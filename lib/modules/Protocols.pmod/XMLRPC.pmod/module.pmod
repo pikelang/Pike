@@ -28,12 +28,9 @@
 //! @note
 //! The XML-RPC @tt{<dateTime.iso8601>@} datatype is currently only
 //! partially implemented. It is decoded but cannot be encoded. Also,
-//! the current implementation breaks the specification by assuming
-//! GMT (if anything, UTC is probably more appropriate). The
-//! specification says: "What timezone should be assumed for the
-//! dateTime.iso8601 type? UTC? Localtime? Don't assume a timezone. It
-//! should be specified by the server in its documentation what
-//! assumptions it makes about timezones."
+//! the code here does not assume any particular timezone (which is
+//! correct according to the specification). The Calendar module,
+//! however, seems to assume localtime.
 //!
 
 //! Represents a function call made to a XML-RPC server.
@@ -229,9 +226,11 @@ static mixed decode(string xml_input, string dtd_input)
 			     case "struct":
 			       return mkmapping(@Array.transpose(data));
 		             case "dateTime.iso8601":
-			       return Calendar.parse("%dT%h:%m:%s %z",
-						     data*""+" GMT")->
-				 set_timezone("locale");
+			       // FIXME: Don't assume any particular
+			       // timezone here (the Calendar module
+			       // seems to assume localtime).
+			       return Calendar.parse("%dT%h:%m:%s", data*"") ||
+				 magic_zero;
 			   }
 			   error("Unknown element %O.\n", name);
 			 case "error":
