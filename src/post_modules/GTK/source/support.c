@@ -1,6 +1,17 @@
 #include <version.h>
 
 struct image;
+
+void my_pop_n_elems( int n ) /* anti-inline */
+{
+  pop_n_elems( n );
+}
+
+void my_ref_push_object( struct object *o )
+{
+  ref_push_object( o );
+}
+
 void pgtk_encode_truecolor_masks(struct image *i,
                                  int bitspp,
                                  int pad,
@@ -118,6 +129,7 @@ void *get_swapped_string( struct pike_string *s,int force_wide )
 
 struct object *pikeimage_from_gdkimage( GdkImage *img )
 {
+  return NULL;
 }
 
 
@@ -403,7 +415,7 @@ void pgtk_get_mapping_arg( struct mapping *map,
                            void *dest, long *mask, int len )
 {
   struct svalue *s;
-  if( s = simple_mapping_string_lookup( map, name ) )
+  if( (s = simple_mapping_string_lookup( map, name )) )
   {
     if( s->type == type )
     {
@@ -654,6 +666,15 @@ void push_gdk_event(GdkEvent *e)
 
    case GDK_NO_EXPOSE:
      push_text("type"); push_text("noexpose");
+     break;
+
+
+   case GDK_DRAG_ENTER:
+   case GDK_DRAG_LEAVE:
+   case GDK_DRAG_MOTION:
+   case GDK_DRAG_STATUS:
+   case GDK_DROP_START:
+   case GDK_DROP_FINISHED:
      break;
   }
   f_aggregate_mapping( sp - osp );
