@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.76 1999/11/25 04:25:42 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.77 1999/11/25 19:27:07 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1891,6 +1891,12 @@ static int low_pike_types_le(char *a,char *b)
     /*
      * function(A...:B) <= function(C...:D)	iff C <= A && B <= D
      */
+    /*
+     * function(:int) <= function(int:int)
+     * function(int|string:int) <= function(int:int)
+     * function(string:int) != function(int:int)
+     * function(int:int) != function(:int)
+     */
     a++;
     b++;
     while(EXTRACT_UCHAR(a)!=T_MANY || EXTRACT_UCHAR(b)!=T_MANY)
@@ -1912,13 +1918,18 @@ static int low_pike_types_le(char *a,char *b)
 	b+=type_length(b);
       }
 
-      if(!low_pike_types_le(b_tmp, a_tmp)) return 0;
+      if (EXTRACT_UCHAR(a_tmp) != T_VOID) {
+	if (EXTRACT_UCHAR(b_tmp) == T_VOID) return 0;
+	if (!low_pike_types_le(b_tmp, a_tmp)) return 0;
+      }
     }
     /* check the 'many' type */
     a++;
     b++;
-    if (!low_pike_types_le(b, a))
-      return 0;
+    if (EXTRACT_UCHAR(a) != T_VOID) {
+      if (!low_pike_types_le(b, a))
+	return 0;
+    }
 
     a+=type_length(a);
     b+=type_length(b);
