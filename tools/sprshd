@@ -98,7 +98,7 @@ void handle_incoming_connection(object(Stdio.File) io)
   object p;
   mapping env=copy_value(getenv());
   sscanf(io->read(4),"%4c",int args);
-  string *cmd=allocate(args);
+  array(string) cmd=allocate(args);
   for(int e=0;e<args;e++)
   {
     sscanf(io->read(4),"%4c",int len);
@@ -320,7 +320,7 @@ void handle_incoming_connection(object(Stdio.File) io)
   destruct(io);
 }
 
-void handle_connections(string *hosts)
+void handle_connections(array(string) hosts)
 {
   while(1)
   {
@@ -358,7 +358,7 @@ int main(int argc, array(string) argv)
     exit(1);
   }
 
-  string *hosts=({});
+  array(string) hosts=({});
   for(int e=2;e<sizeof(argv);e++)
   {
     if(sscanf(argv[e],"%*d.%*d")==2)
