@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.62 1999/10/31 22:41:44 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.63 1999/10/31 22:53:38 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -803,8 +803,14 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 	    } while(0)
 #else
 #define EXTRACT_FLOAT(SVAL, INPUT, SHIFT)				\
-	    /* FIXME! */						\
-	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 4)
+	    do {							\
+	      char x[4];						\
+	      x[0] = (INPUT)[0];					\
+	      x[1] = (INPUT)[1];					\
+	      x[2] = (INPUT)[2];					\
+	      x[3] = (INPUT)[3];					\
+	      (SVAL).u.float_number = low_parse_IEEE_float(x, 4);	\
+            } while(0)
 #endif
 #endif
 
@@ -839,8 +845,18 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 	    } while(0)
 #else
 #define EXTRACT_DOUBLE(SVAL, INPUT, SHIFT)				\
-	    /* FIXME! */						\
-	    (SVAL).u.float_number = low_parse_IEEE_float((INPUT), 8)
+	    do {							\
+	      char x[8];						\
+	      x[0] = (INPUT)[0];					\
+	      x[1] = (INPUT)[1];					\
+	      x[2] = (INPUT)[2];					\
+	      x[3] = (INPUT)[3];					\
+	      x[4] = (INPUT)[4];					\
+	      x[5] = (INPUT)[5];					\
+	      x[6] = (INPUT)[6];					\
+	      x[7] = (INPUT)[7];					\
+	      (SVAL).u.float_number = low_parse_IEEE_float(x, 8);	\
+	    } while(0)
 #endif
 #endif
 
