@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.48 2000/10/02 23:00:21 grubba Exp $
+// $Id: treeopt.in,v 1.49 2000/10/03 12:16:51 grubba Exp $
 //
 // The tree optimizer
 //
@@ -77,6 +77,8 @@ F_APPLY(0 = F_CONSTANT
     n->hash = hash_node(n);
     n->node_info |= OPT_DEFROSTED;
 #endif /* SHARED_NODES */
+    _CDR(n)->parent = NULL;
+    fix_type_field(_CDR(n));
     free_node(arglist);
 #ifdef PIKE_DEBUG
     if (l_flag > 4) {
@@ -108,6 +110,8 @@ F_APPLY(0 = F_CONSTANT
     n->hash = hash_node(n);
     n->node_info |= OPT_DEFROSTED;
 #endif /* SHARED_NODES */
+    _CDR(n)->parent = NULL;
+    fix_type_field(_CDR(n));
     free_node(arglist);
 #ifdef PIKE_DEBUG
     if (l_flag > 4) {
@@ -141,6 +145,8 @@ F_APPLY(0 = F_CONSTANT
     n->hash = hash_node(n);
     n->node_info |= OPT_DEFROSTED;
 #endif /* SHARED_NODES */
+    _CDR(n)->parent = NULL;
+    fix_type_field(_CDR(n));
     free_node(arglist);
 #ifdef PIKE_DEBUG
     if (l_flag > 4) {
