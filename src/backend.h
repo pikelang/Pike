@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: backend.h,v 1.10 2000/12/16 04:58:17 marcus Exp $
+ * $Id: backend.h,v 1.11 2000/12/19 00:41:34 hubbe Exp $
  */
 #ifndef BACKEND_H
 #define BACKEND_H
@@ -30,8 +30,8 @@ void init_backend(void);
 void set_read_callback(int fd,file_callback cb,void *data);
 void set_write_callback(int fd,file_callback cb,void *data);
 #ifdef WITH_OOB
-void set_read_oob_callback(int fd,file_callback cb,void *data);
-void set_write_oob_callback(int fd,file_callback cb,void *data);
+PMOD_EXPORT void set_read_oob_callback(int fd,file_callback cb,void *data);
+PMOD_EXPORT void set_write_oob_callback(int fd,file_callback cb,void *data);
 #endif /* WITH_OOB */
 PMOD_EXPORT file_callback query_read_callback(int fd);
 PMOD_EXPORT file_callback query_write_callback(int fd);
