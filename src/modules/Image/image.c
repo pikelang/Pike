@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.186 2001/03/04 15:27:54 mirar Exp $ */
+/* $Id: image.c,v 1.187 2001/04/03 15:56:03 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.186 2001/03/04 15:27:54 mirar Exp $
+**!	$Id: image.c,v 1.187 2001/04/03 15:56:03 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.186 2001/03/04 15:27:54 mirar Exp $");
+RCSID("$Id: image.c,v 1.187 2001/04/03 15:56:03 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4281,6 +4281,166 @@ static void image__sprintf( INT32 args )
   }
 }
 
+static void image_grey_blur( INT32 args )
+{
+  /* Basically a exactly like blur, but only uses the r color channel. */
+  INT_TYPE t;
+  int x, y, cnt;
+  int xe = THIS->xsize;
+  int ye = THIS->ysize;
+  rgb_group *rgb = THIS->img;
+  if( args != 1 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("grey_blur",1);
+
+  if( !rgb )
+    Pike_error("This object is not initialized\n");
+    
+  if (sp[-args].type!=T_INT)  SIMPLE_BAD_ARG_ERROR("grey_blur",0,"integer");
+
+  t = sp[-args].u.integer;  /* times */
+
+  for( cnt=0; cnt<t; cnt++ )
+  {
+    rgb_group *ro1=NULL, *ro2=NULL, *ro3=rgb;
+    for( y=0; y<ye; y++ )
+    {
+      ro1 = ro2;
+      ro2 = ro3;
+      ro3 = ( y < ye-1 ) ? rgb+xe*(y+1) : 0;
+
+      for( x=0; x<xe; x++ )
+      {
+	int tmp = 0;
+	int n = 0;
+	if( ro1 )
+	{
+	  if( x > 1 )    {n++;tmp += ro1[x-1].r;};
+	  tmp += ro1[x].r; n++;
+	  if( x < xe-1 ) {n++;tmp += ro1[x+1].r;};
+	}
+	if( x > 1 )    {n++;tmp += ro2[x-1].r;};
+	tmp += ro2[x].r; n++;
+	if( x < xe-1 ) {n++;tmp += ro2[x+1].r;};
+	if( ro3 )
+	{
+	  if( x > 1 )    {n++;tmp += ro3[x-1].r;};
+	  tmp += ro3[x].r; n++;
+	  if( x < xe-1 ) {n++;tmp += ro3[x+1].r;};
+	}
+	ro2[x].r = ro2[x].g = ro2[x].b = tmp/n;
+      }
+    }
+  }
+  pop_n_elems( args );
+  ref_push_object( THISOBJ );
+}
+
+
+
+static void image_blur( INT32 args )
+/* about four times faster than the generic apply matrix for this
+ * special case.  */
+{
+  INT_TYPE t;
+  int x, y, cnt;
+  int xe = THIS->xsize;
+  int ye = THIS->ysize;
+  rgb_group *rgb = THIS->img;
+  if( args != 1 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("grey_blur",1);
+
+  if( !rgb )
+    Pike_error("This object is not initialized\n");
+    
+  if (sp[-args].type!=T_INT)  SIMPLE_BAD_ARG_ERROR("grey_blur",0,"integer");
+
+  t = sp[-args].u.integer;  /* times */
+
+  for( cnt=0; cnt<t; cnt++ )
+  {
+    rgb_group *ro1=NULL, *ro2=NULL, *ro3=rgb;
+    for( y=0; y<ye; y++ )
+    {
+      ro1 = ro2;
+      ro2 = ro3;
+      ro3 = ( y < ye-1 ) ? rgb+xe*(y+1) : 0;
+
+      for( x=0; x<xe; x++ )
+      {
+	int tmpr=0, tmpg=0, tmpb=0;
+	int n=0;
+	if( ro1 )
+	{
+	  if( x > 1 )    {
+	    n++;
+	    tmpr += ro1[x-1].r;
+	    tmpg += ro1[x-1].g;
+	    tmpb += ro1[x-1].b;
+	  };
+	  n++;
+	  tmpr += ro1[x].r;
+	  tmpg += ro1[x].g;
+	  tmpb += ro1[x].b;
+	  if( x < xe-1 )
+	  {
+	    n++;
+	    tmpr += ro1[x+1].r;
+	    tmpg += ro1[x+1].g;
+	    tmpb += ro1[x+1].b;
+	  };
+	}
+	if( x > 1 )
+	{
+	  n++;
+	  tmpr += ro2[x-1].r;
+	  tmpg += ro2[x-1].g;
+	  tmpb += ro2[x-1].b;
+	}
+	n++;
+	tmpr += ro2[x].r;
+	tmpg += ro2[x].g;
+	tmpb += ro2[x].b;
+
+	if( x < xe-1 )
+	{
+	  n++;
+	  tmpr += ro2[x+1].r;
+	  tmpg += ro2[x+1].g;
+	  tmpb += ro2[x+1].b;
+	}
+	if( ro3 )
+	{
+	  if( x > 1 )
+	  {
+	    n++;
+	    tmpr += ro3[x-1].r;
+	    tmpg += ro3[x-1].g;
+	    tmpb += ro3[x-1].b;
+	  }
+	  n++;
+	  tmpr += ro3[x].r;
+	  tmpg += ro3[x].g;
+	  tmpb += ro3[x].b;
+	  if( x < xe-1 )
+	  {
+	    n++;
+	    tmpr += ro3[x+1].r;
+	    tmpg += ro3[x+1].g;
+	    tmpb += ro3[x+1].b;
+	  }
+	}
+	ro2[x].r = tmpr/n;
+	ro2[x].g = tmpg/n;
+	ro2[x].b = tmpb/n;
+      }
+    }
+  }
+  pop_n_elems( args );
+  ref_push_object( THISOBJ );
+}
+
+
+
 void image_tobitmap(INT32 args)
 {
    int xs;
@@ -4432,6 +4592,10 @@ void init_image_image(void)
 
    ADD_FUNCTION("apply_matrix",image_apply_matrix,
 		tFuncV(tArr(tArr(tOr(tInt,tArr(tInt)))),tOr(tVoid,tInt),tObj),0);
+
+   ADD_FUNCTION("grey_blur",image_grey_blur,tFunc(tInt,tObj),0);
+   ADD_FUNCTION("blur",image_blur,tFunc(tInt,tObj),0);
+   
    ADD_FUNCTION("outline",image_outline,
 		tOr5(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),
 		     tFunc(tArr(tArr(tInt)) tInt tInt tInt tOr(tVoid,tInt),tObj),
@@ -4605,5 +4769,3 @@ void init_image_image(void)
 void exit_image_image(void) 
 {
 }
-
-
