@@ -17,11 +17,6 @@ class Week
 {
    inherit Calendar.Gregorian.Week;
 
-   string name()
-   {
-      return "v"+(string)this->number();
-   }
-
    int yday()
    {
       return 
