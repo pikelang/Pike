@@ -31,4 +31,4 @@ class Output
 }
 
 Output filter(Standards.URI uri, string|Stdio.File data,
-	      string content_type);
+	      string content_type, mixed ... more);

@@ -18,34 +18,40 @@ static string fix_entities(string text)
 }
 
 Output filter(Standards.URI uri, string|Stdio.File data,
-	      string content_type)
+	      string content_type,
+	      mapping headers,
+	      string|void default_charset )
 {
   Output res=Output();
 
+
   if(objectp(data))
     data=data->read();
-  /* http://lib.roxen.com/jargon-4.2.3/jargon.html
 
-      with old <a> callback: 				     64.9
-      with new <a> callback:                                  2.1
-      with C <a> callback:                                    1.9
-      with empty <a> callback:                                1.9
-      without <a> callback:  				      1.7
-  */
+  data = .Charset.decode_http( data, headers, default_charset );
+
   void parse_meta(Parser.HTML p, mapping m )
   {
     string n = m["http-equiv"]||m->name;
     switch(lower_case(n))
     {
       case "description": 
-	res->fields->description=fix_entities(m->contents||"");
+	res->fields->description=
+	  fix_entities(m->contents||m->content||m->data||"");
 	break;
       case "keywords":
-	res->fields->keywords=fix_entities(m->contents||"");
+	res->fields->keywords=
+	  fix_entities(m->contents||m->content||m->data||"");
 	break;
     }
   };
 
+  if( headers["description"] )
+    res->fields->description=fix_entities(headers["description"]);
+
+  if( headers["keywords"] )
+    res->fields->keywords=fix_entities(headers["keywords"]);
+  
   _WhiteFish.LinkFarm lf = _WhiteFish.LinkFarm();
   function ladd = lf->add;
   void parse_title(Parser.HTML p, mapping m, string c) {
