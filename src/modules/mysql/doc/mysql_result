@@ -32,10 +32,6 @@ SYNTAX
 	or
 	object(Mysql_result) mysql->list_tables(string wild);
 	or
-	object(Mysql_result) mysql->list_fields(string table);
-	or
-	object(Mysql_result) mysql->list_fields(string table, string wild);
-	or
 	object(Mysql_result) mysql->list_processes();
 
 DESCRIPTION
@@ -131,20 +127,8 @@ DESCRIPTION
 	advances the field cursor one step. Returns 0 if there are no more
 	fields.
 
-	The mapping contains the following entries:
-
-	 "name":	string	The name of the field.
-	 "table":	string	The name of the table.
-	 "type":	string	The type of the field.
-	 "length":	int	The length of the field.
-	 "max_length":	int	The length of the longest element in this field.
-	 "flags":	int	Some flags.
-	 "decimals":	int	The number of decimalplaces.
-
-	The type of the field can be any of:
-	"decimal", "char", "short", "long", "float", "double", "null",
-	"time", "longlong", "int24", "tiny blob", "medium blob",
-	"long blob", "var string", "string" or "unknown".
+	The mapping contains the same entries as those returned by
+	mysql->list_fields(), except that the "default" entry is missing.
 
 NOTA BENE
 	This function exists only if SUPPORT_FIELD_SEEK was defined when
@@ -154,7 +138,8 @@ BUGS
 	The "flags" entry should be parsed.
 
 SEE ALSO
-	mysql_result->fetch_fields, mysql_result->field_seek
+	mysql_result->fetch_fields, mysql_result->field_seek,
+	sql->list_fields
 
 
 ============================================================================
@@ -170,7 +155,8 @@ DESCRIPTION
 	Returns an array with one mapping for every remaining field in the
 	result table.
 
-	For a description of the mapping see mysql_result->fetch_field above.
+	It returns data similar to mysql->list_fields(), except for that
+	the "default" entry is missing.
 
 NOTA BENE
 	Resets the field cursor to 0.
@@ -182,7 +168,8 @@ BUGS
 	See mysql_result->fetch_field.
 
 SEE ALSO
-	mysql_result->fetch_field, mysql_result->field_seek
+	mysql_result->fetch_field, mysql_result->field_seek,
+	mysql->list_fields
 
 
 ============================================================================
