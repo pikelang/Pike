@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.811 2004/03/10 09:42:13 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.812 2004/03/10 17:11:18 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2536,6 +2536,23 @@ AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 # It seems buggy on Solaris 7/x86.
 if test "x$with_devpoll" = "xno"; then :; else
   AC_CHECK_HEADERS(sys/devpoll.h)
+
+  if test "x$ac_cv_header_sys_devpoll_h" = "xyes"; then
+    AC_MSG_CHECKING(for poll device)
+    AC_CACHE_VAL(pike_cv_device_devpoll, [
+      pike_cv_poll_device="no"
+      for device in /dev/poll; do
+        if test -w "$device"; then
+          pike_cv_poll_device="$device"
+	  break
+	fi
+      done
+    ])
+    AC_MSG_RESULT($pike_cv_poll_device)
+    if test "x$pike_cv_poll_device" = "xno"; then :; else
+      AC_DEFINE_UNQUOTED(PIKE_POLL_DEVICE, "$pike_cv_poll_device")
+    fi
+  fi
 fi
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
