@@ -9,7 +9,7 @@ if test x$with_jpeglib = xyes ; then
   if test $ac_cv_header_jpeglib_h = yes ; then
     AC_CHECK_LIB(jpeg, jpeg_destroy, [
       AC_DEFINE(HAVE_LIBJPEG) 
-      LIBS="${LIBS-} -lz"
+      LIBS="${LIBS-} -ljpeg"
       ], 
       AC_CHECK_LIB(jpeg, jpeg_destroy))
   fi
