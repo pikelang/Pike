@@ -7,10 +7,17 @@ M4=m4
 IFS="${IFS= 	}"; save_ifs="$IFS"; IFS="${IFS}:"
 for d in $PATH; do
   test -z "$d" && ac_dir=.
+  # GNU m4 is named gm4 on FreeBSD
+  if test -f $d/gm4; then
+    M4=$d/gm4
+    if echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/gm4 >/dev/null; then
+      break
+    fi
+  fi
   if test -f $d/m4; then
     M4=$d/m4
     if echo 'divert(-1)changequote([[,]])define(DOIT,ifelse([foo],foo,[DOIT($1)]))DOIT([[m4exit(1)]])' | $d/m4 >/dev/null; then
-     break
+      break
     fi
   fi
 done
