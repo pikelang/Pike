@@ -1,0 +1,126 @@
+#!/usr/local/bin/pike
+GDK.Drawable get_image( array argv )
+{
+  string image, property_name;
+  Image.Color.Color fgcolor = Image.Color.white, bgcolor = Image.Color.black;
+  int modx, mody;
+  GDK.Window root = GTK.root_window();
+  int maxmode;
+
+  for( int i = 1; i<sizeof( argv ); i++ )
+  {
+    switch( argv[i] )
+    {
+     case "--max":
+       maxmode=1;
+       break;
+     case "--maxpect":
+       maxmode=2;
+       break;
+
+     case "-fg":
+     case "--fg":
+       fgcolor = Image.Color( argv[++i] );
+       break;
+     case "-bg":
+     case "--bg":
+       bgcolor = Image.Color( argv[++i] );
+       break;
+     case "-grey":
+     case "-gray":
+     case "--grey":
+     case "--gray":
+       bgcolor = Image.Color( "grey" );
+       break;
+     case "-rv":
+     case "--rv":
+       mixed tmp = fgcolor;
+       fgcolor = bgcolor;
+       bgcolor = fgcolor;
+       break;
+     case "-name":
+     case "--name":
+       property_name = argv[++i];
+       break;
+     case "--mod":
+     case "-mod":
+       modx = (int)argv[++i];
+       mody = (int)argv[++i];
+       break;
+
+     default:
+       image = argv[i];
+       break;
+    }
+  }
+
+  if( property_name )
+  {
+    mapping pr = root->get_property( GDK.Atom["pv_"+property_name] );
+    werror("%s <-> %O\n", property_name, pr );
+    if( pr && (int)pr->data)
+      if( catch {
+        return GDK.Pixmap( (int)pr->data );
+      } )
+        werror("Warning: Property existed, but pixmap-id not available\n");
+  }
+  GDK.Pixmap bi;
+
+  Image.Image i;
+  if( image )
+  {
+    mapping w = Image._load( image );
+    Image.Image a;
+    i = w->image;
+    a = i->alpha;
+    if( a )
+    {
+      i = Image.Image( i->xsize(), i->ysize(), bgcolor )->
+        paste_mask( i,a );
+    }
+  } else
+    i = Image.Image( 16,16, bgcolor );
+
+  switch( maxmode )
+  {
+   case 1:
+     i = i->scale( root->xsize(), root->ysize() );
+     break;
+   case 2:
+     float fact = max( root->xsize()  / (float)i->xsize(),
+                       root->ysize()  / (float)i->ysize() );
+     i = i->scale( fact );
+     break;
+  }
+
+  bi = GDK.Pixmap( i );
+
+  if( property_name )
+  {
+    string q = (string)bi->xid();
+    root->change_property( GDK.Atom["pv_"+property_name],
+                           GDK.Atom.text,
+                           GDK.PropModeReplace,
+                           q);
+  }
+
+  return bi;
+}
+
+
+int main(int argc, array argv)
+{
+  argv  = GTK.setup_gtk(argv);
+  GDK.Window root = GTK.root_window();
+  array(mapping) maybe
+    =root->children()->get_property(GDK.Atom.__SWM_VROOT)-({0});
+
+  if(sizeof(maybe))
+      root = GDK.Window( maybe[0]->data[0] );
+
+  GDK.Pixmap bg = get_image( argv );
+  GTK.flush();
+  root->set_background( bg );
+  root->clear();
+  GTK.flush();
+}
