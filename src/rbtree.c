@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rbtree.c,v 1.19 2002/12/07 23:16:46 grubba Exp $
+|| $Id: rbtree.c,v 1.20 2002/12/08 16:45:33 mast Exp $
 */
 
 /* An implementation of a threaded red/black balanced binary tree.
@@ -12,7 +12,7 @@
 
 #include "global.h"
 
-RCSID("$Id: rbtree.c,v 1.19 2002/12/07 23:16:46 grubba Exp $");
+RCSID("$Id: rbtree.c,v 1.20 2002/12/08 16:45:33 mast Exp $");
 
 #include "interpret.h"
 #include "pike_error.h"
@@ -967,7 +967,7 @@ struct rb_node_hdr *low_rb_unlink_with_move (struct rb_node_hdr **root,
   if (node != unlink) next = node;
   if (RBSTACK_PEEK (*rbstack_ptr) != next)
     Pike_fatal ("Stack got %p on top, but next node is %p.\n",
-	   RBSTACK_PEEK (*rbstack_ptr), next);
+		RBSTACK_PEEK (*rbstack_ptr), next);
   if (!keep_rbstack) RBSTACK_FREE (*rbstack_ptr);
   return unlink;
 }
@@ -1060,7 +1060,7 @@ void low_rb_unlink_without_move (struct rb_node_hdr **root,
   debug_check_rbstack (*root, *rbstack_ptr);
   if (RBSTACK_PEEK (*rbstack_ptr) != next)
     Pike_fatal ("Stack got %p on top, but next node is %p.\n",
-	   RBSTACK_PEEK (*rbstack_ptr), next);
+		RBSTACK_PEEK (*rbstack_ptr), next);
   if (!keep_rbstack) RBSTACK_FREE (*rbstack_ptr);
 }
 #endif
@@ -1470,7 +1470,7 @@ struct rb_node_hdr *rb_make_tree (struct rb_node_hdr *list, size_t length)
       struct rb_node_hdr *next;
 #ifdef PIKE_DEBUG
       if (!list) Pike_fatal ("Premature end of list at %"PRINTSIZET"u, "
-			"expected %"PRINTSIZET"u.\n", count, length);
+			     "expected %"PRINTSIZET"u.\n", count, length);
 #endif
       next = list->next;
 
@@ -1490,6 +1490,7 @@ struct rb_node_hdr *rb_make_tree (struct rb_node_hdr *list, size_t length)
 	  root = list;
 	}
       }
+      assert (idx <= depth);
 
       if (count++ == deep_end) {
 	if (idx) {		/* Interior node is "half a leaf". */
@@ -1512,7 +1513,11 @@ struct rb_node_hdr *rb_make_tree (struct rb_node_hdr *list, size_t length)
       list = next;
     }
 
-    /* FIXME: What if root is still NULL here? */
+    assert (deep_end == length - 1 && (length & 1) ? idx == 0 : idx == start);
+#ifdef PIKE_DEBUG
+    for (; idx <= depth; idx++)
+      assert (top_idx[idx] == depth + 1);
+#endif
     assert(root);
 
     next_src->next = NULL;
@@ -1734,7 +1739,8 @@ void debug_dump_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data,
 	  RBSTACK_UP (p, n);
 	}
 	if (node->prev != n)
-	  fprintf (stderr, "[Thread ptr is %p, expected %p] ", node->prev, n);
+	  fprintf (stderr, "[Thread ptr is %p, expected %p]\n%*s",
+		   node->prev, n, depth, "");
       }, {			/* prev is subtree. */
 	if (!node->prev) {
 	  fputs ("[Zero subtree]", stderr);
@@ -1759,18 +1765,18 @@ void debug_dump_rb_tree (struct rb_node_hdr *root, dump_data_fn *dump_data,
 	  RBSTACK_UP (p, n);
 	}
 	if (node->next != n)
-	  fprintf (stderr, " [Thread ptr is %p, expected %p]", node->next, n);
+	  fprintf (stderr, "\n%*s[Thread ptr is %p, expected %p]",
+		   depth, "", node->next, n);
       }, {			/* next is subtree. */
+	fprintf (stderr, "\n%*s", depth, "");
 	if (!node->next) {
-	  fputs (" [Zero subtree]", stderr);
+	  fputs ("[Zero subtree]", stderr);
 	  goto leave_1;
 	}
-	fprintf (stderr, "\n%*s", depth, "");
       }, {			/* Pop. */
 	fputc (')', stderr);
-	depth--;
       skip_node:
-	;
+	depth--;
       });
     fputc ('\n', stderr);
   }
