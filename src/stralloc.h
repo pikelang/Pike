@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.49 2000/08/09 14:52:21 grubba Exp $
+ * $Id: stralloc.h,v 1.50 2000/08/09 18:46:31 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -148,7 +148,8 @@ INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *
 
 /* Prototypes begin here */
 PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, ptrdiff_t pos);
-PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, int pos, int value);
+PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, ptrdiff_t pos,
+				      int value);
 PMOD_EXPORT INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
 CONVERT(0,1)
 CONVERT(0,2)
@@ -227,15 +228,15 @@ void gc_mark_all_strings(void);
 PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, int chars, int mag);
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
-PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len);
+PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, ptrdiff_t len);
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
-			   PCHARP from,
-			   INT32 len);
+				       PCHARP from,
+				       ptrdiff_t len);
 PMOD_EXPORT void string_builder_fill(struct string_builder *s,
-			 int howmany,
-			 PCHARP from,
-			 INT32 len,
-			 INT32 offset);
+				     ptrdiff_t howmany,
+				     PCHARP from,
+				     ptrdiff_t len,
+				     ptrdiff_t offset);
 PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str);
 PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);

@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.90 2000/08/09 14:53:11 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.91 2000/08/09 18:46:10 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -117,7 +117,8 @@ PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, ptr
   return generic_extract(s->str,s->size_shift,pos);
 }
 
-PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, int pos, int value)
+PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, ptrdiff_t pos,
+				      int value)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0)
@@ -1639,7 +1640,7 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 }
 
 
-PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len)
+PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, ptrdiff_t len)
 {
   string_build_mkspace(s,len,0);
   switch(s->s->size_shift)
@@ -1655,8 +1656,8 @@ PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *st
 
 
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
-			   PCHARP from,
-			   INT32 len)
+				       PCHARP from,
+				       ptrdiff_t len)
 {
   string_build_mkspace(s,len,from.shift);
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len), from, len);
@@ -1664,12 +1665,13 @@ PMOD_EXPORT void string_builder_append(struct string_builder *s,
 }
 
 PMOD_EXPORT void string_builder_fill(struct string_builder *s,
-			 int howmany,
-			 PCHARP from,
-			 INT32 len,
-			 INT32 offset)
+				     ptrdiff_t howmany,
+				     PCHARP from,
+				     ptrdiff_t len,
+				     ptrdiff_t offset)
 {
-  INT32 tmp;
+  ptrdiff_t tmp;
+
 #ifdef PIKE_DEBUG
   if(len<=0)
     fatal("Cannot fill with zero length strings!\n");
@@ -1687,7 +1689,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
   }
 
   string_build_mkspace(s,howmany,from.shift);
-  tmp=MINIMUM(howmany, len - offset);
+  tmp = MINIMUM(howmany, len - offset);
 
   generic_memcpy(MKPCHARP_STR_OFF(s->s,s->s->len),
 		 ADD_PCHARP(from,offset),
@@ -1706,7 +1708,7 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 
     while(howmany > 0)
     {
-      tmp=MINIMUM(len, howmany);
+      tmp = MINIMUM(len, howmany);
       MEMCPY(s->s->str + (s->s->len << s->s->size_shift),
 	     to.ptr,
 	     tmp << s->s->size_shift);
