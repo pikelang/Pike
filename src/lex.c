@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.68 2000/04/18 17:23:35 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.69 2000/04/18 18:47:31 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -130,17 +130,14 @@ struct keyword instr_names[]=
 { "assign",		F_ASSIGN,0 },
 { "break",		F_BREAK,0 },	
 { "case",		F_CASE,0 },	
-{ "cast",		F_CAST,0 },	
 { "continue",		F_CONTINUE,0 },	
-{ "copy_value",         F_COPY_VALUE,0 },
 { "default",		F_DEFAULT,0 },	
 { "do-while",		F_DO,0 },	
 { "dumb return",	F_DUMB_RETURN,0 },	
 { "for",		F_FOR,0 },
 { "index",              F_INDEX,0 },
 { "->x",                F_ARROW, I_HASARG },
-{ "clear string subtype", F_CLEAR_STRING_SUBTYPE },
-{ "indirect",		F_INDIRECT,0 },
+{ "clear string subtype", F_CLEAR_STRING_SUBTYPE, 0 },
 
 { "branch",             F_BRANCH, I_ISJUMP },
 { "branch non zero",	F_BRANCH_WHEN_NON_ZERO, I_ISJUMP },	
@@ -178,7 +175,7 @@ struct keyword instr_names[]=
 { "mark & local",	F_MARK_AND_LOCAL, I_HASARG },	
 { "ltosval2",		F_LTOSVAL2,0 },
 { "lvalue to svalue",	F_LTOSVAL,0 },	
-{ "lvalue_list",	F_LVALUE_LIST },	
+{ "lvalue_list",	F_LVALUE_LIST,0 },	
 { "[ lvalues ]",	F_ARRAY_LVALUE, I_HASARG },	
 { "mark sp-X",          F_MARK_X, I_HASARG },
 { "mark",               F_MARK,0 },
@@ -186,13 +183,11 @@ struct keyword instr_names[]=
 { "pop mark",           F_POP_MARK,0 },
 { "pop",		F_POP_VALUE,0 },	
 { "pop_n_elems",        F_POP_N_ELEMS, I_HASARG },
-{ "range",              F_RANGE,0 },
 { "return",		F_RETURN,0 },
 { "return 0",		F_RETURN_0,0 },
 { "return 1",		F_RETURN_1,0 },
 { "return local",	F_RETURN_LOCAL, I_HASARG },
 { "return if true",	F_RETURN_IF_TRUE, 0 },
-{ "sscanf",		F_SSCANF, I_HASARG },	
 { "switch",		F_SWITCH, I_HASARG },
 { "unary minus",	F_NEGATE,0 },
 { "while",		F_WHILE,0 },	
@@ -215,10 +210,7 @@ struct keyword instr_names[]=
 { "--local",		F_DEC_LOCAL, I_HASARG },
 { "--local and pop",	F_DEC_LOCAL_AND_POP, I_HASARG },
 { "local--",		F_POST_DEC_LOCAL, I_HASARG },
-{ "sizeof",		F_SIZEOF,0 },
-{ "sizeof local",	F_SIZEOF_LOCAL, I_HASARG },
 { "throw(0)",		F_THROW_ZERO,0 },
-{ "string index",       F_STRING_INDEX, I_HASARG },
 { "local index",        F_LOCAL_INDEX, I_HASARG },
 { "local local index",  F_LOCAL_LOCAL_INDEX, I_HASARG },
 { "int index",          F_POS_INT_INDEX, I_HASARG },
@@ -243,8 +235,6 @@ struct keyword instr_names[]=
 { "global=local;",      F_LOCAL_2_GLOBAL, I_HASARG },
 { "local->x",           F_LOCAL_ARROW, I_HASARG },
 { "global[local]",      F_GLOBAL_LOCAL_INDEX, I_HASARG },
-{ "::`[]",              F_MAGIC_INDEX, I_HASARG },
-{ "::`[]=",             F_MAGIC_SET_INDEX, I_HASARG },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
