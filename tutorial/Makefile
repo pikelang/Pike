@@ -104,7 +104,7 @@ clean:
 
 rebuild:
 	-rm -f $(MADEFILES)
-	make pike="$(pike)" Image.wmml Mysql.wmml tutorial.html
+	$(MAKE) pike="$(pike)" all
 
 install:
 	cp `cat tutorial.files` $(DESTINATION)
