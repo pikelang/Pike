@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.22 2004/01/14 22:12:24 bill Exp $
+// $Id: context.pike,v 1.23 2004/01/27 17:47:05 bill Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -21,11 +21,53 @@ Crypto.rsa rsa;
 int auth_level;
 
 //! Array of authorities that are accepted for client certificates.
-//! The client will only send certificates that are signed by any of
-//! these authorities. The string is the DER-encoded issuer, as extracted from
-//! an X509 certificate by @[Standards.PKCS.Certificate.get_certificate_issuer]
-//! or @[Standards.PKCS.Certificate.get_certificate_subject].
-array(string) authorities;
+//! The server will only accept connections from clients whose certificate
+//! is signed by one of these authorities. The string is a DER-encoded certificate,
+//! which typically must be decoded using @[MIME.decode_base64] first.
+//! 
+//! Note that it is presumed that the issuer will also be trusted by the server. See 
+//! @[trusted_issuers] for details on specifying trusted issuers.
+//! 
+//! If empty, the server will accept any client certificate whose issuer is trusted by the 
+//! server.
+void set_authorities(array  a)
+{
+  authorities = a;
+  update_authorities();
+}
+
+//! Get the list of allowed authorities. See @[set_authorities]. 
+array(string) get_authorities()
+{
+  return authorities;
+}
+
+static array(string) authorities = ({});
+static array(string) authorities_cache = ({});
+
+//! Sets the list of trusted certificate issuers. 
+//!
+//! @param a
+//!
+//! An array of certificate chains whose root is self signed (ie a root issuer), and whose
+//! final certificate is an issuer that we trust. The root of the certificate should be 
+//! first certificate in the chain.
+//! 
+//! If this array is left empty, any certificate will be presumed to be trusted.
+void set_trusted_issuers(array(array)  i)
+{
+  trusted_issuers = i;
+  update_trusted_issuers();
+}
+
+//! Get the list of trusted issuers. See @[set_trusted_issuers]. 
+array(string) get_trusted_issuers()
+{
+  return trusted_issuers;
+}
+
+static array(array) trusted_issuers = ({});
+static array(array) trusted_issuers_cache = ({});
 
 //! Temporary, non-certified, private keys, used with a
 //! server_key_exchange message. The rules are as follows:
@@ -182,4 +224,30 @@ void create()
   session_cache = ([ ]);
   /* Backwards compatibility */
   rsa_mode();
+}
+
+// update the cached decoded authorities list
+private void update_authorities()
+{
+  authorities_cache=({});
+  foreach(authorities, string a)
+  {
+    authorities_cache += ({Standards.ASN1.Decode.simple_der_decode(a)});
+  }
+}
+
+// update the cached decoded issuers list
+private void update_trusted_issuers()
+{
+  trusted_issuers_cache=({});
+  foreach(trusted_issuers, array i)
+  {
+    array chain = ({});
+
+    foreach(i, string chain_element)
+    {
+      chain += ({ Standards.ASN1.Decode.simple_der_decode(chain_element) });
+    }
+    trusted_issuers_cache += ({ ic });
+  }
 }
