@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.8 1998/10/16 17:14:19 nisse Exp $
+ * $Id: Line.pmod,v 1.9 2000/05/07 21:39:24 nilsson Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -106,7 +106,7 @@ class simple
       _handle_command(line);
   }
 
-  object(ADT.queue) send_q = ADT.queue();
+  object(ADT.Queue) send_q = ADT.Queue();
 
   static string write_buffer = "";
   static void write_callback(mixed ignored)
