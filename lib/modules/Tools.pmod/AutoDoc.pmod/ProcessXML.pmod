@@ -622,13 +622,16 @@ void resolveRefs(Node tree) {
 void cleanUndocumented(Node tree) {
 
   void check_node(Node n) {
-    if(n->get_tag_name()=="module" &&
-       !sizeof(n->get_elements())) {
-      Node p = n->get_parent();
-      p->remove_child(n);
-      werror("Removed empty module %O\n", n->get_attributes()->name);
-      check_node(p);
-    }
+    string name = n->get_tag_name();
+    if(name!="class" && name!="module") return;
+    array ch = n->get_elements()->get_tag_name();
+    ch -= ({ "modifiers" });
+    ch -= ({ "source-position" });
+    if(sizeof(ch)) return;
+    Node p = n->get_parent();
+    p->remove_child(n);
+    werror("Removed empty %s %O\n", name, n->get_attributes()->name);
+    check_node(p);
   };
 
   tree->walk_preorder( check_node );
