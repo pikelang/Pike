@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.21 2000/03/10 20:08:08 hubbe Exp $
+ * $Id: preprocessor.h,v 1.22 2000/03/31 22:30:21 hubbe Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -1106,6 +1106,7 @@ static INT32 lower_cpp(struct cpp *this,
 	if(WGOBBLE2(line_))
 	{
 	  /* FIXME: Why not use SKIPSPACE()? */
+	  /* Because SKIPSPACE skips newlines? - Hubbe */
 	  while(data[pos]==' ' || data[pos]=='\t') pos++;
 	}else{
 	  goto unknown_preprocessor_directive;
