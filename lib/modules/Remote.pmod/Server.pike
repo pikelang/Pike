@@ -45,22 +45,22 @@ void got_connection(object f)
   connections += ({ con });
 }
 
-int create(string host, int p)
+void create(string host, int p)
 {
   portno = p;
   port = Stdio.Port();
   if(host)
   {
     if(!port->bind(p, got_connection, host))
-      return 0;
+      throw(({"Failed to bind to port\n", backtrace()}));
   }
   else if(!port->bind(p, got_connection, host))
-    return 0;
+    throw(({"Failed to bind to port\n", backtrace()}));
+
   if(!portno)
     sscanf(port->query_address(), "%*s %d", portno);
 
   sctx = Minicontext();
-  return 1;
 }
 
 void provide(string name, mixed thing)

@@ -1,6 +1,7 @@
 
 #include "remote.h"
 
+int closed;
 object con;
 object ctx;
 array(function) close_callbacks = ({ });
@@ -87,8 +88,9 @@ void closed_connection(int|void ignore)
        f();
     else
       f[0](@f[1..]);
+  closed=1;
 }
-int closed;
+
 string write_buffer = "";
 void write_some(int|void ignore)
 {
@@ -100,7 +102,6 @@ void write_some(int|void ignore)
   if(c <= 0)
   {
     closed_connection();
-    closed=1;
     return;
   }
   write_buffer = write_buffer[c..];
@@ -256,7 +257,6 @@ mixed call_sync(array data)
     if(!s || !strlen(s))
     {
       closed_connection();
-      closed=1;
       error("Could not read");
     }
     read_some(0,s);

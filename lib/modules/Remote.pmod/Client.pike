@@ -19,6 +19,7 @@ void create(string host, int port)
   if(!con->connect(host, port))
     error("Could not connect to server");
   connected = 1;
+  con->closed = 0;
 }
 
 void provide(string name, mixed thing)
