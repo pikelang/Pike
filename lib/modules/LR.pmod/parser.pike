@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.5 1998/11/12 02:22:07 grubba Exp $
+ * $Id: parser.pike,v 1.6 1998/11/12 19:45:44 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.5 1998/11/12 02:22:07 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.6 1998/11/12 19:45:44 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -162,7 +162,7 @@ int verbose=1;
 int error=0;
 
 /* Number of next rule (used only for conflict resolving) */
-static private int next_rule_number = 0;
+static private int next_rule_number = 1;
 
 /*
  * Functions
@@ -341,7 +341,9 @@ void add_rule(object(rule) r)
 
   /* !DEBUG */
 
-  r->number = next_rule_number++;
+  r->number = next_rule_number;
+  /* Reserve space for the items generatable from this rule. */
+  next_rule_number += sizeof(r->symbols) + 1;
 
   /* First add the rule to the grammar */
   if (grammar[r->nonterminal]) {
@@ -482,11 +484,15 @@ static private void make_closure(object(kernel) state, int nonterminal)
   if (grammar[nonterminal]) {
     foreach (grammar[nonterminal], object(rule) r) {
       if (!(state->rules[r])) {
+
 	object(item) new_item = item();
 	
 	new_item->r = r;
-	new_item->offset = 0;
+	new_item->item_id = r->number;
 
+	// Not needed, since 0 is the default.
+	// new_item->offset = 0;
+	// state->rules[r] is set by the post-increment above.
 	state->rules[r] = 1;
 
 	state->add_item(new_item);
@@ -512,7 +518,9 @@ static private object(kernel) first_state()
       object(item) i = item();
 
       i->r = r;
-      i->offset = 0;
+      // Not needed since 0 is the default.
+      // i->offset = 0;
+      i->item_id = r->number;
 
       state->add_item(i);
       state->rules[r] = 1;	/* Since this is an item with offset 0 */
@@ -555,6 +563,7 @@ static private object(kernel) do_goto(object(kernel) state, int|string symbol)
 
       new_item->offset = ++offset;
       new_item->r = r = i->r;
+      new_item->item_id = r->number + offset;
 
       new_state->add_item(new_item);
 

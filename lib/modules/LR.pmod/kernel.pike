@@ -1,5 +1,5 @@
 /*
- * $Id: kernel.pike,v 1.3 1998/11/12 01:31:24 grubba Exp $
+ * $Id: kernel.pike,v 1.4 1998/11/12 19:45:42 grubba Exp $
  *
  * Implements a LR(1) state;
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	kernel.pike
-//. RCSID:	$Id: kernel.pike,v 1.3 1998/11/12 01:31:24 grubba Exp $
+//. RCSID:	$Id: kernel.pike,v 1.4 1998/11/12 19:45:42 grubba Exp $
 //. Author:	Henrik Grubbström
 //.
 //. Synopsis:	Implements an LR(1) state.
@@ -73,13 +73,14 @@ void add_item(object(item) i)
 void make_kernel_hash()
 {
   if (!kernel_hash) {
-    items->make_item_hash();
-    kernel_hash = sort(items->item_hash) * ":";
+    kernel_hash = (string)sort(items->item_id);
+    // kernel_hash = sprintf("%4c:%@4c", sizeof(items), sort(items->item_id));
+    // werror("Kernel hash:%O\n", kernel_hash);
   }
 }
 
 //. - equalp
-//.   Compare with another state.
+//.   Compare with another state. (OBSOLETE)
 //. > state
 //.   State to compare with.
 int equalp(object /* (kernel) */ state)
