@@ -7,7 +7,7 @@
 static inherit .PikeObjects;
 static inherit .DocParser;
 
-#define DEB werror("###%s:%d\n", __FILE__,  __LINE__);
+#include "./debug.h"
 
 //========================================================================
 // DOC EXTRACTION
@@ -16,18 +16,15 @@ static inherit .DocParser;
 static private class Extractor {
   static constant WITH_NL = .PikeParser.WITH_NL;
 
-  static private string filename;
+  //  static private string filename;
   static private .PikeParser parser;
 
   static void create(string s, string filename) {
-    parser = .PikeParser(s, filename);
-    local::filename = filename;
+    parser = .PikeParser(s, filename, 1);
   }
   static void extractorError(string message, mixed ... args) {
     message = sprintf(message, @args);
-    werror("Pike extractor error!\n");
-    message = "Pike extractor error: " + message;
-    throw ( ({ message, parser->currentline }) );
+    throw (AutoDocError(parser->currentPosition, "PikeExtractor", message));
   }
 
   static int isDocComment(string s) {
@@ -45,14 +42,10 @@ static private class Extractor {
     Documentation res = Documentation();
     string s = parser->peekToken();
     string text = "";
-    int firstline = 0;
-    int lastline;
+    SourcePosition pos = parser->currentPosition->copy();
     while (isDocComment(s)) {
       text += stripDocMarker(s) + "\n";
-      lastline = parser->currentline;
       parser->readToken();              // Grok the doc comment string
-      if (!firstline)
-        firstline = parser->currentline;
       s = parser->peekToken(WITH_NL);
       if (s == "\n")
         parser->readToken(WITH_NL);     // Skip the corresp. NL
@@ -61,7 +54,7 @@ static private class Extractor {
       s = parser->peekToken(WITH_NL);   // NL will break the loop
     }
     res->text = text;
-    res->position = SourcePosition(filename, firstline, lastline);
+    res->position = pos;
     return res;
   }
 
@@ -78,7 +71,7 @@ static private class Extractor {
       // To get the correct line# :
       while (parser->peekToken(WITH_NL) == "\n")
         parser->readToken(WITH_NL);
-      int firstline = parser->currentline;
+      SourcePosition pos = parser->currentPosition->copy();
       object(PikeObject)|array(PikeObject) p = parser->parseDecl();
 
       if (isDocComment(parser->peekToken())) {
@@ -102,11 +95,9 @@ static private class Extractor {
       }
       else
         parser->eat(";");
-      SourcePosition pos =
-        SourcePosition(filename, firstline, parser->currentline);
       foreach(arrayp(p) ? [array(object(PikeObject))]p :
 	      ({ [object(PikeObject)]p }), PikeObject obj)
-        obj->position = pos;
+        obj->position = obj->position || pos;
 
       res += arrayp(p) ? p : ({ p });   // int x,y;  =>  array of PikeObject
       if (parser->peekToken(WITH_NL) == "\n")   // we allow ONE "\n" inbetween
@@ -271,7 +262,7 @@ Module extractModule(string s, void|string filename, void|string moduleName) {
   Documentation doc = e->parseClassBody(m, filename);
   m->documentation = doc;
   // if there was no documentation in the file whatsoever
-  if (!doc && sizeof(m->docGroups) == 0)
+  if (!doc && !sizeof(m->docGroups) && !sizeof(m->children))
     return 0;
   return m;
 }
@@ -283,7 +274,7 @@ Class extractClass(string s, void|string filename, void|string className) {
   Documentation doc = e->parseClassBody(c, filename);
   c->documentation = doc;
   // if there was no documentation in the file...
-  if (!doc && sizeof(c->docGroups) == 0)
+  if (!doc && !sizeof(c->docGroups) && !sizeof(c->children))
     return 0;
   return c;
 }

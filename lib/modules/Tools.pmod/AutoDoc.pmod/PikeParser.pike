@@ -1,7 +1,7 @@
 // A very special purpose Pike parser that can parse some selected
 // elements of the Pike language...
 
-#define DEB werror("###PikeParser.Pike: %d\n", __LINE__);
+#include "./debug.h"
 
 static inherit .PikeObjects;
 static inherit "module.pmod";
@@ -12,14 +12,6 @@ static mapping(string : string) quote =
   (["\n" : "\\n", "\\" : "\\\\" ]);
 static string quoteString(string s) {
   return "\"" + (quote[s] || s) + "\"";
-}
-
-static int parseError(string message, mixed ... args) {
-  message = sprintf(message, @args);
-  werror("parseError! \n");
-  // werror(sprintf("%s\n", describe_backtrace(backtrace())));
-  message = "PikeParser error: " + message;
-  throw ( ({ message, currentline }) );
 }
 
 static mapping(string : string) matchTokens =
@@ -96,27 +88,42 @@ void skipUntil(multiset(string)|string tokens) {
 // PARSING OF PIKE SOURCE FILES
 //========================================================================
 
-int currentline = 0;
-string currentfile = "";
+static class Token {
+  SourcePosition position;
+  string text;
+  string _sprintf() { return sprintf("Token(%O, %O)", position, text); }
+}
+
+SourcePosition currentPosition = 0;
+
+static int parseError(string message, mixed ... args) {
+  message = sprintf(message, @args);
+  //  werror("parseError! \n");
+  werror(sprintf("%s\n", describe_backtrace(backtrace())));
+  throw (AutoDocError(currentPosition, "PikeParser", message));
+}
 
 static private int tokenPtr = 0;
-static private array(string) tokens;
+static private array(Token) tokens;
 constant WITH_NL = 1;
 
 string peekToken(int | void with_newlines) {
   if (tokenPtr >= sizeof(tokens))
     return EOF;
-  string s;
+  Token t;
   if (with_newlines)
-    return tokens[tokenPtr];
+    t = tokens[tokenPtr];
   else {
     int i = tokenPtr;
-    while (tokens[i] == "\n")
+    while (tokens[i]->text == "\n")
       ++i;
-    s = tokens[i];
+    t = tokens[i];
   }
-  //  werror("    peek: %O  %s\n", s, with_newlines ? "(WNL)" : "");
-  return s;
+
+  // werror("    peek: %O  %s\n", t->text, with_newlines ? "(WNL)" : "");
+
+  currentPosition = t->position;
+  return t->text;
 }
 
 static int nReadDocComments = 0;
@@ -124,22 +131,21 @@ int getReadDocComments() { return nReadDocComments; }
 string readToken(int | void with_newlines) {
   if (tokenPtr >= sizeof(tokens))
     return EOF;
-  string s;
-  if (with_newlines) {
-    if ( (s = tokens[tokenPtr++]) == "\n")
-      ++currentline;
-  }
+  Token t;
+  if (with_newlines)
+    t = tokens[tokenPtr++];
   else {
-    while (tokens[tokenPtr] == "\n") {
+    while (tokens[tokenPtr]->text == "\n")
       ++tokenPtr;
-      ++currentline;
-    }
-    s = tokens[tokenPtr++];
+    t = tokens[tokenPtr++];
   }
-  if (isDocComment(s))
+  if (isDocComment(t->text))
     ++nReadDocComments;
-  //  werror("    read: %O  %s\n", s, with_newlines ? "(WNL)" : "");
-  return s;
+
+  // werror("    read: %O  %s\n", t->text, with_newlines ? "(WNL)" : "");
+
+  currentPosition = t->position;
+  return t->text;
 }
 
 // consume one token, error if not (one of) the expected
@@ -489,15 +495,27 @@ string eatLiteral() {
 PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   args = args || ([]);
   skip("\n");
-  int firstline = currentline;
+  peekToken();
+  SourcePosition position = currentPosition;
   array(string) modifiers = parseModifiers();
   string s = peekToken(WITH_NL);
-  while (s == "\n") {
-    readToken(WITH_NL);
-    s = peekToken(WITH_NL);
+  for (;;) {
+    while (s == "\n") {
+      readToken(WITH_NL);
+      s = peekToken(WITH_NL);
+    }
+    if (s == "import") {
+      skipUntil(";");
+      eat(";");
+      s = peekToken(WITH_NL);
+    }
+    else
+      break;
   }
+
   if (s == "class") {
     Class c = Class();
+    c->position = position;
     c->modifiers = modifiers;
     readToken();
     c->name = eatIdentifier();
@@ -511,6 +529,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   }
   else if (s == "constant") {
     Constant c = Constant();
+    c->position = position;
     c->modifiers = modifiers;
     readToken();
     c->name = eatIdentifier();
@@ -525,6 +544,7 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
   }
   else if (s == "inherit") {
     Inherit i = Inherit();
+    i->position = position;
     i->modifiers = modifiers;
     readToken();
     i->classname = parseProgramName();
@@ -576,14 +596,6 @@ PikeObject|array(PikeObject) parseDecl(mapping|void args) {
 static private array(string) special(array(string) in) {
   array(string) ret = ({ });
   foreach (in, string s) {
-    // remove preprocessor directives:
-    if (strlen(s) > 1 && s[0..0] == "#")
-      continue;
-    // remove non-doc comments
-    if (strlen(s) >= 2 &&
-        (s[0..1] == "/*" || s[0..1] == "//") &&
-       !isDocComment(s))
-      continue;
     // remove blanks that are not "\n"
     // separate multiple adjacent "\n"
     int c = String.count(s, "\n");
@@ -595,15 +607,41 @@ static private array(string) special(array(string) in) {
   return ret;
 }
 
-static private array(string) tokenize(string s) {
-  return special(Parser.Pike.split(s)) + ({ EOF });
+static private array(Token) tokenize(string s, string filename, int line) {
+  array(string) a = special(Parser.Pike.split(s)) + ({ EOF });
+  array(Token) t = ({ });
+  for(int i = 0; i < sizeof(a); ++i) {
+    string s = a[i];
+    Token tok = Token();
+    tok->position = SourcePosition(filename, line);
+    tok->text = s;
+    line += sizeof(s / "\n") - 1;
+    // remove preprocessor directives:
+    if (strlen(s) > 1 && s[0..0] == "#")
+      continue;
+    // remove non-doc comments
+    if (strlen(s) >= 2 &&
+        (s[0..1] == "/*" || s[0..1] == "//") &&
+        !isDocComment(s))
+      continue;
+    t += ({ tok });
+  }
+
+  return t;
 }
 
-// create(string, filename)
-
-static void create(string s, void|string filename, void|int line) {
-  currentfile = filename || "";
-  currentline = line ? line : 1;
-  tokens = tokenize(s);
+// create(string, filename, firstline)
+static void create(string s, string|SourcePosition filename, int|void line) {
+  if (objectp(filename)) {
+    line = filename->firstline;
+    filename = filename->filename;
+  }
+  if (!line)
+  {
+    werror("PikeParser::create() called without line arg: %s", describe_backtrace(backtrace()));
+    exit(1);
+  }
+  tokens = tokenize(s, filename, line);
+  //  werror("PikeParser::create(), tokens = \n%O\n", tokens);
   tokenPtr = 0;
 }

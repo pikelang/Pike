@@ -6,8 +6,8 @@ static inherit Parser.XML.Tree;
 static inherit "module.pmod";
 
 #define DEB werror("###%s:%d\n", __FILE__, __LINE__);
-static private void processError(string message) {
-  throw ( "XML processing error: " + message );
+static private void processError(string message, mixed ... args) {
+  throw (AutoDocError(0, "ProcessXML", sprintf(message, @args)));
 }
 
 //========================================================================
@@ -501,8 +501,7 @@ static class Target {
 
 static int splitError(string s, mixed ... args) {
   s = sprintf(s, @args);
-  werror("split error: %s\n", s);
-  throw(s);
+  throw(AutoDocError(0, "ProcessXML/splitting", s));
 }
 
 // // docXMLFile = the name of the file that contains the module tree.

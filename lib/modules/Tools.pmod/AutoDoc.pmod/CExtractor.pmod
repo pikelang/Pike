@@ -9,27 +9,10 @@
 static inherit .PikeObjects;
 static inherit .DocParser;
 
-#define DEB werror("CExtractor.pmod: %d\n", __LINE__);
+#include "./debug.h"
 
 constant CdocMarker = "*!";
 constant EOF = .PikeParser.EOF;
-
-/*static private*/ array(string) getDocComments(string s) {
-  array(string) a = filter(Parser.C.split(s), isDocComment);
-  array(string) res = ({ });
-  foreach(a, string doc) {
-    string quux = doc[3 .. strlen(doc) - 3];
-    //    werror("quux == %O\n", quux);
-
-    array(string) lines = doc[1 .. strlen(doc) - 3]/"\n";
-    //    werror("%O\n", lines);
-    lines = map(lines, stripDocMarker);
-    if (lines[-1] == "")
-      lines = lines[0 .. sizeof(lines) - 2];
-    res += ({ lines * "\n" });
-  }
-  return res;
-}
 
 static int isDocComment(string s) {
   return has_prefix(s, "/"+CdocMarker);
@@ -47,8 +30,7 @@ static void extractorErrorAt(SourcePosition sp, string message, mixed ... args)
 {
   message = sprintf(message, @args);
   werror("CExtractor error! %O  %O\n", message, sp);
-  message = "CExtractor error: " + message;
-  throw ( ({ message, sp }) );
+  throw (AutoDocError(sp, "CExtractor", message));
 }
 
 static private class Extractor {
@@ -79,8 +61,8 @@ static private class Extractor {
     }
 
     foreach(a, [SourcePosition sp, string doc]) {
-      array(array(string|array(string))) s = .DocParser.splitDocBlock(doc);
-      foreach(s, array(string|array(string)) a)
+      array(array) s = .DocParser.splitDocBlock(doc, sp);
+      foreach(s, array a)
         tokens += ({ .DocParser.Parse(a, sp) });
     }
     tokens += ({ 0 });

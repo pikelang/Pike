@@ -1,6 +1,8 @@
 // This module contains utility functions for XML creation and
 // some other useful stuff common to all the modules.
 
+#include "./debug.h"
+
 static constant DOC_COMMENT = "//!";
 
 static int isDigit(int c) { return '0' <= c && c <= '9'; }
@@ -57,7 +59,8 @@ static string xmltag(string t, string|mapping(string:string)|void arg1,
   string content = stringp(arg1) ? arg1 : stringp(arg2) ? arg2 : 0;
   if (content && content != "")
     return opentag(t, attributes) + content + closetag(t);
-  return "<" + t + "/>";
+  string s = "<" + t + writeattributes(attributes) + "/>";
+  return s;
 }
 
 class SourcePosition {
@@ -65,12 +68,24 @@ class SourcePosition {
   int firstline;
   int lastline;
 
-  static void create(string|void filename, int|void firstline,
+  static void create(string filename, int firstline,
                      int|void lastline)
   {
+    if (!firstline) {
+      werror("**********************************************************\n");
+      werror("* NO FIRST LINE !!!!! \n");
+      werror("**********************************************************\n");
+      werror("%s", describe_backtrace(backtrace()));
+      werror("**********************************************************\n");
+      werror("**********************************************************\n");
+    }
     local::filename = filename;
     local::firstline = firstline;
     local::lastline = lastline;
+  }
+
+  SourcePosition copy() {
+    return SourcePosition(filename, firstline, lastline);
   }
 
   string _sprintf() {
@@ -82,5 +97,26 @@ class SourcePosition {
         res += sprintf(", line: %d", firstline);
     return res + ")";
   }
+
+  string xml() {
+    mapping(string:string) m = ([]);
+    m["file"] = filename || "?";
+    if (firstline) m["first-line"] = (string) firstline;
+    if (lastline) m["last-line"] = (string) lastline;
+    return xmltag("source-position", m);
+  }
 }
 
+class AutoDocError {
+  SourcePosition position;
+  string part;     // which part of the autodoc system...
+  string message;
+  static void create(SourcePosition _position, string _part, string _message) {
+    position = _position;
+    part = _part;
+    message = _message;
+  }
+  string _sprintf() {
+    return sprintf("AutoDocError(%O, %O, %O)", position, part, message);
+  }
+}
