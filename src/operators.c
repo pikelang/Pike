@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.166 2003/05/15 15:10:14 mast Exp $
+|| $Id: operators.c,v 1.167 2003/11/10 01:22:15 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.166 2003/05/15 15:10:14 mast Exp $");
+RCSID("$Id: operators.c,v 1.167 2003/11/10 01:22:15 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1570,7 +1570,7 @@ PMOD_EXPORT void o_or(void)
   case T_MULTISET:
   {
     struct multiset *l;
-    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_OR);
+    l=merge_multisets(sp[-2].u.multiset, sp[-1].u.multiset, PIKE_ARRAY_OP_OR_LEFT);
     pop_n_elems(2);
     push_multiset(l);
     return;
@@ -1579,7 +1579,7 @@ PMOD_EXPORT void o_or(void)
   case T_ARRAY:
   {
     struct array *a;
-    a=merge_array_with_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_OR);
+    a=merge_array_with_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_OR_LEFT);
     pop_n_elems(2);
     push_array(a);
     return;
