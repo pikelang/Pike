@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.9 1999/10/26 16:10:43 mirar Exp $ */
+/* $Id: math_matrix.c,v 1.10 1999/10/26 16:12:00 mirar Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -756,6 +756,7 @@ void init_math_matrix()
 
    add_function("create",matrix_create,
 		"function(array(array(int|float)):object)|"
+		"function(array(int|float):object)|"
 		"function(string,mixed...:object)|"
 		"function(int(1..),int(1..),int|float|string|void:object)",
 		0);
