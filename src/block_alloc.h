@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.73 2004/06/02 00:07:20 nilsson Exp $
+|| $Id: block_alloc.h,v 1.74 2004/12/07 21:18:14 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -96,15 +96,42 @@ struct PIKE_CONCAT(DATA,_block)						\
   DO_IF_DMALLOC(INT32 real_used;)					\
   struct DATA x[BSIZE];							\
 };									\
+struct PIKE_CONCAT(DATA,_context)					\
+{									\
+  struct PIKE_CONCAT(DATA,_context) *next;				\
+  struct PIKE_CONCAT(DATA, _block) *blocks, *free_blocks;		\
+  INT32 num_empty_blocks;						\
+};									\
 									\
+static struct PIKE_CONCAT(DATA,_context) *PIKE_CONCAT(DATA,_ctxs)=0;	\
 static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_blocks)=0;	\
-static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_free_blocks)=(void*)-1;  \
+static struct PIKE_CONCAT(DATA,_block) *PIKE_CONCAT(DATA,_free_blocks)=	\
+  (void*)-1;								\
 static INT32 PIKE_CONCAT3(num_empty_,DATA,_blocks)=0;			\
 DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
 DO_IF_DMALLOC(								\
   static struct DATA *PIKE_CONCAT(DATA,s_to_free)[4 * (BSIZE)];		\
   static size_t PIKE_CONCAT(DATA,s_to_free_ptr) = 0;			\
 )									\
+									\
+void PIKE_CONCAT3(new_,DATA,_context)(void)				\
+{									\
+  struct PIKE_CONCAT(DATA, _context) *ctx =				\
+    (struct PIKE_CONCAT(DATA, _context) *)				\
+    malloc(sizeof(struct PIKE_CONCAT(DATA, _context)));			\
+  if (!ctx) {								\
+    fprintf(stderr, "Fatal: out of memory.\n");				\
+    exit(17);								\
+  }									\
+  ctx->next = PIKE_CONCAT(DATA, _ctxs);					\
+  PIKE_CONCAT(DATA, _ctxs) = ctx;					\
+  ctx->blocks = PIKE_CONCAT(DATA,_blocks);				\
+  ctx->free_blocks = PIKE_CONCAT(DATA,_free_blocks);			\
+  ctx->num_empty_blocks = PIKE_CONCAT3(num_empty_,DATA,_blocks);	\
+  PIKE_CONCAT(DATA,_blocks) = 0;					\
+  PIKE_CONCAT(DATA,_free_blocks) = (void *)-1;				\
+  PIKE_CONCAT3(num_empty_,DATA,_blocks) = 0;				\
+}									\
 									\
 static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
 {                                                                       \
@@ -184,6 +211,7 @@ DO_IF_DMALLOC(                                                          \
 static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
 {                                                                       \
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
+  struct PIKE_CONCAT(DATA,_context) *ctx = PIKE_CONCAT(DATA,_ctxs);	\
   for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                  \
   {                                                                     \
     if( (char *)d < (char *)tmp) continue;                              \
@@ -192,6 +220,17 @@ static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
 	(d - tmp->x) * (ptrdiff_t) sizeof (struct DATA)) break;		\
     return;                                                             \
   }                                                                     \
+  while (ctx) {								\
+    for(tmp=ctx->blocks; tmp; tmp=tmp->next)				\
+    {									\
+      if( (char *)d < (char *)tmp) continue;				\
+      if( (char *)d >= (char *)(tmp->x+(BSIZE))) continue;		\
+      if ((char *) d - (char *) tmp->x !=				\
+	  (d - tmp->x) * (ptrdiff_t) sizeof (struct DATA)) break;	\
+      return;								\
+    }									\
+    ctx = ctx->next;							\
+  }									\
   Pike_fatal("really_free_%s called on non-block_alloc region (%p).\n",	\
 	     #DATA, d);							\
 }                                                                       \
@@ -319,9 +358,18 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
     PIKE_MEM_RW(tmp->x);						\
     free((char *)tmp);							\
   }									\
-  PIKE_CONCAT(DATA,_blocks)=0;						\
-  PIKE_CONCAT(DATA,_free_blocks)=0;					\
-  PIKE_CONCAT3(num_empty_,DATA,_blocks)=0;				\
+  if (PIKE_CONCAT(DATA,_ctxs)) {					\
+    struct PIKE_CONCAT(DATA, _context) *ctx = PIKE_CONCAT(DATA,_ctxs);	\
+    PIKE_CONCAT(DATA,_blocks)=ctx->blocks;				\
+    PIKE_CONCAT(DATA,_free_blocks)=ctx->free_blocks;			\
+    PIKE_CONCAT3(num_empty_,DATA,_blocks)=ctx->num_empty_blocks;	\
+    PIKE_CONCAT(DATA,_ctxs) = ctx->next;				\
+    free(ctx);								\
+  } else {								\
+    PIKE_CONCAT(DATA,_blocks)=0;					\
+    PIKE_CONCAT(DATA,_free_blocks)=0;					\
+    PIKE_CONCAT3(num_empty_,DATA,_blocks)=0;				\
+  }									\
 }									\
 									\
 void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
@@ -335,12 +383,22 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
 {									\
   INT32 num=0, size=0;							\
   struct PIKE_CONCAT(DATA,_block) *tmp;					\
+  struct PIKE_CONCAT(DATA,_context) *ctx = PIKE_CONCAT(DATA,_ctxs);	\
   DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));               \
   for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)			\
   {									\
     size+=sizeof(struct PIKE_CONCAT(DATA,_block));			\
     num+=tmp->used;							\
     COUNT_BLOCK(tmp);                                                   \
+  }									\
+  while (ctx) {								\
+    for(tmp=ctx->blocks;tmp;tmp=tmp->next)				\
+    {									\
+      size+=sizeof(struct PIKE_CONCAT(DATA,_block));			\
+      num+=tmp->used;							\
+      COUNT_BLOCK(tmp);							\
+    }									\
+    ctx = ctx->next;							\
   }									\
   COUNT_OTHER();                                                        \
   *num_=num;								\
