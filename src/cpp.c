@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.111 2004/03/31 14:28:22 grubba Exp $
+|| $Id: cpp.c,v 1.112 2004/10/31 22:43:17 mast Exp $
 */
 
 #include "global.h"
@@ -695,7 +695,7 @@ while(1)					\
 
 #define FINDTOK() 				\
   do {						\
-  SKIPSPACE();					\
+  SKIPWHITE();					\
   if(data[pos]=='/')				\
   {						\
     ptrdiff_t tmp;				\
@@ -1386,10 +1386,15 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
   if(!s) return 0;
 
   if (SETJMP_SP(recovery, 1)) {
+#if 0
     if (!s->size_shift)
       cpp_handle_exception (this, "Error indexing module with \"%s\".", s->str);
     else
       cpp_handle_exception (this, "Error indexing module in '.' operator.");
+#else
+    free_svalue (&throw_value);
+    throw_value.type = T_INT;
+#endif
     res = 0;
     push_undefined();
   } else {
