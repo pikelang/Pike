@@ -362,8 +362,6 @@ static void decode_value2(struct decode_data *data)
     case T_FUNCTION: APPLY_MASTER("functionof", 1); break;
     case T_PROGRAM: APPLY_MASTER("programof", 1); break;
     }
-    if(sp[-1].type != (what & T_MASK))
-      error("Failed to restore string. (master() failed)\n");
     break;
 
   default:
