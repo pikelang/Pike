@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.834 2004/05/11 15:52:05 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.835 2004/06/21 10:56:32 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1800,6 +1800,29 @@ if test "$cflags_is_set" = "no"; then
     # while being ok for older machines as well.
     AC_SYS_COMPILER_FLAG(-mcpu=750,cpu750,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(-mtune=7450,tune7450,OPTIMIZE)
+  ])
+
+  DO_IF_OS(Linux,
+  [
+    if test "x$with_machine_code" = "xno"; then :; else
+      # WORKAROUND: mprotect(PROT_EXEC) doesn't work on Linux/x86.
+      # Try to set the stackexec flag on the binary.
+      # First try -z execstack (ld).
+      AC_SYS_COMPILER_FLAG([-z execstack], z_execstack, LDFLAGS, [
+        # No, try passing it directly to the linker.
+        AC_SYS_COMPILER_FLAG([-Wl,-z,execstack], Wl_z_execstack, LDFLAGS, [
+	  # No, try --execstack (gas).
+	  AC_SYS_COMPILER_FLAG([--execstack], execstack, CFLAGS, [
+	    # No, try passing it directly to the assembler.
+	    AC_SYS_COMPILER_FLAG([-Wa,--execstack], Wa_execstack, CFLAGS, [
+	      # No.
+	      # FIXME: Add support for use of chstk(1).
+	      PIKE_MSG_WARN([Could not find any way to enable executable stack.])
+	    ])
+	  ])
+	])
+      ])
+    fi
   ])
 
  else if test "x${TCC-}" = xyes ; then
