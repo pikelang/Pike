@@ -11,6 +11,7 @@
 #include "pike_dlfcn.h"
 #include "pike_memory.h"
 #include "pike_error.h"
+#include "pike_macros.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,6 +45,45 @@ static char *dlerr=0;
 /* #define DLDEBUG 1*/
 #define DL_VERBOSE 1
 
+/*
+ * This define makes dlopen create a logfile which maps
+ * addresses to symbols. This can be very helpful when
+ * debugging since regular debug info does not work with
+ * code loaded by dlopen.
+ */
+/* #define DL_SYMBOL_LOG */
+
+
+/*
+ * This puts unused memory after each writable data section
+ * In the future, this padded memory will be filled with
+ * a pattern that can be verified as not being changed later.
+ * This is for debug only of course
+ */
+#define PAD_DATA 0
+
+
+/*
+ * If you enable this, calls to
+ * fopen, fseek etc. from dynamic modules will be dumped to
+ * stderr (only fopen and fseek implemented so far, see below)
+ */
+/* #define DL_WRAP_STDIO */
+
+/*
+ * If EFENCE_BOTTOM is defined, each writable symbol will have it's
+ * own data page and be located at the end of that page with a guard
+ * page right afterwards.
+ */
+/* #define EFENCE_BOTTOM */
+
+/*
+ * If EFENCE_TOP is defined, each writable symbol will have it's
+ * own data page and be located at the beginning of that page with a guard
+ * page right afterwards.
+ */
+/* #define EFENCE_TOP */
+
 #define REALLY_FLUSH() /* do{ fflush(stderr); Sleep(500); }while(0) */
 
 #ifdef DLDEBUG
@@ -52,6 +92,58 @@ static char *dlerr=0;
 #else
 #define FLUSH()
 #define DO_IF_DLDEBUG(X)
+#endif
+
+#ifdef DL_SYMBOL_LOG
+FILE *dl_symlog;
+#endif
+
+
+#if defined(EFENCE_BOTTOM) || defined(EFENCE_TOP)
+#define EFENCE
+DWORD dlopen_page_size;
+
+#define EFENCE_ADD(X) 				\
+  X+=dlopen_page_size*2-1;			\
+  X&=-dlopen_page_size;
+
+static char *EFENCE_ALIGN(char *x, int size, int align)
+{
+  if(!VirtualAlloc(x,size,MEM_COMMIT,PAGE_EXECUTE_READWRITE) && size)
+  {
+    fprintf(stderr,"dlopen:EFENCE ALIGN failed to allocate %d bytes at %p\n",size,x);
+  }
+  
+  if(!VirtualAlloc(x + ( (size + dlopen_page_size -1) & -dlopen_page_size),
+		   dlopen_page_size,MEM_COMMIT,PAGE_NOACCESS))
+  {
+    fprintf(stderr,"dlopen:EFENCE ALIGN failed to protect a page!\n");
+  }
+  
+
+#ifdef EFENCE_BOTTOM
+  {
+    char *ret=x + ( ((dlopen_page_size - (size & (dlopen_page_size-1))) & ~align));
+#ifdef DLDEBUG
+     fprintf(stderr,"ALIGN: %p@%x/%x -> %p\n",x,size,align,ret);
+#endif
+    return ret;
+  }
+	    
+#else
+  return x;
+#endif
+}
+
+
+#else /* EFENCE */
+#define EFENCE_ADD(X)
+#define EFENCE_ALIGN(X,SIZE,AL) X
+#define EFENCE_PROT_PREV_PAGE(X)
+#endif
+
+#ifndef PAD_DATA
+#define PAD_DATA 0
 #endif
 
 #ifndef PIKE_CONCAT
@@ -91,7 +183,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.25 2001/09/23 00:37:01 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.26 2001/09/23 05:29:29 hubbe Exp $");
 
 #endif
 
@@ -815,17 +907,20 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  /* Data section needs to be executable */
 	  data_protection_mode=PAGE_EXECUTE_READWRITE;
 	}
-	  
 	ret->memsize+=align;
 	ret->memsize&=~align;
-	ret->memsize+=data->sections[s].raw_data_size;
+	ret->memsize+=MAXIMUM(data->sections[s].raw_data_size,
+			      data->sections[s].virtual_size);
+	EFENCE_ADD(ret->memsize);
+	ret->memsize+=PAD_DATA;
       }else{
 	/* We place all non-writable sections in the code segment
 	 * to protect it from accidental writing.
 	 */
 	ret->codesize+=align;
 	ret->codesize&=~align;
-	ret->codesize+=data->sections[s].raw_data_size;
+	ret->codesize+=MAXIMUM(data->sections[s].raw_data_size,
+			       data->sections[s].virtual_size);
       }
     }
     if(data->coff->num_symbols)
@@ -867,6 +962,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	ret->memsize+=align;
 	ret->memsize&=~align;
 	ret->memsize+=SYMBOLS(s).value;
+	EFENCE_ADD(ret->memsize);
+	ret->memsize+=PAD_DATA;
       }
     }
   }
@@ -878,7 +975,11 @@ static int dl_load_coff_files(struct DLHandle *ret,
   /* Allocate data memory */
   ret->memory=VirtualAlloc(0,
 			   ret->memsize,
+#ifdef EFENCE
+			   MEM_RESERVE,
+#else
 			   MEM_COMMIT,
+#endif
 			   data_protection_mode);
 
   if(!ret->memory && ret->memsize)
@@ -948,14 +1049,22 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	memptr+=align;
 	memptr&=~align;
 
-	data->section_addresses[s]=(char *)ret->memory + memptr;
-	memptr+=data->sections[s].raw_data_size;
+	data->section_addresses[s]=
+	  EFENCE_ALIGN((char *)ret->memory + memptr,
+		       MAXIMUM(data->sections[s].raw_data_size,
+			       data->sections[s].virtual_size),
+		       align);
+	memptr+=MAXIMUM(data->sections[s].raw_data_size,
+			data->sections[s].virtual_size);
+	EFENCE_ADD(memptr);
+	memptr+=PAD_DATA;
       }else{
 	codeptr+=align;
 	codeptr&=~align;
 
 	data->section_addresses[s]=(char *)ret->code + codeptr;
-	codeptr+=data->sections[s].raw_data_size;
+	codeptr+=MAXIMUM(data->sections[s].raw_data_size,
+			data->sections[s].virtual_size);
       }
 #ifdef DLDEBUG
       fprintf(stderr,"DL: section[%d]=%p { %d, %d }\n",s,
@@ -970,10 +1079,19 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	memcpy((char *)data->section_addresses[s],
 	       data->buffer + data->sections[s].ptr2_raw_data,
 	       data->sections[s].raw_data_size);
+	if(data->sections[s].raw_data_size < data->sections[s].virtual_size)
+	{
+	  memset((char *)data->section_addresses[s] +
+		 data->sections[s].raw_data_size,
+		 0,
+		 data->sections[s].virtual_size - 
+		 data->sections[s].raw_data_size);
+	}
       }else{
 	memset((char *)data->section_addresses[s],
 	       0,
-	       data->sections[s].raw_data_size);
+	       MAXIMUM(data->sections[s].raw_data_size,
+		       data->sections[s].virtual_size));
       }
     }
 
@@ -1009,6 +1127,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	switch(SYMBOLS(s).value)
 	{
 	  case 0:
+#ifdef DL_VERBOSE
+	    fprintf(stderr,"DLOPEN: common symbol with size 0!\n");
+#endif
 	  case 1: align=0; break;
 	  case 2:
 	  case 3: align=1; break;
@@ -1020,11 +1141,18 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	}
 	memptr+=align;
 	memptr&=~align;
-	data->symbol_addresses[s]=((char *)ret->memory + memptr);
+
+	data->symbol_addresses[s]=
+	  EFENCE_ALIGN((char *)ret->memory + memptr,
+		       SYMBOLS(s).value,
+		       align);
+	  
 	memset((char *)data->symbol_addresses[s],
 	       0,
 	       SYMBOLS(s).value);
 	memptr+=SYMBOLS(s).value;
+	EFENCE_ADD(memptr);
+	memptr+=PAD_DATA;
       }
     }
 
@@ -1040,7 +1168,45 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      SYMBOLS(s).class,
 	      SYMBOLS(s).secnum);
 #endif
-	
+
+#ifdef DL_SYMBOL_LOG
+      {
+	char *value=0;
+	static char buf[10];
+	size_t len;
+	char *name;
+
+	if(SYMBOLS(s).secnum>0)
+	  value=data->section_addresses[SYMBOLS(s).secnum-1]+
+	    SYMBOLS(s).value;
+	else if(!SYMBOLS(s).secnum && SYMBOLS(s).value)
+	  value=data->symbol_addresses[s];
+
+	if(value)
+	{
+	  if(!SYMBOLS(s).name.ptr[0])
+	  {
+	    name=data->stringtable + SYMBOLS(s).name.ptr[1];
+	    len=strlen(name);
+#ifdef DLDEBUG
+	    fprintf(stderr,"DL: exporting %s -> %p\n",name,value);
+#endif
+	  }else{
+	    name=SYMBOLS(s).name.text;
+	    len=STRNLEN(name,8);
+	    if(len == 8)
+	    {
+	      MEMCPY(buf,name,8);
+	      buf[8]=0;
+	      name=buf;
+	    }
+	  }
+	  if(name[0] != '$')
+	    fprintf(dl_symlog,"%p = %s\n", value, name);
+	}
+      }
+#endif
+
       if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN ||
 	 SYMBOLS(s).class == COFF_SYMBOL_WEAK_EXTERN)
       {
@@ -1478,7 +1644,12 @@ struct DLHandle *dlopen(const char *name, int flags)
   /* register module for future dlopens */
   ret->next=first;
   first=ret;
-    
+
+
+#ifdef DL_SYMBOL_LOG
+  fflush(dl_symlog);
+#endif
+
   return ret;
 }
 
@@ -1509,6 +1680,52 @@ int dlclose(struct DLHandle *h)
   return 0;
 }
 
+#ifdef DEBUG_MALLOC
+#ifndef __NT__
+#define __cdecl
+#endif
+
+void * __cdecl dlopen_malloc_wrap(size_t size)
+{
+  return malloc(size);
+}
+
+void * __cdecl dlopen_realloc_wrap(void *m, size_t size)
+{
+  return realloc(m, size);
+}
+
+void * __cdecl dlopen_calloc_wrap(size_t size,size_t num)
+{
+  return calloc(size,num);
+}
+
+void __cdecl dlopen_free_wrap(void * size)
+{
+  free(size);
+}
+
+void * __cdecl dlopen_strdup_wrap(const char *s)
+{
+  return strdup(s);
+}
+#endif
+
+#ifdef DL_WRAP_STDIO
+int __cdecl dlopen_fseek_wrapper(FILE *f, long pos, int mode)
+{
+  fprintf(stderr,"fseek(%p,%ld,%d)\n",f,pos,mode);
+  return fseek(f,pos,mode);
+}
+
+FILE *__cdecl dlopen_fopen_wrapper(const char *fname, const char *mode)
+{
+  FILE *ret=fopen(fname,mode);
+  fprintf(stderr,"fopen(\"%s\",\"%s\") => %p\n",fname,mode,ret);
+  return ret;
+}
+#endif
+
 static void init_dlopen(void)
 {
   int tmp;
@@ -1518,6 +1735,10 @@ static void init_dlopen(void)
   HINSTANCE h;
 #ifdef DLDEBUG
   fprintf(stderr,"dlopen_init(%s)\n",ARGV[0]);
+#endif
+
+#ifdef DL_SYMBOL_LOG
+  dl_symlog=fopen("dlopen_symlog","w");
 #endif
 
   global_dlhandle.refs=1;
@@ -1695,6 +1916,36 @@ static void init_dlopen(void)
     EXPORT(fseek);
     EXPORT(fread);
   }
+
+#define EXPORT_AS(X,Y) \
+  DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s = %s\n",#X,#Y); ) \
+  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &Y, 1)
+
+#if 0
+  /* This doesn't work, don't know why - Hubbe */
+#ifdef DEBUG_MALLOC
+  EXPORT_AS(malloc,dlopen_malloc_wrap);
+  EXPORT_AS(calloc,dlopen_calloc_wrap);
+  EXPORT_AS(free,dlopen_free_wrap);
+  EXPORT_AS(realloc,dlopen_free_wrap);
+  EXPORT_AS(strdup,dlopen_strdup_wrap);
+#endif
+#endif
+
+#ifdef DL_WRAP_STDIO
+  EXPORT_AS(fseek, dlopen_fseek_wrapper);
+  EXPORT_AS(fopen, dlopen_fopen_wrapper);
+#endif
+
+#ifdef EFENCE
+  {
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    dlopen_page_size=sysinfo.dwPageSize;
+    fprintf(stderr,"Activating EFENCE, page_size=%d\n",dlopen_page_size);
+    fflush(stderr);
+  }
+#endif
 
 #ifdef DLDEBUG
   fprintf(stderr,"DL: init done\n");
