@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.145 1999/01/21 09:14:58 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.146 1999/01/31 09:01:40 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -280,20 +280,20 @@ void f_search(INT32 args)
 void f_backtrace(INT32 args)
 {
   INT32 frames;
-  struct frame *f,*of;
+  struct pike_frame *f,*of;
   struct array *a,*i;
 
   frames=0;
   if(args) pop_n_elems(args);
-  for(f=fp;f;f=f->parent_frame) frames++;
+  for(f=fp;f;f=f->next) frames++;
 
   sp->type=T_ARRAY;
   sp->u.array=a=allocate_array_no_init(frames,0);
   sp++;
 
-  /* NOTE: The first frame is ignored, since it is the call to backtrace(). */
+  /* NOTE: The first pike_frame is ignored, since it is the call to backtrace(). */
   of=0;
-  for(f=fp;f;f=(of=f)->parent_frame)
+  for(f=fp;f;f=(of=f)->next)
   {
     char *program_name;
 

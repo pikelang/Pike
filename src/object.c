@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.54 1999/01/21 09:15:09 hubbe Exp $");
+RCSID("$Id: object.c,v 1.55 1999/01/31 09:01:56 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -62,7 +62,6 @@ struct object *low_clone(struct program *p)
 {
   int e;
   struct object *o;
-  struct frame frame;
 
   if(!(p->flags & PROGRAM_FINISHED))
     error("Attempting to clone an unfinished program\n");
@@ -89,46 +88,71 @@ struct object *low_clone(struct program *p)
   return o;
 }
 
+#define LOW_PUSH_FRAME(O)	do{		\
+  struct pike_frame *pike_frame=alloc_pike_frame();		\
+  pike_frame->next=fp;				\
+  pike_frame->current_object=o;			\
+  pike_frame->locals=0;				\
+  pike_frame->num_locals=0;				\
+  pike_frame->fun=-1;				\
+  pike_frame->pc=0;					\
+  pike_frame->context.prog=0;                        \
+  pike_frame->context.parent=0;                        \
+  fp= pike_frame
+
+#define PUSH_FRAME(O) \
+  LOW_PUSH_FRAME(O); \
+  add_ref(pike_frame->current_object)
+
+#define SET_FRAME_CONTEXT(X)						\
+  if(pike_frame->context.prog) free_program(pike_frame->context.prog);		\
+  pike_frame->context=(X);							\
+  add_ref(pike_frame->context.prog);						\
+  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset;	\
+  pike_frame->context.parent=0;
+  
+
+#ifdef DEBUG
+#define CHECK_FRAME() if(pike_frame != fp) fatal("Frame stack out of whack.\n");
+#else
+#define CHECK_FRAME()
+#endif
+
+#define POP_FRAME()				\
+  CHECK_FRAME()					\
+  fp=pike_frame->next;				\
+  pike_frame->next=0;				\
+  free_pike_frame(pike_frame); }while(0)
+
+
 void call_c_initializers(struct object *o)
 {
   int e;
-  struct frame frame;
   struct program *p=o->prog;
-
-  frame.parent_frame=fp;
-  frame.current_object=o;
-  frame.locals=0;
-  frame.fun=-1;
-  frame.pc=0;
-  fp= & frame;
-
-  add_ref(frame.current_object);
+  PUSH_FRAME(o);
 
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
     int q;
+    SET_FRAME_CONTEXT(p->inherits[e]);
 
-    frame.context=p->inherits[e];
-    add_ref(frame.context.prog);
-    frame.current_storage=o->storage+frame.context.storage_offset;
-
-    for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
+    for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
     {
-      int d=frame.context.prog->variable_index[q];
-      if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
+      int d=pike_frame->context.prog->variable_index[q];
+      if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
       {
 	struct svalue *s;
-	s=(struct svalue *)(frame.current_storage +
-			    frame.context.prog->identifiers[d].func.offset);
+	s=(struct svalue *)(pike_frame->current_storage +
+			    pike_frame->context.prog->identifiers[d].func.offset);
 	s->type=T_INT;
 	s->u.integer=0;
 	s->subtype=0;
       }else{
 	union anything *u;
-	u=(union anything *)(frame.current_storage +
-			     frame.context.prog->identifiers[d].func.offset);
-	switch(frame.context.prog->identifiers[d].run_time_type)
+	u=(union anything *)(pike_frame->current_storage +
+			     pike_frame->context.prog->identifiers[d].func.offset);
+	switch(pike_frame->context.prog->identifiers[d].run_time_type)
 	{
 	  case T_INT: u->integer=0; break;
 	  case T_FLOAT: u->float_number=0.0; break;
@@ -137,14 +161,11 @@ void call_c_initializers(struct object *o)
       }
     }
 
-    if(frame.context.prog->init)
-      frame.context.prog->init(o);
-
-    free_program(frame.context.prog);
+    if(pike_frame->context.prog->init)
+      pike_frame->context.prog->init(o);
   }
 
-  free_object(frame.current_object);
-  fp = frame.parent_frame;
+  POP_FRAME();
 }
 
 static void call_pike_initializers(struct object *o, int args)
@@ -298,8 +319,9 @@ struct object *master(void)
 void destruct(struct object *o)
 {
   int e;
-  struct frame frame;
   struct program *p;
+
+  
 
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
@@ -338,47 +360,38 @@ void destruct(struct object *o)
     o->parent=0;
   }
 
-  frame.parent_frame=fp;
-  frame.current_object=o;  /* refs already updated */
-  frame.locals=0;
-  frame.fun=-1;
-  frame.pc=0;
-  fp= & frame;
+  LOW_PUSH_FRAME(o);
 
   /* free globals and call C de-initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
     int q;
 
-    frame.context=p->inherits[e];
-    add_ref(frame.context.prog);
-    frame.current_storage=o->storage+frame.context.storage_offset;
+    SET_FRAME_CONTEXT(p->inherits[e]);
 
-    if(frame.context.prog->exit)
-      frame.context.prog->exit(o);
+    if(pike_frame->context.prog->exit)
+      pike_frame->context.prog->exit(o);
 
-    for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
+    for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
     {
-      int d=frame.context.prog->variable_index[q];
+      int d=pike_frame->context.prog->variable_index[q];
       
-      if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
+      if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
       {
 	struct svalue *s;
-	s=(struct svalue *)(frame.current_storage +
-			    frame.context.prog->identifiers[d].func.offset);
+	s=(struct svalue *)(pike_frame->current_storage +
+			    pike_frame->context.prog->identifiers[d].func.offset);
 	free_svalue(s);
       }else{
 	union anything *u;
-	u=(union anything *)(frame.current_storage +
-			     frame.context.prog->identifiers[d].func.offset);
-	free_short_svalue(u, frame.context.prog->identifiers[d].run_time_type);
+	u=(union anything *)(pike_frame->current_storage +
+			     pike_frame->context.prog->identifiers[d].func.offset);
+	free_short_svalue(u, pike_frame->context.prog->identifiers[d].run_time_type);
       }
     }
-    free_program(frame.context.prog);
   }
 
-  free_object(frame.current_object);
-  fp = frame.parent_frame;
+  POP_FRAME();
 
   free_program(p);
 }
@@ -789,7 +802,6 @@ union anything *object_get_item_ptr(struct object *o,
 void verify_all_objects(void)
 {
   struct object *o;
-  struct frame frame;
 
   for(o=first_object;o;o=o->next)
   {
@@ -837,27 +849,19 @@ void verify_all_objects(void)
 	}
       }
 
-      frame.parent_frame=fp;
-      frame.current_object=o;
-      frame.locals=0;
-      frame.fun=-1;
-      frame.pc=0;
-      fp= & frame;
-
-      add_ref(frame.current_object);
+#if 0
+      PUSH_FRAME(o);
 
       for(e=0;e<(int)o->prog->num_inherits;e++)
       {
-	frame.context=o->prog->inherits[e];
-	add_ref(frame.context.prog);
-	frame.current_storage=o->storage+frame.context.storage_offset;
-	/* Do frame stuff here */
+	SET_FRAME_CONTEXT(o->prog->inherits[e]);
+	/* Do pike_frame stuff here */
 
-	free_program(frame.context.prog);
+	free_program(pike_frame->context.prog);
       }
 
-      free_object(frame.current_object);
-      fp = frame.parent_frame;
+      POP_FRAME();
+#endif
     }
   }
 
@@ -993,7 +997,6 @@ void gc_mark_object_as_referenced(struct object *o)
   if(gc_mark(o))
   {
     int e;
-    struct frame frame;
     struct program *p;
 
     if(!o || !(p=o->prog)) return; /* Object already destructed */
@@ -1002,46 +1005,37 @@ void gc_mark_object_as_referenced(struct object *o)
     if(o->parent)
       gc_mark_object_as_referenced(o->parent);
 
-    frame.parent_frame=fp;
-    frame.current_object=o;  /* refs already updated */
-    frame.locals=0;
-    frame.fun=-1;
-    frame.pc=0;
-    fp= & frame;
+    LOW_PUSH_FRAME(o);
 
     for(e=p->num_inherits-1; e>=0; e--)
     {
       int q;
       
-      frame.context=p->inherits[e];
-      add_ref(frame.context.prog);
-      frame.current_storage=o->storage+frame.context.storage_offset;
+      SET_FRAME_CONTEXT(p->inherits[e]);
 
-      if(frame.context.prog->gc_marked)
-	frame.context.prog->gc_marked(o);
+      if(pike_frame->context.prog->gc_marked)
+	pike_frame->context.prog->gc_marked(o);
 
-      for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
+      for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
-	int d=frame.context.prog->variable_index[q];
+	int d=pike_frame->context.prog->variable_index[q];
 	
-	if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
+	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
 	{
 	  struct svalue *s;
-	  s=(struct svalue *)(frame.current_storage +
-			      frame.context.prog->identifiers[d].func.offset);
+	  s=(struct svalue *)(pike_frame->current_storage +
+			      pike_frame->context.prog->identifiers[d].func.offset);
 	  gc_mark_svalues(s,1);
 	}else{
 	  union anything *u;
-	  u=(union anything *)(frame.current_storage +
-			       frame.context.prog->identifiers[d].func.offset);
-	  gc_mark_short_svalue(u,frame.context.prog->identifiers[d].run_time_type);
+	  u=(union anything *)(pike_frame->current_storage +
+			       pike_frame->context.prog->identifiers[d].func.offset);
+	  gc_mark_short_svalue(u,pike_frame->context.prog->identifiers[d].run_time_type);
 	}
       }
-      free_program(frame.context.prog);
     }
     
-    free_object(frame.current_object);
-    fp = frame.parent_frame;
+    POP_FRAME();
   }
 }
 
@@ -1052,7 +1046,6 @@ void gc_check_all_objects(void)
   for(o=first_object;o;o=next)
   {
     int e;
-    struct frame frame;
     struct program *p;
     add_ref(o);
 
@@ -1066,44 +1059,35 @@ void gc_check_all_objects(void)
 #endif
     if((p=o->prog))
     {
-      frame.parent_frame=fp;
-      frame.current_object=o;  /* refs already updated */
-      frame.locals=0;
-      frame.fun=-1;
-      frame.pc=0;
-      fp= & frame;
+      PUSH_FRAME(o);
       
       for(e=p->num_inherits-1; e>=0; e--)
       {
 	int q;
+	SET_FRAME_CONTEXT(p->inherits[e]);
 	
-	frame.context=p->inherits[e];
-	add_ref(frame.context.prog);
-	frame.current_storage=o->storage+frame.context.storage_offset;
-	
-	if(frame.context.prog->gc_check)
-	  frame.context.prog->gc_check(o);
+	if(pike_frame->context.prog->gc_check)
+	  pike_frame->context.prog->gc_check(o);
 
-	for(q=0;q<(int)frame.context.prog->num_variable_index;q++)
+	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
-	  int d=frame.context.prog->variable_index[q];
+	  int d=pike_frame->context.prog->variable_index[q];
 	  
-	  if(frame.context.prog->identifiers[d].run_time_type == T_MIXED)
+	  if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
 	  {
 	    struct svalue *s;
-	    s=(struct svalue *)(frame.current_storage +
-				frame.context.prog->identifiers[d].func.offset);
+	    s=(struct svalue *)(pike_frame->current_storage +
+				pike_frame->context.prog->identifiers[d].func.offset);
 	    debug_gc_check_svalues(s,1,T_OBJECT,o);
 	  }else{
 	    union anything *u;
-	    u=(union anything *)(frame.current_storage +
-				 frame.context.prog->identifiers[d].func.offset);
-	    debug_gc_check_short_svalue(u,frame.context.prog->identifiers[d].run_time_type,T_OBJECT,o);
+	    u=(union anything *)(pike_frame->current_storage +
+				 pike_frame->context.prog->identifiers[d].func.offset);
+	    debug_gc_check_short_svalue(u,pike_frame->context.prog->identifiers[d].run_time_type,T_OBJECT,o);
 	  }
 	}
-	free_program(frame.context.prog);
       }
-      fp = frame.parent_frame;
+      POP_FRAME();
     }
     next=o->next;
     free_object(o);

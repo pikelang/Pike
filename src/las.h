@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.17 1998/11/22 11:02:57 hubbe Exp $
+ * $Id: las.h,v 1.18 1999/01/31 09:01:52 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -44,6 +44,7 @@ struct compiler_frame
   struct pike_string *current_return_type;
   int current_number_of_locals;
   int max_number_of_locals;
+  int lexical_scope;
   struct local_variable variable[MAX_LOCAL];
 };
 
@@ -78,7 +79,7 @@ node *mkfloatnode(FLOAT_TYPE foo);
 node *mkapplynode(node *func,node *args);
 node *mkefuncallnode(char *function, node *args);
 node *mkopernode(char *oper_id, node *arg1, node *arg2);
-node *mklocalnode(int var);
+node *mklocalnode(int var, int depth);
 node *mkidentifiernode(int i);
 node *mkexternalnode(int level,
 		     int i,
@@ -86,7 +87,7 @@ node *mkexternalnode(int level,
 node *mkcastnode(struct pike_string *type,node *n);
 void resolv_constant(node *n);
 void resolv_program(node *n);
-node *index_node(node *n, char *node_name, struct pike_string * id);
+node *index_node(node *n, char *node_name, struct pike_string *id);
 int node_is_eq(node *a,node *b);
 node *mkconstantsvaluenode(struct svalue *s);
 node *mkliteralsvaluenode(struct svalue *s);

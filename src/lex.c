@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.60 1999/01/29 12:27:45 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.61 1999/01/31 09:01:53 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -77,6 +77,7 @@ struct keyword instr_names[]=
 { "%",			F_MOD,0 },	
 { "%=",			F_MOD_EQ,0 },	
 { "& global",           F_GLOBAL_LVALUE, I_HASARG },
+{ "& lexical local",	F_LEXICAL_LOCAL_LVALUE, I_HASARG },	
 { "& local",            F_LOCAL_LVALUE, I_HASARG },
 { "&",			F_AND,0 },
 { "&=",			F_AND_EQ,0 },	
@@ -164,7 +165,9 @@ struct keyword instr_names[]=
 { "local function call",F_CALL_LFUN, I_HASARG },
 { "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
 { "local function",	F_LFUN, I_HASARG },	
+{ "trampoline",         F_TRAMPOLINE, I_HASARG },	
 { "local",		F_LOCAL, I_HASARG },	
+{ "lexical local",	F_LEXICAL_LOCAL, I_HASARG },	
 { "external",		F_EXTERNAL, I_HASARG },
 { "& external",		F_EXTERNAL_LVALUE, I_HASARG },
 { "LDA",			F_LDA, I_HASARG },

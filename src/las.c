@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.72 1999/01/29 12:29:02 hubbe Exp $");
+RCSID("$Id: las.c,v 1.73 1999/01/31 09:01:51 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -49,6 +49,7 @@ int car_is_node(node *n)
   {
   case F_EXTERNAL:
   case F_IDENTIFIER:
+  case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
     return 0;
@@ -64,6 +65,7 @@ int cdr_is_node(node *n)
   {
   case F_EXTERNAL:
   case F_IDENTIFIER:
+  case F_TRAMPOLINE:
   case F_CONSTANT:
   case F_LOCAL:
   case F_CAST:
@@ -503,17 +505,24 @@ node *mkopernode(char *oper_id, node *arg1, node *arg2)
   return mkefuncallnode(oper_id, arg1);
 }
 
-node *mklocalnode(int var)
+node *mklocalnode(int var, int depth)
 {
+  struct compiler_frame *f;
+  int e;
   node *res = mkemptynode();
   res->token = F_LOCAL;
-  copy_shared_string(res->type, compiler_frame->variable[var].type);
+
+  f=compiler_frame;
+  for(e=0;e<depth;e++) f=f->previous;
+  copy_shared_string(res->type, f->variable[var].type);
+
   res->node_info = OPT_NOT_CONST;
   res->tree_info=res->node_info;
 #ifdef __CHECKER__
   CDR(res)=0;
 #endif
-  res->u.number = var;
+  res->u.integer.a = var;
+  res->u.integer.b = depth;
   return res;
 }
 
@@ -791,7 +800,10 @@ int node_is_eq(node *a,node *b)
   switch(a->token)
   {
   case F_LOCAL:
+    return a->u.integer.a == b->u.integer.b;
+      
   case F_IDENTIFIER:
+  case F_TRAMPOLINE: /* FIXME, the context has to be the same! */
     return a->u.number == b->u.number;
 
   case F_CAST:
@@ -902,6 +914,7 @@ node *copy_node(node *n)
   {
   case F_LOCAL:
   case F_IDENTIFIER:
+  case F_TRAMPOLINE:
     b=mkintnode(0);
     *b=*n;
     copy_shared_string(b->type, n->type);
@@ -1072,7 +1085,12 @@ static void low_print_tree(node *foo,int needlval)
   {
   case F_LOCAL:
     if(needlval) putchar('&');
-    printf("$%ld",(long)foo->u.number);
+    if(foo->u.integer.b)
+    {
+      printf("$<%ld>%ld",(long)foo->u.integer.b,(long)foo->u.integer.a);
+    }else{
+      printf("$%ld",(long)foo->u.integer.a);
+    }
     break;
 
   case '?':
@@ -1088,6 +1106,10 @@ static void low_print_tree(node *foo,int needlval)
   case F_IDENTIFIER:
     if(needlval) putchar('&');
     printf("%s",ID_FROM_INT(new_program, foo->u.number)->name->str);
+    break;
+
+  case F_TRAMPOLINE:
+    printf("trampoline<%s>",ID_FROM_INT(new_program, foo->u.number)->name->str);
     break;
 
   case F_ASSIGN:
@@ -1229,7 +1251,8 @@ static int find_used_variables(node *n,
   switch(n->token)
   {
   case F_LOCAL:
-    q=p->locals+n->u.number;
+    /* FIXME: handle local variable depth */
+    q=p->locals+n->u.integer.a;
     goto set_pointer;
 
   case F_IDENTIFIER:
@@ -1307,7 +1330,7 @@ static void find_written_vars(node *n,
   switch(n->token)
   {
   case F_LOCAL:
-    if(lvalue) p->locals[n->u.number]=VAR_USED;
+    if(lvalue) p->locals[n->u.integer.a]=VAR_USED;
     break;
 
   case F_IDENTIFIER:
@@ -1569,6 +1592,9 @@ void fix_type_field(node *n)
       char *name;
       switch(CAR(n)->token)
       {
+#if 0 /* FIXME */
+	case F_TRAMPOLINE;
+#endif
       case F_IDENTIFIER:
 	name=ID_FROM_INT(new_program, CAR(n)->u.number)->name->str;
 	break;
@@ -2334,7 +2360,7 @@ static int stupid_args(node *n, int expected,int vargs)
     if(expected==-1) return -1;
     return stupid_args(CDR(n), expected,vargs);
   case F_LOCAL:
-    return n->u.number==expected ? expected + 1 : -1;
+    return (!n->u.integer.b && n->u.integer.a==expected) ? expected + 1 : -1;
   default:
     return -1;
   }

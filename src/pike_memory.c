@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.28 1998/11/22 11:03:09 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.29 1999/01/31 09:01:58 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -793,7 +793,7 @@ static inline unsigned long lhash(struct memhdr *m, int locnum)
     if(mlhash[l]==ml) mlhash[l]=0;			\
 							\
     X->locations=ml->next;				\
-    free_memloc(ml);					\
+    really_free_memloc(ml);					\
   }							\
 }while(0)
 
@@ -928,7 +928,7 @@ static int remove_memhdr(void *p, int already_gone)
 
       *prev=mh->next;
       low_add_marks_to_memhdr(&no_leak_memlocs, mh);
-      free_memhdr(mh);
+      really_free_memhdr(mh);
       
       return 1;
     }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.47 1999/01/21 09:15:15 hubbe Exp $
+ * $Id: program.h,v 1.48 1999/01/31 09:02:02 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -232,6 +232,13 @@ struct program
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!--_->refs) really_free_program(_); }while(0)
 
 
+struct pike_trampoline
+{
+  struct pike_frame *frame;
+  INT32 func;
+};
+
+
 extern struct object *fake_object;
 extern struct program *new_program;
 extern struct program *first_program;
@@ -239,6 +246,7 @@ extern int compiler_pass;
 extern long local_class_counter;
 extern int catch_level;
 extern INT32 num_used_modules;
+extern struct program *pike_trampoline_program;
 
 #define COMPILER_IN_CATCH 1
 
@@ -361,13 +369,14 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog);
 int add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
 void check_all_programs(void);
+void init_program(void);
 void cleanup_program(void);
 void gc_mark_program_as_referenced(struct program *p);
 void gc_check_all_programs(void);
 void gc_mark_all_programs(void);
 void gc_free_all_unreferenced_programs(void);
 void count_memory_in_programs(INT32 *num_, INT32 *size_);
-void push_compiler_frame(void);
+void push_compiler_frame(int lexical_scope);
 void pop_local_variables(int level);
 void pop_compiler_frame(void);
 int low_get_storage(struct program *o, struct program *p);
@@ -381,7 +390,6 @@ int find_child(struct program *parent, struct program *child);
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)));
 struct implements_cache_s;
 int implements(struct program *a, struct program *b);
-void f_encode_program(INT32 args);
 /* Prototypes end here */
 
 

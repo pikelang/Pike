@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.106 1999/01/21 09:15:14 hubbe Exp $");
+RCSID("$Id: program.c,v 1.107 1999/01/31 09:02:00 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -606,7 +606,7 @@ void low_start_new_program(struct program *p,
   init_node=0;
   num_parse_error=0;
 
-  push_compiler_frame();
+  push_compiler_frame(0);
 
 #ifdef PIKE_DEBUG
   if(lex.current_file)
@@ -2406,6 +2406,21 @@ void check_all_programs(void)
 }
 #endif
 
+struct program *pike_trampoline_program=0;
+
+static void apply_trampoline(INT32 args)
+{
+  error("Internal error: Trampoline magic failed!\n");
+}
+
+void init_program(void)
+{
+  start_new_program();
+  add_storage(sizeof(struct pike_trampoline));
+  add_function("`()",apply_trampoline,"function(mixed...:mixed)",0);
+  pike_trampoline_program=end_program();
+}
+
 void cleanup_program(void)
 {
   int e;
@@ -2423,6 +2438,12 @@ void cleanup_program(void)
   {
     free_mapping(resolve_cache);
     resolve_cache=0;
+  }
+
+  if(pike_trampoline_program)
+  {
+    free_program(pike_trampoline_program);
+    pike_trampoline_program=0;
   }
 }
 
@@ -2544,10 +2565,11 @@ void count_memory_in_programs(INT32 *num_, INT32 *size_)
   *size_=size;
 }
 
-void push_compiler_frame(void)
+void push_compiler_frame(int lexical_scope)
 {
   struct compiler_frame *f;
   f=ALLOC_STRUCT(compiler_frame);
+  f->lexical_scope=lexical_scope;
   f->current_type=0;
   f->current_return_type=0;
   f->current_number_of_locals=0;
@@ -2792,41 +2814,6 @@ int implements(struct program *a, struct program *b)
   return implements_cache[hval].ret;
 }
 
-#if 0
-void f_encode_program(INT32 args)
-{
-  check_stack(20);
-  f_version();
-  push_int(p->flags);
-  push_int(p->storage_needed);
-  if(p->init || p->exit || p->gc_marked || p->gc_check)
-    error("Cannot encode C programs.\n");
-  push_int(total_size);
-  push_string(make_shared_binary_string(p->program, p->num_program));
-  push_string(make_shared_binary_string(p->linenumbers, p->num_linenumbers));
-  push_string(make_shared_binary_string((char *)p->identifier_index, p->num_identifier_index * sizeof(unsigned short*)));
-  push_string(make_shared_binary_string((char *)p->variable_index, p->num_variable_index * sizeof(unsigned short*)));
-  push_string(make_shared_binary_string((char *)p->identifier_references, p->num_identifier_references * sizeof(struct reference)));
-  check_stack(p->num_strings);
-  for(e=0;e<p->num_strings;e++) ref_push_string(p->strings[e]);
-  f_aggregate(p->num_strings);
 
-  check_stack(p->num_inherits * 2);
-  for(e=1;e<p->num_strings;e++)
-  {
-    ref_push_string(p->inherits[e].name);
-  }
 
-  f_aggregate(p->num_inherits);
-  
-  check_stack(NUM_LFUNS);
-  for(e=0;e<NUM_LFUNS;e++) push_int(p->lfuns[e]);
-  
-  UNSET_ONERROR(tmp);
 
-  free_mapping(data->encoded);
-  pop_n_elems(args);
-  push_string(low_free_buf(&data->buf));
-}
-
-#endif

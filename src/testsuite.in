@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.141 1999/01/29 12:30:35 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.142 1999/01/31 09:02:03 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -321,6 +321,12 @@ test_compile_error([[void foo() { 1++; }]])
 test_compile_error([[void foo() { return destruct(this_object()); }]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
+
+test_true([[lambda(int x) { return lambda() { return x; };}]])
+test_eq([[lambda(int x) { return lambda() { return x; };}(4)()]],4)
+test_eq([[lambda(int x) { return lambda() { return x; };}(17)()]],17)
+test_eq([[lambda(int x) { return lambda() { return lambda() { return x; };};}(17)()()]],17)
+
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
 test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )

@@ -27,6 +27,8 @@
 %token F_INC_LOOP F_DEC_LOOP
 %token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
 
+%token F_LEXICAL_LOCAL F_LEXICAL_LOCAL_LVALUE
+
 %token F_INDEX F_ARROW F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
 %token F_LOCAL_LOCAL_INDEX F_LOCAL_ARROW F_GLOBAL_LOCAL_INDEX
 %token F_POS_INT_INDEX F_NEG_INT_INDEX
@@ -37,7 +39,7 @@
 /*
  * Basic value pushing
  */
-%token F_LFUN
+%token F_LFUN F_TRAMPOLINE
 %token F_GLOBAL F_GLOBAL_LVALUE
 %token F_LOCAL F_2_LOCALS F_LOCAL_LVALUE F_MARK_AND_LOCAL
 %token F_EXTERNAL F_EXTERNAL_LVALUE
@@ -179,7 +181,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.108 1998/11/22 11:02:55 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.109 1999/01/31 09:01:50 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -210,6 +212,7 @@ RCSID("$Id: language.yacc,v 1.108 1998/11/22 11:02:55 hubbe Exp $");
 
 
 void add_local_name(struct pike_string *,struct pike_string *);
+static node *lexical_islocal(struct pike_string *);
 
 static int varargs;
 static INT32  current_modifiers;
@@ -566,7 +569,7 @@ type_or_error: simple_type
 
 def: modifiers type_or_error optional_stars F_IDENTIFIER 
   {
-    push_compiler_frame();
+    push_compiler_frame(0);
     if(!compiler_frame->previous ||
        !compiler_frame->previous->current_type)
     {
@@ -993,7 +996,7 @@ new_local_name: optional_stars F_IDENTIFIER
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
     add_local_name($2->u.sval.u.string, compiler_pop_type());
-    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string)));
+    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($2->u.sval.u.string),0));
     free_node($2);
   }
   | optional_stars bad_identifier { $$=0; }
@@ -1002,7 +1005,7 @@ new_local_name: optional_stars F_IDENTIFIER
     push_finished_type($<n>0->u.sval.u.string);
     while($1--) push_type(T_ARRAY);
     add_local_name($2->u.sval.u.string, compiler_pop_type());
-    $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string)));
+    $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2->u.sval.u.string),0));
     free_node($2);
   }
   | optional_stars bad_identifier '=' expr0
@@ -1029,7 +1032,7 @@ new_local_name2: F_IDENTIFIER
   {
     add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
-    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string)));
+    $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
   | bad_identifier { $$=mkintnode(0); }
@@ -1037,7 +1040,7 @@ new_local_name2: F_IDENTIFIER
   {
     add_ref($<n>0->u.sval.u.string);
     add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string);
-    $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string)));
+    $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
   | bad_identifier '=' safe_expr0 { $$=$3; }
@@ -1130,7 +1133,7 @@ continue: F_CONTINUE { $$=mknode(F_CONTINUE,0,0); } ;
 
 lambda: F_LAMBDA
   {
-    push_compiler_frame();
+    push_compiler_frame(1);
     
     if(compiler_frame->current_return_type)
       free_string(compiler_frame->current_return_type);
@@ -1185,6 +1188,8 @@ lambda: F_LAMBDA
 		ID_PRIVATE | ID_INLINE);
 
     $$=mkidentifiernode(f);
+    if(compiler_frame->lexical_scope == 2)
+      $$->token=F_TRAMPOLINE;
     free_string(name);
     free_string(type);
     pop_compiler_frame();
@@ -1665,9 +1670,10 @@ low_idents: F_IDENTIFIER
     struct efun *f;
     if(last_identifier) free_string(last_identifier);
     copy_shared_string(last_identifier, $1->u.sval.u.string);
-    if((i=islocal(last_identifier))>=0)
+
+    if(($$=lexical_islocal(last_identifier)))
     {
-      $$=mklocalnode(i);
+      /* done, nothing to do here */
     }else if((i=isidentifier(last_identifier))>=0){
       $$=mkidentifiernode(i);
     }else if(!($$=find_module_identifier(last_identifier))){
@@ -1905,7 +1911,7 @@ lvalue: expr4
   | type6 F_IDENTIFIER
   {
     add_local_name($2->u.sval.u.string,compiler_pop_type());
-    $$=mklocalnode(islocal($2->u.sval.u.string));
+    $$=mklocalnode(islocal($2->u.sval.u.string),0);
     free_node($2);
   }
   | bad_lvalue
@@ -2090,6 +2096,33 @@ int islocal(struct pike_string *str)
     if(compiler_frame->variable[e].name==str)
       return e;
   return -1;
+}
+
+/* argument must be a shared string */
+static node *lexical_islocal(struct pike_string *str)
+{
+  int e,depth=0;
+  struct compiler_frame *f=compiler_frame;
+  
+  while(1)
+  {
+    for(e=f->current_number_of_locals-1;e>=0;e--)
+    {
+      if(f->variable[e].name==str)
+      {
+	struct compiler_frame *q=compiler_frame;
+	while(q!=f) 
+	{
+	  q->lexical_scope=2;
+	  q=q->previous;
+	}
+	return mklocalnode(e,depth);
+      }
+    }
+    if(!f->lexical_scope) return 0;
+    depth++;
+    f=f->previous;
+  }
 }
 
 void cleanup_compiler(void)

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.7 1998/10/11 22:33:11 hubbe Exp $
+ * $Id: pike_memory.h,v 1.8 1999/01/31 09:01:59 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -56,7 +56,7 @@ struct generic_mem_searcher
   } data;
 };
 
-#define BLOCK_ALLOC(X,Y)
+#include "block_alloc_h.h"
 #define MEMCHR0 MEMCHR
 
 /* Prototypes begin here */

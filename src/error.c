@@ -16,7 +16,7 @@
 #include "backend.h"
 #include "operators.h"
 
-RCSID("$Id: error.c,v 1.22 1998/11/22 11:02:44 hubbe Exp $");
+RCSID("$Id: error.c,v 1.23 1999/01/31 09:01:45 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -62,16 +62,14 @@ void pike_throw(void) ATTRIBUTE((noreturn))
 
   while(fp != recoveries->fp)
   {
+    struct pike_frame *tmp=fp;
 #ifdef PIKE_DEBUG
     if(!fp)
       fatal("Popped out of stack frames.\n");
 #endif
-    free_object(fp->current_object);
-    free_program(fp->context.prog);
-    if(fp->context.parent)
-      free_object(fp->context.parent);
-    
-    fp = fp->parent_frame;
+    fp = tmp->next;
+    tmp->next=0;
+    free_pike_frame(tmp);
   }
 
   pop_n_elems(sp - evaluator_stack - recoveries->sp);

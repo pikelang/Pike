@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.25 1999/01/21 09:15:02 hubbe Exp $
+ * $Id: interpret.h,v 1.26 1999/01/31 09:01:49 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -16,19 +16,22 @@
 #ifndef STRUCT_FRAME_DECLARED
 #define STRUCT_FRAME_DECLARED
 #endif
-struct frame
+struct pike_frame
 {
+  INT32 refs; /* must be first */
+  INT32 args;
+  INT16 fun;
+  INT16 num_locals;
+  INT16 num_args;
+  INT16 malloced_locals;
+  struct pike_frame *next;
+  struct pike_frame *scope;
   unsigned char *pc;
-  struct frame *parent_frame;
   struct svalue *locals;
   struct svalue *expendible;
   struct object *current_object;
   struct inherit context;
   char *current_storage;
-  INT32 args;
-  INT32 fun;
-  INT16 num_locals;
-  INT16 num_args;
 };
 
 #ifdef PIKE_DEBUG
@@ -90,6 +93,29 @@ struct frame
 #define stack_dup() push_svalue(sp-1)
 #define stack_swap() do { struct svalue _=sp[-1]; sp[-1]=sp[-2]; sp[-2]=_; } while(0)
 
+#define free_pike_frame(F) do{ struct pike_frame *f_=(F); debug_malloc_touch(f_); if(!--f_->refs) really_free_pike_frame(f_); }while(0)
+
+#define POP_PIKE_FRAME() do {						\
+  struct pike_frame *tmp_=fp;						\
+  fp=tmp_->next;							\
+  if(!--tmp_->refs)							\
+  {									\
+    really_free_pike_frame(tmp_);					\
+  }else{								\
+    if(tmp_->num_locals)						\
+    {									\
+      struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
+					       tmp_->num_locals);	\
+      assign_svalues_no_free(s,tmp_->locals,tmp_->num_locals,BIT_MIXED);\
+      tmp_->locals=s;							\
+      tmp_->malloced_locals=1;						\
+    }else{								\
+      tmp_->locals=0;							\
+    }									\
+    tmp_->next=0;							\
+  }									\
+ }while(0)
+
 
 enum apply_type
 {
@@ -140,6 +166,7 @@ do{ \
   static int div_; if(!(div_++& ((1<<(X))-1))) check_threads_etc(); } while(0)
 #endif
 
+#include "block_alloc_h.h"
 /* Prototypes begin here */
 void push_sp_mark(void);
 int pop_sp_mark(void);
@@ -151,6 +178,9 @@ void print_return_value(void);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
+BLOCK_ALLOC(pike_frame,128)
+
+static void restore_creds(struct object *creds);
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 void f_call_function(INT32 args);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
@@ -170,7 +200,7 @@ extern struct svalue *sp;
 extern struct svalue **mark_sp;
 extern struct svalue *evaluator_stack;
 extern struct svalue **mark_stack;
-extern struct frame *fp; /* frame pointer */
+extern struct pike_frame *fp; /* pike_frame pointer */
 extern char *stack_top;
 extern int stack_size;
 extern int evaluator_stack_malloced, mark_stack_malloced;

@@ -9,7 +9,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.15 1998/11/22 11:02:36 hubbe Exp $");
+RCSID("$Id: callback.c,v 1.16 1999/01/31 09:01:41 hubbe Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -159,7 +159,7 @@ void call_callback(struct callback_list *lst, void *arg)
       }
 
       *ptr=l->next;
-      free_callback(l);
+      really_free_callback(l);
 
 #ifdef PIKE_DEBUG
       l->free_func=(callback_func)remove_callback;
@@ -212,7 +212,7 @@ void free_callback_list(struct callback_list *lst)
     if(l->free_func)
       l->free_func(l, l->arg, 0);
     *ptr=l->next;
-    free_callback(l);
+    really_free_callback(l);
   }
 }
 

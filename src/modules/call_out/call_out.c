@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.23 1998/11/22 11:05:56 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.24 1999/01/31 09:03:50 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -488,7 +488,7 @@ void do_call_outs(struct callback *ignored, void *ignored_too, void *arg)
       }
       UNPROTECT_CALL_OUTS();
       c=*cc;
-      free_call_out_s(cc);
+      really_free_call_out_s(cc);
 
       if(c.caller) free_object(c.caller);
 
@@ -626,7 +626,7 @@ void f_remove_call_out(INT32 args)
     free_array(CALL(e)->args);
     if(CALL(e)->caller)
       free_object(CALL(e)->caller);
-    free_call_out_s(CALL(e));
+    really_free_call_out_s(CALL(e));
     --num_pending_calls;
     if(e!=num_pending_calls)
     {
@@ -696,7 +696,7 @@ void free_all_call_outs(void)
   {
     free_array(CALL(e)->args);
     if(CALL(e)->caller) free_object(CALL(e)->caller);
-    free_call_out_s(CALL(e));
+    really_free_call_out_s(CALL(e));
   }
   if(call_buffer) free((char*)call_buffer);
   if(call_hash) free((char*)call_hash);

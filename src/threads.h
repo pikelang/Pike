@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.60 1998/11/22 11:03:23 hubbe Exp $
+ * $Id: threads.h,v 1.61 1999/01/31 09:02:04 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -241,7 +241,7 @@ extern COND_T live_threads_change;		/* Used by _disable_threads */
 extern COND_T threads_disabled_change;		/* Used by _disable_threads */
 
 struct svalue;
-struct frame;
+struct pike_frame;
 
 extern MUTEX_T interleave_lock;
 
@@ -289,7 +289,7 @@ struct thread_state {
   /* Swapped variables */
   struct svalue *sp,*evaluator_stack;
   struct svalue **mark_sp,**mark_stack;
-  struct frame *fp;
+  struct pike_frame *fp;
   int evaluator_stack_malloced;
   int mark_stack_malloced;
   JMP_BUF *recoveries;

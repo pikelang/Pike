@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.112 1999/01/21 09:15:01 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.113 1999/01/31 09:01:47 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -29,6 +29,7 @@ RCSID("$Id: interpret.c,v 1.112 1999/01/21 09:15:01 hubbe Exp $");
 #include "callback.h"
 #include "fd_control.h"
 #include "security.h"
+#include "block_alloc.h"
 
 #include <fcntl.h>
 #include <errno.h>
@@ -91,15 +92,15 @@ int pop_sp_mark(void)
   return sp - *--mark_sp;
 }
 
-struct frame *fp; /* frame pointer */
+struct pike_frame *fp; /* pike_frame pointer */
 
 #ifdef PIKE_DEBUG
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
-  struct frame *f;
+  struct pike_frame *f;
   debug_gc_xmark_svalues(evaluator_stack,sp-evaluator_stack-1,"interpreter stack");
 
-  for(f=fp;f;f=f->parent_frame)
+  for(f=fp;f;f=f->next)
   {
     if(f->context.parent)
       gc_external_mark(f->context.parent);
@@ -194,7 +195,6 @@ use_malloc:
 #endif
 #endif
 }
-
 
 
 static int eval_instruction(unsigned char *pc);
@@ -662,6 +662,17 @@ static int eval_instruction(unsigned char *pc)
       print_return_value();
       break;
 
+      CASE(F_TRAMPOLINE);
+      {
+	struct object *o=low_clone(pike_trampoline_program);
+	add_ref( ((struct pike_trampoline *)(o->storage))->frame=fp );
+	((struct pike_trampoline *)(o->storage))->func=GET_ARG()+fp->context.identifier_level;
+	push_object(o);
+	print_return_value();
+	break;
+      }
+
+
       /* The not so basic 'push value' instructions */
       CASE(F_GLOBAL);
       low_object_index_no_free(sp,
@@ -836,6 +847,34 @@ static int eval_instruction(unsigned char *pc)
       sp[1].type=T_VOID;
       sp+=2;
       break;
+
+      CASE(F_LEXICAL_LOCAL);
+      {
+	struct pike_frame *f=fp;
+	while(accumulator--)
+	{
+	  f=f->scope;
+	  if(!f) error("Lexical scope error.\n");
+	}
+	push_svalue(f->locals + GET_ARG());
+	print_return_value();
+	break;
+      }
+
+      CASE(F_LEXICAL_LOCAL_LVALUE);
+      {
+	struct pike_frame *f=fp;
+	while(accumulator--)
+	{
+	  f=f->scope;
+	  if(!f) error("Lexical scope error.\n");
+	}
+	sp[0].type=T_LVALUE;
+	sp[0].u.lval=f->locals+GET_ARG();
+	sp[1].type=T_VOID;
+	sp+=2;
+	break;
+      }
 
       CASE(F_ARRAY_LVALUE);
       f_aggregate(GET_ARG()*2);
@@ -1536,8 +1575,25 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_ADD_NEG_INT); push_int(-GET_ARG()); f_add(2); break;
 
       CASE(F_PUSH_ARRAY);
-      if(sp[-1].type!=T_ARRAY)
-	PIKE_ERROR("@", "Bad argument.\n", sp, 1);
+      switch(sp[-1].type)
+      {
+	default:
+	  PIKE_ERROR("@", "Bad argument.\n", sp, 1);
+
+	case T_OBJECT:
+	  if(!sp[-1].u.object->prog || FIND_LFUN(sp[-1].u.object->prog,LFUN__VALUES) == -1)
+	    PIKE_ERROR("@", "Bad argument.\n", sp, 1);
+
+	  apply_lfun(sp[-1].u.object, LFUN__VALUES, 0);
+	  if(sp[-1].type != T_ARRAY)
+	    error("Bad return type from o->_values() in @\n");
+	  free_svalue(sp-2);
+	  sp[-2]=sp[-1];
+	  sp--;
+	  break;
+
+	case T_ARRAY: break;
+      }
       sp--;
       push_array_items(sp->u.array);
       break;
@@ -1796,6 +1852,27 @@ static void do_trace_call(INT32 args)
   free(s);
 }
 
+
+#undef INIT_BLOCK
+#define INIT_BLOCK(X) do { X->refs=1; X->malloced_locals=0; X->scope=0; }while(0)
+
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(X) do {				\
+  free_object(X->current_object);			\
+  if(X->context.prog) free_program(X->context.prog);	\
+  if(X->context.parent) free_object(X->context.parent);	\
+  if(X->scope) free_pike_frame(X->scope);		\
+  if(X->malloced_locals)				\
+  {							\
+    free_svalues(X->locals,X->num_locals,BIT_MIXED);	\
+    free((char *)(X->locals));				\
+  }							\
+}while(0)
+
+BLOCK_ALLOC(pike_frame,128)
+
+
+
 #ifdef PIKE_SECURITY
 static void restore_creds(struct object *creds)
 {
@@ -1810,9 +1887,11 @@ static
 #define mega_apply2 mega_apply
 #endif
 
+
 void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
+  struct pike_frame *scope=0;
   int fun, tailrecurse=-1;
   struct svalue *save_sp=sp-args;
 
@@ -1919,6 +1998,13 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
     case T_OBJECT:
       o=s->u.object;
+      if(o->prog == pike_trampoline_program)
+      {
+	fun=((struct pike_trampoline *)(o->storage))->func;
+	scope=((struct pike_trampoline *)(o->storage))->frame;
+	o=scope->current_object;
+	goto apply_low_with_scope;
+      }
       fun=LFUN_CALL;
       goto call_lfun;
     }
@@ -1941,10 +2027,12 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
     fun=(long)arg2;
 
   apply_low:
+    scope=0;
+  apply_low_with_scope:
     {
       struct program *p;
       struct reference *ref;
-      struct frame new_frame;
+      struct pike_frame *new_frame=alloc_pike_frame();
       struct identifier *function;
       
       if(fun<0)
@@ -1984,12 +2072,12 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	fatal("Inherit offset out of range in program.\n");
 #endif
 
-      /* init a new evaluation frame */
-      new_frame.parent_frame = fp;
-      new_frame.current_object = o;
-      new_frame.context = p->inherits[ ref->inherit_offset ];
+      /* init a new evaluation pike_frame */
+      new_frame->next = fp;
+      new_frame->current_object = o;
+      new_frame->context = p->inherits[ ref->inherit_offset ];
 
-      function = new_frame.context.prog->identifiers + ref->identifier_offset;
+      function = new_frame->context.prog->identifiers + ref->identifier_offset;
 
 #ifdef PIKE_SECURITY
       CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL, ("Function call permission denied.\n"));
@@ -2003,16 +2091,18 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       function->num_calls++;
 #endif
   
-      new_frame.locals = sp - args;
-      new_frame.expendible = new_frame.locals;
-      new_frame.args = args;
-      new_frame.fun = fun;
-      new_frame.current_storage = o->storage+new_frame.context.storage_offset;
-      new_frame.pc = 0;
+      new_frame->locals = sp - args;
+      new_frame->expendible = new_frame->locals;
+      new_frame->args = args;
+      new_frame->fun = fun;
+      new_frame->current_storage = o->storage+new_frame->context.storage_offset;
+      new_frame->pc = 0;
+      new_frame->scope=scope;
       
-      add_ref(new_frame.current_object);
-      add_ref(new_frame.context.prog);
-      if(new_frame.context.parent) add_ref(new_frame.context.parent);
+      add_ref(new_frame->current_object);
+      add_ref(new_frame->context.prog);
+      if(new_frame->context.parent) add_ref(new_frame->context.parent);
+      if(new_frame->scope) add_ref(new_frame->scope);
       
       if(t_flag)
       {
@@ -2024,7 +2114,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	do_trace_call(args);
       }
       
-      fp = &new_frame;
+      fp = new_frame;
       
       if(function->func.offset == -1)
 	PIKE_ERROR(function->name->str, "Calling undefined function.\n", sp, args);
@@ -2041,7 +2131,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       {
       case IDENTIFIER_C_FUNCTION:
 	fp->num_args=args;
-	new_frame.num_locals=args;
+	new_frame->num_locals=args;
 	check_threads_etc();
 	(*function->func.c_fun)(args);
 	break;
@@ -2082,10 +2172,15 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	int num_args;
 	int num_locals;
 	unsigned char *pc;
-	pc=new_frame.context.prog->program + function->func.offset;
+	pc=new_frame->context.prog->program + function->func.offset;
 	
 	num_locals=EXTRACT_UCHAR(pc++);
 	num_args=EXTRACT_UCHAR(pc++);
+
+	/* FIXME: this is only needed if this function contains
+	 * trampolines
+	 */
+	new_frame->expendible+=num_locals;
 	
 	/* adjust arguments on stack */
 	if(args < num_args) /* push zeros */
@@ -2114,8 +2209,8 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	if(num_locals < num_args)
 	  fatal("Wrong number of arguments or locals in function def.\n");
 #endif
-	new_frame.num_locals=num_locals;
-	new_frame.num_args=num_args;
+	new_frame->num_locals=num_locals;
+	new_frame->num_args=num_args;
 
 	check_threads_etc();
 
@@ -2163,12 +2258,12 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 
 #if 0
-      if(sp - new_frame.locals > 1)
+      if(sp - new_frame->locals > 1)
       {
-	pop_n_elems(sp - new_frame.locals -1);
-      }else if(sp - new_frame.locals < 1){
+	pop_n_elems(sp - new_frame->locals -1);
+      }else if(sp - new_frame->locals < 1){
 #ifdef PIKE_DEBUG
-	if(sp - new_frame.locals<0) fatal("Frame underflow.\n");
+	if(sp - new_frame->locals<0) fatal("Frame underflow.\n");
 #endif
 	sp->u.integer = 0;
 	sp->subtype=NUMBER_NUMBER;
@@ -2176,13 +2271,14 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	sp++;
       }
 #endif
-      
-      if(new_frame.context.parent) free_object(new_frame.context.parent);
-      free_object(new_frame.current_object);
-      free_program(new_frame.context.prog);
 
-      fp = new_frame.parent_frame;
+#ifdef PIKE_DEBUG
+      if(fp!=new_frame)
+	fatal("Frame stack out of whack!\n");
+#endif
       
+      POP_PIKE_FRAME();
+
       if(tailrecurse>=0)
       {
 	args=tailrecurse;
@@ -2256,25 +2352,25 @@ void f_call_function(INT32 args)
 int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
   JMP_BUF tmp;
-  struct frame new_frame;
+  struct pike_frame *new_frame=alloc_pike_frame();
   int ret;
 
-  new_frame.parent_frame = fp;
-  new_frame.current_object = o;
-  new_frame.context=o->prog->inherits[0];
-  new_frame.locals = evaluator_stack;
-  new_frame.expendible=new_frame.locals;
-  new_frame.args = 0;
-  new_frame.num_args=0;
-  new_frame.num_locals=0;
-  new_frame.fun = -1;
-  new_frame.pc = 0;
-  new_frame.current_storage=o->storage;
-  new_frame.context.parent=0;
-  fp = & new_frame;
+  new_frame->next = fp;
+  new_frame->current_object = o;
+  new_frame->context=o->prog->inherits[0];
+  new_frame->locals = evaluator_stack;
+  new_frame->expendible=new_frame->locals;
+  new_frame->args = 0;
+  new_frame->num_args=0;
+  new_frame->num_locals=0;
+  new_frame->fun = -1;
+  new_frame->pc = 0;
+  new_frame->current_storage=o->storage;
+  new_frame->context.parent=0;
+  fp = new_frame;
 
-  add_ref(new_frame.current_object);
-  add_ref(new_frame.context.prog);
+  add_ref(new_frame->current_object);
+  add_ref(new_frame->context.prog);
 
   if(SETJMP(tmp))
   {
@@ -2291,10 +2387,8 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   }
   UNSETJMP(tmp);
 
-  free_object(new_frame.current_object);
-  free_program(new_frame.context.prog);
+  POP_PIKE_FRAME();
 
-  fp=new_frame.parent_frame;
   return ret;
 }
 
@@ -2401,7 +2495,7 @@ void apply_svalue(struct svalue *s, INT32 args)
 void slow_check_stack(void)
 {
   struct svalue *s,**m;
-  struct frame *f;
+  struct pike_frame *f;
 
   debug_check_stack();
 
@@ -2428,7 +2522,7 @@ void slow_check_stack(void)
   if(s > &(evaluator_stack[stack_size]))
     fatal("Mark stack exceeds svalue stack\n");
 
-  for(f=fp;f;f=f->parent_frame)
+  for(f=fp;f;f=f->next)
   {
     if(f->locals)
     {
@@ -2437,7 +2531,7 @@ void slow_check_stack(void)
       fatal("Local variable pointer points to Finspång.\n");
 
       if(f->args < 0 || f->args > stack_size)
-	fatal("FEL FEL FEL! HELP!! (corrupted frame)\n");
+	fatal("FEL FEL FEL! HELP!! (corrupted pike_frame)\n");
     }
   }
 }
@@ -2451,10 +2545,10 @@ void cleanup_interpret(void)
 
   while(fp)
   {
-    free_object(fp->current_object);
-    free_program(fp->context.prog);
-    
-    fp = fp->parent_frame;
+    struct pike_frame *tmp=fp;
+    fp=tmp->next;
+    tmp->next=0;
+    free_pike_frame(tmp);
   }
 
 #ifdef PIKE_DEBUG
