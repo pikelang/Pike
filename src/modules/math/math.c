@@ -169,20 +169,22 @@ void f_sgn(INT32 args)
   zero.type=T_INT;
   zero.u.integer=0;
 
-  check_all_args("sgn",args,BIT_MIXED,BIT_MIXED,0);
+  check_all_args("sgn",args,BIT_MIXED,BIT_VOID|BIT_MIXED,0);
+  if(args<2) push_int(0);
+
   if(is_lt(sp-args,&zero))
   {
-    pop_n_elems(args);
+    pop_n_elems(2);
     push_int(-1);
   }
   else if(is_gt(sp-1,&zero))
   {
-    pop_n_elems(args);
+    pop_n_elems(2);
     push_int(1);
   }
   else
   {
-    pop_n_elems(args);
+    pop_n_elems(2);
     push_int(0);
   }
 }
@@ -205,7 +207,7 @@ void pike_module_init()
   add_efun("max",f_max,"function(mixed,mixed:mixed)",0);
   add_efun("min",f_min,"function(mixed,mixed:mixed)",0);
   add_efun("abs",f_abs,"function(float|int|object:float|int|object)",0);
-  add_efun("sgn",f_sgn,"function(mixed,mixed,int)",0);
+  add_efun("sgn",f_sgn,"function(mixed,mixed|void:int)",0);
 }
 
 void pike_module_exit() {}
