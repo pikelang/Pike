@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.87 2001/06/05 19:50:40 grubba Exp $
+ * $Id: cpp.c,v 1.88 2001/06/08 19:26:44 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -118,11 +118,8 @@ void cpp_error(struct cpp *this,char *err)
     ref_push_string(this->current_file);
     push_int(this->current_line);
     push_text(err);
-    if (this->handler && this->handler->prog) {
-      safe_apply(this->handler, "compile_error", 3);
-    } else {
-      SAFE_APPLY_MASTER("compile_error", 3);
-    }
+    safe_apply_handler("compile_error", this->handler,
+		       this->compat_handler, 3);
     pop_stack();
   }else{
     (void)fprintf(stderr, "%s:%ld: %s\n",
@@ -1098,19 +1095,7 @@ static void check_constant(struct cpp *this,
 	push_int(0);
       }
 
-      if(this->handler &&
-	 (i=find_identifier("resolv",this->handler->prog))!=-1)
-      {
-	safe_apply_low(this->handler, i, 3);
-      } else if(this->compat_handler &&
-		(i=find_identifier("resolv",this->compat_handler->prog))!=-1)
-      {
-	safe_apply_low(this->compat_handler, i, 3);
-      }
-      else
-      {
-	SAFE_APPLY_MASTER("resolv", 3);
-      }
+      safe_apply_handler("resolv", this->handler, this->compat_handler, 3);
       
       res=(throw_value.type!=T_STRING) &&
 	(!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED));
@@ -1122,14 +1107,15 @@ static void check_constant(struct cpp *this,
     push_text(".");
     ref_push_string(this->current_file);
 
-    /* FIXME: use this->compat_handler */
-    if (this->handler && this->handler->prog) {
+    if (this->handler) {
       ref_push_object(this->handler);
-      SAFE_APPLY_MASTER("handle_import", 3);
     } else {
-      SAFE_APPLY_MASTER("handle_import", 2);
+      push_int(0);
     }
-    
+
+    safe_apply_handler("handle_import", this->handler,
+		       this->compat_handler, 3);
+
     res=(throw_value.type!=T_STRING) &&
       (!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED));
   }

@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.247 2001/05/14 03:27:44 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.248 2001/06/08 19:32:16 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3659,11 +3659,7 @@ void yyerror(char *str)
     }
     push_int(lex.current_line);
     push_text(str);
-    if (error_handler && error_handler->prog) {
-      safe_apply(error_handler, "compile_error", 3);
-    } else {
-      SAFE_APPLY_MASTER("compile_error", 3);
-    }
+    safe_apply_handler("compile_error", error_handler, compat_handler, 3);
     pop_stack();
   }else{
     if (lex.current_file) {
