@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.688 2003/10/11 15:30:16 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.689 2003/11/08 16:09:32 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5487,6 +5487,16 @@ test_do(add_constant("blatinka");)
     }()->test();
   ]], 1)
 
+// Numerical limits.
+test_true([[Int.NATIVE_MIN <= -2147483648]])
+test_true([[Int.NATIVE_MAX >= 2147483647]])
+test_true([[Float.DIGITS_10 >= 6]])
+test_true([[Float.MIN_10_EXP <= -37]])
+test_true([[Float.MAX_10_EXP >= 37]])
+test_true([[Float.MIN <= 1e-37]])
+test_true([[Float.MAX >= 1e37]])
+test_true([[Float.EPSILON <= 1e-5]])
+
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
   // Test the lexer.
@@ -5512,12 +5522,20 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-1125899906842624", [[ (string)-0b100000000000000000000000000000000000000000000000000 ]])
   test_eq(500000000 * 10, 5000000000)
   test_eq(5000000000000000000 * 10, 50000000000000000000)
-    
-  // These numbers should be ordinary integers.
-  test_false([[ objectp(-0x80000000) ]])
-  test_false([[ objectp(-0x7fffffff) ]])
-  test_false([[ objectp( 0x7fffffff) ]])
+
+  // Numbers that shouldn't be native integers. Has to resort to
+  // strange methods to test this since bignums behave like native
+  // integers in almost every way.
+  test_do([[ _next ((mixed) Int.NATIVE_MAX + 1) ]])
+  test_do([[ _next ((mixed) Int.NATIVE_MIN - 1) ]])
 ]])
+    
+  // These numbers should be native integers.
+  test_eval_error([[ _next ((mixed) -0x80000000) ]])
+  test_eval_error([[ _next ((mixed) -0x7fffffff) ]])
+  test_eval_error([[ _next ((mixed) 0x7fffffff) ]])
+  test_eval_error([[ _next ((mixed) Int.NATIVE_MAX) ]])
+  test_eval_error([[ _next ((mixed) Int.NATIVE_MIN) ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
 [[
