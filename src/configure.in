@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.573 2002/04/06 18:03:22 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.574 2002/04/06 18:51:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1705,7 +1705,7 @@ echo Searching for library directories...
 if test $ldflags_is_set = no ; then
   for dd in `echo ${with_lib_path} | sed 's/:/ /g'` \
     `echo "${with_site_prefixes}/lib"|sed -e 's/:/\/lib /g'` \
-    `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$with_root$ac_default_prefix/lib@g"` \
+    `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
     $with_root/usr/local/lib $with_root/sw/local/lib $with_root/sw/lib \
     $with_root/usr/gnu/lib $with_root/opt/gnu/lib $with_root/sw/gnu/lib \
     $with_root/usr/freeware/lib $with_root/usr/pkg/lib \
