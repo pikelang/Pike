@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.91 2000/10/13 19:40:08 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.92 2000/10/19 14:05:48 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1025,8 +1025,8 @@ char *do_pad(char *mem, long size)
   return mem;
 }
 
-#define FD2PTR(X) (void *)((X)*4+1)
-#define PTR2FD(X) (((long)(X))>>2)
+#define FD2PTR(X) (void *)(ptrdiff_t)((X)*4+1)
+#define PTR2FD(X) (((ptrdiff_t)(X))>>2)
 
 
 void check_pad(struct memhdr *mh, int freeok)
@@ -1472,7 +1472,9 @@ void *debug_malloc(size_t s, LOCATION location)
   }
 
   if(verbose_debug_malloc)
-    fprintf(stderr, "malloc(%d) => %p  (%s)\n", s, m, LOCATION_NAME(location));
+    fprintf(stderr, "malloc(%ld) => %p  (%s)\n",
+	    DO_NOT_WARN((long)s),
+	    m, LOCATION_NAME(location));
 
   mt_unlock(&debug_malloc_mutex);
   return m;
@@ -1485,7 +1487,10 @@ void *debug_calloc(size_t a, size_t b, LOCATION location)
     MEMSET(m, 0, a*b);
 
   if(verbose_debug_malloc)
-    fprintf(stderr, "calloc(%d,%d) => %p  (%s)\n", a, b, m, LOCATION_NAME(location));
+    fprintf(stderr, "calloc(%ld, %ld) => %p  (%s)\n",
+	    DO_NOT_WARN((long)a),
+	    DO_NOT_WARN((long)b),
+	    m, LOCATION_NAME(location));
 
   return m;
 }
@@ -1504,7 +1509,10 @@ void *debug_realloc(void *p, size_t s, LOCATION location)
     low_make_memhdr(m, s, location)->flags|=MEM_PADDED;
   }
   if(verbose_debug_malloc)
-    fprintf(stderr, "realloc(%p,%d) => %p  (%s)\n", p, s, m, LOCATION_NAME(location));
+    fprintf(stderr, "realloc(%p, %ld) => %p  (%s)\n",
+	    p,
+	    DO_NOT_WARN((long)s),
+	    m, LOCATION_NAME(location));
   mt_unlock(&debug_malloc_mutex);
   return m;
 }

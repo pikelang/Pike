@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.90 2000/10/10 01:20:37 hubbe Exp $");
+RCSID("$Id: array.c,v 1.91 2000/10/19 13:58:45 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1525,10 +1525,12 @@ void describe_array(struct array *a,struct processing *p,int indent)
       return;
     }
   }
-  
-  sprintf(buf, a->size == 1 ? "({ /* %ld element */\n" :
-	                      "({ /* %ld elements */\n",
-	  (long)a->size);
+
+  if (a->size == 1) {
+    sprintf(buf, "({ /* 1 element */\n");
+  } else {
+    sprintf(buf, "({ /* %ld elements */\n", (long)a->size);
+  }
   my_strcat(buf);
   describe_array_low(a,&doing,indent);
   my_putchar('\n');
