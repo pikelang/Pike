@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.352 2001/07/12 23:15:41 hubbe Exp $");
+RCSID("$Id: program.c,v 1.353 2001/07/13 11:26:39 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1019,19 +1019,18 @@ int program_function_index_compare(const void *a,const void *b)
 }
 
 #ifdef PIKE_DEBUG
-char *find_program_name(struct program *p, INT32 *line)
+struct pike_string *find_program_name(struct program *p, INT32 *line)
 {
-#ifdef DEBUG_MALLOC
-  char *tmp;
-#endif
   ptrdiff_t pos;
   INT32 l;
   if(!line) line=&l;
 
 #ifdef DEBUG_MALLOC
-  tmp=dmalloc_find_name(p);
-  *line=0;
-  if(tmp) return tmp;
+  {
+    char *tmp=dmalloc_find_name(p);
+    *line=0;
+    if(tmp) return make_shared_string(tmp);
+  }
 #endif
 
   return get_program_line(p, line);
@@ -1093,7 +1092,7 @@ void fixate_program(void)
 #define DBSTR(X) ((X)?(X)->str:"")
     int e,v;
     INT32 line;
-    char *tmp;
+    struct pike_string *tmp;
     struct memory_map *m=0;;
     if(lex.current_file && 
        lex.current_file->str &&
@@ -1104,7 +1103,8 @@ void fixate_program(void)
     }
     else if( (tmp=find_program_name(Pike_compiler->new_program, &line)) )
     {
-      m=dmalloc_alloc_mmap( tmp, line);
+      m=dmalloc_alloc_mmap( tmp->str, line);
+      free_string(tmp);
     }else{
       m=dmalloc_alloc_mmap( "program id", Pike_compiler->new_program->id);
     }
@@ -1113,6 +1113,7 @@ void fixate_program(void)
     {
       struct inherit *i=Pike_compiler->new_program->inherits+e;
       char *tmp;
+      struct pike_string *tmp2 = NULL;
       char buffer[50];
 
       for(v=0;v<i->prog->num_variable_index;v++)
@@ -1132,10 +1133,12 @@ void fixate_program(void)
       {
 	tmp=i->name->str;
       }
-      else if(!(tmp=find_program_name(i->prog, &line)))
+      else if(!(tmp2 = find_program_name(i->prog, &line)))
       {
 	sprintf(buffer,"inherit[%d]",e);
 	tmp=buffer;
+      } else {
+	tmp = tmp2->str;
       }
       dmalloc_add_mmap_entry(m,
 			     tmp,
@@ -1143,7 +1146,9 @@ void fixate_program(void)
 			     i->prog->storage_needed - i->prog->inherits[0].storage_offset,
 			     1, /* count */
 			     0,0);
-
+      if (tmp2) {
+	free_string(tmp2);
+      }
     }
     dmalloc_set_mmap_template(Pike_compiler->new_program, m);
   }
@@ -1341,15 +1346,21 @@ void low_start_new_program(struct program *p,
 
     {
       INT32 line=0, off=0;
+      size_t len = 0;
+      INT32 shift = 0;
       char *file=0;
       char *cnt=Pike_compiler->new_program->linenumbers;
 
-      while(cnt < Pike_compiler->new_program->linenumbers + Pike_compiler->new_program->num_linenumbers)
+      while(cnt < Pike_compiler->new_program->linenumbers +
+	    Pike_compiler->new_program->num_linenumbers)
       {
 	if(*cnt == 127)
 	{
-	  file=cnt+1;
-	  cnt=file+strlen(file)+1;
+	  cnt++;
+	  len = get_small_number(&cnt);
+	  shift = *cnt;
+	  file = ++cnt;
+	  cnt += len<<shift;
 	}
 	off+=get_small_number(&cnt);
 	line+=get_small_number(&cnt);
@@ -1358,8 +1369,10 @@ void low_start_new_program(struct program *p,
       Pike_compiler->last_pc=off;
       if(file)
       {
+	struct pike_string *str = begin_wide_shared_string(len, shift);
 	if(Pike_compiler->last_file) free_string(Pike_compiler->last_file);
-	Pike_compiler->last_file=make_shared_string(file);
+	memcpy(str->str, file, len<<shift);
+	Pike_compiler->last_file = end_shared_string(str);
       }
     }
 
@@ -3896,7 +3909,7 @@ static void insert_small_number(INT32 a)
 #ifdef PIKE_DEBUG
   {
     unsigned char *tmp = Pike_compiler->new_program->linenumbers + start;
-    INT32 res = get_small_number(&tmp);
+    INT32 res = get_small_number((char **)&tmp);
     if (a != res) {
       tmp = Pike_compiler->new_program->linenumbers + start;
       fprintf(stderr, "0x%p: %02x %02x %02x %02x %02x\n",
@@ -3915,50 +3928,91 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   if(d_flag)
   {
     INT32 line=0, off=0;
+    size_t len = 0;
+    INT32 shift = 0;
     char *file=0;
     char *cnt=Pike_compiler->new_program->linenumbers;
 
-    while(cnt < Pike_compiler->new_program->linenumbers + Pike_compiler->new_program->num_linenumbers)
+    if (d_flag > 5) {
+      fprintf(stderr, "store_line_number(%d, \"%s\")\n",
+	      current_line, current_file->str);
+      fprintf(stderr, "  last_line:%d last_file:\"%s\"\n",
+	      Pike_compiler->last_line,
+	      Pike_compiler->last_file?Pike_compiler->last_file->str:"");
+    }
+
+    while(cnt < Pike_compiler->new_program->linenumbers +
+	  Pike_compiler->new_program->num_linenumbers)
     {
+      char *start = cnt;
       if(*cnt == 127)
       {
-	file=cnt+1;
-	cnt=file+strlen(file)+1;
+	cnt++;
+	len = get_small_number(&cnt);
+	shift = *cnt;
+	file = ++cnt;
+	cnt += len<<shift;
+	if (d_flag > 10) {
+	  fprintf(stderr, "Filename entry:\n"
+		  "  len: %d, shift: %d\n",
+		  len, shift);
+	}
       }
       off+=get_small_number(&cnt);
       line+=get_small_number(&cnt);
+      if (d_flag > 10) {
+	fprintf(stderr, "  off: %d, line: %d\n"
+		"  raw: ",
+		off, line);
+	for (;start < cnt; start++) {
+	  fprintf(stderr, "%02x ", *((unsigned char *)start));
+	}
+	fprintf(stderr, "\n");
+      }
     }
 
     if(Pike_compiler->last_line != line ||
        Pike_compiler->last_pc != off ||
-       (Pike_compiler->last_file && file && strcmp(Pike_compiler->last_file->str, file)))
+       (Pike_compiler->last_file && file &&
+	memcmp(Pike_compiler->last_file->str, file, len<<shift)))
     {
       fatal("Line numbering out of whack\n"
-	    "    (line: %d ?= %d)!\n"
-	    "    (  pc: %d ?= %d)!\n"
-	    "    (file: %s ?= %s)!\n",
+	    "    (line : %d ?= %d)!\n"
+	    "    (  pc : %d ?= %d)!\n"
+	    "    (shift: %d ?= %d)!\n"
+	    "    (len  : %d ?= %d)!\n"
+	    "    (file : %s ?= %s)!\n",
 	    Pike_compiler->last_line, line,
 	    Pike_compiler->last_pc, off,
+	    Pike_compiler->last_file?Pike_compiler->last_file->size_shift:0,
+	    shift,
+	    Pike_compiler->last_file?Pike_compiler->last_file->len:0, len,
 	    Pike_compiler->last_file?Pike_compiler->last_file->str:"N/A",
 	    file?file:"N/A");
     }
   }
 #endif
-  if(Pike_compiler->last_line!=current_line || Pike_compiler->last_file != current_file)
+  if(Pike_compiler->last_line != current_line ||
+     Pike_compiler->last_file != current_file)
   {
-    if(Pike_compiler->last_file != current_file)
+    if((Pike_compiler->last_file != current_file) ||
+       (DO_NOT_WARN((INT32)(PC - Pike_compiler->last_pc)) == 127))
     {
       char *tmp;
+      INT32 remain = DO_NOT_WARN((INT32)current_file->len)<<
+	current_file->size_shift;
+
       if(Pike_compiler->last_file) free_string(Pike_compiler->last_file);
       add_to_linenumbers(127);
-      for(tmp=current_file->str; *tmp; tmp++)
+      insert_small_number(DO_NOT_WARN((INT32)current_file->len));
+      add_to_linenumbers(current_file->size_shift);
+      for(tmp=current_file->str; remain-- > 0; tmp++)
 	add_to_linenumbers(*tmp);
-      add_to_linenumbers(0);
       copy_shared_string(Pike_compiler->last_file, current_file);
     }
     insert_small_number(DO_NOT_WARN((INT32)(PC-Pike_compiler->last_pc)));
     insert_small_number(current_line-Pike_compiler->last_line);
-    Pike_compiler->last_line=current_line;
+    Pike_compiler->last_line = current_line;
     Pike_compiler->last_pc = DO_NOT_WARN((INT32)PC);
   }
 }
@@ -3966,28 +4020,44 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 /* Returns the file where the program is defined. The line of the
  * class start is written to linep, or 0 if the program is the top
  * level of the file. */
-PMOD_EXPORT char *get_program_line(struct program *prog, INT32 *linep)
+PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
+						 INT32 *linep)
 {
-  char *file, *cnt;
+  char *cnt;
+  size_t len = 0;
+  INT32 shift = 0;
+  char *file = NULL;
 
   if(prog == Pike_compiler->new_program)
   {
+    struct pike_string *optimizer;
     linep[0]=0;
-    return "Optimizer";
+    MAKE_CONSTANT_SHARED_STRING(optimizer, "Optimizer");
+    return optimizer;
   }
 
   cnt = prog->linenumbers;
-  file = "-";
   if (cnt < prog->linenumbers + prog->num_linenumbers) {
     if (*cnt == 127) {
-      file = cnt + 1;
-      cnt = file + strlen(file) + 1;
+      cnt++;
+      len = get_small_number(&cnt);
+      shift = *cnt;
+      file = ++cnt;
+      cnt += len<<shift;
     }
-    get_small_number(&cnt);
+    get_small_number(&cnt);	/* Ignore the offset */
     *linep = get_small_number(&cnt);
   }
   else *linep = 0;
-  return file;
+  if (file) {
+    struct pike_string *str = begin_wide_shared_string(len, shift);
+    memcpy(str->str, file, len<<shift);
+    return end_shared_string(str);
+  } else {
+    struct pike_string *dash;
+    MAKE_CONSTANT_SHARED_STRING(dash, "-");
+    return dash;
+  }
 }
 
 /*
@@ -3996,43 +4066,57 @@ PMOD_EXPORT char *get_program_line(struct program *prog, INT32 *linep)
  * program, and line will be initialized to the line
  * in that file.
  */
-PMOD_EXPORT char *get_line(PIKE_OPCODE_T *pc,struct program *prog,INT32 *linep)
+PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
+					 struct program *prog, INT32 *linep)
 {
-  static char *file, *cnt;
+  static char *file = NULL;
+  static char *cnt;
   static INT32 off,line,pid;
+  static size_t len;
+  static INT32 shift;
   ptrdiff_t offset;
 
   if (prog == 0) {
+    struct pike_string *unknown_program;
     *linep = 0;
-    return "Unknown program";
+    MAKE_CONSTANT_SHARED_STRING(unknown_program, "Unknown program");
+    return unknown_program;
   }
   offset = pc - prog->program;
 
   if(prog == Pike_compiler->new_program)
   {
+    struct pike_string *optimizer;
     linep[0]=0;
-    return "Optimizer";
+    MAKE_CONSTANT_SHARED_STRING(optimizer, "Optimizer");
+    return optimizer;
   }
 
   if(prog->id != pid || offset < off)
   {
     cnt=prog->linenumbers;
     off=line=0;
-    file="Line not found";
     pid=prog->id;
+    file = 0;
   }else{
     goto fromold;
   }
 
-  if ((offset > (ptrdiff_t)prog->num_program) || (offset < 0))
-    return file;
+  if ((offset > (ptrdiff_t)prog->num_program) || (offset < 0)) {
+    struct pike_string *res = begin_wide_shared_string(len, shift);
+    memcpy(res->str, file, len<<shift);
+    return end_shared_string(res);
+  }
 
   while(cnt < prog->linenumbers + prog->num_linenumbers)
   {
     if(*cnt == 127)
     {
-      file=cnt+1;
-      cnt=file+strlen(file)+1;
+      cnt++;
+      len = get_small_number(&cnt);
+      shift = *cnt;
+      file = ++cnt;
+      cnt += len<<shift;
     }
     off+=get_small_number(&cnt);
     if(off > offset) break;
@@ -4040,7 +4124,15 @@ PMOD_EXPORT char *get_line(PIKE_OPCODE_T *pc,struct program *prog,INT32 *linep)
     line+=get_small_number(&cnt);
   }
   linep[0]=line;
-  return file;
+  if (!file) {
+    struct pike_string *not_found;
+    MAKE_CONSTANT_SHARED_STRING(not_found, "Line not found");
+    return not_found;
+  } else {
+    struct pike_string *res = begin_wide_shared_string(len, shift);
+    memcpy(res->str, file, len<<shift);
+    return end_shared_string(res);
+  }
 }
 
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.137 2001/07/12 23:15:41 hubbe Exp $
+ * $Id: program.h,v 1.138 2001/07/13 11:26:39 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -386,7 +386,7 @@ struct program *parent_compilation(int level);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
 int program_function_index_compare(const void *a,const void *b);
-char *find_program_name(struct program *p, INT32 *line);
+struct pike_string *find_program_name(struct program *p, INT32 *line);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
@@ -511,9 +511,11 @@ void program_index_no_free(struct svalue *to, struct program *p,
 int get_small_number(char **q);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
-PMOD_EXPORT char *get_program_line(struct program *prog,INT32 *linep);
-PMOD_EXPORT char *get_line(PIKE_OPCODE_T *pc, struct program *prog,
-			   INT32 *linep);
+PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
+						 INT32 *linep);
+PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
+					 struct program *prog,
+					 INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog,
 			struct object *handler,

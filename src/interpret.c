@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.218 2001/07/09 14:19:15 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.219 2001/07/13 11:26:38 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -676,7 +676,7 @@ void dump_backlog(void)
 
     if(backlog[e].program)
     {
-      char *file;
+      struct pike_string *file;
       INT32 line;
 
 #ifdef _REENTRANT
@@ -687,24 +687,25 @@ void dump_backlog(void)
       }
 #endif
 
-      file=get_line(backlog[e].pc-1,backlog[e].program, &line);
+      file = get_line(backlog[e].pc-1,backlog[e].program, &line);
 #ifdef HAVE_COMPUTED_GOTO
       fprintf(stderr,"%s:%ld: %s",
-	      file,
+	      file->str,
 	      (long)line,
 	      get_opcode_name(backlog[e].instruction));
 #else /* !HAVE_COMPUTED_GOTO */
       if(backlog[e].instruction < 0 || backlog[e].instruction+F_OFFSET > F_MAX_OPCODE)
       {
 	fprintf(stderr,"%s:%ld: ILLEGAL INSTRUCTION %d\n",
-		file,
+		file->str,
 		(long)line,
 		backlog[e].instruction + F_OFFSET);
+	free_string(file);
 	continue;
       }
 
       fprintf(stderr,"%s:%ld: %s",
-	      file,
+	      file->str,
 	      (long)line,
 	      low_get_f_name(backlog[e].instruction + F_OFFSET, backlog[e].program));
       if(instrs[backlog[e].instruction].flags & I_HASARG2)
@@ -725,6 +726,7 @@ void dump_backlog(void)
 	      DO_NOT_WARN((long)backlog[e].stack),
 	      DO_NOT_WARN((long)backlog[e].mark_stack));
 #endif /* HAVE_COMPUTED_GOTO */
+      free_string(file);
     }
   }while(e!=backlogp);
 }
@@ -800,7 +802,8 @@ static void trace_return_value(void)
 
 static void do_trace_call(INT32 args)
 {
-  char *file,*s;
+  struct pike_string *filep = NULL;
+  char *file, *s;
   INT32 linep,e;
   my_strcat("(");
   for(e=0;e<args;e++)
@@ -820,13 +823,18 @@ static void do_trace_call(INT32 args)
   if(Pike_fp && Pike_fp->pc)
   {
     char *f;
-    file=get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
-    while((f=STRCHR(file,'/'))) file=f+1;
+    filep = get_line(Pike_fp->pc,Pike_fp->context.prog,&linep);
+    file = filep->str;
+    while((f=STRCHR(file,'/')))
+      file=f+1;
   }else{
     linep=0;
     file="-";
   }
   fprintf(stderr,"- %s:%4ld: %s\n",file,(long)linep,s);
+  if (filep) {
+    free_string(filep);
+  }
   free(s);
 }
 
@@ -1805,7 +1813,7 @@ void gdb_backtrace (
   for (of = 0; f; f = (of = f)->next)
     if (f->refs) {
       int args, i;
-      char *file = 0;
+      struct pike_string *file = NULL;
       INT32 line;
 
       if (f->context.prog) {
@@ -1814,9 +1822,10 @@ void gdb_backtrace (
 	else
 	  file = get_program_line (f->context.prog, &line);
       }
-      if (file)
-	fprintf (stderr, "%s:%d: ", file, line);
-      else
+      if (file) {
+	fprintf (stderr, "%s:%d: ", file->str, line);
+	free_string(file);
+      } else
 	fputs ("unknown program: ", stderr);
 
       if (f->current_object && f->current_object->prog) {
@@ -1934,7 +1943,8 @@ void gdb_backtrace (
 	    struct program *p = arg->u.object->prog;
 	    if (p && p->num_linenumbers) {
 	      file = get_program_line (p, &line);
-	      fprintf (stderr, "object(%s:%d)", file, line);
+	      fprintf (stderr, "object(%s:%d)", file->str, line);
+	      free_string(file);
 	    }
 	    else
 	      fputs ("object", stderr);
@@ -1945,7 +1955,8 @@ void gdb_backtrace (
 	    struct program *p = arg->u.program;
 	    if (p->num_linenumbers) {
 	      file = get_program_line (p, &line);
-	      fprintf (stderr, "program(%s:%d)", file, line);
+	      fprintf (stderr, "program(%s:%d)", file->str, line);
+	      free_string(file);
 	    }
 	    else
 	      fputs ("program", stderr);

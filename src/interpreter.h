@@ -129,10 +129,13 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     if(t_flag > 2)
     {
       char *file, *f;
+      struct pike_string *filep;
       INT32 linep;
 
-      file = get_line(pc-1,Pike_fp->context.prog,&linep);
-      while((f=STRCHR(file,'/'))) file=f+1;
+      filep = get_line(pc-1,Pike_fp->context.prog,&linep);
+      file = filep->str;
+      while((f=STRCHR(file,'/')))
+	file=f+1;
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
 	      file,(long)linep,
 	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
@@ -143,6 +146,7 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #endif /* HAVE_COMPUTED_GOTO */
 	      DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),
 	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
+      free_string(filep);
     }
 
 #ifdef HAVE_COMPUTED_GOTO

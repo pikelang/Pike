@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.393 2001/07/10 00:04:11 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.394 2001/07/13 11:26:40 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1018,8 +1018,6 @@ PMOD_EXPORT void f_backtrace(INT32 args)
   of=0;
   for(f=Pike_fp;f;f=(of=f)->next)
   {
-    char *program_name;
-
     debug_malloc_touch(f);
     frames--;
 
@@ -1055,11 +1053,12 @@ PMOD_EXPORT void f_backtrace(INT32 args)
 
       if(f->pc)
       {
-	program_name=get_line(f->pc, f->context.prog, & ITEM(i)[1].u.integer);
+	struct pike_string *program_name =
+	  get_line(f->pc, f->context.prog, & ITEM(i)[1].u.integer);
 	ITEM(i)[1].subtype=NUMBER_NUMBER;
 	ITEM(i)[1].type=T_INT;
 
-	ITEM(i)[0].u.string=make_shared_string(program_name);
+	ITEM(i)[0].u.string = program_name;
 #ifdef __CHECKER__
 	ITEM(i)[0].subtype=0;
 #endif
@@ -7222,22 +7221,21 @@ PMOD_EXPORT void f_function_defined(INT32 args)
   if(Pike_sp[-args].subtype != FUNCTION_BUILTIN &&
      Pike_sp[-args].u.object->prog)
   {
-    char *tmp;
-    INT32 line;
     struct identifier *id=ID_FROM_INT(Pike_sp[-args].u.object->prog,
 				      Pike_sp[-args].subtype);
     if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
       id->func.offset != -1)
     {
-      if((tmp=get_line(Pike_sp[-args].u.object->prog->program + id->func.offset,
-		       Pike_sp[-args].u.object->prog,
-		       &line)))
+      INT32 line = 0;
+      struct pike_string *tmp =
+	get_line(Pike_sp[-args].u.object->prog->program + id->func.offset,
+		 Pike_sp[-args].u.object->prog,
+		 &line);
+      if (tmp)
       {
-	struct pike_string *tmp2;
-	tmp2=make_shared_string(tmp);
 	pop_n_elems(args);
 	
-	push_string(tmp2);
+	push_string(tmp);
 	push_constant_text(":");
 	push_int(line);
 	f_add(3);

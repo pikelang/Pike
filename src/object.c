@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.178 2001/07/12 23:15:40 hubbe Exp $");
+RCSID("$Id: object.c,v 1.179 2001/07/13 11:26:39 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -112,11 +112,12 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
 #ifdef DEBUG_MALLOC
   if(!debug_malloc_copy_names(o, p)) 
   {
-    char *tmp;
+    struct pike_string *tmp;
     INT32 line;
 
     tmp=get_program_line(p, &line);
-    debug_malloc_name(o, tmp, line);
+    debug_malloc_name(o, tmp->str, line);
+    free_string(tmp);
   }
   dmalloc_set_mmap_from_template(o,p);
 #endif
@@ -634,8 +635,9 @@ void destruct(struct object *o)
     fprintf(stderr, "|   Destructing %p with %d refs", o, o->refs);
     if (o->prog) {
       INT32 line;
-      char *file = get_program_line (o->prog, &line);
-      fprintf(stderr, ", prog %s:%d\n", file, line);
+      struct pike_string *file = get_program_line (o->prog, &line);
+      fprintf(stderr, ", prog %s:%d\n", file->str, line);
+      free_string(file);
     }
     else fputs(", is destructed\n", stderr);
   }

@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.58 2001/07/11 17:57:23 mast Exp $
+ * $Id: builtin.cmod,v 1.59 2001/07/13 11:26:37 grubba Exp $
  */
 
 #include "global.h"
@@ -407,23 +407,19 @@ PIKEFUN string program_defined(program p)
 {
   if(p && p->num_linenumbers)
   {
-    char *tmp;
     INT32 line;
-    if((tmp=get_program_line(p, &line)))
-    {
-      struct pike_string *tmp2;
-      tmp2=make_shared_string(tmp);
-      pop_n_elems(args);
+    struct pike_string *tmp = get_program_line(p, &line);
 
-      push_string(tmp2);
-      if(line >= 1)
-      {
-	push_constant_text(":");
-	push_int(line);
-	f_add(3);
-      }
-      return;
+    pop_n_elems(args);
+
+    push_string(tmp);
+    if(line >= 1)
+    {
+      push_constant_text(":");
+      push_int(line);
+      f_add(3);
     }
+    return;
   }
 
   pop_n_elems(args);
@@ -802,8 +798,7 @@ PIKECLASS backtrace_frame
     push_text("backtrace_frame(");
     if (THIS->pc) {
       if (!THIS->filename) {
-	THIS->filename =
-	  make_shared_string(get_line(THIS->pc, THIS->prog, &THIS->lineno));
+	THIS->filename = get_line(THIS->pc, THIS->prog, &THIS->lineno);
       }
       THIS->pc = NULL;
     }
@@ -903,9 +898,7 @@ PIKECLASS backtrace_frame
       case 1:	/* Linenumber */
 	if (THIS->pc) {
 	  if (!THIS->filename) {
-	    THIS->filename =
-	      make_shared_string(get_line(THIS->pc, THIS->prog,
-					  &THIS->lineno));
+	    THIS->filename = get_line(THIS->pc, THIS->prog, &THIS->lineno);
 	  }
 	  THIS->pc = NULL;
 	}
@@ -979,9 +972,7 @@ PIKECLASS backtrace_frame
       /* First make sure we have line-number info. */
       if (THIS->pc) {
 	if (!THIS->filename) {
-	  THIS->filename =
-	  make_shared_string(get_line(THIS->pc, THIS->prog,
-				      &THIS->lineno));
+	  THIS->filename = get_line(THIS->pc, THIS->prog, &THIS->lineno);
 	}
 	THIS->pc = NULL;
       }
@@ -1721,10 +1712,7 @@ PIKECLASS single_string_replace
     copy_shared_string(THIS->to, to = to_->u.string);
 
     if (del->len) {
-      THIS->mojt = compile_memsearcher(MKPCHARP_STR(del),
-				       del->len,
-				       0x7fffffff,
-				       del);
+      THIS->mojt = simple_compile_memsearcher(del);
     }
   }
 
