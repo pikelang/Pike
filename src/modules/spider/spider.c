@@ -1274,12 +1274,8 @@ void f_gethostname(INT32 args)
 {
   char name[1024];
   pop_n_elems(args);
-  if((gethostname(name, 1024) != -1))
-  {
-    push_text(name);
-    return;
-  }
-  error("gethostname() system call failed?\n");
+  gethostname(name, 1024);
+  push_text(name);
 }
 #else
 #ifdef HAVE_UNAME
