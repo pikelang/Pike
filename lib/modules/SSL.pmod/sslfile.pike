@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.33 2001/08/20 10:10:16 grubba Exp $
+/* $Id: sslfile.pike,v 1.34 2001/08/26 14:17:54 grubba Exp $
  *
  */
 
@@ -319,7 +319,7 @@ private void ssl_read_callback(mixed id, string s)
   } else {
     if (data > 0)
       {
-	if (close_callback)
+	if (close_callback && socket)
 	  close_callback(socket->query_id());
       }
     else
@@ -414,6 +414,9 @@ void set_read_callback(function(mixed,string:void) r)
   werror("SSL.sslport: set_read_callback\n");
 #endif
   read_callback = r;
+  if (strlen(read_buffer) && socket) {
+    ssl_read_callback(socket->query_id(), "");
+  }
 }
 
 function query_read_callback() { return read_callback; }
