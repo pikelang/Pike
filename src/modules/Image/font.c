@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.35 1998/04/24 13:50:21 mirar Exp $ */
+/* $Id: font.c,v 1.35.2.1 1998/05/03 18:54:42 mirar Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.35 1998/04/24 13:50:21 mirar Exp $
+**!	$Id: font.c,v 1.35.2.1 1998/05/03 18:54:42 mirar Exp $
 **! class font
 **!
 **! note
@@ -326,6 +326,10 @@ static INLINE void write_char(struct _char *ci,
 **! arg string filename
 **!	Font file
 **! see also: write
+**!
+**! method void create(string filename)
+**! 	Loads a font file to this font object.
+**!	Similar to <ref>load</ref>().
 */
 
 
@@ -519,6 +523,12 @@ void font_write(INT32 args)
    if (!this)
       error("font->write: no font loaded\n");
 
+   if (args==0)
+   {
+      push_string(make_shared_binary_string("",0));
+      args++;
+   }
+
    maxwidth2=1;
 
    width_of=(int *)malloc((args+1)*sizeof(int));
@@ -526,17 +536,22 @@ void font_write(INT32 args)
 
    for (j=0; j<args; j++)
    {
-     if (sp[j-args].type!=T_STRING)
-       error("font->write: illegal argument(s)\n");
+      int max;
+      if (sp[j-args].type!=T_STRING)
+	 error("font->write: illegal argument(s)\n");
      
-     xsize = 0;
-     to_write = (unsigned char*)sp[j-args].u.string->str;
-     to_write_len = sp[j-args].u.string->len;
-     for (i = 0; i < to_write_len; i++)
-       xsize += char_space(this,to_write[i]);
-     xsize += char_width(this,to_write[to_write_len-1])-char_space(this,to_write[to_write_len-1]);
-     width_of[j]=xsize;
-     if (xsize>maxwidth2) maxwidth2=xsize;
+      xsize = max = 1;
+      to_write = (unsigned char*)sp[j-args].u.string->str;
+      to_write_len = sp[j-args].u.string->len;
+      for (i = 0; i < to_write_len; i++)
+      {
+	 if (xsize+char_width(this,to_write[i]) > max)
+	    max=xsize+char_width(this,to_write[i]);
+	 xsize += char_space(this,to_write[i]);
+	 if (xsize > max) max=xsize;
+      }
+      width_of[j]=max;
+      if (max>maxwidth2) maxwidth2=max;
    }
    
    o = clone_object(image_program,0);
@@ -623,16 +638,33 @@ void font_text_extents(INT32 args)
 
   maxwidth2=0;
 
-  for (j=0; j<args; j++) 
+  if (args==0)
   {
-    if (sp[j-args].type!=T_STRING) error("font->text_extents: illegal argument(s)\n");
-    xsize = 0;
-    for (i = 0; i < sp[j-args].u.string->len; i++)
-      xsize += char_space(THIS, (unsigned char)sp[j-args].u.string->str[i]);
-    xsize +=char_width(THIS,(unsigned char)sp[j-args].u.string->str[i-1])
-            -char_space(THIS,(unsigned char)sp[j-args].u.string->str[i-1]);
-    if (xsize>maxwidth2) maxwidth2=xsize;
+     push_string(make_shared_binary_string("",0));
+     args++;
   }
+
+  for (j=0; j<args; j++)
+  {
+     int max;
+     unsigned char *to_write;
+     int to_write_len;
+     if (sp[j-args].type!=T_STRING)
+	error("font->write: illegal argument(s)\n");
+     
+     xsize = max = 1;
+     to_write = (unsigned char*)sp[j-args].u.string->str;
+     to_write_len = sp[j-args].u.string->len;
+     for (i = 0; i < to_write_len; i++)
+     {
+	if (xsize+char_width(THIS,to_write[i]) > max)
+	   max=xsize+char_width(THIS,to_write[i]);
+	xsize += char_space(THIS,to_write[i]);
+	if (xsize > max) max=xsize;
+     }
+     if (max>maxwidth2) maxwidth2=max;
+  }
+
   pop_n_elems(args);
   push_int(maxwidth2);
   push_int(args * THIS->height * THIS->yspacing_scale);
@@ -731,6 +763,9 @@ void init_font_programs(void)
    add_storage(sizeof(struct font*));
 
    add_function("load",font_load,
+                "function(string:object|int)",0);
+
+   add_function("create",font_load,
                 "function(string:object|int)",0);
 
    add_function("write",font_write,
