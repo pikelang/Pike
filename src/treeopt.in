@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.15 1999/11/12 18:04:11 grubba Exp $
+// $Id: treeopt.in,v 1.16 1999/11/12 18:54:20 grubba Exp $
 //
 // The tree optimizer
 //
@@ -517,9 +517,11 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
       else
 	token = F_DEC_LOOP;
     }
-    tmp2 = mknode(token, mknode(F_VAL_LVAL, tmp3, *arg1), $3);
-    ADD_NODE_REF(*arg1);
-    ADD_NODE_REF($3);
+
+    ADD_NODE_REF2(*arg1,
+    ADD_NODE_REF2($3,
+      tmp2 = mknode(token, mknode(F_VAL_LVAL, tmp3, *arg1), $3);
+    ));
 
 #ifdef SHARED_NODES
     sub_node(tmp1);
