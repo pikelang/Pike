@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.58 2002/04/11 10:12:24 jhs Exp $
+ * $Id: Sql.pike,v 1.59 2002/04/15 16:28:08 agehall%shadowbyte.com Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -100,7 +100,7 @@ function(string:int) decode_datetime;
 //!       Use the dbtype protocol to connect to the database server
 //!       on the specified host.
 //!       If the hostname is @tt{""@}, access through a UNIX-domain
-//!	  socket or similar, e g @tt{"mysql://root@:/tmp/mysql.sock/"@}
+//!	  socket or similar, e g @tt{"mysql://root@@:/tmp/mysql.sock/"@}
 //!     @type int(0..0)
 //!       Access through a UNIX-domain socket or similar.
 //!   @endmixed

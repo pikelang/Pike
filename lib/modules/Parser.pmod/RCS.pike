@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.17 2002/04/15 12:30:30 jhs Exp $
+// $Id: RCS.pike,v 1.18 2002/04/15 16:28:34 agehall%shadowbyte.com Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -44,17 +44,17 @@
 //! Version number of the head version of the file
 string head;
 
-//! The default branch (or revision), if present, @code{@0} otherwise
+//! The default branch (or revision), if present, @code{0@} otherwise
 string|int(0..0) branch;
 
 //! The usernames listed in the ACCESS section of the RCS file
 array(string) access;
 
-//! The RCS file comment if present, @code{@0} otherwise
+//! The RCS file comment if present, @code{0@} otherwise
 string|int(0..0) comment;
 
 //! The keyword expansion options (as named by RCS) if present,
-//! @code{@0} otherwise
+//! @code{0@} otherwise
 string expand;
 
 //! The RCS file description
