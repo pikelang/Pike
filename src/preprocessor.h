@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.1 1999/02/27 21:52:38 grubba Exp $
+ * $Id: preprocessor.h,v 1.2 1999/02/28 03:17:43 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -287,7 +287,7 @@ static INLINE int find_end_parenthesis(struct cpp *this,
   {
     if(pos+1>=len)
     {
-      cpp_error(this,"End of file while looking for end parenthesis.");
+      cpp_error(this, "End of file while looking for end parenthesis.");
       return pos;
     }
 
@@ -689,12 +689,12 @@ static int calc(struct cpp *this,WCHAR *data,INT32 len,INT32 tmp)
       a=low_array_get_item_ptr(throw_value.u.array, 0, T_STRING);
       if(a)
       {
-	cpp_error(this,a->string->str);
+	cpp_error(this, a->string->str);
       }else{
-	cpp_error(this,"Nonstandard error format.");
+	cpp_error(this, "Nonstandard error format.");
       }
     }else{
-      cpp_error(this,"Nonstandard error format.");
+      cpp_error(this, "Nonstandard error format.");
     }
     FIND_EOL();
     push_int(0);
@@ -749,7 +749,7 @@ static INT32 lower_cpp(struct cpp *this,
 	   data[pos+3]=='<'  &&
 	   data[pos+4]=='<'  &&
 	   data[pos+5]=='<')
-	  cpp_error(this,"CVS conflict detected");
+	  cpp_error(this, "CVS conflict detected");
 	
       case '!': case '@': case '$': case '%': case '^': case '&':
       case '*': case '(': case ')': case '-': case '=': case '+':
@@ -769,22 +769,18 @@ static INT32 lower_cpp(struct cpp *this,
 
 	if(flags & CPP_DO_IF)
 	{
-	  static PCHARP defined_ = { (p_wchar0 *)"defined", 0 };
-	  static PCHARP efun_ = { (p_wchar0 *)"efun", 0 };
-	  static PCHARP constant_ = { (p_wchar0 *)"constant", 0 };
-	  PCHARP op = MKPCHARP(data + tmp, SHIFT);
+	  static WCHAR defined_[] = { 'd','e','f','i','n','e','d' };
+	  static WCHAR efun_[] = { 'e','f','u','n' };
+	  static WCHAR constant_[] = { 'c','o','n','s','t','a','n','t' };
 
-	  if(pos-tmp == 7 && !pcharp_memcmp(defined_, op, 7))
+	  if(pos-tmp == 7 && !memcmp(defined_, data+tmp, 7<<SHIFT))
 	  {
-	    d=defined_macro;
-	  }
-	  else if((pos-tmp == 4 && !pcharp_memcmp(efun_, op, 4)) ||
-		  (pos-tmp == 8 && !pcharp_memcmp(constant_, op,8)))
+	    d = defined_macro;
+	  } else if((pos-tmp == 4 && !memcmp(efun_, data+tmp, 4<<SHIFT)) ||
+		    (pos-tmp == 8 && !memcmp(constant_, data+tmp, 8<<SHIFT)))
 	  {
-	    d=constant_macro;
-	  }
-	  else
-	  {
+	    d = constant_macro;
+	  } else {
 	    goto do_find_define;
 	  }
 	}else{
@@ -809,7 +805,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    
 	    if(!GOBBLE('('))
 	    {
-	      cpp_error(this,"Missing '(' in macro call.");
+	      cpp_error(this, "Missing '(' in macro call.");
 	      break;
 	    }
 	    
@@ -827,7 +823,7 @@ static INT32 lower_cpp(struct cpp *this,
 		  sprintf(buffer,
 			  "Too few arguments to macro %950s, expected %d.",
 			  d->link.s->str, d->args);
-		  cpp_error(this,buffer);
+		  cpp_error(this, buffer);
 		  break;
 		}
 	      }
@@ -838,7 +834,7 @@ static INT32 lower_cpp(struct cpp *this,
 	      {
 		if(pos+1>len)
 		{
-		  cpp_error(this,"End of file in macro call.");
+		  cpp_error(this, "End of file in macro call.");
 		  break;
 		}
 		
@@ -872,11 +868,11 @@ static INT32 lower_cpp(struct cpp *this,
 	    }
 	    SKIPWHITE();
 	    if(!GOBBLE(')'))
-	      cpp_error(this,"Missing ) in macro call.");
+	      cpp_error(this, "Missing ) in macro call.");
 	  }
 	  
 	  if(d->args >= 0 && arg != d->args)
-	    cpp_error(this,"Wrong number of arguments to macro.");
+	    cpp_error(this, "Wrong number of arguments to macro.");
 	  
 	  init_string_builder(&tmp, 0);
 	  if(d->magic)
@@ -892,7 +888,7 @@ static INT32 lower_cpp(struct cpp *this,
 	      if((d->parts[e].argument & DEF_ARG_MASK) < 0 || 
 		 (d->parts[e].argument & DEF_ARG_MASK) >= arg)
 	      {
-		cpp_error(this,"Macro not expanded correctly.");
+		cpp_error(this, "Macro not expanded correctly.");
 		continue;
 	      }
 	      
@@ -1153,7 +1149,7 @@ static INT32 lower_cpp(struct cpp *this,
 		{
 		  if(data[pos]=='\n')
 		  {
-		    cpp_error(this,"Expecting '>' in include.");
+		    cpp_error(this, "Expecting '>' in include.");
 		    break;
 		  }
 		      
@@ -1175,7 +1171,7 @@ static INT32 lower_cpp(struct cpp *this,
 	      }
 
 	    default:
-	      cpp_error(this,"Expected file to include.");
+	      cpp_error(this, "Expected file to include.");
 	      break;
 	    }
 
@@ -1189,7 +1185,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  
 	    if(sp[-1].type != T_STRING)
 	    {
-	      cpp_error(this,"Couldn't include file.");
+	      cpp_error(this, "Couldn't include file.");
 	      pop_n_elems(sp-save_sp);
 	      break;
 	    }
@@ -1203,7 +1199,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    
 	    if(sp[-1].type != T_STRING)
 	    {
-	      cpp_error(this,"Couldn't read include file.");
+	      cpp_error(this, "Couldn't read include file.");
 	      pop_n_elems(sp-save_sp);
 	      break;
 	    }
@@ -1287,7 +1283,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  SKIPSPACE();
 
 	  if(!WC_ISIDCHAR(data[pos]))
-	    cpp_error(this,"#ifdef what?\n");
+	    cpp_error(this, "#ifdef what?\n");
 
 	  namestart=pos;
 	  while(WC_ISIDCHAR(data[pos])) pos++;
@@ -1311,7 +1307,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  SKIPSPACE();
 
 	  if(!WC_ISIDCHAR(data[pos]))
-	    cpp_error(this,"#ifndef what?");
+	    cpp_error(this, "#ifndef what?");
 
 	  namestart=pos;
 	  while(WC_ISIDCHAR(data[pos])) pos++;
@@ -1341,7 +1337,7 @@ static INT32 lower_cpp(struct cpp *this,
       if(WGOBBLE2(endif_, 5))
       {
 	if(!(flags & CPP_EXPECT_ENDIF))
-	  cpp_error(this,"Unmatched #endif");
+	  cpp_error(this, "Unmatched #endif");
 
 	return pos;
       }
@@ -1349,7 +1345,7 @@ static INT32 lower_cpp(struct cpp *this,
       if(WGOBBLE2(else_, 4))
 	{
 	  if(!(flags & CPP_EXPECT_ELSE))
-	    cpp_error(this,"Unmatched #else");
+	    cpp_error(this, "Unmatched #else");
 
 	  flags&=~CPP_EXPECT_ELSE;
 	  flags|=CPP_EXPECT_ENDIF;
@@ -1365,7 +1361,7 @@ static INT32 lower_cpp(struct cpp *this,
       if(WGOBBLE2(elif_, 4) || WGOBBLE2(elseif_, 6))
       {
 	if(!(flags & CPP_EXPECT_ELSE))
-	  cpp_error(this,"Unmatched #elif");
+	  cpp_error(this, "Unmatched #elif");
 	
 	flags|=CPP_EXPECT_ENDIF;
 	
@@ -1411,7 +1407,7 @@ static INT32 lower_cpp(struct cpp *this,
 	    push_string(make_shared_binary_string2(data+foo, pos-foo));
 #endif /* SHIFT == 1 */
 #endif /* SHIFT == 0 */
-	    cpp_error(this,sp[-1].u.string->str);
+	    cpp_error(this, sp[-1].u.string->str);
 	  }
 	  break;
 	}
@@ -1432,8 +1428,14 @@ static INT32 lower_cpp(struct cpp *this,
 	  SKIPSPACE();
 
 	  namestart=pos;
-	  if(!WC_ISIDCHAR(data[pos]))
-	    cpp_error(this,"Define what?");
+	  if(!WC_ISIDCHAR(data[pos])) {
+	    cpp_error(this, "Define what?");
+	    /* Scan to EOL */
+	    while (data[pos] && (data[pos] != '\n')) {
+	      pos++;
+	    }
+	    break;
+	  }
 
 	  while(WC_ISIDCHAR(data[pos])) pos++;
 	  nameend=pos;
@@ -1449,14 +1451,15 @@ static INT32 lower_cpp(struct cpp *this,
 		  if(argno)
 		    {
 		      if(!GOBBLE(','))
-			cpp_error(this,"Expecting comma in macro definition.");
+			cpp_error(this,
+				  "Expecting comma in macro definition.");
 		      SKIPWHITE();
 		    }
 		  tmp2=pos;
 
 		  if(!WC_ISIDCHAR(data[pos]))
 		  {
-		    cpp_error(this,"Expected argument for macro.");
+		    cpp_error(this, "Expected argument for macro.");
 		    break;
 		  }
 
@@ -1477,14 +1480,14 @@ static INT32 lower_cpp(struct cpp *this,
 		  argno++;
 		  if(argno>=MAX_ARGS)
 		  {
-		    cpp_error(this,"Too many arguments in macro definition.");
+		    cpp_error(this, "Too many arguments in macro definition.");
 		    pop_stack();
 		    argno--;
 		  }
 		}
 
 	      if(!GOBBLE(')'))
-		cpp_error(this,"Missing ) in macro definition.");
+		cpp_error(this, "Missing ) in macro definition.");
 	    }
 
 	  SKIPSPACE();
@@ -1677,7 +1680,7 @@ static INT32 lower_cpp(struct cpp *this,
 
 	  tmp=pos;
 	  if(!WC_ISIDCHAR(data[pos]))
-	    cpp_error(this,"Undefine what?");
+	    cpp_error(this, "Undefine what?");
 
 	  while(WC_ISIDCHAR(data[pos])) pos++;
 
@@ -1702,13 +1705,21 @@ static INT32 lower_cpp(struct cpp *this,
 	static WCHAR charset_[] = { 'c', 'h', 'a', 'r', 's', 'e', 't' };
 
       if (WGOBBLE2(charset_, 7)) {
-	/* FIXME: Should probably only be allowed in 8bit strings.
-	 *
-	 * FIXME: Should probably only be allowed at top-level (flags == 0).
-	 */
-
 	INT32 p;
 	struct pike_string *s;
+
+	if (flags & (CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE)) {
+	  /* Only allowed at the top-level */
+	  cpp_error(this, "#charset directive inside #if/#endif.\n");
+	  /* Skip to end of line */
+	  while (data[pos] && data[pos] != '\n') {
+	    pos++;
+	  }
+	  break;
+	}
+
+	/* FIXME: Should probably only be allowed in 8bit strings.
+	 */
 
 	SKIPSPACE();
 
@@ -1774,7 +1785,7 @@ static INT32 lower_cpp(struct cpp *this,
 	}
 	buffer[i]=0;
 	
-	cpp_error(this,"Unknown preprocessor directive.");
+	cpp_error(this, "Unknown preprocessor directive.");
       }
     }
     }
