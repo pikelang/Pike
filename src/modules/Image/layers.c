@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.16 1999/06/13 11:46:09 mirar Exp $
+**!	$Id: layers.c,v 1.17 1999/06/18 17:34:22 mirar Exp $
 **! class Layer
 */
 
@@ -9,7 +9,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.16 1999/06/13 11:46:09 mirar Exp $");
+RCSID("$Id: layers.c,v 1.17 1999/06/18 17:34:22 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1372,7 +1372,8 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-	    if ((my_rand()&65535) < (la->r*87 + la->g*127 + la->b*41)) 
+	    if ((my_rand()%(255*255)) < 
+		(unsigned)(la->r*87 + la->g*127 + la->b*41)) 
 	       *d=*l,*da=white;
 	    else 
 	       *d=*s,*da=*sa;
@@ -1385,7 +1386,7 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       if (!la)  /* no layer alpha => full opaque */
 	 while (len--)
 	 {
-	    if ((my_rand()&255) < v) 
+	    if ((my_rand()&255) < (unsigned)v) 
 	       *d=*l,*da=white;
 	    else 
 	       *d=*s,*da=*sa;
@@ -1395,7 +1396,8 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       {
 	 while (len--)
 	 {
-	    if ((my_rand()&65535) < ((la->r*87 + la->g*127 + la->b*41)>>8)*v)
+	    if ((my_rand()%(255*255)) < 
+		(unsigned)((la->r*87 + la->g*127 + la->b*41)>>8)*v)
 	       *d=*l,*da=white;
 	    else 
 	       *d=*s,*da=*sa;
@@ -1954,6 +1956,123 @@ void image_lay(INT32 args)
    push_object(o);
 }
 
+/**  image-object operations  *************************/
+
+/*
+**! method object crop(int xoff,int yoff,int xsize,int ysize)
+**!	Crops this layer at this offset and size.
+**!	Offset is not relative the layer offset, so this
+**!	can be used to crop a number of layers simuntaneously.
+**! returns a new layer object
+**! note:
+**!	The new layer object may have the same image object,
+**!	if there was no cropping to be done.
+*/
+
+static INLINE struct layer *push_new_layer()
+{
+   push_object(clone_object(image_layer_program,0));
+   return (struct layer*)get_storage(sp[-1].u.object,image_layer_program);
+}
+
+static INLINE struct layer *clone_this_layer()
+{
+   struct layer *l;
+   l=push_new_layer();
+   l->xsize=THIS->xsize;
+   l->ysize=THIS->ysize;
+   l->xoffs=THIS->xoffs;
+   l->yoffs=THIS->yoffs;
+   l->image=THIS->image;
+   l->alpha=THIS->alpha;
+   l->img=THIS->img;
+   l->alp=THIS->alp;
+   if (l->image) add_ref(l->image);
+   if (l->alpha) add_ref(l->alpha);
+   l->alpha_value=THIS->alpha_value;
+   l->fill=THIS->fill;
+   l->fill_alpha=THIS->fill_alpha;
+   MEMCPY(l->sfill,THIS->sfill,sizeof(rgb_group)*SNUMPIXS);
+   MEMCPY(l->sfill_alpha,THIS->sfill_alpha,sizeof(rgb_group)*SNUMPIXS);
+   l->tiled=THIS->tiled;
+   l->row_func=THIS->row_func;
+   l->optimize_alpha=THIS->optimize_alpha;
+   return l;
+}
+
+static void image_layer_crop(INT32 args)
+{
+   struct layer *l;
+   int x,y,xz,yz,xi,yi;
+   int zot=0;
+   struct image *img;
+
+   get_all_args("Image.Layer->crop",args,"%d%d%d%d",&x,&y,&xz,&yz);
+
+   l=clone_this_layer();
+   if (x<=l->xoffs) x=l->xoffs; else zot++;
+   if (y<=l->yoffs) y=l->yoffs; else zot++;
+   if (l->xsize+l->xoffs<=x+xz) xz=l->xsize-(x-l->xoffs); else zot++;
+   if (l->ysize+l->yoffs<=y+yz) yz=l->ysize-(y-l->yoffs); else zot++;
+
+   fprintf(stderr,"old %d,%d + %d,%d\n",l->xoffs,l->yoffs,l->xsize,l->ysize);
+   fprintf(stderr,"new %d,%d + %d,%d zot=%d\n",x,y,xz,yz,zot);
+   xi=x-l->xoffs;
+   yi=y-l->yoffs;
+   l->xoffs=x;
+   l->yoffs=y;
+   fprintf(stderr,"crop %d,%d + %d,%d zot=%d\n",xi,yi,xz,yz,zot);
+
+   if (l->image)
+   {
+      ref_push_object(l->image);
+      push_constant_text("copy");
+      f_index(2);
+      push_int(xi);
+      push_int(yi);
+      push_int(xz+xi-1);
+      push_int(yz+yi-1);
+      f_call_function(5);
+      if (sp[-1].type!=T_OBJECT ||
+	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
+	 error("No image returned from image->copy\n");
+      if (img->xsize!=xz || img->ysize!=yz) 
+	 error("Image returned from image->copy had "
+	       "unexpected size (%d,%d, expected %d,%d)\n",
+	       img->xsize,img->ysize,xz,yz);
+
+      free_object(l->image);
+      l->image=sp[-1].u.object;
+      sp--;
+      l->img=img;
+   }
+
+   if (l->alpha)
+   {
+      ref_push_object(l->alpha);
+      push_constant_text("copy");
+      f_index(2);
+      push_int(xi);
+      push_int(yi);
+      push_int(xz+xi-1);
+      push_int(yz+yi-1);
+      f_call_function(5);
+      if (sp[-1].type!=T_OBJECT ||
+	  !(img=(struct image*)get_storage(sp[-1].u.object,image_program)))
+	 error("No image returned from alpha->copy\n");
+      if (img->xsize!=xz || img->ysize!=yz) 
+	 error("Image returned from alpha->copy had "
+	       "unexpected size (%d,%d, expected %d,%d)\n",
+	       img->xsize,img->ysize,xz,yz);
+      free_object(l->alpha);
+      l->alpha=sp[-1].u.object;
+      sp--;
+      l->alp=img;
+   }
+
+   stack_pop_n_elems_keep_top(args);
+}
+
 /******************************************************/
 
 void init_image_layers(void)
@@ -2012,6 +2131,24 @@ void init_image_layers(void)
    ADD_FUNCTION("fill_alpha",image_layer_fill_alpha,tFunc(,tObj),0);
 
    ADD_FUNCTION("tiled",image_layer_tiled,tFunc(,tInt01),0);
+
+   /* image-object operations */
+
+   ADD_FUNCTION("crop",image_layer_crop,
+		tFunc(tInt tInt tInt tInt,tObj),0);
+
+   /*
+   ADD_FUNCTION("rotate",image_layer_rotate,tFunc(tOr(tInt,tFloat),tObj),0);
+   ADD_FUNCTION("scale",image_layer_scale,tOr3(tFunc(tInt tInt,tObj),
+					       tFunc(tFloat,tObj),
+					       tFunc(tFloat,tFloat,tObj)),0);
+   ADD_FUNCTION("autocrop",image_layer_autocrop,
+		tFuncV(,tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("find_autocrop",image_layer_autocrop,
+		tFuncV(,tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("translate",image_layer_translate,
+		tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),0);
+   */
 }
 
 void exit_image_layers(void)
