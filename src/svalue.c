@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.150 2002/11/23 18:40:05 marcus Exp $
+|| $Id: svalue.c,v 1.151 2002/11/23 20:05:14 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.150 2002/11/23 18:40:05 marcus Exp $");
+RCSID("$Id: svalue.c,v 1.151 2002/11/23 20:05:14 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -224,6 +224,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
     DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, dmalloc_location));	\
     Y(s->u.Z);								\
     DO_IF_DMALLOC(s->u.Z=(void *)-1);					\
+    PIKE_MEM_WO(s->u.Z);						\
     s++;								\
    }return
 
@@ -280,6 +281,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
       {
 	really_free_svalue(s);
 	DO_IF_DMALLOC(s->u.refs=0);
+	PIKE_MEM_WO(*s);
       }
       s++;
     }
@@ -298,6 +300,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 	else
 	  schedule_really_free_object(s->u.object);
 	DO_IF_DMALLOC(s->u.refs=0);
+	PIKE_MEM_WO(*s);
       }
       s++;
     }

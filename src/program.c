@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.459 2002/11/22 15:46:14 grubba Exp $
+|| $Id: program.c,v 1.460 2002/11/23 20:05:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.459 2002/11/22 15:46:14 grubba Exp $");
+RCSID("$Id: program.c,v 1.460 2002/11/23 20:05:14 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6372,7 +6372,6 @@ void gc_free_all_unreferenced_programs(void)
       {
 	free_svalue(& p->constants[e].sval);
 	p->constants[e].sval.type=T_INT;
-	DO_IF_DMALLOC(p->constants[e].sval.u.refs=(void *)-1);
       }
 
       for(e=0;e<p->num_inherits;e++)

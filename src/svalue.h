@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.110 2002/11/22 13:46:56 grubba Exp $
+|| $Id: svalue.h,v 1.111 2002/11/23 20:05:14 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -411,8 +411,9 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
   if(_s->type<=MAX_REF_TYPE) {					\
     debug_malloc_touch(_s->u.refs);				\
     if(sub_ref(_s->u.dummy) <=0) { really_free_svalue(_s); }	\
-    DO_IF_DMALLOC(_s->type=PIKE_T_UNKNOWN;_s->u.refs=(void *)-1;) \
   }								\
+  DO_IF_DMALLOC(_s->type=PIKE_T_UNKNOWN;_s->u.refs=(void *)-1); \
+  PIKE_MEM_WO(*_s);						\
 }while(0)
 
 #define free_short_svalue_unlocked(X,T) do {				\
@@ -421,8 +422,9 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
   assert_svalue_locked(_s);						\
   if(_t<=MAX_REF_TYPE && _s->refs) {					\
     if(sub_ref(_s->dummy) <= 0) really_free_short_svalue(_s,_t);	\
-     DO_IF_DMALLOC(_s->refs=(void *)-1;)				\
   }									\
+  DO_IF_DMALLOC(_s->refs=(void *)-1);					\
+  PIKE_MEM_WO(_s->refs);						\
 }while(0)
 
 #define add_ref_svalue_unlocked(X) do {				\

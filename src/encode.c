@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.157 2002/11/22 14:45:57 grubba Exp $
+|| $Id: encode.c,v 1.158 2002/11/23 20:05:14 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.157 2002/11/22 14:45:57 grubba Exp $");
+RCSID("$Id: encode.c,v 1.158 2002/11/23 20:05:14 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -395,7 +395,6 @@ static void zap_unfinished_program(struct program *p)
   {
     free_svalue(& p->constants[e].sval);
     p->constants[e].sval.type=T_INT;
-    DO_IF_DMALLOC(p->constants[e].sval.u.refs=(void *)-1);
   }
   
   for(e=0;e<p->num_inherits;e++)

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.208 2002/11/23 15:11:05 mast Exp $
+|| $Id: object.c,v 1.209 2002/11/23 20:05:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.208 2002/11/23 15:11:05 mast Exp $");
+RCSID("$Id: object.c,v 1.209 2002/11/23 20:05:14 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -857,6 +857,7 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
   {
     o->next = objects_to_destruct;
     DO_IF_DMALLOC(o->prev = (void *) -1);
+    PIKE_MEM_WO(o->prev);
     objects_to_destruct = o;
 
 #ifdef GC_VERBOSE
