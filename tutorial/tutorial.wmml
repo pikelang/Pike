@@ -12390,6 +12390,66 @@ localtime, time, ctime, mktime
 
 
 
+<function   name=has_index   title="does the index exist?">
+  <man_syntax>
+    int has_index(string  <i>haystack</i>,  int <i>index</i>);<br>
+    int has_index(array   <i>haystack</i>,   int <i>index</i>);<br>
+    int has_index(mapping <i>haystack</i>, mixed <i>index</i>);
+  </man_syntax>
+
+  <man_description>
+      Search for <i>index</i> in <i>haystack</i>. Returns <tt>1</tt>
+      if the <i>index</i> is in the index domain of <i>haystack</i>,
+      or <tt>0</tt> if not found.
+
+      The <tt>has_index</tt> function is equivalent (but sometimes
+      faster) to:
+
+      <example language=pike>search(indices(haystack), index) != -1</example>
+  </man_description>
+
+  <man_note>
+    A negative index in strings and arrays as recognized by the
+    index operators <tt>`[]</tt> and <tt>`[]=</tt> is not considered
+    a proper index by <tt>has_index</tt>.
+  </man_note>
+
+  <man_see>
+    indices, values, zero_type, search, has_value
+  </man_see>
+</function>
+
+
+
+<function   name=has_value   title="does the value exist?">
+  <man_syntax>
+    int has_value(string  <i>haystack</i>, int <i>value</i>);<br>
+    int has_value(array   <i>haystack</i>, int <i>value</i>);<br>
+    int has_value(mapping <i>haystack</i>, mixed <i>value</i>);
+  </man_syntax>
+
+  <man_description>
+      Search for <i>value</i> in <i>haystack</i>. Returns <tt>1</tt>
+      if the <i>value</i> is in the value domain of <i>haystack</i>,
+      or <tt>0</tt> if not found.
+
+      The <tt>has_value</tt> function is in all cases except for strings
+      equivalent (but sometimes faster) to:
+
+      <example language=pike>search(values(haystack), value) != -1</example>
+
+      For strings, <tt>has_value</tt> is equivalent to:
+
+      <example language=pike>search(haystack, value) != -1</example>
+  </man_description>
+
+  <man_see>
+    indices, values, zero_type, search, has_index
+  </man_see>
+</function>
+
+
+
 <function name=hash title="hash a string">
 <man_syntax>
 int hash(string <I>s</I>);<br>
@@ -13317,46 +13377,6 @@ and zero_type() will return 1 for this zero.
 indices, values, zero_type
 </man_see>
 </function>
-
-
-
-<function name=has_index title="does the index exist?">
-<man_syntax>
-int has_index(string <I>haystack</I>, int <I>index</I>);<br>
-int has_index(array <I>haystack</I>, int <I>index</I>);<br>
-int has_index(mapping <I>haystack</I>, mixed <I>index</I>);
-</man_syntax>
-<man_description>
-<p>Search for <i>index</i> in <i>haystack</i>. Returns 1 if the <i>index</i>
-is in the index domain of the <i>haystack</i> or 0 if not found.</p>
-<p>The has_index function is equivalent (but sometimes faster) to
-search(indices(haystack), index) != -1.</p>
-</man_description>
-<man_see>
-indices, values, zero_type, search, has_value
-</man_see>
-</function>
-
-
-
-<function name=has_value title="does the value exist?">
-<man_syntax>
-int has_value(string <I>haystack</I>, int <I>value</I>);<br>
-int has_value(array <I>haystack</I>, int <I>value</I>);<br>
-int has_value(mapping <I>haystack</I>, mixed <I>value</I>);
-</man_syntax>
-<man_description>
-<p>Search for <i>value</i> in <i>haystack</i>. Returns 1 if the <i>value</i>
-is in value domain of the <i>haystack</i> or 0 if not found.</p>
-<p>The has_value function is in all cases except for strings equivalent
-(but sometimes faster) to search(values(haystack), value) != -1.</p>
-For strings, it is equivalent to search(haystack, value) != -1.
-</man_description>
-<man_see>
-indices, values, zero_type, search, has_index
-</man_see>
-</function>
-
 
 
 <function name=sgn title="check the sign of a value">
