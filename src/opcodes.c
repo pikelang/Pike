@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.96 2000/12/05 21:08:20 per Exp $");
+RCSID("$Id: opcodes.c,v 1.97 2001/01/15 22:14:19 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1363,6 +1363,7 @@ CHAROPT2(								 \
 	    int contains_percent_percent;				 \
             ptrdiff_t start, new_eye;					 \
 									 \
+	    e = cnt;							 \
 	    start=eye;							 \
 	    end_str_start=match+cnt+1;					 \
 									 \
@@ -1375,12 +1376,20 @@ CHAROPT2(								 \
               set.neg=0;						 \
 	      switch(*s)						 \
 	      {								 \
+                case 0:							 \
+                  /* FIXME: Should really look at the match len */	 \
+		  Pike_error("%% without conversion specifier.\n");	 \
+                  break;						 \
+									 \
 		case 'n':						 \
 		  s++;							 \
+                  /* Advance the end string start pointer */		 \
+                  end_str_start = s;					 \
+		  e = s - match;					 \
 	          goto test_again;					 \
 									 \
 		case 's':						 \
-		  Pike_error("Illegal to have two adjecent %%s.\n");		 \
+		  Pike_error("Illegal to have two adjecent %%s.\n");	 \
 		  return 0;		/* make gcc happy */		 \
 									 \
 	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
@@ -1426,7 +1435,7 @@ CHAROPT2(								 \
 									 \
 	    contains_percent_percent=0;					 \
 									 \
-	    for(e=cnt;e<match_len;e++)					 \
+	    for(;e<match_len;e++)					 \
 	    {								 \
 	      if(match[e]=='%')						 \
 	      {								 \
@@ -1442,7 +1451,15 @@ CHAROPT2(								 \
 									 \
 	    end_str_end=match+e;					 \
 									 \
-	    if(!contains_percent_percent)				 \
+	    if (end_str_end == end_str_start) {				 \
+	      sval.type=T_STRING;					 \
+	      DO_IF_CHECKER(sval.subtype=0);				 \
+	      sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+	      				INPUT_SHIFT)(input+eye,		 \
+	      					     input_len-eye);	 \
+	      eye=input_len;						 \
+	      break;							 \
+	    } else if(!contains_percent_percent)			 \
 	    {								 \
 	      struct generic_mem_searcher searcher;			 \
 	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			 \
