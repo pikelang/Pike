@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.455 2001/09/29 08:47:03 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.456 2001/09/30 18:56:47 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -834,6 +834,11 @@ test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return b]],2)
 test_any([[ int a; catch { [a]=({1,2}); }; return 1]],1)
 test_any([[ int a,b; catch { [a,b]=({1}); }; return 1]],1)
 test_any([[ mapping m=([]); m[m]=m; return stringp(sprintf("%O",m)); ]],1)
+test_any([[ 
+// don't know if this /should/ be valid  /Mirar
+// remove if it shouldn't
+array a=({});
+[]=a; return 1; ]],1)
 
 test_any([[
   int q() { throw(1); };
@@ -5569,6 +5574,12 @@ test_any([[
   return ret;
 ]],24)
 
+test_any([[
+  int ret;
+  foreach( (<1,3,7,13>) ; ; ) ret++;
+  return ret;
+]],4)
+
 
 test_any([[
   int ret;
@@ -5596,6 +5607,12 @@ test_any([[
 
 test_any([[
   int ret;
+  foreach( ({2,5,11,17}) ; ; ) ret++;
+  return ret;
+]],4)
+
+test_any([[
+  int ret;
   foreach( "foobar" ; int a; int b) ret+=a*b;
   return ret;
 ]],1585)
@@ -5617,7 +5634,6 @@ test_any([[
   foreach(m  ; int a ; int b) m_delete(m,a);
   return sizeof(m);
 ]],0)
-
 
 test_any([[
   mapping m=([1:2,3:5,7:11,13:17]);
