@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.199 2004/09/25 19:21:54 grubba Exp $
+|| $Id: svalue.c,v 1.200 2004/09/25 19:23:50 grubba Exp $
 */
 
 #include "global.h"
@@ -736,6 +736,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
 
     if(FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1)
       goto b_is_obj;
+    return 0;
 
   case T_MULTISET:
   case T_PROGRAM:
