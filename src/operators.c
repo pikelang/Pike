@@ -18,6 +18,8 @@
 #include "error.h"
 #include "docode.h"
 #include "add_efun.h"
+#include "peep.h"
+#include "lex.h"
 
 #define COMPARISON(ID,NAME,EXPR) \
 void ID(INT32 args) \
@@ -71,28 +73,30 @@ void f_add(INT32 args)
     struct lpc_string *r;
     char *buf;
 
-    if(args==1) return;
-    size=0;
-
-    for(e=-args;e<0;e++) size+=sp[e].u.string->len;
-
-    if(args==2)
+    switch(args)
     {
-      r=add_shared_strings(sp[-2].u.string,sp[-1].u.string);
-    }else{
+    case 1: return;
+    default:
+      size=0;
+      for(e=-args;e<0;e++) size+=sp[e].u.string->len;
+
       r=begin_shared_string(size);
       buf=r->str;
       for(e=-args;e<0;e++)
       {
+#if 1
+	int q;
+	for(q=0;q<sp[e].u.string->len;q++)
+	  buf[q]=sp[e].u.string->str[q];
+#else
 	MEMCPY(buf,sp[e].u.string->str,sp[e].u.string->len);
+#endif
 	buf+=sp[e].u.string->len;
       }
       r=end_shared_string(r);
     }
-    for(e=-args;e<0;e++)
-    {
-      free_string(sp[e].u.string);
-    }
+
+    for(e=-args;e<0;e++) free_string(sp[e].u.string);
     sp-=args;
     push_string(r);
     break;
@@ -229,7 +233,7 @@ static int generate_sum(node *n)
 
   case 2:
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_ADD);
+    emit2(F_ADD);
     return 1;
 
   default:
@@ -297,17 +301,17 @@ static int generate_comparison(node *n)
     do_docode(CDR(n),DO_NOT_COPY);
 
     if(CAR(n)->u.sval.u.efun->function == f_eq)
-      ins_f_byte(F_EQ);
+      emit2(F_EQ);
     else if(CAR(n)->u.sval.u.efun->function == f_ne)
-      ins_f_byte(F_NE);
+      emit2(F_NE);
     else if(CAR(n)->u.sval.u.efun->function == f_lt)
-      ins_f_byte(F_LT);
+      emit2(F_LT);
     else if(CAR(n)->u.sval.u.efun->function == f_le)
-      ins_f_byte(F_LE);
+      emit2(F_LE);
     else if(CAR(n)->u.sval.u.efun->function == f_gt)
-      ins_f_byte(F_GT);
+      emit2(F_GT);
     else if(CAR(n)->u.sval.u.efun->function == f_ge)
-      ins_f_byte(F_GE);
+      emit2(F_GE);
     else
       fatal("Couldn't generate comparison!\n");
     return 1;
@@ -414,12 +418,12 @@ static int generate_minus(node *n)
   {
   case 1:
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_NEGATE);
+    emit2(F_NEGATE);
     return 1;
 
   case 2:
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_SUBTRACT);
+    emit2(F_SUBTRACT);
     return 1;
   }
   return 0;
@@ -489,7 +493,7 @@ static int generate_and(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    ins_f_byte(F_AND);
+    emit2(F_AND);
     return 1;
 
   default:
@@ -562,7 +566,7 @@ static int generate_or(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    ins_f_byte(F_OR);
+    emit2(F_OR);
     return 1;
 
   default:
@@ -635,7 +639,7 @@ static int generate_xor(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    ins_f_byte(F_XOR);
+    emit2(F_XOR);
     return 1;
 
   default:
@@ -648,7 +652,7 @@ void o_lsh()
   if(sp[-2].type != T_INT) error("Bad argument 1 to <<\n");
   if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
   sp--;
-  sp[-1].u.integer <<= sp[0].u.integer;
+  sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
 }
 
 void f_lsh(INT32 args)
@@ -663,7 +667,7 @@ static int generate_lsh(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_LSH);
+    emit2(F_LSH);
     return 1;
   }
   return 0;
@@ -671,10 +675,10 @@ static int generate_lsh(node *n)
 
 void o_rsh()
 {
-  if(sp[-2].type != T_INT) error("Bad argument 1 to >>\n"); 
+  if(sp[-2].type != T_INT) error("Bad argument 1 to >>\n");
   if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
   sp--;
-  sp[-1].u.integer >>= sp[0].u.integer;
+  sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
 }
 
 void f_rsh(INT32 args)
@@ -689,7 +693,7 @@ static int generate_rsh(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_RSH);
+    emit2(F_RSH);
     return 1;
   }
   return 0;
@@ -761,7 +765,7 @@ static int generate_multiply(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    ins_f_byte(F_MULTIPLY);
+    emit2(F_MULTIPLY);
     return 1;
 
   default:
@@ -819,7 +823,7 @@ static int generate_divide(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_DIVIDE);
+    emit2(F_DIVIDE);
     return 1;
   }
   return 0;
@@ -866,7 +870,7 @@ static int generate_mod(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_MOD);
+    emit2(F_MOD);
     return 1;
   }
   return 0;
@@ -896,7 +900,7 @@ static int generate_not(node *n)
   if(count_args(CDR(n))==1)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_NOT);
+    emit2(F_NOT);
     return 1;
   }
   return 0;
@@ -904,8 +908,19 @@ static int generate_not(node *n)
 
 void o_compl()
 {
-  if (sp[-1].type != T_INT) error("Bad argument to ~\n");
-  sp[-1].u.integer = ~ sp[-1].u.integer;
+  switch(sp[-1].type)
+  {
+  case T_INT:
+    sp[-1].u.integer = ~ sp[-1].u.integer;
+    break;
+
+  case T_FLOAT:
+    sp[-1].u.float_number = -1.0 - sp[-1].u.float_number;
+    break;
+
+  default:
+    error("Bad argument to ~\n");
+  }
 }
 
 void f_compl(INT32 args)
@@ -919,7 +934,7 @@ static int generate_compl(node *n)
   if(count_args(CDR(n))==1)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    ins_f_byte(F_COMPL);
+    emit2(F_COMPL);
     return 1;
   }
   return 0;
@@ -999,32 +1014,32 @@ void o_range()
 
 void init_operators()
 {
-  add_efun2("`==",f_eq,"function(mixed,mixed:int)",0,0,generate_comparison);
-  add_efun2("`!=",f_ne,"function(mixed,mixed:int)",0,0,generate_comparison);
-  add_efun2("`<", f_lt,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
-  add_efun2("`<=",f_le,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
-  add_efun2("`>", f_gt,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
-  add_efun2("`>=",f_ge,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`==",f_eq,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`!=",f_ne,"function(mixed,mixed:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`<", f_lt,"function(int|float,int|float:int)|function(string,string:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`<=",f_le,"function(int|float,int|float:int)|function(string,string:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`>", f_gt,"function(int|float,int|float:int)|function(string,string:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
+  add_efun2("`>=",f_ge,"function(int|float,int|float:int)|function(string,string:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
 
-  add_efun2("`+",f_add,"function(int...:int)|!function(int...:mixed)&function(int|float...:float)|!function(int|float...:mixed)&function(string|int|float...:string)|function(array...:array)|function(mapping...:mapping)|function(list...:list)",0,optimize_binary,generate_sum);
+  add_efun2("`+",f_add,"function(int...:int)|!function(int...:mixed)&function(int|float...:float)|!function(int|float...:mixed)&function(string|int|float...:string)|function(array...:array)|function(mapping...:mapping)|function(list...:list)",OPT_TRY_OPTIMIZE,optimize_binary,generate_sum);
 
-  add_efun2("`-",f_minus,"function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(list,list:list)|function(float|int,float:float)|function(float,int:float)|function(int,int:int)|function(string,string:string)",0,0,generate_minus);
+  add_efun2("`-",f_minus,"function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(list,list:list)|function(float|int,float:float)|function(float,int:float)|function(int,int:int)|function(string,string:string)",OPT_TRY_OPTIMIZE,0,generate_minus);
 
-  add_efun2("`&",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_and);
+  add_efun2("`&",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
-  add_efun2("`|",f_or,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_or);
+  add_efun2("`|",f_or,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",OPT_TRY_OPTIMIZE,optimize_binary,generate_or);
 
-  add_efun2("`^",f_xor,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_xor);
+  add_efun2("`^",f_xor,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
-  add_efun2("`<<",f_lsh,"function(int,int:int)",0,0,generate_lsh);
-  add_efun2("`>>",f_rsh,"function(int,int:int)",0,0,generate_rsh);
+  add_efun2("`<<",f_lsh,"function(int,int:int)",OPT_TRY_OPTIMIZE,0,generate_lsh);
+  add_efun2("`>>",f_rsh,"function(int,int:int)",OPT_TRY_OPTIMIZE,0,generate_rsh);
 
-  add_efun2("`*",f_multiply,"function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",0,optimize_binary,generate_multiply);
+  add_efun2("`*",f_multiply,"function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
-  add_efun2("`/",f_divide,"function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",0,0,generate_divide);
+  add_efun2("`/",f_divide,"function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",OPT_TRY_OPTIMIZE,0,generate_divide);
 
-  add_efun2("`%",f_mod,"function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",0,0,generate_mod);
+  add_efun2("`%",f_mod,"function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
 
-  add_efun2("`!",f_not,"function(mixed:int)",0,0,generate_not);
-  add_efun2("`~",f_compl,"function(int:int)",0,0,generate_compl);
+  add_efun2("`!",f_not,"function(mixed:int)",OPT_TRY_OPTIMIZE,0,generate_not);
+  add_efun2("`~",f_compl,"function(int:int)|function(float:float)",OPT_TRY_OPTIMIZE,0,generate_compl);
 }
