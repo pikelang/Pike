@@ -398,7 +398,7 @@ Encoder encoder(string name, string|void replacement,
     return ASCIIEnc(replacement, repcb);
 
   if(has_prefix(name, "iso2022"))
-    return ISO2022Enc(replacement, repcb);
+    return ISO2022Enc(name[7..], replacement, repcb);
 
   program p = ([
     "utf7": UTF7enc,

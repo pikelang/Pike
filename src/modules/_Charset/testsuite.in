@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.5 2003/04/08 01:12:00 nilsson Exp $
+// $Id: testsuite.in,v 1.6 2003/12/17 00:15:44 marcus Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -16,6 +16,25 @@ test_eq([[_Charset.decoder("iso-ir-126")->feed("abcåäö")->drain()]],
 test_eq([[_Charset.decoder("iso-2022")->
 	feed("\033-Aeäv\016ed\017v\033$(BF|K\\\033(Bfoo")->drain()]],
 	"eävåäv\x65e5\x672c""foo")
+
+// 2022 variants
+test_eq([[_Charset.encoder("iso-2022-jp")->
+	feed("\x30ce\x30f4\x30f8\x30ce")->drain()]],
+	[["\33$B%N%t\33$@%t%N"]])
+test_eq([[_Charset.encoder("iso-2022-cn")->
+	feed("\x5143\x6c14")->drain()]], [["\33$AT*Fx"]])
+test_eq([[_Charset.encoder("iso-2022-jp")->
+	feed("\x5143\x6c17")->drain()]], [["\33$B855$"]])
+test_eq([[_Charset.encoder("iso-2022-kr")->
+	feed("\x5143\x6c23")->drain()]], [["\33$Cj*Q("]])
+test_eq([[_Charset.encoder("iso-2022-jp2")->
+	feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]],
+	[["\33$B`T\33$Dlt\33$AYd\33$C|\\"]])
+test_eq([[_Charset.encoder("iso-2022")->
+	feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]],
+	[["\33$B`T\33$Dlt\33$AYd\33$C|\\"]])
+test_eval_error([[_Charset.encoder("iso-2022-jp")->
+		feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]])
 
 // _Charset.UTF7
 test_eq([[_Charset.decoder("utf-7")->
