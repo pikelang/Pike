@@ -408,6 +408,7 @@ static void exit_gc(void)
   }
 }
 
+#ifdef DEBUG
 void locate_references(void *a)
 {
   if(!in_gc)
@@ -416,7 +417,7 @@ void locate_references(void *a)
   fprintf(stderr,"**Looking for references:\n");
   
   check_for=a;
-  
+
   found_where=" in an array";
   gc_check_all_arrays();
   
@@ -441,6 +442,7 @@ void locate_references(void *a)
   if(!in_gc)
     exit_gc();
 }
+#endif
 
 int gc_is_referenced(void *a)
 {
