@@ -246,6 +246,7 @@ testfont binary
 /lib/modules/Tools.pmod/Standalone.pmod/extract_locale.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/join_autodoc.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/module.pike foreign_ident
+/lib/modules/Tools.pmod/Standalone.pmod/monger.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/rsif.pike foreign_ident
 /lib/modules/Tools.pmod/Standalone.pmod/rsqld.pike foreign_ident
 /lib/modules/Tools.pmod/X509.pmod foreign_ident
