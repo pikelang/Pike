@@ -1029,11 +1029,18 @@ void dump_modules()
   
   if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
   {
-    Process.create_process( ({fakeroot(pike),"-m",
+     object p=
+	Process.create_process( ({fakeroot(pike),"-m",
 				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
-				@(vars->fakeroot?({"--fakeroot="+
+				  @(vars->fakeroot?({"--fakeroot="+
                                                      vars->fakeroot}):({})),
-				master}), options)->wait();
+				  master}), options);
+     p->wait();
+     if (p->status())
+     {
+	werror("Dumping of master.pike failed (not fatal) (%d)\n",
+	       p->status());
+     }
   }
 
   if(sizeof(to_dump))
@@ -1075,15 +1082,23 @@ void dump_modules()
     int offset = 1;
     foreach(to_dump/50.0, array delta_dump)
       {
-	Process.create_process(cmd +
-			       ( istty() ? 
-				 ({
-				   "--progress-bar",
-				     sprintf("%d,%d", offset, sizeof(to_dump))
+	 object p=
+	    Process.create_process(cmd +
+				   ( istty() ? 
+				     ({
+					"--progress-bar",
+					sprintf("%d,%d", 
+						offset, sizeof(to_dump))
 				     }) : ({"--quiet"}) ) +
-			       delta_dump, options)->wait();
+				   delta_dump, options);
+	 p->wait();
+	 if (p->status() && p->status()!=1)
+	 {
+	    werror("Dumping of some modules failed (not fatal) (%d)\n",
+		   p->status());
+	 }
 
-	offset += sizeof(delta_dump);
+	 offset += sizeof(delta_dump);
       }
       
     if(progress_bar)

@@ -36,6 +36,7 @@ testfont binary
 /bin/mkpeep.pike foreign_ident
 /bin/mktreeopt.pike foreign_ident
 /bin/mkwmml.pike foreign_ident
+/bin/mkxml.pike foreign_ident
 /bin/pikedoc.pike foreign_ident
 /bin/pikedoc2.pike foreign_ident
 /bin/split-autodoc.pike foreign_ident
