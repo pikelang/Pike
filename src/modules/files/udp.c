@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.33 2002/05/09 19:31:33 zino Exp $
+ * $Id: udp.c,v 1.34 2002/05/11 00:18:21 nilsson Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.33 2002/05/09 19:31:33 zino Exp $");
+RCSID("$Id: udp.c,v 1.34 2002/05/11 00:18:21 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -925,4 +925,3 @@ void init_udp(void)
    pop_stack();
 
 }
-
