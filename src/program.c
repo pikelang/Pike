@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.233 2001/08/02 23:10:40 hubbe Exp $");
+RCSID("$Id: program.c,v 1.234 2004/08/13 13:05:35 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2834,7 +2834,8 @@ struct array *program_indices(struct program *p)
   struct array *res;
   for (e = p->num_identifier_references; e--; ) {
     struct identifier *id;
-    if (p->identifier_references[e].id_flags & ID_HIDDEN) {
+    if (p->identifier_references[e].id_flags &
+	(ID_HIDDEN|ID_STATIC|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
@@ -2857,7 +2858,8 @@ struct array *program_values(struct program *p)
   struct array *res;
   for(e = p->num_identifier_references; e--; ) {
     struct identifier *id;
-    if (p->identifier_references[e].id_flags & ID_HIDDEN) {
+    if (p->identifier_references[e].id_flags &
+	(ID_HIDDEN|ID_STATIC|ID_PRIVATE)) {
       continue;
     }
     id = ID_FROM_INT(p, e);
