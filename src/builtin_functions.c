@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.505 2003/09/04 16:00:29 grubba Exp $
+|| $Id: builtin_functions.c,v 1.506 2003/09/05 11:56:24 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.505 2003/09/04 16:00:29 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.506 2003/09/05 11:56:24 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -425,12 +425,21 @@ static struct case_info *find_ci_shift0(INT32 c)
   } while(0)
 
 /*! @decl string lower_case(string s)
+ *! @decl int lower_case(int c)
  *!
- *!   Convert a string to lower case.
+ *!   Convert a string or character to lower case.
  *!
  *! @returns
  *!   Returns a copy of the string @[s] with all upper case characters
- *!   converted to lower case.
+ *!   converted to lower case, or the character @[c] converted to lower
+ *!   case.
+ *!
+ *! @note
+ *!   Assumes the string or character to be coded according to
+ *!   ISO-10646 (aka Unicode).
+ *!
+ *! @note
+ *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
  *!   @[upper_case()]
@@ -440,6 +449,16 @@ PMOD_EXPORT void f_lower_case(INT32 args)
   ptrdiff_t i;
   struct pike_string *orig;
   struct pike_string *ret;
+
+  check_all_args("lower_case", args, BIT_STRING|BIT_INT, 0);
+
+  if (Pike_sp[-args].type == T_INT) {
+    /* NOTE: Performs the case change in place. */
+    DO_LOWER_CASE(Pike_sp[-args].u.integer);
+    pop_n_elems(args-1);
+    return;
+  }
+  
   get_all_args("lower_case", args, "%W", &orig);
 
   ret = begin_wide_shared_string(orig->len, orig->size_shift);
@@ -475,12 +494,21 @@ PMOD_EXPORT void f_lower_case(INT32 args)
 }
 
 /*! @decl string upper_case(string s)
+ *! @decl int upper_case(int c)
  *!
- *!   Convert a string to upper case.
+ *!   Convert a string or character to upper case.
  *!
  *! @returns
  *!   Returns a copy of the string @[s] with all lower case characters
- *!   converted to upper case.
+ *!   converted to upper case, or the character @[c] converted to upper
+ *!   case.
+ *!
+ *! @note
+ *!   Assumes the string or character to be coded according to
+ *!   ISO-10646 (aka Unicode).
+ *!
+ *! @note
+ *!   Prior to Pike 7.5 this function only accepted strings.
  *!
  *! @seealso
  *!   @[lower_case()]
@@ -491,6 +519,15 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   struct pike_string *orig;
   struct pike_string *ret;
   int widen = 0;
+  check_all_args("upper_case", args, BIT_STRING|BIT_INT, 0);
+
+  if (Pike_sp[-args].type == T_INT) {
+    /* NOTE: Performs the case change in place. */
+    DO_UPPER_CASE(Pike_sp[-args].u.integer);
+    pop_n_elems(args-1);
+    return;
+  }
+  
   get_all_args("upper_case",args,"%W",&orig);
 
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
@@ -7959,8 +7996,9 @@ void init_builtin_efuns(void)
 /* function(mixed:int) */
   ADD_EFUN("multisetp", f_multisetp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
   
-/* function(string:string) */
-  ADD_EFUN("lower_case",f_lower_case,tFunc(tStr,tStr),OPT_TRY_OPTIMIZE);
+/* function(string:string)|function(int:int) */
+  ADD_EFUN("lower_case",f_lower_case,
+	   tOr(tFunc(tStr,tStr), tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
   
 /* function(mixed:int) */
   ADD_EFUN("mappingp",f_mappingp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
@@ -8116,8 +8154,9 @@ void init_builtin_efuns(void)
 		tFunc(tArr(tSetvar(0,tMix)),tArr(tVar(0))), 0,
 		OPT_TRY_OPTIMIZE);
   
-/* function(string:string) */
-  ADD_EFUN("upper_case",f_upper_case,tFunc(tStr,tStr),0);
+/* function(string:string)|function(int:int) */
+  ADD_EFUN("upper_case",f_upper_case,
+	   tOr(tFunc(tStr,tStr),tFunc(tInt,tInt)),OPT_TRY_OPTIMIZE);
   
 /* function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0)) */
   ADD_EFUN2("values",f_values,
