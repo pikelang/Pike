@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.120 2001/03/28 18:34:51 grubba Exp $");
+RCSID("$Id: main.c,v 1.121 2001/03/29 20:23:08 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -770,14 +770,18 @@ void low_exit_main(void)
 	describe_something(o, T_OBJECT, 0,2,0);
     }
 
-    cleanup_shared_string_table();
+#ifdef USE_PIKE_TYPE
+    count_memory_in_pike_types(&num, &size);
+    if (num)
+      fprintf(stderr, "Types left: %d (%d bytes)\n", num, size);
+    describe_all_types();
+#endif /* USE_PIKE_TYPE */
   }
 #else
 
   zap_all_arrays();
   zap_all_mappings();
 
-  cleanup_shared_string_table();
 #endif
 
   really_clean_up_interpret();
@@ -785,6 +789,9 @@ void low_exit_main(void)
   cleanup_callbacks();
   free_all_callable_blocks();
   exit_destroy_called_mark_hash();
+
+  cleanup_pike_type_table();
+  cleanup_shared_string_table();
 
   free_dynamic_load();
   first_mapping=0;
