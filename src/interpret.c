@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.212 2001/07/02 20:09:17 mast Exp $");
+RCSID("$Id: interpret.c,v 1.213 2001/07/06 22:56:56 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -618,59 +618,6 @@ void print_return_value(void)
 #endif
 
 struct callback_list evaluator_callbacks;
-#define CASE(X) case (X)-F_OFFSET:
-
-#define COMPARISMENT(ID,EXPR) \
-CASE(ID); \
-instr=EXPR; \
-pop_n_elems(2); \
-push_int(instr); \
-break
-
-#ifdef AUTO_BIGNUM
-#define AUTO_BIGNUM_LOOP_TEST(X,Y) INT_TYPE_ADD_OVERFLOW(X,Y)
-#else
-#define AUTO_BIGNUM_LOOP_TEST(X,Y) 0
-#endif
-
-#define LOOP(ID, INC, OP2, OP4)					\
-CASE(ID)							\
-{								\
-  union anything *i=get_pointer_if_this_type(Pike_sp-2, T_INT);	\
-  if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC))		\
-  {								\
-    i->integer += INC;						\
-    if(i->integer OP2 Pike_sp[-3].u.integer)			\
-    {								\
-      DOJUMP();							\
-    }else{							\
-      SKIPJUMP();						\
-    }								\
-  }else{							\
-    lvalue_to_svalue_no_free(Pike_sp,Pike_sp-2); Pike_sp++;	\
-    push_int(INC);						\
-    f_add(2);							\
-    assign_lvalue(Pike_sp-3,Pike_sp-1);				\
-    if(OP4 ( Pike_sp-1, Pike_sp-4 ))				\
-    {								\
-      DOJUMP();							\
-    }else{							\
-      SKIPJUMP();						\
-    }								\
-    pop_stack();						\
-  }								\
-  break;							\
-}
-
-#define CJUMP(X,Y) \
-CASE(X); \
-if(Y(Pike_sp-2,Pike_sp-1)) { \
-  DOJUMP(); \
-}else{ \
-  SKIPJUMP(); \
-} \
-pop_n_elems(2); \
-break
 
 
 /*
@@ -1669,8 +1616,14 @@ PMOD_EXPORT void safe_apply_handler(const char *fun,
 				    INT32 args)
 {
   int i;
+#if 0
+  fprintf(stderr, "safe_apply_handler(\"%s\", 0x%08p, 0x%08p, %d\n",
+	  fun, handler, compat, args);
+#endif /* 0 */
+
   free_svalue(&throw_value);
   throw_value.type = T_INT;
+
   if (handler && handler->prog &&
       (i = find_identifier(fun, handler->prog)) != -1) {
     safe_apply_low2(handler, i, args, 0);

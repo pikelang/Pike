@@ -3,6 +3,8 @@
 #undef GET_ARG2
 #undef GET_JUMP
 #undef SKIPJUMP
+#undef CASE
+#undef DOJUMP
 
 #ifdef PIKE_DEBUG
 
@@ -34,6 +36,8 @@
 #define SKIPJUMP() pc+=sizeof(INT32)
 
 #endif
+
+#define CASE(X) case (X)-F_OFFSET:
 
 #define DOJUMP() \
  do { int tmp; tmp=GET_JUMP(); pc+=tmp; if(tmp < 0) fast_check_threads_etc(6); }while(0)

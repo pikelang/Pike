@@ -1,11 +1,19 @@
 /*
- * $Id: interpret_functions.h,v 1.69 2001/07/06 17:17:49 grubba Exp $
+ * $Id: interpret_functions.h,v 1.70 2001/07/06 22:56:56 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
 
 #include "global.h"
 
+#undef CJUMP
+#undef AUTO_BIGNUM_LOOP_TEST
+#undef LOOP
+#undef COMPARISON
+#undef MKAPPLY
+#undef DO_CALL_BUILTIN
+
+#undef DO_IF_BIGNUM
 #ifdef AUTO_BIGNUM
 #define DO_IF_BIGNUM(CODE)	CODE
 #else /* !AUTO_BIGNUM */
@@ -28,7 +36,7 @@
 #define OPCODE2_TAILJUMP(A, B, C)	OPCODE2_TAILJUMP(A, B) C
 #endif /* GEN_PROTOS */
 
-OPCODE0(F_UNDEFINED,"push UNDEFINED", {
+OPCODE0(F_UNDEFINED, "push UNDEFINED", {
   push_int(0);
   Pike_sp[-1].subtype=NUMBER_UNDEFINED;
 });
@@ -53,7 +61,7 @@ OPCODE1(F_NUMBER, "push int", {
   push_int(arg1);
 });
 
-OPCODE1(F_NEG_NUMBER,"push -int", {
+OPCODE1(F_NEG_NUMBER, "push -int", {
   push_int(-arg1);
 });
 
@@ -64,7 +72,7 @@ OPCODE1(F_CONSTANT, "constant", {
 
 /* The rest of the basic 'push value' instructions */	
 
-OPCODE1_TAIL(F_MARK_AND_STRING,"mark & string", {
+OPCODE1_TAIL(F_MARK_AND_STRING, "mark & string", {
   *(Pike_mark_sp++)=Pike_sp;
 
   OPCODE1(F_STRING, "string", {
@@ -898,12 +906,22 @@ OPCODE1_JUMP(F_BRANCH_IF_NOT_LOCAL, "branch if !local", {
   }
 });
 
-      CJUMP(F_BRANCH_WHEN_EQ, is_eq);
-      CJUMP(F_BRANCH_WHEN_NE,!is_eq);
-      CJUMP(F_BRANCH_WHEN_LT, is_lt);
-      CJUMP(F_BRANCH_WHEN_LE,!is_gt);
-      CJUMP(F_BRANCH_WHEN_GT, is_gt);
-      CJUMP(F_BRANCH_WHEN_GE,!is_lt);
+#define CJUMP(X, DESC, Y) \
+  OPCODE0_JUMP(X, DESC, { \
+    if(Y(Pike_sp-2,Pike_sp-1)) { \
+      DOJUMP(); \
+    }else{ \
+      SKIPJUMP(); \
+    } \
+    pop_n_elems(2); \
+  })
+
+CJUMP(F_BRANCH_WHEN_EQ, "branch if ==", is_eq);
+CJUMP(F_BRANCH_WHEN_NE, "branch if !=", !is_eq);
+CJUMP(F_BRANCH_WHEN_LT, "branch if <", is_lt);
+CJUMP(F_BRANCH_WHEN_LE, "branch if <=", !is_gt);
+CJUMP(F_BRANCH_WHEN_GT, "branch if >", is_gt);
+CJUMP(F_BRANCH_WHEN_GE, "branch if >=", !is_lt);
 
 OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", {
   if(!IS_ZERO(Pike_sp-1))
@@ -1029,12 +1047,46 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", {
 });
 
 
+#ifdef AUTO_BIGNUM
+#define AUTO_BIGNUM_LOOP_TEST(X,Y) INT_TYPE_ADD_OVERFLOW(X,Y)
+#else
+#define AUTO_BIGNUM_LOOP_TEST(X,Y) 0
+#endif
+
       /* FIXME: Does this need bignum tests? /Fixed - Hubbe */
       /* LOOP(OPCODE, INCREMENT, OPERATOR, IS_OPERATOR) */
-      LOOP(F_INC_LOOP, 1, <, is_lt);
-      LOOP(F_DEC_LOOP, -1, >, is_gt);
-      LOOP(F_INC_NEQ_LOOP, 1, !=, !is_eq);
-      LOOP(F_DEC_NEQ_LOOP, -1, !=, !is_eq);
+#define LOOP(ID, DESC, INC, OP2, OP4)					\
+  OPCODE0_JUMP(ID, DESC, {						\
+    union anything *i=get_pointer_if_this_type(Pike_sp-2, T_INT);	\
+    if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC))			\
+    {									\
+      i->integer += INC;						\
+      if(i->integer OP2 Pike_sp[-3].u.integer)				\
+      {									\
+  	DOJUMP();							\
+      }else{								\
+  	SKIPJUMP();							\
+      }									\
+    }else{								\
+      lvalue_to_svalue_no_free(Pike_sp,Pike_sp-2); Pike_sp++;		\
+      push_int(INC);							\
+      f_add(2);								\
+      assign_lvalue(Pike_sp-3,Pike_sp-1);				\
+      if(OP4 ( Pike_sp-1, Pike_sp-4 ))					\
+      {									\
+  	DOJUMP();							\
+      }else{								\
+  	SKIPJUMP();							\
+      }									\
+      pop_stack();							\
+    }									\
+    break;								\
+  })
+
+LOOP(F_INC_LOOP, "++Loop", 1, <, is_lt);
+LOOP(F_DEC_LOOP, "--Loop", -1, >, is_gt);
+LOOP(F_INC_NEQ_LOOP, "++Loop!=", 1, !=, !is_eq);
+LOOP(F_DEC_NEQ_LOOP, "--Loop!=", -1, !=, !is_eq);
 
 /* Use like:
  *
@@ -1226,12 +1278,19 @@ OPCODE0(F_RSH, ">>", {
   o_rsh();
 });
 
-      COMPARISMENT(F_EQ, is_eq(Pike_sp-2,Pike_sp-1));
-      COMPARISMENT(F_NE,!is_eq(Pike_sp-2,Pike_sp-1));
-      COMPARISMENT(F_GT, is_gt(Pike_sp-2,Pike_sp-1));
-      COMPARISMENT(F_GE,!is_lt(Pike_sp-2,Pike_sp-1));
-      COMPARISMENT(F_LT, is_lt(Pike_sp-2,Pike_sp-1));
-      COMPARISMENT(F_LE,!is_gt(Pike_sp-2,Pike_sp-1));
+#define COMPARISON(ID,DESC,EXPR)	\
+  OPCODE0(ID, DESC, {			\
+    instr = EXPR;			\
+    pop_n_elems(2);			\
+    push_int(instr);			\
+  })
+
+COMPARISON(F_EQ, "==", is_eq(Pike_sp-2,Pike_sp-1));
+COMPARISON(F_NE, "!=", !is_eq(Pike_sp-2,Pike_sp-1));
+COMPARISON(F_GT, ">", is_gt(Pike_sp-2,Pike_sp-1));
+COMPARISON(F_GE, ">=", !is_lt(Pike_sp-2,Pike_sp-1));
+COMPARISON(F_LT, "<", is_lt(Pike_sp-2,Pike_sp-1));
+COMPARISON(F_LE, "<=", !is_gt(Pike_sp-2,Pike_sp-1));
 
 OPCODE0(F_ADD, "+", {
   f_add(2);
