@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.43 1999/04/07 23:04:08 hubbe Exp $
+// $Id: module.pmod,v 1.44 1999/04/16 14:04:42 grubba Exp $
 
 import String;
 
@@ -665,3 +665,224 @@ int cp(string from, string to)
   return 1;
 }
 #endif
+
+/*
+ * Asynchronous sending of files.
+ */
+
+#define READER_RESTART 4
+#define READER_HALT 32
+
+static class nb_sendfile
+{
+  static object from;
+  static int len;
+  static array(string) trailers;
+  static object to;
+  static function(int, mixed ...:void) callback;
+  static array(mixed) args;
+
+  // NOTE: Always modified from backend callbacks, so no need
+  // for locking.
+  static array(string) to_write = ({});
+  static int sent;
+
+  static int reader_awake;
+  static int writer_awake;
+
+  /* Reader */
+
+  static void reader_done()
+  {
+    from->set_nonblocking(0,0,0);
+    from = 0;
+    if (trailers) {
+      to_write += (trailers - ({""}));
+    }
+    if (sizeof(to_write)) {
+      start_writer();
+    }
+  }
+
+  static void close_cb(mixed ignored)
+  {
+    reader_done();
+  }
+
+  static void read_cb(mixed ignored, string data)
+  {
+    if (len > 0) {
+      if (sizeof(data) < len) {
+	len -= sizeof(data);
+	to_write += ({ data });
+      } else {
+	to_write += ({ data[..len-1] });
+	reader_done();
+      }
+    } else {
+      to_write += ({ data });
+    }
+    if (sizeof(to_write) > READER_HALT) {
+      // Go to sleep.
+      from->set_nonblocking(0,0,0);
+      reader_awake = 0;
+    }
+    start_writer();
+  }
+
+  static void start_reader()
+  {
+    if (!reader_awake) {
+      reader_awake = 1;
+      from->set_nonblocking(read_cb, 0, close_cb);
+    }
+  }
+
+  /* Writer */
+
+  static void writer_done()
+  {
+    // Disable any reader.
+    if (from) {
+      from->set_nonblocking(0,0,0);
+    }
+
+    // Make sure we get rid of any references...
+    to_write = 0;
+    trailers = 0;
+    from = 0;
+    to = 0;
+    array(mixed) a = args;
+    function(int, mixed ...:void) cb = callback;
+    args = 0;
+    callback = 0;
+    cb(sent, @a);
+  }
+
+  static void write_cb(mixed ignored)
+  {
+    int bytes = to->write(to_write);
+
+    if (bytes > 0) {
+      sent += bytes;
+
+      int n;
+      for (n = 0; n < sizeof(to_write); n++) {
+	if (bytes < sizeof(to_write[n])) {
+	  to_write[n] = to_write[n][bytes..];
+	  to_write = to_write[n..];
+
+	  if (sizeof(to_write) < READER_RESTART) {
+	    start_reader();
+	  }
+	  return;
+	} else {
+	  bytes -= sizeof(to_write[n]);
+	  if (!bytes) {
+	    to_write = to_write[n+1..];
+	    if (sizeof(to_write) < READER_RESTART) {
+	      if (!sizeof(to_write)) {
+		// Go to sleep.
+		to->set_nonblocking(0,0,0);
+		writer_awake = 0;
+		if (!from) {
+		  // Done!
+		  writer_done();
+		  return;
+		}
+	      }
+	      start_reader();
+	    }
+	    return;
+	  }
+	}
+      }
+    } else {
+      // Premature end of file!
+      writer_done();
+    }
+  }
+
+  static void start_writer()
+  {
+    if (!writer_awake) {
+      writer_awake = 1;
+      to->set_nonblocking(0, write_cb, 0);
+    }
+  }
+
+  /* Starter */
+
+  void create(array(string) hd,
+	      object f, int off, int l,
+	      array(string) tr,
+	      object t,
+	      function(int, mixed ...:void)|void cb,
+	      mixed ... a)
+  {
+    if (!l) {
+      // No need for from.
+      f = 0;
+
+      // No need to differentiate between headers and trailers.
+      if (tr) {
+	if (hd) {
+	  hd += tr;
+	} else {
+	  hd = tr;
+	}
+	tr = 0;
+      }
+    }
+
+    if (!f && (!hd || !sizeof(hd - ({ "" })))) {
+      // NOOP!
+      call_out(cb, 0, 0, @args);
+      return;
+    }
+
+    to_write = (hd || ({})) - ({ "" });
+    from = f;
+    len = l;
+    trailers = (tr || ({})) - ({ "" });
+    to = t;
+    callback = cb;
+    args = a;
+
+    if (from) {
+      if (off >= 0) {
+	from->seek(off);
+      }
+      start_reader();
+    }
+    if (sizeof(to_write)) {
+      start_writer();
+    }
+  }
+}
+
+object sendfile(array(string) headers,
+		object from, int offset, int len,
+		array(string) trailers,
+		object to,
+		function(int, mixed ...:void)|void cb,
+		mixed ... args)
+{
+#if constant(_Sendfile.sendfile)
+  // Try using _Sendfile.sendfile().
+  
+  mixed err = catch {
+    return _Sendfile.sendfile(headers, from, offset, len,
+			      trailers, to, cb, @args);
+  };
+
+#ifdef SENDFILE_DEBUG
+  werror(sprintf("_Sendfile.sendfile() failed:\n%s\n",
+		 describe_backtrace(err)));
+#endif /* SENDFILE_DEBUG */
+
+#endif /* _Sendfile.sendfile */
+
+  // Use nb_sendfile instead.
+  return nb_sendfile(headers, from, offset, len, trailers, to, cb, @args);
+}
