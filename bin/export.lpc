@@ -1,9 +1,33 @@
 #!/usr/local/bin/ulpc
 
+string *get_files(string path)
+{
+  string *files,tmp,*ret;
+  files=get_dir(path);
+  files-=({"CVS","RCS",".cvsignore"});
+  ret=({});
+  foreach(files,tmp)
+  {
+    if(tmp[-1]=='~') continue;
+    if(tmp[0]=='#' && tmp[-1]=='#') continue;
+    if(tmp[0]=='.' && tmp[1]=='#') continue;
+
+    tmp=path+"/"+tmp;
+    if(file_size(tmp)==-2)
+    {
+      ret+=get_files(tmp);
+    }else{
+      ret+=({tmp});
+    }
+  }
+  return ret;
+}
+
 int main(int argc, string *argv)
 {
   mixed tmp;
   int e;
+  string files;
   string s=replace(version()," ","_");
 
   tmp=explode(argv[0],"/");
@@ -20,10 +44,14 @@ int main(int argc, string *argv)
   cd(tmp*"/");
   perror("Sourcedir = "+tmp*"/"+"/ulpc\n");
 
-  perror("Cleaning up:\n");
-  system("find ulpc '(' -name '*~' -o -name '.*~' -o -name core ')' -print -exec /bin/rm '{}' ';'");
+  files=sum(({ "ulpc/README" }),
+	    get_files("ulpc/src"),
+	    get_files("ulpc/doc"),
+	    get_files("ulpc/lib"),
+	    get_files("ulpc/bin"));
+
   perror("Creating "+s+".tar.gz:\n");
-  system("tar cvzf ulpc/"+s+".tar.gz ulpc/README ulpc/src ulpc/lib ulpc/bin ulpc/doc");
+  system("tar cvzf ulpc/"+s+".tar.gz "+files*" ");
   perror("Done.\n");
   return 0;
 }
