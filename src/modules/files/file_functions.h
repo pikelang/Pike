@@ -28,8 +28,8 @@
   FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback,"function(mixed:void)")
 
 #endif /* WITH_OOB */
-  FILE_FUNC("_enable_callbacks",file__enable_callbacks,"function(:void)");
-  FILE_FUNC("_disable_callbacks",file__disable_callbacks,"function(:void)");
+  FILE_FUNC("_enable_callbacks",file__enable_callbacks,"function(:void)")
+  FILE_FUNC("_disable_callbacks",file__disable_callbacks,"function(:void)")
 
   FILE_FUNC("set_blocking",file_set_blocking,"function(:void)")
 
