@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $
+|| $Id: system.c,v 1.130 2003/03/03 18:27:31 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $");
+RCSID("$Id: system.c,v 1.130 2003/03/03 18:27:31 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -95,6 +95,10 @@ RCSID("$Id: system.c,v 1.129 2002/10/21 17:06:27 marcus Exp $");
 #ifdef HAVE_SYS_ID_H
 #include <sys/id.h>
 #endif /* HAVE_SYS_ID_H */
+
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif /* HAVE_SYS_PRCTL_H */
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>
@@ -1004,6 +1008,51 @@ void f_setsid(INT32 args)
   if (pid < 0)
        report_error("setsid");
   push_int(pid);
+}
+#endif
+
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+/*! @decl int(0..1) dumpable(int(0..1)|void val)
+ *!   Get and/or set whether this process should be able to
+ *!   dump core.
+ *!
+ *! @param val
+ *!   Optional argument to set the core dumping state.
+ *!   @int
+ *!     @value 0
+ *!       Disable core dumping for this process.
+ *!     @value 1
+ *!       Enable core dumping for this process.
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns @tt{1@} if this process currently is capable of dumping core,
+ *!   and @tt{0@} (zero) if not.
+ *!
+ *! @note
+ *!   This function is currently only available on some versions of Linux.
+ */ 
+void f_dumpable(INT32 args)
+{
+  int current = prctl(PR_GET_DUMPABLE);
+
+  if (current == -1) {
+    int err = errno;
+    Pike_error("Failed to get dumpable state. errno:%d\n", err);
+  }
+  if (args) {
+    INT_TYPE val;
+    get_all_args("dumpable", args, "%i", &val);
+    if (val & ~1) {
+      SIMPLE_BAD_ARG_ERROR("dumpable", 1, "int(0..1)");
+    }
+    if (prctl(PR_SET_DUMPABLE, val) == -1) {
+      int err = errno;
+      Pike_error("Failed to set dumpable state to %d. errno:%d\n", val, err);
+    }
+  }
+  pop_n_elems(args);
+  push_int(current);
 }
 #endif
 
@@ -2663,6 +2712,11 @@ PIKE_MODULE_INIT
 	   OPT_SIDE_EFFECT);
   ADD_FUNCTION2("setsid", f_setsid, tFunc(tNone, tInt), 0,
 		OPT_SIDE_EFFECT);
+#endif
+
+#if defined(HAVE_PRCTL) && defined(PR_SET_DUMPABLE)
+  ADD_FUNCTION2("dumpable", f_dumpable, tFunc(tOr(tInt01, tVoid), tInt01),
+		0, OPT_SIDE_EFFECT);
 #endif
 
 #ifdef HAVE_GETRLIMIT
