@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.64 2003/02/07 11:28:30 agehall Exp $
+|| $Id: mysql.c,v 1.65 2003/02/07 13:20:21 agehall Exp $
 */
 
 /*
@@ -84,7 +84,14 @@
 #endif
 
 #ifdef HAVE_MYSQL_SSL
+
+#ifdef HAVE_OPENSSL_SSL_H
 #include <openssl/ssl.h>
+#endif
+#ifdef HAVE_SSL_H
+#include <ssl.h>
+#endif
+
 #endif
 
 #define sp Pike_sp
@@ -98,7 +105,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.64 2003/02/07 11:28:30 agehall Exp $");
+RCSID("$Id: mysql.c,v 1.65 2003/02/07 13:20:21 agehall Exp $");
 
 /*! @module Mysql
  *!
