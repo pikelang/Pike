@@ -263,7 +263,20 @@ class PikeType
 	case "8":
 	case "9": return "mixed";
 
-	default:  return ret;
+      case "int":
+      case "float":
+      case "string":
+      case "object":
+      case "function":
+      case "array":
+      case "mapping":
+      case "multiset":
+      case "type":
+      case "program":
+      case "mixed":
+	return ret;
+
+	default:  return "object";
       }
     }
 
@@ -317,7 +330,18 @@ class PikeType
 	    "function",
 	  });
 
-	default:  return ({ ret });
+      case "int":
+      case "float":
+      case "string":
+      case "object":
+      case "function":
+      case "array":
+      case "mapping":
+      case "multiset":
+      case "type":
+	return ({ ret });
+
+	default:  return ({ "object" });
       }
     }
 
