@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.677 2004/06/21 10:58:03 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.678 2004/06/21 11:24:55 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1580,7 +1580,7 @@ if test "$cflags_is_set" = "no"; then
 	    AC_SYS_COMPILER_FLAG([-Wa,--execstack], Wa_execstack, CFLAGS, [
 	      # No.
 	      # FIXME: Add support for use of chstk(1).
-	      PIKE_MSG_WARN([Could not find any way to enable executable stack.])
+	      AC_MSG_WARN([Could not find any way to enable executable stack.])
 	    ])
 	  ])
 	])
