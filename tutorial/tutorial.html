@@ -252,7 +252,7 @@ This is what it could look like:
 
 	int main(int argc, string *argv)
 	{
-	  if(argc &gt; 1 &amp;&amp; argv[1]=="--traditional")
+	  if(argc &gt; 1 &amp;&amp; argv[1]=="-<tt>-traditional")
 	  {
 	    write("hello world\n"); // old stype
 	  }else{
@@ -267,7 +267,7 @@ Let's run it:
 	$ chmod +x hello_world.pike
 	$ ./hello_world.pike
 	Hello world!
-	$ ./hello_world.pike --traditional
+	$ ./hello_world.pike -<tt>-traditional
 	hello world
 	$ 
 </pre>
@@ -290,7 +290,7 @@ words were written on the command line (including the command itself) and
 <tt>argv</tt> is an array formed by these words.
 <p>
 <pre>
-	  if(argc &gt; 1 &amp;&amp; argv[1] == "--traditional")
+	  if(argc &gt; 1 &amp;&amp; argv[1] == "-<tt>-traditional")
 	  {
 	    write("hello world\n"); // old stype
 	  }else{
@@ -303,10 +303,10 @@ other than zero. Otherwise what's between the second set of brackets will
 be executed. Let's look at that expression:
 <p>
 <pre>
-	argc &gt; 1 &amp;&amp; argv[1] == "--traditional"
+	argc &gt; 1 &amp;&amp; argv[1] == "-<tt>-traditional"
 </pre>
 Loosely translated, this means: argc is greater than one,  and the second
-element in the array argv is equal to the string <tt>--traditional</tt>. Since
+element in the array argv is equal to the string <tt>-</tt><tt>-traditional</tt>. Since
 argc is the number of words on the command line the first part is true only
 if there was anything after the program invocaton.
 <p>
@@ -748,7 +748,7 @@ Once again <tt>main()</tt> is left unchanged, except for yet another two case st
 </pre>
 <h2>Then what?</h2>
 Well that's it! The example is now a complete working example of a Pike program. But of course there are plenty of details that we haven't attended to. Error checking is for example extremely sparse in our program. This is left for you
-to do as you continue to reed this book. Tthe complete listing of this example can be found in APPENDIX B on page XXX. Read it, study it and enjoy!
+to do as you continue to reed this book. The complete listing of this example can be found in APPENDIX B on page XXX. Read it, study it and enjoy!
 <p>
 
 <table cellpadding=10 width="100%" border=1 cellspacing=0>
@@ -2319,9 +2319,9 @@ not fit in any particular categories.
 <tr><td>Calling</td>	<td>a ( arguments ) </td><td>`()</td>	<td>Calls the function a.</td></tr>
 <tr><td>splice</td>	<td>@ <i>a</i></td><td>none</td>	<td>Sends each element in the array a as an individual argument to a function call.</td></tr>
 <tr><td>Increment</td>	<td>++ a</td>		<td>none</td>	<td>Increments a and returns the new value for a.</td></tr>
-<tr><td>Decrement</td>	<td>-- a</td>		<td>none</td>	<td>Decrements a and returns the new value for a.</td></tr>
+<tr><td>Decrement</td>	<td>-<tt>- a</td>		<td>none</td>	<td>Decrements a and returns the new value for a.</td></tr>
 <tr><td>Post increment</td><td>a ++</td>	<td>none</td>	<td>Increments a and returns the old value for a.</td></tr>
-<tr><td>Post decrement</td><td>a --</td>	<td>none</td>	<td>Decrements a and return the old value for a.</td></tr>
+<tr><td>Post decrement</td><td>a -<tt>-</td>	<td>none</td>	<td>Decrements a and return the old value for a.</td></tr>
 <tr><td>casting</td>	<td>(<i>type</i>) a</td><td>none</td>	<td>Tries to convert a into a value of the specified type.</td></tr>
 <tr><td>Null</td>	<td>a, b</td>		<td>none</td>	<td>Evaluates a and b, then returns b.</td></tr>
 </table>
@@ -2401,8 +2401,8 @@ priority.
 <table border=1 halign=center>
 <tr><th>Operators</th></tr>
 <tr><td><center><tt>(a) a() a[b] a-&gt;b a[b..c] ({}) ([]) (&lt;&gt;)</tt></center></td></tr>
-<tr><td><center><tt>a++ a--</tt></center></td></tr>
-<tr><td><center><tt>!a ~a (type)a ++a --a</tt></center></td></tr>
+<tr><td><center><tt>a++ a-</tt><tt>-</tt></center></td></tr>
+<tr><td><center><tt>!a ~a (type)a ++a -</tt><tt>-a</tt></center></td></tr>
 <tr><td><center><tt>a*b a/b a%b</tt></center></td></tr>
 <tr><td><center><tt>a+b a-b</tt></center></td></tr>
 <tr><td><center><tt>a&gt;&gt;b a&lt;&lt;b</tt></center></td></tr>
@@ -2431,7 +2431,7 @@ Examples:
 <tr><td><tt> 1+4,c=2|3+5 </tt></td><td><tt> (1+4),(c=(2|3)+5) </tt></td></tr>
 <tr><td><tt> 1+5 & 4 == 3 </tt></td><td><tt> (1+(5 & 4)) == 3 </tt></td></tr>
 <tr><td><tt> c=1,99 </tt></td><td><tt> (c=1),99 </tt></td></tr>
-<tr><td><tt> !a++ + ~--a()</tt></td><td><tt> (!(a++)) + (~((--a)())) </tt></td></tr>
+<tr><td><tt> !a++ + ~-</tt><tt>-a()</tt></td><td><tt> (!(a++)) + (~((-</tt><tt>-a)())) </tt></td></tr>
 </table>
 </center>
 <p>
@@ -2632,7 +2632,7 @@ your inherits. Here is an example of named inherits:
 	inherit Stdio.FILE;   // This inherit is named FILE
 	inherit "hello_word"; // This inherit is named hello_world
 	inherit Stdio.File : test1; // This inherit is named test1
-	inherit "hello_world: : test2; // This inherit is named test2
+	inherit "hello_world": : test2; // This inherit is named test2
 
 	void test()
 	{
@@ -2847,9 +2847,9 @@ into a list of variables. The syntax looks like this:
 <pre>
 	int sscanf(string <i>str</i>, string <I>fmt</I>, <i>lvalue</i> ...)
 </pre>
-The string <i>str</i> will be matched against the format strin <i>fmt</i>.
+The string <i>str</i> will be matched against the format string <i>fmt</i>.
 <i>fmt</i> can contain strings
-separated by "%d,%s,%c and %f. Every % corresponds to one <i>lvalue</i>.
+separated by %d,%s,%c and %f. Every % corresponds to one <i>lvalue</i>.
 An lvalue is the name of a variable, a name of a local variable, an index
 in an array, mapping or object. It is because of these lvalues that sscanf
 can not be implemented as a normal function.
@@ -3005,13 +3005,13 @@ Modules are not loaded until you use them, which saves memory unless you use
 all the modules. However, if you want to write your own modules it is important
 to know how modules are located and loaded.
 <p>
-When you use <tt>Stdio</tt> Pike will look for the that module:
+When you use <tt>Stdio</tt> Pike will look for that module:
 <ol>
 <li> In the same directory as the source.
 <li> In directories added with add_module_path()
 <li> In directories specified with -M on the command line.
 <li> In directories in the environment variable PIKE_MODULE_PATH
-<li> In the directory with builtin modules, usually /usr/local/pike/lib/modules/
+<li> In the directory with builtin modules, usually /usr/local/lib/pike/modules/
 </ul>
 
 For each of these directories, Pike will do the following:
@@ -3054,7 +3054,7 @@ module like this:
 <pre>
 	int main()
 	{
-	  write(spritnf("%f\n",Trig.cos2(Trig.PI));
+	  write(sprintf("%f\n",Trig.cos2(Trig.PI));
 	}
 </pre>
 or like this:
@@ -3063,7 +3063,7 @@ or like this:
 
 	int main() 
 	{
-	  write(spritnf("%f\n",cos2(PI));
+	  write(sprintf("%f\n",cos2(PI));
 	}
 </pre>
 
@@ -5548,7 +5548,7 @@ thing as their UNIX counterpart. See the UNIX man pages for detailed
 information about what these functions do on your system.
 <p>
 Please note that these functions are available globally, you do not
-have to <tt>import System</tt> to use these functions.
+need to <tt>import System</tt> to use these functions.
 
 <hr noshade size=1>
 <a name=chroot>
@@ -6736,11 +6736,11 @@ on the disk.
 Getopt is a group of function which can be used to find command line options.
 Command line options come in two flavours: long and short. The short ones
 consists of a dash followed by a character (<tt>-t</tt>), the long ones
-consist of two dashes followed by a string of text (<tt>--test</tt>).
+consist of two dashes followed by a string of text (<tt>-</tt><tt>-test</tt>).
 The short options can also be combined, which means that you can write
 <tt>-tda</tt> instead of <tt>-t -d -a</tt>. Options can also require
 arguments, in which case they cannot be combined. To write an option
-with an argument you write <tt>-t <i>argument</i></tt> or <tt>-t<i>argument</i></tt> or <tt>--test=<i>argument</i></tt>.
+with an argument you write <tt>-t <i>argument</i></tt> or <tt>-t<i>argument</i></tt> or <tt>-</tt><tt>-test=<i>argument</i></tt>.
 
 <hr noshade size=1>
 <a name=Getopt.find_option>
@@ -6758,13 +6758,14 @@ mixed def);<br>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
 This is a generic function to parse command line options of the
-type '-f', '--foo' or '--foo=bar'. The first argument should be
-the array of strings that is sent as second argument to your
-main() function, the second is a string with the short form of
-your option. The short form must be only one character long.
-The 'longform' is an alternative and maybe more readable way to
-give the same option. If you give "foo" as longform your program
-will accept --foo as argument. The envvar argument specifies what
+type '<tt>-f</tt>', '<tt>-</tt><tt>-foo</tt>' or '<tt>-</tt><tt>-foo=bar</tt>'.
+The first argument should be the array of strings that is sent as
+second argument to your main() function, the second is a string with
+the short form of your option. The short form must be only one
+character long. The 'longform' is an alternative and maybe more
+readable way to give the same option. If you give "foo" as longform
+your program will accept <tt>-</tt><tt>-foo</tt> as argument. The
+envvar argument specifies what
 environment variable can be used to specify the same option. The
 envvar option exists to make it easier to custimizer program usage.
 The 'def' has two functions: It specifies that the option takes an
@@ -6836,16 +6837,16 @@ Only the first three elements has to be included.
      and it affects how the error handling and parsing works.
      You should use HAS_ARG for options that require a path, a number or
      similar. NO_ARG should be used for options that do not need an
-     argument, such as <tt>--version</tt>. MAY_HAVE_ARG should be used
+     argument, such as <tt>-</tt><tt>-version</tt>. MAY_HAVE_ARG should be used
      for options that may or may not need an argument.
 <dt> <i>aliases</i>
 <dd> This  is a string or a list of string of options that will be looked for.
      Short and long options can be mixed, and short options can be
      combined into one string. Note that you must include the dashes
      in <i>aliases</i> so find_all_options can distinguish between
-      long and short options. Example: <tt>({"-tT","--test"})</tt>
+      long and short options. Example: <tt>({"-tT","-</tt><tt>-test"})</tt>
       This would make find_all_options look for <tt>-t</tt>,
-      <tt>-T</tt> and <tt>--test</tt>.
+      <tt>-T</tt> and <tt>-</tt><tt>-test</tt>.
 <dt> <i>env_var</i>
 <dd> This is a string or an array of strings containging names of
      environment variables that can be used instead of the
@@ -6875,7 +6876,7 @@ find_option modifies argv.<br>
 First let's take a look at input and output:
 <pre>
 &gt; Getopt.find_all_options(({"test","-dd"}),
-&gt;&gt;  ({ ({ "debug", Getopt.NO_ARG, ({"-d","--debug"}), "DEBUG", 1}) }));
+&gt;&gt;  ({ ({ "debug", Getopt.NO_ARG, ({"-d","-<tt>-debug"}), "DEBUG", 1}) }));
 Result: ({
   ({ "debug",  1 }),
   ({ "debug",  1 })
@@ -6891,8 +6892,8 @@ int debug=0;
 int main(int argc, string *argv
 {
   foreach(find_all_options(argv, ({
-    ({ "debug", MAY_HAVE_ARG, ({"-d","--debug"}), "DEBUG", 1}),
-    ({ "version", NO_ARG, ({"-v","--version" }) })  })),
+    ({ "debug", MAY_HAVE_ARG, ({"-d","-<tt>-debug"}), "DEBUG", 1}),
+    ({ "version", NO_ARG, ({"-v","-<tt>-version" }) })  })),
     mixed option)
   {
     switch(option[0])
@@ -7013,7 +7014,7 @@ so it can be re-used.
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function preforms gzip style compression on a string and
+This function performs gzip style compression on a string and
 returns the packed data. Streaming can be done by calling this
 functon several time and concatenating the returned data.
 The optional 'flush' argument should be one f the following:
@@ -7099,7 +7100,7 @@ it.
 </tt>
 <p>
 <dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
-This function preforms gzip style decompression. It can inflate
+This function performs gzip style decompression. It can inflate
 a whole file at once or in blocks.
 <p>
 <dt><b> <font size=+1>E</font><font size=-1>XAMPLES</font></b><dd>
@@ -12507,13 +12508,13 @@ Pike is a very dynamic language. Sometimes that is not enough, sometimes you
 want to change the way Pike handles errors, loads modules or start scripts.
 All this and much more can be changed by modifying the <b>master object</b>.
 The <b>master object</b> is a Pike object like any other object, but it is
-loaded before anything else and is expected to preform certain things for
+loaded before anything else and is expected to perform certain things for
 the Pike executable. The Pike executable cannot function without a master
 object to take care of these things. Here is a list of the methods needed
 in the <b>master object</b>:
 <dl>
 <dt> <tt>program cast_to_program(string <i>program_name</i>, string <i>current_file</i>)</tt>
-<dd> This function s called whenever somoene performs a cast from a string
+<dd> This function is called whenever someone performs a cast from a string
      to a program.
 <dt> <tt>program handle_inherit(string <i>program_name</i>, string <i>current_file</i>)</tt>
 <dd> This is called whenever a pike program which uses inherit with a string
@@ -12543,12 +12544,12 @@ in the <b>master object</b>:
 <dd> This function is used to locate include files. <i>file</i> is the file
      name the user wants to include, and <i>local_include</i> is 1 if
      the user used doublequotes rather than lesser-than, greather-than to
-     quote the file name. Othewise it is zero.
+     quote the file name. Otherwise it is zero.
 </dl>
 <p>
 Aside from the above functions, which are expected from the Pike binary,
-the master object is also exepcted to provide functions used by Pike
-scripts. The current master add the following global functions:
+the master object is also expected to provide functions used by Pike
+scripts. The current master adds the following global functions:
 <dl><dd>
 	add_include_path, remove_include_path, add_module_path,
 	remove_module_path, master, describe_backtrace, mkmultiset,
@@ -12578,6 +12579,19 @@ Let's look an example:
 	  void handle_error(mixed *trace)
 	  {
 	    Stdio.write_file("errorlog",describe_backtrace(trace));
+	  }
+	  void create()
+	  {
+	    /* You need to copy the values from the old master to the new */
+	    /* NOTE: At this point we are still using the old master */
+	    object old_master = master();
+	    object new_master = this_object();
+
+	    foreach(indices(old_master), string varname)
+	    {
+	      /* The catch is needed since we can't assign constants */
+	      catch { new_master[varname] = old_master[varname]; };
+	    }
 	  }
 	};
 
@@ -12889,7 +12903,7 @@ This is the BNF for Pike:
 <tr valign=top><td>expression2</td><td>::=</td><td>{ lvalue ( "=" | "+=" | "*=" | "/=" | "&amp;=" | "|=" | "^=" | "&lt;&lt;=" | "&gt;&gt;=" | "%=" ) } expression3</td></tr>
 <tr valign=top><td>expression3</td><td>::=</td><td>expression4 '?' expression3 ":" expression3 </td></tr>
 <tr valign=top><td>expression4</td><td>::=</td><td>{ expression5 ( "||" | "&amp;&amp;" | "|" | "^" | "&amp;" | "==" | "!=" | "&gt;" | "&lg;" | "&gt;=" | "&lt;=" | "&lt;&lt;" | "&gt;&gt;" | "+" | "*" | "/" | "%" ) } expression5</td></tr>
-<tr valign=top><td>expression5</td><td>::=</td><td>expression6 | "(" type ")" expression5 | "--" expression6 | "++" expression6 | expression6 "--" | expression6 "++" | "~" expression5 | "-" expression5 </td></tr>
+<tr valign=top><td>expression5</td><td>::=</td><td>expression6 | "(" type ")" expression5 | "-<tt></tt>-" expression6 | "++" expression6 | expression6 "-<tt></tt>-" | expression6 "++" | "~" expression5 | "-" expression5 </td></tr>
 <tr valign=top><td>expression6</td><td>::=</td><td>string | number | float | catch | guage | typeof | sscanf | lambda | class | constant_identifer | call | index | mapping | multiset | array | parenthesis | arrow </td></tr>
 <tr valign=top><td>number</td><td>::=</td><td>digit { digit } | "0x" { digits } | "'" character "'" </td></tr>
 <tr valign=top><td>float</td><td>::=</td><td>digit { digit } "." { digit }</td></tr>
@@ -12909,7 +12923,7 @@ This is the BNF for Pike:
 <tr valign=top><td>parenthesis</td><td>::=</td><td>"(" expression ")"</td></tr>
 <tr valign=top><td>expression_list</td><td>::=</td><td> [ splice_expression { "," splice_expression } ] [ "," ]</td></tr>
 <tr valign=top><td>splice_expression</td><td>::=</td><td>[ "@" ] expression2</td></tr>
-<tr valign=top><td>type</td><td>::=</td><td> ( <b>int</b> | <b>string</b> | <b>float</b> | <b>program</b> | <b>object</b> [ "(" program_specifier ")" ] | mapping [ "(" type ":" type ")" | array [ "(" type ")" ] | multiset [ "(" type ")" ] | function [ function_type ] ) { "*" }</td></tr>
+<tr valign=top><td>type</td><td>::=</td><td> ( <b>int</b> | <b>string</b> | <b>float</b> | <b>program</b> | <b>object</b> [ "(" program_specifier ")" ] | <b>mapping</b> [ "(" type ":" type ")" | <b>array</b> [ "(" type ")" ] | <b>multiset</b> [ "(" type ")" ] | <b>function</b> [ function_type ] ) { "*" }</td></tr>
 <tr valign=top><td>function_type</td><td>::=</td><td>"(" [ type { "," type } [ "..." ] ")"</td></tr>
 <tr valign=top><td>arguments</td><td>::=</td><td>[ argument { "," argument } ] [","]</td></tr>
 <tr valign=top><td>argument</td><td>::=</td><td>type [ "..." ] [ identifier ]</td></tr>
@@ -12924,13 +12938,13 @@ This is the BNF for Pike:
 <HR NEWPAGE>
 <h2> Appendix E: How to install Pike</h2>
 To install pike, you need a C compiler, a couple of Mb of disk space,
-the source for Pike, and a bit of patientce. The latest version of Pike is
+the source for Pike, and a bit of patience. The latest version of Pike is
 always available from <a href=http://pike.infovav.se>the Pike home page</a>.
-lists of mirror sites and binary releases should also be available there.
+Lists of mirror sites and binary releases should also be available there.
 Pike should compile and install nicely on almost any UNIX platform. It has
 been tested on the following:
 <ul>
-<li> Solaris 2.4, 2.5
+<li> Solaris 2.4, 2.5, 2.5.1
 <li> Sunos 4.1.1, 4.1.3
 <li> Linux Red Hat 3, Red Hat 4, Slackware 3.0, Slackware 96
 <li> HP-UX 9, 10
@@ -12950,14 +12964,14 @@ typing:
 	$ tar xvf Pike-v0.4.tar
 </pre>
 
-Now you have a directory called Pike-v0.3. Please read the README file
-in the new directory since newer version can contain information not
+Now you have a directory called Pike-v0.4. Please read the README file
+in the new directory since newer versions can contain information not
 available at the time this book was written.
 <p>
 Now, to compile Pike, the following three commands should be enough.
 <pre>
 	$ cd Pike-v0.4/src
-	$ ./configure --prefix=/dir/to/install/pike
+	$ ./configure -<tt>-prefix=/dir/to/install/pike
 	$ make
 </pre>
 They will (in order) change directory to the source directory. Configure will
