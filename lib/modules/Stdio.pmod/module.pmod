@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.182 2003/10/05 19:34:20 grubba Exp $
+// $Id: module.pmod,v 1.183 2003/10/08 18:51:49 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -467,7 +467,7 @@ class File
   //! This function creates a pipe between the object it was called in
   //! and an object that is returned.
   //!
-  //! @param void|int required_properties
+  //! @param required_properties
   //!   Binary or (@[predef::`|()]) of required @expr{PROP_@} properties.
   //!   @int
   //!     @value PROP_IPC

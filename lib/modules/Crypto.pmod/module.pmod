@@ -181,6 +181,7 @@ class DES_Algorithm
 
 DES_Algorithm DES = DES_Algorithm();
 
+//!
 class DES3_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.

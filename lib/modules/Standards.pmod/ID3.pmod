@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.14 2003/10/03 23:46:31 nilsson Exp $
+//  $Id: ID3.pmod,v 1.15 2003/10/08 18:52:34 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -169,6 +169,7 @@ class TagHeader {
   }
 }
 
+//!
 class ExtendedHeader {
 
   int(0..1) flag_is_update = 0;
