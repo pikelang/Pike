@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.37 1998/01/26 19:59:56 hubbe Exp $");
+RCSID("$Id: main.c,v 1.38 1998/01/27 18:06:43 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -285,8 +285,7 @@ int dbm_main(int argc, char **argv)
     }else{
       ONERROR tmp;
       SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
-      assign_svalue_no_free(sp, & throw_value);
-      sp++;
+      push_svalue(& throw_value);
       APPLY_MASTER("handle_error", 1);
       pop_stack();
       UNSET_ONERROR(tmp);
@@ -357,6 +356,8 @@ void low_exit_main(void)
   cleanup_compiler();
 
   do_gc();
+  free_svalue(& throw_value);
+  throw_value.type=T_INT;
 
   cleanup_callbacks();
 #if defined(DEBUG) && defined(DEBUG_MALLOC)
