@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Stack.pike,v 1.6 2002/03/25 22:39:07 nilsson Exp $
+// $Id: Stack.pike,v 1.7 2002/03/26 11:40:18 nilsson Exp $
 
 //! This class implements a simple stack. Instead of adding and removing
 //! elements to an array, and thus making it vary in size for every push
@@ -102,7 +102,36 @@ void create(int|void initial_size)
   arr = allocate(initial_size || 32);
 }
 
-//!
+//! Sets the stacks content to the provided array.
+void set_stack(array stack) {
+  arr = stack;
+  ptr = sizeof(arr);
+}
+
+//! @[sizeof] on a stack returns the number of entries
+//! in the stack.
 int _sizeof() {
   return ptr;
+}
+
+//! @[values] on a stack returns all the entries in
+//! the stack, in order.
+array _values() {
+  return arr[..ptr-1];
+}
+
+//! A stack added with another stack yields a third
+//! a third stack will all the stack elements from
+//! the two first stacks.
+ADT.Stack `+(ADT.Stack s) {
+  array elem = arr[..ptr-1]+values(s);
+  ADT.Stack ns = ADT.Stack(1);
+  ns->set_stack(elem);
+  return ns;
+}
+
+string _sprintf(int t) {
+  if(t=='t') return "ADT.Stack";
+  if(t=='O') return sprintf("ADT.Stack%O", _values());
+  error("Can't display ADT.Stack as %c.", t);
 }
