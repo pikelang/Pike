@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.109 2004/03/01 22:43:18 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.110 2004/04/08 14:50:43 grubba Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -2352,7 +2352,7 @@ dump state
 dump wrapper
       Show the latest Hilfe wrapper that the last expression was
       evaluated in. Useful when debugging Hilfe (i.e. investigating
-      why valid Pike expressions doesn't compile).
+      why valid Pike expressions don't compile).
 ";
 
 constant documentation_new =
