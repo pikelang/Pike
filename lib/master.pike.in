@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.227 2002/11/24 16:46:33 grubba Exp $
+// $Id: master.pike.in,v 1.228 2002/11/24 18:20:09 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -2511,7 +2511,7 @@ string describe_program(program p)
   string s;
   if(!p) return 0;
 
-  if(s=get_clean_program_path(p, "program(", ")", ""))
+  if(s=get_clean_program_path(p, "object_program(", ")", ""))
     return s;
 
   if(mixed tmp=function_object(p))
