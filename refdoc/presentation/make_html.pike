@@ -769,6 +769,13 @@ string parse_type(Node n, void|string debug) {
       ret += "<font color='#202020'>object</font>";
     break;
 
+  case "type":
+    ret += "<font color='#202020'>type</font>";
+    if (n->count_children() && (c = get_first_element(n)))
+      ret += "(" + parse_type(c) + ")";
+    }
+    break;
+
   case "multiset":
     ret += "<font color='#202020'>multiset</font>";
     c = n->get_first_element("indextype");
@@ -825,6 +832,7 @@ string parse_type(Node n, void|string debug) {
     break;
 
   case "string": case "void": case "program": case "mixed": case "float":
+  case "zero":
     ret += "<font color='#202020'>" + n->get_any_name() + "</font>";
     break;
 
