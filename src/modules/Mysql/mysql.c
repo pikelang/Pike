@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.73 2003/04/30 10:35:03 grubba Exp $
+|| $Id: mysql.c,v 1.74 2003/10/13 15:41:59 mast Exp $
 */
 
 /*
@@ -96,7 +96,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.73 2003/04/30 10:35:03 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.74 2003/10/13 15:41:59 mast Exp $");
 
 /*! @module Mysql
  *!
@@ -156,6 +156,19 @@ static MUTEX_T stupid_port_lock;
 #define MYSQL_ALLOW()
 #define MYSQL_DISALLOW()
 #endif /* _REENTRANT */
+
+#define CHECK_8BIT_NONBINARY_STRING(FUNC, ARG) do {			\
+    if (sp[ARG-1-args].type != T_STRING ||				\
+	sp[ARG-1-args].u.string->size_shift ||				\
+	strlen (sp[ARG-1-args].u.string->str) != sp[ARG-1-args].u.string->len) \
+      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (nonbinary 8bit)");	\
+  } while (0)
+
+#define CHECK_8BIT_STRING(FUNC, ARG) do {				\
+    if (sp[ARG-1-args].type != T_STRING ||				\
+	sp[ARG-1-args].u.string->size_shift)				\
+      SIMPLE_BAD_ARG_ERROR (FUNC, ARG, "string (nonbinary 8bit)");	\
+  } while (0)
 
 
 /*
@@ -568,39 +581,31 @@ static void f_create(INT32 args)
 #endif /* HAVE_MYSQL_OPTIONS */
 
   if (args >= 1) {
-    if (sp[-args].type != T_STRING) {
-      Pike_error("Bad argument 1 to mysql()\n");
-    }
+    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 1);
     if (sp[-args].u.string->len) {
       add_ref(PIKE_MYSQL->host = sp[-args].u.string);
     }
 
     if (args >= 2) {
-      if (sp[1-args].type != T_STRING) {
-	Pike_error("Bad argument 2 to mysql()\n");
-      }
+      CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 2);
       if (sp[1-args].u.string->len) {
 	add_ref(PIKE_MYSQL->database = sp[1-args].u.string);
       }
       
       if (args >= 3) {
-	if (sp[2-args].type != T_STRING) {
-	  Pike_error("Bad argument 3 to mysql()\n");
-	}
+	CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 3);
 	if (sp[2-args].u.string->len) {
 	  add_ref(PIKE_MYSQL->user = sp[2-args].u.string);
 	}
 	
 	if (args >= 4) {
-	  if (sp[3-args].type != T_STRING) {
-	    Pike_error("Bad argument 4 to mysql()\n");
-	  }
+	  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create", 4);
 	  if (sp[3-args].u.string->len) {
 	    add_ref(PIKE_MYSQL->password = sp[3-args].u.string);
 	  }
 	  if (args >= 5) {
 	    if (sp[4-args].type != T_MAPPING) {
-	      Pike_error("Bad argument 5 to mysql()\n");
+	      SIMPLE_BAD_ARG_ERROR ("Mysql.mysql->create", 5, "mapping(string:mixed)");
 	    }
 	    add_ref(PIKE_MYSQL->options = sp[4-args].u.mapping);
 	    pike_mysql_set_options(sp[4-args].u.mapping);
@@ -772,11 +777,9 @@ static void f_select_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    Pike_error("Too few arguments to mysql->select_db()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->select_db", 1);
   }
-  if (sp[-args].type != T_STRING) {
-    Pike_error("Bad argument 1 to mysql->select_db()\n");
-  }
+  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->select_db", 1);
 
   database = sp[-args].u.string->str;
 
@@ -807,7 +810,7 @@ static void f_select_db(INT32 args)
     err = mysql_error(socket);
     MYSQL_DISALLOW();
 
-    Pike_error("mysql->select_db(): Couldn't select database \"%s\" (%s)\n",
+    Pike_error("Mysql.mysql->select_db(): Couldn't select database \"%s\" (%s)\n",
 	  sp[-args].u.string->str, err);
   }
   if (PIKE_MYSQL->database) {
@@ -840,11 +843,13 @@ static void f_big_query(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    Pike_error("Too few arguments to mysql->big_query()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->big_query", 1);
   }
-  if (sp[-args].type != T_STRING) {
-    Pike_error("Bad argument 1 to mysql->big_query()\n");
-  }
+#ifdef HAVE_MYSQL_REAL_QUERY
+  CHECK_8BIT_STRING ("Mysql.mysql->big_query", 1);
+#else
+  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->big_query", 1);
+#endif
 
   query = sp[-args].u.string->str;
   qlen = sp[-args].u.string->len;
@@ -905,10 +910,10 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (sp[-args].u.string->len <= 512) {
-      Pike_error("mysql->big_query(): Query \"%s\" failed (%s)\n",
+      Pike_error("Mysql.mysql->big_query(): Query \"%s\" failed (%s)\n",
 	    sp[-args].u.string->str, err);
     } else {
-      Pike_error("mysql->big_query(): Query failed (%s)\n", err);
+      Pike_error("Mysql.mysql->big_query(): Query failed (%s)\n", err);
     }
   }
 
@@ -932,7 +937,7 @@ static void f_big_query(INT32 args)
     MYSQL_DISALLOW();
 
     if (err) {
-      Pike_error("mysql->big_query(): Couldn't create result for query\n");
+      Pike_error("Mysql.mysql->big_query(): Couldn't create result for query\n");
     }
     /* query was INSERT or similar - return 0 */
 
@@ -950,7 +955,7 @@ static void f_big_query(INT32 args)
     if ((!(res = (struct precompiled_mysql_result *)
 	   get_storage(o, mysql_result_program))) || res->result) {
       mysql_free_result(result);
-      Pike_error("mysql->big_query(): Bad mysql result object!\n");
+      Pike_error("Mysql.mysql->big_query(): Bad mysql result object!\n");
     }
     res->result = result;
   }
@@ -973,11 +978,9 @@ static void f_create_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    Pike_error("Too few arguments to mysql->create_db()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->create_db", 1);
   }
-  if (sp[-args].type != T_STRING) {
-    Pike_error("Bad argument 1 to mysql->create_db()\n");
-  }
+  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->create_db", 1);
   if (sp[-args].u.string->len > 127) {
     if (sp[-args].u.string->len < 1024) {
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
@@ -1009,7 +1012,7 @@ static void f_create_db(INT32 args)
   }
 
   if (tmp < 0) {
-    Pike_error("mysql->create_db(): Creation of database \"%s\" failed\n",
+    Pike_error("Mysql.mysql->create_db(): Creation of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
 
@@ -1032,11 +1035,9 @@ static void f_drop_db(INT32 args)
   int tmp = -1;
 
   if (!args) {
-    Pike_error("Too few arguments to mysql->drop_db()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->drop_db", 1);
   }
-  if (sp[-args].type != T_STRING) {
-    Pike_error("Bad argument 1 to mysql->drop_db()\n");
-  }
+  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->drop_db", 1);
   if (sp[-args].u.string->len > 127) {
     if (sp[-args].u.string->len < 1024) {
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
@@ -1069,7 +1070,7 @@ static void f_drop_db(INT32 args)
   }    
 
   if (tmp < 0) {
-    Pike_error("mysql->drop_db(): Drop of database \"%s\" failed\n",
+    Pike_error("Mysql.mysql->drop_db(): Drop of database \"%s\" failed\n",
 	  sp[-args].u.string->str);
   }
 
@@ -1112,7 +1113,7 @@ static void f_shutdown(INT32 args)
   }
 
   if (tmp < 0) {
-    Pike_error("mysql->shutdown(): Shutdown failed\n");
+    Pike_error("Mysql.mysql->shutdown(): Shutdown failed\n");
   }
 
   pop_n_elems(args);
@@ -1153,7 +1154,7 @@ static void f_reload(INT32 args)
   }
 
   if (tmp < 0) {
-    Pike_error("mysql->reload(): Reload failed\n");
+    Pike_error("Mysql.mysql->reload(): Reload failed\n");
   }
 
   pop_n_elems(args);
@@ -1299,9 +1300,7 @@ static void f_list_dbs(INT32 args)
   char *wild = NULL;
 
   if (args) {
-    if (sp[-args].type != T_STRING) {
-      Pike_error("Bad argument 1 to mysql->list_dbs()\n");
-    }
+    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_dbs", 1);
     if (sp[-args].u.string->len > 80) {
       if (sp[-args].u.string->len < 1024) {
 	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
@@ -1343,7 +1342,7 @@ static void f_list_dbs(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("mysql->list_dbs(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_dbs(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1361,7 +1360,7 @@ static void f_list_dbs(INT32 args)
     if ((!(res = (struct precompiled_mysql_result *)
 	   get_storage(o, mysql_result_program))) || res->result) {
       mysql_free_result(result);
-      Pike_error("mysql->list_dbs(): Bad mysql result object!\n");
+      Pike_error("Mysql.mysql->list_dbs(): Bad mysql result object!\n");
     }
     res->result = result;
   }
@@ -1387,9 +1386,7 @@ static void f_list_tables(INT32 args)
   char *wild = NULL;
 
   if (args) {
-    if (sp[-args].type != T_STRING) {
-      Pike_error("Bad argument 1 to mysql->list_tables()\n");
-    }
+    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_tables", 1);
     if (sp[-args].u.string->len > 80) {
       if (sp[-args].u.string->len < 1024) {
 	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
@@ -1431,7 +1428,7 @@ static void f_list_tables(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("mysql->list_tables(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_tables(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1449,7 +1446,7 @@ static void f_list_tables(INT32 args)
     if ((!(res = (struct precompiled_mysql_result *)
 	   get_storage(o, mysql_result_program))) || res->result) {
       mysql_free_result(result);
-      Pike_error("mysql->list_tables(): Bad mysql result object!\n");
+      Pike_error("Mysql.mysql->list_tables(): Bad mysql result object!\n");
     }
     res->result = result;
   }
@@ -1521,12 +1518,10 @@ static void f_list_fields(INT32 args)
   char *wild = NULL;
 
   if (!args) {
-    Pike_error("Too few arguments to mysql->list_fields()\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR ("Mysql.mysql->list_fields", 1);
   }
-  
-  if (sp[-args].type != T_STRING) {
-    Pike_error("Bad argument 1 to mysql->list_fields()\n");
-  }
+
+  CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_fields", 1);
   if (sp[-args].u.string->len > 125) {
     if (sp[-args].u.string->len < 1024) {
       Pike_error("Table name \"%s\" is too long (max 125 characters)\n",
@@ -1538,9 +1533,7 @@ static void f_list_fields(INT32 args)
   }
   table = sp[-args].u.string->str;
   if (args > 1) {
-    if (sp[-args+1].type != T_STRING) {
-      Pike_error("Bad argument 2 to mysql->list_fields()\n");
-    }
+    CHECK_8BIT_NONBINARY_STRING ("Mysql.mysql->list_fields", 2);
     if (sp[-args+1].u.string->len + sp[-args].u.string->len > 125) {
       /* The length of the table name has already been checked. */
       if (sp[-args+1].u.string->len < 1024) {
@@ -1586,7 +1579,7 @@ static void f_list_fields(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("mysql->list_fields(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_fields(): Cannot list databases: %s\n", err);
   }
 
   pop_n_elems(args);
@@ -1646,7 +1639,7 @@ static void f_list_processes(INT32 args)
 
     MYSQL_DISALLOW();
 
-    Pike_error("mysql->list_processes(): Cannot list databases: %s\n", err);
+    Pike_error("Mysql.mysql->list_processes(): Cannot list databases: %s\n", err);
   }
 
   {
@@ -1662,7 +1655,7 @@ static void f_list_processes(INT32 args)
     if ((!(res = (struct precompiled_mysql_result *)
 	   get_storage(o, mysql_result_program))) || res->result) {
       mysql_free_result(result);
-      Pike_error("mysql->list_processes(): Bad mysql result object!\n");
+      Pike_error("Mysql.mysql->list_processes(): Bad mysql result object!\n");
     }
     res->result = result;
   }
