@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.29 2004/05/01 12:53:44 mast Exp $
+# $Id: common_module_makefile.in,v 1.30 2004/10/14 11:29:20 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -21,7 +21,8 @@ PREFLAGS=-I. -I$(SRCDIR) -I$(BUILD_BASE) -I$(PIKE_SRC_DIR) $(LINKAGE_CPPFLAGS) $
 CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(OTHERFLAGS) $(LINKAGE_CFLAGS)
 NOOPT_CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(NOOPTFLAGS) $(LINKAGE_CFLAGS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) $(LINKAGE_CFLAGS)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) $(LINKAGE_CFLAGS)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAG
+S=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
 
 MODULE_BASE=$(BUILD_BASE)/modules
 TMP_MODULE_BASE=$(TMP_LIBDIR)/modules
@@ -215,7 +216,7 @@ gdb_verify: testsuite $(PIKE_EXTERNAL_MODULE)
 
 extract_autodoc: $(PIKE_EXTERNAL_MODULE) plib/refdoc plib/doc_build/images
 	$(RUNPIKE) -x extract_autodoc --builddir=plib/refdoc --srcdir=plib/modules
-	if test "X$(AUTODOC_SRC_IN)" -ne "X"; then \
+	if test "X$(AUTODOC_SRC_IN)" != "X"; then \
 	$(RUNPIKE) -x extract_autodoc --builddir=plib/refdoc $(AUTODOC_SRC_IN); \
 	fi
 
