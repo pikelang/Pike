@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.187 2000/12/06 17:59:54 marcus Exp $");
+RCSID("$Id: signal_handler.c,v 1.188 2001/01/16 14:14:54 jhs Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1640,65 +1640,6 @@ void f_set_priority( INT32 args )
 }
 
 
-/*
- * create_process(string *arguments, mapping optional_data);
- *
- * optional_data:
- *
- *   stdin	object(files.file)
- *   stdout	object(files.file)
- *   stderr	object(files.file)
- *   cwd	string
- *   env	mapping(string:string)
- *   priority   string
- *               "highest"                      realtime, or similar
- *               "high"
- *               "normal"                       the normal execution level
- *               "low"
- *               "lowest*                       the lowest possible priority
- *
- *
- * only on UNIX:
- *
- *   fds		array(object(files.file))	fds 3-.
- *   uid		int|string
- *   gid		int|string
- *   nice		int
- *   noinitgroups	int
- *   setgroups		array(int|string)
- *   keep_signals	int
- *   rlimit             mapping(string:int|array(int|string)|mapping(string:int|string)|string)
- *                         There are two values for each limit, the
- *                         soft limit and the hard limit. Processes
- *                         that does not have UID 0 may not raise the
- *                         hard limit, and the soft limit may never be
- *                         increased over the hard limit.
- *                         value is:
- *                            integer     -> sets cur, max left as it is.
- *                            mapping     -> ([ "hard":int, "soft":int ])
- *                                           Both values are optional.
- *                            array       -> ({ hard, soft }), 
- *                                            both can be set to the string
- *                                            "unlimited". 
- *                                            a value of -1 means 
- *                                            'keep the old value'
- *                            "unlimited" ->  set both to unlimited
- * 
- *                         the limits are
- *                            core          core file size
- *                            cpu           cpu time, in seconds
- *                            fsize         file size, in bytes
- *                            nofiles       the number of file descriptors
- * 
- *                            stack         stack size in bytes
- *                            data          heap (brk, malloc) size
- *                            map_mem       mmap() and heap size
- *                            mem           mmap, heap and stack size
- *
- *
- * FIXME:
- *   Support for setresgid().
- */
 #ifndef __amigaos__
 #ifdef HAVE_SETRLIMIT
 static void internal_add_limit( struct perishables *storage, 
@@ -1763,6 +1704,168 @@ static void internal_add_limit( struct perishables *storage,
 }
 #endif
 #endif /* __amigaos__ */
+
+
+/*! @module Process */
+
+/*! @class create_process
+ *! This is the recommended and most portable way to start processes
+ *! in Pike. The process object is a pike abstraction of the running
+ *! system process, with methods for various process housekeeping.
+ */
+
+/*! @decl constant limit_value = int|array(int|string)|mapping(string:int|string)|string
+ *!  Each @i{limit_value@} may be either of:
+ *!
+ *!  @dl
+ *!  @item integer
+ *!   sets current limit, max is left as it is.
+ *!  @item mapping
+ *!   ([ "hard":int, "soft":int ]) Both values are optional,
+ *!   hard <= soft.
+ *!  @item array
+ *!   ({ hard, soft }), both can be set to the string
+ *!   "unlimited". A value of -1 means 'keep the old value'.
+ *!  @item string
+ *!   The string "unlimited" sets both the hard and soft limit to unlimited
+ *!  @enddl
+ */
+
+/*! @decl void Process.create_process.create(array(string) command_args, void|mapping modifiers);
+ *!
+ *! @param command_args
+ *! The command name and its command-line arguments. You do not have
+ *! to worry about quoting them; pike does this for you.
+ *!
+ *! @param modifiers
+ *! This optional mapping can can contain zero or more of the
+ *! following parameters:
+ *!
+ *! @mapping
+ *!
+ *! @member string "cwd"
+ *!  Execute the command in another directory than the current
+ *!  directory of this process. Please note that if the command is
+ *!  given is a relative path, it will be relative to this directory
+ *!  rather than the current directory of this process.
+ *!
+ *! @member Stdio.File "stdin"
+ *! @member Stdio.File "stdout"
+ *! @member Stdio.File "stderr"
+ *!  These parameters allows you to change the standard input, output
+ *!  and error streams of the newly created process. This is
+ *!  particularly useful in combination with @[Stdio.File.pipe].
+ *!
+ *! @member mapping(string:string) "env"
+ *!  This mapping will become the environment variables for the
+ *!  created process. Normally you will want to only add or change
+ *!  variables which can be achived by getting the environment mapping
+ *!  for this process with @[getenv]. See the examples section.
+ *!
+ *! @member int|string "uid"
+ *!  This parameter changes which user the new process will execute
+ *!  as. Note that the current process must be running as UID 0 to use
+ *!  this option. The uid can be given either as an integer as a
+ *!  string containing the login name of that user.
+ *!
+ *!  The "gid" and "groups" for the new process will be set to the
+ *!  right values for that user unless overriden by options below.
+ *!
+ *!  (See @[setuid] and @[getpwuid] for more info.)
+ *!
+ *! @member int|string "gid"
+ *!  This parameter changes the primary group for the new process.
+ *!  When the new process creates files, they will will be created
+ *!  with this group. The group can either be given as an int or a
+ *!  string containing the name of the group. (See @[setuid]
+ *!  and @[getgrgid] for more info.)
+ *!
+ *! @member array(int|string) "setgroups"
+ *!  This parameter allows you to the set the list of groups that the
+ *!  new process belongs to. It is recommended that if you use this
+ *!  parameter you supply at least one and no more than 16 groups.
+ *!  (Some system only support up to 8...) The groups can be given as
+ *!  gids or as strings with the group names.
+ *!
+ *! @member int(0..1) "noinitgroups"
+ *!  This parameter overrides a behaviour of the "uid" parameter. If
+ *!  this parameter is used, the gid and groups of the new process
+ *!  will be inherited from the current process rather than changed to
+ *!  the approperiate values for that uid.
+ *!
+ *! @member string "priority"
+ *!  This sets the priority of the new process, see
+ *!  @[set_priority] for more info.
+ *!
+ *! @member int "nice"
+ *!  This sets the nice level of the new process; the lower the
+ *!  number, the higher the priority of the process. Note that only
+ *!  UID 0 may use negative numbers.
+ *!
+ *! @member int(0..1) "keep_signals"
+ *!  This prevents Pike from restoring all signal handlers to their
+ *!  default values for the new process. Useful to ignore certain
+ *!  signals in the new process.
+ *!
+ *! @member array(Stdio.File|int(0..0)) "fds"
+ *!  This parameter allows you to map files to filedescriptors 3 and
+ *!  up. The file @tt{fds[0]@} will be remapped to fd 3 in the new
+ *!  process, etc.
+ *!
+ *! @member mapping(string:limit_value) "rlimit"
+ *!  There are two values for each limit, the soft limit and the hard
+ *!  limit. Processes that do not have UID 0 may not raise the hard
+ *!  limit, and the soft limit may never be increased over the hard
+ *!  limit. The indices of the mapping indicate what limit to impose,
+ *!  and the values dictate what the limit should be. (See also
+ *!  @[system.setrlimit])
+ *!
+ *! @mapping
+ *! @member limit_value "core"
+ *!  maximum core file size in bytes
+ *!
+ *! @member limit_value "cpu"
+ *!  maximum amount of cpu time used by the process in seconds
+ *!
+ *! @member limit_value "data"
+ *!  maximum heap (brk, malloc) size in bytes
+ *!
+ *! @member limit_value "fsize"
+ *!  maximum size of files created by the process in bytes
+ *!
+ *! @member limit_value "map_mem"
+ *!  maximum size of the process's mapped address space (mmap() and
+ *!  heap size) in bytes
+ *!
+ *! @member limit_value "mem"
+ *!  maximum size of the process's total amount of available memory
+ *!  (mmap, heap and stack size) in bytes
+ *!
+ *! @member limit_value "nofile"
+ *!  maximum number of file descriptors the process may create
+ *!
+ *! @member limit_value "stack"
+ *!  maximum stack size in bytes
+ *! @endmapping
+ *!
+ *! @endmapping
+ *!
+ *! @example
+ *! Process.create_process(({ "/usr/bin/env" }),
+ *!                        (["env" : getenv() + (["TERM":"vt100"]) ]));
+ *!
+ *! @note
+ *! All parameters that accept both string or int input can be
+ *! noticeably slower using a string instead of an integer; if maximum
+ *! performance is an issue, please use integers.
+ *!
+ *! The "fds", "uid", "gid", "nice", "noinitgroups", "setgroups",
+ *! "keep_signals" and "rlimit" modifiers only exist on unix.
+ */
+
+/*! @endclass */
+
+/*! @endmodule */
 
 void f_create_process(INT32 args)
 {
