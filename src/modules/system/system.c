@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.156 2003/09/30 17:55:28 nilsson Exp $
+|| $Id: system.c,v 1.157 2003/09/30 18:20:35 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.156 2003/09/30 17:55:28 nilsson Exp $");
+RCSID("$Id: system.c,v 1.157 2003/09/30 18:20:35 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -633,7 +633,6 @@ void f_cleargroups(INT32 args)
  *!   @[initgroups()], @[cleargroups()], @[getgroups()],
  *!   @[getgid()], @[getgid()], @[getegid()], @[setegid()]
  */
-/* NOT Implemented in Pike 0.5 */
 void f_setgroups(INT32 args)
 {
   static gid_t safeguard[1] = { 65534 };
@@ -861,8 +860,6 @@ void f_seteuid(INT32 args)
 #else
   err = setresuid(-1, id, -1);
 #endif /* HAVE_SETEUID */
-  if(err!=0)
-    Pike_error("seteuid failed.\n");
 
   pop_n_elems(args);
   push_int(err);
