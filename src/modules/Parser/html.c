@@ -2917,9 +2917,10 @@ static void html_feed(INT32 args)
 
    if (args)
    {
-      if (sp[-args].type!=T_STRING)
+      if (sp[-args].type==T_STRING)
+	 low_feed(sp[-args].u.string);
+      else if (sp[-args].type!=T_INT || sp[-args].u.integer)
 	 SIMPLE_BAD_ARG_ERROR("feed",1,"string");
-      low_feed(sp[-args].u.string);
    }
 
    if (args<2 || sp[1-args].type!=T_INT || sp[1-args].u.integer)
@@ -2998,9 +2999,10 @@ static void html_finish(INT32 args)
 {
    if (args)
    {
-      if (sp[-args].type!=T_STRING)
+      if (sp[-args].type==T_STRING)
+	 low_feed(sp[-args].u.string);
+      else if (sp[-args].type!=T_INT || sp[-args].u.integer)
 	 SIMPLE_BAD_ARG_ERROR("finish",1,"string");
-      low_feed(sp[-args].u.string);
    }
    if (THIS->feed || THIS->stack->prev) try_feed(1);
    ref_push_object(THISOBJ);
