@@ -1,5 +1,5 @@
 /*
- * $Id: extract.pike,v 1.16 2002/06/04 13:33:13 mast Exp $
+ * $Id: extract.pike,v 1.17 2002/09/09 14:59:57 bill Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -112,11 +112,10 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
 	parents = ({});
 
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
-
       string name = (name_sans_suffix/"/")[-1];
       if(name == "master.pike")
 	name = "/master";
-      if(name == "module" && !rootless) {
+      if(name == "module" && (filename/"/")[-1] != "module.pike" && !rootless) {
 	if(!sizeof(parents))
 	  error("Unknown module parent name.\n");
 	name = parents[-1];
