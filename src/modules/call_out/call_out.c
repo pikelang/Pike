@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: call_out.c,v 1.16 1997/10/27 01:44:14 hubbe Exp $");
+RCSID("$Id: call_out.c,v 1.17 1997/10/28 03:07:59 hubbe Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -266,6 +266,7 @@ static struct callback *call_out_backend_callback=0;
 static struct callback *mem_callback=0;
 void do_call_outs(struct callback *ignored, void *ignored_too, void *arg);
 
+#ifdef DEBUG
 static void mark_call_outs(struct callback *foo, void *bar, void *gazonk)
 {
   int e;
@@ -276,6 +277,7 @@ static void mark_call_outs(struct callback *foo, void *bar, void *gazonk)
       gc_external_mark(CALL(e).caller);
   }
 }
+#endif
 
 void f_call_out(INT32 args)
 {
@@ -302,15 +304,15 @@ void f_call_out(INT32 args)
     call_out_backend_callback=add_backend_callback(do_call_outs,0,0);
 
   if(!mem_callback)
-  {
     mem_callback=add_memory_usage_callback(count_memory_in_call_outs,0,0);
-    add_gc_callback(mark_call_outs, 0, 0);
-  }
 
 #ifdef DEBUG
   if(!verify_call_out_callback)
+  {
     verify_call_out_callback=add_to_callback(& do_debug_callbacks,
 					     do_verify_call_outs, 0, 0);
+    add_gc_callback(mark_call_outs, 0, 0);
+  }
 #endif
 
 }
