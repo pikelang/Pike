@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.551 2004/12/16 17:08:36 mast Exp $
+|| $Id: builtin_functions.c,v 1.552 2004/12/22 12:48:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.551 2004/12/16 17:08:36 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.552 2004/12/22 12:48:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4348,7 +4348,12 @@ PMOD_EXPORT void f_localtime(INT32 args)
  */
 static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
 {
-  time_t base = (t1->tm_year - t2->tm_year) * 32140800;
+  time_t base;
+
+  /* Win32 localtime() returns NULL for all dates before Jan 01, 1970. */
+  if (!t2) return -1;
+
+  base = (t1->tm_year - t2->tm_year) * 32140800;
 
   /* Overflow detection. (Should possibly be done on the other fields
    * too to cope with very large invalid dates.) */
@@ -4391,6 +4396,13 @@ static int my_time_inverse (struct tm *target_tm, time_t *result, time_fn timefn
 	     current_tm->tm_hour, current_tm->tm_min, current_tm->tm_isdst);
     fprintf (stderr, "diff: %d\n", diff_ts);
 #endif
+
+    if (!current_tm) {
+#ifdef DEBUG_MY_TIME_INVERSE
+      fprintf (stderr, "outside range for timefn().\n");
+#endif
+      return 0;
+    }
 
     if (!diff_ts) {
       /* Got a satisfactory time, but if target_tm has an opinion on
