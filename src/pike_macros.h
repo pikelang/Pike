@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.13 2000/04/06 20:17:05 hubbe Exp $
+ * $Id: pike_macros.h,v 1.14 2000/04/08 01:09:33 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -63,13 +63,14 @@
 #define CONSTANT_STRLEN(X) (sizeof(X) - sizeof(""))
 
 #define SET_NEXT_AND_FREE(p,free_program) do{	\
-      while((next=p->next) && p->refs == 1)	\
-      {						\
-	add_ref(next);				\
-	free_program(p);			\
-	p=next;					\
-      }						\
-      free_program(p);                          \
-    }while(0)
-
+  next=p->next;					\
+  while(p->refs == 1 && (next=p->next))		\
+  {						\
+    add_ref(next);				\
+    free_program(p);				\
+    p=next;					\
+  }						\
+  free_program(p);				\
+}while(0)
+  
 #endif

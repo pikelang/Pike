@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.87 2000/04/06 21:00:20 hubbe Exp $");
+RCSID("$Id: main.c,v 1.88 2000/04/08 01:09:56 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -609,10 +609,10 @@ void low_exit_main(void)
   free(node_hash.table);
 #endif /* SHARED_NODES */
 
-  do_gc();
   exit_pike_security();
   free_svalue(& throw_value);
   throw_value.type=T_INT;
+  do_gc();
 
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
