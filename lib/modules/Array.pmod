@@ -667,25 +667,29 @@ array(array(array)) greedy_diff(array from, array to)
   return low_greedy_diff(d1, d2);
 }
 
-//! @decl int count(array|multiset haystack, mixed needle)
-//! @decl mapping(mixed:int) count(array|multiset haystack)
+//! @decl int count(array|mapping|multiset haystack, mixed needle)
+//! @decl mapping(mixed:int) count(array|mapping|multiset haystack)
 //!   Returns the number of occurrences of @[needle] in @[haystack].
 //!   If the optional @[needle] argument is omitted, @[count] instead
 //!   works similar to the unix command @tt{sort|uniq -c@}, returning
 //!   a mapping with the number of occurrences of each element in
-//!   @[haystack].
+//!   @[haystack]. For array or mapping @[haystack]s, it's the values
+//!   that are counted, for multisets the indices, as you'd expect.
 //! @seealso
 //!   @[String.count], @[search], @[has_value]
-int|mapping count(array|multiset haystack, mixed|void needle)
+int|mapping(mixed:int) count(array|mapping|multiset haystack,
+			     mixed|void needle)
 {
   if(zero_type(needle))
   {
     mapping res = ([]);
+    if(mappingp(haystack))
+      haystack = values(haystack);
     foreach(haystack, mixed what)
       res[what]++;
     return res;
   }
-  return sizeof(map((array)haystack, `==, needle) - ({ 0 }));
+  return sizeof(filter(haystack, `==, needle));
 }
 
 //! Returns a random element from the @[in] array.
