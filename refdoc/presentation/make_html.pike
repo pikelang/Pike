@@ -150,6 +150,14 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
       ret += parse_docgroup(c);
       break;
 
+    case "autodoc":
+      ret += parse_autodoc(c);
+      break;
+
+    case "namespace":
+      ret += parse_namespace(c);
+      break;
+
     case "module":
       ret += parse_module(c);
       break;
@@ -211,11 +219,64 @@ string parse_appendix(Node n, void|int noheader) {
   return ret;
 }
 
+string parse_autodoc(Node n)
+{
+  string ret ="";
+
+  mapping m = n->get_attributes();
+
+  Node c = n->get_first_element("doc");
+  if(c)
+    ret += "<dl>" + parse_doc(c) + "</dl>";
+
+#ifdef DEBUG
+  if(sizeof(n->get_elements("doc"))>1)
+    error( "More than one doc element in autodoc node.\n" );
+#endif
+
+  ret += parse_children(n, "docgroup", parse_docgroup);
+  ret += parse_children(n, "namespace", parse_module);
+
+  return ret;
+}
+
+string parse_namespace(Node n, void|int noheader)
+{
+  string ret = "";
+
+  mapping m = n->get_attributes();
+  int(0..1) header = !noheader && !(m->hidden);
+  if(header)
+    ret += "<dl><dt>"
+      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Namespace <b>" +
+      m->name + "::</b></font></td></tr></table><br />\n"
+      "</dt><dd>";
+
+  Node c = n->get_first_element("doc");
+  if(c)
+    ret += "<dl>" + parse_doc(c) + "</dl>";
+
+#ifdef DEBUG
+  if(sizeof(n->get_elements("doc"))>1)
+    error( "More than one doc element in namespace node.\n" );
+#endif
+
+  ret += parse_children(n, "docgroup", parse_docgroup, noheader);
+  ret += parse_children(n, "class", parse_class, noheader);
+  ret += parse_children(n, "module", parse_module, noheader);
+
+  if(header)
+    ret += "</dd></dl>"; 
+
+  return ret;
+}
+
 string parse_module(Node n, void|int noheader) {
   string ret ="";
 
   mapping m = n->get_attributes();
-  int(0..1) header = !noheader && m->name!="" && !(m->hidden);
+  int(0..1) header = !noheader && !(m->hidden);
   if(header)
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
@@ -237,7 +298,7 @@ string parse_module(Node n, void|int noheader) {
   ret += parse_children(n, "module", parse_module, noheader);
 
   if(header)
-    ret = ret + "</dd></dl>"; 
+    ret += "</dd></dl>"; 
 
   return ret;
 }
@@ -251,14 +312,6 @@ string parse_class(Node n, void|int noheader) {
       render_class_path(n) + n->get_attributes()->name +
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
-
-
-  if(n->get_first_element("inherit")) {
-    ret += "Inherits<ul>";
-    foreach(n->get_elements("inherit"), Node c)
-      ret += "<li>" + quote(c->get_first_element("classname")[0]->get_text()) + "</li>\n";
-    ret += "</ul>\n";
-  }
 
   Node c = n->get_first_element("doc");
 
@@ -274,7 +327,7 @@ string parse_class(Node n, void|int noheader) {
   ret += parse_children(n, "class", parse_class, noheader);
 
   if(!noheader)
-    ret = ret + "</dd></dl>";
+    ret += "</dd></dl>";
   return ret;
 }
 
@@ -418,7 +471,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 	break;
       }
       string ref;
-      ref = c->get_attributes()->resolved;
+      //ref = c->get_attributes()->resolved;
       if(!ref) ref = parse_text(c);
       ret->add("<font face='courier'>", ref, "</font> ");
       break;
@@ -520,8 +573,9 @@ string parse_text(Node n, void|String.Buffer ret) {
 #endif
       m = c->get_attributes();
       if(!m->href)
-	m->href=c[0]->get_text();
-      ret->add( sprintf("<a%{ %s='%s'%}>%s</a>", (array)m, c[0]->get_text()) );
+	m->href=c->value_of_node();
+      ret->add( sprintf("<a%{ %s='%s'%}>%s</a>",
+			(array)m, c->value_of_node()) );
 
     case "section":
       //      werror(c->html_of_node()+"\n");
@@ -669,9 +723,15 @@ string parse_type(Node n, void|string debug) {
   switch(n->get_any_name()) {
 
   case "object":
-    if(n->count_children())
-      ret += "<font color='#005080'>" + n[0]->get_text() + "</font>";
-    else
+    if(n->count_children()) {
+      if (resolve_reference) {
+	ret += "<font color='#005080'>" +
+	  resolve_reference(n->value_of_node(), n->get_attributes()) +
+	  "</font>";
+      } else {
+	ret += "<font color='#005080'>" + n->value_of_node() + "</font>";
+      }
+    } else
       ret += "<font color='#202020'>object</font>";
     break;
 
@@ -738,16 +798,12 @@ string parse_type(Node n, void|string debug) {
     ret += "<font color='#202020'>int</font>";
     c = n->get_first_element("min");
     d = n->get_first_element("max");
-    if(c) c=c[0];
-    if(d) d=d[0];
     if(c && d)
-      ret += "(" + c->get_text() + ".." + d->get_text() + ")";
+      ret += "(" + c->value_of_node() + ".." + d->value_of_node() + ")";
     else if(c)
-      ret += "(" + c->get_text() + "..)";
-#ifdef DEBUG
+      ret += "(" + c->value_of_node() + "..)";
     else if(d)
-      error( "max element without min element in int node.\n" );
-#endif
+      ret += "(.." + d->value_of_node() + ")";
     break;
 
   case "static": // Not in XSLT
@@ -782,11 +838,23 @@ string render_class_path(Node n,int|void class_only)
 	      "section", "subsection" }), string node)
     root = max(root, search(b, node));
   a = a[root+1..];
-  if(sizeof(a) && a[0]->get_attributes()->name=="")
+  if(sizeof(a) && a[0]->get_any_name() == "autodoc")
     a = a[1..];
-  string ret = a->get_attributes()->name * ".";
-  if(!sizeof(ret) || ret[-1]==':')
-    return ret;
+  if (!sizeof(a)) return "";
+  string ret = "";
+  if (a[0]->get_any_name() == "namespace") {
+    a = a->get_attributes()->name;
+    a[0] += "::";
+    if ((<"::","lfun::">)[a[0]]) {
+      // Censor namespaces other than :: and lfun::
+      ret = a[0];
+    }
+    a = a[1..];
+  } else {
+    a = a->get_attributes()->name;
+  }
+  ret += a * ".";
+  if (!sizeof(ret) || ret[-1] == ':') return ret;
   if(n->get_any_name()=="class" || n->get_any_name()=="module")
     return ret + ".";
   if(n->get_parent()->get_parent()->get_any_name()=="class")
@@ -854,7 +922,7 @@ string parse_not_doc(Node n) {
     case "argument":
       if(argument++) ret += ", ";
       cc = c->get_first_element("value");
-      if(cc) ret += "<font color='green'>" + cc[0]->get_text() + "</font>";
+      if(cc) ret += "<font color='green'>" + cc->value_of_node() + "</font>";
       else if( !c->count_children() );
       else if( get_first_element(c)->get_any_name()=="type" && c->get_attributes()->name) {
 	ret += parse_type(get_first_element(get_first_element(c))) + " <font color='#005080'>" +
@@ -895,8 +963,19 @@ string parse_not_doc(Node n) {
       break;
 
     case "inherit":
-      ret += "<font color='red'>Missing content (" + c->render_xml() + ")</font>";
-      // Not implemented yet.
+      ret += "<font face='courier'>inherit ";
+      Node n = c->get_first_element("classname");
+      if (resolve_reference) {
+	ret += "</font>" +
+	  resolve_reference(n->value_of_node(), n->get_attributes());
+      } else {
+	ret += Parser.encode_html_entities(n->value_of_node()) + "</font>";
+      }
+      if (c->get_attributes()->name) {
+	ret += "<font face='courier'> : " + "<font color='#F000F0'>" +
+	  Parser.encode_html_entities(c->get_attributes()->name) +
+	  "</font></font>";
+      }
       break;
 
     default:
@@ -921,9 +1000,20 @@ string parse_docgroup(Node n) {
       if(m["homogen-name"])
 	ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
 	  "</b></font>\n";
-      else
+      else if (m["homogen-type"] == "method") {
 	foreach(Array.uniq(n->get_elements("method")->get_attributes()->name), string name)
 	  ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+      } else if (m["homogen-type"] == "inherit") {
+	foreach(n->get_elements("inherit"), Node child) {
+	  string name = child->get_attributes()->name ||
+	    child->value_of_node();
+	  if (name) {
+	    ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
+	  }
+	}
+      } else {
+	// FIXME: Error?
+      }
     }
     else
       ret += "syntax";

@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.34 2002/11/27 17:38:39 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.35 2002/12/18 20:36:00 grubba Exp $
  *
  */
 
@@ -38,7 +38,7 @@ string cquote(string n)
 string create_reference(string from, string to, string text) {
   return "<font face='courier'><a href='" +
     "../"*max(sizeof(from/"/") - 2, 0) +
-    map(to/".", cquote)*"/" + ".html'>" + text +
+    map(replace(to, "::", "::.")/".", cquote)*"/" + ".html'>" + text +
     "</a></font>";
 }
 
@@ -70,9 +70,7 @@ class Node
     data = get_parser()->finish( _data )->read();
     ENDPROFILE("Parsing");
 
-    string path = replace(make_class_path(), "()->", ".");
-    if(has_suffix(path, "()"))
-      path = path[..sizeof(path)-3];
+    string path = raw_class_path();
     refs[path] = this_object();
 
     sort(class_children->name, class_children);
@@ -129,9 +127,15 @@ class Node
   }
 
   static string parse_node(Parser.HTML p, mapping m, string c) {
-    if(m->name)
-      this_object()[p->tag_name()+"_children"] +=
+    if(m->name) {
+      if (p->tag_name() == "namespace") {
+	this_object()["module_children"] +=
+	({ Node( "namespace", m->name, c, this_object() ) });
+      } else {
+	this_object()[p->tag_name()+"_children"] +=
 	({ Node( p->tag_name(), m->name, c, this_object() ) });
+      }
+    }
     return "";
   }
 
@@ -174,8 +178,9 @@ class Node
 
       case "constant":
       case "variable":
-	string path = replace(make_class_path(), "()->", ".");
-	if(sizeof(path)) path += ".";
+      case "inherit":
+	string path = raw_class_path();
+	if(sizeof(path) && (path[-1] != ':')) path += ".";
 	if(!m["homogen-name"]) {
 	  Parser.HTML()->add_tags
 	    ( ([ "constant":
@@ -189,7 +194,15 @@ class Node
 		   string name = Parser.parse_html_entities(m->name);
 		   refs[path + name] =
 		     Node( "variable", name, "", this_object());
-		 }
+		 },
+		 "inherit":
+		 lambda(Parser.HTML p, mapping m, string c) {
+		   if (m->name) {
+		     string name = Parser.parse_html_entities(m->name);
+		     refs[path + name] =
+		       Node( "inherit", name, "", this_object());
+		   }
+		 },
 	    ]) )->finish(c);
 	}
 	else
@@ -210,6 +223,7 @@ class Node
     parser->xml_tag_syntax(3);
 
     parser->add_container("docgroup", my_parse_docgroup);
+    parser->add_container("namespace", parse_node);
     parser->add_container("module", parse_node);
     parser->add_container("class",  parse_node);
 
@@ -239,7 +253,11 @@ class Node
   {
     if(_make_filename_low) return _make_filename_low;
     PROFILE();
-    _make_filename_low = parent->make_filename_low()+"/"+cquote(name);
+    if (type == "namespace") {
+      _make_filename_low = parent->make_filename_low()+"/"+cquote(name+"::");
+    } else {
+      _make_filename_low = parent->make_filename_low()+"/"+cquote(name);
+    }
     ENDPROFILE("make_filename_low");
     return _make_filename_low;
   }
@@ -286,8 +304,7 @@ class Node
 	  }
 	  // FIXME: Assert that the reference is correct?
 	  return create_reference(make_filename(),
-				  replace(replace(res_obj->make_class_path(),
-					  "()->", "."), "()", ""),
+				  res_obj->raw_class_path(),
 				  _reference);
 	}
 
@@ -315,6 +332,7 @@ class Node
   }
 
   string _make_class_path;
+  string _raw_class_path;
   string make_class_path(void|int(0..1) header)
   {
     if(_make_class_path) return _make_class_path;
@@ -322,21 +340,42 @@ class Node
     array a = reverse(parent->get_ancestors());
 
     _make_class_path = "";
+    _raw_class_path = "";
     foreach(a, Node n)
     {
-      _make_class_path += n->name;
-      if(n->type=="class")
-	_make_class_path += "()->";
-      else if(n->type=="module")
-	_make_class_path += ".";
+      // Hide most namepaces from the class path.
+      if (n->type == "namespace") {
+	_raw_class_path += n->name + "::";
+	if ((<"","lfun">)[n->name]) {
+	  _make_class_path += n->name + "::";
+	}
+      } else {
+	_raw_class_path += n->name + ".";
+	_make_class_path += n->name;
+	if(n->type=="class")
+	  _make_class_path += "()->";
+	else if(n->type=="module")
+	  _make_class_path += ".";
+      }
     }
     _make_class_path += name;
+    _raw_class_path += name;
 
-    if(type=="method")
-      _make_class_path +="()";
+    if(type=="method") {
+      _make_class_path += "()";
+    } else if (type == "namespace") {
+      _make_class_path += "::";
+      _raw_class_path += "::";
+    }
 
     ENDPROFILE("make_class_path");
     return _make_class_path;
+  }
+  string raw_class_path(void|int(0..1) header)
+  {
+    if(_raw_class_path) return _raw_class_path;
+    make_class_path(header);
+    return _raw_class_path;
   }
 
   string make_navbar_really_low(array(Node) children, void|int notables)
@@ -352,7 +391,9 @@ class Node
       string my_name = Parser.encode_html_entities(node->name);
       if(node->type=="method")
 	my_name+="()";
-      else
+      else if (node->type == "namespace")
+	my_name+="::";
+      else 
 	my_name="<b>"+my_name+"</b>";
 
       if(node==this_object())
@@ -488,6 +529,7 @@ class Node
       contents = parse_appendix(n, 1);
     else {
       contents = parse_children(n, "docgroup", parse_docgroup, 1);
+      contents += parse_children(n, "namespace", parse_namespace, 1);
       contents += parse_children(n, "module", parse_module, 1);
       contents += parse_children(n, "class", parse_class, 1);
     }
@@ -545,12 +587,12 @@ class TopNode {
     Parser.HTML parser = Parser.HTML();
     parser->case_insensitive_tag(1);
     parser->xml_tag_syntax(3);
-    parser->add_container("module", lambda(Parser.HTML p, mapping args, string c) {
+    parser->add_container("autodoc", lambda(Parser.HTML p, mapping args, string c) {
                                       return ({ c }); });
     _data = parser->finish(_data)->read();
-    ::create("module", "", _data);
+    ::create("autodoc", "", _data);
     sort(appendix_children->name, appendix_children);
-    type = "";
+    type = "autodoc";
   }
 
   Parser.HTML get_parser() {
@@ -566,7 +608,10 @@ class TopNode {
   int(0..0) find_next_node() { return 0; }
   string make_class_path(void|int(0..1) header) {
     if(header && sizeof(method_children))
-      return "Top level methods";
+      return "Namespaces";
+    return "";
+  }
+  string raw_class_path(void|int(0..1) header) {
     return "";
   }
 

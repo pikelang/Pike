@@ -2,7 +2,7 @@
 <!-- put everything together, as well as information about how to -->
 <!-- split it up into smaller files. -->
 
-<!-- $Id: modref.xml,v 1.5 2002/04/06 21:21:11 nilsson Exp $ -->
+<!-- $Id: modref.xml,v 1.6 2002/12/18 20:36:00 grubba Exp $ -->
 
 <manual>
   <dir name="ignored">
@@ -14,8 +14,8 @@
   </dir>
 
   <void>
-    <insert-move entity="7-0"/>
-    <insert-move entity="7-2"/>
+    <insert-move entity="7-0::"/>
+    <insert-move entity="7-2::"/>
     <insert-move entity="__builtin"/>
     <insert-move entity="_Roxen"/>
     <insert-move entity="lfun::"/>

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.211 2002/12/01 00:16:55 mast Exp $
+|| $Id: object.c,v 1.212 2002/12/18 20:36:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.211 2002/12/01 00:16:55 mast Exp $");
+RCSID("$Id: object.c,v 1.212 2002/12/18 20:36:00 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1747,9 +1747,7 @@ void push_magic_index(struct program *type, int inherit_no, int parent_level)
   push_object(magic);
 }
 
-/*! @module ::
- *!
- *! @endmodule
+/*! @namespace ::
  */
 
 /* The type argument to the magic index functions is intentionally
@@ -2050,6 +2048,9 @@ static void f_magic_values (INT32 args)
     low_object_index_no_free (ITEM(res) + e, obj,
 			      prog->identifier_index[e] + inherit->identifier_level);
 }
+
+/*! @endnamespace
+ */
 
 void init_object(void)
 {

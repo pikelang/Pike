@@ -67,8 +67,10 @@ static private class Extractor {
   // returns ({"class", Class })
   // or ({"module", Module })
   // or ({"docgroup", DocGroup })
+  // or ({"namespace", NameSpace })
   // or 0 if no objects to parse.
-  static array(string|Class|Module|DocGroup) parseObject(Class|Module|void parent)
+  static array(string|Class|Module|NameSpace|DocGroup)
+    parseObject(Class|Module|NameSpace|AutoDoc parent, AutoDoc root)
   {
     Parse token = tokens[0];
     if (!token)
@@ -76,14 +78,18 @@ static private class Extractor {
     MetaData meta = token->metadata();
     array(PikeObject) decls = meta->decls;
     switch (meta->type) {
-      case "class":
-      case "module":
-        {
+    case "namespace":
+      // Namespaces are always located in the root.
+      parent = root;
+      // FALL_THROUGH
+    case "class":
+    case "module":
+      {
         object(Class)|object(Module) alreadyChild =
           parent->findChild(meta->name);
         object(Class)|object(Module) c;
 
-        // see if we are re-enteri ng a previously created class/module...
+        // see if we are re-entering a previously created class/module...
         if (alreadyChild) {
           c = alreadyChild;
           if (meta->type != c->objtype)
@@ -97,12 +103,14 @@ static private class Extractor {
                              " reentrance into '%s %s'", c->objtype, c->name);
         }
         else {
-          c = (meta->type == "module" ? Module() : Class());
+          c = (["module":Module,
+		"class":Class,
+		"namespace":NameSpace])[meta->type]();
           c->name = meta->name;
         }
         decls = ({ c });
         tokens = tokens[1..];
-        parseClassBody(c);
+        parseClassBody(c, root);
         .DocParser.Parse p = tokens[0];
         MetaData endmeta = p ? p->metadata() : 0;
         if (!endmeta || endmeta->type != "end" + meta->type)
@@ -130,10 +138,10 @@ static private class Extractor {
         c->belongs = meta->belongs;
         tokens = tokens[1..];
         return ({ meta->type, c });
-        }
-        break;
-      case "decl":
-        {
+      }
+      break;
+    case "decl":
+      {
         mapping(string:int) contexts = ([]);
         foreach (decls, PikeObject obj)
           contexts[obj->objtype] = 1;
@@ -154,34 +162,38 @@ static private class Extractor {
         d->documentation = doc;
         tokens = tokens[1..];
         return ({ "docgroup", d });
-        }
-        break;
-      case 0:
-        extractorErrorAt(token->currentPosition, "doc comment without destination");
-      default:
-        return 0;
+      }
+      break;
+    case 0:
+      extractorErrorAt(token->currentPosition,
+		       "doc comment without destination");
+    default:
+      return 0;
     }
 
   }
 
-  void parseClassBody(Class|Module c) {
+  void parseClassBody(Class|Module|NameSpace c, AutoDoc root) {
     for(;;) {
-      array(string|Class|Module|DocGroup) a = parseObject(c);
+      array(string|Class|Module|DocGroup) a = parseObject(c, root);
       if (!a)
         return;
       switch ([string]a[0]) {
+        case "namespace":
+          //werror("in parent %O: found child %O\n", c->name, a[1]->name);
+          // Check if it was a namespace we already know of:
+          if (search(root->children, a[1]) < 0)
+            root->AddChild([object(NameSpace)]a[1]);
+          break;
+	  
         case "class":
         case "module":
           //werror("in parent %O: found child %O\n", c->name, a[1]->name);
           // Check if it was a @class or @module that was reentered:
-          if (search(c->children, a[1]) < 0)
-            c->AddChild([object(Class)|object(Module)]a[1]);
+	  if (search(c->children, a[1]) < 0)
+	    c->AddChild([object(Class)|object(Module)]a[1]);
           break;
         case "docgroup":
-          array(PikeObject) objects = ([object(DocGroup)]a[1])->objects;
-          foreach (objects, PikeObject obj)
-            if (obj->objtype == "inherit")
-              c->AddInherit(obj);
           c->AddGroup([object(DocGroup)]a[1]);
           break;
       }
@@ -189,10 +201,21 @@ static private class Extractor {
   }
 }
 
-Module extract(string s, string|void filename) {
+AutoDoc extract(string s, string|void filename, string|void namespace)
+{
   Extractor e = Extractor(s, filename);
-  Module m = Module();
-  m->name = "";  // the top-level module
-  e->parseClassBody(m);
+
+  // Create the top-level module.
+  AutoDoc m = AutoDoc();
+
+  // Create the default namespace.
+  NameSpace ns = NameSpace();
+  ns->name = namespace || "predef";
+  ns->documentation = Documentation();
+  ns->documentation->xml = "";
+  m->AddChild(ns);
+
+  // Perform the actual parsing.
+  e->parseClassBody(ns, m);
   return m;
 }

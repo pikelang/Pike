@@ -39,6 +39,8 @@ mapping(string : int) keywordtype =
   "endclass" : METAKEYWORD,
   "module" : METAKEYWORD,
   "endmodule" : METAKEYWORD,
+  "namespace" : METAKEYWORD,
+  "endnamespace" : METAKEYWORD,
   "decl" : METAKEYWORD,
 
   "b" : BRACEKEYWORD,
@@ -94,6 +96,11 @@ mapping(string : array(string)) attributenames =
   "typedef" : ({ "name" }),
   "enum" : ({ "name" }),
 ]);
+
+mapping(string:array(string)) required_attributes =
+([
+  "param" : ({ "name" }),
+]);  
 
 static constant standard = (<
   "note", "bugs", "example", "seealso", "deprecated", "fixme"
@@ -470,6 +477,12 @@ static class DocParserClass {
       parseError(sprintf("@%s with too many parameters", keyword));
     for (int i = 0; i < sizeof(args); ++i)
       res[attrnames[i]] =  attributequote(args[i]);
+    foreach(required_attributes[keyword]||({}), string attrname) {
+      if (!res[attrname]) {
+	parseError(sprintf("@%s lacking required parameter %s",
+			   keyword, attrname));
+      }
+    }
     return res;
   }
 
@@ -722,9 +735,10 @@ static class DocParserClass {
       string arg = token->arg;
       string endkeyword = 0;
       switch (keyword) {
-        case "class":
-        case "module":
-          {
+      case "namespace":
+      case "class":
+      case "module":
+	{
           if (endkeyword)
             parseError("@%s must stand alone", endkeyword);
           if (meta->appears)
@@ -736,21 +750,39 @@ static class DocParserClass {
           meta->type = keyword;
           .PikeParser nameparser = .PikeParser(arg, currentPosition);
           string s = nameparser->readToken();
-          if (!isIdent(s) && s != "::")
-            parseError("@%s: expected %s name, got %O", keyword, keyword, s);
-          if (nameparser->peekToken() == "::")
-            if (keyword == "module")
-              s += nameparser->readToken();
-            else
-              parseError("@class: 'scope::' only allowed as @module name");
+          if (!isIdent(s)) {
+	    if ((keyword == "namespace") && (s == "::")) {
+	      s = "";
+	    } else {
+	      parseError("@%s: expected %s name, got %O", keyword, keyword, s);
+	    }
+	  } else if (nameparser->peekToken() == "::") {
+	    nameparser->readToken();
+            if (keyword != "namespace")
+              parseError("@%s: '%s::' only allowed as @namespace name",
+			 keyword, s);
+	  }
           if (nameparser->peekToken() != EOF)
             parseError("@%s: expected %s name, got %O", keyword, keyword, arg);
           meta->name = s;
-          }
-          break;
+	}
+	break;
 
-        case "decl":
-          {
+      case "endnamespace":
+      case "endclass":
+      case "endmodule":
+	{
+          if (meta->type || meta->belongs || meta->appears || endkeyword)
+            parseError("@%s must stand alone", keyword);
+          meta->type = endkeyword = keyword;
+          .PikeParser nameparser = .PikeParser(arg, currentPosition);
+          while (nameparser->peekToken() != EOF)
+            meta->name = (meta->name || "") + nameparser->readToken();
+	}
+	break;
+
+      case "decl":
+	{
           if (endkeyword)
             parseError("@%s must stand alone", endkeyword);
           int first = !meta->type;
@@ -781,10 +813,11 @@ static class DocParserClass {
           else if (!first && scopeModule)
             parseError("@decl's must have identical 'scope::' prefix");
           meta->decls += ({ p });
-          }
-          break;
+	}
+	break;
 
-        case "appears":
+      case "appears":
+	{
           if (endkeyword)
             parseError("@%s must stand alone", endkeyword);
           if (meta->type == "class" || meta->type == "decl"
@@ -804,9 +837,11 @@ static class DocParserClass {
           }
           else
             parseError("@appears not allowed here");
-          break;
+	}
+	break;
 
-        case "belongs":
+      case "belongs":
+	{
           if (endkeyword)
             parseError("@%s must stand alone", endkeyword);
           if (meta->type == "class" || meta->type == "decl"
@@ -824,21 +859,11 @@ static class DocParserClass {
               parseError("@belongs: expected identifier or blank, got %O", arg);
             meta->belongs = s || "";  // blank is allowed too, you know ..
           }
-          break;
+	}
+	break;
 
-        case "endclass":
-        case "endmodule":
-          {
-          if (meta->type || meta->belongs || meta->appears || endkeyword)
-            parseError("@%s must stand alone", keyword);
-          meta->type = endkeyword = keyword;
-          .PikeParser nameparser = .PikeParser(arg, currentPosition);
-          while (nameparser->peekToken() != EOF)
-            meta->name = (meta->name || "") + nameparser->readToken();
-          }
-          break;
-        default:
-          parseError("illegal keyword: @%s", keyword);
+      default:
+	parseError("illegal keyword: @%s", keyword);
       }
     }
     if (scopeModule)

@@ -1,4 +1,6 @@
-// $Id: assemble_autodoc.pike,v 1.18 2002/12/05 16:44:09 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.19 2002/12/18 20:36:00 grubba Exp $
+
+constant description = "Assembles AutoDoc output file.";
 
 // AutoDoc mk II assembler
 
@@ -96,7 +98,7 @@ string visualize(Node n, int depth) {
     return "";
 
   string name = n->get_tag_name();
-  if(name!="module" && name!="class")
+  if(!(<"autodoc","namespace","module","class">)[name])
     return "";
 
   string data = "<" + name;
@@ -153,6 +155,14 @@ void enqueue_move(string source, Node target) {
 
   if(source != "") {
     array path = map(source/".", replace, "-", ".");
+    if (!has_value(path[0], "::")) {
+      // Default namespace.
+      path = ({ "predef::" }) + path;
+    } else {
+      if (!has_suffix(path[0], "::")) {
+	path = path[0]/"::" + path[1..];
+      }
+    }
     foreach(path, string node) {
       if(!bucket[node])
 	bucket[node] = ([]);
@@ -327,7 +337,8 @@ void move_appendices(Node n) {
     }
   }
   if(sizeof(appendix_queue))
-    werror("Failed to find appendi%s %s.\n", (sizeof(appendix_queue)==1?"x":"ces"),
+    werror("Failed to find appendi%s %s.\n",
+	   (sizeof(appendix_queue)==1?"x":"ces"),
 	   String.implode_nicely(map(indices(appendix_queue),
 				     lambda(string in) {
 				       return "\""+in+"\"";
@@ -345,7 +356,7 @@ Node wrap(Node n, Node wrapper) {
   return wrapper;
 }
 
-void move_items(Node n, mapping jobs, void|Node wrapper) {
+static void move_items_low(Node n, mapping jobs, void|Node wrapper) {
   if(jobs[0]) {
     if(wrapper)
       jobs[0]( wrap(n, wrapper->clone()) );
@@ -367,11 +378,40 @@ void move_items(Node n, mapping jobs, void|Node wrapper) {
       if(wrapper)
 	wr = wrap( wr, wrapper->clone() );
 
-      move_items(c, e, wr);
+      move_items_low(c, e, wr);
 
       if(!sizeof(e))
 	m_delete(jobs, name);
     }
+}
+
+void move_items(Node n, mapping jobs, void|Node wrapper)
+{
+  if(jobs[0]) {
+    if(wrapper)
+      jobs[0]( wrap(n, wrapper->clone()) );
+    else
+      jobs[0](n);
+    m_delete(jobs, 0);
+  }
+  if(!sizeof(jobs)) return;
+
+  foreach(n->get_elements("namespace"), Node c) {
+    mapping m = c->get_attributes();
+    string name = m->name + "::";
+    mapping e = jobs[name];
+    if(!e) continue;
+
+    Node wr = Node(XML_ELEMENT, "autodoc",
+		   n->get_attributes()+(["hidden":"1"]), 0);
+    if(wrapper)
+      wr = wrap( wr, wrapper->clone() );
+
+    move_items_low(c, e, wr);
+
+    if(!sizeof(e))
+      m_delete(jobs, name);
+  }
 }
 
 string make_toc_entry(Node n) {
@@ -436,7 +476,7 @@ int(0..1) main(int num, array(string) args) {
 
   werror("Parsing autodoc file %O.\n", args[2]);
   Node m = parse_file(args[2]);
-  m = m->get_first_element("module");
+  m = m->get_first_element("autodoc");
 
   werror("Moving appendices.\n");
   move_appendices(m);

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.465 2002/12/01 18:39:07 mast Exp $
+|| $Id: program.c,v 1.466 2002/12/18 20:36:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.465 2002/12/01 18:39:07 mast Exp $");
+RCSID("$Id: program.c,v 1.466 2002/12/18 20:36:00 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -206,9 +206,7 @@ static char *raw_lfun_types[] = {
   tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
 };
 
-/*! @module lfun::
- *!
- *! @endmodule
+/*! @namespace lfun::
  */
 
 /*! @decl void lfun::__INIT()
@@ -750,6 +748,9 @@ static char *raw_lfun_types[] = {
  *!
  *! @seealso
  *!   @[Iterator], @[foreach()]
+ */
+
+/*! @endnamespace
  */
 
 struct program *first_program = 0;

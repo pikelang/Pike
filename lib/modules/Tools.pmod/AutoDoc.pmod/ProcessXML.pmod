@@ -20,13 +20,32 @@ static private void processError(string message, mixed ... args) {
 // From source file to XML
 //========================================================================
 
+// Wrap child in the proper modules and namespace.
 static object makeWrapper(array(string) modules, object|void child)
 {
-  foreach(reverse(modules) + ({ "" }), string n) {
-    object m = .PikeObjects.Module();
-    m->name = n;
-    if (child)
+  object m;
+  if (child->objtype != "autodoc") {
+    if (child->objtype != "namespace") {
+      string namespace = "predef";	// Default namespace.
+      if (sizeof(modules) && has_suffix(modules[0], "::")) {
+	// The parent module list starts with a namespace.
+	namespace = modules[0][..sizeof(modules[0])-3];
+	modules = modules[1..];
+      }
+      foreach(reverse(modules), string n) {
+	m = .PikeObjects.Module();
+	m->name = n;
+	if (child)
+	  m->AddChild(child);
+	child = m;
+      }
+      m = .PikeObjects.NameSpace();
+      m->name = namespace;
       m->AddChild(child);
+      child = m;
+    }
+    m = .PikeObjects.AutoDoc();
+    m->AddChild(child);
     child = m;
   }
   return child;
@@ -78,7 +97,11 @@ string extractXML(string filename, int|void pikeMode, string|void type,
   //  }
 
   if (styleC && has_value(contents, "/*!")) {
-    object m = .CExtractor.extract(contents, filename);
+    string namespace = ((parentModules||({})) + ({"predef::"}))[0];
+    if (has_suffix(namespace, "::")) {
+      namespace = namespace[..sizeof(namespace)-3];
+    }
+    object m = .CExtractor.extract(contents, filename, namespace);
     return m->xml();
   }
   else if(stylePike && has_value(contents, "//!")) {
@@ -87,7 +110,8 @@ string extractXML(string filename, int|void pikeMode, string|void type,
     object m = (type == "module")
       ? .PikeExtractor.extractModule(contents, filename, name)
       : .PikeExtractor.extractClass(contents, filename, name);
-    return makeWrapper(parentModules, m)->xml();
+    if (m)
+      return makeWrapper(parentModules, m)->xml();
   }
   return "";
 }
@@ -119,7 +143,19 @@ string moveImages(string docXMLFile,
   int counter = 0;
   array(int) docgroupcounters = ({}); // docgroup on top level is impossible
   string cwd = getcwd();
-  Node n = parse_input(docXMLFile)[0];
+  Node n;
+  mixed err = catch {
+    n = parse_input(docXMLFile)[0];
+  };
+  if (err) {
+    int offset;
+    if (sscanf(err[0], "%*s[Offset: %d]", offset) == 2) {
+      werror("XMLError: %O#%O\n",
+	     docXMLFile[offset-20..offset-1],
+	     docXMLFile[offset..offset+20]);
+    }
+    throw(err);
+  }
   n->walk_preorder_2(
     lambda(Node n) {
       if (n->get_node_type() == XML_ELEMENT) {
@@ -151,10 +187,13 @@ string moveImages(string docXMLFile,
 	    if(attr->name != "")
 	      parents += ({ "CHAPTER" + hash(attr->name) });
 
+	  case "namespace":
           case "class":
           case "module":
             if (attr["name"] != "")
               parents += ({ attr["name"] });
+	    // FALL_THROUGH
+	  case "autodoc":
             counter = 0;
             docgroupcounters += ({ 0 });
             break;
@@ -214,6 +253,8 @@ string moveImages(string docXMLFile,
 // BUILDING OF THE BIG TREE
 //========================================================================
 
+static int isAutoDoc(Node node) { return node->get_any_name() == "autodoc"; }
+static int isNameSpace(Node node) { return node->get_any_name() == "namespace"; }
 static int isClass(Node node) { return node->get_any_name() == "class"; }
 static int isModule(Node node) { return node->get_any_name() == "module"; }
 static int isDoc(Node node) { return node->get_any_name() == "doc"; }
@@ -225,26 +266,29 @@ static string getName(Node node) { return node->get_attributes()["name"]; }
 //!   Used to merge the results of extractions of different Pike and C files.
 //! @param source
 //! @param dest
-//!   The nodes @[source] and @[dest] are @tt{<class>@} or @tt{<module>@}
-//!   nodes that are identical in the sense that they represent the same
-//!   module or class. Typically they both represent the top module.
+//!   The nodes @[source] and @[dest] are @tt{<class>@}, @tt{<module>@},
+//!   @tt{<namespace>@} or @tt{<autodoc>@} nodes that are identical in
+//!   the sense that they represent the same module, class or namespace.
+//!   Typically they both represent @tt{<autodoc>@} nodes.
 //! @note
 //!   After calling this method, any @tt{<class>@} or @tt{<module>@} nodes
-//!   that have been marked with @@appears or @@belongs, are still in their
-//!   wrong place in the tree, so @[handleAppears] must be called on the
-//!   whole documentation tree has been merged.
+//!   that have been marked with @@appears or @@belongs, are still in the
+//!   wrong place in the tree, so @[handleAppears()] (or @[postProcess()])
+//!   must be called on the whole documentation tree to relocate them once
+//!   the tree has been fully merged.
 void mergeTrees(Node dest, Node source) {
   mapping(string : Node) dest_children = ([]);
   int dest_has_doc = 0;
 
   foreach(dest->get_children(), Node node)
-    if (isClass(node) || isModule(node))
+    if (isNameSpace(node) || isClass(node) || isModule(node))
       dest_children[getName(node)] = node;
     else if (isDoc(node))
       dest_has_doc = 1;
 
   foreach(source->get_children(), Node node)
     switch(node->get_any_name()) {
+      case "namespace":
       case "class":
       case "module":
         {
@@ -253,7 +297,8 @@ void mergeTrees(Node dest, Node source) {
         if (n) {
           if (node->get_any_name() != n->get_any_name())
             processError("entity '" + name +
-                         "' used both as a class and a module");
+                         "' used both as a " + node->get_anu_name() +
+			 " and a " + n->get_anu_name());
           mergeTrees(n, node);
         }
         else
@@ -266,7 +311,10 @@ void mergeTrees(Node dest, Node source) {
         break;
       case "doc":
         if (dest_has_doc) {
-          if (isClass(dest))
+	  if (isNameSpace(dest))
+            processError("duplicate documentation for namespace " +
+			 getName(dest));
+          else if (isClass(dest))
             processError("duplicate documentation for class " + getName(dest));
           else if (isModule(dest))
             processError("duplicate documentation for module " +
@@ -289,7 +337,7 @@ static void reportError(string filename, mixed ... args) {
 
 static Node findNode(Node root, array(string) ref) {
   Node n = root;
-  // top:: is just an anchor to the root
+  // top:: is an anchor to the root of the current namespace.
   if (sizeof(ref) && ref[0] == "top::")
     ref = ref[1..];
   if (!sizeof(ref))
@@ -299,7 +347,7 @@ static Node findNode(Node root, array(string) ref) {
     Node found = 0;
     foreach (children, Node child) {
       string tag = child->get_any_name();
-      if (tag == "module" || tag == "class") {
+      if (tag == "namespace" || tag == "module" || tag == "class") {
         string name = child->get_attributes()["name"];
         if (name && name == ref[0]) {
           found = child;
@@ -316,41 +364,64 @@ static Node findNode(Node root, array(string) ref) {
 }
 
 static class ReOrganizeTask {
-  array(string) belongsRef = 0;
-  string newName = 0;
+  array(string) belongsRef;
+  string newName;
   Node n;
 }
 
 static array(ReOrganizeTask) tasks;
 
 // current is a <module>, <class> or <docgroup> node
-static void recurseAppears(Node root, Node current) {
+static void recurseAppears(string namespace, Node current) {
   mapping attr = current->get_attributes() || ([]);
   if (attr["appears"] || attr["belongs"] || attr["global"]) {
     ReOrganizeTask t = ReOrganizeTask();
+    array(string) a = ({});
     if (string attrRef = attr["appears"]) {
-      array(string) a = splitRef(attrRef);
-      t->belongsRef = a[0 .. sizeof(a) - 2];
+      a = splitRef(attrRef);
       t->newName = a[-1];
+      a = a[0 .. sizeof(a)-2];
     }
     else if (string belongsRef = attr["belongs"]) {
-      array(string) a = splitRef(belongsRef);
-      t->belongsRef = a;
+      a = splitRef(belongsRef);
     }
+    if (sizeof(a) && has_suffix(a[0], "::")) {
+      // Note: This assignment affects the default namespace
+      //       for nodes under this one, but it seems a
+      //       reasonable behaviour.
+      if (a[0] != "top::")
+	namespace = a[0];
+    } else {
+      // Prefix with the durrent namespace.
+      a = ({ namespace }) + a;
+    }
+    // Strip the :: from the namespace name.
+    a[0] = a[0][..sizeof(a[0])-3];
+    t->belongsRef = a;
     t->n = current;
     tasks += ({ t });
   }
   if ( (<"class", "module">)[ current->get_any_name() ] )
     foreach (current->get_children(), Node child)
       if ((<"module", "class", "docgroup">)[child->get_any_name()])
-        recurseAppears(root, child);
+        recurseAppears(namespace, child);
 }
 
 //! Take care of all the @@appears and @@belongs directives everywhere,
-//! and rearrange the nodes in the tree accordingly
+//! and rearranges the nodes in the tree accordingly
+//!
+//! @param root
+//!   The root (@tt{<autodoc>@}) node of the documentation tree.
 void handleAppears(Node root) {
   tasks = ({ });
-  recurseAppears(root, root);
+  foreach(root->get_elements("namespace"), Node namespaceNode) {
+    string namespace = namespaceNode->get_attributes()->name + "::";
+    foreach(namespaceNode->get_children(), Node child) {
+      if ((<"module", "class", "docgroup">)[child->get_any_name()]) {
+	recurseAppears(namespace, child);
+      }
+    }
+  }
   tasks = Array.sort_array(
     tasks,
     lambda (ReOrganizeTask task1, ReOrganizeTask task2) {
@@ -401,20 +472,31 @@ void handleAppears(Node root) {
 
 // Rather DWIM splitting of a string into a chain of identifiers:
 // "Module.Class->funct(int i)" ==> ({"Module","Class","func"})
+// "\"foo.pike\"" ==> ({ "\"foo.pike\"" })
 static array(string) splitRef(string ref) {
+  if ((sizeof(ref)>1) && (ref[0] == '"')) {
+    // Explictly named program.
+    // Try to DWIM it...
+    ref = ref[1..sizeof(ref)-2];
+    ref = replace(ref, ({ ".pike", ".pmod" }), ({ "", "" }));
+    // FIXME: What about module.pike/module.pmod?
+    return ref/"/";
+  }
   array(string) a = Parser.Pike.split(ref);
-  string scope = "";
+  string namespace;
   array result = ({});
-  if (sizeof(a) && (a[0] == "lfun" || a[0] == "predef" || a[0] == "top")) {
-    scope += a[0];
-    a = a[1..];
+  if (sizeof(a)) {
+    // Check for a namespace.
+    if (a[0] == "::") {
+      namespace = "::";
+      a = a[1..];
+    } else if ((sizeof(a) > 1) && a[1] == "::") {
+      namespace = a[0]+"::";
+      a = a[2..];
+    }
   }
-  if (sizeof(a) && a[0] == "::") {
-    scope += a[0];
-    a = a[1..];
-  }
-  if (strlen(scope))
-    result = ({ scope });
+  if (namespace)
+    result = ({ namespace });
   for (;;) {
     if (!sizeof(a))
       return result;
@@ -446,7 +528,7 @@ static array(string) splitRef(string ref) {
 
 static string mergeRef(array(string) ref) {
   string s = "";
-  if (sizeof(ref) && search(ref[0], "::") >= 0) {
+  if (sizeof(ref) && has_suffix(ref[0], "::")) {
     s = ref[0];
     ref = ref[1..];
   }
@@ -466,29 +548,53 @@ static class Scope(string|void type, string|void name) {
 }
 
 static class ScopeStack {
-  /*static*/ array(Scope) scopeArr = ({ 0 }); // sentinel
+  mapping(string:array(Scope)) scopes = ([]);
+  string namespace = "predef";
+
+  array(array(string|array(Scope))) namespaceStack = ({});
 
   void enter(string|void type, string|void name) {
     //werror("entering scope type(%O), name(%O)\n", type, name);
-    scopeArr += ({ Scope(type, name) });
+    if (type == "namespace") {
+      namespaceStack += ({ ({ namespace, scopes[name] }) });
+      scopes[namespace = name] = ({ Scope(type, name+"::") });
+    } else {
+      if (!sizeof(scopes[namespace]||({}))) {
+	werror("WARNING: Implicit enter of namespace %s:: for %s %s\n",
+	       namespace, type, name||"");
+	scopes[namespace] = ({ Scope("namespace", namespace+"::") });
+      }
+      scopes[namespace] += ({ Scope(type, name) });
+    }
   }
   void leave() {
-    if (sizeof(scopeArr[-1]->failures)) {
-      werror("WARNING: Failed to resolv the following symbols in scope %O:\n"
-	     "%{  %O\n%}\n",
-	     scopeArr[1..]->name * ".",
-	     indices(scopeArr[-1]->failures));
+    if (sizeof(scopes[namespace]||({}))) {
+      if (sizeof(scopes[namespace][-1]->failures)) {
+	werror("WARNING: Failed to resolv the following symbols in scope %O:\n"
+	       "%{  %O\n%}\n",
+	       namespace + "::" + scopes[namespace][1..]->name * ".",
+	       indices(scopes[namespace][-1]->failures));
+      }
+      if (sizeof(scopes[namespace][-1]) == 1) {
+	// Leaving namespace...
+	scopes[namespace] = namespaceStack[-1][1];
+	namespace = namespaceStack[-1][0];
+	namespaceStack = namespaceStack[..sizeof(namespaceStack)-2];
+      } else {
+	scopes[namespace] = scopes[namespace][..sizeof(scopes[namespace])-2];
+      }
     }
-    scopeArr = scopeArr[..sizeof(scopeArr)-2];
   }
 
-  void addName(string sym) { scopeArr[-1]->idents[sym] = 1; }
+  void addName(string sym) { scopes[namespace][-1]->idents[sym] = 1; }
+
+  void remName(string sym) { scopes[namespace][-1]->idents[sym] = 0; }
 
   mapping resolveRef(string ref) {
     array(string) idents = splitRef(ref);
     int not_param = has_suffix(ref, "()");
     if (!sizeof(idents))
-      return ([ "resolved" : "" ]);
+      return ([ "resolution-failure" : "yes" ]);
 
 #if 0
     if (has_prefix(ref, "glGetIntegerv")) {
@@ -500,61 +606,59 @@ static class ScopeStack {
     }
 #endif /* 0 */
 
-    if (idents[0] == "top::") {
-      // top:: is an anchor to the root.
-      ref = mergeRef(idents[1..]);
-      idents = idents[1..];
-    } else if(idents[0] == "predef::") {
-      // Better-than-nothing
-      // FIXME: Should look backwards until it finds a
-      // matching symbol.
-      ref = mergeRef(idents[1..]);
-      idents = idents[1..];
+    if (has_suffix(idents[0], "::")) {
+      // Namespace specifier.
+      if (idents[0] == "top::") {
+	// top:: is an anchor to the root of the current namespace.
+	idents[0] = namespace + "::";
+      }
+      ref = mergeRef(idents);
+
+      // we consider it to be an absolute reference
+      // TODO: should we check that the symbol really DOES appear
+      // in the specified scope too?
+      return ([ "resolved" : ref ]);
     }
-    else {
-      if (!scopeArr[-1]->failures[ref]) {
-	array(string) matches = ({});
 
-	ref = mergeRef(idents);
+    // Relative reference.
+    if (!scopes[namespace][-1]->failures[ref]) {
+      array(string) matches = ({});
 
-	string firstIdent = idents[0];
-	for(int i = sizeof(scopeArr)-1; i ; i--) {
-	  Scope s = scopeArr[i];
-	  if (s->idents[firstIdent])
-	    if (s->type == "params" && !not_param) {
-	      return ([ "param" : ref ]);
-	    }
-	    else {
-	      //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
-	      string res = "";
-	      // work our way from the root of the stack
-	      for (int j = 1; j <= i; j++) {
-		string name = scopeArr[j]->name;
-		if (name && name != "")
-		  res += name + ".";
-		//werror("[[[[ name == %O\n", name);
-	      }
-	      matches += ({ res + ref });
-	    }
-	}
-	if (sizeof(matches)) {
-	  return ([ "resolved" : matches*"\0" ]);
-	}
-	// Resolution failure.
-	int i;
-	for (i = sizeof(scopeArr)-1; i; i--) {
-	  if (scopeArr[i]->type != "params") {
-	    scopeArr[i]->failures[ref] = 1;
-	    break;
+      ref = (idents - ({""}))*".";
+
+      string firstIdent = idents[0];
+      for(int i = sizeof(scopes[namespace]); i--;) {
+	Scope s = scopes[namespace][i];
+	if (s->idents[firstIdent])
+	  if (s->type == "params" && !not_param) {
+	    return ([ "param" : ref ]);
 	  }
+	  else {
+	    //werror("[[[[ found in type(%O) name(%O)\n", s->type, s->name);
+	    string res = namespace + "::";
+	    // work our way from the root of the stack
+	    for (int j = 1; j <= i; j++) {
+	      string name = scopes[namespace][j]->name;
+	      if (name && name != "")
+		res += name + ".";
+	      //werror("[[[[ name == %O\n", name);
+	    }
+	    matches += ({ res + ref });
+	  }
+      }
+      if (sizeof(matches)) {
+	return ([ "resolved" : matches*"\0" ]);
+      }
+      // Resolution failure.
+      int i;
+      for (i = sizeof(scopes[namespace]); i--;) {
+	if (scopes[namespace][i]->type != "params") {
+	  scopes[namespace][i]->failures[ref] = 1;
+	  break;
 	}
       }
-      return ([ "resolution-failure" : "yes" ]);
     }
-
-    // TODO: should we check that the symbol really DOES appear
-    // on the top level too?
-    return ([ "resolved" : ref ]); // we consider it to be an absolute reference
+    return ([ "resolution-failure" : "yes" ]);
   }
 }
 
@@ -566,7 +670,7 @@ static void fixupRefs(ScopeStack scopes, Node node) {
         // Add them here if we decide that also references in e.g.
         // object types should be resolved.
 	string name = n->get_any_name();
-        if (name == "ref") {
+        if ((<"ref", "classname", "object">)[name]) {
           mapping m = n->get_attributes();
           if (m["resolved"])
             return;
@@ -579,10 +683,14 @@ static void fixupRefs(ScopeStack scopes, Node node) {
   );
 }
 
-// expects a <module> or <class> node
+// expects a <autodoc>, <namespace>, <module> or <class> node
 static void resolveFun(ScopeStack scopes, Node node) {
+  if (node->get_any_name() == "namespace") {
+    // Create the namespace.
+    scopes->enter("namespace", node->get_attributes()["name"]);
+  }
   // first collect the names of all things inside the scope
-  foreach (node->get_children(), Node child)
+  foreach (node->get_children(), Node child) {
     if (child->get_node_type() == XML_ELEMENT) {
       switch (child->get_any_name()) {
         case "docgroup":
@@ -607,10 +715,14 @@ static void resolveFun(ScopeStack scopes, Node node) {
           ; // do nothing (?)
       }
     }
+  }
   foreach (node->get_children(), Node child) {
     if (child->get_node_type() == XML_ELEMENT) {
       string tag = child->get_any_name();
       switch (tag) {
+        case "namespace":
+	  resolveFun(scopes, child);
+	  break;
         case "class":
         case "module":
           scopes->enter(tag, child->get_attributes()["name"]);
@@ -620,13 +732,10 @@ static void resolveFun(ScopeStack scopes, Node node) {
           scopes->leave();
           break;
         case "docgroup":
-          scopes->enter("params");
           {
-            Node doc = 0;
-            foreach (child->get_children(), Node n)
-              if (n->get_any_name() == "doc")
-                doc = n;
-              else if (n->get_any_name() == "method") {
+            scopes->enter("params");
+            foreach (child->get_children(), Node n) {
+              if (n->get_any_name() == "method") {
                 foreach (filter(n->get_children(),
                                 lambda (Node n) {
                                   return n->get_any_name() == "arguments";
@@ -636,30 +745,58 @@ static void resolveFun(ScopeStack scopes, Node node) {
 		      continue;
                     scopes->addName(argnode->get_attributes()["name"]);
 		  }
-              }
-	    if(doc)
-	      fixupRefs(scopes, doc);
-	    else
+	      }
+	    }
+            Node doc = 0;
+	    foreach(child->get_children(), Node n) {
+	      if (n->get_any_name() == "doc") {
+		doc = n;
+		fixupRefs(scopes, n);
+	      }
+	    }
+	    if (!doc)
 	      werror("No doc element found\n%s\n\n", child->render_xml());
+	    scopes->leave();
+	    if ((child->get_attributes()["homogen-type"] == "inherit") &&
+		(child->get_attributes()["homogen-name"])) {
+	      // Avoid finding ourselves...
+	      scopes->remName(child->get_attributes()["homogen-name"]);
+	      foreach(child->get_children(), Node n) {
+		if (n->get_any_name() != "doc") {
+		  fixupRefs(scopes, n);
+		}
+	      }
+	      scopes->addName(child->get_attributes()["homogen-name"]);
+	    } else {
+	      foreach(child->get_children(), Node n) {
+		if (n->get_any_name() != "doc") {
+		  fixupRefs(scopes, n);
+		}
+	      }
+	    }
           }
-          scopes->leave();
           break;
         case "doc":  // doc for the <class>/<module> itself
           fixupRefs(scopes, child);
           break;
         case "inherit":
-	  break;
+	  child = child->get_first_element("classname");
           mapping m = child->get_attributes();
           if (m["resolved"])
-            return;
+            break;
           mapping resolved = scopes->resolveRef(child->value_of_node());
-          foreach (indices(resolved), string i)
-            m[i] = resolved[i];
+          foreach (resolved; string i; string v)
+	    m[i] = v;
+	  // werror("Inherit: m:%O\n", m);
 	  break;
         default:
           ; // do nothing
       }
     }
+  }
+  if (node->get_any_name() == "namespace") {
+    // Leave the namespace.
+    scopes->leave();
   }
 }
 
@@ -667,7 +804,7 @@ static void resolveFun(ScopeStack scopes, Node node) {
 // hierarchy. 'tree' might be the node <root> or <module name="Pike">
 void resolveRefs(Node tree) {
   ScopeStack scopes = ScopeStack();
-  scopes->enter("module", "");    // The top level scope
+  scopes->enter("namespace", "predef");    // The default scope
   resolveFun(scopes, tree);
   scopes->leave();
 }
@@ -690,13 +827,22 @@ void cleanUndocumented(Node tree) {
   tree->walk_preorder( check_node );
 }
 
-// Call this method after the extraction and merge of the tree.
-void postProcess(Node tree) {
+//! Perform the last steps on a completed documentation tree.
+//!
+//! @param root
+//!   Root @tt{<autodoc>@} node of the completed documentation tree.
+//!
+//! Calls @[handleAppears()], @[cleanUndocumented()] and @[resolveRefs()]
+//! in turn.
+//!
+//! @seealso
+//!   @[handleAppears()], @[cleanUndocumented()], @[resolveRefs()]
+void postProcess(Node root) {
   //  werror("handleAppears\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  handleAppears(tree);
+  handleAppears(root);
   //  werror("cleanUndocumented\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  cleanUndocumented(tree);
+  cleanUndocumented(root);
   //  werror("resolveRefs\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
-  resolveRefs(tree);
+  resolveRefs(root);
   //  werror("done postProcess\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
 }

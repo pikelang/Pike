@@ -419,15 +419,8 @@ static private class Extractor {
 
       mapping(string:int) contexts = ([]);
 
-      // Make sure that all inherits are added:
       foreach(decls, PikeObject obj)
-        switch (obj->objtype) {
-          case "inherit":
-            c->AddInherit(obj);
-            // fall through
-          default:
-            contexts[obj->objtype] = 1;
-        }
+	contexts[obj->objtype] = 1;
 
       if (doc) {
         if (wasNonGroupable) {
@@ -450,7 +443,14 @@ static private class Extractor {
         else
           context = "_general";
         doc->xml = parse->doc(context);
-      } // if (doc)
+      } else {
+	// Make sure that all inherits are added:
+	foreach(decls, PikeObject obj) {
+	  if (obj->objtype == "inherit") {
+	    c->AddInherit(obj);
+	  }
+	}
+      }
     } // for (;;)
   }
 
