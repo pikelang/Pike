@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.121 2000/06/04 18:23:10 kinkie Exp $
+ * $Id: master.pike.in,v 1.122 2000/06/09 21:46:37 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1245,6 +1245,29 @@ void compile_warning(string file,int line,string err)
   } else if (objectp(val) && val->compile_warning) {
     val->compile_warning(file, line, err);
   }
+}
+
+/*
+ * Called for every runtime warning. The first argument identifies
+ * where the warning comes from, the second identifies the specific
+ * message, and the rest depends on that. See code below for currently
+ * implemented warnings.
+ */
+void runtime_warning (string where, string what, mixed... args)
+{
+  if (want_warnings)
+    switch (where + "." + what) {
+      case "gc.bad_cycle":
+	// args[0] is an array containing the objects in the cycle
+	// which aren't destructed and have destroy() functions.
+	werror ("GC warning: Garbing cycle where destroy() will be called "
+		"in arbitrary order:\n%{            %s\n%}",
+		map (args[0], describe_object));
+	break;
+
+      default:
+	werror ("%s warning: %s %O\n", capitalize (where), what, args);
+    }
 }
 
 
