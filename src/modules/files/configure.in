@@ -199,7 +199,6 @@ AC_TRY_RUN([
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <signal.h>
 #include <netinet/in.h>
 #include <errno.h>
 #include <unistd.h>
@@ -214,19 +213,30 @@ AC_TRY_RUN([
 int main()
 {
   fd_set tmp;
+  struct timeval foo;
   int fds[2];
+
   if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds)<0)
     exit(1);
 
-  while(write(fds[0],"foo",3)<0 && errno==EINTR);
+  shutdown(fds[1],1);
+  shutdown(fds[0],1);
+  close(fds[0]);
+
+  foo.tv_sec=5;
+  foo.tv_usec=0;
 
   FD_ZERO(&tmp);
   FD_SET(fds[1], &tmp);
-  alarm(5);
-  if(select(fds[1]+1,&tmp, 0,0,0)>0 && FD_ISSET(fds[1], &tmp))
-    exit(0);
-  exit(1);
+  if(select(fds[1]+1,&tmp, 0,0,&foo)<=0)
+    exit(2);
+
+  if(!FD_ISSET(fds[1], &tmp))
+    exit(3);
+
+  exit(0);
 }
+
 
 ],pike_cv_select_on_unix_sockets=yes,pike_cv_select_on_unix_sockets=no)
 ])
