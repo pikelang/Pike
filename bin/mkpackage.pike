@@ -30,29 +30,44 @@ void rmrf(string ... path)
   Process.create_process(({ "rm","-rf", @path }))->wait();
 }
 
-class Package
+class Package(string my_name,
+	      string pike_filename, 
+	      string install_filename, 
+	      string extra_help, 
+	      string extra_flags)
 {
-  static private string install_filename, pike_filename, extra_help;
   static private mapping(array(string):string) options =
   ([ ({ "-h", "--help" }):
-     "echo \"Usage: $TARFILE [options]\"\n"
+     "echo \"Usage: $MY_NAME [options]\"\n"
      "echo \n"
      "echo 'Options:'\n"
      "echo '  -h, --help              Display this help and exit.'\n"
      "echo '  -l, --list              Display the contents of the package and exit.'\n"
      "echo '  -v, --version           Display version information and exit.'\n"
      "echo '  --features              Display feature information and exit.'\n"
-     "echo '  -a, --add <component>   Add a component to the package and exit.'\n"
+     "echo '  -a, --add=<package>     Add <package> and exit.'\n"
      "echo \"$EXTRA_HELP\"\n"
      "EXIT=yes",
      ({ "-v", "--version" }):
      "echo 'Package version unknown.'\n"
      "EXIT=yes",
-     ({ "-a", "--add" }):
-     "shift\n"
-     "(cd `dirname \"$1\"` &&\n"
-     " tar rf \"$TARFILE\" `basename \"$1\"`)\n"
+     
+     // We actually have two versions here, with and without =.
+     ({ "-a=*", "--add=*" }):
+     "PKG=`echo \"$1\" | sed -e 's/^.*=//'`\n"
+     "(cd `dirname \"$PKG\"` && tar rf \"$TARFILE\" `basename \"$PKG\"`)\n"
      "EXIT=yes",
+     ({ "-a", "--add" }):
+     "if [ $# = 1 ]\n"
+     "then\n"
+     "   echo \"$MY_NAME: Missing argument to '$1'.\"\n"
+     "   echo \"Try '$MY_NAME --help' for more information.\"\n"
+     "else\n"
+     "  shift\n"
+     "  (cd `dirname \"$1\"` && tar rf \"$TARFILE\" `basename \"$1\"`)\n"
+     "fi\n"
+     "EXIT=yes",
+
      ({ "-l", "--list" }):
      "echo \"$CONTENTS\"\n"
      "EXIT=yes" ]);
@@ -92,6 +107,7 @@ class Package
 		    "      TARFILE=\"`pwd`/$TARFILE\"\n"
 		    "    ;;\n"
 		    "esac\n"
+		    "MY_NAME='"+my_name+"'\n"
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
@@ -104,11 +120,26 @@ class Package
 			       {
 				 return flags*"|"+") "+options[flags]+" ;;\n";
 			       })*""+
+		    "  "+extra_flags+"\n"
 		    "  esac\n"
+		    "  if [ \"x$HAS_ARG\" != x ]\n"
+		    "  then\n"
+		    "    if [ $# = 1 ]\n"
+		    "    then\n"
+		    "      echo \"$MY_NAME: Missing argument to '$1'.\"\n"
+		    "      echo \"Try '$MY_NAME --help' for more information.\"\n"
+		    "      EXITCODE=1\n"
+		    "      EXIT=yes \n"
+		    "    else\n"
+		    "      ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\"\n"
+		    "      shift\n"
+		    "    fi\n"
+		    "    HAS_ARG=''\n"
+		    "  fi\n"
 		    "  if [ $EXIT = yes ]\n"
 		    "  then\n"
 		    "    rm -f "+setup_filename+"\n"
-		    "    exit\n"
+		    "    exit $EXITCODE\n"
 		    "  fi\n"
 		    "  ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\"\n"
 		    "  shift\n"
@@ -173,13 +204,6 @@ class Package
     
     return this_object();
   }
-  
-  void create(string pike_filename, string install_filename, string extra_help)
-  {
-    local::pike_filename = pike_filename;
-    local::install_filename = install_filename;
-    local::extra_help = extra_help || "";
-  }
 }
 
 int main(int argc, array(string) argv)
@@ -188,11 +212,14 @@ int main(int argc, array(string) argv)
   {
     write("Usage: make-package.pike <name> <pike binary> <install script> [packages ...]\n\n"
 	  "Environment variables:\n"
-	  "  EXTRA_PACKAGE_HELP\n");
+	  "  EXTRA_PACKAGE_HELP\n"
+	  "  EXTRA_PACKAGE_FLAGS\n");
     return 1;
   }
   
-  Package(argv[2], argv[3], getenv("EXTRA_PACKAGE_HELP")||"")->
+  Package(argv[1], argv[2], argv[3],
+	  getenv("EXTRA_PACKAGE_HELP") || "",
+	  getenv("EXTRA_PACKAGE_FLAGS") || "")->
     add_packages(@argv[4..])->make(argv[1]);
   
   return 0;
