@@ -253,10 +253,28 @@ int main(int argc, string *argv)
 
   int ret;
   if(verbose && target!="-")
+  { 
     ret=do_cmd(cmd);
-  else
-    ret=silent_do_cmd(cmd);
-
+  }else{
+    int first_line=1;
+    // cl.exe echoes the file name of the file we are compiling
+    // first, we need to get rid of that to make configure behave 
+    ret=silent_do_cmd(cmd, lambda(string line) 
+		      {
+			if(first_line)
+			{
+			  array x=line/"\n";
+			  if(sizeof(x)>1)
+			  {
+			    line=x[1..]*"\n";
+			    first_line=0;
+			  }else{
+			    return;
+			  }
+			}
+			write(line);
+		      },1);
+  }
 
   if(ret)
   {
