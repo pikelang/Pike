@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.99 2002/10/14 16:06:08 nilsson Exp $
+# $Id: Makefile,v 1.100 2002/10/15 15:15:42 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -232,12 +232,10 @@ snapshot: snapshot_export
 
 xenofarm_export:
 	@echo Begin export
-	@if test "x$(EXPORT_NAME)" = x; then \
-	  EXPORT_NAME="Pike%maj.%min-%Y%M%D-%h%m%d"; \
-	fi;
 	@$(MAKE) "MAKE=$(MAKE)" "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
-	  "EXPORT_NAME=$(EXPORT_NAME)" compile > export_result.txt 2>&1
+	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" \
+	  "EXPORTARGS=$(EXPORTARGS)" compile > export_result.txt 2>&1
 	@echo Export done
 
 bin_export:
