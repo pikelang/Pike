@@ -5655,12 +5655,13 @@ mutex is already locked by this thread:
 
 <method name=Thread.Mutex-&gt;trylock title="try to lock the mutex">
 <man_syntax>
-Thread.MutexKey trylock();
+Thread.MutexKey trylock();<br>
+Thread.MutexKey trylock(int <i>type</i>);
 </man_syntax>
 <man_description>
 This function performs the same operation as lock(), but if the mutex
-is already locked zero will be returned instead of sleeping until the
-lock is unlocked.
+is already locked, it will return zero instead of sleeping until it's
+unlocked.
 </man_description>
 </method>
 
