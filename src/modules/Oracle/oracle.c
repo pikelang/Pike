@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.57 2001/10/05 14:37:40 leif Exp $
+ * $Id: oracle.c,v 1.58 2001/10/05 14:39:46 leif Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,12 +53,12 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.57 2001/10/05 14:37:40 leif Exp $");
+RCSID("$Id: oracle.c,v 1.58 2001/10/05 14:39:46 leif Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
 
-#define ORACLE_DEBUG 1 /* #define ORACLE_DEBUG */
+/* #define ORACLE_DEBUG */
 #define ORACLE_USE_THREADS
 #define SERIALIZE_CONNECT
 
