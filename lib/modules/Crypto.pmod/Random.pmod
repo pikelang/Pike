@@ -1,10 +1,10 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.1 2003/08/07 20:58:59 nilsson Exp $
+// $Id: Random.pmod,v 1.2 2003/08/10 13:44:34 grubba Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
 
-#if constant(Nettle)
+#if constant(Nettle.Yarrow)
 
 static class RND {
   inherit Nettle.Yarrow;
