@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.7 1997/01/27 22:48:00 grubba Exp $
+ * $Id: system.c,v 1.8 1997/01/28 18:34:54 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -13,7 +13,7 @@
 #include "system_machine.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.7 1997/01/27 22:48:00 grubba Exp $");
+RCSID("$Id: system.c,v 1.8 1997/01/28 18:34:54 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -692,6 +692,9 @@ void f_gethostbyname(INT32 args)
 
 void init_system_efuns(void)
 {
+  /*
+   * From this file:
+   */
 #ifdef HAVE_LINK
   add_efun("hardlink", f_hardlink, "function(string, string:void)", OPT_SIDE_EFFECT);
 #endif /* HAVE_LINK */
@@ -745,6 +748,15 @@ void init_system_efuns(void)
   add_efun("gethostbyaddr", f_gethostbyaddr, "function(string:array)",
            OPT_TRY_OPTIMIZE);
 #endif /* HAVE_GETHOSTBYNAME */
+
+  /*
+   * From syslog.c:
+   */
+#ifdef HAVE_SYSLOG
+  add_efun("openlog", f_openlog, "function(string,int,int:void)", 0);
+  add_efun("syslog", f_syslog, "function(int,string:void)", 0);
+  add_efun("closelog", f_closelog, "function(:void)", 0);
+#endif /* HAVE_SYSLOG */
 }
 
 void init_system_programs(void)

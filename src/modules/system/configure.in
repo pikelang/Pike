@@ -13,9 +13,13 @@ module_makefile=$srcdir/../module_makefile
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
 
-AC_HAVE_HEADERS(sys/types.h errno.h unistd.h pwd.h sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h varargs.h sys/utsname.h)
+AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
+	sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
+	sys/utsname.h)
 
-AC_HAVE_FUNCS(link symlink readlink initgroups seteuid setresuid geteuid getpgrp getpgid getppid fchroot uname gethostname gethostbyname)
+AC_HAVE_FUNCS(syslog link symlink readlink \
+	initgroups seteuid setresuid geteuid getpgrp getpgid getppid \
+	fchroot uname gethostname gethostbyname)
 
 
 AC_CHECK_LIB(nsl, gethostbyname)

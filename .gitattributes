@@ -68,6 +68,7 @@ testfont binary
 /src/modules/spider/dumudp.c foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
 /src/modules/ssleay/ssleay.c foreign_ident
+/src/modules/system/syslog.c foreign_ident
 /src/modules/system/system.c foreign_ident
 /src/modules/system/system_machine.h.in foreign_ident
 /src/modules/zlibmod/zlibmod.c foreign_ident
