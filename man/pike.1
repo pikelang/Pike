@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.10 2000/03/30 21:07:32 grubba Exp $
+.\" $Id: pike.1,v 1.11 2001/01/14 21:16:46 grubba Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2000/03/30 21:07:32 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2000/03/30 21:07:32 $"
+.TH pike 1 "$Date: 2001/01/14 21:16:46 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2001/01/14 21:16:46 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2000/03/30 21:07:32 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2001/01/14 21:16:46 $ \" Solaris nroff
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -142,11 +142,17 @@ Enable warnings.
 .B \-W, \-\-woff, \-\-no\-warnings
 Disable warnings.
 .TP
+.B \-\-assembler\-debug
+Set the peephole optimizer debug level (debug).
+.TP
 .B \-\-compiler\-trace
 Turn on tracing of the Pike compiler (debug).
 .TP
 .B \-\-debug
 Increase or set the debug level (debug).
+.TP
+.B \-\-optimizer\-debug
+Set the global optimizer debug level (debug).
 .TP
 .B \-\-show\-paths
 Show the paths pike will use and exit (debug).
