@@ -237,7 +237,7 @@ string layout_matrix( array(array(string)) rows ) {
     dim = max(dim, sizeof(row));
 
   foreach(rows, array row) {
-    ret += "<tr>";
+    ret += "<tr valign='top'>";
     if(sizeof(row)<dim)
       ret += "<td bgcolor='white'>" + row[..sizeof(row)-2]*"</td><td bgcolor='white'>" +
 	"</td><td bgcolor='white' colspan='"+ (dim-sizeof(row)) + "'>" + row[-1] + "</td>";
@@ -261,10 +261,11 @@ string nicebox(array rows) {
   foreach(rows, array row) {
     if(sizeof(row)==1) {
       if(stringp(row[0]))
-	ret += "<tr><td bgcolor='white' colspan='" + dim + "'>" + row[0] + "</td></tr>\n";
+	ret += "<tr valign='top'><td bgcolor='white' colspan='" + dim + "'>" +
+	  row[0] + "</td></tr>\n";
       else
 	foreach(row[0], string elem)
-	  ret += "<tr><td bgcolor='white'><tt>" + elem + "</tt></td>" +
+	  ret += "<tr valign='top'><td bgcolor='white'><tt>" + elem + "</tt></td>" +
 	    (dim==2?"<td bgcolor='white'>&nbsp;</td>":"") + "</tr>\n";
     }
     else if(sizeof(row[0])==1)
