@@ -2,7 +2,6 @@
 
 inherit Array;
 inherit String;
-inherit Process;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
@@ -47,6 +46,17 @@ array(string) map_regexp(array(string) s, string reg)
   s=filter(s,regexp->match);
   return s;
 }
+
+#define GP(X) constant X = Process.X
+
+GP(create_process);
+GP(exec);
+GP(search_path);
+GP(sh_quote);
+GP(split_quoted_string);
+GP(spawn);
+GP(popen);
+GP(system);
 
 constant PI = 3.1415926535897932384626433832795080;
 function all_efuns = all_constants;
