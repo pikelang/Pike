@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.26 1999/07/15 16:58:44 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.27 1999/08/20 20:04:31 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -135,8 +136,6 @@ static void gz_deflate(INT32 args)
   if(!THIS->gz.state)
     error("gz_deflate not initialized or destructed\n");
 
-  initialize_buf(&buf);
-
   if(args<1)
     error("Too few arguments to gz_deflate->deflate()\n");
 
@@ -169,6 +168,8 @@ static void gz_deflate(INT32 args)
 
   this->gz.next_in=(Bytef *)data->str;
   this->gz.avail_in=data->len;
+
+  initialize_buf(&buf);
 
   fail=do_deflate(&buf,this,flush);
   pop_n_elems(args);
@@ -287,8 +288,6 @@ static void gz_inflate(INT32 args)
   if(!THIS->gz.state)
     error("gz_inflate not initialized or destructed\n");
 
-  initialize_buf(&buf);
-
   if(args<1)
     error("Too few arguments to gz_inflate->inflate()\n");
 
@@ -299,6 +298,8 @@ static void gz_inflate(INT32 args)
 
   this->gz.next_in=(Bytef *)data->str;
   this->gz.avail_in=data->len;
+
+  initialize_buf(&buf);
 
   fail=do_inflate(&buf,this,Z_PARTIAL_FLUSH);
   pop_n_elems(args);
