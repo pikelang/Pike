@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.193 1999/10/26 00:08:14 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.194 1999/10/26 00:18:04 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -340,6 +340,8 @@ void f_random(INT32 args)
   {
     pop_n_elems(args-1);
     apply(sp[-1].u.object,"_random",0);
+    stack_swap();
+    pop_stack();
     return;
   }
 

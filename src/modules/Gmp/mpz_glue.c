@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.54 1999/10/26 00:09:44 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.55 1999/10/26 00:18:39 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -994,7 +994,7 @@ static void mpzmod_random(INT32 args)
 
   res=clone_object(mpzmod_program,0);
   /* We add two to assure reasonably uniform randomness */
-  mpz_random(OBTOMPZ(res), mpz_size(OBTOMPZ(res)) + 2);
+  mpz_random(OBTOMPZ(res), mpz_size(THIS) + 2);
   mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
   PUSH_REDUCED(res);
 }
