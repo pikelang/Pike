@@ -106,7 +106,7 @@ static void f_readline(INT32 args)
   THREADS_ALLOW();
 
   write(1, prompt, plen);
-  r=fgets(line,BLOCK,stdin);	/* Should probably get rid of this one */
+  r=fgets(line,BLOCK-1,stdin);	/* Should probably get rid of this one */
   line[BLOCK-1] = '\0';		/* Always NUL-terminated */
 
   THREADS_DISALLOW();
