@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.43 1999/10/21 11:16:46 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.44 1999/10/21 14:55:07 mirar Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -112,6 +112,8 @@ RCSID("$Id: sprintf.c,v 1.43 1999/10/21 11:16:46 noring Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "bignum.h"
+#include "mapping.h"
+#include "builtin_functions.h"
 #include <ctype.h>
 
 #ifdef PC
@@ -721,59 +723,73 @@ INLINE static int do_one(struct format_stack *fs,
      break; \
    }
 
-#define CHECK_OBJECT_SPRINTF()                                             \
-	/* FIXME: Check that the stack/reference operations are correct. */\
-	/* FIXME: Send precision flags etc. as a 2nd argument mapping. */  \
-	/*        (Don't forget to add this in `describe_svalue' too.) */  \
-	{								   \
-	   /* NOTE: It would be nice if this was a do { } while(0) macro */\
-	   /* but it cannot be since we need to break out of the case... */\
-	  struct svalue *sv;						   \
-	  PEEK_SVALUE(sv);						   \
-	  if(sv->type == T_OBJECT)					   \
-	  {								   \
-	    ref_push_object(sv->u.object);				   \
-	    push_constant_text("_sprintf");				   \
-	    f_index(2);							   \
-	    if(sp[-1].type == T_FUNCTION || sp[-1].type == T_OBJECT)	   \
-	    {								   \
-	      push_int(EXTRACT_PCHARP(a));				   \
-	      apply_svalue(sp-2, 1);   /* FIXME: lfun optimisation? */	   \
-	    								   \
-	      if(sp[-1].type == T_STRING)				   \
-	      {								   \
-		struct pike_string *s = (--sp)->u.string;		   \
-									   \
-		/* Do some evil stuff to the stack...  We want that */	   \
-		/* the allocated string is freed after it has been */	   \
-		/* copied to the result string. */			   \
-		   							   \
-		/* Perhaps this can be done more nicely? */		   \
-		/*  /Noring, Grubba */					   \
-		if(arg)							   \
-		{							   \
-		  free_svalue(arg);					   \
-		  *arg = *sp;						   \
-		  arg = 0;						   \
-		}							   \
-		else							   \
-		{							   \
-		  free_svalue(lastarg = argp + argument);		   \
-		  argp[argument] = *sp;					   \
-		  argument++;						   \
-		}							   \
-									   \
-		/* FIXME: What about wide strings? */			   \
-		fsp->b = MKPCHARP_STR(s);				   \
-		fsp->len = s->len;					   \
-	      								   \
-		pop_stack();						   \
-		break;							   \
-	      }								   \
-	      pop_stack();						   \
-	    }								   \
-	    pop_stack();						   \
-	  }								   \
+#define CHECK_OBJECT_SPRINTF()						    \
+	/* FIXME: Check that the stack/reference operations are correct. */ \
+	/* FIXME: Send precision flags etc. as a 2nd argument mapping. */   \
+	/*        (Don't forget to add this in `describe_svalue' too.) */   \
+	{								    \
+	   /* NOTE: It would be nice if this was a do { } while(0) macro */ \
+	   /* but it cannot be since we need to break out of the case... */ \
+	  struct svalue *sv;						    \
+	  PEEK_SVALUE(sv);						    \
+	  if(sv->type == T_OBJECT)					    \
+	  {								    \
+	    ref_push_object(sv->u.object);				    \
+	    push_constant_text("_sprintf");				    \
+	    f_index(2);							    \
+	    if(sp[-1].type == T_FUNCTION || sp[-1].type == T_OBJECT)	    \
+	    {								    \
+              int n=0;							    \
+	      push_int(EXTRACT_PCHARP(a));				    \
+	      if (fsp->precision!=SPRINTF_UNDECIDED)			    \
+	      {								    \
+		 push_constant_text("precision");			    \
+		 push_int(fsp->precision);				    \
+                 n+=2;							    \
+	      }								    \
+	      f_aggregate_mapping(n);					    \
+									    \
+	      apply_svalue(sp-3, 2);   /* FIXME: lfun optimisation? */	    \
+\
+	      if(sp[-1].type == T_STRING)				      \
+	      {								      \
+		struct pike_string *s = (--sp)->u.string;		      \
+									      \
+		/* Do some evil stuff to the stack...  We want that */	      \
+		/* the allocated string is freed after it has been */	      \
+		/* copied to the result string. */			      \
+									      \
+		/* Perhaps this can be done more nicely? */		      \
+		/*  /Noring, Grubba */					      \
+		if(arg)							      \
+		{							      \
+		  free_svalue(arg);					      \
+		  *arg = *sp;						      \
+		  arg = 0;						      \
+		}							      \
+		else							      \
+		{							      \
+		  free_svalue(lastarg = argp + argument);		      \
+		  argp[argument] = *sp;					      \
+		  argument++;						      \
+		}							      \
+									      \
+		/* FIXME: What about wide strings? */			      \
+		fsp->b = MKPCHARP_STR(s);				      \
+		fsp->len = s->len;					      \
+									      \
+		pop_stack();						      \
+		break;							      \
+	      }								      \
+              if(!IS_ZERO(sp-1))					      \
+	      {								      \
+		 sprintf_error(fs,"argument %d (object) returned "	      \
+			       "illegal value from _sprintf()\n",argument+1); \
+	      }								      \
+	      pop_stack();						      \
+	    }								      \
+	    pop_stack();						      \
+	  }								      \
 	}
 
 /* This is the main pike_sprintf function, note that it calls itself
