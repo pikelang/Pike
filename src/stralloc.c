@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.190 2004/11/11 16:01:05 grubba Exp $
+|| $Id: stralloc.c,v 1.191 2004/11/14 18:21:56 mast Exp $
 */
 
 #include "global.h"
@@ -2045,10 +2045,10 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 
   if (mag > s->s->size_shift) {
     string_build_mkspace(s, 1, mag);
-    s->known_shift = (size_t)mag;
+    s->known_shift = mag;
   } else if (((size_t)s->s->len) >= ((size_t)s->malloced)) {
     string_build_mkspace(s, 1, mag);
-    s->known_shift = MAXIMUM((size_t)mag, s->known_shift);
+    s->known_shift = MAXIMUM(mag, s->known_shift);
   }
   i = s->s->len++;
   low_set_index(s->s,i,ch);
@@ -2173,7 +2173,7 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   string_build_mkspace(s,str->len,str->size_shift);
 
   pike_string_cpy(MKPCHARP_STR_OFF(s->s,s->s->len), str);
-  s->known_shift=MAXIMUM(s->known_shift,(size_t)str->size_shift);
+  s->known_shift=MAXIMUM(s->known_shift,str->size_shift);
   s->s->len+=str->len;
   /* Ensure NUL-termination */
   s->s->str[s->s->len << s->s->size_shift] = 0;
@@ -2624,7 +2624,7 @@ PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
     s->s->len = s->malloced;
     s->s = realloc_unlinked_string(s->s, len);
   }
-  if(s->known_shift == (size_t)s->s->size_shift)
+  if(s->known_shift == s->s->size_shift)
     return low_end_shared_string(s->s);
   return end_shared_string(s->s);
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.88 2004/11/11 15:59:58 grubba Exp $
+|| $Id: stralloc.h,v 1.89 2004/11/14 18:21:56 mast Exp $
 */
 
 #ifndef STRALLOC_H
@@ -37,7 +37,7 @@ struct string_builder
 {
   struct pike_string *s;
   ptrdiff_t malloced;
-  size_t known_shift;
+  INT32 known_shift;
 };
 
 /* Flags used by string_builder_append_integer() */
