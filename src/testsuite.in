@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.513 2002/05/11 01:23:43 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.514 2002/05/11 21:29:58 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -946,6 +946,7 @@ int main()
 dnl
 dnl this_program
 dnl
+
 test_true(this_program)
 test_any([[int this_program; return this_program;]], 0)
 test_any([[class A { int a() { return this_program == A; }}; return A()->a();]], 1)
@@ -990,6 +991,76 @@ test_program([[
   // It would perhaps be nice if this_program possessed the magic
   // to refer to B in the inherit from A, but that would be magic indeed.
   int a() {return object_program (B()->clone()) == A;}
+]])
+
+test_program([[
+  class A {
+    class B {
+      mixed f() {
+	return ({global::this_program,
+		 A::this_program, // Works, but not really useful.
+		 B::this_program, // Ditto.
+		 ::this_program, // Should perhaps be an error? /mast
+		 this_program});
+      }
+    }
+  }
+  int a() {
+    return equal (A()->B()->f(), ({object_program (this_object()), A, A.B, 0, A.B}));
+  }
+]])
+
+test_program([[
+  class A {
+    class B {
+      constant this_program = "foo";
+      mixed f (int this_program) {
+	return ({A::this_program, B::this_program, this_program});
+      }
+    }
+  }
+  int a() {
+    return equal (A()->B()->f (1), ({A, "foo", 1}));
+  }
+]])
+
+test_program([[
+  class I {
+    string this_program = "foo";
+  }
+  class A {
+    class B {
+      inherit I;
+      mixed f (int this_program) {
+	return ({A::this_program, B::this_program, this_program});
+      }
+    }
+  }
+  int a() {
+    return equal (A()->B()->f (1), ({A, "foo", 1}));
+  }
+]])
+
+test_program([[
+  string this_program = "foo";
+  class A {
+    class B {
+      mixed f() {
+	return ({A::this_program, B::this_program, this_program});
+      }
+    }
+  }
+  int a() {
+    return equal (A()->B()->f(), ({A, A.B, "foo"}));
+  }
+]])
+
+test_compile_error_any([[
+  class A {}
+  class B {
+    inherit A;
+    mixed f() {return A::this_program;}
+  }
 ]])
 
 dnl test_compile_error(0())
@@ -5655,7 +5726,8 @@ test_eq(sprintf("%O", _typeof(1)),"int(1..1)")
 test_eq(sprintf("%O", _typeof("")),"string")
 test_eq(sprintf("%O", _typeof("x"[0])),"int(120..120)")
 test_eq(sprintf("%O", _typeof(0.0)),"float")
-test_eq(sprintf("%O", _typeof(this_object))-" ","function(:object)")
+test_eq([[sscanf(sprintf("%Ox", _typeof(this_object))-" ",
+		 "function(void|int(0..%*[0-9]):object)%*c")]], 2)
 
 
 // class
@@ -8614,8 +8686,90 @@ test_equal(`+(([0:1,3:6]),([5:2,3:6])),([0:1,3:6,3:6,5:2]))
 
 test_any(return((1+2+3)-(1+2-3)), 6)
 
-// - this_object
+// - this_object and this
 test_true(objectp(this_object()))
+
+test_program([[
+  string _sprintf() {return "g";}
+  class A {
+    string _sprintf() {return "A";}
+    class B {
+      string _sprintf() {return "B";}
+      mixed f() {
+	return sprintf ("%O%O%O%O", global::this, A::this, B::this, this);
+      }
+    }
+  }
+  int a() {return A()->B()->f() == "gABB";}
+]])
+
+test_program([[
+  string _sprintf() {return "g";}
+  class A {
+    string _sprintf() {return "A";}
+    class B {
+      string _sprintf() {return "B";}
+      mixed f() {
+	return sprintf ("%O%O%O%O",
+			this_object (2), this_object (1), this_object (0), this_object());
+      }
+    }
+  }
+  int a() {return A()->B()->f() == "gABB";}
+]])
+
+test_program([[
+  string _sprintf() {return "g";}
+  class A {
+    string _sprintf() {return "A";}
+    class B {
+      string _sprintf() {return "B";}
+      mixed f() {
+	return map (({2, 1, 0}), lambda (int l) {
+				   return sprintf ("%O", this_object (l));
+				 }) * "";
+      }
+    }
+  }
+  int a() {return A()->B()->f() == "gAB";}
+]])
+
+test_program([[
+  string _sprintf() {return "g";}
+  class A {
+    string _sprintf() {return "A";}
+    class B {
+      string _sprintf() {return "B";}
+      mixed f() {
+	return sprintf ("%O%O%O%O", global::this, A::this, B::this, this);
+      }
+    }
+    constant this = 7;
+  }
+  int a() {return A()->B()->f() == "g7B7";}
+]])
+
+test_program([[
+  class A {
+    class B {
+      mixed f() {
+	return typeof (A::this) != typeof (B::this);
+      }
+    }
+  }
+  int a() {return A()->B()->f();}
+]])
+
+test_program([[
+  class A {
+    class B {
+      mixed f() {
+	return typeof (this_object (1)) != typeof (this_object (0));
+      }
+    }
+  }
+  int a() {return A()->B()->f();}
+]])
 
 // - throw
 test_eq(20,catch(throw(a())))
