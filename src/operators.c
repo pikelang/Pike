@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.164 2002/10/15 15:29:13 grubba Exp $
+|| $Id: operators.c,v 1.165 2002/11/26 16:55:55 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.164 2002/10/15 15:29:13 grubba Exp $");
+RCSID("$Id: operators.c,v 1.165 2002/11/26 16:55:55 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2302,7 +2302,7 @@ PMOD_EXPORT void o_multiply(void)
  *!   In Pike 7.0 and earlier the multiplication order was unspecified.
  *!
  *! @seealso
- *!   @[`+()], @[`-()], [`/()], @[lfun::`*()], @[lfun::``*()]
+ *!   @[`+()], @[`-()], @[`/()], @[lfun::`*()], @[lfun::``*()]
  */
 PMOD_EXPORT void f_multiply(INT32 args)
 {
