@@ -144,6 +144,7 @@ SYNTAX
 DESCRIPTION
 	When opening the database with the 'f' flag writings to the database
 	can be cached in memory for a long time. Calling sync will write
-	all such caches to disk and not return until 
+	all such caches to disk and not return until everything is stored
+	on the disk.
 
 ============================================================================
