@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.307 2000/08/31 14:40:19 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.308 2000/09/01 19:09:04 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5570,56 +5570,44 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 
     if(in->inherit_level==1)
     {
-      if(in->parent_offset)
+      switch(in->parent_offset)
       {
-	struct inherit *inherit=in;
-	int accumulator;
-	struct object *o=par;
-	int i;
-
-	o=par;
-	i=in->parent_identifier;
-	accumulator=inherit->parent_offset - 1;
-	while(accumulator--)
+	default:
 	{
-	  struct program *p;
-	  if(inherit->parent_offset)
+	  struct external_variable_context tmp;
+	  if(!par)
 	  {
-	    i=o->parent_identifier;
-	    o=o->parent;
-	    accumulator+=inherit->parent_offset-1;
+	    ref_push_program(in->prog);
 	  }else{
-	    i=inherit->parent_identifier;
-	    o=inherit->parent;
-	  }
-	  if(!o || !o->prog || i<0) break;
-	  inherit=INHERIT_FROM_INT(o->prog, i);
-	}
-	if(o && o->prog && i>=0)
-	{
-	  ref_push_object(o);
-	  Pike_sp[-1].subtype=i;
-	  Pike_sp[-1].type=T_FUNCTION;
-#ifdef PIKE_DEBUG
-	  if(program_from_svalue(Pike_sp-1) != in->prog)
-	    fatal("Programming error in inherit_list!\n");
-#endif
-	  q++;
-	  continue;
-	}
-      }
+	    tmp.o=par;
+	    tmp.parent_identifier=parid;
+	    tmp.inherit=INHERIT_FROM_INT(par->prog,parid);
 
-      if(in->parent && in->parent->prog)
-      {
-	ref_push_object(in->parent);
-	Pike_sp[-1].subtype=in->parent_identifier;
-	Pike_sp[-1].type=T_FUNCTION;
-#ifdef PIKE_DEBUG
-	if(program_from_svalue(Pike_sp-1) != in->prog)
-	  fatal("Programming error in inherit_list!\n");
-#endif
-      }else{
-	ref_push_program(in->prog);
+	    find_external_context(&tmp, in->parent_offset-1);
+	    ref_push_object(tmp.o);
+	    Pike_sp[-1].subtype=in->parent_identifier + 
+	      tmp.inherit->identifier_level;
+	    Pike_sp[-1].type=T_FUNCTION;
+	  }
+	}
+	break;
+
+	case -17:
+	  ref_push_object(in->parent);
+	  Pike_sp[-1].subtype=in->parent_identifier;
+	  Pike_sp[-1].type=T_FUNCTION;
+	  break;
+	  
+	case -18:
+	  if(par)
+	  {
+	    ref_push_object(par);
+	    Pike_sp[-1].subtype=parid;
+	    Pike_sp[-1].type=T_FUNCTION;
+	  }else{
+	    ref_push_program(in->prog);
+	  }
+	  break;
       }
       q++;
     }
@@ -5721,11 +5709,20 @@ void init_builtin_efuns(void)
   ADD_PROTOTYPE("read_include", tFunc(tStr, tStr), 0);
   ADD_PROTOTYPE("resolv", tFunc(tStr tOr(tStr, tVoid), tMix), 0);
 
+#if 0
+  /* Getenv and putenv are efuns, they do not HAVE to be defined in the
+   * master object. -Hubbe
+   */
+
   /* These two aren't called from C-code, but are popular from other code. */
   ADD_PROTOTYPE("getenv",
 		tOr(tFunc(tStr,tStr), tFunc(tNone, tMap(tStr, tStr))),
 		ID_OPTIONAL);
   ADD_PROTOTYPE("putenv", tFunc(tStr tStr, tVoid), ID_OPTIONAL);
+
+#endif
+
+
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
 
@@ -6217,7 +6214,7 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 		
   ADD_FUNCTION2("inherit_list", f_inherit_list,
-		tFunc(tProgram,tArr(tProgram)), 0, OPT_TRY_OPTIMIZE);
+		tFunc(tOr(tObj,tProgram),tArr(tProgram)), 0, OPT_TRY_OPTIMIZE);
   ADD_FUNCTION2("function_defined", f_function_defined,
 	       tFunc(tFunction,tString), 0, OPT_TRY_OPTIMIZE);
 
