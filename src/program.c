@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.303 2001/03/17 16:36:04 grubba Exp $");
+RCSID("$Id: program.c,v 1.304 2001/03/20 02:45:51 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -585,6 +585,8 @@ static char *raw_lfun_types[] = {
 struct program *first_program = 0;
 static int current_program_id=0x10000;
 
+struct program *null_program=0;
+
 struct object *error_handler=0;
 struct object *compat_handler=0;
 
@@ -1102,6 +1104,7 @@ struct program *low_allocate_program(void)
   struct program *p;
   p=ALLOC_STRUCT(program);
   MEMSET(p, 0, sizeof(struct program));
+  p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
 
   GC_ALLOC(p);
@@ -1173,6 +1176,7 @@ void low_start_new_program(struct program *p,
     }
     e=2;
   }
+  p->flags &=~ PROGRAM_VIRGIN;
   Pike_compiler->parent_identifier=id;
   if(idp) *idp=id;
 
@@ -3755,7 +3759,9 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 
 struct program *compile(struct pike_string *prog,
 			struct object *handler,/* error handler */
-			int major, int minor)
+			int major, int minor,
+			struct program *target,
+			struct object *placeholder)
 {
 #ifdef PIKE_DEBUG
   ONERROR tmp;
@@ -3774,6 +3780,12 @@ struct program *compile(struct pike_string *prog,
 
   CDFPRINTF((stderr, "th(%ld) compile() starting compilation_depth=%d\n",
 	     (long)th_self(),compilation_depth));
+
+  if(placeholder && placeholder->prog != null_program)
+    Pike_error("Placeholder object is not a null_program clone!\n");
+
+  if(target && !(target->flags & PROGRAM_VIRGIN))
+    Pike_error("Placeholder program is not virgin!\n");
 
   error_handler = handler;
   compat_handler=0;
@@ -3827,10 +3839,22 @@ struct program *compile(struct pike_string *prog,
   }
 
   compilation_depth=-1;
-  low_start_new_program(0,0,0,0);
+  low_start_new_program(target,0,0,0);
 
   initialize_buf(&used_modules);
   use_module(Pike_sp-1);
+
+  if(placeholder)
+  {
+    if(placeholder->prog != null_program)
+    {
+      yyerror("Placeholder argument is not a null_program clone!");
+      placeholder=0;
+    }else{
+      free_program(placeholder->prog);
+      add_ref(placeholder->prog=Pike_compiler->new_program);
+    }
+  }
 
   if(lex.current_file)
   {
@@ -3857,6 +3881,25 @@ struct program *compile(struct pike_string *prog,
   yyparse();  /* Parse da program */
 
   p=end_first_pass(0);
+
+  if(placeholder)
+  {
+    if(!p)
+    {
+      destruct(placeholder);
+      placeholder=0;
+    }
+    else if(placeholder->storage)
+    {
+      yyerror("Placeholder already has storage!\n");
+      destruct(placeholder);
+      placeholder=0;
+    }else{
+      placeholder->storage=p->storage_needed ?
+	(char *)xalloc(p->storage_needed) :
+	(char *)0;
+    }
+  }
 
 #ifdef PIKE_DEBUG
   if (compilation_depth != -1) {
@@ -3932,6 +3975,11 @@ struct program *compile(struct pike_string *prog,
   UNSET_ONERROR(tmp);
 #endif
   pop_stack(); /* pop the 'default' module */
+  if(placeholder)
+  {
+    call_c_initializers(placeholder);
+    call_pike_initializers(placeholder,0);
+  }
 
   if(!p) Pike_error("Compilation failed.\n");
   return p;
@@ -4105,6 +4153,7 @@ void init_program(void)
   struct svalue val;
   struct svalue id;
 
+
   MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
 
   lfun_ids = allocate_mapping(NUM_LFUNS);
@@ -4135,6 +4184,15 @@ void init_program(void)
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
   pike_trampoline_program=end_program();
+
+  {
+    struct svalue s;
+    start_new_program();
+    null_program=end_program();
+    s.type=T_PROGRAM;
+    s.u.program=null_program;
+    low_add_constant("__null_program",&s);
+  }
 }
 
 void cleanup_program(void)
@@ -4170,6 +4228,12 @@ void cleanup_program(void)
   {
     free_program(pike_trampoline_program);
     pike_trampoline_program=0;
+  }
+
+  if(null_program)
+  {
+    free_program(null_program);
+    null_program=0;
   }
 #endif
 }
@@ -4990,5 +5054,4 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 
   Pike_compiler->compat_major=major;
   Pike_compiler->compat_minor=minor;
-  
 }

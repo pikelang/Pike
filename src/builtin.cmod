@@ -357,6 +357,13 @@ PIKEFUN int(0 .. 1) get_weak_flag(array|mapping|multiset m)
   push_int(flag);
 }
 
+PIKEFUN program __empty_program()
+  efun;
+  optflags OPT_EXTERNAL_DEPEND;
+{
+  RETURN low_allocate_program();
+}
+
 void init_builtin(void)
 {
 INIT

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.354 2001/03/17 21:09:06 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.355 2001/03/20 02:45:50 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3239,8 +3239,9 @@ PMOD_EXPORT void f_replace(INT32 args)
  */
 PMOD_EXPORT void f_compile(INT32 args)
 {
-  struct program *p;
+  struct program *p=0;
   struct object *o;
+  struct object *placeholder=0;
   int major=-1;
   int minor=-1;
 
@@ -3250,24 +3251,35 @@ PMOD_EXPORT void f_compile(INT32 args)
 		 BIT_VOID | BIT_INT | BIT_OBJECT,
 		 BIT_VOID | BIT_INT,
 		 BIT_VOID | BIT_INT,
+		 BIT_VOID | BIT_INT | BIT_PROGRAM,
+		 BIT_VOID | BIT_INT | BIT_OBJECT,
 		 0);
 
   o=0;
-  if (args > 1)
-    if(Pike_sp[1-args].type == T_OBJECT)
-      o=Pike_sp[1-args].u.object;
-
-  if(args == 3)
-    SIMPLE_BAD_ARG_ERROR("compile", 4, "int");
-
-  if(args > 3)
+  switch(args)
   {
-    major=sp[2-args].u.integer;
-    minor=sp[3-args].u.integer;
+    case 3:
+      SIMPLE_BAD_ARG_ERROR("compile", 4, "int");
+    default:
+      if(Pike_sp[5-args].type == T_OBJECT)
+	placeholder=Pike_sp[5-args].u.object;
+
+    case 5:
+      if(Pike_sp[4-args].type == T_PROGRAM)
+	p=Pike_sp[4-args].u.program;
+
+    case 4:
+      major=sp[2-args].u.integer;
+      minor=sp[3-args].u.integer;
+      
+    case 2:
+      if(Pike_sp[1-args].type == T_OBJECT)
+	o=Pike_sp[1-args].u.object;
+      
+    case 0: case 1: break;
   }
 
-
-  p = compile(Pike_sp[-args].u.string, o, major, minor);
+  p = compile(Pike_sp[-args].u.string, o, major, minor, p, placeholder);
 
 #ifdef PIKE_DEBUG
   if(!(p->flags & PROGRAM_FINISHED))
@@ -7565,8 +7577,8 @@ void init_builtin_efuns(void)
 /* function(string...:string) */
   ADD_EFUN("combine_path",f_combine_path,tFuncV(tNone,tStr,tStr),0);
   
-/* function(string,object|void,mixed...:program) */
-  ADD_EFUN("compile", f_compile, tFuncV(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) ,tMix,tPrg),
+  ADD_EFUN("compile", f_compile,
+	   tFunc(tStr tOr(tObj, tVoid) tOr(tInt, tVoid) tOr(tInt, tVoid) tOr(tPrg, tVoid) tOr(tObj, tVoid) ,tPrg),
 	   OPT_EXTERNAL_DEPEND);
   
 /* function(1=mixed:1) */

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.57 2001/02/03 01:24:38 mast Exp $
+ * $Id: object.h,v 1.58 2001/03/20 02:45:51 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -57,6 +57,7 @@ BLOCK_ALLOC(object, 511)
 PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct object * o);
 PMOD_EXPORT struct object *low_clone(struct program *p);
 PMOD_EXPORT void call_c_initializers(struct object *o);
+void call_pike_initializers(struct object *o, int);
 PMOD_EXPORT void do_free_object(struct object *o);
 PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args);
 PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args);

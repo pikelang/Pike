@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.163 2001/03/12 22:42:18 hubbe Exp $");
+RCSID("$Id: object.c,v 1.164 2001/03/20 02:45:50 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -248,7 +248,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
   POP_FRAME();
 }
 
-static void call_pike_initializers(struct object *o, int args)
+void call_pike_initializers(struct object *o, int args)
 {
   apply_lfun(o,LFUN___INIT,0);
   pop_stack();

@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.147 2001/03/14 21:44:04 mast Exp $
+ * $Id: master.pike.in,v 1.148 2001/03/20 02:45:49 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -191,12 +191,23 @@ string master_read_file(string file)
 //! @seealso
 //! @[compile()], @[compile_string()], @[cpp()]
 //!
-program compile_file(string filename, object|void handler)
+program compile_file(string filename,
+		     object|void handler,
+		     void|program p,
+		     void|object o)
 {
   AUTORELOAD_CHECK_FILE(filename);
   return compile(cpp(master_read_file(filename),
-		     filename, 1, handler, compat_major, compat_minor),
-		 handler, compat_major, compat_minor);
+		     filename,
+		     1,
+		     handler,
+		     compat_major,
+		     compat_minor),
+		 handler,
+		 compat_major,
+		 compat_minor,
+		 p,
+		 o);
 }
 
 
@@ -339,7 +350,10 @@ array(string) query_precompiled_names(string fname)
 object compilation_mutex = _static_modules.Builtin()->mutex();
 #endif
 
-static program low_findprog(string pname, string ext, object|void handler)
+static program low_findprog(string pname,
+			    string ext,
+			    object|void handler,
+			    void|int mkobj)
 {
   program ret;
   Stat s;
@@ -426,11 +440,16 @@ static program low_findprog(string pname, string ext, object|void handler)
       }
       
 //      werror("2.5: %O\n",fname);
-      
-      if ( mixed e=catch { ret=compile_file(fname); } )
+      programs[fname]=ret=__empty_program();
+      if ( mixed e=catch {
+	ret=compile_file(fname,
+			 0,
+			 ret,
+			 mkobj? (objects[ret]=__null_program()) : 0);
+      } )
       {
 //	werror("-3: %O\n",fname);
-	programs[fname]=0;
+	ret=programs[fname]=0;
         if(arrayp(e) && sizeof(e) && e[0] == "Compilation failed.\n")
           e[1]=({});
         throw(e);
@@ -449,35 +468,36 @@ static program low_findprog(string pname, string ext, object|void handler)
 
     AUTORELOAD_FINISH(ret,programs,fname);
 
-//    werror("3: %O\n",fname);
+//    werror("3: %O (%O)\n",fname, ret);
     return programs[fname]=ret;
   }
   return 0;
 }
 
-static program findprog(string pname, string ext, object|void handler)
+static program findprog(string pname,
+			string ext,
+			object|void handler,
+			void|int mkobj)
 {
   switch(ext)
   {
   case ".pike":
   case ".so":
-    return low_findprog(pname,ext,handler);
+    return low_findprog(pname,ext,handler, mkobj);
 
   default:
     pname+=ext;
     return
-      low_findprog(pname,"", handler) ||
-      low_findprog(pname,".pike", handler) ||
-      low_findprog(pname,".so", handler);
+      low_findprog(pname,"", handler, mkobj) ||
+      low_findprog(pname,".pike", handler, mkobj) ||
+      low_findprog(pname,".so", handler, mkobj);
   }
 }
 
-/* This function is called when the driver wants to cast a string
- * to a program, this might be because of an explicit cast, an inherit
- * or a implict cast. In the future it might receive more arguments,
- * to aid the master finding the right program.
- */
-program cast_to_program(string pname, string current_file, object|void handler)
+program low_cast_to_program(string pname,
+			    string current_file,
+			    object|void handler,
+			    void|int mkobj)
 {
   string ext;
   string nname;
@@ -494,7 +514,7 @@ program cast_to_program(string pname, string current_file, object|void handler)
   if(IS_ABSOLUTE_PATH(pname))
   {
     pname=combine_path("/",pname);
-    return findprog(pname,ext,handler);
+    return findprog(pname,ext,handler,mkobj);
   }else{
     string cwd;
     if(current_file)
@@ -504,16 +524,30 @@ program cast_to_program(string pname, string current_file, object|void handler)
       cwd=getcwd();
     }
 
-    if(program ret=findprog(combine_path(cwd,pname),ext,handler))
+    if(program ret=findprog(combine_path(cwd,pname),ext,handler,mkobj))
       return ret;
 
     foreach(pike_program_path, string path)
-      if(program ret=findprog(combine_path(path,pname),ext,handler))
+      if(program ret=findprog(combine_path(path,pname),ext,handler,mkobj))
 	return ret;
 
     return 0;
   }
 }
+
+
+/* This function is called when the driver wants to cast a string
+ * to a program, this might be because of an explicit cast, an inherit
+ * or a implict cast. In the future it might receive more arguments,
+ * to aid the master finding the right program.
+ */
+program cast_to_program(string pname,
+			string current_file, 
+			object|void handler)
+{
+  return low_cast_to_program(pname, current_file, handler);
+}
+
 
 /* This function is called when an error occurs that is not caught
  * with catch().
@@ -665,7 +699,7 @@ object low_cast_to_object(string oname, string current_file)
   program p;
   object o;
 
-  p=cast_to_program(oname, current_file);
+  p=low_cast_to_program(oname, current_file, 0, 1);
   if(!p) return 0;
   if(!(o=objects[p])) o=objects[p]=p();
   return o;
@@ -718,7 +752,11 @@ class dirnode
     if(module) 
     {
       object o;
-      if(!zero_type(o=module[index])) return o;
+      if(!zero_type(o=module[index]))
+      {
+//	werror("Dirnode(%O) module[%O] -> %O\n",dirname,index, o);
+	return o;
+      }
     }
 
     if( !files )
@@ -741,15 +779,22 @@ class dirnode
       if(mixed tmp=o->_module_value) o=tmp;
       return o;
     }
-    if (program p=cast_to_program( index, 0 )) return p;
+    if (program p=cast_to_program( index, 0 ))
+    {
+//      werror("dirnode(%O)[%O] -> %O\n",dirname,index,p);
+      return p;
+    }
+    werror("Returning UNDEFINED for %s\n",ind);
     return UNDEFINED;
   }
 
   mixed `[](string index)
   {
     mixed ret;
-    if(!zero_type(ret=cache[index]))
+//      werror("Dirnode(%O) cache[%O] ?????\n",dirname,index);
+      if(!zero_type(ret=cache[index]))
     {
+//      werror("Dirnode(%O) cache[%O] -> %O\n",dirname,index, ret);
       // The check below is to (hopefully) avoid calling any function
       // in ret (like `! or `==) in case it's an object.
       if(!intp (ret) || ret) return ret;
@@ -920,6 +965,7 @@ object findmodule(string fullname)
   object o;
   if(!zero_type(o=fc[fullname]))
   {
+//    werror("fc[%O] -> %O\n",fullname, o);
     return o;
   }
 
@@ -2172,7 +2218,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
     ret += frames * "";
   }
 
-  return ret;
+  return ret || "No backtrace!\n";;
 }
 
 //! @global

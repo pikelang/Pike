@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.119 2001/03/12 23:46:22 hubbe Exp $
+ * $Id: program.h,v 1.120 2001/03/20 02:45:51 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -216,6 +216,7 @@ struct pike_trampoline
 };
 
 
+
 /* program parts have been realloced into one block */
 #define PROGRAM_OPTIMIZED 1
 
@@ -253,6 +254,9 @@ struct pike_trampoline
 
 /* Program is in an inconsistant state */
 #define PROGRAM_AVOID_CHECK 512
+
+/* Program has not yet been used for compilation */
+#define PROGRAM_VIRGIN 1024
 
 enum pike_program_event
 {
@@ -475,7 +479,9 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog,
 			struct object *handler,
 			int major,
-			int minor);
+			int minor,
+			struct program *target,
+			struct object *placeholder);
 PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
 				   char *type, unsigned INT8 flags,
 				   unsigned INT16 opt_flags);
