@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.39 2001/01/08 13:23:49 mirar Exp $
+ * $Id: image_jpeg.c,v 1.40 2001/01/08 13:32:35 mirar Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.39 2001/01/08 13:23:49 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.40 2001/01/08 13:32:35 mirar Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -409,7 +409,7 @@ static void my_term_source(struct jpeg_decompress_struct *cinfo)
 **!	wizard options:
 **!	    "baseline":0|1
 **!		Force baseline output. Useful for quality&lt;25.
-**!		Default is on for quality&lt;25.
+**!		Default is off for quality&lt;25.
 **!	    "quant_tables":mapping(int,array(array(int)))
 **!		Tune quantisation tables manually.
 **!	</pre>
@@ -483,7 +483,7 @@ static void image_jpeg_encode(INT32 args)
 
       p=-1;
       if (parameter_int(sp+1-args,param_quality,&q)) {
-	 if (q<25) p=1; else p=0;
+	 if (q<25) p=0; else p=1;
       }
       if (parameter_int(sp+1-args,param_baseline,&p) || p!=-1)
       {
