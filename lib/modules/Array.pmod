@@ -778,3 +778,24 @@ int(0..1) any( array a, function predicate, mixed ... extra_args )
       return 1;
   return 0;
 }
+
+//! Splits an array in two, according to an arbitration function
+//! @[arbiter]. The elements in @[a] who return non-zero for the
+//! expression @[arbiter]( @[a][@i{i@}], @extra_args ) end up in
+//! the first sub-array, the others in the second. The order is
+//! preserved from the original array.
+//! @example
+//!   Array.partition( enumerate( 9 ), lambda(int n) { return n>3 && n<7; } );
+//!   > ({ ({ 4, 5, 6 }), ({ 0, 1, 2, 3, 7, 8 }) })
+//! @seealso
+//!   @[filter], @[`/], @[`%]
+array(array) partition( array a, function arbiter, mixed ... extra_args )
+{
+  array first = ({}), second = ({});
+  foreach( a, mixed elem )
+    if( arbiter( elem, @extra_args ) )
+      first += ({ elem });
+    else
+      second += ({ elem });
+  return ({ first, second });
+}
