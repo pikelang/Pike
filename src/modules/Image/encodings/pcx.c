@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.12 2000/09/08 20:10:26 grubba Exp $");
+RCSID("$Id: pcx.c,v 1.13 2000/09/08 20:10:54 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -20,6 +20,7 @@ RCSID("$Id: pcx.c,v 1.12 2000/09/08 20:10:26 grubba Exp $");
 #include "builtin_functions.h"
 #include "operators.h"
 #include "dynamic_buffer.h"
+#include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"
