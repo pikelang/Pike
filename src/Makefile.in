@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.266 2001/07/06 17:17:48 grubba Exp $
+# $Id: Makefile.in,v 1.267 2001/07/13 18:19:07 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -697,7 +697,7 @@ modules/linker_options: modules-stamp
 
 module.o:  modules/modlist_headers.h modules/modlist.h
 
-$(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h
+$(SRCDIR)/interpret_protos.h_src: $(SRCDIR)/interpret_functions.h $(SRCDIR)/strip_opcodes
 	$(CPP) $(PREFLAGS) -DGEN_PROTOS $(SRCDIR)/interpret_functions.h | $(SRCDIR)/strip_opcodes >$(SRCDIR)/interpret_protos.h_src || { rm $(SRCDIR)/interpret_protos.h_src; exit 1; }
 
 lex.o: $(SRCDIR)/lex.c $(SRCDIR)/interpret_protos.h
@@ -712,8 +712,8 @@ $(SRCDIR)/language.h_src: $(SRCDIR)/language.yacc
 	@echo "Expect 1 shift/reduce conflict."
 	( cd $(SRCDIR) &&\
 	 $(YACC) $(YFLAGS) language.yacc &&\
-	 mv y.tab.c language.c &&\
-	 mv y.tab.h language.h_src )
+	 sed -e 's/YY_COUNT_TYPE/@YY_COUNT_TYPE@/' <y.tab.c >language.c &&\
+	 mv y.tab.h language.h_src && rm y.tab.c)
 
 $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 	touch $(SRCDIR)/language.c

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.536 2001/07/12 12:14:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.537 2001/07/13 18:19:06 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1819,10 +1819,11 @@ EOF
 AC_MSG_RESULT($pike_cv___yy_memcpy_count_type)
 if test "x$pike_cv___yy_memcpy_count_type" = "xunknown"; then
   AC_MSG_WARN([Defaulting to unsigned int.])
-  AC_DEFINE(YY_COUNT_TYPE, [unsigned int])
+  YY_COUNT_TYPE="unsigned int"
 else
-  AC_DEFINE_UNQUOTED(YY_COUNT_TYPE, $pike_cv___yy_memcpy_count_type)
+  YY_COUNT_TYPE="$pike_cv___yy_memcpy_count_type"
 fi
+AC_SUBST(YY_COUNT_TYPE)
 
 #############################################################################
 
