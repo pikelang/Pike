@@ -9,10 +9,14 @@ string crypt_md5(string pw, void|string salt) {
 constant string_to_hex = __builtin.string2hex;
 constant hex_to_string = __builtin.hex2string;
 
-#if constant(___Nettle.DES_Info)
-// FIXME: Only compatible when sizeof(parameter)==8.
-function(string:string) des_parity = ___Nettle.DES_Info()->fix_parity;
-#endif
+
+string des_parity(string s) {
+  foreach(s; int pos; int v) {
+    int i = v & 0xfe;
+    s[pos] = i | !Int.parity(i);
+  }
+  return s;
+}
 
 // These haven't been modified.
 constant arcfour = Crypto.arcfour;
