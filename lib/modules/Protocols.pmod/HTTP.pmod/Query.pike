@@ -127,7 +127,10 @@ string request;
 
 string buf="",headerbuf="";
 int datapos;
+
+#if constant(thread_create)
 object conthread;
+#endif
 
 function request_ok,request_fail;
 array extra_args;
@@ -400,6 +403,8 @@ object set_callbacks(function(object,mixed...:mixed) _ok,
    return this_object();
 }
 
+#if constant(thread_create)
+
 object thread_request(string server,int port,string query,
 		      void|mapping|string headers,void|string data)
 {
@@ -434,6 +439,8 @@ object thread_request(string server,int port,string query,
 
    return this_object();
 }
+
+#endif
 
 object sync_request(string server,int port,string query,
 		    void|mapping|string headers,void|string data)
@@ -499,12 +506,16 @@ object async_request(string server,int port,string query,
    return this_object();
 }
 
+#if constant(thread_create)
+
 int `()()
 {
    // wait for completion
    if (conthread) conthread->wait();
    return ok;
 }
+
+#endif
 
 string data()
 {
