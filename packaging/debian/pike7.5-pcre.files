@@ -1,1 +1,2 @@
-usr/lib/pike/*/lib/modules/_Regexp_PCRE.so
+usr/lib/pike/*/lib/modules/*Regexp_PCRE.*
+usr/share/pike/*/lib/modules/*Regexp_PCRE.*

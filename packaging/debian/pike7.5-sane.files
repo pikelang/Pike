@@ -1,2 +1,2 @@
-usr/lib/pike/*/lib/modules/SANE.so
-
+usr/lib/pike/*/lib/modules/*SANE.*
+usr/share/pike/*/lib/modules/*SANE.*

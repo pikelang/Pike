@@ -1,4 +1,6 @@
 usr/lib/pike/*/lib/include/postgres.h
-usr/lib/pike/*/lib/modules/Postgres.so
+usr/lib/pike/*/lib/7.4/include/postgres.h
+usr/lib/pike/*/lib/modules/*Postgres.*
+usr/share/pike/*/lib/modules/*Postgres.*
 usr/lib/pike/*/lib/modules/Sql.pmod/postgres*
 usr/share/pike/*/lib/modules/Sql.pmod/postgres*

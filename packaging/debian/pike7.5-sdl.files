@@ -1,1 +1,2 @@
-usr/lib/pike/*/lib/modules/SDL.so
+usr/lib/pike/*/lib/modules/*SDL.*
+usr/share/pike/*/lib/modules/*SDL.*

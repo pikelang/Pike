@@ -1,1 +1,2 @@
-usr/lib/pike/*/lib/modules/Perl.so
+usr/lib/pike/*/lib/modules/*Perl.*
+usr/share/pike/*/lib/modules/*Perl.*

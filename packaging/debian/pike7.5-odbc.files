@@ -1,3 +1,4 @@
-usr/lib/pike/*/lib/modules/Odbc.so
+usr/lib/pike/*/lib/modules/*Odbc.*
+usr/share/pike/*/lib/modules/*Odbc.*
 usr/lib/pike/*/lib/modules/Sql.pmod/odbc*
 usr/share/pike/*/lib/modules/Sql.pmod/odbc*

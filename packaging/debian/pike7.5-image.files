@@ -1,3 +1,5 @@
 usr/lib/pike/*/lib/modules/*Image*.so
 usr/lib/pike/*/lib/modules/*Image*.pmod*
 usr/share/pike/*/lib/modules/*Image*.pmod*
+usr/share/pike/*/lib/modules/_Image.pmod
+usr/lib/pike/*/lib/modules/_Image.pmod

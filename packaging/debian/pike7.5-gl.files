@@ -1,2 +1,4 @@
-usr/lib/pike/*/lib/modules/GL*
-usr/share/pike/*/lib/modules/GL*
+usr/lib/pike/*/lib/modules/*GL.*
+usr/share/pike/*/lib/modules/*GL.*
+usr/lib/pike/*/lib/modules/*GLUT.*
+usr/share/pike/*/lib/modules/*GLUT.*
