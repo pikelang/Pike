@@ -26,7 +26,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.37 2000/07/28 07:14:27 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.38 2000/08/03 18:45:52 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -118,15 +118,15 @@ struct input
     struct pike_string *str;
     char *mmap;
   } u;
-  unsigned long len;		/* current input: string or mmap len */
-  int set_blocking_offset, set_nonblocking_offset;
+  size_t len;		/* current input: string or mmap len */
+  ptrdiff_t set_blocking_offset, set_nonblocking_offset;
   struct input *next;
 };
 
 struct output
 {
   struct object *obj;
-  int write_offset, set_blocking_offset, set_nonblocking_offset;
+  ptrdiff_t write_offset, set_blocking_offset, set_nonblocking_offset;
   int fd;
       
   enum 
@@ -135,7 +135,7 @@ struct output
     O_SLEEP			/* sleeping; waiting for more data */
   } mode;
 
-  unsigned long pos; /* position in buffer */
+  size_t pos; /* position in buffer */
   struct object *next;
   struct pipe *the_pipe;
 };
@@ -174,11 +174,12 @@ struct pipe
   unsigned long sent;
 };
 
-static int offset_input_read_callback;
-static int offset_input_close_callback;
-static int offset_output_write_callback;
-static int offset_output_close_callback;
-static int mmapped, nobjects, nstrings, noutputs, ninputs, nbuffers, sbuffers;
+static ptrdiff_t offset_input_read_callback;
+static ptrdiff_t offset_input_close_callback;
+static ptrdiff_t offset_output_write_callback;
+static ptrdiff_t offset_output_close_callback;
+static ptrdiff_t mmapped, nobjects, nstrings, noutputs;
+static ptrdiff_t ninputs, nbuffers, sbuffers;
 
 void close_and_free_everything(struct object *o,struct pipe *);
 static INLINE void output_finish(struct object *obj);
