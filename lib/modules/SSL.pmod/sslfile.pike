@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.39 2002/06/03 20:42:31 mast Exp $
+/* $Id: sslfile.pike,v 1.40 2002/06/10 13:56:51 grubba Exp $
  *
  */
 
@@ -72,11 +72,19 @@ private int queue_write()
   int|string data = to_write();
 #ifdef SSL3_DEBUG_TRANSPORT
   werror(sprintf("SSL.sslfile->queue_write: '%O'\n", data));
+#else
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.sslfile->queue_write: '%O'\n", stringp(data)?(string)sizeof(data):data));
+#endif
 #endif
   if (stringp(data))
     write_buffer += data;
 #ifdef SSL3_DEBUG_TRANSPORT
   werror(sprintf("SSL.sslfile->queue_write: buffer = '%O'\n", write_buffer));
+#else
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.sslfile->queue_write: buffer = %O\n", sizeof(write_buffer)));
+#endif
 #endif
 
   if(!blocking) {
@@ -86,7 +94,7 @@ private int queue_write()
       return(0);
     }
   }
-#ifdef SSL3_DEBUG_TRANSPORT
+#if defined(SSL3_DEBUG_TRANSPORT) || defined(SSL3_DEBUG)
   werror("SSL.sslfile->queue_write: end\n");
 #endif
   return stringp(data) ? 0 : data;
@@ -375,14 +383,18 @@ private void ssl_write_callback(mixed id)
 #endif
 	  die(-1);
     }
+    if (strlen(write_buffer))
+      return;
   }
   int res = queue_write();
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.sslport->ssl_write_callback: res = '%O'\n", res));
 #endif
   
-  if ( !res && !strlen(write_buffer)
-       && connected && !blocking && write_callback)
+  if (strlen(write_buffer))
+    return;
+
+  if ( !res && connected && !blocking && write_callback)
   {
 #ifdef SSL3_DEBUG
     werror("SSL.sslport->ssl_write_callback: Calling write_callback\n");
@@ -393,8 +405,11 @@ private void ssl_write_callback(mixed id)
       return;
     }
     res = queue_write();
+
+    if (strlen(write_buffer))
+      return;
   }
-  if (!strlen(write_buffer) && socket)
+  if (socket)
   {
     socket->set_write_callback(0);
     if (is_closed)
@@ -484,7 +499,7 @@ void set_nonblocking(function ...args)
     set_read_callback(args[0]);
     set_write_callback(args[1]);
     set_close_callback(args[2]);
-    if (!this_object()) {
+    if (!this_object() || is_closed || !socket) {
       return;
     }
     break;
@@ -493,8 +508,8 @@ void set_nonblocking(function ...args)
 		backtrace() }) );
   }
   blocking = 0;
-  if (!socket) return;
-  socket->set_nonblocking(ssl_read_callback,ssl_write_callback,ssl_close_callback);
+  socket->set_nonblocking(ssl_read_callback,ssl_write_callback,
+			  ssl_close_callback);
   if (strlen(read_buffer))
     ssl_read_callback(socket->query_id(), "");
 }
