@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.30 1999/12/13 21:40:53 grubba Exp $
+ * $Id: pike_types.h,v 1.31 1999/12/14 19:51:57 mast Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -183,7 +183,7 @@ int type_may_overload(char *type, int lfun);
 #define dtSet(IND) {unsafe_push_type(PIKE_T_MULTISET); {IND}}
 #define dtMultiset dtSet(dtMix)
 #define dtObjImpl(PROGRAM) {unsafe_push_type(PIKE_T_OBJECT); unsafe_push_type(0); push_type_int_backwards((PROGRAM)->id);}
-#define dtObjInher(PROGRAM) {unsafe_push_type(PIKE_T_OBJECT); unsafe_push_type(1); push_type_int_backwards((PROGRAM)->id);}
+#define dtObjIs(PROGRAM) {unsafe_push_type(PIKE_T_OBJECT); unsafe_push_type(1); push_type_int_backwards((PROGRAM)->id);}
 #define dtObj dtStore(tObj)
 #define dtFuncV(ARGS,REST,RET) MagicdtFuncV(RET,REST,ARGS)
 #define dtFunc(ARGS,RET) MagicdtFunc(RET,ARGS)
