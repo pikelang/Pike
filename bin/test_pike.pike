@@ -62,7 +62,7 @@ int main(int argc, string *argv)
       default:
 	if(tests)
 	{
-	  perror("Uknown argument: "+opt+".\n");
+	  perror("Unknown argument: "+opt+".\n");
 	  exit(1);
 	}
 	tests=(read_bytes(argv[e])||"")/"\n....\n";
