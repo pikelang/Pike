@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.178 2003/06/05 12:34:43 grubba Exp $
+|| $Id: encode.c,v 1.179 2003/06/05 15:03:38 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.178 2003/06/05 12:34:43 grubba Exp $");
+RCSID("$Id: encode.c,v 1.179 2003/06/05 15:03:38 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -126,7 +126,7 @@ struct encode_data
 #endif
 };
 
-static void encode_value2(struct svalue *val, struct encode_data *data, int force_dump);
+static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode);
 
 #define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
 #define addchar(t)   low_my_putchar((char)(t), &(data->buf))
@@ -436,15 +436,15 @@ static void zap_unfinished_program(struct program *p)
   }
 }
 
-/* force_dump == 0: Maybe dump the thing later, and only a forward
+/* force_encode == 0: Maybe dump the thing later, and only a forward
  * reference here (applies to programs only).
  *
- * force_dump == 1: Dump the thing now.
+ * force_encode == 1: Dump the thing now.
  *
- * force_dump == 2: A forward reference has been encoded to this
+ * force_encode == 2: A forward reference has been encoded to this
  * thing. Now it's time to dump it. */
 
-static void encode_value2(struct svalue *val, struct encode_data *data, int force_dump)
+static void encode_value2(struct svalue *val, struct encode_data *data, int force_encode)
 
 #ifdef PIKE_DEBUG
 #undef encode_value2
@@ -489,7 +489,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   {
     entry_id = *tmp;		/* It's always a small integer. */
     if (entry_id.u.integer < 0) entry_id.u.integer = -entry_id.u.integer;
-    if (force_dump && tmp->u.integer < 0) {
+    if (force_encode && tmp->u.integer < 0) {
       EDB(1,
 	  fprintf(stderr, "%*sEncoding delayed thing to <%d>: ",
 		  data->depth, "", entry_id.u.integer);
@@ -512,7 +512,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
     }
   }else {
 #ifdef PIKE_DEBUG
-    if (force_dump == 2)
+    if (force_encode == 2)
       Pike_fatal ("Didn't find old entry for delay encoded thing.\n");
 #endif
     if (val->type != T_TYPE) {
@@ -871,7 +871,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	    /* Code the program */
 	    code_entry(TAG_OBJECT, 3,data);
-	    encode_value2(Pike_sp-1, data, 0);
+	    encode_value2(Pike_sp-1, data, 1);
 	    pop_stack();
 	    
 	    push_svalue(val);
@@ -1142,7 +1142,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 	/* Portable encoding (4 and 5). */
 
-	if (!force_dump) {
+	if (!force_encode) {
 	  /* Encode later (5). */
 	  EDB(1, fprintf(stderr, "%*sencode: delayed encoding of program\n",
 			 data->depth, ""));
@@ -1577,7 +1577,9 @@ void f_encode_value(INT32 args)
   int i;
   data=&d;
 
-  check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
+  check_all_args("encode_value", args,
+		 BIT_MIXED,
+		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
 		 /* This argument is only an internal debug helper.
 		  * It's intentionally not part of the function
@@ -1593,7 +1595,7 @@ void f_encode_value(INT32 args)
   data->delayed = allocate_array (0);
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
-  if(args > 1)
+  if(args > 1 && Pike_sp[1-args].type == T_OBJECT)
   {
     data->codec=Pike_sp[1-args].u.object;
   }else{
@@ -1725,24 +1727,6 @@ struct decode_data
 };
 
 static void decode_value2(struct decode_data *data);
-
-static void fallback_codec(void)
-{
-  size_t x;
-  push_constant_text(".");
-  f_divide(2);
-  f_reverse(1);
-  dmalloc_touch_svalue(Pike_sp-1);
-  Pike_sp--;
-  x=Pike_sp->u.array->size;
-  push_array_items(Pike_sp->u.array);
-  ref_push_mapping(get_builtin_constants());
-  while(x--)
-  {
-    stack_swap();
-    f_arrow(2);
-  }
-}
 
 static int my_extract_char(struct decode_data *data)
 {
@@ -2405,12 +2389,7 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  if(data->codec)
-	  {
-	    apply(data->codec,"objectof", 1);
-	  }else{
-	    fallback_codec();
-	  }
+	  apply(data->codec,"objectof", 1);
 	  break;
 
 	case 1:
@@ -2517,12 +2496,7 @@ static void decode_value2(struct decode_data *data)
       switch(num)
       {
 	case 0:
-	  if(data->codec)
-	  {
-	    apply(data->codec,"functionof", 1);
-	  }else{
-	    fallback_codec();
-	  }
+	  apply(data->codec,"functionof", 1);
 	  break;
 
 	case 1: {
@@ -2585,13 +2559,7 @@ static void decode_value2(struct decode_data *data)
 	  struct program *p;
 
 	  decode_value2(data);
-
-	  if(data->codec)
-	  {
-	    apply(data->codec,"programof", 1);
-	  }else{
-	    fallback_codec();
-	  }
+	  apply(data->codec,"programof", 1);
 
 	  p = program_from_svalue(Pike_sp-1);
 
@@ -2642,27 +2610,24 @@ static void decode_value2(struct decode_data *data)
 	      data->supporter.prog = p;
 
 	    debug_malloc_touch(p);
-	    if(data->codec)
-	    {
-	      ref_push_program(p);
-	      apply(data->codec, "__register_new_program", 1);
+	    ref_push_program(p);
+	    apply(data->codec, "__register_new_program", 1);
 	      
-	      /* return a placeholder */
-	      if(Pike_sp[-1].type == T_OBJECT)
-	      {
-		placeholder=Pike_sp[-1].u.object;
-		if(placeholder->prog != null_program)
-		  Pike_error("Placeholder object is not a null_program clone.\n");
-		dmalloc_touch_svalue(Pike_sp-1);
-		Pike_sp--;
-	      }
-	      else if (Pike_sp[-1].type != T_INT ||
-		       Pike_sp[-1].u.integer)
-		Pike_error ("Expected placeholder object or zero "
-			    "from __register_new_program.\n");
-	      else {
-		pop_stack();
-	      }
+	    /* return a placeholder */
+	    if(Pike_sp[-1].type == T_OBJECT)
+	    {
+	      placeholder=Pike_sp[-1].u.object;
+	      if(placeholder->prog != null_program)
+		Pike_error("Placeholder object is not a __null_program clone.\n");
+	      dmalloc_touch_svalue(Pike_sp-1);
+	      Pike_sp--;
+	    }
+	    else if (Pike_sp[-1].type != T_INT ||
+		     Pike_sp[-1].u.integer)
+	      Pike_error ("Expected placeholder object or zero "
+			  "from __register_new_program.\n");
+	    else {
+	      pop_stack();
 	    }
 	  }
 
@@ -2858,7 +2823,7 @@ static void decode_value2(struct decode_data *data)
 	      debug_malloc_touch(placeholder);
 	      ref_push_program (p);
 	      decode_error(Pike_sp - 1, NULL,
-			   "Placeholder argument is not a null_program clone.\n");
+			   "Placeholder is no longer a __null_program clone.\n");
 	    }else{
 	      free_program(placeholder->prog);
 	      add_ref(placeholder->prog = p);
@@ -3468,7 +3433,7 @@ static void decode_value2(struct decode_data *data)
 
 	    case ID_ENTRY_VARIABLE:
 	      {
-		int no;
+		int no, n;
 
 		/* name */
 		decode_value2(data);
@@ -3500,12 +3465,14 @@ static void decode_value2(struct decode_data *data)
 		 * storage, variable_index, identifiers and
 		 * identifier_references
 		 */
-		if (no != define_variable(Pike_sp[-2].u.string,
-					  Pike_sp[-1].u.type,
-					  id_flags)) {
+		n = define_variable(Pike_sp[-2].u.string,
+				    Pike_sp[-1].u.type,
+				    id_flags);
+		if (no != n) {
 		  ref_push_program (p);
 		  decode_error(Pike_sp - 1, NULL,
-			       "Bad variable identifier offset: %d\n", no);
+			       "Bad variable identifier offset: got %d, expected %d\n",
+			       n, no);
 		}
 
 		pop_n_elems(2);
@@ -3960,19 +3927,41 @@ static void free_decode_data(struct decode_data *data)
   free( (char *) data);
 }
 
-/* Run pass2 */
-int re_decode(struct decode_data *data, int ignored)
+static void low_do_decode (struct decode_data *data)
 {
+  int e;
+  struct keypair *k;
   ONERROR err;
   SET_ONERROR(err, free_decode_data, data);
-  data->next = current_decode;
   current_decode = data;
 
   decode_value2(data);
 
-  UNSET_ONERROR(err);
+  while (data->ptr < data->len) {
+    decode_value2 (data);
+    pop_stack();
+  }
 
+#ifdef PIKE_DEBUG
+  NEW_MAPPING_LOOP (data->decoded->data) {
+    if (k->val.type == T_PROGRAM &&
+	!(k->val.u.program->flags & PROGRAM_FINISHED)) {
+      decode_error (NULL, &k->val,
+		    "Got unfinished program <%"PRINTPIKEINT"d> after decode: ",
+		    k->ind.u.integer);
+    }
+  }
+#endif
+
+  UNSET_ONERROR(err);
   free_decode_data(data);
+}
+
+/* Run pass2 */
+int re_decode(struct decode_data *data, int ignored)
+{
+  data->next = current_decode;
+  low_do_decode (data);
   return 1;
 }
 
@@ -3983,10 +3972,7 @@ static INT32 my_decode(struct pike_string *tmp,
 #endif
 		      )
 {
-  ONERROR err;
   struct decode_data *data;
-  int e;
-  struct keypair *k;
 
   /* Attempt to avoid infinite recursion on circular structures. */
   for (data = current_decode; data; data=data->next) {
@@ -4046,32 +4032,12 @@ static INT32 my_decode(struct pike_string *tmp,
 
   data->decoded=allocate_mapping(128);
 
-  current_decode = data;
-
-  SET_ONERROR(err, free_decode_data, data);
-
   init_supporter(& data->supporter,
 		 (supporter_callback *) re_decode,
 		 (void *)data);
 
-  decode_value2(data);
-  while (data->ptr < data->len) {
-    decode_value2 (data);
-    pop_stack();
-  }
+  low_do_decode (data);
 
-#ifdef PIKE_DEBUG
-  NEW_MAPPING_LOOP (data->decoded->data) {
-    if (k->val.type == T_PROGRAM &&
-	!(k->val.u.program->flags & PROGRAM_FINISHED)) {
-      decode_error (NULL, &k->val,
-		    "Got unfinished program <%"PRINTPIKEINT"d> after decode: ",
-		    k->ind.u.integer);
-    }
-  }
-#endif
-
-  CALL_AND_UNSET_ONERROR(err);
   return 1;
 }
 
@@ -4206,13 +4172,20 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
  *!   @[functionof()], @[objectof()]
  */
 
-/*! @decl program __register_new_program(program p)
+/*! @decl object __register_new_program(program p)
  *!
- *!   Called by @[decode_value()] to register a program that is
- *!   being decoded.
+ *!   Called by @[decode_value()] to register the program that is
+ *!   being decoded. Might get called repeatedly with several other
+ *!   programs that are being decoded recursively. The only safe
+ *!   assumption is that when the top level thing being decoded is a
+ *!   program, then the first call will be with the unfinished embryo
+ *!   that will later become that program.
  *!
  *! @returns
- *!   Returns a program os a place-holder program.
+ *!   Returns either zero or a placeholder object. A placeholder
+ *!   object must be a clone of @[__null_program]. When the program is
+ *!   finished, the placeholder object will be converted to a clone of
+ *!   it. This is used for pike module objects.
  */
 
 /*! @endclass
@@ -4306,15 +4279,16 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   }
 }
 
-/*! @decl mixed decode_value(string coded_value, object|void codec)
+/*! @decl mixed decode_value(string coded_value, void|Codec codec)
  *!
- *! Decode a value from a string.
+ *! Decode a value from the string @[coded_value].
  *!
  *! This function takes a string created with @[encode_value()] or
  *! @[encode_value_canonic()] and converts it back to the value that was
  *! coded.
  *!
- *! If no codec is specified, the current master object will be used as codec.
+ *! If @[codec] is specified, it's used as the codec for the decode.
+ *! If no codec is specified, the current master object will be used.
  *!
  *! @seealso
  *!   @[encode_value()], @[encode_value_canonic()]
@@ -4323,14 +4297,14 @@ void f_decode_value(INT32 args)
 {
   struct pike_string *s;
   struct object *codec;
-  struct pike_frame *new_frame;
 
 #ifdef ENCODE_DEBUG
-  int debug;
+  int debug = 0;
 #endif /* ENCODE_DEBUG */
 
   check_all_args("decode_value", args,
-		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT,
+		 BIT_STRING,
+		 BIT_VOID | BIT_OBJECT | BIT_ZERO,
 #ifdef ENCODE_DEBUG
 		 /* This argument is only an internal debug helper.
 		  * It's intentionally not part of the function
@@ -4340,22 +4314,22 @@ void f_decode_value(INT32 args)
 #endif
 		 0);
 
-#ifdef ENCODE_DEBUG
-  debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
-#endif /* ENCODE_DEBUG */
-
   s = Pike_sp[-args].u.string;
-  if(args<2)
-  {
-    codec=get_master();
-  }
-  else if(Pike_sp[1-args].type == T_OBJECT)
-  {
-    codec=Pike_sp[1-args].u.object;
-  }
-  else
-  {
-    codec=0;
+
+  switch (args) {
+    default:
+#ifdef ENCODE_DEBUG
+      debug = Pike_sp[4-args].u.integer;
+      /* Fall through. */
+    case 2:
+#endif
+      if (Pike_sp[1-args].type == T_OBJECT) {
+	codec = Pike_sp[1-args].u.object;
+	break;
+      }
+      /* Fall through. */
+    case 1:
+      codec = get_master();
   }
 
   if(!my_decode(s, codec
