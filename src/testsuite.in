@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.721 2004/04/29 21:26:38 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.722 2004/04/29 21:44:22 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -159,6 +159,12 @@ test_any([[
       cd(".");
   return i;
 ]], 17)
+
+test_any([[
+  // Another over-optimization test.
+  string x(string i) { return i; };
+  return x("")+1+1;
+]], "11")
 
 test_compile_any([[
   void foo() 
