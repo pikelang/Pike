@@ -8,7 +8,7 @@
 //! @param msg
 //!   message to digest
 //! @param hash
-//!   crypto hash object such as <ref to="Crypto.sha</ref> or <ref to="Crypto.md5">Crypto md5</ref>
+//!   crypto hash object such as @[Crypto.sha] or @[Crypto md5]
 string build_digestinfo(string msg, object hash)
 {
   string d = hash->update(msg)->digest();

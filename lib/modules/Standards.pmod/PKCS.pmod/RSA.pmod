@@ -1,6 +1,6 @@
-/* RSA.pmod
- *
- * rsa operations and types as described in PKCS-1 */
+// $Id: RSA.pmod,v 1.17 2002/11/27 16:31:21 nilsson Exp $
+
+//! RSA operations and types as described in PKCS-1.
 
 #pike __REAL_VERSION__
 
@@ -16,7 +16,7 @@ import Standards.ASN1.Types;
 
 //! Create a DER-coded RSAPublicKey structure
 //! @param rsa
-//!   <ref to="Crypto.rsa">Crypto.rsa</ref> object
+//!   @[Crypto.rsa] object
 //! @returns
 //!   ASN1 coded RSAPublicKey structure
 string public_key(object rsa)
@@ -28,7 +28,7 @@ string public_key(object rsa)
 
 //! Create a DER-coded RSAPrivateKey structure
 //! @param rsa
-//!   <ref to="Crypto.rsa">Crypto.rsa</ref> object
+//!   @[Crypto.rsa] object
 //! @returns
 //!   ASN1 coded RSAPrivateKey structure
 string private_key(object rsa)
@@ -59,7 +59,7 @@ string rsa_private_key(object rsa) { return private_key(rsa); }
 //! @param key
 //!   RSAPublicKey provided in ASN1 encoded format
 //! @returns
-//!   <ref to="Crypto.rsa">Crypto.rsa</ref> object
+//!   @[Crypto.rsa] object
 object parse_public_key(string key)
 {
   // WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
@@ -83,7 +83,7 @@ object parse_public_key(string key)
 //! @param key
 //!   RSAPrivateKey provided in ASN1 encoded format
 //! @returns
-//!   <ref to="Crypto.rsa">Crypto.rsa</ref> object
+//!   @[Crypto.rsa] object
 object parse_private_key(string key)
 {
   WERROR(sprintf("rsa->parse_private_key: '%s'\n", key));
