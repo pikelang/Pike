@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.79 1998/04/18 12:04:16 mirar Exp $
+# $Id: Makefile.in,v 1.80 1998/04/19 00:14:54 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -248,7 +248,7 @@ install: pike hilfe
 	done
 	@echo ; echo "Installing modules written in Pike..."; \
 	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print`; do \
-	  if cmp "$(share_prefix)/$$f" "$(TMP_LIBDIR)/$$f" >/dev/null 2>&1 ; \
+	  if cmp "$(share_prefix)/$$f" "$(LIBDIR_SRC)/$$f" >/dev/null 2>&1 ; \
 	  then : ; else \
 	    echo "$(share_prefix)/$$f"; \
 	    if [ -f "$(share_prefix)/$$f" ]; then \
@@ -355,9 +355,8 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 	  ln -s "$(LIBDIR_SRC)" ./share || exit 1; \
 	fi
 	@echo "Creating lib/master.pike"; \
-	( sed -e 's!¤exec_prefix¤!$(exec_prefix)!'  \
-	      -e 's!¤lib_prefix¤!$(lib_prefix)!'  \
-	      -e 's!¤data_prefix¤!$(share_prefix)!'  \
+	( sed -e 's!¤lib_prefix¤!$(lib_prefix)!'  \
+	      -e 's!¤share_prefix¤!$(share_prefix)!'  \
 	      <$(LIBDIR_SRC)/master.pike.in \
 	  >./lib/master.pike && chmod 644 ./lib/master.pike) || exit 1
 	@echo "Done."
