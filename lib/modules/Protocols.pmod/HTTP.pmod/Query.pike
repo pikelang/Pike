@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.41 2002/06/03 20:52:23 mast Exp $
+// $Id: Query.pike,v 1.42 2002/06/04 00:24:16 mast Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -95,13 +95,7 @@ static void ponder_answer()
 	    headers[n]=(headers[n]||({}))+({d});
 	    break;
 	 default:
-	   if (headers[n])
-	     if (arrayp (headers[n]))
-	       headers[n] += ({d});
-	     else
-	       headers[n] = ({headers[n], d});
-	   else
-	     headers[n]=d;
+	   headers[n]=d;
       }
    }
 
