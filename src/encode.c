@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.83 2001/02/20 22:03:47 grubba Exp $");
+RCSID("$Id: encode.c,v 1.84 2001/02/21 13:46:13 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1034,16 +1034,20 @@ one_more_type:
 	low_decode_type(data);
       }
       push_type(T_MANY);
+      low_decode_type(data);
+      goto one_more_type;
 
     case T_MAPPING:
     case T_OR:
     case T_AND:
       push_type(tmp);
       low_decode_type(data);
+      goto one_more_type;
 
     case T_ARRAY:
     case T_MULTISET:
     case T_NOT:
+      push_type(tmp);
       goto one_more_type;
 
     case T_INT:
