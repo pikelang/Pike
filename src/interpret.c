@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.189 2001/03/09 02:28:22 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.190 2001/03/17 16:32:14 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1680,12 +1680,12 @@ void slow_check_stack(void)
   }
 }
 
-/*! Prints the Pike backtrace for the interpreter context in the given
- *! thread to stderr, without messing in the internals (doesn't even
- *! use dynamic_buffer).
- *!
- *! This function is intended only for convenient use inside a
- *! debugger session; it can't be used from inside the code.
+/*: Prints the Pike backtrace for the interpreter context in the given
+ *: thread to stderr, without messing in the internals (doesn't even
+ *: use dynamic_buffer).
+ *:
+ *: This function is intended only for convenient use inside a
+ *: debugger session; it can't be used from inside the code.
  */
 void gdb_backtrace (
 #ifdef PIKE_THREADS
@@ -1888,11 +1888,11 @@ void gdb_backtrace (
       fputs ("frame with no references\n", stderr);
 }
 
-/*! Prints the Pike backtraces for the interpreter contexts in all
- *! Pike threads to stderr, using @[gdb_backtrace].
- *!
- *! This function is intended only for convenient use inside a
- *! debugger session; it can't be used from inside the program.
+/*: Prints the Pike backtraces for the interpreter contexts in all
+ *: Pike threads to stderr, using @[gdb_backtrace].
+ *:
+ *: This function is intended only for convenient use inside a
+ *: debugger session; it can't be used from inside the program.
  */
 void gdb_backtraces()
 {
