@@ -13,7 +13,7 @@
 
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.5 1999/04/14 19:13:19 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.6 1999/04/22 01:42:19 per Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -524,6 +524,7 @@ void low_image_tiff_decode( struct buffer *buf,
     if (TIFFFieldSet(tif,FIELD_COLORMAP)) 
     {
       int l,n = 1L<<td->td_bitspersample;
+      push_text("colormap");
       for (l = 0; l < n; l++)
       {
         push_int( td->td_colormap[0][l] );
