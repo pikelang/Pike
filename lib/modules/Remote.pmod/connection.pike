@@ -436,7 +436,8 @@ void read_thread()
 void server_read_thread()
 {
   DEBUGMSG("server_read_thread\n");
-  handshake (0, con->read (24, 1));
+  con->set_blocking();
+  handshake (0, con->read (24));
   read_thread();
   DEBUGMSG("server_read_thread exit\n");
 }
