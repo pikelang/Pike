@@ -133,7 +133,41 @@ char *alloca ();
 
 #define FLOAT_TYPE float
 
+#define B1_T char
 
+#if SIZEOF_SHORT == 2
+#define B2_T short
+#elif SIZEOF_INT == 2
+#define B2_T int
+#endif
+
+#if SIZEOF_SHORT == 4
+#define B4_T short
+#elif SIZEOF_INT == 4
+#define B4_T int
+#elif SIZEOF_LONG == 4
+#define B4_T long
+#endif
+
+#if SIZEOF_INT == 8
+#define B8_T int
+#elif SIZEOF_LONG == 8
+#define B8_T long
+#elif SIZEOF_CHAR_P == 8
+#define B8_T char *
+#elif SIZEOF_DOUBLE == 8
+#define B8_T double
+#elif defined(B4_T)
+struct b8_t_s { B4_T x,y; };
+#define B8_T struct b8_t
+#endif
+
+#if SIZEOF_DOUBLE == 16
+#define B16_T double
+#elif defined(B8_T)
+struct b16_t { B8_T x,y; };
+#define B16_T struct b16_t
+#endif
 
 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 7)

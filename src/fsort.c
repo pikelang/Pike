@@ -17,40 +17,44 @@ static char *tmp_area;
 #define STEP(X,Y) (&((X)[(Y)]))
 
 #define ID fsort_1
-typedef struct a1 { char b[1]; } b1;
-#define TYPE b1
+#define TYPE B1_T
 #include "fsort_template.h"
 #undef ID
 #undef TYPE
 
+#ifdef B2_T
 #define ID fsort_2
-typedef struct a2 { char b[2]; } b2;
-#define TYPE b2
+#define TYPE B2_T
 #include "fsort_template.h"
 #undef ID
 #undef TYPE
+#endif
 
+#ifdef B4_T
 #define ID fsort_4
-typedef struct a4 { char b[4]; } b4;
-#define TYPE b4
+#define TYPE B4_T
 #include "fsort_template.h"
 #undef ID
 #undef TYPE
+#endif
 
 
+#ifdef B8_T
 #define ID fsort_8
-typedef struct a8 { char b[8]; } b8;
-#define TYPE b8
+#define TYPE B8_T
 #include "fsort_template.h"
 #undef ID
 #undef TYPE
+#endif
 
+
+#ifdef B16_T
 #define ID fsort_16
-typedef struct a16 { char b[16]; } b16;
-#define TYPE b16
+#define TYPE B16_T
 #include "fsort_template.h"
 #undef ID
 #undef TYPE
+#endif
 
 #undef SWAP
 #undef STEP
@@ -83,11 +87,19 @@ void fsort(void *base,
 
   switch(elmSize)
   {
-  case  1:  fsort_1(( b1 *)base,(elms-1)+( b1 *)base); break;
-  case  2:  fsort_2(( b2 *)base,(elms-1)+( b2 *)base); break;
-  case  4:  fsort_4(( b4 *)base,(elms-1)+( b4 *)base); break;
-  case  8:  fsort_8(( b8 *)base,(elms-1)+( b8 *)base); break;
-  case 16: fsort_16((b16 *)base,(elms-1)+(b16 *)base); break;
+  case  1:  fsort_1(( B1_T *)base,(elms-1)+( B1_T *)base); break;
+#ifdef B2_T
+  case  2:  fsort_2(( B2_T *)base,(elms-1)+( B2_T *)base); break;
+#endif
+#ifdef B4_T
+  case  4:  fsort_4(( B4_T *)base,(elms-1)+( B4_T *)base); break;
+#endif
+#ifdef B8_T
+  case  8:  fsort_8(( B8_T *)base,(elms-1)+( B8_T *)base); break;
+#endif
+#ifdef B16_T
+  case 16: fsort_16((B16_T *)base,(elms-1)+(B16_T *)base); break;
+#endif
   default:
     tmp_area=(char *)alloca(elmSize);
     fsort_n((char *)base,((char *)base) + size * (elms - 1));

@@ -25,7 +25,6 @@ struct object
   char storage[1];
 };
 
-extern struct object fake_object;
 extern struct object *first_object;
 extern struct object *master_object;
 extern struct program *master_program;

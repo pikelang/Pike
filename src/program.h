@@ -214,7 +214,7 @@ struct program
 
 #define free_program(p) do{ struct program *_=(p); if(!--_->refs) really_free_program(_); }while(0)
 
-extern struct object fake_object;
+extern struct object *fake_object;
 extern struct program *new_program;
 extern struct program *first_program;
 extern int compiler_pass;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.34 1998/01/26 19:59:56 hubbe Exp $");
+RCSID("$Id: object.c,v 1.35 1998/01/29 00:30:35 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -25,15 +25,6 @@ RCSID("$Id: object.c,v 1.34 1998/01/26 19:59:56 hubbe Exp $");
 struct object *master_object = 0;
 struct program *master_program =0;
 struct object *first_object;
-
-struct object fake_object = { 1 }; /* start with one reference */
-
-void setup_fake_object(void)
-{
-  fake_object.prog=new_program;
-  fake_object.next=0;
-  fake_object.refs=0xffffff;
-}
 
 struct object *low_clone(struct program *p)
 {

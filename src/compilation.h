@@ -77,6 +77,7 @@
   SNAME(program_state,previous_program_state)
   ZMEMBER(INT32,last_line)
   STRMEMBER(last_file,"last_file")
+  ZMEMBER(struct object *,fake_object)
   ZMEMBER(struct program *,new_program)
   ZMEMBER(struct program *,malloc_size_program)
   ZMEMBER(node *,init_node)

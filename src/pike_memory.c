@@ -44,23 +44,31 @@ void swap(char *a, char *b, INT32 size)
 
 void reverse(char *memory, INT32 nitems, INT32 size)
 {
-#define DOSIZE(X,Y)				\
- case X:					\
- {						\
-  struct Y { char tt[X]; };			\
-  struct Y tmp;					\
-  struct Y *start=(struct Y *) memory;		\
-  struct Y *end=start+nitems-1;			\
-  while(start<end){tmp=*start;*(start++)=*end;*(end--)=tmp;} \
-  break;					\
+#define DOSIZE(X,Y)						\
+ case X:							\
+ {								\
+  Y tmp;							\
+  Y *start=(Y *) memory;					\
+  Y *end=start+nitems-1;					\
+  while(start<end){tmp=*start;*(start++)=*end;*(end--)=tmp;}	\
+  break;							\
  }
 
   switch(size)
   {
-    DOSIZE(1,TMP1)
-    DOSIZE(2,TMP2)
-    DOSIZE(4,TMP4)
-    DOSIZE(8,TMP8)
+    DOSIZE(1,B1_T)
+#ifdef B2_T
+    DOSIZE(2,B2_T)
+#endif
+#ifdef B4_T
+    DOSIZE(4,B4_T)
+#endif
+#ifdef B16_T
+    DOSIZE(8,B8_T)
+#endif
+#ifdef B16_T
+    DOSIZE(16,B8_T)
+#endif
   default:
   {
     char *start = (char *) memory;
@@ -89,9 +97,8 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #define DOSIZE(X,Y)				\
  case X:					\
  {						\
-  struct Y { char tt[X]; };			\
-  struct Y *from=(struct Y *) memory;		\
-  struct Y *to=(struct Y *) tmp;		\
+  Y *from=(Y *) memory;				\
+  Y *to=(Y *) tmp;				\
   for(e=0;e<nitems;e++) to[e]=from[order[e]];	\
   break;					\
  }
@@ -99,11 +106,19 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 
   switch(size)
   {
-    DOSIZE(1,TMP1)
-    DOSIZE(2,TMP2)
-    DOSIZE(4,TMP4)
-    DOSIZE(8,TMP8)
-    DOSIZE(16,TMP16)
+    DOSIZE(1,B1_T)
+#ifdef B2_T
+    DOSIZE(2,B2_T)
+#endif
+#ifdef B4_T
+    DOSIZE(4,B4_T)
+#endif
+#ifdef B8_T
+    DOSIZE(8,B8_T)
+#endif
+#ifdef B16_T
+    DOSIZE(16,B16_T)
+#endif
 
   default:
     for(e=0;e<nitems;e++) MEMCPY(tmp+e*size, memory+order[e]*size, size);

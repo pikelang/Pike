@@ -1,10 +1,7 @@
 #include <string.h>
 
-constant PROP_IPC=files.PROP_IPC;
-constant PROP_NONBLOCk=files.PROP_NONBLOCK;
-constant PROP_SHUTDOWN=files.PROP_SHUTDOWN;
-constant PROP_BUFFERED=files.PROP_BUFFERED;
-constant PROP_BIDIRECTIONAL=files.PROP_BIDIRECTIONAL;
+inherit files;
+
 constant File=files.file;
 constant Port=files.port;
 

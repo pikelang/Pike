@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.46 1998/01/27 20:51:56 hubbe Exp $");
+RCSID("$Id: las.c,v 1.47 1998/01/29 00:30:34 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -524,7 +524,12 @@ node *mkexternalnode(int level,
   copy_shared_string(res->type, id->type);
 
   /* FIXME */
-  res->node_info = OPT_NOT_CONST;
+  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(parent_compilation(level), i)->identifier_flags))
+  {
+    res->node_info = OPT_EXTERNAL_DEPEND;
+  }else{
+    res->node_info = OPT_NOT_CONST;
+  }
   res->tree_info=res->node_info;
 
 #ifdef __CHECKER__
@@ -772,12 +777,21 @@ node *mksvaluenode(struct svalue *s)
     return make_node_from_mapping(s->u.mapping);
 
   case T_OBJECT:
-    if(s->u.object == &fake_object)
+    if(s->u.object == fake_object)
     {
       return mkefuncallnode("this_object", 0);
-/*  }else{
-      yyerror("Non-constant object pointer! (should not happen!)");
- */
+    }
+    if(s->u.object->next == s->u.object)
+    {
+      int x=0;
+      struct object *o;
+      node *n=mkefuncallnode("this_object", 0);
+      for(o=fake_object;o!=s->u.object;o=o->parent)
+      {
+	n=mkefuncallnode("function_object",
+			 mkefuncallnode("object_program",n));
+      }
+      return n;
     }
     break;
 
@@ -785,8 +799,18 @@ node *mksvaluenode(struct svalue *s)
   {
     if(s->subtype != FUNCTION_BUILTIN)
     {
-      if(s->u.object == &fake_object)
+      if(s->u.object == fake_object)
 	return mkidentifiernode(s->subtype);
+
+      if(s->u.object->next == s->u.object)
+      {
+	int x=0;
+	struct object *o;
+	for(o=fake_object->parent;o!=s->u.object;o=o->parent) x++;
+	return mkexternalnode(x, s->subtype,
+			      ID_FROM_INT(o->prog, s->subtype));
+
+      }
 
 /*      yyerror("Non-constant function pointer! (should not happen!)"); */
     }
@@ -2053,13 +2077,11 @@ int eval_low(node *n)
     foo.counter=10000;
     foo.yes=0;
 
-    setup_fake_object();
-
     tmp_callback=add_to_callback(&evaluator_callbacks,
 				 check_evaluation_time,
 				 (void *)&foo,0);
 				 
-    if(apply_low_safe_and_stupid(&fake_object, jump))
+    if(apply_low_safe_and_stupid(fake_object, jump))
     {
       /* Generate error message */
       if(throw_value.type == T_ARRAY && throw_value.u.array->size)

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.25 1998/01/25 08:25:05 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.26 1998/01/29 00:30:33 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -23,6 +23,7 @@ RCSID("$Id: docode.c,v 1.25 1998/01/25 08:25:05 hubbe Exp $");
 #include "peep.h"
 #include "docode.h"
 #include "operators.h"
+#include "object.h"
 
 INT32 current_break=-1;
 INT32 current_continue=-1;
@@ -668,7 +669,7 @@ static int do_docode2(node *n,int flags)
 	  if(n->type == void_type_string) return 0;
 	  return 1;
 	}else{
-	  if(CAR(n)->u.sval.u.object == &fake_object)
+	  if(CAR(n)->u.sval.u.object->next == fake_object)
 	  {
 	    emit2(F_MARK);
 	    do_docode(CDR(n),0);
@@ -1024,12 +1025,30 @@ static int do_docode2(node *n,int flags)
     case T_FUNCTION:
       if(n->u.sval.subtype!=FUNCTION_BUILTIN)
       {
-	if(n->u.sval.u.object == &fake_object)
+	if(n->u.sval.u.object == fake_object)
 	{
 	  emit(F_LFUN,n->u.sval.subtype);
 	  return 1;
 	}
+
+	if(n->u.sval.u.object->next == n->u.sval.u.object)
+	{
+	  int x=0;
+	  struct object *o;
+	  
+	  for(o=fake_object->parent;o!=n->u.sval.u.object;o=o->parent)
+	    x++;
+	  emit(F_LDA, x);
+	  emit(F_EXTERNAL, n->u.sval.subtype);
+	  return 1;
+	}
       }
+      
+#ifdef DEBUG
+      case T_OBJECT:
+	if(n->u.sval.u.object->next == n->u.sval.u.object)
+	  fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
+#endif
 
     default:
       tmp1=store_constant(&(n->u.sval),!(n->tree_info & OPT_EXTERNAL_DEPEND));

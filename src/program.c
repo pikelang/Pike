@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.58 1998/01/28 00:31:17 hubbe Exp $");
+RCSID("$Id: program.c,v 1.59 1998/01/29 00:30:36 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -91,6 +91,7 @@ struct program *first_program = 0;
 static int current_program_id=0;
 
 struct program *new_program=0;
+struct object *fake_object=0;
 struct program *malloc_size_program=0;
 
 int compiler_pass;
@@ -214,12 +215,17 @@ struct node_s *find_module_identifier(struct pike_string *ident)
 #if 0
 	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags))
 	{
-	  ret=mksvaluenode(PROG_FROM_INT(p->new_program, i)->constants+
-			   id->func.offset);
-	  return ret;
+	  struct svalue *s=PROG_FROM_INT(p->new_program, i)->constants+
+			   id->func.offset;
+	  if(s->type != T_PROGRAM)
+	  {
+	    ret=mksvaluenode(s);
+	    return ret;
+	  }
 	}
 #endif
-	  return mkexternalnode(n, i, id);
+
+	return mkexternalnode(n, i, id);
       }
     }
   }
@@ -367,7 +373,7 @@ void low_start_new_program(struct program *p,
 			   struct pike_string *name,
 			   int flags)
 {
-  int e;
+  int e,id=0;
 
   threads_disabled++;
   compilation_depth++;
@@ -391,7 +397,7 @@ void low_start_new_program(struct program *p,
     struct svalue s;
     s.type=T_PROGRAM;
     s.u.program=p;
-    add_constant(name, &s, flags);
+    id=add_constant(name, &s, flags);
   }
 
 #define PUSH
@@ -408,6 +414,29 @@ void low_start_new_program(struct program *p,
   }
 
   malloc_size_program = ALLOC_STRUCT(program);
+#ifdef DEBUG
+  fake_object=(struct object *)xalloc(sizeof(struct object) + 256*sizeof(struct svalue));
+  /* Stipple to find illegal accesses */
+  MEMSET(fake_object,0x55,sizeof(struct object) + 256*sizeof(struct svalue));
+#else
+  fake_object=ALLOC_STRUCT(object);
+#endif
+
+  fake_object->next=fake_object;
+  fake_object->prev=fake_object;
+  fake_object->refs=1;
+  fake_object->parent=0;
+  fake_object->parent_identifier=0;
+  fake_object->prog=p;
+  p->refs++;
+
+  if(name)
+  {
+    if((fake_object->parent=previous_program_state->fake_object))
+      fake_object->parent->refs++;
+    fake_object->parent_identifier=id;
+  }
+
   new_program=p;
 
   if(new_program->program)
@@ -558,6 +587,13 @@ static void toss_compilation_resources(void)
       free((char *)malloc_size_program);
       malloc_size_program=0;
     }
+
+  if(fake_object)
+  {
+    fake_object->prog=0;
+    free_object(fake_object);
+    fake_object=0;
+  }
   
   while(compiler_frame)
     pop_compiler_frame();
