@@ -6,10 +6,13 @@ class protocol
   inherit .NNTP.protocol;
 }
 
+//!
 class client
 {
   inherit protocol;
 
+  //! A mapping(int:string) that maps SMTP return
+  //! codes to english textual messages.
   constant reply_codes =
   ([ 211:"System status, or system help reply",
      214:"Help message",
@@ -52,6 +55,22 @@ class client
     return r;
   }
 
+  //! @decl void create()
+  //! @decl void create(Stdio.File server)
+  //! @decl void create(string server, void|int port)
+  //! Creates an SMTP mail client and connects it to the
+  //! the @[server] provided. The server parameter may
+  //! either be a string witht the hostnam of the mail server,
+  //! or it may be a file object acting as a mail server.
+  //! If @[server] is a string, than an optional port parameter
+  //! may be provided. If no port parameter is provided, port
+  //! 25 is assumed. If no parameters at all is provided
+  //! the client will look up the mail host by searching
+  //! for the DNS MX record.
+  //!
+  //! @throws
+  //!   Throws an exception if the client fails to connect to
+  //!   the mail server.
   void create(void|string|Stdio.File server, int|void port)
   {
     if(!server)
@@ -61,7 +80,6 @@ class client
       server=dns->get_primary_mx(gethostname());
     }
 
-    werror("server=%O\n",server);
     if (objectp(server))
        assign(server);
     else
@@ -82,6 +100,17 @@ class client
       cmd("HELO "+gethostname(), "greeting failed.");
   }
   
+  //! Sends a mail message from @[from] to the mail addresses
+  //! listed in @[to] with the mail body @[body]. The body
+  //! should be a correctly formatted mail DATA block, e.g.
+  //! produced by @[MIME.Message].
+  //!
+  //! @seealso
+  //!   @[simple_mail]
+  //!
+  //! @throws
+  //!   If the mail server returns any other return code than
+  //!   200-399 an exception will be thrown.
   void send_message(string from, array(string) to, string body)
   {
     cmd("MAIL FROM: <" + from + ">");
@@ -106,6 +135,11 @@ class client
     return tokens*"";
   }
 
+  //! Sends an e-mail. Wrapper function that uses @[send_message].
+  //!
+  //! @throws
+  //!   If the mail server returns any other return code than
+  //!   200-399 an exception will be thrown.
   void simple_mail(string to, string subject, string from, string msg)
   {
     if (search(msg,"\r\n")==-1)
@@ -121,6 +155,25 @@ class client
 					       "8bit"])));
   }
 
+  //! Verifies the mail address @[addr] against the mail server.
+  //!
+  //! @returns
+  //!   @array
+  //!     @elem int code
+  //!       The numerical return code from the VRFY call.
+  //!     @elem string message
+  //!       The textual answer to the VRFY call.
+  //!  @endarray
+  //!
+  //! @note
+  //!   Some mail servers does not answer truthfully to
+  //!   verfification queries in order to prevent spammers
+  //!   and others to gain information about the mail
+  //!   addresses present on the mail server.
+  //!
+  //! @throws
+  //!   If the mail server returns any other return code than
+  //!   200-399 an exception will be thrown.
   array(int|string) verify(string addr)
   {
     return ({command("VRFY "+addr),rest});
