@@ -1159,7 +1159,7 @@ class cSuperTimeRange
       return parts[0]->distance(z)->format_elapsed();
    }
 
-   string sprintf(int t,mapping m)
+   string _sprintf(int t,mapping m)
    {
       if (t=='t') 
 	 return "Calendar."+calendar_name()+".TimeofDay";
