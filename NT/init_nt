@@ -35,9 +35,23 @@ fi
 
 export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE NTPORT USE_SPRSH
 
-case x$SHELL-$TERM in
+case /$SHELL-$TERM in
    */bash-xterm)
      PROMPT_COMMAND="echo -n ]2\; Remote NT compile ]1\; rntcc"
      export PROMPT_COMMAND
    ;;
+esac
+
+case /$SHELL in
+   */bash)
+     PS1="NT $NTHOST \\$ "
+     export PS1
+   ;;
+esac
+
+
+case /$0 in
+  */init_nt)
+    exec $SHELL
+  ;;
 esac
