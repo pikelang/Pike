@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.112 2002/11/02 15:43:45 grubba Exp $
+|| $Id: interpret_functions.h,v 1.113 2002/11/02 16:24:10 grubba Exp $
 */
 
 /*
@@ -1006,11 +1006,11 @@ OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype", 0, {
 });
 
       /* Jumps */
-OPCODE0_JUMP(F_BRANCH, "branch", 0, {
-  DOJUMP();
+OPCODE0_BRANCH(F_BRANCH, "branch", 0, {
+  DO_BRANCH();
 });
 
-OPCODE2_JUMP(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
+OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
   struct svalue tmp;
   tmp.type=PIKE_T_STRING;
   tmp.u.string=Pike_fp->context.prog->strings[arg1];
@@ -1022,29 +1022,29 @@ OPCODE2_JUMP(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
 
   /* Fall through */
 
-  OPCODE0_TAILJUMP(F_BRANCH_WHEN_ZERO, "branch if zero", 0, {
+  OPCODE0_TAILBRANCH(F_BRANCH_WHEN_ZERO, "branch if zero", 0, {
     if(!UNSAFE_IS_ZERO(Pike_sp-1))
     {
-      SKIPJUMP();
+      DONT_BRANCH();
     }else{
-      DOJUMP();
+      DO_BRANCH();
     }
     pop_stack();
   });
 });
 
       
-OPCODE0_JUMP(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", 0, {
+OPCODE0_BRANCH(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", 0, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
-    DOJUMP();
+    DO_BRANCH();
   }
   pop_stack();
 });
 
-OPCODE1_JUMP(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", 0, {
+OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", 0, {
 /*  fprintf(stderr,"******BRANCH IF TYPE IS NOT***** %s\n",get_name_of_type(arg1)); */
   if(Pike_sp[-1].type == T_OBJECT &&
      Pike_sp[-1].u.object->prog)
@@ -1061,37 +1061,37 @@ OPCODE1_JUMP(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", 0, {
   }
   if(Pike_sp[-1].type == arg1)
   {
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
-    DOJUMP();
+    DO_BRANCH();
   }
   pop_stack();
 });
 
-OPCODE1_JUMP(F_BRANCH_IF_LOCAL, "branch if local", 0, {
+OPCODE1_BRANCH(F_BRANCH_IF_LOCAL, "branch if local", 0, {
   if(UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
-    DOJUMP();
+    DO_BRANCH();
   }
 });
 
-OPCODE1_JUMP(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
+OPCODE1_BRANCH(F_BRANCH_IF_NOT_LOCAL, "branch if !local", 0, {
   if(!UNSAFE_IS_ZERO(Pike_fp->locals + arg1))
   {
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
-    DOJUMP();
+    DO_BRANCH();
   }
 });
 
 #define CJUMP(X, DESC, Y) \
-  OPCODE0_JUMP(X, DESC, 0, { \
+  OPCODE0_BRANCH(X, DESC, 0, { \
     if(Y(Pike_sp-2,Pike_sp-1)) { \
-      DOJUMP(); \
+      DO_BRANCH(); \
     }else{ \
-      SKIPJUMP(); \
+      DONT_BRANCH(); \
     } \
     pop_2_elems(); \
   })
@@ -1103,70 +1103,73 @@ CJUMP(F_BRANCH_WHEN_LE, "branch if <=", !is_gt);
 CJUMP(F_BRANCH_WHEN_GT, "branch if >", is_gt);
 CJUMP(F_BRANCH_WHEN_GE, "branch if >=", !is_lt);
 
-OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", 0, {
+OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_ZERO, "branch & pop if zero", 0, {
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
-    DOJUMP();
+    DO_BRANCH();
     pop_stack();
   }
 });
 
-OPCODE0_JUMP(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", 0, {
+OPCODE0_BRANCH(F_BRANCH_AND_POP_WHEN_NON_ZERO, "branch & pop if !zero", 0, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
-    DOJUMP();
+    DO_BRANCH();
     pop_stack();
   }
 });
 
-OPCODE0_JUMP(F_LAND, "&&", 0, {
+OPCODE0_BRANCH(F_LAND, "&&", 0, {
   if(!UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    SKIPJUMP();
+    DONT_BRANCH();
     pop_stack();
   }else{
-    DOJUMP();
+    DO_BRANCH();
   }
 });
 
-OPCODE0_JUMP(F_LOR, "||", 0, {
+OPCODE0_BRANCH(F_LOR, "||", 0, {
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
-    SKIPJUMP();
+    DONT_BRANCH();
     pop_stack();
   }else{
-    DOJUMP();
+    DO_BRANCH();
   }
 });
 
-OPCODE0_JUMP(F_EQ_OR, "==||", 0, {
+OPCODE0_BRANCH(F_EQ_OR, "==||", 0, {
   if(!is_eq(Pike_sp-2,Pike_sp-1))
   {
     pop_2_elems();
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
     pop_2_elems();
     push_int(1);
-    DOJUMP();
+    DO_BRANCH();
   }
 });
 
-OPCODE0_JUMP(F_EQ_AND, "==&&", 0, {
+OPCODE0_BRANCH(F_EQ_AND, "==&&", 0, {
   if(is_eq(Pike_sp-2,Pike_sp-1))
   {
     pop_2_elems();
-    SKIPJUMP();
+    DONT_BRANCH();
   }else{
     pop_2_elems();
     push_int(0);
-    DOJUMP();
+    DO_BRANCH();
   }
 });
 
+/* This instruction can't currently be a branch, since
+ * it has more than two continuation paths.
+ */
 OPCODE0_JUMP(F_CATCH, "catch", 0, {
   check_c_stack(8192);
   switch (o_catch((PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER)+1)))
@@ -1181,7 +1184,7 @@ OPCODE0_JUMP(F_CATCH, "catch", 0, {
   default:
     DOJUMP();
   }
-  /* NOT_REACHED */
+  /* NOT_REACHED in byte-code and computed goto cases. */
 });
 
 OPCODE0_RETURN(F_ESCAPE_CATCH, "escape catch", 0, {
@@ -1247,16 +1250,16 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", 0, {
       /* FIXME: Does this need bignum tests? /Fixed - Hubbe */
       /* LOOP(OPCODE, INCREMENT, OPERATOR, IS_OPERATOR) */
 #define LOOP(ID, DESC, INC, OP2, OP4)					\
-  OPCODE0_JUMP(ID, DESC, 0, {						\
+  OPCODE0_BRANCH(ID, DESC, 0, {						\
     union anything *i=get_pointer_if_this_type(Pike_sp-2, T_INT);	\
     if(i && !AUTO_BIGNUM_LOOP_TEST(i->integer,INC))			\
     {									\
       i->integer += INC;						\
       if(i->integer OP2 Pike_sp[-3].u.integer)				\
       {									\
-  	DOJUMP();							\
+  	DO_BRANCH();							\
       }else{								\
-  	SKIPJUMP();							\
+  	DONT_BRANCH();							\
       }									\
     }else{								\
       lvalue_to_svalue_no_free(Pike_sp,Pike_sp-2); Pike_sp++;		\
@@ -1265,9 +1268,9 @@ OPCODE2(F_SWITCH_ON_LOCAL, "switch on local", 0, {
       assign_lvalue(Pike_sp-3,Pike_sp-1);				\
       if(OP4 ( Pike_sp-1, Pike_sp-4 ))					\
       {									\
-  	DOJUMP();							\
+  	DO_BRANCH();							\
       }else{								\
-  	SKIPJUMP();							\
+  	DONT_BRANCH();							\
       }									\
       pop_stack();							\
     }									\
@@ -1289,19 +1292,19 @@ LOOP(F_DEC_NEQ_LOOP, "--Loop!=", -1, !=, !is_eq);
  * l2:
  * loop(l1)
  */
-OPCODE0_JUMP(F_LOOP, "loop", 0, { /* loopcnt */
+OPCODE0_BRANCH(F_LOOP, "loop", 0, { /* loopcnt */
   /* Use >= and 1 to be able to reuse the 1 for the subtraction. */
   push_int(1);
   if (!is_lt(Pike_sp-2, Pike_sp-1)) {
     o_subtract();
-    DOJUMP();
+    DO_BRANCH();
   } else {
     pop_2_elems();
-    SKIPJUMP();
+    DONT_BRANCH();
   }
 });
 
-OPCODE0_JUMP(F_FOREACH, "foreach", 0, { /* array, lvalue, X, i */
+OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, X, i */
   if(Pike_sp[-4].type != PIKE_T_ARRAY)
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
@@ -1309,10 +1312,10 @@ OPCODE0_JUMP(F_FOREACH, "foreach", 0, { /* array, lvalue, X, i */
     if(Pike_sp[-1].u.integer < 0)
       Pike_error("Foreach loop variable is negative!\n");
     assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
-    DOJUMP();
+    DO_BRANCH();
     Pike_sp[-1].u.integer++;
   }else{
-    SKIPJUMP();
+    DONT_BRANCH();
   }
 });
 
@@ -1321,16 +1324,16 @@ OPCODE0(F_MAKE_ITERATOR, "Iterator", 0, {
   f_Iterator(1);
 });
 
-OPCODE0_JUMP(F_NEW_FOREACH, "foreach++", 0, { /* iterator, lvalue, lvalue */
+OPCODE0_BRANCH(F_NEW_FOREACH, "foreach++", 0, { /* iterator, lvalue, lvalue */
   extern int foreach_iterate(struct object *o);
 
   if(Pike_sp[-5].type != PIKE_T_OBJECT)
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(foreach_iterate(Pike_sp[-5].u.object))
   {
-    DOJUMP();
+    DO_BRANCH();
   }else{
-    SKIPJUMP();
+    DONT_BRANCH();
   }
 });
 
