@@ -6325,7 +6325,7 @@ on the disk.
 
 <hr noshade size=1>
 
-<anchor name=Getopt>
+<module name=Getopt>
 <section title="Getopt">
 Getopt is a group of function which can be used to find command line options.
 Command line options come in two flavors: long and short. The short ones
@@ -6337,21 +6337,17 @@ arguments, in which case they cannot be combined. To write an option
 with an argument you write <tt>-t <i>argument</i></tt> or <tt>-t<i>argument</i></tt> or <tt>--test=<i>argument</i></tt>.
 
 <hr noshade size=1>
-<anchor name=Getopt.find_option>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Getopt.find_option</tt> - find command line options
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt><p>mixed find_option(array(string) <i>argv</i>,<br>
+<function name=Getopt.find_option title="find command line options">
+<man_syntax>
+<p>mixed find_option(array(string) <i>argv</i>,<br>
 <dl><dt><dd>string <i>shortform</i>,<br>
 void|string <i>longform</i>,<br>
 void|string <i>envvar</i>,<br>
 void|mixed <i>def</i>,<br>
 void|int <i>throw_errors</i>);<br>
-</dl></tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</dl>
+</man_syntax>
+<man_description>
 This is a generic function to parse command line options of the
 type '-f', '--foo' or '--foo=bar'. The first argument should be
 the array of strings that is sent as second argument to your
@@ -6369,19 +6365,20 @@ argument find_option will print an error message and exit the program.
 <p>Also, as an extra bonus: shortform, longform and envvar can all be
 arrays, in which case either of the options in the array will be
 accpted.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 find_option modifies argv.<br>
 This function reads options even if they are written after the first
 non-option on the line.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-This program tests two different options. One is called <tt>-f</tt> or
-<tt>-foo</tt> and the other is called <tt>-b</tt> or <tt>--bar</tt> and
-can also be given by using the <tt>BAR_OPTION</tt> environment variable.
+</man_note>
+<man_example>
+<pre><example language=pike>
+/* This program tests two different options. One is called -f or
+ * --foo and the other is called -b or --bar and can also be given
+ * by using the BAR_OPTION environment variable.
+ */
 
-<example language=pike>
-int main(int argc, array(string) argv)<br>
+int main(int argc, array(string) argv)
 {
   if(find_option(argv,"f","foo"))
     werror("The FOO option was given.\n");
@@ -6390,24 +6387,20 @@ int main(int argc, array(string) argv)<br>
     find_option(argv,"b","bar","BAR_OPTION","default")+
     " argument.\n");
 }
-</example>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Getopt.get_args>Getopt.get_args</link>
-<p>
-</dl>
-</anchor>
+</example></pre>
+</man_example>
+<man_see>
+Getopt.get_args
+</man_see>
+</function>
+
 <hr noshade size=1>
-<anchor name=Getopt.find_all_options>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Getopt.find_all_options</tt> - find command line options
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt><p>array find_all_options(array(string) <i>argv</i>, array <i>option</i>, int|void <i>posix_me_harder</i>, int|void <i>throw_errors</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Getopt.find_all_options title="find command line options">
+<man_syntax>
+array find_all_options(array(string) <i>argv</i>, array <i>option</i>, int|void <i>posix_me_harder</i>, int|void <i>throw_errors</i>);<br>
+</man_syntax>
+<man_description>
 This function does the job of several calls to <tt>find_option</tt>.
 The main advantage of this is that it allows it to handle the
 POSIX_ME_HARDER environment variable better. When the either
@@ -6467,11 +6460,11 @@ this form:
 The <i>name</i> is the identifier from the input and <i>value</i> is the
 value given to it from the argument, environment variable or <i>default</i>.
 If no default is given, <i>value</i> will be 1.
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 find_all_options modifies argv.<br>
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
+</man_note>
+<man_example>
 First let's take a look at input and output:
 <pre>
 &gt; Getopt.find_all_options(({"test","-dd"}),
@@ -6507,49 +6500,46 @@ int main(int argc, array(string) argv
   argv=Getopt.get_args(argv);
 }
 </example>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Getopt.get_args>Getopt.get_args</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+Getopt.get_args
+</man_see>
+</function>
+
 <hr noshade size=1>
-<anchor name=Getopt.get_args>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Getopt.get_args</tt> - get the non-option arguments
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string) get_args(array(string) <I>argv</I>,void|int <i>throw_errors</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Getopt.get_args title="get the non-option arguments">
+<man_syntax>
+array(string) get_args(array(string) <I>argv</I>,void|int <i>throw_errors</i>);<br>
+</man_syntax>
+<man_description>
 This function returns the remaining command line arguments after
 you have run find_options to find all the options in the
 argument list. If there are any options left not handled by
 find_options an error message will be written and the program will
 exit. Otherwise a new 'argv' array without the parsed options is
 returned.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>int main(int argc, array(string) argv)<br>
-{<br>
-<dl><dt><dd>if(find_option(argv,"f","foo"))<br>
-<dl><dt><dd>werror("The FOO option was given.\n");<br>
-</dl></dl>
-<p><dl><dt><dd>argv=get_args(argv);<br>
-werror("The arguments are: "+(argv*" ")+".\n");<br>
-</dl>}<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Getopt.find_option>Getopt.find_option</link>
-<p>
-</dl>
+</man_description>
+<man_example>
+<example language=pike>
+int main(int argc, array(string) argv)
+{
+  if(find_option(argv,"f","foo"))
+    werror("The FOO option was given.\n");
 
-</anchor>
+  argv=get_args(argv);
+  werror("The arguments are: "+(argv*" ")+".\n");
+}
+</example>
+</man_example>
+<man_see>
+Getopt.find_option
+</man_see>
+</function>
+
 </section>
-</anchor>
+</module>
+
 <hr noshade size=1>
 
 <anchor name=Gz>
