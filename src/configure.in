@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.247 1998/10/28 01:00:23 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.248 1998/10/28 04:12:54 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1236,7 +1236,7 @@ int accept(int, struct sockaddr *, size_t *);
     /* EMPTY */
   ], pike_cv_accept_size_t=size_t, pike_cv_accept_size_t=int)
 ])
-AC_MSG_RESULT($pike_cv_type_accept)
+AC_MSG_RESULT($pike_cv_accept_size_t)
 AC_DEFINE_UNQUOTED(ACCEPT_SIZE_T, $pike_cv_accept_size_t)
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
@@ -1782,6 +1782,7 @@ if test "x$pike_cv_union_wait" = "xyes" ; then
   return WIFEXITED(status) || 0;
 ], pike_cv_union_wait_needed=no, pike_cv_union_wait_needed=yes)
 ])
+  AC_MSG_RESULT($pike_cv_union_wait_needed)
   if test "x$pike_cv_union_wait_needed" = "xyes" ; then
     AC_DEFINE(HAVE_UNION_WAIT)
   else :; fi
@@ -2389,7 +2390,8 @@ void fatal(char *foo,...)
   va_end(args);
   exit(2);
 }
-main() {  exit(0); }
+
+int main() {  exit(0); }
 
 ], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no, pike_cv_gcc_attributes=no)])
 
