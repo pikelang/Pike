@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.291 2003/07/16 14:11:17 mast Exp $
+|| $Id: interpret.c,v 1.292 2003/07/23 15:41:06 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.291 2003/07/16 14:11:17 mast Exp $");
+RCSID("$Id: interpret.c,v 1.292 2003/07/23 15:41:06 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1796,8 +1796,8 @@ PMOD_EXPORT void call_handle_error(void)
       UNSET_ONERROR(tmp);
     }
     else {
-      fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
       char *s;
+      fprintf (stderr, "There's no master to handle the error. Dumping it raw:\n");
       init_buf();
       describe_svalue (Pike_sp - 1, 0, 0);
       s=simple_free_buf();
