@@ -2,8 +2,6 @@
 
 //! This implements TNG stardates. 
 
-inherit .TimeRanges;
-
 static constant TNGSTARPERJULIAN=1000.0/365.2425;
 static constant TNGSTARPERSECOND=TNGSTARPERJULIAN/86400;
 static constant TNG0JULIAN=2569518.5;
@@ -16,7 +14,7 @@ function(mixed...:cTick) Tick=cTick;
 //!
 class cTick
 {
-   inherit TimeRange;
+   inherit Calendar.TimeRange;
 
    constant is_stardate=1;
 
@@ -60,18 +58,18 @@ class cTick
 	 case 1:
 	    if (intp(args[0]) || floatp(args[0]))
 	    {
-	       rules=default_rules;
+	       rules=Calendar.default_rules;
 	       t=(float)args[0];
 	       len=0.0;
 	       return;
 	    }
 	    break;
 	 case 0:
-	    rules=default_rules;
+	    rules=Calendar.default_rules;
 	    create_unixtime_default(time());
 	    return;
       }
-      rules=default_rules;
+      rules=Calendar.default_rules;
       ::create(@args);
    }
 
@@ -131,7 +129,7 @@ class cTick
       return ((int)(t/TNGSTARPERJULIAN))+TNG0JULIAN;
    }
 
-   static TimeRange _add(int n,void|this_program step)
+   static Calendar.TimeRange _add(int n,void|this_program step)
    {
       float x;
       if (!step) 
@@ -149,7 +147,7 @@ class cTick
       return this_object();
    }
 
-   static void convert_from(TimeRange other)
+   static void convert_from(Calendar.TimeRange other)
    {
       if (other->unix_time)
 	 create_unixtime_default(other->unix_time());
@@ -168,26 +166,26 @@ class cTick
 	 len=0.0;
    }
 
-   static TimeRange _set_size(int n,TimeRange x)
+   static Calendar.TimeRange _set_size(int n, Calendar.TimeRange x)
    {
       if (!x->is_stardate)
 	 error("distance: Incompatible type %O\n",x);
       return Tick("stardate",rules,t,x->len);
    }
 
-   TimeRange place(TimeRange what,void|int force)
+   Calendar.TimeRange place(Calendar.TimeRange what,void|int force)
    {
 // can't do this
       return this_object();
    }
 
-   array(TimeRange) split(int n)
+   array(Calendar.TimeRange) split(int n)
    {
       if (!n) return ({this_object()}); // foo
 
       float z=t;
       float l=len/n;
-      array(TimeRange) res=({});
+      array(Calendar.TimeRange) res=({});
 
       while (n--)
 	 res+=({Tick("stardate",rules,z,l)}),z+=l;
@@ -195,19 +193,19 @@ class cTick
       return res;
    }
 
-   TimeRange beginning()
+   Calendar.TimeRange beginning()
    {
       if (!len) return this_object();
       return Tick("stardate",rules,t,0.0);
    }
 
-   TimeRange end()
+   Calendar.TimeRange end()
    {
       if (!len) return this_object();
       return Tick("stardate",rules,t+len,0.0);
    }
 
-   TimeRange distance(TimeRange to)
+   Calendar.TimeRange distance(Calendar.TimeRange to)
    {
       if (!to->is_stardate)
 	 error("distance: Incompatible type %O\n",to);
@@ -216,7 +214,7 @@ class cTick
       return Tick("stardate",rules,t,to->t-t);
    }
 
-   array(int(-1..1)) _compare(TimeRange with)
+   array(int(-1..1)) _compare(Calendar.TimeRange with)
    {
       float b1=t;
       float e1=t+len;
@@ -231,7 +229,7 @@ class cTick
 
    int __hash() { return (int)t; }
 
-   TimeRange set_ruleset(.Ruleset r)
+   Calendar.TimeRange set_ruleset(.Ruleset r)
    {
       return Tick("stardate",r,t,len);
    }
