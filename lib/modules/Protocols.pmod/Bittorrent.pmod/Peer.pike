@@ -46,7 +46,7 @@ constant BANDWIDTH_O_METER_C=(int)(20/BANDWIDTH_O_METER_DELAY);
 // ----------------------------------------------------------------
 
 // created with a peer-info dictionary
-void create(Torrent _parent,mapping m)
+void create(.Torrent _parent,mapping m)
 {
    parent=_parent;
    ip=m->ip;
