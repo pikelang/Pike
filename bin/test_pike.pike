@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.26 1999/08/25 05:03:06 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.27 1999/08/30 06:21:17 hubbe Exp $ */
 
 import Stdio;
 
@@ -277,10 +277,10 @@ int main(int argc, string *argv)
 		werror(fname + " failed.\n");
 		bzot(test);
 		if (arrayp(err) && sizeof(err) && stringp(err[0])) {
-		  werror("Error: " + err[0]);
+		  werror("Error: " + master()->describe_backtrace(err));
 		}
 		if (objectp(err)) {
-		  werror("Error: " + err[0]);
+		  werror("Error: " + master()->describe_backtrace(err));
 		}
 		errors++;
 		break;
