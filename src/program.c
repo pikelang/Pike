@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.505 2003/06/06 12:57:00 grubba Exp $
+|| $Id: program.c,v 1.506 2003/06/06 14:31:11 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.505 2003/06/06 12:57:00 grubba Exp $");
+RCSID("$Id: program.c,v 1.506 2003/06/06 14:31:11 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4246,14 +4246,22 @@ PMOD_EXPORT int add_string_constant(const char *name,
 }
 
 PMOD_EXPORT int add_program_constant(const char *name,
-			 struct program *p,
-			 INT32 flags)
+				     struct program *p,
+				     INT32 flags)
 {
   INT32 ret;
   struct svalue tmp;
-  tmp.type=T_PROGRAM;
-  tmp.subtype=0;
-  tmp.u.program=p;
+  if (p) {
+    tmp.type=T_PROGRAM;
+    tmp.subtype=0;
+    tmp.u.program=p;
+  } else {
+    /* Probable compilation error in a C-module. */
+    tmp.type = T_INT;
+    tmp.subtype = NUMBER_UNDEFINED;
+    tmp.u.integer = 0;
+    my_yyerror("Program constant \"%s\" is NULL.", name);
+  }
   ret=simple_add_constant(name, &tmp, flags);
   return ret;
 }
