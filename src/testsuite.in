@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.348 2000/11/18 18:07:08 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.349 2000/11/29 11:52:31 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4081,6 +4081,11 @@ test_true([[(array(array))([1:2,3:4]) ]])
 test_true([[(array(array))([1:2,3:4,5:6]) ]])
 test_equal( [[ (multiset) ({1})]], [[ (< 1 >) ]] )
 test_eval_error([[return (mapping)""]])
+test_equal( (mapping)({({1,2}),({3,4})}), ([1:2,3:4]) )
+test_equal( ({({1,2})}), (array)([1:2]) )
+test_equal( (mapping)({}), ([]) )
+test_equal( ({}), (array)([]) )
+
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
