@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.82 1998/08/24 20:58:38 marcus Exp $");
+RCSID("$Id: threads.c,v 1.83 1998/08/27 20:43:25 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -1052,6 +1052,12 @@ void th_init(void)
   set_init_callback(init_thread_obj);
   set_exit_callback(exit_thread_obj);
   thread_id_prog=end_program();
+
+  /* Some constants... */
+  add_integer_constant("THREAD_NOT_STARTED", THREAD_NOT_STARTED, 0);
+  add_integer_constant("THREAD_RUNNING", THREAD_RUNNING, 0);
+  add_integer_constant("THREAD_EXITED", THREAD_EXITED, 0);
+
   if(!mutex_key)
     fatal("Failed to initialize thread program!\n");
 
