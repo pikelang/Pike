@@ -15,6 +15,9 @@ mixed map(mixed arr, mixed fun, mixed ... args)
   if(mappingp(arr))
     return mkmapping(indices(arr),map(values(arr),fun,@args));
 
+  if(multisetp(arr))
+    return mkmultiset(map(indices(arr,fun,@args)));
+
   switch(sprintf("%t",fun))
   {
   case "int":
@@ -50,7 +53,13 @@ mixed filter(mixed arr, mixed fun, mixed ... args)
     for(e=0;e<sizeof(ret);e++) if(ret[e]) r[i[e]]=v[e];
 
     return r;
-  }else{
+  }
+  if(multisetp(arr))
+  {
+    return mkmultiset(filter(indices(arr,fun,@args)));
+  }
+  else
+  {
     int d;
     ret=map(arr,fun,@args);
     for(e=0;e<sizeof(arr);e++) if(ret[e]) ret[d++]=arr[e];
