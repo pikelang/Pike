@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.244 2005/02/07 14:01:31 grubba Exp $
+|| $Id: pike_types.c,v 1.245 2005/03/21 21:35:29 grubba Exp $
 */
 
 #include "global.h"
@@ -687,12 +687,18 @@ void debug_push_type(unsigned int type)
   /* fprintf(stderr, "push_type(%d)\n", type); */
 
   switch(type) {
+  case T_OR:
+  case T_AND:
+    /* Special case: Check if the two top elements are equal. */
+    if (Pike_compiler->type_stackp[-1] == Pike_compiler->type_stackp[0]) {
+      free_type(*(Pike_compiler->type_stackp--));
+      return;
+    }
+    /* FALL_THROUGH */
   case T_FUNCTION:
   case T_MANY:
   case T_TUPLE:
   case T_MAPPING:
-  case T_OR:
-  case T_AND:
   case PIKE_T_RING:
     /* Make a new type of the top two types. */
     --Pike_compiler->type_stackp;
