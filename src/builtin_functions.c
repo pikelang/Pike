@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.314 2000/10/04 22:59:11 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.315 2000/10/13 19:39:37 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -466,6 +466,7 @@ PMOD_EXPORT void f_search(INT32 args)
     start=string_search(Pike_sp[-args].u.string,
 			Pike_sp[1-args].u.string,
 			start);
+
     pop_n_elems(args);
     push_int64(start);
     break;
