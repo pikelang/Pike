@@ -4,8 +4,8 @@
 
 #pragma strict_types
 
-inherit .PikeObjects;
-inherit .DocParser;
+static inherit .PikeObjects;
+static inherit .DocParser;
 
 #define DEB werror("###%s:%d\n", __FILE__,  __LINE__);
 

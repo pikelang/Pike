@@ -1,8 +1,8 @@
 // A very special purpose Pike parser that can parse some selected
 // elements of the Pike language...
 
-inherit .PikeObjects;
-inherit "module.pmod";
+static inherit .PikeObjects;
+static inherit "module.pmod";
 
 constant EOF = "";
 

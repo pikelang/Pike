@@ -2,8 +2,8 @@
 // Some functions to apply to the XML tree after extraction, too, for
 // reference resolving etc.
 
-inherit Parser.XML.Tree;
-inherit "module.pmod";
+static inherit Parser.XML.Tree;
+static inherit "module.pmod";
 
 #define DEB werror("###%s:%d\n", __FILE__, __LINE__);
 static private void processError(string message) {
