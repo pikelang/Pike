@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.157 2004/03/05 23:30:47 nilsson Exp $
+|| $Id: sscanf.c,v 1.158 2004/03/07 22:23:58 nilsson Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.157 2004/03/05 23:30:47 nilsson Exp $");
+RCSID("$Id: sscanf.c,v 1.158 2004/03/07 22:23:58 nilsson Exp $");
 
 /* 
  * helper functions for sscanf %O
@@ -1073,14 +1073,15 @@ CHAROPT2(								 \
 	      break;							 \
 	    } else if(!contains_percent_percent)			 \
 	    {								 \
-	      struct generic_mem_searcher searcher;			 \
+	      struct pike_mem_searcher searcher;			 \
 	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			 \
-	      init_generic_memsearcher(&searcher, end_str_start,	 \
+	      pike_init_memsearch(&searcher,				 \
+				  MKPCHARP(end_str_start, MATCH_SHIFT),	 \
 				       end_str_end - end_str_start,	 \
-				       MATCH_SHIFT, input_len - eye,	 \
-				       INPUT_SHIFT);			 \
-	      s2 = generic_memory_search(&searcher, input+eye,		 \
-					 input_len - eye, INPUT_SHIFT);	 \
+				       input_len - eye);		 \
+              s2 = (void*)( searcher.mojt.vtab->funcN(searcher.mojt.data, \
+				       MKPCHARP(input+eye, INPUT_SHIFT), \
+				       input_len-eye) ).ptr;		 \
 	      if(!s2)							 \
 	      {								 \
 		chars_matched[0]=eye;					 \
