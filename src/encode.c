@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.98 2001/04/14 09:44:19 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.99 2001/05/14 03:26:57 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -482,6 +482,40 @@ static void encode_type(struct pike_type *t, struct encode_data *data)
   low_encode_type(t->str, data);
 }
 #endif /* USE_PIKE_TYPE */
+
+static void zap_unfinished_program(struct program *p)
+{
+  int e;
+  debug_malloc_touch(p);
+  if(p->parent)
+  {
+    free_program(p->parent);
+    p->parent=0;
+  }
+  for(e=0;e<p->num_constants;e++)
+  {
+    free_svalue(& p->constants[e].sval);
+    p->constants[e].sval.type=T_INT;
+    DO_IF_DMALLOC(p->constants[e].sval.u.refs=(void *)-1);
+  }
+  
+  for(e=0;e<p->num_inherits;e++)
+  {
+    if(p->inherits[e].parent)
+    {
+      free_object(p->inherits[e].parent);
+      p->inherits[e].parent=0;
+    }
+    if(e)
+    {
+      if(p->inherits[e].prog)
+      {
+	free_program(p->inherits[e].prog);
+	p->inherits[e].prog=0;
+      }
+    }
+  }
+}
 
 static void encode_value2(struct svalue *val, struct encode_data *data)
 
@@ -1153,7 +1187,13 @@ static void restore_type_stack(struct pike_type **old_stackp)
     fatal("type stack out of sync!\n");
   }
 #endif /* PIKE_DEBUG */
+#ifdef USE_PIKE_TYPE
+  while(Pike_compiler->type_stackp > old_stackp) {
+    free_type(*(Pike_compiler->type_stackp--));
+  }
+#else
   Pike_compiler->type_stackp = old_stackp;
+#endif
 }
 
 static void restore_type_mark(struct pike_type ***old_type_mark_stackp)
@@ -1689,8 +1729,7 @@ static void decode_value2(struct decode_data *data)
 	  size_t size=0;
 	  char *dat;
 	  struct program *p;
-	  ONERROR err1;
-	  ONERROR err2;
+	  ONERROR err1, err2, err3;
 
 #ifdef _REENTRANT
 	  ONERROR err;
@@ -1699,6 +1738,8 @@ static void decode_value2(struct decode_data *data)
 #endif
 
 	  p=low_allocate_program();
+	  SET_ONERROR(err3, zap_unfinished_program, p);
+	  
 	  debug_malloc_touch(p);
 	  tmp.type=T_PROGRAM;
 	  tmp.u.program=p;
@@ -1712,6 +1753,7 @@ static void decode_value2(struct decode_data *data)
 	    Pike_error("Cannot decode programs encoded with other pike version.\n");
 	  pop_n_elems(2);
 
+	  debug_malloc_touch(p);
 	  decode_number(p->flags,data);
 	  p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED);
 	  p->flags |= PROGRAM_AVOID_CHECK;
@@ -1722,6 +1764,7 @@ static void decode_value2(struct decode_data *data)
 	  decode_number(p->timestamp.tv_sec,data);
 	  decode_number(p->timestamp.tv_usec,data);
 
+	  debug_malloc_touch(p);
 	  decode_value2(data);
 	  switch(Pike_sp[-1].type)
 	  {
@@ -1739,6 +1782,8 @@ static void decode_value2(struct decode_data *data)
 	  }
 	  if(p->parent) add_ref(p->parent);
 	  pop_stack();
+
+	  debug_malloc_touch(p);
 
 #define FOO(X,Y,Z) \
 	  decode_number( p->num_##Z, data);
@@ -1763,6 +1808,7 @@ static void decode_value2(struct decode_data *data)
 	    p->constants[e].sval.type=T_INT;
 
 	  debug_malloc_touch(dat);
+	  debug_malloc_touch(p);
 
 	  p->total_size=size + sizeof(struct program);
 
@@ -1786,6 +1832,7 @@ static void decode_value2(struct decode_data *data)
 #endif
 
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<p->num_identifier_index;d++)
 	  {
 	    decode_number(p->identifier_index[d],data);
@@ -1796,6 +1843,7 @@ static void decode_value2(struct decode_data *data)
 	    }
 	  }
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<p->num_variable_index;d++)
 	  {
 	    decode_number(p->variable_index[d],data);
@@ -1806,6 +1854,7 @@ static void decode_value2(struct decode_data *data)
 	    }
 	  }
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<p->num_identifier_references;d++)
 	  {
 	    decode_number(p->identifier_references[d].inherit_offset,data);
@@ -1818,9 +1867,11 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifier_references[d].id_flags,data);
 	  }
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<p->num_strings;d++)
 	    getdata(p->strings[d]);
 
+	  debug_malloc_touch(p);
 	  debug_malloc_touch(dat);
 
 	  data->pickyness++;
@@ -1830,6 +1881,7 @@ static void decode_value2(struct decode_data *data)
 	  p->inherits[0].parent_offset=1;
 */
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<p->num_inherits;d++)
 	  {
 	    decode_number(p->inherits[d].inherit_level,data);
@@ -1880,6 +1932,7 @@ static void decode_value2(struct decode_data *data)
 	  SET_ONERROR(err1, restore_type_stack, Pike_compiler->type_stackp);
 	  SET_ONERROR(err2, restore_type_mark, Pike_compiler->pike_type_mark_stackp);
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<p->num_identifiers;d++)
 	  {
 	    getdata(p->identifiers[d].name);
@@ -1895,6 +1948,7 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(dat);
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<p->num_constants;d++)
 	  {
 	    decode_value2(data);
@@ -1906,11 +1960,13 @@ static void decode_value2(struct decode_data *data)
 
 	  debug_malloc_touch(dat);
 
+	  debug_malloc_touch(p);
 	  for(d=0;d<NUM_LFUNS;d++)
 	    decode_number(p->lfuns[d],data);
 
 	  debug_malloc_touch(dat);
 
+	  debug_malloc_touch(p);
 	  {
 	    struct program *new_program_save=Pike_compiler->new_program;
 	    Pike_compiler->new_program=p;
@@ -1919,6 +1975,7 @@ static void decode_value2(struct decode_data *data)
 		  sizeof(unsigned short),(fsortfun)program_function_index_compare);
 	    Pike_compiler->new_program=new_program_save;
 	  }
+	  UNSET_ONERROR(err3);
 	  p->flags &=~ PROGRAM_AVOID_CHECK;
 	  p->flags |= PROGRAM_FINISHED;
 	  ref_push_program(p);
