@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.45 2002/12/23 18:50:27 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.46 2002/12/30 14:44:20 grubba Exp $
  *
  */
 
@@ -305,8 +305,8 @@ class Node
     if(vars->param)
       return "<font face='courier'>" + _reference + "</font>";
 
-    if (!vars["resolution-failure"]) {
-      foreach (resolved||({}), string resolution) {
+    if (resolved) {
+      foreach (resolved, string resolution) {
 	Node res_obj;
 
 	if(res_obj = refs[resolution]) {
@@ -319,6 +319,18 @@ class Node
 	    return sprintf("<font face='courier'>" + _reference + "</font>");
 	  }
 	  // FIXME: Assert that the reference is correct?
+	  return create_reference(make_filename(),
+				  res_obj->raw_class_path(),
+				  _reference);
+	}
+
+	// Might be a reference to a parameter.
+	// Try cutting of the last section, and retry.
+	array(string) tmp = resolution/".";
+	if ((sizeof(tmp) > 1) && (res_obj = refs[tmp[..sizeof(tmp)-2]*"."])) {
+	  if (res_obj == this_object()) {
+	    return sprintf("<font face='courier'>" + _reference + "</font>");
+	  }
 	  return create_reference(make_filename(),
 				  res_obj->raw_class_path(),
 				  _reference);
