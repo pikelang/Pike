@@ -7,12 +7,12 @@ void set_gamma( float gamma );
 void set_range( float min_x, float max_x, float min_y, float max_y );
 array(float) get_vector(int num_points)
 {
-  INT_TYPE num_points, q=0;
+  int num_points, q=0;
   gfloat *vector;
   get_all_args("get_vector", args, "%d", &num_points);
   my_pop_n_elems(args);
-  vector = g_malloc(sizeof(gfloat) * num_points);
-  gtk_curve_get_vector( GTK_CURVE(THIS->obj), num_points, vector );
+  vector = g_malloc(sizeof(gfloat) * (int)num_points);
+  gtk_curve_get_vector( GTK_CURVE(THIS->obj), (int)num_points, vector );
   while(q < num_points)
     push_float(vector[q++]);
   f_aggregate(num_points);
