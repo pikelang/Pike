@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.166 2005/01/27 16:50:08 mast Exp $
+ * $Id: backend.cmod,v 1.167 2005/01/27 17:45:34 grubba Exp $
  *
  * Backend object.
  */
@@ -2653,19 +2653,6 @@ PIKECLASS Backend
 
 	  check_box (box, fd);
 
-	  /* Hook in the box in the fd_list. */
-	  if (!box->next) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: hooking in box for fd %d\n",
-			  THR_NO, me->id, fd));
-	    box->next = fd_list.next;
-	    fd_list.next = box;
-	    if (box->ref_obj) add_ref(box->ref_obj);
-	  } else {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: fd %d already in list.\n",
-			  THR_NO, me->id, fd));
-	  }
-
 	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR)) {
 	    /* Errors are signalled on the first available callback,
 	     * and generally don't like other events.
@@ -2713,6 +2700,21 @@ PIKECLASS Backend
 		      (long)GET_EVENTS(ACTIVE_POLLSET[i]));
 	    }
 #endif /* PIKE_DEBUG */
+	  }
+	  if (box->revents) {
+	    /* Hook in the box on the fd_list. */
+	    if (!box->next) {
+	      IF_PD(fprintf(stderr,
+			    "[%d]BACKEND[%d]: hooking in box for fd %d\n",
+			    THR_NO, me->id, fd));
+	      box->next = fd_list.next;
+	      fd_list.next = box;
+	      if (box->ref_obj) add_ref(box->ref_obj);
+	    } else {
+	      IF_PD(fprintf(stderr,
+			    "[%d]BACKEND[%d]: fd %d already in list.\n",
+			    THR_NO, me->id, fd));
+	    }
 	  }
 	}
 
