@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.12 1998/04/21 02:56:03 per Exp $
+ * $Id: XImage.pmod,v 1.13 2000/01/10 02:03:39 per Exp $
  */
 
 /*
@@ -44,7 +44,7 @@ class Image_wrapper
     function f;
     object parent;
     
-    void `()( mixed ... args )
+    mixed `()( mixed ... args )
     {
       mixed q = f( @args );
       if(objectp(q)) parent->set_image( q );
