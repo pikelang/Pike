@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.483 2003/10/21 02:16:34 nilsson Exp $
+|| $Id: program.c,v 1.484 2003/11/25 18:29:30 jonasw Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.483 2003/10/21 02:16:34 nilsson Exp $");
+RCSID("$Id: program.c,v 1.484 2003/11/25 18:29:30 jonasw Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5004,7 +5004,7 @@ char *debug_get_line(PIKE_OPCODE_T *pc, struct program *prog, INT32 *linep)
     offset = pc - prog->program;
     if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
       char *base, *cnt = prog->linenumbers;
-      INT32 off,line,pid;
+      INT32 off = 0, line = 0;
 
       while(cnt < prog->linenumbers + prog->num_linenumbers)
       {
