@@ -398,6 +398,7 @@ static p_instr *instr(int offset)
     }
   }else{
     fatal("Can't handle negative offsets in peephole optimizer!\n");
+    return 0; /* Make GCC happy */
   }
 }
 
@@ -443,7 +444,7 @@ static void pop_n_opcodes(int n)
       if(instrbuf.s.len <= 0)
 	fatal("Popping out of opcodes.\n");
 #endif
-      low_make_buf_space(-sizeof(p_instr), &instrbuf);
+      low_make_buf_space(-((INT32)sizeof(p_instr)), &instrbuf);
       p=(p_instr *)low_make_buf_space(0, &instrbuf);
       
       free_string(p->file);
