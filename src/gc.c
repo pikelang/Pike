@@ -20,12 +20,13 @@ struct callback *gc_evaluator_callback=0;
 #include "pike_macros.h"
 #include "pike_types.h"
 #include "time_stuff.h"
+#include "constants.h"
 
 #include "gc.h"
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.40 1998/12/16 07:49:35 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.41 1999/03/17 21:49:24 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -315,6 +316,13 @@ void describe_something(void *a, int t, int dm)
 
   switch(t)
   {
+    case T_FUNCTION:
+      if(attempt_to_identify(a) != T_OBJECT)
+      {
+	fprintf(stderr,"**Builtin function!\n");
+	break;
+      }
+
     case T_OBJECT:
       p=((struct object *)a)->prog;
       fprintf(stderr,"**Parent identifier: %d\n",((struct object *)a)->parent_identifier);
@@ -336,26 +344,50 @@ void describe_something(void *a, int t, int dm)
     {
       char *tmp;
       INT32 line,pos;
+      int foo=0;
 
       fprintf(stderr,"**Program id: %ld\n",(long)(p->id));
       if(p->flags & PROGRAM_HAS_C_METHODS)
       {
-	int e;
 	fprintf(stderr,"**The program was written in C.\n");
-	fprintf(stderr,"**identifiers:\n");
-	for(e=0;e<p->num_identifiers;e++)
-	  fprintf(stderr,"**** %s\n",p->identifiers[e].name->str);
       }
-
-      for(pos=0;pos<(long)p->num_program && pos<100;pos++)
+      for(pos=0;pos<100;pos++)
       {
 	tmp=get_line(p->program+pos, p, &line);
 	if(tmp && line)
 	{
 	  fprintf(stderr,"**Location: %s:%ld\n",tmp,(long)line);
+	  foo=1;
 	  break;
 	}
+	if(pos+1>=(long)p->num_program)
+	  break;
       }
+#if 0
+      if(!foo && p->num_linenumbers>1 && EXTRACT_UCHAR(p->linenumbers)=='\177')
+      {
+	fprintf(stderr,"**From file: %s\n",p->linenumbers+1);
+	foo=1;
+      }
+#endif
+
+      if(!foo)
+      {
+	int e;
+#if 0
+	fprintf(stderr,"**identifiers:\n");
+	for(e=0;e<p->num_identifiers;e++)
+	  fprintf(stderr,"**** %s\n",p->identifiers[e].name->str);
+#else
+	fprintf(stderr,"**identifiers:\n");
+	for(e=0;e<p->num_identifier_references;e++)
+	  fprintf(stderr,"**** %s\n",ID_FROM_INT(p,e)->name->str);
+	
+#endif
+
+	fprintf(stderr,"**num inherits: %d\n",p->num_inherits);
+      }
+
       break;
     }
       
@@ -402,6 +434,19 @@ void debug_describe_svalue(struct svalue *s)
     case T_FLOAT:
       fprintf(stderr,"    %f\n",s->u.float_number);
       break;
+
+    case T_FUNCTION:
+      if(s->subtype == FUNCTION_BUILTIN)
+      {
+	fprintf(stderr,"    Builtin function: %s\n",s->u.efun->name->str);
+      }else{
+	if(!s->u.object->prog)
+	{
+	  fprintf(stderr,"    Function in destructed object.\n");
+	}else{
+	  fprintf(stderr,"    Function name: %s\n",ID_FROM_INT(s->u.object->prog,s->subtype)->name->str);
+	}
+      }
   }
   describe_something(s->u.refs,s->type,1);
 }
