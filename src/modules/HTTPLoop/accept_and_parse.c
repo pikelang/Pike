@@ -589,9 +589,9 @@ static void f_accept_with_http_parse(INT32 nargs)
     aap_first_log = log;
   }
   c = aap_malloc(sizeof(struct cache));
+  MEMSET(c, 0, sizeof(struct cache));
   c->next = first_cache;
   first_cache = c;
-  MEMSET(c, 0, sizeof(struct cache));
   args->cache = c;
   c->max_size = ms;
   args->fd = ((struct port *)port->storage)->fd;
