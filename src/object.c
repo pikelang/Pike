@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.222 2003/02/15 14:59:05 grubba Exp $
+|| $Id: object.c,v 1.223 2003/02/15 15:52:36 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.222 2003/02/15 14:59:05 grubba Exp $");
+RCSID("$Id: object.c,v 1.223 2003/02/15 15:52:36 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -767,15 +767,16 @@ void destruct(struct object *o)
       {
 	struct svalue *s;
 	s=(struct svalue *)(storage + id->func.offset);
+	dmalloc_touch_svalue(s);
 	if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
 	    !(id_flags & IDENTIFIER_NO_THIS_REF))
 	  free_svalue(s);
       }else{
 	union anything *u;
 	u=(union anything *)(storage + id->func.offset);
-#ifdef PIKE_DEBUG
+#ifdef DEBUG_MALLOC
 	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
-#endif /* PIKE_DEBUG */
+#endif
 	if (rtt != T_OBJECT || u->object != o ||
 	    !(id_flags & IDENTIFIER_NO_THIS_REF))
 	  free_short_svalue(u, rtt);
@@ -1195,6 +1196,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 	case T_OBJECT:
 	  if (id_flags & IDENTIFIER_NO_THIS_REF) {
 	    /* Don't count references to ourselves to help the gc. */
+	    debug_malloc_touch(u->object);
 	    if ((u->object != o) && u->refs && --*(u->refs) <= 0)
 	      really_free_short_svalue(u,rtt);
 	    u->refs = from->u.refs;
@@ -1203,16 +1205,17 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 	  }
 	  /* FALL THROUGH */
 	default:
+	  debug_malloc_touch(u->refs);
 	  if(u->refs && --*(u->refs) <= 0)
 	    really_free_short_svalue(u,rtt);
 	  u->refs = from->u.refs;
 	  add_ref(u->dummy);
       }
     }else if(rtt<=MAX_REF_TYPE && UNSAFE_IS_ZERO(from)){
-      if((rtt != T_OBJECT || u->object != o) &&
-	 !(id_flags & IDENTIFIER_NO_THIS_REF) &&
+      if((rtt != T_OBJECT || u->object != o || !(id_flags & IDENTIFIER_NO_THIS_REF)) &&
 	 u->refs && --*(u->refs) <= 0)
 	really_free_short_svalue(u,rtt);
+      debug_malloc_touch(u->ptr);
       u->refs=0;
     }else{
       Pike_error("Wrong type in assignment, expected %s, got %s.\n",
