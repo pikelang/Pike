@@ -1,5 +1,6 @@
 #undef BLOCK_ALLOC
 #undef PTR_HASH_ALLOC
+#undef PTR_HASH_ALLOC_FIXED
 
 #define BLOCK_ALLOC(DATA,SIZE)						\
 struct DATA *PIKE_CONCAT(alloc_,DATA)(void);				\
@@ -20,8 +21,12 @@ struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, size_t hval);	\
 struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr);			\
 int PIKE_CONCAT3(check_,DATA,_semafore)(void *ptr);		\
 int PIKE_CONCAT(remove_,DATA)(void *ptr);			\
+void PIKE_CONCAT3(low_init_,DATA,_hash)(size_t);		\
 void PIKE_CONCAT3(init_,DATA,_hash)(void);			\
 void PIKE_CONCAT3(exit_,DATA,_hash)(void);			\
+
+#define PTR_HASH_ALLOC_FIXED(DATA,BSIZE)			\
+PTR_ALLOC(DATA,BSIZE);
 
 #define PTR_HASH_LOOP(DATA,HVAL,PTR)					\
   for ((HVAL) = PIKE_CONCAT(DATA,_hash_table_size); (HVAL)-- > 0;)	\

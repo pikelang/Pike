@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.173 2001/09/06 16:53:43 mast Exp $");
+RCSID("$Id: gc.c,v 1.174 2001/09/06 21:23:00 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -226,7 +226,7 @@ static void gc_cycle_pop(void *a);
 #define find_marker debug_find_marker
 #endif
 
-PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
+PTR_HASH_ALLOC_FIXED(marker,MARKER_CHUNK_SIZE)
 
 #ifdef PIKE_DEBUG
 
@@ -1232,7 +1232,7 @@ static void init_gc(void)
 #ifdef PIKE_DEBUG
   if (!gc_is_watching) {
 #endif
-    init_marker_hash();
+    low_init_marker_hash(num_objects);
     get_marker(rec_list.data);	/* Used to simplify fencepost conditions. */
 #ifdef PIKE_DEBUG
   }
