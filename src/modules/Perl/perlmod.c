@@ -6,6 +6,9 @@
 #include <module_support.h>
 #include <threads.h>
 #include <mapping.h>
+#include <perl_machine.h>
+
+#ifdef HAVE_PERL
 
 #include <EXTERN.h>
 #include <perl.h>
@@ -23,6 +26,7 @@ struct perlmod_storage
   char **env;
   char *env_block;
   struct array *argv_strings;
+  int parsed;
   PerlInterpreter *my_perl;
 };
 
@@ -36,6 +40,7 @@ static void init_perl_glue(struct object *o)
   THIS->env=0;
   THIS->env_block=0;
   THIS->argv_strings=0;
+  THIS->parsed=0;
 
 #ifndef MULTIPLICITY
   if(num_perl_interpreters>0)
@@ -49,7 +54,6 @@ static void init_perl_glue(struct object *o)
   THREADS_ALLOW();
   mt_lock(&perl_running);
   p=perl_alloc();
-  if(p) perl_construct(p);
   mt_unlock(&perl_running);
   THREADS_DISALLOW();
   PERL=p;
@@ -60,11 +64,16 @@ static void exit_perl_glue(struct object *o)
 {
   if(PERL)
   {
-    PerlInterpreter *p=PERL;
+    struct perlmod_storage *storage=THIS;
+
     THREADS_ALLOW();
     mt_lock(&perl_running);
-    perl_destruct(p);
-    perl_free(p);
+    if(storage->parsed)
+    {
+      perl_destruct(storage->my_perl);
+      storage->parsed=0;
+    }
+    perl_free(storage->my_perl);
     mt_unlock(&perl_running);
     THREADS_DISALLOW();
     num_perl_interpreters--;
@@ -98,6 +107,9 @@ static void perlmod_run(INT32 args)
   if(!p) error("No perl interpreter available.\n");
   pop_n_elems(args);
 
+  if(!THIS->argv_strings)
+    error("Perl->create() must be called first.\n");
+
   THREADS_ALLOW();
   mt_lock(&perl_running);
   i=perl_run(p);
@@ -106,7 +118,7 @@ static void perlmod_run(INT32 args)
   push_int(i);
 }
 
-static void perlmod_parse(INT32 args)
+static void perlmod_create(INT32 args)
 {
   extern void xs_init(void);
   int e;
@@ -114,11 +126,11 @@ static void perlmod_parse(INT32 args)
   PerlInterpreter *p=PERL;
   struct perlmod_storage *storage=THIS;
     
-  check_all_args("Perl->parse",args,BIT_ARRAY, BIT_MAPPING|BIT_VOID, 0);
+  check_all_args("Perl->create",args,BIT_ARRAY, BIT_MAPPING|BIT_VOID, 0);
   if(!p) error("No perl interpreter available.\n");
 
   if(THIS->argv_strings)
-    error("Perl->parse() can only be called once.\n");
+    error("Perl->create() can only be called once.\n");
 
   switch(args)
   {
@@ -127,17 +139,20 @@ static void perlmod_parse(INT32 args)
       mapping_fix_type_field(env_mapping);
 
       if(m_ind_types(env_mapping) & ~BIT_STRING)
-	error("Bad argument 2 to Perl->parse().\n");
+	error("Bad argument 2 to Perl->create().\n");
       if(m_val_types(env_mapping) & ~BIT_STRING)
-	error("Bad argument 2 to Perl->parse().\n");
+	error("Bad argument 2 to Perl->create().\n");
       
     case 1:
       THIS->argv_strings=sp[-args].u.array;
       add_ref(THIS->argv_strings);
       array_fix_type_field(THIS->argv_strings);
 
+      if(THIS->argv_strings->size<2)
+	error("Perl: Too few elements in argv array.\n");
+
       if(THIS->argv_strings->type_field & ~BIT_STRING)
-	error("Bad argument 2 to Perl->parse().\n");
+	error("Bad argument 2 to Perl->create().\n");
   }
 
   THIS->argv=(char **)xalloc(sizeof(char *)*THIS->argv_strings->size);
@@ -176,6 +191,11 @@ static void perlmod_parse(INT32 args)
   
   THREADS_ALLOW();
   mt_lock(&perl_running);
+  if(!storage->parsed)
+  {
+    perl_construct(p);
+    storage->parsed++;
+  }
   e=perl_parse(p,
 	       xs_init,
 	       storage->argv_strings->size,
@@ -199,10 +219,10 @@ static void perlmod_call(INT32 args)
 
 void pike_module_init(void)
 {
-  perl_destruct_level=1;
+  perl_destruct_level=2;
   start_new_program();
   add_storage(sizeof(struct perlmod_storage));
-  add_function("parse",perlmod_parse,"function(array(string),void|mapping(string:string):int)",0);
+  add_function("create",perlmod_create,"function(array(string),void|mapping(string:string):int)",0);
   add_function("run",perlmod_run,"function(:int)",0);
   add_function("eval",perlmod_eval,"function(string:int)",0);
   add_function("call",perlmod_call,"function(string,mixed...:int)",0);
@@ -222,3 +242,8 @@ void pike_module_init(void)
 void pike_module_exit(void)
 {
 }
+
+#else /* HAVE_PERL */
+void pike_module_init(void) {}
+void pike_module_exit(void) {}
+#endif

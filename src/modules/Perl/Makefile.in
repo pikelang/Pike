@@ -1,8 +1,8 @@
-# $Id: Makefile.in,v 1.1 1998/11/22 11:05:03 hubbe Exp $
+# $Id: Makefile.in,v 1.2 1998/11/22 13:02:05 hubbe Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @PERL_LDFLAGS@
-OBJS=perlmod.o perlxsi.o
+OBJS=perlmod.o @extra_objs@
 PERL=@perl@
 MODULE_CFLAGS=@PERL_CCFLAGS@
 

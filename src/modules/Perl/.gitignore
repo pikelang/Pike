@@ -9,3 +9,6 @@
 /modlist_segment
 /module_testsuite
 /stamp-h
+/stamp-h.in
+/perl_machine.h
+/perl_machine.h.in

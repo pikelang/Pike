@@ -1,9 +1,12 @@
-# $Id: configure.in,v 1.1 1998/11/22 11:05:04 hubbe Exp $
+# $Id: configure.in,v 1.2 1998/11/22 13:02:06 hubbe Exp $
 AC_INIT(perlmod.c)
+AC_CONFIG_HEADER(perl_machine.h)
 
 AC_MODULE_INIT()
 
 AC_CHECK_PROGS(perl, perl perl5, x)
+
+objs=
 
 if test x$perl != xx ; then
   # We have perl, but do we have perlembed?
@@ -12,11 +15,19 @@ if test x$perl != xx ; then
 
   PERL_LDFLAGS=`perl -MExtUtils::Embed -e ldopts`
   PERL_CCFLAGS=`perl -MExtUtils::Embed -e ccopts`
+
+  if test "x$PERL_LDFLAGS$PERL_CCFLAGS" != x; then
+    extra_objs='perlxsi.o'
+    AC_DEFINE(HAVE_PERL)
+  fi
 fi
 
 AC_SUBST(perl)
+AC_SUBST(extra_objs)
 AC_SUBST(PERL_LDFLAGS)
 AC_SUBST(PERL_CCFLAGS)
+
+
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
 
