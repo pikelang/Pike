@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.101 2000/08/31 14:43:00 grubba Exp $");
+RCSID("$Id: operators.c,v 1.102 2000/09/22 12:25:59 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1698,7 +1698,18 @@ PMOD_EXPORT void f_multiply(INT32 args)
     {
       CALL_OPERATOR(LFUN_MULTIPLY, args);
     } else {
-      while(--args > 0) o_multiply(); 
+      INT32 i = -args, j = -1;
+      /* Reverse the arguments */
+      while(i < j) {
+	struct svalue tmp = sp[i];
+	sp[i++] = sp[j];
+	sp[j--] = tmp;
+      }
+      while(--args > 0) {
+	/* Restore the order, and multiply */
+	stack_swap();
+	o_multiply();
+      }
     }
   }
 }
