@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.200 2000/01/27 23:17:12 hubbe Exp $");
+RCSID("$Id: program.c,v 1.201 2000/02/07 04:46:43 per Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -325,7 +325,7 @@ static struct node_s *index_modules(struct pike_string *ident,
       push_svalue(modules+e);
       ref_push_string(ident);
       f_index(2);
-      
+
       if(!IS_UNDEFINED(sp-1))
       {
 	UNSETJMP(tmp);
@@ -359,7 +359,7 @@ struct node_s *find_module_identifier(struct pike_string *ident)
 			num_used_modules,
 			modules))) return ret;
   modules-=num_used_modules;
-     
+
   {
     struct program_state *p=previous_program_state;
     int n;
@@ -401,7 +401,7 @@ struct node_s *find_module_identifier(struct pike_string *ident)
   }
 
   if(!num_parse_error && get_master())
-  {	
+  {
     DECLARE_CYCLIC();
     node *ret=0;
     if(BEGIN_CYCLIC(ident, lex.current_file))
@@ -425,7 +425,7 @@ struct node_s *find_module_identifier(struct pike_string *ident)
 	if(!resolve_cache)
 	  resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
 	mapping_string_insert(resolve_cache,ident,sp-1);
-	
+
 	if(!(IS_ZERO(sp-1) && sp[-1].subtype==1))
 	{
 	  ret=mkconstantsvaluenode(sp-1);
@@ -436,7 +436,7 @@ struct node_s *find_module_identifier(struct pike_string *ident)
     }
     if(ret) return ret;
   }
-  
+
   return 0;
 }
 
@@ -466,8 +466,8 @@ struct program *id_to_program(INT32 id)
   if((p=id_to_program_cache[h]))
     if(p->id==id)
       return p;
-  
-  if(id) 
+
+  if(id)
     {
       for(p=first_program;p;p=p->next)
 	{
@@ -548,13 +548,13 @@ void fixate_program(void)
       if(funp->id_flags & ID_PRIVATE) continue;
       fun=ID_FROM_PTR(new_program, funp);
 /*	  if(fun->func.offset == -1) continue; * prototype */
-      
+
       /* check for multiple definitions */
       for(t=i+1;t>=0 && t<(int)new_program->num_identifier_references;t++)
       {
 	struct reference *funpb;
 	struct identifier *funb;
-	
+
 	funpb=new_program->identifier_references+t;
 	if(funpb->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
 	funb=ID_FROM_PTR(new_program,funpb);
@@ -568,8 +568,8 @@ void fixate_program(void)
   fsort((void *)new_program->identifier_index,
 	new_program->num_identifier_index,
 	sizeof(unsigned short),(fsortfun)program_function_index_compare);
-  
-  
+
+
   /* Yes, it is supposed to start at 1  /Hubbe */
   for(i=1;i<3;i++)
   {
@@ -587,7 +587,7 @@ void fixate_program(void)
 
   for(;i<NUM_LFUNS;i++)
     new_program->lfuns[i]=find_identifier(lfun_names[i],new_program);
-  
+
   new_program->flags |= PROGRAM_FIXED;
 }
 
@@ -597,11 +597,11 @@ struct program *low_allocate_program(void)
   p=ALLOC_STRUCT(program);
   MEMSET(p, 0, sizeof(struct program));
   p->alignment_needed=1;
-  
+
   GC_ALLOC();
   p->refs=1;
   p->id=++current_program_id;
-  
+
   if((p->next=first_program)) first_program->prev=p;
   first_program=p;
   GETTIMEOFDAY(& p->timestamp);
@@ -617,7 +617,7 @@ void low_start_new_program(struct program *p,
 {
   int e,id=0;
 
-#if 0  
+#if 0
 #ifdef SHARED_NODES
   if (!node_hash.table) {
     node_hash.table = malloc(sizeof(node *)*16411);
@@ -725,7 +725,7 @@ void low_start_new_program(struct program *p,
       INT32 line=0, off=0;
       char *file=0;
       char *cnt=new_program->linenumbers;
-      
+
       while(cnt < new_program->linenumbers + new_program->num_linenumbers)
       {
 	if(*cnt == 127)
@@ -842,10 +842,10 @@ void really_free_program(struct program *p)
     p->prev->next=p->next;
   else
     first_program=p->next;
-  
+
   if(p->next)
     p->next->prev=p->prev;
-  
+
   if(p->flags & PROGRAM_OPTIMIZED)
   {
     if(p->program)
@@ -857,10 +857,10 @@ void really_free_program(struct program *p)
     if(p->NAME) { dmfree((char *)p->NAME); p->NAME=0; }
 #include "program_areas.h"
   }
-  
+
   FREE_PROT(p);
   dmfree((char *)p);
-  
+
   GC_FREE();
 }
 
@@ -952,7 +952,7 @@ static void toss_compilation_resources(void)
     free_mapping(module_index_cache);
     module_index_cache=0;
   }
-  
+
   while(compiler_frame)
     pop_compiler_frame();
 
@@ -1048,12 +1048,12 @@ void check_program(struct program *p)
 
     if(e)
     {
-      if(p->inherits[e-1].storage_offset > 
+      if(p->inherits[e-1].storage_offset >
 	 p->inherits[e].storage_offset)
 	fatal("Overlapping inherits! (1)\n");
-	
+
       if(p->inherits[e-1].prog &&
-	 p->inherits[e-1].inherit_level >= p->inherits[e].inherit_level && 
+	 p->inherits[e-1].inherit_level >= p->inherits[e].inherit_level &&
 	 ( p->inherits[e-1].storage_offset +
 	   STORAGE_NEEDED(p->inherits[e-1].prog)) >
 	 p->inherits[e].storage_offset)
@@ -1312,7 +1312,7 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
 	  (long)modulo_orig,
 	  (long)alignment
 	  );
-    
+
 #endif
 
   new_program->storage_needed = offset + size;
@@ -1450,16 +1450,16 @@ node *reference_inherited_identifier(struct pike_string *super_name,
   for(n=0;n<compilation_depth;n++,state=state->previous)
   {
     struct program *p=state->new_program;
-    
+
     for(e=p->num_inherits-1;e>0;e--)
     {
       if(p->inherits[e].inherit_level!=1) continue;
       if(!p->inherits[e].name) continue;
-      
+
       if(super_name)
 	if(super_name != p->inherits[e].name)
 	  continue;
-      
+
       id=low_reference_inherited_identifier(state,e,function_name,SEE_STATIC);
 
       if(id!=-1)
@@ -1471,7 +1471,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 	return mknode(F_MAGIC_INDEX,
 		      mknewintnode(e),mknewintnode(n+1));
       }
-      
+
       if(ISCONSTSTR(function_name,"`->=") ||
 	 ISCONSTSTR(function_name,"`[]="))
       {
@@ -1541,7 +1541,7 @@ void low_inherit(struct program *p,
 				 storage_offset);
 
   /* Without this, the inherit becomes skewed */
-  storage_offset-=p->inherits[0].storage_offset; 
+  storage_offset-=p->inherits[0].storage_offset;
 
   for(e=0; e<(int)p->num_inherits; e++)
   {
@@ -1589,7 +1589,7 @@ void low_inherit(struct program *p,
 	      pid=0;
 	      break;
 	    }
-	    
+
 	    in=INHERIT_FROM_INT(par->prog, pid);
 	    if(in->parent_offset)
 	    {
@@ -1601,7 +1601,7 @@ void low_inherit(struct program *p,
 	      par=in->parent;
 	    }
 	  }
-	  
+
 	  inherit.parent=par;
 	  inherit.parent_offset=0;
 	}else{
@@ -1686,7 +1686,7 @@ void compiler_do_inherit(node *n,
   struct program *p;
   struct identifier *i;
   INT32 numid, offset;
-  
+
   if(!n)
   {
     yyerror("Unable to inherit");
@@ -1699,12 +1699,12 @@ void compiler_do_inherit(node *n,
       offset=0;
       numid=n->u.id.number;
       goto continue_inherit;
-      
+
     case F_EXTERNAL:
       p=parent_compilation(n->u.integer.a);
       offset=n->u.integer.a;
       numid=n->u.integer.b;
-      
+
       if(!p)
       {
 	yyerror("Failed to resolv external constant.\n");
@@ -1714,7 +1714,7 @@ void compiler_do_inherit(node *n,
   continue_inherit:
 
       i=ID_FROM_INT(p, numid);
-    
+
       if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
       {
 	struct svalue *s=&PROG_FROM_INT(p, numid)->
@@ -1745,7 +1745,7 @@ void compiler_do_inherit(node *n,
       pop_stack();
   }
 }
-			 
+
 
 void simple_do_inherit(struct pike_string *s,
 		       INT32 flags,
@@ -1782,7 +1782,7 @@ int isidentifier(struct pike_string *s)
   for(e=new_program->num_identifier_references-1;e>=0;e--)
   {
     if(new_program->identifier_references[e].id_flags & ID_HIDDEN) continue;
-    
+
     if(ID_FROM_INT(new_program, e)->name == s)
       return e;
   }
@@ -1826,9 +1826,9 @@ int low_define_variable(struct pike_string *name,
   ref.inherit_offset=0;
 
   add_to_variable_index(ref.identifier_offset);
-  
+
   add_to_identifiers(dummy);
-  
+
   n=new_program->num_identifier_references;
   add_to_identifier_references(ref);
 
@@ -1883,7 +1883,7 @@ int define_variable(struct pike_string *name,
 
   if(type == void_type_string)
     yyerror("Variables can't be of type void");
-  
+
   n = isidentifier(name);
 
   if(new_program->flags & PROGRAM_PASS_1_DONE)
@@ -1907,7 +1907,7 @@ int define_variable(struct pike_string *name,
   if(n != -1)
   {
     /* not inherited */
-    if(new_program->identifier_references[n].inherit_offset == 0) 
+    if(new_program->identifier_references[n].inherit_offset == 0)
     {
       if (!((IDENTIFIERP(n)->id_flags | flags) & ID_EXTERN)) {
 	my_yyerror("Identifier '%s' defined twice.",name->str);
@@ -1926,9 +1926,9 @@ int define_variable(struct pike_string *name,
 
       if(!(IDENTIFIERP(n)->id_flags & ID_INLINE) || compiler_pass!=1)
       {
-	if(ID_FROM_INT(new_program, n)->type != type)
-	  my_yyerror("Illegal to redefine inherited variable "
-		     "with different type.");
+/* 	if(ID_FROM_INT(new_program, n)->type != type) */
+/* 	  my_yyerror("Illegal to redefine inherited variable " */
+/* 		     "with different type."); */
 
 	if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(new_program, n)->
 				   identifier_flags))
@@ -1962,12 +1962,12 @@ int define_variable(struct pike_string *name,
     case T_PROGRAM:
       run_time_type = T_MIXED;
   }
-  
+
   n=low_define_variable(name,type,flags,
 			low_add_storage(sizeof_variable(run_time_type),
 					alignof_variable(run_time_type),0),
 			run_time_type);
-  
+
 
   return n;
 }
@@ -1980,7 +1980,7 @@ int simple_add_variable(char *name,
   struct pike_string *name_s, *type_s;
   name_s=make_shared_string(name);
   type_s=parse_type(type);
-  
+
   ret=define_variable(name_s, type_s, flags);
   free_string(name_s);
   free_string(type_s);
@@ -2105,7 +2105,7 @@ int add_constant(struct pike_string *name,
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
     /* not inherited */
-    if(new_program->identifier_references[n].inherit_offset == 0) 
+    if(new_program->identifier_references[n].inherit_offset == 0)
     {
       my_yyerror("Identifier '%s' defined twice.",name->str);
       return n;
@@ -2125,7 +2125,7 @@ int add_constant(struct pike_string *name,
   return n;
 }
 
-int simple_add_constant(char *name, 
+int simple_add_constant(char *name,
 			struct svalue *c,
 			INT32 flags)
 {
@@ -2335,7 +2335,7 @@ INT32 define_function(struct pike_string *name,
 	funp->func = *func;
       else
 	funp->func.offset = -1;
-      
+
       funp->identifier_flags=function_flags;
 
       free_string(funp->type);
@@ -2350,32 +2350,32 @@ INT32 define_function(struct pike_string *name,
       {
 	my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
       }
-      
+
 
       if(ref.id_flags & ID_INLINE)
       {
 	goto make_a_new_def;
       }
-      
+
       /* Otherwise we make a new definition */
       copy_shared_string(fun.name, name);
       copy_shared_string(fun.type, type);
-      
+
       fun.run_time_type=T_FUNCTION;
-      
+
       fun.identifier_flags=function_flags;
       if(function_flags & IDENTIFIER_C_FUNCTION)
 	new_program->flags |= PROGRAM_HAS_C_METHODS;
-      
+
       if(func)
 	fun.func = *func;
       else
 	fun.func.offset = -1;
-      
+
       ref.identifier_offset=new_program->num_identifiers;
       add_to_identifiers(fun);
     }
-    
+
     ref.inherit_offset = 0;
     ref.id_flags = flags;
 #if 0
@@ -2428,22 +2428,22 @@ make_a_new_def:
 
   copy_shared_string(fun.name, name);
   copy_shared_string(fun.type, type);
-  
+
   fun.identifier_flags=function_flags;
   if(function_flags & IDENTIFIER_C_FUNCTION)
     new_program->flags |= PROGRAM_HAS_C_METHODS;
-  
+
   fun.run_time_type=T_FUNCTION;
-  
+
   if(func)
     fun.func = *func;
   else
     fun.func.offset = -1;
-  
+
   i=new_program->num_identifiers;
-  
+
   add_to_identifiers(fun);
-  
+
   ref.id_flags = flags;
   ref.identifier_offset = i;
   ref.inherit_offset = 0;
@@ -2491,7 +2491,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
       {
 	struct reference *funpb;
 	struct identifier *funb;
-	
+
 	if(t==i) continue;
 	funpb=prog->identifier_references+t;
 	if(funpb->id_flags & ID_HIDDEN) continue;
@@ -2528,7 +2528,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
     if(!funindex)
       fatal("No funindex in fixed program\n");
 #endif
-  
+
     max = prog->num_identifier_index;
     min = 0;
     while(max != min)
@@ -2632,7 +2632,7 @@ int store_constant(struct svalue *foo,
   struct program_constant tmp;
   unsigned int e;
   JMP_BUF tmp2;
-  
+
   if(SETJMP(tmp2))
   {
     ONERROR tmp;
@@ -2665,7 +2665,7 @@ int store_constant(struct svalue *foo,
     }
     assign_svalue_no_free(&tmp.sval,foo);
     if((tmp.name=constant_name)) add_ref(constant_name);
-    
+
     add_to_constants(tmp);
 
     UNSETJMP(tmp2);
@@ -2811,7 +2811,7 @@ static void insert_small_number(INT32 a)
   }else{
     add_to_linenumbers(-128);
     ins_int(a, add_to_linenumbers);
-  }	
+  }
 }
 
 void store_linenumber(INT32 current_line, struct pike_string *current_file)
@@ -2834,7 +2834,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
       off+=get_small_number(&cnt);
       line+=get_small_number(&cnt);
     }
-    
+
     if(last_line != line ||
        last_pc != off ||
        (last_file && file && strcmp(last_file->str, file)))
@@ -3116,7 +3116,7 @@ int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
   int ret;
   struct pike_string *name_tmp,*type_tmp;
   union idptr tmp;
-  
+
   name_tmp=make_shared_string(name);
   type_tmp=parse_type(type);
 
@@ -3342,7 +3342,7 @@ void gc_mark_program_as_referenced(struct program *p)
       if(e && p->inherits[e].prog)
 	gc_mark_program_as_referenced(p->inherits[e].prog);
     }
-      
+
   }
 }
 
@@ -3490,7 +3490,7 @@ void pop_compiler_frame(void)
   pop_local_variables(0);
   if(f->current_type)
     free_string(f->current_type);
-  
+
   if(f->current_return_type)
     free_string(f->current_return_type);
 
@@ -3619,7 +3619,7 @@ int find_child(struct program *parent, struct program *child)
 #ifdef PIKE_DEBUG
   if(h>=FIND_CHILD_HASHSIZE)
     fatal("find_child failed to hash within boundaries.\n");
-#endif  
+#endif
   if(find_child_cache[h].pid == parent->id &&
      find_child_cache[h].cid == child->id)
   {
@@ -3871,5 +3871,3 @@ int yyexplain_not_implements(struct program *a, struct program *b)
   }
   return 1;
 }
-
-
