@@ -1,18 +1,14 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.10 1997/05/19 22:53:26 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.11 1997/08/21 13:59:25 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
 #include "object.h"
-#include "pike_macros.h"
 #include "backend.h"
 #include "fd_control.h"
-#include "error.h"
-#include "builtin_functions.h"
-#include "mapping.h"
 
 #include "error.h"
 #include "signal_handler.h"
@@ -51,10 +47,6 @@ RCSID("$Id: dumudp.c,v 1.10 1997/05/19 22:53:26 hubbe Exp $");
 #include <sys/protosw.h>
 #endif
 
-#ifdef HAVE_SYS_STREAM_H
-#include <sys/stream.h>
-#endif
-
 #ifdef HAVE_SYS_SOCKETVAR_H
 #include <sys/socketvar.h>
 #endif
@@ -65,9 +57,11 @@ RCSID("$Id: dumudp.c,v 1.10 1997/05/19 22:53:26 hubbe Exp $");
 
 struct dumudp {
   int fd;
+  struct svalue read_callback;
 };
 
 #define THIS ((struct dumudp *)fp->current_storage)
+#define FD (THIS->fd)
 
 extern void get_inet_addr(struct sockaddr_in *addr,char *name);
 
@@ -94,13 +88,10 @@ static void udp_bind(INT32 args)
   o=1;
   if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
   {
-/*    THIS->my_errno=errno;*/
     close(fd);
     error("setsockopt failed\n");
     return;
   }
-
-  /* set_close_on_exec(fd,1); */
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -118,24 +109,13 @@ static void udp_bind(INT32 args)
 
   if(tmp)
   {
-/*    THIS->my_errno=errno;*/
     close(fd);
     pop_n_elems(args);
     push_int(0);
     return;
   }
 
-/*
-  if(args > 1)
-  {
-    assign_svalue(& THIS->accept_callback, sp+1-args);
-    if(!IS_ZERO(& THIS->accept_callback))
-      set_read_callback(fd, port_accept_callback, (void *)THIS);
-    set_nonblocking(fd,1);
-  }
-*/
   THIS->fd=fd;
-/*  THIS->my_errno=0;*/
   pop_n_elems(args);
   push_int(1);
 }
@@ -144,7 +124,7 @@ static void udp_bind(INT32 args)
 
 void udp_read(INT32 args)
 {
-  int flags = 0, res=0;
+  int flags = 0, res=0, fd;
   struct sockaddr_in from;
   int  fromlen = sizeof(struct sockaddr_in);
   char buffer[UDP_BUFFSIZE];
@@ -161,8 +141,9 @@ void udp_read(INT32 args)
       error("Illegal 'flags' value passed to udp->read([int flags])\n");
   }
   pop_n_elems(args);
+  fd = THIS->fd;
   THREADS_ALLOW();
-  while(((res = recvfrom(THIS->fd, buffer, UDP_BUFFSIZE, flags,
+  while(((res = recvfrom(fd, buffer, UDP_BUFFSIZE, flags,
 			 (struct sockaddr *)&from, &fromlen))==-1)
 	&&(errno==EINTR));
   THREADS_DISALLOW();
@@ -177,9 +158,7 @@ void udp_read(INT32 args)
      case EIO:
       error("I/O error\n");
      case ENOMEM:
-#ifdef ENOSR
      case ENOSR:
-#endif /* ENOSR */
       error("Out of memory\n");
      case ENOTSOCK:
       fatal("reading from non-socket fd!!!\n");
@@ -227,10 +206,11 @@ void udp_sendto(INT32 args)
   else
     error("Illegal type of argument to sendto, got non-string to-address.\n");
 
-  to.sin_port = sp[1-args].u.integer;
+  to.sin_port = htons( ((u_short)sp[1-args].u.integer) );
 
+  fd = THIS->fd;
   THREADS_ALLOW();
-  while(((res = sendto(THIS->fd, sp[2-args].u.string->str, sp[2-args].u.string->len, flags,
+  while(((res = sendto( fd, sp[2-args].u.string->str, sp[2-args].u.string->len, flags,
 		       (struct sockaddr *)&to,
 		       sizeof( struct sockaddr_in )))==-1)
 	&& errno==EINTR);
@@ -245,9 +225,7 @@ void udp_sendto(INT32 args)
      case EBADF:
       error("Socket closed\n");
      case ENOMEM:
-#ifdef ENOSR
      case ENOSR:
-#endif /* ENOSR */
       error("Out of memory\n");
      case EINVAL:
      case ENOTSOCK:
@@ -261,14 +239,63 @@ void udp_sendto(INT32 args)
 }
 
 
-void zero_udp(struct object *o)
+void zero_udp()
 {
   MEMSET(THIS, 0, sizeof(struct dumudp));
 }
 
-void exit_udp(struct object *o)
+void exit_udp()
 {
-  if(THIS->fd) close(THIS->fd);
+  if(THIS->fd)
+  {
+    set_read_callback( THIS->fd, 0, 0 );
+    if (& THIS->read_callback)
+      free_svalue(& THIS->read_callback );
+    close(THIS->fd);
+  }
+}
+
+#define THIS_DATA ((struct dumudp *)data)
+
+static void udp_read_callback( int fd, void *data )
+{
+  /*  fp->current_object->refs++;
+      push_object( fp->current_object ); */
+  apply_svalue(& THIS_DATA->read_callback, 0);
+  pop_stack(); 
+  return;
+}
+
+static void udp_set_read_callback(INT32 args)
+{
+  if(FD < 0)
+    error("File is not open.\n");
+
+  if(args < 1)
+    error("Too few arguments to file->set_read_callback().\n");
+
+  if(IS_ZERO(& THIS->read_callback))
+    assign_svalue(& THIS->read_callback, sp-args);
+  else
+    assign_svalue_no_free(& THIS->read_callback, sp-args);
+
+  if(IS_ZERO(& THIS->read_callback))
+    set_read_callback(FD, 0, 0);
+  else
+    set_read_callback(FD, udp_read_callback, THIS);
+  pop_n_elems(args);
+}
+
+static void udp_set_nonblocking(INT32 args)
+{
+  if (FD < 0) error("File not open.\n");
+
+  switch(args)
+  {
+  default: pop_n_elems(args-1);
+  case 1: udp_set_read_callback(1);
+  }
+  set_nonblocking(FD,1);
 }
 
 void init_udp()
@@ -279,7 +306,13 @@ void init_udp()
   add_function("bind",udp_bind,"function(int,void|function,void|string:int)",0);
   add_function("read",udp_read,"function(int|void:mapping(string:int|string))",0);
   add_function("send",udp_sendto,"function(string,int,string,void|int:int)",0);
+  add_function( "set_nonblocking", udp_set_nonblocking,
+		"function(function(void:void):void)", 0 );
+  add_function( "set_read_callback", udp_set_read_callback,
+		"function(function(void:void):void)", 0 );
   set_init_callback(zero_udp);
   set_exit_callback(exit_udp);
+  /*  end_c_program( "/precompiled/dumUDP" )->refs++; // For pike 0.4 */
+  /* otherwise... */
   end_class("dumUDP",0);
 }
