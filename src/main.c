@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.222 2005/01/01 17:35:54 grubba Exp $
+|| $Id: main.c,v 1.223 2005/01/03 13:17:07 agehall Exp $
 */
 
 #include "global.h"
@@ -250,10 +250,12 @@ int main(int argc, char **argv)
   find_lib_dir(argc, argv);
 
 #ifdef LIBPIKE
+#ifdef HAVE_DLINIT
   if (!dlinit()) {
     fprintf(stderr, "dlinit failed.\n");
     exit(1);
   }
+#endif /* HAVE_DLINIT */
 
   if (!(libpike = dlopen(libpike_name, RTLD_NOW))) {
     const char *err = dlerror();
