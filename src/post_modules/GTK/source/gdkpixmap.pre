@@ -1,7 +1,8 @@
 PROGRAM(GdkPixmap);
 INHERIT(GdkDrawable);
 // This class creates a GDK.Pixmap from either an GDK.Image or
-// Image.image object.  <p> The GDK.Pixmap object can be used in a lot
+// Image.image object (or a numeric ID, see your X-manual for XIDs).
+// <p> The GDK.Pixmap object can be used in a lot
 // of different GTK widgets.  The most notable is the W(Pixmap)
 // widget.
 //
@@ -30,30 +31,39 @@ void pgtk__pixmap_draw( GdkImage *i )
 		  i->width, i->height);
 }
 
-FUNCTION(create, "function(object:void)")
-ARGS(object(GDK.Image)|object(Image.image));
-NAME_ARGS(image);
-// Create a new GDK.Pixmap object. 
+FUNCTION(create, "function(int|object:void)")
+ARGS(object(GDK.Image)|object(Image.image)|int);
+NAME_ARGS(image|xid);
+// Create a new GDK.Pixmap object.
 // Argument is a GDK.Image object or a Image.image object
 {
   GdkImage *i;
   int f = 0;
   struct object *o;
   pgtk_verify_setup();
-  if(THIS->obj) 
+  if(THIS->obj)
     error("Pixmap already initialized\n");
 
-  get_all_args("create", args, "%o", &o );
-  i = pgtk_pixmap_setup( o, &f );
-
-  THIS->obj = (void *)gdk_pixmap_new( 0, i->width, i->height, i->depth );
-  if(!THIS->obj) 
+  if( sp[-args].type == T_OBJECT )
   {
+    get_all_args("create", args, "%o", &o );
+    i = pgtk_pixmap_setup( o, &f );
+
+    THIS->obj = (void *)gdk_pixmap_new( 0, i->width, i->height, i->depth );
+    if(!THIS->obj)
+    {
+      if(f) gdk_image_destroy( i );
+      error("Failed to create pixmap.\n");
+    }
+    pgtk__pixmap_draw( i );
     if(f) gdk_image_destroy( i );
-    error("Failed to create pixmap.\n");
   }
-  pgtk__pixmap_draw( i );
-  if(f) gdk_image_destroy( i );
+  else if( args && sp[-1].type == T_INT )
+  {
+    THIS->obj = (void *)gdk_pixmap_foreign_new( sp[-1].u.integer );
+    if( !THIS->obj )
+      error("Failed to find remote pixmap\n");
+  }
 }
 
 FUNCTION(set, "function(object:object)");
@@ -61,7 +71,7 @@ RETURNS(GDK.Image);
 ARGS(object(GDK.Image)|object(Image.image));
 NAME_ARGS(image);
 // Argument is a GDK.Image object or an Image.image object.
-// It is much faster to use an gdkImage object, especially one 
+// It is much faster to use an gdkImage object, especially one
 // allocated in shared memory. This is only an issue if you are
 // going to change the contents of the pixmap often, toggling between
 // a small number of images.
