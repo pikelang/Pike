@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: opcodes.c,v 1.25 1998/05/20 23:08:12 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.26 1998/05/25 16:41:23 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -46,6 +46,10 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     to->type=T_INT;
     to->subtype=i ? NUMBER_UNDEFINED : 0;
     to->u.integer=i;
+    break;
+
+  case T_PROGRAM:
+    program_index_no_free(to, what->u.program, ind);
     break;
 
   case T_STRING:
