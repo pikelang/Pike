@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.80 2001/01/25 11:34:18 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.81 2001/04/19 13:39:54 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -321,6 +321,7 @@ one_more_type:
     case T_FLOAT:
     case T_STRING:
     case T_PROGRAM:
+    case T_TYPE:
     case T_MIXED:
     case T_ZERO:
     case T_VOID:
@@ -397,9 +398,15 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       break;
 
     case T_TYPE:
+      /* NOTE: Types are added to the encoded mapping AFTER they have
+       *       been encoded, to simplify decoding.
+       */
       if (data->canonic)
 	Pike_error("Canonical encoding of the type type not supported.\n");
-      Pike_error("Encoding of the type type not supported yet!\n");
+      code_entry(TAG_TYPE, 0, data);	/* Type encoding #0 */
+      encode_type(val->u.string->str, data);
+      mapping_insert(data->encoded, val, &data->counter);
+      data->counter.u.integer++;
       break;
 
     case T_FLOAT:
@@ -1162,10 +1169,18 @@ static void decode_value2(struct decode_data *data)
 
     case TAG_TYPE:
     {
-      Pike_error("Failed to decode string. "
-	    "(decode of the type type isn't supported yet).\n");
-      break;
+      struct pike_string *t;
+
+      decode_type(t, data);
+      check_type_string(t);
+      push_string(t);
+      sp[-1].type = T_TYPE;
+
+      tmp.type = T_INT;
+      tmp = data->counter;
+      data->counter.u.integer++;
     }
+    break;
 
     case TAG_ARRAY:
     {
