@@ -40,14 +40,6 @@ cond([[all_efuns()->localtime]],
 test_true(mappingp(localtime(0)))
 ]])
 
-// strerror
-cond([[all_efuns()->strerror]],
-[[
-test_do(strerror(1))
-test_true(stringp(strerror(2)||""))
-]])
-
-
 // sort
 test_equal(sort(({1,3,2,4})),({1,2,3,4}))
 test_equal(sort(({4,3,2,1})),({1,2,3,4}))
@@ -79,6 +71,23 @@ return 0;
 ]])
 
 test_any([[
+#include <getopt.h>
+return 0;
+]],0)
+
+  test_true(find_option(({"","--foo"}),"p","foo"))
+  test_eq(find_option(({"","--foo=bar"}),"p","foo",0,0),"bar")
+  test_eq(find_option(({"","--foo","bar"}),"p","foo",0,0),"bar")
+  test_eq(find_option(({"","--","--foo=bar"}),"p","foo",0,0),0)
+
+  test_true(find_option(({"","-p"}),"p","foo"))
+  test_eq(find_option(({"","-pbar"}),"p","foo",0,0),"bar")
+  test_eq(find_option(({"","-p","bar"}),"p","foo",0,0),"bar")
+  test_eq(find_option(({"","--","--p","bar"}),"p","foo",0,0),0)
+
+  test_equal(get_args(({"",0,0,"sune","--","-foo"})),({"","sune","-foo"}))
+
+test_any([[
 #include <string.h>
 return 0;
 ]],0)
@@ -89,6 +98,8 @@ return 0;
   test_do(Flurp->append("test"))
   test_eq((string)Flurp,"testtest")
   test_do(add_constant("Flurp"))
+
+  test_eq(strmult("foo",4),"foofoofoofoo")
 
 // m_delete
 test_equal(([1:1]),m_delete(a(),0))

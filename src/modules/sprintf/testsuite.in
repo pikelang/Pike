@@ -48,8 +48,12 @@ test_eq(sprintf("%'FOO'10s","BAR"),"FOOFOOFBAR")
 test_eq(sprintf("%d %<d %<d",2),"2 2 2")
 test_true(stringp(sprintf("%O",({1,2,"foo"}))))
 test_true(stringp(sprintf("%O",([1:2,"foo":"bar"]))))
+test_eq(strlen(sprintf("%@c",allocate(1000))),1000)
 
 test_eq(sprintf("test \0 \n"),"test \0 \n")
+test_eq(sprintf("test \0"),"test \0")
+test_eq(sprintf("%~*n","f",5),"fffff")
+test_eq(sprintf("%'\000'*n",5),"\000\000\000\000\000")
 
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
