@@ -4,6 +4,7 @@
 
 import .types;
 
+#if 0
 class request
 {
   string tag;
@@ -56,57 +57,350 @@ class request
     }
 #endif
 }
+#endif
 
-class easy_request
+class Parser
 {
-  inherit request;
+  object line; /* Current line */
+
+  void create(object l)
+    {
+      line = l;
+    }
+
+  /* These functions are all called directly or indirectly by the
+   * request enging in imap_server.pike. When a complete value is
+   * ready, they call a continuation function given as an argument.
+   * They all return an action mapping, saying what to do next. */
+  
+  /* First a few relatively simple functions */
+
+  /* Used when line == 0, i.e. to continue reading after a literal */
+  class line_handler
+  {
+    function process;
+    function c;
+    
+    void create(function p, function _c)
+      {
+	c = _c;
+	process = p;
+      }
+
+    mapping `()(object l)
+      {
+	line = l;
+	return process(c);
+      }
+  }
+
+  /* Value is an integer */
+  mapping get_number()
+    {
+      if (line)
+	return c(line->get_number());
+
+      return ([ "action" : "expect_line",
+		"handler" : line_handler(get_number, c) ]);
+    }
+  
+  /* Value is a string */
+  mapping get_atom(c)
+    {
+      if (line)
+	return c(line->get_atom());
+
+      return ([ "action" : "expect_line",
+		"handler" : line_handler(get_atom, c) ]);
+    }
+
+  class get_string_handler
+  {
+    function c;
+    
+    void create(function _c)
+      {
+	c = _c;
+      }
+
+    mapping `()(string l)
+      {
+	return c(s);
+      }
+  }
+
+  /* Value is a string */
+  mapping get_string(c)
+    {
+      if (line)
+      {
+	string|object s = line->get_string();
+	if (stringp(s))
+	  return c(s);
+
+	line = 0;
+	return ([ "action", "expect_literal",
+		  "length", s->length,
+		  "handler" : get_string_handler(c) ]);
+      }
+      return ([ "action" : "expect_line",
+		"handler" : line_handler(get_string, c) ]);
+    }
+
+  mapping get_astring(c)
+    {
+      if (line)
+      {
+	string|object s = line->get_astring();
+	if (stringp(s))
+	  return c(s);
+
+	line = 0;
+	return ([ "action", "expect_literal",
+		  "length", s->length,
+		  "handler" : get_string_handler(c) ]);
+      }
+      return ([ "action" : "expect_line",
+		"handler" : line_handler(get_astring, c) ]);
+    }
+
+  /* VAlue is a set object */
+  mapping get_set
+    {
+      if (line)
+	return c(line->get_set());
+
+      return ([ "action" : "expect_line",
+		"handler" : line_handler(get_set, c) ]);
+    }
+  
+  /* The values produced by these functions are mappings, all of which
+   * includes a type field. */
+
+  class handle_literal
+  {
+    function handler;
+  
+    void create(function h)
+      {
+	handler = h;
+      }
+    mixed `()(string s)
+      {
+	return handler( ([ "type" : "string", "string" : s ]) );
+      }
+  }
+
+  /* The function c is called with the resulting mapping and the
+   * optional arguments. */
+  
+  class handle_list
+  {
+    function c;
+  
+    void create(function _c)
+      {
+	c = _c;
+      }
+
+    mixed `()(array l)
+      {
+	return c( ([ "type" : "list", "list" : l ]) );
+      }
+  }
+
+  class collect_list
+  {
+    array l = ({ });
+
+    int max_depth;
+    int eol;
+
+    function c;
+
+    void create(int _max_depth, int _eol, function _c)
+      {
+	max_depth = _max_depth;
+	eol = _eol;
+	c = _c;
+      }
+    
+    mapping append(mapping value)
+      {
+	if (value->eol)
+	  return c(l);
+	l += ({ value });
+
+	return collect();
+      }
+    
+    mapping collect()
+      {
+	return get_any(max_depth, eol, append);
+      }
+  }
+
+  /* Atoms with an option list */
+  class handle_options
+  {
+    function c;
+    mapping value;
+    
+    void create(mapping v, function _c)
+      {
+	value = v;
+	c = _c;
+      }
+
+    mixed `()(array l)
+      {
+	value->options = l;
+	/* line cannot be NULL, as the last token parsed is always ']',
+	 * not a literal */
+	return c(line->get_range(value));
+      }
+  }
+
+  mapping get_any(int max_depth, int eol, object io,
+		  function c)
+    {
+      mapping t = line->get_token(eol);
+
+      if (!t)
+	return c(t);
+  
+      switch(t->type)
+      {
+      case "atom":
+      case "string":
+      case "eol":
+	return c(t);
+      case "literal":
+	return ([ "action" : "expect_literal",
+		  "length" : t->length,
+		  "handler": handle_literal(c) ]);
+      case "atom_options":
+	if (max_depth > 0)
+	  return collect_list(max_depth - 1, ']', handle_options(t, c))->collect();
+	else return 0;
+      case "list":
+	return collect_list(max_depth - 1, ')', handle_list(c))->collect();
+      default:
+	throw( ({ "IMAP: Internal error!\n", backtrace() }) );
+      }
+    }
+}
+  
+class Request
+{
+  string tag;
+  object parser;
+  object io;
+  object server;
+  object session;
+  
+  void create(string t, object l)
+    {
+      tag = t;
+      parser = Parser(line);
+
+      args = allocate(sizeof(arg_info));
+      argc = 0;
+    }
 
   constant arg_info = ({ });
 
+  string easy_process(object|mapping session, object server,
+		      function send, mixed ... args);
+  
   array args;
   int argc;
 
-  string expects;
-  int expected_length;
-  
-  string easy_process(object|mapping session, object server,
-		      function send, mixed ... args)
-    { return "foo"; }
-
-  string process_literal(object|mapping session, object server,
-			 string literal, function send)
+  string process_literal(string literal, object|mapping session, object server,
+			 object io)
     {
-#if 0
-      if ( (arg_info[argc][0] == "mailbox")
-	   && (lower_case(literal) == "inbox") )
-	literal = "INBOX";
-#endif   
       args[argc++] = literal;
       if (argc == sizeof(args))
 	return easy_process(session, server, send, @args);
       else
+	return ([ "action" : "expect_line",
+		  "handler" : process_line ]);
+    }
+
+  string process_line(object l, object|mapping session, object server,
+		      object io)
+    {
+      line = l;
+      return process(session, server, io);
+    }
+
+  string get_literal(object io)
+    {
+      io->send_imap("+", ( (sizeof(arg_info[argc]) > 1)
+			   ? arg_info[argc][1] : "Ready") );
+      return ([ "action" : "expect_literal",
+		"length" : args[argc]->length,
+		"handler": process_literal,
+      ]);
+    }
+  
+  mapping process(object|mapping s, object db, object o)
+    {
+      session = s;
+      server = db;
+      io = o;
+
+      return collect_args();
+    }
+
+  mapping append_number(int i)
+    {
+      if (i<0)
+	return ([ "action" : "bad",
+		  "msg" : "Invalid number" ]);
+
+      args[argc++] = i;
+      return collect_args();
+    }
+
+  mapping append_arg(mixed o)
+    {
+      if (!o)
+	return ([ "action" : "bad",
+		  "msg" : "Invalid or missing argument" ]);
+
+      args[argc++] = o;
+      return collect_args();
+    }
+  
+  mapping collect_args
+    {
+      if (argc == sizeof(args))
+	return easy_process(@args);	
+
+      switch(arg_info[argc][0])
       {
-	expects = "line";
-	return "progress";
+      case "number":
+	return parser->get_number(append_number);
+	
+      case "string":
+	return parser->get_astring(append_arg);
+
+      case "astring":
+	return parser->get_astring(append_arg);
+      case "set":
+	return parser->get_set(append_arg);
+      case "any":
+	/* A single atom or string or a list of atoms (with
+	 * options), lists. Used for fetch. */
+	return parser->get_any(append_arg);
+      default:
+	throw( ({ sprintf("IMAP.requests: Unknown argument type %O\n",
+			  arg_info[argc]), backtrace() }) );
       }
     }
 
-  string process_line(object|mapping session, object server,
-		      object l, function send)
-    {
-      line = l;
-      return process(session, server, send);
-    }
-
-  string request_literal(function send)
-    {
-      send("+", ( (sizeof(arg_info[argc]) > 1)
-		  ? arg_info[argc][1] : "Ready") );
-      expects = "literal";
-      expected_length = args[argc]->length;
-      return "progress";
-    }
-  
+#if 0
   string process(object|mapping session, object server, function send)
     {
       while(argc < sizeof(args))
@@ -164,7 +458,7 @@ class easy_request
       }
       return easy_process(session, server, send, @args);
     }
-  
+#endif
   void create(string tag, object line)
     {
       ::create(tag, line);
