@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.24 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: matrix.c,v 1.25 2000/08/06 17:05:53 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.24 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: matrix.c,v 1.25 2000/08/06 17:05:53 grubba Exp $
 **! class Image
 */
 
@@ -649,7 +649,7 @@ void image_mirrory(INT32 args)
 }
 
 
-#define ROUND(X) ((unsigned char)((X)+0.5))
+#define ROUND(X) (DOUBLE_TO_COLOR((X)+0.5))
 
 static void img_skewx(struct image *src,
 		      struct image *dest,
