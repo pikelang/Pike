@@ -3,7 +3,7 @@
 
 // Implemented by Johan Sundström and Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: URI.pike,v 1.7 2001/01/26 14:54:31 jhs Exp $
+// $Id: URI.pike,v 1.8 2001/01/30 22:04:40 jhs Exp $
 
 #pragma strict_types
 
@@ -30,8 +30,13 @@ string host, user, password;
 int port;
 
 //! The base URI object, if present
-object(this_program) base_uri; 
+object(this_program) base_uri;
 
+// URI hacker docs:
+// This string is the raw uri the object was instantiated from in the
+// first place. We save it here for the sole purpose of being able to
+// replace the base URI, hence also needing to reresolve all of our
+// properties with respect to that change.
 string raw_uri;
 
 #define error(S) throw( ({ (S), backtrace() }) )
@@ -43,7 +48,7 @@ string raw_uri;
 
 // Parse authority component (according to RFC 1738, § 3.1)
 static void parse_authority()
-{ 
+{
   if(sscanf(authority, "%[^@]@%s", string auth, authority) == 2)
   {
     sscanf(auth, "%[^:]:%s", user, password); // auth info present
@@ -55,10 +60,9 @@ static void parse_authority()
   DEBUG("parse_authority(): host=%O, port=%O", host, port);
 }
 
-
 // Inherit all properties except raw_uri and base_uri from the URI uri. :-)
 static void inherit_properties(object(this_program) uri)
-{ 
+{
   authority = uri->authority;
   scheme = uri->scheme;
   user = uri->user; password = uri->password;
@@ -80,7 +84,7 @@ int `==(mixed something)
 string combine_uri_path(string base, string rel)
 {
   string buf;
-  
+
   // RFC 2396, §5.2.6:
   // a) All but the last segment of the base URI's path component is
   //    copied to the buffer.  In other words, any characters after the
@@ -90,19 +94,19 @@ string combine_uri_path(string base, string rel)
     buf=segments[..sizeof(segments)-2]*"/"+"/";
   else
     buf=base;
-  
+
   // b) The reference's path component is appended to the buffer string.
   buf+=rel;
   segments = buf / "/";
-  
+
   // c) All occurrences of "./", where "." is a complete path segment,
   //    are removed from the buffer string.
   for(int i=0; i<sizeof(segments)-1; i++)
     if(segments[i]==".")
       segments[i]=0;
-	  
-  segments -= ({0}); 
-  
+
+  segments -= ({ 0 });
+
   // d) If the buffer string ends with "." as a complete path segment,
   //    that "." is removed.
   if(segments[-1]==".")
@@ -157,11 +161,11 @@ string combine_uri_path(string base, string rel)
 //! The resolving is performed according to the guidelines
 //! outlined by RFC 2396, Uniform Resource Identifiers (URI): Generic Syntax.
 //! @param base_uri
-//!   Set the new base URI to this.  
+//!   Set the new base URI to this.
 void reparse_uri(object(this_program)|string|void base_uri)
 {
   string uri = raw_uri;
-  
+
   if(stringp(base_uri))
   {
     DEBUG("cloning base URI %O", base_uri);
@@ -174,31 +178,30 @@ void reparse_uri(object(this_program)|string|void base_uri)
   // 1) The URI reference is parsed into the potential four components and
   //    fragment identifier, as described in Section 4.3.
 
-
   // 2) If the path component is empty and the scheme, authority, and
   //    query components are undefined, then it is a reference to the
   //    current document and we are done.  Otherwise, the reference URI's
   //    query and fragment components are defined as found (or not found)
   //    within the URI reference and not inherited from the base URI.
   //    (Doing this at once saves us some useless parsing efforts.)
-  if(!raw_uri || raw_uri == "")
-  { 
+  if(!uri || uri == "")
+  {
     DEBUG("Path is empty -- Inherit entire base URI "
 	  "as per RFC 2396, §5.2 step 2. Done!");
     inherit_properties(local::base_uri);
     return;
   }
 
-  if(raw_uri[0] == '#')
-  { 
+  if(uri[0] == '#')
+  {
     DEBUG("Fragment only. Using entire base URI, except fragment.");
     inherit_properties(local::base_uri);
-    fragment=raw_uri[1..];
+    fragment = uri[1..];
     return;
   }
-  
+
   // Parse fragment identifier
-  sscanf(uri, "%s#%s", uri, fragment);     
+  sscanf(uri, "%s#%s", uri, fragment);
   DEBUG("Found fragment %O", fragment);
 
   // Parse scheme
@@ -211,7 +214,7 @@ void reparse_uri(object(this_program)|string|void base_uri)
   DEBUG("Found scheme %O", scheme);
 
   // Parse authority/login
-  if(sscanf(uri, "//%[^/]%s", authority, uri))		
+  if(sscanf(uri, "//%[^/]%s", authority, uri))
   {
     DEBUG("Found authority %O", authority);
   }
@@ -221,7 +224,7 @@ void reparse_uri(object(this_program)|string|void base_uri)
   DEBUG("Found query %O", query);
 
   // Parse path:
-  path = uri;						
+  path = uri;
   DEBUG("Found path %O", path);
 
   // 3) If the scheme component is defined, indicating that the reference
@@ -229,27 +232,27 @@ void reparse_uri(object(this_program)|string|void base_uri)
   //    absolute URI and we are done.  Otherwise, the reference URI's
   //    scheme is inherited from the base URI's scheme component.
   if(scheme)
-  {					
+  {
     if(authority)
       parse_authority();
 
     DEBUG("Scheme found! RFC 2396, §5.2, step 3 "
 	  "says we're absolute. Done!");
-    return;		
+    return;
   }
-  scheme = local::base_uri->scheme;			
+  scheme = local::base_uri->scheme;
   DEBUG("Inherited scheme %O from base URI", scheme);
 
   if(authority)
     parse_authority();
 
-  
+
   // 4) If the authority component is defined, then the reference is a
   //	network-path and we skip to step 7.  Otherwise, the reference
   //	URI's authority is inherited from the base URI's authority
   //	component, which will also be undefined if the URI scheme does not
   //	use an authority component.
-  if(!authority || !sizeof(authority))			
+  if(!authority || !sizeof(authority))
   {
     authority = local::base_uri->authority;
     DEBUG("Inherited authority %O from base URI", authority);
@@ -268,8 +271,8 @@ void reparse_uri(object(this_program)|string|void base_uri)
       DEBUG("Combining base path %O with path %O => %O",
 	    local::base_uri->path, path,
 	    combine_uri_path(local::base_uri->path, path));
-      path = combine_uri_path(local::base_uri->path, path); 
-      
+      path = combine_uri_path(local::base_uri->path, path);
+
     }
   }
 
@@ -304,7 +307,7 @@ void create(object(this_program)|string uri,
     raw_uri = uri->raw_uri;
     inherit_properties([object(this_program)]uri);
   }
-  
+
   reparse_uri(base_uri);
 }
 
@@ -376,7 +379,7 @@ string _sprintf(int how, mapping|void args)
       if(_scheme) _scheme = lower_case(_scheme);
     case 's':
     case 'O':
-      getstring = (path||"") + 
+      getstring = (path||"") +
 	          (query ? "?" + query : "");
       look = _scheme + ":" + (authority
 			      ? "//" + (user
