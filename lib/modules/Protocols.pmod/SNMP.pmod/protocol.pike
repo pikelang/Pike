@@ -1,19 +1,23 @@
 #pike __REAL_VERSION__
 
-//: SNMP protocol implementation for Pike
 //:
 //: Honza Petrous, 2000-10-07 (on the 'coding party' after user conference :)
-//:
-//: RFC:
-//:  implemented (yet):
-//:      1155-7 : v1
-//:      1901-4 : v2/community (Bulk ops aren't implemented!)
-//:  planned:
-//	 2742   : agentX
-//:      2570   : v3 description
-//:
+//! SNMP protocol implementation for Pike
+//!
+//! RFCs:
+//!
+//!  implemented (yet):
+//!      1155-7 : v1
+//!
+//!      1901-4 : v2/community (Bulk ops aren't implemented!)
+//!
+//!  planned:
+//!	 2742   : agentX
+//!
+//!      2570   : v3 description
+//!
 
-// $Id: protocol.pike,v 1.5 2002/11/30 21:25:12 bill Exp $
+// $Id: protocol.pike,v 1.6 2002/11/30 22:33:51 bill Exp $
 
 
 #include "snmp_globals.h"
@@ -170,8 +174,17 @@ string local_host = SNMP_DEFAULT_HOST;
 string remote_host;
 int request_id = 1;
 int next_id = 1;
+
+//! SNMP version
+//! 
+//! currently version 1 and 2 are supported.
 int snmp_version = SNMP_DEFAULT_VERSION;
+
+//! SNMP community string
+//!
+//! should be set to the appropriate SNMP community before sending a request.
 string snmp_community = SNMP_DEFAULT_COMMUNITY;
+
 int snmp_errno = SNMP_SUCCESS;
 int ok;
 
@@ -554,6 +567,14 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
 //!   remote address an UDP port to send request to (optional)
 //! @returns
 //!   request ID
+//!
+//! @example
+//!   // set the value of 1.3.6.1.4.1.1882.2.1 to "blah".
+//!   object s=Protocols.SNMP.protocol();
+//!   s->snmp_community="mysetcommunity";
+//!   mapping req=(["1.3.6.1.4.1.1882.2.1": ({"string", "blah"})]);
+//!   int id=s->set_request(req, "172.21.124.32");
+//!   
 int set_request(mapping varlist, string|void rem_addr,
                          int|void rem_port) {
   //: SetRequest-PDU low call

@@ -1,5 +1,5 @@
 // Compatibility module
-// $Id: __default.pmod,v 1.11 2002/11/29 23:04:51 nilsson Exp $
+// $Id: __default.pmod,v 1.12 2002/11/30 22:33:51 bill Exp $
 
 #pike 7.3
 
@@ -31,6 +31,7 @@ void sleep(float|int t, void|int abort)
   delay(t, abort);
 }
 
+#if constant(Yp.default_domain)
 //!   Get the default YP domain (Pike 7.2 compatibility).
 //!   This function was removed in Pike 7.3, use
 //!   @[Yp.default_domain()] instead.
@@ -39,7 +40,6 @@ void sleep(float|int t, void|int abort)
 //!
 //! @seealso
 //!   @[YP.default_domain()]
-#if constant(Yp.default_domain)
 string default_yp_domain() {
   return Yp.default_domain();
 }
