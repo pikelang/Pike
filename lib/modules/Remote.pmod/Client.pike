@@ -19,10 +19,11 @@ void client_close_callback()
   if (close_callback) close_callback();
 }
 
-void create(string host, int port, void|int nice, int ...timeout)
+void create(string host, int port, void|int nice,
+	    void|int timeout, void|int max_call_threads)
 {
-  con = Connection(nice);
-  if(!con->connect(host, port, @timeout))
+  con = Connection(nice, max_call_threads);
+  if(!con->connect(host, port, timeout))
     error("Could not connect to server");
   connected = 1;
   con->closed = 0;

@@ -1,14 +1,12 @@
 #include "remote.h"
 
-#define MAX_CALL_THREADS 4
-
 #ifdef REMOTE_DEBUG
 private static int _debug_conn_nr;
 #undef DEBUGMSG
 #define DEBUGMSG(X) werror("<" + _debug_conn_nr + "> " + (X))
 #endif
 
-int closed, want_close, outstanding_calls, do_calls_async;
+int closed, want_close, outstanding_calls, do_calls_async, max_call_threads;
 object con;
 object ctx;
 array(function) close_callbacks = ({ });
@@ -17,17 +15,19 @@ int nice; // don't throw from call_sync
 
 // - create
 
-void create(void|int _nice)
+void create(void|int _nice, void|int _max_call_threads)
 {
    nice=_nice;
-   call_out( lambda(){ do_calls_async=1; }, 0.1 ); // :-)
+   max_call_threads = _max_call_threads;
+   if (!max_call_threads)
+     call_out( lambda(){ do_calls_async=1; }, 0.1 ); // :-)
 }
 
 // - connect
 //
 // This function is called by clients to connect to a server.
 //
-int connect(string host, int port, int ... timeout)
+int connect(string host, int port, void|int timeout)
 {
 #ifdef REMOTE_DEBUG
   _debug_conn_nr = all_constants()->Remote_debug_conn_nr;
@@ -35,7 +35,7 @@ int connect(string host, int port, int ... timeout)
 #endif
 
   string s, sv;
-  int end_time=time()+(sizeof(timeout)?(timeout[0]||1):60);
+  int end_time=time()+(timeout||60);
 
   if (closed)
     error("Can't reopen a closed connection");
@@ -171,7 +171,7 @@ void try_close()
 #if constant(thread_create)
       rlock = 0;
 #endif
-      closed_connection();
+      catch (closed_connection());
     }
   }
   else
@@ -287,6 +287,7 @@ void return_value(int refno, mixed val)
 
 void do_call (array data)
 {
+  outstanding_calls++;
   int refno = data[4];
   object|function f = ctx->decode_call(data);
   array args = ctx->decode(data[3]);
@@ -313,6 +314,7 @@ void do_call (array data)
 	  return_error(refno, e);
 	}
     }
+  outstanding_calls--;
 }
 
 void handshake(int ignore, string s)
@@ -364,19 +366,22 @@ void read_some(int ignore, string s)
      case CTX_CALL_SYNC:
      case CTX_CALL_ASYNC:
 #if constant(thread_create)
-       if( do_calls_async )
-         call_out( do_call, 0, data);
-       else 
-       {
-         if (outstanding_calls >= call_threads && 
-             call_threads < MAX_CALL_THREADS)
-           thread_create(call_thread);
-         calls->write(data);
+       if (max_call_threads) {
+	 if (outstanding_calls >= call_threads && call_threads < max_call_threads)
+	   call_threads++, thread_create(call_thread);
+	 calls->write(data);
+       }
+       else {
+	 if( do_calls_async )
+	   call_out( do_call, 0, data);
+	 else
+	 {
+	   if (!call_threads) call_threads++, thread_create(call_thread);
+	   calls->write(data);
+	 }
        }
 #else
-       outstanding_calls++;
        do_call(data);
-       outstanding_calls--;
 #endif
        break;
 
@@ -455,18 +460,15 @@ void server_read_thread()
 
 void call_thread()
 {
-  call_threads++;
-  DEBUGMSG("call_thread " + call_threads + "\n");
+  DEBUGMSG("call_thread\n");
   while (!closed) {
     array data = calls->read();
     if (!data) try_close();
     else {
-      outstanding_calls++;
       if( do_calls_async )
-        call_out( do_call, 0,data);
+	call_out( do_call, 0,data);
       else
-        do_call( data );
-      outstanding_calls--;
+	do_call( data );
     }
   }
   calls->write(0);

@@ -5,6 +5,7 @@ int portno;
 object port;
 array connections = ({ });
 object sctx;
+int max_call_threads;
 
 class Minicontext
 {
@@ -36,7 +37,7 @@ class Minicontext
 void got_connection(object f)
 {
   object c = f->accept();
-  object con = Connection();
+  object con = Connection(0, max_call_threads);
   object ctx = Context(gethostname()+"-"+portno);
   if (!c)
     error("accept failed");
@@ -45,9 +46,10 @@ void got_connection(object f)
   connections += ({ con });
 }
 
-void create(string host, int p)
+void create(string host, int p, void|int _max_call_threads)
 {
   portno = p;
+  max_call_threads = _max_call_threads;
   port = Stdio.Port();
   port->set_id(port);
   if(host)
