@@ -14,7 +14,7 @@ int main(int argc, string *argv)
     argv[0]="install-sh";
     if(getenv("NT_DEBUG"))
       werror("%O\n",argv);
-    exece(argv[0],argv[1..]);
+    Process.exec(argv[0],argv[1..]);
     exit(69);
   }
 }
