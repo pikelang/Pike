@@ -177,7 +177,9 @@
 #undef HAVE_MEMCPY
 
 /* Define if you have memmove.  */
+#ifndef __CHECKER__
 #undef HAVE_MEMMOVE
+#endif
 
 /* Define if you have memmem.  */
 #undef HAVE_MEMMEM
@@ -206,7 +208,7 @@
 /* Define if you have sigvec */
 #undef HAVE_SIGVEC
 
-/* Define if you have sigvec */
+/* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
 
 /* Define if you have setrlimit */

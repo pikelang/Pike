@@ -13,7 +13,7 @@ This is what you need to do to install uLPC:
 3) Run make.
 
 4) optionally, run 'make verify' to check that the compiled driver works
-   as it should (might be a good idea) This can take a little time and use
+   as it should (might be a good idea) This will take a little time and use
    quite a lot of memory, because the testprogram is quite large. If everything
    works out fine no extra messages are written.
 
@@ -22,28 +22,35 @@ This is what you need to do to install uLPC:
 What to do when it doesn't work:
 1) Try again.
 
-2) ./configure relies heavily on sed, if you have several sed in your path
+2) Your sh might be too buggy to run ./configure. (This is the case on A/UX)
+   Try using bash, zsh or possibly ksh. To use bash, first run /bin/sh and
+   type:
+   $ CONFIG_SHELL=full_path_for_bash
+   $ export CONFIG_SHELL
+   $ $CONFIG_SHELL ./configure
+
+3) ./configure relies heavily on sed, if you have several sed in your path
    try another sed. (preferably gnu sed)
 
-3) configure might have done something wrong, check machine.h and report
+4) configure might have done something wrong, check machine.h and report
    any errors back to me.
 
-4) Try a different compiler, malloc, compiler-compiler and/or make.
+5) Try a different compiler, malloc, compiler-compiler and/or make.
    (if you have any other)
 
-5) Don't use gnu 'ar' on Solaris machines, usr /usr/ccs/bin/ar instead.
-
-6) On Linux Slackware machines, uLPC sometimes fails to find -lm, this
-   is because of a bug in /usr/lib/libm.sa (or possibly libg.a) in slackware.
+6) On Linux Slackware machines (older than slackware 3.0), uLPC sometimes
+   fails to find -lm, this is because of a bug in /usr/lib/libm.sa
+   (or possibly libg.a) in slackware.
    Compile with 'make EXTRALIBS="-lc -lm"' to get around this bug.
 
 7)
 If you find a bug in the interpreter, the first thing to do is to make sure
 the interpreter is compiled with DEBUG defined. If not recompile with DEBUG
 and see if you get another error. When you've done this, please report the
-bug to hubbe@lysator.liu.se and include the following:
+bug to hubbe@lysator.liu.se and include as much as you can muster of the
+following:
 
-  o The version of the driver.
+  o The version of the driver. (can be found in lib/simulate.lpc)
   o What kind of system hardware/software you use (OS, compiler, etc.)
   o the piece of code that crashes or bugs.
     (preferably in a very small lpc-script with the bug isolated)

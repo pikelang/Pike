@@ -59,6 +59,7 @@ define(TESTNO,0)
 
 test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
+test_eq("\377"[0],255)
 test_do(add_efun("foo",clone(class {int i;})))
 test_eq(foo->i,0)
 test_do(foo->i=17)

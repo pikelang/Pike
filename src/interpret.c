@@ -512,6 +512,7 @@ static void eval_instruction(unsigned char *pc)
       {
 	struct svalue s;
 	s.type=T_INT;
+	s.subtype=0;
 	s.u.integer=0;
 	assign_lvalue(sp-3,&s);
       }

@@ -52,7 +52,25 @@ fi
 CFLAGS="$OLD_CFLAGS"
 
 if test "$GCC" = "yes"; then
-  WARN="-g -pipe -W -Wunused -Wformat"
+  WARN="-g -W -Wunused -Wformat"
+
+  AC_MSG_CHECKING(-pipe)
+  AC_CACHE_VAL(lpc_cv_option_pipe,
+  [
+    CFLAGS="$OLD_CFLAGS -pipe"
+    AC_TRY_LINK([],[ exit(0); ],lpc_cv_option_pipe=yes,lpc_cv_option_pipe=no)
+  ])
+
+  if test "$lpc_cv_option_pipe" = "yes" ; then
+    CFLAGS="$OLD_CFLAGS -pipe"
+    OPTIMIZE="$OPTIMIZE -pipe"
+    AC_MSG_RESULT(-pipe found)
+  else
+    AC_MSG_RESULT(-pipe not found)
+    CFLAGS="$OLD_CFLAGS"
+  fi
+
+
 else
   WARN=""
 #
@@ -134,6 +152,10 @@ AC_CHECK_TYPE(time_t,INT32)
 
 AC_CHECK_LIB(PW, alloca)
 AC_CHECK_LIB(m, floor)
+if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
+  AC_MSG_WARN(I will compensate for this by adding -lc -lm)
+  LIBS="${LIBS} -lc -lm"
+fi
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(crypt, crypt)
 if test "$ac_cv_lib_socket" = yes -o "$ac_cv_lib_ucb"; then
@@ -452,7 +474,7 @@ fi
 
 
 AC_MSG_CHECKING(if signals are oneshot or not)
-AC_CACHE_VAL(lpc_sys_signal_oneshot,
+AC_CACHE_VAL(lpc_cv_sys_signal_oneshot,
 [
 AC_TRY_RUN([
 #include <signal.h>
@@ -497,10 +519,9 @@ int main()
   sigrun=0;
   exit(0);
 }
-],lpc_sys_signal_oneshot=no,
-lpc_sys_signal_oneshot=yes)])
+],lpc_cv_sys_signal_oneshot=no,lpc_cv_sys_signal_oneshot=yes)])
 
-if test "$lpc_sys_signal_oneshot" = yes; then
+if test "$lpc_cv_sys_signal_oneshot" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(SIGNAL_ONESHOT)
 else

@@ -568,7 +568,46 @@ fi
 CFLAGS="$OLD_CFLAGS"
 
 if test "$GCC" = "yes"; then
-  WARN="-g -pipe -W -Wunused -Wformat"
+  WARN="-g -W -Wunused -Wformat"
+
+  echo $ac_n "checking -pipe""... $ac_c" 1>&6
+  if eval "test \"`echo '$''{'lpc_cv_option_pipe'+set}'`\" = set"; then
+  echo $ac_n "(cached) $ac_c" 1>&6
+else
+  
+    CFLAGS="$OLD_CFLAGS -pipe"
+    cat > conftest.$ac_ext <<EOF
+#line 581 "configure"
+#include "confdefs.h"
+
+int main() { return 0; }
+int t() {
+ exit(0); 
+; return 0; }
+EOF
+if eval $ac_link; then
+  rm -rf conftest*
+  lpc_cv_option_pipe=yes
+else
+  rm -rf conftest*
+  lpc_cv_option_pipe=no
+fi
+rm -f conftest*
+
+  
+fi
+
+
+  if test "$lpc_cv_option_pipe" = "yes" ; then
+    CFLAGS="$OLD_CFLAGS -pipe"
+    OPTIMIZE="$OPTIMIZE -pipe"
+    echo "$ac_t""-pipe found" 1>&6
+  else
+    echo "$ac_t""-pipe not found" 1>&6
+    CFLAGS="$OLD_CFLAGS"
+  fi
+
+
 else
   WARN=""
 #
@@ -578,7 +617,7 @@ else
     OLD_CC="${CC-cc}"
     CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
     cat > conftest.$ac_ext <<EOF
-#line 582 "configure"
+#line 621 "configure"
 #include "confdefs.h"
 int foo(int bar);
 int main() { return 0; }
@@ -603,7 +642,7 @@ if eval "test \"`echo '$''{'lpc_cv_sys_ansi_prototypes'+set}'`\" = set"; then
 else
   
   cat > conftest.$ac_ext <<EOF
-#line 607 "configure"
+#line 646 "configure"
 #include "confdefs.h"
 int foo(int bar);
 int main() { return 0; }
@@ -751,7 +790,7 @@ else
   # On the NeXT, cc -E runs the code through the compiler's parser,
   # not just through cpp.
   cat > conftest.$ac_ext <<EOF
-#line 755 "configure"
+#line 794 "configure"
 #include "confdefs.h"
 #include <assert.h>
 Syntax Error
@@ -765,7 +804,7 @@ else
   rm -rf conftest*
   CPP="${CC-cc} -E -traditional-cpp"
   cat > conftest.$ac_ext <<EOF
-#line 769 "configure"
+#line 808 "configure"
 #include "confdefs.h"
 #include <assert.h>
 Syntax Error
@@ -889,7 +928,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 893 "configure"
+#line 932 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
@@ -926,7 +965,7 @@ else
   ac_cv_c_cross=yes
 else
 cat > conftest.$ac_ext <<EOF
-#line 930 "configure"
+#line 969 "configure"
 #include "confdefs.h"
 main(){return(0);}
 EOF
@@ -947,7 +986,7 @@ if eval "test \"`echo '$''{'ac_cv_header_stdc'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 951 "configure"
+#line 990 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
 #include <stdarg.h>
@@ -969,7 +1008,7 @@ rm -f conftest*
 if test $ac_cv_header_stdc = yes; then
   # SunOS 4.x string.h does not declare mem*, contrary to ANSI.
 cat > conftest.$ac_ext <<EOF
-#line 973 "configure"
+#line 1012 "configure"
 #include "confdefs.h"
 #include <string.h>
 EOF
@@ -987,7 +1026,7 @@ fi
 if test $ac_cv_header_stdc = yes; then
   # ISC 2.0.2 stdlib.h does not declare free, contrary to ANSI.
 cat > conftest.$ac_ext <<EOF
-#line 991 "configure"
+#line 1030 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
 EOF
@@ -1008,7 +1047,7 @@ if test "$cross_compiling" = yes; then
   ac_cv_header_stdc=no
 else
 cat > conftest.$ac_ext <<EOF
-#line 1012 "configure"
+#line 1051 "configure"
 #include "confdefs.h"
 #include <ctype.h>
 #define ISLOWER(c) ('a' <= (c) && (c) <= 'z')
@@ -1046,7 +1085,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 1050 "configure"
+#line 1089 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -1080,7 +1119,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 1084 "configure"
+#line 1123 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -1114,7 +1153,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 1118 "configure"
+#line 1157 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -1148,7 +1187,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 1152 "configure"
+#line 1191 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -1182,7 +1221,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 1186 "configure"
+#line 1225 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -1216,7 +1255,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 1220 "configure"
+#line 1259 "configure"
 #include "confdefs.h"
 #include <stdio.h>
 main()
@@ -1248,7 +1287,7 @@ if eval "test \"`echo '$''{'ac_cv_type_size_t'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1252 "configure"
+#line 1291 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #if STDC_HEADERS
@@ -1279,7 +1318,7 @@ if eval "test \"`echo '$''{'ac_cv_type_pid_t'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1283 "configure"
+#line 1322 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #if STDC_HEADERS
@@ -1310,7 +1349,7 @@ if eval "test \"`echo '$''{'ac_cv_type_uid_t'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1314 "configure"
+#line 1353 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 EOF
@@ -1342,7 +1381,7 @@ if eval "test \"`echo '$''{'ac_cv_type_signal'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1346 "configure"
+#line 1385 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #include <signal.h>
@@ -1379,7 +1418,7 @@ if eval "test \"`echo '$''{'ac_cv_type_time_t'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1383 "configure"
+#line 1422 "configure"
 #include "confdefs.h"
 #include <sys/types.h>
 #if STDC_HEADERS
@@ -1413,7 +1452,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lPW  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1417 "configure"
+#line 1456 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1452,7 +1491,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lm  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1456 "configure"
+#line 1495 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1484,6 +1523,10 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
+if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
+  echo "configure: warning: I will compensate for this by adding -lc -lm" 1>&2
+  LIBS="${LIBS} -lc -lm"
+fi
 echo $ac_n "checking for -lsocket""... $ac_c" 1>&6
 if eval "test \"`echo '$''{'ac_cv_lib_socket'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -1491,7 +1534,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsocket  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1495 "configure"
+#line 1538 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1530,7 +1573,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lcrypt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1534 "configure"
+#line 1577 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1570,7 +1613,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lnsl  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 1574 "configure"
+#line 1617 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -1615,7 +1658,7 @@ else
   ac_cv_func_memcmp=no
 else
 cat > conftest.$ac_ext <<EOF
-#line 1619 "configure"
+#line 1662 "configure"
 #include "confdefs.h"
 
 main()
@@ -1684,7 +1727,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1688 "configure"
+#line 1731 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -1741,7 +1784,7 @@ else
    for a in string.h unistd.h stdlib.h
    do
      cat > conftest.$ac_ext <<EOF
-#line 1745 "configure"
+#line 1788 "configure"
 #include "confdefs.h"
 #include <$a>
 EOF
@@ -1774,7 +1817,7 @@ else
    for a in memory.h unistd.h stdlib.h
    do
      cat > conftest.$ac_ext <<EOF
-#line 1778 "configure"
+#line 1821 "configure"
 #include "confdefs.h"
 #include <$a>
 EOF
@@ -1807,7 +1850,7 @@ else
    for a in sys/socket.h sys/socketvar.h sys/socketio.h
    do
      cat > conftest.$ac_ext <<EOF
-#line 1811 "configure"
+#line 1854 "configure"
 #include "confdefs.h"
 #include <$a>
 EOF
@@ -1840,7 +1883,7 @@ else
    for a in stdio.h unistd.h
    do
      cat > conftest.$ac_ext <<EOF
-#line 1844 "configure"
+#line 1887 "configure"
 #include "confdefs.h"
 #include <$a>
 EOF
@@ -1873,7 +1916,7 @@ else
    for a in unistd.h stdlib.h
    do
      cat > conftest.$ac_ext <<EOF
-#line 1877 "configure"
+#line 1920 "configure"
 #include "confdefs.h"
 #include <$a>
 EOF
@@ -1906,7 +1949,7 @@ else
    for a in unistd.h
    do
      cat > conftest.$ac_ext <<EOF
-#line 1910 "configure"
+#line 1953 "configure"
 #include "confdefs.h"
 #include <$a>
 EOF
@@ -1935,7 +1978,7 @@ if eval "test \"`echo '$''{'lpc_cv_sys_free_return'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 1939 "configure"
+#line 1982 "configure"
 #include "confdefs.h"
 
 #ifdef HAVE_STDLIB_H
@@ -1988,7 +2031,7 @@ if eval "test \"`echo '$''{'lpc_cv_sys_malloc_return'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 1992 "configure"
+#line 2035 "configure"
 #include "confdefs.h"
 
 #include <sys/types.h>
@@ -2048,7 +2091,7 @@ if eval "test \"`echo '$''{'ac_cv_header_alloca_h'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2052 "configure"
+#line 2095 "configure"
 #include "confdefs.h"
 #include <alloca.h>
 int main() { return 0; }
@@ -2079,7 +2122,7 @@ if eval "test \"`echo '$''{'ac_cv_func_alloca'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2083 "configure"
+#line 2126 "configure"
 #include "confdefs.h"
 
 #ifdef __GNUC__
@@ -2137,7 +2180,7 @@ if eval "test \"`echo '$''{'ac_cv_os_cray'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2141 "configure"
+#line 2184 "configure"
 #include "confdefs.h"
 #if defined(CRAY) && ! defined(CRAY2)
 webecray
@@ -2165,7 +2208,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2169 "configure"
+#line 2212 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -2219,7 +2262,7 @@ else
   ac_cv_c_stack_direction=0
 else
 cat > conftest.$ac_ext <<EOF
-#line 2223 "configure"
+#line 2266 "configure"
 #include "confdefs.h"
 find_stack_direction ()
 {
@@ -2260,7 +2303,7 @@ if eval "test \"`echo '$''{'ac_cv_c_const'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2264 "configure"
+#line 2307 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -2335,7 +2378,7 @@ else
   ac_cv_c_inline=no
 for ac_kw in inline __inline__ __inline; do
   cat > conftest.$ac_ext <<EOF
-#line 2339 "configure"
+#line 2382 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -2373,7 +2416,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 2377 "configure"
+#line 2420 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -2435,7 +2478,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2439 "configure"
+#line 2482 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>
@@ -2493,7 +2536,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2497 "configure"
+#line 2540 "configure"
 #include "confdefs.h"
 
 #include <string.h>
@@ -2543,7 +2586,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2547 "configure"
+#line 2590 "configure"
 #include "confdefs.h"
 
 #include <string.h>
@@ -2587,7 +2630,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2591 "configure"
+#line 2634 "configure"
 #include "confdefs.h"
 
 #include <string.h>
@@ -2636,7 +2679,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2640 "configure"
+#line 2683 "configure"
 #include "confdefs.h"
 
 int main()
@@ -2679,7 +2722,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2683 "configure"
+#line 2726 "configure"
 #include "confdefs.h"
 
 int main()
@@ -2715,7 +2758,7 @@ fi
 
 
 echo $ac_n "checking if signals are oneshot or not""... $ac_c" 1>&6
-if eval "test \"`echo '$''{'lpc_sys_signal_oneshot'+set}'`\" = set"; then
+if eval "test \"`echo '$''{'lpc_cv_sys_signal_oneshot'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   
@@ -2723,7 +2766,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2727 "configure"
+#line 2770 "configure"
 #include "confdefs.h"
 
 #include <signal.h>
@@ -2772,16 +2815,16 @@ int main()
 EOF
 eval $ac_link
 if test -s conftest && (./conftest; exit) 2>/dev/null; then
-  lpc_sys_signal_oneshot=no
+  lpc_cv_sys_signal_oneshot=no
 else
-  lpc_sys_signal_oneshot=yes
+  lpc_cv_sys_signal_oneshot=yes
 fi
 fi
 rm -fr conftest*
 fi
 
 
-if test "$lpc_sys_signal_oneshot" = yes; then
+if test "$lpc_cv_sys_signal_oneshot" = yes; then
   echo "$ac_t""yes" 1>&6
   cat >> confdefs.h <<\EOF
 #define SIGNAL_ONESHOT 1
@@ -2802,7 +2845,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 2806 "configure"
+#line 2849 "configure"
 #include "confdefs.h"
 
 #include <stdio.h>
@@ -2878,7 +2921,7 @@ if eval "test \"`echo '$''{'lpc_cv_func_getrusage_full'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 2882 "configure"
+#line 2925 "configure"
 #include "confdefs.h"
 
 #include <sys/time.h>
@@ -2945,7 +2988,7 @@ if eval "test \"`echo '$''{'lpc_cv_getrusage_procfs'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 2949 "configure"
+#line 2992 "configure"
 #include "confdefs.h"
 
 #include <sys/procfs.h>
@@ -2992,7 +3035,7 @@ if eval "test \"`echo '$''{'lpc_cv_volatile'+set}'`\" = set"; then
 else
   
  cat > conftest.$ac_ext <<EOF
-#line 2996 "configure"
+#line 3039 "configure"
 #include "confdefs.h"
 
 int main() { return 0; }
@@ -3036,7 +3079,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3040 "configure"
+#line 3083 "configure"
 #include "confdefs.h"
 
 #include <stdarg.h>
@@ -3085,7 +3128,7 @@ if test "$cross_compiling" = yes; then
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3089 "configure"
+#line 3132 "configure"
 #include "confdefs.h"
 
 #define TESTING
@@ -3101,7 +3144,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3105 "configure"
+#line 3148 "configure"
 #include "confdefs.h"
 
 #define TESTING
@@ -3117,7 +3160,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3121 "configure"
+#line 3164 "configure"
 #include "confdefs.h"
 
 #define TESTING
@@ -3133,7 +3176,7 @@ else
     { echo "configure: error: can not run test program while cross compiling" 1>&2; exit 1; }
 else
 cat > conftest.$ac_ext <<EOF
-#line 3137 "configure"
+#line 3180 "configure"
 #include "confdefs.h"
 
 #define TESTING

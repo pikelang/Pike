@@ -1,3 +1,25 @@
+Tue Nov 14 04:57:29 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* configure.in: Added a kluge for the linux -g -lm bug
+
+	* language.y: major bug: free on totally wrong value fixed
+	* lpc_signals.c: forgot to initialize an element in the struct
+          sigvec or sigaction: fixed
+	* array.c (compact_array): Used wrong type, screwed up
+          a lot of things. Now fixed
+	  (low_lookup): Didn't work correctly if sizeof(int)!=sizeof(char*)
+	* svalue.c (is_eq): if sizeof(int) != sizeof(char *) this
+	  didn't work
+
+Mon Nov 13 00:40:13 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* svalue.c (is_eq): added T_PROGRAM to is_equal
+
+Sun Nov 12 21:45:20 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* modules/file: struct file renamed to struct my_file
+	* "ÿ" now works
+
 Mon Nov  6 00:26:48 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* indices and values now works on objects

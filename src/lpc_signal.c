@@ -157,6 +157,7 @@ static int my_signal(int sig, sigfunctype fun)
     struct sigaction action;
     action.sa_handler=fun;
     sigfillset(&action.sa_mask);
+    action.sa_flags=0;
 #ifdef SA_INTERRUPT
     if(fun != SIG_IGN)
       action.sa_flags=SA_INTERRUPT;
@@ -169,6 +170,7 @@ static int my_signal(int sig, sigfunctype fun)
     struct sigvec action;
     action.sv_handler= fun;
     action.sv_mask=-1;
+    action.sv_flags=0;
 #ifdef SA_INTERRUPT
     if(fun != SIG_IGN)
       action.sv_flags=SV_INTERRUPT;
@@ -242,7 +244,7 @@ void check_signals()
 static char *signame(int sig)
 {
   int e;
-  for(e=0;e<NELEM(signal_desc)-1;e++)
+  for(e=0;e<(int)NELEM(signal_desc)-1;e++)
   {
     if(sig==signal_desc[e].signum)
       return signal_desc[e].signame;
@@ -254,7 +256,7 @@ static char *signame(int sig)
 static int signum(char *name)
 {
   int e;
-  for(e=0;e<NELEM(signal_desc)-1;e++)
+  for(e=0;e<(int)NELEM(signal_desc)-1;e++)
   {
     if(!strcasecmp(name,signal_desc[e].signame) ||
        !strcasecmp(name,signal_desc[e].signame+3) )

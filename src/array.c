@@ -231,6 +231,7 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s)
     v->type_field |= BIT_INT;
     SHORT_ITEM(v)[index].refs=0;
   }else if(v->array_type == s->type){
+    v->type_field |= 1 << s->type;
     assign_to_short_svalue( SHORT_ITEM(v)+index, v->array_type, s);
   }else{
     free_array(v);
@@ -272,6 +273,10 @@ struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
               (char *)(ITEM(v)+index),
               (v->size-index) * sizeof(struct svalue));
       ITEM(v)[index].type=T_INT;
+#ifdef __CHECKER__
+      ITEM(v)[index].subtype=0;
+      ITEM(v)[index].u.refs=0;
+#endif
     }else{
       MEMMOVE((char *)(SHORT_ITEM(v)+index+1),
               (char *)(SHORT_ITEM(v)+index),
@@ -290,6 +295,10 @@ struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
       MEMCPY(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
       MEMCPY(ITEM(ret)+index+1, ITEM(v)+index, sizeof(struct svalue) * (v->size-index));
       ITEM(ret)[index].type=T_INT;
+#ifdef __CHECKER__
+      ITEM(ret)[index].subtype=0;
+      ITEM(ret)[index].u.refs=0;
+#endif
     }else{
       MEMCPY(SHORT_ITEM(ret), SHORT_ITEM(v), sizeof(union anything) * index);
 
@@ -854,8 +863,11 @@ static INT32 low_lookup(struct array *v,
     return ~a;
 
   }else if(s->type == v->array_type ||
-	   (s->type==T_INT && v->array_type != T_FLOAT)){
+	   (IS_ZERO(s) && v->array_type != T_FLOAT)){
     short_cmpfun fun;
+    if(IS_ZERO(s))
+      MEMSET((char *)&s->u, 0, sizeof(union anything));
+
     fun=backfun(v->array_type);
 
     a=0;
@@ -1009,7 +1021,7 @@ struct array *compact_array(struct array *v)
     ret=allocate_array_no_init(v->size, 0, type);
     for(e=0; e<v->size; e++)
       assign_to_short_svalue_no_free(SHORT_ITEM(ret)+e,
-				     ITEM(v)[e].type,
+				     type,
 				     ITEM(v)+e);
     free_array(v);
     return ret;

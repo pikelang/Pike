@@ -142,14 +142,15 @@ TAGS:
 	etags -t *.h *.c
 
 # verify / debug
-verify: $(SRCDIR)/test/testsuite
-	$(RUNULPC) $(SRCDIR)/test/test_lpc.lpc $(SRCDIR)/test/testsuite
+verify_manual:
 	$(RUNULPC) $(SRCDIR)/test/verifymanual.lpc $(TMP_DOCDIR)
 
+verify: $(SRCDIR)/test/testsuite verify_manual
+	$(RUNULPC) $(SRCDIR)/test/test_lpc.lpc $(SRCDIR)/test/testsuite
+
 # verify / debug verbose
-verbose_verify: $(SRCDIR)/test/testsuite
+verbose_verify: $(SRCDIR)/test/testsuite verify_manual
 	$(RUNULPC) $(SRCDIR)/test/test_lpc.lpc $(SRCDIR)/test/testsuite --verbose
-	$(RUNULPC) $(SRCDIR)/test/verifymanual.lpc $(TMP_DOCDIR)
 
 # verify & debug VERBOSE
 gdb_verify: $(SRCDIR)/test/testsuite

@@ -395,12 +395,14 @@ int is_eq(struct svalue *a, struct svalue *b)
   if (a->type != b->type) return 0;
   switch(a->type)
   {
-  case T_INT:
   case T_LIST:
   case T_OBJECT:
   case T_PROGRAM:
   case T_ARRAY:
   case T_MAPPING:
+    return a->u.refs == b->u.refs;
+
+  case T_INT:
     return a->u.integer == b->u.integer;
 
   case T_STRING:
@@ -510,7 +512,7 @@ int is_gt(const struct svalue *a,const struct svalue *b)
   switch(a->type)
   {
   default:
-    error("Bad argument 1 tp '<'.\n");
+    error("Bad argument 1 to '>'.\n");
 
   case T_INT:
     return a->u.integer > b->u.integer;
@@ -537,7 +539,7 @@ int is_lt(const struct svalue *a,const struct svalue *b)
   switch(a->type)
   {
   default:
-    error("Bad arg 1 to '<='.\n");
+    error("Bad arg 1 to '<'.\n");
 
   case T_INT:
     return a->u.integer < b->u.integer;
@@ -642,6 +644,7 @@ void clear_svalues(struct svalue *s, INT32 num)
   struct svalue dum;
   dum.type=T_INT;
   dum.subtype=NUMBER_NUMBER;
+  dum.u.refs=0;
   dum.u.integer=0;
   while(--num >= 0) *(s++)=dum;
 }

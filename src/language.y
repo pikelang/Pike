@@ -712,7 +712,7 @@ class: F_CLASS '{'
            s.subtype=0;
          }
 	 $$=mksvaluenode(&s);
-         free(&s);
+         free_svalue(&s);
        } ;
 
 cond: F_IF '(' comma_expr ')' 

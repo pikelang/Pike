@@ -710,6 +710,7 @@ void f_exit(INT32 args)
 #ifdef DEBUG
   exit_modules();
 #endif
+
   exit(i);
 }
 
