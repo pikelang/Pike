@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.60 1997/10/19 22:13:33 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.61 1997/11/13 22:13:29 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1512,6 +1512,7 @@ test_eq([[combine_path("/","/foo/././/bar/gazonk/../../../..")]],"/")
 test_eq([[combine_path("/","..")]],"/")
 test_eq([[combine_path("./","..")]],"..")
 test_eq([[combine_path("./.","..")]],"..")
+test_eq([[combine_path("/","../../foo")]],"/foo")
 test_eq([[combine_path("./foobar/.","..")]],".")
 
 // - compile_file

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.56 1997/11/08 01:34:36 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.57 1997/11/13 22:13:28 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -426,7 +426,7 @@ static char *combine_path(char *cwd,char *file)
   {
     if(*from == '/')
     {
-      while(from[1] == '/') from++;
+      while(to>ret && to[-1]=='/') to--;
       if(from[1] == '.')
       {
 	switch(from[2])
@@ -438,17 +438,13 @@ static char *combine_path(char *cwd,char *file)
 	    while(--tmp>=ret)
 	      if(*tmp == '/')
 		break;
+	    tmp++;
 
-	    if(tmp[1]=='.' && tmp[2]=='.' && (tmp[3]=='/' || !tmp[3]))
+	    if(tmp[0]=='.' && tmp[1]=='.' && (tmp[2]=='/' || !tmp[2]))
 	      break;
 	    
 	    from+=3;
 	    to=tmp;
-	    if(to<ret)
-	    {
-	      to++;
-	      if(*from) from++;
-	    }
 	    continue;
 	  }
 	  break;
@@ -463,6 +459,10 @@ static char *combine_path(char *cwd,char *file)
     from++;
     to++;
   }
+
+  if(*cwd && from[-1]!='/' && *ret && ret[-1]=='/')
+    *--to=0;
+
   if(!*ret)
   {
     if(*cwd=='/')
