@@ -1,10 +1,45 @@
 #!/usr/local/bin/pike
 // -*- Pike -*-
 
-// RNTCC, a front-end to MS VC++ with options similar to GCC
-// Written by Fredrik Hubinette.
+// RNTCL, a front-end to MS VC++ and Intel ICL/ECL with options similar to GCC
+// Written by Fredrik Hubinette & Henrik Grubbström.
 
 inherit "lib.pike";
+
+// #define WIN64
+
+#ifdef ECL
+#ifdef WIN64
+constant compiler="ecl";
+#else /* !WIN64 */
+constant compiler="icl";
+#endif /* WIN64 */
+#else /* !ECL */
+constant compiler="cl";
+#endif /* ECL */
+
+constant default_cflags = ({
+#ifdef ECL
+  "-Wp64",	// Generate warnings for loss of precision.
+  //"-W4",	// Maximum verbosity.
+  "-W3",	// More warnings.
+#else /* !ECL */
+  "-Zm300",
+  "-F8388608",
+  "-Ge",
+  "-GR",
+#endif /* ECL */
+#ifdef WIN64
+  "-D__WIN64__",
+  "-D_WIN64",
+#else /* !WIN64 */
+  "-D__WIN32__",
+  "-D_WIN32",
+#endif /* WIN64 */
+  "-D__NT__",
+//    "-D__STDC__",  
+  "-nologo",
+});
 
 // Verbose is default for now, this can be turned off one this
 // frontend has been refined to where it does not require more
@@ -38,6 +73,13 @@ string remove_ext(string file)
   return reverse(file);
 }
 
+string o_to_obj(string fname)
+{
+  if (fname[sizeof(fname)-2..] == ".o") {
+    return fname + "bj";
+  }
+  return fname;
+}
 
 array|object paranoia_stat(string f)
 {
@@ -53,17 +95,7 @@ int main(int argc, string *argv)
 {
 //	werror("%O\n",argv);
   string *ldopts=({"-INCREMENTAL:no"});
-  string *cflags=({
-    "-Zm300",
-    "-F8388608",
-    "-Ge",
-    "-GR",
-    "-D__WIN32__",
-    "-D_WIN32",
-    "-D__NT__",
-//    "-D__STDC__",  
-    "-nologo",
-  });
+  string *cflags=default_cflags;
 
   string target="exe";
   int debug,optimize,share,dynamic;
@@ -71,10 +103,12 @@ int main(int argc, string *argv)
 
   mixed *opts=Getopt.find_all_options(argv, aggregate(
     ({"oper_pre",Getopt.NO_ARG, ({"-E"}) }),
+    ({"oper_asm",Getopt.NO_ARG, ({"-S"}) }),
     ({"oper_comp",Getopt.NO_ARG, ({"-c"}) }),	
     ({"verbose",Getopt.NO_ARG, ({"-v"}) }),	
     ({"debug",Getopt.MAY_HAVE_ARG, ({"-g"}) }),
     ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
+    ({"inline",Getopt.MAY_HAVE_ARG, ({"-Q"}) }),
     ({"include",Getopt.HAS_ARG, ({"-I"}) }),
     ({"link",Getopt.HAS_ARG, ({"-l"}) }),
     ({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
@@ -127,6 +161,11 @@ int main(int argc, string *argv)
 	  target="-";
 	  break;
 
+        case "oper_asm":
+	  cflags+=({ "-S" });
+	  target="asm";
+	  break;
+
 	case "oper_comp":
 	  target="obj";
 	  cflags+=({ "-c" });
@@ -134,8 +173,9 @@ int main(int argc, string *argv)
 
 	case "debug":
 	  cflags+=({
-	    // "-Z7",
-	    "-Zi",
+	    "-Z7",
+//	    "-Zi",
+	    "-FR",
 //	    "-Yd",
 	  });
 	  debug=1;
@@ -147,12 +187,28 @@ int main(int argc, string *argv)
 	  {
 	    case 0: optimize=0; break;
 	    case 1: cflags+=({"-O1"}); break;
-	    case 2: cflags+=({"-Ob2gity","-GB"}); break;
+	    case 2:
+#ifdef ECL
+	      cflags+=({"-O2"});
+#else /* !ECL */
+#ifdef WIN64
+	      cflags+=({"-Ob2git"});
+#else /* !WIN64 */
+	      cflags+=({"-Ob2gity","-GB"});
+#endif /* WIN64 */
+#endif /* ECL */
+	      break;
 	    case 3..:
 	      break;
 	  }
 	  break;
-	  
+
+        case "inline":
+	  if (option[1] == "ip") {
+	    cflags+=({"-Qip"});
+	  }
+	  break;
+
 	case "include":
 	  // Avoid searching 'local' include dirs.
 	  // This is not a very pretty solution.
@@ -195,8 +251,10 @@ int main(int argc, string *argv)
 	  // recognized should generate warning/error messages.
 	  switch(option[1])
 	  {
-	    case "all": cflags+=({"-W3"}); break;
-	    default: cflags+=({"-W2"}); break;
+	    case "all": cflags+=({"-W4"}); break;
+            // Not supported, but in the manual...
+	    case "X": cflags+=({"-WX"}); break;
+	    default: cflags+=({"-W3"}); break;
 	  }
 	  break;
 	  
@@ -210,7 +268,7 @@ int main(int argc, string *argv)
 
   // Scan through the remaining arguments
   argv=Getopt.get_args(argv);
-  cflags+=Array.map(argv[1..],fixpath);
+  cflags+=Array.map(Array.map(argv[1..],fixpath), o_to_obj);
 
   foreach(argv[1..], string tmp)
   {
@@ -233,7 +291,14 @@ int main(int argc, string *argv)
     case "obj":
       if(!output)
 	output=remove_ext(argv[1])+".o";
-      cflags+=({"-Fo"+fixpath(output)});
+      cflags+=({"-Fo"+fixpath(output+"bj")});
+      wantfile=output;
+      break;
+
+    case "asm":
+      if(!output)
+        output=remove_ext(argv[1])+".s";
+      cflags+=({"-Fa"+fixpath(output)});
       wantfile=output;
       break;
 
@@ -243,7 +308,9 @@ int main(int argc, string *argv)
       else
 	output=remove_ext(argv[1])+".dll";
 
+#ifndef WIN64
       cflags+=({"-MD" + (/*debug?"d":*/""), "-LD" + (/*debug?"d":*/"")});
+#endif /* !WIN64 */
       wantfile=output;
       break;
 
@@ -255,7 +322,7 @@ int main(int argc, string *argv)
 
   if(output) rm(output);
 
-  array(string) cmd=({"cl"})+cflags;
+  array(string) cmd = ({ compiler }) + cflags;
 
   switch(target)
   {
@@ -299,23 +366,67 @@ int main(int argc, string *argv)
     ret=do_cmd(cmd);
   }else{
     int first_line=1;
-    // cl.exe echoes the file name of the file we are compiling
-    // first, we need to get rid of that to make configure behave 
+    int forced_error=0;
+    string trailer = "";
+    // cl.exe and ecl.exe echoe the file name of the file we are compiling
+    // first, we need to get rid of that to make configure behave.
+    // CL: We also convert warning D4002 into an error.
+    // ECL: We also convert warning 147 into an error, and command line
+    //      remark "option not supported" into an error.
     ret=silent_do_cmd(cmd, lambda(string line) 
 		      {
+			trailer += line;
+			array(string) lines = trailer/"\n";
+			if (sizeof(lines) < 2) return;
 			if(first_line)
 			{
-			  array x=line/"\n";
-			  if(sizeof(x)>1)
-			  {
-			    line=x[1..]*"\n";
-			    first_line=0;
-			  }else{
-			    return;
+			  // Strip first line.
+			  if (verbose && (target != "-")) {
+			    write(lines[0]+"\n");
 			  }
+			  lines = lines[1..];
+			  first_line = 0;
 			}
-			write(line);
+			trailer = lines[-1];
+			lines = lines[..sizeof(lines)-2];
+			for(int i; i < sizeof(lines); i++) {
+#ifdef ECL
+			  // Warning 147 is prototype mismatch.
+			  // for some reason this isn't an error.
+			  // We make it an error...
+			  if (search(lines[i], "warning #147:") != -1) {
+			    forced_error = 1;
+			    lines[i] = replace(lines[i],
+					       "warning #147:",
+					       "error #147:");
+			  } else {
+			    // Make it possible to test if flags are supported.
+			    if (search(lines[i],
+				       "Command line remark: option '") != -1){
+			      if (search(lines[i], "' not supported") != -1) {
+				forced_error = 1;
+			      }
+			    }
+			  }
+#else /* !ECL */
+			  if (search(lines[i],
+				     "Command line warning D4002") != -1) {
+			    forced_error=1;
+			    lines[i] = replace(lines[i],
+					       "Command line warning D4002",
+					       "Command line error D4002");
+			  }
+#endif /* ECL */
+			}
+			if (sizeof(lines)) {
+			  write(lines*"\n" + "\n");
+			}
 		      },1);
+    if (sizeof(trailer)) {
+      // Shouldn't happen, but...
+      write(trailer);
+    }
+    ret = ret || forced_error;
   }
 
   if(ret)
@@ -326,6 +437,16 @@ int main(int argc, string *argv)
 
   if(wantfile)
   {
+    if (target == "obj") {
+      if(!paranoia_stat(wantfile+"bj"))
+      {
+	werror("RNTCL: output file not generated (%s).\n",
+	       wantfile+"bj");
+	exit(1);
+      }
+      rm(wantfile);
+      hardlink(wantfile+"bj", wantfile);
+    }
     if(!paranoia_stat(wantfile))
     {
       werror("RNTCL: output file not generated (%s).\n",wantfile);
@@ -340,6 +461,8 @@ int main(int argc, string *argv)
 		     "#!/usr/local/bin/pike\n"
 		     "inherit \""+find_lib_location()+"\";\n"
 		     "int main(int argc, string *argv) {\n"
+		     "  if (lower_case(getenv(\"CROSSCOMPILING\")||\"no\") != \"no\")\n"
+		     "    exit(1);\n"
 		     "  argv[0]=getenv(\"NTDRIVE\")+fixpath(follow_symlinks(combine_path(getcwd(),argv[0]))+\".exe\");\n"
 		     "  exit(silent_do_cmd(argv));\n"
 		     "}\n");
