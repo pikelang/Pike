@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.83 1998/08/07 16:02:56 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.84 1998/08/08 22:52:42 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1402,15 +1402,15 @@ void f_create_process(INT32 args)
 	  if(initgroups(pw->pw_name, initgroupgid))
 #ifdef _HPUX_SOURCE
 	    /* Kluge for HP-(S)UX */
-	    if(initgroupgid>60000 &&
-	       initgroups(wanted_uid,-2) &&
-	       initgroups(wanted_uid,65534) &&
-	       initgroups(wanted_uid,60001))
+	    if((initgroupgid > 60000) &&
+	       initgroups(pw->pw_name, -2) &&
+	       initgroups(pw->pw_name, 65534) &&
+	       initgroups(pw->pw_name, 60001))
 #endif /* _HPUX_SOURCE */
 	    {
 #ifdef HAVE_SETGROUPS
 	      gid_t x[]={ 65534 };
-	      if(setgroups(0,x))
+	      if(setgroups(0, x))
 #endif /* SETGROUPS */
 		exit(77);
 	    }
