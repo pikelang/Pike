@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.126 1999/06/03 01:39:33 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.127 1999/09/06 10:47:15 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -616,12 +616,6 @@ BLOCK_ALLOC(pike_frame,128)
 
 
 #ifdef PIKE_SECURITY
-static void restore_creds(struct object *creds)
-{
-  if(current_creds) free_object(current_creds);
-  current_creds=creds;
-}
-
 /* Magic trick */
 static
 
@@ -836,7 +830,8 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)
       {
-	fprintf(stderr,"Function index out of range. %d >= %d\n",fun,(int)p->num_identifier_references);
+	fprintf(stderr, "Function index out of range. %d >= %d\n",
+		fun, (int)p->num_identifier_references);
 	fprintf(stderr,"########Program is:\n");
 	describe(p);
 	fprintf(stderr,"########Object is:\n");
@@ -883,7 +878,8 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
 
 #ifdef PIKE_SECURITY
-      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL, ("Function call permission denied.\n"));
+      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL,
+				   ("Function call permission denied.\n"));
 
       if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_NOT_SETUID))
 	SET_CURRENT_CREDS(o->prot);
@@ -1112,6 +1108,13 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 }
 
 #ifdef PIKE_SECURITY
+static void restore_creds(struct object *creds)
+{
+  if(current_creds)
+    free_object(current_creds);
+  current_creds = creds;
+}
+
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   ONERROR tmp;
@@ -1119,7 +1122,7 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     add_ref(current_creds);
 
   SET_ONERROR(tmp, restore_creds, current_creds);
-  mega_apply2(type,args,arg1,arg2);
+  mega_apply2(type, args, arg1, arg2);
   CALL_AND_UNSET_ONERROR(tmp);
 }
 #endif
