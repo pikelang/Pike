@@ -1,4 +1,4 @@
-# $Id: .exportable_files,v 1.5 2001/06/18 11:40:24 grubba Exp $
+# $Id: .exportable_files,v 1.6 2001/10/16 18:11:14 nilsson Exp $
 CREDITS
 cbc.c
 configure.in
@@ -6,6 +6,7 @@ crypto.c
 crypto.doc
 crypto.h
 crypto_submodule.doc
+hash_submodule.doc
 invert.c
 md2.c
 md5.c
