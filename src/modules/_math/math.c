@@ -26,7 +26,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.23 1999/10/19 22:21:32 noring Exp $");
+RCSID("$Id: math.c,v 1.24 1999/10/30 13:17:08 noring Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -157,7 +157,7 @@ void f_sqrt(INT32 args)
 #ifdef AUTO_BIGNUM
   else if(is_bignum_object_in_svalue(&sp[-args]))
   {
-    safe_apply(sp[-args].u.object, "sqrt", 1);
+    safe_apply(sp[-args].u.object, "_sqrt", 1);
   }
 #endif /* AUTO_BIGNUM */
   else
