@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.7 1999/03/01 21:03:33 grubba Exp $
+ * $Id: preprocessor.h,v 1.8 1999/03/08 23:34:28 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -221,7 +221,9 @@ static void PUSH_STRING(WCHAR *str,
   string_builder_putchar(buf, '"');
   for(p2=0; p2<len; p2++)
   {
-    switch(str[p2])
+    unsigned int c = str[p2];
+
+    switch(c)
     {
     case '\n':
       string_builder_putchar(buf, '\\');
@@ -246,35 +248,37 @@ static void PUSH_STRING(WCHAR *str,
     case '\\':
     case '"':
       string_builder_putchar(buf, '\\');
-      string_builder_putchar(buf, str[p2]);
+      string_builder_putchar(buf, c);
       break;
-      
+
     default:
-      if(isprint(EXTRACT_UCHAR(str+p2)))
-      {
-	string_builder_putchar(buf, str[p2]);
-      }
-      else
-      {
-	int c = str[p2];
 #if (SHIFT != 0)
-	if (c < 256) {
+      if (c < 256) {
 #endif /* SHIFT != 0 */
+	if(isprint(c)) {
+	  string_builder_putchar(buf, c);
+	}
+	else
+	{
 	  string_builder_putchar(buf, '\\');
 	  string_builder_putchar(buf, ((c>>6)&7)+'0');
 	  string_builder_putchar(buf, ((c>>3)&7)+'0');
 	  string_builder_putchar(buf, (c&7)+'0');
-	  if(EXTRACT_UCHAR(str+p2+1)>='0' && EXTRACT_UCHAR(str+p2+1)<='7')
+	  if((str[p2+1] >= '0') && (str[p2+1] <= '7'))
 	  {
 	    string_builder_putchar(buf, '"');
 	    string_builder_putchar(buf, '"');
 	  }
-#if (SHIFT != 0)
-	} else {
-	  string_builder_putchar(buf, c);
 	}
-#endif /* SHIFT != 0 */
+#if (SHIFT != 0)
+      } else if (c == 0xfeff) {
+	/* Keep it safe from filter_bom()... */
+	string_builder_strcat(buf, "\\xfeff\"\"");
+      } else {
+	/* No need to encode these */
+	string_builder_putchar(buf, c);
       }
+#endif /* SHIFT != 0 */
       break;
     }
   }
@@ -758,7 +762,9 @@ static int calc(struct cpp *this, WCHAR *data, INT32 len, INT32 tmp)
 static INT32 lower_cpp(struct cpp *this,
 		       WCHAR *data,
 		       INT32 len,
-		       int flags)
+		       int flags,
+		       int auto_convert,
+		       struct pike_string *charset)
 {
   INT32 pos, tmp, e, tmp2;
   
@@ -1237,7 +1243,8 @@ static INT32 lower_cpp(struct cpp *this,
 	    }
 	    
 	    new_file=sp[-1].u.string;
-	    
+
+	    /* Why not just use ref_push_string(new_file)? */
 	    assign_svalue_no_free(sp,sp-1);
 	    sp++;
 	    
@@ -1266,15 +1273,38 @@ static INT32 lower_cpp(struct cpp *this,
 	      string_builder_putchar(&this->buf, '\n');
 	      if(tmp2)
 	      {
+		/* #string */
 		struct pike_string *str = sp[-1].u.string;
 		PUSH_STRING_SHIFT(str->str, str->len, str->size_shift,
 				  &this->buf);
 	      }else{
+		/* #include */
+		if (auto_convert) {
+		  struct pike_string *new_str = recode_string(sp[-1].u.string);
+		  free_string(sp[-1].u.string);
+		  sp[-1].u.string = new_str;
+		} else if (charset) {
+		  ref_push_string(charset);
+		  SAFE_APPLY_MASTER("decode_charset", 2);
+		  if (sp[-1].type != T_STRING) {
+		    cpp_error(this,
+			      "Charset decoding failed for included file.");
+		    pop_n_elems(sp - save_sp);
+		    break;
+		  }
+		}
+		if (sp[-1].u.string->size_shift) {
+		  /* Get rid of any byte order marks (0xfeff) */
+		  struct pike_string *new_str = filter_bom(sp[-1].u.string);
+		  free_string(sp[-1].u.string);
+		  sp[-1].u.string = new_str;
+		}
 		low_cpp(this,
 			sp[-1].u.string->str,
 			sp[-1].u.string->len,
 			sp[-1].u.string->size_shift,
-			flags&~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE));
+			flags&~(CPP_EXPECT_ENDIF | CPP_EXPECT_ELSE),
+			auto_convert, charset);
 	      }
 	      
 	      free_string(this->current_file);
@@ -1840,7 +1870,8 @@ static INT32 lower_cpp(struct cpp *this,
 	  }
 
 	  low_cpp(this, sp[-1].u.string->str, sp[-1].u.string->len,
-		  sp[-1].u.string->size_shift, flags);
+		  sp[-1].u.string->size_shift, flags,
+		  auto_convert, charset);
 	  pop_stack();
 
 	  /* FIXME: Is this the correct thing to return? */
