@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.50 2003/01/03 19:37:26 grubba Exp $
+|| $Id: jvm.c,v 1.51 2003/01/04 13:38:53 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.50 2003/01/03 19:37:26 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.51 2003/01/04 13:38:53 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -48,7 +48,7 @@ RCSID("$Id: jvm.c,v 1.50 2003/01/03 19:37:26 grubba Exp $");
 
 #ifdef _REENTRANT
 #if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU) || defined(HAVE_PPC_CPU) \
-    defined(HAVE_ALPHA_CPU)
+ || defined(HAVE_ALPHA_CPU)
 #define SUPPORT_NATIVE_METHODS
 #endif /* HAVE_SPARC_CPU || HAVE_X86_CPU || HAVE_PPC_CPU || HAVE_ALPHA_CPU */
 #endif /* _REENTRANT */
