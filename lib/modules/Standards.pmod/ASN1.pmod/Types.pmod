@@ -189,9 +189,8 @@ class asn1_string
     }
 }
 
-#if 0
-
 // FIXME: What is the DER-encoding of TRUE???
+// According to Jan Petrous, the LDAP spec says that 0xff is right.
 
 class asn1_boolean
 {
@@ -203,14 +202,23 @@ class asn1_boolean
   
   object init(int x) { value = x; return this_object(); }
 
-  string der_encode() {}
-  object decode_primitive() {}
-  string debug_string
+  string der_encode() { return build_der(value ? "\377" : "\0"); }
+  object decode_primitive(string contents)
+    {
+      if (strlen(contents) != 1)
+      {
+	WERROR("asn1_boolean->decode_primitive: Bad length.\n");
+	return 0;
+      }
+      record_der(contents);
+      value = contents[0];
+      return this_object();
+    }
+  string debug_string()
     {
       return value ? "TRUE" : "FALSE";
     }
 }
-#endif
     
 // All integers are represented as bignums, for simplicity
 class asn1_integer
@@ -260,6 +268,12 @@ class asn1_integer
       return sprintf("INTEGER (%d) %s", value->size(), value->digits());
     }
 
+}
+class asn1_enumerated
+{
+  inherit asn1_integer;
+  constant tag = 10;
+  constant type_name ="ENUMERATED";
 }
 
 class asn1_bit_string
