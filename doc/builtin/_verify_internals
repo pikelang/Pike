@@ -1,0 +1,13 @@
+NAME
+	_verify_internals - check uLPC internals
+
+SYNTAX
+	void _verify_internals();
+
+DESCRIPTION
+	This function goes through most of the internal uLPC structures and
+	generates a fatal error if one of them is found to be out of order.
+	It is only used for debugging.
+
+KEYWORDS
+	debugging
