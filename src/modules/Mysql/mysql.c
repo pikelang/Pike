@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.12 1998/02/08 15:27:09 grubba Exp $
+ * $Id: mysql.c,v 1.13 1998/02/08 15:49:29 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.12 1998/02/08 15:27:09 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.13 1998/02/08 15:49:29 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -231,7 +231,9 @@ static void pike_mysql_reconnect(void)
   }
   
   if (!(PIKE_MYSQL->socket = socket)) {
-    error("Mysql.mysql(): Couldn't reconnect to SQL-server\n");
+    error("Mysql.mysql(): Couldn't reconnect to SQL-server\n"
+	  "%s\n",
+	  mysql_error(&PIKE_MYSQL->mysql);
   }
   if (database) {
     int tmp;
