@@ -142,7 +142,7 @@ install:
 	if [ ! -d "$(prefix)/include" ]; then mkdir "$(prefix)/include"; chmod 755 "$(prefix)/include"; fi
 	if [ ! -d "$(prefix)/include/pike" ]; then mkdir "$(prefix)/include/pike"; chmod 755 "$(prefix)/include/pike"; fi
 	$(INSTALL) $(SRCDIR)/*.h *.h $(prefix)/include/pike
-	cp -r $(TMP_LIBDIR) $(lib_prefix)
+	cp -r $(TMP_LIBDIR)/* $(lib_prefix)
 
 # tidy up a bit
 tidy:
@@ -207,7 +207,7 @@ lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike
 # and thus has to follow the rules stated in that code.
 export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
-	$(RUNPIKE) $(TMP_BINDIR)/export.pike image pipe spider ssleay
+	$(RUNPIKE) $(TMP_BINDIR)/export.pike Image Pipe spider Ssleay _Crypto
 
 full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
