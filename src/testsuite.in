@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.583 2003/01/11 03:14:26 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.584 2003/01/13 04:36:59 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8484,8 +8484,12 @@ test_equal(reverse(({42,4711})),({4711,42}))
 test_equal(reverse(0x12345678),0x1e6a2c48)
 
 // - rusage
-test_true(arrayp(rusage()))
-test_true(sizeof(rusage())>28)
+test_true(
+#pike 7.4
+arrayp(rusage()))
+test_true(
+#pike 7.4
+sizeof(rusage())>28)
 
 // - has_index
 define(test_has_index,[[test_true([[mixed foo=$1; return has_index(foo,$2)==$3;]])]])
