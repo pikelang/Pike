@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.308 2003/11/14 10:26:43 mast Exp $
+|| $Id: file.c,v 1.309 2003/11/26 16:02:47 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.308 2003/11/14 10:26:43 mast Exp $");
+RCSID("$Id: file.c,v 1.309 2003/11/26 16:02:47 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -445,6 +445,7 @@ static int map(int flags)
   if(flags & FILE_CREATE) ret|=fd_CREAT;
   if(flags & FILE_TRUNC) ret|=fd_TRUNC;
   if(flags & FILE_EXCLUSIVE) ret|=fd_EXCL;
+  ret |= fd_LARGEFILE;
   return ret;
 }
 
