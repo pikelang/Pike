@@ -7,7 +7,12 @@ test_true([[programp(Crypto.crypto)]])
 test_true([[
 #pike 7.4
 programp(Crypto.invert)]])
-test_true([[programp(Crypto.md2)]])
+test_true([[
+#pike 7.4
+programp(Crypto.md2)]])
+test_true([[
+#pike 7.4
+programp(Crypto.md4)]])
 test_true([[
 #pike 7.4
 programp(Crypto.md5)]])
@@ -207,37 +212,69 @@ Crypto.md5()->update("1234567890123456789012345678901234567890"
 	[[Crypto.hex_to_string("57edf4a22be3c955ac49da2e2107b67a")]])
 
 // MD4
-test_true([[objectp(Crypto.md4())]])
-test_eq([[Crypto.md4()->update("")->digest()]],
+test_true([[
+#pike 7.4
+objectp(Crypto.md4())]])
+test_eq([[
+#pike 7.4
+Crypto.md4()->update("")->digest()]],
 	[[Crypto.hex_to_string("31d6cfe0d16ae931b73c59d7e0c089c0")]])
-test_eq([[Crypto.md4()->update("a")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md4()->update("a")->digest()]],
 	[[Crypto.hex_to_string("bde52cb31de33e46245e05fbdbd6fb24")]])
-test_eq([[Crypto.md4()->update("abc")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md4()->update("abc")->digest()]],
 	[[Crypto.hex_to_string("a448017aaf21d8525fc10ae87aa6729d")]])
-test_eq([[Crypto.md4()->update("message digest")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md4()->update("message digest")->digest()]],
 	[[Crypto.hex_to_string("d9130a8164549fe818874806e1c7014b")]])
-test_eq([[Crypto.md4()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md4()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
 	[[Crypto.hex_to_string("d79e1c308aa5bbcdeea8ed63df412da9")]])
-test_eq([[Crypto.md4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md4()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
 	[[Crypto.hex_to_string("043f8582f241db351ce627e153e7f0e4")]])
-test_eq([[Crypto.md4()->update("12345678901234567890123456789012345678901234567890123456789012345678901234567890")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md4()->update("12345678901234567890123456789012345678901234567890123456789012345678901234567890")->digest()]],
 	[[Crypto.hex_to_string("e33b4ddc9c38f2199c3e7b164fcc0536")]])
 
 // MD2
-test_true([[objectp(Crypto.md2())]])
-test_eq([[Crypto.md2()->update("")->digest()]],
+test_true([[
+#pike 7.4
+objectp(Crypto.md2())]])
+test_eq([[
+#pike 7.4
+Crypto.md2()->update("")->digest()]],
 	[[Crypto.hex_to_string("8350e5a3e24c153df2275c9f80692773")]])
-test_eq([[Crypto.md2()->update("a")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md2()->update("a")->digest()]],
 	[[Crypto.hex_to_string("32ec01ec4a6dac72c0ab96fb34c0b5d1")]])
-test_eq([[Crypto.md2()->update("abc")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md2()->update("abc")->digest()]],
 	[[Crypto.hex_to_string("da853b0d3f88d99b30283a69e6ded6bb")]])
-test_eq([[Crypto.md2()->update("message digest")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md2()->update("message digest")->digest()]],
 	[[Crypto.hex_to_string("ab4f496bfb2a530b219ff33031fe06b0")]])
-test_eq([[Crypto.md2()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md2()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
 	[[Crypto.hex_to_string("4e8ddff3650292ab5a4108c3aa47940b")]])
-test_eq([[Crypto.md2()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
+test_eq([[
+#pike 7.4
+Crypto.md2()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
 	[[Crypto.hex_to_string("da33def2a42df13975352846c30338cd")]])
-test_eq([[Crypto.md2()->update("1234567890123456789012345678901234567890"
+test_eq([[
+#pike 7.4
+Crypto.md2()->update("1234567890123456789012345678901234567890"
 				"1234567890123456789012345678901234567890")->digest()]],
 	[[Crypto.hex_to_string("d5976f79d83d3a0dc9806c3c66f3efd8")]])
 
@@ -334,8 +371,12 @@ test_eq(Crypto.arcfour()->name(),"ARCFOUR")
 test_eq(
 #pike 7.4
 Crypto.md5()->name(),"MD5")
-test_eq(Crypto.md4()->name(),"MD4")
-test_eq(Crypto.md2()->name(),"MD2")
+test_eq(
+#pike 7.4
+Crypto.md4()->name(),"MD4")
+test_eq(
+#pike 7.4
+Crypto.md2()->name(),"MD2")
 test_eq(
 #pike 7.4
 Crypto.sha()->name(),"SHA")
