@@ -875,7 +875,8 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_RETURN_0);
       pop_n_elems(sp-fp->locals);
-      return;
+      push_int(0);
+      goto do_return;
 
       CASE(F_RETURN);
       if(fp->locals != sp-1)
@@ -883,6 +884,13 @@ static void eval_instruction(unsigned char *pc)
 	assign_svalue(fp->locals, sp-1);
 	pop_n_elems(sp - fp->locals - 1);
       }
+
+    do_return:
+#if defined(DEBUG) && defined(GC2)
+      if(d_flag > 2) do_gc();
+      check_signals();
+#endif
+
       /* fall through */
 
       CASE(F_DUMB_RETURN);
