@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.101 2003/08/25 02:11:43 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.102 2003/09/04 20:40:38 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -788,17 +788,26 @@ private class Expression {
       // We are in a type declaration.
       position++;
 
-      if( !(< "(", "|" >)[`[](position)] )
+      t = `[](position);
+      if( !(< "(", "|" >)[t] )
         return position-1;
 
-      int plevel;
-      for(; position<sizeof(positions); position++) {
-	t = `[](position);
-        if( t=="(" ) plevel++;
-        if( t==")" ) plevel--;
-	if( !plevel ) break;
-	// We will not index outside the array, since "|" can't be the last entry.
-	if( t=="|" ) position++;
+      if( t=="(" ) {
+	int plevel;
+	for(; position<sizeof(positions); position++) {
+	  t = `[](position);
+	  if( t=="(" ) plevel++;
+	  if( t==")" ) plevel--;
+	  if( !plevel ) {
+	    position++;
+	    t = `[](position);
+	    break;
+	  }
+	  // We will not index outside the array,
+	  // since "|" can't be the last entry.
+
+	  if( t=="|" ) position++;
+	}
       }
 
       if( t=="|" )
