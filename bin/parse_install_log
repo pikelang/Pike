@@ -14,6 +14,54 @@ void install(string from, string to)
   install_from[combine_path(".",to)]=combine_path(".",from);
 }
 
+int mkdirhier(string dir)
+{
+  int tomove;
+
+  if(dir=="") return 1;
+  mixed s=file_stat(dir);
+  if(s)
+  {
+    if(s[1]<0)
+      return 1;
+
+    if(glob("*.pmod",dir))
+    {
+      if(!mv(dir,dir+".tmp"))
+      {
+	werror("mv(%s,%s)",dir,dir+".tmp");
+	exit(1);
+      }
+      tomove=1;
+    }else{
+      werror("Warning: Directory '%s' already exists as a file.\n",dir);
+      if(!mv(dir,dir+".old"))
+      {
+	werror("mv(%s,%s)",dir,dir+".old");
+	exit(1);
+      }
+    }
+  }
+
+  mkdirhier(dirname(dir));
+  if(!mkdir(dir))
+  {
+    werror("mkdir(%s)",dir);
+    exit(1);
+  }
+
+  chmod(dir,0755);
+
+  if(tomove)
+    if(!mv(dir+".tmp",dir+"/module.pmod"))
+      {
+	werror("mv(%s,%s)",dir+".tmp",dir+"/module.pmod");
+	exit(1);
+      }
+
+  return 1;
+}
+
 int main(int argc, string *argv)
 {
   string srcdir=argv[1];
@@ -54,16 +102,17 @@ int main(int argc, string *argv)
       }
     }
 
-  string dirname=replace(version()," ","-");
+  string base=replace(replace(version()," ","-"),"-release-",".");
 #if constant(uname)
   mixed u=uname();
   if(u->sysname=="AIX")
-    dirname+="-"+u->sysname+"-"+u->version+"."+u->release;
+    base+="-"+u->sysname+"-"+u->version+"."+u->release;
   else
-    dirname+="-"+u->sysname+"-"+u->release+"-"+u->machine;
+    base+="-"+u->sysname+"-"+u->release+"-"+u->machine;
 
-  dirname=replace(dirname,"/","-");
+  base=replace(base,"/","-");
 #endif
+  string dirname=base+".dir";
 
   Process.system("rm -rf "+dirname);
   mkdir(dirname);
@@ -128,7 +177,46 @@ int main(int argc, string *argv)
   Stdio.write_file(dirname+"/install",script);
   chmod(dirname+"/install",0755);
 
-  Process.system("tar cvf - "+dirname+" | gzip -9 >"+dirname+".tar.gz");
+  Process.system("tar cvf - "+dirname+" | gzip -9 >"+base+".tar.gz");
+
+  string tmpname=sprintf("PtmP%07x",random(0xfffffff));
+  Stdio.write_file(tmpname+".x",
+		   "#!/bin/sh\n"+
+		   "echo Unpacking...\n"+
+		   "tar xf \"$1\" "+base+".tar.gz\n"+
+		   "gzip -dc "+base+".tar.gz | tar xf -\n"+
+		   "rm -rf "+base+".tar.gz\n"+
+		   "shift\n"+
+		   "( cd "+dirname+" ; ./install \"$@\"\n"+
+		   ")\n"+
+		   "rm -rf "+dirname+" "+tmpname+".x\n"
+    );
+  chmod(tmpname+".x",0755);
+
+  string script=sprintf("#!/bin/sh\ntar xf \"$0\" %s.x\nexec %s.x \"$0\" \"$@\"\n",tmpname,tmpname,tmpname);
+    if(strlen(script) >= 100)
+  {
+    werror("Script too long!!\n");
+    exit(1);
+  }
+
+  string *parts=(script/"/");
+  mkdirhier( parts[..sizeof(parts)-2]*"/");
+  Stdio.write_file(script,"");
+
+  string *to_export=({script,tmpname+".x",base+".tar.gz"});
+  Process.create_process( ({ "tar","cf", base })+ to_export)
+    ->wait();
+
+  chmod(base,0755);
+
+  Process.create_process( ({ "rm","-rf",
+			       "#!",
+			       dirname,
+			       tmpname+".x",
+			       }) ) ->wait();
+
+  
 }
 
 
