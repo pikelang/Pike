@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.110 2003/07/21 23:35:27 mast Exp $
+|| $Id: error.c,v 1.111 2003/07/30 16:30:55 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.110 2003/07/21 23:35:27 mast Exp $");
+RCSID("$Id: error.c,v 1.111 2003/07/30 16:30:55 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -257,12 +257,12 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
   {
 #ifdef PIKE_DEBUG
     if (d_flag) {
-      fprintf(stderr,"No error recovery context!\n%s():%s",name,text);
+      fprintf(stderr,"No error recovery context!\n%s():%s",name || "<unknown>",text);
       dump_backlog();
     }
 #endif
 
-    fprintf(stderr,"No error recovery context!\n%s():%s",name,text);
+    fprintf(stderr,"No error recovery context!\n%s():%s",name || "<unknown>",text);
     if(file)
       fprintf(stderr,"at %s:%d\n",file,line);
     exit(99);
@@ -279,7 +279,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
     push_int(0);
     push_int(0);
   }
-  push_text(name);
+
+  if (name)
+    push_text(name);
+  else
+    push_int(0);
 
   for (i=-args; i; i++) {
     push_svalue(oldsp + i);
