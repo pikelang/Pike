@@ -234,6 +234,56 @@ o Using local:: on variables is an error.
     added, so all such uses of local:: should be replaced with
     this_program::.
 
+o Identifier lookup
+    The search algorithm for finding identifiers from inherited classes
+    has been changed to look for the most recent definition in the most
+    recent inherit. In Pike 7.2 and prior, it looked up the last
+    definition regardless of inherit depth, unless there was a
+    definition in the current program. (This actually changed more than
+    once during 7.3 - between 7.3.23 and 7.3.32, it looked up the most
+    recent definition with the least inherit depth.) This example shows
+    what the lookup strategies would find:
+
+    class A {
+      int foo() {}
+    }
+
+    class B {
+      int foo() {}
+      inherit A;
+    }
+
+    class C {
+      inherit B;
+    }
+
+    class D {
+      inherit B;
+      inherit C;
+    }
+
+    Lookup of identifier "foo" in D():
+
+    D-+-B-+-foo          Pike 7.3.23 --- Pike 7.3.32
+      |   |
+      |   +-A---foo
+      |
+      +-C---B-+-foo      Pike 7.3.33 --- (present day)
+              |
+              +-A---foo              --- Pike 7.3.22
+
+    Lookup of identifier "foo" in C():
+
+    C---B-+-foo          Pike 7.3.23 --- (present day)
+          |
+          +-A---foo                  --- Pike 7.3.22
+
+    Lookup of identifier "foo" in B():
+
+    B-+-foo              All versions of Pike
+      |
+      +-A---foo
+
 o Protocols.LDAP.client
     The return code from all methods was changed to follow Pike's
     logic better. 0 is now a failure. The old behaviour is emulated in
