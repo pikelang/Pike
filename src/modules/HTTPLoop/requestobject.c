@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.18 2001/07/12 13:21:53 grubba Exp $
+ * $Id: requestobject.c,v 1.19 2002/05/11 00:27:02 nilsson Exp $
  */
 
 #include "global.h"
@@ -43,6 +43,8 @@
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef _REENTRANT
 #include "accept_and_parse.h"

@@ -1,5 +1,5 @@
 /*
- * $Id: rijndael.c,v 1.6 2001/03/24 20:06:45 grubba Exp $
+ * $Id: rijndael.c,v 1.7 2002/05/11 00:08:58 nilsson Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -40,6 +40,8 @@
 
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 struct pike_crypto_rijndael {
   int rounds;

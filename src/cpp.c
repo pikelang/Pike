@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.99 2002/03/10 02:47:16 mast Exp $
+ * $Id: cpp.c,v 1.100 2002/05/11 00:29:57 nilsson Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -28,6 +28,8 @@
 #include "version.h"
 
 #include <ctype.h>
+
+#define sp Pike_sp
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.38 2001/07/12 13:51:15 grubba Exp $");
+RCSID("$Id: polyfill.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -29,6 +29,8 @@ extern double floor(double);
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 #ifdef THIS
 #undef THIS
 #endif
@@ -40,7 +42,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.38 2001/07/12 13:51:15 grubba Exp $
+**!	$Id: polyfill.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $
 **! class Image
 */
 
@@ -796,4 +798,3 @@ void image_polyfill(INT32 args)
 
    ref_push_object(THISOBJ);
 }
-

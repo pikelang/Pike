@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.35 2002/03/04 16:32:16 grubba Exp $
+ * $Id: passwords.c,v 1.36 2002/05/11 00:14:16 nilsson Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.35 2002/03/04 16:32:16 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.36 2002/05/11 00:14:16 nilsson Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -48,6 +48,8 @@ RCSID("$Id: passwords.c,v 1.35 2002/03/04 16:32:16 grubba Exp $");
 #ifdef HAVE_SHADOW_H
 # include <shadow.h>
 #endif /* HAVE_SHADOW_H */
+
+#define sp Pike_sp
 
 /*
  * Emulation

@@ -21,7 +21,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.25 2002/01/16 03:02:33 nilsson Exp $");
+RCSID("$Id: glue.c,v 1.26 2002/05/11 00:27:03 nilsson Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -44,6 +44,7 @@ struct regexp_glue
 /* must be included last */
 #include "module_magic.h"
 
+#define sp Pike_sp
 
 #ifdef THIS
 #undef THIS

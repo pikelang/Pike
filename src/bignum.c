@@ -8,6 +8,8 @@
 #include "svalue.h"
 #include "pike_error.h"
 
+#define sp Pike_sp
+
 struct svalue auto_bignum_program = {
   T_INT, 0,
 #ifdef HAVE_UNION_INIT

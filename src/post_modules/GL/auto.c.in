@@ -1,6 +1,6 @@
 /* -*- C -*-
  *
- * $Id: auto.c.in,v 1.19 2002/01/11 23:07:10 per-bash Exp $
+ * $Id: auto.c.in,v 1.20 2002/05/11 00:00:33 nilsson Exp $
  *
  */
 
@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.19 2002/01/11 23:07:10 per-bash Exp $");
+RCSID("$Id: auto.c.in,v 1.20 2002/05/11 00:00:33 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -31,6 +31,8 @@ RCSID("$Id: auto.c.in,v 1.19 2002/01/11 23:07:10 per-bash Exp $");
 #endif /* HAVE_GL_GL_H */
 
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #define ZT_INT    1
 #define ZT_FLOAT  2

@@ -1,7 +1,7 @@
 /* Dream SNES Image file */
 
 #include "global.h"
-RCSID("$Id: dsi.c,v 1.3 2000/12/01 08:10:04 hubbe Exp $");
+RCSID("$Id: dsi.c,v 1.4 2002/05/11 00:12:38 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -30,6 +30,8 @@ RCSID("$Id: dsi.c,v 1.3 2000/12/01 08:10:04 hubbe Exp $");
 
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 

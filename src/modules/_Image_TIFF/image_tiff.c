@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.27 2001/09/24 12:13:52 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.28 2002/05/11 00:27:03 nilsson Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -37,6 +37,8 @@ RCSID("$Id: image_tiff.c,v 1.27 2001/09/24 12:13:52 grubba Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;

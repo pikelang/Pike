@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.23 2001/12/16 02:49:44 mast Exp $ */
+/* $Id: ilbm.c,v 1.24 2002/05/11 00:12:39 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.23 2001/12/16 02:49:44 mast Exp $
+**!	$Id: ilbm.c,v 1.24 2002/05/11 00:12:39 nilsson Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.23 2001/12/16 02:49:44 mast Exp $");
+RCSID("$Id: ilbm.c,v 1.24 2002/05/11 00:12:39 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -34,6 +34,8 @@ RCSID("$Id: ilbm.c,v 1.23 2001/12/16 02:49:44 mast Exp $");
 
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;

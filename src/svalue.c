@@ -37,6 +37,8 @@
 #include <float.h>
 #endif /* HAVE_FLOAT_H */
 
+#define sp Pike_sp
+
 /* isnan()...
  */
 #ifdef HAVE_ISNAN
@@ -63,7 +65,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.137 2002/05/02 09:14:46 mast Exp $");
+RCSID("$Id: svalue.c,v 1.138 2002/05/11 00:29:58 nilsson Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,

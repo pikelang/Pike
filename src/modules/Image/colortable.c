@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.107 2002/01/11 17:56:25 mast Exp $ */
+/* $Id: colortable.c,v 1.108 2002/05/11 00:27:03 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.107 2002/01/11 17:56:25 mast Exp $
+**!	$Id: colortable.c,v 1.108 2002/05/11 00:27:03 nilsson Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 /* #define COLORTABLE_REDUCE_DEBUG */
 /* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.107 2002/01/11 17:56:25 mast Exp $");
+RCSID("$Id: colortable.c,v 1.108 2002/05/11 00:27:03 nilsson Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -50,6 +50,7 @@ RCSID("$Id: colortable.c,v 1.107 2002/01/11 17:56:25 mast Exp $");
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
 
 #define WEIGHT_NEEDED (nct_weight_t)(0x10000000)
 #define WEIGHT_REMOVE (nct_weight_t)(0x10000001)
@@ -4604,4 +4605,3 @@ void exit_image_colortable(void)
    free_string(s_mapping);
    free_string(s_string);
 }
-

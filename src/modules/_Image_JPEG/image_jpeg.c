@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.45 2001/09/24 12:11:42 grubba Exp $
+ * $Id: image_jpeg.c,v 1.46 2002/05/11 00:27:03 nilsson Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.45 2001/09/24 12:11:42 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.46 2002/05/11 00:27:03 nilsson Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -63,6 +63,8 @@ RCSID("$Id: image_jpeg.c,v 1.45 2001/09/24 12:11:42 grubba Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef HAVE_JPEGLIB_H
 

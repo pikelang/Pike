@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.23 2001/04/23 00:13:37 grubba Exp $
+ * $Id: des.c,v 1.24 2002/05/11 00:08:58 nilsson Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -43,6 +43,8 @@
 
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 struct pike_crypto_des {
   unsigned INT32 method[DES_EXPANDED_KEYLEN];

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.23 2002/02/05 19:08:52 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.24 2002/05/11 00:29:57 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -87,6 +87,8 @@ struct fd_datum
 #ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif /* HAVE_SYS_POLL_H */
+
+#define sp Pike_sp
 
 /* Some constants... */
 
@@ -2161,4 +2163,3 @@ void exit_backend()
   cleanup_close_on_exec();
 #endif /* HAVE_BROKEN_F_SETFD */
 }
-

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.18 2002/01/16 02:54:13 nilsson Exp $");
+RCSID("$Id: iterators.cmod,v 1.19 2002/05/11 00:29:57 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -28,6 +28,8 @@ RCSID("$Id: iterators.cmod,v 1.18 2002/01/16 02:54:13 nilsson Exp $");
 #include "operators.h"
 #include "builtin_functions.h"
 #include "constants.h"
+
+#define sp Pike_sp
 
 DECLARATIONS
 

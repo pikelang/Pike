@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.39 2002/04/06 16:28:42 bash-peter Exp $ */
+/* $Id: matrix.c,v 1.40 2002/05/11 00:27:03 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.39 2002/04/06 16:28:42 bash-peter Exp $
+**!	$Id: matrix.c,v 1.40 2002/05/11 00:27:03 nilsson Exp $
 **! class Image
 */
 
@@ -27,6 +27,8 @@
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS

@@ -32,7 +32,9 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: sane.c,v 1.9 2001/07/21 00:54:31 nilsson Exp $");
+#define sp Pike_sp
+
+RCSID("$Id: sane.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $");
 
 /*
 **! module SANE
@@ -41,7 +43,7 @@ RCSID("$Id: sane.c,v 1.9 2001/07/21 00:54:31 nilsson Exp $");
 **!     library from pike
 **!
 **! note
-**!	$Id: sane.c,v 1.9 2001/07/21 00:54:31 nilsson Exp $
+**!	$Id: sane.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $
 */
 
 static int sane_is_inited;

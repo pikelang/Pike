@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.111 2002/03/05 20:00:23 mast Exp $");
+RCSID("$Id: efuns.c,v 1.112 2002/05/11 00:27:04 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -74,6 +74,8 @@ RCSID("$Id: efuns.c,v 1.111 2002/03/05 20:00:23 mast Exp $");
 #ifdef HAVE_PROCESS_H
 #include <process.h>
 #endif
+
+#define sp Pike_sp
 
 /* #define DEBUG_FILE */
 /* #define READDIR_DEBUG */

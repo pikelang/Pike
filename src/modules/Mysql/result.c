@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.24 2002/01/27 01:00:53 mast Exp $
+ * $Id: result.c,v 1.25 2002/05/11 00:27:03 nilsson Exp $
  *
  * mysql query result
  *
@@ -72,6 +72,8 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #include <memory.h>
 #endif
 
+#define sp Pike_sp
+
 /* Define this to get support for field->default. NOT SUPPORTED */
 #undef SUPPORT_DEFAULT
 
@@ -85,7 +87,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.24 2002/01/27 01:00:53 mast Exp $");
+RCSID("$Id: result.c,v 1.25 2002/05/11 00:27:03 nilsson Exp $");
 
 struct program *mysql_result_program = NULL;
 

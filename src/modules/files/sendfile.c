@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.55 2001/11/01 18:10:40 mast Exp $
+ * $Id: sendfile.c,v 1.56 2002/05/11 00:27:04 nilsson Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -67,6 +67,8 @@
 #endif /* HAVE_LINUX_MMAN_H */
 #endif /* HAVE_SYS_MMAN_H */
 #endif
+
+#define sp Pike_sp
 
 /* #define SF_DEBUG */
 

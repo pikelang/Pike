@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.89 2002/03/07 10:57:53 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.90 2002/05/11 00:27:04 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -314,6 +314,8 @@ RCSID("$Id: sprintf.c,v 1.89 2002/03/07 10:57:53 grubba Exp $");
 #ifdef HAVE_FP_CLASS_H
 #include <fp_class.h>
 #endif
+
+#define sp Pike_sp
 
 #define FORMAT_INFO_STACK_SIZE 200
 #define RETURN_SHARED_STRING

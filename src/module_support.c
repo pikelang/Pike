@@ -9,7 +9,9 @@
 #include "object.h"
 #include "opcodes.h"
 
-RCSID("$Id: module_support.c,v 1.42 2001/12/16 02:49:41 mast Exp $");
+#define sp Pike_sp
+
+RCSID("$Id: module_support.c,v 1.43 2002/05/11 00:29:57 nilsson Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.

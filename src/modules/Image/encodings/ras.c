@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.15 2001/12/16 02:49:46 mast Exp $ */
+/* $Id: ras.c,v 1.16 2002/05/11 00:12:39 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.15 2001/12/16 02:49:46 mast Exp $
+**!	$Id: ras.c,v 1.16 2002/05/11 00:12:39 nilsson Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.15 2001/12/16 02:49:46 mast Exp $");
+RCSID("$Id: ras.c,v 1.16 2002/05/11 00:12:39 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -36,6 +36,8 @@ RCSID("$Id: ras.c,v 1.15 2001/12/16 02:49:46 mast Exp $");
 
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;

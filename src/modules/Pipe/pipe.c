@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.47 2002/02/05 19:08:57 mast Exp $");
+RCSID("$Id: pipe.c,v 1.48 2002/05/11 00:27:03 nilsson Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -54,6 +54,7 @@ RCSID("$Id: pipe.c,v 1.47 2002/02/05 19:08:57 mast Exp $");
 /* must be included last */
 #include "module_magic.h"
 
+#define sp Pike_sp
 
 /*
 #define PIPE_STRING_DEBUG

@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.31 2001/07/01 16:07:25 grubba Exp $
+ * $Id: mime.c,v 1.32 2002/05/11 00:27:03 nilsson Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.31 2001/07/01 16:07:25 grubba Exp $");
+RCSID("$Id: mime.c,v 1.32 2002/05/11 00:27:03 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -27,6 +27,8 @@ RCSID("$Id: mime.c,v 1.31 2001/07/01 16:07:25 grubba Exp $");
 
 /* must be included last */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 /** Forward declarations of functions implementing Pike functions **/
 

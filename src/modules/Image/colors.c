@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.58 2001/11/07 21:37:34 nilsson Exp $
+**!	$Id: colors.c,v 1.59 2002/05/11 00:27:03 nilsson Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -187,7 +187,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.58 2001/11/07 21:37:34 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.59 2002/05/11 00:27:03 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -214,6 +214,8 @@ RCSID("$Id: colors.c,v 1.58 2001/11/07 21:37:34 nilsson Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 static struct mapping *colors=NULL;
 static struct object *colortable=NULL;

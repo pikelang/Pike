@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.14 2002/01/16 01:46:48 nilsson Exp $
+ * $Id: memory.c,v 1.15 2002/05/11 00:14:16 nilsson Exp $
  */
 
 /*! @module System
@@ -16,7 +16,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.14 2002/01/16 01:46:48 nilsson Exp $");
+RCSID("$Id: memory.c,v 1.15 2002/05/11 00:14:16 nilsson Exp $");
 
 #include "system_machine.h"
 
@@ -85,6 +85,8 @@ RCSID("$Id: memory.c,v 1.14 2002/01/16 01:46:48 nilsson Exp $");
 #include "system.h"
 
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 static void memory__mmap(INT32 args,int complain,int private);
 static void memory_allocate(INT32 args);
@@ -958,4 +960,3 @@ void init_system_memory(void)
    ADD_INT_CONSTANT("__MMAP__",1,0);
 #endif
 }
-

@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.38 2002/02/21 05:31:10 per-bash Exp $ */
+/* $Id: operator.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.38 2002/02/21 05:31:10 per-bash Exp $
+**!	$Id: operator.c,v 1.39 2002/05/11 00:27:03 nilsson Exp $
 **! class Image
 */
 
@@ -30,6 +30,8 @@
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS
@@ -1079,4 +1081,3 @@ void image_find_max(INT32 args)
 
    f_aggregate(2);
 }
-

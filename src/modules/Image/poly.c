@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: poly.c,v 1.13 2001/09/24 11:36:06 grubba Exp $
+**!	$Id: poly.c,v 1.14 2002/05/11 00:27:03 nilsson Exp $
 **! class Poly
 **!
 */
@@ -18,7 +18,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.13 2001/09/24 11:36:06 grubba Exp $");
+RCSID("$Id: poly.c,v 1.14 2002/05/11 00:27:03 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -46,6 +46,8 @@ RCSID("$Id: poly.c,v 1.13 2001/09/24 11:36:06 grubba Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef PFLOAT
 #undef PFLOAT
@@ -807,4 +809,3 @@ void exit_image_poly(void)
 {
    free_string(str_array);
 }
-

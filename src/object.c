@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.199 2002/04/03 12:11:53 mast Exp $");
+RCSID("$Id: object.c,v 1.200 2002/05/11 00:29:57 nilsson Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -44,6 +44,7 @@ RCSID("$Id: object.c,v 1.199 2002/04/03 12:11:53 mast Exp $");
 
 #include "dmalloc.h"
 
+#define sp Pike_sp
 
 /* #define GC_VERBOSE */
 

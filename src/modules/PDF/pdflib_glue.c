@@ -1,9 +1,9 @@
 /*
- * $Id: pdflib_glue.c,v 1.7 2002/03/15 22:13:08 nilsson Exp $
+ * $Id: pdflib_glue.c,v 1.8 2002/05/11 00:27:03 nilsson Exp $
  */
 
 #include "global.h"
-RCSID("$Id: pdflib_glue.c,v 1.7 2002/03/15 22:13:08 nilsson Exp $");
+RCSID("$Id: pdflib_glue.c,v 1.8 2002/05/11 00:27:03 nilsson Exp $");
 
 #include "pdf_machine.h"
 
@@ -34,6 +34,8 @@ RCSID("$Id: pdflib_glue.c,v 1.7 2002/03/15 22:13:08 nilsson Exp $");
 #include "operators.h"
 
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 /*! @module PDF
  */

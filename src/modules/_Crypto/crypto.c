@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.48 2002/02/26 16:54:15 marcus Exp $
+ * $Id: crypto.c,v 1.49 2002/05/11 00:08:58 nilsson Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -39,6 +39,8 @@
 
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 struct pike_crypto {
   struct object *object;
@@ -682,4 +684,3 @@ void pike_module_exit(void)
 
   /* END NATIONAL SECURITY */
 }
-

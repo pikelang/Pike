@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.87 2002/05/10 22:38:33 mast Exp $
+ * $Id: builtin.cmod,v 1.88 2002/05/11 00:29:57 nilsson Exp $
  */
 
 #include "global.h"
@@ -29,6 +29,7 @@
 #include "fsort.h"
 #include "port.h"
 
+#define sp Pike_sp
 
 /*! @decl array(array(int|string)) _describe_program(program p)
  *!

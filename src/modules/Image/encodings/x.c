@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $ */
+/* $Id: x.c,v 1.37 2002/05/11 00:12:39 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $
+**!	$Id: x.c,v 1.37 2002/05/11 00:12:39 nilsson Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $");
+RCSID("$Id: x.c,v 1.37 2002/05/11 00:12:39 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -39,9 +39,6 @@ RCSID("$Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $");
 #include "array.h"
 #include "pike_error.h"
 
-
-
-
 #include "image.h"
 #include "colortable.h"
 #include "builtin_functions.h"
@@ -49,6 +46,7 @@ RCSID("$Id: x.c,v 1.36 2001/06/29 15:15:31 marcus Exp $");
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
 
 /* #define BITDEBUG */
 

@@ -1,9 +1,9 @@
-/* $Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $ */
+/* $Id: iff.c,v 1.10 2002/05/11 00:12:38 nilsson Exp $ */
 
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $");
+RCSID("$Id: iff.c,v 1.10 2002/05/11 00:12:38 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -17,6 +17,8 @@ RCSID("$Id: iff.c,v 1.9 2000/12/01 08:10:04 hubbe Exp $");
 
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 static ptrdiff_t low_parse_iff(unsigned char *data, ptrdiff_t len,
 			       unsigned char *hdr,

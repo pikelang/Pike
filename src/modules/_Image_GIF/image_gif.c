@@ -1,9 +1,9 @@
-/* $Id: image_gif.c,v 1.9 2002/05/10 21:54:28 per Exp $ */
+/* $Id: image_gif.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image_gif.c,v 1.9 2002/05/10 21:54:28 per Exp $
+**!	$Id: image_gif.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.9 2002/05/10 21:54:28 per Exp $");
+RCSID("$Id: image_gif.c,v 1.10 2002/05/11 00:27:03 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -59,6 +59,8 @@ RCSID("$Id: image_gif.c,v 1.9 2002/05/10 21:54:28 per Exp $");
 
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program = NULL;

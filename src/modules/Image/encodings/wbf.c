@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.9 2001/11/07 22:03:03 nilsson Exp $");
+RCSID("$Id: wbf.c,v 1.10 2002/05/11 00:12:39 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -19,7 +19,6 @@ RCSID("$Id: wbf.c,v 1.9 2001/11/07 22:03:03 nilsson Exp $");
 #include "builtin_functions.h"
 #include "program.h"
 
-
 #include "image.h"
 #include "builtin_functions.h"
 #include "module_support.h"
@@ -27,6 +26,7 @@ RCSID("$Id: wbf.c,v 1.9 2001/11/07 22:03:03 nilsson Exp $");
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
 
 extern struct program *image_program;
 

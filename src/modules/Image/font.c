@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.70 2002/02/05 19:08:56 mast Exp $ */
+/* $Id: font.c,v 1.71 2002/05/11 00:27:03 nilsson Exp $ */
 #include "global.h"
 
 #define SPACE_CHAR 'i'
@@ -136,6 +136,8 @@ extern unsigned char * image_default_font;
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *font_program;
 extern struct program *image_program;
@@ -946,5 +948,3 @@ void init_image_font(void)
 void exit_image_font(void) 
 {
 }
-
-

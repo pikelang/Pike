@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.12 2001/02/13 14:03:17 grubba Exp $
+ * $Id: invert.c,v 1.13 2002/05/11 00:08:58 nilsson Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -26,6 +26,8 @@
 
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 /*
  * Globals

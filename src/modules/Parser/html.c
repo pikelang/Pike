@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.149 2002/01/11 17:56:36 mast Exp $ */
+/* $Id: html.c,v 1.150 2002/05/11 00:27:03 nilsson Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -24,6 +24,8 @@
 
 /* must be included last */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *parser_html_program;
 

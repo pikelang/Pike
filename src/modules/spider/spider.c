@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.114 2002/04/06 23:50:08 mast Exp $");
+RCSID("$Id: spider.c,v 1.115 2002/05/11 00:27:04 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -89,6 +89,8 @@ RCSID("$Id: spider.c,v 1.114 2002/04/06 23:50:08 mast Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #define MAX_PARSE_RECURSE 102
 

@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.56 2002/04/11 10:10:20 jhs Exp $
+ * $Id: mysql.c,v 1.57 2002/05/11 00:27:03 nilsson Exp $
  *
  * SQL database functionality for Pike
  *
@@ -84,6 +84,8 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 #ifdef HAVE_MYSQL
 
 /* Local includes */
@@ -93,7 +95,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.56 2002/04/11 10:10:20 jhs Exp $");
+RCSID("$Id: mysql.c,v 1.57 2002/05/11 00:27:03 nilsson Exp $");
 
 /*! @module Mysql
  *!

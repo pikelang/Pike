@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.24 2001/07/18 18:49:59 nilsson Exp $ */
+/* $Id: pattern.c,v 1.25 2002/05/11 00:27:03 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.24 2001/07/18 18:49:59 nilsson Exp $
+**!	$Id: pattern.c,v 1.25 2002/05/11 00:27:03 nilsson Exp $
 **! class Image
 */
 
@@ -28,6 +28,8 @@
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS

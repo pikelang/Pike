@@ -23,7 +23,9 @@
 /* This must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: gettext.c,v 1.7 2002/03/03 16:01:03 marcus Exp $");
+#define sp Pike_sp
+
+RCSID("$Id: gettext.c,v 1.8 2002/05/11 00:27:02 nilsson Exp $");
 
 /*
 **! module Locale.Gettext
@@ -31,7 +33,7 @@ RCSID("$Id: gettext.c,v 1.7 2002/03/03 16:01:03 marcus Exp $");
 **!	This module enables access to localization functions from within Pike.
 **!
 **! note
-**!	$Id: gettext.c,v 1.7 2002/03/03 16:01:03 marcus Exp $
+**!	$Id: gettext.c,v 1.8 2002/05/11 00:27:02 nilsson Exp $
 */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */

@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.41 2001/09/24 12:14:42 grubba Exp $
+ * $Id: image_ttf.c,v 1.42 2002/05/11 00:27:04 nilsson Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.41 2001/09/24 12:14:42 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.42 2002/05/11 00:27:04 nilsson Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -52,6 +52,8 @@ static TT_Engine engine;
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 static struct pike_string *param_baseline;
 static struct pike_string *param_quality;

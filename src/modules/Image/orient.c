@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.19 2001/07/19 21:11:12 nilsson Exp $ */
+/* $Id: orient.c,v 1.20 2002/05/11 00:27:03 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.19 2001/07/19 21:11:12 nilsson Exp $
+**!	$Id: orient.c,v 1.20 2002/05/11 00:27:03 nilsson Exp $
 **! class Image
 */
 
@@ -29,6 +29,8 @@
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 extern struct program *image_program;
 #ifdef THIS
@@ -289,4 +291,3 @@ void image_orient4(INT32 args)
   pop_n_elems(1);
   f_aggregate(4);
 }
-

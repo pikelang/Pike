@@ -1,6 +1,6 @@
 /* MUST BE FIRST */
 #include "global.h"
-RCSID("$Id: clf.c,v 1.7 2002/02/05 19:08:54 mast Exp $");
+RCSID("$Id: clf.c,v 1.8 2002/05/11 00:27:02 nilsson Exp $");
 #include "fdlib.h"
 #include "stralloc.h"
 #include "pike_macros.h"
@@ -18,6 +18,8 @@ RCSID("$Id: clf.c,v 1.7 2002/02/05 19:08:54 mast Exp $");
 
 /* MUST BE LAST */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 /** Forward declarations of functions implementing Pike functions **/
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.428 2002/05/10 22:39:30 mast Exp $");
+RCSID("$Id: program.c,v 1.429 2002/05/11 00:29:58 nilsson Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -39,6 +39,7 @@ RCSID("$Id: program.c,v 1.428 2002/05/10 22:39:30 mast Exp $");
 #include <errno.h>
 #include <fcntl.h>
 
+#define sp Pike_sp
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)

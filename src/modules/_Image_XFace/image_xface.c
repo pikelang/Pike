@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.14 2000/12/01 08:10:33 hubbe Exp $");
+RCSID("$Id: image_xface.c,v 1.15 2002/05/11 00:27:04 nilsson Exp $");
 
 #include "config.h"
 
@@ -53,6 +53,8 @@ RCSID("$Id: image_xface.c,v 1.14 2000/12/01 08:10:33 hubbe Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
 
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
@@ -534,4 +536,3 @@ void pike_module_init(void)
 #endif /* USE_GMP || USE_GMP2 */
 
 }
-

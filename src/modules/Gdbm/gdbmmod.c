@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.16 2002/01/16 02:59:19 nilsson Exp $");
+RCSID("$Id: gdbmmod.c,v 1.17 2002/05/11 00:27:02 nilsson Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -17,9 +17,6 @@ RCSID("$Id: gdbmmod.c,v 1.16 2002/01/16 02:59:19 nilsson Exp $");
 #include "object.h"
 #include "pike_macros.h"
 
-/* THIS MUST BE INCLUDED LAST */
-#include "module_magic.h"
-
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
 
 #include <gdbm.h>
@@ -27,6 +24,11 @@ RCSID("$Id: gdbmmod.c,v 1.16 2002/01/16 02:59:19 nilsson Exp $");
 #ifdef _REENTRANT
 static MUTEX_T gdbm_lock STATIC_MUTEX_INIT;
 #endif  
+
+/* THIS MUST BE INCLUDED LAST */
+#include "module_magic.h"
+
+#define sp Pike_sp
 
 struct gdbm_glue
 {

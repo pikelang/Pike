@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.148 2002/04/20 15:11:50 jhs Exp $");
+RCSID("$Id: operators.c,v 1.149 2002/05/11 00:29:58 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -29,6 +29,8 @@ RCSID("$Id: operators.c,v 1.148 2002/04/20 15:11:50 jhs Exp $");
 #include "pike_macros.h"
 #include "bignum.h"
 #include "builtin_functions.h"
+
+#define sp Pike_sp
 
 #define OP_DIVISION_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Division by zero.\n")

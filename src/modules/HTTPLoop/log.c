@@ -42,6 +42,8 @@
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 int num_log_entries;
 void free_log_entry( struct log_entry *le )
 {

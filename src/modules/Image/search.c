@@ -27,6 +27,8 @@
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 extern struct program *image_program;
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -729,5 +731,3 @@ void image_apply_max(INT32 args)
    pop_n_elems(args);
    push_object(o);
 }
-
-

@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.21 2002/05/08 11:39:15 marcus Exp $ */
+/* $Id: any.c,v 1.22 2002/05/11 00:12:38 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.21 2002/05/08 11:39:15 marcus Exp $
+**!	$Id: any.c,v 1.22 2002/05/11 00:12:38 nilsson Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.21 2002/05/08 11:39:15 marcus Exp $");
+RCSID("$Id: any.c,v 1.22 2002/05/11 00:12:38 nilsson Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -44,6 +44,7 @@ RCSID("$Id: any.c,v 1.21 2002/05/08 11:39:15 marcus Exp $");
 /* MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
 
 /* PNG module uses "type" for something else than what we want to use
    it for.  Rename "type" to "_type", and insert our own "type"...  */

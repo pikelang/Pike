@@ -29,7 +29,9 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.43 2002/05/05 16:06:29 nilsson Exp $");
+#define sp Pike_sp
+
+RCSID("$Id: math.c,v 1.44 2002/05/11 00:27:04 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080

@@ -27,7 +27,9 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.119 2002/01/16 02:54:16 nilsson Exp $");
+#define sp Pike_sp
+
+RCSID("$Id: opcodes.c,v 1.120 2002/05/11 00:29:58 nilsson Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
