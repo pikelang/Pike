@@ -43,7 +43,7 @@ WARN=@WARN@
 
 #add extra defines here
 # Be sure to use -g and -DDEBUG when looking for bugs
-DEBUGDEF=
+DEBUGDEF=-DDEBUG
 DEFINES=-DDEFAULT_MASTER=\"$(lib_prefix)/master.pike\"
 
 # -O should work with all compilers
@@ -225,7 +225,7 @@ module_objects:
 
 lang.o: lang.c config.h object.h interpret.h program.h
 
-$(SRCDIR)/language.h: language.y
+$(SRCDIR)/language.h: language.yacc
 	@echo "Expect 1 shift/reduce conflict."
 	$(YACC) $(YFLAGS) $(SRCDIR)/language.y
 	mv y.tab.c $(SRCDIR)/language.c
