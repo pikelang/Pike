@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.12 2002/10/21 17:06:24 marcus Exp $
+|| $Id: nt.c,v 1.13 2003/01/10 14:05:28 grubba Exp $
 */
 
 /*
@@ -93,13 +93,14 @@ static void f_CryptGenRandom(INT32 args)
 /*! @endclass
  */
 
-/*! @decl CryptoContext CryptAcquireContext(string str1, string str2, @
+/*! @decl CryptoContext CryptAcquireContext(string|zero str1, @
+ *!					    string|zero str2, @
  *!                                         int typ, int flags)
  */
 static void f_CryptAcquireContext(INT32 args)
 {
   char *str1=NULL, *str2=NULL;
-  INT_TYPE typ, flags, fake1, fake2;
+  INT_TYPE typ, flags, zero1, zero2;
   int nullflag=0;
   HCRYPTPROV prov;
 
@@ -115,22 +116,26 @@ static void f_CryptAcquireContext(INT32 args)
     break;
   case 1:
     get_all_args("Crypto.nt.CryptAcquireContext()", args, "%i%s%i%i",
-		 &fake1, &str2, &typ, &flags);
+		 &zero1, &str2, &typ, &flags);
     break;
   case 2:
     get_all_args("Crypto.nt.CryptAcquireContext()", args, "%s%i%i%i",
-		 &str1, &fake2, &typ, &flags);
+		 &str1, &zero2, &typ, &flags);
     break;
   case 3:
     get_all_args("Crypto.nt.CryptAcquireContext()", args, "%i%i%i%i",
-		 &fake1, &fake2, &typ, &flags);
+		 &zero1, &zero2, &typ, &flags);
     break;
   }
 
   if(!CryptAcquireContext(&prov, str1, str2, typ, flags)) {
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    INT32 errcode = GetLastError();
+    if (errcode == 0x80090016) {
+      Pike_error("CryptAcquireContext(): No default key container.\n");
+    } else {
+      Pike_error("CryptAcquireContext(): Failed with code 0x%08x.\n",
+		 errcode);
+    }
   }
   
   pop_n_elems(args);
