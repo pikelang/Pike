@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.119 1999/04/02 02:22:26 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.120 1999/04/02 20:52:48 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2739,6 +2739,13 @@ void init_signals(void)
     signal_callbacks[e].type=T_INT;
 
   firstsig=lastsig=0;
+
+  if(!signal_evaluator_callback)
+  {
+    signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
+					      check_signals,
+					      0,0);
+  }
 
 #ifdef USE_PID_MAPPING
   pid_mapping=allocate_mapping(2);
