@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.19 2003/11/29 19:05:07 nilsson Exp $
+dnl $Id: testsuite.in,v 1.20 2003/11/30 05:53:28 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -322,5 +322,7 @@ test_eq( C->decode("Rgnng"), "Pelle" )
 test_do( C->set_rot_key(3, "ABCabcåäö"/1) )
 test_eq( C->encode("Abbas"), "aääås" )
 test_eq( C->decode("aääås"), "Abbas" )
+test_do( C->set_null_chars(0.2, "xyz"/1) )
+test_eq( C->decode(C->encode("A"*100)), "A"*100 )
 
 test_do( add_constant("C") )
