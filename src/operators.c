@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.88 2000/04/08 15:29:02 grubba Exp $");
+RCSID("$Id: operators.c,v 1.89 2001/02/04 00:38:45 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -190,7 +190,7 @@ void f_add(INT32 args)
       pike_string_cpy(buf,sp[e].u.string);
       INC_PCHARP(buf,sp[e].u.string->len);
     }
-    sp[-args].u.string=end_shared_string(r);
+    sp[-args].u.string=low_end_shared_string(r);
     sp[-args].type=T_STRING;
     for(e=-args+1;e<0;e++) free_string(sp[e].u.string);
     sp-=args-1;
