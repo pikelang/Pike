@@ -31,7 +31,7 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: yp.c,v 1.21 2000/12/05 21:08:32 per Exp $");
+RCSID("$Id: yp.c,v 1.22 2001/01/05 13:50:56 grubba Exp $");
 
 #ifdef HAVE_YPERR_STRING
 #define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
@@ -49,6 +49,17 @@ struct my_yp_domain
 
 #define this ((struct my_yp_domain *)fp->current_storage)
 
+/*! @module Yp
+ *!
+ *! This module is an interface to the Yellow Pages functions. Yp is also
+ *! known as NIS (Network Information System) and is most commonly used to
+ *! distribute passwords and similar information within a network.
+ */
+
+/*! @decl string default_yp_domain()
+ *!
+ *! Returns the default yp-domain.
+ */
 static void f_default_yp_domain(INT32 args)
 {
   int err;
@@ -62,6 +73,15 @@ static void f_default_yp_domain(INT32 args)
   push_text( ret );
 }
 
+/*! @class Domain
+ */
+
+/*! @decl string server(string map)
+ *!
+ *! Returns the hostname of the server serving the map @[map]. @[map]
+ *! is the YP-map to search in. This must be the full map name.
+ *! eg @tt{passwd.byname@} instead of just @tt{passwd@}.
+ */
 static void f_server(INT32 args)
 {
   int err;
@@ -75,6 +95,19 @@ static void f_server(INT32 args)
   push_text( ret );
 }
 
+/*! @decl void create(string|void domain)
+ *!
+ *! If @[domain] is not specified , the default domain will be used.
+ *! (As returned by @[Yp.default_yp_domain()]).
+ *!
+ *! If there is no YP server available for the domain, this
+ *! function call will block until there is one. If no server appears
+ *! in about ten minutes or so, an error will be returned. This timeout
+ *! is not configurable.
+ *!
+ *! @seealso
+ *! @[Yp.default_yp_domain()]
+ */
 static void f_create(INT32 args)
 {
   int err;
@@ -98,6 +131,13 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl mapping(string:string) all(string map)
+ *!
+ *! Returns the whole map as a mapping.
+ *!
+ *! @[map] is the YP-map to search in. This must be the full map name,
+ *! you have to use @tt{passwd.byname@} instead of just @tt{passwd@}.
+ */
 static void f_all(INT32 args)
 {
   int err, num=0;
@@ -133,6 +173,16 @@ static void f_all(INT32 args)
   push_mapping( res_map );
 }
 
+/*! @decl void map(string map, function(string, string:void) fun)
+ *!
+ *! For each entry in @[map], call the function specified by @[fun].
+ *!
+ *! @[fun()] will get two arguments, the first being the key, and the
+ *! second the value.
+ *!
+ *! @[map] is the YP-map to search in. This must be the full map name.
+ *! eg @tt{passwd.byname@} instead of just @tt{passwd@}.
+ */
 static void f_map(INT32 args)
 {
   int err;
@@ -162,6 +212,16 @@ static void f_map(INT32 args)
   pop_n_elems(args);
 }
 
+/*! @decl int order(string map)
+ *!
+ *! Returns the 'order' number for the map @[map].
+ *!
+ *! This is usually the number of seconds since Jan 1 1970 (see @[time()]).
+ *! When the map is changed, this number will change as well.
+ *!
+ *! @[map] is the YP-map to search in. This must be the full map name.
+ *! eg @tt{passwd.byname@} instead of just @tt{passwd@}.
+ */
 static void f_order(INT32 args)
 {
   int err;
@@ -177,6 +237,17 @@ static void f_order(INT32 args)
   push_int( (INT32) ret );
 }
 
+/*! @decl string match(string map, string key)
+ *!
+ *! Search for the key @[key] in the Yp-map @[map].
+ *!
+ *! @returns
+ *! If there is no @[key] in the map, 0 (zero) will be returned,
+ *! otherwise the string matching the key will be returned.
+ *!
+ *! @note
+ *! @[key] must match exactly, no pattern matching of any kind is done.
+ */
 static void f_match(INT32 args)
 {
   int err;
@@ -218,6 +289,11 @@ static void exit_yp_struct( struct object *o )
   }
 }
 
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
 
