@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.8 2003/02/20 22:30:00 marcus Exp $
+// $Id: module.pike,v 1.9 2003/02/21 23:08:30 marcus Exp $
 
 constant description = "Pike module installer.";
 
@@ -10,6 +10,7 @@ string make="make";
 string make_flags="";
 string include_path=master()->include_prefix;
 string configure_command="configure";
+string config_args="";
 #ifdef NOT_INSTALLED
 string src_path=combine_path(__FILE__,"../../../../../src");
 string bin_path=combine_path(src_path,"../bin");
@@ -162,6 +163,8 @@ int main(int argc, array(string) argv)
     run_pike += " -m"+master()->_master_file_name;
   putenv("RUNPIKE", run_pike);
 
+  load_specs(include_path+"/specs");
+  
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"autoconf",Getopt.NO_ARG,({"--autoconf"}) }),
     ({"configure",Getopt.NO_ARG,({"--configure"}) }),
@@ -173,14 +176,16 @@ int main(int argc, array(string) argv)
     ({"auto",Getopt.NO_ARG,({"--auto"}) }),
     ({"source",Getopt.HAS_ARG,({"--source"}) }),
     ({"query",Getopt.HAS_ARG,({"--query"}) }),
+    ({"config_args",Getopt.HAS_ARG,({"--configure-args"}) })
     )),array opt)
     {
       switch(opt[0])
       {
 	case "query":
-	  write("%s\n",this_object()[opt[1]]);
+	  write((opt[1]=="specs"? "%O\n":"%s\n"),this_object()[opt[1]]);
 	  exit(0);
 
+        case "config_args": config_args=opt[1]; break;
 	case "source": srcdir=opt[1]; break;
 	case "automake": run->automake=ALWAYS; do_zero(); break;
 	case "autoheader": run->autoheader=ALWAYS; do_zero(); break;
@@ -201,8 +206,6 @@ int main(int argc, array(string) argv)
 
   argv=Getopt.get_args(argv);
 
-  load_specs(include_path+"/specs");
-  
   int tmp1;
   if(run->automake)
   {
@@ -277,7 +280,7 @@ int main(int argc, array(string) argv)
 			"BUILD_BASE":include_path])]),
 		    srcdir+"/"+configure_command,
 		    "--cache-file=./config.cache",
-		    @(cfa-({0})));
+		    @(cfa-({0})), @do_split_quoted_string(config_args));
       }
     }
   }
