@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.24 1998/07/29 22:59:10 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.25 1998/07/30 14:56:58 marcus Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -931,6 +931,9 @@ static string low_pike_sprintf(char *format,
       {
         INT32 l;
 #ifdef DOUBLE_IS_IEEE_LITTLE
+	double td;
+#endif
+#ifdef DOUBLE_IS_IEEE_BIG
 	double td;
 #endif
         DO_OP();
