@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.9 1996/11/19 09:35:24 hubbe Exp $");
+RCSID("$Id: program.c,v 1.10 1996/12/04 00:27:12 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -399,8 +399,8 @@ struct program *end_program()
     struct pike_string *s;
     s=make_shared_string("__INIT");
     tmp.offset=PC;
-    ins_byte(0, A_PROGRAM); /* num args */
     ins_byte(0, A_PROGRAM); /* num locals */
+    ins_byte(0, A_PROGRAM); /* num args */
     dooptcode(s,mknode(F_ARG_LIST,init_node,mknode(F_RETURN,mkintnode(0),0)),0);
     define_function(s,
 		    function_type_string,
@@ -408,6 +408,7 @@ struct program *end_program()
 		    IDENTIFIER_PIKE_FUNCTION,
 		    & tmp);
     free_string(s);
+    init_node=0;
   }
 
   if (num_parse_error > 0)
@@ -533,7 +534,7 @@ struct program *end_program()
 #undef POP
 #undef PROGRAM_STATE
   threads_disabled--;
-
+  free_all_nodes();
   return prog;
 }
 

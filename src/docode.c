@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.5 1996/12/01 13:03:54 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.6 1996/12/04 00:27:10 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -419,6 +419,9 @@ static int do_docode2(node *n,int flags)
       switch(CDR(n)->token)
       {
       case F_LOCAL:
+	if(CDR(n)->u.number >= local_variables->max_number_of_locals)
+	  yyerror("Illegal to use local variable here.");
+
 	if(do_docode(CAR(n),0)!=1) yyerror("RHS is void!");
 	emit(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
 	     CDR(n)->u.number );
@@ -985,6 +988,8 @@ static int do_docode2(node *n,int flags)
     }
 
   case F_LOCAL:
+    if(n->u.number >= local_variables->max_number_of_locals)
+      yyerror("Illegal to use local variable here.");
     if(flags & DO_LVALUE)
     {
       emit(F_LOCAL_LVALUE,n->u.number);

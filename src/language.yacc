@@ -156,7 +156,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.13 1996/11/28 03:42:13 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.14 1996/12/04 00:27:10 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -185,7 +185,7 @@ void add_local_name(struct pike_string *,struct pike_string *);
 /*
  * The names and types of arguments and auto variables.
  */
-struct locals *local_variables;
+struct locals *local_variables = 0;
 
 static int varargs;
 static INT32  current_modifiers;
@@ -425,6 +425,7 @@ constant_name: F_IDENTIFIER '=' expr0
       add_constant($1,&tmp, current_modifiers);
     } else {
       tmp=eval_low($3);
+      free_node($3);
       if(tmp < 1)
       {
 	yyerror("Error in constant definition.");

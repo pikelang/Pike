@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.8 1996/11/25 21:33:08 hubbe Exp $");
+RCSID("$Id: las.c,v 1.9 1996/12/04 00:27:11 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -24,6 +24,7 @@ RCSID("$Id: las.c,v 1.8 1996/11/25 21:33:08 hubbe Exp $");
 #include "memory.h"
 #include "operators.h"
 #include "callback.h"
+#include "macros.h"
 
 #define LASDEBUG
 
@@ -120,12 +121,65 @@ INT32 count_args(node *n)
   }
 }
 
+
+#define NODES 256
+
+struct node_chunk 
+{
+  struct node_chunk *next;
+  node nodes[NODES];
+};
+
+static struct node_chunk *node_chunks=0;
+static node *free_nodes=0;
+
+void free_all_nodes()
+{
+  if(!local_variables)
+  {
+    node *tmp;
+    struct node_chunk *tmp2;
+#ifdef DEBUG
+    int e=0;
+    for(tmp2=node_chunks;tmp2;tmp2=tmp2->next) e+=NODES;
+    for(tmp=free_nodes;tmp;tmp=CAR(tmp)) e--;
+    if(e)
+    {
+      int e2=e;
+      for(tmp2=node_chunks;tmp2;tmp2=tmp2->next)
+      {
+	for(e=0;e<NODES;e++)
+	{
+	  for(tmp=free_nodes;tmp;tmp=CAR(tmp))
+	    if(tmp==tmp2->nodes+e)
+	      break;
+
+	  if(!tmp)
+	    fprintf(stderr,"Free node at %p.\n",(tmp2->nodes+e));
+	}
+      }
+      fatal("Failed to free %d nodes when compiling!\n",e2);
+    }
+#endif
+    while(node_chunks)
+    {
+      tmp2=node_chunks;
+      node_chunks=tmp2->next;
+      free((char *)tmp2);
+    }
+    free_nodes=0;
+  }
+}
+
 void free_node(node *n)
 {
   if(!n) return;
-  if(n->type) free_string(n->type);
   switch(n->token)
   {
+  case USHRT_MAX:
+    fatal("Freeing node again!\n");
+    break;
+
   case F_CONSTANT:
     free_svalue(&(n->u.sval));
     break;
@@ -134,16 +188,32 @@ void free_node(node *n)
     if(car_is_node(n)) free_node(CAR(n));
     if(cdr_is_node(n)) free_node(CDR(n));
   }
-  free((char *)n);
+  n->token=USHRT_MAX;
+  if(n->type) free_string(n->type);
+  CAR(n)=free_nodes;
+  free_nodes=n;
 }
 
 
 /* here starts routines to make nodes */
-
 static node *mkemptynode()
 {
   node *res;
-  res=(node *)xalloc(sizeof(node));
+  if(!free_nodes)
+  {
+    int e;
+    struct node_chunk *tmp=ALLOC_STRUCT(node_chunk);
+    tmp->next=node_chunks;
+    node_chunks=tmp;
+
+    for(e=0;e<NODES-1;e++)
+      CAR(tmp->nodes+e)=tmp->nodes+e+1;
+    CAR(tmp->nodes+e)=0;
+    free_nodes=tmp->nodes;
+  }
+  res=free_nodes;
+  free_nodes=CAR(res);
+  res->token=0;
   res->line_number=current_line;
   res->type=0;
   res->node_info=0;
