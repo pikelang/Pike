@@ -1,8 +1,20 @@
-/* $Id: master.pike.in,v 1.21 1998/04/29 03:08:25 grubba Exp $
+/* $Id: master.pike.in,v 1.22 1998/04/29 13:11:01 grubba Exp $
  * 
  * Master-file for Pike.
  *
  * Based on master.pike 1.67.
+ */
+
+// Some configurable parameters useful for debugging
+
+// Used by describe_backtrace() et al.
+#if !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0)
+#undef BT_MAX_STRING_LEN
+#define BT_MAX_STRING_LEN	60
+#endif /* !defined(BT_MAX_STRING_LEN) || (BT_MAX_STRING_LEN <= 0) */
+
+/*
+ * Functions begin here.
  */
 
 int is_absolute_path(string p)
@@ -795,9 +807,13 @@ string stupid_describe(mixed m)
     return (string)m;
 
   case "string":
-    if(sizeof(m) < 60 && sscanf(m,"%*[^\0-\037\177-\237\\\"]%n",int i) && i==sizeof(m))
+    if(sizeof(m) < BT_MAX_STRING_LEN)
     {
-      return "\""+m+"\"";
+      string t = sprintf("%O", m);
+      if (sizeof(t) < (BT_MAX_STRING_LEN + 2)) {
+	return t;
+      }
+      t = 0;
     }
 
   case "array":
@@ -806,7 +822,7 @@ string stupid_describe(mixed m)
     return typ+"["+sizeof(m)+"]";
 
   default:
-    return sprintf("%t",m);
+    return typ;
   }
 }
 
