@@ -666,7 +666,7 @@ void do_export()
 
     status("Creating", export_base_name+"_actions.wxs");
 
-    WixNode xml_root = Parser.XML.Tree.SimpleRootNode()->
+    xml_root = Parser.XML.Tree.SimpleRootNode()->
       add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						   "encoding":"utf-8"])))->
       add_child(WixNode("Wix", ([
