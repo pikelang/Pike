@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.42 1997/01/18 21:48:06 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.43 1997/01/21 12:50:10 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -149,11 +149,12 @@ AC_MSG_CHECKING(if ld accepts setting the run-time path with -R)
 AC_CACHE_VAL(pike_cv_ld_accepts_r,
 [
   OLD_CFLAGS="$CFLAGS"
+  pike_cv_ld_accepts_r=yes
   
-  CFLAGS="$CFLAGS -R."
-  AC_TRY_LINK([],[ exit(0); ],[
-    pike_cv_ld_accepts_r=yes
-  ],[ pike_cv_ld_accepts_r=no ])
+  for test_path in . .. /lib /usr/lib .:.. /lib:/usr/lib; do
+    CFLAGS="$OLD_CFLAGS -R$test_path"
+    AC_TRY_LINK([],[ exit(0); ],[],[ pike_cv_ld_accepts_r=no ])
+  done
   CFLAGS="$OLD_CFLAGS"
 ])
 AC_MSG_RESULT($pike_cv_ld_accepts_r)
