@@ -8,14 +8,22 @@ This is what you need to do to install Pike:
                             default is /usr/local.
   --without-gdbm            compile without gdbm support
   --without-gmp             compile without gmp support
-  --without-debug           compile without runtime debugging
-  --without-threads         compile without threads support
+  --without-rtldebug        compile without runtime debugging
+  --without-cdebug          compile without debug symbols (-g)
+  --without-debug           compile without rtldbug and cdebug
+  --without-threads         compile without threads support (See below)
   --without-zlib            compile without gzip compression libary support
   --without-dynamic-modules compile statically, no dynamic loading used.
 	                    (makes binary larger)
   --without-mysql           compile without mysql support
   --with-profiling          enables profiling pike code but slows
                             down interpreter a little
+  --with-poll               use poll instead of select
+  --with-dmalloc            compile with memory tracking, makes pike
+                            very slow, use for debugging only.
+  --without-copt            compile without -O2
+  --without-bignums         disable support for large integers
+  --with-security           enable internal object security system
 
    You might also want to set the following environment variables:
    CFLAGS     Put extra flags for your C compiler here.
@@ -48,39 +56,57 @@ This is what you need to do to install Pike:
    will contain the Pike documentation in html. This directory can then
    be copied to anywhere you want.
 
-What to do when it doesn't work:
-1) Try again.
+IF IT DOESN'T WORK:
 
-2) Your sh might be too buggy to run ./configure. (This is the case on A/UX)
+ o Try again.
+
+ o Your sh might be too buggy to run ./configure. (This is the case on A/UX)
    Try using bash, zsh or possibly ksh. To use bash, first run /bin/sh and
    type:
    $ CONFIG_SHELL=full_path_for_bash
    $ export CONFIG_SHELL
    $ $CONFIG_SHELL ./configure
 
-3) ./configure relies heavily on sed, if you have several sed in your path
+ o ./configure relies heavily on sed, if you have several sed in your path
    try another sed. (preferably gnu sed)
 
-4) configure might have done something wrong, check machine.h and report
+ o configure might have done something wrong, check machine.h and report
    any errors back to me.
 
-5) Your gmp/gdbm libraries might not be working or incorrectly 
+ o Your gmp/gdbm libraries might not be working or incorrectly 
    installed, start over by running configure with the approperiate
    --without-xxx arguments. Also note that threads might give problems
    with I/O and signals. If so you need to run configure --without-threads.
 
-6) Try a different compiler, malloc, compiler-compiler and/or make.
+ o Try a different compiler, malloc, compiler-compiler and/or make.
    (if you have any other)
 
-7) On old Linux Slackware machines (older than slackware 3.0), Pike sometimes
-   fails to find -lm, this is because of a bug in /usr/lib/libm.sa
-   (or possibly libg.a) in slackware.
-   Compile with 'make EXTRALIBS="-lc -lm"' to get around this bug.
 
-   Threads support on linux works on some releaes, you might need to add
-   an _ to line 36 in /usr/include/sched.h (change _P to __P).
 
-8)
+THREADS SUPPORT
+
+Getting threads support might be hairy on some platforms, most platforms
+have threads support but quite a few have problems running external
+processes. (through create_process) By default thread support is disabled
+on platforms where threading is known not to work 100% properly.
+
+IRIX: starting many processes causes an error causes a resource
+      error which sometimes causes a complete hang and 100% cpu
+      usage.
+
+FreeBSD 3.x: Symptoms are similar to IRIX, but the problem has
+      something to do with signal handling. (And as you may know,
+      process handling uses signals on UNIX...)
+
+Linux: Not all linux variations have 100% working threads, in
+      fact most libc5 systems do not work very well threads.
+      Threads support is enabled by default on Linux, but I
+      recommend running 'make verify' after compilation. This
+      will (hopefully) tell you if your threads are not working.
+
+
+BUGS
+
 If you find a bug in the interpreter, the first thing to do is to make sure
 the interpreter is compiled with PIKE_DEBUG defined. If not recompile with PIKE_DEBUG
 and see if you get another error. When you've done this, please report the
