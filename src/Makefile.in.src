@@ -1,0 +1,174 @@
+# This line is needed on some machines.
+@SET_MAKE@
+
+# Don't change this line.  Define EXTRALIBS before this line if you
+# wish to add any libraries.
+LIBS=@LIBS@ $(EXTRALIBS)
+
+# not used yet
+INSTALL=@INSTALL@
+
+SRCDIR=@srcdir@
+VPATH=@srcdir@
+
+# These are used while compiling
+TMP_LIBDIR = @srcdir@/../lib
+TMP_BINDIR = @srcdir@/../bin
+
+prefix = @prefix@
+exec_prefix = $(prefix)/bin
+lib_prefix = $(prefix)/lib/ulpc
+
+#
+# use bison please, yacc doesn't always work good enough.
+#
+YACC=@YACC@
+YFLAGS=-d -v
+
+# If you don't have 'strchr', then add next flag to CFLAGS.
+# -Dstrchr=index -Dstrrchr=rindex
+#
+PROFIL=
+#PROFIL=-pg
+
+#
+#Enable warnings from the compiler, if wanted.
+#
+WARN=@WARN@
+#WARN=-W -Wunused -Wformat
+#WARN -Wunused -Wformat -Wuninitialized
+#WARN= -Wall -Wshadow -Dlint
+
+#add extra defines here
+DEFINES=-DDEFAULT_MASTER=\"$(lib_prefix)/master.lpc\"
+
+# -O should work with all compilers
+OPTIMIZE=@OPTIMIZE@
+
+# Preprocessor flags.
+PREFLAGS=-I. -I$(SRCDIR) $(DEFINES)
+OTHERFLAGS=$(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
+
+CC=@CC@
+CPP=@CPP@
+
+LD=$(CC)
+LDFLAGS=$(CFLAGS)
+
+MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)"
+
+# Add alloca.o if you don't have alloca() on your machine.
+# Add ualarm.o if you don't have ualarm() on your machine.
+#
+OBJ=language.o add_efun.o array.o builtin_efuns.o backend.o \
+    call_out.o docode.o dynamic_buffer.o error.o fd_control.o \
+    fsort.o hashtable.o interpret.o lex.o las.o list.o \
+    lpc_types.o main.o mapping.o memory.o module.o object.o \
+    opcodes.o operators.o port.o program.o rusage.o stralloc.o \
+    stuff.o svalue.o debug.o callback.o
+
+#
+MODULES=@subdirs@
+MODULE_OBJS=@MODULE_OBJS@
+
+all: ulpc
+
+module_objects:
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) ) ; done
+
+ulpc: $(OBJ) module_objects
+	-mv ulpc ulpc.old
+	$(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+
+pure: $(OBJ) module_objects
+	-mv ulpc ulpc.old
+	purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+
+cover: $(OBJ) module_objects
+	-mv ulpc ulpc.old
+	purecov purify -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+
+quant: $(OBJ) module_objects
+	-mv ulpc ulpc.old
+	quantify $(LD) $(LDFLAGS) $(OBJ) $(MODULE_OBJS) -o ulpc $(LIBS)
+
+install:
+	if [ ! -d "$(prefix)" ]; then mkdir "$(prefix)" ; chmod 755 "$(prefix)" ; fi
+	if [ ! -d "$(exec_prefix)" ]; then mkdir "$(exec_prefix)" ; chmod 755 "$(exec_prefix)" ; fi
+	$(INSTALL) ./ulpc $(exec_prefix)
+	if [ ! -d "$(prefix)/lib" ]; then mkdir "$(prefix)/lib" ; chmod 755 "$(prefix)/lib" ; fi
+	if [ ! -d "$(lib_prefix)" ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; fi
+	$(INSTALL) $(TMP_LIBDIR)/master.lpc $(lib_prefix)
+	$(INSTALL) $(TMP_LIBDIR)/simulate.lpc $(lib_prefix)
+
+
+spinner-install:
+	cp ulpc $(SRCDIR)/../../server/bin/
+
+lint: *.c
+	lint *.c
+
+lang.o: lang.c config.h object.h interpret.h program.h
+
+language.h: language.y
+	@echo "Expect 1 shift/reduce conflict."
+	$(YACC) $(YFLAGS) $(SRCDIR)/language.y
+	mv y.tab.c language.c
+	mv y.tab.h language.h
+
+language.c: language.h
+	touch language.c
+
+module.c: modlist.h
+
+tidy:
+	-rm -f *.o core $(MUD_LIB)/core y.output y.tab.c y.tab.h
+	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~
+
+clean: tidy
+	-for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
+	-for a in $(MODULES) ; do rm -f $$a/*.o ; done
+	-rm -f language.h language.c efun_protos.h opc_cost.h
+	-rm -f TAGS tags
+	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
+
+spotless: clean
+	rm -f Makefile machine.h
+	find . -type f '(' -name '*~' -o -name '.*~' -o -name core -o -name '.nfs*' -name '#*#' ')' -print | xargs rm -f
+	-rm -f lexical.c mon.out *.ln config.status
+	-rm -f $(TMP_BINDIR)/driver $(TMP_BINDIR)/*~ $(TMP_BINDIR)/#*#
+	-rm -f .pure driver* l.outa*
+
+tags:
+	ctags *.c
+
+TAGS:
+	etags -t *.h *.c
+
+Makefile: Makefile.in 
+	./config.status
+
+machine.h: stamp-h
+
+stamp-h: machine.h.in 
+	./config.status
+
+modlist.h:
+	./config.status
+
+$(TMP_LIBDIR)/testsuite.lpc: $(TMP_BINDIR)/create_testsuite
+	$(TMP_BINDIR)/create_testsuite >$(TMP_LIBDIR)/testsuite.lpc
+
+verify: $(TMP_LIBDIR)/testsuite.lpc
+	./ulpc -m $(TMP_LIBDIR)/master.lpc $(TMP_LIBDIR)/testsuite.lpc
+
+verbose_verify: $(TMP_LIBDIR)/testsuite.lpc
+	./ulpc -m $(TMP_LIBDIR)/master.lpc $(TMP_LIBDIR)/testsuite.lpc --verbose
+
+depend: language.c
+	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c >$(SRCDIR)/dependencies
+	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
+	config.status
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
+
