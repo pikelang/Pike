@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.61 1999/01/31 09:02:04 hubbe Exp $
+ * $Id: threads.h,v 1.62 1999/02/01 04:11:37 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -392,7 +392,7 @@ struct thread_state {
 
 #define SWAP_OUT_CURRENT_THREAD() \
   do {\
-     struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
+     struct thread_state *_tmp=OBJ2THREAD(thread_id); \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
 			 __FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
@@ -425,10 +425,12 @@ struct thread_state {
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
 #endif /* PIKE_DEBUG */
-			   
+
+#define	OBJ2THREAD(X) \
+  ((struct thread_state *)((X)->storage+thread_storage_offset))
 
 #define THREADS_ALLOW() do { \
-     struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
+     struct thread_state *_tmp=OBJ2THREAD(thread_id); \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
@@ -455,7 +457,7 @@ struct thread_state {
    } while(0)
 
 #define THREADS_ALLOW_UID() do { \
-     struct thread_state *_tmp_uid=(struct thread_state *)thread_id->storage; \
+     struct thread_state *_tmp_uid=OBJ2THREAD(thread_id); \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp_uid); \
        live_threads++; \
@@ -567,5 +569,6 @@ void CheckValidHandle(HANDLE h);
 #endif
 
 extern int threads_disabled;
+extern int thread_storage_offset;
 
 #endif /* THREADS_H */

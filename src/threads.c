@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.87 1999/02/01 02:41:50 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.88 1999/02/01 04:11:35 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -152,6 +152,7 @@ struct program *thread_local_prog = 0;
 pthread_attr_t pattr;
 pthread_attr_t small_pattr;
 #endif
+int thread_storage_offset;
 
 struct thread_starter
 {
@@ -332,7 +333,7 @@ unsigned INT32 thread_table_hash(THREAD_T *tid)
 
 void thread_table_insert(struct object *o)
 {
-  struct thread_state *s = (struct thread_state *)o->storage;
+  struct thread_state *s = OBJ2THREAD(o);
   unsigned INT32 h = thread_table_hash(&s->id);
 #ifdef PIKE_DEBUG
   if(h>=THREAD_TABLE_SIZE)
@@ -348,7 +349,7 @@ void thread_table_insert(struct object *o)
 
 void thread_table_delete(struct object *o)
 {
-  struct thread_state *s = (struct thread_state *)o->storage;
+  struct thread_state *s = OBJ2THREAD(o);
   mt_lock( & thread_table_lock );
   if(s->hashlink != NULL)
     s->hashlink->backlink = s->backlink;
@@ -456,8 +457,8 @@ void *new_thread_func(void * data)
     fatal("Failed to lock interpreter, errno %d\n",tmp);
   init_interpreter();
   thread_id=arg.id;
-  SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
-  ((struct thread_state *)thread_id->storage)->swapped=0;
+  SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */
+  OBJ2THREAD(thread_id)->swapped=0;
   stack_top=((char *)&data)+ (thread_stack_size-16384) * STACK_DIRECTION 
 #ifdef THREAD_TRACE
   {
@@ -495,13 +496,13 @@ void *new_thread_func(void * data)
     pop_stack();
   }
 
-  if(((struct thread_state *)(thread_id->storage))->thread_local != NULL) {
-    free_mapping(((struct thread_state *)(thread_id->storage))->thread_local);
-    ((struct thread_state *)(thread_id->storage))->thread_local = NULL;
+  if(OBJ2THREAD(thread_id)->thread_local != NULL) {
+    free_mapping(OBJ2THREAD(thread_id)->thread_local);
+    OBJ2THREAD(thread_id)->thread_local = NULL;
   }
 
-   ((struct thread_state *)(thread_id->storage))->status=THREAD_EXITED;
-   co_broadcast(& ((struct thread_state *)(thread_id->storage))->status_change);
+   OBJ2THREAD(thread_id)->status=THREAD_EXITED;
+   co_broadcast(& OBJ2THREAD(thread_id)->status_change);
 
   free((char *)data); /* Moved by per, to avoid some bugs.... */
   UNSETJMP(back);
@@ -537,9 +538,9 @@ void f_thread_create(INT32 args)
   arg=ALLOC_STRUCT(thread_starter);
   arg->args=aggregate_array(args);
   arg->id=clone_object(thread_id_prog,0);
-  ((struct thread_state *)arg->id->storage)->status=THREAD_RUNNING;
+  OBJ2THREAD(arg->id)->status=THREAD_RUNNING;
 
-  tmp=th_create(&((struct thread_state *)arg->id->storage)->id,
+  tmp=th_create(& OBJ2THREAD(arg->id)->id,
 		new_thread_func,
 		arg);
 
@@ -801,8 +802,8 @@ void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 
 void f_thread_backtrace(INT32 args)
 {
-  struct thread_state *foo = (struct thread_state *)fp->current_object->storage;
-  struct thread_state *bar = (struct thread_state *)thread_id->storage;
+  struct thread_state *foo = THIS_THREAD;
+  struct thread_state *bar = OBJ2THREAD( thread_id );
   struct svalue *osp = sp;
   pop_n_elems(args);
   if(foo->sp)
@@ -847,7 +848,7 @@ static void f_thread_id_result(INT32 args)
 
 void init_thread_obj(struct object *o)
 {
-  MEMSET(o->storage, 0, sizeof(struct thread_state));
+  MEMSET(THIS_THREAD, 0, sizeof(struct thread_state));
   THIS_THREAD->status=THREAD_NOT_STARTED;
   co_init(& THIS_THREAD->status_change);
   THIS_THREAD->thread_local=NULL;
@@ -866,7 +867,7 @@ void exit_thread_obj(struct object *o)
 
 static void thread_was_marked(struct object *o)
 {
-  struct thread_state *tmp=(struct thread_state *)(o->storage);
+  struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     gc_mark_mapping_as_referenced(tmp->thread_local);
 #ifdef PIKE_DEBUG
@@ -879,7 +880,7 @@ static void thread_was_marked(struct object *o)
 
 static void thread_was_checked(struct object *o)
 {
-  struct thread_state *tmp=(struct thread_state *)(o->storage);
+  struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     gc_check(tmp->thread_local);  
 }
@@ -903,7 +904,7 @@ void f_thread_local_get(INT32 args)
   key.subtype = NUMBER_NUMBER;
   pop_n_elems(args);
   if(thread_id != NULL &&
-     (m = ((struct thread_state *)thread_id->storage)->thread_local) != NULL)
+     (m = OBJ2THREAD(thread_id)->thread_local) != NULL)
     mapping_index_no_free(sp++, m, &key);
   else {
     push_int(0);
@@ -926,8 +927,8 @@ void f_thread_local_set(INT32 args)
   if(thread_id == NULL)
     error("Trying to set thread_local without thread!\n");
 
-  if((m = ((struct thread_state *)thread_id->storage)->thread_local) == NULL)
-    m = ((struct thread_state *)thread_id->storage)->thread_local =
+  if((m = OBJ2THREAD(thread_id)->thread_local) == NULL)
+    m = OBJ2THREAD(thread_id)->thread_local =
       allocate_mapping(4);
 
   mapping_insert(m, &key, &sp[-1]);
@@ -1042,7 +1043,7 @@ void th_init(void)
     fatal("Failed to initialize thread_local program!\n");
 
   start_new_program();
-  ADD_STORAGE(struct thread_state);
+  thread_storage_offset=ADD_STORAGE(struct thread_state);
   thread_id_result_variable=simple_add_variable("result","mixed",0);
   add_function("backtrace",f_thread_backtrace,"function(:array)",0);
   add_function("wait",f_thread_id_result,"function(:mixed)",0);
@@ -1062,9 +1063,9 @@ void th_init(void)
     fatal("Failed to initialize thread program!\n");
 
   thread_id=clone_object(thread_id_prog,0);
-  SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
-  ((struct thread_state *)thread_id->storage)->swapped=0;
-  ((struct thread_state *)thread_id->storage)->id=th_self();
+  SWAP_OUT_THREAD(OBJ2THREAD(thread_id)); /* Init struct */
+  OBJ2THREAD(thread_id)->swapped=0;
+  OBJ2THREAD(thread_id)->id=th_self();
   thread_table_insert(thread_id);
 }
 
