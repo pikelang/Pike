@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.166 2003/01/13 14:42:06 grubba Exp $
+|| $Id: main.c,v 1.167 2003/02/03 13:58:28 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.166 2003/01/13 14:42:06 grubba Exp $");
+RCSID("$Id: main.c,v 1.167 2003/02/03 13:58:28 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -666,16 +666,33 @@ int dbm_main(int argc, char **argv)
   TRACE((stderr, "Init time...\n"));
   
   GETTIMEOFDAY(&current_time);
-  
-  TRACE((stderr, "Init interpreter...\n"));
+
+  TRACE((stderr, "Init threads...\n"));
 
   low_th_init();
+
+  TRACE((stderr, "Init strings...\n"));
   
   init_shared_string_table();
+
+  TRACE((stderr, "Init interpreter...\n"));
+
   init_interpreter();
+
+  TRACE((stderr, "Init types...\n"));
+
   init_types();
+
+  TRACE((stderr, "Init lexer...\n"));
+
   init_lex();
+
+  TRACE((stderr, "Init programs...\n"));
+
   init_program();
+
+  TRACE((stderr, "Init objects...\n"));
+
   init_object();
 
   TRACE((stderr, "Init modules...\n"));
