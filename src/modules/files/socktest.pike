@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.21 2003/01/20 17:53:13 nilsson Exp $ */
+/* $Id: socktest.pike,v 1.22 2003/04/10 02:04:35 nilsson Exp $ */
 
 
 import Stdio;
@@ -233,6 +233,7 @@ void got_oob0(mixed ignored, string got)
 
 inherit Port : port1;
 inherit Port : port2;
+void create() {}
 
 int portno1;
 int portno2;
