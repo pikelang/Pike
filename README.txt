@@ -2,7 +2,7 @@ Pike by Fredrik Hübinette 1994-2001
 
 Permission to copy, modify, and distribute this source for any legal
 purpose granted as long as my name is still attached to it.  More
-specifically the GPL license applies to this software.
+specifically the GPL, LGPL and MPL license applies to this software.
 
 New releases can be found on ftp://pike.ida.liu.se/pub/pike/
 Report bugs at http://community.roxen.com/crunch/
@@ -36,7 +36,7 @@ yourself, try the Old instructions:
 
    Some options for ./configure are:
    --prefix=/foo/bar         if you want to install Pike in /foo/bar,
-                             default is /usr/local.
+                             default is /usr/local
    --without-gdbm            compile without gdbm support
    --without-gmp             compile without gmp support
    --without-rtldebug        compile without runtime debugging
@@ -47,13 +47,13 @@ yourself, try the Old instructions:
    --without-zlib            compile without gzip compression libary
                              support
    --without-dynamic-modules compile statically, no dynamic loading
-                             used. (makes binary larger)
+                             used (makes binary larger)
    --without-mysql           compile without mysql support
    --with-profiling          enables profiling pike code but slows
                              down interpreter a little
    --with-poll               use poll instead of select
    --with-dmalloc            compile with memory tracking, makes pike
-                             very slow, use for debugging only.
+                             very slow, use for debugging only
    --without-copt            compile without -O2
    --without-bignums         disable support for large integers
    --with-security           enable internal object security system
