@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.3 1997/11/02 03:44:50 mirar Exp $
+**!	$Id: gif_lzw.c,v 1.4 1997/11/05 03:42:50 mirar Exp $
 */
 
 #include "global.h"
@@ -110,7 +110,7 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
 
 void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
 {
-   int i;
+   unsigned long i;
 
    lzw->broken=0;
 
