@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.52 2004/06/23 15:13:40 jonasw Exp $
+ * $Id: Tree.pmod,v 1.53 2004/11/17 17:09:09 mast Exp $
  *
  */
 
@@ -1521,7 +1521,7 @@ private Node|int(0..0)
 	name = lower_case(name);
 	attr = mkmapping(map(indices(attr), lower_case), values(attr));
       }
-      //  Parse namespace information of available.
+      //  Parse namespace information if available.
       if (extra[0]->xmlns) {
 	XMLNSParser xmlns = extra[0]->xmlns;
 	attr = xmlns->Enter(attr);
@@ -1613,12 +1613,22 @@ string report_error_context(string data, int ofs)
 //! Flags used together with @[simple_parse_input()] and
 //! @[simple_parse_file()].
 enum ParseFlags {
-  PARSE_WANT_ERROR_CONTEXT = 1,
-#define PARSE_WANT_ERROR_CONTEXT	1
-  PARSE_FORCE_LOWERCASE = 2,
-#define PARSE_FORCE_LOWERCASE		2
-  PARSE_ENABLE_NAMESPACES = 4,
-#define PARSE_ENABLE_NAMESPACES		4
+  PARSE_WANT_ERROR_CONTEXT =		0x1,
+#define PARSE_WANT_ERROR_CONTEXT	0x1
+  PARSE_FORCE_LOWERCASE =		0x2,
+#define PARSE_FORCE_LOWERCASE		0x2
+  PARSE_ENABLE_NAMESPACES =		0x4,
+#define PARSE_ENABLE_NAMESPACES		0x4
+  // Negated flag for compatibility.
+  PARSE_DISALLOW_RXML_ENTITIES =	0x8,
+#define PARSE_DISALLOW_RXML_ENTITIES	0x8
+  
+  PARSE_COMPAT_ALLOW_ERRORS_7_2 =	0x10,
+#define PARSE_COMPAT_ALLOW_ERRORS_7_2	0x10
+  PARSE_COMPAT_ALLOW_ERRORS_7_6 =	0x20,
+#define PARSE_COMPAT_ALLOW_ERRORS_7_6	0x20
+  // The following exists for compatibility only.
+  PARSE_CHECK_ALL_ERRORS =		0,
 }
 
 //! Takes an XML string and produces a @[SimpleNode] tree.
@@ -1626,10 +1636,16 @@ SimpleNode simple_parse_input(string data,
 			      void|mapping predefined_entities,
 			      ParseFlags|void flags)
 {
-  object xp = spider.XML();
+  Parser.XML.Simple xp = Parser.XML.Simple();
   SimpleNode mRoot;
-  
-  xp->allow_rxml_entities(1);
+
+  if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
+    xp->allow_rxml_entities(1);
+
+  if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_2)
+    xp->compat_allow_errors ("7.2");
+  else if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_6)
+    xp->compat_allow_errors ("7.6");
   
   //  Init parser with predefined entities
   if (predefined_entities)
@@ -1688,16 +1704,28 @@ SimpleNode simple_parse_file(string path,
     return simple_parse_input(data, predefined_entities, flags);
 }
 
-//! Takes a XML string and produces a node tree.
+//! Takes an XML string and produces a node tree.
+//!
+//! @note
+//! @[flags] is not used for @[PARSE_WANT_ERROR_CONTEXT],
+//! @[PARSE_FORCE_LOWERCASE] or @[PARSE_ENABLE_NAMESPACES] since they
+//! are covered by the separate flag arguments.
 Node parse_input(string data, void|int(0..1) no_fallback,
 		 void|int(0..1) force_lowercase,
 		 void|mapping(string:string) predefined_entities,
-		 void|int(0..1) parse_namespaces)
+		 void|int(0..1) parse_namespaces,
+		 ParseFlags|void flags)
 {
-  object xp = spider.XML();
+  Parser.XML.Simple xp = Parser.XML.Simple();
   Node mRoot;
-  
-  xp->allow_rxml_entities(1);
+
+  if (!(flags & PARSE_DISALLOW_RXML_ENTITIES))
+    xp->allow_rxml_entities(1);
+
+  if (flags & PARSE_COMPAT_ALLOW_ERRORS_7_2)
+    xp->compat_allow_errors ("7.2");
+  else if (flags & PARSE_CHECK_ALL_ERRORS)
+    xp->compat_allow_errors (0);
   
   //  Init parser with predefined entities
   if (predefined_entities)
