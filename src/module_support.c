@@ -3,6 +3,7 @@
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
+#include "pike_types.h"
 
 enum error_type {
   ERR_NONE,
