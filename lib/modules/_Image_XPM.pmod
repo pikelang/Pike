@@ -9,7 +9,7 @@ static mapping parse_color( array color )
 
 static array find_color( mapping in, string space )
 {
-  return in&&in[space||"c"];
+  return in && (in[space||"s"] || in->c || in->g || in->g4 || in->m);
 } 
 
 mapping _decode( string what, void|mapping opts )
