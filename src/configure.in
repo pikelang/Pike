@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.78 1997/04/11 04:03:28 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.79 1997/04/11 04:18:11 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -125,7 +125,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
   AC_CACHE_VAL(pike_cv_option_$2,
   [
     CFLAGS="[$]OLD_CFLAGS $1"
-    AC_TRY_RUN([],[],pike_cv_option_$2=yes,pike_cv_option_$2=no)
+    AC_TRY_RUN([int main(){exit(0);}],pike_cv_option_$2=yes,pike_cv_option_$2=no)
   ])
   
   CFLAGS="[$]OLD_CFLAGS"
