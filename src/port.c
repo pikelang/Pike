@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.61 2003/02/24 13:36:45 grubba Exp $
+|| $Id: port.c,v 1.62 2003/02/26 09:29:39 grubba Exp $
 */
 
 /*
@@ -15,6 +15,7 @@
 
 #include "global.h"
 #include "time_stuff.h"
+#include "pike_error.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -26,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.61 2003/02/24 13:36:45 grubba Exp $");
+RCSID("$Id: port.c,v 1.62 2003/02/26 09:29:39 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
