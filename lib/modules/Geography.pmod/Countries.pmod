@@ -486,7 +486,7 @@ Country from_name(string name)
 //!	an array of the countries on that continent.
 //!
 //!	The continents are:
-//!	@pre{
+//!	@tt{
 //!    	  "Europe"
 //!    	  "Africa"
 //!    	  "Asia"
@@ -533,7 +533,7 @@ mapping(string:array(Country)) continents()
 //!	is in the name- and domain-space and
 //!	returns that country if possible:
 //!
-//!     @pre{
+//!     @tt{
 //! > Geography.Countries.se;    
 //! Result: Country(Sweden)
 //! > Geography.Countries.djibouti;

@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.119 2001/06/16 17:25:34 per Exp $
+// $Id: module.pmod,v 1.120 2001/07/16 15:41:28 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -1252,6 +1252,7 @@ class FILE
     }
     return ::write( what,@fmt );
   }
+
   //! This function does approximately the same as:
   //! @code{@[write](@[sprintf](@[format],@@@[data]))@}.
   //!

@@ -296,7 +296,7 @@ string unentity(string s)
 //!	and packs the result together in a HTTP query string.
 //!
 //!	Example:
-//!	@pre{
+//!	@tt{
 //!	> Protocols.HTTP.http_encode_query( (["anna":"eva","lilith":"blue"]) );  
 //!     Result: "lilith=blue&anna=eva"
 //!     > Protocols.HTTP.http_encode_query( (["&amp;":"&","'=\"":"\0\0\0"]) );  

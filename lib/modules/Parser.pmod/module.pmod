@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.8 2001/06/09 12:53:58 grubba Exp $
+ * $Id: module.pmod,v 1.9 2001/07/16 15:37:04 grubba Exp $
  *
  */
 
@@ -25,7 +25,7 @@ class SGML
 //!	A string
 //!     @tt{"<gat>&nbsp;<gurka>&nbsp;</gurka>&nbsp;<banan>&nbsp;<kiwi>&nbsp;</gat>"@}
 //!     results in 
-//!	@pre{
+//!	@tt{
 //!	({
 //!	    tag "gat" object with data:
 //!	    ({
@@ -50,7 +50,7 @@ class SGML
 //!	container _with_ an end tag.
 //!
 //! 	The 'tag' is an object with the following variables:
-//!	@pre{
+//!	@tt{
 //!	 string name;           - name of tag
 //!	 mapping args;          - argument to tag
 //!	 int line,char,column;  - position of tag

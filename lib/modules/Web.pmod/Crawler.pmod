@@ -1,22 +1,40 @@
 #pike __REAL_VERSION__
 
-// This module implements a generic web crawler.
-// Features:
-// o Fully asynchronous operation (Several hundred simultaneous requests)
-// o Supports the /robots.txt exclusion standard
-// o Extensible
-//   - URI Queues
-//   - Allow/Deny rules
-// o Configurable
-//   - Number of concurrent fetchers
-//   - Bits per second (bandwidth throttling)
-//   - Number of concurrent fetchers per host
-//   - Delay between fetches from the same host
-// o Supports HTTP and HTTPS
+//! This module implements a generic web crawler.
+//!
+//! Features:
+//! @ul
+//!   @item
+//!     Fully asynchronous operation (Several hundred simultaneous requests)
+//!   @item
+//!     Supports the /robots.txt exclusion standard
+//!   @item
+//!     Extensible
+//!     @ul 
+//!       @item
+//!         URI Queues
+//!       @item
+//!         Allow/Deny rules
+//!     @endul
+//!   @item
+//!     Configurable
+//!     @ul
+//!       @item
+//!         Number of concurrent fetchers
+//!       @item
+//!         Bits per second (bandwidth throttling)
+//!       @item
+//!         Number of concurrent fetchers per host
+//!       @item
+//!         Delay between fetches from the same host
+//!     @endul
+//!   @item
+//!     Supports HTTP and HTTPS
+//! @endul
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.9 2001/06/10 11:39:41 per Exp $
+// $Id: Crawler.pmod,v 1.10 2001/07/16 15:47:16 grubba Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -27,6 +45,7 @@
 # define CRAWLER_MSGS(X, Y)
 #endif
 
+//! Statistics.
 class Stats(int window_width,
 	    int granularity)
 {
@@ -353,6 +372,7 @@ class MySQLQueue
   }
 }
 
+//! Memory queue
 class MemoryQueue
 {
   Stats stats;
