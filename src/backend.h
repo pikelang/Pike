@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: backend.h,v 1.7 1999/05/02 08:11:29 hubbe Exp $
+ * $Id: backend.h,v 1.8 2000/06/29 16:52:25 grubba Exp $
  */
 #ifndef BACKEND_H
 #define BACKEND_H
@@ -46,7 +46,7 @@ void *query_write_oob_callback_data(int fd);
 #endif /* WITH_OOB */
 void do_debug(void);
 void backend(void);
-int write_to_stderr(char *a, INT32 len);
+int write_to_stderr(char *a, size_t len);
 /* Prototypes end here */
 
 #define add_backend_callback(X,Y,Z) \

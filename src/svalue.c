@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.77 2000/06/23 06:17:58 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.78 2000/06/29 16:44:24 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -139,7 +139,7 @@ void do_free_svalue(struct svalue *s)
  * We put this routine here so the compiler can optimize the call
  * inside the loop if it wants to
  */
-void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE_ARGS)
+void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS)
 {
   switch(type_hint)
   {
@@ -150,7 +150,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE
     return;
 
 #define DOTYPE(X,Y,Z) case X:						\
-   while(--num>=0) {							\
+   while(num--) {							\
     DO_IF_DMALLOC(debug_malloc_update_location(s->u.Z, dmalloc_location));	\
     Y(s->u.Z);								\
     DO_IF_DMALLOC(s->u.Z=(void *)-1);					\
@@ -201,7 +201,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE
    case 247: case 248: case 249: case 250: case 251: case 252: case 253:
    case 254: case 255:
 
-    while(--num>=0)
+    while(num--)
     {
 #ifdef DEBUG_MALLOC
       debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
@@ -216,7 +216,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE
     break;
 
   case BIT_FUNCTION:
-    while(--num>=0)
+    while(num--)
     {
 #ifdef DEBUG_MALLOC
       debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
@@ -235,7 +235,7 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE
 
 #undef DOTYPE
   default:
-    while(--num >= 0)
+    while(num--)
       {
 #ifdef DEBUG_MALLOC
 	if(s->type <= MAX_REF_TYPE)
@@ -248,13 +248,13 @@ void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE
 
 void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
-			    INT32 num,
+			    size_t num,
 			    INT32 type_hint)
 {
 #ifdef PIKE_DEBUG
   if(d_flag)
   {
-    INT32 e;
+    size_t e;
     for(e=0;e<num;e++)
       if(!(type_hint & (1<<from[e].type)))
 	 fatal("Type hint lies (%ld %ld %d)!\n",(long)e,(long)type_hint,from[e].type);
@@ -268,7 +268,7 @@ void assign_svalues_no_free(struct svalue *to,
 
   if((type_hint & ((2<<MAX_REF_TYPE)-1)) == type_hint)
   {
-    while(--num >= 0)
+    while(num--)
     {
       struct svalue tmp;
       tmp=*(from++);
@@ -278,12 +278,12 @@ void assign_svalues_no_free(struct svalue *to,
     return;
   }
 
-  while(--num >= 0) assign_svalue_no_free(to++,from++);
+  while(num--) assign_svalue_no_free(to++,from++);
 }
 
 void assign_svalues(struct svalue *to,
 		    struct svalue *from,
-		    INT32 num,
+		    size_t num,
 		    TYPE_FIELD types)
 {
   free_svalues(to,num,BIT_MIXED);
@@ -1110,32 +1110,32 @@ void print_svalue (FILE *out, struct svalue *s)
   free (str.str);
 }
 
-void clear_svalues(struct svalue *s, INT32 num)
+void clear_svalues(struct svalue *s, size_t num)
 {
   struct svalue dum;
   dum.type=T_INT;
   dum.subtype=NUMBER_NUMBER;
   dum.u.refs=0;
   dum.u.integer=0;
-  while(--num >= 0) *(s++)=dum;
+  while(num--) *(s++)=dum;
 }
 
-void clear_svalues_undefined(struct svalue *s, INT32 num)
+void clear_svalues_undefined(struct svalue *s, size_t num)
 {
   struct svalue dum;
   dum.type=T_INT;
   dum.subtype=NUMBER_UNDEFINED;
   dum.u.refs=0;
   dum.u.integer=0;
-  while(--num >= 0) *(s++)=dum;
+  while(num--) *(s++)=dum;
 }
 
 void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct svalue *from,
-				      INT32 num,
+				      size_t num,
 				      struct processing *p)
 {
-  while(--num >= 0)
+  while(num--)
   {
     check_type(from->type);
     check_refs(from);
@@ -1223,9 +1223,9 @@ void debug_check_svalue(struct svalue *s)
 #endif
 
 #ifdef PIKE_DEBUG
-void real_gc_xmark_svalues(struct svalue *s, int num)
+void real_gc_xmark_svalues(struct svalue *s, size_t num)
 {
-  INT32 e;
+  size_t e;
 
   if (!s) {
     return;
@@ -1312,12 +1312,12 @@ void real_gc_xmark_svalues(struct svalue *s, int num)
 
 #define SET_SUB_SHORT_SVALUE(V)
 
-TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
+TYPE_FIELD real_gc_check_svalues(struct svalue *s, size_t num)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
 #endif
-  INT32 e;
+  size_t e;
   TYPE_FIELD f;
   f=0;
   for(e=0;e<num;e++,s++)
@@ -1337,12 +1337,12 @@ TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num)
   return f;
 }
 
-TYPE_FIELD gc_check_weak_svalues(struct svalue *s, int num)
+TYPE_FIELD gc_check_weak_svalues(struct svalue *s, size_t num)
 {
 #ifdef PIKE_DEBUG
   extern void * check_for;
 #endif
-  INT32 e;
+  size_t e;
   TYPE_FIELD f;
   f=0;
   for(e=0;e<num;e++,s++)
@@ -1446,9 +1446,9 @@ void gc_check_weak_short_svalue(union anything *u, TYPE_T type)
       break;								\
     }
 
-void real_gc_mark_svalues(struct svalue *s, int num)
+void real_gc_mark_svalues(struct svalue *s, size_t num)
 {
-  INT32 e;
+  size_t e;
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
@@ -1458,11 +1458,11 @@ void real_gc_mark_svalues(struct svalue *s, int num)
   }
 }
 
-TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, int num)
+TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num)
 {
   TYPE_FIELD t = 0;
   int freed = 0;
-  INT32 e;
+  size_t e;
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
@@ -1501,9 +1501,9 @@ int gc_mark_weak_short_svalue(union anything *u, TYPE_T type)
 #define GC_DO_CYCLE_CHECK(U, TN) PIKE_CONCAT(gc_cycle_check_, TN)(U.TN)
 #define GC_DO_CYCLE_CHECK_WEAK(U, TN) PIKE_CONCAT3(gc_cycle_check_, TN, _weak)(U.TN)
 
-void real_gc_cycle_check_svalues(struct svalue *s, int num)
+void real_gc_cycle_check_svalues(struct svalue *s, size_t num)
 {
-  INT32 e;
+  size_t e;
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);
@@ -1513,11 +1513,11 @@ void real_gc_cycle_check_svalues(struct svalue *s, int num)
   }
 }
 
-TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, int num)
+TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num)
 {
   TYPE_FIELD t = 0;
   int freed = 0;
-  INT32 e;
+  size_t e;
   for(e=0;e<num;e++,s++)
   {
     dmalloc_touch_svalue(s);

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.56 2000/06/16 23:18:40 hubbe Exp $
+ * $Id: svalue.h,v 1.57 2000/06/29 16:44:24 grubba Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -327,14 +327,14 @@ extern struct svalue dest_ob_zero;
 void really_free_short_svalue(union anything *s, TYPE_T type);
 void really_free_svalue(struct svalue *s);
 void do_free_svalue(struct svalue *s);
-void debug_free_svalues(struct svalue *s,INT32 num, INT32 type_hint DMALLOC_LINE_ARGS);
+void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
 void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
-			    INT32 num,
+			    size_t num,
 			    INT32 type_hint);
 void assign_svalues(struct svalue *to,
 		    struct svalue *from,
-		    INT32 num,
+		    size_t num,
 		    TYPE_FIELD types);
 void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
@@ -366,26 +366,26 @@ int is_equal(struct svalue *a,struct svalue *b);
 int is_lt(struct svalue *a,struct svalue *b);
 void describe_svalue(struct svalue *s,int indent,struct processing *p);
 void print_svalue (FILE *out, struct svalue *s);
-void clear_svalues(struct svalue *s, INT32 num);
-void clear_svalues_undefined(struct svalue *s, INT32 num);
+void clear_svalues(struct svalue *s, size_t num);
+void clear_svalues_undefined(struct svalue *s, size_t num);
 void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct svalue *from,
-				      INT32 num,
+				      size_t num,
 				      struct processing *p);
 void check_short_svalue(union anything *u, TYPE_T type);
 void debug_check_svalue(struct svalue *s);
-void real_gc_xmark_svalues(struct svalue *s, int num);
-TYPE_FIELD real_gc_check_svalues(struct svalue *s, int num);
+void real_gc_xmark_svalues(struct svalue *s, size_t num);
+TYPE_FIELD real_gc_check_svalues(struct svalue *s, size_t num);
 void real_gc_check_short_svalue(union anything *u, TYPE_T type);
-TYPE_FIELD gc_check_weak_svalues(struct svalue *s, int num);
+TYPE_FIELD gc_check_weak_svalues(struct svalue *s, size_t num);
 void gc_check_weak_short_svalue(union anything *u, TYPE_T type);
-void real_gc_mark_svalues(struct svalue *s, int num);
+void real_gc_mark_svalues(struct svalue *s, size_t num);
 void real_gc_mark_short_svalue(union anything *u, TYPE_T type);
-TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, int num);
+TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num);
 int gc_mark_weak_short_svalue(union anything *u, TYPE_T type);
-void real_gc_cycle_check_svalues(struct svalue *s, int num);
+void real_gc_cycle_check_svalues(struct svalue *s, size_t num);
 void real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type);
-TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, int num);
+TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num);
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
 INT32 pike_sizeof(struct svalue *s);
 /* Prototypes end here */
