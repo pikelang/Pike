@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.126 2001/05/16 23:35:52 hubbe Exp $");
+RCSID("$Id: main.c,v 1.127 2001/05/31 12:27:30 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -57,6 +57,14 @@ RCSID("$Id: main.c,v 1.126 2001/05/16 23:35:52 hubbe Exp $");
 int try_use_mmx;
 #endif
 
+/* Define this to trace the execution of main(). */
+/* #define TRACE_MAIN */
+
+#ifdef TRACE_MAIN
+#define TRACE(X)	fprintf X
+#else /* !TRACE_MAIN */
+#define TRACE(X)
+#endif /* TRACE_MAIN */
 
 char *master_file;
 char **ARGV;
@@ -70,9 +78,9 @@ PMOD_EXPORT int default_t_flag=0;
 PMOD_EXPORT int a_flag=0;
 PMOD_EXPORT int l_flag=0;
 PMOD_EXPORT int p_flag=0;
-#ifdef YYDEBUG
+#if defined(YYDEBUG) || defined(PIKE_DEBUG)
 extern int yydebug;
-#endif /* YYDEBUG */
+#endif /* YYDEBUG || PIKE_DEBUG */
 static long instructions_left;
 
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
@@ -179,6 +187,8 @@ int dbm_main(int argc, char **argv)
   extern char **environ;
 #endif
 
+  TRACE((stderr, "dbm_main()\n"));
+
   /* Attempt to make sure stderr is unbuffered. */
 #ifdef HAVE_SETVBUF
   setvbuf(stderr, NULL, _IONBF, 0);
@@ -187,19 +197,27 @@ int dbm_main(int argc, char **argv)
   setbuf(stderr, NULL);
 #endif /* HAVE_SETBUF */
 #endif /* HAVE_SETVBUF */
+
+  TRACE((stderr, "Init CPU lib...\n"));
   
   init_pike_cpulib();
 
 #ifdef TRY_USE_MMX
+  TRACE((stderr, "Init MMX...\n"));
+  
   try_use_mmx=mmx_ok();
 #endif
 #ifdef OWN_GETHRTIME
 /* initialize our own gethrtime conversion /Mirar */
+  TRACE((stderr, "Init gethrtime...\n"));
+  
   own_gethrtime_init();
 #endif
 
   ARGV=argv;
 
+  TRACE((stderr, "Main init...\n"));
+  
   fd_init();
   {
     extern void init_mapping_blocks(void);
@@ -221,6 +239,8 @@ int dbm_main(int argc, char **argv)
   }
 
 #ifdef SHARED_NODES
+  TRACE((stderr, "Init shared nodes...\n"));
+  
   node_hash.table = malloc(sizeof(node *)*32831);
   if (!node_hash.table) {
     fatal("Out of memory!\n");
@@ -247,6 +267,8 @@ int dbm_main(int argc, char **argv)
 #endif
 #endif  
 
+  TRACE((stderr, "Init master...\n"));
+  
   master_file = 0;
 
 #ifdef HAVE_GETENV
@@ -271,8 +293,12 @@ int dbm_main(int argc, char **argv)
     master_file=master_location;
   }
 
+  TRACE((stderr, "Default master at \"%s\"...\n", master_file));
+  
   for(e=1; e<argc; e++)
   {
+    TRACE((stderr, "Parse argument %d:\"%s\"...\n", e, argv[e]));
+  
     if(argv[e][0]=='-')
     {
       for(p=argv[e]+1; *p;)
@@ -376,9 +402,9 @@ int dbm_main(int argc, char **argv)
 
 	    case 'c':
 	      p++;
-#ifdef YYDEBUG
+#if defined(YYDEBUG) || defined(PIKE_DEBUG)
 	      yydebug++;
-#endif /* YYDEBUG */
+#endif /* YYDEBUG || PIKE_DEBUG */
 	      break;
 
 	    case 's':
@@ -469,6 +495,8 @@ int dbm_main(int argc, char **argv)
 #define RLIMIT_NOFILE RLIMIT_OFILE
 #endif
 
+  TRACE((stderr, "Init C stack...\n"));
+  
   Pike_interpreter.stack_top = (char *)&argv;
 
   /* Adjust for anything already pushed on the stack.
@@ -605,7 +633,11 @@ int dbm_main(int argc, char **argv)
 #endif
 #endif
   
+  TRACE((stderr, "Init time...\n"));
+  
   GETTIMEOFDAY(&current_time);
+  
+  TRACE((stderr, "Init interpreter...\n"));
   
   init_shared_string_table();
   init_interpreter();
@@ -616,11 +648,18 @@ int dbm_main(int argc, char **argv)
   init_object();
   low_th_init();
 
+  TRACE((stderr, "Init modules...\n"));
+
   init_modules();
+
+  TRACE((stderr, "Init master...\n"));
+
   master();
   call_callback(& post_master_callbacks, 0);
   free_callback_list(& post_master_callbacks);
 
+  TRACE((stderr, "Call master->_main()...\n"));
+  
   if(SETJMP(back))
   {
     if(throw_severity == THROW_EXIT)
@@ -656,6 +695,8 @@ int dbm_main(int argc, char **argv)
   }
   UNSETJMP(back);
 
+  TRACE((stderr, "Exit %s...\n", num));
+  
   pike_do_exit(num);
   return num; /* avoid warning */
 }
