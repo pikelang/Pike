@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.38 2000/08/15 12:53:17 grubba Exp $");
+RCSID("$Id: png.c,v 1.39 2000/10/28 22:52:45 per Exp $");
 
 #include "image_machine.h"
 
@@ -703,14 +703,14 @@ static int _png_write_rgb(rgb_group *w1,
 	       if (!trns)
 		  while (n)
 		  {
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
-		     if (x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
+		    if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
+		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
+		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
+		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
+		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
+		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
+		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
+		     if (n&&x) n--,x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
 		     s++;
 		     if (!x) x=width;
 		  }
@@ -749,10 +749,10 @@ static int _png_write_rgb(rgb_group *w1,
 	       if (!trns)
 		  while (n)
 		  {
-		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
-		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
-		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
-		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
+		     if (n&&x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
+		     if (n&&x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
+		     if (n&&x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
+		     if (n&&x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
 		     s++;
 		     if (!x) x=width;
 		  }
@@ -791,8 +791,8 @@ static int _png_write_rgb(rgb_group *w1,
 	       if (!trns)
 		  while (n)
 		  {
-		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
-		     if (x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
+		     if (n&&x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
+		     if (n&&x) x--,n--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
 		     s++;
 		     if (!x) x=width;
 		  }
