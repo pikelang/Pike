@@ -1,5 +1,5 @@
 /*
- * $Id: dynamic_load.h,v 1.3 1998/03/28 15:32:20 grubba Exp $
+ * $Id: dynamic_load.h,v 1.4 2000/09/28 15:37:24 grubba Exp $
  */
 #ifndef DYNAMIC_LOAD_H
 #define DYNAMIC_LOAD_H
@@ -9,6 +9,7 @@ struct module_list;
 void f_load_module(INT32 args);
 void init_dynamic_load(void);
 void exit_dynamic_load(void);
+void free_dynamic_load(void);
 /* Prototypes end here */
 
 #endif

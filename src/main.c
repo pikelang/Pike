@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.101 2000/08/29 13:40:14 mirar Exp $");
+RCSID("$Id: main.c,v 1.102 2000/09/28 15:37:25 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -745,6 +745,7 @@ void low_exit_main(void)
   free_all_callable_blocks();
   exit_destroy_called_mark_hash();
 
+  free_dynamic_load();
   free_all_mapping_blocks();
   free_all_object_blocks();
   first_mapping=0;

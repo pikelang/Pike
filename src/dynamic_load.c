@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.44 2000/09/27 01:21:21 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.45 2000/09/28 15:37:23 grubba Exp $");
 
 #endif /* !TESTING */
 
@@ -341,6 +341,7 @@ void init_dynamic_load(void)
 #endif
 }
 
+/* Call the pike_module_exit() callbacks for the dynamic modules. */
 void exit_dynamic_load(void)
 {
 #if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
@@ -349,6 +350,18 @@ void exit_dynamic_load(void)
     struct module_list *tmp=dynamic_module_list;
     dynamic_module_list=tmp->next;
     (*tmp->exit)();
+  }
+#endif
+}
+
+/* Unload all the dynamically loaded modules. */
+void free_dynamic_load(void)
+{
+#if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL)
+  while(dynamic_module_list)
+  {
+    struct module_list *tmp=dynamic_module_list;
+    dynamic_module_list=tmp->next;
 #ifndef DEBUG_MALLOC
     dlclose(tmp->module);
 #endif
