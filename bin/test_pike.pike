@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.31 1999/12/10 00:51:43 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.32 2000/01/30 23:44:40 hubbe Exp $ */
 
 import Stdio;
 
@@ -16,6 +16,21 @@ int foo(string opt)
 {
   if(opt=="" || !opt) return 1;
   return (int)opt;
+}
+
+int istty_cache;
+int istty()
+{
+#ifdef __NT__
+  return 1;
+#else
+  if(!istty_cache)
+  {
+    istty_cache=!!Stdio.stdin->tcgetattr();
+    if(!istty_cache) istty_cache=-1;
+  }
+  return istty_cache>0;
+#endif
 }
 
 mapping(string:int) cond_cache=([]);
@@ -96,6 +111,7 @@ int main(int argc, string *argv)
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
     ({"mem",Getopt.MAY_HAVE_ARG,({"-m","--mem","--memory"})}),
     ({"auto",Getopt.MAY_HAVE_ARG,({"-a","--auto"})}),
+    ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
 #ifdef HAVE_DEBUG
     ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
 #endif
@@ -103,6 +119,10 @@ int main(int argc, string *argv)
     {
       switch(opt[0])
       {
+	case "notty":
+	  istty_cache=-1;
+	  break;
+
 	case "help":
 	  werror("Usage: "+argv[e]+" [-v | --verbose] [-h | --help] [-t <testno>] <testfile>\n");
 	  return 0;
@@ -175,8 +195,32 @@ int main(int argc, string *argv)
       
 	for(e=start;e<sizeof(tests);e++)
 	{
-	  werror("%6d\r",e+1);
-
+	  if(istty())
+	  {
+	    werror("%6d\r",e+1);
+	  }else{
+	    switch( (e-start) % 50)
+	    {
+	      case 0:
+		werror("%5d: ",e);
+		break;
+		
+	      case 9:
+	      case 19:
+	      case 29:
+	      case 39:
+		werror(". ");
+		break;
+		
+	      default:
+		werror(".");
+		break;
+		
+	      case 49:
+		werror(".\n");
+	    }
+	  }
+	    
 	  string test,condition;
 	  string|int type;
 	  object o;
@@ -409,7 +453,13 @@ int main(int argc, string *argv)
 	
 	  a=b=0;
       }
-	werror("             \r");
+
+	if(istty())
+	{
+	  werror("             \r");
+	}else{
+	  werror("\n");
+	}
     }
     if(mem)
     {
