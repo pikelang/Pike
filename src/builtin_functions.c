@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.368 2001/05/10 13:05:59 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.369 2001/05/22 12:09:27 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7423,6 +7423,7 @@ static void f_buf_add( INT32 args )
     /* This will not win the "most optimal code of the year"
        award, but it works, and is rather fast. */
     f_buf_get( 0 );
+    stack_swap();
     f_add( 2 );
     f_buf_add( 1 );
     return;
