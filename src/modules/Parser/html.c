@@ -2956,7 +2956,7 @@ void init_parser_html(void)
    ADD_FUNCTION("finish",html_finish,tFunc(tOr(tVoid,tStr),tObj),0);
    ADD_FUNCTION("read",html_read,tFunc(tOr(tVoid,tInt),tOr(tStr,tArr(tMixed))),0);
 
-   ADD_FUNCTION("write_out",html_write_out,tFunc(tOr(tStr,tArr(tMixed)),tObj),0);
+   ADD_FUNCTION("write_out",html_write_out,tFuncV(tNone,tOr(tStr,tMixed),tObj),0);
    ADD_FUNCTION("feed_insert",html_feed_insert,tFunc(tStr,tObj),0);
 
    /* query */
