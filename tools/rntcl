@@ -24,10 +24,10 @@ constant default_cflags = ({
   //"-W4",	// Maximum verbosity.
   "-W3",	// More warnings.
 #else /* !ECL */
-  "-Zm300",
-  "-F8388608",
-  "-Ge",
-  "-GR",
+  "-Zm300",	// Memory allocation limit
+  "-Ge",	// Activate stack probes
+  "-F8388608",	// Stack size
+  "-GR",	// Runtime type information (RTTI)
 #endif /* ECL */
 #ifdef WIN64
   "-D__WIN64__",
@@ -38,7 +38,7 @@ constant default_cflags = ({
 #endif /* WIN64 */
   "-D__NT__",
 //    "-D__STDC__",  
-  "-nologo",
+  "-nologo",	// Supress banner
 });
 
 // Verbose is default for now, this can be turned off one this
@@ -192,9 +192,26 @@ int main(int argc, string *argv)
 	      cflags+=({"-O2"});
 #else /* !ECL */
 #ifdef WIN64
-	      cflags+=({"-Ob2git"});
+	      cflags += ({
+		"-O"	// Optimization flags:
+		"b"	//   Control inline expansion
+		"2"	//   Create fast code
+		// Disabled due to optimizer bugs in XP Platform SDK Beta 2.
+		//"g"	//   Enable global optimizer
+		"i"	//   Use intrinsic functions
+		"t"	//   Favour fast code
+	      });
 #else /* !WIN64 */
-	      cflags+=({"-Ob2gity","-GB"});
+	      cflags += ({
+		"-O"	// Optimization flags:
+		"b"	//   Control inline expansion
+		"2"	//   Create fast code
+		"g"	//   Enable global optimizer
+		"i"	//   Use intrinsic functions
+		"t"	//   Favour fast code
+		"y",	//   Omit frame pointer
+		"-GB",	// Optimize for Pentium
+	      });
 #endif /* WIN64 */
 #endif /* ECL */
 	      break;
@@ -344,7 +361,7 @@ int main(int argc, string *argv)
 	       "-fixed:no",
 	       "-debug",
 //	  "-PDB:NONE",
-	  "-DEBUGTYPE:BOTH",
+//	  "-DEBUGTYPE:BOTH",
 	  "-DEBUG",
 	  })
 	  +ldopts;
