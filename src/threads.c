@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.126 2000/05/21 18:19:35 grubba Exp $");
+RCSID("$Id: threads.c,v 1.127 2000/05/22 19:50:29 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -571,8 +571,8 @@ TH_RETURN_TYPE new_thread_func(void * data)
    * effective uid & gid.
    */
   if (!geteuid()) {
-    setegid(arg->egid);
-    seteuid(arg->euid);
+    setegid(arg.egid);
+    seteuid(arg.euid);
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
   
