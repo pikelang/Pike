@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.112 1999/11/18 16:53:59 grubba Exp $");
+RCSID("$Id: las.c,v 1.113 1999/11/18 17:37:46 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -867,6 +867,8 @@ node *debug_mkcastnode(struct pike_string *type,node *n)
   node *res;
 
   if(!n) return 0;
+
+  if (type == void_type_string) return mknode(F_POP_VALUE, n, 0);
 
   if(type==n->type) return n;
 
