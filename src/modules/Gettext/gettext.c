@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.20 2003/10/16 01:11:43 nilsson Exp $
+|| $Id: gettext.c,v 1.21 2003/10/30 17:04:15 grubba Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.20 2003/10/16 01:11:43 nilsson Exp $");
+RCSID("$Id: gettext.c,v 1.21 2003/10/30 17:04:15 grubba Exp $");
 
 /*! @module Locale
  */
@@ -277,21 +277,6 @@ void f_setlocale(INT32 args)
     push_int(1);
 }
   
-#define MAPSTR(key, value) do {\
-  struct svalue val; struct pike_string *valstr; \
-  val.type = T_STRING; \
-  valstr = make_shared_string(locale->value);\
-  val.u.string = valstr; \
-  mapping_string_insert(map, make_shared_string(key), &val);\
-  free_string(valstr); \
-  } while(0)
-#define MAPINT(key, value) do {\
-  struct svalue val; \
-  val.type = T_INT; \
-  val.u.integer = (int)locale->value; \
-  mapping_string_insert(map, make_shared_string(key), &val);\
-  } while(0)
-
 /*! @decl mapping localeconv()
  *!
  *! The localeconv() function returns a mapping with settings for
@@ -398,35 +383,45 @@ void f_setlocale(INT32 args)
 void f_localeconv(INT32 args)
 {
   struct lconv *locale; /* Information about the current locale */
-  struct mapping *map;
-  map = allocate_mapping(18);
+  struct svalue *save_sp = Pike_sp;
+
   locale = localeconv();
 
-  pop_n_elems(args);
+#define MAPSTR(key) do {		\
+    push_constant_text(TOSTR(key));	\
+    push_text(locale->key);		\
+  } while(0)
+#define MAPINT(key) do {		\
+    push_constant_text(TOSTR(key));	\
+    push_int(locale->key);		\
+  } while(0)
 
-  MAPSTR("decimal_point", decimal_point);
-  MAPSTR("thousands_sep", thousands_sep);
-  MAPSTR("int_curr_symbol", int_curr_symbol);
-  MAPSTR("currency_symbol", currency_symbol);
-  MAPSTR("mon_decimal_point", mon_decimal_point);
-  MAPSTR("mon_thousands_sep", mon_thousands_sep);
-  MAPSTR("positive_sign", positive_sign);
-  MAPSTR("negative_sign", negative_sign);
+  MAPSTR(decimal_point);
+  MAPSTR(thousands_sep);
+  MAPSTR(int_curr_symbol);
+  MAPSTR(currency_symbol);
+  MAPSTR(mon_decimal_point);
+  MAPSTR(mon_thousands_sep);
+  MAPSTR(positive_sign);
+  MAPSTR(negative_sign);
 
   /*
-    MAPCHAR("grouping", grouping);
-    MAPCHAR("mon_grouping", mon_grouping);
-  */
+   * MAPCHAR(grouping);
+   * MAPCHAR(mon_grouping);
+   */
 
-  MAPINT("int_frac_digits", int_frac_digits);
-  MAPINT("frac_digits", frac_digits);
-  MAPINT("p_cs_precedes", p_cs_precedes);
-  MAPINT("p_sep_by_space", p_sep_by_space);
-  MAPINT("n_cs_precedes", n_cs_precedes);
-  MAPINT("n_sep_by_space", n_sep_by_space);
-  MAPINT("p_sign_posn", p_sign_posn);
-  MAPINT("n_sign_posn", n_sign_posn);
-  push_mapping(map);
+  MAPINT(int_frac_digits);
+  MAPINT(frac_digits);
+  MAPINT(p_cs_precedes);
+  MAPINT(p_sep_by_space);
+  MAPINT(n_cs_precedes);
+  MAPINT(n_sep_by_space);
+  MAPINT(p_sign_posn);
+  MAPINT(n_sign_posn);
+
+  f_aggregate_mapping(Pike_sp - save_sp);
+
+  stack_pop_n_elems_keep_top(args);
 }
 
 /*! @decl constant LC_ALL
