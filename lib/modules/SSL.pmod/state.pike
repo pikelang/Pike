@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.25 2004/03/04 14:08:32 grubba Exp $
+// $Id: state.pike,v 1.26 2004/03/04 15:36:51 grubba Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -81,16 +81,20 @@ Alert|.packet decrypt_packet(.packet packet, int version)
     if (! msg)
       return Alert(ALERT_fatal, ALERT_unexpected_message, version);
 
-    msg = crypt->crypt(msg);
-
-    if (session->cipher_spec->cipher_type == CIPHER_block)
+    if (session->cipher_spec->cipher_type == CIPHER_block) {
       if(version==0) {
+	// crypt->unpad() performs decrypt.
 	if (catch { msg = crypt->unpad(msg); })
 	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       } else {
+	msg = crypt->crypt(msg);
+
 	if (catch { msg = tls_unpad(msg); })
 	  return Alert(ALERT_fatal, ALERT_unexpected_message, version);
       }
+    } else {
+      msg = crypt->crypt(msg);
+    }
     packet->fragment = msg;
   }
   
