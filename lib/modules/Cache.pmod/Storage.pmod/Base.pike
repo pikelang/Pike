@@ -2,7 +2,7 @@
  * Storage Manager prototype.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Base.pike,v 1.7 2002/03/09 18:08:04 nilsson Exp $
+ * $Id: Base.pike,v 1.8 2003/01/16 14:35:58 grubba Exp $
  *
  * All storage managers must provide these methods.
  */
@@ -37,7 +37,7 @@ void set(string key, mixed value,
 // fetches some data from the cache synchronously.
 // be careful, as with some storage managers it might block the calling
 // thread for some time.
-int(0..0)|Cache.Data get(string key) {
+int(0..0)|Cache.Data get(string key, void|int(0..1) notouch) {
   T();
 }
 

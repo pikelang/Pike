@@ -2,7 +2,7 @@
  * An LRU, size-constrained expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Sized.pike,v 1.4 2002/01/15 22:31:24 nilsson Exp $
+ * $Id: Sized.pike,v 1.5 2003/01/16 14:35:58 grubba Exp $
  */
 
 #pike __REAL_VERSION__
@@ -16,7 +16,7 @@ int min_size=0;
 #define KEY 0
 #define SIZE 1
 
-void expire (Cache.Storage storage) {
+void expire (Cache.Storage.Base storage) {
   ADT.Priority_queue removables=ADT.Priority_queue();
   Cache.Data got;
   mixed tmp;

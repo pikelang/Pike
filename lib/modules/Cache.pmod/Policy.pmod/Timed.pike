@@ -2,7 +2,7 @@
  * An access-time-based expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Timed.pike,v 1.5 2002/01/15 22:31:24 nilsson Exp $
+ * $Id: Timed.pike,v 1.6 2003/01/16 14:35:58 grubba Exp $
  */
 
 #pike __REAL_VERSION__
@@ -15,7 +15,7 @@ private int ktime;
 
 inherit Cache.Policy.Base;
 
-void expire(Cache.Storage storage) {
+void expire(Cache.Storage.Base storage) {
   werror("Expiring cache\n");
   int now=time(1);
   int limit=now-ktime;

@@ -2,7 +2,7 @@
  * A multiple-policies expiration policy manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Multiple.pike,v 1.4 2002/01/15 22:31:24 nilsson Exp $
+ * $Id: Multiple.pike,v 1.5 2003/01/16 14:35:58 grubba Exp $
  */
 
 #pike __REAL_VERSION__
@@ -10,7 +10,7 @@
 inherit Cache.Policy.Base;
 private array(Cache.Policy.Base) my_policies;
 
-void expire (Cache.Storage storage) {
+void expire (Cache.Storage.Base storage) {
   foreach(my_policies, object policy) {
     policy->expire(storage);
   }
