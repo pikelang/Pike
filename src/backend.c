@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.36 1998/07/19 14:13:06 grubba Exp $");
+RCSID("$Id: backend.c,v 1.37 1998/10/21 14:59:33 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -61,6 +61,12 @@ struct selectors
 {
   my_fd_set read;
   my_fd_set write;
+#ifdef WITH_OOB
+  /* except == incoming OOB data
+   * outgoing OOB data is multiplexed on write
+   */
+  my_fd_set except;
+#endif /* WITH_OOB */
 };
 
 static struct selectors selectors;
@@ -208,6 +214,9 @@ void init_backend(void)
 #ifndef HAVE_POLL
   my_FD_ZERO(&selectors.read);
   my_FD_ZERO(&selectors.write);
+#ifdef WITH_OOB
+  my_FD_ZERO(&selectors.except);
+#endif /* WITH_OOB */
 #endif
   if(pike_make_pipe(wakeup_pipe) < 0)
     fatal("Couldn't create backend wakup pipe! errno=%d.\n",errno);
@@ -253,7 +262,7 @@ void set_read_callback(int fd,file_callback cb,void *data)
   {
 #ifdef HAVE_POLL
     if(!was_set)
-      POLL_FD_SET(fd,POLLRDNORM);
+      POLL_FD_SET(fd, POLLRDNORM);
 #else
     my_FD_SET(fd, &selectors.read);
 #endif
@@ -269,13 +278,17 @@ void set_read_callback(int fd,file_callback cb,void *data)
       {
 	while(max_fd >=0 &&
 	      !my_FD_ISSET(max_fd, &selectors.read) &&
-	      !my_FD_ISSET(max_fd, &selectors.write))
+	      !my_FD_ISSET(max_fd, &selectors.write)
+#ifdef WITH_OOB
+	      && !my_FD_ISSET(max_fd, &selectors.except)
+#endif /* WITH_OOB */
+	      )
 	  max_fd--;
       }
     }
 #else
     if(was_set)
-      POLL_FD_CLR(fd,POLLRDNORM);
+      POLL_FD_CLR(fd, POLLRDNORM);
 #endif
   }
 }
@@ -307,18 +320,33 @@ void set_write_callback(int fd,file_callback cb,void *data)
 #ifndef HAVE_POLL
     if(fd <= max_fd)
     {
-      my_FD_CLR(fd, &selectors.write);
-      if(fd == max_fd)
-      {
-	while(max_fd >=0 &&
-	      !my_FD_ISSET(max_fd, &selectors.read) &&
-	      !my_FD_ISSET(max_fd, &selectors.write))
-	  max_fd--;
+#ifdef WITH_POLL
+      if (!fds[fd].write_oob.callback) {
+#endif /* WITH_POLL */
+	my_FD_CLR(fd, &selectors.write);
+	if(fd == max_fd)
+	{
+	  while(max_fd >=0 &&
+		!my_FD_ISSET(max_fd, &selectors.read) &&
+		!my_FD_ISSET(max_fd, &selectors.write)
+#ifdef WITH_OOB
+		&& !my_FD_ISSET(max_fd, &selectors.except)
+#endif /* WITH_OOB */
+		)
+	    max_fd--;
+	}
+#ifdef WITH_POLL
       }
+#endif /* WITH_POLL */
     }
 #else
+#if POLLWRBAND == POLLOUT
+    if (was_set && !fds[fd].write_oob.callback)
+      POLL_FD_CLR(fd, POLLOUT);
+#else /* POLLWRBAND != POLLOUT */
     if(was_set)
-      POLL_FD_CLR(fd,POLLOUT);
+      POLL_FD_CLR(fd, POLLOUT);
+#endif /* POLLWRBAND == POLLOUT */
 #endif
   }
 }
@@ -339,30 +367,30 @@ void set_read_oob_callback(int fd,file_callback cb,void *data)
   if(cb)
   {
 #ifdef HAVE_POLL
-    POLL_FD_SET(fd,POLLRDBAND);
+    POLL_FD_SET(fd, POLLRDBAND);
 #else
-    my_FD_SET(fd, &selectors.read);	/* FIXME:? */
+    my_FD_SET(fd, &selectors.except);
 #endif
     if(max_fd < fd) max_fd = fd;
     wake_up_backend();
   }else{
 #ifndef HAVE_POLL
-    /* FIXME:? */
     if(fd <= max_fd)
     {
-      my_FD_CLR(fd, &selectors.read);
+      my_FD_CLR(fd, &selectors.except);
 
       if(fd == max_fd)
       {
 	while(max_fd >=0 &&
 	      !my_FD_ISSET(max_fd, &selectors.read) &&
-	      !my_FD_ISSET(max_fd, &selectors.write))
+	      !my_FD_ISSET(max_fd, &selectors.write) &&
+	      !my_FD_ISSET(max_fd, &selectors.except))
 	  max_fd--;
       }
     }
 #else
     if(was_set)
-      POLL_FD_CLR(fd,POLLRDBAND);
+      POLL_FD_CLR(fd, POLLRDBAND);
 #endif
   }
 }
@@ -394,13 +422,16 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
     /* FIXME:? */
     if(fd <= max_fd)
     {
-      my_FD_CLR(fd, &selectors.write);
-      if(fd == max_fd)
-      {
-	while(max_fd >=0 &&
-	      !my_FD_ISSET(max_fd, &selectors.read) &&
-	      !my_FD_ISSET(max_fd, &selectors.write))
-	  max_fd--;
+      if (!fds[fd].write.callback) {
+	my_FD_CLR(fd, &selectors.write);
+	if(fd == max_fd)
+	{
+	  while(max_fd >=0 &&
+		!my_FD_ISSET(max_fd, &selectors.read) &&
+		!my_FD_ISSET(max_fd, &selectors.write) &&
+		!my_FD_ISSET(max_fd, &selectors.except))
+	    max_fd--;
+	}
       }
     }
 #else
@@ -529,11 +560,15 @@ void do_debug(void)
 #ifndef HAVE_POLL
   for(e=0;e<=max_fd;e++)
   {
-    if(my_FD_ISSET(e,&selectors.read) || my_FD_ISSET(e,&selectors.write))
+    if(my_FD_ISSET(e, &selectors.read) || my_FD_ISSET(e, &selectors.write)
+#ifdef WITH_OOB
+       || my_FD_ISSET(e, &selectors.except)
+#endif /* WITH_OOB */
+       )
     {
       int ret;
       do {
-	ret=fd_fstat(e, &tmp);
+	ret = fd_fstat(e, &tmp);
       }while(ret < 0 && errno == EINTR);
 
       if(ret<0)
@@ -581,8 +616,13 @@ void backend(void)
 {
   JMP_BUF back;
   int i, delay;
+#ifndef HAVE_POLL
   fd_set rset;
   fd_set wset;
+#ifdef WITH_OOB
+  fd_set eset;
+#endif /* WITH_OOB */
+#endif /* !HAVE_POLL */
 
   if(SETJMP(back))
   {
@@ -609,6 +649,9 @@ void backend(void)
     /* FIXME: OOB? */
     fd_copy_my_fd_set_to_fd_set(&rset, &selectors.read, max_fd+1);
     fd_copy_my_fd_set_to_fd_set(&wset, &selectors.write, max_fd+1);
+#ifdef WITH_OOB
+    fd_copy_my_fd_set_to_fd_set(&eset, &selectors.except, max_fd+1);
+#endif /* WITH_OOB */
 #else
     switch_poll_set();
 #endif
@@ -632,11 +675,17 @@ void backend(void)
 #ifdef HAVE_POLL
     {
       int msec = (next_timeout.tv_sec*1000) + next_timeout.tv_usec/1000;
-      i=poll(active_poll_fds, active_num_in_poll, msec);
+      i = poll(active_poll_fds, active_num_in_poll, msec);
     }
 #else
     /* FIXME: OOB? */
-    i=fd_select(max_fd+1, &rset, &wset, 0, &next_timeout);
+    i = fd_select(max_fd+1, &rset, &wset, 
+#ifdef WITH_OOB
+		  &eset,
+#else /* !WITH_OOB */
+		  0, 
+#endif /* WITH_OOB */
+		  &next_timeout);
 #endif
     THREADS_DISALLOW();
     may_need_wakeup=0;
@@ -652,11 +701,24 @@ void backend(void)
       /* FIXME: OOB? */
       for(i=0; i<max_fd+1; i++)
       {
-	if(fd_FD_ISSET(i, &rset) && fds[i].read.callback)
-	  (*(fds[i].read.callback))(i,fds[i].read.data);
+#ifdef WITH_OOB
+	if(fd_FD_ISSET(i, &eset) && fds[i].read_oob.callback)
+	  (*(fds[i].read_oob.callback))(i, fds[i].read_oob.data);
+#endif /* WITH_OOB */
 
-	if(fd_FD_ISSET(i, &wset) && fds[i].write.callback)
-	  (*(fds[i].write.callback))(i,fds[i].write.data);
+	if(fd_FD_ISSET(i, &rset) && fds[i].read.callback)
+	  (*(fds[i].read.callback))(i, fds[i].read.data);
+
+	if(fd_FD_ISSET(i, &wset)) {
+#ifdef WITH_OOB
+	  if (fds[i].write_oob.callback) {
+	    (*(fds[i].write_oob.callback))(i, fds[i].write_oob.data);
+	  } else
+#endif /* WITH_OOB */
+	    if (fds[i].write.callback) {
+	      (*(fds[i].write.callback))(i, fds[i].write.data);
+	    }
+	}
       }
 #else
       for(i=0; i<active_num_in_poll; i++)
@@ -739,7 +801,7 @@ void backend(void)
 
 	if(active_poll_fds[i].revents & POLLOUT) {
 	  if (fds[fd].write.callback) {
-	    (*(fds[fd].write.callback))(fd,fds[fd].write.data);
+	    (*(fds[fd].write.callback))(fd, fds[fd].write.data);
 	  } else {
 	    POLL_FD_CLR(fd, POLLOUT);
 	  }
@@ -799,9 +861,18 @@ void backend(void)
 	/* FIXME: OOB? */
 	fd_copy_my_fd_set_to_fd_set(&rset, &selectors.read, max_fd+1);
 	fd_copy_my_fd_set_to_fd_set(&wset, &selectors.write, max_fd+1);
+#ifdef WITH_OOB
+	fd_copy_my_fd_set_to_fd_set(&eset, &selectors.except, max_fd+1);
+#endif /* WITH_OOB */
 	next_timeout.tv_usec=0;
 	next_timeout.tv_sec=0;
-	if(fd_select(max_fd+1, &rset, &wset, 0, &next_timeout) < 0)
+	if(fd_select(max_fd+1, &rset, &wset,
+#ifdef WITH_OOB
+		     &eset,
+#else /* !WITH_OOB */
+		     0,
+#endif /* WITH_OOB */
+		     &next_timeout) < 0)
 	{
 	  switch(errno)
 	  {
@@ -816,19 +887,36 @@ void backend(void)
 	      int i;
 	      for(i=0;i<MAX_OPEN_FILEDESCRIPTORS;i++)
 	      {
-		if(!my_FD_ISSET(i, &selectors.read) && !my_FD_ISSET(i,&selectors.write))
+		if(!my_FD_ISSET(i, &selectors.read) &&
+		   !my_FD_ISSET(i, &selectors.write)
+#ifdef WITH_OOB
+		   && !my_FD_ISSET(i, &selectors.except)
+#endif /* WITH_OOB */
+		   )
 		  continue;
 		
 		fd_FD_ZERO(& rset);
 		fd_FD_ZERO(& wset);
+#ifdef WITH_OOB
+		fd_FD_ZERO(& eset);
+#endif /* WITH_OOB */
 		
 		if(my_FD_ISSET(i, &selectors.read))  fd_FD_SET(i, &rset);
 		if(my_FD_ISSET(i, &selectors.write)) fd_FD_SET(i, &wset);
+#ifdef WITH_OOB
+		if(my_FD_ISSET(i, &selectors.except)) fd_FD_SET(i, &eset);
+#endif /* WITH_OOB */
 		
 		next_timeout.tv_usec=0;
 		next_timeout.tv_sec=0;
 		
-		if(fd_select(max_fd+1, &rset, &wset, 0, &next_timeout) < 0)
+		if(fd_select(max_fd+1, &rset, &wset,
+#ifdef WITH_OOB
+			     &eset,
+#else /* !WITH_OOB */
+			     0,
+#endif /* WITH_OOB */
+			     &next_timeout) < 0)
 		{
 		  switch(errno)
 		  {
