@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.70 2000/08/10 08:43:22 grubba Exp $
+ * $Id: cpp.c,v 1.71 2000/08/10 08:44:31 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -789,7 +789,7 @@ static struct pike_string *filter_bom(struct pike_string *data)
   return(data);
 }
 
-static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
+static INT32 low_cpp(struct cpp *this, void *data, ptrdiff_t len, int shift,
 		     int flags, int auto_convert, struct pike_string *charset);
 
 #define SHIFT 0
@@ -804,7 +804,7 @@ static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
 #include "preprocessor.h"
 #undef SHIFT
 
-static INT32 low_cpp(struct cpp *this, void *data, INT32 len, int shift,
+static INT32 low_cpp(struct cpp *this, void *data, ptrdiff_t len, int shift,
 		     int flags, int auto_convert, struct pike_string *charset)
 {
   switch(shift) {

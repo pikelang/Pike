@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.28 2000/08/09 22:23:25 grubba Exp $
+ * $Id: preprocessor.h,v 1.29 2000/08/10 08:46:09 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -736,10 +736,11 @@ static ptrdiff_t calc1(struct cpp *this, WCHAR *data, ptrdiff_t len,
   return pos;
 }
 
-static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len, ptrdiff_t tmp)
+static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		      ptrdiff_t tmp)
 {
   JMP_BUF recovery;
-  INT32 pos;
+  ptrdiff_t pos;
 
   /* DUMPPOS("Calculating"); */
 
@@ -1255,7 +1256,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
 	    case '<':
 	      {
-		INT32 tmp=pos;
+		ptrdiff_t tmp = pos;
 		while(data[pos]!='>')
 		{
 		  if(data[pos]=='\n')
@@ -1389,10 +1390,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       if(WGOBBLE2(if_))
       {
-	struct string_builder save,tmp;
-	INT32 nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
+	struct string_builder save, tmp;
+	INT32 nflags = CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF;
 #ifdef PIKE_DEBUG
-	int skip;
+	ptrdiff_t skip;
 #endif /* PIKE_DEBUG */
 	
 	if(!OUTP())
@@ -1417,8 +1418,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	/* fprintf(stderr, "\"\n"); */
 	/* fflush(stderr); */
 #else /* !PIKE_DEBUG */
-	pos+=lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF,
-		       auto_convert, charset);
+	pos += lower_cpp(this, data+pos, len-pos, CPP_END_AT_NEWLINE|CPP_DO_IF,
+			 auto_convert, charset);
 #endif /* PIKE_DEBUG */
 	tmp=this->buf;
 	this->buf=save;
@@ -1450,16 +1451,17 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       if(WGOBBLE2(ifdef_))
 	{
-	  INT32 namestart,nflags;
+	  INT32 nflags;
+	  ptrdiff_t namestart;
 	  struct pike_string *s;
 	  SKIPSPACE();
 
 	  if(!WC_ISIDCHAR(data[pos]))
 	    cpp_error(this, "#ifdef what?");
 
-	  namestart=pos;
+	  namestart = pos;
 	  while(WC_ISIDCHAR(data[pos])) pos++;
-	  nflags=CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF | CPP_NO_OUTPUT;
+	  nflags = CPP_EXPECT_ELSE | CPP_EXPECT_ENDIF | CPP_NO_OUTPUT;
 
 	  if(!OUTP())
 	    nflags|=CPP_REALLY_NO_OUTPUT;
