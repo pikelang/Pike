@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.56 1999/06/03 01:39:36 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.57 1999/10/25 10:17:47 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -103,7 +103,6 @@ void check_type_string(struct pike_string *s)
 
 void init_types(void)
 {
-#define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
   string_type_string = CONSTTYPE(tString);
   int_type_string = CONSTTYPE(tInt);
   object_type_string = CONSTTYPE(tObj);
@@ -1772,6 +1771,49 @@ INT32 get_max_args(struct pike_string *type)
   return tmp;
 }
 
+
+struct pike_string *zzap_function_return(char *a, INT32 id)
+{
+  switch(EXTRACT_UCHAR(a))
+  {
+    case T_OR:
+    {
+      struct pike_string *ar, *br, *ret=0;
+      a++;
+      ar=zzap_function_return(a,id);
+      br=zzap_function_return(a+type_length(a),id);
+      if(ar && br) ret=or_pike_types(ar,br);
+      if(ar) free_string(ar);
+      if(br) free_string(br);
+      return ret;
+    }
+      
+    case T_FUNCTION:
+      type_stack_mark();
+      push_type_int(id);
+      push_type(1);
+      push_type(T_OBJECT);
+      
+      type_stack_mark();
+      a++;
+      while(EXTRACT_UCHAR(a)!=T_MANY)
+      {
+	type_stack_mark();
+	push_unfinished_type(a);
+	type_stack_reverse();
+	a+=type_length(a);
+      }
+      a++;
+      push_type(T_MANY);
+      type_stack_mark();
+      push_unfinished_type(a);
+      type_stack_reverse();
+      type_stack_reverse();
+      push_type(T_FUNCTION);
+      return pop_unfinished_type();
+  }
+}
+
 struct pike_string *get_type_of_svalue(struct svalue *s)
 {
   struct pike_string *ret;
@@ -1818,20 +1860,33 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     type_stack_mark();
     if(s->u.object->prog)
     {
-      push_type_int(s->u.object->prog->id);
-      push_type(1);
+#ifdef AUTO_BIGNUM
+      if(is_bignum_object(s->u.object))
+      {
+	push_type_int(MAX_INT32);
+	push_type_int(MIN_INT32);
+	push_type(T_INT);
+      }
+      else
+#endif
+      {
+	push_type_int(s->u.object->prog->id);
+	push_type(1);
+	push_type(T_OBJECT);
+      }
     }else{
       push_type_int(0);
       push_type(0);
+      push_type(T_OBJECT);
     }
-    push_type(T_OBJECT);
     return pop_unfinished_type();
 
   case T_INT:
     if(s->u.integer)
     {
       type_stack_mark();
-      /* Fixme, check that the integer is in range of MIN_INT32 .. MAX_INT32!*/
+      /* Fixme, check that the integer is in range of MIN_INT32 .. MAX_INT32!
+       */
       push_type_int(s->u.integer);
       push_type_int(s->u.integer);
       push_type(T_INT);
@@ -1845,6 +1900,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   case T_PROGRAM:
   {
     char *a;
+    struct pike_string *tmp;
     int id=FIND_LFUN(s->u.program,LFUN_CREATE);
     if(id>=0)
     {
@@ -1852,31 +1908,8 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     }else{
       a=function_type_string->str;
     }
-    if(EXTRACT_UCHAR(a)==T_FUNCTION)
-    {
-      type_stack_mark();
-      push_type_int(s->u.program->id);
-      push_type(1);
-      push_type(T_OBJECT);
-      
-      type_stack_mark();
-      a++;
-      while(EXTRACT_UCHAR(a)!=T_MANY)
-      {
-	type_stack_mark();
-	push_unfinished_type(a);
-	type_stack_reverse();
-	a+=type_length(a);
-      }
-      a++;
-      push_type(T_MANY);
-      type_stack_mark();
-      push_unfinished_type(a);
-      type_stack_reverse();
-      type_stack_reverse();
-      push_type(T_FUNCTION);
-      return pop_unfinished_type();
-    }
+    if((tmp=zzap_function_return(a, s->u.program->id)))
+      return tmp;
   }
 
   default:
