@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.1 2001/06/21 03:15:35 per Exp $");
+RCSID("$Id: normalize.c,v 1.2 2001/07/03 23:14:55 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -320,6 +320,13 @@ struct pike_string *unicode_normalize( struct pike_string *source,
 {
   struct pike_string *d = unicode_decompose( source, how );
   if( how & COMPOSE_BIT )
-    d = unicode_compose( d, how );
+  {
+    struct pike_string *d2;
+    debug_malloc_touch(d);
+    d2 = unicode_compose( d, how );
+    debug_malloc_touch(d2);
+    free_string(d);
+    return d2;
+  }
   return d;
 }
