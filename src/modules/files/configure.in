@@ -16,6 +16,8 @@ if test x$ac_cv_func_readdir_r = xyes ; then
   AC_MSG_CHECKING(if readdir_r takes 2(Solaris & HPUX) or 3(Posix) arguments)
   AC_CACHE_VAL(pike_cv_func_posix_readdir_r, [
     AC_TRY_RUN([
+// For _REENTRANT
+#include "machine.h"
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -58,6 +60,8 @@ else
   AC_MSG_CHECKING(if readdir_r returns an int(HPUX) or a pointer(Solaris))
   AC_CACHE_VAL(pike_cv_func_solaris_style_readdir_r, [
     AC_TRY_RUN([
+// For _REENTRANT
+#include "machine.h"
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
