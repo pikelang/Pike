@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpq.cmod,v 1.16 2003/02/15 16:29:22 grubba Exp $
+|| $Id: mpq.cmod,v 1.17 2003/03/28 22:13:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpq.cmod,v 1.16 2003/02/15 16:29:22 grubba Exp $");
+RCSID("$Id: mpq.cmod,v 1.17 2003/03/28 22:13:54 mast Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -167,7 +167,8 @@ PIKECLASS mpq
       }
     }
 
-  static void get_new_mpq(MP_RAT *tmp, struct svalue *s)
+  int get_new_mpq(MP_RAT *tmp, struct svalue *s,
+		  int throw_error, const char *arg_func, int arg, int args)
     {
       switch(s->type)
       {
@@ -192,12 +193,12 @@ PIKECLASS mpq
 	}
 	  
 	case T_INT:
-	  get_new_mpz(mpq_numref(tmp), s);
+	  get_new_mpz(mpq_numref(tmp), s, 1, arg_func, arg, args);
 	  mpz_set_si(mpq_denref(tmp),1);
 	  break;
 	  
 	case T_OBJECT:
-	  if(s->u.object->prog == mpzmod_program)
+	  if(IS_MPZ_OBJ (s->u.object))
 	  {
 	    mpq_set_z(tmp, OBTOMPZ(s->u.object));
 	    break;
@@ -210,8 +211,10 @@ PIKECLASS mpq
 	  }
 	  
 	  if (s->u.object->prog) {
-	    Pike_error("Wrong type of object (id:%d), cannot convert to mpq.\n",
-		       s->u.object->prog->id);
+	    if (throw_error)
+	      SIMPLE_ARG_TYPE_ERROR (arg_func, arg, "int|float|Gmp.mpq|Gmp.mpz");
+	    else
+	      return 0;
 	  } else {
 	    /* Destructed object. Use as zero. */
 	    mpq_set_si(tmp, 0, 1);
@@ -219,10 +222,43 @@ PIKECLASS mpq
 	  break;
 	  
 	default:
-	  Pike_error("cannot convert argument to mpq.\n");
+	  if (throw_error)
+	    SIMPLE_ARG_TYPE_ERROR (arg_func, arg, "int|float|Gmp.mpq|Gmp.mpz");
+	  else
+	    return 0;
       }
+
+      return 1;
     }
-  
+
+/* Converts an svalue, located on the stack, to an mpq object */
+  static MP_RAT *debug_get_mpq(struct svalue *s,
+			       int throw_error, const char *arg_func, int arg, int args)
+  {
+    struct object *o = fast_clone_object (mpq_program);
+    ONERROR uwp;
+    SET_ONERROR (uwp, do_free_object, o);
+    if (get_new_mpq (OBTOMPQ (o), s, throw_error, arg_func, arg, args)) {
+      UNSET_ONERROR (uwp);
+      free_svalue(s);
+      s->u.object=o;
+      s->type=T_OBJECT;
+      return OBTOMPQ (o);
+    }
+    else {
+      UNSET_ONERROR (uwp);
+      return NULL;
+    }
+  }
+
+#ifdef DEBUG_MALLOC
+#define get_mpq(S, THROW_ERROR, ARG_FUNC, ARG, ARGS)			\
+  ((S)->type <= MAX_REF_TYPE ? debug_malloc_touch((S)->u.object) : 0,	\
+   debug_get_mpq((S), (THROW_ERROR), (ARG_FUNC), (ARG), (ARGS)))
+#else
+#define get_mpq debug_get_mpq
+#endif
+
   PIKEFUN void create(void|string|int|float|object x, void|int base)
     type function(void|string|int|float|object:void)|function(string,int:void)|function(int,int:void);
     flags ID_STATIC;
@@ -233,7 +269,7 @@ PIKECLASS mpq
 	if(sp[-args].type == T_STRING)
 	  get_mpq_from_digits(THISMPQ, sp[-args].u.string, 0);
 	else
-	  get_new_mpq(THISMPQ, sp-args);
+	  get_new_mpq(THISMPQ, sp-args, 1, "Gmp.mpq", 1, args);
 	break;
 	
       case 2:
@@ -241,28 +277,28 @@ PIKECLASS mpq
 	/* or int num / den */
 	
 	if (sp[1-args].type != T_INT)
-	  Pike_error("Bad arg 2 for Gmp.mpq(), expected integer.\n");
+	  SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 2, "int");
 
 	switch(sp[-args].type)
 	{
 	  default:
-	    Pike_error("bad argument 1 for Gmp.Mpq()\n");
+	    SIMPLE_ARG_TYPE_ERROR ("Gmp.mpq", 1, "int|string");
 
 	  case T_STRING:
 	    get_mpq_from_digits(THISMPQ, sp[-args].u.string, sp[1-args].u.integer);
 	    break;
 
 	  case T_INT:
-	    mpq_set_num(THISMPQ,get_mpz(sp-args,1));
-	    mpq_set_den(THISMPQ,get_mpz(sp-args+1,1));
+	    mpq_set_num(THISMPQ,get_mpz(sp-args, 1, "Gmp.mpq", 1, args));
+	    mpq_set_den(THISMPQ,get_mpz(sp-args+1, 1, "Gmp.mpq", 2, args));
 	    mpq_canonicalize(THISMPQ);
 	    break;
 	}
 	break;
 	
       default:
-	Pike_error("Too many arguments to Mpq->create()\n");
-	
+	SIMPLE_WRONG_NUM_ARGS_ERROR ("Gmp.mpq", 2);
+
       case 0:
 	break;	/* Needed by AIX cc */
     }
@@ -303,10 +339,11 @@ PIKECLASS mpq
       f_add(3);
     }
 
-  static int lookup(char *name,
+  static int lookup(const char *name,
 		    struct mapping *m,
 		    char *ind,
-		    int def)
+		    int def,
+		    int arg, int args)
     {
       struct svalue *sv;
       if((sv=simple_mapping_string_lookup(m,ind)))
@@ -315,8 +352,10 @@ PIKECLASS mpq
 	{
 	  return sv->u.integer;
 	}else{
-	  Pike_error("\"%s\" argument to %s is not an integer.\n",ind,name);
-
+	  bad_arg_error_2 (name, Pike_sp - args, args, arg, Pike_sp + arg - 1 - args,
+			   "Bad argument %d to %s(). "
+			   "The field \"%s\" doesn't hold an integer.\n",
+			   arg, name, ind);
 	}
       }
       return def;
@@ -330,9 +369,9 @@ PIKECLASS mpq
       struct pike_string *s = 0;
       INT_TYPE flag_left;
 
-      precision=lookup("Gmp.Mpq->_sprintf",flags,"precision",7);
-      width=lookup("Gmp.Mpq->_sprintf",flags,"width",-1);
-      flag_left=lookup("Gmp.Mpq->_sprintf",flags,"flag_left",0);
+      precision=lookup("Gmp.Mpq->_sprintf",flags,"precision",7, 2, args);
+      width=lookup("Gmp.Mpq->_sprintf",flags,"width",-1, 2, args);
+      flag_left=lookup("Gmp.Mpq->_sprintf",flags,"flag_left",0, 2, args);
       pop_n_elems(args);
       if(precision<0) precision=0;
       
@@ -452,50 +491,10 @@ PIKECLASS mpq
       }
       
       free_string(s);
-      
-      Pike_error("mpq->cast() to \"%s\" is other type than string, int or float.\n",
-		 s->str);
+
+      SIMPLE_ARG_ERROR ("Gmp.mpq->cast", 1,
+			"Cannot cast to other type than sitrng, int or float.\n");
     }
-
-#ifdef DEBUG_MALLOC
-#define get_mpq(X,Y) \
- (debug_get_mpq((X),(Y)),( (X)->type==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpq((X),(Y)))
-#else
-#define get_mpq debug_get_mpq 
-#endif
-
-/* Converts an svalue, located on the stack, to an mpq object */
-  static MP_RAT *debug_get_mpq(struct svalue *s, int throw_error)
-    {
-#define MPQ_ERROR(x) if (throw_error) Pike_error(x)
-      struct object *o;
-      switch(s->type)
-      {
-	default:
-	  MPQ_ERROR("Wrong type of value, cannot convert to mpq.\n");
-	  return 0;
-	  
-	case T_OBJECT:
-	  if(s->u.object->prog == mpq_program)
-	    return (MP_RAT *)s->u.object->storage;
-	  
-	  if(!throw_error && 
-	     s->u.object->prog != mpzmod_program &&
-	     s->u.object->prog)
-	    return 0;
-	  
-	  /* Fall through */
-	case T_INT:
-	case T_FLOAT:
-	  o=fast_clone_object(mpq_program);
-	  get_new_mpq(OBTOMPQ(o), s);
-	  free_svalue(s);
-	  s->u.object=o;
-	  s->type=T_OBJECT;
-	  return (MP_RAT *)o->storage;
-      }
-    }
-
 
   PIKEFUN object `+(int|float|object ... a)
     flags ID_STATIC;
@@ -503,7 +502,7 @@ PIKECLASS mpq
       INT32 e;
       struct object *res;
       for(e=0; e<args; e++)
-	get_mpq(sp+e-args, 1);
+	get_mpq(sp+e-args, 1, "Gmp.mpq->`+", e + 1, args);
       res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       for(e=0;e<args;e++)
@@ -518,7 +517,7 @@ PIKECLASS mpq
       INT32 e;
       struct object *res;
       for(e=0; e<args; e++)
-	get_mpq(sp+e-args, 1);
+	get_mpq(sp+e-args, 1, "Gmp.mpq->``+", e + 1, args);
       res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
       for(e=0;e<args;e++)
@@ -532,7 +531,7 @@ PIKECLASS mpq
   {
     INT32 e;
     for(e=0; e<args; e++)
-      get_mpq(sp+e-args, 1);
+      get_mpq(sp+e-args, 1, "Gmp.mpq->`+=", e + 1, args);
     for(e=0;e<args;e++)
       mpq_add(THISMPQ, THISMPQ, OBTOMPQ(sp[e-args].u.object));
     
@@ -546,7 +545,7 @@ PIKECLASS mpq
 #define TOOBIGTEST 
 #endif
 
-  static void mult_convert_args(INT32 args)
+  static void mult_convert_args(INT32 args, const char *arg_func)
     {
       INT32 e;
       for(e=0; e<args; e++)
@@ -562,7 +561,7 @@ PIKECLASS mpq
 	}
 	
 	if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0 TOOBIGTEST)
-	  get_mpq(sp+e-args, 1);
+	  get_mpq(sp+e-args, 1, arg_func, e + 1, args);
       }
     }
   
@@ -598,7 +597,7 @@ PIKECLASS mpq
     flags ID_STATIC;
     {
       struct object *res;
-      mult_convert_args(args);
+      mult_convert_args(args, "Gmp.mpq->`*");
       
       res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
@@ -611,7 +610,7 @@ PIKECLASS mpq
     flags ID_STATIC;
     {
       struct object *res;
-      mult_convert_args(args);
+      mult_convert_args(args, "Gmp.mpq->``*");
       
       res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
@@ -623,7 +622,7 @@ PIKECLASS mpq
   PIKEFUN object `*=(int|float|object ... a)
     flags ID_STATIC;
   {
-    mult_convert_args(args);
+    mult_convert_args(args, "Gmp.mpq->`*=");
     mult_args(THISMPQ, 0,args);
     REF_RETURN fp->current_object;
   }
@@ -636,7 +635,7 @@ PIKECLASS mpq
       
       if (args)
 	for (e = 0; e<args; e++)
-	  get_mpq(sp + e - args, 1);
+	  get_mpq(sp + e - args, 1, "Gmp.mpq->`-", e + 1, args);
       
       res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
@@ -656,7 +655,7 @@ PIKECLASS mpq
     flags ID_STATIC;
     {
       struct object *res;
-      MP_RAT *a=get_mpq(sv,1);
+      MP_RAT *a=get_mpq(sv, 1, "Gmp.mpq->``-", 1, args);
       res = fast_clone_object(mpq_program);
       mpq_sub(OBTOMPQ(res), a, THISMPQ);
       RETURN res;
@@ -669,8 +668,8 @@ PIKECLASS mpq
       struct object *res;
       
       for(e=0;e<args;e++)
-	if (!mpq_sgn(get_mpq(sp+e-args, 1)))
-	  Pike_error("Division by zero.\n");
+	if (!mpq_sgn(get_mpq(sp+e-args, 1, "Gmp.mpq->`/", e + 1, args)))
+	  SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->`/");
       
       res = fast_clone_object(mpq_program);
       mpq_set(OBTOMPQ(res), THISMPQ);
@@ -686,9 +685,9 @@ PIKECLASS mpq
       MP_RAT *a;
       struct object *res = NULL;
       if(!mpq_sgn(THISMPQ))
-	Pike_error("Division by zero.\n");
-      
-      a=get_mpq(sv,1);
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->``/");
+
+      a=get_mpq(sv, 1, "Gmp.mpq->``/", 1, args);
       
       res=fast_clone_object(mpq_program);
       mpq_div(OBTOMPQ(res), a, THISMPQ);
@@ -705,9 +704,9 @@ PIKECLASS mpq
       mpq_t tmp;
       
       for(e=0;e<args;e++)
-	if (!mpq_sgn(get_mpq(sp+e-args, 1)))
-	  Pike_error("Modulo by zero.\n");	
-  
+	if (!mpq_sgn(get_mpq(sp+e-args, 1, "Gmp.mpq->`%", e, args)))
+	  SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->`%");
+
       res = fast_clone_object(mpq_program);
       
       mpq_init(tmp);
@@ -737,19 +736,16 @@ PIKECLASS mpq
       RETURN res;
     }
 
-  PIKEFUN object ``%(int|float|object ... a)
+  PIKEFUN object ``%(int|float|object a)
     flags ID_STATIC;
     {
       MP_RAT *a;
       
       struct object *res;
       if(!mpq_sgn(THISMPQ))
-	Pike_error("Modulo by zero.\n");
-      
-      if(args!=1)
-	Pike_error("Gmp.mpq->``%%() called with more than one argument.\n");
-      
-      a=get_mpq(sp-1,1);
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->``%");
+
+      a=get_mpq(sp-1, 1, "Gmp.mpq->``%", 1, 1);
       
       res=fast_clone_object(mpq_program);
       
@@ -775,7 +771,7 @@ PIKECLASS mpq
     {
       struct object *res;
       if (!mpq_sgn(THISMPQ))
-	Pike_error("divide by zero in mpq->invert\n");
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpq->invert");
       res = fast_clone_object(mpq_program);
       mpq_inv(OBTOMPQ(res), THISMPQ);
       RETURN res;
@@ -796,39 +792,39 @@ PIKECLASS mpq
   PIKEFUN int `>(mixed q)
     flags ID_STATIC;
     {
-      RETURN mpq_cmp(THISMPQ, get_mpq(q, 1)) > 0;
+      RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`>", 1, args)) > 0;
     }
 
   PIKEFUN int `<(mixed q)
     flags ID_STATIC;
     {
-      RETURN mpq_cmp(THISMPQ, get_mpq(q, 1)) < 0;
+      RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<", 1, args)) < 0;
     }
   
   PIKEFUN int `>=(mixed q)
     flags ID_STATIC;
   {
-    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1)) >= 0;
+    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`>=", 1, args)) >= 0;
   }
   
   PIKEFUN int `<=(mixed q)
     flags ID_STATIC;
   {
-    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1)) <= 0;
+    RETURN mpq_cmp(THISMPQ, get_mpq(q, 1, "Gmp.mpq->`<=", 1, args)) <= 0;
   }
 
 
   PIKEFUN int `==(mixed q)
     flags ID_STATIC;
   {
-    MP_RAT *arg=get_mpq(q, 0);
+    MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
     RETURN arg && !mpq_cmp(THISMPQ, arg);
   }
 
   PIKEFUN int `!=(mixed q)
     flags ID_STATIC;
   {
-    MP_RAT *arg=get_mpq(q, 0);
+    MP_RAT *arg=get_mpq(q, 0, NULL, 0, 0);
     RETURN !(arg && !mpq_cmp(THISMPQ, arg));
   }
 

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.21 2002/12/03 13:09:45 grubba Exp $
+|| $Id: mpf.cmod,v 1.22 2003/03/28 22:13:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.21 2002/12/03 13:09:45 grubba Exp $");
+RCSID("$Id: mpf.cmod,v 1.22 2003/03/28 22:13:54 mast Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -660,11 +660,11 @@ PIKECLASS mpf
 	  MP_FLT *a=get_mpf(sp+e-args, 1, prec);
 	  tmp=mpf_get_prec(a);
 	  if(!mpf_sgn(a))
-	    Pike_error("Division by zero.\n");
+	    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpf->`/");
 	}else{
 	  tmp=sizeof(sp[e-args].u.integer)*CHAR_BITS;
 	  if(!sp[e-args].u.integer)
-	    Pike_error("Division by zero.\n");
+	    SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpf->`/");
 	}
 	if(tmp>prec) prec=tmp;
       }
@@ -691,7 +691,7 @@ PIKECLASS mpf
       MP_FLT *a;
       struct object *res = NULL;
       if(!mpf_sgn(THISMPF))
-	Pike_error("Division by zero.\n");
+	SIMPLE_DIVISION_BY_ZERO_ERROR ("Gmp.mpf->``/");
       
       a=get_mpf(sv,1,0);
 

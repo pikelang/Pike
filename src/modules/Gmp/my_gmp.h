@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: my_gmp.h,v 1.16 2003/03/28 15:51:40 mast Exp $
+|| $Id: my_gmp.h,v 1.17 2003/03/28 22:13:54 mast Exp $
 */
 
 /*
@@ -46,8 +46,10 @@ void my_mpz_xor _PROTO ((mpz_ptr, mpz_srcptr, mpz_srcptr));
 void get_mpz_from_digits(MP_INT *tmp,
 			 struct pike_string *digits,
 			 int base);
-void get_new_mpz(MP_INT *tmp, struct svalue *s);
-MP_INT *debug_get_mpz(struct svalue *s, int throw_error);
+int get_new_mpz(MP_INT *tmp, struct svalue *s,
+		int throw_error, const char *arg_func, int arg, int args);
+MP_INT *debug_get_mpz(struct svalue *s,
+		      int throw_error, const char *arg_func, int arg, int args);
 void mpzmod_reduce(struct object *o);
 struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base);
 
@@ -67,8 +69,9 @@ extern struct program *bignum_program;
 #endif
 
 #ifdef DEBUG_MALLOC
-#define get_mpz(X,Y) \
- (debug_get_mpz((X),(Y)),( (X)->type==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpz((X),(Y)))
+#define get_mpz(S, THROW_ERROR, ARG_FUNC, ARG, ARGS)			\
+  ((S)->type <= MAX_REF_TYPE ? debug_malloc_touch((S)->u.object) : 0,	\
+   debug_get_mpz((S), (THROW_ERROR), (ARG_FUNC), (ARG), (ARGS)))
 #else
 #define get_mpz debug_get_mpz 
 #endif
@@ -78,6 +81,12 @@ extern struct program *bignum_program;
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
 #define OBTOMPQ(o) ((MP_RAT *)(o->storage))
 #define OBTOMPF(o) ((MP_FLT *)(o->storage))
+
+#ifdef AUTO_BIGNUM
+#define IS_MPZ_OBJ(O) ((O)->prog == bignum_program || (O)->prog == mpzmod_program)
+#else
+#define IS_MPZ_OBJ(O) ((O)->prog == mpzmod_program)
+#endif
 
 #ifndef GMP_NUMB_BITS
 #define GMP_NUMB_BITS (SIZEOF_MP_LIMB_T * CHAR_BIT)
