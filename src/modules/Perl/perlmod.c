@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.13 2000/03/18 21:12:38 leif Exp $ */
+/* $Id: perlmod.c,v 1.14 2000/03/23 21:48:38 leif Exp $ */
 
 #include "builtin_functions.h"
 #include "global.h"
@@ -184,6 +184,14 @@ static void exit_perl_glue(struct object *o)
     MT_PERMIT;
     if(storage->constructed)
     {
+      if (!storage->parsed)
+      { static char *dummyargv[] = { "perl", "-e", "1", 0 };
+        extern void xs_init(void);
+        /* this should be unnecessary, but for some reason, some
+         * perl5.004 installations dump core if we don't do this.
+         */
+        perl_parse(storage->my_perl, xs_init, 3, dummyargv, NULL);
+      }
       perl_destruct(storage->my_perl);
       storage->constructed=0;
     }
