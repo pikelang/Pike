@@ -122,6 +122,17 @@ class AES_Algorithm
 
 AES_Algorithm AES = AES_Algorithm();
 
+class ARCFOUR_Algorithm
+{
+  // NOTE: Depends on the order of INIT invocations.
+  inherit ARCFOUR_Info;
+  inherit CipherAlgorithm;
+
+  ARCFOUR_State `()() { return ARCFOUR_State(); }
+}
+
+ARCFOUR_Algorithm ARCFOUR = ARCFOUR_Algorithm();
+
 class CAST128_Algorithm
 {
   // NOTE: Depends on the order of INIT invocations.

@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.11 2003/08/06 21:35:42 grubba Exp $");
+RCSID("$Id: cipher.cmod,v 1.12 2003/08/24 15:03:59 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -16,6 +16,7 @@ RCSID("$Id: cipher.cmod,v 1.11 2003/08/06 21:35:42 grubba Exp $");
 #include "nettle.h"
 
 #include <nettle/aes.h>
+#include <nettle/arcfour.h>
 #include <nettle/cast128.h>
 #include <nettle/serpent.h>
 #include <nettle/twofish.h>
@@ -237,8 +238,8 @@ AES_check_key(ptrdiff_t len, const char *key)
 /*! @class AES_Info
  *!
  *! Internal mixin class, intended to be multiply inherited
- *! together with CipherInfo. */
-
+ *! together with CipherInfo.
+ */
 PIKECLASS AES_Info
 {
   INIT
@@ -276,6 +277,55 @@ PIKECLASS AES_State
     }
 }
 /*! @endclass AES_State */
+
+static int
+ARCFOUR_check_key(ptrdiff_t len, const char *key)
+{
+  return (len>=ARCFOUR_MIN_KEY_SIZE && len<=ARCFOUR_MAX_KEY_SIZE);
+}
+
+/*! @class ARCFOUR_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo.
+ */
+PIKECLASS ARCFOUR_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
+
+      if (CipherInfo && !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_arcfour128;
+	CipherInfo->check_key = &ARCFOUR_check_key;
+      }
+    }
+}
+
+/*! @endclass ARCFOUR_Info */
+
+/*! @class ARCFOUR_State
+ *!
+ *! State for ARCFOUR encyption
+ */
+PIKECLASS ARCFOUR_State
+{
+  INHERIT ARCFOUR_Info;
+  INHERIT CipherState;
+  CVAR struct arcfour_ctx arcfour;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->arcfour;
+    }
+}
+/*! @endclass ARCFOUR_State */
 
 static int
 CAST128_check_key(ptrdiff_t len, const char *key)
