@@ -103,19 +103,88 @@ o Crypto/Nettle
 
       Crypto.MD5()->update("Hash this ")->update("string")->digest();
 
-   The confusing and hard to use Crypto.randomness has been obsoleted
-   by the Nettle implementation of the Yarrow random generator. The
-   Nettle implementation of Yarrow uses AES and SHA256. The
-   Crypto.Random module acts as a frontend before system crypto
-   sources and ensure that no matter how bad your OS is, you will
-   still get cryptographically strong random data.
+    The confusing and hard to use Crypto.randomness has been obsoleted
+    by the Nettle implementation of the Yarrow random generator. The
+    Nettle implementation of Yarrow uses AES and SHA256. The
+    Crypto.Random module acts as a frontend before system crypto
+    sources and ensure that no matter how bad your OS is, you will
+    still get cryptographically strong random data.
 
-   PGP
+
+o Crypto.PGP
+    The start of a PGP/GPG toolkit. It still cannot handle all types
+    of signatures nor generate any, but it is useful to verify
+    selfsigned code and data.
+
+
+o ADT.Struct
+    This module makes it possible to work with binary formats of the
+    packed-struct-type. Simply create a class and specify the members
+    in order, create an object with a file object as argument and then
+    read the decoded values from the object as ordinary variables.
+
+      class ID3 {
+        inherit ADT.Struct;
+        Item head = Chars(3);
+        Item title = Chars(30);
+        Item artist = Chars(30);
+        Item album = Chars(30);
+        Item year = Chars(4);
+        Item comment = Chars(30);
+        Item genre = Byte();
+      }
+
+      Stdio.File f = Stdio.File("foo.mp3");
+      f->seek(-128);
+      ADT.Struct tag = ID3(f);
+      if(tag->head=="TAG") {
+        write("Title: %s\n", tag->title);
+        tag->title = "A new title" + "\0"*19;
+        f->seek(-128);
+        f->write( (string)tag );
+      }
+
+
+o ADT.BitBuffer
+    When operating on data formats that are defined on bit level, the
+    ADT.BitBuffer presents a convenient interface. It operates as a
+    FIFO buffer on bit level, which allows you to read and write bits
+    and bytes.
+
+      > ADT.BitBuffer b=ADT.BitBuffer();
+      > b->put1(2);
+      (1) Result: ADT.BitBuffer(11)
+      > b->put0(15);
+      (2) Result: ADT.BitBuffer("À\0"0)
+      > b->drain();
+      (3) Result: "À\0"
+      > sizeof(b);
+      (4) Result: 1
+
+
+o Debug.Wrapper
+    A simple litte wrapper that can be placed around another object to
+    get printouts about what is happening to it. Only a few LFUNs are
+    currently supported.
+
+      > object x=Debug.Wrapper(Crypto.MD5());
+      Debug.Wrapper is proxying ___Nettle.MD5_State()
+      > x->name();
+      ___Nettle.MD5_State()->name
+      (1) Result: "md5"
+      > !x;
+      !___Nettle.MD5_State()
+      (2) Result: 0
+
+
+o Image.NEO
+    Support for one of the major image formats on Atari ST/STE,
+    including decoding of color cycling. The C bitmap and palette
+    handler can be used to implement other atari image formats.
+
+
 
 o _ADT
-o ADT.Struct
-o ADT.BitBuffer
-o Debug.Wrapper
 o Geography RT38
 o Int
 o Pike.Security
@@ -143,7 +212,8 @@ o Instantiation and destruction of pike-classes is now significantly faster.
 o Handling of bignums has been optimized, especially conversion
   to/from normal integers.
 
-o String case conversion is now five times faster than before on average.
+o String case conversion is now five times faster than before on
+  average.
 
 
 Compatibility changes:
@@ -154,14 +224,13 @@ Compatibility changes without backward compatibility:
 
 o Module ABI changed
   The pike_frame struct has a new member, which makes modules compiled
-  against earlier versions of Pike incompatible.
+  with earlier versions of Pike incompatible.
 
 
 C level/development changes:
 ----------------------------
 
 o The security.h include file is renamed to pike_security.h
-
 
 Bugs fixed:
 -----------
