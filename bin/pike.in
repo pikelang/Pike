@@ -43,7 +43,7 @@ for arg; do
 done
 
 if test "x$gdb" != "x"; then
-  args="'-m$BUILDDIR/master.pike'"
+  args="-DPRECOMPILED_SEARCH_MORE '-m$BUILDDIR/master.pike'"
   for arg; do
     arg=`sed -e s/\'/\'\"\'\"\'/g <<EOF
 $arg
