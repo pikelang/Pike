@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.82 2005/03/21 05:10:47 per Exp $
+|| $Id: math.c,v 1.83 2005/03/21 07:11:30 nilsson Exp $
 */
 
 #include "global.h"
@@ -844,15 +844,16 @@ PIKE_MODULE_INIT
   ADD_EFUN("min",f_min,CMP_TYPE,0);
   
   ADD_EFUN("limit",f_limit,
-	   tFunc(tOr3(tFlt,tInt,tObj) 
-		 tOr3(tFlt,tInt,tObj) 
-		 tOr3(tFlt,tInt,tObj),
-		 tOr3(tFlt,tInt,tObj)),0);
+	   tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj))
+		 tSetvar(1,tOr3(tFlt,tInt,tObj))
+		 tSetvar(2,tOr3(tFlt,tInt,tObj)),
+		 tOr3(tVar(0),tVar(1),tVar(2))),0);
+
 /* function(float|int|object:float|int|object) */
-  ADD_EFUN("abs",f_abs,tFunc(tOr3(tFlt,tInt,tObj),tOr3(tFlt,tInt,tObj)),0);
+  ADD_EFUN("abs",f_abs,tFunc(tSetvar(0,tOr3(tFlt,tInt,tObj)),tVar(0)),0);
   
 /* function(mixed,mixed|void:int) */
-  ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt),0);
+  ADD_EFUN("sgn",f_sgn,tFunc(tMix tOr(tMix,tVoid),tInt_11),0);
 }
 
 PIKE_MODULE_EXIT {}
