@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.207 2003/02/16 03:59:57 mast Exp $
+|| $Id: pike_types.c,v 1.208 2003/02/24 20:42:53 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.207 2003/02/16 03:59:57 mast Exp $");
+RCSID("$Id: pike_types.c,v 1.208 2003/02/24 20:42:53 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3385,21 +3385,9 @@ static struct pike_type *debug_low_index_type(struct pike_type *t,
 	  add_ref(mixed_type_string);
 	  return mixed_type_string;
 	}else{
-#if 0
-	  if(t->car ||
-	     (p->identifier_references[i].id_flags & ID_NOMASK) ||
-	    (ID_FROM_INT(p, i)->identifier_flags & IDENTIFIER_PROTOTYPED))
-	  {
-#endif
-	    add_ref(ID_FROM_INT(p, i)->type);
-	    return ID_FROM_INT(p, i)->type;
-#if 0
-	  }else{
-	    add_ref(mixed_type_string);
-	    return mixed_type_string;
-	  }
-#endif
-	}	   
+	  add_ref(ID_FROM_INT(p, i)->type);
+	  return ID_FROM_INT(p, i)->type;
+	}
       }
     }
   }
