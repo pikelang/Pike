@@ -2,7 +2,7 @@ array(int) field_ranking;
 array(int) proximity_ranking;
 int cutoff;
 
-void create(Search.Database.Base db, void|mapping(string:int) _field_ranking)
+void create(void|Search.Database.Base db, void|mapping(string:int) _field_ranking)
 {
   field_ranking=allocate(66);
   field_ranking[0]=17;
@@ -21,4 +21,13 @@ void create(Search.Database.Base db, void|mapping(string:int) _field_ranking)
       if(field_id=db->get_field_id(field, 1))
 	field_ranking[field_id]=_field_ranking[field];
   }
+}
+
+this_program copy()
+{
+  this_program c = this_program();
+  c->field_ranking = field_ranking;
+  c->proximity_ranking = proximity_ranking;
+  c->cutoff = cutoff;
+  return c;
 }
