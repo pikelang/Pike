@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.80 1999/12/06 21:59:37 grubba Exp $
+ * $Id: master.pike.in,v 1.81 1999/12/06 22:16:05 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -1434,7 +1434,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
      (objectp(trace) && trace->is_generic_error))
   {
     if (catch {
-      ret = trace[0];
+      ret = trace[0] || "No error message!\n";
       trace = trace[1];
     }) {
       return "Error indexing backtrace!\n";
@@ -1503,7 +1503,11 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	}
 	else
 	{
-	  row="Destructed object";
+	  if (tmp) {
+	    row = sprintf("%O", tmp);
+	  } else {
+	    row = "Destructed object";
+	  }
 	}
       }) {
 	row += sprintf("Error indexing backtrace line %d (%O)!", e, err[1]);
