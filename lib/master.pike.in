@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.249 2003/08/18 12:43:49 tomas Exp $
+// $Id: master.pike.in,v 1.250 2003/09/09 16:57:04 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -2446,15 +2446,19 @@ static string get_clean_program_path ( program p, string pref1,
 //!   currently either @tt{"."@} or @tt{"->"@}.
 string describe_module(object|program mod, array(object)|void ret_obj)
 {
-  if (!mod) return "";
-  program parent_fun;
-  if (objectp(mod)) {
-    parent_fun = object_program(mod);
+  // Note: mod might be a bignum object; objectp won't work right for
+  // our purposes. object_program returns zero for non-objects, so we
+  // use it instead.
+  program parent_fun = object_program(mod);
+  if (parent_fun) {
     if (ret_obj) ret_obj[0] = mod;
-  } else {
+  } else if (programp (mod)) {
     parent_fun = mod;
     if (objectp (mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
   }
+  else
+    return "";			// efun
+
   if (mod) {
     catch {
       string res = sprintf("%O", mod);
@@ -2476,8 +2480,8 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 			       parent_obj);
   // werror("So far: %O parent_obj:%O\n", res, parent_obj);
   object|program parent =
-    objectp (parent_obj[0]) ? parent_obj[0] : object_program(parent_fun);
-  if (mod && (objectp (parent) || parent)) {
+    object_program (parent_obj[0]) ? parent_obj[0] : object_program(parent_fun);
+  if (mod && (object_program (parent) || parent)) {
     // Object identified.
     catch {
       // Check if we're an object in parent.
@@ -2495,14 +2499,14 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 
   // No such luck.
   // Try identifying a clone of ourselves.
-  if (!mod && (objectp (parent) || parent)) {
+  if (!mod && (object_program (parent) || parent)) {
     catch {
       // Check if there's a clone of parent_fun in parent_obj.
       int i;
       array(mixed) val = values(parent);
       array(string) ind = indices(parent);
       for (i=0; i < sizeof(val); i++) {
-	if (objectp(val[i]) && object_program(val[i]) == parent_fun) {
+	if (object_program(val[i]) && object_program(val[i]) == parent_fun) {
 	  return res + ind[i] + ".";
 	}
       }
@@ -2517,9 +2521,9 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 string describe_object(object|program o)
 {
   string s;
-  if(!o) return 0;
 
   function parent_fun = object_program(o);
+  if(!parent_fun) return 0;
 
   /* Constant object? */
   catch {
@@ -2533,14 +2537,14 @@ string describe_object(object|program o)
 
       /* Try finding ourselves in parent_obj. */
       int i;
-      if (objectp(o)) {
+      if (object_program(o)) {
 	i = search(values(parent_obj), o);
       } else {
 	i = search(map(values(parent_obj),
 		       lambda(mixed x) {
-			 if (objectp(x)) return object_program(x);
+			 if (program p = object_program(x)) return p;
 			 return 0;
-		       }), o);
+		       }), (mixed) o);
       }
       if (i >= 0) {
 	s = indices(parent_obj)[i];
@@ -2597,8 +2601,9 @@ string describe_function (function f)
     if (catch (name = function_name (f))) name = "function";
 
   object o = function_object(f);
-  if(objectp (o)) { // Check if it's an object in a way that (hopefully) doesn't
-		    // call any functions in it (neither `== nor `!).
+  if(object_program (o)) { // Check if it's an object in a way that
+			   // (hopefully) doesn't call any functions
+			   // in it (neither `== nor `!).
     string s;
     if (!catch (s = sprintf("%O",o)) && s != "object")
       return s+"->"+name;
