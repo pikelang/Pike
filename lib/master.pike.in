@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.64 1999/10/21 21:34:14 hubbe Exp $
+/* $Id: master.pike.in,v 1.65 1999/11/03 23:52:07 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -263,7 +263,10 @@ static program low_findprog(string pname, string ext)
 	    return programs[fname]=decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
 	  };
 	  if(want_warnings)
-	    werror("Failed to decode %s.o\n",fname);
+	    werror("Warning: Failed to decode %s.o:\n"
+		   "       : \t%s\n",
+		   fname,
+		   err[0]);
 	}
       }
       
