@@ -3,14 +3,17 @@
 //! submodule HTTP
 //! method object(Protocols.HTTP.Query) get_url(string url)
 //! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables)
+//! method object(Protocols.HTTP.Query) get_url(string url,mapping query_variables, mapping request_headers)
 //! 	Sends a HTTP GET request to the server in the URL
 //!	and returns the created and initialized <ref>Query</ref> object.
 //!	0 is returned upon failure.
 //!
 //! method array(string) get_url_nice(string url)
 //! method array(string) get_url_nice(string url,mapping query_variables)
+//! method array(string) get_url_nice(string url,mapping query_variables, mapping request_headers)
 //! method string get_url_data(string url)
 //! method string get_url_data(string url,mapping query_variables)
+//! method string get_url_data(string url,mapping query_variables, mapping request_headers)
 //!	Returns an array of ({content_type,data}) and just the data
 //!	string respective, 
 //!	after calling the requested server for the information.
@@ -18,13 +21,16 @@
 //!
 //!
 //! method array(string) post_url_nice(string url,mapping query_variables)
+//! method array(string) post_url_nice(string url,mapping query_variables, mapping request_headers)
 //! method string post_url_data(string url,mapping query_variables)
+//! method string post_url_data(string url,mapping query_variables, mapping request_headers)
 //! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables)
+//! method object(Protocols.HTTP.Query) post_url(string url,mapping query_variables, mapping request_headers)
 //! 	Similar to the <ref>get_url</ref> class of functions, except that the 
 //!	query variables is sent as a post request instead of a get.
 //!
 
-object get_url(string url,void|mapping query_variables)
+object get_url(string url,void|mapping query_variables, void|mapping request_headers)
 {
    object con=master()->resolv("Protocols")["HTTP"]["Query"]();
    
@@ -53,25 +59,25 @@ object get_url(string url,void|mapping query_variables)
    con->sync_request(host,port,
 		     "GET /"+query+" HTTP/1.0",
 		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)"]));
+		       "Mozilla/4.0 compatible (Pike HTTP client)"]) | request_headers);
 
    if (!con->ok) return 0;
    return con;
 }
 
-array(string) get_url_nice(string url,void|mapping query_variables)
+array(string) get_url_nice(string url,void|mapping query_variables, void|mapping request_headers)
 {
-   object c=get_url(url,query_variables);
+   object c=get_url(url,query_variables, request_headers);
    return c && ({c->headers["content-type"],c->data()});
 }
 
-string get_url_data(string url,void|mapping query_variables)
+string get_url_data(string url,void|mapping query_variables, void|mapping request_headers)
 {
-   object z=get_url(url,query_variables);
+   object z=get_url(url,query_variables, request_headers);
    return z && z->data();
 }
 
-object post_url(string url,mapping query_variables)
+object post_url(string url,mapping query_variables, void|mapping request_headers)
 {
    object con=master()->resolv("Protocols")["HTTP"]["Query"]();
    
@@ -92,8 +98,9 @@ object post_url(string url,mapping query_variables)
    con->sync_request(host,port,
 		     "POST /"+query+" HTTP/1.0",
 		     (["user-agent":
-		       "Mozilla/4.0 compatible (Pike HTTP client)",
-		       "content-type":
+		       "Mozilla/4.0 compatible (Pike HTTP client)"]) |
+		     request_headers |
+		     (["content-type":
 		       "application/x-www-form-urlencoded"]),
 		     http_encode_query(query_variables));
 
@@ -101,15 +108,15 @@ object post_url(string url,mapping query_variables)
    return con;
 }
 
-array(string) post_url_nice(string url,mapping query_variables)
+array(string) post_url_nice(string url,mapping query_variables, void|mapping request_headers)
 {
-   object c=post_url(url,query_variables);
+   object c=post_url(url,query_variables, request_headers);
    return c && ({c->headers["content-type"],c->data()});
 }
 
-string post_url_data(string url,mapping query_variables)
+string post_url_data(string url,mapping query_variables, void|mapping request_headers)
 {
-   object z=post_url(url,query_variables);
+   object z=post_url(url,query_variables, request_headers);
    return z && z->data();
 }
 
