@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 2001/02/13 16:14:47 mirar Exp $
+# $Id: configure.in,v 1.6 2002/08/05 17:24:41 kiwi Exp $
 #
 AC_INIT(pdflib_glue.c)
 AC_CONFIG_HEADER(pdf_machine.h)
@@ -46,6 +46,12 @@ if test x$with_libpanda = xyes ; then
 # now check
     AC_CHECK_LIB(panda, settitle, [
       AC_DEFINE(HAVE_LIBPANDA) 
+      LIBS="${LIBS-} -lpanda"
+
+      PIKE_FEATURE(PDF.Panda,[yes (but not implemented)])
+      ])
+    AC_CHECK_LIB(panda, panda_settitle, [
+      AC_DEFINE(HAVE_LIBPANDA)
       LIBS="${LIBS-} -lpanda"
 
       PIKE_FEATURE(PDF.Panda,[yes (but not implemented)])
