@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.120 1999/04/15 04:08:14 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.121 1999/04/17 13:48:47 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1298,7 +1298,7 @@ void slow_check_stack(void)
   for(m=mark_stack;m<mark_sp;m++)
   {
     if(*m < s)
-      fatal("Mark stack failiure.\n");
+      fatal("Mark stack failure.\n");
 
     s=*m;
   }
