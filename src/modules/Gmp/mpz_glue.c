@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.116 2003/01/13 14:42:07 grubba Exp $
+|| $Id: mpz_glue.c,v 1.117 2003/01/25 23:43:27 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.116 2003/01/13 14:42:07 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.117 2003/01/25 23:43:27 nilsson Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -164,7 +164,7 @@ void get_mpz_from_digits(MP_INT *tmp,
     }
 
     if (mpz_set_str(tmp, digits->str + offset, base))
-      Pike_error("invalid digits, cannot convert to mpz\n");
+      Pike_error("Invalid digits, cannot convert to Gmp.mpz.\n");
 
     if(neg)
       mpz_neg(tmp, tmp);
@@ -187,7 +187,7 @@ void get_mpz_from_digits(MP_INT *tmp,
   }
   else
   {
-    Pike_error("invalid base.\n");
+    Pike_error("Invalid base.\n");
   }
 }
 
@@ -255,7 +255,7 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
 #endif
        ) {
       if (s->u.object->prog) {
-	Pike_error("Wrong type of object (id:%d), cannot convert to mpz.\n",
+	Pike_error("Wrong type of object (id:%d), cannot convert to Gmp.mpz.\n",
 		   s->u.object->prog->id);
       } else {
 	/* Destructed object. Use as zero. */
@@ -274,13 +274,13 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
     if ( (s->u.array->size != 2)
 	 || (ITEM(s->u.array)[0].type != T_STRING)
 	 || (ITEM(s->u.array)[1].type != T_INT))
-      Pike_error("cannot convert array to mpz.\n");
+      Pike_error("Cannot convert array to Gmp.mpz.\n");
     get_mpz_from_digits(tmp, ITEM(s->u.array)[0].u.string,
 			ITEM(s->u.array)[1]);
     break;
 #endif
   default:
-    Pike_error("cannot convert argument to mpz.\n");
+    Pike_error("Cannot convert argument to Gmp.mpz.\n");
   }
 }
 
@@ -319,16 +319,13 @@ static void mpzmod_create(INT32 args)
 
   case 2: /* Args are string of digits and integer base */
     if(sp[-args].type != T_STRING)
-      Pike_error("bad argument 1 for Mpz->create()\n");
+      SIMPLE_BAD_ARG_ERROR("Gmp.mpz", 1, "string");
 
     if (sp[1-args].type != T_INT)
-      Pike_error("wrong type for base in Mpz->create()\n");
+      SIMPLE_BAD_ARG_ERROR("Gmp.mpz", 2, "int");
 
     get_mpz_from_digits(THIS, sp[-args].u.string, sp[1-args].u.integer);
     break;
-
-  default:
-    Pike_error("Too many arguments to Mpz->create()\n");
 
   case 0:
     break;	/* Needed by AIX cc */
@@ -383,7 +380,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 #endif
 
     if (mpz_sgn(mpz) < 0)
-      Pike_error("only non-negative numbers can be converted to base 256.\n");
+      Pike_error("Only non-negative numbers can be converted to base 256.\n");
 #if 0
     len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
     s = begin_shared_string(len);
@@ -432,7 +429,7 @@ struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
   }
   else
   {
-    Pike_error("invalid base.\n");
+    Pike_error("Invalid base.\n");
     return 0; /* Make GCC happy */
   }
 
@@ -457,7 +454,7 @@ static void mpzmod_digits(INT32 args)
   else
   {
     if (sp[-args].type != T_INT)
-      Pike_error("Bad argument 1 for Mpz->digits().\n");
+      SIMPLE_BAD_ARG_ERROR("Gmp.mpz->digits", 1, "int");
     base = sp[-args].u.integer;
   }
 
@@ -475,23 +472,25 @@ static void mpzmod__sprintf(INT32 args)
 
   debug_malloc_touch(Pike_fp->current_object);
   
-  if(args < 1 || sp[-args].type != T_INT)
-    Pike_error("Bad argument 1 for Mpz->_sprintf().\n");
-  if(args < 2 || sp[1-args].type != T_MAPPING)
-    Pike_error("Bad argument 2 for Mpz->_sprintf().\n");
+  if(args < 2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->_sprintf", 2);
+  if(sp[-args].type != T_INT)
+    SIMPLE_BAD_ARG_ERROR("Gmp.mpz->_sprintf", 1, "int");
+  if(sp[1-args].type != T_MAPPING)
+    SIMPLE_BAD_ARG_ERROR("Gmp.mpz->_sprintf", 2, "mapping");
 
   push_svalue(&sp[1-args]);
   push_constant_text("precision");
   f_index(2);
   if(sp[-1].type != T_INT)
-    Pike_error("\"precision\" argument to Mpz->_sprintf() is not an integer.\n");
+    Pike_error("\"precision\" argument to Gmp.mpz->_sprintf() is not an integer.\n");
   precision = (--sp)->u.integer;
   
   push_svalue(&sp[1-args]);
   push_constant_text("width");
   f_index(2);
   if(sp[-1].type != T_INT)
-    Pike_error("\"width\" argument to Mpz->_sprintf() is not an integer.\n");
+    Pike_error("\"width\" argument to Gmp.mpz->_sprintf() is not an integer.\n");
   width_undecided = ((sp-1)->subtype != NUMBER_NUMBER);
   width = (--sp)->u.integer;
 
@@ -499,7 +498,7 @@ static void mpzmod__sprintf(INT32 args)
   push_constant_text("flag_left");
   f_index(2);
   if(sp[-1].type != T_INT)
-    Pike_error("\"flag_left\" argument to Mpz->_sprintf() is not an integer.\n");
+    Pike_error("\"flag_left\" argument to Gmp.mpz->_sprintf() is not an integer.\n");
   flag_left=sp[-1].u.integer;
   pop_stack();
 
@@ -642,8 +641,10 @@ static void mpzmod__sprintf(INT32 args)
 
 static void mpzmod__is_type(INT32 args)
 {
-  if(args < 1 || sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 for Mpz->_is_type().\n");
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->_is_type", 1);
+  if(sp[-args].type != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("Gmp.mpz->_is_type", 1, "string");
 
   pop_n_elems(args-1);
   push_constant_text("int");
@@ -661,10 +662,10 @@ static void mpzmod_size(INT32 args)
   else
   {
     if (sp[-args].type != T_INT)
-      Pike_error("bad argument 1 for Mpz->size()\n");
+      SIMPLE_BAD_ARG_ERROR("Gmp.mpz->size", 1, "int");
     base = sp[-args].u.integer;
     if ((base != 256) && ((base < 2) || (base > 36)))
-      Pike_error("invalid base\n");
+      Pike_error("Invalid base.\n");
   }
   pop_n_elems(args);
 
@@ -679,9 +680,9 @@ static void mpzmod_cast(INT32 args)
   struct pike_string *s;
 
   if(args < 1)
-    Pike_error("mpz->cast() called without arguments.\n");
+    SIMPLE_TOO_FEW_ARGS_ERROR("Gmp.mpz->cast", 1);
   if(sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to mpz->cast().\n");
+    SIMPLE_BAD_ARG_ERROR("Gmp.mpz->cast", 1, "string");
 
   s = sp[-args].u.string;
   add_ref(s);
@@ -735,7 +736,7 @@ static void mpzmod_cast(INT32 args)
 
   push_string(s);	/* To get it freed when Pike_error() pops the stack. */
 
-  Pike_error("mpz->cast() to \"%s\" is other type than string, int or float.\n",
+  Pike_error("Gmp.mpz->cast() to \"%s\" is other type than string, int or float.\n",
 	s->str);
 }
 
@@ -747,7 +748,7 @@ MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
   switch(s->type)
   {
   default:
-    MPZ_ERROR("Wrong type of value, cannot convert to mpz.\n");
+    MPZ_ERROR("Wrong type of value, cannot convert to Gmp.mpz.\n");
     return 0;
 
   case T_INT:
@@ -773,7 +774,7 @@ MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
     {
       if (s->u.object->prog) {
 	if(throw_error)
-	  Pike_error("Wrong type of object (id:%d), cannot convert to mpz.\n",
+	  Pike_error("Wrong type of object (id:%d), cannot convert to Gmp.mpz.\n",
 		     s->u.object->prog->id);
       } else {
 	/* Destructed object. Use as zero. */
@@ -1151,7 +1152,7 @@ static void mpzmod_gcdext2(INT32 args)
   MP_INT *a;
 
   if (args != 1)
-    Pike_error("Gmp.mpz->gcdext: Wrong number of arguments.\n");
+    Pike_error("Gmp.mpz->gcdext2: Wrong number of arguments.\n");
 
   a = get_mpz(sp-args, 1);
   
@@ -1178,7 +1179,7 @@ static void mpzmod_invert(INT32 args)
   if (mpz_invert(OBTOMPZ(res), THIS, modulo) == 0)
   {
     free_object(res);
-    Pike_error("Gmp.mpz->invert: not invertible\n");
+    Pike_error("Gmp.mpz->invert: not invertible.\n");
   }
   pop_n_elems(args);
   PUSH_REDUCED(res);
@@ -1305,7 +1306,7 @@ static void mpzmod_sqrt(INT32 args)
   struct object *o = 0;   /* Make gcc happy. */
   pop_n_elems(args);
   if(mpz_sgn(THIS)<0)
-    Pike_error("mpz->sqrt() on negative number.\n");
+    Pike_error("Gmp.mpz->sqrt() on negative number.\n");
 
   o=fast_clone_object(THIS_PROGRAM,0);
   mpz_sqrt(OBTOMPZ(o), THIS);
@@ -1318,7 +1319,7 @@ static void mpzmod_sqrtrem(INT32 args)
   
   pop_n_elems(args);
   if(mpz_sgn(THIS)<0)
-    Pike_error("mpz->sqrtrem() on negative number.\n");
+    Pike_error("Gmp.mpz->sqrtrem() on negative number.\n");
 
   root = fast_clone_object(THIS_PROGRAM,0);
   rem = fast_clone_object(THIS_PROGRAM,0);
@@ -1337,18 +1338,18 @@ static void mpzmod_lsh(INT32 args)
   f_cast();
   if(sp[-1].type == T_INT) {
     if(sp[-1].u.integer < 0)
-      Pike_error("mpz->lsh on negative number.\n");
+      Pike_error("Gmp.mpz->lsh on negative number.\n");
     res = fast_clone_object(THIS_PROGRAM, 0);
     mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
     INT32 i;
     MP_INT *mi = get_mpz(sp-1,1);
     if(mpz_sgn(mi)<0)
-      Pike_error("mpz->lsh on negative number.\n");
+      Pike_error("Gmp.mpz->lsh on negative number.\n");
     i=mpz_get_si(mi);
     if(mpz_cmp_si(mi, i)) {
       if(mpz_sgn(THIS))
-	Pike_error("mpz->lsh: shift count too large.\n");
+	Pike_error("Gmp.mpz->lsh: shift count too large.\n");
       else {
 	/* Special case: shifting 0 left any number of bits still yields 0 */
 	res = fast_clone_object(THIS_PROGRAM, 0);
@@ -1400,11 +1401,11 @@ static void mpzmod_rlsh(INT32 args)
     Pike_error("Wrong number of arguments to Gmp.mpz->``<<.\n");
   get_mpz(sp-1,1);
   if(mpz_sgn(THIS) < 0)
-    Pike_error("mpz->``<< on negative number.\n");
+    Pike_error("Gmp.mpz->``<< on negative number.\n");
   i=mpz_get_si(THIS);
   if(mpz_cmp_si(THIS, i)) {
     if(mpz_sgn(OBTOMPZ(sp[-1].u.object)))
-      Pike_error("mpz->``<<: shift count too large.\n");
+      Pike_error("Gmp.mpz->``<<: shift count too large.\n");
     else {
       /* Special case: shifting 0 left any number of bits still yields 0 */
       res = fast_clone_object(THIS_PROGRAM, 0);
@@ -1426,7 +1427,7 @@ static void mpzmod_rrsh(INT32 args)
     Pike_error("Wrong number of arguments to Gmp.mpz->``>>.\n");
   get_mpz(sp-1,1);
   if(mpz_sgn(THIS) < 0)
-    Pike_error("mpz->``>> on negative number.\n");
+    Pike_error("Gmp.mpz->``>> on negative number.\n");
   i=mpz_get_si(THIS);
   res = fast_clone_object(THIS_PROGRAM, 0);
   if(mpz_cmp_si(THIS, i))
@@ -1534,9 +1535,9 @@ static void gmp_fac(INT32 args)
   if (args != 1)
     Pike_error("Gmp.fac: Wrong number of arguments.\n");
   if (sp[-1].type != T_INT)
-    Pike_error("Gmp.fac: Non int argument.\n");
+    SIMPLE_BAD_ARG_ERROR("Gmp.fac", 1, "int");
   if (sp[-1].u.integer < 0)
-    Pike_error("Gmp.mpz->pow: Negative exponent.\n");
+    SIMPLE_BAD_ARG_ERROR("Gmp.fac", 1, "positive exponent");
   res = fast_clone_object(mpzmod_program, 0);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
@@ -1548,7 +1549,7 @@ static void mpzmod_random(INT32 args)
   struct object *res = 0;   /* Make gcc happy. */
   pop_n_elems(args);
   if(mpz_sgn(THIS) <= 0)
-    Pike_error("random on negative number.\n");
+    Pike_error("Random on negative number.\n");
 
   res=fast_clone_object(THIS_PROGRAM,0);
   /* We add two to assure reasonably uniform randomness */
