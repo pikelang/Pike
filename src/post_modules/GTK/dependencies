@@ -1,1 +1,7 @@
-# No, there is no way to fix these, really.
+dummy.o : $(SRCDIR)/dummy.c \
+ $(PIKE_SRC_DIR)/global.h \
+ $(BUILD_BASE)/machine.h \
+ $(PIKE_SRC_DIR)/port.h \
+ $(PIKE_SRC_DIR)/dmalloc.h \
+ config.h \
+ $(PIKE_SRC_DIR)/module_magic.h
