@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.138 2001/01/16 05:39:30 hubbe Exp $
+ * $Id: master.pike.in,v 1.139 2001/01/19 11:05:15 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -1208,6 +1208,7 @@ void _main(array(string) orig_argv, array(string) env)
   object tmp;
   string a,b;
   array q;
+  int list_features=0; 
 
   _pike_file_name = orig_argv[0];
 
@@ -1253,6 +1254,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"compat_version",tmp->HAS_ARG,({"-V","--compat"})}),
       ({"version",tmp->NO_ARG,({"-v","--version"})}),
       ({"help",tmp->NO_ARG,({"-h","--help"})}),
+      ({"features",tmp->NO_ARG,({"--features"})}),
       ({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
       ({"debug_without",tmp->HAS_ARG,({"--debug-without"})}),
       ({"preprocess",tmp->HAS_ARG,({"-E","--preprocess"})}),
@@ -1385,6 +1387,7 @@ void _main(array(string) orig_argv, array(string) env)
 	       " -e --execute=<cmd>   : Run the given command instead of a script.\n"
 	       " -h --help            : see this message\n"
 	       " -v --version         : See what version of pike you have.\n"
+	       " --features           : List Pike features.\n"
 	       " --show-paths         : See the paths and master that pike uses.\n"
 	       " -s#                  : Set stack size\n"
 	       " -m <file>            : Use <file> as master object.\n"
@@ -1392,6 +1395,10 @@ void _main(array(string) orig_argv, array(string) env)
 	       " -t -t#               : Increase trace level\n"
 	  );
 	exit(0);
+	
+      case "features":
+	list_features=1;
+	break;
 
       case "showpaths":
 	werror("Include path : " + pike_include_path*"\n"
@@ -1416,6 +1423,24 @@ void _main(array(string) orig_argv, array(string) env)
     }
 
     argv = tmp->get_args(argv,1);
+  }
+
+  if (list_features)
+  {
+     mixed v;
+
+     v = resolv("Tools");
+     if (v) v = v["Install"];
+     if (v) v = v["features"];
+     if (!v)
+     {
+	werror("Could not resolv Tools.Install.features\n");
+	exit(1);
+     }
+
+     _static_modules.files()->_stdout->write(version()+"\n"+
+					     v()*"\n"+"\n");
+     exit(0);
   }
 
   random_seed(time() + (getpid() * 0x11111111));
