@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.18 2001/09/06 19:05:39 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.19 2001/09/06 21:21:21 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -492,7 +492,11 @@ PIKECLASS Backend
    * FDS handling
    */
 #define FDS_ISSET(fd,X) (me->fds_size>(fd) &&  me->fds[(fd)].X!=0)
-#define ASSURE_FDS_SIZE(ME,X) grow_fds(ME,X)
+#define ASSURE_FDS_SIZE(ME,X)  do{ 		\
+  struct Backend_struct *me_=(ME);		\
+  int fd_=(X);					\
+  if(fd_ >= me_->fds_size)  grow_fds(ME,X);	\
+}while(0)
   
   void grow_fds(struct Backend_struct *me,
 		int wanted_size)
