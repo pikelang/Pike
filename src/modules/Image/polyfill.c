@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.12 1997/11/05 03:30:02 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.13 1997/11/05 03:36:56 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -29,7 +29,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.12 1997/11/05 03:30:02 mirar Exp $
+**!	$Id: polyfill.c,v 1.13 1997/11/05 03:36:56 mirar Exp $
 **! class image
 */
 
@@ -863,3 +863,4 @@ void image_polygone(INT32 args)
    THISOBJ->refs++;
    push_object(THISOBJ);
 }
+
