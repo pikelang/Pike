@@ -187,12 +187,12 @@ class LocaleObject
     int size=2*64+8; //Two mappings and a timestamp
     foreach(indices(bindings), string|int id) {
       size+=8;
-      if(stringp(id)) size+=strlen(id);
+      if(stringp(id)) size+=sizeof(id);
       else size+=4;
-      size+=strlen(bindings[id]);
+      size+=sizeof(bindings[id]);
     }
     size+=32*sizeof(functions); // The actual functions are not included though...
-    size+=strlen( indices(functions)*"" );
+    size+=sizeof( indices(functions)*"" );
     return size;
   }
 

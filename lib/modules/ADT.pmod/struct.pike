@@ -69,9 +69,9 @@ void put_uint(int i, int len)
 //!  document me!
 void put_var_string(string s, int len)
 {
-  if ( (len <= 3) && (strlen(s) >= ({ -1, 0x100, 0x10000, 0x1000000 })[len] ))
+  if ( (len <= 3) && (sizeof(s) >= ({ -1, 0x100, 0x10000, 0x1000000 })[len] ))
     error("ADT.struct->put_var_string: Field overflow.\n");
-  put_uint(strlen(s), len);
+  put_uint(sizeof(s), len);
   add_data(s);
 }
 
@@ -112,7 +112,7 @@ void put_var_uint_array(array(int) data, int item_size, int len)
 int get_uint(int len)
 {
   mixed i;
-  if ( (strlen(buffer) - index) < len)
+  if ( (sizeof(buffer) - index) < len)
     error("ADT.struct->get_uint: no data\n");
   sscanf(buffer, "%*" + (string) index +"s%" + (string) len + "c", i);
   index += len;
@@ -125,7 +125,7 @@ string get_fix_string(int len)
 {
   string res;
   
-  if ((strlen(buffer) - index) < len)
+  if ((sizeof(buffer) - index) < len)
     error("ADT.struct->get_fix_string: no data\n");
   res = buffer[index .. index + len - 1];
   index += len;
@@ -180,6 +180,6 @@ array(mixed) get_var_uint_array(int item_size, int len)
 //!   1 if empty, 0 otherwise
 int is_empty()
 {
-  return (index == strlen(buffer));
+  return (index == sizeof(buffer));
 }
 

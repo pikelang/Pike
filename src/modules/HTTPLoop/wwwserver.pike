@@ -62,7 +62,7 @@ mixed handle(object o)
       "<h1>No such file or directory: "+f+"</h1>";
     o->reply_with_cache("HTTP/1.0 404 Unknown file\r\n"
 			"Content-type: text/html\r\n"
-			"Content-Length: "+strlen(nofile)+"\r\n"
+			"Content-Length: "+sizeof(nofile)+"\r\n"
 			"MIME-Version: 1.0\r\n"
 			"Server: Neo-FastSpeed\r\n"
 			"Connection: Keep-Alive\r\n"
@@ -105,7 +105,7 @@ mixed handle(object o)
 		       ctype);
       }
       return o->reply_with_cache(head +
-				 "Content-Length: "+strlen(res)+
+				 "Content-Length: "+sizeof(res)+
 				 "\r\n\r\n"+res, 30);
     } else {
       o->reply_with_cache("HTTP/1.0 302  Redirect\r\n"
@@ -158,7 +158,7 @@ int main(int argc, array (string) argv)
   array foo;
   foreach(read_file((argv[0] - "wwwserver.pike") + "extensions")/"\n",
 	  string s) {
-    if(strlen(s) && s[0] != '#' && (foo = (s / "\t" - ({""}))) &&
+    if(sizeof(s) && s[0] != '#' && (foo = (s / "\t" - ({""}))) &&
        sizeof(foo) == 2)
       exts[foo[0]] = foo[1];
   }

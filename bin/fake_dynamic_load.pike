@@ -348,7 +348,7 @@ void low_process_file(mixed data, string file)
     data=PC.hide_whitespaces(data);
     data=PC.strip_line_statements(data);
     data=PC.group(data);
-    if(sizeof(data) && strlen( (string) (data[0]) ))
+    if(sizeof(data) && sizeof( (string) (data[0]) ))
     {
       switch(((string)data[0])[0] )
       {

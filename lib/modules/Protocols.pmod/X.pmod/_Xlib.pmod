@@ -1,6 +1,6 @@
 /* _Xlib.pmod
  *
- * $Id: _Xlib.pmod,v 1.17 2002/01/15 22:32:43 nilsson Exp $
+ * $Id: _Xlib.pmod,v 1.18 2003/01/20 17:44:01 nilsson Exp $
  *
  * Kluge, should be in Xlib.pmod
  */
@@ -31,7 +31,7 @@ object display_re = Regexp("^([^:]*):([0-9]+)(.[0-9]+|)$");
 
 string pad(string s)
 {
-  return s + ({ "", "\0\0\0", "\0\0", "\0" })[strlen(s) % 4];
+  return s + ({ "", "\0\0\0", "\0\0", "\0" })[sizeof(s) % 4];
 }
 
 array(string) window_attributes =

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: state.pike,v 1.14 2002/03/20 16:40:02 nilsson Exp $
+/* $Id: state.pike,v 1.15 2003/01/20 17:44:01 nilsson Exp $
  *
  */
 
@@ -40,7 +40,7 @@ void create(object s)
 
 string tls_pad(string data,int blocksize  ) {
 //    werror("Blocksize:"+blocksize+"\n");
-  int plen=(blocksize-(strlen(data)+1)%blocksize)%blocksize;
+  int plen=(blocksize-(sizeof(data)+1)%blocksize)%blocksize;
   string res=data + sprintf("%c",plen)*plen+sprintf("%c",plen);
   return res;
 }
@@ -79,7 +79,7 @@ object decrypt_packet(object packet,int version)
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying decrypt..\n");
     //    werror("SSL.state: The encrypted packet is:"+sprintf("%O\n",packet->fragment));
-    werror("strlen of the encrypted packet is:"+strlen(packet->fragment)+"\n");
+    werror("sizeof of the encrypted packet is:"+sizeof(packet->fragment)+"\n");
 #endif
     msg=packet->fragment;
         
@@ -106,7 +106,7 @@ object decrypt_packet(object packet,int version)
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying mac verification...\n");
 #endif
-    int length = strlen(packet->fragment) - session->cipher_spec->hash_size;
+    int length = sizeof(packet->fragment) - session->cipher_spec->hash_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
     

@@ -1,4 +1,4 @@
-/* $Id: _rsa.pike,v 1.6 2002/03/09 18:12:21 nilsson Exp $
+/* $Id: _rsa.pike,v 1.7 2003/01/20 17:44:00 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -98,8 +98,8 @@ bignum rsa_pad(string message, int type, mixed|void random)
   string cookie;
   int len;
 
-  len = size - 3 - strlen(message);
-  /*  write(sprintf("%d, %d, %d, %s", len, size, strlen(message), message)); */
+  len = size - 3 - sizeof(message);
+  /*  write(sprintf("%d, %d, %d, %s", len, size, sizeof(message), message)); */
   if (len < 8)
     error( "Crypto.rsa->rsa_pad: Too large block.\n" );
 
@@ -128,7 +128,7 @@ string rsa_unpad(bignum block, int type)
   string s = block->digits(256);
   int i = search(s, "\0");
 
-  if ((i < 9) || (strlen(s) != (size - 1)) || (s[0] != type))
+  if ((i < 9) || (sizeof(s) != (size - 1)) || (s[0] != type))
     return 0;
   return s[i+1..];
 }

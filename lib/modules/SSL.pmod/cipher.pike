@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: cipher.pike,v 1.20 2002/06/11 18:01:04 mast Exp $
+/* $Id: cipher.pike,v 1.21 2003/01/20 17:44:01 nilsson Exp $
  *
  */
 
@@ -64,7 +64,7 @@ class mac_sha
   {
     string s = sprintf("%~8s%c%2c%s",
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
-		       packet->content_type, strlen(packet->fragment),
+		       packet->content_type, sizeof(packet->fragment),
 		       packet->fragment);
 #ifdef SSL3_DEBUG_CRYPT
 //    werror(sprintf("SSL.cipher: hashing %O\n", s));
@@ -107,7 +107,7 @@ class mac_hmac_sha {
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
 		       packet->content_type,
 		       packet->protocol_version[0],packet->protocol_version[1],
-		       strlen(packet->fragment),
+		       sizeof(packet->fragment),
 		       packet->fragment);
 
     return  hmac(secret)(s);
@@ -146,8 +146,8 @@ static string P_hash(object hashfn,int hlen,string secret,string seed,int len) {
 
 string prf(string secret,string label,string seed,int len) { 
 
-  string s1=secret[..(int)(ceil(strlen(secret)/2.0)-1)];
-  string s2=secret[(int)(floor(strlen(secret)/2.0))..];
+  string s1=secret[..(int)(ceil(sizeof(secret)/2.0)-1)];
+  string s2=secret[(int)(floor(sizeof(secret)/2.0))..];
 
   string a=P_hash(Crypto.md5,16,s1,label+seed,len);
   string b=P_hash(Crypto.sha,20,s2,label+seed,len);

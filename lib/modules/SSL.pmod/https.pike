@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.12 2002/03/20 16:40:01 nilsson Exp $
+/* $Id: https.pike,v 1.13 2003/01/20 17:44:01 nilsson Exp $
  *
  * dummy https server
  */
@@ -46,7 +46,7 @@ class conn {
 
   void write_callback()
   {
-    if (index < strlen(message))
+    if (index < sizeof(message))
     {
       int written = sslfile->write(message[index..]);
       if (written > 0)
@@ -54,7 +54,7 @@ class conn {
       else
 	sslfile->close();
     }
-    if (index == strlen(message))
+    if (index == sizeof(message))
       sslfile->close();
   }
   

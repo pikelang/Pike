@@ -500,7 +500,7 @@ class CharacterData
   }
   string get_data() { return get_node_value(); }
   void set_data(string data) { set_node_value(data); }
-  int get_length() { return strlen(get_data()); }
+  int get_length() { return sizeof(get_data()); }
 
   string substring_data(int offset, int count)
   {

@@ -180,7 +180,7 @@ string extractXML(string filename, int|void pikeMode, string|void type,
   //    array(string) a = Parser.Pike.split(contents);
   //    // check if it _really_ is a C-style doc comment ...
   //    foreach (a, string s)
-  //      if (strlen(s) >= strlen("/*!*/") && s[0..2] == "/*!")
+  //      if (sizeof(s) >= sizeof("/*!*/") && s[0..2] == "/*!")
   //	styleC = 1;
   //      else if (isDocComment(s))
   //	stylePike = 1;

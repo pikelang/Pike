@@ -1,7 +1,7 @@
 /*
  * This is part of the Postgres module for Pike.
  *
- * $Id: postgres.pike,v 1.18 2002/11/27 15:40:34 mast Exp $
+ * $Id: postgres.pike,v 1.19 2003/01/20 17:44:01 nilsson Exp $
  *
  */
 
@@ -318,7 +318,7 @@ array(mapping(string:mixed)) list_fields (string table, void|string wild) {
 			"AND a.attrelid = c.oid AND a.atttypid = t.oid ORDER BY attnum");
 	while (row=res->fetch_row()) {
 		mapping m;
-    if (wild && strlen(wild) && !glob(wild,row[1]))
+    if (wild && sizeof(wild) && !glob(wild,row[1]))
       continue;
 		row=row[1..];
 		row[4]=mkbool(row[4]);

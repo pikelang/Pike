@@ -65,7 +65,7 @@ class ExecTest(string id,Test test)
       int testntot=0;
 
       if (!silent) 
-	 write(test->name+"..........................."[strlen(test->name)..]);
+	 write(test->name+"..........................."[sizeof(test->name)..]);
 
       for (;;)
       {

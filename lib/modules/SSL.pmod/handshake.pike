@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.29 2002/03/20 16:40:01 nilsson Exp $
+/* $Id: handshake.pike,v 1.30 2003/01/20 17:44:01 nilsson Exp $
  *
  */
 
@@ -105,7 +105,7 @@ object handshake_packet(int type, string data)
   /* Perhaps one need to split large packages? */
   object packet = Packet();
   packet->content_type = PACKET_handshake;
-  packet->fragment = sprintf("%c%3c%s", type, strlen(data), data);
+  packet->fragment = sprintf("%c%3c%s", type, sizeof(data), data);
   handshake_messages += packet->fragment;
   return packet;
 }
@@ -236,7 +236,7 @@ object client_key_exchange_packet()
     data = (temp_key || context->rsa)->encrypt(premaster_secret);
 
     if(version[1]==1) 
-      data=sprintf("%2c",strlen(data))+data;
+      data=sprintf("%2c",sizeof(data))+data;
       
     break;
   case KE_dhe_dss:
@@ -295,7 +295,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   {
     object struct = Struct();
     
-    int len = `+( @ Array.map(context->certificates, strlen));
+    int len = `+( @ Array.map(context->certificates, sizeof));
 #ifdef SSL3_DEBUG
 //    werror(sprintf("SSL.handshake: certificate_message size %d\n", len));
 #endif
@@ -316,7 +316,7 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
     object struct = Struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
-    int len = `+(@ Array.map(authorities, strlen));
+    int len = `+(@ Array.map(authorities, sizeof));
     struct->put_uint(len + 2 * sizeof(authorities), 2);
     foreach(authorities, string auth)
       struct->put_var_string(auth, 2);
@@ -375,7 +375,7 @@ string server_derive_master_secret(string data)
 #endif
   case KE_dhe_dss:
   case KE_dhe_rsa:
-    if (!strlen(data))
+    if (!sizeof(data))
     {
       /* Implicit encoding; Should never happen unless we have
        * requested and received a client certificate of type
@@ -415,7 +415,7 @@ string server_derive_master_secret(string data)
      werror(sprintf("encrypted premaster_secret: '%O'\n", data));
 #endif
      if(version[1] == 1) {
-       if(strlen(data)-2 != data[0]*256+data[1]) {
+       if(sizeof(data)-2 != data[0]*256+data[1]) {
 	 premaster_secret = context->random(48);
 	 rsa_message_was_bad = 1;
        }
@@ -427,7 +427,7 @@ string server_derive_master_secret(string data)
      werror(sprintf("premaster_secret: '%O'\n", premaster_secret));
 #endif
      if (!premaster_secret
-	 || (strlen(premaster_secret) != 48)
+	 || (sizeof(premaster_secret) != 48)
 	 || (premaster_secret[0] != 3))
      {
 
@@ -533,7 +533,7 @@ string describe_type(int i)
  void  printHex(string buf) {
   int i;
   string res="";
-  for(i=0; i< strlen(buf) ; i++) {
+  for(i=0; i< sizeof(buf) ; i++) {
     int data=buf[i];
     res+=sprintf("%02x ",data&0xff);
   } 
@@ -559,7 +559,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 #ifdef SSL3_DEBUG_HANDSHAKE_STATE
   werror("SSL.handshake: state %s, type %s\n",
 	 describe_state(handshake_state), describe_type(type));
-  werror("strlen(data)="+strlen(data)+"\n");
+  werror("sizeof(data)="+sizeof(data)+"\n");
 #endif
 
   switch(handshake_state)
@@ -626,10 +626,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  werror(sprintf("SSL.handshake->handle_handshake: "
 			 "Version %d.%d hello detected\n", @version));
 	
-	if (strlen(id))
+	if (sizeof(id))
 	  werror(sprintf("SSL.handshake: Looking up session %O\n", id));
 #endif
-	session = strlen(id) && context->lookup_session(id);
+	session = sizeof(id) && context->lookup_session(id);
 	if (session)
 	  {
 #ifdef SSL3_DEBUG
@@ -1055,7 +1055,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       {
 	object struct = Struct();
     
-	int len = `+( @ Array.map(context->certificates, strlen));
+	int len = `+( @ Array.map(context->certificates, sizeof));
 #ifdef SSL3_DEBUG
 	//    werror(sprintf("SSL.handshake: certificate_message size %d\n", len));
 #endif

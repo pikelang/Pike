@@ -1,4 +1,4 @@
-// $Id: Elite.pmod,v 1.2 2002/03/19 23:58:06 nilsson Exp $
+// $Id: Elite.pmod,v 1.3 2003/01/20 17:44:01 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -259,7 +259,7 @@ string elite_string(string in, void|int(0..100) leetp, void|int(0..1) eightbit)
     {
       if (arrayp(dest)) dest=dest[random(sizeof(dest))];
       res+=in[..i-1]+dest;
-      in=in[i+strlen(what)..];
+      in=in[i+sizeof(what)..];
     }
     in=res+in;
   }
@@ -280,7 +280,7 @@ string elite_string(string in, void|int(0..100) leetp, void|int(0..1) eightbit)
       else
 	r=what;
       res+=in[..i-1]+r;
-      in=in[i+strlen(what)..];
+      in=in[i+sizeof(what)..];
     }
     in=res+in;
   }

@@ -13,7 +13,7 @@ class StdErr
       name=_name;
       __backtrace=backtrace();
       while (!__backtrace[-1][0]||
-	     __backtrace[-1][0][strlen(__backtrace[-1][0])-11..]
+	     __backtrace[-1][0][sizeof(__backtrace[-1][0])-11..]
 	     == "/Error.pmod")
 	 __backtrace=__backtrace[0..sizeof(__backtrace)-2];
    }

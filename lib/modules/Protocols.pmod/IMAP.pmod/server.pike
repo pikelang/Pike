@@ -45,7 +45,7 @@ function(object:void) request_callback;
 
 void recv_command(string s)
 {
-  if (!strlen(s))
+  if (!sizeof(s))
     // Ignore empty lines.
     return;
   

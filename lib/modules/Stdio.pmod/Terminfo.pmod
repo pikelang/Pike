@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.13 2002/10/25 15:27:04 jonasw Exp $
+// $Id: Terminfo.pmod,v 1.14 2003/01/20 17:44:01 nilsson Exp $
 #pike __REAL_VERSION__
 
 
@@ -369,12 +369,12 @@ class Terminfo {
     {
       string stroffs = swab(f->read(nstr*2));
       string strbuf = f->read(sstr);
-      if(strlen(strbuf)==sstr-1 && !bug_compat && (nbool&1)) {
+      if(sizeof(strbuf)==sstr-1 && !bug_compat && (nbool&1)) {
 	// Ugh.  Someone didn't pad their bool array properly (one suspects).
 	f->seek(0);
 	return load_cap(f, 1);
       }
-      if(strlen(strbuf)!=sstr)
+      if(sizeof(strbuf)!=sstr)
 	return 0;
       array(string) strarr = Array.map(array_sscanf(stroffs, "%2c"*nstr),
 				       lambda(int offs, string buf) {
@@ -421,7 +421,7 @@ class TermcapDB {
   {
     if (!filename) {
       string tce = [string]getenv("TERMCAP");
-      if (tce && strlen(tce) && tce[0]=='/')
+      if (tce && sizeof(tce) && tce[0]=='/')
 	filename = tce;
       else
 	filename = "/etc/termcap";
@@ -710,7 +710,7 @@ class TerminfoDB {
   {
     object(Terminfo) ti;
 
-    if (!strlen(term))
+    if (!sizeof(term))
       return 0;
     LOCK;
     if (!(ti = cache[term]))

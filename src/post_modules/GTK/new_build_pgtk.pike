@@ -51,7 +51,7 @@ string destination_dir = "";
 
 string indent( string what, int amnt )
 {
-  if( !strlen(what) ) return "";
+  if( !sizeof(what) ) return "";
   string q = (" "*amnt);
   return q+((what/"\n")*("\n"+q));
 }
@@ -61,7 +61,7 @@ string make_c_string( string from )
   string line = "\"";
   string res = "";
   int c;
-  for( int i=0; i<strlen( from ); i++ )
+  for( int i=0; i<sizeof( from ); i++ )
   {
     switch( (c=from[i]) )
     {
@@ -76,7 +76,7 @@ string make_c_string( string from )
        line += sprintf("\\%o", c );
        break;
     }
-    if( strlen( line ) > 75 )
+    if( sizeof( line ) > 75 )
     {
       res += line+"\"\n";
       line="\"";
@@ -103,9 +103,9 @@ int data_offset( string what )
 
   if((off=search(gbl_data,what))!=-1)
   {
-    if( gbl_data[ off..off+strlen(what)-1 ] != what )
+    if( gbl_data[ off..off+sizeof(what)-1 ] != what )
       werror( "Search returned illegal string match! %O != %O\n",
-	      gbl_data[ off..off+strlen(what)-1 ], what );
+	      gbl_data[ off..off+sizeof(what)-1 ], what );
     return ocache[what]=off;
   }
 //   write("New string: %O\n", what);
@@ -200,9 +200,9 @@ class Function(Class parent,
     {
       res += sprintf("    quick_add_function(%s,%d,p%s,%s,%d,\n                          "
                      "%s,OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);\n",
-                     S(name,0,1,27), strlen(name),
+                     S(name,0,1,27), sizeof(name),
                      c_name(), S(type,0,2,27),
-                     strlen(type), (is_static()?"ID_STATIC":"0"));
+                     sizeof(type), (is_static()?"ID_STATIC":"0"));
     };
     array names = ({ name });
     switch( name )
@@ -407,12 +407,12 @@ class Member( string name, Type type, int set,
     if( set || classes[ type->name ] )
       return sprintf("    quick_add_function(%s,%d,p%s,\n                       %s,%d,"
                      "0,OPT_EXTERNAL_DEPEND);\n",
-                     S(name,0,1,27), strlen(name),
-                     c_name(), S(tp,0,2,27), strlen(tp));
+                     S(name,0,1,27), sizeof(name),
+                     c_name(), S(tp,0,2,27), sizeof(tp));
     return sprintf("    quick_add_function(%s,%d,p%s,\n                       %s,%d,"
                    "0,OPT_EXTERNAL_DEPEND);\n",
-                   S("get_"+name,0,1,27), strlen("get_"+name),
-                   c_name(), S(tp,0,2,27), strlen(tp));
+                   S("get_"+name,0,1,27), sizeof("get_"+name),
+                   c_name(), S(tp,0,2,27), sizeof(tp));
   }
 
   string pike_name()
@@ -1037,7 +1037,7 @@ class Class( string name, string file, int line )
                            }),
                            SPLIT(
                              "{\n  pgtk_default__sprintf( args, "+
-                             data_offset( name )+","+strlen(name)+
+                             data_offset( name )+","+sizeof(name)+
                              " );\n}\n",
                              file),
                            ({}),
@@ -1294,7 +1294,7 @@ Type parse_type( mixed t )
   }
   else
     tt = t->text;
-  if(!strlen(tt))
+  if(!sizeof(tt))
     SYNTAX("Expected type",t); 
   if( tt[0] == '"' ) // No types are strings...
     SYNTAX("Expected type",t); 
@@ -1396,7 +1396,7 @@ string parse_pre_file( string file )
   {
     object pp = t[i];
     string fname;
-    if( strlen(pp->text) &&
+    if( sizeof(pp->text) &&
         pp->text[0] == '#' &&
         sscanf( pp->text, "#include \"%s.inc\"", fname ) )
     {
@@ -1541,7 +1541,7 @@ string parse_pre_file( string file )
          if( token->text[..1] == "/*" ) // comment
            continue;
 
-         if( !strlen(token->text) )
+         if( !sizeof(token->text) )
            continue;
 
          if( token->text[0] == '#' )
@@ -1636,7 +1636,7 @@ void main(int argc, array argv)
     source_dir = combine_path( getcwd(), source_dir );
   if (source_dir[-1] != '/')
     source_dir += "/";
-  if( !strlen(destination_dir) || destination_dir[0] != '/' )
+  if( !sizeof(destination_dir) || destination_dir[0] != '/' )
     destination_dir = combine_path( getcwd(), destination_dir );
   if (destination_dir[-1] != '/')
     destination_dir += "/";

@@ -27,7 +27,7 @@ void skip_whitespace()
 int eolp()
 {
   skip_whitespace();
-  return !strlen(buffer);
+  return !sizeof(buffer);
 }
 #endif
 
@@ -36,11 +36,11 @@ int get_number()
 {
   skip_whitespace();
       
-  if (!strlen(buffer))
+  if (!sizeof(buffer))
     return -1;
 
   int i;
-  for(i = 0; i<strlen(buffer); i++)
+  for(i = 0; i<sizeof(buffer); i++)
     if ( (buffer[i] < '0') || ('9' < buffer[i]) )
       break;
       
@@ -66,7 +66,7 @@ string get_atom(int|void with_options)
 	 atom, buffer);
 
   werror(sprintf("=> atom: %O\n", atom));
-  return strlen(atom) && atom;
+  return sizeof(atom) && atom;
 }
 
 string|object get_string()
@@ -75,7 +75,7 @@ string|object get_string()
 
   skip_whitespace();
 
-  if (!strlen(buffer))
+  if (!sizeof(buffer))
     return 0;
       
   switch(buffer[0])
@@ -100,9 +100,9 @@ string|object get_string()
   }
   case '{':
   {
-    if (buffer[strlen(buffer)-1..] != "}")
+    if (buffer[sizeof(buffer)-1..] != "}")
       return 0;
-    string n = buffer[1..strlen(buffer)-2];
+    string n = buffer[1..sizeof(buffer)-2];
 
     buffer = "";
     if ( (sizeof(values(n) - values("0123456789")))
@@ -121,7 +121,7 @@ string|object get_astring()
   werror("get_astring: buffer = '%s'\n", buffer);
       
   skip_whitespace();
-  if (!strlen(buffer))
+  if (!sizeof(buffer))
     return 0;
   switch(buffer[0])
   {
@@ -153,7 +153,7 @@ object get_set()
 mapping get_token(int eol, int accept_options)
 {
   skip_whitespace();
-  if (!strlen(buffer))
+  if (!sizeof(buffer))
     return (eol == -1) && ([ "type" : "eol", "eol" : 1 ]);
   
   if (eol && (buffer[0] == eol))
@@ -188,19 +188,19 @@ mapping get_token(int eol, int accept_options)
 /* Reads a <start.size> suffix */
 mapping get_range(mapping atom)
 {
-  if (!strlen(buffer) || (buffer[0] != '<'))
+  if (!sizeof(buffer) || (buffer[0] != '<'))
     return atom;
 
   buffer = buffer[1..];
 
   int start = get_number();
-  if ((start < 0) || !strlen(buffer) || (buffer[0] != '.'))
+  if ((start < 0) || !sizeof(buffer) || (buffer[0] != '.'))
     return 0;
 
   buffer = buffer[1..];
       
   int size = get_number();
-  if ((size <= 0) || !strlen(buffer) || (buffer[0] != '>'))
+  if ((size <= 0) || !sizeof(buffer) || (buffer[0] != '>'))
     return 0;
       
   buffer = buffer[1..];
@@ -217,7 +217,7 @@ array(string) get_flag_list()
 {
   skip_whitespace();
 
-  if (!strlen(buffer) || (buffer[0] != '(') )
+  if (!sizeof(buffer) || (buffer[0] != '(') )
     return 0;
 
   buffer = buffer[1..];
@@ -234,7 +234,7 @@ array(string) get_flag_list()
   }
   skip_whitespace();	// This one shouldn't be needed, but...
 
-  if (!strlen(buffer))
+  if (!sizeof(buffer))
     return 0;
 
   if (buffer[0] = ')')
@@ -259,7 +259,7 @@ array(string) get_flag_list()
 mapping get_simple_list(int max_depth)
 {
   skip_whitespace();
-  if (!strlen(buffer))
+  if (!sizeof(buffer))
     return 0;
 
   if (buffer[0] == '(') {
@@ -289,7 +289,7 @@ array do_parse_simple_list(int max_depth, int terminator)
   {
     skip_whitespace();
 	
-    if (!strlen(buffer))
+    if (!sizeof(buffer))
       return 0;
 	
     if (buffer[0] == terminator)
@@ -332,7 +332,7 @@ mapping get_atom_options(int max_depth)
 
   mapping res = ([ "type" : "atom",
 		   "atom" : atom ]);
-  if (!strlen(buffer) || (buffer[0] != '['))
+  if (!sizeof(buffer) || (buffer[0] != '['))
   {
     res->raw = atom;
     return res;
@@ -355,20 +355,20 @@ mapping get_atom_options(int max_depth)
     option_start[..sizeof(option_start) - sizeof(buffer) - 1];
 
       
-  if (!strlen(buffer) || (buffer[0] != '<'))
+  if (!sizeof(buffer) || (buffer[0] != '<'))
     return res;
 
   /* Parse <start.size> suffix */
   buffer = buffer[1..];
 
   int start = get_number();
-  if ((start < 0) || !strlen(buffer) || (buffer[0] != '.'))
+  if ((start < 0) || !sizeof(buffer) || (buffer[0] != '.'))
     return 0;
 
   buffer = buffer[1..];
       
   int size = get_number();
-  if ((size < 0) || !strlen(buffer) || (buffer[0] != '>'))
+  if ((size < 0) || !sizeof(buffer) || (buffer[0] != '>'))
     return 0;
       
   buffer = buffer[1..];

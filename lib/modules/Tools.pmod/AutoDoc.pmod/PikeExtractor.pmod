@@ -37,7 +37,7 @@ static private class Extractor {
       int pos = positions[i];
       int ignoreline = 0;
       if (has_prefix(s, DOC_COMMENT)) {
-        s = String.trim_all_whites(s[strlen(DOC_COMMENT) .. ]);
+        s = String.trim_all_whites(s[sizeof(DOC_COMMENT) .. ]);
         ignoreline = 1;
         if (s == "@ignore")
           ignores = ({ pos }) + ignores;
@@ -67,7 +67,7 @@ static private class Extractor {
   }
 
   static int isDocComment(string s) {
-    return (strlen(s) >= 3 && s[0..2] == DOC_COMMENT);
+    return (sizeof(s) >= 3 && s[0..2] == DOC_COMMENT);
   }
 
   static string stripDocMarker(string s) {

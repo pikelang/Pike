@@ -422,7 +422,7 @@ array(string) get_args(array(string) argv, void|int(-1..1) posix_me_harder,
       my_error( "Unknown option "+opt+".\n", throw_errors );
     }
     else {
-      if(strlen(argv[i]) == 2)
+      if(sizeof(argv[i]) == 2)
 	my_error( "Unknown option "+argv[i]+".\n", throw_errors );
       my_error( "Unknown options "+argv[i]+".\n", throw_errors );
     }

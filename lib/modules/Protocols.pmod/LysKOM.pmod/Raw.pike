@@ -53,7 +53,7 @@ static inline int conwrite(string what)
 #ifdef LYSKOM_DEBUG
    werror("-> %O\n",what);
 #endif
-   int i=con->write(what)==strlen(what);
+   int i=con->write(what)==sizeof(what);
    if (!i) { werror("write failed!!!\n"); _exit(1); }
    return i;
 }
@@ -367,7 +367,7 @@ array(array(mixed)|int) try_parse(string what)
    
    array stack=({});
 
-   while (strlen(what)>1)
+   while (sizeof(what)>1)
    {
       string a,b;
 
@@ -382,16 +382,16 @@ array(array(mixed)|int) try_parse(string what)
 
 	    if (b[0]=='H') // hollerith
 	    {
-	       if (strlen(b)<=(int)a)
+	       if (sizeof(b)<=(int)a)
 		  return ({0,0}); // incomplete
 	       res+=({b[1..(int)a]});
-	       len+=strlen(a)+strlen(res[-1])+2;
+	       len+=sizeof(a)+sizeof(res[-1])+2;
 	       b=b[(int)a+1..];
 	    }
 	    else // bitfield or int
 	    {
 	       res+=({a});
-	       len+=strlen(a)+1;
+	       len+=sizeof(a)+1;
 	    }
 
 	    if (b=="") return ({0,0}); // incomplete

@@ -190,7 +190,7 @@ string eatIdentifier(void|int allowScopePrefix) {
   string colons = peekToken() == "::" ? readToken() : "";
   //  werror("scope == %O ,colons == %O\n", scope, colons);
 
-  if (strlen(scope + colons) && !allowScopePrefix)
+  if (sizeof(scope + colons) && !allowScopePrefix)
     parseError("scope prefix not allowed");
   string s = peekToken();
   if (!isIdent(s))
@@ -335,7 +335,7 @@ string|void parseIdents() {
 
 string parseProgramName() {
   string s = peekToken();
-  if (strlen(s) && s[0] == '"')
+  if (sizeof(s) && s[0] == '"')
     return (readToken(), s);
   s = parseIdents();
   if (!s)
@@ -663,7 +663,7 @@ static private array(string) special(array(string) in) {
     int c = String.count(s, "\n");
     if (c)
       ret += ({ "\n" }) * c;
-    else if (strlen(replace(s, ({" ", "\t", "\r" }), ({ "","","" }) )))
+    else if (sizeof(replace(s, ({" ", "\t", "\r" }), ({ "","","" }) )))
       ret += ({ s });
   }
   return ret;
@@ -682,10 +682,10 @@ array(array(string)|array(int)) tokenize(string s, string filename, int line) {
     line += sizeof(s / "\n") - 1;
 
     // remove preprocessor directives:
-    if (strlen(s) > 1 && s[0..0] == "#")
+    if (sizeof(s) > 1 && s[0..0] == "#")
       continue;
     // remove non-doc comments
-    if (strlen(s) >= 2 &&
+    if (sizeof(s) >= 2 &&
         (s[0..1] == "/*" || s[0..1] == "//") &&
         !isDocComment(s))
       continue;

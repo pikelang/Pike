@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.20 2002/10/12 13:32:31 grubba Exp $ */
+/* $Id: socktest.pike,v 1.21 2003/01/20 17:53:13 nilsson Exp $ */
 
 
 import Stdio;
@@ -48,18 +48,18 @@ class Socket {
     if(input_buffer != expected_data)
     {
       werror("Failed to read complete data, errno=%d.\n",err);
-      if(strlen(input_buffer) < 100)
+      if(sizeof(input_buffer) < 100)
       {
 	werror(num+":Input buffer: "+input_buffer+"\n");
       }else{
-	werror(num+":Input buffer: "+strlen(input_buffer)+" bytes.\n");
+	werror(num+":Input buffer: "+sizeof(input_buffer)+" bytes.\n");
       }
 
-      if(strlen(expected_data) < 100)
+      if(sizeof(expected_data) < 100)
       {
 	werror(num+":Expected data: "+expected_data+"\n");
       }else{
-	werror(num+":Expected data: "+strlen(expected_data)+" bytes.\n");
+	werror(num+":Expected data: "+sizeof(expected_data)+" bytes.\n");
       }
 
       exit(1);
@@ -72,7 +72,7 @@ class Socket {
   void write_callback()
   {
     got_callback();
-    if(strlen(output_buffer))
+    if(sizeof(output_buffer))
     {
       int tmp=write(output_buffer);
       if(tmp >= 0)
@@ -124,7 +124,7 @@ class Socket2
   void write_callback()
   {
     got_callback();
-    if(strlen(output_buffer))
+    if(sizeof(output_buffer))
     {
       int prerefs = _refs ("%s");
       int tmp=write(({"%s"}), output_buffer);

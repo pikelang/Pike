@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.18 2002/12/19 15:20:00 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.19 2003/01/20 17:44:01 nilsson Exp $ */
 
 /* MirarDoc documentation extractor.
  */
@@ -66,7 +66,7 @@ string stripws(string s)
     if (s!="")
     {
       sscanf(s,"%[ ]%s",string a,string b);
-      if (b!="") m=min(strlen(a),m);
+      if (b!="") m=min(sizeof(a),m);
     }
 
   return map(lines,lambda(string s) { return s[m..]; })*"\n";
@@ -195,7 +195,7 @@ string getridoftabs(string s)
    while (sscanf(s,"%s\t%s",string a,s)==2)
    {
       res+=a;
-      res+="         "[(strlen(res)%8)..7];
+      res+="         "[(sizeof(res)%8)..7];
    }
    return res+s;
 }
@@ -217,13 +217,13 @@ string htmlify(string s)
 string make_nice_reference(string what,string prefix,string stuff)
 {
    string q;
-   if (what==prefix[strlen(prefix)-strlen(what)-2..strlen(prefix)-3])
+   if (what==prefix[sizeof(prefix)-sizeof(what)-2..sizeof(prefix)-3])
    {
-      q=prefix[0..strlen(prefix)-3];
+      q=prefix[0..sizeof(prefix)-3];
    }
-   else if (what==prefix[strlen(prefix)-strlen(what)-1..strlen(prefix)-2])
+   else if (what==prefix[sizeof(prefix)-sizeof(what)-1..sizeof(prefix)-2])
    {
-      q=prefix[0..strlen(prefix)-2];
+      q=prefix[0..sizeof(prefix)-2];
    }
    else if (search(what,".")==-1 &&
 	    search(what,"->")==-1 &&
@@ -287,7 +287,7 @@ string doctype(string type,void|string indent)
    {
       int i;
       int q=1;
-      for (i=0; i<strlen(in); i++)
+      for (i=0; i<sizeof(in); i++)
 	 switch (in[i])
 	 {
 	    case '(': q++; break;
@@ -298,7 +298,7 @@ string doctype(string type,void|string indent)
    string combine_or(string a,string b)
    {
      b = String.trim_all_whites(b);
-     if (b[..3]=="<or>") b=b[4..strlen(b)-6];
+     if (b[..3]=="<or>") b=b[4..sizeof(b)-6];
      return "<or>"+a+b+"</or>";
    };
    array(string) paramlist(string in,string indent)
@@ -306,7 +306,7 @@ string doctype(string type,void|string indent)
       int i;
       int q=0;
       array res=({});
-      for (i=0; i<strlen(in); i++)
+      for (i=0; i<sizeof(in); i++)
 	 switch (in[i])
 	 {
 	    case '(': q++; break;

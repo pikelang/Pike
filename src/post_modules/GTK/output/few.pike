@@ -9,7 +9,7 @@ int fcount;
 void output_current_data()
 {
   // Processing done. Actually write the file.
-  if( strlen( current_data ) )
+  if( sizeof( current_data ) )
   {
     fcount++;
     write_file( dir + "pgtk_"+(fcount)+".c", current_data );
@@ -29,7 +29,7 @@ static void output_class( Class cls, int lvl )
     cls->create_default_sprintf();
 
   /* Start output */
-  if(!strlen( current_data ) )
+  if(!sizeof( current_data ) )
     current_data += "#define EXTPRG extern\n"+sfhead;
 
   if( sizeof( cls->pre ) )

@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.31 2002/03/09 18:13:27 nilsson Exp $
+/* $Id: rsa.pike,v 1.32 2003/01/20 17:44:00 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -374,7 +374,7 @@ string sha_sign(string message, mixed|void r)
 
   hash->update(message);
   s = hash->digest();
-  s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
+  s = sprintf("%c%s%c%s", 4, "sha1", sizeof(s), s);
   return cooked_sign(s);
 }
   
@@ -387,7 +387,7 @@ int sha_verify(string message, string signature)
   
   hash->update(message);
   s = hash->digest();
-  s = sprintf("%c%s%c%s", 4, "sha1", strlen(s), s);
+  s = sprintf("%c%s%c%s", 4, "sha1", sizeof(s), s);
 
   return raw_verify(s, BIGNUM(signature, 256));
 }

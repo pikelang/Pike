@@ -27,7 +27,7 @@ mapping _decode( string what, void|mapping opts )
   if(sscanf(what, "%*s/*%*[ \t]XPM%*[ \t]*/%*s{%s", what)  != 5)
     error("This is not a XPM image (1)\n");
 
-  if(strlen(what)<100000)
+  if(sizeof(what)<100000)
   {
     TD("Extra scan for small images");
     sscanf(what, "%s\n/* XPM */", what ) ||
@@ -172,7 +172,7 @@ string encode( object what, mapping|void options )
     string r = "";
     int i;
     r += "\"";
-    for(i=0; i<strlen(row); i++)
+    for(i=0; i<sizeof(row); i++)
       r += cmap_t[row[i]];
     res += r+"\",\n";
   }

@@ -46,7 +46,7 @@ void main()
   foreach( Stdio.stdin.read()/"\n", string line )
   {
     sscanf( line, "%s#", line );
-    if( !strlen( line ) )
+    if( !sizeof( line ) )
       continue;
     array data = line / ";";
     if( sizeof( data ) != 15 )

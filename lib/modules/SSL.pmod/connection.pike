@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: connection.pike,v 1.23 2002/12/06 20:31:06 grubba Exp $
+/* $Id: connection.pike,v 1.24 2003/01/20 17:44:01 nilsson Exp $
  *
  * SSL packet layer
  */
@@ -96,7 +96,7 @@ void send_packet(object packet, int|void priority)
 {
 
 #ifdef SSL3_FRAGDEBUG
-  werror(" SSL.connection->send_packet: strlen(packet)="+strlen(packet)+"\n");
+  werror(" SSL.connection->send_packet: sizeof(packet)="+sizeof(packet)+"\n");
 #endif
   if (!priority)
     priority = ([ PACKET_alert : PRI_alert,
@@ -283,7 +283,7 @@ string|int got_data(string|int s)
 	 mixed err = 0;
 	 alert_buffer += packet->fragment;
 	 for (i = 0;
-	      !err && ((strlen(alert_buffer) - i) >= 2);
+	      !err && ((sizeof(alert_buffer) - i) >= 2);
 	      i+= 2)
 	   err = handle_alert(alert_buffer[i..i+1]);
 
@@ -296,7 +296,7 @@ string|int got_data(string|int s)
        {
 	 int i;
 	 int err;
-	 for (i = 0; (i < strlen(packet->fragment)); i++)
+	 for (i = 0; (i < sizeof(packet->fragment)); i++)
 	 {
 	   err = handle_change_cipher(packet->fragment[i]);
 #ifdef SSL3_DEBUG
@@ -320,10 +320,10 @@ string|int got_data(string|int s)
 	 int len;
 	 handshake_buffer += packet->fragment;
 
-	 while (strlen(handshake_buffer) >= 4)
+	 while (sizeof(handshake_buffer) >= 4)
 	 {
 	   sscanf(handshake_buffer, "%*c%3c", len);
-	   if (strlen(handshake_buffer) < (len + 4))
+	   if (sizeof(handshake_buffer) < (len + 4))
 	     break;
 	   err = handle_handshake(handshake_buffer[0],
 				  handshake_buffer[4..len + 3],

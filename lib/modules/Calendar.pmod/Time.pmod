@@ -971,7 +971,7 @@ class TimeofDay
    {									\
       _ind+=IND;							\
       TimeRange x=::OP(@args);						\
-      _ind=_ind[..strlen(_ind)-strlen(IND)-1];				\
+      _ind=_ind[..sizeof(_ind)-sizeof(IND)-1];				\
       werror(_ind+"  %O\n",this_object());				\
       foreach (args,TimeRange t) werror(_ind+NAME+" %O\n",t);		\
       werror(_ind+"= %O\n",x);						\
@@ -1059,7 +1059,7 @@ class cSuperTimeRange
       int from=0,to=0x7fffffff,pos=0;
       array res=({});
       TimeRange last=0;
-      string ums=unit[..strlen(unit)-2]; // no 's'
+      string ums=unit[..sizeof(unit)-2]; // no 's'
 
       if (sizeof(range)==2)
 	 [from,to]=range;
@@ -1095,7 +1095,7 @@ class cSuperTimeRange
    {
       int pos=0;
       TimeRange last=0;
-      string ums=unit[..strlen(unit)-2]; // no 's'
+      string ums=unit[..sizeof(unit)-2]; // no 's'
 
       foreach (parts,TimeRange part)
       {

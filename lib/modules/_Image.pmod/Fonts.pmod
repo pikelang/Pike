@@ -64,7 +64,7 @@ static class FTFont
   {
     Image.Image res;
     int xp, ys;
-    if( !strlen( text ) )
+    if( !sizeof( text ) )
       text = " ";
     array(int) tx = (array(int))text;
     array chars = map( tx, do_write_char );

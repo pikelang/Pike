@@ -17,12 +17,12 @@ int main()
   if(data0 + data1 != unpacked)
   {
     werror("Input length:  %d (%d+%d)\n",
-	   strlen(data0)+strlen(data0),
-	   strlen(data0),strlen(data1));
+	   sizeof(data0)+sizeof(data0),
+	   sizeof(data0),sizeof(data1));
     werror("Packed length: %d (should be %d)\n",
-	   strlen(packed),
-	   strlen(Gz.deflate()->deflate(data0+data1)));
-    werror("Output length: %d\n",strlen(unpacked));
+	   sizeof(packed),
+	   sizeof(Gz.deflate()->deflate(data0+data1)));
+    werror("Output length: %d\n",sizeof(unpacked));
     return 1;
   }else{
     return 0;

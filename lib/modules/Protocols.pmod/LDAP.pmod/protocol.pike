@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.8 2002/07/22 16:15:40 bill Exp $
+// $Id: protocol.pike,v 1.9 2003/01/20 17:44:01 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -79,9 +79,9 @@
     int msglen = 0, ix, ofs;
     string s, shlp;
 
-    if(strlen(readbuf) < 2)
+    if(sizeof(readbuf) < 2)
       readbuf = ldapfd->read(2); 	// 1. byte = 0x0C, 2. byte = msglen
-    if (intp(readbuf) || (strlen(readbuf) < 2)) {
+    if (intp(readbuf) || (sizeof(readbuf) < 2)) {
       seterr (LDAP_TIMEOUT);
       DWRITE_HI("protocol.read_anwer: ERROR: connection timeout.\n");
       THROW(({"LDAP: connection timeout.\n",backtrace()}));
@@ -107,10 +107,10 @@
 	return;
       }
       ofs = (msglen & 0x7f) + 2;
-      ix = ofs - strlen(readbuf);
+      ix = ofs - sizeof(readbuf);
       if(ix > 0)
 	s = ldapfd->read(ix);
-      if (!s || (strlen(s) < ix)) {
+      if (!s || (sizeof(s) < ix)) {
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
 	//return(-ldap_errno);
@@ -119,14 +119,14 @@
       readbuf += s;
       msglen = 0; // !!! RESTRICTION: 2^32 !!!
       shlp = reverse(readbuf[2..ofs]);
-      for (ix=0; ix<strlen(shlp); ix++) {
+      for (ix=0; ix<sizeof(shlp); ix++) {
         msglen += shlp[ix]*(1<<(ix*8));
       }
     }
-    ix = (ofs + msglen) - strlen(readbuf);
+    ix = (ofs + msglen) - sizeof(readbuf);
     if(ix > 0)
       s = ldapfd->read(ix);
-    if (!s || (strlen(s) < ix)) {
+    if (!s || (sizeof(s) < ix)) {
       seterr (LDAP_SERVER_DOWN);
       THROW(({"LDAP: connection closed by server.\n",backtrace()}));
       //return(-ldap_errno);
@@ -148,7 +148,7 @@
     int msglen, ix, ofs;
     string shlp;
 
-    if (strlen(readbuf) < 3)
+    if (sizeof(readbuf) < 3)
       return(0);  // PDU have min. 3 bytes
 
     if (readbuf[0] != '0')
@@ -159,16 +159,16 @@
       if (msglen == 0x80)
 	return(1); // forced execution 
       ofs = (msglen & 0x7f) + 2;
-      ix = ofs - strlen(readbuf);
+      ix = ofs - sizeof(readbuf);
       if(ix > 0)
 	return(0);  // incomplete PDU
       msglen = 0;
       shlp = reverse(readbuf[2..ofs]);
-      for (ix=0; ix<strlen(shlp); ix++) {
+      for (ix=0; ix<sizeof(shlp); ix++) {
         msglen += shlp[ix]*(1<<(ix*8));
       }
     }
-    ix = (ofs + msglen) - strlen(readbuf);
+    ix = (ofs + msglen) - sizeof(readbuf);
     if(ix > 0)
       return(0);  // incomplete PDU
 

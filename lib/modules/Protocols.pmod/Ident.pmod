@@ -1,6 +1,6 @@
 // An implementation of the IDENT protocol, specified in RFC 931.
 //
-// $Id: Ident.pmod,v 1.9 2000/09/28 03:38:50 hubbe Exp $
+// $Id: Ident.pmod,v 1.10 2003/01/20 17:44:00 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -181,12 +181,12 @@ int|array (string) lookup(object fd)
   remote_fd->set_blocking();
   string query = raddr[1]+","+laddr[1]+"\r\n";
   int written;
-  if((written = remote_fd->write(query)) != strlen(query)) {
+  if((written = remote_fd->write(query)) != sizeof(query)) {
     destruct(remote_fd);
     throw(backtrace() +({ "Protocols.Ident: short write ("+written+")."}));
   }
   mixed response = remote_fd->gets();//0xefffffff, 1);
-  if(!response || !strlen(response))
+  if(!response || !sizeof(response))
   {
     destruct(remote_fd);
     throw(backtrace() +({ "Protocols.Ident: read failed."}));

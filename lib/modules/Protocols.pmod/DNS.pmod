@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.70 2002/12/23 18:59:54 grubba Exp $
+// $Id: DNS.pmod,v 1.71 2003/01/20 17:44:00 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -100,9 +100,9 @@ class protocol
 {
   string mklabel(string s)
   {
-    if(strlen(s)>63)
+    if(sizeof(s)>63)
       error("Too long component in domain name.\n");
-    return sprintf("%c%s",strlen(s),s);
+    return sprintf("%c%s",sizeof(s),s);
   }
 
   static private string mkname(string|array(string) labels, int pos,
@@ -119,7 +119,7 @@ class protocol
       if(pos<0x4000)
 	comp[n]=pos;
       string l = mklabel(labels[0]);
-      return l + mkname(labels[1..], pos+strlen(l), comp);
+      return l + mkname(labels[1..], pos+sizeof(l), comp);
     }
   }
 
@@ -145,11 +145,11 @@ class protocol
      case T_MX:
        return sprintf("%2c", entry->preference)+mkname(entry->mx, pos+2, c);
      case T_HINFO:
-       return sprintf("%1c%s%1c%s", strlen(entry->cpu||""), entry->cpu||"",
-		      strlen(entry->os||""), entry->os||"");
+       return sprintf("%1c%s%1c%s", sizeof(entry->cpu||""), entry->cpu||"",
+		      sizeof(entry->os||""), entry->os||"");
      case T_MINFO:
        string rmailbx = mkname(entry->rmailbx, pos, c);
-       return rmailbx + mkname(entry->emailbx, pos+strlen(rmailbx), c);
+       return rmailbx + mkname(entry->emailbx, pos+sizeof(rmailbx), c);
      case T_SRV:
         return sprintf("%2c%2c%2c", entry->priority, entry->weight, entry->port) +
                       mkname(entry->target||"", pos+6, c);
@@ -158,13 +158,13 @@ class protocol
        return sprintf("%@1c", (array(int))((entry->a||"0.0.0.0")/".")[0..3]);
      case T_SOA:
        string mname = mkname(entry->mname, pos, c);
-       return mname + mkname(entry->rname, pos+strlen(mname), c) +
+       return mname + mkname(entry->rname, pos+sizeof(mname), c) +
 	 sprintf("%4c%4c%4c%4c%4c", entry->serial, entry->refresh,
 		 entry->retry, entry->expire, entry->minimum);
      case T_TXT:
        return Array.map(stringp(entry->txt)? ({entry->txt}):(entry->txt||({})),
 			lambda(string t) {
-			  return sprintf("%1c%s", strlen(t), t);
+			  return sprintf("%1c%s", sizeof(t), t);
 			})*"";
      default:
        return "";
@@ -178,10 +178,10 @@ class protocol
     foreach(entries, mapping entry) {
       string e = mkname(entry->name, pos, comp)+
 	sprintf("%2c%2c%4c", entry->type, entry->cl, entry->ttl);
-      pos += strlen(e)+2;
+      pos += sizeof(e)+2;
       string rd = entry->rdata || mkrdata(entry, pos, comp);
-      res += e + sprintf("%2c", strlen(rd)) + rd;
-      pos += strlen(rd);
+      res += e + sprintf("%2c", sizeof(rd)) + rd;
+      pos += sizeof(rd);
     }
     return res;
   }
@@ -202,14 +202,14 @@ class protocol
     mapping(string:int) c = ([]);
     if(qd)
       foreach(qd, mapping _qd)
-	r += mkname(_qd->name, strlen(r), c) +
+	r += mkname(_qd->name, sizeof(r), c) +
 	sprintf("%2c%2c", _qd->type, _qd->cl);
     if(an)
-      r+=encode_entries(an, strlen(r), c);
+      r+=encode_entries(an, sizeof(r), c);
     if(ns)
-      r+=encode_entries(ns, strlen(r), c);
+      r+=encode_entries(ns, sizeof(r), c);
     if(ar)
-      r+=encode_entries(ar, strlen(r), c);
+      r+=encode_entries(ar, sizeof(r), c);
     return r;
   }
 
@@ -301,7 +301,7 @@ class protocol
   array decode_entries(string s,int num, array(int) next)
   {
     array(string) ret=({});
-    for(int e=0;e<num && next[0]<strlen(s);e++)
+    for(int e=0;e<num && next[0]<sizeof(s);e++)
     {
       mapping m=([]);
       m->name=decode_domain(s,next);
@@ -402,7 +402,7 @@ class protocol
     m->ad=(m->c2>>5)&1;
     m->ra=(m->c2>>7)&1;
     
-    m->length=strlen(s);
+    m->length=sizeof(s);
     
     array(string) tmp=({});
     int e;

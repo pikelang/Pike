@@ -55,11 +55,11 @@ static void create(void|string directory,  // default: cwd
 #ifdef __NT__
     directory = replace( directory, "\\", "/" );
     string p;
-    if( strlen(root) )
+    if( sizeof(root) )
     {
       if( sscanf( directory, "%s:/%s", p, directory ) )
       {
-	if( strlen( root ) )
+	if( sizeof( root ) )
 	{
 	  if( search( root, ":/" ) == -1 )
 	    root = p+":"+ (root[0] == '/' ?"":"/") + root;
@@ -71,20 +71,20 @@ static void create(void|string directory,  // default: cwd
       }
     }
 #endif
-    while( strlen(directory) && directory[0] == '/' )
+    while( sizeof(directory) && directory[0] == '/' )
       directory = directory[1..];
-    while( strlen(directory) && directory[-1] == '/' )
-      directory = directory[..strlen(directory)-2];
+    while( sizeof(directory) && directory[-1] == '/' )
+      directory = directory[..sizeof(directory)-2];
 #ifdef __NT__
-    if( strlen( directory ) != 2 || directory[1] != ':' )
+    if( sizeof( directory ) != 2 || directory[1] != ':' )
 #endif
       if(!(a = file_stat(combine_path("/",root,directory))) || !a->isdir)
 	error("Not a directory\n");
   }
-  while( strlen(directory) && directory[0] == '/' )
+  while( sizeof(directory) && directory[0] == '/' )
     directory = directory[1..];
-  while( strlen(directory) && directory[-1] == '/' )
-    directory = directory[..strlen(directory)-2];
+  while( sizeof(directory) && directory[-1] == '/' )
+    directory = directory[..sizeof(directory)-2];
   wd = directory;
 }
 
@@ -132,8 +132,8 @@ Filesystem.Stat stat(string file, int|void lstat)
    Stdio.Stat a;
 #ifdef __NT__
    file = replace( file, "\\", "/" );
-   while( strlen(file) && file[-1] == '/' )
-     file = file[..strlen(file)-2];
+   while( sizeof(file) && file[-1] == '/' )
+     file = file[..sizeof(file)-2];
 #endif
    string full = combine_path(wd, file);
    if ( full!="" && full[0]=='/') full=full[1..];
@@ -157,8 +157,8 @@ array(string) get_dir(void|string directory, void|string|array(string) globs)
   if(directory)
   {
     directory = replace( directory, "\\", "/" );
-    while( strlen(directory) && directory[-1] == '/' )
-      directory = directory[..strlen(directory)-2];
+    while( sizeof(directory) && directory[-1] == '/' )
+      directory = directory[..sizeof(directory)-2];
   }
 #endif
   directory = directory ? combine_path(wd, directory) : wd;
@@ -189,8 +189,8 @@ array(Filesystem.Stat) get_stats(void|string directory,
   if(directory)
   {
     directory = replace( directory, "\\", "/" );
-    while( strlen(directory) && directory[-1] == '/' )
-      directory = directory[..strlen(directory)-2];
+    while( sizeof(directory) && directory[-1] == '/' )
+      directory = directory[..sizeof(directory)-2];
   }
 #endif
   if(directory &&

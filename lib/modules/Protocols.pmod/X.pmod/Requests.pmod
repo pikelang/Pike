@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.31 2002/01/15 22:47:11 nilsson Exp $
+ * $Id: Requests.pmod,v 1.32 2003/01/20 17:44:01 nilsson Exp $
  */
 
 /*
@@ -56,9 +56,9 @@ class request
     
     // Big requests extension. Will not work
     // if this extension is not present.
-    if((strlen(req)+1) > (65535*4))
-      return sprintf("%c%c\0\0%4c%s", reqType, data, 1 + strlen(req) / 4, req);
-    return sprintf("%c%c%2c%s", reqType, data, 1 + strlen(req) / 4, req);
+    if((sizeof(req)+1) > (65535*4))
+      return sprintf("%c%c\0\0%4c%s", reqType, data, 1 + sizeof(req) / 4, req);
+    return sprintf("%c%c%2c%s", reqType, data, 1 + sizeof(req) / 4, req);
   }
 
   mixed handle_reply(mapping reply)
@@ -279,7 +279,7 @@ class InternAtom
 
   string to_string()
   {
-    return build_request(sprintf("%2c\0\0%s", strlen(name), name),
+    return build_request(sprintf("%2c\0\0%s", sizeof(name), name),
 			 onlyIfExists);
   }
 
@@ -748,7 +748,7 @@ class PutImage
     //    werror(sprintf("PutImage>to_string: %d, %d, %d, %d\n",
     //		   dst_x, dst_y, width, height));
     string pad="";
-    while(((strlen(data)+strlen(pad))%4)) pad += "\0";
+    while(((sizeof(data)+sizeof(pad))%4)) pad += "\0";
     pad =  build_request(sprintf("%4c" "%4c"
 				 "%2c" "%2c"
 				 "%2c" "%2c"
@@ -914,8 +914,8 @@ class QueryExtension
   string to_string()
   {
     string pad="";
-    while(((strlen(name)+strlen(pad))%4)) pad += "\0";
-    return build_request(sprintf("%2c\0\0%s%s", strlen(name),name,pad));
+    while(((sizeof(name)+sizeof(pad))%4)) pad += "\0";
+    return build_request(sprintf("%2c\0\0%s%s", sizeof(name),name,pad));
   }
 
   mapping handle_reply(mapping reply)
@@ -959,7 +959,7 @@ class ExtensionRequest
 
   string build_request(string req, void|int data)
   {
-    return sprintf("%c%c%2c%s", type, data, 1 + strlen(req) / 4, req);
+    return sprintf("%c%c%2c%s", type, data, 1 + sizeof(req) / 4, req);
   }
 
 
@@ -976,7 +976,7 @@ class ExtensionRequest
   {
     string pad ="";
     if(!data) data = "";
-    else while((strlen(data)+strlen(pad))%4) pad += "\0";
+    else while((sizeof(data)+sizeof(pad))%4) pad += "\0";
     return build_request(data+pad, code);
   }
   

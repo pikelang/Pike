@@ -49,7 +49,7 @@ class encapsulated_message {
     /* Make all lines terminated with \r (but the last, which is
      * either empty or a "line" that was not terminated). */
     for(int i=0; i < sizeof(lines)-1; i++)
-      if (!strlen(lines[i]) || (lines[i][-1] != '\r'))
+      if (!sizeof(lines[i]) || (lines[i][-1] != '\r'))
 	lines[i] += "\r";
     return lines * "\n";
   }

@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.79 2002/12/30 01:29:53 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.80 2003/01/20 17:48:45 nilsson Exp $ */
 
 import Stdio;
 
@@ -159,7 +159,7 @@ void run_watchdog(int pid) {
 #ifdef WATCHDOG_PIPE
   thread_create(lambda() {
 		  object o=Stdio.File("stdin");
-		  while(strlen(o->read(1) || ""))
+		  while(sizeof(o->read(1) || ""))
 		  {
 		    last_time=time();
 		  }

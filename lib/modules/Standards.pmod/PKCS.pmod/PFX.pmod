@@ -327,7 +327,7 @@ class PFX
       for(int i; i<count; i++)
 	A = Crypto.sha()->update(A)->digest;
 
-      if (strlen(A)<needed)
+      if (sizeof(A)<needed)
 	error("PFX: Step 6c) of section 6.1 not implemented.\n");
 
       return A[..ndeded-1];

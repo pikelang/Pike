@@ -136,13 +136,13 @@ void status(string doing, void|string file, string|void msg)
   }
 
   file=replace(file,"\n","\\n");
-  if(strlen(file)>45)
-    file=".."+file[strlen(file)-44..];
+  if(sizeof(file)>45)
+    file=".."+file[sizeof(file)-44..];
 
   if(msg) file+=" "+msg;
   if(doing) file=doing+": "+file;
   string s="\r   "+file;
-  int t=strlen(s);
+  int t=sizeof(s);
   if(t<last_len) s+=" "*(last_len-t);
   last_len=t;
   write(s);
@@ -165,7 +165,7 @@ int mkdirhier(string orig_dir)
   string dir=orig_dir;
   if(already_created[orig_dir]) return 1;
 
-  if(dir=="" || (strlen(dir)==2 && dir[-1]==':')) return 1;
+  if(dir=="" || (sizeof(dir)==2 && dir[-1]==':')) return 1;
   dir=fakeroot(dir);
 
   status("Creating",dir+"/");
@@ -305,7 +305,7 @@ int install_file(string from,
 
 string stripslash(string s)
 {
-  while(strlen(s)>1 && s[-1]=='/') s=s[..strlen(s)-2];
+  while(sizeof(s)>1 && s[-1]=='/') s=s[..sizeof(s)-2];
   return s;
 }
 
@@ -362,7 +362,7 @@ object reg;
 
 string regquote(string s)
 {
-  while(s[-1] == '/' || s[-1]=='\\') s=s[..strlen(s)-2];
+  while(s[-1] == '/' || s[-1]=='\\') s=s[..sizeof(s)-2];
   return
     replace(s,
 	    ({".","[","]","*","\\","(",")","|","+"}),
@@ -371,7 +371,7 @@ string regquote(string s)
 
 string globify(string s)
 {
-  if(s[-1]=='/') s=s[..strlen(s)-2];
+  if(s[-1]=='/') s=s[..sizeof(s)-2];
   return s+"*";
 }
 
@@ -443,7 +443,7 @@ void do_export()
   status("Creating",export_base_name+".burk");
   Stdio.File p=Stdio.File(export_base_name+".burk","wc");
   string msg="   Loading installation script, please wait...";
-  p->write("w%4c%s",strlen(msg),msg);
+  p->write("w%4c%s",sizeof(msg),msg);
 
 #define TRANSLATE(X,Y) combine_path(".",X) : Y
   string tmpdir="~piketmp";
@@ -470,13 +470,13 @@ void do_export()
   dirs-=({""});
   sort(dirs);
 
-  foreach(dirs, string dir) p->write("d%4c%s",strlen(dir),dir);
+  foreach(dirs, string dir) p->write("d%4c%s",sizeof(dir),dir);
   foreach(Array.transpose(  ({ to_export, translated_names }) ),
 	  [ string file, string file_name ])
     {
       status("Adding",file);
       if (string f=Stdio.read_file(file)) {
-	p->write("f%4c%s%4c",strlen(file_name),file_name,strlen(f));
+	p->write("f%4c%s%4c",sizeof(file_name),file_name,sizeof(f));
 	p->write(f);
       } else {
 	//  Huh? File could not be found.
@@ -498,7 +498,7 @@ void do_export()
 
 
   foreach(env, string e)
-    p->write("e%4c%s",strlen(e),e);
+    p->write("e%4c%s",sizeof(e),e);
 
 #define RELAY(X) " " #X "=" + TRVAR(X)+
 
@@ -517,7 +517,7 @@ void do_export()
     " $" // $ = @argv
     ;
 
-  p->write("s%4c%s",strlen(cmd),cmd);
+  p->write("s%4c%s",sizeof(cmd),cmd);
 
   array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
   to_delete=Array.uniq(to_delete);
@@ -525,7 +525,7 @@ void do_export()
 
   // Generate cleanup
   foreach(to_delete, string del)
-    p->write("D%4c%s",strlen(del),del);
+    p->write("D%4c%s",sizeof(del),del);
 
   p->write("q\0\0\0\0");
   p->close("rw");
@@ -610,7 +610,7 @@ done
   string script=sprintf("#!/bin/sh\n"
 			"tar xf \"$0\" %s.x\n"
 			"exec ./%s.x \"$0\" \"$@\"\n", tmpname, tmpname, tmpname);
-  if(strlen(script) >= 100)
+  if(sizeof(script) >= 100)
   {
     werror("Script too long!!\n");
     exit(1);
@@ -1000,7 +1000,7 @@ int pre_install(array(string) argv)
     case "":
     default:
     case "--new-style":
-      if(!(lnk=vars->pike_name) || !strlen(lnk)) {
+      if(!(lnk=vars->pike_name) || !sizeof(lnk)) {
 	lnk = combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),
 			   "pike");
 	old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
@@ -1224,7 +1224,7 @@ void do_install()
 	pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
 	Stdio.write_file(pike_bin_file, pike_bin);
 	Stdio.File f=Stdio.File(pike_bin_file,"rw");
-	f->seek(pos+strlen(MASTER_COOKIE));
+	f->seek(pos+sizeof(MASTER_COOKIE));
 	f->write(combine_path(lib_prefix,"master.pike"));
 	f->close();
 	status("Finalizing",pike_bin_file,"done");

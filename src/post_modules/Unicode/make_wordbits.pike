@@ -27,7 +27,7 @@ void main()
   foreach( Stdio.stdin.read()/"\n", string line )
   {
     sscanf( line, "%s#", line );
-    if( !strlen( line ) )
+    if( !sizeof( line ) )
       continue;
     array data = line / ";";
     if( sizeof( data ) != 15 )
@@ -36,7 +36,7 @@ void main()
     if( sscanf( data[0], "%x", c ) && data[1][0] != '<' )
       if( parse_type( data[2] ) )
       {
-	if( !strlen(data[5]) && !last_was )
+	if( !sizeof(data[5]) && !last_was )
 	  last_was = c;
       }
       else if( last_was )

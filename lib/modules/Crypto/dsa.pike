@@ -119,7 +119,7 @@ string sign_rsaref(string msg)
 //!   Document this function.
 int verify_rsaref(string msg, string s)
 {
-  if (strlen(s) != 40)
+  if (sizeof(s) != 40)
     return 0;
 
   return raw_verify(dsa_hash(msg),
@@ -184,7 +184,7 @@ string nist_hash(bignum x)
 {
   string s = x->digits(256);
 		       
-  return Crypto.sha()->update(s[strlen(s) - SEED_LENGTH..])->digest();
+  return Crypto.sha()->update(s[sizeof(s) - SEED_LENGTH..])->digest();
 }
 
 //! Returns ({ p, q })
@@ -209,7 +209,7 @@ array(bignum) nist_primes(int l)
 
     string h = nist_hash(s) ^ nist_hash(s + 1);
 
-    h = sprintf("%c%s%c", h[0] | 0x80, h[1..strlen(h) - 2], h[-1] | 1);
+    h = sprintf("%c%s%c", h[0] | 0x80, h[1..sizeof(h) - 2], h[-1] | 1);
 
     bignum q = Gmp.mpz(h, 256);
 

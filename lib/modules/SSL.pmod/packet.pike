@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: packet.pike,v 1.11 2002/03/20 16:40:01 nilsson Exp $
+/* $Id: packet.pike,v 1.12 2003/01/20 17:44:01 nilsson Exp $
  *
  * SSL Record Layer
  */
@@ -38,7 +38,7 @@ void create(void|int extra)
 object check_size(int version, int|void extra)
 {
   marginal_size = extra;
-  return (strlen(fragment) > (PACKET_MAX_SIZE + extra))
+  return (sizeof(fragment) > (PACKET_MAX_SIZE + extra))
     ? Alert(ALERT_fatal, ALERT_unexpected_message, version) : 0;
 }
 
@@ -52,16 +52,16 @@ object|string recv(string data, int version)
 {
 
 #ifdef SSL3_FRAGDEBUG
-  werror(" SSL.packet->recv: strlen(data)="+strlen(data)+"\n");
+  werror(" SSL.packet->recv: sizeof(data)="+sizeof(data)+"\n");
 #endif 
 
 
   buffer += data;
-  while (strlen(buffer) >= needed_chars)
+  while (sizeof(buffer) >= needed_chars)
   {
 #ifdef SSL3_DEBUG
 //    werror(sprintf("SSL.packet->recv: needed = %d, avail = %d\n",
-//		     needed_chars, strlen(buffer)));
+//		     needed_chars, sizeof(buffer)));
 #endif
     if (needed_chars == HEADER_SIZE)
     {
@@ -130,10 +130,10 @@ string send()
     werror(sprintf("SSL.packet->send: received version %d.%d packet\n",
 		   @ protocol_version));
 #endif
-  if (strlen(fragment) > (PACKET_MAX_SIZE + marginal_size))
+  if (sizeof(fragment) > (PACKET_MAX_SIZE + marginal_size))
     error( "SSL.packet->send: maximum packet size exceeded\n" );
 
   return sprintf("%c%c%c%2c%s", content_type, @protocol_version,
-		 strlen(fragment), fragment);
+		 sizeof(fragment), fragment);
 }
 

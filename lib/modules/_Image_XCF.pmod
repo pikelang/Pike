@@ -39,7 +39,7 @@ array(Parasite) decode_parasites( mixed data )
 {
   array res = ({});
   data = (string)data;
-  while(strlen(data))
+  while(sizeof(data))
   {
     int slen, flags;
     string value, name;

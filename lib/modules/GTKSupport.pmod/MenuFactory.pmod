@@ -53,7 +53,7 @@ string shortcut_to_string( int key, int mod )
   if(mod & FLAG_META) m += "M";
   if(mod & FLAG_HYPER) m += "H";
   if(mod & FLAG_SUPER) m += "U";
-  if(strlen(m)) m+= "-";
+  if(sizeof(m)) m+= "-";
   return sprintf("%s%c",m, key);
 }
 

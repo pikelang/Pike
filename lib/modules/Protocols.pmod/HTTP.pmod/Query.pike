@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.47 2002/11/29 01:09:27 nilsson Exp $
+// $Id: Query.pike,v 1.48 2003/01/20 17:44:00 nilsson Exp $
 
 //!	Open and execute an HTTP query.
 
@@ -65,9 +65,9 @@ static void ponder_answer()
       if ((i=min(i,j))!=10000000) break;
 
       s=con->read(8192,1);
-      if (!s || s=="") { i=strlen(buf); break; }
+      if (!s || s=="") { i=sizeof(buf); break; }
 
-      i=strlen(buf)-3;
+      i=sizeof(buf)-3;
       buf+=s;
    }
 
@@ -185,7 +185,7 @@ static void async_close()
 static void async_read(mixed dummy,string s)
 {
 #ifdef HTTP_QUERY_DEBUG
-   werror("-> %d bytes of data\n",strlen(s));
+   werror("-> %d bytes of data\n",sizeof(s));
 #endif
 
    buf+=s;
@@ -289,7 +289,7 @@ void async_got_host(string server,int port)
 void async_fetch_read(mixed dummy,string data)
 {
 #ifdef HTTP_QUERY_DEBUG
-   werror("-> %d bytes of data\n",strlen(data));
+   werror("-> %d bytes of data\n",sizeof(data));
 #endif
    buf+=data;
 }
@@ -475,7 +475,7 @@ this_program thread_request(string server, int port, string query,
       headers=mkmapping(Array.map(indices(headers),lower_case),
 			values(headers));
 
-      if (data!="") headers->content_length=strlen(data);
+      if (data!="") headers->content_length=sizeof(data);
 
       headers=headers_encode(headers);
    }
@@ -534,7 +534,7 @@ object sync_request(string server, int port, string query,
 			     values( http_headers ));
 
     if(data != "")
-      http_headers->content_length = strlen( data );
+      http_headers->content_length = sizeof( data );
 
     http_headers = headers_encode( http_headers );
   }
@@ -571,7 +571,7 @@ object async_request(string server,int port,string query,
       headers=mkmapping(Array.map(indices(headers),lower_case),
 			values(headers));
 
-      if (data!="") headers->content_length=strlen(data);
+      if (data!="") headers->content_length=sizeof(data);
 
       headers=headers_encode(headers);
    }
@@ -617,10 +617,10 @@ string data(int|void max_length)
       l=0x7fffffff;
    else {
       len -= discarded_bytes;
-      l=len-strlen(buf)+datapos;
+      l=len-sizeof(buf)+datapos;
    }
-   if(!zero_type(max_length) && l>max_length-strlen(buf)+datapos)
-     l = max_length-strlen(buf)+datapos;
+   if(!zero_type(max_length) && l>max_length-sizeof(buf)+datapos)
+     l = max_length-sizeof(buf)+datapos;
    if(l>0 && con)
    {
      if(headers->server == "WebSTAR")
@@ -731,7 +731,7 @@ class PseudoFile
       con=_con;
       buf=_buf;
       len=_len;
-      if (!con) len=strlen(buf);
+      if (!con) len=sizeof(buf);
    }
 
    string read(int n)
@@ -740,15 +740,15 @@ class PseudoFile
 
       if (len && p+n>len) n=len-p;
 
-      if (strlen(buf)<n && con)
+      if (sizeof(buf)<n && con)
       {
-	 string s=con->read(n-strlen(buf));
+	 string s=con->read(n-sizeof(buf));
 	 buf+=s;
       }
 
       s=buf[..n-1];
       buf=buf[n..];
-      p+=strlen(s);
+      p+=sizeof(s);
       return s;
    }
 
@@ -787,8 +787,8 @@ object file(void|mapping newheader,void|mapping removeheader)
       if (zero_type(headers["content-length"]))
 	 len=0x7fffffff;
       else
-	 len=strlen(protocol+" "+status+" "+status_desc)+2+
-	    strlen(hbuf)+2+(int)headers["content-length"];
+	 len=sizeof(protocol+" "+status+" "+status_desc)+2+
+	    sizeof(hbuf)+2+(int)headers["content-length"];
       return PseudoFile(con,
 			protocol+" "+status+" "+status_desc+"\r\n"+
 			hbuf+"\r\n"+buf[datapos..],len);
@@ -796,7 +796,7 @@ object file(void|mapping newheader,void|mapping removeheader)
    if (zero_type(headers["content-length"]))
       len=0x7fffffff;
    else
-      len=strlen(headerbuf)+4+(int)h["content-length"];
+      len=sizeof(headerbuf)+4+(int)h["content-length"];
    return PseudoFile(con,buf,len);
 }
 

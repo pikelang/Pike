@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: httpd.pike,v 1.4 2002/12/01 01:38:28 nilsson Exp $ */
+/* $Id: httpd.pike,v 1.5 2003/01/20 17:48:45 nilsson Exp $ */
 
 /* A very small httpd capable of fetching files only.
  * Written by Fredrik Hübinette as a demonstration of Pike
@@ -36,7 +36,7 @@ program output_class=class
 
     file::seek(offset);
     data=file::read(BLOCK);
-    if(data && strlen(data))
+    if(data && sizeof(data))
     {
       written=socket::write(data);
       if(written >= 0)

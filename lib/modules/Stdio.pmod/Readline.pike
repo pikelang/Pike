@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.43 2002/11/26 15:06:46 jhs Exp $
+// $Id: Readline.pike,v 1.44 2003/01/20 17:44:01 nilsson Exp $
 #pike __REAL_VERSION__
 
 class OutputController
@@ -165,10 +165,10 @@ class OutputController
 		  "~P","~Q","~R","~S","~T","~U","~V","~W",
 		  "~X","~Y","~Z","~[","~\\","~]","~^","~_",
 		  }));
-    return hide ? "*"*strlen(s) : s;
+    return hide ? "*"*sizeof(s) : s;
 #else
 
-  for(int i=0; i<strlen(s); i++)
+  for(int i=0; i<sizeof(s); i++)
       if(s[i]<' ')
 	s = s[..i-1]+sprintf("^%c", s[i]+'@')+s[i+1..];
       else if(s[i]==127)
@@ -182,7 +182,7 @@ class OutputController
 
   static int width(string s)
   {
-    return strlen(s);
+    return sizeof(s);
   }
 
   static int escapified_width(string s)
@@ -212,7 +212,7 @@ class OutputController
 	{
 	  outfd->write(line);
 	}else{
-	  l=strlen(line)-spos;
+	  l=sizeof(line)-spos;
 	  outfd->write(line[..l-2]);
 	}
 	s=s[l..];
@@ -764,9 +764,9 @@ class DefaultEditKeys
   void delete_char_or_eof()
   {
     int p = _readline->getcursorpos();
-    if (p<strlen(_readline->gettext()))
+    if (p<sizeof(_readline->gettext()))
       _readline->delete(p,p+1);
-    else if(!strlen(_readline->gettext()))
+    else if(!sizeof(_readline->gettext()))
       _readline->eof();
   }
 
@@ -787,13 +787,13 @@ class DefaultEditKeys
 
   void end_of_line()
   {
-    _readline->setcursorpos(strlen(_readline->gettext()));
+    _readline->setcursorpos(sizeof(_readline->gettext()));
   }
 
   void transpose_chars()
   {
     int p = _readline->getcursorpos();
-    if (p<0 || p>=strlen(_readline->gettext()))
+    if (p<0 || p>=sizeof(_readline->gettext()))
       return;
     string c = _readline->gettext()[p-1..p];
     _readline->delete(p-1, p+1);
@@ -805,9 +805,9 @@ class DefaultEditKeys
     int p = _readline->getcursorpos();
     int ep;
     string line = _readline->gettext();
-    while(word_break_chars[ line[p..p] ] && p < strlen(line))
+    while(word_break_chars[ line[p..p] ] && p < sizeof(line))
       p++;
-    if(p >= strlen(line)) {
+    if(p >= sizeof(line)) {
       _readline->setcursorpos(p);
       return ({ 0, 0 });
     }
@@ -853,7 +853,7 @@ class DefaultEditKeys
   {
     int p = _readline->getcursorpos()-1;
     string line = _readline->gettext();
-    if(p >= strlen(line)) p = strlen(line) - 1;
+    if(p >= sizeof(line)) p = sizeof(line) - 1;
     while(word_break_chars[ line[p..p] ] && p >= 0)
       // find first "non break char"
       p--;
@@ -891,12 +891,12 @@ class DefaultEditKeys
 
   void kill_line()
   {
-    _readline->kill(_readline->getcursorpos(), strlen(_readline->gettext()));
+    _readline->kill(_readline->getcursorpos(), sizeof(_readline->gettext()));
   }
 
   void kill_whole_line()
   {
-    _readline->kill(0, strlen(_readline->gettext()));
+    _readline->kill(0, sizeof(_readline->gettext()));
   }
 
   void yank()
@@ -1164,8 +1164,8 @@ int setcursorpos(int p)
 {
   if (p<0)
     p = 0;
-  if (p>strlen(text))
-    p = strlen(text);
+  if (p>sizeof(text))
+    p = sizeof(text);
   if (p<cursorpos)
   {
     if(!input_controller->dumb)
@@ -1187,8 +1187,8 @@ int setmark(int p)
 {
   if (p<0)
     p = 0;
-  if (p>strlen(text))
-    p = strlen(text);
+  if (p>sizeof(text))
+    p = sizeof(text);
   mark=p;
 }
 
@@ -1205,21 +1205,21 @@ void insert(string s, int p)
 {
   if (p<0)
     p = 0;
-  if (p>strlen(text))
-    p = strlen(text);
+  if (p>sizeof(text))
+    p = sizeof(text);
   setcursorpos(p);
   if(!input_controller->dumb)
     output_controller->write(s,0,hide);
-  cursorpos += strlen(s);
+  cursorpos += sizeof(s);
   string rest = text[p..];
-  if (strlen(rest) && !input_controller->dumb)
+  if (sizeof(rest) && !input_controller->dumb)
   {
     output_controller->write(rest,0,hide);
     output_controller->move_backward(rest);
   }
   text = text[..p-1]+s+rest;
 
-  if (mark>p) mark+=strlen(s);
+  if (mark>p) mark+=sizeof(s);
 }
 
 //! @fixme
@@ -1228,8 +1228,8 @@ void delete(int p1, int p2)
 {
   if (p1<0)
     p1 = 0;
-  if (p2>strlen(text))
-    p2 = strlen(text);
+  if (p2>sizeof(text))
+    p2 = sizeof(text);
   setcursorpos(p1);
   if (p1>=p2)
     return;
@@ -1242,7 +1242,7 @@ void delete(int p1, int p2)
   if (mark>p2) mark-=(p2-p1);
   else if (mark>p1) mark=p1;
 
-  cursorpos = strlen(text);
+  cursorpos = sizeof(text);
   setcursorpos(p1);
 }
 
@@ -1272,8 +1272,8 @@ void kill(int p1, int p2)
 {
   if (p1<0)
     p1 = 0;
-  if (p2>strlen(text))
-    p2 = strlen(text);
+  if (p2>sizeof(text))
+    p2 = sizeof(text);
   if (p1>=p2)
     return;
   add_to_kill_ring(text[p1..p2-1]);
@@ -1302,7 +1302,7 @@ void history(int n)
 {
   if(historyobj) {
     string h = historyobj->history(n, text);
-    delete(0, strlen(text)+strlen(prompt));
+    delete(0, sizeof(text)+sizeof(prompt));
     insert(h, 0);
   }
 }
@@ -1386,7 +1386,7 @@ void eof()
 void message(string msg)
 {
   int p = cursorpos;
-  setcursorpos(strlen(text));
+  setcursorpos(sizeof(text));
   output_controller->newline();
   foreach(msg/"\n", string l) {
     output_controller->write(l);
@@ -1414,7 +1414,7 @@ void write(string msg,void|int word_wrap)
   }
   output_controller->write(tmp[-1],word_wrap);
 
-  cursorpos=strlen(text);
+  cursorpos=sizeof(text);
   redisplay(0, 1);
   setcursorpos(p);
 }
@@ -1468,10 +1468,10 @@ void set_blocking()
 //!   Document this function
 string edit(string data, string|void local_prompt, array(string)|void attrs)
 {
-  if(data && strlen(data) && input_controller->dumb)
+  if(data && sizeof(data) && input_controller->dumb)
   {
     string ret=edit("", (local_prompt || get_prompt()) +"["+data+"] ", attrs);
-    return (!ret || !strlen(ret))?data:ret;
+    return (!ret || !sizeof(ret))?data:ret;
   }
   string old_prompt;
   array(string) old_attrs;

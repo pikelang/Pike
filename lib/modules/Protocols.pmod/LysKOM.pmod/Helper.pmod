@@ -9,7 +9,7 @@ string encode(mixed ... z) // encode arguments
 
 string H(string what) // encode hollerith
 {
-   return strlen(what)+"H"+what;
+   return sizeof(what)+"H"+what;
 }
 
 string B(int(0..1) ... z) // encode bitfield

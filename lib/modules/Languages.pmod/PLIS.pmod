@@ -424,7 +424,7 @@ class Parser (string buffer)
 
   mixed _read()
     {
-      if (!strlen(buffer))
+      if (!sizeof(buffer))
       {
 	return 0;
       }
@@ -432,27 +432,27 @@ class Parser (string buffer)
       if (a = space_re->split(buffer) || comment_re->split(buffer))
       {
 	//	werror(sprintf("Ignoring space and comments: '%s'\n", a[0]));
-	buffer = buffer[strlen(a[0])..];
+	buffer = buffer[sizeof(a[0])..];
 	return _read();
       }
       if (a = number_re->split(buffer))
       {
 	//	werror("Scanning number\n");
 	string s = `+(@ a);
-	buffer = buffer[ strlen(s) ..];
+	buffer = buffer[ sizeof(s) ..];
 	return Number( (int)s );
       }
       if (a = symbol_re->split(buffer))
       {
 	// 	werror("Scanning symbol\n");
-	buffer = buffer[strlen(a[0])..];
+	buffer = buffer[sizeof(a[0])..];
 	return make_symbol(a[0]);
       }
       if (a = string_re->split(buffer))
       {
 	//	werror("Scanning string\n");
-	buffer = buffer[strlen(a[0])..];
-	return String(replace(a[0][1 .. strlen(a[0]) - 2],
+	buffer = buffer[sizeof(a[0])..];
+	return String(replace(a[0][1 .. sizeof(a[0]) - 2],
 			      ({ "\\\\", "\\\"", "\\n" }),
 			      ({ "\\", "\"", "\n"}) ) );
       }
@@ -469,7 +469,7 @@ class Parser (string buffer)
 	buffer = buffer[1..];
 	return c;
       case '#':
-	if (strlen(buffer) < 2)
+	if (sizeof(buffer) < 2)
 	  return 0;
 	c = buffer[1];
 	buffer = buffer[2..];

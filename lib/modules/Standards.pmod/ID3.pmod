@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.7 2002/11/26 15:46:06 nilsson Exp $
+//  $Id: ID3.pmod,v 1.8 2003/01/20 17:44:01 nilsson Exp $
 //
 
 //! ID3 decoder/encoder.
@@ -733,7 +733,7 @@ class Framev1 {
   void create(string buffer, string name) {
     id = name;
     data = FrameDatav1(buffer, name);
-    size = strlen(buffer);
+    size = sizeof(buffer);
   }
 
 }

@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.5 2002/12/12 20:50:14 marcus Exp $
+// $Id: module.pmod,v 1.6 2003/01/20 17:44:00 nilsson Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -928,7 +928,7 @@ class Message {
       data += "--"+boundary+"--\r\n";
     }
     
-    headers["content-length"] = ""+strlen(data);
+    headers["content-length"] = ""+sizeof(data);
 
     return map( indices(headers),
 		lambda(string hname){
@@ -1164,12 +1164,12 @@ int|object reconstruct_partial(array(object) collection)
       }, parts)));
     foreach(indices(reconstructed->headers), string h) {
       if(h != "message-id" && h != "encrypted" && h != "mime-version" &&
-	 h != "subject" && (strlen(h)<8 || h[0..7] != "content-"))
+	 h != "subject" && (sizeof(h)<8 || h[0..7] != "content-"))
 	m_delete(reconstructed->headers, h);
     }
     foreach(indices(enclosing_headers), string h) {
       if(h != "message-id" && h != "encrypted" && h != "mime-version" &&
-	 h != "subject" && (strlen(h)<8 || h[0..7] != "content-"))
+	 h != "subject" && (sizeof(h)<8 || h[0..7] != "content-"))
 	reconstructed->headers[h] = enclosing_headers[h];
     }
     return reconstructed;

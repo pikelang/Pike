@@ -98,7 +98,7 @@ class imap_string
       if (!sizeof(array_sscanf(data, "%*[^\0-\037\\\"\177-\377]%s")[0]))
 	return "\"" + replace(data, ({ "\"", "\\" }), ({ "\\\"", "\\\\" }) ) + "\"";
       else
-	return sprintf("{%d}\r\n%s", strlen(data), data);
+	return sprintf("{%d}\r\n%s", sizeof(data), data);
     }
 }
 
@@ -134,7 +134,7 @@ class imap_number
 // Returns -1 on error. 
 int string_to_number(string s)
 {
-  if (!strlen(s) || (strlen(s)  > 9))
+  if (!sizeof(s) || (sizeof(s)  > 9))
     return -1;
   if (sizeof(values(s) - ({ '0', '1', '2', '3', '4',
 			    '5', '6', '7', '8', '9' })))

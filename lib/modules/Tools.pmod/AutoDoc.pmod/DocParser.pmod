@@ -148,7 +148,7 @@ multiset(string) allowOnlyOne =
 static int getKeywordType(string keyword) {
   if (keywordtype[keyword])
     return keywordtype[keyword];
-  if (strlen(keyword) > 3 && keyword[0..2] == "end")
+  if (sizeof(keyword) > 3 && keyword[0..2] == "end")
     return ENDKEYWORD;
   return ERRORKEYWORD;
 }
@@ -172,7 +172,7 @@ static int isKeywordChar(int char) {
 static array(string) extractKeyword(string line) {
   line += "\0";
   int i = 0;
-  while (i < strlen(line) && isSpaceChar(line[i]))
+  while (i < sizeof(line) && isSpaceChar(line[i]))
     ++i;
   if (line[i++] != '@')
     return 0;
@@ -183,11 +183,11 @@ static array(string) extractKeyword(string line) {
     return 0;
   string keyword = line[keywordstart .. i - 1];
   //  if (getKeywordType(keyword) == METAKEYWORD)
-  return ({ keyword, line[i .. strlen(line) - 2] });  // skippa "\0" ...
+  return ({ keyword, line[i .. sizeof(line) - 2] });  // skippa "\0" ...
 }
 
 static int allSpaces(string s) {
-  for (int i = strlen(s) - 1; i >= 0; --i)
+  for (int i = sizeof(s) - 1; i >= 0; --i)
     if (s[i] != ' ' && s[i] != '\t')
       return 0;
   return 1;

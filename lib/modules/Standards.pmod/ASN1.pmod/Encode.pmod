@@ -58,14 +58,14 @@ class asn1_object
       if (len < 0x80)
 	return sprintf("%c", len);
       string s = Gmp.mpz(len)->digits(256);
-      if (strlen(s) >= 0x80)
+      if (sizeof(s) >= 0x80)
 	error( "asn1.encode.asn1_object->encode_length: Max length exceeded.\n" );
-      return sprintf("%c%s", strlen(s) | 0x80, s);
+      return sprintf("%c%s", sizeof(s) | 0x80, s);
     }
   
   string build_der(string contents)
     {
-      string data = encode_tag() + encode_length(strlen(contents)) + contents;
+      string data = encode_tag() + encode_length(sizeof(contents)) + contents;
       // WERROR(sprintf("build_der: '%s'\n", Crypto.string_to_hex(data)));
       WERROR(sprintf("build_der: '%s'\n", data));
       return data;
@@ -138,7 +138,7 @@ class asn1_bitstring
       {
 	value = value[..(len + 7)/8];
 	unused = (- len) % 8;
-	value = sprintf("%s%c", value[..strlen(value)-2], value[-1]
+	value = sprintf("%s%c", value[..sizeof(value)-2], value[-1]
 		    & ({ 0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x80 })[unused]);
       } else {
 	unused = 0;
@@ -221,9 +221,9 @@ class asn1_set
     {
       for(int i = 0;; i++)
       {
-	if (i == strlen(r))
-	  return (i = strlen(s)) ? 0 : 1;
-	if (i == strlen(s))
+	if (i == sizeof(r))
+	  return (i = sizeof(s)) ? 0 : 1;
+	if (i == sizeof(s))
 	  return -1;
 	if (r[i] < s[i])
 	  return 1;

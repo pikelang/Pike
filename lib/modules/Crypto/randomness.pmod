@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.23 2003/01/09 17:43:20 grubba Exp $
+// $Id: randomness.pmod,v 1.24 2003/01/20 17:44:00 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -147,7 +147,7 @@ RandomSource reasonably_random()
 
   string seed = some_entropy();
 #if constant(Crypto.arcfour)
-  if (strlen(seed) < 2001)
+  if (sizeof(seed) < 2001)
     seed = random_string(2001); // Well, we're only at reasonably random...
   return (global_arcfour = arcfour_random(sprintf("%4c%O%s", time(),
 						  _memory_usage(), seed)));

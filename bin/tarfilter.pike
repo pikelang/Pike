@@ -13,7 +13,7 @@ void copydata(Stdio.File in, Stdio.File out, int size)
       exit(1);
     }
     out->write(s);
-    size -= strlen(s);
+    size -= sizeof(s);
   }
 }
 
@@ -23,7 +23,7 @@ void doit(Stdio.File in, Stdio.File out)
     string s = in->read(512);
     if(s == "")
       break;
-    if(strlen(s) != 512) {
+    if(sizeof(s) != 512) {
       werror("READ ERROR on input\n");
       exit(1);
     }

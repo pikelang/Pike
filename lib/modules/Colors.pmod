@@ -83,7 +83,7 @@ array(int) cmyk_to_rgb(array(int)|int c, int|void m, int|void y, int|void k)
 array(int(0..255)) parse_color(string name)
 {
   Image.Color.Color color;
-  if(!name || !strlen(name)) return ({ 0,0,0 }); // Odd color...
+  if(!name || !sizeof(name)) return ({ 0,0,0 }); // Odd color...
 
   if(color=Image.Color.guess(name)) return color->rgb();
 

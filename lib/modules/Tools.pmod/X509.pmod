@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.16 2001/10/08 05:37:38 per Exp $
+ * $Id: X509.pmod,v 1.17 2003/01/20 17:44:01 nilsson Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -40,11 +40,11 @@ object make_time(int t)
 mapping parse_time(object asn1)
 {
   if ((asn1->type_name != "UTCTime")
-      || (strlen(asn1->value) != 13))
+      || (sizeof(asn1->value) != 13))
     return 0;
 
   sscanf(asn1->value, "%[0-9]s%c", string s, int c);
-  if ( (strlen(s) != 12) && (c != 'Z') )
+  if ( (sizeof(s) != 12) && (c != 'Z') )
     return 0;
 
   /* NOTE: This relies on pike-0.7 not interpreting leading zeros as

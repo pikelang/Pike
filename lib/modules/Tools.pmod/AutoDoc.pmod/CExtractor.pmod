@@ -43,7 +43,7 @@ static private class Extractor {
     foreach(ctokens, string ctoken) {
       if (has_prefix(ctoken, "/*!")) {
         int firstLine = line;
-        array(string) lines = ctoken[1 .. strlen(ctoken) - 3]/"\n";
+        array(string) lines = ctoken[1 .. sizeof(ctoken) - 3]/"\n";
         //    werror("%O\n", lines);
         int lastLine = firstLine + sizeof(lines) - 1;
         lines = map(lines, stripDocMarker);

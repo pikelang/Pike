@@ -48,7 +48,7 @@ static array sedreplace(string s,object re,string with,
       wa=sedreplace(a[0],re,with,whatin,first,lastmod,flags);
       if (wa)
 	 if (!flags["g"])
-	    return ({wa[0],wa[1]+s[strlen(a[0])..]});
+	    return ({wa[0],wa[1]+s[sizeof(a[0])..]});
 	 else
 	    pr=wa[0],w=wa[1];
       else
@@ -210,10 +210,10 @@ string|array `()(string|array(string) commands,
 	    inflags="";
 	    if (sscanf(cmd,"%*c"+div+"%s"+div+"%s"+div+"%s",
 		       what,with,inflags)<3) continue;
-	    if (strlen(what)!=strlen(with))
+	    if (sizeof(what)!=sizeof(with))
 	    {
-	       what=what[0..strlen(with)-1];
-	       with=with[0..strlen(what)-1];
+	       what=what[0..sizeof(with)-1];
+	       with=with[0..sizeof(what)-1];
 	    }
 	    
 	    a1=what/"",a2=with/"";

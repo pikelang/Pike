@@ -6,7 +6,7 @@ object parent;
 
 static string filename( Class c )
 {
-  if( strlen( c->c_name() ) )
+  if( sizeof( c->c_name() ) )
     return "p"+c->c_name()+".c";
   return "pgtk_globals.c";
 }
@@ -120,13 +120,13 @@ string make_initfun()
   for( int i = 1; i<=init_n; i++ )
   {
     line += "_"+i+"(); ";
-    if( strlen( line ) > 70 )
+    if( sizeof( line ) > 70 )
     {
       res += "  "+line+"\n";
       line = "";
     }
   }
-  if( strlen(line) )
+  if( sizeof(line) )
     res += "  "+line+"\n";
   return res;
 }
@@ -161,7 +161,7 @@ array(string) output( mapping(string:Class) classes,
   array q = ({});
   foreach( values(classes), object c )
     q |= indices(c->functions) | indices(c->members);
-  q = Array.uniq( q ); sort(map(q,strlen),q);
+  q = Array.uniq( q ); sort(map(q,sizeof),q);
   foreach( reverse(q), string w ) S(w);
   
   traverse_class_tree( classes, build_pike_fadds );
@@ -173,7 +173,7 @@ array(string) output( mapping(string:Class) classes,
       if( !done[s] )
         done[s] = c->signals[s];
 
-  q = indices( done ); sort(map(q,strlen),q);
+  q = indices( done ); sort(map(q,sizeof),q);
   foreach( reverse(q), string w ) S("s_"+w,1);
 
   foreach( sort(indices( done )), string w )

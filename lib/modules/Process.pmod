@@ -112,7 +112,7 @@ array(string) split_quoted_string(string s)
       ret[-1]+=x[e][1..];
       while(x[++e][0]!='"')
       {
-	if(strlen(x[e])==1 && x[e][0]=='\\' && x[e+1][0]=='"') e++;
+	if(sizeof(x[e])==1 && x[e][0]=='\\' && x[e+1][0]=='"') e++;
 	ret[-1]+=x[e];
       }
       ret[-1]+=x[e][1..];
@@ -125,7 +125,7 @@ array(string) split_quoted_string(string s)
       break;
       
       case '\\':
-      if(strlen(x[e])>1)
+      if(sizeof(x[e])>1)
       {
 	ret[-1]+=x[e][1..];
       }else{
@@ -136,7 +136,7 @@ array(string) split_quoted_string(string s)
       case ' ':
       case '\t':
       case '\n':
-	while(strlen(x[e])==1)
+	while(sizeof(x[e])==1)
 	{
 	  if(e+1 < sizeof(x))
 	  {
@@ -170,7 +170,7 @@ Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
 #if defined(__NT__)
   // if the command string s is not quoted, add double quotes to
   // make sure it is not modified by create_process
-  if (strlen(s) <= 1 || s[0] != '\"' || s[strlen(s)-1] != '\"')
+  if (sizeof(s) <= 1 || s[0] != '\"' || s[sizeof(s)-1] != '\"')
     s = "\"" + s + "\"";
   return create_process(({ "cmd", "/c", s }),data);
 #elif defined(__amigaos__)

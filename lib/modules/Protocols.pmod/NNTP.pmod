@@ -44,11 +44,11 @@ class protocol
     s=replace(s,"\r","");
     foreach(s/"\n",string line)
       {
-	if(strlen(line) && line[0]=='.')
+	if(sizeof(line) && line[0]=='.')
 	  line="."+line+"\r\n";
 	else
 	  line=line+"\r\n";
-	if(news::write(line) != strlen(line))
+	if(news::write(line) != sizeof(line))
 	  error("NNTP: Failed to write body.\n");
       }
     news::write(".\r\n");

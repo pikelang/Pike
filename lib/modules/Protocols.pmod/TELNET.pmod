@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.18 2002/03/09 18:55:50 nilsson Exp $
+// $Id: TELNET.pmod,v 1.19 2003/01/20 17:44:00 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -546,7 +546,7 @@ class protocol
   static void call_read_cb(string data)
   {
     DWRITE("Fnurgel!\n");
-    if(read_cb && strlen(data)) read_cb(id,data);
+    if(read_cb && sizeof(data)) read_cb(id,data);
   }
 
   //! Callback called when normal data has been received.
@@ -897,7 +897,7 @@ class Readline
     {
       if(!icanon)
       {
-	if(strlen(data)) read_cb(id,data);
+	if(sizeof(data)) read_cb(id,data);
       }else{
 	DWRITE(sprintf("Line callback... %O\n",data));
 	data=replace(data,
@@ -1020,7 +1020,7 @@ class Readline
     }else{
       if(prompt!=s)
       {
-	if(s[..strlen(prompt)-1]==prompt)
+	if(s[..sizeof(prompt)-1]==prompt)
 	  write(s);
 	prompt=s;
       }

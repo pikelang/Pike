@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.18 2002/11/29 00:35:51 nilsson Exp $
+ * $Id: Tar.pmod,v 1.19 2003/01/20 17:44:00 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -215,7 +215,7 @@ class _Tar  // filesystem
       Record r;
       string s = this_program::fd->read(512);
 
-      if(s=="" || strlen(s)<512 || sscanf(s, "%*[\0]%*2s")==1)
+      if(s=="" || sizeof(s)<512 || sscanf(s, "%*[\0]%*2s")==1)
 	break;
 
       r = Record(s, pos+512);

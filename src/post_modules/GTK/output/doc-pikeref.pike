@@ -133,13 +133,13 @@ static string make_pike_refdoc( string pgtkdoc,
 				mapping|void signals)
 {
   string res =  "";
-  if( !pgtkdoc || !strlen(pgtkdoc) )
+  if( !pgtkdoc || !sizeof(pgtkdoc) )
     return "//!\n";
 
   pgtkdoc = fix_images( fix_const( trim_xml(pgtkdoc) ) );
   foreach( pgtkdoc/"\n", string s )
   {
-    if( !strlen(s) )
+    if( !sizeof(s) )
       res += "//!\n";
     else if( s[0] == '!' )
       res += "//"+s+"\n";
@@ -233,7 +233,7 @@ static string make_function_doc( Function f, Class c )
   res += ");";
   res += "\n";
   imgfile=imgfilename(c->name+"_"+f->name);
-  if( !f->doc || !strlen( f->doc ) )
+  if( !f->doc || !sizeof( f->doc ) )
   {
     werror("Warning:"+f->file+":"+f->line+": "
 	   +c->name+"->"+f->name+" not documented\n" );
@@ -251,7 +251,7 @@ static void output_class( Class cls, int lvl )
   string result = "";
   array functions = ({});
   imgfile=imgfilename(cls->name);
-  if( !cls->doc || !strlen( cls->doc ) )
+  if( !cls->doc || !sizeof( cls->doc ) )
     werror("Warning:"+cls->file+":"+cls->line+": "
 	   +cls->name+" not documented\n" );
 

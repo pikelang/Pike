@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-// $Id: test.pike,v 1.5 2002/05/09 13:31:09 per Exp $
+// $Id: test.pike,v 1.6 2003/01/20 18:00:49 nilsson Exp $
 
 #define c1 c[0]
 #define c2 c[1]
@@ -23,7 +23,7 @@ void main(int argc, array argv)
 
   foreach( Stdio.File( argv[1]+"/NormalizationTest.txt","r" )->read()/"\n", string l )
   {
-    if( !strlen( l ) || has_prefix(l, "#"))
+    if( !sizeof( l ) || has_prefix(l, "#"))
       continue;
 
     if( l[0] == '@' )
@@ -35,7 +35,7 @@ void main(int argc, array argv)
       part++;
       continue;
     }
-    if( !strlen( l ) )
+    if( !sizeof( l ) )
       continue;
 
     string decode_hex( string d )

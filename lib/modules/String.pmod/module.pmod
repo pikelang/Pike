@@ -100,7 +100,7 @@ static int low_fuzzymatch(string str1, string str2)
   int offset, length;
   int fuzz;
   fuzz = 0;
-  while(strlen(str1) && strlen(str2))
+  while(sizeof(str1) && sizeof(str2))
   {
     /* Now we will look for the first character of tmp1 in tmp2 */
     if((offset = search(str2, str1[0..0])) != -1)
@@ -112,7 +112,7 @@ static int low_fuzzymatch(string str1, string str2)
       while(1)
       {
         //*(++tmp1)==*(++tmp2) && *tmp1
-        if(length < strlen(tmp1) && length < strlen(tmp2) &&
+        if(length < sizeof(tmp1) && length < sizeof(tmp2) &&
            tmp1[length] == tmp2[length])
           length++;
         else
@@ -126,7 +126,7 @@ static int low_fuzzymatch(string str1, string str2)
         continue;
       }
     }
-    if(strlen(str1))
+    if(sizeof(str1))
       str1 = str1[1..];
   }
   return fuzz;
@@ -148,7 +148,7 @@ int(0..100) fuzzymatch(string a, string b)
 
   fuzz = low_fuzzymatch(a, b);
   fuzz += low_fuzzymatch(b, a);
-  fuzz = fuzz*100/(strlen(a)+strlen(b));
+  fuzz = fuzz*100/(sizeof(a)+sizeof(b));
 
   return [int(0..100)]fuzz;
 }

@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.47 2002/06/15 20:55:25 bill Exp $
+ * $Id: Xlib.pmod,v 1.48 2003/01/20 17:44:01 nilsson Exp $
  */
 
 /*
@@ -48,7 +48,7 @@ class rec_buffer
 
   int needs()
   {
-    return pad + expected - strlen(buffer);
+    return pad + expected - sizeof(buffer);
   }
   
   void add_data(string data)
@@ -58,7 +58,7 @@ class rec_buffer
 
   string get_msg()
   {
-    if (strlen(buffer) < (expected + pad))
+    if (sizeof(buffer) < (expected + pad))
       return 0;
     string res = buffer[pad..pad+expected-1];
     buffer = buffer[pad+expected..];
@@ -210,7 +210,7 @@ class Display
   
   void write_callback()
   {
-    if (strlen(buffer))
+    if (sizeof(buffer))
       {
 	int written = write(buffer);
 	if (written < 0)
@@ -223,7 +223,7 @@ class Display
 	  {
 	    // werror(sprintf("Xlib: wrote '%s'\n", buffer[..written-1]));
 	    buffer = buffer[written..];
-	    // if (!strlen(buffer))
+	    // if (!sizeof(buffer))
 	    //   set_write_callback(0);
 	  }
       }
@@ -231,9 +231,9 @@ class Display
 
   void send(string data)
   {
-    int ob = strlen(buffer);
+    int ob = sizeof(buffer);
     buffer += data;
-    if (!ob && strlen(buffer))
+    if (!ob && sizeof(buffer))
       {
 #if 0
 	set_write_callback(write_callback);
@@ -250,7 +250,7 @@ class Display
   { /* FIXME: Not thread-safe */
     set_blocking();
     int written = write(buffer);
-    if (written < strlen(buffer))
+    if (written < sizeof(buffer))
       return 0;
     buffer = "";
 
@@ -734,7 +734,7 @@ class Display
 		    fields[1]));
 
     string host;
-    if (strlen(fields[0]))
+    if (sizeof(fields[0]))
       host = fields[0];
     else
       {
@@ -797,7 +797,7 @@ class Display
     /* Always uses network byteorder (big endian) */
     string msg = sprintf("B\0%2c%2c%2c%2c\0\0%s%s",
 			 11, 0,
-			 strlen(auth_data->name), strlen(auth_data->data),
+			 sizeof(auth_data->name), sizeof(auth_data->data),
 			 ._Xlib.pad(auth_data->name), ._Xlib.pad(auth_data->data));
 
     state = STATE_WAIT_CONNECT;

@@ -501,10 +501,10 @@ class Gdb
 	buffer+=tmp;
 	if(spos<0) spos=0;
 	pos=search(buffer,prompt,spos);
-	spos=strlen(buffer)-strlen(prompt);
+	spos=sizeof(buffer)-sizeof(prompt);
       }while(pos == -1);
       ret=buffer[..pos-1];
-      pos+=strlen(prompt);
+      pos+=sizeof(prompt);
       buffer=buffer[pos..];
       spos=0;
       return ret;
@@ -833,7 +833,7 @@ class Gdb
     void create(string e)
       {
 	__expr=e;
-	if(strlen(__expr) > 200) _evaluate();
+	if(sizeof(__expr) > 200) _evaluate();
       }
   }
 
@@ -914,10 +914,10 @@ class Debug
 #endif
 
       ret=mkhandle(prog, "->linenumbers[0]@ ", prog, "->num_linenumbers")->_value();
-      if(strlen(ret) != prog->num_linenumbers->_value())
+      if(sizeof(ret) != prog->num_linenumbers->_value())
       {
 	werror("Failed to get line number info!\n");
-	werror("strlen(%O) != %O (it is %d)\n",ret, prog->num_linenumbers->_value(),strlen(ret));
+	werror("sizeof(%O) != %O (it is %d)\n",ret, prog->num_linenumbers->_value(),sizeof(ret));
       }
       return line_number_info_cache[progid]=ret;
     }
@@ -967,7 +967,7 @@ class Debug
 	  }
 	};
       
-      while(cnt < strlen(lineinfo))
+      while(cnt < sizeof(lineinfo))
       {
 	if(lineinfo[cnt] == 127)
 	{
@@ -1167,7 +1167,7 @@ class Debug
 	    odesc="({";
 	    for(int e=0;e<_sizeof();e++)
 	    {
-	      if(strlen(odesc)>300)
+	      if(sizeof(odesc)>300)
 	      {
 		odesc+="...."+(_sizeof()-e);
 		break;
@@ -1247,12 +1247,12 @@ class Debug
 	  int done;
 	  foreach(cache, KeyPair k)
 	    {
-	      if(strlen(odesc)>300)
+	      if(sizeof(odesc)>300)
 	      {
 		odesc+="...."+(_sizeof()-done);
 		break;
 	      }
-	      if(strlen(odesc)>2) odesc+=",";
+	      if(sizeof(odesc)>2) odesc+=",";
 	      done++;
 	      odesc+=sprintf("%O:%O",k->ind, k->val);
 	    }
@@ -2817,7 +2817,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.9 2002/10/31 17:26:24 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.10 2003/01/20 17:48:45 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002, Department of Computer and Information Science,
                 Linköping University

@@ -334,7 +334,7 @@ static private Ruleset.Timezone _magic_timezone(string tz)
    if (sscanf(tz,"%[-+]%[-+0-9]",string a,string b)==2)
       if ((<"-","+">)[a])
       {
-	 switch (strlen(b))
+	 switch (sizeof(b))
 	 {
 	    case 2: return _magic_timezone("UTC"+a+b[..1]);
 	    case 4: return _magic_timezone("UTC"+a+b[..1]+":"+b[2..]);
@@ -1097,7 +1097,7 @@ class Runtime_timezone_compiler
 	    z->add(b);
 	    foreach (q/"\n",string line)
 	    {
-	       if (sscanf(line,"%*[ \t]%[-0-9]%s",a,b)==3 && strlen(a))
+	       if (sscanf(line,"%*[ \t]%[-0-9]%s",a,b)==3 && sizeof(a))
 		  z->add(a+b);
 	       else if (sscanf(line,"%*[ ]#%*s")<2)
 		  break; // end of zone

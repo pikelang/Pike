@@ -72,7 +72,7 @@ void con_write_callback()
    while (sizeof(write_buf))
    {
       int j=con->write(write_buf[0]);
-      if (j!=strlen(write_buf[0]))
+      if (j!=sizeof(write_buf[0]))
       {
 	 if (j==-1) 
 	 {

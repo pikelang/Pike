@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: session.pike,v 1.20 2002/03/20 16:40:02 nilsson Exp $
+/* $Id: session.pike,v 1.21 2003/01/20 17:44:01 nilsson Exp $
  *
  */
 
@@ -85,7 +85,7 @@ string generate_key_block(string client_random, string server_random,array(int) 
   string key = "";
 
   if(version[1]==0) {
-    while (strlen(key) < required)
+    while (sizeof(key) < required)
       {
 	i++;
 	string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
@@ -110,9 +110,9 @@ string generate_key_block(string client_random, string server_random,array(int) 
 void printKey(string name , string key) {
 
   string res="";
-  res+=sprintf("%s:  len:%d type:%d \t\t",name,strlen(key),0); 
+  res+=sprintf("%s:  len:%d type:%d \t\t",name,sizeof(key),0); 
   /* return; */
-  for(int i=0;i<strlen(key);i++) {
+  for(int i=0;i<sizeof(key);i++) {
     int d=key[i];
     res+=sprintf("%02x ",d&0xff);
   }
@@ -166,7 +166,7 @@ array generate_keys(string client_random, string server_random,array(int) versio
 	string iv_block=prf("","IV block",client_random+server_random,2*cipher_spec->iv_size);
 	keys[4]=iv_block[..cipher_spec->iv_size-1];
 	keys[5]=iv_block[cipher_spec->iv_size..];
-	werror("strlen(keys[4]):"+strlen(keys[4])+"   strlen(keys[5]):"+strlen(keys[4])+"\n");
+	werror("sizeof(keys[4]):"+sizeof(keys[4])+"   sizeof(keys[5]):"+sizeof(keys[4])+"\n");
       }
       
     }

@@ -263,7 +263,7 @@ private class _encoder
   static string low_convert(string s, string|void r,
 			     function(string:string)|void rc)
   {
-    int i = strlen(s);
+    int i = sizeof(s);
     string rr;
     while(--i>=0)
       if(s[i]>255)
@@ -307,7 +307,7 @@ private class UTF16enc {
   static private string low_convert(string s, string|void r,
 				    function(string:string)|void rc)
   {
-    int i = strlen(s);
+    int i = sizeof(s);
     string rr;
     while(--i>=0)
       if(s[i]>0x10ffff)

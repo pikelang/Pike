@@ -1,5 +1,5 @@
 /*
- * $Id: Line.pmod,v 1.20 2002/11/26 21:39:51 grubba Exp $
+ * $Id: Line.pmod,v 1.21 2003/01/20 17:44:00 nilsson Exp $
  *
  * Line-buffered protocol handling.
  *
@@ -391,7 +391,7 @@ class imap_style
     while(1) {
       if (handle_literal)
       {
-	if (strlen(read_buffer) < literal_length)
+	if (sizeof(read_buffer) < literal_length)
 	  return;
 	string literal = read_buffer[..literal_length - 1];
 	read_buffer = read_buffer[literal_length..];

@@ -1,5 +1,5 @@
 /*
- * $Id: Types.pmod,v 1.20 2002/12/05 18:08:05 bill Exp $
+ * $Id: Types.pmod,v 1.21 2003/01/20 17:44:01 nilsson Exp $
  *
  * Encodes various asn.1 objects according to the Distinguished
  * Encoding Rules (DER) */
@@ -126,14 +126,14 @@ class asn1_object
       if (len < 0x80)
 	return sprintf("%c", len);
       string s = Gmp.mpz(len)->digits(256);
-      if (strlen(s) >= 0x80)
+      if (sizeof(s) >= 0x80)
 	error( "asn1.encode.asn1_object->encode_length: Max length exceeded.\n" );
-      return sprintf("%c%s", strlen(s) | 0x80, s);
+      return sprintf("%c%s", sizeof(s) | 0x80, s);
     }
   
   string build_der(string contents)
     {
-      string data = encode_tag() + encode_length(strlen(contents)) + contents;
+      string data = encode_tag() + encode_length(sizeof(contents)) + contents;
       // WERROR(sprintf("build_der: '%s'\n", Crypto.string_to_hex(data)));
       WERROR(sprintf("build_der: %O\n", data));
       return data;
@@ -274,7 +274,7 @@ class asn1_boolean
   string der_encode() { return build_der(value ? "\377" : "\0"); }
   object decode_primitive(string contents)
     {
-      if (strlen(contents) != 1)
+      if (sizeof(contents) != 1)
       {
 	WERROR("asn1_boolean->decode_primitive: Bad length.\n");
 	return 0;
@@ -330,7 +330,7 @@ class asn1_integer
       record_der_contents(contents);
       value = Gmp.mpz(contents, 256);
       if (contents[0] & 0x80)  /* Negative */
-	value -= pow(256, strlen(contents));
+	value -= pow(256, sizeof(contents));
       return this_object();
     }
   
@@ -376,7 +376,7 @@ class asn1_bit_string
       {
 	value = value[..(len + 7)/8];
 	unused = (- len) % 8;
-	value = sprintf("%s%c", value[..strlen(value)-2], value[-1]
+	value = sprintf("%s%c", value[..sizeof(value)-2], value[-1]
 		    & ({ 0xff, 0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x80 })[unused]);
       } else {
 	unused = 0;
@@ -476,7 +476,7 @@ class asn1_identifier
       else
 	id = ({ 2, contents[0] - 80 });
       int index = 1;
-      while(index < strlen(contents))
+      while(index < sizeof(contents))
       {
 	int element = 0;
 	do
@@ -563,9 +563,9 @@ class asn1_set
     {
       for(int i = 0;; i++)
       {
-	if (i == strlen(r))
-	  return (i = strlen(s)) ? 0 : 1;
-	if (i == strlen(s))
+	if (i == sizeof(r))
+	  return (i = sizeof(s)) ? 0 : 1;
+	if (i == sizeof(s))
 	  return -1;
 	if (r[i] < s[i])
 	  return 1;

@@ -4,7 +4,7 @@
 //
 // Author: Honza Petrous, hop@unibase.cz
 //
-// $Id: module.pmod,v 1.5 2002/11/29 00:30:37 nilsson Exp $
+// $Id: module.pmod,v 1.6 2003/01/20 17:43:59 nilsson Exp $
 
 //#define AUDIO_FORMAT_DEBUG
 #ifdef AUDIO_FORMAT_DEBUG
@@ -166,16 +166,16 @@ class vbuffer {
   //  1 = string, 0 or void = integer
   string|int getbytes( int n, int|void s ) {
     DEBUG("getbytes: n: %d, s: %d\n", n, s);
-    if( !buffer || !strlen(buffer) ) {
+    if( !buffer || !sizeof(buffer) ) {
       if(!fd)
         return -1;
       bpos = 0;
       buffer = fd->read( BSIZE );
     }
-    if( !strlen(buffer) )
+    if( !sizeof(buffer) )
       return s?0:-1;
     if( s ) {
-      if( strlen(buffer) - bpos > n ) {
+      if( sizeof(buffer) - bpos > n ) {
 	string d = buffer[bpos..bpos+n-1];
 	buffer = buffer[bpos+n..];
 	bpos=0;
@@ -187,7 +187,7 @@ class vbuffer {
 	buffer = buffer[bpos..];
 	bpos=0;
 	string t = fd->read( BSIZE );
-	if( !t || !strlen(t) )
+	if( !t || !sizeof(t) )
 	  return -1;
 	buffer+=t;
 	return getbytes(n,1);
@@ -197,12 +197,12 @@ class vbuffer {
     while( n-- ) {
       res<<=8;
       res|=buffer[ bpos++ ];
-      if( bpos == strlen(buffer) ) {
+      if( bpos == sizeof(buffer) ) {
         if(!fd)
           return -1;
 	bpos = 0;
 	buffer = fd->read( BSIZE );
-	if( !buffer || !strlen( buffer ) )
+	if( !buffer || !sizeof( buffer ) )
 	  return -1;
       }
     }

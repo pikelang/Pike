@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.13 2002/12/11 22:18:02 anders Exp $
+// $Id: Crawler.pmod,v 1.14 2003/01/20 17:44:02 nilsson Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -179,7 +179,7 @@ class Queue
 	if( !h[a]++ )
 	  res += "&"+a+"="+b;
     }
-    if( !strlen( res ) )
+    if( !sizeof( res ) )
       return 0;
     return res[1..];
   }

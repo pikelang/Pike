@@ -130,7 +130,7 @@ static int parse_variables()
    if (request_type=="POST" &&
        request_headers["content-type"]=="application/x-www-form-urlencoded")
    {
-      if ((int)request_headers["content-length"]<=strlen(buf))
+      if ((int)request_headers["content-length"]<=sizeof(buf))
       {
 	 parse_post();
 	 return 1;
@@ -163,8 +163,8 @@ static void read_cb_post(mixed dummy,string s)
    raw+=s;
    buf+=s;
 
-   if (strlen(buf)>=(int)request_headers["content-length"] ||
-       strlen(buf)>MAXIMUM_REQUEST_SIZE)
+   if (sizeof(buf)>=(int)request_headers["content-length"] ||
+       sizeof(buf)>MAXIMUM_REQUEST_SIZE)
    {
       my_fd->set_blocking();
       populate_raw();
@@ -232,7 +232,7 @@ string make_response_header(mapping m)
 
    if (zero_type(m->size))
       if (m->data)
-	 m->size=strlen(m->data);
+	 m->size=sizeof(m->data);
       else if (m->stat)
 	 m->size=m->stat->size;
       else 
@@ -276,7 +276,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 
    if (m->file && 
        m->size!=-1 && 
-       m->size+strlen(header)<4096) // fit in buffer
+       m->size+sizeof(header)<4096) // fit in buffer
    {
       m->data=m->file->read(m->size);
       m->file->close();
@@ -329,7 +329,7 @@ Stdio.File send_fd=0;
 
 void send_write()
 {
-   if (strlen(send_buf)-send_pos<8192 &&
+   if (sizeof(send_buf)-send_pos<8192 &&
        send_fd)
    {
       string q=send_fd->read(131072);
@@ -344,7 +344,7 @@ void send_write()
 	 send_pos=0;
       }
    }
-   else if (send_pos==strlen(send_buf) && !send_fd)
+   else if (send_pos==sizeof(send_buf) && !send_fd)
    {
       finish();
       return;

@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.50 2002/11/29 01:22:14 nilsson Exp $
+/* $Id: sslfile.pike,v 1.51 2003/01/20 17:44:01 nilsson Exp $
  *
  */
 
@@ -195,14 +195,14 @@ string|int read(string|int ...args) {
   string res="";
   int leftToRead=nbytes;
 
-  if(strlen(read_buffer)) {
-    if(leftToRead<=strlen(read_buffer)) {
+  if(sizeof(read_buffer)) {
+    if(leftToRead<=sizeof(read_buffer)) {
       res=read_buffer[..leftToRead-1];
       read_buffer=read_buffer[leftToRead..];
       return res;
     } else {
       res=read_buffer;
-      leftToRead-=strlen(read_buffer);
+      leftToRead-=sizeof(read_buffer);
       if(notall) {
 	return res;
       }
@@ -216,14 +216,14 @@ string|int read(string|int ...args) {
 
   while(stringp(data)) {
     res+=data;
-    leftToRead-=strlen(data);
+    leftToRead-=sizeof(data);
     if(leftToRead<=0) break;
     if(notall) return res;
     data=got_data(read_blocking_packet());
   }
 
   if(leftToRead<0) {
-    read_buffer=data[strlen(data)+leftToRead..];
+    read_buffer=data[sizeof(data)+leftToRead..];
     return res[0..args[0]-1];
   } else {
     read_buffer="";
@@ -250,10 +250,10 @@ int write(string|array(string) s)
   }
 
   int call_write = !sizeof (write_buffer);
-  int len = strlen(s);
+  int len = sizeof(s);
   object packet;
   int res;
-  while(strlen(s))
+  while(sizeof(s))
   {
     packet = Packet();
     packet->content_type = PACKET_application_data;
@@ -291,7 +291,7 @@ private int|string read_blocking_packet() {
     return -1;    
   }
   
-  if(strlen(header)!=5) {
+  if(sizeof(header)!=5) {
     return 1;
   }
   
@@ -305,7 +305,7 @@ private void write_blocking() {
 
   int res = queue_write();
 
-  while(strlen(write_buffer) && socket) {
+  while(sizeof(write_buffer) && socket) {
     
     int written = socket->write(write_buffer);
     if (written > 0) {
@@ -339,7 +339,7 @@ private void ssl_read_callback(mixed id, string s)
     }
     
     read_buffer += data;
-    if (!blocking && read_callback && strlen(read_buffer))
+    if (!blocking && read_callback && sizeof(read_buffer))
       {
 	string received = read_buffer;
 	read_buffer = "";
@@ -379,7 +379,7 @@ private void ssl_write_callback(mixed id)
 		 handshake_finished, blocking, write_callback));
 #endif
 
-  if (strlen(write_buffer))
+  if (sizeof(write_buffer))
     {
       int written = socket->write(write_buffer);
     if (written > 0)
@@ -393,7 +393,7 @@ private void ssl_write_callback(mixed id)
 #endif
 	  die(-1);
     }
-    if (strlen(write_buffer))
+    if (sizeof(write_buffer))
       return;
   }
 
@@ -406,7 +406,7 @@ private void ssl_write_callback(mixed id)
   werror(sprintf("SSL.sslport->ssl_write_callback: res = '%O'\n", res));
 #endif
   
-  if (strlen(write_buffer))
+  if (sizeof(write_buffer))
     return;
 
   if ( !res && connected && !blocking && write_callback)
@@ -421,7 +421,7 @@ private void ssl_write_callback(mixed id)
     }
     res = queue_write();
 
-    if (strlen(write_buffer))
+    if (sizeof(write_buffer))
       return;
   }
   if (socket)
@@ -469,7 +469,7 @@ void set_read_callback(function(mixed,string:void) r)
   werror("SSL.sslport: set_read_callback\n");
 #endif
   read_callback = r;
-  if (strlen(read_buffer)&& socket)
+  if (sizeof(read_buffer)&& socket)
     ssl_read_callback(socket->query_id(), "");
 
 }
@@ -523,7 +523,7 @@ void set_nonblocking(function ...args)
   blocking = 0;
   if (!socket) return;
   socket->set_nonblocking(ssl_read_callback,ssl_write_callback,ssl_close_callback);
-  if (strlen(read_buffer))
+  if (sizeof(read_buffer))
     ssl_read_callback(socket->query_id(), "");
 }
 

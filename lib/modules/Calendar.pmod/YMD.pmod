@@ -2630,12 +2630,12 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       {
 	 int y,mo,d;
       
-	 if (strlen(m->d)==6)
+	 if (sizeof(m->d)==6)
 	 {
 	    [y,mo,d]=(array(int))(m->d/2);
 	    if (y<70) y+=2000; else y+=1900;
 	 }
-	 else if (strlen(m->d)==8)
+	 else if (sizeof(m->d)==8)
 	    [y,mo,d]=(array(int))array_sscanf(m->d,"%4s%2s%2s");
 	 else return 0;
 
@@ -2646,7 +2646,7 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
 	 if (!zero_type(m->Y)) m->year=cal->Year(m->Y);
 	 else if (m->y)
 	 {
-	    if (strlen(m->y)<3) 
+	    if (sizeof(m->y)<3) 
 	    {
 	       m->y=(int)m->y;
 	       if (m->y<70) m->y+=2000;
@@ -2714,9 +2714,9 @@ TimeRange parse(string fmt,string arg,void|TimeRange context)
       
       if (m->t)
       {
-	 if (strlen(m->t)==6)
+	 if (sizeof(m->t)==6)
 	    [h,mi,s]=(array(int))(m->t/2),g="second";
-	 else if (strlen(m->t)==4)
+	 else if (sizeof(m->t)==4)
 	    [h,mi]=(array(int))(m->t/2),g="minute";
 	 else return 0;
       }
@@ -2865,7 +2865,7 @@ cDay dwim_day(string day,void|TimeRange context)
       else return (d->week()+1)->place(d);
    }
 
-   if (strlen(day)==4) catch { return parse("%M/%D",day/2*"/",context); };
+   if (sizeof(day)==4) catch { return parse("%M/%D",day/2*"/",context); };
 
    if (day=="today") return t;
    if (day=="tomorrow") return t+1;

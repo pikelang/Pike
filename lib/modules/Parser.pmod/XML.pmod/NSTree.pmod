@@ -209,7 +209,7 @@ class NSNode {
 			break;
 
 		      case XML_ELEMENT:
-			if (!strlen(n->get_tag_name()))
+			if (!sizeof(n->get_tag_name()))
 			  break;
 
 			data->add("<", n->get_xml_name());
@@ -236,7 +236,7 @@ class NSNode {
 		    lambda(Node n) {
 		      if (n->get_node_type() == XML_ELEMENT)
 			if (n->count_children())
-			  if (strlen(n->get_tag_name()))
+			  if (sizeof(n->get_tag_name()))
 			    data->add("</", n->get_xml_name(), ">");
 		    });
 	

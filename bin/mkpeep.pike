@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.29 2003/01/13 22:31:06 nilsson Exp $ */
+/* $Id: mkpeep.pike,v 1.30 2003/01/20 17:48:45 nilsson Exp $ */
 
 string skipwhite(string s)
 {
@@ -23,7 +23,7 @@ int find_end(string s)
   werror("find_end("+s+")\n");
 #endif
 
-  for(int e=1; e<strlen(s); e++)
+  for(int e=1; e<sizeof(s); e++)
   {
     switch(s[e])
     {
@@ -51,7 +51,7 @@ array(string) explode_comma_expr(string s)
   array(string) ret=({});
   int begin=0;
 
-  for(int e=0; e<strlen(s); e++)
+  for(int e=0; e<sizeof(s); e++)
   {
     switch(s[e])
     {
@@ -73,7 +73,7 @@ array(string) explode_comma_expr(string s)
   }
 
   /* Ignore empty last arguments */
-  if(strlen(String.trim_all_whites(s[begin..])))
+  if(sizeof(String.trim_all_whites(s[begin..])))
     ret+=({ String.trim_all_whites(s[begin..]) });
 #if DEBUG>4
   werror("RESULT: %O\n",ret);
@@ -99,7 +99,7 @@ array(int|string|array(string)) split(string s)
   s=skipwhite(s);
 
   /* First, we tokenize */
-  while(strlen(s))
+  while(sizeof(s))
   {
     switch(s[0])
     {
@@ -134,7 +134,7 @@ array(int|string|array(string)) split(string s)
       {
 	int i=find_end(s);
 	b+=({ s[0..i] });
-	s=s[i+1..strlen(s)];
+	s=s[i+1..sizeof(s)];
       }
       break;
 
@@ -143,7 +143,7 @@ array(int|string|array(string)) split(string s)
       {
 	int i=find_end(s);
 	b+=({ s[0..i] });
-	s=s[i+1..strlen(s)];
+	s=s[i+1..sizeof(s)];
       }
       break;
     }
@@ -175,17 +175,17 @@ array(int|string|array(string)) split(string s)
     switch(a[e][0])
     {
       case '(':
-	array(string) tmp=explode_comma_expr(a[e][1..strlen(a[e])-2]);
+	array(string) tmp=explode_comma_expr(a[e][1..sizeof(a[e])-2]);
 	for(int x=0;x<sizeof(tmp);x++)
 	{
 	  string arg=sprintf("$%d%c", i, 'a'+x);
-	  if(arg != tmp[x] && strlen(tmp[x]))
+	  if(arg != tmp[x] && sizeof(tmp[x]))
 	    newa+=({ sprintf("(%s)==%s",tmp[x], arg) });
 	}
       break;
 
     case '[':
-      newa+=({ a[e][1..strlen(a[e])-2] });
+      newa+=({ a[e][1..sizeof(a[e])-2] });
       break;
 
     case 'F':
@@ -338,7 +338,7 @@ void dump2(array(array(array(string))) data,int ind)
 	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
 	{
 	  string tmp=d[1][i+1];
-	  args=explode_comma_expr(tmp[1..strlen(tmp)-2]);
+	  args=explode_comma_expr(tmp[1..sizeof(tmp)-2]);
 	  i++;
 	}
 	write("%*n                %d,%s,%{(%s), %}\n",
@@ -372,7 +372,7 @@ int main(int argc, array(string) argv)
     foreach(f/";",f)
       {
 	f=skipwhite(f);
-	if(!strlen(f)) continue;
+	if(!sizeof(f)) continue;
 	data+=({split(f)});
       }
   }

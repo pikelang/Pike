@@ -44,8 +44,8 @@ class `()
   //!   Document this function.
   void create(string passwd)
     {
-      if (strlen(passwd) < B)
-	passwd = passwd + "\0" * (B - strlen(passwd));
+      if (sizeof(passwd) < B)
+	passwd = passwd + "\0" * (B - sizeof(passwd));
 
       ikey = passwd ^ ("6" * B);
       okey = passwd ^ ("\\" * B);

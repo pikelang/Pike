@@ -1,6 +1,6 @@
 /* KeySyms.pmod
  *
- * $Id: KeySyms.pmod,v 1.2 2002/06/16 17:55:46 nilsson Exp $
+ * $Id: KeySyms.pmod,v 1.3 2003/01/20 17:44:01 nilsson Exp $
  */
 
 /*
@@ -1547,13 +1547,13 @@
       compose_state="";
       return _LookupKeysym( keysym );
     }
-    if(strlen(compose_state)>4)
+    if(sizeof(compose_state)>4)
     {
       string res="";
-      while(strlen(compose_state)
+      while(sizeof(compose_state)
 	    && (sscanf(compose_state, "%4c%s", keysym, compose_state)==2))
 	res += _LookupKeysym( keysym ) || "";
-      return strlen(res)?res:0;
+      return sizeof(res)?res:0;
     }
     compose_state="";
     return _LookupKeysym( keysym );

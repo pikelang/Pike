@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.162 2002/12/12 13:14:15 jhs Exp $
+// $Id: module.pmod,v 1.163 2003/01/20 17:44:01 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -690,7 +690,7 @@ class File
     string s=::read(8192,1);
     if(s)
     {
-      if(strlen(s))
+      if(sizeof(s))
       {
         ___read_callback(___id, s);
         return;
@@ -750,7 +750,7 @@ class File
   static void __stdio_read_oob_callback()
   {
     string s=::read_oob(8192,1);
-    if(s && strlen(s))
+    if(s && sizeof(s))
     {
       ___read_oob_callback(___id, s);
     }else{
@@ -1187,7 +1187,7 @@ class FILE
     string s = file::read(BUFSIZE,1);
     if( input_conversion )
       s = input_conversion( s );
-    if(s && strlen(s))
+    if(s && sizeof(s))
       b+=s;
     else
       s = 0;
@@ -1307,7 +1307,7 @@ class FILE
     }
 
     array res=b[bpos..]/"\n";
-    bpos=strlen(b)-strlen(res[-1]);
+    bpos=sizeof(b)-sizeof(res[-1]);
     res=res[..sizeof(res)-2];
 
     while (sizeof(res)<n)
@@ -1318,12 +1318,12 @@ class FILE
 	  else return res;
 
        array a=b[bpos..]/"\n";
-       bpos=strlen(b)-strlen(a[-1]);
+       bpos=sizeof(b)-sizeof(a[-1]);
        res+=a[..sizeof(a)-2];
     }
     if (sizeof(res)>n)
     {
-      bpos-=`+(@map(res[n..],strlen))+(sizeof(res)-n);
+      bpos-=`+(@map(res[n..],sizeof))+(sizeof(res)-n);
       return res[..n-1];
     }
     return res;
@@ -1432,13 +1432,13 @@ class FILE
     }
 
     /* Optimization - Hubbe */
-    if(!strlen(b) && bytes > BUFSIZE) {
+    if(!sizeof(b) && bytes > BUFSIZE) {
       if (input_conversion)
 	return input_conversion(::read(bytes, now));
       return ::read(bytes, now);
     }
 
-    while(strlen(b) - bpos < bytes)
+    while(sizeof(b) - bpos < bytes)
       if(!get_data()) {
 	// EOF.
 	string res = b[bpos..];
@@ -1475,7 +1475,7 @@ class FILE
   int getchar()
   {
     cached_lines = ({});lp=0;
-    if(strlen(b) - bpos < 1)
+    if(sizeof(b) - bpos < 1)
       if(!get_data())
 	return -1;
 
@@ -1853,8 +1853,8 @@ int cp(string from, string to)
   {
     data=r(BLOCK);
     if(!data) return 0;
-    if(w(data)!=strlen(data)) return 0;
-  }while(strlen(data) == BLOCK);
+    if(w(data)!=sizeof(data)) return 0;
+  }while(sizeof(data) == BLOCK);
 
   f->close();
   t->close();

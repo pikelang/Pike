@@ -53,8 +53,8 @@ string dash_stuff(string msg)
 #if 0
 string chop_cr(string s)
 {
-  return (strlen(s) && (s[-1] == '\r'))
-    ? s[..strlen(s) - 2]
+  return (sizeof(s) && (s[-1] == '\r'))
+    ? s[..sizeof(s) - 2]
     : s;
 }
 #endif

@@ -55,8 +55,8 @@ int connect(string host, int port, void|int timeout)
   con->set_nonblocking();
   for (;;)
   {
-     s += (con->read(24-strlen(s),1)||"");
-     if (strlen(s)==24) break;
+     s += (con->read(24-sizeof(s),1)||"");
+     if (sizeof(s)==24) break;
      sleep(0.02);
      if (time()>end_time) 
      {
@@ -258,7 +258,7 @@ void send(string s)
 #else
   string ob = write_buffer;
   write_buffer += s;
-  if(!strlen(ob))
+  if(!sizeof(ob))
     write_some();
 #endif
 }
@@ -301,7 +301,7 @@ void return_error(int refno, mixed err)
 void return_value(int refno, mixed val)
 {
   string s = encode_value(ctx->encode_return(refno, val));
-  DEBUGMSG("return "+strlen(s)+" bytes ["+refno+"]\n");
+  DEBUGMSG("return "+sizeof(s)+" bytes ["+refno+"]\n");
   send(sprintf("%4c%s", sizeof(s), s));
 }
 
@@ -365,7 +365,7 @@ void read_some(int ignore, string s)
   DEBUGMSG("read "+sizeof(s)+" bytes\n");
   read_buffer += s;
   DEBUGMSG("has "+sizeof(read_buffer)+" bytes\n");
-  if(!strlen(read_buffer)) return;
+  if(!sizeof(read_buffer)) return;
 
   if (!request_size && sizeof(read_buffer) > 4)
   {
@@ -438,7 +438,7 @@ int read_once()
 {
   if (closed) return 0;
   string s = con->read( 8192, 1 );
-  if( !s || !strlen(s) )
+  if( !s || !sizeof(s) )
   {
     closed_connection( 0 );
     return 0;
@@ -453,7 +453,7 @@ void write_thread()
   DEBUGMSG("write_thread\n");
   while( write_some() ) {
     Thread.MutexKey lock = write_buffer_cond_mutex->lock();
-    if(!(strlen(write_buffer) || closed)) {
+    if(!(sizeof(write_buffer) || closed)) {
       if (want_close) try_close();
       write_buffer_cond->wait(lock);
     }

@@ -187,7 +187,7 @@ Event.Namedays find_namedays(string region)
    if (i==-1) return UNDEFINED; // not found
 
    int i2=search(all,"\nRegion",i+1);
-   if (i2==-1) i2=strlen(all)-1;
+   if (i2==-1) i2=sizeof(all)-1;
 
    array(array(string)) names=0;
    int start=-1,stop=-1;
