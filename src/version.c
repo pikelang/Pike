@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 
 #include "global.h"
 #include "svalue.h"
@@ -10,9 +11,17 @@
 #include "stralloc.h"
 #include "version.h"
 
-RCSID("$Id: version.c,v 1.132 1999/03/26 19:29:54 hubbe Exp $");
+RCSID("$Id: version.c,v 1.133 2001/02/08 23:54:19 grubba Exp $");
 
 #define STR(X) #X
+/*! @decl string version()
+ *!
+ *! Report the version of Pike.
+ *!
+ *! @seealso
+ *!   @[__VERSION__], @[__MINOR__], @[__BUILD__],
+ *!   @[__REAL_VERSION__], @[__REAL_MINOR__], @[__REAL_BUILD__],
+ */
 void f_version(INT32 args)
 {
   char buffer[128];
