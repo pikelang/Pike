@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.69 2002/07/31 12:04:42 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.70 2002/08/06 18:34:41 nilsson Exp $ */
 
 import Stdio;
 
@@ -51,11 +51,13 @@ mapping(string:int) cond_cache=([]);
 
 void bzot(string test)
 {
-  int line=1;
-  int tmp=strlen(test)-1;
-  while(test[tmp]=='\n') tmp--;
-  foreach(test[..tmp]/"\n",string s)
-    werror("%3d: %s\n",line++,s);
+  array lines = test/"\n";
+  foreach(lines; int r; string line) {
+    line = sprintf("%O",line);
+    werror("%3d: %s\n", r, line[1..sizeof(line)-2]);
+  }
+  werror("\n");
+  return;
 }
 
 array find_testsuites(string dir)
@@ -426,7 +428,7 @@ int main(int argc, array(string) argv)
 	    if(!tmp) tmp=-1;
 	    cond_cache[condition]=tmp;
 	  }
-	
+
 	  if(tmp==-1)
 	  {
 	    if(verbose>1)
