@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.21 1999/06/09 18:03:14 hubbe Exp $
+// $Id: Readline.pike,v 1.22 1999/06/11 21:40:29 marcus Exp $
 
 class OutputController
 {
@@ -287,9 +287,13 @@ class InputController
   static private function grab_binding = 0;
   static private mapping oldattrs = 0;
 
+  int dumb=0;
+
   void destroy()
   {
     catch{ infd->set_blocking(); };
+    if(dumb)
+      return;
     catch{ infd->tcsetattr((["ECHO":1,"ICANON":1])); };
     catch{ if(oldattrs) infd->tcsetattr((["ECHO":0,"ICANON":0,"VEOF":0,
 					  "VEOL":0,"VLNEXT":0])&oldattrs); };
@@ -591,7 +595,18 @@ class InputController
     infd = _infd || Stdio.File("stdin");
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
     disable();
+    if(search(term->aliases, "dumb")>=0) {
+      // Dumb terminal.  Don't try anything fancy.
+      dumb = 1;
+      return;
+    }
     catch { oldattrs = infd->tcgetattr(); };
+    if(catch { infd->tcsetattr((["ECHO":0])); }) {
+      // If echo can't be disabled, Readline won't work very well.
+      // Go to dumb mode.
+      dumb = 1;
+      return;
+    }
     catch { infd->tcsetattr((["ECHO":0,"ICANON":0,"VMIN":1,"VTIME":0,
 			      "VLNEXT":0])); };
   }
@@ -866,6 +881,12 @@ class DefaultEditKeys
       ic->bindstr(sprintf("%c", i), self_insert_command);
     for(int i='\240'; i<='\377'; i++)
       ic->bindstr(sprintf("%c", i), self_insert_command);
+
+    if(ic->dumb) {
+      ic->bind("^J", newline);
+      ic->bind("^M", lambda() { });
+      return;
+    }
     
     foreach(default_bindings, array(string|function) b)
       ic->bind(@b);
@@ -1018,12 +1039,14 @@ int setcursorpos(int p)
     p = strlen(text);
   if (p<cursorpos)
   {
-    output_controller->move_backward(text[p..cursorpos-1]);
+    if(!input_controller->dumb)
+      output_controller->move_backward(text[p..cursorpos-1]);
     cursorpos = p;
   }
   else if (p>cursorpos)
   {
-    output_controller->move_forward(text[cursorpos..p-1]);
+    if(!input_controller->dumb)
+      output_controller->move_forward(text[cursorpos..p-1]);
     cursorpos = p;
   }
   return cursorpos;
@@ -1050,10 +1073,11 @@ void insert(string s, int p)
   if (p>strlen(text))
     p = strlen(text);
   setcursorpos(p);
-  output_controller->write(s,0,hide);
+  if(!input_controller->dumb)
+    output_controller->write(s,0,hide);
   cursorpos += strlen(s);
   string rest = text[p..];
-  if (strlen(rest))
+  if (strlen(rest) && !input_controller->dumb)
   {
     output_controller->write(rest,0,hide);
     output_controller->move_backward(rest);
@@ -1072,8 +1096,10 @@ void delete(int p1, int p2)
   setcursorpos(p1);
   if (p1>=p2)
     return;
-  output_controller->write(text[p2..],0,hide);
-  output_controller->erase(text[p1..p2-1]);
+  if(!input_controller->dumb) {
+    output_controller->write(text[p2..],0,hide);
+    output_controller->erase(text[p1..p2-1]);
+  }
   text = text[..p1-1]+text[p2..];
 
   if (mark>p2) mark-=(p2-p1);
@@ -1150,10 +1176,12 @@ void redisplay(int clear, int|void nobackup)
   }
   output_controller->check_columns();
 
-// This seems like a silly limitation
-//  if(newline_func == read_newline)
-    output_controller->write(prompt);
-  output_controller->write(text,0,hide);
+  if(!input_controller->dumb) {
+  // This seems like a silly limitation
+  //  if(newline_func == read_newline)
+      output_controller->write(prompt);
+    output_controller->write(text,0,hide);
+  }
   cursorpos = sizeof(text);
   setcursorpos(p);
 }
@@ -1169,7 +1197,10 @@ static private void initline()
 string newline()
 {
   setcursorpos(sizeof(text));
-  output_controller->newline();
+  if(!input_controller->dumb)
+    output_controller->newline();
+  else
+    output_controller->bol();
   string data = text;
   if (historyobj && !hide)
     historyobj->finishline(text);
@@ -1205,8 +1236,10 @@ void write(string msg,void|int word_wrap)
 {
   int p = cursorpos;
   setcursorpos(0);
-  output_controller->bol();
-  output_controller->clear(1);
+  if(!input_controller->dumb) {
+    output_controller->bol();
+    output_controller->clear(1);
+  }
   array(string) tmp=msg/"\n";
   foreach(tmp[..sizeof(tmp)-2],string l)
   {
