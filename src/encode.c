@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.177 2003/06/04 13:03:11 nilsson Exp $
+|| $Id: encode.c,v 1.178 2003/06/05 12:34:43 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.177 2003/06/04 13:03:11 nilsson Exp $");
+RCSID("$Id: encode.c,v 1.178 2003/06/05 12:34:43 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -448,10 +448,20 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 
 #ifdef PIKE_DEBUG
 #undef encode_value2
-#define encode_value2(X,Y,Z) do {					\
-    struct svalue *_=Pike_sp;						\
-    encode_value2_(X,Y,Z);						\
-    if(Pike_sp!=_) Pike_fatal("encode_value2 failed!\n");		\
+#define encode_value2(X,Y,Z) do {			\
+    struct svalue *_=Pike_sp;				\
+    struct svalue *X_ = (X);				\
+    encode_value2_(X_,Y,Z);				\
+    if(Pike_sp != _) {					\
+      fprintf(stderr, "Stack error when encoding:\n");	\
+      print_svalue(stderr, X_);				\
+      fprintf(stderr, "\n");				\
+      if (X_->type == T_PROGRAM) {			\
+        dump_program_tables(X_->u.program, 2);		\
+      }							\
+      Pike_fatal("encode_value2() failed %p != %p!\n",	\
+		 Pike_sp, _);				\
+    }							\
   } while(0)
 #endif
 
@@ -513,8 +523,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  {
 	    fprintf(stderr,"TAG%d",val->type);
 	  }else{
-	    print_svalue(stderr, val);
-	  
+	    print_svalue(stderr, val);	  
 	  }
 	  fputc('\n', stderr););
       mapping_insert(data->encoded, val, &entry_id);
@@ -969,13 +978,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	{
 	  if(p->parent)
 	  {
-	    /* We have to remove ourself from the cache for now */
+	    /* We have to remove ourselves from the cache for now */
 	    struct svalue tmp = entry_id;
 	    map_delete(data->encoded, val);
 
 	    code_entry(TAG_PROGRAM, 2, data);
 	    ref_push_program(p->parent);
-	    encode_value2(Pike_sp-1,data, 0);
+	    encode_value2(Pike_sp-1, data, 0);
 
 	    ref_push_program(p);
 	    f_function_name(1);
@@ -983,7 +992,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	      Pike_error("Cannot encode C programs.\n");
 	    encode_value2(Pike_sp-1, data, 0);
 
-	    pop_n_elems(3);
+	    pop_n_elems(2);
 
 	    /* Put value back in cache */
 	    mapping_insert(data->encoded, val, &tmp);
