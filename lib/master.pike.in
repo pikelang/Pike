@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.268 2003/04/09 23:48:10 nilsson Exp $
+// $Id: master.pike.in,v 1.269 2003/04/10 00:31:07 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1725,9 +1725,8 @@ object backend_thread()
 void _main(array(string) orig_argv, array(string) env)
 {
   array(string) argv=copy_value(orig_argv);
-  int i,debug,trace,run_tool;
+  int debug,trace,run_tool;
   object tmp;
-  array q;
   string postparseaction=0;
 
   predefines = _static_modules.Builtin()->_take_over_initial_predefines();
@@ -1755,14 +1754,19 @@ void _main(array(string) orig_argv, array(string) env)
   };
 
 #ifndef NOT_INSTALLED
-  q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
-  for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
+  {
+    array parts = (getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
+    int i = sizeof(parts);
+    while(i) add_include_path(parts[--i]);
 
-  q=(getenv("PIKE_PROGRAM_PATH")||"")/":"-({""});
-  for(i=sizeof(q)-1;i>=0;i--) add_program_path(q[i]);
+    parts = (getenv("PIKE_PROGRAM_PATH")||"")/":"-({""});
+    i = sizeof(parts);
+    while(i) add_program_path(parts[--i]);
 
-  q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
-  for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
+    parts = (getenv("PIKE_MODULE_PATH")||"")/":"-({""});
+    i = sizeof(parts);
+    while(i) add_module_path(parts[--i]);
+  }
 #endif
 
   // Some configure scripts depends on this format.
@@ -1789,6 +1793,7 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
+    array q;
     tmp = main_resolv( "Getopt" );
 
     int NO_ARG = tmp->NO_ARG;
@@ -1824,7 +1829,7 @@ void _main(array(string) orig_argv, array(string) env)
     }), 1);
     
     /* Parse -M and -I backwards */
-    for(i=sizeof(q)-1; i>=0; i--)
+    for(int i=sizeof(q)-1; i>=0; i--)
     {
       switch(q[i][0])
       {
@@ -2106,6 +2111,7 @@ void _main(array(string) orig_argv, array(string) env)
   if(debug) _debug(debug);
 #endif
   if(trace) predef::trace(trace);
+  mixed ret;
   mixed err = catch {
       // The main reason for this catch is actually to get a new call
       // to eval_instruction in interpret.c so that the debug and
@@ -2113,14 +2119,15 @@ void _main(array(string) orig_argv, array(string) env)
       object script=prog(argv);
       if(!script->main)
 	_error("Error: %s has no main().\n", argv[0]);
-      i=script->main(sizeof(argv),argv,env);
+      ret=script->main(sizeof(argv),argv,env);
     };
   if(trace) predef::trace(0);
   if (err) {
     handle_error (err);
-    i = 10;
+    ret = 10;
   }
-  if(i >=0) exit(i);
+  if(!intp(ret)) exit(0);
+  if(ret >=0) exit([int]ret);
   _async=1;
   
   while(1)
