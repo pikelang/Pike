@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.63 1999/09/29 14:57:10 mirar Exp $
+// $Id: module.pmod,v 1.64 1999/10/02 06:05:45 hubbe Exp $
 
 import String;
 
@@ -148,6 +148,8 @@ class File
 #ifdef __STDIO_DEBUG
 	__closed_backtrace=0;
 #endif
+	break; /* ARGH, this missing break took 6 hours to find! /Hubbe */
+
       case "stdout":
 	_fd=_stdout;
 #ifdef __STDIO_DEBUG
