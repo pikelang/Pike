@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.96 2000/04/06 20:17:05 hubbe Exp $");
+RCSID("$Id: object.c,v 1.97 2000/04/06 21:00:20 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -445,6 +445,7 @@ void low_destruct(struct object *o,int do_free)
     return;
   }
 
+  debug_malloc_touch(o);
   o->prog=0;
 
   LOW_PUSH_FRAME(o);
@@ -459,7 +460,11 @@ void low_destruct(struct object *o,int do_free)
     if(pike_frame->context.prog->exit)
       pike_frame->context.prog->exit(o);
 
-    if(!do_free) continue;
+    if(!do_free)
+    {
+      debug_malloc_touch(o);
+      continue;
+    }
 
     for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
     {
@@ -527,11 +532,7 @@ void destruct_objects_to_destruct(void)
     first_object=o;
     o->prev=0;
 
-    add_ref(o); /* Don't free me now! */
-
     destruct(o);
-
-    free_object(o);
   }
   objects_to_destruct=0;
   if(destruct_object_evaluator_callback)

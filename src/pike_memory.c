@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.61 2000/04/04 20:35:57 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.62 2000/04/06 21:00:20 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1634,6 +1634,7 @@ void cleanup_memhdrs(void)
 	  break;
 	}
 	
+	find_references_to(p);
 	dump_memhdr_locations(m, 0);
       }
     }
