@@ -4,11 +4,6 @@ Changes since Pike 7.4:
 New/improved functionality:
 ---------------------------
 
-o rsif
-    rsif can now work recursively in a file structure if given the
-    flag -r or --recursive. Example:
-      pike -x rsif -r 7.4 7.6
-
 o The automatic garbage collection strategy is configurable
     The garbage collector can be configured to take both the amount of
     garbage and the cpu time spent in the gc into account. Automatic
@@ -44,6 +39,15 @@ o INT64
 
 o IPv6
 
+o mysqls
+    The Mysql glue can operate over SSL. Use the "mysqls://" protocol
+    in the Sql.Sql module to use this secuity feature.
+
+o trace() can trace all threads
+    The configure option --without-thread-trace has been removed, but
+    instead the trace() function has been extended to make it possible
+    to set the trace level in all threads simultaneously.
+
 
 Build baluns:
 -------------
@@ -53,14 +57,55 @@ bundles
 Language additions:
 -------------------
 
+Changes and additions to -x utilities:
+--------------------------------------
+
+o rsif
+    rsif can now work recursively in a file structure if given the
+    flag -r or --recursive. Example:
+      pike -x rsif -r 7.4 7.6
+
+o benchmark
+    A set of benchmarks is available in the benchmark tool. They are
+    based on the Great Computer Language Shootout, but has been
+    modified to make more sense in the context of Pike and to test
+    various aspects of Pike we suspect (or at least at one time
+    suspected) performs badly.
+
+o cgrep
+    Context sensitive grep is very helpful when you are looking for
+    substrings that are common. The implemented search modes are:
+      o Complete token
+      o Part of a token
+      o Complete string literal
+      o Part of a string literal
+      o Part of a comment
+
+    Example:
+      $ cd Pike/7.6/src
+      $ grep or * | wc -l
+      18907
+      $ pike -x cgrep -T or * | wc -l
+      14
+
+o dump
+    Dumps Pike .pike and .pmod module files to precompiled .o files
+    for shorter load times. Previously available as
+    src/dumpmodule.pike in the Pike source tree, but moved into the
+    Pike builtin tools to facilitate dumping of external modules.
+
+o extract_locale
+    Locale extractor utility used to extract localizable strings from
+    an application into an xml format, to later be used by the Locale
+    module.
+
+o monger
+    A new utility to download, install and otherwise manage external
+    modules from the Fresh Pike project.
+
 
 New modules / classes / methods added:
 --------------------------------------
-
-o trace() can trace all threads
-    The configure option --without-thread-trace has been removed, but
-    instead the trace() function has been extended to make it possible
-    to set the trace level in all threads simultaneously.
 
 o Regexp.PCRE added to give libpcre support.
     Are you a closet-perlet? For those who missed the richer flora of
@@ -182,6 +227,26 @@ o Image.NEO
     including decoding of color cycling. The C bitmap and palette
     handler can be used to implement other atari image formats.
 
+o GLUE
+
+    The GL Universal Environment is a GL toolkit that makes
+    implementing GL applications in Pike really simple. GLUE has
+    several orthogonal components like object orientation
+    encapsulation of Gl, drawing primitives, texture handling and text
+    generation. The most fundamental part is however an abstract
+    interface to a GL area driver, like GTK or SDL.
+
+      int main() {
+        GLUE.init();
+        draw_frame();
+        return -1;
+      }
+      
+      void draw_frame() {
+        call_out(draw_frame, 0.02); // 1/(50 fps)
+        do_gl_code();
+        GLUE.swap_buffers();
+      }
 
 
 o _ADT
@@ -189,16 +254,10 @@ o Geography RT38
 o Int
 o Pike.Security
 o Protocols.HTTP.Session
-o Tools.Shoot/Standalone.benchmark
-o Standalone.cgrep
-o Standalone.dump
-o Standalone.extract_locale
-o Image.NEO
 o Bz2
 o Process.Process
 o Error
 o Float
-o GLUE
 o Protocols.Bittorrent
 o Protocols.LMTP
 o Web.RDF/RDFS/OWL/RSS
