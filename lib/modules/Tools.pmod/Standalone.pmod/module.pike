@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.11 2003/04/04 02:09:20 nilsson Exp $
+// $Id: module.pike,v 1.12 2003/04/06 22:44:45 nilsson Exp $
 
 constant description = "Pike module installer.";
 
@@ -19,6 +19,9 @@ string src_path=include_path;
 string bin_path=include_path;
 #endif
 string run_pike;
+
+int(0..1) verbose;
+#define VERB(X ...) if(verbose) werror(X)
 
 #define NOT 0
 #define AUTO 1
@@ -176,7 +179,8 @@ int main(int argc, array(string) argv)
     ({"auto",Getopt.NO_ARG,({"--auto"}) }),
     ({"source",Getopt.HAS_ARG,({"--source"}) }),
     ({"query",Getopt.HAS_ARG,({"--query"}) }),
-    ({"config_args",Getopt.HAS_ARG,({"--configure-args"}) })
+    ({"config_args",Getopt.HAS_ARG,({"--configure-args"}) }),
+    ({"help",Getopt.NO_ARG,({"--help"}) }),
     )),array opt)
     {
       switch(opt[0])
@@ -188,6 +192,9 @@ int main(int argc, array(string) argv)
 	    write("%s\n", this[opt[1]]);
 	  else
 	    write("Unknown variable %s.\n", opt[1]);
+	  exit(0);
+        case "help":
+	  write(help);
 	  exit(0);
 
         case "config_args": config_args=opt[1]; break;
@@ -247,7 +254,17 @@ int main(int argc, array(string) argv)
       if(run->autoconf==ALWAYS ||
 	 max_time_of_files("$src/configure") <= tmp1)
       {
-	run_or_fail((["dir":srcdir]),"autoconf","--localdir="+src_path);
+	string data = Process.popen("autoconf --version");
+	data = (data/"\n")[0];
+	float v;
+	sscanf(data, "%*s %f", v);
+
+	// If we fail to determine the autoconf version we assume
+	// yet another incompatble autoconf change.
+	if(!v || v>2.52)
+	  run_or_fail((["dir":srcdir]),"autoconf","--include="+src_path);
+	else
+	  run_or_fail((["dir":srcdir]),"autoconf","--localdir="+src_path);
       }
     }
   }
@@ -306,3 +323,34 @@ int main(int argc, array(string) argv)
     do_make(argv[1..]);
   }
 }
+
+constant help=#"Pike module installer $Version$
+module <options> <arguments passed to make>
+
+Information options:
+  --help        Prints this text
+  --query=X     Shows the value of setting X. Possible settings are
+                include_path, configure_command, src_path, bin_path,
+                make and specs.
+
+Stage selection:
+                If none of these stages are selected, all of them will
+                be run, given that the timestamps of the dependncies
+                indicates that it is needed. If one or more stage is
+                selected, these stages will always run, but none of
+                the unselected ones.
+
+  --automake    Runs aclocal and automake.
+  --autoheader  Runs autoheader.
+  --autoconf    Runs autoconf.
+  --configure   Runs configure.
+  --depend      Runs make depend and make Makefile.
+  --make        Runs make.
+  --all         Runs all of the above.
+  --auto        Sets all stages to auto (default).
+
+Environment:
+  --source=X    Path to the source directory.
+  --configure-args
+                Additional arguments to configure.
+";
