@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.43 2001/01/30 07:54:10 mirar Exp $
+# $Id: configure.in,v 1.44 2001/01/31 13:33:08 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -309,7 +309,8 @@ int main()
    return 1;
 }
 ],pike_cv_itimer_type_is_02=yes,
-pike_cv_itimer_type_is_02="not certain")
+pike_cv_itimer_type_is_02="not certain",
+pike_cv_itimer_type_is_02="not certain",)
 ])
 
 AC_MSG_RESULT($pike_cv_itimer_type_is_02)
