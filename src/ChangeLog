@@ -1,11 +1,15 @@
+Wed Apr 15 18:15:34 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* object(foo) now means 'object that implements foo'
+	* sscanf: added %{  %}
+	* new function: array_sscanf, works like sscanf() but is a normal
+	  function and returns an array.
+	* %o, %d and %x now accepts field lengths in sscanf()
+
 Wed Apr 15 03:47:05 1998  Henrik Grubbström  <grubba@idonex.se>
 
 	* language.yacc: Lots of error-handling added. The compiler ought
 	to leak a bit less when encountering syntax errors now.
-
-Tue Apr 14 13:11:03 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
-
-	* %o, %d and %x now accepts field lengths in sscanf()
 
 Fri Apr 10 15:05:11 1998  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
