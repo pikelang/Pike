@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.787 2004/02/28 20:33:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.788 2004/02/28 20:43:18 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6937,6 +6937,10 @@ $bundle_info])
 	    OLD_CFLAGS="$CFLAGS"
 	    CFLAGS="$CCSHARED $CFLAGS"
 
+	    # Make sure stuff in /usr/ccs/bin and the like can be found.
+	    OLD_PATH="$PATH"
+	    PATH="$PATH:$EXTRA_PATH"
+
 	    extra_configure_args=""
 	    # Some libraries insist in using config.guess;
 	    # they tend to have problems with rntcl...
@@ -6957,8 +6961,9 @@ $bundle_info])
 	      --prefix="$pike_bundle_prefix" ${extra_configure_args} \
 	      --disable-shared --cache-file=config.cache || exit 1
 
-	    # Restore CFLAGS
+	    # Restore CFLAGS and PATH
 	    CFLAGS="$OLD_CFLAGS"
+	    PATH="$OLD_PATH"
 
 	    if test -f "Makefile"; then :; else
 	      echo "Makefile not found in `pwd`."
