@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.115 1999/03/08 05:34:37 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.116 1999/03/10 00:33:04 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -809,7 +809,9 @@ static void do_da_lock(void)
 
 static void do_bi_do_da_lock(void)
 {
+#ifdef PROC_DEBUG
   fprintf(stderr, "wait thread: This is your wakeup call!\n");
+#endif
   co_signal(&start_wait_thread);
   mt_unlock(&wait_thread_mutex);
 }
