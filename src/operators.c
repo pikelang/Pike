@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.165 2002/11/26 16:55:55 grubba Exp $
+|| $Id: operators.c,v 1.166 2002/12/05 20:10:41 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.165 2002/11/26 16:55:55 grubba Exp $");
+RCSID("$Id: operators.c,v 1.166 2002/12/05 20:10:41 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1393,6 +1393,7 @@ static void speedup(INT32 args, void (*func)(void))
   {
     /* This method can be used for types where a op b === b op a */
     case T_MULTISET:
+#ifndef PIKE_NEW_MULTISETS
     {
       int e=-1;
       while(args > 1)
@@ -1412,6 +1413,7 @@ static void speedup(INT32 args, void (*func)(void))
       }
       return;
     }
+#endif
     
     /* Binary balanced tree method for types where
      * a op b may or may not be equal to b op a
