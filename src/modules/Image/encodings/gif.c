@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.48 1999/05/23 17:46:52 mirar Exp $ */
+/* $Id: gif.c,v 1.49 1999/05/28 13:33:25 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.48 1999/05/23 17:46:52 mirar Exp $
+**!	$Id: gif.c,v 1.49 1999/05/28 13:33:25 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.48 1999/05/23 17:46:52 mirar Exp $");
+RCSID("$Id: gif.c,v 1.49 1999/05/28 13:33:25 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -45,11 +45,13 @@ RCSID("$Id: gif.c,v 1.48 1999/05/23 17:46:52 mirar Exp $");
 #include "image.h"
 #include "colortable.h"
 #include "builtin_functions.h"
+#include "mapping.h"
 
 #include "gif_lzw.h"
 
 extern struct program *image_colortable_program;
 extern struct program *image_program;
+extern struct program *image_layer_program;
 
 extern void f_add(INT32 args);
 
@@ -2062,6 +2064,153 @@ void image_gif_decode(INT32 args)
 }
 
 /*
+**! method object decode_layers(string data)
+**! method object decode_layers(array _decoded)
+**! method object decode_layer(string data)
+**! method object decode_layer(array _decoded)
+**!	Decodes GIF data and creates an array of layers
+**!	or the resulting layer.
+**! 	
+**! see also: encode, decode_map
+**!
+**! note
+**!	The resulting layer may not have the same size
+**!	as the gif image, but the resulting bounding box
+**!	of all render chunks in the gif file.
+**!	The offset should be correct, though.
+**!
+*/
+
+void image_gif_decode_layers(INT32 args)
+{
+   struct array *a,*b;
+   struct image *img,*src,*alpha;
+   struct object *o;
+   int n;
+   int numlayers=0;
+
+   if (!args)
+      error("Image.GIF.decode_layers: too few argument\n");
+
+   if (sp[-args].type==T_ARRAY)
+   {
+      pop_n_elems(args-1);
+      if (sp[-args].u.array->size<4)
+	 error("Image.GIF.decode: illegal argument\n");
+      if (sp[-args].u.array->item[3].type!=T_ARRAY)
+	 image_gif__decode(1);
+   }
+   else
+      image_gif__decode(args);
+
+   if (sp[-1].type!=T_ARRAY)
+      error("Image.GIF.decode: internal error: "
+	    "illegal result from _decode\n");
+
+   a=sp[-1].u.array;
+   if (a->size<4)
+      error("Image.GIF.decode: given (_decode'd) array "
+	    "is too small\n");
+
+   for (n=4; n<a->size; n++)
+      if (a->item[n].type==T_ARRAY
+	  && (b=a->item[n].u.array)->size==11
+	  && b->item[0].type==T_INT 
+	  && b->item[0].u.integer==GIF_RENDER
+	  && b->item[3].type==T_OBJECT
+	  && (src=(struct image*)get_storage(b->item[3].u.object,
+					     image_program)) )
+      {
+	 if (b->item[4].type==T_OBJECT)
+	    alpha=(struct image*)get_storage(b->item[4].u.object,
+					     image_program);
+	 else
+	    alpha=NULL;
+	     
+	 if (alpha) 
+	 {
+	    push_constant_text("image");
+	    push_svalue(b->item+3);
+	    push_constant_text("alpha");
+	    push_svalue(b->item+4);
+	    push_constant_text("xoffset");
+	    push_svalue(b->item+1);
+	    push_constant_text("yoffset");
+	    push_svalue(b->item+2);
+	    f_aggregate_mapping(8);
+	    push_object(clone_object(image_layer_program,1));
+	    numlayers++;
+	 }
+	 else
+	 {
+	    push_constant_text("image");
+	    push_svalue(b->item+3);
+	    push_constant_text("xoffset");
+	    push_svalue(b->item+1);
+	    push_constant_text("yoffset");
+	    push_svalue(b->item+2);
+	    f_aggregate_mapping(6);
+	    push_object(clone_object(image_layer_program,1));
+	    numlayers++;
+	 }
+      }
+
+   f_aggregate(numlayers);
+   stack_swap();
+   pop_stack();
+}
+
+void image_gif_decode_layer(INT32 args)
+{
+   image_gif_decode_layers(args);
+   image_lay(1);
+}
+
+/*
+**! method mapping decode_map(INT32 args)
+**!	Returns a mapping similar to other decoders
+**!	<tt>_decode</tt> function.
+**!
+**!	<pre>
+**!	    "image":the image
+**!	    "alpha":the alpha channel
+**!
+**!	    "xsize":int
+**!	    "ysize":int
+**!		size of image
+**!	    "type":"image/gif"
+**!		file type information as MIME type
+**!     </pre>
+**!
+**! note:
+**!	The wierd name of this function (not <tt>_decode</tt>
+**!	as the other decoders) is because gif was the first
+**!	decoder and was written before the API was finally
+**!	defined. Sorry about that. /Mirar
+*/
+
+void image_gif_decode_map(INT32 args)
+{
+   image_gif_decode_layer(args);
+
+   push_constant_text("image");
+   push_constant_text("alpha");
+   push_constant_text("xsize");
+   push_constant_text("ysize");
+   f_aggregate(4);
+#define stack_swap_behind() do { struct svalue _=sp[-2]; sp[-2]=sp[-3]; sp[-3]=_; } while(0)
+   stack_dup();
+   stack_swap_behind();
+   f_rows(2);
+   f_call_function(1);
+   f_mkmapping(2);
+   push_constant_text("type");
+   push_constant_text("image/gif");
+   f_aggregate_mapping(2);
+   f_add(2);
+}
+
+/*
 **! method string _encode(array data)
 **!	Encodes GIF data; reverses _decode.
 **!
@@ -2557,6 +2706,12 @@ void init_image_gif(void)
 		"function(string|array:array)",0);
    add_function("decode",image_gif_decode,
 		"function(string|array:object)",0);
+   add_function("decode_layers",image_gif_decode_layers,
+		"function(string|array:array(object))",0);
+   add_function("decode_layer",image_gif_decode_layer,
+		"function(string|array:object)",0);
+   add_function("decode_map",image_gif_decode_map,
+		"function(string|array:mapping)",0);
 
    add_function("_encode",image_gif__encode,
 		"function(array:string)",0);
