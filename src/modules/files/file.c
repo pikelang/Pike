@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.161 1999/10/29 20:55:10 noring Exp $");
+RCSID("$Id: file.c,v 1.162 1999/11/04 20:05:46 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -892,7 +892,7 @@ static void file_write(INT32 args)
   if(args<1 || ((sp[-args].type != T_STRING) && (sp[-args].type != T_ARRAY)))
     error("Bad argument 1 to file->write().\n"
 	  "Type is %s. Expected string or array(string)\n",
-	  type_name[sp[-args].type]);
+	  get_name_of_type(sp[-args].type));
 
   if(FD < 0)
     error("File not open for write.\n");

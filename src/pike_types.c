@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.60 1999/10/31 15:33:41 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.61 1999/11/04 20:05:24 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1936,7 +1936,6 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
     return pop_unfinished_type();
   }
 }
-
 
 char *get_name_of_type(int t)
 {

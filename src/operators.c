@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.66 1999/10/30 13:18:49 noring Exp $");
+RCSID("$Id: operators.c,v 1.67 1999/11/04 20:05:22 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -633,7 +633,7 @@ void o_subtract(void)
   {
     if(call_lfun(LFUN_SUBTRACT, LFUN_RSUBTRACT))
       return;
-    bad_arg_error("`-", sp-2, 2, 2, type_name[sp[-2].type],
+    bad_arg_error("`-", sp-2, 2, 2, get_name_of_type(sp[-2].type),
 		  sp-1, "Subtract on different types.\n");
   }
 
@@ -761,7 +761,7 @@ void o_and(void)
       return;
     {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`&", 2, type_name[sp[-2].type]);
+      SIMPLE_BAD_ARG_ERROR("`&", 2, get_name_of_type(sp[-2].type));
     }
   }
 
@@ -949,7 +949,7 @@ void o_or(void)
 
     {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`|", 2, type_name[sp[-2].type]);
+      SIMPLE_BAD_ARG_ERROR("`|", 2, get_name_of_type(sp[-2].type));
     }
   }
 
@@ -1042,7 +1042,7 @@ void o_xor(void)
       return;
     {
       int args = 2;
-      SIMPLE_BAD_ARG_ERROR("`^", 2, type_name[sp[-2].type]);
+      SIMPLE_BAD_ARG_ERROR("`^", 2, get_name_of_type(sp[-2].type));
     }
   }
 

@@ -23,19 +23,9 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.54 1999/10/29 00:09:04 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.55 1999/11/04 20:05:25 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
-
-/*
- * This one is useful for error-handling.
- */
-char *type_name[] = {
-  "array", "mapping", "multiset", "object",
-  "function", "program", "string", "float",
-  "int", 0, 0, 0, 0, 0, 0, 0,
-  "void", "many",
-};
 
 /*
  * This routine frees a short svalue given a pointer to it and

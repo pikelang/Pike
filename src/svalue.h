@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.35 1999/10/29 00:09:05 hubbe Exp $
+ * $Id: svalue.h,v 1.36 1999/11/04 20:05:26 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -103,7 +103,6 @@ struct svalue
 #define T_ARRAY_LVALUE 254
 #define T_MIXED 255
 
-extern char *type_name[];
 
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
