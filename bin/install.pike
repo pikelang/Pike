@@ -180,24 +180,27 @@ void install_dir(string from, string to,int dump)
 
   mkdirhier(to);
   foreach(get_dir(from),string file)
-    {
-      if(file=="CVS") continue;
-      if(file[..1]==".#") continue;
-      if(file[0]=='#' && file[-1]=='#') continue;
-      if(file[-1]=='~') continue;
-      mixed stat=file_stat(combine_path(from,file));
-      if (stat) {
-	if(stat[1]==-2)
-	{
-	  install_dir(combine_path(from,file),combine_path(to,file),dump);
-	}else{
-	  install_file(combine_path(from,file),combine_path(to,file),0755,dump);
-	}
+  {
+    if(file=="CVS") continue;
+    if(file[..1]==".#") continue;
+    if(file[0]=='#' && file[-1]=='#') continue;
+    if(file[-1]=='~') continue;
+    mixed stat=file_stat(combine_path(from,file));
+    if (stat) {
+      if(stat[1]==-2) {
+	install_dir(combine_path(from,file),combine_path(to,file),dump);
+      } else if (stat[0] & 0111) {
+	// Executable
+	install_file(combine_path(from,file),combine_path(to,file),0755,dump);
       } else {
-	werror(sprintf("\nstat:0, from:%O, file:%O, combined:%O\n",
-		       from, file, combine_path(from, file)));
+	// Not executable
+	install_file(combine_path(from,file),combine_path(to,file),0644,dump);
       }
+    } else {
+      werror(sprintf("\nstat:0, from:%O, file:%O, combined:%O\n",
+		     from, file, combine_path(from, file)));
     }
+  }
 }
 
 void install_header_files(string from, string to)
