@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.592 2003/09/11 19:23:54 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.593 2003/10/10 01:20:14 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -134,6 +134,18 @@ test_compile_any([[
       return 0;
     }; 
   } 
+]])
+
+test_compile_any([[
+  string foo (string a, string b, string c, string d, string e, string f, string g)
+  {
+    string out;
+    if (a)
+      out = "foo";
+    else
+      out = "bar";
+    return out;
+  }
 ]])
 
 
