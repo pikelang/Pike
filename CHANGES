@@ -89,6 +89,19 @@ o Iterators
 	mixed any_index = Mapping.Iterator(m)->index();
 
 o Automap
+    To perform per-element operations on arrays, there is now a convenience
+    syntax for map(), that can make code more readable in some situations.
+    Summing up two arrays element by element using automap looks like this:
+
+	a[*] + b[*]; // the result has as many elements as the shortest array
+
+    Multiplying all elements in a by a constant:
+
+	a[*] * 4711;
+
+    Make an array of what sprintf("%O", a[n]) returns for all elements in a:
+
+	sprintf("%O", a[*]);
 
 o Implicit lambda.
 
