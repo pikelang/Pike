@@ -1,3 +1,4 @@
+#pike __REAL_VERSION__
 
 constant opt_summary =
   #"Usage: pike [-driver options] script [script arguments]
@@ -30,8 +31,8 @@ Driver options:
  --features           : List Pike features.
  --info               : List information about the Pike build and setup.
  --show-paths         : See the paths and master that pike uses.
- -s#                  : Set stack size.
- -ss#
+ -s#                  : Set Pike stack size.
+ -ss#                 : Set thread stack size.
  -m <file>            : Use <file> as master object.
  -d -d# -d<what>      : Increase debug.
  -t -t#               : Increase trace level.
@@ -41,7 +42,7 @@ Driver options:
  -E --preprocess=<f>  : Run only the preprocessor.
  -w --warnings        : Enable warnings
  -W --no-warnings     : Disable warnings
- --autoreload
+ --autoreload         : Automatically reload changed modules.
  --compiler-trace     : Turn on tracing of the Pike compiler.
  --assembler-debug=#  : Set peephole optimizer debug level.
  --optimizer-debug=#  : Set global optimizer debug level.
@@ -57,8 +58,8 @@ Driver options:
 ";
 
 string do_help(string|int what) {
-
   if( intp(what) ) return opt_summary;
+  what -= "-";
   if( stringp(this[what+"_help"]) )
     return this[what+"_help"];
   return "No help available on that topic.\n";
