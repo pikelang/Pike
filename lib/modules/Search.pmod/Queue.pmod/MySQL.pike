@@ -76,6 +76,8 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
     if(search(rpath,reverse(index))==0)
       rpath=rpath[sizeof(index)..];
   r->path=reverse(rpath);
+
+  r->path = combine_path(r->path);
     
   if( force || check_link(uri, allow, deny) )
   {
