@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.51 2003/01/09 23:55:09 nilsson Exp $
+|| $Id: png.c,v 1.52 2003/01/18 01:20:03 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.51 2003/01/09 23:55:09 nilsson Exp $");
+RCSID("$Id: png.c,v 1.52 2003/01/18 01:20:03 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -87,7 +87,6 @@ static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
       case 1:  return DO_NOT_WARN((COLORTYPE)(z*255));
       default: return DO_NOT_WARN((COLORTYPE)z);
    }
-
 }
 
 static INLINE INT32 call_gz_crc32(INT32 args)
@@ -95,7 +94,8 @@ static INLINE INT32 call_gz_crc32(INT32 args)
    INT32 z;
    apply_svalue(&gz_crc32,args);
    if (sp[-1].type!=T_INT)
-      Pike_error("Image.PNG: internal error (not integer from Gz.crc32)\n");
+      PIKE_ERROR("Image.PNG", "Internal error (not integer from Gz.crc32).\n",
+		 sp, args);
    z=sp[-1].u.integer;
    pop_stack();
    return z;
@@ -404,6 +404,9 @@ static struct pike_string *_png_unfilter(unsigned char *data,
    int x;
    int sbb;
 
+   if(filter!=0)
+     Pike_error("Unknown filter type %d.\n", filter);
+
    switch (type)
    {
       case 2: x=3; break;
@@ -519,7 +522,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	    
 	    break;
 	 default:
-	    Pike_error("Image.PNG._decode: unsupported filter %d\n",s[-1]);
+	    Pike_error("Unsupported subfilter %d\n", s[-1]);
       }
    }
 }
@@ -1138,6 +1141,12 @@ static void img_png_decode(INT32 args,int header_only)
          case 0x67414d41: /* gAMA */
 	    break;
 
+         case 0x73524742: /* sRGB */
+	   break;
+
+         case 0x69434350: /* iCCP */
+	   break;
+
          case 0x73424954: /* sBIT */
 	    break;
 
@@ -1209,6 +1218,28 @@ static void img_png_decode(INT32 args,int header_only)
 
          case 0x7a545874: /* zTXt */
 	    break;
+
+         case 0x69545874: /* iTXt */
+	   break;
+
+         /* Extensions */
+         case 0x6f464673: /* oFFs */
+	   break;
+
+         case 0x7043414c: /* pCAL */
+	   break;
+
+         case 0x7343414c: /* sCAL */
+	   break;
+
+         case 0x67494667: /* gIFg */
+	   break;
+
+         case 0x67494678: /* gIFg */
+	   break;
+
+         case 0x66524163: /* fRAc */
+	   break;
       }
    }
 
@@ -1466,15 +1497,20 @@ static void image_png_encode(INT32 args)
 	 if (sp[-1].type!=T_OBJECT ||
 	     !(alpha=(struct image*)
 	       get_storage(sp[-1].u.object,image_program)))
-	    Pike_error("Image.PNG.encode: option (arg 2) \"alpha\" has illegal type\n");
+	    PIKE_ERROR("Image.PNG.encode",
+		       "Option (arg 2) \"alpha\" has illegal type.\n",
+		       sp, args);
       pop_stack();
 
       if (alpha &&
 	  (alpha->xsize!=img->xsize ||
 	   alpha->ysize!=img->ysize))
-	 Pike_error("Image.PNG.encode option (arg 2) \"alpha\"; images differ in size\n");
+	 PIKE_ERROR("Image.PNG.encode",
+		    "Option (arg 2) \"alpha\"; images differ in size.\n",
+		    sp, args);
       if (alpha && !alpha->img)
-	 Pike_error("Image.PNG.encode option (arg 2) \"alpha\"; no image\n");
+	PIKE_ERROR("Image.PNG.encode", "Option (arg 2) \"alpha\"; no image\n",
+		   sp, args);
 
       push_svalue(sp+1-args);
       ref_push_string(param_palette); 
@@ -1484,9 +1520,10 @@ static void image_png_encode(INT32 args)
 	 if (sp[-1].type!=T_OBJECT ||
 	     !(ct=(struct neo_colortable*)
 	       get_storage(sp[-1].u.object,image_colortable_program)))
-	    Pike_error("Image.PNG.encode: option (arg 2) \"palette\" has illegal type\n");
+	   PIKE_ERROR("Image.PNG.encode",
+		      "Option (arg 2) \"palette\" has illegal type.\n",
+		      sp, args);
       pop_stack();
-
    }
    
    sprintf(buf,"%c%c%c%c%c%c%c%c",
@@ -1499,8 +1536,9 @@ static void image_png_encode(INT32 args)
       ptrdiff_t sz;
       sz = image_colortable_size(ct);
       if (sz>256)
-	 Pike_error("Image.PNG.encode: palette size to large; "
-	       "PNG doesn't support bigger palettes then 256 colors\n");
+	 PIKE_ERROR("Image.PNG.encode", "Palette size to large; "
+		    "PNG doesn't support bigger palettes then 256 colors.\n",
+		    sp, args);
       if (sz>16) bpp=8;
       else if (sz>4) bpp=4;
       else if (sz>2) bpp=2;
@@ -1538,15 +1576,18 @@ static void image_png_encode(INT32 args)
    y=img->ysize;
    s=img->img;
    if (alpha) sa=alpha->img;
-   if (ct)
-      if (alpha)
-	 Pike_error("Image.PNG.encode: colortable and alpha channel not supported at the same time\n");
+   if (ct) {
+      if (alpha) {
+	 PIKE_ERROR("Image.PNG.encode",
+		    "Colortable and alpha channel not supported "
+		    "at the same time.\n", sp, args);
+      }
       else
       {
 	 unsigned char *tmp=malloc(img->xsize*img->ysize),*ts;
 
 	 if (!tmp)
-	    Pike_error("Image.PNG.encode: out of memory\n");
+	    PIKE_ERROR("Image.PNG.encode", "Out of memory.\n", sp, args);
 	 image_colortable_index_8bit_image(ct,img->img,tmp,
 					   img->xsize*img->ysize,img->xsize);
 	 ts=tmp;
@@ -1579,6 +1620,7 @@ static void image_png_encode(INT32 args)
 	 }
 	 free(tmp);
       }
+   }
    else
       while (y--)
       {
@@ -1723,13 +1765,13 @@ void exit_image_png(void)
 
 void init_image_png(void)
 {
-   push_text("Gz");
+   push_constant_text("Gz");
    push_int(0);
    SAFE_APPLY_MASTER("resolv",2);
    if (sp[-1].type==T_OBJECT) 
    {
      stack_dup();
-     push_text("inflate");
+     push_constant_text("inflate");
      f_index(2);
      gz_inflate=program_from_svalue(sp-1);
      if(gz_inflate) 
@@ -1737,7 +1779,7 @@ void init_image_png(void)
      pop_stack();
 
      stack_dup();
-     push_text("deflate");
+     push_constant_text("deflate");
      f_index(2);
      gz_deflate=program_from_svalue(sp-1);
      if(gz_deflate) 
@@ -1745,7 +1787,7 @@ void init_image_png(void)
      pop_stack();
 
      stack_dup();
-     push_text("crc32");
+     push_constant_text("crc32");
      f_index(2);
      gz_crc32=sp[-1];
      sp--;
