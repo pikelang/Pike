@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.101 2001/01/03 21:35:13 grubba Exp $");
+RCSID("$Id: array.c,v 1.102 2001/02/03 01:04:48 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1867,23 +1867,27 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,struct processi
 PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
   INT32 e;
-  struct array *ret;
-  ptrdiff_t argp;
+  struct svalue *argp = Pike_sp-args;
+  TYPE_FIELD new_types = 0;
 
-  argp=Pike_sp-args - Pike_interpreter.evaluator_stack;
-
-  check_stack(a->size + args + 1);
   check_array_for_destruct(a);
-  for(e=0;e<a->size;e++)
-  {
-    assign_svalues_no_free(Pike_sp, Pike_interpreter.evaluator_stack + argp,
-			   args, BIT_MIXED);
-    Pike_sp+=args;
-    apply_svalue(ITEM(a)+e,args);
-  }
-  ret=aggregate_array(a->size);
-  pop_n_elems(args);
-  push_array(ret);
+  check_stack(120 + args + 1);
+
+  BEGIN_AGGREGATE_ARRAY(a->size) {
+    for (e=0;e<a->size;e++) {
+      assign_svalues_no_free(Pike_sp, argp, args, BIT_MIXED);
+      Pike_sp+=args;
+      apply_svalue(ITEM(a)+e,args);
+      new_types |= 1 << Pike_sp[-1].type;
+      DO_AGGREGATE_ARRAY(120);
+    }
+  } END_AGGREGATE_ARRAY;
+
+  Pike_sp[-1].u.array->type_field = new_types;
+#ifdef PIKE_DEBUG
+  array_check_type_field(Pike_sp[-1].u.array);
+#endif
+  stack_pop_n_elems_keep_top(args);
 }
 
 PMOD_EXPORT struct array *reverse_array(struct array *a)
@@ -2244,10 +2248,10 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_)
 
 PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
 {
-  INT32 e,d,q,start;
+  INT32 e,d,start;
   struct array *tmp;
 
-  q=start=0;
+  start=0;
 #if 0
   if(!a->size)
   {
@@ -2256,31 +2260,36 @@ PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
 #endif
   if(b->size)
   {
-    for(e=0;e<=a->size - b->size;e++)
-    {
-      for(d=0;d<b->size;d++)
+    BEGIN_AGGREGATE_ARRAY(1) {
+      for(e=0;e<=a->size - b->size;e++)
       {
-	if(!is_eq(ITEM(a)+(e+d),ITEM(b)+d))
-	  break;
+	for(d=0;d<b->size;d++)
+	{
+	  if(!is_eq(ITEM(a)+(e+d),ITEM(b)+d))
+	    break;
+	}
+	if(d==b->size)
+	{
+	  check_stack(1);
+	  push_array(friendly_slice_array(a, start, e));
+	  DO_AGGREGATE_ARRAY(120);
+	  e+=b->size-1;
+	  start=e+1;
+	}
       }
-      if(d==b->size)
-      {
-	check_stack(1);
-	push_array(friendly_slice_array(a, start, e));
-	q++;
-	e+=b->size-1;
-	start=e+1;
-      }
-    }
-    check_stack(1);
-    push_array(friendly_slice_array(a, start, a->size));
-    q++;
+      check_stack(1);
+      push_array(friendly_slice_array(a, start, a->size));
+    } END_AGGREGATE_ARRAY;
   }else{
-    check_stack(a->size);
-    for(e=0;e<a->size;e++) push_array(friendly_slice_array(a, e, e+1));
-    q=a->size;
+    check_stack(120);
+    BEGIN_AGGREGATE_ARRAY(a->size) {
+      for(e=0;e<a->size;e++) {
+	push_array(friendly_slice_array(a, e, e+1));
+	DO_AGGREGATE_ARRAY(120);
+      }
+    } END_AGGREGATE_ARRAY;
   }
-  tmp=aggregate_array(q);
+  tmp=(--Pike_sp)->u.array;
   if(tmp->size) tmp->type_field=BIT_ARRAY;
   return tmp;
 }
