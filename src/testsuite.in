@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.584 2003/03/18 16:41:56 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.585 2003/03/28 14:32:20 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7727,6 +7727,8 @@ test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
 test_eq([[random_seed(17),random(20000)]],[[random_seed(17),random(20000)]])
 test_eq([[random_seed(18),random(20000)]],[[random_seed(18),random(20000)]])
 test_eq([[random_seed(19),random(20000)]],[[random_seed(19),random(20000)]])
+test_equal([[random_seed(4711),map(allocate(10,1000), random)]],
+	   [[({598,11,331,991,383,553,997,53,272,381})]])
 
 // - replace
 test_eq(replace("foo","f","\x9999"),"\x9999oo")
