@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.541 2001/08/15 14:42:10 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.542 2001/08/23 16:45:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -520,7 +520,7 @@ case "$UNAME" in
   Linux\ 2.*)
     AC_DEFINE(USE_Wl)
     ;;
-  UnixWare\ 7.*)
+  UnixWare\ 7.*|OpenUNIX\ 8.*)
     if test "$ac_cv_prog_gcc" = "yes"; then
       AC_DEFINE(USE_XLINKER_YP_)
     else
@@ -638,7 +638,7 @@ case "$pike_cv_sys_os" in
       *) LD="$BINDIR/smartlink shlicc";;
     esac
   ;;
-  UnixWare*)
+  UnixWare*|OpenUNIX*)
     case "$CFLAGS" in
       *-Kalloca*) ;;
       *)
@@ -957,7 +957,7 @@ AC_ARG_WITH(pg,          [  --with-pg              Use the gcc -pg option],
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX|Linux|Darwin|UnixWare)
+    Solaris|HP-UX|OSF1|IRIX|Linux|Darwin|UnixWare|OpenUNIX)
       AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
       with_poll=yes
     ;;
@@ -989,11 +989,7 @@ AC_ARG_WITH(security,    [  --with-security        enable internal pike security
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --without-shared-nodes disable the SHARED_NODES mode of the optimizer],[],[with_shared_nodes=yes])
 AC_ARG_WITH(computed-goto,[  --with-computed-goto   Enable use of gcc-style computed goto (EXPERIMENTAL).], [], [with_computed_goto=no])
-AC_ARG_WITH(computed-goto,[  --with-machine-code    Enable use of machine code when possible (EXPERIMENTAL).], [
-  if test "$with_machine_code" = "yes"; then
-    AC_DEFINE(PIKE_USE_MACHINE_CODE)
-  else :; fi
-], [])
+AC_ARG_WITH(computed-goto,[  --with-machine-code    Enable use of machine code when possible (EXPERIMENTAL).], [], [])
 
 AC_ARG_WITH(keypair-loop,[  --with-keypair-loop    Enable use of the keypair mapping loop method (EXPERIMENTAL).],[
   if test "$with_keypair_loop" = "yes"; then
@@ -1454,7 +1450,7 @@ esac
     *-fast*) ;;
     *)
       case "$pike_cv_sys_os:$GCC" in
-        UnixWare*:no)
+        UnixWare*:no|OpenUNIX*:no)
 	  OPTIMIZE=""
 	;;
 	*)
@@ -1479,6 +1475,32 @@ else
   ])
 fi
 
+#############################################################################
+
+## Check if we should default to --with-machine-code
+
+#############################################################################
+
+if test "$with_machine_code" = "no"; then :; else
+  if test "x${GCC-}" = xyes ; then
+    case "`uname -p 2>/dev/null || echo unknown`" in
+      powerpc|sparc|ia32|i[3456]86)
+        with_machine_code="yes"
+      ;;
+      unknown)
+        case "`uname -m`" in
+	  ia64)
+	    # with_machine_code="yes"
+	  ;;
+	esac
+      ;;
+    esac
+  else :; fi
+  if test "$with_machine_code" = "yes"; then
+    AC_MSG_WARN([Enabling machine-code interpreter.])
+    AC_DEFINE(PIKE_USE_MACHINE_CODE)
+  else :; fi
+fi
 
 if test ! -d modules/. ; then
   mkdir modules
@@ -1958,10 +1980,10 @@ if test x"$pike_cv_sys_os" = xWindows_NT ; then
     AC_MSG_RESULT(yes)
     # Apparently the libraries are stilled named *32...
     # LIBS="-lkernel64 -lws2_64 -ladvapi64 $LIBS"
-    LIBS="-lkernel32 -lws2_32 -ladvapi32 $LIBS"
+    LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 $LIBS"
   else
     AC_MSG_RESULT(no)
-    LIBS="-lkernel32 -lws2_32 -ladvapi32 $LIBS"
+    LIBS="-lshell32 -lkernel32 -lws2_32 -ladvapi32 $LIBS"
   fi
 fi
 
@@ -2036,7 +2058,7 @@ else
       LIBS="${OLDLIBS}"
     ;;
 
-    xUnixWare*)
+    xUnixWare*|xOpenUNIX*)
       if test "$GCC" = yes ; then
         CFLAGS="${CFLAGS} -pthread"
       else
@@ -2390,7 +2412,7 @@ pthread_t gazonk;
 
     AC_MSG_CHECKING(unix threads)
     case "x$pike_cv_sys_os" in
-      xUnixWare*)
+      xUnixWare*|xOpenUNIX*)
   	if test "$GCC" = yes ; then
   	  CFLAGS="${CFLAGS} -pthread"
   	else
@@ -5299,7 +5321,7 @@ if test -z "$LDSHARED" ; then
     ;;
     SCO_SV*) LDSHARED="$CC -G -KPIC -Wl,-Bexport";;
     UNIX_SV*) LDSHARED="ld -G";;
-    UnixWare*)
+    UnixWare*|OpenUNIX*)
       if test "$GCC" = yes ; then
         LDSHARED="$CC -G -fPIC"
       else
@@ -5346,7 +5368,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	hp*|HP*) CCSHARED="+z"; ;;
 	FreeBSD*) CCSHARED="-fpic";;
 	SCO_SV*) CCSHARED="-KPIC -dy -Bdynamic";;
-        UnixWare*) CCSHARED="-KPIC -dy -Bdynamic";;
+        UnixWare*|OpenUNIX*) CCSHARED="-KPIC -dy -Bdynamic";;
 	Solaris*) CCSHARED="-KPIC -Bdynamic";;
 	Windows_NT*) CCSHARED="-shared" ;;
       esac
@@ -5396,7 +5418,7 @@ then
       next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare*) LINKFORSHARED="-fpic -Wl,-Bexport";;
+      UnixWare*|OpenUNIX*) LINKFORSHARED="-fpic -Wl,-Bexport";;
 
       FreeBSD*)
         AC_TRY_RUN([int main(){exit(
@@ -5424,7 +5446,7 @@ then
       next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
       # What about UNIX_SV?
-      UnixWare*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
+      UnixWare*|OpenUNIX*) LINKFORSHARED="-Bdynamic -dy -Wl,-Bexport";;
     esac
   fi
 fi
