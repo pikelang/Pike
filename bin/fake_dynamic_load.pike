@@ -73,6 +73,12 @@ string low_strip_other_files(string data, string s)
 	{
 	  string dir=my_dirname(file);
 	  on= dir==current_dir || dir==source_dir || dir==target_dir;
+	  if (!on) {
+	    // No match yet. check if it's a suffix.
+	    on = (dir == current_dir[sizeof(current_dir) - sizeof(dir)..]) ||
+	      (dir == source_dir[sizeof(source_dir) - sizeof(dir)..]) ||
+	      (dir == target_dir[sizeof(target_dir) - sizeof(dir)..]);
+	  }
 	}
 
       if(on) ret+="#"+x;
