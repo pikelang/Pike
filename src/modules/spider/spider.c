@@ -597,13 +597,15 @@ void do_html_parse(struct pike_string *ss,
   {
     if (s[i]=='<')
     {
+      int n;
       /* skip all spaces */
       i++;
-      for (j=i; j<len && s[j]!='>' && !ISSPACE(s[j]); j++);
+      for (n=i;n<len && ISSPACE(s[n]); n++);
+      for (j=n; j<len && s[j]!='>' && !ISSPACE(s[j]); j++);
 
       if (j==len) break; /* end of string */
 
-      push_string(make_shared_binary_string((char *)s+i, j-i));
+      push_string(make_shared_binary_string((char *)s+n, j-n));
       f_lower_case(1);
       sval2.u.string = sp[-1].u.string;
       sval2.u.string->refs++;
