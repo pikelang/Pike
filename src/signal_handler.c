@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.264 2003/04/30 01:05:58 nilsson Exp $
+|| $Id: signal_handler.c,v 1.265 2003/05/04 14:37:17 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.264 2003/04/30 01:05:58 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.265 2003/05/04 14:37:17 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2102,14 +2102,14 @@ static int set_priority( int pid, char *to )
   {
     HANDLE process;
     DWORD how;
-    if( pid == getpid() || !pid ) // pid == 0 == this process.
+    if( pid == getpid() || !pid ) /* pid == 0 == this process. */
       process = GetCurrentProcess();
     else
       process = OpenProcess( PROCESS_SET_INFORMATION, FALSE, pid );
 
     if( !process )
     {
-      // Permission denied, or no such process.
+      /* Permission denied, or no such process. */
       return 0;
     }
     
