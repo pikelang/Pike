@@ -24,3 +24,6 @@ void _main(string *argv, string *env)
   _static_modules.files()->Fd(argv[-1] + ".o","wct")->write(s);
   exit(0);
 }
+
+
+mixed resolv() { return ([])[0]; }
