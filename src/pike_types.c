@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.113 1999/12/26 18:53:33 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.114 1999/12/29 17:59:33 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2640,7 +2640,9 @@ static struct pike_string *debug_low_index_type(char *t,
 	  /* FIXME: function_type_string should be replaced with something
 	   * derived from type_string
 	   */
-	  if(i!=-1 && (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type)))
+	  if(i!=-1 &&
+	     (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type,
+			     0)))
 	    return tmp;
 
 	  reference_shared_string(mixed_type_string);
@@ -2652,7 +2654,9 @@ static struct pike_string *debug_low_index_type(char *t,
 	  /* FIXME: function_type_string should be replaced with something
 	   * derived from type_string
 	   */
-	  if(i!=-1 && (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type)))
+	  if(i!=-1 &&
+	     (tmp=check_call(function_type_string, ID_FROM_INT(p, i)->type,
+			     0)))
 	    return tmp;
 
 	  reference_shared_string(mixed_type_string);
@@ -3067,7 +3071,8 @@ int minimum_arguments(struct pike_string *s)
 }
 
 struct pike_string *check_call(struct pike_string *args,
-			       struct pike_string *type)
+			       struct pike_string *type,
+			       int strict)
 {
   check_type_string(args);
   check_type_string(type);
@@ -3077,7 +3082,7 @@ struct pike_string *check_call(struct pike_string *args,
   
   if(low_get_return_type(type->str,args->str))
   {
-    if (lex.pragmas & ID_STRICT_TYPES) {
+    if (strict) {
       if (!strict_check_call(type->str, args->str)) {
 	struct pike_string *type_t = describe_type(type);
 
@@ -3107,7 +3112,7 @@ INT32 get_max_args(struct pike_string *type)
   INT32 ret,tmp=max_correct_args;
   check_type_string(type);
   clear_markers();
-  type=check_call(function_type_string, type);
+  type = check_call(function_type_string, type, 0);
   if(type) free_string(type);
   ret=max_correct_args;
   max_correct_args=tmp;

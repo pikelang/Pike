@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.35 1999/12/22 00:13:37 grubba Exp $
+ * $Id: pike_types.h,v 1.36 1999/12/29 17:59:34 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -169,7 +169,8 @@ int check_indexing(struct pike_string *type,
 int count_arguments(struct pike_string *s);
 int minimum_arguments(struct pike_string *s);
 struct pike_string *check_call(struct pike_string *args,
-			       struct pike_string *type);
+			       struct pike_string *type,
+			       int strict);
 INT32 get_max_args(struct pike_string *type);
 struct pike_string *zzap_function_return(char *a, INT32 id);
 struct pike_string *get_type_of_svalue(struct svalue *s);
@@ -177,6 +178,7 @@ struct pike_string *object_type_to_program_type(struct pike_string *obj_t);
 char *get_name_of_type(int t);
 void cleanup_pike_types(void);
 int type_may_overload(char *type, int lfun);
+struct pike_string *make_pike_type(char *t);
 /* Prototypes end here */
 
 /* "Dynamic types" - use with ADD_FUNCTION_DTYPE */

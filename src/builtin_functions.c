@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.226 1999/12/27 18:46:48 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.227 1999/12/29 18:00:00 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1508,7 +1508,9 @@ static node *fix_overloaded_type(node *n, int lfun, const char *deftype, int def
 	/* FIXME: function type string should really be compiled from
 	 * the arguments so that or:ed types are handled correctly
 	 */
-	if(fun!=-1 && (t2=check_call(function_type_string , ID_FROM_INT(p, fun)->type)))
+	if(fun!=-1 &&
+	   (t2=check_call(function_type_string , ID_FROM_INT(p, fun)->type,
+			  0)))
 	{
 	  free_string(n->type);
 	  n->type=t2;

@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "constants.h"
 #include "pike_macros.h"
@@ -15,7 +16,7 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.19 1999/12/07 09:40:54 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.20 1999/12/29 18:00:32 grubba Exp $");
 
 static struct mapping *builtin_constants = 0;
 
@@ -88,7 +89,7 @@ struct callable *low_make_callable(c_fun fun,
   f->optimize=optimize;
 #ifdef PIKE_DEBUG
   {
-    struct pike_string *z=check_call(function_type_string,type);
+    struct pike_string *z=check_call(function_type_string,type,0);
     f->may_return_void= z == void_type_string;
     if(!z) fatal("Gnapp!\n");
     free_string(z);
