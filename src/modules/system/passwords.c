@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.8 1998/04/07 00:20:28 hubbe Exp $
+ * $Id: passwords.c,v 1.9 1998/04/16 21:50:39 hubbe Exp $
  *
  * Password handling for Pike.
  *
@@ -19,7 +19,7 @@
 
 #include "global.h"
 
-RCSID("$Id: passwords.c,v 1.8 1998/04/07 00:20:28 hubbe Exp $");
+RCSID("$Id: passwords.c,v 1.9 1998/04/16 21:50:39 hubbe Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -118,9 +118,7 @@ void push_pwent(struct passwd *ent)
   {
     struct spwd *foo;
     THREADS_ALLOW_UID();
-    mt_lock(&password_protection_mutex);
     foo = getspnam(ent->pw_name);
-    mt_unlock(&password_protection_mutex);
     THREADS_DISALLOW_UID();
     if(foo)
       push_text(foo->sp_pwdp);
