@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.15 2000/12/16 17:55:34 mirar Exp $
+//! $Id: module.pmod,v 1.16 2001/08/15 17:50:47 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -73,7 +73,10 @@ mapping _decode( string data, mixed|void tocolor )
     foreach( ({ "GIF", "JPEG", "XWD", "PNM", "RAS" }), string fmt )
     {
       catch {
-        i = Image[fmt]->decode( data );
+	if( mappingp( opts ) )
+	  i = Image[fmt]->decode( data, opts );
+	else
+	  i = Image[fmt]->decode( data );
         format = fmt;
       };
       if( i )
@@ -89,7 +92,11 @@ mapping _decode( string data, mixed|void tocolor )
     }), string fmt )
     {
       catch {
-        mixed q = Image[fmt]->_decode( data );
+	mixed q;
+	if( mappingp( opts ) )
+	  q = Image[fmt]->_decode( data, opts );
+	else
+	  q = Image[fmt]->_decode( data );
         format = fmt;
         i = q->image;
         a = q->alpha;
