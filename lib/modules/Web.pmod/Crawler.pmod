@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.12 2002/03/06 10:21:27 js Exp $
+// $Id: Crawler.pmod,v 1.13 2002/03/07 16:15:51 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -566,8 +566,7 @@ class RobotExcluder
 	      void|mixed _user_agent, void|mixed ... _args)
   {
     base_uri=_base_uri; done_cb=_done_cb;
-    user_agent = _user_agent || "PikeCrawler";
-    user_agent = (user_agent/"/")[0];
+    user_agent = _user_agent || "RoxenCrawler";
     args = _args;
     set_callbacks(request_ok, request_fail);
     async_request(base_uri->host, base_uri->port,
@@ -635,7 +634,7 @@ class RobotExcluder
 	    else if(rejected==2)
 	      rejected=0;
 	  }
-	  else if(glob("*"+lower_case(value)+"*", lower_case(user_agent)))
+	  else if(has_value(lower_case(user_agent), lower_case(value)))
 	  {
 	    switch(rejected)
 	    {
