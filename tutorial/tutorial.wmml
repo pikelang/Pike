@@ -391,7 +391,7 @@ A function is declared like this:
 	  <i> statements </i>
 	}
 </pre>
-The <i>modifiers </i> are optional. See section XX.XX for more details about
+The <i>modifiers</i> are optional. See <link to=modifiers> for more details about
 modifiers. The <i>type </i> specifies what kind of data the function returns.
 For example, the word <tt>int</tt> would signify that the function returns
 an integer number. The <i>name </i> is used to identify the function when
@@ -642,7 +642,7 @@ If the command given is "quit" the <tt>exit(0)</tt> statement stops the executio
 
 <section title="Communicating with files">
 Now if we want to save the database and also be able to retrieve previously stored data we have to communicate with the environment, i.e. with files on disk.
-Now we have to introduce objects. To open a file, be it for writing or for reading, we need to use the builtin program <tt>File</tt>.
+Now we have to introduce objects. To open a file, be it for writing or for reading, we need to use the builtin program <tt>Stdio.File</tt>.
 A program is a data type which contains code, function and variables.
 A program can be <i>cloned</i>, i.e. we can create an data area for the program and initialize it with the physical file in question. The methods and variables in the file object enables us to perform actions on the associated file.
 The methods we need to use are open, read, write and close. See <link to=io>
@@ -650,7 +650,7 @@ for more details.
 <p>
 
 <section title="save()">
-First we clone a <tt>File</tt> program to the object <tt>o</tt>. Then we use it to open the file named file for writing, using the fact that if there's an error during opening, o will return a false value which we can detect and act upon by exiting. The arrow operator is what you use to access methods and variables in an object.
+First we clone a <tt>Stdio.File</tt> program to the object <tt>o</tt>. Then we use it to open the file named file for writing, using the fact that if there's an error during opening, o will return a false value which we can detect and act upon by exiting. The arrow operator is what you use to access methods and variables in an object.
 If there's no error we use yet another control structure, <tt>foreach</tt>, to go through the mapping records one record at a time. We precede record names with the string "Record: " and song names with "Song: ". We also put every entry, be it song or record, on its own line by adding a newline to everything we write to the file.<br>
 Finally, remember to close the file.
 <pre>
@@ -658,7 +658,7 @@ Finally, remember to close the file.
 	{
 	  string name, song;
 	  object o;
-	  o=File();
+	  o=Stdio.File();
 
 	  if(!o-&gt;open(file,"wct"))
 	  {
@@ -692,7 +692,7 @@ After having closed the file we initialise our database, i.e. the mapping record
 	  string name="ERROR";
 	  string file_contents,line;
 
-	  o=File();
+	  o=Stdio.File();
 	  if(!o-&gt;open(file,"r"))
 	  {
 	    write("Failed to open file.\n");
@@ -1126,7 +1126,7 @@ it would be done:
 	}
 </pre>
 This would return the error code <tt>1</tt> to the system when the program
-is runned.
+is run.
 </section>
 </section>
 
@@ -1321,7 +1321,7 @@ All the comparison operators plus the operators listed here can be used on strin
 <p>
 Also, these functions operates on strings:
 <dl>
-<dt><tt>string capitalize(string <i>s</i>)</tt>
+<dt><tt>string String.capitalize(string <i>s</i>)</tt>
 <dd>Returns <i>s</i> with the first character converted to upper case.
 
 <dt><tt>string lower_case(string <i>s</i>)</tt>
@@ -1461,11 +1461,11 @@ use the operators <tt>&gt;</tt>, <tt>&gt;=</tt>, <tt>&lt;</tt> or <tt>&lt;=</tt>
      do not have to be pointers to the same array, as long as they are the same
      size and contain equal data.
 
-<dt><tt>array filter(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
+<dt><tt>array Array.filter(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
 <dd> <tt>filter</tt> returns every element in <i>a</i> for which <i>func</i> returns <b>true</b> when called with that element as first argument, and <i>args</i> for the second, third, etc. arguments.
 
-<dt><tt>array map(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
-<dd> This function works similar to <tt>filter</tt> but returns the results
+<dt><tt>array Array.map(array <i>a</i>, mixed <i>func</i>, mixed ... <i>args</i>)</tt>
+<dd> This function works similar to <tt>Array.filter</tt> but returns the results
      of the function <i>func</i> instead of returning the elements from <i>a</i> for which <i>func</i> returns <b>true</b>.
 
 <dt><tt>array replace(array <i>a</i>, mixed <i>from</i>, mixed <i>to</i>)</tt>
@@ -2773,17 +2773,17 @@ read function the results will be returned in an array.
 Let's look at another example:
 <pre>
 	#!/usr/local/bin/pike
-
+	
 	inherit Stdio.File : input;
 	inherit Stdio.File : output;
-
+	
 	int main(int argc, string *argv)
 	{
-          output::create("stdout");
-	  for(int e=0;e&lt;sizeof(argv);e++)
+	  output::create("stdout");
+	  for(int e=1;e<sizeof(argv);e++)
 	  {
-	    input::open(argv[e],"r")
-	    while(s=input::read(4096)) output::write(s);
+	    input::open(argv[e],"r");
+            while(output::write(input::read(4096)) == 4096);
 	  }
 	}
 </pre>
@@ -2801,7 +2801,7 @@ choose not to. This may confuse some programmers with previous experience
 in object oriented programming.
 </section>
 
-<section title="Modifiers">
+<section title="Modifiers" alias=modifiers>
 Sometimes, you may wish to hide things from inheriting programs, or
 prevent functions from being called from other objects. To do so you use
 <b>modifiers</b>. A modifier is simply a word written before a variable
@@ -15187,7 +15187,7 @@ void save(string file)
 {
   string name, song;
   object o;
-  o=File();
+  o=Stdio.File();
 
   if(!o-&gt;open(file,"wct"))
   {
@@ -15211,7 +15211,7 @@ void load(string file)
   string name="ERROR";
   string file_contents,line;
 
-  o=File();
+  o=Stdio.File();
   if(!o-&gt;open(file,"r"))
   {
     write("Failed to open file.\n");
