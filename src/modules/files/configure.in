@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.91 2003/07/03 16:06:21 grubba Exp $
+# $Id: configure.in,v 1.92 2003/07/04 12:17:27 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1176,7 +1176,7 @@ if test yes = "$ac_cv_func_grantpt"; then
       pike_cv_chgpt_path=no
       for i in $pt_chmod_dirs; do
         if test -x ${i}/chgpt; then
-          pike_cv_pt_chmod_path="${i}/chgpt"
+          pike_cv_chgpt_path="${i}/chgpt"
 	  break
         else
           :
