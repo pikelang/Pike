@@ -35,6 +35,10 @@ int main(int argc, string *argv)
     mixed data=Sgml.lex(input,argv[1]);
     werror("Grouping ");
     data=Sgml.group(data);
+
+    werror("Expanding macros\n");
+    data=Wmml.expand_macros(data);
+
     werror("Verifying\n");
     Wmml.verify(data,input,argv[1]);
     werror("Concretizing\n");

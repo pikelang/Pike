@@ -3,6 +3,7 @@
 /.nfs*
 /Calendar.wmml
 /Image.wmml
+/Math.wmml
 /Mysql.wmml
 /Parser.wmml
 /Protocols*.wmml
@@ -44,5 +45,6 @@
 /tutorial.ps.gz
 /tutorial.tex
 /tutorial.toc
+/tutorial.xml
 /tutorial_*.html
 /tutorial_onepage.tex

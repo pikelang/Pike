@@ -80,10 +80,6 @@ class Tag
   }
 };
 
-class PropTag
-{
-};
-
 #define TAG object(Tag)|string
 #define SGML array(TAG)
 

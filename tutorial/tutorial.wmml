@@ -66,8 +66,8 @@ _typeof
 all_threads (link to threads)
 	atan2
 	atexit -fixed by hubbe
-(chmod fixed /Mirar)
-chroot
+(chmod fixed /Mirar) 	(Move to system module? -Hubbe)
+chroot		need ref
 cleargroups
 closelog
 endpwent
@@ -78,22 +78,22 @@ get_all_users
 get_groups_for_user
 getgrent
 getgroups
-getegid
-geteuid
-getgid
+getegid		need ref
+geteuid		need ref
+getgid		need ref
 getgrgid
 getgrnam
-gethostbyaddr
-gethostbyname
-gethostname
+gethostbyaddr	need ref
+gethostbyname	need ref
+gethostname	need ref
 gethrtime
 gethrvtime
-getpgrp
+getpgrp	need ref
 getppid
 getpwent
 getpwnam
 getpwuid
-getuid
+getuid	need ref
 	gmtime - already exists /Hubbe
 hardlink
 initgroups
@@ -112,7 +112,7 @@ setgid
 setgrent
 setgroups
 setpwent
-setuid
+setuid		need ref
 	sgn - documented /hubbe
 symlink
 syslog
@@ -140,6 +140,7 @@ typeof         (Not a function and is documented in one way in misc
 all global functions are included (like threads and Stdio-stuff).
 If the Threads och Stdio-functions begin to work in the modules,
 this comment can be erased.
+
 
 Locale.Charset.*
 Process.create_process ?  done  -hubbe
@@ -7027,7 +7028,6 @@ Set the supplemental group access list for this process.
 initgroups, getgroups, getgid, setgid, getegid, setegid
 </man_see>
 </function>
-
 
 
 <function name=setuid title="set the user ID" fullpath>

@@ -32,9 +32,125 @@ import Sgml;
  * Solution two:
  *   Same as above, but using another field in the Tag class.
  *
+ * Solution three: (implemented)
+ *   Add a function to the Tag class which can access the contained
+ *   tags as a mapping.
+ *
  */
 
 SGML low_make_concrete_wmml(SGML data);
+
+#define TNAME(X) (objectp(X) ? X->tag : "")
+#define PROCESS(X,T) foreach(X,TAG T) switch(objectp(T) ? T->tag : "")
+
+string expand_macro_string(string s, TAG tag)
+{
+  array(string) data=s/"$";
+  for(int e=1;e<sizeof(data);e+=2)
+  {
+    if(data[e]=="")
+    {
+      data[e]="$";
+    }else{
+      data[e]=tag->params[data[e]];
+    }
+  }
+  return data*"";
+}
+
+SGML expand_macro(SGML macro, TAG tag)
+{
+  SGML ret=({});
+  
+  foreach(macro, TAG t)
+    {
+      if(objectp(t))
+      {
+	if(sscanf(t->tag,"%s:%s",string tagtype, string what))
+	{
+	  switch(tagtype)
+	  {
+	    case "param": ret+=({ tag->params[what] }); continue;
+	    case "taglist": ret+=tag->find(what); continue;
+	    case "tag": ret+=tag->find(what)->data; continue;
+	  }
+	}else{
+	  switch(t->tag)
+	  {
+	    case "content": ret+=tag->data; continue;
+	  }
+	}
+
+	ret+=({
+	  Tag(t->tag,
+	      map(t->params, expand_macro_string, tag),
+	      t->pos,
+	      expand_macro(t->data, tag),
+	      t->file)
+	});
+      }else{
+	ret+=({ expand_macro_string(t, tag) });
+      }
+    }
+  return ret;
+}
+
+mapping(string:SGML) macros=([]);
+
+SGML expand_macros(SGML x)
+{
+  if(!x) return 0;
+
+  SGML ret=({});
+
+  foreach(x, TAG t)
+    {
+      if(objectp(t))
+      {
+	switch(t->tag)
+	{
+	  case "include":
+	  {
+	    string filename=t->params->file;
+	    werror("Including %s...\n",filename);
+	    string file=Stdio.read_file(filename);
+	    if (file)
+	    {
+	      ret+=expand_macros(group(lex(file,filename)));
+	    } else {
+	      werror(sprintf("File %O not found specified in tag %O near %s\n",
+			     filename, t->tag, t->location()));
+	    }
+	    continue;
+	  }
+	  
+	  case "defmacro":
+	    macros[t->name]=t->data;
+	    continue;
+
+	  default:
+	    if(SGML macro=macros[t->name])
+	    {
+	      m_delete(macros, t->name); /* Avoid recursive expansion */
+	      ret+=expand_macros( expand_macro(macro, t) );
+	      macros[t->name]=macros;
+	      continue;
+	    }
+	}
+	ret+=({
+	  Tag(t->tag,
+	      t->params,
+	      t->pos,
+	      expand_macros(t->data),
+	      t->file)
+	});
+	continue;
+      }
+      ret+=({t});
+    }
+  return ret;
+}
+
 
 class Trace
 {
@@ -187,7 +303,7 @@ static private int verify_any(SGML data,
 	 case "insert_added_appendices":
 	 case "ex_indent":
 	 case "ex_br":
-	 case "include":
+//	 case "include":
 	 case "dt":
 	 case "dd":
 	 case "li":
@@ -800,13 +916,6 @@ SGML fix_module(TAG tag, string name)
   return res;
 }
 
-#define TNAME(X) (objectp(X) ? X->tag : "")
-#define PROCESS(X,T) foreach(X,TAG T) switch(objectp(T) ? T->tag : "")
-
-
-SGML explode(SGML data, multiset tags)
-{
-}
 
 SGML low_make_concrete_wmml(SGML data)
 {
@@ -928,22 +1037,6 @@ SGML low_make_concrete_wmml(SGML data)
 	case "head":
 	  metadata+=tag->data;
 	  continue;
-	  
-	case "include":
-	{
-	  string filename=tag->params->file;
-	  werror("Reading %s...\n",filename);
-	  string file=Stdio.read_file(filename);
-	  if (file) {
-	    SGML tmp=group(lex(file,filename));
-	    verify(tmp,file,filename);
-	    ret+=low_make_concrete_wmml(tmp);
-	  } else {
-	    werror(sprintf("File %O not found specified in tag %O near %s\n",
-			   filename, tag->tag, tag->location()));
-	  }
-	  continue;
-	}
 	  
 	case "chapter":
 	  ret+=fix_section(tag,chapterE);
