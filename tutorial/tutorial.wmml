@@ -29,7 +29,7 @@ Write an appendix about old functions, behaviors and keywords.
 
 Missing funktions in the manual: (tab before function means fixed)
 UNDEFINED
-Stdio.append_path
+( Stdio.append_path FIXED! /Hedda)
 Regexp->replace
 _sqrt
 _is_type
@@ -2820,6 +2820,7 @@ here is a list of <b>lvalues</b>:
 <tr><th>Lvalue type</th><th>Syntax</th><th>Valid assignment type</th></tr>
 <tr><td> a local or global variable </td><td> <i>identifier</i> </td> <td>same as variable</td></tr>
 <tr><td> an element in an array </td><td> <i>array</i> [ <i>int</i> ]</td><td>any type</td></tr>
+<tr><td> elements in elements in an array </td><td> <i>array</i> [ <i>string</i> ]</td><td>any type<br>This is like map(arr, `[]=,string_indexing_element, assignment_element)</td></tr>
 <tr><td> an element in an string </td><td> <i>string</i> [ <i>int</i> ]</td><td>integer</td></tr>
 <tr><td> an element in a mapping </td><td> <i>mapping</i>[<i>mixed</i>] or <i>mapping</i>-&gt;<i>identifier</i> </td><td>any type</td></tr>
 <tr><td> an element in a multiset </td><td> <i>multiset</i>[<i>mixed</i>] or <i>multiset</i>-&gt;<i>identifier</i> </td><td>true / false</td></tr>
@@ -4771,6 +4772,32 @@ The Stdio module also contains a collection of high level IO functions
 to make it easy to write short and readable Pike programs. Most of these
 functions are implemented using Stdio.File and Stdio.FILE.
 
+
+
+<function name=append_path title="append paths in a secure way">
+<man_syntax>
+string append_path(string <I>absolute</I>, string ... <I>relative</I>);<br>
+</man_syntax>
+<man_description>
+Append relative paths to an absolute path and remove any "//", "../"
+or "/." to produce a straightforward absolute path as a result. "../"
+is ignorded in the relative paths if it makes the created path begin
+with something else than the absolute path (or so far created path).
+</man_description>
+<man_example>
+&gt; Stdio.append_path("/foo/bar/","..");<br>
+Result: /foo/bar/<br>
+&gt; Stdio.append_path("/foo/bar/","../apa.c");<br>
+Result: /foo/bar/apa.c<br>
+&gt; Stdio.append_path("/foo/bar","./sune.c");<br>
+Result: /foo/bar/sune.c<br>
+&gt; Stdio.append_path("/foo/bar","bertil/../../sune.c");<br>
+Result: /foo/bar/sune.c<br>
+&gt; Stdio.append_path("/foo/bar","klas","bertil/../../sune.c");<br>
+Result: /foo/bar/klas/sune.c<br>
+</man_example>
+<man_see>combine_path</man_see>
+</function>
 
 
 <function name=file_size title="return the size of a file in bytes">
@@ -11351,7 +11378,7 @@ Result: /foo/apa.c<br>
 Result: /foo/bar/sune.c<br>
 </man_example>
 <man_see>
-getcwd
+getcwd, Stdio.append_path
 </man_see>
 </function>
 
