@@ -1,0 +1,87 @@
+The following people have commit access to the Pike sources.
+Note that this is not a full list of Pike's authors, however --
+for that, you'd need to browse the log messages to see all the
+patch contributors.
+
+If you have a question or comment, it's probably best to join
+the Pike mailing list and ask there, rather than mailing any of
+these people directly. Check http://pike.ida.liu.se/forums/ for
+further instructions on how to join the pike list.
+
+Blanket Pike commit access at pike.ida.liu.se:
+
+          marcus   Marcus Comstedt <marcus@pike.ida.liu.se>
+           peter   Peter Bortas <peter@bortas.org>
+              js   Johan Schön <johan@schon.org>
+            mast   Martin Stjernholm <mast@roxen.com>
+             jhs   Johan Sundström <jhs@pike.ida.liu.se>
+        stensson   Leif Stensson <stensson@pike.ida.liu.se>
+         nilsson   Martin Nilsson <nilsson@pike.ida.liu.se>
+             per   Per Hedbor <per@hedbor.org>
+          grubba   Henrik Grubbström <grubba@grubba.org>
+         agehall   Marcus Agehall <agehall@lysator.liu.se>
+             hop   Honza Petrous <hop@unibase.cz>
+            bill   Bill Welliver <Bill.Welliver@fairchildsemi.com>
+         neotron   David Hedbor <david@hedbor.org>
+          mikael   Mikael Branström <mikael@brandstrom.org>
+           sigge   Andreas Sigfridsson <andsi988@student.liu.se>
+
+Commit access for specific areas:
+
+         grendel   Marek Habersack <grendel@caudium.net> (deb packages)
+            kiwi   Xavier Beaudouin <kiwi@oav.net>       (*BSD ports)
+
+Since Pike/7.2 still is hosted by Roxen Internet Software, this
+tree has different committers from the rest of Pike. Below, we
+list the people that currently have write access to the Pike
+repositories ordered by their first checkins to Pike.
+
+Commit access for Pike/7.2 at cvs.roxen.com:
+
+          grubba   Henrik Grubbström <grubba@grubba.org>
+            mast   Martin Stjernholm <mast@roxen.com>
+          noring   Fredrik Noring <noring@roxen.com>
+          jonasw   Jonas Walldén <jonasw@roxen.com>
+        wellhard   Marcus Wellhardh <wellhard@roxen.com>
+           stewa   Stefan Wallström <stewa@lysator.liu.se>
+           tomas   Tomas Nilsson <tomas@roxen.com>
+             ian   Ian Delahorne <ian@assv.net>
+          anders   Anders Johansson <anders@roxen.com>
+
+People who have committed to Pike historically by order of appearance:
+
+           hubbe   Fredrik Hubinette <hubbe@hubbe.net>            1996
+             per   Per Hedbor <per@hedbor.org>
+           mirar   Pontus Hagland <mirar@mirar.org>
+         neotron   David Hedbor <david@hedbor.org>
+          grubba   Henrik Grubbström <grubba@grubba.org>
+           nisse   Niels Möller <nisse@lysator.liu.se>
+          davidk   David Kågedal <david@kagedal.org>              1997
+          marcus   Marcus Comstedt <marcus@pike.ida.liu.se>
+            mast   Martin Stjernholm <mast@roxen.com>
+           hedda   Henrik Wallin <hedda@lysator.liu.se>
+          noring   Fredrik Noring <noring@roxen.com>
+        nordgren   Peter Nordgren <nordgren@lysator.liu.se> 
+              js   Johan Schön <johan@schon.org>                  1998
+            wing   Mattias Wingstedt <w@firefruit.com>
+           peter   Peter Bortas <peter@bortas.org>
+           sigge   Andreas Sigfridsson <andsi988@student.liu.se>  1999
+             jhs   Johan Sundström <jhs@pike.ida.liu.se>
+          jonasw   Jonas Walldén <jonasw@roxen.com>
+        wellhard   Marcus Wellhardh <wellhard@roxen.com>
+             hop   Honza Petrous <hop@unibase.cz>
+        stensson   Leif Stensson <stensson@pike.ida.liu.se>       2000
+           stewa   Stefan Wallström <stewa@lysator.liu.se>
+         nilsson   Martin Nilsson <nilsson@pike.ida.liu.se>
+          kinkie   Francesco Chemolli <>
+           lange   Andreas Lange <a.lange@home.se>
+          norlin   David Norlin <davno337@student.liu.se>
+           tomas   Tomas Nilsson <tomas@roxen.com>                2001
+             noy   Pär Svensson <noy@lysator.liu.se>
+             ian   Ian Delahorne <ian@assv.net>
+          anders   Anders Johansson <anders@roxen.com>
+          mikael   Mikael Branström <mikael@brandstrom.org>       2002
+         agehall   Marcus Agehall <agehall@lysator.liu.se>
+            bill   Bill Welliver <Bill.Welliver@fairchildsemi.com>
+         grendel   Marek Habersack <grendel@caudium.net>
+            kiwi   Xavier Beaudouin <kiwi@oav.net>
