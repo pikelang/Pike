@@ -246,10 +246,30 @@
    if (!equal(img->max(),({255,254,253}))) fail("wrong maxcolor");
    ok();
 
+//-----------------------------------------------------
+#chapter Image.Font
+
+#test instansiating default font
+   if (!objectp(Image.Font())) fail("not object"); 
+   ok();
+
+#test writing simple text with default font
+   object f=Image.Font();
+   object i=f->write("hej");
+   if (i!=Image.PNM.decode(MIME.decode_base64("UDQKMTkgMTEK///gv/7gv//grzjglt7gth7gtv7gtv7gtx7g//7g//Hg"))) 
+      fail("incorrect");
+   ok();
+
+#test writing multiple lines with default font
+   object f=Image.Font();
+   object i=f->write("h","o");
+   if (i!=Image.PNM.decode(MIME.decode_base64("UDQKNyAyMwr+vr6ulra2trb+/v7+/s62tra2zv7+/g==")))
+      fail("incorrect");
+   ok();
    
 
 //-----------------------------------------------------
-#chapter colortable
+#chapter Image.Colortable
 
 #test colortable - black/white init & cast
    object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
@@ -660,7 +680,7 @@ if (!(Stinares-expected_result<80))
    fail("->match_phase(float f, object needle) differ too much");
 
  /*
- This is used to create more tests. Please don't remove!
+ This is used to create more tests. Please don't remMIME.encode_base64ove!
 
  MIME.encode_base64(Image.JPEG.encode(Stinares));
  */

@@ -1,13 +1,16 @@
-/* $Id: font.c,v 1.48 1999/05/23 17:46:40 mirar Exp $ */
+/* $Id: font.c,v 1.49 1999/05/24 14:33:10 mirar Exp $ */
 #include "global.h"
 #include <config.h>
 
 #define SPACE_CHAR 'i'
 
+extern unsigned char * image_default_font;
+#define IMAGE_DEFAULT_FONT_SIZE 30596
+
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.48 1999/05/23 17:46:40 mirar Exp $
+**!	$Id: font.c,v 1.49 1999/05/24 14:33:10 mirar Exp $
 **! class Font
 **!
 **! note
@@ -219,7 +222,7 @@ static INLINE void free_font_struct(struct font *font)
 {
    if (font)
    {
-      if (font->mem)
+      if (font->mem && font->mem!=image_default_font)
       {
 #ifdef HAVE_MMAP
 	 munmap(font->mem,font->mmaped_size);
@@ -335,26 +338,32 @@ void font_load(INT32 args);
 
 void font_create(INT32 args)
 {
-   if (args) 
-   {
-     font_load(args);
-     pop_stack();
-   }
+   font_load(args);
+   pop_stack();
 }
 
 void font_load(INT32 args)
 {
    int fd;
+   size_t size;
 
-   if (args<1 
-       || sp[-args].type!=T_STRING)
-      error("font->read: illegal or wrong number of arguments\n");
-   
    if (THIS)
    {
       free_font_struct(THIS);
       THIS=NULL;
    }
+
+   if (!args) 
+   {
+      THIS=(struct font *)xalloc(sizeof(struct font));
+      THIS->mem=image_default_font;
+      size=IMAGE_DEFAULT_FONT_SIZE;
+      goto loading_default;
+   }
+
+   if (sp[-args].type!=T_STRING)
+      error("font->read: illegal or wrong number of arguments\n");
+   
    do 
    {
 #ifdef FONT_DEBUG
@@ -365,7 +374,6 @@ void font_load(INT32 args)
 
    if (fd >= 0)
    {
-      size_t size;
       struct font *new_font;
 
       size = (size_t) file_size(fd);
@@ -390,6 +398,8 @@ void font_load(INT32 args)
 	 }
 #endif
 	 THREADS_DISALLOW();
+
+loading_default:
 
 	 if (THIS->mem)
 	 {
@@ -473,6 +483,8 @@ void font_load(INT32 args)
 
 		  }
 
+		  if (!args) goto done;
+
 		  fd_close(fd);
 		  pop_n_elems(args);
 		  ref_push_object(THISOBJ);   /* success */
@@ -488,6 +500,7 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
 	    else fprintf(stderr,"FONT wrong cookie\n");
 #endif
+	    if (!args) goto done; /* just in case */
 	 } /* mem failure */
 #ifdef FONT_DEBUG
 	 else fprintf(stderr,"FONT mem failure\n");
@@ -503,6 +516,8 @@ void font_load(INT32 args)
 #ifdef FONT_DEBUG
    else fprintf(stderr,"FONT fd failure\n");
 #endif
+
+done:
 
    pop_n_elems(args);
    push_int(0);
@@ -888,7 +903,7 @@ void init_image_font(void)
    ADD_FUNCTION("create",font_create,tFunc(tOr(tVoid,tStr),tVoid),0);
 
    /* function(string:object) */
-   ADD_FUNCTION("write",font_write,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("write",font_write,tFuncV(,tStr,tObj),0);
 
    /* function(:int) */
    ADD_FUNCTION("height",font_height,tFunc(,tInt),0);

@@ -415,8 +415,6 @@ if (!equal(img->max(),({255,254,253}))) do { werror("failure; Image.image/advanc
 return 1;
 
 
-
-
 }
 mixed b() { return 1; }
 
@@ -426,14 +424,8 @@ mixed a(){
 # 1 "-"
 
 
-#255 "testsuite.in.in"
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-array z=(array)c;
-if (sizeof(z)!=2) 
-do { werror("failure; Image.image/colortable/colortable - black/white init & cast: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
-(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/colortable/colortable - black/white init & cast: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+#253 "testsuite.in.in"
+if (!objectp(Image.Font())) do { werror("failure; Image.image/Image.Font/instansiating default font: "+( "not object" )+"\n"); return 0; } while (0); 
 return 1;
 
 }
@@ -445,16 +437,11 @@ mixed a(){
 # 1 "-"
 
 
-#265 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-img=c*img;
-array z=(array)Image.Colortable(img);
-if (sizeof(z)!=2) 
-do { werror("failure; Image.image/colortable/colortable - black/white normal: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
-(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/colortable/colortable - black/white normal: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+#257 "testsuite.in.in"
+object f=Image.Font();
+object i=f->write("hej");
+if (i!=Image.PNM.decode(MIME.decode_base64("UDQKMTkgMTEK///gv/7gv//grzjglt7gth7gtv7gtv7gtx7g//7g//Hg"))) 
+do { werror("failure; Image.image/Image.Font/writing simple text with default font: "+( "incorrect" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -466,18 +453,14 @@ mixed a(){
 # 1 "-"
 
 
-#277 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-c->floyd_steinberg();
-img=c*img;
-array z=(array)Image.Colortable(img);
-if (sizeof(z)!=2) 
-do { werror("failure; Image.image/colortable/colortable - black/white floyd-steinberg: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
-(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/colortable/colortable - black/white floyd-steinberg: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+#264 "testsuite.in.in"
+object f=Image.Font();
+object i=f->write("h","o");
+if (i!=Image.PNM.decode(MIME.decode_base64("UDQKNyAyMwr+vr6ulra2trb+/v7+/s62tra2zv7+/g==")))
+do { werror("failure; Image.image/Image.Font/writing multiple lines with default font: "+( "incorrect" )+"\n"); return 0; } while (0);
 return 1;
+
+
 
 }
 mixed b() { return 1; }
@@ -488,17 +471,14 @@ mixed a(){
 # 1 "-"
 
 
-#290 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
+#275 "testsuite.in.in"
 object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-c->ordered();
-img=c*img;
-array z=(array)Image.Colortable(img);
+array z=(array)c;
 if (sizeof(z)!=2) 
-do { werror("failure; Image.image/colortable/colortable - black/white ordered: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
 if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
 (z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/colortable/colortable - black/white ordered: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -510,13 +490,16 @@ mixed a(){
 # 1 "-"
 
 
-#303 "testsuite.in.in"
-object img=Image.image(200,200)->test(42);
-img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-object c=Image.Colortable(img,1000)->cubicles(16,16,16,4);
-if (sizeof(c)<200) do { werror("failure; Image.image/colortable/colortable - standard: "+( "too few colors" )+"\n"); return 0; } while (0);
-object img1=(c*img);
-if (!(img-img1<50)) do { werror("failure; Image.image/colortable/colortable - standard: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+#285 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -528,12 +511,17 @@ mixed a(){
 # 1 "-"
 
 
-#312 "testsuite.in.in"
-object img=Image.image(200,200)->test(42);
-img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-object c=Image.Colortable(32,32,32)->floyd_steinberg();
-object img1=(c*img);
-if (!(img-img1<50)) do { werror("failure; Image.image/colortable/colortable - floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+#297 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+c->floyd_steinberg();
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -545,15 +533,18 @@ mixed a(){
 # 1 "-"
 
 
-#320 "testsuite.in.in"
-object img=Image.image(200,200)->test(42);
-img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-object c=Image.Colortable(32,32,32)->ordered();
-object img1=(c*img);
-if (!(img-img1<32)) do { werror("failure; Image.image/colortable/colortable - ordered: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+#310 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+c->ordered();
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get black and white: "+((array(string))c)*", " )+"\n"); return 0; } while (0);
 return 1;
-
-
 
 }
 mixed b() { return 1; }
@@ -564,10 +555,13 @@ mixed a(){
 # 1 "-"
 
 
-#332 "testsuite.in.in"
-object img=Image.image(100,100)->test(40);
-object img1=Image.PNM.decode(Image.PNM.encode(img));
-if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode: "+( "differ" )+"\n"); return 0; } while (0);
+#323 "testsuite.in.in"
+object img=Image.image(200,200)->test(42);
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.Colortable(img,1000)->cubicles(16,16,16,4);
+if (sizeof(c)<200) do { werror("failure; Image.image/Image.Colortable/colortable - standard: "+( "too few colors" )+"\n"); return 0; } while (0);
+object img1=(c*img);
+if (!(img-img1<50)) do { werror("failure; Image.image/Image.Colortable/colortable - standard: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -579,12 +573,12 @@ mixed a(){
 # 1 "-"
 
 
-#338 "testsuite.in.in"
-object img=Image.image(100,100)->test(41);
-object c=Image.Colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
-img=c*img;
-object img1=Image.GIF.decode(Image.GIF.encode(img));
-if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode: "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+#332 "testsuite.in.in"
+object img=Image.image(200,200)->test(42);
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.Colortable(32,32,32)->floyd_steinberg();
+object img1=(c*img);
+if (!(img-img1<50)) do { werror("failure; Image.image/Image.Colortable/colortable - floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -596,13 +590,15 @@ mixed a(){
 # 1 "-"
 
 
-#346 "testsuite.in.in"
-object img=Image.image(100,100)->test(42);
-object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
-img=c*img;
-object img1=Image.GIF.decode(Image.GIF.encode(img,c));
-if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable : "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+#340 "testsuite.in.in"
+object img=Image.image(200,200)->test(42);
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.Colortable(32,32,32)->ordered();
+object img1=(c*img);
+if (!(img-img1<32)) do { werror("failure; Image.image/Image.Colortable/colortable - ordered: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
 return 1;
+
+
 
 }
 mixed b() { return 1; }
@@ -613,12 +609,10 @@ mixed a(){
 # 1 "-"
 
 
-#354 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
-img=c*img;
-object img1=Image.GIF.decode(Image.GIF.encode(img,c));
-if (!(img-img1<50)) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable w/ floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+#352 "testsuite.in.in"
+object img=Image.image(100,100)->test(40);
+object img1=Image.PNM.decode(Image.PNM.encode(img));
+if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode: "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -630,9 +624,12 @@ mixed a(){
 # 1 "-"
 
 
-#362 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.AVS.decode(Image.AVS.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.AVS.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+#358 "testsuite.in.in"
+object img=Image.image(100,100)->test(41);
+object c=Image.Colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img));
+if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode: "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -644,9 +641,12 @@ mixed a(){
 # 1 "-"
 
 
-#367 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (truecolor): "+( "differ" )+"\n"); return 0; } while (0);
+#366 "testsuite.in.in"
+object img=Image.image(100,100)->test(42);
+object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable : "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -658,11 +658,12 @@ mixed a(){
 # 1 "-"
 
 
-#372 "testsuite.in.in"
+#374 "testsuite.in.in"
 object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,256);
+object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
 img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (8bpp): "+( "differ" )+"\n"); return 0; } while (0);
+object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+if (!(img-img1<50)) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable w/ floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -674,11 +675,9 @@ mixed a(){
 # 1 "-"
 
 
-#379 "testsuite.in.in"
+#382 "testsuite.in.in"
 object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,16);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
+if (Image.AVS.decode(Image.AVS.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.AVS.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -690,11 +689,9 @@ mixed a(){
 # 1 "-"
 
 
-#386 "testsuite.in.in"
+#387 "testsuite.in.in"
 object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,2);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (1bpp): "+( "differ" )+"\n"); return 0; } while (0);
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (truecolor): "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -706,10 +703,11 @@ mixed a(){
 # 1 "-"
 
 
-#393 "testsuite.in.in"
-object img=Image.image(256,240)->test(43);
-img=Image.Colortable( ({"white","black","red","green"}) )*img;
-if (Image.HRZ.decode(Image.HRZ.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.HRZ.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+#392 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+object c=Image.Colortable(img,256);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (8bpp): "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -725,7 +723,7 @@ mixed a(){
 object img=Image.image(100,100)->test(43);
 object c=Image.Colortable(img,16);
 img=c*img;
-if (Image.ILBM.decode(Image.ILBM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.ILBM.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -739,7 +737,9 @@ mixed a(){
 
 #406 "testsuite.in.in"
 object img=Image.image(100,100)->test(43);
-if (Image.PCX.decode(Image.PCX.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PCX.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+object c=Image.Colortable(img,2);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (1bpp): "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -751,9 +751,10 @@ mixed a(){
 # 1 "-"
 
 
-#411 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.PNM.decode(Image.PNM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+#413 "testsuite.in.in"
+object img=Image.image(256,240)->test(43);
+img=Image.Colortable( ({"white","black","red","green"}) )*img;
+if (Image.HRZ.decode(Image.HRZ.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.HRZ.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -765,9 +766,11 @@ mixed a(){
 # 1 "-"
 
 
-#416 "testsuite.in.in"
+#419 "testsuite.in.in"
 object img=Image.image(100,100)->test(43);
-if (Image.TGA.decode(Image.TGA.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.TGA.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.ILBM.decode(Image.ILBM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.ILBM.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -779,7 +782,49 @@ mixed a(){
 # 1 "-"
 
 
-#421 "testsuite.in.in"
+#426 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.PCX.decode(Image.PCX.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PCX.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 44, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#431 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.PNM.decode(Image.PNM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 45, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#436 "testsuite.in.in"
+object img=Image.image(100,100)->test(43);
+if (Image.TGA.decode(Image.TGA.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.TGA.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 46, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#441 "testsuite.in.in"
 object img=Image.image(100,100)->test(43);
 object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
 img=c*img;
@@ -799,12 +844,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 44, expected result: EQ
+test 47, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#437 "testsuite.in.in"
+#457 "testsuite.in.in"
 #if constant(Image.XPM.encode)
 object img=Image.image(100,100)->test(43);
 object c=Image.Colortable(img,16);
@@ -820,12 +865,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 45, expected result: EQ
+test 48, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#449 "testsuite.in.in"
+#469 "testsuite.in.in"
 #if constant(Image.XPM.encode)
 object img=Image.image(100,100)->test(43);
 object c=Image.Colortable(16,16,16); 
@@ -839,12 +884,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 46, expected result: EQ
+test 49, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#459 "testsuite.in.in"
+#479 "testsuite.in.in"
 #if constant(Image.TIFF.encode)
 object img=Image.image(100,100)->test(43);
 if (Image.TIFF.decode(Image.TIFF.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.TIFF.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
@@ -857,12 +902,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 47, expected result: EQ
+test 50, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#468 "testsuite.in.in"
+#488 "testsuite.in.in"
 #if constant(Image.XFace.encode)
 object img=Image.image(48,48)->test(43);
 object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
@@ -878,12 +923,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 48, expected result: EQ
+test 51, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#480 "testsuite.in.in"
+#500 "testsuite.in.in"
 #if constant(Image.JPEG.encode)
 object img=Image.image(100,100)->test(43);
 object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
@@ -899,12 +944,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 49, expected result: EQ
+test 52, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#494 "testsuite.in.in"
+#514 "testsuite.in.in"
 foreach (
 ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
 ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
@@ -970,12 +1015,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 50, expected result: EQ
+test 53, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#556 "testsuite.in.in"
+#576 "testsuite.in.in"
 if (!arrayp(indices(Image.Color)))
 do { werror("failure; Image.image/Image.Color/indices(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
 if (!stringp(indices(Image.Color)[0]))
@@ -988,12 +1033,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 51, expected result: EQ
+test 54, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#565 "testsuite.in.in"
+#585 "testsuite.in.in"
 if (!arrayp(values(Image.Color)))
 do { werror("failure; Image.image/Image.Color/values(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
 if (!objectp(values(Image.Color)[0]))
@@ -1006,12 +1051,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 52, expected result: EQ
+test 55, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#574 "testsuite.in.in"
+#594 "testsuite.in.in"
 foreach (
 ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
 ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
@@ -1037,12 +1082,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 53, expected result: EQ
+test 56, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#598 "testsuite.in.in"
+#618 "testsuite.in.in"
 
 object Stina=Image.JPEG.decode(MIME.decode_base64(
 "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAABgcABQgE/8QANhAAAgEEAAQDAwkJAAAAAAAAAQID\r\nAAQFEQYSITEHE3EiQYEUMjNCYXOhscEVIzY3UVJicsL/xAAZAQACAwEAAAAAAAAAAAAAAAACBAAB\r\nAwX/xAAdEQACAgMBAQEAAAAAAAAAAAABAgARAyExEjJB/9oADAMBAAIRAxEAPwBcXMazCMT3wOjy\r\nhAOpPpXaOEs2bIXdhib2WJVIJW31sfO3vfpXXaWlrd35SUDn0PLHYg9/0p44HiS1yWIgCSwRXcQ8\r\nuW3kl8vlK9NjferZ1X65JlORVtBZmW7iSWFJreTzUZG5ikq6ZTrtqtQ+EuLixvh7jm8tRLcp5khD\r\ndT16b+FLDxltcZe5DFXWPlglyLs0d38nYHYGtA6+3dPvERfJ8JYwBQnJbouh00eUVRbViXbeR67M\r\nzeIRi4f8QLlLNFhVFdF+tok73+PauK3s5r20DLEsS82/PufYD0x48Ri8/wCPGVkybQPBYBWSCYjT\r\nyFQOx79wfhTNzj4+2w8sV9bxtC6FEhZRo9PcKFcwA3I7MpAAmbplvYomtXijcluUSxN8emvdRH4X\r\nAW0eYLHmlWVUHOSTqhG/hW1zTShnWLQ1pui9e1GvhwD+xrqYczefcMQT3IFBme01GMCn1uC1/byT\r\nsGtWKuDtXB67qxsM0l9bbyYhM8Oo9gA85Hp1owfwltZnaK1y1xBNolY/L3v0oLfgjHxZg2drkMjL\r\nfxvp0ktBErH7Dvr/AEregTMzctsJjocnx5gbVIIzbef50qqhGuXZ0a0Yw6dunuA+ND/CmDhxOItW\r\ne3C3xQhmce0P8d1ci7jZuQnUv9g70LVwQCSxiu8ROBpJc1LxJas0qzRrHcQbJ0yjQZT6dDSxzWdF\r\ngqRq9xJMy8qhm3yDtqtSMiSRGN0DK406nsd96UOd8PcFJxiTc/uIki505j0cH6o9DUpSNw1Y3UR7\r\nJc3kq24V3uJ/ZCjZK799PPCY6LA4a2s9FgqDm9nR37/xroseG8bip2nsrSAvrQk5tsBVkyEqpCk/\r\nHdJ5snrQjmJaNmWkP0ll/sPzpdZz+Z0Hr/1UqU4nYs3I9F+ji9BVUf4kP3VSpVHsyWWMvYeo/OhT\r\njT59v92f1qVKFvmFj+oL475g9Ksrbs1SpSB7Oj+T/9k="));
@@ -1060,12 +1105,12 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 54, expected result: EQ
+test 57, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#612 "testsuite.in.in"
+#632 "testsuite.in.in"
 
 object Stina=Image.JPEG.decode(MIME.decode_base64(
 "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAABgcABQgE/8QANhAAAgEEAAQDAwkJAAAAAAAAAQID\r\nAAQFEQYSITEHE3EiQYEUMjNCYXOhscEVIzY3UVJicsL/xAAZAQACAwEAAAAAAAAAAAAAAAACBAAB\r\nAwX/xAAdEQACAgMBAQEAAAAAAAAAAAABAgARAyExEjJB/9oADAMBAAIRAxEAPwBcXMazCMT3wOjy\r\nhAOpPpXaOEs2bIXdhib2WJVIJW31sfO3vfpXXaWlrd35SUDn0PLHYg9/0p44HiS1yWIgCSwRXcQ8\r\nuW3kl8vlK9NjferZ1X65JlORVtBZmW7iSWFJreTzUZG5ikq6ZTrtqtQ+EuLixvh7jm8tRLcp5khD\r\ndT16b+FLDxltcZe5DFXWPlglyLs0d38nYHYGtA6+3dPvERfJ8JYwBQnJbouh00eUVRbViXbeR67M\r\nzeIRi4f8QLlLNFhVFdF+tok73+PauK3s5r20DLEsS82/PufYD0x48Ri8/wCPGVkybQPBYBWSCYjT\r\nyFQOx79wfhTNzj4+2w8sV9bxtC6FEhZRo9PcKFcwA3I7MpAAmbplvYomtXijcluUSxN8emvdRH4X\r\nAW0eYLHmlWVUHOSTqhG/hW1zTShnWLQ1pui9e1GvhwD+xrqYczefcMQT3IFBme01GMCn1uC1/byT\r\nsGtWKuDtXB67qxsM0l9bbyYhM8Oo9gA85Hp1owfwltZnaK1y1xBNolY/L3v0oLfgjHxZg2drkMjL\r\nfxvp0ktBErH7Dvr/AEregTMzctsJjocnx5gbVIIzbef50qqhGuXZ0a0Yw6dunuA+ND/CmDhxOItW\r\ne3C3xQhmce0P8d1ci7jZuQnUv9g70LVwQCSxiu8ROBpJc1LxJas0qzRrHcQbJ0yjQZT6dDSxzWdF\r\ngqRq9xJMy8qhm3yDtqtSMiSRGN0DK406nsd96UOd8PcFJxiTc/uIki505j0cH6o9DUpSNw1Y3UR7\r\nJc3kq24V3uJ/ZCjZK799PPCY6LA4a2s9FgqDm9nR37/xroseG8bip2nsrSAvrQk5tsBVkyEqpCk/\r\nHdJ5snrQjmJaNmWkP0ll/sPzpdZz+Z0Hr/1UqU4nYs3I9F+ji9BVUf4kP3VSpVHsyWWMvYeo/OhT\r\njT59v92f1qVKFvmFj+oL475g9Ksrbs1SpSB7Oj+T/9k="));
