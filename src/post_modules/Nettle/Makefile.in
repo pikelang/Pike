@@ -1,8 +1,8 @@
-# $Id: Makefile.in,v 1.2 2003/03/12 19:30:39 nilsson Exp $
+# $Id: Makefile.in,v 1.3 2003/03/13 15:00:37 nisse Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 
-OBJS = nettle.o
+OBJS = nettle.o hash.o
 
 MODULE_LDFLAGS = @LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
@@ -10,5 +10,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 @dynamic_module_makefile@
 
 nettle.o: $(SRCDIR)/nettle.c
+hash.o: $(SRCDIR)/hash.c
 
 @dependencies@
