@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.43 1999/02/13 20:45:56 grubba Exp $
+ * $Id: requests.pmod,v 1.44 1999/02/14 23:13:17 grubba Exp $
  */
 
 import .types;
@@ -193,6 +193,22 @@ class create_mailbox
   mapping easy_process(string mailbox_name)
   {
     if (server->create_mailbox(session, mailbox_name)) {
+      send(tag, "OK");
+    } else {
+      send(tag, "NO");
+    }
+    return ([ "action" : "finished" ]);
+  }
+}
+
+class delete
+{
+  inherit request;
+  constant arg_info = ({ ({ "string" }) });
+
+  mapping easy_process(string mailbox_name)
+  {
+    if (server->delete(session, mailbox_name)) {
       send(tag, "OK");
     } else {
       send(tag, "NO");
@@ -811,7 +827,6 @@ class search
 
 constant authenticate = unimplemented;
 constant examine = unimplemented;
-constant delete = unimplemented;
 constant rename = unimplemented;
 constant subscribe = unimplemented;
 constant unsubscribe = unimplemented;
