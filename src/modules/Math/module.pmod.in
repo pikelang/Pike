@@ -2,29 +2,99 @@
 
 inherit @module@;
 
+//! This function converts between degrees, radians and gons. The
+//! @[from] and @[to] arguments may be any of the follwoing
+//! strings: "deg", "rad" and "gon" for degrees, radians and gon
+//! respectivly. The output is not guaranteed to be within the
+//! first turn, e.g. converting 10 radians yields almost 573 degrees
+//! as output.
+int|float convert_angle(int|float angle, string from, string to) {
+  switch(to) {
+  case "deg":
+    switch(from) {
+    case "deg": return angle;
+    case "rad": return angle * 360.0/(2.0*pi);
+    case "gon": return angle * 360.0/400.0;
+    default: throw( ({"Unknwon angle from type "+from+".\n", backtrace()}) );
+    }
+  case "rad":
+    switch(from) {
+    case "deg": return angle * (2.0*pi)/360.0;
+    case "rad": return angle;
+    case "gon": return angle * (2.0*pi)/400.0;
+    default: throw( ({"Unknwon angle from type "+from+".\n", backtrace()}) );
+    }
+  case "gon":
+    switch(from) {
+    case "deg": return angle * 400.0/360.0;
+    case "rad": return angle * 400.0/(2.0*pi);
+    case "gon": return angle;
+    default: throw( ({"Unknwon angle from type "+from+".\n", backtrace()}) );
+    }
+  default: throw( ({"Unknown angle to type "+to+".\n", backtrace()}) );
+  }
+}
+
 class Angle {
 
   //! The actual keeper of the angle value.
   int|float angle;
 
-  void create(void|int|float degree) {
-    angle = degree % 360;
+  //! The type of the angle value. Is either "deg", "rad" or "gon".
+  string type;
+
+  //! @decl create()
+  //! @decl create(int|float radians)
+  //! @decl create(int|float angle, string type)
+  //!
+  //! If an angle object is created without arguments it
+  //! will have the value 0 radians.
+  void create(void|int|float _angle, void|string type) {
+    if(type) {
+      set(type, _angle);
+      return;
+    }
+    set_rad(_angle);
   }
 
-  //! Returns the number of degrees.
-  int degrees() {
-    return (int)angle;
+  //! Gets the value in the provided type.
+  int|float get(string type) {
+    switch(type) {
+    case "deg": return degree();
+    case "rad": return rad();
+    case "gon": return gon();
+    }
+    throw( ({"Unknown type "+type+".\n", backtrace()}) );
+  }
+
+  //! Sets the angle value and type to the given value
+  //! and type.
+  Angle set(string type, int|float _angle) {
+    switch(type) {
+    case "deg": return set_degree(_angle);
+    case "rad": return set_rad(_angle);
+    case "gon": return set_gon(_angle);
+    }
+    throw( ({"Unknown type "+type+".\n", backtrace()}) );
+  }
+
+  //! Returns the number of degrees, including minutes and
+  //! seconds as decimals.
+  int|float degree() {
+    return convert_angle(angle, type, "deg");
   }
 
   //! Returns the number of minute.
-  int minutes() {
-    if(intp(angle)) return 0;
+  int minute() {
+    float angle = (float)degree();
+    if(angle - floor(angle) == 0.0) return 0;
     return (int)floor(60.0*(angle-floor(angle)));
   }
 
   //! Returns the number of seconds.
-  float seconds() {
-    if(intp(angle)) return 0;
+  float second() {
+    float angle = (float)degree();
+    if(angle - floor(angle) == 0.0) return 0;
     return 3600.0*(angle-floor(60.0*angle)/60.0);
   }
 
@@ -33,35 +103,47 @@ class Angle {
   //! @decl Angle set_dms(int degrees, inte minutes, float seconds)
   //! Set degrees, minues and seconds. Returns the current angle object.
   Angle set_dms(int degrees, void|int minutes, void|float seconds) {
-    create( degrees + minutes/60.0 + seconds/3600.0 );
+    set_degree( degrees + minutes/60.0 + seconds/3600.0 );
     return this_object();
   }
 
   //! Returns degrees, minutes and seconds as a string, e.g.
   //! 47°6'36.00".
   string format_dms() {
-    return sprintf("%d°%d'%.2f\"", degrees(), minutes(), seconds());
+    return sprintf("%d°%d'%.2f\"", (int)degree(), minute(), second());
+  }
+
+  //! Sets the angle to the provided degree. Alters the type to degrees.
+  //! Returns the current object.
+  Angle set_degree(int|float degree) {
+    angle = degree % 360;
+    type = "deg";
+    return this_object();
   }
 
   //! Returns the number of gons.
-  float gon() {
-    return angle * 400.0/360.0;
+  int|float gon() {
+    return convert_angle(angle, type, "gon");
   }
 
-  //! Set the angle with gons. Returns the current angle object.
+  //! Set the angle to the provided gons. Alters the type to gons.
+  //! Returns the current angle object.
   Angle set_gon(int|float gon) {
-    create( gon * 360.0/400.0 );
+    angle = gon % 400;
+    type = "gon";
     return this_object();
   }
 
   //! Returns the number of radians.
   float rad() {
-    return angle * (2*pi)/360.0;
+    return convert_angle(angle, type, "rad");
   }
 
-  //! Set the angle with radians. Returns the current angle object.
+  //! Set the angle to the provided radians. Alters the type to radians.
+  //! Returns the current angle object.
   Angle set_rad(int|float rad) {
-    create( rad * 360.0/(2*pi) );
+    angle = rad % (2.0*pi);
+    type = "rad";
     return this_object();
   }
 
@@ -71,31 +153,31 @@ class Angle {
     case "int": return (int)angle;
     case "string": return (string)angle;
     }
-    throw("Can not cas to %O.\n");
+    throw( ({"Could not cast to "+to+".\n", backtrace()}) );
   }
 
   float|int|object `+ (float|int|object _angle) {
-    if(objectp(_angle)) return Angle( angle + _angle->angle );
+    if(objectp(_angle)) return Angle( angle + _angle->get(type), type );
     return angle + _angle;
   }
 
   float|int|object `- (float|int|object _angle) {
-    if(objectp(_angle)) return Angle( angle - _angle->angle );
+    if(objectp(_angle)) return Angle( angle - _angle->get(type), type );
     return angle - _angle;
   }
 
   float|int|object `* (float|int|object _angle) {
-    if(objectp(_angle)) return Angle( angle * _angle->angle );
+    if(objectp(_angle)) return Angle( angle * _angle->get(type), type );
     return angle * _angle;
   }
 
   float|int|object `/ (float|int|object _angle) {
-    if(objectp(_angle)) return Angle( angle / _angle->angle );
+    if(objectp(_angle)) return Angle( angle / _angle->get(type), type );
     return angle / _angle;
   }
 
   float|int|object `% (float|int|object _angle) {
-    if(objectp(_angle)) return Angle( angle % _angle->angle );
+    if(objectp(_angle)) return Angle( angle % _angle->get(type), type );
     return angle % _angle;
   }
 
@@ -104,20 +186,24 @@ class Angle {
   }
 
   int `== (object _angle) {
-    return _angle->angle == angle;
+    return _angle->rad() == rad();
   }
 
   int `< (object _angle) {
-    return angle < _angle->angle;
+    return rad() < _angle->rad();
   }
 
   int `> (object _angle) {
-    return angle > _angle->angle;
+    return rad() > _angle->rad();
   }
 
   string _sprintf(int t) {
     if(t=='O')
-      return "Angle(" + angle + "°)";
+      switch(type) {
+      case "deg": return "Angle(" + angle + "°)";
+      case "rad": return "Angle(" + angle + " rads)";
+      case "gon": return "Angle(" + angle + " gons)";
+      }
     return 0;
   }
 }
