@@ -2,7 +2,7 @@ n/*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.334 2004/11/30 15:29:15 mast Exp $
+|| $Id: file.c,v 1.335 2004/11/30 15:30:09 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -884,8 +884,8 @@ static void file_peek(INT32 args)
  *! stream.
  *!
  *! @note
- *!   Out-of-band data was not be supported on Pike 0.5 and earlier,
- *!   and not on Pike 0.6 through 7.4 if they were compiled with the
+ *!   Out-of-band data was not supported in Pike 0.5 and earlier, and
+ *!   not in Pike 0.6 through 7.4 if they were compiled with the
  *!   option @tt{'--without-oob'@}.
  *!
  *! @note
@@ -1287,8 +1287,8 @@ static void file_write(INT32 args)
  *! them.
  *!
  *! @note
- *!   Out-of-band data was not be supported on Pike 0.5 and earlier,
- *!   and not on Pike 0.6 through 7.4 if they were compiled with the
+ *!   Out-of-band data was not supported in Pike 0.5 and earlier, and
+ *!   not in Pike 0.6 through 7.4 if they were compiled with the
  *!   option @tt{'--without-oob'@}.
  *!
  *! @note
