@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.128 2003/04/01 18:09:15 nilsson Exp $
+|| $Id: builtin.cmod,v 1.129 2003/04/07 15:30:10 mast Exp $
 */
 
 #include "global.h"
@@ -1685,22 +1685,11 @@ PIKECLASS Buffer
   PIKEFUN object `+( string what )
   {
     struct Buffer_struct *str = THIS, *str2;
-    struct object *res = clone_object( Buffer_program, 0 );
-
+    struct object *res = fast_clone_object( Buffer_program );
+    str2 = OBJ2_BUFFER( res );
+    str2->initial = str->initial;
     if( str->str.s )
-    {
-      str2 = OBJ2_BUFFER( res );
-
-      if( str2->str.s ) free_string_builder( &str2->str );
-      *str2 = *str;
-      init_string_builder_alloc( &str2->str,
-				 str->str.malloced,
-				 str->str.s->size_shift );
-      /* We know the actual shift. */
-      str2->str.known_shift = str->str.s->size_shift;
-      MEMCPY( (void *)str2->str.s, (void *)str->str.s,
-	      str->str.malloced+sizeof(struct pike_string));
-    }
+      init_string_builder_copy (&str2->str, &str->str);
     apply( res, "add", 1 );
     RETURN res;
   }
