@@ -1,6 +1,6 @@
 
 // Test suite for Hilfe.
-// $Id: testhilfe.pike,v 1.11 2002/07/01 00:08:28 nilsson Exp $
+// $Id: testhilfe.pike,v 1.12 2002/07/01 00:56:45 nilsson Exp $
 
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -90,6 +90,7 @@ int main(int num, array(string) args) {
   test("class A{}", "");
   test("A();", "object");
   test("A a=A();", "");
+  test("class { int i=4; }()->i;", "4");
   //  test("class A{}();", "object");
   test("indices((<1,2>));","({ /""* 2 elements *""/\n    1,\n    2\n})");
   test("void nop(mixed m){};", "");
