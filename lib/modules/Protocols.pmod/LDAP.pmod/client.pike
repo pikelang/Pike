@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.30 2001/11/02 08:59:32 hop Exp $
+// $Id: client.pike,v 1.31 2001/11/05 00:50:54 nilsson Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -241,9 +241,6 @@ int _prof_gtim;
     //!  @[LDAP.client.result.first], @[LDAP.client.result.next]
     int count_entries() { return(entrycnt - actnum); }
 
-    //! @decl mapping(string:array(string)) fetch()
-    //! @decl mapping(string:array(string)) fetch(int index)
-    //!
     //! Returns a mapping with an entry for each attribute.
     //! Each entry is an array of values of the attribute.
     //!
@@ -352,7 +349,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.30 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.31 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -636,8 +633,6 @@ int _prof_gtim;
   }
 
 
-  //! @decl add(dn, mapping(string:array(string)))
-  //!
   //!  The Add Operation allows a client to request the addition
   //!  of an entry into the directory
   //!
@@ -1095,9 +1090,6 @@ int _prof_gtim;
     return (do_op(msgval));
   }
 
-  //! @decl modifydn(string, string, int)
-  //! @decl modifydn(string, string, int, string)
-  //!
   //!  The Modify DN Operation allows a client to change the leftmost
   //!  (least significant) component of the name of an entry in the directory,
   //!  or to move a subtree of entries to a new location in the directory.
@@ -1145,8 +1137,6 @@ int _prof_gtim;
 
   }  //modifydn
 
-  //! @decl modify(string, mapping(string:array(mixed)))
-  //!
   //!  The Modify Operation allows a client to request that a modification
   //!  of an entry be performed on its behalf by a server.
   //!
