@@ -1,10 +1,10 @@
-// $Id: Readline.pike,v 1.46 2003/05/06 00:06:03 nilsson Exp $
+// $Id: Readline.pike,v 1.47 2003/06/26 23:06:03 nilsson Exp $
 #pike __REAL_VERSION__
 
 class OutputController
 {
-  static private object(Stdio.File) outfd;
-  static private object(Stdio.Terminfo.Termcap) term;
+  static private .File outfd;
+  static private .Terminfo.Termcap term;
   static private int xpos = 0, columns = 0;
   static private mapping oldattrs = 0;
 
@@ -34,7 +34,7 @@ class OutputController
 
   static void low_set_attributes(int mask, int val, int|void temp)
   {
-    int i, remv = mask & selected_attributes & ~val;
+    int remv = mask & selected_attributes & ~val;
     string s = "";
 
     if(remv & 15) {
@@ -49,7 +49,7 @@ class OutputController
       needed_attributes &= ~remv;
     }
     active_attributes &= ~remv;
-    for(i=0; remv; i++)
+    for(int i=0; remv; i++)
       if(remv & (1<<i)) {
 	string cap = ({0,0,0,0,"ZR","se","ue"})[i];
 	if(cap && (cap = term->put(cap)))
@@ -87,16 +87,19 @@ class OutputController
       outfd->write(s);
   }
 
+  //! Set the provided attributes to on.
   void turn_on(string ... atts)
   {
     low_set_attributes(low_attribute_mask(atts), ~0);
   }
 
+  //! Set the provided attributes to off.
   void turn_off(string ... atts)
   {
     low_set_attributes(low_attribute_mask(atts), 0);
   }
 
+  //!
   void disable()
   {
     catch{
@@ -109,6 +112,7 @@ class OutputController
     };
   }
 
+  //!
   void enable()
   {
     if(term->put("cr") && term->put("do"))
@@ -118,11 +122,14 @@ class OutputController
 				 "OFILL":1,"OFDEL":0,"ONLRET":0,"ONOCR":0]));};
   }
 
-  void destroy()
+  static void destroy()
   {
     disable();
   }
 
+  //! Check the terminal width.
+  //! @seealso
+  //!   @[get_number_of_columns]
   void check_columns()
   {
     catch {
@@ -134,6 +141,11 @@ class OutputController
       columns = term->tgetnum("co") || 80;
   }
 
+  //! Returns the width of the terminal.
+  //! @note
+  //!   Does not check the width of the terminal.
+  //! @seealso
+  //!   @[check_columns]
   int get_number_of_columns()
   {
     return columns;
@@ -190,6 +202,7 @@ class OutputController
     return width(escapify(s));
   }
 
+  //!
   void low_write(string s, void|int word_break)
   {
     int n = width(s);
@@ -242,11 +255,13 @@ class OutputController
       outfd->write(" "+le);
   }
 
+  //!
   void write(string s,void|int word_break,void|int hide)
   {
     low_write(escapify(s,hide),word_break);
   }
 
+  //!
   void low_move_downward(int n)
   {
     if(n<=0)
@@ -256,6 +271,7 @@ class OutputController
     outfd->write(term->put("DO", n) || (term->put("do")||"")*n);
   }
 
+  //!
   void low_move_upward(int n)
   {
     if(n<=0)
@@ -265,6 +281,7 @@ class OutputController
     outfd->write(term->put("UP", n) || (term->put("up")||"")*n);
   }
 
+  //!
   void low_move_forward(int n)
   {
     if(n<=0)
@@ -286,6 +303,7 @@ class OutputController
     }
   }
 
+  //!
   void low_move_backward(int n)
   {
     if(n<=0)
@@ -306,6 +324,7 @@ class OutputController
     }
   }
 
+  //!
   void low_erase(int n)
   {
     string e = term->put("ec", n);
@@ -320,21 +339,25 @@ class OutputController
     }
   }
 
+  //!
   void move_forward(string s)
   {
     low_move_forward(escapified_width(s));
   }
 
+  //!
   void move_backward(string s)
   {
     low_move_backward(escapified_width(s));
   }
 
+  //!
   void erase(string s)
   {
     low_erase(escapified_width(s));
   }
 
+  //!
   void newline()
   {
     string cr = term->put("cr"), down = term->put("do");
@@ -348,6 +371,7 @@ class OutputController
     xpos = 0;
   }
 
+  //!
   void bol()
   {
     if(active_attributes && !term->tgetflag("ms"))
@@ -356,6 +380,7 @@ class OutputController
     xpos = 0;
   }
 
+  //!
   void clear(int|void partial)
   {
     string s;
@@ -373,20 +398,21 @@ class OutputController
     outfd->write(term->put("cd")||"");
   }
 
+  //!
   void beep()
   {
     outfd->write(term->put("bl")||"");
   }
 
-  void create(Stdio.File|void _outfd,
-	      Stdio.Terminfo.Termcap|string|void _term)
+  //!
+  void create(.File|void _outfd,
+	      .Terminfo.Termcap|string|void _term)
   {
-    outfd = _outfd || Stdio.File("stdout");
+    outfd = _outfd || .stdout;
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
     catch { oldattrs = outfd->tcgetattr(); };
     check_columns();
   }
-
 }
 
 class InputController
@@ -401,7 +427,7 @@ class InputController
 
   int dumb=0;
 
-  void destroy()
+  static void destroy()
   {
     catch{ infd->set_blocking(); };
     if(dumb)
@@ -464,7 +490,7 @@ class InputController
   {
     if (close_callback && close_callback())
       return;
-    destruct(this_object());
+    destruct(this);
   }
 
   static private int set_enabled(int e)
@@ -487,11 +513,13 @@ class InputController
       return enabled;
   }
 
+  //!
   int isenabled()
   {
     return enabled;
   }
 
+  //!
   int enable(int ... e)
   {
     if (sizeof(e))
@@ -500,11 +528,13 @@ class InputController
       return set_enabled(1);
   }
 
+  //!
   int disable()
   {
     return set_enabled(0);
   }
 
+  //!
   int run_blocking()
   {
     disable();
@@ -525,22 +555,26 @@ class InputController
     }
   }
 
+  //!
   void set_close_callback(function (:int) ccb)
   {
     close_callback = ccb;
   }
 
+  //! Clears the bindings.
   void nullbindings()
   {
     bindings = ([]);
   }
 
+  //!
   void grabnextkey(function g)
   {
     if(functionp(g))
       grab_binding = g;
   }
 
+  //!
   function bindstr(string str, function f)
   {
     function oldf = 0;
@@ -586,11 +620,13 @@ class InputController
     return oldf;
   }
 
+  //!
   function unbindstr(string str)
   {
     return bindstr(str, 0);
   }
 
+  //!
   function getbindingstr(string str)
   {
     switch (sizeof(str||""))
@@ -605,21 +641,25 @@ class InputController
     }
   }
 
+  //!
   function bindtc(string cap, function f)
   {
     return bindstr(term->tgetstr(cap), f);
   }
 
+  //!
   function unbindtc(string cap)
   {
     return unbindstr(term->tgetstr(cap));
   }
 
+  //!
   function getbindingtc(string cap)
   {
     return getbindingstr(term->tgetstr(cap));
   }
 
+  //!
   string parsekey(string k)
   {
     if (k[..1]=="\\!")
@@ -678,21 +718,25 @@ class InputController
     return k;
   }
 
+  //!
   function bind(string k, function f)
   {
     return bindstr(parsekey(k), f);
   }
 
+  //!
   function unbind(string k)
   {
     return unbindstr(parsekey(k));
   }
 
+  //!
   function getbinding(string k, string cap)
   {
     return getbindingstr(parsekey(k));
   }
 
+  //!
   mapping(string:function) getbindings()
   {
     mapping(int:function) bb = bindings-Array.filter(bindings, mappingp);
@@ -702,9 +746,10 @@ class InputController
 	      @Array.filter(values(bindings), mappingp));
   }
 
+  //!
   void create(object|void _infd, object|string|void _term)
   {
-    infd = _infd || Stdio.File("stdin");
+    infd = _infd || .stdin;
     term = objectp(_term)? _term : .Terminfo.getTerm(_term);
     disable();
     if(search(term->aliases, "dumb")>=0) {
@@ -731,37 +776,44 @@ class DefaultEditKeys
     mkmultiset("\t \n\r/*?_-.[]~&;\!#$%^(){}<>\"'`"/"");
   static object _readline;
 
+  //!
   void self_insert_command(string str)
   {
     _readline->insert(str, _readline->getcursorpos());
   }
 
+  //!
   void quoted_insert()
   {
     _readline->get_input_controller()->grabnextkey(self_insert_command);
   }
 
+  //!
   void newline()
   {
     _readline->newline();
   }
 
+  //!
   void up_history()
   {
     _readline->delta_history(-1);
   }
 
+  //!
   void down_history()
   {
     _readline->delta_history(1);
   }
 
+  //!
   void backward_delete_char()
   {
     int p = _readline->getcursorpos();
     _readline->delete(p-1,p);
   }
 
+  //!
   void delete_char_or_eof()
   {
     int p = _readline->getcursorpos();
@@ -771,26 +823,31 @@ class DefaultEditKeys
       _readline->eof();
   }
 
+  //!
   void forward_char()
   {
     _readline->setcursorpos(_readline->getcursorpos()+1);
   }
 
+  //!
   void backward_char()
   {
     _readline->setcursorpos(_readline->getcursorpos()-1);
   }
 
+  //!
   void beginning_of_line()
   {
     _readline->setcursorpos(0);
   }
 
+  //!
   void end_of_line()
   {
     _readline->setcursorpos(sizeof(_readline->gettext()));
   }
 
+  //!
   void transpose_chars()
   {
     int p = _readline->getcursorpos();
@@ -817,6 +874,7 @@ class DefaultEditKeys
     return ({ line[p..ep-1], p });
   }
 
+  //!
   void capitalize_word()
   {
     [string word, string pos]= find_word_to_manipulate();
@@ -824,6 +882,7 @@ class DefaultEditKeys
       _readline->insert(String.capitalize(lower_case(word)), pos);
   }
 
+  //!
   void upcase_word()
   {
     [string word, string pos]= find_word_to_manipulate();
@@ -831,13 +890,14 @@ class DefaultEditKeys
       _readline->insert(upper_case(word), pos);
   }
 
+  //!
   void downcase_word()
   {
     [string word, string pos]= find_word_to_manipulate();
     if(word)
       _readline->insert(lower_case(word), pos);
   }
-  
+
   static int forward_find_word()
   {
     int p, n;
@@ -865,22 +925,26 @@ class DefaultEditKeys
       }
     return p;
   }
-  
+
+  //!
   void forward_word()
   {
     _readline->setcursorpos(forward_find_word());
   }
 
+  //!
   void backward_word()
   {
     _readline->setcursorpos(backward_find_word());
   }
 
+  //!
   void kill_word()
   {
     _readline->kill(_readline->getcursorpos(), forward_find_word());
   }
   
+  //!
   void backward_kill_word()
   {
     int sp = backward_find_word();
@@ -890,37 +954,44 @@ class DefaultEditKeys
     _readline->kill(sp, ep);
   }
 
+  //!
   void kill_line()
   {
     _readline->kill(_readline->getcursorpos(), sizeof(_readline->gettext()));
   }
 
+  //!
   void kill_whole_line()
   {
     _readline->kill(0, sizeof(_readline->gettext()));
   }
 
+  //!
   void yank()
   {
     _readline->setmark(_readline->getcursorpos());
     _readline->insert(_readline->kill_ring_yank(),_readline->getcursorpos());
   }
 
+  //!
   void kill_ring_save()
   { 
     _readline->add_to_kill_ring(_readline->region());
   }
 
+  //!
   void kill_region()
   { 
     _readline->kill(@_readline->pointmark());
   }
 
+  //!
   void set_mark()
   {
     _readline->setmark(_readline->getcursorpos());
   }
 
+  //!
   void swap_mark_and_point()
   {
     int p=_readline->getcursorpos();
@@ -928,11 +999,13 @@ class DefaultEditKeys
     _readline->setmark(p);
   }
 
+  //!
   void redisplay()
   {
     _readline->redisplay(0);
   }
 
+  //!
   void clear_screen()
   {
     _readline->redisplay(1);
@@ -986,6 +1059,7 @@ class DefaultEditKeys
     ({ "^X^X", swap_mark_and_point }),
   });
 
+  //!
   static void set_default_bindings()
   {
     object ic = _readline->get_input_controller();
@@ -1004,6 +1078,7 @@ class DefaultEditKeys
       ic->bind(@b);
   }
 
+  //!
   void create(object readline)
   {
     _readline = readline;
@@ -1018,16 +1093,19 @@ class History
   static private mapping(int:string) historykeep=([]);
   static private int minhistory, maxhistory, historynum;
 
+  //!
   string encode()
   {
     return historylist*"\n";
   }
   
+  //!
   int get_history_num()
   {
     return historynum;
   }
 
+  //!
   string history(int n, string text)
   {
     if (n<minhistory)
@@ -1042,6 +1120,7 @@ class History
     return historylist[(historynum=n)-minhistory];
   }
 
+  //!
   void initline()
   {
     if (sizeof(historylist)==0 || historylist[-1]!="") {
@@ -1057,6 +1136,7 @@ class History
     historykeep = ([]);
   }
 
+  //!
   void finishline(string text)
   {
     foreach(indices(historykeep), int n)
@@ -1067,18 +1147,19 @@ class History
       historylist = historylist[..sizeof(historylist)-2];
   }
 
+  //!
   void set_max_history(int maxhist)
   {
     maxhistory = maxhist;
   }
 
+  //!
   void create(int maxhist, void|array(string) hist)
   {
     historylist = hist || ({ "" });
     minhistory = historynum = 0;
     maxhistory = maxhist;
   }
-
 }
 
 
@@ -1539,11 +1620,19 @@ History get_history()
   return historyobj;
 }
 
+static void destroy()
+{
+  if(input_controller)
+    destruct(input_controller);
+  if(output_controller)
+    destruct(output_controller);
+}
+
 //! Creates a Readline object, that takes input from @[infd] and has output
 //! on @[outfd].
 //!
 //! @param infd
-//!   Defaults to @[Stdio.stdout].
+//!   Defaults to @[Stdio.stdin].
 //!
 //! @param interm
 //!   Defaults to @[Stdio.Terminfo.getTerm()].
@@ -1557,10 +1646,8 @@ History get_history()
 void create(object|void infd, object|string|void interm,
 	    object|void outfd, object|string|void outterm)
 {
+  atexit(destroy);
   output_controller = OutputController(outfd || infd, outterm || interm);
   input_controller = InputController(infd, interm);
-  DefaultEditKeys(this_object());
+  DefaultEditKeys(this);
 }
-
-// compatibility
-void destroy() {}
