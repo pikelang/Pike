@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.420 2002/05/01 15:08:21 grubba Exp $");
+RCSID("$Id: program.c,v 1.421 2002/05/01 18:59:44 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3943,6 +3943,61 @@ make_a_new_def:
   return i;
 }
 
+/* Identifier lookup
+ *
+ * The search algorithm has changed several times during Pike 7.3.
+ *
+ * It now (Pike 7.3.33 and later) looks up the most recent definition
+ * in the most recent inherit.
+ *
+ * In Pike 7.3.23 -- 7.3.32 it looked up the most recent definition
+ * with the least inherit depth.
+ *
+ * In Pike 7.3.22 and prior, it looked up the last definition regardless
+ * of inherit depth, unless there was a definition in the current program.
+ *
+ * Example:
+ *
+ * class A {
+ *   int foo() {}
+ * }
+ *
+ * class B {
+ *   int foo() {}
+ *   inherit A;
+ * }
+ *
+ * class C {
+ *   inherit B;
+ * }
+ *
+ * class D {
+ *   inherit B;
+ *   inherit C;
+ * }
+ *
+ * Lookup of identifier "foo" in D():
+ *
+ * D-+-B-+-foo		Pike 7.3.23 --- Pike 7.3.32
+ *   |   |
+ *   |   +-A---foo
+ *   |
+ *   +-C---B-+-foo	Pike 7.3.33 ---
+ *           |
+ *           +-A---foo	            --- Pike 7.3.22
+ *
+ * Lookup of identifier "foo" in C():
+ *
+ * C---B-+-foo		Pike 7.3.23 ---
+ *       |
+ *       +-A---foo	            --- Pike 7.3.22
+ *
+ * Lookup of identifier "foo" in B():
+ *
+ * B-+-foo		All versions of Pike
+ *   |
+ *   +-A---foo
+ */
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags)
