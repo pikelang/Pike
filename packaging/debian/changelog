@@ -1,12 +1,7 @@
-pike7.4 (7.4.21-2) unstable; urgency=low
-
-  * Added a workaround for a gcc optimizer bug on arm and m68k.
-
- -- Marek Habersack <grendel@debian.org>  Fri, 11 Apr 2003 21:10:57 +0200
-
 pike7.4 (7.4.21-1) unstable; urgency=low
 
   * Latest upstream version.
+  * Added a workaround for a gcc optimizer bug on arm and m68k.
 
  -- Marek Habersack <grendel@debian.org>  Fri,  4 Apr 2003 18:22:38 +0200
 
