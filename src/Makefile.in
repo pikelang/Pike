@@ -165,7 +165,7 @@ run_hilfe:
 # make export archive (requires compiled uLPC)
 # Do not compile in source tree if you want to use this!
 export: $(SRCDIR)/test/testsuite
-	chmod +x $(TMP_SRCDIR)/install-sh
+	chmod +x $(SRCDIR)/install-sh
 	$(RUNULPC) $(TMP_BINDIR)/export.lpc
 
 # make dependencies (requires compiled uLPC)
