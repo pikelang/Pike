@@ -24,6 +24,8 @@ extern int pigtk_is_setup;
 void my_pop_n_elems( int n );
 void my_ref_push_object( struct object *o );
 
+void push_Xpseudo32bitstring( void *f, int nelems );
+
 int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b );
 
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,

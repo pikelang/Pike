@@ -129,9 +129,10 @@ string make_c_string( string from )
 {
   string line = "\"";
   string res = "";
+  int c;
   for( int i=0; i<strlen( from ); i++ )
   {
-    switch( from[i] )
+    switch( (c=from[i]) )
     {
      case 'a'..'z':
      case 'A'..'Z':
@@ -141,7 +142,7 @@ string make_c_string( string from )
        line += from[i..i];
        break;
      default:
-       line += sprintf("\\%o", from[i] );
+       line += sprintf("\\%o", c );
        break;
     }
     if( strlen( line ) > 75 )
@@ -161,14 +162,15 @@ string function_type( string what )
 }
 
 string data = "";
-
+mapping ocache = ([]);
 int data_offset( string what )
 {
   int off;
+  if( ocache[what] ) return ocache[what];
   if( (off = search( data, what )) != -1 )
-    return off;
+    return ocache[what] = off;
   data += what;
-  return data_offset( what );
+  return ocache[what]=strlen(data)-strlen(what);
 }
 
 string emit_function_def( string fun, string cfun, string type, int opt )
@@ -418,7 +420,7 @@ array (string) sort_dependencies( array bunch, mapping extra )
     else
       inheriting[extra[s]["inherit"]]=({ s });
   }
-  array (string) result = inheriting[0];
+  array (string) result = sort(inheriting[0]);
 
   if(do_docs)
   {
@@ -466,14 +468,14 @@ array (string) sort_dependencies( array bunch, mapping extra )
     {
       if(inheriting[s])
       {
-	result += inheriting[s];
+	result += sort(inheriting[s]);
 	m_delete(inheriting, s);
 	mod++;
       }
     }
     if(!mod)
     {
-      werror("Inconsistend inheritance tree!\n");
+      werror("Inconsistent inheritance tree!\n");
       multiset roots=mkmultiset(indices(inheriting))-mkmultiset(`+(@values(inheriting)));;
       werror("orphans:\n");
       foreach(indices(roots), string r)
@@ -1342,6 +1344,19 @@ int main(int argc, array argv)
 // werror(sizeof(signals)+" signal constants (strings)\n");
 
   string to_free="";
+
+  array functions = ({});
+  foreach( indices( struct ), mapping q )
+    foreach( indices( struct[q] ) , string f )
+      if( f != "inherit"  && f)
+        functions |= ({ f, function_type(struct[q][f]) });
+
+  sort( map(functions,strlen), functions );
+
+  foreach(reverse(functions), string q ) // Evil me. Sort for best compression
+    data_offset( q );
+
+
   foreach(sort_dependencies(indices(struct),struct), string w)
   {
     mapping q = struct[w];
@@ -1368,21 +1383,20 @@ int main(int argc, array argv)
   files += "pgtk.c ";
   if(!do_docs)
   {
+    werror("%d bytes\n", strlen(data) );
     string q =replace(Stdio.read_bytes(dir+"/pgtk.c.head"), 
                       "PROTOTYPES", 
                       replace(pre, "/*ext*/ ", "")+
                       "\nstatic char _data[] =\n"+make_c_string( data )+";");
     pre = replace(pre, "/*ext*/", "extern");
-    if(!equal(sort((Stdio.read_bytes("prototypes.h")||"")/"\n"), 
-              sort(pre/"\n")))
+    if(Stdio.read_bytes("prototypes.h") != pre )
     {
       rm("prototypes.h");
       werror("prototypes.h was modified\n");
       Stdio.write_file("prototypes.h", pre);
     }
     q+=(sort(glob_prototypes/"\n")*"\n") + "\n\n" + buffer;
-    if(!equal(sort((Stdio.read_bytes("pgtk.c") || "")/"\n"),
-	      sort(q/"\n")))
+    if( Stdio.read_file("pgtk.c") != q )
     {
       werror("pgtk.c modified\n");
       object outf = Stdio.File("pgtk.c", "rwct");
@@ -1391,6 +1405,16 @@ int main(int argc, array argv)
   }
   rm("files_to_compile");
   Stdio.write_file("files_to_compile", replace(files, ".c", ".o"));
+//   mapping pi = get_profiling_info( object_program(this_object()) )[1];
+//   array q = ({});
+//   foreach( indices( pi ), string f )
+//     q += ({({ pi[f][2], pi[f][0], f })});
+
+//   foreach(reverse(sort(q)), array f )
+//   {
+//     write( "%-20s %6d  %4.2f\n", 
+//            f[2], f[1], f[0]/1000000.0 );
+//   }
 }
 
 
