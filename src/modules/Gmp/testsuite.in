@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.24 2003/01/29 00:26:32 nilsson Exp $
+dnl $Id: testsuite.in,v 1.25 2003/03/26 15:23:59 mast Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -37,6 +37,7 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_binop(66,-,11,55)
   test_binop(17,|,7,23)
   test_binop(17,&,18,16)
+  test_binop(17,^,15,30)
 
   test_eq([[`+(1,1,1,Gmp.mpz(1),1,1)]],6)
   test_eq(-Gmp.mpz(17),-17)
