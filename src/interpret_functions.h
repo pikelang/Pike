@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.121 2003/01/30 13:43:32 grubba Exp $
+|| $Id: interpret_functions.h,v 1.122 2003/02/26 18:19:08 mast Exp $
 */
 
 /*
@@ -156,12 +156,12 @@
      else						\
        low_return();					\
 							\
-    DO_IF_DEBUG(if (t_flag)				\
+    DO_IF_DEBUG(if (t_flag > 5)				\
       fprintf(stderr, "Returning to 0x%p\n",		\
 	      Pike_fp->pc));				\
     DO_JUMP_TO(Pike_fp->pc);				\
   }							\
-  DO_IF_DEBUG(if (t_flag)				\
+  DO_IF_DEBUG(if (t_flag > 5)				\
     fprintf(stderr, "Inter return\n"));			\
   INTER_RETURN;						\
 }
