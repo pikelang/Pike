@@ -10237,29 +10237,21 @@ signals to yourself.
 </anchor>
 
 <HR NEWPAGE>
-<anchor name=glob>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>glob</tt> - match strings against globs
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int glob(string <I>glob</I>, string <I>str</I>);<br>
+<function name=glob title="match strings against globs" fullpath>
+<man_syntax>
+int glob(string <I>glob</I>, string <I>str</I>);
 or<br>
 array(string) glob(string <I>glob</I>, array(string) <I>arr</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function matches "globs". In a glob string a question sign
 matches any character and an asterisk matches any string. When
 given two strings as argument a true/false value is returned
 which reflects if the <i>str</i> matches <i>glob</i>. When given an array as
 second argument, an array containing all matching strings is returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=sscanf>sscanf</link> and <link to=Regexp>Regexp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>sscanf, Regexp</man_see>
+</function>
 
 <HR NEWPAGE>
 <anchor name=hash>
