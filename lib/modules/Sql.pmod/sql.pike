@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.25 1998/07/03 20:03:51 mast Exp $
+ * $Id: sql.pike,v 1.26 1998/07/08 21:05:20 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.25 1998/07/03 20:03:51 mast Exp $
+//. RCSID:	$Id: sql.pike,v 1.26 1998/07/08 21:05:20 mast Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -35,87 +35,49 @@ int case_convert;
 //. - quote
 //.   Quote a string so that it can safely be put in a query.
 //. > s - String to quote.
-string quote(string s)
+function(string:string) quote = lambda (string s)
 {
-  if (master_sql && master_sql->quote) {
-    return(master_sql->quote(s));
-  }
+  // This lambda is overridden from master_sql in create().
   return(replace(s, "\'", "\'\'"));
-}
+};
 
 //. - encode_time
 //.   Converts a system time value to an appropriately formatted time
 //.   spec for the database.
-//. > time - Time to encode.
-//. > date - If nonzero then time is taken as a "full" unix time spec
+//. > arg 1 - Time to encode.
+//. > arg 2 - If nonzero then time is taken as a "full" unix time spec
 //.   (where the date part is ignored), otherwise it's converted as a
 //.   seconds-since-midnight value.
-string encode_time (int time, void|int date)
-{
-  if (functionp (master_sql->encode_time))
-    return master_sql->encode_time (time, date);
-  else
-    throw_error ("sql->encode_time(): Not supported by this database\n");
-}
+function(int,void|int:string) encode_time;
 
 //. - decode_time
 //.   Converts a database time spec to a system time value.
-//. > timestr - Time spec to decode.
-//. > date - Take the date part from this system time value. If zero, a
+//. > arg 1 - Time spec to decode.
+//. > arg 2 - Take the date part from this system time value. If zero, a
 //.   seconds-since-midnight value is returned.
-int decode_time (string timestr, void|int date)
-{
-  if (functionp (master_sql->decode_time))
-    return master_sql->decode_time (timestr, date);
-  else
-    throw_error ("sql->decode_time(): Not supported by this database\n");
-}
+function(string,void|int:int) decode_time;
 
 //. - encode_date
 //.   Converts a system time value to an appropriately formatted
 //.   date-only spec for the database.
-//. > time - Time to encode.
-string encode_date (int time)
-{
-  if (functionp (master_sql->encode_date))
-    return master_sql->encode_date (time);
-  else
-    throw_error ("sql->encode_date(): Not supported by this database\n");
-}
+//. > arg 1 - Time to encode.
+function(int:string) encode_date;
 
 //. - decode_date
 //.   Converts a database date-only spec to a system time value.
-//. > datestr - Date spec to decode.
-int decode_date (string datestr)
-{
-  if (functionp (master_sql->decode_date))
-    return master_sql->decode_date (datestr);
-  else
-    throw_error ("sql->decode_date(): Not supported by this database\n");
-}
+//. > arg 1 - Date spec to decode.
+function(string:int) decode_date;
 
 //. - encode_datetime
 //.   Converts a system time value to an appropriately formatted
 //.   date and time spec for the database.
-//. > time - Time to encode.
-string encode_datetime (int time)
-{
-  if (functionp (master_sql->encode_datetime))
-    return master_sql->encode_datetime (time);
-  else
-    throw_error ("sql->encode_datetime(): Not supported by this database\n");
-}
+//. > arg 1 - Time to encode.
+function(int:string) encode_datetime;
 
 //. - decode_datetime
 //.   Converts a database date and time spec to a system time value.
-//. > datestr - Date and time spec to decode.
-int decode_datetime (string timestr)
-{
-  if (functionp (master_sql->decode_datetime))
-    return master_sql->decode_datetime (timestr);
-  else
-    throw_error ("sql->decode_datetime(): Not supported by this database\n");
-}
+//. > arg 1 - Date and time spec to decode.
+function(string:int) decode_datetime;
 
 //. - create
 //.   Create a new generic SQL object.
@@ -284,6 +246,16 @@ void create(void|string|object host, void|string db,
     throw_error("Sql.sql(): Couldn't connect using the " +
 		(program_names[0]/".pike")[0] + " database\n");
   }
+
+  function fallback =
+    lambda () {throw_error ("Function not supported in this database.");};
+  if (master_sql->quote) quote = master_sql->quote;
+  encode_time = master_sql->encode_time || fallback;
+  decode_time = master_sql->decode_time || fallback;
+  encode_date = master_sql->encode_date || fallback;
+  decode_date = master_sql->decode_date || fallback;
+  encode_datetime = master_sql->encode_datetime || fallback;
+  decode_datetime = master_sql->decode_datetime || fallback;
 }
 
 static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
