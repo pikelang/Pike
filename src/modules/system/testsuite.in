@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.13 2001/02/04 08:39:23 mirar Exp $
+// $Id: testsuite.in,v 1.14 2001/03/09 21:10:01 grubba Exp $
 
 
 // system.c:
@@ -175,7 +175,7 @@ test_any( [[
   return mem->pread(13,6);
 ]], "\0hopp\0" )
 
-cond([[ system.__MMAP__ ]],
+cond([[ system["__MMAP__"] ]],
 [[
   test_any( [[
     object f=Stdio.File();
