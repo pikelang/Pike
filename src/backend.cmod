@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.98 2004/04/02 14:21:15 grubba Exp $
+|| $Id: backend.cmod,v 1.99 2004/04/02 14:22:34 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.98 2004/04/02 14:21:15 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.99 2004/04/02 14:22:34 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -241,7 +241,7 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 {
   struct pollfd poll_state[2];
   int e;
-  size_t sz = sizeof(poll_state);
+  int sz = sizeof(poll_state);
 
   /* NOTE: POLLREMOVE must (unfortunately) be a separate request. */
   poll_state[0].fd = fd;
@@ -268,7 +268,7 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
   if (e != sz) {
     Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
 	       " short write (%d != %d).\n",
-	       fd, e, sizeof(poll_state));
+	       fd, e, (int)sizeof(poll_state));
   }
   return e;
 }
