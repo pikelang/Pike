@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.441 2000/12/18 23:02:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.442 2000/12/19 00:43:43 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1295,8 +1295,11 @@ AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
 
-AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
-export AR
+if test "x${AR-}" = x ; then
+  AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
+  export AR
+fi
+
 AC_SUBST(AR)
 
 #############################################################################
