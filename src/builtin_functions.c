@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.142 1998/12/21 09:38:31 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.143 1999/01/16 01:20:39 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -37,6 +37,7 @@ RCSID("$Id: builtin_functions.c,v 1.142 1998/12/21 09:38:31 hubbe Exp $");
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
+#include "security.h"
 
 #ifdef HAVE_POLL
 #ifdef HAVE_POLL_H
@@ -352,6 +353,7 @@ void f_backtrace(INT32 args)
 
 void f_add_constant(INT32 args)
 {
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("add_constant: permission denied.\n"));
   if(args<1)
     PIKE_ERROR("add_constant", "Too few arguments.\n", sp, args);
 
@@ -1084,6 +1086,7 @@ void f_throw(INT32 args)
 
 void f_exit(INT32 args)
 {
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("exit: permission denied.\n"));
   if(args < 1)
     PIKE_ERROR("exit", "Too few arguments.\n", sp, args);
 
@@ -1097,6 +1100,7 @@ void f_exit(INT32 args)
 
 void f__exit(INT32 args)
 {
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
   if(args < 1)
     PIKE_ERROR("_exit", "Too few arguments.\n", sp, args);
 
@@ -1902,6 +1906,7 @@ void f_column(INT32 args)
 void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
   d_flag=0x7fffffff;
   do_debug();
   d_flag=tmp;
@@ -1912,6 +1917,7 @@ void f__verify_internals(INT32 args)
 void f__debug(INT32 args)
 {
   INT32 i=d_flag;
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
   get_all_args("_debug",args,"%i",&d_flag);
   pop_n_elems(args);
   push_int(i);
@@ -1923,6 +1929,7 @@ void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
   INT32 i = yydebug;
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_exit: permission denied.\n"));
   get_all_args("_compiler_trace", args, "%i", &yydebug);
   pop_n_elems(args);
   push_int(i);
@@ -3257,6 +3264,9 @@ void f__memory_usage(INT32 args)
 void f__next(INT32 args)
 {
   struct svalue tmp;
+
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_next: permission denied.\n"));
+
   if(!args)
     PIKE_ERROR("_next", "Too few arguments.\n", sp, args);
   
@@ -3285,6 +3295,9 @@ void f__next(INT32 args)
 void f__prev(INT32 args)
 {
   struct svalue tmp;
+
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("_prev: permission denied.\n"));
+
   if(!args)
     PIKE_ERROR("_prev", "Too few arguments.\n", sp, args);
   
@@ -3339,6 +3352,8 @@ void f__typeof(INT32 args)
 
 void f_replace_master(INT32 args)
 {
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
+
   if(!args)
     PIKE_ERROR("replace_master", "Too few arguments.\n", sp, 0);
   if(sp[-args].type != T_OBJECT)
@@ -3576,7 +3591,7 @@ void f_transpose(INT32 args)
   out=allocate_array(sizeininner);
 
   for(i=0; i<sizein; i++)
-    type|=in->item->u.array->type_field;
+    type|=in->item[i].u.array->type_field;
   
   for(j=0; j<sizeininner; j++)
   {
@@ -3603,6 +3618,7 @@ void f_transpose(INT32 args)
 #ifdef DEBUG_MALLOC
 void f__reset_dmalloc(INT32 args)
 {
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
   pop_n_elems(args);
   reset_debug_malloc();
 }
@@ -3611,6 +3627,7 @@ void f__reset_dmalloc(INT32 args)
 #ifdef PIKE_DEBUG
 void f__locate_references(INT32 args)
 {
+  CHECK_SECURITY(0,SECURITY_BIT_SECURITY, ("replace_master: permission denied.\n"));
   if(args)
     locate_references(sp[-args].u.refs);
   pop_n_elems(args-1);
