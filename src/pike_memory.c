@@ -9,7 +9,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.20 1998/04/10 22:24:20 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.21 1998/04/16 01:17:45 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -735,7 +735,7 @@ static void make_memhdr(void *p, int s, int locnum)
   unsigned long l=lhash(mh,locnum);
   unsigned long h=(long)p;
   h%=HSIZE;
-
+  
   mh->next=hash[h];
   mh->data=p;
   mh->size=s;
@@ -897,6 +897,7 @@ void cleanup_memhdrs()
       free(p);
     }
   }
+
   if(verbose_debug_exit)
   {
     int first=1;
@@ -905,7 +906,11 @@ void cleanup_memhdrs()
       struct memhdr *m;
       for(m=hash[h];m;m=m->next)
       {
+	struct memhdr *tmp;
 	struct memloc *l;
+	void *p=m->data;
+
+	mt_unlock(&debug_malloc_mutex);
 	if(first)
 	{
 	  fprintf(stderr,"\n");
@@ -913,10 +918,25 @@ void cleanup_memhdrs()
 	}
 
 	
-	fprintf(stderr, "LEAK: (%p) %ld bytes\n",m->data, m->size);
+	fprintf(stderr, "LEAK: (%p) %ld bytes\n",p, m->size);
 #ifdef DEBUG
-	describe_something(m->data, attempt_to_identify(m->data),0);
+	describe_something(p, attempt_to_identify(p),0);
 #endif
+	mt_lock(&debug_malloc_mutex);
+
+	/* Now we must reassure 'm' */
+	for(tmp=hash[h];tmp;tmp=tmp->next)
+	  if(m==tmp)
+	    break;
+
+	if(!tmp)
+	{
+	  fprintf(stderr,"**BZOT: Memory header was freed in mid-flight.\n");
+	  fprintf(stderr,"**BZOT: Restarting hash bin, some entries might be duplicated.\n");
+	  h--;
+	  break;
+	}
+	
 	for(l=m->locations;l;l=l->next)
 	{
 	  struct fileloc *f=find_file_location(l->locnum);
