@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.6 2001/05/05 20:42:39 mirar Exp $ */
+/* $Id: mkxml.pike,v 1.7 2001/05/06 15:20:38 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -816,6 +816,52 @@ void make_doc_files()
       document("module",parse[module],module,module+".",stdout);
 }
 
+void process_line(string s, string currentfile, int line)
+{
+  s=getridoftabs(s);
+
+  if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
+  {
+    string kw,arg;
+    
+    sscanf(s[i+3..],"%*[ \t]%[^: \t\n\r]%*[: \t]%s",kw,arg);
+    if (keywords[kw])
+    {
+      string err;
+      if ( (err=keywords[kw](arg,"file='"+currentfile+"' line='"+line+"'")) )
+      {
+	stderr->write("mkwmml: "+
+		      currentfile+"file='"+currentfile+"' line="+line);
+	return 1;
+      }
+      inpre=0;
+    }
+    else if (s[i+3..]!="")
+    {
+      string d=s[i+3..];
+      //  	    sscanf(d,"%*[ \t]!%s",d);
+      //	    if (search(s,"$Id")!=-1) report("Id: "+d);
+      if (!descM) descM=methodM;
+      if (!descM)
+      {
+	stderr->write("mkwmml: "+
+		      currentfile+" line "+line+
+		      ": illegal description position\n");
+	return 1;
+      }
+      if (!descM->desc) descM->desc="";
+      else descM->desc+="\n";
+      d=getridoftabs(d);
+      descM->desc+=d;
+    }
+    else
+    {
+      if (!descM->desc) descM->desc="";
+      else descM->desc+="\n";
+    }
+  }
+}
+
 int main(int ac,string *files)
 {
    string s,t;
@@ -870,49 +916,9 @@ int main(int ac,string *files)
       }
       s=ss[0]; ss=ss[1..];
 
-      s=getridoftabs(s);
-
       line++;
-      if ((i=search(s,"**!"))!=-1 || (i=search(s,"//!"))!=-1)
-      {
-	 string kw,arg;
 
-	 sscanf(s[i+3..],"%*[ \t]%[^: \t\n\r]%*[: \t]%s",kw,arg);
-	 if (keywords[kw])
-	 {
-	    string err;
-	    if ( (err=keywords[kw](arg,"file='"+currentfile+"' line='"+line+"'")) )
-	    {
-	       stderr->write("mkwmml: "+
-			     currentfile+"file='"+currentfile+"' line="+line);
-	       return 1;
-	    }
-	    inpre=0;
-	 }
-	 else if (s[i+3..]!="")
-	 {
-	    string d=s[i+3..];
-//  	    sscanf(d,"%*[ \t]!%s",d);
-//	    if (search(s,"$Id")!=-1) report("Id: "+d);
-	    if (!descM) descM=methodM;
-	    if (!descM)
-	    {
-	       stderr->write("mkwmml: "+
-			     currentfile+" line "+line+
-			     ": illegal description position\n");
-	       return 1;
-	    }
-	    if (!descM->desc) descM->desc="";
-	    else descM->desc+="\n";
-	    d=getridoftabs(d);
-	    descM->desc+=d;
-	 }
-	 else
-	 {
-	    if (!descM->desc) descM->desc="";
-	    else descM->desc+="\n";
-	 }
-      }
+      process_line(s, currentfile, line);
    }
 
 //   stderr->write(sprintf("%O",parse));
