@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.145 2002/04/05 16:42:21 jhs Exp $
+// $Id: module.pmod,v 1.146 2002/04/07 11:16:51 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1148,17 +1148,35 @@ class Port
   }
 }
 
-//! An instance of FILE("stderr").
-//! @fixme
-//!   Document this object.
+//! An instance of FILE("stderr"), the standard error stream. Use this
+//! when you want to output error messages.
 File stderr=FILE("stderr");
 
-//! An instance of FILE("stdout").
-//! @fixme
-//!   Document this object.
+//! An instance of FILE("stdout"), the standatd output stream. Use this
+//! when you want to write anything to the standard output.
 File stdout=FILE("stdout");
 
-//! Buffered I/O
+//! An instance of FILE("stdin"), the standard input stream. Use this
+//! when you want to read anything from the standard input.
+//! This example will read lines from standard input for as long as there
+//! are more lines to read. Each line will then be written to stdout together
+//! with the line number. We could use @[Stdio.stdout.write] instead
+//! of just @[write], since they are the same function.
+//!
+//! @example
+//!  int main()
+//!  {
+//!    int line;
+//!    while(string s=Stdio.stdin.gets())
+//! 	 write(sprintf("%5d: %s\n",line++,s));
+//!  }
+
+FILE stdin=FILE("stdin");
+
+//! Stdio.FILE is a buffered version of Stdio.File, it inherits Stdio.File and
+//! has most of the functionality of Stdio.File. However, it has an input buffer
+//! that allows line-by-line input. Note that the output part of Stdio.FILE is
+//! not buffered at this moment.
 class FILE
 {
 #define BUFSIZE 8192
@@ -1461,8 +1479,6 @@ class FILE
     return b[bpos++];
   }
 }
-
-FILE stdin=FILE("stdin");
 
 #ifdef TRACK_OPEN_FILES
 static mapping(string|int:array) open_files = ([]);
