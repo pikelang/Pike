@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.27 1998/04/06 17:27:55 grubba Exp $");
+RCSID("$Id: backend.c,v 1.28 1998/04/29 00:32:40 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -58,7 +58,15 @@ struct selectors
 static struct selectors selectors;
 
 #else
+
+#ifdef HAVE_POLL_H
 #include <poll.h>
+#endif /* HAVE_POLL_H */
+
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif /* HAVE_SYS_POLL_H */
+
 struct pollfd *poll_fds = NULL;
 int poll_fd_size = 0;
 int num_in_poll = 0;
