@@ -265,6 +265,8 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	    /* This provides some very basic terminal emulation */
 	    /* We need to understand \r, \n, and \b */
 //	    werror("%O\n",s);
+	    rl->set_prompt("");
+//	    Stdio.append_file("/tmp/liblog",sprintf("%O\n",s));
 	    s=replace(prompt+s,from_handler,to_handler);
 	    
 	    array tmp=s/"/b";
@@ -281,7 +283,7 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	      }
 	    }
 	      
-	    rl->set_prompt(prompt);
+	    rl->set_prompt(prompt[..78]);
 	    return strlen(s);
 	  }
 
