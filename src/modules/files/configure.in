@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.85 2003/05/14 20:21:15 marcus Exp $
+# $Id: configure.in,v 1.86 2003/05/14 20:40:23 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -181,7 +181,7 @@ if test x$ac_cv_func_readdir_r = xyes ; then
 #endif /* !__STDC_EXT__ */
 
 /* For _REENTRANT */
-#include "machine.h"
+#include "../../machine.h"
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -232,7 +232,7 @@ if test x$pike_cv_func_posix_readdir_r = xyes ; then
 #endif /* !__STDC_EXT__ */
 
 /* For _REENTRANT */
-#include "machine.h"
+#include "../../machine.h"
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
@@ -316,7 +316,7 @@ else
 #endif /* !__STDC_EXT__ */
 
 /* For _REENTRANT */
-#include "machine.h"
+#include "../../machine.h"
 #ifndef POSIX_SOURCE
 #define POSIX_SOURCE
 #endif
