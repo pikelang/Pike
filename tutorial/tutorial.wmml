@@ -144,6 +144,9 @@ this comment can be erased.
 
 Process.create_process ?
 
+Det står object(Stdio.File) överallt i manualen istället för
+Stdio.File.
+
 --> 
 
 <firstpage>
