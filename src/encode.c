@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.178 2004/05/11 14:13:02 grubba Exp $
+|| $Id: encode.c,v 1.179 2004/05/11 14:16:07 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.178 2004/05/11 14:13:02 grubba Exp $");
+RCSID("$Id: encode.c,v 1.179 2004/05/11 14:16:07 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3817,6 +3817,7 @@ static void decode_value2(struct decode_data *data)
 	   *
 	   * lfuns and identifier_index
 	   */
+	  ref_push_program (p);
 	  if (!(p = end_first_pass(2))) {
 	    decode_error(Pike_sp - 1, NULL, "Failed to decode program.\n");
 	  }
@@ -3831,6 +3832,12 @@ static void decode_value2(struct decode_data *data)
 #ifdef PIKE_DEBUG
 	  check_program (p);
 #endif
+
+	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
+	    /* We've regenerated p->program, so these may be off. */
+	    local_num_program = p->num_program;
+	    local_num_linenumbers = p->num_linenumbers;
+	  }
 
 	  /* Verify... */
 #define FOO(NUMTYPE,TYPE,NAME)					\
