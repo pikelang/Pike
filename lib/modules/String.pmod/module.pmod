@@ -235,3 +235,46 @@ string soundex(string word) {
   return first + word[..2];
 }
 
+//! Converts the provided integer to a roman integer (i.e. a string).
+string int2roman(int m)
+{
+  string res="";
+  if (m>10000000||m<0) return "que";
+  while (m>999) { res+="M"; m-=1000; }
+  if (m>899) { res+="CM"; m-=900; }
+  else if (m>499) { res+="D"; m-=500; }
+  else if (m>399) { res+="CD"; m-=400; }
+  while (m>99) { res+="C"; m-=100; }
+  if (m>89) { res+="XC"; m-=90; }
+  else if (m>49) { res+="L"; m-=50; }
+  else if (m>39) { res+="XL"; m-=40; }
+  while (m>9) { res+="X"; m-=10; }
+  if (m>8) return res+"IX";
+  else if (m>4) { res+="V"; m-=5; }
+  else if (m>3) return res+"IV";
+  while (m) { res+="I"; m--; }
+  return res;
+}
+
+static constant prefix = ({ "bytes", "kb", "Mb", "Gb", "Tb", "Pb", "Eb", "Zb", "Yb" });
+
+//! Returns the size as a memory size string with suffix,
+//! e.g. 43210 is converted into "42.2 kb". To be correct
+//! to the latest standards it should really read "42.2 KiB",
+//! but we have chosen to keep the old notation for a while.
+//! The function knows about the quantifiers kilo, mega, giga,
+//! tera, peta, exa, zetta and yotta.
+string int2size( int size )
+{
+  if(size<0) return "--------";
+  float s = (float)size;
+  size=0;
+
+  if(s<1025.0) return (int)s+" bytes";
+  while( s > 1024.0 && size<sizeof(prefix)-1)
+  {
+    s /= 1024.0;
+    size ++;
+  }
+  return sprintf("%.1f %s", s, prefix[ size ]);
+}
