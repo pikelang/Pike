@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.105 2001/07/16 14:52:55 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.106 2001/10/02 19:15:53 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1498,9 +1498,25 @@ void init_files_efuns(void)
   set_close_on_exec(2,1);
 
 #ifdef __NT__
-  /* MoveFileEx doesn't exist in W98 and earlier. */
-  if ((kernel32lib = LoadLibrary ("kernel32")))
-    movefileex = (movefileextype) GetProcAddress (kernel32lib, "MoveFileExA");
+  {
+    /* MoveFileEx doesn't exist in W98 and earlier. */
+    /* Correction, it exists but does not work -Hubbe */
+
+    OSVERSIONINFO osversion;
+    osversion.dwOSVersionInfoSize=sizeof(osversion);
+    if(GetVersionEx(&osversion))
+    {
+      switch(osversion.dwPlatformId)
+      {
+	case VER_PLATFORM_WIN32s: /* win32s */
+	case VER_PLATFORM_WIN32_WINDOWS: /* win9x */
+	  break;
+	default:
+	  if ((kernel32lib = LoadLibrary ("kernel32")))
+	    movefileex = (movefileextype) GetProcAddress (kernel32lib, "MoveFileExA");
+      }
+    }
+  }
 #endif
 
 /* function(string,int|void:int *) */
