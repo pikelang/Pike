@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.16 2000/04/25 09:32:46 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.17 2000/04/27 02:12:49 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1492,7 +1492,7 @@ OPCODE0_JUMP(F_RECUR,"recur")
   char *addr;
   struct svalue *expendible=fp->expendible;
   struct svalue *locals=fp->locals;
-  struct svalue *save_sp;
+  struct svalue *save_sp, **save_mark_sp;
 
   fast_check_threads_etc(6);
   check_c_stack(8192);
@@ -1500,6 +1500,7 @@ OPCODE0_JUMP(F_RECUR,"recur")
 
   save_sp=fp->expendible=fp->locals=*--Pike_mark_sp;
   args=sp-fp->locals;
+  save_mark_sp=mark_sp;
 
   addr=pc+EXTRACT_INT(pc);
   num_locals=EXTRACT_UCHAR(addr-1);
@@ -1513,6 +1514,7 @@ OPCODE0_JUMP(F_RECUR,"recur")
   sp += num_locals - args;
 
   x=eval_instruction(addr);
+  mark_sp=save_mark_sp;
   if(x!=-1) mega_apply(APPLY_STACK, x, 0,0);
   pc+=sizeof(INT32);
   if(save_sp+1 < sp)
