@@ -168,7 +168,7 @@
  * Utility definitions.
  */
 
-#define regerror(X) error(X);
+#define regerror(X) error("Regexp: %s\n",X);
 #define SPECIAL 0x100
 #define LBRAC	('('|SPECIAL)
 #define RBRAC	(')'|SPECIAL)
