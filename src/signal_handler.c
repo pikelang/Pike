@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.91 1998/11/29 21:28:17 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.92 1998/11/29 21:55:27 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1474,8 +1474,46 @@ void f_create_process(INT32 args)
 	push_int(0);
       } else {
 	/* Something went wrong. */
-	error("Process.create_process(): Child failed: %d, %d, %d!\n",
-	      buf[0], buf[1], buf[2]);
+	switch(buf[0]) {
+	case PROCE_CHDIR:
+	  error("Process.create_process(): chdir() failed. errno:%d\n",
+		buf[1]);
+	  break;
+	case PROCE_DUP2:
+	  error("Process.create_process(): dup2() failed. errno:%d\n",
+		buf[1]);
+	  break;
+	case PROCE_SETGID:
+	  error("Process.create_process(): setgid(%d) failed. errno:%d\n",
+		buf[2], buf[1]);
+	  break;
+	case PROCE_SETGROUPS:
+	  error("Process.create_process(): setgroups() failed. errno:%d\n",
+		buf[1]);
+	  break;
+	case PROCE_GETPWUID:
+	  error("Process.create_process(): getpwuid(%d) failed. errno:%d\n",
+		buf[2], buf[1]);
+	  break;
+	case PROCE_INITGROUPS:
+	  error("Process.create_process(): initgroups() failed. errno:%d\n",
+		buf[1]);
+	  break;
+	case PROCE_SETUID:
+	  error("Process.create_process(): setuid(%d) failed. errno:%d\n",
+		buf[1]);
+	  break;
+	case PROCE_EXEC:
+	  error("Process.create_process(): exec() failed. errno:%d\n"
+		"File not found?\n", buf[1]);
+	  break;
+	case 0:
+	  /* read() probably failed. */
+	default:
+	  error("Process.create_process(): Child failed: %d, %d, %d!\n",
+		buf[0], buf[1], buf[2]);
+	  break;
+	}
       }
     }else{
       ONERROR oe;
