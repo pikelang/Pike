@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.424 2001/06/11 18:18:42 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.425 2001/06/20 15:21:54 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2246,6 +2246,18 @@ test_any([[multiset m=(<>);int e;
   return 1;
 ]],1)
 
+test_eq([[
+  multiset m = set_weak_flag((<>), 1);
+  m[1] = 1;
+  return sizeof(m);
+]], 1)
+
+test_true([[
+  multiset m = set_weak_flag((<>), 1);
+  m[1] = 1;
+  return get_weak_flag(m);
+]])
+
 test_eq([[sizeof(mtest_m)]],sizeof(mtest_i))
 test_equal(Array.sort_array(indices(mtest_m)),Array.sort_array(mtest_i))
 test_equal(mtest_m,copy_value(mtest_m))
@@ -4297,24 +4309,32 @@ test_any([[mixed a; sscanf("\100\105\110\000\0\0\0\0","%8F",a); return a]],42.56
 test_any([[mixed a; sscanf("\275\007\053\002","%4F",a); return a]],-0.032999999821186065673828125)
 test_any([[mixed a; sscanf("\277\240\345\140\100\0\0\0","%8F",a); return a]],-0.032999999821186065673828125)
 
+// Inf
 test_any([[mixed a; sscanf("\177\200\0\0","%4F",a); return a>0.0]],1)
 test_any([[mixed a; sscanf("\177\200\0\0","%4F",a); return (a/2)==a]],1)
+// -Inf
 test_any([[mixed a; sscanf("\377\200\0\0","%4F",a); return a<0.0]],1)
 test_any([[mixed a; sscanf("\377\200\0\0","%4F",a); return (a/2)==a]],1)
+// NaN
 test_any([[mixed a; sscanf("\177\300\0\0","%4F",a); return a>0.0]],0)
 test_any([[mixed a; sscanf("\177\300\0\0","%4F",a); return a<0.0]],0)
 test_any([[mixed a; sscanf("\177\300\0\0","%4F",a); return a==0.0]],0)
+// -NaN
 test_any([[mixed a; sscanf("\377\300\0\0","%4F",a); return a>0.0]],0)
 test_any([[mixed a; sscanf("\377\300\0\0","%4F",a); return a<0.0]],0)
 test_any([[mixed a; sscanf("\377\300\0\0","%4F",a); return a==0.0]],0)
 
+// Inf
 test_any([[mixed a; sscanf("\177\360\0\0\0\0\0\0","%8F",a); return a>0.0]],1)
 test_any([[mixed a; sscanf("\177\360\0\0\0\0\0\0","%8F",a); return(a/2)==a]],1)
+// -Inf
 test_any([[mixed a; sscanf("\377\360\0\0\0\0\0\0","%8F",a); return a<0.0]],1)
 test_any([[mixed a; sscanf("\377\360\0\0\0\0\0\0","%8F",a); return(a/2)==a]],1)
+// NaN
 test_any([[mixed a; sscanf("\177\370\0\0\0\0\0\0","%8F",a); return a>0.0]],0)
 test_any([[mixed a; sscanf("\177\370\0\0\0\0\0\0","%8F",a); return a<0.0]],0)
 test_any([[mixed a; sscanf("\177\370\0\0\0\0\0\0","%8F",a); return a==0.0]],0)
+// -NaN
 test_any([[mixed a; sscanf("\377\370\0\0\0\0\0\0","%8F",a); return a>0.0]],0)
 test_any([[mixed a; sscanf("\377\370\0\0\0\0\0\0","%8F",a); return a<0.0]],0)
 test_any([[mixed a; sscanf("\377\370\0\0\0\0\0\0","%8F",a); return a==0.0]],0)
@@ -7340,9 +7360,10 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thre
     for(int e=0;e<10;e++)
     {
       fnord+=({ thread_create(lambda() {
-        Process.create_process(({"/bin/cat","/dev/null"}));
-        fifo->read();
-      }) });
+        	  Process.create_process(({"/bin/cat","/dev/null"}));
+        	  fifo->read();
+	        })
+	      });
     }
     for(int e=0;e<50;e++)  Stdio.Port()->bind(0);
     for(int e=0;e<10;e++) fifo->write(1);
