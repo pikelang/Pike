@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.42 1998/04/06 20:38:52 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.43 1998/04/06 23:56:08 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -823,7 +823,7 @@ void f_create_process(INT32 args)
   }
 #else /* __NT__ */
   {
-    struct svalue *stack_save=sp-args;
+    struct svalue *stack_save=sp;
     ONERROR err;
     struct passwd *pw=0;
     struct perishables storage;
@@ -1014,7 +1014,8 @@ void f_create_process(INT32 args)
     if(storage.wanted_gids_array)
     {
       int e;
-      storage.wanted_gids=(gid_t *)xalloc(sizeof(gid_t) * storage.wanted_gids_array->size);
+      storage.wanted_gids=(gid_t *)xalloc(sizeof(gid_t) * (storage.wanted_gids_array->size + 1));
+      storage.wanted_gids[0]=65534; /* Paranoia */
       for(e=0;e<storage.wanted_gids_array->size;e++)
       {
 	switch(storage.wanted_gids_array->item[e].type)
