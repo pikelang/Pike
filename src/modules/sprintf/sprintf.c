@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.45 1999/10/21 17:35:53 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.46 1999/10/21 18:15:51 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -729,8 +729,6 @@ INLINE static int do_one(struct format_stack *fs,
 
 #define CHECK_OBJECT_SPRINTF()						    \
 	/* FIXME: Check that the stack/reference operations are correct. */ \
-	/* FIXME: Send precision flags etc. as a 2nd argument mapping. */   \
-	/*        (Don't forget to add this in `describe_svalue' too.) */   \
 	{								    \
 	   /* NOTE: It would be nice if this was a do { } while(0) macro */ \
 	   /* but it cannot be since we need to break out of the case... */ \
@@ -754,7 +752,6 @@ INLINE static int do_one(struct format_stack *fs,
 	      f_aggregate_mapping(n);					    \
 									    \
 	      apply_svalue(sp-3, 2);   /* FIXME: lfun optimisation? */	    \
-\
 	      if(sp[-1].type == T_STRING)				      \
 	      {								      \
 		struct pike_string *s = (--sp)->u.string;		      \
