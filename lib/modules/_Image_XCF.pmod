@@ -407,8 +407,8 @@ string translate_mode( int mode )
 array decode_layers( string|object|mapping what, mapping|void opts, 
                      int|void concat )
 {
-  int shrink = (opts->shrink_fact||1);
   if(!opts) opts = ([]);
+  int shrink = (opts->shrink_fact||1);
 
   if(!objectp( what ) )
     what = __decode( what );
