@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.12 2001/11/09 02:09:13 nilsson Exp $
+ * $Id: pike_threadlib.h,v 1.13 2002/02/05 19:15:58 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -361,7 +361,13 @@ PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads 
 #define THREADS_FPRINTF(L,X)
 #else
 #define THREADS_FPRINTF(L,X)	do { \
-    if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) fprintf X; \
+    if ((VERBOSE_THREADS_DEBUG + 0) >= (L)) {				\
+      /* E.g. THREADS_DISALLOW is used in numerous places where the */	\
+      /* value in errno must not be clobbered. */			\
+      int saved_errno__ = errno;					\
+      fprintf X;							\
+      errno = saved_errno__;						\
+    }									\
   } while(0)
 #endif /* VERBOSE_THREADS_DEBUG */
 
