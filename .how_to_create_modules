@@ -1,0 +1,26 @@
+o You need a name for your module, for our purposes, let us assume you 
+   want to create the module "modulen".
+
+o Create the dir src/modules/modulen
+
+o Copy the Makefile.src from src/modules/files and modify it.
+  The Makefile.src need not contain any dependencies.
+
+o You need a testsuite.in, even if it is just an empty one.
+
+o You want a doc dir with BMML or HTML documenation.
+
+o You need a configure.in
+  Your configure.in should test for ALL features you need.
+  Do not trust the global configure tests to do things for you.
+
+o All c/c++ files should include "global.h"
+
+o The makefile should create a file called linker_options in the build dir
+  that contains the needed -l<lib> directives.
+
+o When building the your module the first time you need to:
+  1) run autoconf
+  2) do 'make depend' from your build dir
+  3) re-run configure from your build dir
+  4) make (in your build dir)
