@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.6 2003/09/21 11:27:17 mirar Exp $
+|| $Id: pcre_glue.cmod,v 1.7 2003/09/23 12:48:27 grubba Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.6 2003/09/21 11:27:17 mirar Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.7 2003/09/23 12:48:27 grubba Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -159,6 +159,8 @@ PIKECLASS _pcre
       }
    }
 
+#ifdef HAVE_PCRE_FULLINFO
+
    PIKEFUN mapping info()
       {
 	 int backrefmax,firstbyte,lastliteral,capturecount;
@@ -206,6 +208,8 @@ PIKECLASS _pcre
 	 push_text("studysize"); 	push_int(studysize);
 	 f_aggregate_mapping(22);
       }
+
+#endif /* HAVE_PCRE_FULLINFO */
 
 /*! @decl int|array exec(string subject,void|int startoffset)
  *!     match a regexp; will return an array of 2*n integers
@@ -282,7 +286,11 @@ PIKECLASS _pcre
 	 if (!THIS->re)
 	    Pike_error("need to initialize before exec() is called\n");
 
+#ifdef PCRE_EXTRA_STUDY_DATA
 	 if (THIS->extra) opts|=PCRE_EXTRA_STUDY_DATA;
+#else
+	 /* FIXME: Throw an error if THIS->extra is set? */
+#endif /* PCRE_EXTRA_STUDY_DATA */
          /* FIXME: also MATCH_LIMIT and CALLOUT_DATA ... later */
 
 	 switch (args) /* get ints and check 8 bit compliancy */
@@ -450,11 +458,21 @@ PIKE_MODULE_INIT
    }									\
    while (0)
 
+#ifdef PCRE_CONFIG_UTF8
    FIGURE_BUILD_TIME_OPTION(UTF8);
+#endif
+#ifdef PCRE_CONFIG_NEWLINE
    FIGURE_BUILD_TIME_OPTION(NEWLINE);
+#endif
+#ifdef PCRE_CONFIG_LINK_SIZE
    FIGURE_BUILD_TIME_OPTION(LINK_SIZE);
+#endif
+#ifdef PCRE_CONFIG_POSIX_MALLOC_THRESHOLD
    FIGURE_BUILD_TIME_OPTION(POSIX_MALLOC_THRESHOLD);
+#endif
+#ifdef PCRE_CONFIG_MATCH_LIMIT
    FIGURE_BUILD_TIME_OPTION(MATCH_LIMIT);
+#endif
 
 /*! @module CONFIG
  *!  contains all option constants
@@ -553,6 +571,7 @@ PIKE_MODULE_INIT
  */
    add_integer_constant("MULTILINE",PCRE_MULTILINE,0);
 
+#ifdef PCRE_NO_AUTO_CAPTURE
 /*! @decl constant NO_AUTO_CAPTURE
  *!  (from the pcreapi manpage)
  *!  If this option is set, it disables the use of numbered capturing paren-
@@ -562,6 +581,7 @@ PIKE_MODULE_INIT
  *!  There is no equivalent of this option in Perl.
  */
    add_integer_constant("NO_AUTO_CAPTURE",PCRE_NO_AUTO_CAPTURE,0);
+#endif
 
 /*! @decl constant UNGREEDY
  *!  (from the pcreapi manpage)
@@ -572,6 +592,7 @@ PIKE_MODULE_INIT
  */
    add_integer_constant("UNGREEDY",PCRE_UNGREEDY,0);
 
+#ifdef PCRE_UTF8
 /*! @decl constant UTF8
  *!  (from the pcreapi manpage)
  *!  This option causes PCRE to regard both the pattern and the  subject  as
@@ -582,6 +603,7 @@ PIKE_MODULE_INIT
  *!  on UTF-8 support in the main pcre page.
  */
    add_integer_constant("UTF8",PCRE_UTF8,0);
+#endif
 
 #define END_PROGRAM_MAKE_SUBMODULE(X)					\
    do									\
@@ -605,8 +627,12 @@ PIKE_MODULE_INIT
    add_integer_constant("NODE",PCRE_ERROR_UNKNOWN_NODE,0);
    add_integer_constant("NOMEMORY",PCRE_ERROR_NOMEMORY,0);
    add_integer_constant("NOSUBSTRING",PCRE_ERROR_NOSUBSTRING,0);
+#ifdef PCRE_ERROR_MATCHLIMIT
    add_integer_constant("MATCHLIMIT",PCRE_ERROR_MATCHLIMIT,0);
+#endif
+#ifdef PCRE_ERROR_CALLOUT
    add_integer_constant("CALLOUT",PCRE_ERROR_CALLOUT,0);
+#endif
 
    END_PROGRAM_MAKE_SUBMODULE("ERROR");
 
