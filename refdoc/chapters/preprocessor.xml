@@ -185,11 +185,9 @@ do_something(#string "the_file.wks");
 </section>
 
 
-<!--
 <section title="Predefined defines">
-  <insert-move entity="define::"/>
+  <insert-move entity="cpp::"/>
 </section>
--->
 
 <!--
 
