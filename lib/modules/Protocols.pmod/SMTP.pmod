@@ -39,7 +39,7 @@ class client
      551:"User not local; please try <forward-path>",
      552:"Requested mail action aborted: exceeded storage allocation",
      553:"Requested action not taken: mailbox name not allowed "
-         "[E.g., mailbox syntax incorrect]",
+         "[E.g., mailbox syntax incorrect or relaying denied]",
      554:"Transaction failed" ]);
 
   static private int cmd(string c, string|void comment)
