@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.616 2002/09/02 16:50:31 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.617 2002/09/03 08:02:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4984,7 +4984,7 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
           pike_cv_sys_nonblock=$method
           break;
         ], [], [
-	  # Not meaningful.
+	  :; # Not meaningful.
   	])
       done
     else :; fi
