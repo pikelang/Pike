@@ -17,8 +17,10 @@
 
 #include "parser.h"
 
-/*
+extern struct program *parser_html_program;
+
 #define DEBUG
+/*
 #define SCAN_DEBUG
 */
 
@@ -31,7 +33,7 @@
 #define DEBUG_MARK_SPOT(TEXT,FEED,C) do; while(0)
 #endif
 
-#if 0
+#if 1
 #define free(X) fprintf(stderr,"free line %d: %p\n",__LINE__,X); free(X)
 #endif
 
@@ -285,12 +287,11 @@ found_start:
       free(THIS->ws_or_endarg);
       THIS->ws_or_endarg=NULL;
    }
-   THIS->ws_or_endarg=(p_wchar2*)xalloc(sizeof(p_wchar2)*THIS->n_ws);
-
+   THIS->n_ws_or_endarg=THIS->n_ws+2;
+   THIS->ws_or_endarg=(p_wchar2*)xalloc(sizeof(p_wchar2)*THIS->n_ws_or_endarg);
    MEMCPY(THIS->ws_or_endarg+2,THIS->ws,THIS->n_ws*sizeof(p_wchar2));
    THIS->ws_or_endarg[0]=THIS->arg_eq;
    THIS->ws_or_endarg[1]=THIS->tag_end;
-   THIS->n_ws_or_endarg=THIS->n_ws+2;
 
    if (THIS->ws_or_endarg_or_quote) 
    {
@@ -298,8 +299,10 @@ found_start:
       THIS->ws_or_endarg_or_quote=NULL;
    }
 
+   THIS->n_ws_or_endarg_or_quote=
+      THIS->n_ws_or_endarg+THIS->nargq;
    THIS->ws_or_endarg_or_quote=
-      (p_wchar2*)xalloc(sizeof(p_wchar2)*(THIS->n_ws_or_endarg+THIS->nargq));
+      (p_wchar2*)xalloc(sizeof(p_wchar2)*(THIS->n_ws_or_endarg_or_quote));
 
    MEMCPY(THIS->ws_or_endarg_or_quote, THIS->ws_or_endarg,
 	  THIS->n_ws_or_endarg*sizeof(p_wchar2));
@@ -307,8 +310,6 @@ found_start:
    MEMCPY(THIS->ws_or_endarg_or_quote+THIS->n_ws_or_endarg,
 	  THIS->argq_start, THIS->nargq*sizeof(p_wchar2));
 
-   THIS->n_ws_or_endarg_or_quote=
-      THIS->n_ws_or_endarg+THIS->nargq;
 }
 
 static void init_html_struct(struct object *o)
@@ -389,6 +390,8 @@ static void exit_html_struct(struct object *o)
    if (THIS->ws_or_endarg_or_quote) free(THIS->ws_or_endarg_or_quote);
 
    if (THIS->extra_args) free_array(THIS->extra_args);
+
+   DEBUG((stderr,"exit_html_struct %p done\n",THIS));
 }
 
 /****** setup callbacks *****************************/
@@ -469,6 +472,13 @@ static void html_add_tag(INT32 args)
 {
    check_all_args("add_tag",args,
 		  BIT_STRING,BIT_MIXED,0);
+   if (THIS->maptag->refs>1)
+   {
+      push_mapping(THIS->maptag);
+      THIS->maptag=copy_mapping(THIS->maptag);
+      pop_stack();
+      fprintf(stderr,"COPY\n");
+   }
    mapping_insert(THIS->maptag,sp-2,sp-1);
    
    pop_n_elems(args);
@@ -478,6 +488,12 @@ static void html_add_container(INT32 args)
 {
    check_all_args("add_container",args,
 		  BIT_STRING,BIT_MIXED,0);
+   if (THIS->mapcont->refs>1)
+   {
+      push_mapping(THIS->mapcont);
+      THIS->mapcont=copy_mapping(THIS->mapcont);
+      pop_stack();
+   }
    mapping_insert(THIS->mapcont,sp-2,sp-1);
    pop_n_elems(args);
 }
@@ -486,6 +502,12 @@ static void html_add_entity(INT32 args)
 {
    check_all_args("parse_tag_args",args,
 		  BIT_STRING,BIT_MIXED,0);
+   if (THIS->mapentity->refs>1)
+   {
+      push_mapping(THIS->mapentity);
+      THIS->mapentity=copy_mapping(THIS->mapentity);
+      pop_stack();
+   }
    mapping_insert(THIS->mapentity,sp-2,sp-1);
    pop_n_elems(args);
 }
@@ -2165,6 +2187,78 @@ void html_create(INT32 args)
    pop_n_elems(args);
 }
 
+/*
+**! method object clone(mixed ...)
+**!	Clones the <ref>Parser.HTML</ref> object.
+**!	A new object of the same class is created,
+**!	filled with the parse setup from the 
+**!	old object.
+**!
+**!	This is the simpliest way of flushing a 
+**!	parse feed/output.
+**!
+**!	The arguments to clone is sent to the 
+**!	new object, simplifying work for custom classes that
+**!	inherits <ref>Parser.HTML</ref>.
+**! returns the new object.
+**!
+**! note:
+**!	create is called _before_ the setup is copied.
+*/
+
+static void html_clone(INT32 args)
+{
+   struct object *o;
+   struct parser_html_storage *p;
+   int i;
+   p_wchar2 *newws;
+
+   DEBUG((stderr,"parse_html_clone object %p\n",THISOBJ));
+
+   /* clone the current object, same class (!) */
+   push_object(o=clone_object(parser_html_program,args));
+
+   p=(struct parser_html_storage*)get_storage(o,parser_html_program);
+
+   if (p->maptag) free_mapping(p->maptag);
+   add_ref(p->maptag=THIS->maptag);
+   if (p->mapcont) free_mapping(p->mapcont);
+   add_ref(p->mapcont=THIS->mapcont);
+   if (p->mapentity) free_mapping(p->mapentity);
+   add_ref(p->mapentity=THIS->mapentity);
+
+   if (p->extra_args) free_array(p->extra_args);
+   if (THIS->extra_args)
+      add_ref(p->extra_args=THIS->extra_args);
+   else
+      p->extra_args=NULL;
+
+   p->lazy_end_arg_quote=THIS->lazy_end_arg_quote;
+   p->lazy_entity_end=THIS->lazy_entity_end;
+   
+   p->tag_start=THIS->tag_start;
+   p->tag_end=THIS->tag_end;
+   p->entity_start=THIS->entity_start;
+   p->entity_end=THIS->entity_end;
+   p->arg_eq=THIS->arg_eq;
+
+   p->nargq=THIS->nargq;
+   for (i=0; i<p->nargq; i++)
+   {
+      p->argq_start[i]=THIS->argq_start[i];
+      p->argq_stop[i]=THIS->argq_stop[i];
+   }
+   p->n_ws=THIS->n_ws;
+   newws=(p_wchar2*)xalloc(sizeof(p_wchar2)*p->n_ws);
+   MEMCPY(newws,THIS->ws,sizeof(p_wchar2)*p->n_ws);
+   if (p->ws) free(p->ws); 
+   p->ws=newws;
+
+   fprintf(stderr,"done clone\n");
+
+   /* all copied, object on stack */
+}
+
 /****** module init *********************************/
 
 #define tCbret tOr3(tInt0,tStr,tArr(tStr))
@@ -2184,30 +2278,22 @@ void init_parser_html(void)
 #define CBRET "string|array(string)" /* 0|string|({string}) */
 
    ADD_FUNCTION("create",html_create,tFunc(,tVoid),0);
+   ADD_FUNCTION("clone",html_clone,tFuncV(,tMixed,tVoid),0);
 
    /* feed control */
 
-   add_function("feed",html_feed,
-		"function(:object)|"
-		"function(string,void|int:object)",0);
-   add_function("finish",html_finish,
-		"function(:object)",0);
-   add_function("read",html_read,
-		"function(void|int:string)",0);
+   ADD_FUNCTION("feed",html_feed,tOr(tFunc(,tObj),tFunc(tStr tOr(tVoid,tInt),tObj)),0);
+   ADD_FUNCTION("finish",html_finish,tFunc(,tObj),0);
+   ADD_FUNCTION("read",html_read,tFunc(tOr(tVoid,tInt),tStr),0);
 
-   add_function("write_out",html_write_out,
-		"function(string:object)",0);
-   add_function("feed_insert",html_feed_insert,
-		"function(string,void|int:object)",0);
+   ADD_FUNCTION("write_out",html_write_out,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("feed_insert",html_feed_insert,tFunc(tStr tOr(tVoid,tInt),tObj),0);
 
    /* query */
 
-   add_function("current",html_current,
-		"function(:string)",0);
-   add_function("tag_name",html_tag_name,
-		"function(:string)",0);
-   add_function("tag_args",html_tag_args,
-		"function(:mapping)",0);
+   ADD_FUNCTION("current",html_current,tFunc(,tStr),0);
+   ADD_FUNCTION("tag_name",html_tag_name,tFunc(,tStr),0);
+   ADD_FUNCTION("tag_args",html_tag_args,tFunc(,tMapping),0);
 
    /* callback setup */
 
@@ -2220,17 +2306,16 @@ void init_parser_html(void)
 
    /* special callbacks */
 
-   add_function("_set_tag_callback",html__set_tag_callback,
-		"function(function(object,string,mixed ...:"CBRET"):void)",0);
-   add_function("_set_data_callback",html__set_data_callback,
-		"function(function(object,string,mixed ...:"CBRET"):void)",0);
-   add_function("_set_entity_callback",html__set_entity_callback,
-		"function(function(object,string,mixed ...:"CBRET"):void)",0);
+   ADD_FUNCTION("_set_tag_callback",html__set_tag_callback,
+		tFunc(tFuncV(tObj tStr,tMix,tCbret),tVoid),0);
+   ADD_FUNCTION("_set_data_callback",html__set_data_callback,
+		tFunc(tFuncV(tObj tStr,tMix,tCbret),tVoid),0);
+   ADD_FUNCTION("_set_entity_callback",html__set_entity_callback,
+		tFunc(tFuncV(tObj tStr,tMix,tCbret),tVoid),0);
 
    /* debug, whatever */
    
-   add_function("_inspect",html__inspect,
-		"function(:mapping)",0);
+   ADD_FUNCTION("_inspect",html__inspect,tFunc(,tMapping),0);
 
    /* just useful */
 
@@ -2240,6 +2325,9 @@ void init_parser_html(void)
 		tFunc(tStr,tStr),0);
 }
 
+void exit_parser_html()
+{
+}
 
 /*
 
@@ -2249,8 +2337,6 @@ class Parse_HTML
    void finish(); // stream ends here
 
    string read(void|int chars); // read out-feed
-
-   void reset();  // reset stream
 
    object clone(); // new object, fresh stream
 
