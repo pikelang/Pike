@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.89 2000/09/16 15:22:06 leif Exp $
+ * $Id: system.c,v 1.90 2000/09/17 17:05:28 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.89 2000/09/16 15:22:06 leif Exp $");
+RCSID("$Id: system.c,v 1.90 2000/09/17 17:05:28 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -748,16 +748,21 @@ void f_getpgrp(INT32 args)
 }
 #endif /* HAVE_GETPGID || HAVE_GETPGRP */
 
-#if defined(HAVE_SETPGRP)
+#if defined(HAVE_SETPGID) || defined(HAVE_SETPGRP)
 void f_setpgrp(INT32 args)
 {
   int pid;
-  if (args != 0)
-       error("Too many arguments.\n");
   pop_n_elems(args);
+#ifdef HAVE_SETPGID
+  pid = setpgid(0, 0);
+#else /* !HAVE_SETPGID */
+#ifdef HAVE_SETPGRP_BSD
+  pid = setpgrp(0, 0);
+#else /* !HAVE_SETPGRP_BSD */
   pid = setpgrp();
+#endif /* HAVE_SETPGRP_BSD */
   if (pid < 0)
-       report_error("setpgrp");
+    report_error("setpgrp");
 
   push_int(pid);
 }
@@ -767,11 +772,9 @@ void f_setpgrp(INT32 args)
 void f_getsid(INT32 args)
 {
   int pid = 0;
-  if (args > 1)
-       error("Too many arguments for getsid().\n");
-  if (args == 1 && sp[-args].type != T_INT)
+  if (args >= 1 && sp[-args].type != T_INT)
        error("Bad argument for getsid().\n");
-  if (args == 1)
+  if (args >= 1)
        pid = sp[-args].u.integer;
   pop_n_elems(args);
   pid = getsid(pid);
