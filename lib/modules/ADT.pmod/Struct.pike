@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.16 2005/04/02 19:26:11 nilsson Exp $
+// $Id: Struct.pike,v 1.17 2005/04/02 22:32:18 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -111,6 +111,7 @@ static array _values() {
 //! The size of the struct object is the number of bytes
 //! allocated for the struct.
 static int _sizeof() {
+  if(!sizeof(items)) return 0;
   return `+( @sizeof(items[*]) );
 }
 
