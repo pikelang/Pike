@@ -21,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.58 2000/08/15 11:04:52 grubba Exp $");
+RCSID("$Id: error.c,v 1.59 2000/08/15 11:42:44 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -631,7 +631,7 @@ void generic_error_va(struct object *o,
 #endif /* HAVE_VSNPRINTF */
   in_error=buf;
 
-  if (1 || !master_program) {
+  if (!master_program) {
     fprintf(stderr, "ERROR: %s\n", buf);
   }
 
