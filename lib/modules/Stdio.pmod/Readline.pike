@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.9 1999/04/02 09:57:59 neotron Exp $
+// $Id: Readline.pike,v 1.10 1999/04/02 10:14:03 neotron Exp $
 
 class OutputController
 {
@@ -659,7 +659,11 @@ class DefaultEditKeys
   }
   void backward_delete_word()
   {
-    _readline->delete(backward_find_word()+1, _readline->getcursorpos());
+    int sp = backward_find_word() + 1;
+    int ep = _readline->getcursorpos();
+    if((ep - sp) == 0)
+      sp--;
+    _readline->delete(sp, ep);
   }
 
   void kill_line()
@@ -726,6 +730,7 @@ class DefaultEditKeys
       ic->bindstr(sprintf("%c", i), self_insert_command);
     for(int i='\240'; i<='\377'; i++)
       ic->bindstr(sprintf("%c", i), self_insert_command);
+    
     foreach(default_bindings, array(string|function) b)
       ic->bind(@b);
   }
