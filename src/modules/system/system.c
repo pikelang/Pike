@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.130 2003/03/03 18:27:31 grubba Exp $
+|| $Id: system.c,v 1.131 2003/05/12 11:45:36 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.130 2003/03/03 18:27:31 grubba Exp $");
+RCSID("$Id: system.c,v 1.131 2003/05/12 11:45:36 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2533,6 +2533,9 @@ static void f_gettimeofday(INT32 args)
 
 PIKE_MODULE_INIT
 {
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+  mt_init(&gethostbyname_mutex);
+#endif
   /*
    * From this file:
    */
@@ -2866,5 +2869,8 @@ PIKE_MODULE_EXIT
     extern void exit_nt_system_calls(void);
     exit_nt_system_calls();
   }
+#endif
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+  mt_destroy(&gethostbyname_mutex);
 #endif
 }
