@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.5 2003/05/07 16:12:17 grubba Exp $");
+RCSID("$Id: hash.cmod,v 1.6 2003/05/08 11:17:17 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -178,7 +178,7 @@ PIKECLASS HashState
   EXIT
     {
       werror("HashState->EXIT\n");
-      if (THIS->ctx)
+      if (THIS->ctx && Pike_fp->current_object->prog)
       {
 	const struct nettle_hash *meta =
 	  GET_META(Pike_fp->current_object);
