@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.79 2000/02/15 22:06:22 hubbe Exp $
+ * $Id: program.h,v 1.80 2000/02/15 23:41:03 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -281,7 +281,7 @@ struct program
 #define PROG_FROM_INT(P,X) PROG_FROM_PTR(P,(P)->identifier_references+(X))
 #define ID_FROM_INT(P,X) ID_FROM_PTR(P,(P)->identifier_references+(X))
 
-#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):find_identifier(lfun_names[(N)],(P)) )
+#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
 
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!--_->refs) really_free_program(_); }while(0)
 
@@ -412,6 +412,7 @@ INT32 define_function(struct pike_string *name,
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
+int low_find_lfun(struct program *p, int lfun);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);
 struct ff_hash;
