@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.21 2000/10/27 14:05:08 grubba Exp $
+# $Id: configure.in,v 1.22 2000/10/31 17:34:28 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -182,6 +182,8 @@ if test x$with_oracle = xyes; then
         ORACLE_LIBS="-lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 $pike_cv_oracle_sysliblist $oracle_aio -lm -lcore3"
       fi
     fi
+
+    AC_CHECK_HEADERS(oci.h ocidfn.h ociapr.h)
 
     OLDLIBS=LIBS
     LIBS="$ORACLE_LIBS $LIBS"
