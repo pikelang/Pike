@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.10 1997/11/05 03:42:35 mirar Exp $ */
+/* $Id: gif.c,v 1.11 1997/11/05 18:34:24 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.10 1997/11/05 03:42:35 mirar Exp $
+**!	$Id: gif.c,v 1.11 1997/11/05 18:34:24 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.10 1997/11/05 03:42:35 mirar Exp $");
+RCSID("$Id: gif.c,v 1.11 1997/11/05 18:34:24 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -163,7 +163,6 @@ void image_gif_header_block(INT32 args)
 	        get_storage(sp[2-args].u.object,image_colortable_program)))
    {
       numcolors=image_colortable_size(nct);
-      if (numcolors<2) numcolors=2;
       globalpalette=1;
    }
    else
@@ -203,7 +202,7 @@ void image_gif_header_block(INT32 args)
    }
 
    if (numcolors+alphaentry>256)
-      error("Image.GIF.header_block(): too many colors\n");
+      error("Image.GIF.header_block(): too many colors (%d%s)\n",numcolors+alphaentry,alphaentry?" including alpha channel color":"");
 
    while ((1<<bpp)<numcolors+alphaentry) bpp++;
 
@@ -906,17 +905,21 @@ static void _image_gif_encode(INT32 args,int fs)
    if (args>=2)
       if (sp[1-args].type==T_INT)
       {
-	 n=sp[1-args].u.integer;
-	 if (n>256) n=256; if (n<2) n=2;
+	 if (args!=4)
+	 {
+	    n=sp[1-args].u.integer;
+	    if (n>256) n=256; if (n<2) n=2;
 
-	 imgobj->refs++;
-	 push_object(imgobj);
-	 if (alpha) push_int(n);
-	 nctobj=clone_object(image_colortable_program,2);
-	 nct=(struct neo_colortable*)
-	    get_storage(nctobj,image_colortable_program);
-	 if (!nct)
-	    error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+	    imgobj->refs++;
+	    push_object(imgobj);
+	    if (alpha) push_int(n);
+	    nctobj=clone_object(image_colortable_program,2);
+	    nct=(struct neo_colortable*)
+	       get_storage(nctobj,image_colortable_program);
+	    if (!nct)
+	       error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
+	 }
+	 else arg=1;
       }
       else if (sp[1-args].type!=T_OBJECT)
 	 error("Image.GIF.encode(): Illegal argument 2 (expected image or colortable object or int)\n");
@@ -985,7 +988,6 @@ static void _image_gif_encode(INT32 args,int fs)
 	    if (!nct)
 	       error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
 	 }
-
    
 	 tr.r=(unsigned char)sp[arg-args].u.integer;
 	 tr.g=(unsigned char)sp[1+arg-args].u.integer;
