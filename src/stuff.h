@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stuff.h,v 1.11 2000/12/16 05:45:45 marcus Exp $
+ * $Id: stuff.h,v 1.12 2001/09/01 01:45:52 hubbe Exp $
  */
 #ifndef STUFF_H
 #define STUFF_H
@@ -18,6 +18,7 @@ PMOD_EXPORT int count_bits(unsigned INT32 x);
 PMOD_EXPORT int is_more_than_one_bit(unsigned INT32 x);
 PMOD_EXPORT double my_strtod(char *nptr, char **endptr);
 PMOD_EXPORT unsigned INT32 my_sqrt(unsigned INT32 n);
+unsigned long find_good_hash_size(unsigned long x);
 /* Prototypes end here */
 
 PMOD_EXPORT extern INT32 hashprimes[32];

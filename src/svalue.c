@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.117 2001/08/31 06:55:23 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.118 2001/09/01 01:45:52 hubbe Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -510,9 +510,12 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
       pop_stack();
       break;
     }
-
   default:
+#if SIZEOF_CHAR_P > 4
     q=DO_NOT_WARN((unsigned INT32)((ptrdiff_t)s->u.refs >> 2));
+#else
+    q=DO_NOT_WARN((unsigned INT32)((ptrdiff_t)s->u.refs));
+#endif
     break;
   case T_INT:   q=s->u.integer; break;
   case T_FLOAT:
