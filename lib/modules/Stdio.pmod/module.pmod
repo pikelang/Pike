@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.148 2002/05/19 15:14:13 per Exp $
+// $Id: module.pmod,v 1.149 2002/06/11 17:12:52 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -125,7 +125,7 @@ class BlockFile
 //! in @[Fd] are available here as well.
 class File
 {
-  inherit Fd_ref;
+  optional inherit Fd_ref;
   
 #ifdef TRACK_OPEN_FILES
   static int open_file_id = next_open_file_id++;
