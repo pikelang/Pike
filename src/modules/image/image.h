@@ -53,5 +53,6 @@ void colortable_free(struct colortable *ct);
 
 struct pike_string *
    image_encode_gif(struct image *img,struct colortable *ct,
-		    rgb_group *transparent);
+		    rgb_group *transparent,
+		    int floyd_steinberg);
 

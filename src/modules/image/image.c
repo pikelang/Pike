@@ -706,7 +706,27 @@ void image_togif(INT32 args)
    pop_n_elems(args);
    if (!THIS->img) { error("no image\n");  return; }
    ct=colortable_quant(THIS,256);
-   push_string( image_encode_gif( THIS,ct, transparent) );
+   push_string( image_encode_gif( THIS,ct, transparent, 0) );
+   colortable_free(ct);
+}
+
+void image_togif_fs(INT32 args)
+{
+   char buf[80];
+   struct pike_string *a,*b;
+   rgb_group *transparent=NULL;
+   struct colortable *ct;
+
+   if (args>=3)
+   {
+      getrgb(THIS,0,args,"image->togif_fs() (transparency)");
+      transparent=&(THIS->rgb);
+   }
+
+   pop_n_elems(args);
+   if (!THIS->img) { error("no image\n");  return; }
+   ct=colortable_quant(THIS,256);
+   push_string( image_encode_gif( THIS,ct, transparent, 1) );
    colortable_free(ct);
 }
 
@@ -1732,6 +1752,8 @@ void init_image_programs()
    add_function("fromppm",image_frompnm,
 		"function(string:void)",0);
    add_function("togif",image_togif,
+		"function(:string)",0);
+   add_function("togif_fs",image_togif_fs,
 		"function(:string)",0);
 
    add_function("copy",image_copy,

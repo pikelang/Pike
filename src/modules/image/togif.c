@@ -8,8 +8,10 @@
 
 #define INITIAL_BUF_LEN 8192
 
-/** compress algorithm *************/
 
+#define min(a,b) ((a)<(b)?(a):(b))
+#define max(a,b) ((a)<(b)?(b):(a))
+#define testrange(x) max(min((x),255),0)
 
 void buf_word( unsigned short w, dynamic_buffer *buf )
 {
@@ -19,7 +21,7 @@ void buf_word( unsigned short w, dynamic_buffer *buf )
 
 struct pike_string *
    image_encode_gif(struct image *img,struct colortable *ct,
-		    rgb_group *transparent)
+		    rgb_group *transparent,int fs)
 {
    dynamic_buffer buf;
    long i;
@@ -73,9 +75,45 @@ struct pike_string *
    
    i=img->xsize*img->ysize;
    rgb=img->img;
-   
+
    lzw_init(&lzw,8);
-   while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
+   if (!fs)
+      while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
+   else
+   {
+      rgbl_group err,*errb;
+      rgb_group corgb;
+      int c,x=0;
+      errb=xalloc(sizeof(rgbl_group)*img->xsize);
+      err.r=err.g=err.b=0;
+      MEMSET(errb,sizeof(rgbl_group)*img->xsize,0);
+
+      while (i--)
+      {
+	 corgb=*rgb;
+	 corgb.r=testrange(err.r+corgb.r+errb[x].r);
+	 corgb.g=testrange(err.g+corgb.g+errb[x].g);
+	 corgb.b=testrange(err.b+corgb.b+errb[x].b);
+	 c=colortable_rgb(ct,corgb);
+	 err.r+=((signed long)rgb->r-ct->clut[c].r)>>1;
+	 err.g+=((signed long)rgb->g-ct->clut[c].g)>>1;
+	 err.b+=((signed long)rgb->b-ct->clut[c].b)>>1;
+	 errb[x].r=((signed long)rgb->r-ct->clut[c].r)>>1;
+	 errb[x].g=((signed long)rgb->g-ct->clut[c].g)>>1;
+	 errb[x].b=((signed long)rgb->b-ct->clut[c].b)>>1;
+	 rgb++;
+	 if (++x==img->xsize) 
+	 {
+	    errb[x-1].r+=err.r; err.r=0;
+	    errb[x-1].g+=err.g; err.g=0;
+	    errb[x-1].b+=err.b; err.b=0;
+	    x=0;
+	 }
+	 lzw_add(&lzw,c);
+      }
+
+      free(errb);
+   }
 
    lzw_write_last(&lzw);
 
