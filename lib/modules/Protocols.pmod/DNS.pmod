@@ -1,7 +1,8 @@
+// $Id: DNS.pmod,v 1.69 2002/12/01 22:54:25 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
+
 //! Domain Name System
 //! RFC 1035
-//! $Id: DNS.pmod,v 1.68 2002/12/01 22:46:06 bill Exp $
 
 #pike __REAL_VERSION__
 
