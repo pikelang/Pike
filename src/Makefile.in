@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.89 1998/05/06 00:38:55 hubbe Exp $
+# $Id: Makefile.in,v 1.90 1998/05/17 16:59:51 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -171,7 +171,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	  ( sed -e 's!/usr/local/bin!$(exec_prefix)!' <$(TMP_BINDIR)/hilfe \
 	    >./hilfe && chmod 755 ./hilfe) || exit 1 ; \
 	else \
-	  $(INSTALL) $(TMP_BINDIR)/hilfe `pwd` || exit 1; \
+	  $(INSTALL) $(TMP_BINDIR)/hilfe `pwd`/hilfe || exit 1; \
 	fi
 	@echo "Done."
 
@@ -351,7 +351,7 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 	done
 	@if [ -d share/. ]; then : ; else \
 	  echo "Creating symlink ./share"; \
-	  if ls share >/dev/null 2>&1; then \
+	  if [ "x`ls share 2>&1`" = "x" ]; then \
 	    echo "Renaming share to share.old"; \
 	    mv share share.old || exit 1; \
 	  else : ; fi; \
