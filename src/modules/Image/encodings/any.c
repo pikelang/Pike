@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.5 1999/04/06 17:24:30 marcus Exp $ */
+/* $Id: any.c,v 1.6 1999/04/09 10:19:51 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.5 1999/04/06 17:24:30 marcus Exp $
+**!	$Id: any.c,v 1.6 1999/04/09 10:19:51 mirar Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -11,7 +11,7 @@
 **!	this is.
 **!
 **!	Methods:
-**!	<ref>decode</ref>, <ref>decode_trans</ref>,
+**!	<ref>decode</ref>, <ref>decode_alpha</ref>,
 **!	<ref>_decode</ref>
 **!
 **! see also: Image
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.5 1999/04/06 17:24:30 marcus Exp $");
+RCSID("$Id: any.c,v 1.6 1999/04/09 10:19:51 mirar Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -39,6 +39,24 @@ RCSID("$Id: any.c,v 1.5 1999/04/06 17:24:30 marcus Exp $");
 void image_gif__decode(INT32 args);
 void image_pnm_decode(INT32 args);
 void image_xwd__decode(INT32 args);
+
+/*
+**! method mapping _decode(string data)
+**  method object decode(string data)
+**  method object decode_alpha(string data)
+**!	Tries heuristics to find the correct method 
+**!	of decoding the data, then calls that method.
+**!
+**! 	The result of _decode() is a mapping that contains
+**!	<pre>
+**!		"type":image data type (ie, "image/jpeg" or similar)
+**!		"image":the image object,
+**!		"alpha":the alpha channel or 0 if N/A
+**!	</pre>
+**!
+**! note
+**!	Throws upon failure.
+*/
 
 void image_any__decode(INT32 args)
 {
@@ -112,7 +130,10 @@ void image_any__decode(INT32 args)
 	       return; /* done */
 	 }
 	 
+	 goto unknown_format;
+
       default:
+unknown_format:
 	 error("Unknown image format.\n");	 
    }
 

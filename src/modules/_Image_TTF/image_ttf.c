@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.12 1999/03/23 20:28:49 per Exp $
+ * $Id: image_ttf.c,v 1.13 1999/04/09 10:18:28 mirar Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.12 1999/03/23 20:28:49 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.13 1999/04/09 10:18:28 mirar Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -620,7 +620,7 @@ static void image_ttf_face_make(INT32 args)
 **!     This is the instance of a face, with geometrics,
 **!	encodings and stuff.
 **! 
-**! method create(object face)
+**! method void create(object face)
 **!	creates a new Instance from a face.
 */
 
