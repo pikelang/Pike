@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.194 2002/04/04 15:01:53 grubba Exp $ */
+/* $Id: image.c,v 1.195 2002/05/10 21:53:52 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.194 2002/04/04 15:01:53 grubba Exp $
+**!	$Id: image.c,v 1.195 2002/05/10 21:53:52 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.194 2002/04/04 15:01:53 grubba Exp $");
+RCSID("$Id: image.c,v 1.195 2002/05/10 21:53:52 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4764,6 +4764,17 @@ void init_image_image(void)
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
+
+
+#ifndef FAKE_DYNAMIC_LOAD
+   /* Added by per: Export all functions needed by _Image_GIF */
+   PIKE_MODULE_EXPORT("Image", image_lay );
+   PIKE_MODULE_EXPORT("Image", image_colortable_write_rgb );
+   PIKE_MODULE_EXPORT("Image", image_colortable_size );
+   PIKE_MODULE_EXPORT("Image", image_colortable_index_8bit_image );
+   PIKE_MODULE_EXPORT("Image", image_colortable_internal_floyd_steinberg );
+#endif
+
 }
 
 void exit_image_image(void) 
