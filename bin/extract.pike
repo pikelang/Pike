@@ -2,7 +2,7 @@
 // Copyright © 2000, Roxen IS.
 // By Martin Nilsson and Andreas Lange
 //
-// $Id: extract.pike,v 1.7 2000/11/26 17:28:53 nilsson Exp $
+// $Id: extract.pike,v 1.8 2000/11/27 10:28:07 nilsson Exp $
 //
 
 
@@ -396,14 +396,16 @@ void write_xml_file(string filename, string language, string encoding,
     Standards.ISO639_2.get_language(language) ||
 #endif
     language + "</language>\n";
-  newfile += "<dumped>"+time()+"</dumped>\n";
+
+  if(!args->notime)
+    newfile += "<dumped>"+time()+"</dumped>\n";
 
   // List files included in the project
-  foreach(files, string inname)
+  foreach(sort(files), string inname)
     newfile += "<file>"+inname+"</file>\n";
 
   // List blocks added from the config
-  foreach(indices(added)+indices(add), string blockname)
+  foreach(sort(indices(added)+indices(add)), string blockname)
     newfile += "<added id=\""+blockname+"\"/>\n";
 
   string o_tag = "o";
@@ -1031,13 +1033,14 @@ int main(int argc, array(string) argv) {
 
   if( (!(xml_name && args->sync && args->xmlpath && args->baselang)) && 
       (!sizeof(files) || args->help) ) {
-    sscanf("$Revision: 1.7 $", "$"+"Revision: %s $", string v);
+    sscanf("$Revision: 1.8 $", "$"+"Revision: %s $", string v);
     werror("\n  Locale Extractor Utility "+v+"\n\n");
     werror("  Syntax: extract.pike [arguments] infile(s)\n\n");
     werror("  Arguments: --project=name  default: first found in infile\n");
     werror("             --config=file   default: [project].xml\n");
     werror("             --out=file      default: [project]_eng.xml\n");
     werror("             --nocopy        update infile instead of infile.new\n");
+    werror("             --notime        don't include dump time in xml files\n");
     werror("             --wipe          remove unused ids from xml\n");
     werror("             --sync          synchronize all locale projects\n");
     werror("             --encoding=enc  default: ISO-8859-1\n");
