@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.85 2005/01/26 20:34:10 mast Exp $
+/* $Id: sslfile.pike,v 1.86 2005/01/26 20:41:02 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -266,11 +266,7 @@ static THREAD_T op_thread;
 									\
 	if (ENABLE_READS) {						\
 	  stream->set_read_callback (ssl_read_callback);		\
-	  /* If we've received a close message then the other end can	\
-	   * legitimately close the stream, so don't install our close	\
-	   * callback. (Might still have to write our close		\
-	   * message.) */						\
-	  stream->set_close_callback (conn->closing < 2 && ssl_close_callback); \
+	  stream->set_close_callback (ssl_close_callback);		\
 	}								\
 	else {								\
 	  stream->set_read_callback (0);				\
@@ -1307,6 +1303,9 @@ static int ssl_read_callback (int called_from_real_backend, string input)
       if (close_callback && !close_state) {
 	// Call the close callback to report the error.
 	RESTORE;
+	// Note that the callback should call close() (or free things
+	// so that we get destructed) - there's no need for us to
+	// schedule a shutdown after it.
 	return call_close_callback();
       }
 
@@ -1452,20 +1451,41 @@ static int ssl_close_callback (int called_from_real_backend)
       error ("Got zapped stream in callback.\n");
 #endif
 
-    // Always signal an error and do a blunt shutdown here. That since
-    // the connection has always been closed abruptly if we arrive
-    // here (a proper close arrives in the read callback).
-    if (cb_errno)
-      SSL3_DEBUG_MSG ("ssl_close_callback: Got errno from another callback\n");
-    else {
+    // If we've arrived here due to an error, let it override any
+    // older errno from an earlier callback.
+    if (int new_errno = stream->errno()) {
+      SSL3_DEBUG_MSG ("ssl_close_callback: Got error %d\n", new_errno);
+      cb_errno = new_errno;
+    }
+#ifdef SSL3_DEBUG
+    else if (cb_errno)
+      SSL3_DEBUG_MSG ("ssl_close_callback: Propagating errno from another callback\n");
+#endif
+
+    if (!cb_errno) {
+      if (conn->closing & 2) {
+	// A proper close is handled in ssl_read_callback when we get
+	// the close packet, so there's nothing to do here.
+	SSL3_DEBUG_MSG ("ssl_close_callback: Clean close already handled\n");
+	RESTORE;
+	return 0;
+      }
+
+      // The remote end has closed the connection without sending a
+      // close packet. Treat that as an error so that the caller can
+      // detect truncation attacks.
       SSL3_DEBUG_MSG ("ssl_close_callback: Abrupt close - simulating System.EPIPE\n");
       cb_errno = System.EPIPE;
     }
-    local_errno = cb_errno;
 
-    if (close_callback && !close_state) {
-      // Call the close callback to report the error.
+    // Got an error.
+
+    if (called_from_real_backend && close_callback && !close_state) {
+      // Report the error using the close callback.
       RESTORE;
+      // Note that the callback should call close() (or free things
+      // so that we get destructed) - there's no need for us to
+      // schedule a shutdown after it.
       return call_close_callback();
     }
 
