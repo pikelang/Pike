@@ -24,21 +24,11 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
       else
 	 while (len--)
 	 {
-	    if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
-	       L_CHANNEL_DO(*s,*l,*d,*la);
-	    else if (la->r==0 && la->g==0 && la->b==0)
-	    {
-	       *d=*s;
-	    }
-	    else
-	    {
-	       L_CHANNEL_DO(*s,*l,*d,*la);
-	       ALPHA_ADD_nA(s,d,d,sa,la,da,r);
-	       ALPHA_ADD_nA(s,d,d,sa,la,da,g);
-	       ALPHA_ADD_nA(s,d,d,sa,la,da,b);
-	    }
-
-	    l++; s++; la++; d++; sa++; 
+	   if (la->r==0 && la->g==0 && la->b==0)
+	     *d=*s;
+	   else
+	     L_CHANNEL_DO(*s,*l,*d,*la);
+	   l++; s++; la++; d++; sa++; 
 	 }
    }
    else
@@ -47,18 +37,12 @@ static void LM_FUNC(rgb_group *s,rgb_group *l,rgb_group *d,
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD_V_NOLA_nA(s,d,d,sa,da,alpha,r);
-	    ALPHA_ADD_V_NOLA_nA(s,d,d,sa,da,alpha,g);
-	    ALPHA_ADD_V_NOLA_nA(s,d,d,sa,da,alpha,b);
 	    l++; s++; la++; d++; sa++; 
 	 }
       else
 	 while (len--)
 	 {
 	    L_CHANNEL_DO_V(*s,*l,*d,white,alpha);
-	    ALPHA_ADD_V_nA(s,d,d,sa,la,da,alpha,r);
-	    ALPHA_ADD_V_nA(s,d,d,sa,la,da,alpha,g);
-	    ALPHA_ADD_V_nA(s,d,d,sa,la,da,alpha,b);
 	    l++; s++; la++; d++; sa++; 
 	 }
    }

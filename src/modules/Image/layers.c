@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.65 2001/03/27 12:30:22 grubba Exp $
+**!	$Id: layers.c,v 1.66 2001/03/28 00:30:33 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -216,7 +216,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.65 2001/03/27 12:30:22 grubba Exp $");
+RCSID("$Id: layers.c,v 1.66 2001/03/28 00:30:33 per Exp $");
 
 #include "image_machine.h"
 
@@ -313,6 +313,7 @@ LMFUNC(lm_add);
 LMFUNC(lm_subtract);
 LMFUNC(lm_multiply);
 LMFUNC(lm_divide);
+LMFUNC(lm_negdivide);
 LMFUNC(lm_modulo);
 LMFUNC(lm_invsubtract);
 LMFUNC(lm_invdivide);
@@ -331,6 +332,7 @@ LMFUNC(lm_replace);
 LMFUNC(lm_red);
 LMFUNC(lm_green);
 LMFUNC(lm_blue);
+LMFUNC(lm_hardlight);
 
 LMFUNC(lm_replace_hsv);
 LMFUNC(lm_hue);
@@ -403,6 +405,8 @@ struct layer_mode_desc
     "D=S*L applied with alpha, aD=aS"},
    {"divide",        lm_divide,        1, NULL,
     "D=S/L applied with alpha, aD=aS"},
+   {"negdivide",     lm_negdivide,     1, NULL, 
+    "D=1.0-S/L applied with alpha, aD=aS"},
    {"modulo",        lm_modulo,        1, NULL,
     "D=S%L applied with alpha, aD=aS"},
 
@@ -442,47 +446,50 @@ struct layer_mode_desc
    {"blue",          lm_blue,          1, NULL,
     "Db=(Lb*aLb+Sb*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Drg=Srg, aD=aS"},
 
+   {"hardlight",          lm_hardlight,          1, NULL,
+    "Like photoshop hardlight layer mode, aD=aS"},
+
    {"replace_hsv",   lm_replace_hsv,   1, NULL,
-    "Dhsv=(Lhsv*aLrgb+Shsv*(1-aLrgb)*aSrgb) / (aLrgb+(1-aLrgb)*aSrgb), aD=aS"},
+    "Dhsv=Lhsv apply with alpha, aD=aS"},
    {"hue",           lm_hue,           1, NULL,
-    "Dh=(Lh*aLr+Sh*(1-aLr)*aSr) / (aLr+(1-aLr)*aSr), Dsv=Lsv, aD=aS"},
+    "Dh=Lh apply with alpha, Dsv=Lsv, aD=aS"},
    {"saturation",    lm_saturation,    1, NULL,
-    "Ds=(Ls*aLg+Ss*(1-aLg)*aSg) / (aLg+(1-aLg)*aSg), Dhv=Lhv, aD=aS"},
+    "Ds=Ls apply with alpha, Dhv=Lhv, aD=aS"},
    {"value",         lm_value,         1, NULL,
-    "Dv=(Lv*aLb+Sv*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
+    "Dv=Lv apply with alpha, Dhs=Lhs, aD=aS"},
    {"color",         lm_color,         1, NULL,
-    "Dhs=(Lhs*aLrg+Shs*(1-aLrg)*aSrg) / (aLrg+(1-aLrg)*aSrg), Dv=Lv, aD=aS"},
+    "Dhs=Lhs apply with alpha, Dv=Lv, aD=aS"},
    {"value_mul",     lm_value_mul,     1, NULL,
-    "Dv=((Lv*Sv)*aLb+Sv*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
+    "Dv=Lv*Sv apply with alpha, Dhs=Lhs, aD=aS"},
    {"darken",        lm_darken,        1, NULL,
-    "Dv=min(Lv,Sv), Dhs=Lhs, aD=aS"},
+    "Dv=min(Lv,Sv) apply with alpha, Dhs=Lhs, aD=aS"},
    {"lighten",       lm_lighten,       1, NULL,
-    "Dv=max(Lv,Sv), Dhs=Lhs, aD=aS"},
+    "Dv=max(Lv,Sv) apply with alpha, Dhs=Lhs, aD=aS"},
    {"saturate",      lm_saturate,      1, NULL,
-    "Ds=max(Ls,Ss), Dhv=Lhv, aD=aS"},
+    "Ds=max(Ls,Ss) apply with alpha, Dhv=Lhv, aD=aS"},
    {"desaturate",    lm_desaturate,    1, NULL,
-    "Ds=min(Ls,Ss), Dhv=Lhv, aD=aS"},
+    "Ds=min(Ls,Ss) apply with alpha, Dhv=Lhv, aD=aS"},
 
    {"hls_replace",   lm_hls_replace,       1, NULL,
-    "Dhsv=(Lhls*aLrgb+Shls*(1-aLrgb)*aSrgb) / (aLrgb+(1-aLrgb)*aSrgb), aD=aS"},
+    "Dhls=Lhls apply with alpha, aD=aS"},
    {"hls_hue",       lm_hls_hue,           1, NULL,
-    "Dh=(Lh*aLr+Sh*(1-aLr)*aSr) / (aLr+(1-aLr)*aSr), Dsv=Lsv, aD=aS"},
+    "Dh=Lh apply with alpha, Dsv=Lsv, aD=aS"},
    {"hls_saturation",lm_hls_saturation,    1, NULL,
-    "Ds=(Ls*aLg+Ss*(1-aLg)*aSg) / (aLg+(1-aLg)*aSg), Dhv=Lhv, aD=aS"},
+    "Ds=Ls apply with alpha, Dhv=Lhv, aD=aS"},
    {"hls_lightness", lm_hls_lightness,     1, NULL,
-    "Dl=(Ll*aLb+Sl*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
+    "Dl=Ll apply with alpha, Dhs=Lhs, aD=aS"},
    {"hls_color",     lm_hls_color,         1, NULL,
-    "Dhs=(Lhs*aLrg+Shs*(1-aLrg)*aSrg) / (aLrg+(1-aLrg)*aSrg), Dl=Ll, aD=aS"},
+    "Dhs=Lhs apply with alpha, Dl=Ll, aD=aS"},
    {"hls_lightness_mul",lm_hls_lightness_mul,     1, NULL,
-    "Dl=((Ll*Sl)*aLb+Sl*(1-aLb)*aSb) / (aLb+(1-aLb)*aSb), Dhs=Lhs, aD=aS"},
+    "Dl=Ll*Sl apply with alpha, Dhs=Lhs, aD=aS"},
    {"hls_darken",    lm_hls_darken,        1, NULL,
-    "Dv=min(Ll,Sl), Dhs=Lhs, aD=aS"},
+    "Dl=min(Ll,Sl) apply with alpha, Dhs=Lhs, aD=aS"},
    {"hls_lighten",   lm_hls_lighten,       1, NULL,
-    "Dv=max(Ll,Sl), Dhs=Lhs, aD=aS"},
+    "Dl=max(Ll,Sl) apply with alpha, Dhs=Lhs, aD=aS"},
    {"hls_saturate",  lm_hls_saturate,      1, NULL,
-    "Ds=max(Ls,Ss), Dhl=Lhl, aD=aS"},
+    "Ds=max(Ls,Ss) apply with alpha, Dhl=Lhl, aD=aS"},
    {"hls_desaturate",lm_hls_desaturate,    1, NULL,
-    "Ds=min(Ls,Ss), Dhl=Lhl, aD=aS"},
+    "Ds=min(Ls,Ss) apply with alpha, Dhl=Lhl, aD=aS"},
 
    {"dissolve",      lm_dissolve,      1, NULL,
     "i=random 0 or 1, D=i?L:S, aD=i+aS"},
@@ -1636,6 +1643,15 @@ WARN_TRACE(4);
 #undef L_TRUNC
 #undef L_OPER
 
+#define LM_FUNC lm_negdivide
+#define L_TRUNC(X) MINIMUM(255,(X))
+#define L_OPER(A,B) 1.0-MINIMUM( DOUBLE_TO_INT((A)/C2F(1+(int)(B))), COLORMAX)
+WARN_TRACE(4);
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
 #define LM_FUNC lm_modulo
 #define L_TRUNC(X) (DOUBLE_TO_COLORTYPE(X))
 #define L_OPER(A,B) ((A)%((B)?(B):1))
@@ -1937,24 +1953,70 @@ WARN_TRACE(26);
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
+
+
+#define LM_FUNC lm_hardlight
+#define L_CHANNEL_DO(S,L,D,A) L_CHANNEL_DO_V(S,L,D,A,1.0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) do {					 \
+     int v;								 \
+     rgb_group tmp;							 \
+      int tr, tg, tb;                                                    \
+     if( (L).r > 128 )							 \
+       v = 255 - (((255 - (S).r) * (256 - (((L).r - 128)<<1))) >> 8);	 \
+     else								 \
+       v = ((S).r * ((L).r<<1))>>8;					 \
+     tmp.r = MAXIMUM(MINIMUM(v,255),0);					 \
+									 \
+     if( (L).g > 128 )							 \
+       v = 255 - (((255 - (S).g) * (256 - (((L).g - 128)<<1))) >> 8);	 \
+     else								 \
+       v = ((S).g * ((L).g<<1))>>8;					 \
+     tmp.g = MAXIMUM(MINIMUM(v,255),0);					 \
+									 \
+     if( (L).b > 128 )							 \
+       v = 255 - (((255 - (S).b) * (256 - (((L).b - 128)<<1))) >> 8);	 \
+     else								 \
+       v = ((S).b * ((L).b<<1))>>8;					 \
+     tmp.b = MAXIMUM(MINIMUM(v,255),0);                                  \
+                                                                         \
+      tr = (int)((tmp.r*(V*C2F((A).r))) + ((S).r*(1-(V)*C2F((A).r))));   \
+      tg = (int)((tmp.g*(V*C2F((A).g))) + ((S).g*(1-(V)*C2F((A).g))));   \
+      tb = (int)((tmp.b*(V*C2F((A).b))) + ((S).b*(1-(V)*C2F((A).b))));   \
+      (D).r = MAXIMUM(MINIMUM(tr,255),0);                                \
+      (D).g = MAXIMUM(MINIMUM(tg,255),0);                                \
+      (D).b = MAXIMUM(MINIMUM(tb,255),0);                                \
+ }while(0)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
 /* replace hsv by alpha channel (r=h, g=s, b=v) */
 
 #define L_CHANNEL_DO(S,L,D,A) L_CHANNEL_DO_V(S,L,D,A,1.0)
 
-#define LM_FUNC lm_replace_hsv
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
-      ds=ls*(V)*C2F((A).g)+ss*(1-(V)*C2F((A).g));			\
-      dv=lv*(V)*C2F((A).b)+sv*(1-(V)*C2F((A).b));			\
-      hsv_to_rgb(dh,ds,dv,&(D));					\
+
+#define LM_HSV_DO(HSV_X,S,L,D,A,V)                                       \
+   do {									 \
+      double lh,lv,ls;							 \
+      double sh,sv,ss;							 \
+      rgb_group tmp;                                                     \
+      int tr, tg, tb;                                                    \
+      rgb_to_hsv((S),&sh,&ss,&sv);					 \
+      rgb_to_hsv((L),&lh,&ls,&lv);					 \
+      HSV_X;                                                             \
+      hsv_to_rgb(sh,ss,sv,&(tmp));					 \
+      tr = (int)((tmp.r*(V*C2F((A).r))) + ((S).r*(1-(V)*C2F((A).r))));   \
+      tg = (int)((tmp.g*(V*C2F((A).g))) + ((S).g*(1-(V)*C2F((A).g))));   \
+      tb = (int)((tmp.b*(V*C2F((A).b))) + ((S).b*(1-(V)*C2F((A).b))));   \
+      (D).r = MAXIMUM(MINIMUM(tr,255),0);                                \
+      (D).g = MAXIMUM(MINIMUM(tg,255),0);                                \
+      (D).b = MAXIMUM(MINIMUM(tb,255),0);                                \
    } while (0)
 
+
+#define LM_FUNC lm_replace_hsv
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(sh=lh;ss=ls;sv=lv,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -1962,63 +2024,25 @@ WARN_TRACE(26);
 /* replace h, s or v (by alpha channel (r=h, g=s, b=v), only that one used) */
 
 #define LM_FUNC lm_hue
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
-      hsv_to_rgb(dh,ss,sv,&(D));					\
-   } while (0)
-
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(sh=lh,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
 #define LM_FUNC lm_saturation
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      ds=ls*(V)*C2F((A).g)+ss*(1-(V)*C2F((A).g));			\
-      hsv_to_rgb(sh,ds,sv,&(D));					\
-   } while (0)
-
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(ss=ls,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
 #define LM_FUNC lm_value
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      dv=lv*(V)*C2F((A).b)+sv*(1-(V)*C2F((A).b));			\
-      hsv_to_rgb(sh,ss,dv,&(D));					\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(sv=lv,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
 #define LM_FUNC lm_value_mul
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      dv=sv*lv*(V)*C2F((A).b)+sv*(1-(V)*C2F((A).b));			\
-      hsv_to_rgb(sh,ss,dv,&(D));					\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(sv*=lv,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2026,17 +2050,7 @@ WARN_TRACE(26);
 /* h, s */
 
 #define LM_FUNC lm_color
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
-      ds=ls*(V)*C2F((A).g)+ss*(1-(V)*C2F((A).g));			\
-      hsv_to_rgb(dh,ds,sv,&(D));					\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(sh=lh;ss=ls,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2044,15 +2058,7 @@ WARN_TRACE(26);
 /* lighten: max v */
 
 #define LM_FUNC lm_lighten
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      hsv_to_rgb(sh,ss,MAXIMUM(sv,lv),&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(sv=MAXIMUM(sv,lv),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2060,15 +2066,7 @@ WARN_TRACE(26);
 /* darken: min v */
 
 #define LM_FUNC lm_darken
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      hsv_to_rgb(sh,ss,MINIMUM(sv,lv),&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(sv=MINIMUM(sv,lv),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2076,15 +2074,7 @@ WARN_TRACE(26);
 /* saturate: max s */
 
 #define LM_FUNC lm_saturate
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      hsv_to_rgb(sh,MAXIMUM(ss,ls),sv,&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(ss=MAXIMUM(ss,ls),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2092,35 +2082,36 @@ WARN_TRACE(26);
 /* desaturate: min s */
 
 #define LM_FUNC lm_desaturate
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ls,lv;							\
-      double sh,ss,sv;							\
-      double dh,ds,dv;							\
-      rgb_to_hsv((S),&sh,&ss,&sv);					\
-      rgb_to_hsv((L),&lh,&ls,&lv);					\
-      hsv_to_rgb(sh,MINIMUM(ss,ls),sv,&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V)	LM_HSV_DO(ss=MINIMUM(ss,ls),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
+#undef LM_HSV_DO
+
 /******************************************************************/ 
 
-#define LM_FUNC lm_hls_replace
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
-      dl=ll*(V)*C2F((A).g)+sl*(1-(V)*C2F((A).g));			\
-      ds=ls*(V)*C2F((A).b)+ss*(1-(V)*C2F((A).b));			\
-      hls_to_rgb(dh,dl,ds,&(D));					\
+#define LM_HLS_DO(HLS_X,S,L,D,A,V)                                       \
+   do {									 \
+      double lh,ll,ls;							 \
+      double sh,sl,ss;							 \
+      rgb_group tmp;                                                     \
+      int tr, tg, tb;                                                    \
+      rgb_to_hls((S),&sh,&sl,&ss);					 \
+      rgb_to_hls((L),&lh,&ll,&ls);					 \
+      HLS_X;                                                             \
+      hls_to_rgb(sh,sl,ss,&(tmp));					 \
+      tr = (int)((tmp.r*(V*C2F((A).r))) + ((S).r*(1-(V)*C2F((A).r))));   \
+      tg = (int)((tmp.g*(V*C2F((A).g))) + ((S).g*(1-(V)*C2F((A).g))));   \
+      tb = (int)((tmp.b*(V*C2F((A).b))) + ((S).b*(1-(V)*C2F((A).b))));   \
+      (D).r = MAXIMUM(MINIMUM(tr,255),0);                                \
+      (D).g = MAXIMUM(MINIMUM(tg,255),0);                                \
+      (D).b = MAXIMUM(MINIMUM(tb,255),0);                                \
    } while (0)
 
+	
+#define LM_FUNC lm_hls_replace
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sh=lh;sl=ll;ss=ls,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2128,63 +2119,25 @@ WARN_TRACE(26);
 /* replace h, l or s (by alpha channel (r=h, g=l, b=s), only that one used) */
 
 #define LM_FUNC lm_hls_hue
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
-      hls_to_rgb(dh,sl,ss,&(D));					\
-   } while (0)
-
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sh=lh,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
 #define LM_FUNC lm_hls_saturation
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      ds=ls*(V)*C2F((A).b)+ss*(1-(V)*C2F((A).b));			\
-      hls_to_rgb(sh,sl,ds,&(D));					\
-   } while (0)
-
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(ss=ls,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
 #define LM_FUNC lm_hls_lightness
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      dl=ll*(V)*C2F((A).g)+sl*(1-(V)*C2F((A).g));			\
-      hls_to_rgb(sh,dl,ss,&(D));					\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sl=ll,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
 #define LM_FUNC lm_hls_lightness_mul
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      dl=sl*ll*(V)*C2F((A).g)+sl*(1-(V)*C2F((A).g));			\
-      hls_to_rgb(sh,dl,ss,&(D));					\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sl*=ll,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2192,17 +2145,7 @@ WARN_TRACE(26);
 /* h, s */
 
 #define LM_FUNC lm_hls_color
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      dh=lh*(V)*C2F((A).r)+sh*(1-(V)*C2F((A).r));			\
-      ds=ls*(V)*C2F((A).b)+ss*(1-(V)*C2F((A).b));			\
-      hls_to_rgb(dh,sl,ds,&(D));					\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sh=lh;ss=ls,S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2210,15 +2153,7 @@ WARN_TRACE(26);
 /* lighten: max v */
 
 #define LM_FUNC lm_hls_lighten
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      hls_to_rgb(sh,MAXIMUM(sl,ll),ss,&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sl=MAXIMUM(sl,ll),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2226,15 +2161,7 @@ WARN_TRACE(26);
 /* darken: min v */
 
 #define LM_FUNC lm_hls_darken
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      hls_to_rgb(sh,MINIMUM(sl,ll),ss,&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sl=MINIMUM(sl,ll),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2243,15 +2170,7 @@ WARN_TRACE(26);
 /* saturate: max s */
 
 #define LM_FUNC lm_hls_saturate
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      hls_to_rgb(sh,sl,MAXIMUM(ss,ls),&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sl=MAXIMUM(ss,ls),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -2259,19 +2178,12 @@ WARN_TRACE(26);
 /* desaturate: min s */
 
 #define LM_FUNC lm_hls_desaturate
-#define L_CHANNEL_DO_V(S,L,D,A,V)					\
-   do {									\
-      double lh,ll,ls;							\
-      double sh,sl,ss;							\
-      double dh,dl,ds;							\
-      rgb_to_hls((S),&sh,&sl,&ss);					\
-      rgb_to_hls((L),&lh,&ll,&ls);					\
-      hls_to_rgb(sh,sl,MINIMUM(ss,ls),&(D));				\
-   } while (0)
+#define L_CHANNEL_DO_V(S,L,D,A,V) LM_HLS_DO(sl=MINIMUM(ss,ls),S,L,D,A,V)
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
+#undef LM_HLS_DO
 
 /******************************************************************/
 
