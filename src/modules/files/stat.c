@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.6 2000/08/28 16:10:46 grubba Exp $
+ * $Id: stat.c,v 1.7 2000/08/28 16:32:00 mast Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.6 2000/08/28 16:10:46 grubba Exp $");
+RCSID("$Id: stat.c,v 1.7 2000/08/28 16:32:00 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -397,7 +397,7 @@ static void stat_index(INT32 args)
 static void stat_cast(INT32 args)
 {
    if (!args)
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Colortable->cast",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("Stat cast",1);
    if (sp[-args].type==T_STRING && !sp[-args].u.string->size_shift)
    {
       if (strncmp(sp[-args].u.string->str,"array",5)==0)
