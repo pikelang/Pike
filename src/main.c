@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.123 2001/04/14 09:44:20 hubbe Exp $");
+RCSID("$Id: main.c,v 1.124 2001/04/30 17:33:55 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -29,6 +29,7 @@ RCSID("$Id: main.c,v 1.123 2001/04/14 09:44:20 hubbe Exp $");
 #include "cpp.h"
 #include "main.h"
 #include "operators.h"
+#include "rbtree.h"
 #include "security.h"
 #include "constants.h"
 #include "version.h"
@@ -186,6 +187,7 @@ int dbm_main(int argc, char **argv)
     init_node_s_blocks();
     init_object_blocks();
     init_callback_blocks();
+    init_rbtree();
   }
 
 #ifdef SHARED_NODES
@@ -574,7 +576,7 @@ int dbm_main(int argc, char **argv)
   master();
   call_callback(& post_master_callbacks, 0);
   free_callback_list(& post_master_callbacks);
-  
+
   if(SETJMP(back))
   {
     if(throw_severity == THROW_EXIT)
@@ -809,6 +811,7 @@ void low_exit_main(void)
   first_object=0;
   free_all_object_blocks();
   free_all_program_blocks();
+  exit_rbtree();
 #endif
 }
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.255 2001/04/25 21:26:45 hubbe Exp $
+# $Id: Makefile.in,v 1.256 2001/04/30 17:33:55 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -140,6 +140,7 @@ OBJ= \
  operators.o \
  port.o \
  program.o \
+ rbtree.o \
  rusage.o \
  stralloc.o \
  stuff.o \
@@ -870,7 +871,8 @@ HFILES=						\
   error.protos					\
   opcodes.protos					\
   version.protos                                    \
-  builtin.protos
+  builtin.protos					\
+  rbtree.protos
 
 $(HFILES): precompile.sh-stamp
 
