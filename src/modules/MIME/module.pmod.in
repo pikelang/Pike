@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.6 1997/08/23 23:04:03 marcus Exp $
+ * $Id: module.pmod.in,v 1.7 1997/09/15 11:31:05 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -306,12 +306,7 @@ class Message {
     disposition = 0;
     if (hdrs || parts) {
       string hname;
-      if (message)
-	decoded_data = message;
-      else
-	decoded_data = (parts?
-			"This is a multi-part message in MIME format.\r\n":
-			"");
+      decoded_data = message;
       if (hdrs)
 	foreach( indices(hdrs), hname )
 	  headers[lower_case(hname)] = hdrs[hname];
@@ -375,6 +370,11 @@ class Message {
 	  part = part[..sizeof(part)-2];
 	return object_program(this_object())(part[1..]);
       });
+    }
+    if((hdrs || parts) && !decoded_data) {
+      decoded_data = (parts?
+		      "This is a multi-part message in MIME format.\r\n":
+		      "");
     }
   }
   
