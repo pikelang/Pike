@@ -466,7 +466,6 @@ testfont binary
 /src/post_modules/GL/configure.in foreign_ident
 /src/post_modules/GL/top.c foreign_ident
 /src/post_modules/GTK/acconfig.h foreign_ident
-/src/post_modules/GTK/aclocal.m4 foreign_ident
 /src/post_modules/GTK/dummy.c foreign_ident
 /src/post_modules/Makefile.in foreign_ident
 /src/post_modules/configure.in foreign_ident
