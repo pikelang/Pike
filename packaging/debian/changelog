@@ -1,3 +1,10 @@
+pike7.5 (7.5.27-1) experimental; urgency=low
+
+  * The latest cvs snapshot
+
+
+ -- Pike build system <pike-devel@lists.lysator.liu.se>  Sat, 17 Apr 2004 17:57:50 +0200
+
 pike7.5 (7.5.26-1) experimental; urgency=low
 
   * Release number bumped by export.pike.
