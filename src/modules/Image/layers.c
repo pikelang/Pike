@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.42 2000/02/08 03:38:56 per Exp $
+**!	$Id: layers.c,v 1.43 2000/02/22 03:41:27 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.42 2000/02/08 03:38:56 per Exp $");
+RCSID("$Id: layers.c,v 1.43 2000/02/22 03:41:27 per Exp $");
 
 #include "image_machine.h"
 
@@ -511,7 +511,7 @@ struct layer_mode_desc
     	          (((COLORMAX*(int)(aL))+(COLORMAX-(int)(aL))*(aS))) ) )
 
 #define COMBINE_ALPHA_V(S,L,aS,aL,V) \
-    COMBINE_ALPHA(S,(int)((L)*(V)),aS,aL)
+    COMBINE_ALPHA((S),(L),(aS),((aL)*(V)))
 
 #else
 #ifdef COMBINE_METHOD_FLOAT
@@ -1323,26 +1323,8 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 	 {
 	    if (la->r==0 && la->g==0 && la->b==0)
 	    {
-#if 0
-	       int n=0;
-	       do
-	       {
-		  n++; la++;
-	       }
-	       while (len && len-- && la->r==0 && la->g==0 && la->b==0);
-	       if (n>1)
-	       {
-		  MEMCPY(d,s,n*sizeof(rgb_group));
-		  MEMCPY(da,sa,n*sizeof(rgb_group));
-		  l+=n; s+=n; sa+=n; d+=n; da+=n;
-	       }
-	       else
-		  *(d++)=*(s++),*(da++)=*(sa++),l++;
-	       continue;
-#else
 	       *d=*s;
 	       *da=*sa;
-#endif
 	    }
 	    else if (la->r==COLORMAX && la->g==COLORMAX && la->b==COLORMAX)
 	    {
@@ -1374,7 +1356,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 	    ALPHA_ADD_V_NOLA(s,l,d,sa,da,alpha,g);
 	    ALPHA_ADD_V_NOLA(s,l,d,sa,da,alpha,b);
 
-	    l++; s++; la++; sa++; da++; d++;
+	    l++; s++; sa++; da++; d++;
 	 }
       else
 	 while (len--)
@@ -2336,7 +2318,7 @@ static INLINE void img_lay_line(struct layer *ly,
       }
       if (len<xsize) /* copy stroke, fill right */
       {
-	 img_lay_stroke(ly,l,la,s,sa,d,da,len);
+         img_lay_stroke(ly,l,la,s,sa,d,da,len);
 
 	 img_lay_stroke(ly,NULL,NULL,s+len,sa+len,d+len,da+len,xsize-len);
       }
