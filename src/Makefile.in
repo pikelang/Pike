@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.102 1998/07/22 00:33:24 hubbe Exp $
+# $Id: Makefile.in,v 1.103 1998/07/26 10:28:07 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -224,9 +224,9 @@ install: pike hilfe
 	    mv -f "$(exec_prefix)/pike" "$(exec_prefix)/pike.old" || exit 1; \
 	  else : ; fi ; \
 	  echo "$(exec_prefix)/pike"; \
-	  $(INSTALL) ./pike $(exec_prefix) || exit 1; \
-	  chmod a+rx $(exec_prefix)/pike; \
-	  chmod u+w $(exec_prefix)/pike; \
+	  $(INSTALL) ./pike "$(exec_prefix)" || exit 1; \
+	  chmod a+rx "$(exec_prefix)/pike"; \
+	  chmod u+w "$(exec_prefix)/pike"; \
 	fi
 	@if [ -f ./hilfe ]; then \
 	  echo ; echo "Installing hilfe..."; \
@@ -234,20 +234,20 @@ install: pike hilfe
 	  then \
 	    echo "$(exec_prefix)/hilfe already installed." ; \
 	  else \
-	    if [ -f $(exec_prefix)/hilfe ]; then \
-	      mv $(exec_prefix)/hilfe $(exec_prefix)/hilfe.old || exit 1; \
+	    if [ -f "$(exec_prefix)/hilfe" ]; then \
+	      mv "$(exec_prefix)/hilfe" "$(exec_prefix)/hilfe.old" || exit 1; \
 	    else : ; fi; \
 	    echo "$(exec_prefix)/hilfe"; \
-	    $(INSTALL) $(TMP_BINDIR)/hilfe $(exec_prefix) || exit 1; \
-	    chmod a+rx $(exec_prefix)/hilfe; \
-	    chmod u+w $(exec_prefix)/hilfe; \
+	    $(INSTALL) $(TMP_BINDIR)/hilfe "$(exec_prefix)" || exit 1; \
+	    chmod a+rx "$(exec_prefix)/hilfe"; \
+	    chmod u+w "$(exec_prefix)/hilfe"; \
 	  fi; \
 	else : ; fi
 	@echo ; echo "Installing header-files..."; \
 	for a in $(SRCDIR)/*.h *.h ; do \
-	  $(INSTALL) $$a $(prefix)/include/pike || exit 1; \
-	  chmod a+r $(prefix)/include/pike ; \
-	  chmod u+w $(prefix)/include/pike ; \
+	  $(INSTALL) $$a "$(prefix)/include/pike" || exit 1; \
+	  chmod a+r "$(prefix)/include/pike" ; \
+	  chmod u+w "$(prefix)/include/pike" ; \
 	done
 	@echo ; echo "Installing modules written in Pike..."; \
 	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print | grep -v '/CVS/'`; do \
