@@ -579,7 +579,7 @@ string data()
        buf += con->read(l);
    }
    if(zero_type( len ))
-     len = sizeof( data ) - datapos - 1;
+     len = sizeof( buf ) - datapos - 1;
 #ifdef HTTP_QUERY_NOISE
    werror("buf[datapos..]     : %O\n", buf[datapos
 				       ..min(sizeof(buf), datapos+19)]);
