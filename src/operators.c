@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.165 2002/11/26 16:55:55 grubba Exp $
+|| $Id: operators.c,v 1.166 2003/05/15 15:10:14 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.165 2002/11/26 16:55:55 grubba Exp $");
+RCSID("$Id: operators.c,v 1.166 2003/05/15 15:10:14 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -3496,8 +3496,6 @@ static void f_string_assignment_index(INT32 args)
   INT_TYPE i;
   get_all_args("string[]",args,"%i",&i);
   if(i<0) i+=THIS->s->len;
-  if(i<0)
-    i+=THIS->s->len;
   if(i<0 || i>=THIS->s->len)
     Pike_error("Index %"PRINTPIKEINT"d is out of range 0 - %ld.\n",
 	       i, PTRDIFF_T_TO_LONG(THIS->s->len - 1));
@@ -3518,10 +3516,10 @@ static void f_string_assignment_assign_index(INT32 args)
   get_all_args("string[]=",args,"%i%i",&i,&j);
   if((u=get_pointer_if_this_type(THIS->lval, T_STRING)))
   {
-    free_string(THIS->s);
     if(i<0) i+=u->string->len;
     if(i<0 || i>=u->string->len)
       Pike_error("String index out of range %ld\n",(long)i);
+    free_string(THIS->s);
     u->string=modify_shared_string(u->string,i,j);
     copy_shared_string(THIS->s, u->string);
   }else{
