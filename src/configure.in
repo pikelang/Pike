@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.104 1997/08/10 00:49:52 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.105 1997/08/16 18:55:03 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -292,6 +292,39 @@ AC_PROG_INSTALL
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
+
+#############################################################################
+
+# installbsd seems to be broken on some versions of AIX
+#
+# /grubba 1997-08-16
+
+case "$ac_cv_path_install" in
+  *installbsd*)
+    AC_MSG_CHECKING(if $ac_cv_path_install works)
+    AC_CACHE_VAL(pike_cv_install_works,
+[
+    if $ac_cv_path_install "$srcdir/configure.in" ./conftest >/dev/null 2>&1
+    then
+      if cmp "$srcdir/configure.in" ./conftest >/dev/null 2>&1; then
+        pike_cv_install_works=yes;
+      else
+        pike_cv_install_works=no;
+      fi
+    else
+      pike_cv_install_works=no;
+    fi
+    if test -f ./conftest; then
+      rm -f ./conftest
+    fi
+])
+    AC_MSG_RESULT($pike_cv_install_works)
+    if test "$pike_cv_install_works" = "no"; then
+      echo "Warning: Falling back to $ac_install_sh"
+      INSTALL="$ac_install_sh"
+    fi
+  ;;
+esac
 
 #############################################################################
 
