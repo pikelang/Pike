@@ -125,7 +125,7 @@ class Angle {
 
   //! @decl Angle set_dms(int degrees)
   //! @decl Angle set_dms(int degrees, int minutes)
-  //! @decl Angle set_dms(int degrees, inte minutes, float seconds)
+  //! @decl Angle set_dms(int degrees, int minutes, float seconds)
   //! Set degrees, minues and seconds. Returns the current angle object.
   Angle set_dms(int degrees, void|int minutes, void|float seconds) {
     set_degree( degrees + minutes/60.0 + seconds/3600.0 );

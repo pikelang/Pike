@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gdbmmod.c,v 1.22 2002/10/21 17:06:12 marcus Exp $
+|| $Id: gdbmmod.c,v 1.23 2002/12/30 13:06:19 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.22 2002/10/21 17:06:12 marcus Exp $");
+RCSID("$Id: gdbmmod.c,v 1.23 2002/12/30 13:06:19 grubba Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -322,7 +322,7 @@ static void gdbmmod_nextkey(INT32 args)
 }
 
 /*! @decl int store(string key, string data)
- *! @decl int `[]= (string key, stirng data)
+ *! @decl int `[]= (string key, string data)
  *!
  *! Associate the contents of 'data' with the key 'key'. If the key 'key'
  *! already exists in the database the data for that key will be replaced.
