@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.8 2002/11/16 14:53:03 grubba Exp $
+dnl $Id: testsuite.in,v 1.9 2002/11/17 05:06:54 nilsson Exp $
 
 dnl - Array
 
@@ -142,6 +142,7 @@ dnl setup
 test_do( add_constant("getopt_env", master()->environment); )
 test_do( master()->environment=([ "foo": ({ "foo", "bar" }) ]); )
 
+test_eq( Getopt.find_option( ({}), "a" ), 0 )
 test_eq( Getopt.find_option( "-a,-b"/",", "a" ), 0 )
 test_eq( Getopt.find_option( "-a,--b"/",", "a" ), 0 )
 test_eq( Getopt.find_option( "-a,-b"/",", "b" ), 1 )
@@ -155,13 +156,14 @@ test_eq( Getopt.find_option( ",--a,-b"/",", "b"), 1)
 test_eq( Getopt.find_option( ",--a=b"/",", "x", "a"), "b")
 test_eq( Getopt.find_option( ",--a=b"/",", "x", "a", 0, "y"), "b")
 test_eq( Getopt.find_option( ",--a,-b"/",", "b", "a", 0, "y"), "-b")
-test_eval_error( Getopt.find_option( ",--a"/",", "x", "a", 0, "y") )
+test_eq( Getopt.find_option( ",--a,-b"/",", "b", "a", 0, UNDEFINED), 1)
+test_eval_error( Getopt.find_option( ",--a"/",", "x", "a", 0, "y", 1) )
 
 test_eq( Getopt.find_option( ",-ab"/",", "a"), 1)
 test_eq( Getopt.find_option( ",-ab"/",", "b"), 1)
 test_eq( Getopt.find_option( ",-ab"/",", "a", 0, 0, "y"), "b")
 test_eq( Getopt.find_option( ",-a,-b"/",", "ab"/1, 0, 0, "y"), "-b")
-test_eval_error( Getopt.find_option( ",-a"/",", "a", 0, 0, "y") )
+test_eval_error( Getopt.find_option( ",-a"/",", "a", 0, 0, "y", 1) )
 
 test_any_equal([[
   array x = ({ "", "--a" });
@@ -210,6 +212,7 @@ test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "foo" ), "bar")
 test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), ({"x","foo"}) ), "bar")
 test_eq( Getopt.find_option(({}),({"a","b"}),({"c","d"}), "x", "e" ), "e")
 
+test_equal( Getopt.get_args( ({}) ), ({}) )
 test_equal( Getopt.get_args(({ "x",0,0,1,"y",0,"z" })), "xyz"/1 )
 test_eval_error( Getopt.get_args(({ "x", "-a" }), 0, 1) )
 test_equal( Getopt.get_args(({ "-a", 0, "a"})), ({ "-a", "a" }) )
@@ -225,6 +228,7 @@ test_eval_error( Getopt.get_args(({ "x", "-a" }), 1, 1))
 
 test_do( add_constant("opt", lambda(array x, array y, mixed ... z) {
  return Getopt.find_all_options(x, ({ y }), @z); }); )
+test_equal( Getopt.find_all_options( ({}), ({}) ), ({}) )
 test_equal( opt( "-a,-b"/",", ({ "a", Getopt.NO_ARG, "-a" }) ), ({}) )
 test_equal( opt( "-a,--b"/",", ({ "a", Getopt.NO_ARG, "-b" }) ), ({}) )
 test_equal( opt( "-a,-b"/",", ({ "b", Getopt.NO_ARG, "-b" }) ),
@@ -364,7 +368,7 @@ test_do( putenv("POSIX_ME_HARDER", "1"); )
 test_eval_error( Getop.get_args(({ "x", "a", "-b" }), -1, 1) )
 test_equal( Getopt.get_args(({ "x", "a", "-b" }), 0, 1), ({ "x", "a", "-b" }))
 test_equal( Getopt.get_args(({ "x", 0, "-b" }), 0, 1), ({ "x", "-b" }))
-test_eval_error( opt( ({"x","a","-b"}), ({"y",Getopt.HAS_ARG,"-b"}), -1, 1 ))
+test_eval_error( opt( ({"x","a","-b"}), ({"y",Getopy.HAS_ARG,"-b"}), -1 ))
 test_any_equal([[
   array x = ({ "x", "a", "-b" });
   opt(x, ({ "y", Getopt.HAS_ARG, "-b" }), 0, 1 );
