@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.513 2001/03/27 19:21:57 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.514 2001/03/27 20:58:18 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -13,6 +13,25 @@ case "$srcdir" in
 If this does not work, please use an absolute path to the configure script. ])
     ;;
 esac
+
+# Attempt to use bash instead of /bin/sh to run configure
+# since bash is usually several orders of magnitude faster
+# on machines that have a real /bin/sh.
+if test "x$CONFIG_SHELL" = "x"; then 
+  AC_PATH_PROG(bash_prog, bash, no)
+  if test "x$ac_cv_path_bash_prog" = "xno"; then :; else
+    AC_MSG_WARN([Found bash as $ac_cv_path_bash_prog.
+Will attempt to restart configure with bash for performance.
+
+If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.
+
+])
+    CONFIG_SHELL="$ac_cv_path_bash_prog"
+    export CONFIG_SHELL
+    echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
+    exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args
+  fi
+else :; fi
 
 if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
