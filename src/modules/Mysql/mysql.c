@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.50 2001/11/15 10:57:46 tomas Exp $
+ * $Id: mysql.c,v 1.51 2001/12/07 22:35:05 nilsson Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,13 +91,14 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.50 2001/11/15 10:57:46 tomas Exp $");
+RCSID("$Id: mysql.c,v 1.51 2001/12/07 22:35:05 nilsson Exp $");
 
 /*! @module Mysql
  *!
  *! This module enables access to the Mysql database from within Pike.
+ *! Use @[Sql.sql] for general database access.
  *!
- *! Mysql is available from www.mysql.com.
+ *! Mysql is available from @url{http://www.mysql.com@}.
  *!
  *! @seealso
  *!  @[Mysql.mysql], @[Mysql.mysql_result], @[Sql.sql]
