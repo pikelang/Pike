@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.15 2002/03/17 23:06:30 nilsson Exp $
+// $Id: testsuite.in,v 1.16 2002/09/18 04:35:56 nilsson Exp $
 
 
 // system.c:
@@ -146,43 +146,43 @@ cond([[ all_constants()->getpwuid && all_constants()->getpwnam ]], [[
 // openlog		HAVE_SYSLOG
 // syslog		HAVE_SYSLOG
 
-cond([[ system->NetSessionEnum ]],
+cond([[ System->NetSessionEnum ]],
 [[
-  test_true( system.NetSessionEnum(0,0,0,0) )
+  test_true( System.NetSessionEnum(0,0,0,0) )
 ]])
 
 
 // memory.c: system.Memory
 
-test_true( system.Memory() )
-test_true( system.Memory(17) )
-test_true( system.Memory(8192) )
+test_true( System.Memory() )
+test_true( System.Memory(17) )
+test_true( System.Memory(8192) )
 test_any( [[
-  object mem=system.Memory();
+  object mem=System.Memory();
   mem->allocate(42);
   return (string)mem; 
 ]], "\0"*42 )
 test_any( [[
-  object mem=system.Memory();
+  object mem=System.Memory();
   mem->allocate(42);
   mem->pwrite(38,"hopp");
   return (string)mem; 
 ]], "\0"*38+"hopp" )
 test_any( [[
-  object mem=system.Memory();
+  object mem=System.Memory();
   mem->allocate(42);
   mem->pwrite(14,"hopp");
   return mem->pread(13,6);
 ]], "\0hopp\0" )
 
-cond([[ system["__MMAP__"] ]],
+cond([[ System["__MMAP__"] ]],
 [[
   test_any( [[
     object f=Stdio.File();
     f->open("testsuite1.mmap.tmp","wtc");
     f->write("testing testing");
     f->close();
-    object mem=system.Memory();
+    object mem=System.Memory();
     mem->mmap("testsuite1.mmap.tmp");
     string s=(string)mem;
     rm("testsuite1.mmap.tmp");
@@ -193,7 +193,7 @@ cond([[ system["__MMAP__"] ]],
     f->open("testsuite2.mmap.tmp","wtc");
     f->write("testing testing");
     f->close();
-    object mem=system.Memory();
+    object mem=System.Memory();
     mem->mmap("testsuite2.mmap.tmp");
     array a=(array)mem;
     rm("testsuite2.mmap.tmp");
@@ -204,7 +204,7 @@ cond([[ system["__MMAP__"] ]],
     f->open("testsuite3.mmap.tmp","wtc");
     f->write("testing testing");
     f->close();
-    object mem=system.Memory();
+    object mem=System.Memory();
     mem->mmap("testsuite3.mmap.tmp");
     string s=mem->pread(4,6);
     rm("testsuite3.mmap.tmp");
@@ -215,7 +215,7 @@ cond([[ system["__MMAP__"] ]],
     f->open("testsuite4.mmap.tmp","wtc");
     f->write("testing testing");
     f->close();
-    object mem=system.Memory();
+    object mem=System.Memory();
 // private is always writeable
     mem->mmap_private("testsuite4.mmap.tmp");
     mem->pwrite(4,"nazota");
@@ -229,7 +229,7 @@ cond([[ system["__MMAP__"] ]],
     f->open("testsuite5.mmap.tmp","wtc");
     f->write("testing testing");
     f->close();
-    object mem=system.Memory();
+    object mem=System.Memory();
     mem->mmap("testsuite5.mmap.tmp");
     if (mem->writeable())
     {
