@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.737 2004/07/16 14:38:36 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.738 2004/09/20 12:12:13 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6983,6 +6983,14 @@ test_equal([[ ({({1,2})})]], [[(array)([1:2]) ]])
 test_equal([[ (mapping)({})]], [[ ([]) ]])
 test_equal([[ ({}) ]], [[ (array)([]) ]])
 test_eval_error([[ mapping m=(mapping)({ ({1,2,3}), ({4,5,6}) }); ]])
+
+test_any([[
+  object x = class {
+      mixed cast (string t) {return t == "string" && "foo";}
+    }();
+  destruct (x);
+  return (string) x;
+]], "0")
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
