@@ -5,6 +5,7 @@
 \*/
 #include "global.h"
 #include "fdlib.h"
+#include "fd_control.h"
 #include "svalue.h"
 #include "interpret.h"
 #include "stralloc.h"
