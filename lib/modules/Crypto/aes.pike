@@ -1,5 +1,5 @@
 /*
- * $Id: aes.pike,v 1.1 2000/10/03 11:00:14 grubba Exp $
+ * $Id: aes.pike,v 1.2 2001/08/21 20:56:23 grubba Exp $
  *
  * Advanced Encryption Standard (AES).
  *
@@ -10,3 +10,8 @@
 
 /* aka rijndael */
 inherit Crypto.rijndael;
+
+string name()
+{
+  return "AES";
+}
