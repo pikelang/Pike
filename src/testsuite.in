@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.430 2001/06/29 17:04:19 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.431 2001/07/01 18:34:20 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2879,14 +2879,49 @@ ifefun(gc,
       void destroy()
       {
 	if (!arrayp(a) || !arrayp(a[0]) || a[0][0] != a)
-	  error ("GC garbed weak things too early.\n");
+	  add_constant ("my_little_error", "GC garbed weak things too early.\n");
       }
     };
     object o = Live();
     o = 0;
-    return gc() + gc() >= 3;
+    int res = gc() + gc() >= 3;
+    if (all_constants()->my_little_error)
+      error (all_constants()->my_little_error);
+    return res;
   }]], 1);
 
+  test_do([[{
+    class Live
+    {
+      Foo f;
+      void destroy()
+      {
+	if (!f->l || !f->a || !f->a[0] || !f->a[1])
+	  add_constant ("my_little_error", "GC garbed live things.\n");
+      }
+    };
+    class Foo
+    {
+      int i;
+      class Bar
+      {
+	int j = i++;		// Ensure parent pointer.
+	array a = ({j});
+      }
+      Live l;
+      void create (Live _l)
+      {
+	l = _l;
+	l->f = this_object();
+      }
+      array a = allocate (2, Bar)();
+    };
+    object o = Foo(Live());
+    o = 0;
+    gc(), gc();
+    if (all_constants()->my_little_error)
+      error (all_constants()->my_little_error);
+  }]]);
 ]])
 
 ifefun(gc,
