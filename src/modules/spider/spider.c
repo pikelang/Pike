@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.120 2002/10/21 17:06:26 marcus Exp $
+|| $Id: spider.c,v 1.121 2002/11/28 23:52:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -50,7 +50,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.120 2002/10/21 17:06:26 marcus Exp $");
+RCSID("$Id: spider.c,v 1.121 2002/11/28 23:52:42 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1100,25 +1100,27 @@ PIKE_MODULE_INIT
   empty_string_svalue = sp[-1];
   pop_stack();
 
-  ADD_EFUN("_low_program_name", f__low_program_name,tFunc(tPrg(tObj),tStr),0);
+  ADD_FUNCTION("_low_program_name",f__low_program_name,
+	       tFunc(tPrg(tObj),tStr),0);
+
+  /* function(int:int) */
+  ADD_FUNCTION("set_start_quote",f_set_start_quote,
+	       tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
+
+  /* function(int:int) */
+  ADD_FUNCTION("set_end_quote",f_set_end_quote,
+	   tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
+
+  /* function(string:array) */
+  ADD_FUNCTION("parse_accessed_database", f_parse_accessed_database,
+	       tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
+
+  /* function(:array(array)) */
+  ADD_FUNCTION("_dump_obj_table", f__dump_obj_table,
+	       tFunc(tNone,tArr(tArray)), OPT_EXTERNAL_DEPEND);
 
 
-/* function(int:int) */
-  ADD_EFUN("set_start_quote",f_set_start_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
-
-/* function(int:int) */
-  ADD_EFUN("set_end_quote",f_set_end_quote,tFunc(tInt,tInt),OPT_EXTERNAL_DEPEND);
-
-/* function(string:array) */
-  ADD_EFUN("parse_accessed_database", f_parse_accessed_database,tFunc(tStr,tArray), OPT_TRY_OPTIMIZE);
-
-
-/* function(:array(array)) */
-  ADD_EFUN("_dump_obj_table", f__dump_obj_table,tFunc(tNone,tArr(tArray)),
-	   OPT_EXTERNAL_DEPEND);
-
-
-  ADD_EFUN("parse_html",f_parse_html,
+  ADD_FUNCTION("parse_html",f_parse_html,
 	   tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
 				tFuncV(tOr(tStr,tVoid)
@@ -1136,7 +1138,7 @@ PIKE_MODULE_INIT
 	   OPT_SIDE_EFFECT);
 
 
-  ADD_EFUN("parse_html_lines",f_parse_html_lines,
+  ADD_FUNCTION("parse_html_lines",f_parse_html_lines,
 	   tFuncV(tStr
 		  tMap(tStr,tOr(tStr,
 				tFuncV(tOr(tStr,tVoid)
@@ -1155,18 +1157,19 @@ PIKE_MODULE_INIT
 		  tStr),
 	   0);
 
-/* function(int:array) */
-  ADD_EFUN("discdate", f_discdate,tFunc(tInt,tArray), 0);
+  /* function(int:array) */
+  ADD_FUNCTION("discdate", f_discdate,tFunc(tInt,tArray), 0);
 
-/* function(int,void|int:int) */
-  ADD_EFUN("stardate", f_stardate,tFunc(tInt tOr(tVoid,tInt),tInt), 0);
+  /* function(int,void|int:int) */
+  ADD_FUNCTION("stardate", f_stardate,tFunc(tInt tInt,tInt), 0);
 
-/* function(:array(int)) */
-  ADD_EFUN("get_all_active_fd", f_get_all_active_fd,tFunc(tNone,tArr(tInt)),
-	   OPT_EXTERNAL_DEPEND);
+  /* function(:array(int)) */
+  ADD_FUNCTION("get_all_active_fd", f_get_all_active_fd,
+	       tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
 
-/* function(int:string) */
-  ADD_EFUN("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
+  /* function(int:string) */
+  ADD_FUNCTION("fd_info", f_fd_info,tFunc(tInt,tStr), OPT_EXTERNAL_DEPEND);
+
   {
     extern void init_xml(void);
     init_xml();
