@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.26 2000/08/25 10:50:37 grubba Exp $
+ * $Id: nt.c,v 1.27 2000/09/11 18:45:06 leif Exp $
  *
  * NT system calls for Pike
  *
@@ -29,6 +29,103 @@
 #include <windows.h>
 #include <accctrl.h>
 #include <lm.h>
+
+static void throw_nt_error(char *funcname, int err)
+/*
+ *  Give string equivalents to some of the more common NT error codes.
+ */ 
+{
+  char *msg;
+
+  switch (err)
+  {
+    case ERROR_ACCESS_DENIED:
+      msg = "Access denied.";
+      break;
+
+    case ERROR_LOGON_FAILURE:
+      msg = "Logon failure (access denied).";
+      break;
+
+    case ERROR_INVALID_PARAMETER:
+      msg = "Invalid parameter.";
+      break;
+
+    case ERROR_NOT_ENOUGH_MEMORY:
+      msg = "Out of memory.";
+      break;
+
+    case ERROR_INVALID_NAME:
+      msg = "Invalid name.";
+      break;
+
+    case ERROR_INVALID_LEVEL:
+      msg = "Invalid level.";
+      break;
+
+    case ERROR_NO_SUCH_ALIAS:
+      msg = "No such alias.";
+      break;
+
+    case ERROR_NO_SUCH_DOMAIN:
+      msg = "No such domain.";
+      break;
+
+    case ERROR_NO_LOGON_SERVERS:
+      msg = "No log-on servers.";
+      break;
+
+    case ERROR_BAD_NETPATH:
+      msg = "Network path not found.";
+      break;
+
+    case ERROR_NO_TRUST_LSA_SECRET:
+      msg = "No trust LSA secret (client not trusted).";
+      break;
+
+    case ERROR_NO_TRUST_SAM_ACCOUNT:
+      msg = "No trust SAM account (server/password not trusted).";
+      break;
+
+    case ERROR_DOMAIN_TRUST_INCONSISTENT:
+      msg = "Domain trust inconsistent.";
+      break;
+
+    case NERR_DCNotFound:
+      msg = "Domain controller not found.";
+      break;
+
+    case NERR_InvalidComputer:
+      msg = "Invalid computer.";
+      break;
+
+    case NERR_UserNotFound:
+      msg = "User not found.";
+      break;
+
+    case NERR_GroupNotFound:
+      msg = "Group not found.";
+      break;
+
+    case NERR_ClientNameNotFound:
+      msg = "Client name not found.";
+      break;
+
+    case RPC_S_SERVER_UNAVAILABLE:
+      msg = "RPC server unavailable.";
+      break;
+
+    case NERR_Success:
+      msg = "Strange error (NERR_Success).";
+      break;
+
+    default:
+      error("%s: Unknown error 0x%04x (%d)\n", funcname, err, err);
+      return;
+  }
+  error("%s: %s\n", funcname, msg);
+}
+
 
 static void f_cp(INT32 args)
 {
@@ -130,7 +227,7 @@ void f_RegGetValue(INT32 args)
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
   if(ret != ERROR_SUCCESS)
-    error("RegOpenKeyEx failed with error %d\n",ret);
+    throw_nt_error("RegOpenKeyEx", ret);
 
   ret=RegQueryValueEx(new_key,ind, 0, &type, buffer, &len);
   RegCloseKey(new_key);
@@ -140,7 +237,7 @@ void f_RegGetValue(INT32 args)
     pop_n_elems(args);
     push_regvalue(type, buffer, len);
   }else{
-    error("RegQueryValueEx failed with error %d\n",ret);
+    throw_nt_error("RegQueryValueEx", ret);
   }
 }
 
@@ -165,7 +262,7 @@ void f_RegGetKeyNames(INT32 args)
 
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
   if(ret != ERROR_SUCCESS)
-    error("RegOpenKeyEx failed with error %d\n",ret);
+    throw_nt_error("RegGetKeyNames[RegOpenKeyEx]", ret);
 
   SET_ONERROR(tmp, do_regclosekey, new_key);
 
@@ -190,7 +287,7 @@ void f_RegGetKeyNames(INT32 args)
 	break;
 
       default:
-	error("RegEnumKeyEx failed with error %d\n",ret);
+	throw_nt_error("RegGetKeyNames[RegEnumKeyEx]", ret);
     }
     break;
   }
@@ -216,7 +313,7 @@ void f_RegGetValues(INT32 args)
   ret = RegOpenKeyEx(hkeys[hkey_num], (LPCTSTR)key, 0, KEY_READ,  &new_key);
 
   if(ret != ERROR_SUCCESS)
-    error("RegOpenKeyEx failed with error %d\n",ret);
+    throw_nt_error("RegOpenKeyEx", ret);
 
   SET_ONERROR(tmp, do_regclosekey, new_key);
   pop_n_elems(args);
@@ -245,7 +342,7 @@ void f_RegGetValues(INT32 args)
       
       default:
 	RegCloseKey(new_key);
-	error("RegEnumKeyEx failed with error %d\n",ret);
+	throw_nt_error("RegGetValues[RegEnumKeyEx]", ret);
     }
     break;
   }
@@ -866,29 +963,13 @@ void f_NetUserGetInfo(INT32 args)
   if(to_free1) free(to_free1);
   if(to_free2) free(to_free2);
 
-  switch(ret)
+  if (ret == NERR_Success)
   {
-    case ERROR_ACCESS_DENIED:
-    case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-      error("NetGetUserInfo: Access denied.\n");
-      break;
-
-    case NERR_InvalidComputer:
-      error("NetGetUserInfo: Invalid computer.\n");
-      break;
-
-    case NERR_UserNotFound:
-      push_int(0);
-      return;
-
-    case NERR_Success:
-      encode_user_info(tmp,level);
-      netapibufferfree(tmp);
-      return;
-
-    default:
-      error("NetGetUserInfo: Unknown error %d\n",ret);
+    encode_user_info(tmp,level);
+    netapibufferfree(tmp);
   }
+  else
+    throw_nt_error("NetGetUserInfo", ret);
 }
 
 void f_NetUserEnum(INT32 args)
@@ -900,6 +981,7 @@ void f_NetUserEnum(INT32 args)
   INT32 pos=0,e;
   struct array *a=0;
   DWORD resume=0;
+  NET_API_STATUS ret;
 
   /*  fprintf(stderr,"before: sp=%p args=%d (base=%p)\n",sp,args,sp-args); */
 
@@ -928,10 +1010,11 @@ void f_NetUserEnum(INT32 args)
 
   /*  fprintf(stderr,"now: sp=%p\n",sp); */
 
-  while(1)
+  ret = ERROR_MORE_DATA;
+
+  do
   {
     DWORD read=0, total=0;
-    NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
     THREADS_ALLOW();
@@ -939,49 +1022,37 @@ void f_NetUserEnum(INT32 args)
 		    level,
 		    filter,
 		    &buf,
-		    0x10000,
+		    0x4000,
 		    &read,
 		    &total,
 		    &resume);
     THREADS_DISALLOW();
     if(!a)
       push_array(a=allocate_array(total));
-    switch(ret)
+
+    if (ret == NERR_Success || ret == ERROR_MORE_DATA)
     {
-      case ERROR_ACCESS_DENIED:
-      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-	if(to_free1) free(to_free1);
-	error("NetUserEnum: Access denied.\n");
-	break;
-	
-      case NERR_InvalidComputer:
-	if(to_free1) free(to_free1);
-	error("NetUserEnum: Invalid computer.\n");
-	break;
-
-      case NERR_Success:
-      case ERROR_MORE_DATA:
-	ptr=buf;
-	for(e=0;e<read;e++)
-	{
-	  encode_user_info(ptr,level);
-	  a->item[pos]=sp[-1];
-	  sp--;
-	  dmalloc_touch_svalue(sp);
-	  pos++;
-	  if(pos>=a->size) break;
-	  ptr+=sizeof_user_info(level);
-	}
-	netapibufferfree(buf);
-	if(ret==ERROR_MORE_DATA) continue;
-	break;
-
-      default:
-	error("NetUserEnum: Unknown error %d\n",ret);
+      ptr=buf;
+      for(e=0;e<read;e++)
+      {
+        encode_user_info(ptr,level);
+        a->item[pos]=sp[-1];
+        sp--;
+        dmalloc_touch_svalue(sp);
+        pos++;
+        if(pos>=a->size) break;
+        ptr+=sizeof_user_info(level);
+      }
+      netapibufferfree(buf);
     }
-    break;
-  }
-  if(to_free1) free(to_free1);
+    else
+    { if (to_free1) free(to_free1);
+      throw_nt_error("NetUserEnum", ret);
+      return;
+    }
+  } while (ret == ERROR_MORE_DATA);
+
+  if (to_free1) free(to_free1);
 }
 
 
@@ -993,6 +1064,7 @@ void f_NetGroupEnum(INT32 args)
   INT32 pos=0,e;
   struct array *a=0;
   DWORD resume=0;
+  NET_API_STATUS ret;
 
   check_all_args("NetGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
@@ -1012,10 +1084,9 @@ void f_NetGroupEnum(INT32 args)
 
   pop_n_elems(args);
 
-  while(1)
+  do
   {
     DWORD read=0, total=0;
-    NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
     THREADS_ALLOW();
@@ -1030,41 +1101,29 @@ void f_NetGroupEnum(INT32 args)
     if(!a)
       push_array(a=allocate_array(total));
 
-    switch(ret)
+    if (ret == NERR_Success || ret == ERROR_MORE_DATA)
     {
-      case ERROR_ACCESS_DENIED:
-      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-	if(to_free1) free(to_free1);
-	error("NetGroupEnum: Access denied.\n");
-	break;
-	
-      case NERR_InvalidComputer:
-	if(to_free1) free(to_free1);
-	error("NetGroupEnum: Invalid computer.\n");
-	break;
-
-      case NERR_Success:
-      case ERROR_MORE_DATA:
-	ptr=buf;
-	for(e=0;e<read;e++)
-	{
-	  encode_group_info(ptr,level);
-	  a->item[pos]=sp[-1];
-	  sp--;
-	  dmalloc_touch_svalue(sp);
-	  pos++;
-	  if(pos>=a->size) break;
-	  ptr+=sizeof_group_info(level);
-	}
-	netapibufferfree(buf);
-	if(ret==ERROR_MORE_DATA) continue;
-	break;
-
-      default:
-	error("NetGroupEnum: Unknown error %d\n",ret);
+      ptr=buf;
+      for(e=0;e<read;e++)
+      {
+        encode_group_info(ptr,level);
+        a->item[pos]=sp[-1];
+        sp--;
+        dmalloc_touch_svalue(sp);
+        pos++;
+        if(pos>=a->size) break;
+        ptr+=sizeof_group_info(level);
+      }
+      netapibufferfree(buf);
     }
-    break;
-  }
+    else
+    {
+      if (to_free1) free(to_free1);
+      throw_nt_error("NetGroupEnum", ret);
+      return;
+    }
+  } while (ret == ERROR_MORE_DATA);
+
   if(to_free1) free(to_free1);
 }
 
@@ -1076,6 +1135,7 @@ void f_NetLocalGroupEnum(INT32 args)
   INT32 pos=0,e;
   struct array *a=0;
   DWORD resume=0;
+  NET_API_STATUS ret;
 
   check_all_args("NetLocalGroupEnum",args,BIT_STRING|BIT_INT|BIT_VOID, BIT_INT|BIT_VOID,0);
 
@@ -1095,10 +1155,9 @@ void f_NetLocalGroupEnum(INT32 args)
 
   pop_n_elems(args);
 
-  while(1)
+  do
   {
     DWORD read=0, total=0;
-    NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
     THREADS_ALLOW();
@@ -1113,41 +1172,28 @@ void f_NetLocalGroupEnum(INT32 args)
     if(!a)
       push_array(a=allocate_array(total));
 
-    switch(ret)
+    if (ret == NERR_Success || ret == ERROR_MORE_DATA)
     {
-      case ERROR_ACCESS_DENIED:
-      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-	if(to_free1) free(to_free1);
-	error("NetLocalGroupEnum: Access denied.\n");
-	break;
-	
-      case NERR_InvalidComputer:
-	if(to_free1) free(to_free1);
-	error("NetLocalGroupEnum: Invalid computer.\n");
-	break;
-
-      case NERR_Success:
-      case ERROR_MORE_DATA:
-	ptr=buf;
-	for(e=0;e<read;e++)
-	{
-	  encode_localgroup_info(ptr,level);
-	  a->item[pos]=sp[-1];
-	  sp--;
-	  dmalloc_touch_svalue(sp);
-	  pos++;
-	  if(pos>=a->size) break;
-	  ptr+=sizeof_localgroup_info(level);
-	}
-	netapibufferfree(buf);
-	if(ret==ERROR_MORE_DATA) continue;
-	break;
-
-      default:
-	error("NetLocalGroupEnum: Unknown error %d\n",ret);
+      ptr=buf;
+      for(e=0;e<read;e++)
+      {
+        encode_localgroup_info(ptr,level);
+        a->item[pos]=sp[-1];
+        sp--;
+        dmalloc_touch_svalue(sp);
+        pos++;
+        if(pos>=a->size) break;
+        ptr+=sizeof_localgroup_info(level);
+      }
+      netapibufferfree(buf);
     }
-    break;
-  }
+    else
+    {
+      if (to_free1) free(to_free1);
+      throw_nt_error("NetLocalGroupEnum", ret);
+    }
+  } while (ret == ERROR_MORE_DATA);
+
   if(to_free1) free(to_free1);
 }
 
@@ -1197,22 +1243,8 @@ void f_NetUserGetGroups(INT32 args)
   if(!a)
     push_array(a=allocate_array(total));
   
-  switch(ret)
+  if (ret == NERR_Success)
   {
-  case ERROR_ACCESS_DENIED:
-  case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-    if(to_free1) free(to_free1);
-    if(to_free2) free(to_free2);
-    error("NetUserGetGroups: Access denied.\n");
-    break;
-    
-  case NERR_InvalidComputer:
-    if(to_free1) free(to_free1);
-    if(to_free2) free(to_free2);
-    error("NetUserGetGroups: Invalid computer.\n");
-    break;
-    
-  case NERR_Success:
     ptr=buf;
     for(e=0;e<read;e++)
     {
@@ -1225,13 +1257,15 @@ void f_NetUserGetGroups(INT32 args)
       ptr+=sizeof_group_users_info(level);
     }
     netapibufferfree(buf);
-    break;
-
-  default:
-    error("NetUserGetGroups: Unknown error %d\n",ret);
+    if(to_free1) free(to_free1);
+    if(to_free2) free(to_free2);
   }
-  if(to_free1) free(to_free1);
-  if(to_free2) free(to_free2);
+  else
+  {
+    if(to_free1) free(to_free1);
+    if(to_free2) free(to_free2);
+    throw_nt_error("NetUserGetGroups", ret);
+  }
 }
 
 void f_NetUserGetLocalGroups(INT32 args)
@@ -1287,36 +1321,25 @@ void f_NetUserGetLocalGroups(INT32 args)
   
   switch(ret)
   {
-  case ERROR_ACCESS_DENIED:
-  case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-    if(to_free1) free(to_free1);
-    if(to_free2) free(to_free2);
-    error("NetUserGetLocalGroups: Access denied.\n");
-    break;
-    
-  case NERR_InvalidComputer:
-    if(to_free1) free(to_free1);
-    if(to_free2) free(to_free2);
-    error("NetUserGetLocalGroups: Invalid computer.\n");
-    break;
-    
-  case NERR_Success:
-    ptr=buf;
-    for(e=0;e<read;e++)
-    {
-      encode_localgroup_users_info(ptr,level);
-      a->item[pos]=sp[-1];
-      sp--;
-      dmalloc_touch_svalue(sp);
-      pos++;
-      if(pos>=a->size) break;
-      ptr+=sizeof_localgroup_users_info(level);
-    }
-    netapibufferfree(buf);
-    break;
+    case NERR_Success:
+      ptr=buf;
+      for(e=0;e<read;e++)
+      {
+  	encode_localgroup_users_info(ptr,level);
+  	a->item[pos]=sp[-1];
+  	sp--;
+  	dmalloc_touch_svalue(sp);
+  	pos++;
+  	if(pos>=a->size) break;
+  	ptr+=sizeof_localgroup_users_info(level);
+      }
+      netapibufferfree(buf);
+      break;
 
-  default:
-    error("NetUserGetLocalGroups: Unknown error %d\n",ret);
+    default:
+      if(to_free1) free(to_free1);
+      if(to_free2) free(to_free2);
+      throw_nt_error("NetUserGetLocalGroups", ret);
   }
   if(to_free1) free(to_free1);
   if(to_free2) free(to_free2);
@@ -1374,25 +1397,6 @@ void f_NetGroupGetUsers(INT32 args)
 
     switch(ret)
     {
-      case ERROR_ACCESS_DENIED:
-      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-	if(to_free1) free(to_free1);
-	if(to_free2) free(to_free2);
-	error("NetGroupGetUsers: Access denied.\n");
-	break;
-	
-      case NERR_InvalidComputer:
-	if(to_free1) free(to_free1);
-	if(to_free2) free(to_free2);
-	error("NetGroupGetUsers: Invalid computer.\n");
-	break;
-
-      case NERR_GroupNotFound:
-	if(to_free1) free(to_free1);
-	if(to_free2) free(to_free2);
-	error("NetGroupGetUsers: Group not found.\n");
-	break;
-
       case NERR_Success:
       case ERROR_MORE_DATA:
 	ptr=buf;
@@ -1411,7 +1415,9 @@ void f_NetGroupGetUsers(INT32 args)
 	break;
 
       default:
-	error("NetGroupGetUsers: Unknown error %d\n",ret);
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	throw_nt_error("NetGroupGetUsers", ret);
     }
     break;
   }
@@ -1471,25 +1477,6 @@ void f_NetLocalGroupGetMembers(INT32 args)
 
     switch(ret)
     {
-      case ERROR_ACCESS_DENIED:
-      case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-	if(to_free1) free(to_free1);
-	if(to_free2) free(to_free2);
-	error("NetLocalGroupGetMembers: Access denied.\n");
-	break;
-	
-      case NERR_InvalidComputer:
-	if(to_free1) free(to_free1);
-	if(to_free2) free(to_free2);
-	error("NetLocalGroupGetMembers: Invalid computer.\n");
-	break;
-
-      case NERR_GroupNotFound:
-	if(to_free1) free(to_free1);
-	if(to_free2) free(to_free2);
-	error("NetLocalGroupGetMembers: Group not found.\n");
-	break;
-
       case ERROR_NO_SUCH_ALIAS:
 	if(to_free1) free(to_free1);
 	if(to_free2) free(to_free2);
@@ -1514,7 +1501,10 @@ void f_NetLocalGroupGetMembers(INT32 args)
 	break;
 
       default:
-	error("NetLocalGroupGetMembers: Unknown error %d\n",ret);
+	if(to_free1) free(to_free1);
+	if(to_free2) free(to_free2);
+	throw_nt_error("NetLocalGroupGetMembers", ret);
+        break;
     }
     break;
   }
@@ -1558,29 +1548,13 @@ void f_NetGetDCName(INT32 args)
 
   switch(ret)
   {
-    case NERR_DCNotFound:
-      error("NetGetDCName: Could not find the domain controller for the domain.\n");
-      break;
-
-    case ERROR_INVALID_NAME:
-      error("NetGetDCName: The name could not be found.\n");
-      break;
-
-    case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-      error("NetGetDCName: Access denied.\n");
-      break;
-
-    case RPC_S_SERVER_UNAVAILABLE: /* Known to be returned sometimes.. */
-      error("NetGetDCName: The RPC server is unavailable.\n");
-      break;
-
     case NERR_Success:
       SAFE_PUSH_WSTR(tmp);
       netapibufferfree(tmp);
       return;
 
     default:
-      error("NetGetDCName: Unknown error %d\n",ret);
+      throw_nt_error("NetGetDCName", ret);
   }
 }
 
@@ -1620,41 +1594,13 @@ void f_NetGetAnyDCName(INT32 args)
 
   switch(ret)
   {
-    case ERROR_NO_LOGON_SERVERS:
-      error("NetGetAnyDCName: No domain controllers could be found.\n");
-      break;
-
-    case ERROR_NO_SUCH_DOMAIN:
-      error("NetGetAnyDCName: The specified domain is not a trusted domain.\n");
-      break;
-
-    case ERROR_NO_TRUST_LSA_SECRET:
-      error("NetGetAnyDCName: The client side of the trust relationship is broken.\n");
-      break;
-
-    case ERROR_NO_TRUST_SAM_ACCOUNT:
-      error("NetGetAnyDCName: The server side of the trust relationship is broken or the password is broken.\n");
-      break;
-
-    case ERROR_DOMAIN_TRUST_INCONSISTENT:
-      error("NetGetAnyDCName: The server that responded is not a proper domain controller of the specified domain.\n");
-      break;
-
-    case ERROR_LOGON_FAILURE:	/* Known to be returned sometimes.. */
-      error("NetGetAnyDCName: Access denied.\n");
-      break;
-
-    case RPC_S_SERVER_UNAVAILABLE: /* Known to be returned sometimes.. */
-      error("NetGetAnyDCName: The RPC server is unavailable.\n");
-      break;
-
     case NERR_Success:
       SAFE_PUSH_WSTR(tmp);
       netapibufferfree(tmp);
       return;
 
     default:
-      error("NetGetAnyDCName: Unknown error %d\n",ret);
+      throw_nt_error("NetGetAnyDCName", ret);
   }
 }
 
@@ -1676,8 +1622,12 @@ static LPWSTR get_wstring(struct svalue *s)
     /* Fall through */
     case 1:
       return STR1(s->u.string);
-    case 2:
-    error("String too wide!\n");
+    default:
+      error("Bad string width.\n");
+      /* we never get here, but the "return (LPWSTR)0" makes the compiler
+       * stop complaining about our not returning a value here.
+       */
+      return (LPWSTR)0;
   }
 }
 
@@ -1691,54 +1641,6 @@ LINKFUNC(NET_API_STATUS, netsessionenum,
 LINKFUNC(NET_API_STATUS, netwkstauserenum,
 	 (LPWSTR, DWORD, LPBYTE *,
 	  DWORD, LPDWORD, LPDWORD, LPDWORD));
-
-static void throw_nt_error(char *funcname, int err)
-{
-  char *msg;
-
-  switch (err)
-  {
-    case ERROR_ACCESS_DENIED:
-      msg = "Access denied.";
-      break;
-
-    case ERROR_LOGON_FAILURE:
-      msg = "Logon failure (access denied).";
-      break;
-
-    case ERROR_INVALID_PARAMETER:
-      msg = "Invalid parameter.";
-      break;
-
-    case ERROR_NOT_ENOUGH_MEMORY:
-      msg = "Out of memory.";
-      break;
-
-    case ERROR_INVALID_LEVEL:
-      msg = "Invalid level.";
-      break;
-        
-    case NERR_InvalidComputer:
-      msg = "Invalid computer.";
-      break;
-
-    case NERR_UserNotFound:
-      msg = "User not found.";
-      break;
-
-    case NERR_ClientNameNotFound:
-      msg = "Client name not found.";
-      break;
-
-    case NERR_Success:
-      msg = "Strange error (NERR_Success).";
-      break;
-
-    default:
-      error("%s: Unknown error 0x%ux\n", funcname, err);
-  }
-  error("%s: %s\n", funcname, msg);
-}
 
 static void low_encode_session_info_0(SESSION_INFO_0 *tmp)
 {
@@ -1896,7 +1798,7 @@ static void f_NetSessionEnum(INT32 args)
       /* valid levels */
       break;
     default:
-      error("System.NetSessionEnum: Unsupported level: %d.\n", level);
+      error("NetSessionEnum: Unsupported level: %d.\n", level);
   }
 
   
@@ -1966,7 +1868,7 @@ static void f_NetWkstaUserEnum(INT32 args)
   level=sp[1-args].u.integer;
 
   if (level != 0 && level != 1)
-      error("System.NetWkstaUserEnum: Unsupported level: %d.\n", level);
+      error("NetWkstaUserEnum: Unsupported level: %d.\n", level);
   
   while(1)
   {
