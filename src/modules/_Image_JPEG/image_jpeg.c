@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.17 1998/05/13 18:47:48 grubba Exp $
+ * $Id: image_jpeg.c,v 1.18 1998/06/19 12:55:24 mirar Exp $
  */
 
 #include "config.h"
@@ -22,7 +22,7 @@
 #undef HAVE_STDLIB_H
 #endif
 #include "global.h"
-RCSID("$Id: image_jpeg.c,v 1.17 1998/05/13 18:47:48 grubba Exp $");
+RCSID("$Id: image_jpeg.c,v 1.18 1998/06/19 12:55:24 mirar Exp $");
 
 #include "pike_macros.h"
 #include "object.h"
@@ -34,7 +34,6 @@ RCSID("$Id: image_jpeg.c,v 1.17 1998/05/13 18:47:48 grubba Exp $");
 #include "mapping.h"
 #include "error.h"
 #include "stralloc.h"
-#include "dynamic_buffer.h"
 
 #ifdef HAVE_JPEGLIB_H
 
@@ -238,6 +237,11 @@ static void my_term_source(struct jpeg_decompress_struct *cinfo)
 **!		DCT method to use.
 **!		DEFAULT and FASTEST is from the jpeg library,
 **!		probably ISLOW and IFAST respective.
+**!
+**!	    "density_unit":int
+**!	    "x_density":int
+**!	    "y_density":int
+**!		density of image; unit is 1:dpi 2:dpcm 0:no units
 **!
 **!	wizard options:
 **!	    "baseline":0|1
@@ -474,9 +478,12 @@ static void image_jpeg_decode(INT32 args)
 
    jpeg_read_header(&cinfo,TRUE);
 
-   /* we can only handle RGB */
+   /* we can only handle RGB or GRAYSCALE */
 
-   cinfo.out_color_space=JCS_RGB;
+   if (cinfo.jpeg_color_space==JCS_GRAYSCALE)
+      cinfo.out_color_space=JCS_GRAYSCALE;
+   else
+      cinfo.out_color_space=JCS_RGB;
 
    /* check configuration */
 
@@ -553,11 +560,14 @@ static void image_jpeg_decode(INT32 args)
 
       s=tmp;
       m=img->xsize*n;
-      while (m--)
-	 d->r=*(s++),
-	 d->g=*(s++),
-	 d->b=*(s++),d++;
-
+      if (cinfo.out_color_space==JCS_RGB)
+	 while (m--)
+	    d->r=*(s++),
+	    d->g=*(s++),
+	    d->b=*(s++),d++;
+      else
+	 while (m--)
+	    d->r=d->g=d->b=*(s++),d++;
       y-=n;
    }
 
@@ -567,6 +577,145 @@ static void image_jpeg_decode(INT32 args)
 
    pop_n_elems(args);
    push_object(o);
+
+   jpeg_destroy_decompress(&cinfo);
+}
+
+/*
+**! method object decode_header(string data)
+**! method object decode_header(string data, mapping options)
+**! 	Decodes a JPEG image header. 
+**!
+**!	<pre>
+**!	    "xsize":int
+**!	    "ysize":int
+**!		size of image
+**!	    "xdpi":float
+**!	    "ydpi":float
+**!		image dpi, if known
+**!	    "type":"image/jpeg"
+**!		file type information as MIME type
+**!
+**!	JPEG specific:
+**!	    "num_compontents":int
+**!		number of channels in JPEG image
+**!	    "color_space":"GRAYSCALE"|"RGB"|"YUV"|"CMYK"|"YCCK"|"UNKNOWN"
+**!		color space of JPEG image
+**!	    "density_unit":int
+**!	    "x_density":int
+**!	    "y_density":int
+**!		density of image; unit is 1:dpi 2:dpcm 0:no units
+**!	    "adobe_marker":0|1
+**!		if the file has an adobe marker
+**!	</pre>
+**!
+**! note
+**!	Please read some about JPEG files. 
+*/
+
+static void image_jpeg_decode_header(INT32 args)
+{
+   struct jpeg_error_mgr errmgr;
+   struct my_source_mgr srcmgr;
+   struct jpeg_decompress_struct cinfo;
+
+   struct image *img;
+
+   int n=0;
+
+   if (args<1 
+       || sp[-args].type!=T_STRING
+       || (args>1 && sp[1-args].type!=T_MAPPING))
+      error("Image.JPEG.decode_header: Illegal arguments\n");
+
+   pop_n_elems(args-1);
+
+   /* init jpeg library objects */
+
+   jpeg_std_error(&errmgr);
+
+   errmgr.error_exit=my_error_exit;
+   errmgr.emit_message=my_emit_message;
+   errmgr.output_message=my_output_message;
+
+   srcmgr.pub.init_source=my_init_source;
+   srcmgr.pub.fill_input_buffer=my_fill_input_buffer;
+   srcmgr.pub.skip_input_data=my_skip_input_data;
+   srcmgr.pub.resync_to_restart=jpeg_resync_to_restart;
+   srcmgr.pub.term_source=my_term_source;
+   srcmgr.str=sp[-args].u.string;
+
+   cinfo.err=&errmgr;
+
+   jpeg_create_decompress(&cinfo);
+
+   cinfo.src=(struct jpeg_source_mgr*)&srcmgr;
+
+   jpeg_read_header(&cinfo,TRUE);
+
+   /* standard header info */
+
+   push_text("type"); n++;
+   push_text("image/jpeg");
+
+   push_text("xsize"); n++;
+   push_int(cinfo.image_width);
+
+   push_text("ysize"); n++;
+   push_int(cinfo.image_height);
+
+   push_text("xdpi"); n++;
+   push_text("ydpi"); n++;
+   switch (cinfo.density_unit)
+   {
+      default:
+	 pop_n_elems(2); n-=2;
+	 break;
+      case 1:
+	 push_float( cinfo.X_density );
+	 stack_swap();
+	 push_float( cinfo.Y_density );
+	 break;
+      case 2:
+	 push_float( cinfo.X_density/2.54 );
+	 stack_swap();
+	 push_float( cinfo.Y_density/2.54 );
+	 break;
+   }
+
+   /* JPEG special header */
+
+   push_text("num_components"); n++;
+   push_int(cinfo.num_components);
+
+   push_text("color_space"); n++;
+   switch (cinfo.jpeg_color_space)
+   {
+      case JCS_UNKNOWN:	  push_text("UNKNOWN"); break;
+      case JCS_GRAYSCALE: push_text("GRAYSCALE"); break;
+      case JCS_RGB:	  push_text("RGB"); break;
+      case JCS_YCbCr:	  push_text("YUV"); break;
+      case JCS_CMYK:	  push_text("CMYK"); break;
+      case JCS_YCCK:	  push_text("YCCK"); break;
+      default:		  push_text("?"); break;
+   }
+
+   push_text("density_unit"); n++;
+   push_int(cinfo.density_unit);
+
+   push_text("x_density"); n++;
+   push_int(cinfo.X_density);
+
+   push_text("y_density"); n++;
+   push_int(cinfo.Y_density);
+
+   push_text("adobe_marker"); n++;
+   push_int(cinfo.saw_Adobe_marker);
+
+   f_aggregate_mapping(n*2);
+
+   stack_swap();
+   pop_stack();
 
    jpeg_destroy_decompress(&cinfo);
 }
@@ -615,6 +764,8 @@ void pike_module_init(void)
    if (image_program)
    {
       add_function("decode",image_jpeg_decode,
+		   "function(string,void|mapping(string:int):object)",0);
+      add_function("decode_header",image_jpeg_decode_header,
 		   "function(string,void|mapping(string:int):object)",0);
       add_function("encode",image_jpeg_encode,
 		   "function(object,void|mapping(string:int):string)",0);
