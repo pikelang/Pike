@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.23 2000/10/31 16:11:38 grubba Exp $
+# $Id: configure.in,v 1.24 2000/11/01 13:44:29 grubba Exp $
 #
 # Configure script for the oracle module
 #
@@ -69,7 +69,11 @@ if test x$with_oracle = xyes; then
 
   echo no > conftest
       
-  if test x"$pike_cv_oracle_oracle_home" != xno && \
+  if test "x$pike_cv_sys_os" = "xWindows_NT"; then
+    if test x"$pike_cv_oracle_oracle_home" = xno; then :; else
+      echo "$pike_cv_oracle_oracle_home/oci/lib/msvc" > conftest
+    fi
+  else if test x"$pike_cv_oracle_oracle_home" != xno && \
       test -f "$pike_cv_oracle_oracle_home/lib/libcommon.a" -o \
             -f "$pike_cv_oracle_oracle_home/lib/libcommon8.a"; then
 
@@ -107,7 +111,12 @@ if test x$with_oracle = xyes; then
 
   echo no > conftest
 
-  if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/rdbms/demo/ocidfn.h"; then
+  if test "x$pike_cv_sys_os" = "xWindows_NT"; then
+    if test x"$pike_cv_oracle_oracle_home" = xno; then :; else
+      echo "$pike_cv_oracle_oracle_home" > conftest
+    fi
+  else if test x"$pike_cv_oracle_oracle_home" != xno -a \
+      -f "$pike_cv_oracle_oracle_home/rdbms/demo/ocidfn.h"; then
 
     echo "$pike_cv_oracle_oracle_home" > conftest
 
@@ -135,7 +144,8 @@ if test x$with_oracle = xyes; then
 
     echo no > conftest
 
-    if test x"$pike_cv_oracle_oracle_home" != xno -a -f "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist"; then
+    if test x"$pike_cv_oracle_oracle_home" != xno -a \
+        -f "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist"; then
 
       echo "$pike_cv_oracle_oracle_home/rdbms/lib/sysliblist" > conftest
 
@@ -170,10 +180,12 @@ if test x$with_oracle = xyes; then
   if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :;
   else
 
-    CPPFLAGS="-I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/rdbms/public/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public -I ${CPPFLAGS}"
+    CPPFLAGS="-I$oracle_include_dir/oci/include -I$oracle_include_dir/rdbms/demo/ -I$oracle_include_dir/rdbms/public/ -I$oracle_include_dir/network/public/ -I$oracle_include_dir/plsql/public -I$oracle_include_dir/otrace/public ${CPPFLAGS}"
     LDFLAGS="${LDFLAGS} -L$oracle_lib_dir -R$oracle_lib_dir"
 
-    if test -f "$oracle_lib_dir/libcommon8.a"; then
+    if test "x$pike_cv_sys_os" = "xWindows_NT"; then
+      ORACLE_LIBS="-loci"
+    else if test -f "$oracle_lib_dir/libcommon8.a"; then
       ORACLE_LIBS="-lclntsh"
     else
       if test -f "$oracle_lib_dir/libcore4.a"; then
