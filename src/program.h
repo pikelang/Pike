@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.73 1999/12/17 21:09:52 hubbe Exp $
+ * $Id: program.h,v 1.74 1999/12/30 14:45:12 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -154,19 +154,20 @@ struct program_constant
  * char code[]
  */
 
-#define ID_STATIC          0x01
-#define ID_PRIVATE         0x02
-#define ID_NOMASK          0x04
+#define ID_STATIC          0x01	/* Symbol is not visible by indexing */
+#define ID_PRIVATE         0x02	/* Symbol is not visible by inherit */
+#define ID_NOMASK          0x04	/* Symbol may not be overloaded */
 #define ID_PUBLIC          0x08
 #define ID_PROTECTED       0x10
 #define ID_INLINE          0x20
-#define ID_HIDDEN          0x40 /* needed? */
+#define ID_HIDDEN          0x40	/* needed? */
 #define ID_INHERITED       0x80
-#define ID_OPTIONAL       0x100
+#define ID_OPTIONAL       0x100	/* Symbol is not required by the interface */
+#define ID_EXTERN         0x200	/* Symbol is defined later */
 
-#define ID_MODIFIER_MASK 0x01ff
+#define ID_MODIFIER_MASK 0x03ff
 
-#define ID_STRICT_TYPES	 0x8000
+#define ID_STRICT_TYPES  0x8000	/* #pragma strict_types */
 
 struct reference
 {
