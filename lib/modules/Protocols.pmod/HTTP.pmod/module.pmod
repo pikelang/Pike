@@ -152,7 +152,7 @@ object post_url(string|Standards.URI url,
 		void|Protocols.HTTP.Query con)
 {
   return do_method("POST", url, 0,
-		   request_headers|
+		   (request_headers||([]))|
 		   (["content-type":
 		     "application/x-www-form-urlencoded"]),
 		   con,
