@@ -74,8 +74,8 @@ static struct sigdesc signal_desc []={
 #ifdef SIGIOT
   { SIGIOT, "SIGIOT" },
 #endif
-#ifdef SIGBUS
-  { SIGBUS, "SIGBUS" },
+#ifdef SIGEMT
+  { SIGEMT, "SIGEMT" },
 #endif
 #ifdef SIGFPE
   { SIGFPE, "SIGFPE" },
@@ -83,18 +83,14 @@ static struct sigdesc signal_desc []={
 #ifdef SIGKILL
   { SIGKILL, "SIGKILL" },
 #endif
-
-#if !defined(__linux__) || !defined(_REENTRANT)
-#ifdef SIGUSR1
-  { SIGUSR1, "SIGUSR1" },
+#ifdef SIGBUS
+  { SIGBUS, "SIGBUS" },
 #endif
-#ifdef SIGUSR2
-  { SIGUSR2, "SIGUSR2" },
-#endif
-#endif
-
 #ifdef SIGSEGV
   { SIGSEGV, "SIGSEGV" },
+#endif
+#ifdef SIGSYS
+  { SIGSYS, "SIGSYS" },
 #endif
 #ifdef SIGPIPE
   { SIGPIPE, "SIGPIPE" },
@@ -105,23 +101,42 @@ static struct sigdesc signal_desc []={
 #ifdef SIGTERM
   { SIGTERM, "SIGTERM" },
 #endif
-#ifdef SIGSTKFLT
-  { SIGSTKFLT, "SIGSTKFLT" },
+
+#if !defined(__linux__) || !defined(_REENTRANT)
+#ifdef SIGUSR1
+  { SIGUSR1, "SIGUSR1" },
 #endif
+#ifdef SIGUSR2
+  { SIGUSR2, "SIGUSR2" },
+#endif
+#endif /* !defined(__linux__) || !defined(_REENTRANT) */
+
 #ifdef SIGCHLD
   { SIGCHLD, "SIGCHLD" },
 #endif
 #ifdef SIGCLD
   { SIGCLD, "SIGCLD" },
 #endif
-#ifdef SIGCONT
-  { SIGCONT, "SIGCONT" },
+#ifdef SIGPWR
+  { SIGPWR, "SIGPWR" },
+#endif
+#ifdef SIGWINCH
+  { SIGWINCH, "SIGWINCH" },
+#endif
+#ifdef SIGURG
+  { SIGURG, "SIGURG" },
+#endif
+#ifdef SIGIO
+  { SIGIO, "SIGIO" },
 #endif
 #ifdef SIGSTOP
   { SIGSTOP, "SIGSTOP" },
 #endif
 #ifdef SIGTSTP
   { SIGTSTP, "SIGTSTP" },
+#endif
+#ifdef SIGCONT
+  { SIGCONT, "SIGCONT" },
 #endif
 #ifdef SIGTSTP
   { SIGTSTP, "SIGTSTP" },
@@ -132,8 +147,11 @@ static struct sigdesc signal_desc []={
 #ifdef SIGTTIO
   { SIGTTIO, "SIGTTIO" },
 #endif
-#ifdef SIGURG
-  { SIGURG, "SIGURG" },
+#ifdef SIGVTALRM
+  { SIGVTALRM, "SIGVTALRM" },
+#endif
+#ifdef SIGPROF
+  { SIGPROF, "SIGPROF" },
 #endif
 #ifdef SIGXCPU
   { SIGXCPU, "SIGXCPU" },
@@ -141,17 +159,9 @@ static struct sigdesc signal_desc []={
 #ifdef SIGXFSZ
   { SIGXFSZ, "SIGXFSZ" },
 #endif
-#ifdef SIGVTALRM
-  { SIGVTALRM, "SIGVTALRM" },
-#endif
-#ifdef SIGPROF
-  { SIGPROF, "SIGPROF" },
-#endif
-#ifdef SIGWINCH
-  { SIGWINCH, "SIGWINCH" },
-#endif
-#ifdef SIGIO
-  { SIGIO, "SIGIO" },
+
+#ifdef SIGSTKFLT
+  { SIGSTKFLT, "SIGSTKFLT" },
 #endif
 #ifdef SIGPOLL
   { SIGPOLL, "SIGPOLL" },
@@ -159,12 +169,91 @@ static struct sigdesc signal_desc []={
 #ifdef SIGLOST
   { SIGLOST, "SIGLOST" },
 #endif
-#ifdef SIGPWR
-  { SIGPWR, "SIGPWR" },
-#endif
 #ifdef SIGUNUSED
   { SIGUNUSED, "SIGUNUSED" },
 #endif
+#ifdef SIGINFO
+  { SIGINFO, "SIGINFO" },
+#endif
+#ifdef SIGMSG
+  { SIGMSG, "SIGMSG" },
+#endif
+#ifdef SIGDANGER
+  { SIGDANGER, "SIGDANGER" },
+#endif
+#ifdef SIGMIGRATE
+  { SIGMIGRATE, "SIGMIGRATE" },
+#endif
+#ifdef SIGPRE
+  { SIGPRE, "SIGPRE" },
+#endif
+#ifdef SIGVIRT
+  { SIGVIRT, "SIGVIRT" },
+#endif
+#ifdef SIGALRM1
+  { SIGALRM1, "SIGALRM1" },
+#endif
+#ifdef SIGWAITING
+  { SIGWAITING, "SIGWAITING" },
+#endif
+#ifdef SIGKAP
+  { SIGKAP, "SIGKAP" },
+#endif
+#ifdef SIGGRANT
+  { SIGGRANT, "SIGGRANT" },
+#endif
+#ifdef SIGRETRACT
+  { SIGRETRACT, "SIGRETRACT" },
+#endif
+#ifdef SIGSOUND
+  { SIGSOUND, "SIGSOUND" },
+#endif
+#ifdef SIGSAK
+  { SIGSAK, "SIGSAK" },
+#endif
+#ifdef SIGDIL
+  { SIGDIL, "SIGDIL" },
+#endif
+#ifdef SIG32
+  { SIG32, "SIG32" },
+#endif
+#ifdef SIGCKPT
+  { SIGCKPT, "SIGCKPT" },
+#endif
+
+#ifdef SIGPTINTR
+  { SIGPTINTR, "SIGPTINTR" },
+#endif
+#ifdef SIGPTRESCHED
+  { SIGPTRESCHED, "SIGPTRESCHED" },
+#endif
+#ifdef SIGWAITING
+  { SIGWAITING, "SIGWAITING" },
+#endif
+
+#ifndef _REENTRANT
+#ifdef SIGLWP
+  { SIGLWP, "SIGLWP" },
+#endif
+#ifdef SIGCANCEL
+  { SIGCANCEL, "SIGCANCEL" },
+#endif
+#endif /* !_REENTRANT */
+
+#ifdef SIGFREEZE
+  { SIGFREEZE, "SIGFREEZE" },
+#endif
+#ifdef SIGTHAW
+  { SIGTHAW, "SIGTHAW" },
+#endif
+
+#ifdef SIGRTMIN
+  { SIGRTMIN, "SIGRTMIN" },
+#endif
+#ifdef SIGRTMAX
+  { SIGRTMAX, "SIGRTMAX" },
+#endif
+
   { -1, "END" } /* Notused */
 };
 
