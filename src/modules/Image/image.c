@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.156 1999/11/25 17:06:28 mast Exp $ */
+/* $Id: image.c,v 1.157 1999/11/26 00:29:04 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.156 1999/11/25 17:06:28 mast Exp $
+**!	$Id: image.c,v 1.157 1999/11/26 00:29:04 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.156 1999/11/25 17:06:28 mast Exp $");
+RCSID("$Id: image.c,v 1.157 1999/11/26 00:29:04 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3979,7 +3979,9 @@ void init_image_image(void)
 		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),
 		    tFuncV(tInt tInt tString,tMixed,tVoid)),0);
    ADD_FUNCTION("clone",image_clone,
-		tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tObj),0);
+		tOr3(tFunc(tInt tInt tInt tInt tRGB,tObj),
+                     tFunc(tRGB,tObj),
+                     tFunc(tNone,tObj)),0);
    ADD_FUNCTION("new",image_clone, /* alias */
 		tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tObj),0);
    ADD_FUNCTION("clear",image_clear,
@@ -4019,7 +4021,7 @@ void init_image_image(void)
 		     tFunc(tObj,tObj)),0);
 
    ADD_FUNCTION("setcolor",image_setcolor,
-		tFunc(tInt tInt tInt,tObj),0);
+		tFunc(tInt tInt tInt tOr(tInt,tVoid),tObj),0);
    ADD_FUNCTION("setpixel",image_setpixel,
 		tFunc(tInt tInt tRGB,tObj),0);
    ADD_FUNCTION("getpixel",image_getpixel,
@@ -4075,7 +4077,7 @@ void init_image_image(void)
 		tOr(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),
 		    tFunc(tArr(tArr(tInt)) tInt tInt tInt,tObj)),0);
    ADD_FUNCTION("modify_by_intensity",image_modify_by_intensity,
-		tFunc(tInt tInt tInt tInt tInt,tObj),0);
+		tFunc(tInt tInt tInt tInt tRGB,tObj),0);
    ADD_FUNCTION("gamma",image_gamma,
 		tOr(tFunc(tOr(tFlt,tInt),tObj),
 		    tFunc(tOr(tFlt,tInt) tOr(tFlt,tInt) tOr(tFlt,tInt),tObj)),0);
