@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.15 2001/04/18 14:30:41 noy Exp $
+/* $Id: connection.pike,v 1.16 2001/06/14 13:48:48 noy Exp $
  *
  * SSL packet layer
  */
@@ -48,7 +48,7 @@ void set_alert_callback(function(object,int|object,string:void) callback)
   alert_callback = callback;
 }
 
-object recv_packet(string data)
+static object recv_packet(string data)
 {
   mixed res;
 
@@ -67,7 +67,7 @@ object recv_packet(string data)
   { /* Finished a packet */
     left_over = res;
     if (current_read_state) {
-      return current_read_state->decrypt_packet(packet);
+      return current_read_state->decrypt_packet(packet,version[1]);
     } else {
 #ifdef SSL3_DEBUG
       werror(sprintf("SSL.connection->recv_packet(): current_read_state is zero!\n"));
@@ -84,6 +84,11 @@ object recv_packet(string data)
  * so must application data and close_notifies. */
 void send_packet(object packet, int|void priority)
 {
+
+
+  #ifdef SSL3_FRAGDEBUG
+  werror(" SSL.connection->send_packet: strlen(packet)="+strlen(packet)+"\n");
+  #endif
   if (!priority)
     priority = ([ PACKET_alert : PRI_alert,
 		  PACKET_change_cipher_spec : PRI_urgent,
@@ -155,7 +160,7 @@ int handle_alert(string s)
 {
   int level = s[0];
   int description = s[1];
-
+  //FIXME  Include the TLS alerts in ALERT_levels and ALERT_descriptopns aswell!!
   if (! (ALERT_levels[level] && ALERT_descriptions[description]))
   {
     send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
