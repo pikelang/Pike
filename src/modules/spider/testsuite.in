@@ -59,21 +59,30 @@ dnl _num_mappings
 cond([[all_constants()->_num_mappings]],[[test_true(intp(_num_mappings()))]])
 dnl _dump_obj_table
 dnl parse_html
-test_eq([[parse_html("f<bar>o", ([ "bar":"o" ]), ([]))]], "foo")
-test_eq([[parse_html("f<bar goo=\">\">o", ([ "bar":"o" ]), ([]))]], "foo")
-test_eq([[parse_html("f<bar>o", ([ "bar":lambda(){return "o";} ]), ([]))]], "foo")
-test_eq([[parse_html("f<bar>o", ([ "bar":lambda(){return ({"o"});} ]), ([]))]], "foo")
-test_eq([[parse_html("f<bar>o", ([ "bar":lambda(){return 0;} ]), ([]))]], "f<bar>o")
-test_eq([[parse_html("f<\nbar\rt\"a b\"=\no>o", ([ "bar":lambda(string s, mapping(string:string) attr){return attr["ta b"];} ]), ([]))]], "foo")
-test_eq([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":"o"]))]], "foo")
-test_eq([[parse_html("f<bar goo=\">\">g</bar>o", ([]), ([ "bar":"o"]))]], "foo")
-test_eq([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":lambda(){return "o";}]))]], "foo")
-test_eq([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":lambda(){return ({"o"});}]))]], "foo")
-test_eq([[parse_html("f<bar rab>g</bar>o", ([]), ([ "bar":lambda(){return "o";}]))]], "foo")
-test_eq([[parse_html("f<bar rab>g</bar>o", ([]), ([ "bar":lambda(){return ({"o"});}]))]], "foo")
-test_eq([[parse_html("f<\nbar\rt\"a b\"=\no>g<\n/bar\r>o", ([]), ([ "bar":lambda(string s, mapping(string:string) attr, string g){return g=="g"?attr["ta b"]:"-";}]))]], "foo")
-test_eq([[parse_html("f<bar><foo>o</foo>o", (["bar":lambda(string s, mapping(string:string) attr) { return ""; }]), ([]))]], "f<foo>o</foo>o")
-test_eq([[parse_html("f<!--#bar gazonk=\"o\"-->o", (["!--#bar":lambda(string s, mapping(string:string) attr) { return attr->gazonk; }]),([]))]], "foo")
+
+define(test_spider,[[
+  test_eq([[
+#pike 7.2
+$1]],$2)
+  test_eq([[spider.$1]],$2)
+]])
+
+test_spider([[parse_html("f<bar>o", ([ "bar":"o" ]), ([]))]], "foo")
+test_spider([[parse_html("f<bar goo=\">\">o", ([ "bar":"o" ]), ([]))]], "foo")
+test_spider([[parse_html("f<bar>o", ([ "bar":lambda(){return "o";} ]), ([]))]], "foo")
+test_spider([[parse_html("f<bar>o", ([ "bar":lambda(){return ({"o"});} ]), ([]))]], "foo")
+test_spider([[parse_html("f<bar>o", ([ "bar":lambda(){return 0;} ]), ([]))]], "f<bar>o")
+test_spider([[parse_html("f<\nbar\rt\"a b\"=\no>o", ([ "bar":lambda(string s, mapping(string:string) attr){return attr["ta b"];} ]), ([]))]], "foo")
+test_spider([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":"o"]))]], "foo")
+test_spider([[parse_html("f<bar goo=\">\">g</bar>o", ([]), ([ "bar":"o"]))]], "foo")
+test_spider([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":lambda(){return "o";}]))]], "foo")
+test_spider([[parse_html("f<bar>g</bar>o", ([]), ([ "bar":lambda(){return ({"o"});}]))]], "foo")
+test_spider([[parse_html("f<bar rab>g</bar>o", ([]), ([ "bar":lambda(){return "o";}]))]], "foo")
+test_spider([[parse_html("f<bar rab>g</bar>o", ([]), ([ "bar":lambda(){return ({"o"});}]))]], "foo")
+test_spider([[parse_html("f<\nbar\rt\"a b\"=\no>g<\n/bar\r>o", ([]), ([ "bar":lambda(string s, mapping(string:string) attr, string g){return g=="g"?attr["ta b"]:"-";}]))]], "foo")
+test_spider([[parse_html("f<bar><foo>o</foo>o", (["bar":lambda(string s, mapping(string:string) attr) { return ""; }]), ([]))]], "f<foo>o</foo>o")
+test_spider([[parse_html("f<!--#bar gazonk=\"o\"-->o", (["!--#bar":lambda(string s, mapping(string:string) attr) { return attr->gazonk; }]),([]))]], "foo")
+
 dnl real_perror
 dnl openlog
 dnl syslog
