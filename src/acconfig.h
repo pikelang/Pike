@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.86 2001/05/28 18:15:06 marcus Exp $
+ * $Id: acconfig.h,v 1.87 2001/06/12 18:50:27 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -158,6 +158,9 @@
 
 /* Define if you have infnan */
 #undef HAVE_INFNAN
+
+/* Define if you have _isnan */
+#undef HAVE__ISNAN
 
 /* Define if you have fork */
 #undef HAVE_FORK
