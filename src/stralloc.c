@@ -523,4 +523,5 @@ void cleanup_shared_string_table()
     }
     base_table[e]=0;
   }
+  free((char *)base_table);
 }
