@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.400 2001/07/27 21:03:07 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.401 2001/07/30 14:59:25 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5264,7 +5264,7 @@ PMOD_EXPORT void f_permute( INT32 args )
  *!   array @[a], and the second is an array of parts in array @[b].
  *!
  *! @seealso
- *!   @[diff_compare_table()], @[diff_longset_sequence()],
+ *!   @[diff_compare_table()], @[diff_longest_sequence()],
  *!   @[String.fuzzymatch()]
  */
 PMOD_EXPORT void f_diff(INT32 args)
@@ -5317,8 +5317,23 @@ PMOD_EXPORT void f_diff(INT32 args)
  *!   Returns an array which maps from index in @[a] to corresponding
  *!   indices in @[b].
  *!
+ *! @pre{
+ *! > Array.diff_compare_table( ({ "a","b","c" }), ({ "b", "b", "c", "d", "b" }));
+ *! Result: ({
+ *!             ({ }),
+ *!             ({
+ *!                 0,
+ *!                 1,
+ *!                 4
+ *!             }),
+ *!             ({
+ *!                 2
+ *! 	        })
+ *!         })
+ *! @}
+ *!
  *! @seealso
- *!   @[diff()], @[diff_longset_sequence()], @[String.fuzzymatch()]
+ *!   @[diff()], @[diff_longest_sequence()], @[String.fuzzymatch()]
  */
 void f_diff_compare_table(INT32 args)
 {
@@ -5366,7 +5381,7 @@ void f_diff_longest_sequence(INT32 args)
  *!   Gives the longest sequence of indices in @[b] that have corresponding
  *!   values in the same order in @[a].
  *!
- *!   This function performs the same operation as @[diff_longset_sequence()],
+ *!   This function performs the same operation as @[diff_longest_sequence()],
  *!   but uses a different algorithm, which in some rare cases might be faster
  *!   (usually it's slower though).
  *!
