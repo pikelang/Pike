@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.42 2001/02/06 03:41:18 hubbe Exp $
+# $Id: Makefile,v 1.43 2001/03/27 21:04:06 per Exp $
 #
 # Meta Makefile
 #
@@ -70,7 +70,8 @@ configure: src/configure builddir
 		  "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	  else \
 	    echo Running $$srcdir/configure $$configureargs in $$builddir; \
-	    CONFIG_SITE=x "$$srcdir"/configure $$configureargs && \
+	    if [ -f /bin/bash  ] ; then CONFIG_SHELL=/bin/bash ;  fi ;\
+	    CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} "$$srcdir"/configure $$configureargs && \
 	      echo "$$configureargs" > .configureargs; \
 	    if test "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	    else \
