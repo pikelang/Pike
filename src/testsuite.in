@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.86 1998/04/09 21:11:03 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.87 1998/04/10 04:49:55 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -11,6 +11,9 @@ test_true([[1.0e-40]])
 test_eq([[#"foo
 bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
+test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
+
+
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[int t=gauge { string foo; };]])
 test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])

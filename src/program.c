@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.73 1998/04/09 02:49:48 hubbe Exp $");
+RCSID("$Id: program.c,v 1.74 1998/04/10 04:49:55 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -769,7 +769,7 @@ struct program *end_first_pass(int finish)
 
 
   /* Collect references to inherited __INIT functions */
-  for(e=1;e<new_program->num_inherits;e++)
+  for(e=new_program->num_inherits-1;e>1;e--)
   {
     int id;
     if(new_program->inherits[e].inherit_level!=1) continue;
@@ -777,9 +777,9 @@ struct program *end_first_pass(int finish)
     if(id!=-1)
     {
       init_node=mknode(F_ARG_LIST,
-		       init_node,
 		       mkcastnode(void_type_string,
-				  mkapplynode(mkidentifiernode(id),0)));
+				  mkapplynode(mkidentifiernode(id),0)),
+		       init_node);
     }
   }
 
