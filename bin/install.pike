@@ -1311,7 +1311,7 @@ int main(int argc, array(string) argv)
     }
 
   argv=Getopt.get_args(argv);
-      
+
   foreach(argv[1..], string foo)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
@@ -1319,7 +1319,7 @@ int main(int argc, array(string) argv)
   /* Some magic for the fakeroot stuff */
   string tmp=vars->fakeroot;
   m_delete(vars,"fakeroot");
-  if(tmp!="")
+  if(tmp && tmp!="")
   {
     if(tmp[-1]=='/' || tmp[-1]=='\\')
       tmp=tmp[..sizeof(tmp)-2];
