@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.493 2002/04/11 20:48:27 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.494 2002/04/12 16:34:11 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -37,6 +37,7 @@ test_eq(16, 0b10000);
 test_eq(-16, -0b10000);
 
 test_do([[
+  // bug 2677
   int x;
   if (time())
     x = 1;
@@ -1993,6 +1994,7 @@ test_any([[
 ]], 7)
 
 test_do([[
+  // bug 3006
   class X {
     constant foo = Foo;
     class Foo {}
