@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.2 1997/01/08 01:49:26 grubba Exp $
+ * $Id: precompiled_mysql.h,v 1.3 1997/02/01 14:44:41 grubba Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -13,12 +13,24 @@
  * Includes
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 /* From the mysql-dist */
 /* Workaround for versions prior to 3.20.0 not beeing protected for
  * multiple inclusion.
  */
 #ifndef _mysql_h
+#ifdef HAVE_MYSQL_H
 #include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h header-file
+#endif /* HAVE_MYSQL_MYSQL_H */
+#endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
 #define _mysql_h
 #endif

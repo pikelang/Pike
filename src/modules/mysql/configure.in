@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.13 1997/02/01 00:58:00 grubba Exp $
+# $Id: configure.in,v 1.14 1997/02/01 14:44:37 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -72,6 +72,10 @@ if test x$with_mysql = xyes; then
     echo Adding $pike_cv_mysql_include_dir to the include search path.
     CPPFLAGS="-I$pike_cv_mysql_include_dir ${CPPFLAGS}"
   fi
+
+  # Header file
+
+  AC_CHECK_HEADERS(mysql.h mysql/mysql.h)
 
   # Mysql libs
 

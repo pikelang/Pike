@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.14 1997/02/01 01:14:44 grubba Exp $
+ * $Id: result.c,v 1.15 1997/02/01 14:44:43 grubba Exp $
  *
  * mysql query result
  *
@@ -20,7 +20,15 @@
  * multiple inclusion.
  */
 #ifndef _mysql_h
+#ifdef HAVE_MYSQL_H
 #include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h header-file
+#endif /* HAVE_MYSQL_MYSQL_H */
+#endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
 #define _mysql_h
 #endif
@@ -66,7 +74,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.14 1997/02/01 01:14:44 grubba Exp $");
+RCSID("$Id: result.c,v 1.15 1997/02/01 14:44:43 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
