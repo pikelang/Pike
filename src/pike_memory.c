@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.84 2000/09/08 17:31:03 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.85 2000/09/08 20:13:25 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1395,6 +1395,10 @@ void *debug_malloc(size_t s, LOCATION location)
   char *m;
 
   mt_lock(&debug_malloc_mutex);
+
+  if (s & 0xff000000) {
+    fatal("malloc(0x%08lx) -- Huge malloc!\n", (unsigned long)s);
+  }
 
   m=(char *)malloc(s + DEBUG_MALLOC_PAD*2);
   if(m)
