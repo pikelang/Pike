@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.324 2000/08/27 13:50:37 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.325 2000/09/01 20:19:35 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -626,12 +626,15 @@ void low_generate(int depth,
       "mixed Q() { return "+acc+"();}\n"
       "int main() { trace(9); werror(\"%O\\n\","+acc+"()); }\n"
       ;
+
+    mixed tmp;
     mixed err=catch {
-      mixed tmp=compile_string(test)();
+      tmp=compile_string(test)();
       res=tmp->Q();
       if(res != ans)
       throw("Test failed");
     };
+    mixed x=Program.inherit_list(object_program(tmp));
     if(err)
     {
       errors++;
