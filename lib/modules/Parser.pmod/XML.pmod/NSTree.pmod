@@ -112,18 +112,20 @@ class NSNode {
     }
 
     // First handle all xmlns attributes.
-    foreach(attr; string name; string value) {
+    if(attr) {
+      foreach(attr; string name; string value) {
 
-      // Update namespace scope. Must be done before analyzing the namespace
-      // of the current element.
-      string lcname = lower_case(name);
-      if(lcname=="xmlns") {
-	default_ns = value;
-	m_delete(attr, name);
-      }
-      else if(has_prefix(lcname, "xmlns:")) {
-	nss = nss + ([ name[6..]:value ]); // No destructive changes.
-	continue;
+	// Update namespace scope. Must be done before analyzing the namespace
+	// of the current element.
+	string lcname = lower_case(name);
+	if(lcname=="xmlns") {
+	  default_ns = value;
+	  m_delete(attr, name);
+	}
+	else if(has_prefix(lcname, "xmlns:")) {
+	  nss = nss + ([ name[6..]:value ]); // No destructive changes.
+	  continue;
+	}
       }
     }
 
@@ -138,36 +140,38 @@ class NSNode {
       element_ns = default_ns;
 
     // Then take care of the rest of the attributes.
-    foreach(attr; string name; string value) {
+    if(attr) {
+      foreach(attr; string name; string value) {
 
-      if(has_prefix(lower_case(name), "xmlns"))
-	continue;
-
-      // Move namespaced attributes to a mapping of their own.
-      string ns, m;
-      if( sscanf(name, "%s:%s", ns, m)==2 ) {
-	if(!nss[ns]) {
-	  if(ns=="xml")
-	    add_namespace("xml","xml");
-	  else
-	    error("Unknown namespace %s.\n", ns);
-	}
-	ns = nss[ns];
-	m_delete(attr, name);
-      } else {
-	// FIXME: This makes the RDF-tests work,
-	//        but is it according to the spec?
-	ns = element_ns;
-	m = name;
-	if (ns_attrs[ns] && !zero_type(ns_attrs[ns][m])) {
-	  // We have an explicit entry already,
-	  // so skip the implicit entry.
+	if(has_prefix(lower_case(name), "xmlns"))
 	  continue;
+
+	// Move namespaced attributes to a mapping of their own.
+	string ns, m;
+	if( sscanf(name, "%s:%s", ns, m)==2 ) {
+	  if(!nss[ns]) {
+	    if(ns=="xml")
+	      add_namespace("xml","xml");
+	    else
+	      error("Unknown namespace %s.\n", ns);
+	  }
+	  ns = nss[ns];
+	  m_delete(attr, name);
+	} else {
+	  // FIXME: This makes the RDF-tests work,
+	  //        but is it according to the spec?
+	  ns = element_ns;
+	  m = name;
+	  if (ns_attrs[ns] && !zero_type(ns_attrs[ns][m])) {
+	    // We have an explicit entry already,
+	    // so skip the implicit entry.
+	    continue;
+	  }
 	}
+	if(!ns_attrs[ns])
+	  ns_attrs[ns] = ([]);
+	ns_attrs[ns][m] = value;
       }
-      if(!ns_attrs[ns])
-	ns_attrs[ns] = ([]);
-      ns_attrs[ns][m] = value;
     }
 
     ::create(type, name, attr, text);
