@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.316 2000/07/28 17:16:55 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.317 2000/08/07 03:01:23 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -585,6 +585,82 @@ test_any([[
  class D { inherit C; };
  return sizeof( Program.all_inherits(D) - ({A,B,C}) );
 ]],0)
+
+
+test_program([[
+int errors;
+int tests;
+
+string indent(string code)
+{
+  string tmp="  "+replace(code,"\n","\n  ");
+  while(strlen(tmp) && tmp[-1]==' ') tmp=tmp[..strlen(tmp)-2];
+  return tmp;
+}
+
+void low_generate(int depth,string code, string acc, string ans, int cnt)
+{
+  if(!depth)
+  {
+    mixed tmp;
+    string res="Error";
+    tests++;
+    string test=code+"\nmixed Q() { return "+acc+"();}";
+    mixed err=catch {
+      res=compile_string(test)()->Q();
+      if(res != ans)
+	throw("Test failed");
+    };
+    if(err)
+    {
+      errors++;
+      werror("\nTest failed:\n----------------------------------\n%s\n---------------------------------\nexpected answer: %O\nAnswer received: %O\n",test,ans,res);
+      if(err!="Test failed")
+	werror("%s\n",master()->describe_backtrace(err));
+    }
+  }else{
+    depth--;
+
+    low_generate(depth, 
+		 sprintf("class C%d {\n%s\n};",cnt,indent(code)),
+		 sprintf("C%d()->%s",cnt,acc),
+		 ans,cnt+1);
+
+    low_generate(depth, 
+		 sprintf("class C%d {\n%s\n};\ninherit C%d;",cnt,indent(code),cnt),
+		 acc,
+		 ans,cnt+1);
+
+    low_generate(depth,
+		 sprintf("%s\nclass C%d { string F%d() { return %s()+\"F%d\"; } };",code,cnt,cnt+1,acc,cnt+1),
+		 sprintf("C%d()->F%d",cnt,cnt+1),
+		 sprintf("%sF%d",ans,cnt+1),cnt+2);
+
+
+    if(sscanf(acc,"%s()->%s",string classname,string rest))
+    {
+      low_generate(depth,
+		   sprintf("%s\nclass C%d {\n  inherit %s;\n"
+			   "  string F%d() { return %s()+\"F%d\"; }\n};",code,cnt,classname,cnt+1,rest,cnt+1),
+		   sprintf("C%d()->F%d",cnt,cnt+1),
+		   sprintf("%sF%d",ans,cnt+1),cnt+2);
+    }
+  }
+}
+
+int a()
+{
+  for(int e=0;e<7;e++) 
+    low_generate(e,
+		 "string X(){return \"X\";}",
+		 "X",
+		 "X",0);
+
+  if(errors) werror("%d/%d tests failed.\n",errors,tests);
+  return !errors;
+}
+]])
+
 
 test_true([[Program.implements( class { int x; string y; void foo(int x) {} },
 	class { void foo(mixed z) {} int x; })]])
