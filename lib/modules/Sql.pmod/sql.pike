@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.14 1997/07/02 00:27:27 grubba Exp $
+ * $Id: sql.pike,v 1.15 1997/09/02 22:24:27 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.14 1997/07/02 00:27:27 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.15 1997/09/02 22:24:27 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -144,7 +144,15 @@ void create(void|string|object host, void|string db,
 	master()->inhibit_compile_errors = old_inhib;
 #endif /* PIKE_SQL_DEBUG */
 	if (err) {
-	  throw(err);
+#ifdef PIKE_SQL_DEBUG
+	  Stdio.stderr->write(sprintf("Sql.sql(): Failed to compile module Sql.%s (%s)\n",
+				      program_name, err[0]));
+#endif /* PIKE_SQL_DEBUG */
+	  if (program_names) {
+	    throw(err);
+	  } else {
+	    throw(0);
+	  }
 	}
 
 	if (p) {
@@ -162,23 +170,29 @@ void create(void|string|object host, void|string db,
 	    }
 	    return;
 	  };
-#ifdef PIKE_SQL_DEBUG
 	  if (err) {
+	    if (program_names) {
+	      throw(err);
+	    }
+#ifdef PIKE_SQL_DEBUG
 	    Stdio.stderr->write(sprintf("Sql.sql(): Failed to connect using module Sql.%s (%s)\n",
 					program_name, err[0]));
+#endif /* PIKE_SQL_DEBUG */
 	  }
 	} else {
+	  if (program_names) {
+	    throw(({ sprintf("Sql.sql(): Failed to index module Sql.%s\n",
+			     program_name), backtrace() }));
+	  }
+#ifdef PIKE_SQL_DEBUG
 	  Stdio.stderr->write(sprintf("Sql.sql(): Failed to index module Sql.%s\n",
 				      program_name));
 #endif /* PIKE_SQL_DEBUG */
 	}
       };
-#ifdef PIKE_SQL_DEBUG
-      if (err) {
-	Stdio.stderr->write(sprintf("Sql.sql(): Failed to compile module Sql.%s (%s)\n",
-				    program_name, err[0]));
+      if (err && program_names) {
+	throw(err);
       }
-#endif /* PIKE_SQL_DEBUG */
     }
   }
 
