@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.5 2000/12/16 05:03:34 marcus Exp $
+ * $Id: pike_error.h,v 1.6 2000/12/19 00:55:32 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -195,13 +195,13 @@ PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)));
-PMOD_EXPORT void DECLSPEC(noreturn) index_error(
+PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *val,
   struct svalue *ind,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
-PMOD_EXPORT void DECLSPEC(noreturn) bad_arg_error(
+PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   char *func,
   struct svalue *base_sp,  int args,
   int which_arg,
