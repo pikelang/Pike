@@ -1,0 +1,12 @@
+# $Id: Makefile.in,v 1.1 2004/05/13 08:57:07 grubba Exp $
+@make_variables@
+VPATH=@srcdir@
+OBJS=kerberos.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+kerberos.o: $(SRCDIR)/kerberos.c
+
+@dependencies@
