@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.21 1999/07/24 11:38:49 grubba Exp $
+ * $Id: sendfile.c,v 1.22 1999/08/17 14:20:06 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -63,7 +63,7 @@
 #endif /* HAVE_SYS_MMAN_H */
 
 
-/* #define SF_DEBUG */
+#define SF_DEBUG
 
 #ifdef SF_DEBUG
 #define SF_DFPRINTF(X)	fprintf X
@@ -166,6 +166,8 @@ static void init_pike_sendfile(struct object *o)
 
 static void exit_pike_sendfile(struct object *o)
 {
+  SF_DFPRINTF((stderr, "sendfile: Exiting...\n"));
+
   if (THIS->iovs) {
     free(THIS->iovs);
   }
@@ -305,7 +307,7 @@ int send_iov(int fd, struct iovec *iov, int iovcnt)
   return sent;
 }
 
-TH_RETURN_TYPE worker(void *this_)
+void worker(void *this_)
 {
   struct pike_sendfile *this = this_;
 
@@ -892,7 +894,9 @@ static void sf_create(INT32 args)
     }
 
     /* The worker will have a ref. */
-    if (th_create_small(&th_id, worker, THIS)) {
+    th_farm(worker, THIS);
+#if 0
+    {
       /* Failure */
       sf.to->flags &= ~FILE_LOCK_FD;
       if (sf.from) {
@@ -902,6 +906,7 @@ static void sf_create(INT32 args)
       resource_error("Stdio.sendfile", sp, 0, "threads", 1,
 		     "Failed to create thread.\n");
     }
+#endif /* 0 */
     num_threads++;
   }
   return;
