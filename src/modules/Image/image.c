@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.80 1998/02/13 00:41:40 mirar Exp $ */
+/* $Id: image.c,v 1.81 1998/02/13 11:52:14 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.80 1998/02/13 00:41:40 mirar Exp $
+**!	$Id: image.c,v 1.81 1998/02/13 11:52:14 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.80 1998/02/13 00:41:40 mirar Exp $");
+RCSID("$Id: image.c,v 1.81 1998/02/13 11:52:14 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2486,9 +2486,9 @@ static void _image_outline(INT32 args,int mask)
    o=clone_object(image_program,2);
    img=(struct image*)(o->storage);
 
-   tmp=malloc((THIS->xsize+width-1)*(THIS->ysize+height));
+   tmp=malloc((THIS->xsize+width)*(THIS->ysize+height));
    if (!tmp) { free_object(o); error("out of memory\n"); }
-   MEMSET(tmp,0,(THIS->xsize+width-1)*(THIS->ysize+height-1));
+   MEMSET(tmp,0,(THIS->xsize+width)*(THIS->ysize+height));
  
    s=THIS->img;
 
