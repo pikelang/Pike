@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.26 2003/10/06 15:55:38 grubba Exp $ */
+/* $Id: socktest.pike,v 1.27 2004/04/02 16:14:24 grubba Exp $ */
 
 
 import Stdio;
@@ -486,6 +486,19 @@ int main()
     werror("Available fds: %d\n", max_fds);
   }
 #endif /* constant(System.getrlimit) */
+
+#if constant(fork)
+  werror("\nForking...");
+  object pid = fork();
+  if (pid) {
+    int res = pid->wait();
+    if (res) {
+      werror("\nChild failed with errcode %d\n", res);
+      exit(res);
+    }
+    werror("\nRunning in parent...");
+  }
+#endif /* constant(fork) */
 
   if(!port1::bind(0, accept_callback))
   {
