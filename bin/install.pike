@@ -1357,6 +1357,8 @@ void do_install()
 		combine_path(doc_prefix, "src", "src_images"), 0);
     install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
 		combine_path(doc_prefix, "src", "structure"), 0);
+    install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
+		 combine_path(doc_prefix, "src", "Makefile"));
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
