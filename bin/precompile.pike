@@ -1429,10 +1429,12 @@ class ParseBlock
 		({
 		  IFDEF("PROG_"+upper_case(lname)+"_ID",
 			({
-			  sprintf("  START_NEW_PROGRAM_ID(%s);\n",
-				  upper_case(lname)),
+			  PC.Token(sprintf("  START_NEW_PROGRAM_ID(%s);\n",
+					   upper_case(lname)),
+				   proto[0]->line),
 			  "#else\n",
-			  "  start_new_program();\n"
+			  PC.Token("  start_new_program();\n",
+				   proto[0]->line),
 			})),
 		  IFDEF("tObjImpl_"+upper_case(lname),
 			0,
