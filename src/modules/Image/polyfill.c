@@ -28,7 +28,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.6 1997/10/06 15:02:13 grubba Exp $<br>
+**!	$Id: polyfill.c,v 1.7 1997/10/12 18:11:04 noring Exp $<br>
 **! class image
 */
 
@@ -238,15 +238,15 @@ static void polygone_row_fill(float *buf,
 			      float xmin,float xmax)
 {
    int i;
-   int max;
-   if (floor(xmin)==floor(xmax))
-      buf[(int)floor(xmin)]+=xmax-xmin;
+   int xmin_i = (int)floor(xmin);
+   int xmax_i = (int)floor(xmax);
+   if (xmin_i == xmax_i)
+      buf[xmin_i] += xmax-xmin;
    else
    {
-      buf[(int)floor(xmin)]+=1-(xmin-floor(xmin));
-      max=floor(xmax);
-      for (i=(int)floor(xmin)+1; i<max; i++) buf[i]=1.0;
-      buf[(int)floor(xmax)]+=xmax-floor(xmax);
+      buf[xmin_i] += 1-(xmin-((float)xmin_i));
+      for (i=xmin_i+1; i<xmax_i; i++) buf[i]=1.0;
+      buf[xmax_i] += xmax-((float)xmax_i);
    }
 }
 
@@ -260,12 +260,15 @@ static int polygone_row_vertices(float *buf,
 {
    struct vertex_list *v;
    int xofill=1;
+   int xmax_i, xmin_i;
    float x;
 
 #ifdef POLYDEBUG
    int i;
    fprintf(stderr,"aa %g..%g fill %d\n",xmin,xmax,fill);
 #endif
+   xmax_i = (int)floor(xmax);
+   xmin_i = (int)floor(xmin);
 
    fill=fill?-1:1;
    
@@ -299,26 +302,34 @@ static int polygone_row_vertices(float *buf,
       if (xmin!=xmax && v->xmin<xmax && v->xmax>xmin) 
       {
 #define CALC_AREA(FILL,X,Y1,Y2,YP) \
-	    ((FILL)*(X)*( 1-0.5*((Y1)+(Y2))+(YP) ))
-/*	    (fprintf(stderr,"area: %d*%g*%g y1=%g y2=%g yp=%g == %g\n", FILL,X,( 1-0.5*(Y1+Y2)+YP ),Y1,Y2,YP,((FILL)*(X)*( 1-0.5*((Y1)+(Y2))+(YP) ))), \*/
+	    ((FILL)*(X)*( 1.0-0.5*((Y1)+(Y2))+(YP) ))
+	/*	    (fprintf(stderr," [area: %d*%g*%g y1=%g y2=%g yp=%g]\n", FILL,X,( 1-0.5*(Y1+Y2)+YP ),Y1,Y2,YP), \*/
 
 			 
-	 if (floor(xmin)==floor(xmax))
-	    buf[(int)floor(xmin)]+=
+	 if (xmin_i == xmax_i)
+	    buf[xmin_i]+=
 	       CALC_AREA(fill*xofill,(xmax-xmin), VY(v,xmin),VY(v,xmax),yp);
 	 else
 	 {
-	    buf[(int)floor(xmin)]+=
-	       CALC_AREA(xofill*fill, (1+floor(xmin)-xmin),
-			 VY(v,xmin),VY(v,1+floor(xmin)), yp);
+	   int xx;
+	    buf[xmin_i]+=
+	       CALC_AREA(xofill*fill, (1+((float)xmin_i)-xmin),
+			 VY(v,xmin),VY(v,1+((float)xmin_i)), yp);
 
-	    for (x=1+floor(xmin); x<floor(xmax); x+=1.0)
-	       buf[(int)x]+=
+	    for (x=(float)(xx=1+xmin_i); xx<xmax_i; xx++, x+=1.0)
+	       buf[xx] +=
 		  CALC_AREA(fill*xofill,1.0, VY(v,x),VY(v,x+1.0),yp);
-	    
-	    buf[(int)floor(xmax)]+=
-	       CALC_AREA(fill*xofill, xmax-floor(xmax), 
-			 VY(v,xmax),VY(v,floor(xmax)),yp);
+
+#if 0
+	    fprintf(stderr,"buf[%d] = %g", xmax_i, buf[xmax_i]);
+	    fflush(stderr);
+#endif
+	    buf[xmax_i] +=
+	       CALC_AREA(fill*xofill, xmax-((float)xmax_i), 
+			 VY(v,xmax),VY(v,((float)xmax_i)),yp);
+#if 0
+	    fprintf(stderr," ok\n");
+#endif
 	 }
 #ifdef POLYDEBUG
 	 fprintf(stderr,"aa ");
@@ -380,7 +391,7 @@ static void polygone_row(struct image *img,
    if (ixmax>=img->xsize) *pixmax=ixmax=img->xsize;
    else if (ixmax<0) { *pixmax=ixmin; return; } 
 
-   for (i=ixmin; i<ixmax; i++) buf[i]=0.0;
+   for (i=ixmin; i<=ixmax; i++) buf[i]=0.0;
 
    v=vertices;
    nxmax=xmax=v->xmax;
@@ -480,10 +491,10 @@ static void polygone_some(struct image *img,
 
 
    rgb_group *dest=img->img,rgb=img->rgb;
-   float *buf=alloca(sizeof(float)*img->xsize*2);
+   float *buf=alloca(sizeof(float)*(img->xsize+1));
 
    if (!buf) error("out of stack, typ\n");
-   for (i=0; i<img->xsize; i++) buf[i]=0.0;
+   for (i=0; i<img->xsize+1; i++) buf[i]=0.0;
 
    nextb=next=top;
 
