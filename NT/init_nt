@@ -12,6 +12,12 @@ NTMOUNT=
 PATH=`pwd`/tools:$PATH
 CC=rntcc
 NTTOOLS=`pwd`/tools/lib
+if [ "x$NTMOUNT" = x ]; then
+  MNTREPLACE=""
+else
+  MNTREPLACE="s@$NTMOUNT@@g
+"
+fi
 
 export NTHOST NTDRIVE NTCC CC PATH NTTOOLS
 
