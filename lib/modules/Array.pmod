@@ -258,11 +258,14 @@ array(array(array)) diff3 (array a, array b, array c)
   ca[sizeof (c)] = cb[sizeof (c)] = eoa;
 
   for (int i = 0, j = 0; j < sizeof (seq_ab); i++)
-    if (a[i] == b[seq_ab[j]]) ab[i] = seq_ab[j], ba[seq_ab[j]] = i, j++;
+    if (equal (a[i], b[seq_ab[j]]))
+      a[i] = b[seq_ab[j]], ab[i] = seq_ab[j], ba[seq_ab[j]] = i, j++;
   for (int i = 0, j = 0; j < sizeof (seq_bc); i++)
-    if (b[i] == c[seq_bc[j]]) bc[i] = seq_bc[j], cb[seq_bc[j]] = i, j++;
+    if (equal (b[i], c[seq_bc[j]]))
+      b[i] = c[seq_bc[j]], bc[i] = seq_bc[j], cb[seq_bc[j]] = i, j++;
   for (int i = 0, j = 0; j < sizeof (seq_ca); i++)
-    if (c[i] == a[seq_ca[j]]) ca[i] = seq_ca[j], ac[seq_ca[j]] = i, j++;
+    if (equal (c[i], a[seq_ca[j]]))
+      c[i] = a[seq_ca[j]], ca[i] = seq_ca[j], ac[seq_ca[j]] = i, j++;
 
   array(array) ares = ({}), bres = ({}), cres = ({});
   int ai = 0, bi = 0, ci = 0;
