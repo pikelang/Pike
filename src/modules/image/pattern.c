@@ -1,4 +1,4 @@
-/* $Id: pattern.c,v 1.4 1996/12/10 01:42:49 law Exp $ */
+/* $Id: pattern.c,v 1.5 1996/12/12 20:03:45 law Exp $ */
 
 #include "global.h"
 
@@ -89,12 +89,11 @@ static INLINE double turbulence(double x,double y,int octaves)
 
 static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 {
-   rgb_group *rgb,*rgbp;
    float *v,*vp;
    int i,n,k;
    struct svalue s2,s3;
-   rgb_group lrgb;
-   float fr,fg,fb;
+   rgbd_group lrgb,*rgbp,*rgb;
+   float fr,fg,fb,q;
    int b;
 
    if (s->type!=T_ARRAY)
@@ -106,7 +105,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    s3.type=T_INT; /* don't free these */
 
    vp=v=(void*)xalloc(sizeof(float)*(s->u.array->size/2+1));
-   rgbp=rgb=(void*)xalloc(sizeof(rgb_group)*(s->u.array->size/2+1));
+   rgbp=rgb=(void*)xalloc(sizeof(rgbd_group)*(s->u.array->size/2+1));
 
    for (i=0; i<s->u.array->size-1; i+=2)
    {
@@ -148,9 +147,11 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 
       if (n>i)
       {
-	 fr=(rgb[k].r-lrgb.r)/((float)(n-i));
-	 fg=(rgb[k].g-lrgb.g)/((float)(n-i));
-	 fb=(rgb[k].b-lrgb.b)/((float)(n-i));
+	 q=1/((float)(n-i));
+   
+	 fr=(rgb[k].r-lrgb.r)*q;
+	 fg=(rgb[k].g-lrgb.g)*q;
+	 fb=(rgb[k].b-lrgb.b)*q;
 
 	 for (b=0;i<n;i++,b++)
 	 {
@@ -216,7 +217,7 @@ void image_noise(INT32 args)
       error("Out of memory\n");
    }
 
-   cscale=COLORRANGE_LEVELS/(65536*cscale);
+   cscale=(32768*cscale)/COLORRANGE_LEVELS;
 
    d=img->img;
    for (y=THIS->ysize,xp=xdiff; y--; xp+=1.0)
@@ -238,10 +239,10 @@ void image_turbulence(INT32 args)
 {
 /* parametrar: 	array(float|int|array(int)) colorrange,
 		int octaves=3,
-                float scale=1,
+                float scale=0.1,
 		float xdiff=0,
 		float ydiff=0,
-   		float cscale=1
+   		float cscale=0.001
 */
    int x,y,octaves;
    rgb_group cr[COLORRANGE_LEVELS];
@@ -255,10 +256,10 @@ void image_turbulence(INT32 args)
    if (args<1) error("too few arguments to image->turbulence()\n");
 
    octaves=GET_INT_ARG(sp,args,1,3,"image->turbulence");
-   scale=GET_FLOAT_ARG(sp,args,2,1,"image->turbulence");
+   scale=GET_FLOAT_ARG(sp,args,2,0.1,"image->turbulence");
    xdiff=GET_FLOAT_ARG(sp,args,3,0,"image->turbulence");
    ydiff=GET_FLOAT_ARG(sp,args,4,0,"image->turbulence");
-   cscale=GET_FLOAT_ARG(sp,args,5,1,"image->turbulence");
+   cscale=GET_FLOAT_ARG(sp,args,5,0.001,"image->turbulence");
 
    init_colorrange(cr,sp-args,"image->turbulence()");
 
@@ -271,12 +272,22 @@ void image_turbulence(INT32 args)
       error("Out of memory\n");
    }
 
-   cscale=COLORRANGE_LEVELS/(32768*cscale);
+   cscale=(32768*cscale)/COLORRANGE_LEVELS;
 
    d=img->img;
    for (y=THIS->ysize,xp=xdiff; y--; xp+=1.0)
       for (x=THIS->xsize,yp=ydiff; x--; yp+=1.0)
       {
+#if 0
+	 if (y==0 && x<10)
+	 {
+	    fprintf(stderr,"%g*%g=%d => %d\n",
+		    turbulence(xp*scale,yp*scale,octaves),
+		    cscale,
+		    (INT32)(turbulence(xp*scale,yp*scale,octaves)*cscale),
+		    (INT32)(turbulence(xp*scale,yp*scale,octaves)*cscale)&(COLORRANGE_LEVELS)-1 );
+	 }
+#endif
 	 *(d++)=
 	    cr[(INT32)(turbulence(xp*scale,yp*scale,octaves)*cscale)
 	       & (COLORRANGE_LEVELS-1)];
