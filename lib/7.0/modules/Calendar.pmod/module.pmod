@@ -21,11 +21,11 @@ class _TimeUnit
    //!	a list of day objects in the object @tt{o@}.
    //!
    //!	
-   //!	Ie:@pre{
-   //!	array(string) lesser()    - gives back a list of possible xxx's.
-   //!	object xxxs()     	  - gives back a list of possible n's.
-   //!	object xxx(mixed n)       - gives back xxx n
-   //!	object xxx(object(Xxx) o) - gives back the corresponing xxx 
+   //!	Ie: @tt{
+   //!	  array(string) lesser()    - gives back a list of possible xxx's.
+   //!	  object xxxs()             - gives back a list of possible n's.
+   //!	  object xxx(mixed n)       - gives back xxx n
+   //!	  object xxx(object(Xxx) o) - gives back the corresponing xxx 
    //!	@}
    //!
    //!	The list of n's (as returned from xxxs) are always in order.
