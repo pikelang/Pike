@@ -8,8 +8,14 @@ tutorial.html: tutorial.wmml
 tutorial_onepage.html: tutorial.wmml
 	./wmmltohtml2 <tutorial.wmml html_onepage tutorial_onepage
 
+Image.wmml :
+	cd ../src/modules/Image; make wmml
+
+the_image_module_onepage.html: Image.wmml the_image_module.wmml
+	./wmmltohtml2 <the_image_module.wmml html_onepage the_image_module_onepage
+
 clean:
-	rm *.html illustration_cache illustration*.gif
+	rm *.html illustration_cache illustration*.gif 
 
 export:
 	(cd .. ; tar czvf tutorial.tar.gz \
