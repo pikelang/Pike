@@ -143,7 +143,7 @@ SYNTAX
 
 DESCRIPTION
 	This function sends an SQL query to the underlying SQL-server. The
-	result is returned as a /precompiled/sql object. This allows for
+	result is returned as a Sql.sql_result object. This allows for
 	having results larger than the available memory, and returning some
 	more info on the result. Returns 0 if the query didn't return any
 	result (e.g. INSERT or similar).
