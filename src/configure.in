@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.835 2004/09/26 15:14:57 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.836 2004/09/26 15:49:20 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3387,7 +3387,7 @@ if test "x$pike_cv_sys_os" = "xWindows_NT" -o "x$pike_cv_sys_os" = "xAmigaOS"; t
       while read x; do
         pike_cv_initial_stack_size=$x ;
       done <confdefs.out.2
-    ])
+    ], [pike_cv_initial_stack_size=''])
     rm confdefs.out.2 >/dev/null 2>/dev/null || :
   ])
   if test x$pike_cv_initial_stack_size = x ; then
