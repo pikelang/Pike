@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.2 1997/03/09 13:46:52 grubba Exp $
+ * $Id: result.c,v 1.3 1997/03/28 18:23:08 grubba Exp $
  *
  * mysql query result
  *
@@ -74,7 +74,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.2 1997/03/09 13:46:52 grubba Exp $");
+RCSID("$Id: result.c,v 1.3 1997/03/28 18:23:08 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -211,16 +211,18 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
 /* void create(object(mysql)) */
 static void f_create(INT32 args)
 {
+  struct precompiled_mysql *mysql;
+
   if (!args) {
     error("Too few arguments to mysql_result()\n");
   }
   if ((sp[-args].type != T_OBJECT) ||
-      (sp[-args].u.object->prog != mysql_program)) {
+      (!(mysql = get_storage(sp[-args].u.object, mysql_program)))) {
     error("Bad argument 1 to mysql_result()\n");
   }
 
-  PIKE_MYSQL_RES->result = ((struct precompiled_mysql *)sp[-args].u.object->storage)->last_result;
-  ((struct precompiled_mysql *)sp[-args].u.object->storage)->last_result = NULL;
+  PIKE_MYSQL_RES->result = mysql->last_result;
+  mysql->last_result = NULL;
   
   pop_n_elems(args);
 
