@@ -12,11 +12,14 @@
 #include "array.h"
 #include "object.h"
 
+#undef ATTRIBUTE
+#define ATTRIBUTE(X)
+
 char *automatic_fatal, *exit_on_error;
 JMP_BUF *recoveries=0;
 ONERROR *onerror_stack=0;
 
-my_jmp_buf *init_recovery(JMP_BUF *r)
+JMP_BUF *init_recovery(JMP_BUF *r)
 {
   r->fp=fp;
   r->sp=sp-evaluator_stack;
@@ -24,10 +27,10 @@ my_jmp_buf *init_recovery(JMP_BUF *r)
   r->previous=recoveries;
   r->onerror=onerror_stack;
   recoveries=r;
-  return & ( r->recovery );
+  return r;
 }
 
-void throw()
+void throw() ATTRIBUTE((noreturn))
 {
   if(!recoveries)
     fatal("No error recovery context.\n");
@@ -67,7 +70,7 @@ void throw()
 
 struct svalue throw_value = { T_INT };
 
-void va_error(char *fmt, va_list args)
+void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   char buf[2000];
   static char *in_error;
@@ -115,7 +118,7 @@ void va_error(char *fmt, va_list args)
   throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
-void error(char *fmt,...)
+void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   va_start(args,fmt);
@@ -124,7 +127,7 @@ void error(char *fmt,...)
 }
 
 
-void fatal(char *fmt, ...)
+void fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   static int in_fatal = 0;

@@ -29,12 +29,10 @@ typedef struct ONERROR
   void *arg;
 } ONERROR;
 
-typedef jmp_buf my_jmp_buf; /* Maybe I'll get less warnings like this */
-
 typedef struct JMP_BUF
 {
   struct JMP_BUF *previous;
-  my_jmp_buf recovery;
+  jmp_buf recovery;
   struct frame *fp;
   INT32 sp;
   INT32 mark_sp;
@@ -46,7 +44,7 @@ extern JMP_BUF *recoveries;
 extern struct svalue throw_value;
 extern char *automatic_fatal, *exit_on_error;
 
-#define SETJMP(X) setjmp((init_recovery(&X)[0]))
+#define SETJMP(X) setjmp((init_recovery(&X)->recovery))
 #define UNSETJMP(X) recoveries=X.previous;
 
 #define SET_ONERROR(X,Y,Z) \
@@ -59,12 +57,13 @@ extern char *automatic_fatal, *exit_on_error;
 
 #define UNSET_ONERROR(X) onerror_stack=X.previous
 
-my_jmp_buf *init_recovery(JMP_BUF *r);
-int fix_recovery(int i, JMP_BUF *r);
+/* Prototypes begin here */
+JMP_BUF *init_recovery(JMP_BUF *r);
 void throw() ATTRIBUTE((noreturn));
 void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn));
 void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 void fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+/* Prototypes end here */
 
 #endif
 
