@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.561 2004/07/04 20:11:04 srb Exp $
+|| $Id: builtin_functions.c,v 1.562 2004/07/04 20:47:06 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.561 2004/07/04 20:11:04 srb Exp $");
+RCSID("$Id: builtin_functions.c,v 1.562 2004/07/04 20:47:06 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2177,7 +2177,20 @@ PMOD_EXPORT void f_exit(INT32 args)
   in_exit=1;
 
   if(args>1 && Pike_sp[1-args].type==T_STRING) {
-    safe_apply(get_master(), "werror", args-1);
+    struct svalue *_sp_ = Pike_sp;
+    int i=1;
+    push_svalue(simple_mapping_string_lookup(get_builtin_constants(),
+					     "werror"));
+
+    /* Push top of stack below all werror args. */
+    for(; i<args; i++) {
+      struct svalue _=_sp_[-(i)];
+      _sp_[-(i)]=_sp_[-(i+1)];
+      _sp_[-(i+1)]=_;
+    }
+
+    f_call_function(args);
+    pop_stack();
     args=1;
   }
 
