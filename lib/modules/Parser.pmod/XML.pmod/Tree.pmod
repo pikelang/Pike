@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.55 2004/11/18 14:23:43 jonasw Exp $
+ * $Id: Tree.pmod,v 1.56 2004/12/21 16:05:41 grubba Exp $
  *
  */
 
@@ -861,7 +861,13 @@ static class VirtualNode {
   // It doesn't produce html, and not of the node only.
   string html_of_node(void|int(0..1) preserve_roxen_entities)
   {
-    return render_xml(preserve_roxen_entities);
+    String.Buffer data = String.Buffer();
+    set_short_namespaces();
+    if(preserve_roxen_entities)
+      low_render_xml(data, this, roxen_text_quote, roxen_attribute_quote);
+    else
+      low_render_xml(data, this, text_quote, attribute_quote);
+    return (string)data;
   }
 
   //! It is possible to cast a node to a string, which will return
@@ -994,6 +1000,13 @@ static class VirtualNode {
     mShortNamespace = "";
     if (sizeof(mNamespace)) {
       if (!(mShortNamespace = forward_lookup[mNamespace])) {
+	werror("Forward_lookup: %O\n"
+	       "Backward_lookup: %O\n"
+	       "mNamespace:%O\n",
+	       forward_lookup,
+	       backward_lookup,
+	       mNamespace);
+	       
 	// We need to allocate a short namespace symbol.
 	// FIXME: This is O(n²).
 	int i;
