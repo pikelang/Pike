@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.130 2004/04/06 16:17:02 mast Exp $
+|| $Id: backend.cmod,v 1.131 2004/04/07 19:10:59 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.130 2004/04/06 16:17:02 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.131 2004/04/07 19:10:59 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -58,7 +58,7 @@ RCSID("$Id: backend.cmod,v 1.130 2004/04/06 16:17:02 mast Exp $");
 #endif
 #include <sys/stat.h>
 
-/* #define POLL_DEBUG */
+#define POLL_DEBUG
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
@@ -142,7 +142,7 @@ static struct Backend_struct **fd_map=0;
 static int fd_map_size=0;
 PMOD_EXPORT struct Backend_struct *default_backend = NULL;
 #ifdef DO_PIKE_CLEANUP
-static int num_backends = 0;
+static int num_active_backends = 0;
 #endif
 
 static int backend_do_call_outs(struct Backend_struct *me);
@@ -2585,8 +2585,8 @@ PIKECLASS Backend
 	    old_events = box->events;
 	    set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
 	    if (WANT_EVENT (box, ERROR)) {
-	      IF_PD(fprintf(stderr, "BACKEND[%d]: error event %d on fd %d sent to %p\n",
-			    me->id, err, i, box->ref_obj));
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: error event on fd %d sent to %p\n",
+			    me->id, i, box->ref_obj));
 	      if (box->callback (box, PIKE_FD_ERROR) == -1)
 		goto backend_round_done;
 	    }
@@ -2955,8 +2955,6 @@ PIKECLASS Backend
 	Pike_error("Failed to open poll device (errno:%d)\n", errno);
       }
       set_close_on_exec(me->set, 1);
-
-      register_backend(me);
 #elif defined(HAVE_POLL)
       me->set.poll_fds=0;
       me->set.poll_fd_size=0;
@@ -2990,8 +2988,10 @@ PIKECLASS Backend
 	set_close_on_exec(pipe[1], 1);
       }
 
+      register_backend(me);
+
 #ifdef DO_PIKE_CLEANUP
-      num_backends++;
+      num_active_backends++;
 #endif
     }
   
@@ -3101,7 +3101,7 @@ PIKECLASS Backend
       me->call_hash=NULL;
 
 #ifdef DO_PIKE_CLEANUP
-      if (!--num_backends) backend_cleanup();
+      if (!--num_active_backends) backend_cleanup();
 #endif
     }
 }
@@ -3454,6 +3454,12 @@ void exit_backend()
  * after exit_backend if there's garbage. */
 static void backend_cleanup()
 {
+#ifdef CHILD_NEEDS_TO_REOPEN
+  if (backends) {
+    free(backends);
+    num_backends = 0;
+  }
+#endif /* CHILD_NEEDS_TO_REOPEN */
   free_all_call_out_s_blocks();
   free_all_compat_cb_box_blocks();
   if(fd_map)
