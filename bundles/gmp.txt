@@ -1,0 +1,2 @@
+Gmp is the GNU Multi-Precision library. It can be downloaded from most
+GNU mirrors, and has its development site at http://www.swox.com/gmp/.
