@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.2 2001/01/11 20:31:44 grubba Exp $
+ * $Id: autodoc.pike,v 1.3 2001/02/02 21:10:03 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -35,14 +35,18 @@ int main(int argc, array(string) argv)
   	  werror(sprintf("Unknown filetype %O\n", path));
   	  exit(1);
   	}
-	write(sprintf("%s\n", info));
+	write(sprintf("%s\n", info->xml()));
       } else {
   	werror(sprintf("%O is not a plain file or directory.\n", path));
   	exit(1);
       }
     };
-    if (err && intp(err[1])) {
-      werror(sprintf("%s:%d: %s\n", path, err[1], (string)err[0]));
+    if (err) {
+      if (intp(err[1])) {
+	werror(sprintf("%s:%d: %s\n", path, err[1], (string)err[0]));
+      }
+      else
+	throw(err);
     }
   }
 }
