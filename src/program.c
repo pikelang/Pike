@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.472 2003/03/19 19:55:24 nilsson Exp $
+|| $Id: program.c,v 1.473 2003/06/30 17:18:24 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.472 2003/03/19 19:55:24 nilsson Exp $");
+RCSID("$Id: program.c,v 1.473 2003/06/30 17:18:24 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1310,13 +1310,12 @@ void optimize_program(struct program *p)
 }
 
 /* internal function to make the index-table */
-static ptrdiff_t program_identifier_index_compare(int a, int b,
-						  const struct program *p)
+static int program_identifier_index_compare(int a, int b,
+					    const struct program *p)
 {
-  ptrdiff_t val_a = ((char *)(ID_FROM_INT(p, a)->name))-(char *)0;
-  ptrdiff_t val_b = ((char *)(ID_FROM_INT(p, b)->name))-(char *)0;
-
-  return val_a - val_b;
+  size_t val_a = (size_t) (((char *)(ID_FROM_INT(p, a)->name))-(char *)NULL);
+  size_t val_b = (size_t) (((char *)(ID_FROM_INT(p, b)->name))-(char *)NULL);
+  return val_a < val_b ? -1 : (val_a == val_b ? 0 : 1);
 }
 
 #define CMP(X,Y)	program_identifier_index_compare(*(X), *(Y), prog)
@@ -4427,7 +4426,7 @@ int low_find_shared_string_identifier(struct pike_string *name,
   if(prog->flags & PROGRAM_FIXED)
   {
     unsigned short *funindex = prog->identifier_index;
-    ptrdiff_t val_n = ((char *)name) - (char *)0;
+    size_t val_n = (size_t) (((char *)name) - (char *)NULL);
 
 #ifdef PIKE_DEBUG
     if(!funindex)
@@ -4438,13 +4437,13 @@ int low_find_shared_string_identifier(struct pike_string *name,
     min = 0;
     while(max != min)
     {
-      ptrdiff_t val_t;
+      size_t val_t;
 
       tst=(max + min) >> 1;
       fun = ID_FROM_INT(prog, funindex[tst]);
       if(is_same_string(fun->name,name)) return funindex[tst];
-      val_t = ((char *)fun->name) - (char *)0;
-      if ((val_n - val_t) < 0) {
+      val_t = (size_t) (((char *)fun->name) - (char *)NULL);
+      if (val_n < val_t) {
 	max = tst;
       } else {
 	min = tst+1;
