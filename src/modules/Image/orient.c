@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.2 1998/02/15 15:50:10 hedda Exp $ */
+/* $Id: orient.c,v 1.3 1998/02/15 15:53:00 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.2 1998/02/15 15:50:10 hedda Exp $
+**!	$Id: orient.c,v 1.3 1998/02/15 15:53:00 mirar Exp $
 **! class image
 */
 
@@ -36,7 +36,7 @@ extern struct program *image_program;
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 
 static const double c0=0.70710678118654752440;
-static const double PI=3.14159265358979323846;
+static const double my_PI=3.14159265358979323846;
 
 /*
 **! method object orient( foo bar args?)
@@ -61,7 +61,7 @@ static const double PI=3.14159265358979323846;
 **! returns an array of four new image objects
 **! arg int newx
 **! arg int newy
-**!	new image size in pixels
+**!	new image size in my_PIxels
 **!
 */
 static INLINE int sq(int a) { return a*a; }
@@ -191,23 +191,23 @@ void image_orient(INT32 args)
 	
 	if (h>0)
 	  if (j>0)
-	    A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*PI))*
+	    A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
 					 atan((float)h/(float)j));
 	  else
 	    if (j<0)
-	      A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*PI))*
-					   (PI+atan((float)h/(float)j)));
+	      A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
+					   (my_PI+atan((float)h/(float)j)));
 	    else
 	      A->img[x+y*B->xsize].r=255/4;
 	else
 	  if (h<0)
 	    if (j>0)
-	      A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*PI))*
-					   (2*PI+atan((float)h/(float)j)));
+	      A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
+					   (2*my_PI+atan((float)h/(float)j)));
 	    else
 	      if (j<0)
-		A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*PI))*
-					     (PI+atan((float)h/(float)j)));
+		A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
+					     (my_PI+atan((float)h/(float)j)));
 	      else
 		A->img[x+y*B->xsize].r=(3*255)/4;
 	  else
