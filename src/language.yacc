@@ -49,6 +49,7 @@
 %token TOK_DOT_DOT
 %token TOK_DOT_DOT_DOT
 %token TOK_ELSE
+%token TOK_ENUM
 %token TOK_EXTERN
 %token TOK_FLOAT_ID
 %token TOK_FOR
@@ -83,6 +84,7 @@
 %token TOK_STATIC
 %token TOK_STRING_ID
 %token TOK_SUB_EQ
+%token TOK_TYPEDEF
 %token TOK_TYPEOF
 %token TOK_VARIANT
 %token TOK_VOID_ID
@@ -110,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.223 2001/01/20 01:15:44 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.224 2001/04/02 22:09:35 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -130,6 +132,7 @@ RCSID("$Id: language.yacc,v 1.223 2001/01/20 01:15:44 grubba Exp $");
 #include "machine.h"
 #include "main.h"
 #include "opcodes.h"
+#include "operators.h"
 
 #define YYMAXDEPTH	1000
 
@@ -145,6 +148,8 @@ int add_local_name(struct pike_string *,struct pike_string *,node *);
 int low_add_local_name(struct compiler_frame *,
 		       struct pike_string *,struct pike_string *,node *);
 static node *lexical_islocal(struct pike_string *);
+static void safe_inc_enum(void);
+
 
 static int inherit_depth;
 static struct program_state *inherit_state = NULL;
@@ -272,6 +277,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> catch
 %type <n> catch_arg
 %type <n> class
+%type <n> enum
 %type <n> safe_comma_expr
 %type <n> comma_expr
 %type <n> comma_expr2
@@ -326,6 +332,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> local_function
 %type <n> local_function2
 %type <n> magic_identifier
+%type <n> simple_identifier
 %%
 
 all: program { YYACCEPT; }
@@ -863,6 +870,8 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   | import {}
   | constant {}
   | class { free_node($1); }
+  | enum { free_node($1); }
+  | typedef {}
   | error TOK_LEX_EOF
   {
     reset_type_stack();
@@ -996,6 +1005,8 @@ magic_identifiers2:
   | TOK_STRING_ID     { $$ = "string"; }
   | TOK_FLOAT_ID      { $$ = "float"; }
   | TOK_INT_ID        { $$ = "int"; }
+  | TOK_ENUM	      { $$ = "enum"; }
+  | TOK_TYPEDEF       { $$ = "typedef"; }
   ;
 
 magic_identifiers3:
@@ -1063,6 +1074,16 @@ soft_cast: '[' type ']'
       free_string(s);
     }
     ;
+
+full_type: type4
+  | full_type '*'
+  {
+    if (Pike_compiler->compiler_pass == 2) {
+       yywarning("The *-syntax in types is obsolete. Use array instead.");
+    }
+    push_type(T_ARRAY);
+  }
+  ;
 
 type6: type | identifier_type ;
   
@@ -2273,6 +2294,123 @@ class: modifiers TOK_CLASS optional_identifier
   }
   ;
 
+simple_identifier: TOK_IDENTIFIER
+  | bad_identifier { $$ = 0; }
+  ;
+
+enum_value: /* EMPTY */
+  {
+    safe_inc_enum();
+  }
+  | '=' safe_expr0
+  {
+    pop_stack();
+
+    /* This can be made more lenient in the future */
+
+    /* Ugly hack to make sure that $2 is optimized */
+    {
+      int tmp=Pike_compiler->compiler_pass;
+      $2=mknode(F_COMMA_EXPR,$2,0);
+      Pike_compiler->compiler_pass=tmp;
+    }
+
+    if(!is_const($2))
+    {
+      if(Pike_compiler->compiler_pass==2)
+	yyerror("Enum definition is not constant.");
+      push_int(0);
+    } else {
+      if(!Pike_compiler->num_parse_error)
+      {
+	ptrdiff_t tmp=eval_low($2);
+	if(tmp < 1)
+	{
+	  yyerror("Error in enum definition.");
+	  push_int(0);
+	}else{
+	  pop_n_elems(DO_NOT_WARN((INT32)(tmp - 1)));
+	}
+      } else {
+	push_int(0);
+      }
+    }
+    if($2) free_node($2);
+  }
+  ;
+
+enum_def: /* EMPTY */
+  | simple_identifier enum_value
+  {
+    if ($1) {
+      add_constant($1->u.sval.u.string, Pike_sp-1,
+		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+    }
+    free_node($1);
+    /* Update the type. */
+    {
+      struct pike_type *current = pop_unfinished_type();
+      struct pike_type *new = get_type_of_svalue(Pike_sp-1);
+      struct pike_type *res = or_pike_types(new, current, 1);
+      free_type(current);
+      free_type(new);
+      type_stack_mark();
+      push_finished_type(res);
+    }
+  }
+  ;
+
+enum_list: enum_def
+  | enum_list ',' enum_def
+  ;
+
+enum: modifiers TOK_ENUM
+  {
+    if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
+	(Pike_compiler->compiler_pass == 1)) {
+      yywarning("Extern declared enum.");
+    }
+
+    push_int(-1);	/* Last enum-value. */
+    type_stack_mark();
+    push_type(T_ZERO);	/* Joined type so far. */
+  }
+  optional_identifier '{' enum_list end_block
+  {
+    struct pike_type *t = pop_unfinished_type();
+    pop_stack();
+    if ($4) {
+      ref_push_type_value(t);
+      add_constant($4->u.sval.u.string, Pike_sp-1,
+		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+      pop_stack();
+      free_node($4);
+    }
+    $$ = mktypenode(t);
+    free_type(t);
+  }
+  ;
+
+typedef: modifiers TOK_TYPEDEF full_type simple_identifier ';'
+  {
+    struct pike_type *t = compiler_pop_type();
+
+    if ((Pike_compiler->current_modifiers & ID_EXTERN) &&
+	(Pike_compiler->compiler_pass == 1)) {
+      yywarning("Extern declared typedef.");
+    }
+
+    if ($4) {
+      ref_push_type_value(t);
+      add_constant($4->u.sval.u.string, Pike_sp-1,
+		   Pike_compiler->current_modifiers & ~ID_EXTERN);
+      pop_stack();
+      free_node($4);
+    }
+    free_type(t);
+  }
+  ;
+
 cond: TOK_IF
   {
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
@@ -2730,6 +2868,7 @@ expr4: string
   | sscanf
   | lambda
   | class
+  | enum
   | idents2
   | expr4 '(' expr_list  ')' optional_block
     {
@@ -3541,6 +3680,28 @@ static node *lexical_islocal(struct pike_string *str)
     depth++;
     f=f->previous;
   }
+}
+
+static void safe_inc_enum(void)
+{
+  struct svalue *save_sp = Pike_sp;
+  JMP_BUF recovery;
+
+  free_svalue(&throw_value);
+  throw_value.type = T_INT;
+  if (SETJMP(recovery)) {
+    yyerror("Bad implicit enum value (failed to add 1).");
+    while(Pike_sp > save_sp) pop_stack();
+  } else {
+    push_int(1);
+    f_add(2);
+  }
+  UNSETJMP(recovery);
+#ifdef PIKE_DEBUG
+  if (Pike_sp != save_sp) {
+    fatal("stack thrashed in enum.\n");
+  }
+#endif /* PIKE_DEBUG */
 }
 
 void cleanup_compiler(void)

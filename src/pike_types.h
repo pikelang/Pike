@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.47 2001/02/09 17:30:23 hubbe Exp $
+ * $Id: pike_types.h,v 1.48 2001/04/02 22:09:34 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -273,5 +273,10 @@ int pike_type_allow_premature_toss(char *type);
 #ifndef PIKE_DEBUG
 #define check_type_string(X)
 #endif
+
+/* Forward compatibility */
+#define free_type(T)		free_string(T)
+#define copy_pike_type(T1, T2)	copy_shared_string(T1, T2)
+#define pike_type		pike_string
 
 #endif
