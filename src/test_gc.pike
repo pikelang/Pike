@@ -567,8 +567,6 @@ array(int) a() {
 //        })}),
   });
 
-  int quiet = !_verbose;
-
   int tests_failed = 0;
   int tests = 0;
   foreach (destruct_order_tests;
@@ -604,8 +602,12 @@ array(int) a() {
 
     int n = 1;
     for (int f = nlive + ndead; f > 1; f--) n *= f;
-    if(!quiet)
-      werror ("GC destruct order test %d, %d permutations      \r", test, n);
+    switch ((mixed) _verbose) {
+      case 1:
+	werror ("\rGC destruct order test %d, %d permutations    ", test, n); break;
+      case 2..:
+	werror ("GC destruct order test %d, %d permutations\n", test, n); break;
+    }
     tests += n;
 
     while (n--) {
@@ -732,12 +734,12 @@ array(int) a() {
 	got_error = 0;
 	break;
       }
+
+      __signal_watchdog();
     }
   }
 
-  if (!quiet) {
-    werror ("%60s\r", "");
-  }
+  if (_verbose == 1) werror ("\r%60s\r", "");
 
   add_constant ("destructing");
   add_constant ("my_error");
