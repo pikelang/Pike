@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.59 1998/02/20 03:45:21 per Exp $");
+RCSID("$Id: spider.c,v 1.60 1998/02/20 11:23:43 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -413,7 +413,10 @@ void f_parse_html_lines(INT32 args)
 
   free_mapping(cont);
   free_mapping(single);
-  f_add(strings);
+  if(strings > 1)
+    f_add(strings);
+  else if(!strings)
+    push_text("");
 }
 
 char start_quote_character = '\000';
@@ -706,6 +709,7 @@ void do_html_parse(struct pike_string *ss,
 	  continue;
 	}
 	pop_stack();
+	continue;
       }
 
       /* Is it a container then? */
@@ -774,6 +778,7 @@ void do_html_parse(struct pike_string *ss,
 	  continue;
 	}
 	pop_stack();
+	continue;
       }
       free_svalue(&sval1);
       free_svalue(&sval2);
