@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.76 1999/10/25 16:14:10 marcus Exp $ */
+/* $Id: colortable.c,v 1.77 1999/10/30 11:51:41 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.76 1999/10/25 16:14:10 marcus Exp $
+**!	$Id: colortable.c,v 1.77 1999/10/30 11:51:41 mirar Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.76 1999/10/25 16:14:10 marcus Exp $");
+RCSID("$Id: colortable.c,v 1.77 1999/10/30 11:51:41 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -4452,7 +4452,12 @@ void init_image_colortable(void)
    ADD_FUNCTION("randomgrey",image_colortable_randomgrey,tOr(tFunc(tNone,tObj),tFunc(tInt,tObj)),0);
    /* function(:object)"
       "|function(int,int,int:object) */
-   ADD_FUNCTION("ordered",image_colortable_ordered,tOr(tFunc(tNone,tObj),tFunc(tInt tInt tInt,tObj)),0);
+   ADD_FUNCTION("ordered",image_colortable_ordered,
+		tOr5(tFunc(tNone,tObj),
+		     tFunc(tInt tInt tInt,tObj),
+		     tFunc(tInt tInt tInt tInt tInt,tObj),
+		     tFunc(tInt tInt tInt tInt tInt tInt tInt,tObj),
+		     tFunc(tInt tInt tInt tInt tInt tInt tInt tInt tInt tInt tInt,tObj)),0);
 
    /* function(:object) */
    ADD_FUNCTION("image",image_colortable_image,tFunc(tNone,tObj),0);
