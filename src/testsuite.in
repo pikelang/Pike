@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.474 2001/12/10 02:11:11 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.475 2001/12/12 21:14:04 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1044,17 +1044,20 @@ string efoo(string e)
  //_optimizer_debug(2);
  //_assembler_debug(20);
 
+ object orig_master = master();
+ replace_master(object_program(orig_master)());
  catch {
    compile_string("import \".\";\n"
                   "int foo() { testsuite_test.efoo; }\n",
 		  "testsuite_test", handler());
  };
+ replace_master(orig_master);
  return 0;
 ]],0);
 
 test_any([[
 // infokom:350113
- rm("testsuite_test_dir.pmod");
+ Stdio.recursive_rm("testsuite_test_dir.pmod");
  mkdir("testsuite_test_dir.pmod");
  Stdio.write_file("testsuite_test_dir.pmod/module.pmod",
 	#"
@@ -1073,18 +1076,19 @@ test_any([[
    void compile_warning(string file, int line, string err) { } 
  };
 
+  object orig_master = master();
+  replace_master(object_program(orig_master)());
   master()->set_inhibit_compile_errors(handler());
   mixed err = catch {
      compile_string("import \".\"; "
-  	"int foo() { testsuite_test_dir.a(); }",
-  	"test",handler());
+	"int foo() { testsuite_test_dir.a(); }",
+	"test",handler());
   };
   master()->set_inhibit_compile_errors(0);
+  replace_master(orig_master);
   if(err)
   { 
-    rm("testsuite_test_dir.pmod/module.pmod");
-    rm("testsuite_test_dir.pmod/A.pike");
-    rm("testsuite_test_dir.pmod");
+    Stdio.recursive_rm("testsuite_test_dir.pmod");
     return 0;
   }
   
@@ -1105,9 +1109,15 @@ test_do([[
     .X f() {return 0;}
 	");
 
- compile_string("import \".\"; "
-		"int foo() { testsuite_test_dir.A(); }",
-		"test");
+ object orig_master = master();
+ replace_master(object_program(orig_master)());
+ mixed err = catch {
+   compile_string("import \".\"; "
+		  "int foo() { testsuite_test_dir.A(); }",
+		  "test");
+ };
+ replace_master(orig_master);
+ if (err) throw (err);
 
  Stdio.recursive_rm("testsuite_test_dir.pmod");
 ]]);
