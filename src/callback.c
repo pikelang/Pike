@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: callback.c,v 1.22 2001/08/30 22:35:21 hubbe Exp $");
+RCSID("$Id: callback.c,v 1.23 2001/09/05 01:39:20 hubbe Exp $");
 
 struct callback_list fork_child_callback;
 
@@ -57,7 +57,7 @@ static void check_callback_chain(struct callback_list *lst)
   int e,len=0;
   struct callback_block *tmp;
   struct callback *foo;
-  if(d_flag>1)
+  if(d_flag>4)
   {
     for(foo=lst->callbacks;foo;foo=foo->next)
     {
