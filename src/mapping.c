@@ -107,20 +107,6 @@ static struct mapping *allocate_mapping(int size)
   return m;
 }
 
-unsigned INT32 hash_svalue(struct svalue *s)
-{
-  unsigned INT32 q;
-  switch(s->type)
-  {
-  case T_INT:   q=s->u.integer; break;
-  case T_FLOAT: q=(unsigned INT32)(s->u.float_number * 16843009.0); break;
-  default:      q=(unsigned INT32)s->u.refs >> 2;
-  }
-  q+=q % 997;
-  q+=((q + s->type) * 9248339);
-  
-  return q;
-}
 
 void really_free_mapping(struct mapping *m)
 {
@@ -946,6 +932,8 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
 
   ret=allocate_mapping(MAP_SLOTS(m->size));
   doing.pointer_b=ret;
+
+  check_stack(2);
 
   LOOP(m)
   {
