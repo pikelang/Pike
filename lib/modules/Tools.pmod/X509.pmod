@@ -61,7 +61,7 @@ string make_selfsigned_dsa_certificate(object dsa, int ttl, array name,
   object validity = asn1_sequence( ({ make_time(now),
 				      make_time(now + ttl) }) );
 
-  object signature_algorithm = Identifiers.dsa_sha_id;
+  object signature_algorithm = asn1_sequence( ({ Identifiers.dsa_sha_id }) );
   
   object keyinfo = asn1_sequence(
     ({ /* Use an identifier with parameters */
@@ -76,7 +76,7 @@ string make_selfsigned_dsa_certificate(object dsa, int ttl, array name,
   
   return asn1_sequence(
     ({ tbs,
-       asn1_sequence( ({ signature_algorithm }) ),
+       signature_algorithm,
        asn1_bit_string(dsa
 		       ->sign_ssl(tbs->get_der())) }))->get_der();
 }
