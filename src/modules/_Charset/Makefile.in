@@ -1,11 +1,11 @@
 #
-# $Id: Makefile.in,v 1.1 1998/10/15 19:33:33 marcus Exp $
+# $Id: Makefile.in,v 1.2 1998/11/05 01:06:59 marcus Exp $
 #
 
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
-OBJS=charsetmod.o iso2022.o tables.o
+OBJS=charsetmod.o iso2022.o tables.o misc.o
 MODULE_LDFLAGS=@LDFLAGS@
 
 @dynamic_module_makefile@

@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.2 1998/11/02 22:55:19 grubba Exp $");
+RCSID("$Id: charsetmod.c,v 1.3 1998/11/05 01:07:00 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -19,10 +19,13 @@ RCSID("$Id: charsetmod.c,v 1.2 1998/11/02 22:55:19 grubba Exp $");
 #define SIGNED
 #endif
 
+p_wchar1 *misc_charset_lookup(char *name, int *rlo, int *rhi);
+
 static struct program *std_cs_program = NULL, *std_rfc_program = NULL;
 static struct program *utf7_program = NULL, *utf8_program = NULL;
 static struct program *std_94_program = NULL, *std_96_program = NULL;
 static struct program *std_9494_program = NULL, *std_9696_program = NULL;
+static struct program *std_8bit_program = NULL;
 
 struct std_cs_stor { 
   struct string_builder strbuild;
@@ -33,6 +36,11 @@ struct std_rfc_stor {
   UNICHAR *table;
 };
 static SIZE_T std_rfc_stor_offs = 0;
+
+struct std_misc_stor {
+  int lo, hi;
+};
+static SIZE_T std_misc_stor_offs = 0;
 
 struct utf7_stor {
   INT32 dat, surro;
@@ -287,6 +295,7 @@ static void f_rfc1345(INT32 args)
   extern int num_charset_def;
   struct pike_string *str;
   int lo=0, hi=num_charset_def-1;
+  p_wchar1 *tabl;
 
   get_all_args("rfc1345()", args, "%S", &str);
 
@@ -315,6 +324,19 @@ static void f_rfc1345(INT32 args)
       hi=mid-1;
     else
       lo=mid+1;
+  }
+
+  if(str->size_shift==0 &&
+     (tabl = misc_charset_lookup(STR0(str), &lo, &hi))!=NULL) {
+    pop_n_elems(args);
+    push_object(clone_object(std_8bit_program, 0));
+    ((struct std_rfc_stor *)(sp[-1].u.object->storage+std_rfc_stor_offs))
+      ->table = (UNICHAR *)tabl;
+    ((struct std_misc_stor *)(sp[-1].u.object->storage+std_misc_stor_offs))
+      ->lo = lo;
+    ((struct std_misc_stor *)(sp[-1].u.object->storage+std_misc_stor_offs))
+      ->hi = hi;
+    return;    
   }
 
   pop_n_elems(args);
@@ -411,6 +433,31 @@ static void f_feed_9696(INT32 args)
   f_std_feed(args, feed_9696);
 }
 
+static INT32 feed_8bit(const p_wchar0 *p, INT32 l, struct std_cs_stor *s)
+{
+  UNICHAR *table =
+    ((struct std_rfc_stor *)(((char*)s)+std_rfc_stor_offs))->table;
+  struct std_misc_stor *misc =
+    ((struct std_misc_stor *)(((char*)s)+std_misc_stor_offs));
+  int lo = misc->lo, hi = misc->hi;
+
+  while(l--) {
+    p_wchar0 x = *p++;
+    if(x<lo || (x>0x7f && hi<=0x7f))
+      string_builder_putchar(&s->strbuild, x);
+    else if(x>hi)
+      string_builder_putchar(&s->strbuild, DEFCHAR);
+    else
+      string_builder_putchar(&s->strbuild, table[x-lo]);
+  }
+  return 0;
+}
+
+static void f_feed_8bit(INT32 args)
+{
+  f_std_feed(args, feed_8bit);
+}
+
 void pike_module_init(void)
 {
   int i;
@@ -477,6 +524,12 @@ void pike_module_init(void)
   add_function("feed", f_feed_9696, "function(string:object)", 0);
   std_9696_program = end_program();
 
+  start_new_program();
+  do_inherit(&prog, 0, NULL);
+  std_misc_stor_offs = add_storage(sizeof(struct std_misc_stor));
+  add_function("feed", f_feed_8bit, "function(string:object)", 0);
+  std_8bit_program = end_program();
+
   add_function_constant("rfc1345", f_rfc1345, "function(string:object)", 0);
 }
 
@@ -501,6 +554,9 @@ void pike_module_exit(void)
 
   if(std_9696_program != NULL)
     free_program(std_9696_program);
+
+  if(std_8bit_program != NULL)
+    free_program(std_8bit_program);
 
   if(std_rfc_program != NULL)
     free_program(std_rfc_program);
