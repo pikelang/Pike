@@ -17,10 +17,10 @@ string B(int(0..1) ... z) // encode bitfield
    return res;
 }
 
-array(string) A(mixed ... z) // encode array (use @)
+array(string) A(array z) // encode array 
 {
    if (!sizeof(z)) return ({"0","*"});
-   return ({""+sizeof(z)," { "+encode(@z)+" }"});
+   return ({""+sizeof(z),"{ "+encode(@z)+" }"});
 }
 
 class LysKOMError

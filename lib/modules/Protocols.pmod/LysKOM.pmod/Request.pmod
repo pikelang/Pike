@@ -1,4 +1,4 @@
-//  $Id: Request.pmod,v 1.2 1999/06/14 19:23:14 mirar Exp $
+//  $Id: Request.pmod,v 1.3 1999/07/19 13:46:45 mirar Exp $
 //! module Protocols
 //! submodule LysKOM
 //! submodule Request
@@ -793,16 +793,16 @@ class Create_text_old
    inherit _Request;
 
    array indata(string text,
-                array(int) misc_info)
+                array(string) misc_info)
    {
       return ({28,
                H(text),
-               @A((array(string))misc_info)});
+               @A(misc_info)});
    }
 
    int reply(array what)
    {
-      return what[0]; /* Text-No */
+      return (int)what[0]; /* Text-No */
    }
 
    void failure(object error)
@@ -1431,7 +1431,7 @@ class Create_anonymous_text_old
 
    int reply(array what)
    {
-      return what[0]; /* Text-No */
+      return (int)what[0]; /* Text-No */
    }
 
    void failure(object error)
@@ -2061,7 +2061,7 @@ class Create_text
 
    int reply(array what)
    {
-      return what[0]; /* Text-No */
+      return (int)what[0]; /* Text-No */
    }
 
    void failure(object error)
@@ -2088,7 +2088,7 @@ class Create_anonymous_text
 
    int reply(array what)
    {
-      return what[0]; /* Text-No */
+      return (int)what[0]; /* Text-No */
    }
 
    void failure(object error)

@@ -1,4 +1,4 @@
-//  $Id: Connection.pike,v 1.2 1999/06/12 23:13:47 mirar Exp $
+//  $Id: Connection.pike,v 1.3 1999/07/19 13:46:42 mirar Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -35,6 +35,15 @@ import ".";
 object this=this_object();
 object con; // LysKOM.Raw
 
+//! variable int protocol_level
+//! variable string session_software
+//! variable string software_version
+//!	Description of the connected server.
+
+int protocol_level;
+string session_software;
+string software_version;
+
 //!
 //! method void create(string server)
 //! method void create(string server,mapping options)
@@ -57,6 +66,20 @@ void create(string server,void|mapping options)
       return;
    }
 
+   mixed err=catch {
+      object vi=this->get_version_info();
+      protocol_level=vi->protocol_version;
+      session_software=vi->session_software;
+      software_version=vi->software_version;
+   };
+   if (err)
+      if (err->no==2)
+      {
+	 protocol_level=0;
+	 session_software=software_version="unknown";
+      }
+      else throw(err);
+
    if (options->login)
    {
       if (stringp(options->login))
@@ -68,9 +91,12 @@ void create(string server,void|mapping options)
 		  options->login,sizeof(a));
 	 options->login=a[0]->conf_no;
       }
-      this->login(options->login,
-		  options->password||"",
-		  options->invisible);
+      (protocol_level<3 ?
+       this->login_old:
+       this->login)
+	 (options->login,
+	  options->password||"",
+	  options->invisible);
    }
 }
 
