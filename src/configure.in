@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.204 1998/06/10 19:22:11 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.205 1998/06/15 23:05:16 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -795,13 +795,33 @@ int main()
         LIBS="${OLDLIBS}"
       ;;
 
-      xFreeBSD*)
-        case `uname -r` in
-          [[3-9]].*)
-	    # Threads on FreeBSD 3.0 earlier than 1998-06-07 are broken.
-            LIBS="${OLDLIBS} -pthread"
-          ;;
-        esac
+      xFreeBSD*)      
+	# Threads on FreeBSD earlier than 1998-06-07 are broken.
+        AC_MSG_CHECKING(if this version of FreeBSD may have working threads)
+	AC_CACHE_VAL(pike_cv_freebsd_threads, [
+	  AC_RUN([
+#include <osreldate.h>
+
+int main(int argc, char **argv)
+{
+  /* FreeBSD before 226001 and 300000 - 300003 have broken threads. */
+  if (__FreeBSD_version < 226001)
+    return(1);
+  if (__FreeBSD_version < 300000)
+    return(0);
+  if (__FreeBSD_version < 300004)
+    return(1);
+  return(0);
+}
+          ], pike_cv_freebsd_threads=yes, pike_cv_freebsd_threads=no,
+	  pike_cv_freebsd_threads=yes)
+	])
+	if test "x$pike_cv_freebsd_threads" = "xno"; then
+	  AC_MSG_RESULT(no)
+	else
+	  AC_MSG_RESULT(yes)
+          LIBS="${OLDLIBS} -pthread"
+	fi
       ;;
 
       *)
