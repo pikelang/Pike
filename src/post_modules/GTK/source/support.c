@@ -1,6 +1,5 @@
 #include <version.h>
-/* Woho! Now I can include image.h. :-) */
-/* #include "../../modules/Image/image.h" */
+#include <bignum.h>
 
 void pgtk_verify_setup()
 {
@@ -413,8 +412,10 @@ void pgtk_get_mapping_arg( struct mapping *map,
       switch(type)
       {
        case T_STRING:
+#ifdef DEBUG
          if(len != sizeof(char *))
            fatal("oddities detected\n");
+#endif
          MEMCPY(((char **)dest), &s->u.string->str, sizeof(char *));
          break;
        case T_INT:
@@ -427,8 +428,8 @@ void pgtk_get_mapping_arg( struct mapping *map,
            MEMCPY(((int *)dest), &s->u.integer, len);
          break;
        case T_FLOAT:
-         if(len == sizeof(float))
-           MEMCPY(((float *)dest), &s->u.float_number,len);
+         if(len == sizeof(FLOAT_TYPE))
+           MEMCPY(((FLOAT_TYPE *)dest), &s->u.float_number,len);
          else if(len == sizeof(double))
          {
            double d = s->u.float_number;
@@ -436,7 +437,8 @@ void pgtk_get_mapping_arg( struct mapping *map,
          }
          break;
       }
-      *mask |= madd;
+      if( mask )
+        *mask |= madd;
     }
   }
 }
@@ -742,8 +744,7 @@ void push_gdk_event(GdkEvent *e)
      goto dnd_event;
    case GDK_DROP_FINISHED:
      push_text("type"); push_text("drop_finished");
-  dnd_event:
-
+   dnd_event:
      push_text( "send_event" ); push_int( e->dnd.send_event );
      push_text( "x_root" ); push_int( e->dnd.x_root );
      push_text( "y_root" ); push_int( e->dnd.y_root );
@@ -754,156 +755,187 @@ void push_gdk_event(GdkEvent *e)
   f_aggregate_mapping( sp - osp );
 }
 
+enum { PUSHED_NOTHING, PUSHED_VALUE, NEED_RETURN, };
+
+static int pgtk_push_selection_data_param( GtkArg *a )
+{
+  fprintf( stderr, " Pushing selection data object %p now...\n",
+           GTK_VALUE_POINTER(*a));
+  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_selection_data_program);
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_accel_group_param( GtkArg *a )
+{
+  gtk_accel_group_ref( (void *)GTK_VALUE_POINTER(*a) );
+  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_accel_group_program);
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_ctree_node_param( GtkArg *a )
+{
+  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_CTreeNode_program);
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_ctree_row_param( GtkArg *a )
+{
+  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_CTreeRow_program);
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_gdk_drag_context_param( GtkArg *a )
+{
+  push_pgdkobject( GTK_VALUE_POINTER(*a), pgtk_GdkDragContext_program);
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_gdk_event_param( GtkArg *a )
+{
+  push_gdk_event( GTK_VALUE_POINTER( *a ) );
+  return NEED_RETURN;
+}
+
+static int pgtk_push_int_param( GtkArg *a )
+{
+  LONGEST retval;
+  switch( a->type )
+  {
+   case GTK_TYPE_INT:   retval = (LONGEST)GTK_VALUE_INT( *a ); break;
+   case GTK_TYPE_ENUM:  retval = (LONGEST)GTK_VALUE_ENUM( *a ); break;
+   case GTK_TYPE_FLAGS: retval = (LONGEST)GTK_VALUE_FLAGS( *a ); break;
+   case GTK_TYPE_BOOL:  retval = (LONGEST)GTK_VALUE_BOOL( *a ); break;
+   case GTK_TYPE_LONG:  retval = (LONGEST)GTK_VALUE_LONG( *a ); break;
+   case GTK_TYPE_CHAR:  retval = (LONGEST)GTK_VALUE_CHAR( *a ); break;
+   default: retval = (LONGEST)GTK_VALUE_UINT( *a ); break;
+  }
+  if( retval < 0x7fffffff )
+    push_int( retval );
+  else
+    push_int64( retval );
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_float_param( GtkArg *a )
+{
+  FLOAT_TYPE retval;
+  if( a->type == GTK_TYPE_FLOAT )
+    retval = (FLOAT_TYPE)GTK_VALUE_FLOAT( *a );
+  else
+    retval = (FLOAT_TYPE)GTK_VALUE_DOUBLE( *a );
+  push_float( retval );
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_string_param( GtkArg *a )
+{
+  gchar *t = GTK_VALUE_STRING( *a );
+  if( t )
+    push_text( t );
+  else
+    push_text( "" );
+  return PUSHED_VALUE;
+}
+
+static int pgtk_push_object_param( GtkArg *a )
+{
+  push_gtkobject( ((void *)GTK_VALUE_OBJECT( *a )) );
+  return PUSHED_VALUE;
+}
+
+static struct push_callback
+{
+  int (*callback)(GtkArg *);
+  unsigned int id;
+  struct push_callback *next;
+} push_callbacks[100], *push_cbtable[63];
+
+static int last_used_callback = 0;
+
+static void insert_push_callback( unsigned int i, int (*cb)(GtkArg *) )
+{
+  struct push_callback *new = push_callbacks + last_used_callback++;
+  struct push_callback *old = push_cbtable[ i%63 ];
+  new->id = i;
+  new->callback = cb;
+  if( old )  new->next = old;
+  push_cbtable[ i%63 ] = new;
+}
+
+static void build_push_callbacks( )
+{
+#define CB(X,Y)  insert_push_callback( X, Y )
+  CB( GTK_TYPE_INT,   pgtk_push_int_param );
+  CB( GTK_TYPE_ENUM,  pgtk_push_int_param );
+  CB( GTK_TYPE_FLAGS, pgtk_push_int_param );
+  CB( GTK_TYPE_BOOL,  pgtk_push_int_param );
+  CB( GTK_TYPE_UINT,  pgtk_push_int_param );
+  CB( GTK_TYPE_LONG,  pgtk_push_int_param );
+  CB( GTK_TYPE_CHAR,  pgtk_push_int_param );
+  CB( GTK_TYPE_ACCEL_FLAGS, pgtk_push_int_param );
+  CB( GTK_TYPE_GDK_MODIFIER_TYPE, pgtk_push_int_param );
+  CB( GTK_TYPE_FLOAT,  pgtk_push_float_param );
+  CB( GTK_TYPE_DOUBLE, pgtk_push_float_param );
+  CB( GTK_TYPE_STRING, pgtk_push_string_param );
+  CB( GTK_TYPE_OBJECT, pgtk_push_object_param );
+  CB( GTK_TYPE_SELECTION_DATA, pgtk_push_selection_data_param );
+  CB( GTK_TYPE_ACCEL_GROUP, pgtk_push_accel_group_param );
+  CB( GTK_TYPE_CTREE_NODE,  pgtk_push_ctree_node_param );
+  CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
+  CB( GTK_TYPE_GDK_EVENT, pgtk_push_gdk_event_param );
+  CB( GTK_TYPE_POINTER, NULL ); /* This might not be exactly what we want */
+  CB( GTK_TYPE_INVALID, NULL ); /* This might not be exactly what we want */
+}
+
+static int push_param( GtkArg *param )
+{
+  unsigned int t = GTK_TYPE_SEQNO(param->type);
+  struct push_callback *cb = push_cbtable[ t%63 ];
+  while( cb && (cb->id != t) ) cb = cb->next;
+  if( cb )
+  {
+    if( cb->callback )
+      if( cb->callback( param )== NEED_RETURN)
+        return 1;
+  }
+  else
+  {
+#ifdef DEBUG
+    char *s = gtk_type_name( t );
+    if(!s) s = "Unknown Type";
+    fprintf( stderr, "No callback for %d (%s)\n",t, s);
+    gtk_type_describe_heritage( t );
+    gtk_type_describe_tree( t, 1 );
+#endif
+    if( GTK_FUNDAMENTAL_TYPE(param->type) != t )
+    {
+      GtkArg p  = *param;
+      p.type = GTK_FUNDAMENTAL_TYPE(param->type);
+      return push_param( &p );
+    }
+  }
+  return 0;
+}
 
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
                              int nparams, GtkArg *params)
 {
   int i, j=0, res, return_value = 0;
+  struct svalue *osp = sp;
+
+  if( !last_used_callback ) build_push_callbacks();
+
   push_svalue(&d->args);
   push_gtkobject( obj );
-  for(i=0; i<nparams; i++)
-  {
-    switch( params[i].type )
-    {
-     case GTK_TYPE_INT:
-     case GTK_TYPE_ENUM:
-     case GTK_TYPE_FLAGS:
-       push_int( (int)GTK_VALUE_INT(params[i]) );
-       break;
-     case GTK_TYPE_BOOL:
-       push_int( (int)GTK_VALUE_BOOL(params[i]) );
-       break;
-     case GTK_TYPE_UINT:
-       push_int( (int)GTK_VALUE_UINT(params[i]) );
-       break;
-     case GTK_TYPE_LONG:
-       push_int( (int)GTK_VALUE_LONG(params[i]) );
-       break;
 
-     case GTK_TYPE_CHAR:
-       push_int( (int)((unsigned char)GTK_VALUE_CHAR( params[i] )) );
-       break;
+  for(i=0; !return_value && (i<nparams); i++)
+    return_value = push_param( params+i );
 
-     case GTK_TYPE_ULONG:
-       push_int( (int)GTK_VALUE_ULONG(params[i]) );
-       break;
-     case GTK_TYPE_INVALID:
-     case GTK_TYPE_NONE:
-       push_int( 0 );
-       break;
-     case GTK_TYPE_FLOAT:
-       push_float( (float)GTK_VALUE_FLOAT(params[i]) );
-       break;
-     case GTK_TYPE_DOUBLE:
-       push_float( (float)GTK_VALUE_DOUBLE(params[i]) );
-       break;
-
-     case GTK_TYPE_POINTER:
-     case GTK_TYPE_FOREIGN: /* These probably need fixing.. / Hubbe */
-
-     case GTK_TYPE_STRING:
-       if(GTK_VALUE_STRING( params[i] ))
-	 push_text( GTK_VALUE_STRING( params[i] ) );
-       else
-	 push_text( "" );
-       break;
-
-     case GTK_TYPE_OBJECT:
-       push_gtkobject( GTK_VALUE_OBJECT( params[i] ) );
-       break;
-
-     default:
-       {
-	 char *n = gtk_type_name( params[i].type );
-         if(n)
-         {
-           int ok = 0;
-           switch(n[3])
-           {
-            case 'A':
-              if(!strcmp(n, "GtkAccelFlags"))
-              {
-                push_int( GTK_VALUE_UINT( params[i] ) );
-                ok=1;
-              }
-              else if(!strcmp(n, "GtkAccelGroup"))
-              {
-                ok=1;
-                gtk_accel_group_ref( (void *)GTK_VALUE_POINTER(params[i]) );
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
-                                 pgtk_accel_group_program);
-              }
-              break;
-
-            case 'C':
-              if(!strcmp(n, "GtkCTreeNode"))
-              {
-                ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
-                                 pgtk_CTreeNode_program);
-              }
-              else if(!strcmp(n, "GtkCTreeRow"))
-              {
-                ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
-                                 pgtk_CTreeRow_program);
-              }
-              break;
-
-            case 'D':
-              if(!strcmp(n, "GdkDragContext"))
-              {
-                ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
-                                 pgtk_GdkDragContext_program);
-              }
-              break;
-
-            case 'E':
-              if(!strcmp(n, "GdkEvent"))
-              {
-                return_value = 1;
-                ok=1;
-                push_gdk_event( GTK_VALUE_POINTER( params[i] ) );
-              }
-              break;
-
-            case 'M':
-              if(!strcmp(n, "GdkModifierType"))
-              {
-                ok=1;
-                push_int( GTK_VALUE_UINT( params[i] ) );
-              }
-              break;
-
-            case 'S':
-              if(!strcmp(n, "GtkSelectionData"))
-              {
-                ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
-                                 pgtk_selection_data_program);
-              }
-              break;
-
-           }
-           if(!ok)
-           {
-             fprintf(stderr,"Unknown param type: %s<value=%p>\n",
-                     n, GTK_VALUE_POINTER(params[i]));
-             push_text( n );
-           }
-         }
-	 else
-	   push_int( 0 );
-       }
-    }
-    j++;
-  }
-  apply_svalue(&d->cb, 2+j);
+  apply_svalue(&d->cb, sp-osp);
   res = sp[-1].u.integer;
   pop_stack();
+
   if( return_value )
-  {
     if( params[1].type == GTK_TYPE_POINTER)
     {
       gint *return_val;
@@ -911,7 +943,6 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
       if(return_val)
         *return_val = res;
     }
-  }
   return res;
 }
 
