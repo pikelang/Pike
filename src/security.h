@@ -123,6 +123,7 @@ struct pike_creds
 extern struct object *current_creds;
 /* Prototypes begin here */
 void init_pike_security(void);
+void exit_pike_security(void);
 /* Prototypes end here */
 
 
