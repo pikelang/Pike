@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.21 1998/04/29 20:55:04 mirar Exp $
+# $Id: Makefile.in,v 1.22 1998/08/02 16:14:39 grubba Exp $
 
 @SET_MAKE@
 
@@ -47,6 +47,7 @@ install:
 
 clean:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; done
+	-rm -f linker_options modlist.h modlist_headers.h
 
 verify:
 	for a in $(MODULES) ; do ( cd $$a ; echo verifying $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verify ) || exit $$? ; done
