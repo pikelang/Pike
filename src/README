@@ -73,6 +73,9 @@ What to do when it doesn't work:
    (or possibly libg.a) in slackware.
    Compile with 'make EXTRALIBS="-lc -lm"' to get around this bug.
 
+   Threads support on linux works on some releaes, you might need to add
+   an _ to line 36 in /usr/include/sched.h (change _P to __P).
+
 8)
 If you find a bug in the interpreter, the first thing to do is to make sure
 the interpreter is compiled with DEBUG defined. If not recompile with DEBUG
