@@ -15,8 +15,7 @@ class GTK.GladeXML;
 #include "builtin_functions.h"
 #include <glade/glade.h>
 
-int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.11 2000/12/18 17:54:05 per Exp $");
+RCSID("$Id: gladexml.pre,v 1.12 2000/12/20 21:17:46 per Exp $");
 
 /* This function is used by signal_autoconnect to handle signal
    connection Basically it uses a mapping and data from the stack to
@@ -59,14 +58,14 @@ static void pgtk__signal_connect(const gchar *handler_name,
 	    handler_name, signal_name);
     return;
   }
-  b = xalloc(sizeof(struct signal_data));
+  b = (void *)xalloc(sizeof(struct signal_data));
   assign_svalue_no_free( &b->cb, cb);
   assign_svalue_no_free( &b->args, data);
 
   signal_id = gtk_signal_lookup (signal_name, GTK_OBJECT_TYPE (obj));
   if(!signal_id)
   {
-    free(b);
+    xfree(b);
 #if 0
     fprintf(stderr,
 	    "** WARNING **: Signal \"%s\" not defined in the `%s' "
@@ -78,6 +77,23 @@ static void pgtk__signal_connect(const gchar *handler_name,
                                (void *)pgtk_signal_func_wrapper, b,
 			       (void *)pgtk_free_signal_data, FALSE, after);
 }
+
+
+static void glade_verify_setup()
+{
+  static int glade_is_setup = 0;
+  pgtk_verify_setup();
+  if(!glade_is_setup)
+  {
+    glade_init();
+#if defined(NEED_GNOMESUPPORT_H) && defined(HAVE_GLADE_GNOME_INIT)
+    if(Pike_sp[-args].type == PIKE_T_INT && Pike_sp[-1].u.integer != 0)
+      glade_gnome_init();
+#endif
+    glade_is_setup = 1;
+  }
+}
+
 %}
 
 void new_from_memory(string data, string|void root, string|void domain)
@@ -91,6 +107,8 @@ void new_from_memory(string data, string|void root, string|void domain)
   GladeXML *xml = 0;
   struct pike_string *data = NULL;
   char *root = NULL, *domain = NULL;
+
+  glade_verify_setup();
 
   if(THIS->obj)
     Pike_error("GladeXML->new_from_memory(): Already initialized!\n");
@@ -144,6 +162,8 @@ void new(string filename, string|void root, string|void domain)
   GladeXML *xml = 0;
   char *data = NULL, *root = NULL, *domain = NULL;
 
+  glade_verify_setup();
+
   if(THIS->obj)
     Pike_error("GladeXML->new: Already initialized!\n");
 
@@ -181,27 +201,6 @@ void new(string filename, string|void root, string|void domain)
   else
     xml = glade_xml_new(data, root);
   THIS->obj = (GtkObject *)xml;
-  ref_push_object(Pike_fp->current_object);
-}
-
-void create(void|int init_gnome)
-//! Create a new GladeXML object. The first time it is run the libglade
-//! initializing function is automatically run.
-{
-  pgtk_verify_setup();
-  if(!glade_is_setup)
-  {
-    glade_init();
-#if defined(NEED_GNOMESUPPORT_H) && defined(HAVE_GLADE_GNOME_INIT)
-    if(args)
-    {
-      if(Pike_sp[-args].type == PIKE_T_INT && Pike_sp[-1].u.integer != 0)
-	glade_gnome_init();
-    }
-#endif
-    glade_is_setup = 1;
-  }
-  pop_n_elems(args);
   ref_push_object(Pike_fp->current_object);
 }
 
@@ -314,5 +313,5 @@ void signal_autoconnect(mapping(string:function) callbacks, mixed data)
   RETURN_THIS();
 }
 
-//! <p align="right"><font size="2"><i>$Id: gladexml.pre,v 1.11 2000/12/18 17:54:05 per Exp $</i></font></p>
+//! <p align="right"><font size="2"><i>$Id: gladexml.pre,v 1.12 2000/12/20 21:17:46 per Exp $</i></font></p>
 
