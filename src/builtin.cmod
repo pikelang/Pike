@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.111 2003/01/26 19:00:53 mirar Exp $
+|| $Id: builtin.cmod,v 1.112 2003/01/31 01:59:49 mast Exp $
 */
 
 #include "global.h"
@@ -32,6 +32,7 @@
 #include "fsort.h"
 #include "port.h"
 #include "gc.h"
+#include <assert.h>
 
 /*! @decl array(array(int|string)) describe_program(program p)
  *! @belongs Debug
@@ -1072,8 +1073,14 @@ PIKECLASS backtrace_frame
 {
   PIKEVAR mixed fun;
   PIKEVAR array args;
+
+  /* These are cleared when filename and lineno has been initialized
+   * from them. */
   CVAR struct program *prog;	/* FIXME: Ought to be a private pikevar... */
   CVAR PIKE_OPCODE_T *pc;
+
+  /* These two are considered to be uninitialized from prog, pc and
+   * fun as long as lineno == -1. */
   CVAR struct pike_string *filename;
   CVAR INT32 lineno;
 
@@ -1083,7 +1090,7 @@ PIKECLASS backtrace_frame
     THIS->fun.u.integer = 0;
     THIS->prog = NULL;
     THIS->pc = NULL;
-    THIS->lineno = 0;
+    THIS->lineno = -1;
     THIS->args = NULL;
     THIS->filename = NULL;
   }
@@ -1103,7 +1110,7 @@ PIKECLASS backtrace_frame
       THIS->filename = NULL;
     }
     THIS->pc = NULL;
-    THIS->lineno = 0;
+    THIS->lineno = -1;
     free_svalue(&THIS->fun);
     THIS->fun.type = T_INT;
     THIS->fun.u.integer = 0;
@@ -1116,6 +1123,30 @@ PIKECLASS backtrace_frame
     push_int(res);
   }
 
+  static void fill_in_file_and_line()
+  {
+    struct pike_string *file;
+    assert (THIS->lineno == -1);
+
+    if (THIS->pc && THIS->prog) {
+      file = low_get_line(THIS->pc, THIS->prog, &THIS->lineno);
+      THIS->pc = NULL;
+    }
+    else if (THIS->fun.type == PIKE_T_FUNCTION)
+      file = low_get_function_line (THIS->fun.u.object, THIS->fun.subtype,
+				    &THIS->lineno);
+    else if (THIS->prog)
+      file = low_get_program_line (THIS->prog, &THIS->lineno);
+
+    if (!THIS->filename) THIS->filename = file;
+    else free_string (file);
+
+    if (THIS->prog) {
+      free_program(THIS->prog);
+      THIS->prog = NULL;
+    }
+  }
+
   PIKEFUN string _sprintf(int c, mapping|void opts)
   {
     pop_n_elems(args);
@@ -1126,16 +1157,9 @@ PIKECLASS backtrace_frame
     }
 
     push_text("backtrace_frame(");
-    if (THIS->pc) {
-      if (!THIS->filename) {
-	THIS->filename = get_line(THIS->pc, THIS->prog, &THIS->lineno);
-      }
-      THIS->pc = NULL;
-    }
-    if (THIS->prog) {
-      free_program(THIS->prog);
-      THIS->prog = NULL;
-    }
+
+    if (THIS->lineno == -1) fill_in_file_and_line();
+
     if (THIS->filename) {
       ref_push_string(THIS->filename);
       push_text(":");
@@ -1225,28 +1249,16 @@ PIKECLASS backtrace_frame
     for (i = index; i <= end; i++) {
       switch(i) {
       case 0:	/* Filename */
-      case 1:	/* Linenumber */
-	if (THIS->pc) {
-	  if (!THIS->filename) {
-	    THIS->filename = get_line(THIS->pc, THIS->prog, &THIS->lineno);
-	  }
-	  THIS->pc = NULL;
-	}
-        if (THIS->prog) {
-	  free_program(THIS->prog);
-	  THIS->prog = NULL;
-	}
-        if (i) {
-	  /* Linenumber */
-	  push_int(THIS->lineno);
+	if (THIS->lineno == -1) fill_in_file_and_line();
+	if (THIS->filename) {
+	  ref_push_string(THIS->filename);
 	} else {
-	  /* Filename */
-	  if (THIS->filename) {
-	    ref_push_string(THIS->filename);
-	  } else {
-	    push_int(0);
-	  }
+	  push_int(0);
 	}
+	break;
+      case 1:	/* Linenumber */
+	if (THIS->lineno == -1) fill_in_file_and_line();
+	push_int(THIS->lineno);
 	break;
       case 2:	/* Function */
         push_svalue(&THIS->fun);
@@ -1297,46 +1309,36 @@ PIKECLASS backtrace_frame
 
     switch(index) {
     case 0:	/* Filename */
-    case 1:	/* Linenumber */
-      /* First make sure we have line-number info. */
-      if (THIS->pc) {
-	if (!THIS->filename) {
-	  THIS->filename = get_line(THIS->pc, THIS->prog, &THIS->lineno);
+      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (value->type != PIKE_T_STRING) {
+	if ((value->type != PIKE_T_INT) ||
+	    (value->u.integer)) {
+	  SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2,
+			       "string|int(0..0)");
 	}
-	THIS->pc = NULL;
-      }
-      if (THIS->prog) {
-	free_program(THIS->prog);
-	THIS->prog = NULL;
-      }
-      if (index) {
-	/* Linenumber */
-	if (value->type != PIKE_T_INT) {
-	  SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2, "int(1..)");
+	if (THIS->filename) {
+	  free_string(THIS->filename);
+	  THIS->filename = NULL;
 	}
-	THIS->lineno = value->u.integer;
       } else {
-	/* Filename */
-	if (value->type != PIKE_T_STRING) {
-	  if ((value->type != PIKE_T_INT) ||
-	      (value->u.integer)) {
-	    SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2,
-				 "string|int(0..0)");
-	  }
-	  if (THIS->filename) {
-	    free_string(THIS->filename);
-	    THIS->filename = NULL;
-	  }
-	} else {
-	  if (THIS->filename) {
-	    free_string(THIS->filename);
-	    THIS->filename = NULL;
-	  }
-	  copy_shared_string(THIS->filename, value->u.string);
+	if (THIS->filename) {
+	  free_string(THIS->filename);
+	  THIS->filename = NULL;
 	}
+	copy_shared_string(THIS->filename, value->u.string);
       }
       break;
+
+    case 1:	/* Linenumber */
+      if (THIS->lineno == -1) fill_in_file_and_line();
+      if (value->type != PIKE_T_INT) {
+	SIMPLE_BAD_ARG_ERROR("backtrace_frame->`[]=", 2, "int(1..)");
+      }
+      THIS->lineno = value->u.integer;
+      break;
+
     case 2:	/* Function */
+      if (THIS->lineno == -1) fill_in_file_and_line();
       assign_svalue(&THIS->fun, value);
       break;
     default:	/* Arguments */
@@ -1640,6 +1642,8 @@ PIKECLASS Buffer
       init_string_builder_alloc( &str2->str,
 				 str->str.malloced,
 				 str->str.s->size_shift );
+      /* We know the actual shift. */
+      str2->str.known_shift = str->str.s->size_shift;
       MEMCPY( (void *)str2->str.s, (void *)str->str.s,
 	      str->str.malloced+sizeof(struct pike_string));
     }
@@ -1668,7 +1672,10 @@ PIKECLASS Buffer
       if (sum < str->initial) {
 	sum = str->initial;
       }
-      init_string_builder_alloc(&str->str, sum, shift & ~(shift>>1));
+      shift = shift & ~(shift >> 1);
+      init_string_builder_alloc(&str->str, sum, shift);
+      /* We know it will be a string that really is this wide. */
+      str->str.known_shift = shift;
     }
 
     for( j = 0; j<args; j++ )
