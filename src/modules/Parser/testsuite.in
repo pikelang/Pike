@@ -591,7 +591,6 @@ test_any([[{
   p->add_container ("foo", lambda (object p, mapping a, string s)
 			     {return ({"[",s,"]"});});
   p->add_quote_tag ("?", "y", "?");
-  p->debug_mode(1);
   return p->finish ("<foo><? sadf </foo>z")->read();
 }]], "[<? sadf </foo>z]");
 test_any([[{
@@ -1026,3 +1025,8 @@ test_any([[{
   p->add_quote_tag ("?", "X", "?");
   return p->finish ("<")->read();
 }]], "T");
+test_any([[{
+  object p = Parser.HTML();
+  p->_set_data_callback (lambda () {});
+  return p->finish ("<x>")->read();
+}]], "<x>");
