@@ -28,11 +28,11 @@ array(string) features()
   a += ({ "single_precision_float" });
 #endif
 
-  foreach(({ "_Crypto", "Dbm", "GL", "GTK", "Gdbm", "Gmp", "Gz",
-	     "_Image_JPEG", "_Image_GIF", "_Image_TIFF", "_Image_TTF", 
-	     "Image.PNG", "Java", "Mird",
-	     "Msql", "Mysql", "Odbc", "Oracle", "Perl", "Postgres", "Ssleay",
-	     "sybase", "X"  }),
+  foreach(({ "_Crypto", "Dbm", "GL", "GLUT", "GTK", "Gdbm", "Gmp", "Gz",
+	     "_Image_FreeType", "_Image_GIF", "_Image_JPEG", "_Image_TIFF",
+	     "_Image_TTF", "_Image_XFace", "Image.PNG", "Java", "Mird",
+	     "Msql", "Mysql", "Odbc", "Oracle", "PDF", "Perl", "Postgres",
+	     "SANE", "Ssleay", "Yp", "sybase", "X"  }),
 	  string modname)
   {
     catch
