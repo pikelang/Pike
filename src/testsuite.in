@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.716 2004/04/21 18:55:25 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.717 2004/04/22 14:12:32 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7495,12 +7495,39 @@ test_eq([[cpp("#define FOO(X) X\nFOO(\"\\\n\")\n")]], "# 1 \"-\"\n\n\n \"\" \n")
 test_eq([[cpp("#define FOO(X) X\r\nFOO(\"\\\r\n\")\r\n")]], "# 1 \"-\"\n\n\n \"\"  \n" /* Note: Added extra space for \r. */);
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(\"\\\n\\\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
 test_equal([[compile_string("#define FOO(X) X\nstring s=FOO(#\"\n\n\");\nmixed f() {return ({__LINE__, backtrace()[-1][1]});}\n")()->f()]], ({5, 5}));
+// The following two tests are in triplicate to force testing in all shifts.
 test_do([[
 #define FOO(X) X
 string s = FOO (#"a
 b
 c");
 ]]);
+test_do([[
+#define FOO(X) X
+string s = FOO (#"a
+b
+c");
+]]);
+test_do([[
+#define FOO(X) X
+string s = FOO (#"a
+b
+c");
+]]);
+test_any([[
+#define FOO(X) X
+FOO ("\
+\
+");
+return __LINE__;
+]], 6);
+test_any([[
+#define FOO(X) X
+FOO ("\
+\
+");
+return __LINE__;
+]], 6);
 test_any([[
 #define FOO(X) X
 FOO ("\
