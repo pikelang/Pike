@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.60 2000/03/24 16:25:46 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.61 2000/04/04 20:35:57 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -682,6 +682,15 @@ static MUTEX_T debug_malloc_mutex;
 #undef strdup
 #undef main
 
+
+#ifdef WRAP
+#define malloc __real_malloc
+#define free __real_free
+#define realloc __real_realloc
+#define calloc __real_calloc
+#define strdup __real_strdup
+#endif
+
 #define LOCATION char *
 #define LOCATION_NAME(X) ((X)+1)
 #define LOCATION_IS_DYNAMIC(X) ((X)[0]=='D')
@@ -1251,7 +1260,6 @@ void *debug_malloc(size_t s, LOCATION location)
   return m;
 }
 
-
 void *debug_calloc(size_t a, size_t b, LOCATION location)
 {
   void *m=debug_malloc(a*b,location);
@@ -1288,6 +1296,10 @@ void debug_free(void *p, LOCATION location, int mustfind)
   struct memhdr *mh;
   if(!p) return;
   mt_lock(&debug_malloc_mutex);
+
+#ifdef WRAP
+  mustfind=1;
+#endif
 
   mh=my_find_memhdr(p,0);
 
@@ -1375,6 +1387,33 @@ char *debug_strdup(const char *s, LOCATION location)
 
   return m;
 }
+
+#ifdef WRAP
+void *__wrap_malloc(size_t size)
+{
+  return debug_malloc(size, "Smalloc");
+}
+
+void *__wrap_realloc(void *m, size_t size)
+{
+  return debug_realloc(m, size, "Srealloc");
+}
+
+void *__wrap_calloc(size_t size,size_t num)
+{
+  return debug_calloc(size,num,"Scalloc");
+}
+
+void __wrap_free(void * size)
+{
+  return debug_free(size, "Sfree", 0);
+}
+
+void *__wrap_strdup(const char *s)
+{
+  return debug_strdup(s, "Sstrdup");
+}
+#endif
 
 
 void dump_memhdr_locations(struct memhdr *from,
