@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.4 2002/10/30 01:07:23 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.5 2003/02/18 17:33:07 marcus Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -110,3 +110,66 @@ test_equal((string)Standards.URI("g?y/../x",      "http://a/b/c/d;p?q"), "http:/
 test_equal((string)Standards.URI("g#s/./x",       "http://a/b/c/d;p?q"), "http://a/b/c/g#s/./x")
 test_equal((string)Standards.URI("g#s/../x",      "http://a/b/c/d;p?q"), "http://a/b/c/g#s/../x")
 test_equal((string)Standards.URI("http:g",        "http://a/b/c/d;p?q"), "http:g")
+
+
+// - Standards.IDNA
+define([[test_punycode]], [[
+  test_eq([[Standards.IDNA.Punycode.encode($1)]], [[$2]])
+  test_eq([[Standards.IDNA.Punycode.decode($2)]], [[$1]])
+]])
+test_punycode([["\x644\x64A\x647\x645\x627\x628\x62A\x643\x644"
+                "\x645\x648\x634\x639\x631\x628\x64A\x61F"]],
+              [["egbpdaj6bu4bxfgehfvwxn"]]) // A
+test_punycode([["\x4ED6\x4EEC\x4E3A\x4EC0\x4E48\x4E0D\x8BF4\x4E2D\x6587"]],
+              [["ihqwcrb4cv8a8dqg056pqjye"]]) // B
+test_punycode([["\x4ED6\x5011\x7232\x4EC0\x9EBD\x4E0D\x8AAA\x4E2D\x6587"]],
+              [["ihqwctvzc91f659drss3x8bo0yb"]]) // C
+test_punycode([["Pro\x10Dprost\x11Bnemluví\x10D""esky"]],
+              [["Proprostnemluvesky-uyb24dma41a"]]) // D
+test_punycode([["\x5DC\x5DE\x5D4\x5D4\x5DD\x5E4\x5E9\x5D5\x5D8\x5DC\x5D0"
+                "\x5DE\x5D3\x5D1\x5E8\x5D9\x5DD\x5E2\x5D1\x5E8\x5D9\x5EA"]],
+              [["4dbcagdahymbxekheh6e0a7fei0b"]]) // E
+test_punycode([["\x92F\x939\x932\x94B\x917\x939\x93F\x928\x94D\x926\x940"
+                "\x915\x94D\x92F\x94B\x902\x928\x939\x940\x902\x92C\x94B"
+                "\x932\x938\x915\x924\x947\x939\x948\x902"]],
+              [["i1baa7eci9glrd9b2ae1bj0hfcgg6iyaf8o0a1dig0cd"]]) // F
+test_punycode([["\x306A\x305C\x307F\x3093\x306A\x65E5\x672C\x8A9E\x3092"
+                "\x8A71\x3057\x3066\x304F\x308C\x306A\x3044\x306E\x304B"]],
+              [["n8jok5ay5dzabd5bym9f0cm5685rrjetr6pdxa"]]) // G
+test_punycode([["\xC138\xACC4\xC758\xBAA8\xB4E0\xC0AC\xB78C\xB4E4\xC774"
+                "\xD55C\xAD6D\xC5B4\xB97C\xC774\xD574\xD55C\xB2E4\xBA74"
+                "\xC5BC\xB9C8\xB098\xC88B\xC744\xAE4C"]],
+              [["989aomsvi5e83db1d2a355cv1e0vak1dwrv93d5xbh15a0dt30a5j"
+                "psd879ccm6fea98c"]]) // H
+test_punycode([["\x43F\x43E\x447\x435\x43C\x443\x436\x435\x43E\x43D\x438"
+                "\x43D\x435\x433\x43E\x432\x43E\x440\x44F\x442\x43F\x43E"
+                "\x440\x443\x441\x441\x43A\x438"]],
+              [["b1abfaaepdrnnbgefbadotcwatmq2g4l"]]) // I
+test_punycode([["PorquénopuedensimplementehablarenEspañol"]],
+              [["PorqunopuedensimplementehablarenEspaol-fmd56a"]]) // J
+test_punycode([["T\x1EA1isaoh\x1ECDkhôngth\x1EC3""ch\x1EC9nóiti\x1EBFng"
+                "Vi\x1EC7t"]],
+              [["TisaohkhngthchnitingVit-kjcr8268qyxafd2f1b9g"]]) // K
+test_punycode([["3\x5E74""B\x7D44\x91D1\x516B\x5148\x751F"]],
+              [["3B-ww4c5e180e575a65lsy2b"]]) // L
+test_puntcode([["\x5B89\x5BA4\x5948\x7F8E\x6075-with-SUPER-MONKEYS"]],
+              [["-with-SUPER-MONKEYS-pc58ag80a8qai00g7n9n"]]) // M
+test_punycode([["Hello-Another-Way-\x305D\x308C\x305E\x308C"
+                "\x306E\x5834\x6240"]],
+              [["Hello-Another-Way--fc4qua05auwb3674vfr0b"]]) // N
+test_punycode([["\x3072\x3068\x3064\x5C4B\x6839\x306E\x4E0B""2"]],
+              [["2-u9tlzr9756bt3uc0v"]]) // O
+test_punycode([["Maji\x3067Koi\x3059\x308B""5\x79D2\x524D"]],
+              [["MajiKoi5-783gue6qz075azm5e"]]) // P
+test_punycode([["\x30D1\x30D5\x30A3\x30FC""de\x30EB\x30F3\x30D0"]],
+	      [["de-jg4avhby1noc0d"]]) // Q
+test_punycode([["\x305D\x306E\x30B9\x30D4\x30FC\x30C9\x3067"]],
+              [["d9juau41awczczp"]]) // R
+test_punycode([["-> $1.00 <-"]], [["-> $1.00 <--"]]) // S
+
+// Case check
+test_eq([[Standards.IDNA.Punycode.decode("b1abfaaepdrnnbgefbaDotcwatmq2g4l")]],
+        [["\x43F\x43E\x447\x435\x43C\x443\x436\x435\x43E\x43D\x438"
+          "\x43D\x435\x433\x43E\x432\x43E\x440\x44F\x442\x43F\x43E"
+          "\x440\x443\x441\x441\x43A\x438"]]) // I
+

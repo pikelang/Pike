@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.120 2003/02/16 03:59:57 mast Exp $
+|| $Id: builtin.cmod,v 1.121 2003/02/18 17:33:07 marcus Exp $
 */
 
 #include "global.h"
@@ -2261,6 +2261,215 @@ PIKECLASS single_string_replace
       
     f_single_string_replace_create(i);
   }
+}
+
+/*! @endclass
+ */
+
+/*! @class Bootstring
+ */
+PIKECLASS bootstring
+{
+  CVAR INT_TYPE base, tmin, tmax, skew, damp;
+  CVAR INT_TYPE initial_bias, initial_n;
+  CVAR p_wchar2 delim;
+  PIKEVAR string digits;
+
+  static INT_TYPE bootstring_cp_to_digit(p_wchar2 ch)
+  {
+    ptrdiff_t digit = THIS->digits->len;
+    PCHARP digits = MKPCHARP_STR( THIS->digits );
+    while (digit>=0)
+      if (INDEX_PCHARP( digits, digit ) == ch)
+	return digit;
+      else
+	--digit;
+    return -1;
+  }
+
+  static INT_TYPE bootstring_adapt(INT_TYPE delta, INT_TYPE numpoints,
+				   int firsttime)
+  {
+    struct bootstring_struct *bs = THIS;
+    INT_TYPE k = 0, b = bs->base;
+    INT_TYPE a = b - bs->tmin;
+    INT_TYPE limit = (a * bs->tmax) >> 1;
+    if (firsttime)
+      delta /= bs->damp;
+    else
+      delta >>= 1;
+    delta += delta / numpoints;
+    while (delta > limit) {
+      delta /= a;
+      k += b;
+    }
+    return k + (a + 1)*delta / (delta + bs->skew);
+  }
+
+  PIKEFUN string decode(string s)
+  {
+    struct bootstring_struct *bs = THIS;
+    INT_TYPE n = bs->initial_n;
+    INT_TYPE i = 0;
+    INT_TYPE bias = bs->initial_bias;
+    ptrdiff_t pos, input_left;
+    PCHARP input;
+    struct string_builder output;
+    init_string_builder( &output,0 );
+    input = MKPCHARP_STR( s );
+    input_left = s->len;
+    for (pos = input_left-1; pos > 0; --pos)
+      if (INDEX_PCHARP( input, pos ) == bs->delim) {
+	string_builder_append( &output, input, pos );
+	INC_PCHARP( input, pos+1 );
+	input_left -= pos+1;
+	break;
+      }
+
+    while (input_left > 0) {
+      INT_TYPE oldi = i;
+      INT_TYPE w = 1;
+      INT_TYPE k;
+      for (k=bs->base; ; k+=bs->base) {
+	INT_TYPE digit, t;
+	if (input_left < 1 ||
+	    (digit = bootstring_cp_to_digit( EXTRACT_PCHARP( input ) )) < 0) {
+	  free_string_builder( &output );
+	  Pike_error( "Invalid variable-length integer.\n" );
+	}
+	INC_PCHARP( input, 1 );
+	--input_left;
+	i += digit * w;	/* fail on overflow... */
+	if (k <= bias + bs->tmin)
+	  t = bs->tmin;
+	else if (k >= bias + bs->tmax)
+	  t = bs->tmax;
+	else
+	  t = k - bias;
+	if (digit < t) break;
+	w *= (bs->base - t);
+      }
+      bias = bootstring_adapt( i - oldi, output.s->len+1, !oldi );
+      n += i / (output.s->len+1);
+      i %= output.s->len+1;
+      string_builder_putchar( &output, n );
+      if (i != output.s->len-1)
+	switch (output.s->size_shift) {
+	case 0:
+	  {
+	    p_wchar0 *s = STR0(output.s);
+	    INT_TYPE p = output.s->len;
+	    while (--p>i)
+	      s[p] = s[p-1];
+	    s[p] = n;
+	  }
+	  break;
+	case 1:
+	  {
+	    p_wchar1 *s = STR1(output.s);
+	    INT_TYPE p = output.s->len;
+	    while (--p>i)
+	      s[p] = s[p-1];
+	    s[p] = n;
+	  }
+	  break;
+	case 2:
+	  {
+	    p_wchar2 *s = STR2(output.s);
+	    INT_TYPE p = output.s->len;
+	    while (--p>i)
+	      s[p] = s[p-1];
+	    s[p] = n;
+	  }
+	  break;
+	default:
+	  Pike_fatal("Illegal shift size!\n");
+	}
+      i++;
+    }
+
+    RETURN finish_string_builder( &output );
+  }
+
+  PIKEFUN string encode(string s)
+  {
+    struct bootstring_struct *bs = THIS;
+    INT_TYPE n = bs->initial_n;
+    INT_TYPE delta = 0;
+    INT_TYPE bias = bs->initial_bias;
+    INT_TYPE c, h, b = 0;
+    ptrdiff_t pos, input_left;
+    PCHARP input;
+    struct string_builder output;
+    init_string_builder( &output,0 );
+    input = MKPCHARP_STR( s );
+    input_left = s->len;
+    for (pos=0; pos<input_left; pos++)
+      if ((c = INDEX_PCHARP( input, pos )) < n) {
+	string_builder_putchar( &output, c );
+	b++;
+      }
+    if ((h = b))
+      string_builder_putchar( &output, bs->delim );
+    while (h < input_left) {
+      INT_TYPE m = -1;
+      for (pos=0; pos<input_left; pos++)
+	if ((c = INDEX_PCHARP( input, pos )) >= n &&
+	    (m < 0 || c < m))
+	  m = c;
+      delta = delta + (m - n) * (h + 1); /* fail on overflow... */
+      n = m;
+      for (pos=0; pos<input_left; pos++)
+	if ((c = INDEX_PCHARP( input, pos )) < n)
+	  delta++;
+	else if (c == n) {
+	  INT_TYPE k, q = delta;
+	  for (k=bs->base; ; k+=bs->base) {
+	    INT_TYPE t, bt;
+	    if (k <= bias + bs->tmin)
+	      t = bs->tmin;
+	    else if(k >= bias + bs->tmax)
+	      t = bs->tmax;
+	    else
+	      t = k-bias;
+	    if (q < t)
+	      break;
+	    bt = bs->base - t;
+	    string_builder_putchar( &output,
+				    index_shared_string( bs->digits,
+							 t + (q-t)%bt ) );
+	    q = (q-t) / bt;
+	  }
+	  string_builder_putchar( &output,
+				  index_shared_string( bs->digits, q ) );
+	  bias = bootstring_adapt( delta, h+1, h==b );
+	  delta = 0;
+	  h++;
+	}
+      delta++;
+      n++;
+    }
+
+    RETURN finish_string_builder( &output );
+  }
+
+  PIKEFUN void create( int base, int tmin, int tmax,
+		       int skew, int damp, 
+		       int initial_bias, int initial_n,
+		       int delim, string digits )
+  {
+    struct bootstring_struct *bs = THIS;
+    bs->base = base;  bs->tmin = tmin;  bs->tmax = tmax;
+    bs->skew = skew;  bs->damp = damp;
+    bs->initial_bias = initial_bias;  bs->initial_n = initial_n;
+    bs->delim = delim;
+    if (bs->digits) {
+      free_string( bs->digits );
+      bs->digits = NULL;
+    }
+    copy_shared_string( bs->digits, digits );
+  }
+
 }
 
 /*! @endclass
