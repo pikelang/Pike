@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.56 1998/02/19 05:13:22 per Exp $");
+RCSID("$Id: spider.c,v 1.57 1998/02/20 03:19:41 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -673,10 +673,11 @@ void do_html_parse(struct pike_string *ss,
 	}
 
 	apply_svalue(&sval1,2+(extra_args?extra_args->size:0));
+	free_svalue(&sval2);
+	free_svalue(&sval1);
+
 	if (sp[-1].type==T_STRING)
 	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 	  if (last!=i-1)
@@ -688,8 +689,6 @@ void do_html_parse(struct pike_string *ss,
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
 	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval2);
-	  free_svalue(&sval1);
 	  push_text("");
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
@@ -704,8 +703,6 @@ void do_html_parse(struct pike_string *ss,
 	  
 	  push_string(ss2);
 	  (*strings)++;
-
-	  free_svalue(&sval1);	/* FIXME: Double free? */
 	  continue;
 	}
 	pop_stack();
@@ -741,11 +738,11 @@ void do_html_parse(struct pike_string *ss,
 	}
 
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+	free_svalue(&sval1);
+	free_svalue(&sval2);
 
 	if (sp[-1].type==T_STRING)
 	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
 	  copy_shared_string(ss2,sp[-1].u.string);
 	  pop_stack();
 
@@ -759,10 +756,8 @@ void do_html_parse(struct pike_string *ss,
 	  i=last=j=m;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
-
+ 
 	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
 	  push_text("");
 	  f_multiply(2);
 	  copy_shared_string(ss2,sp[-1].u.string);
@@ -806,6 +801,51 @@ void do_html_parse(struct pike_string *ss,
 }
 
 
+#define PARSE_RECURSE()	do {					\
+  copy_shared_string(ss2,sp[-1].u.string); 			\
+  pop_stack();							\
+  if (last!=i-1)						\
+  {								\
+    push_string(make_shared_binary_string(s+last,i-last-1));	\
+    (*strings)++; 						\
+  }								\
+  for (;i<m; i++) if (s[i]==10) line++;				\
+  i=last=j=m;							\
+  do_html_parse_lines(ss2,cont,single,strings,			\
+		      recurse_left-1,extra_args,line);		\
+} while(0)
+
+
+#define PARSE_RETURN() do{					\
+  push_text("");						\
+  f_multiply(2);						\
+  (*strings)++;							\
+  if (last!=i-1)						\
+  {								\
+    copy_shared_string(ss2,sp[-1].u.string);			\
+    pop_stack();						\
+    push_string(make_shared_binary_string(s+last,i-last-1)); 	\
+    (*strings)++; 						\
+    push_string(ss2);						\
+  }								\
+  for (;i<j+k; i++) if (s[i]==10) line++;			\
+  i=last=j+k;							\
+} while(0)
+
+#define HANDLE_RETURN_VALUE() do {		\
+  free_svalue(&sval1);                          \
+  free_svalue(&sval2); 			        \
+  if (sp[-1].type==T_STRING)			\
+  {						\
+    PARSE_RECURSE();				\
+    continue;					\
+  } else if (sp[-1].type==T_ARRAY) {		\
+    PARSE_RETURN();				\
+    continue;					\
+  }						\
+  pop_stack();					\
+} while(0)
+
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
@@ -835,13 +875,11 @@ void do_html_parse_lines(struct pike_string *ss,
   last=0;
   for (i=0; i<len-1;)
   {
-    if (s[i]==10) 
+    if (s[i]==10)
     {
-       line++;
-       i++;
-    }
-    else if (s[i]=='<')
-    {
+      line++;
+      i++;
+    }  else if (s[i]=='<') {
       /* skip all spaces */
       i++;
       for (j=i; j<len && s[j]!='>' && !isspace(((unsigned char *)s)[j]); j++);
@@ -861,18 +899,23 @@ void do_html_parse_lines(struct pike_string *ss,
       if (sval1.type==T_STRING)
       {
 	/* A simple string ... */
-	assign_svalue_no_free(sp++,&sval1);
-	free_svalue(&sval1);
+	*(sp++)=sval1;
+#ifdef DEBUG
+	sval1.type=99;
+#endif
 	(*strings)++;
-	free_svalue(&sval2);
 	find_endtag(sval2.u.string ,s+j, len-j, &l); /* bug /law 960805 */
+	free_svalue(&sval2);
 	j+=l;
 	i=last=j;
 	continue;
       }
       else if (sval1.type!=T_INT)
       {
-	assign_svalue_no_free(sp++,&sval2);
+	*(sp++)=sval2;
+#ifdef DEBUG
+	sval2.type=99;
+#endif
 	k=push_parsed_tag(s+j,len-j); 
 	push_int(line);
 	if (extra_args)
@@ -880,126 +923,47 @@ void do_html_parse_lines(struct pike_string *ss,
 	  extra_args->refs++;
 	  push_array_items(extra_args);
 	}
-
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
-	if (sp[-1].type==T_STRING)
-	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-	  if (last!=i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  last=j+k;
-	  do_html_parse_lines(ss2,cont,single,strings,
-			      recurse_left-1,extra_args,line);
-	  for (; i<last; i++) if (s[i]==10) line++;
-	  continue;
-	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval2);
-	  free_svalue(&sval1);
-	  push_text("");
-	  f_multiply(2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-
-	  if (last != i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  i=last=j+k;
-	  
-	  push_string(ss2);
-	  (*strings)++;
-
-	  free_svalue(&sval1);
-	  continue;
-	}
-	pop_stack();
+	HANDLE_RETURN_VALUE();
       }
+      free_svalue(&sval1);
 
       /* Is it a container then? */
-      free_svalue(&sval1);
       mapping_index_no_free(&sval1,cont,&sval2);
       if (sval1.type==T_STRING)
       {
-	assign_svalue_no_free(sp++,&sval1);
-	free_svalue(&sval1);
+	*(sp++)=sval1;
+#ifdef DEBUG
+	sval1.type=99;
+#endif
 	(*strings)++;
 	find_endtag(sval2.u.string,s+j,len-j,&l);
 	free_svalue(&sval2);
-
 	j+=l;
 	for (; i<j; i++) if (s[i]==10) line++;
-
 	i=last=j;
 	continue;
       }
       else if (sval1.type != T_INT)
       {
-	assign_svalue_no_free(sp++,&sval2);
+	*(sp++)=sval2;
+#ifdef DEBUG
+	sval2.type=99;
+#endif
 	m=push_parsed_tag(s+j,len-j) + j;
 	k=find_endtag(sval2.u.string,s+m,len-m,&l);
 	push_string(make_shared_binary_string(s+m,k));
 	m+=l;
         /* M == just after end tag, from s */
-
 	push_int(line);
 	if (extra_args)
 	{
 	  extra_args->refs++;
 	  push_array_items(extra_args);
 	}
-
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
-
-	if (sp[-1].type==T_STRING)
-	{
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-
-	  /* i == first '<' ? */
-	  /* last == end of last tag */
-	  if (last!=i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  for (;i<m; i++) if (s[i]==10) line++;
-	  i=last=j=m;
-	  do_html_parse_lines(ss2,cont,single,strings,
-			      recurse_left-1,extra_args,line);
-	  continue;
-
-	} else if (sp[-1].type==T_ARRAY) {
-	  free_svalue(&sval1);
-	  free_svalue(&sval2);
-	  push_text("");
-	  f_multiply(2);
-	  copy_shared_string(ss2,sp[-1].u.string);
-	  pop_stack();
-
-	  if (last!=i-1)
-	  { 
-	    push_string(make_shared_binary_string(s+last,i-last-1)); 
-	    (*strings)++; 
-	  }
-	  for (;i<j+k; i++) if (s[i]==10) line++;
-	  i=last=j+k;
-	  push_string(ss2);
-	  (*strings)++;
-	  continue;
-	}
-	pop_stack();
+	HANDLE_RETURN_VALUE();
       }
-      free_svalue(&sval1);
-      free_svalue(&sval2);
       i=j;
     }
     else
