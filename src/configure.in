@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.230 1998/08/10 23:33:28 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.231 1998/08/27 00:12:29 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -807,6 +807,14 @@ else
 
   AC_MSG_CHECKING(unix threads)
   case "x$pike_cv_sys_os" in
+    xUnixWare)
+      if test "$GCC" = yes ; then
+        LIBS="${LIBS} -lthread"
+      else
+        LIBS="${LIBS} -Kthread"
+      fi
+      CFLAGS="${CFLAGS} -D_UNIXWARE_THREADS_"
+    ;;
     *)
       LIBS="${LIBS} -lthread"
     ;;
@@ -818,6 +826,9 @@ else
 #define _THREAD_SAFE
 #define _MIT_POSIX_THREADS 1
 #include <thread.h>
+#ifdef _UNIXWARE_THREADS_
+#include <synch.h>
+#endif
 
 void *foo(void *bar) { thr_exit(0); return 0; }
 mutex_t tmp;
@@ -2473,6 +2484,7 @@ then
 	BSD/OS*) LDSHARED="shlicc -r";;
 	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
 	UNIX_SV) LDSHARED="ld -G";;
+	UnixWare) LDSHARED="ld -G";;
         Windows_NT*) LDSHARED="$CC -shared";;
 	*) LDSHARED="ld";;
 	esac
@@ -2516,6 +2528,8 @@ then
         GNU*) LINKFORSHARED="-rdynamic";;
 	next) LINKFORSHARED="-u libsys_s";;
 	SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
+	# What about UNIX_SV?
+	UnixWare) LINKFORSHARED="-fpic -Wl,-Bexport";;
     esac
   else
     case $pike_cv_sys_os in
