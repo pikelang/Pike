@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.665 2002/12/14 16:01:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.666 2002/12/14 16:02:08 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -57,7 +57,7 @@ AC_PROG_MAKE_SET
 
 rm "conftest_VPATH.in" 2>/dev/null
 touch "$srcdir/conftest_VPATH.in"
-if test -f conftest_VPATH; then :; else
+if test -f conftest_VPATH.in; then :; else
   # Not building in source tree.
   AC_MSG_CHECKING([whether ${MAKE-make} supports VPATH])
   AC_CACHE_VAL(pike_cv_make_supports_VPATH, [
