@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.616 2003/03/08 12:28:55 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.617 2003/03/08 16:56:35 mirar Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5653,7 +5653,7 @@ test_equal(({"c","foo","bar","gazonk","a","b",})-({"foo","gazonk"}),({"c","bar",
 test_equal((<"foo","bar","gazonk">)-(<"foo","gazonk">),(<"bar">))
 test_equal((["foo":3,"bar":4,"gazonk":5])-(["foo":3,"gazonk":8]),(["bar":4]))
 
-test_equal([[string s="\57070 abcdefghijklmnopqrstuvwxyz012345678"; return strlen(s-s[1..35])]],37-35)
+test_any([[string s="\57070 abcdefghijklmnopqrstuvwxyz012345678"; return strlen(s-s[1..35])]],37-35)
 
 // testing ~
 test_eq(-1-4,~4)
