@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.18 2003/04/03 15:45:28 mast Exp $
+.\" $Id: pike.1,v 1.19 2003/04/16 16:36:31 nilsson Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2003/04/03 15:45:28 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2003/04/03 15:45:28 $"
+.TH pike 1 "$Date: 2003/04/16 16:36:31 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2003/04/16 16:36:31 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2003/04/03 15:45:28 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2003/04/16 16:36:31 $ \" Solaris nroff
 .\" Major (mj) and minor (mn) version of Pike
 .nr mj 7
 .nr mn 5
@@ -54,6 +54,12 @@ Set the debug level to
 .TP
 .B \-dc
 Increase the debug level of the Pike compiler (debug).
+.TP
+.B \-dg
+Resets the debug malloc at every garbage collection (debug).
+.TP
+.B \-dp
+Turns off the peep hole optimization (debug).
 .TP
 .B \-ds
 Debug signals (debug).
@@ -165,6 +171,9 @@ Increase or set the debug level (debug).
 Hide 
 .I feature
 from the resolver (debug).
+.TP
+.B \-\-dumpversion
+Print the Pike version number to stderr, e.g. "7.8.10\\n"
 .TP
 .B \-\-features
 List some of the features that are enabled in this Pike binary
