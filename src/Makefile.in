@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.318 2002/08/03 03:28:46 nilsson Exp $
+# $Id: Makefile.in,v 1.319 2002/08/20 08:23:41 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -834,8 +834,11 @@ precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 # exists, not that it's older than the target. In source dists,
 # precompile.sh is almost always newer than the targets that depend on
 # it, e.g. builtin.c that comes with the dist.
+#
+# The date stamp used to be 0103000070, but that seems to confuse some
+# recent OS's, that haven't heard of the 70's...
 precompile.sh-stamp: precompile.sh
-	@touch 0103000070 precompile.sh-stamp
+	@touch 0101010185 precompile.sh-stamp
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
