@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.9 1997/01/10 10:52:10 grubba Exp $
+ * $Id: mysql.c,v 1.10 1997/01/11 20:56:53 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -59,7 +59,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.9 1997/01/10 10:52:10 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.10 1997/01/11 20:56:53 grubba Exp $");
 
 struct program *mysql_program = NULL;
 
@@ -188,11 +188,17 @@ static void f_insert_id(INT32 args)
   push_int(mysql_insert_id(PIKE_MYSQL->socket));
 }
 
-/* string error() */
+/* int|string error() */
 static void f_error(INT32 args)
 {
+  char *error_msg = mysql_error(PIKE_MYSQL->socket);
+
   pop_n_elems(args);
-  push_text(mysql_error(PIKE_MYSQL->socket));
+  if (error_msg && *error_msg) {
+    push_text(error_msg);
+  } else {
+    push_int(0);
+  }
 }
 
 /* void select_db(string database) */
@@ -515,11 +521,13 @@ static void f_list_tables(INT32 args)
   push_object(clone(mysql_result_program, 1));
 }
 
-/* object(mysql_res) list_fields(string table, void|string wild) */
+/* array(int|mapping(string:mixed)) list_fields(string table, void|string wild) */
 static void f_list_fields(INT32 args)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   MYSQL_RES *result;
+  MYSQL_FIELD *field;
+  int i = 0;
   char *table;
   char *wild = NULL;
 
@@ -553,17 +561,18 @@ static void f_list_fields(INT32 args)
 
   THREADS_DISALLOW();
 
-  if (!(PIKE_MYSQL->last_result = result)) {
+  if (!result) {
     error("mysql->list_fields(): Cannot list databases: %s\n",
 	  mysql_error(PIKE_MYSQL->socket));
   }
 
   pop_n_elems(args);
 
-  push_object(fp->current_object);
-  fp->current_object->refs++;
-
-  push_object(clone(mysql_result_program, 1));
+  while ((field = mysql_fetch_field(result))) {
+    mysqlmod_parse_field(field, 1);
+    i++;
+  }
+  f_aggregate(i);
 }
 
 /* object(mysql_res) list_processes() */
@@ -627,7 +636,7 @@ void init_mysql_programs(void)
   start_new_program();
   add_storage(sizeof(struct precompiled_mysql));
 
-  add_function("error", f_error, "function(void:string)", OPT_EXTERNAL_DEPEND);
+  add_function("error", f_error, "function(void:int|string)", OPT_EXTERNAL_DEPEND);
   add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", OPT_SIDE_EFFECT);
   add_function("affected_rows", f_affected_rows, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("insert_id", f_insert_id, "function(void:int)", OPT_EXTERNAL_DEPEND);
@@ -643,7 +652,7 @@ void init_mysql_programs(void)
   add_function("protocol_info", f_protocol_info, "function(void:int)", OPT_EXTERNAL_DEPEND);
   add_function("list_dbs", f_list_dbs, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
   add_function("list_tables", f_list_tables, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
-  add_function("list_fields", f_list_fields, "function(string, void|string:object)", OPT_EXTERNAL_DEPEND);
+  add_function("list_fields", f_list_fields, "function(string, void|string:array(int|mapping(string:mixed)))", OPT_EXTERNAL_DEPEND);
   add_function("list_processes", f_list_processes, "function(void|string:object)", OPT_EXTERNAL_DEPEND);
 
   set_init_callback(init_mysql_struct);
