@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.76 2001/07/03 02:39:12 david%hedbor.org Exp $");
+RCSID("$Id: mapping.c,v 1.77 2001/08/09 18:53:00 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1606,9 +1606,9 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
   add_ref(md);
   MAPPING_LOOP(m)	/* FIXME: Shouldn't NEW_MAPPING_LOOP() be used? */
   {
-    copy_svalues_recursively_no_free(sp,&k->ind, 1, p);
+    copy_svalues_recursively_no_free(sp,&k->ind, 1, &doing);
     sp++;
-    copy_svalues_recursively_no_free(sp,&k->val, 1, p);
+    copy_svalues_recursively_no_free(sp,&k->val, 1, &doing);
     sp++;
     
     mapping_insert(ret, sp-2, sp-1);
