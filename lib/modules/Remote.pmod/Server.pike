@@ -69,3 +69,19 @@ void provide(string name, mixed thing)
   DEBUGMSG("providing "+name+"\n");
   sctx->add(name, thing);
 }
+
+void close()
+{
+  destruct (port);
+}
+
+void close_all()
+{
+  destruct (port);
+  foreach (connections, object conn) conn->close();
+}
+
+int closed()
+{
+  return !!port;
+}

@@ -1,7 +1,7 @@
 
 #include "remote.h"
 
-int closed;
+int closed, want_close, reading;
 object con;
 object ctx;
 array(function) close_callbacks = ({ });
@@ -37,7 +37,6 @@ int connect(string host, int port, int ... timeout)
   con = Stdio.File();
   if(!con->connect(host, port))
     return 0;
-  DEBUGMSG("connected\n");
   con->write("Pike remote client "+PROTO_VERSION+"\n");
   s="";
   con->set_nonblocking();
@@ -54,6 +53,7 @@ int connect(string host, int port, int ... timeout)
   }
   if((sscanf(s,"Pike remote server %4s\n", sv) == 1) && (sv == PROTO_VERSION))
   {
+    DEBUGMSG("connected\n");
     ctx = Context(replace(con->query_address(1), " ", "-"), this_object());
     con->set_nonblocking(read_some, write_some, closed_connection);
     return 1;
@@ -101,16 +101,32 @@ void remove_close_callback(array f)
   close_callbacks -= ({ f });
 }
 
+// - close
+//
+// Closes the connection.
+//
+void close()
+{
+  want_close = 1;
+  if (!(reading || sizeof (write_buffer))) {
+    if (!catch {con->set_blocking(); con->close();})
+      closed_connection();
+  }
+  else
+    DEBUGMSG("close delayed\n");
+}
+
 
 void closed_connection(int|void ignore)
 {
+  if (closed) return;
+  closed=1;
   DEBUGMSG("connection closed\n");
   foreach(close_callbacks, function|array f)
     if(functionp(f))
        f();
     else
       f[0](@f[1..]);
-  closed=1;
 }
 
 string write_buffer = "";
@@ -120,13 +136,16 @@ void write_some(int|void ignore)
     write_buffer="";
     return;
   }
-  int c;
-  if (!sizeof(write_buffer))
-    return;
-  c = con->write(write_buffer);
-  if(c <= 0) return;
-  write_buffer = write_buffer[c..];
-  DEBUGMSG("wrote "+c+" bytes\n");
+  if (sizeof (write_buffer)) {
+    int c;
+    c = con->write(write_buffer);
+    if(c <= 0) return;
+    write_buffer = write_buffer[c..];
+    DEBUGMSG("wrote "+c+" bytes\n");
+  }
+  if (want_close && !(reading || sizeof(write_buffer)))
+    if (!catch {con->set_blocking(); con->close();})
+      closed_connection();
 }
 
 void send(string s)
@@ -212,36 +231,41 @@ void read_some(int ignore, string s)
     sscanf(read_buffer, "%4c%s", request_size, read_buffer);
   }
   
-  if (request_size && sizeof(read_buffer) >= request_size)
+  if (request_size && sizeof(read_buffer) >= request_size && !want_close)
   {
     array data = decode_value(read_buffer[0..request_size-1]);
+    DEBUGMSG("got " + request_size + " bytes of message: "+ctx->describe(data)+"\n");
     read_buffer = read_buffer[request_size..];
     request_size = 0;
-    DEBUGMSG("got message: "+ctx->describe(data)+"\n");
+    reading = 1;
     switch(data[0]) {
 
      case CTX_ERROR:
        throw(({ "Remote error: "+data[1]+"\n", backtrace() }));
       
-     case CTX_CALL_SYNC: // a synchrounous call
+     case CTX_CALL_SYNC: // a synchronous call
        int refno = data[4];
        object|function f = ctx->decode_call(data);
        array args = ctx->decode(data[3]);
        mixed res;
        mixed e = catch { res = f(@args); };
-       if (e)
+       if (e) {
+	 catch (e[1] = e[1][sizeof(backtrace())..]);
 	 return_error(refno, e);
+       }
        else
 	 return_value(refno, res);
        break;
 
-     case CTX_CALL_ASYNC: // an asynchrounous call
+     case CTX_CALL_ASYNC: // an asynchronous call
        int refno = data[4];
        object|function f = ctx->decode_call(data);
        array args = ctx->decode(data[3]);
        mixed e = catch { f(@args); };
-       if (e)
+       if (e) {
+	 catch (e[1] = e[1][sizeof(backtrace())..]);
 	 return_error(refno, e);
+       }
        break;
 
      case CTX_RETURN: // a returned value
@@ -257,9 +281,14 @@ void read_some(int ignore, string s)
      default:
        error("Unknown message");
     }
+    reading = 0;
     if(sizeof(read_buffer) > 4) read_some(ignore,"");
   }
 }
+
+#if constant(Thread.Mutex)
+object(Thread.Mutex) block_read_mutex = Thread.Mutex();
+#endif
 
 
 // - call_sync
@@ -274,23 +303,43 @@ mixed call_sync(array data)
   int refno = data[4];
   string s = encode_value(data);
   con->set_blocking();
-  DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
-  pending_calls[refno] = 17; // a mutex lock key maybe?
-  send(sprintf("%4c%s", sizeof(s), s));
-  while(zero_type(finished_calls[refno]))
-  {
-    string s = con->read(8192,1);
-    if(!s || !strlen(s))
+  mixed err = catch {
+    DEBUGMSG("call_sync "+ctx->describe(data)+"\n");
+    pending_calls[refno] = 17; // a mutex lock key maybe?
+    send(sprintf("%4c%s", sizeof(s), s));
+    while(zero_type(finished_calls[refno]))
     {
-      closed_connection();
-      if (!nice)
-	 error("Could not read");
-      else
-	 return ([])[0]; // failed, like
+#if constant(Thread.Mutex)
+      // Only one thread does read(), the rest just waits. When the
+      // read() finishes, all threads loop once.
+      object lock = block_read_mutex->trylock();
+      if (lock) {
+#endif
+	string s = con->read(8192,1);
+	if(s && strlen(s)) read_some(0,s);
+	else
+	{
+#if constant(Thread.Mutex)
+	  lock = 0;
+#endif
+	  if (!catch (con->close()))
+	    closed_connection();
+	  if (!nice)
+	    error("Could not read");
+	  else
+	    return ([])[0]; // failed, like
+	}
+#if constant(Thread.Mutex)
+	lock = 0;
+      }
+      else block_read_mutex->lock();
+#endif
     }
-    read_some(0,s);
-  }
-  con->set_nonblocking(read_some, write_some, closed_connection);
+  };
+  mixed err2 = catch {
+    con->set_nonblocking(read_some, write_some, closed_connection);
+  };
+  if (err || err2) throw (err || err2);
   return get_result(refno);
 }
 
