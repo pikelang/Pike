@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! $Id: DNS.pmod,v 1.63 2002/09/17 18:58:14 nilsson Exp $
+//! $Id: DNS.pmod,v 1.64 2002/11/26 21:59:50 bill Exp $
 
 #pike __REAL_VERSION__
 
@@ -33,7 +33,7 @@ constant T_MINFO=14;
 constant T_MX=15;
 constant T_TXT=16;
 constant T_AAAA=28;
-
+constant T_SRV=33;
 
 class protocol
 {
@@ -89,6 +89,9 @@ class protocol
      case T_MINFO:
        string rmailbx = mkname(entry->rmailbx, pos, c);
        return rmailbx + mkname(entry->emailbx, pos+strlen(rmailbx), c);
+     case T_SRV:
+        return sprintf("%2c%2c%2c", entry->priority, entry->weight, entry->port) +
+                      mkname(entry->target||"", pos+6, c);
      case T_A:
      case T_AAAA:
        return sprintf("%@1c", (array(int))((entry->a||"0.0.0.0")/".")[0..3]);
@@ -251,6 +254,35 @@ class protocol
 	m->cpu=decode_string(s,next);
 	m->os=decode_string(s,next);
 	break;
+      case T_SRV:
+        m->priority=decode_short(s,next);
+        m->weight=decode_short(s,next);
+        m->port=decode_short(s,next);
+        m->target=decode_domain(s,next);
+        array x=m->name/".";
+        if(x[0]) 
+        {
+          if(x[0][0..0]=="_")
+            m->service=x[0][1..];
+          else
+            m->service=x[0];
+        }        
+        if(x[1])
+        {
+          if(x[1][0..0]=="_")
+            m->proto=x[1][1..];
+          else
+            m->proto=x[1];
+        }
+        if(x[2])
+        {
+          if(x[2][0..0]=="_")
+            x[2]=x[2][1..];
+          m->name=x[2..]*".";
+        }
+
+        m->ttl=decode_int(s,next);
+        break;
       case T_A:
       case T_AAAA:
 	m->a=sprintf("%{.%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
@@ -648,7 +680,6 @@ class client
   //!       DNS name(s).
   //!	@endarray
   //!
-
   array gethostbyname(string s)
   {
     mapping m;
@@ -683,6 +714,69 @@ class client
       ips,
       names,
     });
+  }
+
+  //!	Querys the service record from the default or given
+  //!	DNS server. The result is an array of arrays with the
+  //!   following six elements for each record. The array is
+  //!   sorted according to the priority of each record.
+  //!
+  //!   Each element of the array returned represents a service 
+  //!   record. Each service record contains the following:
+  //!	@array
+  //!     @elem int priority
+  //!       Priority
+  //!     @elem int weight
+  //!       Weight in event of multiple records with same priority.
+  //!     @elem int port
+  //!       port number
+  //!     @elem string target
+  //!       target dns name
+  //!	@endarray
+  //!
+  array getsrvbyname(string service, string protocol, string|void name)
+  {
+    mapping m;
+    if(!service) error("no service name specified.");
+    if(!protocol) error("no service name specified.");
+
+    if(sizeof(domains) && !name) { 
+      // we haven't provided a target domain to search on.
+      // we probably shouldn't do a searchdomains search, 
+      // as it might return ambiguous results.
+      m = do_sync_query(
+        mkquery("_" + service +"._"+ protocol + "." + name, C_IN, T_SRV));
+      if(!m || !m->an || !sizeof(m->an))
+	foreach(domains, string domain)
+	{
+          m = do_sync_query(
+            mkquery("_" + service +"._"+ protocol + "." + domain, C_IN, T_SRV));
+	  if(m && m->an && sizeof(m->an))
+	    break;
+	}
+    } else {
+      m = do_sync_query(
+        mkquery("_" + service +"._"+ protocol + "." + name, C_IN, T_SRV));
+    }
+
+    if (!m) { // no entries.
+      return ({});
+    }
+    
+    array res=({});
+
+    foreach(m->an, mapping x)
+    {
+       res+=({({x->priority, x->weight, x->port, x->target})});
+    }
+
+    // now we sort the array by priority as a convenience
+    array y=({});
+    foreach(res, array t)
+      y+=({t[0]});
+    sort(y, res);
+
+    return res;
   }
 
   string arpa_from_ip(string ip)
@@ -977,3 +1071,4 @@ class async_client
     ::create(server,domain);
   }
 };
+
