@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.4 1998/09/20 08:31:37 hubbe Exp $
+dnl $Id: configure.in,v 1.5 1999/08/27 19:15:21 noring Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(msqlmod.c)
@@ -75,6 +75,8 @@ dnl		AC_MSG_RESULT($pike_cv_msql_lib_dir)
 
 	if test "$pike_cv_msql_lib_dir" != "no" ; then
 		LDFLAGS="$LDFLAGS -L$pike_cv_msql_lib_dir"
+	fi
+
 		# On some OS's (Solaris 2) these are requiered
 		AC_CHECK_LIB(socket, socket, [], [])
 		AC_CHECK_LIB(nsl, gethostbyname, [], [])
@@ -84,7 +86,6 @@ dnl		AC_MSG_RESULT($pike_cv_msql_lib_dir)
 			pike_cv_found_msql="yes"
 			MSQL_SUPPORTED="yes"
 		fi
-	fi
 
 	if test x$pike_cv_found_msql = xyes; then
 		AC_CHECK_FUNCS(msqlListIndex)
