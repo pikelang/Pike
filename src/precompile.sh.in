@@ -25,6 +25,12 @@ fi
 old_method="${method-}"
 
 retries=.
+
+if test "@CROSS@" = "yes"; then
+  method="QQQQ"
+  retries="....."
+else :; fi
+
 while test "$retries" != .......... ; do
 
 RUNPIKE=
