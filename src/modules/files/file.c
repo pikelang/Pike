@@ -8,7 +8,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.80 1998/03/22 04:37:19 per Exp $");
+RCSID("$Id: file.c,v 1.81 1998/03/25 22:39:40 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -119,6 +119,12 @@ static void init_fd(int fd, int open_mode)
   files[fd].read_callback.u.integer=0;
   files[fd].write_callback.type=T_INT;
   files[fd].write_callback.u.integer=0;
+#ifdef WITH_OOB
+  files[fd].read_oob_callback.type=T_INT;
+  files[fd].read_oob_callback.u.integer=0;
+  files[fd].write_oob_callback.type=T_INT;
+  files[fd].write_oob_callback.u.integer=0;
+#endif /* WITH_OOB */
   files[fd].close_callback.type=T_INT;
   files[fd].close_callback.u.integer=0;
 }
@@ -138,14 +144,26 @@ static int close_fd(int fd)
   {
     set_read_callback(fd,0,0);
     set_write_callback(fd,0,0);
+#ifdef WITH_OOB
+    set_read_oob_callback(fd,0,0);
+    set_write_oob_callback(fd,0,0);
+#endif /* WITH_OOB */
 
     free_svalue(& files[fd].id);
     free_svalue(& files[fd].read_callback);
     free_svalue(& files[fd].write_callback);
+#ifdef WITH_OOB
+    free_svalue(& files[fd].read_oob_callback);
+    free_svalue(& files[fd].write_oob_callback);
+#endif /* WITH_OOB */
     free_svalue(& files[fd].close_callback);
     files[fd].id.type=T_INT;
     files[fd].read_callback.type=T_INT;
     files[fd].write_callback.type=T_INT;
+#ifdef WITH_OOB
+    files[fd].read_oob_callback.type=T_INT;
+    files[fd].write_oob_callback.type=T_INT;
+#endif /* WITH_OOB */
     files[fd].close_callback.type=T_INT;
     files[fd].open_mode = 0;
 
@@ -261,7 +279,6 @@ static int parse(char *a)
     case 'X':
       ret|=FILE_EXCLUSIVE;
       break;
-
    }
   }
 }
@@ -408,6 +425,129 @@ static struct pike_string *do_read(int fd,
   }
 }
 
+#ifdef WITH_OOB
+static struct pike_string *do_read_oob(int fd,
+				       INT32 r,
+				       int all,
+				       short *err)
+{
+  ONERROR ebuf;
+  INT32 bytes_read,i;
+  bytes_read=0;
+  *err=0;
+
+  if(r <= 65536)
+  {
+    struct pike_string *str;
+
+    str=begin_shared_string(r);
+
+    SET_ONERROR(ebuf, call_free, str);
+
+    do{
+      int fd=FD;
+      THREADS_ALLOW();
+      i=fd_recv(fd, str->str+bytes_read, r, MSG_OOB);
+      THREADS_DISALLOW();
+
+      check_signals(0,0,0);
+
+      if(i>0)
+      {
+	r-=i;
+	bytes_read+=i;
+	if(!all) break;
+      }
+      else if(i==0)
+      {
+	break;
+      }
+      else if(errno != EINTR)
+      {
+	*err=errno;
+	if(!bytes_read)
+	{
+	  free((char *)str);
+	  UNSET_ONERROR(ebuf);
+	  return 0;
+	}
+	break;
+      }
+    }while(r);
+
+    UNSET_ONERROR(ebuf);
+    
+    if(bytes_read == str->len)
+    {
+      return end_shared_string(str);
+    }else{
+      struct pike_string *foo; /* Per */
+      foo = make_shared_binary_string(str->str,bytes_read);
+      free((char *)str);
+      return foo;
+    }
+    
+  }else{
+#define CHUNK 65536
+    INT32 try_read;
+    dynamic_buffer b;
+
+    b.s.str=0;
+    initialize_buf(&b);
+    SET_ONERROR(ebuf, free_dynamic_buffer, &b);
+    do{
+      char *buf;
+      try_read=MINIMUM(CHUNK,r);
+      
+      buf = low_make_buf_space(try_read, &b);
+
+      THREADS_ALLOW();
+      i=fd_recv(fd, buf, try_read, MSG_OOB);
+      THREADS_DISALLOW();
+
+      check_signals(0,0,0);
+      
+      if(i==try_read)
+      {
+	r-=i;
+	bytes_read+=i;
+	if(!all) break;
+      }
+      else if(i>0)
+      {
+	bytes_read+=i;
+	r-=i;
+	low_make_buf_space(i - try_read, &b);
+	if(!all) break;
+      }
+      else if(i==0)
+      {
+	low_make_buf_space(-try_read, &b);
+	break;
+      }
+      else
+      {
+	low_make_buf_space(-try_read, &b);
+	if(errno != EINTR)
+	{
+	  *err=errno;
+	  if(!bytes_read)
+	  {
+	    free(b.s.str);
+	    UNSET_ONERROR(ebuf);
+	    return 0;
+	  }
+	  break;
+	}
+      }
+    }while(r);
+
+    UNSET_ONERROR(ebuf);
+    return low_free_buf(&b);
+  }
+}
+#endif /* WITH_OOB */
+
 static void file_read(INT32 args)
 {
   struct pike_string *tmp;
@@ -426,7 +566,7 @@ static void file_read(INT32 args)
       error("Bad argument 1 to file->read().\n");
     len=sp[-args].u.integer;
     if(len<0)
-      error("Cannot read negative number of args.\n");
+      error("Cannot read negative number of characters.\n");
   }
 
   if(args > 1 && !IS_ZERO(sp+1-args))
@@ -444,6 +584,44 @@ static void file_read(INT32 args)
     push_int(0);
 }
 
+#ifdef WITH_OOB
+static void file_read_oob(INT32 args)
+{
+  struct pike_string *tmp;
+  INT32 all, len;
+
+  if(FD < 0)
+    error("File not open.\n");
+
+  if(!args)
+  {
+    len=0x7fffffff;
+  }
+  else
+  {
+    if(sp[-args].type != T_INT)
+      error("Bad argument 1 to file->read_oob().\n");
+    len=sp[-args].u.integer;
+    if(len<0)
+      error("Cannot read negative number of characters.\n");
+  }
+
+  if(args > 1 && !IS_ZERO(sp+1-args))
+  {
+    all=0;
+  }else{
+    all=1;
+  }
+
+  pop_n_elems(args);
+
+  if((tmp=do_read_oob(FD, len, all, & ERRNO)))
+    push_string(tmp);
+  else
+    push_int(0);
+}
+#endif /* WITH_OOB */
+
 static void file_write_callback(int fd, void *data)
 {
   set_write_callback(fd, 0, 0);
@@ -452,6 +630,17 @@ static void file_write_callback(int fd, void *data)
   apply_svalue(& files[fd].write_callback, 1);
   pop_stack();
 }
+
+#ifdef WITH_OOB
+static void file_write_oob_callback(int fd, void *data)
+{
+  set_write_oob_callback(fd, 0, 0);
+
+  assign_svalue_no_free(sp++, & files[fd].id);
+  apply_svalue(& files[fd].write_oob_callback, 1);
+  pop_stack();
+}
+#endif /* WITH_OOB */
 
 static void file_write(INT32 args)
 {
@@ -516,6 +705,71 @@ static void file_write(INT32 args)
   push_int(written);
 }
 
+#ifdef WITH_OOB
+static void file_write_oob(INT32 args)
+{
+  INT32 written,i;
+  struct pike_string *str;
+
+  if(args<1 || sp[-args].type != T_STRING)
+    error("Bad argument 1 to file->write().\n");
+
+  if(args > 1)
+  {
+    extern void f_sprintf(INT32);
+    f_sprintf(args);
+    args=1;
+  }
+
+  if(FD < 0)
+    error("File not open for write_oob.\n");
+  
+  written=0;
+  str=sp[-args].u.string;
+
+  while(written < str->len)
+  {
+    int fd=FD;
+    THREADS_ALLOW();
+    i=fd_send(fd, str->str + written, str->len - written, MSG_OOB);
+    THREADS_DISALLOW();
+
+#ifdef _REENTRANT
+    if(FD<0) error("File destructed while in file->write_oob.\n");
+#endif
+
+    if(i<0)
+    {
+      switch(errno)
+      {
+      default:
+	ERRNO=errno;
+	pop_n_elems(args);
+	push_int(-1);
+	return;
+
+      case EINTR: continue;
+      case EWOULDBLOCK: break;
+      }
+      break;
+    }else{
+      written+=i;
+
+      /* Avoid extra write() */
+      if(THIS->open_mode & FILE_NONBLOCKING)
+	break;
+    }
+  }
+
+  if(!IS_ZERO(& THIS->write_oob_callback))
+    set_write_oob_callback(FD, file_write_oob_callback, 0);
+  ERRNO=0;
+
+  pop_n_elems(args);
+  push_int(written);
+}
+#endif /* WITH_OOB */
+
 static int do_close(int fd, int flags)
 {
   if(fd == -1) return 1; /* already closed */
@@ -536,6 +790,9 @@ static int do_close(int fd, int flags)
     if(files[fd].open_mode & FILE_WRITE)
     {
       set_read_callback(fd,0,0);
+#ifdef WITH_OOB
+      set_read_oob_callback(fd,0,0);
+#endif /* WITH_OOB */
       fd_shutdown(fd, 0);
       files[fd].open_mode &=~ FILE_READ;
       return 0;
@@ -548,6 +805,9 @@ static int do_close(int fd, int flags)
     if(files[fd].open_mode & FILE_READ)
     {
       set_write_callback(fd,0,0);
+#ifdef WITH_OOB
+      set_write_oob_callback(fd,0,0);
+#endif /* WITH_OOB */
       fd_shutdown(fd, 1);
       files[fd].open_mode &=~ FILE_WRITE;
       return 0;
@@ -645,7 +905,6 @@ static void file_open(INT32 args)
   }
   else
   {
-    
     init_fd(fd,flags | fd_query_properties(fd, FILE_CAPABILITIES));
     FD=fd;
     ERRNO = 0;
@@ -763,6 +1022,17 @@ static struct pike_string *simple_do_read(INT32 *amount,int fd)
   return 0;
 }
 
+#ifdef WITH_OOB
+static struct pike_string *simple_do_read_oob(INT32 *amount,int fd)
+{
+  char buffer[READ_BUFFER];
+  *amount = fd_recv(fd, buffer, READ_BUFFER, MSG_OOB);
+  /* Note: OOB packets may have zero size */
+  if(*amount>=0) return make_shared_binary_string(buffer,*amount);
+  return 0;
+}
+#endif /* WITH_OOB */
+
 static void file_read_callback(int fd, void *data)
 {
   struct pike_string *s;
@@ -805,6 +1075,44 @@ static void file_read_callback(int fd, void *data)
   apply_svalue(& files[fd].close_callback, 1);
 }
 
+#ifdef WITH_OOB
+static void file_read_oob_callback(int fd, void *data)
+{
+  struct pike_string *s;
+  INT32 i;
+
+#ifdef DEBUG
+  if(fd == -1 || fd >= MAX_OPEN_FILEDESCRIPTORS)
+    fatal("Error in file::read_oob_callback()\n");
+#endif
+
+  /* files[fd].errno=0; */
+
+  s=simple_do_read_oob(&i, fd);
+
+  /* Note: OOB ackets may have zero size */
+  if(i>=0)
+  {
+    assign_svalue_no_free(sp++, &files[fd].id);
+    push_string(s);
+    apply_svalue(& files[fd].read_oob_callback, 2);
+    pop_stack();
+    return;
+  }
+  
+  if(i < 0)
+  {
+    /* files[fd].errno=errno; */
+    switch(errno)
+    {
+    case EINTR:
+    case EWOULDBLOCK:
+      return;
+    }
+  }
+}
+#endif /* WITH_OOB */
+
 static void file_set_read_callback(INT32 args)
 {
   if(FD < 0)
@@ -843,6 +1151,46 @@ static void file_set_write_callback(INT32 args)
   pop_n_elems(args);
 }
 
+#ifdef WITH_OOB
+static void file_set_read_oob_callback(INT32 args)
+{
+  if(FD < 0)
+    error("File is not open.\n");
+
+  if(args < 1)
+    error("Too few arguments to file->set_read_oob_callback().\n");
+
+  assign_svalue(& THIS->read_oob_callback, sp-args);
+
+  if(IS_ZERO(& THIS->read_oob_callback))
+  {
+    set_read_oob_callback(FD, 0, 0);
+  }else{
+    set_read_oob_callback(FD, file_read_oob_callback, 0);
+  }
+  pop_n_elems(args);
+}
+
+static void file_set_write_oob_callback(INT32 args)
+{
+  if(FD < 0)
+    error("File is not open.\n");
+
+  if(args < 1)
+    error("Too few arguments to file->set_write_oob_callback().\n");
+
+  assign_svalue(& THIS->write_oob_callback, sp-args);
+
+  if(IS_ZERO(& THIS->write_oob_callback))
+  {
+    set_write_oob_callback(FD, 0, 0);
+  }else{
+    set_write_oob_callback(FD, file_write_oob_callback, 0);
+  }
+  pop_n_elems(args);
+}
+#endif /* WITH_OOB */
+
 static void file_set_close_callback(INT32 args)
 {
   if(FD < 0)
@@ -870,7 +1218,13 @@ static void file_set_nonblocking(INT32 args)
 
   switch(args)
   {
+#ifdef WITH_OOB
+  default: pop_n_elems(args-5);
+  case 5: file_set_write_oob_callback(1);
+  case 4: file_set_read_oob_callback(1);
+#else /* !WITH_OOB */
   default: pop_n_elems(args-3);
+#endif /* WITH_OOB */
   case 3: file_set_close_callback(1);
   case 2: file_set_write_callback(1);
   case 1: file_set_read_callback(1);
@@ -888,6 +1242,16 @@ static void file_set_blocking(INT32 args)
   free_svalue(& THIS->write_callback);
   THIS->write_callback.type=T_INT;
   THIS->write_callback.u.integer=0;
+
+#ifdef WITH_OOB
+  free_svalue(& THIS->read_oob_callback);
+  THIS->read_oob_callback.type=T_INT;
+  THIS->read_oob_callback.u.integer=0;
+  free_svalue(& THIS->write_oob_callback);
+  THIS->write_oob_callback.type=T_INT;
+  THIS->write_oob_callback.u.integer=0;
+#endif /* WITH_OOB */
+
   free_svalue(& THIS->close_callback);
   THIS->close_callback.type=T_INT;
   THIS->close_callback.u.integer=0;
@@ -896,6 +1260,10 @@ static void file_set_blocking(INT32 args)
   {
     set_read_callback(FD, 0, 0);
     set_write_callback(FD, 0, 0);
+#ifdef WITH_OOB
+    set_read_oob_callback(FD, 0, 0);
+    set_write_oob_callback(FD, 0, 0);
+#endif /* WITH_OOB */
     set_nonblocking(FD,0);
     THIS->open_mode &=~ FILE_NONBLOCKING;
   }
@@ -965,6 +1333,26 @@ static void file_query_write_callback(INT32 args)
   pop_n_elems(args);
   assign_svalue_no_free(sp++,& THIS->write_callback);
 }
+
+#ifdef WITH_OOB
+static void file_query_read_oob_callback(INT32 args)
+{
+  if(FD < 0)
+    error("File not open.\n");
+
+  pop_n_elems(args);
+  assign_svalue_no_free(sp++,& THIS->read_oob_callback);
+}
+
+static void file_query_write_oob_callback(INT32 args)
+{
+  if(FD < 0)
+    error("File not open.\n");
+
+  pop_n_elems(args);
+  assign_svalue_no_free(sp++,& THIS->write_oob_callback);
+}
+#endif /* WITH_OOB */
 
 static void file_query_close_callback(INT32 args)
 {
@@ -1250,7 +1638,7 @@ static void file_pipe(INT32 args)
       break;
     }
     
-    error("Cannot create a pipe patching those parameters.\n");
+    error("Cannot create a pipe matching those parameters.\n");
   }while(0);
     
   if(i<0)
@@ -1298,6 +1686,10 @@ static void gc_mark_file_struct(struct object *o)
   {
     gc_mark_svalues(& THIS->read_callback,1);
     gc_mark_svalues(& THIS->write_callback,1);
+#ifdef WITH_OOB
+    gc_mark_svalues(& THIS->read_oob_callback,1);
+    gc_mark_svalues(& THIS->write_oob_callback,1);
+#endif /* WITH_OOB */
     gc_mark_svalues(& THIS->close_callback,1);
     gc_mark_svalues(& THIS->id,1);
   }
@@ -1387,6 +1779,12 @@ static void file_dup2(INT32 args)
 
   assign_svalue_no_free(& files[fd].read_callback, & THIS->read_callback);
   assign_svalue_no_free(& files[fd].write_callback, & THIS->write_callback);
+#ifdef WITH_OOB
+  assign_svalue_no_free(& files[fd].read_oob_callback,
+			& THIS->read_oob_callback);
+  assign_svalue_no_free(& files[fd].write_oob_callback,
+			& THIS->write_oob_callback);
+#endif /* WITH_OOB */
   assign_svalue_no_free(& files[fd].close_callback, & THIS->close_callback);
   assign_svalue_no_free(& files[fd].id, & THIS->id);
 
@@ -1403,6 +1801,22 @@ static void file_dup2(INT32 args)
   }else{
     set_write_callback(fd, file_write_callback, 0);
   }
+
+#ifdef WITH_OOB  
+  if(IS_ZERO(& THIS->read_oob_callback))
+  {
+    set_read_oob_callback(fd, 0,0);
+  }else{
+    set_read_oob_callback(fd, file_read_oob_callback, 0);
+  }
+  
+  if(IS_ZERO(& THIS->write_oob_callback))
+  {
+    set_write_oob_callback(fd, 0,0);
+  }else{
+    set_write_oob_callback(fd, file_write_oob_callback, 0);
+  }
+#endif /* WITH_OOB */
   
   pop_n_elems(args);
   push_int(1);
@@ -1909,6 +2323,28 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
       tmp=0;
     }
 
+#ifdef WITH_OOB
+    if(query_read_oob_callback(e)!=file_read_oob_callback)
+    {
+      gc_check_svalues( & files[e].read_oob_callback, 1);
+    }else{
+#ifdef DEBUG
+      debug_gc_xmark_svalues( & files[e].read_oob_callback, 1, "File->read_oob_callback");
+#endif
+      tmp=0;
+    }
+
+    if(query_write_oob_callback(e)!=file_write_oob_callback)
+    {
+      gc_check_svalues( & files[e].write_oob_callback, 1);
+    }else{
+#ifdef DEBUG
+      debug_gc_xmark_svalues( & files[e].write_oob_callback, 1, "File->write_callback");
+#endif
+      tmp=0;
+    }
+#endif /* WITH_OOB */
+
     if(tmp)
     {
       gc_check_svalues( & files[e].id, 1);
@@ -1954,6 +2390,10 @@ void pike_module_init(void)
   add_function("close",file_close,"function(string|void:int)",0);
   add_function("read",file_read,"function(int|void,int|void:int|string)",0);
   add_function("write",file_write,"function(string,void|mixed...:int)",0);
+#ifdef WITH_OOB
+  add_function("read_oob",file_read_oob,"function(int|void,int|void:int|string)",0);
+  add_function("write_oob",file_write_oob,"function(string,void|mixed...:int)",0);
+#endif /* WITH_OOB */
 
   add_function("seek",file_seek,"function(int,int|void,int|void:int)",0);
   add_function("tell",file_tell,"function(:int)",0);
@@ -1961,9 +2401,17 @@ void pike_module_init(void)
   add_function("errno",file_errno,"function(:int)",0);
 
   add_function("set_close_on_exec",file_set_close_on_exec,"function(int:void)",0);
+#ifdef WITH_OOB
+  add_function("set_nonblocking",file_set_nonblocking,"function(mixed|void,mixed|void,mixed|void,mixed|void,mixed|void:void)",0);
+#else /* !WITH_OOB */
   add_function("set_nonblocking",file_set_nonblocking,"function(mixed|void,mixed|void,mixed|void:void)",0);
+#endif /* WITH_OOB */
   add_function("set_read_callback",file_set_read_callback,"function(mixed:void)",0);
   add_function("set_write_callback",file_set_write_callback,"function(mixed:void)",0);
+#ifdef WITH_OOB
+  add_function("set_read_oob_callback",file_set_read_oob_callback,"function(mixed:void)",0);
+  add_function("set_write_oob_callback",file_set_write_oob_callback,"function(mixed:void)",0);
+#endif /* WITH_OOB */
   add_function("set_close_callback",file_set_close_callback,"function(mixed:void)",0);
 
   add_function("set_blocking",file_set_blocking,"function(:void)",0);
@@ -1973,6 +2421,10 @@ void pike_module_init(void)
   add_function("query_id",file_query_id,"function(:mixed)",0);
   add_function("query_read_callback",file_query_read_callback,"function(:mixed)",0);
   add_function("query_write_callback",file_query_write_callback,"function(:mixed)",0);
+#ifdef WITH_OOB
+  add_function("query_read_oob_callback",file_query_read_oob_callback,"function(:mixed)",0);
+  add_function("query_write_oob_callback",file_query_write_oob_callback,"function(:mixed)",0);
+#endif /* WITH_OOB */
   add_function("query_close_callback",file_query_close_callback,"function(:mixed)",0);
 
   add_function("dup",file_dup,"function(:object)",0);

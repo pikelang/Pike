@@ -73,6 +73,7 @@ SOCKFUN2(getsockname,struct sockaddr *,int *)
 SOCKFUN2(getpeername,struct sockaddr *,int *)
 SOCKFUN3(recv,void *,int,int)
 SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
+SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
@@ -235,6 +236,7 @@ typedef int FD;
 #define fd_getsockname getsockname
 #define fd_getpeername getpeername
 #define fd_recv recv
+#define fd_send send
 #define fd_sendto sendto
 #define fd_recvfrom recvfrom
 #define fd_shutdown shutdown

@@ -24,10 +24,22 @@ void wake_up_backend(void);
 void init_backend(void);
 void set_read_callback(int fd,file_callback cb,void *data);
 void set_write_callback(int fd,file_callback cb,void *data);
+#ifdef WITH_OOB
+void set_read_oob_callback(int fd,file_callback cb,void *data);
+void set_write_oob_callback(int fd,file_callback cb,void *data);
+#endif /* WITH_OOB */
 file_callback query_read_callback(int fd);
 file_callback query_write_callback(int fd);
+#ifdef WITH_OOB
+file_callback query_read_oob_callback(int fd);
+file_callback query_write_oob_callback(int fd);
+#endif /* WITH_OOB */
 void *query_read_callback_data(int fd);
 void *query_write_callback_data(int fd);
+#ifdef WITH_OOB
+void *query_read_oob_callback_data(int fd);
+void *query_write_oob_callback_data(int fd);
+#endif /* WITH_OOB */
 void do_debug(void);
 void backend(void);
 int write_to_stderr(char *a, INT32 len);

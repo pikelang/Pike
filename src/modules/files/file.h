@@ -30,6 +30,10 @@ struct my_file
   struct svalue id;
   struct svalue read_callback;
   struct svalue write_callback;
+#ifdef WITH_OOB
+  struct svalue read_oob_callback;
+  struct svalue write_oob_callback;
+#endif /* WITH_OOB */
   struct svalue close_callback;
 #ifdef HAVE_FD_FLOCK
   struct object *key;

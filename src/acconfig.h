@@ -183,6 +183,9 @@
 /* Use poll() instead of select() ? */
 #undef HAVE_AND_USE_POLL
 
+/* Enable code to handle Out-Of-Band data */
+#undef WITH_OOB
+
 @BOTTOM@
 
 /* NT stuff */

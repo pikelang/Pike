@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.168 1998/03/22 03:20:31 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.169 1998/03/25 22:39:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -103,6 +103,7 @@ AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[AC_DEFINE(HAVE_AND_USE_POLL)],[])
 AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
+AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
 
 #
 # Allow --with(out)-debug to toggle both cdebug and rtldebug, but
