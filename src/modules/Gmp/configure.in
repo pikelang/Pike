@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.15 2000/08/01 23:02:18 grubba Exp $
+# $Id: configure.in,v 1.16 2000/09/04 13:50:22 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -56,11 +56,12 @@ define([AC_CHECK_GMP],
       AC_TRY_RUN([
 #include <stdio.h>
 
+/* Kludge for some compilers only defining __STDC__ in strict mode. */
+#ifndef __STDC__
 #ifdef HAVE_ANSI_CONCAT
-#define __MPN(x) __mpn_##x
-#else
-#define __MPN(x) __mpn_/**/x
+#define __STDC__ 0
 #endif
+#endif /* __STDC__ */
 
 #include <$2>
 int main(int argc, char **argv)
@@ -82,11 +83,12 @@ int main(int argc, char **argv)
         AC_TRY_LINK([
 #include <stdio.h>
 
+/* Kludge for some compilers only defining __STDC__ in strict mode. */
+#ifndef __STDC__
 #ifdef HAVE_ANSI_CONCAT
-#define __MPN(x) __mpn_##x
-#else
-#define __MPN(x) __mpn_/**/x
+#define __STDC__ 0
 #endif
+#endif /* __STDC__ */
 
 #include <$2>
 
