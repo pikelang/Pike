@@ -456,6 +456,19 @@ static private class Extractor {
 
 } // static private class Extractor
 
+NameSpace extractNamespace(string s, void|string filename,
+			   void|string namespaceName) {
+  Extractor e = Extractor(s, filename);
+  NameSpace ns = NameSpace();
+  ns->name = namespaceName || filename;
+  Documentation doc = e->parseClassBody(ns, 0, filename);
+  ns->documentation = doc;
+  // if there was no documentation in the file whatsoever
+  if (!doc && !sizeof(ns->docGroups) && !sizeof(ns->children))
+    return 0;
+  return ns;
+}
+
 Module extractModule(string s, void|string filename, void|string moduleName) {
   Extractor e = Extractor(s, filename);
   Module m = Module();
