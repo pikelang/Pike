@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.93 1999/10/23 06:51:26 hubbe Exp $");
+RCSID("$Id: las.c,v 1.94 1999/11/05 01:45:30 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1922,6 +1922,20 @@ static void optimize(node *n)
       }
       break;
 
+    case F_RANGE:
+      /* X[Y..Z]
+       * Warn if Z is a constant <= 0.
+       */
+      if (CDR(n)->token == F_ARG_LIST &&
+	  CDDR(n)->token == F_CONSTANT &&
+	  ((CDDR(n)->u.sval.type == T_INT &&
+	    CDDR(n)->u.sval.u.integer <= 0) ||
+	   (CDDR(n)->u.sval.type == T_FLOAT &&
+	    CDDR(n)->u.sval.u.float_number <= 0.0))) {
+	yywarning("Range end is not positive.");
+      }
+      break;
+
     case F_ARG_LIST:
     case F_LVALUE_LIST:
       if(!CAR(n)) goto use_cdr;
@@ -1966,11 +1980,23 @@ static void optimize(node *n)
       break;
 
     case '?':
-      /* (! X) ? Y : Z  -> X ? Z : Y */
+      /* (! X) ? Y : Z  ->  X ? Z : Y */
       if(CAR(n)->token == F_NOT)
       {
 	tmp1=mknode('?',CAAR(n),mknode(':',CDDR(n),CADR(n)));
 	CAAR(n)=CDDR(n)=CADR(n)=0;
+	goto use_tmp1;
+      }
+      /* 0 ? Y : Z  ->  Z */
+      if (node_is_false(CAR(n))) {
+	tmp1 = CDDR(n);
+	CDDR(n) = 0;
+	goto use_tmp1;
+      }
+      /* 1 ? Y : Z  ->  Y */
+      if (node_is_true(CAR(n))) {
+	tmp1 = CADR(n);
+	CADR(n) = 0;
 	goto use_tmp1;
       }
       break;
