@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.110 2003/01/25 23:35:14 nilsson Exp $
+# $Id: Makefile,v 1.111 2003/01/31 22:06:18 grubba Exp $
 #
 # Meta Makefile
 #
@@ -346,8 +346,5 @@ pikefun_TAGS:
 	cd src && etags -l none -r \
 	'/[ 	]*\(PMOD_PROTO \|PMOD_EXPORT \|static \|extern \)*void[ 	]\{1,\}f_\([a-zA-Z0-9_]*\)[ 	]*([ 	]*INT32/\2/' \
 	`find . -type f -name '*.[ch]' -print`
-	cd lib/modules && etags -l none -r \
-	'/[ \t]*\(\<\(public\|inline\|final\|static\|protected\|local\|optional\|private\|nomask\|variant\)\>[ \t]\{1,\}\)*\(\<class\>\)[ \t]\{1,\}\<\([a-zA-Z¡-ÿ_][a-zA-Z¡-ÿ_0-9]*\)\>/\4/' \
-	-r '/[ \t]*\(\<\(mixed\|float\|int\|program\|string\|function\|function(.*)\|array\|array(.*)\|mapping\|mapping(.*)\|multiset\|multiset(.*)\|object\|object(.*)\|void\|constant\|class\)\>)*\|\<\([A-ZÀ-ÖØ-ß][a-zA-Z¡-ÿ_0-9]*\)\>\)[ \t]\{1,\}\(\<\([_a-zA-Z¡-ÿ][_a-zA-Z¡-ÿ0-9]*\)\>\|``?\(!=\|->=?\|<[<=]\|==\|>[=>]\|\[\]=?\|()\|[%-!^&+*<>|~\/]\)\)[ \t]*(/\4/' \
-	-r '/#[ \t]*define[ \t]+\([_a-zA-Z]+\)(?/\1/' \
-	`find . -type f '(' -name '*.pmod' -o -name '*.pike' ')' -print`
+	cd lib/modules && ../../bin/pike_etags \
+	  `find . -type f '(' -name '*.pmod' -o -name '*.pike' ')' -print`
