@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.57 2003/02/22 21:51:10 marcus Exp $
+|| $Id: jvm.c,v 1.58 2003/03/04 17:10:21 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.57 2003/02/22 21:51:10 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.58 2003/03/04 17:10:21 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1890,7 +1890,10 @@ static void native_dispatch(struct native_method_context *ctx,
 					      thread_storage_offset));
     num_threads++;
     thread_table_insert(Pike_interpreter.thread_state);
+
     do_native_dispatch(ctx, env, cls, args, rc);
+
+    cleanup_interpret();	/* Must be done before EXIT_THREAD_STATE */
     Pike_interpreter.thread_state->status=THREAD_EXITED;
     co_signal(&Pike_interpreter.thread_state->status_change);
     thread_table_delete(Pike_interpreter.thread_state);
@@ -1898,7 +1901,6 @@ static void native_dispatch(struct native_method_context *ctx,
     Pike_interpreter.thread_state=NULL;
     free_object(thread_obj);
     thread_obj = NULL;
-    cleanup_interpret();
     num_threads--;
     mt_unlock_interpreter();
   }
