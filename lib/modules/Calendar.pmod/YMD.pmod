@@ -375,6 +375,7 @@ class YMD
 //!     time           "2000-06-02 00:00:00" 
 //!	time_short     "20000602 00:00:00"
 //!	time_xshort    "000602 00:00:00"
+//!	iso_short      "2000-06-02T00:00:00"
 //!     mtime          "2000-06-02 00:00" 
 //!     xtime          "2000-06-02 00:00:00.000000" 
 //!     tod            "00:00:00"
@@ -501,6 +502,11 @@ class YMD
    string format_time_short()
    {
       return format_ymd_short()+" 00:00:00";
+   }
+
+   string format_iso_short()
+   {
+      return format_ymd_short()+"T00:00:00";
    }
 
    string format_time_xshort()
@@ -2173,6 +2179,13 @@ class cDay
 	       res=res->add(u1-u0,Second);
 	    else
 	       res=res->autopromote();
+
+	    if (!force)
+	    {
+	       if (res->hour_no()!=what->hour_no())
+		  error("place: no such time of "
+			"day (DST shift)\n",what,this_object());
+	    }
 	 }
 	 else
 	    res=res->autopromote();

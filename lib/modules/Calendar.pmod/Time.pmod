@@ -194,6 +194,9 @@ class TimeofDay
    {
 #define CMP(A,B) ( ((A)<(B))?-1:((A)>(B))?1:0 )
 
+      if (!objectp(with))
+	 error("_compare: illegal argument 1, expected TimeRange: %O\n",with);
+
       if (with->is_timeofday_f)
       {
 	 array(int(-1..1)) cmp=with->_compare(this_object());
@@ -698,6 +701,7 @@ class TimeofDay
 //! method string format_iso_time();
 //! method string format_time();
 //! method string format_time_short();
+//! method string format_iso_short();
 //! method string format_time_xshort();
 //! method string format_mtime();
 //! method string format_xtime();
@@ -726,6 +730,7 @@ class TimeofDay
 //!     time           "2000-06-02 20:53:14" 
 //!	time_short     "20000602 20:53:14"
 //!	time_xshort    "000602 20:53:14"
+//!	iso_short      "20000602T20:53:14"
 //!     mtime          "2000-06-02 20:53" 
 //!     xtime          "2000-06-02 20:53:14.000000" 
 //!     todz           "20:53:14 CET"
@@ -781,6 +786,11 @@ class TimeofDay
    string format_time_short()
    {
       return this_object()->format_ymd_short()+" "+format_tod();
+   }
+
+   string format_iso_short()
+   {
+      return this_object()->format_ymd_short()+"T"+format_tod();
    }
 
    string format_time_xshort()
