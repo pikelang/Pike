@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.5 1999/02/14 17:25:56 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.6 1999/02/15 00:00:04 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define WARN(msg) werror(msg)
@@ -34,8 +34,8 @@ constant cvs_id = "$Id: module.pmod,v 1.5 1999/02/14 17:25:56 noring Exp $";
  * ProcessLock will throw an error if the lock could not be obtained.
  */
 static private class ProcessLock {
-  static private int write = 0;
   static private string lock_file;
+  static private int have_lock = 0;
 
   static private int get_locked_pid()
   {
@@ -45,7 +45,7 @@ static private class ProcessLock {
   void destroy()
   {
     /* Release PID lock when the object is destroyed. */
-    if(write)
+    if(have_lock)
       rm(lock_file);
   }
 
@@ -53,41 +53,34 @@ static private class ProcessLock {
   {
     lock_file = _lock_file;
 
-    /* Check if a process has locked the lock. */
-    int pid = get_locked_pid();
-    if(pid && kill(pid, 0))
-      ERR(sprintf("Out-locked by PID %d", pid));
-
-    if(search(mode, "w")+1) {
-      /* Enable write mode. */
-      write = 1;
-
-      /* Remove old lock, since there does not seem to be
-       * any other process using it.
-       *
-       * Note: There may be race conditions here!
-       */
-      rm(lock_file);
-
-      /* Write our own lock file.
-       *
-       * Open with `x', which will make it a bit safer
-       * regarding race conditions.
-       */
+    while(1) {
       object f = Stdio.File();
-      if(!f->open(lock_file, "cxw"))
-	ERR("PID lock error");
-      f->write(sprintf("%d", getpid()));
-      f->close();
-
-      /* The last protection against race conditions, make
-       * sure that the PID file stays the way it should.
-       */
-      if(search(mode, "P")+1)
-	sleep(1);
-      pid = get_locked_pid();
-      if(pid != getpid())
-	ERR(sprintf("Lock was overridden by PID %d", pid));
+      
+      if(f->open(lock_file, "cxw")) {
+	/* We're being paranoid... */
+	mixed err = catch {
+	  string s = sprintf("%d", getpid());
+	  if(f->write(s) != sizeof(s))
+	    ERR("Failed to write lock-file");
+	  f->close();
+	  if(get_locked_pid() != getpid())
+	    ERR("Failed to reread lock-file");
+	  
+	  /* We now have the lock! */
+	  have_lock = 1;
+	  return;
+	};
+	rm(lock_file);
+	throw(err);
+      }
+      
+      /* Failed to obtain lock, now trying some obscure techniques... */
+      int pid = get_locked_pid();
+      if(pid && kill(pid, 0))
+	ERR(sprintf("Out-locked by PID %d", pid));
+      
+      rm(lock_file);
+      sleep(10);
     }
   }
 }
@@ -98,7 +91,7 @@ static private class ProcessLock {
 
 /*
  * With logging enabled, nearly everything Yabu does will
- * be put in a log file.
+ * be put in a log file (not yet though...).
  *
  */
 class YabuLog {
@@ -606,7 +599,7 @@ class Transaction {
  */
 class Table {
   INHERIT_MUTEX;
-  static private object index, db;
+  static private object index, db, lock_file;
 
   static private string mode, filename;
   static private mapping handles, changes;
@@ -657,9 +650,10 @@ class Table {
       if(usage > ratio)
 	return 0;
     }
-
+    
     /* Remove old junk, just in case. */
     rm(filename+".opt");
+    
     /* Create new database. */
     object opt = Chunk(filename+".opt", mode, this_object(), ([]));
 
@@ -946,10 +940,11 @@ class Table {
     UNLOCK();
   }
   
-  void create(string filename_in, string _mode)
+  void create(string filename_in, string _mode, object _lock_file)
   {
     filename = filename_in;
     mode = _mode;
+    lock_file = _lock_file;
 
     if(search(mode, "w")+1)
       write = 1;
@@ -1120,7 +1115,7 @@ class db {
   static string dir, mode;
   static mapping tables = ([]), table_refs = ([]);
   static int write, id;
-  static object pid_lock;
+  static object lock_file;
 
   void sync()
   {
@@ -1151,7 +1146,7 @@ class db {
   {
     LOCK();
     if(!tables[handle])
-      tables[handle] = Table(dir+"/"+handle, mode);
+      tables[handle] = Table(dir+"/"+handle, mode, lock_file);
     table_refs[handle]++;
     // DEB(sprintf("### refs[%s]++ = %d\n", handle, table_refs[handle]));
     DEB(sprintf("# tables '%s': %d (%s)\n",
@@ -1254,7 +1249,7 @@ class db {
       if(search(mode, "c")+1)
 	mkdirhier(dir+"/");
     }
-    pid_lock = ProcessLock(dir+"/lock.pid", mode);
+    lock_file = ProcessLock(dir+"/lock.pid", mode);
   }
 }
 
@@ -1319,7 +1314,7 @@ class LookupTable {
   void create(string filename, string mode, int _minx)
   {
     minx = _minx;
-    table = Table(filename, mode);
+    table = Table(filename, mode, 0);
   }
 }
 
