@@ -31,7 +31,8 @@ mixed data() {} //A method in order to allow for lazy computation
 //It's left here as a common utility. Some classes won't even need it.
 int recursive_low_size(mixed whatfor) {
   if (stringp(whatfor)) return sizeof(whatfor);
-  if (intp(whatfor)) return 4; //BUG on non 32-bit architectures. 
+  if (intp(whatfor)) return SIZEOF_INT; //NOTE: not true for bignums...
+  if (floatp(whatfor)) return SIZEOF_FLOAT;
   if (programp(whatfor) || objectp(whatfor) || 
       functionp(whatfor)) return DEFAULT_SIZE;
   // only composite types ahead
