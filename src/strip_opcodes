@@ -1,4 +1,5 @@
 #!/bin/sh
 
+# Stupid IRIX cpp turns --- into -- -
 sed 's/OPCODE/\
-OPCODE/g' | egrep '^OPCODE[0-9]' | sed 's/ --- .*//g'
+OPCODE/g' | egrep '^OPCODE[0-9]' | sed -e 's/ --- .*//g' -e 's/ -- - .*//g'
