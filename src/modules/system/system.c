@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.167 2003/12/17 22:44:55 marcus Exp $
+|| $Id: system.c,v 1.168 2004/01/13 00:47:37 nilsson Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.167 2003/12/17 22:44:55 marcus Exp $");
+RCSID("$Id: system.c,v 1.168 2004/01/13 00:47:37 nilsson Exp $");
 
 #ifdef HAVE_WINDOWS_H
 #include <windows.h>
@@ -3085,7 +3085,7 @@ PIKE_MODULE_INIT
  
   
 /* function(:int) */
-  ADD_EFUN("getpid", f_getpid,tFunc(tNone,tInt), OPT_EXTERNAL_DEPEND);
+/* Also available as efun */
   ADD_FUNCTION2("getpid", f_getpid,tFunc(tNone,tInt), 0, OPT_EXTERNAL_DEPEND);
 #ifdef HAVE_GETPPID
   
