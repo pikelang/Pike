@@ -674,7 +674,7 @@ class Connection {
        if(datamode)
        {
          if(pattern=="\r\n.\r\n")
-           message(inputbuffer[..end+1]);
+           message(inputbuffer[..end-2]);
          pattern = "\r\n.\r\n";
        }
        // end of buffer detection
