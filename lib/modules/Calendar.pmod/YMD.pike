@@ -2084,9 +2084,12 @@ class cDay
       switch (t)
       {
 	 case 'O':
-	    if (n!=1) 
+	   catch {
+	     if (n!=1)
 	       return sprintf("Day(%s)",nice_print_period());
-	    return sprintf("Day(%s)",nice_print());
+	     return sprintf("Day(%s)",nice_print());
+	   };
+	   return sprintf("Day(%d)", unix_time());
 	 case 't':
 	    return "Calendar."+calendar_name()+".Day";
 	 default:
@@ -2098,7 +2101,7 @@ class cDay
    {
       if (m==CALUNKNOWN) make_month();
       if (wd==CALUNKNOWN) make_week();
-      return 
+      return
 	 sprintf("%s %s %s %s",
 		 week_day_shortname(),
 		 month_day_name(),month_shortname(),
