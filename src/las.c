@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.96 1999/11/05 23:22:04 grubba Exp $");
+RCSID("$Id: las.c,v 1.97 1999/11/06 00:08:45 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1952,6 +1952,12 @@ static void optimize(node *n)
       if (CAR(n)->token == F_CONSTANT) {
 	goto use_cdr;
       }
+      /* ((void) const) , X  ->  X */
+      if (CAR(n)->token == F_CAST &&
+	  CAR(n)->type == void_type_string &&
+	  CAAR(n)->token == F_CONSTANT) {
+	goto use_cdr;
+      }
       /* (X , const) , Y  ->  X , Y */
       if (CAR(n)->token == F_COMMA_EXPR &&
 	  CDAR(n)->token == F_CONSTANT) {
@@ -1959,7 +1965,16 @@ static void optimize(node *n)
 	CAAR(n) = CDR(n) = 0;
 	goto use_tmp1;
       }
-
+      /* ((void)(X, const)), Y  ->  ((void) X), Y */
+      if (CAR(n)->token == F_CAST &&
+	  CAR(n)->type == void_type_string &&
+	  CAAR(n)->token == F_COMMA_EXPR &&
+	  CDR(CAAR(n))->token == F_CONSTANT) {
+	tmp1 = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, CAR(CAAR(n))),
+		      CDR(n));
+	CAR(CAAR(n)) = CDR(n) = 0;
+	goto use_tmp1;
+      }
       /* FALL_THROUGH */
     case F_ARG_LIST:
     case F_LVALUE_LIST:
