@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.15 1997/09/02 22:24:27 grubba Exp $
+ * $Id: sql.pike,v 1.16 1998/01/14 21:45:44 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.15 1997/09/02 22:24:27 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.16 1998/01/14 21:45:44 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -125,7 +125,7 @@ void create(void|string|object host, void|string db,
   foreach(program_names || get_dir(Sql->dirname), string program_name) {
     if ((sizeof(program_name / "_result") == 1) &&
 	(sizeof(program_name / ".pike") > 1) &&
-	(program_name != "sql.pike")) {
+	(program_name[..7] != "sql.pike")) {
       /* Don't call ourselves... */
       array(mixed) err;
       
