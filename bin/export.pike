@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.60 2004/03/12 11:19:35 grubba Exp $ */
+/* $Id: export.pike,v 1.61 2004/03/12 12:49:13 grubba Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -159,7 +159,6 @@ int main(int argc, array(string) argv)
   string export_list, filename;
   object cvs;
   int tag, snapshot, t;
-  int snapshot;
 
   foreach(Getopt.find_all_options(argv, ({
     ({ "srcdir",    Getopt.HAS_ARG, "--srcdir"     }),
