@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.69 2000/04/18 18:47:31 grubba Exp $");
+RCSID("$Id: lex.c,v 1.70 2000/04/18 19:09:17 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -112,7 +112,6 @@ struct keyword instr_names[]=
 { ">=",			F_GE,0 },	
 { ">>",			F_RSH,0 },	
 { ">>=",		F_RSH_EQ,0 },	
-{ "@",			F_PUSH_ARRAY,0 },
 { "^",			F_XOR,0 },
 { "^=",			F_XOR_EQ,0 },	
 { "arg+=1024",		F_PREFIX_1024,0 },
@@ -136,7 +135,6 @@ struct keyword instr_names[]=
 { "dumb return",	F_DUMB_RETURN,0 },	
 { "for",		F_FOR,0 },
 { "index",              F_INDEX,0 },
-{ "->x",                F_ARROW, I_HASARG },
 { "clear string subtype", F_CLEAR_STRING_SUBTYPE, 0 },
 
 { "branch",             F_BRANCH, I_ISJUMP },
@@ -211,8 +209,6 @@ struct keyword instr_names[]=
 { "--local and pop",	F_DEC_LOCAL_AND_POP, I_HASARG },
 { "local--",		F_POST_DEC_LOCAL, I_HASARG },
 { "throw(0)",		F_THROW_ZERO,0 },
-{ "local index",        F_LOCAL_INDEX, I_HASARG },
-{ "local local index",  F_LOCAL_LOCAL_INDEX, I_HASARG },
 { "int index",          F_POS_INT_INDEX, I_HASARG },
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },
@@ -233,8 +229,6 @@ struct keyword instr_names[]=
 { "local=local;",       F_LOCAL_2_LOCAL, I_HASARG },
 { "local=global;",      F_GLOBAL_2_LOCAL, I_HASARG },
 { "global=local;",      F_LOCAL_2_GLOBAL, I_HASARG },
-{ "local->x",           F_LOCAL_ARROW, I_HASARG },
-{ "global[local]",      F_GLOBAL_LOCAL_INDEX, I_HASARG },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
