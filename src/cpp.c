@@ -1978,7 +1978,9 @@ static void check_constant(struct cpp *this,
 
       if(res)
       {
-	res=do_safe_index_call(binary_findstring(data, dlen));
+        struct pike_string *s=make_shared_binary_string(data, dlen)
+	res=do_safe_index_call(s);
+        free_string(s);
       }
     }else{
       cpp_error(this, "Garbage characters in constant()\n");
