@@ -132,13 +132,15 @@ class cpEntry {
 
 void enqueue_move(string source, Node target) {
   mapping bucket = queue;
-  array path = map(source/".", replace, "-", ".");
-  if(source != "")
+
+  if(source != "") {
+    array path = map(source/".", replace, "-", ".");
     foreach(path, string node) {
       if(!bucket[node])
 	bucket[node] = ([]);
       bucket = bucket[node];
     }
+  }
 
   if(bucket[0])
     error("Move source already allocated (%s).\n", source);
@@ -333,24 +335,24 @@ void move_items(Node n, mapping jobs, void|Node wrapper) {
       jobs[0](n);
     m_delete(jobs, 0);
   }
+  if(!sizeof(jobs)) return;
 
   foreach( ({ "module", "class", "docgroup" }), string type)
     foreach(n->get_elements(type), Node c) {
       mapping m = c->get_attributes();
       string name = m->name || m["homogen-name"];
-      mapping|Entry e = jobs[ name ];
+      mapping e = jobs[ name ];
       if(!e) continue;
-      if(mappingp(e)) {
-	Node wr = Node(XML_ELEMENT, n->get_tag_name(),
-		       n->get_attributes()+(["hidden":"1"]), 0);
-	if(wrapper)
-	  wr = wrap( wr, wrapper->clone() );
 
-	move_items(c, e, wr);
+      Node wr = Node(XML_ELEMENT, n->get_tag_name(),
+		     n->get_attributes()+(["hidden":"1"]), 0);
+      if(wrapper)
+	wr = wrap( wr, wrapper->clone() );
 
-	if(!sizeof(e))
-	  m_delete(jobs, name);
-      }
+      move_items(c, e, wr);
+
+      if(!sizeof(e))
+	m_delete(jobs, name);
     }
 }
 
