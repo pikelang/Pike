@@ -1003,6 +1003,11 @@ class dumpfile
       filename=f;
       if(!len) len=strlen(d)-base;
 
+#ifdef DEBUG
+      write("Dumping: Data[%d] Base:0x%08x Len:0x%08x Filename:%O\n",
+	    sizeof(d), p, len, f);
+#endif /* DEBUG */
+
       if(range(0,8) == "!<arch>\n")
       {
 #ifdef DEBUG
@@ -1041,7 +1046,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.15 2002/10/23 15:28:48 grubba Exp $\n"
+	 "$Id: pntld,v 1.16 2002/10/23 16:36:52 grubba Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
