@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.5 1998/11/02 05:10:57 per Exp $
+ * $Id: image_ttf.c,v 1.6 1998/11/03 08:38:56 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.5 1998/11/02 05:10:57 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.6 1998/11/03 08:38:56 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -993,7 +993,7 @@ static void image_ttf_faceinstance_write(INT32 args)
    int width,height,mod;
    
    unsigned char* pixmap;
-
+   int maxcharwidth = 0;
 
    if (!(face_s=(struct image_ttf_face_struct*)
 	 get_storage(THISi->faceobj,image_ttf_face_program)))
@@ -1072,10 +1072,16 @@ static void image_ttf_faceinstance_write(INT32 args)
 	 if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))
 	    { errs="TT_Get_Glyph_Metrics: "; break; }
 
-	 if (pos+metrics.bbox.xMin<xmin) xmin=pos+metrics.bbox.xMin;
+	 if (pos+metrics.bbox.xMin<xmin) 
+	   xmin=pos+metrics.bbox.xMin;
 	 if (pos+metrics.bbox.xMax>xmax) 
 	   xmax=pos+metrics.bbox.xMax;
 
+	 if((metrics.bbox.xMax-(metrics.bbox.xMin<0?metrics.bbox.xMin:0))
+	    >maxcharwidth)
+	   maxcharwidth =
+	     (metrics.bbox.xMax-(metrics.bbox.xMin<0?metrics.bbox.xMin:0));
+	 
 	 pos+=metrics.advance;
 	 if(has_kerning && i<slen[a]-1)
 	 {
@@ -1103,10 +1109,10 @@ static void image_ttf_faceinstance_write(INT32 args)
    xmin&=~63;
    width=((xmax-xmin+63)>>6)+4;
    height=face_i->height*args;
-   mod=(4-(width&3))&3;
+   mod=(4-(maxcharwidth&3))&3;
    if (width<1) width=1;
 
-   if ((pixmap=malloc((width+mod)*height/args)))
+   if ((pixmap=malloc((maxcharwidth+mod)*face_i->height)))
    {
       /* second pass: write the stuff */
 
@@ -1118,7 +1124,7 @@ static void image_ttf_faceinstance_write(INT32 args)
       
 
       rastermap.rows=face_i->height;
-      rastermap.cols=rastermap.width=width+mod;
+      rastermap.cols=rastermap.width=maxcharwidth+mod;
       rastermap.flow=TT_Flow_Down;
       rastermap.bitmap=pixmap;
       rastermap.size=rastermap.cols*rastermap.rows;
@@ -1140,6 +1146,7 @@ static void image_ttf_faceinstance_write(INT32 args)
          pos=-xmin;
 	 for (i=0; i<slen[a]; i++)
 	 {
+    	    int sw, xp;
 	    TT_Glyph glyph;
 	    TT_Glyph_Metrics metrics;
 	    int ind, x, y;
@@ -1163,39 +1170,32 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    if ((res=TT_Get_Glyph_Pixmap(glyph,
 					 &rastermap,
 					 -metrics.bbox.xMin+
-					 pos&63,
+					 pos%64,
 					 face_i->height*64-
 					 face_i->trans)))
 	       { errs="TT_Get_Glyph_Pixmap: "; break; }
 
 
+	    sw = metrics.bbox.xMax-(metrics.bbox.xMin<0?metrics.bbox.xMin:0);
+	    /* Copy source pixmap to destination image object. */
 	    for(y=0; y<face_i->height; y++)
 	    {
-	      int xp = (metrics.bbox.xMin+pos)/64;
-	      int i = (int)((y+ypos)*width)+xp, s;
-	      int i2 = y*rastermap.width;
-	      for(x=0; x<(metrics.bbox.xMin+metrics.bbox.xMax*2) 
-		    && i2 < rastermap.size
-		    && i < width*height
-		    && xp<width
-		    ; x++,xp++,i++,i2++)
-	      {
-		if(xp<0) continue;
-		if((s = pixmap[i2]))
-		{
-/* 		  fprintf(stderr, "found pixel %d\n", s); */
-		  if((s=d[i].r+s) < 256)
-		    d[i].r=d[i].g=d[i].b=s;
-		  else
-		    d[i].r=d[i].g=d[i].b=255;
-		} else {
-/* 		  d[i].b = y; */
-/* 		  d[i].g += x; */
-		}
-	      }
+	      unsigned int s;
+	      unsigned char * source = pixmap+rastermap.width*y;
+	      rgb_group *dt=d+(ypos+y)*width+(xp=(metrics.bbox.xMin+pos)/64);
+	      
+	      for(x=0; x<sw && xp<width; x++,xp++,source++,dt++)
+		if(xp<0 || !(s = *source)) 
+		  continue;
+		else if((s=dt->r+s) < 256)
+		  dt->r=dt->g=dt->b=s;
+		else
+		  dt->r=dt->g=dt->b=255;
 	    }
 	    
-	    pos+=metrics.advance/*+metrics.bbox.xMin*/;
+	    pos+=metrics.advance;
+/* 	    if(metrics.bbox.xMin < 0) */
+/* 	      pos += metrics.bbox.xMin; */
 	    if(has_kerning && i<slen[a]-1)
 	    {
 	      int kern = find_kerning( kerning, sstr[a][i], sstr[a][i+1] );
