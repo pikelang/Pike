@@ -1370,7 +1370,8 @@ static newstate entity_callback(struct parser_html_storage *this,
    switch (v->type)
    {
       case T_STRING:
-	 push_svalue(v);
+	 put_out_feed(this,v->u.string);
+	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
 	 return STATE_DONE;
       case T_ARRAY:
 	 error("unimplemented");
@@ -1421,7 +1422,8 @@ static newstate tag_callback(struct parser_html_storage *this,
    switch (v->type)
    {
       case T_STRING:
-	 push_svalue(v);
+	 put_out_feed(this,v->u.string);
+	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
 	 return STATE_DONE;
       case T_ARRAY:
 	 error("unimplemented");
@@ -1475,7 +1477,8 @@ static newstate container_callback(struct parser_html_storage *this,
    switch (v->type)
    {
       case T_STRING:
-	 push_svalue(v);
+	 put_out_feed(this,v->u.string);
+	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
 	 return STATE_DONE; /* done */
       case T_ARRAY:
 	 error("unimplemented");
@@ -2049,7 +2052,7 @@ static void html_feed_insert(INT32 args)
       SIMPLE_TOO_FEW_ARGS_ERROR("feed_insert",1);
 
    if (!sp[-args].type!=T_STRING)
-      SIMPLE_BAD_ARG_ERROR("finish",1,"string");
+      SIMPLE_BAD_ARG_ERROR("feed_insert",1,"string");
 
    DEBUG((stderr,"html_feed_insert: "
 	  "pushing string (len=%d) on feedstack\n",
@@ -2335,6 +2338,8 @@ new_arg:
       scan_forward_arg(this,s2,c2,&s1,&c1,1);
 
       /* next argument in the loop */
+      s2 = s1;
+      c2 = c1;
    }
 
    f_aggregate_mapping(n*2);
@@ -2592,7 +2597,7 @@ void init_parser_html(void)
    ADD_FUNCTION("read",html_read,tFunc(tOr(tVoid,tInt),tStr),0);
 
    ADD_FUNCTION("write_out",html_write_out,tFunc(tStr,tObj),0);
-   ADD_FUNCTION("feed_insert",html_feed_insert,tFunc(tStr tOr(tVoid,tInt),tObj),0);
+   ADD_FUNCTION("feed_insert",html_feed_insert,tFunc(tStr,tObj),0);
 
    /* query */
 
