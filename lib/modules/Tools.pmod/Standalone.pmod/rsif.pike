@@ -1,26 +1,66 @@
 #! /usr/bin/env pike
-// -*- pike -*- $Id: rsif.pike,v 1.1 2002/09/05 15:26:51 marcus Exp $
+// -*- pike -*- $Id: rsif.pike,v 1.2 2002/12/05 19:51:03 nilsson Exp $
 
-string version = ("$Revision: 1.1 $"/" ")[1];
-int verbosity = 1; // more output
-int overwrite = 1; // no backups
+string version = ("$Revision: 1.2 $"/" ")[1];
+int(0..1) verbosity = 1; // more output
+int(0..1) overwrite = 1; // no backups
+int(0..1) recursive = 0; // not recursive
 
 constant usage = #"rsif [options] <from> <to> <files>
 
-rsif (\"replace string in file\") replaces all occurrences of the string
-<from> with the string <to> in listed files. The name of the files that
-were changed are written to stdout. Available options:
+rsif (\"replace string in file\") replaces all occurrences of the
+string <from> with the string <to> in listed files. The name of the
+files that were changed are written to stdout. Directories may be
+given instead of files, in which case all the files in that directory
+will be processed. Available options:
 
   -b, --backups   Saves the unaltered file in <filename>~
+  -r, --recursive Processes directories recusively
   -v, --verbose   Writes more junk to stderr.
   -q, --quiet     Writes no output at all.
   -V, --version   Writes the version number of rsif.
-  -h, --help      Shows this help message.\n";
+  -h, --help      Shows this help message.
+";
 
-int main(int argc, array(string) argv)
+int(0..) process_path(string path, string from, string to) {
+
+  if(Stdio.is_dir(path)) {
+    if( path[-1] != '/' )
+      path += "/";
+    int failures;
+    foreach(get_dir(path), string fn)
+      failures += process_path( path+fn, from, to );
+    return failures;
+  }
+  else
+    return process(path, from, to);
+}
+
+int(0..1) process(string path, string from, string to) {
+
+  string file = Stdio.read_file(path);
+  if(file) {
+    if(has_value(file, from)) {
+      if(verbosity > 0)
+	write("%s\n", path);
+      string file = replace(file, from, to);
+      int mode = file_stat(path)->mode;
+
+      if(overwrite || mv(path, path + "~"))
+	return !Stdio.write_file(path, file, mode);
+      else {
+	werror("Failed to create backup file.\n");
+	return 1;
+      }
+    }
+  }
+}
+
+int(0..) main(int argc, array(string) argv)
 {
   foreach(Getopt.find_all_options(argv, ({
     ({ "backup",     Getopt.NO_ARG,       "-b,--backup"/"," }),
+    ({ "recurse",    Getopt.NO_ARG,       "-r,--recursive"/"," }),
     ({ "verbose",    Getopt.NO_ARG,       "-v,--verbose"/"," }),
     ({ "version",    Getopt.NO_ARG,       "-V,--version"/"," }),
     ({ "quiet",      Getopt.NO_ARG,       "-q,--quiet"/"," }),
@@ -29,6 +69,9 @@ int main(int argc, array(string) argv)
     {
       case "backup":
 	overwrite = 0;
+	break;
+      case "recurse":
+	recursive = 1;
 	break;
       case "verbose":
 	verbosity++;
@@ -50,9 +93,10 @@ int main(int argc, array(string) argv)
     return 1;
   }
 
-  string from = argv[1], to = argv[2], file;
+  string from = argv[1], to = argv[2];
   if(argc == 4 && argv[-1] == "-")
   {
+    string file;
     if(file = Stdio.stdin.read())
     {
       if(has_value(file, argv[1]))
@@ -66,28 +110,11 @@ int main(int argc, array(string) argv)
     return 0;
   }
 
-  int failures, mode;
+  int failures;
   if(verbosity > 1)
     werror("Replaced strings in these files:\n");
-  foreach(argv[3..], string filename)
-  {
-    if(file = Stdio.read_file(filename))
-    {
-      if(has_value(file, argv[1]))
-      {
-	if(verbosity > 0)
-	  write("%s\n", filename);
-    	file = replace(file, argv[1], argv[2]);
-	mode = file_stat(filename)->mode;
-	if(overwrite || mv(filename, filename + "~"))
-	  failures += !Stdio.write_file(filename, file, mode);
-	else
-	{
-	  werror("Failed to create backup file.\n");
-	  failures++;
-	}
-      }
-    }
-  }
+  foreach(argv[3..], string path)
+    failures += process_path(path, argv[1], argv[2]);
+
   return failures;
 }
