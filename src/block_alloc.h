@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.50 2002/11/20 18:02:05 grubba Exp $
+|| $Id: block_alloc.h,v 1.51 2002/11/23 15:58:02 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -57,7 +57,7 @@ DO_IF_RUN_UNLOCKED(static PIKE_MUTEX_T PIKE_CONCAT(DATA,_mutex);)       \
 static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
 {                                                                       \
   struct PIKE_CONCAT(DATA,_block) *n;					\
-  int e;								\
+  size_t e;								\
   n=(struct PIKE_CONCAT(DATA,_block) *)					\
      malloc(sizeof(struct PIKE_CONCAT(DATA,_block)));			\
   if(!n)								\
