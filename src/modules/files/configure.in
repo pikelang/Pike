@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.92 2003/07/04 12:17:27 grubba Exp $
+# $Id: configure.in,v 1.93 2003/12/07 22:49:12 marcus Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -16,6 +16,7 @@ AC_HEADER_DIRENT
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(net, __get_socket_descriptor)
 
 AC_HAVE_FUNCS(getwd perror readdir_r statvfs statfs ustat lseek64 lstat fsync \
  grantpt unlockpt ptsname posix_openpt socketpair writev sendfile munmap \
