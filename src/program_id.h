@@ -31,5 +31,10 @@
 #define tObjImpl_PARSER_HTML                  "\003\000\000\000\000\010"
 #define   tObjIs_PARSER_HTML                  "\003\001\000\000\000\010"
 
+#define     PROG___BUILTIN_ID                                       011
+#define tObjImpl___BUILTIN                    "\003\000\000\000\000\011"
+#define   tObjIs___BUILTIN                    "\003\001\000\000\000\011"
+
+
 
 #endif
