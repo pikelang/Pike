@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.12 2003/12/02 12:39:11 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.13 2003/12/12 14:47:50 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -16,7 +16,17 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "pike_types.h"
+#include "stralloc.h"
+#include "sscanf.h"
 #include "module.h"
+
+/*
+ * Convenience macro to apply functions in current object.
+ */
+#define APPLY_SELF(REF_NO, ARGS)				\
+  apply_low(Pike_fp->current_object,				\
+	    Pike_fp->context.identifier_level + (REF_NO),	\
+	    (ARGS))
 
 /*! @module Tokenizer
  */
@@ -751,9 +761,7 @@ PIKECLASS LiteralToken
   {
     assign_svalue(&THIS->value, value);
     pop_stack();
-    args=2;
-    apply_low(Pike_fp->current_object, literal_token_inherited_create, 2);
-    args=1;
+    APPLY_SELF(literal_token_inherited_create, 2);
   }
 }
 /*! @endclass
@@ -841,6 +849,17 @@ PIKECLASS TokenizingCompiler
   PIKECLASS pike_tokenizer
   {
     static int tokenizing_compiler_pike_tokenizer_inherited_report = -1;
+    static int tokenizing_compiler_pike_tokenizer_inherited_line_no = -1;
+
+    /* PIKEVAR object(Token) current_token; */
+    PIKEVAR string current_file;
+    PIKEVAR object pos
+       flags ID_STATIC;
+
+    INIT
+    {
+      THIS->current_file = make_shared_string("-");
+    }
 
     EXTRA
     {
@@ -860,26 +879,360 @@ PIKECLASS TokenizingCompiler
       tokenizing_compiler_pike_tokenizer_inherited_report =
 	really_low_reference_inherited_identifier(NULL, 1,
 						  f_compiler_basic_tokenizer_report_fun_num);
+      {
+	/* FIXME: Ought to save the identifier numbers for variables too. */
+	struct pike_string *line_no_str = make_shared_string("line_no");
+	tokenizing_compiler_pike_tokenizer_inherited_line_no =
+	  low_reference_inherited_identifier(NULL, 1, line_no_str, SEE_STATIC);
+	free_string(line_no_str);
+      }
     }
-
-    /* PIKEVAR object(Token) current_token; */
-    PIKEVAR string current_file;
-    /* PIKEVAR object(Position) pos
-       flags ID_STATIC; */
 
     PIKEFUN void report(int(0..3) severity, object/*(Position)*/|int|string pos,
 			string subsystem, string msg, mixed ... extras)
     {
-#if 0
       if ((pos->type == T_INT) && (THIS->pos)) {
 	add_ref(pos->u.object = THIS->pos);
 	pos->type = T_OBJECT;
 	pos->subtype = 0;
       }
-#endif
-      apply_low(Pike_fp->current_object,
-		tokenizing_compiler_pike_tokenizer_inherited_report,
-		args);
+      APPLY_SELF(tokenizing_compiler_pike_tokenizer_inherited_report, args);
+    }
+
+    PIKEFUN void yyerror(string msg, mixed ... extras)
+      flags ID_STATIC;
+    {
+      if (extras) {
+	f_sprintf(args);
+      }
+      push_int(0);
+      push_constant_text("scanner");
+      Pike_sp[0] = Pike_sp[-3];
+      Pike_sp[-3].type = PIKE_T_INT;
+      Pike_sp[-3].subtype = 0;
+      Pike_sp[-3].u.integer = SL_ERROR;
+      Pike_sp++;
+      APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+    }
+
+    PIKEFUN void handle_pragma(string pragma, string rest)
+      flags ID_STATIC;
+    {
+      /* FIXME: Not implemented yet.
+       * NOTE: Pike code below.
+       */
+#if 0
+      switch(pragma) {
+      case "all_inline":
+      case "all_nomask":
+      case "strict_types":
+      case "save_parent":
+      case "dont_save_parent":
+	if (sizeof(args)) {
+	  yyerror("#pragma %s does not support options.", pragma);
+	}
+	context->pragmas[pragma] = 1;
+	break;
+
+      default:
+	// Unknown pragmas are silently ignored.
+	break;
+      }
+#endif /* 0 */
+    }
+
+    PIKEFUN string parse_string(string raw)
+      flags ID_STATIC;
+    {
+      struct string_builder buf;
+      ONERROR err;
+
+      if (raw->len == 0) {
+	push_constant_text("Empty string passed to parse_string().");
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 1);
+	pop_stack();
+	return;	/* Return the empty string */
+      }
+      if ((raw->len < 2) ||
+	  (index_shared_string(raw, 0) !=
+	   index_shared_string(raw, raw->len-1))) {
+	ref_push_string(raw);
+	push_constant_text("Unterminated string or character constant %s.");
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+	pop_stack();
+      }
+
+      /* The result will be at least as wide as the raw string. */
+      init_string_builder(&buf, raw->size_shift);
+      SET_ONERROR(err, free_string_builder, &buf);
+
+      switch(raw->size_shift)
+      {
+#define PS_CASE(SHIFT)							\
+      case SHIFT:							\
+	{								\
+	  PIKE_CONCAT(p_wchar, SHIFT) *raw_str;				\
+	  ptrdiff_t off;						\
+	  raw_str = PIKE_CONCAT(STR,SHIFT)(raw);			\
+	  for (off = 1; off < raw->len-1; off++) {			\
+	    ptrdiff_t end = off;					\
+	    while ((end < raw->len-1) && (raw_str[end] != '\\')) {	\
+	      end++;							\
+	    }								\
+	    if (off != end) {						\
+	      string_builder_append(&buf, MKPCHARP(raw_str+off, 0),	\
+				    end - off);				\
+	      off = end;						\
+	    }								\
+	    if (off+1 < raw->len-1) {					\
+	      p_wchar2 code;						\
+	      switch(code = raw_str[++off]) {				\
+	      case 'a':	/* Alert (BEL), 7 */				\
+		string_builder_putchar(&buf, 7);			\
+		break;							\
+	      case 'b':	/* Backspace (BS), 8 */				\
+		string_builder_putchar(&buf, 8);			\
+		break;							\
+	      case 't':	/* Tab (HT), 9 */				\
+		string_builder_putchar(&buf, 9);			\
+		break;							\
+	      case 'n':	/* Newline (LF), 10 */				\
+		string_builder_putchar(&buf, 10);			\
+		break;							\
+	      case 'v':	/* Vertical tab (VT), 11 */			\
+		string_builder_putchar(&buf, 11);			\
+		break;							\
+	      case 'f':	/* Form-feed (FF), 12 */			\
+		string_builder_putchar(&buf, 12);			\
+		break;							\
+	      case 'r':	/* Return (CR), 13 */				\
+		string_builder_putchar(&buf, 13);			\
+		break;							\
+	      case 'e':	/* Escape (ESC), 27 */				\
+		string_builder_putchar(&buf, 27);			\
+		break;							\
+									\
+	      case '0':							\
+	      case '1':							\
+	      case '2':							\
+	      case '3':							\
+	      case '4':							\
+	      case '5':							\
+	      case '6':							\
+	      case '7':	/* Octal escape. */				\
+		{							\
+		  p_wchar2 val = 0;					\
+		  p_wchar2 c;						\
+		  while ((off < raw->len) &&				\
+			 ((c = raw_str[off]) <= '7') &&			\
+			 (c >= '0')) {					\
+		    val = val*8 + (c - '0');				\
+		    off++;						\
+		  }							\
+		  string_builder_putchar(&buf, val);			\
+		  off--;						\
+		}							\
+		break;							\
+									\
+	      case 'd':	/* Decimal escape. */				\
+		{							\
+		  p_wchar2 val = 0;					\
+		  p_wchar2 c;						\
+		  off++;						\
+		  while ((off < raw->len) &&				\
+			 ((c = raw_str[off]) <= '9') &&			\
+			 (c >= '0')) {					\
+		    val = val*10 + (c - '0');				\
+		    off++;						\
+		  }							\
+		  string_builder_putchar(&buf, val);			\
+		  off--;						\
+		}							\
+		break;							\
+									\
+	      case 'U':	/* Length 8 unicode escape. */			\
+		if (off+8 < (end = raw->len)) {				\
+		  end = off+9;						\
+		}							\
+		goto PIKE_CONCAT(do_read_hex, SHIFT);			\
+	      case 'u':	/* Length 4 unicode escape. */			\
+		if (off+4 < (end = raw->len)) {				\
+		  end = off+5;						\
+		}							\
+		goto PIKE_CONCAT(do_read_hex, SHIFT);			\
+	      case 'x':	/* Hexadecimal escape. */			\
+		end = raw->len;						\
+	      PIKE_CONCAT(do_read_hex, SHIFT):				\
+		{							\
+		  p_wchar2 val = 0;					\
+		  p_wchar2 c;						\
+		  off++;						\
+		  while ((off < end) &&					\
+			 ((c = raw_str[off]) <= 'f') &&			\
+			 (c >= '0') &&					\
+			 ((c <= '9') || (c >= 'a') ||			\
+			  ((c >= 'A') && (c <= 'F')))) {		\
+		    val *= 16;						\
+		    if (c >= 'A') {					\
+		      val += (c+(10-'A')) & 15;				\
+		    } else {						\
+		      val += c - '0';					\
+		    }							\
+		    off++;						\
+		  }							\
+		  string_builder_putchar(&buf, val);			\
+									\
+		  if ((code != 'x') && (off != end)) {			\
+		    /* Short Unicode escape. */				\
+		  }							\
+		  off--;						\
+		}							\
+		break;							\
+									\
+	      default:							\
+		/* FIXME: Warn? */					\
+	      case '\\':						\
+	      case '\"':						\
+	      case '\'':						\
+		string_builder_putchar(&buf, code);			\
+		break;							\
+	      }								\
+	    }								\
+	  }								\
+	}								\
+	break
+	PS_CASE(0);
+	PS_CASE(1);
+	PS_CASE(2);
+#undef PS_CASE
+      default:
+	push_int(raw->size_shift);
+	ref_push_string(raw);
+	push_constant_text("Unsupported string shift %d on string %O.");
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 3);
+	pop_stack();
+	break;
+      }
+      push_string(finish_string_builder(&buf));
+      stack_pop_n_elems_keep_top(args);
+    }
+
+    PIKEFUN void handle_pike_compat(int major, int minor)
+      flags ID_STATIC;
+      prototype;
+    {
+    }
+
+    PIKEFUN void preprocess(string cmd, string extras)
+    {
+      struct pike_string *pragma_str;
+      struct pike_string *error_str;
+      struct pike_string *warning_str;
+      struct pike_string *line_str;
+      struct pike_string *pike_str;
+#define MKSTR(SYM) \
+    MAKE_CONST_STRING(PIKE_CONCAT(SYM, _str), #SYM)
+      MKSTR(pragma);
+      MKSTR(error);
+      MKSTR(warning);
+      MKSTR(line);
+      MKSTR(pike);
+#undef MKSTR
+      if (cmd == pragma_str) {
+	struct pike_string *format_str;
+	MAKE_CONST_STRING(format_str, "%[^ \t]%*[ \t]%s");
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_pragma_fun_num,
+		   low_sscanf(extras, format_str));
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == error_str) {
+	push_int(SL_ERROR);
+	push_int(0);
+	push_constant_text("preprocessor");
+	push_constant_text("#error: %s");
+	ref_push_string(extras);
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == warning_str) {
+	push_int(SL_WARNING);
+	push_int(0);
+	push_constant_text("preprocessor");
+	push_constant_text("#warning: %s");
+	ref_push_string(extras);
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == pike_str) {
+	struct pike_string *format_str;
+	/* FIXME: Use more paranoid parsing of version? */
+	MAKE_CONST_STRING(format_str, "%d.%d");
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_pike_compat_fun_num,
+		   low_sscanf(extras, format_str));
+	pop_n_elems(args);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      } else if (cmd == line_str) {
+	struct pike_string *format_string;
+	int res;
+	MAKE_CONST_STRING(format_string, "%[^ \t]%*[ \t]%s");
+	res = low_sscanf(extras, format_string);
+	if (!res) {
+	  push_int(SL_ERROR);
+	  push_int(0);
+	  push_constant_text("preprocessor");
+	  push_constant_text("Bad directive: #line %s");
+	  ref_push_string(extras);
+	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 4);
+	  pop_n_elems(args);
+	  /* NOTE: We keep one argument on the stack. */
+	  return;
+	}
+	if (res == 1) {
+	  push_constant_text("");
+	}
+	cmd = Pike_sp[-2].u.string;
+	extras = Pike_sp[-1].u.string;
+	args += 2;
+      }
+      /* Old-style line directive. */
+      {
+	struct pike_string *format_string;
+	int res;
+	MAKE_CONST_STRING(format_string, "%d");
+	if (!(res = low_sscanf(cmd, format_string)) ||
+	    (Pike_sp[-1].type != PIKE_T_INT)) {
+	  push_int(SL_ERROR);
+	  push_int(0);
+	  push_constant_text("preprocessor");
+	  push_constant_text("Bad directive: #line %s %s");
+	  ref_push_string(cmd);
+	  ref_push_string(extras);
+	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_report_fun_num, 5);
+	  pop_n_elems(args + res);
+	  /* NOTE: We keep one argument on the stack. */
+	  return;
+	}
+	/* Set line_no. */
+	object_low_set_index(Pike_fp->current_object,
+			     Pike_fp->context.identifier_level +
+			     tokenizing_compiler_pike_tokenizer_inherited_line_no,
+			     Pike_sp-1);
+	pop_stack();
+	if (extras->len) {
+	  /* NOTE: extras is always at the top of the stack here. */
+	  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num,
+		     1);
+	  free_string(THIS->current_file);
+	  copy_shared_string(THIS->current_file, Pike_sp[-1].u.string);
+	}
+	pop_n_elems(args-1);
+	/* NOTE: We keep one argument on the stack. */
+	return;
+      }
     }
   }
   /*! @endclass
@@ -948,7 +1301,7 @@ PIKE_MODULE_INIT
     MAKE_CONSTANT_SHARED_STRING(type_name, "SeverityLevel");
     type_value.type = PIKE_T_TYPE;
     type_value.subtype = 0;
-    type_value.u.type = CONSTTYPE(tInt03);
+    type_value.u.type = CONSTTYPE(tName("SeverityLevel", tInt03));
     add_constant(type_name, &type_value, 0);
     free_svalue(&type_value);
     free_string(type_name);
