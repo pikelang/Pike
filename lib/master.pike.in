@@ -6,7 +6,7 @@
 // Pike is distributed as GPL (General Public License)
 // See the files COPYING and DISCLAIMER for more information.
 //
-// $Id: master.pike.in,v 1.202 2002/05/22 17:21:41 nilsson Exp $
+// $Id: master.pike.in,v 1.203 2002/05/23 23:27:16 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1426,12 +1426,16 @@ class CompatResolver
 	       object|void current_handler)
     {
 #ifdef RESOLV_DEBUG
-      werror("Resolv(%O)\n",identifier);
+      werror("Resolv(%O, %O)\n",identifier, current_file);
 #endif /* RESOLV_DEBUG */
 
       // FIXME: Support having the cache in the handler?
-      if( no_resolv[ identifier ] )
+      if( no_resolv[ identifier ] ) {
+#ifdef RESOLV_DEBUG
+	werror("Resolv(%O, %O) => excluded\n",identifier, current_file);
+#endif /* RESOLV_DEBUG */
 	return UNDEFINED;
+      }
 
       if (current_file && !stringp(current_file)) {
 	throw(({sprintf("resolv(%O, %O, %O): current_file is not a string!\n",
@@ -1444,6 +1448,12 @@ class CompatResolver
       if( zero_type (ret = resolv_cache[id]) != 1 )
       {
 //	werror("Resolv cached(%O) => %O (%d)\n",id,resolv_cache[id],zero_type(resolv_cache[id]));
+#ifdef RESOLV_DEBUG
+	if (ret == ZERO_TYPE)
+	  werror("Resolv(%O, %O) => not found (cached)\n",identifier, current_file);
+	else
+	  werror("Resolv(%O, %O) => found %O (cached)\n",identifier, current_file, ret);
+#endif /* RESOLV_DEBUG */
 	return ret == ZERO_TYPE ? UNDEFINED : ret;
       }
 
@@ -1451,6 +1461,12 @@ class CompatResolver
       ret=resolv_base(tmp[0], current_file, current_handler);
       foreach(tmp[1..],string index) ret=ret[index];
       resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
+#ifdef RESOLV_DEBUG
+      if (zero_type (ret))
+	  werror("Resolv(%O, %O) => not found\n",identifier, current_file);
+	else
+	  werror("Resolv(%O, %O) => found %O\n",identifier, current_file, ret);
+#endif /* RESOLV_DEBUG */
       return ret;
     }
 
@@ -2024,9 +2040,13 @@ void runtime_warning (string where, string what, mixed... args)
       case "gc.bad_cycle":
 	// args[0] is an array containing the objects in the cycle
 	// which aren't destructed and have destroy() functions.
+#if 0
+	// Ignore this warning for now since we do not yet have a weak
+	// modifier, so it can't be avoided in a reasonable way.
 	werror ("GC warning: Garbing cycle where destroy() will be called "
 		"in arbitrary order:\n%{            %s\n%}",
 		map (args[0], describe_object));
+#endif
 	break;
 
       default:
