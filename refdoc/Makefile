@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.15 2001/07/20 23:37:48 nilsson Exp $
+# $Id: Makefile,v 1.16 2001/07/21 00:57:26 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -27,7 +27,6 @@ _html: html_manual manual/Makefile
 
 split: join manual
 	@$(PIKE) ../bin/split-autodoc.pike manual.xml structure.xml .
-	@rm manual/structure.xml
 
 join: recursive_join
 	@$(MAKE) PIKE="$(PIKE)" XMLFILES="`echo build/*/*.xml`" manual.xml
