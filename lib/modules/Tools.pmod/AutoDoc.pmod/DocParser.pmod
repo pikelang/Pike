@@ -6,7 +6,7 @@ inherit "module.pmod";
 
 #define DEB werror("###DocParser.Pike: %d\n", __LINE__);
 
-private void parseError(string s, mixed ... args) {
+static void parseError(string s, mixed ... args) {
   s = sprintf(s, @args);
   werror(s+"\n");
   s = "DocParser error: " + s;
@@ -103,27 +103,24 @@ mapping(string : function(string, string :
   "index" : indexArgHandler,
 ]);
 
-private string memberArgHandler(string keyword, string arg) {
-  werror("This is the @member arg handler ");
+static string memberArgHandler(string keyword, string arg) {
+  //  werror("This is the @member arg handler ");
   .PikeParser parser = .PikeParser(arg);
-  werror("&&& %O\n", arg);
-DEB
+  //  werror("&&& %O\n", arg);
   Type t = parser->parseOrType();
   if (!t)
     parseError("expected type, got %O", arg);
-  werror("%%%%%% got type == %O\n", t->xml());
+  //  werror("%%%%%% got type == %O\n", t->xml());
   string s = parser->parseLiteral() || parser->parseIdents();
   if (!s)
     parseError("expected indentifier or literal constant, got %O", arg);
-DEB
   parser->eat(EOF);
-DEB
   return xmltag("type", t->xml())
     + xmltag("index", xmlquote(s));
 }
 
-private string elemArgHandler(string keyword, string arg) {
-  werror("This is the @elem arg handler\n");
+static string elemArgHandler(string keyword, string arg) {
+  //  werror("This is the @elem arg handler\n");
   .PikeParser parser = .PikeParser(arg);
   Type t = parser->parseOrType();
   if (!t)
@@ -132,28 +129,29 @@ private string elemArgHandler(string keyword, string arg) {
     t = VarargsType(t);
     parser->eat("...");
   }
-  do {
-    string s = parser->parseLiteral() || parser->parseIdents();
-    if (!s)
-      break;
-    string s2 = 0;
-    if (parser->peekToken() == "..") {
-      parser->readToken();
-      s2 = parser->parseLiteral() || parser->parseIdents();
-      if (!s2)
-        break;
-    }
-    parser->eat(EOF);
+  string s = parser->parseLiteral() || parser->parseIdents();
+  string s2 = 0;
+  int dots = 0;
+  if (parser->peekToken() == "..") {
+    dots = 1;
+    parser->readToken();
+    s2 = parser->parseLiteral() || parser->parseIdents();
+  }
+  parser->eat(EOF);
+  if (s)
     if (s2)
       return xmltag("minindex", xmlquote(s))
         + xmltag("maxindex", xmlquote(s2));
     else
-      return xmltag("index", xmlquote(s));
-  } while (0);
-  parseError("expected identifier or literal");
+      return xmltag(dots ? "minindex" : "index", xmlquote(s));
+  else
+    if (s2)
+      return xmltag("maxindex", xmlquote(s2));
+    else
+      parseError("expected identifier or literal");
 }
 
-private string indexArgHandler(string keyword, string arg) {
+static string indexArgHandler(string keyword, string arg) {
   werror("indexArgHandler\n");
   .PikeParser parser = .PikeParser(arg);
   string s = parser->parseLiteral();
@@ -163,7 +161,7 @@ private string indexArgHandler(string keyword, string arg) {
   return xmltag("value", xmlquote(s));
 }
 
-private mapping(string : string) standardArgHandler(string keyword, string arg)
+static mapping(string : string) standardArgHandler(string keyword, string arg)
 {
   array(string) args = ({});
   arg += "\0";
@@ -223,11 +221,11 @@ private mapping(string : string) standardArgHandler(string keyword, string arg)
   return res;
 }
 
-private string|mapping(string:string) getArgs(string keyword, string arg) {
+static string|mapping(string:string) getArgs(string keyword, string arg) {
   return (argHandlers[keyword] || standardArgHandler)(keyword, arg);
 }
 
-private int getKeywordType(string keyword) {
+static int getKeywordType(string keyword) {
   if (keywordtype[keyword])
     return keywordtype[keyword];
   if (strlen(keyword) > 3 && keyword[0..2] == "end")
@@ -235,7 +233,7 @@ private int getKeywordType(string keyword) {
   return ERRORKEYWORD;
 }
 
-private int getTokenType(array(string) | string token) {
+static int getTokenType(array(string) | string token) {
   if (arrayp(token))
     return getKeywordType(token[0]);
   if (!token)
@@ -243,15 +241,15 @@ private int getTokenType(array(string) | string token) {
   return TEXTTOKEN;
 }
 
-static private int isSpaceChar(int char) {
+static int isSpaceChar(int char) {
   return (< '\t', '\n', ' ' >) [char];
 }
 
-static private int isKeywordChar(int char) {
+static int isKeywordChar(int char) {
   return char >= 'a' && char <= 'z';
 }
 
-static private array(string) extractKeyword(string line) {
+static array(string) extractKeyword(string line) {
   line += "\0";
   int i = 0;
   while (i < strlen(line) && isSpaceChar(line[i]))
@@ -268,7 +266,7 @@ static private array(string) extractKeyword(string line) {
   return ({ keyword, line[i .. strlen(line) - 2] });  // skippa "\0" ...
 }
 
-static private int allSpaces(string s) {
+static int allSpaces(string s) {
   for (int i = strlen(s) - 1; i >= 0; --i)
     if (s[i] != ' ' && s[i] != '\t')
       return 0;
@@ -299,7 +297,7 @@ static array(string|array(string)) split(string s) {
   return res;
 }
 
-static private string xmlNode(string s) {  /* now, @xml works like @i & @tt */
+static string xmlNode(string s) {  /* now, @xml works like @i & @tt */
   s += "\0";
   string res = "";
   int i = 0;
@@ -389,12 +387,12 @@ static private string xmlNode(string s) {  /* now, @xml works like @i & @tt */
   return "<p>" + res + "</p>";
 }
 
-static private class DocParserClass {
-  static private array(array(string)|string) tokens;
+static class DocParserClass {
+  static array(array(string)|string) tokens;
 
   // Read until the next delimiter token on the same level, or to
   // the end.
-  static private string xmlText() {
+  static string xmlText() {
     string res = "";
     for (;;) {
       switch (getTokenType(tokens[0])) {
@@ -429,7 +427,7 @@ static private class DocParserClass {
     }
   }
 
-  static private string xmlContainerContents(string container) {
+  static string xmlContainerContents(string container) {
     string res = "";
     switch( getTokenType(tokens[0]) ) {
       case ENDTOKEN:
