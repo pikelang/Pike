@@ -1,6 +1,5 @@
 class widget;
 inherit object;
-#include <gdk/gdkx.h>
 // The basic widget, inherited (directly or indirectly) by all
 // widgets.  Thus, all functions and signals defined in this widget
 // works on all widgets.
@@ -308,6 +307,9 @@ void set_sensitive( int sensitivep );
 string get_name();
 // Returns the name set by set_name or the class name
 
+#ifndef __NT__
+#include <gdk/gdkx.h>
+#endif
 FUNCTION(set_cursor, "function(int,void|object,void|object:object)");
 ARGS(int|void,void|GDK.Color,void|GDK.Color);
 NAME_ARGS(cursor_type, fg, bg);

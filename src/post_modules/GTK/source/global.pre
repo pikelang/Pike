@@ -1,4 +1,6 @@
+#ifndef __NT__
 #include <gdk/gdkx.h>
+#endif
 require gnome;
 #include <applet-widget.h>
 endrequire;
@@ -25,7 +27,11 @@ int IS_OBJECT_PROGRAM(struct program *X)
 static void backend_callback()
 {
   next_timeout = current_time;
+#ifndef __NT__
   next_timeout.tv_usec += 20000;
+#else
+  next_timeout.tv_usec += 10000;
+#endif
   if(next_timeout.tv_usec > 1000000)
   {
     next_timeout.tv_usec-=1000000;
@@ -290,8 +296,6 @@ NAME_ARGS(argv, do_not_parse_rc);
     fd = ConnectionNumber( d );
     set_read_callback( fd, socket_ready_callback, NULL );
   }
-#else
-# error Fixme. This needs some work.
 #endif
 
   my_pop_n_elems(args);

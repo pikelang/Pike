@@ -1,6 +1,8 @@
 class socket;
 inherit container;
+#ifndef __NT__
 #include <gdk/gdkx.h>
+#endif
 // Together with W(Plug), GTK.Socket provides the ability to embed
 // widgets from one process into another process in a fashion that is
 // transparent to the user. One process creates a GTK.Socket widget

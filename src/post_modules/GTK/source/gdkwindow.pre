@@ -1,6 +1,8 @@
 class GdkWindow;
 inherit GdkDrawable;
+#ifndef __NT__
 #include <gdk/gdkx.h>
+#endif
 // a GDK.Window object.
 //
 // NOIMG
@@ -188,6 +190,7 @@ NAME_ARGS(mask,xoffset,yoffset);
   RETURN_THIS();
 }
 
+#ifndef __NT__
 static GList *pgdk_window_get_children (GdkWindow *window)
 {
   GdkWindowPrivate *private;
@@ -226,7 +229,7 @@ static GList *pgdk_window_get_children (GdkWindow *window)
 
   return children;
 }
-
+#endif
 FUNCTION(children, "function(void:array(object))");
 RETURNS(array(GDK.Window));
 // Returns an array of GDK.Window objects.
@@ -234,7 +237,11 @@ RETURNS(array(GDK.Window));
   GList *l;
   int n = 0;
 
+#ifndef __NT__
   l = pgdk_window_get_children( (GdkWindow *)THIS->obj );
+#else
+  l = gdk_window_get_children( (GdkWindow *)THIS->obj );
+#endif
 
   while(l)
   {
@@ -439,7 +446,11 @@ NAME_ARGS(property, offset, delete_when_done);
        push_Xpseudo32bitstring( retdata, actual_length );
        break;
     }
+#ifndef __NT__
     XFree( retdata );
+#else
+    gfree( retdata );
+#endif
     f_aggregate_mapping( 6 );
     return;
   }
