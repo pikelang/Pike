@@ -3,7 +3,9 @@
  */
 
 import .types;
-  
+
+// FIXME: Pass the current request's tag when returning a "bad" action.
+
 class request
 {
   string tag;
@@ -13,7 +15,6 @@ class request
 
   function send;
 
-  
   void create(string t, object line)
     {
       tag = t;
@@ -25,6 +26,11 @@ class request
 
   constant arg_info = ({ });
 
+  mapping bad(string msg)
+    {
+      return ([ "action" : bat, "tag" : tag, "msg" : msg]);
+    }
+  
   mapping easy_process(mixed ... args);
   
   array args;
@@ -52,8 +58,7 @@ class request
   mapping append_arg(mixed o)
     {
       if (!o)
-	return ([ "action" : "bad",
-		  "msg" : "Invalid or missing argument" ]);
+	return bad("Invalid or missing argument");
 
       args[argc++] = o;
       return collect_args();
@@ -281,8 +286,7 @@ class fetch
 	  mixed f = process_fetch_attr(request);
 	  if (!f)
 	  {
-	    send(tag, "BAD");
-	    return ([ "action" : "finished" ]);
+	    return bad("Invalid fetch");
 	  }
 	  fetch_attrs = ({ f });
 	}
@@ -293,8 +297,7 @@ class fetch
 	{
 	  if (!(fetch_attrs[i] = process_fetch_attr(request->list[i])))
 	  {
-	    send(tag, "BAD");
-	    return ([ "action" : "finished" ]);
+	    return bad("Invalid fetch");
 	  }
 	}
 	break;
@@ -314,7 +317,7 @@ class fetch
       {
 	if (stringp(e))
 	{
-	  return ([ "action" : "bad", "msg" : e ]);
+	  return bad(e);
 	}
 	else throw(e);
       }
@@ -419,13 +422,13 @@ class search
       string charset = "us-ascii";
 	
       if (!sizeof(args))
-	return ([ "action"  : "bad", "msg" : "No arguments to SEARCH" ]);
+	return bad("No arguments to SEARCH");
 
       if (lower(args[0]->atom) == "charset")
       {
 	if ( (sizeof(args) < 2)
 	     || !(charset = astring(args[1])) )
-	  return ([ "action"  : "bad", "msg" : "Bad charset to SEARCH" ]);
+	  return bad("Bad charset to SEARCH");
 
 	args = args[2..];
       }
@@ -433,7 +436,7 @@ class search
       mapping criteria = parse_criteria(args)->parse_toplevel();
       
       if (!criteria)
-	return ([ "action" : "bad", "msg" : "Invalid search criteria" ]);
+	return bad("Invalid search criteria");
       
       array matches = server->search(session, charset, criteria);
       

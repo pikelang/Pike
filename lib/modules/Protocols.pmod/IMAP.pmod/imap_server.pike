@@ -61,7 +61,7 @@ class connection
   mapping session = ([]); /* State information about this ession; primarily
 			   * uid and mailboxid. */
 
-  object current_request;
+  // object current_request;
 
   class get_line
   {
@@ -106,7 +106,8 @@ class connection
 	/* Close connection */
 	io->close_imap();
       case "bad":
-	io->send_bad_response(action->msg || "Invalid request");
+	io->send_bad_response(action->tag,
+			      action->msg || "Invalid request");
 	/* Fall through */
       case "finished":
 	/* Finished processing this request. Remain in the same state. */
