@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.3 2001/02/04 10:34:51 mirar Exp $
+ * $Id: memory.c,v 1.4 2001/02/04 18:31:17 mirar Exp $
  */
 
 //! module system
@@ -14,7 +14,7 @@
 //!	Don't blame Pike if you shoot your foot off.
 
 #include "global.h"
-RCSID("$Id: memory.c,v 1.3 2001/02/04 10:34:51 mirar Exp $");
+RCSID("$Id: memory.c,v 1.4 2001/02/04 18:31:17 mirar Exp $");
 
 #include "system_machine.h"
 
@@ -41,6 +41,16 @@ RCSID("$Id: memory.c,v 1.3 2001/02/04 10:34:51 mirar Exp $");
 #include <sys/user.h>
 #endif
 
+
+/* something on AIX defines these */
+#ifdef T_INT
+#undef T_INT
+#endif
+#ifdef T_FLOAT
+#undef T_FLOAT
+#endif
+
+/* some systems call it PAGESIZE, some PAGE_SIZE */
 #ifndef PAGE_SIZE
 #ifdef PAGESIZE
 #define PAGE_SIZE PAGESIZE
