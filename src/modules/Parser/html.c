@@ -796,7 +796,7 @@ static void html_add_quote_tag(INT32 args)
       MEMCPY (arr->item+arr->size-3, sp-=3, 3*sizeof(struct svalue));
     }
 
-  done:
+  done:	;
   }
 
   else if (!remove) {
@@ -1766,7 +1766,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 	*d_p = cdst;
 	return 1;
 
-      cont:
+      cont: ;
       }
     }
 #ifdef DEBUG
