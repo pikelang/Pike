@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.286 2003/06/02 19:18:56 mast Exp $
+// $Id: master.pike.in,v 1.287 2003/06/05 01:07:16 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -676,8 +676,8 @@ static program low_findprog(string pname,
 	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
 	      INC_RESOLV_MSG_DEPTH();
 	      ret = decode_value(master_read_file(oname),
-				 (handler && handler->Decoder ||
-				  Decoder)(fname, mkobj));
+				 (handler && handler->get_codec ||
+				  get_codec)(fname, mkobj));
 	      DEC_RESOLV_MSG_DEPTH();
 	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
 	      return programs[fname] = ret;
@@ -3452,6 +3452,14 @@ class Decoder (void|string fname, void|int mkobj)
 	     object_program (o));
     ([function(mixed:void)]o->_decode)(data);
   }
+}
+
+mapping(string:Codec) codecs = set_weak_flag(([]),1);
+Codec get_codec(string|void fname, int|void mkobj)
+{
+  string key = fname + "\0" + mkobj;
+  if (codecs[key]) return codecs[key];
+  return codecs[key] = Decoder(fname, mkobj);
 }
 
 class Codec
