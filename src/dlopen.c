@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.65 2002/10/31 01:23:34 nilsson Exp $
+|| $Id: dlopen.c,v 1.66 2002/11/04 15:53:14 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.65 2002/10/31 01:23:34 nilsson Exp $");
+RCSID("$Id: dlopen.c,v 1.66 2002/11/04 15:53:14 grubba Exp $");
 
 #endif
 
@@ -1409,9 +1409,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
   memptr += sizeof(void *)-1;
   memptr &= ~(sizeof(void *)-1);
 
-  gp = EFENCE_ALIGN((char *)ret->memory + memptr,
-		    gp_size * sizeof(void *),
-		    sizeof(void *) - 1);
+  gp = (void **)EFENCE_ALIGN((char *)ret->memory + memptr,
+			     gp_size * sizeof(void *),
+			     sizeof(void *) - 1);
   memptr += gp_size * sizeof(void *);
   EFENCE_ADD(memptr);
   memptr += PAD_DATA;
@@ -1452,9 +1452,6 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	ptrdiff_t sym=RELOCS(r).symbol;
 	char *name;
 	size_t len;
-#ifdef _M_IA64
-	int flag = ((size_t)loc) & 0xf;
-#endif /* _M_IA64 */
 
 	if(!SYMBOLS(sym).name.ptr[0])
 	{
@@ -1835,6 +1832,11 @@ static int dl_load_coff_files(struct DLHandle *ret,
   if(ret->code)
   {
     DWORD oldprotect;
+#if defined(_M_IA64) && 0
+    extern void (*ia64_flush_instruction_cache)(void *addr, size_t len);
+    /* Flush the instruction cache. */
+    ia64_flush_instruction_cache(ret->code, ret->codesize);
+#endif /* _M_IA64 && 0 */
     if(!VirtualProtect(ret->code,
 		       ret->codesize,
 		       PAGE_EXECUTE_READ,
