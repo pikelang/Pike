@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.7 1996/11/18 20:44:08 hubbe Exp $");
+RCSID("$Id: las.c,v 1.8 1996/11/25 21:33:08 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -315,7 +315,12 @@ node *mkidentifiernode(int i)
   copy_shared_string(res->type, ID_FROM_INT(&fake_program, i)->type);
 
   /* FIXME */
-  res->node_info = OPT_NOT_CONST;
+  if(IDENTIFIER_IS_CONSTANT(ID_FROM_INT(&fake_program, i)->flags))
+  {
+    res->node_info = OPT_EXTERNAL_DEPEND;
+  }else{
+    res->node_info = OPT_NOT_CONST;
+  }
 
 #ifdef __CHECKER__
   CDR(res)=0;
@@ -967,7 +972,7 @@ void fix_type_field(node *n)
   case F_ASSIGN:
     if(CAR(n) && CDR(n) && 
        !match_types(CDR(n)->type,CAR(n)->type))
-      my_yyerror("Bad type in assignment.\n");
+      my_yyerror("Bad type in assignment.");
     copy_shared_string(n->type, CDR(n)->type);
     break;
 
@@ -993,7 +998,19 @@ void fix_type_field(node *n)
 
     if(!n->type)
     {
-      yyerror("Bad arguments to function call.");
+      switch(CAR(n)->token)
+      {
+      case F_IDENTIFIER:
+	setup_fake_program();
+	my_yyerror("Bad argument %d to '%s'.",
+		   max_correct_args+1,
+		   ID_FROM_INT(& fake_program, CAR(n)->u.number)->name->str);
+	break;
+
+      case F_CONSTANT:
+      default:
+	my_yyerror("Bad argument %d to function call.",max_correct_args+1);
+      }
       copy_shared_string(n->type, mixed_type_string);
     }
     free_string(s);
