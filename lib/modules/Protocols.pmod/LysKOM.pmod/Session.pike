@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.15 1999/11/27 21:24:33 js Exp $
+//  $Id: Session.pike,v 1.16 2000/03/08 21:05:16 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -396,6 +396,77 @@ class MiscInfo
      if(objectp(res) && res->iserror) err=res; else VAR=CONV;           \
    }
 
+
+class AuxItems
+{
+  mapping(string:int) name_to_tag= ([ "content-type": 1,
+				      "fast-reply": 2,
+				      "cross-reference": 3,
+				      "no-comments": 4,
+				      "personal-comment": 5,
+				      "request-confirmation": 6,
+				      "read-confirm": 7,
+				      "redirect": 8,
+				      "x-face": 9,
+				      "alternate-name": 10,
+				      "pgp-signature": 11,
+				      "pgp-public-key": 12,
+				      "e-mail-address": 13,
+				      "faq-text": 14,
+				      "creating-software": 15,
+				      "mx-author": 16,
+				      "mx-from": 17,
+				      "mx-reply-to": 18,
+				      "mx-to": 19,
+				      "mx-cc": 20,
+				      "mx-date": 21,
+				      "mx-message-id": 22,
+				      "mx-in-reply-to": 23,
+				      "mx-misc": 24,
+				      "mx-allow-filter": 25,
+				      "mx-reject-forward": 26,
+				      "notify-comments": 27,
+				      "faq-for-conf": 28,
+				      "recommended-conf": 29,
+				      "mx-mime-belongs-to": 10100,
+				      "mx-mime-part-in": 10101,
+				      "mx-mime-misc": 10102,
+				      "mx-envelope-sender": 10103,
+				      "mx-mime-file-name": 10104,
+  ]);
+				      
+  mapping(int:array(ProtocolTypes.AuxItem)) tag_to_items=([]);
+
+  array(ProtocolTypes.AuxItem) aux_items;
+  
+  void create(array(ProtocolTypes.AuxItem) _aux_items)
+  {
+    aux_items=_aux_items;
+    foreach(aux_items, ProtocolTypes.AuxItem item)
+    {
+      if(tag_to_items[item->tag])
+	tag_to_items[item->tag] += ({ item });
+      else
+	tag_to_items[item->tag] = ({ item });
+    }
+  }
+
+  mixed `[](string what)
+  {
+    switch (what)
+    {
+    case "create":
+      return create;
+
+    default:
+      return tag_to_items[name_to_tag[replace(what,"_","-")]] || ({ });
+    }
+  }
+  
+//   mixed `->(string what) { return `[](what); }
+  
+}
+
 class Text
 {
    int no;
@@ -487,6 +558,10 @@ class Text
            _stat=0;
 	   return 0;
 
+         case "aux_items":
+	   waitfor_stat();
+	   return AuxItems(_stat->aux_items);
+
          case "mark_as_read":
             return mark_as_read;
       }
@@ -560,12 +635,16 @@ class Membership
   
   array(object) get_unread_texts_blocking()
   {
+#ifdef LYSKOM_DEBUG
     werror("get_unread_texts_blocking()\n");
+#endif    
     int i=last_text_read+1;
     mapping(int:int) local_to_global = ([]);
 
+#ifdef LYSKOM_DEBUG
     werror("i: %d  last_text_read: %d\n",i,last_text_read);
     werror("conf: %d  conf->no_of_texts: %d\n",conf->no, conf->no_of_texts);
+#endif    
     if(i > con->get_uconf_stat(conf->no)->highest_local_no)
       return ({ }) ;
 
@@ -749,6 +828,9 @@ class Conference
 	 case "creator":
 	    waitfor_stat();
 	    return person( (_conf||_confold)[what] );
+         case "aux_items":
+	   waitfor_stat();
+	   return _conf->aux_items;
 	 case "name":
 	 case "type":
 	 case "creation_time":

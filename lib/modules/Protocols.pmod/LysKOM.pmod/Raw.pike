@@ -370,10 +370,14 @@ void create(string server,void|int port,void|string whoami)
 #if constant(thread_create) && !LYSKOM_UNTHREADED
    thread_create(read_thread);
    thread_create(call_thread);
+#ifdef LYSKOM_DEBUG
    werror("LysKOM running threaded\n");
+#endif   
 #else
    con->set_nonblocking(recv,0,0);
+#ifdef LYSKOM_DEBUG
    werror("LysKOM running unthreaded\n");
+#endif   
 #endif
    return;
 }
