@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.84 1998/04/19 00:13:18 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.85 1998/04/19 03:17:37 per Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -471,14 +471,17 @@ constant_name: F_IDENTIFIER '=' safe_expr0
 	yyerror("Constant definition is not constant.");
       add_constant($1->u.sval.u.string,0, current_modifiers); /* Prototype */
     } else {
-      tmp=eval_low($3);
-      if(tmp < 1)
+      if(!num_parse_error)
       {
-	yyerror("Error in constant definition.");
-      }else{
-	pop_n_elems(tmp-1);
-	add_constant($1->u.sval.u.string,sp-1,current_modifiers);
-	pop_stack();
+	tmp=eval_low($3);
+	if(tmp < 1)
+	{
+	  yyerror("Error in constant definition.");
+	}else{
+	  pop_n_elems(tmp-1);
+	  add_constant($1->u.sval.u.string,sp-1,current_modifiers);
+	  pop_stack();
+	}
       }
     }
     if($3) free_node($3);
