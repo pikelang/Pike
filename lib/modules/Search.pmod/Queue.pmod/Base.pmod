@@ -9,7 +9,6 @@ class Queue
   
   int|Standards.URI get();
   void put(string|array(string)|Standards.URI|array(Standards.URI) uri);
-  void done( Standards.URI uri,int called );
   void clear();
   void clear_stage( int ... stages );
   void clear_md5( int ... stages );

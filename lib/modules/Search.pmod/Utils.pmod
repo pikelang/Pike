@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.29 2001/08/22 19:33:47 nilsson Exp $
+// $Id: Utils.pmod,v 1.30 2001/08/26 23:04:17 js Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -565,7 +565,8 @@ class Logger {
 
     1000: "Disallowed by robots.txt. (%s)",
     1001: "Can't handle scheme. (%s)",
-    1002: "No matching filter. (%s)", 
+    1002: "No matching filter. (%s)",
+    1100: "Failed to connect to %s.",
   ]);
     
 

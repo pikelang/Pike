@@ -126,9 +126,7 @@ static int p_c;
 int|Standards.URI get()
 {
   if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
-  {
     return -1;
-  }
 
   if( sizeof( possible ) <= p_c )
   {
@@ -143,9 +141,9 @@ int|Standards.URI get()
     empty_count=0;
     if( possible[ p_c ] )
     {
-      Standards.URI ur = Standards.URI( possible[p_c++] );
+      Standards.URI uri = Standards.URI( possible[p_c++] );
 
-      if( stats->concurrent_fetchers( ur->host ) >
+      if( stats->concurrent_fetchers( uri->host ) >
 	  policy->max_concurrent_fetchers_per_host )
       {
 	retry_count++;
@@ -153,8 +151,8 @@ int|Standards.URI get()
       }
       possible[p_c-1] = 0;
       retry_count=0;
-      set_stage( ur, 1 );
-      return ur;
+      set_stage( uri, 1 );
+      return uri;
     }
     p_c++;
     continue;
@@ -164,18 +162,20 @@ int|Standards.URI get()
   {
     return -1;
   }
-  // delay for (quite) a while.
-  if( empty_count++ > 40 )
-  {
-    if( num_with_stage( 2 ) || num_with_stage( 3 ) )
-    {
-      empty_count=0;
-      return -1;
-    }
-    return 0;
-  }
 
-  return -1;
+  // delay for (quite) a while.
+//    if( empty_count++ > 40 )
+//    {
+//      if( num_with_stage( 2 ) || num_with_stage( 3 ) )
+//      {
+//        empty_count=0;
+//        werror("Queue: delay for (quite) a while.\n");
+//        werror("possible: %O\np_c: %O\n", possible, p_c);
+//        return -1;
+//      }
+//      return 0;
+//    }
+  return 0;
 }
 
 void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
@@ -190,15 +190,6 @@ void put(string|array(string)|Standards.URI|array(Standards.URI) uri)
     uri=Standards.URI(uri);
     
   add_uri( uri, 1, 0 );
-}
-
-void done( Standards.URI uri,
-	   int called )
-{
-  if( called )
-    set_stage( uri, 2 );
-  else
-    set_stage( uri, 5 );
 }
 
 void clear()
