@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.91 1999/03/21 21:34:29 grubba Exp $");
+RCSID("$Id: threads.c,v 1.92 1999/04/02 23:23:47 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -16,6 +16,7 @@ int threads_disabled = 0;
 #include "program.h"
 #include "gc.h"
 #include "main.h"
+#include "module_support.h"
 
 int live_threads = 0;
 COND_T live_threads_change;
@@ -617,26 +618,45 @@ void f_mutex_lock(INT32 args)
 {
   struct mutex_storage  *m;
   struct object *o;
+  INT_TYPE type;
 
   m=THIS_MUTEX;
+  if(!args)
+    type=0;
+  else
+    get_all_args("mutex->lock",args,"%i",&type);
+
+  switch(type)
+  {
+    default:
+      bad_arg_error("mutex->lock", sp-args, args, 2, "int(0..2)", sp+1-args,
+		  "Unknown mutex locking style: %d\n",type);
+      
+
+    case 0:
+    case 2:
+      if(m->key && OB2KEY(m->key)->owner == thread_id)
+      {
+	THREADS_FPRINTF(0,
+			(stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
+			 (unsigned int)OB2KEY(m->key),
+			 (unsigned int)m,
+			 (unsigned int)OB2KEY(m->key)->mut,
+			 (unsigned int) thread_id));
+
+	if(type==0) error("Recursive mutex locks!\n");
+
+	pop_n_elems(args);
+	push_int(0);
+      }
+    case 1:
+      break;
+  }
+
   /* Needs to be cloned here, since create()
    * might use threads.
    */
   o=clone_object(mutex_key,0);
-  if(!args || IS_ZERO(sp-args))
-  {
-    if(m->key && OB2KEY(m->key)->owner == thread_id)
-    {
-      THREADS_FPRINTF(0,
-		      (stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
-		       (unsigned int)OB2KEY(m->key),
-		       (unsigned int)m,
-		       (unsigned int)OB2KEY(m->key)->mut,
-		       (unsigned int) thread_id));
-      free_object(o);
-      error("Recursive mutex locks!\n");
-    }
-  }
 
   if(m->key)
   {
@@ -664,23 +684,38 @@ void f_mutex_trylock(INT32 args)
 {
   struct mutex_storage  *m;
   struct object *o;
+  int type;
   int i=0;
-
-  o=clone_object(mutex_key,0);
-  m=THIS_MUTEX;
 
   /* No reason to release the interpreter lock here
    * since we aren't calling any functions that take time.
    */
 
-  if(!args || IS_ZERO(sp-args))
+  m=THIS_MUTEX;
+
+  if(!args)
+    type=0;
+  else
+    get_all_args("mutex->lock",args,"%i",&type);
+
+  switch(type)
   {
-    if(m->key && OB2KEY(m->key)->owner == thread_id)
-    {
-      free_object(o);
-      error("Recursive mutex locks!\n");
-    }
+    default:
+      bad_arg_error("mutex->trylock", sp-args, args, 2, "int(0..2)", sp+1-args,
+		  "Unknown mutex locking style: %d\n",type);
+
+    case 0:
+      if(m->key && OB2KEY(m->key)->owner == thread_id)
+      {
+	error("Recursive mutex locks!\n");
+      }
+
+    case 2:
+    case 1:
+      break;
   }
+
+  o=clone_object(mutex_key,0);
 
   if(!m->key)
   {
@@ -1007,8 +1042,7 @@ void th_init(void)
 
   start_new_program();
   ADD_STORAGE(struct mutex_storage);
-  /* function(int|void:object) */
-  ADD_FUNCTION("lock",f_mutex_lock,tFunc(tOr(tInt,tVoid),tObj),0);
+  add_function("lock",f_mutex_lock,"function(int(0..2)|void:object)",0);
   /* function(int|void:object) */
   ADD_FUNCTION("trylock",f_mutex_trylock,tFunc(tOr(tInt,tVoid),tObj),0);
   set_init_callback(init_mutex_obj);
