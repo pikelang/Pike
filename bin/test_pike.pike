@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.10 1998/04/09 21:10:19 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.11 1998/04/11 11:53:35 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -117,12 +117,14 @@ int main(int argc, string *argv)
 	
 	if(check > 1) _verify_internals();
 	
+	string fname = argv[f] + ": Test " + (e + 1);
+
 	switch(type)
 	{
 	  case "COMPILE":
-	    if(catch(compile_string(test,"Test "+(e+1))))
+	    if(catch(compile_string(test, fname)))
 	    {
-	      werror("Test "+(e+1)+" failed.\n");
+	      werror(fname + " failed.\n");
 	      werror(test+"\n");
 	      errors++;
 	    }else{
@@ -132,11 +134,11 @@ int main(int argc, string *argv)
 	    
 	  case "COMPILE_ERROR":
 	    master()->set_inhibit_compile_errors(1);
-	    if(catch(compile_string(test,"Test "+(e+1))))
+	    if(catch(compile_string(test, fname)))
 	    {
 	      successes++;
 	    }else{
-	      werror("Test "+(e+1)+" failed.\n");
+	      werror(fname + " failed.\n");
 	      werror(test+"\n");
 	      errors++;
 	    }
@@ -145,11 +147,11 @@ int main(int argc, string *argv)
 	    
 	  case "EVAL_ERROR":
 	    master()->set_inhibit_compile_errors(1);
-	    if(catch(clone(compile_string(test,"Test "+(e+1)))->a()))
+	    if(catch(clone(compile_string(test, fname))->a()))
 	    {
 	      successes++;
 	    }else{
-	      werror("Test "+(e+1)+" failed.\n");
+	      werror(fname + " failed.\n");
 	      werror(test+"\n");
 	      errors++;
 	    }
@@ -157,7 +159,7 @@ int main(int argc, string *argv)
 	    break;
 	    
 	  default:
-	    o=clone(compile_string(test,"Test "+(e+1)));
+	    o=clone(compile_string(test,fname));
 	    
 	    if(check > 1) _verify_internals();
 	    
@@ -177,7 +179,7 @@ int main(int argc, string *argv)
 	      case "TRUE":
 		if(!a)
 		{
-		  werror("Test "+(e+1)+" failed.\n");
+		  werror(fname + " failed.\n");
 		  werror(test+"\n");
 		  werror(sprintf("o->a(): %O\n",a));
 		  errors++;
@@ -193,7 +195,7 @@ int main(int argc, string *argv)
 	      case "EQ":
 		if(a!=b)
 		{
-		  werror("Test "+(e+1)+" failed.\n");
+		  werror(fname + " failed.\n");
 		  werror(test+"\n");
 		  werror(sprintf("o->a(): %O\n",a));
 		  werror(sprintf("o->b(): %O\n",b));
@@ -206,7 +208,7 @@ int main(int argc, string *argv)
 	      case "EQUAL":
 		if(!equal(a,b))
 		{
-		  werror("Test "+(e+1)+" failed.\n");
+		  werror(fname + " failed.\n");
 		  werror(test+"\n");
 		  werror(sprintf("o->a(): %O\n",a));
 		  werror(sprintf("o->b(): %O\n",b));
@@ -217,7 +219,7 @@ int main(int argc, string *argv)
 		break;
 		
 	      default:
-		werror(sprintf("Unknown test type (%O).\n",type));
+		werror(sprintf("%s: Unknown test type (%O).\n", fname, type));
 		errors++;
 	    }
 	}
