@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.2 1999/04/06 00:39:22 per Exp $
+ * $Id: tga.c,v 1.3 1999/04/06 03:51:06 per Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -27,6 +27,7 @@
 
 
 
+RCSID("$Id: tga.c,v 1.3 1999/04/06 03:51:06 per Exp $");
 /*
 **! module Image
 **! submodule TGA
