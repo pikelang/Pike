@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.8 1999/12/13 01:27:29 grubba Exp $
+.\" $Id: pike.1,v 1.9 2000/03/30 19:07:03 grubba Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 1999/12/13 01:27:29 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 1999/12/13 01:27:29 $"
+.TH pike 1 "$Date: 2000/03/30 19:07:03 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2000/03/30 19:07:03 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 1999/12/13 01:27:29 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2000/03/30 19:07:03 $ \" Solaris nroff
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -137,7 +137,10 @@ to the program path.
 Print version of Pike and exit.
 .TP
 .B \-w, \-\-warnings
-Enable warnings.
+Enable warnings (default).
+.TP
+.B \-W, \-\-woff, \-\-no\-warnings
+Disable warnings.
 .TP
 .B \-\-compiler\-trace
 Turn on tracing of the Pike compiler (debug).
