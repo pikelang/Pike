@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.36 2004/03/24 00:08:30 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.37 2004/05/19 00:04:08 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -497,7 +497,7 @@ PIKECLASS CBC
     if(data->len % THIS->block_size)
       Pike_error("Data length not multiple of block size.\n");
     if(!(result = alloca(data->len)))
-      Pike_error("Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len);
 
     if(THIS->mode == 0) {
       while (offset < data->len) {
@@ -660,7 +660,7 @@ PIKECLASS Proxy {
     ptrdiff_t len;
 
     if (!(result = alloca(data->len + THIS->block_size)))
-      Pike_error("Out of memory\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("crypt", data->len + THIS->block_size);
 
     if (THIS->backlog_len) {
       if (data->len >= (THIS->block_size - THIS->backlog_len)) {

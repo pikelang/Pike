@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.23 2004/04/30 20:19:53 nilsson Exp $");
+RCSID("$Id: hash.cmod,v 1.24 2004/05/19 00:03:52 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "threads.h"
@@ -118,7 +118,7 @@ PIKECLASS HashInfo
 
     ctx = (void *)alloca(meta->context_size);
     if(!ctx)
-      Pike_error("Out of memory or karma.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
 
     THREADS_ALLOW();
     meta->init(ctx);
@@ -189,11 +189,11 @@ PIKECLASS HashInfo
 
     ctx = (void *)alloca(meta->context_size);
     if (!ctx)
-      Pike_error("Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("hash", meta->context_size);
 
     read_buffer=(char *)malloc(8192);
     if (!read_buffer)
-      Pike_error("Out of memory.\n");
+      SIMPLE_OUT_OF_MEMORY_ERROR("hash", 8192);
 
     THREADS_ALLOW();
     meta->init(ctx);
