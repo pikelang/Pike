@@ -1,6 +1,6 @@
 #define NEWLINE() do { while( pos<len && data[pos]!='\n' )pos++; } while(0)
 
-unsigned int TOKENIZE( struct array **res, CHAR *data, unsigned int len )
+static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 {
   unsigned int start=0;
   unsigned int pos;
@@ -44,7 +44,7 @@ unsigned int TOKENIZE( struct array **res, CHAR *data, unsigned int len )
 	  if(data[pos]=='e' || data[pos]=='E')
 	  {
 	    pos++;
-	    if(data[pos]=='-') pos++;
+	    if(data[pos]=='-' || data[pos]=='+') pos++;
 	    while(data[pos]>='0' && data[pos]<='9') pos++;
 	  }
 	}
