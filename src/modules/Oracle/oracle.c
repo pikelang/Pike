@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.60 2001/09/24 11:55:49 grubba Exp $
+ * $Id: oracle.c,v 1.61 2001/09/28 01:37:56 leif Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.60 2001/09/24 11:55:49 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.61 2001/09/28 01:37:56 leif Exp $");
 
 
 /* User-changable defines: */
@@ -407,6 +407,9 @@ struct dbcon
   OCISvcCtx *context;
 
   DEFINE_MUTEX(lock);
+
+  int resultobject_busy;
+  int timeout_limit;
 };
 
 static void init_dbcon_struct(struct object *o)
@@ -419,6 +422,7 @@ static void init_dbcon_struct(struct object *o)
 #endif
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
+  THIS_DBCON->timeout_limit = 30; /* default value */
 #ifdef LOCAL_ENV
   THIS_DBCON->env=0;
 #endif
@@ -513,6 +517,7 @@ static void init_dbresult_struct(struct object *o)
 #endif
   THIS_RESULT->dbcon_lock=0;
   THIS_RESULT->dbquery_lock=0;
+  THIS_RESULT_DBCON->resultobject_busy = 1;
 }
 
 static void exit_dbresult_struct(struct object *o)
@@ -525,6 +530,7 @@ static void exit_dbresult_struct(struct object *o)
   if(THIS_RESULT->dbquery_lock && dbquery)
   {
     struct dbcon *dbcon=THIS_RESULT_DBCON;
+    dbcon->resultobject_busy = 0;
     UNLOCK( dbquery->lock );
     if(THIS_RESULT->dbcon_lock && dbcon)
     {
@@ -1394,6 +1400,28 @@ static void f_oracle_create(INT32 args)
 
   return;
 }
+
+static void f_dbcon_timeout_limit(INT32 args)
+{
+  struct dbcon *dbcon=THIS_DBCON;
+  int           new_timeout;
+  /* No arguments: get timeout. One argument: set timeout. */
+#ifdef ORACLE_DEBUG
+  fprintf(stderr, "%s, dbcon=%p, args=%d\n", __FUNCTION__, dbcon, args);
+#endif
+  if (args)
+  {
+    get_all_args("Oracle->timeout", args, "%i", &new_timeout);
+    if (new_timeout < 0)
+      Pike_error("Negative timeout specified.\n");
+    if (new_timeout > 3600) /* max one hour */
+      new_timeout = 3600;
+    dbcon->timeout_limit = new_timeout;
+  }
+  pop_n_elems(args);
+  push_int(dbcon->timeout_limit);
+}
+
 static void f_compile_query_create(INT32 args)
 {
   int rc;
@@ -1412,7 +1440,23 @@ static void f_compile_query_create(INT32 args)
   fprintf(stderr,"f_compile_query_create: dbquery: %p\n",dbquery);
   fprintf(stderr,"         dbcon:   %p\n",dbcon);
   fprintf(stderr,"  error_handle: %p\n",dbcon->error_handle);
+  fprintf(stderr,"resultobject_busy: %d\n", dbcon->resultobject_busy);
 #endif
+
+  if (dbcon->resultobject_busy)
+  {
+    int t, timeout_limit = threads_disabled ? 0 : dbcon->timeout_limit;
+
+    for(t = 0; t < timeout_limit && dbcon->resultobject_busy; ++t)
+    {
+      THREADS_ALLOW();
+      sleep(1);
+      THREADS_DISALLOW();
+    }
+    if (dbcon->resultobject_busy)
+      Pike_error("Oracle connection busy; previous result object "
+		 "still active.\n");
+  }
 
   THREADS_ALLOW();
   LOCK(dbcon->lock);
@@ -2083,6 +2127,9 @@ void pike_module_init(void)
 #endif
       MY_END_CLASS(compile_query);
     }
+
+    ADD_FUNCTION("timeout_limit", f_dbcon_timeout_limit,
+		 tFunc(tOr(tInt,tVoid), tInt), ID_PUBLIC);
 
     ADD_FUNCTION("create", f_oracle_create,tFunc(tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid) tComma tOr(tStr,tVoid),tVoid), ID_PUBLIC);
     
