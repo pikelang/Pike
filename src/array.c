@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.65 2000/04/17 16:48:57 grubba Exp $");
+RCSID("$Id: array.c,v 1.66 2000/04/20 01:49:42 mast Exp $");
 
 struct array empty_array=
 {
@@ -104,7 +104,7 @@ static void array_free_no_free(struct array *v)
 
   free((char *)v);
 
-  GC_FREE();
+  GC_FREE(v);
 }
 
 /*

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.115 2000/04/19 21:49:27 mast Exp $");
+RCSID("$Id: object.c,v 1.116 2000/04/20 01:49:43 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -471,7 +471,7 @@ void low_destruct(struct object *o,int do_free)
 
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
-  if(Pike_in_gc && Pike_in_gc<4)
+  if(Pike_in_gc > 1 && Pike_in_gc < 4 && Pike_in_gc != 5)
     fatal("Destructing object inside gc()\n");
 #endif
 
@@ -561,7 +561,7 @@ void destruct_objects_to_destruct(void)
   struct object *o, *next;
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc >= 3 && Pike_in_gc <= 4)
+  if (Pike_in_gc > 1 && Pike_in_gc < 6)
     fatal("Can't meddle with the object link list in gc pass %d.\n", Pike_in_gc);
 #endif
 
@@ -612,7 +612,10 @@ void really_free_object(struct object *o)
   if(o->prog)
   {
     DOUBLELINK(objects_to_destruct,o);
-    if (Pike_in_gc) return;	/* Done last in gc(). */
+    if (Pike_in_gc) {
+      remove_marker(o);
+      if (Pike_in_gc < 6) return; /* Done last in gc(). */
+    }
     if(!destruct_object_evaluator_callback)
     {
       destruct_object_evaluator_callback=
@@ -633,9 +636,7 @@ void really_free_object(struct object *o)
 
     free((char *)o);
 
-    /* Not using GC_FREE_OBJ here, since it balks in gc pass 3. This
-     * case is ok, since no destroy() is called. */
-    LOW_GC_FREE();
+    GC_FREE(o);
   }
 }
 
@@ -1223,10 +1224,10 @@ void gc_mark_all_objects(void)
 
 }
 
-void gc_free_all_unreferenced_objects(void)
+int gc_destroy_all_unreferenced_objects(void)
 {
+  int n = 0;
   struct object *o,*next;
-  extern int Pike_in_gc;
 
 #ifdef PIKE_DEBUG
   if(d_flag)
@@ -1245,12 +1246,10 @@ void gc_free_all_unreferenced_objects(void)
   }
 #endif
 
-  Pike_in_gc=4;  /* Allow thread switches, god help us */
-
   for(o=first_object;o;o=o->next)
   {
 #ifdef PIKE_DEBUG
-    get_marker(o)->flags |= GC_OBJ_PASS_4;
+    get_marker(o)->flags |= GC_OBJ_DESTROY_CHECK;
 #endif
     if(gc_do_free(o))
     {
@@ -1259,8 +1258,34 @@ void gc_free_all_unreferenced_objects(void)
       get_marker(o)->flags |= GC_DO_FREE_OBJ;
 #endif
       call_destroy(o,0);
+      n++;
     }
   }
+
+  return n;
+}
+
+int gc_free_all_unreferenced_objects(void)
+{
+  int n = 0;
+  struct object *o,*next;
+
+#ifdef PIKE_DEBUG
+  if(d_flag)
+  {
+    for(o=first_object;o;o=next)
+    {
+      if(!gc_do_free(o))
+      {
+	add_ref(o);
+	gc_check_object(o);
+	SET_NEXT_AND_FREE(o,free_object);
+      }else{
+	next=o->next;
+      }
+    }
+  }
+#endif
 
   for(o=first_object;o;o=next)
   {
@@ -1268,7 +1293,7 @@ void gc_free_all_unreferenced_objects(void)
     {
 #ifdef PIKE_DEBUG
       if (!(get_marker(o)->flags & GC_DO_FREE_OBJ) ||
-	  !(get_marker(o)->flags & GC_OBJ_PASS_4)) {
+	  !(get_marker(o)->flags & GC_OBJ_DESTROY_CHECK)) {
 	extern char *fatal_after_gc;
 	fprintf(stderr,"**Object unexpectedly marked for gc. flags: %d\n",
 		get_marker(o)->flags);
@@ -1276,14 +1301,19 @@ void gc_free_all_unreferenced_objects(void)
 	locate_references(o);
 	fprintf(stderr,"##### Continuing search for more bugs....\n");
 	fatal_after_gc="Object unexpectedly marked for gc.\n";
+	next=o->next;		/* Leave it alone and continue. */
+	continue;
       }
 #endif
       low_destruct(o,1);
+      n++;
       SET_NEXT_AND_FREE(o,free_object);
     }else{
       next=o->next;
     }
   }
+
+  return n;
 }
 
 void count_memory_in_objects(INT32 *num_, INT32 *size_)

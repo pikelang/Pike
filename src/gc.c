@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.73 2000/04/19 21:49:27 mast Exp $");
+RCSID("$Id: gc.c,v 1.74 2000/04/20 01:49:42 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -597,7 +597,7 @@ INT32 real_gc_check(void *a)
     return 0;
   }
 
-  if (Pike_in_gc != 1)
+  if (Pike_in_gc != 2)
     fatal("gc check attempted in pass %d.\n", Pike_in_gc);
 
   if(m->saved_refs != -1)
@@ -727,7 +727,7 @@ int debug_gc_is_referenced(void *a)
 
   if(m->refs + m->xrefs > *(INT32 *)a ||
      (!(m->refs < *(INT32 *)a) && m->xrefs)  ||
-     (Pike_in_gc < 3  && m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
+     (Pike_in_gc < 4 && m->saved_refs != -1 && m->saved_refs != *(INT32 *)a))
   {
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
@@ -811,7 +811,7 @@ int gc_mark(void *a)
   m=get_marker(debug_malloc_pass(a));
 
 #ifdef PIKE_DEBUG
-  if (Pike_in_gc != 2)
+  if (Pike_in_gc != 3)
     fatal("gc mark attempted in pass %d.\n", Pike_in_gc);
 #endif
 
@@ -863,6 +863,7 @@ void do_gc(void)
   double tmp;
   INT32 tmp2;
   double multiplier;
+  int destroyed, destructed;
 #ifdef HAVE_GETHRTIME
 #ifdef PIKE_DEBUG
   hrtime_t gcstarttime;
@@ -872,7 +873,10 @@ void do_gc(void)
   if(Pike_in_gc) return;
   Pike_in_gc=1;
 
-  /* Make sure there will be no callback to this while we're in the gc. */
+  /* Make sure there will be no callback to this while we're in the
+   * gc. That can be fatal since this function links objects back to
+   * the object list, which causes that list to be reordered and the
+   * various gc loops over it might then miss things. */
   destruct_objects_to_destruct();
 
   if(gc_evaluator_callback)
@@ -906,6 +910,7 @@ void do_gc(void)
 
   init_gc();
 
+  Pike_in_gc=2;
   /* First we count internal references */
   gc_check_all_arrays();
   gc_check_all_multisets();
@@ -927,8 +932,7 @@ void do_gc(void)
    */
   call_callback(& gc_callbacks, (void *)0);
 
-  Pike_in_gc=2;
-
+  Pike_in_gc=3;
   /* Next we mark anything with external references */
   gc_mark_all_arrays();
   run_queue(&gc_mark_queue);
@@ -944,27 +948,35 @@ void do_gc(void)
   if(d_flag)
     gc_mark_all_strings();
 
-
 #ifdef PIKE_DEBUG
   check_for=(void *)1;
 #endif
-  Pike_in_gc=3;
+  Pike_in_gc=5;
   /* Now we free the unused stuff */
   gc_free_all_unreferenced_arrays();
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();
   gc_free_all_unreferenced_programs();
-  gc_free_all_unreferenced_objects();
+  Pike_in_gc=4;
+  /* This is intended to happen before the freeing done above. But
+   * it's put here for the time being, since the problem of non-object
+   * objects getting external references from destroy code isn't
+   * solved yet. */
+  destroyed = gc_destroy_all_unreferenced_objects();
+  Pike_in_gc=5;
+  destructed = gc_free_all_unreferenced_objects();
 
 #ifdef PIKE_DEBUG
-
+  if (destroyed != destructed)
+    fatal("destroy() called in %d objects in gc, but %d destructed.\n",
+	  destroyed, destructed);
   check_for=0;
   if(fatal_after_gc) fatal(fatal_after_gc);
 #endif
 
   exit_gc();
 
-  Pike_in_gc=5;
+  Pike_in_gc=6;
   destruct_objects_to_destruct();
   
   objects_freed -= (double) num_objects;

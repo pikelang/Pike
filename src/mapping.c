@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.77 2000/04/17 16:42:16 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.78 2000/04/20 01:49:43 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -63,7 +63,7 @@ DO_IF_DEBUG(								\
 									\
   if(m->next) m->next->prev = m->prev;					\
 									\
-  GC_FREE();
+  GC_FREE(m);
 
 
 #undef COUNT_OTHER

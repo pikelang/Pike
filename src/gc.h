@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.36 2000/04/19 21:25:33 mast Exp $
+ * $Id: gc.h,v 1.37 2000/04/20 01:49:43 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -32,7 +32,7 @@ extern void *gc_svalue_location;
  num_allocs++;								\
  DO_IF_DEBUG(								\
    if(d_flag) CHECK_INTERPRETER_LOCK();					\
-   if(Pike_in_gc >0 && Pike_in_gc<4)					\
+   if(Pike_in_gc > 1 && Pike_in_gc < 4 && Pike_in_gc != 5)		\
      fatal("Allocating new objects within gc is not allowed!\n");	\
  )									\
  if(num_allocs == alloc_threshold && !gc_evaluator_callback)		\
@@ -43,10 +43,10 @@ extern void *gc_svalue_location;
 struct marker
 {
   struct marker *next;
-  INT32 refs;
+  INT32 refs;			/* Internal references. */
 #ifdef PIKE_DEBUG
-  INT32 xrefs;
-  INT32 saved_refs;
+  INT32 xrefs;			/* Known external references. */
+  INT32 saved_refs;		/* Object refcount during check and mark pass. */
 #endif
   INT32 flags;
   void *data;
@@ -85,24 +85,19 @@ void f__gc_status(INT32 args);
 #define gc_check(VP) real_gc_check(debug_malloc_pass(VP))
 
 #ifdef PIKE_DEBUG
-#define LOW_GC_FREE() do {						\
+#define LOW_GC_FREE(OBJ) do {						\
   extern int d_flag;							\
   if(d_flag) CHECK_INTERPRETER_LOCK();					\
   num_objects-- ;							\
   if(num_objects < 0)							\
     fatal("Panic!! less than zero objects!\n");				\
+  if (Pike_in_gc) remove_marker(OBJ);					\
 }while(0)
 
-#define GC_FREE() do {							\
-  if(Pike_in_gc >0 && Pike_in_gc<3)					\
+#define GC_FREE(OBJ) do {						\
+  if(Pike_in_gc >2 && Pike_in_gc <4)					\
     fatal("Freeing objects within gc is not allowed!\n");		\
-  LOW_GC_FREE();							\
-}while(0)
-
-#define GC_FREE_OBJ() do {						\
-  if(Pike_in_gc >1 && Pike_in_gc<4)					\
-    fatal("Freeing objects within gc is not allowed!\n");		\
-  LOW_GC_FREE();							\
+  LOW_GC_FREE(OBJ);							\
 }while(0)
 
 #else
@@ -110,9 +105,11 @@ void f__gc_status(INT32 args);
 #define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
-#define LOW_GC_FREE() do {} while(0)
-#define GC_FREE() do { num_objects-- ; }while(0)
-#define GC_FREE_OBJ() do { num_objects-- ; }while(0)
+#define LOW_GC_FREE(OBJ) do {						\
+  num_objects-- ;							\
+  if (Pike_in_gc) remove_marker(OBJ);					\
+}while(0)
+#define GC_FREE(OBJ) LOW_GC_FREE(OBJ)
 #endif
 
 
@@ -126,8 +123,8 @@ void f__gc_status(INT32 args);
 #define GC_XREFERENCED 2
 #define GC_CHECKED 4
 #ifdef PIKE_DEBUG
-#define GC_DO_FREE_OBJ 8
-#define GC_OBJ_PASS_4 16
+#define GC_OBJ_DESTROY_CHECK 8
+#define GC_DO_FREE_OBJ 16
 #endif
 
 #ifdef PIKE_DEBUG
