@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.267 1999/03/06 17:47:16 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.268 1999/03/06 17:49:08 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -140,6 +140,7 @@ else
   AC_MSG_RESULT(no)
 
   if echo foo "$CC" | grep rntcc >/dev/null; then
+    echo Warning: rntcc detected. Using the smartlink /bin/sh script.
     SMARTLINK="$BINDIR/smartlink"
   else
     rm -f "$SMARTLINK"
