@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.39 2003/04/13 02:49:39 grendel Exp $
+# $Id: configure.in,v 1.40 2003/04/14 12:58:48 marcus Exp $
 #
 # Configure script for the mysql-module
 #
@@ -30,44 +30,12 @@ OLD_CPPFLAGS=$CPPFLAGS
 MYSQL_LIBS=""
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
-AC_PATH_PROG(MYSQL_CONFIG_PROG,mysql_config,mysql_config,none)
-
-define([PIKE_CHECK_MYSQL_FUNC], [
-  changequote(<<, >>)dnl
-  define(<<AC_CV_NAME>>, translit(pike_cv_mysql_$1, [ *], [_p]))dnl
-  changequote([, ])dnl
-  AC_MSG_CHECKING(for $1)
-  AC_CACHE_VAL(AC_CV_NAME, [
-    AC_TRY_LINK([
-#ifdef HAVE_WINSOCK_H
-#include <winsock.h>
-#endif
-
-#ifdef HAVE_MYSQL_H
-#include <mysql.h>
-#else
-#ifdef HAVE_MYSQL_MYSQL_H
-#include <mysql/mysql.h>
-#else
-#error Need mysql.h headerfile!
-#endif
-#endif
-    ], [
-      void (*foo__)() = (void (*)())&$1;
-    ], [AC_CV_NAME="yes"], [AC_CV_NAME="no"])
-      ])
-  if test "$AC_CV_NAME" = "yes"; then
-    AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
-  fi
-  AC_MSG_RESULT($AC_CV_NAME)
-])
 
 if test x$with_mysql = xno; then
   :
-elif test "x$MYSQL_CONFIG_PROG" = "xnone"; then
- PIKE_FEATURE_NODEP(Mysql)
- 
- if test "x$MYSQL_CONFIG" = "xnone"; then 
+else
+  PIKE_FEATURE_NODEP(Mysql)
+
   AC_MSG_CHECKING(for Mysql lib-directory)
 
   libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
@@ -293,7 +261,6 @@ fi
 	])
     ])
   ])
- else
 
   if test x$pike_cv_mysql = xno; then
     # Restore variables, so we don't link with unnessesary libs
@@ -306,6 +273,36 @@ fi
     AC_DEFINE(HAVE_MYSQL)
 
     # Note: mysql_port and mysql_unix_port aren't functions, but that shouldn't matter
+    define([PIKE_CHECK_MYSQL_FUNC], [
+      changequote(<<, >>)dnl
+      define(<<AC_CV_NAME>>, translit(pike_cv_mysql_$1, [ *], [_p]))dnl
+      changequote([, ])dnl
+      AC_MSG_CHECKING(for $1)
+      AC_CACHE_VAL(AC_CV_NAME, [
+        AC_TRY_LINK([
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+        ], [
+          void (*foo__)() = (void (*)())&$1;
+        ], [AC_CV_NAME="yes"], [AC_CV_NAME="no"])
+      ])
+      if test "$AC_CV_NAME" = "yes"; then
+        AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
+      fi
+      AC_MSG_RESULT($AC_CV_NAME)
+    ])
+    
     PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
     PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
     PIKE_CHECK_MYSQL_FUNC(mysql_options)
@@ -365,40 +362,8 @@ $ret_type * STDCALL mysql_fetch_lengths(MYSQL_RES *mysql)
     AC_CHECK_FUNCS(ldiv open sopen close read fileno puts fgets)
 
   fi
- fi
-else
-  AC_DEFINE(HAVE_MYSQL)
-  # MySQL 4.x or newer
-  MYSQL_LIBS="`$MYSQL_CONFIG_PROG --libs`"
-  MYSQL_CFLAGS="`$MYSQL_CONFIG_PROG --cflags`"
-  LIBS="$LIBS $MYSQL_LIBS"
-  CFLAGS="$CFLAGS $MYSQL_CFLAGS"
-  CPPFLAGS="$CPPFLAGS $MYSQL_CFLAGS"
-  
-
-  AC_MSG_CHECKING(Mysql version)
-  AC_MSG_RESULT(`$MYSQL_CONFIG_PROG --version`)
-
-  AC_CHECK_HEADERS(winsock.h mysql.h mysql/mysql.h errmsg.h mysql/errmsg.h)
-  
-  AC_CHECK_FUNCS(mysql_real_connect)
-  # Note: mysql_port and mysql_unix_port aren't functions, but that shouldn't matter
-  PIKE_CHECK_MYSQL_FUNC(mysql_real_query)
-  PIKE_CHECK_MYSQL_FUNC(mysql_fetch_lengths)
-  PIKE_CHECK_MYSQL_FUNC(mysql_options)
-
-  # Note: The following two are variables:
-  PIKE_CHECK_MYSQL_FUNC(mysql_port)
-  PIKE_CHECK_MYSQL_FUNC(mysql_unix_port)
-
-  AC_MSG_CHECKING([if mysql_fetch_lengths() returns an uint or an ulong])
-  AC_MSG_RESULT(ulong)
-  AC_DEFINE(FETCH_LENGTHS_TYPE, unsigned long)
-
-  PIKE_FEATURE(Mysql,[yes (v`$MYSQL_CONFIG_PROG --version`)])
 fi
 
 AC_SUBST(MYSQL_LIBS)
-AC_SUBST(MYSQL_CFLAGS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
