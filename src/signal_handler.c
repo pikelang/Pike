@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.299 2004/09/13 11:49:13 grubba Exp $
+|| $Id: signal_handler.c,v 1.300 2004/09/26 15:16:44 marcus Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.299 2004/09/13 11:49:13 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.300 2004/09/26 15:16:44 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -127,11 +127,11 @@ RCSID("$Id: signal_handler.c,v 1.299 2004/09/13 11:49:13 grubba Exp $");
 #include <dos/dos.h>
 #include <dos/dostags.h>
 #include <dos/exall.h>
-#include <clib/dos_protos.h>
 #ifdef __amigaos4__
 #include <interfaces/dos.h>
 #include <inline4/dos.h>
 #else
+#include <clib/dos_protos.h>
 #include <inline/dos.h>
 #endif
 #undef timeval
