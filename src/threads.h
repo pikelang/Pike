@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.61 1999/05/08 04:46:08 hubbe Exp $
+ * $Id: threads.h,v 1.62 1999/05/08 04:47:44 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -186,7 +186,7 @@ extern pthread_attr_t small_pattr;
 #define TH_RETURN_TYPE unsigned __stdcall
 #define th_exit(foo) _endthread(foo)
 #define th_join(ID,res)	/******************* FIXME! ****************/
-#define th_self() GetCurrentThread()
+#define th_self() GetCurrentThreadId()
 #define th_destroy(X)
 #define th_yield() Sleep(0)
 #define th_equal(X,Y) ((X)==(Y))
