@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.37 1998/05/25 19:38:31 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.38 1998/09/18 21:33:07 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -261,6 +261,16 @@ struct pike_string * debug_make_shared_binary_string(const char *str,int len)
 struct pike_string *debug_make_shared_string(const char *str)
 {
   return make_shared_binary_string(str, strlen(str));
+}
+
+struct pike_string *make_shared_string2(const INT16 *str)
+{
+  INT32 e,len;
+  struct pike_string *s;
+  for(len=0;str[len];len++);
+  s=begin_shared_string(len);
+  for(e=0;e<len;e++) s->str[e]=str[e];
+  return end_shared_string(s);
 }
 
 /*** Free strings ***/

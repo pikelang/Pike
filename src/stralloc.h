@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.16 1998/05/25 10:38:46 hubbe Exp $
+ * $Id: stralloc.h,v 1.17 1998/09/18 21:33:07 hubbe Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -81,6 +81,7 @@ struct pike_string *debug_begin_shared_string(int len);
 struct pike_string *end_shared_string(struct pike_string *s);
 struct pike_string * debug_make_shared_binary_string(const char *str,int len);
 struct pike_string *debug_make_shared_string(const char *str);
+struct pike_string *make_shared_string2(const INT16 *str);
 void unlink_pike_string(struct pike_string *s);
 void really_free_string(struct pike_string *s);
 void debug_free_string(struct pike_string *s);
