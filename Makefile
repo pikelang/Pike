@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.22 1999/12/02 18:36:37 mast Exp $
+# $Id: Makefile,v 1.23 1999/12/05 15:30:02 mast Exp $
 #
 # Meta Makefile
 #
@@ -98,7 +98,7 @@ bin/pike: force
 
 # This skips the modules.
 pike: force
-	@$(MAKE) "METATARGET=pike"
+	@$(MAKE) "METATARGET=pike master.pike"
 
 install:
 	@$(MAKE) "METATARGET=install"
