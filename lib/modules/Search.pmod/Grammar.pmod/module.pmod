@@ -21,6 +21,10 @@ class ParseNode {
     string indent = " " * (strlen(op) + 2);
     return sprintf("(%s %s)", op, printChildren(indent));
   }
+
+  string _sprintf() {
+    return "ParseNode" + print();
+  }
 }
 
 class AndNode {
