@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.53 1999/10/05 19:48:38 grubba Exp $
+# $Id: static_module_makefile.in,v 1.54 1999/11/08 21:45:55 hubbe Exp $
 #
 
 
@@ -16,6 +16,7 @@ REAL_CPPFLAGS=@CPPFLAGS@
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS)
+NOOPT_CFLAGS=$(PREFLAGS) $(NOOPTFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
 
@@ -47,8 +48,8 @@ dummy:	linker_options modlist_headers modlist_segment module.pmod module.a
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
 	else \
 	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2;\
-	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
+	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
 	fi
 
 linker_options: Makefile $(MODULE_ARCHIVES)

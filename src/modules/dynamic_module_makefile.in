@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.60 1999/10/09 23:29:58 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.61 1999/11/08 21:45:54 hubbe Exp $
 #
 
 
@@ -18,8 +18,10 @@ PIKE_INCLUDES=-I$(PIKE_SRC_DIR) -I$(BUILD_BASE)
 
 PREFLAGS=-I. -I$(SRCDIR) $(PIKE_INCLUDES) -I. $(MODULE_CPPFLAGS) $(DEFINES) -DDYNAMIC_MODULE
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
+NOOPT_CFLAGS=$(PREFLAGS) $(NOOPTFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) @CCSHARED@" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" "NOOPTFLAGS=$(NOOPTFLAGS)" $(MODULE_MAKE_FLAGS)
+
 
 all: dummy
 
@@ -58,8 +60,8 @@ dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
 	else \
 	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
-	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2;\
-	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	  echo "echo $(CC) $(NOOPT_CFLAGS) -c $< -o $@" >&2;\
+	  NO_ULIMIT=yes $(CC) $(NOOPT_CFLAGS) -c $< -o $@ ;\
 	fi
 
 linker_options: Makefile
