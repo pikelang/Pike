@@ -451,7 +451,7 @@ int handover=0; // more downloads is ok
 void request(int piece,int offset,int bytes,
 	     function(int,int,string,object:void|mixed) callback)
 {
-   foreach (map(values(piece_callback),function_object)->peer;;Peer p)
+   foreach (map(values(piece_callback),function_object)->peer;;.Peer p)
       if (p!=this_object())
       {
 	 werror("%O: funny thing in queue: %O\n",

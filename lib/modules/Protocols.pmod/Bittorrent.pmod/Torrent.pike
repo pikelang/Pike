@@ -595,15 +595,16 @@ class PieceDownload
    {
       foreach (sort(indices(expect_chunks-chunks-queued_chunks));;int i)
       {
+	 if (sizeof(peer->piece_callback)>=download_chunk_max_queue)
+	    return;
+
 	 int z=expect_chunks[i];
 	 queued_chunks[i]=z;
 	 peer->request(piece,i,z,got_data);
-	 if (sizeof(queued_chunks)==download_chunk_max_queue)
-	    return;
       }
 
       if (!handed_over &&
-	  sizeof(queued_chunks)<download_chunk_max_queue)
+	  sizeof(peer->piece_callback)<download_chunk_max_queue)
       {
 	 peer->handover=1;
 	 handovers[piece]=this_object();
