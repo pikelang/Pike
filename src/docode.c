@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.154 2002/11/14 12:36:42 grubba Exp $
+|| $Id: docode.c,v 1.155 2002/11/14 12:45:44 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.154 2002/11/14 12:36:42 grubba Exp $");
+RCSID("$Id: docode.c,v 1.155 2002/11/14 12:45:44 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -458,9 +458,20 @@ int do_lfun_call(int id, node *args)
 	/* Identifier is declared inline/local
 	 * or in inlining pass.
 	 */
-	Pike_compiler->compiler_frame->
-	  recur_label=do_jump(F_RECUR,
-			      Pike_compiler->compiler_frame->recur_label);
+	if ((ref->id_flags & ID_INLINE) &&
+	    (!Pike_compiler->compiler_frame->is_inline)) {
+	  /* Explicit local:: reference in first pass.
+	   *
+	   * RECUR directly to label 0.
+	   *
+	   * (We don't want to trigger the second pass if it's not needed.)
+	   */
+	  do_jump(F_RECUR, 0);
+	} else {
+	  Pike_compiler->compiler_frame->
+	    recur_label=do_jump(F_RECUR,
+				Pike_compiler->compiler_frame->recur_label);
+	}
       } else {
 	/* Recur if not overloaded. */
 	emit1(F_COND_RECUR,id);
@@ -2212,7 +2223,6 @@ INT32 do_code_block(node *n)
 
   ret=PIKE_PC;
   /* NOTE: This is no ordinary label... */
-  Pike_compiler->compiler_frame->recur_label=0;
   low_insert_label(0);
   emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
   emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
@@ -2224,6 +2234,7 @@ INT32 do_code_block(node *n)
        Pike_compiler->compiler_frame->current_function_number].id_flags &
       ID_INLINE))
   {
+    Pike_compiler->compiler_frame->recur_label=0;
     Pike_compiler->compiler_frame->is_inline=1;
   }
 
