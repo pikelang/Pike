@@ -728,6 +728,41 @@ o Individual parent object pointers are now only kept when needed
     refers to identifiers in the parent. This change however affects
     the behaviour of object_program() and function_object().
 
+    Examples:
+
+      >  class A {
+      >>   int q;
+      >>   class B {
+      >>     int inq(){return q++;}
+      >>   }
+      >>   class C {
+      >>     int q;
+      >>     int inq(){return q++;}
+      >>   }
+      >> }
+      > indices(A);
+      (1) Result: ({ /* 1 element */
+                      "C"
+                  })
+
+      C doesn't refer to variables in surrounding classes, and is thus
+      constant.
+
+      > object a = A();
+      > object b = a->B();
+      > object c = a->C();
+      > function_object(object_program(b));
+      (2) Result: HilfeInput()->A()
+      > function_object(object_program(c));
+      (3) Result: HilfeInput()->A
+      > function_object(object_program(b)) == a;
+      (4) Result: 1
+      > function_object(object_program(c)) == A;
+      (5) Result: 1
+
+      The b object has an intact parent object pointer, while the c
+      object only has a parent program pointer.
+
 o __pragma_save_parent__
     To change the default parent object pointer behaviour to the
     Pike 7.0/7.2 default it is possible to
