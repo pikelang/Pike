@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.114 2000/12/08 15:47:55 grubba Exp $");
+RCSID("$Id: operators.c,v 1.115 2000/12/15 21:37:44 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2725,9 +2725,9 @@ void init_operators(void)
   ADD_EFUN2("`+",f_add,
 	    tOr7(tIfnot(tFuncV(tNone,tNot(tOr(tObj,tMix)),tMix),tFunction),
 		 tFuncV(tInt,tInt,tInt),
-		 tIfnot(tFuncV(tNone,tNot(tFlt),tMix),
+		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
 			tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tFlt)),
-		 tIfnot(tFuncV(tOr(tInt,tFlt),tOr(tInt,tFlt),tMix),
+		 tIfnot(tFuncV(tNone, tNot(tStr), tMix),
 			tFuncV(tOr3(tStr,tInt,tFlt),
 			       tOr3(tStr,tInt,tFlt),tStr)),
 		 tFuncV(tSetvar(0,tArray),tSetvar(1,tArray),
@@ -2792,7 +2792,7 @@ multiset & mapping -> mapping
 		     F_AND_TYPE(tString),
 		     F_AND_TYPE(tOr(tType,tPrg)) ),
 
-	       tIfnot(tFuncV(tNone,tOr(tArray,tMultiset),tMix),
+	       tIfnot(tFuncV(tNone, tNot(tMapping), tMix),
 		      tFuncV(tNone,
 			     tOr3(tArray,tMultiset,tSetvar(4,tMapping)),
 			     tVar(4)) )
@@ -2868,7 +2868,14 @@ multiset & mapping -> mapping
 	    "function(string,int:string)|"
 	    "function(array(0=mixed),int:array(0))|"
 	    "!function(int,int:mixed)&function(int|float,int|float:float) */
-  ADD_EFUN2("`%",f_mod,tOr6(tFunc(tMix tObj,tMix),tFunc(tObj tMix,tMix),tFunc(tInt tInt,tInt),tFunc(tStr tInt,tStr),tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),tIfnot(tFunc(tInt tInt,tMix),tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tFlt))),
+  ADD_EFUN2("`%", f_mod,
+	    tOr6(tFunc(tMix tObj,tMix),
+		 tFunc(tObj tMix,tMix),
+		 tFunc(tInt tInt,tInt),
+		 tFunc(tStr tInt,tStr),
+		 tFunc(tArr(tSetvar(0,tMix)) tInt,tArr(tVar(0))),
+		 tIfnot(tFuncV(tNone, tNot(tFlt), tMix),
+			tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt),tFlt))),
 	    OPT_TRY_OPTIMIZE,0,generate_mod);
 
   /* function(object:mixed)|function(int:int)|function(float:float)|function(string:string) */
