@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.10 2003/04/14 13:42:50 nilsson Exp $
+// $Id: RDF.pike,v 1.11 2003/04/14 17:11:25 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -141,6 +141,16 @@ void add_statement(Resource subj, Resource pred, Resource obj) {
   }
 
   rel->add(subj, obj);
+}
+
+//! Removes the relation from the RDF set. Returns 1 if the relation
+//! did exist in the RDF set.
+int(0..1) remove_statement(Resource subj, Resource pred, Resource obj) {
+  ADT.Relation.Binary rel = statements[pred];
+  if(!rel) return 0;
+  int(0..1) ret = rel->contains(subj,obj);
+  rel->remove(subj,obj);
+  return ret;
 }
 
 //! Reifies the statement @tt{{ pred, subj, obj }@} and returns
@@ -454,11 +464,20 @@ string encode_n_triple_string(string in) {
 #define Node Parser.XML.NSTree.NSNode
 
 static Node add_xml_children(Node p, string rdfns) {
-  if(p->get_ns()!=rdfns) error("Namespace strangeness.\n");
   string subj_uri = p->get_attributes()->about;
-  if(!subj_uri) error("Missing about attribute.\n");
-  Resource subj = make_resource(subj_uri);
+  Resource subj;
+  if(!subj_uri) {
+    subj = Resource();
+  }
+  else
+    subj = make_resource(subj_uri);
 
+  if(p->get_ns()!=rdfns) {
+    add_statement( subj, rdf_type,
+		   make_resource(p->get_ns()+p->get_any_name()) );
+  }
+
+  // Handle attribute abbreviation (2.2.2. Basic Abbreviated Syntax)
   mapping m = p->get_ns_attributes();
   foreach(m; string ns; mapping m) {
     if(ns==rdfns) continue;
@@ -466,7 +485,21 @@ static Node add_xml_children(Node p, string rdfns) {
       add_statement( subj, make_resource(ns+pred), LiteralResource(obj) );
   }
 
+  // Handle subnodes
   foreach(p->get_elements(), Node c) {
+    if(c->get_ns()==rdfns) {
+      if(c->get_any_name()=="type") {
+	string obj_uri = c->get_attributes()->resource;
+	if(!obj_uri) error("rdf:type missing resource attribute.\n");
+	add_statement( subj, rdf_type, make_resource(obj_uri) );
+	continue;
+      }
+      else {
+	// We are required to ignore unknown rdf elements.
+	error("Can not handle rdf:%s\n", c->get_any_name());
+      }
+    }
+
     string pred_uri = c->get_ns() + c->get_any_name();
     Resource obj;
     string obj_uri = c->get_ns_attributes()[rdfns] &&
@@ -482,13 +515,21 @@ static Node add_xml_children(Node p, string rdfns) {
       }
     }
     else {
-      array(Node) dc = c->get_elements("Description");
-      if(sizeof(dc)) {
-	if(sizeof(dc)!=1) error("More than one Description.\n");
-	obj = add_xml_children(dc[0], rdfns);
+      string ptype = c->get_attributes()->parserType;
+      if( !(< "Literal", "Resource", 0 >)[ptype] )
+	error("Illegal parserType value %O.\n", ptype);
+
+      if(ptype!="Literal") {
+	array(Node) dcs = c->get_elements();
+	if(sizeof(dcs)) {
+	  foreach(dcs, Node dc)
+	    add_statement( subj, make_resource(pred_uri),
+			   add_xml_children(dc, rdfns) );
+	  continue;
+	}
       }
-      else
-	obj = LiteralResource(c[0]->get_text());
+
+      obj = LiteralResource((array(string))c->get_children()*"");
     }
     add_statement( subj, make_resource(pred_uri), obj );
   }
@@ -499,18 +540,23 @@ static Node add_xml_children(Node p, string rdfns) {
 //! @decl Standards.RDF parse_xml(string|Parser.XML.NSTree.NSNode in)
 //! Adds the statements represented by the string or tree @[in] to the
 //! RDF domain. If @[in] is a tree the in-node should be the @tt{RDF@}
-//! node of the XML serialization.
-this_program parse_xml(string|Node in) {
+//! node of the XML serialization. RDF documents takes it default
+//! namespace from the URI of the document, so if the RDF document relies
+//! such ingenious mechanisms, pass the document URI in the @[base]
+//! variable.
+this_program parse_xml(string|Node in, void|string base) {
   Node n;
+  if(base && base[-1]!='/') base += "#";
   if(stringp(in)) {
-    n = Parser.XML.NSTree.parse_input(in);
+    n = Parser.XML.NSTree.parse_input(in, base);
     n = n->get_first_element("RDF");
   }
   else
     n = in;
+
   string rdfns = n->get_ns();
 
-  foreach(n->get_elements("Description"), Node c)
+  foreach(n->get_elements(), Node c)
     add_xml_children(c, rdfns);
 
   return this_object();
