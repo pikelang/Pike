@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.19 2000/08/19 10:17:15 grubba Exp $ */
+/* $Id: block_alloc.h,v 1.20 2001/07/04 07:01:50 hubbe Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -43,14 +43,14 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)				\
 									\
     for(e=0;e<BSIZE;e++)						\
     {									\
-      n->x[e].BLOCK_ALLOC_NEXT=PIKE_CONCAT3(free_,DATA,s);		\
+      n->x[e].BLOCK_ALLOC_NEXT=(void *)PIKE_CONCAT3(free_,DATA,s);	\
       PRE_INIT_BLOCK( (n->x+e) );					\
       PIKE_CONCAT3(free_,DATA,s)=n->x+e;				\
     }									\
   }									\
 									\
   tmp=PIKE_CONCAT3(free_,DATA,s);					\
-  PIKE_CONCAT3(free_,DATA,s)=tmp->BLOCK_ALLOC_NEXT;			\
+  PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)tmp->BLOCK_ALLOC_NEXT;	\
   DO_IF_DMALLOC( dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());  )\
   INIT_BLOCK(tmp);							\
   return tmp;								\
@@ -60,7 +60,7 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
 {									\
   EXIT_BLOCK(d);							\
   DO_IF_DMALLOC( dmalloc_unregister(d, 1);  )				\
-  d->BLOCK_ALLOC_NEXT=PIKE_CONCAT3(free_,DATA,s);			\
+  d->BLOCK_ALLOC_NEXT = (void *)PIKE_CONCAT3(free_,DATA,s);		\
   PRE_INIT_BLOCK(d);							\
   PIKE_CONCAT3(free_,DATA,s)=d;						\
 }									\
@@ -72,9 +72,9 @@ void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)				\
    for(tmp=PIKE_CONCAT(DATA,_blocks);tmp;tmp=tmp->next)                 \
    {                                                                    \
      int tmp2;                                                          \
-     extern void dmalloc_check_block_free(void *p);                     \
+     extern void dmalloc_check_block_free(void *p, char *loc);          \
      for(tmp2=0;tmp2<BSIZE;tmp2++)                                      \
-       dmalloc_check_block_free(tmp->x+tmp2);                           \
+       dmalloc_check_block_free(tmp->x+tmp2, DMALLOC_LOCATION());       \
    }                                                                    \
   )                                                                     \
   while((tmp=PIKE_CONCAT(DATA,_blocks)))				\
@@ -99,7 +99,7 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
     COUNT_BLOCK(tmp);                                                   \
   }									\
   for(tmp2=PIKE_CONCAT3(free_,DATA,s);tmp2;				\
-          tmp2=tmp2->BLOCK_ALLOC_NEXT) num--;				\
+          tmp2 = (struct DATA *)tmp2->BLOCK_ALLOC_NEXT) num--;		\
   COUNT_OTHER();                                                        \
   *num_=num;								\
   *size_=size;								\
@@ -112,12 +112,12 @@ void PIKE_CONCAT3(count_memory_in_,DATA,s)(INT32 *num_, INT32 *size_)	\
 									     \
 BLOCK_ALLOC(DATA,BSIZE)							     \
 									     \
-static struct DATA **PIKE_CONCAT(DATA,_hash_table)=0;			     \
-static int PIKE_CONCAT(DATA,_hash_table_size)=0;			     \
-static int PIKE_CONCAT(num_,DATA)=0;					     \
+struct DATA **PIKE_CONCAT(DATA,_hash_table)=0;				     \
+size_t PIKE_CONCAT(DATA,_hash_table_size)=0;				     \
+static size_t PIKE_CONCAT(num_,DATA)=0;				     \
 									     \
 inline struct DATA *							     \
- PIKE_CONCAT(really_low_find_,DATA)(void *ptr, int hval)		     \
+ PIKE_CONCAT(really_low_find_,DATA)(void *ptr, size_t hval)		     \
 {									     \
   struct DATA *p,**pp;							     \
   p=PIKE_CONCAT(DATA,_hash_table)[hval];                                     \
@@ -139,7 +139,8 @@ inline struct DATA *							     \
 									     \
 struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				     \
 {									     \
-  unsigned int hval=(long)ptr;						     \
+  size_t hval = (size_t)ptr;						     \
+  if(!PIKE_CONCAT(DATA,_hash_table_size)) return 0;                          \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
   return PIKE_CONCAT(really_low_find_,DATA)(ptr, hval);			     \
 }									     \
@@ -150,8 +151,8 @@ static void PIKE_CONCAT(DATA,_rehash)()					     \
   /* Time to re-hash */							     \
   struct DATA **old_hash= PIKE_CONCAT(DATA,_hash_table);		     \
   struct DATA *p;							     \
-  int hval;								     \
-  int e=PIKE_CONCAT(DATA,_hash_table_size);				     \
+  size_t hval;							     \
+  size_t e=PIKE_CONCAT(DATA,_hash_table_size);			     \
 									     \
   PIKE_CONCAT(DATA,_hash_table_size)*=2;				     \
   PIKE_CONCAT(DATA,_hash_table_size)++;					     \
@@ -161,12 +162,12 @@ static void PIKE_CONCAT(DATA,_rehash)()					     \
   {									     \
     MEMSET(PIKE_CONCAT(DATA,_hash_table),0,				     \
 	   sizeof(struct DATA *)*PIKE_CONCAT(DATA,_hash_table_size));	     \
-    while(--e >=0)							     \
+    while(e-- > 0)							     \
     {									     \
       while((p=old_hash[e]))						     \
       {									     \
 	old_hash[e]=p->BLOCK_ALLOC_NEXT;				     \
-	hval=(long)(p-> data);						     \
+	hval=(size_t)(p->data);					     \
 	hval%=PIKE_CONCAT(DATA,_hash_table_size);			     \
 	p->BLOCK_ALLOC_NEXT=PIKE_CONCAT(DATA,_hash_table)[hval];	     \
 	PIKE_CONCAT(DATA,_hash_table)[hval]=p;				     \
@@ -180,7 +181,7 @@ static void PIKE_CONCAT(DATA,_rehash)()					     \
 }									     \
 									     \
 									     \
-struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)		     \
+struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, size_t hval)		     \
 {									     \
   struct DATA *p;							     \
 									     \
@@ -192,7 +193,7 @@ struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)		     \
      PIKE_CONCAT(DATA,_hash_table_size))				     \
   {									     \
     PIKE_CONCAT(DATA,_rehash)();					     \
-    hval=(long)ptr;							     \
+    hval=(size_t)ptr;						     \
     hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
   }									     \
 									     \
@@ -203,10 +204,10 @@ struct DATA *PIKE_CONCAT(make_,DATA)(void *ptr, int hval)		     \
   return p;								     \
 }									     \
 									     \
-struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr)				     \
+struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr)			 	     \
 {									     \
   struct DATA *p;							     \
-  int hval=(long)ptr;							     \
+  size_t hval=(size_t)ptr;					     \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
   if((p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))			     \
     return p;								     \
@@ -217,7 +218,7 @@ struct DATA *PIKE_CONCAT(get_,DATA)(void *ptr)				     \
 int PIKE_CONCAT3(check_,DATA,_semafore)(void *ptr)			     \
 {									     \
   struct DATA *p;							     \
-  int hval=(long)ptr;							     \
+  size_t hval=(size_t)ptr;					     \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
   if((p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))			     \
     return 0;								     \
@@ -229,7 +230,7 @@ int PIKE_CONCAT3(check_,DATA,_semafore)(void *ptr)			     \
 int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
 {									     \
   struct DATA *p;							     \
-  int hval=(long)ptr;							     \
+  size_t hval=(size_t)ptr;					     \
   if(!PIKE_CONCAT(DATA,_hash_table)) return 0;				     \
   hval%=PIKE_CONCAT(DATA,_hash_table_size);				     \
   if((p=PIKE_CONCAT(really_low_find_,DATA)(ptr, hval)))			     \
@@ -246,7 +247,7 @@ int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
 void PIKE_CONCAT3(init_,DATA,_hash)(void)				     \
 {									     \
   extern INT32 hashprimes[32];						     \
-  extern int my_log2(unsigned INT32 x);					     \
+  extern int my_log2(size_t x);					     \
   PIKE_CONCAT(DATA,_hash_table_size)=hashprimes[my_log2(BSIZE)];	     \
 									     \
   PIKE_CONCAT(DATA,_hash_table)=(struct DATA **)			     \
@@ -267,6 +268,3 @@ void PIKE_CONCAT3(exit_,DATA,_hash)(void)				     \
   PIKE_CONCAT(DATA,_hash_table)=0;					     \
   PIKE_CONCAT(num_,DATA)=0;						     \
 }
-
-#define BLOCK_ALLOC_NEXT next
-
