@@ -68,14 +68,38 @@ object pkcs_id = asn1_identifier(1, 2, 840, 113549, 1);
 object pkcs_1_id = pkcs_id->append(1);
 object pkcs_9_id = pkcs_id->append(9);
 
+/* For public key */
 object rsa_id = pkcs_1_id->append(1);
+
+/* Signature algorithms */
+object rsa_md2_id = pkcs_1_id->append(2);
 object rsa_md5_id = pkcs_1_id->append(4);
+object rsa_sha1_id = pkcs_1_id->append(5);
+
+/* For public key 
+        id-dsa ID ::= { iso(1) member-body(2) us(840) x9-57(10040)
+                  x9cm(4) 1 }
+*/
+object dsa_id = asn1_identifier(1, 2, 840, 10040, 4, 1);
+
+/* Signature algorithm 
+           id-dsa-with-sha1 ID  ::=  {
+                   iso(1) member-body(2) us(840) x9-57 (10040)
+                   x9cm(4) 3 }
+*/
+object dsa_sha_id = asn1_identifier(1, 2, 840, 10040, 4, 3);
 
 object md5_id = asn1_identifier(1, 2, 840, 113549, 2, 5);
 object sha1_id = asn1_identifier(1, 3, 14, 3, 2, 26);
 
+/*      dhpublicnumber OBJECT IDENTIFIER ::= { iso(1) member-body(2)
+                  us(840) ansi-x942(10046) number-type(2) 1 } */
+
+object dh_id = asn1_identifier(1, 2, 840, 10046, 2, 1);
+
 /* Object Identifiers used in X509 distinguished names */
 
+/* Kept for compatibility with older versions of this file. */
 object attributeType_id = asn1_identifier(2, 5, 4);
 
 mapping name_ids =
@@ -87,7 +111,7 @@ mapping name_ids =
   "stateOrProvinceName" : attributeType_id->append(8), /* printable string */
   "organizationName" : attributeType_id->append(10), /* printable string */
   "organizationUnitName" : attributeType_id->append(11)  /* printable string */
-   ]);
+  ]);
 
 mapping attribute_ids =
 ([
@@ -104,3 +128,78 @@ mapping attribute_ids =
   "friendlyName" : pkcs_9_id->append(20),           /* BMPString */
   "localKeyID" : pkcs_9_id->append(21)              /* OCTET STRING */
 ]);
+
+/* From RFC 2459 */
+
+object at_id = attributeType_id;
+mapping at_ids =
+([ /* All attribute values are a CHOICE of most string types,
+    * including PrintableString, TeletexString (which in practice
+    * means latin1) and UTF8String. */
+  "commonName" : at_id->append(3),       
+  "surname" : at_id->append(4),
+  "countryName" : at_id->append(6),
+  "localityName" : at_id->append(7),
+  "stateOrProvinceName" : at_id->append(8),
+  "organizationName" : at_id->append(10),
+  "organizationUnitName" : at_id->append(11),
+  "title" : at_id->append(12),
+  "name" : at_id->append(41),
+  "givenName" : at_id->append(42),
+  "initials" : at_id->append(43),
+  "generationQualifier" : at_id->append(43),
+  /* What does this attribute mean? */
+  "dnQualifier" : at_id->append(46),
+  /* Obsolete, not recommended. */
+  "emailAddress" : pkcs_9_id->append(1)            /* IA5String */  
+]);
+
+object ce_id = asn1_identifier(2, 5, 29);
+object pkix_id = asn1_identifier(1, 3, 6, 1, 5, 5, 7);
+
+
+mapping ce_ids =
+([
+   "subjectDirectoryAttributes"	: ce_id->append(9),
+   "subjectKeyIdentifier"	: ce_id->append(14),
+   "keyUsage"			: ce_id->append(15),
+   "privateKeyUsagePeriod"	: ce_id->append(16),
+   "subjectAltName"		: ce_id->append(17),
+   "issuerAltName"		: ce_id->append(18),
+   "basicConstraints"		: ce_id->append(19),
+   "nameConstraints"		: ce_id->append(30),
+   "cRLDistributionPoints"	: ce_id->append(31),
+   "certificatePolicies"	: ce_id->append(32),
+   "policyMappings"		: ce_id->append(33),
+   "authorityKeyIdentifier"	: ce_id->append(35),
+   "policyConstraints"		: ce_id->append(36),
+   "extKeyUsage"		: ce_id->append(37)
+ ]);
+
+/* Policy qualifiers */
+object qt_id = pkix_id->append(2);
+
+mapping qt_ids =
+([ "cps" : qt_id->append(1),
+   "unotice" : qt_id->append(2) ]);
+  
+/* Key purposes */
+
+object kp_id = pkix_id->append(3);
+
+mapping kp_ids =
+([ "serverAuth" : kp_id->append(1),
+   "clientAuth" : kp_id->append(2),
+   "codeSigning" : kp_id->append(3),
+   "emailProtection" : kp_id->append(4),
+   "timeStamping" : kp_id->append(8) ]);
+
+/* Private extensions */
+object pe_id = pkix_id->append(1);
+
+/* Access descriptions */
+
+object ad_id = pkix_id->append(48);
+
+mapping ad_ids =
+([ "caIssuers" : ad_id->append(2) ]);
