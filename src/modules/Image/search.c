@@ -203,7 +203,7 @@ static INLINE int abs(int a) { return (a<0)?-a:a; }
 #define NAME "match_norm_corr"
 #define INAME image_match_norm_corr
 #undef SCALE_MODIFY 
-#define SCALE_MODIFY(x) (1.0/MAXIMUM(1,x))
+#define SCALE_MODIFY(x) (1.0/MAXIMUM(1.0,x))
 #define PIXEL_VALUE_DISTANCE(CO)  \
        (((haystacki[j].CO-tempavr)/2+128) \
         * ( (needlei[ny*nxs+nx].CO-needle_average)/2+128 ))
