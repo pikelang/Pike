@@ -1,6 +1,0 @@
-/* config.h.in.  Generated automatically from configure.in by autoheader.  */
-
-/* Define if type char is unsigned and you are not using gcc.  */
-#ifndef __CHAR_UNSIGNED__
-#undef __CHAR_UNSIGNED__
-#endif
