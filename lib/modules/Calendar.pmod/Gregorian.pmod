@@ -1478,3 +1478,59 @@ object parse(string fmt,string arg)
    return low;
 }
 
+//-- auxillary functions------------------------------------------------
+
+//!
+//! function datetime(int|void unix_time)
+//!          Replacement for localtime.
+//!
+//! function datetime_name(int|void unix_time)
+//!          Replacement for ctime.
+//!
+//! function datetime_short_name(int|void unix_time)
+//!          Replacement for ctime.
+//!
+
+
+// Sane replacement for localtime().
+mapping(string:int) datetime(int|void unix_time,int|void skip_extra)
+{
+   mapping t = localtime(unix_time || time());
+   return 
+      ([ "year":t->year+1900,
+	 "month":t->mon+1,
+	 "day":t->mday,
+	 "hour":t->hour,
+	 "minute":t->min,
+	 "second":t->sec,
+	 "yearday":t->yday,
+	 "timezone":t->timezone,
+	 "DST":t->isdst // Dayligt-saving time.
+      ]) |
+      // calculate week and week day
+      (skip_extra
+       ?([])
+       :(["week":(int)Week(),
+	  "weekday":Day()->week_day()]));
+}
+
+// Sane replacement for ctime().
+string datetime_name(int|void unix_time)
+{
+  mapping t = datetime(unix_time);
+  return sprintf("%04d-%02d-%02d (%s) -W%02d-%d (%s) %02d:%02d:%02d",
+		 t->year, t->month, t->day, 
+		 month_names[t->month-1][..2],
+		 t->week, t->weekday, 
+		 week_day_names[t->weekday-1][..2],
+		 t->hour, t->minute, t->second);
+}
+
+// Sane replacement for ctime().
+string datetime_short_name(int|void unix_time)
+{
+  mapping t = datetime(unix_time,1);
+  return sprintf("%04d-%02d-%02d %02d:%02d:%02d",
+		 t->year, t->month, t->day,
+		 t->hour, t->minute, t->second);
+}

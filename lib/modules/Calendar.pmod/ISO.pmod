@@ -99,6 +99,7 @@ class Day
 
    string week_day_name()
    {
+      werror("week_days: %O\n",week_day_names);
       return week_day_names[(this->week_day()+6)%7];
    }
 
@@ -243,3 +244,4 @@ class Second
       return _iso_name()-":";
    }
 }
+
