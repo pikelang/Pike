@@ -99,6 +99,59 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) a, array(2=mixed) b)
   RETURN mkmapping(a,b);
 }
 
+PIKEFUN int string_count(string haystack, string needle)
+  errname String.count;
+  optflags OPT_TRY_OPTIMIZE;
+{
+   int c=0;
+   int i,j;
+
+   switch (needle->len)
+   {
+     case 0:
+       switch (haystack->len)
+       {
+	 case 0: c=1; break; /* "" appears one time in "" */
+	 case 1: c=0; break; /* "" doesn't appear in "x" */
+	 default: c=haystack->len-1; /* one time between each character */
+       }
+       break;
+     case 1:
+       /* maybe optimize? */
+     default:
+       for (i=0; i<haystack->len; i++)
+       {
+	 j=string_search(haystack,needle,i);
+	 if (j==-1) break;
+	 i=j+needle->len-1;
+	 c++;
+       }
+       break;
+   }
+   RETURN c;
+}
+
+PIKEFUN int program_implements(program p, program p2)
+  errname Program.implements;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  RETURN implements(p,p2);
+}
+
+PIKEFUN int program_inherits(program p, program p2)
+  errname Program.inherits;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  RETURN !!low_get_storage(p2,p);
+}
+
+PIKEFUN int string_width(string s)
+  errname String.width;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  RETURN 8 * (1 << s->size_shift);
+}
+
 void init_builtin(void)
 {
 INIT

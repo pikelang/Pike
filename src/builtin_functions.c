@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.277 2000/05/25 05:18:52 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.278 2000/05/25 20:08:55 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5395,41 +5395,6 @@ void f_enumerate(INT32 args)
    }
 }
 
-void f_string_count(INT32 args)
-{
-   struct pike_string * haystack=NULL;
-   struct pike_string * needle=NULL;
-   int c=0;
-   int i,j;
-
-   get_all_args("String.count",args,"%W%W",&haystack,&needle);
-
-   switch (needle->len)
-   {
-      case 0:
-	 switch (haystack->len)
-	 {
-	    case 0: c=1; break; /* "" appears one time in "" */
-	    case 1: c=0; break; /* "" doesn't appear in "x" */
-	    default: c=haystack->len-1; /* one time between each character */
-	 }
-	 break;
-      case 1:
-	 /* maybe optimize? */
-      default:
-	 for (i=0; i<haystack->len; i++)
-	 {
-	    j=string_search(haystack,needle,i);
-	    if (j==-1) break;
-	    i=j+needle->len-1;
-	    c++;
-	 }
-	 break;
-   }
-   pop_n_elems(args);
-   push_int(c);
-}
-
 void f_inherit_list(INT32 args)
 {
   struct program *p;
@@ -5518,29 +5483,6 @@ void f_inherit_list(INT32 args)
 }
 
 
-void f_program_implements(INT32 args)
-{
-  struct program *p,*p2;
-  int ret;
-  get_all_args("Program.implements",args,"%p%p",&p,&p2);
-
-  ret=implements(p,p2);
-  pop_n_elems(args);
-  push_int(ret);
-}
-
-void f_program_inherits(INT32 args)
-{
-  struct program *p,*p2;
-  struct svalue *arg,*arg2;
-  int ret;
-  get_all_args("Program.inherits",args,"%p%p",&p,&p2);
-
-  ret=!!low_get_storage(p2,p);
-  pop_n_elems(args);
-  push_int(ret);
-}
-
 void f_program_defined(INT32 args)
 {
   struct program *p;
@@ -5605,16 +5547,6 @@ void f_function_defined(INT32 args)
   pop_n_elems(args);
   push_int(0);
   
-}
-
-void f_string_width(INT32 args)
-{
-  struct pike_string *s;
-  int ret;
-  get_all_args("String.width",args,"%W",&s);
-  ret=s->size_shift;
-  pop_n_elems(args);
-  push_int(8 * (1<<ret));
 }
 
 void init_builtin_efuns(void)
@@ -6086,8 +6018,6 @@ void init_builtin_efuns(void)
   ADD_FUNCTION("sort",f_sort,
 	       tFuncV(tArr(tSetvar(0, tMix)),tArr(tMix),tArr(tVar(0))),
 	       OPT_SIDE_EFFECT);
-  ADD_FUNCTION("string_count",f_string_count,
-	       tFunc(tString tString,tInt),OPT_TRY_OPTIMIZE);
 
 #define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
   tOr7( tFuncV(IN tFuncV(SUB,tMix,tSetvar(2,tAny)),tMix,OUTFUN), \
@@ -6163,15 +6093,10 @@ void init_builtin_efuns(void)
 	   OPT_TRY_OPTIMIZE);
 		
   ADD_FUNCTION("inherit_list",f_inherit_list,tFunc(tProgram,tArr(tProgram)),0);
-  ADD_FUNCTION("program_implements",f_program_implements,
-	       tFunc(tProgram tProgram,tInt),0);
-  ADD_FUNCTION("program_inherits",f_program_inherits,
-	       tFunc(tProgram tProgram,tInt),0);
   ADD_FUNCTION("program_defined",f_program_defined,
 	       tFunc(tProgram,tString),0);
   ADD_FUNCTION("function_defined",f_function_defined,
 	       tFunc(tFunction,tString),0);
-  ADD_FUNCTION("string_width",f_string_width,tFunc(tString,tInt),0);
 
 #ifdef DEBUG_MALLOC
   
