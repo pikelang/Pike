@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.41 2001/07/05 01:47:20 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.42 2001/11/18 02:00:22 nilsson Exp $");
 
 #include "zlib_machine.h"
 
@@ -69,6 +69,13 @@ struct zipper
  */
 
 /*! @class deflate
+ *!
+ *! Gz_deflate is a builtin program written in C. It interfaces the
+ *! packing routines in the libz library.
+ *!
+ *! @note
+ *! This program is only available if libz was available and found when
+ *! Pike was compiled.
  *!
  *! @seealso
  *! @[Gz.inflate()]
@@ -290,6 +297,16 @@ static void exit_gz_deflate(struct object *o)
 /*******************************************************************/
 
 /*! @class inflate
+ *!
+ *! Gz_deflate is a builtin program written in C. It interfaces the
+ *! unpacking routines in the libz library.
+ *!
+ *! @note
+ *! This program is only available if libz was available and found when
+ *! Pike was compiled.
+ *!
+ *! @seealso
+ *!   @[deflate]
  */
 
 /*! @decl void create()
@@ -394,6 +411,15 @@ static int do_inflate(dynamic_buffer *buf,
  *!
  *! This function performs gzip style decompression. It can inflate
  *! a whole file at once or in blocks.
+ *!
+ *! @example
+ *! // whole file
+ *! write(Gz_inflate()->inflate(stdin->read(0x7fffffff));
+ *!
+ *! // streaming (blocks)
+ *! function inflate=Gz_inflate()->inflate;
+ *! while(string s=stdin->read(8192))
+ *!   write(inflate(s));
  *!
  *! @seealso
  *! @[Gz.deflate->deflate()]
