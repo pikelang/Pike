@@ -1,0 +1,4 @@
+#include <windows.h>
+
+pike.exe     ICON    pike.ico
+
