@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.136 1999/11/23 03:06:35 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.137 1999/11/25 00:56:22 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -995,7 +995,13 @@ opt_function_type: '('
   | /* empty */
   {
    push_type(T_MIXED);
+   push_type(T_VOID);
+   push_type(T_OR);
+
    push_type(T_MIXED);
+   push_type(T_VOID);
+   push_type(T_OR);
+
    push_type(T_MANY);
   }
   ;

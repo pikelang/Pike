@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.73 1999/11/25 00:09:56 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.74 1999/11/25 00:56:25 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -991,6 +991,10 @@ static void low_or_pike_types(char *t1, char *t2)
   }
   else if(EXTRACT_UCHAR(t1)==T_INT && EXTRACT_UCHAR(t2)==T_INT)
   {
+    /* FIXME:
+     * This should only be done if the ranges are
+     * overlapping or adjecant to each other. /Hubbe
+     */
     INT32 i1,i2;
     i1=extract_type_int(t1+1+sizeof(INT32));
     i2=extract_type_int(t2+1+sizeof(INT32));
@@ -1464,9 +1468,9 @@ static char *low_match_types2(char *a,char *b, int flags)
 
   /* 'mixed' matches anything */
 
-  if((EXTRACT_UCHAR(a) == T_ZERO && !(flags & A_EXACT) &&
-      EXTRACT_UCHAR(b) != T_VOID) ||
-     (EXTRACT_UCHAR(a) == T_MIXED && !(flags & A_EXACT)))
+  if(((EXTRACT_UCHAR(a) == T_ZERO || EXTRACT_UCHAR(a) == T_MIXED) &&
+      !(flags & A_EXACT) &&
+      EXTRACT_UCHAR(b) != T_VOID))
   {
 #if 1
     switch(EXTRACT_UCHAR(b))
@@ -1489,8 +1493,8 @@ static char *low_match_types2(char *a,char *b, int flags)
     return a;
   }
 
-  if((EXTRACT_UCHAR(b) == T_MIXED && !(flags & B_EXACT)) ||
-     (EXTRACT_UCHAR(b) == T_ZERO && !(flags & B_EXACT) &&
+  if((( EXTRACT_UCHAR(b) == T_ZERO || EXTRACT_UCHAR(b) == T_MIXED) &&
+      !(flags & B_EXACT) &&
       EXTRACT_UCHAR(a) != T_VOID))
   {
 #if 1
