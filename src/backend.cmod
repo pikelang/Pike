@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.125 2004/04/05 21:50:12 mast Exp $
+|| $Id: backend.cmod,v 1.126 2004/04/06 08:49:26 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.125 2004/04/05 21:50:12 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.126 2004/04/06 08:49:26 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -58,7 +58,7 @@ RCSID("$Id: backend.cmod,v 1.125 2004/04/05 21:50:12 mast Exp $");
 #endif
 #include <sys/stat.h>
 
-/* #define POLL_DEBUG */
+#define POLL_DEBUG
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
@@ -630,6 +630,7 @@ int MY_FD_CLR(int *pfd, int fd, int filter)
 {
   struct kevent ev;
 
+  IF_PD(fprintf(stderr, "BACKEND: EV_DISABLE fd:%d, filter:%d\n", fd, filter));
   /* Note: Use EV_DISABLE in preference to EV_DELETE, since
    *       odds are that the fd will be reenabled, and the
    *       filter is deleted anyway when the fd is closed.
@@ -643,10 +644,12 @@ int MY_FD_SET(int *pfd, int fd, int filter)
 {
   struct kevent ev[2];
 
+  IF_PD(fprintf(stderr, "BACKEND: EV_ADD fd:%d, filter:%d\n", fd, filter));
   EV_SET(ev, fd, filter, EV_ADD, 0, 0, 0);
   /* Note: EV_ADD unfortunately doesn't reenable EV_DISABLED
    *       filters.
    */
+  IF_PD(fprintf(stderr, "BACKEND: EV_ENABLE fd:%d, filter:%d\n", fd, filter));
   EV_SET(ev+1, fd, filter, EV_ENABLE, 0, 0, 0);
   
   return kevent(*pfd, ev, 2, NULL, 0, NULL);
@@ -1559,6 +1562,13 @@ PIKECLASS Backend
      return NULL;
    }
 
+   /* Make sure the WANT_EVENT() macro is useable... */
+#undef READ
+#undef WRITE
+#undef READ_OOB
+#undef WRITE_OOB
+#undef ERROR
+
 #define WANT_EVENT(BOX, WHAT)						\
    ((BOX) && (BOX)->events & PIKE_CONCAT (PIKE_BIT_FD_, WHAT))
 
@@ -2440,6 +2450,10 @@ PIKECLASS Backend
 #ifdef PIKE_DEBUG
 	  int handled = 0;
 #endif /* PIKE_DEBUG */
+
+	  IF_PD(fprintf(stderr, "fd:%d events:0x%04d\n",
+			GET_FD(ACTIVE_POLLSET[i]),
+			(unsigned)GET_EVENTS(ACTIVE_POLLSET[i])));
 
 	  /* FIMXE: kqueue wants to look at
 	   *	    ACTIVE_POLLSET[i].flags & EV_ERROR
