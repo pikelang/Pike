@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.88 1998/03/08 13:55:18 per Exp $ */
+/* $Id: image.c,v 1.89 1998/03/11 20:44:48 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.88 1998/03/08 13:55:18 per Exp $
+**!	$Id: image.c,v 1.89 1998/03/11 20:44:48 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.88 1998/03/08 13:55:18 per Exp $");
+RCSID("$Id: image.c,v 1.89 1998/03/11 20:44:48 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1865,24 +1865,24 @@ void image_rgb_to_hsv(INT32 args)
    i=img->xsize*img->ysize;
    while (i--)
    {
-     register int r,g,b;
-     register int v, delta;
-     register int h;
+      register int r,g,b;
+      register int v, delta;
+      register int h;
 
-     r = s->r; g = s->g; b = s->b;
-     v = MAX3(r,g,b);
-     delta = v - MIN3(r,g,b);
+      r = s->r; g = s->g; b = s->b;
+      v = MAX3(r,g,b);
+      delta = v - MIN3(r,g,b);
 
-     if(r==v)      h = (int)(((g-b)/(float)delta)*(255.0/6.0));
-     else if(g==v) h = (int)((2.0+(b-r)/(float)delta)*(255.0/6.0));
-     else h = (int)((4.0+(r-g)/(float)delta)*(255.0/6.0));
-     if(h<0) h+=255;
+      if(r==v)      h = (int)(((g-b)/(float)delta)*(255.0/6.0));
+      else if(g==v) h = (int)((2.0+(b-r)/(float)delta)*(255.0/6.0));
+      else h = (int)((4.0+(r-g)/(float)delta)*(255.0/6.0));
+      if(h<0) h+=255;
 
-/*     printf("hsv={ %d,%d,%d }\n", h, (int)((delta/(float)v)*255), v);*/
-     d->r = (int)h;
-     d->g=(int)((delta/(float)v)*255.0);
-     d->b=v;
-     s++; d++;
+      /*     printf("hsv={ %d,%d,%d }\n", h, (int)((delta/(float)v)*255), v);*/
+      d->r = (int)h;
+      d->g=(int)((delta/(float)v)*255.0);
+      d->b=v;
+      s++; d++;
    }
    THREADS_DISALLOW();
 
@@ -3248,8 +3248,10 @@ void pike_module_init(void)
    add_function("write_lsb_grey",image_write_lsb_rgb,
 		"function(:object)",0);
 
-   add_function("orient",image_orient,
+   add_function("orient4",image_orient4,
                 "function(:array(object))",0);
+   add_function("orient",image_orient,
+                "function(:object)",0);
 
 
    set_init_callback(init_image_struct);

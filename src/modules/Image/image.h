@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.18 1998/02/15 14:53:56 hedda Exp $
+**!	$Id: image.h,v 1.19 1998/03/11 20:44:50 mirar Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -148,3 +148,4 @@ void image_polyfill(INT32 args);
 /* orient.c */
 
 void image_orient(INT32 args);
+void image_orient4(INT32 args);

@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.4 1998/02/17 19:47:44 hubbe Exp $ */
+/* $Id: orient.c,v 1.5 1998/03/11 20:44:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.4 1998/02/17 19:47:44 hubbe Exp $
+**!	$Id: orient.c,v 1.5 1998/03/11 20:44:50 mirar Exp $
 **! class image
 */
 
@@ -19,6 +19,7 @@
 #include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
+#include "threads.h"
 #include "array.h"
 #include "error.h"
 
@@ -38,202 +39,196 @@ extern struct program *image_program;
 static const double c0=0.70710678118654752440;
 static const double my_PI=3.14159265358979323846;
 
+#if 1
+#include <sys/resource.h>
+#define CHRONO(X) chrono(X);
+
+static void chrono(char *x)
+{
+   struct rusage r;
+   static struct rusage rold;
+   getrusage(RUSAGE_SELF,&r);
+   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
+	   (long)r.ru_utime.tv_sec,(long)r.ru_utime.tv_usec,
+	   
+	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
+		  +r.ru_utime.tv_sec-rold.ru_utime.tv_sec),
+	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
+		  + r.ru_utime.tv_usec-rold.ru_utime.tv_usec)
+      );
+
+   rold=r;
+}
+#else
+#define CHRONO(X)
+#endif
+
 /*
-**! method object orient( foo bar args?)
-**!	Draws four images describing the orientation.
-**!	
-**!	
-**!	
+**! method object orient()
+**! method array(object) orient4()
+**!	Draws images describing the orientation
+**!     of the current image.
 **!
-**!	
-**!	
-**!	
+**!	<tt>orient</tt> gives a HSV image
+**!	(run a <ref>hsv_to_rgb</ref> pass on it
+**!	to get a viewable image).
+**!     corresponding to the angle of the
+**!	orientation:
+**!     <pre>      |      /    -    \
+**!          hue=  0     64   128  192  (=red in a hsv image)
+**!              purple cyan green red
+**!     </pre>
+**!	Red, green and blue channels are added
+**!	and not compared separately.
 **!
-**!	
-**!	
+**!     The <tt>orient4</tt> function gives back
+**!	4 image objects, corresponding to the
+**!	amount of different directions, see above.
 **!
-**!	
-**!	
+**! returns an array of the five new image objects
 **!
-**!
-**!
-**!
-**! returns an array of four new image objects
-**! arg int newx
-**! arg int newy
-**!	new image size in my_PIxels
-**!
+**! note
+**!	experimental status; may not be exact the same
+**!	output in later versions
 */
 static INLINE int sq(int a) { return a*a; }
+static INLINE int abs(int a) { return (a<0)?-a:a; }
+
+static void _image_orient(struct image *source,
+			  struct object *o[4],
+			  struct image *img[4])
+{
+   int i;
+   struct { int x,y; } or[4]={ {1,0}, {1,1}, {0,1}, {-1,1} };
+   int x,y;
+
+   for (i=0; i<5; i++)
+   {
+      push_int(source->xsize);
+      push_int(source->ysize);
+      o[i]=clone_object(image_program,2);
+      img[i]=(struct image*)get_storage(o[i],image_program);
+      push_object(o[i]);
+   }
+
+THREADS_ALLOW();  
+CHRONO("start");
+   for (i=0; i<4; i++) /* four directions */
+   {
+      rgb_group *d=img[i]->img;
+      rgb_group *s=source->img;
+      int xz=source->xsize;
+      int yz=source->ysize;
+      int xd=or[i].x;
+      int yd=or[i].y;
+
+      for(x=1; x<xz-1; x++)
+	 for(y=1; y<yz-1; y++)
+	 {
+#define FOOBAR(CO) \
+  d[x+y*xz].CO \
+     = \
+  (COLORTYPE) \
+     abs( s[(x+xd)+(y+yd)*xz].CO - s[(x-xd)+(y-yd)*xz].CO )
+
+	    /*
+	      sqrt( ( sq( s[(x-xd)+(y-yd)*xz].CO - s[x+y*xz].CO ) + \
+	      sq( s[(x+xd)+(y+yd)*xz].CO - s[x+y*xz].CO ) ) / 2.0 )
+	    */
+
+	    FOOBAR(r);
+	    FOOBAR(g);
+	    FOOBAR(b);
+
+#undef FOOBAR
+	 }
+   }
+CHRONO("end");
+THREADS_DISALLOW();  
+}
 
 void image_orient(INT32 args)
 {
-  int x,y;
-  int h,j;
-  struct object *o1;
-  struct object *o2;
-  struct object *o3;
-  struct object *o4;
-  struct object *o5;
-  struct image *o1img;
-  struct image *o2img;
-  struct image *o3img;
-  struct image *o4img;
-  struct image *o5img;
+  struct object *o[5];
+  struct image *img[5],*this;
+  int n;
+  rgb_group *d,*s1,*s2,*s3,*s0;
+  float mag;
   
   if (!THIS->img) { error("no image\n");  return; }
+
+  this=THIS;
+
+   if (args)
+   {
+      if (sp[-args].type==T_INT) 
+	 mag=sp[-args].u.integer;
+      else if (sp[-args].type==T_FLOAT)
+	 mag=sp[-args].u.float_number;
+      else
+	 error("Illegal argument 1 to image->orient\n");
+      pop_n_elems(args);
+   }
+   else mag=1.0;
   
-  push_int(THIS->xsize);
-  push_int(THIS->ysize);
-  o1=clone_object(image_program,2);
-  o1img=(struct image*)get_storage(o1,image_program);
+  _image_orient(this,o,img);
 
-  push_int(THIS->xsize);
-  push_int(THIS->ysize);
-  o2=clone_object(image_program,2);
-  o2img=(struct image*)get_storage(o2,image_program);
+  s0=img[0]->img;
+  s1=img[1]->img;
+  s2=img[2]->img;
+  s3=img[3]->img;
+  d=img[4]->img;
 
-  push_int(THIS->xsize);
-  push_int(THIS->ysize);
-  o3=clone_object(image_program,2);
-  o3img=(struct image*)get_storage(o3,image_program);
+THREADS_ALLOW();  
+CHRONO("begin hsv...");
+  n=this->xsize*this->ysize;
+  while (n--)
+  {
+     /* Första färg, sista mörkhet */
+     float j=(s0->r+s0->g+s0->b-s2->r-s2->g-s2->b)/3.0; 
+                /* riktning - - riktning | */
 
-  push_int(THIS->xsize);
-  push_int(THIS->ysize);
-  o4=clone_object(image_program,2);
-  o4img=(struct image*)get_storage(o4,image_program);
+     float h=(s1->r+s1->g+s1->b-s3->r-s3->g-s3->b)/3.0;
+                /* riktning \ - riktning / */
 
-  push_int(THIS->xsize);
-  push_int(THIS->ysize);
-  o5=clone_object(image_program,2);
-  o5img=(struct image*)get_storage(o5,image_program);
+     int z,w;
 
-#define A o1img
-#define B THIS
+     if (abs(h)>abs(j)) 
+	if (h) z=-(int)(32*(j/h)+(h>0)*128+64),w=abs(h);
+	else z=0,w=0;
+     else 
+	z=-(int)(-32*(h/j)+(j>0)*128+128),w=abs(j);
 
+     d->r=(COLORTYPE)z;
+     d->g=255;     
+     d->b=(COLORTYPE)MINIMUM(w*mag,255);
 
+     d++;
+     s0++;
+     s1++;
+     s2++;
+     s3++;
+  }
+CHRONO("end hsv...");
+THREADS_DISALLOW();
 
-#define FOOBAR(CO,xd,yd) \
-	A->img[x+y*B->xsize].CO= \
-	   sqrt((sq((B->img[(x-xd)+(y-yd)*B->xsize].CO-B-> \
-                img[x+y*B->xsize].CO ))+ \
-		sq((B->img[x+y*B->xsize].CO- \
-		B->img[(x+xd)+(y+yd)*B->xsize].CO)) \
-		     )/2.0); 
-
-	/* Create image 1 */
-  for(x=1; x<A->xsize-1; x++)
-    for(y=1; y<A->ysize-1; y++)
-      {
-	FOOBAR(r,1,0);
-	FOOBAR(g,1,0);
-	FOOBAR(b,1,0);
-      }
-
-#undef A
-#define A o2img
-
-  /* Create image 2 */
-  for(x=1; x<A->xsize-1; x++)
-    for(y=1; y<A->ysize-1; y++)
-      {
-	FOOBAR(r,1,1);
-	FOOBAR(g,1,1);
-	FOOBAR(b,1,1);
-      }
+  o[4]->refs++;
+  pop_n_elems(5);
+  push_object(o[4]);
+}
 
 
-#undef A
-#define A o3img
-
-  /* Create image 3 */
-  for(x=1; x<A->xsize-1; x++)
-    for(y=1; y<A->ysize-1; y++)
-      {
-	FOOBAR(r,0,1);
-	FOOBAR(g,0,1);
-	FOOBAR(b,0,1);
-      }
-
-#undef A
-#define A o4img
-
-  /* Create image 4 */
-  for(x=1; x<A->xsize-1; x++)
-    for(y=1; y<A->ysize-1; y++)
-      {
-	FOOBAR(r,-1,1);
-	FOOBAR(g,-1,1);
-	FOOBAR(b,-1,1);
-      }
-
-#undef A
-#define A o5img
-
-  /* Create image 5, the hsv-thing... */
-  for(x=1; x<A->xsize-1; x++)
-    for(y=1; y<A->ysize-1; y++)
-      {
-	/* Första färg, sista mörkhet */
-	j=o1img->img[x+y*B->xsize].r+
-	  o1img->img[x+y*B->xsize].g+
-	  o1img->img[x+y*B->xsize].b-
-	  o3img->img[x+y*B->xsize].r-
-	  o3img->img[x+y*B->xsize].g-
-	  o3img->img[x+y*B->xsize].b;
-	
-	h=o2img->img[x+y*B->xsize].r+
-	  o2img->img[x+y*B->xsize].g+
-	  o2img->img[x+y*B->xsize].b-
-	  o4img->img[x+y*B->xsize].r-
-	  o4img->img[x+y*B->xsize].g-
-	  o4img->img[x+y*B->xsize].b;
-	
-	if (h>0)
-	  if (j>0)
-	    A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
-					 atan((float)h/(float)j));
-	  else
-	    if (j<0)
-	      A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
-					   (my_PI+atan((float)h/(float)j)));
-	    else
-	      A->img[x+y*B->xsize].r=255/4;
-	else
-	  if (h<0)
-	    if (j>0)
-	      A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
-					   (2*my_PI+atan((float)h/(float)j)));
-	    else
-	      if (j<0)
-		A->img[x+y*B->xsize].r=(int)(0.5+(255/(2*my_PI))*
-					     (my_PI+atan((float)h/(float)j)));
-	      else
-		A->img[x+y*B->xsize].r=(3*255)/4;
-	  else
-	    if (j<0)
-	      A->img[x+y*B->xsize].r=255/2;
-	    else
-	      A->img[x+y*B->xsize].r=0;
-	
-	
-	A->img[x+y*B->xsize].g=255;
-
-	A->img[x+y*B->xsize].b=MINIMUM(255, sqrt((sq(j)+sq(h))));
-
-      }
-
-
-
-
-  /* Och så fylla ut de andra bilderna med lite junk. */
+void image_orient4(INT32 args)
+{
+  struct object *o[5];
+  struct image *img[5];
+  
+  if (!THIS->img) { error("no image\n");  return; }
 
   pop_n_elems(args);
-  push_object(o1);
-  push_object(o2);
-  push_object(o3);
-  push_object(o4);
-  push_object(o5);
-  
-  f_aggregate(5);
+  _image_orient(THIS,o,img);
+
+  pop_n_elems(1);
+  f_aggregate(4);
 }
+
