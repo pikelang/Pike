@@ -104,7 +104,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.16 1999/11/18 07:58:19 hubbe Exp $
+# $Id: aclocal.m4,v 1.17 2001/03/02 13:44:07 grubba Exp $
 
 MY_AC_PROG_CC
 
@@ -118,6 +118,22 @@ dependencies=$srcdir/dependencies
 AC_SUBST_FILE(dynamic_module_makefile)
 AC_SUBST_FILE(static_module_makefile)
 
+AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
+  case "$with_root" in
+    /)
+      with_root=""
+    ;;
+    /*)
+    ;;
+    no)
+      with_root=""
+    ;;
+    *)
+      AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
+      with_root=""
+    ;;
+  esac
+],[with_root=""])
 ])
 
 
@@ -227,4 +243,3 @@ AC_MSG_RESULT([$]pike_cv_func_$1)
 if test [$]pike_cv_func_$1 = yes; then
 AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
 fi])
-
