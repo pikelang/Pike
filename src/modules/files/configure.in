@@ -6,7 +6,7 @@ AC_PROG_RANLIB
 AC_SUBST(RANLIB)
 
 AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h netinet/in.h \
- sys/stream.h sys/protosw.h)
+ sys/stream.h sys/protosw.h netdb.h)
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
