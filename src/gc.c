@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.113 2000/08/10 09:23:35 grubba Exp $");
+RCSID("$Id: gc.c,v 1.114 2000/08/10 09:25:44 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -691,7 +691,8 @@ void low_describe_something(void *a,
       if(flags & DESCRIBE_MEM)
       {
 #define FOO(NUMTYPE,TYPE,NAME) \
-      fprintf(stderr,"%*s* " #NAME " %p[%d]\n",indent,"",p->NAME,p->PIKE_CONCAT(num_,NAME));
+      fprintf(stderr, "%*s* " #NAME " %p[%ld]\n", \
+              indent, "", p->NAME, (long)p->PIKE_CONCAT(num_,NAME));
 #include "program_areas.h"
       }
 
