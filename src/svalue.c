@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.174 2003/09/09 14:58:53 mast Exp $
+|| $Id: svalue.c,v 1.175 2003/09/10 11:51:10 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.174 2003/09/09 14:58:53 mast Exp $");
+RCSID("$Id: svalue.c,v 1.175 2003/09/10 11:51:10 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1263,7 +1263,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	if(!prog)
 	  my_strcat("0");
 	else {
-	  struct pike_string *name;
+	  struct pike_string *name = NULL;
 	  struct identifier *id;
 
 	  if (prog == pike_trampoline_program) {
