@@ -153,7 +153,7 @@ if test x$# != x0 ; then
    ;;
    UnixWare\ 7.*)
      if test x$LINKING != xno -a "x$RPATH" != x ; then
-       LDOPTS="$LDOPTS -YP, $RPATH"
+       LDOPTS="$LDOPTS -Xlinker -YP, -Xlinker $RPATH"
      fi
    ;;
    *)
