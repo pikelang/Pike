@@ -29,8 +29,8 @@ SHA or whether it's simply a bandaid which fixes the problem with a minimum of
 effort (for example the reengineering of a great many Capstone chips).
 */
 
-#include "types.h"
-#include "port.h"
+#include "crypto_types.h"
+/* #include "port.h" */
 #include "sha.h"
 
 void sha_copy(struct sha_ctx *dest, struct sha_ctx *src)
@@ -238,12 +238,14 @@ static void sha_transform(struct sha_ctx *ctx, unsigned INT32 *data )
 }
 
 #if 1
+#ifndef EXTRACT_UCHAR
+#define EXTRACT_UCHAR(p)  (*(unsigned char *)(p))
+
 #define STRING2INT(s) ((((((EXTRACT_UCHAR(s) << 8)    \
 			 | EXTRACT_UCHAR(s+1)) << 8)  \
 			 | EXTRACT_UCHAR(s+2)) << 8)  \
 			 | EXTRACT_UCHAR(s+3))
 #else
-
 unsigned INT32 STRING2INT(unsigned INT8 *s)
 {
   unsigned INT32 r;
