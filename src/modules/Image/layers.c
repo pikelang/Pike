@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.96 2004/03/05 23:04:03 nilsson Exp $
+|| $Id: layers.c,v 1.97 2004/04/18 03:30:02 nilsson Exp $
 */
 
 /*
@@ -15,7 +15,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.96 2004/03/05 23:04:03 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.97 2004/04/18 03:30:02 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1423,7 +1423,7 @@ static void image_layer_create(INT32 args)
 /*** layer object *****************************************/
 
 /*
-**! method mapping(string:mixed) cast()
+**! method mapping(string:mixed)|string cast()
 **! ([ "xsize":int,
 **!    "ysize":int,
 **!    "image":image,
@@ -1463,9 +1463,49 @@ static void image_layer_cast(INT32 args)
 
 	 return;
       }
+      else if (strncmp(Pike_sp[-args].u.string->str,"string",6)==0)
+      {
+	size_t size = THIS->xsize*THIS->ysize, i;
+	struct pike_string *s = begin_shared_string(size*4);
+	rgb_group *img = 0;
+	rgb_group *alp = 0;
+
+	pop_n_elems(args);
+	if(THIS->img)
+	  img = THIS->img->img;
+	if(THIS->alp)
+	  alp = THIS->alp->img;
+
+	if(img && alp)
+	  for(i=0; i<size; i++) {
+	    s->str[i*4+0] = img[i].r;
+	    s->str[i*4+1] = img[i].g;
+	    s->str[i*4+2] = img[i].b;
+	    s->str[i*4+3] = alp[i].r;
+	  }
+	else if(img)
+	  for(i=0; i<size; i++) {
+	    s->str[i*4+0] = img[i].r;
+	    s->str[i*4+1] = img[i].g;
+	    s->str[i*4+2] = img[i].b;
+	    s->str[i*4+3] = 255;
+	  }
+	else if(alp)
+	  for(i=0; i<size; i++) {
+	    s->str[i*4+0] = 255;
+	    s->str[i*4+1] = 255;
+	    s->str[i*4+2] = 255;
+	    s->str[i*4+3] = alp[i].r;
+	  }
+	else
+	  memset(s->str, 0, size*4);
+
+	push_string(end_shared_string(s));
+	return;
+      }
    }
    SIMPLE_BAD_ARG_ERROR("Image.Colortable->cast",1,
-			"string(\"mapping\"|\"array\"|\"string\")");
+			"string(\"mapping\"|\"string\")");
 
 }
 
