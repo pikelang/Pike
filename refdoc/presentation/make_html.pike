@@ -6,6 +6,7 @@
 
 function resolve_reference; 
 string image_path = "images/";
+string dest_path;
 
 mapping lay = ([
  "docgroup" : "\n\n<hr clear='all' size='1' noshadow='noshadow' />\n<dl>",
@@ -1115,13 +1116,28 @@ string layout_toploop(Node n) {
     switch(c->get_any_name()) {
 
     case "dir":
+      string cwd;
+      if(dest_path)
+      {
+        cwd=getcwd();
+        cd(dest_path);
+      }  
       Stdio.mkdirhier(c->get_attributes()->name);
       layout_toploop(c);
+      if(cwd)
+        cd(cwd);
       break;
 
     case "file":
+      if(dest_path)
+      {
+        cwd=getcwd();
+        cd(dest_path);
+      }  
       Stdio.write_file( c->get_attributes()->name,
 			frame_html(layout_toploop(c)) );
+      if(cwd)
+        cd(cwd);
       break;
 
     case "appendix":
@@ -1147,6 +1163,10 @@ int main(int num, array args) {
     string tmp;
     if(sscanf(arg, "--img=%s", tmp)) {
       image_path = tmp;
+      args -= ({ arg });
+    }
+    if(sscanf(arg, "--dest=%s", tmp) && tmp!="") {
+      dest_path = tmp;
       args -= ({ arg });
     }
     if(arg=="--help") {

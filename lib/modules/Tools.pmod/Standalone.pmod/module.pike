@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.20 2003/10/31 11:39:50 grubba Exp $
+// $Id: module.pike,v 1.21 2003/11/04 22:24:39 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.20 $"/" ")[1];
+constant version = ("$Revision: 1.21 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -27,6 +27,10 @@ string local_module_path="$$HOME/lib/pike/modules";
 // we prefer the last element, because if there are more than one
 // master() puts the lib/modules path last.
 string system_module_path=master()->system_module_path[-1];
+
+// where do we install the documentation?
+string system_doc_path;
+
 #endif
 string run_pike;
 
@@ -130,6 +134,16 @@ void do_make(array(string) cmd)
     lmp="./plib/modules";
   else lmp = local_module_path;
 
+  // we should try to find the core autodoc file
+  if(file_stat(combine_path(system_module_path, "../../doc/src/core_autodoc.xml")))
+  {
+    system_doc_path=combine_path(system_module_path, "../../doc");
+  }
+  else if(file_stat(combine_path(system_module_path, "../../../doc/pike/src/core_autodoc.xml")))
+  {
+    system_doc_path=combine_path(system_module_path, "../../../doc/pike");
+  }
+
   array(string) makecmd=(
     ({make})+
     do_split_quoted_string(make_flags)+
@@ -145,6 +159,8 @@ void do_make(array(string) cmd)
       "SRCDIR="+fix("$src"),
       "TMP_MODULE_BASE=.",
       "PIKE_EXTERNAL_MODULE=pike_external_module",
+      "CORE_AUTODOC_PATH=" + combine_path(system_doc_path, "src/core_autodoc.xml"),
+      "SYSTEM_DOC_PATH=" + system_doc_path,
       "SYSTEM_MODULE_PATH=" + system_module_path,
       "LOCAL_MODULE_PATH=" + lmp,
       "RUNPIKE="+run_pike,

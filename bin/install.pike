@@ -389,6 +389,7 @@ string fakeroot(string s)
 				   vars->TMP_BINDIR,
 				   vars->BASEDIR,
 				   vars->MANDIR_SRC,
+				   vars->DOCDIR_SRC,
 				   vars->TMP_LIBDIR,
 				   vars->fakeroot,
 				 }),regquote)));
@@ -456,6 +457,7 @@ void do_export()
     TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
     TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
     TRANSLATE(vars->MANDIR_SRC,tmpdir+"/man"),
+    TRANSLATE(vars->DOCDIR_SRC,tmpdir+"/refdoc"),
     TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
     "unpack_master.pike" : tmpdir+"/build/master.pike",
     "":tmpdir+"/build",
@@ -514,6 +516,7 @@ void do_export()
     RELAY(SRCDIR)
     RELAY(TMP_BINDIR)
     RELAY(MANDIR_SRC)
+    RELAY(DOCDIR_SRC)
     RELAY(BASEDIR)
     " TMP_BUILDDIR="+translate("", translator)+
     (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
@@ -599,6 +602,7 @@ done
 		   "  TMP_BINDIR=\\\"bin\\\"\\\n"
 		   "  TMP_BUILDDIR=\\\"build\\\"\\\n"
 		   "  MANDIR_SRC=\\\"man\\\"\\\n"
+		   "  DOCDIR_SRC=\\\"doc\\\"\\\n"
 		   "  PIKE_MODULE_RELOC=\\\"" + vars->PIKE_MODULE_RELOC +
 		                       "\\\"\\\n"
 		   "  $ARGS\"\n"
@@ -999,6 +1003,7 @@ int pre_install(array(string) argv)
       mklink(getcwd(),export_base_name+".dir/build");
       mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
       mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
+      mklink(vars->DOCDIR_SRC,export_base_name+".dir/refdoc");
 
       cd(export_base_name+".dir");
 
@@ -1007,6 +1012,7 @@ int pre_install(array(string) argv)
       vars->SRCDIR="src";
       vars->TMP_BINDIR="bin";
       vars->MANDIR_SRC="man";
+      vars->DOCDIR_SRC="refdoc";
       vars->TMP_BUILDDIR="build";
 
 #endif
@@ -1140,6 +1146,7 @@ void dump_modules()
 		vars->SRCDIR,
 		vars->TMP_BINDIR,
 		vars->MANDIR_SRC,
+		vars->DOCDIR_SRC,
 		vars->TMP_LIBDIR,
 		vars->BASEDIR,
 		vars->fakeroot,
@@ -1336,6 +1343,9 @@ void do_install()
     // create a directory for extracted module documentation
     mkdirhier(combine_path(doc_prefix, "src", "extracted"));
 
+    // copy the documentation source
+    install_dir(vars->DOCDIR_SRC, combine_path(doc_prefix, "src"), 0);
+
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
       install_file(combine_path(vars->TMP_BINDIR,f),
@@ -1452,6 +1462,7 @@ int main(int argc, array(string) argv)
     if(vars->BASEDIR[-1]!='/') vars->BASEDIR += "/";
     if(!vars->LIBDIR_SRC) vars->LIBDIR_SRC=vars->BASEDIR+"lib";
     if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"man";
+    if(!vars->DOCDIR_SRC) vars->DOCDIR_SRC=vars->BASEDIR+"refdoc";
     if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
   }
   else if(vars->SRCDIR) {

@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.13 2003/11/04 00:06:48 bill Exp $
+# $Id: common_module_makefile.in,v 1.14 2003/11/04 22:24:39 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -108,7 +108,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.13 2003/11/04 00:06:48 bill Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.14 2003/11/04 22:24:39 bill Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
@@ -194,3 +194,9 @@ gdb_verify: testsuite $(PIKE_EXTERNAL_MODULE)
 
 extract_autodoc: $(PIKE_EXTERNAL_MODULE) plib/refdoc
 	$(RUNPIKE) -x extract_autodoc --builddir=plib/refdoc --srcdir=plib/modules
+
+join_autodoc: extract_autodoc
+	$(RUNPIKE) -x join_autodoc --quiet --post-process  "plib/autodoc.xml" "$(CORE_AUTODOC_PATH)" "plib/refdoc"
+
+refdoc:	join_autodoc
+	cd $(SYSTEM_DOC_PATH)/src && $(MAKE) $(MAKE_FLAGS) DESTDIR="$(SYSTEM_DOC_PATH)" modref

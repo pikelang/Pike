@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.57 2003/11/04 21:34:15 bill Exp $
+# $Id: Makefile,v 1.58 2003/11/04 22:24:39 bill Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -20,14 +20,14 @@ caudium.net: modref caudium_modref traditional
 
 modref: $(BUILDDIR)/modref.xml structure/modref.css structure/modref.html \
 	  presentation/make_html.pike presentation/tree-split-autodoc.pike
-	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_modref
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_modref
 
 low_modref:
 	rm -rf modref || /bin/true
 	@mkdir modref
 	@cp structure/modref.css modref/style.css
 	@$(PIKE) presentation/tree-split-autodoc.pike \
-	  $(BUILDDIR)/modref.xml structure/modref.html modref predef
+	  $(BUILDDIR)/modref.xml structure/modref.html $(DESTDIR)modref predef
 	@mkdir $(DESTDIR)modref/images
 	cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)modref/images
 	@for file in pike_logo.gif next.gif prev.gif unit.gif \
@@ -66,11 +66,11 @@ low_one_page:
 	@$(PIKE) presentation/make_html.pike --img= $(BUILDDIR)/onepage.xml
 
 traditional: traditional_manual $(BUILDDIR)/traditional.xml presentation/make_html.pike
-	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_traditional
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" DESTDIR="$(DESTDIR)" low_traditional
 
 low_traditional:
 	cp $(BUILDDIR)/doc_build/images/* $(DESTDIR)traditional_manual/images/
-	@$(PIKE) presentation/make_html.pike --img=images/ $(BUILDDIR)/traditional.xml
+	@$(PIKE) presentation/make_html.pike --dest=$(DESTDIR) --img=images/ $(BUILDDIR)/traditional.xml
 
 # Sub targets used by the above targets.
 
