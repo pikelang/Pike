@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.111 1998/05/25 10:38:44 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.112 1998/05/25 15:23:25 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -818,6 +818,10 @@ void f_indices(INT32 args)
     a=object_indices(sp[-args].u.object);
     break;
 
+  case T_PROGRAM:
+    a = program_indices(sp[-args].u.program);
+    break;
+
   default:
     PIKE_ERROR("indices", "Bad argument 1.\n", sp, args);
     return; /* make apcc happy */
@@ -867,6 +871,10 @@ void f_values(INT32 args)
 
   case T_OBJECT:
     a=object_values(sp[-args].u.object);
+    break;
+
+  case T_PROGRAM:
+    a = program_values(sp[-args].u.program);
     break;
 
   default:
@@ -2959,7 +2967,7 @@ void init_builtin_efuns(void)
   add_efun("functionp",  f_functionp,  "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("glob",f_glob,"function(string,string:int)|function(string,string*:array(string))",OPT_TRY_OPTIMIZE);
   add_efun("hash",f_hash,"function(string,int|void:int)",OPT_TRY_OPTIMIZE);
-  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object:string*)",0);
+  add_efun("indices",f_indices,"function(string|array:int*)|function(mapping(1=mixed:mixed)|multiset(1=mixed):array(1))|function(object|program:string*)",0);
   add_efun("intp",   f_intp,    "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("multisetp",   f_multisetp,   "function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("lower_case",f_lower_case,"function(string:string)",OPT_TRY_OPTIMIZE);
@@ -2990,7 +2998,7 @@ void init_builtin_efuns(void)
   add_efun("trace",f_trace,"function(int:int)",OPT_SIDE_EFFECT);
   add_function("transpose",f_transpose,"function(array(0=mixed):array(0))", 0);
   add_efun("upper_case",f_upper_case,"function(string:string)",0);
-  add_efun("values",f_values,"function(string|multiset:int*)|function(array(0=mixed)|mapping(mixed:0=mixed)|object:array(0))",0);
+  add_efun("values",f_values,"function(string|multiset:array(int))|function(array(0=mixed)|mapping(mixed:0=mixed)|object|program:array(0))",0);
   add_efun("zero_type",f_zero_type,"function(mixed:int)",0);
   add_efun("array_sscanf",f_sscanf,"function(string,string:array)",0);
 
