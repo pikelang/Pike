@@ -116,7 +116,8 @@ PIKEFUN int trace(int t)
   t_flag=t;
 }
 
-/*!
+/*! @decl string ctime(int timestamp)
+ *!
  *! Convert the output from a previous call to @[time()] into a readable
  *! string containing the current year, month, day and time.
  *!
@@ -271,7 +272,7 @@ PIKEFUN string program_defined(program p)
  *!     The string @[s] contains characters >= 65536.
  *! @endint
  */
-PIKEFUN int(8..8)|int(16..16)|int(32..32) string_width(string s)
+PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
   errname String.width;
   optflags OPT_TRY_OPTIMIZE;
 {
