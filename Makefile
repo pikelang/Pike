@@ -1,8 +1,20 @@
 #
-# $Id: Makefile,v 1.140 2004/04/04 12:37:47 grubba Exp $
+# $Id: Makefile,v 1.141 2004/05/01 13:36:32 mast Exp $
 #
 # Meta Makefile
 #
+
+# Use this to pass arguments to configure. Leave empty to keep previous args.
+CONFIGUREARGS=
+
+# Set this to any generic make options you'd otherwise would have to
+# pass on the command line.
+#MAKEFLAGS=-j2 --no-print-directory
+
+# Set to a flag for parallelizing make, e.g. -j2. It's given to make
+# at the level where it's most effective. (Don't use when the make
+# program has smart job control, e.g. GNU make.)
+MAKE_PARALLEL=
 
 VPATH=.
 OS=`uname -s -r -m|sed \"s/ /-/g\"|tr \"[A-Z]\" \"[a-z]\"|tr \"/()\" \"___\"`
@@ -14,20 +26,12 @@ METATARGET=
 # Priority is $(MAKE) before ${MAKE} before make.
 MAKE_CMD=`if [ "x$(MAKE)" = "x" ]; then echo "$${MAKE-make}"; else echo "$(MAKE)"; fi`
 
-# Evaluates to $(MAKE_CMD) and sets ${MAKE} and $(MAKE)
-DO_MAKE=MAKE="$(MAKE_CMD)" export MAKE && "$${MAKE}" "MAKE=$${MAKE}"
-
-# Use this to pass arguments to configure. Leave empty to keep previous args.
-CONFIGUREARGS=
-
-# Set to a flag for parallelizing make, e.g. -j2. It's given to make
-# at the level where it's most effective.
-MAKE_PARALLEL=
+# Used internally in this file to start a submake to expand
+# $(BUILDDIR), $(MAKE_CMD) etc.
+DO_MAKE=MAKE="$(MAKE_CMD)" export MAKE && "$${MAKE}" "MAKE=$${MAKE}" "CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
 
 # Used to avoid make compatibility problems.
 BIN_TRUE=":"
-
-MAKE_FLAGS="CONFIGUREARGS=$(CONFIGUREARGS)" "BUILDDIR=$(BUILDDIR)"
 
 all: bin/pike compile
 	-@$(BIN_TRUE)
@@ -43,7 +47,7 @@ force_autoconfig:
 
 force_configure:
 	-rm -f "$(BUILDDIR)/Makefile"
-	@$(DO_MAKE) $(MAKE_FLAGS) configure
+	@$(DO_MAKE) configure
 
 configure_help: src/configure
 	cd src && ./configure --help
@@ -157,7 +161,7 @@ compile: configure
 # FIXME: The refdoc stuff ought to use $(BUILDDIR) too.
 
 documentation:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=documentation"
+	@$(DO_MAKE) "METATARGET=documentation"
 
 doc: documentation
 
@@ -182,38 +186,38 @@ bin/pike: force
 
 # This skips the modules.
 pike: bin/pike
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=pike"
+	@$(DO_MAKE) "METATARGET=pike"
 
 install: bin/pike
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install"
+	@$(DO_MAKE) "METATARGET=install"
 
 install_nodoc: bin/pike
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install_nodoc"
+	@$(DO_MAKE) "METATARGET=install_nodoc"
 
 install_interactive: bin/pike
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive"
+	@$(DO_MAKE) "METATARGET=install_interactive"
 
 install_interactive_nodoc: bin/pike
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive_nodoc"
+	@$(DO_MAKE) "METATARGET=install_interactive_nodoc"
 
 tinstall: bin/pike
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=tinstall"
+	@$(DO_MAKE) "METATARGET=tinstall"
 
 testsuites:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=testsuites"
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=testsuite"
+	@$(DO_MAKE) "METATARGET=testsuites"
+	@$(DO_MAKE) "METATARGET=testsuite"
 
 just_verify:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=just_verify"
+	@$(DO_MAKE) "METATARGET=just_verify"
 
 valgrind_verify:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=valgrind_verify"
+	@$(DO_MAKE) "METATARGET=valgrind_verify"
 
 verify:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=verify"
+	@$(DO_MAKE) "METATARGET=verify"
 
 verify_installed:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=verify_installed"
+	@$(DO_MAKE) "METATARGET=verify_installed"
 
 check: verify
 	-@$(BIN_TRUE)
@@ -222,25 +226,25 @@ sure: verify
 	-@$(BIN_TRUE)
 
 verbose_verify:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=verbose_verify"
+	@$(DO_MAKE) "METATARGET=verbose_verify"
 
 gdb_verify:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=gdb_verify"
+	@$(DO_MAKE) "METATARGET=gdb_verify"
 
 dump_modules:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=dump_modules"
+	@$(DO_MAKE) "METATARGET=dump_modules"
 
 force_dump_modules:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=force_dump_modules"
+	@$(DO_MAKE) "METATARGET=force_dump_modules"
 
 delete_dumped_modules:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=delete_dumped_modules"
+	@$(DO_MAKE) "METATARGET=delete_dumped_modules"
 
 undump_modules:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=undump_modules"
+	@$(DO_MAKE) "METATARGET=undump_modules"
 
 run_hilfe:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=run_hilfe"
+	@$(DO_MAKE) "METATARGET=run_hilfe"
 
 source:
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
@@ -275,10 +279,10 @@ xenofarm_export:
 	@echo Export done
 
 bin_export:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=bin_export"
+	@$(DO_MAKE) "METATARGET=bin_export"
 
 feature_list:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=feature_list"
+	@$(DO_MAKE) "METATARGET=feature_list"
 
 solaris_pkg_configure:
 	@$(DO_MAKE) "CONFIGUREARGS=--prefix=/opt $(CONFIGUREARGS)" \
@@ -307,7 +311,7 @@ xenofarm:
 	gzip -f9 xenofarm_result.tar
 
 benchmark:
-	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=run_bench"
+	@$(DO_MAKE) "METATARGET=run_bench"
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(DO_MAKE) clean || { \
