@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.10 2002/12/15 19:24:33 grubba Exp $
+# $Id: configure.in,v 1.11 2003/05/12 12:38:15 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -27,6 +27,14 @@ else
 
   AC_CHECK_HEADERS(GL/glut.h)
 
+  # MaxOS X
+  old_CPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="-framework GLUT $CPPFLAGS"
+  AC_CHECK_HEADERS(GLUT/glut.h)
+  if test x"$ac_cv_header_GLUT_gl_h" = xno; then
+    CPPFLAGS="$old_CPPFLAGS"
+  fi
+
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   LIBS="$X_EXTRA_LIBS $LIBS"
   LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
@@ -49,17 +57,47 @@ else
 #ifdef HAVE_GL_GLUT_H
 #include <GL/glut.h>
 #endif /* HAVE_GL_GLUT_H */
+#ifdef HAVE_GLUT_GLUT_H
+#include <GL/glut.h>
+#endif /* HAVE_GLUT_GLUT_H */
     ], [ glutSolidTeapot(1.0) ],
        [ pike_cv_lib_glut=yes ], [ pike_cv_lib_glut=no ])
     LIBS="$oldLIBS"
   ])
-  if test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
+  if test x"$pike_cv_lib_glut" = "xyesyes"; then
     AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+  AC_MSG_CHECKING(for glutSolidTeapot in GLUT.framework)
+  AC_CACHE_VAL(pike_cv_framework_GLUT, [
+    oldLIBS="$LIBS"
+    LIBS="-framework GLUT -lobjc $LIBS"
+    AC_TRY_LINK([
+#ifdef HAVE_GL_GLUT_H
+#include <GL/glut.h>
+#endif /* HAVE_GL_GLUT_H */
+#ifdef HAVE_GLUT_GLUT_H
+#include <GL/glut.h>
+    ], [ glutSolidTeapot(1.0) ],
+       [ pike_cv_framework_GLUT=yes ], [ pike_cv_framework_GLUT=no ])
+    LIBS="$oldLIBS"
+  ])
+  if test x"$pike_cv_framework_GLUT" = "xyesyes"; then
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+  if test x"$ac_cv_header_GL_glut_h$pike_cv_lib_glut" = "xyesyes"; then
     AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
     LIBS="-lglut $LIBS"
     AUTO=auto.o
+  elif test x"$ac_cv_header_GLUT_glut_h$pike_cv_framework_glut" = "xyesyes"; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE_UNQUOTED(HAVE_LIBGLUT)
+    LIBS="-framework GLUT -lobjc $LIBS"
+    AUTO=auto.o
   else
-    AC_MSG_RESULT(no)
     AUTO=""
   fi
 fi
