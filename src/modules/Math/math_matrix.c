@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.21 2000/12/13 21:14:19 hubbe Exp $ */
+/* $Id: math_matrix.c,v 1.22 2001/04/17 20:25:21 js Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -747,6 +747,49 @@ static void matrix_cross(INT32 args)
    pop_stack();
 }
 
+/*
+**! method float `·(object with)
+**! method float ``·(object with)
+**! method float dot(object with)
+**!	Matrix dot product.
+*/
+
+static void matrix_dot(INT32 args)
+{
+  struct matrix_storage *mx=NULL;
+  int num,i;
+  FTYPE res;
+  FTYPE *a,*b;
+  
+  if (args<1)
+     SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`·",1);
+  
+  pop_n_elems(args-1); 
+  
+  if (sp[-1].type!=T_OBJECT ||
+      !((mx=(struct matrix_storage*)
+	 get_storage(sp[-1].u.object,math_matrix_program))))
+    SIMPLE_BAD_ARG_ERROR("matrix->`·",1,"object(Math.Matrix)");
+  
+  if(!(mx->xsize==THIS->xsize &&
+       mx->ysize==THIS->ysize &&
+       (mx->xsize==1 || mx->ysize==1)))
+    math_error("Matrix->`·",sp-args,args,0,
+	       "Matrices must be the same sizes, and one-dimensional\n");
+  
+  res=0.0;
+  num=THIS->xsize+THIS->ysize;
+  a=THIS->m;
+  b=mx->m;
+  
+  for(i=0;i<num;i++)
+    res+=a[i]*b[i];
+  
+  push_float((FLOAT_TYPE)res);
+  
+  stack_swap();
+  pop_stack();
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -802,11 +845,14 @@ void init_math_matrix(void)
 		"function(object|float|int:object)",0);
    add_function("``*",matrix_mult,
 		"function(object|float|int:object)",0);
-   add_function("`·",matrix_mult,
+   
+   add_function("`·",matrix_dot,
 		"function(object|float|int:object)",0);
-   add_function("``·",matrix_mult,
+   add_function("``·",matrix_dot,
 		"function(object|float|int:object)",0);
 
+   add_function("dot_product",matrix_dot,"function(object:object)",0);
+   
    add_function("cross",matrix_cross,
 		"function(object:object)",0);
    add_function("`×",matrix_cross,
