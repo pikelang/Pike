@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.31 1998/05/05 10:38:13 grubba Exp $");
+RCSID("$Id: backend.c,v 1.32 1998/05/12 19:46:28 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -50,20 +50,6 @@ void *write_oob_callback_data[MAX_OPEN_FILEDESCRIPTORS];
 
 #ifndef HAVE_POLL
 
-/* Some constants... */
-
-#ifndef POLLRDNORM
-#define POLLRDNORM	POLLIN
-#endif /* !POLLRDNORM */
-
-#ifndef POLLRDBAND
-#define POLLRDBAND	POLLPRI
-#endif /* !POLLRDBAND */
-
-#ifndef POLLWRBAND
-#define POLLWRBAND	POLLOUT
-#endif /* !POLLWRBAND */
-
 struct selectors
 {
   my_fd_set read;
@@ -81,6 +67,20 @@ static struct selectors selectors;
 #ifdef HAVE_SYS_POLL_H
 #include <sys/poll.h>
 #endif /* HAVE_SYS_POLL_H */
+
+/* Some constants... */
+
+#ifndef POLLRDNORM
+#define POLLRDNORM	POLLIN
+#endif /* !POLLRDNORM */
+
+#ifndef POLLRDBAND
+#define POLLRDBAND	POLLPRI
+#endif /* !POLLRDBAND */
+
+#ifndef POLLWRBAND
+#define POLLWRBAND	POLLOUT
+#endif /* !POLLWRBAND */
 
 struct pollfd *poll_fds = NULL;
 int poll_fd_size = 0;
@@ -677,11 +677,24 @@ void backend(void)
 #endif /* WITH_OOB */
 
 	if((active_poll_fds[i].revents & POLLHUP) ||
-	   (active_poll_fds[i].revents & POLLERR))
-	  active_poll_fds[i].revents |= POLLRDNORM;
+	   (active_poll_fds[i].revents & POLLERR)) {
+	  /* Closed or error */
+	  if (read_callback[fd]) {
+	    (*(read_callback[fd]))(fd,read_callback_data[fd]);
+	  }
+	  /* We don't want to keep this fd anymore. */
+	  POLL_FD_CLR(fd, ~0);
+#ifdef DEBUG
+	  handled = 1;
+#endif /* DEBUG */
+	}
 
-	if((active_poll_fds[i].revents & POLLRDNORM)&& read_callback[fd]) {
-	  (*(read_callback[fd]))(fd,read_callback_data[fd]);
+	if(active_poll_fds[i].revents & POLLRDNORM) {
+	  if (read_callback[fd]) {
+	    (*(read_callback[fd]))(fd,read_callback_data[fd]);
+	  } else {
+	    POLL_FD_CLR(fd, POLLRDNORM);
+	  }
 #ifdef DEBUG
 	  handled = 1;
 #endif /* DEBUG */
@@ -697,8 +710,12 @@ void backend(void)
 	}
 #endif /* WITH_OOB */
 
-	if((active_poll_fds[i].revents & POLLOUT)&& write_callback[fd]) {
-	  (*(write_callback[fd]))(fd,write_callback_data[fd]);
+	if(active_poll_fds[i].revents & POLLOUT) {
+	  if (write_callback[fd]) {
+	    (*(write_callback[fd]))(fd,write_callback_data[fd]);
+	  } else {
+	    POLL_FD_CLR(fd, POLLOUT);
+	  }
 #ifdef DEBUG
 	  handled = 1;
 #endif /* DEBUG */
