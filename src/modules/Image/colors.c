@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.20 1999/05/30 20:11:53 mirar Exp $
+**!	$Id: colors.c,v 1.21 1999/06/14 22:16:02 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -63,7 +63,93 @@
 **!	and saturation and value is given in percent. <i>This is not
 **!	the same as returned or given to the <ref>hsv</ref>() methods!</i>
 **!
-**! see also: Image.Color.Color->name, Image.Color.Color->rgb
+**!
+**! <add_appendix name="colors" title="Image.Color colors"><execute>
+**! 
+**! import Image;
+**! 
+**! constant modifiers=({"neon","light","dark","bright","dull"});
+**! 
+**! mixed color_info(object c)
+**! {
+**!    begin_tag("tr");
+**! 
+**!    begin_tag("td",(["valign":"center"]));
+**!    begin_tag("tt",(["valign":"center","align":"left"]));
+**!    write(c->name());
+**!    write(end_tag());
+**!    write(end_tag());
+**! 
+**! #define YZ 14
+**! #define MODX 32
+**! #define CXZ 32
+**! #define CSP 8
+**! #define MSP 4
+**! #define LSP 4
+**! #define XZ (MODX+CSP+(MSP+MODX)*sizeof(modifiers)-MSP)
+**! 
+**!    object i=Image(XZ,YZ,Color.black);
+**!    object a=Image(XZ,YZ,Color.black);
+**!    i->box(0,0,CXZ-1,YZ,c);
+**!    i->box(CXZ,YZ-LSP,XZ,YZ,c);
+**!    a->box(0,0,CXZ-1,YZ,Color.white);
+**!    a->box(CXZ,YZ-LSP,XZ,YZ,Color.white);
+**! 
+**!    int x=CXZ+CSP;
+**!    foreach (modifiers,string mod)
+**!    {
+**! 	  i->box(x,0,x+MODX-1,YZ-LSP-1,c[mod]());
+**! 	  a->box(x,0,x+MODX-1,YZ-LSP-1,Color.white);
+**! 	  x+=MSP+MODX;
+**!    }
+**! 
+**!    begin_tag("td",(["valign":"center"]));
+**!    write(illustration(i,a));
+**!    write(end_tag());
+**! 
+**!    begin_tag("td",(["valign":"center","align":"left"]));
+**!    begin_tag("tt",(["valign":"center","align":"left"]));
+**!    write(replace("  "+c->hex(2) +
+**! 		     sprintf("    %4.2f %4.2f %4.2f   ",@c->rgbf()) +
+**! 		     sprintf("%3g° %4.2f %4.2f",@c->hsvf()),
+**! 		     " ","&nbsp;"));
+**!    write(end_tag());
+**!    write(end_tag());
+**! 
+**!    return end_tag();
+**! }
+**! 
+**! void main()
+**! {
+**!    array cs=values(Color);
+**!    begin_tag("table",(["cellspacing":1,"cellpadding":0,"border":0]));
+**!    
+**!    array orig=({Color.black,Color.red,Color.green,Color.yellow,
+**! 		    Color.blue,Color.violet,Color.cyan,Color.white});
+**!    cs-=orig;
+**!    
+**!    array grey=Array.filter(cs,lambda(object c) { return c->s==0; });
+**!    array colored=cs-grey;
+**! 
+**!    sort(grey->v,grey);
+**!    sort(Array.map(colored,lambda(object c)
+**! 			      {
+**! 				 return (c->h*50-c->s)*10+c->v;
+**! 			      }),colored);
+**! 
+**!    write(@Array.map(orig,color_info));
+**!    write(mktag("tr",0,mktag("td",(["colspan":2]),"&nbsp;")));
+**!    write(@Array.map(grey,color_info));
+**!    write(mktag("tr",0,mktag("td",(["colspan":2]),"&nbsp;")));
+**!    write(@Array.map(colored,color_info));
+**! 
+**!    write(end_tag());
+**! }
+**! 
+**! </execute>
+**! </add_appendix>
+**!
+**! see also: Image.Color.Color->name, Image.Color.Color->rgb, colors
 **!
 **! added:
 **!	pike 0.7
@@ -96,7 +182,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.20 1999/05/30 20:11:53 mirar Exp $");
+RCSID("$Id: colors.c,v 1.21 1999/06/14 22:16:02 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -1536,3 +1622,4 @@ void exit_image_colors(void)
 
    free_string(no_name);
 }
+
