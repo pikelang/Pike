@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.395 2001/07/16 09:08:00 norlin Exp $");
+RCSID("$Id: builtin_functions.c,v 1.396 2001/07/16 23:48:22 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -117,7 +117,8 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
  *!
  *!   This function will return an @tt{int@} derived from the string @[s].
  *!   The same string will always hash to the same value.
- *!   If @[max] is given, the result will be >= 0 and <= @[max].
+ *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
+ *!   the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
  *!   This function is provided for backward compatibility reasons.
@@ -161,7 +162,8 @@ void f_compat_hash( INT32 args )
  *!
  *!   This function will return an @tt{int@} derived from the string @[s].
  *!   The same string will always hash to the same value.
- *!   If @[max] is given, the result will be >= 0 and <= @[max].
+ *!   If @[max] is given, the result will be >= 0 and < @[max], otherwise
+ *!   the result will be >= 0 and <= 0x7fffffff.
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 7.1. If you want a hash
