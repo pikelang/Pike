@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+//! Implements an abstraction of the normal filesystem.
+
 inherit Filesystem.Base;
 
 // Some notes about NT code:
@@ -19,6 +21,17 @@ static Filesystem.Base parent; // parent filesystem
 static string root = ""; // Note: Can now include leading "/"
 static string wd;        // never trailing "/"
 
+//! @decl void create(void|string directory, void|string _root, void|int fast, void|Filesystem.Base parent)
+//! Instanciate a new object representing the filesystem.
+//! @param directory
+//! The directory (in the real filesystem) that should become
+//! the root of the filesystemobject.
+//! @param _root
+//! Internal
+//! @param fast
+//! Internal
+//! @param _parent
+//! Internal
 static void create(void|string directory,  // default: cwd
 		   void|string _root,   // internal: root
 		   void|int fast,       // internal: fast mode (no check)

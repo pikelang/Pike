@@ -1,8 +1,18 @@
 /*
- * $Id: Tar.pmod,v 1.14 2002/03/13 12:13:05 grubba Exp $
+ * $Id: Tar.pmod,v 1.15 2002/08/24 21:26:07 agehall Exp $
  */
 
 #pike __REAL_VERSION__
+
+//! Filesystem which can be used to mount a Tar file.
+
+//! @decl void create(string filename, void|Filesystem.Base parent)
+//! @param filename
+//! The tar file to mount.
+//! @param parent
+//! The parent filesystem. If non is given, the normal system
+//! filesystem is assumed. This allows mounting a TAR-file within
+//! a tarfile.
 
 class _Tar  // filesystem
 {
@@ -351,3 +361,4 @@ class `()
 		   tar && tar->filename, root, wd);
   }
 }
+

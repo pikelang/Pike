@@ -1,5 +1,6 @@
 #pike __REAL_VERSION__
 
+//! Describes the stat of a file
 class Stat
 {
   int mode;
@@ -12,15 +13,55 @@ class Stat
   string name;
   object /* Filesystem.Base */ filesystem;
 
-  int isfifo() { return (mode&0xF000)==0x1000; }
-  int ischr()  { return (mode&0xF000)==0x2000; }
-  int isdir()  { return (mode&0xF000)==0x4000; }
-  int isblk()  { return (mode&0xF000)==0x6000; }
-  int isreg()  { return (mode&0xF000)==0x8000; }
-  int islnk()  { return (mode&0xF000)==0xa000; }
-  int issock() { return (mode&0xF000)==0xc000; }
-  int isdoor() { return (mode&0xF000)==0xd000; }
+  //! @dl
+  //! @item fifo
+  //! Is the file a FIFO?
+  //! @item chr
+  //! Is the file a character device?
+  //! @item dir
+  //! Is the file (?) a directory?
+  //! @item blk
+  //! Is the file a block device?
+  //! @item reg
+  //! Is the file a regular file?
+  //! @item lnk
+  //! Is the file a link to some other file or directory?
+  //! @item sock
+  //! Is the file a socket?
+  //! @item door
+  //! @xml{<fixme>Document this function.</fixme>@}
+  //! @enddl
+  //! @returns
+  //! 1 if the file is of a specific type
+  //! 0 if the file is not.
+  //! @seealso
+  //! [set_type]
+  int(0..1) isfifo() { return (mode&0xF000)==0x1000; }
+  int(0..1) ischr()  { return (mode&0xF000)==0x2000; }
+  int(0..1) isdir()  { return (mode&0xF000)==0x4000; }
+  int(0..1) isblk()  { return (mode&0xF000)==0x6000; }
+  int(0..1) isreg()  { return (mode&0xF000)==0x8000; }
+  int(0..1) islnk()  { return (mode&0xF000)==0xa000; }
+  int(0..1) issock() { return (mode&0xF000)==0xc000; }
+  int(0..1) isdoor() { return (mode&0xF000)==0xd000; }
 
+  //! Set a type for the stat-object.
+  //! @note
+  //! This call doesnot change the filetype in the underlaying filesystem.
+  //! @param x
+  //! Type to set. Type is one of the following:
+  //! @ul
+  //! @item fifo
+  //! @item chr
+  //! @item dir
+  //! @item blk
+  //! @item reg
+  //! @item lnk
+  //! @item sock
+  //! @item door
+  //! @endul
+  //! @seealso
+  //! [isfifo], [ischr], [isdir], [isblk], [isreg], [islnk], [issock], [isdoor]
   void set_type(string x)
   {
     switch (x)
@@ -37,6 +78,7 @@ class Stat
     }
   }
 
+  //! Fills the stat-object with data from a Stdio.File.stat() call.
   void attach_statarray(array(int) a)
   {
     [mode, size, atime, mtime, ctime, uid, gid] = a;
@@ -50,11 +92,19 @@ class Stat
      attach_statarray( (array) a );
   }
 
+  //! Open the stated file within the filesystem
+  //! @returns
+  //! a [Stdio.File] object
+  //! @seealso
+  //! [Stdio.File]
   Stdio.File open(string mode)
   {
     return filesystem->open(fullpath, mode);
   }
 
+  //! Change to the stated directory.
+  //! @returns
+  //! the directory if the stated object was a directory, 0 otherwise.
   object /* Filesystem.Base */ cd()
   {
     if(isdir())
@@ -66,6 +116,7 @@ class Stat
     return 0;
   }
 
+  //! Returns the date of the stated object as cleartext.
   string nice_date()
   {
     mapping tm = localtime(mtime);
@@ -108,44 +159,80 @@ class Stat
   }
 }
 
+//! Baseclass that can be extended to create new filesystems.
+//! Is used by the Tar and System filesystem classes.
 class Base
 {
+  //! Change directory within the filesystem.
+  //! Returns a new filesystem object with the given directory as cwd.
   Base cd(string|void directory);
+
+  //! Returns the current working directory within the filesystem.
   string cwd();
+
+  //! Change the root of the filesystem.
   Base chroot(void|string directory);
 
+  //! Return a stat-object for a file or a directory within the filesystem.
   Stat stat(string file, int|void lstat);
 
+  //! Returns an array of all files and directories within a given directory.
+  //! @param directory
+  //! Directory where the search should be made within the filesystem. CWD is assumed
+  //! if none (or 0) is given.
+  //! @param glob
+  //! Return only files and dirs matching the glob (if given).
+  //! @seealso
+  //! [get_stats]
   array(string) get_dir(void|string directory, void|string|array glob);
+
+  //! Returns stat-objects for the files and directories matching the given glob
+  //! within the given directory.
+  //! @seealso
+  //! [get_dir]
   array(Stat) get_stats(void|string directory, void|string|array glob);
 
+  //! Open a file within the filesystem
+  //! @returns
+  //! A Stdio.File object.
   Stdio.File open(string filename, string mode);
 
   // int access(string filename, string mode);
 
+  //! @xml{<fixme>Document this function</fixme>@}
   int apply();
 
+  //! Change mode of a file or directory.
   void chmod(string filename, int|string mode);
+
+  //! Change ownership of the file or directory
   void chown(string filename, int|object owner, int|object group);
 
+  //! Create a new directory
   int mkdir(string directory, void|int|string mode);
+
+  //! Remove a file from the filesystem.
   int rm(string filename);
 
+  //! @xml{<fixme>Document this function</fixme>@}
   array find(void|function(Stat:int) mask, mixed ...extra);
 }
 
+  //! @xml{<fixme>Document this function</fixme>@}
 int parse_mode(int old, int|string mode)
 {
   if(intp(mode)) return mode;
   error("string parsing of mode not implemented");
 }
 
+  //! @xml{<fixme>Document this function</fixme>@}
 program get_filesystem(string what)
 {
   // runtime!
   return master()->resolv("Filesystem")[what];
 }
 
+  //! @xml{<fixme>Document this function</fixme>@}
 function `()(void|string path)
 {
   return get_filesystem("System")(".")->cd(path||".") ||
