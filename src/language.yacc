@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.306 2002/11/23 15:11:05 mast Exp $
+|| $Id: language.yacc,v 1.307 2002/11/23 23:20:06 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.306 2002/11/23 15:11:05 mast Exp $");
+RCSID("$Id: language.yacc,v 1.307 2002/11/23 23:20:06 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3991,8 +3991,8 @@ static node *lexical_islocal(struct pike_string *str)
 
 static void safe_inc_enum(void)
 {
-  STACK_LEVEL_START(1);
   JMP_BUF recovery;
+  STACK_LEVEL_START(1);
 
   if (SETJMP_SP(recovery, 1)) {
     struct svalue s;
