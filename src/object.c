@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.6 1996/12/05 00:47:17 hubbe Exp $");
+RCSID("$Id: object.c,v 1.7 1996/12/05 01:29:45 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -817,9 +817,19 @@ void count_memory_in_objects(INT32 *num_, INT32 *size_)
     num++;
     if(o->prog)
     {
-      size+=sizeof(struct object);
-    }else{
       size+=sizeof(struct object)-1+o->prog->storage_needed;
+    }else{
+      size+=sizeof(struct object);
+    }
+  }
+  for(o=objects_to_destruct;o;o=o->next)
+  {
+    num++;
+    if(o->prog)
+    {
+      size+=sizeof(struct object)-1+o->prog->storage_needed;
+    }else{
+      size+=sizeof(struct object);
     }
   }
   *num_=num;
