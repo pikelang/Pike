@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.1 1997/03/20 07:56:26 mirar Exp $ */
+/* $Id: x.c,v 1.2 1997/03/21 16:56:40 per Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.1 1997/03/20 07:56:26 mirar Exp $");
+RCSID("$Id: x.c,v 1.2 1997/03/21 16:56:40 per Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -17,6 +17,7 @@ RCSID("$Id: x.c,v 1.1 1997/03/20 07:56:26 mirar Exp $");
 #include "threads.h"
 #include "array.h"
 #include "error.h"
+#include "port.h"
 
 #include "image.h"
 #include "builtin_functions.h"
@@ -262,6 +263,86 @@ void image_to8bit_rgbcube(INT32 args)
 	        ((s->g*green+hgreen)>>8)*red+
 	        ((s->b*blue+hblue)>>8)*redgreen ];
 	s++;
+     }
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  push_string(end_shared_string(res));
+}
+
+void image_to8bit_rgbcube_rdither(INT32 args)
+/*
+  ->to8bit_rgbcube_rdither(int red,int green,int blue,
+                [string map])
+  
+  gives r+red*g+red*green*b       
+ */
+{
+  struct colortable *ct;
+  struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
+  unsigned long i;
+  rgb_group *s;
+  unsigned char *d;
+  unsigned char *map=NULL;
+
+  int red,green,blue,redgreen,redgreenblue,rmax,gmax,bmax;
+  
+  if(!res) error("Out of memory\n");
+
+  if (!THIS->img) 
+     error("No image\n");
+
+  if (args<3) 
+     error("Too few arguments to image->to8bit_rgbcube()\n");
+  
+  if (sp[-args].type!=T_INT
+      || sp[1-args].type!=T_INT
+      || sp[2-args].type!=T_INT) 
+     error("Illegal argument(s) to image->to8bit_rgbcube()\n");
+
+  red=sp[-args].u.integer; 	rmax=red*255;
+  green=sp[1-args].u.integer;	gmax=green*255;
+  blue=sp[2-args].u.integer; 	bmax=blue*255;
+  redgreen=red*green;
+  redgreenblue=red*green*blue;
+
+  if (args>3)
+     if (sp[3-args].type!=T_STRING)
+	error("Illegal argument 4 to image->to8bit_rgbcube()"
+	      " (expected string or no argument)\n");
+     else if (sp[3-args].u.string->len<red*green*blue)
+	error("map string is not long enough to image->to8bit_rgbcube()\n");
+     else
+	map=sp[3-args].u.string->str;
+
+  i=THIS->xsize*THIS->ysize;
+  s=THIS->img;
+  d=res->str;
+
+  THREADS_ALLOW();
+  if (!map)
+     while (i--)
+     {
+       unsigned int tal = my_rand();
+
+       int r=(s->r*red)+(tal&255);
+       int g=(s->g*green)+((tal>>8)&255);
+       int b=(s->b*blue+((tal>>16)&255));
+       if(r>rmax) r=rmax; if(g>gmax) g=gmax; if(b>bmax) b=bmax;
+       *(d++)= (unsigned char)((r>>8)+(g>>8)*red+(b>>8)*redgreen);
+       s++;
+     }
+  else
+     while (i--)
+     {
+       unsigned int tal = my_rand();
+
+       int r=(s->r*red)+(tal&255);
+       int g=(s->g*green)+((tal>>8)&255);
+       int b=(s->b*blue+((tal>>16)&255));
+       if(r>rmax) r=rmax; if(g>gmax) g=gmax; if(b>bmax) b=bmax;
+       *(d++)= map[ (r>>8)+(g>>8)*red+(b>>8)*redgreen ];
+       s++;
      }
   THREADS_DISALLOW();
 
