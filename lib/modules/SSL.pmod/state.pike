@@ -1,8 +1,7 @@
 #pike __REAL_VERSION__
+// #pragma strict_types
 
-/* $Id: state.pike,v 1.17 2003/01/27 15:03:00 nilsson Exp $
- *
- */
+// $Id: state.pike,v 1.18 2003/03/08 22:12:48 nilsson Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -11,63 +10,58 @@
 
 import .Constants;
 
-//! Information about the used algorithms.
-object session;
-
-// string my_random;
-// string other_random;  
-
-//! Message Authentication Code
-object mac;
-
-//! Encryption or decryption object.
-object crypt;
-
-object compress;
-
-//! 64-bit sequence number.
-object(Gmp.mpz)|int seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
-
-constant Alert = SSL.alert;
-
 void create(object s)
 {
   session = s;
   seq_num = Gmp.mpz(0);
 }
 
+//! Information about the used algorithms.
+.session session;
+
+//! Message Authentication Code
+.Cipher.MACAlgorithm mac;
+
+//! Encryption or decryption object.
+.Cipher.CipherAlgorithm crypt;
+
+object compress;
+
+//! 64-bit sequence number.
+Gmp.mpz seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
+
+constant Alert = SSL.alert;
 
 
-string tls_pad(string data,int blocksize  ) {
-//    werror("Blocksize:"+blocksize+"\n");
+string tls_pad(string data, int blocksize) {
   int plen=(blocksize-(sizeof(data)+1)%blocksize)%blocksize;
-  string res=data + sprintf("%c",plen)*plen+sprintf("%c",plen);
-  return res;
+  return data + sprintf("%c",plen)*plen+sprintf("%c",plen);
 }
 
-string tls_unpad(string data ) {
+string tls_unpad(string data) {
+  int(0..255) plen=[int(0..255)]data[-1];
 
-  int plen=data[-1];
-  string res=reverse(reverse(data)[plen+1..]);
+#ifdef DEBUG
   string padding=reverse(data)[..plen];
-  int tmp;
 
   /* Checks that the padding is correctly done */
-  foreach(values(padding),tmp)
+  foreach(values(padding), int tmp)
     {
       if(tmp!=plen) {
 	werror("Incorrect padding detected!!!\n");
 	throw(0);
       }
     }
-  return res;
+#endif
+
+  return data[..sizeof(data)-plen-2];
 }
 
-//! Destructively decrypts a packet (including inflating and MAC-verification, if
-//! needed). On success, returns the decrypted packet. On failure,
+//! Destructively decrypts a packet (including inflating and MAC-verification,
+//! if needed). On success, returns the decrypted packet. On failure,
 //! returns an alert packet. These cases are distinguished by looking
 //! at the is_alert attribute of the returned packet.
-object decrypt_packet(object packet,int version)
+Alert|.packet decrypt_packet(.packet packet, int version)
 {
 #ifdef SSL3_DEBUG_CRYPT
   werror("SSL.state->decrypt_packet: data = %O\n", packet->fragment);
@@ -75,17 +69,17 @@ object decrypt_packet(object packet,int version)
   
   if (crypt)
   {
-    string msg;
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying decrypt..\n");
     //    werror("SSL.state: The encrypted packet is:%O\n",packet->fragment);
     werror("sizeof of the encrypted packet is:"+sizeof(packet->fragment)+"\n");
 #endif
-    msg=packet->fragment;
-        
-    msg = crypt->crypt(msg); 
+
+    string msg = packet->fragment;
     if (! msg)
       return Alert(ALERT_fatal, ALERT_unexpected_message, version);
+    msg = crypt->crypt(msg);
+
     if (session->cipher_spec->cipher_type == CIPHER_block)
       if(version==0) {
 	if (catch { msg = crypt->unpad(msg); })
@@ -125,31 +119,32 @@ object decrypt_packet(object packet,int version)
 #ifdef SSL3_DEBUG_CRYPT
     werror("SSL.state: Trying decompression...\n");
 #endif
-    string msg;
-    msg = compress(packet->fragment);
+    string msg = [string]compress(packet->fragment);
     if (!msg)
       return Alert(ALERT_fatal, ALERT_unexpected_message, version);
     packet->fragment = msg;
   }
-  return packet->check_size(version) || packet;
+
+  return [object(Alert)]packet->check_size(version) || packet;
 }
 
 //! Encrypts a packet (including deflating and MAC-generation).
-object encrypt_packet(object packet,int version)
+Alert|.packet encrypt_packet(.packet packet, int version)
 {
   string digest;
-  packet->protocol_version=({3,version});
+  packet->protocol_version = ({3, version});
   
   if (compress)
   {
-    packet->fragment = compress(packet->fragment);
+    packet->fragment = [string]compress(packet->fragment);
   }
 
   if (mac)
     digest = mac->hash(packet, seq_num);
   else
     digest = "";
-  seq_num += 1;
+
+  seq_num++;
 
   if (crypt)
   {
@@ -159,7 +154,8 @@ object encrypt_packet(object packet,int version)
 	  packet->fragment = crypt->crypt(packet->fragment + digest);
 	  packet->fragment += crypt->pad();
 	} else {
-	  packet->fragment = tls_pad(packet->fragment+digest,crypt->query_block_size());
+	  packet->fragment = tls_pad(packet->fragment+digest,
+				     crypt->query_block_size());
 	  packet->fragment = crypt->crypt(packet->fragment);
 	}
       } else {
@@ -169,7 +165,7 @@ object encrypt_packet(object packet,int version)
   else
     packet->fragment += digest;
   
-  return packet->check_size(version, 2048) || packet;
+  return [object(Alert)]packet->check_size(version, 2048) || packet;
 }
 
 
