@@ -271,7 +271,8 @@ mapping get_simple_list(int max_depth)
       return 0;
     }
   }
-  return get_atom_options(max_depth);
+  return 0;
+  // return get_atom_options(max_depth-1);
 }
 
 array do_parse_simple_list(int max_depth, int terminator)
@@ -348,7 +349,7 @@ mapping get_atom_options(int max_depth)
   }
 
   res->options = options;
-  res->raw = atom + "[" +
+  res->raw = atom +
     option_start[..sizeof(option_start) - sizeof(buffer) - 1];
 
       
