@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.137 2001/09/27 20:45:57 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.138 2001/11/09 02:09:14 nilsson Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1617,6 +1617,8 @@ PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
   if(needle->size_shift > haystack->size_shift ||
      start + needle->len > haystack->len)
     return -1;
+
+  if(!needle->len) return start;
 
   mojt=compile_memsearcher(MKPCHARP_STR(needle),
 			   needle->len,
