@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.95 1998/05/29 21:02:00 grubba Exp $
+# $Id: Makefile.in,v 1.96 1998/05/29 21:02:32 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -490,7 +490,7 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
-	  rm $(SRCDIR)/stamp-h; $(MAKE) $(SRCDIR)/stamp-h.in; \
+	  rm $(SRCDIR)/stamp-h.in; $(MAKE) $(SRCDIR)/stamp-h.in; \
 	fi
 $(SRCDIR)/stamp-h.in: $(SRCDIR)/configure.in $(SRCDIR)/acconfig.h
 	cd $(SRCDIR) && autoheader
