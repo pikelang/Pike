@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.30 1998/05/01 15:42:44 grubba Exp $");
+RCSID("$Id: backend.c,v 1.31 1998/05/05 10:38:13 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -49,6 +49,21 @@ void *write_oob_callback_data[MAX_OPEN_FILEDESCRIPTORS];
 #endif
 
 #ifndef HAVE_POLL
+
+/* Some constants... */
+
+#ifndef POLLRDNORM
+#define POLLRDNORM	POLLIN
+#endif /* !POLLRDNORM */
+
+#ifndef POLLRDBAND
+#define POLLRDBAND	POLLPRI
+#endif /* !POLLRDBAND */
+
+#ifndef POLLWRBAND
+#define POLLWRBAND	POLLOUT
+#endif /* !POLLWRBAND */
+
 struct selectors
 {
   my_fd_set read;
@@ -380,8 +395,13 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
       }
     }
 #else
+#if POLLWRBAND == POLLOUT
+    if (was_set && !write_callback[fd])
+      POLL_FD_CLR(fd,POLLWRBAND);
+#else /* POLLWRBAND != POLLOUT */
     if(was_set)
       POLL_FD_CLR(fd,POLLWRBAND);
+#endif /* POLLWRBAND == POLLOUT */
 #endif
   }
 }
