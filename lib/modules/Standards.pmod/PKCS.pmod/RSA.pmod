@@ -14,6 +14,14 @@ import ".";
 
 import Standards.ASN1.Types;
 
+/* Create a DER-coded RSAPublicKey structure */
+string rsa_public_key(object rsa)
+{
+  return asn1_sequence(Array.map(
+    ({ rsa->n, rsa->e }),
+    asn1_integer))->get_der();
+}
+
 /* Create a DER-coded RSAPrivateKey structure */
 string rsa_private_key(object rsa)
 {
@@ -24,6 +32,26 @@ string rsa_private_key(object rsa)
        rsa->q->invert(rsa->p) % rsa->p
     }),
     asn1_integer))->get_der();
+}
+
+/* Decode a coded RSAPublicKey structure */
+object parse_public_key(string key)
+{
+  // WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
+  object a = Standards.ASN1.Decode.simple_der_decode(key);
+
+  // WERROR(sprintf("rsa->parse_public_key: asn1 = %O\n", a));
+  if (!a
+      || (a->type_name != "SEQUENCE")
+      || (sizeof(a->elements) != 2)
+      || (sizeof(a->elements->type_name - ({ "INTEGER" }))) )
+  {
+    //  WERROR("Not a Valid Key!\n");
+    return 0;
+  }
+  object rsa = Crypto.rsa();
+  rsa->set_public_key(a->elements[0]->value, a->elements[1]->value);
+  return rsa;
 }
 
 /* Decode a coded RSAPrivateKey structure */
