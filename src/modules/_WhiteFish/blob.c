@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.25 2001/07/04 22:24:42 per Exp $");
+RCSID("$Id: blob.c,v 1.26 2001/07/31 15:27:17 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -120,20 +120,10 @@ Hit wf_blob_hit( Blob *b, int n )
     hit.raw = ht;
     if( (ht>>14) == 3 )
     {
-      if( (ht >>8) == 255 )
-      {
-	hit.type = HIT_ANCHOR;
-	hit.u.anchor._pad = 255;
-	hit.u.anchor.hash = (ht>>4) & 63;
-	hit.u.anchor.pos = (ht) & 63;
-      }
-      else
-      {
-	hit.type = HIT_FIELD;
-	hit.u.field._pad = 3;
-	hit.u.field.type = (ht>>8) & 63;
-	hit.u.field.pos = ht&255;
-      }
+      hit.type = HIT_FIELD;
+      hit.u.field._pad = 3;
+      hit.u.field.type = (ht>>8) & 63;
+      hit.u.field.pos = ht&255;
     }
     else
     {
@@ -346,7 +336,7 @@ static void f_blob_remove( INT32 args )
 }
 
 void wf_blob_low_add( struct object *o,
-		      int docid, int field, int hash, int off )
+		      int docid, int field, int off )
 {
   unsigned short s;
   switch( field )
@@ -354,11 +344,8 @@ void wf_blob_low_add( struct object *o,
     case 0:
       s = off>((1<<14)-1)?((1<<14)-1):off;
       break;
-    case 1:
-      s = (255<<8) | (hash<<4) | (off>15?15:off);
-      break;
     default:
-      s = (3<<14) | ((field-2)<<6) | (off>63?63:off);
+      s = (3<<14) | ((field-1)<<8) | (off>255?255:off);
       break;
   }
   _append_hit( ((struct blob_data *)o->storage), docid, s );
@@ -366,13 +353,12 @@ void wf_blob_low_add( struct object *o,
 
 static void f_blob_add( INT32 args )
 {
-  int docid = sp[-4].u.integer;
-  int field = sp[-3].u.integer;
-  int off = sp[-2].u.integer;
-  int hash = sp[-1].u.integer;
-  if( args != 4 )
+  int docid = sp[-3].u.integer;
+  int field = sp[-2].u.integer;
+  int off = sp[-1].u.integer;
+  if( args != 3 )
     Pike_error( "Illegal number of arguments\n" );
-  wf_blob_low_add( Pike_fp->current_object, docid, field, hash, off );
+  wf_blob_low_add( Pike_fp->current_object, docid, field, off );
   pop_n_elems( args );
   push_int( 0 );
 }
@@ -516,7 +502,7 @@ void init_blob_program()
   ADD_STORAGE( struct blob_data );
   add_function( "create", f_blob_create, "function(string|void:void)", 0 );
   add_function( "merge", f_blob_merge, "function(string:void)", 0 );
-  add_function( "add", f_blob_add, "function(int,int:void)",0 );
+  add_function( "add", f_blob_add, "function(int,int,int:void)",0 );
   add_function( "remove", f_blob_remove, "function(int:void)",0 );
   add_function( "data", f_blob__cast, "function(void:string)", 0 );
   add_function( "memsize", f_blob_memsize, "function(void:int)", 0 );

@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.5 2001/07/04 22:02:26 per Exp $");
+RCSID("$Id: blobs.c,v 1.6 2001/07/31 15:27:18 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -90,8 +90,7 @@ static struct hash *find_hash( struct blobs *d, struct pike_string *id )
 
 static void f_blobs_add_words( INT32 args )
 /*
- *! @decl void add_words( int docid, array(string) words, int field_id,
- *!                       int link_hash )
+ *! @decl void add_words( int docid, array(string) words, int field_id )
  *!
  *! Add all the words in the 'words' array to the blobs
  */ 
@@ -99,20 +98,19 @@ static void f_blobs_add_words( INT32 args )
   INT_TYPE docid;
   struct array *words;
   INT_TYPE field_id;
-  INT_TYPE link_hash;
 
   int i;
   struct blobs *blbl = THIS;
   
-  get_all_args( "add_words", args, "%d%a%d%d",
-		&docid, &words, &field_id, &link_hash );
+  get_all_args( "add_words", args, "%d%a%d",
+		&docid, &words, &field_id);
 
   for( i = 0; i<words->size; i++ )
     if( words->item[i].type != PIKE_T_STRING )
       Pike_error("Illegal element %d in words array\n", i );
     else
       wf_blob_low_add( find_hash( blbl, words->item[i].u.string )->bl,
-		       docid, field_id, link_hash, i );
+		       docid, field_id, i );
 
   pop_n_elems( args );
   push_int(0);
@@ -212,7 +210,7 @@ void init_blobs_program()
   start_new_program();
   ADD_STORAGE( struct blobs );
   add_function("add_words",f_blobs_add_words,
-	       "function(int,array,int,int:void)",0 );
+	       "function(int,array,int:void)",0 );
   add_function("memsize", f_blobs_memsize, "function(void:int)", 0 );
   add_function("read", f_blobs_read, "function(void:array(string|object))", 0);
   set_init_callback( init_blobs_struct );

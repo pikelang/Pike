@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.31 2001/07/04 22:24:42 per Exp $");
+RCSID("$Id: whitefish.c,v 1.32 2001/07/31 15:27:18 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -44,7 +44,10 @@ static void free_stuff( void *_t )
 }
 
 #define OFFSET(X) \
- (X.type == HIT_BODY?X.u.body.pos:X.type==HIT_FIELD?(X.u.field.pos):(X.u.anchor.pos))
+ (X.type == HIT_BODY?X.u.body.pos:X.u.field.pos)
+
+#define DOFF(X)  _distance_f(X)
+#define MOFF(X)  (X.type==HIT_BODY?0:X.u.field.type+1)
 
 static int _distance_f( int distance )
 {
@@ -58,14 +61,12 @@ static int _distance_f( int distance )
   return 7;
 }
 
-#define DOFF(X)  _distance_f(X)
-#define MOFF(X)  (X.type==HIT_BODY?0:X.type==HIT_FIELD?X.u.field.type+2:1)
 
 static void handle_hit( Blob **blobs,
 			int nblobs,
 			struct object *res,
 			int docid,
-			double *field_c[66],
+			double *field_c[65],
 			double *prox_c[8],
 			double mc, double mp,
 			int cutoff )
@@ -75,7 +76,7 @@ static void handle_hit( Blob **blobs,
   unsigned char *nhits = malloc( nblobs );
   unsigned char *pos = malloc( nblobs );
 
-  int matrix[66][8];
+  int matrix[65][8];
 
   MEMSET(matrix, 0, sizeof(matrix) );
   MEMSET(hits, 0, nblobs * sizeof(Hit) );
@@ -113,7 +114,7 @@ static void handle_hit( Blob **blobs,
   {
     double accum = 0.0, fc, pc;
     int accum_i;
-    for( i = 0; i<66; i++ )
+    for( i = 0; i<65; i++ )
       if( (fc = (*field_c)[i]) != 0.0 )
 	for( j = 0; j<8; j++ )
 	  if( (pc = (*prox_c)[j]) != 0.0 )
@@ -122,15 +123,15 @@ static void handle_hit( Blob **blobs,
     /* Limit */
     if( accum > 32000.0 )
       accum = 32000.0;
-    accum_i = (int)(accum *100 ); 
-    if( accum_i > 0 )
+    accum_i = (int)(accum *100 ) + 1;
+    if( accum > 0.0 )
       wf_resultset_add( res, docid, accum_i );
   }
 }
 
 static struct object *low_do_query_or( Blob **blobs,
 					  int nblobs,
-					  double field_c[66],
+					  double field_c[65],
 					  double prox_c[8],
 					  int cutoff)
 {
@@ -149,7 +150,7 @@ static struct object *low_do_query_or( Blob **blobs,
   SET_ONERROR( e, free_stuff, __f );
 
 
-  for( i = 0; i<66; i++ )
+  for( i = 0; i<65; i++ )
     if( field_c[i] > max_c )
       max_c = field_c[i];
   
@@ -197,13 +198,13 @@ static void handle_phrase_hit( Blob **blobs,
 			       int nblobs,
 			       struct object *res,
 			       int docid,
-			       double *field_c[66],
+			       double *field_c[65],
 			       double mc )
 {
   int i, j, k;
   unsigned char *nhits = malloc( nblobs*2 );
   unsigned char *first = nhits+nblobs;
-  int matrix[66];
+  int matrix[65];
   double accum = 0.0;
   
   MEMSET(matrix, 0, sizeof(matrix) );
@@ -249,7 +250,7 @@ static void handle_phrase_hit( Blob **blobs,
 }
 
 static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
-					   double field_c[66])
+					   double field_c[65])
 {
   struct object *res = wf_resultset_new();
   struct tofree *__f = malloc( sizeof( struct tofree ) );
@@ -263,7 +264,7 @@ static struct object *low_do_query_phrase( Blob **blobs, int nblobs,
   SET_ONERROR( e, free_stuff, __f );
 
 
-  for( i = 0; i<66; i++ )
+  for( i = 0; i<65; i++ )
     if( field_c[i] > max_c )
       max_c = field_c[i];
 
@@ -309,7 +310,7 @@ end:
 }
 				
 static struct object *low_do_query_and( Blob **blobs, int nblobs,
-					double field_c[66],
+					double field_c[65],
 					double prox_c[8],
 					int cutoff)
 {
@@ -325,7 +326,7 @@ static struct object *low_do_query_and( Blob **blobs, int nblobs,
   SET_ONERROR( e, free_stuff, __f );
 
 
-  for( i = 0; i<66; i++ )
+  for( i = 0; i<65; i++ )
     if( field_c[i] > max_c )
       max_c = field_c[i];
 
@@ -388,14 +389,13 @@ static void f_do_query_phrase( INT32 args )
  *!       @[field_coefficients]
  *!
  *!       An array of ranking coefficients for the different fields. 
- *!       In the range of [0x0000-0xffff]. The array (always) has 66
+ *!       In the range of [0x0000-0xffff]. The array (always) has 65
  *!       elements:
  *!
  *!	  Index        Coefficient for field
  *!	  -----        ---------------------
  *!	  0            body
- *!	  1            anchor
- *!	  2..65        Special field 0..63
+ *!	  1..64        Special field 0..63
  *!
  *!     @[blobfeeder]
  *!     
@@ -404,7 +404,7 @@ static void f_do_query_phrase( INT32 args )
  */
 {
   double proximity_coefficients[8];
-  double field_coefficients[66];
+  double field_coefficients[65];
   int numblobs, i;
   Blob **blobs;
 
@@ -416,8 +416,8 @@ static void f_do_query_phrase( INT32 args )
   get_all_args( "do_query_phrase", args, "%a%a%*",
 		&_words, &_field, &cb);
 
-  if( _field->size != 66 )
-    Pike_error("Illegal size of field_coefficients array (expected 66)\n" );
+  if( _field->size != 65 )
+    Pike_error("Illegal size of field_coefficients array (expected 65)\n" );
 
   numblobs = _words->size;
   if( !numblobs )
@@ -433,7 +433,7 @@ static void f_do_query_phrase( INT32 args )
   for( i = 0; i<numblobs; i++ )
     blobs[i] = wf_blob_new( cb, _words->item[i].u.string );
 
-  for( i = 0; i<66; i++ )
+  for( i = 0; i<65; i++ )
     field_coefficients[i] = (double)_field->item[i].u.integer;
 
   res = low_do_query_phrase(blobs,numblobs, field_coefficients );
@@ -454,14 +454,13 @@ static void f_do_query_and( INT32 args )
  *!       @[field_coefficients]
  *!
  *!       An array of ranking coefficients for the different fields. 
- *!       In the range of [0x0000-0xffff]. The array (always) has 66
+ *!       In the range of [0x0000-0xffff]. The array (always) has 65
  *!       elements:
  *!
  *!	  Index        Coefficient for field
  *!	  -----        ---------------------
  *!	  0            body
- *!	  1            anchor
- *!	  2..65        Special field 0..63
+ *!	  1..64        Special field 0..63
  *!
  *!       @[proximity_coefficients]
  *!
@@ -489,7 +488,7 @@ static void f_do_query_and( INT32 args )
  */
 {
   double proximity_coefficients[8];
-  double field_coefficients[66];
+  double field_coefficients[65];
   int numblobs, i, cutoff;
   Blob **blobs;
 
@@ -501,8 +500,8 @@ static void f_do_query_and( INT32 args )
   get_all_args( "do_query_and", args, "%a%a%a%d%*",
 		&_words, &_field, &_prox, &cutoff, &cb);
 
-  if( _field->size != 66 )
-    Pike_error("Illegal size of field_coefficients array (expected 66)\n" );
+  if( _field->size != 65 )
+    Pike_error("Illegal size of field_coefficients array (expected 65)\n" );
   if( _prox->size != 8 )
     Pike_error("Illegal size of proximity_coefficients array (expected 8)\n" );
 
@@ -523,7 +522,7 @@ static void f_do_query_and( INT32 args )
   for( i = 0; i<8; i++ )
     proximity_coefficients[i] = (double)_prox->item[i].u.integer;
 
-  for( i = 0; i<66; i++ )
+  for( i = 0; i<65; i++ )
     field_coefficients[i] = (double)_field->item[i].u.integer;
 
   res = low_do_query_and(blobs,numblobs,
@@ -547,14 +546,13 @@ static void f_do_query_or( INT32 args )
  *!       @[field_coefficients]
  *!
  *!       An array of ranking coefficients for the different fields. 
- *!       In the range of [0x0000-0xffff]. The array (always) has 66
+ *!       In the range of [0x0000-0xffff]. The array (always) has 65
  *!       elements:
  *!
  *!	  Index        Coefficient for field
  *!	  -----        ---------------------
  *!	  0            body
- *!	  1            anchor
- *!	  2..65        Special field 0..63
+ *!	  1..64        Special field 0..63
  *!
  *!       @[proximity_coefficients]
  *!
@@ -582,7 +580,7 @@ static void f_do_query_or( INT32 args )
  */
 {
   double proximity_coefficients[8];
-  double field_coefficients[66];
+  double field_coefficients[65];
   int numblobs, i, cutoff;
   Blob **blobs;
 
@@ -594,8 +592,8 @@ static void f_do_query_or( INT32 args )
   get_all_args( "do_query_or", args, "%a%a%a%d%*",
 		&_words, &_field, &_prox, &cutoff, &cb);
 
-  if( _field->size != 66 )
-    Pike_error("Illegal size of field_coefficients array (expected 66)\n" );
+  if( _field->size != 65 )
+    Pike_error("Illegal size of field_coefficients array (expected 65)\n" );
   if( _prox->size != 8 )
     Pike_error("Illegal size of proximity_coefficients array (expected 8)\n" );
 
@@ -616,7 +614,7 @@ static void f_do_query_or( INT32 args )
   for( i = 0; i<8; i++ )
     proximity_coefficients[i] = (double)_prox->item[i].u.integer;
 
-  for( i = 0; i<66; i++ )
+  for( i = 0; i<65; i++ )
     field_coefficients[i] = (double)_field->item[i].u.integer;
 
   res = low_do_query_or(blobs,numblobs,

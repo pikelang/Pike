@@ -101,6 +101,7 @@ mapping get_extra( Standards.URI uri )
 		       "FROM "+table+" WHERE uri_md5=%s", to_md5((string)uri) );
   if( sizeof( r ) )
     return r[0];
+  
 }
 
 static int empty_count;

@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.50 2001/07/16 14:49:15 js Exp $
+// $Id: MySQL.pike,v 1.51 2001/07/31 15:29:47 js Exp $
 
 inherit .Base;
 
@@ -203,8 +203,8 @@ void insert_words(Standards.URI|string uri, void|string language,
 
   int doc_id   = get_document_id((string)uri, language);
   int field_id = get_field_id(field);
-
-  blobs->add_words( doc_id, words, field_id, 0 );
+  
+  blobs->add_words( doc_id, words, field_id );
 
   if(blobs->memsize() > MAXMEM)
     sync();

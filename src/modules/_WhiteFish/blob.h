@@ -13,7 +13,6 @@ typedef enum {
   HIT_NOTHING,
   HIT_BODY,
   HIT_FIELD,
-  HIT_ANCHOR
 } HitType;
 
 typedef struct
@@ -33,12 +32,6 @@ typedef struct
       unsigned char type:6;
       unsigned char pos:8;
     } field;
-    struct
-    {
-      unsigned char _pad;
-      unsigned char hash:4;
-      unsigned char pos:4;
-    } anchor;
   } u;
 } Hit;
 
@@ -70,7 +63,7 @@ int wf_blob_docid( Blob *b );
 int wf_blob_eof( Blob *b );
 /* Returns -1 if there are no more entries available */
 
-void wf_blob_low_add( struct object *o, int docid, int field, int hash, int off );
+void wf_blob_low_add( struct object *o, int docid, int field, int off );
 /* Add a hit */
 
 int wf_blob_low_memsize( struct object *o );

@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.18 2001/07/31 15:02:58 norlin Exp $
+// $Id: Utils.pmod,v 1.19 2001/07/31 15:29:47 js Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -105,7 +105,7 @@ class ProfileEntry {
   Search.RankingProfile get_ranking() {
     refresh();
     if(!ranking)
-      ranking = Search.RankingProfile(8,
+      ranking = Search.RankingProfile(0, 
 				      get_search_value("px_rank"),
 				      get_database(),
 				      get_search_value("fi_rank"));

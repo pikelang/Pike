@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pmod,v 1.9 2001/07/16 14:49:14 js Exp $
+// $Id: Base.pmod,v 1.10 2001/07/31 15:29:47 js Exp $
 
 //! Base class for Roxen Search database storage abstraction implementations.
 
@@ -55,8 +55,7 @@ mapping get_uri_and_language(int doc_id);
 void insert_words(Standards.URI|string uri,
 		  void|string language,
 		  string field,
-		  array(string) words,
-		  void|int link_hash);
+		  array(string) words);
 
 //! Set a metadata collection for a document.
 //! @param uri
