@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.170 2003/04/18 15:45:01 mast Exp $
+// $Id: module.pmod,v 1.171 2003/04/22 15:15:49 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -220,13 +220,16 @@ class File
   //! only useful for some silly protocols like @b{FTP@}. You may also
   //! specify an @[address] to bind to if your machine has many IP numbers.
   //!
+  //! @[port] can also be specified as a string, giving the name of the
+  //! service associated with the port.
+  //!
   //! @returns
   //! This function returns 1 for success, 0 otherwise.
   //!
   //! @seealso
   //! @[connect()], @[set_nonblocking()], @[set_blocking()]
   //!
-  int open_socket(int|void port, string|void address)
+  int open_socket(int|string|void port, string|void address)
   {
     _fd=Fd();
     is_file = 0;
@@ -265,7 +268,8 @@ class File
   //! @seealso
   //! @[query_address()], @[async_connect()], @[connect_unix()]
   //!
-  int connect(string host, int port, void|string client, void|int client_port)
+  int connect(string host, int|string port,
+	      void|string client, void|int|string client_port)
   {
     if(!_fd) _fd=Fd();
 #ifdef __STDIO_DEBUG
@@ -355,7 +359,7 @@ class File
   //!   Hostname or IP to connect to.
   //!
   //! @param port
-  //!   Port number to connect to.
+  //!   Port number or service name to connect to.
   //!
   //! @param callback
   //!   Function to be called on completion.
@@ -383,7 +387,7 @@ class File
   //!
   //! @seealso
   //!   @[connect()], @[open_socket()], @[set_nonblocking()]
-  int async_connect(string host, int port,
+  int async_connect(string host, int|string port,
 		    function(int, mixed ...:void) callback,
 		    mixed ... args)
   {
@@ -1084,9 +1088,9 @@ class Port
   }
 
   //! @decl void create()
-  //! @decl void create(int port)
-  //! @decl void create(int port, function accept_callback)
-  //! @decl void create(int port, function accept_callback, string ip)
+  //! @decl void create(int|string port)
+  //! @decl void create(int|string port, function accept_callback)
+  //! @decl void create(int|string port, function accept_callback, string ip)
   //! @decl void create("stdin")
   //! @decl void create("stdin", function accept_callback)
   //!
@@ -1295,7 +1299,7 @@ class FILE
     return file::open(file,mode);
   }
 
-  int open_socket(int|void port, string|void address)
+  int open_socket(int|string|void port, string|void address)
   {
     bpos=0;  b="";
     if(zero_type(port))

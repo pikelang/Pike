@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.267 2003/04/07 17:21:13 nilsson Exp $
+|| $Id: file.c,v 1.268 2003/04/22 15:15:49 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.267 2003/04/07 17:21:13 nilsson Exp $");
+RCSID("$Id: file.c,v 1.268 2003/04/22 15:15:49 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2653,23 +2653,30 @@ static void file_open_socket(INT32 args)
 
   if (args) {
     struct sockaddr_in addr;
+    char *name;
     int o;
 
-    if (Pike_sp[-args].type != PIKE_T_INT) {
+    if (Pike_sp[-args].type != PIKE_T_INT &&
+	(Pike_sp[-args].type != PIKE_T_STRING ||
+	 Pike_sp[-args].u.string->size_shift)) {
       fd_close(fd);
-      SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 1, "int");
+      SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 1, "int|string (8bit)");
     }
     if (args > 1) {
       if (Pike_sp[1-args].type != PIKE_T_STRING) {
 	fd_close(fd);
 	SIMPLE_BAD_ARG_ERROR("Stdio.File->open_socket", 1, "string");
       }
-      get_inet_addr(&addr, Pike_sp[1-args].u.string->str);
+
+      name = Pike_sp[1-args].u.string->str;
     } else {
-      addr.sin_addr.s_addr = htonl(INADDR_ANY);
-      addr.sin_family = AF_INET;
+      name = NULL;
     }
-    addr.sin_port = htons( ((u_short)Pike_sp[-args].u.integer) );
+    get_inet_addr(&addr, name,
+		  (Pike_sp[-args].type == PIKE_T_STRING?
+		   Pike_sp[-args].u.string->str : NULL),
+		  (Pike_sp[-args].type == PIKE_T_INT?
+		   Pike_sp[-args].u.integer : -1), 0);
 
     o=1;
     if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0) {
@@ -2823,24 +2830,32 @@ static void file_connect(INT32 args)
   struct sockaddr_in addr;
   struct pike_string *dest_addr = NULL;
   struct pike_string *src_addr = NULL;
-  INT_TYPE dest_port = 0;
-  INT_TYPE src_port = 0;
+  struct svalue *dest_port = NULL;
+  struct svalue *src_port = NULL;
 
   int tmp;
 
   if (args < 4) {
-    get_all_args("Stdio.File->connect", args, "%S%i", &dest_addr, &dest_port);
+    get_all_args("Stdio.File->connect", args, "%S%*", &dest_addr, &dest_port);
   } else {
-    get_all_args("Stdio.File->connect", args, "%S%i%S%i",
+    get_all_args("Stdio.File->connect", args, "%S%*%S%*",
 		 &dest_addr, &dest_port, &src_addr, &src_port);
   }
+
+  if(dest_port->type != PIKE_T_INT &&
+     (dest_port->type != PIKE_T_STRING || dest_port->u.string->size_shift))
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 2, "int|string (8bit)");
+
+  if(src_port && src_port->type != PIKE_T_INT &&
+     (src_port->type != PIKE_T_STRING || src_port->u.string->size_shift))
+    SIMPLE_BAD_ARG_ERROR("Stdio.File->connect", 4, "int|string (8bit)");
 
   if(FD < 0)
   {
     if (args < 4) {
       file_open_socket(0);
     } else {
-      push_int(src_port);
+      push_svalue(src_port);
       ref_push_string(src_addr);
       file_open_socket(2);
     }
@@ -2849,8 +2864,11 @@ static void file_connect(INT32 args)
     pop_stack();
   }
 
-  get_inet_addr(&addr, dest_addr->str);
-  addr.sin_port = htons(((u_short)dest_port));
+  get_inet_addr(&addr, dest_addr->str,
+		(dest_port->type == PIKE_T_STRING?
+		 dest_port->u.string->str : NULL),
+		(dest_port->type == PIKE_T_INT?
+		 dest_port->u.integer : -1), 0);
 
   tmp=FD;
   THREADS_ALLOW();

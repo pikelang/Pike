@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.13 2002/10/11 01:39:56 nilsson Exp $
+|| $Id: acconfig.h,v 1.14 2003/04/22 15:15:50 marcus Exp $
 */
 
 /*
@@ -22,6 +22,12 @@
  
 /* Define if you have OSF1 style gethostbyname_r. */
 #undef HAVE_OSF1_GETHOSTBYNAME_R
+
+/* Define if you have solaris style getservbyname_r. */
+#undef HAVE_SOLARIS_GETSERVBYNAME_R
+ 
+/* Define if you have OSF1 style getservbyname_r. */
+#undef HAVE_OSF1_GETSERVBYNAME_R
 
 /* Define if you have solaris style getspnam_r. */
 #undef HAVE_SOLARIS_GETSPNAM_R

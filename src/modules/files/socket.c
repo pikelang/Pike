@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.67 2003/01/05 14:10:58 nilsson Exp $
+|| $Id: socket.c,v 1.68 2003/04/22 15:15:50 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.67 2003/01/05 14:10:58 nilsson Exp $");
+RCSID("$Id: socket.c,v 1.68 2003/04/22 15:15:50 marcus Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -229,7 +229,7 @@ static void port_listen_fd(INT32 args)
   push_int(1);
 }
 
-/*! @decl int bind(int port, void|function accept_callback, void|string ip)
+/*! @decl int bind(int|string port, void|function accept_callback, void|string ip)
  *!
  *! Bind opens a sockets and binds it to port number on the local machine.
  *! If the second argument is present, the socket is set to nonblocking
@@ -253,8 +253,10 @@ static void port_bind(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "int");
+  if(Pike_sp[-args].type != PIKE_T_INT &&
+     (Pike_sp[-args].type != PIKE_T_STRING ||
+      Pike_sp[-args].u.string->size_shift))
+    SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "int|string (8bit)");
 
   fd=fd_socket(AF_INET, SOCK_STREAM, 0);
 
@@ -282,17 +284,12 @@ static void port_bind(INT32 args)
 
   my_set_close_on_exec(fd,1);
 
-  MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
-
-  if(args > 2 && Pike_sp[2-args].type==PIKE_T_STRING)
-  {
-    get_inet_addr(&addr, Pike_sp[2-args].u.string->str);
-  }else{
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  }
-
-  addr.sin_port = htons( ((u_short)Pike_sp[-args].u.integer) );
-  addr.sin_family = AF_INET;
+  get_inet_addr(&addr, (args > 2 && Pike_sp[2-args].type==PIKE_T_STRING?
+			Pike_sp[2-args].u.string->str : NULL),
+		(Pike_sp[-args].type == PIKE_T_STRING?
+		 Pike_sp[-args].u.string->str : NULL),
+		(Pike_sp[-args].type == PIKE_T_INT?
+		 Pike_sp[-args].u.integer : -1), 0);
 
   THREADS_ALLOW_UID();
   tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || fd_listen(fd, 16384) < 0;
@@ -327,18 +324,21 @@ static void port_bind(INT32 args)
 }
 
 /* @decl void create("stdin", void|function accept_callback)
- * @decl void create(int port, void|function accept_callback, void|string ip)
+ * @decl void create(int|string port, void|function accept_callback, void|string ip)
  *
  * When create is called with 'stdin' as argument, a socket is created
  * out of the file descriptor 0. This is only useful if that actually
- * IS a socket to begin with. When create is called with an int as first
- * argument, it does the same as bind() would do with the same arguments.
+ * IS a socket to begin with. When create is called with an int or any
+ * other string as first argument, it does the same as bind() would do
+ * with the same arguments.
  */
 static void port_create(INT32 args)
 {
   if(args)
   {
-    if(Pike_sp[-args].type == PIKE_T_INT)
+    if(Pike_sp[-args].type == PIKE_T_INT ||
+       (Pike_sp[-args].type == PIKE_T_STRING &&
+	strcmp("stdin",Pike_sp[-args].u.string->str)))
     {
       port_bind(args); /* pops stack */
       return;
@@ -487,8 +487,8 @@ void port_setup_program(void)
   offset=ADD_STORAGE(struct port);
   map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),PIKE_T_MIXED);
   map_variable("_id","mixed",0,offset+OFFSETOF(port,id),PIKE_T_MIXED);
-  /* function(int,void|mixed,void|string:int) */
-  ADD_FUNCTION("bind",port_bind,tFunc(tInt tOr(tVoid,tMix) tOr(tVoid,tStr),tInt),0);
+  /* function(int|string,void|mixed,void|string:int) */
+  ADD_FUNCTION("bind",port_bind,tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt),0);
   /* function(int,void|mixed:int) */
   ADD_FUNCTION("listen_fd",port_listen_fd,tFunc(tInt tOr(tVoid,tMix),tInt),0);
   /* function(mixed:mixed) */

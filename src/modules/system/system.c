@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.142 2003/04/07 17:21:36 nilsson Exp $
+|| $Id: system.c,v 1.143 2003/04/22 15:15:50 marcus Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.142 2003/04/07 17:21:36 nilsson Exp $");
+RCSID("$Id: system.c,v 1.143 2003/04/22 15:15:50 marcus Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1615,6 +1615,53 @@ static MUTEX_T gethostbyname_mutex;
 
 #endif /* HAVE_OSF1_GETHOSTBYNAME_R */
 #endif /* HAVE_SOLARIS_GETHOSTBYNAME_R */
+
+#ifdef HAVE_SOLARIS_GETSERVBYNAME_R
+
+#define GETSERV_DECLARE \
+    struct servent *ret; \
+    struct servent result; \
+    char data[2048]
+
+#define CALL_GETSERVBYNAME(X,Y) \
+    THREADS_ALLOW(); \
+    ret=getservbyname_r((X), (Y), &result, data, sizeof(data)); \
+    THREADS_DISALLOW()
+
+#else /* HAVE_SOLARIS_GETSERVBYNAME_R */
+#ifdef HAVE_OSF1_GETSERVBYNAME_R
+
+#define GETSERV_DECLARE \
+    struct servent *ret; \
+    struct servent result; \
+    struct setvent_data data
+
+#define CALL_GETSERVBYNAME(X,Y) \
+    THREADS_ALLOW(); \
+    MEMSET((char *)&data,0,sizeof(data)); \
+    if(getservbyname_r((X), (Y), &result, &data) < 0) { \
+      ret=0; \
+    }else{ \
+      ret=&result; \
+    } \
+    THREADS_DISALLOW()
+
+#else /* HAVE_OSF1_GETSERVBYNAME_R */
+static MUTEX_T getservbyname_mutex;
+#define GETSERVBYNAME_MUTEX_EXISTS
+
+#define GETSERV_DECLARE struct servent *ret
+
+#define CALL_GETSERVBYNAME(X,Y) \
+    THREADS_ALLOW(); \
+    mt_lock(&getservbyname_mutex); \
+    ret=getservbyname(X,Y); \
+    mt_unlock(&getservbyname_mutex); \
+    THREADS_DISALLOW()
+
+#endif /* HAVE_OSF1_GETSERVBYNAME_R */
+#endif /* HAVE_SOLARIS_GETSERVBYNAME_R */
+
 #else /* _REENTRANT */
 
 #ifdef HAVE_GETHOSTBYNAME
@@ -1624,15 +1671,20 @@ static MUTEX_T gethostbyname_mutex;
 #define CALL_GETHOSTBYADDR(X,Y,Z) ret=gethostbyaddr((X),(Y),(Z))
 #endif
 
+#ifdef HAVE_GETSERVBYNAME
+#define GETSERV_DECLARE struct servent *ret
+#define CALL_GETSERVBYNAME(X,Y) ret=getservbyname(X,Y)
+#endif
+
 #endif /* REENTRANT */
 
 /* this is used from modules/file, and modules/spider! */
-void get_inet_addr(struct sockaddr_in *addr,char *name)
+void get_inet_addr(struct sockaddr_in *addr,char *name,char *service, INT_TYPE port, int udp)
 {
   MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
 
   addr->sin_family = AF_INET;
-  if(!strcmp(name,"*"))
+  if(!name || !strcmp(name,"*"))
   {
     addr->sin_addr.s_addr=htonl(INADDR_ANY);
   }
@@ -1674,6 +1726,32 @@ void get_inet_addr(struct sockaddr_in *addr,char *name)
     }
 #endif
   }
+
+  if(service) {
+#ifdef GETSERV_DECLARE
+    GETSERV_DECLARE;
+    CALL_GETSERVBYNAME(service, (udp? "udp":"tcp"));
+
+    if(!ret) {
+      if (strlen(service) < 1024) {
+	Pike_error("Invalid service '%s'\n",service);
+      } else {
+	Pike_error("Invalid service\n");
+      }
+    }
+
+    addr->sin_port = ret->s_port;
+#else
+    if (strlen(service) < 1024) {
+      Pike_error("Invalid service '%s'\n",service);
+    } else {
+      Pike_error("Invalid service\n");
+    }
+#endif
+  } else if(port >= 0)
+    addr->sin_port = htons((u_short)port);
+  else
+    addr->sin_port = 0;
 }
 
 
@@ -1798,10 +1876,15 @@ void f_gethostbyname(INT32 args)
 }  
 #endif /* HAVE_GETHOSTBYNAME */
 
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
 static void cleanup_after_fork(struct callback *cb, void *arg0, void *arg1)
 {
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
   mt_init(&gethostbyname_mutex);
+#endif
+#ifdef GETSERVBYNAME_MUTEX_EXISTS
+  mt_init(&getservbyname_mutex);
+#endif
 }
 #endif
 
@@ -2997,7 +3080,7 @@ PIKE_MODULE_INIT
   init_passwd();
   init_system_memory();
 
-#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+#if defined(GETHOSTBYNAME_MUTEX_EXISTS) || defined(GETSERVBYNAME_MUTEX_EXISTS)
   dmalloc_accept_leak(add_to_callback(& fork_child_callback,
 				      cleanup_after_fork, 0, 0));
 #endif

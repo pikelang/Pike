@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.57 2003/03/14 14:13:40 kiwi Exp $
+# $Id: configure.in,v 1.58 2003/04/22 15:15:50 marcus Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -7,6 +7,7 @@ AC_MODULE_INIT()
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(nsl, getservbyname)
 
 dnl For Cygwin
 AC_CHECK_LIB(cygipc, shmget)
@@ -61,7 +62,7 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
         setpgid getsid setsid \
 	getpwnam getspnam getgrnam getpwuid getgrgid \
 	getgrent setgrent endgrent getpwent setpwent endpwent \
-	chroot fchroot uname sysinfo gethostname gethostbyname \
+	chroot fchroot uname sysinfo gethostname gethostbyname getservbyname \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
         getspnam_r innetgr utime sleep usleep nanosleep \
@@ -137,6 +138,54 @@ AC_MSG_RESULT($pike_cv_have_osf1_gethostbyname_r)
 
 if test $pike_cv_have_osf1_gethostbyname_r = yes; then
   AC_DEFINE(HAVE_OSF1_GETHOSTBYNAME_R)
+fi
+
+AC_CHECK_LIB(nsl, getservbyname)
+
+AC_MSG_CHECKING(for solaris style getservbyname_r)
+
+AC_CACHE_VAL(pike_cv_have_solaris_getservbyname_r,
+[
+AC_TRY_LINK([
+#define _REENTRANT
+#define _THREAD_SAFE
+#include <netdb.h>
+],[
+  char data[2000];
+  struct servent result,*bar;
+  getservbyname_r("foo","bar",&result, data, sizeof(data))->s_port;
+],pike_cv_have_solaris_getservbyname_r=yes,
+pike_cv_have_solaris_getservbyname_r=no)
+])
+
+AC_MSG_RESULT($pike_cv_have_solaris_getservbyname_r)
+
+if test $pike_cv_have_solaris_getservbyname_r = yes; then
+  AC_DEFINE(HAVE_SOLARIS_GETSERVBYNAME_R)
+fi
+
+
+AC_MSG_CHECKING(for OSF1 style getservbyname_r)
+
+AC_CACHE_VAL(pike_cv_have_osf1_getservbyname_r,
+[
+AC_TRY_LINK([
+#define _REENTRANT
+#define _THREAD_SAFE
+#include <netdb.h>
+],[
+  int bar;
+  struct servent result;
+  struct servent_data data;
+  bar=getservbyname_r("foo","bar",&result, &data);
+],pike_cv_have_osf1_getservbyname_r=yes,
+pike_cv_have_osf1_getservbyname_r=no)
+])
+
+AC_MSG_RESULT($pike_cv_have_osf1_getservbyname_r)
+
+if test $pike_cv_have_osf1_getservbyname_r = yes; then
+  AC_DEFINE(HAVE_OSF1_GETSERVBYNAME_R)
 fi
 
 if test "$ac_cv_func_getspnam_r" = "yes"; then

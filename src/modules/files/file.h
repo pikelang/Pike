@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.25 2003/03/27 18:25:08 mast Exp $
+|| $Id: file.h,v 1.26 2003/04/22 15:15:50 marcus Exp $
 */
 
 #ifndef FILE_H
@@ -94,7 +94,7 @@ struct pike_sendfile
 extern struct program *file_program;
 extern struct program *file_ref_program;
 
-extern void get_inet_addr(struct sockaddr_in *addr,char *name);
+extern void get_inet_addr(struct sockaddr_in *addr,char *name,char *service, INT_TYPE port, int udp);
 
 #define CBFUNCS(X) \
 static void PIKE_CONCAT(file_,X) (int fd, void *data);		\

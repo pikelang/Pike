@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.43 2003/04/07 17:21:13 nilsson Exp $
+|| $Id: udp.c,v 1.44 2003/04/22 15:15:50 marcus Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.43 2003/04/07 17:21:13 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.44 2003/04/22 15:15:50 marcus Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -29,6 +29,7 @@ RCSID("$Id: udp.c,v 1.43 2003/04/07 17:21:13 nilsson Exp $");
 
 #include "module_support.h"
 #include "builtin_functions.h"
+#include "file.h"
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -154,10 +155,8 @@ struct udp_storage {
 /*! @class UDP
  */
 
-extern void get_inet_addr(struct sockaddr_in *addr,char *name);
-
-/*! @decl object bind(int port)
- *! @decl object bind(int port, string address)
+/*! @decl object bind(int|string port)
+ *! @decl object bind(int|string port, string address)
  *!
  *! Binds a port for recieving or transmitting UDP.
  */
@@ -173,8 +172,10 @@ static void udp_bind(INT32 args)
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("UDP->bind", 1);
 
-  if(Pike_sp[-args].type != PIKE_T_INT)
-    SIMPLE_BAD_ARG_ERROR("UDP->bind", 1, "int");
+  if(Pike_sp[-args].type != PIKE_T_INT &&
+     (Pike_sp[-args].type != PIKE_T_STRING ||
+      Pike_sp[-args].u.string->size_shift))
+    SIMPLE_BAD_ARG_ERROR("UDP->bind", 1, "int|string (8bit)");
 
   if(FD != -1)
   {
@@ -229,16 +230,12 @@ static void udp_bind(INT32 args)
 	Pike_error("UDP->bind: setsockopt IP_HDRINCL failed\n");
 #endif /* IP_HDRINCL */
 
-  MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
-
-  if(args > 1 && Pike_sp[1-args].type==PIKE_T_STRING) {
-    get_inet_addr(&addr, Pike_sp[1-args].u.string->str);
-  } else {
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
-  }
-
-  addr.sin_port = htons( ((u_short)Pike_sp[-args].u.integer) );
-  addr.sin_family = AF_INET;
+  get_inet_addr(&addr, (args > 1 && Pike_sp[1-args].type==PIKE_T_STRING?
+			Pike_sp[1-args].u.string->str : NULL),
+		(Pike_sp[-args].type == PIKE_T_STRING?
+		 Pike_sp[-args].u.string->str : NULL),
+		(Pike_sp[-args].type == PIKE_T_INT?
+		 Pike_sp[-args].u.integer : -1), 1);
 
   THREADS_ALLOW_UID();
 
@@ -479,8 +476,8 @@ void udp_read(INT32 args)
   f_aggregate_mapping( 6 );
 }
 
-/*! @decl int send(string to, int port, string message)
- *! @decl int send(string to, int port, string message, int flags)
+/*! @decl int send(string to, int|string port, string message)
+ *! @decl int send(string to, int|string port, string message, int flags)
  *!
  *! Send data to a UDP socket. The recepient address will be @[to]
  *! and port will be @[port].
@@ -503,7 +500,7 @@ void udp_sendto(INT32 args)
     Pike_error("UDP: not open\n");
   
   check_all_args("send", args,
-		 BIT_STRING, BIT_INT, BIT_STRING, BIT_INT|BIT_VOID, 0);
+		 BIT_STRING, BIT_INT|BIT_STRING, BIT_STRING, BIT_INT|BIT_VOID, 0);
   
   if(args>3)
   {
@@ -519,13 +516,15 @@ void udp_sendto(INT32 args)
     }
     if(Pike_sp[3-args].u.integer & ~3) {
       Pike_error("Illegal 'flags' value passed to "
-		 "UDP->send(string to, int port, string message, int flags)\n");
+		 "UDP->send(string to, int|string port, string message, int flags)\n");
     }
   }
 
-  get_inet_addr(&to, Pike_sp[-args].u.string->str);
-
-  to.sin_port = htons( ((u_short)Pike_sp[1-args].u.integer) );
+  get_inet_addr(&to, Pike_sp[-args].u.string->str,
+		(Pike_sp[1-args].type == PIKE_T_STRING?
+		 Pike_sp[1-args].u.string->str : NULL),
+		(Pike_sp[1-args].type == PIKE_T_INT?
+		 Pike_sp[1-args].u.integer : -1), 1);
 
   fd = FD;
   str = Pike_sp[2-args].u.string->str;
@@ -533,8 +532,7 @@ void udp_sendto(INT32 args)
 
   do {
     THREADS_ALLOW();
-    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to,
-		     sizeof( struct sockaddr_in ));
+    res = fd_sendto( fd, str, len, flags, (struct sockaddr *)&to, sizeof(to));
     e = errno;
     THREADS_DISALLOW();
 
@@ -657,7 +655,7 @@ static void udp_set_blocking(INT32 args)
   ref_push_object(THISOBJ);
 }
 
-/*! @decl int(0..1) connect(string address, int port)
+/*! @decl int(0..1) connect(string address, int|string port)
  *!
  *!   Establish an UDP connection.
  *!
@@ -680,13 +678,15 @@ static void udp_connect(INT32 args)
 {
   struct sockaddr_in addr;
   struct pike_string *dest_addr = NULL;
-  struct pike_string *src_addr = NULL;
-  INT_TYPE dest_port = 0;
-  INT_TYPE src_port = 0;
+  struct svalue *dest_port = NULL;
 
   int tmp;
 
-  get_all_args("UDP.connect", args, "%S%i", &dest_addr, &dest_port);
+  get_all_args("UDP.connect", args, "%S%*", &dest_addr, &dest_port);
+
+  if(dest_port->type != PIKE_T_INT &&
+     (dest_port->type != PIKE_T_STRING || dest_port->u.string->size_shift))
+    SIMPLE_BAD_ARG_ERROR("UDP.connect", 2, "int|string (8bit)");
 
   if(FD < 0)
   {
@@ -699,8 +699,11 @@ static void udp_connect(INT32 args)
      set_close_on_exec(FD, 1);
   }
 
-  get_inet_addr(&addr, dest_addr->str);
-  addr.sin_port = htons(((u_short)dest_port));
+  get_inet_addr(&addr, dest_addr->str,
+		(dest_port->type == PIKE_T_STRING?
+		 dest_port->u.string->str : NULL),
+		(dest_port->type == PIKE_T_INT?
+		 dest_port->u.integer : -1), 0);
 
   tmp=FD;
   THREADS_ALLOW();
@@ -829,7 +832,7 @@ void init_udp(void)
 	       tFunc(tNone,tArr(tInt)),0);
 
   ADD_FUNCTION("bind",udp_bind,
-	       tFunc(tInt tOr(tVoid,tStr),tObj),0);
+	       tFunc(tOr(tInt,tStr) tOr(tVoid,tStr),tObj),0);
 
   ADD_FUNCTION("enable_broadcast", udp_enable_broadcast,
 	       tFunc(tNone,tVoid), 0);
@@ -845,10 +848,10 @@ void init_udp(void)
 #endif /* MSG_PEEK */
 
   ADD_FUNCTION("send",udp_sendto,
-	       tFunc(tStr tInt tStr tOr(tVoid,tInt),tInt),0);
+	       tFunc(tStr tOr(tInt,tStr) tStr tOr(tVoid,tInt),tInt),0);
 
   ADD_FUNCTION("connect",udp_connect,
-	       tFunc(tString tInt,tInt),0);
+	       tFunc(tString tOr(tInt,tStr),tInt),0);
   
   ADD_FUNCTION("_set_nonblocking", udp_set_nonblocking,
 	       tFunc(tOr(tFunc(tVoid,tVoid),tVoid),tObj), 0 );
