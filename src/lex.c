@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.32 1997/12/16 22:48:14 grubba Exp $");
+RCSID("$Id: lex.c,v 1.33 1997/12/16 22:50:05 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1865,7 +1865,7 @@ static void low_lex(void)
 	  pop_stack();
 	  push_svalue(sv);
 	  res = 1;
-	} else if (get_master) {
+	} else if (get_master()) {
 	  current_file->refs++;
 	  push_string(current_file);
 
