@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.h,v 1.20 2003/03/28 15:53:12 mast Exp $
+|| $Id: bignum.h,v 1.21 2003/03/28 23:39:01 mast Exp $
 */
 
 #include "global.h"
@@ -61,14 +61,14 @@ void convert_svalue_to_bignum(struct svalue *s);
 PMOD_EXPORT void (*push_int64)(INT64 i);
 PMOD_EXPORT int (*int64_from_bignum) (INT64 *i, struct object *bignum);
 #else
-#define push_int64(i) push_int((INT_TYPE)i)
+#define push_int64(i) push_int((INT_TYPE)(i))
 #define int64_from_bignum(I,BIGNUM)	0
 #endif /* INT64 */
 /* Prototypes end here */
 
 #else
 
-#define push_int64(i) push_int((INT_TYPE)i)
+#define push_int64(i) push_int((INT_TYPE)(i))
 #define int64_from_bignum(I,BIGNUM)	0
 
 #endif /* AUTO_BIGNUM */
