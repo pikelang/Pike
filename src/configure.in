@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.100 1997/06/04 00:48:31 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.101 1997/06/12 14:59:05 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1443,6 +1443,7 @@ then
 	Linux*) LDSHARED="gcc -shared";;
 	FreeBSD*) LDSHARED="ld -Bshareable";;
 	NetBSD) LDSHARED="ld -Bshareable";;
+	OpenBSD*) LDSHARED="ld -Bshareable";;
 	SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
 	*) LDSHARED="ld";;
 	esac
