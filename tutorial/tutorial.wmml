@@ -6718,6 +6718,26 @@ the fchroot(2) system call.
 </function>
 
 
+<function name=sleep title="call the system sleep(3)">
+<man_syntax>
+int sleep(int seconds);
+</man_syntax>
+<man_description>
+Calls the system sleep. This is not to be confused with the efun <link
+to=sleep>sleep</link>(int|float) that does more elaborate things and
+can sleep with better precision (although dependant on a normal
+functioning system clock).
+</man_description>
+<man_note>
+The system's sleep function often utilizes the alarm() call and might
+not be perfectly thread safe in combination with simultaneous
+sleep()'s or alarm()'s. It might also be interrupted by other signals.
+
+<p>If you don't need it to be independant of the system clock, use the
+<link to=sleep>sleep</link>() efun instead.
+</man_note>
+</function>
+
 
 <function name=getegid title="get the effective group ID" fullpath>
 <man_syntax>
