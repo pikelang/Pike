@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.358 2001/01/01 15:18:27 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.359 2001/01/02 03:18:21 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6074,12 +6074,15 @@ void test_dir(string dir, int|void base_size)
            {
 	      werror("test: failed to compile %O\n",file);
               ok=0;
+              continue;
            }
            string prg = replace( file[base_size+1..sizeof(file)-6], ([ "/":".", ".pmod":""]) );
            if(prg[sizeof(prg)-7..]==".module")
              prg = prg[..sizeof(prg)-8];
-           if( catch( master()->resolv(prg) ) )
+           if( catch( master()->resolv(prg) ) ) {
              werror("test: failed to compile and peek at %O\n", prg);
+             ok=0;
+           }
         }
       }
     }
