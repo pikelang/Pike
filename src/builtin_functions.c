@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.540 2004/04/15 00:12:21 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.541 2004/04/19 22:30:19 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.540 2004/04/15 00:12:21 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.541 2004/04/19 22:30:19 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2305,11 +2305,12 @@ PMOD_EXPORT void f_crypt(INT32 args)
   }
 }
 
-/*! @decl void destruct(object o)
+/*! @decl void destruct(void|object o)
  *!
  *!   Mark an object as destructed.
  *!
- *!   Calls @expr{o->destroy()@}, and then clears all variables in the object.
+ *!   Calls @expr{o->destroy()@}, and then clears all variables in the
+ *!   object. If no argument is given, the current object is destructed.
  *!
  *!   All pointers and function pointers to this object will become zero.
  *!   The destructed object will be freed from memory as soon as possible.
