@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.121 2001/03/29 20:23:08 grubba Exp $");
+RCSID("$Id: main.c,v 1.122 2001/04/11 11:52:12 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -468,6 +468,15 @@ int dbm_main(int argc, char **argv)
        */
       if(lim.rlim_cur > 2*1024*1024) lim.rlim_cur=2*1024*1024;
 #endif
+
+#if defined(_AIX) && defined(__ia64)
+      /* getrlimit() on AIX 5L/IA64 Beta 3 reports 32MB by default,
+       * even though the stack is just 8MB.
+       */
+      if (lim.rlim_cur > 8*1024*1024) {
+        lim.rlim_cur = 8*1024*1024;
+      }
+#endif /* _AIX && __ia64 */
 
 #if STACK_DIRECTION < 0
       Pike_interpreter.stack_top -= lim.rlim_cur;
