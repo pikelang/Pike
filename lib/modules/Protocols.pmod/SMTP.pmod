@@ -57,8 +57,7 @@ class client
     if(!server)
     {
       // Lookup MX record here (Using DNS.pmod)
-      object dns=master()->resolv("Protocols")["DNS"]->client();
-      server=dns->get_primary_mx(gethostname());
+      server=master()->resolv("Protocols.DNS.get_primary_mx")(gethostname());
     }
 
     if(!port)

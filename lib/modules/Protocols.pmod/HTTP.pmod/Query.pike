@@ -58,12 +58,6 @@
 **!	Set this to a global mapping if you want to use a cache,
 **!	prior of calling *request().
 **!
-**! variable mapping async_dns
-**!	Set this to an array of Protocols.DNS.async_clients,
-**!	if you wish to limit the number of outstanding DNS
-**!	requests. Example:
-**!	   async_dns=allocate(20,Protocols.DNS.async_client)();
-**!
 **! method int `()()
 **!	Wait for connection to complete.
 **! returns 1 on successfull connection, 0 if failed
@@ -417,7 +411,6 @@ string headers_encode(mapping h)
 /****** helper methods *********************************************/
 
 mapping hostname_cache=([]);
-array async_dns=0;
 
 void dns_lookup_callback(string name,string ip,function callback,
 			 mixed ...extra)
@@ -443,12 +436,7 @@ void dns_lookup_async(string hostname,function callback,mixed ...extra)
       return;
    }
 
-   if (!async_dns)
-      Protocols.DNS.async_client()
-	 ->host_to_ip(hostname,dns_lookup_callback,callback,@extra);
-   else
-      async_dns[random(sizeof(async_dns))]->
-	 host_to_ip(hostname,dns_lookup_callback,callback,@extra);
+   Protocols.DNS.async_host_to_ip(hostname,dns_lookup_callback,callback,@extra);
 }
 
 string dns_lookup(string hostname)
