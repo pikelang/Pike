@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.121 2001/06/23 10:33:11 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.122 2001/06/23 21:52:09 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1754,7 +1754,8 @@ static int do_docode2(node *n, INT16 flags)
 	    x++;
 #endif
 	  emit2(F_EXTERNAL, n->u.sval.subtype, x);
-	  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
+	  Pike_compiler->new_program->flags |=
+	    PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
 	  return 1;
 	}
       }

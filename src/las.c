@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.253 2001/06/07 21:47:11 hubbe Exp $");
+RCSID("$Id: las.c,v 1.254 2001/06/23 21:52:09 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -953,7 +953,7 @@ node *debug_mknode(short token, node *a, node *b)
     res->node_info |= OPT_EXTERNAL_DEPEND;
     for(e=0;e<b->u.sval.u.integer;e++)
     {
-      state->new_program->flags |= PROGRAM_USES_PARENT;
+      state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
       state=state->previous;
     }
       
@@ -1310,7 +1310,7 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   state = Pike_compiler;
   while(parent_prog != state->new_program)
   {
-    state->new_program->flags |= PROGRAM_USES_PARENT;
+    state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
     state=state->previous;
   }
 
@@ -1900,7 +1900,7 @@ node *debug_mksvaluenode(struct svalue *s)
       struct program_state *state=Pike_compiler;;
       for(;state->fake_object!=s->u.object;state=state->previous)
       {
-	state->new_program->flags |= PROGRAM_USES_PARENT;
+	state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
 	n=mkefuncallnode("function_object",
 			 mkefuncallnode("object_program",n));
       }

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.332 2001/06/14 16:12:13 grubba Exp $");
+RCSID("$Id: program.c,v 1.333 2001/06/23 21:52:10 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2358,7 +2358,7 @@ void low_inherit(struct program *p,
     return;
   }
 
-  if(p->flags & PROGRAM_USES_PARENT)
+  if(p->flags & PROGRAM_NEEDS_PARENT)
   {
     struct program_state *state=Pike_compiler;
 

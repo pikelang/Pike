@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.170 2001/06/11 19:58:29 mast Exp $");
+RCSID("$Id: object.c,v 1.171 2001/06/23 21:52:10 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -268,7 +268,7 @@ PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
 {
   ONERROR tmp;
   struct object *o;
-  if(p->flags & PROGRAM_USES_PARENT)
+  if(p->flags & PROGRAM_NEEDS_PARENT)
     Pike_error("Parent lost, cannot clone program.\n");
 
   o=low_clone(p);
