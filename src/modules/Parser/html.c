@@ -2999,7 +2999,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 
 	 if (m_sizeof(this->mapqtag)) {
 	   struct piece *e1,*e2; /* <![CDATA[ ... ]]>  */
-	   int ce1,ce2;          /*       e1 ^    ^ e2 */
+	   ptrdiff_t ce1,ce2;    /*       e1 ^    ^ e2 */
 	   struct svalue *entry;
 
 	   if (!quote_tag_lookup(this,dst,cdst,&e1,&ce1,finished,&entry)) {
