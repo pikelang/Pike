@@ -7264,8 +7264,8 @@ Yp.
 <section title="Table">
 
 Table is a generic module for manipulating tables. Each table contains one
-or several columns. Each column is associated with a name, the field name.
-Optionally, one can provide a field type. The Table module can do a number
+or several columns. Each column is associated with a name, the column name.
+Optionally, one can provide a column type. The Table module can do a number
 of operations on a given table, like computing the sum of a column, grouping,
 sorting etc.
 
@@ -7274,10 +7274,9 @@ its position (a number).
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;create title="create table object">
+<method name=ADT.Table.table-&gt;create title="create table object">
 <man_syntax>
-void create(array(array) <i>table</i>, array(string) <i>field_names</i>);<br>
-void create(array(array) <i>table</i>, array(string) <i>field_names</i>, array(mapping) <i>field_types</i>);<br>
+void create(array(array) <i>table</i>, array(string) <i>column_names</i>, array(mapping)|void <i>field_types</i>);<br>
 </man_syntax>
 <man_description>
 </man_description>
@@ -7285,18 +7284,18 @@ void create(array(array) <i>table</i>, array(string) <i>field_names</i>, array(m
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;_indices title="give the field names">
+<method name=ADT.Table.table-&gt;_indices title="gives the column names">
 <man_syntax>
 array(string) _indices();<br>
 </man_syntax>
 <man_description>
-This method returns the field names for the table.
+This method returns the column names for the table.
 </man_description>
 </method>
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;_values title="give the contents of a table">
+<method name=ADT.Table.table-&gt;_values title="gives the contents of a table">
 <man_syntax>
 array(array) _values();<br>
 </man_syntax>
@@ -7307,7 +7306,7 @@ This method returns the contents of a table as a two dimensional array.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;_sizeof title="gives the number of rows in the table">
+<method name=ADT.Table.table-&gt;_sizeof title="gives the number of rows in the table">
 <man_syntax>
 int _sizeof();<br>
 </man_syntax>
@@ -7318,7 +7317,7 @@ This method returns the number of rows in the table.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;reverse title="reverse the table rows">
+<method name=ADT.Table.table-&gt;reverse title="reverse the table rows">
 <man_syntax>
 object reverse();<br>
 </man_syntax>
@@ -7329,7 +7328,7 @@ This method reverses the rows in the table and returns a new table object.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;rename title="rename a column">
+<method name=ADT.Table.table-&gt;rename title="rename a column">
 <man_syntax>
 object rename(string|int <i>from</i>, string <i>to</i>);<br>
 </man_syntax>
@@ -7341,7 +7340,7 @@ returns a new table object.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;type title="fetch or set the type for a column">
+<method name=ADT.Table.table-&gt;type title="fetch or set the type for a column">
 <man_syntax>
 mapping type(string|int <i>column</i>, string|void <i>type</i>);<br>
 </man_syntax>
@@ -7353,9 +7352,9 @@ given, the old type will be replaced with <i>type</i>.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;truncate title="truncate the table">
+<method name=ADT.Table.table-&gt;limit title="truncate the table">
 <man_syntax>
-object truncate(int <i>n</i>);<br>
+object limit(int <i>n</i>);<br>
 </man_syntax>
 <man_description>
 This method truncates the table to <i>n</i> rows and returns a new object.
@@ -7364,20 +7363,20 @@ This method truncates the table to <i>n</i> rows and returns a new object.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;sort title="sort the table on one or several columns">
+<method name=ADT.Table.table-&gt;sort title="sort the table on one or several columns">
 <man_syntax>
 object sort(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
 <man_description>
-This method sorts the table in ascendent order on one or several columns and returns a new
-table object. The left most column is sorted last. Note that the sort is
-stable.
+This method sorts the table in ascendent order on one or several columns
+and returns a new table object. The left most column is sorted last. Note
+that the sort is stable.
 </man_description>
 </method>
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;rsort title="sort the table in reversed order on one or several columns">
+<method name=ADT.Table.table-&gt;rsort title="sort the table in reversed order on one or several columns">
 <man_syntax>
 object rsort(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
@@ -7388,7 +7387,7 @@ Like <link to=Table.table-&gt;sort>sort</link>, but the order is descendent.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;distinct title="keep unique columns only">
+<method name=ADT.Table.table-&gt;distinct title="keep unique columns only">
 <man_syntax>
 object distinct(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
@@ -7412,10 +7411,10 @@ columns not listed. The result will be returned as a new table object.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;map title="map the table over functions">
+<method name=ADT.Table.table-&gt;group title="group the table using functions">
 <man_syntax>
-object map(mapping(string|int:funcion) <i>fus</i>, string|int <i>column1</i>, mixed ... <i>arg</i>);<br>
-object map(mapping(string|int:funcion) <i>fus</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>);<br>
+object group(mapping(string|int:funcion) <i>fus</i>, mixed ... <i>arg</i>);<br>
+object group(funcion <i>f</i>, array(string|int)|string|int <i>columns</i>, mixed ... <i>arg</i>);<br>
 </man_syntax>
 <man_description>
 This method calls the function for each column each time a non uniqe row
@@ -7426,13 +7425,13 @@ result will be returned as a new table object.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;map_col title="map columns over a function">
+<method name=ADT.Table.table-&gt;map title="map columns over a function">
 <man_syntax>
-object map_col(funcion <i>fu</i>, string|int|array(int|string) <i>columns</i>, mixed ... <i>arg</i>);<br>
+object map(funcion <i>fu</i>, string|int|array(int|string) <i>columns</i>, mixed ... <i>arg</i>);<br>
 </man_syntax>
 <man_description>
 This method calls the function for all rows in the table. The value returned
-will replace the values in the columns given as argument to map_col. If
+will replace the values in the columns given as argument to map. If
 the function returns an array, several columns will be replaced. Otherwise
 on the first column will be replaced. The result will be returned as a new
 table object.
@@ -7441,10 +7440,9 @@ table object.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;filter title="filter the table through a function">
+<method name=ADT.Table.table-&gt;filter title="filter the table through a function">
 <man_syntax>
-object filter(funcion <i>fu</i>, string|int <i>column1</i>, mixed ... <i>arg</i>);<br>
-object filter(funcion <i>fu</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>);<br>
+object filter(funcion <i>fu</i>, array(string|int)|string|int <i>column1</i>, mixed ... <i>arg</i>);<br>
 </man_syntax>
 <man_description>
 This method calls the function for each row. If the function returns zero,
@@ -7455,7 +7453,7 @@ the row will be kept. The result will be returned as a new table object.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;select title="keep only the given columns">
+<method name=ADT.Table.table-&gt;select title="keep only the given columns">
 <man_syntax>
 object select(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
@@ -7466,7 +7464,7 @@ This method returns a new table object with the selected columns only.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;remove title="remove columns">
+<method name=ADT.Table.table-&gt;remove title="remove columns">
 <man_syntax>
 object remove(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
@@ -7477,7 +7475,7 @@ Like select, but the given columns will not be in the resulted table.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;encode title="encode the table to a binary string">
+<method name=ADT.Table.table-&gt;encode title="encode the table to a binary string">
 <man_syntax>
 string encode();<br>
 </man_syntax>
@@ -7488,7 +7486,7 @@ This method returns a binary string representation of the table.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;decode title="decode an encoded table">
+<method name=ADT.Table.table-&gt;decode title="decode an encoded table">
 <man_syntax>
 string decode(string <i>table_string</i>);<br>
 </man_syntax>
@@ -7500,7 +7498,7 @@ a table.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;col title="fetch a column">
+<method name=ADT.Table.table-&gt;col title="fetch a column">
 <man_syntax>
 array col(string|int <i>column</i>);<br>
 </man_syntax>
@@ -7511,7 +7509,7 @@ This method returns the contents of a given column as an array.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;`[] title="fetch a column">
+<method name=ADT.Table.table-&gt;`[] title="fetch a column">
 <man_syntax>
 array `[](string|int <i>column</i>);<br>
 </man_syntax>
@@ -7522,7 +7520,7 @@ Same as col.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;row title="fetch a row">
+<method name=ADT.Table.table-&gt;row title="fetch a row">
 <man_syntax>
 array row(int <i>row_number</i>);<br>
 </man_syntax>
@@ -7533,7 +7531,7 @@ This method returns the contents of a given row as an array.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;`== title="compare two tables">
+<method name=ADT.Table.table-&gt;`== title="compare two tables">
 <man_syntax>
 int `==(object <i>table</i>);<br>
 </man_syntax>
@@ -7545,7 +7543,7 @@ of the tables and the field names are equal.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;append_bottom title="concatenate two tables">
+<method name=ADT.Table.table-&gt;append_bottom title="concatenate two tables">
 <man_syntax>
 object append_bottom(object <i>table</i>);<br>
 </man_syntax>
@@ -7558,7 +7556,7 @@ be equal.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;append_right title="concatenate two tables">
+<method name=ADT.Table.table-&gt;append_right title="concatenate two tables">
 <man_syntax>
 object append_right(object <i>table</i>);<br>
 </man_syntax>
