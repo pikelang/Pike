@@ -3055,7 +3055,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    int empty_tag;
 	    struct svalue *tag, *cont;
 	    struct piece *e1,*e2; /* <tag> ... </tag>     */
-	    int ce1,ce2;          /*        e1 ^     ^ e2 */
+	    ptrdiff_t ce1,ce2;    /*        e1 ^     ^ e2 */
 
 	    if (!scan_for_end_of_tag(this,dst,cdst,&tagend,&ctagend,finished,
 				     flags & FLAG_MATCH_TAG, &empty_tag))
