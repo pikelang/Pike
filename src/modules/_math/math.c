@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.51 2002/10/15 16:34:14 marcus Exp $
+|| $Id: math.c,v 1.52 2002/10/21 15:54:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: math.c,v 1.51 2002/10/15 16:34:14 marcus Exp $");
+RCSID("$Id: math.c,v 1.52 2002/10/21 15:54:45 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -295,9 +295,13 @@ void f_exp(INT32 args)
   push_float(f);
 }
 
-/*! @decl float pow(float|int n, float|int x)
+/*! @decl int|float pow(float|int n, float|int x)
+ *! @decl mixed pow(object n, float|int|object x)
  *!
- *! Return @[n] raised to the power of @[x].
+ *! Return @[n] raised to the power of @[x]. If both @[n]
+ *! and @[x] are integers the result will be an integer.
+ *! If @[n] is an object its pow method will be called with
+ *! @[x] as argument.
  *!
  *! @seealso
  *!   @[exp()], @[log()]
@@ -392,9 +396,11 @@ void f_round(INT32 args)
     DO_NOT_WARN((FLOAT_TYPE)RINT(sp[-args].u.float_number));
 }
 
-/*! @decl mixed min(mixed ...args)
+/*! @decl int|float|object min(int|float|object ... args)
+ *! @deck string min(string ... args)
  *!
- *! Returns the smallest value among @[args].
+ *! Returns the smallest value among @[args]. Compared objects
+ *! must implement the @[lfun::`<] method.
  *!
  *! @seealso
  *!   @[max()]
@@ -409,9 +415,11 @@ void f_min(INT32 args)
   pop_n_elems(args-1);
 }
 
-/*! @decl mixed max(mixed ...args)
+/*! @decl int|float|object max(int|float|object ... args)
+ *! @decl string max(string ... args)
  *!
- *! Returns the largest value among @[args].
+ *! Returns the largest value among @[args]. Compared objects
+ *! must implement the @[lfun::`<] method.
  *!
  *! @seealso
  *!   @[min()]
@@ -430,7 +438,9 @@ void f_max(INT32 args)
  *! @decl int abs(int f)
  *! @decl object abs(object f)
  *!
- *! Return the absolute value for @[f].
+ *! Return the absolute value for @[f]. If @[f] is
+ *! an object it must implement @[lfun::`<] and
+ *! unary @[lfun::`-].
  */
 void f_abs(INT32 args)
 {
@@ -546,15 +556,6 @@ void pike_module_init(void)
 
 /* function(float:float) */
   ADD_EFUN("round",f_round,tFunc(tFlt,tFlt),0);
-
-#define OLD_CMP_TYPE \
-  tOr5(tIfnot(tFuncV(tNone,tNot(tObj),tMix),tFuncV(tNone,tMix,tMix)), \
-       tFuncV(tNone,tInt,tInt), \
-       tFuncV(tNone,tFloat,tFloat), \
-       tFuncV(tNone,tString,tString), \
-       tIfnot(tFuncV(tNone,tInt,tMix), \
-	      tIfnot(tFuncV(tNone,tFloat,tMix), \
-		     tFuncV(tNone,tOr(tInt,tFloat),tOr(tInt|tFloat)))))
 
 #define CMP_TYPE \
   tOr3(tFuncV(tNone,tString,tString), \
