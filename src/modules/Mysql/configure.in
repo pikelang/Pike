@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.21 2001/02/27 20:50:52 grubba Exp $
+# $Id: configure.in,v 1.22 2001/11/15 13:23:35 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -165,8 +165,8 @@ else
 
 define([AC_CHECK_SQLLIB],
 [
-AC_MSG_CHECKING(for mysql_connect in $1)
-AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_connect,
+AC_MSG_CHECKING(for mysql_real_connect in $1)
+AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_real_connect,
 [
   ac_save_LIBS="$LIBS"
 LIBS="-l$1 $LIBS"
@@ -184,17 +184,51 @@ LIBS="-l$1 $LIBS"
 #endif
 #endif
 ],[
-  mysql_connect(0,0,0,0);
-],ac_cv_pike_lib_$1_mysql_connect=yes,ac_cv_pike_lib_$1_mysql_connect=no)
+  mysql_real_connect(0,0,0,0,0,0,0,0);
+],ac_cv_pike_lib_$1_mysql_real_connect=yes,
+  ac_cv_pike_lib_$1_mysql_real_connect=no)
 LIBS="$ac_save_LIBS"
 ])
 
-if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
+if test "x$ac_cv_pike_lib_$1_mysql_real_connect" = xyes ; then
   AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_MYSQL_REAL_CONNECT)
   $2
 else
   AC_MSG_RESULT(no)
-  $3
+
+  AC_MSG_CHECKING(for mysql_connect in $1)
+  AC_CACHE_VAL(ac_cv_pike_lib_$1_mysql_connect,
+  [
+    ac_save_LIBS="$LIBS"
+    LIBS="-l$1 $LIBS"
+    AC_TRY_LINK(
+[
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#endif
+#endif
+],[
+  mysql_connect(0,0,0,0);
+],ac_cv_pike_lib_$1_mysql_connect=yes,
+  ac_cv_pike_lib_$1_mysql_connect=no)
+  LIBS="$ac_save_LIBS"
+  ])
+
+  if test "x$ac_cv_pike_lib_$1_mysql_connect" = xyes ; then
+    AC_MSG_RESULT(yes)
+    $2
+  else
+    AC_MSG_RESULT(no)
+    $3
+  fi
 fi
 ])
 
@@ -209,7 +243,9 @@ fi
       AC_CHECK_SQLLIB(mysql, [
 	LIBS="-lmysql $LIBS"
 	MYSQL_LIBS="-lmysql ${MYSQL_LIBS}"
-      ], [ pike_cv_mysql="no" ])
+      ], [ 
+	pike_cv_mysql="no" 
+	])
     ])
   ])
 
