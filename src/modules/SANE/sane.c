@@ -34,17 +34,13 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.11 2002/05/19 15:25:24 per Exp $");
+RCSID("$Id: sane.c,v 1.12 2002/07/28 23:59:49 nilsson Exp $");
 
-/*
-**! module SANE
-**!
-**!	This module enables access to the SANE (Scanner Access Now Easy)
-**!     library from pike
-**!
-**! note
-**!	$Id: sane.c,v 1.11 2002/05/19 15:25:24 per Exp $
-*/
+/*! @module SANE
+ *!
+ *!  This module enables access to the SANE (Scanner Access Now Easy)
+ *!  library from pike
+ */
 
 static int sane_is_inited;
 
@@ -70,32 +66,28 @@ static void push_device( SANE_Device *d )
 }
 
 
-/*
-**! method array(mapping) list_scanners()
-**!
-**!  Returns an array with all available scanners.
-**!
-**!    Example:
-**!     <pre>
-**!   Pike v0.7 release 120 running Hilfe v2.0 (Incremental Pike Frontend)
-**!   > SANE.list_scanners();
-**!     Result: ({
-**!            ([
-**!              "model":"Astra 1220S     ",
-**!              "name":"umax:/dev/scg1f",
-**!              "type":"flatbed scanner",
-**!              "vendor":"UMAX    "
-**!            ]),
-**!            ([
-**!              "model":"Astra 1220S     ",
-**!              "name":"net:lain.idonex.se:umax:/dev/scg1f",
-**!              "type":"flatbed scanner",
-**!              "vendor":"UMAX    "
-**!            ])
-**!        })
-**!
-**!     </pre>
-*/
+/*! @decl array(mapping) list_scanners()
+ *!
+ *!  Returns an array with all available scanners.
+ *!
+ *! @example
+ *!   Pike v0.7 release 120 running Hilfe v2.0 (Incremental Pike Frontend)
+ *!   > SANE.list_scanners();
+ *!     Result: ({
+ *!            ([
+ *!              "model":"Astra 1220S     ",
+ *!              "name":"umax:/dev/scg1f",
+ *!              "type":"flatbed scanner",
+ *!              "vendor":"UMAX    "
+ *!            ]),
+ *!            ([
+ *!              "model":"Astra 1220S     ",
+ *!              "name":"net:lain.idonex.se:umax:/dev/scg1f",
+ *!              "type":"flatbed scanner",
+ *!              "vendor":"UMAX    "
+ *!            ])
+ *!        })
+ */
 static void f_list_scanners( INT32 args )
 {
   SANE_Device **devices;
@@ -208,10 +200,11 @@ static void push_option_descriptor( const SANE_Option_Descriptor *o )
   f_aggregate_mapping( sp - osp );
 }
 
-/*
-**! class Scanner
-**!    Scanner s = Scanner( scanner name )
-*/
+/*! @class Scanner
+ */
+
+/*! @decl void create(string name)
+ */
 static void f_scanner_create( INT32 args )
 {
   char *name;
@@ -222,9 +215,73 @@ static void f_scanner_create( INT32 args )
     Pike_error("Failed to open scanner \"%s\"\n", name );
 }
 
-/*
-**! method array(mapping) list_options()
-*/
+/*! @decl array(mapping) list_options()
+ *!
+ *! This method returns an array where every element is a
+ *! mapping, layed out as follows.
+ *!
+ *! @mapping
+ *!   @member string "name"
+ *!
+ *!   @member string "title"
+ *!
+ *!   @member string "desc"
+ *!
+ *!   @member string "type"
+ *!     @string
+ *!       @value "boolean"
+ *!       @value "int"
+ *!       @value "float"
+ *!       @value "string"
+ *!       @value "button"
+ *!       @value "group"
+ *!     @endstring
+ *!   @member string "unit"
+ *!     @string
+ *!       @value "none"
+ *!       @value "pixel"
+ *!       @value "bit"
+ *!       @value "mm"
+ *!       @value "dpi"
+ *!       @value "percent"
+ *!       @value "microsend"
+ *!     @endstring
+ *!   @member int "size"
+ *!
+ *!   @member multiset "cap"
+ *!     @multiset
+ *!       @index "soft_select"
+ *!       @index "hard_select"
+ *!       @index "emulate"
+ *!       @index "automatic"
+ *!       @index "inactive"
+ *!       @index "advanced"
+ *!     @endmultiset
+ *!   @member int(0..0)|mapping "constraint"
+ *!     Constraints can be of three different types; range, word list or string
+ *!     list. Constraint contains 0 if there are no constraints.
+ *!
+ *!     @mapping range
+ *!       @member string "type"
+ *!         Contains the value "range".
+ *!       @member int "max"
+ *!       @member int "min"
+ *!       @member int "quant"
+ *!     @endmapping
+ *!
+ *!     @mapping "word list"
+ *!       @member string "type"
+ *!         Contains the value "list".
+ *!       @member array(float|int) "list"
+ *!     @endmapping
+ *!
+ *!     @mapping "string list"
+ *!       @member string "type"
+ *!         Contains the value "list".
+ *!       @member array(string) "list"
+ *!     @endmapping
+ *! @endmapping
+ */
 static void f_scanner_list_options( INT32 args )
 {
   int i, n;
@@ -250,11 +307,10 @@ static int find_option( char *name, const SANE_Option_Descriptor **p )
 }
 
 
-/*
-**! method void set_option( string name, mixed new_value )
-**! method void set_option( string name )
-**!    If no value is specified, the option is set to it's default value
-*/
+/*! @decl void set_option( string name, mixed new_value )
+ *! @decl void set_option( string name )
+ *!    If no value is specified, the option is set to it's default value
+ */
 static void f_scanner_set_option( INT32 args )
 {
   char *name;
@@ -299,9 +355,8 @@ static void f_scanner_set_option( INT32 args )
 }
 
 
-/*
-**! method mixed get_option( string name )
-*/
+/*! @decl mixed get_option( string name )
+ */
 static void f_scanner_get_option( INT32 args )
 {
   char *name;
@@ -340,9 +395,18 @@ static void f_scanner_get_option( INT32 args )
   }
 }
 
-/*
-**! method mapping(string:int) get_parameters()
-*/
+/*! @decl mapping(string:int) get_parameters()
+ *!
+ *! @returns
+ *!   @mapping
+ *!  	@member int "format"
+ *!  	@member int "last_frame"
+ *!  	@member int "lines"
+ *!  	@member int "depth"
+ *!  	@member int "pixels_per_line"
+ *!  	@member int "bytes_per_line"
+ *!   @endmapping
+ */
 static void f_scanner_get_parameters( INT32 args )
 {
   SANE_Parameters p;
@@ -422,9 +486,8 @@ static void assert_image_program()
     Pike_error("No Image.Image?!\n");
 }
 
-/*
-**! method Image.Image simple_scan()
-*/
+/*! @decl Image.Image simple_scan()
+ */
 static void f_scanner_simple_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -477,9 +540,8 @@ static void f_scanner_simple_scan( INT32 args )
   push_object( o );
 }
 
-/*
-**! method void row_scan(function(Image.Image,int,Scanner:void) callback)
-*/
+/*! @decl void row_scan(function(Image.Image,int,Scanner:void) callback)
+ */
 static void f_scanner_row_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -622,9 +684,8 @@ static void nonblocking_row_scan_callback( int fd, void *_c )
   }
 }
 
-/*
-**! method void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
-*/
+/*! @decl void nonblocking_row_scan(function(Image.Image,int,Scanner,int:void) callback)
+ */
 static void f_scanner_nonblocking_row_scan( INT32 args )
 {
   SANE_Parameters p;
@@ -679,10 +740,25 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
   push_int( 0 );
 }
 
+/*! @decl void cancel_scan()
+ */
 static void f_scanner_cancel_scan( INT32 args )
 {
   sane_cancel( THIS->h );
 }
+
+/*! @endclass
+ */
+
+/*! @decl constant FrameGray
+ *! @decl constant FrameRGB
+ *! @decl constant FrameRed
+ *! @decl constant FrameGreen
+ *! @decl cosntant FrameBlue
+ */
+
+/*! @endmodule
+ */
 
 static void init_scanner_struct( struct object *p )
 {
