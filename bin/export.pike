@@ -1,12 +1,9 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.43 2002/04/07 13:25:11 nilsson Exp $ */
+/* $Id: export.pike,v 1.44 2002/04/07 15:19:02 nilsson Exp $ */
 
-import Stdio;
-
-multiset except_modules  =(<>);
+multiset except_modules = (<>);
 string vpath;
-
 
 string dirname(string dir)
 {
@@ -17,71 +14,65 @@ string dirname(string dir)
   return tmp*"/";
 }
 
-string *get_files(string path)
+array(string) get_files(string path)
 {
-  string *files,tmp,*ret;
-  files=get_dir(path);
-
-  // if (!files) return ({});
+  array(string) files = get_dir(path);
 
   if(!getenv("PIKE_EXPORT_CVS_DIRS"))
-    files-=({"CVS","RCS",".cvsignore"});
+    files -= ({ "CVS", "RCS", ".cvsignore" });
 
-  ret=({});
-  foreach(files,tmp)
+  array(string) ret = ({});
+  foreach(files, string fn)
   {
-    if(tmp=="core") continue;
-    if(tmp[-1]=='~') continue;
-    if(tmp[0]=='#' && tmp[-1]=='#') continue;
-    if(tmp[0]=='.' && tmp[1]=='#') continue;
+    if( fn=="core" ) continue;
+    if( fn[-1]=='~' ) continue;
+    if( fn[0]=='#' && fn[-1]=='#' ) continue;
+    if( fn[0]=='.' && fn[1]=='#' ) continue;
 
-    if(path==vpath+"/src/modules" && except_modules[tmp])
+    if( path==vpath+"/src/modules" && except_modules[fn] )
       continue;
 
-    if(path==vpath+"/bin" && except_modules[tmp])
+    if( path==vpath+"/bin" && except_modules[fn] )
       continue;
 
-    if(search(path,vpath+"/lib/modules")==0 &&
-       (except_modules[tmp] || except_modules[tmp - ".pmod"]))
+    if( has_prefix(path, vpath+"/lib/modules") &&
+	(except_modules[fn] || except_modules[fn - ".pmod"]))
       continue;
 
-    tmp=path+"/"+tmp;
+    fn = path+"/"+fn;
 
-    if(file_size(tmp)==-2)
-    {
-      ret+=get_files(tmp);
-    }else{
-      ret+=({tmp});
-    }
+    if( Stdio.file_size(fn)==-2 )
+      ret += get_files(fn);
+    else
+      ret += ({ fn });
   }
   return ret;
 }
 
 void fix_configure(string dir)
 {
-  mixed config,config_in;
-  config=file_stat(dir+"/configure");
-  config_in=file_stat(dir+"/configure.in");
+  Stdio.Stat config=file_stat(dir+"/configure");
+  Stdio.Stat config_in=file_stat(dir+"/configure.in");
 
   if(config_in)
   {
-    if(!config || config_in[3] > config[3])
+    if(!config || config_in->mtime > config->mtime)
     {
       werror("Fixing configure in "+dir+".\n");
-      Process.create_process(({"autoconf"}),(["cwd":dir]))->wait();
+      Process.create_process( ({"autoconf"}),
+			      (["cwd":dir]) )->wait();
     }
   }
 }
 
-string getversion()
+array(int) getversion()
 {
-//  werror("FNORD: %O  %O\n",getcwd(),pike_base_name+"/src/version.h");
-  string s=Stdio.read_file(pike_base_name+"/src/version.h");
+  string s = Stdio.read_file(pike_base_name+"/src/version.h");
 
   if(!s)
   {
     werror("Failed to read version.h\n");
-    werror("cwd=%s  version.h=%s\n",getcwd(),pike_base_name+"/src/version.h");
+    werror("cwd=%s  version.h=%s\n", getcwd(), pike_base_name+"/src/version.h");
     exit(1);
   }
 
@@ -94,43 +85,43 @@ string getversion()
     werror("Failed to get Pike version.\n");
     exit(1);
   }
-  return sprintf("Pike v%d.%d release %d", maj, min, build);
+
+  return ({ maj, min, build });
 }
 
 void bump_version()
 {
   werror("Bumping release number.\n");
-  Process.create_process(({ "cvs", "update", "version.h" }),
-			 ([ "cwd":pike_base_name+"/src" ]))->wait();
+  Process.create_process( ({ "cvs", "update", "version.h" }),
+			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 
-  string s=Stdio.read_file(pike_base_name+"/src/version.h");
-  sscanf(s,"%s PIKE_BUILD_VERSION %d%s",string pre, int rel, string post);
+  string s = Stdio.read_file(pike_base_name+"/src/version.h");
+  sscanf(s, "%s PIKE_BUILD_VERSION %d%s", string pre, int rel, string post);
   rel++;
-  Stdio.File(pike_base_name+"/src/version.h", "wct")->
-    write(pre+" PIKE_BUILD_VERSION "+rel+post);
-  Process.create_process(({ "cvs", "commit", "-m",
-			    "release number bumped to "+rel+" by export.pike",
-			    "version.h" }),
-			 ([ "cwd":pike_base_name+"/src" ]))->wait();
+  Stdio.write_file( pike_base_name+"/src/version.h",
+		    pre+" PIKE_BUILD_VERSION "+rel+post );
+  Process.create_process( ({ "cvs", "commit", "-m",
+			     "release number bumped to "+rel+" by export.pike",
+			     "version.h" }),
+			  ([ "cwd":pike_base_name+"/src" ]) )->wait();
 }
 
 string pike_base_name;
 string srcdir;
 int rebuild;
 
-int main(int argc, string *argv)
+int main(int argc, array(string) argv)
 {
-  mixed tmp;
-  int e;
-  string *files;
+  array(string) files;
   object cvs;
   int notag;
 
-  foreach(Getopt.find_all_options(argv,aggregate(
+  foreach(Getopt.find_all_options(argv, ({
     ({ "srcdir", Getopt.HAS_ARG, "--srcdir"  }),
     ({ "rebuild",Getopt.NO_ARG,  "--rebuild" }),
     ({ "notag",  Getopt.NO_ARG,  "--notag"   }),
-    )),array opt)
+    ({ "help",   Getopt.NO_ARG,  "--help"    }),
+  }) ),array opt)
     {
       switch(opt[0])
       {
@@ -150,30 +141,20 @@ int main(int argc, string *argv)
         case "notag":
 	  notag=1;
 	  break;
+
+        case "help":
+	  write(documentation);
+	  return 0;
       }
     }
       
-  argv=Getopt.get_args(argv);
-
-  if(!srcdir)
-  {
-    tmp=reverse(argv[0]/"/");
-    except_modules=mkmultiset(argv[1..]);
-    e=search(tmp,"pike");
-    if(e==-1)
-    {
-      werror("Couldn't find Pike source dir.\n");
-      werror("Use export.pike --srcdir=<dir> <except modules>.\n");
-      exit(1);
-    }
-    tmp=reverse(tmp[e..]);
-    cd(sizeof(tmp) ? (tmp*"/") : "/");
-    werror("Sourcedir = "+tmp*"/"+"\n");
-    pike_base_name=".";
+  argv -= ({ 0 });
+  except_modules = (multiset)argv[1..];
+  if(!srcdir) {
+    werror(documentation);
+    return 1;
   }
 
-//  werror("pike_base_name=%s\n",pike_base_name);
-//  exit(0);
   if(rebuild)
   {
     werror("Not yet finished!\n");
@@ -188,24 +169,30 @@ int main(int argc, string *argv)
   {
     bump_version();
 
-    vpath=replace(replace(getversion()," ","-"),"-release-",".");
-    string tag=replace(vpath,({"Pike-","."}),({"","_"}));
+    array(int) version = getversion();
+    vpath = sprintf("Pike-v%d.%d.%d", @version);
+    string tag = sprintf("v%d_%d_%d", @version);
 
     werror("Creating tag "+tag+" in the background.\n");
-    cvs=Process.create_process(({"cvs","tag","-R","-F",tag}));
-  }else{
-    vpath=replace(replace(getversion()," ","-"),"-release-",".");
+    cvs = Process.create_process( ({"cvs", "tag", "-R", "-F", tag}) );
+  }
+  else if(notag) {
+    mapping m = gmtime(time());
+    vpath = sprintf("%04d%02d%02d_%02d%02d%02d", 1900+m->year, m->mon+1, m->mday,
+		    m->hour, m->min, m->sec);
+  }
+  else {
+    array(int) version = getversion();
+    vpath = sprintf("Pike-v%d.%d.%d", @version);
   }
 
   fix_configure(pike_base_name+"/src");
 
-  foreach(get_dir(pike_base_name+"/src/modules") - ({"CVS","RCS"}), tmp)
-    if(file_size(pike_base_name+"/src/modules/"+tmp) == -2)
-      fix_configure("modules/"+tmp);
+  foreach(get_dir(pike_base_name+"/src/modules") - ({"CVS","RCS"}), string fn)
+    if(Stdio.file_size(pike_base_name+"/src/modules/"+fn) == -2)
+      fix_configure("modules/"+fn);
 
-  //  werror("vpath = %s  pwd = %s\n",vpath,getcwd());
-  symlink(".",vpath);
-  //  system("ln -s pike "+vpath);
+  symlink(".", vpath);
 
   files=`+( ({ vpath+"/README.txt", vpath+"/ANNOUNCE",
 	       vpath+"/COPYING", vpath+"/COPYRIGHT",
@@ -229,40 +216,37 @@ int main(int argc, string *argv)
 	      vpath+"/refdoc/.cvsignore",
 	   }));
 
-  if(notag) {
-    mapping m = gmtime(time());
-    vpath = sprintf("%04d%02d%02d_%02d%02d%02d", 1900+m->year, m->mon+1, m->mday,
-		    m->hour, m->min, m->sec);
-  }
-
   werror("Creating "+vpath+".tar.gz:\n");
-  object o=Stdio.File();
 
-  int first=1;
-  foreach(files/50.0,files)
+  int first = 1;
+  foreach(files/25.0, files)
     {
-      if(Process.create_process(({"tar",
-				    first?"cvf":"rvf",
-				    pike_base_name+"/"+vpath+".tar"
-				    })+files)->wait())
+      if(Process.create_process
+	 ( ({"tar",
+	     first?"cvf":"rvf",
+	     pike_base_name+"/"+vpath+".tar" }) +
+	   files)->wait())
       {
 	werror("Tar file creation failed!\n");
 	if(cvs) cvs->wait();
+	rm(vpath);
 	exit(1);
       }
-      first=0;
+      first = 0;
     }
 
-  if(Process.create_process(({"gzip",
-				"-9",
-				pike_base_name+"/"+vpath+".tar"
-})
-			    )->wait())
-  {
-    werror("Gzip failed!\n");
-    if(cvs) cvs->wait();
-    exit(1);
-  }
+  if(Process.create_process
+     ( ({"gzip",
+	 "-9",
+	 pike_base_name+"/"+vpath+".tar"
+     }) )->wait())
+    {
+      werror("Gzip failed!\n");
+      if(cvs) cvs->wait();
+      rm(vpath);
+      exit(1);
+    }
+
   rm(vpath);
   werror("Done.\n");
 
@@ -271,5 +255,16 @@ int main(int argc, string *argv)
     cvs->wait();
     bump_version();
   }
+
   return 0;
 }
+
+constant documentation = #"
+Usage: export.pike --srcdir=<src> <except modules>
+
+Creates a pike distribution. Optional arguments:
+
+ rebuild
+ notag
+ help
+";
