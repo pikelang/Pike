@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.22 1997/11/23 21:58:53 per Exp $ */
+/* $Id: blit.c,v 1.23 1997/11/24 15:43:10 mirar Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.22 1997/11/23 21:58:53 per Exp $
+**!	$Id: blit.c,v 1.23 1997/11/24 15:43:10 mirar Exp $
 **! class image
 */
 
@@ -115,11 +115,12 @@ void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
     int increment = 1;
     rgb_group *from = dest;
     *(dest++)=rgb;
-    size--;
-    for (; size > increment; size-=increment,dest+=increment) 
+    size -= 1;
+    while (size>increment) 
     {
       MEMCPY(dest,from,increment*sizeof(rgb_group));
-      if(increment < 1024) increment *= 2;
+      size-=increment,dest+=increment;
+      if (increment<1024) increment *= 2;
     }
     if(size>0) MEMCPY(dest,from,size*sizeof(rgb_group));
   }
@@ -150,7 +151,9 @@ void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
        for(x=0; x<length; x++)  *(foo+x) = rgb;
        while(--y)  MEMCPY((foo+=xs), from, length*sizeof(rgb_group)); 
      }
-   } else {
+   } 
+   else 
+   {
      for (; foo<=end; foo+=mod) for (x=x1; x<=x2; x++,foo++) 
        set_rgb_group_alpha(*foo,rgb,this->alpha);
    }
