@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.4 1999/04/07 17:34:06 marcus Exp $ */
+/* $Id: ilbm.c,v 1.5 1999/04/07 17:47:12 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.4 1999/04/07 17:34:06 marcus Exp $
+**!	$Id: ilbm.c,v 1.5 1999/04/07 17:47:12 marcus Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.4 1999/04/07 17:34:06 marcus Exp $");
+RCSID("$Id: ilbm.c,v 1.5 1999/04/07 17:47:12 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -243,7 +243,7 @@ static void planar2chunky(unsigned char *src, int srcmod, int depth,
 
 static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
 		       struct image *img, struct image *alpha,
-		       struct neo_colortable *ctable)
+		       struct neo_colortable *ctable, int ham)
 {
   unsigned int x, y;
   int rbyt = ((bmhd->w+15)&~15)>>3;
@@ -282,17 +282,86 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
     if((blen -= suse)<0)
       break;
     planar2chunky(line, rbyt, bmhd->nPlanes, bmhd->w, cptr=cline);
-    if(ctable != NULL) {
-      int numcolors = ctable->u.flat.numentries;
-      struct nct_flat_entry *entries = ctable->u.flat.entries;
-      for(x=0; x<bmhd->w; x++)
-	if(*cptr<numcolors)
-	  *dest++ = entries[*cptr++].color;
-	else {
-	  dest++;
-	  cptr++;
+    if(ctable != NULL)
+      if(ham)
+	if(bmhd->nPlanes>6) {
+	  /* HAM7/HAM8 */
+	  rgb_group hold;
+	  int clr, numcolors = ctable->u.flat.numentries;
+	  struct nct_flat_entry *entries = ctable->u.flat.entries;
+	  hold.r = hold.g = hold.b = 0;
+	  for(x=0; x<bmhd->w; x++)
+	    switch((*cptr)&0xc0) {
+	    case 0x00:
+	      if(*cptr<numcolors)
+		*dest++ = hold = entries[*cptr++].color;
+	      else {
+		*dest++ = hold;
+		cptr++;
+	      }
+	      break;
+	    case 0x80:
+	      clr = (*cptr++)&0x3f;
+	      hold.r = (clr<<2)|(clr>>4);
+	      *dest++ = hold;
+	      break;
+	    case 0xc0:
+	      clr = (*cptr++)&0x3f;
+	      hold.g = (clr<<2)|(clr>>4);
+	      *dest++ = hold;
+	      break;
+	    case 0x40:
+	      clr = (*cptr++)&0x3f;
+	      hold.b = (clr<<2)|(clr>>4);
+	      *dest++ = hold;
+	      break;
+	    }
+	} else {
+	  /* HAM5/HAM6 */	  
+	  rgb_group hold;
+	  int clr, numcolors = ctable->u.flat.numentries;
+	  struct nct_flat_entry *entries = ctable->u.flat.entries;
+	  hold.r = hold.g = hold.b = 0;
+	  for(x=0; x<bmhd->w; x++)
+	    switch((*cptr)&0x30) {
+	    case 0x00:
+	      if(*cptr<numcolors)
+		*dest++ = hold = entries[*cptr++].color;
+	      else {
+		*dest++ = hold;
+		cptr++;
+	      }
+	      break;
+	    case 0x20:
+	      clr = (*cptr++)&0xf;
+	      hold.r = (clr<<4)|clr;
+	      *dest++ = hold;
+	      break;
+	    case 0x30:
+	      clr = (*cptr++)&0xf;
+	      hold.g = (clr<<4)|clr;
+	      *dest++ = hold;
+	      break;
+	    case 0x10:
+	      clr = (*cptr++)&0xf;
+	      hold.b = (clr<<4)|clr;
+	      *dest++ = hold;
+	      break;
+	    }
 	}
-    } else
+      else {
+	/* normal palette */
+	int numcolors = ctable->u.flat.numentries;
+	struct nct_flat_entry *entries = ctable->u.flat.entries;
+	for(x=0; x<bmhd->w; x++)
+	  if(*cptr<numcolors)
+	    *dest++ = entries[*cptr++].color;
+	  else {
+	    dest++;
+	    cptr++;
+	  }
+      }
+    else
       for(x=0; x<bmhd->w; x++) {
 	/* ILBM-24 */
 	dest->b = ((*cptr)&0xff0000)>>16;
@@ -395,7 +464,7 @@ static void image_ilbm__decode(INT32 args)
   }
 
   parse_body(&bmhd, STR0(ITEM(arr)[5].u.string), ITEM(arr)[5].u.string->len,
-	     img, NULL, ctable);
+	     img, NULL, ctable, !!(camg & CAMG_HAM));
 
   f_aggregate_mapping(2*n);
   stack_swap();
