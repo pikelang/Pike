@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.241 2002/12/14 04:34:55 nilsson Exp $
+// $Id: master.pike.in,v 1.242 2002/12/29 22:30:24 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1806,9 +1806,18 @@ void _main(array(string) orig_argv, array(string) env)
 	random_seed(time() ^ (getpid()<<8));
 	argv = tmp->get_args(argv,1);
 	if(trace) predef::trace(trace);
-	compile_string("mixed create(int argc, array(string) argv,array(string) env){"+
-			opts[1]+";}")(sizeof(argv),argv,env);
-	exit(0);
+	mixed ret;
+	if(currentversion <= Version(7,4))
+	  compile_string(
+            "mixed create(int argc, array(string) argv,array(string) env){"+
+	    opts[1]+";}")(sizeof(argv),argv,env);
+	else
+	  ret = compile_string(
+            "mixed run(int argc, array(string) argv,"
+            "mapping(string:string) env){"+
+	    opts[1]+";}")()->run(sizeof(argv),argv,getenv());
+	if(!intp(ret) || ret<0) ret=0;
+	exit(ret);
 
       case "preprocess":
 	_static_modules.files()->_stdout->write(cpp(master_read_file(opts[1]),
