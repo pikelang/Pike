@@ -118,11 +118,23 @@ test_true(stringp(sprintf("%e",exp(200))))
 test_true(stringp(sprintf("%E",exp(200))))
 
 dnl test for "inf" problems
-test_eq(lower_case(sprintf("%f",exp(65536))),"inf") 
-test_eq(lower_case(sprintf("%g",exp(65536))),"inf")
-test_eq(lower_case(sprintf("%G",exp(65536))),"inf")
-test_eq(lower_case(sprintf("%e",exp(65536))),"inf")
-test_eq(lower_case(sprintf("%E",exp(65536))),"inf")
+test_eq(lower_case(sprintf("%f",Math.inf)),"inf") 
+test_eq(lower_case(sprintf("%g",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%G",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%e",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%E",Math.inf)),"inf")
+test_eq(lower_case(sprintf("%f",-Math.inf)),"-inf") 
+test_eq(lower_case(sprintf("%g",-Math.inf)),"-inf")
+test_eq(lower_case(sprintf("%G",-Math.inf)),"-inf")
+test_eq(lower_case(sprintf("%e",-Math.inf)),"-inf")
+test_eq(lower_case(sprintf("%E",-Math.inf)),"-inf")
+
+dnl test for "nan" problems
+test_eq(lower_case(sprintf("%f",Math.nan)),"nan") 
+test_eq(lower_case(sprintf("%g",Math.nan)),"nan")
+test_eq(lower_case(sprintf("%G",Math.nan)),"nan")
+test_eq(lower_case(sprintf("%e",Math.nan)),"nan")
+test_eq(lower_case(sprintf("%E",Math.nan)),"nan")
 
 test_eq(sprintf("%s","foobaR"),"foobaR")
 test_eq(sprintf("%s","foo\nbar"),"foo\nbar")
