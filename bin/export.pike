@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.18 1998/03/27 23:12:45 hubbe Exp $ */
+/* $Id: export.pike,v 1.19 1998/03/31 21:59:29 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -100,25 +100,13 @@ int main(int argc, string *argv)
 			   (["cwd":"pike/src"]))->wait();
 
 
-    vpath=replace(getversion()," ","-");
+    vpath=replace(replace(getversion()," ","-"),"-release-",".");
     string tag=replace(vpath,({"Pike-","."}),({"","_"}));
-    vpath=replace(vpath,"-release-",".");
-#if 0
-    mapping x=localtime(time());
-    tag+=+"-"+sprintf("%02d%02d%02d-%02d%02d",
-		      x->year,
-		      x->mon+1,
-		      x->mday,
-		      x->hour,
-		      x->min);
-#else
-    tag+="-rel"+rel;
-#endif
 
     werror("Creating tag "+tag+" in the background.\n");
     system("cd pike ; cvs tag -R -F "+tag+"&");
   }else{
-    vpath=replace(getversion()," ","-");
+    vpath=replace(replace(getversion()," ","-"),"-release-",".");
   }
 
   fix_configure("pike/src");
@@ -135,10 +123,10 @@ int main(int argc, string *argv)
 	    get_files(vpath+"/lib"),
 	    get_files(vpath+"/bin"));
 
-  werror("Creating "+vpath+".tar.gz:\n");
+  werror("Creating "+vpath+"-indigo.tar.gz:\n");
   object o=Stdio.File();
   spawn("tar cvf - "+files*" ",0,o->pipe(Stdio.PROP_IPC));
-  spawn("gzip -9",o,Stdio.File("pike/"+vpath+".tar.gz","wct"))->wait();
+  spawn("gzip -9",o,Stdio.File("pike/"+vpath+"-indigo.tar.gz","wct"))->wait();
   rm(vpath);
   werror("Done.\n");
   return 0;
