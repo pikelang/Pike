@@ -6,9 +6,10 @@ constant count=__builtin.string_count;
  * Implode an array of strings to an english 'list'
  * ie. ({"foo","bar","gazonk"}) beomces "foo, bar and gazonk"
  */
-string implode_nicely(string *foo, string|void and)
+string implode_nicely(array(string|int|float) foo, string|void and)
 {
   if(!and) and="and";
+  foo=(array(string))foo;
   switch(sizeof(foo))
   {
   case 0: return "";
