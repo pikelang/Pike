@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.55 1999/06/09 21:13:05 mirar Exp $
+// $Id: module.pmod,v 1.56 1999/06/29 16:02:29 mast Exp $
 
 import String;
 
@@ -23,7 +23,7 @@ class File
     if(!_fd)									\
     {										\
       throw(({									\
-	"Stdio.File(): line "+__LINE__+" on closed file.\n"+				\
+	"Stdio.File(): line "+__LINE__+" on closed file.\n"+			\
 	  (__closed_backtrace ? 						\
 	   sprintf("File was closed from:\n    %-=200s\n",__closed_backtrace) :	\
 	   "This file has never been open.\n" ),				\
@@ -348,6 +348,7 @@ class File
   void set_blocking()
   {
     CHECK_OPEN();
+    ::_disable_callbacks(); // Thread safing
     SET(read_callback,0);
     SET(write_callback,0);
     ___close_callback=0;
@@ -356,6 +357,7 @@ class File
     SET(write_oob_callback,0);
 #endif
     ::set_blocking();
+    ::_enable_callbacks();
   }
 
   void destroy()
