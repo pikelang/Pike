@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.21 1998/08/26 16:14:24 per Exp $");
+RCSID("$Id: png.c,v 1.22 1999/04/23 15:25:18 mirar Exp $");
 
 #include "config.h"
 
@@ -1725,7 +1725,7 @@ struct object *init_image_png(void)
       if (gz_deflate)
       {
 	 add_function("_decode",image_png__decode,
-		      "function(array|string,void|mapping(string:mixed):object)",0);
+		      "function(array|string,void|mapping(string:mixed):mapping)",0);
 	 add_function("decode",image_png_decode,
 		      "function(string,void|mapping(string:mixed):object)",0);
 	 add_function("decode_alpha",image_png_decode_alpha,
