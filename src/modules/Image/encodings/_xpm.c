@@ -1,5 +1,12 @@
+/*
+|| This file is part of Pike. For copyright information see COPYRIGHT.
+|| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
+|| for more information.
+|| $Id: _xpm.c,v 1.17 2003/10/14 11:40:17 grubba Exp $
+*/
+
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.16 2000/12/05 21:08:26 per Exp $");
+RCSID("$Id: _xpm.c,v 1.17 2003/10/14 11:40:17 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -15,7 +22,6 @@ RCSID("$Id: _xpm.c,v 1.16 2000/12/05 21:08:26 per Exp $");
 #include "stralloc.h"
 #include "multiset.h"
 #include "pike_types.h"
-#include "rusage.h"
 #include "operators.h"
 #include "fsort.h"
 #include "callback.h"
@@ -31,14 +37,13 @@ RCSID("$Id: _xpm.c,v 1.16 2000/12/05 21:08:26 per Exp $");
 #include "opcodes.h"
 #include "cyclic.h"
 #include "signal_handler.h"
-#include "security.h"
-
 
 #include "image.h"
 #include "colortable.h"
 
-/* MUST BE INCLUDED LAST */
-#include "module_magic.h"
+
+#define sp Pike_sp
+
 
 extern struct program *image_program;
 
@@ -229,13 +234,38 @@ void f__xpm_write_rows( INT32 args )
   rgb_group *dst, *adst;
   INT_TYPE y,x,  bpc;
 
-  get_all_args("_xpm_write_rows",args,"%o%o%d%a%a",
+  get_all_args("_xpm_write_rows",args,"%o%o%i%a%a",
                &img,&alpha,&bpc,&colors,&pixels);
 
   iimg = (struct image *)get_storage( img, image_program );
   ialpha = (struct image *)get_storage( alpha, image_program );
   if(!iimg || !ialpha)
     Pike_error("Sluta pilla på interna saker..\n");
+
+  if (pixels->size < iimg->ysize + colors->size) {
+    Pike_error("_xpm_write_rows(): Bad argument 5: "
+	       "pixel array is too short.\n");
+  }
+
+  for(y = 0; y < iimg->ysize + colors->size + 1; y++) {
+    if ((pixels->item[y].type != T_STRING) ||
+	(pixels->item[y].u.string->size_shift)) {
+      Pike_error("_xpm_write_rows(): Bad argument 5: "
+		 "Pixel array contains elements other than 8bit strings.\n");
+    }
+    if (y < colors->size) {
+      if ((colors->item[y].type != T_STRING) ||
+	  (pixels->item[y].u.string->size_shift)) {
+	Pike_error("_xpm_write_rows(): Bad argument 5: "
+		   "Color array contains elements other than 8bit strings.\n");
+      }
+    } else if (y > colors->size) {
+      if (pixels->item[y].u.string->len < iimg->xsize*bpc) {
+	Pike_error("_xpm_write_rows(): Bad argument 5: "
+		   "Pixel array contains too short string (bad bpc?).\n");
+      }
+    }
+  }
 
   dst = iimg->img;
   adst = ialpha->img;
@@ -383,14 +413,13 @@ void f__xpm_trim_rows( INT32 args )
 {
   struct array *a;
   int i,j=0;
-  get_all_args("___", args, "%a", &a );
+  get_all_args("_xpm_trim_rows", args, "%a", &a );
   for(i=0; i<a->size; i++)
   {
-    char *ns;
     int len,start;
     struct pike_string *s = a->item[i].u.string;
     if(a->item[i].type != T_STRING)
-      Pike_error("Ajabaja\n");
+      Pike_error("Array must be array(string).\n");
     if(s->len > 4)
     {
       for(start=0; start<s->len; start++)
@@ -413,7 +442,7 @@ void f__xpm_trim_rows( INT32 args )
 void init_image__xpm( )
 {
    add_function( "_xpm_write_rows", f__xpm_write_rows, "mixed", 0); 
-  add_function( "_xpm_trim_rows", f__xpm_trim_rows, "mixed", 0);
+   add_function( "_xpm_trim_rows", f__xpm_trim_rows, "mixed", 0);
 }
 
 void exit_image__xpm(void)
