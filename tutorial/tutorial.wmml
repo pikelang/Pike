@@ -12,7 +12,9 @@ An Appendix about kompiling
 Running Pike on NT
 
 sprintf does not work like it used to do since it has been updated
-for bignum functionality.
+for bignum functionality. 
+The %[n]-feature is documented in the code but not here.
+
 
 Hedda-notes: 
 
@@ -147,6 +149,8 @@ this comment can be erased.
 
 Locale.Charset.*
 Process.create_process ?  done  -hubbe
+
+#define now handles varargs, should be in chapter 15.
 
 --> 
 
