@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.146 2001/03/12 10:51:27 hubbe Exp $
+ * $Id: master.pike.in,v 1.147 2001/03/14 21:44:04 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -2052,8 +2052,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
     {
       mixed tmp;
       string row;
-      // The continue's below jump wrong when this catch is here.. :P
-//       if (mixed err=catch {
+      if (mixed err=catch {
 	tmp = trace[e];
 	if(stringp(tmp))
 	{
@@ -2153,9 +2152,9 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    row = "Destructed object";
 	  }
 	}
-//       }) {
-//  	row = sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
-//       }
+      }) {
+  	row = sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
+      }
       frames += ({row + "\n"});
     }
 
