@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.25 1997/01/29 20:24:13 per Exp $");
+RCSID("$Id: file.c,v 1.26 1997/01/29 20:57:29 per Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1336,8 +1336,7 @@ static void file_create(INT32 args)
   }
   else
   {
-    file_open(args);
-    /*error("file->create() not called with stdin, stdout or stderr as argument.\n");*/
+    file_open(args); /* Try opening the file instead. */
   }
 }
 
