@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.223 2000/11/25 16:45:02 grubba Exp $");
+RCSID("$Id: las.c,v 1.224 2000/11/26 14:20:24 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -427,18 +427,18 @@ static void sub_node(node *n)
 
 static node *freeze_node(node *orig)
 {
-  size_t hash = hash_node(orig);
+  size_t hash;
   node *n;
   int found = 0;
-
-  /* free_node() wants a correct hash */
-  orig->hash = hash;
 
   if (orig->tree_info & OPT_NOT_SHARED) {
     /* No need to have this node in the hash-table. */
     /* add_node(orig); */
     return check_node_hash(dmalloc_touch(node *, orig));
   }
+
+  /* free_node() wants a correct hash */
+  orig->hash = hash = hash_node(orig);
 
   /* Mark this node as a possible duplicate */
   orig->node_info |= OPT_DEFROSTED;
@@ -566,7 +566,9 @@ void free_all_nodes(void)
 		if(car_is_node(tmp)) _CAR(tmp)=0;
 		if(cdr_is_node(tmp)) _CDR(tmp)=0;
 #ifdef SHARED_NODES
-		tmp->hash = hash_node(tmp);
+		if (!(tmp->tree_info & OPT_NOT_SHARED)) {
+		  tmp->hash = hash_node(tmp);
+		}
 #ifdef PIKE_DEBUG
 		if (l_flag > 3) {
 		  fprintf(stderr, "Freeing node that had %d refs.\n",
@@ -609,7 +611,7 @@ void debug_free_node(node *n)
     if(l_flag>9)
       print_tree(n);
 
-    {
+    if (!(n->tree_info & OPT_NOT_SHARED)) {
       size_t hash;
       if ((hash = hash_node(n)) != n->hash) {
 	fprintf(stderr, "Hash-value is bad 0x%08lx != 0x%08lx\n",
@@ -633,7 +635,7 @@ void debug_free_node(node *n)
       print_tree(n);
 
 #ifdef SHARED_NODES
-    {
+    if (!(n->tree_info & OPT_NOT_SHARED)) {
       size_t hash;
       if ((hash = hash_node(n)) != n->hash) {
 	fprintf(stderr, "Hash-value is bad 0x%08lx != 0x%08lx\n",
@@ -780,7 +782,7 @@ void debug_free_node(node *n)
 node *debug_check_node_hash(node *n)
 {
 #if defined(PIKE_DEBUG) && defined(SHARED_NODES)
-  if (n && (n->hash != hash_node(n))) {
+  if (n && !(n->tree_info & OPT_NOT_SHARED) && (n->hash != hash_node(n))) {
     fprintf(stderr,"Bad node hash at %p, (%s:%d) (token=%d).\n",
 	    n, n->current_file->str, n->line_number,
 	    n->token);
@@ -1072,7 +1074,7 @@ node *debug_mknewintnode(int nr)
   res->type=get_type_of_svalue( & res->u.sval);
 #ifdef SHARED_NODES
   res->refs = 1;
-  res->hash = hash_node(res);
+  /* res->hash = hash_node(res); */
 #endif /* SHARED_NODES */
 
   return res;
@@ -3223,7 +3225,9 @@ void fix_type_field(node *n)
 	_CAR(n) = mkintnode(0);
 	copy_shared_string(n->type, CAR(n)->type);
 #ifdef SHARED_NODES
-	n->hash = hash_node(n);
+	if (!(n->tree_info & OPT_NOT_SHARED)) {
+	  n->hash = hash_node(n);
+	}
 	n->node_info |= OPT_DEFROSTED;
 	add_node(n);
 #endif /* SHARED_NODES */
@@ -4291,9 +4295,11 @@ static void optimize(node *n)
 #endif /* SHARED_NODES */
 	_CAR(n) = eval(CAR(n));
 #ifdef SHARED_NODES
-	n->hash = hash_node(n);
 	n->node_info |= OPT_DEFROSTED;
-	add_node(n);
+	if (!(n->tree_info & OPT_NOT_SHARED)) {
+	  n->hash = hash_node(n);
+	  add_node(n);
+	}
 #endif /* SHARED_NODES */
 	if(CAR(n)) CAR(n)->parent = n;
 	zapp_try_optimize(CAR(n)); /* avoid infinite loops */
@@ -4313,9 +4319,11 @@ static void optimize(node *n)
 #endif /* SHARED_NODES */
 	_CDR(n) = eval(CDR(n));
 #ifdef SHARED_NODES
-	n->hash = hash_node(n);
 	n->node_info |= OPT_DEFROSTED;
-	add_node(n);
+	if (!(n->tree_info & OPT_NOT_SHARED)) {
+	  n->hash = hash_node(n);
+	  add_node(n);
+	}
 #endif /* SHARED_NODES */
 	if(CDR(n)) CDR(n)->parent = n;
 	zapp_try_optimize(CDR(n)); /* avoid infinite loops */
@@ -4375,9 +4383,11 @@ static void optimize(node *n)
       }
 
 #ifdef SHARED_NODES      
-      n->parent->hash = hash_node(n->parent);
-      add_node(n->parent);
       n->parent->node_info |= OPT_DEFROSTED;
+      if (!(n->tree_info & OPT_NOT_SHARED)) {
+	n->parent->hash = hash_node(n->parent);
+	add_node(n->parent);
+      }
 #endif /* SHARED_NODES */
 	
       if(tmp1)
