@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.45 1999/02/14 23:53:28 grubba Exp $
+ * $Id: requests.pmod,v 1.46 1999/02/17 01:14:26 grubba Exp $
  */
 
 import .types;
@@ -87,7 +87,7 @@ class request
 	return parser->get_set(append_arg);
 
       case "list":
-	return parser->get_list(append_arg);
+	return parser->get_flag_list(append_arg);
 
       case "any":
 	/* A single atom or string or a list of atoms (with
