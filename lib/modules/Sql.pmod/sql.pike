@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.19 1998/03/20 21:55:14 grubba Exp $
+ * $Id: sql.pike,v 1.20 1998/06/17 12:41:37 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.19 1998/03/20 21:55:14 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.20 1998/06/17 12:41:37 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -273,14 +273,23 @@ string|object compile_query(string q)
 //. > q
 //.   Query to send to the SQL-server. This can either be a string with the
 //.   query, or a previously compiled query (see compile_query()).
-array(mapping(string:mixed)) query(object|string q)
+array(mapping(string:mixed)) query(object|string q,
+				   mapping(string|int:mixed)|void bindings)
 {
   object res_obj;
 
   if (functionp(master_sql->query)) {
-    return(master_sql->query(q));
+    if (bindings) {
+      return(master_sql->query(q, bindings));
+    } else {
+      return(master_sql->query(q));
+    }
   }
-  return(res_obj_to_array(master_sql->big_query(q)));
+  if (bindings) {
+    return(res_obj_to_array(master_sql->big_query(q, bindings)));
+  } else {
+    return(res_obj_to_array(master_sql->big_query(q)));
+  }
 }
 
 //. - big_query
@@ -291,12 +300,20 @@ array(mapping(string:mixed)) query(object|string q)
 //. > q
 //.   Query to send to the SQL-server. This can either be a string with the
 //.   query, or a previously compiled query (see compile_query()).
-object big_query(object|string q)
+object big_query(object|string q, mapping(string|int:mixed)|void bindings)
 {
   if (functionp(master_sql->big_query)) {
-    return(Sql.sql_result(master_sql->big_query(q)));
+    if (bindings) {
+      return(Sql.sql_result(master_sql->big_query(q, bindings)));
+    } else {
+      return(Sql.sql_result(master_sql->big_query(q)));
+    }
   }
-  return(Sql.sql_result(master_sql->query(q)));
+  if (bindings) {
+    return(Sql.sql_result(master_sql->query(q, bindings)));
+  } else {
+    return(Sql.sql_result(master_sql->query(q)));
+  }
 }
 
 //. - create_db
