@@ -649,8 +649,7 @@ int            *flagp;
 /*
  - regnode - emit a node
  */
-static char *regnode(op)
-char            op;
+static char *regnode(char op)
 {
     register char  *ret;
     register char  *ptr;
@@ -672,8 +671,7 @@ char            op;
 /*
  - regc - emit (if appropriate) a byte of code
  */
-static void regc(b)
-char            b;
+static void regc(char b)
 {
     if (regcode != &regdummy)
 	*regcode++ = b;
@@ -686,9 +684,7 @@ char            b;
  *
  * Means relocating the operand.
  */
-static void reginsert(op, opnd)
-char            op;
-char           *opnd;
+static void reginsert(char op, char *opnd)
 {
     register char  *src;
     register char  *dst;
