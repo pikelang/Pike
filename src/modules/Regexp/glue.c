@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: glue.c,v 1.34 2003/08/08 12:24:30 nilsson Exp $
+|| $Id: glue.c,v 1.35 2003/08/08 12:48:52 nilsson Exp $
 */
 
 #include "global.h"
@@ -22,7 +22,7 @@
 #include "module_support.h"
 #include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.34 2003/08/08 12:24:30 nilsson Exp $");
+RCSID("$Id: glue.c,v 1.35 2003/08/08 12:48:52 nilsson Exp $");
 
 #include "pike_regexp.h"
 
@@ -39,7 +39,9 @@ struct regexp_glue
 
 /*! @module Regexp
  *!
- *! This module implements the interface to a simple regexp engine
+ *! @class SimpleRegexp
+ *!
+ *! This class implements the interface to a simple regexp engine
  *! with the following capabilities:
  *!
  *! @xml{<matrix>
@@ -81,8 +83,8 @@ static void do_free(void)
  *! When create is called, the current regexp bound to this object is
  *! cleared. If a string is sent to create(), this string will be compiled
  *! to an internal representation of the regexp and bound to this object
- *! for laters calls to match or split. Calling create() without an
- *! argument can be used to free up a little memory after the regexp has
+ *! for laters calls to e.g. @[match] or @[split]. Calling create() without
+ *! an argument can be used to free up a little memory after the regexp has
  *! been used.
  */
 static void regexp_create(INT32 args)
@@ -108,8 +110,8 @@ static void regexp_create(INT32 args)
  *! regexp bound to the regexp object.
  *!
  *! @bugs
- *!   The current implementation (Pike 7.3.51) doesn't support
- *!   searching in strings containing the NUL character or any
+ *!   The current implementation doesn't support searching
+ *!   in strings containing the NUL character or any
  *!   wide character.
  *!
  *! @seealso
@@ -175,8 +177,8 @@ static void regexp_match(INT32 args)
  *!   You can currently only have 39 subregexps.
  *!
  *! @bugs
- *!   The current implementation (Pike 7.3.51) doesn't support
- *!   searching in strings containing the NUL character or any
+ *!   The current implementation doesn't support searching
+ *!   in strings containing the NUL character or any
  *!   wide character.
  *!
  *! @seealso
@@ -223,6 +225,9 @@ static void exit_regexp_glue(struct object *o)
 {
   do_free();
 }
+
+/*! @endclass
+ */
 
 /*! @endmodule
  */
