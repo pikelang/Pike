@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.35 2000/09/08 16:13:27 grubba Exp $
+ * $Id: image_ttf.c,v 1.36 2000/09/11 18:31:57 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.35 2000/09/08 16:13:27 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.36 2000/09/11 18:31:57 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -730,7 +730,7 @@ static void ttf_translate_8bit(TT_CharMap charMap,
 
    THREADS_ALLOW();
    for (i=0; i<len; i++)
-      dest[0][i]=TT_Char_Index(charMap, (TT_UShort)what[i]+base);
+      dest[0][i]=TT_Char_Index(charMap, (TT_UShort)(what[i]+base));
    THREADS_DISALLOW();
 }
 

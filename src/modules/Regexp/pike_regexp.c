@@ -1,5 +1,5 @@
 /* 
- * $Id: pike_regexp.c,v 1.17 2000/09/08 16:02:29 grubba Exp $
+ * $Id: pike_regexp.c,v 1.18 2000/09/11 18:31:07 grubba Exp $
  *
  * regexp.c - regular expression matching
  *
@@ -421,7 +421,7 @@ static char *reg(int paren,int *flagp)
     }
 
     /* Make a closing node, and hook it on the end. */
-    ender = regnode((paren) ? (char)(CLOSE + parno) : END);
+    ender = regnode((char)((paren) ? (CLOSE + parno) : END));
     regtail(ret, ender);
 
     /* Hook the tails of the branches to the closing node. */

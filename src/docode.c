@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.81 2000/09/08 16:32:59 grubba Exp $");
+RCSID("$Id: docode.c,v 1.82 2000/09/11 18:42:25 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -95,7 +95,7 @@ static int is_efun(node *n, c_fun fun)
 
 static void code_expression(node *n, INT16 flags, char *err)
 {
-  switch(do_docode(check_node_hash(n), flags & ~ DO_POP))
+  switch(do_docode(check_node_hash(n), (INT16)(flags & ~DO_POP)))
   {
   case 0: my_yyerror("Void expression for %s",err);
   case 1: return;
@@ -147,7 +147,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
     return;
   }
 
-  code_expression(n, flags | DO_NOT_COPY, "condition");
+  code_expression(n, (INT16)(flags | DO_NOT_COPY), "condition");
   
   if(flags & DO_POP)
   {
@@ -890,7 +890,7 @@ static int do_docode2(node *n, INT16 flags)
 
   case F_ARG_LIST:
   case F_COMMA_EXPR:
-    tmp1=do_docode(CAR(n),flags & ~WANT_LVALUE);
+    tmp1 = do_docode(CAR(n), (INT16)(flags & ~WANT_LVALUE));
     tmp1+=do_docode(CDR(n),flags);
     return DO_NOT_WARN((INT32)tmp1);
 
@@ -1200,8 +1200,8 @@ static int do_docode2(node *n, INT16 flags)
     if(flags & WANT_LVALUE)
     {
       int mklval=CAR(n) && match_types(CAR(n)->type, string_type_string);
-      tmp1=do_docode(CAR(n),
-		     mklval ? DO_LVALUE_IF_POSSIBLE : 0);
+      tmp1 = do_docode(CAR(n),
+		       (INT16)(mklval ? DO_LVALUE_IF_POSSIBLE : 0));
       if(tmp1==2)
       {
 #ifdef PIKE_DEBUG
@@ -1354,7 +1354,8 @@ static int do_docode2(node *n, INT16 flags)
     return 1;
 
   case F_VAL_LVAL:
-    return do_docode(CAR(n),flags)+do_docode(CDR(n),flags | DO_LVALUE);
+    return do_docode(CAR(n),flags) +
+      do_docode(CDR(n), (INT16)(flags | DO_LVALUE));
     
   default:
     fatal("Infernal compiler error (unknown parse-tree-token).\n");

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.146 2000/08/24 17:09:41 grubba Exp $");
+RCSID("$Id: object.c,v 1.147 2000/09/11 18:50:17 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1264,7 +1264,8 @@ void gc_mark_object_as_referenced(struct object *o)
 	  gc_mark_svalues(s, 1);
 	}else{
 	  union anything *u;
-	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
+	  TYPE_T rtt =
+	    (TYPE_T)pike_frame->context.prog->identifiers[d].run_time_type;
 	  u=(union anything *)(pike_frame->current_storage +
 			       pike_frame->context.prog->identifiers[d].func.offset);
 #ifdef DEBUG_MALLOC
