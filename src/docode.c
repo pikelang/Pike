@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.95 2001/01/14 21:05:38 grubba Exp $");
+RCSID("$Id: docode.c,v 1.96 2001/01/14 21:39:36 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -894,14 +894,12 @@ static int do_docode2(node *n, INT16 flags)
   {
     /* FIXME: No support for break or continue. */
     PUSH_STATEMENT_LABEL;
-    tmp1 = do_code(CAR(n));
+    tmp1 = do_docode(CAR(n), 0);
     if (tmp1 > 0) {
       do_pop(tmp1-1);
       tmp2 = do_branch(-1);
       tmp3 = ins_label(-1);
-      PUSH_STATEMENT_LABEL;
-      do_pop(do_code(CDR(n)));
-      POP_STATEMENT_LABEL;
+      DO_CODE_BLOCK(CDR(n));
       ins_label(tmp2);
       emit1(F_LOOP, tmp3);
     }
