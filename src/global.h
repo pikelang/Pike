@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.73 2002/09/13 15:35:48 mast Exp $
+ * $Id: global.h,v 1.74 2002/10/05 17:15:19 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -13,17 +13,6 @@
 #if defined(__WINNT__) && !defined(__NT__)
 #define __NT__
 #endif
-
-/* The worlds most stringent C compiler? */
-#ifdef __TenDRA__
-/* We want to be able to use 64bit arithmetic */
-#pragma TenDRA longlong type allow
-#pragma TenDRA set longlong type : long long
-
-#ifdef _NO_LONGLONG
-#undef _NO_LONGLONG
-#endif /* _NO_LONGLONG */
-#endif /* __TenDRA__ */
 
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
@@ -45,16 +34,6 @@
 #ifndef __BUILTIN_VA_ARG_INCR
 #define __BUILTIN_VA_ARG_INCR	1
 #endif /* !__BUILTIN_VA_ARG_INCR */
-
-/* Get more declarations in GNU libc. */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
-/* Get more declarations from AIX libc. */
-#ifndef _ALL_SOURCE
-#define _ALL_SOURCE
-#endif
 
 /*
  * Some structure forward declarations are needed.
