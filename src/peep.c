@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.101 2004/08/25 09:36:47 grubba Exp $
+|| $Id: peep.c,v 1.102 2004/08/25 12:00:08 grubba Exp $
 */
 
 #include "global.h"
@@ -25,9 +25,9 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.101 2004/08/25 09:36:47 grubba Exp $");
+RCSID("$Id: peep.c,v 1.102 2004/08/25 12:00:08 grubba Exp $");
 
-static void asm_opt(void);
+static int asm_opt(void);
 
 dynamic_buffer instrbuf;
 
@@ -146,8 +146,6 @@ void update_arg(int instr,INT32 arg)
 
 /**** Bytecode Generator *****/
 
-static int relabel;
-
 INT32 assemble(int store_linenumbers)
 {
   INT32 entry_point;
@@ -163,6 +161,8 @@ INT32 assemble(int store_linenumbers)
   int synch_depth = 0;
   size_t fun_start = Pike_compiler->new_program->num_program;
 #endif
+  int relabel;
+  int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
 
   c=(p_instr *)instrbuf.s.str;
   length=instrbuf.s.len / sizeof(p_instr);
@@ -292,8 +292,6 @@ INT32 assemble(int store_linenumbers)
   jumps = labels + max_label + 2;
   uses = jumps + max_label + 2;
 
-  int reoptimize = relabel = !(debug_options & NO_PEEP_OPTIMIZING);
-
   while(relabel)
   {
     /* First do the relabel pass. */
@@ -380,13 +378,11 @@ INT32 assemble(int store_linenumbers)
       }
     }
 
-    relabel = 0;
-
     if(!reoptimize) break;
 
     /* Then do the optimize pass. */
 
-    asm_opt();
+    relabel = asm_opt();
 
     reoptimize = 0;
 
@@ -973,14 +969,14 @@ static void do_optimization(int topop, ...)
   va_end(arglist);
 
   DO_OPTIMIZATION_POSTQUEL(q);
-
-  relabel = 1;
 }
 
 #include "peep_engine.c"
 
-static void asm_opt(void)
+static int asm_opt(void)
 {
+  int relabel = 0;
+
 #ifdef PIKE_DEBUG
   if(a_flag > 3)
   {
@@ -1026,7 +1022,7 @@ static void asm_opt(void)
     }
 #endif
 
-    low_asm_opt();
+    relabel |= low_asm_opt();
     advance();
   }
 
@@ -1054,4 +1050,6 @@ static void asm_opt(void)
     }
   }
 #endif
+
+  return relabel;
 }
