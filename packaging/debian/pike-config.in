@@ -1,0 +1,36 @@
+#!/bin/sh
+#
+# $Id: pike-config.in,v 1.1 2002/08/12 01:02:31 grendel Exp $
+#
+
+MY_CFLAGS="@CFLAGS@"
+MY_LDFLAGS="@LDFLAGS@"
+MY_VERSION="@MAJOR@.@MINOR@.@BUILD@"
+
+if test -z "$1"; then
+  cat <<EOF
+Usage: pike-config [--cflags] [--ldflags] [--version]
+
+  --cflags        Print the compiler flags required to compile a module
+  --ldflags       Print the linker flags required to link a module
+  --version       Print the pike version for which the compilation is taking
+                  place
+
+EOF
+  exit 1
+fi
+
+while true; do
+  if test -z "$1"; then
+    break
+  fi
+
+  case $1 in
+    --cflags) echo -n "${MY_CFLAGS} " ;;
+    --ldflags) echo -n "${MY_LDFLAGS} " ;;
+    --version) echo -n "${MY_VERSION} " ;;
+  esac
+  shift
+done
+
+echo
