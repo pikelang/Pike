@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.18 1997/05/19 22:48:54 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.19 1997/06/04 16:02:02 nisse Exp $");
 #include "gmp_machine.h"
 
 #if !defined(HAVE_LIBGMP)
@@ -59,6 +59,7 @@ static void get_mpz_from_digits(MP_INT *tmp,
       mpz_mul_2exp(digit, digit, (digits->len - i - 1) * 8);
       mpz_ior(tmp, tmp, digit);
     }
+    mpz_clear(digit);
   }
   else
   {
