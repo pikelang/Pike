@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.143 1999/06/29 00:00:27 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.144 1999/06/29 05:02:51 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2328,7 +2328,7 @@ void f_create_process(INT32 args)
 #else
       pid=fork();
 #endif
-    }while(pid==-1 && errno==EINTR)
+    }while(pid==-1 && errno==EINTR);
 
     UNSET_ONERROR(err);
 
