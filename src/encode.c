@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.100 2001/07/01 14:27:08 grubba Exp $");
+RCSID("$Id: encode.c,v 1.101 2001/07/01 16:59:45 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2024,7 +2024,7 @@ static void decode_value2(struct decode_data *data)
 			 Pike_sp[-1].u.integer);
 	    }
 	    pop_stack();
-	    push_program(p);
+	    ref_push_program(p);
 	  } else {
 	    Pike_error("Failed to decode program.\n");
 	  }
