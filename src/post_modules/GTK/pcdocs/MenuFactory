@@ -19,17 +19,17 @@ ARGS(array(MenuDef));
 // <p>
 // This is the function that actually builds the menubar.
 // A short example:
-//<p><pre>
+// <p><pre>
 // import GTK.MenuFactory;
 // [GTK.MenuBar bar, GTK.AcceleratorTable map] = 
 //  MenuFactory( 
 //    MenuDef( "File/New", new_file, 0, "A-N" ), 
 //    MenuDef( "File/Open", new_file, 1, "A-O" ), 
 //    MenuDef( "File/Save", save_file, 0, "A-S" ), 
-//    MenuDef( "File/<separator>", 0, 0 ),
+//    MenuDef( "File/&lt;separator&gt;", 0, 0 ),
 //    MenuDef( "File/Quit", _exit, 0, "A-Q" ), 
 //  );
-//</pre>
+// </pre>
 
 // A single menu entry.
 FUNCTION(MenuDef, "function(string,function(mixed:mixed),mixed,string,int:object)");
@@ -37,10 +37,10 @@ NAME_ARGS(path,callback,callbackargument,shortcut,flags);
 RETURNS(MenuDef);
 // Path is the menupath. A submenu will be created for each
 // "Directory" in the path, and menuitems will be created for the
-// "files". There are two special cases: The "file" '<separator>' will
-// create a thin line. The "file"prefix <check> will make the menuitem
+// "files". There are two special cases: The "file" '&lt;separator&gt;' will
+// create a thin line. The "file"prefix &lt;check&gt; will make the menuitem
 // a checkmenuitem instead of a normal menuitem.
-//<p>
+// <p>
 
 // The second and third arguments are the callback function and the
 // first callback function argument. If the callback function argument
@@ -49,7 +49,7 @@ RETURNS(MenuDef);
 // make an array with the array in.  The callback function will be
 // called like callback( arg, widget ), or if arg is an array,
 // callback( arg[0], arg[1], ..., widget )
-//<p>
+// <p>
 // The fourth argument, shortcut, is the shortcut to bind to this menu
 // item. The shortcut can be changed later on by calling
 // assign_shortcut, or by the user by pressing the desired
