@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.185 2001/12/19 23:54:54 mast Exp $
+ * $Id: master.pike.in,v 1.186 2001/12/29 22:53:23 nilsson Exp $
  * 
  * Master-file for Pike.
  *
@@ -1487,7 +1487,7 @@ void _main(array(string) orig_argv, array(string) env)
   string postparseaction=0;
   mixed v;
 
-  predefines = _static_modules.Builtin._take_over_initial_predefines();
+  predefines = _static_modules.Builtin()->_take_over_initial_predefines();
   _pike_file_name = orig_argv[0];
 #if constant(thread_create)
   _backend_thread = this_thread();
