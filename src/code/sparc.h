@@ -1,8 +1,6 @@
 /*
- * $Id: sparc.h,v 1.9 2001/08/13 23:39:11 mast Exp $
+ * $Id: sparc.h,v 1.10 2002/04/07 19:30:12 mast Exp $
  */
-
-#define PIKE_OPCODE_T	unsigned INT32
 
 #define PIKE_OPCODE_ALIGN	4
 

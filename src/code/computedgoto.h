@@ -1,8 +1,6 @@
 /*
- * $Id: computedgoto.h,v 1.3 2001/07/20 22:45:16 grubba Exp $
+ * $Id: computedgoto.h,v 1.4 2002/04/07 19:30:11 mast Exp $
  */
-
-#define PIKE_OPCODE_T	void *
 
 #define UPDATE_PC()
 

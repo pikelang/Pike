@@ -1,8 +1,7 @@
 /*
- * $Id: ia32.h,v 1.13 2001/08/16 18:49:47 marcus Exp $
+ * $Id: ia32.h,v 1.14 2002/04/07 19:30:11 mast Exp $
  */
 
-#define PIKE_OPCODE_T	unsigned INT8
 /* #define ALIGN_PIKE_JUMPS 8 */
 
 #define LOW_GET_JUMP()	EXTRACT_INT(PROG_COUNTER)

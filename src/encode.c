@@ -24,8 +24,9 @@
 #include "stuff.h"
 #include "version.h"
 #include "bignum.h"
+#include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.138 2002/02/13 13:38:44 grubba Exp $");
+RCSID("$Id: encode.c,v 1.139 2002/04/07 19:30:08 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 

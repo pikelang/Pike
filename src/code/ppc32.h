@@ -1,8 +1,6 @@
 /*
- * $Id: ppc32.h,v 1.10 2001/09/19 21:59:15 marcus Exp $
+ * $Id: ppc32.h,v 1.11 2002/04/07 19:30:12 mast Exp $
  */
-
-#define PIKE_OPCODE_T	unsigned INT32
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
       add_to_program(((OPCD)<<26)|((BO)<<21)|((BI)<<16)|	\

@@ -3,7 +3,7 @@ Code generation templates for Pike.
 These paired files should all implement the following functions/macros:
 
 PIKE_OPCODE_T
-	Type with opcode granularity.
+	Type with opcode granularity. This is defined in ../program.h.
 
 PIKE_OPCODE_T *PROG_COUNTER;
 	Return the current program counter.
