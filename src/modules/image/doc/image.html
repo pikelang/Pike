@@ -551,4 +551,10 @@ int main()
 object image->select_from(int x,int y);
 object image->distancesq(int r,int g,int b);
 array(int) image->getpixel(int x,int y);
+object image->skewx(int diff,rgb);
+object image->skewy(int diff,rgb);
+object image->skewx_expand(int diff,rgb);
+object image->skewy_expand(int diff,rgb);
+object image->rotate(int|float angle,rgb);
+object image->rotate_expand(int|float angle,rgb);
 </pre>
