@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: RCS.pike,v 1.20 2002/04/19 23:18:15 jhs Exp $
+// $Id: RCS.pike,v 1.21 2002/06/11 15:18:33 jhs Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -334,16 +334,129 @@ void parse_deltatext_sections(string raw,
 			      void|function(string:void) progress_callback,
 			      array|void callback_args)
 {
-  string this_rev, lmsg, diff;
+  DeltatextIterator iterate = DeltatextIterator(raw, progress_callback,
+						callback_args);
+  while(iterate->next())
+    ;
+}
 
-  while(sscanf(raw, SWS "%[0-9.]" SWS "%s", this_rev, raw) &&
-	sizeof(this_rev))
+//! Iterator for the deltatext sections of the RCS file. Typical usage:
+//! @example
+//!   string raw = Stdio.read_file(my_rcs_filename);
+//!   Parser.RCS rcs = Parser.RCS(my_rcs_filename, 0);
+//!   raw = rcs->parse_delta_sections(rcs->parse_admin_section(raw));
+//!   foreach(rcs->DeltatextIterator(raw); int n; Parser.RCS.Revision rev)
+//!     do_something(rev);
+class DeltatextIterator
+{
+  static int finished, this_no;
+  static string raw, this_rev;
+
+  static function(string, mixed ...:void) callback;
+  static array callback_args;
+
+  //! @param deltatext_section
+  //! the deltatext section of the RCS file in its entirety
+  //! @param progress_callback
+  //!   This optional callback is invoked with the revision of the
+  //!   deltatext about to be parsed (useful for progress indicators).
+  //! @param progress_callback_args
+  //!   Optional extra trailing arguments to be sent to @[progress_callback]
+  //! @seealso
+  //! the @tt{rcsfile(5)@} manpage outlines the sections of an RCS file
+  static void create(string deltatext_section,
+		     void|function(string, mixed ...:void) progress_callback,
+		     void|array(mixed) progress_callback_args)
   {
-    if(progress_callback)
+    raw = deltatext_section;
+    callback = progress_callback;
+    callback_args = progress_callback_args;
+  }
+
+  string _sprintf(int|void type, mapping|void options)
+  {
+    string name = "DeltatextIterator";
+    if(type == 't')
+      return name;
+    return sprintf("%s(/* processed %d/%d revisions%s */)", name, this_no,
+		   sizeof(revisions), (this_no ? ", now at "+this_rev : ""));
+  }
+
+  //! drops the leading whitespace before next revision's deltatext
+  //! entry and sets this_rev to the revision number we're about to read.
+  //! @note
+  //! this method requires that @[raw] starts with a valid deltatext entry
+  static int(0..1) read_next()
+  {
+    raw = parse_deltatext_section(raw);
+    return finished = !!raw;
+  }
+
+  //! @returns
+  //! the number of deltatext entries processed so far (0..N-1, N
+  //! being the total number of revisions in the rcs file)
+  int index()
+  {
+    return this_no;
+  }
+
+  //! @returns
+  //! the @[Revision] at whose deltatext data we are, updated with its info
+  Revision value()
+  {
+    return revisions[this_rev];
+  }
+
+  //! @returns
+  //! 1 if the iterator has processed all deltatext entries, 0 otherwise.
+  int(0..1) `!()
+  {
+    return finished;
+  }
+
+  this_program `+=(int nsteps)
+  {
+    while(nsteps--)
+      next();
+    return this_object();
+  }
+
+  //! like @expr{@[`+=](1)@}, but returns 0 if the iterator is finished
+  int(0..1) next()
+  {
+    return read_next() && (++this_no, 1);
+  }
+
+  //! Restart not implemented; always returns 0 (==failed)
+  int(0..1) first()
+  {
+    return 0;
+  }
+
+  //! Chops off the first deltatext section from the string @[raw] and
+  //! returns the rest of the string, or the value @expr{0@} (zero) if
+  //! we had already visited the final deltatext entry. The deltatext's
+  //! data is stored destructively in the appropriate entry of the
+  //! @[revisions] array.
+  //! @note
+  //!   @[raw] must start with a deltatext entry for this method to work
+  //! @fixme
+  //!   does not handle rcsfile(5) newphrase skipping
+  //! @fixme
+  //!   if the rcs file is truncated, this method writes a descriptive
+  //!   error to stderr and then returns 0 - some nicer error handling
+  //!   wouldn't hurt
+  static string parse_deltatext_section(string raw)
+  {
+    if(sscanf(raw, SWS "%[0-9.]" SWS "%s", this_rev, raw) < 4
+    || !sizeof(this_rev))
+      return 0; // we've already visited the final deltatext entry
+
+    if(callback)
       if(callback_args)
-	progress_callback(this_rev, @callback_args);
+	callback(this_rev, @callback_args);
       else
-	progress_callback(this_rev);
+	callback(this_rev);
 
     Revision this = revisions[this_rev];
     [this->log, raw] = parse_string(raw, "log");
@@ -353,7 +466,7 @@ void parse_deltatext_sections(string raw,
     {
       werror("RCS file %sbroken (truncated?) at rev %s.\n",
 	     (rcs_file_name ? rcs_file_name + " " : ""), this_rev);
-      break;
+      return 0;
     }
 
     array(string) rows = this->rcs_text / "\n";
@@ -386,7 +499,7 @@ void parse_deltatext_sections(string raw,
 	      this->lines, this->ancestor, this->next);
 	Revision next = revisions[this->next];
 	this->lines = next->lines - removed + added;
-	this->added = this->lines; // to make added files show their length
+	this->added = this->lines; // so added files show their length
 	next->removed = added; // remember, the math is all
 	next->added = removed; // backwards on the trunk
       }
@@ -397,6 +510,7 @@ void parse_deltatext_sections(string raw,
 	this->added = added;
       }
     }
+    return raw;
   }
 }
 
