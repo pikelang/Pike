@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.775 2004/02/27 12:48:53 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.776 2004/02/27 13:43:33 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1194,8 +1194,9 @@ if test "$with_bundles" = "no"; then :; else
     pike_bundle_dir=`cd "$srcdir/../bundles" && pwd`
   fi
   if test -d bundles || mkdir bundles; then
-    LDFLAGS="$LDFLAGS -L`pwd`/bundles/lib"
-    CPPFLAGS="$CPPFLAGS -I`pwd`/bundles/include"
+    pike_bundle_prefix="`pwd`/bundles"
+    LDFLAGS="$LDFLAGS -L$pike_bundle_prefix/lib"
+    CPPFLAGS="$CPPFLAGS -I$pike_bundle_prefix/include"
   fi
 fi
 export pike_bundle_dir
@@ -6885,19 +6886,66 @@ if test "$pike_bundle_dir" = ""; then :; else
       done
       AC_MSG_RESULT($dist_file)
       if test "$dist_file" = "no"; then
-        PIKE_MSG_WARN([Bundle $bundle not found.
+        AC_MSG_WARN([Bundle $bundle not found.
 Requested from:
 $bundle_info])
         bundle_info=`echo "$bundle_info" | grep -v "$bundle.bundle"`
       else
-        # FIXME: Extract bundle
-        # FIXME: Configure bundle --prefix=`pwd`/bundles --static
-        # FIXME: Compile bundle
-        # FIXME: Install bundle
-        :
+        # First extract the bundle.
+
+        # Bundle source is expected to be extracted into a directory
+	# of the same name as the bundle.
+        bundle_source_dir=`echo "$dist_file"|sed -e 's/.tar.gz$//'`
+
+        if test -f "$bundle_source_dir/configure"; then
+	  # Bundle source already extracted.
+	  :
+	else
+	  echo "Extracting bundle $dist_file..."
+	  ( cd "$bundle_dir" && \
+	    gzip -cd "$dist_file" | tar xf -
+	  )
+	fi
+	if test -d "bundles/$bundle.build" || \
+	   mkdir "bundles/$bundle.build"; then :; else
+	  echo "Failed to create bundle build directory bundles/$bundle.build"
+	  exit 1
+	fi
+	( cd "bundles/$bundle.build" || exit 1
+
+	  if test -f "Makefile"; then :; else
+            # Configure bundle.
+	    # Note
+	    #  * Configure for installation in $pike_bundle_prefix.
+	    #  * Make sure that only static libraries are built.
+
+	    if test -f "$bundle_source_dir/configure"; then :; else
+	      echo "Bundle configure script $bundle_source_dir/configure not found."
+	      exit 1
+	    fi
+
+	    echo "Configuring bundle $bundle_source_dir in `pwd`..."
+
+	    "$bundle_source_dir/configure" --prefix="$pike_bundle_prefix" \
+	      --disable-shared || exit 1
+	    if test -f "Makefile"; then :; else
+	      echo "Makefile not found in `pwd`."
+	      exit 1
+	    fi
+	  fi
+
+	  # Compile bundle.
+	  echo "Compiling bundle $bundle in `pwd`..."
+	  ${MAKE-make} || exit 1
+
+	  # Install bundle.
+	  echo "Installing bundle $bundle in ${pike_bundle_prefix}..."
+	  ${MAKE-make} install || exit 1
+	) || exit 1
       fi
     done
     # Clear the caches.
+    echo Clearing cached variables related to the bundles.
     for varname in `cat $bundle_info|sort|uniq`; do
       unset $varname
     done
@@ -6909,6 +6957,13 @@ q
 EOF
     fi
     # Rerun configure
+    cat <<EOF
+
+
+Rerunning configure with the bundles `echo $bundles` enabled.
+
+
+EOF
     if "x$CONFIG_SHELL" = "x"; then
       CONFIG_SHELL=/bin/sh
     fi
