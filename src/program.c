@@ -493,6 +493,12 @@ struct program *end_program()
     free((char *)local_variables);
     local_variables=l;
   }
+  
+  if(last_file)
+  {
+    free_string(last_file);
+    last_file=0;
+  }
 
 #define PROGRAM_STATE
 #define POP

@@ -27,7 +27,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/wait.h>
 #include <sys/socket.h>
 
 #ifdef HAVE_SYS_STREAM_H
@@ -846,7 +845,7 @@ static void file_pipe(INT32 args)
   pop_n_elems(args);
   THIS->errno=0;
 
-  i=socketpair(AF_UNIX, SOCK_STREAM, 0, &inout);
+  i=socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
   if(i<0)
   {
     THIS->errno=errno;

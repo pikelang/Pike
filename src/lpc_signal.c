@@ -11,6 +11,7 @@
 #include "macros.h"
 #include "backend.h"
 #include <signal.h>
+#include <sys/wait.h>
 
 #ifdef NSIG
 #define MAX_SIGNALS NSIG

@@ -52,6 +52,19 @@
       oLd=Y; Y=oLd->previous;
 #define SEND free(oLd); \
     }
+#define PCODE(X) X
+#else
+#define PCODE(X)
+#endif
+
+
+#ifdef DEBUG
+#define STRMEMBER(X,Y) \
+  PCODE(if(X) fatal("Variable %s not deallocated properly.\n",Y);) \
+  ZMEMBER(struct lpc_string *,X,)
+#else
+#define STRMEMBER(X) \
+  ZMEMBER(struct lpc_string *,X,)
 #endif
 
 #ifdef FILE_STATE
@@ -62,14 +75,14 @@
   ZMEMBER(int,pragma_all_inline,)
   ZMEMBER(struct inputstate *,istate,)
   ZMEMBER(struct hash_table *,defines,)
-  ZMEMBER(struct lpc_string *,current_file,)
+  STRMEMBER(current_file,"current_file")
   SEND
 #endif
 
 #ifdef PROGRAM_STATE
   SNAME(program_state,previous_program_state)
   ZMEMBER(INT32,last_line,)
-  ZMEMBER(struct shared_string *,last_file,)
+  STRMEMBER(last_file,"last_file")
   ZMEMBER(struct program,fake_program,)
   ZMEMBER(node *,init_node,)
   ZMEMBER(INT32,last_pc,)
@@ -81,6 +94,8 @@
   SEND
 #endif
 
+#undef PCODE
+#undef STRMEMBER
 #undef IMEMBER
 #undef ZMEMBER
 #undef SNAME

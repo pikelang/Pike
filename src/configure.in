@@ -204,6 +204,8 @@ AC_HAVE_FUNCS(
  times \
  vfprintf \
  vsprintf \
+ wait4 \
+ waitpid \
 )
 
 define(MY_CHECK_HEADERS,
