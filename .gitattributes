@@ -421,6 +421,8 @@ testfont binary
 /src/modules/Image/encodings/Makefile.in foreign_ident
 /src/modules/Image/encodings/_xpm.c foreign_ident
 /src/modules/Image/encodings/any.c foreign_ident
+/src/modules/Image/encodings/atari.c foreign_ident
+/src/modules/Image/encodings/atari.h foreign_ident
 /src/modules/Image/encodings/avs.c foreign_ident
 /src/modules/Image/encodings/bmp.c foreign_ident
 /src/modules/Image/encodings/configure.in foreign_ident
@@ -429,6 +431,7 @@ testfont binary
 /src/modules/Image/encodings/hrz.c foreign_ident
 /src/modules/Image/encodings/iff.c foreign_ident
 /src/modules/Image/encodings/ilbm.c foreign_ident
+/src/modules/Image/encodings/neo.c foreign_ident
 /src/modules/Image/encodings/pcx.c foreign_ident
 /src/modules/Image/encodings/png.c foreign_ident
 /src/modules/Image/encodings/pnm.c foreign_ident
