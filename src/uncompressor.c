@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: uncompressor.c,v 1.7 2003/03/27 18:25:08 mast Exp $
+|| $Id: uncompressor.c,v 1.8 2004/01/28 18:00:32 grubba Exp $
 */
 
 #include <sys/types.h>
@@ -141,7 +141,7 @@ void my_uncompress(char *file,int argc, char **argv)
 	putenv(buffer);
 	break;
 	
-      case 's': /* execute */
+      case 's': /* system */
 	/* We ignore error so that we can continue with
 	 * file deletion
 	 */
