@@ -13,6 +13,8 @@
 import ".";
 inherit Time:Time;
 
+#include "constants.h"
+
 #define this this_object()
 
 // ----------------
@@ -965,9 +967,8 @@ class YMD
    { 
       if (sizeof(time)==2)
       {
-	 if (n==number_of_hours())
-	    return (hour(-1)+1)->minute(time[0])->second(time[1]);
-	 return hour(n)->minute(time[0])->second(time[1]);
+	 return second(n*3600+time[0]*60+time[1]);
+//  	 return hour(n)->minute(time[0])->second(time[1]);
       }
       return get_unit("second",n); 
    }
@@ -2404,7 +2405,12 @@ class cSuperTimeRange
 // this API may change without further notice
 static TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
 {
-   TimeRange tr=origin[whut](h,m,s);
+   TimeRange tr;
+   if (catch {
+      tr=origin[whut](h,m,s);
+   } && h==24 && m==0 && s==0) // special case
+      return origin->end()->second();
+
    if (tr->hour_no()!=h || tr->minute_no()!=m)
    {
 //        werror("%O %O %O -> %O %O %O (%O)\n",
@@ -2428,6 +2434,7 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
 			   string whut,int ...args)
 {
    if (zonename=="") return 0;
+
    if (origin->rules->abbr2zone[zonename])
       zonename=origin->rules->abbr2zone[zonename];
    Ruleset.Timezone zone=Timezone[zonename];
@@ -2446,31 +2453,57 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
       return dwim_tod(origin->set_timezone(zone),whut,@args);
 }
 
+static mapping(string:array) parse_format_cache=([]);
+
 TimeRange parse(string fmt,string arg)
 {
-   string nfmt;
+   [string nfmt,array q]=(parse_format_cache[fmt]||({0,0}));
 
-   nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
+   if (!nfmt)
+   {
+//        nfmt=replace(fmt," %","%*[ \t]%"); // whitespace -> whitespace
 #define ALNU "%[^- -,./:-?[-`{-¿]"
 #define AMPM "%[ampAMP]"
 #define NUME "%[0-9]"
-   nfmt=replace(nfmt,
-		({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s","%p",
-		  "%t","%f","%d","%z","%n"}),
-		({ALNU,ALNU,ALNU,"%d",NUME,"%d",ALNU,"%d","%d","%d",AMPM,
-		  NUME,NUME,NUME,"%[-+0-9A-Za-z/]","%s"}));
-   array q=Array.map(replace(fmt,({"%*","%%"}),({"",""}))/"%",
-		     lambda(string s){ return s[..0];})-({""});
+
+      nfmt=replace(fmt,
+		   ({"%Y","%y","%M","%W","%D","%a","%e","%h","%m","%s","%p",
+		     "%t","%f","%d","%z","%n"}),
+		   ({ALNU,ALNU,ALNU,"%d",NUME,"%d",ALNU,"%d","%d","%d",AMPM,
+		     NUME,NUME,NUME,"%[-+0-9A-Za-z/]","%s"}));
+
+#if 1
+      q=array_sscanf(fmt,"%{%*[^%]%%%1s%}")*({})*({})-({"*","%"});
+#else
+// slower alternatives:
+      array q=Array.map(replace(fmt,({"%*","%%"}),({"",""}))/"%",
+			lambda(string s){ return s[..0];})-({""});
+
+      array q=({});
+      array pr=(array)fmt;
+      int i=-1;
+      while ((i=search(pr,'%',i+1))!=-1) q+=({sprintf("%c",pr[i+1])});
+#endif
+      parse_format_cache[fmt]=({nfmt,q});
+   }
+
    array res=array_sscanf(arg,nfmt);
+
+   int i=search(res,"");
+   if (i!=-1 && i<sizeof(res)-1) return 0;
 
    if (sizeof(res)<sizeof(q)) 
       return 0; // parse error
 
    mapping m=mkmapping(q,res);
+   if (i!=-1 && m->z!="") return 0; 
+
+//     werror("bopa %O\n %O\n %O\n %O\n",fmt,arg,nfmt,m);
 
    TimeRange low;
 
    Calendar cal=this_object();
+
 
 //  #define NOCATCH
 #ifndef NOCATCH
@@ -2486,6 +2519,7 @@ TimeRange parse(string fmt,string arg)
 
       if (!zero_type(m->Y) && m->D && (int)m->M)
 	 low=m->day=cal->Day(m->Y,(int)m->M,(int)m->D);
+
 
       if (m->d)
       {
@@ -2607,6 +2641,7 @@ TimeRange parse(string fmt,string arg)
 	 return dwim_tod(low,g,h,mi,s);
       else
 	 return low;
+
 #ifndef NOCATCH
    })
 #endif
@@ -2743,6 +2778,8 @@ TimeofDay dwim_time(string what)
 // #define COLON "$*[ :]" 
 #define COLON ":" 
 
+   if (t=parse("%e %M %D %h:%m:%s %Y",what)) return t; // ctime
+
    foreach ( dwim_day_strings +
 	     ({""}),
 	     string dayformat )
@@ -2760,17 +2797,17 @@ TimeofDay dwim_time(string what)
 		   "%h"COLON"%m%z",
 		   "%h"COLON"%m",
 		   "%h%*[ ]%p",
-		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s %p %z",
-		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s %p",
-		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s %z",
-		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s%z",
-		   "%[a-zA-Z.] %h"COLON"%m"COLON"%s",
-		   "%[a-zA-Z.] %h"COLON"%m %p %z",
-		   "%[a-zA-Z.] %h"COLON"%m %p",
-		   "%[a-zA-Z.] %h"COLON"%m %z",
-		   "%[a-zA-Z.] %h"COLON"%m%z",
-		   "%[a-zA-Z.] %h"COLON"%m",
- 		   "%[a-zA-Z.] %h%*[ ]%p", }),
+		   "%*[a-zA-Z.] %h"COLON"%m"COLON"%s %p %z",
+		   "%*[a-zA-Z.] %h"COLON"%m"COLON"%s %p",
+		   "%*[a-zA-Z.] %h"COLON"%m"COLON"%s %z",
+		   "%*[a-zA-Z.] %h"COLON"%m"COLON"%s%z",
+		   "%*[a-zA-Z.] %h"COLON"%m"COLON"%s",
+		   "%*[a-zA-Z.] %h"COLON"%m %p %z",
+		   "%*[a-zA-Z.] %h"COLON"%m %p",
+		   "%*[a-zA-Z.] %h"COLON"%m %z",
+		   "%*[a-zA-Z.] %h"COLON"%m%z",
+		   "%*[a-zA-Z.] %h"COLON"%m",
+ 		   "%*[a-zA-Z.] %h%*[ ]%p", }),
 		string todformat )
       {
 //  	 werror("try: %O\n     %O\n",
