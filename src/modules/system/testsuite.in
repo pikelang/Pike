@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.5 1998/07/18 17:41:49 grubba Exp $
+// $Id: testsuite.in,v 1.6 1998/07/18 17:47:36 grubba Exp $
 
 
 // system.c:
@@ -112,11 +112,9 @@ ifefun(getpwuid, [[
     }
     return 0;
   ]], 0)
-  ifefun(getpwnam, [[
-    const([[ getpwuid(0) ]], [[
-      test_equal([[ getpwnam(getpwuid(0)[0]) ]], [[ getpwuid(0) ]])
-    ]])
-  ]])
+]])
+cond([[ all_constants()->getpwuid && all_constants()->getpwnam && getpwuid(0) ]], [[
+  test_equal([[ getpwnam(getpwuid(0)[0]) ]], [[ getpwuid(0) ]])
 ]])
 // setgrent		HAVE_SETGRENT
 // setpwent		HAVE_SETPWENT
