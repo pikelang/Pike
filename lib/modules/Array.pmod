@@ -11,6 +11,10 @@ constant everynth = __builtin.everynth;
 constant splice = __builtin.splice;
 constant transpose = __builtin.transpose;
 
+#if 1
+constant filter=predef::filter;
+constant map=predef::map;
+#else
 mixed map(mixed arr, mixed fun, mixed ... args)
 {
   int e,s;
@@ -61,6 +65,7 @@ mixed map(mixed arr, mixed fun, mixed ... args)
   }
 }
 
+
 mixed filter(mixed arr, mixed fun, mixed ... args)
 {
   int e;
@@ -89,6 +94,7 @@ mixed filter(mixed arr, mixed fun, mixed ... args)
     return ret[..d-1];
   }
 }
+#endif
 
 mixed reduce(function fun, array arr, mixed|void zero)
 {
