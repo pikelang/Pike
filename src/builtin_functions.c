@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.123 1998/10/09 22:24:49 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.124 1998/10/09 22:28:35 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -727,24 +727,20 @@ void f_unicode_to_string(INT32 args)
 
   len = in->len / 2;
 
-  out = begin_shared_string(in->len + 1);
-  out->size_shift = 1;
-  out->len = len;
+  out = begin_wide_shared_string(len, 1);
 #if (BYTEORDER == 4321)
   /* Big endian
    *
    * FIXME: Future optimization: Perform sufficient magic
    * to do the conversion in place if the ref-count is == 1.
    */
-  /* NOTE: We copy the zero-termination byte too */
-  MEMCPY(out->str, in->str, in->len + 1);
+  MEMCPY(out->str, in->str, in->len);
 #else
   /* Little endian */
   {
     int i;
     p_wchar1 *str1 = STR1(out);
 
-    str1[len] = 0;	/* Force proper zero termination */
     for (i = len; i--;) {
       str1[i] = in->str[i*2]<<8 + in->str[i*2 + 1];
     }
