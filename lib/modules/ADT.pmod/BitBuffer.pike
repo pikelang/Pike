@@ -1,5 +1,5 @@
 //
-// $Id: BitBuffer.pike,v 1.4 2004/04/20 21:49:50 nilsson Exp $
+// $Id: BitBuffer.pike,v 1.5 2004/04/20 22:57:33 nilsson Exp $
 
 //! Implements a FIFO bit buffer, i.e. a buffer that operates on bits
 //! instead of bytes. It is not designed for performance, but as a way
@@ -7,6 +7,17 @@
 //! may need to work on unaligned data units of sub byte size, without
 //! having to fry your brain while keeping track of all the bits
 //! yourself.
+//!
+//! @example
+//!   > ADT.BitBuffer b=ADT.BitBuffer();
+//!   > b->put1(2);
+//!   (1) Result: ADT.BitBuffer(11)
+//!   > b->put0(15);
+//!   (2) Result: ADT.BitBuffer("À\0"0)
+//!   > b->drain();
+//!   (3) Result: "À\0"
+//!   > sizeof(b);
+//!   (4) Result: 1
 
 
 #pike __REAL_VERSION__
