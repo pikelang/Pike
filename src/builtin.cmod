@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.131 2003/04/07 17:28:54 nilsson Exp $
+|| $Id: builtin.cmod,v 1.132 2003/04/10 17:08:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -828,6 +828,8 @@ PIKEFUN int get_weak_flag(multiset m)
 #endif
 }
 
+/*! @decl program __empty_program(int|void line, string|void file)
+ */
 PIKEFUN program __empty_program(int|void line, string|void file)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
@@ -1019,15 +1021,20 @@ PIKEFUN program function_program(program|function func)
 }
 
 
-
-/*! @decl int random(int max)
- *!
- *!   This function returns a random number in the range 0 - @[max]-1.
- *!
+/*! @decl mixed random(object o)
+ *!   If random is called with an object, @[lfun::random] will be
+ *!   called in the object.
  *! @seealso
- *!   @[random_seed()]
+ *!  @[lfun::_random]
  */
 
+/*! @decl mixed lfun::_random()
+ *!   Called by @[random]. Typical uses is when the object implements
+ *!   a ADT, then a call to this lfun should return a random member of
+ *!   the ADT or range implied by the ADT.
+ *! @seealso
+ *!   @[predef::random()]
+ */
 
 PIKEFUN mixed random(object o)
   efun;
@@ -1037,6 +1044,15 @@ PIKEFUN mixed random(object o)
   stack_swap();
   pop_stack();
 }
+
+/*! @decl int random(int max)
+ *! @decl float random(float max)
+ *!
+ *!   This function returns a random number in the range 0 - @[max]-1.
+ *!
+ *! @seealso
+ *!   @[random_seed()]
+ */
 
 PIKEFUN int random(int i)
 {
@@ -1052,6 +1068,10 @@ PIKEFUN float random(float f)
     f * (my_rand()%N/( ((float)N) * ((float)N) ));
 		   
 }
+
+/*! @decl mixed random(array|multiset xa)
+ *!   Returns a random element from @[x].
+ */
 
 PIKEFUN mixed random(array a)
 {
@@ -1084,6 +1104,10 @@ PIKEFUN mixed random(multiset m)
   stack_swap();
   pop_stack();
 }
+
+/*! @decl array random(mapping m)
+ *!   Returns a random index-value pair from the mapping.
+ */
 
 PIKEFUN array random(mapping m)
 {
@@ -1174,6 +1198,9 @@ PIKECLASS backtrace_frame
     THIS->fun.u.integer = 0;
   }
 
+  /*! @decl int(0..1) _is_type(string t)
+   *! This object claims to be an array for backward compatibility.
+   */
   PIKEFUN int(0..1) _is_type(string t)
   {
     INT_TYPE res = (t == findstring("array"));
@@ -1205,6 +1232,8 @@ PIKECLASS backtrace_frame
     }
   }
 
+  /*! @decl string _sprintf(int c, mapping|void opts)
+   */
   PIKEFUN string _sprintf(int c, mapping|void opts)
   {
     pop_n_elems(args);
@@ -1255,7 +1284,9 @@ PIKECLASS backtrace_frame
     f_add(5);
   }
 
-  PIKEFUN int _sizeof()
+  /*! @decl int(3..) _sizeof()
+   */
+  PIKEFUN int(3..) _sizeof()
   {
     if (THIS->args) {
       push_int(THIS->args->size + 3);
@@ -1264,6 +1295,9 @@ PIKECLASS backtrace_frame
     }
   }
 
+  /*! @decl mixed `[](int index, int|void end_or_none)
+   *! The BacktraceFrame object can be indexed as an array.
+   */
   PIKEFUN mixed `[](int index, int|void end_or_none)
   {
     INT_TYPE end = index;
@@ -1342,6 +1376,8 @@ PIKECLASS backtrace_frame
     }
   }
 
+  /*! @decl mixed `[]=(int index, mixed value)
+   */
   PIKEFUN mixed `[]=(int index, mixed value)
   {
     INT32 numargs = 0;
@@ -1607,6 +1643,10 @@ PIKECLASS Buffer
     }
   }
 
+  /*! @decl string _sprintf( int flag, mapping flags )
+   *! It is possible to @[sprintf] a String.Buffer object
+   *! as @tt{%s@} just as if it was a string.
+   */
   PIKEFUN string _sprintf( int flag, mapping flags )
   {
     switch( flag )
@@ -1651,6 +1691,10 @@ PIKECLASS Buffer
     Pike_sp[-1].subtype = 1;
   }
 
+  /*! @decl mixed cast( string type )
+   *! It is possible to cast a String.Buffer object to
+   *! a @expr{string@} and an @expr{int@}.
+   */
   PIKEFUN mixed cast( string type )
   {
     struct pike_string *string_t;
@@ -1682,6 +1726,8 @@ PIKECLASS Buffer
     Pike_error("Cannot cast to %s\n", type->str );
   }
   
+  /*! @decl String.Buffer `+( string what )
+   */
   PIKEFUN object `+( string what )
   {
     struct Buffer_struct *str = THIS, *str2;
@@ -1694,6 +1740,8 @@ PIKECLASS Buffer
     RETURN res;
   }
 
+  /*! @decl String.Buffer `+=( string what )
+   */
   PIKEFUN object `+=( string what )
   {
     f_Buffer_add( 1 );
@@ -1841,6 +1889,8 @@ PIKECLASS multi_string_replace
     return DO_NOT_WARN((int)my_quick_strcmp(a->ind, b->ind));
   }
 
+  /*! @decl void create(array(string)|void from, array(string)|void to)
+   */
   PIKEFUN void create(array(string)|void from_, array(string)|void to_)
   {
     int i;
@@ -1974,6 +2024,8 @@ PIKECLASS multi_string_replace
     return match;
   }
 
+  /*! @decl string `()(string str)
+   */
   PIKEFUN string `()(string str)
   {
     struct string_builder ret;
@@ -2033,6 +2085,8 @@ PIKECLASS multi_string_replace
     RETURN finish_string_builder(&ret);
   }
 
+  /*! @decl array(string) _encode()
+   */
   PIKEFUN array(string) _encode()
   {
     size_t i;
@@ -2047,6 +2101,8 @@ PIKECLASS multi_string_replace
     f_aggregate(2);
   }
 
+  /*! @decl void _decode(array(array(string)) encoded)
+   */
   PIKEFUN void _decode(array(array(string)) encoded)
   {
     INT32 i;
@@ -2122,6 +2178,8 @@ PIKECLASS single_string_replace
     }
   }
 
+  /*! @decl void create(string|void del, string|void to)
+   */
   PIKEFUN void create(string|void del_, string|void to_)
   {
     struct pike_string *del;
@@ -2151,6 +2209,9 @@ PIKECLASS single_string_replace
 
   /*** replace function ***/
   typedef char *(* replace_searchfunc)(void *,void *,size_t);
+
+  /*! @decl string `()(string str)
+   */
   PIKEFUN string `()(string str)
   {
     int shift;
@@ -2237,6 +2298,8 @@ PIKECLASS single_string_replace
     RETURN end_shared_string(ret);
   }
 
+  /*! @decl array(string) _encode()
+   */
   PIKEFUN array(string) _encode()
   {
     if (THIS->del) {
@@ -2248,6 +2311,8 @@ PIKECLASS single_string_replace
     }
   }
 
+  /*! @decl void _decode(array(string)|int(0..0) encoded)
+   */
   PIKEFUN void _decode(array(string)|int(0..0) encoded_)
   {    
     INT32 i = 0;
