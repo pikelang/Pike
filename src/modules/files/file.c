@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.241 2002/09/25 14:12:45 marcus Exp $");
+RCSID("$Id: file.c,v 1.242 2002/10/04 11:23:23 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3205,10 +3205,41 @@ static void exit_file_lock_key(struct object *o)
   }
 }
 
+static void init_file_locking(void)
+{
+  ptrdiff_t off;
+  start_new_program();
+  off = ADD_STORAGE(struct file_lock_key_storage);
+#ifdef _REENTRANT
+  map_variable("_owner","object",0,
+	       off + OFFSETOF(file_lock_key_storage, owner),
+	       PIKE_T_OBJECT);
+#endif
+  map_variable("_file","object",0,
+	       off + OFFSETOF(file_lock_key_storage, file),
+	       PIKE_T_OBJECT);
+  set_init_callback(init_file_lock_key);
+  set_exit_callback(exit_file_lock_key);
+  file_lock_key_program=end_program();
+  file_lock_key_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
+}
+static void exit_file_locking(void)
+{
+  if(file_lock_key_program)
+  {
+    free_program(file_lock_key_program);
+    file_lock_key_program=0;
+  }
+}
+#else /* !(HAVE_FD_FLOCK || HAVE_FD_LOCKF) */
+#define init_file_locking()
+#define exit_file_locking()
+#endif /* HAVE_FD_FLOCK || HAVE_FD_LOCKF */
+
 /*! @endclass
  */
 
-/*! @decl array(int) get_all_active_fds()
+/*! @decl array(int) get_all_active_fd()
  *! Returns the id of all the active file descriptors.
  */
 static void f_get_all_active_fd(INT32 args)
@@ -3290,45 +3321,13 @@ static void f_get_all_active_fd(INT32 args)
 /*! @endmodule
  */
 
-static void init_file_locking(void)
-{
-  ptrdiff_t off;
-  start_new_program();
-  off = ADD_STORAGE(struct file_lock_key_storage);
-#ifdef _REENTRANT
-  map_variable("_owner","object",0,
-	       off + OFFSETOF(file_lock_key_storage, owner),
-	       PIKE_T_OBJECT);
-#endif
-  map_variable("_file","object",0,
-	       off + OFFSETOF(file_lock_key_storage, file),
-	       PIKE_T_OBJECT);
-  set_init_callback(init_file_lock_key);
-  set_exit_callback(exit_file_lock_key);
-  file_lock_key_program=end_program();
-  file_lock_key_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
-}
-static void exit_file_locking(void)
-{
-  if(file_lock_key_program)
-  {
-    free_program(file_lock_key_program);
-    file_lock_key_program=0;
-  }
-}
-#else
-#define init_file_locking()
-#define exit_file_locking()
-#endif /* HAVE_FD_FLOCK */
-
 void exit_files_stat(void);
+void exit_files_efuns(void);
+void exit_sendfile(void);
+void port_exit_program(void);
 
 void pike_module_exit(void)
 {
-  extern void exit_files_efuns(void);
-  extern void exit_sendfile(void);
-  extern void port_exit_program(void);
-
   exit_files_efuns();
   exit_files_stat();
 
@@ -3351,9 +3350,6 @@ void pike_module_exit(void)
   }
   port_exit_program();
 }
-
-void init_files_efuns(void);
-void init_files_stat(void);
 
 #define REF (*((struct object **)(Pike_fp->current_storage)))
 
@@ -3413,12 +3409,15 @@ void file_tcflush(INT32 args);
 /* void file_tcsetpgrp(INT32 args); */
 #endif
 
+void init_files_efuns(void);
+void init_files_stat(void);
+void port_setup_program(void);
+void init_sendfile(void);
+void init_udp(void);
+
 void pike_module_init(void)
 {
   struct object *o;
-  extern void port_setup_program(void);
-  extern void init_sendfile(void);
-  extern void init_udp(void);
 
   Pike_compiler->new_program->id = PROG_MODULE_FILES_ID;
 
@@ -3493,12 +3492,10 @@ void pike_module_init(void)
   ADD_FUNCTION("get_all_active_fd", f_get_all_active_fd,
 	       tFunc(tNone,tArr(tInt)), OPT_EXTERNAL_DEPEND);
 
-#ifdef PIKE_DEBUG
   dmalloc_accept_leak(add_to_callback(&do_debug_callbacks,
 				      check_static_file_data,
 				      0,
 				      0));
-#endif
 }
 
 /* Used from backend */
