@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.99 2000/12/14 07:29:20 mast Exp $");
+RCSID("$Id: array.c,v 1.100 2001/01/03 16:36:45 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -682,61 +682,74 @@ static INLINE int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
 	if(a->u.object == b->u.object) return 0;
 	if(a->u.refs < b->u.refs) { def=-1; break; }
 	if(a->u.refs > b->u.refs) { def=1; break; }
-	def=0;
+	def = (a<b)?-1:1;
 	break;
     }
   }else{
     def=a->type - b->type;
   }
 
-  if(a->type == T_OBJECT && a->u.object->prog && 
-     FIND_LFUN(a->u.object->prog,LFUN_LT) != -1)
-  {
-    push_svalue(b);
-    apply_lfun(a->u.object,LFUN_LT,1);
-    if(!IS_ZERO(sp-1))
-    {
-      pop_stack();
-      return -1;
-    }else{
-      pop_stack();
-    }
-    
-    push_svalue(b);
-    apply_lfun(a->u.object,LFUN_GT,1);
-    if(!IS_ZERO(sp-1))
-    {
-      pop_stack();
-      return 1;
-    }else{
+  if (a->type == T_OBJECT && a->u.object->prog) {
+    if (FIND_LFUN(a->u.object->prog,LFUN_LT) != -1) {
+      push_svalue(b);
+      apply_lfun(a->u.object,LFUN_LT,1);
+      if(!IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return -1;
+      }
       pop_stack();
     }
-    return 0;
+    if (FIND_LFUN(a->u.object->prog,LFUN_GT) != -1) {
+      push_svalue(b);
+      apply_lfun(a->u.object,LFUN_GT,1);
+      if(!IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return 1;
+      }
+      pop_stack();
+    }
+    if (FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1) {
+      push_svalue(b);
+      apply_lfun(a->u.object,LFUN_EQ,1);
+      if (!IS_ZERO(sp-1)) {
+	pop_stack();
+	return 0;
+      }
+      pop_stack();
+    }
   }
-
-  if(b->type == T_OBJECT && b->u.object->prog && 
-     FIND_LFUN(b->u.object->prog,LFUN_LT) != -1)
-  {
-    push_svalue(a);
-    apply_lfun(b->u.object,LFUN_LT,1);
-    if(!IS_ZERO(sp-1))
-    {
-      pop_stack();
-      return 1;
-    }else{
+  if(b->type == T_OBJECT && b->u.object->prog) {
+    if (FIND_LFUN(b->u.object->prog,LFUN_LT) != -1) {
+      push_svalue(a);
+      apply_lfun(b->u.object,LFUN_LT,1);
+      if(!IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return 1;
+      }
       pop_stack();
     }
-    
-    push_svalue(a);
-    apply_lfun(b->u.object,LFUN_GT,1);
-    if(!IS_ZERO(sp-1))
-    {
-      pop_stack();
-      return -1;
-    }else{
+    if (FIND_LFUN(b->u.object->prog,LFUN_GT) != -1) {
+      push_svalue(a);
+      apply_lfun(b->u.object,LFUN_GT,1);
+      if(!IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return -1;
+      }
       pop_stack();
     }
-    return 0;
+    if (FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1) {
+      push_svalue(a);
+      apply_lfun(b->u.object,LFUN_EQ,1);
+      if (!IS_ZERO(sp-1)) {
+	pop_stack();
+	return 0;
+      }
+      pop_stack();
+    }
   }
 
   return def;
@@ -1251,7 +1264,8 @@ static int array_merge_fun(INT32 *a, INT32 *b,
  * into ordered sets, merging them as sets and then rearranging the zipper
  * before zipping the sets together. 
  */
-PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op)
+PMOD_EXPORT struct array *merge_array_with_order(struct array *a,
+						 struct array *b, INT32 op)
 {
   ONERROR r1,r2,r3,r4,r5;
   INT32 *zipper;
