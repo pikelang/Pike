@@ -17,6 +17,7 @@ constant uniq = __builtin.uniq_array;
 constant filter=predef::filter;
 constant map=predef::map;
 constant permute = __builtin.permute;
+constant enumerate = predef::enumerate;
 
 //! @[reduce()] sends the first two elements in @[arr] to @[fun],
 //! then the result and the next element in @[arr] to @[fun] and
