@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.225 1998/08/05 22:45:44 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.226 1998/08/06 16:28:17 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -316,6 +316,12 @@ if test $cflags_is_set = no; then
   # Causes __STDC__ to be 1 which causes several headerfiles to behave
   # differently.
   # AC_SYS_OS_COMPILER_FLAG(Solaris,-Xc,Xc,WARN)
+
+  # AIX
+  # This one is needed to get the compiler to fail on errors,
+  # which is needed for several configure-scripts.
+  AC_SYS_OS_COMPILER_FLAG(AIX,-qhalt=e,qhalt_e,CFLAGS)
+  AC_SYS_OS_COMPILER_FLAG(AIX,-qro,qro,OPTIMIZE)
 
   # HP-UX
   AC_SYS_OS_COMPILER_FLAG(HP-UX,-D__STDC_EXT__,stdc_ext,CFLAGS)
