@@ -587,7 +587,7 @@ static INLINE struct vertex *polygone_add(struct vertex *top,
 					  int arg,
 					  char* what)
 {
-   struct vertex *first,*last,*cur;
+   struct vertex *first,*last,*cur = NULL;
    int n;
 
    for (n=0; n<a->size; n++)
@@ -599,7 +599,11 @@ static INLINE struct vertex *polygone_add(struct vertex *top,
 	 return NULL;
       }
 
-   if (a->size<6) return; /* no polygon with less then tree corners */
+   if (a->size<6) {
+      polygone_free(top);
+      error("Illegal argument %d to %s, too few vertices (min 3)\n", arg, what);
+      return NULL; /* no polygon with less then tree corners */
+   }
 
 #define POINT(A,N) (((A)->item[N].type==T_FLOAT)?((A)->item[N].u.float_number):((float)((A)->item[N].u.integer)))
 
@@ -635,23 +639,28 @@ static INLINE struct vertex *polygone_add(struct vertex *top,
 void image_polygone(INT32 args)
 {
    struct vertex *v;
-   int n;
 
    if (!THIS->img)
       error("No image when calling image::polygone()\n");
 
    v=polygone_begin();
 
-   n=args;
    while (args)
    {
+      struct vertex *v_tmp;
+
       if (sp[-1].type!=T_ARRAY)
       {
 	 polygone_free(v);
-	 error("Illegal argument %d to image::polygone(), expected array\n",n);
+	 error("Illegal argument %d to image::polygone(), expected array\n",
+	       args);
       }
-      v=polygone_add(v,sp[-1].u.array,n,"image::polygone()");
-      n++;
+      if ((v_tmp=polygone_add(v, sp[-1].u.array, args, "image::polygone()"))) {
+	 v = v_tmp;
+      } else {
+	 polygone_free(v);
+	 error("Bad argument %d to image::polygone(), bad vertice\n", args);
+      }
       args--;
       pop_stack();
    }
