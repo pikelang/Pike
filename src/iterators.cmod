@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.26 2002/08/15 14:49:22 marcus Exp $");
+RCSID("$Id: iterators.cmod,v 1.27 2002/10/07 08:03:39 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -923,17 +923,20 @@ PIKECLASS string_split_iterator
   do {								\
     PIKE_CONCAT(p_wchar, SHIFT) *s = 				\
       PIKE_CONCAT(STR,SHIFT)(THIS->buffer);			\
-    while(OFF < THIS->buffer->len) {				\
-      int i;							\
-      p_wchar2 ch = s[OFF];					\
-      for (i=0; i < THIS->split_set_size; i++) {		\
-	if (ch == THIS->split_set[i]) {				\
-	  goto PIKE_CONCAT(break_scan,SHIFT);			\
-	}							\
+    {								\
+      while(OFF < THIS->buffer->len) {				\
+        int i;							\
+        p_wchar2 ch = s[OFF];					\
+        for (i=0; i < THIS->split_set_size; i++) {		\
+	  if (ch == THIS->split_set[i]) {			\
+	    goto PIKE_CONCAT(break_scan,SHIFT);			\
+	  }							\
+        }							\
+        OFF++;							\
       }								\
-      OFF++;							\
+    PIKE_CONCAT(break_scan, SHIFT):				\
+      ;								\
     }								\
-  PIKE_CONCAT(break_scan, SHIFT):				\
     push_string(PIKE_CONCAT(make_shared_binary_string, SHIFT)	\
       (s+offset, OFF-offset));					\
   } while(0)
