@@ -41,8 +41,10 @@ mapping syms=
           "BIT_NOTHING":0,
           "BMLEN":768,
           "BUFFER_BEGIN_SIZE":4080,
+	  "CALLABLE_DYNAMIC":1,
           "CASE_INFO_SHIFT0_HIGH":15,
           "CHARS":256,
+	  "COMBINE_PATH_DEBUG":0,
           "COMPILER_IN_CATCH":1,
           "DEBUG_SIGNALS":1,
           "DECLARE_ENVIRON":1,
@@ -54,11 +56,13 @@ mapping syms=
           "DO_NOT_COPY_TOPLEVEL":32,
           "DO_POP":4,
           "DOUBLE_IS_IEEE_LITTLE":1,
-          "EFUN_CONST":1,
-          "EFUN_GLOBAL_SIDE_EFFECT":4,
-          "EFUN_LOCAL_SIDE_EFFECT":2,
-          "EFUN_OTHER_SIDE_EFFECT":8,
-          "ENCAPSULATE_MALLOC":1,
+	  "EFUN_CONST":1,
+	  "EFUN_GLOBAL_SIDE_EFFECT":4,
+	  "EFUN_LOCAL_SIDE_EFFECT":2,
+	  "EFUN_OTHER_SIDE_EFFECT":8,
+	  "ENCAPSULATE_MALLOC":1,
+	  "ENTRY_PROLOGUE_SIZE":0,
+	  "ERRORCHECK_MUTEXES":16,
           "EXTRACT_CHAR_BY_CAST":1,
           "EXTRACT_UCHAR_BY_CAST":1,
           "fd_APPEND":4,
@@ -70,6 +74,7 @@ mapping syms=
           "fd_CREAT":8,
           "fd_EXCL":32,
           "fd_INTERPROCESSABLE":1,
+	  "fd_LARGEFILE":0,
           "fd_LOCK_EX":2,
           "fd_LOCK_NB":8,
           "fd_LOCK_SH":1,
@@ -84,6 +89,9 @@ mapping syms=
           "_FILE_OFFSET_BITS":64,
           "FLOAT_IS_IEEE_LITTLE":1,
           "GAUGE_RUSAGE_INDEX":0,
+	  "GC_MAX_ALLOC_THRESHOLD":2000000000,
+	  "GC_MIN_ALLOC_THRESHOLD":1000,
+	  "GC_RESET_DMALLOC":8,
           "GETTIMEOFDAY_TAKES_TWO_ARGS":1,
           "HAVE_ALARM":1,
           "HAVE_ALLOCA":1,
@@ -161,6 +169,7 @@ mapping syms=
           "HAVE_PIPE":1,
           "HAVE_POLL":1,
           "HAVE_POLL_H":1,
+	  "HAVE_PRCTL":1,
           "HAVE_PTHREAD_ATFORK":1,
           "HAVE_PTHREAD_ATTR_SETSTACKSIZE":1,
           "HAVE_PTHREAD_COND_INIT":1,
@@ -168,6 +177,7 @@ mapping syms=
           "HAVE_PTHREAD_KILL":1,
           "HAVE_PTHREAD_MUTEXATTR_INIT":1,
           "HAVE_PTHREAD_MUTEX_RECURSIVE_NP":1,
+	  "HAVE_PTHREAD_YIELD":1,
           "HAVE_PWD_H":1,
           "HAVE_RINDEX":1,
           "HAVE_RINT":1,
@@ -212,27 +222,37 @@ mapping syms=
           "HAVE_STRTOD":1,
           "HAVE_STRTOK":1,
           "HAVE_STRTOL":1,
+	  "HAVE_STRUCT_SOCKADDR_IN6":1,
           "HAVE_STRUCT_TIMEVAL":1,
           "HAVE_SYS_ERRNO_H":1,
           "HAVE_SYS_FILE_H":1,
+	  "HAVE_SYS_IOCTL_H":1,
           "HAVE_SYS_MMAN_H":1,
           "HAVE_SYS_PARAM_H":1,
           "HAVE_SYS_POLL_H":1,
+	  "HAVE_SYS_PRCTL_H":1,
           "HAVE_SYS_PROCFS_H":1,
+	  "HAVE_SYS_PTRACE_H":1,
           "HAVE_SYS_RESOURCE_H":1,
           "HAVE_SYS_SELECT_H":1,
           "HAVE_SYS_SOCKET_H":1,
           "HAVE_SYS_STAT_H":1,
+	  "HAVE_SYS_TERMIOS_H":1,
           "HAVE_SYS_TIME_H":1,
           "HAVE_SYS_TIMES_H":1,
           "HAVE_SYS_TYPES_H":1,
+	  "HAVE_SYS_USER_H":1,
           "HAVE_SYS_WAIT_H":1,
           "HAVE_TIME":1,
           "HAVE_TIME_H":1,
           "HAVE_TIMES":1,
+	  "HAVE_TZSET":1,
           "HAVE_UALARM":1,
+	  "HAVE_UNION_INIT":1,
           "HAVE_UNISTD_H":1,
           "HAVE_USLEEP":1,
+	  "HAVE_VALGRIND_H":1,
+	  "HAVE_VALGRIND_MEMCHECK_H":1,
           "HAVE_VALUES_H":1,
           "HAVE_VFPRINTF":1,
           "HAVE_VSNPRINTF":1,
@@ -243,15 +263,21 @@ mapping syms=
           "HAVE_WORKING___FUNC__":1,
           "HAVE_WORKING___FUNCTION__":1,
           "I_DATA":9,
+	  "IDENTIFIER_ALIAS":128,
           "IDENTIFIER_C_FUNCTION":2,
           "IDENTIFIER_CONSTANT":4,
           "IDENTIFIER_FUNCTION":3,
-          "IDENTIFIER_MASK":127,
+	  "IDENTIFIER_HAS_BODY":16,
+          "IDENTIFIER_MASK":255,
+	  "IDENTIFIER_NO_THIS_REF":8,
           "IDENTIFIER_PIKE_FUNCTION":1,
           "IDENTIFIER_PROTOTYPED":16,
           "IDENTIFIER_SCOPED":32,
           "IDENTIFIER_SCOPE_USED":64,
+	  "IDENTIFIER_TYPE_MASK":7,
           "IDENTIFIER_VARARGS":8,
+	  "IDENTIFIER_VARIABLE":0,
+	  "ID_DONT_SAVE_PARENT":0x20000,
           "ID_EXTERN":512,
           "ID_HIDDEN":64,
           "ID_INHERITED":128,
@@ -262,6 +288,7 @@ mapping syms=
           "ID_PRIVATE":2,
           "ID_PROTECTED":16,
           "ID_PUBLIC":8,
+	  "ID_SAVE_PARENT":0x10000,
           "ID_STATIC":1,
           "ID_STRICT_TYPES":32768,
           "I_HASARG":1,
@@ -311,23 +338,28 @@ mapping syms=
           "LFUN_RSH":9,
           "LFUN_RSUBTRACT":29,
           "LFUN_RXOR":32,
+	  "LFUN__SEARCH":44,
           "LFUN__SIZEOF":24,
           "LFUN__SPRINTF":40,
           "LFUN_SUBTRACT":4,
           "LFUN__VALUES":26,
           "LFUN_XOR":7,
           "MAPPING_FLAG_WEAK":1,
+	  "MAX_EMPTY_BLOCKS":4,
           "MAX_GLOBAL_VARIABLES":1000,
           "MAX_INT32":2147483647,
+	  "MAX_INT64":0x7fffffffffffffff,
           "MAX_OPEN_FILEDESCRIPTORS":1024,
           "MEMSEARCH_LINKS":512,
           "_MIT_POSIX_THREADS":1,
           "NEW_HASHTABLE_SIZE":4,
+	  "NO_PEEP_OPTIMIZING":4,
           "NO_TAILRECURSION":2,
           "NUMBER_DESTRUCTED":2,
           "NUMBER_NUMBER":0,
           "NUMBER_UNDEFINED":1,
           "NUM_LFUNS":44,
+	  "NUM_PROG_EVENTS":4,
           "OPT_APPLY":4096,
           "OPT_ASSIGNMENT":8,
           "OPT_BREAK":256,
@@ -349,13 +381,19 @@ mapping syms=
           "PIKE_ARRAY_OP_SKIP_B":8,
           "PIKE_ARRAY_OP_TAKE_A":3,
           "PIKE_ARRAY_OP_TAKE_B":12,
-          "PIKE_BUILD_VERSION":5,
+          "PIKE_BUILD_VERSION":15,
+	  "PIKE_BYTECODE_PPC32":4,
           "PIKE_BYTEORDER":1234,
           "PIKE_DEBUG":1,
+	  "PIKE_FRAME_MALLOCED_LOCALS":0x8000,
+	  "PIKE_FRAME_RETURN_INTERNAL":1,
+	  "PIKE_FRAME_RETURN_POP":2,
           "PIKE_INT32_ALIGNMENT":4,
           "PIKE_MAJOR_VERSION":7,
-          "PIKE_MINOR_VERSION":3,
-          "PIKE_OOB_WORKS":2,
+          "PIKE_MINOR_VERSION":5,
+	  "PIKE_NEW_MULTISETS":1,
+          "PIKE_OOB_WORKS":3,
+	  "PIKE_POINTER_ALIGNMENT":4,
           "PIKE_T_ARRAY":0,
           "PIKE_T_FLOAT":9,
           "PIKE_T_FUNCTION":4,
@@ -375,8 +413,16 @@ mapping syms=
           "PIKE_T_UNKNOWN":247,
           "PIKE_TYPE_STACK_SIZE":100000,
           "PIKE_T_ZERO":14,
+	  "PIKE_USE_MACHINE_CODE":1,
+	  "PIKE_WEAK_BOTH":6,
+	  "PIKE_WEAK_INDICES":2,
+	  "PIKE_WEAK_VALUES":4,
           "PROG___BUILTIN_ID":9,
-          "PROG_GMP_MPZ_ID":21,
+	  "PROG_EVENT_EXIT":1,
+	  "PROG_EVENT_GC_CHECK":3,
+	  "PROG_EVENT_GC_RECURSE":2,
+	  "PROG_EVENT_INIT":0,
+          "PROG_GMP_MPZ_ID":32,
           "PROG_IMAGE_CLASS_START":100,
           "PROG_IMAGE_COLOR_COLOR_ID":200,
           "PROG_IMAGE_COLORTABLE_ID":101,
@@ -393,6 +439,7 @@ mapping syms=
           "PROGRAM_FINISHED":4,
           "PROGRAM_FIXED":2,
           "PROGRAM_HAS_C_METHODS":32,
+	  "PROGRAM_NEEDS_PARENT":0x1000,
           "PROGRAM_NO_EXPLICIT_DESTRUCT":512,
           "PROGRAM_NO_WEAK_FREE":256,
           "PROGRAM_OPTIMIZED":1,
@@ -400,13 +447,22 @@ mapping syms=
           "PROGRAM_USES_PARENT":128,
           "PROGRAM_VIRGIN":2048,
           "PROG_STDIO_FD_ID":1,
+	  "PROG_STDIO_FD_REF_ID":026,
+	  "PROG_STDIO_FILE_LOCK_ID":027,
+	  "PROG_STDIO_IPPROTO_ID":034,
+	  "PROG_STDIO_PORT_ID":030,
+	  "PROG_STDIO_SENDFILE_ID":031,
+	  "PROG_STDIO_SOCK_ID":033,
           "PROG_STDIO_STAT_ID":10,
+	  "PROG_STDIO_UDP_ID":032,
           "PROG_THREAD_CONDITION_ID":5,
           "PROG_THREAD_DISABLE_THREADS_ID":7,
           "PROG_THREAD_ID_ID":2,
           "PROG_THREAD_LOCAL_ID":6,
           "PROG_THREAD_MUTEX_ID":4,
           "PROG_THREAD_MUTEX_KEY_ID":3,
+	  "PTRACE_ADDR_TYPE_IS_POINTER":1,
+	  "PTRACE_TAKES_FOUR_ARGS":1,
           "_REENTRANT":1,
           "RTLD_GLOBAL":1,
           "RTLD_LAZY":0,
@@ -431,22 +487,31 @@ mapping syms=
           "SHARED_NODES":1,
           "S_IFIFO":4096,
           "S_IFSOCK":49152,
+	  "SIGNAL_ONESHOT":1,
           "SIZEOF_CHAR_P":4,
           "SIZEOF_DOUBLE":8,
           "SIZEOF_FLOAT":4,
           "SIZEOF_INT":4,
           "SIZEOF___INT64":0,
+	  "SIZEOF_INT64":8,
           "SIZEOF_LONG":4,
+	  "SIZEOF_LONG_DOUBLE":12,
           "SIZEOF_LONG_LONG":8,
+	  "SIZEOF_OFF_T":0,
           "SIZEOF_SHORT":2,
+	  "STACK_SLICE_SIZE":20,
           "STDC_HEADERS":1,
+	  "STEP_BREAK_LINE":109,
+	  "STRUCT_TM_HAS_GMTOFF":1,
           "T_AND":254,
           "T_ARRAY_LVALUE":250,
           "T_ASSIGN":245,
           "T_DELETED":246,
+	  "THREAD_DEBUG_LOOSE":1,
           "THREAD_EXITED":1,
           "THREAD_RUNNING":0,
           "_THREAD_SAFE":1,
+	  "THREAD_TABLE_SIZE":127,
           "THREAD_TRACE":1,
           "THROW_ERROR":10,
           "THROW_EXIT":40,
@@ -456,19 +521,106 @@ mapping syms=
           "TIME_WITH_SYS_TIME":1,
           "T_LVALUE":249,
           "T_MANY":17,
-          "T_MAPPING_DATA":242,
+          "T_MAPPING_DATA":10001,
+	  "T_MULTISET_DATA":10003,
           "T_NOT":253,
+	  "T_OBJ_INDEX":248,
           "T_OR":255,
+	  "T_PIKE_FRAME":10002,
           "T_SHORT_LVALUE":248,
+	  "T_STORAGE":10000,
+	  "T_STRUCT_CALLABLE":10004,
+	  "T_SVALUE_PTR":249,
           "T_UNFINISHED":15,
           "T_VOID":16,
+	  "TOK_ADD_EQ":280,
+	  "TOK_AND_EQ":281,
+	  "TOK_ARRAY_ID":282,
+	  "TOK_ARROW":258,
+	  "TOK_BREAK":283,
+	  "TOK_CASE":284,
+	  "TOK_CATCH":277,
+	  "TOK_CLASS":285,
+	  "TOK_COLON_COLON":286,
+	  "TOK_CONSTANT":259,
+	  "TOK_CONTINUE":287,
+	  "TOK_DEC":264,
+	  "TOK_DEFAULT":288,
+	  "TOK_DIV_EQ":289,
+	  "TOK_DO":290,
+	  "TOK_DOT_DOT":291,
+	  "TOK_DOT_DOT_DOT":292,
+	  "TOK_ELSE":293,
+	  "TOK_ENUM":294,
+	  "TOK_EQ":266,
+	  "TOK_EXTERN":295,
+	  "TOK_FINAL_ID":307,
+	  "TOK_FLOAT":260,
+	  "TOK_FLOAT_ID":296,
+	  "TOK_FOR":297,
+	  "TOK_FOREACH":278,
+	  "TOK_FUNCTION_ID":298,
+	  "TOK_GAUGE":299,
+	  "TOK_GE":267,
+	  "TOK_GLOBAL":300,
+	  "TOK_IDENTIFIER":301,
+	  "TOK_IF":302,
+	  "TOK_IMPORT":303,
+	  "TOK_INC":263,
+	  "TOK_INHERIT":304,
+	  "TOK_INLINE":305,
+	  "TOK_INT_ID":308,
+	  "TOK_LAMBDA":309,
+	  "TOK_LAND":273,
+	  "TOK_LE":268,
+	  "TOK_LEX_EOF":279,
+	  "TOK_LOCAL_ID":306,
+	  "TOK_LOR":274,
+	  "TOK_LSH":271,
+	  "TOK_LSH_EQ":313,
+	  "TOK_MAPPING_ID":314,
+	  "TOK_MIXED_ID":315,
+	  "TOK_MOD_EQ":316,
+	  "TOK_MULT_EQ":317,
+	  "TOK_MULTISET_END":311,
+	  "TOK_MULTISET_ID":310,
+	  "TOK_MULTISET_START":312,
+	  "TOK_NE":269,
+	  "TOK_NO_MASK":318,
+	  "TOK_NOT":270,
+	  "TOK_NUMBER":262,
+	  "TOK_OBJECT_ID":319,
+	  "TOK_OPTIONAL":336,
+	  "TOK_OR_EQ":320,
+	  "TOK_PREDEF":324,
+	  "TOK_PRIVATE":321,
+	  "TOK_PROGRAM_ID":322,
+	  "TOK_PROTECTED":323,
+	  "TOK_PUBLIC":325,
+	  "TOK_RETURN":265,
+	  "TOK_RSH":272,
+	  "TOK_RSH_EQ":326,
+	  "TOK_SSCANF":276,
+	  "TOK_STATIC":327,
+	  "TOK_STRING":261,
+	  "TOK_STRING_ID":328,
+	  "TOK_SUB_EQ":329,
+	  "TOK_SWITCH":275,
+	  "TOK_TYPEDEF":330,
+	  "TOK_TYPEOF":331,
+	  "TOK_VARIANT":332,
+	  "TOK_VOID_ID":333,
+	  "TOK_WHILE":334,
+	  "TOK_XOR_EQ":335,
           "UALARM_TAKES_TWO_ARGS":1,
+	  "USE_ERRORCHECK_MUTEX":1,
+	  "USE_FCNTL_0_NONBLOCK":1,
           "USE_FCNTL_FNDELAY":1,
           "USE_PIKE_TYPE":1,
           "USE_SIGCHILD":1,
           "USE_Wl":1,
+	  "WITH_LONG_INT":1,
           "WITH_OOB":1,
-          "STEP_BREAK_LINE":52,
   ]);
 
 
@@ -513,11 +665,11 @@ class Gdb
   string cmd(string s)
     {
 #if DEBUG
-      if(search(s,"\n")!=-1)
+      if(has_value(s,"\n"))
       {
 	error("NEWLINE IN COMMAND\n");
 
-	if(search(buffer,prompt)!=-1)
+	if(has_value(buffer,prompt))
 	  error("PROMPT PRESENT IN BUFFER!!!!\n");
       }
 #endif
@@ -558,7 +710,8 @@ class Gdb
     {
       if(!token_dividers)
       {
-	token_dividers=Array.map(tokens,lambda(string x) { return " "+x+" "; });
+	token_dividers=Array.map(tokens, lambda(string x) {
+					   return " "+x+" "; });
 	tokens+=({"\n","\t","\r"});
 	token_dividers+=({" "," "," "});
       }
@@ -913,11 +1066,13 @@ class Debug
       werror("Get line numbers for %O\n",prog);
 #endif
 
-      ret=mkhandle(prog, "->linenumbers[0]@ ", prog, "->num_linenumbers")->_value();
+      ret=mkhandle(prog, "->linenumbers[0]@ ", prog,
+		   "->num_linenumbers")->_value();
       if(sizeof(ret) != prog->num_linenumbers->_value())
       {
 	werror("Failed to get line number info!\n");
-	werror("sizeof(%O) != %O (it is %d)\n",ret, prog->num_linenumbers->_value(),sizeof(ret));
+	werror("sizeof(%O) != %O (it is %d)\n", ret,
+	       prog->num_linenumbers->_value(), sizeof(ret));
       }
       return line_number_info_cache[progid]=ret;
     }
@@ -1018,7 +1173,8 @@ class Debug
       {
 	int h=low_hash();
 	h=clamp(h+h % 997);
-	h=clamp(h+clamp(clamp(h + syms[ "PIKE_T_"+upper_case(_type()) ]) * 9248339));
+	h=clamp(h+clamp(clamp(h + syms[ "PIKE_T_"+upper_case(_type()) ])
+			* 9248339));
 	return h;
       }
 
@@ -1137,7 +1293,8 @@ class Debug
 	if(x < 0 || x >= _sizeof())
 	  unbug_error("Index %d is out of range (0..%d)\n",x,_sizeof()-1);
 
-	return FakeHandle( mkhandle("((p_wchar"+_width()+" *)(",__ptr,"->str))[",x,"]")->_value());
+	return FakeHandle( mkhandle("((p_wchar" + _width() + " *)(",
+				    __ptr, "->str))[", x, "]")->_value());
       }
   }
 
@@ -1513,7 +1670,8 @@ class Debug
 
 	
 #if 1
-	if(mixed name=ObjectHandle(Handle("master_object"))->programs->_search(this_object()))
+	if(mixed name=ObjectHandle(Handle("master_object"))->
+	   programs->_search(this_object()))
 	{
 	  return odesc=name->_value();
 	}
@@ -1610,9 +1768,15 @@ class Debug
 	  case "": /* variable */
 	    if(i->run_time_type() == "PIKE_T_MIXED")
 	    {
-	      return Svalue(mkhandle("(struct svalue *)(",__ptr -> storage + i->storage_offset() + i->offset(),")"));
+	      return Svalue(mkhandle("(struct svalue *)(",
+				     __ptr -> storage + i->storage_offset() +
+				     i->offset(), ")"));
 	    }else{
-	      return ShortSvalue(mkhandle("(union anything *)(",__ptr -> storage + i->storage_offset() + i->offset(),")"), i->run_time_type());
+	      return ShortSvalue(mkhandle("(union anything *)(",
+					  __ptr -> storage +
+					  i->storage_offset() +
+					  i->offset(), ")"),
+				 i->run_time_type());
 	    }
 
 	  default:
@@ -1666,13 +1830,16 @@ class Debug
 	    return odesc="function";
 
 	  Handle idref=prog->identifier_references + __func;
-	  Handle identifier=(prog->inherits + idref->inherit_offset)->prog->identifiers + idref->identifier_offset;
-	    odesc=sprintf("%O->%s",
-			  MKSH(ObjectHandle,__ptr),
-			  mkhandle("(char *)",identifier->name->str)->_value());
+	  Handle identifier=(prog->inherits +
+			     idref->inherit_offset)->prog->identifiers +
+	    idref->identifier_offset;
+	  odesc=sprintf("%O->%s",
+			MKSH(ObjectHandle,__ptr),
+			mkhandle("(char *)",identifier->name->str)->_value());
 #if 0
-	  werror("FOOBAR1: %s\n",MKSH(ObjectHandle,__ptr)->_sprintf('O'));
-	  werror("FOOBAR2: %O\n",mkhandle("(char *)",identifier->name->str)->_value());
+	  werror("FOOBAR1: %s\n", MKSH(ObjectHandle,__ptr)->_sprintf('O'));
+	  werror("FOOBAR2: %O\n", mkhandle("(char *)",
+					   identifier->name->str)->_value());
 #endif
 	}
 	return odesc;
@@ -1701,12 +1868,17 @@ class Debug
 	  case "PF":
 	    Handle prog=__ptr->prog;
 	    Handle idref=prog->identifier_references + __func;
-	    Handle identifier=(prog->inherits + idref->inherit_offset)->prog->identifiers + idref->identifier_offset;
-	    return Breakpoint(mkhandle("(long)(",prog->program + identifier->func->offset + 2, ")")->_value(), _sprintf('O'));
+	    Handle identifier=(prog->inherits +
+			       idref->inherit_offset)->prog->identifiers +
+	      idref->identifier_offset;
+	    return Breakpoint(mkhandle("(long)(", prog->program +
+				       identifier->func->offset + 2,
+				       ")")->_value(), _sprintf('O'));
 	    break;
 
 	  case "CF":
-	    return CFunctionBreakpoint(mkhandle("(long)(",ID->offset(),")")->_value(), _sprintf('O'));
+	    return CFunctionBreakpoint(mkhandle("(long)(", ID->offset(),
+						")")->_value(), _sprintf('O'));
 	}
       }
     
@@ -1731,9 +1903,10 @@ class Debug
 
 
     Breakpoint _break()
-      {
-	return CFunctionBreakpoint(mkhandle("(long)(",__ptr->function,")")->_value(), _sprintf('O'));
-      }
+    {
+      return CFunctionBreakpoint(mkhandle("(long)(", __ptr->function,
+					  ")")->_value(), _sprintf('O'));
+    }
 
   }
 
@@ -1781,7 +1954,7 @@ class Debug
       if(!zero_type(ret=ptrhandlecache[v])) return ret;
       if(p == ProgramHandle)
       {
-//	werror("LOOKING UP PROGRAMHANDLE %d  (%O) => %O \n",v,h,zero_type(proghandlecache[v])); 
+// werror("LOOKING UP HANDLE %d (%O) => %O\n",v,h,zero_type(proghandlecache[v]));
 	if(!zero_type(ret=proghandlecache[v]))
 	{
 //	  werror("Found it, checking ids (%O , %O)\n",
@@ -1983,7 +2156,8 @@ class Debug
       { 
 	return all_constants() +
 	  ([
-	    "__THIS_OBJECT__":(current_frame && current_frame->this_object()) || ([]),
+	    "__THIS_OBJECT__":(current_frame &&
+			       current_frame->this_object()) || ([]),
 	    "__GET_HISTORY__":get_history,
 	    "this_object":lambda()
 	  {
@@ -2375,7 +2549,8 @@ class Debug
 	{
 	  unregister_internal_watchpoint(handle);
 	  if(on)
-	    cmd(sprintf("print *(unsigned char *)(%d)=%d",location,F_BREAKPOINT));
+	    cmd(sprintf("print *(unsigned char *)(%d)=%d",
+			location, F_BREAKPOINT));
 	  return ({});
 	}
     }
@@ -2387,9 +2562,11 @@ class Debug
 	{
 	  if(oldval == -10000)
 	  {
-	    oldval=Handle(sprintf("*(unsigned char *)(%d)",location))->_value();
+	    oldval=Handle(sprintf("*(unsigned char *)(%d)",
+				  location))->_value();
 	  }
-	  cmd(sprintf("print *(unsigned char *)(%d)=%d",location,F_BREAKPOINT));
+	  cmd(sprintf("print *(unsigned char *)(%d)=%d",
+		      location, F_BREAKPOINT));
 	  on=1;
 	}
       }
@@ -2580,6 +2757,7 @@ class Debug
       return "";
 
       case "quit":
+      case "q":
 	destruct(this_object());
 	exit(0);
 
@@ -2738,7 +2916,7 @@ class Debug
 	write("info breakpoints  : show breakpoints\n");
 	write("enable B          : enable breakpoint B\n");
 	write("disable B         : disable breakpoint B\n");
-	write("quit              : Exit unbug\n");
+	write("quit/q            : Exit unbug\n");
 	write("gdb <gdb command> : Run a GDB command\n");
 	write("help/h/?          : show this text\n");
 	return "";
@@ -2779,20 +2957,26 @@ class Debug
   void create(array(string) argv)
     {
       ::create();
+
       string tmpfile=sprintf("pike-debugger-%d-%d",getpid(),counter++);
-      cmd("file "+argv[0]);
-      string c="stty sane ;tty >"+tmpfile+".tmp ; mv "+tmpfile+".tmp "+tmpfile+" ; while kill -0 "+getpid()+"; do sleep 2; done";
+      string c="stty sane ;tty >" + tmpfile + ".tmp ; mv " + tmpfile +
+	".tmp " + tmpfile + " ; while kill -0 " + getpid() +
+	"; do sleep 2; done";
       array(string) fnord;
-      if(getenv("STY")) fnord=({"screen","/bin/sh","-c",c });
+      if(getenv("STY")) fnord=({/*"screen",*/"/bin/sh","-c",c });
       if(getenv("DISPLAY")) fnord=({"xterm","-e","/bin/sh","-c",c });
-      terminal=Process.create_process(fnord, (["setsid":1]) );
+      object error_redirect = Stdio.File()->pipe(Stdio.PROP_IPC);
+      terminal=Process.create_process(fnord, (["setsid":1,
+					       "stderr":error_redirect]) );
 
       while(!file_stat(tmpfile))
 	sleep(0.2);
       string tmp=Stdio.FILE(tmpfile,"r")->gets();
       sscanf(tmp,"%s\n",tmp);
-      cmd("tty "+tmp);
       rm(tmpfile);
+
+      cmd("file "+argv[0]);
+      cmd("tty "+tmp);
       cmd("cd "+getcwd());
 
       /* FIXME: Args will probably need quoting */
@@ -2804,7 +2988,7 @@ class Debug
 string find_in_path(string cmd)
 {
   /* GDB looks in $PATH for executable, and so must we */
-  if(search(cmd,"/") == -1)
+  if(!has_value(cmd,"/"))
   {
     foreach(getenv("PATH")/":", string p)
     {
@@ -2817,10 +3001,10 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.10 2003/01/20 17:48:45 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.11 2003/12/07 22:39:52 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
-Copyright 2002, Department of Computer and Information Science,
-                Linköping University
+Copyright 2002-2003, Department of Computer and Information Science,
+                     Linköping University
 UNBUG is free software, covered by the GNU General Public License, and you are
 welcome to change it and/or distribute copies of it under certain conditions.
 ");
@@ -2867,7 +3051,8 @@ welcome to change it and/or distribute copies of it under certain conditions.
 
   if(string symbols=Stdio.read_file(realpike+".syms"))
   {
-    syms=(mapping)(array_sscanf(symbols,"%{%*sdefine%*[ \t]%s%*[ \t]%i%*s\n%}")[0]);
+    syms=(mapping)(array_sscanf(symbols,
+				"%{%*sdefine%*[ \t]%s%*[ \t]%i%*s\n%}")[0]);
   }else{
     write("Warning, no symbol file found, using builtin symbols!\n");
   }
