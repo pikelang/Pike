@@ -1180,18 +1180,18 @@ BREAK;
 	break;
       }
 
-      CASE(F_STRING_INDEX);
-      {
-	struct svalue tmp,tmp2;
-	tmp.type=PIKE_T_STRING;
-	tmp.u.string=Pike_fp->context.prog->strings[GET_ARG()];
-	tmp.subtype=0;
-	index_no_free(&tmp2, Pike_sp-1, &tmp);
-	free_svalue(Pike_sp-1);
-	Pike_sp[-1]=tmp2;
-	print_return_value();
-	break;
-      }
+OPCODE1(F_STRING_INDEX, "string index")
+{
+  struct svalue tmp,tmp2;
+  tmp.type=PIKE_T_STRING;
+  tmp.u.string=Pike_fp->context.prog->strings[arg1];
+  tmp.subtype=0;
+  index_no_free(&tmp2, Pike_sp-1, &tmp);
+  free_svalue(Pike_sp-1);
+  Pike_sp[-1]=tmp2;
+  print_return_value();
+}
+BREAK;
 
       CASE(F_POS_INT_INDEX);
       push_int(GET_ARG());
@@ -1214,15 +1214,17 @@ BREAK;
       print_return_value();
       break;
 
-      CASE(F_MAGIC_INDEX);
-      push_magic_index(magic_index_program, accumulator, GET_ARG());
-      break;
+OPCODE1(F_MAGIC_INDEX, "::`[]")
+  push_magic_index(magic_index_program, accumulator, arg1);
+BREAK;
 
-      CASE(F_MAGIC_SET_INDEX);
-      push_magic_index(magic_set_index_program, accumulator, GET_ARG());
-      break;
+OPCODE1(F_MAGIC_SET_INDEX, "::`[]=")
+  push_magic_index(magic_set_index_program, accumulator, arg1);
+BREAK;
 
-      CASE(F_CAST); f_cast(); break;
+OPCODE0(F_CAST, "cast")
+  f_cast();
+BREAK;
 
       CASE(F_SOFT_CAST);
       /* Stack: type_string, value */
@@ -1287,50 +1289,54 @@ BREAK;
       pop_stack();
       break;
 
-      CASE(F_RANGE); o_range(); break;
-      CASE(F_COPY_VALUE);
-      {
-	struct svalue tmp;
-	copy_svalues_recursively_no_free(&tmp,Pike_sp-1,1,0);
-	free_svalue(Pike_sp-1);
-	Pike_sp[-1]=tmp;
-      }
-      break;
+OPCODE0(F_RANGE, "range")
+  o_range();
+BREAK;
 
-      CASE(F_INDIRECT);
-      {
-	struct svalue s;
-	lvalue_to_svalue_no_free(&s,Pike_sp-2);
-	if(s.type != PIKE_T_STRING)
-	{
-	  pop_n_elems(2);
-	  *Pike_sp=s;
-	  Pike_sp++;
-	}else{
-	  struct object *o;
-	  o=low_clone(string_assignment_program);
-	  ((struct string_assignment_storage *)o->storage)->lval[0]=Pike_sp[-2];
-	  ((struct string_assignment_storage *)o->storage)->lval[1]=Pike_sp[-1];
-	  ((struct string_assignment_storage *)o->storage)->s=s.u.string;
-	  Pike_sp-=2;
-	  push_object(o);
-	}
-      }
-      print_return_value();
-      break;
+OPCODE0(F_COPY_VALUE, "copy_value")
+{
+  struct svalue tmp;
+  copy_svalues_recursively_no_free(&tmp,Pike_sp-1,1,0);
+  free_svalue(Pike_sp-1);
+  Pike_sp[-1]=tmp;
+}
+BREAK;
+
+OPCODE0(F_INDIRECT, "indirect")
+{
+  struct svalue s;
+  lvalue_to_svalue_no_free(&s,Pike_sp-2);
+  if(s.type != PIKE_T_STRING)
+  {
+    pop_n_elems(2);
+    *Pike_sp=s;
+    Pike_sp++;
+  }else{
+    struct object *o;
+    o=low_clone(string_assignment_program);
+    ((struct string_assignment_storage *)o->storage)->lval[0]=Pike_sp[-2];
+    ((struct string_assignment_storage *)o->storage)->lval[1]=Pike_sp[-1];
+    ((struct string_assignment_storage *)o->storage)->s=s.u.string;
+    Pike_sp-=2;
+    push_object(o);
+  }
+}
+print_return_value();
+BREAK;
       
+OPCODE0(F_SIZEOF, "sizeof")
+  instr=pike_sizeof(Pike_sp-1);
+  pop_stack();
+  push_int(instr);
+BREAK;
 
-      CASE(F_SIZEOF);
-      instr=pike_sizeof(Pike_sp-1);
-      pop_stack();
-      push_int(instr);
-      break;
+OPCODE1(F_SIZEOF_LOCAL, "sizeof local")
+  push_int(pike_sizeof(Pike_fp->locals+arg1));
+BREAK;
 
-      CASE(F_SIZEOF_LOCAL);
-      push_int(pike_sizeof(Pike_fp->locals+GET_ARG()));
-      break;
-
-      CASE(F_SSCANF); o_sscanf(GET_ARG()); break;
+OPCODE1(F_SSCANF, "sscanf")
+  o_sscanf(arg1);
+BREAK;
 
       CASE(F_CALL_LFUN);
       apply_low(Pike_fp->current_object,
