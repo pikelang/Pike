@@ -188,10 +188,3 @@ RSA. It also includes a some randomness sources.
 The toolkit can be used for most kinds of cryptographic applications,
 including encrypted network connections, as well as encryption of
 files or other data. 
-
-Unfortunately, the cryptograpy toolkit in this release has been
-stripped of all real cryptography. It includes only the hash functions
-and the glue objects. The full cryptographic toolkit will be released
-as soon as the export issues have been resolved.
-
-
