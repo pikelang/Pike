@@ -54,7 +54,10 @@ PRIVATE string some_entropy()
     {
       catch {
 	Process.create_process(Process.split_quoted_string(cmd),
-			       (["stdin":null,"stdout":child_pipe,"stderr":null]));
+				       (["stdin":null,
+					"stdout":child_pipe,
+					"stderr":null,
+					"env":env]));
       };
     }
 
