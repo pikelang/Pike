@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.73 2004/09/06 02:25:18 nilsson Exp $
+// $Id: Query.pike,v 1.74 2004/09/19 02:05:10 nilsson Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -588,8 +588,7 @@ this_program sync_request(string server, int port, string query,
     if(String.width(data)>8) {
       if(!http_headers["content-type"])
 	error("Wide string as data and no content-type header set.\n");
-      array split;
-      split = http_headers["content-type"]/"charset=";
+      array split = http_headers["content-type"]/"charset=";
       if(sizeof(split)==1)
 	http_headers["content-type"] += "; charset=utf-8";
       else {
