@@ -1353,7 +1353,10 @@ void do_install()
   {
     do_export();
   }else{
-    dump_modules();
+    if ((vars->PIKE_MODULE_RELOC||"") == "") {
+      // Support for PIKE_MODULE_RELOC is currently broken.
+      dump_modules();
+    }
 
     // Delete any .pmod files that would shadow the .so
     // files that we just installed. For a new installation
