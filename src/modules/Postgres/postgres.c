@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.40 2004/11/12 13:30:19 grubba Exp $
+|| $Id: postgres.c,v 1.41 2005/03/22 10:37:21 grubba Exp $
 */
 
 /*
@@ -734,56 +734,57 @@ static void f_host_info (INT32 args)
 
 PIKE_MODULE_INIT
 {
-	start_new_program();
-	ADD_STORAGE(struct pgres_object_data);
-	set_init_callback(pgres_create);
-	set_exit_callback(pgres_destroy);
+  start_new_program();
+  ADD_STORAGE(struct pgres_object_data);
+  set_init_callback(pgres_create);
+  set_exit_callback(pgres_destroy);
 
-	/* sql-interface compliant functions */
-	/* function(void|string,void|string,void|string,void|string,int|void:void) */
-  ADD_FUNCTION("create",f_create,tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tInt,tVoid),tVoid),
-		OPT_EXTERNAL_DEPEND);
-	/* That is: create(hostname,database,port)
-	 * It depends on the environment variables:
-	 * PGHOST, PGOPTIONS, PGPORT, PGTTY(don't use!), PGDATABASE
-	 * Notice: Postgres _requires_ a database to be selected upon connection
-	 */
-	/* function(string:void) */
-  ADD_FUNCTION("select_db",f_select_db,tFunc(tStr,tVoid),
-			OPT_EXTERNAL_DEPEND);
-	/* function(string:int|object) */
-  ADD_FUNCTION("big_query",f_big_query,tFunc(tStr,tOr(tInt,tObj)),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(void:string) */
-  ADD_FUNCTION("error",f_error,tFunc(tVoid,tStr),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(void:string) */
-  ADD_FUNCTION("host_info",f_host_info,tFunc(tVoid,tStr),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
+  /* sql-interface compliant functions */
+  /* function(void|string,void|string,void|string,void|string,int|void:void) */
+  ADD_FUNCTION("create", f_create,
+	       tFunc(tOr(tVoid,tStr) tOr(tVoid,tStr) tOr(tVoid,tStr)
+		     tOr(tVoid,tStr) tOr(tInt,tVoid), tVoid), 0);
 
-	/* postgres-specific functions */
-	/* function(void:void) */
-  ADD_FUNCTION("reset",f_reset,tFunc(tVoid,tVoid),OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
+  /* That is: create(hostname,database,port)
+   * It depends on the environment variables:
+   * PGHOST, PGOPTIONS, PGPORT, PGTTY(don't use!), PGDATABASE
+   * Notice: Postgres _requires_ a database to be selected upon connection
+   */
+  /* function(string:void) */
+  ADD_FUNCTION("select_db", f_select_db, tFunc(tStr,tVoid), 0);
+
+  /* function(string:int|object) */
+  ADD_FUNCTION("big_query", f_big_query, tFunc(tStr,tOr(tInt,tObj)), 0);
+
+  /* function(void:string) */
+  ADD_FUNCTION("error", f_error, tFunc(tVoid,tStr), 0);
+
+  /* function(void:string) */
+  ADD_FUNCTION("host_info", f_host_info,tFunc(tVoid,tStr), 0);
+
+  /* postgres-specific functions */
+  /* function(void:void) */
+  ADD_FUNCTION("reset", f_reset, tFunc(tVoid,tVoid), 0);
 
 #if 0
-	 /* function(object|int:void) */
-  ADD_FUNCTION("trace",f_trace,tFunc(tOr(tObj,tInt),tVoid),
-		 OPT_EXTERNAL_DEPEND|OPT_SIDE_EFFECT);
-	 /* If given a clone of /precompiled/file, traces to that file.
-		* If given 0, stops tracing.
-		* See note on the implementation.
-		*/
+  /* function(object|int:void) */
+  ADD_FUNCTION("trace", f_trace, tFunc(tOr(tObj,tInt),tVoid), 0);
+
+  /* If given a clone of /precompiled/file, traces to that file.
+   * If given 0, stops tracing.
+   * See note on the implementation.
+   */
 #endif
-	/* function(int|function(string:void):void) */
-  ADD_FUNCTION("_set_notify_callback",f_callback,tFunc(tOr(tInt,tFunc(tStr,tVoid)),tVoid),
-			OPT_SIDE_EFFECT);
+  /* function(int|function(string:void):void) */
+  ADD_FUNCTION("_set_notify_callback", f_callback,
+	       tFunc(tOr(tInt,tFunc(tStr,tVoid)),tVoid), 0);
 
-	postgres_program = end_program();
-	add_program_constant("postgres",postgres_program,0);
+  postgres_program = end_program();
+  add_program_constant("postgres",postgres_program,0);
 
-	add_string_constant("version",PGSQL_VERSION,0);
+  add_string_constant("version",PGSQL_VERSION,0);
 
-	pgresult_init(); 
+  pgresult_init(); 
 }
 
 PIKE_MODULE_EXIT

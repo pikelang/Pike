@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.30 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: pgresult.c,v 1.31 2005/03/22 10:37:21 grubba Exp $
 */
 
 /*
@@ -387,27 +387,31 @@ struct program * pgresult_program;
 
 void pgresult_init (void)
 {
-	start_new_program();
-	ADD_STORAGE(struct postgres_result_object_data);
-	set_init_callback(result_create);
-	set_exit_callback(result_destroy);
+  start_new_program();
+  ADD_STORAGE(struct postgres_result_object_data);
+  set_init_callback(result_create);
+  set_exit_callback(result_destroy);
 
-	/* function(object:void) */
-  ADD_FUNCTION("create",f_create,tFunc(tObj,tVoid),OPT_SIDE_EFFECT);
-	/* function(void:int) */
-  ADD_FUNCTION("num_rows",f_num_rows,tFunc(tVoid,tInt),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(void:int) */
-  ADD_FUNCTION("num_fields",f_num_fields,tFunc(tVoid,tInt),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(void:void|array(mapping(string:mixed))) */
-  ADD_FUNCTION("fetch_fields",f_fetch_fields,tFunc(tVoid,tOr(tVoid,tArr(tMap(tStr,tMix)))),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
-	/* function(int:void) */
-  ADD_FUNCTION("seek",f_seek,tFunc(tInt,tVoid),OPT_SIDE_EFFECT);
-	/* function(void:void|array(mixed)) */
-  ADD_FUNCTION("fetch_row",f_fetch_row,tFunc(tVoid,tOr(tVoid,tArr(tMix))),
-			OPT_EXTERNAL_DEPEND|OPT_RETURN);
+  /* function(object:void) */
+  ADD_FUNCTION("create", f_create, tFunc(tObj,tVoid), 0);
+
+  /* function(void:int) */
+  ADD_FUNCTION("num_rows", f_num_rows, tFunc(tVoid,tInt), 0);
+
+  /* function(void:int) */
+  ADD_FUNCTION("num_fields", f_num_fields, tFunc(tVoid,tInt), 0);
+
+  /* function(void:void|array(mapping(string:mixed))) */
+  ADD_FUNCTION("fetch_fields", f_fetch_fields,
+	       tFunc(tVoid,tOr(tVoid,tArr(tMap(tStr,tMix)))), 0);
+
+  /* function(int:void) */
+  ADD_FUNCTION("seek", f_seek, tFunc(tInt,tVoid), 0);
+
+  /* function(void:void|array(mixed)) */
+  ADD_FUNCTION("fetch_row", f_fetch_row,
+	       tFunc(tVoid,tOr(tVoid,tArr(tMix))), 0);
+
   pgresult_program=end_program();
   add_program_constant("postgres_result",pgresult_program,0);
 }
