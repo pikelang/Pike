@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.94 2000/11/17 10:14:03 per Exp $");
+RCSID("$Id: array.c,v 1.95 2000/11/29 21:22:21 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1265,10 +1265,11 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *
   INT32 *ordera, *orderb;
 
   ordera=get_set_order(a);
-  orderb=get_set_order(b);
-
-  SET_ONERROR(r5,free,orderb);
   SET_ONERROR(r4,free,ordera);
+
+  orderb=get_set_order(b);
+  SET_ONERROR(r5,free,orderb);
+
   tmpa=reorder_and_copy_array(a,ordera);
   SET_ONERROR(r1,do_free_array,tmpa);
 
@@ -1286,8 +1287,8 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *
   UNSET_ONERROR(r3);  free((char *)zipper);
   UNSET_ONERROR(r2);  free_array(tmpb);
   UNSET_ONERROR(r1);  free_array(tmpa);
-  UNSET_ONERROR(r4);  free((char *)ordera);
   UNSET_ONERROR(r5);  free((char *)orderb);
+  UNSET_ONERROR(r4);  free((char *)ordera);
   return ret;
 }
 
