@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.82 2003/03/26 12:43:18 mast Exp $
+|| $Id: interpreter.h,v 1.83 2003/03/29 00:10:48 mast Exp $
 */
 
 #undef LOW_GET_ARG
@@ -60,14 +60,14 @@
   prefix=0,\
   instr += LOW_GET_ARG(),\
   DEBUG_LOG_ARG (instr),\
-  instr))
+  instr)
 
 #define GET_ARG2() (\
   instr=prefix2,\
   prefix2=0,\
   instr += LOW_GET_ARG(),\
   DEBUG_LOG_ARG2 (instr),\
-  instr))
+  instr)
 
 #else /* !PIKE_DEBUG */
 
