@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.2 2003/03/18 16:25:00 nisse Exp $");
+RCSID("$Id: cipher.cmod,v 1.3 2003/03/18 16:33:23 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -53,7 +53,8 @@ PIKECLASS CipherInfo
   
   /*! @decl string name(void)
    *!
-   *! Returns a human readable name for the algorithm.
+   *! @returns
+   *!   A human readable name for the algorithm.
    */
   PIKEFUN string name()
     {
@@ -65,7 +66,8 @@ PIKECLASS CipherInfo
 
   /*! @decl string key_size(void)
    *!
-   *! Returns the recommended key size for the cipher.
+   *! @returns
+   *!   The recommended key size for the cipher.
    */
   PIKEFUN int key_size()
     {
@@ -75,10 +77,11 @@ PIKECLASS CipherInfo
       push_int(THIS->meta->key_size);
     }
 
-  /*! @decl string check_key_size(void)
+  /*! @decl int check_key_size(void)
    *!
-   *! Returns 1 if the given key size is acceptable for the cipher,
-   *! otherwise zero.
+   *! @returns
+   *!   1 if the given key size is acceptable for the cipher,
+   *!   otherwise 0.
    */
   PIKEFUN int check_key_size(int size)
     {
@@ -90,8 +93,8 @@ PIKECLASS CipherInfo
   
   /*! @decl string block_size(void)
    *!
-   *! Returns the internal block size of the cipher (or zero for
-   *! stream ciphers).
+   *! @returns
+   *!   The block size of the cipher (or 0 for stream ciphers).
    */
   PIKEFUN int block_size()
     {
@@ -123,7 +126,7 @@ PIKECLASS CipherState
   /* FIXME: Create should copy state from the other object, if
    * provided. */
 
-  /*! @decl object set_encrypt_key(string key)
+  /*! @decl CipherState set_encrypt_key(string key)
    *!
    *! Initializes the object for encryption.
    */
@@ -145,7 +148,7 @@ PIKECLASS CipherState
       push_object(this_object());
     }
 
-  /*! @decl object set_decrypt_key(string key)
+  /*! @decl CipherState set_decrypt_key(string key)
    *!
    *! Initializes the object for decryption.
    */
@@ -173,6 +176,9 @@ PIKECLASS CipherState
    *!
    *! @param data
    *!   For block ciphers, data must be an integral number of blocks.
+   *!
+   *! @returns
+   *!   The encrypted or decrypted data.
    */
 
   PIKEFUN string crypt (string data)
