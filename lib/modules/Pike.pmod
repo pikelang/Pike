@@ -2,7 +2,7 @@
 
 // Pike core things that don't belong anywhere else.
 //
-// $Id: Pike.pmod,v 1.6 2002/03/20 16:39:52 nilsson Exp $
+// $Id: Pike.pmod,v 1.7 2003/01/13 17:19:31 mast Exp $
 
 constant WEAK_INDICES = __builtin.PIKE_WEAK_INDICES;
 constant WEAK_VALUES = __builtin.PIKE_WEAK_VALUES;
@@ -20,3 +20,5 @@ constant Security = __builtin.security;
 
 constant Backend = __builtin.Backend;
 constant DefaultBackend = __builtin.__backend;
+
+constant gc_parameters = __builtin.gc_parameters;
