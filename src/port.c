@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.57 2003/01/16 01:10:44 nilsson Exp $
+|| $Id: port.c,v 1.58 2003/01/16 17:15:04 grubba Exp $
 */
 
 /*
@@ -29,7 +29,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.57 2003/01/16 01:10:44 nilsson Exp $");
+RCSID("$Id: port.c,v 1.58 2003/01/16 17:15:04 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -330,8 +330,8 @@ PMOD_EXPORT void MEMMOVE(void *b,const void *aa,size_t s)
 #ifndef HAVE_MEMCMP
 PMOD_EXPORT int MEMCMP(const void *bb,const void *aa,size_t s)
 {
-  char *a=(char *)aa;
-  char *b=(char *)bb;
+  unsigned char *a=(unsigned char *)aa;
+  unsigned char *b=(unsigned char *)bb;
   for(;s;s--,b++,a++)
   {
     if(*b!=*a)
