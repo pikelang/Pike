@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.420 2000/09/16 22:47:49 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.421 2000/09/17 19:29:04 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -960,7 +960,7 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-qro,qro,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(-qfold,qfold,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(-qwarn64,qwarn64,WARN)
-    AC_SYS_COMPILER_FLAG(-qflag=w,qflag_w,WARN)
+    AC_SYS_COMPILER_FLAG(-qflag=w:w,qflag_w_w,WARN)
     AC_DEFUN(AC_SYS_COMPILER_FLAG_QINFO, [
       AC_SYS_COMPILER_FLAG(-qinfo=$1,qinfo_$1,WARN)
     ])
@@ -982,11 +982,15 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG_QINFO(ord)
     AC_SYS_COMPILER_FLAG_QINFO(par)
     AC_SYS_COMPILER_FLAG_QINFO(por)
-    AC_SYS_COMPILER_FLAG_QINFO(ppc)
+    # ppc disabled since it complains about the system header files.
+    # AC_SYS_COMPILER_FLAG_QINFO(ppc)
+    # ppt disabled since tracing the preprocessor isn't interresting.
+    # AC_SYS_COMPILER_FLAG_QINFO(ppt)
     AC_SYS_COMPILER_FLAG_QINFO(pro)
     AC_SYS_COMPILER_FLAG_QINFO(rea)
     AC_SYS_COMPILER_FLAG_QINFO(ret)
-    AC_SYS_COMPILER_FLAG_QINFO(trd)
+    # trd disabled, since it adds extra errors (in particular 1506-419).
+    # AC_SYS_COMPILER_FLAG_QINFO(trd)
     AC_SYS_COMPILER_FLAG_QINFO(tru)
     AC_SYS_COMPILER_FLAG_QINFO(uni)
     AC_SYS_COMPILER_FLAG_QINFO(use)
