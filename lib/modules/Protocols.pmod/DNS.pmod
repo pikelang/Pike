@@ -229,7 +229,7 @@ class client {
 	  }),string key)
 	{
 	  catch {
-	    return RegGetValue(HKEY_LOCAL_MACHINE, key, value);
+	    return RegGetValue(HKEY_LOCAL_MACHINE, key, val);
 	  };
 	}
     }
