@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.24 1999/03/04 06:05:08 hubbe Exp $
+ * $Id: object.h,v 1.25 1999/03/11 13:44:35 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -92,6 +92,7 @@ void gc_mark_all_objects(void);
 void gc_free_all_unreferenced_objects(void);
 void count_memory_in_objects(INT32 *num_, INT32 *size_);
 struct magic_index_struct;
+void push_magic_index(struct program *type, int inherit_no, int parent_level);
 void init_object(void);
 void exit_object(void);
 /* Prototypes end here */

@@ -1184,6 +1184,14 @@ static int eval_instruction(unsigned char *pc)
       print_return_value();
       break;
 
+      CASE(F_MAGIC_INDEX);
+      push_magic_index(magic_index_program, accumulator, GET_ARG());
+      break;
+
+      CASE(F_MAGIC_SET_INDEX);
+      push_magic_index(magic_set_index_program, accumulator, GET_ARG());
+      break;
+
       CASE(F_CAST); f_cast(); break;
 
       CASE(F_RANGE); o_range(); break;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.10 1999/03/10 02:41:18 hubbe Exp $
+ * $Id: pike_memory.h,v 1.11 1999/03/11 13:44:36 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -60,7 +60,6 @@ struct generic_mem_searcher
 #define MEMCHR0 MEMCHR
 
 /* Prototypes begin here */
-char *strdup(const char *str);
 int pcharp_memcmp(PCHARP a, PCHARP b, int sz);
 INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e);
 INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e);

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.59 1999/03/05 02:14:59 hubbe Exp $");
+RCSID("$Id: object.c,v 1.60 1999/03/11 13:44:33 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1174,27 +1174,21 @@ struct magic_index_struct
 };
 
 #define MAGIC_THIS ((struct magic_index_struct *)(fp->current_storage))
+#define MAGIC_O2S(o) ((struct magic_index_struct *)&(o->storage))
 
 struct program *magic_index_program=0;
 struct program *magic_set_index_program=0;
 
-static void f_magic_index_create(INT32 args)
+void push_magic_index(struct program *type, int inherit_no, int parent_level)
 {
   struct inherit *inherit;
-  struct object *o;
+  struct object *o,*magic;
   struct program *p;
-  int inherit_no,parent_level;
 
-  if(MAGIC_THIS->o)
-    error("Cannot call this function twice.\n");
-
-  get_all_args("create",args,"%i%i",&inherit_no,&parent_level);
-
-  o=fp->next->current_object;
+  o=fp->current_object;
   if(!o) error("Illegal magic index call.\n");
-
   
-  inherit=INHERIT_FROM_INT(o->prog, fp->next->fun);
+  inherit=INHERIT_FROM_INT(o->prog, fp->fun);
 
   while(parent_level--)
   {
@@ -1218,8 +1212,11 @@ static void f_magic_index_create(INT32 args)
     inherit=INHERIT_FROM_INT(p, i);
   }
 
-  add_ref(MAGIC_THIS->o=o);
-  MAGIC_THIS->inherit = inherit + inherit_no;
+
+  magic=low_clone(type);
+  add_ref(MAGIC_O2S(magic)->o=o);
+  MAGIC_O2S(magic)->inherit = inherit + inherit_no;
+  push_object(magic);
 }
 
 static void f_magic_index(INT32 args)
@@ -1290,7 +1287,6 @@ void init_object(void)
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
   add_function("`()",f_magic_index,"function(string:mixed)",0);
-  add_function("create",f_magic_index_create,"function(int,int:void)",0);
   magic_index_program=end_program();
 
   start_new_program();
@@ -1298,7 +1294,6 @@ void init_object(void)
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
   add_function("`()",f_magic_set_index,"function(string,mixed:void)",0);
-  add_function("create",f_magic_index_create,"function(int,int:void)",0);
   magic_set_index_program=end_program();
 }
 

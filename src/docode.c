@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.44 1999/02/10 01:29:05 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.45 1999/03/11 13:44:27 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -237,6 +237,12 @@ static int do_docode2(node *n,int flags)
 
   switch(n->token)
   {
+  case F_MAGIC_INDEX:
+  case F_MAGIC_SET_INDEX:
+    emit(F_LDA, n->u.node.a->u.sval.u.integer);
+    emit(n->token, n->u.node.b->u.sval.u.integer);
+    return 1;
+      
   case F_EXTERNAL:
     emit(F_LDA, n->u.integer.a);
     if(flags & WANT_LVALUE)

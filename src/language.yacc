@@ -31,7 +31,7 @@
 
 %token F_INDEX F_ARROW F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
 %token F_LOCAL_LOCAL_INDEX F_LOCAL_ARROW F_GLOBAL_LOCAL_INDEX
-%token F_POS_INT_INDEX F_NEG_INT_INDEX
+%token F_POS_INT_INDEX F_NEG_INT_INDEX F_MAGIC_INDEX F_MAGIC_SET_INDEX
 %token F_LTOSVAL F_LTOSVAL2
 %token F_PUSH_ARRAY 
 %token F_RANGE F_COPY_VALUE
@@ -181,7 +181,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.113 1999/03/05 02:14:57 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.114 1999/03/11 13:44:30 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1761,14 +1761,12 @@ low_idents: F_IDENTIFIER
 	if(ISCONSTSTR($2->u.sval.u.string,"`->") ||
 	   ISCONSTSTR($2->u.sval.u.string,"`[]") )
 	{
-	  $$=mkapplynode(mkprgnode(magic_index_program),
-			 mknode(F_ARG_LIST,mkintnode(0),mkintnode(0)));
+	  $$=mknode(F_MAGIC_INDEX,mkintnode(0),mkintnode(0));
 	}
 	else if(ISCONSTSTR($2->u.sval.u.string,"`->=") ||
 		ISCONSTSTR($2->u.sval.u.string,"`[]=") )
 	{
-	  $$=mkapplynode(mkprgnode(magic_set_index_program),
-			 mknode(F_ARG_LIST,mkintnode(0),mkintnode(0)));
+	  $$=mknode(F_MAGIC_SET_INDEX,mkintnode(0),mkintnode(0));
 	}
 	else
 	{
