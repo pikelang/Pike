@@ -46,7 +46,9 @@ class mac_sha
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
 		       packet->content_type, strlen(packet->fragment),
 		       packet->fragment);
+#ifdef SSL3_DEBUG
 //    werror(sprintf("SSL.cipher: hashing '%s'\n", s));
+#endif
     return hash_raw(secret + pad_2 +
 		    hash_raw(secret + pad_1 + s));
   }

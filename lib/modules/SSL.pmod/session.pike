@@ -14,7 +14,7 @@ int ke_method;
 string master_secret; /* 48 byte secret shared between client and server */
 
 constant Struct = ADT.struct;
-constant State = (program) "state";
+constant State = SSL.state;
 
 void set_cipher_suite(int suite)
 {
@@ -22,8 +22,10 @@ void set_cipher_suite(int suite)
   cipher_suite = suite;
   ke_method = res[0];
   cipher_spec = res[1];
+#ifdef SSL3_DEBUG
   werror(sprintf("SSL.session: cipher_spec %O\n",
 		 mkmapping(indices(cipher_spec), values(cipher_spec))));
+#endif
 }
 
 void set_compression_method(int compr)
@@ -49,12 +51,16 @@ string generate_key_block(string client_random, string server_random)
   {
     i++;
     string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
+#ifdef SSL3_DEBUG
 //    werror(sprintf("cookie '%s'\n", cookie));
+#endif
     key += md5->hash_raw(master_secret +
 			 sha->hash_raw(cookie + master_secret +
 				       server_random + client_random));
   }
+#ifdef SSL3_DEBUG
 //  werror(sprintf("key_block: '%s'\n", key));
+#endif
   return key;
 }
 
@@ -63,8 +69,10 @@ array generate_keys(string client_random, string server_random)
   object key_data = Struct(generate_key_block(client_random, server_random));
   array keys = allocate(6);
 
-  write(sprintf("client_random: '%s'\nserver_random: '%s'\n",
+#ifdef SSL3_DEBUG
+  werror(sprintf("client_random: '%s'\nserver_random: '%s'\n",
 		client_random, server_random));
+#endif
 
   /* client_write_MAC_secret */
   keys[0] = key_data->get_fix_string(cipher_spec->hash_size);

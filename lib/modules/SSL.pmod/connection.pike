@@ -16,7 +16,7 @@ inherit "constants";
 inherit "handshake";
 
 constant Queue = ADT.queue;
-constant State = (program) "state";
+constant State = SSL.state;
 
 inherit Queue : alert;
 inherit Queue : urgent;
@@ -36,7 +36,9 @@ object recv_packet(string data)
 {
   mixed res;
 
+#ifdef SSL3_DEBUG
 //  werror(sprintf("SSL.connection->recv_packet('%s')\n", data));
+#endif
   if (left_over || !packet)
   {
     packet = Packet(2048);
@@ -57,8 +59,10 @@ object recv_packet(string data)
 
 void send_packet(object packet, int|void fatal)
 {
+#ifdef SSL3_DEBUG
 //  werror(sprintf("SSL.connection->send_packet: type %d, '%s'\n",
 //		 packet->content_type, packet->fragment));
+#endif
   switch (packet->content_type)
   {
   default:
@@ -101,13 +105,15 @@ string|int to_write()
     packet = urgent::get() || application::get();
   }
   if (packet)
-    {
-      werror(sprintf("SSL.connection: writing packet of type %d, '%s'\n",
-		     packet->content_type, packet->fragment[..6]));
-      res = current_write_state->encrypt_packet(packet)->send();
-      if (packet->content_type == PACKET_change_cipher_spec)
-	current_write_state = pending_write_state;
-    }
+  {
+#ifdef SSL3_DEBUG
+    werror(sprintf("SSL.connection: writing packet of type %d, '%s'\n",
+		   packet->content_type, packet->fragment[..6]));
+#endif
+    res = current_write_state->encrypt_packet(packet)->send();
+    if (packet->content_type == PACKET_change_cipher_spec)
+      current_write_state = pending_write_state;
+  }
   else
     res = closing ? 1 : "";
   return res;
@@ -126,7 +132,9 @@ int handle_alert(string s)
   }
   if (level == ALERT_fatal)
   {
+#ifdef SSL3_DEBUG
     werror(sprintf("SSL.connection: Fatal alert %d\n", description));
+#endif
     return -1;
   }
   if (description == ALERT_close_notify)
@@ -182,15 +190,19 @@ string|int got_data(string s)
 
     if (packet->is_alert)
     { /* Reply alert */
+#ifdef SSL3_DEBUG
       werror("SSL.connection: Bad recieved packet\n");
+#endif
       send_packet(packet);
       if (packet->level == ALERT_fatal)
 	return -1;
     }
     else
     {
+#ifdef SSL3_DEBUG
       werror(sprintf("SSL.connection: recieved packet of type %d\n",
 		     packet->content_type));
+#endif
       switch (packet->content_type)
       {
       case PACKET_alert:
@@ -215,7 +227,9 @@ string|int got_data(string s)
 	 for (i = 0; (i < strlen(packet->fragment)); i++)
 	 {
 	   err = handle_change_cipher(packet->fragment[i]);
+#ifdef SSL3_DEBUG
 	   werror(sprintf("tried change_cipher: %d\n", err));
+#endif
 	   if (err)
 	     return err;
 	 }

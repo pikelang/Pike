@@ -6,7 +6,7 @@ inherit Stdio.Port : socket;
 inherit "context";
 inherit ADT.queue : accept_queue;
 
-constant sslfile = (program) "sslfile";
+constant sslfile = SSL.sslfile;
 
 function(object:void) accept_callback;
 
@@ -62,7 +62,9 @@ int accept()
 
 void create()
 {
+#ifdef SSL3_DEBUG
   werror("SSL.sslport->create\n");
+#endif
   context::create();
   accept_queue::create();
 }

@@ -56,7 +56,9 @@ class conn {
   
   void read_callback(mixed id, string data)
   {
+#ifdef SSL3_DEBUG
     werror("Recieved: '" + data + "'\n");
+#endif
     do_write();
   }
 
@@ -102,17 +104,23 @@ class ber_decode {
     int len;
     string contents;
     
+#ifdef SSL3_DEBUG
     werror(sprintf("decoding tag %x\n", tag));
+#endif
     if ( (tag & 0x1f) == 0x1f)
       throw( ({ "high tag numbers is not supported\n", backtrace() }) );
     int len = get_int(1);
     if (len & 0x80)
       len = get_int(len & 0x7f);
     
+#ifdef SSL3_DEBUG
     werror(sprintf("len : %d\n", len));
+#endif
 
     contents = get_fix_string(len);
+#ifdef SSL3_DEBUG
     werror(sprintf("contents: %O\n", contents));
+#endif
     if (tag & 0x20)
     {
       object seq = object_program(this_object())(contents);
@@ -120,7 +128,9 @@ class ber_decode {
       while(! seq->is_empty())
       {
 	array elem = seq->get_asn1();
+#ifdef SSL3_DEBUG
 	// werror(sprintf("elem: %O\n", elem));
+#endif
 	res += ({ elem });
       }
       return ({ tag, res });
@@ -156,11 +166,15 @@ void my_accept_callback(object f)
 
 int main()
 {
+#ifdef SSL3_DEBUG
   werror(sprintf("Cert: '%s'\n", Crypto.string_to_hex(my_certificate)));
   werror(sprintf("Key:  '%s'\n", Crypto.string_to_hex(my_key)));
 //  werror(sprintf("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1()));
+#endif
   array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
+#ifdef SSL3_DEBUG
   werror(sprintf("Decoded key: %O\n", key));
+#endif
   object n = key[1][1];
   object e = key[2][1];
   object d = key[3][1];
@@ -169,6 +183,7 @@ int main()
 
   werror(sprintf("n =  %s\np =  %s\nq =  %s\npq = %s\n",
 		 n->digits(), p->digits(), q->digits(), (p*q)->digits()));
+
   rsa = Crypto.rsa();
   rsa->set_public_key(n, e);
   rsa->set_private_key(d);
@@ -186,6 +201,8 @@ int main()
 
 void create()
 {
+#ifdef SSL3_DEBUG
   werror("https->create\n");
+#ifdef SSL3_DEBUG
   sslport::create();
 }

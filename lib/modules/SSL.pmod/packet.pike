@@ -17,8 +17,9 @@ private int needed_chars;
 
 int marginal_size;
 
-// constant Alert = (program) "alert";
-#define Alert ((program) "alert")
+/* Circular dependence */
+program Alert = master()->resolv("SSL")->alert;
+// #define Alert ((program) "alert")
 
 void create(void|int extra)
 {
@@ -46,8 +47,10 @@ object|string recv(string data)
   buffer += data;
   while (strlen(buffer) >= needed_chars)
   {
+#ifdef SSL3_DEBUG
 //    werror(sprintf("SSL.packet->recv: needed = %d, avail = %d\n",
 //		     needed_chars, strlen(buffer)));
+#endif
     if (needed_chars == HEADER_SIZE)
     {
       content_type = buffer[0];
@@ -56,7 +59,9 @@ object|string recv(string data)
       {
 	if (SUPPORT_V2)
 	{
+#ifdef SSL3_DEBUG
 //	  werror(sprintf("SSL.packet: Recieving SSL2 packet '%s'\n", buffer[..4]));
+#endif
 
 	  content_type = PACKET_V2;
 	  if ( (!(buffer[0] & 0x80)) /* Support only short SSL2 headers */
@@ -64,7 +69,9 @@ object|string recv(string data)
 	    return Alert(ALERT_fatal, ALERT_unexpected_message);
 	  length = ((buffer[0] & 0x7f) << 8 | buffer[1]
 		    - 3);
+#ifdef SSL3_DEBUG
 //	  werror(sprintf("SSL2 length = %d\n", length));
+#endif
 	  protocol_version = values(buffer[3..4]);
 	}
 	else
@@ -105,8 +112,10 @@ string send()
     throw( ({ sprintf("SSL.packet->send: Version %d is not supported\n",
 		      protocol_version[0]), backtrace() }) );
   if (protocol_version[1] > 0)
+#ifdef SSL3_DEBUG
     werror(sprintf("SSL.packet->send: recieved version %d.%d packet\n",
 		   @ protocol_version));
+#endif
   if (strlen(fragment) > (PACKET_MAX_SIZE + marginal_size))
     throw( ({ "SSL.packet->send: maximum packet size exceeded\n",
 		backtrace() }) );

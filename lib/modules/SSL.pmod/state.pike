@@ -14,7 +14,7 @@ object compress;
 
 object(Gmp.mpz) seq_num;    /* Bignum, values 0, .. 2^64-1 are valid */
 
-constant Alert = (program) "alert";
+constant Alert = SSL.alert;
 
 void create(object s)
 {
@@ -27,12 +27,16 @@ void create(object s)
  * there was an error, otherwise 0. */
 object decrypt_packet(object packet)
 {
+#ifdef SSL3_DEBUG
   werror(sprintf("SSL.state->decrypt_packet: data = '%s'\n", packet->fragment));
+#endif
   
   if (crypt)
   {
     string msg;
+#ifdef SSL3_DEBUG
     werror("SSL.state: Trying decrypt..\n");
+#endif
     msg = crypt->crypt(packet->fragment); 
     if (! msg)
       return Alert(ALERT_fatal, ALERT_unexpected_message);
@@ -42,11 +46,15 @@ object decrypt_packet(object packet)
     packet->fragment = msg;
   }
 
+#ifdef SSL3_DEBUG
   werror(sprintf("SSL.state: Decrypted_packet '%s'\n", packet->fragment));
+#endif
 
   if (mac)
   {
+#ifdef SSL3_DEBUG
     werror("SSL.state: Trying mac verification...\n");
+#endif
     int length = strlen(packet->fragment) - session->cipher_spec->hash_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
@@ -58,7 +66,9 @@ object decrypt_packet(object packet)
 
   if (compress)
   {
+#ifdef SSL3_DEBUG
     werror("SSL.state: Trying decompression...\n");
+#endif
     string msg;
     msg = compress(packet->fragment);
     if (!msg)

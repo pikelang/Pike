@@ -36,7 +36,7 @@ array(int) preferred_suites =
 array(int) preferred_compressors =
 ({ COMPRESSION_null });
 
-constant Session = (program) "session";
+constant Session = SSL.session;
 constant Queue = ADT.queue;
 
 int use_cache = 1;
@@ -44,7 +44,7 @@ int session_lifetime = 600; /* Time to remember a session, in seconds */
 
 /* Session cache */
 object active_sessions;  /* Queue of pairs (time, id), in cronological order */
-mapping(string:object(Session)) session_cache;
+mapping(string:object) session_cache;
 
 int session_number; /* Incremented for each session, and used when constructing the
 		     * session id */
@@ -87,6 +87,9 @@ void record_session(object s)
 
 void purge_session(object s)
 {
+#ifdef SSL3_DEBUG
+  werror(sprintf("SSL.context->purge_session: '%s'\n", s->identity || ""));
+#endif
   if (s->identity)
     session_cache[s->identity] = 0;
   /* There's no need to remove the id from the active_sessions queue */
@@ -94,6 +97,9 @@ void purge_session(object s)
 
 void create()
 {
+#ifdef SSL3_DEBUG
+  werror("SSL.context->create\n");
+#endif
   active_sessions = Queue();
   session_cache = ([ ]);
 }

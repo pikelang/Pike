@@ -38,9 +38,9 @@ string my_random;
 string other_random;
 
 constant Struct = ADT.struct;
-constant Session = (program) "session";
-constant Packet = (program) "packet";
-constant Alert = (program) "alert";
+constant Session = SSL.session;
+constant Packet = SSL.packet;
+constant Alert = SSL.alert;
 
 /* Defined in connection.pike */
 void send_packet(object packet, int|void fatal);
@@ -68,7 +68,9 @@ object server_hello_packet()
   struct->put_int(session->compression_algorithm, 1);
 
   string data = struct->pop_data();
+#ifdef SSL3_DEBUG
   werror(sprintf("SSL.handshake: Server hello: '%s'\n", data));
+#endif
   return handshake_packet(HANDSHAKE_server_hello, data);
 }
 
@@ -78,13 +80,16 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
   session = context->new_session();
   multiset(int) common_suites;
   
+#ifdef SSL3_DEBUG
   werror(sprintf("ciphers: me: %O, client: %O\n",
 		   context->preferred_suites, cipher_suites)); 
 //  werror(sprintf("compr: me: %O, client: %O\n",
 //		   context->preferred_compressors, compression_methods)); 
-  
+#endif
   common_suites = mkmultiset(cipher_suites & context->preferred_suites);
+#ifdef SSL3_DEBUG
   werror(sprintf("intersection: %O\n", common_suites));
+#endif
   if (sizeof(common_suites))
   {
     int suite;
@@ -115,7 +120,9 @@ int reply_new_session(array(int) cipher_suites, array(int) compression_methods)
     object struct = Struct();
     
     int len = `+( @ Array.map(context->certificates, strlen));
+#ifdef SSL3_DEBUG
 //    werror(sprintf("SSL.handshake: certificate_message size %d\n", len));
+#endif
     struct->put_int(len + 3 * sizeof(context->certificates), 3);
     foreach(context->certificates, string cert)
       struct->put_var_string(cert, 3);
@@ -175,7 +182,9 @@ string server_derive_master_secret(string data)
    {
      /* Decrypt the pre_master_secret */
      string s = context->rsa->decrypt(data);
+#ifdef SSL3_DEBUG
 //     werror(sprintf("premaster_secret: '%s'\n", s));
+#endif
      if (!s || (strlen(s) != 48) || (s[0] != 3))
        return 0;
      if (s[1] > 0)
@@ -188,7 +197,9 @@ string server_derive_master_secret(string data)
      break;
    }
   }
+#ifdef SSL3_DEBUG
 //  werror(sprintf("master: '%s'\n", res));
+#endif
   return res;
 }
 
@@ -198,7 +209,9 @@ int handle_handshake(int type, string data, string raw)
 {
   object input = Struct(data);
 
+#ifdef SSL3_DEBUG
   werror(sprintf("SSL.handshake: state %d, type %d\n", handshake_state, type));
+#endif
   
   switch(handshake_state)
   {
@@ -250,12 +263,16 @@ int handle_handshake(int type, string data, string raw)
 	  werror(sprintf("SSL.connection->handle_handshake: "
 			 "Version %d.%d hello detected\n", @version));
 
+#ifdef SSL3_DEBUG
 	if (strlen(id))
 	  werror(sprintf("SSL.handshake: Looking up session %s\n", id));
+#endif
 	session = strlen(id) && context->lookup_session(id);
 	if (session)
 	{
+#ifdef SSL3_DEBUG
 	  werror(sprintf("SSL.handshake: Reusing session %s\n", id));
+#endif
 	  /* Reuse session */
 	  reuse = 1;
 	  if (! ( (cipher_suites & ({ session->cipher_suite }))
@@ -286,7 +303,9 @@ int handle_handshake(int type, string data, string raw)
       }
      case HANDSHAKE_hello_v2:
       {
+#ifdef SSL3_DEBUG
 	werror("SSL.handshake: SSL2 hello message recieved\n");
+#endif
 	int ci_len;
 	int id_len;
 	int ch_len;
@@ -379,7 +398,9 @@ int handle_handshake(int type, string data, string raw)
 			backtrace()));
       return -1;
     case HANDSHAKE_client_key_exchange:
+#ifdef SSL3_DEBUG
 //      werror("client_key_exchange\n");
+#endif
       if (certificate_state == CERT_requested)
       { /* Certificate should be sent before key exchange message */
 	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
@@ -398,7 +419,9 @@ int handle_handshake(int type, string data, string raw)
       pending_read_state = res[0];
       pending_write_state = res[1];
 
+#ifdef SSL3_DEBUG
 //      werror(sprintf("certificate_state: %d\n", certificate_state));
+#endif
       if (certificate_state != CERT_recieved)
       {
 	handshake_state = STATE_server_wait_for_finish;
@@ -462,7 +485,9 @@ int handle_handshake(int type, string data, string raw)
    {
    }
   }
+#ifdef SSL3_DEBUG
 //  werror(sprintf("SSL.handshake: messages = '%s'\n", handshake_messages));
+#endif
   return 0;
 }
 
