@@ -3288,8 +3288,8 @@ static INLINE void tag_push_default_arg(struct svalue *def)
 static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
 		     struct svalue *def)
 {
-   struct piece *s1=NULL,*s2=NULL;
-   int c1=0,c2=0;
+   struct piece *s1=NULL,*s2=NULL,*s3;
+   int c1=0,c2=0,c3;
    int n=0;
 
    p_wchar2 ch=index_shared_string(feed->s,c);
@@ -3322,31 +3322,39 @@ new_arg:
 
       /* scan for '=', '>' or next argument */
       /* skip whitespace */
-      scan_forward(s2,c2,&s1,&c1,this->ws,-this->n_ws);
-      if (c1==s1->s->len) /* end<tm> */
+      scan_forward(s2,c2,&s3,&c3,this->ws,-this->n_ws);
+      if (c3==s3->s->len) /* end<tm> */
       {
 	 tag_push_default_arg(def);
 	 break;
       }
-      ch=index_shared_string(s1->s,c1);
+      ch=index_shared_string(s3->s,c3);
       if (ch==this->tag_end) /* end */
       {
 	 tag_push_default_arg(def);
 	 break;
       }
-      if (ch!=this->arg_eq) /* end of _this_ argument */
-      {
-	 tag_push_default_arg(def);
-	 goto new_arg;
-      }
+      if (ch!=this->arg_eq)
+	if (c1!=c3 || s1!=s3)	/* end of _this_ argument */
+	{
+	  s1 = s3, c1 = c3;
+	  tag_push_default_arg(def);
+	  goto new_arg;
+	}
+	else {			/* a stray bogus character */
+	  s1 = s3, c1 = c3 + 1;
+	  pop_stack();
+	  n--;
+	  goto new_arg;
+	}
       
       /* left: case of '=' */
-      c1++; /* skip it */
+      c3++; /* skip it */
       
       /* skip whitespace */
-      scan_forward(s1,c1,&s2,&c2,this->ws,-this->n_ws);
+      scan_forward(s3,c3,&s2,&c2,this->ws,-this->n_ws);
 
-      DEBUG_MARK_SPOT("html_tag_args value start",s1,c1);
+      DEBUG_MARK_SPOT("html_tag_args value start",s2,c2);
 
       /* scan the argument value */
       scan_forward_arg(this,s2,c2,&s1,&c1,1,1);
