@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.7 2001/01/19 22:36:44 grubba Exp $
+# $Id: configure.in,v 1.8 2002/03/06 17:53:47 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -27,7 +27,7 @@ else
 
   AC_CHECK_HEADERS(GL/glut.h)
 
-  CPPFLAGS="$CFLAGS $X_CFLAGS"
+  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   LIBS="$X_EXTRA_LIBS $LIBS"
   LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
   AC_CHECK_LIB(X11, XDrawPoint)
