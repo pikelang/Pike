@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.381 2004/04/23 17:18:34 grubba Exp $
+# $Id: Makefile.in,v 1.382 2004/05/01 13:46:31 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -725,7 +725,7 @@ autodoc.xml: pike doc_build/src doc_build/lib doc_build/images images force
 	$(RUNPIKE) -x join_autodoc --quiet --post-process autodoc.xml doc_build
 
 autodoc-stamp:
-	@test -f autodoc.xml || $(MAKE) $(MAKEFLAGS) autodoc.xml
+	@test -f autodoc.xml || $(MAKE) autodoc.xml
 	@test -f autodoc-stamp || echo foo > autodoc-stamp
 
 images: doc_build/src/post_modules/GTK/refdoc/images
