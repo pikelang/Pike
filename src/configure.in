@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.844 2004/10/20 18:57:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.845 2004/10/21 11:35:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1513,6 +1513,13 @@ AC_ARG_WITH(machine-code,
             with_machine_code="yes"
           fi
 
+	])
+AC_ARG_WITH(small-eval-instruction,
+	MY_DESCR([--with-small-eval-instruction],
+		 [attempt to reduce the size of eval_instruction (EXPERIMENTAL).]), [
+	  AC_DEFINE(PIKE_SMALL_EVAL_INSTRUCTION)
+	  with_machine_code="no"
+	  with_computed_goto="no"
 	])
 
 MY_AC_ARG_WITH(keypair-loop,
@@ -6406,12 +6413,12 @@ int main()
   co_wait (&c, &m);
   wait_time = get_cpu_time() - start;
   if (start == (cpu_time_t) -1 || work_time == (cpu_time_t) -1) {
-    FPUTS("unknown (get_cpu_time doesn't work)", res);
+    FPUTS("unknown (get_cpu_time does not work)", res);
     fclose (res);
     return 4;
   }
   if (work_time < (CPU_TIME_TICKS / 10)) {
-    fprintf (res, "unknown (get_cpu_time doesn't work - loop took only %ld ms)",
+    fprintf (res, "unknown (get_cpu_time does not work - loop took only %ld ms)",
 	     (long) (work_time / (CPU_TIME_TICKS / 1000)));
     fclose (res);
     return 5;
