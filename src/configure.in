@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.323 1999/10/17 17:11:57 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.324 1999/10/19 01:11:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -205,7 +205,7 @@ AC_DEFUN(AC_SYS_COMPILER_FLAG,
     $3="[$]$3 $1"
     case "$3" in
       OPTIMIZE)
-        CFLAGS="[$]OLD_CFLAGS $1"
+        CFLAGS="[$]CFLAGS $1"
       ;;
     esac
     AC_MSG_RESULT(yes)
@@ -490,7 +490,7 @@ if test $cflags_is_set = no; then
     CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @ @g'`
   else
     :
-  fi  
+  fi
 
 
  if test "x${GCC-}" = xyes ; then
