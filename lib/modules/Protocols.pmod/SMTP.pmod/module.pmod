@@ -295,7 +295,10 @@ class Connection {
      if(messageid)
        errmsg += messageid + ": ";
      errmsg += fmt + "\n";
-     logfunction(sprintf(errmsg, @args));
+     if(args)
+       logfunction(sprintf(errmsg, @args));
+     else
+       logfunction(errmsg);
    }
   
    // make the received header
