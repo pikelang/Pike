@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.15 2000/04/19 16:03:34 mast Exp $
+ * $Id: jvm.c,v 1.16 2000/04/19 18:17:56 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.15 2000/04/19 16:03:34 mast Exp $");
+RCSID("$Id: jvm.c,v 1.16 2000/04/19 18:17:56 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -2716,8 +2716,15 @@ static void f_create(INT32 args)
   char *classpath = NULL;
   jclass cls;
 
-  if(j->jvm)
-    (*j->jvm)->DestroyJavaVM(j->jvm);
+  while(j->jvm) {
+    JavaVM *jvm = j->jvm;
+    JNIEnv *env;
+    j->jvm = NULL;
+    THREADS_ALLOW();
+    (*jvm)->AttachCurrentThread(jvm, (void **)&env, NULL);
+    (*jvm)->DestroyJavaVM(jvm);
+    THREADS_DISALLOW();
+  }
 
   j->vm_args.version = 0x00010002; /* Java 1.2. */
   j->vm_args.nOptions = 0;
@@ -2864,10 +2871,13 @@ static void exit_jvm_struct(struct object *o)
     jvm_vacate_env(fp->current_object, env);
   }
 
-  if(j->jvm) {
-    (*j->jvm)->AttachCurrentThread(j->jvm, (void **)&env, NULL);
-    (*j->jvm)->DestroyJavaVM(j->jvm);
+  while(j->jvm) {
+    JavaVM *jvm = j->jvm;
     j->jvm = NULL;
+    THREADS_ALLOW();
+    (*jvm)->AttachCurrentThread(jvm, (void **)&env, NULL);
+    (*jvm)->DestroyJavaVM(jvm);
+    THREADS_DISALLOW();
   }
   if(j->classpath_string)
     free_string(j->classpath_string);
