@@ -95,6 +95,8 @@ object function_for(string id)
 
 array encode(mixed val)
 {
+  if (intp(val) || floatp(val))
+    return ({ CTX_OTHER, val });
   if (objectp(val))
     return ({ CTX_OBJECT, id_for(val) });
   if (functionp(val) || programp(val))
