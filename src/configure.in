@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.568 2002/03/07 09:58:33 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.569 2002/03/14 01:10:42 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -973,18 +973,20 @@ MY_AC_ARG_WITH(int-int, MY_DESCR([--with-int-int],
 AC_ARG_WITH(gdbm, MY_DESCR([--without-gdbm],[no GNU database manager support]))
 AC_ARG_WITH(gmp, MY_DESCR([--without-gmp],[no support for Gmp bignums]))
 MY_AC_ARG_WITH(dmalloc, MY_DESCR([--with-dmalloc],[enable memory-leak tests]),
-	       [with_debug="yes" AC_DEFINE(DEBUG_MALLOC,10)])
-MY_AC_ARG_WITH(dmalloc-malloc, MY_DESCR([--without-dmalloc-malloc],
-					[Disable overloading malloc(3)]),
-	       [],[ AC_DEFINE(ENCAPSULATE_MALLOC,1) ])
+	       [AC_DEFINE(DEBUG_MALLOC,10)])
+MY_AC_ARG_WITH(dmalloc-malloc, MY_DESCR([--with-dmalloc-malloc],
+					[Enable overloading malloc(3)]),
+	       [ AC_DEFINE(ENCAPSULATE_MALLOC,1) ])
 MY_AC_ARG_WITH(dmalloc-malloc-leaks,
-	       MY_DESCR([--with-malloc-leaks],
+	       MY_DESCR([--with-dmalloc-malloc-leaks],
 			[Report memory allocated by malloc(3) as leaks.]),
 	       [ AC_DEFINE(REPORT_ENCAPSULATED_MALLOC,1) ])
 MY_AC_ARG_WITH(dmalloc-trace, MY_DESCR([--with-dmalloc-trace],
 				       [enable tracepoints]),
 	       [with_dmalloc_trace="yes" AC_DEFINE(DMALLOC_TRACE,10)])
-AC_ARG_WITH(debug, MY_DESCR([--without-debug],[disable run debugging]),
+AC_ARG_WITH(debug, MY_DESCR([--with-debug],[same as --with-cdebug --with-rtldebug]),
+	    [],[with_debug=])
+AC_ARG_WITH(debug, MY_DESCR([--without-debug],[same as --without-cdebug --without-rtldebug]),
 	    [],[with_debug=])
 AC_ARG_WITH(rtldebug, MY_DESCR([--with-rtldebug],[enable run time self tests]),
 	    [],[with_rtldebug=])
@@ -5876,8 +5878,8 @@ EOF
 $CPP -I. -I$srcdir conftest.c > conftest.cpp
 sed <conftest.cpp >conftypes.txt '1,/^--$/d'
 
-if test "x$with_debug" = x; then
-  with_debug=no
+if test "x$with_cdebug" = x; then
+  with_cdebug=no
 fi
 if test "x$with_rtldebug" = x; then
   with_rtldebug=no
@@ -5932,9 +5934,9 @@ cross-compiled.. $cross_compiling
 features:
 PAD_FEATURE([dynamic loading])$pike_cv_sys_dynamic_loading
 PAD_FEATURE([threads])$using_threads
-PAD_FEATURE([debug])$with_debug
-PAD_FEATURE([dmalloc])$with_dmalloc
+PAD_FEATURE([cdebug])$with_cdebug
 PAD_FEATURE([rtldebug])$with_rtldebug
+PAD_FEATURE([dmalloc])$with_dmalloc
 PAD_FEATURE([mmx])$with_mmx$mmx_reason
 PAD_FEATURE([module reloc])${with_relocatable_dumped_modules:-no}
 EOF
