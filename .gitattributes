@@ -215,6 +215,7 @@ testfont binary
 /src/modules/Image/orient.c foreign_ident
 /src/modules/Image/pattern.c foreign_ident
 /src/modules/Image/polyfill.c foreign_ident
+/src/modules/Image/testsuite.in.in foreign_ident
 /src/modules/Java/Makefile.in foreign_ident
 /src/modules/Java/acconfig.h foreign_ident
 /src/modules/Java/jvm.c foreign_ident

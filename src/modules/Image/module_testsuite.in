@@ -3,10 +3,10 @@ mixed a(){
 # 1 "-"
 
 
-#7 "testsuite.in.in"
+#9 "testsuite.in.in"
 object img1=Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0");
 object img2=Image.PNM.decode("P4\n5 5\nx¸Øèð");
-if (img1!=img2) do { werror("failure; Image.image/testsuite/Image.PNM.decode, ==: "+( "differ\n" )+"\n"); return 0; } while (0);
+if (img1!=img2) do { werror("failure; Image.Image/testsuite/Image.PNM.decode, ==: "+( "differ\n" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -18,9 +18,9 @@ mixed a(){
 # 1 "-"
 
 
-#13 "testsuite.in.in"
+#15 "testsuite.in.in"
 if ("hejsan, hoppsan" != MIME.decode_base64("aGVqc2FuLCBob3Bwc2Fu\n"))
-do { werror("failure; Image.image/testsuite/MIME.decode_base64: "+( "differ" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/testsuite/MIME.decode_base64: "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -32,10 +32,10 @@ mixed a(){
 # 1 "-"
 
 
-#18 "testsuite.in.in"
+#20 "testsuite.in.in"
 object img1=Image.GIF.decode(MIME.decode_base64("R0lGODlhBQAFAIAAAAAAAP///ywAAAAABQAFAAACCAxwEWrY8BwoADs="));
 object img2=Image.PNM.decode("P4\n5 5\nx\00èØèð");
-if (img1!=img2) do { werror("failure; Image.image/testsuite/Image.GIF.decode, MIME.decode_base64, ==: "+( "differ\n" )+"\n"); return 0; } while (0);
+if (img1!=img2) do { werror("failure; Image.Image/testsuite/Image.GIF.decode, MIME.decode_base64, ==: "+( "differ\n" )+"\n"); return 0; } while (0);
 return 1;
 
 
@@ -48,11 +48,11 @@ mixed a(){
 # 1 "-"
 
 
-#27 "testsuite.in.in"
-object img=Image.image();
+#29 "testsuite.in.in"
+object img=Image.Image();
 if (!img ||
 img->xsize() ||
-img->ysize()) do { werror("failure; Image.image/create/Image.image() no image: "+( "have size" )+"\n"); return 0; } while (0);
+img->ysize()) do { werror("failure; Image.Image/create/Image.Image() no image: "+( "have size" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -64,12 +64,12 @@ mixed a(){
 # 1 "-"
 
 
-#34 "testsuite.in.in"
-object img=Image.image(100,100);
+#36 "testsuite.in.in"
+object img=Image.Image(100,100);
 if (!img ||
 img->xsize()!=100 ||
-img->ysize()!=100) do { werror("failure; Image.image/create/Image.image() image: "+( "wrong size" )+"\n"); return 0; } while (0);
-if (img!=0) do { werror("failure; Image.image/create/Image.image() image: "+( "wrong color" )+"\n"); return 0; } while (0);
+img->ysize()!=100) do { werror("failure; Image.Image/create/Image.Image() image: "+( "wrong size" )+"\n"); return 0; } while (0);
+if (img!=0) do { werror("failure; Image.Image/create/Image.Image() image: "+( "wrong color" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -81,11 +81,11 @@ mixed a(){
 # 1 "-"
 
 
-#42 "testsuite.in.in"
+#44 "testsuite.in.in"
 int x=1; while ((x<<1)>0) x=(x<<1)+1;
-if (!catch { Image.image(x,2); }) do { werror("failure; Image.image/create/Image.image() too big: "+( x+"x2 permitted" )+"\n"); return 0; } while (0);
-if (!catch { Image.image(x/32768,65537); }) do { werror("failure; Image.image/create/Image.image() too big: "+( (x/32768)+"x65537 permitted" )+"\n"); return 0; } while (0);
-if (!catch { Image.image(x/(32768*3),65537); }) do { werror("failure; Image.image/create/Image.image() too big: "+( (x/(32768*3))+"x65537 permitted" )+"\n"); return 0; } while (0);
+if (!catch { Image.Image(x,2); }) do { werror("failure; Image.Image/create/Image.Image() too big: "+( x+"x2 permitted" )+"\n"); return 0; } while (0);
+if (!catch { Image.Image(x/32768,65537); }) do { werror("failure; Image.Image/create/Image.Image() too big: "+( (x/32768)+"x65537 permitted" )+"\n"); return 0; } while (0);
+if (!catch { Image.Image(x/(32768*3),65537); }) do { werror("failure; Image.Image/create/Image.Image() too big: "+( (x/(32768*3))+"x65537 permitted" )+"\n"); return 0; } while (0);
 return 1;
 
 }
@@ -97,12 +97,12 @@ mixed a(){
 # 1 "-"
 
 
-#49 "testsuite.in.in"
-object img=Image.image(1000,1000,17,42,96);
+#51 "testsuite.in.in"
+object img=Image.Image(1000,1000,17,42,96);
 if (!img ||
 img->xsize()!=1000 ||
-img->ysize()!=1000) do { werror("failure; Image.image/create/Image.image() color: "+( "wrong size" )+"\n"); return 0; } while (0);
-if (img!=({17,42,96})) do { werror("failure; Image.image/create/Image.image() color: "+( "wrong color" )+"\n"); return 0; } while (0);
+img->ysize()!=1000) do { werror("failure; Image.Image/create/Image.Image() color: "+( "wrong size" )+"\n"); return 0; } while (0);
+if (img!=({17,42,96})) do { werror("failure; Image.Image/create/Image.Image() color: "+( "wrong color" )+"\n"); return 0; } while (0);
 return 1;
 
 
@@ -115,910 +115,7 @@ mixed a(){
 # 1 "-"
 
 
-#60 "testsuite.in.in"
-object img=Image.image(10,10);
-img=img->test(42);
-if (equal(img->max(),({0,0,0}))) do { werror("failure; Image.image/testsuite II/Image.image->test(), ==: "+( "failed" )+"\n"); return 0; } while (0);
-img->setpixel(2,2,0,255,0);
-if (img==img->invert()) do { werror("failure; Image.image/testsuite II/Image.image->test(), ==: "+( "failed" )+"\n"); return 0; } while (0);
-return 1;
-
-
-}
-mixed b() { return 1; }
-
-....
-test 9, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#71 "testsuite.in.in"
-object img=Image.image(100,100)->test(42);
-if (img!=img->copy()) do { werror("failure; Image.image/copy/Image.image->copy: "+( "differ" )+"\n"); return 0; } while (0);
-if (img->copy(25,25,75,75)!=img->copy(25,25,75,75)) do { werror("failure; Image.image/copy/Image.image->copy: "+( "subregion differ" )+"\n"); return 0; } while (0);
-if (img->copy(25,25,75,75)==img) do { werror("failure; Image.image/copy/Image.image->copy: "+( "subregion doesn't differ" )+"\n"); return 0; } while (0);
-img->setpixel(2,2,0,255,0);
-if (img->copy()==img->invert()->copy()) do { werror("failure; Image.image/copy/Image.image->copy: "+( "copy of other doesn't differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 10, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#80 "testsuite.in.in"
-object img=Image.image(100,100)->test(42);
-if (img->clear()==img) do { werror("failure; Image.image/copy/Image.image->clear: "+( "doesn't differ" )+"\n"); return 0; } while (0);
-if (img->clear(0,0,0)!=0) do { werror("failure; Image.image/copy/Image.image->clear: "+( "wrong color (black)" )+"\n"); return 0; } while (0);
-if (img->clear(1,255,0)!=({1,255,0})) do { werror("failure; Image.image/copy/Image.image->clear: "+( "wrong color (color)" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 11, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#87 "testsuite.in.in"
-object img=Image.image(100,100)->test(42);
-if (img!=img->clone()) do { werror("failure; Image.image/copy/Image.image->clone: "+( "differ" )+"\n"); return 0; } while (0);
-img->setpixel(2,2,0,255,0);
-if (img->clone()==img->invert()->clone()) do { werror("failure; Image.image/copy/Image.image->clone: "+( "clone of other doesn't differ" )+"\n"); return 0; } while (0);
-return 1;
-
-
-}
-mixed b() { return 1; }
-
-....
-test 12, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#97 "testsuite.in.in"
-array a=({0,0,0});
-array b=copy_value(a); b[0]=17; b[1]=42; b[2]=128;
-if (!equal( ({0,0,0}), a)) do { werror("failure; Image.image/testsuite III/equal, copy_value: "+( "differ (1)" )+"\n"); return 0; } while (0);
-if (!equal( ({17,42,128}), b)) do { werror("failure; Image.image/testsuite III/equal, copy_value: "+( "differ (2)" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 13, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#104 "testsuite.in.in"
-if (!equal( ({0,0,0}), 
-Image.image(10,10,0,0,0)->max() ))
-do { werror("failure; Image.image/testsuite III/Image.image->max(): "+( "erranous (1)" )+"\n"); return 0; } while (0);
-if (!equal( ({17,42,36}), 
-Image.image(10,10,17,42,36)->max() ))
-do { werror("failure; Image.image/testsuite III/Image.image->max(): "+( "erranous (2)" )+"\n"); return 0; } while (0);
-if (!equal( ({17,42,36}), 
-Image.image(10,10,0,0,0)
-->setpixel(5,5,17,42,36)->max() ))
-do { werror("failure; Image.image/testsuite III/Image.image->max(): "+( "erranous (3)" )+"\n"); return 0; } while (0);
-if (!equal( ({17,42,36}), 
-Image.image(10,10,0,0,0)
-->setpixel(2,2,1,2,3)
-->setpixel(3,3,17,42,36)
-->setpixel(4,4,3,2,1)
-->max()))
-do { werror("failure; Image.image/testsuite III/Image.image->max(): "+( "erranous (4)" )+"\n"); return 0; } while (0);
-if (!equal( ({17,42,36}), 
-Image.image(10,10,0,0,0)
-->setpixel(2,2,17,2,3)
-->setpixel(3,3,2,42,5)
-->setpixel(4,4,3,2,36)
-->max()))
-do { werror("failure; Image.image/testsuite III/Image.image->max(): "+( "erranous (5)" )+"\n"); return 0; } while (0);
-return 1;
-
-
-}
-mixed b() { return 1; }
-
-....
-test 14, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#134 "testsuite.in.in"
-object img=Image.image(10,10,255,0,0);
-if (!equal(img->getpixel(5,5),({255,0,0}))) do { werror("failure; Image.image/plain/setpixel, getpixel: "+( "getpixel erranous" )+"\n"); return 0; } while (0);
-img->setpixel(5,5,1,2,3);
-if (!equal(img->getpixel(5,5),({1,2,3}))) do { werror("failure; Image.image/plain/setpixel, getpixel: "+( "failed" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 15, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#141 "testsuite.in.in"
-object img=Image.image(10,10,255,0,0);
-img->setpixel(5,5,0,255,0,127);
-if (!equal(img->getpixel(5,5),({127,128,0}))) do { werror("failure; Image.image/plain/setpixel alpha: "+( "failed" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 16, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#147 "testsuite.in.in"
-object img=Image.image(100,100,0,0,0);
-foreach (({40,50,60}),int z)
-{ 
-img->line(50-z,0,50,50,255,255,255);
-img->line(50-z,100,50,50,255,255,255);
-img->line(100,50+z,50,50,255,255,255);
-img->line(100,50-z,50,50,255,255,255);
-}
-object img1=Image.GIF.decode(MIME.decode_base64(
-"R0lGODlhZABkAIAAAAAAAP///ywAAAAAZABkAAAC/wxwiGC7/l6UktZ6Mdatdr9toSiSZQmCjPihqPu+MdLST23Lsr7vGF7DrXw+YhEF3AiFx2NTFiwtnU5qMYpUVqvbrAT7/XG5Y3HYfD6TyWsw+vZms68qaTw3n/tazE/AvcCkpwcH95OkFkhIaGdYdwfIyDikePeIVzk5yacFdUmpOcfpIUiaiBnK5Wfp6YiaerT6SecKCrtX++o0mnnb+vrHyKvr+xgpKttbbDxLmGy77Hi86VoK28FnrfesTY3a7VwdjTc8HowJToZ9Ok6unLoemA6fOR+L3u5Fab/T8JzfaR89UPyKnYsnjFzBaP6IVWnoEGAjiKLcSXyYY6EihP8Xd2VkY8Cfxo7BKN4z2RHkCn4hI6Y8CS0LypcVW/ZbOZImCJsvSuq85hMJz5/wzrEYSrRonz85kwoFYtSpwagMqEr1xfRG06u4aGzliusrWFpjASIta1Ae2qnYrK51RjXr201u5c5FttTt3X561YqVmtVa0L2ezooxTDgM4sNVE2tZ/Njl25Ysh/zNF7SgzcsMP6qzzPkWxJEUQ4caHU4gWtQJVXM9+E7lPtOq6g38RxNhaJO0u7oeSFCn7mUc+07t1ft3zLTI23Fcfk0cZmXJg8cmTp02N5K5OEctN/3d33LVWXT3Rv0nbuM3a5XvmQv6r2+A47ME/35+zHmR8rdPj82eeM2ox45k/a1WoHwHrgWeLlYhwmCC31ni32cJWkYhYdM4yAqCEmboGDTdTBGiiPB1eNeGy1UIXHwrljjLNCxi9UYfMAZkiI034hhIAQA7"));
-if (img!=img1) do { werror("failure; Image.image/plain/Image.image->line structure: "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 17, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#161 "testsuite.in.in"
-object img=Image.image(100,100,0,0,0);
-img->line(40,0,0,40);
-if (!equal( ({0,0,0}), img->max() )) do { werror("failure; Image.image/plain/Image.image->line color : "+( "differ (reset)" )+"\n"); return 0; } while (0);
-img->line(10,10,20,20,128,13,42);
-if (!equal( ({128,13,42}), img->max() )) do { werror("failure; Image.image/plain/Image.image->line color : "+( "differ (direct)" )+"\n"); return 0; } while (0);
-img->setcolor(200,19,99);
-img->line(30,20,20,30);
-if (!equal( ({200,19,99}), img->max() )) do { werror("failure; Image.image/plain/Image.image->line color : "+( "differ (setcolor)" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 18, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#172 "testsuite.in.in"
-object img=Image.image(100,100,0,0,0);
-foreach (({40,60,50}),int z)
-{ 
-img->box(z,0,50,50,255,z,255);
-img->box(z,100,50,50,255,z,0);
-img->box(100,z,50,50,0,z,255);
-img->box(0,z,50,50,0,z,0);
-}
-object img1=Image.GIF.decode(MIME.decode_base64(
-"R0lGODlhZABkALMAAAAAAAAyAAA8AAAoAP8oAP8yAAAo/wAy/wA8//88AP8o//8y//88/wAAAAAAAAAAACwAAAAAZABkAAME/xAAOWe1Fue8OVAKGIbhwjAniqKe17ouHMcznZEkbq7rats/IFA4nORypV6PVSw2nU4bErlb+qJRbDY7zVWtjO1WPKZ1SV9rubxmf86K9NLtpkfhcfC1XudL4XI9fX2DZoB6TISEijeHiIuLkBZ4gXuRkYSUiGGYmJmOep6efZqPo6NspaGoqGOqYK2tW69qsrJOtHO3t0O5gry8f2eVicHBHr6Wx8eToLDMzI3Dm9HRzdOm1tHJxdrB3Jzex+DizOTl38616Lfn7LLu76jx8p709ZH3+J/Yq/uY+v65CSiwDMGCs9TpYjZgQEOHDiFGjDiRIkWLFy9mJMbAgAGPH/8/hhQpkmTJkidRatS4kiVLly8HcESJkmbNmjdLxoy5kydPhzNx4hQ6dOjPn0eRUgxatGjTokqVRuXJ1KlTqyqlStWqserVq18NbN06dukmsGDRfiRLlq3Ms2nTgm3blqxXuXJr1q0r9W7evCIDBBA8eHBhw4YRJ068mDFjxwEOHJA8eXJly5YxZ868mTNnzgIEhBYtmnTp0qdRo1a9enXrAggQxJYtm3bt2rdx49a9e/du166BBw8+nLgA2L59J1eunLly48ahR48uGnnz5texY8dNnXp376itb98+njx38ODRGxdv3nz75unTxw/O3r17++fly9df/f59/77tt5/lgMf995+BtQ044H71HXggeQsumF6DDz7YnDYEEJChhhpqWEACCYAYYoghIrRIhx2i+CGJJJJoIiEppuhhiy2W+GIdMsq4Yo0u3uhGjinuyGMCPv4I5IxD2ljkGEcimeSSZTRJgJA8Qslkk1TWaOUWUmbZ4pZZdJmkkmAOIeaYZTpx5pNpmonlmES2CcSaQ8o555to2kkDnVXqGQOfWvrpAqBfCuoBoT0amgGiZCoKAKNxOjoBpJJaQGmlj+LJZqWXcqppnZh2KqmojpKqqKmGoiqoqn6yqqerdsIqp6xt0pqmrYtEAAA7"));
-if (img!=img1) do { werror("failure; Image.image/plain/Image.image->box structure: "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 19, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#186 "testsuite.in.in"
-object img=Image.image(100,100,0,0,0);
-img->box(40,0,0,40);
-if (!equal( ({0,0,0}), img->max() )) do { werror("failure; Image.image/plain/Image.image->box color : "+( "differ (reset)" )+"\n"); return 0; } while (0);
-img->box(10,10,20,20,128,13,42);
-if (!equal( ({128,13,42}), img->max() )) do { werror("failure; Image.image/plain/Image.image->box color : "+( "differ (direct)" )+"\n"); return 0; } while (0);
-img->setcolor(200,19,99);
-img->box(30,20,20,30);
-if (!equal( ({200,19,99}), img->max() )) do { werror("failure; Image.image/plain/Image.image->box color : "+( "differ (setcolor)" )+"\n"); return 0; } while (0);
-return 1;
-
-
-}
-mixed b() { return 1; }
-
-....
-test 20, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#200 "testsuite.in.in"
-object img=Image.image(100,100,0,0,0);
-float x=0,y=0.2;
-img->setcolor(255,254,253);
-img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
-({20+x,15+y,25+x,15+y,20+x,10+y}),
-({10+x,20+y,15+x,20+y,15+x,25+y}),
-({20+x,25+y,25+x,20+y,20+x,20+y}),
-
-({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
-({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
-({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
-({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
-
-({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
-({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
-({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
-({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
-
-object img1=Image.GIF.decode(MIME.decode_base64(
-"R0lGODlhZABkAMQAAAAAAAICAgUFBQoKChYWFigoKC0tLTAwMDIyMjMyMj8/P1lYWFFRUHJycXp5eYyLi6OioaWlpK2srLW0s8vLyszLytbV1Ojn5vTz8vn49/z7+v/+/QAAAAAAAAAAAAAAACwAAAAAZABkAAQF/yAAiONYmiaapivLuu8byzJd1zeO6/ve+z5gMDgkEo3HY1KpZDabTyhUOp1WrVZsNrvlcr3fb1gsJpfLZzRafWSw3Osd4bF7EOLtDCsDx6fmGBs7Gxh2fjgMGYIpG3yHAIAbG4s1k4SGjyaJkyyTjnGRlpQyopd3j5ucjJ59X6Glg6WmhwYICLYst7cGaAW6uro7wMAIBZmZx8jIysvLzc7O0GUOFBTVLNbWDmgKE9nZ1jvg4BMKhwISlp2TEgJrAw0XsrGiFw0DmeiqJuzuePDy1OGod8+Zvk7tMgHcR2qDPXzRAKBjkXAZwB0PI6bwZ4KjM4g1QGrUOJIkSZMnT+6mVKmSZcuWL2HClDlzZk2bNnHmzLmTJ0+fP38GFSqUaNGiR5EiVbp0aVOnTqFGjTqV6hdjKbBadRaBRdetywpoYKFBK9hDEUYB2PD1rB+xajeUdesnbVy2dOPAvTs3bxm7d/H6vapBIL9JfQdbARxYsOIpBxIkkMxi8uQDjx9n1qyZc+fOn0GDFj169CMI4LBlg2D6yAJR6yYtaE0kgAXDIyxZCECbyGuGa2X3rn377u7hvoELRx7EdtzjzIO87jQ7enMLLKBb91HdRPftO3inEA8efHnz5tGnT7+ePXv379/Hly+ffv369/HjPxQCADs="));
-if (!(img-img1<16)) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 1 (right triangle 0.0, 0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
-if (!equal(img->max(),({255,254,253}))) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 1 (right triangle 0.0, 0.2): "+( "wrong maxcolor" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 21, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#225 "testsuite.in.in"
-object img=Image.image(100,100,0,0,0);
-float x=-0.2,y=-0.2;
-img->setcolor(255,254,253);
-img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
-({20+x,15+y,25+x,15+y,20+x,10+y}),
-({10+x,20+y,15+x,20+y,15+x,25+y}),
-({20+x,25+y,25+x,20+y,20+x,20+y}),
-
-({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
-({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
-({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
-({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
-
-({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
-({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
-({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
-({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
-
-object img1=Image.GIF.decode(MIME.decode_base64(
-"R0lGODlhZABkANUAAAAAAAICAgUFBQcHBwoKChQUFBYWFh4eHiMjIyYmJS0tLTAwMDMyMigoKFFRUFlYWHp5eX9+fnJycYyLi56dnDIyMqOioaWlpMHBwMvLyszLytHQz9bV1Orp6Ojn5vTz8vz7+v/+/QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAZABkAAUG/0AAQDgcFo1GZDK5ZDKdz2dUKqVWq1csVrvddr1ecDg8JpPN53NarWa32284XD6f1+12fD6/5/P9f3+BgoKEhYVqAkmKiGQEWAMBjW0FFEkMEZNYBhMYWBUcD5KaWwUbGZchmaRGnB8hqFUVISGho6xJprCpqqyutLuywLWiuEO6wUMMwKuIv8OxUrPDxLeTAhQZGRkWSQ3b2w6FAQ8Y4ODcWN/o4BYNxsbw8fHz9PT29/f5ggIMDP7vjBD49w/BuAUECf4LKGWgQoUHWEUAFg3AMlodFCBqcAEEtWRPplHzIOGRRFoVL2bUxNEjxU8jS9KbmDLESlYtUcKkRdLkvf8IKW8aa1mRyaye+pKIM4JAo74GELAkkJk0aVWrVrFmzbqVK1evX7+GFSuWbNmyZ9GiVbt2bVu3buHGjTuXLl27d+/m1auXb9++fwEDFjx4cGHDhvlYs5b43oMkCxg2jmfAkxEGFybfm5AShGTNmgx8qJkZNKsJIJd5Nh36Vc0QpVkjQp2a1mrZgkTrvAwsNu48tGvb/vxbDQFz27oZWbctavHiz6FDlz59enXr1rFnz152QIUK3yUTAA8+AfczATi85A1MwvkzD9YrA+bB5/st6XfPp+X+Ppn4wtXnHxn5vdbfgGHEV5OACIaRXk0HNujFAykxKKEXASinTIQXbiEk2QH2ddihiCOOWKKJJqKYYoorssiiiy++GKOMMtJYY4034hYEADs="));
-if (!(img-img1<16)) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 2 (right triangle -0.2, -0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
-if (!equal(img->max(),({255,254,253}))) do { werror("failure; Image.image/advanced drawing/Image.image->polyfill 2 (right triangle -0.2, -0.2): "+( "wrong maxcolor" )+"\n"); return 0; } while (0);
-return 1;
-
-
-}
-mixed b() { return 1; }
-
-....
-test 22, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#253 "testsuite.in.in"
-if (!objectp(Image.Font())) do { werror("failure; Image.image/Image.Font/instansiating default font: "+( "not object" )+"\n"); return 0; } while (0); 
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 23, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#257 "testsuite.in.in"
-object f=Image.Font();
-object i=f->write("hej");
-if (i!=Image.PNM.decode(MIME.decode_base64("UDQKMTkgMTEK///gv/7gv//grzjglt7gth7gtv7gtv7gtx7g//7g//Hg"))) 
-do { werror("failure; Image.image/Image.Font/writing simple text with default font: "+( "incorrect" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 24, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#264 "testsuite.in.in"
-object f=Image.Font();
-object i=f->write("h","o");
-if (i!=Image.PNM.decode(MIME.decode_base64("UDQKNyAyMwr+vr6ulra2trb+/v7+/s62tra2zv7+/g==")))
-do { werror("failure; Image.image/Image.Font/writing multiple lines with default font: "+( "incorrect" )+"\n"); return 0; } while (0);
-return 1;
-
-
-
-}
-mixed b() { return 1; }
-
-....
-test 25, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#275 "testsuite.in.in"
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-array z=(array)c;
-if (sizeof(z)!=2) 
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
-(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 26, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#285 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-img=c*img;
-array z=(array)Image.Colortable(img);
-if (sizeof(z)!=2) 
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z1]!=Image.Color.white) &&
-(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white normal: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 27, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#297 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-c->floyd_steinberg();
-img=c*img;
-array z=(array)Image.Colortable(img);
-if (sizeof(z)!=2) 
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
-(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 28, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#310 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-c->ordered();
-img=c*img;
-array z=(array)Image.Colortable(img);
-if (sizeof(z)!=2) 
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
-if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
-(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
-do { werror("failure; Image.image/Image.Colortable/colortable - black/white ordered: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 29, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#323 "testsuite.in.in"
-object img=Image.image(200,200)->test(42);
-img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-object c=Image.Colortable(img,1000)->cubicles(16,16,16,4);
-if (sizeof(c)<200) do { werror("failure; Image.image/Image.Colortable/colortable - standard: "+( "too few colors" )+"\n"); return 0; } while (0);
-object img1=(c*img);
-if (!(img-img1<50)) do { werror("failure; Image.image/Image.Colortable/colortable - standard: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 30, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#332 "testsuite.in.in"
-object img=Image.image(200,200)->test(42);
-img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-object c=Image.Colortable(32,32,32)->floyd_steinberg();
-object img1=(c*img);
-if (!(img-img1<50)) do { werror("failure; Image.image/Image.Colortable/colortable - floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 31, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#340 "testsuite.in.in"
-object img=Image.image(200,200)->test(42);
-img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-object c=Image.Colortable(32,32,32)->ordered();
-object img1=(c*img);
-if (!(img-img1<32)) do { werror("failure; Image.image/Image.Colortable/colortable - ordered: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
-return 1;
-
-
-
-}
-mixed b() { return 1; }
-
-....
-test 32, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#352 "testsuite.in.in"
-object img=Image.image(100,100)->test(40);
-object img1=Image.PNM.decode(Image.PNM.encode(img));
-if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode: "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 33, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#358 "testsuite.in.in"
-object img=Image.image(100,100)->test(41);
-object c=Image.Colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
-img=c*img;
-object img1=Image.GIF.decode(Image.GIF.encode(img));
-if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode: "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 34, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#366 "testsuite.in.in"
-object img=Image.image(100,100)->test(42);
-object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
-img=c*img;
-object img1=Image.GIF.decode(Image.GIF.encode(img,c));
-if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable : "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 35, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#374 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
-img=c*img;
-object img1=Image.GIF.decode(Image.GIF.encode(img,c));
-if (!(img-img1<50)) do { werror("failure; Image.image/encoding/decoding/Image.GIF.encode/decode colortable w/ floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 36, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#382 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.AVS.decode(Image.AVS.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.AVS.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 37, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#387 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (truecolor): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-
-}
-mixed b() { return 1; }
-
-....
-test 38, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#393 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,256);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8])))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (8bpp): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 39, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#400 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,16);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4])))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 40, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#407 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,2)->floyd_steinberg();
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":1])))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (1bpp): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 41, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#414 "testsuite.in.in"
-object img=Image.image(400,100,Image.Color.red);
-img->line(0,0,0,99,Image.Color.green);
-img->line(399,0,399,99,Image.Color.blue);
-object c=Image.Colortable(img,256);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8,"rle":1])))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (8bpp rle first): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 42, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#423 "testsuite.in.in"
-object img=Image.image(400,100,Image.Color.red);
-img->line(0,0,0,99,Image.Color.green);
-img->line(399,0,399,99,Image.Color.blue);
-object c=Image.Colortable(img,16);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4,"rle":1])))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (4bpp rle first): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 43, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#432 "testsuite.in.in"
-object img=Image.image(100,100)->test(99)->scale(400,100);
-object c=Image.Colortable(img,256);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8,"rle":1])))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (8bpp rle second): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 44, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#439 "testsuite.in.in"
-object img=Image.image(100,100)->test(99)->scale(400,100);
-object c=Image.Colortable(img,16);
-img=c*img;
-if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4,"rle":1])))!=img) do { werror("failure; Image.image/encoding/decoding/Image.BMP.encode/decode (4bpp rle second): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 45, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#446 "testsuite.in.in"
-object img=Image.image(256,240)->test(43);
-img=Image.Colortable( ({"white","black","red","green"}) )*img;
-if (Image.HRZ.decode(Image.HRZ.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.HRZ.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 46, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#452 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,16);
-img=c*img;
-if (Image.ILBM.decode(Image.ILBM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.ILBM.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 47, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#459 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.PCX.decode(Image.PCX.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PCX.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 48, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#464 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.PNM.decode(Image.PNM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 49, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#469 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-if (Image.TGA.decode(Image.TGA.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.TGA.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 50, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#474 "testsuite.in.in"
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-img=c*img;
-if (Image.XBM.decode(Image.XBM.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.XBM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-return 1;
-
-
-
-
-
-
-
-
-
-
-}
-mixed b() { return 1; }
-
-....
-test 51, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#490 "testsuite.in.in"
-#if constant(Image.XPM.encode)
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(img,16);
-img=c*img;
-if (Image.XPM.decode(Image.XPM.encode(img,(["colortable":c])))!=img) 
-do { werror("failure; Image.image/encoding/decoding/Image.XPM.encode/decode (16 colors): "+( "differ" )+"\n"); return 0; } while (0);
-#else
-werror(" (Image.XPM not available) ");
-#endif
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 52, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#502 "testsuite.in.in"
-#if constant(Image.XPM.encode)
-object img=Image.image(100,100)->test(43);
-object c=Image.Colortable(16,16,16); 
-img=c*img;
-if (Image.XPM.decode(Image.XPM.encode(img,(["colortable":c])))!=img) 
-do { werror("failure; Image.image/encoding/decoding/Image.XPM.encode/decode (4096 colors): "+( "differ" )+"\n"); return 0; } while (0);
-#endif
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 53, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#512 "testsuite.in.in"
-#if constant(Image.TIFF.encode)
-object img=Image.image(100,100)->test(43);
-if (Image.TIFF.decode(Image.TIFF.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.TIFF.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-#else
-werror(" (Image.TIFF not available) ");
-#endif
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 54, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#521 "testsuite.in.in"
-#if constant(Image.XFace.encode)
-object img=Image.image(48,48)->test(43);
-object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
-c->floyd_steinberg();
-img=c*img;
-if (Image.XFace.decode(Image.XFace.encode(img))!=img) do { werror("failure; Image.image/encoding/decoding/Image.XFace.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
-#else
-werror(" (Image.XFace not available) ");
-#endif
-return 1;
-
-}
-mixed b() { return 1; }
-
-....
-test 55, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#533 "testsuite.in.in"
-#if constant(Image.JPEG.encode)
-object img=Image.image(100,100)->test(43);
-object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
-if (!(img-img1<10)) do { werror("failure; Image.image/encoding/decoding/Image.JPEG.encode/decode : "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
-#else
-werror(" (Image.JPEG not available) ");
-#endif
-return 1;
-
-
-
-}
-mixed b() { return 1; }
-
-....
-test 56, expected result: EQ
-mixed a(){
-# 1 "-"
-
-
-#547 "testsuite.in.in"
+#62 "testsuite.in.in"
 foreach (
 ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
 ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
@@ -1037,18 +134,18 @@ object c3=Image.Color.rgb(@i[1]);
 if (c1!=c2)
 
 
-do { werror("failure; Image.image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "by values != by name" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "by values != by name" )+"\n"); return 0; } while (0);
 if (c1!=c3)
 
 
-do { werror("failure; Image.image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "by rgb() != by name|values" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "by rgb() != by name|values" )+"\n"); return 0; } while (0);
 
 if (c1->r!=i[1][0] ||
 c1->g!=i[1][1] ||
 c1->b!=i[1][2])
 
 
-do { werror("failure; Image.image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->r("+c1->r+"), ->g, ->b reported" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->r("+c1->r+"), ->g, ->b reported" )+"\n"); return 0; } while (0);
 
 if (c1->rgb()[0]!=i[1][0] ||
 c1->rgb()[1]!=i[1][1] ||
@@ -1056,7 +153,7 @@ c1->rgb()[2]!=i[1][2])
 
 
 
-do { werror("failure; Image.image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->rgb() (" +c1->rgb()[0]+","+c1->rgb()[1]+","+c1->rgb()[2]+") reported" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->rgb() (" +c1->rgb()[0]+","+c1->rgb()[1]+","+c1->rgb()[2]+") reported" )+"\n"); return 0; } while (0);
 
 if (c1->hsv()[0]!=i[2][0] ||
 c1->hsv()[1]!=i[2][1] ||
@@ -1064,19 +161,19 @@ c1->hsv()[2]!=i[2][2])
 
 
 
-do { werror("failure; Image.image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->hsv() (" +c1->hsv()[0]+","+c1->hsv()[1]+","+c1->hsv()[2]+") reported" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->hsv() (" +c1->hsv()[0]+","+c1->hsv()[1]+","+c1->hsv()[2]+") reported" )+"\n"); return 0; } while (0);
 
 if (c1->greylevel()!=i[3])
 
 
 
-do { werror("failure; Image.image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->greylevel() ("+c1->greylevel()+", should be " +i[3]+") reported" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->greylevel() ("+c1->greylevel()+", should be " +i[3]+") reported" )+"\n"); return 0; } while (0);
 
 if (c1->grey()->r!=i[3])
 
 
 
-do { werror("failure; Image.image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->grey()->r ("+c1->grey()->r+", should be " +i[3]+") reported" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/Image.Color: "+( "color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+ ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; " "wrong ->grey()->r ("+c1->grey()->r+", should be " +i[3]+") reported" )+"\n"); return 0; } while (0);
 }; 
 return 1;
 
@@ -1084,48 +181,48 @@ return 1;
 mixed b() { return 1; }
 
 ....
-test 57, expected result: EQ
+test 9, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#609 "testsuite.in.in"
+#124 "testsuite.in.in"
 if (!arrayp(indices(Image.Color)))
-do { werror("failure; Image.image/Image.Color/indices(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/indices(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
 if (!stringp(indices(Image.Color)[0]))
-do { werror("failure; Image.image/Image.Color/indices(Image.Color): "+( "wrong type of elements\n" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/indices(Image.Color): "+( "wrong type of elements\n" )+"\n"); return 0; } while (0);
 if (sizeof(indices(Image.Color))<8)
-do { werror("failure; Image.image/Image.Color/indices(Image.Color): "+( "too few colors\n" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/indices(Image.Color): "+( "too few colors\n" )+"\n"); return 0; } while (0);
 return 1;
 
 }
 mixed b() { return 1; }
 
 ....
-test 58, expected result: EQ
+test 10, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#618 "testsuite.in.in"
+#133 "testsuite.in.in"
 if (!arrayp(values(Image.Color)))
-do { werror("failure; Image.image/Image.Color/values(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/values(Image.Color): "+( "wrong type\n" )+"\n"); return 0; } while (0);
 if (!objectp(values(Image.Color)[0]))
-do { werror("failure; Image.image/Image.Color/values(Image.Color): "+( "wrong type of elements\n" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/values(Image.Color): "+( "wrong type of elements\n" )+"\n"); return 0; } while (0);
 if (sizeof(indices(Image.Color))!=sizeof(values(Image.Color)))
-do { werror("failure; Image.image/Image.Color/values(Image.Color): "+( "not the same size of indices() and values()\n" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Image.Color/values(Image.Color): "+( "not the same size of indices() and values()\n" )+"\n"); return 0; } while (0);
 return 1;
 
 }
 mixed b() { return 1; }
 
 ....
-test 59, expected result: EQ
+test 11, expected result: EQ
 mixed a(){
 # 1 "-"
 
 
-#627 "testsuite.in.in"
+#142 "testsuite.in.in"
 foreach (
 ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
 ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
@@ -1147,6 +244,955 @@ z->bright();
 return 1;
 
 
+
+}
+mixed b() { return 1; }
+
+....
+test 12, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#167 "testsuite.in.in"
+object img=Image.Image(10,10);
+img=img->test(42);
+if (equal(img->max(),({0,0,0}))) do { werror("failure; Image.Image/testsuite II/Image.Image->test(), ==: "+( "failed" )+"\n"); return 0; } while (0);
+img->setpixel(2,2,0,255,0);
+if (img==img->invert()) do { werror("failure; Image.Image/testsuite II/Image.Image->test(), ==: "+( "failed" )+"\n"); return 0; } while (0);
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 13, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#178 "testsuite.in.in"
+object img=Image.Image(100,100)->test(42);
+if (img!=img->copy()) do { werror("failure; Image.Image/copy/Image.Image->copy: "+( "differ" )+"\n"); return 0; } while (0);
+if (img->copy(25,25,75,75)!=img->copy(25,25,75,75)) do { werror("failure; Image.Image/copy/Image.Image->copy: "+( "subregion differ" )+"\n"); return 0; } while (0);
+if (img->copy(25,25,75,75)==img) do { werror("failure; Image.Image/copy/Image.Image->copy: "+( "subregion doesn't differ" )+"\n"); return 0; } while (0);
+img->setpixel(2,2,0,255,0);
+if (img->copy()==img->invert()->copy()) do { werror("failure; Image.Image/copy/Image.Image->copy: "+( "copy of other doesn't differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 14, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#187 "testsuite.in.in"
+object img=Image.Image(100,100)->test(42);
+if (img->clear()==img) do { werror("failure; Image.Image/copy/Image.Image->clear: "+( "doesn't differ" )+"\n"); return 0; } while (0);
+if (img->clear(0,0,0)!=0) do { werror("failure; Image.Image/copy/Image.Image->clear: "+( "wrong color (black)" )+"\n"); return 0; } while (0);
+if (img->clear(1,255,0)!=({1,255,0})) do { werror("failure; Image.Image/copy/Image.Image->clear: "+( "wrong color (color)" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 15, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#194 "testsuite.in.in"
+object img=Image.Image(100,100)->test(42);
+if (img!=img->clone()) do { werror("failure; Image.Image/copy/Image.Image->clone: "+( "differ" )+"\n"); return 0; } while (0);
+img->setpixel(2,2,0,255,0);
+if (img->clone()==img->invert()->clone()) do { werror("failure; Image.Image/copy/Image.Image->clone: "+( "clone of other doesn't differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 16, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#201 "testsuite.in.in"
+object img=Image.Image(20,20);
+img->box(4,4,8,8,Image.Color.red);
+img->box(8,8,12,12,Image.Color.green);
+img->box(12,4,16,8,Image.Color.blue);
+
+if (img->autocrop()!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhDQAJAJEAAAAAAP8AAAAA/wD/ACwAAAAADQAJAAECIkwcACDSck5azkE5mb1yaYsNg7gJ\r\nHjCOw3mqI+u5K4y6ZwEAOw==")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop: "+( "autocropped (all) image is not correct" )+"\n"); return 0; } while (0);
+
+if (img->autocrop(0,1,0,0,0)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhEAAUAJEAAAAAAP8AAAAA/wD/ACwAAAAAEAAUAAECOQR8l6rc/SCUc54QcFBCdKFk2XZ4\r\nHniNJHB6ocq1bzYMdYtCtj1YDW/zKYA9IYBoNCaVSmaz+YQ2CgA7")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop: "+( "autocropped (0,1,0,0,0) image is not correct" )+"\n"); return 0; } while (0);
+
+if (img->autocrop(0,0,1,0,0)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhEQAUAJEAAAAAAP8AAAAA/wD/ACwAAAAAEQAUAAECOgR8l6rc/SCUc1YVQg5KCC80msYd\r\n3xdiZAmgn7h2LqwNg+2m030PFtS7/RpB3/BQPB6Vy2XT6YRGfwUAOw==")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop: "+( "autocropped (0,0,1,0,0) image is not correct" )+"\n"); return 0; } while (0);
+
+if (img->autocrop(0,0,0,1,0)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhFAAQAJEAAAAAAP8AAAAA/wD/ACwAAAAAFAAQAAECMwQckXEg8kRrQCl2IJT0XNVsUOd9\r\noUhW1zCwIpcebTvEKd3aJF7rFO/zBYVCYrF4RCJjBQA7")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop: "+( "autocropped (0,0,0,1,0) image is not correct" )+"\n"); return 0; } while (0);
+
+if (img->autocrop(0,0,0,0,1)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhFAANAJEAAAAAAP8AAAAA/wD/ACwAAAAAFAANAAECNQR8l6rc/SCUc1ZrQQg7KCGAgsVx\r\n3hGG42Ryn7pC7QnAcdMOg25nyr4b+CbB3RBSFB5/RUsBADs=")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop: "+( "autocropped (0,0,0,0,1) image is not correct" )+"\n"); return 0; } while (0);
+
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 17, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#234 "testsuite.in.in"
+object img=Image.Image(20,20);
+img->box(4,4,8,8,Image.Color.red);
+img->box(8,8,12,12,Image.Color.green);
+img->box(12,4,16,8,Image.Color.blue);
+img->setcolor(255,255,255);
+
+if (img->autocrop(5)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhFwATAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAAAAFwATAAIDVkiku+0OOgBo\r\nrRdjPPf2H9CFYTiWJbdsQdAGmCDIgkqwrhvPs43nO54Pk9NVeL3KqTgYNJE15arkdA5Kp43ViZ2G\r\ntleT9wPu3lKpYTqdXX/abnX8TUgAADs=")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop / border: "+( "autocropped (border) image is not correct" )+"\n"); return 0; } while (0);
+return 1;
+
+if (img->autocrop(5,0,0,0,1)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhHgAXAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAAAAHgAXAAIDbUiku+0Oxjgp\r\ntfdmrXnvHwiKIwEAJ4qq67qOrhvLKEzTt43jrg4EAWBgJRAUBS+QKxgcooxGZE25agaJUSnAZ3UC\r\nslpuczAgg5MdXrk8wPlc7LKbSou3ae+VfZ7m8dAaf39TfYM8eYaAF4mHEQkAOw==")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop / border: "+( "autocropped (5,0,0,0,1) image is not correct" )+"\n"); return 0; } while (0);
+
+if (img->autocrop(5,0,0,1,0)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhHgAaAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAAAAHgAaAAIDdEiku+0OxjgJ\r\nABdjvfemlOeJIwZGZZkCp6OqZbt4QVAHmyDowifTNltut/O1gMEh0XhCCjHEoum3CQYGA2y0Nz2q\r\nstmBSmb5hsUxaumMHpFh7LEaBmPN63IvHvbe8+9+TCCBeU2EbmRkiYqKjI2Nj5CQko0JADs=")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop / border: "+( "autocropped (5,0,0,1,0) image is not correct" )+"\n"); return 0; } while (0);
+
+if (img->autocrop(5,0,1,0,0)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhGwAeAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAAAAGwAeAAIDfEiku+0Oxjgp\r\ntfdmrXnvHwheAFCaJpqmqcayL2y6slzTts3iQBD4gZRAMBS0SKnfL2giEo0zpGn5Ez6hAB6VCbhi\r\ntcvBQOw9UnTj8cDGY6nHbCnsvZa1U/T4WaczR/p9UXuBOneEfg6HhXKKiAuNdiMjkpOTlZaWmJmZ\r\nHQkAOw==")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop / border: "+( "autocropped (5,0,1,0,0) image is not correct" )+"\n"); return 0; } while (0);
+
+if (img->autocrop(5,1,0,0,0)!=
+Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhGgAeAKIAAAAAAP8AAAAA/wD/AP///wAAAAAAAAAAACwAAAAAGgAeAAIDekiku+0Oxjgp\r\ntfdmrXnvH3gBAFmWJ4qi47q6L9DGcTzXNUutQdAHKIFAKNBFeD5fcDg0OpDJJdO5gCpLzGbplgwM\r\nBt9scburgcGD2m2FBqvLsXbaBn/J38dcjkrY78l5fzlrgiuEhYBPiHSBi3wiIpCRkZOUlJaXlwQJ\r\nADs=")))
+do { werror("failure; Image.Image/copy/Image.Image->autocrop / border: "+( "autocropped (5,1,0,0,0) image is not correct" )+"\n"); return 0; } while (0);
+
+
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 18, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#273 "testsuite.in.in"
+array a=({0,0,0});
+array b=copy_value(a); b[0]=17; b[1]=42; b[2]=128;
+if (!equal( ({0,0,0}), a)) do { werror("failure; Image.Image/testsuite III/equal, copy_value: "+( "differ (1)" )+"\n"); return 0; } while (0);
+if (!equal( ({17,42,128}), b)) do { werror("failure; Image.Image/testsuite III/equal, copy_value: "+( "differ (2)" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 19, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#280 "testsuite.in.in"
+if (!equal( ({0,0,0}), 
+Image.Image(10,10,0,0,0)->max() ))
+do { werror("failure; Image.Image/testsuite III/Image.Image->max(): "+( "erranous (1)" )+"\n"); return 0; } while (0);
+if (!equal( ({17,42,36}), 
+Image.Image(10,10,17,42,36)->max() ))
+do { werror("failure; Image.Image/testsuite III/Image.Image->max(): "+( "erranous (2)" )+"\n"); return 0; } while (0);
+if (!equal( ({17,42,36}), 
+Image.Image(10,10,0,0,0)
+->setpixel(5,5,17,42,36)->max() ))
+do { werror("failure; Image.Image/testsuite III/Image.Image->max(): "+( "erranous (3)" )+"\n"); return 0; } while (0);
+if (!equal( ({17,42,36}), 
+Image.Image(10,10,0,0,0)
+->setpixel(2,2,1,2,3)
+->setpixel(3,3,17,42,36)
+->setpixel(4,4,3,2,1)
+->max()))
+do { werror("failure; Image.Image/testsuite III/Image.Image->max(): "+( "erranous (4)" )+"\n"); return 0; } while (0);
+if (!equal( ({17,42,36}), 
+Image.Image(10,10,0,0,0)
+->setpixel(2,2,17,2,3)
+->setpixel(3,3,2,42,5)
+->setpixel(4,4,3,2,36)
+->max()))
+do { werror("failure; Image.Image/testsuite III/Image.Image->max(): "+( "erranous (5)" )+"\n"); return 0; } while (0);
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 20, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#310 "testsuite.in.in"
+object img=Image.Image(10,10,255,0,0);
+if (!equal(img->getpixel(5,5),({255,0,0}))) do { werror("failure; Image.Image/plain/setpixel, getpixel: "+( "getpixel erranous" )+"\n"); return 0; } while (0);
+img->setpixel(5,5,1,2,3);
+if (!equal(img->getpixel(5,5),({1,2,3}))) do { werror("failure; Image.Image/plain/setpixel, getpixel: "+( "failed" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 21, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#317 "testsuite.in.in"
+object img=Image.Image(10,10,255,0,0);
+img->setpixel(5,5,0,255,0,127);
+if (!equal(img->getpixel(5,5),({127,128,0}))) do { werror("failure; Image.Image/plain/setpixel alpha: "+( "failed" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 22, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#323 "testsuite.in.in"
+object img=Image.Image(100,100,0,0,0);
+foreach (({40,50,60}),int z)
+{ 
+img->line(50-z,0,50,50,255,255,255);
+img->line(50-z,100,50,50,255,255,255);
+img->line(100,50+z,50,50,255,255,255);
+img->line(100,50-z,50,50,255,255,255);
+}
+object img1=Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhZABkAIAAAAAAAP///ywAAAAAZABkAAAC/wxwiGC7/l6UktZ6Mdatdr9toSiSZQmCjPihqPu+MdLST23Lsr7vGF7DrXw+YhEF3AiFx2NTFiwtnU5qMYpUVqvbrAT7/XG5Y3HYfD6TyWsw+vZms68qaTw3n/tazE/AvcCkpwcH95OkFkhIaGdYdwfIyDikePeIVzk5yacFdUmpOcfpIUiaiBnK5Wfp6YiaerT6SecKCrtX++o0mnnb+vrHyKvr+xgpKttbbDxLmGy77Hi86VoK28FnrfesTY3a7VwdjTc8HowJToZ9Ok6unLoemA6fOR+L3u5Fab/T8JzfaR89UPyKnYsnjFzBaP6IVWnoEGAjiKLcSXyYY6EihP8Xd2VkY8Cfxo7BKN4z2RHkCn4hI6Y8CS0LypcVW/ZbOZImCJsvSuq85hMJz5/wzrEYSrRonz85kwoFYtSpwagMqEr1xfRG06u4aGzliusrWFpjASIta1Ae2qnYrK51RjXr201u5c5FttTt3X561YqVmtVa0L2ezooxTDgM4sNVE2tZ/Njl25Ysh/zNF7SgzcsMP6qzzPkWxJEUQ4caHU4gWtQJVXM9+E7lPtOq6g38RxNhaJO0u7oeSFCn7mUc+07t1ft3zLTI23Fcfk0cZmXJg8cmTp02N5K5OEctN/3d33LVWXT3Rv0nbuM3a5XvmQv6r2+A47ME/35+zHmR8rdPj82eeM2ox45k/a1WoHwHrgWeLlYhwmCC31ni32cJWkYhYdM4yAqCEmboGDTdTBGiiPB1eNeGy1UIXHwrljjLNCxi9UYfMAZkiI034hhIAQA7"));
+if (img!=img1) do { werror("failure; Image.Image/plain/Image.Image->line structure: "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 23, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#337 "testsuite.in.in"
+object img=Image.Image(100,100,0,0,0);
+img->line(40,0,0,40);
+if (!equal( ({0,0,0}), img->max() )) do { werror("failure; Image.Image/plain/Image.Image->line color : "+( "differ (reset)" )+"\n"); return 0; } while (0);
+img->line(10,10,20,20,128,13,42);
+if (!equal( ({128,13,42}), img->max() )) do { werror("failure; Image.Image/plain/Image.Image->line color : "+( "differ (direct)" )+"\n"); return 0; } while (0);
+img->setcolor(200,19,99);
+img->line(30,20,20,30);
+if (!equal( ({200,19,99}), img->max() )) do { werror("failure; Image.Image/plain/Image.Image->line color : "+( "differ (setcolor)" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 24, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#348 "testsuite.in.in"
+object img=Image.Image(100,100,0,0,0);
+foreach (({40,60,50}),int z)
+{ 
+img->box(z,0,50,50,255,z,255);
+img->box(z,100,50,50,255,z,0);
+img->box(100,z,50,50,0,z,255);
+img->box(0,z,50,50,0,z,0);
+}
+object img1=Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhZABkALMAAAAAAAAyAAA8AAAoAP8oAP8yAAAo/wAy/wA8//88AP8o//8y//88/wAAAAAAAAAAACwAAAAAZABkAAME/xAAOWe1Fue8OVAKGIbhwjAniqKe17ouHMcznZEkbq7rats/IFA4nORypV6PVSw2nU4bErlb+qJRbDY7zVWtjO1WPKZ1SV9rubxmf86K9NLtpkfhcfC1XudL4XI9fX2DZoB6TISEijeHiIuLkBZ4gXuRkYSUiGGYmJmOep6efZqPo6NspaGoqGOqYK2tW69qsrJOtHO3t0O5gry8f2eVicHBHr6Wx8eToLDMzI3Dm9HRzdOm1tHJxdrB3Jzex+DizOTl38616Lfn7LLu76jx8p709ZH3+J/Yq/uY+v65CSiwDMGCs9TpYjZgQEOHDiFGjDiRIkWLFy9mJMbAgAGPH/8/hhQpkmTJkidRatS4kiVLly8HcESJkmbNmjdLxoy5kydPhzNx4hQ6dOjPn0eRUgxatGjTokqVRuXJ1KlTqyqlStWqserVq18NbN06dukmsGDRfiRLlq3Ms2nTgm3blqxXuXJr1q0r9W7evCIDBBA8eHBhw4YRJ068mDFjxwEOHJA8eXJly5YxZ868mTNnzgIEhBYtmnTp0qdRo1a9enXrAggQxJYtm3bt2rdx49a9e/du166BBw8+nLgA2L59J1eunLly48ahR48uGnnz5texY8dNnXp376itb98+njx38ODRGxdv3nz75unTxw/O3r17++fly9df/f59/77tt5/lgMf995+BtQ044H71HXggeQsumF6DDz7YnDYEEJChhhpqWEACCYAYYoghIrRIhx2i+CGJJJJoIiEppuhhiy2W+GIdMsq4Yo0u3uhGjinuyGMCPv4I5IxD2ljkGEcimeSSZTRJgJA8Qslkk1TWaOUWUmbZ4pZZdJmkkmAOIeaYZTpx5pNpmonlmES2CcSaQ8o555to2kkDnVXqGQOfWvrpAqBfCuoBoT0amgGiZCoKAKNxOjoBpJJaQGmlj+LJZqWXcqppnZh2KqmojpKqqKmGoiqoqn6yqqerdsIqp6xt0pqmrYtEAAA7"));
+if (img!=img1) do { werror("failure; Image.Image/plain/Image.Image->box structure: "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 25, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#362 "testsuite.in.in"
+object img=Image.Image(100,100,0,0,0);
+img->box(40,0,0,40);
+if (!equal( ({0,0,0}), img->max() )) do { werror("failure; Image.Image/plain/Image.Image->box color : "+( "differ (reset)" )+"\n"); return 0; } while (0);
+img->box(10,10,20,20,128,13,42);
+if (!equal( ({128,13,42}), img->max() )) do { werror("failure; Image.Image/plain/Image.Image->box color : "+( "differ (direct)" )+"\n"); return 0; } while (0);
+img->setcolor(200,19,99);
+img->box(30,20,20,30);
+if (!equal( ({200,19,99}), img->max() )) do { werror("failure; Image.Image/plain/Image.Image->box color : "+( "differ (setcolor)" )+"\n"); return 0; } while (0);
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 26, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#376 "testsuite.in.in"
+object img=Image.Image(100,100,0,0,0);
+float x=0,y=0.2;
+img->setcolor(255,254,253);
+img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
+({20+x,15+y,25+x,15+y,20+x,10+y}),
+({10+x,20+y,15+x,20+y,15+x,25+y}),
+({20+x,25+y,25+x,20+y,20+x,20+y}),
+
+({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
+({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
+({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
+({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
+
+({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
+({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
+({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
+({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
+
+object img1=Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhZABkAMQAAAAAAAICAgUFBQoKChYWFigoKC0tLTAwMDIyMjMyMj8/P1lYWFFRUHJycXp5eYyLi6OioaWlpK2srLW0s8vLyszLytbV1Ojn5vTz8vn49/z7+v/+/QAAAAAAAAAAAAAAACwAAAAAZABkAAQF/yAAiONYmiaapivLuu8byzJd1zeO6/ve+z5gMDgkEo3HY1KpZDabTyhUOp1WrVZsNrvlcr3fb1gsJpfLZzRafWSw3Osd4bF7EOLtDCsDx6fmGBs7Gxh2fjgMGYIpG3yHAIAbG4s1k4SGjyaJkyyTjnGRlpQyopd3j5ucjJ59X6Glg6WmhwYICLYst7cGaAW6uro7wMAIBZmZx8jIysvLzc7O0GUOFBTVLNbWDmgKE9nZ1jvg4BMKhwISlp2TEgJrAw0XsrGiFw0DmeiqJuzuePDy1OGod8+Zvk7tMgHcR2qDPXzRAKBjkXAZwB0PI6bwZ4KjM4g1QGrUOJIkSZMnT+6mVKmSZcuWL2HClDlzZk2bNnHmzLmTJ0+fP38GFSqUaNGiR5EiVbp0aVOnTqFGjTqV6hdjKbBadRaBRdetywpoYKFBK9hDEUYB2PD1rB+xajeUdesnbVy2dOPAvTs3bxm7d/H6vapBIL9JfQdbARxYsOIpBxIkkMxi8uQDjx9n1qyZc+fOn0GDFj169CMI4LBlg2D6yAJR6yYtaE0kgAXDIyxZCECbyGuGa2X3rn377u7hvoELRx7EdtzjzIO87jQ7enMLLKBb91HdRPftO3inEA8efHnz5tGnT7+ePXv379/Hly+ffv369/HjPxQCADs="));
+if (!(img-img1<16)) do { werror("failure; Image.Image/advanced drawing/Image.Image->polyfill 1 (right triangle 0.0, 0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
+if (!equal(img->max(),({255,254,253}))) do { werror("failure; Image.Image/advanced drawing/Image.Image->polyfill 1 (right triangle 0.0, 0.2): "+( "wrong maxcolor" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 27, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#401 "testsuite.in.in"
+object img=Image.Image(100,100,0,0,0);
+float x=-0.2,y=-0.2;
+img->setcolor(255,254,253);
+img->polygone(({10+x,15+y,15+x,10+y,15+x,15+y}),
+({20+x,15+y,25+x,15+y,20+x,10+y}),
+({10+x,20+y,15+x,20+y,15+x,25+y}),
+({20+x,25+y,25+x,20+y,20+x,20+y}),
+
+({30+2*10+x,15+y,30+2*15+x,10+y,30+2*15+x,15+y}),
+({30+2*20+x,15+y,30+2*25+x,15+y,30+2*20+x,10+y}),
+({30+2*10+x,20+y,30+2*15+x,20+y,30+2*15+x,25+y}),
+({30+2*20+x,25+y,30+2*25+x,20+y,30+2*20+x,20+y}),
+
+({10+x,30+2*15+y,15+x,30+2*10+y,15+x,30+2*15+y}),
+({20+x,30+2*15+y,25+x,30+2*15+y,20+x,30+2*10+y}),
+({10+x,30+2*20+y,15+x,30+2*20+y,15+x,30+2*25+y}),
+({20+x,30+2*25+y,25+x,30+2*20+y,20+x,30+2*20+y}));
+
+object img1=Image.GIF.decode(MIME.decode_base64(
+"R0lGODlhZABkANUAAAAAAAICAgUFBQcHBwoKChQUFBYWFh4eHiMjIyYmJS0tLTAwMDMyMigoKFFRUFlYWHp5eX9+fnJycYyLi56dnDIyMqOioaWlpMHBwMvLyszLytHQz9bV1Orp6Ojn5vTz8vz7+v/+/QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAZABkAAUG/0AAQDgcFo1GZDK5ZDKdz2dUKqVWq1csVrvddr1ecDg8JpPN53NarWa32284XD6f1+12fD6/5/P9f3+BgoKEhYVqAkmKiGQEWAMBjW0FFEkMEZNYBhMYWBUcD5KaWwUbGZchmaRGnB8hqFUVISGho6xJprCpqqyutLuywLWiuEO6wUMMwKuIv8OxUrPDxLeTAhQZGRkWSQ3b2w6FAQ8Y4ODcWN/o4BYNxsbw8fHz9PT29/f5ggIMDP7vjBD49w/BuAUECf4LKGWgQoUHWEUAFg3AMlodFCBqcAEEtWRPplHzIOGRRFoVL2bUxNEjxU8jS9KbmDLESlYtUcKkRdLkvf8IKW8aa1mRyaye+pKIM4JAo74GELAkkJk0aVWrVrFmzbqVK1evX7+GFSuWbNmyZ9GiVbt2bVu3buHGjTuXLl27d+/m1auXb9++fwEDFjx4cGHDhvlYs5b43oMkCxg2jmfAkxEGFybfm5AShGTNmgx8qJkZNKsJIJd5Nh36Vc0QpVkjQp2a1mrZgkTrvAwsNu48tGvb/vxbDQFz27oZWbctavHiz6FDlz59enXr1rFnz152QIUK3yUTAA8+AfczATi85A1MwvkzD9YrA+bB5/st6XfPp+X+Ppn4wtXnHxn5vdbfgGHEV5OACIaRXk0HNujFAykxKKEXASinTIQXbiEk2QH2ddihiCOOWKKJJqKYYoorssiiiy++GKOMMtJYY4034hYEADs="));
+if (!(img-img1<16)) do { werror("failure; Image.Image/advanced drawing/Image.Image->polyfill 2 (right triangle -0.2, -0.2): "+( "differ too much" )+"\n"); return 0; } while (0);
+if (!equal(img->max(),({255,254,253}))) do { werror("failure; Image.Image/advanced drawing/Image.Image->polyfill 2 (right triangle -0.2, -0.2): "+( "wrong maxcolor" )+"\n"); return 0; } while (0);
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 28, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#429 "testsuite.in.in"
+if (!objectp(Image.Font())) do { werror("failure; Image.Image/Image.Font/instansiating default font: "+( "not object" )+"\n"); return 0; } while (0); 
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 29, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#433 "testsuite.in.in"
+object f=Image.Font();
+object i=f->write("hej");
+if (i!=Image.PNM.decode(MIME.decode_base64("UDQKMTkgMTEK///gv/7gv//grzjglt7gth7gtv7gtv7gtx7g//7g//Hg"))) 
+do { werror("failure; Image.Image/Image.Font/writing simple text with default font: "+( "incorrect" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 30, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#440 "testsuite.in.in"
+object f=Image.Font();
+object i=f->write("h","o");
+if (i!=Image.PNM.decode(MIME.decode_base64("UDQKNyAyMwr+vr6ulra2trb+/v7+/s62tra2zv7+/g==")))
+do { werror("failure; Image.Image/Image.Font/writing multiple lines with default font: "+( "incorrect" )+"\n"); return 0; } while (0);
+return 1;
+
+
+
+}
+mixed b() { return 1; }
+
+....
+test 31, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#451 "testsuite.in.in"
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+array z=(array)c;
+if (sizeof(z)!=2) 
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get two colors (black and white): "+((array(string))c)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white init & cast: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 32, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#461 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white normal: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white normal: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 33, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#473 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+c->floyd_steinberg();
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white floyd-steinberg: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 34, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#486 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+c->ordered();
+img=c*img;
+array z=(array)Image.Colortable(img);
+if (sizeof(z)!=2) 
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white ordered: "+( "didn't get two colors (black and white): "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+if ((z[0]!=Image.Color.black || z[1]!=Image.Color.white) &&
+(z[1]!=Image.Color.black || z[0]!=Image.Color.white))
+do { werror("failure; Image.Image/Image.Colortable/colortable - black/white ordered: "+( "didn't get black and white: "+((array(string))z)*", " )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 35, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#499 "testsuite.in.in"
+object img=Image.Image(200,200)->test(42);
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.Colortable(img,1000)->cubicles(16,16,16,4);
+if (sizeof(c)<200) do { werror("failure; Image.Image/Image.Colortable/colortable - standard: "+( "too few colors" )+"\n"); return 0; } while (0);
+object img1=(c*img);
+if (!(img-img1<50)) do { werror("failure; Image.Image/Image.Colortable/colortable - standard: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 36, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#508 "testsuite.in.in"
+object img=Image.Image(200,200)->test(42);
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.Colortable(32,32,32)->floyd_steinberg();
+object img1=(c*img);
+if (!(img-img1<50)) do { werror("failure; Image.Image/Image.Colortable/colortable - floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 37, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#516 "testsuite.in.in"
+object img=Image.Image(200,200)->test(42);
+img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
+object c=Image.Colortable(32,32,32)->ordered();
+object img1=(c*img);
+if (!(img-img1<32)) do { werror("failure; Image.Image/Image.Colortable/colortable - ordered: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+
+
+}
+mixed b() { return 1; }
+
+....
+test 38, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#528 "testsuite.in.in"
+object img=Image.Image(100,100)->test(40);
+object img1=Image.PNM.decode(Image.PNM.encode(img));
+if (img!=img1) do { werror("failure; Image.Image/encoding/decoding/Image.PNM.encode/decode: "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 39, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#534 "testsuite.in.in"
+object img=Image.Image(100,100)->test(41);
+object c=Image.Colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img));
+if (img!=img1) do { werror("failure; Image.Image/encoding/decoding/Image.GIF.encode/decode: "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 40, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#542 "testsuite.in.in"
+object img=Image.Image(100,100)->test(42);
+object c=Image.Colortable(img,256)->cubicles(16,16,16,1);
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+if (img!=img1) do { werror("failure; Image.Image/encoding/decoding/Image.GIF.encode/decode colortable : "+( "differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 41, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#550 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
+img=c*img;
+object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+if (!(img-img1<50)) do { werror("failure; Image.Image/encoding/decoding/Image.GIF.encode/decode colortable w/ floyd-steinberg: "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 42, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#558 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+if (Image.AVS.decode(Image.AVS.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.AVS.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 43, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#563 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+if (Image.BMP.decode(Image.BMP.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (truecolor): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+
+}
+mixed b() { return 1; }
+
+....
+test 44, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#569 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(img,256);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8])))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (8bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 45, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#576 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4])))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 46, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#583 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(img,2)->floyd_steinberg();
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":1])))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (1bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 47, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#590 "testsuite.in.in"
+object img=Image.Image(400,100,Image.Color.red);
+img->line(0,0,0,99,Image.Color.green);
+img->line(399,0,399,99,Image.Color.blue);
+object c=Image.Colortable(img,256);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8,"rle":1])))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (8bpp rle first): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 48, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#599 "testsuite.in.in"
+object img=Image.Image(400,100,Image.Color.red);
+img->line(0,0,0,99,Image.Color.green);
+img->line(399,0,399,99,Image.Color.blue);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4,"rle":1])))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (4bpp rle first): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 49, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#608 "testsuite.in.in"
+object img=Image.Image(100,100)->test(99)->scale(400,100);
+object c=Image.Colortable(img,256);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":8,"rle":1])))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (8bpp rle second): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 50, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#615 "testsuite.in.in"
+object img=Image.Image(100,100)->test(99)->scale(400,100);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.BMP.decode(Image.BMP.encode(img,(["bpp":4,"rle":1])))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.BMP.encode/decode (4bpp rle second): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 51, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#622 "testsuite.in.in"
+object img=Image.Image(256,240)->test(43);
+img=Image.Colortable( ({"white","black","red","green"}) )*img;
+if (Image.HRZ.decode(Image.HRZ.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.HRZ.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 52, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#628 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.ILBM.decode(Image.ILBM.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.ILBM.encode/decode (4bpp): "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 53, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#635 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+if (Image.PCX.decode(Image.PCX.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.PCX.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 54, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#640 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+if (Image.PNM.decode(Image.PNM.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.PNM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 55, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#645 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+if (Image.TGA.decode(Image.TGA.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.TGA.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 56, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#650 "testsuite.in.in"
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+img=c*img;
+if (Image.XBM.decode(Image.XBM.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.XBM.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+return 1;
+
+
+
+
+
+
+
+
+
+
+}
+mixed b() { return 1; }
+
+....
+test 57, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#666 "testsuite.in.in"
+#if constant(Image.XPM.encode)
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(img,16);
+img=c*img;
+if (Image.XPM.decode(Image.XPM.encode(img,(["colortable":c])))!=img) 
+do { werror("failure; Image.Image/encoding/decoding/Image.XPM.encode/decode (16 colors): "+( "differ" )+"\n"); return 0; } while (0);
+#else
+werror(" (Image.XPM not available) ");
+#endif
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 58, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#678 "testsuite.in.in"
+#if constant(Image.XPM.encode)
+object img=Image.Image(100,100)->test(43);
+object c=Image.Colortable(16,16,16); 
+img=c*img;
+if (Image.XPM.decode(Image.XPM.encode(img,(["colortable":c])))!=img) 
+do { werror("failure; Image.Image/encoding/decoding/Image.XPM.encode/decode (4096 colors): "+( "differ" )+"\n"); return 0; } while (0);
+#endif
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 59, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#688 "testsuite.in.in"
+#if constant(Image.TIFF.encode)
+object img=Image.Image(100,100)->test(43);
+if (Image.TIFF.decode(Image.TIFF.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.TIFF.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+#else
+werror(" (Image.TIFF not available) ");
+#endif
+return 1;
+
 }
 mixed b() { return 1; }
 
@@ -1156,18 +1202,16 @@ mixed a(){
 # 1 "-"
 
 
-#651 "testsuite.in.in"
-
-object Stina=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAABgcABQgE/8QANhAAAgEEAAQDAwkJAAAAAAAAAQID\r\nAAQFEQYSITEHE3EiQYEUMjNCYXOhscEVIzY3UVJicsL/xAAZAQACAwEAAAAAAAAAAAAAAAACBAAB\r\nAwX/xAAdEQACAgMBAQEAAAAAAAAAAAABAgARAyExEjJB/9oADAMBAAIRAxEAPwBcXMazCMT3wOjy\r\nhAOpPpXaOEs2bIXdhib2WJVIJW31sfO3vfpXXaWlrd35SUDn0PLHYg9/0p44HiS1yWIgCSwRXcQ8\r\nuW3kl8vlK9NjferZ1X65JlORVtBZmW7iSWFJreTzUZG5ikq6ZTrtqtQ+EuLixvh7jm8tRLcp5khD\r\ndT16b+FLDxltcZe5DFXWPlglyLs0d38nYHYGtA6+3dPvERfJ8JYwBQnJbouh00eUVRbViXbeR67M\r\nzeIRi4f8QLlLNFhVFdF+tok73+PauK3s5r20DLEsS82/PufYD0x48Ri8/wCPGVkybQPBYBWSCYjT\r\nyFQOx79wfhTNzj4+2w8sV9bxtC6FEhZRo9PcKFcwA3I7MpAAmbplvYomtXijcluUSxN8emvdRH4X\r\nAW0eYLHmlWVUHOSTqhG/hW1zTShnWLQ1pui9e1GvhwD+xrqYczefcMQT3IFBme01GMCn1uC1/byT\r\nsGtWKuDtXB67qxsM0l9bbyYhM8Oo9gA85Hp1owfwltZnaK1y1xBNolY/L3v0oLfgjHxZg2drkMjL\r\nfxvp0ktBErH7Dvr/AEregTMzctsJjocnx5gbVIIzbef50qqhGuXZ0a0Yw6dunuA+ND/CmDhxOItW\r\ne3C3xQhmce0P8d1ci7jZuQnUv9g70LVwQCSxiu8ROBpJc1LxJas0qzRrHcQbJ0yjQZT6dDSxzWdF\r\ngqRq9xJMy8qhm3yDtqtSMiSRGN0DK406nsd96UOd8PcFJxiTc/uIki505j0cH6o9DUpSNw1Y3UR7\r\nJc3kq24V3uJ/ZCjZK799PPCY6LA4a2s9FgqDm9nR37/xroseG8bip2nsrSAvrQk5tsBVkyEqpCk/\r\nHdJ5snrQjmJaNmWkP0ll/sPzpdZz+Z0Hr/1UqU4nYs3I9F+ji9BVUf4kP3VSpVHsyWWMvYeo/OhT\r\njT59v92f1qVKFvmFj+oL475g9Ksrbs1SpSB7Oj+T/9k="));
-
-array(object) Stina4;
-Stina4=Stina->orient4();
-Stina4[1]*=215;
-Stina4[3]*=215;
-string foo=Stina->make_ascii(@Stina4,40,2,4);
-if (foo[0..200]!=
-"            /*  *|           || \n    /-\\*-\\  */  ||  -----    || \n   /*   \\\\\\||   ||/// \\*\\    |  \n    +\\*-**|/|   ||*X  // |   |  \n   \\\\     |*    \\*\\--- //   */  \n     \\-  |*|     \\\\\\ //    //   \n ---/--////        \\\\\\//--//    \n  -\\*-|//            \\|-        \n1\0\0\0P\24\20@P\24\20@\b\0\0\08\0\0\0\4\0\6\0\200\35 \b\6\0\0\0\n"[0..200]) do { werror("failure; Image.image/Computer Vision Functions/make_ascii: "+( "Wrong ascii-picture" )+"\n"); return 0; } while (0);
+#697 "testsuite.in.in"
+#if constant(Image.XFace.encode)
+object img=Image.Image(48,48)->test(43);
+object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
+c->floyd_steinberg();
+img=c*img;
+if (Image.XFace.decode(Image.XFace.encode(img))!=img) do { werror("failure; Image.Image/encoding/decoding/Image.XFace.encode/decode : "+( "differ" )+"\n"); return 0; } while (0);
+#else
+werror(" (Image.XFace not available) ");
+#endif
 return 1;
 
 }
@@ -1179,56 +1223,100 @@ mixed a(){
 # 1 "-"
 
 
-#665 "testsuite.in.in"
+#709 "testsuite.in.in"
+#if constant(Image.JPEG.encode)
+object img=Image.Image(100,100)->test(43);
+object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
+if (!(img-img1<10)) do { werror("failure; Image.Image/encoding/decoding/Image.JPEG.encode/decode : "+( "differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")" )+"\n"); return 0; } while (0);
+#else
+werror(" (Image.JPEG not available) ");
+#endif
+return 1;
+
+
+
+}
+mixed b() { return 1; }
+
+....
+test 62, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#723 "testsuite.in.in"
 
 object Stina=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAABgcABQgE/8QANhAAAgEEAAQDAwkJAAAAAAAAAQID\r\nAAQFEQYSITEHE3EiQYEUMjNCYXOhscEVIzY3UVJicsL/xAAZAQACAwEAAAAAAAAAAAAAAAACBAAB\r\nAwX/xAAdEQACAgMBAQEAAAAAAAAAAAABAgARAyExEjJB/9oADAMBAAIRAxEAPwBcXMazCMT3wOjy\r\nhAOpPpXaOEs2bIXdhib2WJVIJW31sfO3vfpXXaWlrd35SUDn0PLHYg9/0p44HiS1yWIgCSwRXcQ8\r\nuW3kl8vlK9NjferZ1X65JlORVtBZmW7iSWFJreTzUZG5ikq6ZTrtqtQ+EuLixvh7jm8tRLcp5khD\r\ndT16b+FLDxltcZe5DFXWPlglyLs0d38nYHYGtA6+3dPvERfJ8JYwBQnJbouh00eUVRbViXbeR67M\r\nzeIRi4f8QLlLNFhVFdF+tok73+PauK3s5r20DLEsS82/PufYD0x48Ri8/wCPGVkybQPBYBWSCYjT\r\nyFQOx79wfhTNzj4+2w8sV9bxtC6FEhZRo9PcKFcwA3I7MpAAmbplvYomtXijcluUSxN8emvdRH4X\r\nAW0eYLHmlWVUHOSTqhG/hW1zTShnWLQ1pui9e1GvhwD+xrqYczefcMQT3IFBme01GMCn1uC1/byT\r\nsGtWKuDtXB67qxsM0l9bbyYhM8Oo9gA85Hp1owfwltZnaK1y1xBNolY/L3v0oLfgjHxZg2drkMjL\r\nfxvp0ktBErH7Dvr/AEregTMzctsJjocnx5gbVIIzbef50qqhGuXZ0a0Yw6dunuA+ND/CmDhxOItW\r\ne3C3xQhmce0P8d1ci7jZuQnUv9g70LVwQCSxiu8ROBpJc1LxJas0qzRrHcQbJ0yjQZT6dDSxzWdF\r\ngqRq9xJMy8qhm3yDtqtSMiSRGN0DK406nsd96UOd8PcFJxiTc/uIki505j0cH6o9DUpSNw1Y3UR7\r\nJc3kq24V3uJ/ZCjZK799PPCY6LA4a2s9FgqDm9nR37/xroseG8bip2nsrSAvrQk5tsBVkyEqpCk/\r\nHdJ5snrQjmJaNmWkP0ll/sPzpdZz+Z0Hr/1UqU4nYs3I9F+ji9BVUf4kP3VSpVHsyWWMvYeo/OhT\r\njT59v92f1qVKFvmFj+oL475g9Ksrbs1SpSB7Oj+T/9k="));
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAABgcABQgE/8QANhAAAgEEAAQDAwkJAAAAAAAAAQIDAAQFEQYSITEHE3EiQYEUMjNCYXOhscEVIzY3UVJicsL/xAAZAQACAwEAAAAAAAAAAAAAAAACBAABAwX/xAAdEQACAgMBAQEAAAAAAAAAAAABAgARAyExEjJB/9oADAMBAAIRAxEAPwBcXMazCMT3wOjyhAOpPpXaOEs2bIXdhib2WJVIJW31sfO3vfpXXaWlrd35SUDn0PLHYg9/0p44HiS1yWIgCSwRXcQ8uW3kl8vlK9NjferZ1X65JlORVtBZmW7iSWFJreTzUZG5ikq6ZTrtqtQ+EuLixvh7jm8tRLcp5khDdT16b+FLDxltcZe5DFXWPlglyLs0d38nYHYGtA6+3dPvERfJ8JYwBQnJbouh00eUVRbViXbeR67MzeIRi4f8QLlLNFhVFdF+tok73+PauK3s5r20DLEsS82/PufYD0x48Ri8/wCPGVkybQPBYBWSCYjTyFQOx79wfhTNzj4+2w8sV9bxtC6FEhZRo9PcKFcwA3I7MpAAmbplvYomtXijcluUSxN8emvdRH4XAW0eYLHmlWVUHOSTqhG/hW1zTShnWLQ1pui9e1GvhwD+xrqYczefcMQT3IFBme01GMCn1uC1/byTsGtWKuDtXB67qxsM0l9bbyYhM8Oo9gA85Hp1owfwltZnaK1y1xBNolY/L3v0oLfgjHxZg2drkMjLfxvp0ktBErH7Dvr/AEregTMzctsJjocnx5gbVIIzbef50qqhGuXZ0a0Yw6dunuA+ND/CmDhxOItWe3C3xQhmce0P8d1ci7jZuQnUv9g70LVwQCSxiu8ROBpJc1LxJas0qzRrHcQbJ0yjQZT6dDSxzWdFgqRq9xJMy8qhm3yDtqtSMiSRGN0DK406nsd96UOd8PcFJxiTc/uIki505j0cH6o9DUpSNw1Y3UR7Jc3kq24V3uJ/ZCjZK799PPCY6LA4a2s9FgqDm9nR37/xroseG8bip2nsrSAvrQk5tsBVkyEqpCk/HdJ5snrQjmJaNmWkP0ll/sPzpdZz+Z0Hr/1UqU4nYs3I9F+ji9BVUf4kP3VSpVHsyWWMvYeo/OhTjT59v92f1qVKFvmFj+oL475g9Ksrbs1SpSB7Oj+T/9k="));
+
+array(object) Stina4;
+Stina4=Stina->orient4();
+Stina4[1]*=215;
+Stina4[3]*=215;
+string foo=Stina->make_ascii(@Stina4,40,2,4);
+if (foo[0..200]!=
+"            /*  *|           || \n    /-\\*-\\  */  ||  -----    || \n   /*   \\\\\\||   ||/// \\*\\    |  \n    +\\*-**|/|   ||*X  // |   |  \n   \\\\     |*    \\*\\--- //   */  \n     \\-  |*|     \\\\\\ //    //   \n ---/--////        \\\\\\//--//    \n  -\\*-|//            \\|-        \n1\0\0\0P\24\20@P\24\20@\b\0\0\08\0\0\0\4\0\6\0\200\35 \b\6\0\0\0\n"[0..200]) do { werror("failure; Image.Image/Computer Vision Functions/make_ascii: "+( "Wrong ascii-picture" )+"\n"); return 0; } while (0);
+return 1;
+
+}
+mixed b() { return 1; }
+
+....
+test 63, expected result: EQ
+mixed a(){
+# 1 "-"
+
+
+#737 "testsuite.in.in"
+
+object Stina=Image.JPEG.decode(MIME.decode_base64(
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGQAAAgMBAAAAAAAAAAAAAAAABgcABQgE/8QANhAAAgEEAAQDAwkJAAAAAAAAAQIDAAQFEQYSITEHE3EiQYEUMjNCYXOhscEVIzY3UVJicsL/xAAZAQACAwEAAAAAAAAAAAAAAAACBAABAwX/xAAdEQACAgMBAQEAAAAAAAAAAAABAgARAyExEjJB/9oADAMBAAIRAxEAPwBcXMazCMT3wOjyhAOpPpXaOEs2bIXdhib2WJVIJW31sfO3vfpXXaWlrd35SUDn0PLHYg9/0p44HiS1yWIgCSwRXcQ8uW3kl8vlK9NjferZ1X65JlORVtBZmW7iSWFJreTzUZG5ikq6ZTrtqtQ+EuLixvh7jm8tRLcp5khDdT16b+FLDxltcZe5DFXWPlglyLs0d38nYHYGtA6+3dPvERfJ8JYwBQnJbouh00eUVRbViXbeR67MzeIRi4f8QLlLNFhVFdF+tok73+PauK3s5r20DLEsS82/PufYD0x48Ri8/wCPGVkybQPBYBWSCYjTyFQOx79wfhTNzj4+2w8sV9bxtC6FEhZRo9PcKFcwA3I7MpAAmbplvYomtXijcluUSxN8emvdRH4XAW0eYLHmlWVUHOSTqhG/hW1zTShnWLQ1pui9e1GvhwD+xrqYczefcMQT3IFBme01GMCn1uC1/byTsGtWKuDtXB67qxsM0l9bbyYhM8Oo9gA85Hp1owfwltZnaK1y1xBNolY/L3v0oLfgjHxZg2drkMjLfxvp0ktBErH7Dvr/AEregTMzctsJjocnx5gbVIIzbef50qqhGuXZ0a0Yw6dunuA+ND/CmDhxOItWe3C3xQhmce0P8d1ci7jZuQnUv9g70LVwQCSxiu8ROBpJc1LxJas0qzRrHcQbJ0yjQZT6dDSxzWdFgqRq9xJMy8qhm3yDtqtSMiSRGN0DK406nsd96UOd8PcFJxiTc/uIki505j0cH6o9DUpSNw1Y3UR7Jc3kq24V3uJ/ZCjZK799PPCY6LA4a2s9FgqDm9nR37/xroseG8bip2nsrSAvrQk5tsBVkyEqpCk/HdJ5snrQjmJaNmWkP0ll/sPzpdZz+Z0Hr/1UqU4nYs3I9F+ji9BVUf4kP3VSpVHsyWWMvYeo/OhTjT59v92f1qVKFvmFj+oL475g9Ksrbs1SpSB7Oj+T/9k="));
 
 object Stinamini=Stina->copy(10, 5, 15, 25);
 object Stinares=Stina->match_norm(0.00002, Stinamini, 
-Image.image(63,33)->polyfill(({0,0,60,0,60,30})), 10);
+Image.Image(63,33)->polyfill(({0,0,60,0,60,30})), 10);
 object expected_result=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAYFAwII/8QAJhAAAQMDAwQCAwAAAAAAAAAAAAEC\r\nBAMFERKi0RMVIVExQzNBkv/EABkBAQADAQEAAAAAAAAAAAAAAAABAgMFBP/EACMRAAEDBAICAwEA\r\nAAAAAAAAAAEAAgQDBRHREqEUcRUhMVH/2gAMAwEAAhEDEQA/APn8GxaYMeTFc+tT1OR6pnUqeMJ6\r\nNFLJEc3LaK/0vJ53yWMOCuxHskmRTFRhGD70pYFG+1RGfNHcvIp2uG5MrR3LyR5TMZVvgpPLjkd6\r\nU4Ch7ZE1Y6O5eTq2zRFTK0dy8gymBG2KS78I70pkFP2mCnzR3u5Mm6xaEZaXRZp1Zz5VfXssyQ17\r\nuIWUq0V41M1XkYH8zpdrVPoRYzmVX6XK9VxhV/SGgl5iJ9+1eCYBD4zHHJVo96kUKYpsAwPe1RVb\r\nrFev5tq8Htl0hNbha213BNAjxWYx9q4vskO5Yb3tUC3OIj8pW2rwde8xcY621eCaAMVhRt9kt/AO\r\n9qiddYq/btXgzbnJoyEpdJ+rTnPhU9GeC7KDWHIWEi615FM03gYPvaAA2XMQABEAARAAEX//2Q=="
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAYFAwII/8QAJhAAAQMDAwQCAwAAAAAAAAAAAAECBAMFERKi0RMVIVExQzNBkv/EABkBAQADAQEAAAAAAAAAAAAAAAABAgMFBP/EACMRAAEDBAICAwEAAAAAAAAAAAEAAgQDBRHREqEUcRUhMVH/2gAMAwEAAhEDEQA/APn8GxaYMeTFc+tT1OR6pnUqeMJ6NFLJEc3LaK/0vJ53yWMOCuxHskmRTFRhGD70pYFG+1RGfNHcvIp2uG5MrR3LyR5TMZVvgpPLjkd6U4Ch7ZE1Y6O5eTq2zRFTK0dy8gymBG2KS78I70pkFP2mCnzR3u5Mm6xaEZaXRZp1Zz5VfXssyQ17uIWUq0V41M1XkYH8zpdrVPoRYzmVX6XK9VxhV/SGgl5iJ9+1eCYBD4zHHJVo96kUKYpsAwPe1RVbrFev5tq8Htl0hNbha213BNAjxWYx9q4vskO5Yb3tUC3OIj8pW2rwde8xcY621eCaAMVhRt9kt/AO9qiddYq/btXgzbnJoyEpdJ+rTnPhU9GeC7KDWHIWEi615FM03gYPvaAA2XMQABEAARAAEX//2Q=="
 ));
 if (!(Stinares-expected_result<80)) 
-do { werror("failure; Image.image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_norm(float f, object needle, object haystack_avoid, int foo) differ too much" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_norm(float f, object needle, object haystack_avoid, int foo) differ too much" )+"\n"); return 0; } while (0);
 
 Stinares=Stina->match_norm(0.00002, Stinamini);
 expected_result=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAYFAwII/8QAJhAAAQMDAwQCAwAAAAAAAAAAAAEC\r\nBAMFERKi0RMVIVExQzNBkv/EABkBAQADAQEAAAAAAAAAAAAAAAABAgMFBP/EACMRAAEDBAICAwEA\r\nAAAAAAAAAAEAAgQDBRHREqEUcRUhMVH/2gAMAwEAAhEDEQA/APn8GxaYMeTFc+tT1OR6pnUqeMJ6\r\nNFLJEc3LaK/0vJ53yWMOCuxHskmRTFRhGD70pYFG+1RGfNHcvIp2uG5MrR3LyR5TMZVvgpPLjkd6\r\nU4Ch7ZE1Y6O5eTq2zRFTK0dy8gymBG2KS78I70pkFP2mCnzR3u5Mm6xaEZaXRZp1Zz5VfXssyQ17\r\nuIWUq0V41M1XkYH8zpdrVPoRYzmVX6XK9VxhV/SGgl5iJ9+1eCYBD4zHHJVo96kUKYpsAwPe1RVb\r\nrFev5tq8Htl0hNbha213BNAjxWYx9q4vskO5Yb3tUC3OIj8pW2rwde8xcY621eCaAMVhRt9kt/AO\r\n9qiddYq/btXgzbnJoyEpdJ+rTnPhU9GeC7KDWHIWEi615FM03gYPvaAA2XMQABEAARAAEX//2Q=="
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAYFAwII/8QAJhAAAQMDAwQCAwAAAAAAAAAAAAECBAMFERKi0RMVIVExQzNBkv/EABkBAQADAQEAAAAAAAAAAAAAAAABAgMFBP/EACMRAAEDBAICAwEAAAAAAAAAAAEAAgQDBRHREqEUcRUhMVH/2gAMAwEAAhEDEQA/APn8GxaYMeTFc+tT1OR6pnUqeMJ6NFLJEc3LaK/0vJ53yWMOCuxHskmRTFRhGD70pYFG+1RGfNHcvIp2uG5MrR3LyR5TMZVvgpPLjkd6U4Ch7ZE1Y6O5eTq2zRFTK0dy8gymBG2KS78I70pkFP2mCnzR3u5Mm6xaEZaXRZp1Zz5VfXssyQ17uIWUq0V41M1XkYH8zpdrVPoRYzmVX6XK9VxhV/SGgl5iJ9+1eCYBD4zHHJVo96kUKYpsAwPe1RVbrFev5tq8Htl0hNbha213BNAjxWYx9q4vskO5Yb3tUC3OIj8pW2rwde8xcY621eCaAMVhRt9kt/AO9qiddYq/btXgzbnJoyEpdJ+rTnPhU9GeC7KDWHIWEi615FM03gYPvaAA2XMQABEAARAAEX//2Q=="
 ));
 if (!(Stinares-expected_result<80)) 
-do { werror("failure; Image.image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_norm(float f, object needle) differ too much" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_norm(float f, object needle) differ too much" )+"\n"); return 0; } while (0);
 
 Stinares=Stina->match(0.00002, Stinamini);
 expected_result=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAUGAwII/8QAJhAAAgAFBAEEAwAAAAAAAAAAAAEC\r\nBAURogMSE9EhM0NRUxUxQf/EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMFBP/EAB8RAAICAgMBAQEA\r\nAAAAAAAAAAECAAQDEQWh0XExUf/aAAwDAQACEQMRAD8A+fwV6XJS8zLRR6unuiUbV9zXiyKSokpF\r\nDeHRyfZzvZRDozYr8JYsYxkQjR++TLA0WpSpWD2sn2eFTpT6sn2AsoYNwlhTokd+SADQKmyjduHJ\r\n9naGjSjV3o5Psg2kEZOCst+Ed+TMg0cVLkk/RyfZNqktoy/FxQbd17+W/gdM6udCUWeKzV8ZyORo\r\nfzfk60ue0JaWig1I9sTjb/Tf8RQhrMqvfxfRmQK9ZGOzHr8zYwIMaAaH32aLVqsrG/VxfR4VRlPt\r\nxfRAACsgjNzdhjsgd+y+qlKqK/Li+jt+ZlbW5sX0ZoEGqhkrzllfwDv2aCKpyjfq4von1OZ0ZhaX\r\nFHu23v4a+CeB0wKp2JRY5TNnxnG4Gj99gAF0zYAAQgABCAAEJ//Z"
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAUGAwII/8QAJhAAAgAFBAEEAwAAAAAAAAAAAAECBAURogMSE9EhM0NRUxUxQf/EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMFBP/EAB8RAAICAgMBAQEAAAAAAAAAAAECAAQDEQWh0XExUf/aAAwDAQACEQMRAD8A+fwV6XJS8zLRR6unuiUbV9zXiyKSokpFDeHRyfZzvZRDozYr8JYsYxkQjR++TLA0WpSpWD2sn2eFTpT6sn2AsoYNwlhTokd+SADQKmyjduHJ9naGjSjV3o5Psg2kEZOCst+Ed+TMg0cVLkk/RyfZNqktoy/FxQbd17+W/gdM6udCUWeKzV8ZyORofzfk60ue0JaWig1I9sTjb/Tf8RQhrMqvfxfRmQK9ZGOzHr8zYwIMaAaH32aLVqsrG/VxfR4VRlPtxfRAACsgjNzdhjsgd+y+qlKqK/Li+jt+ZlbW5sX0ZoEGqhkrzllfwDv2aCKpyjfq4von1OZ0ZhaXFHu23v4a+CeB0wKp2JRY5TNnxnG4Gj99gAF0zYAAQgABCAAEJ//Z"
 ));
 if (!(Stinares-expected_result<80)) 
-do { werror("failure; Image.image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match(float f, object needle) differ too much" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match(float f, object needle) differ too much" )+"\n"); return 0; } while (0);
 
-Stinares=Stina->match(0.00002, Stinamini,Image.image(63,33)->polyfill(({0,0,60,0,60,30})), 10);
+Stinares=Stina->match(0.00002, Stinamini,Image.Image(63,33)->polyfill(({0,0,60,0,60,30})), 10);
 expected_result=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAUGAwII/8QAJhAAAgAFBAEEAwAAAAAAAAAAAAEC\r\nBAURogMSE9EhM0NRUxUxQf/EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMFBP/EAB8RAAICAgMBAQEA\r\nAAAAAAAAAAECAAQDEQWh0XExUf/aAAwDAQACEQMRAD8A+fwV6XJS8zLRR6unuiUbV9zXiyKSokpF\r\nDeHRyfZzvZRDozYr8JYsYxkQjR++TLA0WpSpWD2sn2eFTpT6sn2AsoYNwlhTokd+SADQKmyjduHJ\r\n9naGjSjV3o5Psg2kEZOCst+Ed+TMg0cVLkk/RyfZNqktoy/FxQbd17+W/gdM6udCUWeKzV8ZyORo\r\nfzfk60ue0JaWig1I9sTjb/Tf8RQhrMqvfxfRmQK9ZGOzHr8zYwIMaAaH32aLVqsrG/VxfR4VRlPt\r\nxfRAACsgjNzdhjsgd+y+qlKqK/Li+jt+ZlbW5sX0ZoEGqhkrzllfwDv2aCKpyjfq4von1OZ0ZhaX\r\nFHu23v4a+CeB0wKp2JRY5TNnxnG4Gj99gAF0zYAAQgABCAAEJ//Z"
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGQABAQEBAQEAAAAAAAAAAAAAAAUGAwII/8QAJhAAAgAFBAEEAwAAAAAAAAAAAAECBAURogMSE9EhM0NRUxUxQf/EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMFBP/EAB8RAAICAgMBAQEAAAAAAAAAAAECAAQDEQWh0XExUf/aAAwDAQACEQMRAD8A+fwV6XJS8zLRR6unuiUbV9zXiyKSokpFDeHRyfZzvZRDozYr8JYsYxkQjR++TLA0WpSpWD2sn2eFTpT6sn2AsoYNwlhTokd+SADQKmyjduHJ9naGjSjV3o5Psg2kEZOCst+Ed+TMg0cVLkk/RyfZNqktoy/FxQbd17+W/gdM6udCUWeKzV8ZyORofzfk60ue0JaWig1I9sTjb/Tf8RQhrMqvfxfRmQK9ZGOzHr8zYwIMaAaH32aLVqsrG/VxfR4VRlPtxfRAACsgjNzdhjsgd+y+qlKqK/Li+jt+ZlbW5sX0ZoEGqhkrzllfwDv2aCKpyjfq4von1OZ0ZhaXFHu23v4a+CeB0wKp2JRY5TNnxnG4Gj99gAF0zYAAQgABCAAEJ//Z"
 
 ));
 if (!(Stinares-expected_result<80)) 
-do { werror("failure; Image.image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match(float f, object needle, object haystack_avoid, int foo) differ too much" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match(float f, object needle, object haystack_avoid, int foo) differ too much" )+"\n"); return 0; } while (0);
 
-Stinares=Stina->match_phase(0.00002, Stinamini,Image.image(63,33)->polyfill(({0,0,60,0,60,30})), 10);
+Stinares=Stina->match_phase(0.00002, Stinamini,Image.Image(63,33)->polyfill(({0,0,60,0,60,30})), 10);
 expected_result=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGgABAQEBAAMAAAAAAAAAAAAAAAYFAgEDCP/EACUQAAEDAgUFAQEAAAAAAAAAAAAB\r\nAgQFogMREiHRExVDUVMxM//EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMEBf/EACQRAAEDAgYDAQEA\r\nAAAAAAAAAAEAAgQDEQUGFFFx0RIxkWEh/9oADAMBAAIRAxEAPwD5/Bs0iDGkxXPxsPU5HqmepU2y\r\nT0aSUSE5M24FzuTM+UxhsV2Y+ByZFMVGEWPPSlAVC0eE39wL3cnPaYXwvdyRq2bFWHL8oe3N+npT\r\nIKdKRCXwXu5OuzQvje7kNWz9UjL0o+i36elLAp1pMFPBe7ky6vEwIvR6LNOrVnuq+vY7JDXu8Qs0\r\nnB68akaryLDa+9tl7aTOjxYrmYuJpcr1XLSq7ZIaDazDb57XcEuCHxmOJJTx8bkUKYpsAsOe1Tur\r\nEJfNa7g8d2hfax3BMgXSM3KtOYJR/vi34e1TJV4SL/a1eDt1Zhqm2PavBLANIz9QMwygLAN+HtUv\r\ndYX3tdwZtXl4Ero9F+rTqz2VPXszAOyO1jvILPJxevIpGk8Cx553QAF65SAAEIAAQgABC//Z"
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGgABAQEBAAMAAAAAAAAAAAAAAAYFAgEDCP/EACUQAAEDAgUFAQEAAAAAAAAAAAABAgQFogMREiHRExVDUVMxM//EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMEBf/EACQRAAEDAgYDAQEAAAAAAAAAAAEAAgQDEQUGFFFx0RIxkWEh/9oADAMBAAIRAxEAPwD5/Bs0iDGkxXPxsPU5HqmepU2yT0aSUSE5M24FzuTM+UxhsV2Y+ByZFMVGEWPPSlAVC0eE39wL3cnPaYXwvdyRq2bFWHL8oe3N+npTIKdKRCXwXu5OuzQvje7kNWz9UjL0o+i36elLAp1pMFPBe7ky6vEwIvR6LNOrVnuq+vY7JDXu8Qs0nB68akaryLDa+9tl7aTOjxYrmYuJpcr1XLSq7ZIaDazDb57XcEuCHxmOJJTx8bkUKYpsAsOe1TurEJfNa7g8d2hfax3BMgXSM3KtOYJR/vi34e1TJV4SL/a1eDt1Zhqm2PavBLANIz9QMwygLAN+HtUvdYX3tdwZtXl4Ero9F+rTqz2VPXszAOyO1jvILPJxevIpGk8Cx553QAF65SAAEIAAQgABC//Z"
 ));
 if (!(Stinares-expected_result<80)) 
-do { werror("failure; Image.image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_phase(float f, object needle, object haystack_avoid, int foo) differ too much" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_phase(float f, object needle, object haystack_avoid, int foo) differ too much" )+"\n"); return 0; } while (0);
 
 Stinares=Stina->match_phase(0.00002, Stinamini);
 expected_result=Image.JPEG.decode(MIME.decode_base64(
-"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a\r\nHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIy\r\nMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIA\r\nAhEBAxEB/8QAGgABAQEBAAMAAAAAAAAAAAAAAAYFAgEDCP/EACUQAAEDAgUFAQEAAAAAAAAAAAAB\r\nAgQFogMREiHRExVDUVMxM//EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMEBf/EACQRAAEDAgYDAQEA\r\nAAAAAAAAAAEAAgQDEQUGFFFx0RIxkWEh/9oADAMBAAIRAxEAPwD5/Bs0iDGkxXPxsPU5HqmepU2y\r\nT0aSUSE5M24FzuTM+UxhsV2Y+ByZFMVGEWPPSlAVC0eE39wL3cnPaYXwvdyRq2bFWHL8oe3N+npT\r\nIKdKRCXwXu5OuzQvje7kNWz9UjL0o+i36elLAp1pMFPBe7ky6vEwIvR6LNOrVnuq+vY7JDXu8Qs0\r\nnB68akaryLDa+9tl7aTOjxYrmYuJpcr1XLSq7ZIaDazDb57XcEuCHxmOJJTx8bkUKYpsAsOe1Tur\r\nEJfNa7g8d2hfax3BMgXSM3KtOYJR/vi34e1TJV4SL/a1eDt1Zhqm2PavBLANIz9QMwygLAN+HtUv\r\ndYX3tdwZtXl4Ero9F+rTqz2VPXszAOyO1jvILPJxevIpGk8Cx553QAF65SAAEIAAQgABC//Z"
+"/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAhAD8DASIAAhEBAxEB/8QAGgABAQEBAAMAAAAAAAAAAAAAAAYFAgEDCP/EACUQAAEDAgUFAQEAAAAAAAAAAAABAgQFogMREiHRExVDUVMxM//EABkBAAIDAQAAAAAAAAAAAAAAAAACAQMEBf/EACQRAAEDAgYDAQEAAAAAAAAAAAEAAgQDEQUGFFFx0RIxkWEh/9oADAMBAAIRAxEAPwD5/Bs0iDGkxXPxsPU5HqmepU2yT0aSUSE5M24FzuTM+UxhsV2Y+ByZFMVGEWPPSlAVC0eE39wL3cnPaYXwvdyRq2bFWHL8oe3N+npTIKdKRCXwXu5OuzQvje7kNWz9UjL0o+i36elLAp1pMFPBe7ky6vEwIvR6LNOrVnuq+vY7JDXu8Qs0nB68akaryLDa+9tl7aTOjxYrmYuJpcr1XLSq7ZIaDazDb57XcEuCHxmOJJTx8bkUKYpsAsOe1TurEJfNa7g8d2hfax3BMgXSM3KtOYJR/vi34e1TJV4SL/a1eDt1Zhqm2PavBLANIz9QMwygLAN+HtUvdYX3tdwZtXl4Ero9F+rTqz2VPXszAOyO1jvILPJxevIpGk8Cx553QAF65SAAEIAAQgABC//Z"
 ));
 
 if (!(Stinares-expected_result<80)) 
-do { werror("failure; Image.image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_phase(float f, object needle) differ too much" )+"\n"); return 0; } while (0);
+do { werror("failure; Image.Image/Computer Vision Functions/match_X float, object, void|object, void|int: "+( "->match_phase(float f, object needle) differ too much" )+"\n"); return 0; } while (0);
 
  
 
