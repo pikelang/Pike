@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.106 2000/09/26 03:17:04 hedda Exp $");
+RCSID("$Id: operators.c,v 1.107 2000/09/26 10:04:33 hedda Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1897,7 +1897,7 @@ PMOD_EXPORT void o_divide(void)
 	  
 	  for(last=sp[-2].u.string->len,e=0;e<size-1;e++)
 	  {
-	    pos=sp[-2].u.string->len - (ptrdiff_t)((e+1)*len);
+	    pos=sp[-2].u.string->len - (ptrdiff_t)((e+1)*len+0.5);
 	    a->item[size-1-e].u.string=string_slice(sp[-2].u.string,
 						    pos,
 						    last-pos);
@@ -1915,7 +1915,7 @@ PMOD_EXPORT void o_divide(void)
 	  
 	  for(last=0,e=0;e<size-1;e++)
 	  {
-	    pos = DO_NOT_WARN((ptrdiff_t)((e+1)*len));
+	    pos = DO_NOT_WARN((ptrdiff_t)((e+1)*len+0.5));
 	    a->item[e].u.string=string_slice(sp[-2].u.string,
 					     last,
 					     pos-last);
@@ -1986,7 +1986,7 @@ PMOD_EXPORT void o_divide(void)
 	  
 	  for(last=sp[-2].u.array->size,e=0;e<size-1;e++)
 	  {
-	    pos=sp[-2].u.array->size - (ptrdiff_t)((e+1)*len);
+	    pos=sp[-2].u.array->size - (ptrdiff_t)((e+1)*len+0.5);
 	    a->item[size-1-e].u.array=friendly_slice_array(sp[-2].u.array,
 						    pos,
 						    last);
@@ -2003,7 +2003,7 @@ PMOD_EXPORT void o_divide(void)
 	  
 	  for(last=0,e=0;e<size-1;e++)
 	  {
-	    pos = (ptrdiff_t)((e+1)*len);
+	    pos = (ptrdiff_t)((e+1)*len+0.5);
 	    a->item[e].u.array=friendly_slice_array(sp[-2].u.array,
 						    last,
 						    pos);
