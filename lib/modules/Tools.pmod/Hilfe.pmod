@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.118 2005/01/11 08:29:36 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.119 2005/01/11 08:49:23 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -164,7 +164,7 @@ private class CommandSet {
 	    array(string) tokens) {
 
     line = sizeof(words)>1 && words[1];
-    function(string, mixed ... : void) write = e->safe_write;
+    function(array(string)|string, mixed ... : void) write = e->safe_write;
 
     if(!line) {
       write("No setting to change given.\n");
@@ -314,7 +314,7 @@ private class CommandHelp {
   void exec(Evaluator e, string line, array(string) words,
 	    array(string) tokens) {
     line = words[1..]*" ";
-    function(string, mixed ... : void) write = e->safe_write;
+    function(array(string)|string, mixed ... : void) write = e->safe_write;
 
     switch(line) {
 
@@ -424,7 +424,7 @@ private class CommandDot {
 class CommandDump {
   inherit Command;
 
-  private function(string, mixed ... : int) write;
+  private function(array(string)|string, mixed ... : int) write;
 
   string help(string what) { return "Dump variables and other info."; }
   string doc(string what, string with) { return documentation_dump; }
@@ -1144,7 +1144,7 @@ private class ParserState {
   //! Prints out any error that might have occured while
   //! @[push_string] was executed. The error will be
   //! printed with the print function @[w].
-  void show_error(function(string, mixed ... : int) w) {
+  void show_error(function(array(string)|string, mixed ... : int) w) {
     if(!error) return;
     w("Hilfe Error: %s", caught_error);
     caught_error = 0;
@@ -1335,9 +1335,10 @@ class Evaluator {
   }
 
   //! An output method that shouldn't crash.
-  int safe_write(string in, mixed ... args) {
+  int safe_write(array(string)|string in, mixed ... args) {
     if(!write) return 0;
     mixed err = catch {
+      if(arrayp(in)) in *= "";
       if(sizeof(args))
 	in = sprintf(in, @args);
       int ret = write(in);
