@@ -104,9 +104,10 @@ static private class Extractor {
   }
 
   // consumes the "\n" after the last constant too...
-  static array(EnumConstant) parseAdjacentEnumConstants() {
+  static array(array(EnumConstant)|int(0..1)) parseAdjacentEnumConstants() {
     array(EnumConstant) result = ({ });
     parser->skipNewlines();
+    int terminating_nl;
     while (isIdent(parser->peekToken(WITH_NL))) {
       EnumConstant c = EnumConstant();
       c->position = parser->currentPosition->copy();
@@ -118,10 +119,10 @@ static private class Extractor {
       else
         break;
       // allow at most ONE intervening newline character
-      if (parser->peekToken(WITH_NL) == "\n")
+      if (terminating_nl = (parser->peekToken(WITH_NL) == "\n"))
         parser->readToken(WITH_NL);
     }
-    return result;
+    return ({ result, terminating_nl });
   }
 
   // Returns nothing, instead adds the enumconstants as children to
@@ -131,17 +132,18 @@ static private class Extractor {
       parser->skipNewlines();
       Documentation doc = 0;
       array(EnumConstant) consts = ({});
+      int got_nl;
       if (isIdent(parser->peekToken())) {
         // The case with one or more constants, optionally followed by
         // a doc comment.
-        consts = parseAdjacentEnumConstants();
+        [consts, got_nl] = parseAdjacentEnumConstants();
         if (!sizeof(consts)) // well, could never happen, but ...
           extractorError("expected enum constant");
 
         // read the optional doc comment
         if (isDocComment(parser->peekToken(WITH_NL))) {
           doc = readAdjacentDocLines();
-	  if (isIdent(parser->peekToken()))
+	  if (got_nl && isIdent(parser->peekToken()))
 	    extractorError("constant + doc + constant not allowed");
 	}
       }
@@ -151,7 +153,7 @@ static private class Extractor {
         doc = readAdjacentDocLines(); // consumes the \n after //... too!
         if (!isIdent(parser->peekToken(WITH_NL)))
           extractorError("expected enum constant");
-        consts = parseAdjacentEnumConstants();
+        [consts, got_nl] = parseAdjacentEnumConstants();
         // consumes the "\n" after them too...
         if (isDocComment(parser->peekToken(WITH_NL)))
           extractorError("cant have doc both before and after enum constant");
