@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.13 2000/11/21 12:58:34 per Exp $
+//! $Id: module.pmod,v 1.14 2000/12/16 16:27:02 mirar Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -20,7 +20,7 @@
 //! 	All data is read, ie nothing happens until the file is closed.
 //!	Throws upon error.
 
-mapping _decode( string data, mixed|void tocolor )
+mapping _decode( string data, mixed|void tocolor, void|int triedmac )
 {
   Image.image i, a;
   string format;
@@ -33,6 +33,26 @@ mapping _decode( string data, mixed|void tocolor )
     opts = tocolor;
     tocolor = 0;
   }
+
+  // macbinary decoding
+  if (data[102..105]=="mBIN")
+  {
+     int i;
+     sscanf(data,"%2c",i);
+     // sanity check
+
+     if (i>0 && i<64 && -1==search(data[2..2+i-1],"\0"))
+     {
+	int p,l;
+	sscanf(data[83..86],"%4c",l);    // data fork size
+	sscanf(data[120..121],"%2c",p);  // extra header size
+	p=128+((p+127)/128)*128;         // data fork position
+
+	if (p<strlen(data)) // extra sanity check
+	   data=data[p..p+l-1];
+     }
+  }
+
   // Use the low-level decode function to get the alpha channel.
 #if constant(Image.GIF) && constant(Image.GIF.RENDER)
   catch
