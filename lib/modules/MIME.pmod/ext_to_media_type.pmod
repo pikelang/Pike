@@ -1,4 +1,6 @@
-// $Id: ext_to_media_type.pmod,v 1.1 2002/11/10 08:43:26 nilsson Exp $
+// $Id: ext_to_media_type.pmod,v 1.2 2002/11/11 14:18:52 nilsson Exp $
+
+#pike __REAL_VERSION__
 
 static constant small_ext2type = ([
   "html" : "text/html",
