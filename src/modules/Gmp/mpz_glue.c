@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.94 2001/06/13 12:46:45 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.95 2001/08/13 23:33:48 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -53,16 +53,15 @@ long random(void)
 
 #undef THIS
 #define THIS ((MP_INT *)(fp->current_storage))
-#define OBTOMPZ(o) ((MP_INT *)(o->storage))
 #define THIS_PROGRAM (fp->context.prog)
 
-static struct program *mpzmod_program;
+struct program *mpzmod_program;
 #ifdef AUTO_BIGNUM
-static struct program *bignum_program;
+struct program *bignum_program;
 #endif
 
 #ifdef AUTO_BIGNUM
-static void reduce(struct object *o)
+void mpzmod_reduce(struct object *o)
 {
   INT_TYPE i;
 
@@ -112,7 +111,7 @@ static void reduce(struct object *o)
 }
 #define PUSH_REDUCED(o) do { struct object *reducetmp__=(o);	\
    if(THIS_PROGRAM == bignum_program)				\
-     reduce(reducetmp__);					\
+     mpzmod_reduce(reducetmp__);					\
    else								\
      push_object(reducetmp__);					\
 }while(0)
@@ -122,9 +121,9 @@ static void reduce(struct object *o)
 #endif /* AUTO_BIGNUM */
 
 
-static void get_mpz_from_digits(MP_INT *tmp,
-				struct pike_string *digits,
-				int base)
+void get_mpz_from_digits(MP_INT *tmp,
+			 struct pike_string *digits,
+			 int base)
 {
   if(!base || ((base >= 2) && (base <= 36)))
   {
@@ -183,7 +182,7 @@ static void get_mpz_from_digits(MP_INT *tmp,
   }
 }
 
-static void get_new_mpz(MP_INT *tmp, struct svalue *s)
+void get_new_mpz(MP_INT *tmp, struct svalue *s)
 {
   switch(s->type)
   {
@@ -305,7 +304,7 @@ static void mpzmod_get_int(INT32 args)
   pop_n_elems(args);
 #ifdef AUTO_BIGNUM
   add_ref(fp->current_object);
-  reduce(fp->current_object);
+  mpzmod_reduce(fp->current_object);
 #else
   push_int(mpz_get_si(THIS));
 #endif /* AUTO_BIGNUM */
@@ -323,7 +322,7 @@ static void mpzmod_get_float(INT32 args)
   push_float((FLOAT_TYPE)mpz_get_d(THIS));
 }
 
-static struct pike_string *low_get_digits(MP_INT *mpz, int base)
+struct pike_string *low_get_mpz_digits(MP_INT *mpz, int base)
 {
   struct pike_string *s = 0;   /* Make gcc happy. */
   ptrdiff_t len;
@@ -373,7 +372,7 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
       /* Zero is a special case. There are no limbs at all, but
        * the size is still 1 bit, and one digit should be produced. */
       if (len != 1)
-	fatal("mpz->low_get_digits: strange mpz state!\n");
+	fatal("mpz->low_get_mpz_digits: strange mpz state!\n");
       s->str[0] = 0;
     } else {
       mp_limb_t *src = mpz->_mp_d;
@@ -406,7 +405,7 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
 static void mpzmod_get_string(INT32 args)
 {
   pop_n_elems(args);
-  push_string(low_get_digits(THIS, 10));
+  push_string(low_get_mpz_digits(THIS, 10));
 }
 
 static void mpzmod_digits(INT32 args)
@@ -425,7 +424,7 @@ static void mpzmod_digits(INT32 args)
     base = sp[-args].u.integer;
   }
 
-  s = low_get_digits(THIS, base);
+  s = low_get_mpz_digits(THIS, base);
   pop_n_elems(args);
 
   push_string(s);
@@ -479,7 +478,7 @@ static void mpzmod__sprintf(INT32 args)
   case 'O':
   case 'u': /* Note: 'u' is not really supported. */
   case 'd':
-    s = low_get_digits(THIS, 10);
+    s = low_get_mpz_digits(THIS, 10);
     break;
 
   case 'x':
@@ -503,11 +502,11 @@ static void mpzmod__sprintf(INT32 args)
       mpz_mul_2exp(mask, mask, precision * mask_shift);
       mpz_sub_ui(mask, mask, 1);
       mpz_and(mask, mask, THIS);
-      s = low_get_digits(mask, base);
+      s = low_get_mpz_digits(mask, base);
       mpz_clear(mask);
     }
     else
-      s = low_get_digits(THIS, base);
+      s = low_get_mpz_digits(THIS, base);
     break;
     
   case 'c':
@@ -694,15 +693,8 @@ static void mpzmod_cast(INT32 args)
 	s->str);
 }
 
-#ifdef DEBUG_MALLOC
-#define get_mpz(X,Y) \
- (debug_get_mpz((X),(Y)),( (X)->type==T_OBJECT? debug_malloc_touch((X)->u.object) :0 ),debug_get_mpz((X),(Y)))
-#else
-#define get_mpz debug_get_mpz 
-#endif
-
 /* Converts an svalue, located on the stack, to an mpz object */
-static MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
+MP_INT *debug_get_mpz(struct svalue *s, int throw_error)
 {
 #define MPZ_ERROR(x) if (throw_error) Pike_error(x)
   struct object *o;
@@ -828,7 +820,7 @@ static void name(INT32 args)						\
         MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
         sp[-args].type=T_INT;                                           \
-        sp[-args].u.string=low_get_digits(THIS, 10);                    \
+        sp[-args].u.string=low_get_mpz_digits(THIS, 10);                \
         sp[-args].type=T_STRING;                                        \
         f_add(args);                                                    \
 	return; )							\
@@ -873,7 +865,7 @@ static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
 	push_float( ret );						\
 	return;								\
        case T_STRING:                                                   \
-        push_string(low_get_digits(THIS, 10));                          \
+        push_string(low_get_mpz_digits(THIS, 10));                      \
         f_add(args+1);                                                  \
 	return; 							\
       }									\
@@ -919,7 +911,7 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
         MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
         sp++; args++;                                                   \
         sp[-args].type=T_INT;                                           \
-        sp[-args].u.string=low_get_digits(THIS, 10);                    \
+        sp[-args].u.string=low_get_mpz_digits(THIS, 10);                \
         sp[-args].type=T_STRING;                                        \
         f_add(args);                                                    \
 	return;								\
@@ -1175,17 +1167,6 @@ static void mpzmod_compl(INT32 args)
   PUSH_REDUCED(o);
 }
 
-
-#define CMPFUN(name,cmp)				\
-static void name(INT32 args)				\
-{							\
-  INT32 i;						\
-  if(!args) Pike_error("Comparison with one argument?\n");	\
-  i=mpz_cmp(THIS, get_mpz(sp-args, 1)) cmp 0;		\
-  pop_n_elems(args);					\
-  push_int(i);						\
-}
-
 #define CMPEQU(name,cmp,default)			\
 static void name(INT32 args)				\
 {							\
@@ -1193,19 +1174,22 @@ static void name(INT32 args)				\
   MP_INT *arg;						\
   if(!args) Pike_error("Comparison with one argument?\n");	\
   if (!(arg = get_mpz(sp-args, 0)))			\
-    i = default;					\
+    do { default; }while(0);				\
   else							\
     i=mpz_cmp(THIS, arg) cmp 0;				\
   pop_n_elems(args);					\
   push_int(i);						\
 }
 
-CMPFUN(mpzmod_gt, >)
-CMPFUN(mpzmod_lt, <)
-CMPFUN(mpzmod_ge, >=)
-CMPFUN(mpzmod_le, <=)
-CMPEQU(mpzmod_eq, ==, 0)
-CMPEQU(mpzmod_nq, !=, 1)
+#define RET_UNDEFINED do{pop_n_elems(args);push_undefined();return;}while(0)
+
+CMPEQU(mpzmod_gt, >, RET_UNDEFINED)
+CMPEQU(mpzmod_lt, <, RET_UNDEFINED)
+CMPEQU(mpzmod_ge, >=, RET_UNDEFINED)
+CMPEQU(mpzmod_le, <=, RET_UNDEFINED)
+
+CMPEQU(mpzmod_eq, ==, RET_UNDEFINED)
+CMPEQU(mpzmod_nq, !=, i=1)
 
 static void mpzmod_probably_prime_p(INT32 args)
 {
@@ -1488,6 +1472,7 @@ static void exit_mpz_glue(struct object *o)
 
 void pike_module_exit(void)
 {
+  pike_exit_mpq_module();
 #if defined(USE_GMP) || defined(USE_GMP2)
   if(mpzmod_program)
   {
@@ -1663,5 +1648,7 @@ void pike_module_init(void)
 #endif
 
 #endif
+
+  pike_init_mpq_module();
 }
 

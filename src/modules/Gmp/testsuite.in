@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.16 2000/04/25 23:30:39 marcus Exp $
+// $Id: testsuite.in,v 1.17 2001/08/13 23:33:48 hubbe Exp $
 
 // mpz
 cond( [[ master()->resolv("Gmp")->mpz ]],
@@ -51,6 +51,51 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_eq(clone(Gmp.mpz,17)->powm(12,4711),85)
 ]])
 
+
+cond( [[ master()->resolv("Gmp")->mpq ]],
+[[
+  test_true(programp(Gmp.mpq))
+  test_false(clone(Gmp.mpq))
+  test_false(!Gmp.mpq(1))
+  test_do(destruct(clone(Gmp.mpq)))
+
+  test_eq(Gmp.mpq(10),10)
+  test_eq(Gmp.mpq(10,2),5)
+  test_eq(Gmp.mpq("10"),10)
+  test_eq(Gmp.mpq(10.0),10)
+  test_eq(Gmp.mpq("10",8),8)
+  test_eq(Gmp.mpq("0",256),'0')
+
+  test_eq(Gmp.mpq("17") == "foo", 0)
+  test_eq(Gmp.mpq("17") != "foo", 1)
+  test_true(catch(Gmp.mpq("17") < "foo"))
+
+  define([[test_binop]],[[
+    test_eq(Gmp.mpq($1) $2 $3, $4)
+    test_eq(Gmp.mpq($1) $2 $3.0, $4)
+    test_eq(Gmp.mpq($1) $2 Gmp.mpq($3), $4)
+    test_eq($1 $2 Gmp.mpq($3), $4)
+    test_eq($1.0 $2 Gmp.mpq($3), $4)
+    test_eq($1.0 $2 Gmp.mpq($3), $4)
+    test_eq($1 $2 $3,Gmp.mpq($4))
+  ]])
+
+  test_binop(99,+,1,100)
+  test_binop(100,*,10,1000)
+  test_binop(100,/,4,25)
+  test_binop(66,+,11,77)
+  test_binop(66,-,11,55)
+
+  test_eq([[`+(1,1,1,Gmp.mpq(1),1,1)]],6)
+  test_eq(-clone(Gmp.mpq,17),-17)
+  test_true(stringp((string)clone(Gmp.mpq,17)))
+  test_eq((string)clone(Gmp.mpq,17),"17/1")
+  test_true(intp((int)clone(Gmp.mpq,17)))
+  test_eq((int)clone(Gmp.mpq,17),17)
+  test_false(clone(Gmp.mpq,0))
+  test_true(clone(Gmp.mpq,1))
+]])
+
   define([[mpz_test_cmp]],[[
     cond( [[ master()->resolv("Gmp")->mpz ]],
     [[
@@ -66,6 +111,22 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
     [[
     test_cmp3($1, Gmp.mpz($2), Gmp.mpz($3))
     test_cmp3(Gmp.mpz($1), Gmp.mpz($2), Gmp.mpz($3))
+    ]])
+
+    cond( [[ master()->resolv("Gmp")->mpq ]],
+    [[
+    test_cmp3(Gmp.mpq($1), $2, $3)
+    test_cmp3($1, Gmp.mpq($2), $3)
+    ]])
+    cond( [[ master()->resolv("Gmp")->mpq ]],
+    [[
+    test_cmp3(Gmp.mpq($1), Gmp.mpq($2), $3)
+    test_cmp3(Gmp.mpq($1), $2, Gmp.mpq($3))
+    ]])
+    cond( [[ master()->resolv("Gmp")->mpq ]],
+    [[
+    test_cmp3($1, Gmp.mpq($2), Gmp.mpq($3))
+    test_cmp3(Gmp.mpq($1), Gmp.mpq($2), Gmp.mpq($3))
     ]])
   ]])
 
@@ -84,9 +145,14 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
     mpz_test_type2($1,$2,$3.0)
   ]])
 
-  mpz_test_type3(1,2,3)
-  mpz_test_type3(-2,1,4)
-  mpz_test_type3(-2,-1,4)
+  define([[mpz_test_type4]],[[
+    mpz_test_type2($1,$2,$3)
+    mpz_test_type2($1,$2,Gmp.mpz($3))
+  ]])
+
+  mpz_test_type4(1,2,3)
+  mpz_test_type4(-2,1,4)
+  mpz_test_type4(-2,-1,4)
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
