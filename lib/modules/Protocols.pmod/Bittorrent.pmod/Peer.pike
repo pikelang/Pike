@@ -4,6 +4,7 @@
 constant dont_dump_program = 1;
 
 Stdio.File fd=Stdio.File();
+
 .Torrent parent;
 
 string ip;
@@ -32,6 +33,7 @@ constant CONNECTION_TIMEOUT=30;
 constant CONNECTION_DEAD_RETRY=-1;
 constant CONNECTION_DROP_RETRY=30;
 constant CONNECTION_HANDSHAKE_DROP_RETRY=-1;
+constant GARB_DELAY=600;
 
 constant MSG_CHOKE = 0;
 constant MSG_UNCHOKE = 1;
@@ -43,6 +45,18 @@ constant MSG_REQUEST = 6;
 constant MSG_PIECE = 7;
 constant MSG_CANCEL = 8;
 typedef int(0..8) message_id;
+
+mapping msg_to_string=([
+   0:"choke",
+   1:"unchoke",
+   2:"interested",
+   3:"not_interested",
+   4:"have",
+   5:"bitfield",
+   6:"request",
+   7:"piece",
+   8:"cancel",
+]);
 
 function(string,mixed...:void|mixed) warning=werror;
 int cancelled=0;
@@ -66,11 +80,11 @@ void create(.Torrent _parent,mapping m)
    parent=_parent;
    ip=m->ip;
    port=m->port;
-   id=m["peer id"];
+   id=m["peer id"]||"?";
    if (id!="?") 
    {
       client_version=.PeerID.identify_peer(id);
-//       werror("%O is %O is %O\n",ip,id,client_version);
+//       werror("%O is %O is %O (out)\n",ip,id,client_version);
    }
 //    else
 //       werror("incoming from %O\n",ip);
@@ -93,6 +107,8 @@ void create(.Torrent _parent,mapping m)
       parent->peers_ordered+=({this});
 
       _status("incoming");
+
+      call_out(connection_timeout,CONNECTION_TIMEOUT);
    }
 }
 
@@ -106,6 +122,24 @@ private static inline void _status(string type,void|string|int data)
    Function.call_callback(parent->peer_update_status,type,data);
    status(type,data);
 }
+
+#ifdef BT_TRAFFIC_DEBUG
+int traffic_start=time(1);
+float traffic_last_choke=time(traffic_start);
+void traffic_debug(string fmt,mixed...args)
+{
+   fmt=sprintf(fmt,@args);
+   int t=time();
+   mapping tm=localtime(t);
+   werror("%02d:%02d:%02d %7.1f %6.1f %-15s %-20s %s",
+	  tm->hour,tm->min,tm->sec,
+	  time(traffic_start),
+	  time(traffic_start)-traffic_last_choke,
+	  ip,
+	  client_version,
+	  fmt);
+}
+#endif
 
 //! Returns true if we can connect to this peer,
 //! when new or disconnected but not fatally.
@@ -189,7 +223,7 @@ void connect()
       connect2(ip);
    else
    {
-      parent->async_dns->
+      parent->dns_async->
 	 host_to_ip(ip, 
 		    lambda(string name,string ip)
 		    {
@@ -201,6 +235,7 @@ void connect()
 
 void connect2(string ip2)
 {
+   fd=Stdio.File();
    fd->async_connect(
       ip2,port,
       lambda(int success)
@@ -216,21 +251,54 @@ void connect2(string ip2)
 	 }
 	 else
 	 {
-	    online=0;
-	    _status("dead");
 	    remove_call_out(connection_timeout);
+	    drop("dead","failed");
+	    if (CONNECTION_DEAD_RETRY>0)
+	       call_out(connect,CONNECTION_DEAD_RETRY);
 	 }
       });
 }
 
-void connection_timeout()
+void drop(string how,void|string misc)
 {
    online=0;
-   _status("dead");
+   if (how) _status(how,misc);
+
+   catch { fd->set_blocking(); };
+   catch { fd->close(); };
+   destruct(fd);
+   fd=0;
+
+   remove_call_out(keepalive);
+   remove_call_out(bandwidth_o_meter);
+
+#ifdef BT_TRAFFIC_DEBUG
+   traffic_debug("-- connection dropped %O,%O\n",how,misc);
+#endif
+
+   map(Array.uniq(values(piece_callback)),
+       lambda(function f) { catch { f(-1,0,"disconnected",this); }; });
+   piece_callback=([]);
+
+   catch { parent->peer_lost(this); };
+
+   call_out(garb,GARB_DELAY);
+}
+
+void garb()
+{
+   if (online || find_call_out(connect)!=-1) return;
+   parent->peers_ordered-=({this_object()});
+   parent->peers_unused-=({this_object()});
+   m_delete(parent->peers,id);
+   destruct(this_object());
+}
+
+void connection_timeout()
+{
    if (CONNECTION_DEAD_RETRY>0)
       call_out(connect,CONNECTION_DEAD_RETRY);
-   destruct(fd);
-   fd=Stdio.File();
+   drop("dead","timeout");
 }
 
 //! Disconnect a peer.
@@ -240,18 +308,10 @@ void disconnect()
 {
    if (online)
    {
-      destruct(fd);
-      fd=Stdio.File();
-      online=0;
 #ifdef BT_PEER_DEBUG
       werror("%O call disconnected %O\n",this,piece_callback);
 #endif
-      Array.uniq(values(piece_callback))(-1,0,"disconnected",this);
-      piece_callback=([]);
-      parent->peer_lost(this);
-      remove_call_out(keepalive); 
-      remove_call_out(bandwidth_o_meter); 
-      _status("disconnected","we");
+      drop("disconnected","we");
    }
 }
 
@@ -269,6 +329,12 @@ static private string sendbuf="";
 static private void transmit(string fmt,mixed ...args)
 {
    if (sizeof(args)) fmt=sprintf(fmt,@args);
+
+#ifdef BT_TRAFFIC_DEBUG
+   traffic_debug("-> %db: %O\n",
+	  strlen(fmt),
+	  strlen(fmt)>40?fmt[..29]+"..."+fmt[strlen(fmt)-10..]:fmt);
+#endif
 
 //    hexdump(fmt,0,0,"> ");
 
@@ -290,6 +356,11 @@ void send_message(message_id n,string fmt,mixed ...args)
 #ifdef BT_PEER_DEBUG
    werror("%O send message %d, %O\n",ip,n,sizeof(fmt));
 #endif
+#ifdef BT_TRAFFIC_DEBUG
+   traffic_debug("-> message %d (%s)\n",
+	  n,msg_to_string[n]);
+#endif
+	  
 
    lastmsg=({n,fmt});
 
@@ -371,6 +442,8 @@ static private void peer_write()
 	 uploading=0,uploading_pieces=(<>);
 	 return;
       }
+      if (were_choking) 
+	 werror("%O: choking but uploading?\n",ip);
    }
 }
 
@@ -391,87 +464,89 @@ static private void peer_read(mixed dummy,string s)
       if (readbuf[..min(strlen(readbuf)-1,19)] !=
 	  "\23BitTorrent protocol"[..min(strlen(readbuf)-1,19)])
       {
-	 destruct(fd);
-	 fd=Stdio.File();
-	 online=0;
-	 _status("failed","not bittorrent");
+#ifdef BT_TRAFFIC_DEBUG
+	 traffic_debug("<- %db: %O\n",
+		       strlen(readbuf),
+		       strlen(readbuf)>40?readbuf[..29]+"..."+
+		       readbuf[strlen(readbuf)-10..]:readbuf);
+#endif
+	 drop("failed","not bittorrent");
 
 	 warning("got non-bittorrent connection from %O (%s %s): %O\n",
 		 ip,
-		 mode=="connected"?"outgoing":"incoming",
+		 mode,
 		 client_version,
 		 readbuf[..40]);
+
 	 return;
       }
 
       if (strlen(readbuf)<68) return; // wait for more data
-      if (readbuf[..19]=="\23BitTorrent protocol")
-      {
-	 if (readbuf[28..47]!=parent->info_sha1)
-	 {
-	    destruct(fd);
-	    fd=Stdio.File();
-	    online=0;
-	    _status("failed","torrent metainfo mismatch");
-	    return;
-	 }
-	 if (id=="?")
-	 {
-	    id=readbuf[48..67];
-	    client_version=.PeerID.identify_peer(id);
-// 	    werror("(inc) %O is %O is %O\n",ip,id,client_version);
 
-	    if (parent->peers[id]) // no cheating by reconnecting :)
-	    {
-	       bytes_in=parent->peers[id]->bytes_in;
-	       bytes_out=parent->peers[id]->bytes_out;
+#ifdef BT_TRAFFIC_DEBUG
+   traffic_debug("<- %db: %O\n",
+	  strlen(readbuf),
+	  strlen(readbuf)>40?readbuf[..29]+"..."+readbuf[strlen(readbuf)-10..]:readbuf);
+#endif
+
+      if (readbuf[28..47]!=parent->info_sha1)
+      {
+	 drop("failed","torrent metainfo mismatch");
+	 return;
+      }
+      if (id=="?")
+      {
+	 id=readbuf[48..67];
+	 client_version=.PeerID.identify_peer(id);
+// 	 werror("(inc) %O is %O is %O\n",ip,id,client_version);
+
+	 if (parent->peers[id]) // no cheating by reconnecting :)
+	 {
+	    bytes_in=parent->peers[id]->bytes_in;
+	    bytes_out=parent->peers[id]->bytes_out;
 
 #if 1
- 	       parent->peers[id]->disconnect();
+	    parent->peers[id]->disconnect();
 
- 	       warning("%O (%s): disconnected old connection, we got a new\n",
- 		       ip,client_version);
+	    warning("%O (%s): disconnected old connection, we got a new\n",
+		    ip,client_version);
 #endif
-	    }
-
-	    parent->peers[id]=this;
-	 }
-	 else if (readbuf[48..67]!=id)
-	 {
-	    destruct(fd);
-	    fd=Stdio.File();
-	    online=0;
-	    _status("failed","peer id mismatch");
-	    return;
 	 }
 
-	 if (mode=="incoming")
-	    peer_connected(); // send handshake
+	 parent->peers[id]=this;
+      }
+      else if (readbuf[48..67]!=id)
+      {
+	 drop("failed","peer id mismatch");
+	 return;
+      }
 
-	 readbuf=readbuf[68..];
-	 call_out(keepalive,KEEPALIVE_DELAY);
-	 bandwidth_o_meter();
+      if (mode=="incoming")
+	 peer_connected(); // send handshake
 
-	 send_message(MSG_BITFIELD, 
-		      "%s",parent->file_got_bitfield());
+      readbuf=readbuf[68..];
+      call_out(keepalive,KEEPALIVE_DELAY);
+      bandwidth_o_meter();
+
+      send_message(MSG_BITFIELD, 
+		   "%s",parent->file_got_bitfield());
 // 	 if (!parent->default_is_choked)
 // 	    send_message(MSG_UNCHOKE,""); 
 
-	 if (were_interested)
-	    send_message(MSG_INTERESTED,"");
-	 if (!were_choking)
-	    send_message(MSG_UNCHOKE,"");
+      if (were_interested)
+	 send_message(MSG_INTERESTED,"");
+      if (!were_choking)
+	 send_message(MSG_UNCHOKE,"");
 
 
-	 if (-1==search(parent->peers_ordered,this))
-	    parent->peers_ordered+=({this});
-	 parent->peers_unused-=({this});
+      if (-1==search(parent->peers_ordered,this))
+	 parent->peers_ordered+=({this});
+      parent->peers_unused-=({this});
 
 
-	 online=2;
-	 _status("online");
-	 remove_call_out(connection_timeout);
-      }
+      online=2;
+      _status("online");
+      remove_call_out(connection_timeout);
    }
 
    if (mode=="online")
@@ -482,6 +557,13 @@ static private void peer_read(mixed dummy,string s)
 	 sscanf(readbuf,"%4c",n);
 	 if (strlen(readbuf)>=4+n)
 	 {
+#ifdef BT_TRAFFIC_DEBUG
+	    traffic_debug("<- %db: %O\n",
+		   4+n,
+		   4+n>40?readbuf[..29]+"..."+
+			  readbuf[strlen(readbuf)-10..]:readbuf[..3+n]);
+#endif
+
 	    string msg=readbuf[4..3+n];
 	    readbuf=readbuf[4+n..];
 	    got_message_from_peer(msg);
@@ -494,7 +576,12 @@ static private void peer_read(mixed dummy,string s)
 // no action for 5 minutes, drop and reconnect
 void peer_read_timeout()
 {
+#ifdef BT_TRAFFIC_DEBUG
+   traffic_debug("-- timeout, reconnecting\n");
+#endif
+
    disconnect();
+   fd=Stdio.File();
    connect();
 }
 
@@ -508,11 +595,17 @@ void got_message_from_peer(string msg)
       return;
    }
 #ifdef BT_PEER_DEBUG
-   werror("%O: got message type %d: %O (%d bytes)\n",ip,msg[0],msg[1..40],strlen(msg));
+   werror("%O: got message type %d: %O (%d bytes)\n",
+	  ip,msg[0],msg[1..40],strlen(msg));
 #endif
 
    int n,o,l;
    string data;
+
+#ifdef BT_TRAFFIC_DEBUG
+   traffic_debug("<- - got message %d (%s)\n",
+	  msg[0],msg_to_string[msg[0]]);
+#endif
 
    switch (msg[0])
    {
@@ -549,8 +642,20 @@ void got_message_from_peer(string msg)
 	 peer_interested=1;
 	 _status("online","interested");
 
-	 if (were_choking && 
-	     sizeof(parent->file_got)>sizeof(parent->file_want)) unchoke();
+	 if (were_choking)
+	    if (sizeof(parent->file_got)>sizeof(parent->file_want)) 
+	       ;
+	    else
+	    {
+	       Function.call_callback(
+		  warning,
+		  "%O (%s): sent interested but we have none "
+		  "(want=%d got=%d)\n",
+		  ip,client_version,
+		  sizeof(parent->file_got),sizeof(parent->file_want)
+				      );
+	    }
+	 if (!strangled) unchoke();
 	 break;
       case MSG_NOT_INTERESTED:
 	 peer_interested=0;
@@ -615,9 +720,7 @@ void peer_close()
    remove_call_out(keepalive); 
    remove_call_out(bandwidth_o_meter); 
 
-   fd->set_blocking();
-   destruct(fd);
-   fd=Stdio.File();
+   drop(0);
    if (online)
    {
       if (online==2)
@@ -748,6 +851,18 @@ array(array(int|string)) queued_pieces=({});
 
 static void queue_piece(int piece,int offset,int length)
 {
+   if (were_choking)
+   {
+#if 0
+// lots of clients to this, so don't warn
+      Function.call_callback(
+	 warning,
+	 "%O (%s): got request for a piece while we're choking\n",
+	 ip,client_version);
+#endif
+      return;
+   }
+
    if (length>524288 || 
        length>parent->info["piece length"])
    {
@@ -805,16 +920,23 @@ static void fill_queue()
 
 void unchoke()
 {
-   send_message(MSG_UNCHOKE,"");
-   were_choking=0;
+   werror("%O (%s): unchoke\n",ip,client_version);
 
-   if (queued_pieces && sendbuf=="")
-      fd->set_write_callback(peer_write);
+   were_choking=0;
+   send_message(MSG_UNCHOKE,"");
+
+//    if (queued_pieces && sendbuf=="") // wont happen (transmit above)
+//       fd->set_write_callback(peer_write);
    _status("online","unchoking");
 }
 
 void choke()
 {
+//    werror("%O (%s): choke\n",ip,client_version);
+#ifdef BT_TRAFFIC_DEBUG
+   traffic_last_choke=time(traffic_start);
+#endif
+
    send_message(MSG_CHOKE,"");
    were_choking=1;
    _status("online","choking");
@@ -827,18 +949,28 @@ void choke()
 #endif
 }
 
+static int last_strangle;
+
 void strangle()
 {
    strangled=1;
    choke();
+   last_strangle=time(1);
 }
 
 void unstrangle()
 {
-   strangled=0;
-   unchoke();
-   if (queued_pieces)
-      fd->set_write_callback(peer_write);
+   if (time(1)-last_strangle<10)
+   {
+      void unstrangle2() { if (strangled) unstrangle(); };
+      remove_call_out(unstrangle2);
+      call_out(unstrangle2,time(1)+10-last_strangle);
+   }
+   else
+   {
+      strangled=0;
+      unchoke();
+   }
 }
 
 void show_interest()
@@ -875,7 +1007,7 @@ void status(string type,void|int|string data)
 string _sprintf(int t)
 {
    if (t=='O') 
-      return sprintf("Bittorrent.Peer(%s:%d %O%s%s%s%s%s%s%s v%d ^%d b/s)",
+      return sprintf("Bittorrent.Peer(%s:%d %O%s%s%s%s%s%s%s v%d ^%d b/s q:%d p:%d sb:%d)",
 		     ip,port,mode,
 		     is_activated()?" dl":"",
 		     uploading?" ul":"",
@@ -884,16 +1016,16 @@ string _sprintf(int t)
 		     strangled?" strangled":"",
 		     is_activated()?" activated":"",
 		     handover?" handover":"",
-		     bandwidth_in,bandwidth_out);
+		     bandwidth_in,bandwidth_out,
+		     sizeof(queued_pieces),
+		     sizeof(piece_callback),
+		     sizeof(sendbuf));
    return 0;
 }
 
 void destroy()
 {
-   catch { fd->set_blocking(); };
-   destruct(fd);
-   remove_call_out(keepalive);
-   remove_call_out(bandwidth_o_meter);
+   drop(0);
 }
 
 // ----------------------------------------------------------------

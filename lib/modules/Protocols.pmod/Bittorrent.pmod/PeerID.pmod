@@ -18,14 +18,14 @@ string identify_peer(string peerid)
       {
 	 string version = peerid[1..3];
 	 string name = "Shadow "
-	    +version[..2]/1*".";
+	    +(version[..2]/1)*".";
 	 return name;
       }
         
       if (peerid[8] == 0) 
       {  // is next Burst version still using this?
 	 string name = "Shadow "
-	    +peerid[1..3]/1*".";
+	    +((array(string))peerid[1..3])*".";
 	 return name;
       }
    }
@@ -49,7 +49,7 @@ string identify_peer(string peerid)
       {
 	 string version = peerid[1..3];
 	 string name = "UPnP "
-	    +((array(string))version[..2])*".";
+	    +(version[..2]/1)*".";
 	 return name;
       }  
    }

@@ -36,17 +36,16 @@ void destroy() { destruct(port); }
 
 static void new_connection()
 {
-   Stdio.File fd = port->accept();
-   if( !fd )
+   Stdio.File fd=port->accept();
+   
+   if (!fd)
    {
-     int errno = port->errno();
-     error( sprintf("Bittorrent.Port->new_connection: "
-		    "accept() failed with ERRNO %d - %s\n",
-		    errno, strerror( errno ) ) );
-     return;
+      parent->warning("failed to accept() (out of fds?): %s\n",
+		      strerror(errno()));
+      return;
    }
 
-   array v = fd->query_address() / " ";
+   array v=fd->query_address()/" ";
    parent->peer_program(
       parent,
       (["peer id":"?",
