@@ -1,6 +1,6 @@
 /* XImage.pmod
  *
- * $Id: XImage.pmod,v 1.8 1998/04/06 15:48:02 nisse Exp $
+ * $Id: XImage.pmod,v 1.9 1998/04/18 01:06:55 cardeci Exp $
  */
 
 /*
@@ -130,6 +130,7 @@ class XImage
 
   object allocate_colortable()
   {
+//     werror("Allocating colortable\n");
     array wanted;
     if(best)
       wanted = image->select_colors( 100 );
@@ -232,6 +233,11 @@ class XImage
     }
   }
 
+  void set_window(object w)
+  {
+    set_drawable(w);
+  }
+
   void set_drawable(object w)
   {
     window = w;
@@ -285,12 +291,11 @@ class XImage
        ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
        converter = Image.X.encode_pseudocolor;
        break;
-//        ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
-//        converter = Image.X.encode_pseudocolor;
-//        break;
+//     ccol = Image.colortable(0,0,0, ({0,0,0}), ({255,255,255}), 1<<depth);
+//     converter = Image.X.encode_pseudocolor;
+//     break;
      case "GrayScale":
      case "PseudoColor":
-       ccol = 0;
        converter = Image.X.encode_pseudocolor;
        break;
      case "StaticColor":
@@ -302,7 +307,8 @@ class XImage
 				 1<<BITS(gmask),
 				 1<<BITS(bmask));
 	 ccol->ordered();
-       }
+       } else
+	 ccol = 0;
        converter = Image.X.encode_truecolor_masks;
        break;
      case "DirectColor":
@@ -351,8 +357,9 @@ class PixmapImage
 {
   inherit XImage;
 
-  void create(object /*(Types.Pixmap)*/ p)
+  void create(object (Types.Pixmap) p, object|void ct)
   {
+    if(ct) ccol = ct;
     set_drawable( p );
   }
 }
@@ -370,7 +377,25 @@ object MakeShapeMask(object in, object alpha)
   return shape;
 }
 
-void ShapedWindowImage(object in, object color, object alpha, int contour)
+
+object spcm;
+object SimplePixmapImage(object in, object color, int|void ocol)
+{
+  object bgpm;
+  int width = color->xsize();
+  int height = color->ysize();
+  if(!ocol) 
+    spcm = 0;
+  object bgpm = in->CreatePixmap(width, height, in->depth);
+  object pi = PixmapImage( bgpm, spcm );
+  pi->set_render("best");
+  pi->set_image( color );
+  spcm = pi->ccol;
+  return bgpm;
+}
+
+void ShapedWindowImage(object in, object color, object|void alpha, 
+		       int|void contour)
 {
   object bgpm;
   int width = color->xsize();
@@ -379,28 +404,29 @@ void ShapedWindowImage(object in, object color, object alpha, int contour)
   object bgpm = in->CreatePixmap(width, height, in->depth);
   PixmapImage( bgpm )->set_image( color );
   in->ChangeAttributes( (["BackPixmap":bgpm ]) );
-
-
-  mapping f;
-  object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
-  foreach(in->display->formats, f) if(f->depth == 1) break;
-  shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
-		   Image.X.encode_truecolor( alpha->invert(), 
-					     1, f->scanLinePad,
-					     !in->display->bitmapBitOrder, 
-					     1, 0, 0, 0, 0, 0), 0);
-  in->ShapeMask("both", 0, 0, "set", shape);
-  if(contour)
+  if(shape)
   {
-    in->ShapeMask("bounding", -1, -1, "union", shape);
-    in->ShapeMask("bounding", -1, 1, "union", shape);
-    in->ShapeMask("bounding", 1, -1, "union", shape);
-    in->ShapeMask("bounding", 1, 1, "union", shape);
+    mapping f;
+    object shape = in->CreatePixmap(alpha->xsize(),alpha->ysize(),1);
+    foreach(in->display->formats, f) if(f->depth == 1) break;
+    shape->PutImage( shape->CreateGC(), 1, 0, 0, alpha->xsize(), alpha->ysize(), 
+		     Image.X.encode_truecolor( alpha->invert(), 
+					       1, f->scanLinePad,
+					       !in->display->bitmapBitOrder, 
+					       1, 0, 0, 0, 0, 0), 0);
+    in->ShapeMask("both", 0, 0, "set", shape);
+    if(contour)
+    {
+      in->ShapeMask("bounding", -1, -1, "union", shape);
+      in->ShapeMask("bounding", -1, 1, "union", shape);
+      in->ShapeMask("bounding", 1, -1, "union", shape);
+      in->ShapeMask("bounding", 1, 1, "union", shape);
     
-    in->ShapeMask("bounding", 1, 0, "union", shape);
-    in->ShapeMask("bounding", 0, 1, "union", shape);
-    in->ShapeMask("bounding", -1, 0, "union", shape);
-    in->ShapeMask("bounding", 0, -1, "union", shape);
+      in->ShapeMask("bounding", 1, 0, "union", shape);
+      in->ShapeMask("bounding", 0, 1, "union", shape);
+      in->ShapeMask("bounding", -1, 0, "union", shape);
+      in->ShapeMask("bounding", 0, -1, "union", shape);
+    }
   }
 }
                       
