@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.47 2002/10/21 17:06:15 marcus Exp $
+|| $Id: png.c,v 1.48 2003/01/06 13:49:00 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.47 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: png.c,v 1.48 2003/01/06 13:49:00 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1022,6 +1022,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    break;
 	 case T_INT:
 	    pop_n_elems(1);
+	    break;
 	 default:
 	    Pike_error("Image.PNG._decode: illegal value of option \"palette\"\n");
       }
