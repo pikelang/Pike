@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.104 2000/03/23 20:05:09 mast Exp $
+ * $Id: master.pike.in,v 1.105 2000/03/23 20:09:41 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1436,7 +1436,7 @@ string describe_object(object o)
 {
   string s;
   if(!o) return 0;
-  if (!catch(s=sprintf("%O",o)) && stringp(s)) return s;
+  if (!catch (s = sprintf("%O",o)) && s != "object") return s;
   if(( s=describe_program(object_program(o)) ))
     return s+"()";
   return 0;
