@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.54 2002/03/18 13:10:54 grubba Exp $
+ * $Id: mysql.c,v 1.55 2002/04/11 09:14:45 jhs Exp $
  *
  * SQL database functionality for Pike
  *
@@ -93,7 +93,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.54 2002/03/18 13:10:54 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.55 2002/04/11 09:14:45 jhs Exp $");
 
 /*! @module Mysql
  *!
@@ -530,6 +530,57 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 
   pike_mysql_reconnect();
+}
+
+/*! @decl string _sprintf(int type, void|mapping flags)
+ */
+static void mysql__sprintf(INT32 args)
+{
+  INT_TYPE type;
+  struct mapping * flags;
+
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+  if(sp[-args].type!=T_INT)
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+
+  type = sp[-args].u.integer;
+  pop_n_elems(args);
+  switch( type )
+  {
+    case 'O':
+    {
+      struct pike_string *res;
+      MYSQL *socket;
+      char *info;
+
+      if(!PIKE_MYSQL->socket)
+	pike_mysql_reconnect();
+      socket = PIKE_MYSQL->socket;
+
+      MYSQL_ALLOW();
+      info = mysql_get_host_info(socket);
+      MYSQL_DISALLOW();
+
+      push_text("Mysql(/* %s */)");
+      push_text(info);
+      f_sprintf(2);
+
+      res = Pike_sp[-1].u.string;
+      Pike_sp--;
+      push_string(res);
+      return;
+    }
+
+    case 't':
+    {
+      struct pike_string * res = make_shared_binary_string("Mysql", 5);
+      push_string(res);
+      return;
+    }
+  }
+  push_int( 0 );
+  Pike_sp[-1].subtype = 1;
 }
 
 /*! @decl int affected_rows()
@@ -1581,6 +1632,9 @@ void pike_module_init(void)
   ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
+  /* function(int, void|mapping:string) */
+  ADD_FUNCTION("_sprintf",mysql__sprintf,
+	       tFunc(tInt tOr(tVoid,tMapping),tString),0);
   /* function(void:int) */
   ADD_FUNCTION("affected_rows", f_affected_rows,tFunc(tVoid,tInt), ID_PUBLIC);
   /* function(void:int) */
