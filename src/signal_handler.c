@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.168 2000/03/24 01:24:52 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.169 2000/06/26 17:22:45 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1851,7 +1851,7 @@ void f_create_process(INT32 args)
 	if(tmp->type == T_STRING)
 	{
 	  dir=(TCHAR *)STR0(tmp->u.string);
-	  fprintf(stderr,"DIR: %s\n",STR0(tmp->u.string));
+	  /* fprintf(stderr,"DIR: %s\n",STR0(tmp->u.string)); */
 	}
       }
 
