@@ -16,7 +16,7 @@
 #define PATH  "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin"
 
 #ifndef __NT__
-#define SYSTEM_COMMANDS ({ "last -256", \
+#define SYSTEM_COMMANDS ({ "last -256", "arp -a", \
                         "netstat -anv","netstat -mv","netstat -sv", \
                         "uptime","ps -fel","ps aux", \
 			"vmstat -s","vmstat -M", \
