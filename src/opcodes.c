@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.93 2000/11/24 05:41:02 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.94 2000/11/29 13:14:18 mirar Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -185,12 +185,26 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	{
 	  case T_ARRAY:
 	  {
-	    f_transpose(1);
-	    sp--;
-	    dmalloc_touch_svalue(sp);
-	    push_array_items(sp->u.array);
-	    f_mkmapping(2);
-	    break;
+	     struct array *a=sp[-1].u.array;
+	     struct array *b;
+	     struct mapping *m;
+	     INT32 i;
+	     m=allocate_mapping(a->size); /* MAP_SLOTS(a->size) */
+	     push_mapping(m);
+	     for (i=0; i<a->size; i++)
+	     {
+		if (ITEM(a)[i].type!=T_ARRAY)
+		   error("Cast array to mapping: "
+			 "element %d is not an array\n", i);
+		b=ITEM(a)[i].u.array;
+		if (b->size!=2)
+		   error("Cast array to mapping: "
+			 "element %d is not an array of size 2\n", i);
+		mapping_insert(m,ITEM(b)+0,ITEM(b)+1);
+	     }
+	     stack_swap();
+	     pop_n_elems(1);
+	     break;
 	  }
 
 	  default:
