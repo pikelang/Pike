@@ -2482,7 +2482,7 @@ static void html_clone(INT32 args)
 
 void init_parser_html(void)
 {
-   MAKE_CONSTANT_SHARED_STRING(empty_string,"");
+   empty_string = make_shared_binary_string("", 0);
 
    ADD_STORAGE(struct parser_html_storage);
 
@@ -2562,6 +2562,7 @@ void init_parser_html(void)
 
 void exit_parser_html()
 {
+   free_string(empty_string);
 }
 
 /*
