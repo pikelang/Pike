@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.4 2002/12/05 15:46:04 nilsson Exp $
+dnl $Id: testsuite.in,v 1.5 2002/12/11 22:57:24 nilsson Exp $
 
 dnl NOTE:
 dnl   *every* time the Calendar tests have failed, it's not the 
@@ -44,3 +44,61 @@ test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
 test_false( Calendar.parse("%Y w%W %e %h:%m %p %z","1913 w4 monday 2:14 pm CET")
   > Calendar.set_timezone("CET")->Minute(1913,1,20,14,14) )
 dnl The two objects above is not equal, which really is a bug.
+
+
+dnl From verify.pike
+define(test_WDIFF,[[
+test_true( $1->week_no() == $2->week_no() )
+test_true( $1->week() == $2->week() )
+test_true( $1->week()->year() == $2->week()->year() )
+]])
+define(test_day,[[
+test_do([[
+  sscanf($1,"%d-%d-%d %s %dw%d",
+         int y,int m,int d,string wd,int wy,int w);
+  add_constant("d1", Calendar.ISO.Day(y,m,d));
+  add_constant("d2", Calendar.ISO.dwim_day(y+"-"+m+"-"+d));
+  add_constant("d3", Calendar.ISO.Week(wy,w)->day(wd));
+]])
+test_true( objectp(d1) )
+test_true( objectp(d2) )
+test_true( objectp(d3) )
+test_true( d1==d2 )
+test_true( d2==d3 )
+test_true( d3==d1 )
+test_WDIFF(d1,d2)
+test_WDIFF(d2,d3)
+test_WDIFF(d3,d1)
+test_any([[
+  sscanf($1,"%d-%d-%d %s %dw%d",
+         int y,int m,int d,string wd,int wy,int w);
+  return w;
+]], d1->week_no())
+test_any([[
+  sscanf($1,"%d-%d-%d %s %dw%d",
+         int y,int m,int d,string wd,int wy,int w);
+  return wy;
+]], d1->week()->year_no())
+test_do([[ add_constant("d1"); ]])
+test_do([[ add_constant("d2"); ]])
+test_do([[ add_constant("d3"); ]])
+]])
+test_day("1993-12-31 Fri 1993w52")
+test_day("1994-01-01 Sat 1993w52")
+test_day("1994-12-31 Sat 1994w52")
+test_day("1995-01-01 Sun 1994w52")
+test_day("1995-12-31 Sun 1995w52")
+test_day("1996-01-01 Mon 1996w01")
+test_day("1996-12-31 Tue 1997w01")
+test_day("1997-01-01 Wed 1997w01")
+test_day("1997-12-31 Wed 1998w01")
+test_day("1998-01-01 Thu 1998w01")
+test_day("1998-12-31 Thu 1998w53")
+test_day("1999-01-01 Fri 1998w53")
+test_day("1999-12-31 Fri 1999w52")
+test_day("2000-01-01 Sat 1999w52")
+test_day("2000-12-31 Sun 2000w52")
+test_day("2001-01-01 Mon 2001w01")
+
+test_day("2003-12-31 Wed 2004w01")
+test_day("2004-01-01 Thu 2004w01")
