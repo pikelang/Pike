@@ -498,7 +498,7 @@ int push_parsed_tag(char *s,int len)
     int oldi;
     oldi = i;
     i = extract_word(s, i, len);
-    f_lower_case(1);            /* Since SGML want's us to... */
+    f_lower_case(1);            /* Since SGML wants us to... */
     if (i+1 >= len || (s[i] != '='))
     {
       /* No 'Y' part here. Assign to 'X' */
