@@ -10706,7 +10706,7 @@ call_out, find_call_out, remove_call_out
 
 <function name=_exit title="Really exit" fullpath>
 <man_syntax>
-void _exit(int <i>returncode</I>);
+void _exit(int <i>returncode</i>);
 </man_syntax>
 <man_description>
 This function does the same as <tt>exit</tt>, but doesn't bother to clean
@@ -12376,6 +12376,12 @@ mixed max(mixed ...arg)
 <man_description>
 Returns the greatest value of its args.
 </man_description>
+<man_example>
+<example language=pike>
+&gt; man( 1,2,3 );
+Result: 3
+</example>
+</man_example>
 <man_see>
 min
 </man_see>
@@ -12388,6 +12394,12 @@ mixed min(mixed ...arg)
 <man_description>
 Returns the smallest value of its args.
 </man_description>
+<man_example>
+<example language=pike>
+&gt; min( 1,2,3 );
+Result: 1
+</example>
+</man_example>
 <man_see>
 max
 </man_see>
