@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.51 2004/05/14 18:37:31 grubba Exp $
+ * $Id: Tree.pmod,v 1.52 2004/06/23 15:13:40 jonasw Exp $
  *
  */
 
@@ -732,6 +732,14 @@ static class VirtualNode {
   string get_any_name()
   {
     return (mTagName);
+  }
+
+  //! Change the tag name destructively. Can only be used on element and
+  //! processing-instruction nodes.
+  void set_tag_name(string name)
+  {
+    if (mNodeType & (XML_ELEMENT | XML_PI))
+      mTagName = name;
   }
 
   //! Return fully qualified name of the element node.
