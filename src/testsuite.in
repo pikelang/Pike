@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.387 2001/02/21 16:29:23 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.388 2001/02/25 17:42:50 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -52,6 +52,15 @@ test_do([[
   };
   foo (1);
 ]])
+
+test_any([[
+  array tmp=({});
+  tmp=({([])})+tmp;
+  tmp->foo=7;
+  tmp=({([])})+tmp;
+  return sizeof(tmp[0]);
+]], 0)
+
 
 test_any([[int a=0xffffffff; return a+17]], 0x100000010);
 test_any([[int a=0xffffffff; return a-17]], 0xffffffee);

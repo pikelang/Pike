@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.107 2001/02/24 02:38:31 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.108 2001/02/25 17:40:19 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -26,6 +26,8 @@ RCSID("$Id: docode.c,v 1.107 2001/02/24 02:38:31 hubbe Exp $");
 #include "opcodes.h"
 #include "language.h"
 #include "lex.h"
+#include "mapping.h"
+#include "multiset.h"
 
 static int do_docode2(node *n, INT16 flags);
 
@@ -808,7 +810,7 @@ static int do_docode2(node *n, INT16 flags)
     fatal("Optimizer error.\n");
 
   case F_RANGE:
-    tmp1=do_docode(CAR(n),DO_NOT_COPY);
+    tmp1=do_docode(CAR(n),DO_NOT_COPY_TOPLEVEL);
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
       fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
     emit0(n->token);
@@ -889,7 +891,7 @@ static int do_docode2(node *n, INT16 flags)
     {
       BLOCK_BEGIN;
       /* New-style */
-      tmp1=do_docode(CAR(arr), DO_NOT_COPY);
+      tmp1=do_docode(CAR(arr), DO_NOT_COPY_TOPLEVEL);
       emit0(F_MAKE_ITERATOR);
 
       if(CADR(arr))
@@ -944,7 +946,7 @@ static int do_docode2(node *n, INT16 flags)
 	 a2[0]->u.sval.type==0x7fffffff &&
 	a1[0]->type == int_type_string)
       {
-	do_docode(CAR(arr),DO_NOT_COPY);
+	do_docode(CAR(arr),DO_NOT_COPY_TOPLEVEL);
 	do_docode(*a1,DO_NOT_COPY);
 	goto foreach_arg_pushed;
       }
@@ -1692,7 +1694,34 @@ static int do_docode2(node *n, INT16 flags)
       
       /* copy now or later ? */
       if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))
-	emit0(F_COPY_VALUE);
+      {
+	if(flags & DO_NOT_COPY_TOPLEVEL)
+	{
+	  switch(n->u.sval.type)
+	  {
+	    case T_ARRAY:
+	      array_fix_type_field(n->u.sval.u.array);
+	      if(n->u.sval.u.array -> type_field & BIT_COMPLEX)
+		emit0(F_COPY_VALUE);
+	      break;
+
+	    case T_MAPPING:
+	      mapping_fix_type_field(n->u.sval.u.mapping);
+	      if((n->u.sval.u.mapping->data->ind_types |
+		  n->u.sval.u.mapping->data->val_types) & BIT_COMPLEX)
+		emit0(F_COPY_VALUE);
+	      break;
+
+	    case T_MULTISET:
+	      array_fix_type_field(n->u.sval.u.multiset->ind);
+	      if(n->u.sval.u.multiset->ind-> type_field & BIT_COMPLEX)
+		emit0(F_COPY_VALUE);
+	      break;
+	  }
+	}else{
+	  emit0(F_COPY_VALUE);
+	}
+      }
       return 1;
 
     }
