@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Copyright.pmod,v 1.5 2003/11/27 02:33:02 nilsson Exp $
+// $Id: Copyright.pmod,v 1.6 2004/02/04 14:21:57 nilsson Exp $
 
 //! Contains functions and information to store and present
 //! copyright information about Pike and it's components.
@@ -23,9 +23,6 @@ static mapping(string:array(string)) copyrights = ([
   "TrueVision Targa code":
   ({ "Copyright © 1997 Raphael FRANCOIS and Gordon Matzigkeit" }),
 
-  "DES encryption and decryption code":
-  ({ "Copyright © 1992 Dana L. How" }),
-
   "Emacs font lock definitions":
   ({ "Copyright © 2002 Martin Stjernholm" }),
 
@@ -34,12 +31,6 @@ static mapping(string:array(string)) copyrights = ([
 
   "MD5 password hash code":
   ({ "Copyright © Poul-Henning Kamp" }),
-
-  "Rijndael encryption and decryption code":
-  ({ "Copyright © 2000 Joan Daemen" }),
-
-  "Secure Hash Algorithm code":
-  ({ "Copyright © 1995, A.M. Kuchling" }),
 
   "Regular expression matching code":
   ({ "Copyright © 1986 by University of Toronto." }),
