@@ -8,7 +8,7 @@
 #endif
 
 #include "stralloc.h"
-RCSID("$Id: avs.c,v 1.4 1999/05/08 00:44:40 hubbe Exp $");
+RCSID("$Id: avs.c,v 1.5 1999/05/13 03:25:48 neotron Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -116,7 +116,7 @@ void image_avs_f_encode(INT32 args )
   s = begin_shared_string( i->xsize*i->ysize*4+8 );
   MEMSET(s->str, 0, s->len );
 
-  q = (int *)s->str;
+  q = (unsigned int *)s->str;
   *(q++) = htonl( i->xsize );
   *(q++) = htonl( i->ysize );
 
