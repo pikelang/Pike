@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.58 2001/09/17 21:36:21 grubba Exp $
+//! $Id: DNS.pmod,v 1.59 2001/10/03 11:05:12 per Exp $
 
 #pike __REAL_VERSION__
 
@@ -844,7 +844,7 @@ class async_client
 		function(string,mapping,mixed...:void) callback,
 		mixed ... args)
   {
-    for(int e=next_client ? 5 : 256;e>=0;e--)
+    for(int e=next_client ? 100 : 256;e>=0;e--)
     {
       int lid = random(65536);
       if(!catch { requests[lid]++; })
@@ -985,3 +985,49 @@ class async_client
     ::create(server,domain);
   }
 };
+
+
+async_client global_async_client;
+
+#define GAC(X)								\
+void async_##X( string host, function callback, mixed ... args ) 	\
+{									\
+  if( !global_async_client )						\
+    global_async_client = async_client();				\
+  global_async_client->X(host,callback,@args);				\
+}
+
+GAC(ip_to_host);
+//! method void async_ip_to_host(string ip, function cb, mixed ... cba)
+
+GAC(host_to_ip);
+//! method void async_host_to_ip(string host, function cb, mixed ... cba)
+
+GAC(get_mx_all);
+//! method void async_get_mx_all(string host, function cb, mixed ... cba)
+
+GAC(get_mx);
+//! method void async_get_mx(string host, function cb, mixed ... cba)
+
+
+client global_client;
+
+#define GC(X)							\
+mixed X( string host ) 	                                        \
+{								\
+  if( !global_client )						\
+    global_client = client();				        \
+  return global_client->X(host);				\
+}
+
+GC(gethostbyname);
+//! method array gethostbyname(string host)
+
+GC(gethostbyaddr);
+//! method array gethostbyaddr(string host)
+
+GC(get_mx);
+//! method string get_mx(string host)
+
+GC(get_primary_mx);
+//! method string get_primary_mx(string host)
