@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.24 1998/09/24 17:34:03 grubba Exp $
+# $Id: run_autoconfig,v 1.25 1998/09/24 17:36:39 grubba Exp $
 #
 # Bootstrap script
 
@@ -19,6 +19,8 @@ else
   localdir=`echo $0 | sed 's@[^/]*$@@g'`
   if test "x$localdir" = "x"; then
     localdir=`pwd`
+  else
+    localdir=`cd $localdir;pwd`
   fi
 fi
 
