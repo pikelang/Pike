@@ -21,8 +21,8 @@ object previous_object()
   o=function_object(trace[-2][2]);
   for(e=sizeof(trace)-3;e>=0;e--)
   {
-    if(!trace[1][2]) continue;
-    ret=function_object(trace[1][2]);
+    if(!trace[e][2]) continue;
+    ret=function_object(trace[e][2]);
     if(o!=ret) return ret;
   }
   return 0;
