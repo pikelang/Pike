@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.63 1999/10/31 22:53:38 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.64 1999/11/04 20:04:05 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -623,51 +623,137 @@ void f_cast(void)
   %%
 */
 
-static int read_set(unsigned char *match,int cnt,char *set,int match_len)
+
+struct sscanf_set
 {
-  int init;
-  int last=0;
-  int e;
+  int neg;
+  char c[256];
+  struct array *a;
+};
 
-  if(cnt>=match_len)
-    error("Error in sscanf format string.\n");
+/* FIXME:
+ * This implementation will break in certain cases, especially cases
+ * like this [\1000-\1002\1001] (ie, there is a single character which
+ * is also a part of a range
+ *   /Hubbe
+ */
 
-  if(match[cnt]=='^')
-  {
-    for(e=0;e<256;e++) set[e]=1;
-    init=0;
-    cnt++;
-    if(cnt>=match_len)
-      error("Error in sscanf format string.\n");
-  }else{
-    for(e=0;e<256;e++) set[e]=0;
-    init=1;
-  }
-  if(match[cnt]==']' || match[cnt]=='-')
-  {
-    set[last=match[cnt]]=init;
-    cnt++;
-    if(cnt>=match_len)
-      error("Error in sscanf format string.\n");
-  }
 
-  for(;match[cnt]!=']';cnt++)
-  {
-    if(match[cnt]=='-')
-    {
-      cnt++;
-      if(cnt>=match_len)
-	error("Error in sscanf format string.\n");
-      if(match[cnt]==']')
-      {
-	set['-']=init;
-	break;
-      }
-      for(e=last;e<(int) EXTRACT_UCHAR(match+cnt);e++) set[e]=init;
-    }
-    set[last=EXTRACT_UCHAR(match+cnt)]=init;
-  }
-  return cnt;
+#define MKREADSET(SIZE)						\
+static int PIKE_CONCAT(read_set,SIZE) (				\
+  PIKE_CONCAT(p_wchar,SIZE) *match,				\
+  int cnt,							\
+  struct sscanf_set *set,					\
+  int match_len)						\
+{								\
+  unsigned long e,last=0;					\
+  CHAROPT( int set_size=0; )					\
+								\
+  if(cnt>=match_len)						\
+    error("Error in sscanf format string.\n");			\
+								\
+  MEMSET(set->c, 0, sizeof(set->c));				\
+  set->a=0;							\
+								\
+  if(match[cnt]=='^')						\
+  {								\
+    set->neg=1;							\
+    cnt++;							\
+    if(cnt>=match_len)						\
+      error("Error in sscanf format string.\n");		\
+  }else{							\
+    set->neg=0;							\
+  }								\
+								\
+  if(match[cnt]==']' || match[cnt]=='-')			\
+  {								\
+    set->c[last=match[cnt]]=1;					\
+    cnt++;							\
+    if(cnt>=match_len)						\
+      error("Error in sscanf format string.\n");		\
+  }								\
+								\
+  for(;match[cnt]!=']';cnt++)					\
+  {								\
+    if(match[cnt]=='-')						\
+    {								\
+      cnt++;							\
+      if(cnt>=match_len)					\
+	error("Error in sscanf format string.\n");		\
+								\
+      if(match[cnt]==']')					\
+      {								\
+	set->c['-']=1;						\
+	break;							\
+      }								\
+								\
+      if(last >= match[cnt])					\
+	error("Error in sscanf format string.\n");		\
+								\
+CHAROPT(							\
+      if(last < sizeof(set->c))					\
+      {								\
+	if(match[cnt] < sizeof(set->c))				\
+	{							\
+)								\
+	  for(e=last;e<match[cnt];e++) set->c[e]=1;		\
+CHAROPT(							\
+	}else{							\
+	  for(e=last;e<sizeof(set->c);e++) set->c[e]=1;		\
+								\
+	  check_stack(2);					\
+	  push_int(256);					\
+	  push_int(match[cnt]);					\
+	  set_size++;						\
+	}							\
+      }								\
+      else							\
+      {								\
+	sp[-1].u.integer=match[cnt];				\
+      }								\
+)								\
+      continue;							\
+    }								\
+    last=match[cnt];						\
+    if(last < sizeof(set->c))					\
+      set->c[last]=1;						\
+CHAROPT(							\
+    else{							\
+      if(set_size && sp[-1].u.integer == last-1)		\
+      {								\
+	sp[-1].u.integer++;					\
+      }else{							\
+	check_stack(2);						\
+	push_int(last);						\
+	push_int(last);						\
+	set_size++;						\
+      }								\
+    }								\
+)								\
+  }								\
+								\
+CHAROPT(							\
+  if(set_size)							\
+  {								\
+    INT32 *order;						\
+    set->a=aggregate_array(set_size*2);				\
+    order=get_switch_order(set->a);				\
+    for(e=0;e<set->a->size;e+=2)				\
+    {								\
+      if(order[e]+1 != order[e+1])				\
+      {								\
+        free_array(set->a);					\
+        set->a=0;						\
+        free((char *)order);					\
+        error("Overlapping ranges in sscanf not supported.\n");	\
+     }								\
+   }								\
+								\
+    order_array(set->a,order);					\
+    free((char *)order);					\
+  }								\
+)								\
+  return cnt;							\
 }
 
 
@@ -860,523 +946,560 @@ static INLINE float low_parse_IEEE_float(char *b, int sz)
 #endif
 #endif
 
-#define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			\
-static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	\
-                         PIKE_CONCAT(p_wchar, INPUT_SHIFT) *input,	\
-			 long input_len,				\
-			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	\
-			 long match_len,				\
-			 long *chars_matched,				\
-			 int *success)					\
-{									\
-  struct svalue sval;							\
-  int e,cnt,matches,eye,arg;						\
-  int no_assign = 0, field_length = 0, minus_flag = 0;			\
-  char set[256];							\
-  struct svalue *argp;							\
-  									\
-  success[0]=0;								\
-									\
-  arg=eye=matches=0;							\
-									\
-  for(cnt = 0; cnt < match_len; cnt++)					\
-  {									\
-    for(;cnt<match_len;cnt++)						\
-    {									\
-      if(match[cnt]=='%')						\
-      {									\
-        if(match[cnt+1]=='%')						\
-        {								\
-          cnt++;							\
-        }else{								\
-          break;							\
-        }								\
-      }									\
-      if(eye>=input_len || input[eye]!=match[cnt])			\
-      {									\
-	chars_matched[0]=eye;						\
-	return matches;							\
-      }									\
-      eye++;								\
-    }									\
-    if(cnt>=match_len)							\
-    {									\
-      chars_matched[0]=eye;						\
-      return matches;							\
-    }									\
-									\
-    DO_IF_DEBUG(							\
-    if(match[cnt]!='%' || match[cnt+1]=='%')				\
-    {									\
-      fatal("Error in sscanf.\n");					\
-    }									\
-    );									\
-									\
-    no_assign=0;							\
-    field_length=-1;							\
-    minus_flag=0;							\
-									\
-    cnt++;								\
-    if(cnt>=match_len)							\
-      error("Error in sscanf format string.\n");			\
-									\
-    while(1)								\
-    {									\
-      switch(match[cnt])						\
-      {									\
-	case '*':							\
-	  no_assign=1;							\
-	  cnt++;							\
-	  if(cnt>=match_len)						\
-	    error("Error in sscanf format string.\n");			\
-	  continue;							\
-									\
-	case '0': case '1': case '2': case '3': case '4':		\
-	case '5': case '6': case '7': case '8': case '9':		\
-	{								\
-	  PCHARP t;							\
-	  field_length = STRTOL_PCHARP(MKPCHARP(match+cnt, MATCH_SHIFT),\
-				       &t,10);				\
-	  cnt = SUBTRACT_PCHARP(t, MKPCHARP(match, MATCH_SHIFT));	\
-	  continue;							\
-	}								\
-									\
-        case '-':							\
-	  minus_flag=1;							\
-	  cnt++;							\
-	  continue;							\
-									\
-	case '{':							\
-	{								\
-	  ONERROR err;							\
-	  long tmp;							\
-	  for(e=cnt+1,tmp=1;tmp;e++)					\
-	  {								\
-	    if(!match[e])						\
-	    {								\
-	      error("Missing %%} in format string.\n");			\
-	      break;		/* UNREACHED */				\
-	    }								\
-	    if(match[e]=='%')						\
-	    {								\
-	      switch(match[e+1])					\
-	      {								\
-		case '%': e++; break;					\
-		case '}': tmp--; break;					\
-		case '{': tmp++; break;					\
-	      }								\
-	    }								\
-	  }								\
-	  sval.type=T_ARRAY;						\
-	  sval.u.array=allocate_array(0);				\
-	  SET_ONERROR(err, do_free_array, sval.u.array);		\
-									\
-	  while(input_len-eye)						\
-	  {								\
-	    int yes;							\
-	    struct svalue *save_sp=sp;					\
-	    PIKE_CONCAT4(very_low_sscanf_, INPUT_SHIFT, _, MATCH_SHIFT)(\
-                         input+eye,					\
-			 input_len-eye,					\
-			 match+cnt+1,					\
-			 e-cnt-2,					\
-			 &tmp,						\
-			 &yes);						\
-	    if(yes && tmp)						\
-	    {								\
-	      f_aggregate(sp-save_sp);					\
-	      sval.u.array=append_array(sval.u.array,sp-1);		\
-	      pop_stack();						\
-	      eye+=tmp;							\
-	    }else{							\
-	      pop_n_elems(sp-save_sp);					\
-	      break;							\
-	    }								\
-	  }								\
-	  cnt=e;							\
-	  UNSET_ONERROR(err);						\
-	  break;							\
-	}								\
-									\
-	case 'c':							\
-	  if(field_length == -1) field_length = 1;			\
-	  if(eye+field_length > input_len)				\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-	  sval.type=T_INT;						\
-	  sval.subtype=NUMBER_NUMBER;					\
-	  sval.u.integer=0;						\
-	  if (minus_flag)						\
-	  {								\
-	     int x, pos=0;						\
-	     								\
-	     while(--field_length >= 0)					\
-	     {								\
-	       int lshfun, orfun;					\
-	       x = input[eye];						\
-	       								\
-               DO_IF_BIGNUM(						\
-	       if(INT_TYPE_LSH_OVERFLOW(x, pos))			\
-	       {							\
-		 push_int(sval.u.integer);				\
-		 convert_stack_top_to_bignum();				\
-		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	\
-		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	\
-									\
-		 while(field_length-- >= 0)				\
-		 {							\
-		   push_int(input[eye]);				\
-		   convert_stack_top_to_bignum();			\
-		   push_int(pos);					\
-		   apply_low(sp[-2].u.object, lshfun, 1);		\
-		   stack_swap();					\
-		   pop_stack();						\
-		   apply_low(sp[-2].u.object, orfun, 1);		\
-		   stack_swap();					\
-		   pop_stack();						\
-		   pos+=8;						\
-		   eye++;						\
-		 }							\
-		 sval=*--sp;						\
-		 break;							\
-	       }							\
-               );							\
-	       sval.u.integer|=x<<pos;					\
-	       								\
-	       pos+=8;							\
-	       eye++;							\
-	     }								\
-	  }								\
-	  else								\
-	     while(--field_length >= 0)					\
-	     {								\
-	       int lshfun, orfun;					\
-               DO_IF_BIGNUM(						\
-	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		\
-	       {							\
-		 push_int(sval.u.integer);				\
-		 convert_stack_top_to_bignum();				\
-		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	\
-		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	\
-		 							\
-		 while(field_length-- >= 0)				\
-		 {							\
-		   push_int(8);						\
-		   apply_low(sp[-2].u.object, lshfun, 1);		\
-		   stack_swap();					\
-		   pop_stack();						\
-		   push_int(input[eye]);				\
-		   apply_low(sp[-2].u.object, orfun, 1);		\
-		   stack_swap();					\
-		   pop_stack();						\
-		   eye++;						\
-		 }							\
-		 sval=*--sp;						\
-		 break;							\
-	       }							\
-	       );							\
-	       sval.u.integer<<=8;					\
-	       sval.u.integer |= input[eye];				\
-	       eye++;							\
-	     }								\
-	  break;							\
-									\
-        case 'b':							\
-        case 'o':							\
-        case 'd':							\
-        case 'x':							\
-        case 'D':							\
-        case 'i':							\
-	{								\
-	  int base = 0;							\
-	  PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;				\
-									\
-	  if(eye>=input_len)						\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-									\
-	  switch(match[cnt])						\
-	  {								\
-	  case 'b': base =  2; break;					\
-	  case 'o': base =  8; break;					\
-	  case 'd': base = 10; break;					\
-	  case 'x': base = 16; break;					\
-	  }								\
-	  								\
-	  wide_string_to_svalue_inumber(&sval, input+eye, (void **)&t,	\
-					base, field_length,		\
-					INPUT_SHIFT);			\
-									\
-	  if(input + eye == t)						\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-	  eye=t-input;							\
-	  break;							\
-	}								\
-									\
-        case 'f':			       				\
-	{								\
-	  PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;				\
-	  PCHARP t2;							\
-									\
-	  if(eye>=input_len)						\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-	  sval.u.float_number=STRTOD_PCHARP(MKPCHARP(input+eye,		\
-						     INPUT_SHIFT),&t2);	\
-	  t = (PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)(t2.ptr);		\
-	  if(input + eye == t)						\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-	  eye=t-input;							\
-	  sval.type=T_FLOAT;						\
-	  DO_IF_CHECKER(sval.subtype=0);				\
-	  break;							\
-	}								\
-									\
-	case 'F':							\
-	  if(field_length == -1) field_length = 4;			\
-	  if(field_length != 4 && field_length != 8)			\
-	    error("Invalid IEEE width %d in sscanf format string.\n",	\
-		  field_length);					\
-	  if(eye+field_length > input_len)				\
-	  {								\
-	    chars_matched[0]=eye;					\
-	    return matches;						\
-	  }								\
-	  sval.type=T_FLOAT;						\
-	  DO_IF_CHECKER(sval.subtype=0);				\
-	  switch(field_length) {					\
-	    case 4:							\
-	      EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT);		\
-	      eye += 4;							\
-	      break;							\
-	    case 8:							\
-	      EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT);		\
-	      eye += 8;							\
-	      break;							\
-	  }								\
-	  break;							\
-									\
-	case 's':							\
-	  if(field_length != -1)					\
-	  {								\
-	    if(input_len - eye < field_length)				\
-	    {								\
-	      chars_matched[0]=eye;					\
-	      return matches;						\
-	    }								\
-									\
-	    sval.type=T_STRING;						\
-	    DO_IF_CHECKER(sval.subtype=0);				\
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
-                                      INPUT_SHIFT)(input+eye,		\
-						   field_length);	\
-	    eye+=field_length;						\
-	    break;							\
-	  }								\
-									\
-	  if(cnt+1>=match_len)						\
-	  {								\
-	    sval.type=T_STRING;						\
-	    DO_IF_CHECKER(sval.subtype=0);				\
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
-				      INPUT_SHIFT)(input+eye,		\
-						   input_len-eye);	\
-	    eye=input_len;						\
-	    break;							\
-	  }else{							\
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_start;		\
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_end;		\
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *s=0;			\
-	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *p=0;			\
-	    int start,contains_percent_percent, new_eye;		\
-									\
-	    start=eye;							\
-	    end_str_start=match+cnt+1;					\
-          								\
-	    s=match+cnt+1;						\
-      test_again:							\
-	    if(*s=='%')							\
-	    {								\
-	      s++;							\
-	      if(*s=='*') s++;						\
-	      switch(*s)						\
-	      {								\
-		case 'n':						\
-		  s++;							\
-	          goto test_again;					\
-	      								\
-		case 's':						\
-		  error("Illegal to have two adjecent %%s.\n");		\
-		  return 0;		/* make gcc happy */		\
-	      								\
-	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	\
-		case 'd':						\
-		  for(e=0;e<256;e++) set[e]=1;				\
-		  for(e='0';e<='9';e++) set[e]=0;			\
-		  set['-']=0;						\
-		  goto match_set;					\
-									\
-		case 'o':						\
-		  for(e=0;e<256;e++) set[e]=1;				\
-		  for(e='0';e<='7';e++) set[e]=0;			\
-		  goto match_set;					\
-									\
-		case 'x':						\
-		  for(e=0;e<256;e++) set[e]=1;				\
-		  for(e='0';e<='9';e++) set[e]=0;			\
-		  for(e='a';e<='f';e++) set[e]=0;			\
-		  goto match_set;					\
-									\
-		case 'D':						\
-		  for(e=0;e<256;e++) set[e]=1;				\
-		  for(e='0';e<='9';e++) set[e]=0;			\
-		  set['-']=0;						\
-		  set['x']=0;						\
-		  goto match_set;					\
-									\
-		case 'f':						\
-		  for(e=0;e<256;e++) set[e]=1;				\
-		  for(e='0';e<='9';e++) set[e]=0;			\
-		  set['.']=set['-']=0;					\
-		  goto match_set;					\
-									\
-		case '[':		/* oh dear */			\
-		  /* FIXME! */						\
-		  read_set(match,s-match+1,set,match_len);		\
-		  for(e=0;e<256;e++) set[e]=!set[e];			\
-		  goto match_set;					\
-	      }								\
-	    }								\
-									\
-	    contains_percent_percent=0;					\
-									\
-	    for(e=cnt;e<match_len;e++)					\
-	    {								\
-	      if(match[e]=='%')						\
-	      {								\
-		if(match[e+1]=='%')					\
-		{							\
-		  contains_percent_percent=1;				\
-		  e++;							\
-		}else{							\
-		  break;						\
-		}							\
-	      }								\
-	    }								\
-	   								\
-	    end_str_end=match+e;					\
-									\
-	    if(!contains_percent_percent)				\
-	    {								\
-	      struct generic_mem_searcher searcher;			\
-	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			\
-	      init_generic_memsearcher(&searcher, end_str_start,	\
-				       end_str_end - end_str_start,	\
-				       MATCH_SHIFT, input_len - eye,	\
-				       INPUT_SHIFT);			\
-	      s2 = generic_memory_search(&searcher, input+eye,		\
-					 input_len - eye, INPUT_SHIFT);	\
-	      if(!s2)							\
-	      {								\
-		chars_matched[0]=eye;					\
-		return matches;						\
-	      }								\
-	      eye=s2-input;						\
-	      new_eye=eye+end_str_end-end_str_start;			\
-	    }else{							\
-	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *p2 = NULL;		\
-	      for(;eye<input_len;eye++)					\
-	      {								\
-		p2=input+eye;						\
-		for(s=end_str_start;s<end_str_end;s++,p2++)		\
-		{							\
-		  if(*s!=*p2) break;					\
-		  if(*s=='%') s++;					\
-		}							\
-		if(s==end_str_end)					\
-		  break;						\
-	      }								\
-	      if(eye==input_len)					\
-	      {								\
-		chars_matched[0]=eye;					\
-		return matches;						\
-	      }								\
-	      new_eye=p2-input;						\
-	    }								\
-									\
-	    sval.type=T_STRING;						\
-	    DO_IF_CHECKER(sval.subtype=0);				\
-	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	\
-				      INPUT_SHIFT)(input+start,		\
-						   eye-start);		\
-									\
-	    cnt=end_str_end-match-1;					\
-	    eye=new_eye;						\
-	    break;							\
-	  }								\
-									\
-	case '[':							\
-	  /* FIXME! */							\
-	  cnt=read_set(match,cnt+1,set,match_len);			\
-									\
-  match_set:								\
-	  /* FIXME! */							\
-	  for(e=eye;eye<input_len && !(input[eye]&~0xff) &&		\
-		    set[input[eye]];eye++);				\
-	  sval.type=T_STRING;						\
-	  DO_IF_CHECKER(sval.subtype=0);				\
-	  sval.u.string=PIKE_CONCAT(make_shared_binary_string,		\
-				    INPUT_SHIFT)(input+e,eye-e);	\
-	  break;							\
-									\
-	case 'n':							\
-	  sval.type=T_INT;						\
-	  sval.subtype=NUMBER_NUMBER;					\
-	  sval.u.integer=eye;						\
-	  break;							\
-    									\
-	default:							\
-	  error("Unknown sscanf token %%%c(0x%02x)\n",			\
-		match[cnt], match[cnt]);				\
-      }									\
-      break;								\
-    }									\
-    matches++;								\
-									\
-    if(no_assign)							\
-    {									\
-      free_svalue(&sval);						\
-    }else{								\
-      check_stack(1);							\
-      *sp++=sval;							\
-      DO_IF_DEBUG(sval.type=99);					\
-    }									\
-  }									\
-  chars_matched[0]=eye;							\
-  success[0]=1;								\
-  return matches;							\
+#define MK_VERY_LOW_SSCANF(INPUT_SHIFT, MATCH_SHIFT)			 \
+static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
+                         PIKE_CONCAT(p_wchar, INPUT_SHIFT) *input,	 \
+			 long input_len,				 \
+			 PIKE_CONCAT(p_wchar, MATCH_SHIFT) *match,	 \
+			 long match_len,				 \
+			 long *chars_matched,				 \
+			 int *success)					 \
+{									 \
+  struct svalue sval;							 \
+  int e,cnt,matches,eye,arg;						 \
+  int no_assign = 0, field_length = 0, minus_flag = 0;			 \
+  struct sscanf_set set;						 \
+  struct svalue *argp;							 \
+									 \
+									 \
+  set.a=0;								 \
+  success[0]=0;								 \
+									 \
+  arg=eye=matches=0;							 \
+									 \
+  for(cnt = 0; cnt < match_len; cnt++)					 \
+  {									 \
+    for(;cnt<match_len;cnt++)						 \
+    {									 \
+      if(match[cnt]=='%')						 \
+      {									 \
+        if(match[cnt+1]=='%')						 \
+        {								 \
+          cnt++;							 \
+        }else{								 \
+          break;							 \
+        }								 \
+      }									 \
+      if(eye>=input_len || input[eye]!=match[cnt])			 \
+      {									 \
+	chars_matched[0]=eye;						 \
+	return matches;							 \
+      }									 \
+      eye++;								 \
+    }									 \
+    if(cnt>=match_len)							 \
+    {									 \
+      chars_matched[0]=eye;						 \
+      return matches;							 \
+    }									 \
+									 \
+    DO_IF_DEBUG(							 \
+    if(match[cnt]!='%' || match[cnt+1]=='%')				 \
+    {									 \
+      fatal("Error in sscanf.\n");					 \
+    }									 \
+    );									 \
+									 \
+    no_assign=0;							 \
+    field_length=-1;							 \
+    minus_flag=0;							 \
+									 \
+    cnt++;								 \
+    if(cnt>=match_len)							 \
+      error("Error in sscanf format string.\n");			 \
+									 \
+    while(1)								 \
+    {									 \
+      switch(match[cnt])						 \
+      {									 \
+	case '*':							 \
+	  no_assign=1;							 \
+	  cnt++;							 \
+	  if(cnt>=match_len)						 \
+	    error("Error in sscanf format string.\n");			 \
+	  continue;							 \
+									 \
+	case '0': case '1': case '2': case '3': case '4':		 \
+	case '5': case '6': case '7': case '8': case '9':		 \
+	{								 \
+	  PCHARP t;							 \
+	  field_length = STRTOL_PCHARP(MKPCHARP(match+cnt, MATCH_SHIFT), \
+				       &t,10);				 \
+	  cnt = SUBTRACT_PCHARP(t, MKPCHARP(match, MATCH_SHIFT));	 \
+	  continue;							 \
+	}								 \
+									 \
+        case '-':							 \
+	  minus_flag=1;							 \
+	  cnt++;							 \
+	  continue;							 \
+									 \
+	case '{':							 \
+	{								 \
+	  ONERROR err;							 \
+	  long tmp;							 \
+	  for(e=cnt+1,tmp=1;tmp;e++)					 \
+	  {								 \
+	    if(!match[e])						 \
+	    {								 \
+	      error("Missing %%} in format string.\n");			 \
+	      break;		/* UNREACHED */				 \
+	    }								 \
+	    if(match[e]=='%')						 \
+	    {								 \
+	      switch(match[e+1])					 \
+	      {								 \
+		case '%': e++; break;					 \
+		case '}': tmp--; break;					 \
+		case '{': tmp++; break;					 \
+	      }								 \
+	    }								 \
+	  }								 \
+	  sval.type=T_ARRAY;						 \
+	  sval.u.array=allocate_array(0);				 \
+	  SET_ONERROR(err, do_free_array, sval.u.array);		 \
+									 \
+	  while(input_len-eye)						 \
+	  {								 \
+	    int yes;							 \
+	    struct svalue *save_sp=sp;					 \
+	    PIKE_CONCAT4(very_low_sscanf_, INPUT_SHIFT, _, MATCH_SHIFT)( \
+                         input+eye,					 \
+			 input_len-eye,					 \
+			 match+cnt+1,					 \
+			 e-cnt-2,					 \
+			 &tmp,						 \
+			 &yes);						 \
+	    if(yes && tmp)						 \
+	    {								 \
+	      f_aggregate(sp-save_sp);					 \
+	      sval.u.array=append_array(sval.u.array,sp-1);		 \
+	      pop_stack();						 \
+	      eye+=tmp;							 \
+	    }else{							 \
+	      pop_n_elems(sp-save_sp);					 \
+	      break;							 \
+	    }								 \
+	  }								 \
+	  cnt=e;							 \
+	  UNSET_ONERROR(err);						 \
+	  break;							 \
+	}								 \
+									 \
+	case 'c':							 \
+	  if(field_length == -1) field_length = 1;			 \
+	  if(eye+field_length > input_len)				 \
+	  {								 \
+	    chars_matched[0]=eye;					 \
+	    return matches;						 \
+	  }								 \
+	  sval.type=T_INT;						 \
+	  sval.subtype=NUMBER_NUMBER;					 \
+	  sval.u.integer=0;						 \
+	  if (minus_flag)						 \
+	  {								 \
+	     int x, pos=0;						 \
+									 \
+	     while(--field_length >= 0)					 \
+	     {								 \
+	       int lshfun, orfun;					 \
+	       x = input[eye];						 \
+									 \
+               DO_IF_BIGNUM(						 \
+	       if(INT_TYPE_LSH_OVERFLOW(x, pos))			 \
+	       {							 \
+		 push_int(sval.u.integer);				 \
+		 convert_stack_top_to_bignum();				 \
+		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	 \
+		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	 \
+									 \
+		 while(field_length-- >= 0)				 \
+		 {							 \
+		   push_int(input[eye]);				 \
+		   convert_stack_top_to_bignum();			 \
+		   push_int(pos);					 \
+		   apply_low(sp[-2].u.object, lshfun, 1);		 \
+		   stack_swap();					 \
+		   pop_stack();						 \
+		   apply_low(sp[-2].u.object, orfun, 1);		 \
+		   stack_swap();					 \
+		   pop_stack();						 \
+		   pos+=8;						 \
+		   eye++;						 \
+		 }							 \
+		 sval=*--sp;						 \
+		 break;							 \
+	       }							 \
+               );							 \
+	       sval.u.integer|=x<<pos;					 \
+									 \
+	       pos+=8;							 \
+	       eye++;							 \
+	     }								 \
+	  }								 \
+	  else								 \
+	     while(--field_length >= 0)					 \
+	     {								 \
+	       int lshfun, orfun;					 \
+               DO_IF_BIGNUM(						 \
+	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		 \
+	       {							 \
+		 push_int(sval.u.integer);				 \
+		 convert_stack_top_to_bignum();				 \
+		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);	 \
+		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);	 \
+									 \
+		 while(field_length-- >= 0)				 \
+		 {							 \
+		   push_int(8);						 \
+		   apply_low(sp[-2].u.object, lshfun, 1);		 \
+		   stack_swap();					 \
+		   pop_stack();						 \
+		   push_int(input[eye]);				 \
+		   apply_low(sp[-2].u.object, orfun, 1);		 \
+		   stack_swap();					 \
+		   pop_stack();						 \
+		   eye++;						 \
+		 }							 \
+		 sval=*--sp;						 \
+		 break;							 \
+	       }							 \
+	       );							 \
+	       sval.u.integer<<=8;					 \
+	       sval.u.integer |= input[eye];				 \
+	       eye++;							 \
+	     }								 \
+	  break;							 \
+									 \
+        case 'b':							 \
+        case 'o':							 \
+        case 'd':							 \
+        case 'x':							 \
+        case 'D':							 \
+        case 'i':							 \
+	{								 \
+	  int base = 0;							 \
+	  PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;				 \
+									 \
+	  if(eye>=input_len)						 \
+	  {								 \
+	    chars_matched[0]=eye;					 \
+	    return matches;						 \
+	  }								 \
+									 \
+	  switch(match[cnt])						 \
+	  {								 \
+	  case 'b': base =  2; break;					 \
+	  case 'o': base =  8; break;					 \
+	  case 'd': base = 10; break;					 \
+	  case 'x': base = 16; break;					 \
+	  }								 \
+									 \
+	  wide_string_to_svalue_inumber(&sval, input+eye, (void **)&t,	 \
+					base, field_length,		 \
+					INPUT_SHIFT);			 \
+									 \
+	  if(input + eye == t)						 \
+	  {								 \
+	    chars_matched[0]=eye;					 \
+	    return matches;						 \
+	  }								 \
+	  eye=t-input;							 \
+	  break;							 \
+	}								 \
+									 \
+        case 'f':							 \
+	{								 \
+	  PIKE_CONCAT(p_wchar, INPUT_SHIFT) *t;				 \
+	  PCHARP t2;							 \
+									 \
+	  if(eye>=input_len)						 \
+	  {								 \
+	    chars_matched[0]=eye;					 \
+	    return matches;						 \
+	  }								 \
+	  sval.u.float_number=STRTOD_PCHARP(MKPCHARP(input+eye,		 \
+						     INPUT_SHIFT),&t2);	 \
+	  t = (PIKE_CONCAT(p_wchar, INPUT_SHIFT) *)(t2.ptr);		 \
+	  if(input + eye == t)						 \
+	  {								 \
+	    chars_matched[0]=eye;					 \
+	    return matches;						 \
+	  }								 \
+	  eye=t-input;							 \
+	  sval.type=T_FLOAT;						 \
+	  DO_IF_CHECKER(sval.subtype=0);				 \
+	  break;							 \
+	}								 \
+									 \
+	case 'F':							 \
+	  if(field_length == -1) field_length = 4;			 \
+	  if(field_length != 4 && field_length != 8)			 \
+	    error("Invalid IEEE width %d in sscanf format string.\n",	 \
+		  field_length);					 \
+	  if(eye+field_length > input_len)				 \
+	  {								 \
+	    chars_matched[0]=eye;					 \
+	    return matches;						 \
+	  }								 \
+	  sval.type=T_FLOAT;						 \
+	  DO_IF_CHECKER(sval.subtype=0);				 \
+	  switch(field_length) {					 \
+	    case 4:							 \
+	      EXTRACT_FLOAT(sval, input+eye, INPUT_SHIFT);		 \
+	      eye += 4;							 \
+	      break;							 \
+	    case 8:							 \
+	      EXTRACT_DOUBLE(sval, input+eye, INPUT_SHIFT);		 \
+	      eye += 8;							 \
+	      break;							 \
+	  }								 \
+	  break;							 \
+									 \
+	case 's':							 \
+	  if(field_length != -1)					 \
+	  {								 \
+	    if(input_len - eye < field_length)				 \
+	    {								 \
+	      chars_matched[0]=eye;					 \
+	      return matches;						 \
+	    }								 \
+									 \
+	    sval.type=T_STRING;						 \
+	    DO_IF_CHECKER(sval.subtype=0);				 \
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+                                      INPUT_SHIFT)(input+eye,		 \
+						   field_length);	 \
+	    eye+=field_length;						 \
+	    break;							 \
+	  }								 \
+									 \
+	  if(cnt+1>=match_len)						 \
+	  {								 \
+	    sval.type=T_STRING;						 \
+	    DO_IF_CHECKER(sval.subtype=0);				 \
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+				      INPUT_SHIFT)(input+eye,		 \
+						   input_len-eye);	 \
+	    eye=input_len;						 \
+	    break;							 \
+	  }else{							 \
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_start;		 \
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *end_str_end;		 \
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *s=0;			 \
+	    PIKE_CONCAT(p_wchar, MATCH_SHIFT) *p=0;			 \
+	    int start,contains_percent_percent, new_eye;		 \
+									 \
+	    start=eye;							 \
+	    end_str_start=match+cnt+1;					 \
+									 \
+	    s=match+cnt+1;						 \
+      test_again:							 \
+	    if(*s=='%')							 \
+	    {								 \
+	      s++;							 \
+	      if(*s=='*') s++;						 \
+              set.neg=0;						 \
+	      switch(*s)						 \
+	      {								 \
+		case 'n':						 \
+		  s++;							 \
+	          goto test_again;					 \
+									 \
+		case 's':						 \
+		  error("Illegal to have two adjecent %%s.\n");		 \
+		  return 0;		/* make gcc happy */		 \
+									 \
+	  /* sscanf("foo-bar","%s%d",a,b) might not work as expected */	 \
+		case 'd':						 \
+		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  for(e='0';e<='9';e++) set.c[e]=0;			 \
+		  set.c['-']=0;						 \
+		  goto match_set;					 \
+									 \
+		case 'o':						 \
+		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  for(e='0';e<='7';e++) set.c[e]=0;			 \
+		  goto match_set;					 \
+									 \
+		case 'x':						 \
+		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  for(e='0';e<='9';e++) set.c[e]=0;			 \
+		  for(e='a';e<='f';e++) set.c[e]=0;			 \
+		  goto match_set;					 \
+									 \
+		case 'D':						 \
+		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  for(e='0';e<='9';e++) set.c[e]=0;			 \
+		  set.c['-']=0;						 \
+		  set.c['x']=0;						 \
+		  goto match_set;					 \
+									 \
+		case 'f':						 \
+		  MEMSET(set.c, 1, sizeof(set.c));			 \
+		  for(e='0';e<='9';e++) set.c[e]=0;			 \
+		  set.c['.']=set.c['-']=0;				 \
+		  goto match_set;					 \
+									 \
+		case '[':		/* oh dear */			 \
+		  PIKE_CONCAT(read_set,MATCH_SHIFT)(match,		 \
+						    s-match+1,		 \
+						    &set,		 \
+						    match_len);		 \
+		  set.neg=!set.neg;					 \
+		  goto match_set;					 \
+	      }								 \
+	    }								 \
+									 \
+	    contains_percent_percent=0;					 \
+									 \
+	    for(e=cnt;e<match_len;e++)					 \
+	    {								 \
+	      if(match[e]=='%')						 \
+	      {								 \
+		if(match[e+1]=='%')					 \
+		{							 \
+		  contains_percent_percent=1;				 \
+		  e++;							 \
+		}else{							 \
+		  break;						 \
+		}							 \
+	      }								 \
+	    }								 \
+									 \
+	    end_str_end=match+e;					 \
+									 \
+	    if(!contains_percent_percent)				 \
+	    {								 \
+	      struct generic_mem_searcher searcher;			 \
+	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *s2;			 \
+	      init_generic_memsearcher(&searcher, end_str_start,	 \
+				       end_str_end - end_str_start,	 \
+				       MATCH_SHIFT, input_len - eye,	 \
+				       INPUT_SHIFT);			 \
+	      s2 = generic_memory_search(&searcher, input+eye,		 \
+					 input_len - eye, INPUT_SHIFT);	 \
+	      if(!s2)							 \
+	      {								 \
+		chars_matched[0]=eye;					 \
+		return matches;						 \
+	      }								 \
+	      eye=s2-input;						 \
+	      new_eye=eye+end_str_end-end_str_start;			 \
+	    }else{							 \
+	      PIKE_CONCAT(p_wchar, INPUT_SHIFT) *p2 = NULL;		 \
+	      for(;eye<input_len;eye++)					 \
+	      {								 \
+		p2=input+eye;						 \
+		for(s=end_str_start;s<end_str_end;s++,p2++)		 \
+		{							 \
+		  if(*s!=*p2) break;					 \
+		  if(*s=='%') s++;					 \
+		}							 \
+		if(s==end_str_end)					 \
+		  break;						 \
+	      }								 \
+	      if(eye==input_len)					 \
+	      {								 \
+		chars_matched[0]=eye;					 \
+		return matches;						 \
+	      }								 \
+	      new_eye=p2-input;						 \
+	    }								 \
+									 \
+	    sval.type=T_STRING;						 \
+	    DO_IF_CHECKER(sval.subtype=0);				 \
+	    sval.u.string=PIKE_CONCAT(make_shared_binary_string,	 \
+				      INPUT_SHIFT)(input+start,		 \
+						   eye-start);		 \
+									 \
+	    cnt=end_str_end-match-1;					 \
+	    eye=new_eye;						 \
+	    break;							 \
+	  }								 \
+									 \
+	case '[':							 \
+	  cnt=PIKE_CONCAT(read_set,MATCH_SHIFT)(match,cnt+1,		 \
+						&set,match_len);	 \
+									 \
+  match_set:								 \
+	  for(e=eye;eye<input_len;eye++)				 \
+	  {								 \
+CHAROPT(								 \
+	    if(input[eye]<sizeof(set.c))				 \
+	    {								 \
+)									 \
+	      if(set.c[input[eye]] == set.neg)				 \
+		break;							 \
+CHAROPT(								 \
+	    }else{							 \
+	      if(set.a)							 \
+	      {								 \
+		INT32 x;						 \
+		struct svalue tmp;					 \
+		tmp.type=T_INT;						 \
+		tmp.u.integer=input[eye];				 \
+		x=switch_lookup(set.a, &tmp);				 \
+		if( set.neg != (x<0 && (x&1)) ) break;	                 \
+	      }else{							 \
+		break;							 \
+	      }								 \
+	    }								 \
+)									 \
+	  }								 \
+          if(set.a) { free_array(set.a); set.a=0; }                      \
+	  sval.type=T_STRING;						 \
+	  DO_IF_CHECKER(sval.subtype=0);				 \
+	  sval.u.string=PIKE_CONCAT(make_shared_binary_string,		 \
+				    INPUT_SHIFT)(input+e,eye-e);	 \
+	  break;							 \
+									 \
+	case 'n':							 \
+	  sval.type=T_INT;						 \
+	  sval.subtype=NUMBER_NUMBER;					 \
+	  sval.u.integer=eye;						 \
+	  break;							 \
+									 \
+	default:							 \
+	  error("Unknown sscanf token %%%c(0x%02x)\n",			 \
+		match[cnt], match[cnt]);				 \
+      }									 \
+      break;								 \
+    }									 \
+    matches++;								 \
+									 \
+    if(no_assign)							 \
+    {									 \
+      free_svalue(&sval);						 \
+    }else{								 \
+      check_stack(1);							 \
+      *sp++=sval;							 \
+      DO_IF_DEBUG(sval.type=99);					 \
+    }									 \
+  }									 \
+  chars_matched[0]=eye;							 \
+  success[0]=1;								 \
+  return matches;							 \
 }
 
+#define CHAROPT(X)
+
+MKREADSET(0)
 MK_VERY_LOW_SSCANF(0,0)
-MK_VERY_LOW_SSCANF(0,1)
-MK_VERY_LOW_SSCANF(0,2)
 MK_VERY_LOW_SSCANF(1,0)
-MK_VERY_LOW_SSCANF(1,1)
-MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,0)
+
+#undef CHAROPT
+#define CHAROPT(X) X
+MKREADSET(1)
+MKREADSET(2)
+
+
+MK_VERY_LOW_SSCANF(0,1)
+MK_VERY_LOW_SSCANF(1,1)
 MK_VERY_LOW_SSCANF(2,1)
+MK_VERY_LOW_SSCANF(0,2)
+MK_VERY_LOW_SSCANF(1,2)
 MK_VERY_LOW_SSCANF(2,2)
 
 void o_sscanf(INT32 args)

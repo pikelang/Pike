@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.221 1999/11/01 16:57:43 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.222 1999/11/04 20:04:07 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1765,6 +1765,16 @@ test_true([[array_sscanf("(02323) 23455 344","%{%*[^0-9]%[0-9]%}")]])
 
 test_eq([[ array_sscanf(sprintf("%4c",16909060),"%4c")[0] ]],16909060)
 test_eq([[ array_sscanf(sprintf("%-4c",16909060),"%-4c")[0] ]],16909060)
+
+test_equal([[array_sscanf("\1000\1001\2000","%[\1000-\1111]%s")]],
+	[[ ({ "\1000\1001", "\2000" }) ]])
+
+test_equal([[array_sscanf("foo\1000\1001\1111\1110\2000","%s%[\1000-\1111]%s")]],
+	[[ ({ "foo", "\1000\1001\1111\1110", "\2000" }) ]])
+
+test_equal([[array_sscanf("\2000\1000\1111\1001\1110foo","%s%[\1000-\1111]%s")]],
+	[[ ({  "\2000", "\1000\1111\1001\1110", "foo"}) ]])
+	
 
 // Basics
 test_true(1)
