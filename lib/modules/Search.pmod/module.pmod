@@ -121,3 +121,17 @@ class Anchor_database {
   }
 
 }
+
+
+// --- Page Ranking Algorithms ------------
+
+float entropy(array(string) page_words) {
+  mapping(string:int) words=([]);
+  foreach(page_words, string word)
+    words[word]=1;
+  return (float)sizeof(words)/(float)sizeof(page_words);
+}
+
+// A normal page has an entropy value around 0.5, so the result x should probably be
+// remapped to abs(x-0.5) or even 1-abs(x-0.5)
+
