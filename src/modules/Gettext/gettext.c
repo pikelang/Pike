@@ -20,7 +20,7 @@
 #include "mapping.h"
 #include "module_support.h"
 
-RCSID("$Id: gettext.c,v 1.2 2000/02/29 20:37:39 neotron Exp $");
+RCSID("$Id: gettext.c,v 1.3 2000/02/29 20:41:13 neotron Exp $");
 
 /*
 **! module Locale.Gettext
@@ -28,7 +28,7 @@ RCSID("$Id: gettext.c,v 1.2 2000/02/29 20:37:39 neotron Exp $");
 **!	This module enables access to localization functions from within Pike.
 **!
 **! note
-**!	$Id: gettext.c,v 1.2 2000/02/29 20:37:39 neotron Exp $
+**!	$Id: gettext.c,v 1.3 2000/02/29 20:41:13 neotron Exp $
 */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
@@ -280,7 +280,7 @@ void f_setlocale(INT32 args)
   val.u.integer = (int)locale->value; \
   mapping_string_insert(map, make_shared_string(key), &val);\
   } while(0)
-
+/*
 **! method mapping localeconv()
 **!	     The localeconv() function returns a mapping with settings for
 **!	     the current locale. This mapping contains all values
@@ -380,6 +380,7 @@ void f_setlocale(INT32 args)
 **!	               quantity. The value of n_sign_posn is interpreted
 **!	               according to the rules described under p_sign_posn.
 **! see also: bindtextdomain, textdomain, gettext, dgettext, dcgettext, setlocale
+*/
 void f_localeconv(INT32 args)
 {
   struct lconv *locale; /* Information about the current locale */
