@@ -1,3 +1,8 @@
+Sun Nov 12 21:45:20 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* modules/file: struct file renamed to struct my_file
+	* "ÿ" now works
+
 Mon Nov  6 00:26:48 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* indices and values now works on objects
