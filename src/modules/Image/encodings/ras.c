@@ -1,9 +1,9 @@
-/* $Id: ras.c,v 1.3 1999/10/22 17:16:28 marcus Exp $ */
+/* $Id: ras.c,v 1.4 1999/11/19 15:36:57 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ras.c,v 1.3 1999/10/22 17:16:28 marcus Exp $
+**!	$Id: ras.c,v 1.4 1999/11/19 15:36:57 grubba Exp $
 **! submodule RAS
 **!
 **!	This submodule keep the RAS encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ras.c,v 1.3 1999/10/22 17:16:28 marcus Exp $");
+RCSID("$Id: ras.c,v 1.4 1999/11/19 15:36:57 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -27,6 +27,7 @@ RCSID("$Id: ras.c,v 1.3 1999/10/22 17:16:28 marcus Exp $");
 #include "builtin_functions.h"
 #include "module_support.h"
 #include "operators.h"
+#include "program.h"
 
 #include "image.h"
 #include "colortable.h"

@@ -5,7 +5,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: wbf.c,v 1.2 1999/10/21 23:20:11 per Exp $");
+RCSID("$Id: wbf.c,v 1.3 1999/11/19 15:36:17 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "mapping.h"
@@ -17,6 +17,7 @@ RCSID("$Id: wbf.c,v 1.2 1999/10/21 23:20:11 per Exp $");
 #include "array.h"
 #include "error.h"
 #include "builtin_functions.h"
+#include "program.h"
 
 
 #include "image.h"
