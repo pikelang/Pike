@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.45 2001/04/28 19:23:14 grubba Exp $
+ * $Id: mysql.c,v 1.46 2001/09/06 12:20:57 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.45 2001/04/28 19:23:14 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.46 2001/09/06 12:20:57 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -170,9 +170,7 @@ static void exit_mysql_struct(struct object *o)
 {
   MYSQL *socket = PIKE_MYSQL->socket;
   MYSQL *mysql = PIKE_MYSQL->mysql;
-  MYSQL_RES *last_result = PIKE_MYSQL->last_result;
 
-  PIKE_MYSQL->last_result = NULL;
   PIKE_MYSQL->socket = NULL;
   PIKE_MYSQL->mysql = NULL;
 
@@ -195,9 +193,6 @@ static void exit_mysql_struct(struct object *o)
 
   MYSQL_ALLOW();
 
-  if (last_result) {
-    mysql_free_result(last_result);
-  }
   if (socket) {
     mysql_close(socket);
   }
@@ -638,7 +633,7 @@ static void f_big_query(INT32 args)
 
   pop_n_elems(args);
 
-  if (!(PIKE_MYSQL->last_result = result)) {
+  if (!(result)) {
     int err;
 
     MYSQL_ALLOW();
@@ -663,10 +658,20 @@ static void f_big_query(INT32 args)
     push_int(0);
   } else {
     /* Return the result-object */
+    struct precompiled_mysql_result *res;
+    struct object *o;
 
+    /* Create the object */
     ref_push_object(Pike_fp->current_object);
+    push_object(o = clone_object(mysql_result_program, 1));
 
-    push_object(clone_object(mysql_result_program, 1));
+    /* Set the result. */
+    if ((!(res = (struct precompiled_mysql_result *)
+	   get_storage(o, mysql_result_program))) || res->result) {
+      mysql_free_result(result);
+      Pike_error("mysql->big_query(): Bad mysql result object!\n");
+    }
+    res->result = result;
   }
 }
 
@@ -1048,7 +1053,7 @@ static void f_list_dbs(INT32 args)
     MYSQL_DISALLOW();
   }
 
-  if (!(PIKE_MYSQL->last_result = result)) {
+  if (!result) {
     char *err;
 
     MYSQL_ALLOW();
@@ -1062,9 +1067,23 @@ static void f_list_dbs(INT32 args)
 
   pop_n_elems(args);
 
-  ref_push_object(Pike_fp->current_object);
+  {
+    /* Return the result-object */
+    struct precompiled_mysql_result *res;
+    struct object *o;
 
-  push_object(clone_object(mysql_result_program, 1));
+    /* Create the object */
+    ref_push_object(Pike_fp->current_object);
+    push_object(o = clone_object(mysql_result_program, 1));
+
+    /* Set the result. */
+    if ((!(res = (struct precompiled_mysql_result *)
+	   get_storage(o, mysql_result_program))) || res->result) {
+      mysql_free_result(result);
+      Pike_error("mysql->list_dbs(): Bad mysql result object!\n");
+    }
+    res->result = result;
+  }
 }
 
 /*! @decl object(Mysql.mysql_result) list_tables()
@@ -1122,7 +1141,7 @@ static void f_list_tables(INT32 args)
     MYSQL_DISALLOW();
   }
 
-  if (!(PIKE_MYSQL->last_result = result)) {
+  if (!result) {
     char *err;
 
     MYSQL_ALLOW();
@@ -1136,9 +1155,23 @@ static void f_list_tables(INT32 args)
 
   pop_n_elems(args);
 
-  ref_push_object(Pike_fp->current_object);
+  {
+    /* Return the result-object */
+    struct precompiled_mysql_result *res;
+    struct object *o;
 
-  push_object(clone_object(mysql_result_program, 1));
+    /* Create the object */
+    ref_push_object(Pike_fp->current_object);
+    push_object(o = clone_object(mysql_result_program, 1));
+
+    /* Set the result. */
+    if ((!(res = (struct precompiled_mysql_result *)
+	   get_storage(o, mysql_result_program))) || res->result) {
+      mysql_free_result(result);
+      Pike_error("mysql->list_tables(): Bad mysql result object!\n");
+    }
+    res->result = result;
+  }
 }
 
 /*! @decl array(int|mapping(string:mixed)) list_fields(string table)
@@ -1319,7 +1352,7 @@ static void f_list_processes(INT32 args)
     MYSQL_DISALLOW();
   }
 
-  if (!(PIKE_MYSQL->last_result = result)) {
+  if (!result) {
     char *err;
 
     MYSQL_ALLOW();
@@ -1331,9 +1364,23 @@ static void f_list_processes(INT32 args)
     Pike_error("mysql->list_processes(): Cannot list databases: %s\n", err);
   }
 
-  ref_push_object(Pike_fp->current_object);
+  {
+    /* Return the result-object */
+    struct precompiled_mysql_result *res;
+    struct object *o;
 
-  push_object(clone_object(mysql_result_program, 1));
+    /* Create the object */
+    ref_push_object(Pike_fp->current_object);
+    push_object(o = clone_object(mysql_result_program, 1));
+
+    /* Set the result. */
+    if ((!(res = (struct precompiled_mysql_result *)
+	   get_storage(o, mysql_result_program))) || res->result) {
+      mysql_free_result(result);
+      Pike_error("mysql->list_processes(): Bad mysql result object!\n");
+    }
+    res->result = result;
+  }
 }
 
 /*! @decl int binary_data()

@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.19 2001/02/10 19:31:07 grubba Exp $
+ * $Id: result.c,v 1.20 2001/09/06 12:20:57 grubba Exp $
  *
  * mysql query result
  *
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.19 2001/02/10 19:31:07 grubba Exp $");
+RCSID("$Id: result.c,v 1.20 2001/09/06 12:20:57 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -243,26 +243,14 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
  */
 static void f_create(INT32 args)
 {
-  struct precompiled_mysql *mysql;
-
   if (!args) {
     Pike_error("Too few arguments to mysql_result()\n");
   }
-  if ((sp[-args].type != T_OBJECT) ||
-      (!(mysql = (struct precompiled_mysql *)get_storage(sp[-args].u.object,
-							 mysql_program)))) {
-    Pike_error("Bad argument 1 to mysql_result()\n");
-  }
 
   add_ref(PIKE_MYSQL_RES->connection = sp[-args].u.object);
-  PIKE_MYSQL_RES->result = mysql->last_result;
-  mysql->last_result = NULL;
+  PIKE_MYSQL_RES->result = NULL;
   
   pop_n_elems(args);
-
-  if (!PIKE_MYSQL_RES->result) {
-    Pike_error("mysql_result(): No result to clone\n");
-  }
 }
 
 /*! @decl int num_rows()
@@ -275,7 +263,11 @@ static void f_create(INT32 args)
 static void f_num_rows(INT32 args)
 {
   pop_n_elems(args);
-  push_int(mysql_num_rows(PIKE_MYSQL_RES->result));
+  if (PIKE_MYSQL_RES->result) {
+    push_int(mysql_num_rows(PIKE_MYSQL_RES->result));
+  } else {
+    push_int(0);
+  }
 }
 
 /*! @decl int num_fields()
@@ -288,7 +280,11 @@ static void f_num_rows(INT32 args)
 static void f_num_fields(INT32 args)
 {
   pop_n_elems(args);
-  push_int(mysql_num_fields(PIKE_MYSQL_RES->result));
+  if (PIKE_MYSQL_RES->result) {
+    push_int(mysql_num_fields(PIKE_MYSQL_RES->result));
+  } else {
+    push_int(0);
+  }
 }
 
 #ifdef SUPPORT_FIELD_SEEK
@@ -318,6 +314,9 @@ static void f_field_seek(INT32 args)
   if (sp[-args].type != T_INT) {
     Pike_error("Bad argument 1 to mysql->field_seek()\n");
   }
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't seek in uninitialized result object.\n");
+  }
   mysql_field_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
   pop_n_elems(args);
 }
@@ -337,7 +336,11 @@ static void f_field_seek(INT32 args)
 static void f_eof(INT32 args)
 {
   pop_n_elems(args);
-  push_int(mysql_eof(PIKE_MYSQL_RES->result));
+  if (PIKE_MYSQL_RES->result) {
+    push_int(mysql_eof(PIKE_MYSQL_RES->result));
+  } else {
+    push_int(0);
+  }
 }
 
 #ifdef SUPPORT_FIELD_SEEK
@@ -368,6 +371,11 @@ static void f_fetch_field(INT32 args)
   MYSQL_RES *res = PIKE_MYSQL_RES->result;
 
   pop_n_elems(args);
+
+  if (!res) {
+    push_int(0);
+    return;
+  }
 
   THREADS_ALLOW();
 
@@ -404,7 +412,11 @@ static void f_fetch_fields(INT32 args)
 {
   MYSQL_FIELD *field;
   int i = 0;
-  
+
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't fetch fields from uninitialized result object.\n");
+  }
+
   pop_n_elems(args);
 
   while ((field = mysql_fetch_field(PIKE_MYSQL_RES->result))) {
@@ -437,6 +449,10 @@ static void f_seek(INT32 args)
   if (sp[-args].u.integer < 0) {
     Pike_error("Negative argument 1 to mysql_result->seek()\n");
   }
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't seek in uninitialized result object.\n");
+  }
+
   mysql_data_seek(PIKE_MYSQL_RES->result, sp[-args].u.integer);
 
   pop_n_elems(args);
@@ -456,11 +472,20 @@ static void f_seek(INT32 args)
  */
 static void f_fetch_row(INT32 args)
 {
-  int num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
-  MYSQL_ROW row = mysql_fetch_row(PIKE_MYSQL_RES->result);
+  int num_fields;
+  MYSQL_ROW row;
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
-  FETCH_LENGTHS_TYPE *row_lengths =
-    mysql_fetch_lengths(PIKE_MYSQL_RES->result);
+  FETCH_LENGTHS_TYPE *row_lengths;
+#endif /* HAVE_MYSQL_FETCH_LENGTHS */
+
+  if (!PIKE_MYSQL_RES->result) {
+    Pike_error("Can't fetch data from an uninitialized result object.\n");
+  }
+
+  num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
+  row = mysql_fetch_row(PIKE_MYSQL_RES->result);
+#ifdef HAVE_MYSQL_FETCH_LENGTHS
+  row_lengths = mysql_fetch_lengths(PIKE_MYSQL_RES->result);
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 
   pop_n_elems(args);
