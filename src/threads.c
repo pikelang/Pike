@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.163 2001/09/06 00:20:59 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.164 2001/09/18 22:59:57 hubbe Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -81,36 +81,7 @@ int low_nt_create_thread(unsigned Pike_stack_size,
 
 
 #ifdef PIKE_DEBUG
-static int IsValidHandle(HANDLE h)
-{
-  __try {
-    HANDLE ret;
-    if(DuplicateHandle(GetCurrentProcess(),
-			h,
-			GetCurrentProcess(),
-			&ret,
-			0,
-			0,
-			DUPLICATE_SAME_ACCESS))
-    {
-      CloseHandle(ret);
-    }
-  }
-
-  __except (1) {
-    return 0;
-  }
-
-  return 1;
-}
-
-PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
-{
-  if(!IsValidHandle(h))
-    fatal("Invalid handle!\n");
-  return h;
-}
-
+PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h);
 #endif
 
 #endif
@@ -1844,6 +1815,7 @@ void th_cleanup(void)
     destruct(Pike_interpreter.thread_id);
     free_object(Pike_interpreter.thread_id);
     Pike_interpreter.thread_id=0;
+    destruct_objects_to_destruct_cb();
   }
 
   if(mutex_key)

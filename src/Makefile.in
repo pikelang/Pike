@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.271 2001/09/02 01:36:14 marcus Exp $
+# $Id: Makefile.in,v 1.272 2001/09/18 22:59:56 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -384,7 +384,7 @@ install_interactive: pike hilfe pike-module aclocal
 # tidy up a bit
 tidy:
 	-rm -f *.fail *.o *.obj *.pp *.protos core y.output y.tab.c y.tab.h
-	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ testsuite
+	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ testsuite dynloadtest*
 
 # make clean
 clean: tidy
@@ -439,6 +439,19 @@ module_testsuites:
 just_verify: module_testsuites testsuite master-stamp
 	if test "$(TESTARGS)" = "" ; then args="-a" ; else args="$(TESTARGS)" ; fi; \
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike $$args
+
+# Testsuite for dynamic loading debugging
+test_dlopen: dynloadtest.sh
+	sh ./dynloadtest.sh
+
+dynloadtest.sh: $(SRCDIR)/test_dynamic_loading.in
+	m4 "$<" >"$@"
+
+dynloadtest.c: dynamic_load.c
+
+dynloadtest: dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o
+	$(LD) $(LDFLAGS) dynloadtest.o @EXTRA_OBJS@ fdlib.o port.o $(LIBS) -o dynloadtest
+
 
 tinstall: aclocal master-stamp aclocal
 	-rm -rf test-install

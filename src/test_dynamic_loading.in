@@ -1,0 +1,192 @@
+#!/bin/sh
+dnl This is a M4|sh script
+
+changequote([[,]])
+define([[TESTNUM]],0)
+
+define([[Tlow_test]],[[
+  define([[TESTNUM]],incr(TESTNUM))
+  echo "======= test TESTNUM ======="
+  $1
+  if ./dynloadtest ; then
+    echo "Test TESTNUM ok!"
+  else
+    echo "Test TESTNUM failed!"
+    for c in MODC
+    do
+      echo ==================== $c =======================
+      cat $c
+      echo ----------------------------------------------------------
+    done
+  fi
+]])dnl
+
+
+define([[Tmodule]],[[
+  define([[MODOBJ]],[[]])
+  define([[MODC]],[[]])
+  $2
+  if make --no-print-directory \
+   -f modules/dynamic_module_makefile \
+   SRCDIR="`dirname '__file__'`" \
+   TMP_BINDIR="`dirname '__file__'`/../bin" \
+   MODULE_BASE=modules \
+   OBJS="MODOBJ" \
+   MODNAME=dynloadtestmod$1 \
+   module.so
+   mv module.so dynloadtestmod$1.so ; then
+    :
+  else
+    echo Failed to compile test module!
+  fi
+  rm -f MODOBJ
+]])dnl
+
+define([[Tmodulefile]],[[
+define([[MODOBJ]],MODOBJ dynloadtestmod$1.o)
+define([[MODC]],MODC dynloadtestmod$1.c)
+cat >dynloadtestmod$1.c <<EOF
+#include "dynloadtest.h"
+$2
+EOF
+]])dnl
+
+define([[Tmod]],[[
+  Tmodule([[]],[[
+    Tmodulefile([[]],[[$1]])
+  ]])
+]])dnl
+
+define([[Tprog]],[[
+rm -f dynloadtest dynloadtest.o dynloadtest.c
+cat >dynloadtest.h <<EOF
+$1
+EOF
+cat >dynloadtest.c <<EOF
+#include "dynloadtest.h"
+$2
+EOF
+
+if make --no-print-directory dynloadtest ; then
+  :
+else
+  echo "Failed to compile test program"
+  cat dynloadtest.c
+  exit 1
+fi
+
+
+]])dnl
+
+
+Tprog([[
+#ifdef __NT__
+#define EXPORT __declspec(dllexport)
+#else
+#define EXPORT 
+#endif
+
+  extern int integer;
+  extern char * strptr;
+  int neg_func(int x);
+  int sub_one_func(int x);
+  extern int (*funcptr)(int);
+  int call_funcptr(int z);
+]],[[
+#define NO_PIKE_GUTS
+#include "dynamic_load.c"
+
+#line 1
+
+int integer = 17;
+
+char *strptr="strptr";
+
+int neg_func(int x)
+{
+  return -x;
+}
+
+int sub_one_func(int x)
+{
+  return x-1;
+}
+
+int (*funcptr)(int) = neg_func;
+
+int call_funcptr(int z)
+{
+  return funcptr(z);
+}
+
+char **ARGV;
+int main(int argc, char **argv)
+{
+  void *module,*fun;
+  ARGV=argv;
+  dlinit();
+  module=dlopen("./dynloadtestmod.so",RTLD_NOW);
+  if(!module)
+  {
+    fprintf(stderr,"Failed to link dlmodtest.so: %s\n",dlerror());
+    exit(1);
+  }
+  fun=dlsym(module,"foo");
+  if(!fun) fun=dlsym(module,"_foo");
+  if(!fun)
+  {
+    fprintf(stderr,"Failed to find function foo: %s\n",dlerror());
+    exit(1);
+  }
+  exit( ((int (*)(void))fun)() );
+}
+
+DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+{
+  va_list args;
+  va_start(args,fmt);
+  (void)VFPRINTF(stderr, fmt, args);
+  fflush(stderr);
+  abort();
+}
+
+]])
+
+
+define([[TTest]],[[Tlow_test(Tmod([[$1]]))]])
+
+TTest( [[ EXPORT int foo() { return 0; } ]] )
+TTest( [[ EXPORT int foo() { exit(0); } ]] )
+TTest( [[ EXPORT int foo() { return integer != 17; } ]] )
+TTest( [[ EXPORT int foo() { return strcmp(strptr,"strptr"); } ]] )
+TTest( [[ EXPORT int foo() { return neg_func(-18) != 18; } ]] )
+TTest( [[ EXPORT int foo() { return sub_one_func(-18) != -19; } ]] )
+TTest( [[ EXPORT int foo() { return call_funcptr(-18) != 18; } ]] )
+
+TTest( [[
+EXPORT int foo()
+{
+  funcptr=sub_one_func;
+  return call_funcptr(-18) != -19;
+}
+]] )
+
+TTest( [[
+EXPORT int foo()
+{
+  funcptr=sub_one_func;
+  return call_funcptr(-18) != sub_one_func(-18);
+}
+]] )
+
+TTest( [[
+
+int bar(int q) { return 4711; }
+
+EXPORT int foo()
+{
+  funcptr=bar;
+  return call_funcptr(-18) != 4711;
+}
+]] )
+

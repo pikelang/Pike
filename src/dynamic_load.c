@@ -1,4 +1,10 @@
-#ifndef TESTING
+#ifdef TESTING
+#define NO_PIKE_INCLUDES
+#define CREATE_MAIN
+#define NO_PIKE_GUTS
+#endif
+
+#ifndef NO_PIKE_INCLUDES
 #  include "global.h"
 #  include "interpret.h"
 #  include "constants.h"
@@ -9,7 +15,7 @@
 #  include "main.h"
 #  include "constants.h"
 
-RCSID("$Id: dynamic_load.c,v 1.55 2001/09/11 05:42:20 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.56 2001/09/18 22:59:56 hubbe Exp $");
 
 #else /* TESTING */
 
@@ -292,7 +298,7 @@ static void *dlclose(void *module)
 #define RTLD_GLOBAL 0 
 #endif
 
-#ifndef TESTING
+#ifndef NO_PIKE_GUTS
 
 #if defined(HAVE_DLOPEN) || defined(USE_DLD) || defined(USE_HPUX_DL) || defined(USE_LOADLIBRARY)
 #define USE_DYNAMIC_MODULES
@@ -471,7 +477,9 @@ void free_dynamic_load(void)
 }
 
 
-#else /* TESTING */
+#endif /* NO_PIKE_GUTS */
+
+#ifdef CREATE_MAIN
 #include <stdio.h>
 
 int main()
@@ -496,4 +504,4 @@ int main()
   fprintf(stderr,"testfunc returned!\n");
   exit(1);
 }
-#endif
+#endif /* CREATE_MAIN */

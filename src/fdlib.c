@@ -3,7 +3,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.48 2001/04/23 19:06:53 marcus Exp $");
+RCSID("$Id: fdlib.c,v 1.49 2001/09/18 22:59:56 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -23,6 +23,38 @@ int first_free_handle;
 #define FDDEBUG(X) X
 #else
 #define FDDEBUG(X)
+#endif
+
+#ifdef PIKE_DEBUG
+static int IsValidHandle(HANDLE h)
+{
+  __try {
+    HANDLE ret;
+    if(DuplicateHandle(GetCurrentProcess(),
+			h,
+			GetCurrentProcess(),
+			&ret,
+			0,
+			0,
+			DUPLICATE_SAME_ACCESS))
+    {
+      CloseHandle(ret);
+    }
+  }
+
+  __except (1) {
+    return 0;
+  }
+
+  return 1;
+}
+
+PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
+{
+  if(!IsValidHandle(h))
+    fatal("Invalid handle!\n");
+  return h;
+}
 #endif
 
 PMOD_EXPORT char *debug_fd_info(int fd)
