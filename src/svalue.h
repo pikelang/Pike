@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.120 2003/04/28 00:44:28 mast Exp $
+|| $Id: svalue.h,v 1.121 2003/05/13 19:35:38 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -487,7 +487,7 @@ extern struct svalue dest_ob_zero;
     dmalloc_touch_svalue(s_);			\
     free_svalue(s_++);				\
   }						\
-}while(0);
+}while(0)
 
 #ifdef DEBUG_MALLOC
 #define free_svalues(X,Y,Z) debug_free_svalues((X),(Y),(Z), DMALLOC_NAMED_LOCATION(" free_svalues"));
