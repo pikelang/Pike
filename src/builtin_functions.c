@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.500 2003/08/04 15:39:38 grubba Exp $
+|| $Id: builtin_functions.c,v 1.501 2003/08/04 16:23:29 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.500 2003/08/04 15:39:38 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.501 2003/08/04 16:23:29 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6140,7 +6140,7 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
   nsec = args && !UNSAFE_IS_ZERO(Pike_sp-args);
 
   pop_n_elems(args);
-  if (args)
+  if (nsec)
     push_int64(time);
   else
     push_int64(time/1000);
