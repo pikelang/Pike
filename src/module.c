@@ -17,8 +17,11 @@
 #include "program_id.h"
 
 #include "modules/modlist_headers.h"
+#ifndef IN_TPIKE
+#include "post_modules/modlist_headers.h"
+#endif
 
-RCSID("$Id: module.c,v 1.12 2000/12/01 08:09:50 hubbe Exp $");
+RCSID("$Id: module.c,v 1.13 2001/02/01 10:27:29 hubbe Exp $");
 
 typedef void (*modfun)(void);
 
@@ -32,6 +35,9 @@ struct static_module
 static struct static_module module_list[] = {
   { "Builtin", low_init_main, low_exit_main }
 #include "modules/modlist.h"
+#ifndef IN_TPIKE
+#include "post_modules/modlist.h"
+#endif
   ,{ "Builtin2", init_main, exit_main }
 };
 

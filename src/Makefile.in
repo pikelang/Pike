@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.244 2001/01/30 21:06:17 hubbe Exp $
+# $Id: Makefile.in,v 1.245 2001/02/01 10:27:28 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -133,7 +133,6 @@ OBJ= \
  main.o \
  mapping.o \
  pike_memory.o \
- module.o \
  module_support.o \
  object.o \
  opcodes.o \
@@ -167,8 +166,9 @@ DEPEND= \
 # The following objectfiles differ between tpike & pike:
 #
 
-TOBJ = las_t.o builtin_functions_t.o peep_t.o
-POBJ = las.o builtin_functions.o peep.o
+TOBJ = las_t.o builtin_functions_t.o peep_t.o  module_t.o
+POBJ = las.o builtin_functions.o peep.o module.o
+
 
 #
 # User callable targets
@@ -184,6 +184,15 @@ post_modules: pike
 	@( cd post_modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
+
+post_modules/modlist_headers.h:
+	touch post_modules/modlist_headers.h
+
+post_modules/modlist.h:
+	touch post_modules/modlist.h
+
+post_modules/linker_options:
+	touch post_modules/linker_options
 
 compiler-warnings : clean
 	@echo Summarizing compiler warnings.
@@ -225,27 +234,27 @@ $(TMP_BUILDDIR)/tpike: precompile.sh-stamp
 # the recursive make of tpike-real above, that one will never start to
 # make the $(OBJ)s concurrently with this one. stamp-tpike-predep
 # records the $(POBJ) dependencies without tpike.
-pike: $(OBJ) master.pike modules/linker_options stamp-tpike-predep
+pike: $(OBJ) master.pike modules/linker_options stamp-tpike-predep post_modules/linker_options
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options post_modules/linker_options` $(LIBS) -o pike
 
 # purify
 pure: $(OBJ) $(POBJ) master.pike module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 # purecov
 cover: $(OBJ) $(POBJ) master.pike module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -max-threads=128 -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 # quantify
 quant: $(OBJ) $(POBJ) master.pike module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) $(POBJ) `cat modules/linker_options  post_modules/linker_options` $(LIBS) -o pike
 
 atom: pike
 	atom pike -tool atom -env threads -g -v `find lib/modules -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`

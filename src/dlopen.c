@@ -29,7 +29,7 @@ static char *dlerr=0;
  *  Separate RWX, RW and R memory sections.
  */
 
-/* #define DLDEBUG 1 */
+#define DLDEBUG 1
 #define DL_VERBOSE 1
 
 #define REALLY_FLUSH() /* do{ fflush(stderr); Sleep(500); }while(0) */
@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.11 2001/01/26 12:40:47 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.12 2001/02/01 10:27:29 hubbe Exp $");
 
 #endif
 

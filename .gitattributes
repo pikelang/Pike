@@ -205,6 +205,7 @@ testfont binary
 /src/module.h foreign_ident
 /src/module_support.c foreign_ident
 /src/module_support.h foreign_ident
+/src/module_t.c foreign_ident
 /src/modules/CommonLog/Makefile.in foreign_ident
 /src/modules/CommonLog/acconfig.h foreign_ident
 /src/modules/CommonLog/clf.c foreign_ident
