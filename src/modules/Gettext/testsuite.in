@@ -1,3 +1,4 @@
+START_MARKER
 
 cond_resolv(Gettext.gettext,[[
 
@@ -53,3 +54,4 @@ test_true( intp(Gettext.LC_NUMERIC) )
 test_true( intp(Gettext.LC_TIME) )
 
 ]])
+END_MARKER
