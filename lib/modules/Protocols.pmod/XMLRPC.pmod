@@ -25,7 +25,7 @@
 //! XML-RPC @tt{<array>@} is translated to Pike @code{array@}.
 //!
 //! @note
-//! The XML-RPC @tt{<dateTime.iso8601>@} datatype is not currently
+//! The XML-RPC @tt{<dateTime.iso8601>@} datatype is currently not
 //! implemented.
 
 //! Represents a function call made to a XML-RPC server.
@@ -44,8 +44,8 @@ class Call(string method_name, array params)
 
   string _sprintf()
   {
-    return sprintf("Protocols.XMLRPC.Call(%O%s)", method_name,
-		   params ? ", " + sizeof(params) + " arguments" : "");
+    return sprintf("Protocols.XMLRPC.Call(%O, %d params)",
+		   method_name, sizeof(params));
   }
 }
 
