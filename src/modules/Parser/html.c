@@ -2914,6 +2914,8 @@ static void low_feed(struct pike_string *ps)
 {
    struct piece *f;
 
+   if (!ps->len) return;
+
    f=malloc(sizeof(struct piece));
    if (!f)
       error("feed: out of memory\n");
@@ -3182,20 +3184,26 @@ void html_write_out(INT32 args)
 
 static void html_at_line(INT32 args)
 {
+   struct feed_stack *st = THIS->stack;
    pop_n_elems(args);
-   push_int(THIS->stack->pos.lineno);
+   while (st->prev) st = st->prev;
+   push_int(st->pos.lineno);
 }
 
 static void html_at_char(INT32 args)
 {
+   struct feed_stack *st = THIS->stack;
    pop_n_elems(args);
-   push_int(THIS->stack->pos.byteno);
+   while (st->prev) st = st->prev;
+   push_int(st->pos.byteno);
 }
 
 static void html_at_column(INT32 args)
 {
+   struct feed_stack *st = THIS->stack;
    pop_n_elems(args);
-   push_int(THIS->stack->pos.byteno-THIS->stack->pos.linestart);
+   while (st->prev) st = st->prev;
+   push_int(st->pos.byteno-st->pos.linestart);
 }
 
 static void html_at(INT32 args)
