@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.184 2004/05/11 20:33:53 grubba Exp $
+|| $Id: encode.c,v 1.185 2004/05/18 13:01:16 grubba Exp $
 */
 
 #include "global.h"
@@ -32,12 +32,12 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.184 2004/05/11 20:33:53 grubba Exp $");
+RCSID("$Id: encode.c,v 1.185 2004/05/18 13:01:16 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
 /* Use the old encoding method for programs. */
-#define OLD_PIKE_ENCODE_PROGRAM
+/* #define OLD_PIKE_ENCODE_PROGRAM */
 
 #ifdef ENCODE_DEBUG
 /* Pass a nonzero integer as the third arg to encode_value,
