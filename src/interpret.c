@@ -184,7 +184,7 @@ void print_return_value()
   }
 }
 #else
-#define print_return_type()
+#define print_return_value();
 #endif
 
 
