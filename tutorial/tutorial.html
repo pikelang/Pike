@@ -1739,7 +1739,7 @@ in the function <tt>teleledningsanka</tt>.
 <p>
 This is what you can do with a function pointer.
 <dl>
-<dt> calling ( <i>f</i> ( mixed ... <i>args</i> )
+<dt> calling ( <i>f</i> ( mixed ... <i>args</i> ) )
 <dd> As mentioned earlier, all function pointers can be called. In this example
      the function <i>f</i> is called with the arguments <i>args</i>.
 
@@ -1782,7 +1782,7 @@ you remember from maths in school. The arithmetic operators are:
 <tr><td>Negation</td>	<td>- a</td>	<td>`-</td>	<td>minus a</td></tr>
 <tr><td>Multiplication</td><td>a * b</td><td>`*</td>	<td>a multiplied by b</td></tr>
 <tr><td>Division</td>	<td>a / b</td>	<td>`/</td>	<td>a divided by b</td></tr>
-<tr><td>Modulo</td>	<td>a % b</td>	<td>`%</td>	<td>the rest of a division between a and b</td></tr>
+<tr><td>Modulo</td>	<td>a % b</td>	<td>`%</td>	<td>the remainder of a division between a and b</td></tr>
 </table>
 <p>
 </center>
@@ -2689,23 +2689,32 @@ In this chapter I will explain the basics of modules and how to use them.
 <dt>Gz *
 <dd>Deflate packing algorithms.
 <dt>Image
-<dd>Image manipulating routines.
+<dd>Image manipulation routines.
+<dt>LR
+<dd>LALR(1) parser generator.
+<dt>Msql *
+<dd>Sql database support for the mini-SQL database server.
 <dt>Mysql *
-<dd>Simple sql database support.
+<dd>Sql database support for the mySQL database server.
 <dt>Regexp
 <dd>Regexp matching routines.
 <dt>Simulate
 <dd>Routines to emulate old pike routines.
 <dt>String
 <dd>Routines that operate on strings.
+<dt>Sql **
+<dd>Generic SQL database support.
 <dt>Thread *
 <dd>Thread support functions.
 <dt>Yp *
 <dd>Network Information System support.
+<dt>X *
+<dd>Support for the X Window System.
 </dl>
 <p>
 * These modules might not be available depending on how Pike was compiled
-  and weather support for these functions exists on your system.
+  and wether support for these functions exist on your system.<br>
+** This module requires at least one specific SQL module (e.g. Msql or Mysql)
 <p>
 
 <h2>How to use modules</h2>
@@ -3948,8 +3957,8 @@ Stdio.File. The new file is by default set to blocking.
 
 <a name=threads>
 <h1>Threads</h2>
-Threads used to run several Pike functions at the same time without having to start
-several Pike processes. It often simplifies coding to use threads and because the
+Threads are used to run several Pike functions at the same time without having to start
+several Pike processes. Using threads often simplifies coding and because the
 threads are within the same process, data can be shared or sent to other threads
 very fast. Threads are not supported on all systems, you may test if you have
 thread support with the preprocessor constructoin <tt>#if efun(thread_create)</tt>.
@@ -3996,15 +4005,15 @@ This is quite harmless as long as it is only used from one thread at a time,
 but if two threads call it it at the same time, there is a slight chance that
 both threads will discover that <tt>map[i]</tt> is zero and both threads will
 then do <tt>map[i]=({j});</tt> and one value of <tt>j</tt> will be lost.
-These type of bugs can be extremely hard to debug.
+This type of bug can be extremely hard to debug.
 
 <dt> Deadlocks
 <dd> Deadlocks arise when two threads are waiting for each other to do something.
      This bug can often arise when several threads needs access to a number of
      resources such as files or other I/O devices. What may happen is that one
      thread has locked device #1 and is trying to lock device #2 while another
-     thread has locked device #2 and is trying to lock device #1. These types
-     of bugs are generally easier to find, but may require a lot of work to fix.
+     thread has locked device #2 and is trying to lock device #1. This type
+     of bug is generally easier to find, but may require a lot of work to fix.
 </dl>
 
 The above problems can all be solved with the help of Mutexes and Condition
@@ -5244,6 +5253,7 @@ in the stack. Each entry has this format:
 <tr valign=top><td> file, </td><td> /* a string with the filename if known, else zero */ </td></tr>
 <tr valign=top><td> line, </td><td> /* an integer containing the line if known, else zero */ </td></tr>
 <tr valign=top><td> function, </td><td> /* The function-pointer to the called function */ </td></tr>
+<tr valign=top><td> mixed|void ..., </td><td> /* The arguments the function was called with */ </td></tr>
 </table>
 </dl>})<br>
 
@@ -5612,7 +5622,7 @@ Return the cosinus value for f.
 </a>
 
 <HR NEWPAGE>
-html><title>Pike: crypt</title><body bgcolor="#A0E0C0" text="#000000" link=blue vlink=purple><a name=crypt>
+<title>Pike: crypt</title><body bgcolor="#A0E0C0" text="#000000" link=blue vlink=purple><a name=crypt>
 <dl>
 <dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
 <tt>crypt</tt> - crypt a password
