@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.9 1999/01/31 09:01:43 hubbe Exp $
+ * $Id: dmalloc.h,v 1.10 1999/03/19 11:39:29 hubbe Exp $
  */
 
 extern char *debug_xalloc(long);
@@ -33,6 +33,7 @@ void *debug_malloc_update_location(void *,const char *, int);
 #define debug_malloc_pass(X) debug_malloc_update_location((X),__FILE__,__LINE__)
 #define xalloc(X) ((char *)debug_malloc_touch(debug_xalloc(X)))
 void debug_malloc_dump_references(void *x);
+#define dmalloc_touch(TYPE,X) ((TYPE)debug_malloc_update_location((X),__FILE__,__LINE__))
 #else
 #define debug_malloc_dump_references(X)
 #define xalloc debug_xalloc
@@ -41,4 +42,5 @@ void debug_malloc_dump_references(void *x);
 #define debug_malloc_update_location(X,Y,Z) (X)
 #define debug_malloc_touch(X)
 #define debug_malloc_pass(X) (X)
+#define dmalloc_touch(TYPE,X) (X)
 #endif

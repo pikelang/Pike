@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.53 1999/03/17 21:51:59 hubbe Exp $
+ * $Id: program.h,v 1.54 1999/03/19 11:39:49 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -229,14 +229,14 @@ struct program
   INT16 lfuns[NUM_LFUNS];
 };
 
-#define INHERIT_FROM_PTR(P,X) ((debug_malloc_pass(P))->inherits + (debug_malloc_pass(X))->inherit_offset)
-#define PROG_FROM_PTR(P,X) (debug_malloc_pass(INHERIT_FROM_PTR(P,X)->prog))
+#define INHERIT_FROM_PTR(P,X) (dmalloc_touch(struct program *,(P))->inherits + (X)->inherit_offset)
+#define PROG_FROM_PTR(P,X) (dmalloc_touch(struct program *,INHERIT_FROM_PTR(P,X)->prog))
 #define ID_FROM_PTR(P,X) (PROG_FROM_PTR(P,X)->identifiers+(X)->identifier_offset)
 #define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P,(P)->identifier_references+(X))
 #define PROG_FROM_INT(P,X) PROG_FROM_PTR(P,(P)->identifier_references+(X))
 #define ID_FROM_INT(P,X) ID_FROM_PTR(P,(P)->identifier_references+(X))
 
-#define FIND_LFUN(P,N) ((debug_malloc_pass(P))->flags & PROGRAM_FIXED?(debug_malloc_pass((P)->lfuns[(N)])):find_identifier(lfun_names[(N)],(P)))
+#define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):find_identifier(lfun_names[(N)],(P)) )
 
 #define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!--_->refs) really_free_program(_); }while(0)
 

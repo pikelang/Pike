@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.34 1999/03/10 02:41:17 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.35 1999/03/19 11:39:30 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -636,8 +636,8 @@ int debug_malloc_check_all = 0;
 #define LHSIZE 1109891
 #define FLSIZE 8803
 #define DEBUG_MALLOC_PAD 8
-#define FREE_DELAY 1024
-#define MAX_UNFREE_MEM 1024*1024*16
+#define FREE_DELAY 4096
+#define MAX_UNFREE_MEM 1024*1024*32
 
 static void *blocks_to_free[FREE_DELAY];
 static unsigned int blocks_to_free_ptr=0;
@@ -701,9 +701,12 @@ char *do_pad(char *mem, long size)
 
 void check_pad(struct memhdr *mh, int freeok)
 {
+  static int out_biking=0;
   long q,e;
   char *mem=mh->data;
   long size=mh->size;
+  if(out_biking) return;
+
   if(size < 0)
   {
     if(!freeok)
@@ -725,14 +728,16 @@ void check_pad(struct memhdr *mh, int freeok)
     q=(q<<13) ^ ~(q>>5);
     if(mem[e-DEBUG_MALLOC_PAD] != tmp)
     {
+      out_biking=1;
       fprintf(stderr,"Pre-padding overwritten for block at %p (size %ld) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[e-DEBUG_MALLOC_PAD]);
-      dump_memhdr_locations(mh, 0);
+      describe(mem);
       abort();
     }
     if(mem[size+e] != tmp)
     {
+      out_biking=1;
       fprintf(stderr,"Post-padding overwritten for block at %p (size %ld) (e=%ld %d!=%d)!\n",mem, size, e, tmp, mem[size+e]);
-      dump_memhdr_locations(mh, 0);
+      describe(mem);
       abort();
     }
   }
