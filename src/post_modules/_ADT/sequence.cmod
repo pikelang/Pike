@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.4 2003/04/04 15:10:00 peta Exp $
+|| $Id: sequence.cmod,v 1.5 2003/04/05 11:59:39 grubba Exp $
 */
 
 #include "global.h"
@@ -702,7 +702,6 @@ PIKECLASS Sequence
       REF_RETURN Pike_fp->current_object;
     }
 
-    
 
     /*! @decl SequenceIterator `-(int steps)
      *!   Move the iterator @[steps] steps backwards (negative value on 
@@ -729,29 +728,6 @@ PIKECLASS Sequence
 	new->pos = new->sequence->a->size; 
       }
       RETURN o;
-    }
-
-    /*! @decl SequenceIterator `-=(int steps)
-     *!   Move this iterator @[steps] steps backwards (negative value on 
-     *!   @[steps] will cause the iterator to move backwards) and return 
-     *!   the result as a new iterator.
-     *!
-     *! @returns
-     *!    This iterator positioned @[steps] steps forward.
-     */    
-
-    PIKEFUN object  `-=(int steps) //shall be `-=
-    {
-      THIS->pos-=steps;
-      if (THIS->pos < 0) 
-      { 
-	THIS->pos = 0;
-      }
-      else if (THIS->pos > THIS->sequence->a->size) 
-      { 
-	THIS->pos = THIS->sequence->a->size; 
-      }
-      REF_RETURN Pike_fp->current_object;
     }
 
     
