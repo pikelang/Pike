@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.105 2001/01/15 17:09:24 mirar Exp $
+// $Id: module.pmod,v 1.106 2001/01/15 17:10:57 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -1175,9 +1175,9 @@ class FILE
   //!
   void ungets(string s)
   {
-    cached_lines = ({});
-    b=s+b[bpos..];
-    bpos=0;
+     cached_lines = ({s})+cached_lines[lp..]; lp=0;
+     b=s+"\n"+b[bpos..];
+     bpos=0;
   }
 
   //! This function returns one character from the input stream.
