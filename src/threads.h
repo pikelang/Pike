@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.55 1998/11/20 06:46:58 hubbe Exp $
+ * $Id: threads.h,v 1.56 1998/11/20 08:18:54 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -345,7 +345,7 @@ struct thread_state {
 #endif /* THREAD_TRACE */
 
 #if defined(PROFILING) && defined(HAVE_GETHRTIME)
-#define DO_IF_PROFILING(X)
+#define DO_IF_PROFILING(X) X
 #else
 #define DO_IF_PROFILING(X)
 #endif
