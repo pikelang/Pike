@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.801 2004/03/08 20:20:17 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.802 2004/03/08 20:33:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6915,6 +6915,18 @@ AC_OUTPUT(Makefile \
 if test "$pike_bundle_dir" = ""; then :; else
   bundle_info="`find . -type f -name '*.bundle'`"
   if test "$bundle_info" = ""; then :; else
+    # We have some bundles to enable.
+
+    # Add some dummy programs to hide stuff that potentially breaks
+    # the builds.
+    test -d "${pike_bundle_prefix}/bin/." || mkdir "${pike_bundle_prefix}/bin"
+    if test -f "${pike_bundle_prefix}/bin/makeinfo"; then :; else
+      cat >"${pike_bundle_prefix}/bin/makeinfo" <<EOF
+#!/bin/sh
+exit 1
+EOF
+      chmod a+x "${pike_bundle_prefix}/bin/makeinfo"
+    fi
     cat <<EOF
 
 
@@ -6923,7 +6935,6 @@ if test "$pike_bundle_dir" = ""; then :; else
 #   Requested from:
 `echo "$bundle_info"|sed -e 's/^/#     /'`
 EOF
-    # We have some bundles to enable.
     bundles=`echo "$bundle_info" | sed -e 's/.*\///g' -e 's/\.bundle$//' | sort | uniq`
     # FIXME: Intra-bundle dependencies?
     for bundle in $bundles; do
@@ -6963,8 +6974,10 @@ $bundle_info])
 	( cd "bundles/$bundle.build" || exit 1
 
 	  # Make sure stuff in /usr/ccs/bin and the like can be found.
+	  # We also want to hide some possibly broken binaries (notably
+	  # makeinfo) with ${pike_bundle_prefix}/bin.
 	  OLD_PATH="$PATH"
-	  PATH="$PATH:$EXTRA_PATH"
+	  PATH="${pike_bundle_prefix}/bin:$PATH:$EXTRA_PATH"
 	  export PATH
 
 	  if test -f "Makefile"; then :; else
