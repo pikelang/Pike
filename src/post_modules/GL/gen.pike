@@ -8,6 +8,7 @@
    B=bitfield
    O=bool
    R=double/float
+   S=string
    Q=int/float
    Z=(byte/)double/float/int/short
 
@@ -114,7 +115,7 @@ array(string) gen_func(string name, string ty)
   case 'S':
     prot=":string";
     vdec="const GLubyte *";
-    vret="push_text";
+    vret="my_push_text";
     vcast="(char *)";
     break;
   default:
