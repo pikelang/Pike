@@ -1,2 +1,8 @@
+/Makefile
+/config.log
+/config.status
 /configure
 /dependencies
+/linker_options
+/stamp-h
+/system_machine.h
