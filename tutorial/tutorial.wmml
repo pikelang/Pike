@@ -2610,8 +2610,8 @@ how the relative priority of all the operators in descending order:
 <tr><td><center><tt>a|b</tt></center></td></tr>
 <tr><td><center><tt>&amp;&amp;</tt></center></td></tr>
 <tr><td><center><tt>||</tt></center></td></tr>
-<tr><td><center><tt>=</tt></center></td></tr>
 <tr><td><center><tt>a?b:c</tt></center></td></tr>
+<tr><td><center><tt>=</tt></center></td></tr>
 <tr><td><center><tt>@a</tt></center></td></tr>
 <tr><td><center><tt>,</tt></center></td></tr>
 </table>
