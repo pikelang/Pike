@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.23 1997/02/27 10:34:46 hubbe Exp $");
+RCSID("$Id: las.c,v 1.24 1997/02/27 10:39:42 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -497,10 +497,20 @@ node *index_node(node *n, struct pike_string * id)
     push_int(0);
   }else{
     resolv_constant(n);
-    if(sp[-1].type==T_INT)
+    switch(sp[-1].type)
     {
+    case T_INT:
       yyerror("Failed to index module (module doesn't exist?)");
-    }else{
+      break;
+
+    case T_PROGRAM:
+    case T_FLOAT:
+    case T_STRING:
+    case T_ARRAY:
+      yyerror("Failed to index module (Not a module?)");
+      break;
+
+    default:
       push_string(id);
       reference_shared_string(id);
       f_index(2);
