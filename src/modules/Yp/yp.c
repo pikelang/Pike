@@ -28,7 +28,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: yp.c,v 1.16 1999/02/10 21:51:02 hubbe Exp $");
+RCSID("$Id: yp.c,v 1.17 1999/08/03 00:42:53 hubbe Exp $");
 
 #define YPERROR(fun,err) do{ if(err) error("yp->%s(): %s\n", (fun), \
                                            yperr_string(err)); }while(0)
@@ -125,7 +125,7 @@ static void f_all(INT32 args)
   push_mapping( res_map );
 }
 
-void f_map(INT32 args)
+static void f_map(INT32 args)
 {
   int err;
   char *retval, *retkey;
