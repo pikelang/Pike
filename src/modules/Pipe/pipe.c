@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.17 1998/04/03 20:06:48 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.18 1998/04/03 20:55:47 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -446,15 +446,16 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 	  this->firstinput &&
 	  this->bytes_in_buffer<MAX_BYTES_IN_BUFFER)
       {
-	if (this->type == I_BLOCKING_OBJ) {
+	if (this->firstinput->type == I_BLOCKING_OBJ) {
 	  push_int(8192);
 	  push_int(1);	/* We don't care if we don't get all 8192 bytes. */
-	  apply(i->u.obj, "read", 2);
+	  apply(i->firstinput->u.obj, "read", 2);
 	  if (sp[-1].type == T_STRING) {
 	    append_buffer(sp[-1].u.string);
 	  } else {
 	    /* FIXME: Should probably check the return value. */
 	    /* EOF */
+	    this->sleeping = 0;
 	    input_finish();
 	  }
 	  pop_stack();
@@ -687,7 +688,7 @@ static void pipe_input(INT32 args)
 #ifdef HAVE_GETEUID
 	 if(ou) {
 #ifdef HAVE_SETEUID
-	   seteuid(0);
+	   seteuid(ou);
 #else /* ! HAVE_SETEUID */
 #ifdef HAVE_SETREUID
 	   setresuid(-1, ou, -1);
