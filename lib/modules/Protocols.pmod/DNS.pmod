@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! $Id: DNS.pmod,v 1.65 2002/11/27 01:10:35 grendel Exp $
+//! $Id: DNS.pmod,v 1.66 2002/11/27 01:59:13 grendel Exp $
 
 #pike __REAL_VERSION__
 
@@ -814,7 +814,7 @@ class client
   //!       DNS name(s).
   //!	@endarray
   //!
-  array gethostbyaddr(string hostip)
+  array gethostbyaddr(string s)
   {
     mapping m=do_sync_query(mkquery(arpa_from_ip(s), C_IN, T_PTR));
     if (m) {
