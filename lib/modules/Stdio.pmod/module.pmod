@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.59 1999/08/06 23:08:48 hubbe Exp $
+// $Id: module.pmod,v 1.60 1999/08/08 12:53:05 grubba Exp $
 
 import String;
 
@@ -995,6 +995,13 @@ static class nb_sendfile
       writer_done();
     }
   }
+
+#ifdef SENDFILE_DEBUG
+  void destroy()
+  {
+    werror("Stdio.sendfile(): Destructed.\n");
+  }
+#endif /* SENDFILE_DEBUG */
 
   /* Starter */
 
