@@ -34,8 +34,8 @@ o delay()/sleep()
 
 o search(string, int) / has_value(string, int)
     Both of these methods now handle both looking for strings and
-    integers (ie single characters). eg search("hi, ho!", ',') or
-    has_value("Nope.", ' ').
+    integers (the unicode number for a single character).
+    Examples: search("hi, ho!", '!'), has_value("Nope.", ' ')
 
 Language additions:
 -------------------
