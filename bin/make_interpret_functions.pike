@@ -83,7 +83,7 @@ array fix_cases(array x)
   while(1)
   {
     int casepos=search(x,PC.Token("CASE"), start);
-    werror("%O\n",PC.simple_reconstitute(x[casepos..casepos+1]));
+    //werror("%O\n",PC.simple_reconstitute(x[casepos..casepos+1]));
     if(casepos == -1) break;
     int donepos=search(x,PC.Token("DONE"),casepos+1);
     
