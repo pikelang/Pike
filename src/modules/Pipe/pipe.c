@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.45 2000/12/05 21:08:31 per Exp $");
+RCSID("$Id: pipe.c,v 1.46 2003/10/07 16:27:19 mast Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -717,18 +717,19 @@ static void pipe_input(INT32 args)
 
      if (fd != -1 && fstat(fd,&s)==0)
      {
-       int filep=fd_lseek(fd, 0L, SEEK_CUR); /* keep the file pointer */
+       off_t filep=fd_lseek(fd, 0L, SEEK_CUR); /* keep the file pointer */
+       size_t len = s.st_size - filep;
        if(S_ISREG(s.st_mode)	/* regular file */
-	  && ((long)(m=(char *)mmap(0,s.st_size - filep,PROT_READ,
+	  && ((long)(m=(char *)mmap(0, len, PROT_READ,
 				    MAP_FILE|MAP_SHARED,fd,filep))!=-1))
        {
 #ifdef HAVE_GETEUID
 	 int ou = 0;
 #endif
-	 mmapped += s.st_size;
+	 mmapped += len;
 
 	 i->type=I_MMAP;
-	 i->len=s.st_size;
+	 i->len = len;
 	 i->u.mmap=m;
 #if defined(HAVE_MADVISE) && defined(MADV_SEQUENTIAL)
 	 /* Mark the pages as sequential read only access... */
@@ -749,7 +750,7 @@ static void pipe_input(INT32 args)
 #endif /* HAVE_SETEUID */
 	 }
 #endif
-	 madvise(m, s.st_size, MADV_SEQUENTIAL);
+	 madvise(m, len, MADV_SEQUENTIAL);
 #ifdef HAVE_GETEUID
 	 if(ou) {
 #ifdef HAVE_SETEUID
