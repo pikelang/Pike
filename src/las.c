@@ -2,13 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.345 2004/03/16 13:42:30 grubba Exp $
+|| $Id: las.c,v 1.346 2004/05/29 18:13:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.345 2004/03/16 13:42:30 grubba Exp $");
+RCSID("$Id: las.c,v 1.346 2004/05/29 18:13:41 grubba Exp $");
 
-#include "language.h"
 #include "interpret.h"
 #include "las.h"
 #include "array.h"
@@ -5470,10 +5469,12 @@ ptrdiff_t eval_low(node *n,int print_error)
     p_const = prog->constants + prog->num_constants;
 
     free_svalue(&p_const->sval);
+#if 0
     if (p_const->name) {
       free_string(p_const->name);
       p_const->name = NULL;
     }
+#endif /* 0 */
   }
 
 #ifdef PIKE_USE_MACHINE_CODE

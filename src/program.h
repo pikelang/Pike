@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.204 2004/05/23 00:45:11 nilsson Exp $
+|| $Id: program.h,v 1.205 2004/05/29 18:13:42 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -246,8 +246,8 @@ struct identifier
  */
 struct program_constant
 {
-  struct svalue sval;
-  struct pike_string *name;
+  struct svalue sval;	/* Value. */
+  ptrdiff_t offset;	/* Offset in identifiers to initialization function. */
 };
 
 /*

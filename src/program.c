@@ -2,18 +2,17 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.563 2004/04/18 02:16:06 mast Exp $
+|| $Id: program.c,v 1.564 2004/05/29 18:13:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.563 2004/04/18 02:16:06 mast Exp $");
+RCSID("$Id: program.c,v 1.564 2004/05/29 18:13:41 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "pike_types.h"
 #include "stralloc.h"
 #include "las.h"
-#include "language.h"
 #include "lex.h"
 #include "pike_macros.h"
 #include "fsort.h"
@@ -2380,7 +2379,9 @@ static void exit_program_struct(struct program *p)
     for(e=0;e<p->num_constants;e++)
     {
       free_svalue(& p->constants[e].sval);
+#if 0
       if(p->constants[e].name) free_string(p->constants[e].name);
+#endif /* 0 */
     }
   }
 
@@ -2673,10 +2674,17 @@ void dump_program_tables (struct program *p, int indent)
 	  indent, "", indent, "");
   for (d = 0; d < p->num_constants; d++) {
     struct program_constant *c = p->constants + d;
+#if 0
     fprintf(stderr, "%*s  %4d: %-15s %s%s%s\n",
 	    indent, "",
 	    d, get_name_of_type (c->sval.type),
 	    c->name?"\"":"",c->name?c->name->str:"NULL",c->name?"\"":"");
+#else /* !0 */
+    fprintf(stderr, "%*s  %4d: %-15s %d\n",
+	    indent, "",
+	    d, get_name_of_type (c->sval.type),
+	    c->offset);
+#endif /* 0 */
   }
 
   fprintf(stderr, "\n"
@@ -2756,7 +2764,14 @@ void check_program(struct program *p)
     if (p->flags & PROGRAM_FINISHED && s->type == T_OBJECT &&
 	s->u.object->next == s->u.object)
       Pike_fatal ("Got fake object in constant in finished program.\n");
+#if 0
     if(p->constants[e].name) check_string(p->constants[e].name);
+#else /* ! 0 */
+    if (p->constants[e].offset >= p->num_identifiers) {
+      Pike_fatal("Constant initializer outside num_identifiers (%d >= %d).\n",
+		 p->constants[e].offset, p->num_identifiers);
+    }
+#endif /* 0 */
   }
 
   for(e=0;e<p->num_strings;e++)
@@ -5206,8 +5221,7 @@ int store_constant(struct svalue *foo,
     }
     else {
       struct program_constant *c= Pike_compiler->new_program->constants+e;
-      if(c->name == constant_name &&
-	 (equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)))
+      if((equal ? is_equal(& c->sval,foo) : is_eq(& c->sval,foo)))
       {
 	UNSETJMP(jmp);
 	return e;
@@ -5216,7 +5230,11 @@ int store_constant(struct svalue *foo,
     UNSETJMP(jmp);
   }
   assign_svalue_no_free(&tmp.sval,foo);
+#if 0
   if((tmp.name=constant_name)) add_ref(constant_name);
+#else /* !0 */
+  tmp.offset = -1;
+#endif /* 0 */
 
   add_to_constants(tmp);
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.254 2004/05/23 00:44:34 nilsson Exp $
+|| $Id: gc.c,v 1.255 2004/05/29 18:13:41 grubba Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.254 2004/05/23 00:44:34 nilsson Exp $");
+RCSID("$Id: gc.c,v 1.255 2004/05/29 18:13:41 grubba Exp $");
 
 int gc_enabled = 1;
 
@@ -440,8 +440,13 @@ void describe_location(void *real_memblock,
       {
 	e = ((char *)ptr - (char *)(p->constants)) /
 	  sizeof(struct program_constant);
+#if 0
 	fprintf(stderr,"%*s  **In p->constants[%"PRINTPTRDIFFT"d] (%s)\n",indent,"",
 		e, p->constants[e].name ? p->constants[e].name->str : "no name");
+#else /* !0 */
+	fprintf(stderr,"%*s  **In p->constants[%"PRINTPTRDIFFT"d] (%d)\n",indent,"",
+		e, p->constants[e].offset);
+#endif /* 0 */
 	break;
       }
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.215 2004/05/19 09:19:13 grubba Exp $
+|| $Id: encode.c,v 1.216 2004/05/29 18:13:41 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.215 2004/05/19 09:19:13 grubba Exp $");
+RCSID("$Id: encode.c,v 1.216 2004/05/29 18:13:41 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1136,7 +1136,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	for(d=0;d<p->num_constants;d++)
 	{
 	  encode_value2(& p->constants[d].sval, data, 0);
-	  adddata3(p->constants[d].name);
+	  adddata3(NULL /* p->constants[d].name */);
 	}
 
 #else /* !OLD_PIKE_ENCODE_PROGRAM */
@@ -1262,15 +1262,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    encode_value2(&p->constants[d].sval, data, 0);
 
 	    /* name */
+#if 0
 	    if (p->constants[d].name) {
 	      str_sval.u.string = p->constants[d].name;
 	      encode_value2(&str_sval, data, 0);
 	    } else {
+#endif /* 0 */
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data, 0);
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
+#if 0
 	    }
+#endif /* 0 */
 	  }
 	}
 #endif /* PIKE_PORTABLE_BYTECODE */
@@ -1578,15 +1582,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	    encode_value2(&p->constants[d].sval, data, 0);
 
 	    /* name */
+#if 0
 	    if (p->constants[d].name) {
 	      str_sval.u.string = p->constants[d].name;
 	      encode_value2(&str_sval, data, 0);
 	    } else {
+#endif /* 0 */
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data, 0);
 	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
+#if 0
 	    }
+#endif /* 0 */
 	  }
 	}
 #endif /* OLD_PIKE_ENCODE_PROGRAM */
@@ -3131,7 +3139,11 @@ static void decode_value2(struct decode_data *data)
 	      p->constants[d].sval=*--Pike_sp;
 	    }
 	    dmalloc_touch_svalue(Pike_sp);
-	    getdata3(p->constants[d].name);
+	    {
+	      struct pike_string *dummy = NULL;
+	      getdata3(dummy /*p->constants[d].name*/);
+	      if (dummy) free_string(dummy);
+	    }
 	  }
 
 #ifdef PIKE_DEBUG	  
@@ -3561,10 +3573,10 @@ static void decode_value2(struct decode_data *data)
 	   */
 	  {
 	    struct program_constant constant;
-	    constant.name = NULL;
 	    constant.sval.type = T_INT;
 	    constant.sval.subtype = NUMBER_UNDEFINED;
 	    constant.sval.u.integer = 0;
+	    constant.offset = -1;
 
 	    for(e=0;e<local_num_constants;e++) {
 	      add_to_constants(constant);
@@ -3619,6 +3631,7 @@ static void decode_value2(struct decode_data *data)
 	    }
 	    /* name */
 	    decode_value2(data);
+#if 0
 	    if (Pike_sp[-1].type == T_STRING) {
 	      constant->name = Pike_sp[-1].u.string;
 	    } else if ((Pike_sp[-1].type == T_INT) &&
@@ -3633,6 +3646,13 @@ static void decode_value2(struct decode_data *data)
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    dmalloc_touch_svalue(Pike_sp-2);
 	    Pike_sp -= 2;
+#else /* !0 */
+	    constant->offset = -1;
+	    pop_stack();
+	    constant->sval = Pike_sp[-1];
+	    dmalloc_touch_svalue(Pike_sp-1);
+	    Pike_sp -= 1;
+#endif /* 0 */
 	    decode_number(entry_type, data);
 	  }
 	  while (entry_type != ID_ENTRY_EOT) {
@@ -4070,6 +4090,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_value2(data);
 	    /* name */
 	    decode_value2(data);
+#if 0
 	    if (Pike_sp[-1].type == T_STRING) {
 	      constant->name = Pike_sp[-1].u.string;
 	    } else if ((Pike_sp[-1].type == T_INT) &&
@@ -4084,6 +4105,13 @@ static void decode_value2(struct decode_data *data)
 	    dmalloc_touch_svalue(Pike_sp-1);
 	    dmalloc_touch_svalue(Pike_sp-2);
 	    Pike_sp -= 2;
+#else /* !0 */
+	    constant->offset = -1;
+	    pop_stack();
+	    constant->sval = Pike_sp[-1];
+	    dmalloc_touch_svalue(Pike_sp-1);
+	    Pike_sp -= 1;
+#endif /* 0 */	    
 	    EDB(5,
 		fprintf(stderr, "%*sDecoded constant %d to a %s\n",
 			data->depth, "",
