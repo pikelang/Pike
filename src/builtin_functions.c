@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.261 2001/06/06 02:22:29 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.262 2001/06/09 15:25:36 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -851,7 +851,8 @@ void f_combine_path(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("combine_path", 1);
 
-  if(sp[-args].type != T_STRING)
+  if((sp[-args].type != T_STRING) ||
+     (sp[-args].u.string->size_shift))
     SIMPLE_BAD_ARG_ERROR("combine_path", 1, "string");
 
   path=sp[-args].u.string->str;
@@ -859,7 +860,8 @@ void f_combine_path(INT32 args)
   for(e=1;e<args;e++)
   {
     char *newpath;
-    if(sp[e-args].type != T_STRING)
+    if((sp[e-args].type != T_STRING) ||
+       (sp[e-args].u.string->size_shift))
     {
       if(dofree) free(path);
       SIMPLE_BAD_ARG_ERROR("combine_path", e+1, "string");
