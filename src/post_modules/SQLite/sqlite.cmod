@@ -17,9 +17,9 @@
 #include <time.h>
 
 #ifdef HAVE_USLEEP
-#define SLEEP() usleep(100);
+#define SLEEP() usleep(100)
 #else
-#define SLEEP() sleep(1);
+#define SLEEP() sleep(1)
 #endif
 
 
@@ -272,9 +272,12 @@ PIKECLASS SQLite
     if(THIS->db) {
       int i;
       /* FIXME: sqlite3_close can fail. What do we do then? */
-      for(i=0; i<5; i++)
+      for(i=0; i<5; i++) {
 	if( sqlite3_close(THIS->db)!=SQLITE_OK )
 	  SLEEP();
+	else
+	  break;
+      }
     }
   }
 
