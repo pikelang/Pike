@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.119 2001/09/02 14:25:20 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.120 2001/09/02 14:42:54 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1116,7 +1116,7 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	{
 	  if (s->u.object->prog == pike_trampoline_program) {
 	    /* Trampoline */
-	    struct pike_trampoline *tramp =
+	    struct pike_trampoline *tramp = (struct pike_trampoline *)
 	      get_storage(s->u.object, pike_trampoline_program);
 	    if (!tramp || !tramp->frame || !tramp->frame->current_object ||
 		!tramp->frame->current_object->prog) {
