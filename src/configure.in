@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.599 2002/08/16 14:14:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.600 2002/08/17 18:33:45 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -526,6 +526,9 @@ if test "$uname_prog" != "no"; then
       # will be changed to "AIX" in the final release.
       # (Monterey 64 is also known as AIX 5L).
       pike_cv_sys_os="AIX"
+    ;;
+    *Windows*|*windows*)
+      pike_cv_sys_os="Windows_NT"
     ;;
   esac
 else
