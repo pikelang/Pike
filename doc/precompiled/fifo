@@ -1,0 +1,73 @@
+NAME
+	/precompiled/fifo - first in, first out object
+
+DESCRIPTION
+	/precompiled/fifo implements a fixed length fifo. A fifo is a queue
+	of values and is often used as a stream of data between two threads.
+
+SEE ALSO
+	/precompiled/queue
+
+NOTA BENE
+	Fifos are only available on systems with POSIX threads support.
+
+============================================================================
+NAME
+	create - initialize the fifo
+
+SYNTAX
+	#include <fifo.h>
+
+	void fifo->create(int size);
+	or
+	clone(Fifo);
+	or
+	clone(Fifo,size);
+
+DESCRIPTION
+	The function create() is called when the fifo is cloned, if the
+	optional size argument is present it sets how many values can be
+	written to the fifo without blocking. The default size is 128.
+
+============================================================================
+NAME
+	write - queue a value
+
+SYNTAX
+	#include <fifo.h>
+
+	void fifo->write(mixed value);
+
+DESCRIPTION
+	This function puts a value last in the fifo. If there is no more
+	room in the fifo the current thread will sleep until space is
+	available.
+
+============================================================================
+NAME
+	read - read a value from the fifo
+
+SYNTAX
+	#include <fifo.h>
+
+	mixed fifo->read();
+
+DESCRIPTION
+	This function retreives a value from the fifo. Values will be
+	returned in the order they were written. If there are no values
+	present in the fifo the current thread will sleep until some other
+	thread writes a value to the fifo.
+
+============================================================================
+NAME
+	size - return number of values in fifo
+
+SYNTAX
+	#include <fifo.h>
+
+	int fifo->size();
+
+DESCRIPTION
+	This function returns how many values are currently in the fifo.
+
+============================================================================
