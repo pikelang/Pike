@@ -16,7 +16,7 @@
 #include "backend.h"
 #include "operators.h"
 
-RCSID("$Id: error.c,v 1.19 1998/05/15 18:45:37 grubba Exp $");
+RCSID("$Id: error.c,v 1.20 1998/05/16 08:23:06 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -109,7 +109,7 @@ void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
   in_error=buf;
 
 #ifdef HAVE_VSNPRINTF
-  vsnprintf(bug, 4090, fmt, args);
+  vsnprintf(buf, 4090, fmt, args);
 #else /* !HAVE_VSNPRINTF */
   VSPRINTF(buf, fmt, args);
 #endif /* HAVE_VSNPRINTF */
