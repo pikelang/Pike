@@ -1,4 +1,4 @@
-// $Id: HTML.pmod,v 1.2 2002/03/19 23:46:14 nilsson Exp $
+// $Id: HTML.pmod,v 1.3 2002/11/27 21:34:39 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -241,7 +241,7 @@ class OBox {
 
   //! Ensures that all rows have the same number of cells.
   void pad_rows() {
-    rows = ::pad_rows(rows, "<td bgcolor='" + cell_color + "'>&nbsp;</td>");
+    rows = global::pad_rows(rows, "<td bgcolor='" + cell_color + "'>&nbsp;</td>");
   }
 
   //! Returns the result.
