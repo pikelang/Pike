@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.27 2003/05/02 12:54:37 grubba Exp $
+# $Id: configure.in,v 1.28 2003/12/23 17:30:17 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -18,6 +18,13 @@ OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
 
 AC_ARG_WITH(odbc,  [  --without-odbc       no support for ODBC databases],[],[with_odbc=yes])
+AC_ARG_WITH(odbc_implicit_commit,
+		   [  --with-odbc-implicit-commit    implicitly commit statements (discouraged)])
+
+if test "x$with_odbc_implicit_commit" = xyes; then
+  AC_MSG_WARN([Enabling implicit commit])
+  AC_DEFINE(ENABLE_IMPLICIT_COMMIT)
+fi
 
 PIKE_FEATURE_WITHOUT(Odbc)
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.34 2003/05/02 12:54:37 grubba Exp $
+|| $Id: odbc.c,v 1.35 2003/12/23 17:30:17 grubba Exp $
 */
 
 /*
@@ -21,7 +21,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.34 2003/05/02 12:54:37 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.35 2003/12/23 17:30:17 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -308,9 +308,12 @@ static void f_big_query(INT32 args)
   if (!sp[-1].u.integer) {
     pop_n_elems(2);	/* Zap the result object too */
 
+#ifdef ENABLE_IMPLICIT_COMMIT
+    /* This breaks with Free TDS. */
     odbc_check_error("odbc->big_query", "Couldn't commit query",
 		     SQLTransact(odbc_henv, PIKE_ODBC->hdbc, SQL_COMMIT),
 		     NULL);
+#endif /* ENABLE_IMPLICIT_COMMIT */
 
     push_int(0);
   } else {

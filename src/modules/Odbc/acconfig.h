@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.8 2003/05/02 12:54:37 grubba Exp $
+|| $Id: acconfig.h,v 1.9 2003/12/23 17:30:17 grubba Exp $
 */
 
 /*
@@ -45,6 +45,9 @@
 
 /* Define if you have ODBC */
 #undef HAVE_ODBC
+
+/* Define if you want to enable implicit commit (discouraged). */
+#undef ENABLE_IMPLICIT_COMMIT
 
 @BOTTOM@
 
