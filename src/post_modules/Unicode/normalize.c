@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.3 2001/07/03 23:13:45 grubba Exp $");
+RCSID("$Id: normalize.c,v 1.4 2001/07/03 23:44:18 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -128,20 +128,6 @@ int get_canonical_class( int c )
   return 0;
 }
 
-int get_compose_pair( int c1, int c2, int canonical )
-{
-  unsigned int c = (c1<<16) | (c2);
-  int hv = c % HSIZE;
-  const struct comp_h *r = comp_hash[hv];
-  while( r )
-  {
-    if( (r->v->c1 == c1) && (r->v->c2 == c2) )
-      return r->v->c;
-    r = r->next;
-  }
-  return 0;
-}
-
 #define SBase 0xAC00
 #define LBase 0x1100
 #define VBase 0x1161
@@ -151,6 +137,41 @@ int get_compose_pair( int c1, int c2, int canonical )
 #define TCount 28
 #define NCount (VCount * TCount)
 #define SCount (LCount * NCount)
+
+int get_compose_pair( int c1, int c2 )
+{
+  const struct comp_h *r;
+  if( c1 >= LBase )
+  {
+    /* Perhaps hangul */
+    int LIndex = c1-LBase, SIndex;
+    if( LIndex < LCount )
+    {
+      int VIndex = c2-VBase;
+      if( 0 <= VIndex && VIndex < VCount )
+	return SBase + (LIndex*VCount + VIndex)*TCount;
+    }
+
+    if( c1 >= SBase )
+    {
+      SIndex = c1-SBase;
+      if( SIndex < SCount && (SIndex % TCount)== 0 )
+      {
+	int TIndex = c2-TBase;
+	if( 0 <= TIndex && TIndex <= TCount )
+	  /* LVT */
+	  return c1+TIndex;
+      }
+    }
+  }
+
+  /* Nope. Not hangul. */
+  for( r=comp_hash[ ((unsigned int)((c1<<16) | (c2))) % HSIZE ]; r; r=r->next )
+    if( (r->v->c1 == c1) && (r->v->c2 == c2) )
+      return r->v->c;
+
+  return 0;
+}
 
 static void rec_get_decomposition( int canonical, int c, struct buffer *tmp )
 {
@@ -225,70 +246,19 @@ struct pike_string *unicode_decompose( struct pike_string *source,
   return uc_buffer_to_pikestring( res );
 }
 
-static struct buffer *unicode_compose_hangul_buffer( struct buffer *source,
-						     int how )
-{
-  struct buffer *res = uc_buffer_new();
-  unsigned int i;
-  int last = source->data[0];
-
-  uc_buffer_write( res, last );
-
-  for( i = 1; i<source->size; i++ )
-  {
-    int ch = source->data[i];
-    
-    /* 1. check to see if two current characters are L and V */
-    int LIndex = last-LBase;
-    if( 0 <= LIndex && LIndex < LCount )
-    {
-      int VIndex = ch-VBase;
-      if( 0 <= VIndex && VIndex < VCount )
-      {
-	last = SBase + (LIndex*VCount + VIndex)*TCount;
-	res->data[res->size-1]=last;
-	continue;
-      }
-    }
-
-    /* 2. check to see if two current characters are LV and T */
-    {
-      int SIndex = last-SBase;
-      if( 0 <= SIndex && SIndex < SCount && (SIndex % TCount)== 0 )
-      {
-	int TIndex = ch-TBase;
-	if( 0 <= TIndex && TIndex <= TCount )
-	{
-	  /* LVT */
-	  last += TIndex;
-	  res->data[res->size-1]=last;
-	  continue;
-	}
-      }
-    }
-
-
-    /* if neither case was true, just add the character */
-    last = ch;
-    uc_buffer_write( res, ch );
-  }
-  uc_buffer_free( source );
-  return res;
-}
-
 struct buffer *unicode_compose_buffer( struct buffer *source, int how )
 {
   int startch = source->data[0];
   int lastclass = get_canonical_class( startch )?256:0;
   unsigned int startpos = 0, comppos=1;
   unsigned int pos;
-  int canonical = !(how & COMPAT_BIT);
   
   for( pos = 1; pos < source->size; pos++ )
   {
-    int ch = source->data[pos];
+    int ch = source->data[ pos ];
     int cl = get_canonical_class( ch );
-    int co = get_compose_pair( startch, ch, canonical );
+    int co = get_compose_pair( startch, ch );
+
     if( co && ((lastclass < cl) || (lastclass == 0)) )
       source->data[ startpos ] = startch = co;
     else
@@ -303,7 +273,7 @@ struct buffer *unicode_compose_buffer( struct buffer *source, int how )
     }
   }
   source->size = comppos;
-  return unicode_compose_hangul_buffer( source, how );
+  return source;
 }
 
 struct pike_string *unicode_compose( struct pike_string *source,
