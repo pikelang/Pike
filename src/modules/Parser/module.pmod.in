@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.3 1999/06/12 19:44:30 mirar Exp $
+ * $Id: module.pmod.in,v 1.4 1999/06/12 19:45:50 mirar Exp $
  *
  */
 
@@ -22,7 +22,7 @@ class SGML
 //!     
 //!	Example:
 //!	A string
-//!     <tt>"<gat>&nbsp;<gurka>&nbsp;</gurka>&nbsp;<banan>&nbsp;<kiwi>&nbsp;</gat>"</tt>
+//!     <tt>"&lt;gat&gt;&nbsp;&lt;gurka&gt;&nbsp;&lt;/gurka&gt;&nbsp;&lt;banan&gt;&nbsp;&lt;kiwi&gt;&nbsp;&lt;/gat&gt;"</tt>
 //!     results in 
 //!	<pre>
 //!	({
