@@ -52,18 +52,22 @@ char *alloca ();
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#undef HAVE_STDLIB_H
 #endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#undef HAVE_UNISTD_H
 #endif
 
 #ifdef HAVE_STRING_H
 #include <string.h>
+#undef HAVE_STRING_H
 #endif
 
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
+#undef HAVE_MEMORY_H
 #endif
 
 #if defined(__GNUC__) && !defined(DEBUG) && !defined(lint)
