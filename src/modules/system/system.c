@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.83 2000/03/16 02:30:10 mast Exp $
+ * $Id: system.c,v 1.84 2000/06/21 00:54:30 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.83 2000/03/16 02:30:10 mast Exp $");
+RCSID("$Id: system.c,v 1.84 2000/06/21 00:54:30 hubbe Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -733,6 +733,45 @@ void f_getpgrp(INT32 args)
 }
 #endif /* HAVE_GETPGID || HAVE_GETPGRP */
 
+#ifdef HAVE_SETRESUID
+void f_setresuid(INT32 args)
+{
+  int ruid, euid,suid;
+  int err;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("setresuid: permission denied.\n");
+#endif
+  get_all_args("setresuid", args, "%i%i%i", &ruid,&euid,&suid);
+ 
+  err = setresuid(ruid,euid,suid);
+
+  pop_n_elems(args);
+  push_int(err);
+}
+#endif /* HAVE_SETRESUID */
+
+#ifdef HAVE_SETRESGID
+void f_setresgid(INT32 args)
+{
+  int rgid, egid,sgid;
+  int err;
+
+#ifdef PIKE_SECURITY
+  if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
+    error("setresgid: permission denied.\n");
+#endif
+  get_all_args("setresgid", args, "%i%i%i", &rgid,&egid,&sgid);
+ 
+  err = setresgid(rgid,egid,sgid);
+
+  pop_n_elems(args);
+  push_int(err);
+}
+#endif /* HAVE_SETRESGID */
+
+
 #define f_get(X,Y) void X(INT32 args){ pop_n_elems(args); push_int((INT32)Y()); }
 
 #ifdef HAVE_GETUID
@@ -1395,6 +1434,14 @@ void pike_module_init(void)
 /* function(int:int) */
   ADD_EFUN("setegid", f_setegid,tFunc(tInt,tInt), OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEGID || HAVE_SETRESGID */
+
+
+#ifdef HAVE_SETRESUID
+  ADD_EFUN("setresuid",f_setresuid,tFunc(tInt tInt tInt, tInt), OPT_SIDE_EFFECT);
+#endif
+#ifdef HAVE_SETRESGID
+  ADD_EFUN("setresgid",f_setresgid,tFunc(tInt tInt tInt, tInt), OPT_SIDE_EFFECT);
+#endif
 
 #ifdef HAVE_GETUID
   
