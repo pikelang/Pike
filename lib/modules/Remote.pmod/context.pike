@@ -38,8 +38,8 @@ string id_for(mixed thing)
 
 object object_for(string id)
 {
-  object o;
-  int destructed = zero_type (o = id2val[id]) != 1;
+  object o = id2val[id];
+  int destructed = zero_type (id2val[id]) != 1;
   if(o) {
     DEBUGMSG("object_for(" + id + ") found locally\n");
     return o;
@@ -65,8 +65,8 @@ object object_for(string id)
 
 object function_for(string id)
 {
-  object o;
-  if(zero_type (o=id2val[id]) != 1) {
+  object o = id2val[id];
+  if(zero_type (id2val[id]) != 1) {
     DEBUGMSG("function_for(" + id + ") found " + (o ? "" : "destructed ") + "locally\n");
     return o;
   }
