@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.17 2000/07/20 15:00:12 hop Exp $
+// $Id: client.pike,v 1.18 2000/07/25 09:59:19 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -50,6 +50,8 @@
 //
 //	newer versions - see CVS at roxen.com (hop)
 //
+//			 - corrected deUTF8 values in result
+//			 -
 //
 // Specifications:
 //
@@ -257,20 +259,25 @@
   {
 
     if(!server || !sizeof(server))
-      server = (string)LDAP_DEFAULT_HOST;
+      server = LDAP_DEFAULT_URL;
 
     lauth = parse_url(server);
 
     if(!stringp(lauth->scheme) || (lauth->scheme != "ldap")) {
       THROW(({"Unknown scheme in server URL.\n",backtrace()}));
     }
+
+    if(!lauth->host)
+      lauth += ([ "host" : parse_url(LDAP_DEFAULT_URL)->host ]);
+    if(!lauth->port)
+      lauth += ([ "port" : parse_url(LDAP_DEFAULT_URL)->port ]);
       
-    ::create(lauth->host||LDAP_DEFAULT_HOST, lauth->port||LDAP_DEFAULT_PORT);
+    ::create(lauth->host, lauth->port);
     if(!::connected) {
       THROW(({"Failed to connect to LDAP server.\n",backtrace()}));
     }
     DWRITE(sprintf("client.create: remote = %s\n", query_address()));
-    DWRITE_HI("client.OPEN: " + lauth->host||LDAP_DEFAULT_HOST + (string)(lauth->port||LDAP_DEFAULT_PORT) + " - OK\n");
+    DWRITE_HI("client.OPEN: " + lauth->host + ":" + (string)(lauth->port) + " - OK\n");
 
     binded = 0;
 
@@ -736,6 +743,8 @@
     array(string) rawarr = ({});
     mixed rv;
 
+    filter=filter||lauth->filter; // default from LDAP URI
+
     DWRITE_HI("client.SEARCH: " + (string)filter + "\n");
     if (chk_ver())
       return(-ldap_errno);
@@ -978,7 +987,7 @@
     res += ([ "host" : (s / ":")[0] ]);
 
     if(sizeof(s / ":") > 1)
-      res += ([ "port" : (s / ":")[1] ]);
+      res += ([ "port" : (int)((s / ":")[1]) ]);
 
     ar = url / "?";
 
