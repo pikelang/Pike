@@ -6,12 +6,6 @@ SIGNAL("dock-drag-end", "This signal is emitted at the end of a dock item drag."
 SIGNAL("dock-drag-motion", "This signal is emitted while the item is being dragged and reports that the pointer position has changed.");
 SIGNAL("dock-detatch", "This signal is emitted when an item is detached from its parent dock band and thus becomes a floating item.");
 
-CONSTANT(GNOME_DOCK_ITEM_BEH_NORMAL);
-CONSTANT(GNOME_DOCK_ITEM_BEH_EXCLUSIVE);
-CONSTANT(GNOME_DOCK_ITEM_BEH_NEVER_FLOATING);
-CONSTANT(GNOME_DOCK_ITEM_BEH_NEVER_VERTICAL);
-CONSTANT(GNOME_DOCK_ITEM_BEH_NEVER_HORIZONTAL);
-CONSTANT(GNOME_DOCK_ITEM_BEH_LOCKED);
 
 COMPLEX_FUNCTION( create, string, int );
 NAME_ARGS(name, behaviour);

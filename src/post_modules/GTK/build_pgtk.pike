@@ -14,7 +14,7 @@ mapping signals = ([  ]);
 string glob_prototypes="";
 string line_id = "";
 
-int last_ended_with_nl, debug_mode=0, no_hashline=1;
+int last_ended_with_nl, debug_mode=1, no_hashline=0;
 void emit_nl(string what)
 {
   if(!no_hashline && debug_mode)
@@ -1362,6 +1362,11 @@ int main(int argc, array argv)
       if(!sscanf(line, "GTK_%s", fn))
 	fn = line;
       constants += ("  add_integer_constant((char*)_data+"+
+                    data_offset(fn+"\0")+", "+line+", 0);\n");
+    } else if(sscanf(line, "SCONSTANT(%s)", line)==1) {
+      if(!sscanf(line, "GTK_%s", fn))
+	fn = line;
+      constants += ("  add_string_constant((char*)_data+"+
                     data_offset(fn+"\0")+", "+line+", 0);\n");
     } else if(sscanf(line, "SIMPLE%sFUNCTION(%s)", line, fn)==2) {
       last_function=fn;
