@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.2 2002/08/02 23:24:24 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.3 2002/08/04 20:00:54 nilsson Exp $"]]);
 
 // ADT.Stack
 
@@ -8,20 +8,82 @@ test_any([[
   return s->pop();
 ]], 1)
 
+test_eval_error(return ADT.Stack()->pop())
+
 test_any([[
+  object s = ADT.Stack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  for(int i; i<1000; i++)
+    s->pop();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return s->pop();
+]], 999)
+
+test_equal_any([[
   object s = ADT.Stack();
   s->push(2);
   s->push(3);
   s->push(4);
-  s->pop(2);
-  return s->pop();
-]], 2)
+  s->pop();
+  return s->pop(2);
+]], ({2,3}) )
 
 test_any([[
   object s = ADT.Stack();
   s->push(5);
   return s->top();
 ]], 5)
+
+test_eval_error(return ADT.Stack()->top())
+
+test_any([[
+  object s = ADT.Stack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  for(int i; i<1000; i++)
+    s->quick_pop();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return sizeof(s);
+]], 1000)
+
+test_any([[
+  object s = ADT.Stack();
+  for(int i; i<1000; i++)
+    s->push(i);
+  return sizeof(s);
+]], 1000)
+
+test_any([[
+  object s = ADT.Stack();
+  s->push(3);
+  s->reset();
+  return sizeof(s);
+]], 0)
+
+test_any([[
+  object s = ADT.Stack();
+  s->set_stack( "1234"/1 );
+  s->push("5");
+  return s->pop()+sizeof(s);
+]], "54")
+
+test_any([[
+  object s = ADT.Stack();
+  s->push("a");
+  s->push("b");
+  return values(s)*",";
+]], [["a,b"]])
+
+test_any([[
+  object s = ADT.Stack();
+  s->set_stack( "1234"/1 );
+  object t = ADT.Stack();
+  t->push("5");
+  return values(s+t)*"";
+]], "12345")
 
 
 // ADT.Table
