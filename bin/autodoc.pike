@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.19 2001/08/23 19:08:24 nilsson Exp $
+ * $Id: autodoc.pike,v 1.20 2001/08/23 19:28:54 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -72,7 +72,7 @@ int main(int argc, array(string) argv)
 	    info = Tools.AutoDoc.PikeExtractor.extractModule(raw, path, name);
 
 	  } else if (has_suffix(path, ".pike")) {
-	    if (segments[-1] == "module.pike") {
+	    if (!rootless && segments[-1] == "module.pike") {
 	      // Handling of Foo.pmod/module.pike.
 	      segments = segments[..sizeof(segments)-2];
 	    }
