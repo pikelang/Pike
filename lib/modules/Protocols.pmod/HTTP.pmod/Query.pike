@@ -187,7 +187,14 @@ static void ponder_answer()
    {
       string n,d;
       sscanf(s,"%[!-9;-~]%*[ \t]:%*[ \t]%s",n,d);
-      headers[lower_case(n)]=d;
+      switch(n=lower_case(n))
+      {
+	 case "set-cookie":
+	    headers[n]=(headers[n]||({}))+({d});
+	    break;
+	 default:
+	    headers[n]=d;
+      }
    }
 
    // done
