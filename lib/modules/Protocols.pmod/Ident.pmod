@@ -1,6 +1,6 @@
 // An implementation of the IDENT protocol, specified in RFC 931.
 //
-// $Id: Ident.pmod,v 1.1 1998/04/08 05:38:52 neotron Exp $
+// $Id: Ident.pmod,v 1.2 1998/04/08 05:53:40 neotron Exp $
 
 
 class client {
@@ -35,7 +35,7 @@ class client {
       destruct(remote_fd);
       throw(err);
     }
-    if(remote_fd->write(laddr[1]+","+raddr[1]+"\r\n") == -1) {
+    if(remote_fd->write(raddr[1]+","+laddr[1]+"\r\n") == -1) {
       destruct(remote_fd);
       throw(backtrace() +({ "Protocols.Ident: write failed."}));
     }
@@ -50,7 +50,7 @@ class client {
     response -= " ";
     response -= "\r\n";
     response /= ":";
-    if(sizeof(response) < 3)
+    if(sizeof(response) < 2)
       return ({ "ERROR", "UNKNOWN-ERROR" });
     return response[1..];
   }
