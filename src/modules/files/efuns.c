@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.154 2004/11/20 16:19:30 nilsson Exp $
+|| $Id: efuns.c,v 1.155 2005/01/04 17:44:35 grubba Exp $
 */
 
 #include "global.h"
@@ -735,6 +735,7 @@ void f_mkdir(INT32 args)
     THREADS_ALLOW_UID();
     i = mkdir(str->str) != -1;
     umask(mask);
+    REVEAL_GLOBAL_VARIABLES();
     if (i) {
       /* Attempt to set the mode.
        *
@@ -753,11 +754,16 @@ void f_mkdir(INT32 args)
 	  if (i || errno != EINTR) break;
 	  /* Must have do { ... } while(0) around these since
 	   * THREADS_DISALLOW_UID contains "} while (0)" and
-	   * THREADS_ALLOW_UID "do {". */
+	   * THREADS_ALLOW_UID "do {".
+	   *
+	   * The same thing applies to {HIDE,REVEAL}_HIDDEN_VARIABLES().
+	   */
 	  do {
+	    HIDE_GLOBAL_VARIABLES();
 	    THREADS_DISALLOW_UID();
 	    check_threads_etc();
 	    THREADS_ALLOW_UID();
+	    REVEAL_GLOBAL_VARIABLES();
 	  } while (0);
 	} while (1);
       }
@@ -774,6 +780,7 @@ void f_mkdir(INT32 args)
 	rmdir(str->str);
       }
     }
+    HIDE_GLOBAL_VARIABLES();
     THREADS_DISALLOW_UID();
   }
 #endif
