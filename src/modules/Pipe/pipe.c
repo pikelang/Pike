@@ -22,7 +22,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.14 1997/10/10 18:59:47 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.15 1998/04/03 20:23:00 grubba Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -76,7 +76,7 @@ static struct program *pipe_program, *output_program;
 
 struct input
 {
-  enum { I_NONE,I_OBJ,I_STRING,I_MMAP } type;
+  enum { I_NONE,I_OBJ,I_BLOCKING_OBJ,I_STRING,I_MMAP } type;
   union
   {
     struct object *obj; 
@@ -185,6 +185,7 @@ static INLINE void free_input(struct input *i)
   switch (i->type)
   {
   case I_OBJ:
+  case I_BLOCKING_OBJ:
     if (!i->u.obj) break;
     if (i->u.obj->prog)
     {
@@ -334,6 +335,7 @@ static INLINE void input_finish(void)
 
   while(1)
   {
+    /* Get the next input from the queue */
     i=THIS->firstinput->next;
     free_input(THIS->firstinput);
     THIS->firstinput=i;
@@ -350,6 +352,22 @@ static INLINE void input_finish(void)
       apply_low(i->u.obj,i->set_nonblocking_offset,3);
       pop_stack();
       return;
+
+    case I_BLOCKING_OBJ:
+      push_int(8192);
+      push_int(1);    /* We don't care if we don't get all 8192 bytes. */
+      apply(i->u.obj, "read", 2);
+      if (sp[-1].type == T_STRING) {
+	append_buffer(sp[-1].u.string);
+	pop_stack();
+	THIS->sleeping = 1;
+	return;
+      } else {
+	/* FIXME: Should we check the return value here? */
+	pop_stack();
+	/* EOF */
+	continue;
+      }
 
     case I_MMAP:
       if (THIS->fd==-1) return;
@@ -425,12 +443,26 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 	  this->firstinput &&
 	  this->bytes_in_buffer<MAX_BYTES_IN_BUFFER)
       {
-	this->sleeping=0;
-	push_callback(offset_input_read_callback);
-	push_int(0);
-	push_callback(offset_input_close_callback);
-	apply(this->firstinput->u.obj, "set_nonblocking", 3);
-	pop_stack();
+	if (this->firstinput->type == I_BLOCKING_OBJ) {
+	  push_int(8192);
+	  push_int(1);  /* We don't care if we don't get all 8192 bytes. */
+	  apply(this->firstinput->u.obj, "read", 2);
+	  if (sp[-1].type == T_STRING) {
+	    append_buffer(sp[-1].u.string);
+	  } else {
+	    /* FIXME: Should probably check the return value. */
+	    /* EOF */
+	    input_finish();
+	  }
+	  pop_stack();
+	} else {
+	  this->sleeping=0;
+	  push_callback(offset_input_read_callback);
+	  push_int(0);
+	  push_callback(offset_input_close_callback);
+	  apply(this->firstinput->u.obj, "set_nonblocking", 3);
+	  pop_stack();
+	}
       }
    }
 
@@ -464,6 +496,7 @@ static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 #endif
        if (this->firstinput->type!=I_OBJ)
        {
+	 /* FIXME: What about I_BLOCKING_OBJ? */
 	 input_finish();       /* shouldn't be anything else ... maybe a finished object */
        }
      }
@@ -678,14 +711,21 @@ static void pipe_input(INT32 args)
    if (i->set_nonblocking_offset<0 ||
        i->set_blocking_offset<0) 
    {
-      free_object(i->u.obj);
-      i->u.obj=NULL;
-      i->type=I_NONE;
+      if (find_identifier("read", i->u.obj->prog) < 0) {
+	/* Not even a read function */
+	free_object(i->u.obj);
+	i->u.obj=NULL;
+	i->type=I_NONE;
 
-      nobjects--;
-      error("illegal file object%s%s\n",
-	    ((i->set_nonblocking_offset<0)?"; no set_nonblocking":""),
-	    ((i->set_blocking_offset<0)?"; no set_blocking":""));
+	nobjects--;
+	error("illegal file object%s%s\n",
+	      ((i->set_nonblocking_offset<0)?"; no set_nonblocking":""),
+	      ((i->set_blocking_offset<0)?"; no set_blocking":""));
+      } else {
+        /* Try blocking mode */
+	i->type = I_BLOCKING_OBJ;
+	return;
+      }
    }
   
    if (i==THIS->firstinput)
