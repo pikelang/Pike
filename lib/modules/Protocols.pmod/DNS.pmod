@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.75 2003/04/22 21:56:43 nilsson Exp $
+// $Id: DNS.pmod,v 1.76 2003/04/22 22:18:11 marcus Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -123,6 +123,23 @@ class protocol
     }
   }
 
+  static string make_raw_addr6(string addr6)
+  {
+    if(!addr6) return "\0"*16;
+    if(has_value(addr6, "::")) {
+      int parts = sizeof((addr6/":")-({""}));
+      if(has_value(addr6, ".")) parts++;
+      addr6 = replace(addr6, "::", ":"+"0:"*(8-parts));
+      sscanf(addr6, ":%s", addr6);
+    }
+    if(has_value(addr6, "."))
+      return sprintf("%2c%2c%2c%2c%2c%2c%c%c%c%c",
+		     array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x.%x.%x.%x"));
+    else
+      return sprintf("%@2c",
+		     array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x:%x"));
+  }
+
   static private string mkrdata(mapping entry, int pos, mapping(string:int) c)
   {
     switch(entry->type) {
@@ -156,19 +173,7 @@ class protocol
      case T_A:
        return sprintf("%@1c", (array(int))((entry->a||"0.0.0.0")/".")[0..3]);
      case T_AAAA:
-       string addr6 = entry->a||"::";
-       if(has_value(addr6, "::")) {
-	 int parts = sizeof((addr6/":")-({""}));
-	 if(has_value(addr6, ".")) parts++;
-	 addr6 = replace(addr6, "::", ":"+"0:"*(8-parts));
-	 sscanf(addr6, ":%s", addr6);
-       }
-       if(has_value(addr6, "."))
-	 return sprintf("%2c%2c%2c%2c%2c%2c%c%c%c%c",
-			array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x.%x.%x.%x"));
-       else
-	 return sprintf("%@2c",
-			array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x:%x"));
+       return make_raw_addr6(entry->aaaa);
      case T_SOA:
        string mname = mkname(entry->mname, pos, c);
        return mname + mkname(entry->rname, pos+sizeof(mname), c) +
@@ -376,7 +381,7 @@ class protocol
 	m->a=sprintf("%{.%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
 	break;
       case T_AAAA:
-	m->a=sprintf("%{:%02X%02X%}",
+	m->aaaa=sprintf("%{:%02X%02X%}",
 		     values(s[next[0]..next[0]+m->len-1])/2)[1..];
 	break;
       case T_SOA:
@@ -921,12 +926,21 @@ class client
 
   string arpa_from_ip(string ip)
   {
-    return reverse(ip/".")*"."+".IN-ADDR.ARPA";
+    if(has_value(ip,':')) {
+      string raw_ipv6 = make_raw_addr6(ip);
+      return reverse(sprintf("%@02X", values(raw_ipv6)))/1*"."+".IP6.ARPA";
+    } else
+      return reverse(ip/".")*"."+".IN-ADDR.ARPA";
   }
 
   string ip_from_arpa(string arpa)
   {
-    return reverse(arpa/".")[2..]*".";
+    array(string) parts = reverse(arpa/".");
+    if(sizeof(parts)<2) return "";
+    if(lower_case(parts[1]) == "ip6")
+      return map(parts[2..]/4, `*, "")*":";
+    else
+      return parts[2..]*".";
   }
 
   //! @decl array gethostbyaddr(string hostip)
