@@ -93,7 +93,7 @@ void f_load_module(INT32 args)
     free(module);
 #endif
     
-    error("Failed to initialize module.\n");
+    error("Failed to initialize module \"%s\".\n", module_name);
   }
 
   new_module=ALLOC_STRUCT(module_list);

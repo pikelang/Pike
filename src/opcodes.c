@@ -643,7 +643,7 @@ static INT32 low_sscanf(INT32 num_arg)
 	      goto test_again;
 	      
 	    case 's':
-	      error("Illigal to have two adjecent %%s.\n");
+	      error("Illegal to have two adjecent %%s.\n");
 	      return 0;		/* make gcc happy */
 	      
 	      /* sscanf("foo-bar","%s%d",a,b) might not work as expected */

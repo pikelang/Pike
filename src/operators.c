@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.10 1997/03/08 12:54:07 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.11 1997/03/11 23:32:32 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1233,7 +1233,7 @@ void f_index(INT32 args)
     o_range();
     break;
   default:
-    error("Too manu arguments to `[]\n");
+    error("Too many arguments to `[]\n");
   }
 }
 
@@ -1251,7 +1251,7 @@ void f_arrow(INT32 args)
     o_index();
     break;
   default:
-    error("Too manu arguments to `->\n");
+    error("Too many arguments to `->\n");
   }
 }
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.13 1997/02/17 20:47:13 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.14 1997/03/11 23:32:28 grubba Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -795,7 +795,7 @@ void f_aggregate_mapping(INT32 args)
   struct mapping *m;
 
   if(args & 1)
-    error("Uneven number of arguments to aggregage_mapping.\n");
+    error("Uneven number of arguments to aggregate_mapping.\n");
 
   m=allocate_mapping(MAP_SLOTS(args / 2));
 
