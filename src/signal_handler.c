@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.147 1999/08/06 22:12:17 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.148 1999/08/27 21:49:35 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2830,6 +2830,7 @@ static void f_pid_status_kill(INT32 args)
 static void f_kill(INT32 args)
 {
   HANDLE proc=INVALID_HANDLE_VALUE;
+  HANDLE tofree=INVALID_HANDLE_VALUE;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -2842,14 +2843,15 @@ static void f_kill(INT32 args)
   switch(sp[-args].type)
   {
   case T_INT:
-    proc=OpenProcess(PROCESS_TERMINATE,
-		     0,
-		     sp[-args].u.integer);
-    if(proc==INVALID_HANDLE_VALUE)
+    tofree=proc=OpenProcess(PROCESS_TERMINATE,
+			    0,
+			    sp[-args].u.integer);
+/*    fprintf(stderr,"PROC: %ld %ld\n",(long)proc,INVALID_HANDLE_VALUE); */
+    if(!proc || proc==INVALID_HANDLE_VALUE)
     {
       errno=EPERM;
       pop_n_elems(args);
-      push_int(-1);
+      push_int(0);
       return;
     }
     break;
@@ -2875,9 +2877,14 @@ static void f_kill(INT32 args)
 
   switch(sp[1-args].u.integer)
   {
+    case 0:
+      pop_n_elems(args);
+      push_int(1);
+      break;
+      
     case SIGKILL:
     {
-      int i=TerminateProcess(proc,0xff)?0:-1;
+      int i=TerminateProcess(proc,0xff);
       pop_n_elems(args);
       push_int(i);
       check_signals(0,0,0);
@@ -2887,9 +2894,11 @@ static void f_kill(INT32 args)
     default:
       errno=EINVAL;
       pop_n_elems(args);
-      push_int(-1);
+      push_int(0);
       break;
   }
+  if(tofree != INVALID_HANDLE_VALUE)
+    CloseHandle(tofree);
 }
 
 static void f_pid_status_kill(INT32 args)
