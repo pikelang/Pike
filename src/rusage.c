@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -13,7 +14,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.13 2000/07/11 19:05:02 neotron Exp $");
+RCSID("$Id: rusage.c,v 1.14 2000/08/16 17:18:23 grubba Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -24,6 +25,8 @@ RCSID("$Id: rusage.c,v 1.13 2000/07/11 19:05:02 neotron Exp $");
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+
+#include "fd_control.h"
 
 static INT32 rusage_values[30];
 /*
