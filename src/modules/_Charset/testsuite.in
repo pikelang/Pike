@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.2 2001/09/17 00:33:14 nilsson Exp $
+// $Id: testsuite.in,v 1.3 2005/04/02 22:22:57 mast Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -24,6 +24,28 @@ test_eq([[_Charset.decoder("utf-7")->
 
 // _Charset.UTF8
 test_eq([[_Charset.decoder("utf-8")->feed("Ã¥Ã¤Ã¶")->drain()]],"åäö")
+
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xc0\x80")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xc1\xbf")->drain())
+test_eq(_Charset.decoder ("utf-8")->feed ("\xc2\x80")->drain(), "\x80")
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xe0\x80\x80")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xe0\x9f\xbf")->drain())
+test_eq(_Charset.decoder ("utf-8")->feed ("\xe0\xa0\x80")->drain(), "\x800"))
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xf0\x80\x80\x80")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xf0\x8f\xbf\xbf")->drain())
+test_eq(_Charset.decoder ("utf-8")->feed ("\xf0\x90\x80\x80")->drain(), "\x10000")
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xf8\x80\x80\x80\x80")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xf8\x87\xbf\xbf\xbf")->drain())
+test_eq(_Charset.decoder ("utf-8")->feed ("\xf8\x88\x80\x80\x80")->drain(), "\x200000")
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xfc\x80\x80\x80\x80\x80")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xfc\x83\xbf\xbf\xbf\xbf")->drain())
+test_eq(_Charset.decoder ("utf-8")->feed ("\xfc\x84\x80\x80\x80\x80")->drain(), "\x4000000")
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xfe")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xff")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\x80")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xcf\x3f")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xcf\x7f")->drain())
+test_eval_error(return _Charset.decoder ("utf-8")->feed ("\xcf\xff")->drain())
 
 // _Charset.UTF16
 test_eq([[_Charset.decoder("utf-16")->feed("\0h\0e\0j")->drain()]],"hej")

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: charsetmod.c,v 1.41 2003/09/23 17:59:40 mast Exp $
+|| $Id: charsetmod.c,v 1.42 2005/04/02 22:22:57 mast Exp $
 */
 
 #ifdef HAVE_CONFIG_H
@@ -10,7 +10,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.41 2003/09/23 17:59:40 mast Exp $");
+RCSID("$Id: charsetmod.c,v 1.42 2005/04/02 22:22:57 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -201,7 +201,7 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
 						     struct std_cs_stor *))
 {
   struct std_cs_stor *s = (struct std_cs_stor *)fp->current_storage;
-  struct pike_string *str, *tmpstr = NULL;
+  struct pike_string *str;
   ptrdiff_t l;
 
   get_all_args("feed()", args, "%W", &str);
@@ -210,19 +210,19 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
     Pike_error("Can't feed on wide strings!\n");
 
   if(s->retain != NULL) {
-    tmpstr = add_shared_strings(s->retain, str);
-    free_string(s->retain);
-    s->retain = NULL;
-    str = tmpstr;
+    str = add_shared_strings(s->retain, str);
+    push_string (str);
+    args++;
   }
 
   l = func(STR0(str), str->len, s);
 
+  if (s->retain) {
+    free_string(s->retain);
+    s->retain = NULL;
+  }
   if(l>0)
     s->retain = make_shared_binary_string((char *)STR0(str)+str->len-l, l);
-
-  if(tmpstr != NULL)
-    free_string(tmpstr);
 
   pop_n_elems(args);
   push_object(this_object());
@@ -232,32 +232,61 @@ static void f_std_feed(INT32 args, ptrdiff_t (*func)(const p_wchar0 *,
 static ptrdiff_t feed_utf8(const p_wchar0 *p, ptrdiff_t l,
 			   struct std_cs_stor *s)
 {
-  static int utf8len[] = { 0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   0, 0, 0, 0, 0, 0, 0, 0,
-			   1, 1, 1, 1, 1, 1, 1, 1,
-			   2, 2, 2, 2, 3, 3, 4, 5 };
-  static unsigned INT32 utf8of[] = { 0ul, 0x3080ul, 0xe2080ul,
-				     0x3c82080ul, 0xfa082080ul, 0x82082080ul };
-  while(l>0) {
-    unsigned INT32 ch = 0;
-    int cl = utf8len[(*p)>>2];
-    if(cl>--l)
-      return l+1;
-    switch(cl) {
-    case 5: ch = *p++<<6;
-    case 4: ch += *p++; ch<<=6;
-    case 3: ch += *p++; ch<<=6;
-    case 2: ch += *p++; ch<<=6;
-    case 1: ch += *p++; ch<<=6;
-    case 0: ch += *p++;
+  static const int utf8cont[] = { 0, 0, 0, 0, 0, 0, 0, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0,
+				  0, 0, 0, 0, 0, 0, 0, 0,
+				  1, 1, 1, 1, 1, 1, 1, 1,
+				  1, 1, 1, 1, 1, 1, 1, 1,
+				  2, 2, 2, 2, 2, 2, 2, 2,
+				  3, 3, 3, 3, 4, 4, 5, 0 };
+  static const unsigned int first_char_mask[] = {0x1f, 0x0f, 0x07, 0x03, 0x01};
+
+  const p_wchar0 *start = p;
+  for (; l > 0; l--) {
+    unsigned int ch = *p++;
+
+    if (ch & 0x80) {
+      int cl = utf8cont[(ch>>1) - 64], i;
+      if (!cl)
+	Pike_error ("Got invalid byte 0x%x at position %"PRINTPTRDIFFT"d.\n",
+		    ch, p - start - 1 - (s->retain ? s->retain->len : 0));
+
+      ch &= first_char_mask[cl - 1];
+
+      for (i = cl >= l ? l - 1 : cl; i--;) {
+	unsigned int c = *p++;
+	if ((c & 0xc0) != 0x80)
+	  Pike_error ("Got invalid UTF-8 sequence continuation byte 0x%x "
+		      "at position %"PRINTPTRDIFFT"d.\n",
+		      c, p - start - 1 - (s->retain ? s->retain->len : 0));
+	ch = (ch << 6) | (c & 0x3f);
+      }
+
+      if(cl >= l)
+	return l;
+      l -= cl;
+
+      switch (cl) {
+	case 1: if (ch >= (1 << 7)) break;
+	case 2: if (ch >= (1 << 11)) break;
+	case 3: if (ch >= (1 << 16)) break;
+	case 4: if (ch >= (1 << 21)) break;
+	case 5: if (ch >= (1 << 26)) break;
+	  {
+	    ptrdiff_t errpos =
+	      p - start - cl - 1 - (s->retain ? s->retain->len : 0);
+	    if (errpos < 0) errpos = 0;
+	    Pike_error ("Got non-shortest form of char 0x%x "
+			"at position %"PRINTPTRDIFFT"d.\n",
+			ch, errpos);
+	  }
+      }
     }
-    l-=cl;
-    string_builder_putchar(&s->strbuild, (ch-utf8of[cl])&0x7fffffffl);
+
+    string_builder_putchar(&s->strbuild, ch);
   }
+
   return l;
 }
 
