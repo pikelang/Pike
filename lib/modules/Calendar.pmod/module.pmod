@@ -3,8 +3,8 @@ static private int booted=0;
 static private object defcal;
 static private object iso_utc;
 static private object default_rules;
-static private multiset magic= // magic + indices(Calendar.ISO) without YMD
-(< 
+constant magic= // magic + indices(Calendar.ISO) without YMD
+(<
    "ISO_UTC","II", "default_rules",
    "_sprintf", "set_timezone", "language", "Day", "Year", "Week",
    "Month", "Hour", "Minute", "datetime", "format_iso",
@@ -21,7 +21,6 @@ static private multiset magic= // magic + indices(Calendar.ISO) without YMD
 #if 1
 mixed `[](string what)
 {
-//     werror("%O\n",what);
    if (!booted)
    {
       booted++;
@@ -37,7 +36,10 @@ mixed `[](string what)
       master()->resolv("Calendar")["Gregorian"];
 
 // load ISO
-      iso_utc=master()->resolv("Calendar")["ISO"]->set_timezone("UTC");
+// it can crash here if you're loading from compiled modules
+// that is updated without all of the calendar module is updated
+      iso_utc=master()->resolv("Calendar")["ISO"];
+      iso_utc=iso_utc->set_timezone("UTC");
       stage--;
       object tz=
 	 master()->resolv("Calendar")["Timezone"][default_timezone];
@@ -50,6 +52,8 @@ mixed `[](string what)
    switch (what)
    {
       case "ISO_UTC":
+	 if (!iso_utc)
+	    error("ERROR\n");
 	 return iso_utc;
       case "II":
 	 return 1;
@@ -59,8 +63,9 @@ mixed `[](string what)
 	    default_rules=master()->resolv("Calendar")["Ruleset"]();
 	    default_rules=default_rules->set_language(default_language);
 	 }
-   // load ISO_UTC and set timezone
-	 if (!iso_utc) `[]("ISO_UTC");
+   // load ISO_UTC and set timezone there
+//  	 if (!iso_utc) `[]("ISO_UTC");
+   // timezone will be set on the way out, through boot above
 	 return default_rules;
    }
    if (!defcal)
