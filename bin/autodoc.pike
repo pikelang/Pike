@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.17 2001/07/27 14:43:18 nilsson Exp $
+ * $Id: autodoc.pike,v 1.18 2001/08/20 16:08:10 nilsson Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -125,10 +125,7 @@ int main(int argc, array(string) argv)
 	      }
 	    }
 	  }
-	  write(info?sprintf("%s\n",info->xml()):
-		"<module name=''><modifiers/></module>\n");
-	} else {
-	  write("<module name=''><modifiers/></module>\n");
+	  if(info) write(sprintf("%s\n",info->xml()));
 	}
       } else {
         werror("%O is not a plain file or directory.\n", path);
