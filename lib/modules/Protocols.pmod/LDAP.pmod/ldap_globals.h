@@ -29,11 +29,11 @@
 #define ENABLE_PAGED_SEARCH
 
 #ifdef DEBUG_PIKE_PROTOCOL_LDAP
-#define DWRITE(X)		werror("Protocols.LDAP: "+X)
-#define DWRITE_HI(X)		werror("Protocols.LDAP: "+X)
+#define DWRITE(X...)		werror("Protocols.LDAP: "+X)
+#define DWRITE_HI(X...)		werror("Protocols.LDAP: "+X)
 #else
-#define DWRITE(X)
-#define DWRITE_HI(X)
+#define DWRITE(X...)
+#define DWRITE_HI(X...)
 #endif
 
 #ifdef DEBUG
