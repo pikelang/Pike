@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.21 1999/03/19 11:40:15 hubbe Exp $");
+RCSID("$Id: module_support.c,v 1.22 1999/03/20 23:11:14 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -122,7 +122,7 @@ void check_all_args(const char *fnname, int args, ... )
  * many arguments were actually matched.
  * usage: get_args(sp-args, args, "%i",&an_int)
  * format specifiers:
- *   %i: INT32
+ *   %i: INT_TYPE
  *   %s: char *				Only 8bit strings
  *   %S: struct pike_string *		Only 8bit strings
  *   %W: struct pike_string *		Allow wide strings
