@@ -344,7 +344,7 @@ void async_got_host(string server,int port)
 
    // (empty) OOB-R and OOB-W callbacks needed on NT to get a close
    // callback in case the connection failed.
-   con->set_nonblocking(0,async_connected,async_failed, lambda(){}, lamda(){});
+   con->set_nonblocking(0,async_connected,async_failed, lambda(){}, lambda(){});
 
    int success;
    if (catch { success = con->connect(server,port);
