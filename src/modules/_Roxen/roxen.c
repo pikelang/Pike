@@ -46,7 +46,7 @@ struct  header_buf
 static void f_hp_feed( INT32 args )
 {
   struct pike_string *str = Pike_sp[-1].u.string;
-  int slash_n = 0, cnt, num;
+  int tot_slash_n=0, slash_n = 0, spc = 0, cnt, num;
   char *pp,*ep;
   struct svalue *tmp;
   struct mapping *headers;
@@ -60,23 +60,32 @@ static void f_hp_feed( INT32 args )
     Pike_error("Too many headers\n");
 
   MEMCPY( THP->pnt, str->str, str->len );
+  pop_n_elems( args );
 
-  for( ep=(THP->pnt+str->len),
-         pp=MAXIMUM(THP->headers,THP->pnt-3); 
-       pp<ep && slash_n<2; 
-       pp++ )
-    if( *pp == '\n' )
-      slash_n++;
-    else if( *pp != '\r' )
-      slash_n=0;
-  
+  for( ep=(THP->pnt+str->len),pp=MAXIMUM(THP->headers,THP->pnt-3); 
+       pp<ep && slash_n<2; pp++ )
+    if( *pp == ' ' )  spc++;
+    else if( *pp == '\n' ) slash_n++, tot_slash_n++;
+    else if( *pp != '\r' ) slash_n=0;
+
   THP->left -= str->len;
   THP->pnt += str->len;
   THP->pnt[0] = 0;
-  pop_n_elems( args );
+
   if( slash_n != 2 )
   {
-    /* check for HTTP/0.9? */
+    /* one newline, but less than 2 space,
+     *    --> HTTP/0.9 or broken request 
+     */
+    if( (spc < 2) && tot_slash_n )
+    {
+      push_text( "" );
+      /* This includes (all eventual) \r\n etc. */
+      push_text( THP->headers ); 
+      f_aggregate_mapping( 0 );
+      f_aggregate( 3 );
+      return;
+    }
     push_int( 0 );
     return;
   }
@@ -109,9 +118,8 @@ static void f_hp_feed( INT32 args )
       while(in[os]==' ') os++;
       for(j=os;j<l;j++) 
         if( in[j] == '\n' || in[j]=='\r')
-        { 
           break; 
-        }
+
       push_string(make_shared_binary_string((char*)in+os,j-os));
 
       if((tmp = low_mapping_lookup(headers, Pike_sp-2)))
@@ -139,7 +147,7 @@ static void f_hp_feed( INT32 args )
     }
   }
   push_mapping( headers );
-  f_aggregate( 3 );             /* data, headers */
+  f_aggregate( 3 );             /* data, firstline, headers */
 }
 
 static void f_hp_create( INT32 args )
