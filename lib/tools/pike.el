@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.15 2000/11/17 16:47:36 mast Exp $
+;;; $Id: pike.el,v 1.16 2000/12/22 17:07:10 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -130,9 +130,9 @@ The name is assumed to begin with a capital letter.")
   (defconst pike-modifier-regexp
     (concat "\\<\\(public\\|inline\\|final\\|static\\|protected\\|"
 	    "local\\|optional\\|private\\|nomask\\|variant\\)\\>"))
-  (defconst pike-operator-identifiers 
-    (concat "``?\\(!=\\|->=?\\|<[<=]\\|==\\|>[=>]\\|\\[\\]=?\\|\(\)"
-	    "\\|[!%&+*/<>^|~-]\\)"))
+  (defconst pike-operator-identifiers
+    (concat "`\\(->=?\\|+=?\\|==\\|\\[\\]=?\\|()\\|[!<>~]"
+	    "\\|`?\\(<<\\|>>\\|[%&*+/^|-]\\)\\)"))
 
   ;; Basic font-lock support:
   (setq pike-font-lock-keywords-1
@@ -305,18 +305,18 @@ The name is assumed to begin with a capital letter.")
 	    (1 pike-font-lock-refdoc-init2-face prepend)
 	    (2 pike-font-lock-refdoc-init-face prepend)
 	    (3 pike-font-lock-refdoc-face prepend)
-	    ((lambda (limit)
-	       (if (looking-at "[ \t]*@decl")
-		   (progn
-		     (put-text-property (match-end 0) limit 'face nil)
-		     (goto-char limit)
-		     t)))
-	     (goto-char (match-end 2)) nil)
 	    ("\\(@\\(\\w+{?\\|\\[[^\]]*\\]\\|[@}]\\|$\\)\\)\\|\\(@.\\)"
 	     (goto-char (match-end 2)) nil
 	     (1 font-lock-reference-face t t)
 	     (1 pike-font-lock-refdoc-keyword-face prepend t)
 	     (3 pike-font-lock-refdoc-error-face t t))
+	    ((lambda (limit)
+	       (if (looking-at "[ \t]*@\\(decl\\|member\\|index\\|elem\\)")
+		   (progn
+		     (put-text-property (match-end 0) limit 'face nil)
+		     (goto-char limit)
+		     t)))
+	     (goto-char (match-end 2)) nil)
 	    )
 	  )
 	 pike-font-lock-keywords-2
