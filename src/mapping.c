@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.72 2000/04/22 13:20:39 mast Exp $");
+RCSID("$Id: mapping.c,v 1.73 2000/04/22 18:48:58 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -63,7 +63,7 @@ DO_IF_DEBUG(								\
 									\
   if(m->next) m->next->prev = m->prev;					\
 									\
-  GC_FREE(m);
+  GC_FREE();
 
 
 #undef COUNT_OTHER
@@ -170,9 +170,9 @@ struct mapping *debug_allocate_mapping(int size)
 {
   struct mapping *m;
 
-  GC_ALLOC();
-
   m=alloc_mapping();
+
+  GC_ALLOC(m);
 
   INITIALIZE_PROT(m);
   init_mapping(m,size);
@@ -1841,10 +1841,10 @@ void gc_check_all_mappings(void)
     }
 #endif /* DEBUG_MALLOC */
 
-    if(gc_check_nongarbed(m->data)) continue;
-
     if((m->data->ind_types | m->data->val_types) & BIT_COMPLEX)
     {
+      if(gc_check(m->data)) continue;
+
       MAPPING_LOOP(m)
       {
 	/* We do not want to count this key:index pair if

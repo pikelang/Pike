@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.104 2000/04/22 13:20:39 mast Exp $");
+RCSID("$Id: object.c,v 1.105 2000/04/22 18:48:58 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -84,9 +84,9 @@ struct object *low_clone(struct program *p)
   p->num_clones++;
 #endif /* PROFILING */
 
-  GC_ALLOC();
-
   o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
+
+  GC_ALLOC(o);
 
 #ifdef DEBUG_MALLOC
   if(!debug_malloc_copy_names(o, p)) 
@@ -596,7 +596,6 @@ void really_free_object(struct object *o)
     o->prev=0;
     objects_to_destruct=o;
     if (Pike_in_gc) {
-      remove_marker(o);
       /* destruct_objects_to_destruct() done last in gc() instead. */
       return;
     }
@@ -619,7 +618,7 @@ void really_free_object(struct object *o)
     FREE_PROT(o);
 
     free((char *)o);
-    GC_FREE(o);
+    GC_FREE();
   }
 }
 

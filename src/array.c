@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.64 2000/04/22 13:20:39 mast Exp $");
+RCSID("$Id: array.c,v 1.65 2000/04/22 18:48:57 mast Exp $");
 
 struct array empty_array=
 {
@@ -57,12 +57,12 @@ struct array *low_allocate_array(INT32 size,INT32 extra_space)
     return &empty_array;
   }
 
-  GC_ALLOC();
-
   v=(struct array *)malloc(sizeof(struct array)+
 			   (size+extra_space-1)*sizeof(struct svalue));
   if(!v)
     error("Couldn't allocate array, out of memory.\n");
+
+  GC_ALLOC(v);
   
 
   /* for now, we don't know what will go in here */
@@ -104,7 +104,7 @@ static void array_free_no_free(struct array *v)
 
   free((char *)v);
 
-  GC_FREE(v);
+  GC_FREE();
 }
 
 /*

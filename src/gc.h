@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.26 2000/04/22 13:20:39 mast Exp $
+ * $Id: gc.h,v 1.27 2000/04/22 18:48:58 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -23,9 +23,9 @@ extern void *gc_svalue_location;
 #define ADD_GC_CALLBACK() gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0)
 
 #ifdef ALWAYS_GC
-#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(!gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
+#define GC_ALLOC(OBJ) do{ num_objects++; num_allocs++; if (Pike_in_gc) remove_marker(OBJ); if(!gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
 #else
-#define GC_ALLOC() do{ num_objects++; num_allocs++;  if(num_allocs == alloc_threshold && !gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
+#define GC_ALLOC(OBJ) do{ num_objects++; num_allocs++; if (Pike_in_gc) remove_marker(OBJ); if(num_allocs == alloc_threshold && !gc_evaluator_callback) ADD_GC_CALLBACK(); } while(0)
 #endif
 
 struct marker
@@ -53,12 +53,10 @@ void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
 TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 int debug_gc_check(void *x, TYPE_T t, void *data);
-int debug_gc_check_nongarbed(void *x, TYPE_T t, void *data);
 void describe_something(void *a, int t, int dm);
 void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 INT32 real_gc_check(void *a);
-INT32 real_gc_check_nongarbed(void *a);
 void locate_references(void *a);
 int debug_gc_is_referenced(void *a);
 int gc_external_mark(void *a);
@@ -72,17 +70,15 @@ void f__gc_status(INT32 args);
 #define gc_check_short_svalue(S,N) real_gc_check_short_svalue(debug_malloc_pass(S),N)
 #define gc_xmark_svalues(S,N) real_gc_xmark_svalues(debug_malloc_pass(S),N)
 #define gc_check(VP) real_gc_check(debug_malloc_pass(VP))
-#define gc_check_nongarbed(VP) real_gc_check_nongarbed(debug_malloc_pass(VP))
 
 #ifdef PIKE_DEBUG
-#define GC_FREE(OBJ) do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); if (Pike_in_gc) remove_marker(OBJ); }while(0)
+#define GC_FREE() do { num_objects-- ; if(num_objects < 0) fatal("Panic!! less than zero objects!\n"); }while(0)
 #else
 #define debug_gc_check_svalues(S,N,T,V) gc_check_svalues((S),N)
 #define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
-#define debug_gc_check_nongarbed(VP,T,V) gc_check_nongarbed((VP))
-#define GC_FREE(OBJ) do { num_objects-- ; if (Pike_in_gc) remove_marker(OBJ); }while(0)
+#define GC_FREE() do { num_objects-- ; }while(0)
 #endif
 
 
@@ -92,7 +88,6 @@ void f__gc_status(INT32 args);
 #define GC_REFERENCED 1
 #define GC_XREFERENCED 2
 #define GC_CHECKED 4
-#define GC_NONGARBED 8
 
 
 #ifdef PIKE_DEBUG

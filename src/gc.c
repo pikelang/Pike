@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.56 2000/04/22 13:20:39 mast Exp $");
+RCSID("$Id: gc.c,v 1.57 2000/04/22 18:48:57 mast Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -316,17 +316,6 @@ int debug_gc_check(void *x, TYPE_T t, void *data)
   return ret;
 }
 
-int debug_gc_check_nongarbed(void *x, TYPE_T t, void *data)
-{
-  int ret;
-  found_in=data;
-  found_in_type=t;
-  ret=gc_check_nongarbed(x);
-  found_in_type=T_UNKNOWN;
-  found_in=0;
-  return ret;
-}
-
 void low_describe_something(void *a, int t, int dm)
 {
   struct program *p=(struct program *)a;
@@ -534,27 +523,10 @@ INT32 real_gc_check(void *a)
     }
     return 0;
   }
-  if (m->flags & GC_NONGARBED)
-    fatal("Using gc_check() and gc_check_nongarbed() on the same object.\n");
 #endif
   m->flags |= GC_CHECKED;
 
   return add_ref(m);
-}
-
-INT32 real_gc_check_nongarbed(void *a)
-{
-  struct marker *m = get_marker(a);
-#ifdef PIKE_DEBUG
-  if (m->flags & GC_CHECKED)
-    fatal("Using gc_check_nongarbed() and gc_check() on the same object.\n");
-#endif
-  if (m->flags & GC_NONGARBED)
-    return 1;
-  else {
-    m->flags |= GC_NONGARBED;
-    return 0;
-  }
 }
 
 static void init_gc(void)
