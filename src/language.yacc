@@ -188,7 +188,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.161 2000/01/25 22:41:29 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.162 2000/02/02 21:45:59 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -231,7 +231,7 @@ static struct pike_string *last_identifier=0;
  */
 #ifndef __GNUC__
 #ifndef __cplusplus
-static void __yy_memcpy(char *to, char *from, int count);
+static void __yy_memcpy(char *to, char *from, unsigned int count);
 #endif /* !__cplusplus */
 #endif /* !__GNUC__ */
 
