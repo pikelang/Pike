@@ -10,11 +10,15 @@ ProtocolsLysKOM.wmml
 ___tmp.*
 __tmp.ppm
 error.pdf
+execute_cache
 extra_textflows.mif
 gfx
 illustration*.*
 illustration_cache
+image_cache
+image_cache.log
 latex_wcache
+latex_wcache.log
 man
 pike.pdf
 test.aux
