@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.127 2001/05/31 12:27:30 grubba Exp $");
+RCSID("$Id: main.c,v 1.128 2001/06/25 20:03:40 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -734,6 +734,8 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 
 void low_init_main(void)
 {
+  void init_builtin(void);
+
   init_backend();
   init_iterators();
   init_pike_searching();
@@ -741,6 +743,9 @@ void low_init_main(void)
   init_pike_security();
   th_init();
   init_operators();
+
+  init_builtin();
+
   init_builtin_efuns();
   init_signals();
   init_dynamic_load();
@@ -767,16 +772,19 @@ void low_exit_main(void)
   void free_all_mapping_blocks(void);
   void free_all_object_blocks(void);
   void free_all_program_blocks(void);
+  void exit_builtin(void);
 
 #ifdef AUTO_BIGNUM
   void exit_auto_bignum(void);
   exit_auto_bignum();
 #endif
+
   exit_pike_searching();
   th_cleanup();
   exit_object();
   exit_dynamic_load();
   exit_signals();
+  exit_builtin();
   exit_lex();
   exit_cpp();
   cleanup_interpret();

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.381 2001/06/24 23:18:37 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.382 2001/06/25 20:03:39 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7138,10 +7138,6 @@ PMOD_EXPORT void f_function_defined(INT32 args)
 void init_builtin_efuns(void)
 {
   struct program *pike___master_program;
-
-  extern int init_builtin(void);
-
-  init_builtin();
 
   ADD_EFUN("gethrtime", f_gethrtime,
 	   tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
