@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.16 1997/02/07 01:37:49 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.17 1997/02/11 13:27:11 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -341,7 +341,7 @@ void th_init()
   add_function("trylock",f_mutex_trylock,"function(:object)",0);
   set_init_callback(init_mutex_obj);
   set_exit_callback(exit_mutex_obj);
-  end_class("mutex");
+  end_class("mutex", 0);
 
   start_new_program();
   add_storage(sizeof(struct key_storage));
@@ -356,7 +356,7 @@ void th_init()
   add_function("broadcast",f_cond_broadcast,"function(:void)",0);
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
-  end_class("condition");
+  end_class("condition", 0);
 
   start_new_program();
   thread_id_prog=end_program();
