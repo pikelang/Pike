@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.73 2000/01/12 04:28:32 mast Exp $
+// $Id: module.pmod,v 1.74 2000/01/22 02:33:50 hubbe Exp $
 
 import String;
 
@@ -537,11 +537,11 @@ class FILE {
       return file::open_socket();
     }
 
-    object pipe()
+    object pipe(void|int flags)
     {
       bpos=0;
       b="";
-      return file::pipe();
+      return query_num_arg() ? file::pipe(flags) : file::pipe();
     }
 
     int assign(object foo)
