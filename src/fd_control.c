@@ -47,7 +47,7 @@ void set_nonblocking(int fd,int which)
 #ifdef USE_FCNTL_FNDELAY
   fcntl(fd, F_SETFL, which?FNDELAY:0);
 #else
-#error Don not know how to set your filedescriptors nonblocking.
+#error Do not know how to set your filedescriptors nonblocking.
 #endif
 #endif
 #endif
@@ -77,7 +77,7 @@ int query_nonblocking(int fd)
 #ifdef USE_FCNTL_FNDELAY
   return fcntl(fd, F_GETFL, 0) & FNDELAY;
 #else
-#error Don not know how to set your filedescriptors nonblocking.
+#error Do not know how to set your filedescriptors nonblocking.
 #endif
 #endif
 #endif
