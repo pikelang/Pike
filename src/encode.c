@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.185 2004/05/18 13:01:16 grubba Exp $
+|| $Id: encode.c,v 1.186 2004/05/19 09:19:34 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.185 2004/05/18 13:01:16 grubba Exp $");
+RCSID("$Id: encode.c,v 1.186 2004/05/19 09:19:34 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -108,6 +108,7 @@ RCSID("$Id: encode.c,v 1.185 2004/05/18 13:01:16 grubba Exp $");
 #define COUNTER_START (-MAX_SMALL)
 
 /* Entries used to encode the identifier_references table. */
+#define ID_ENTRY_TYPE_CONSTANT	-4
 #define ID_ENTRY_EFUN_CONSTANT	-3
 #define ID_ENTRY_RAW		-2
 #define ID_ENTRY_EOT		-1
@@ -1259,11 +1260,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  /* constants */
 	  for(d=0;d<p->num_constants;d++)
 	  {
-	    if ((p->constants[d].sval.type != T_FUNCTION) ||
-		(p->constants[d].sval.subtype != FUNCTION_BUILTIN)) {
+	    if ((p->constants[d].sval.type == T_FUNCTION) &&
+		(p->constants[d].sval.subtype == FUNCTION_BUILTIN)) {
+	      code_number(ID_ENTRY_EFUN_CONSTANT, data);
+	    } else if (p->constants[d].sval.type == T_TYPE) {
+	      code_number(ID_ENTRY_TYPE_CONSTANT, data);
+	    } else {
 	      continue;
 	    }
-	    code_number(ID_ENTRY_EFUN_CONSTANT, data);
 	    code_number(d, data);
 	    /* value */
 	    encode_value2(&p->constants[d].sval, data, 0);
@@ -1574,8 +1578,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  for(d=0;d<p->num_constants;d++)
 	  {
 #ifdef PIKE_PORTABLE_BYTECODE
-	    if ((p->constants[d].sval.type == T_FUNCTION) &&
-		(p->constants[d].sval.subtype == FUNCTION_BUILTIN)) {
+	    if (((p->constants[d].sval.type == T_FUNCTION) &&
+		 (p->constants[d].sval.subtype == FUNCTION_BUILTIN)) ||
+		(p->constants[d].sval.type == T_TYPE)) {
 	      /* Already encoded above. */
 	      continue;
 	    }
@@ -3598,27 +3603,43 @@ static void decode_value2(struct decode_data *data)
 #ifdef ENCODE_DEBUG
 	  data->depth+=2;
 #endif
-	  while (entry_type == ID_ENTRY_EFUN_CONSTANT) {
+	  while ((entry_type == ID_ENTRY_EFUN_CONSTANT) ||
+		 (entry_type == ID_ENTRY_TYPE_CONSTANT)) {
 	    INT32 efun_no;
 	    struct program_constant *constant;
 	    decode_number(efun_no, data);
 	    EDB(2,
-		fprintf(stderr, "%*sDecoding efun constant #%d.\n",
+		fprintf(stderr, "%*sDecoding efun/type constant #%d.\n",
 			data->depth, "", efun_no));
 	    if ((efun_no < 0) || (efun_no >= local_num_constants)) {
 	      ref_push_program (p);
 	      decode_error(Pike_sp - 1, NULL,
-			   "Bad efun number: %d (expected 0 - %d).\n",
+			   "Bad efun/type number: %d (expected 0 - %d).\n",
 			   efun_no, local_num_constants-1);	      
 	    }
 	    constant = p->constants+efun_no;
 	    /* value */
 	    decode_value2(data);
-	    if ((Pike_sp[-1].type != T_FUNCTION) ||
-		(Pike_sp[-1].subtype != FUNCTION_BUILTIN)) {
-	      ref_push_program (p);
-	      decode_error(Pike_sp - 1, Pike_sp - 2,
-			   "Expected efun constant: ");
+	    switch(entry_type) {
+	    case ID_ENTRY_EFUN_CONSTANT:
+	      if ((Pike_sp[-1].type != T_FUNCTION) ||
+		  (Pike_sp[-1].subtype != FUNCTION_BUILTIN)) {
+		ref_push_program (p);
+		decode_error(Pike_sp - 1, Pike_sp - 2,
+			     "Expected efun constant: ");
+	      }
+	      break;
+	    case ID_ENTRY_TYPE_CONSTANT:
+	      if (Pike_sp[-1].type != T_TYPE) {
+		ref_push_program (p);
+		decode_error(Pike_sp - 1, Pike_sp - 2,
+			     "Expected type constant: ");
+	      }
+	      break;
+	    default:
+	      Pike_error("Internal error: Unsupported early constant (%d)\n",
+			 entry_type);
+	      break;
 	    }
 	    /* name */
 	    decode_value2(data);
