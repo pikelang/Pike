@@ -1,0 +1,4 @@
+configure
+dependencies
+sdl_config.h.in
+stamp-h.in
