@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.208 2001/01/23 13:47:54 grubba Exp $");
+RCSID("$Id: file.c,v 1.209 2001/01/27 08:08:18 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2506,6 +2506,8 @@ static void low_file_lock(INT32 args, int flags)
 {
   int ret,fd=FD;
   struct object *o;
+  
+  destruct_objects_to_destruct();
 
   if(FD==-1)
     Pike_error("File->lock(): File is not open.\n");
@@ -2622,8 +2624,6 @@ static void exit_file_lock_key(struct object *o)
 #endif
     THIS_KEY->f->key = 0;
     THIS_KEY->f = 0;
-    free_object(THIS_KEY->file);
-    THIS_KEY->file = NULL;
   }
 }
 
@@ -2637,6 +2637,9 @@ static void init_file_locking(void)
 	       off + OFFSETOF(file_lock_key_storage, owner),
 	       PIKE_T_OBJECT);
 #endif
+  map_variable("_file","object",0,
+	       off + OFFSETOF(file_lock_key_storage, file),
+	       PIKE_T_OBJECT);
   set_init_callback(init_file_lock_key);
   set_exit_callback(exit_file_lock_key);
   file_lock_key_program=end_program();
