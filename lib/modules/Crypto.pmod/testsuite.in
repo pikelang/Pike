@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.18 2003/11/29 18:38:41 nilsson Exp $
+dnl $Id: testsuite.in,v 1.19 2003/11/29 19:05:07 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -162,9 +162,11 @@ cond([[ Crypto["SHA256"] ]], [[
 dnl Crypto.DES
 cond([[ Crypto["DES"] ]], [[
   test_eq( Crypto.DES.fix_parity("\xff"*8), "\xfe"*8 )
+  test_eq( Crypto.DES.fix_parity("\xff"*9), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("12345678"), "12244778" )
   test_eq( Crypto.DES.fix_parity("\xff"*7), "\xfe"*8 )
   test_eq( Crypto.DES.fix_parity("\1"*7), "\1\200\100\40\20\10\4\2")
+  test_eval_error( Crypto.DES.fix_parity("123456") )
 ]])
 test_eq([[
 #pike 7.4
@@ -186,6 +188,15 @@ test_eq([[
 
 dnl Crypto.DES3
 cond([[ Crypto["DES3"] ]], [[
+  test_eq( Crypto.DES3.fix_parity("\xff"*8*3), "\xfe"*8*3 )
+  test_eq( Crypto.DES3.fix_parity("\xff"*(8*3+1)), "\xfe"*8*3 )
+  test_eq( Crypto.DES3.fix_parity("12345678"*3), "12244778"*3 )
+  test_eq( Crypto.DES3.fix_parity("\xff"*7*3), "\xfe"*8*3 )
+  test_eq( Crypto.DES3.fix_parity("\1"*7*3), "\1\200\100\40\20\10\4\2"*3)
+  test_eval_error( Crypto.DES3.fix_parity("x"*20) )
+  test_eval_error( Crypto.DES3.fix_parity("x"*22) )
+  test_eval_error( Crypto.DES3.fix_parity("x"*23) )
+
   test_eq( Crypto.DES3()->set_encrypt_key( "1234567qwertyu" )->crypt("AAAAAAAA"), String.hex2string("5c9a0edce113b184") )
 dnl  test_eq( Crypto.DES3()->set_encrypt_key( "12345678qwertyui" )->crypt("AAAAAAAA"), String.hex2string("fc516e07b34afe5a") )
   test_eq( Crypto.DES3()->set_encrypt_key( "1234567qwertyuASDFGHJ" )->crypt("AAAAAAAA"), String.hex2string("b3341af18e541949") )
@@ -206,6 +217,21 @@ cond([[ Crypto["$1"] ]],[[
     c->make_key();
     return sizeof(c->crypt("A"*c->block_size()));
   ]], Crypto.$1->block_size() )
+  test_eval_error([[
+    object c=Crypto.$1();
+    if(c->block_size()==1) throw(1);
+    c->make_key();
+    c->crypt("A"*c->block_size()+1);
+  ]])
+  test_eval_error([[
+    object c=Crypto.$1();
+    c->make_key();
+    c->crypt("\500"*c->block_size());
+  ]])
+  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_encrypt_key("A")))
+  test_eval_error("$1"=="ARCFOUR"?throw(1):Crypto.$1()->set_decrypt_key("A")))
+  test_eval_error(Crypto.$1()->set_decrypt_key("\500"*Crypto.$1->key_size()))
+  test_eval_error(Crypto.$1()->crypt();)
 ]])]])
 
 test_cipher(AES,aes)
