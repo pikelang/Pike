@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.375 2000/11/03 14:11:03 noring Exp $")
+AC_REVISION("$Id: configure.in,v 1.376 2001/02/28 23:50:35 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -343,7 +343,10 @@ case "$pike_cv_sys_os" in
     CFLAGS="$CFLAGS -D__USE_FIXED_PROTOTYPES__"
   ;;
   BSD/OS*)
-    LD="$BINDIR/smartlink shlicc"
+    case "`uname -r`" in
+      4.*) ;;
+      *) LD="$BINDIR/smartlink shlicc";;
+    esac
   ;;
   UnixWare*)
     case "$CFLAGS" in
@@ -453,7 +456,23 @@ else :; fi
 #############################################################################
 
 
-
+AC_ARG_WITH(root,              [  --with-root=path                 specify a c
+ross-compilation root-directory],[
+  case "$with_root" in
+    /)
+      with_root=""
+    ;;
+    /*)
+    ;;
+    no)
+      with_root=""
+    ;;
+    *)
+      AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
+      with_root=""
+    ;;
+  esac
+],[with_root=""])
 AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
 AC_ARG_WITH(static_linking,    [  --with-static-linking            link statically, if possible],[with_static_linking=yes],[])
 AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
@@ -483,7 +502,7 @@ AC_ARG_WITH(copt,        [  --without-copt         disable -O2],[],[with_copt=])
 AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[
    case "x$pike_cv_sys_os" in
      xFreeBSD*)
-        if test "`uname -r`" -gt 3; then
+        if test "`uname -r|sed -e 's/\([[0-9]]*\).*/\1/'`" -lt 4; then
            AC_MSG_WARN([
 FreeBSD <= 3.x detected, disabling threads.
 Use --with-threads to force threads support.
@@ -518,7 +537,7 @@ AC_ARG_WITH(pg,		[  --with-pg              Use the gcc -pg option],
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX)
+    Solaris|HP-UX|OSF1|IRIX|Linux|Darwin)
       AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
       with_poll=yes
     ;;
@@ -546,8 +565,10 @@ AC_ARG_WITH(shared-nodes,[  --with-shared-nodes    enable the SHARED_NODES mode 
 
 # This makes configure default to --without-Perl
 # Remove this when the Perl module stops crashing and hanging. -Hubbe
-AC_ARG_WITH(with-Perl,   [  --with-Perl            enable the embedded Perl module (EXPERIMENTAL)],[],
-[ac_configure_args="$ac_configure_args --without-Perl"]
+AC_ARG_WITH(perl,        [  --with-perl            enable the embedded Perl module (EXPERIMENTAL)],[],
+[ac_configure_args="$ac_configure_args --without-Perl"
+ with_perl="no"
+]
 )
 
 if test "x$with_bignums" = xyes; then
@@ -591,6 +612,17 @@ fi
 
 if test "x$with_rtldebug" = x ; then
   with_rtldebug="$with_debug"
+fi
+
+
+#
+# --with-dmalloc requires --with-rtldebug
+#
+if test "x$with_dmalloc" = "x"; then :; else
+  if test "x$with_rtldebug" = "xyes"; then :; else
+    AC_MSG_WARN([Debug malloc requires rtldebug. Enabling rtldebug.])
+    with_rtldebug=yes
+  fi
 fi
 
 
@@ -684,10 +716,10 @@ if test $cflags_is_set = no; then
   # Yikes! We're using the TenDRA compiler!
 
   # Make sure we can use the system headerfiles...
-  AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CFLAGS)
+  AC_SYS_COMPILER_FLAG(-Ysystem, ysystem, CPPFLAGS)
 
   # Use lenient ANSI compliance...
-  AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
+  #AC_SYS_COMPILER_FLAG(-Xa, xa, CFLAGS)
 
   # Find out where libtdf.a is hidden.
   AC_MSG_CHECKING(for machine dependant library directory)
@@ -882,7 +914,7 @@ else
       case "/$CC" in
         */smartlink\ cc)
            if test -x /usr/bin/cc; then
-             CC="$SMARTLINK /usr/bin/cc"
+	     CC="`echo $CC|sed -e 's/ cc/ \/usr\/bin\/cc/`"
            else
              : ;
            fi
@@ -921,10 +953,12 @@ echo Searching for include-file directories...
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
   real_include_dirs=''
   for d in `echo ${with_include_path} | sed 's/:/ /g'` \
-    `echo $prefix | sed "s@^NONE@$ac_default_prefix@g"`/include \
-    /usr/local/include /sw/local/include /usr/gnu/include /opt/gnu/include \
-    /sw/gnu/include /sw/include /usr/freeware/include /usr/pkg/include \
-    `echo /usr/X11*/include | sort -r` $srcdir `pwd`
+    `echo $prefix | sed "s@^NONE@$with_root$ac_default_prefix@g"`/include \
+    $with_root/usr/local/include $with_root/sw/local/include \
+    $with_root/usr/gnu/include $with_root/opt/gnu/include \
+    $with_root/sw/gnu/include $with_root/sw/include \
+    $with_root/usr/freeware/include $with_root/usr/pkg/include \
+    `echo $with_root/usr/X11*/include | sort -r` $srcdir `pwd`
   do
     AC_MSG_CHECKING($d)
     case x$d in
@@ -968,10 +1002,11 @@ fi
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
   for d in `echo ${with_lib_path} | sed 's/:/ /g'` \
-    `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$ac_default_prefix/lib@g"` \
-    /usr/local/lib /sw/local/lib /sw/lib \
-    /usr/gnu/lib /opt/gnu/lib /sw/gnu/lib /usr/freeware/lib /usr/pkg/lib \
-    `echo /usr/X11*/lib | sort -r`
+    `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$with_root$ac_default_prefix/lib@g"` \
+    $with_root/usr/local/lib $with_root/sw/local/lib $with_root/sw/lib \
+    $with_root/usr/gnu/lib $with_root/opt/gnu/lib $with_root/sw/gnu/lib \
+    $with_root/usr/freeware/lib $with_root/usr/pkg/lib \
+    `echo $with_root/usr/X11*/lib | sort -r`
   do
     AC_MSG_CHECKING($d)
     if test -d "$d/." ; then
@@ -993,9 +1028,10 @@ else
 fi
 
 echo Searching for binary directories...
-for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$ac_default_prefix@g"` \
-    "" /usr /usr/ccs /usr/local /sw/local /usr/gnu /opt/gnu /sw/gnu \
-    /sw /usr/freeware /usr/pkg
+for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
+    "$with_root" $with_root/usr $with_root/usr/ccs $with_root/usr/local \
+    $with_root/sw/local $with_root/usr/gnu $with_root/opt/gnu \
+    $with_root/sw/gnu $with_root/sw $with_root/usr/freeware $with_root/usr/pkg
 do
   AC_MSG_CHECKING($d/bin)
   if test -d "$d/bin/." ; then
@@ -1065,8 +1101,11 @@ AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
 
-AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
-export AR
+if test "x${AR-}" = x ; then
+  AC_PATH_PROG(AR, ar, ar, $PATH:$EXTRA_PATH)
+  export AR
+fi
+
 AC_SUBST(AR)
 
 #############################################################################
@@ -1254,10 +1293,10 @@ AC_CHECK_SIZEOF(short,2)
 AC_CHECK_SIZEOF(float,4)
 AC_CHECK_SIZEOF(double,8)
 AC_CHECK_SIZEOF(long,4)
-AC_CHECK_SIZEOF(long long,0)
-AC_CHECK_SIZEOF(__int64,0)
+AC_CHECK_SIZEOF(long long,8)
+AC_CHECK_SIZEOF(__int64,8)
 
-AC_MY_CHECK_TYPE(size_t,long)
+AC_MY_CHECK_TYPE(size_t,unsigned long)
 AC_MY_CHECK_TYPE(off_t,long)
 AC_MY_CHECK_TYPE(pid_t,int)
 AC_MY_CHECK_TYPE(uid_t,int)
@@ -1438,7 +1477,11 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
     ;;
 
     xAIX*)
-      LIBS="${OLDLIBS} -lpthreads -lc_r"
+      if test "`uname -v`" -gt 4 ; then
+        LIBS="${OLDLIBS} -lpthread"
+      else
+        LIBS="${OLDLIBS} -lpthreads -lc_r"
+      fi
     ;;
 
     xSolaris*)
@@ -1451,8 +1494,7 @@ rm confdefs.out.2 >/dev/null 2>/dev/null || :
     ;;
   esac
 
-  AC_CHECK_FUNCS(pthread_init)
-  AC_CHECK_FUNCS(pthread_mutexattr_init)
+  AC_CHECK_FUNCS(pthread_init pthread_mutexattr_init pthread_kill)
 
   AC_MSG_CHECKING(posix threads)
 
@@ -1727,13 +1769,20 @@ fi
 
 ########################################################################
 
+# NOTE: The following test is hardcoded to fail when crosscompiling
+# It also clobbers $LIBOBJS.
+
+OLD_LIBOBJS="${LIBOBJS}"
+
 AC_FUNC_MEMCMP
 
-if test "${OLD_LIBOBJS}" = "${LIBOBJS}" ; then
+if test "$$ac_cv_func_memcmp_clean" = "xyes"; then
   AC_DEFINE(HAVE_MEMCMP)
 fi
 
 LIBOBJS="${OLD_LIBOBJS}"
+
+########################################################################
 
 AC_FUNC_MMAP
 
@@ -1814,9 +1863,10 @@ AC_CHECK_FUNCS( \
  nanosleep \
 )
 
-AC_MSG_CHECKING(if the last argument to accept is a size_t *)
+AC_MSG_CHECKING(for the type of the last argument to accept)
 AC_CACHE_VAL(pike_cv_accept_size_t, [
-  AC_TRY_COMPILE([
+  for t in socklen_t size_t int; do
+    AC_TRY_COMPILE([
 #ifndef _LARGEFILE_SOURCE
 #  define _FILE_OFFSET_BITS 64
 #  define _LARGEFILE_SOURCE
@@ -1841,12 +1891,88 @@ AC_CACHE_VAL(pike_cv_accept_size_t, [
 #endif
 
 /* Here's the actual test: */
-int accept(int, struct sockaddr *, size_t *);
-  ], [
-    /* EMPTY */
-  ], pike_cv_accept_size_t=size_t, pike_cv_accept_size_t=int)
+int accept(int, struct sockaddr *, $t *);
+    ], [
+      /* EMPTY */
+    ], [
+      pike_cv_accept_size_t=$t
+      break
+    ], [
+      AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+/* NT */
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+/* Here's the actual test: */
+SOCKET accept(SOCKET, struct sockaddr *, $t *);
+      ], [
+        /* EMPTY */
+      ], [
+        pike_cv_accept_size_t=$t
+        break
+      ], [])
+    ])
+  done
+  if test "x$pike_cv_accept_size_t" = "x"; then
+    # Check if it could be a Psocklen_t
+    # Psocklen_t is a stupid typedef of socklen_t *.
+    AC_TRY_COMPILE([
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#  define _LARGEFILE64_SOURCE 1
+#endif
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
+
+#include <sys/types.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
+/* NT */
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+/* Here's the actual test: */
+int accept(int, struct sockaddr *, Psocklen_t);
+    ], [
+      /* EMPTY */
+    ], [
+      pike_cv_accept_size_t=socklen_t
+    ], [
+      # FIXME: Should probably have a warning here.
+      # FIXME: Should we check if socklen_t exists, and use that?
+      pike_cv_accept_size_t=int
+    ])
+  fi
 ])
-AC_MSG_RESULT($pike_cv_accept_size_t)
+AC_MSG_RESULT($pike_cv_accept_size_t *)
 AC_DEFINE_UNQUOTED(ACCEPT_SIZE_T, $pike_cv_accept_size_t)
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
@@ -2097,8 +2223,6 @@ if test "x$ac_cv_func_ualarm" = "xyes"; then
     AC_MSG_RESULT(1)
   fi
 fi
-
-OLD_LIBOBJS="${LIBOBJS}"
 
 ########################################################################
 AC_MSG_CHECKING(stack direction)
@@ -2391,6 +2515,13 @@ int main()
 
 MY_CHECK_FUNCTION(memset,
 [
+#ifdef HAVE_STDDEF_H
+#include <stddef.h>
+#endif /* HAVE_STDDEF_H */
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#include <stdio.h>
 #include <string.h>
 char foo[23];
 int main()
@@ -2800,6 +2931,9 @@ AC_CACHE_VAL(ac_cv_type_sig_atomic_t,
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
+#ifdef HAVE_CRT_SIGNAL_H
+#include <crt/signal.h>
+#endif
 #include <sys/types.h>
 #if STDC_HEADERS
 #include <stdlib.h>
@@ -2862,10 +2996,18 @@ int main()
 #endif
 
   kill(getpid(), sig);
+#ifdef HAVE_POLL
+  while(!sigrun) poll(0,0,100);
+#else
   while(!sigrun) sleep(1);
+#endif
   sigrun=0;
   kill(getpid(), sig);
+#ifdef HAVE_POLL
+  while(!sigrun) poll(0,0,100);
+#else
   while(!sigrun) sleep(1);
+#endif
   sigrun=0;
   exit(0);
 }
@@ -2893,7 +3035,7 @@ AC_TRY_RUN([
 #endif
 
 #ifndef MAX_FD
-#define MAX_FD 256
+#define MAX_FD 65536
 #endif
 
 int main()
@@ -2914,10 +3056,10 @@ int main()
   }else{
     if(lim.rlim_max == RLIM_INFINITY)
     {
-      limit=131072; /* Noone needs more :-) */
+      limit = 1024 * 1024 * 2; /* Noone needs more :-) */
     }else{
       limit=lim.rlim_max;
-      if(limit > 131072) limit=131072;
+      if(limit > 1024 * 1024 * 2) limit= 1024 * 1024 * 2;
     }
   }
 #else
@@ -3269,12 +3411,11 @@ if test -z "$LDSHARED" ; then
   case "$pike_cv_sys_os" in
     AIX*)
       if test "$GCC" = yes ; then
-        if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
+        if test "`uname -r`" -ge 2 -a "`uname -v`" -eq 4 ; then
           LDSHARED="ld -G -bexpall"
 	else if test "`uname -v`" -gt 4 ; then
-	    # Extra forward compatibility...
-	    # AIX 5+
-	    LDSHARED="ld -G -bexpall"
+	    # AIX 5L+
+	    LDSHARED="ld -G"
 	  else
 	    # AIX 4.1 and earlier don't have/have unreliable
 	    # handling of dlopen et al.
@@ -3318,17 +3459,24 @@ if test -z "$LDSHARED" ; then
     FreeBSD*) LDSHARED="$CC -Wl,-Bshareable";;
     NetBSD*) LDSHARED="ld -Bshareable";;
     OpenBSD*) LDSHARED="ld -Bshareable";;
-    BSD/OS*) LDSHARED="shlicc -r";;
-    SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
+    BSD/OS*)
+      case "`uname -r`" in
+       4.*) LDSHARED="$CC -shared";;
+        *) LDSHARED="shlicc -r";;
+      esac
+    ;;
+    SCO_SV*) LDSHARED="$CC -G -KPIC -Wl,-Bexport";;
     UNIX_SV*) LDSHARED="ld -G";;
     UnixWare*)
       if test "$GCC" = yes ; then
-        LDSHARED="ld -G"
+        LDSHARED="$CC -G -fPIC"
       else
-        LDSHARED="cc -G -KPIC -Wl,-Bexport"
+        LDSHARED="$CC -G -KPIC -Wl,-Bexport"
       fi
     ;;
-    Windows_NT*) LDSHARED="$CC -shared";;
+    Windows_NT*)
+      LDSHARED="pntld"
+    ;;
     *) LDSHARED="ld";;
   esac
 fi
@@ -3340,9 +3488,12 @@ AC_MSG_CHECKING(CCSHARED)
 AC_CACHE_VAL(pike_cv_sys_ccshared,[
   if test -z "$CCSHARED" ; then
     if test "$GCC" = yes ; then
-      case $pike_cv_sys_os in
+      case "$pike_cv_sys_os" in
 	BSD/OS*)
-	  CCSHARED=""
+	  case "`uname -r`" in
+	    4.*) CCSHARED="-fPIC";;
+	    *) CCSHARED="";;
+	  esac
 	;;
 	Solaris*)
 	  # The Image module runs out of symbol reference space unless we
@@ -3356,7 +3507,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
 	;;
       esac
     else
-      case $pike_cv_sys_os in
+      case "$pike_cv_sys_os" in
         IRIX*)
           AC_SYS_COMPILER_FLAG(-share,cc_shared,CCSHARED)
         ;;
@@ -3371,7 +3522,7 @@ AC_CACHE_VAL(pike_cv_sys_ccshared,[
   fi
   OLD_CFLAGS="$CFLAGS"
   CFLAGS="$CFLAGS $CCSHARED"
-  AC_TRY_COMPILE([], [int main() { exit(0); }],
+  AC_TRY_COMPILE([], [exit(0);],
     pike_cv_sys_ccshared="$CCSHARED", pike_cv_sys_ccshared='')
   CFLAGS="$OLD_CFLAGS"
 ])
@@ -3388,9 +3539,21 @@ then
   LINKFORSHARED=""
   if test "$GCC" = yes ; then
     case "$pike_cv_sys_os" in
-      AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
+      AIX*)
+        if test "`uname -v`" -gt 4 ; then
+	  # This is probably wrong, but I don't have a man page for ld yet.
+	  LINKFORSHARED=""
+	else
+	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
+	fi
+      ;;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
+      BSD/OS*)
+        case "`uname -r`" in
+         4.*) LINKFORSHARED="-rdynamic";;
+       esac
+      ;;
       GNU*) LINKFORSHARED="-rdynamic";;
       next*) LINKFORSHARED="-u libsys_s";;
       SCO_SV*) LINKFORSHARED="-fpic -Wl,-Bexport";;
@@ -3410,7 +3573,13 @@ then
     esac
   else
     case "$pike_cv_sys_os" in
-      AIX*)	LINKFORSHARED="-Wl,-bexpall -Wl,-brtl";;
+      AIX*)
+        if test "`uname -v`" -gt 4 ; then
+	  LINKFORSHARED="-Bexport"
+	else
+	  LINKFORSHARED="-Wl,-bexpall -Wl,-brtl"
+	fi
+      ;;
       hp*|HP*) LINKFORSHARED="-Wl,-E";;
       Linux*) LINKFORSHARED="-rdynamic";;
       GNU*) LINKFORSHARED="-rdynamic";;
@@ -3438,6 +3607,7 @@ AC_MSG_RESULT($LINKFORSHARED)
 
 cat >conftest.c <<EOF
 #include <stdio.h>
+#include <stdlib.h>
 void testfunc(void) {
   fprintf(stderr,"Calling testfunc2\n");
   testfunc2();
@@ -3459,6 +3629,9 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
     mv conftest.$SO myconftest.so
 
     OLD_CFLAGS="$CFLAGS"
+    OLD_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
+
     CFLAGS="$CFLAGS $LINKFORSHARED"
     OLD_CC="$CC"
     case "$LD" in
@@ -3472,6 +3645,7 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
+    CPPFLAGS="${OLD_CPPFLAGS}"
     CC="$OLD_CC"
   else    
     pike_cv_sys_dynamic_loading=no
@@ -3490,18 +3664,31 @@ fi
 # be given automatically by $(CC) $(CFLAGS)
 # /Hubbe
 #
-
-case "x$LD" in
-  $CC*)
+if test "$ldflags_is_set" = no ; then
+case "x$LD $LDFLAGS" in
+  *\$\(CFLAGS\)*)
     # Options in CFLAGS, no stuff needs to be added
   ;;
-  \$\(CC\)*)
-    # Options in CFLAGS, no stuff needs to be added
+  x$CC*|x\$\(CC\)*)
+    LD="$LD \$(CFLAGS)"
   ;;
   *)
-    LD="${LD} ${LD_FALLBACK_FLAGS-}"
+    LD="$LD ${LD_FALLBACK_FLAGS-}"
   ;;
 esac
+
+case "x$LDSHARED $LDFLAGS" in
+  *\$\(CFLAGS\)*)
+    # Options in CFLAGS, no stuff needs to be added
+  ;;
+  x$CC*|x\$\(CC\)*)
+    LDSHARED="$LDSHARED \$(CFLAGS)"
+  ;;
+  *)
+    LDSHARED="$LDSHARED ${LD_FALLBACK_FLAGS-}"
+  ;;
+esac
+fi
 
 #######################################################################
 # Since all $OPTIMIZE flags have to be automatically included in $CFLAGS
