@@ -379,3 +379,85 @@
    if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
 
+//-----------------------------------------------------
+#chapter Image.color
+
+#test Image.color
+   foreach (
+    ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
+       ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
+       ({ "cyan", ({ 0, 255, 255 }), ({ 128, 255, 255 }), 168 }),
+       ({ "green", ({ 0, 255, 0 }), ({ 85, 255, 255 }), 127 }),
+       ({ "magenta", ({ 255, 0, 255 }), ({ 213, 255, 255 }), 128 }),
+       ({ "red", ({ 255, 0, 0 }), ({ 0, 255, 255 }), 87 }),
+       ({ "white", ({ 255, 255, 255 }), ({ 0, 0, 255 }), 255 }),
+       ({ "yellow", ({ 255, 255, 0 }), ({ 43, 255, 255 }), 214 }) }),
+    array i)
+   {
+      object c1=Image.color(i[0]);
+      object c2=Image.color(@i[1]);
+      object c3=Image.color.rgb(@i[1]);
+
+      if (c1!=c2)
+	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
+	      ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; "
+	      "by values != by name");
+      if (c1!=c3)
+	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
+	      ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; "
+	      "by rgb() != by name|values");
+
+      if (c1->r!=i[1][0] ||
+	  c1->g!=i[1][1] ||
+	  c1->b!=i[1][2])
+	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
+	      ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; "
+	      "wrong ->r("+c1->r+"), ->g, ->b reported");
+
+      if (c1->rgb()[0]!=i[1][0] ||
+	  c1->rgb()[1]!=i[1][1] ||
+	  c1->rgb()[2]!=i[1][2])
+	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
+	      ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; "
+	      "wrong ->rgb() ("
+      	      +c1->rgb()[0]+","+c1->rgb()[1]+","+c1->rgb()[2]+") reported");
+
+      if (c1->hsv()[0]!=i[2][0] ||
+	  c1->hsv()[1]!=i[2][1] ||
+	  c1->hsv()[2]!=i[2][2])
+	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
+	      ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; "
+	      "wrong ->hsv() ("
+	      +c1->hsv()[0]+","+c1->hsv()[1]+","+c1->hsv()[2]+") reported");
+
+      if (c1->greylevel()!=i[3])
+	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
+	      ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; "
+	      "wrong ->greylevel() ("+c1->greylevel()+", should be "
+	      +i[3]+") reported");
+
+      if (c1->grey()->r!=i[3])
+	 fail("color "+i[0]+" (rgb="+i[1][0]+","+i[1][1]+","+i[1][2]+
+	      ", hsv="+i[2][0]+","+i[2][1]+","+i[2][2]+") failed; "
+	      "wrong ->grey()->r ("+c1->grey()->r+", should be "
+	      +i[3]+") reported");
+   };    
+   ok();
+
+#test indices(Image.color)
+   if (!arrayp(indices(Image.color)))
+      fail("wrong type\n");
+   if (!stringp(indices(Image.color)[0]))
+      fail("wrong type of elements\n");
+   if (sizeof(indices(Image.color))<8)
+      fail("too few colors\n");
+   ok();
+
+#test values(Image.color)
+   if (!arrayp(values(Image.color)))
+      fail("wrong type\n");
+   if (!objectp(values(Image.color)[0]))
+      fail("wrong type of elements\n");
+   if (sizeof(indices(Image.color))!=sizeof(values(Image.color)))
+      fail("not the same size of indices() and values()\n");
+   ok();
