@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_rusage.h,v 1.16 2003/11/27 19:57:35 mast Exp $
+|| $Id: pike_rusage.h,v 1.17 2004/05/19 20:57:04 grubba Exp $
 */
 
 #ifndef PIKE_RUSAGE_H
@@ -41,6 +41,7 @@ typedef unsigned long cpu_time_t;
 #define PRINT_CPU_TIME "lu"
 #endif
 cpu_time_t get_cpu_time (void);
+cpu_time_t get_real_time(void);
 
 INT32 internal_rusage(void);	/* For compatibility. */
 
