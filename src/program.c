@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.192 1999/12/28 01:18:43 hubbe Exp $");
+RCSID("$Id: program.c,v 1.193 1999/12/29 21:22:47 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -421,7 +421,7 @@ struct node_s *find_module_identifier(struct pike_string *ident)
       else
       {
 	if(!resolve_cache)
-	  resolve_cache=allocate_mapping(10);
+	  resolve_cache=dmalloc_touch(struct mapping *, allocate_mapping(10));
 	mapping_string_insert(resolve_cache,ident,sp-1);
 	
 	if(!(IS_ZERO(sp-1) && sp[-1].subtype==1))
@@ -1220,6 +1220,16 @@ struct program *end_first_pass(int finish)
 
   toss_compilation_resources();
 
+  CDFPRINTF((stderr,
+	     "th(%ld),end_first_pass(): compilation_depth:%d, compiler_pass:%d\n",
+	     (long)th_self(), compilation_depth, compiler_pass));
+
+  if(!compiler_frame && (compiler_pass==2 || !prog) && resolve_cache)
+  {
+    free_mapping(dmalloc_touch(struct mapping *, resolve_cache));
+    resolve_cache=0;
+  }
+
 #ifdef SHARED_NODES
   /* free(node_hash.table); */
 #endif /* SHARED_NODES */
@@ -1233,16 +1243,7 @@ struct program *end_first_pass(int finish)
 
   exit_threads_disable(NULL);
 
-  CDFPRINTF((stderr,
-	     "th(%ld),end_first_pass(): compilation_depth:%d, compiler_pass:%d\n",
-	     (long)th_self(), compilation_depth, compiler_pass));
-
   free_all_nodes();
-  if(!compiler_frame && compiler_pass==2 && resolve_cache)
-  {
-    free_mapping(resolve_cache);
-    resolve_cache=0;
-  }
 
   return prog;
 }
@@ -2414,8 +2415,10 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   struct identifier *fun;
   int i,t;
 
+#if 0
   CDFPRINTF((stderr,"th(%ld) Trying to find %s flags=%d\n",
 	     (long)th_self(),name->str, flags));
+#endif
 
 #ifdef PIKE_DEBUG
   if (!prog) {
@@ -2981,16 +2984,16 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   yyparse();  /* Parse da program */
 
   p=end_first_pass(0);
-  
-  if(p)
-  {
+
 #ifdef PIKE_DEBUG
-    if (compilation_depth != -1) {
-      fprintf(stderr, "compile(): compilation_depth is %d at end of pass 1.\n",
-	      compilation_depth);
-    }
+  if (compilation_depth != -1) {
+    fprintf(stderr, "compile(): compilation_depth is %d at end of pass 1.\n",
+	    compilation_depth);
+  }
 #endif /* PIKE_DEBUG */
 
+  if(p)
+  {
     low_start_new_program(p,0,0);
     free_program(p);
     p=0;
@@ -3011,6 +3014,13 @@ struct program *compile(struct pike_string *prog, struct object *handler)
 
     yyparse();  /* Parse da program again */
     p=end_program();
+
+#ifdef PIKE_DEBUG
+    if (compilation_depth != -1) {
+      fprintf(stderr, "compile(): compilation_depth is %d at end of pass 2.\n",
+	      compilation_depth);
+    }
+#endif /* PIKE_DEBUG */
   }
 
 #ifdef PIKE_DEBUG
@@ -3041,6 +3051,9 @@ struct program *compile(struct pike_string *prog, struct object *handler)
   used_modules = used_modules_save;
   num_used_modules = num_used_modules_save ;
   error_handler = saved_handler;
+#ifdef PIKE_DEBUG
+  if (resolve_cache) fatal("resolve_cache not freed at end of compilation.\n");
+#endif
   resolve_cache = resolve_cache_save;
 
 #ifdef PIKE_DEBUG
@@ -3247,7 +3260,7 @@ void cleanup_program(void)
 #ifdef DO_PIKE_CLEANUP
   if(resolve_cache)
   {
-    free_mapping(resolve_cache);
+    free_mapping(dmalloc_touch (struct mapping *, resolve_cache));
     resolve_cache=0;
   }
 
