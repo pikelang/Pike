@@ -307,6 +307,16 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
   return i;
 }
 
+#define IS_OBJECT_PROGRAM(X)                 \
+!( ((X) == pgtk_style_program)               \
+|| ((X) == pgtk_CTreeNode_program)           \
+|| ((X) == pgtk_CTreeRow_program)            \
+|| ((X) == pgtk_icon_list_item_program)      \
+|| ((X) == pgtk_plot_dataset_program)        \
+|| ((X) == pgtk_psfont_program)              \
+|| ((X) == pgtk_selection_data_program)      \
+|| ((X) == pgtk_sheet_child_program))
+
 void push_gtkobjectclass(void *obj, struct program *def)
 {
   struct object *o;
@@ -315,11 +325,12 @@ void push_gtkobjectclass(void *obj, struct program *def)
     push_int(0);
     return;
   }
-  if( (o=gtk_object_get_data(GTK_OBJECT(obj), "pike_object")) )
-  {
-    ref_push_object( o );
-    return;
-  }
+  if( IS_OBJECT_PROGRAM(def) )
+    if( (o=gtk_object_get_data(((void *)obj), "pike_object")) )
+    {
+      ref_push_object( o );
+      return;
+    }
   o = low_clone( def );
   call_c_initializers( o );
   ((struct object_wrapper *)o->storage)->obj = obj;
