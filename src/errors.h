@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.27 2004/10/22 23:22:24 nilsson Exp $
+|| $Id: errors.h,v 1.28 2004/11/05 20:03:26 nilsson Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -124,8 +124,6 @@ DECLARE_ERROR(permission, Permission,
 DECLARE_ERROR(cpp, Cpp, ERR_INHERIT(generic), EMPTY)
 
 DECLARE_ERROR(compilation, Compilation, ERR_INHERIT(generic), EMPTY)
-
-DECLARE_ERROR(compile_callback, CompileCallback, ERR_INHERIT(generic), EMPTY)
 
 DECLARE_ERROR(master_load, MasterLoad, ERR_INHERIT (generic), EMPTY)
 
