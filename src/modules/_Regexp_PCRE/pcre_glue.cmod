@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.3 2003/09/20 20:50:28 nilsson Exp $
+|| $Id: pcre_glue.cmod,v 1.4 2003/09/20 21:38:29 nilsson Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.3 2003/09/20 20:50:28 nilsson Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.4 2003/09/20 21:38:29 nilsson Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -329,6 +329,7 @@ PIKECLASS _pcre
       {
 	 if (THIS->re) (*pcre_free)(THIS->re); /* -> free() usually */
 	 if (THIS->extra) (*pcre_free)(THIS->extra); /* -> free() usually */
+	 if (THIS->pattern) free_string(THIS->pattern);
       }
 
 /*! @decl int get_stringnumber(string stringname)
