@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.11 2004/11/23 14:52:52 grubba Exp $
+// $Id: Wix.pmod,v 1.12 2004/11/23 16:27:04 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -135,10 +135,14 @@ class Directory
 
   string gen_8dot3(string long_name)
   {
-    array(string) segs = long_name/".";
     string extension;
-    string base = segs[0];
     int truncated;
+    string base;
+    if (long_name != (base = replace(long_name, " ", "_"))) {
+      truncated = 1;
+    }
+    array(string) segs = base/".";
+    base = segs[0];
     if (sizeof(segs) > 1) {
       extension = segs[-1];
       if (sizeof(segs) > 2) {
