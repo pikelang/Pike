@@ -1,3 +1,4 @@
+#include "global.h"
 #include "config.h"
 #include "machine.h"
 
@@ -21,8 +22,7 @@
 
 #include <fcntl.h>
 
-#include "global.h"
-RCSID("$Id: pipe.c,v 1.17 1998/04/03 21:29:15 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.18 1998/06/12 19:19:00 noring Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
