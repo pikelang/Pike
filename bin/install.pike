@@ -831,7 +831,7 @@ string install_type="--interactive";
 
 int pre_install(array(string) argv)
 {
-  werror("pre_install(({%{%O, %}}))\r\n", argv);
+  // werror("pre_install(({%{%O, %}}))\r\n", argv);
   
   prefix=vars->prefix || "/usr/local";
   
@@ -842,7 +842,7 @@ int pre_install(array(string) argv)
 
   while(1)
   {
-    werror("install_type: %O...\r\n", install_type);
+    // werror("install_type: %O...\r\n", install_type);
   switch(install_type)
   {
     case "--traditional":
@@ -1122,7 +1122,7 @@ void dump_modules()
 
 void do_install()
 {
-  werror("do_install()\r\n");
+  // werror("do_install()\r\n");
   pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
@@ -1272,7 +1272,7 @@ void do_install()
 
 int main(int argc, array(string) argv)
 {
-  werror("main(%O, ({%{%O, %}}))...\r\n", argc, argv);
+  // werror("main(%O, ({%{%O, %}}))...\r\n", argc, argv);
   foreach(Getopt.find_all_options(argv,aggregate(
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
