@@ -197,6 +197,7 @@ void streamed_parser_parse( INT32 args )
   int c, length, state, begin, last, ind, ind2;
   char *str;
   struct svalue *sp_save;
+  struct svalue *sp_tag_save;
   
   state = NOTAG;
   begin = last = 0;
@@ -218,6 +219,7 @@ void streamed_parser_parse( INT32 args )
     sp--;
   }
   sp_save = sp;
+  sp_tag_save = 0;
   for (c=0; c < length; c++)
     switch (state)
     {
@@ -286,7 +288,7 @@ void streamed_parser_parse( INT32 args )
 	  {
 	    if (last > begin)
 	    {
-	      push_string( make_shared_binary_string( str + begin, last - begin ) );
+	      push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	      SWAP;
 	    }
 	    begin = c+1;
@@ -347,6 +349,7 @@ void streamed_parser_parse( INT32 args )
 	{
 	  f_aggregate_mapping( 0 );
 	  state = TAG_WS;
+	  sp_tag_save = sp-1;
 	}
 	else
 	{
@@ -364,7 +367,7 @@ void streamed_parser_parse( INT32 args )
 	  {
 	    if (last > begin)
 	    {
-	      push_string( make_shared_binary_string( str + begin, last - begin ) );
+	      push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	      SWAP;
 	    }
 	    begin = c+1;
@@ -375,6 +378,7 @@ void streamed_parser_parse( INT32 args )
 	else
 	  pop_stack();
 	last = c;
+	sp_tag_save = 0;
 	state = NOTAG;
 	break;
       }
@@ -390,7 +394,7 @@ void streamed_parser_parse( INT32 args )
 	{
 	  if (last > begin)
 	  {
-	    push_string( make_shared_binary_string( str + begin, last - begin ) );
+	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
 	  }
 	  begin = c+1;
@@ -398,6 +402,7 @@ void streamed_parser_parse( INT32 args )
 	else
 	  ;
 	last = c;
+	sp_tag_save = 0;
 	state = NOTAG;
 	break;
        default:
@@ -436,7 +441,7 @@ void streamed_parser_parse( INT32 args )
 	{
 	  if (last > begin)
 	  {
-	    push_string( make_shared_binary_string( str + begin, last - begin ) );
+	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
 	  }
 	  begin = c+1;
@@ -444,6 +449,7 @@ void streamed_parser_parse( INT32 args )
 	else
 	  ;
 	last = c;
+	sp_tag_save = 0;
 	state = NOTAG;
 	break;
        default:
@@ -467,7 +473,7 @@ void streamed_parser_parse( INT32 args )
 	{
 	  if (last > begin)
 	  {
-	    push_string( make_shared_binary_string( str + begin, last - begin ) );
+	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
 	  }
 	  begin = c+1;
@@ -475,6 +481,7 @@ void streamed_parser_parse( INT32 args )
 	else
 	  ;
 	last = c;
+	sp_tag_save = 0;
 	state = NOTAG; /* error */
 	break;
        case '"':
@@ -533,7 +540,7 @@ void streamed_parser_parse( INT32 args )
 	{
 	  if (last > begin)
 	  {
-	    push_string( make_shared_binary_string( str + begin, last - begin ) );
+	    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
 	    SWAP;
 	  }
 	  begin = c+1;
@@ -541,15 +548,28 @@ void streamed_parser_parse( INT32 args )
 	else
 	  ;
 	last = c;
+	sp_tag_save = 0;
 	state = NOTAG;
 	break;
       }
       break;
      default:      
     }
+  if (sp_tag_save)
+  {
+    push_text( "sp_tag_save removing\n" );
+    f_perror( 1 );
+    while (sp_tag_save <= sp)
+      pop_stack();
+  }
   if (begin < last)
-    push_string( make_shared_binary_string( str + begin, last - begin ) );
-  f_sum( sp - sp_save ); /* fix? this is what we return */
+    push_string( make_shared_binary_string( str + begin, last - begin + 1 ) );
+  if (sp - sp_save == 0)
+    push_text( "" );
+  else if (sp - sp_save == 1)
+    ;
+  else
+    f_sum( sp - sp_save ); /* fix? this is what we return */
   if (last < length-1)
   {
     DATA->last_buffer = malloc( length - last );
