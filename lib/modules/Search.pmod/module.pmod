@@ -6,8 +6,12 @@
 
 class Document
 {
+  string _sprintf()
+  {
+    return sprintf("Search.Document(\"http://%s\")", uri);
+  }
   //! The placeholder for document metadata.
-  
+  string uri;
   string title;
   string description;
   int last_changed;
@@ -19,21 +23,24 @@ private mapping filters=([]);
 
 void create()
 {
-  werror("Loading filters\n");
-  foreach(values(Search.Filter), Search.Filter filter)
-    foreach(filter->contenttypes || ({ }), string mime)
-      filters[mime]=filter;
+//   werror("Loading filters\n");
+  foreach(values(Search.Filter), program filter)
+  {
+    Search.Filter.Base tmp=filter();
+    foreach(tmp->contenttypes || ({ }), string mime)
+      filters[mime]=tmp;
+  }
   
-  if(!sizeof(filters))
-    werror("No filters loaded\n");
-  else
-    werror("Loaded %d filters\n", sizeof(filters));
+//   if(!sizeof(filters))
+//     werror("No filters loaded\n");
+//   else
+//     werror("Loaded %d filters\n", sizeof(filters));
 }
 
-Filter get_filter(string mime_type)
+Search.Filter.Base get_filter(string mime_type)
 {
   if(!filters[mime_type]) return 0;
-  return filters[mime_type]->Filter();
+  return filters[mime_type];
 }
 
 array(string) get_filter_mime_types()

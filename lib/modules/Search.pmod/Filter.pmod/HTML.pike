@@ -9,6 +9,11 @@ static constant whtspaces = ({ "\n", "\r", "\t" });
 static constant interpunc = ({ ".", ",", ";", ":", "-", "_", "!", "\"", "?",
 			"\\", "(", ")", "{", "}", "[", "]" });
 
+string _sprintf()
+{
+  return "Search.Filter.HTML";
+}
+
 static string normalize(string text)
 {
   return replace(text,

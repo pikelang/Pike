@@ -42,11 +42,26 @@ void create_tables()
 // This is the database object that all queries will be made to.
 object db;
 int removed;
-void create(string host)
+
+string host;
+
+void create(string _host)
 {
-  db=Sql.sql(host);
+  db=Sql.sql(host=_host);
 }
 
+string _sprintf()
+{
+  return sprintf("Search.Database.MySQL( %s )", host);
+}
+
+mapping stats()
+{
+  mapping tmp=([]);
+  tmp->words=(int)db->query("select count(*) as c from occurance")[0]->c;
+  tmp->documents=(int)db->query("select count(*) as c from document")[0]->c;
+  return tmp;
+}
 
 string to_md5(string url)
 {
@@ -176,15 +191,28 @@ void optimize()
   garbage_collect();
 }
 
+
+mapping(string:Search.Document) make_document_mapping(array(mapping) mysql_result)
+{
+  array a= map(mysql_result,
+	       lambda(mapping m)
+	       {
+		 Search.Document tmp=Search.Document();
+		 tmp->title=m->title;
+		 tmp->description=m->description;
+		 tmp->last_changed=(int)m->last_changed;
+		 tmp->uri=m->uri;
+		 return tmp;
+	       });
+  return mkmapping(a->uri,a);
+}
+
 mapping(string:Search.Document) lookup_word(string word)
 {
-  array documents=db->query("SELECT * FROM occurance WHERE word_id=%s",
+  array documents=db->query("SELECT document.* FROM document, occurance WHERE word_id=%s"
+			    " and occurance.document_id=document.id",
 			    hash_word(word));
-  if(sizeof(documents)) return 0;
-
-  //  sort(documents->ranking_type, documents);
-
-  return documents;
+  return make_document_mapping(documents);
 }
 
 mapping(string:Search.Document) lookup_words_or(array(string) words)
@@ -196,30 +224,26 @@ mapping(string:Search.Document) lookup_words_or(array(string) words)
   sql += words*" || ";
 
   array documents=db->query(sql);
-  if(!sizeof(documents)) return 0;
-
-  //  sort(documents->ranking_type, documents);
-
-  return documents;
+  return make_document_mapping(documents);
 }
 
 mapping(string:Search.Document) lookup_words_and(array(string) words)
 {
-  array first_result=({});
-  array rest_results=({});
+//   array first_result=({});
+//   array rest_results=({});
   
-  first_result = lookup_word(words[0]);
-  foreach(words[1..], string word)
-  {
-    rest_results += ({ lookup_word(word) });
-    if(rest_results[-1]==({ 0 }))
-      return 0;
-    rest_results[-1]=(multiset)rest_results[-1]->uri;
-  }
+//   first_result = lookup_word(words[0]);
+//   foreach(words[1..], string word)
+//   {
+//     rest_results += ({ lookup_word(word) });
+//     if(rest_results[-1]==({ 0 }))
+//       return 0;
+//     rest_results[-1]=(multiset)rest_results[-1]->uri;
+//   }
   
-  array results=({});
-  foreach(first_result, mapping hit)
-    if(!has_value(rest_results[hit->uri], 0))
-      results += ({ hit });
-  return results;
+//   array results=({});
+//   foreach(first_result, mapping hit)
+//     if(!has_value(rest_results[hit->uri], 0))
+//       results += ({ hit });
+//   return make_document_mapping(documents);
 }

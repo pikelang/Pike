@@ -2,7 +2,7 @@ inherit Search.Grammar.Base;
 
 private array build_tree(string query)
 {
-  ADT.Queue stack=ADT.queue();
+  ADT.Queue stack=ADT.Queue();
 
   query=replace(query,({"(", ")"}), ({" ( ", " ) "}) );
   array(string) xq = (query/" ")-({""});
@@ -28,7 +28,7 @@ private array build_tree(string query)
 private mapping(string:Search.Document) evaluate_tree(Search.Database db, array tree)
 {
   mixed first;
-  mapping(string:Search.Document) result = ([]);
+  mapping(string:Search.Document) result = 0;
   string last_operator="+";
   mapping(string:Search.Document) current_pages;
   array(string) all_words;
@@ -36,7 +36,7 @@ private mapping(string:Search.Document) evaluate_tree(Search.Database db, array 
   foreach(tree, array|string node)
   {
     if(arrayp(node))
-      current_pages = evaluate_tree(node);
+      current_pages = evaluate_tree(db, node);
     else
     {
       if((node=="|") || (node=="+") || (node=="^") || (node=="-"))
@@ -44,6 +44,9 @@ private mapping(string:Search.Document) evaluate_tree(Search.Database db, array 
       else
 	current_pages = db->lookup_word(node);
     }
+
+    if(!result)
+      result=current_pages;
     
     if( node!="|" && node!="^" && node!="+" && node!="-")
     {
@@ -72,6 +75,9 @@ private mapping(string:Search.Document) evaluate_tree(Search.Database db, array 
 
 mapping do_query(Search.Database db, string query)
 {
+  int t0=gethrtime();
   array tree=build_tree(query);
-  return evaluate_tree(db, tree);  
+  mapping tmp=evaluate_tree(db, tree);
+  werror("Query took %.1f ms.\n",(gethrtime()-t0)/1000.0);
+  return tmp;
 }

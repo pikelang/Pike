@@ -7,6 +7,11 @@ constant whtspaces = ({ "\n", "\r", "\t" });
 constant interpunc = ({ ".", ",", ";", ":", "-", "_", "!", "\"", "?", "/",
 			"\\", "(", ")", "{", "}", "[", "]" });
 
+string _sprintf()
+{
+  return "Search.Filter.PlainText";
+}
+
 inline string normalize(string text)
 {
   return replace(text, whtspaces+interpunc,
