@@ -1,3 +1,11 @@
+Thu Feb 27 19:33:33 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* module system slightly re-worked
+	* fixed a couple of minor bugs
+	* backtrace() now returns the arguments to functions
+	* testsuite.in now has more tests fore threads
+	* backend.c: now detects EBADF properly
+	
 Tue Feb 18 20:59:18 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* array.c: division and multiplication on arrays implemented.
