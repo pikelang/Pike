@@ -82,7 +82,7 @@ void recv_command(string s)
     if (intp(req)) {
       if (!req || state)
       {
-	send_bad_response(tag, "Unknown command");
+	send_bad_response(tag, upper_case(command)+" Unknown command");	
 	return;
       }
       state = req;

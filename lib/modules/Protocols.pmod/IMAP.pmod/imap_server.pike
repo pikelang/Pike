@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.17 1999/03/28 23:18:13 grubba Exp $
+ * $Id: imap_server.pike,v 1.18 1999/03/30 20:44:41 grubba Exp $
  */
 
 constant unauth_commands =
@@ -157,6 +157,8 @@ class connection
       next_action(action);
     }
 
+  function(mapping, string, string, int, int|void:void) log;
+
   void create(object f, int timeout, object backend,
 	      mapping preauth, int|void debug)
     {
@@ -173,6 +175,11 @@ class connection
 	io->use_commands(unauth_commands);
 	io->send_imap("*", "OK", "IMAP4", "IMAP4rev1", "Service ready");
       }
+      /* Callback for session initialization */
+      db->connected(session, f);
+      log = db->log ||
+	lambda(mapping s, string c, string a, int code, int|void sz){};
+      log(session, "CONNECT", replace(f->query_address(), " ", ":"), 200);
     }
 }
 

@@ -303,5 +303,5 @@ class collect_varargs
 
 mapping get_varargs(int max_depth, int accept_options, function c)
 {
-  return collect_list(max_depth, -1, 0, c)->collect();
+  return collect_list(max_depth, -1, accept_options, c)->collect();
 }
