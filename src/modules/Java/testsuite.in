@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.3 2000/07/08 01:36:04 marcus Exp $
+// $Id: testsuite.in,v 1.4 2002/07/30 21:23:30 marcus Exp $
 
 cond( [[ master()->resolv("Java")->jvm ]],
 [[
@@ -23,8 +23,8 @@ ABMBDAAhABcAAAABACcAFgABABoAAAAsAAMAAQAAABAqKrQACyq0AAy4AAi1AA2xAAAAAQAcAAAA
 CgACAAAACQAPAAcAAQAdAAAAAgAf
 ")))
   test_eq([[lambda(){
-    object u = Java.pkg.java.io.File(Java.pkg.java.lang.System
-	->getProperty("user.dir"))->toURL();
+    object u = Java.pkg.java.io.File->_constructor("(Ljava/lang/String;)")
+	(Java.pkg.java.lang.System->getProperty("user.dir"))->toURL();
     object t = Java.pkg.java.net.URLClassLoader(u->_obj->get_object_class()
 	->new_array(1,u->_obj))->loadClass("conftest");
     object n = t->_obj->register_natives(({({"func", "(II)I", `+})}));
