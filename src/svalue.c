@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.67 2000/04/12 18:40:12 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.68 2000/04/13 20:14:35 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -1348,33 +1348,52 @@ void debug_gc_mark_svalues(struct svalue *s, int num)
     case T_ARRAY: 
       enqueue(&gc_mark_queue,
 	      (queue_call)gc_mark_array_as_referenced,
-	      s->u.array);
+	      debug_malloc_pass(s->u.array));
       break;
     case T_MULTISET:
       enqueue(&gc_mark_queue,
 	      (queue_call)gc_mark_multiset_as_referenced,
-	      s->u.multiset);
+	      debug_malloc_pass(s->u.multiset));
       break;
     case T_MAPPING:
       enqueue(&gc_mark_queue,
 	      (queue_call)gc_mark_mapping_as_referenced,
-	      s->u.mapping);
+	      debug_malloc_pass(s->u.mapping));
       break;
     case T_PROGRAM:
       enqueue(&gc_mark_queue,
 	      (queue_call)gc_mark_program_as_referenced,
-	      s->u.program);
+	      debug_malloc_pass(s->u.program));
       break;
 
+#ifdef PIKE_DEBUG
+    case T_STRING:
+      if(d_flag) gc_mark(s->u.string);
+      break;
+#endif      
+      
     case T_FUNCTION:
-      if(s->subtype == FUNCTION_BUILTIN) break;
+      if(s->subtype == FUNCTION_BUILTIN)
+      {
+#ifdef PIKE_DEBUG
+	if(d_flag)
+	{
+	  if(gc_mark(s->u.efun))
+	  {
+	    gc_mark(s->u.efun->name);
+	    gc_mark(s->u.efun->type);
+	  }
+	}
+#endif
+	break;
+      }
 
     case T_OBJECT:
       if(s->u.object->prog)
       {
 	enqueue(&gc_mark_queue,
 		(queue_call)gc_mark_object_as_referenced,
-		s->u.object);
+		debug_malloc_pass(s->u.object));
       }else{
 	free_svalue(s);
 	s->type=T_INT;
@@ -1389,6 +1408,12 @@ void debug_gc_mark_short_svalue(union anything *u, TYPE_T type)
 {
   switch(type)
   {
+#ifdef PIKE_DEBUG
+    case T_STRING:
+      if(d_flag) gc_mark(u->string);
+      break;
+#endif
+
   case T_ARRAY: 
     if(!u->refs) return;
     gc_mark_array_as_referenced(u->array);

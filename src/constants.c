@@ -16,9 +16,9 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.20 1999/12/29 18:00:32 grubba Exp $");
+RCSID("$Id: constants.c,v 1.21 2000/04/13 20:14:35 hubbe Exp $");
 
-static struct mapping *builtin_constants = 0;
+struct mapping *builtin_constants = 0;
 
 struct mapping *get_builtin_constants(void)
 {

@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.56 2000/04/13 02:11:25 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.57 2000/04/13 20:14:35 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -545,12 +545,16 @@ INT32 real_gc_check(void *a)
     if(check_for == (void *)1 && gc_do_free(a))
     {
       struct marker *m=get_marker(a);
-      fprintf(stderr,"**Reference to object to free in referenced object!\n");
-      fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
-      describe(a);
-      locate_references(a);
-      fprintf(stderr,"##### Continuing search for more bugs....\n");
-      fatal_after_gc="Reference to object to free in referenced object!\n";
+      int t=attempt_to_identify(a);
+      if(t != T_STRING && t != T_UNKNOWN)
+      {
+	fprintf(stderr,"**Reference to object to free in referenced object!\n");
+	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
+	describe(a);
+	locate_references(a);
+	fprintf(stderr,"##### Continuing search for more bugs....\n");
+	fatal_after_gc="Reference to object to free in referenced object!\n";
+      }
     }
     return 0;
   }
@@ -631,6 +635,11 @@ void locate_references(void *a)
 
 #ifdef PIKE_DEBUG
   if(master_object) gc_external_mark2(master_object,0," &master_object");
+  {
+    extern struct mapping *builtin_constants;
+    if(builtin_constants)
+      gc_external_mark2(builtin_constants,0," &builtin_constants");
+  }
 #endif
   
   found_where=" in a module";
@@ -710,13 +719,17 @@ int gc_external_mark3(void *a, void *in, char *where)
     if(check_for == (void *)1 && gc_do_free(a))
     {
       struct marker *m=get_marker(a);
-      fprintf(stderr,"EXTERNAL Reference to object to free%s!\n",in?in:"");
-      fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
-      if(where) describe_location(0,T_UNKNOWN,where);
-      describe(a);
-      locate_references(a);
-      fprintf(stderr,"##### Continuing search for more bugs....\n");
-      fatal_after_gc="EXTERNAL Reference to object to free.\n";
+      int t=attempt_to_identify(a);
+      if(t != T_STRING && t != T_UNKNOWN)
+      {
+	fprintf(stderr,"EXTERNAL Reference to object to free%s!\n",in?in:"");
+	fprintf(stderr,"    has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)m->refs,(long)m->xrefs);
+	if(where) describe_location(0,T_UNKNOWN,where);
+	describe(a);
+	locate_references(a);
+	fprintf(stderr,"##### Continuing search for more bugs....\n");
+	fatal_after_gc="EXTERNAL Reference to object to free.\n";
+      }
     }
 
     return 0;
@@ -754,16 +767,18 @@ int debug_gc_do_free(void *a)
     INT32 refs=m->refs;
     INT32 xrefs=m->xrefs;
     TYPE_T t=attempt_to_identify(a);
+    if(t != T_STRING && t != T_UNKNOWN)
+    {
+      fprintf(stderr,"**gc_is_referenced failed, object has %ld references, while gc() found %ld + %ld external. (type=%d)\n",(long)*(INT32 *)a,(long)refs,(long)xrefs,t);
+      describe_something(a, t, 1);
 
-    fprintf(stderr,"**gc_is_referenced failed, object has %ld references, while gc() found %ld + %ld external.\n",(long)*(INT32 *)a,(long)refs,(long)xrefs);
-    describe_something(a, t, 1);
-
-    locate_references(a);
-
-    fatal("GC failed object (has %d, found %d + %d external)\n",
-	  *(INT32 *)a,
-	  refs,
-	  xrefs);
+      locate_references(a);
+      
+      fatal("GC failed object (has %d, found %d + %d external)\n",
+	    *(INT32 *)a,
+	    refs,
+	    xrefs);
+    }
   }
 
   return !(m->flags & GC_REFERENCED);
@@ -815,6 +830,11 @@ void do_gc(void)
 
 #ifdef PIKE_DEBUG
   if(master_object) gc_external_mark2(master_object,0," &master_object");
+  {
+    extern struct mapping *builtin_constants;
+    if(builtin_constants)
+      gc_external_mark2(builtin_constants,0," &builtin_constants");
+  }
 #endif
 
   call_callback(& gc_callbacks, (void *)0);

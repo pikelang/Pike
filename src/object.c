@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.104 2000/04/13 12:09:30 grubba Exp $");
+RCSID("$Id: object.c,v 1.105 2000/04/13 20:14:35 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -944,79 +944,6 @@ union anything *object_get_item_ptr(struct object *o,
   return 0;
 }
 
-#ifdef PIKE_DEBUG
-void verify_all_objects(void)
-{
-  struct object *o;
-
-  for(o=first_object;o;o=o->next)
-  {
-    if(o->next && o->next->prev !=o)
-      fatal("Object check: o->next->prev != o\n");
-
-    if(o->prev)
-    {
-      if(o->prev->next != o)
-	fatal("Object check: o->prev->next != o\n");
-
-      if(o == first_object)
-	fatal("Object check: o->prev !=0 && first_object == o\n");
-    } else {
-      if(first_object != o)
-	fatal("Object check: o->prev ==0 && first_object != o\n");
-    }
-
-    if(o->refs <= 0)
-      fatal("Object refs <= zero.\n");
-
-    if(o->prog)
-    {
-      extern struct program *first_program;
-      struct program *p;
-      int e;
-
-      for(p=first_program;p!=o->prog;p=p->next)
-	if(!p)
-	  fatal("Object's program not in program list.\n");
-
-      for(e=0;e<(int)o->prog->num_identifiers;e++)
-      {
-	struct identifier *i;
-	i=ID_FROM_INT(o->prog, e);
-	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-	  continue;
-
-	if(i->run_time_type == T_MIXED)
-	{
-	  check_svalue((struct svalue *)LOW_GET_GLOBAL(o,e,i));
-	}else{
-	  check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
-			     i->run_time_type);
-	}
-      }
-
-#if 0
-      PUSH_FRAME(o);
-
-      for(e=0;e<(int)o->prog->num_inherits;e++)
-      {
-	SET_FRAME_CONTEXT(o->prog->inherits[e]);
-	/* Do pike_frame stuff here */
-
-	free_program(pike_frame->context.prog);
-      }
-
-      POP_FRAME();
-#endif
-    }
-  }
-
-  for(o=objects_to_destruct;o;o=o->next)
-    if(o->refs)
-      fatal("Object to be destructed has references.\n");
-
-}
-#endif
 
 int object_equal_p(struct object *a, struct object *b, struct processing *p)
 {
@@ -1537,7 +1464,29 @@ void check_object(struct object *o)
   debug_malloc_touch(o);
 
   if(o == fake_object) return;
+
+  if(o->next && o->next->prev !=o)
+    fatal("Object check: o->next->prev != o\n");
+  
+  if(o->prev)
+  {
+    if(o->prev->next != o)
+      fatal("Object check: o->prev->next != o\n");
+    
+    if(o == first_object)
+      fatal("Object check: o->prev !=0 && first_object == o\n");
+  } else {
+    if(first_object != o)
+      fatal("Object check: o->prev ==0 && first_object != o\n");
+  }
+  
+  if(o->refs <= 0)
+    fatal("Object refs <= zero.\n");
+
   if(!(p=o->prog)) return;
+
+  if(id_to_program(o->prog->id) != o->prog)
+    fatal("Object's program not in program list.\n");
 
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
@@ -1557,6 +1506,11 @@ void check_all_objects(void)
     check_object(o);
     SET_NEXT_AND_FREE(o,free_object);
   }
+
+  for(o=objects_to_destruct;o;o=o->next)
+    if(o->refs)
+      fatal("Object to be destructed has references.\n");
+
 }
 
 #endif

@@ -8,7 +8,7 @@ struct queue_entry
   void *data;
 };
 
-#define QUEUE_ENTRIES 8192
+#define QUEUE_ENTRIES 8191
 
 struct queue_block
 {
@@ -24,7 +24,10 @@ void run_queue(struct pike_queue *q)
   {
     int e;
     for(e=0;e<b->used;e++)
+    {
+      debug_malloc_touch(b->entries[e].data);
       b->entries[e].call(b->entries[e].data);
+    }
 
     q->first=b->next;
     free((char *)b);
@@ -48,6 +51,6 @@ void enqueue(struct pike_queue *q, queue_call call, void *data)
   }
 
   b->entries[b->used].call=call;
-  b->entries[b->used].data=data;
+  b->entries[b->used].data=debug_malloc_pass(data);
   b->used++;
 }
