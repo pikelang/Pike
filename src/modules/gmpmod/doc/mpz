@@ -18,15 +18,20 @@ NAME
 	create - initialize a bignum
 
 SYNTAX
-	object clone((program)"/precompiled/mpz");
+	object Mpz();
 	or
-	object clone((program)"/precompiled/mpz",int|object|string|float i);
+	object Mpz(int|object|float i);
+	or
+	object Mpz(string digits, int base);
+	
 
 DESCRIPTION
 	When cloning an mpz it is by default initalized to zero. However,
 	you can give a second argument to clone to initialize the new
 	object to that value. The argument can be an int, float another
-	mpz object, or a string containing an ascii number.
+	mpz object, or a string containing an ascii number. You can also
+	give the number in the string in another base by specifying the
+	base as a second argument. Valid bases are 2-36 and 256.
 
 SEE ALSO
 	builtin/clone
@@ -94,5 +99,38 @@ DESCRIPTION
 
 SEE ALSO
 	cast
+
+============================================================================
+NAME
+	digits - convert mpz to a string
+
+SYNTAX
+	string mpz->digits();
+	or
+	string mpz->digits(int base);
+
+DESCRIPTION
+	This function converts an mpz to a string. If a base is given the
+	number will be represented in that base. Valid bases are 2-36 and
+	256. The default base is 10.
+
+SEE ALSO
+	mpz->cast
+
+============================================================================
+NAME
+	size - how long is a number
+
+SYNTAX
+	string mpz->size();
+	or
+	string mpz->size(int base);
+
+DESCRIPTION
+	This function returns how long the mpz would be represented in the
+	specified base. The default base is 2.
+
+SEE ALSO
+	mpz->digits
 
 ============================================================================

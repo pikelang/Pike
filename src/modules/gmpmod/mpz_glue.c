@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.10 1996/11/18 02:47:51 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.11 1996/11/23 00:08:56 hubbe Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -33,46 +33,33 @@ RCSID("$Id: mpz_glue.c,v 1.10 1996/11/18 02:47:51 nisse Exp $");
 static struct program *mpzmod_program;
 
 static void get_mpz_from_digits(MP_INT *tmp,
-				struct svalue *s, struct svalue *b)
+				struct pike_string *digits,
+				int base)
 {
-  INT32 base;
-  struct pike_string *digits;
-
-  if (s->type != T_STRING)
-    error("wrong type, cannot convert to mpz");
-  digits = s->u.string;
-
-  if (b)
+  if(!base || ((base >= 2) && (base <= 36)))
+  {
+    if (mpz_set_str(tmp, digits->str, base))
+      error("invalid digits, cannot convert to mpz");
+  }
+  else if(base == 256)
+  {
+    
+    INT8 i;
+    mpz_t digit;
+    
+    mpz_init(digit);
+    mpz_set_ui(tmp, 0);
+    for (i = 0; i < digits->len; i++)
     {
-      if  (b->type != T_INT)
-	error("wrong type, cannot convert to mpz");
-      base = b->u.integer;
+      mpz_set_ui(digit, EXTRACT_UCHAR(digits->str + i));
+      mpz_mul_2exp(digit, digit, (digits->len - i - 1) * 8);
+      mpz_ior(tmp, tmp, digit);
     }
+  }
   else
-    base = 0;
-
-  if ((base == 0) || ((base >= 2) && (base <= 36)))
-    {
-      if (mpz_set_str(tmp, digits->str, base))
-	error("invalid digits, cannot convert to mpz");
-    }
-  else if (base == 256)
-    {
-
-      INT8 i;
-      mpz_t digit;
-
-      mpz_init(digit);
-      mpz_set_ui(tmp, 0);
-      for (i = 0; i < digits->len; i++)
-	{
-	  mpz_set_ui(digit, EXTRACT_UCHAR(digits->str + i));
-	  mpz_mul_2exp(digit, digit, (digits->len - i - 1) * 8);
-	  mpz_ior(tmp, tmp, digit);
-	}
-    }
-  else
+  {
     error("invalid base.\n");
+  }
 }
 
 static void get_new_mpz(MP_INT *tmp, struct svalue *s)
@@ -115,19 +102,29 @@ static void get_new_mpz(MP_INT *tmp, struct svalue *s)
 static void mpzmod_create(INT32 args)
 {
   switch(args)
-    {
-    case 1:
-      if ((sp-args)->type == T_STRING)
-	get_mpz_from_digits(THIS, sp-args, NULL);
-      else
-	get_new_mpz(THIS, sp-args);
-      break;
-    case 2: /* Args are string of digits and integer base */
-      if ((sp-args)->type != T_STRING)
-	error("wrong type, invalid string of digits");
-      get_mpz_from_digits(THIS, sp-args, sp-args+1);
-      break;
-    }
+  {
+  case 1:
+    if(sp[-args].type == T_STRING)
+      get_mpz_from_digits(THIS, sp[-args].u.string, 0);
+    else
+      get_new_mpz(THIS, sp-args);
+    break;
+
+  case 2: /* Args are string of digits and integer base */
+    if(sp[-args].type != T_STRING)
+      error("bad argument 1 for Mpz->create()");
+
+    if (sp[1-args].type != T_INT)
+      error("wrong type for base in Mpz->create()");
+
+    get_mpz_from_digits(THIS, sp[-args].u.string, sp[1-args].u.integer);
+    break;
+
+  default:
+    error("Too many arguments to Mpz->create()\n");
+
+  case 0:
+  }
   pop_n_elems(args);
 }
 
@@ -143,94 +140,93 @@ static void mpzmod_get_float(INT32 args)
   push_float((float)mpz_get_d(THIS));
 }
 
-static void mpzmod_get_string(INT32 args)
+static struct pike_string *low_get_digits(MP_INT *mpz, int base)
 {
   struct pike_string *s;
   INT32 len;
+  
+  if ( (base >= 2) && (base <= 36))
+  {
+    len = mpz_sizeinbase(mpz, base) + 2;
+    s = begin_shared_string(len);
+    mpz_get_str(s->str, base, mpz);
+    /* Find NULL character */
+    len-=4;
+    if (len < 0) len = 0;
+    while(s->str[len]) len++;
+    s->len=len;
+    s=end_shared_string(s);
+  }
+  else if (base == 256)
+  {
+    INT8 i;
+    mpz_t tmp;
+    
+    if (mpz_sgn(mpz) < 0)
+      error("only non-negative numbers can be converted to base 256.\n");
+    len = (mpz_sizeinbase(mpz, 2) + 7) / 8;
+    s = begin_shared_string(len);
+    mpz_init_set(tmp, mpz);
+    for (i = len - 1; i>= 0; i-- )
+    {
+      s->str[i] = mpz_get_ui(tmp) & 0xff;
+      mpz_tdiv_q_2exp(tmp, tmp, 8);
+    }
+    assert(mpz_sgn(tmp) == 0);
+    mpz_clear(tmp);
+    s = end_shared_string(s);
+  }
+  else
+  {
+    error("invalid base.\n");
+    return 0; /* Make GCC happy */
+  }
 
+  return s;
+}
+
+static void mpzmod_get_string(INT32 args)
+{
   pop_n_elems(args);
-  len=mpz_sizeinbase(THIS,10);
-  len++; /* For a zero */
-  if(mpz_sgn(THIS) < 0) len++; /* For the - sign */
-
-  s=begin_shared_string(len);
-  mpz_get_str(s->str,10,THIS);
-
-  len-=4;
-  if(len < 0) len = 0;
-  while(s->str[len]) len++;
-  s->len=len;
-  s=end_shared_string(s);
-  push_string(s);
+  push_string(low_get_digits(THIS, 10));
 }
 
 static void mpzmod_digits(INT32 args)
 {
-  int base;
-  struct pike_string *s;
-  INT32 len;
-
+  INT32 base;
   if (!args)
+  {
     base = 10;
+  }
   else
-    {
-      if (sp[-args].type != T_INT)
-	error("wrong type");
-      base = sp[-args].u.integer;
-    }
-  if ( (base >= 2) && (base <= 36))
-    {
-      len = mpz_sizeinbase(THIS, base) + 2;
-      s = begin_shared_string(len);
-      mpz_get_str(s->str, base, THIS);
-      /* Find NULL character */
-      len-=4;
-      if (len < 0) len = 0;
-      while(s->str[len]) len++;
-      s->len=len;
-      s=end_shared_string(s);
-    }
-  else if (base == 256)
-    {
-      INT8 i;
-      mpz_t tmp;
-      
-      if (mpz_sgn(THIS) < 0)
-	error("only non-negative numbers can be converted to base 256.\n");
-      len = (mpz_sizeinbase(THIS, 2) + 7) / 8;
-      s = begin_shared_string(len);
-      mpz_init_set(tmp, THIS);
-      for (i = len - 1; i>= 0; i-- )
-	{
-	  s->str[i] = mpz_get_ui(tmp) & 0xff;
-	  mpz_tdiv_q_2exp(tmp, tmp, 8);
-	}
-      assert(mpz_sgn(tmp) == 0);
-      mpz_clear(tmp);
-      s = end_shared_string(s);
-    }
-  else
-    error("invalid base.\n");
-  
+  {
+    if (sp[-args].type != T_INT)
+      error("Bad argument 1 for Mpz->digits().\n");
+    base = sp[-args].u.integer;
+  }
   pop_n_elems(args);
-  push_string(s);
+
+  push_string(low_get_digits(THIS, base));
 }
 
 static void mpzmod_size(INT32 args)
 {
   int base;
   if (!args)
+  {
     /* Default is number of bits */
     base = 2;
+  }
   else
-    {
-      if ((sp-args)->type != T_INT)
-	error("wrong type");
-      base = (sp-args)->u.integer;
-      if ((base != 256) && ((base < 2) || (base > 36)))
-	error("invalid base");
-    }
+  {
+    if (sp[-args].type != T_INT)
+      error("bad argument 1 for Mpz->size()\n");
+    base = sp[-args].u.integer;
+    if ((base != 256) && ((base < 2) || (base > 36)))
+      error("invalid base\n");
+  }
   pop_n_elems(args);
+
   if (base == 256)
     push_int((mpz_sizeinbase(THIS, 2) + 7) / 8);
   else
