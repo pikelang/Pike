@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.34 2004/04/18 02:16:06 mast Exp $
+|| $Id: multiset.h,v 1.35 2004/05/28 16:08:24 grubba Exp $
 */
 
 #ifndef MULTISET_H
@@ -412,7 +412,7 @@ int multiset_is_constant (struct multiset *l, struct processing *p);
 node *make_node_from_multiset (struct multiset *l);
 PMOD_EXPORT void f_aggregate_multiset (int args);
 struct multiset *copy_multiset_recursively (struct multiset *l,
-					    struct processing *p);
+					    struct mapping *p);
 PMOD_EXPORT ptrdiff_t multiset_get_nth (struct multiset *l, size_t n);
 
 unsigned gc_touch_all_multisets (void);

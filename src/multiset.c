@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.85 2004/05/19 19:02:08 mast Exp $
+|| $Id: multiset.c,v 1.86 2004/05/28 16:08:24 grubba Exp $
 */
 
 #include "global.h"
@@ -24,7 +24,7 @@
 #include "svalue.h"
 #include "block_alloc.h"
 
-RCSID("$Id: multiset.c,v 1.85 2004/05/19 19:02:08 mast Exp $");
+RCSID("$Id: multiset.c,v 1.86 2004/05/28 16:08:24 grubba Exp $");
 
 /* FIXME: Optimize finds and searches on type fields? (But not when
  * objects are involved!) Well.. Although cheap I suspect it pays off
@@ -3630,9 +3630,8 @@ PMOD_EXPORT void f_aggregate_multiset (INT32 args)
 }
 
 struct multiset *copy_multiset_recursively (struct multiset *l,
-					    struct processing *p)
+					    struct mapping *p)
 {
-  struct processing curr;
   struct tree_build_data new;
   struct multiset_data *msd = l->msd;
   union msnode *node;
@@ -3640,18 +3639,10 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
   struct svalue ind;
   TYPE_FIELD ind_types, val_types;
   ONERROR uwp;
+  struct svalue aa, bb;
 
   debug_malloc_touch (l);
   debug_malloc_touch (msd);
-
-  curr.pointer_a = (void *) l;
-  curr.next = p;
-
-  for (; p; p = p->next)
-    if (p->pointer_a == (void *) l) {
-      add_ref ((struct multiset *) p->pointer_b);
-      return (struct multiset *) p->pointer_b;
-    }
 
 #ifdef PIKE_DEBUG
   if (d_flag > 1) check_multiset_type_fields (l);
@@ -3672,10 +3663,17 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
   assign_svalue_no_free (&new.msd->cmp_less, &msd->cmp_less);
   ind_types = 0;
   val_types = got_values ? 0 : BIT_INT;
-  curr.pointer_b = (void *) new.l;
   add_ref (new.msd2 = msd);
   node = low_multiset_first (msd);
   SET_ONERROR (uwp, free_tree_build_data, &new);
+
+  aa.type = T_MULTISET;
+  aa.subtype = 0;
+  aa.u.multiset = l;
+  bb.type = T_MULTISET;
+  bb.subtype = 0;
+  bb.u.multiset = new.l;
+  mapping_insert(p, &aa, &bb);
 
   node = low_multiset_first (msd);
   pos = 0;
@@ -3690,12 +3688,12 @@ struct multiset *copy_multiset_recursively (struct multiset *l,
 
     copy_svalues_recursively_no_free (&new.node->i.ind,
 				      low_use_multiset_index (node, ind),
-				      1, &curr);
+				      1, p);
     ind_types |= 1 << new.node->i.ind.type;
 
     if (got_values) {
       copy_svalues_recursively_no_free (&new.node->iv.val, &node->iv.val,
-					1, &curr);
+					1, p);
       val_types |= 1 << new.node->iv.val.type;
     }
 

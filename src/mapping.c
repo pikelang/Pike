@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.180 2004/04/15 00:12:04 nilsson Exp $
+|| $Id: mapping.c,v 1.181 2004/05/28 16:08:24 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.180 2004/04/15 00:12:04 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.181 2004/05/28 16:08:24 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -648,9 +648,9 @@ PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
  *   2: Replace both the index and the value if the entry exists.
  */
 PMOD_EXPORT void low_mapping_insert(struct mapping *m,
-			struct svalue *key,
-			struct svalue *val,
-			int overwrite)
+				    const struct svalue *key,
+				    const struct svalue *val,
+				    int overwrite)
 {
   unsigned INT32 h,h2;
   struct keypair *k, **prev;
@@ -759,8 +759,8 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 }
 
 PMOD_EXPORT void mapping_insert(struct mapping *m,
-		    struct svalue *key,
-		    struct svalue *val)
+				const struct svalue *key,
+				const struct svalue *val)
 {
   low_mapping_insert(m,key,val,1);
 }
@@ -1040,7 +1040,7 @@ PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 }
 
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
-				  struct svalue *key)
+					      const struct svalue *key)
 {
   unsigned INT32 h,h2;
   struct keypair *k=0, **prev=0;
@@ -2010,29 +2010,18 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 }
 
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
-						     struct processing *p)
+						     struct mapping *p)
 {
-  struct processing doing;
   struct mapping *ret;
   INT32 e;
   struct keypair *k;
   struct mapping_data  *md;
+  struct svalue aa, bb;
 
 #ifdef PIKE_DEBUG
   if(m->data->refs <=0)
     Pike_fatal("Zero refs in mapping->data\n");
 #endif
-
-  doing.next=p;
-  doing.pointer_a=(void *)m;
-  for(;p;p=p->next)
-  {
-    if(p->pointer_a == (void *)m)
-    {
-      add_ref(ret=(struct mapping *)p->pointer_b);
-      return ret;
-    }
-  }
 
 #ifdef PIKE_DEBUG
   if(d_flag > 1) check_mapping_type_fields(m);
@@ -2042,7 +2031,14 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
     return copy_mapping(m);
 
   ret=allocate_mapping(MAP_SLOTS(m->data->size));
-  doing.pointer_b=ret;
+
+  aa.type = T_MAPPING;
+  aa.subtype = 0;
+  aa.u.mapping = m;
+  bb.type = T_MAPPING;
+  bb.subtype = 0;
+  bb.u.mapping = ret;
+  mapping_insert(p, &aa, &bb);
 
   ret->data->flags = m->data->flags;
 
@@ -2053,10 +2049,10 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
   add_ref(md);
   NEW_MAPPING_LOOP(md)
   {
-    copy_svalues_recursively_no_free(Pike_sp,&k->ind, 1, &doing);
+    copy_svalues_recursively_no_free(Pike_sp,&k->ind, 1, p);
     Pike_sp++;
     dmalloc_touch_svalue(Pike_sp-1);
-    copy_svalues_recursively_no_free(Pike_sp,&k->val, 1, &doing);
+    copy_svalues_recursively_no_free(Pike_sp,&k->val, 1, p);
     Pike_sp++;
     dmalloc_touch_svalue(Pike_sp-1);
     

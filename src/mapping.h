@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.h,v 1.55 2004/04/29 23:56:21 nilsson Exp $
+|| $Id: mapping.h,v 1.56 2004/05/28 16:08:24 grubba Exp $
 */
 
 #ifndef MAPPING_H
@@ -121,12 +121,12 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md);
 PMOD_EXPORT void mapping_fix_type_field(struct mapping *m);
 PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags);
 PMOD_EXPORT void low_mapping_insert(struct mapping *m,
-			struct svalue *key,
-			struct svalue *val,
-			int overwrite);
+				    const struct svalue *key,
+				    const struct svalue *val,
+				    int overwrite);
 PMOD_EXPORT void mapping_insert(struct mapping *m,
-		    struct svalue *key,
-		    struct svalue *val);
+				const struct svalue *key,
+				const struct svalue *val);
 PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 				     struct svalue *key,
 				     TYPE_T t);
@@ -135,7 +135,7 @@ PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			struct svalue *to);
 PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m);
 PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
-				  struct svalue *key);
+					      const struct svalue *key);
 PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
 					 struct pike_string *p);
 PMOD_EXPORT void mapping_string_insert(struct mapping *m,
@@ -175,7 +175,7 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent);
 node *make_node_from_mapping(struct mapping *m);
 PMOD_EXPORT void f_aggregate_mapping(INT32 args);
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
-						     struct processing *p);
+						     struct mapping *p);
 PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    struct svalue *look_for,

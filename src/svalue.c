@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.193 2004/04/17 23:22:50 mast Exp $
+|| $Id: svalue.c,v 1.194 2004/05/28 16:08:24 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.193 2004/04/17 23:22:50 mast Exp $");
+RCSID("$Id: svalue.c,v 1.194 2004/05/28 16:08:24 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1652,14 +1652,31 @@ PMOD_EXPORT void print_short_svalue_compact (FILE *out, const union anything *a,
 }
 
 PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
-				      const struct svalue *from,
-				      size_t num,
-				      struct processing *p)
+						  const struct svalue *from,
+						  size_t num,
+						  struct mapping *m)
 {
+  ONERROR err;
+  int allocated_here = 0;
+  if (!m) {
+    m = allocate_mapping(num);
+    allocated_here = 1;
+    SET_ONERROR(err, do_free_mapping, m);
+  }
   while(num--)
   {
+    struct svalue *tmp;
+
     check_type(from->type);
     check_refs(from);
+
+    if ((tmp = low_mapping_lookup(m, from))) {
+      *to = *tmp;
+      if (tmp->type <= MAX_REF_TYPE) add_ref(tmp->u.dummy);
+      to++;
+      from++;
+      continue;
+    }
 
     switch(from->type)
     {
@@ -1669,22 +1686,26 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
       break;
 
     case T_ARRAY:
-      to->u.array=copy_array_recursively(from->u.array,p);
+      to->u.array=copy_array_recursively(from->u.array,m);
       to->type=T_ARRAY;
       break;
 
     case T_MAPPING:
-      to->u.mapping=copy_mapping_recursively(from->u.mapping,p);
+      to->u.mapping=copy_mapping_recursively(from->u.mapping,m);
       to->type=T_MAPPING;
       break;
 
     case T_MULTISET:
-      to->u.multiset=copy_multiset_recursively(from->u.multiset,p);
+      to->u.multiset=copy_multiset_recursively(from->u.multiset,m);
       to->type=T_MULTISET;
       break;
     }
+    mapping_insert(m, from, to);
     to++;
     from++;
+  }
+  if (allocated_here) {
+    CALL_AND_UNSET_ONERROR(err);
   }
 }
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.60 2004/05/13 23:28:50 nilsson Exp $
+|| $Id: array.h,v 1.61 2004/05/28 16:08:24 grubba Exp $
 */
 
 #ifndef ARRAY_H
@@ -164,7 +164,8 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s);
 PMOD_EXPORT struct array *explode(struct pike_string *str,
 		       struct pike_string *del);
 PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del);
-PMOD_EXPORT struct array *copy_array_recursively(struct array *a,struct processing *p);
+PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
+						 struct mapping *p);
 PMOD_EXPORT void apply_array(struct array *a, INT32 args);
 PMOD_EXPORT struct array *reverse_array(struct array *a);
 void array_replace(struct array *a,
