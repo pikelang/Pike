@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.27 2001/08/08 10:59:06 per Exp $");
+RCSID("$Id: blob.c,v 1.28 2001/09/27 04:25:29 js Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -237,7 +237,8 @@ static struct hash *find_hash( struct blob_data *d, int doc_id )
   }
   d->size++;
   h = new_hash( doc_id );
-  d->memsize=0;
+  if( d->memsize )
+    d->memsize+=sizeof( struct hash )+32;
   insert_hash( d, h );
   return h;
 }
@@ -263,7 +264,7 @@ static void _append_hit( struct blob_data *d, int doc_id, int hit )
   /* Max 255 hits */
   if( nhits < 255 )
   {
-    if( d->memsize ) d->memsize=0;
+    if( d->memsize ) d->memsize+=8;
     wf_buffer_wshort( h->data, hit );
     ((unsigned char *)h->data->data)[4] = nhits+1;
   }
