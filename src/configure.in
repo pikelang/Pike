@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.810 2004/03/10 09:22:37 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.811 2004/03/10 09:42:13 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -127,18 +127,18 @@ complex_false:
 complex_true:
 	test "foo" = "bar" || /bin/true
 EOF
-    if ${MAKE-make} -f conftestmake false >/dev/null 2>&AC_FD_CC; then
+    if ${MAKE-make} -f conftestmake false >&AC_FD_CC 2>&AC_FD_CC; then
       # /bin/sh was found, and /bin/false was not executed.
       pike_cv_make_supports_spaces_in_SHELL=yes
-    elif ${MAKE-make} -f conftestmake complex_false >/dev/null 2>&AC_FD_CC; then
+    elif ${MAKE-make} -f conftestmake complex_false >&AC_FD_CC 2>&AC_FD_CC; then
       # SHELL is ignored for simple targets, but not for more
       # complex expressions.
       # When SHELL is used, spaces are supported.
       pike_cv_make_supports_spaces_in_SHELL="complex only"
-    elif ${MAKE-make} -f conftestmake complex_true >/dev/null 2>&AC_FD_CC; then
+    elif ${MAKE-make} -f conftestmake complex_true >&AC_FD_CC 2>&AC_FD_CC; then
       # SHELL is ignored for all targets.
       pike_cv_make_supports_spaces_in_SHELL=ignored
-    elif ${MAKE-make} -f conftestmake true >/dev/null 2>&AC_FD_CC; then
+    elif ${MAKE-make} -f conftestmake true >&AC_FD_CC 2>&AC_FD_CC; then
       # SHELL is ignored for simple targets, but not for more
       # complex expressions.
       # When SHELL is used, spaces are not supported.
