@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.46 2001/02/04 21:48:39 mirar Exp $
+# $Id: configure.in,v 1.47 2001/02/04 21:52:28 mirar Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -21,7 +21,7 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 	sys/time.h sys/mman.h fcntl.h sys/fcntl.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
-AC_MSG_CHECKING([for sys/resource.h])
+AC_MSG_CHECKING([for working sys/resource.h])
 AC_CACHE_VAL(pike_cv_sys_resource_h,
 	[AC_TRY_COMPILE([#include <sys/resource.h>],[],
 	        [pike_cv_sys_resource_h=yes],[pike_cv_sys_resource_h=no])])
@@ -33,7 +33,7 @@ else
 fi
 
 # some systems have a broken sys/user.h that doesn't compile /Mirar
-AC_MSG_CHECKING([for sys/user.h])
+AC_MSG_CHECKING([for working sys/user.h])
 AC_CACHE_VAL(pike_cv_sys_user_h,
 	[AC_TRY_COMPILE([
 #ifdef HAVE_UNISTD_H
