@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.229 2000/12/05 21:08:19 per Exp $");
+RCSID("$Id: las.c,v 1.230 2001/01/11 23:32:29 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2197,6 +2197,12 @@ static void low_print_tree(node *foo,int needlval)
     fprintf(stderr, "(");
     low_print_tree(_CDR(foo),0);
     fprintf(stderr, ")");
+    return;
+
+  case F_NORMAL_STMT_LABEL:
+  case F_CUSTOM_STMT_LABEL:
+    fprintf(stderr, "%s:", _CAR(foo)->u.sval.u.string->str);
+    low_print_tree(_CDR(foo),0);
     return;
 
   default:
