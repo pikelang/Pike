@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.27 1999/07/23 21:37:40 mirar Exp $
+**!	$Id: colors.c,v 1.28 1999/10/21 14:54:34 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.27 1999/07/23 21:37:40 mirar Exp $");
+RCSID("$Id: colors.c,v 1.28 1999/10/21 14:54:34 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -689,6 +689,89 @@ static void image_color_cast(INT32 args)
       return;
    }
    error("Image.Color.Color->cast(): Can't cast to that\n");
+}
+
+/*
+**! method _sprintf(string s, mapping flags)
+**!	
+*/
+
+static void image_color__sprintf(INT32 args)
+{
+   int prec,n,x;
+
+   if (args<2)
+      SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+
+   if (sp[-args].type!=T_INT)
+      SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+   if (sp[1-args].type!=T_MAPPING)
+      SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
+
+   pop_n_elems(args-2);
+
+   push_text("precision");
+   f_index(2);
+   if (sp[-1].type!=T_INT)
+      SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping(\"precision\":int)");
+   prec=sp[-1].u.integer;
+   x=sp[-2].u.integer;
+   pop_n_elems(2);
+
+   switch (x)
+   {
+/*       case 'c': */
+/*       case 'd': */
+      case 't':
+	 push_constant_text("Image.Color.Color");
+	 return;
+      case 'O':
+	 if (!THIS->name) try_find_name(THIS);
+	 if (THIS->name==no_name)
+	 {
+	    push_constant_text("Image.Color(\"");
+	    if (prec)
+	    {
+	       push_int(prec);
+	       image_color_hex(1);
+	    }
+	    else
+	       image_color_hex(0);
+	    push_constant_text("\")");
+	    f_add(3);
+	    return;
+	 }
+	 else
+	 {
+	    push_constant_text("Image.Color.");
+	    ref_push_string(THIS->name);
+	    f_add(2);
+	    return;
+	 }
+	 break;
+      case 's':
+	 if (prec)
+	 {
+	    push_int(prec);
+	    image_color_name(1);
+	 }
+	 else
+	    image_color_name(0);
+	 return;
+      case 'x':
+	 if (prec)
+	 {
+	    push_int(prec);
+	    image_color_hex(1);
+	 }
+	 else
+	    image_color_hex(0);
+	 return;
+      default:
+	 push_int(0);
+	 return;
+   }
+
 }
 
 static void image_color_index(INT32 args)
@@ -1538,6 +1621,8 @@ void init_image_colors(void)
    /* color info methods */
 
    ADD_FUNCTION("cast",image_color_cast,tFunc(tStr,tOr(tArray,tStr)),0);
+   ADD_FUNCTION("_sprintf",image_color__sprintf,
+		tFunc(tInt tMap(tStr,tMix),tStr),0);
    ADD_FUNCTION("`[]",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
    ADD_FUNCTION("`->",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
    ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObj,tInt),tInt),0);
