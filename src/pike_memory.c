@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.93 2000/12/01 08:09:52 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.94 2000/12/01 20:23:04 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -167,76 +167,9 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
   free(tmp);
 }
 
-size_t hashmem(const unsigned char *a, size_t len, size_t mlen)
+size_t hashmem(const unsigned char *a_, size_t len_, size_t mlen_)
 {
-  size_t ret;
-
-  ret = 9248339*len;
-  if(len<mlen)
-    mlen=len;
-  else
-  {
-    switch(len-mlen)
-    {
-      default: ret^=(ret<<6) + a[len-7];
-      case 7:
-      case 6: ret^=(ret<<7) + a[len-5];
-      case 5:
-      case 4: ret^=(ret<<4) + a[len-4];
-      case 3: ret^=(ret<<3) + a[len-3];
-      case 2: ret^=(ret<<3) + a[len-2];
-      case 1: ret^=(ret<<3) + a[len-1];
-    }
-  }
-  switch(mlen&7)
-  {
-    case 7: ret^=*(a++);
-    case 6: ret^=(ret<<4)+*(a++);
-    case 5: ret^=(ret<<7)+*(a++);
-    case 4: ret^=(ret<<6)+*(a++);
-    case 3: ret^=(ret<<3)+*(a++);
-    case 2: ret^=(ret<<7)+*(a++);
-    case 1: ret^=(ret<<5)+*(a++);
-  }
-
-#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-  {
-    size_t *b;
-    b=(size_t *)a;
-
-    for(
-#if SIZEOF_CHAR_P == 4
-	mlen >>= 3;
-#else /* sizeof(char *) != 4 */
-#if SIZEOF_CHAR_P == 8
-	mlen >>= 4;
-#else /* sizeof(char *) != 8 */
-	mlen /= 2*sizeof(size_t);
-#endif /* sizeof(char *) == 8 */
-#endif /* sizeof(char *) == 4 */
-	mlen--;)
-    {
-      ret^=(ret<<7)+*(b++);
-      ret^=(ret>>6)+*(b++);
-    }
-  }
-#else
-  for(mlen >>= 3; mlen--;)
-  {
-    register size_t t1,t2;
-    t1= *(a++);
-    t2= *(a++);
-    t1=(t1<<5) + *(a++);
-    t2=(t2<<4) + *(a++);
-    t1=(t1<<7) + *(a++);
-    t2=(t2<<5) + *(a++);
-    t1=(t1<<3) + *(a++);
-    t2=(t2<<4) + *(a++);
-    ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);
-  }
-#endif
-
-  return ret;
+  DO_HASHMEM(a_, len_m mlen_);
 }
 
 size_t hashstr(const unsigned char *str, ptrdiff_t maxn)
