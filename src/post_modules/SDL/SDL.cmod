@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.11 2002/11/26 20:38:26 grubba Exp $
+|| $Id: SDL.cmod,v 1.12 2002/11/26 21:29:23 mast Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.11 2002/11/26 20:38:26 grubba Exp $");
+RCSID("$Id: SDL.cmod,v 1.12 2002/11/26 21:29:23 mast Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -953,11 +953,12 @@ PIKECLASS Surface {
     CHECK_INIT();
     if(THIS->fast_set_pixel) {
       SDL_Surface *surface = THIS->_s;
+      int bpp = surface->format->BytesPerPixel;
+      Uint8 *p;
       if(x < 0 || y < 0 || x > surface->w || y > surface->h) {
 	Pike_error("Pixel out of bounds!\n");
       }
-      int bpp = surface->format->BytesPerPixel;
-      Uint8 *p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
+      p = (Uint8 *)surface->pixels + y * surface->pitch + x * bpp;
       
       switch(bpp) {
       case 1:  RETURN *p;
