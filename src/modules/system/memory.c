@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.2 2001/02/04 08:39:22 mirar Exp $
+ * $Id: memory.c,v 1.3 2001/02/04 10:34:51 mirar Exp $
  */
 
 //! module system
@@ -13,32 +13,8 @@
 //!	Beware, and read about <tt>mmap</tt> before you try anything.
 //!	Don't blame Pike if you shoot your foot off.
 
-#ifndef _POSIX_MAPPED_FILES
-#define _POSIX_MAPPED_FILES
-#endif
-
 #include "global.h"
-RCSID("$Id: memory.c,v 1.2 2001/02/04 08:39:22 mirar Exp $");
-
-#include "pike_macros.h"
-#include "object.h"
-#include "constants.h"
-#include "interpret.h"
-#include "svalue.h"
-#include "threads.h"
-#include "array.h"
-#include "mapping.h"
-#include "pike_error.h"
-#include "stralloc.h"
-#include "threads.h"
-#include "builtin_functions.h"
-#include "module_support.h"
-#include "program.h"
-#include "operators.h"
-#include "fdlib.h"
-#include "bignum.h"
-
-#include "system.h"
+RCSID("$Id: memory.c,v 1.3 2001/02/04 10:34:51 mirar Exp $");
 
 #include "system_machine.h"
 
@@ -70,6 +46,26 @@ RCSID("$Id: memory.c,v 1.2 2001/02/04 08:39:22 mirar Exp $");
 #define PAGE_SIZE PAGESIZE
 #endif
 #endif
+
+#include "pike_macros.h"
+#include "object.h"
+#include "constants.h"
+#include "interpret.h"
+#include "svalue.h"
+#include "threads.h"
+#include "array.h"
+#include "mapping.h"
+#include "pike_error.h"
+#include "stralloc.h"
+#include "threads.h"
+#include "builtin_functions.h"
+#include "module_support.h"
+#include "program.h"
+#include "operators.h"
+#include "fdlib.h"
+#include "bignum.h"
+
+#include "system.h"
 
 #include "module_magic.h"
 
