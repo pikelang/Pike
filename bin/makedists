@@ -28,7 +28,7 @@ PIKEDIR=`echo *`
 
 ( cd $PIKEDIR/src/modules ; rm -rf  Odbc Oracle Postgres )
 
-echo building $DIR/$BASE_TARFILE.tar.gz
+echo building $DIR/$BASE_TARFILE-sweden.tar.gz
 tar cf - $PIKEDIR | gzip -c9 >$DIR/$BASE_TARFILE-sweden.tar.gz
 
 
