@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.198 2000/07/10 14:32:06 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.199 2000/07/10 15:36:35 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -775,6 +775,11 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
   ;
 
 optional_dot_dot_dot: TOK_DOT_DOT_DOT { $$=1; }
+  | TOK_DOT_DOT
+  {
+    yyerror("Range indicator ('..') where elipsis ('...') expected.");
+    $$=1;
+  }
   | /* empty */ { $$=0; }
   ;
 
@@ -831,7 +836,8 @@ arguments2: new_arg_name { $$ = 1; }
   }
   ;
 
-modifier: TOK_NO_MASK    { $$ = ID_NOMASK; }
+modifier:
+    TOK_NO_MASK    { $$ = ID_NOMASK; }
   | TOK_FINAL_ID   { $$ = ID_NOMASK; }
   | TOK_STATIC     { $$ = ID_STATIC; }
   | TOK_EXTERN     { $$ = ID_EXTERN; }
@@ -847,7 +853,7 @@ magic_identifiers1:
     TOK_NO_MASK    { $$ = "nomask"; }
   | TOK_FINAL_ID   { $$ = "final"; }
   | TOK_STATIC     { $$ = "static"; }
-  | TOK_EXTERN	 { $$ = "extern"; }
+  | TOK_EXTERN	   { $$ = "extern"; }
   | TOK_PRIVATE    { $$ = "private"; }
   | TOK_LOCAL_ID   { $$ = "local"; }
   | TOK_PUBLIC     { $$ = "public"; }
@@ -1110,12 +1116,19 @@ number_or_minint: /* Empty */
   }
   ;
 
+expected_dot_dot: TOK_DOT_DOT
+  | TOK_DOT_DOT_DOT
+  {
+    yyerror("Elipsis ('...') where range indicator ('..') expected.");
+  }
+  ;
+
 opt_int_range: /* Empty */
   {
     push_type_int(MAX_INT32);
     push_type_int(MIN_INT32);
   }
-  | '(' number_or_minint TOK_DOT_DOT number_or_maxint ')'
+  | '(' number_or_minint expected_dot_dot number_or_maxint ')'
   {
     /* FIXME: Check that $4 is >= $2. */
     if($4->token == F_CONSTANT && $4->u.sval.type == T_INT)
@@ -2153,7 +2166,7 @@ case: TOK_CASE safe_comma_expr expected_colon
   {
     $$=mknode(F_CASE,$2,0);
   }
-  | TOK_CASE safe_comma_expr TOK_DOT_DOT optional_comma_expr expected_colon
+  | TOK_CASE safe_comma_expr expected_dot_dot optional_comma_expr expected_colon
   {
      $$=mknode(F_CASE,$4?$2:0,$4?$4:$2);
   }
@@ -2369,7 +2382,7 @@ expr4: string
   | expr4 '(' error ';' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
   | expr4 '(' error '}' { yyerror("Missing ')'."); $$=mkapplynode($1, NULL); }
   | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
-  | expr4 '['  comma_expr_or_zero TOK_DOT_DOT comma_expr_or_maxint ']'
+  | expr4 '['  comma_expr_or_zero expected_dot_dot comma_expr_or_maxint ']'
   {
     $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
   }
