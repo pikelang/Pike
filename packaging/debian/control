@@ -95,25 +95,25 @@ Package: pike7.4-gtk
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: GTK module for Pike
- This Pike modules provides access to the GTK+ library.
+ This Pike module provides access to the GTK+ library.
 
 Package: pike7.4-gl
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Mesa module for Pike
- This Pike modules provides access to the Mesa 3D graphics library.
+ This Pike module provides access to the Mesa 3D graphics library.
 
 Package: pike7.4-sane
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: SANE module for Pike
- This Pike modules provides access to SANE.
+ This Pike module provides access to SANE.
 
 Package: pike7.4-perl
 Architecture: any
 Depends: ${shlibs:Depends}, pike7.4-core (=${Source-Version})
 Description: Perl module for Pike
- This Pike modules enables one to embed perl in the pike
+ This Pike module enables one to embed perl in the pike
  programs.
 
 Package: pike7.4-dev
