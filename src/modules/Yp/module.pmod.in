@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.1 1997/06/09 18:37:59 grubba Exp $
+ * $Id: module.pmod.in,v 1.2 1997/06/09 18:44:56 grubba Exp $
  *
  * YP (NIS) Functionality for Pike
  *
@@ -31,7 +31,7 @@ class YpMap {
   }
   string `[](string key)
   {
-    return(match(key));
+    return(domain->match(ypmap, key));
   }
   mapping all()
   {
@@ -63,6 +63,16 @@ class YpMap {
   }
   array(string) values()
   {
-    return(values(domain->all(ypmap));
+    return(values(domain->all(ypmap)));
+  }
+  mixed cast(string type)
+  {
+    switch(type) {
+    case "mapping":
+      return(cast_to_mapping());
+    default:
+      throw(({ "Yp.YpDomain: Cast to " + type + " not supported.\n",
+		 backtrace() }));
+    }
   }
 };
