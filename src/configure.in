@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.499 2003/03/05 16:18:24 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.500 2003/05/07 21:01:02 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3086,6 +3086,22 @@ MY_CHECK_FUNCTION(fork,
   exit(fork()==-1);
 ])
 
+########################################################################
+MY_CHECK_FUNCTION(PTHREAD_MUTEX_ERRORCHECK,
+[
+#include <pthread.h>
+], [
+  PTHREAD_MUTEX_ERRORCHECK;
+  exit(0);
+])
+########################################################################
+MY_CHECK_FUNCTION(PTHREAD_MUTEX_ERRORCHECK_NP,
+[
+#include <pthread.h>
+], [
+  PTHREAD_MUTEX_ERRORCHECK_NP;
+  exit(0);
+])
 ########################################################################
 MY_CHECK_FUNCTION(PTHREAD_MUTEX_RECURSIVE,
 [

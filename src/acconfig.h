@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.79 2001/07/13 18:21:30 grubba Exp $
+ * $Id: acconfig.h,v 1.80 2003/05/07 21:01:02 mast Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -307,6 +307,12 @@
 
 /* Define this if your pthreads have pthread_condattr_default */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT
+
+/* Define if your pthreads have PTHREAD_MUTEX_ERRORCHECK */
+#undef HAVE_PTHREAD_MUTEX_ERRORCHECK
+
+/* Define if your pthreads have PTHREAD_MUTEX_ERRORCHECK_NP */
+#undef HAVE_PTHREAD_MUTEX_ERRORCHECK_NP
 
 /* Define if your pthreads have PTHREAD_MUTEX_RECURSIVE */
 #undef HAVE_PTHREAD_MUTEX_RECURSIVE

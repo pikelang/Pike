@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.168 2003/04/01 14:22:20 grubba Exp $");
+RCSID("$Id: threads.c,v 1.169 2003/05/07 21:01:03 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -32,6 +32,11 @@ PMOD_EXPORT int live_threads = 0;
 PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=1024 * 1204;
+ 
+PMOD_EXPORT void thread_low_error (int errcode)
+{
+  fatal ("Unexpected error from thread function: %d\n", errcode);
+}
 
 #ifdef USE_CLOCK_FOR_SLICES
 PMOD_EXPORT clock_t thread_start_clock = 0;
@@ -625,14 +630,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   }
 #endif /* HAVE_BROKEN_LINUX_THREAD_EUID */
   
-  if((tmp=mt_lock_interpreter()))
-    fatal("Failed to lock interpreter, return value=%d, errno=%d\n",tmp,
-#ifdef __NT__
-	  GetLastError()
-#else
-	  errno
-#endif
-	 );
+  mt_lock_interpreter();
 
   while (threads_disabled) {
     THREADS_FPRINTF(1, (stderr,

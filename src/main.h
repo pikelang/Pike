@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: main.h,v 1.15 2000/12/16 05:24:40 marcus Exp $
+ * $Id: main.h,v 1.16 2003/05/07 21:01:03 mast Exp $
  */
 #ifndef MAIN_H
 #define MAIN_H
@@ -23,6 +23,7 @@ extern int try_use_mmx;
 /* Debug options */
 #define DEBUG_SIGNALS 1
 #define NO_TAILRECURSION 2
+#define ERRORCHECK_MUTEXES 4
 
 /* Runtime options */
 #define RUNTIME_CHECK_TYPES  1

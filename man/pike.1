@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.11 2001/01/14 21:16:46 grubba Exp $
+.\" $Id: pike.1,v 1.12 2003/05/07 21:01:24 mast Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 2001/01/14 21:16:46 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 2001/01/14 21:16:46 $"
+.TH pike 1 "$Date: 2003/05/07 21:01:24 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 2003/05/07 21:01:24 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 2001/01/14 21:16:46 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 2003/05/07 21:01:24 $ \" Solaris nroff
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -57,6 +57,9 @@ Debug signals (debug).
 .TP
 .B \-dt
 Turn off tail recursion optimization (debug).
+.TP
+.B \-dT
+Enable extra checks in the thread library, e.g. mutex sanity checks (debug).
 .TP
 .B \-l
 Increase the debug level of the global optimizer with 1 (debug).
