@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.84 2004/11/06 13:41:27 grubba Exp $
+|| $Id: stralloc.h,v 1.85 2004/11/06 15:13:35 grubba Exp $
 */
 
 #ifndef STRALLOC_H
@@ -44,6 +44,8 @@ struct string_builder
 #define APPEND_SIGNED		1	/* Value is signed */
 #define APPEND_POSITIVE		2	/* Sign positive values too. */
 #define APPEND_UPPER_CASE	4	/* Use upper case hex. */
+#define APPEND_ZERO_PAD		8	/* Zero pad. */
+#define APPEND_LEFT		16	/* Left align. */
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
@@ -287,7 +289,9 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       LONGEST val,
 					       unsigned int base,
-					       int flags);
+					       int flags,
+					       size_t min_width,
+					       size_t precision);
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
 					 va_list args);

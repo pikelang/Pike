@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.175 2004/11/06 13:52:18 grubba Exp $
+|| $Id: stralloc.c,v 1.176 2004/11/06 15:13:50 grubba Exp $
 */
 
 #include "global.h"
@@ -2180,9 +2180,12 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
 PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 					       LONGEST val,
 					       unsigned int base,
-					       int flags)
+					       int flags,
+					       size_t min_width,
+					       size_t precision)
 {
   unsigned LONGEST tmp;
+  size_t len = 1;
   const char *numbers = "0123456789abcdef";
   if ((base < 2) || (base > 16)) {
     Pike_fatal("string_builder_append_int(): Unsupported base %u.\n", base);
@@ -2196,17 +2199,30 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
   } else if (flags & APPEND_POSITIVE) {
     string_builder_putchar(s, '+');
   }
+  if ((flags & APPEND_ZERO_PAD) && (precision < min_width)) {
+    precision = min_width;
+  }
+
   tmp = val;
   if (base & (base - 1)) {
-    int len = 0;
-
     /* Calculate the output length.
      * Use do-while to ensure that zero isn't output as an empty string.
      */
+    len = 0;
     do {
       len++;
       tmp /= base;
     } while (tmp);
+
+    /* Precision is minimum number of digits. */
+    if (len < precision) len = precision;
+
+    /* Perform padding. */
+    if ((len < min_width) && !(flags & APPEND_LEFT)) {
+      string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+			  4, 0);
+      min_width = 0;
+    }
 
     tmp = val;
     switch(s->s->size_shift) {
@@ -2216,7 +2232,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 	do {
 	  p[--len] = numbers[tmp%base];
 	  tmp /= base;
-	} while (tmp);
+	} while (len);
       }
       break;
     case 1:
@@ -2225,7 +2241,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 	do {
 	  p[--len] = numbers[tmp%base];
 	  tmp /= base;
-	} while (tmp);
+	} while (len);
       }
       break;
     case 2:
@@ -2234,7 +2250,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 	do {
 	  p[--len] = numbers[tmp%base];
 	  tmp /= base;
-	} while (tmp);
+	} while (len);
       }
       break;
     }
@@ -2243,7 +2259,7 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
      * the division and modulo operations.
      */
     int delta;
-    int shift;
+    size_t shift;
     unsigned int mask;
 
     for(delta = 1; (base>>delta) > 1; delta++)
@@ -2251,16 +2267,45 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 
     mask = (1<<delta)-1;	/* Usually base-1. */
 
-    /* Start at delta, so that zero isn't output as an empty string. */
-    for (shift = delta; tmp >> shift; shift += delta)
+    /* Precision is minimum number of digits. */
+    if (precision) shift = (len = precision) * delta;
+    else shift = delta;
+
+    /* Calculate actual number of digits and initial shift. */
+    for (; tmp >> shift; shift += delta, len++)
       ;
-    shift -= delta;
-    while(shift >= 0) {
-      string_builder_putchar(s, numbers[(tmp>>shift) & mask]);
+
+    if ((len < min_width) && !(flags & APPEND_LEFT)) {
+      /* Perform padding.
+       * Note that APPEND_ZERO_PAD can not be active here, since
+       * len is at least min_width in that case.
+       */
+      string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+			  4, 0);
+      min_width = 0;
+    }
+
+    while(shift) {
       shift -= delta;
+      string_builder_putchar(s, numbers[(tmp>>shift) & mask]);
     }
   }
+  if (len < min_width) {
+    /* Perform padding.
+     * Note that APPEND_ZERO_PAD can not be active here, since
+     * len is at least min_width in that case.
+     * Note that APPEND_LEFT is always active here, since
+     * min_width isn't zero.
+     */
+    string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+			4, 0);
+  }
+
 }
+
+/* Values used internally in string_builder_vsprintf() */
+#define STATE_MIN_WIDTH	1
+#define STATE_PRECISION 2
 
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
@@ -2268,14 +2313,46 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 {
   while (*fmt) {
     if (*fmt == '%') {
+      int flags = 0;
+      size_t min_width = 0;
+      size_t precision = 0;
+      int state = 0;
+      
       fmt++;
       while (1) {
 	switch (*(fmt++)) {
 	case '%':
 	  string_builder_putchar(s, '%');
 	  break;
+	case '+':
+	  flags |= APPEND_POSITIVE;
+	  break;
+	case '-':
+	  flags |= APPEND_LEFT;
+	  break;
+
+	case '0':
+	  if (!state) {
+	    flags |= APPEND_ZERO_PAD;
+	  }
+	  /* FALL_THROUGH */
+	case '1': case '2': case '3':
+	case '4': case '5': case '6':
+	case '7': case '8': case '9':
+	  if (state = STATE_PRECISION) {
+	    precision *= 10 + fmt[-1] - '0';
+	  } else {
+	    state = STATE_MIN_WIDTH;
+	    min_width *= 10 + fmt[-1] - '0';
+	  }
+	  break;
+	case '.':
+	  state = STATE_PRECISION;
+	  break;
+	  
 	case 'O':
 	  {
+	    /* FIXME: Doesn't care about field widths yet. */
 	    dynamic_buffer old_buf;
 	    init_buf(&old_buf);
 	    describe_svalue(va_arg(args, struct svalue *), 0, NULL);
@@ -2286,36 +2363,74 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  }
 	  break;
 	case 'S':
-	  string_builder_shared_strcat(s, va_arg(args, struct pike_string *));
+	  {
+	    struct pike_string *str = va_arg(args, struct pike_string *);
+	    size_t len = str->len;
+	    if (precision && (precision < len)) len = precision;
+	    if (min_width > len) {
+	      if (flags & APPEND_LEFT) {
+		string_builder_append(s, MKPCHARP_STR(str), len);
+		string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				    4, 0);
+	      } else {
+		string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				    4, 0);
+		string_builder_append(s, MKPCHARP_STR(str), len);
+	      }
+	    } else {
+	      string_builder_append(s, MKPCHARP_STR(str), len);
+	    }
+	  }
 	  break;
 	case 's':
 	  {
 	    const char *str = va_arg(args, char *);
-	    string_builder_binary_strcat(s, str, strlen(str));
+	    size_t len = strlen(str);
+	    if (precision && precision < len) len = precision;
+	    if (min_width > len) {
+	      if (flags & APPEND_LEFT) {
+		string_builder_binary_strcat(s, str, len);
+		string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				    4, 0);
+	      } else {
+		string_builder_fill(s, min_width - len, MKPCHARP("    ", 0),
+				    4, 0);
+		string_builder_binary_strcat(s, str, len);
+	      }
+	    } else {
+	      string_builder_binary_strcat(s, str, len);
+	    }
 	  }
 	  break;
 	case 'c':
+	  /* FIXME: Doesn't case about field widths yet. */
 	  string_builder_putchar(s, va_arg(args, INT32));
 	  break;
 	case 'b':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 2, 0);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 2, 0,
+					min_width, precision);
 	  break;
 	case 'o':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 8, 0);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 8, 0,
+					min_width, precision);
 	  break;
 	case 'x':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 16, 0);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 16, 0,
+					min_width, precision);
 	  break;
 	case 'X':
 	  string_builder_append_integer(s, va_arg(args, unsigned int), 16,
-					APPEND_UPPER_CASE);
+					APPEND_UPPER_CASE,
+					min_width, precision);
 	  break;
 	case 'u':
-	  string_builder_append_integer(s, va_arg(args, unsigned int), 10, 0);
+	  string_builder_append_integer(s, va_arg(args, unsigned int), 10, 0,
+					min_width, precision);
 	  break;
 	case 'd':
 	  string_builder_append_integer(s, va_arg(args, int), 10,
-					APPEND_SIGNED);
+					APPEND_SIGNED,
+					min_width, precision);
 	  break;
 	default:
 	  Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
