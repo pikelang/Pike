@@ -1,9 +1,9 @@
-# $Id: Makefile.in,v 1.24 2000/08/01 19:48:34 sigge Exp $
+# $Id: Makefile.in,v 1.25 2000/10/02 19:35:01 grubba Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 
 # BEGIN NATIONAL SECURITY
-MASS_DESTRUCTION_OBJS = idea.o des.o cast.o arcfour.o rsa.o
+MASS_DESTRUCTION_OBJS = idea.o des.o cast.o arcfour.o rsa.o rijndael.o
 # END NATIONAL SECURITY
 
 OBJS= $(MASS_DESTRUCTION_OBJS) crypto.o invert.o sha.o md2.o md5.o pipe.o cbc.o nt.o

@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.25 2000/08/02 20:52:28 grubba Exp $
+# $Id: Makefile.in,v 1.26 2000/10/02 19:35:03 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -159,10 +159,12 @@ desQuickCore.c:
 ### End of rules for desCore
 
 # BEGIN NATIONAL SECURITY
-MASS_DESTRUCTION_OBJS = idea.o arcfour.o cast.o $(O)
+MASS_DESTRUCTION_OBJS = idea.o arcfour.o cast.o rijndael.o $(O)
 # END NATIONAL SECURITY
 
 OBJS = $(MASS_DESTRUCTION_OBJS) sha.o md2.o md5.o
+
+rijndael.o: $(SRCDIR)/../include/rijndael.h rijndael-boxes.dat
 
 algorithms.a: $(OBJS)
 	rm -f algorithms.a

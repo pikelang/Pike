@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.38 2000/08/16 20:08:19 grubba Exp $
+ * $Id: crypto.c,v 1.39 2000/10/02 19:35:02 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -526,6 +526,7 @@ void pike_module_init(void)
   pike_cast_init();
   pike_arcfour_init();
   pike_rsa_init();
+  pike_rijndael_init();
 
   /* END NATIONAL SECURITY */
 }  
@@ -547,6 +548,7 @@ void pike_module_exit(void)
   pike_cast_exit();
   pike_arcfour_exit();
   pike_rsa_exit();
+  pike_rijndael_exit();
 
   /* END NATIONAL SECURITY */
 }
