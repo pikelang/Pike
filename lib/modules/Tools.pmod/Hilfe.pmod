@@ -202,6 +202,7 @@ import Getopt;
   int in_comment=0;
   int in_string=0;
   int in_quote=0;
+  int in_char=0;
   int eq_pos=-1;
   
   void set_buffer(string s,int parsing)
@@ -212,6 +213,7 @@ import Getopt;
     parenthese_level=0;
     in_comment=0;
     in_quote=0;
+    in_char=0;
     in_string=0;
     eq_pos=-1;
     if(!parsing) do_parse();
@@ -322,6 +324,11 @@ import Getopt;
 	case '\\':
 	  in_quote=1;
 	  break;
+
+	case '\'':
+	  if(in_quote || in_comment || in_string) break;
+	  in_char=!in_char;
+	  break;
 	  
 	case '=':
 	  if(in_string || in_comment  || parenthese_level || eq_pos!=-1) break;
@@ -329,7 +336,7 @@ import Getopt;
 	  break;
 	  
 	case '"':
-	  if(in_comment) break;
+	  if(in_char || in_quote || in_comment) break;
 	  in_string=!in_string;
 	  break;
 	  
@@ -362,7 +369,7 @@ import Getopt;
 	  break;
 	  
 	case ';':
-	  if(in_string || in_comment || parenthese_level) break;
+	  if(in_char || in_string || in_quote || in_comment || parenthese_level) break;
 	  if(tmp=parse_statement(input[0..pos]))
 	  {
 	    cut_buffer(pos+1);
