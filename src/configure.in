@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.471 2001/02/03 07:02:06 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.472 2001/02/27 20:33:40 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2694,11 +2694,16 @@ if test "x$ac_cv_func_gethrtime" != "xyes"; then
   AC_CACHE_VAL(pike_cv_own_gethrtime_rdtsc, [
      AC_TRY_RUN([
 #include <unistd.h>
+#include <stdio.h>
 #include <sys/time.h>
 
 static long long hrtime_rtsc_zero;
+static long long hrtime_rtsc_last;
+static long long hrtime_max;
 static struct timeval hrtime_timeval_zero;
 static long double hrtime_conv=0.0;
+
+#define GETTIMEOFDAY(PTR) gettimeofday(PTR,NULL)
 
 #define RTSC(x)   							\
    __asm__ __volatile__ (  "rdtsc"                			\
@@ -2707,31 +2712,60 @@ static long double hrtime_conv=0.0;
 
 void own_gethrtime_init()
 {
+   GETTIMEOFDAY(&hrtime_timeval_zero);
    RTSC(hrtime_rtsc_zero);
-   gettimeofday(&hrtime_timeval_zero,NULL);
+   hrtime_rtsc_last=hrtime_rtsc_zero;
+   hrtime_max=0;
 }
 
-void own_gethrtime_update(struct timeval *ptr)
+int own_gethrtime_update(struct timeval *ptr)
 {
    long long td,t,now;
+   GETTIMEOFDAY(ptr);
    RTSC(now);
-   gettimeofday(ptr,NULL);
    td=((long long)ptr->tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
       ((long long)ptr->tv_usec-hrtime_timeval_zero.tv_usec)*1000;
+
+   hrtime_rtsc_last=now;
    t=now-hrtime_rtsc_zero;
    if (t) hrtime_conv=((long double)td)/t;
+
+   return 1;
 }
+
+/* this is very sensitive to the compiler; keep all crap */
 
 long long gethrtime()
 {
    long long now;
-   struct timeval dummy;
+   struct timeval tv;
 
-   if (hrtime_conv==0.0) own_gethrtime_update(&dummy);
+   if (hrtime_conv==0.0) 
+   {
+      if (!own_gethrtime_update(&tv))  /* not calibrated yet */
+      {
+	 return
+	    hrtime_max=
+	    ((long long)tv.tv_sec-hrtime_timeval_zero.tv_sec)*1000000000+
+	    ((long long)tv.tv_usec-hrtime_timeval_zero.tv_usec)*1000;
+      }
+   }
 
    RTSC(now);
-   return (long long) ( (long double)now * hrtime_conv );
+
+   if (now-hrtime_rtsc_last > 2000000000) 
+   {
+      own_gethrtime_update(&tv);
+      return gethrtime();
+   }
+
+   now = (long long) ( (long double)(now-hrtime_rtsc_zero) * hrtime_conv );
+
+   if (now<hrtime_max) now=hrtime_max;
+   return hrtime_max=now;
 }
+
+#include <stdio.h>
 
 int main()
 {
@@ -2740,25 +2774,28 @@ int main()
    own_gethrtime_init();
 
    usleep(10);
+   own_gethrtime_update(&tv2);
+
    t1=gethrtime();
    
    gettimeofday(&tv1,NULL);
    for (;;) /* busy loop */
    {
-      gettimeofday(&tv2,NULL);
+      GETTIMEOFDAY(&tv2);
       td=((long long)tv2.tv_sec-tv1.tv_sec)*1000000000+
 	 ((long long)tv2.tv_usec-tv1.tv_usec)*1000;
       if (td>1000000) break;
    }
    t2=gethrtime();
 
+/*   printf("t2-t1=%lld\n",t2-t1);  */
+
    if (t2==hrtime_rtsc_zero ||
        t2-t1>1100000 ||
        t2-t1<900000) return 1;
 
    return 0;
-}
-	], pike_cv_own_gethrtime_rdtsc=yes,
+}], pike_cv_own_gethrtime_rdtsc=yes,
 	pike_cv_own_gethrtime_rdtsc=no, pike_cv_own_gethrtime_rdtsc=no)
 	])
   if test "x$pike_cv_own_gethrtime_rdtsc" = "xyes"; then
@@ -4271,7 +4308,6 @@ fi
 
 rm -f core
 
-
 ##########################################################################
 AC_MSG_CHECKING(how well OOB handling works)
 AC_CACHE_VAL(pike_cv_system_oob_working,[
@@ -4612,7 +4648,7 @@ case "x$pike_cv_system_oob_working" in
   xTIMEOUT)        AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,0)  ;;
   *)               AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,-1) ;; #unknown
 esac
-##########################################################################
+#######################################################################
 
 # Set info about shared libraries.
 AC_SUBST(SO)
@@ -4700,13 +4736,13 @@ if test -z "$LDSHARED" ; then
         *) LDSHARED="shlicc -r";;
       esac
     ;;
-    SCO_SV*) LDSHARED="cc -G -KPIC -Wl,-Bexport";;
+    SCO_SV*) LDSHARED="$CC -G -KPIC -Wl,-Bexport";;
     UNIX_SV*) LDSHARED="ld -G";;
     UnixWare*)
       if test "$GCC" = yes ; then
-        LDSHARED="ld -G"
+        LDSHARED="$CC -G -fPIC"
       else
-        LDSHARED="cc -G -KPIC -Wl,-Bexport"
+        LDSHARED="$CC -G -KPIC -Wl,-Bexport"
       fi
     ;;
     Windows_NT*)
@@ -4871,7 +4907,7 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
     OLD_CFLAGS="$CFLAGS"
     OLD_CPPFLAGS="$CPPFLAGS"
     CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
-
+    
     CFLAGS="$CFLAGS $LINKFORSHARED"
     OLD_CC="$CC"
     case "$LD" in
@@ -4895,7 +4931,7 @@ void testfunc2(void) { exit(0); }
 AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 
 
-if test "x$with_dynamic_modules" = "x" ; then
+if test "x$with_dynamic_modules" != "xno" ; then
   if test x$pike_cv_sys_dynamic_loading = xno ; then
     with_dynamic_modules=no
   else
@@ -5072,5 +5108,4 @@ AC_SUBST(ac_configure_args)
 AC_SUBST(dmmsrc)
 
 AC_OUTPUT(Makefile modules/static_module_makefile  post_modules/static_module_makefile:modules/static_module_makefile.in modules/dynamic_module_makefile:$dmmsrc post_modules/dynamic_module_makefile:$dmmsrc precompile.sh,[echo foo >stamp-h ; chmod +x precompile.sh])
-
 
