@@ -5615,7 +5615,7 @@ mixed read()
 
 <method name=Thread.Mutex-&gt;lock title="lock the mutex">
 <man_syntax>
-Thread.MutexKey lock();
+Thread.MutexKey lock();<br>
 Thread.MutexKey lock(int <i>type</i>);
 </man_syntax>
 <man_description>
