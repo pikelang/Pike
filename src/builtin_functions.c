@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.543 2004/04/29 19:23:20 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.544 2004/04/29 21:25:59 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.543 2004/04/29 19:23:20 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.544 2004/04/29 21:25:59 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4761,21 +4761,23 @@ PMOD_EXPORT void f_glob(INT32 args)
     
   case T_ARRAY:
     a=Pike_sp[1-args].u.array;
+
+    if(a->type_field & ~BIT_STRING) {
+      array_fix_type_field(a);
+      if(a->type_field & ~BIT_STRING)
+	SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
+    }
+
     matches=0;
     check_stack(120);
     BEGIN_AGGREGATE_ARRAY (MINIMUM (a->size, 120)) {
       for(i=0;i<a->size;i++)
-      {
-	if(ITEM(a)[i].type != T_STRING)
-	  SIMPLE_BAD_ARG_ERROR("glob", 2, "string|array(string)");
-
 	if(does_match(ITEM(a)[i].u.string,0,glob,0))
 	{
 	  ref_push_string(ITEM(a)[i].u.string);
 	  matches++;
 	  DO_AGGREGATE_ARRAY (120);
 	}
-      }
     } END_AGGREGATE_ARRAY;
     Pike_sp[-1].u.array->type_field = BIT_STRING;
     stack_pop_n_elems_keep_top (2);
@@ -4805,7 +4807,6 @@ static void f_interleave_array(INT32 args)
   struct array *min = NULL;
   struct array *order = NULL;
   int max = 0;
-  int ok;
   int nelems = 0;
   int i;
 
@@ -4814,18 +4815,10 @@ static void f_interleave_array(INT32 args)
   /* We're not interrested in any other arguments. */
   pop_n_elems(args-1);
 
-  if ((ok = arr->type_field & BIT_MAPPING) &&
-      (arr->type_field & ~BIT_MAPPING)) {
-    /* Might be ok, but do some more checking... */
-    for(i = 0; i < arr->size; i++) {
-      if (ITEM(arr)[i].type != T_MAPPING) {
-	ok = 0;
-	break;
-      }
-    }
-  }
-  if (!ok) {
-    SIMPLE_BAD_ARG_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
+  if(arr->type_field & ~BIT_MAPPING) {
+    array_fix_type_field(arr);
+    if(arr->type_field & ~BIT_MAPPING)
+      SIMPLE_BAD_ARG_ERROR("interleave_array", 1, "array(mapping(int:mixed))");
   }
 
   /* The order array */
@@ -4899,6 +4892,7 @@ static void f_interleave_array(INT32 args)
       int low = ITEM(min)[i].u.integer;
       int j = ITEM(order)[i].u.integer;
       int offset = 0;
+      int ok = 0;
       struct mapping *m;
       struct mapping_data *md;
       INT32 e;
@@ -4917,7 +4911,6 @@ static void f_interleave_array(INT32 args)
       }
 
       md = m->data;
-      ok = 0;
       while (!ok) {
 	ok = 1;
 	NEW_MAPPING_LOOP(md) {
@@ -6705,8 +6698,8 @@ PMOD_EXPORT void f_transpose(INT32 args)
   if(in->type_field != BIT_ARRAY)
   {
     array_fix_type_field(in);
-    if(!in->type_field || in->type_field & ~BIT_ARRAY)
-      Pike_error("The array given as argument 1 to transpose must contain arrays only.\n");
+    if(in->type_field != BIT_ARRAY)
+      SIMPLE_BAD_ARG_ERROR("transpose", 1, "array(array)");
   }
 
   sizeininner=in->item->u.array->size;
