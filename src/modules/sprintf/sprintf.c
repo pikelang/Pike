@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.76 2001/07/19 07:10:02 mast Exp $");
+RCSID("$Id: sprintf.c,v 1.77 2003/03/02 15:10:59 mast Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -837,13 +837,13 @@ static void low_pike_sprintf(struct format_stack *fs,
   {
     int num_snurkel;
 
+    if(fs->fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE - 1)
+      sprintf_error(fs, "Sprintf stack overflow.\n");
     fs->fsp++;
 #ifdef PIKE_DEBUG
     if(fs->fsp < fs->format_info_stack)
       fatal("sprintf: fs->fsp out of bounds.\n");
 #endif
-    if(fs->fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE)
-      sprintf_error(fs, "Sprintf stack overflow.\n");
     fs->fsp->pad_string=MKPCHARP(" ",0);
     fs->fsp->pad_length=1;
     fs->fsp->fi_free_string=0;
