@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Base.pike,v 1.8 2001/06/28 12:16:43 js Exp $
+// $Id: Base.pike,v 1.9 2001/08/01 15:52:24 js Exp $
 
 //! The MIME content types this class can filter.
 constant contenttypes = ({ });
@@ -11,10 +11,7 @@ class Output
   // Wide strings here
 
   mapping(string:string) fields=([]);
-  // body_normal
-  // body_medium
-  // body_big
-  // title, description, keywords
+  // body, title, description, keywords
 
   int document_size;
   
