@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.220 2004/10/15 15:24:51 grubba Exp $
+|| $Id: encode.c,v 1.221 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -2266,37 +2266,44 @@ static INT32 decode_portable_bytecode(INT32 string_no)
   SET_ONERROR(err, exit_bytecode, NULL);
 
   switch(bytecode->size_shift) {
-#define EMIT_BYTECODE(STR) do {					\
-    for (e = 0; e < bytecode->len; e += 3) {			\
-      if (STR(bytecode)[e] == F_FILENAME) {			\
-	INT32 strno = STR(bytecode)[e+1];			\
-	if ((strno < 0) || (strno >= p->num_strings)) {		\
-	  Pike_error("Bad filename directive number:"		\
-		     " %d (expected 0 - %d).\n",		\
-		     strno, p->num_strings);			\
-	}							\
-	current_file = p->strings[strno];			\
-      } else if (STR(bytecode)[e] == F_LINE) {			\
-	current_line = STR(bytecode)[e+1];			\
-      } else {							\
-	insert_opcode2(STR(bytecode)[e],			\
-		       STR(bytecode)[e+1],			\
-		       STR(bytecode)[e+2],			\
-		       current_line,				\
-		       current_file);				\
-      }								\
-    }								\
+#define EMIT_BYTECODE2(STR)				\
+      if (STR(bytecode)[e] == F_FILENAME) {		\
+	INT32 strno = STR(bytecode)[e+1];		\
+	if ((strno < 0) || (strno >= p->num_strings)) {	\
+	  Pike_error("Bad filename directive number:"	\
+		     " %d (expected 0 - %d).\n",	\
+		     strno, p->num_strings);		\
+	}						\
+	current_file = p->strings[strno];		\
+      } else if (STR(bytecode)[e] == F_LINE) {		\
+	current_line = STR(bytecode)[e+1];		\
+      } else 
+
+#define EMIT_BYTECODE(STR, X) do {		\
+    for (e = 0; e < bytecode->len; e += 3) {	\
+      X(STR)					\
+      {					\
+	insert_opcode2(STR(bytecode)[e],	\
+		       STR(bytecode)[e+1],	\
+		       STR(bytecode)[e+2],	\
+		       current_line,		\
+		       current_file);		\
+      }						\
+    }						\
   } while(0)
   case 2:
-    EMIT_BYTECODE(STR2);
+    EMIT_BYTECODE(STR2, EMIT_BYTECODE2);
     break;
   case 1:
-    EMIT_BYTECODE(STR1);
+    EMIT_BYTECODE(STR1, EMIT_BYTECODE2);
     break;
   case 0:
-    EMIT_BYTECODE(STR0);
+#undef EMIT_BYTECODE2
+#define EMIT_BYTECODE2(X)
+    EMIT_BYTECODE(STR0, EMIT_BYTECODE2);
     break;
 #undef EMIT_BYTECODE
+#undef EMIT_BYTECODE2
   default:
     Pike_fatal("Bad size_shift: %d\n", bytecode->size_shift);
   }

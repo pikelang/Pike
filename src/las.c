@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.349 2004/09/18 20:50:51 nilsson Exp $
+|| $Id: las.c,v 1.350 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -1903,7 +1903,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	pop_stack();
 	push_int(0);
       }else{
-	int exception = 0;
+	volatile int exception = 0;
 	SET_CYCLIC_RET(c+1);
 	ref_push_string(id);
 	{

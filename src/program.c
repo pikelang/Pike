@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.569 2004/09/27 15:12:15 grubba Exp $
+|| $Id: program.c,v 1.570 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -5190,7 +5190,7 @@ int store_constant(struct svalue *foo,
 		   struct pike_string *constant_name)
 {
   struct program_constant tmp;
-  unsigned int e;
+  volatile unsigned int e;
 
   for(e=0;e<Pike_compiler->new_program->num_constants;e++)
   {

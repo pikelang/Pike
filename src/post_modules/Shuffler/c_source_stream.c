@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: c_source_stream.c,v 1.10 2004/06/23 00:08:32 srb Exp $
+|| $Id: c_source_stream.c,v 1.11 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -60,7 +60,7 @@ static void remove_callbacks( struct source *_s )
 }
 
 
-static struct data get_data( struct source *_s, int len )
+static struct data get_data( struct source *_s, off_t len )
 {
   struct fd_source *s = (struct fd_source *)_s;
   struct data res;

@@ -1,5 +1,5 @@
 /* hash.cmod -*- c -*- */
-/* $Id: hash.cmod,v 1.25 2004/10/07 22:19:11 nilsson Exp $ */
+/* $Id: hash.cmod,v 1.26 2004/10/16 07:27:29 agehall Exp $ */
 
 #include "global.h"
 #include "interpret.h"
@@ -254,7 +254,7 @@ PIKECLASS HashState
   PIKEFUN object update(string data)
     optflags OPT_SIDE_EFFECT;
     {
-      const void *ctx = THIS->ctx;
+      void *ctx = THIS->ctx;
       const struct nettle_hash *meta =
 	GET_META(Pike_fp->current_object);
 

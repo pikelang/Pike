@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.41 2004/09/18 20:50:55 nilsson Exp $
+|| $Id: rusage.c,v 1.42 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -422,13 +422,13 @@ cpu_time_t get_real_time(void)
   struct timeval tv;
 
   if (GETTIMEOFDAY(&tv) < 0) return -1;
-  if (CPU_TIME_TICKS > 1000000) {
+#ifdef LONG_CPU_TIME
     return tv.tv_sec * CPU_TIME_TICKS +
       tv.tv_usec * (CPU_TIME_TICKS / 1000000);
-  } else {
+#else
     return tv.tv_sec * CPU_TIME_TICKS +
       tv.tv_usec / (1000000 / CPU_TIME_TICKS);
-  }
+#endif
 }
 #endif
 

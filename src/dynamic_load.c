@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.84 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: dynamic_load.c,v 1.85 2004/10/16 07:27:30 agehall Exp $
 */
 
 #ifdef TESTING
@@ -641,7 +641,7 @@ void init_dynamic_load(void)
 void exit_dynamic_load(void)
 {
 #ifdef USE_DYNAMIC_MODULES
-  struct module_list *tmp;
+  struct module_list * volatile tmp;
   JMP_BUF recovery;
   for (tmp = dynamic_module_list; tmp; tmp = tmp->next)
   {

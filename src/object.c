@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.257 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: object.c,v 1.258 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -672,7 +672,7 @@ PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct objec
 
 static void call_destroy(struct object *o, int foo)
 {
-  int e;
+  volatile int e;
 
   debug_malloc_touch(o);
   if(!o || !o->prog) {

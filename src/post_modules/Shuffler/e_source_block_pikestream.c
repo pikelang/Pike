@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: e_source_block_pikestream.c,v 1.4 2004/07/09 01:34:47 srb Exp $
+|| $Id: e_source_block_pikestream.c,v 1.5 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@ struct pf_source
 };
 
 
-static struct data get_data( struct source *_s, int len )
+static struct data get_data( struct source *_s, off_t len )
 {
   struct pf_source *s = (struct pf_source *)_s;
   struct data res;

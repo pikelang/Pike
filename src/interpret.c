@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.355 2004/09/30 15:28:09 mast Exp $
+|| $Id: interpret.c,v 1.356 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -1600,7 +1600,7 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o = NULL;
   struct pike_frame *scope=0;
-  ptrdiff_t fun;
+  ptrdiff_t fun=0;
   struct svalue *save_sp=Pike_sp-args;
 
 #if defined(PIKE_DEBUG) && defined(_REENTRANT)
@@ -1828,7 +1828,7 @@ void low_return(void)
   struct svalue *save_sp = Pike_fp->save_sp;
   int trace_level = Pike_interpreter.trace_level;
   struct object *o;
-  int fun;
+  int fun = 0;
 
   if (trace_level > 1) {
     o = Pike_fp->current_object;

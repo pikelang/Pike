@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: shuffler.h,v 1.5 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: shuffler.h,v 1.6 2004/10/16 07:27:29 agehall Exp $
 */
 
 struct data
@@ -17,7 +17,7 @@ struct source
   int eof;
 
   /* Must be implemented by all sources */
-  struct data (*get_data)(struct source *s,int len);
+  struct data (*get_data)(struct source *s,off_t len);
   void (*free_source)(struct source *s);
 
   /* These can be defined in any source, however, they are mostly

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: a_source_system_memory.c,v 1.10 2003/12/13 22:54:29 nilsson Exp $
+|| $Id: a_source_system_memory.c,v 1.11 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct sm_source
   int offset, len;
 };
 
-static struct data get_data( struct source *_s, int len )
+static struct data get_data( struct source *_s, off_t len )
 {
   struct sm_source *s = (struct sm_source *)_s;
   struct data res;

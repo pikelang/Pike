@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.173 2004/09/30 14:00:13 mast Exp $
+|| $Id: array.c,v 1.174 2004/10/16 07:27:30 agehall Exp $
 */
 
 #include "global.h"
@@ -82,7 +82,7 @@ PMOD_EXPORT struct array *real_allocate_array(ptrdiff_t size,
   }
 
   /* Limits size to (1<<29)-4 */
-  if( (size+extra_space-1) >
+  if( (size_t)(size+extra_space-1) >
       (LONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
     Pike_error("Too large array (size %ld exceeds %ld).\n",
 	       (long)(size+extra_space-1),

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module.c,v 1.29 2004/09/18 23:00:52 nilsson Exp $
+|| $Id: module.c,v 1.30 2004/10/16 07:27:29 agehall Exp $
 */
 
 #include "global.h"
@@ -49,7 +49,7 @@ static const struct static_module module_list[] = {
 void init_modules(void)
 {
   struct program *p = NULL;
-  unsigned int e;
+  volatile unsigned int e;
   struct lex save_lex;
 
   save_lex = lex;
@@ -104,7 +104,7 @@ void init_modules(void)
 void exit_modules(void)
 {
   JMP_BUF recovery;
-  int e;
+  volatile int e;
 
   exit_main();
 

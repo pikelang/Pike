@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.70 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: jvm.c,v 1.71 2004/10/16 07:27:29 agehall Exp $
 */
 
 /*
@@ -164,9 +164,10 @@ static JNIEnv *jvm_procure_env(struct object *jvm)
 
 #ifdef _REENTRANT
     JNIEnv *env;
-
-    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void **)&env, JNI_VERSION_1_2))
-      return env;
+    void *tmp;
+    if(JNI_OK == (*j->jvm)->GetEnv(j->jvm, (void **)&tmp, JNI_VERSION_1_2)) {
+      return (JNIEnv *)tmp;
+    }
 
     if(j->tl_env != NULL && j->tl_env->prog != NULL) {
       safe_apply(j->tl_env, "get", 0);
@@ -3068,10 +3069,10 @@ static void f_create(INT32 args)
 
   while(j->jvm) {
     JavaVM *jvm = j->jvm;
-    JNIEnv *env;
+    void *env;
     j->jvm = NULL;
     THREADS_ALLOW();
-    (*jvm)->AttachCurrentThread(jvm, (void **)&env, NULL);
+    (*jvm)->AttachCurrentThread(jvm, &env, NULL);
     (*jvm)->DestroyJavaVM(jvm);
     THREADS_DISALLOW();
   }
@@ -3220,7 +3221,8 @@ static void init_jvm_struct(struct object *o)
 static void exit_jvm_struct(struct object *o)
 {
   struct jvm_storage *j = THIS_JVM;
-  JNIEnv *env;
+  JNIEnv *env = NULL;
+  void *tmpenv = NULL;
 
   if(j->jvm != NULL && (env = jvm_procure_env(Pike_fp->current_object))) {
     if(j->class_system)
@@ -3238,11 +3240,12 @@ static void exit_jvm_struct(struct object *o)
     jvm_vacate_env(Pike_fp->current_object, env);
   }
 
+  tmpenv = (void *)env;
   while(j->jvm) {
     JavaVM *jvm = j->jvm;
     j->jvm = NULL;
     THREADS_ALLOW();
-    (*jvm)->AttachCurrentThread(jvm, (void **)&env, NULL);
+    (*jvm)->AttachCurrentThread(jvm, (void **)&tmpenv, NULL);
     (*jvm)->DestroyJavaVM(jvm);
     THREADS_DISALLOW();
   }
