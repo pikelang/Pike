@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.27 2001/04/24 14:46:32 mast Exp $
+;;; $Id: pike.el,v 1.28 2001/04/26 02:23:42 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -108,7 +108,7 @@ The name is assumed to begin with a capital letter.")
 
   (defconst pike-font-lock-identifier-or-integer
     ;; The identifier should get submatch 1 but not the integer.
-    (concat pike-font-lock-identifier-regexp "\\|[" digit "]+")))
+    (concat pike-font-lock-identifier-regexp "\\|-?[" digit "]+")))
 
 (defconst pike-font-lock-semantic-whitespace
   (concat "[ \t\n\r]*"
@@ -119,6 +119,8 @@ The name is assumed to begin with a capital letter.")
 		  "/\\*\\([^*]\\|\\*[^/]\\)*\\*/" ; 3
 		  "\\|"
 		  "\\\\[\n\r]"
+		  "\\|"
+		  "@[\n\r]\\s *//[.!|]"	; Line continuations in autodoc comments.
 		  "\\)")
 	  "[ \t\n\r]*"
 	  "\\)*"))
@@ -148,6 +150,7 @@ The name is assumed to begin with a capital letter.")
 	  pike-font-lock-semantic-whitespace ; 7-9
 	  "\\(\\<\\sw\\|\\<\\s_\\|`\\)")) ; 10
 
+(defvar pike-font-lock-last-type-start nil)
 (defvar pike-font-lock-last-type-end nil)
 (defvar pike-font-lock-real-limit nil)
 (defvar pike-font-lock-more-identifiers nil)
@@ -159,24 +162,77 @@ The name is assumed to begin with a capital letter.")
 ;; don't belong in a type.
 (defvar pike-font-lock-maybe-ids nil)
 
-(defsubst pike-font-lock-forward-syntactic-ws ()
-  (forward-comment 134217727)
-  (while (looking-at "\\\\$")
-    (forward-char)
-    (forward-comment 134217727)))
+(defsubst pike-font-lock-beginning-of-macro ()
+  "Move to the beginning of the macro containing point.
+If not inside a macro, point is not moved and nil is returned.
+Otherwise t is returned."
+  (catch 'break
+    (goto-char (save-excursion
+		 (beginning-of-line)
+		 (while (and (>= (- (point) 2) (point-min))
+			     (eq (char-after (- (point) 2)) ?\\))
+		   (forward-line -1))
+		 (back-to-indentation)
+		 (if (eq (following-char) ?#)
+		     (point)
+		   (throw 'break nil))))
+    t))
 
-(defsubst pike-font-lock-backward-syntactic-ws ()
-  ;; If forward-comment in Emacs 19.34 is given a large negative
-  ;; value, it'll loop all the way through if it it hits bob.
-  (let ((pos (point)))
-    (forward-comment -20)
-    (while (or (and (< (point) pos)
-		    (memq (preceding-char) '(?\  ?\t ?\n ?\r ?/)))
-	       (when (and (eolp) (eq (preceding-char) ?\\))
-		 (backward-char)
-		 t))
-      (setq pos (point))
-      (forward-comment -20))))
+(defun pike-font-lock-forward-syntactic-ws ()
+  (let ((start (point)))
+    (forward-comment 134217727)
+    (while (cond ((looking-at "\\\\$")
+		  (forward-char)
+		  t)
+		 ;; Step past a macro if we were outside it to begin with.
+		 ((and (eq (following-char) ?#)
+		       (save-excursion
+			 (beginning-of-line)
+			 (and (looking-at "\\s *#")
+			      (< start (point)))))
+		  (while (progn
+			   (end-of-line)
+			   (eq (preceding-char) ?\\))
+		    (forward-line 1))
+		  t)
+		 ;; The following handles continuation lines in autodoc comments.
+		 ((looking-at "@[\n\r]\\s *//[.!|]")
+		  (goto-char (match-end 0))
+		  t))
+      (forward-comment 134217727))))
+
+(defun pike-font-lock-backward-syntactic-ws ()
+  (save-match-data
+    (let ((pos (point)) (start (point)) (in-macro 'dont-know) orig)
+      ;; If forward-comment in Emacs 19.34 is given a large negative
+      ;; value, it'll loop all the way through if it hits bob.
+      (forward-comment -20)
+      (while (or (and (< (point) pos)
+		      (memq (preceding-char) '(?\  ?\t ?\n ?\r ?/)))
+		 (when (and (eolp) (eq (preceding-char) ?\\))
+		   (backward-char)
+		   t)
+		 ;; Step past a macro if we were outside it to begin with.
+		 (when (and (looking-at "\\s *$")
+			    (< (match-end 0) start)
+			    (pike-font-lock-beginning-of-macro))
+		   t)
+		 ;; The following handles continuation lines in autodoc comments.
+		 (and (memq (preceding-char) '(?. ?! ?|))
+		      (progn
+			(setq orig (point))
+			(beginning-of-line)
+			(if (and (looking-at "\\s *//[.!|]")
+				 (eq (match-end 0) orig)
+				 (condition-case nil
+				     (progn (backward-char 2) t)
+				   (error nil))
+				 (eq (following-char) ?@))
+			    t
+			  (goto-char orig)
+			  nil))))
+	(setq pos (point))
+	(forward-comment -20)))))
 
 (defun pike-font-lock-find-type (limit)
   "Finds the beginning of a type."
@@ -263,39 +319,31 @@ The name is assumed to begin with a capital letter.")
 			   ;; bob can't happen here.
 			   (not (eq (char-after (- (point) 2)) ?\\)))
 			 ;; ...and the expression is not part of a macro...
-			 (save-excursion
-			   (beginning-of-line)
-			   (while (and (>= (- (point) 2) (point-min))
-				       (eq (char-after (- (point) 2)) ?\\))
-			     (forward-line -1))
-			   (eq (following-char) ?#)))
+			 (pike-font-lock-beginning-of-macro))
 		;; ...but the type is. They therefore don't correspond to each
 		;; other and we should ignore it. Set continue-pos to continue
 		;; searching after the macro. We also set start so we don't go
 		;; back into the macro a second time.
-		(save-restriction
-		  (end-of-line)
-		  (while (and (not (eobp))
-			      (eq (preceding-char) ?\\))
-		    (forward-char)
-		    (end-of-line))
-		  (setq start (point)
-			continue-pos (point)))
-		(throw 'continue t))
-	      (setq pike-font-lock-more-identifiers nil
-		    pike-font-lock-maybe-ids nil)
-	      (if (< (point) start)
-		  ;; Might have gone before the start. Start off inside
-		  ;; the type in that case.
-		  (goto-char start)
-		(when (eq (following-char) cast)
-		  ;; Jumped over exactly one sexp surrounded with ( ) or [ ],
-		  ;; so it's a cast.
+		(goto-char beg-pos)
+		(end-of-line)
+		(while (and (not (eobp))
+			    (eq (preceding-char) ?\\))
 		  (forward-char)
-		  ;; Make sure that pike-font-lock-find-following-identifier
-		  ;; doesn't highlight any following identifier.
-		  (setq pike-font-lock-last-type-end cast-end-pos)
-		  (throw 'done t)))
+		  (end-of-line))
+		(setq start (point)
+		      continue-pos (point))
+		(throw 'continue t))
+	      (setq pike-font-lock-last-type-start (max start (point))
+		    pike-font-lock-more-identifiers nil
+		    pike-font-lock-maybe-ids nil)
+	      (when (eq (following-char) cast)
+		;; Jumped over exactly one sexp surrounded with ( ) or [ ],
+		;; so it's a cast.
+		(forward-char)
+		;; Make sure that pike-font-lock-find-following-identifier
+		;; doesn't highlight any following identifier.
+		(setq pike-font-lock-last-type-end cast-end-pos)
+		(throw 'done t))
 	      (setq pike-font-lock-last-type-end continue-pos)
 	      (throw 'done t)))
 	  (goto-char continue-pos)
@@ -305,29 +353,37 @@ The name is assumed to begin with a capital letter.")
   "Finds the next identifier/keyword in a type.
 Used after `pike-font-lock-find-type' or `pike-font-lock-fontify-type'
 have matched."
-  (pike-font-lock-forward-syntactic-ws)
-  (while (and (< (point) pike-font-lock-last-type-end)
-	      (> (skip-chars-forward ":().|,&!~") 0))
-    (pike-font-lock-forward-syntactic-ws))
-  (if (< (point) pike-font-lock-last-type-end)
-      (if (looking-at pike-font-lock-identifier-or-integer)
-	  (progn
-	    (when (match-beginning 1)
-	      (setq pike-font-lock-maybe-ids
-		    (cons (cons (match-beginning 1) (match-end 1))
-			  pike-font-lock-maybe-ids)))
-	    (goto-char (match-end 0)))
-	;; Turned out to be too expression-like to be highlighted as
-	;; a type; undo the highlights.
-	(while pike-font-lock-maybe-ids
-	  (let ((range (car pike-font-lock-maybe-ids)))
-	    (when (eq (get-text-property (car range) 'face) 'font-lock-type-face)
-	      (put-text-property (car range) (cdr range) 'face nil))
-	    (setq pike-font-lock-maybe-ids (cdr pike-font-lock-maybe-ids))))
-	(goto-char pike-font-lock-last-type-end)
-	nil)
-    (goto-char pike-font-lock-last-type-end)
-    nil))
+  (when (< (point) pike-font-lock-last-type-end)
+    (catch 'done
+      (while t
+	(while (prog2
+		   (pike-font-lock-forward-syntactic-ws)
+		   (> (skip-chars-forward ":().|,&!~") 0)
+		 (when (>= (point) pike-font-lock-last-type-end)
+		   (goto-char pike-font-lock-last-type-end)
+		   (throw 'done nil))))
+	(if (and (not (eq (get-text-property (point) 'face) 'font-lock-type-face))
+		 (looking-at pike-font-lock-identifier-or-integer))
+	    (if (< (point) pike-font-lock-last-type-start)
+		(goto-char (match-end 0))
+	      (when (match-beginning 1)
+		(setq pike-font-lock-maybe-ids
+		      (cons (cons (match-beginning 1) (match-end 1))
+			    pike-font-lock-maybe-ids)))
+	      (goto-char (match-end 0))
+	      (throw 'done t))
+	  ;; Turned out to be too expression-like to be highlighted as
+	  ;; a type; undo the highlights. By checking for words
+	  ;; already highlighted as types above we catch the case when
+	  ;; an expression that contains types is about to be
+	  ;; highlighted as a type itself.
+	  (while pike-font-lock-maybe-ids
+	    (let ((range (car pike-font-lock-maybe-ids)))
+	      (when (eq (get-text-property (car range) 'face) 'font-lock-type-face)
+		(put-text-property (car range) (cdr range) 'face nil))
+	      (setq pike-font-lock-maybe-ids (cdr pike-font-lock-maybe-ids))))
+	  (goto-char pike-font-lock-last-type-end)
+	  (throw 'done nil))))))
 
 (defun pike-font-lock-find-following-identifier (limit)
   "Finds the following identifier after a type.
@@ -336,6 +392,7 @@ or `pike-font-lock-find-following-identifier' have matched. Should the
 variable name be followed by a comma after an optional value, we
 reposition the cursor to fontify more identifiers."
   (if (and pike-font-lock-maybe-ids
+	   (< (point) pike-font-lock-real-limit)
 	   (looking-at pike-font-lock-identifier-regexp))
       (let ((match (match-data))
 	    (start (point))
@@ -579,16 +636,31 @@ types are recognized.")
 	      (3 pike-font-lock-refdoc-error-face t t)))
 
 	    (,(concat "^\\([^/]\\|/[^/]\\)*//[.!|][^\n\r]*" ; 1
-		      "@\\(decl\\|member\\|index\\|elem\\)") ; 2
+		      "@\\(decl\\|member\\|index\\|elem\\)" ; 2
+		      "\\([^@\n\r]\\|@\\(.\\|[\n\r]\\)\\)*") ; 3 4
 	     ;; A Pike declaration inside the comment. Reset the
 	     ;; comment highlight so that we can redo it as code.
 	     ((lambda (limit)
-		(put-text-property (point) limit 'face nil))
-	      (goto-char (match-end 0))
+		(setq pike-font-lock-real-limit (match-end 0))
+		(put-text-property (point) limit 'face nil)
+		nil)
+	      (goto-char (match-end 2))
 	      nil)
+	     ;; Markup line continuations.
+	     ((lambda (limit)
+		(re-search-forward "\\(@\\)[\n\r]\\s *\\(\\(//\\)\\([.!|]\\)\\)"
+				   pike-font-lock-real-limit t))
+	      (goto-char (match-end 2))
+	      nil
+	      (1 font-lock-reference-face)
+	      (2 font-lock-comment-face)
+	      (3 pike-font-lock-refdoc-init2-face prepend)
+	      (4 pike-font-lock-refdoc-init-face prepend))
 	     ;; Must (re)handle the string literals ourselves.
-	     ("\"[^\"]*\"\\|'[^']*'"
-	      (goto-char (match-end 0))
+	     ((lambda (limit)
+		(re-search-forward "\"[^\"]*\"\\|'[^']*'"
+				   pike-font-lock-real-limit t))
+	      (goto-char (match-end 2))
 	      nil
 	      (0 font-lock-string-face))
 	     ;; Always highlight the first argument after @member and @elem
@@ -600,12 +672,13 @@ types are recognized.")
 		    (goto-char (match-beginning 2))
 		    (looking-at "\\(member\\|elem\\)\\s *\\(\\S *\\)"))
 		  (progn
-		    (setq pike-font-lock-last-type-end (match-end 0)
+		    (goto-char (match-beginning 2))
+		    (setq pike-font-lock-last-type-start (point)
+			  pike-font-lock-last-type-end (match-end 0)
 			  pike-font-lock-more-identifiers nil
-			  pike-font-lock-maybe-ids nil)
-		    (goto-char (match-beginning 2)))
+			  pike-font-lock-maybe-ids nil))
 		(setq pike-font-lock-last-type-end (point)))
-	      (end-of-line)
+	      (goto-char pike-font-lock-real-limit)
 	      (1 font-lock-type-face nil t))))
 
 	  pike-font-lock-more
