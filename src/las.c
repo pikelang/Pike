@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.68 1998/11/07 06:32:18 hubbe Exp $");
+RCSID("$Id: las.c,v 1.69 1998/11/17 22:57:50 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -271,6 +271,11 @@ void free_all_nodes(void)
 void free_node(node *n)
 {
   if(!n) return;
+#ifdef DEBUG
+  if(l_flag>9)
+    print_tree(n);
+#endif
+
   switch(n->token)
   {
   case USHRT_MAX:
@@ -2413,6 +2418,13 @@ int dooptcode(struct pike_string *name,
   if(compiler_pass==1)
   {
     tmp.offset=-1;
+#ifdef DEBUG
+    if(a_flag > 4)
+    {
+      fprintf(stderr,"Making prototype (pass 1) for: ");
+      print_tree(n);
+    }
+#endif
   }else{
     n=mknode(F_ARG_LIST,n,0);
     
