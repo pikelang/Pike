@@ -132,7 +132,7 @@ install:
 	if [ ! -d "$(prefix)" ]; then mkdir "$(prefix)" ; chmod 755 "$(prefix)" ; else : ; fi
 	if [ ! -d "$(exec_prefix)" ]; then mkdir "$(exec_prefix)" ; chmod 755 "$(exec_prefix)" ; else : ; fi
 	$(INSTALL) ./pike $(exec_prefix)
-	$(INSTALL) ../bin/hilfe $(exec_prefix)
+	$(INSTALL) $(SRCDIR)/../bin/hilfe $(exec_prefix)
 	if [ ! -d "$(prefix)/lib" ]; then mkdir "$(prefix)/lib" ; chmod 755 "$(prefix)/lib" ; else : ; fi
 	if [ ! -d "$(lib_prefix)" ]; then mkdir "$(lib_prefix)" ; chmod 755 "$(lib_prefix)" ; else : ; fi
 	if [ ! -d "$(prefix)/include" ]; then mkdir "$(prefix)/include"; chmod 755 "$(prefix)/include"; fi
