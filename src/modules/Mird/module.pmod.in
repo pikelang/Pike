@@ -90,6 +90,18 @@ class Mird
       return vTable(this_object(),table2id[name]);
    }
 
+   vzTable vztable(string name)
+   {
+      if (name==NEXT_TABLE) error("illegal name\n");
+      if (!table2id[name]) 
+      {
+	 string d=mird->fetch(TABLE2ID_TABLE,name);
+	 if (!d) error("no such table (%O)\n",name);
+	 table2id[name]=(int)d;
+      }
+      return vzTable(this_object(),table2id[name]);
+   }
+
 //! method table_name(int id)
 
    string table_name(int id)
@@ -121,6 +133,13 @@ class Mird
       return table(name);
    }
 
+   void delete_table(string name)
+   {
+      Transaction tr=transaction();
+      tr->delete_table(name);
+      tr->close();
+   }
+
 //!
 //! method Transaction transaction()
 //! 	creates a new transaction
@@ -128,6 +147,11 @@ class Mird
    Transaction transaction()
    {
       return Transaction(this_object());
+   }
+
+   Transaction ctransaction()
+   {
+      return cTransaction(this_object());
    }
 
 //!
@@ -277,20 +301,23 @@ class Mird
 //!     and unpacked if reading, for convinience. 
 //!
 
-   class vTable
+   class v0Table
    {
       inherit Table;
+
+      string pack(mixed v);
+      mixed unpack(string s);
 
       mixed `[](int|string key)
       {
 	 string s=parent->_fetch(table_id,key);
-	 if (s) return decode_value(s);
+	 if (s) return unpack(s);
 	 return ([])[0];
       }
 
       string `[]=(int|string key,mixed value)
       {
-	 parent->_store(table_id,key,encode_value(value));
+	 parent->_store(table_id,key,pack(value));
 	 return value;
       }
 
@@ -301,7 +328,7 @@ class Mird
 	 Glue.Scanner sc=parent->_scanner(table_id);
 	 mapping m;
 	 while ( (m=sc->read(100)) ) vals+=values(m);
-	 return map(vals,decode_value);
+	 return map(vals,unpack);
       }
 
       array|mapping cast(string to)
@@ -314,7 +341,7 @@ class Mird
 	    while ( (m=sc->read(100)) ) tupels+=(array)m;
 	    return map(tupels,lambda(array(string) v)
 			      {
-				 return ({v[0],decode_value(v[1])});
+				 return ({v[0],unpack(v[1])});
 			      });
 	 }
 	 if (sscanf(to,"mapping%*s"))
@@ -327,10 +354,48 @@ class Mird
 	    return (mapping)map((array)tupels,
 				lambda(array(string) v)
 				{
-				   return ({v[0],decode_value(v[1])});
+				   return ({v[0],unpack(v[1])});
 				});
 	 }
 	 error("illegal argument 1 to cast\n");
+      }
+   }
+
+   class vTable
+   {
+      inherit v0Table;
+
+      string pack(mixed v) 
+      { 
+	 return encode_value(v); 
+      }
+
+      mixed unpack(string s) 
+      { 
+	 return s?decode_value(s):([])[0];
+      }
+   }
+
+//!
+//! subclass vzTable
+//! inherits Table
+//!     This is just like a normal table, but all data is encode_value()ed,
+//!     and gzipped, and unpacked if reading, for convinience. 
+//!
+
+   class vzTable
+   {
+      inherit v0Table;
+
+      string pack(mixed v) 
+      { 
+	 return Gz.deflate()->deflate(encode_value(v)); 
+      }
+
+      mixed unpack(string s) 
+      { 
+	 if (!s) return ([])[0];
+	 return decode_value(Gz.inflate()->inflate(s)); 
       }
    }
 
@@ -397,17 +462,29 @@ class Mird
 //!     values can be anything, not just strings. The
 //!     data is encode_value()ed before storage.
 
-   vTable vtable(string name)
-   {
-      if (name==NEXT_TABLE) error("illegal name\n");
-      if (!table2id[name]) 
+      vTable vtable(string name)
       {
-	 string d=mird->fetch(TABLE2ID_TABLE,name);
-	 if (!d) error("no such table (%O)\n",name);
-	 table2id[name]=(int)d;
+	 if (name==NEXT_TABLE) error("illegal name\n");
+	 if (!table2id[name]) 
+	 {
+	    string d=mird->fetch(TABLE2ID_TABLE,name);
+	    if (!d) error("no such table (%O)\n",name);
+	    table2id[name]=(int)d;
+	 }
+	 return vTable(this_object(),table2id[name]);
       }
-      return vTable(this_object(),table2id[name]);
-   }
+
+      vzTable vztable(string name)
+      {
+	 if (name==NEXT_TABLE) error("illegal name\n");
+	 if (!table2id[name]) 
+	 {
+	    string d=mird->fetch(TABLE2ID_TABLE,name);
+	    if (!d) error("no such table (%O)\n",name);
+	    table2id[name]=(int)d;
+	 }
+	 return vzTable(this_object(),table2id[name]);
+      }
 
 //!
 //! method Table new_stringkey_table(string name)
@@ -441,6 +518,28 @@ class Mird
 	 mtr->new_hashkey_table(no);
 	 refresh_at_close=1;
 	 return table(name);
+      }
+
+//! method void delete_table(string name)
+//!	Removes a table and all items in it
+
+      void delete_table(string name)
+      {
+	 if (name==NEXT_TABLE) error("no such table (%O)\n",name);
+      
+	 int no;
+	 if (!(no=table2id[name]))
+	 {
+	    string d=mtr->fetch(TABLE2ID_TABLE,name);
+	    if (!d) error("no such table (%O)",name);
+	    no=(int)d;
+	 }
+	 catch { mtr->delete_table(no); };
+	 m_delete(table2id,name);
+	 m_delete(id2table,no);
+	 mtr->delete(TABLE2ID_TABLE,name);
+	 mtr->delete(ID2TABLE_TABLE,no);
+	 refresh_at_close=1;
       }
 
 //!
@@ -480,6 +579,69 @@ class Mird
       void destroy()
       {
 	 if (mtr) destruct(mtr);
+      }
+   }
+
+// caching transaction
+
+   class cTransaction
+   {
+      inherit Transaction;
+
+      mapping edited=([]);
+
+      void create(object _parent)
+      {
+	 ::create(_parent);
+
+	 _fetch=cfetch;
+	 _scanner=lambda(int ... args) 
+		  { 
+	       // this'll do for now
+		     flush();
+		     return Glue.Scanner(mtr,@args); 
+		  };
+      }
+
+      Transaction _store(int table_id,int|string key,string value)
+      {
+	 if ((<TABLE2ID_TABLE,ID2TABLE_TABLE>)[table_id])
+	    return ::_store(table_id,key,value);
+	 if (!edited[table_id]) edited[table_id]=([]);
+	 edited[table_id][key]=value;
+	 return this_object();
+      }
+
+      string cfetch(int table_id,int|string key)
+      {
+	 mixed m;
+         // this will not be a TABLE table since we don't store those:
+	 if ((m=edited[table_id]) &&
+	     (m=m[key])) return m;
+	 return mtr->fetch(table_id,key);
+      }
+
+      void flush()
+      {
+	 foreach (indices(edited),int table)
+	    foreach ((array)(edited[table]),[int|string key,string value])
+	       if (value)
+		  mtr->store(table,key,value);
+	       else
+		  mtr->delete(table,key);
+	 edited=([]);
+      }
+
+      void close()
+      {
+	 flush();
+	 ::close();
+      }
+
+      void cancel()
+      {
+	 edited=([]);
+	 ::cancel();
       }
    }
 }
