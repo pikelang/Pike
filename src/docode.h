@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: docode.h,v 1.9 2000/04/20 02:41:44 hubbe Exp $
+ * $Id: docode.h,v 1.10 2000/09/08 16:33:29 grubba Exp $
  */
 #ifndef DOCODE_H
 #define DOCODE_H
@@ -34,7 +34,7 @@ INT32 pop_address(void);
 int alloc_label(void);
 int do_jump(int token,INT32 lbl);
 void do_pop(int x);
-int do_docode(node *n,INT16 flags);
+int do_docode(node *n, INT16 flags);
 void do_cond_jump(node *n, int label, int iftrue, int flags);
 void do_code_block(node *n);
 int docode(node *n);
