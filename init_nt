@@ -131,7 +131,7 @@ esac
 
 if [ "x$OSTYPE" = xcygwin32 ]; then
   REMOTE_METHOD=cygwin
-  driveletter=`echo $base | sed -e 's@^//\(.\)/.*@\1@`
+  driveletter=`echo $base | sed -e 's@^//\(.\)/.*@\1@'`
   if [ "x$driveletter" != "x" ]; then
     NTDRIVE=${driveletter}:
     NTMOUNT="//$driveletter"
