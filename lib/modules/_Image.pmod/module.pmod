@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.31 2002/11/15 05:06:18 nilsson Exp $
+// $Id: module.pmod,v 1.32 2004/02/25 15:04:59 nilsson Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -204,7 +204,7 @@ local string load_file( void|object|string file )
   else
   {
     if( catch( data = read_file( file ) ) || !data || !strlen(data) )
-      catch( data = Protocols.HTTP.get_url_nice( file )[ 1 ] );
+      catch( data = Protocols["HTTP"]->get_url_nice( file )[ 1 ] );
   }
   return data;
 }
