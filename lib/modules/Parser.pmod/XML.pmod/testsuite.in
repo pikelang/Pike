@@ -1,9 +1,10 @@
-// $Id: testsuite.in,v 1.3 2002/10/25 16:45:34 nilsson Exp $
+// $Id: testsuite.in,v 1.4 2003/12/23 15:20:04 grubba Exp $
 
 // DOM
 
 // Tree
 
+test_eval_error([[ Parser.XML.Tree.parse_input("<foo>", 0, 0, 0, 1); ]])
 test_eq([[ Parser.XML.Tree.parse_input("<a>foo &gt; hej &x.y; hopp &lt; bar</a>")->render_xml(); ]],
 [[ "<a>foo &gt; hej &amp;x.y; hopp &lt; bar</a>" ]])
 test_eq([[ Parser.XML.Tree.parse_input("<a>foo &gt; hej &x.y; hopp &lt; bar</a>")->render_xml(1); ]],
