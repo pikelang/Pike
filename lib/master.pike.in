@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.11 1998/04/17 21:48:36 mirar Exp $
+/* $Id: master.pike.in,v 1.12 1998/04/18 06:28:09 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -506,17 +506,18 @@ void _main(string *orig_argv, string *env)
 
   add_constant("write",_static_modules.files()->_stdout->write);
 
-  _master_file_name=backtrace()[-1][0];
-  q=explode_path(_master_file_name);
 
   // add path for architecture-shared files
-  add_include_path("¤data_prefix¤/include");
-  add_module_path("¤data_prefix¤/modules");
+  add_include_path("¤share_prefix¤/include");
+  add_module_path("¤share_prefix¤/modules");
 
   // add path for architecture-dependant files
   add_include_path("¤lib_prefix¤/include");
   add_module_path("¤lib_prefix¤/modules");
 
+  _master_file_name=backtrace()[-1][0];
+#if 0
+  q=explode_path(_master_file_name);
   // add path for wherever the master is now
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
@@ -528,6 +529,7 @@ void _main(string *orig_argv, string *env)
 
   add_program_path(getcwd());
   add_module_path(getcwd());
+#endif
 
   _master_file_name=combine_path(getcwd(), _master_file_name);
 
@@ -555,7 +557,7 @@ void _main(string *orig_argv, string *env)
 		  ({"warnings",tmp->NO_ARG,({"-w","--warnings"})}),
 		    ({"ignore",tmp->HAS_ARG,"-ms"}),
 		      ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
-		      ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
+			({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
 			  ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1})
 			}), 1);
     

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.77 1998/04/17 21:53:21 mirar Exp $
+# $Id: Makefile.in,v 1.78 1998/04/18 06:28:50 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -72,7 +72,7 @@ AR=@AR@
 LD=@LD@
 LDFLAGS=$(CFLAGS) @LDFLAGS@ @LINKFORSHARED@
 
-RUNPIKE=$(TMP_BUILDDIR)/pike -m$(TMP_LIBDIR)/master.pike -M$(LIBDIR_SRC)/modules -I$(LIBDIR_SRC)/include $(PIKEOPTS)
+RUNPIKE=$(TMP_BUILDDIR)/pike -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 
 MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "NOOPTFLAGS=$(NOOPTFLAGS)" "AR=$(AR)"
 MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)" 
@@ -181,13 +181,13 @@ compile_interpret : force
 force :
 
 # install
-install:
+install: pike hilfe
 	@echo
 	@echo Installing Pike...
 	@echo
 	@echo "Creating directories..."; \
 	for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
-	          "$(lib_prefix)" "$(prefix)/share" "$(share_prefix)" \
+	          "$(lib_prefix)" "$(share_prefix)" \
 	          "$(prefix)/include" "$(prefix)/include/pike"; do \
 	  if [ -d "$$d/." ]; then : ; else \
 	    echo "$$d"; \
@@ -313,7 +313,7 @@ verify_modules:
 module_testsuites:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
 
-verify: module_testsuites testsuite
+verify: module_testsuites testsuite master.pike
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
 
 check: verify
@@ -321,14 +321,14 @@ check: verify
 sure: verify
 
 # verify / debug verbose
-verbose_verify: module_testsuites testsuite
+verbose_verify: module_testsuites testsuite master.pike
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike --verbose modules/*/module_testsuite testsuite 
 
 # verify & debug VERBOSE
-gdb_verify: module_testsuites testsuite
+gdb_verify: module_testsuites testsuite master.pike
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -Mmodules -DNOT_INSTALLED -m$(TMP_LIBDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f modules/*/module_testsuite
+	@echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f modules/*/module_testsuite
 	gdb ./pike
 	@rm .gdbinit
 
@@ -355,10 +355,15 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 	  ln -s "$(LIBDIR_SRC)" ./share || exit 1; \
 	fi
 	@echo "Creating lib/master.pike"; \
-	( sed -e 's!¤exec_prefix¤!$(exec_prefix)!' <$(LIBDIR_SRC)/master.pike.in \
-	  >./lib/master.pike && chmod 644 ./lib/master.pike) || exit 1
+	( sed -e 's!¤lib_prefix¤!$(lib_prefix)!' <$(LIBDIR_SRC)/master.pike.in \
+	  | sed -e 's!¤share_prefix¤!$(share_prefix)!' >./lib/master.pike && chmod 644 ./lib/master.pike) || exit 1
 	@echo "Done."
 	-@touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
+
+
+master.pike: $(LIBDIR_SRC)/master.pike.in
+	sed -e 's!¤lib_prefix¤!$(TMP_LIBDIR)!' <$(LIBDIR_SRC)/master.pike.in \
+	  | sed -e 's!¤share_prefix¤!$(LIBDIR_SRC)!' >master.pike
 
 # make export archive (requires compiled Pike)
 # Do not compile in source tree if you want to use this!
@@ -371,6 +376,9 @@ export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 full_export: new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h depend
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNPIKE) $(TMP_BINDIR)/export.pike
+
+all_exports: full_export
+	( cd .. ; $(TMP_BINDIR)/makedists )
 
 bin_export:
 	PATH=$(TMP_BINDIR)/fakes:$$PATH INSTALL_LOG=`pwd`/log make install INSTALL=install
@@ -403,7 +411,7 @@ lobotomize_crypto:
 #
 # Pike internal targets
 #
-module_objects: machine.h global.h modules/static_module_makefile modules/dynamic_module_makefile $(SRCDIR)/language.h lib
+module_objects: machine.h global.h modules/static_module_makefile modules/dynamic_module_makefile $(SRCDIR)/language.h lib master.pike
 	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
 	   ${MAKE} $(MAKE_FLAGS) || \
 	     ( test -f remake && ${MAKE} $(MAKE_FLAGS) ) ) || exit $$?
