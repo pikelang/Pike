@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.207 2001/10/12 12:54:25 tomas Exp $");
+RCSID("$Id: signal_handler.c,v 1.208 2001/11/01 18:10:28 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1126,7 +1126,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
       fprintf(stderr, "wait thread: locking interpreter, pid=%d\n",pid);
 #endif
 
-      mt_lock_interpreter();
+      low_mt_lock_interpreter(); /* Can run even if threads_disabled. */
 
 #ifdef PROC_DEBUG
       fprintf(stderr, "wait thread: reporting the event!\n");

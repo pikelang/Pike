@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.6 2001/09/20 19:07:57 hubbe Exp $
+ * $Id: pike_threadlib.h,v 1.7 2001/11/01 18:10:28 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -320,10 +320,9 @@ PMOD_EXPORT extern PIKE_MUTEX_T interpreter_lock;
 extern THREAD_T debug_locking_thread;
 #define SET_LOCKING_THREAD (debug_locking_thread = th_self(), 0)
 
-#define mt_lock_interpreter() (mt_lock(&interpreter_lock) || SET_LOCKING_THREAD)
-#define mt_trylock_interpreter() (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
-#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
-#define co_wait_interpreter(COND) \
+#define low_mt_lock_interpreter() (mt_lock(&interpreter_lock) || SET_LOCKING_THREAD)
+#define low_mt_trylock_interpreter() (mt_trylock(&interpreter_lock) || SET_LOCKING_THREAD)
+#define low_co_wait_interpreter(COND) \
   do {co_wait((COND), &interpreter_lock); SET_LOCKING_THREAD;} while (0)
 
 #define CHECK_INTERPRETER_LOCK() do {					\
@@ -339,12 +338,33 @@ extern THREAD_T debug_locking_thread;
 
 #else
 
-#define mt_lock_interpreter() (mt_lock(&interpreter_lock))
-#define mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
-#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
-#define co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
+#define low_mt_lock_interpreter() (mt_lock(&interpreter_lock))
+#define low_mt_trylock_interpreter() (mt_trylock(&interpreter_lock))
+#define low_co_wait_interpreter(COND) do {co_wait((COND), &interpreter_lock);} while (0)
 
 #endif
+
+static inline int threads_disabled_wait()
+{
+  do {
+    THREADS_FPRINTF(1, (stderr, "Thread %d: Wait on threads_disabled\n",
+			(int) th_self()));
+    low_co_wait_interpreter(&threads_disabled_change);
+  } while (threads_disabled);
+  THREADS_FPRINTF(1, (stderr, "Thread %d: Continue after threads_disabled\n",
+		      (int) th_self()));
+  return 0;
+}
+
+#define mt_lock_interpreter() \
+  (low_mt_lock_interpreter() || (threads_disabled && threads_disabled_wait()))
+#define mt_trylock_interpreter() \
+  (low_mt_trylock_interpreter() || (threads_disabled && threads_disabled_wait()))
+#define mt_unlock_interpreter() (mt_unlock(&interpreter_lock))
+#define co_wait_interpreter(COND) do {					\
+    low_co_wait_interpreter(COND);					\
+    if (threads_disabled) threads_disabled_wait();			\
+  } while (0)
 
 #ifndef TH_RETURN_TYPE
 #define TH_RETURN_TYPE void *
@@ -494,15 +514,11 @@ PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_DISALLOW() \
      REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp->swapped) { \
-       mt_lock_interpreter(); \
+       low_mt_lock_interpreter(); \
        THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
                            (unsigned int)_tmp->thread_id, live_threads)); \
-       while (threads_disabled) { \
-         THREADS_FPRINTF(1, (stderr, \
-                             "THREADS_DISALLOW(): Threads disabled\n")); \
-         co_wait_interpreter(&threads_disabled_change); \
-       } \
+       if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
      DO_IF_DEBUG( if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
@@ -535,17 +551,14 @@ PMOD_EXPORT extern int Pike_in_gc;
 #define THREADS_DISALLOW_UID() \
      REVEAL_GLOBAL_VARIABLES(); \
      if(_tmp_uid->swapped) { \
-       mt_lock_interpreter(); \
+       low_mt_lock_interpreter(); \
        live_threads--; \
        THREADS_FPRINTF(1, (stderr, \
                            "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
                            (unsigned int)_tmp_uid->thread_id, live_threads)); \
        co_broadcast(&live_threads_change); \
-       while (threads_disabled) { \
-         THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW_UID(): Wait...\n")); \
-         co_wait_interpreter(&threads_disabled_change); \
-       } \
+       if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp_uid);\
      } \
    } while(0)
@@ -597,8 +610,10 @@ PMOD_EXPORT extern int Pike_in_gc;
 #define th_cleanup()
 #define th_init_programs()
 #define th_self() ((void*)0)
+#define co_wait(X,Y)
 #define co_signal(X)
 #define co_broadcast(X)
+#define co_destroy(X)
 
 #define low_init_threads_disable()
 #define init_threads_disable(X)

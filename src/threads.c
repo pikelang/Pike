@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.170 2001/10/28 18:02:49 nilsson Exp $");
+RCSID("$Id: threads.c,v 1.171 2001/11/01 18:10:28 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -286,7 +286,7 @@ void init_threads_disable(struct object *o)
 		      (stderr,
 		       "_disable_threads(): Waiting for %d threads to finish\n",
 		       live_threads));
-      co_wait_interpreter(&live_threads_change);
+      low_co_wait_interpreter(&live_threads_change);
     }
     SWAP_IN_CURRENT_THREAD();
   }
@@ -1659,7 +1659,7 @@ void low_th_init(void)
 #endif /* POSIX_THREADS */
 
   mt_init( & interpreter_lock);
-  mt_lock_interpreter();
+  low_mt_lock_interpreter();
   mt_init( & thread_table_lock);
   mt_init( & interleave_lock);
   mt_init( & rosie);
