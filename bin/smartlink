@@ -117,6 +117,9 @@ if test x$# != x0 ; then
    OSF1\ V4.*)
      LDOPTS="$LDOPTS -rpath $RPATH"
    ;;
+   IRIX\ 6.*)
+     LDOPTS="$LDOPTS -rpath $RPATH"
+   ;;
    SunOS\ 5.*)
      LDOPTS="$LDOPTS -R$RPATH"
    ;;
