@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.109 1999/02/17 00:07:52 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.110 1999/02/18 16:34:36 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2112,7 +2112,8 @@ void f_fork(INT32 args)
 						check_signals,
 						0,0);
     }
-    o=clone_object(pid_status_program,0);
+    o=low_clone(pid_status_program);
+    call_c_initializers(o);
     p=(struct pid_status *)get_storage(o,pid_status_program);
     p->pid=pid;
     p->state=PROCESS_RUNNING;
