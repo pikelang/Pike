@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.159 1999/03/20 02:31:55 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.160 1999/03/20 03:00:03 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -172,7 +172,7 @@ static struct case_info case_info[] = {
 static struct case_info *find_ci(int c)
 {
   static struct case_info *cache = NULL;
-  struct case_info ci = cache;
+  struct case_info *ci = cache;
   int lo = 0;
   int hi = NELEM(case_info);
 
@@ -209,6 +209,7 @@ static struct case_info *find_ci(int c)
       case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
       default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
+   } \
   } while(0)
 
 #define DO_UPPER_CASE(C) do {\
@@ -222,6 +223,7 @@ static struct case_info *find_ci(int c)
       case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
       default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
     } \
+   } \
   } while(0)
 
 void f_lower_case(INT32 args)
@@ -271,7 +273,7 @@ void f_upper_case(INT32 args)
   int widen = 0;
   get_all_args("upper_case",args,"%W",&orig);
 
-  ret=begin_wide_shared_string(orig->len);
+  ret=begin_wide_shared_string(orig->len,orig->size_shift);
   MEMCPY(ret->str, orig->str, orig->len);
 
   i = orig->len;
@@ -313,8 +315,8 @@ void f_upper_case(INT32 args)
     i = orig->len;
 
     while(i--) {
-      if ((ret[i] = orig[i]) == 0xff) {
-	ret[i] = 0x178;
+      if ((STR1(ret)[i] = STR0(orig)[i]) == 0xff) {
+	STR1(ret)[i] = 0x178;
       }
     }
     free_string(sp[-1].u.string);
