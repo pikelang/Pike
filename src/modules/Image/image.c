@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.67 1997/11/23 07:22:45 per Exp $ */
+/* $Id: image.c,v 1.68 1997/11/23 21:58:55 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.67 1997/11/23 07:22:45 per Exp $
+**!	$Id: image.c,v 1.68 1997/11/23 21:58:55 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.67 1997/11/23 07:22:45 per Exp $");
+RCSID("$Id: image.c,v 1.68 1997/11/23 21:58:55 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1176,6 +1176,7 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
 {
   int x, y=height, w;
   rgb_group *from = dest;
+  if(!xsize || !height) return;
   for(x=0; x<length; x++)
   {
     (dest+x)->r = (((long)left.r)*(length-x)+((long)right.r)*(x))/length;
@@ -1194,6 +1195,7 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
 {
   int x,y;
   rgb_group color, *from, old;
+  if(!xsize || !height) return;
   if(length > 128)
   {
     for(y=0; y<height; y++)

@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.21 1997/11/23 07:22:44 per Exp $ */
+/* $Id: blit.c,v 1.22 1997/11/23 21:58:53 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.21 1997/11/23 07:22:44 per Exp $
+**!	$Id: blit.c,v 1.22 1997/11/23 21:58:53 per Exp $
 **! class image
 */
 
@@ -104,26 +104,26 @@ static INLINE void getrgb(struct image *img,
 
 void img_clear(rgb_group *dest,rgb_group rgb,INT32 size)
 {
-  int ok = 0;
-   THREADS_ALLOW();
-   if(sizeof(rgb.r) == 1)
-   {
-     if(rgb.r == rgb.b && rgb.b == rgb.g)
-       (ok = 1),MEMSET(dest, rgb.r, size*sizeof(rgb_group));
-   } else {
-     if(!rgb.r && !rgb.b && !rgb.g)
-       (ok = 1),MEMSET(dest, 0, size*sizeof(rgb_group));
-   }
-   if(!ok)
-   {
-       int increment = 1;
-       rgb_group *from = dest;
-       *(dest++)=rgb;
-       for (; size > increment; size-=increment,dest+=increment,increment*=2) 
-	 MEMCPY(dest,from,increment*sizeof(rgb_group));
-       MEMCPY(dest,from,size*sizeof(rgb_group));
-   }
-   THREADS_DISALLOW();
+  if(!size) return;
+  THREADS_ALLOW();
+  if(!rgb.r && !rgb.b && !rgb.g)
+    MEMSET(dest, 0, size*sizeof(rgb_group));
+  else if((sizeof(rgb.r) == 1) && (rgb.r == rgb.b && rgb.b == rgb.g))
+    MEMSET(dest, rgb.r, size*sizeof(rgb_group));
+  else if(size)
+  {
+    int increment = 1;
+    rgb_group *from = dest;
+    *(dest++)=rgb;
+    size--;
+    for (; size > increment; size-=increment,dest+=increment) 
+    {
+      MEMCPY(dest,from,increment*sizeof(rgb_group));
+      if(increment < 1024) increment *= 2;
+    }
+    if(size>0) MEMCPY(dest,from,size*sizeof(rgb_group));
+  }
+  THREADS_DISALLOW();
 }
 
 void img_box_nocheck(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
