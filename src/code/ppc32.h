@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.4 2001/08/13 23:39:11 mast Exp $
+ * $Id: ppc32.h,v 1.5 2001/08/14 01:26:09 marcus Exp $
  */
 
 #define PIKE_OPCODE_T	unsigned INT32
@@ -26,9 +26,9 @@
 
 #define UPDATE_PC() do {						\
     INT32 tmp = PIKE_PC;						\
-    SET_REG(11, ((INT32)(&Pike_interpreter.frame_pointer)));		\
-    /* lwz 11,0(11) */							\
-    add_to_program(0x80000000|(11<<21)|(11<<16));			\
+    /* lwz 11,frame_pointer(31) */					\
+    add_to_program(0x80000000|(11<<21)|(31<<16)|			\
+		   OFFSETOF(Pike_interpreter, frame_pointer));		\
     SET_REG(0, tmp);							\
     /* stw 0,pc(11) */							\
     add_to_program(0x90000000|(0<<21)|(11<<16)|				\
@@ -77,5 +77,20 @@ void ppc32_decode_program(struct program *p);
 #define DECODE_PROGRAM(P)	ppc32_decode_program(p)
 */
 
-#define CALL_MACHINE_CODE(pc)    do { if(pc) goto *(pc); } while(0)
+/* FIXME: should be autoconf test for regname syntax */
+#ifdef _AIX
+#define PPC_REGNAME(n) #n
+#else
+#define PPC_REGNAME(n) "r"#n
+#endif
+
+#define CALL_MACHINE_CODE(pc)						     \
+  __asm__ __volatile__( "	mtctr %0\n"				     \
+			"	mr "PPC_REGNAME(31)",%1\n"		     \
+			"	bctr"					     \
+			:						     \
+			: "r" (pc), "r" (&Pike_interpreter)		     \
+			: "ctr", "lr", "cc", "memory", "r31", "r0",	     \
+			  "r3", "r4", "r5", "r6", "r7", "r8", "r9",	     \
+			  "r10", "r11", "r12")
 
