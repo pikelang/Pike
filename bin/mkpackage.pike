@@ -63,6 +63,11 @@ class Package
     return sprintf("%ctmP%07x", c, random(0xfffffff));
   }
 
+  string basename(string path)
+  {
+    return (path/"/")[-1];
+  }
+  
   string make(string package_filename)
   {
     string setup_filename = unique_name('S')+".sh";
@@ -71,7 +76,7 @@ class Package
     string setup = ("#!/bin/sh\n"
 		    "TARFILE=\"$1\"; shift; ARGS=''\n"
 		    "CONTENTS=`tar tf \"$TARFILE\" | sed -ne '/^"+
-		    (replace(install_filename, ".", "\\.")/"/")[-1]+"/,$p'`\n"
+		    replace(basename(install_filename), ".", "\\.")+"/,$p'`\n"
 		    // Check all arguments for possible options.
 		    "while [ $# != 0 ]\n"
 		    "do\n"
@@ -89,8 +94,9 @@ class Package
 		    "mkdir "+unpack_directory+"\n"
 		    "(cd "+unpack_directory+"\n"
 		    " tar xf ../\"$TARFILE\" $CONTENTS\n"
-		    " ./"+(pike_filename/"/")[-1]+" "
-		                "--script \"`pwd`\"/"+install_filename+")\n"
+		    " ./"+basename(pike_filename)+" "
+	                     "--script \"`pwd`\"/"+
+		                            basename(install_filename)+")\n"
 		    "rm -rf "+setup_filename+" "+unpack_directory+"\n");
     
     string bootstrap = sprintf("#!/bin/sh\n"
