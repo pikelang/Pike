@@ -1,9 +1,11 @@
-# $Id: Makefile.in,v 1.35 2002/03/06 01:01:26 mast Exp $
+# $Id: Makefile.in,v 1.36 2002/04/06 23:45:31 mast Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 OBJS = pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o psd.o wbf.o ras.o pvr.o tim.o dsi.o
 
 @SET_MAKE@
+PIKE_SRC_DIR=@PIKE_SRC_DIR@
+BUILD_BASE=@BUILD_BASE@
 
 CC=@CC@
 CPP=@CPP@
@@ -46,9 +48,19 @@ pike: all
 pure: all
 	cd ../../..; $(MAKE) pure
 
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
-	@echo "Run make again"
+	touch remake
+	@echo "Run make again" >&2
 	@exit 1
+
+$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
+	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
+	if [ -f $(SRCDIR)/acconfig.h ]; then \
+	  cd $(SRCDIR) && autoheader; \
+	else :; fi
+
+config.status: $(SRCDIR)/configure
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 @dependencies@

@@ -1,6 +1,6 @@
 # Makefile for builtin Pike libmird
 
-# $Id: Makefile.in,v 1.5 2002/01/27 17:51:01 mast Exp $
+# $Id: Makefile.in,v 1.6 2002/04/06 23:45:32 mast Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 
@@ -9,6 +9,8 @@ OBJS = blocks.o cells.o database.o debug.o dmalloc.o errors.o frags.o  \
 	usage.o
 
 @SET_MAKE@
+PIKE_SRC_DIR=@PIKE_SRC_DIR@
+BUILD_BASE=@BUILD_BASE@
 
 CC=@CC@
 CPP=@CPP@
@@ -21,8 +23,6 @@ MIRD_CFLAGS=@MIRD_CFLAGS@
 
 PREFLAGS=-I. -I$(SRCDIR) $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS) @CCSHARED@ 
-
-PIKE_SRC_DIR=$(SRCDIR)/../../..
 
 all: libmird.a
 
@@ -57,9 +57,10 @@ pike: all
 pure: all
 	cd ../../..; $(MAKE) pure
 
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="$(CONFIG_HEADERS)" ./config.status
-	@echo "Run make again"
+	touch remake
+	@echo "Run make again" >&2
 	@exit 1
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
@@ -69,7 +70,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" ./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 mird.h: $(SRCDIR)/mird.h.in config.status
 	CONFIG_FILES=mird.h CONFIG_HEADERS="" ./config.status
