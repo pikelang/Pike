@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.187 2003/11/28 13:29:37 grubba Exp $
+|| $Id: main.c,v 1.188 2003/12/17 22:04:05 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.187 2003/11/28 13:29:37 grubba Exp $");
+RCSID("$Id: main.c,v 1.188 2003/12/17 22:04:05 marcus Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -773,6 +773,10 @@ int dbm_main(int argc, char **argv)
     a->type_field = BIT_STRING;
     push_array(a);
     
+#ifdef __amigaos__
+    /* FIXME... */
+    push_array(allocate_array_no_init(0,0));
+#else
     for(num=0;environ[num];num++);
     a=allocate_array_no_init(num,0);
     for(num=0;environ[num];num++)
@@ -782,6 +786,7 @@ int dbm_main(int argc, char **argv)
     }
     a->type_field = BIT_STRING;
     push_array(a);
+#endif
   
     apply(master(),"_main",2);
     pop_stack();
