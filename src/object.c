@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.46 1998/04/16 21:32:02 hubbe Exp $");
+RCSID("$Id: object.c,v 1.47 1998/04/17 16:55:48 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -771,6 +771,9 @@ void verify_all_objects(void)
 	frame.context=o->prog->inherits[e];
 	add_ref(frame.context.prog);
 	frame.current_storage=o->storage+frame.context.storage_offset;
+	/* Do frame stuff here */
+
+	free_program(frame.context.prog);
       }
 
       free_object(frame.current_object);
@@ -840,12 +843,12 @@ void cleanup_objects(void)
     next=o->next;
     free_object(o);
   }
-  destruct_objects_to_destruct();
 
   free_object(master_object);
   master_object=0;
   free_program(master_program);
   master_program=0;
+  destruct_objects_to_destruct();
 }
 
 struct array *object_indices(struct object *o)
