@@ -5436,7 +5436,7 @@ Please note that these functions are available globally, you do not
 need to <tt>import System</tt> to use these functions.
 
 <hr noshade size=1>
-<method name=chroot title="change the root directory">
+<function name=chroot title="change the root directory">
 <man_syntax>
 int chroot(string <I>newroot</I>);<br>
 int chroot(object(File) <I>obj</I>);<br>
@@ -5454,11 +5454,11 @@ system call.
 The second variant only works on systems that also have
 the fchroot(2) system call.
 </man_note>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=getegid title="get the effective group ID">
+<function name=getegid title="get the effective group ID">
 <man_syntax>
 int getegid();<br>
 </man_syntax>
@@ -5468,11 +5468,11 @@ Get the effective group ID.
 <man_see>
 setuid, getuid, setgid, getgid, seteuid, geteuid, setegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=geteuid title="get the effective user ID">
+<function name=geteuid title="get the effective user ID">
 <man_syntax>
 int geteuid();<br>
 </man_syntax>
@@ -5482,11 +5482,11 @@ Get the effective user ID.
 <man_see>
 setuid, getuid, setgid, getgid, seteuid, setegid, getegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=getgid title="get the group ID">
+<function name=getgid title="get the group ID">
 <man_syntax>
 int getgid();<br>
 </man_syntax>
@@ -5496,11 +5496,11 @@ Get the real group ID.
 <man_see>
 setuid, getuid, setgid, seteuid, geteuid, setegid, getegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=gethostbyaddr title="gets information about a host given its address">
+<function name=gethostbyaddr title="gets information about a host given its address">
 <man_syntax>
 array gethostbyaddr(string <I>addr</I>);<br>
 </man_syntax>
@@ -5516,11 +5516,11 @@ or similar system call.
 <man_see>
 gethostbyname
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=gethostbyname title="gets information about a host given its name">
+<function name=gethostbyname title="gets information about a host given its name">
 <man_syntax>
 array gethostbyname(string <I>hostname</I>);<br>
 </man_syntax>
@@ -5538,11 +5538,11 @@ or similar system call.
 <man_see>
 gethostbyaddr
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=gethostname title="get the name of this host">
+<function name=gethostname title="get the name of this host">
 <man_syntax>
 string gethostname();<br>
 </man_syntax>
@@ -5553,11 +5553,11 @@ Returns a string with the name of the host.
 This function only exists on systems that have the gethostname(2)
 or uname(2) system calls.
 </man_note>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=getpgrp title="get the process group ID">
+<function name=getpgrp title="get the process group ID">
 <man_syntax>
 int getpgrp();<br>
 int getpgrp(int <I>pid</I>);<br>
@@ -5570,11 +5570,11 @@ group ID of this process.
 <man_see>
 getpid, getppid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=getpid title="get the process ID">
+<function name=getpid title="get the process ID">
 <man_syntax>
 int getpid();<br>
 </man_syntax>
@@ -5584,11 +5584,11 @@ Returns the process ID of this process.
 <man_see>
 getppid, getpgrp
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=getppid title="get the parent process ID">
+<function name=getppid title="get the parent process ID">
 <man_syntax>
 int getppid();<br>
 </man_syntax>
@@ -5598,11 +5598,11 @@ Returns the process ID of the parent process.
 <man_see>
 getpid, getpgrp
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=getuid title="get the user ID">
+<function name=getuid title="get the user ID">
 <man_syntax>
 int getuid();<br>
 </man_syntax>
@@ -5612,11 +5612,11 @@ Get the real user ID.
 <man_see>
 setuid, setgid, getgid, seteuid, geteuid, setegid, getegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=hardlink title="create a hardlink">
+<function name=hardlink title="create a hardlink">
 <man_syntax>
 void hardlink(string <I>from</I>, string <I>to</I>);<br>
 </man_syntax>
@@ -5626,11 +5626,11 @@ Creates a hardlink named <i>to</i> from the file <i>from</i>.
 <man_see>
 symlink, mv, rm
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=initgroups title="initialize the group access list">
+<function name=initgroups title="initialize the group access list">
 <man_syntax>
 void initgroups(string <I>username</I>, int <I>base_gid</I>);<br>
 </man_syntax>
@@ -5642,11 +5642,11 @@ list.
 <man_see>
 setuid, getuid, setgid, getgid, seteuid, geteuid, setegid, getegid, getgroups, setgroups
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=openlog title="initializes the connection to syslogd">
+<function name=openlog title="initializes the connection to syslogd">
 <man_syntax>
 void openlog(string <I>ident</I>, int <I>options</I>, <I>facility</I>);<br>
 </man_syntax>
@@ -5691,11 +5691,11 @@ LOG_NOWAIT should probably always be specified.
 <man_see>
 syslog, closelog, setlogmask
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=readlink title="read a symbolic link">
+<function name=readlink title="read a symbolic link">
 <man_syntax>
 string readlink(string <I>linkname</I>);<br>
 </man_syntax>
@@ -5705,11 +5705,11 @@ Returns what the symbolic link <i>linkname</i> points to.
 <man_see>
 symlink
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=setegid title="set the effective group ID">
+<function name=setegid title="set the effective group ID">
 <man_syntax>
 void setegid(int <I>uid</I>);<br>
 </man_syntax>
@@ -5719,11 +5719,11 @@ Sets the effective group ID to <i>gid</i>.
 <man_see>
 setuid, getuid, setgid, getgid, seteuid, geteuid, getegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=seteuid title="set the effective user ID">
+<function name=seteuid title="set the effective user ID">
 <man_syntax>
 void seteuid(int <I>uid</I>);<br>
 </man_syntax>
@@ -5733,11 +5733,11 @@ Sets the effective user ID to <i>uid</i>.
 <man_see>
 setuid, getuid, setgid, getgid, geteuid, setegid, getegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=setgid title="set the group ID">
+<function name=setgid title="set the group ID">
 <man_syntax>
 void setgid(int <I>gid</I>);<br>
 </man_syntax>
@@ -5747,11 +5747,11 @@ Sets the real group ID, effective group ID and saved group ID to <i>gid</i>.
 <man_see>
 setuid, getuid, getgid, seteuid, geteuid, setegid, getegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=setuid title="set the user ID">
+<function name=setuid title="set the user ID">
 <man_syntax>
 void setuid(int <I>uid</I>);<br>
 </man_syntax>
@@ -5761,11 +5761,11 @@ Sets the real user ID, effective user ID and saved user ID to <i>uid</i>.
 <man_see>
 getuid, setgid, getgid, seteuid, geteuid, setegid, getegid
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=symlink title="create a symbolic link">
+<function name=symlink title="create a symbolic link">
 <man_syntax>
 void symlink(string <I>from</I>, string <I>to</I>);<br>
 </man_syntax>
@@ -5775,11 +5775,11 @@ Creates a symbolic link named <i>to</i> pointing to <i>from</i>.
 <man_see>
 hardlink, readlink, mv, rm
 </man_see>
-</method>
+</function>
 
 <hr noshade size=1>
 
-<method name=uname title="get operating system information">
+<function name=uname title="get operating system information">
 <man_syntax>
 mapping(string:string) <I>uname</I>();<br>
 </man_syntax>
@@ -5795,55 +5795,45 @@ Returns a mapping describing the operating system.
 This function only exists on systems that have the uname(2)
 system call.
 </man_note>
-</method>
+</function>
 
 </section>
 </anchor>
 
 <hr noshade size=1>
 
-<anchor name=Process>
+<module name=Process>
 <section title="Process">
 The Process module contains functions to start and control other programs from Pike.
 <hr noshade size=1>
-<anchor name=Process.popen>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Process.popen</tt> - pipe open
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string popen(string <I>cmd</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=Process.popen title="pipe open">
+<man_syntax>
+string popen(string <I>cmd</I>);<br>
+</man_syntax>
+<man_description>
 This function runs the command <i>cmd</i> as in a shell and returns the
 output. See your Unix/C manual for details on popen.
-<p>
-</dl>
+</man_description>
+</function>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Process.system>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Process.system</tt> - run an external program
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void system(string <I>cmd</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Process.system title="run an external program">
+<man_syntax>
+void system(string <I>cmd</I>);<br>
+</man_syntax>
+<man_description>
 This function runs the external program <i>cmd</i> and waits until it
 is finished. Standard /bin/sh completions/redirections/etc. can
 be used.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Process.popen>Process.popen</link>, <link to=Process.exec>Process.exec</link> and <link to=Process.spawn>Process.spawn</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Process.popen, Process.exec, Process.spawn
+</man_see>
+</function>
 
-</anchor>
 <hr noshade size=1>
+
 <anchor name=Process.spawn>
 <dl>
 <dt><encaps>NAME</encaps><dd>
@@ -5932,7 +5922,7 @@ the exec fails for some reason.
 </anchor>
 
 </section>
-</anchor>
+</module>
 
 <anchor name=Regexp>
 <section title="Regexp">
