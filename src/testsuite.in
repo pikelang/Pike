@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.609 2003/02/26 22:43:24 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.610 2003/02/28 19:44:37 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8839,6 +8839,68 @@ test_do([[
   proc->kill (9);
   return threads->wait() - ({-1});
 ]], ({}))
+
+test_do([[
+  // Check that tracing works...
+  object proc = Process.create_process(({ "/bin/sleep", "99999" }),
+				       (["trace":1]));
+  if (!proc->continue) {
+    // No trace support...
+    proc->kill(9);
+    return 0;
+  }
+  int code = proc->wait(1);
+  if (code != -2) {
+    proc->kill(9);
+    return sprintf("Bad returncode from wait():%d (expected -2)", code);
+  }
+  int sig = proc->last_signal();
+  if (sig != 5) {
+    proc->kill(9);
+    return sprintf("Unexpected signal:%d (expected 5)", sig);
+  }
+  proc->continue();
+
+  // Check that we can block deadly signals.
+  proc->kill(15);	// SIGTERM
+  code = proc->wait(1);
+  if (code != -2) {
+    proc->kill(9);
+    return sprintf("Bad second returncode from wait():%d (expected -2)", code);
+  }
+  sig = proc->last_signal();
+  if (sig != 15) {
+    proc->kill(9);
+    return sprintf("Unexpected signal:%d (expected 15)", sig);
+  }
+  proc->continue();
+
+  // Check that we can make harmless signals deadly.
+  proc->kill(18);	// SIGCONT
+  code = proc->wait(1);
+  if (code != -2) {
+    proc->kill(9);
+    return sprintf("Bad third returncode from wait():%d (expected -2)", code);
+  }
+  sig = proc->last_signal();
+  if (sig != 18) {
+    proc->kill(9);
+    return sprintf("Unexpected signal:%d (expected 18)", sig);
+  }
+  proc->continue(9);	// Make it a SIGKILL
+
+  code = proc->wait(1);
+  if (code != -1) {
+    proc->kill(9);
+    return sprintf("Bad fourth returncode from wait():%d (expected -1)", code);
+  }
+  sig = proc->last_signal();
+  if (sig != 9) {
+    proc->kill(9);
+    return sprintf("Unexpected signal:%d (expected 9)", sig);
+  }
+  // Test ok.
+  return 0; ]], 0)
 ]])
 
 test_do([[
