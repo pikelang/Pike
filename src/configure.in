@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.282 1999/05/08 00:31:29 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.283 1999/05/11 22:41:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -127,7 +127,12 @@ case "$UNAME" in
     AC_DEFINE(USE_RPATH)
     ;;
   SunOS\ 5.*)
-    AC_DEFINE(USE_R)
+    if test "$TCC" = "yes"; then
+      # tcc doesn't know about -R
+      AC_DEFINE(USE_Wl_R)
+    else
+      AC_DEFINE(USE_R)
+    fi
     ;;
   Linux\ 2.*)
     AC_DEFINE(USE_Wl)
