@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! $Id: DNS.pmod,v 1.62 2002/03/09 18:27:04 nilsson Exp $
+//! $Id: DNS.pmod,v 1.63 2002/09/17 18:58:14 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -505,17 +505,17 @@ class client
 	  break;
 
       if (!resolv_conf) {
-	if (system->get_netinfo_property) {
+	if (System->get_netinfo_property) {
 	  //  Mac OS X / Darwin (and possibly other systems) that use
 	  //  NetInfo may have these values in the database.
 	  if (nameservers =
-	      system->get_netinfo_property(".",
+	      System->get_netinfo_property(".",
 					   "/locations/resolver",
 					   "nameserver")) {
 	    nameservers = map(nameservers, `-, "\n");
 	  }
 	  
-	  if (domains = system->get_netinfo_property(".",
+	  if (domains = System->get_netinfo_property(".",
 						    "/locations/resolver",
 						    "domain")) {
 	    domains = map(domains, `-, "\n");
