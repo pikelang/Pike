@@ -157,6 +157,17 @@ import Getopt;
 	    }
 	  }
 	  break;
+
+	case '\'':
+	  for(e++;s[e]!='\'';e++)
+	  {
+	    switch(s[e])
+	    {
+	      case 0: return 0;
+	      case '\\': e++; break;
+	    }
+	  }
+	  break;
 	  
 	case '{':
 	case '(':
@@ -348,7 +359,8 @@ import Getopt;
 	  break;
 	  
 	case '=':
-	  if(in_string || in_comment  || parenthese_level || eq_pos!=-1) break;
+	  if(in_char || in_string || in_comment  || parenthese_level ||
+	     eq_pos!=-1) break;
 	  eq_pos=pos;
 	  break;
 	  
@@ -360,14 +372,14 @@ import Getopt;
 	case '{':
 	case '(':
 	case '[':
-	  if(in_string || in_comment) break;
+	  if(in_char || in_string || in_comment) break;
 	  parenthese_level++;
 	  break;
 	  
 	case '}':
 	case ')':
 	case ']':
-	  if(in_string || in_comment) break;
+	  if(in_char || in_string || in_comment) break;
 	  if(--parenthese_level<0)
 	  {
 	    write("Syntax error.\n");
@@ -396,12 +408,12 @@ import Getopt;
 	  break;
 	  
 	case '*':
-	  if(in_string || in_comment) break;
+	  if(in_char || in_string || in_comment) break;
 	  if(input[pos-1]=='/') in_comment=1;
 	  break;
 	  
 	case '/':
-	  if(in_string) break;
+	  if(in_char || in_string) break;
 	  if(input[pos-1]=='*') in_comment=0;
 	  break;
       }
