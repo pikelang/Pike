@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.c,v 1.2 2004/12/30 13:40:19 grubba Exp $
+ * $Id: pike_embed.c,v 1.3 2005/01/01 14:35:45 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -501,3 +501,80 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
   pike_exit_cb(num);
 }
 
+/* Some helper functions
+ */
+
+void pike_push_argv(int argc, char **argv)
+{
+  struct array *a;
+  int num;
+  a=allocate_array_no_init(argc,0);
+  for(num=0;num<argc;num++)
+  {
+    ITEM(a)[num].u.string=make_shared_string(argv[num]);
+    ITEM(a)[num].type=T_STRING;
+  }
+  a->type_field = BIT_STRING;
+  push_array(a);
+}
+
+#ifdef __amigaos4__
+#define timeval timeval_amigaos
+#include <exec/types.h>
+#include <utility/hooks.h>
+#include <dos/dosextens.h>
+#include <proto/dos.h>
+
+static SAVEDS LONG scan_amigaos_environment_func(struct Hook *REG(a0,hook),
+						 APTR REG(a2,userdata),
+						 struct ScanVarsMsg *REG(a1,msg))
+{
+  if(msg->sv_GDir[0] == '\0' ||
+     !strcmp(msg->sv_GDir, "ENV:")) {
+    push_text(msg->sv_Name);
+    push_constant_text("=");
+    push_string(make_shared_binary_string(msg->sv_Var, msg->sv_VarLen));
+    f_add(3);
+  }
+
+  return 0;
+}
+
+static struct Hook scan_amigaos_environment_hook = {
+  { NULL, NULL },
+  (ULONG (*)())scan_amigaos_environment_func,
+  NULL, NULL
+};
+#endif /* __amigsos4__ */
+
+void pike_push_env(void)
+{
+#ifdef __amigaos__
+#ifdef __amigaos4__
+  if(DOSBase->lib_Version >= 50) {
+    struct svalue *mark = Pike_sp;
+    IDOS->ScanVars(&scan_amigaos_environment_hook,
+		   GVF_BINARY_VAR|GVF_DONT_NULL_TERM,
+		   NULL);
+    f_aggregate(Pike_sp-mark);
+  } else
+#endif
+    push_array(allocate_array_no_init(0,0));
+#else
+#ifdef DECLARE_ENVIRON
+  extern char **environ;
+#endif
+  struct array *a;
+  int num;
+
+  for(num=0;environ[num];num++);
+  a=allocate_array_no_init(num,0);
+  for(num=0;environ[num];num++)
+  {
+    ITEM(a)[num].u.string=make_shared_string(environ[num]);
+    ITEM(a)[num].type=T_STRING;
+  }
+  a->type_field = BIT_STRING;
+  push_array(a);
+#endif
+}

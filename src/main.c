@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.220 2005/01/01 13:42:16 grubba Exp $
+|| $Id: main.c,v 1.221 2005/01/01 14:35:45 grubba Exp $
 */
 
 #include "global.h"
@@ -262,34 +262,6 @@ PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
 
 
 
-#ifdef __amigaos4__
-#define timeval timeval_amigaos
-#include <exec/types.h>
-#include <utility/hooks.h>
-#include <dos/dosextens.h>
-#include <proto/dos.h>
-
-static SAVEDS LONG scan_amigaos_environment_func(struct Hook *REG(a0,hook),
-						 APTR REG(a2,userdata),
-						 struct ScanVarsMsg *REG(a1,msg))
-{
-  if(msg->sv_GDir[0] == '\0' ||
-     !strcmp(msg->sv_GDir, "ENV:")) {
-    push_text(msg->sv_Name);
-    push_constant_text("=");
-    push_string(make_shared_binary_string(msg->sv_Var, msg->sv_VarLen));
-    f_add(3);
-  }
-
-  return 0;
-}
-
-static struct Hook scan_amigaos_environment_hook = {
-  { NULL, NULL },
-  (ULONG (*)())scan_amigaos_environment_func,
-  NULL, NULL
-};
-#endif /* __amigsos4__ */
 
 int main(int argc, char **argv)
 {
@@ -297,9 +269,6 @@ int main(int argc, char **argv)
   int e, num;
   char *p;
   struct array *a;
-#ifdef DECLARE_ENVIRON
-  extern char **environ;
-#endif
 
   TRACE((stderr, "Init master...\n"));
   
@@ -558,11 +527,12 @@ int main(int argc, char **argv)
   }
 
 #ifndef PIKE_MUTEX_ERRORCHECK
-  if (debug_options & ERRORCHECK_MUTEXES)
+  if (set_pike_debug_options(0,0) & ERRORCHECK_MUTEXES)
     fputs ("Warning: -dT (error checking mutexes) not supported on this system.\n",
 	   stderr);
 #endif
-  if (d_flag) debug_options |= ERRORCHECK_MUTEXES;
+  if (d_flag)
+    set_pike_debug_options(ERRORCHECK_MUTEXES, ERRORCHECK_MUTEXES);
 
   init_pike_runtime(exit);
 
@@ -620,37 +590,9 @@ int main(int argc, char **argv)
 
     TRACE((stderr, "Call master->_main()...\n"));
 
-    a=allocate_array_no_init(argc,0);
-    for(num=0;num<argc;num++)
-    {
-      ITEM(a)[num].u.string=make_shared_string(argv[num]);
-      ITEM(a)[num].type=T_STRING;
-    }
-    a->type_field = BIT_STRING;
-    push_array(a);
-    
-#ifdef __amigaos__
-#ifdef __amigaos4__
-    if(DOSBase->lib_Version >= 50) {
-      struct svalue *mark = Pike_sp;
-      IDOS->ScanVars(&scan_amigaos_environment_hook,
-		     GVF_BINARY_VAR|GVF_DONT_NULL_TERM,
-		     NULL);
-      f_aggregate(Pike_sp-mark);
-    } else
-#endif
-      push_array(allocate_array_no_init(0,0));
-#else
-    for(num=0;environ[num];num++);
-    a=allocate_array_no_init(num,0);
-    for(num=0;environ[num];num++)
-    {
-      ITEM(a)[num].u.string=make_shared_string(environ[num]);
-      ITEM(a)[num].type=T_STRING;
-    }
-    a->type_field = BIT_STRING;
-    push_array(a);
-#endif
+    pike_push_argv(argc, argv);
+
+    pike_push_env();
   
     apply(master(),"_main",2);
     pop_stack();

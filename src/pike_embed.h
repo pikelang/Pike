@@ -1,5 +1,5 @@
 /*
- * $Id: pike_embed.h,v 1.2 2004/12/30 13:40:19 grubba Exp $
+ * $Id: pike_embed.h,v 1.3 2005/01/01 14:35:45 grubba Exp $
  *
  * Pike embedding API.
  *
@@ -56,5 +56,8 @@ PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
 					       void *arg,
 					       callback_func free_func);
 DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn));
+
+void pike_push_argv(int argc, char **argv);
+void pike_push_env(void);
 
 #endif /* PIKE_EMBED_H */
