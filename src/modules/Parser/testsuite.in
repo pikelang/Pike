@@ -581,6 +581,20 @@ test_parser([[{
   p->feed ("a<")->feed ("t>")->feed ("b")->feed (WIDENER);
   return !!catch (p->mixed_mode (0)) + p->read();
 }]], "0axb" WIDENER);
+test_parser([[{
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->add_tag ("t", lambda (object p, mapping a) {return ({1});});
+    return p->clone()->finish("<t>" WIDENER)->read();
+  }]], ({1, WIDENER}));
+test_parser([[{
+    object p = Parser.HTML();
+    p->mixed_mode (1);
+    p->feed ("foo" WIDENER)->feed ("bar");
+    p->mixed_mode (0);
+    p->finish ("gnu");
+    return p->read();
+  }]], "foo" WIDENER "bargnu");
 
 // Matching tags and quotes
 test_parser([[
