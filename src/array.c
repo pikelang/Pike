@@ -268,7 +268,7 @@ struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
 /*
  * resize array, resize an array destructively
  */
-static struct array *resize_array(struct array *a, INT32 size)
+struct array *resize_array(struct array *a, INT32 size)
 {
   if(a->size == size) return a;
   if(size > a->size)

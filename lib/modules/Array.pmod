@@ -1,5 +1,11 @@
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
+constant diff = __builtin.diff;
+constant diff_longest_sequence = __builtin.diff_longest_sequence;
+constant diff_compare_table = __builtin.diff_compare_table;
+
+constant sort = __builtin.sort;
+
 mixed map(mixed arr, mixed fun, mixed ... args)
 {
   int e;

@@ -63,6 +63,7 @@ typedef short_cmpfun (*cmpfun_getter)(TYPE_T);
 struct array *low_allocate_array(INT32 size,INT32 extra_space);
 void really_free_array(struct array *v);
 void do_free_array(struct array *a);
+struct array *resize_array(struct array *a, INT32 size);
 void array_index_no_free(struct svalue *s,struct array *v,INT32 index);
 void array_index(struct svalue *s,struct array *v,INT32 index);
 void simple_array_index_no_free(struct svalue *s,
