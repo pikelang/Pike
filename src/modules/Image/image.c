@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.121 1999/04/06 17:24:26 marcus Exp $ */
+/* $Id: image.c,v 1.122 1999/04/07 14:37:42 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.121 1999/04/06 17:24:26 marcus Exp $
+**!	$Id: image.c,v 1.122 1999/04/07 14:37:42 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.121 1999/04/06 17:24:26 marcus Exp $");
+RCSID("$Id: image.c,v 1.122 1999/04/07 14:37:42 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3498,6 +3498,7 @@ static struct pike_string
    *magic_JPEG, 
    *magic_XFace,
    *magic_XPM,
+   *magic_TIFF,
    *magic_PNG,
    *magic_TTF;
 
@@ -3534,6 +3535,14 @@ static void image_index_magic(INT32 args)
       SAFE_APPLY_MASTER("resolv",2);
       return;
    }
+   else if (sp[-1].u.string==magic_TIFF)
+   {
+      pop_stack();
+      push_string(make_shared_string("_Image_TIFF"));
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      return;
+   }
    else if (sp[-1].u.string==magic_PNG)
    {
       pop_stack();
@@ -3565,6 +3574,7 @@ void pike_module_init(void)
    magic_PNG=make_shared_string("PNG");
    magic_XFace=make_shared_string("XFace");
    magic_XPM=make_shared_string("XPM");
+   magic_TIFF=make_shared_string("TIFF");
 
    image_noise_init();
 
@@ -3898,6 +3908,7 @@ void pike_module_exit(void)
    free_string(magic_JPEG);
    free_string(magic_XFace);
    free_string(magic_XPM);
+   free_string(magic_TIFF);
    free_string(magic_TTF);
 }
 
