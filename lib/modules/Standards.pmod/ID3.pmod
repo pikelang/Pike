@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.19 2004/04/03 00:37:32 nilsson Exp $
+//  $Id: ID3.pmod,v 1.20 2004/04/06 21:44:57 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -93,8 +93,11 @@ int synchsafe_to_int(array(int) bytes) {
 //!   @[synchsafe_to_int]
 array(int) int_to_synchsafe(int in, void|int no_bytes) {
   array res = ({});
-  while(in>>=7)
+  do {
     res += ({ in&127 });
+   } while(in>>=7);
+  if(no_bytes)
+    res += ({0})*(no_bytes-sizeof(res)); // Throws when res>no_bytes
   return reverse(res);
 }
 
@@ -158,7 +161,7 @@ class TagHeader {
   //! Encode the data in this tag and return as a string.
   string encode() {
     return sprintf("ID3%c%c%c", minor_version, sub_version, encode_flags()) +
-      (string)int_to_synchsafe(tag_size);
+      (string)int_to_synchsafe(tag_size,4);
   }
 
   //! Should the unsynchronisation flag be set or not?
@@ -367,10 +370,9 @@ class Frame {
 
   program get_frame_data(string id) {
     if( (< "TIT1", "TIT2", "TIT3", "TALB", "TOAL", "TSSE", "TSST",
-	   "TSRC",
-	   "TPE1", "TPE2", "TPE3", "TPE4", "TOPE", "TEXT", "TOLY",
-	   "TCOM", "TENC", "TLAN", "TMOO", "TOWN", "TRSN", "TRSO",
-	   "TOFN", "TSOA", "TSOP", "TSOT" >)[id] )
+	   "TSRC", "TPE1", "TPE2", "TPE3", "TPE4", "TOPE", "TEXT",
+	   "TOLY", "TCOM", "TENC", "TLAN", "TMOO", "TOWN", "TRSN",
+	   "TRSO", "TOFN", "TSOA", "TSOP", "TSOT" >)[id] )
       return Frame_TextPlain;
 
     if( (< "TMCL", "TIPL" >)[id] )
@@ -473,9 +475,8 @@ class Frame {
     }
   }
 
-  void encode() {
-    //hop@string block = data;
-    mixed block = data;
+  string encode() {
+    string block = data->encode();
 
     if(flag_compression)
 #if constant(Gz.deflate)
@@ -498,9 +499,8 @@ class Frame {
     if(flag_grouping && group_id)
       block = group_id + block;
 
-    return id + (string)int_to_synchsafe(sizeof(block)) + 
-      sprintf("%c%c", @encode_flags()) +
-      block;
+    return id + (string)int_to_synchsafe(sizeof(block),4) +
+      sprintf("%c%c", @encode_flags()) + block;
   }
 
   static string _sprintf(int t) {
