@@ -1,3 +1,8 @@
+Wed Aug 27 01:25:02 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* builtin_functions.c (combine_path): Fixed bug. combine_path("/", ".")
+	now expands to "/" and not to "".
+
 Fri Aug 15 13:23:09 1997  Henrik Grubbström  <grubba@infovav.se>
 
 	* modules/Mysql/result.c (f_fetch_row): Now returns strings for all
