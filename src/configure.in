@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.121 1997/09/21 21:08:02 nisse Exp $")
+AC_REVISION("$Id: configure.in,v 1.122 1997/09/22 11:09:27 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -462,6 +462,21 @@ fi
 #############################################################################
 
 AC_C_CONST
+
+# The above doesn't find IBM C's buggy const.
+
+if test "$ac_cv_c_const" = "yes"; then
+  AC_MSG_CHECKING(if const really does work)
+  AC_TRY_COMPILE([
+const int foo(int bar) { return bar; }
+  ], [
+    return bar(0);
+  ], [], [
+    ac_cv_c_const=no
+    AC_DEFINE(const, [])
+  ])
+  AC_MSG_RESULT($ac_cv_c_const)
+fi
 
 #############################################################################
 
