@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.c,v 1.36 2004/03/25 12:56:07 grubba Exp $
+|| $Id: accept_and_parse.c,v 1.37 2005/02/10 15:02:52 per Exp $
 */
 
 /* Hohum. Here we go. This is try number four for a more optimized
@@ -572,7 +572,7 @@ static void f_accept_with_http_parse(INT32 nargs)
 /* From socket.c */
   struct port 
   {
-    int fd;
+    struct fd_callback_box box;
     int my_errno;
     struct svalue accept_callback;
     struct svalue id;
@@ -602,7 +602,10 @@ static void f_accept_with_http_parse(INT32 nargs)
   first_cache = c;
   args->cache = c;
   c->max_size = ms;
-  args->fd = ((struct port *)port->storage)->fd;
+  {
+      extern struct program *port_program;
+      args->fd = ((struct port *)get_storage( port, port_program))->box.fd;
+  }
   args->filesystem = NULL;
 #ifdef HAVE_TIMEOUTS
   args->timeout = to;
