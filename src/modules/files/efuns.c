@@ -209,11 +209,15 @@ void f_filesystem_stat(INT32 args)
     push_int(st.f_ffree);
     push_text("favail");
     push_int(st.f_favail);
-    push_text("fstype");
-    push_text(st.f_basetype);
     push_text("fsname");
     push_text(st.f_fstr);
+#ifdef HAVE_STATVFS_F_BASETYPE
+    push_text("fstype");
+    push_text(st.f_basetype);
     f_aggregate_mapping(9*2);
+#else /* !HAVE_STATVFS_ST_BASETYPE */
+    f_aggregete_mapping(8*2);
+#endif /* HAVE_STATVFS_ST_BASETYPE */
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
 #ifdef HAVE_STRUCT_STATFS
@@ -223,10 +227,6 @@ void f_filesystem_stat(INT32 args)
     push_int(st.f_blocks);
     push_text("bfree");
     push_int(st.f_bfree);
-#ifdef HAVE_STATFS_F_BAVAIL
-    push_text("bavail");
-    push_int(st.f_bavail);
-#endif /* HAVE_STATFS_F_BAVAIL */
     push_text("files");
     push_int(st.f_files);
     push_text("ffree");
@@ -234,6 +234,8 @@ void f_filesystem_stat(INT32 args)
     push_text("favail");
     push_int(st.f_ffree);
 #ifdef HAVE_STATFS_F_BAVAIL
+    push_text("bavail");
+    push_int(st.f_bavail);
     f_aggregate_mapping(7*2);
 #else
     f_aggregate_mapping(6*2);
