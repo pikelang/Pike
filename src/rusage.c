@@ -13,7 +13,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.10 1998/03/28 15:00:50 grubba Exp $");
+RCSID("$Id: rusage.c,v 1.11 1998/06/10 19:23:30 hubbe Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -33,6 +33,8 @@ static INT32 rusage_values[30];
 
 #ifdef GETRUSAGE_THROUGH_PROCFS
 #include <sys/procfs.h>
+#include "fdlib.h"
+
 static INLINE int get_time_int(timestruc_t * val) 
 {
   return val->tv_sec * 1000 + val->tv_nsec / 1000000;
