@@ -125,4 +125,35 @@ array(string) event_types =
   "SelectionNotify",
   "ColormapNotify",
   "ClientMessage",
-  "MappingNotify" });
+  "MappingNotify"
+});
+
+array(string) error_codes =
+({
+  "Success",		/* everything's okay */
+  "Request",		/* bad request code */
+  "Value",		/* int parameter out of range */
+  "Window",		/* parameter not a Window */
+  "Pixmap",		/* parameter not a Pixmap */
+  "Atom",		/* parameter not an Atom */
+  "Cursor",		/* parameter not a Cursor */
+  "Font",		/* parameter not a Font */
+  "Match",		/* parameter mismatch */
+  "Drawable",		/* parameter not a Pixmap or Window */
+  "Access",		/* depending on context:
+			   - key/button already grabbed
+			   - attempt to free an illegal 
+			     cmap entry 
+			   - attempt to store into a read-only 
+			     color map entry.
+			   - attempt to modify the access control
+			     list from other than the local host.
+			     */
+  "Alloc",		/* insufficient resources */
+  "Color",		/* no such colormap */
+  "GC",			/* parameter not a GC */
+  "IDChoice",		/* choice not in range or already used */
+  "Name",		/* font or color name doesn't exist */
+  "Length",		/* Request length incorrect */
+  "Implementation"	/* server is defective */
+});
