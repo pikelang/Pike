@@ -1,11 +1,14 @@
-Wed Jan 29 21:23:26 1997  Per Hedbor  <per@infovav.se>
+Wed Jan 29 13:24:46 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
-	* modules/files/file.c (file_write): Changed the file->write
- 	function to _not_ loop over write unless EINTR is received. Why?
-  	Because write() only fails to write everything if the file is in
- 	non-blocking mode. Immediately Writing again then will always
- 	result in an EWOULDBLOCK error.  Thus: The extra syscall will slow
- 	things down quite a lot but there is no extra gain.
+	* mapping.c: fixed a memory bound error when allocating mappings
+	  with room for zero elements.
+	* modules/files/file.c:
+	  Per pointed out that it is not nessesary to loop in write()
+	  when the file is in nonblocking mode.
+	  Also fixed so that close on exec is updated only at fork()
+	  or exece().
+
+Wed Jan 29 21:23:26 1997  Per Hedbor  <per@infovav.se>
 
 	(file_create): It is now possible to write File(filename,mode); to
 	open a new file-object.
