@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.38 2000/12/23 07:33:49 hubbe Exp $
+ * $Id: fdlib.h,v 1.39 2001/04/23 19:06:54 marcus Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -116,8 +116,8 @@ PMOD_EXPORT char *debug_fd_info(int fd);
 PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
-PMOD_EXPORT int debug_fd_stat(char *file, struct stat *buf);
-PMOD_EXPORT FD debug_fd_open(char *file, int open_mode, int create_mode);
+PMOD_EXPORT int debug_fd_stat(const char *file, struct stat *buf);
+PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode);
 PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
 PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
 PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen);

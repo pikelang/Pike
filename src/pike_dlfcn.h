@@ -13,7 +13,7 @@
 
 void *dlsym(DLHANDLE *handle, char *name);
 const char *dlerror(void);
-DLHANDLE *dlopen(char *name, int flags);
+DLHANDLE *dlopen(const char *name, int flags);
 int dlclose(DLHANDLE *h);
 
 #endif

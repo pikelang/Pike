@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.12 2001/02/01 10:27:29 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.13 2001/04/23 19:06:52 marcus Exp $");
 
 #endif
 
@@ -258,7 +258,7 @@ static void htable_free(struct Htable *h, void(*hfree)(void *))
 
 /****************************************************************/
 
-static int filesize(char *filename)
+static int filesize(const char *filename)
 {
   struct stat st;
 #ifdef DLDEBUG
@@ -268,7 +268,7 @@ static int filesize(char *filename)
   return st.st_size;
 }
 
-static char *read_file(char *name, size_t *len)
+static char *read_file(const char *name, size_t *len)
 {
   ptrdiff_t tmp;
   char *buffer;
@@ -600,7 +600,7 @@ static parse_link_info(struct DLHandle *ret,
     char *end;
 
 #ifdef DLDEBUG    
-    fprintf(stderr,"Parse link info ptr=%d\n",ptr,l);
+    fprintf(stderr,"Parse link info ptr=%d\n",ptr);
     FLUSH();
 #endif
 
@@ -1255,7 +1255,7 @@ static int dl_load_file(struct DLHandle *ret,
 
 static void init_dlopen(void);
 
-struct DLHandle *dlopen(char *name, int flags)
+struct DLHandle *dlopen(const char *name, int flags)
 {
   struct DLHandle *ret;
   struct DLTempData tmpdata;
