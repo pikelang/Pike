@@ -21,7 +21,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.52 1999/08/17 22:00:00 hubbe Exp $");
+RCSID("$Id: array.c,v 1.53 1999/08/21 23:21:06 noring Exp $");
 
 struct array empty_array=
 {
@@ -173,7 +173,7 @@ void simple_array_index_no_free(struct svalue *s,
 	tmp.type=T_ARRAY;
 	tmp.u.array=a;
 	if (a->size) {
-	  index_error(0,0,0,&tmp,ind,"Index %d is out of range 0 - %d.\n", i, a->size-1);
+	  index_error(0,0,0,&tmp,ind,"Index %d is out of array range 0 - %d.\n", i, a->size-1);
 	} else {
 	  index_error(0,0,0,&tmp,ind,"Attempt to index the empty array with %d.\n", i);
 	}
@@ -245,7 +245,7 @@ void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
       if(i<0) i+=a->size;
       if(i<0 || i>=a->size) {
 	if (a->size) {
-	  error("Index %d is out of range 0 - %d.\n", i, a->size-1);
+	  error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
 	} else {
 	  error("Attempt to index the empty array with %d.\n", i);
 	}
@@ -950,7 +950,7 @@ union anything *array_get_item_ptr(struct array *a,
   if(i<0) i+=a->size;
   if(i<0 || i>=a->size) {
     if (a->size) {
-      error("Index %d is out of range 0 - %d.\n", i, a->size-1);
+      error("Index %d is out of array range 0 - %d.\n", i, a->size-1);
     } else {
       error("Attempt to index the empty array with %d.\n", i);
     }

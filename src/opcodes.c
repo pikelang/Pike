@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.42 1999/07/27 16:41:37 mirar Exp $");
+RCSID("$Id: opcodes.c,v 1.43 1999/08/21 23:21:07 noring Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -63,8 +63,13 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       if(i<0)
 	i+=what->u.string->len;
       if(i<0 || i>=what->u.string->len)
-	error("Index %d is out of range 0 - %d.\n", i, what->u.string->len-1);
-      else
+      {
+	if(what->u.string->len == 0)
+	  error("Attempt to index the empty string with %d.\n", i);
+	else
+	  error("Index %d is out of string range 0 - %d.\n",
+		i, what->u.string->len-1);
+      } else
 	i=index_shared_string(what->u.string,i);
       to->type=T_INT;
       to->subtype=NUMBER_NUMBER;
