@@ -221,6 +221,9 @@ void f_send_fd(INT32 args)
 #ifdef ENOSR
      case ENOSR:
 #endif
+      THREADS_ALLOW();
+      tmp=ioctl(sock_fd, I_SENDFD, fd);
+      THREADS_DISALLOW();
       continue;
 
      default:
@@ -1065,16 +1068,22 @@ void f_real_perror(INT32 args)
 
 void f_get_all_active_fd(INT32 args)
 {
-  int i,fds;
+  int i,fds,q;
   struct stat foo;
   
   pop_n_elems(args);
   for (i=fds=0; i<MAX_OPEN_FILEDESCRIPTORS; i++)
-    if(!fstat(i,&foo))
+  {
+    int q;
+    THREADS_ALLOW();
+    q = fstat(i,&foo);
+    THREADS_DISALLOW();
+    if(!q)
     {
       push_int(i);
       fds++;
     }
+  }
   f_aggregate(fds);
 }
 
