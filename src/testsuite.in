@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.330 2000/09/15 01:07:38 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.331 2000/09/20 13:19:52 noring Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -143,6 +143,18 @@ test_any([[
   };
   return Foo()->foo();
 ]], "int")
+
+test_compile_any([[
+  class { ; }
+]])
+
+test_compile_any([[
+  class { ; ; }
+]])
+
+test_compile_any([[
+  class { ; constant c = 0; }
+]])
 
 test_compile_any([[
   constant FOO = 0;
