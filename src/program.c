@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.154 1999/09/28 21:57:47 hubbe Exp $");
+RCSID("$Id: program.c,v 1.155 1999/09/28 22:34:47 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -892,23 +892,16 @@ void check_program(struct program *p)
       if(p->inherits[e-1].storage_offset > 
 	 p->inherits[e].storage_offset)
 	fatal("Overlapping inherits! (1)\n");
-
+	
       if(p->inherits[e-1].prog &&
 	 p->inherits[e-1].inherit_level >= p->inherits[e].inherit_level && 
 	 ( p->inherits[e-1].storage_offset +
 	   STORAGE_NEEDED(p->inherits[e-1].prog)) >
 	 p->inherits[e].storage_offset)
 	fatal("Overlapping inherits! (3)\n");
-    } else {
-      struct inherit *last_inh = p->inherits + p->num_inherits - 1;
-
-      if(last_inh->prog &&
-	 (last_inh->storage_offset +
-	  STORAGE_NEEDED(last_inh->prog) >
-	  p->storage_needed))
-	fatal("Overflowing inherits! (2)\n");
     }
   }
+
 
   if(p->flags & PROGRAM_FINISHED)
   for(e=0;e<p->num_identifiers;e++)
@@ -1112,8 +1105,14 @@ SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo_orig)
 
   offset=DO_ALIGN(new_program->storage_needed-modulo,alignment)+modulo;
 
-  if(!new_program->storage_needed)
+  if(!new_program->storage_needed) {
+    /* FIXME: Shouldn't new_program->storage_needed be set here?
+     * Otherwise the debug code below ought to be trigged.
+     * But since it isn't, I guess this is dead code?
+     *	/grubba 1999-09-28
+     */
     new_program->inherits[0].storage_offset=offset;
+  }
 
   if(new_program->alignment_needed<alignment)
     new_program->alignment_needed=alignment;
@@ -1356,7 +1355,6 @@ void low_inherit(struct program *p,
   storage_offset=low_add_storage(STORAGE_NEEDED(p),
 				 p->alignment_needed,
 				 storage_offset);
-
 
   /* Without this, the inherit becomes skewed */
   storage_offset-=p->inherits[0].storage_offset; 
