@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.26 2002/02/20 01:11:15 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.27 2002/02/20 02:33:35 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -215,7 +215,7 @@ dump wrapper
       case "history":
 	history(e);
 	return;
-      case 0:
+      case "":
 	dump(e);
 	return;
       }
