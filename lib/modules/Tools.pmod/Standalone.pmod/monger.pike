@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: monger.pike,v 1.5 2004/08/11 16:50:48 bill Exp $
+// $Id: monger.pike,v 1.6 2004/09/21 20:20:46 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.5 $"/" ")[1];
+constant version = ("$Revision: 1.6 $"/" ")[1];
 constant description = "Monger: the Pike module manger.";
 
 string repository = "http://modules.gotpike.org:8000/xmlrpc/index.pike";
@@ -404,7 +404,7 @@ void do_list(string|void name)
 
 class xmlrpc_handler
 {
-  object x;
+  Protocols.XMLRPC.Client x;
 
   void create(string loc)
   {
@@ -412,15 +412,15 @@ class xmlrpc_handler
   }
  
 
-  class _caller (string n, object c){
+  class _caller (string n){
 
     mixed `()(mixed ... args)
     {
       array|Protocols.XMLRPC.Fault r;
       if(args)
-        r = c[n](@args);
+	r = x[n](@args);
       else
-        r = c[n]();
+	r = x[n]();
       if(objectp(r)) // we have an error, throw it.
         error(r->fault_string);
       else return r[0];
@@ -430,7 +430,7 @@ class xmlrpc_handler
 
   function `->(string n, mixed ... args)
   {
-    return _caller(n, x);
+    return _caller(n);
   }
 
 }
