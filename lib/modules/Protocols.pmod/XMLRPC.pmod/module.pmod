@@ -24,9 +24,6 @@
 //! XML-RPC @tt{<struct>@} is translated to Pike @code{mapping@}.
 //! XML-RPC @tt{<array>@} is translated to Pike @code{array@}.
 //!
-//! @note
-//! The XML-RPC @tt{<dateTime.iso8601>@} datatype is currently not
-//! implemented.
 
 //! Represents a function call made to a XML-RPC server.
 //!
@@ -132,7 +129,7 @@ static constant common_dtd_fragment = #"
   <!ELEMENT params  (param*)>
   <!ELEMENT param   (value)>
 
-  <!ELEMENT value   (boolean|i4|int|double|string|base64|array|struct)>
+  <!ELEMENT value   (boolean|i4|int|double|string|base64|array|struct|dateTime.iso8601)>
 
   <!ELEMENT boolean (#PCDATA)>
   <!ELEMENT i4      (#PCDATA)>
@@ -140,6 +137,7 @@ static constant common_dtd_fragment = #"
   <!ELEMENT double  (#PCDATA)>
   <!ELEMENT string  (#PCDATA)>
   <!ELEMENT base64  (#PCDATA)>
+  <!ELEMENT dateTime.iso8601  (#PCDATA)>
 
   <!ELEMENT array   (data)>
   <!ELEMENT data    (value*)>
@@ -218,6 +216,8 @@ static mixed decode(string xml_input, string dtd_input)
 			       return data;
 			     case "struct":
 			       return mkmapping(@Array.transpose(data));
+		             case "dateTime.iso8601":
+			       return Calendar.parse ("%dT%h:%m:%s %z", (data * "") + " GMT")->set_timezone ("locale");
 			   }
 			   error("Unknown element %O.\n", name);
 			 case "error":
