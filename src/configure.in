@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.749 2003/12/03 09:27:04 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.750 2003/12/04 13:31:39 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -841,6 +841,11 @@ AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
 if test "$GCC" = "yes"; then
   if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-pipe, pipe, OPTIMIZE)
+
+    #### For exec-shield in newer linux kernels.
+    #### We should really fix the machine code generator to use mprotect instead.
+    #### That should work.
+    AC_SYS_COMPILER_FLAG([[-Wa,--execstack]],executableheap,CFLAGS)
   fi
 fi
 
@@ -1303,7 +1308,8 @@ AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
     Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX)
-      PIKE_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
+#    PIKE_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
+# Nothing to warn about, really...
       with_poll=yes
     ;;
     AIX)
@@ -1314,9 +1320,6 @@ AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
           with_poll=yes
         else :; fi
       fi
-      if test "$with_poll" = "yes" ; then
-        PIKE_MSG_WARN([Defaulting to --with-poll since the OS is AIX 4.2 or later.])
-      else :; fi
     ;;
   esac
 ])
@@ -1396,8 +1399,9 @@ if you know that you do not need GMP, you may re-run configure
 with the option --without-bignums instead.])
   else :; fi
 else
-  PIKE_MSG_WARN([Compiling without bignum support. This is discouraged. Many
-Pike applications might not work correctly.])
+  PIKE_MSG_WARN([****** Compiling without bignum support. This is discouraged. Many
+****** Pike applications might not work correctly.])
+ sleep 10
 fi
 
 dnl Pike currently breaks miserably if SHARED_NODES isn't defined.
@@ -1514,6 +1518,7 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-Wimplicit-function-declaration,Wimplicit_function_declaration,WARN)
     AC_SYS_COMPILER_FLAG(-Wmultichar,Wmultichar,WARN)
     AC_SYS_COMPILER_FLAG(-Wswitch,Wswitch,WARN)
+
     if test "x$with_copt" != xno; then
       # gcc complains that it doesn't support this when compiling
       # without optimizations.
@@ -1538,6 +1543,7 @@ if test "$cflags_is_set" = "no"; then
     #else
     #  :
     #fi  
+
 
 ### Optimize for different SUN machines. If there is no working 'uname'
 ### no extra optimization will be done, but nothing should break either.
@@ -3210,6 +3216,9 @@ PIKE_CHECK_CONSTANTS(recursive mutex flag,
 
 # NOTE: The following test is hardcoded to fail when crosscompiling
 # It also clobbers $LIBOBJS.
+#
+# Handle the latest autoconf incompatibility...
+m4_pattern_allow(LIBOBJS)
 
 OLD_LIBOBJS="${LIBOBJS}"
 
