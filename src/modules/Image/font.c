@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.36 1998/05/04 11:49:57 mirar Exp $ */
+/* $Id: font.c,v 1.37 1998/05/04 16:28:08 mirar Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.36 1998/05/04 11:49:57 mirar Exp $
+**!	$Id: font.c,v 1.37 1998/05/04 16:28:08 mirar Exp $
 **! class font
 **!
 **! note
@@ -332,6 +332,13 @@ static INLINE void write_char(struct _char *ci,
 **!	Similar to <ref>load</ref>().
 */
 
+void font_load(INT32 args);
+
+void font_create(INT32 args)
+{
+   if (args) font_load(args);
+   pop_n_elems(1);
+}
 
 void font_load(INT32 args)
 {
@@ -766,7 +773,7 @@ void init_font_programs(void)
                 "function(string:object|int)",0);
 
    add_function("create",font_load,
-                "function(string:object|int)",0);
+                "function(void|string:void)",0);
 
    add_function("write",font_write,
                 "function(string:object)",0);
