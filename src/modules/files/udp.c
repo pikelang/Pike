@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.31 2002/05/06 19:23:21 hop%unibase.cz Exp $
+ * $Id: udp.c,v 1.32 2002/05/06 20:39:27 hop%unibase.cz Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.31 2002/05/06 19:23:21 hop%unibase.cz Exp $");
+RCSID("$Id: udp.c,v 1.32 2002/05/06 20:39:27 hop%unibase.cz Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -153,9 +153,10 @@ struct udp_storage {
 
 extern void get_inet_addr(struct sockaddr_in *addr,char *name);
 
-/*! @decl object bind(int port, void|string address)
+/*! @decl object bind(int port)
+/*! @decl object bind(int port, string address)
  *!
- *! Assignes local port and local address.
+ *! Binds a port for recieving or transmitting UDP.
  */
 static void udp_bind(INT32 args)
 {
@@ -256,9 +257,18 @@ static void udp_bind(INT32 args)
   ref_push_object(THISOBJ);
 }
 
-/*! @decl void enable_broadcast()
- *! @fixme
- *! Document this function.
+/*! @decl int(0..1) enable_broadcast()
+ *!
+ *! Set the broadcast flag. 
+ *! If enabled then sockets receive packets sent  to  a  broadcast
+ *! address  and  they are allowed to send packets to a
+ *! broadcast address.
+ *!
+ *! @returns
+ *!  Returns @tt{1@} on success, @tt{0@} (zero) otherwise.
+ *!
+ *! @note
+ *!  This is normally only avalable to root users.
  */
 void udp_enable_broadcast(INT32 args)
 {
@@ -274,9 +284,12 @@ void udp_enable_broadcast(INT32 args)
 #endif /* SO_BROADCAST */
 }
 
-/*! @decl int wait(int|float timeout)
+/*! @decl int(0..1) wait(int|float timeout)
  *!
  *! Check for data and wait max. @[timeout] seconds.
+ *!
+ *! @returns
+ *!  Returns @tt{1@} if data are ready, @tt{0@} (zero) otherwise.
  */
 void udp_wait(INT32 args)
 {
@@ -359,9 +372,23 @@ void udp_wait(INT32 args)
 
 #define UDP_BUFFSIZE 65536
 
-/*! @decl mapping(string:int|string) read(void|int a)
- *! @fixme
- *! Document this function.
+/*! @decl mapping(string:int|string) read()
+/*! @decl mapping(string:int|string) read(int flag)
+ *!
+ *! Read from the UDP socket.
+ *!
+ *! Flag @[flag] is a bitfield, 1 for out of band data and 2 for peek
+ *!
+ *! @returns
+ *!  mapping(string:int|string) in the form 
+ *!	([
+ *!	   "data" : string recieved data
+ *!	   "ip" : string   recieved from this ip
+ *!	   "port" : int    ...and this port
+ *!	])
+ *!
+ *! @seealso
+ *!   @[set_read_callback()]
  */
 void udp_read(INT32 args)
 {
@@ -449,13 +476,17 @@ void udp_read(INT32 args)
   f_aggregate_mapping( 6 );
 }
 
-/*! @decl int send(string to, int port, string message, void|int flags)
+/*! @decl int send(string to, int port, string message)
+/*! @decl int send(string to, int port, string message, int flags)
  *!
  *! Send data to a UDP socket. The recepient address will be @[to]
  *! and port will be @[port].
  *!
- *! Writes @[message] and returns the number of bytes that were
- *! actually written.
+ *! Flag @[flag] is a bitfield, 1 for out of band data and
+ *! 2 for don't route flag.
+ *!
+ *! @returns
+ *! The number of bytes that were actually written.
  */
 void udp_sendto(INT32 args)
 {
@@ -616,8 +647,8 @@ static void udp_set_nonblocking(INT32 args)
 }
 
 /*! @decl object set_blocking()
- *! @fixme
- *! Document this function.
+ *!
+ *! Sets this object to be blocking.
  */
 static void udp_set_blocking(INT32 args)
 {
@@ -627,9 +658,24 @@ static void udp_set_blocking(INT32 args)
   ref_push_object(THISOBJ);
 }
 
-/*! @decl int connect(string a, int b)
- *! @fixme
- *! Document this function.
+/*! @decl int(0..1) connect(string address, int port)
+ *!
+ *! Connect a socket to something.
+ *!
+ *! This function connects a socket previously created with @[open_socket()]
+ *! to a remote socket. The argument is the IP name or number for the remote
+ *! machine. 
+ *!
+ *! @returns
+ *! Returns @tt{1@} on success, @tt{0@} (zero) otherwise.
+ *!
+ *! @note
+ *! If the socket is in nonblocking mode, you have to wait
+ *! for a write or close callback before you know if the connection
+ *! failed or not.
+ *!
+ *! @seealso
+ *!  @[query_address()]
  */
 static void udp_connect(INT32 args)
 {
@@ -674,8 +720,10 @@ static void udp_connect(INT32 args)
 }
 
 /*! @decl string query_address()
- *! @fixme
- *! Document this function.
+ *! 
+ *! Returns the local address of a socket on the form "x.x.x.x port".
+ *! If this file is not a socket, not connected or some other error occurs,
+ *! zero is returned.
  */
 static void udp_query_address(INT32 args)
 {
@@ -711,8 +759,9 @@ static void udp_query_address(INT32 args)
 }
 
 /*! @decl int errno()
- *! @fixme
- *! Document this function.
+ *!
+ *! Returns the error code for the last command on this object.
+ *! Error code is normally cleared when a command is successful.
  */
 static void udp_errno(INT32 args)
 {
@@ -720,9 +769,10 @@ static void udp_errno(INT32 args)
    push_int(THIS->my_errno);
 }
 
-/*! @decl object set_type(int a, void|int b)
- *! @fixme
- *! Document this function.
+/*! @decl object set_type(int sock_type)
+/*! @decl object set_type(int sock_type, int family)
+ *!
+ *! Sets socket type and protocol family.
  */
 static void udp_set_type(INT32 args)
 {
@@ -741,8 +791,8 @@ static void udp_set_type(INT32 args)
 }
 
 /*! @decl array(int) get_type()
- *! @fixme
- *! Document this function.
+ *!
+ *! Returns socket type and protocol family.
  */
 static void udp_get_type(INT32 args)
 {
@@ -754,7 +804,7 @@ static void udp_get_type(INT32 args)
 
 /*! @decl constant MSG_OOB
  *! @fixme
- *! Document this constant. (Why is it always 1?)
+ *! Document this constant.
  */
 
 /*! @decl constant MSG_PEEK
