@@ -2,6 +2,7 @@
 
 #pike __REAL_VERSION__
 
+//! NNTP protocol
 class protocol
 {
   inherit Stdio.FILE : sock;
