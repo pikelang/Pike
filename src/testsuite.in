@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.601 2004/06/30 18:21:29 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.602 2005/02/01 19:10:04 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -693,11 +693,15 @@ test_do([[
       }
     }
 
-    mixed eat_stack()
+    mixed eat_stack(int|void probe)
     {
+      // Avoid eating as much C-stack by releasing the
+      // catch at every level.
+      if (probe) return 1;
+      if (catch(eat_stack(1))) return 1;
       mixed err = 1;
-      if (catch (err = eat_stack()) || err != 10)
-	return intp (err) && err > 0 ? err + 1 : err;
+      if ((err = eat_stack()) != 10)
+	return intp(err) && err > 0 ? err + 1 : err;
       if (err = catch {
 
 	Foo foo;
@@ -4383,11 +4387,15 @@ test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),2)]],[[({3,7,0})]])
   ]])
 
   test_do([[
-    mixed eat_stack()
+    mixed eat_stack(int|void probe)
     {
+      // Avoid eating as much C-stack by releasing the
+      // catch at every level.
+      if (probe) return 1;
+      if (catch(eat_stack(1))) return 1;
       mixed err = 1;
-      if (catch (err = eat_stack()) || err != 10)
-	return intp (err) && err ? err + 1 : err;
+      if ((err = eat_stack()) != 10)
+	return intp(err) && err > 0 ? err + 1 : err;
       if (err = catch {
 	class Foo
 	{
