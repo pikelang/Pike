@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.4 2001/08/07 12:34:09 js Exp $
+// $Id: PDF.pmod,v 1.5 2001/08/08 15:09:02 noring Exp $
 
 // Filter for application/pdf
 
@@ -17,12 +17,17 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
   if(objectp(data))
     data=data->read();
 
-  string fn=tmp_filename();
-  object f=Stdio.File(fn,"wcb");
-  f->write(data);
+  string fn = tmp_filename();
+  object f = Stdio.File(fn, "wct");
+  int r = f->write(data);
   f->close();
+  if(r != sizeof(data))
+    error("Failed to write data for %O (returned %O, not %O)\n",
+	  fn, r, sizeof(data));
   
-  string text=Process.popen(combine_path(__FILE__, "../../../../bin/pdftotext")+" "+fn+" -");
+  string text =
+    my_popen(({ combine_path(__FILE__,"../../../../bin/pdftotext"), fn, "-" }));
+  
   rm(fn);
 
   string md="", body="";
