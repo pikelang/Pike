@@ -442,6 +442,20 @@ static void exit_html_struct(struct object *o)
    DEBUG((stderr,"exit_html_struct %p done\n",THIS));
 }
 
+static void gc_check_html(struct object *o)
+{
+   gc_check(THIS->maptag);
+   gc_check(THIS->mapcont);
+   gc_check(THIS->mapentity);
+
+   gc_check_svalues(&(THIS->callback__tag),1);
+   gc_check_svalues(&(THIS->callback__data),1);
+   gc_check_svalues(&(THIS->callback__entity),1);
+   
+   if (THIS->extra_args)
+      gc_check(THIS->extra_args);
+}
+
 /****** setup callbacks *****************************/
 
 /*
@@ -2891,6 +2905,7 @@ void init_parser_html(void)
 
    set_init_callback(init_html_struct);
    set_exit_callback(exit_html_struct);
+   set_gc_check_callback(gc_check_html);
 
 #define CBRET "string|array(string)" /* 0|string|({string}) */
 
