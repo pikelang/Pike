@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.18 2003/09/05 12:41:47 grubba Exp $
+// $Id: module.pmod.in,v 1.19 2003/09/05 16:25:51 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -546,24 +546,6 @@ class PikeCompiler
     // Called at
     //   modifier ·
     void parse_modifier(Iterator tokens_left) {}
-  }
-
-  class NameSpace
-  {
-    inherit IdentifierToken;
-
-    // Called at
-    //   namespace · { string | symbol } [ ':' name ] ';'
-    void parse_meta_program(Class current_class, Iterator tokens_left,
-			    Modifiers current_modifiers)
-    {
-      // FIXME:
-      Token token;
-      foreach(tokens_left; ;token) {
-	if (token->symbol == ";") return;
-      }
-      SYNTAX_ERROR("Namespace parsing not implemented yet.");
-    }
   }
 
   class Expression
@@ -1174,6 +1156,47 @@ class PikeCompiler
 
   // Start of metaprograms.
 
+  class NameSpace
+  {
+    inherit IdentifierToken;
+
+    Expression source;
+    Token rename;
+
+    // Called at
+    //   namespace · { string | symbol } [ ':' name ] ';'
+    void parse_meta_program(Class current_class, Iterator tokens_left,
+			    Modifiers current_modifiers)
+    {
+      current_class->add_namespace(this_object());
+
+      source = parse_basic_expression(tokens_left);
+
+      Token token;
+      if (tokens_left &&
+	  (token = tokens_left->value())->symbol == ":") {
+	// Rename.
+	tokens_left->`+=(1);
+	if (!tokens_left ||
+	    (token = tokens_left->value())->token != "identifier") {
+	  SYNTAX_ERROR("Expected renaming symbol.");
+	} else {
+	  rename = token;
+	  tokens_left->`+=(1);
+	  if (tokens_left) {
+	    token = tokens_left->value();
+	  }
+	}
+      }
+      if (!tokens_left ||
+	  token->symbol != ";") {
+	SYNTAX_ERROR("Expected ';'.");
+	return;
+      }
+      tokens_left->`+=(1);
+    }
+  }
+
   class Definition
   {
     // FIXME!
@@ -1624,6 +1647,25 @@ class PikeCompiler
       tokens_left->`+=(1);
       current_class->add_constant(current_modifiers, name,
 				  LiteralExpression(this));
+    }
+
+    // Notes about resolving:
+    //
+    //   First symbols that are used expand the resolution
+    //   space are resolved. ie symbols refered to from
+    //   inherit and import. These symbols are looked up
+    //   in the scope surrounding the current scope unless
+    //   specified explicitly via local::.
+    //
+    //   After the first pass all symbols that are available
+    //   in the local scope are known, and the remaining
+    //   symbols can be resolved.
+
+    void resolv_symbols(Scope parent_scope)
+    {
+      foreach(namespaces, Namespace namespace) {
+	namespace->resolv(parent_scope);
+      }
     }
 
     CodeBlock current_block;
