@@ -1,4 +1,4 @@
-/* $Id: mirardoc.pike,v 1.5 2001/10/23 21:24:13 nilsson Exp $ */
+/* $Id: mirardoc.pike,v 1.6 2001/11/13 17:50:40 nilsson Exp $ */
 
 string IMAGE_DIR = "../src_images/";
 string makepic1;
@@ -14,25 +14,25 @@ int illustration_counter;
 
 module : mapping <- moduleM
 	"desc" : text
-	"see also" : array of references 
+	"see also" : array of references
 	"note" : mapping of "desc": text
 	"modules" : same as classes (below)
 	"classes" : mapping 
 		class : mapping <- classM
-	        	"see also" : array of references 
+	        	"see also" : array of references
 			"desc" : text
 			"note" : mapping of "desc": text
 			"methods" : array of mappings <- methodM
 				"decl" : array of textlines of declarations
 				"desc" : text
 				"returns" : textline
-				"see also" : array of references 
+				"see also" : array of references
 				"note" : mapping of "desc": text
 				"known bugs" : mapping of "desc": text
 				"args" : array of mappings <- argM
 					"args" : array of args names and types
 					"desc" : description
-				"names" : multiset of method name(s) 
+				"names" : multiset of method name(s)
 
 Quoting: Only '<' must be quoted as '&lt;'.
 
@@ -72,7 +72,7 @@ string stripws(string s)
 
 mapping lower_nowM()
 {
-   if (nowM && 
+   if (nowM &&
        (nowM==parse
 	|| nowM==classM
 	|| nowM==methodM
@@ -97,26 +97,26 @@ mapping keywords=
   "appendix":lambda(string arg,string line) {
 	       descM=nowM=appendixM=focM(parse[" appendix"],stripws(arg),line);
 	       report("appendix "+arg);},
-  "module":lambda(string arg,string line) 
-	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line); 
-	    methodM=0; 
-	    if (!nowM->classes) nowM->classes=(["_order":({})]); 
-	    if (!nowM->modules) nowM->modules=(["_order":({})]); 
+  "module":lambda(string arg,string line)
+	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line);
+	    methodM=0;
+	    if (!nowM->classes) nowM->classes=(["_order":({})]);
+	    if (!nowM->modules) nowM->modules=(["_order":({})]);
 	    report("module "+arg); },
-  "class":lambda(string arg,string line) 
+  "class":lambda(string arg,string line)
 	  { if (!moduleM) return complain("class w/o module");
-	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),line); 
+	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),line);
 	    methodM=0; report("class "+arg); },
-  "submodule":lambda(string arg,string line) 
+  "submodule":lambda(string arg,string line)
 	  { if (!moduleM) return complain("submodule w/o module");
 	    classM=descM=nowM=moduleM=focM(moduleM->modules,stripws(arg),line);
 	    methodM=0;
-	    if (!nowM->classes) nowM->classes=(["_order":({})]); 
-	    if (!nowM->modules) nowM->modules=(["_order":({})]); 
+	    if (!nowM->classes) nowM->classes=(["_order":({})]);
+	    if (!nowM->modules) nowM->modules=(["_order":({})]);
 	    report("submodule "+arg); },
   "method":lambda(string arg,string line)
 	  { if (!classM) return complain("method w/o class");
-	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM) 
+	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM)
 	    { if (!classM->methods) classM->methods=({});
 	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":line])}); }
 	    methodM->decl+=({stripws(arg)}); descM=0; },
@@ -130,39 +130,39 @@ mapping keywords=
 	  {
 	     if (!classM) return complain("variable w/o class");
 	     if (!classM->variables) classM->variables=({});
-	     classM->variables+=({descM=nowM=(["_line":line])}); 
-	     nowM->decl=stripws(arg); 
+	     classM->variables+=({descM=nowM=(["_line":line])});
+	     nowM->decl=stripws(arg);
 	  },
   "constant":lambda(string arg,string line)
 	  {
 	     if (!classM) return complain("constant w/o class");
 	     if (!classM->constants) classM->constants=({});
 	     classM->constants+=({descM=nowM=(["_line":line])}); 
-	     nowM->decl=stripws(arg); 
+	     nowM->decl=stripws(arg);
 	  },
 
   "arg":lambda(string arg,string line)
 	  {
 	     if (!methodM) return complain("arg w/o method");
 	     if (!methodM->args) methodM->args=({});
-	       methodM->args+=({argM=nowM=(["args":({}),"_line":line])}); 
+	       methodM->args+=({argM=nowM=(["args":({}),"_line":line])});
 	     argM->args+=({arg}); descM=argM;
 	  },
   "note":lambda(string arg,string line)
 	  {
-	     if (!lower_nowM()) 
+	     if (!lower_nowM())
 	        return complain("note w/o method, class or module");
 	     descM=nowM->note||(nowM->note=(["_line":line]));
 	  },
   "added":lambda(string arg,string line)
 	  {
-	     if (!lower_nowM()) 
+	     if (!lower_nowM())
 	        return complain("added in: w/o method, class or module");
 	     descM=nowM->added||(nowM->added=(["_line":line]));
 	  },
   "bugs":lambda(string arg,string line)
 	  {
-	     if (!lower_nowM()) 
+	     if (!lower_nowM())
 	        return complain("bugs w/o method, class or module");
 	     descM=nowM->bugs||(nowM->bugs=(["_line":line]));
 	  },
@@ -170,7 +170,7 @@ mapping keywords=
 	  {
 	     if (arg[0..3]!="also")
 	        return complain("see w/o 'also:'\n");
-	     if (!lower_nowM()) 
+	     if (!lower_nowM())
 	        return complain("see also w/o method, class or module");
 	     sscanf(arg,"also%*[:]%s",arg);
 	     nowM["see also"]=map(arg/",",stripws)-({""});
@@ -179,7 +179,7 @@ mapping keywords=
 	  },
   "returns":lambda(string arg)
 	  {
-	     if (!methodM) 
+	     if (!methodM)
 	        return complain("returns w/o method");
 	     methodM->returns=stripws(arg);
 	     descM=0; nowM=0;
@@ -252,7 +252,6 @@ string fixdesc(string s,string prefix,void|string where)
    return s;
 }
 
-
 multiset(string) get_method_names(string *decls)
 {
    string decl,name;
@@ -317,8 +316,7 @@ string doctype(string type,void|string indent)
       return ({doctype(in,indent+"  ")});
    };
 
-
-   if (!indent) indent="\n "; 
+   if (!indent) indent="\n ";
    string nindent=indent+"  ";
 
    if (type[..2]=="...")
@@ -327,7 +325,7 @@ string doctype(string type,void|string indent)
    string a=type,b=0,c,o=0;
    sscanf(type,"%s(%s",a,b);
    if (b) [b,c]=endparan(b);
-   
+
    if (sscanf(a,"%s|%s",string d,string e)==2)
    {
       if (b) e+="("+b+")"+c;
@@ -423,11 +421,9 @@ void docdecl(string enttype,
    if (convname[name]) name=convname[name];
 
    f->write("<"+enttype+" name="+S(name)+">");
-   
+
    if (params)
    {
-
-
      string paramlist(string in) {
        int i;
        string res = "";
@@ -530,7 +526,6 @@ void document(string enttype,
    string presname = replace(sort(names)[0],
 			     ([ ".":"_", ">":"_" ]) );
 
-
    if (convname[canname]) canname=convname[canname];
 
    switch (enttype)
@@ -603,17 +598,14 @@ void document(string enttype,
 
 // [ARGUMENTS]
 
-#if 1
    if (huh->args)
    {
-      string rarg="";
-      mapping arg;
-      
-      array v=({});
-      
+     mapping arg;
+      array(string) v = ({});
+
       foreach (huh->args, arg)
       {
-	 v+=arg->args;
+	v += arg->args;
 	 if (arg->desc)
 	 {
 	    res+="<group>\n";
@@ -627,11 +619,13 @@ void document(string enttype,
 	       "<text>"+
 	       fixdesc(arg->desc,prefix,arg->_line)+
 	       "</text></group>\n";
+	    v = ({});
 	 }
       }
-      if (rarg!="") error("trailing args w/o desc on "+arg->_line+"\n");
+      if(sizeof(v))
+	werror("Parameters without description on line %O.\n%O\n",
+	       arg->_line, v);
    }
-#endif
 
 // [RETURN VALUE]
 
@@ -641,7 +635,6 @@ void document(string enttype,
       res+=fixdesc(huh->returns,prefix,huh->_line)+"\n";
       res+="</text></group>\n";
    }
-
 
 // [NOTE]
 
