@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.86 2001/02/24 22:08:43 grubba Exp $");
+RCSID("$Id: encode.c,v 1.87 2001/02/24 22:14:53 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -263,7 +263,7 @@ static void do_enable_threads(void)
 }
 #endif
 
-static ptrdiff_t encode_type(unsigned char *t, struct encode_data *data)
+static ptrdiff_t low_encode_type(unsigned char *t, struct encode_data *data)
 {
   unsigned char *q = t;
 one_more_type:
@@ -282,13 +282,13 @@ one_more_type:
 
     case T_FUNCTION:
       while(EXTRACT_UCHAR(t)!=T_MANY)
-	t+=encode_type(t, data);
+	t += low_encode_type(t, data);
       addchar(EXTRACT_UCHAR(t++));
 
     case T_MAPPING:
     case T_OR:
     case T_AND:
-      t+=encode_type(t, data);
+      t += low_encode_type(t, data);
 
     case T_ARRAY:
     case T_MULTISET:
@@ -353,6 +353,10 @@ one_more_type:
   return t-q;
 }
 
+static ptrdiff_t encode_type(struct pike_type *t, struct encode_data *data)
+{
+  return low_encode_type(t->str, data);
+}
 
 static void encode_value2(struct svalue *val, struct encode_data *data)
 
@@ -403,7 +407,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       if (data->canonic)
 	Pike_error("Canonical encoding of the type type not supported.\n");
       code_entry(TAG_TYPE, 0, data);	/* Type encoding #0 */
-      encode_type(val->u.type->str, data);
+      encode_type(val->u.type, data);
       mapping_insert(data->encoded, val, &data->counter);
       data->counter.u.integer++;
       break;
@@ -694,7 +698,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	for(d=0;d<p->num_identifiers;d++)
 	{
 	  adddata(p->identifiers[d].name);
-	  encode_type(p->identifiers[d].type->str, data);
+	  encode_type(p->identifiers[d].type, data);
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
