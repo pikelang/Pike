@@ -261,7 +261,10 @@ array(array(array)) diff3 (array a, array b, array c)
   int prevodd = -2;
 
   while (!(aeq[ai] & beq[bi] & ceq[ci] & 4)) {
+    /* werror ("aeq[%d]=%d beq[%d]=%d ceq[%d]=%d prevodd=%d\n",
+       ai, aeq[ai], bi, beq[bi], ci, ceq[ci], prevodd); */
     array empty = ({}), apart = empty, bpart = empty, cpart = empty;
+    int intersect;
 
     if (aeq[ai] == 2 && beq[bi] == 1) { // a and b are equal.
       do apart += ({a[ai++]}), bi++; while (aeq[ai] == 2 && beq[bi] == 1);
@@ -281,7 +284,7 @@ array(array(array)) diff3 (array a, array b, array c)
       while (!beq[bi]) bpart += ({b[bi++]});
       prevodd = 1;
     }
-    else if (aeq[ai] & beq[bi] & ceq[ci] == 3) { // All are equal.
+    else if ((intersect = aeq[ai] & beq[bi] & ceq[ci]) == 3) { // All are equal.
       do apart += ({a[ai++]}), bi++, ci++; while (aeq[ai] & beq[bi] & ceq[ci] == 3);
       cpart = bpart = apart;
       prevodd = -1;
@@ -292,7 +295,7 @@ array(array(array)) diff3 (array a, array b, array c)
       // ({({}),({"bar"}),({"bar"})})). Besides that, leave the
       // odd-one-out sequence empty in a block where two are equal.
 
-      if (aeq[ai] & beq[bi] & ceq[ci]) {
+      if (intersect && (aeq[ai] | beq[bi] | ceq[ci]) != 3) {
 	// Got cyclically interlocking equivalences. Have to break one
 	// of them. Prefer the shortest.
 	int which, newblock, mask, i, oi;
@@ -317,6 +320,8 @@ array(array(array)) diff3 (array a, array b, array c)
 	    if (mask == 1) oi = ai, oeq = aeq; else oi = bi, oeq = beq;
 	    break;
 	  }
+	/* werror ("which=%d newblock=%d mask=%d i=%d oi=%d\n",
+	   which, newblock, mask, i, oi); */
 	if (newblock)
 	  ares += ({empty}), bres += ({empty}), cres += ({empty}), prevodd = -1;
 	while (oeq[oi] != mask) oi++;
@@ -332,6 +337,32 @@ array(array(array)) diff3 (array a, array b, array c)
       }
 
       else {
+	if (intersect) {
+	  // One matches on both sides and the other two doesn't match
+	  // each other. This occurs when the matches aren't
+	  // synchronized. E.g. for a = ({"a"}), b = ({"b","a"}), c =
+	  // ({"a","b","a"}) we got a[0]->b[1], b[0..1]->c[1..2],
+	  // c[0]->a[0]. We shift the match forward to catch the
+	  // all-three match later, i.e. replace c[0]->a[0] with
+	  // c[2]->a[0] in this case.
+	  int i;
+	  array(int) eq;
+	  array arr;
+	  if (aeq[ai] == 3)
+	    if (intersect == 1) i = bi, eq = beq, arr = b; else i = ci, eq = ceq, arr = c;
+	  else if (beq[bi] == 3)
+	    if (intersect == 1) i = ci, eq = ceq, arr = c; else i = ai, eq = aeq, arr = a;
+	  else
+	    if (intersect == 1) i = ai, eq = aeq, arr = a; else i = bi, eq = beq, arr = b;
+	  while (eq[i] == intersect) {
+	    mixed el = arr[i];
+	    eq[i] = 0;
+	    int j = ++i;
+	    while (arr[j] != el || eq[j] & intersect) j++;
+	    eq[j] |= intersect;
+	  }
+	}
+
 	switch (prevodd) {
 	  case 0: apart = ares[-1], ares[-1] = ({}); break;
 	  case 1: bpart = bres[-1], bres[-1] = ({}); break;
