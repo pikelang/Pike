@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.201 2003/02/10 17:10:40 mast Exp $
+|| $Id: threads.c,v 1.202 2003/02/15 17:04:48 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.201 2003/02/10 17:10:40 mast Exp $");
+RCSID("$Id: threads.c,v 1.202 2003/02/15 17:04:48 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1073,7 +1073,7 @@ void f_mutex_lock(INT32 args)
   /* Needs to be cloned here, since create()
    * might use threads.
    */
-  o=fast_clone_object(mutex_key,0);
+  o=fast_clone_object(mutex_key);
 
   DO_IF_DEBUG(
     if(thread_for_id(th_self()) != Pike_interpreter.thread_id) {
