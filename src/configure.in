@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.725 2003/07/28 13:21:26 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.726 2003/08/04 13:37:42 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5977,20 +5977,20 @@ cpu_time_t work_time, wait_time;
 
 TH_RETURN_TYPE work_thread (void *dummy)
 {
-  time_t rt_start, rt;
+  struct timeval rt_start, rt;
   cpu_time_t start;
   mt_lock (&m);
-  rt_start = TIME (0);
+  GETTIMEOFDAY (&rt_start);
   start = get_cpu_time();
   do {
     cpu_time_t t = get_cpu_time();
-    rt = TIME (0);
+    GETTIMEOFDAY (&rt);
     if (t == (cpu_time_t) -1) {
       work_time = t;
       break;
     }
     work_time = t - start;
-  } while (work_time < (CPU_TIME_TICKS / 10) && rt <= rt_start + 1);
+  } while (work_time < (CPU_TIME_TICKS / 10) && rt.tv_sec <= rt_start.tv_sec + 1);
   co_signal (&c);
   mt_unlock (&m);
   return 0;
