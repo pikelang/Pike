@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pdflib_glue.c,v 1.11 2002/10/21 17:06:21 marcus Exp $
+|| $Id: pdflib_glue.c,v 1.12 2004/03/21 06:10:31 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pdflib_glue.c,v 1.11 2002/10/21 17:06:21 marcus Exp $");
+RCSID("$Id: pdflib_glue.c,v 1.12 2004/03/21 06:10:31 nilsson Exp $");
 
 #include "pdf_machine.h"
 
@@ -279,17 +279,19 @@ static void pdf_findfont(INT32 args)
    char *fontname;
 
    get_all_args("findfont",args,"%s",&fontname);
-   if (args>=2)
+   if (args>=2) {
       if (sp[1-args].type==T_STRING && 
 	  !sp[1-args].u.string->size_shift)
 	 encoding=sp[1-args].u.string->str;
       else if (sp[1-args].type!=T_INT || sp[-args].u.integer)
 	 SIMPLE_BAD_ARG_ERROR("findfont",2,"8 bit string or void");
-   if (args>=3)
+   }
+   if (args>=3) {
       if (sp[2-args].type==T_INT)
 	 embed=(int)sp[2-args].u.integer;
       else
 	 SIMPLE_BAD_ARG_ERROR("findfont",3,"int or void");
+   }
    if (!this->pdf) Pike_error("PDF not initiated\n");
 
    THREADS_ALLOW();
@@ -823,17 +825,19 @@ static void pdf_open_image_file(INT32 args)
    INT_TYPE res=0,intparam=0;
    char *type=NULL,*filename=NULL,*stringparam="";
    get_all_args("open_image_file",args,"%s%s",&type,&filename);
-   if (args>=3)
+   if (args>=3) {
       if (sp[2-args].type==T_STRING && 
 	  !sp[2-args].u.string->size_shift)
 	 stringparam=sp[2-args].u.string->str;
       else if (sp[2-args].type!=T_INT || sp[-args].u.integer)
 	 SIMPLE_BAD_ARG_ERROR("open_image_file",3,"8 bit string or void");
-   if (args>=4)
+   }
+   if (args>=4) {
       if (sp[3-args].type==T_INT)
 	 intparam=(int)sp[3-args].u.integer;
       else
 	 SIMPLE_BAD_ARG_ERROR("findfont",4,"int or void");
+   }
    if (!this->pdf) Pike_error("PDF not initiated\n");
    THREADS_ALLOW();
    res=PDF_open_image_file(this->pdf,type,filename,stringparam,(int)intparam);
