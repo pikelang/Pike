@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.17 2001/01/01 23:31:18 kinkie Exp $
+ * $Id: msqlmod.c,v 1.18 2001/12/07 23:23:55 nilsson Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.17 2001/01/01 23:31:18 kinkie Exp $");
+RCSID("$Id: msqlmod.c,v 1.18 2001/12/07 23:23:55 nilsson Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -53,6 +53,50 @@ MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
 #endif /* INT_TYPE */
 
 #include <msql.h>
+
+/*! @module Msql
+ *! This is an interface to the mSQL database server.
+ *! This module may or may not be availible on your Pike, depending
+ *! whether the appropriate include and library files (msql.h and libmsql.a
+ *! respectively) could be found at compile-time. Note that you DO NOT
+ *! need to have a mSQL server running on your host to use this module:
+ *! you can connect to the database over a TCP/IP socket
+ *!
+ *! Please notice that unless you wish to specifically connect to a mSQL
+ *! server, you'd better use the @[Sql.sql] program instead. Using Sql.sql
+ *! ensures that your pike applications will run with any supported SQL
+ *! server without changing a single line of code.
+ *!
+ *! Also notice that some functions may be mSQL/2.0-specific, and thus missing
+ *! on hosts running mSQL/1.0.*
+ *!
+ *! @note
+ *!  The mSQL C API has some extermal dependencies.
+ *!  They take the form of certain environment variables
+ *!  which, if defined in the environment of the pike interpreter, influence
+ *!  the interface's behavior. Those are "MSQL_TCP_PORT" which forces the
+ *!  server to connect to a port other than the default, "MSQL_UNIX_PORT", same
+ *!  as above, only referring to the UNIX domain sockets. If you built your
+ *!  mSQL server with the default setttings, you shouldn't worry about these.
+ *!  The variable MINERVA_DEBUG can be used to debug the mSQL API (you
+ *!  shouldn't worry about this either). Refer to the mSQL documentation
+ *!  for further details.
+ *!
+ *!  Also note that THIS MODULE USES BLOCKING I/O to connect to the server.
+ *!  mSQL should be reasonably fast, but you might want to consider this
+ *!  particular aspect. It is thread-safe, and so it can be used
+ *!  in a multithread environment.
+ *!
+ *! @fixme
+ *! Although it seems that mSQL/2.0 has some support for server statistics,
+ *! it's really VERY VERY primitive, so it won't be added for now.
+ *!
+ *! @seealso
+ *!   @[Sql.sql]
+ */
+
+/*! @class msql
+ */
 
 static char * decode_msql_type (int msql_type)
 {
@@ -137,7 +181,11 @@ static void do_select_db(char * dbname)
 	return;
 }
 
-/* void shutdown() */
+/*! @decl void shutdown()
+ *!
+ *! This function shuts a SQL-server down.
+ */
+
 static void do_shutdown (INT32 args)
 /* Notice: the msqlShutdown() function is undocumented. I'll have to go
 	 through the source to find how to report errors.*/
@@ -164,7 +212,19 @@ static void do_shutdown (INT32 args)
 	THIS->db_selected=0;
 }
 
-/* void reload_acl() */
+/*! @decl void reload_acl()
+ *!
+ *! This function forces a server to reload its ACLs.
+ *!
+ *! @note
+ *!  This function is @b{not@} part of the standard interface, so it is NOT
+ *!  availible through the Sql.sql interface, but only through Sql.msql and
+ *!  Msql.msql programs
+ *!
+ *! @seealso
+ *!   @[create]
+ */
+
 static void do_reload_acl (INT32 args)
 /* Undocumented mSQL function. */
 {
@@ -186,8 +246,33 @@ static void do_reload_acl (INT32 args)
 	}
 }
 
-/* void create (void|string dbserver, void|string dbname,
-	void|string username, void|string passwd) */
+/*! @decl void create (void|string dbserver, void|string dbname,@
+ *!                    void|string username, void|string passwd)
+ *! With one argument, this function
+ *! tries to connect to the specified (use hostname or IP address) database
+ *! server. To connect to a server running on the local host via UNIX domain
+ *! sockets use @tt{"localhost"@}. To connect to the local host via TCP/IP sockets
+ *! you have to use the IP address @tt{"127.0.0.1"@}.
+ *! With two arguments it also selects a database to use on the server.
+ *! With no arguments it tries to connect to the server on localhost, using
+ *! UNIX sockets.
+ *!
+ *! @throws
+ *! You need to have a database selected before using the sql-object,
+ *! otherwise you'll get exceptions when you try to query it.
+ *! Also notice that this function @b{can@} raise exceptions if the db
+ *! server doesn't respond, if the database doesn't exist or is not accessible
+ *! by you.
+ *!
+ *! @note
+ *! You don't need bothering about syncronizing the connection to the database:
+ *! it is automatically closed (and the database is sync-ed) when the msql
+ *! object is destroyed.
+ *!
+ *! @seealso
+ *!   @[select_db]
+ */
+
 static void msql_mod_create (INT32 args)
 {
 	struct pike_string * arg1=NULL, *arg2=NULL;
@@ -253,7 +338,14 @@ static void msql_mod_create (INT32 args)
 	pop_n_elems(args);
 }
 
-/* array list_dbs(void|string wild) */
+/*! @decl array list_dbs(void|string wild)
+ *!
+ *! Returns an array containing the names of all databases availible on
+ *! the system. Will throw an exception if there is no server connected.
+ *! If an argument is specified, it will return only those databases
+ *! whose name matches the given glob.
+ */
+
 static void do_list_dbs (INT32 args)
 {
 	m_result * result;
@@ -295,7 +387,15 @@ static void do_list_dbs (INT32 args)
 	return;
 }
 
-/* array list_tables(void|string wild) */
+/*! @decl array list_tables(void|string wild)
+ *!
+ *! Returns an array containing the names of all the tables in the currently
+ *! selected database. Will throw an exception if we aren't connected to
+ *! a database.
+ *! If an argument is specified, it will return only those tables
+ *! whose name matches the given glob.
+ */
+
 static void do_list_tables (INT32 args)
 	/* ARGH! There's much code duplication here... but the subtle differences
 	 * between the various functions make it impervious to try to generalize..*/
@@ -340,7 +440,22 @@ static void do_list_tables (INT32 args)
 	return;
 }
 
-/* void select_db(string dbname) */
+/*! @decl void select_db(string dbname)
+ *!
+ *! Before querying a database you have to select it. This can be accomplished
+ *! in two ways: the first is calling the @[create] function with two arguments,
+ *! another is calling it with one or no argument and then calling @[select_db].
+ *! You can also use this function to change the database you're querying,
+ *! as long as it is on the same server you are connected to.
+ *!
+ *! @throws
+ *! This function CAN raise exceptions in case something goes wrong
+ *! (for example: unexistant database, insufficient permissions, whatever).
+ *!
+ *! @seealso
+ *!  @[create], @[error]
+ */
+
 static void select_db(INT32 args)
 {
 	struct pike_string * arg;
@@ -354,7 +469,40 @@ static void select_db(INT32 args)
 	pop_n_elems(args);
 }
 
-/* array(mapping(string:mixed)) query (string sqlquery) */
+/*! @decl array(mapping(string:mixed)) query (string sqlquery)
+ *!
+ *! This is all you need to query the database. It takes as argument an SQL
+ *! query string (i.e.: "SELECT foo,bar FROM baz WHERE name like '%kinkie%'"
+ *! or "INSERT INTO baz VALUES ('kinkie','made','this')")
+ *! and returns a data structure containing the returned values.
+ *! The structure is an array (one entry for each returned row) of mappings
+ *! which have the column name as index and the column contents as data.
+ *! So to access a result from the first example you would have to do
+ *! "results[0]->foo".
+ *!
+ *! A query which returns no data results in an empty array (and NOT in a 0).
+ *! Also notice that when there is a column name clash (that is: when you
+ *! join two or more tables which have columns with the same name), the
+ *! clashing columns are renamed to <tablename>+"."+<column name>.
+ *! To access those you'll have to use the indexing operator '[]
+ *! (i.e.: results[0]["foo.bar"]).
+ *!
+ *! @throws
+ *! Errors (both from the interface and the SQL server) are reported via
+ *! exceptions, and you definitely want to catch them. Error messages are
+ *! not particularly verbose, since they account only for errors inside the
+ *! driver. To get server-related error messages, you have to use the
+ *! @[error] function.
+ *!
+ *! @note
+ *! Note that if the query is NOT a of SELECT type, but UPDATE or
+ *! MODIFY, the returned value is an empty array.
+ *! @b{This is not an error@}. Errors are reported @b{only@} via exceptions.
+ *!
+ *! @seealso
+ *!   @[error]
+ */
+
 static void do_query (INT32 args)
 {
 	int status, num_fields,num_rows,j,k,tmp_socket,*duplicate_names_map;
@@ -478,7 +626,15 @@ static void do_query (INT32 args)
 	msqlFreeResult(result);
 }
 
-/* string server_info() */
+/*! @decl string server_info()
+ *!
+ *! This function returns a string describing the server we are talking
+ *! to. It has the form "servername/serverversion" (like the HTTP protocol
+ *! description) and is most useful in conjunction with the generic SQL-server
+ *! module.
+ *!
+ */
+
 static void do_info (INT32 args)
 {
 	char * info;
@@ -498,7 +654,12 @@ static void do_info (INT32 args)
 	return;
 }
 
-/* string host_info() */
+/*! @decl string host_info()
+ *!
+ *! This function returns a string describing what host are we talking to,
+ *! and how (TCP/IP or UNIX sockets).
+ */
+
 static void do_host_info (INT32 args)
 {
 	check_all_args("Msql->host_info",args,0);
@@ -511,7 +672,17 @@ static void do_host_info (INT32 args)
 	return;
 }
 
-/* string Pike_error() */
+/*! @decl string error()
+ *!
+ *! This function returns the textual description of the last server-related
+ *! error. Returns 0 if no error has occurred yet. It is not cleared upon
+ *! reading (can be invoked multiple times, will return the same result
+ *! until a new error occurs).
+ *!
+ *! @seealso
+ *!   @[query]
+ */
+
 static void do_error (INT32 args)
 {
 	check_all_args("Msql->error",args,0);
@@ -523,7 +694,15 @@ static void do_error (INT32 args)
 	return;
 }
 
-/* void create_db (string dbname) */
+/*! @decl void create_db(string dbname)
+ *!
+ *! This function creates a new database with the given name (assuming we
+ *! have enough permissions to do this).
+ *!
+ *! @seealso
+ *!   @[drop_db]
+ */
+
 static void do_create_db (INT32 args)
 {
 	int dbresult;
@@ -548,7 +727,15 @@ static void do_create_db (INT32 args)
 	pop_n_elems(args);
 }
 
-/* void drop_db (string dbname) */
+/*! @decl void drop_db(string dbname)
+ *!
+ *! This function destroys a database and all the data it contains (assuming
+ *! we have enough permissions to do so). USE WITH CAUTION!
+ *!
+ *! @seealso
+ *!   @[create_db]
+ */
+
 static void do_drop_db (INT32 args)
 {
 	int dbresult;
@@ -574,7 +761,38 @@ static void do_drop_db (INT32 args)
 	return;
 }
 
-/* array(mapping(string:mixed)) list_fields (string table) */
+/*! @decl mapping(string:mapping(string:mixed)) list_fields(string table, void|string glob)
+ *!
+ *! Returns a mapping describing the fields of a table in the database.
+ *! The returned value is a mapping, indexed on the column name,
+ *! of mappings.The glob argument, if present, filters out the fields
+ *! not matching the glob. These contain currently the fields:
+ *!
+ *! @mapping
+ *!   @member string "type"
+ *!      Describes the field's mSQL data type ("char","integer",...)
+ *!   @member int "length"
+ *!      It describes the field's length. It is only interesting for
+ *!      char() fields, in fact.  Also
+ *!      notice that the strings returned by msql->query() have the correct length.
+ *!      This field only specifies the _maximum_ length a "char()" field can have.
+ *!   @member string "table"
+ *!      The table this field is in. Added only for interface compliancy.
+ *!   @member multiset(string) "flags"
+ *!      It's a multiset containing textual
+ *!      descriptions of the server's flags associated with the current field.
+ *!      Currently it can be empty, or contain "unique" or "not null".
+ *! @endmapping
+ *!
+ *! @note
+ *!   The version of this function in the Msql.msql() program is <b>not</b>
+ *!   sql-interface compliant (this is the main reason why using that program
+ *!   directly is deprecated). Use @[Sql.sql] instead.
+ *!
+ *! @seealso
+ *!   @[query]
+ */
+
 static void do_list_fields (INT32 args)
 {
 	m_result * result;
@@ -650,7 +868,22 @@ static void do_list_fields (INT32 args)
 }
 
 #ifdef MSQL_VERSION_2
-/* int affected_rows() */
+
+/*! @decl int affected_rows()
+ *!
+ *! This function returns how many rows in the database were affected by
+ *! our last SQL query.
+ *!
+ *! @note
+ *!  This function is availible only if you're using mSQL version 2
+ *!  or later. (That means: if the includes and library of version 2 of mSQL
+ *!  were availible when the module was compiled).
+ *!
+ *!  This function is @b{not@} part of the standard interface, so it is @b{not@}
+ *!  availible through the @[Sql.sql] interface, but only through @[Sql.msql] and
+ *!  @[Msql.msql] programs
+ */
+
 static void do_affected_rows (INT32 args)
 {
 	check_all_args("Msql->affected_rows",args,0);
@@ -659,7 +892,24 @@ static void do_affected_rows (INT32 args)
 	return;
 }
 
-/* array list_index(string tablename, string indexname) */
+/*! @decl array list_index(string tablename, string indexname)
+ *!
+ *! This function returns an array describing the index structure for the
+ *! given table and index name, as defined by the non-standard SQL query
+ *! 'create index' (see the mSQL documentation for further informations).
+ *! More than one index can be created for a table. There's currently NO way
+ *! to have a listing of the indexes defined for a table (blame it on
+ *! the mSQL API).
+ *!
+ *! @note
+ *!  This function is availible if you're using mSQL version 2
+ *!  or later.
+ *!
+ *!  This function is @b{not@} part of the standard interface, so it is @b{not@}
+ *!  availible through the @[Sql.sql] interface, but only through @[Sql.msql] and
+ *!  @[Msql.msql] programs.
+ */
+
 static void do_list_index (INT32 args)
 {
 	char * arg1, *arg2;
@@ -694,6 +944,18 @@ static void do_list_index (INT32 args)
 	return;
 }
 #endif
+
+/*! @endclass
+ */
+
+/*! @decl constant version
+ *!
+ *! Should you need to report a bug to the author, please submit along with
+ *! the report the driver version number, as returned by this call.
+ */
+
+/*! @endmodule
+ */
 
 void pike_module_init(void)
 {
