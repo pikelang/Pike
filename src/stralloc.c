@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.34 1998/04/20 18:53:23 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.35 1998/04/24 00:09:35 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -272,6 +272,9 @@ void unlink_pike_string(struct pike_string *s)
   h=StrHash(s->str,s->len);
   propagate_shared_string(s,h);
   base_table[h]=s->next;
+#ifdef DEBUG
+  s->next=(struct pike_string *)-1;
+#endif
   num_strings--;
 }
 
@@ -286,10 +289,6 @@ void really_free_string(struct pike_string *s)
 
     if(((long)s->next) & 1)
       fatal("Freeing shared string again, memory corrupt or other bug!\n");
-      
-    unlink_pike_string(s);
-    s->next=(struct pike_string *)-1;
-    return;
   }
 #endif
   unlink_pike_string(s);
