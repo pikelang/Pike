@@ -7,7 +7,7 @@
  */
 
 #ifndef	lint
-static char desTest_cRcs[] = "$Id: desTest.c,v 1.2 1998/01/21 19:47:03 hubbe Exp $";
+static char desTest_cRcs[] = "$Id: desTest.c,v 1.3 2002/04/30 21:59:57 mast Exp $";
 #endif
 
 #include	"des.h"
@@ -18,7 +18,7 @@ static char desTest_cRcs[] = "$Id: desTest.c,v 1.2 1998/01/21 19:47:03 hubbe Exp
 #ifndef __NT__
 #include	<sys/time.h>
 #include	<sys/resource.h>
-extern getrusage();
+extern int getrusage();
 static struct rusage usage;
 #define	now(w)	(						\
 		(void)getrusage(RUSAGE_SELF, &usage),		\
@@ -29,6 +29,8 @@ static struct rusage usage;
 #include       <windows.h>
 #define now(w) 0
 #endif
+
+#define byte unsigned char
 
 /* test data
  * the tests (key0-3, text0-3) are cribbed from code which is (c) 1988 MIT
