@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.165 2000/02/07 23:49:52 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.166 2000/03/07 21:23:13 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -788,9 +788,10 @@ static void f_signal(int args)
 #endif
     }
   }
+  assign_svalue(sp-args,signal_callbacks+signum);
   assign_svalue(signal_callbacks + signum, sp+1-args);
   my_signal(signum, func);
-  pop_n_elems(args);
+  pop_n_elems(args-1);
 }
 
 void set_default_signal_handler(int signum, void (*func)(INT32))
@@ -3310,7 +3311,7 @@ void init_signals(void)
            OPT_SIDE_EFFECT);
   
 /* function(int,mixed|void:void) */
-  ADD_EFUN("signal",f_signal,tFunc(tInt tOr(tMix,tVoid),tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("signal",f_signal,tFunc(tInt tOr(tMix,tVoid),tMix),OPT_SIDE_EFFECT);
 #ifdef HAVE_KILL
   
 /* function(int|object,int:int) */
