@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.66 1999/10/14 21:37:30 grubba Exp $
+// $Id: module.pmod,v 1.67 1999/10/15 16:24:44 grubba Exp $
 
 import String;
 
@@ -771,7 +771,7 @@ void async_cp(string from, string to,
     call_out(cb, 0, 0, @args);
     return;
   }
-  sendfile(0, from_file, 0, -1, 0, to, call_cp_cb, cb, @args);
+  sendfile(0, from_file, 0, -1, 0, to_file, call_cp_cb, cb, @args);
 }
 
 /*
