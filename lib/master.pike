@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.54 1997/10/22 02:36:15 hubbe Exp $
+/* $Id: master.pike,v 1.55 1997/11/10 16:37:53 noring Exp $
  *
  * Master-file for Pike.
  */
@@ -539,7 +539,7 @@ void _main(string *argv, string *env)
       if(master_file_stat("/usr/local/bin/hilfe"))
 	argv[0]="/usr/local/bin/hilfe";
       else if(master_file_stat("../bin/hilfe"))
-	argv[0]="/usr/local/bin/hilfe";
+	argv[0]="../bin/hilfe";
       else
       {
 	werror("Couldn't find hilfe.\n");
