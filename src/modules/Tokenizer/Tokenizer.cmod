@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.17 2003/12/28 15:51:22 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.18 2004/03/25 15:34:20 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -103,18 +103,22 @@ PIKECLASS compiler
       args = 4;
     }
     switch(severity) {
-#define SL_CASE(SYMBOL)					\
-    case PIKE_CONCAT(SL_, SYMBOL):			\
-      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,	\
-			    #SYMBOL ":%O:%O:%O\n");	\
+    case SL_NOTICE:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "NOTICE:%O:%O:%O\n");
       break
-
-      SL_CASE(NOTICE);
-      SL_CASE(WARNING);
-      SL_CASE(ERROR);
-      SL_CASE(FATAL);
-
-#undef SL_CASE
+    case SL_WARNING:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "WARNING:%O:%O:%O\n");
+      break
+    case SL_ERROR:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "ERROR:%O:%O:%O\n");
+      break
+    case SL_FATAL:
+      REF_MAKE_CONST_STRING(Pike_sp[-4].u.string,
+			    "FATAL:%O:%O:%O\n");
+      break
 
     default:
       Pike_error("Unknown severity level: %"PRINTPIKEINT"d\n", severity);
@@ -254,8 +258,12 @@ PIKECLASS compiler
      *!   Either get a single @[property] from @[context],
      *!   or return the entire mapping @[context].
      *!
-     *!   Equvivalent to @code{@[context][@[property]]@}, or
-     *!   @code{@[context]@}.
+     *!   Equvivalent to:
+     *!   @code
+     *!     @[context][@[property]]
+     *!       // or
+     *!     @[context]
+     *!   @endcode
      *!
      *!   Provided to simplify C code.
      */
@@ -756,7 +764,7 @@ PIKECLASS Token
 /*! @endclass
  */
 
-/* !class IdentifierToken
+/*! @class IdentifierToken
  */
 PIKECLASS IdentifierToken
 {
@@ -1510,7 +1518,7 @@ PIKECLASS TokenizingCompiler
   /*! @endclass
    */
 }
-/* @endclass
+/*! @endclass
  */
 
 #if 0
