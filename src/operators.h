@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: operators.h,v 1.11 2002/05/31 22:41:25 nilsson Exp $
+ * $Id: operators.h,v 1.12 2002/06/25 18:03:21 neotron Exp $
  */
 #ifndef OPERATORS_H
 #define OPERATORS_H
@@ -55,7 +55,9 @@ PMOD_EXPORT void f_compl(INT32 args);
 PMOD_EXPORT void o_negate(void);
 PMOD_EXPORT void o_range(void);
 PMOD_EXPORT void f_index(INT32 args);
+PMOD_EXPORT void f_index_assign(INT32 args);
 PMOD_EXPORT void f_arrow(INT32 args);
+PMOD_EXPORT void f_arrow_assign(INT32 args);
 PMOD_EXPORT void f_sizeof(INT32 args);
 void init_operators(void);
 void exit_operators(void);
