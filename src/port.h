@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.26 2000/04/01 11:50:58 grubba Exp $
+ * $Id: port.h,v 1.27 2000/06/08 22:06:48 hubbe Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -60,17 +60,8 @@ time_t TIME(time_t *);
 #define RINT rint
 #endif
 
-#if defined(HAVE_STRTOL) && defined(HAVE_WORKING_STRTOL)
-#  define STRTOL strtol
-#else
 long STRTOL(char *str,char **ptr,int base);
-#endif
-
-#ifndef HAVE_STRTOD
 double STRTOD(char * nptr, char **endptr);
-#else
-#  define STRTOD strtod
-#endif
 
 #ifndef HAVE_STRCSPN
 int STRCSPN(const char *s,const char * set);
