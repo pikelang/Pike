@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.320 2000/08/16 22:03:41 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.321 2000/08/18 19:36:30 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1076,6 +1076,7 @@ test_encode((["en":1,"sv":2,"de":3]))
 test_encode(({"s",1,0,-3.4}))
 test_encode((<"s",1,0,-3.4>))
 test_encode((["s":1,1:2,0:3,-3.4:4]))
+test_encode((<1, 2, 2, 3, 3, 3>))
 test_eq(decode_value("\210\201"),1)
 test_eq(decode_value("\210\011\001"),-1)
 test_eq(decode_value("\206\200"),""))
