@@ -304,8 +304,9 @@ array(string) get_args(array(string) argv, void|int posix_me_harder,
 	exit(1);
       }
     }else{
-      if(posix_me_harder || getenv("POSIX_ME_HARDER"))
-	break;
+      if(posix_me_harder != -1)
+	if(posix_me_harder || getenv("POSIX_ME_HARDER"))
+	  break;
     }
   }
 
