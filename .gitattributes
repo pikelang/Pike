@@ -98,6 +98,7 @@ testfont binary
 /lib/modules/Debug.pmod/Subject.pike foreign_ident
 /lib/modules/Debug.pmod/module.pmod foreign_ident
 /lib/modules/Debug.pmod/werror.pmod foreign_ident
+/lib/modules/Error.pmod foreign_ident
 /lib/modules/Filesystem.pmod/Tar.pmod foreign_ident
 /lib/modules/Float.pmod foreign_ident
 /lib/modules/GLU.pmod foreign_ident
