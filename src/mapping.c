@@ -404,7 +404,7 @@ void check_mapping_for_destruct(struct mapping *m)
     m->val_types |= BIT_INT;
     for(e=0;e<m->hashsize;e++)
     {
-      for(prev= m->hash + e;k=*prev;prev=&k->next)
+      for(prev= m->hash + e;k=*prev;)
       {
 	check_destructed(& k->val);
 	
@@ -419,6 +419,7 @@ void check_mapping_for_destruct(struct mapping *m)
 	}else{
 	  val_types |= 1 << k->val.type;
 	  ind_types |= 1 << k->ind.type;
+	  prev=&k->next;
 	}
       }
     }
