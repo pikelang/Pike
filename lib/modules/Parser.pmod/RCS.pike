@@ -1,6 +1,7 @@
 #pike __REAL_VERSION__
+inherit Parser._RCS;
 
-// $Id: RCS.pike,v 1.31 2004/01/11 00:49:26 nilsson Exp $
+// $Id: RCS.pike,v 1.32 2004/02/23 17:40:19 per Exp $
 
 //! A RCS file parser that eats a RCS *,v file and presents nice pike
 //! data structures of its contents.
@@ -10,36 +11,6 @@
 #else
 #define DEBUG(X, Y ...)
 #endif
-
-// regexps based on rcsfile(5) after a really careful read of its poor grammar
-// (i e {idchar|num} and {idchar|digit} being unnecessarily bothersome synonyms
-//  to {idchar}, given consideration to notions on where whitespace is illegal)
-#define OPT(X)	"(" X "|)"
-#define ANY(X)	"(" X ")*"
-#define REST	"(.*)"
-#define WS	"[ \b-\r]*"
-#define SWS	"%*[ \b-\r]"
-#define STRING	WS "@(([^@]|@@)*)@" WS
-#define NUM	"([0-9.][0-9.]*)"
-#define DIGIT	"[0-9]"
-// Actually, $,. should be in idchar too, but cvs uses at least "." in IDs:
-#define IDCHAR	"[^:;@ \b-\r]"
-#define ID	OPT(NUM) IDCHAR IDCHAR "*"
-#define SYM	ANY(DIGIT) IDCHAR IDCHAR "*"
-#define ADMIN	"^" WS "head" WS OPT(NUM) ";" WS \
-		OPT("branch" WS OPT(NUM) ";" WS) \
-		"access" WS "((" ID WS ")*)" ";" WS \
-		"symbols" WS "(" ANY(SYM WS ":" WS NUM WS) ");" WS \
-		"locks" WS "(" ANY(ID WS ":" WS NUM WS) ");" \
-			OPT(WS "strict" WS ";") WS \
-		OPT("comment" WS OPT(STRING) ";" WS) \
-		OPT("expand" WS OPT(STRING) ";" WS)
-#define DELTA	"^" NUM WS \
-		"date" WS NUM ";" WS \
-		"author" WS "(" ID ")" WS ";" WS \
-		"state"	WS OPT(ID) ";" WS \
-		"branches" WS "((" NUM WS ")*)" WS ";" WS \
-		"next" WS OPT(NUM) ";" WS
 
 //! Version number of the head version of the file
 string head;
@@ -89,72 +60,18 @@ mapping(string:Revision) revisions;
 //! (rcsfile(5), of course, fails to state such irrelevant information).
 array(mapping) trunk = ({});
 
-static Regexp admin = Regexp(ADMIN REST);
-static Regexp delta = Regexp(DELTA REST);
-
-static array(string) parse_array(string data)
+static mapping parse_mapping(array data)
 {
-  return Array.flatten(array_sscanf(data, "%{%[^ :\b-\r]%*[ :\b-\r]%}"));
+     return (mapping)(data/2);
 }
 
-static mapping parse_mapping(string data)
+static string parse_string(string data, string|void leader)
 {
-  return (mapping)(parse_array(data) / 2);
-}
-
-static array(string) parse_string(string data, string|void leader)
-{
-  string segment, original = data;
-  String.Buffer result = String.Buffer();
-  function append = result->add;
-  if(leader)
-    sscanf(data, SWS + (leader||"") + SWS "%s", data);
-  if(2 != sscanf(data, "@%s@%s", segment, data))
-    return ({ 0, original }); // "no leading @" or "@not terminated"
-  if(!has_prefix(data, "@"))
-    return ({ segment, data });
-  append(segment);
-  append("@");
-  data = data[1..];
-  int started_parsing;
-  while(sscanf(data, "%s@\n%s", segment, data))
-  {
-    started_parsing = 1;
-    append(replace(segment, "@@", "@"));
-    if(has_suffix(segment, "@"))
-    {
-      int trailing = sizeof(array_sscanf(reverse(segment), "%[@]")[0]);
-      if(trailing & 1) // e g "...a line ends in a @@\nbut the string continues"
-      {
-	sscanf(data, "%[^@]%s", segment, data);
-	append("\n");
-	append(segment);
-	continue;
-      }
-    }
-    return ({ (string)result, data });
-  }
-  if(started_parsing)
-  {
-    if(!sscanf(data, "%s@%s", segment, data))
-      return ({ 0, original }); // "@one or more @@\n:s but not @@ terminated"
-    append(segment);
-    return ({ (string)result, data });
-  }
-  // perhaps the non-mandatory trailing newline in the file was somehow lost
-  sscanf(data, "%s@%s", segment, data);
-  append(segment);
-  while(sscanf(data, "@%s@%s", segment, data))
-  {
-    append("@");
-    append(segment);
-  }
-  if(has_prefix(data, "@"))
-    return ({ 0, original }); // "@not @@ terminated"
-  return ({ result->get(), data });
+    return replace( data, "@@", "@" );
 }
 
 function symbol_is_branch = Regexp("\\.0\\.[0-9]*[02468]$")->match;
+function symbol_is_revision = Regexp("^[0-9.]*$")->match;
 
 string rcs_file_name;
 
@@ -185,53 +102,78 @@ void create(string|void file_name, string|int(0..0)|void file_contents)
     if(!file_contents)
       error("Couldn't read %s\n", file_name);
   }
-  parse(file_contents);
+  parse(tokenize(file_contents));
 }
 
 //! Lower-level API function for parsing only the admin section (the
 //! initial chunk of an RCS file, see manpage rcsfile(5)) of an RCS
 //! file. After running @[parse_admin_section], the RCS object will be
 //! initialized with the values for @[head], @[branch], @[access],
-//! @[branches], @[tags], @[locks], @[strict_locks], @[comment] and
+//! @[branches], @[tokenize], @[tags], @[locks], @[strict_locks], @[comment] and
 //! @[expand].
 //! @param raw
-//!   The unprocessed RCS file.
+//!   The tokenized RCS file, or the raw RCS-file data.
 //! @returns
 //!   The rest of the RCS file, admin section removed.
 //! @seealso
 //!   @[parse_delta_sections], @[parse_deltatext_sections], @[parse], @[create]
 //! @fixme
 //!   Does not handle rcsfile(5) newphrase skipping.
-string parse_admin_section(string raw)
+array parse_admin_section(string|array raw)
 {
-  string broken_regexp_kludge = ""; // these lines are here because Regexp
-  sscanf(raw, "%[^\0]%s", raw, broken_regexp_kludge); // truncates at "\0"
-
-  array got = admin->split(raw);
-  head = got[0];
-  branch = got[3];
-  if(sizeof(got[5]))
-    access = parse_array(got[5]);
-  tags = ([]); branches = ([]);
-  foreach((array)parse_mapping(got[9]||""), [string name, string revision])
-    if(revision == "1.1.1")
-      branches[revision] = name; // the vendor branch
-    else if(symbol_is_branch(revision))
-    {
-      array(string) nums = revision / "."; // "a.b.c.d.0.e"
-      revision = nums[..sizeof(nums)-3] * "." + "." + nums[-1]; // "a.b.c.d.e"
-      branches[revision] = name;
-    }
-    else
-      tags[name] = revision;
-  locks = parse_mapping(got[13]);   // mapping(id:num)
-  strict_locks = has_value(got[18], "strict");
-  if(got[21])
-    comment = replace(got[21], "@@", "@");
-  if(got[25])
-    expand = replace(got[25], "@@", "@");
-  // FIXME: If this stops working, introduce newphrase skipping here
-  return got[-1] + broken_regexp_kludge;
+    if( stringp( raw ) )
+	raw = tokenize(raw);
+  int i;
+  branches = ([]);
+loop:
+  for( i=0; i<sizeof(raw); i++ )
+  {
+      switch( raw[i][0] )
+      {
+	  case "head":
+	      head = raw[i][1];
+	      break;
+	  case "access":
+	      access = raw[i][1..];
+	      break;
+	  case "branch":
+	      branch = raw[i][1];
+	      break;
+	  case "symbols":
+	      tags = parse_mapping( raw[i][1..] );
+	      foreach(tags; string name; string revision ) 
+	      {
+		  if(revision == "1.1.1")
+		      branches[revision] = name; // the vendor branch
+		  else if(symbol_is_branch(revision))
+		  {
+		      array(string) nums = revision / "."; // "a.b.c.d.0.e"
+		      revision = nums[..sizeof(nums)-3] * "." + "." + nums[-1]; // "a.b.c.d.e"
+		      branches[revision] = name;
+		  }
+		  else
+		      tags[name] = revision;
+	      }
+	      break;
+	  case "locks":
+	      locks = parse_mapping( raw[i][1..] );
+	      break;
+	  case "strict":
+	      strict_locks=1;
+	      break;
+	  case "expand":
+	      expand = parse_string( raw[i][1] );
+	      break;
+	  case "comment": // EOL.
+	      comment = parse_string( raw[i][1] );
+	      break;
+	  default:
+	      if( symbol_is_revision( raw[i][0] ) )
+		  break loop;
+	      break;
+      }
+  }
+  return raw[i..];
 }
 
 //! Lower-level API function for parsing only the delta sections (the
@@ -244,51 +186,67 @@ string parse_admin_section(string raw)
 //! @[Revision->state], @[Revision->branches], @[Revision->rcs_next],
 //! @[Revision->ancestor] and @[Revision->next].
 //! @param raw
-//!   The unprocessed RCS file, with admin section removed. (See
+//!   The tokenized RCS file, with admin section removed. (See
 //!   @[parse_admin_section].)
 //! @returns
 //!   The rest of the RCS file, delta sections removed.
 //! @seealso
-//!   @[parse_admin_section], @[parse_deltatext_sections], @[parse], @[create]
+//!   @[parse_admin_section], @[tokenize], @[parse_deltatext_sections], @[parse], @[create]
 //! @fixme
 //!   Does not handle rcsfile(5) newphrase skipping.
-string parse_delta_sections(string raw)
+array parse_delta_sections(array raw)
 {
-  string broken_regexp_kludge = ""; // these lines are here because Regexp
-  sscanf(raw, "%[^\0]%s", raw, broken_regexp_kludge); // truncates at "\0"
-
   array got;
   string revision, ptr;
   revisions = ([]);
-  while(got = delta->split(raw))
+  
+  int i;
+  Revision R;
+loop:
+  for( i = 0; i<sizeof(raw); i++ )
   {
-    Revision R = Revision();
-    R->revision = revision = got[0];
-    if(String.count(revision, ".") == 1)
-      trunk += ({ R });
-    else
-    {
-      sscanf(reverse(revision), "%*d.%s", string branch);
-      R->branch = branches[reverse(branch)];
-    }
+      switch( raw[i][0] )
+      {
+	  case "state":
+	      if( sizeof( raw[i] ) > 1 )
+		  R->state = raw[i][1];
+	      break;
+	  case "author":
+	      if( sizeof( raw[i] ) > 1 )
+		  R->author = raw[i][1];
+	      break;
+	  case "branches":
+	      R->branches = raw[i][1..];
+	      break;
+	  case "next":
+	      if( sizeof( raw[i] ) > 1 )
+		  R->rcs_next = raw[i][1];
+	      break;
+	  case "desc":
+	      // finito
+	      break loop;
 
-    string date = got[1];
-    if(!(int)date) // RCS dates are "YY.*" for 1900<=year<2000 - compensate for
-      date = "1900" + date[search(date, ".")..]; // Calendar.parse(%y, 0)==2000
-    R->time = Calendar.ISO.parse("%y.%M.%D.%h.%m.%s %z", date + " UTC");
-
-    R->author = got[2];
-    R->state = got[5];
-    if(got[8])
-      R->branches = parse_array(got[8]);
-    if(sizeof(got[11]))
-      R->rcs_next = got[11];
-    revisions[R->revision] = R;
-    DEBUG("revision: %O\n\n", R);
-    raw = got[-1];
+	  default:
+	      if( raw[i][1] == "date" )
+	      {
+		  R = Revision();
+		  R->revision = revision = raw[i][0];
+		  if( String.count( revision, "." ) == 1)
+		      trunk += ({ R });
+		  else
+		  {
+		      sscanf(reverse(revision), "%*d.%s", string branch);
+		      R->branch = branches[reverse(branch)];
+		  }
+		  string date = raw[i][2];
+		  if(!(int)date) // RCS dates are "YY.*" for 1900<=year<2000 - compensate for
+		      date = "1900" + date[search(date, ".")..]; // Calendar.parse(%y, 0)==2000
+		  R->time = Calendar.ISO.parse("%y.%M.%D.%h.%m.%s %z", date + " UTC");
+		  revisions[R->revision] = R;
+	      }
+	      break;
+      }
   }
-  // FIXME: If this stops working, introduce newphrase skipping here
-  [description, raw] = parse_string(raw + broken_regexp_kludge, "desc");
 
   // finally, set all next/ancestor pointers:
   foreach(values(revisions), Revision R)
@@ -309,16 +267,24 @@ string parse_delta_sections(string raw)
     foreach(R->branches, string branch_point)
       revisions[branch_point]->ancestor = R->revision;
   }
-  return raw;
+  return raw[i][2..];
 }
+
+//! @decl array(array(string)) tokenize(string data)
+//! Tokenize a RCS file into tokens suitable as argument to the various parse functions
+//! @param data
+//!    The RCS file data
+//! @returns
+//!    An array with arrays with tokens
+
 
 //! Lower-level API function for parsing only the deltatext sections
 //! (the final and typically largest chunk of an RCS file, see manpage
 //! rcsfile(5)) of an RCS file. After a @[parse_deltatext_sections]
 //! run, the RCS object will be fully populated.
 //! @param raw
-//!   The unprocessed RCS file, with admin and delta sections removed.
-//!   (See @[parse_admin_section] and @[parse_delta_sections].)
+//!   The tokenized RCS file, with admin and delta sections removed.
+//!   (See @[parse_admin_section], @[tokenize] and @[parse_delta_sections].)
 //! @param progress_callback
 //!   This optional callback is invoked with the revision of the
 //!   deltatext about to be parsed (useful for progress indicators).
@@ -328,7 +294,7 @@ string parse_delta_sections(string raw)
 //!   @[parse_admin_section], @[parse_delta_sections], @[parse], @[create]
 //! @fixme
 //!   Does not handle rcsfile(5) newphrase skipping.
-void parse_deltatext_sections(string raw,
+void parse_deltatext_sections(array raw,
 			      void|function(string:void) progress_callback,
 			      array|void callback_args)
 {
@@ -348,7 +314,8 @@ void parse_deltatext_sections(string raw,
 class DeltatextIterator
 {
   static int finished, this_no;
-  static string raw, this_rev;
+  static array raw;
+  static string this_rev;
 
   static function(string, mixed ...:void) callback;
   static array callback_args;
@@ -362,7 +329,7 @@ class DeltatextIterator
   //!   Optional extra trailing arguments to be sent to @[progress_callback]
   //! @seealso
   //! the @tt{rcsfile(5)@} manpage outlines the sections of an RCS file
-  static void create(string deltatext_section,
+  static void create(array deltatext_section,
 		     void|function(string, mixed ...:void) progress_callback,
 		     void|array(mixed) progress_callback_args)
   {
@@ -435,7 +402,7 @@ class DeltatextIterator
     return 0;
   }
 
-  //! Chops off the first deltatext section from the string @[raw] and
+  //! Chops off the first deltatext section from the token array @[raw] and
   //! returns the rest of the string, or the value @expr{0@} (zero) if
   //! we had already visited the final deltatext entry. The deltatext's
   //! data is stored destructively in the appropriate entry of the
@@ -448,71 +415,66 @@ class DeltatextIterator
   //!   if the rcs file is truncated, this method writes a descriptive
   //!   error to stderr and then returns 0 - some nicer error handling
   //!   wouldn't hurt
-  static string parse_deltatext_section(string raw)
+  static array parse_deltatext_section(array raw)
   {
-    if(sscanf(raw, SWS "%[0-9.]" SWS "%s", this_rev, raw) < 4
-    || !sizeof(this_rev))
-      return 0; // we've already visited the final deltatext entry
+      if( !sizeof(raw) || !symbol_is_revision( raw[0] ) )
+	  return 0;
 
-    if(callback)
-      if(callback_args)
-	callback(this_rev, @callback_args);
+      this_rev = raw[0];
+
+      if(callback)
+	  if(callback_args)
+	      callback(this_rev, @callback_args);
+	  else
+	      callback(this_rev);
+
+      Revision current = revisions[this_rev];
+      if( raw[1] != "log" )  return 0;
+      if( raw[3] != "text" ) return 0;
+      current->log = parse_string(raw[2]);
+      current->rcs_text = parse_string(raw[4]);
+      if(this_rev == head)
+      {
+	  current->lines = String.count(current->rcs_text,"\n");
+	  current->text = current->rcs_text;
+      }
       else
-	callback(this_rev);
-
-    Revision current = revisions[this_rev];
-    [current->log, raw] = parse_string(raw, "log");
-    // FIXME: If this stops working, introduce newphrase skipping here
-    [current->rcs_text, raw] = parse_string(raw, "text");
-    if(!current->log || !current->rcs_text)
-    {
-      werror("RCS file %sbroken (truncated?) at rev %s.\n",
-	     (rcs_file_name ? rcs_file_name + " " : ""), this_rev);
-      return 0;
-    }
-
-    array(string) rows = current->rcs_text / "\n";
-    if(this_rev == head)
-    {
-      current->lines = sizeof(rows) - has_suffix(current->rcs_text, "\n");
-      current->text = current->rcs_text;
-    }
-    else
-    {
-      int added, removed, count;
-      string op;
-      for(int row=0; row<sizeof(rows); row++)
       {
-	DEBUG("%s:%O\n", this_rev, rows[row]);
-	if(sscanf(rows[row], "%[ad]%*d %d", op, count) < 2)
-	  break; // no rows at all, for instance
-	if(op == "d")
-	{
-	  removed += count;
-	  continue;
-	}
-	added += count;
-	row += count;
-      }
+	  int added, removed, count;
+	  string op;
+	  array(string) rows = current->rcs_text / "\n";
+	  for(int row=0; row<sizeof(rows); row++)
+	  {
+	      DEBUG("%s:%O\n", this_rev, rows[row]);
+	      if(sscanf(rows[row], "%[ad]%*d %d", op, count) < 2)
+		  break; // no rows at all, for instance
+	      if(op == "d")
+	      {
+		  removed += count;
+		  continue;
+	      }
+	      added += count;
+	      row += count;
+	  }
 
-      if(String.count(this_rev, ".") == 1)
-      {
-	DEBUG("current: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
-	      current->lines, current->ancestor, current->next);
-	Revision next = revisions[current->next];
-	current->lines = next->lines - removed + added;
-	current->added = current->lines; // so added files show their length
-	next->removed = added; // remember, the math is all
-	next->added = removed; // backwards on the trunk
+	  if(String.count(this_rev, ".") == 1)
+	  {
+	      DEBUG("current: %s %+d-%d l%d a%O n%O\n", this_rev, added, removed,
+		    current->lines, current->ancestor, current->next);
+	      Revision next = revisions[current->next];
+	      current->lines = next->lines - removed + added;
+	      current->added = current->lines; // so added files show their length
+	      next->removed = added; // remember, the math is all
+	      next->added = removed; // backwards on the trunk
+	  }
+	  else // current revision was on a branch:
+	  {
+	      current->lines = revisions[current->ancestor]->lines + added - removed;
+	      current->removed = removed;
+	      current->added = added;
+	  }
       }
-      else // current revision was on a branch:
-      {
-	current->lines = revisions[current->ancestor]->lines + added - removed;
-	current->removed = removed;
-	current->added = added;
-      }
-    }
-    return raw;
+      return raw[5..];
   }
 }
 
@@ -529,10 +491,14 @@ class DeltatextIterator
 //! @seealso
 //!   @[parse_admin_section], @[parse_delta_sections],
 //!   @[parse_deltatext_sections], @[create]
-this_program parse(string raw, void|function(string:void) progress_callback)
+this_program parse(array raw, void|function(string:void) progress_callback)
 {
-  parse_deltatext_sections(parse_delta_sections(parse_admin_section( raw )));
-  return this;
+    parse_deltatext_sections
+	(parse_delta_sections
+	 (parse_admin_section( raw,progress_callback ),
+	  progress_callback),
+	 progress_callback);
+    return this;
 }
 
 //! All data tied to a particular revision of the file.
