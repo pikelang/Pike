@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.767 2004/02/09 20:42:38 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.768 2004/02/26 16:23:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1180,6 +1180,18 @@ AC_ARG_WITH(dynamic_modules, MY_DESCR([--without-dynamic-modules],
 MY_AC_ARG_WITH(static_linking, MY_DESCR([--with-static-linking],
 					[link statically, if possible]),
 	       [with_static_linking=yes])
+AC_ARG_WITH(bundles,
+	    MY_DESCR([--without-bundles],
+		     [do not enable bundled libraries]))
+if test \! "$with_bundles" = "$no"; -a -d "$srcdir/bundles/."; then
+  # We have a bundle directory; enable them if needed.
+  pike_bundle_dir="$srcdir/bundles"
+  export pike_bundle_dir
+  if test -d bundles || mkdir bundles; then
+    LDFLAGS="$LDFLAGS -L`pwd`/bundles/lib"
+    CPPFLAGS="$CPPFLAGS -I`pwd`/bundles/include"
+  fi
+fi
 AC_ARG_WITH(site-prefixes,
 	    MY_DESCR([--with-site-prefixes],
 		     [list of prefixes to search for include, lib and bin dirs.]))
@@ -6849,6 +6861,47 @@ AC_OUTPUT(Makefile \
             echo foo >stamp-h
             chmod +x precompile.sh
           ])
+
+# Check if we have to enable some bundles
+if test "$pike_bundle_dir" = ""; then :; else
+  bundle_info="`find . -type f -name '*.bundle'`"
+  if test "$bundle_info" = ""; then :; else
+    # We have some bundles to enable.
+    bundles=`echo "$bundle_info" | sed -e 's/.*\///g' -e 's/\.bundle$//' | sort | uniq`
+    # FIXME: Intra-bundle dependencies?
+    for bundle in $bundles; do
+      AC_MSG_CHECKING(Enabling bundle $bundle.)
+      for dist_file in "$bundle_dir/$bundle"*.tar.gz no; do
+        if test -f "$dist_file"; then
+	  break
+	fi
+      done
+      AC_MSG_RESULT($dist_file)
+      if test "$dist_file" = "no"; then
+        PIKE_MSG_WARN([Bundle $bundle not found.
+Requested from:
+`echo "$bundle_info"| grep "$bundle.bundle"`])
+        bundle_info=`echo "$bundle_info" | grep -v "$bundle.bundle"`
+      else
+        # FIXME: Extract bundle
+        # FIXME: Configure bundle --prefix=`pwd`/bundles --static
+        # FIXME: Compile bundle
+        # FIXME: Install bundle
+      fi
+    done
+    # Clear the caches.
+    for varname in `cat $bundle_info`; do
+      unset $varname
+    fi
+    # Rerun configure
+    if "x$CONFIG_SHELL" = "x"; then
+      CONFIG_SHELL=/bin/sh
+    fi
+    echo $CONFIG_SHELL "$srcdir/configure" $ac_configure_args --without-bundles
+    eval exec $CONFIG_SHELL "$srcdir/configure" $ac_configure_args --without-bundles
+    exit 17
+  fi
+fi
 
 # NOTE: M4 uses [] as quotes.
 
