@@ -48,6 +48,18 @@ int test_master_year() {
   return 1;
 }
 
+int test_install_year() {
+  int y;
+  sscanf(Stdio.read_file("bin/install.pike"),
+	 "%*s 1994-%d IDA", y);
+  if(gmtime(time())->year+1900 != y) {
+    write("The year in the copyright message in install.pike\n"
+	  "needs an update.\n");
+    return 0;
+  }
+  return 1;
+}
+
 int test_charset_table(string t) {
   array names = ({});
   foreach( Stdio.read_file("src/modules/_Charset/"+t)/"\n", string line )
@@ -165,6 +177,7 @@ void main(int args) {
   test_copyright();
   test_copying();
   test_master_year();
+  test_install_year();
   test_charset_table("tables.c");
   test_charset_table("misc.c");
   test_unicode();
