@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.42 2004/05/01 13:22:01 mast Exp $
+# $Id: run_autoconfig,v 1.43 2004/05/05 13:16:29 vida Exp $
 #
 # Bootstrap script
 
@@ -87,7 +87,7 @@ if [ "`echo \"$autoconf_version\"|awk -F. '{ print $1 }'`" -ne "2" -o \
     if [ "`echo \"$autoconf_version\"|awk -F. '{ print $2 }'`" -le "53" ]; then
       # autoconf 2.53 doesn't have --prepend-include.
       ac_args="-Wno-obsolete --include=$localdir"
-      ah_args="-Wno-obsolete --include=$localdir"
+      ah_args="--include=$localdir"
     else
       ac_args="-Wno-obsolete --prepend-include=$localdir"
       ah_args="-Wno-obsolete --prepend-include=$localdir"
