@@ -1372,7 +1372,7 @@ class cSecond
    string nice_print()
    {
       if (ls==CALUNKNOWN) make_local();
-      return sprintf("%d:%02d:%02d %s",ls/3600,ls/60%60,ls%60,tzname());
+      return sprintf("%d:%02d:%02d %s",ls/3600,ls/60%60,ls%60,tzname()||"?");
    }
 
    string format_nice()

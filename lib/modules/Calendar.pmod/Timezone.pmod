@@ -179,7 +179,6 @@ static Ruleset.Timezone timezone_select(Ruleset.Timezone try,
 
 static array timezone_collect(string|mapping|array tree)
 {
-   werror("bop\n");
    if (arrayp(tree)) return tree;
    else if (stringp(tree)) return ({tree});
    else return `+(@map(values(tree-({"test"})),timezone_collect));
@@ -237,17 +236,68 @@ class localtime
 // ----------------------------------------------------------------
 // magic timezones
 
-static private Ruleset.Timezone _make_new_timezone(string tz,float plusminus)
+class Timezone_Encapsule
+{
+   Ruleset.Timezone what;
+ 
+   constant is_timezone=1;
+   constant is_dst_timezone=1; // ask me
+  
+   static string extra_name;
+   static int extra_offset;
+   string name;
+
+   static void create(Ruleset.Timezone enc,string name,int off)
+   {
+      what=enc;
+      extra_name=name;
+      extra_offset=off;
+      name=enc->name+extra_name;
+   }
+
+   array(int) tz_ux(int unixtime)
+   {
+      array z=what->tz_ux(unixtime);
+      return ({z[0]+extra_offset,z[1]+extra_name});
+   }
+
+   array(int) tz_jd(int julian_day)
+   {
+      array z=what->tz_jd(julian_day);
+      return ({z[0]+extra_offset,z[1]+extra_name});
+   }
+
+   string _sprintf(int t) 
+   { 
+      return (t=='O')?sprintf("%O%s",what,extra_name):0; 
+   }
+
+   int raw_utc_offset() { return what->raw_utc_offset()+extra_offset; }
+}
+
+static private Ruleset.Timezone _make_new_timezone_i(string tz,int plusminus)
 {
    object(Ruleset.Timezone) z=`[](tz);
    if (!z) return ([])[0];
-   if (plusminus>14.0 || plusminus<-14.0)
+   return make_new_timezone(z,plusminus);
+}
+
+// internal, don't use this outside calendar module
+Ruleset.Timezone make_new_timezone(Ruleset.Timezone z,int plusminus)
+{
+   if (plusminus>14*3600 || plusminus<-14*3600)
       error("difference out of range -14..14 h\n");
-   if (plusminus==0.0)
+   if (plusminus==0)
       return z;
-   return 
-      object_program(z)(z->offset_to_utc-((int)(3600*plusminus)),
-			sprintf("%s%+g",z->name||"",plusminus));
+   string s;
+   if (plusminus%60) 
+      s=sprintf("%+d:%02d:%02d",plusminus/3600,plusminus/60%60,plusminus%60);
+   else if (plusminus/60%60) 
+      s=sprintf("%+d:%02d",plusminus/3600,plusminus/60%60);
+   else
+      s=sprintf("%+d",plusminus/3600);
+
+   return Timezone_Encapsule(z,s,plusminus);
 }
 
 static private constant _military_tz=
@@ -258,12 +308,30 @@ static private constant _military_tz=
    "H":"UTC+8", "I":"UTC+9", "K":"UTC+10", "L":"UTC+11", "M":"UTC+12",
    "J":"locale" ]);
 
-object runtime_timezone_compiler=0;
+static object runtime_timezone_compiler=0;
+
+// internal, don't use this outside calendar module
+int decode_timeskew(string w)
+{
+   float f;
+   int a,b,c;
+   string s="";
+   int neg=1;
+
+   if (sscanf(w,"-%s",w)) neg=-1;
+
+   if (sscanf(w,"%d:%d:%d",a,b,c)==3)
+      return neg*(a*3600+b*60+c);
+   else if (sscanf(w,"%d:%d",a,b,c)==2)
+      return neg*(a*3600+b*60);
+   sscanf(w,"%d%s",a,s);
+   if (s!="") { sscanf(w,"%f",f); if (f!=(float)a) return neg*(int)(f*3600); }
+   return neg*a*3600; // ignore litter
+}
 
 static private Ruleset.Timezone _magic_timezone(string tz)
 {
-   float d;
-   string z;
+   string z,w;
 
    if (!runtime_timezone_compiler)
       runtime_timezone_compiler=Runtime_timezone_compiler();
@@ -276,20 +344,24 @@ static private Ruleset.Timezone _magic_timezone(string tz)
 //     werror("%O\n",t2-t1);
    if (p) return p;
 
-   if (sscanf(tz,"%s+%f",z,d)==2 && z!="")
-      return _make_new_timezone(z,d);
-   if (sscanf(tz,"%s-%f",z,d)==2 && z!="")
-      return _make_new_timezone(z,-d);
+   if (sscanf(tz,"%s+%s",z,w)==2 && z!="")
+      return _make_new_timezone_i(z,decode_timeskew(w));
+   if (sscanf(tz,"%s-%s",z,w)==2 && z!="" && z!="+")
+      return _make_new_timezone_i(z,-decode_timeskew(w));
    if ((z=_military_tz[tz])) return `[](z);
 
-   if (sscanf(tz,"%[-+]%[0-9]",string a,string b)==2 &&
-       (<"-","+">)[a])
-      switch (strlen(b))
+   if (sscanf(tz,"%[-+]%[-+0-9]",string a,string b)==2)
+      if ((<"-","+">)[a])
       {
-	 case 2: return _magic_timezone("UTC"+a+b[..1]);
-	 case 4: return _magic_timezone("UTC"+a+b[..1]+":"+b[2..]);
-	 case 6: return _magic_timezone("UTC"+a+b[..1]+":"+b[2..3]+":"+b[4..]);
+	 switch (strlen(b))
+	 {
+	    case 2: return _magic_timezone("UTC"+a+b[..1]);
+	    case 4: return _magic_timezone("UTC"+a+b[..1]+":"+b[2..]);
+	    case 6: 
+	       return _magic_timezone("UTC"+a+b[..1]+":"+b[2..3]+":"+b[4..]);
+	 }
       }
+      else if (a=="+-") return _magic_timezone("-0"+b);
 
    return ::`[](replace(tz,"-/+"/1,"__p"/1));
 }
@@ -298,6 +370,9 @@ Ruleset.Timezone `[](string tz)
 {
    mixed p=::`[](tz);
    if (!p && tz=="locale") return locale=_locale();
+
+   if ((<"make_new_timezone","decode_timeskew">)[tz]) return p;
+
    if (!p) p=_magic_timezone(tz);
    if (programp(p) || functionp(p)) return p();
    return p;

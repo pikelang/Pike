@@ -2440,12 +2440,25 @@ static TimeRange dwim_zone(TimeRange origin,string zonename,
    Ruleset.Timezone zone=Timezone[zonename];
    if (!zone)
    {
+      if (sscanf(zonename,"%[^-+]%s",string a,string b)==2 && a!="" && b!="")
+      {
+	 TimeRange tr=dwim_zone(origin,a,whut,@args);
+	 if (!tr) return 0;
+
+	 return 
+	    dwim_tod(origin->set_timezone(
+	       Timezone.make_new_timezone(
+		  tr->timezone(),
+		  Timezone.decode_timeskew(b))),
+	       whut,@args);
+      }
+
       array pz=TZnames.abbr2zones[zonename];
       if (!pz) return 0;
       foreach (pz,string zn)
       {
 	 TimeRange try=dwim_zone(origin,zn,whut,@args);
-	 if (try->tzname()==zonename) return try;
+	 if (try && try->tzname()==zonename) return try;
       }
       return 0;
    }
