@@ -1149,6 +1149,40 @@ class cPOLISH
    void create() { SETUPSTUFF; }
 }
 
+class cPOLISH_UNICODE
+{
+   inherit _ymd_base;
+
+   static private constant month_names=
+   ({
+      "stycze\x0143",           // <s><t><y><c><z><e><n'>
+      "luty",
+      "marzec",
+      "kwiecien",
+      "maj",
+      "czerwiec",
+      "lipiec",
+      "sierpien",
+      "wrzesien",
+      "pazdziernik",
+      "listopad",
+      "grudzien",
+   });
+
+   static private constant week_day_names=
+   ({
+      "poniedzia\x0142""ek",      // <p><o><n><i><e><d><z><i><a><l/><e><k>
+      "wtorek",
+      "sroda",
+      "czwartek",
+      "piatek",
+      "sobota",
+      "niedziela",
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
 
 // source: anonymous unix locale file
 
@@ -1187,7 +1221,6 @@ class cTURKISH
 
    void create() { SETUPSTUFF; }
 }
-
 
 // source: anonymous unix locale file
 
@@ -1263,6 +1296,40 @@ class cLATVIAN
       "piektdiena",
       "sestdiena",
       "svetdiena",         // <s><v><e-><t><d><i><e><n><a>
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
+class cLATVIAN_UNICODE
+{
+   inherit _ymd_base;
+
+   static private constant month_names=
+   ({
+      "janv\x0101""ris",          // <j><a><n><v><a-><r><i><s>
+      "februaris",
+      "marts",
+      "apr\x012b""lis",           // <a><p><r><i-><l><i><s>
+      "maijs",
+      "junijs",
+      "julijs",
+      "augusts",
+      "septembris",
+      "oktobris",
+      "novembris",
+      "decembris",
+   });
+
+   static private constant week_day_names=
+   ({
+      "pirmdiena",
+      "otrdiena",
+      "tresdiena",
+      "ceturtdiena",
+      "piektdiena",
+      "sestdiena",
+      "sv\x0113""tdiena",         // <s><v><e-><t><d><i><e><n><a>
    });
 
    void create() { SETUPSTUFF; }
@@ -1346,6 +1413,40 @@ class cLITHUANIAN
    void create() { SETUPSTUFF; }
 }
 
+class cLITHUANIAN_UNICODE
+{
+   inherit _ymd_base;
+
+   static private constant month_names=
+   ({
+      "sausio",
+      "vasario",
+      "kovo",
+      "balandzio",
+      "geguz\x0117""s",           // <g><e><g><u><z<><e.><s>
+      "birzelio",
+      "liepos",
+      "rugpj\x016b\x010d""io",         // <r><u><g><p><j><u-><c<><i><o>
+      "rugsejo",
+      "spalio",
+      "lapkricio",
+      "gruodzio",
+   });
+
+   static private constant week_day_names=
+   ({
+      "Pirmadienis",
+      "Antradienis",
+      "Treciadienis",
+      "Ketvirtadienis",
+      "Penktadienis",
+      "\x0160""estadienis",       // <S<><e><s<><t><a><d><i><e><n><i><s>
+      "Sekmadienis",
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
 
 // source: anonymous unix locale file
 
@@ -1355,7 +1456,7 @@ class cESTONIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   static constant month_names=
    ({
       "jaanuar",
       "veebruar",
@@ -1371,7 +1472,7 @@ class cESTONIAN
       "detsember",
    });
 
-   static private constant week_day_names=
+   static constant week_day_names=
    ({
       "esmaspäev",
       "teisipäev",
@@ -1379,7 +1480,7 @@ class cESTONIAN
       "neljapäev",
       "reede",
       "laupäev",
-      "puhapäev",          // <p><u:><h><a><p><a:><e><v>
+      "pühapäev",          // <p><u:><h><a><p><a:><e><v>
    });
 
    void create() { SETUPSTUFF; }
@@ -1398,7 +1499,7 @@ class cGALICIAN
       "Marzo",
       "Abril",
       "Maio",
-      "Xuno",
+      "Xuño",
       "Xullo",
       "Agosto",
       "Setembro",
@@ -1471,7 +1572,7 @@ class cFRENCH
       "mai",
       "juin",
       "juillet",
-      "aou",
+      "aoû",
       "septembre",
       "octobre",
       "novembre",
@@ -1570,7 +1671,7 @@ class cSLOVENIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   static constant month_names=
    ({
       "januar",
       "februar",
@@ -1586,12 +1687,30 @@ class cSLOVENIAN
       "december",
    });
 
-   static private constant week_day_names=
+   static constant week_day_names=
    ({
       "ponedeljek",
       "torek",
       "sreda",
-      "cetrtek",
+      "cetrtek",    // <c<><e><t><r><t><e><k>
+      "petek",
+      "sobota",
+      "nedelja",
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
+class cSLOVENIAN_UNICODE
+{
+   inherit cSLOVENIAN;
+
+   static constant week_day_names=
+   ({
+      "ponedeljek",
+      "torek",
+      "sreda",
+      "\x010d""etrtek",    // <c<><e><t><r><t><e><k>
       "petek",
       "sobota",
       "nedelja",
@@ -1625,7 +1744,7 @@ class cFAROESE
    static private constant week_day_names=
    ({
       "manadagur",
-      "tysdagur",
+      "týsdagur",
       "mikudagur",
       "hosdagur",
       "friggjadagur",
@@ -1642,31 +1761,49 @@ class cROMANIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   static constant month_names=
    ({
-      "IANUARIE",
-      "FEBRUARIE",
-      "MARTIE",
-      "APRILIE",
-      "MAI",
-      "IUNIE",
-      "IULIE",
-      "AUGUST",
-      "SEPTEMBRIE",
-      "OCTOMBRIE",
-      "NOIEMBRIE",
-      "DECEMBRIE",
+      "Ianuarie",
+      "Februarie",
+      "Martie",
+      "Aprilie",
+      "Mai",
+      "Iunie",
+      "Iulie",
+      "August",
+      "Septembrie",
+      "Octombrie",
+      "Noiembrie",
+      "Decembrie",
    });
 
-   static private constant week_day_names=
+   static constant week_day_names=
    ({
-      "LUNI",
-      "MARTI",             // <M><A><R><T,><I>
-      "MIERCURI",
-      "JOI",
-      "VINERI",
-      "SI",                // <S><I/>><M><B><A(><T><A(>
-      "DUMINICA",          // <D><U><M><I><N><I><C><A(>
+      "Luni",
+      "Marti",             // <M><A><R><T,><I>
+      "Miercuri",
+      "Joi",
+      "Vineri",
+      "Simbata",                // <S><I/>><M><B><A(><T><A(>
+      "Duminica",          // <D><U><M><I><N><I><C><A(>
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
+class cROMANIAN_UNICODE
+{
+   inherit cROMANIAN;
+
+   static constant week_day_names=
+   ({
+      "Luni",
+      "Mar\x0163""i",             // <M><A><R><T,><I>
+      "Miercuri",
+      "Joi",
+      "Vineri",
+      "Sîmb\x0103""t\x0103",                // <S><I/>><M><B><A(><T><A(>
+      "Duminic\x0103",          // <D><U><M><I><N><I><C><A(>
    });
 
    void create() { SETUPSTUFF; }
@@ -1681,8 +1818,8 @@ class cCROATIAN
    static private constant month_names=
    ({
       "Sijecanj",          // <S><i><j><e><c<><a><n><j>
-      "Veljaca",
-      "Ozujak",
+      "Veljaca",           // <V><e><l><j><a><c<><a>
+      "Ozujak",            // <O><z<><u><j><a><k>
       "Travanj",
       "Svibanj",
       "Lipanj",
@@ -1699,7 +1836,41 @@ class cCROATIAN
       "Ponedjeljak",
       "Utorak",
       "Srijeda",
-      "Cetvrtak",
+      "Cetvrtak",          // <C<><e><t><v><r><t><a><k>
+      "Petak",
+      "Subota",
+      "Nedjelja",
+   });
+
+   void create() { SETUPSTUFF; }
+}
+
+class cCROATIAN_UNICODE
+{
+   inherit _ymd_base;
+
+   static private constant month_names=
+   ({
+      "Sije\415anj",
+      "Velja\415a",
+      "O\576ujak",
+      "Travanj",
+      "Svibanj",
+      "Lipanj",
+      "Srpanj",
+      "Kolovoz",
+      "Rujan",
+      "Listopad",
+      "Studeni",
+      "Prosinac",
+   });
+
+   static private constant week_day_names=
+   ({
+      "Ponedjeljak",
+      "Utorak",
+      "Srijeda",
+      "\414etvrtak",
       "Petak",
       "Subota",
       "Nedjelja",
@@ -1750,7 +1921,7 @@ class cSERBIAN
 {
    inherit _ymd_base;
 
-   static private constant month_names=
+   static constant month_names=
    ({
       "januar",
       "februar",
@@ -1766,7 +1937,7 @@ class cSERBIAN
       "decembar",
    });
 
-   static private constant week_day_names=
+   static constant week_day_names=
    ({
       "ponedeljak",
       "utorak",
@@ -1781,6 +1952,23 @@ class cSERBIAN
 }
 
 
+class cSERBIAN_UNICODE
+{
+   inherit cSERBIAN;
+
+   static constant week_day_names=
+   ({
+      "ponedeljak",
+      "utorak",
+      "sreda",
+      "\415etvrtak",
+      "petak",
+      "subota",
+      "nedelja",
+   });
+
+   void create() { SETUPSTUFF; }
+}
 
 // ----------------------------------------------------------------
 
@@ -1801,153 +1989,5 @@ Ruleset.Language `[](string lang)
    
    return l;
 }
-
-/*
- ISO 639:1988 language codes
-
- aa Afar 
- ab Abkhazian 
- af Afrikaans 
- am Amharic 
- ar Arabic 
- as Assamese 
- ay Aymara 
- az Azerbaijani 
- ba Bashkir 
- be Byelorussian 
- bg Bulgarian 
- bh Bihari 
- bi Bislama 
- bn Bengali; Bangla 
- bo Tibetan 
- br Breton 
- ca Catalan 
- co Corsican 
- cs Czech 
- cy Welsh 
- da Danish 
- de German 
- dz Bhutani 
- el Greek 
- en English 
- eo Esperanto 
- es Spanish 
- et Estonian 
- eu Basque 
- fa Persian 
- fi Finnish 
- fj Fiji 
- fo Faroese 
- fr French 
- fy Frisian 
- ga Irish (recte Irish Gaelic) 
- gd Scots Gaelic (recte Scottish Gaelic) 
- gl Galician 
- gn Guarani 
- gu Gujarati 
- gv Manx Gaelic  
- ha Hausa 
- he Hebrew (formerly iw) 
- hi Hindi 
- hr Croatian 
- hu Hungarian 
- hy Armenian 
- ia Interlingua 
- id Indonesian (formerly in) 
- ie Interlingue 
- ik Inupiak 
- is Icelandic 
- it Italian 
- iu Inuktitut 
- ja Japanese 
- jw Javanese 
- ka Georgian 
- kk Kazakh 
- kl Greenlandic 
- km Cambodian 
- kn Kannada 
- ko Korean 
- ks Kashmiri 
- ku Kurdish 
- kw Cornish  
- ky Kirghiz 
- la Latin 
- lb Luxemburgish  
- ln Lingala 
- lo Laothian (recte Laotian) 
- lt Lithuanian 
- lv Latvian; Lettish 
- mg Malagasy 
- mi Maori 
- mk Macedonian 
- ml Malayalam 
- mn Mongolian 
- mo Moldavian 
- mr Marathi 
- ms Malay 
- mt Maltese 
- my Burmese 
- na Nauru 
- ne Nepali 
- nl Dutch 
- no Norwegian 
- oc Occitan 
- om (Afan) Oromo 
- or Oriya 
- pa Punjabi 
- pl Polish 
- ps Pashto, Pushto 
- pt Portuguese 
- qu Quechua 
- rm Rhaeto-Romance 
- rn Kirundi 
- ro Romanian 
- ru Russian 
- rw Kinyarwanda 
- sa Sanskrit 
- sd Sindhi 
- se Northern Sámi  
- sg Sangho 
- sh Serbo-Croatian 
- si Singhalese 
- sk Slovak 
- sl Slovenian 
- sm Samoan 
- sn Shona 
- so Somali 
- sq Albanian 
- sr Serbian 
- ss Siswati 
- st Sesotho 
- su Sundanese 
- sv Swedish 
- sw Swahili 
- ta Tamil 
- te Telugu 
- tg Tajik 
- th Thai 
- ti Tigrinya 
- tk Turkmen 
- tl Tagalog 
- tn Setswana 
- to Tonga 
- tr Turkish 
- ts Tsonga 
- tt Tatar 
- tw Twi 
- ug Uigur 
- uk Ukrainian 
- ur Urdu 
- uz Uzbek 
- vi Vietnamese 
- vo Volapük 
- wo Wolof 
- xh Xhosa 
- yi Yiddish (formerly ji) 
- yo Yoruba 
- za Zhuang 
- zh Chinese 
- zu Zulu
-*/
 
 
