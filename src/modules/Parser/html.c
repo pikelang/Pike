@@ -2248,8 +2248,8 @@ static void html_finish(INT32 args)
 **! method string|array(mixed) read(int max_elems)
 **!	Read parsed data from the parser object. 
 **!
-**! returns a string of parsed data if the parser isn't in
-**! <ref>mixed_mode</ref>, an array of arbitrary data otherwise
+**!	Returns a string of parsed data if the parser isn't in
+**!	<ref>mixed_mode</ref>, an array of arbitrary data otherwise.
 */
 
 static void html_read(INT32 args)
@@ -2839,7 +2839,7 @@ void init_parser_html(void)
 #define CBRET "string|array(string)" /* 0|string|({string}) */
 
    ADD_FUNCTION("create",html_create,tFunc(tNone,tVoid),0);
-   ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tVoid),0);
+   ADD_FUNCTION("clone",html_clone,tFuncV(tNone,tMixed,tObj),0);
 
    /* feed control */
 
