@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.152 2002/10/11 01:39:33 nilsson Exp $
+|| $Id: mapping.c,v 1.153 2002/10/27 16:35:05 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.152 2002/10/11 01:39:33 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.153 2002/10/27 16:35:05 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -212,7 +212,8 @@ static void init_mapping(struct mapping *m,
 #endif
 }
 
-/* This function allocates an empty mapping with room for 'size' values
+/* This function allocates an empty mapping with initial room
+ * for 'size' values.
  */
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 {
