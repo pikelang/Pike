@@ -2,7 +2,7 @@
 
 // Pike installer and exporter.
 //
-// $Id: install.pike,v 1.155 2004/12/14 18:39:37 grubba Exp $
+// $Id: install.pike,v 1.156 2004/12/14 18:59:01 grubba Exp $
 
 #define USE_GTK
 
@@ -1983,11 +1983,8 @@ void make_wix()
   root->install_regkey("bin", "HKCR", "pike_file\\shell\\run\\command", "",
 		       "\"[TARGETDIR]\\bin\\pike.exe\" \"%1\" %*",
 		       "RE__COMMAND");
-#if 0
-  // FIXME: The icon file isn't installed currently.
   root->install_regkey("bin", "HKCR", "pike_file\\DefaultIcon", "",
-		       "[TARGETDIR]\\lib\\pike\\pike.ico", "RE__ICON");
-#endif /* 0 */
+		       "[TARGETDIR]\\lib\\pike.ico", "RE__ICON");
 
   string title = 
 #if 1
@@ -2361,6 +2358,9 @@ void do_install()
 	make_master(unpack_master, master_src, "lib", "include/pike");
 	low_install_file(unpack_master,
 			 combine_path(prefix, "lib/master.pike"));
+	low_install_file(combine_path(vars->SRCDIR,
+				      "../packaging/windows/pike.ico"),
+			 combine_path(prefix, "lib/pike.ico"));
       }
 
       low_install_file(combine_path(vars->TMP_BUILDDIR,"specs"),
@@ -2373,6 +2373,7 @@ void do_install()
 		       combine_path(prefix, "build/install-welcome"));
       low_install_file(combine_path(vars->SRCDIR,"dumpmaster.pike"),
 		       combine_path(prefix, "build/dumpmaster.pike"));
+
 
       void basefile(string x) {
 	string from = combine_path(vars->BASEDIR,x);
