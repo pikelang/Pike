@@ -43,6 +43,7 @@ testfont binary
 /src/modules/Mysql/precompiled_mysql.h foreign_ident
 /src/modules/Mysql/result.c foreign_ident
 /src/modules/Pipe/pipe.c foreign_ident
+/src/modules/Regexp/acconfig.h foreign_ident
 /src/modules/Ssleay/ssleay.c foreign_ident
 /src/modules/_Crypto/cbc.c foreign_ident
 /src/modules/_Crypto/crypto.c foreign_ident
