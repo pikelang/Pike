@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.11 1999/11/18 04:14:48 hubbe Exp $
+ * $Id: lexer.h,v 1.12 1999/11/23 03:11:08 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -353,6 +353,10 @@ static int low_yylex(YYSTYPE *yylval)
 	  else if (ISWORD("all_nomask"))
 	  {
 	    lex.pragmas |= ID_NOMASK;
+	  }
+	  else if (ISWORD("strict_types"))
+	  {
+	    lex.pragmas |= ID_STRICT_TYPES;
 	  }
 	  break;
 	}
