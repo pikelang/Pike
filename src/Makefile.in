@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.123 1998/10/28 11:34:14 grubba Exp $
+# $Id: Makefile.in,v 1.124 1999/01/21 09:13:20 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -84,6 +84,7 @@ MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)"
 #
 OBJ= \
  language.o \
+ security.o \
  interpret.o \
  constants.o \
  cpp.o \
@@ -205,6 +206,13 @@ force :
 
 # install
 install: pike hilfe pike-module aclocal
+	@exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
+	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
+	man_prefix="$(man_prefix)" \
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike
+
+old-install: pike hilfe pike-module aclocal
 	@echo
 	@echo Installing Pike...
 	@echo
@@ -220,20 +228,12 @@ install: pike hilfe pike-module aclocal
 	    chmod u+w "$$d"; \
 	  fi; \
 	done
-	@for d in `cd "$(TMP_LIBDIR)"; find . -type d -print`; do \
+	@for d in `cd "$(TMP_LIBDIR)"; find . -type d -print` `cd "$(LIBDIR_SRC)"; find . ! -name CVS ! -name '.#*' ! -name '#*#' ! -name '*~' -type d -print`; do \
 	  if [ -d "$(lib_prefix)/$$d/." ]; then : ; else \
 	    echo "$(lib_prefix)/$$d"; \
 	    mkdir "$(lib_prefix)/$$d" || exit 1; \
 	    chmod a+rx "$(lib_prefix)/$$d/."; \
 	    chmod u+w "$(lib_prefix)/$$d/."; \
-	  fi; \
-	done
-	@for d in `cd "$(LIBDIR_SRC)"; find . ! -name CVS ! -name '.#*' ! -name '#*#' ! -name '*~' -type d -print`; do \
-	  if [ -d "$(share_prefix)/$$d/." ]; then : ; else \
-	    echo "$(share_prefix)/$$d"; \
-	    mkdir "$(share_prefix)/$$d" || exit 1; \
-	    chmod a+rx "$(share_prefix)/$$d/."; \
-	    chmod u+w "$(share_prefix)/$$d/."; \
 	  fi; \
 	done
 	@echo ; echo "Installing pike..."; \
@@ -290,19 +290,19 @@ install: pike hilfe pike-module aclocal
 	@$(INSTALL) ./aclocal $(prefix)/include/pike/aclocal.m4
 	@echo ; echo "Installing modules written in Pike..."; \
 	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print | grep -v '/CVS/'`; do \
-	  if cmp "$(share_prefix)/$$f" "$(LIBDIR_SRC)/$$f" >/dev/null 2>&1 ; \
+	  if cmp "$(lib_prefix)/$$f" "$(LIBDIR_SRC)/$$f" >/dev/null 2>&1 ; \
 	  then : ; else \
-	    echo "$(share_prefix)/$$f"; \
-	    if [ -f "$(share_prefix)/$$f" ]; then \
-	      mv -f "$(share_prefix)/$$f" "$(share_prefix)/$$f.old"; \
+	    echo "$(lib_prefix)/$$f"; \
+	    if [ -f "$(lib_prefix)/$$f" ]; then \
+	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.old"; \
 	    else : ; fi; \
-	    rm -f "$(share_prefix)/$$f.o" >/dev/null 2>/dev/null ; \
-	    cp "$(LIBDIR_SRC)/$$f" "$(share_prefix)/$$f" || exit 1; \
-	    chmod a+r "$(share_prefix)/$$f"; \
-	    chmod u+w "$(share_prefix)/$$f"; \
+	    rm -f "$(lib_prefix)/$$f.o" >/dev/null 2>/dev/null ; \
+	    cp "$(LIBDIR_SRC)/$$f" "$(lib_prefix)/$$f" || exit 1; \
+	    chmod a+r "$(lib_prefix)/$$f"; \
+	    chmod u+w "$(lib_prefix)/$$f"; \
 	  fi ; \
 	  if [ -f "$(lib_prefix)/$$f" ]; then \
-            if test "x$(lib_prefix)" != "x$(share_prefix)"; then \
+            if test "x$(lib_prefix)" != "x$(lib_prefix)"; then \
 	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
 	    else : ; fi; \
           else : ; fi; \
@@ -337,12 +337,9 @@ install: pike hilfe pike-module aclocal
 	    fi ; \
 	  done ; \
 	else : ; fi
-
-optimize:
 	$(exec_prefix)/pike -m $(SRCDIR)/dumpmaster.pike $(lib_prefix)/master.pike
 	( \
 	  find $(lib_prefix)/modules -type f \( -name '*.pmod' -o -name '*.pike' \) -print  ; \
-	  find $(share_prefix)/modules -type f \( -name '*.pmod' -o -name '*.pike' \) -print \
 	) | \
 	while read file ; do $(exec_prefix)/pike $(SRCDIR)/dumpmodule.pike $$file ; done
 
@@ -485,7 +482,7 @@ all_exports: full_export
 	( cd .. ; $(TMP_BINDIR)/makedists )
 
 bin_export:
-	PATH=$(TMP_BINDIR)/fakes:$$PATH INSTALL_LOG=`pwd`/log make install INSTALL=install
+	PATH=$(TMP_BINDIR)/fakes:$$PATH INSTALL_LOG=`pwd`/log make old-install INSTALL=install
 	$(RUNPIKE) $(TMP_BINDIR)/parse_install_log <log $(SRCDIR) $(prefix)
 
 new_peep_engine:
