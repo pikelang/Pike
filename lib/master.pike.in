@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.371 2005/01/26 21:00:19 mast Exp $
+// $Id: master.pike.in,v 1.372 2005/03/14 17:22:59 per Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -1071,6 +1071,9 @@ constant master_efuns = ({
   "describe_error",
   "get_backtrace",
   "normalize_path",
+  "bool",
+  "true",
+  "false",
   "getenv",
   "putenv",
 
@@ -1079,6 +1082,8 @@ constant master_efuns = ({
   "getcwd",
 #endif
 });
+
+enum bool { false=0, true=1 };
 
 string include_prefix;
 
@@ -1103,7 +1108,7 @@ string include_prefix;
 static void create()
 {
   foreach(master_efuns, string e)
-    if (this[e])
+    if (!zero_type(this[e]))
       add_constant(e, this[e]);
     else
       error("Function %O is missing from master.pike.\n", e);
