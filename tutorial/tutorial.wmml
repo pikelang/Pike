@@ -5125,25 +5125,134 @@ supplement those written in C.
 
 <hr noshade size=1>
 
-<function name=Array.map title="map an array or mapping over a function">
+<function name=Array.diff title="gives the difference of two arrays">
 <man_syntax>
-array map(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-array map(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-array map(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
+array(array(array)) diff(array <i>a</i>, array <i>b</i>);<br>
 </man_syntax>
 <man_description>
-First syntax:<br>
-Map array returns an array holding the items of arr mapped through
-the function fun. i.e. arr[x]=fun(arr[x], @args) for all x.
-<p>Second syntax:<br>
-Map array calls function fun in all objects in the array arr.
-i.e. arr[x]=arr[x]-&gt;fun(@ args);
-<p>Third syntax:<br>
-Map array calls the functions in the array arr:
-arr[x]=arr[x]-&gt;fun(@ args);
+Calculates which parts of the arrays that are common to both, and which parts
+that are not.
+
+Returns an array with two elements, the first is an array of parts in
+array <b>a</b>, and the second is an array of parts in array <b>b<b>.
+
 </man_description>
+<man_example>
+&gt; Array.diff("Hello world!"/"","Help!"/"");
+Result: ({ /* 2 elements */
+    ({ /* 3 elements */
+        ({ /* 3 elements */
+            "H",
+            "e",
+            "l"
+        }),
+        ({ /* 8 elements */
+            "l",
+            "o",
+            " ",
+            "w",
+            "o",
+            "r",
+            "l",
+            "d"
+        }),
+        ({ /* 1 elements */
+            "!"
+        })
+    }),
+    ({ /* 3 elements */
+        ({ /* 3 elements */
+            "H",
+            "e",
+            "l"
+        }),
+        ({ /* 1 elements */
+            "p"
+        }),
+        ({ /* 1 elements */
+            "!"
+        })
+    })
+})
+</man_example>
+<man_note>
+This function is only available in Pike 0.6 and later.
+</man_note>
 <man_see>
-Array.sum_arrays, Array.filter
+Array.diff_compare_table, Array.diff_longest_sequence
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<function name=Array.diff_compare_table
+ title="gives the comparison-table used by Array.diff()">
+<man_syntax>
+array(array(int)) diff_compare_table(array <i>a</i>, array <i>b</i>);<br>
+</man_syntax>
+<man_description>
+Returns an array which maps from index in <b>a</b> to corresponding
+indices in <b>b</b>.
+</man_description>
+<man_example>
+&gt; Array.diff_compare_table("Hello world!"/"","Help!"/"");
+Result: ({ /* 12 elements */
+    ({ /* 1 elements */
+        0
+    }),
+    ({ /* 1 elements */
+        1
+    }),
+    ({ /* 1 elements */
+        2
+    }),
+    ({ /* 1 elements */
+        2
+    }),
+    ({ }),
+    ({ }),
+    ({ }),
+    ({ }),
+    ({ }),
+    ({ /* 1 elements */
+        2
+    }),
+    ({ }),
+    ({ /* 1 elements */
+        4
+    })
+})
+</man_example>
+<man_note>
+This function is only available in Pike 0.6 and later.
+</man_note>
+<man_see>
+Array.diff, Array.diff_longest_sequence
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<function name=Array.diff_longest_sequence
+ title="gives the longest common sequence of two arrays">
+<man_syntax>
+array(array(array)) diff(array <i>a</i>, array <i>b</i>);<br>
+</man_syntax>
+<man_description>
+Gives the longest sequence of indices in <b>b</b> that have corresponding
+values in the same order in <b>a</b>.
+</man_description>
+<man_example>
+&gt; Array.diff_longest_sequence("Hello world!"/"","Help!"/"");
+Result: ({ /* 4 elements */
+    0,
+    1,
+    2,
+    4
+})
+</man_example>
+<man_see>
+Array.diff, Array.diff_compare_table
 </man_see>
 </function>
 
@@ -5168,6 +5277,30 @@ return all that returned true.
 </man_description>
 <man_see>
 Array.sum_arrays, Array.map
+</man_see>
+</function>
+
+<hr noshade size=1>
+
+<function name=Array.map title="map an array or mapping over a function">
+<man_syntax>
+array map(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+array map(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+array map(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
+</man_syntax>
+<man_description>
+First syntax:<br>
+Map array returns an array holding the items of arr mapped through
+the function fun. i.e. arr[x]=fun(arr[x], @args) for all x.
+<p>Second syntax:<br>
+Map array calls function fun in all objects in the array arr.
+i.e. arr[x]=arr[x]-&gt;fun(@ args);
+<p>Third syntax:<br>
+Map array calls the functions in the array arr:
+arr[x]=arr[x]-&gt;fun(@ args);
+</man_description>
+<man_see>
+Array.sum_arrays, Array.filter
 </man_see>
 </function>
 
