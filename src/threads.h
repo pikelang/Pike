@@ -167,6 +167,15 @@ struct thread_state {
   struct object * thread_id;
 };
 
+/* Define to get a debug-trace of some of the threads operations. */
+/* #define VERBOSE_THREADS_DEBUG */
+
+#ifndef VERBOSE_THREADS_DEBUG
+#define THREADS_FPRINTF(X)
+#else
+#define THREADS_FPRINTF(X)	fprintf X
+#endif /* VERBOSE_THREADS_DEBUG */
+
 #define THREADS_ALLOW() \
   do {\
      struct thread_state _tmp; \
@@ -182,17 +191,17 @@ struct thread_state {
        _tmp.evaluator_stack_malloced=evaluator_stack_malloced; \
        _tmp.mark_stack_malloced=mark_stack_malloced; \
        _tmp.thread_id = thread_id; \
-/*     fprintf(stderr, "THREADS_ALLOW() %s:%d", __FILE__, __LINE__);*/\
+       THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x\n", \
+			__FILE__, __LINE__, (unsigned int)_tmp.thread_id)); \
        mt_unlock(& interpreter_lock); \
        /*th_yield();*/\
-/*     fprintf(stderr, "\n");*/\
      }
 
 #define THREADS_DISALLOW() \
      if(_tmp.swapped) { \
-/*     fprintf(stderr, "THREADS_DISALLOW() %s:%d ... ", __FILE__, __LINE__);*/\
        mt_lock(& interpreter_lock); \
-/*     fprintf(stderr, "\n");*/\
+       THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d ... t:%08x\n", \
+			__FILE__, __LINE__, (unsigned int)_tmp.thread_id)); \
        sp=_tmp.sp; \
        evaluator_stack=_tmp.evaluator_stack; \
        mark_sp=_tmp.mark_sp; \
