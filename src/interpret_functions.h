@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.179 2004/12/18 18:07:16 grubba Exp $
+|| $Id: interpret_functions.h,v 1.180 2004/12/18 21:52:50 grubba Exp $
 */
 
 /*
@@ -309,12 +309,15 @@ OPCODE1(F_ARROW_STRING, "->string", I_UPDATE_SP, {
 OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
   LOCAL_VAR(struct object *o);
   LOCAL_VAR(struct svalue tmp);
+  LOCAL_VAR(struct program *p);
 
-  if ((Pike_sp[-1].type == T_OBJECT) && ((o = Pike_sp[-1].u.object)->prog) &&
-      (FIND_LFUN(o->prog, LFUN_ARROW) == -1)) {
-    int id = FIND_LFUN(o->prog, arg1);
+  if ((Pike_sp[-1].type == T_OBJECT) &&
+      (p = (o = Pike_sp[-1].u.object)->prog) &&
+      (FIND_LFUN(p = o->prog->inherits[Pike_sp[-1].subtype].prog,
+		 LFUN_ARROW) == -1)) {
+    int id = FIND_LFUN(p, arg1);
     if ((id != -1) &&
-	(!(o->prog->identifier_references[id].id_flags &
+	(!(p->identifier_references[id].id_flags &
 	   (ID_STATIC|ID_PRIVATE|ID_HIDDEN)))) {
       low_object_index_no_free(&tmp, o, id);
     } else {
@@ -762,10 +765,14 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
   } else if (Pike_sp[-2].type == T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
     int i;
-    if(Pike_sp[-2].u.object->refs <= 2 &&
-       (i = FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ)) != -1)
+    LOCAL_VAR(struct object *o);
+    LOCAL_VAR(struct program *p);
+    if((o = Pike_sp[-2].u.object)->refs <= 2 &&
+       (p = o->prog) &&
+       (i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
+		      LFUN_ADD_EQ)) != -1)
     {
-      apply_low(Pike_sp[-2].u.object, i, 1);
+      apply_low(o, i, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -820,10 +827,14 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
   } else if (Pike_sp[-2].type == PIKE_T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
     int i;
-    if(Pike_sp[-2].u.object->refs <= 2 &&
-       (i = FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ)) != -1)
+    LOCAL_VAR(struct object *o);
+    LOCAL_VAR(struct program *p);
+    if((o = Pike_sp[-2].u.object)->refs <= 2 &&
+       (p = o->prog) &&
+       (i = FIND_LFUN(p->inherits[Pike_sp[-2].subtype].prog,
+		      LFUN_ADD_EQ)) != -1)
     {
-      apply_low(Pike_sp[-2].u.object, i, 1);
+      apply_low(o, i, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -1123,15 +1134,17 @@ OPCODE0_BRANCH(F_BRANCH_WHEN_NON_ZERO, "branch if not zero", I_UPDATE_SP, {
 
 OPCODE1_BRANCH(F_BRANCH_IF_TYPE_IS_NOT, "branch if type is !=", I_UPDATE_SP, {
 /*  fprintf(stderr,"******BRANCH IF TYPE IS NOT***** %s\n",get_name_of_type(arg1)); */
+  LOCAL_VAR(struct object *o);
   if(Pike_sp[-1].type == T_OBJECT &&
-     Pike_sp[-1].u.object->prog)
+     (o = Pike_sp[-1].u.object)->prog)
   {
-    int fun=FIND_LFUN(Pike_sp[-1].u.object->prog, LFUN__IS_TYPE);
+    int fun = FIND_LFUN(o->prog->inherits[Pike_sp[-1].subtype].prog,
+			LFUN__IS_TYPE);
     if(fun != -1)
     {
 /*      fprintf(stderr,"******OBJECT OVERLOAD IN TYPEP***** %s\n",get_name_of_type(arg1)); */
       push_text(get_name_of_type(arg1));
-      apply_low(Pike_sp[-2].u.object, fun, 1);
+      apply_low(o, fun, 1);
       arg1=UNSAFE_IS_ZERO(Pike_sp-1) ? T_FLOAT : T_OBJECT ;
       pop_stack();
     }
@@ -1436,6 +1449,7 @@ OPCODE0_BRANCH (F_FOREACH_START, "foreach start", 0, {
     if(Pike_sp[-5].type != PIKE_T_OBJECT)
       Pike_fatal ("Iterator gone from stack.\n");
   );
+  /* FIXME: object subtype. */
   if (foreach_iterate (Pike_sp[-5].u.object, 0))
     DONT_BRANCH();
   else {
@@ -1449,6 +1463,7 @@ OPCODE0_BRANCH(F_FOREACH_LOOP, "foreach loop", 0, {
     if(Pike_sp[-5].type != PIKE_T_OBJECT)
       Pike_fatal ("Iterator gone from stack.\n");
   );
+  /* FIXME: object subtype. */
   if(foreach_iterate(Pike_sp[-5].u.object, 1))
   {
     DO_BRANCH();
@@ -1642,17 +1657,21 @@ OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
 });
 
 OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
+  int i;
+  LOCAL_VAR(struct program *p);
+
   switch(Pike_sp[-1].type)
   {
   default:
     PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
     
   case PIKE_T_OBJECT:
-    if(!Pike_sp[-1].u.object->prog ||
-       FIND_LFUN(Pike_sp[-1].u.object->prog,LFUN__VALUES) == -1)
+    if(!(p = Pike_sp[-1].u.object->prog) ||
+       (i = FIND_LFUN(p->inherits[Pike_sp[-1].subtype].prog,
+		      LFUN__VALUES)) == -1)
       PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
 
-    apply_lfun(Pike_sp[-1].u.object, LFUN__VALUES, 0);
+    apply_low(Pike_sp[-1].u.object, i, 0);
     if(Pike_sp[-1].type != PIKE_T_ARRAY)
       Pike_error("Bad return type from o->_values() in @\n");
     free_svalue(Pike_sp-2);
@@ -1990,6 +2009,7 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
     o = s->u.object;
     if((p=o->prog))
     {
+      p = p->inherits[s->subtype].prog;
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
@@ -2046,6 +2066,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
     o = s->u.object;
     if((p=o->prog))
     {
+      p = p->inherits[s->subtype].prog;
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
@@ -2104,6 +2125,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
     o = s->u.object;
     if((p=o->prog))
     {
+      p = p->inherits[s->subtype].prog;
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
       {
 	int fun;
