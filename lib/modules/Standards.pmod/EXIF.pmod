@@ -3,7 +3,7 @@
 //!
 //! Copyright (c) Roxen Internet Software 2001
 
-// $Id: EXIF.pmod,v 1.4 2001/09/17 09:20:19 mirar Exp $
+// $Id: EXIF.pmod,v 1.5 2001/09/17 09:20:36 mirar Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -521,7 +521,6 @@ mapping get_properties(Stdio.File|string file)
 
   if (skip[strlen(skip)-6..]!="Exif\0\0")
   {
-     werror("BIPA\n");
      skip=file->read(100);
      int z=search(skip,"Exif\0\0");
      if (z==-1) return ([]); // no exif header?
