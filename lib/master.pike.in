@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.315 2003/12/18 21:28:02 marcus Exp $
+// $Id: master.pike.in,v 1.316 2003/12/18 22:39:35 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -1634,6 +1634,10 @@ joinnode handle_import(string path, string|void current_file,
 			object|void current_handler)
 {
   array(string) tmp;
+#ifdef __amigaos__
+  if(path == ".")
+    path = "";
+#endif
   if(current_file)
   {
     tmp=EXPLODE_PATH(current_file);
