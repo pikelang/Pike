@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.618 2003/03/11 15:53:34 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.619 2003/03/13 00:02:49 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2904,7 +2904,6 @@ test_eval_error(array foo=({}); return mkmapping(foo,({1})); )
 test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
 test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 0: return 1; } else { case 1: return 2; } } }]])
 
-test_true(encode_value(0))
 test_true(encode_value(0)[0]=='\266')
 define(test_encode, [[ test_equal($1, decode_value(encode_value($1)))
 		       test_equal($1, decode_value(encode_value_canonic($1))) ]])
@@ -7728,9 +7727,25 @@ test_any([[
 test_do(Stdio.recursive_rm("getcwd_test"))
 
 // - getegid
+ifefun(getegid,[[
+  test_true(intp(getegid()))
+  test_true(getegid()==getegid())
+]])
+
 // - getenv
+
 // - geteuid
+ifefun(geteuid,[[
+  test_true(intp(geteuid()))
+  test_true(geteuid()==geteuid())
+]])
+
 // - getgid
+ifefun(getgid,[[
+  test_true(intp(getgid()))
+  test_true(getgid()==getgid())
+]])
+
 // - getgrent
 // - getgrgid
 // - getgrnam
@@ -7746,9 +7761,25 @@ test_true(sizeof(gethostname()))
 // See time
 
 // - gethrvtime
+
 // - getpgrp
+ifefun(getpgrp,[[
+  test_true(intp(getpgrp()))
+  test_true(getpgrp()==getpgrp())
+]])
+
 // - getpid
+ifefun(getpid,[[
+  test_true(intp(getpid()))
+  test_true(getpid()==getpid())
+]])
+
 // - getppid
+ifefun(getppid,[[
+  test_true(intp(getppid()))
+  test_true(getppid()==getppid())
+]])
+
 // - getpwent
 // - getpwnam
 // - getpwuid
@@ -8046,8 +8077,20 @@ test_equal(lower_case((string) ({
 // Tested in _math
 
 // - mkdir
+
 // - mkmapping
+test_equal(mkmapping(({}),({})), ([]))
+test_equal(mkmapping(({0}),({0})), ([0:0]))
+test_any_equal([[
+  array a=({"a"});
+  return mkmapping(a,a);
+]], (["a":"a"]))
+test_equal(mkmapping( ({({})}),({({})}) )[ ({}) ], ({}))
+
 // - mkmultiset
+test_equal(mkmultiset(({})), (<>))
+test_equal(mkmultiset(({0})), (<0>))
+test_equal(mkmultiset(({(<>)})), (<(<>)>))
 
 // - mktime
 cond([[all_constants()->mktime]],
