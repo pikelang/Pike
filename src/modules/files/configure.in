@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.88 2003/05/15 15:24:06 marcus Exp $
+# $Id: configure.in,v 1.89 2003/05/16 10:22:03 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1070,7 +1070,7 @@ int sig_child(int arg)
   wait3(-1,0,WNOHANG,0);
 #else
 
-  /* Leave'em hanging */
+  /* Leave them hanging */
 
 #endif /* HAVE_WAIT4 */
 #endif /* HAVE_WAIT3 */
@@ -1173,7 +1173,7 @@ if test yes = "$ac_cv_func_grantpt"; then
       done
     ])
     AC_MSG_RESULT($pike_cv_pt_chmod_path)
-    if test "no" = pike_cv_pt_chmod_path; then
+    if test no = "$pike_cv_pt_chmod_path"; then
       :
     else
       AC_DEFINE_UNQUOTED(USE_PT_CHMOD,"$pike_cv_pt_chmod_path")
