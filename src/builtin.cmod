@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.46 2001/06/25 20:03:39 grubba Exp $
+ * $Id: builtin.cmod,v 1.47 2001/06/25 22:19:18 mast Exp $
  */
 
 #include "global.h"
@@ -889,7 +889,7 @@ PIKEFUN array(mixed) backtrace()
      efun;
      optflags OPT_EXTERNAL_DEPEND;
 {
-  struct pike_frame *f;
+  struct pike_frame *f, *of = 0;
   int size = 0;
   struct array *res = NULL;
 
@@ -900,7 +900,7 @@ PIKEFUN array(mixed) backtrace()
   res = allocate_array_no_init(size, 0);
   push_array(res);
 
-  for (f = Pike_fp; f && size; f = f->next) {
+  for (f = Pike_fp; f && size; f = (of = f)->next) {
     struct object *o = low_clone(backtrace_frame_program);
     struct backtrace_frame_struct *bf;
 
@@ -933,6 +933,10 @@ PIKEFUN array(mixed) backtrace()
     if (f->locals) {
       INT32 numargs = DO_NOT_WARN((INT32) MINIMUM(f->num_args,
 						  Pike_sp - f->locals));
+      if(of)
+	/* f->num_args can be too large, so this is necessary for some
+	 * reason. I don't know why. /mast */
+	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
 
       numargs = MAXIMUM(numargs, 0);
 
