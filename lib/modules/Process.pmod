@@ -32,11 +32,11 @@ string sh_quote(string s)
 	({"\\\\", "\\'", "\\\"","\\ "}));
 }
 
-string *split_quoted_string(string s)
+array(string) split_quoted_string(string s)
 {
   s=replace(s, ({"\"","'","\\"," "}), ({"\0\"","\0'","\0\\","\0 "}));
-  string *x=s/"\0";
-  string *ret=({x[0]});
+  array(string) x=s/"\0";
+  array(string) ret=({x[0]});
 
   for(int e=1;e<sizeof(x);e++)
   {
@@ -173,7 +173,7 @@ class Spawn
 
    private object low_spawn(array(void|object(Stdio.File)) fdp,
 			    array(void|object(Stdio.File)) fd_to_close,
-			    string cmd, void|string *args, 
+			    string cmd, void|array(string) args, 
 			    void|mapping(string:string) env, 
 			    string|void cwd)
    {

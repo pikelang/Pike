@@ -66,13 +66,13 @@ class protocol
     return low_mkquery(random(65536),dname,cl,type);
   }
 
-  string decode_domain(string msg, int *n)
+  string decode_domain(string msg, array(int) n)
   {
-    string *domains=({});
+    array(string) domains=({});
     
     int pos=n[0];
     int next=-1;
-    string *ret=({});
+    array(string) ret=({});
     while(pos < sizeof(msg))
     {
       switch(int len=msg[pos])
@@ -96,30 +96,30 @@ class protocol
     }
   }
 
-  string decode_string(string s, int *next)
+  string decode_string(string s, array(int) next)
   {
     int len=s[next[0]];
     next[0]+=len+1;
     return s[next[0]-len..next[0]-1];
   }
 
-  int decode_short(string s, int *next)
+  int decode_short(string s, array(int) next)
   {
     sscanf(s[next[0]..next[0]+1],"%2c",int ret);
     next[0]+=2;
     return ret;
   }
 
-  int decode_int(string s, int *next)
+  int decode_int(string s, array(int) next)
   {
     sscanf(s[next[0]..next[0]+1],"%2c",int ret);
     next[0]+=2;
     return ret;
   }
   
-  mixed *decode_entries(string s,int num, int *next)
+  array decode_entries(string s,int num, array(int) next)
   {
-    string *ret=({});
+    array(string) ret=({});
     for(int e=0;e<num && next[0]<strlen(s);e++)
     {
       mapping m=([]);
@@ -194,13 +194,13 @@ class protocol
     
     m->length=strlen(s);
     
-    string *tmp=({});
+    array(string) tmp=({});
     int e;
     
     if(m->qdcount!=1)
       return m;
     
-    int *next=({12});
+    array(int) next=({12});
     m->qd=decode_domain(s,next);
     sscanf(s[next[0]..next[0]+3],"%2c%2c",m->type, m->cl);
     next[0]+=4;
@@ -417,7 +417,7 @@ class client
   //!	</data_description>
   //!
 
-  mixed *gethostbyname(string s)
+  array gethostbyname(string s)
   {
     mapping m;
     if(sizeof(domains) && s[-1] != '.' && sizeof(s/".") < 3) {
@@ -437,8 +437,8 @@ class client
       return ({ 0, ({}), ({}) });
     }
 
-    string *names=({});
-    string *ips=({});
+    array(string) names=({});
+    array(string) ips=({});
     foreach(m->an, mapping x)
     {
       if(x->name)
@@ -463,12 +463,12 @@ class client
     return reverse(arpa/".")[2..]*".";
   }
 
-  mixed *gethostbyaddr(string s)
+  array gethostbyaddr(string s)
   {
     mapping m=do_sync_query(mkquery(arpa_from_ip(s), C_IN, T_PTR));
     if (m) {
-      string *names=({});
-      string *ips=({});
+      array(string) names=({});
+      array(string) ips=({});
 
       foreach(m->an, mapping x)
       {
@@ -527,7 +527,7 @@ class client
     return ret;
   }
 
-  string *get_mx(string host)
+  array(string) get_mx(string host)
   {
     mapping m;
     if(sizeof(domains) && host[-1] != '.' && sizeof(host/".") < 3) {
@@ -570,7 +570,7 @@ class async_client
     function callback;
     int retries;
     int timestamp;
-    mixed *args;
+    array args;
   };
 
   mapping requests=([]);

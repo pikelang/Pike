@@ -147,28 +147,28 @@ array permute(array a,int n)
    return a;
 }
 
-int search_array(mixed *arr, mixed fun, mixed ... args)
+int search_array(array arr, mixed fun, mixed ... args)
 {
   int e;
 
   if(stringp(fun))
   {
     for(e=0;e<sizeof(arr);e++)
-      if(arr[e][fun](@args))
+      if(([array(object)]arr)[e][fun](@args))
 	return e;
     return -1;
   }
   else if(functionp(fun))
   {
     for(e=0;e<sizeof(arr);e++)
-      if(fun(arr[e],@args))
+      if(([function]fun)(arr[e],@args))
 	return e;
     return -1;
   }
   else if(intp(fun))
   {
     for(e=0;e<sizeof(arr);e++)
-      if(arr[e](@args))
+      if(([array(function)]arr)[e](@args))
 	return e;
     return -1;
   }
@@ -178,9 +178,9 @@ int search_array(mixed *arr, mixed fun, mixed ... args)
   }
 }
 
-mixed *sum_arrays(function foo, mixed * ... args)
+array sum_arrays(function foo, array(mixed) ... args)
 {
-  mixed *ret;
+  array ret;
   int e,d;
   ret=allocate(sizeof(args[0]));
   for(e=0;e<sizeof(args[0]);e++)
@@ -188,7 +188,7 @@ mixed *sum_arrays(function foo, mixed * ... args)
   return ret;
 }
 
-mixed *sort_array(array foo,function|void cmp, mixed ... args)
+array sort_array(array foo,function|void cmp, mixed ... args)
 {
   array bar,tmp;
   int len,start;
@@ -447,16 +447,16 @@ array(array(array)) diff3 (array a, array b, array c)
 
 // diff3, complement to diff (alpha stage)
 
-array(array(array(mixed))) diff3_old(array mid,array left,array right)
+array(array(array)) diff3_old(array mid,array left,array right)
 {
-   array lmid,ldst;
-   array rmid,rdst;
+   array(array) lmid,ldst;
+   array(array) rmid,rdst;
 
    [lmid,ldst]=diff(mid,left);
    [rmid,rdst]=diff(mid,right);
 
    int l=0,r=0,n;
-   array res=({});
+   array(array(array)) res=({});
    int lpos=0,rpos=0;
    array eq=({});
    int x;
