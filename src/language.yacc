@@ -111,6 +111,7 @@
 %token F_REDEF
 %token F_EFUN_CALL
 %token F_ELSE
+%token F_EXTERN
 %token F_FLOAT_ID
 %token F_FOR
 %token F_FUNCTION_ID
@@ -185,7 +186,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.155 1999/12/27 22:45:46 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.156 1999/12/30 14:45:37 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -876,6 +877,7 @@ arguments2: new_arg_name { $$ = 1; }
 modifier: F_NO_MASK    { $$ = ID_NOMASK; }
   | F_FINAL_ID   { $$ = ID_NOMASK; }
   | F_STATIC     { $$ = ID_STATIC; }
+  | F_EXTERN     { $$ = ID_EXTERN; }
   | F_OPTIONAL   { $$ = ID_OPTIONAL; }
   | F_PRIVATE    { $$ = ID_PRIVATE | ID_STATIC; }
   | F_LOCAL_ID   { $$ = ID_INLINE; }
@@ -888,6 +890,7 @@ magic_identifiers1:
     F_NO_MASK    { $$ = "nomask"; }
   | F_FINAL_ID   { $$ = "final"; }
   | F_STATIC     { $$ = "static"; }
+  | F_EXTERN	 { $$ = "extern"; }
   | F_PRIVATE    { $$ = "private"; }
   | F_LOCAL_ID   { $$ = "local"; }
   | F_PUBLIC     { $$ = "public"; }
@@ -2495,6 +2498,8 @@ bad_expr_ident:
   { yyerror("optional is a reserved word."); }
   | F_STATIC
   { yyerror("static is a reserved word."); }
+  | F_EXTERN
+  { yyerror("extern is a reserved word."); }
   | F_FINAL_ID
   { yyerror("final is a reserved word.");}
   | F_DO
