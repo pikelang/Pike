@@ -1,5 +1,5 @@
 //! module Image
-//! $Id: module.pmod,v 1.4 1999/12/21 23:47:31 per Exp $
+//! $Id: module.pmod,v 1.5 2000/02/08 03:39:46 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -24,7 +24,7 @@ mapping _decode( string data, mixed|void tocolor )
   string format;
   mapping opts;
   if(!data)
-    return 0; 
+    return 0;
 
   if( mappingp( tocolor ) )
   {
@@ -57,8 +57,8 @@ mapping _decode( string data, mixed|void tocolor )
     }
 
   if(!i)
-    foreach( ({ "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX", 
-                "XBM", "XPM", "TIFF", "ILBM", "PS",  
+    foreach( ({ "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
+                "XBM", "XPM", "TIFF", "ILBM", "PS",
        /* Image formats low on headers below this mark */
                 "HRZ", "AVS", "WBF",
        /* "XFace" Always succeds*/
@@ -70,11 +70,11 @@ mapping _decode( string data, mixed|void tocolor )
         i = q->image;
         a = q->alpha;
       };
-      if( i ) 
+      if( i )
         break;
     }
 
-  if(!i) // No image could be decoded at all. 
+  if(!i) // No image could be decoded at all.
     return 0;
 
   if( arrayp(tocolor) && (sizeof(tocolor)==3) && objectp(i) && objectp(a) )
@@ -89,8 +89,38 @@ mapping _decode( string data, mixed|void tocolor )
     "img":i,
     "image":i,
   ]);
-
 }
+
+array(Image.Layer) decode_layers( string data, mixed|void tocolor )
+{
+  array i;
+
+  if(!data)
+    return 0;
+
+  foreach( ({ "GIF", "JPEG", "XWD", "PNM",
+              "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
+              "XBM", "XPM", "TIFF", "ILBM", "PS",
+              "HRZ", "AVS", "WBF",
+  }), string fmt )
+    if( !catch(i = Image[fmt]->decode_layers( data )) && i )
+      break;
+
+  if(!i) // No image could be decoded at all.
+    catch
+    {
+      mapping q = _decode( data, tocolor );
+      i = ({
+        Image.Layer( ([
+          "image":q->img,
+          "alpha":q->alpha
+        ]) )
+      });
+    };
+
+  return i;
+}
+
 
 string read_file(string file)
 {
@@ -121,17 +151,23 @@ string read_file(string file)
   return Stdio.read_file( file );
 }
 
+local string load_file( void|object|string file )
+{
+  string data;
+  if (!file) file=Stdio.stdin;
+  if (objectp(file))
+    data = file->read();
+  else
+  {
+    if( catch( data = read_file( file ) ) || !data || !strlen(data) )
+      catch( data = Protocols.HTTP.get_url_nice( file )[ 1 ] );
+  }
+  return data;
+}
+
 mapping _load(void|object|string file, mixed|void opts)
 {
-   string data;
-   if (!file) file=Stdio.stdin;
-   if (objectp(file))
-     data = file->read();
-   else
-   {
-     if( catch( data = read_file( file ) ) || !data || !strlen(data) )
-       catch( data = Protocols.HTTP.get_url_nice( file )[ 1 ] );
-   }
+   string data = load_file( file, opts );
    if( !data )
      error("Image._load: Can't open %O for input.\n",file);
    return _decode( data,opts );
@@ -144,6 +180,12 @@ object(Image.Layer) load_layer(void|object|string file)
       return Image.Layer( (["image":m->image,"alpha":m->alpha]) );
    else
       return Image.Layer( (["image":m->image]) );
+}
+
+array(Image.Layer) load_layers(void|object|string file, mixed|void opts)
+{
+  string d = load_file( file );
+  return decode_layers( file, opts );
 }
 
 object(Image.Image) load(void|object|string file)
