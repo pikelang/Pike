@@ -1,0 +1,24 @@
+
+test_any([[
+  #pike 7.2
+  return objectp(String.String_buffer());
+]], 1)
+test_do([[
+  #pike 7.2
+  String.String_buffer()->append("foo")
+]])
+test_do([[
+  #pike 7.2
+  add_constant("Flurp", String.String_buffer());
+]])
+test_do(Flurp->append("test"))
+test_do(Flurp->append("test"))
+test_eq((string)Flurp,"testtest")
+test_do( add_constant("Flurp") )
+test_compile_error( String.String_buffer x; )
+
+test_any([[
+  #pike 7.2
+  return String.strmult("foo",4);
+]], "foofoofoofoo")
+test_eval_error( String.strmult("foo",4); )
