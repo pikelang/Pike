@@ -1,10 +1,23 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.5 2004/03/06 01:07:34 nilsson Exp $
+// $Id: Random.pmod,v 1.6 2004/03/06 01:20:41 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
 
 #if constant(Nettle.Yarrow)
+
+#if constant(Crypto.NT)
+static string urandom;
+static string random;
+
+void create() {
+  if(file_stat("/dev/urandom")) urandom = "/dev/urandom";
+  if(file_stat("/dev/random")) random = "/dev/random";
+  if(random && !urandom) urandom=random;
+  if(!random && urandom) ranfom=urandom;
+  if(!random && !urandom) error("No entropy source found.\n");
+}
+#endif
 
 static class RND {
   inherit Nettle.Yarrow;
@@ -24,24 +37,20 @@ static class RND {
     // Source 1: ticker
     // Source 2: external
     ::create(3);
+
 #if constant(Crypto.NT)
     ctx = Crypto.NT.CryptContext(0, 0, Crypto.NT.PROV_RSA_FULL,
 				 Crypto.NT.CRYPT_VERIFYCONTEXT );
     seed( ctx->CryptGenRandom(min_seed_size()*2) );
 #else
-    if(no_block) {
-      if(file_stat("/dev/urandom"))
-	f = Stdio.File("/dev/urandom", "r");
-      if(!f && file_stat("/dev/random"))
-	f = Stdio.File("/dev/random", "r");
-    }
-    else {
+    if(no_block)
+      f = Stdio.File("/dev/urandom", "r");
+    else
       f = Stdio.File("/dev/random", "r");
-    }
-    if(!f)
-      error("No entropy source found.\n");
+
     seed( f->read(min_seed_size()*2) );
 #endif
+
 #if constant(System.rdtsc)
     ticker = System.rdtsc;
 #elif constant(gethrtime)
