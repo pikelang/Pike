@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.109 2000/08/30 21:58:17 grubba Exp $
+ * $Id: program.h,v 1.110 2000/08/31 12:28:06 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -509,15 +509,21 @@ void *parent_storage(int depth);
                      OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND)
 
 #define ADD_PROTOTYPE(NAME, TYPE, FLAGS) \
-  quick_add_function(NAME, CONSTANT_STRLEN(NAME), 0, TYPE, \
-                     CONSTANT_STRLEN(TYPE), FLAGS, \
-                     OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND)
+  ADD_FUNCTION(NAME, 0, TYPE, FLAGS)
 
-#define ADD_INT_CONSTANT(NAME,CONST,FLAGS) \
-  quick_add_integer_constant(NAME,CONSTANT_STRLEN(NAME),CONST,FLAGS)
+#define ADD_FUNCTION2(NAME, FUNC, TYPE, FLAGS, OPT_FLAGS) \
+  quick_add_function(NAME, CONSTANT_STRLEN(NAME), FUNC, TYPE,\
+                     CONSTANT_STRLEN(TYPE), FLAGS, OPT_FLAGS)
 
-#define PIKE_MAP_VARIABLE(NAME,OFFSET,TYPE,RTTYPE,FLAGS) \
-  quick_map_variable(NAME,CONSTANT_STRLEN(NAME),OFFSET,TYPE,CONSTANT_STRLEN(TYPE),RTTYPE,FLAGS)
+#define ADD_PROTOTYPE2(NAME, TYPE, FLAGS, OPT_FLAGS) \
+  ADD_FUNCTION2(NAME, 0, TYPE, FLAGS, OPT_FLAGS)
+
+#define ADD_INT_CONSTANT(NAME, CONST, FLAGS) \
+  quick_add_integer_constant(NAME, CONSTANT_STRLEN(NAME), CONST, FLAGS)
+
+#define PIKE_MAP_VARIABLE(NAME, OFFSET, TYPE, RTTYPE, FLAGS) \
+  quick_map_variable(NAME, CONSTANT_STRLEN(NAME), OFFSET, \
+                     TYPE, CONSTANT_STRLEN(TYPE), RTTYPE, FLAGS)
 
 #define ADD_FUNCTION_DTYPE(NAME,FUN,DTYPE,FLAGS) do {		\
   DTYPE_START;							\
