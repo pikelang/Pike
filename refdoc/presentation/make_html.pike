@@ -200,33 +200,6 @@ string parse_chapter(Node n, void|int noheader) {
   return ret;
 }
 
-string parse_appendix(Node n, void|int noheader) {
-  string ret ="";
-  if(!noheader)
-    ret += "<dl><dt>"
-      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
-      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Appendix " +
-      (string)({ 64+(int)n->get_attributes()->number }) + ". " +
-      n->get_attributes()->name + "</font></td></tr></table><br />\n"
-      "</dt><dd>";
-
-  Node c = n->get_first_element("doc");
-  if(c)
-    ret += parse_text(c);
-  else
-    error( "No doc element in appendix.\n" );
-
-#ifdef DEBUG
-  if(sizeof(n->get_elements("doc"))>1)
-    error( "More than one doc element in appendix node.\n" );
-#endif
-
-  if(!noheader)
-    ret = ret + "</dd></dl>"; 
-
-  return ret;
-}
-
 string parse_autodoc(Node n)
 {
   string ret ="";
@@ -1138,10 +1111,6 @@ string layout_toploop(Node n) {
 			frame_html(layout_toploop(c)) );
       if(cwd)
         cd(cwd);
-      break;
-
-    case "appendix":
-      res += parse_appendix(c);
       break;
 
     case "chapter":

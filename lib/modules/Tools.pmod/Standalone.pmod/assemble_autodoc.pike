@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.27 2003/08/24 21:00:35 nilsson Exp $
+// $Id: assemble_autodoc.pike,v 1.28 2003/11/07 05:38:57 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -11,10 +11,8 @@ constant description = "Assembles AutoDoc output file.";
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
 
 int chapter;
-int appendix;
 
 mapping queue = ([]);
-mapping appendix_queue = ([]);
 mapping ns_queue = ([]);
 array(Node) chapters = ({});
 
@@ -288,8 +286,6 @@ void ref_expansion(Node n, string dir, void|string file) {
 	  string name = c->get_elements()[0]->get_tag_name();
 	  if(name == "chapter" || name == "chapter-ref")
 	    file = "chapter_" + (1+chapter);
-	  else if(name == "appendix" || name == "appendix-ref")
-	    file = "appendix_" + (string)({ 65+appendix });
 	  else
 	    file = "file_" + (++filec);
 	}
@@ -324,60 +320,12 @@ void ref_expansion(Node n, string dir, void|string file) {
       chapter_ref_expansion(c, dir);
       break;
 
-    case "appendix-ref":
-      if(!file)
-	error("appendix-ref element outside file element\n");
-      if(c->get_attributes()->name) {
-	Entry e = mvEntry(c);
-	e->args = ([ "number": (string)++appendix ]);
-	appendix_queue[c->get_attributes()->name] = e;
-
-	// No more than 26 appendicies...
-	toc += ({ ({ c->get_attributes()->name, file,
-		     ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
-	break;
-      }
-      if(!c->get_attributes()->file)
-	error("Neither file nor name attribute on appendix-ref element.\n");
-      c = c->replace_node( parse_file(c->get_attributes()->file)->
-			   get_first_element("appendix") );
-      // fallthrough
-    case "appendix":
-      c->get_attributes()->number = (string)++appendix;
-
-      // No more than 26 appendicies...
-      toc += ({ ({ c->get_attributes()->name, file,
-		   ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"/1)[appendix-1] }) });
-      break;
-
     case "void":
       c->get_parent()->remove_child(c);
       void_node->add_child(c);
       chapter_ref_expansion(c, dir);
     }
   }
-}
-
-void move_appendices(Node n) {
-  foreach(n->get_elements("appendix"), Node c) {
-    string name = c->get_attributes()->name;
-    Node a = appendix_queue[name];
-    if(a) {
-      a(c);
-      m_delete(appendix_queue, name);
-    }
-    else {
-      c->remove_node();
-      werror("Removed untargeted appendix %O.\n", name);
-    }
-  }
-  if(sizeof(appendix_queue))
-    werror("Failed to find appendi%s %s.\n",
-	   (sizeof(appendix_queue)==1?"x":"ces"),
-	   String.implode_nicely(map(indices(appendix_queue),
-				     lambda(string in) {
-				       return "\""+in+"\"";
-				     })) );
 }
 
 Node wrap(Node n, Node wrapper) {
@@ -493,7 +441,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-     werror("$Id: assemble_autodoc.pike,v 1.27 2003/08/24 21:00:35 nilsson Exp $\n");
+     werror("$Id: assemble_autodoc.pike,v 1.28 2003/11/07 05:38:57 nilsson Exp $\n");
   if(num<3)
     error("To few arguments\n");
 
@@ -510,17 +458,14 @@ int(0..1) main(int num, array(string) args) {
   };
   if (err) {
     werror("ref_expansion() failed:\n"
-	   "  ch:%d app:%d toc:%O\n",
-	   chapter, appendix, toc);
+	   "  ch:%d toc:%O\n",
+	   chapter, toc);
     throw(err);
   }
 
   werror("Parsing autodoc file %O.\n", args[2]);
   Node m = parse_file(args[2]);
   m = m->get_first_element("autodoc");
-
-  werror("Moving appendices.\n");
-  move_appendices(m);
 
   werror("Executing node insertions.\n");
   move_items(m, queue);

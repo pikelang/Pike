@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.24 2003/11/06 15:17:54 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.25 2003/11/07 05:39:39 nilsson Exp $ */
 
 #pike __REAL_VERSION__
 
@@ -9,7 +9,7 @@ string makepic1;
 string makepic2;
 string execute;
 
-mapping parse=([ " appendix":([]) ]);
+mapping parse=([ ]);
 int illustration_counter;
 
 int verbosity = 1;
@@ -42,7 +42,7 @@ Quoting: Only '<' must be quoted as '&lt;'.
 
 */
 
-mapping moduleM, classM, methodM, argM, nowM, descM, appendixM;
+mapping moduleM, classM, methodM, argM, nowM, descM;
 
 mapping focM(mapping dest,string name,string line)
 {
@@ -99,9 +99,6 @@ mapping keywords=
 	{
 	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
 	},
-  "appendix":lambda(string arg,string line) {
-	       descM=nowM=appendixM=focM(parse[" appendix"],stripws(arg),line);
-	       report("appendix "+arg);},
   "module":lambda(string arg,string line)
 	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line);
 	    methodM=0;
@@ -543,9 +540,6 @@ void document(string enttype,
 
    switch (enttype)
    {
-      case "appendix":
-	f->write("<"+enttype+" name="+S(name)+">\n");
-	break;
       case "class":
       case "module":
 	 f->write("<"+enttype+" name="+S(canname)+">\n");
@@ -776,7 +770,6 @@ void document(string enttype,
 
    switch (enttype)
    {
-      case "appendix":
       case "class":
       case "module":
 	 f->write("</"+enttype+">\n\n");
@@ -795,7 +788,7 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 
    if (verbosity > 0)
      werror("modules: " +
-	    sort(indices(parse)-({" appendix"}))*", " +
+	    sort(indices(parse))*", " +
 	    "\n");
 
    namespace = namespace || "predef::";
@@ -816,14 +809,9 @@ string make_doc_files(string builddir, string imgdest, string|void namespace)
 
    // Module documentation exists in a namespace...
    f->write("<namespace name='" + namespace + "'>\n");
-   foreach (sort(indices(parse)-({"_order", " appendix"})),string module)
+   foreach (sort(indices(parse)-({"_order"})),string module)
       document("module",parse[module],module,module+".", f);
    f->write("</namespace>\n");
-
-   // But appendices do not.
-   if(appendixM)
-      foreach(parse[" appendix"]->_order, string title)
-         document("appendix",parse[" appendix"][title],title,"", f);
 
    cd(here);
    return Tools.AutoDoc.ProcessXML.moveImages(f->read(), builddir, imgdest);

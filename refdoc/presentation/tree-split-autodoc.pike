@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.53 2003/03/26 19:02:30 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.54 2003/11/07 05:40:39 nilsson Exp $
  *
  */
 
@@ -244,9 +244,6 @@ class Node
 
   string make_faked_wrapper(string s)
   {
-    if(type=="appendix")
-      return "<appendix name='"+name+"'>"+s+"</appendix>";
-
     if(type=="method")
       s = sprintf("<docgroup homogen-type='method' homogen-name='%s'>\n"
 		  "%s\n</docgroup>\n",
@@ -464,10 +461,8 @@ class Node
 
     res += make_navbar_really_low(root->class_children, "Classes");
 
-    if(root->is_TopNode) {
-      res += make_navbar_really_low(root->appendix_children, "Appendices");
+    if(root->is_TopNode)
       res += make_navbar_really_low(root->namespace_children, "Namespaces");
-    }
     else {
       res += make_navbar_really_low(root->enum_children, "Enums");
       res += make_navbar_really_low(root->method_children, "Methods");
@@ -548,9 +543,6 @@ class Node
 
     resolve_reference = my_resolve_reference;
 
-    if(type=="appendix")
-      return parse_appendix(n, 1);
-
     String.Buffer contents = String.Buffer(100000);
     contents->add( parse_children(n, "docgroup", parse_docgroup, 1) );
     contents->add( parse_children(n, "namespace", parse_namespace, 1) );
@@ -607,7 +599,6 @@ class TopNode {
   inherit Node;
 
   constant is_TopNode = 1;
-  array(Node) appendix_children = ({ });
   array(Node) namespace_children = ({ });
 
   void create(string _data) {
@@ -621,7 +612,6 @@ class TopNode {
 
     _data = parser->finish(_data)->read();
     ::create("autodoc", "", _data);
-    sort(appendix_children->name, appendix_children);
     foreach(namespace_children, Node x)
       if(x->type=="namespace" && x->name==default_namespace) {
 	//	namespace_children -= ({ x });
@@ -636,7 +626,6 @@ class TopNode {
 
   Parser.HTML get_parser() {
     Parser.HTML parser = ::get_parser();
-    parser->add_container("appendix", parse_node);
     parser->add_container("namespace", parse_node);
     return parser;
   }
@@ -689,7 +678,6 @@ class TopNode {
 
   void make_html(string template, string path) {
     PROFILE();
-    appendix_children->make_html(template, path);
     namespace_children->make_html(template, path);
     ::make_html(template, path);
     ENDPROFILE("top_make_html");

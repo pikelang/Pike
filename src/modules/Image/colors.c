@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: colors.c,v 1.67 2003/10/13 17:39:08 grubba Exp $
+|| $Id: colors.c,v 1.68 2003/11/07 05:28:36 nilsson Exp $
 */
 
 /*
@@ -67,31 +67,6 @@
 **!	representation, but in floats; hue is in degree range (0..360),
 **!	and saturation and value is given in percent. <i>This is not
 **!	the same as returned or given to the <ref>hsv</ref>() methods!</i>
-**!
-**! see also: Image.Color.Color->name, Image.Color.Color->rgb, colors
-**!
-**! added:
-**!	pike 0.7
-**!	
-**! note: 
-**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
-**!	but a zero_type 0, if the color is unknown. This is enough
-**!	to give the error "not present in module", if used 
-**!	as <tt>Image.Color.something</tt>, though.
-**!
-**!     If you are using colors from for instance a webpage, you might
-**!	want to create the color from <ref>Image.Color.guess</ref>(),
-**!     since that method is more tolerant for mistakes and errors.
-**!
-**!     <tt>Image.Color</tt>() is case- and space-sensitive.
-**!	Use <ref>Image.Color.guess</ref>() to catch all variants.
-**!
-**!	and subtract with a space (lower_case(x)-" ") to make
-**!	sure you get all variants.
-**!	
-**! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
-**!
-**! appendix Image.Color colors
 **!
 **! This table lists all the different named colors available in Image.Color.
 **! The first column shows the actual color while the five following columns
@@ -182,6 +157,30 @@
 **! 
 **! </execute>
 **!
+**!
+**! see also: Image.Color.Color->name, Image.Color.Color->rgb, colors
+**!
+**! added:
+**!	pike 0.7
+**!	
+**! note: 
+**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
+**!	but a zero_type 0, if the color is unknown. This is enough
+**!	to give the error "not present in module", if used 
+**!	as <tt>Image.Color.something</tt>, though.
+**!
+**!     If you are using colors from for instance a webpage, you might
+**!	want to create the color from <ref>Image.Color.guess</ref>(),
+**!     since that method is more tolerant for mistakes and errors.
+**!
+**!     <tt>Image.Color</tt>() is case- and space-sensitive.
+**!	Use <ref>Image.Color.guess</ref>() to catch all variants.
+**!
+**!	and subtract with a space (lower_case(x)-" ") to make
+**!	sure you get all variants.
+**!	
+**! see also: Image.Color.Color, Image.Color.guess, Image, Image.Colortable
+**!
 **! class Color
 **!	This is the color object. It has six readable variables,
 **!	<tt>r</tt>, <tt>g</tt>, <tt>b</tt>, for the <i>red</i>, 
@@ -192,7 +191,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.67 2003/10/13 17:39:08 grubba Exp $");
+RCSID("$Id: colors.c,v 1.68 2003/11/07 05:28:36 nilsson Exp $");
 
 #include "image_machine.h"
 

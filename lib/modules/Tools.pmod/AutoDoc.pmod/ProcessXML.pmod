@@ -19,7 +19,6 @@ static private void processError(string message, mixed ... args) {
 //
 // <autodoc>
 //   <namespace/>
-//   <appendix/>
 //   <doc/>?
 // </autodoc>
 //
@@ -285,11 +284,6 @@ string moveImages(string docXMLFile,
             }
             counter = 0;
             break;
-
-  	  case "appendix":
-	    if(attr->name != "")
-	      parents += ({ "APPENDIX" + hash(attr->name) });
-	    break;
 
 	  case "chapter":
 	    if(attr->name != "")

@@ -2,206 +2,20 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.90 2003/10/24 23:33:08 nilsson Exp $
+|| $Id: layers.c,v 1.91 2003/11/07 05:28:36 nilsson Exp $
 */
 
 /*
 **! module Image
 **! class Layer
 **! see also: layers
-**!
-
-**!
-**!
-**! appendix Image.Layer modes
-**!
-**! <dl compact>
-**! <dt><i>The variables in the expression:</i></dt>
-**! <dt>L</dt><dd><i>The active layer</i></dd>
-**! <dt>S</dt><dd><i>The source layer (the sum of the layers below)</i></dd>
-**! <dt>D</dt><dd><i>The destintion layer (the result)</i></dd>
-**! <dt>Xrgb</dt><dd><i>Layer red (<b>Xr</b>), green (<b>Xg</b>) or blue channel (<b>Xb</b>) </i></dd>
-**! <dt>Xhsv</dt><dd><i>Layer hue (<b>Xh</b>), saturation (<b>Xs</b>) or value channel (<b>Xv</b>) (virtual channels)</i></dd>
-**! <dt>Xhls</dt><dd><i>Layer hue (<b>Xh</b>), lightness channel (<b>Xl</b>) or saturation (<b>Xs</b>) (virtual channels)</i></dd>
-**! <dt>aX</dt><dd><i>Layer alpha, channel in layer alpha</i></dd>
-**! </dl>
-**! <i>All channels are calculated separately, if nothing else is specified.</i>
-**! <execute>
-**! import Image;
-**!
-**! void write_image(string desc,
-**! 		     string filename,
-**! 		     Image img,
-**!                  string longdesc)
-**! {
-**!    longdesc = replace(longdesc, ([ "&lt;":"&amp;lt;", "&gt;":"&amp;gt;", "&amp;":"&amp;amp;" ]));
-**!    write(begin_tag("tr"));
-**!    write(mktag("td",(["align":"left","colspan":"2"]),
-**!          mktag("b",0,desc)));
-**!    write(end_tag());
-**!    write(begin_tag("tr"));
-**!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0,"quality":90]))));
-**!    write(mktag("td",(["align":"left","valign":"center"]),longdesc));
-**           (replace(longdesc,({",",";",")"}),
-**                    ({",<wbr>",";<wbr>",")<wbr>"}))/
-**            "<wbr>")/1*({mktag("wbr")}) ) );
-**!    write(end_tag()+"\n");
-**! }
-**!
-**! int main()
-**! {
-**!    object ltrans=Layer((["image":
-**! 			     Image(32,32,160,160,160)->
-**! 			     box(0,0,15,15,96,96,96)->
-**! 			     box(16,16,31,31,96,96,96)->scale(0.5),
-**! 			     "tiled":1,
-**! 			     "mode":"normal"]));
-**!
-**!    object circle=load(fix_image_path("circle50.pnm"));
-**!    object image_test=load(fix_image_path("image_ill.pnm"));
-**!
-**!    object lc1=
-**! 	     Layer((["image":circle->clear(255,0,0),
-**! 		     "alpha":circle,
-**! 		     "xoffset":5,
-**! 		     "yoffset":5]));
-**!
-**!    object lc2=
-**! 	  Layer((["image":circle->clear(0,0,255),
-**! 		  "alpha":circle,
-**! 		  "xoffset":25,
-**! 		  "yoffset":25]));
-**!    object lc2b=
-**! 	  Layer((["image":circle,
-**! 		  "alpha":circle*({0,0,255}),
-**! 		  "xoffset":25,
-**! 		  "yoffset":25]));
-**!
-**!    object li1=
-**! 	  Layer((["image":image_test->scale(80,0),
-**! 		  "mode":"normal",
-**! 		  "xoffset":0,
-**! 		  "yoffset":0]));
-**!
-**!    object li2=
-**! 	  lay(
-**! 	     ({
-**! 	     (["image":circle->clear(255,0,0),"alpha":circle,
-**! 	       "xoffset":5,"yoffset":0,"mode":"add"]),
-**! 	     (["image":circle->clear(0,255,0),"alpha":circle,
-**! 	       "xoffset":25,"yoffset":0,"mode":"add"]),
-**! 	     (["image":circle->clear(0,0,255),"alpha":circle,
-**! 	       "xoffset":15,"yoffset":20,"mode":"add"]),
-**! 	     (["image":circle->clear(0,0,0)->scale(0.5),
-**! 	       "alpha":circle->scale(0.5),
-**! 	       "xoffset":0,"yoffset":55]),
-**! 	     (["image":circle->clear(255,255,255)->scale(0.5),
-**! 	       "alpha":circle->scale(0.5),
-**! 	       "xoffset":55,"yoffset":55])
-**! 	     }));
-**!
-**!    Layer li2b=Layer(li2->image()->clear(255,255,255),li2->image());
-**!
-**!    object lzo0=
-**! 	  lay( ({
-**! 	     Layer(Image(4,10)
-**! 		   ->tuned_box(0,0,3,8,({({255,255,255}),({255,255,255}),
-**! 					 ({0,0,0}),({0,0,0})}))
-**! 		   ->scale(40,80))
-**! 	     ->set_offset(0,0),
-**! 	     Layer(Image(40,80)
-**! 		   ->tuned_box(0,0,40,78,({({255,255,255}),({255,255,255}),
-**! 					  ({0,0,0}),({0,0,0})})))
-**! 	     ->set_offset(40,0),
-**! 	     Layer(Image(80,80)
-**! 		   ->tuned_box(0,0,80,80,({({255,0,0}),({255,255,0}),
-**! 					  ({0,0,255}),({0,255,0})})))
-**! 	     ->set_offset(80,0),
-**! 	  }) );
-**!
-**!    object scale=
-**! 	  Image(4,80)
-**! 	  ->tuned_box(0,0,40,78,({({255,255,255}),({255,255,255}),
-**! 				  ({0,0,0}),({0,0,0})}));
-**!    object lzo1=
-**! 	  lay( ({
-**! 	     Layer(scale)->set_offset(2,0),
-**! 	     Layer(scale->invert())->set_offset(6,0),
-**! 	     Layer(Image(26,80)->test())->set_offset(12,0),
-**! 	     Layer(scale)->set_offset(42,0),
-**! 	     Layer(scale->invert())->set_offset(46,0),
-**! 	     Layer(Image(26,80)->test())->set_offset(52,0),
-**! 	     Layer(scale)->set_offset(82,0),
-**! 	     Layer(scale->invert())->set_offset(86,0),
-**! 	     Layer(Image(26,80)->test())->set_offset(92,0),
-**! 	     Layer(scale)->set_offset(122,0),
-**! 	     Layer(scale->invert())->set_offset(126,0),
-**! 	     Layer(Image(26,80,"white"),
-**! 		   Image(26,80)->test())->set_offset(132,0),
-**! 	  }));
-**!
-**!    object lca1;
-**!
-**!    object a=
-**! 	  lay( ({ lca1=lay(({Layer((["fill":"white"])),
-**!                          lc1}),0,0,80,80),
-**! 		  lay(({lc1}),0,0,80,80)->set_offset(80,0),
-**! 		  lay(({li1}),0,0,80,80)->set_offset(160,0),
-**! 		  lay(({li1}),0,0,80,80)->set_offset(240,0),
-**! 		  lzo0->set_offset(320,0)}),
-**! 	       0,0,480,80);
-**!
-**!    object b=
-**! 	  lay( ({ lay(({lc2}),0,0,80,80),
-**! 		  lay(({lc2b}),0,0,80,80)->set_offset(80,0),
-**! 		  lay(({li2}),0,0,80,80)->set_offset(160,0),
-**! 		  lay(({li2b}),0,0,80,80)->set_offset(240,0),
-**! 		  lzo1->set_offset(320,0)}),
-**! 	       0,0,480,80);
-**!
-**    xv(a); xv(b);
-**!
-**!    write(begin_tag("table",(["cellspacing":"0","cellpadding":"1"])));
-**!
-**!    write_image("top layer","b",lay(({ltrans,b}))->image(),
-**!		   "");
-**!    write_image("bottom layer","a",lay(({ltrans,a}))->image(),
-**!                "");
-**!
-**!    foreach (Array.transpose(({Layer()->available_modes(),
-**!                               Layer()->descriptions()})),
-**!             [string mode,string desc])
-**!    {
-**!	  if ((&lt;"add","equal","replace","replace_hsv","darken",
-**!	        "dissolve","screen","logic_equal">)[mode])
-**!          write(mktag("tr",0,mktag("td",0,"\240")));
-**!
-**! 	  ({lc2,lc2b,li2,li2b,lzo1})->set_mode(mode);
-**!
-**! 	  object r=
-**! 	     lay( ({ lay(({lca1,lc2}),0,0,80,80),
-**! 		     lay(({lc1,lc2b}),0,0,80,80)->set_offset(80,0),
-**! 		     lay(({li1,li2}),0,0,80,80)->set_offset(160,0),
-**! 		     lay(({li1,li2b}),0,0,80,80)->set_offset(240,0),
-**! 		     lay(({lzo0,lzo1}),320,0,160,80) }),
-**! 		  0,0,480,80);
-**       xv(r);
-**!
-**! 	  write_image(mode,mode,lay(({ltrans,r}))->image(),desc);
-**!    }
-**!
-**!    write(end_tag());
-**!    return 0;
-**! }
-**!
-**! </execute>
 */
 
 #include "global.h"
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.90 2003/10/24 23:33:08 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.91 2003/11/07 05:28:36 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1067,39 +881,186 @@ static void image_layer_alpha_value(INT32 args)
 **! method array(string) available_modes()
 **!	Set/get layer mode. Mode is one of these:
 **!
-**!  	"normal",
-**!  	"add",
-**!  	"subtract",
-**!  	"multiply",
-**!  	"divide",
-**!  	"modulo",
-**!  	"invsubtract",
-**!  	"invdivide",
-**!  	"invmodulo",
-**!  	"difference",
-**!  	"max",
-**!  	"min",
-**!  	"bitwise_and",
-**!  	"bitwise_or",
-**!  	"bitwise_xor",
+**! <dl compact>
+**! <dt><i>The variables in the expression:</i></dt>
+**! <dt>L</dt><dd><i>The active layer</i></dd>
+**! <dt>S</dt><dd><i>The source layer (the sum of the layers below)</i></dd>
+**! <dt>D</dt><dd><i>The destintion layer (the result)</i></dd>
+**! <dt>Xrgb</dt><dd><i>Layer red (<b>Xr</b>), green (<b>Xg</b>) or blue channel (<b>Xb</b>) </i></dd>
+**! <dt>Xhsv</dt><dd><i>Layer hue (<b>Xh</b>), saturation (<b>Xs</b>) or value channel (<b>Xv</b>) (virtual channels)</i></dd>
+**! <dt>Xhls</dt><dd><i>Layer hue (<b>Xh</b>), lightness channel (<b>Xl</b>) or saturation (<b>Xs</b>) (virtual channels)</i></dd>
+**! <dt>aX</dt><dd><i>Layer alpha, channel in layer alpha</i></dd>
+**! </dl>
+**! <i>All channels are calculated separately, if nothing else is specified.</i>
+**! <execute>
+**! import Image;
 **!
-**!  	"replace",
-**!  	"red",
-**!  	"green",
-**!  	"blue",
+**! void write_image(string desc,
+**! 		     string filename,
+**! 		     Image img,
+**!                  string longdesc)
+**! {
+**!    longdesc = replace(longdesc, ([ "&lt;":"&amp;lt;", "&gt;":"&amp;gt;", "&amp;":"&amp;amp;" ]));
+**!    write(begin_tag("tr"));
+**!    write(mktag("td",(["align":"left","colspan":"2"]),
+**!          mktag("b",0,desc)));
+**!    write(end_tag());
+**!    write(begin_tag("tr"));
+**!    write(mktag("td",(["align":"right"]),illustration_jpeg(img,(["dpi":150.0,"quality":90]))));
+**!    write(mktag("td",(["align":"left","valign":"center"]),longdesc));
+**           (replace(longdesc,({",",";",")"}),
+**                    ({",<wbr>",";<wbr>",")<wbr>"}))/
+**            "<wbr>")/1*({mktag("wbr")}) ) );
+**!    write(end_tag()+"\n");
+**! }
 **!
-**!  	"replace_hsv",
-**!  	"hue",
-**!  	"saturation",
-**!  	"value",
-**!  	"color",
+**! int main()
+**! {
+**!    object ltrans=Layer((["image":
+**! 			     Image(32,32,160,160,160)->
+**! 			     box(0,0,15,15,96,96,96)->
+**! 			     box(16,16,31,31,96,96,96)->scale(0.5),
+**! 			     "tiled":1,
+**! 			     "mode":"normal"]));
 **!
-**!  	"darken",
-**!  	"lighten",
+**!    object circle=load(fix_image_path("circle50.pnm"));
+**!    object image_test=load(fix_image_path("image_ill.pnm"));
 **!
-**!  	"dissolve",
-**!  	"behind",
-**!  	"erase",
+**!    object lc1=
+**! 	     Layer((["image":circle->clear(255,0,0),
+**! 		     "alpha":circle,
+**! 		     "xoffset":5,
+**! 		     "yoffset":5]));
+**!
+**!    object lc2=
+**! 	  Layer((["image":circle->clear(0,0,255),
+**! 		  "alpha":circle,
+**! 		  "xoffset":25,
+**! 		  "yoffset":25]));
+**!    object lc2b=
+**! 	  Layer((["image":circle,
+**! 		  "alpha":circle*({0,0,255}),
+**! 		  "xoffset":25,
+**! 		  "yoffset":25]));
+**!
+**!    object li1=
+**! 	  Layer((["image":image_test->scale(80,0),
+**! 		  "mode":"normal",
+**! 		  "xoffset":0,
+**! 		  "yoffset":0]));
+**!
+**!    object li2=
+**! 	  lay(
+**! 	     ({
+**! 	     (["image":circle->clear(255,0,0),"alpha":circle,
+**! 	       "xoffset":5,"yoffset":0,"mode":"add"]),
+**! 	     (["image":circle->clear(0,255,0),"alpha":circle,
+**! 	       "xoffset":25,"yoffset":0,"mode":"add"]),
+**! 	     (["image":circle->clear(0,0,255),"alpha":circle,
+**! 	       "xoffset":15,"yoffset":20,"mode":"add"]),
+**! 	     (["image":circle->clear(0,0,0)->scale(0.5),
+**! 	       "alpha":circle->scale(0.5),
+**! 	       "xoffset":0,"yoffset":55]),
+**! 	     (["image":circle->clear(255,255,255)->scale(0.5),
+**! 	       "alpha":circle->scale(0.5),
+**! 	       "xoffset":55,"yoffset":55])
+**! 	     }));
+**!
+**!    Layer li2b=Layer(li2->image()->clear(255,255,255),li2->image());
+**!
+**!    object lzo0=
+**! 	  lay( ({
+**! 	     Layer(Image(4,10)
+**! 		   ->tuned_box(0,0,3,8,({({255,255,255}),({255,255,255}),
+**! 					 ({0,0,0}),({0,0,0})}))
+**! 		   ->scale(40,80))
+**! 	     ->set_offset(0,0),
+**! 	     Layer(Image(40,80)
+**! 		   ->tuned_box(0,0,40,78,({({255,255,255}),({255,255,255}),
+**! 					  ({0,0,0}),({0,0,0})})))
+**! 	     ->set_offset(40,0),
+**! 	     Layer(Image(80,80)
+**! 		   ->tuned_box(0,0,80,80,({({255,0,0}),({255,255,0}),
+**! 					  ({0,0,255}),({0,255,0})})))
+**! 	     ->set_offset(80,0),
+**! 	  }) );
+**!
+**!    object scale=
+**! 	  Image(4,80)
+**! 	  ->tuned_box(0,0,40,78,({({255,255,255}),({255,255,255}),
+**! 				  ({0,0,0}),({0,0,0})}));
+**!    object lzo1=
+**! 	  lay( ({
+**! 	     Layer(scale)->set_offset(2,0),
+**! 	     Layer(scale->invert())->set_offset(6,0),
+**! 	     Layer(Image(26,80)->test())->set_offset(12,0),
+**! 	     Layer(scale)->set_offset(42,0),
+**! 	     Layer(scale->invert())->set_offset(46,0),
+**! 	     Layer(Image(26,80)->test())->set_offset(52,0),
+**! 	     Layer(scale)->set_offset(82,0),
+**! 	     Layer(scale->invert())->set_offset(86,0),
+**! 	     Layer(Image(26,80)->test())->set_offset(92,0),
+**! 	     Layer(scale)->set_offset(122,0),
+**! 	     Layer(scale->invert())->set_offset(126,0),
+**! 	     Layer(Image(26,80,"white"),
+**! 		   Image(26,80)->test())->set_offset(132,0),
+**! 	  }));
+**!
+**!    object lca1;
+**!
+**!    object a=
+**! 	  lay( ({ lca1=lay(({Layer((["fill":"white"])),
+**!                          lc1}),0,0,80,80),
+**! 		  lay(({lc1}),0,0,80,80)->set_offset(80,0),
+**! 		  lay(({li1}),0,0,80,80)->set_offset(160,0),
+**! 		  lay(({li1}),0,0,80,80)->set_offset(240,0),
+**! 		  lzo0->set_offset(320,0)}),
+**! 	       0,0,480,80);
+**!
+**!    object b=
+**! 	  lay( ({ lay(({lc2}),0,0,80,80),
+**! 		  lay(({lc2b}),0,0,80,80)->set_offset(80,0),
+**! 		  lay(({li2}),0,0,80,80)->set_offset(160,0),
+**! 		  lay(({li2b}),0,0,80,80)->set_offset(240,0),
+**! 		  lzo1->set_offset(320,0)}),
+**! 	       0,0,480,80);
+**!
+**    xv(a); xv(b);
+**!
+**!    write(begin_tag("table",(["cellspacing":"0","cellpadding":"1"])));
+**!
+**!    write_image("top layer","b",lay(({ltrans,b}))->image(),
+**!		   "");
+**!    write_image("bottom layer","a",lay(({ltrans,a}))->image(),
+**!                "");
+**!
+**!    foreach (Array.transpose(({Layer()->available_modes(),
+**!                               Layer()->descriptions()})),
+**!             [string mode,string desc])
+**!    {
+**!	  if ((&lt;"add","equal","replace","replace_hsv","darken",
+**!	        "dissolve","screen","logic_equal">)[mode])
+**!          write(mktag("tr",0,mktag("td",0,"\240")));
+**!
+**! 	  ({lc2,lc2b,li2,li2b,lzo1})->set_mode(mode);
+**!
+**! 	  object r=
+**! 	     lay( ({ lay(({lca1,lc2}),0,0,80,80),
+**! 		     lay(({lc1,lc2b}),0,0,80,80)->set_offset(80,0),
+**! 		     lay(({li1,li2}),0,0,80,80)->set_offset(160,0),
+**! 		     lay(({li1,li2b}),0,0,80,80)->set_offset(240,0),
+**! 		     lay(({lzo0,lzo1}),320,0,160,80) }),
+**! 		  0,0,480,80);
+**       xv(r);
+**!
+**! 	  write_image(mode,mode,lay(({ltrans,r}))->image(),desc);
+**!    }
+**!
+**!    write(end_tag());
+**!    return 0;
+**! }
+**!
+**! </execute>
 **!
 **!	<ref>available_modes</ref>() simply gives an array
 **!	containing the names of these modes.

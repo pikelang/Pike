@@ -2,7 +2,7 @@
 <!-- put everything together, as well as information about how to -->
 <!-- split it up into smaller files. -->
 
-<!-- $Id: onepage.xml,v 1.3 2002/04/06 21:28:15 nilsson Exp $ -->
+<!-- $Id: onepage.xml,v 1.4 2003/11/07 05:27:49 nilsson Exp $ -->
 
 <manual>
   <dir name="onepage">
@@ -11,9 +11,6 @@
     <chapter-ref file="chapters/data_types.xml"/>
     <chapter-ref file="chapters/language_reference.xml"/>
     <chapter-ref file="chapters/autodoc.xml"/>
-    <appendix-ref name="Image.Color colors"/>
-    <appendix-ref name="Image.Layer modes"/>
-    <appendix-ref file="chapters/appendix_bnf.xml"/>
   </file>
   </dir>
 </manual>
