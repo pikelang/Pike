@@ -574,7 +574,7 @@ class Runtime_timezone_compiler
 
 	 array sr=({});
 
-	 int y,mn=min(@indices(rules-(<NUL_YEAR>)));
+	 int mn=min(@indices(rules-(<NUL_YEAR>)));
 
 	 for (y=INF_YEAR;sizeof(r2);y--)
 	    if (r2[y])
@@ -710,7 +710,7 @@ class Runtime_timezone_compiler
 	 if (sizeof(a)<4)
 	    complain("parse error\n");
       
-	 array a=({parse_offset(a[0]), // offset
+	 a=({parse_offset(a[0]), // offset
 		   a[1], // rule or added offset
 		   a[2], // string
 		   a[3],

@@ -78,7 +78,7 @@ object|mapping der_decode(object data, mapping types)
   if ( (raw_tag & 0x1f) == 0x1f)
     error("ASN1.Decode: High tag numbers is not supported\n");
 
-  int len = data->get_uint(1);
+  len = data->get_uint(1);
   if (len & 0x80)
     len = data->get_uint(len & 0x7f);
     
