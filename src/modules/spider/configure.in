@@ -5,7 +5,7 @@ AC_PROG_CC
 AC_PROG_RANLIB
 
 AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h netinet/in.h)
-AC_HAVE_FUNCS(syslog perror strerror)
+AC_HAVE_FUNCS(syslog perror strerror getppid getpgrp getppid getuid getgid geteuid getegid)
 
 AC_SUBST(RANLIB)
 

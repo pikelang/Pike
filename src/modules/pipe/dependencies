@@ -1,4 +1,5 @@
-pipe.o: ./pipe.c ./../../global.h ./../../config.h ./../../machine.h \
- ./../../port.h ./../../stralloc.h ./../../macros.h ./../../object.h \
- ./../../svalue.h ./../../add_efun.h ./../../hashtable.h \
- ./../../interpret.h ./../../program.h ./../../error.h
+pipe.o: ./pipe.c ./config.h ./../../machine.h ./../../global.h \
+ ./../../config.h ./../../debug.h ./../../port.h ./../../stralloc.h \
+ ./../../macros.h ./../../object.h ./../../svalue.h ./../../add_efun.h \
+ ./../../hashtable.h ./../../interpret.h ./../../program.h \
+ ./../../error.h

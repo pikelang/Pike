@@ -922,8 +922,79 @@ void f_mark_fd(INT32 args)
   push_int(0);
 }
 
+#define get(X) void f_##X(INT32 args){ pop_n_elems(args); push_int((INT32)X()); }
+
+#ifdef HAVE_GETUID
+get(getuid);
+#endif
+#ifdef HAVE_GETEUID
+get(geteuid);
+#endif
+#ifdef HAVE_GETGID
+get(getgid);
+#endif
+#ifdef HAVE_GETEGID
+get(getegid);
+#endif
+get(getpid);
+#ifdef HAVE_GETPPID
+get(getppid);
+#endif
+#ifdef HAVE_GETPGRP
+get(getpgrp);
+#endif
+
+#undef get
+
+
+void f_chroot(INT32 args)
+{
+  int res;
+  if(args != 1) 
+    error("Wrong number of args to chroot(string|object newroot)\n");
+  if(sp[-args].type == T_STRING)
+  {
+    res = chroot((char *)sp[-args].u.string->str);
+    pop_stack();
+    push_int(!res);
+    return;
+  } else if(sp[-args].type == T_OBJECT) {
+    int fd;
+    apply(sp[-args].u.object, "query_fd", 0);
+    fd=sp[-1].u.integer;
+    pop_stack();
+    res=fchroot(fd);
+    pop_stack();
+    push_int(!res);
+    return;
+  }
+  error("Wrong type of argument to chroot(string|object newroot)\n");
+}
+
 void init_spider_efuns(void) 
 {
+#ifdef HAVE_GETUID
+  add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETEUID
+  add_efun("geteuid", f_geteuid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETGID
+  add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETEGID
+  add_efun("getegid", f_getegid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
+  add_efun("getpid", f_getpid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#ifdef HAVE_GETPPID
+  add_efun("getppid", f_getppid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETPGRP
+  add_efun("getpgrp", f_getpgrp, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
+
+  add_efun("chroot", f_chroot, "function(string|object:int)", 
+	   OPT_EXTERNAL_DEPEND);
 
   add_efun("parse_accessed_database", f_parse_accessed_database,
 	   "function(string:array)", OPT_TRY_OPTIMIZE);

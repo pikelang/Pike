@@ -1,6 +1,13 @@
+#include "config.h"
+#include "machine.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
+
 #include <fcntl.h>
 
 #include "global.h"
@@ -178,10 +185,13 @@ static INLINE void free_input(struct input *i)
     break;
 
   case I_MMAP:
+#if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
     munmap(i->u.mmap,i->len);
-    mmapped -= i->len;
+    mmapped -= i->len;  
+#else
+    error("I_MMAP input when MMAP is diabled!");
+#endif
     break;
-
   }
   free(i);
 }
@@ -384,6 +394,7 @@ static INLINE struct lpc_string* gimme_some_data(unsigned long pos)
    {
      if (THIS->firstinput)
      {
+#if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
        if (THIS->firstinput->type==I_MMAP)
        {
 	 if (pos >= THIS->firstinput->len + THIS->pos) /* end of mmap */
@@ -398,7 +409,9 @@ static INLINE struct lpc_string* gimme_some_data(unsigned long pos)
 					  pos-THIS->pos,
 					  len);
        }
-       else if (THIS->firstinput->type!=I_OBJ)
+       else
+#endif
+       if (THIS->firstinput->type!=I_OBJ)
        {
 	 input_finish();       /* shouldn't be anything else ... maybe a finished object */
        }
@@ -539,6 +552,8 @@ static void pipe_input(INT32 args)
 
    i=new_input();
 
+#if defined(HAVE_MMAP) && defined(HAVE_MUNMAP)
+
    /* We do not handle mmaps if we have a buffer */
    if(THIS->fd == -1)
    {
@@ -563,6 +578,7 @@ static void pipe_input(INT32 args)
        }
      }
    }
+#endif
 
    i->u.obj=obj;
    nobjects++;

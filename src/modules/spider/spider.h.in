@@ -1,3 +1,17 @@
+#undef HAVE_GETPGRP
+
+#undef HAVE_GETPPID
+
+#undef HAVE_GETGID
+
+#undef HAVE_GETEGID
+
+#undef HAVE_GETEUID
+
+#undef HAVE_GETGID
+
+#undef HAVE_GETUID
+
 #undef HAVE_SYSLOG_H
 
 #undef HAVE_SYSLOG
@@ -8,11 +22,8 @@
 
 #undef HAVE_STRERROR
 
-/* Define if you have arpa/inhet.h */
 #undef HAVE_ARPA_INET_H
 
-/* Define if you have the <sys/socketvar.h> header file.  */
 #undef HAVE_SYS_SOCKETVAR_H
 
-/* Define if you have the <netinet/in.h> header file.  */
 #undef HAVE_NETINET_IN_H
