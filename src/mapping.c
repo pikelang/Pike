@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.90 2000/07/04 00:43:57 mast Exp $");
+RCSID("$Id: mapping.c,v 1.91 2000/07/06 23:25:26 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -208,6 +208,12 @@ void really_free_mapping_data(struct mapping_data *md)
   }
 
   free((char *) md);
+}
+
+void do_free_mapping(struct mapping *m)
+{
+  if (m)
+    free_mapping(m);
 }
 
 /* This function is used to rehash a mapping without loosing the internal

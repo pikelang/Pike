@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.131 2000/07/04 00:43:57 mast Exp $");
+RCSID("$Id: object.c,v 1.132 2000/07/06 23:25:26 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -252,7 +252,8 @@ static void call_pike_initializers(struct object *o, int args)
 
 void do_free_object(struct object *o)
 {
-  free_object(o);
+  if (o)
+    free_object(o);
 }
 
 struct object *debug_clone_object(struct program *p, int args)

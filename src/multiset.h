@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: multiset.h,v 1.11 2000/06/09 22:43:04 mast Exp $
+ * $Id: multiset.h,v 1.12 2000/07/06 23:25:26 mast Exp $
  */
 #ifndef MULTISET_H
 #define MULTISET_H
@@ -33,6 +33,7 @@ extern struct multiset *gc_internal_multiset;
 int multiset_member(struct multiset *l, struct svalue *ind);
 struct multiset *allocate_multiset(struct array *ind);
 void really_free_multiset(struct multiset *l);
+void do_free_multiset(struct multiset *l);
 void order_multiset(struct multiset *l);
 struct multiset *mkmultiset(struct array *ind);
 void multiset_insert(struct multiset *l,
