@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.39 2003/08/15 13:58:48 mattias Exp $
+// $Id: Utils.pmod,v 1.40 2003/09/26 13:30:40 anders Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -496,7 +496,7 @@ class Scheduler {
 	compact_queue[dbp->id] = next;
 	WERR(" Compact: "+(next-time()));
       }
-      WERR("\n");
+      WERR("");
     }
 
     if(!sizeof(crawl_queue) && !sizeof(compact_queue)) return;
