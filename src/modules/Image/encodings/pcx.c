@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.3 1999/04/09 23:19:00 per Exp $");
+RCSID("$Id: pcx.c,v 1.4 1999/04/11 05:37:59 per Exp $");
 
 #include "config.h"
 
@@ -321,7 +321,7 @@ void image_pcx_decode( INT32 args )
 
 
 /*
-**! method object _decode(string data)
+**! method mapping _decode(string data)
 **! 	Decodes a PCX image to a mapping. 
 **!
 **! note
