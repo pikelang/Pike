@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.131 1998/12/17 02:06:46 mirar Exp $");
+RCSID("$Id: file.c,v 1.132 1999/01/01 00:58:27 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1440,7 +1440,7 @@ retry_connect:
   retries++;
   if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
   {
-    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK);
+/*    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK); */
     if(errno != EWOULDBLOCK)
     {
       int tmp2;
@@ -2060,7 +2060,7 @@ void file_proxy(INT32 args)
   if(from<0)
   {
     ERRNO=errno;
-    error("Failed to dup proxy fd.\n");
+    error("Failed to dup proxy fd. (errno=%d)\n",errno);
   }
   to=fd_dup(FD);
   if(from<0)
@@ -2092,6 +2092,8 @@ void create_proxy_pipe(struct object *o, int for_reading)
   push_object(n=clone_object(file_program,0));
   push_int(fd_INTERPROCESSABLE);
   apply(n,"pipe",1);
+  if(sp[-1].type!=T_OBJECT)
+    error("Failed to create proxy pipe (errno=%d)!\n",get_file_storage(n)->my_errno);
   n2=sp[-1].u.object;
   /* Stack is now: pipe(read), pipe(write) */
   if(for_reading)
