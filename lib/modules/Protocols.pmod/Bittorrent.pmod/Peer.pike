@@ -66,7 +66,12 @@ void create(.Torrent _parent,mapping m)
    port=m->port;
    id=m["peer id"];
    if (id!="?") 
+   {
       client_version=.PeerID.identify_peer(id);
+//       werror("%O is %O is %O\n",ip,id,client_version);
+   }
+//    else
+//       werror("incoming from %O\n",ip);
 
    _status("created");
 
@@ -186,7 +191,7 @@ void connect()
 	 host_to_ip(ip, 
 		    lambda(string name,string ip)
 		    {
-		       werror("%O = %O\n",name,ip);
+// 		       werror("%O = %O\n",name,ip);
 		       connect2(ip);
 		    });
    }
@@ -310,13 +315,13 @@ static private void peer_write()
       }
 
 // tit-for-tat
-      if (bytes_out>=bytes_in+parent->allow_free && 
+      if (parent->do_we_strangle(this,bytes_in,bytes_out) && 
 	  !parent->we_are_completed)
       {
-#ifdef BT_PEER_DEBUG
+// #ifdef BT_PEER_DEBUG
 	 werror("%O doesn't give us enough, i:%d o:%d i-o:%O: choking\n",
 		ip,bytes_in,bytes_out,bytes_in-bytes_out);
-#endif
+// #endif
 	 strangle();
 	 fd->set_write_callback(0); 
 	 return; 
@@ -395,8 +400,10 @@ static private void peer_read(mixed dummy,string s)
 	 online=0;
 	 _status("failed","not bittorrent");
 
-	 warning("got non-bittorrent connection from %O (%s): %O\n",
-		 ip,mode=="connected"?"outgoing":"incoming",
+	 warning("got non-bittorrent connection from %O (%s %s): %O\n",
+		 ip,
+		 mode=="connected"?"outgoing":"incoming",
+		 client_version,
 		 readbuf[..40]);
 	 return;
       }
@@ -416,11 +423,17 @@ static private void peer_read(mixed dummy,string s)
 	 {
 	    id=readbuf[48..67];
 	    client_version=.PeerID.identify_peer(id);
+// 	    werror("(inc) %O is %O is %O\n",ip,id,client_version);
 
 	    if (parent->peers[id]) // no cheating by reconnecting :)
 	    {
 	       bytes_in=parent->peers[id]->bytes_in;
 	       bytes_out=parent->peers[id]->bytes_out;
+
+	       parent->peers[id]->disconnect();
+
+	       warning("%O (%s): disconnected old connection, we got a new\n",
+		       ip,client_version);
 	    }
 
 	    parent->peers[id]=this;
@@ -547,12 +560,6 @@ void got_message_from_peer(string msg)
 	 break;
       case MSG_HAVE:
 	 sscanf(msg,"%*c%4c",n);
-	 if (!bitfield)
-	 {
-	    Function.call_callback(
-	       warning,"%O gave us HAVE but no BITFIELD\n",ip);
-	    break;
-	 }
 	 bitfield[n/8]=bitfield[n/8]|(128>>(n&7));
 	 is_complete=(bitfield==parent->all_pieces_bits);
 
@@ -574,8 +581,9 @@ void got_message_from_peer(string msg)
 	 if (sscanf(msg,"%*c%4c%4c%4c",n,o,l)<4)
 	 {
 	    Function.call_callback(
-	       warning,"%O: got illegal piece message, too short (%d bytes)\n",
-	       ip,msg[0],strlen(msg));
+	       warning,"%O (%s): got illegal piece message, "
+	       "too short (%d bytes)\n",
+	       ip,client_version,msg[0],strlen(msg));
 	    return;
 	 }
 	 else
@@ -585,8 +593,9 @@ void got_message_from_peer(string msg)
 	 if (sscanf(msg,"%*c%4c%4c%s",n,o,data)<4)
 	 {
 	    Function.call_callback(
-	       warning,"%O: got illegal piece message, too short (%d bytes)\n",
-	       ip,msg[0],strlen(msg));
+	       warning,"%O (%s): got illegal piece message, "
+	       "too short (%d bytes)\n",
+	       ip,client_version,msg[0],strlen(msg));
 	    return;
 	 }
 	 got_piece_from_peer(n,o,data);
@@ -596,8 +605,8 @@ void got_message_from_peer(string msg)
 	 break;
       default: 
 	 Function.call_callback(
-	    warning,"%O: got unknown message type %d, %d bytes\n",
-	    ip,msg[0],strlen(msg));
+	    warning,"%O (%s): got unknown message type %d, %d bytes\n",
+	    ip,client_version,msg[0],strlen(msg));
    }
 }
 
@@ -707,20 +716,19 @@ void got_piece_from_peer(int piece,int offset,string data)
       cancelled--;
    else
    {
-#if 0
       Function.call_callback(
-	 warning,"%O: got unrequested piece %d/%d+%db\n",
-	 ip,piece,offset,strlen(data));
-#endif
+	 warning,"%O (%s): got unrequested piece %d/%d+%db\n",
+	 ip,client_version,piece,offset,strlen(data));
    }
 
    bytes_in+=strlen(data);
-   if (strangled)
+   if (strangled &&
+       !parent->do_we_strangle(this,bytes_in,bytes_out))
    {
-#ifdef BT_PEER_DEBUG
+// #ifdef BT_PEER_DEBUG
       werror("%O gave us enough, i:%d o:%d i-o:%O: unchoking\n",
 	     ip,bytes_in,bytes_out,bytes_in-bytes_out);
-#endif
+// #endif
       unstrangle();
    }
 }
@@ -747,8 +755,8 @@ static void queue_piece(int piece,int offset,int length)
    {
       Function.call_callback(
 	 warning,
-	 "%O: got request for a too large chunk, %d bytes - ignored\n",
-	 ip,length);
+	 "%O (%s): got request for a too large chunk, %d bytes - ignored\n",
+	 ip,client_version,length);
       return;
    }
 
@@ -760,8 +768,8 @@ static void queue_piece(int piece,int offset,int length)
 
    if (parent->file_want[piece])
    {
-      warning("%s requested piece %d, but we don't have it?\n",
-	      ip,piece);
+      warning("%O (%s) requested piece %d, but we don't have it?\n",
+	      ip,client_version,piece);
       return;
    }
 

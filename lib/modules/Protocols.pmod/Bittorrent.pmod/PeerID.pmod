@@ -16,14 +16,14 @@ string identify_peer(string peerid)
       {
 	 string version = peerid[1..3];
 	 string name = "Shadow "
-	    +((array(string))version[..2])*".";
+	    +version[..2]/1*".";
 	 return name;
       }
         
       if (peerid[8] == 0) 
       {  // is next Burst version still using this?
 	 string name = "Shadow "
-	    +((array(string))peerid[1..3])*".";
+	    +peerid[1..3]/1*".";
 	 return name;
       }
    }
@@ -33,7 +33,7 @@ string identify_peer(string peerid)
    {
       string version = peerid[3..3+4-1];
       string name = "Azureus "
-	 +((array(string))version[..3])*".";
+	 +version[..3]/1*".";
       return name;
    }
       
@@ -71,7 +71,7 @@ string identify_peer(string peerid)
    {
       string version = peerid[3..3+4-1];
       string name = "LibTorrent "
-	 +((array(string))version[..3])*".";
+	 +version[..3]/1*".";
       return name;
    }
       

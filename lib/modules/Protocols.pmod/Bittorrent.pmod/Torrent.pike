@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.18 2003/12/17 19:02:26 mirar Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.19 2003/12/17 22:31:38 mirar Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -88,7 +88,19 @@ int downloaded=0; // bytes
 int downloading=0; // flag
 int we_are_completed=0; // set when no more to download
 
-int allow_free=100000; // free bytes before demanding back from peers
+//! function to determine if we should strangle this peer
+//! default is to allow 100kbyte of data over the ratio,
+//! which is 2:1 per default, upload twice as much as we get
+//!
+//! Arguments are the peer, bytes in (downloaded) and bytes out
+//! (uploaded).
+function(.Peer,int,int:int(0..1)) do_we_strangle=
+   lambda(.Peer peer,int bytes_in,int bytes_out)
+   {
+      constant allow_free=100000; 
+      constant ratio=2; 
+      return bytes_out - bytes_in*ratio > allow_free;
+   };
 
 string datamode="rw";
 
@@ -436,7 +448,7 @@ int bytes_left()
 
 int last_tracker_update;
 int tracker_update_interval=300;
-int tracker_call_if_starved=60; // delay until ok to call if starved
+int tracker_call_if_starved=300; // delay until ok to call if starved
 
 //! Contact and update the tracker with current status
 //! will fill the peer list.
@@ -457,6 +469,7 @@ void update_tracker(void|string event,void|int contact)
 	"downloaded":(string)downloaded,
 	"left":(string)bytes_left(),
 	"port":(string)my_port,
+	"numwant":max(max_peers-sizeof(peers_ordered),100),
       ]);
    if (my_ip) req->ip=my_ip;
    if (event) req->event=event;
@@ -518,6 +531,9 @@ void update_tracker(void|string event,void|int contact)
 		     peers_unused+=({p});
 	       }
 	 }
+	 
+	 if ((int)m->interval)
+	    tracker_update_interval=(int)m->interval;
       },
       lambda() // failed
       {
