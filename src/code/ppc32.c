@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.33 2004/03/13 15:59:46 grubba Exp $
+|| $Id: ppc32.c,v 1.34 2004/05/25 07:56:12 grubba Exp $
 */
 
 /*
@@ -167,7 +167,11 @@ void ppc32_push_constant(INT32 arg)
   INT32 offs;
   struct svalue *sval = &Pike_compiler->new_program->constants[arg].sval;
 
-  if(sval->type > MAX_REF_TYPE) {
+  /*
+   * Note: The constants table may contain UNDEFINED in case of being
+   *       called through decode_value() in PORTABLE_BYTECODE mode.
+   */
+  if((sval->type > MAX_REF_TYPE) && !sval->subtype) {
     int e;
     INT32 last=0;
 
