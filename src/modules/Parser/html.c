@@ -752,7 +752,7 @@ static void gc_mark_html(struct object *o)
 **!	call the given callbacks upon tags, entities
 **!	and/or data.
 **!
-**!	The callbacks will <em>only</em> be called if there isn't
+**!	The callbacks will <i>only</i> be called if there isn't
 **!	another tag/container/entity handler for these.
 **!
 **!	The function will be called with the parser
@@ -4276,7 +4276,6 @@ static void html_tag(INT32 args)
 **! method string html_context()
 **!	Returns the current output context as a string:
 **!	<ul>
-**!
 **!	<li><b>"data"</b>: In top level data. This is always returned
 **!	when called from tag or container callbacks.
 **!
@@ -4662,10 +4661,9 @@ static void html_splice_arg (INT32 args)
 **!
 **!	The flags are:
 **!	<ul>
-**!
 **!	<li><b>ignore_tags</b>: Do not look for tags at all. Normally
 **!	tags are matched even when there's no callbacks for them at
-**!	all. When this is set, the tag delimiters '<' and '>' will be
+**!	all. When this is set, the tag delimiters '&lt;' and '&gt;' will be
 **!	treated as any normal character.
 **!
 **!	<li><b>case_insensitive_tag</b>: All tags and containers are
@@ -4675,12 +4673,12 @@ static void html_splice_arg (INT32 args)
 **!	back won't preserve the case of registered tags and
 **!	containers.
 **!
-**!	<li><b>lazy_argument_end</b>: A '>' in a tag argument closes
+**!	<li><b>lazy_argument_end</b>: A '&gt;' in a tag argument closes
 **!	both the argument and the tag, even if the argument is quoted.
 **!
 **!	<li><b>lazy_entity_end</b>: Normally, the parser search
 **!	indefinitely for the entity end character (i.e. ';'). When
-**!	this flag is set, the characters '&', '<', '>', '"', ''', and
+**!	this flag is set, the characters '&', '&lt;', '&gt;', '"', ''', and
 **!	any whitespace breaks the search for the entity end, and the
 **!	entity text is then ignored, i.e. treated as data.
 **!
@@ -4718,6 +4716,7 @@ static void html_splice_arg (INT32 args)
 **!
 **!	<li><b>ws_before_tag_name</b>: Allow whitespace between the
 **!	tag start character and the tag name.
+**!   </ul> 
 **!
 **! note:
 **!	When functions are specified with
@@ -4728,7 +4727,6 @@ static void html_splice_arg (INT32 args)
 **!	as text data instead of making another call to the same
 **!	function again.
 **!
-**!	</ul>
 */
 
 static void html_ignore_tags(INT32 args)
