@@ -558,11 +558,10 @@ class async_client
     next_client->do_query(domain, cl, type, callback, @args);
   }
 
-  static private void rec_data()
+  static private void rec_data(mapping m)
   {
     mixed err;
     if (err = catch {
-      mapping m=udp::read();
       if(m->port != 53 || search(nameservers, m->ip) == -1) return;
       sscanf(m->data,"%2c",int id);
       object r=requests[id];
