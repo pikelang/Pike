@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.10 1998/04/16 22:44:22 grubba Exp $
+ * $Id: passwords.c,v 1.11 1998/04/16 22:56:52 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -9,6 +9,9 @@
  *         safe. If some other function executes a *pw* function
  *         without locking the password_protection_mutex, we are
  *         pretty much screwed.
+ *
+ * NOTE: To avoid deadlocks, any locking of password_protection_mutex
+ *       MUST be done within THREADS_ALLOW()/THREADS_DISALLOW().
  */
 
 /*
@@ -19,7 +22,7 @@
 
 #include "global.h"
 
-RCSID("$Id: passwords.c,v 1.10 1998/04/16 22:44:22 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.11 1998/04/16 22:56:52 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -518,22 +521,27 @@ void f_get_groups_for_user(INT32 arg)
   check_all_args("get_groups_for_user",arg,BIT_INT | BIT_STRING, 0);
   pop_n_elems(arg-1);
   a=low_allocate_array(0,10);
-  mt_lock(&password_protection_mutex);
   if(sp[-1].type == T_INT)
   {
     int uid=sp[-1].u.integer;
     THREADS_ALLOW();
+    mt_lock(&password_protection_mutex);
     pw=getpwuid(uid);
     THREADS_DISALLOW();
+
     sp[-1].u.string=make_shared_string(pw->pw_name);
     sp[-1].type=T_STRING;
     user=sp[-1].u.string->str;
   }else{
     user=sp[-1].u.string->str;
     THREADS_ALLOW();
+    mt_lock(&password_protection_mutex);
     pw=getpwnam(user);
     THREADS_DISALLOW();
   }
+
+  /* NOTE: password_protection_mutex is still locked here. */
+
   if(!pw)
   {
     mt_unlock(&password_protection_mutex);
@@ -562,7 +570,7 @@ void f_get_groups_for_user(INT32 arg)
       if(gr->gr_mem[e]) break;
     }
 
-    THREADS_DISALLOW();
+    THREADS_DISALLOW();		/* Is there a risk of deadlock here? */
     if(!gr) break;
 
     push_int(gr->gr_gid);
