@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.182 2000/10/08 19:06:47 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.183 2000/10/16 19:27:40 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2403,25 +2403,49 @@ void f_create_process(INT32 args)
 
     th_atfork_prepare();
     {
+      int loop_cnt = 0;
       sigset_t new_sig, old_sig;
       sigfillset(&new_sig);
       while(sigprocmask(SIG_BLOCK, &new_sig, &old_sig));
 
-    do
-    {
+      do {
 
 #ifdef PROC_DEBUG
-      fprintf(stderr,"Forking... (pid=%d errno=%d)\n",pid,errno);
+	fprintf(stderr,"Forking... (pid=%d errno=%d)\n",pid,errno);
 #endif
 #if defined(HAVE_FORK1) && defined(_REENTRANT)
-      pid=fork1();
+	pid=fork1();
 #else
-      pid=fork();
+	pid=fork();
 #endif
+	if (pid == -1) {
+	  if (errno == EAGAIN) {
+	    /* Process table full or similar.
+	     * Try sleeping for a bit.
+	     *
+	     * FIXME: Ought to release the interpreter lock.
+	     */
+	    if (loop_cnt++ < 60) {
+	      /* Don't sleep for too long... */
+#ifdef HAVE_POLL
+	      poll(NULL, 0, 100);
+#else /* !HAVE_POLL */
+	      sleep(1);
+#endif /* HAVE_POLL */
 
-    }while(pid==-1 && errno==EINTR);
+	      /* Try again */
+	      continue;
+	    }
+	  } else if (errno == EINTR) {
+	    /* Try again */
+	    continue;
+	  }
+	}
+	break;
+      } while(1);
 
-      while(sigprocmask(SIG_SETMASK, &old_sig, 0));
+      while(sigprocmask(SIG_SETMASK, &old_sig, 0))
+	;
     }
 
     if(pid) {
