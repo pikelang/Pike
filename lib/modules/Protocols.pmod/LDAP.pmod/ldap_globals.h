@@ -37,6 +37,13 @@
 #define DWRITE(X)
 #define DWRITE_HI(X)
 #endif
+
+#ifdef DEBUG
+#define DO_IF_DEBUG(X...) X
+#else
+#define DO_IF_DEBUG(X...)
+#endif
+
 // --- Enable run-time error ---
 //#define THROW(X)
 #define THROW(X)        throw(X)
