@@ -2923,10 +2923,19 @@ TimeofDay dwim_time(string what,void|TimeRange cx)
 #define COLON ":" 
 #define SPACED(X) replace(X," ","%*[ ]")
 
-   sscanf(what,"%*[ \t]%s",what);
+   what = String.trim_all_whites(what);
 
-   if (t=parse(SPACED("%e %M %D %h:%m:%s %Y"),what,cx)) return t; // ctime
-   if (t=parse(SPACED("%e %M %D %h:%m:%s %z %Y"),what,cx)) return t;
+   if (sizeof(what)>12 &&
+       (t=parse(SPACED("%e %M %D %h:%m:%s %Y"),what,cx))) return t; // ctime
+   if (sizeof(what)>15 &&
+       (t=parse(SPACED("%e %M %D %h:%m:%s %z %Y"),what,cx))) return t;
+   if (sizeof(what)>19 &&
+       (t=parse(SPACED("%e %M %D %h:%m:%s %z DST %Y"),what,cx))) {
+     string tz = t->tzname();
+     t->set_timezone( tz[..sizeof(tz)-2] + "S" +
+		      tz[sizeof(tz)-1..sizeof(tz)-1] );
+     return t;
+   }
 
    foreach ( dwim_day_strings +
 	     ({""}),
