@@ -177,6 +177,7 @@ static private class Extractor {
       // To get the correct line# :
       parser->skipNewlines();
       SourcePosition pos = parser->currentPosition->copy();
+
       object(PikeObject)|array(PikeObject) p = parser->parseDecl();
 
       multiset(string) allowSqueeze = (<
@@ -218,6 +219,8 @@ static private class Extractor {
       }
       else
         parser->eat(";");
+      while (parser->peekToken(WITH_NL) == ";")
+        parser->readToken();
       foreach(arrayp(p) ? [array(object(PikeObject))]p :
 	      ({ [object(PikeObject)]p }), PikeObject obj)
         obj->position = obj->position || pos;
