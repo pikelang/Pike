@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.108 2004/01/11 00:40:21 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.109 2004/03/01 22:43:18 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -48,21 +48,25 @@ class Command {
   string doc(string what, string with) { return help(what); }
 
   //! The actual command callback. Messages to the user should be
-  //! written out by using the safe_write method in the @[Evaluator] object.
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens);
+  //! written out by using the safe_write method in the @[Evaluator]
+  //! object.
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens);
 }
 
-//! Variable reset command. Put ___Hilfe->commands->reset = Tools.Hilfe.CommandReset();
-//! in your .hilferc to have this command defined when you open Hilfe.
+//! Variable reset command. Put ___Hilfe->commands->reset =
+//! Tools.Hilfe.CommandReset(); in your .hilferc to have this command
+//! defined when you open Hilfe.
 class CommandReset {
   inherit Command;
   string help(string what) { return "Undefines the given symbol."; }
   string doc(string what, string with) {
-    return "Undefines any variable, constant, function or program, specified by\n"
-      "name. Example: \"reset tmp\"\n";
+    return "Undefines any variable, constant, function or program, "
+      "specified by\nname. Example: \"reset tmp\"\n";
   }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
     string n = sizeof(words)>1 && words[1];
     if(!n) {
       e->safe_write("No symbol given as argument to reset.\n");
@@ -121,8 +125,8 @@ private class CommandSet {
   }
 
   private class Reswriter (string format) {
-    void `()(function(string, mixed ... : int) w, string sres, int num, mixed res,
-	     int last_compile_time, int last_eval_time) {
+    void `()(function(string, mixed ... : int) w, string sres, int num,
+	     mixed res, int last_compile_time, int last_eval_time) {
       mixed err = catch {
 	if(!sres)
 	  w("Ok.\n");
@@ -138,7 +142,8 @@ private class CommandSet {
     }
   }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
 
     line = sizeof(words)>1 && words[1];
     function(string, mixed ... : void) write = e->safe_write;
@@ -266,7 +271,8 @@ private class CommandExit {
   inherit Command;
   string help(string what) { return "Exit Hilfe."; }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
     e->safe_write("Exiting.\n");
     destruct(e);
     exit(0);
@@ -277,7 +283,8 @@ private class CommandHelp {
   inherit Command;
   string help(string what) { return "Show help text."; }
 
-  void exec(Evaluator e, string line, array(string) words, array(string) tokens) {
+  void exec(Evaluator e, string line, array(string) words,
+	    array(string) tokens) {
     line = words[1..]*" ";
     function(string, mixed ... : void) write = e->safe_write;
 
@@ -627,12 +634,13 @@ private class SubSysLogger {
       running = 0;
     }
 
-    int(0..) `() (string in) {
+    int(0..0) `() (string in) {
       if(!running) return 0;
       if(catch( logfile->write(in) )) {
 	e->remove_writer(this);
 	e->safe_write("Error writing to log file. Terminating logger.\n");
       }
+      return 0;
     }
 
   }
@@ -663,6 +671,57 @@ private class SubSysLogger {
   int(0..1) runningp() { return running; }
 }
 
+private class SubSysPhish {
+
+  constant startdoc = "phish\n"
+    "\tStart the Pike Hilfe Shell.\n";
+  constant stopdoc = "phish\n\tTurns off phish.\n";
+
+  static int(0..1) running;
+  static int(0..1) in_expr;
+  static Evaluator e;
+
+  int(0..1) runningp() { return running; }
+
+  static int(0..1) do_cmd(string cmd) {
+    if(in_expr) {
+      return 0;
+    }
+
+    array c = cmd[..sizeof(cmd)-2]/" ";
+    if(e->commands[c[0]] || cmd==".\n")
+      return 0;
+
+    string src = c[0]+"(";
+    array arg = ({});
+    for(int i=1; i<sizeof(c); i++) {
+      if(c[i][0]=="\"") {
+	string str = "";
+	do {
+	  str += c[i++];
+	} while(i+1<sizeof(c) && c[i+1][-1]!="\"");
+	arg += ({ str });
+      }
+      else
+	arg += ({ "\"" + c[i] + "\"" });
+    }
+    e->add_buffer(src + arg*"," + ");\n");
+    return 1;
+  }
+
+  void start(Evaluator _e, array(string) words) {
+    if(running) return;
+    e = _e;
+    e->add_input_hook(do_cmd);
+    running = 1;
+  }
+
+  void stop(Evaluator e, void|array(string) words) {
+    e->remove_input_hook(do_cmd);
+    running = 0;
+  }
+}
+
 //
 // Support stuff..
 //
@@ -679,6 +738,7 @@ private class SubSystems {
       "backend":SubSysBackend(),
 #endif
       "logging":SubSysLogger(),
+      "phish":SubSysPhish(),
     ]);
   }
 
@@ -1282,7 +1342,8 @@ class Evaluator {
   //! just calls add_buffer.
   void add_input_line(string s)
   {
-    input_hooks(s+"\n");
+    if( sizeof(input_hooks) && `+(@input_hooks(s+"\n")) )
+      return;
 
     if(s==".")
     {
