@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.113 1998/06/07 19:44:46 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.114 1998/07/12 19:57:47 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2888,10 +2888,10 @@ void f_transpose(INT32 args)
     return; 
   }
 
-  if(!(in->type_field & ~BIT_ARRAY))
+  if(in->type_field != BIT_ARRAY)
   {
     array_fix_type_field(in);
-    if(in->type_field & ~BIT_ARRAY)
+    if(!in->type_field || in->type_field & ~BIT_ARRAY)
       error("The array given as argument 1 to transpose must contain arrays only.\n");
   }
 
