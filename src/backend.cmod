@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.159 2005/01/19 18:43:37 grubba Exp $
+ * $Id: backend.cmod,v 1.160 2005/01/19 19:32:59 grubba Exp $
  *
  * Backend object.
  */
@@ -2654,26 +2654,38 @@ PIKECLASS Backend
 	    /* Errors are signalled on the first available callback,
 	     * and generally don't like other events.
 	     */
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLERR on %d\n",
+			  getpid(), me->id, fd));
 	    box->revents = PIKE_BIT_FD_ERROR;
 	  } else {
 #ifdef PIKE_DEBUG
 	    int handled = 0;
 #endif /* PIKE_DEBUG */
 	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
+			    getpid(), me->id, fd));
 	      box->revents |= PIKE_BIT_FD_READ_OOB;
 	      DO_IF_DEBUG(handled = 1);
 	    }
 	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN)) {
+	      IF_PD(fprintf(stderr,
+			    "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+			    getpid(), me->id, fd));
 	      box->revents |= PIKE_BIT_FD_READ;
 	      DO_IF_DEBUG(handled = 1);
 	    }
 	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLWRBAND) ||
 		CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	      IF_PD(fprintf(stderr,
+			    "[%d]BACKEND[%d]: POLLWRBAND|POLLHUP on %d\n",
+			    getpid(), me->id, fd));
 	      box->revents |= PIKE_BIT_FD_WRITE_OOB;
 	      DO_IF_DEBUG(handled = 1);
 	    }
 	    if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLOUT) ||
 		CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP)) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT|POLLHUP on %d\n",
+			    getpid(), me->id, fd));
 	      box->revents |= PIKE_BIT_FD_WRITE;
 	      DO_IF_DEBUG(handled = 1);
 	    }
@@ -2781,8 +2793,6 @@ PIKECLASS Backend
 	   * errno 61 is ECONNREFUSED
 	   */
 	  if (box->revents & box->events & PIKE_BIT_FD_READ_OOB) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
-			  getpid(), me->id, fd));
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
@@ -2796,8 +2806,6 @@ PIKECLASS Backend
 	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	     *        the kqueue case.
 	     */
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
-			  getpid(), me->id, fd));
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
@@ -2808,9 +2816,6 @@ PIKECLASS Backend
 	  }
 
 	  if (box->revents & box->events & PIKE_BIT_FD_WRITE_OOB) {
-	    IF_PD(fprintf(stderr,
-			  "[%d]BACKEND[%d]: POLLWRBAND|POLLHUP on %d\n",
-			  getpid(), me->id, fd));
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_oob_callback(%d, %p)\n",
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
@@ -2824,8 +2829,6 @@ PIKECLASS Backend
 	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
 	     *        the kqueue case.
 	     */
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLOUT|POLLHUP on %d\n",
-			  getpid(), me->id, fd));
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: write_callback(%d, %p)\n",
 			  getpid(), me->id, fd, box->ref_obj));
 	    errno = 0;
