@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.106 2000/04/13 21:59:35 hubbe Exp $");
+RCSID("$Id: object.c,v 1.107 2000/04/14 18:48:42 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1108,13 +1108,17 @@ void gc_mark_object_as_referenced(struct object *o)
 	  struct svalue *s;
 	  s=(struct svalue *)(pike_frame->current_storage +
 			      pike_frame->context.prog->identifiers[d].func.offset);
-	  gc_mark_svalues(debug_malloc_pass(s), 1);
+	  dmalloc_touch_svalue(s);
+	  gc_mark_svalues(s, 1);
 	}else{
 	  union anything *u;
+	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
 	  u=(union anything *)(pike_frame->current_storage +
 			       pike_frame->context.prog->identifiers[d].func.offset);
-	  gc_mark_short_svalue(debug_malloc_pass(u),
-			       pike_frame->context.prog->identifiers[d].run_time_type);
+#ifdef PIKE_DEBUG
+	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+#endif /* PIKE_DEBUG */
+	  gc_mark_short_svalue(u, rtt);
 	}
       }
     }
@@ -1161,15 +1165,17 @@ static inline void gc_check_object(struct object *o)
 	  struct svalue *s;
 	  s=(struct svalue *)(pike_frame->current_storage +
 			      pike_frame->context.prog->identifiers[d].func.offset);
-	  debug_gc_check_svalues(debug_malloc_pass(s),1,T_OBJECT,
-				 debug_malloc_pass(o));
+	  dmalloc_touch_svalue(s);
+	  debug_gc_check_svalues(s, 1, T_OBJECT, debug_malloc_pass(o));
 	}else{
 	  union anything *u;
+	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
 	  u=(union anything *)(pike_frame->current_storage +
 			       pike_frame->context.prog->identifiers[d].func.offset);
-	  debug_gc_check_short_svalue(debug_malloc_pass(u),
-				      pike_frame->context.prog->identifiers[d].run_time_type,
-				      T_OBJECT,debug_malloc_pass(o));
+#ifdef PIKE_DEBUG
+	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+#endif /* PIKE_DEBUG */
+	  debug_gc_check_short_svalue(u, rtt, T_OBJECT, debug_malloc_pass(o));
 	}
       }
     }
