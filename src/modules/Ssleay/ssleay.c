@@ -7,7 +7,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.5 1997/05/19 22:52:03 hubbe Exp $");
+RCSID("$Id: ssleay.c,v 1.6 1997/05/30 01:12:30 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -223,7 +223,7 @@ static void ssleay_locking_callback(int mode, int type, char *file, int line)
 
 static unsigned long ssleay_thread_id(void)
 {
-  return th_self();
+  return (unsigned long)th_self();
 }
       
 static void ssleay_init_threads()
