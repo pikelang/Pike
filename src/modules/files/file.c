@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.200 2000/09/18 15:06:06 per Exp $");
+RCSID("$Id: file.c,v 1.201 2000/10/08 19:11:03 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -106,6 +106,8 @@ RCSID("$Id: file.c,v 1.200 2000/09/18 15:06:06 per Exp $");
 #define ERRNO (THIS->my_errno)
 
 #define READ_BUFFER 8192
+
+/* #define SOCKETPAIR_DEBUG */
 
 struct program *file_program;
 struct program *file_ref_program;
@@ -1664,6 +1666,11 @@ static void file_set_buffer(INT32 args)
 #define AF_UNIX	4711
 #endif /* AF_UNIX */
 
+#ifdef SOCKETPAIR_DEBUG
+#define SP_DEBUG(X)	fprintf X
+#else /* !SOCKETPAIR_DEBUG */
+#define SP_DEBUG(X)
+#endif /* SOCKETPAIR_DEBUG */
 
 /* No socketpair() ?
  * No AF_UNIX sockets ?
@@ -1709,8 +1716,11 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
 
   if(socketpair_fd==-1)
   {
-    if((socketpair_fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if((socketpair_fd=fd_socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+      SP_DEBUG((stderr, "my_socketpair:fd_socket() failed, errno:%d\n",
+		errno));
       return -1;
+    }
 
     /* I wonder what is most common a loopback on ip# 127.0.0.1 or
      * a loopback with the name "localhost"?
@@ -1726,6 +1736,8 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     /* Bind our sockets on any port */
     if(fd_bind(socketpair_fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
     {
+      SP_DEBUG((stderr, "my_socketpair:fd_bind() failed, errno:%d\n",
+		errno));
       fd_close(socketpair_fd);
       socketpair_fd=-1;
       return -1;
@@ -1735,6 +1747,8 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     len = sizeof(my_addr);
     if(fd_getsockname(socketpair_fd,(struct sockaddr *)&my_addr,&len) < 0)
     {
+      SP_DEBUG((stderr, "my_socketpair:fd_getsockname() failed, errno:%d\n",
+		errno));
       fd_close(socketpair_fd);
       socketpair_fd=-1;
       return -1;
@@ -1743,6 +1757,8 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     /* Listen to connections on our new socket */
     if(fd_listen(socketpair_fd, 5) < 0)
     {
+      SP_DEBUG((stderr, "my_socketpair:fd_listen() failed, errno:%d\n",
+		errno));
       fd_close(socketpair_fd);
       socketpair_fd=-1;
       return -1;
@@ -1756,7 +1772,11 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
   }
 
 
-  if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) return -1;
+  if((sv[1]=fd_socket(AF_INET, SOCK_STREAM, 0)) <0) {
+    SP_DEBUG((stderr, "my_socketpair:fd_socket() failed, errno:%d (2)\n",
+	      errno));
+    return -1;
+  }
 
 /*  set_nonblocking(sv[1],1); */
 
@@ -1765,6 +1785,8 @@ retry_connect:
   if(fd_connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
   {
 /*    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK); */
+    SP_DEBUG((stderr, "my_socketpair:fd_connect() failed, errno:%d (%d)\n",
+	      errno, EWOULDBLOCK));
     if(errno != EWOULDBLOCK)
     {
       int tmp2;
@@ -1776,8 +1798,11 @@ retry_connect:
 	len2=sizeof(addr);
 	tmp=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len2);
 
-	if(tmp!=-1)
+	if(tmp!=-1) {
+	  SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d\n",
+		    errno));
 	  fd_close(tmp);
+	}
 	else
 	  break;
       }
@@ -1803,6 +1828,8 @@ retry_connect:
     sv[0]=fd_accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
 
     if(sv[0] < 0) {
+      SP_DEBUG((stderr, "my_socketpair:fd_accept() failed, errno:%d (2)\n",
+		errno));
       if(errno==EINTR) goto retry_accept;
       fd_close(sv[1]);
       return -1;
@@ -1812,14 +1839,25 @@ retry_connect:
 
     /* We do not trust accept */
     len=sizeof(addr);
-    if(fd_getpeername(sv[0], (struct sockaddr *)&addr,&len)) return -1;
+    if(fd_getpeername(sv[0], (struct sockaddr *)&addr,&len)) {
+      SP_DEBUG((stderr, "my_socketpair:fd_getpeername() failed, errno:%d\n",
+		errno));
+      return -1;
+    }
     len=sizeof(addr);
-    if(fd_getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) return -1;
+    if(fd_getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) {
+      SP_DEBUG((stderr, "my_socketpair:fd_getsockname() failed, errno:%d\n",
+		errno));
+      return -1;
+    }
   }while(len < (int)sizeof(addr) ||
 	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
 	 addr2.sin_port != addr.sin_port);
 
 /*  set_nonblocking(sv[1],0); */
+
+  SP_DEBUG((stderr, "my_socketpair: succeeded\n",
+	    errno));
 
   return 0;
 }
