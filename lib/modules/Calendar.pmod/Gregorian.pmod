@@ -1,6 +1,6 @@
 // by Mirar 
 
-//!   
+//! module Calendar
 //! submodule Gregorian
 //!	time units:
 //!	<ref>Year</ref>, <ref>Month</ref>, <ref>Week</ref>, <ref>Day</ref>
