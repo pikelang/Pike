@@ -983,7 +983,12 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_RETURN_LOCAL);
       instr=GET_ARG();
-      pop_n_elems(sp-1 - (fp->locals+instr));
+      if(fp->expendible <= fp->locals+instr)
+      {
+	pop_n_elems(sp-1 - (fp->locals+instr));
+      }else{
+	push_svalue(fp->locals+instr);
+      }
       print_return_value();
       goto do_return;
 
