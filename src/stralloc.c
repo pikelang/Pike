@@ -505,29 +505,33 @@ struct pike_string *string_replace(struct pike_string *str,
 				     struct pike_string *to)
 {
   struct pike_string *ret;
-  INT32 delimeters;
   char *s,*tmp,*r,*end;
   struct mem_searcher searcher;
 
   s=str->str;
   end=s+str->len;
-  delimeters=0;
 
-  init_memsearch(&searcher, del->str, del->len, str->len * 2);
-
-  while((s=memory_search(&searcher,s,end-s)))
+  if(del->len == to->len)
   {
-    delimeters++;
-    s+=del->len;
-  }
+    init_memsearch(&searcher, del->str, del->len, str->len);
+    ret=begin_shared_string(str->len);
+  }else{
+    INT32 delimeters=0;
+    init_memsearch(&searcher, del->str, del->len, str->len*2);
+    while((s=memory_search(&searcher,s,end-s)))
+    {
+      delimeters++;
+      s+=del->len;
+    }
+    
+    if(!delimeters)
+    {
+      str->refs++;
+      return str;
+    }
 
-  if(!delimeters)
-  {
-    str->refs++;
-    return str;
+    ret=begin_shared_string(str->len + (to->len-del->len)*delimeters);
   }
-
-  ret=begin_shared_string(str->len + (to->len-del->len)*delimeters);
   s=str->str;
   r=ret->str;
 
