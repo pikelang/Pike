@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.123 2001/08/10 22:06:14 grubba Exp $");
+RCSID("$Id: encode.c,v 1.124 2001/08/10 22:11:44 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -51,7 +51,7 @@ RCSID("$Id: encode.c,v 1.123 2001/08/10 22:06:14 grubba Exp $");
 #include <netinet/in.h>
 #endif
 
-#ifdef HAVE_IEEFP_H
+#ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif /* HAVE_IEEEFP_H */
 
