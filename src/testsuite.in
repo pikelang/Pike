@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.182 1999/07/05 21:58:45 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.183 1999/07/30 23:43:06 mast Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -3208,6 +3208,9 @@ test_eq(zero_type(0),0)
 test_eq(zero_type(([])[7]),1)
 
 test_true([[lambda (int|void a) { return zero_type(a); }()]])
+test_true([[lambda () {mixed a; return zero_type(a = ([])[0]);}()]])
+test_true([[lambda () {mapping a=([]); return zero_type(a[0] = ([])[0]);}()]])
+test_true([[zero_type (lambda () {return ([])[0];}())]])
 
 test_program(int b=10; mixed a() { return 1; })
 test_program(mixed b=10; mixed a() { return 1;})
