@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.17 1999/05/28 14:24:11 mirar Exp $
+# $Id: Makefile,v 1.18 1999/06/12 19:30:27 mirar Exp $
 
 # grep -l '**!' {,../_Image*/}**/*.{c,h}  
 
@@ -37,7 +37,6 @@ DOCFILES = doc-header            \
 	pattern.c				\
 	polyfill.c				\
 	search.c				\
-	x.c					\
 	blit_layer_include.h			\
 	colortable.h				\
 	colortable_lookup.h			\
