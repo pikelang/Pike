@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.32 2000/08/10 15:01:01 grubba Exp $
+ * $Id: preprocessor.h,v 1.33 2000/08/15 19:37:10 lange Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -880,6 +880,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	if(d && !d->inside)
 	{
 	  int arg=0;
+	  INT32 startline = this->current_line;
 	  struct string_builder tmp;
 	  struct define_argument arguments [MAX_ARGS];
 	  
@@ -891,7 +892,10 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    
 	    if(!GOBBLE('('))
 	    {
-	      cpp_error(this, "Missing '(' in macro call.");
+	      char buffer[1024];
+	      sprintf(buffer, "Missing ( in the macro %.950s.", 
+		      d->link.s->str);
+	      cpp_error(this, buffer);
 	      break;
 	    }
 	    
@@ -905,18 +909,19 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		SKIPWHITE();
 		if(data[pos]==')')
 		{
-		  char buffer[1024];
 		  if(d->varargs && arg + 1 == d->args)
 		  {
 		    arguments[arg].arg = MKPCHARP(data + pos, SHIFT);
 		    arguments[arg].len=0;
 		    continue;
+		  }else{
+		    char buffer[1024];
+		    sprintf(buffer,
+			    "Too few arguments to macro %.950s, expected %d.",
+			    d->link.s->str, d->args);
+		    cpp_error(this, buffer);
+		    break;
 		  }
-		  sprintf(buffer,
-			  "Too few arguments to macro %.950s, expected %d.",
-			  d->link.s->str, d->args);
-		  cpp_error(this, buffer);
-		  break;
 		}
 	      }
 	      arguments[arg].arg = MKPCHARP(data + pos, SHIFT);
@@ -966,8 +971,13 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		((WCHAR *)(arguments[arg].arg.ptr));
 	    }
 	    SKIPWHITE();
-	    if(!GOBBLE(')'))
-	      cpp_error(this, "Missing ) in macro call.");
+	    if(!GOBBLE(')')) {
+	      char buffer[1024];
+	      sprintf(buffer, "Missing ) in the macro %.950s.", 
+		      d->link.s->str);
+	      this->current_line = startline;
+	      cpp_error(this, buffer);
+	    }
 	  }
 	  
 	  if(d->args >= 0 && arg != d->args)
