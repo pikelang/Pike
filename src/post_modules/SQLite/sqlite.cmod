@@ -103,7 +103,7 @@ PIKECLASS ResObj
       push_string( make_shared_binary_string
 		   ( sqlite3_column_blob(stmt, i),
 		     sqlite3_column_bytes(stmt, i) ) );
-      if( sqlite3_column_type(stmt, i) )
+      if( sqlite3_column_type(stmt, i)==SQLITE_TEXT )
 	f_utf8_to_string(1);
     }
     f_aggregate(THIS->columns);
