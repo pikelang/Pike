@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.19 2000/12/05 21:08:33 per Exp $
+ * $Id: des.c,v 1.20 2001/02/12 18:01:08 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -77,20 +77,35 @@ static void exit_pike_crypto_des(struct object *o)
  * efuns and the like
  */
 
-/* int query_block_size(void) */
+/*! @module Crypto
+ */
+
+/*! @class des
+ *!
+ *! Implementation of the Data Encryption Standard (DES).
+ */
+
+/*! @decl int query_block_size()
+ *!
+ *! Return the block size used by DES.
+ */
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
   push_int(DES_BLOCKSIZE);
 }
 
-/* int query_key_length(void) */
+/*! @decl int query_key_length()
+ *!
+ *! Return the key length used by DES.
+ */
 static void f_query_key_length(INT32 args)
 {
   pop_n_elems(args);
   push_int(DES_KEYSIZE);
 }
 
+/* Internal function */
 static void set_key(INT32 args)
 {
   if (args != 1) {
@@ -118,21 +133,30 @@ static void set_key(INT32 args)
   push_object(this_object());
 }
 
-/* void set_encrypt_key */
+/*! @decl void set_encrypt_key(string key)
+ *!
+ *! Set the encryption key.
+ */
 static void f_set_encrypt_key(INT32 args)
 {
   set_key(args);
   THIS->crypt_fun = DesSmallFipsEncrypt;
 }
 
-/* void set_decrypt_key */
+/*! @decl void set_decrypt_key(string key)
+ *!
+ *! Set the decryption key.
+ */
 static void f_set_decrypt_key(INT32 args)
 {
   set_key(args);
   THIS->crypt_fun = DesSmallFipsDecrypt;
 }
 
-/* string encrypt(string) */
+/*! @decl string encrypt(string data)
+ *!
+ *! En/decrypt @[data] with DES using the current key.
+ */
 static void f_crypt_block(INT32 args)
 {
   size_t len;
@@ -159,6 +183,12 @@ static void f_crypt_block(INT32 args)
   pop_n_elems(args);
   push_string(end_shared_string(s));
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 /*
  * Module linkage
