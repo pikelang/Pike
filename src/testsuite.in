@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.449 2001/08/16 04:33:32 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.450 2001/09/05 03:54:00 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2620,6 +2620,48 @@ MTEST(34)
 MTEST(55)
 
 define([[MTEST]])
+
+test_do([[
+
+class X {
+mapping gurka;
+
+class Tomat
+{
+  int `==(mixed x)
+    {
+      /* make hash bigger */
+      for(int e=sizeof(gurka);e<1000;e++) gurka[e]=e;
+      return 0;
+    }
+
+  int __hash()
+    {
+      return 99999;
+    }
+};
+
+class Sallad
+{
+  int __hash()
+    {
+      return 99999;
+    }
+};
+
+void create()
+{
+  for(int x=1;x<255;x++)
+  {
+    gurka=([]);
+    for(int e=0;e<x;e++) gurka[~e]=e;
+    gurka[Sallad()]=-2;
+    gurka[Tomat()]=-3;
+  }
+}
+}();
+
+]])
 
 test_equal([[ `+( ([1:2]) )]],[[ ([1:2]) ]])
 test_false( `+( ([1:2]) ) == ([1:2]) )
