@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.5 1996/11/14 01:24:06 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.6 1996/11/22 00:05:41 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -200,6 +200,9 @@ void backend()
     my_add_timeval(&next_timeout, &current_time);
 
     call_callback(& backend_callbacks, (void *)0);
+
+    check_threads_etc();
+
     sets=selectors;
 
     alloca(0);			/* Do garbage collect */
@@ -222,8 +225,6 @@ void backend()
     GETTIMEOFDAY(&current_time);
     THREADS_DISALLOW();
 
-    check_threads_etc();
-    
     if(i>=0)
     {
       for(i=0; i<max_fd+1; i++)
