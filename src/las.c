@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.315 2002/11/24 22:47:06 mast Exp $
+|| $Id: las.c,v 1.316 2002/12/09 22:20:09 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.315 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: las.c,v 1.316 2002/12/09 22:20:09 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2072,6 +2072,11 @@ node *debug_mksvaluenode(struct svalue *s)
     return make_node_from_mapping(s->u.mapping);
 
   case T_OBJECT:
+#ifdef PIKE_DEBUG
+    if (s->u.object->prog == placeholder_program &&
+	Pike_compiler->compiler_pass == 2)
+      Pike_fatal("Got placeholder object in second pass.\n");
+#endif
     if(s->u.object == Pike_compiler->fake_object)
     {
       return mkefuncallnode("this_object", 0);
