@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.64 2000/08/10 09:51:51 per Exp $");
+RCSID("$Id: encode.c,v 1.65 2000/08/10 13:23:59 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -63,8 +63,8 @@ RCSID("$Id: encode.c,v 1.64 2000/08/10 09:51:51 per Exp $");
 double FREXP(double x, int *exp)
 {
   double ret;
-  *exp=(int)ceil(log(fabs(x))/log(2.0));
-  ret=(x*pow(2.0,(FLOAT_TYPE)-*exp));
+  *exp = DO_NOT_WARN((int)ceil(log(fabs(x))/log(2.0)));
+  ret = (x*pow(2.0,(double)-*exp));
   return ret;
 }
 #endif
@@ -222,16 +222,17 @@ static void code_entry(int tag, ptrdiff_t num, struct encode_data *data)
 
   switch(t)
   {
-  case 3: addchar((num >> 24)&0xff);
-  case 2: addchar((num >> 16)&0xff);
-  case 1: addchar((num >> 8)&0xff);
-  case 0: addchar(num&0xff);
+  case 3: addchar(DO_NOT_WARN((num >> 24)&0xff));
+  case 2: addchar(DO_NOT_WARN((num >> 16)&0xff));
+  case 1: addchar(DO_NOT_WARN((num >> 8)&0xff));
+  case 0: addchar(DO_NOT_WARN(num&0xff));
   }
 }
 
 static void code_number(ptrdiff_t num, struct encode_data *data)
 {
-  code_entry(num & 15, num >> 4, data);
+  code_entry(DO_NOT_WARN(num & 15),
+	     num >> 4, data);
 }
 
 #ifdef _REENTRANT
@@ -241,7 +242,7 @@ static void do_enable_threads(void)
 }
 #endif
 
-static int encode_type(char *t, struct encode_data *data)
+static ptrdiff_t encode_type(char *t, struct encode_data *data)
 {
   char *q=t;
 one_more_type:
@@ -390,8 +391,8 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	int y;
 	double tmp;
 
-	tmp=FREXP((double)val->u.float_number, &y);
-	x=(INT32)((1<<30)*tmp);
+	tmp = FREXP((double)val->u.float_number, &y);
+	x = DO_NOT_WARN((INT32)((1<<30)*tmp));
 	y-=30;
 #if 0
 	while(x && y && !(x&1))
@@ -741,8 +742,8 @@ void f_encode_value_canonic(INT32 args)
 struct decode_data
 {
   unsigned char *data;
-  INT32 len;
-  INT32 ptr;
+  ptrdiff_t len;
+  ptrdiff_t ptr;
   struct mapping *decoded;
   struct svalue counter;
   struct object *codec;
@@ -791,7 +792,7 @@ static int my_extract_char(struct decode_data *data)
   } while(0);
 
 #define getdata2(S,L) do {						\
-      if(data->ptr + (long)(sizeof(S[0])*(L)) > data->len)		\
+      if(data->ptr + (ptrdiff_t)(sizeof(S[0])*(L)) > data->len)		\
 	error("Failed to decode string. (string range error)\n");	\
       MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
       data->ptr+=sizeof(S[0])*(L);					\
@@ -1316,7 +1317,7 @@ static void decode_value2(struct decode_data *data)
 	case 1:
 	{
 	  int d;
-	  SIZE_T size=0;
+	  size_t size=0;
 	  char *dat;
 	  struct program *p;
 	  ONERROR err1;
@@ -1620,18 +1621,20 @@ static ptrdiff_t extract_int(char **v, INT32 *l)
 
 static void rec_restore_value(char **v, INT32 *l)
 {
-  INT32 t,i;
+  ptrdiff_t t, i;
 
-  i=extract_int(v,l);
-  t=extract_int(v,l);
+  i = extract_int(v,l);
+  t = extract_int(v,l);
   switch(i)
   {
-  case TAG_INT: push_int(t); return;
+  case TAG_INT:
+    push_int(DO_NOT_WARN(t));
+    return;
 
   case TAG_FLOAT:
-    if(sizeof(INT32) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
+    if(sizeof(ptrdiff_t) < sizeof(FLOAT_TYPE))  /* FIXME FIXME FIXME FIXME */
       error("Float architecture not supported.\n");
-    push_int(t); /* WARNING! */
+    push_int(DO_NOT_WARN(t)); /* WARNING! */
     Pike_sp[-1].type = T_FLOAT;
     return;
 
@@ -1643,7 +1646,8 @@ static void rec_restore_value(char **v, INT32 *l)
     if(t<0) error("Format error, length of string is negative.\n");
     if(*l < t) error("Format error, string to short\n");
     push_string(make_shared_binary_string(*v, t));
-    (*l)-= t; (*v)+= t;
+    (*l)-= t;
+    (*v)+= t;
     return;
 
   case TAG_ARRAY:

@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.114 2000/08/10 09:25:44 grubba Exp $");
+RCSID("$Id: gc.c,v 1.115 2000/08/10 13:34:36 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -318,7 +318,7 @@ void describe_location(void *real_memblock,
 	    indent,"",
 	    get_name_of_type(type),
 	    memblock,
-	    ((long)location - (long)memblock));
+	    (long)((char *)location - (char *)memblock));
   else
     fprintf(stderr,"%*s-> at location %p in unknown memblock (mmaped?)\n",
 	    indent,"",
@@ -360,9 +360,9 @@ void describe_location(void *real_memblock,
 
       if(p->inherits &&
 	 ptr >= (char *)p->inherits  &&
-	 ptr<(char*)(p->inherits+p->num_inherits)) 
+	 ptr < (char*)(p->inherits+p->num_inherits)) 
       {
-	e=((ptrdiff_t)ptr - (ptrdiff_t)(p->inherits)) / sizeof(struct inherit);
+	e=((char *)ptr - (char *)(p->inherits)) / sizeof(struct inherit);
 	fprintf(stderr,"%*s  **In p->inherits[%ld] (%s)\n",indent,"",
 		e,
 		p->inherits[e].name ? p->inherits[e].name->str : "no name");
@@ -371,9 +371,9 @@ void describe_location(void *real_memblock,
 
       if(p->constants &&
 	 ptr >= (char *)p->constants  &&
-	 ptr<(char*)(p->constants+p->num_constants))
+	 ptr < (char*)(p->constants+p->num_constants))
       {
-	e=((ptrdiff_t)ptr - (ptrdiff_t)(p->constants)) /
+	e = ((char *)ptr - (char *)(p->constants)) /
 	  sizeof(struct program_constant);
 	fprintf(stderr,"%*s  **In p->constants[%ld] (%s)\n",indent,"",
 		e,
@@ -384,9 +384,9 @@ void describe_location(void *real_memblock,
 
       if(p->identifiers && 
 	 ptr >= (char *)p->identifiers  &&
-	 ptr<(char*)(p->identifiers+p->num_identifiers))
+	 ptr < (char*)(p->identifiers+p->num_identifiers))
       {
-	e=((ptrdiff_t)ptr - (ptrdiff_t)(p->identifiers)) /
+	e = ((char *)ptr - (char *)(p->identifiers)) /
 	  sizeof(struct identifier);
 	fprintf(stderr,"%*s  **In p->identifiers[%ld] (%s)\n",indent,"",
 		e,
