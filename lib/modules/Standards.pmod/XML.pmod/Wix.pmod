@@ -1,4 +1,4 @@
-// $Id: Wix.pmod,v 1.8 2004/11/04 14:51:32 grubba Exp $
+// $Id: Wix.pmod,v 1.9 2004/11/04 18:26:51 grubba Exp $
 //
 // 2004-11-01 Henrik Grubbström
 
@@ -8,6 +8,9 @@
 //!   @[Parser.XML.Tree.SimpleNode]
 
 constant wix_ns = "http://schemas.microsoft.com/wix/2003/01/wi";
+
+static Parser.XML.Tree.SimpleTextNode line_feed =
+  Parser.XML.Tree.SimpleTextNode("\n");
 
 // FIXME: Generate deterministic output!
 
@@ -111,6 +114,7 @@ class Directory
   string name;
   string short_name;
   string id;
+  multiset(string) extra_ids = (<>);
   Standards.UUID.UUID guid;
   string source;
   multiset(string) short_names = (<>);
@@ -214,15 +218,8 @@ class Directory
 		      (i==sizeof(path)-1) && dir_id,
 		      d->gen_8dot3(dir))));
     }
-    if (dir_id) {
-      while ((d->id != dir_id) && d->sub_dirs["."]) {
-	d = d->sub_dirs["."];
-      }
-      if (d->id != dir_id) {
-	multiset(string) shorts = d->short_names;
-	d = d->sub_dirs["."] = Directory(".", d->guid->encode(), dir_id, ".");
-	d->short_names = short_names;
-      }
+    if (dir_id && (d->id != dir_id)) {
+      d->extra_ids[dir_id] = 1;
     }
     return d;
   }
@@ -306,7 +303,6 @@ class Directory
   {
     foreach(sub_dirs; string dname; Directory d) {
       d->set_sources();
-      // FIXME: What about "."?
       if (d->source &&
 	  has_suffix(d->source, "/" + dname)) {
 	string sub_src = combine_path(d->source, "..");
@@ -337,8 +333,8 @@ class Directory
     parent += "/" + name;
     
     mapping(string:string) attrs = ([
-      "Id":id,
       "Name":short_name||name,
+      "Id":id,
     ]);
     if (short_name && (short_name != name)) {
       // Win32 stupidity...
@@ -347,30 +343,32 @@ class Directory
     if (source) {
       attrs->src = replace(source+"/", "/", "\\");
     }
-    WixNode node = WixNode("Directory", attrs);
-    foreach(sub_dirs;; Directory d) {
-      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-      node->add_child(d->gen_xml(parent));
+    WixNode root = WixNode("Directory", attrs, "\n");
+    WixNode node = root;
+    foreach(extra_ids; string sub_id;) {
+      node->add_child(node = WixNode("Directory", ([
+				       "Id": sub_id,
+				       "Name":".",
+				     ]), "\n"))->
+	add_child(line_feed);
+    }
+    foreach(sub_dirs;; object(Directory)|Merge d) {
+      root->add_child(d->gen_xml(parent))->add_child(line_feed);
     }
     if (sizeof(files) || sizeof(other_entries)) {
-      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
       WixNode component = WixNode("Component", ([
 				    "Id":"C_" + id,
 				    "Guid":guid->str(),
-				  ]));
+				  ]), "\n");
       foreach(files;; File f) {
-	component->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-	component->add_child(f->gen_xml());
+	component->add_child(f->gen_xml())->add_child(line_feed);
       }
       foreach(other_entries;; RegistryEntry r) {
-	component->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-	component->add_child(r->gen_xml());
+	component->add_child(r->gen_xml())->add_child(line_feed);
       }
-      node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-      node->add_child(component);
+      node->add_child(component)->add_child(line_feed);
     }
-    node->add_child(Parser.XML.Tree.SimpleTextNode("\n"));
-    return node;
+    return root;
   }
 }
 
@@ -395,32 +393,31 @@ WixNode get_module_xml(Directory dir, string id, string version,
   if (comments) {
     package_attrs->Comments = comments;
   }
-  if (sizeof(dir->files)) {
+  if ((sizeof(dir->files) || sizeof(dir->other_entries)) &&
+      !sizeof(dir->extra_ids)) {
     // Due to bugs in (probably) mergemod.dll or light,
     // it's not a good idea to have files directly in the
     // top directory of a module. So we wrap them in an
     // extra directory level.
     //	/grubba 2004-11-04
-    Directory d = dir->sub_dirs["."] ||
-      (dir->sub_dirs["."] = Directory(".", dir->guid->encode(), 0, "."));
-    d->short_names = dir->short_names;
-    d->files += dir->files;
-    dir->files = ([]);
-
-    // FIXME: What about sub_sources and other_entries?
+    dir->extra_ids["KLUDGE_" + dir->id] = 1;
   }
   return Parser.XML.Tree.SimpleRootNode()->
     add_child(Parser.XML.Tree.SimpleHeaderNode((["version":"1.0",
 						 "encoding":"utf-8"])))->
-    add_child(WixNode("Wix", ([	"xmlns":wix_ns ]))->
+    add_child(WixNode("Wix", ([	"xmlns":wix_ns ]), "\n")->
 	      add_child(WixNode("Module", ([
 				  "Id":id,
 				  "Guid":guid,
 				  "Language":"1033",
 				  "Version":version,
-				]))->
+				]), "\n")->
 			add_child(WixNode("Package", package_attrs))->
-			add_child(dir->gen_xml())));
+			add_child(line_feed)->
+			add_child(dir->gen_xml())->
+			add_child(line_feed))->
+	      add_child(line_feed))->
+    add_child(line_feed);
 }
 
 #if 0
