@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.396 2001/12/20 12:52:02 grubba Exp $");
+RCSID("$Id: program.c,v 1.397 2001/12/20 12:54:37 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -569,7 +569,7 @@ static char *raw_lfun_types[] = {
  *!   Sprintf callback.
  *!
  *!   This method is called by @[sprintf()] to print objects. If it is
- *!   not present printing of the object will not be supported for any
+ *!   not present, printing of the object will not be supported for any
  *!   conversion-type except for the @tt{%O@}-conversion-type, which
  *!   will output @tt{"object"@}.
  *!
@@ -627,7 +627,7 @@ static char *raw_lfun_types[] = {
  *!   according to @[conversion_type].
  *!
  *! @note
- *!   The @[_sprintf()] is currently (Pike 7.3) not called for the following
+ *!   @[_sprintf()] is currently (Pike 7.3) not called for the following
  *!   conversion-types:
  *!   @int
  *!     @value 'F'
