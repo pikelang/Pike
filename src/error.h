@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.19 1998/07/12 23:41:52 grubba Exp $
+ * $Id: error.h,v 1.20 1998/07/16 20:42:21 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -84,7 +84,7 @@ extern int throw_severity;
               "Last SET_ONERROR is from %s:%d\n", \
               recoveries->onerror->file, recoveries->onerror->line ); \
       } else { \
-        fatal("UNSET_ONERROR out of sync.\n"); \
+        fatal("UNSET_ONERROR out of sync. No recoveries left.\n"); \
       } \
     } \
     recoveries->onerror=(X).previous; \
