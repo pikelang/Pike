@@ -7,6 +7,10 @@
 #include "gmp_machine.h"
 #include "types.h"
 
+#ifndef HAVE_NEW_GMP
+#undef HAVE_GMP_H
+#endif
+
 #ifdef HAVE_GMP_H
 
 #include "interpret.h"

@@ -8,6 +8,20 @@ AC_SUBST(RANLIB)
 AC_CHECK_HEADERS(gmp.h)
 AC_CHECK_LIB(gmp, mpz_set_si)
 
+AC_MSG_CHECKING(if libgmp is new enough)
+AC_CACHE_VAL(lpc_cv_lib_gmp_is_new_enough,
+[
+AC_TRY_COMPILE([#include <gmp.h>],[
+mpz_t foo;
+return 0;
+],lpc_cv_lib_gmp_is_new_enough=yes,lpc_cv_lib_gmp_is_new_enough=no)
+])
+
+AC_MSG_RESULT($lpc_cv_lib_gmp_is_new_enough)
+if $lpc_cv_lib_gmp_is_new_enough = yes; then
+  AC_DEFINE(HAVE_NEW_GMP)
+fi
+
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
 
