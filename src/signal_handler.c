@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.308 2004/09/30 14:05:35 mast Exp $
+|| $Id: signal_handler.c,v 1.309 2004/10/15 21:47:22 mast Exp $
 */
 
 #include "global.h"
@@ -4526,7 +4526,7 @@ static void run_atexit_functions(struct callback *cb, void *arg,void *arg2)
   if(atexit_functions)
   {
     int i;
-    for (i = atexit_functions->size - 1; i; i--) {
+    for (i = atexit_functions->size; i--;) {
       struct svalue *s = ITEM (atexit_functions) + i;
       if (!IS_DESTRUCTED (s)) {
 	safe_apply_svalue (s, 0, 1);
