@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.406 2001/09/24 16:57:17 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.407 2001/09/27 20:28:28 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4690,10 +4690,18 @@ static INLINE void dml_free_pools(struct diff_magic_link_pool *pools)
 static INLINE void dml_delete(struct diff_magic_link_pool *pools,
 			      struct diff_magic_link *dml)
 {
-   if (dml->prev && !--dml->prev->refs) dml_delete(pools,dml->prev);
-   dmls--;
-   dml->prev=pools->firstfree;
-   pools->firstfree=dml;
+  struct diff_magic_link *prev;
+  while(1)
+  {
+    prev=dml->prev;
+    dmls--;
+    dml->prev=pools->firstfree;
+    pools->firstfree=dml;
+    if (prev && !--prev->refs)
+      dml=prev;
+    else
+      break;
+  }
 }
 
 static INLINE int diff_ponder_stack(int x,
