@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.232 2002/11/28 22:03:49 nilsson Exp $
+// $Id: master.pike.in,v 1.233 2002/11/29 11:09:39 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1167,6 +1167,7 @@ object findmodule(string fullname, object|void handler)
   if(!zero_type(o=fc[fullname]))
   {
 //    werror("fc[%O] -> %O\n",fullname, o);
+    if (o == 0) return UNDEFINED;
     return o;
   }
 
@@ -1372,7 +1373,8 @@ class CompatResolver
       foreach(pike_module_path, string path)
 	{
 	  string file=combine_path(dir, path, identifier);
-	  if(mixed ret=findmodule(file, current_handler)) {
+	  mixed ret;
+	  if(!zero_type(ret=findmodule(file, current_handler))) {
 	    if ((objectp(ret)) &&
 		(ret->is_resolv_dirnode || ret->is_resolv_joinnode)) {
 	      if (mixed new_ret = ret->_module_value) {
@@ -1443,7 +1445,10 @@ class CompatResolver
 
       array(string) tmp=identifier/".";
       ret=resolv_base(tmp[0], current_file, current_handler);
-      foreach(tmp[1..],string index) ret=ret[index];
+      foreach(tmp[1..],string index) {
+	if (zero_type(ret)) break;
+	ret=ret[index];
+      }
       resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
 #ifdef RESOLV_DEBUG
       if (zero_type (ret))
