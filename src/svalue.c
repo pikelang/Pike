@@ -384,12 +384,12 @@ int svalue_is_true(struct svalue *s)
 
   case T_FUNCTION:
     check_destructed(s);
-    if(sp[-1].type==T_INT) return 0;
+    if(s->type==T_INT) return 0;
     return 1;
 
   case T_OBJECT:
     check_destructed(s);
-    if(sp[-1].type==T_INT) return 0;
+    if(s->type==T_INT) return 0;
     if(!s->u.object->prog) return 0;
 
     if(s->u.object->prog->lfuns[LFUN_NOT]!=-1)
