@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.26 1999/11/12 18:20:51 grubba Exp $
+ * $Id: las.h,v 1.27 1999/11/12 18:33:13 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -171,8 +171,10 @@ void resolv_program(node *n);
 
 #ifdef SHARED_NODES
 #define ADD_NODE_REF(n)	(n?add_ref(n):0)
+#define ADD_NODE_REF2(n, code)	do { n?add_ref(n):0; code; } while(0)
 #else /* !SHARED_NODES */
 #define ADD_NODE_REF(n)	(n = 0)
+#define ADD_NODE_REF2(n, code)	do { code; n = 0;} while(0)
 #endif /* SHARED_NODES */
 
 #ifdef SHARED_NODES
