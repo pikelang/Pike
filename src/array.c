@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.160 2004/05/28 16:08:24 grubba Exp $
+|| $Id: array.c,v 1.161 2004/08/19 23:02:29 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.160 2004/05/28 16:08:24 grubba Exp $");
+RCSID("$Id: array.c,v 1.161 2004/08/19 23:02:29 nilsson Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -90,10 +90,13 @@ PMOD_EXPORT struct array *low_allocate_array(ptrdiff_t size, ptrdiff_t extra_spa
     return &empty_array;
   }
 
+  if( (size+extra_space-1) >
+      (ULONG_MAX-sizeof(struct array))/sizeof(struct svalue) )
+    Pike_error("Too large array (memory size exceeds size of size_t)\n");
   v=(struct array *)malloc(sizeof(struct array)+
 			   (size+extra_space-1)*sizeof(struct svalue));
   if(!v)
-    Pike_error("Couldn't allocate array, out of memory.\n");
+    Pike_error(msg_out_of_mem);
 
   GC_ALLOC(v);
 
