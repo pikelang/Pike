@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.9 2000/10/29 10:55:37 mirar Exp $
+### $Id: regional,v 1.10 2000/11/28 09:50:19 mirar Exp $
 
 ### =====================================================================
 ###
@@ -185,11 +185,11 @@ Region "christianity"
   Event "c/nativity of mary"                - "Nativity of Mary"               Fixed Sep  8
   Event "c/all saints"                      - "All Saints Day"                 Fixed Nov  1
   Event "c/all souls"                       - "All Souls Day"                  Fixed Nov  2
-  Event "c/advent 1"                        - "Advent 1"                       WDRel Dec 24 Sun -4 excl
+  Event "c/advent 1"                        - "Advent 1"                       WDRel Dec 25 Sun -4 excl
   Event "c/immaculate conception"           - "Immaculate Conception"          Fixed Dec  8
-  Event "c/advent 2"                        - "Advent 2"                       WDRel Dec 24 Sun -3 excl
-  Event "c/advent 3"                        - "Advent 3"                       WDRel Dec 24 Sun -2 excl
-  Event "c/advent 4"                        - "Advent 4"                       WDRel Dec 24 Sun -1 excl
+  Event "c/advent 2"                        - "Advent 2"                       WDRel Dec 25 Sun -3 excl
+  Event "c/advent 3"                        - "Advent 3"                       WDRel Dec 25 Sun -2 excl
+  Event "c/advent 4"                        - "Advent 4"                       WDRel Dec 25 Sun -1 excl
   Event "c/christmas eve"                   - "Christmas Eve"                  Fixed Dec 24
   Event "c/christmas"                       - "Christmas Day"                  Fixed Dec 25
   Event "c/christmas2d"                     - "Christmas"                      Fixed Dec 25  2 days
@@ -3411,7 +3411,7 @@ Region "se"
   Add   "c/christmas eve"             -  # "Christmas Eve"            Fixed Dec 24
   Add   "new years eve"               -  # "New Year's Eve"           Fixed Dec 31
 
-  Add   "namedays/se"                 #  # # # # # # #
+  Add   "namedays/se"                 -  #  # # # # # # #
   Add   "sunday"                      h  # "Sun"                      Weekday ---
 
 
