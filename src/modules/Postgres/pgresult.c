@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.28 2003/12/20 18:33:55 grubba Exp $
+|| $Id: pgresult.c,v 1.29 2003/12/22 14:01:29 grubba Exp $
 */
 
 /*
@@ -84,7 +84,7 @@
 #include <catalog/pg_type.h>
 #endif
 
-RCSID("$Id: pgresult.c,v 1.28 2003/12/20 18:33:55 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.29 2003/12/22 14:01:29 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
@@ -362,7 +362,7 @@ badresult:
 		  for(;k>0 && value[k]==' ';k--);
 		  break;
 #endif
-#ifdef HAVE_PQUNESCAPEBYTEA
+#if defined(HAVE_PQUNESCAPEBYTEA) && defined(BYTEAOID)
 		case BYTEAOID:
 		  if(binbuf=PQunescapeBytea(value,&binlen))
 		    value=binbuf,k=binlen;
