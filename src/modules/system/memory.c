@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: memory.c,v 1.20 2003/03/12 09:23:36 agehall Exp $
+|| $Id: memory.c,v 1.21 2003/03/14 14:14:56 kiwi Exp $
 */
 
 /*! @module System
@@ -19,7 +19,7 @@
  *!	Don't blame Pike if you shoot your foot off.
  */
 #include "global.h"
-RCSID("$Id: memory.c,v 1.20 2003/03/12 09:23:36 agehall Exp $");
+RCSID("$Id: memory.c,v 1.21 2003/03/14 14:14:56 kiwi Exp $");
 
 #include "system_machine.h"
 
@@ -47,6 +47,10 @@ RCSID("$Id: memory.c,v 1.20 2003/03/12 09:23:36 agehall Exp $");
 #include <sys/shm.h>
 #endif
 
+#ifdef HAVE_CYGWIN_SHM_H
+#include <cygwin/ipc.h>
+#include <cygwin/shm.h>
+#endif
 
 /* something on AIX defines these */
 #ifdef T_INT
