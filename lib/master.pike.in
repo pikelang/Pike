@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.85 1999/12/13 22:15:31 grubba Exp $
+ * $Id: master.pike.in,v 1.86 1999/12/21 23:46:39 per Exp $
  * 
  * Master-file for Pike.
  *
@@ -543,6 +543,7 @@ class dirnode
   string dirname;
   mixed module;
   mapping cache=([]);
+  array files;
 
   void create(string name)
   {
@@ -555,18 +556,33 @@ class dirnode
 
   object|program ind(string index)
   {
-    if(module) {
+    if(module) 
+    {
       object o;
       if(!zero_type(o=module[index])) return o;
     }
 
+    if( !files )
+      files = get_dir(dirname);
+
+    int ret;
+    foreach( files, string s )
+    {
+      if( search(s, index)!=-1 || search(index,s)!=-1 )
+      {
+        ret=1;
+        break;
+      }
+    }
+    if(!ret)
+      return UNDEFINED;
     index = dirname+"/"+index;
     if(object o=findmodule(index))
     {
       if(mixed tmp=o->_module_value) o=tmp;
       return o;
     }
-    return cast_to_program(index,0);
+    return cast_to_program( index, 0 );
   }
 
   object|program `[](string index)
@@ -598,7 +614,9 @@ class dirnode
       }
     }
 
-    foreach(get_dir(dirname), string fname) {
+    if( !files )
+      files = get_dir(dirname);
+    foreach(files, string fname) {
       catch {
 	if (((< ".pike", ".pmod" >)[fname[sizeof(fname)-5..]]) &&
 	    !zero_type(`[](fname[..sizeof(fname)-6]))) {
@@ -1456,7 +1474,11 @@ string describe_backtrace(mixed trace, void|int linewidth)
     {
       mixed tmp;
       string row;
-
+      if( arrayp(trace[e]) &&
+          (sizeof(trace[e]) > 2) &&
+          (trace[e][2] == _main) && 
+          (sizeof(trace)>1) )
+        continue;
       if (mixed err=catch {
 	tmp = trace[e];
 	if(stringp(tmp))
@@ -1476,7 +1498,8 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	    mixed desc="Unknown program";
 	    if(sizeof(tmp)>=3 && functionp(tmp[2]))
 	    {
-	      catch {
+	      catch 
+              {
 		if(mixed tmp=function_object(tmp[2]))
 		  if(tmp=object_program(tmp))
 		    if(tmp=describe_program(tmp))
