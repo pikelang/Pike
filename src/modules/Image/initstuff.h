@@ -38,6 +38,7 @@ IMAGE_SUBMODULE("XBM",   init_image_xbm,  exit_image_xbm  )
 IMAGE_SUBMODULE("_XCF",  init_image_xcf,  exit_image_xcf  ) 
 IMAGE_SUBMODULE("XWD",   init_image_xwd,  exit_image_xwd  ) 
 IMAGE_SUBMODULE("_XPM",  init_image__xpm, exit_image__xpm ) 
+IMAGE_SUBMODULE("WBF",   init_image_wbf,  exit_image_wbf ) 
 
 IMAGE_SUBMODMAG("PNG",   init_image_png,  exit_image_png  )
 
