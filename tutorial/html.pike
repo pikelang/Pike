@@ -7,11 +7,30 @@ mapping(string:SGML) sections=([]);
 mapping(string:string) link_to_page=([]);
 mapping(string:TAG) link_to_data=([]);
 string basename;
+object files;
+
+multiset exported=(<>);
+
+void add_file_to_export_list(string f)
+{
+  if(!exported[f])
+  {
+    exported[f]=1;
+    files->write(f+"\n");
+  }
+}
 
 string mkfilename(string section)
 {
   if(section=="") return basename+".html";
   return basename+"_"+section+".html";
+}
+
+string mklinkname(string section)
+{
+  string s=mkfilename(section);
+  int q=sizeof(basename/"/");
+  return (s/"/")[q-1..]*"/";
 }
 
 
@@ -21,6 +40,7 @@ TAG mkimgtag(string file, mapping params)
   p->src=file;
   if(params->align) p->align=params->align;
   if(params->alt) p->align=params->alt;
+  add_file_to_export_list(file);
   return Sgml.Tag("img",p,0);
 }
 
@@ -305,7 +325,7 @@ SGML convert(SGML data)
 	  {
 	    werror("Warning: Cannot find link "+to+" (near "+data->location()+")\n");
 	  }
-	  data->params->href=mkfilename(link_to_page[to])+"#"+to;
+	  data->params->href=mklinkname(link_to_page[to])+"#"+to;
 	  break;
 	}
 	
@@ -322,7 +342,7 @@ SGML convert(SGML data)
 	  else
 	    data->data=({"unknown"});
 	  data->tag="a";
-	  data->params->href=mkfilename(link_to_page[to])+"#"+to;
+	  data->params->href=mklinkname(link_to_page[to])+"#"+to;
 	  break;
 	}
 	
@@ -338,6 +358,7 @@ SGML convert(SGML data)
 	
 	case "example": data->tag="blockquote";break;
       case "ex_keyword": data->tag="b";break;
+      case "ex_meta": data->tag="i";break;
       case "ex_br": data->tag="br"; break;
 
       case "ex_indent":
@@ -467,6 +488,10 @@ SGML convert(SGML data)
 	ret+=({ Sgml.Tag("b",([]),data->pos,t) });
 	continue;
       }
+
+      case "img":
+	add_file_to_export_list(data->params->src);
+	break;
 
       case "illustration":
 	ret+=({ mkimgtag(Wmml.illustration_to_gif(data,75.0),data->params) });
@@ -601,10 +626,10 @@ SGML low_split(SGML data)
 	    Sgml.Tag("frameset",(["cols":"30%,*"]),0,
 		     ({
 		       "\n",
-		       Sgml.Tag("frame",(["src":mkfilename("toc_frame"),"name":"toc"])),
+		       Sgml.Tag("frame",(["src":mklinkname("toc_frame"),"name":"toc"])),
 		       "\n",
 
-		       Sgml.Tag("frame",(["src":mkfilename("firstpage"),"name":"display"])),
+		       Sgml.Tag("frame",(["src":mklinkname("firstpage"),"name":"display"])),
 		       "\n",
 
 		     })),
@@ -626,6 +651,11 @@ SGML low_split(SGML data)
     }
   
   return current;
+}
+
+SGML split(SGML data)
+{
+  return low_split(data);
 }
 
 void low_collect_links(SGML data, string file)
@@ -680,11 +710,13 @@ string prevify(string num)
 
 void output(string base, WMML data)
 {
+  files=Stdio.File(base+".files","wct");
+
   basename=base;
 
   werror("Splitting ");
   sections=([]);
-  sections[""]=low_split(data->data);
+  sections[""]=split(data->data);
 
   werror("Finding links ");
   foreach(indices(sections), string file)
@@ -720,7 +752,7 @@ void output(string base, WMML data)
 	  
 	  if(name && sections[to])
 	  {
-	    links+=({ Sgml.Tag("a",(["href":mkfilename(to)]),0,
+	    links+=({ Sgml.Tag("a",(["href":mklinkname(to)]),0,
 			       ({
 				 Sgml.Tag("img",([
 				   "src":"left.gif",
@@ -733,7 +765,7 @@ void output(string base, WMML data)
 	  }
 	  name=0;
 
-	  links+=({ Sgml.Tag("a",(["href":mkfilename("")]),0,
+	  links+=({ Sgml.Tag("a",(["href":mklinkname("")]),0,
 			     ({
 			       Sgml.Tag("img",
 					([
@@ -765,7 +797,7 @@ void output(string base, WMML data)
 	  
 	  if(name && sections[to])
 	  {
-	    links+=({ Sgml.Tag("a",(["href":mkfilename(to)]),0,
+	    links+=({ Sgml.Tag("a",(["href":mklinkname(to)]),0,
 			       ({
 				 Sgml.Tag("img",([
 				   "src":"right.gif",
@@ -812,6 +844,7 @@ void output(string base, WMML data)
       werror("->String");
       string data=Sgml.generate(data,Html.mktag);
       werror("->disk");
+      add_file_to_export_list(filename);
       out::open(filename,"wct");
       out::write(data);
       out::close();

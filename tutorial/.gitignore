@@ -11,3 +11,6 @@
 /tutorial.mif
 /tutorial.tex
 /tutorial_*.html
+/tut*.html
+/*.md
+/*.files

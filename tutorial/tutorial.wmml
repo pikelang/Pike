@@ -1,10 +1,12 @@
+<!--
 <head>
 <title>Pike tutorial</title>
 </head>
+-->
 
-<!-- Allmänt: Sök på "'" och byt ut nästan alla 'foo' mot <i>foo</i>
-     Ändra alla kommandon under SEE ALSO till <tt>foo</tt> 
-     Det står "return" på miljoner ställen där det ska stå "returns" -->
+<!--
+TODO: Add a section about casts
+--> 
 
 <firstpage>
 <p>
@@ -364,20 +366,20 @@ program however. Therefore we have <b>control structures</b> to make Pike
 execute pieces of code in more interesting orders than from top to bottom.
 <p>
 We have already seen an example of the <tt>if</tt> statement:
-<pre>
-	if( <i>expression </i> )
-		<i>statement1 </i> ;
+<example language=pike meta=expression,statement1,statement2>
+	if( expression )
+	   statement1;
 	else
-		<i>statement2 </i> ;
-</pre>
+	   statement2;
+</example>
 <!-- FIX ME: should if have a capital letter or not? -->
 <tt>if</tt> simply evaluates the expression and if the result is true it
 executes <i>statement1</i>, otherwise it executes <i>statement2</i>. If you have no need for
 statement2 you can leave out the whole else<!-- FIX ME: tt/italics --> part like this:
-<pre>
-	if( <i>expression </i> )
-		<i>statement1 </i> ;
-</pre>
+<example language=pike meta=expression,statement1>
+	if( expression )
+	  statement1;
+</example>
 In this case <i>statement1</i> is evaluated if <i>expression</i> is true, otherwise
 nothing is evaluated.
 <p>
@@ -385,10 +387,10 @@ nothing is evaluated.
    understand what <tt>if</tt> does.</b>
 <p>
 Another very simple control structure is the <tt>while</tt> statement:
-<pre>
-	while( <i>expression </i> )
-		<i>statement </i> ;
-</pre>
+<example language=pike meta=expression,statemente>
+	while( expression )
+	  statement;
+</example>
 This statement evaluates <i>expression</i> and if it is found to be true it
 evaluates <i>statement</i>. After that it starts over and evaluates <i>expression</i>
 again. This continues until <i>expression</i> is no longer true. This type of
@@ -401,12 +403,12 @@ interesting programming.
 Another control structure we have already seen is the function.
 A function is simply a block of Pike code that can be executed with different arguments from different places in the program.
 A function is declared like this:
-<pre>
-	<i>modifiers type name </i> ( <i>type name1 </i>, <i>type name2 </i>, <i>... </i> )
+<example language=pike meta=modifiers,type,name1,name2,statements>
+	modifiers type name(type name1, type name2, ...)
 	{
-	  <i> statements </i>
+	  statements
 	}
-</pre>
+</example>
 The <i>modifiers</i> are optional. See <ref to=modifiers> for more details about
 modifiers. The <i>type </i> specifies what kind of data the function returns.
 For example, the word <tt>int</tt> would signify that the function returns
@@ -903,12 +905,12 @@ described again in this chapter.
 
 The simplest one is called the <b>if statement</b>. It can be written anywhere
 where a statement is expected and it looks like this:
-<pre>
-	if ( <i>expression</i> )
-	  <i>statement1</i> ;
+<example language=pre meta=expression,statement1,statement2>
+	if( expression )
+	  statement1;
 	else
-	  <i>statement2</i> ;
-</pre>
+	  statement2;
+</example>
 Please note that there is no semicolon after the parenthesis or after the
 <tt>else</tt>. Step by step, <tt>if</tt> does the following:
 <ol>
@@ -925,31 +927,31 @@ In short, <i>statement1</i> is executed if <i>expression</i> is <b>true</b>
 otherwise <i>statement2</i> is executed. If you are not interested in
 having something executed if the expression is false you can drop the
 whole else part like this:
-<pre>
-	if ( <i>expression</i> )
-	  <i>statement1</i> ;
-</pre>
+<example language=pike meta=expression,statement1>
+	if( expression )
+	  statement1;
+</example>
 If on the other hand you are not interested in evaluating something if the
 expression is <b>false</b> you should use the <b>not</b> operator to negate
 the true/false value of the expression. See chapter 5 for more information
 about the <b>not</b> operator. It would look like this:
-<pre>
-	if ( ! <i>expression</i> )
-	  <i>statement2</i> ;
-</pre>
+<example language=pike meta=expression,statement2>
+	if( ! expression )
+	  statement2 ;
+</example>
 Any of the statements here and in the rest of this chapter can
 also be a <b>block</b> of statements. A block is a list of statements,
 separated by semicolons and enclosed by brackets. Note that you should
 never put a semicolon after a block of statements. The example above
 would look like this;
-<pre>
-	if ( ! <i>expression</i> )
+<example language=pike meta=expression,statement>
+	if ( ! expression )
 	{
-	  <i>statement</i> ;
-	  <i>statement</i> ;
-	  <i>statement</i> ;
+	  statement;
+	  statement;
+	  statement;
 	}
-</pre>
+</example>
 </section>
 
 <section title="Switch">
@@ -958,25 +960,25 @@ A more sophisticated condition control structure is the <b>switch
 statement</b>.
 A switch lets you select one of many choices depending on the value of an
 expression and it can look something like this:
-<pre>
-	switch ( <i>expression</i> )
+<example language=pike meta=expression,constant1,constant2,constant3,constant4,expressions1,expressions2,expressions3,expressions5>
+	switch ( expression )
 	{
-	  case <i>constant1</i>:
-	    <i>expressions1</i> ;
+	  case constant1:
+	    expressions1;
 	    break;
 
- 	  case <i>constant2</i>:
-	    <i>expressions2</i> ;
+ 	  case constant2:
+	    expressions2;
 	    break;
 
- 	  case <i>constant3</i> .. <i>constant4</i>:
-	    <i>expressions3</i> ;
+ 	  case constant3 .. constant4:
+	    expressions3;
 	    break;
 
 	  default:
-	    <i>expressions5</i> ;
+	    expressions5;
 	}
-</pre>
+</example>
 As you can see, a switch statement is a bit more complicated than an
 if statement. It is still fairly simple however. It starts by evaluating
 the expression it then searches all the <tt>case</tt> statements in the
@@ -1008,10 +1010,10 @@ one at the right time makes the code a lot shorter and simpler.
 <section title="while">
 <tt>While</tt> is the simplest of the loop control structures. It looks
 just like an <tt>if</tt> statement without the else part:
-<pre>
-	while ( <i>expression</i> )
-	  <i>statement</i> ;
-</pre>
+<example language=pike meta=expression,statement>
+	while ( expression )
+	  statement;
+</example>
 The difference in how it works isn't that big either, the statement is
 executed if the expression is true. Then the expression is evaluated
 again, and if it is true the statement is executed again. Then it
@@ -1033,20 +1035,20 @@ This would call show_record with the values 1, 2, 3 and 4.
 <tt>For</tt> is simply an extension of <tt>while</tt>. It provides an
 even shorter and more compact way of writing loops. The syntax looks
 like this:
-<pre>
-	for ( <i>initializer statement</i> ; <i>expression</i> ; <i>incrementor expression</i> )
-	  <i>statement</i> ;
-</pre>
+<example language=pike meta=initializer_statement,expression,increment_expression,statement>
+	for ( initializer_statement ; expression ; incrementor_expression )
+	  statement ;
+</example>
 For does the following steps:
 <ol>
-<li> Executes the the <i>initializer statement</i>. The initializer statement
+<li> Executes the the <i>initializer_statement</i>. The initializer statement
      is executed only once and is most commonly used to initialize the loop
       variable.
 <li> Evaluates <i>expression</i>
 <li> If the result was false it exits the loop and continues with the
      program after the loop.
 <li> Executes <i>statement</i>.
-<li> Executes the <i>incrementor expression</i>.
+<li> Executes the <i>increment_expression</i>.
 <li> Starts over from 2.
 </ol>
 This means that the example in the while section can be written like this:
@@ -1062,11 +1064,11 @@ Sometimes it is unpractical that the expression is always evaluated before
 the first time the loop is executed. Quite often you want to execute
 something, and then do it over and over until some condition is satisfied.
 This is exactly when you should use the do-while statement.
-<pre>
+<example language=pike meta=statement,expression>
 	do
-	  <i>statement</i> ;
-	while ( <i>expression</i> );
-</pre>
+	  statement;
+	while ( expression );
+</example>
 As usual, the <i>statement</i> can also be a block of statements, and then
 you do not need a semicolon after it. To clarify, this statement executes
 <i>statement</i> first, and then evaluates the <i>expression</i>. If the
@@ -1090,14 +1092,14 @@ the modem by using the functions <tt>write</tt> and <tt>gets</tt>.
 evaluated for each iteration in the loop. Instead, <tt>foreach</tt> executes
 the statement once for each element in an array. <tt>Foreach</tt> looks like
 this:
-<pre>
-	foreach ( <i>array expression</i>, <i>variable</i> )
-	  <i>statement</i> ;
-</pre>
+<example language=pike meta=array_expression,variable,statement>
+	foreach ( array_expression, variable )
+	  statement ;
+</example>
 We have already seen an example of <tt>foreach</tt> in the <tt>find_song</tt>
 function in chapter 2. What foreach does is:
 <ol>
-<li> It evaluates the <i>array expression</i> which must return an array.
+<li> It evaluates the <i>array_expression</i> which must return an array.
 <li> If the array is empty, exit the loop.
 <li> It then assigns the first element from the array to the <i>variable</i>.
 <li> Then it executes the <i>statement</i>.
@@ -1107,14 +1109,14 @@ function in chapter 2. What foreach does is:
 </ol>
 <tt>Foreach</tt> is not really necessary, but it is faster and clearer than
 doing the same thing with a <tt>for</tt> loop, as shown here:
-<pre>
-	array tmp1= <i>array expression</i> ;
+<example language=pike meta=array_expression,variable,statement>
+	array tmp1= array_expression;
 	for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
 	{
-	  <i>variable</i> = tmp1 [ tmp2 ];
-	  <i>statement</i> ;
+	  variable = tmp1 [ tmp2 ];
+	  statement;
 	}
-</pre>
+</example>
 <p>
 </section>
 </section>
@@ -1272,11 +1274,11 @@ need decimals. For this purpose you use <tt>float</tt>. Floats are normally
 and very small numbers, but only with 9 accurate digits. To write a floating
 point constant, you just put in the decimals or write it in the exponential
 form:
-<pre>
+<example language=pike>
 	3.14159265358979323846264338327950288419716939937510 // Pi
 	1.0e9  // A billion
 	1.0e-9 // A billionth
-</pre>
+</example>
 Of course you do not need this many decimals, but it doesn't hurt either.
 Usually digits after the ninth digit are ignored, but on some architectures
 <tt>float</tt> might have higher accuracy than that. In the exponential form,
@@ -1783,10 +1785,10 @@ section again.
 <dt> compiling
 <dd> All programs are generated by compiling a file or a string. For this
      purpose there are two functions:
-<pre>
-	program compile_file(string <i>filename</i>);
-	program compile_string(string <i>p</i>, string <i>filename</i>);
-</pre>
+<example language=pike meta=p,filename>
+	program compile_file(string filename);
+	program compile_string(string p, string filename);
+</example>
      <tt>Compile_file</tt> simply reads the file given as argument, compiles
      it and returns the resulting program. <tt>Compile_string</tt> instead
      compiles whatever is in the string <i>p</i>. The second argument,
@@ -1937,9 +1939,9 @@ For convenience, there is also a simple way to write a function inside another
 function. To do this you use the <tt>lambda</tt> keyword.  The
 syntax is the same as for a normal function, except you write
 <tt>lambda</tt> instead of the function name:
-<pre>
-	lambda ( <i>types</i> ) { <i>statements</i> }
-</pre>
+<example language=pike meta=types,statements>
+	lambda ( types ) { statements }
+</example>
 The major difference is that this is an expression that can be used inside
 other function. Example:
 <example language=pike>
@@ -2020,13 +2022,19 @@ than that, let's look at a few examples:
 	array x; // x is an array of mixed
 	mixed x; // x can be any type
 	string *x; // x is an array of strings
-	mapping(string:int) x; // x is a mapping mapping from int to string
-	object(Stdio.File) x; // x is a clone of Stdio.File
 
-	// x is a function that takes two integer arguments and returns a string
+	 // x is a mapping mapping from int to string
+	mapping(string:int) x;
+
+	// x is a clone of Stdio.File
+	object(Stdio.File) x;
+
+	// x is a function that takes two integer
+	// arguments and returns a string
 	function(int,int:string) x;
 
-	// x is a function taking any amount of integer arguments and returns nothing.
+	// x is a function taking any amount of
+	// integer arguments and returns nothing.
 	function(int...:void) x;
 
 	// x is ... complicated
@@ -2464,22 +2472,22 @@ arguments to a suitable range. This means that
 There is really only one assignment operator, but it can be combined with
 lots of other operators to make the code shorter. An assignment looks
 like this:
-<pre>
-	<i>variable</i> = <i>expression</i> ;
-</pre>
+<example language=pike meta=variable,expression>
+	variable = expression;
+</example>
 The <i>variable</i> can be a local variable, a global variable or an index
 in an array, object, multiset or mapping. This will of course set the
 value stored in <i>variable</i> to <i>expression</i>. Note that the above
 is also an expression which returns the value of the <i>expression</i>.
 This can be used in some interesting ways:
-<pre>
-	<i>variable1</i> = <i>variable2</i> = 1; // Assign 1 to both variables
-	<i>variable1</i> =(<i>variable2</i> = 1); // Same as above
+<example language=pike meta=variable1,variable2,expression>
+	variable1 = variable2 = 1; // Assign 1 to both variables
+	variable1 =(variable2 = 1); // Same as above
 
 	// Write the value of the expression, if any
-	if(<i>variable</i> = <i>expression</i>)
+	if(variable = expression)
 	  write(variable);
-</pre>
+</example>
 Using assignments like this can however be confusing to novice users, or users
 who come from a Pascal or Basic background. Especially the if statement
 can be mistaken for <tt>if(<i>variable</i> == <i>expression</i>)</tt> which
@@ -2753,11 +2761,11 @@ If you don't want to put each program in a separate file, you can use the
 <tt>class</tt> keyword to write all your classes in one file. We have
 already seen an example how this in chapter 4, but let's go over it in
 more detail. The syntax looks like this:
-<pre>
-	class <i>class_name</i> {
-	  <i>class definition</i>
+<example language=pike meta=class_name,class_definition>
+	class class_name {
+	  class_definition
 	}
-</pre>
+</example>
 This construction can be used almost anywhere within a normal program.
 It can be used outside all functions, but it can also be used as an expression
 in which case the defined class will be returned. In this case you may also
@@ -3067,9 +3075,9 @@ Sscanf may look exactly like a normal function, but normal functions
 can not set the variables you send to it. The purpose of sscanf is to
 match one string against a format string and place the matching results
 into a list of variables. The syntax looks like this:
-<pre>
-	int sscanf(string <i>str</i>, string <I>fmt</I>, <i>lvalue</i> ...)
-</pre>
+<example language=pike meta=str,fmt,lvalue>
+	int sscanf(string str, string fmt, lvalue ...)
+</example>
 The string <i>str</i> will be matched against the format string <i>fmt</i>.
 <i>fmt</i> can contain strings
 separated by %d,%s,%c and %f. Every % corresponds to one <i>lvalue</i>.
@@ -3129,17 +3137,17 @@ Let's look at a couple of examples:
 <section title="catch & throw">
 Catch is used to trap errors and other exceptions in Pike.
 It works by making a block of code into an expression, like this:
-<pre>
-	catch { <i>statements</i> }
-</pre>
+<example language=pike meta=statements>
+	catch { statements }
+</example>
 If an error occurs, catch will return a description of the error.
 The description of the error has the following format:
-<pre>
+<example language=pike>
 	({
-	   "<i>error description</i>",
+	   "error description",
 	   backtrace()
 	})
-</pre>
+</example>
 If no error occurs, catch will return zero. You may emulate your own errors
 using the function throw, described in <ref to=functions>.
 <p>
@@ -3156,9 +3164,9 @@ Example:
 <anchor name=gauge>
 <section title="gauge">
 The syntax for gauge is the same as the syntax for catch:
-<pre>
-	gauge { <i>statements</i> }
-</pre>
+<example language=pike meta=statements>
+	gauge { statements }
+</example>
 However, gauge simply returns how many milliseconds the code took to execute.
 This can be used to find out how fast your code actually is.. :)
 Only CPU time used by the Pike process is measured. This means that if it takes
@@ -3296,7 +3304,7 @@ cloned for to find the identifiers.
 <section title="How to write a module">
 Here is an example of a simple module:
 <example language=pike>
-	constant PI = 3.15;
+	constant PI = 3.14159265358979323846264338327950288419716939937510;
 	float cos2(float f) { return pow(cos(f),2.0); }
 </example>
 if we save this short file as <tt>Trig.pike.pmod</tt> we can now use this
@@ -4308,7 +4316,7 @@ this instance of the program. (and thus the connection)
 Remove the leading slash.
 <p>
 <example language=pike>
-	      input=combine_path(BASE,input);
+	      input=BASE+combine_path("/",input);
 </example>
 Combine the requested file with the base of the HTML tree, this gives
 us a full filename beginning with a slash. The HTML tree is the
@@ -4397,9 +4405,7 @@ End of create()
 	};
 </example>
 End of the new class.
-<pre>
-	
-</pre>
+<p>
 Next we define the function called when someone connects.
 <p>
 <example language=pike>
@@ -4482,7 +4488,7 @@ a slow machine available for the server.
 </chapter>
 </module>
 
-<module name=Threads>
+<module name=Thread>
 <chapter title="Threads">
 Threads are used to run several Pike functions at the same time without having to start
 several Pike processes. Using threads often simplifies coding and because the
@@ -4566,7 +4572,7 @@ makes it very simple to write threaded programs. Let's look at an example:
 	int main(int argc, array(string) argv)
 	{
 	  for(int e=0;e&lt;4;e++)          // Start workers
-	    thread_create(worker,argv[1]);
+	    thread_create(worker,argv[e]);
 	  for(int e=2;e&lt;argc;e++)       // Feed workers
 	    Fifo::write(argv[1]);
 	  for(int e=0;e&lt;4;e++)          // Tell workers to die
@@ -5078,7 +5084,7 @@ class worker
 
       // Open the requested file      
       sscanf(input,"%*[/]%s",input);
-      input=combine_path(BASE,input);
+      input=BASE+combine_path("/",input);
       
       if(!file::open(input,"r"))
       {
@@ -5289,7 +5295,7 @@ first call that returned true instead or returning an array of the
 returned values. If no call returns true, -1 is returned.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.filter_array>Array.filter_array</link>
+<link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.filter>Array.filter</link>
 <p>
 </dl>
 </anchor>
@@ -5320,7 +5326,7 @@ return res;<br>
 <p>Simple ehh?
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.map_array>Array.map</link>, <link to=Array.filter>Array.filter</link> and <link to=Array.search_array>Array.search_array</link>
+<link to=Array.map>Array.map</link>, <link to=Array.filter>Array.filter</link> and <link to=Array.search_array>Array.search_array</link>
 </dl>
 </anchor>
 
@@ -5367,13 +5373,8 @@ values removed. The order of the values in the result is undefined.
 </section>
 </chapter>
 
-<chapter title="Other modules">
-
-Pike also include a number of smaller modules. These modules implement support
-for various algorithms, data structures and system routines.
-
 <anchor name=Image>
-<section title=Image>
+<chapter title=Image>
 The Image module is used to manipulate bit-mapped color images. 
 It can read PPM images and do various manipulations, or it can be
 used to create completely new images. The created images can be
@@ -5411,12 +5412,18 @@ Let's look at an example of how this can be used:
 </example>
 This very simple example can be used as a CGI script to produce a gif image
 which says what time it is in white text on a black background.
-<p>
-The Image module manual is not yet a part of this book, but it can be
-found at <a href=http://www.mirar.org/image>http://www.mirar.org/image</a>.
 
-</section>
+<hr newpage>
+
+<include file=Image.wmml>
+
+</chapter>
 </anchor>
+
+<chapter title="Other modules">
+
+Pike also include a number of smaller modules. These modules implement support
+for various algorithms, data structures and system routines.
 
 <anchor name=System>
 <section title="System">
@@ -6112,7 +6119,7 @@ argument can be used to free up a little memory after the regexp has
 been used.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link> and <link to=Yp.regexp.match>Yp.regexp-&gt;match</link>
+<link to=clone>clone</link> and <link to=Regexp.match>Regexp-&gt;match</link>
 <p>
 </dl>
 
@@ -6132,13 +6139,13 @@ Return 1 if <i>s</i> matches the regexp bound to the object regexp,
 zero otherwise.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=Regexp.create>Regexp-&gt;create</link> and <link to=Yp.regexp.split>regexp-&gt;split</link>
+<link to=Regexp.create>Regexp-&gt;create</link> and <link to=Regexp.split>Regexp-&gt;split</link>
 <p>
 </dl>
 
 </anchor>
 <hr noshade size=1>
-<anchor name=split>
+<anchor name=Regexp.split>
 <dl>
 <dt><encaps>NAME</encaps><dd>
 <tt>Regexp.split</tt> - split a string according to a pattern
@@ -7673,7 +7680,7 @@ the function uses the following guesses:
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function is the inverse of the <link to=tokenize>tokenize</link> function.
+This function is the inverse of the <link to=MIME.tokenize>tokenize</link> function.
 A header field value is constructed from a sequence of lexical elements.
 Characters (<tt>int</tt>s) are taken to be special-characters, whereas
 strings are encoded as atoms or quoted-strings, depending on whether
@@ -8059,7 +8066,7 @@ for transmitting the message over protocols such as ESMTP and NNTP.
 The body will be encoded using the current transfer encoding, and subparts
 of a multipart will be collected recursively.  If the message is a multipart
 and no boundary string has been set, one is generated using
-<link to=generate_boundary>generate_boundary</link>.
+<link to=MIME.generate_boundary>generate_boundary</link>.
 <p>
 <dt><encaps>EXAMPLES</encaps><dd>
 <pre>
@@ -8278,7 +8285,7 @@ This is equivalent of calling
 <dt><encaps>DESCRIPTION</encaps><dd>
 Replaces the body entity of the data with a new piece of raw data.
 The new data should comply to the format indicated by the
-<link to=type>type</link> and <link to=subtype>subtype</link> attributes.
+<link to=MIME.Message.type>type</link> and <link to=MIME.Message.subtype>subtype</link> attributes.
 Do not use this method unless you know what you are doing.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -8324,7 +8331,7 @@ function instead.
 Select a new transfer encoding for this message.  The
 <tt>Content-Transfer-Encoding</tt> header will be modified accordingly,
 and subsequent calls to <tt>getencoded</tt> will produce data encoded using
-the new encoding.  See <link to=MIME.Message.encode>encode</link> for a list of valid
+the new encoding.  See <link to=MIME.encode>encode</link> for a list of valid
 encodings.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -8512,6 +8519,28 @@ This function is the same as all_constants.
 
 </anchor>
 
+<hr newpage>
+
+<anchor name=Simulate.explode>
+<dl>
+<dt><encaps>NAME</encaps><dd>
+<tt>Simulate.explode</tt> - explode a string on a delimeter
+<p>
+<dt><encaps>SYNTAX</encaps><dd>
+<tt>string explode(string <I>s</I>, string <I>delimiter</I>);<br>
+</tt>
+<p>
+<dt><encaps>DESCRIPTION</encaps><dd>
+This function is really the same as the division operator.
+It simly divides the string <i>s</i> into an array by splitting
+<i>s</i> at every occurance of <i>delimeter</i>.
+<p>
+<dt><encaps>SEE ALSO</encaps><dd>
+<link to=Simulate.implode>Simulate.implode</link>
+<p>
+</dl>
+
+</anchor>
 <hr newpage>
 
 <anchor name=Simulate.filter_array>
@@ -9397,7 +9426,7 @@ could be written in Pike as:
 aggregate_multiset...
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sizeof>sizeof</link>, <link to=multisetp>multisetp</link> and <link to=Simulate.mkmultiset>Simulate.mkmultiset</link>
+<link to=sizeof>sizeof</link>, <link to=multisetp>multisetp</link> and <link to=mkmultiset>mkmultiset</link>
 <p>
 </dl>
 </anchor>
@@ -10481,7 +10510,7 @@ which reflects if the <i>str</i> matches <i>glob</i>. When given an array as
 second argument, an array containing all matching strings is returned.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
-<link to=sscanf>sscanf</link> and <link to=Regexp.regexp>Regexp.regexp</link>
+<link to=sscanf>sscanf</link> and <link to=Regexp>Regexp</link>
 <p>
 </dl>
 </anchor>

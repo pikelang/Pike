@@ -73,6 +73,7 @@ static private int verify_any(SGML data, string in)
       case "ex_keyword":
       case "ex_string":
       case "ex_comment":
+      case "ex_meta":
       case "example":
 	if(!x->data)
 	{
@@ -85,6 +86,7 @@ static private int verify_any(SGML data, string in)
 
       case "ex_indent":
       case "ex_br":
+      case "include":
       case "dt":
       case "dd":
       case "li":
@@ -210,24 +212,26 @@ INDEX group_index_by_character(INDEX i)
   return m;
 }
 
-multiset reserved_pike =
-(<
+string * reserved_pike =
+({
   "array","break","case","catch","continue","default","do","else","float",
   "for","foreach","function","gauge","if","inherit","inline","int","lambda",
   "mapping","mixed","multiset","nomask","object","predef","private","program",
   "protected","public","return","sscanf","static","string","switch","typeof",
   "varargs","void","while"
->);
+});
 
-multiset reserved_c =
-(<
+string *reserved_c =
+({
   "break","case","continue","default","do","else","float","double",
   "for","if","int","char","short","unsigned","long",
   "public","return","static","switch",
   "void","while"
->);
+});
 
-object(Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
+object(Tag) parse_pike_code(string x,
+	 int pos,
+	 mapping(string:string) reserved_type)
 {
   int p,e;
   int tabindented=-1;
@@ -260,10 +264,7 @@ object(Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
       }
       
       string id=x[p..--e];
-      if(reserved[id])
-	ret+=({ Tag("ex_keyword",([]), pos+e, ({ id }) ) });
-      else
-	ret+=({ Tag("ex_identifier",([]), pos+e, ({ id }) ) });
+      ret+=({ Tag(reserved_type[id]||"ex_identifier",([]), pos+e, ({ id }) ) });
       break;
     }
     
@@ -497,15 +498,16 @@ SGML fix_class(TAG t, string name)
 	      t->data=low_make_concrete_wmml(t->data),
 	      t->file);
 
-  classbase->pop();
-
-  return ({
+  SGML ret=
+  ({
     Tag("anchor",
 	(["name":classbase->query(),"type":t->tag]),
 	t->pos,
 	({t}),
 	t->file)
       });
+  classbase->pop();
+  return ret;
 }
 
 SGML low_make_concrete_wmml(SGML data)
@@ -687,20 +689,33 @@ SGML low_make_concrete_wmml(SGML data)
 		}));
 	  continue;
 	}
-	
+
 	case "example":
+	mapping reswords=([]);
+
+	if(tag->params->meta)
+	  foreach(tag->params->meta/",",string t)
+	    reswords[t]="ex_meta";
+	
+
 	  switch(tag->params->language)
 	  {
 	    case "pike":
+	      foreach(reserved_pike,string keyword)
+		reswords[keyword]="ex_keyword";
+
 	      ret+=({parse_pike_code(tag->data[0],
 				     tag->pos,
-				     reserved_pike)});
+				     reswords)});
 	      continue;
 	      
 	    case "c":
+	      foreach(reserved_c,string keyword)
+		reswords[keyword]="ex_keyword";
+
 	      ret+=({parse_pike_code(tag->data[0],
 				      tag->pos,
-				      reserved_c)});
+				      reswords)});
 	      continue;
 	  }
       }
@@ -736,9 +751,10 @@ int gifnum;
 mapping gifcache=([]);
 mapping srccache=([]);
 
-string mkgif(object o)
+string mkgif(mixed o)
 {
-  string g=o->togif();
+  string g=stringp(o)?o:o->togif();
+
   int key=hash(g);
 
   foreach(gifcache[key]||({}),string file)
@@ -781,7 +797,7 @@ object render_illustration(string pike_code, mapping params, float dpi)
 	 img->fromppm(Process.popen("anytopnm 2>/dev/null "+src)));
   if(scale!=1.0) img=img->scale(scale);
   return compile_string("import Image;\n"
-			"object `()(object src){ "+pike_code+" ; }")()(img);
+			"mixed `()(object src){ "+pike_code+" ; }")()(img);
 }
 
 private static string mkkey(mapping params, mixed ... other)
@@ -789,6 +805,7 @@ private static string mkkey(mapping params, mixed ... other)
   params+=([]);
   m_delete(params,"align");
   m_delete(params,"alt");
+  m_delete(params,"__from__");
   if(params->src)
     if(mixed x=file_stat(params->src))
       params->mtime=(string)(x[3]);
