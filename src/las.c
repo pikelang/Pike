@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.114 1999/11/18 22:15:33 grubba Exp $");
+RCSID("$Id: las.c,v 1.115 1999/11/18 22:17:46 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1973,14 +1973,14 @@ void fix_type_field(node *n)
   case F_LOR:
     if (!CAR(n) || CAR(n)->type == void_type_string ||
 	!CDR(n) || CDR(n)->type == void_type_string) {
-      yyerror("Conditional contains void expression.\n");
+      yyerror("Conditional contains void expression.");
       copy_shared_string(n->type, mixed_type_string);
     }
     if(!match_types(CAR(n)->type,mixed_type_string))
-      yyerror("Bad conditional expression.\n");
+      yyerror("Bad conditional expression.");
 
     if(!match_types(CDR(n)->type,mixed_type_string))
-      yyerror("Bad conditional expression.\n");
+      yyerror("Bad conditional expression.");
 
     if(CAR(n)->type == CDR(n)->type)
     {
@@ -2088,11 +2088,11 @@ void fix_type_field(node *n)
 
       if(max_args < args)
       {
-	my_yyerror("Too many arguments to %s.\n",name);
+	my_yyerror("Too many arguments to %s.",name);
       }
       else if(max_correct_args == args)
       {
-	my_yyerror("Too few arguments to %s.\n",name);
+	my_yyerror("Too few arguments to %s.",name);
       }else{
 	my_yyerror("Bad argument %d to %s.",
 		   max_correct_args+1, name);
@@ -2105,9 +2105,9 @@ void fix_type_field(node *n)
 
   case '?':
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      yyerror("Conditional expression is void.\n");
+      yyerror("Conditional expression is void.");
     } else if(!match_types(CAR(n)->type,mixed_type_string))
-      yyerror("Bad conditional expression.\n");
+      yyerror("Bad conditional expression.");
 
     if(!CADR(n) || !CDDR(n))
     {
@@ -2126,7 +2126,7 @@ void fix_type_field(node *n)
 
   case F_RETURN:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      yyerror("Returning a void expression.\n");
+      yyerror("Returning a void expression.");
     } else if(compiler_frame &&
 	      compiler_frame->current_return_type &&
 	      !match_types(compiler_frame->current_return_type,CAR(n)->type) &&
@@ -2137,7 +2137,7 @@ void fix_type_field(node *n)
 		)
 	      )
     {
-      yyerror("Wrong return type.\n");
+      yyerror("Wrong return type.");
     }
 
     /* Fall through */
@@ -2155,25 +2155,25 @@ void fix_type_field(node *n)
 
   case F_DO:
     if (!CDR(n) || (CDR(n)->type == void_type_string)) {
-      yyerror("do - while(): Conditional expression is void.\n");
+      yyerror("do - while(): Conditional expression is void.");
     } else if(!match_types(CDR(n)->type,mixed_type_string))
-      yyerror("Bad conditional expression do - while().\n");
+      yyerror("Bad conditional expression do - while().");
     copy_shared_string(n->type,void_type_string);
     break;
     
   case F_FOR:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      yyerror("for(): Conditional expression is void.\n");
+      yyerror("for(): Conditional expression is void.");
     } else if(!match_types(CAR(n)->type,mixed_type_string))
-      yyerror("Bad conditional expression for().\n");
+      yyerror("Bad conditional expression for().");
     copy_shared_string(n->type,void_type_string);
     break;
 
   case F_SWITCH:
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
-      yyerror("switch(): Conditional expression is void.\n");
+      yyerror("switch(): Conditional expression is void.");
     } else if(!match_types(CAR(n)->type,mixed_type_string))
-      yyerror("Bad switch expression.\n");
+      yyerror("Bad switch expression.");
     copy_shared_string(n->type,void_type_string);
     break;
 
