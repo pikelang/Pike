@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.22 2001/05/09 12:54:44 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.23 2001/05/09 14:02:05 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -839,6 +839,11 @@ void make_doc_files()
       lambda(Parser.HTML p, mapping args)
       {
 	return ({ sprintf("<dt%{ %s='%s'%}>", (array)args) });
+      });
+   html2xml->add_tag("tr",
+      lambda(Parser.HTML p, mapping args)
+      {
+	return ({ sprintf("<tr%{ %s='%s'%}>", (array)args) });
       });
    html2xml->add_container(
       "text",
