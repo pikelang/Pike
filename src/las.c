@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: las.c,v 1.6 1996/11/14 01:36:28 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"

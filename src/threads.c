@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: threads.c,v 1.10 1996/11/14 01:36:32 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;

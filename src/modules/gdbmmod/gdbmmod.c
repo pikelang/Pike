@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: gdbmmod.c,v 1.4 1996/11/14 01:36:34 hubbe Exp $");
 #include "gdbm_machine.h"
 #include "types.h"
 #include "threads.h"

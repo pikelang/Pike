@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: mapping.c,v 1.7 1996/11/14 01:36:29 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"

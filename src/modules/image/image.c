@@ -5,7 +5,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: image.c,v 1.24 1996/11/14 01:36:35 hubbe Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"

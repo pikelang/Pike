@@ -1,4 +1,4 @@
-test_true("$Id")
+test_true("$Id: testsuite.in,v 1.8 1996/11/14 01:36:32 hubbe Exp $")
 test_any([[object(File) o=File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)

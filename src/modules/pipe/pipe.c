@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: pipe.c,v 1.6 1996/11/14 01:36:35 hubbe Exp $");
 
 #include "stralloc.h"
 #include "types.h"

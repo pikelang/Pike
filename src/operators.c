@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: operators.c,v 1.3 1996/11/14 01:36:30 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"

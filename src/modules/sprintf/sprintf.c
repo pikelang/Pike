@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id");
+RCSID("$Id: sprintf.c,v 1.6 1996/11/14 01:36:36 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"

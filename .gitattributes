@@ -14,8 +14,10 @@ testfont binary
 /src/docode.c foreign_ident
 /src/interpret.c foreign_ident
 /src/language.yacc foreign_ident
+/src/las.c foreign_ident
 /src/lex.c foreign_ident
 /src/main.c foreign_ident
+/src/mapping.c foreign_ident
 /src/modules/_Crypto/cbc.c foreign_ident
 /src/modules/_Crypto/crypto.c foreign_ident
 /src/modules/_Crypto/crypto.h foreign_ident
@@ -28,3 +30,16 @@ testfont binary
 /src/modules/_Crypto/md5.c foreign_ident
 /src/modules/_Crypto/md5.pike foreign_ident
 /src/modules/_Crypto/pipe.c foreign_ident
+/src/modules/call_out/call_out.c foreign_ident
+/src/modules/files/file.c foreign_ident
+/src/modules/gdbmmod/gdbmmod.c foreign_ident
+/src/modules/gmpmod/mpz_glue.c foreign_ident
+/src/modules/image/image.c foreign_ident
+/src/modules/pipe/pipe.c foreign_ident
+/src/modules/sprintf/sprintf.c foreign_ident
+/src/object.c foreign_ident
+/src/operators.c foreign_ident
+/src/pike_types.c foreign_ident
+/src/program.c foreign_ident
+/src/testsuite.in foreign_ident
+/src/threads.c foreign_ident
