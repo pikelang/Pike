@@ -1199,7 +1199,7 @@ array generate_overload_func_for(array(FuncData) d,
   int max_args=0;
   foreach(d, FuncData q)
     {
-      for(int a=q->min_args;a<min(q->max_args,256);a++)
+      for(int a=q->min_args;a<=min(q->max_args,256);a++)
 	x[a]+=({q});
       min_args=min(min_args, q->min_args);
       max_args=max(max_args, q->max_args);
@@ -1255,13 +1255,13 @@ array generate_overload_func_for(array(FuncData) d,
   {
     /* Switch on number of arguments */
     out+=({PC.Token(sprintf("%*nswitch(args) {\n",indent))});
-    for(int a=min_args;a<max_args;a++)
+    for(int a=min_args;a<=max_args;a++)
     {
       array tmp=x[a];
       if(tmp && sizeof(tmp))
       {
 	int d;
-	for(int d=a;d<sizeof(x);d++)
+	for(d=a;d<sizeof(x);d++)
 	{
 	  if(equal(tmp, x[d]) && !sizeof(tmp ^ x[d]))
 	  {
@@ -1274,7 +1274,7 @@ array generate_overload_func_for(array(FuncData) d,
 	out+=generate_overload_func_for(tmp,
 					indent+2,
 					a,
-					d,
+					d-1,
 					name,
 					attributes);
       }
@@ -2046,6 +2046,7 @@ class ParseBlock
 	    name=common_name;
 	    funcname=mkname("f",base,common_name);
 	    define=make_unique_name("f",base,common_name,"defined");
+	    func_num=mkname(base,funcname,"fun_num");
 	    array(string) defines=({});
 	  
 	    type=PikeType(PC.Token("|"), tmp->type);
@@ -2064,6 +2065,7 @@ class ParseBlock
 	     */
 	    ret+=IFDEF(tmp->define, ({
 	      sprintf("#define %s\n",define),
+	      sprintf("ptrdiff_t %s = 0;\n", func_num),
 	      sprintf("void %s(INT32 args) ",funcname),
 	      "{\n",
 	    })+out+({
