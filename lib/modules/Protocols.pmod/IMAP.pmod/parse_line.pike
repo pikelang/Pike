@@ -21,6 +21,12 @@ void skip_whitespace()
   sscanf(buffer, "%*[ \t]%s", buffer);
 }
 
+int eolp()
+{
+  skip_whitespace();
+  return !strlen(buffer);
+}
+
 // Returns -1 on error. All valid numbers ar non-negative.
 int get_number()
 {
