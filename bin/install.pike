@@ -1076,7 +1076,7 @@ void dump_modules()
 	  });
 
     cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
-
+	    "--log-file",	// --distquiet below might override this.
 #ifdef USE_GTK
 	      label1?"--distquiet":
 #endif
@@ -1092,10 +1092,9 @@ void dump_modules()
 	  Process.create_process(cmd +
 				 ( istty() ? 
 				   ({
-				     "--progress-bar",
-				     sprintf("%d,%d", 
+				     sprintf("--progress-bar=%d,%d",
 					     offset, sizeof(to_dump))
-				   }) : ({"--quiet"}) ) +
+				   }) : ({}) ) +
 				 delta_dump, options);
 	int retcode=p->wait();
 	if (retcode)
