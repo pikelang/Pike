@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.88 2002/08/14 16:56:57 grubba Exp $
+# $Id: static_module_makefile.in,v 1.89 2002/09/09 12:50:39 marcus Exp $
 #
 
 
@@ -11,6 +11,7 @@ REAL_CFLAGS=@CFLAGS@
 REAL_CPPFLAGS=@CPPFLAGS@
 
 MODULE_BASE=$(BUILD_BASE)/modules
+TMP_MODULE_BASE=$(TMP_LIBDIR)/modules
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(BUILD_BASE) -I$(PIKE_SRC_DIR) -Dpike_module_init=pike_module_$(MODNAME)_init -Dpike_module_exit=pike_module_$(MODNAME)_exit $(MODULE_CPPFLAGS) $(DEFINES)
 CFLAGS=$(MODULE_CFLAGS) $(PREFLAGS) $(OTHERFLAGS)
@@ -36,7 +37,7 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 dummy:	Makefile linker_options modlist_headers modlist_segment module.pmod module.a
 	@tmp="$(INSTALL_NAME)" ;\
 	if test x$$tmp = x ; then tmp="$(MODNAME)"; else :; fi ;\
-	$(TMP_BINDIR)/install_module module.pmod $(TMP_LIBDIR)/modules/$$tmp.pmod
+	$(TMP_BINDIR)/install_module module.pmod $(TMP_MODULE_BASE)/$$tmp.pmod
 
 .SUFFIXES: .c .o .cmod .protos
 
