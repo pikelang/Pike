@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.59 2003/02/26 22:42:29 mast Exp $
+|| $Id: port.c,v 1.60 2003/03/28 13:38:27 marcus Exp $
 */
 
 #define PORT_DO_WARN
@@ -23,7 +23,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.59 2003/02/26 22:42:29 mast Exp $");
+RCSID("$Id: port.c,v 1.60 2003/03/28 13:38:27 marcus Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -74,17 +74,17 @@ time_t TIME(time_t *t)
  * care of everything.
  */
 
-static unsigned long RandSeed1 = 0x5c2582a4;
-static unsigned long RandSeed2 = 0x64dff8ca;
+static unsigned INT32 RandSeed1 = 0x5c2582a4;
+static unsigned INT32 RandSeed2 = 0x64dff8ca;
 
-static unsigned long slow_rand(void)
+static unsigned INT32 slow_rand(void)
 {
   RandSeed1 = ((RandSeed1 * 13 + 1) ^ (RandSeed1 >> 9)) + RandSeed2;
   RandSeed2 = (RandSeed2 * RandSeed1 + 13) ^ (RandSeed2 >> 13);
   return RandSeed1;
 }
 
-static void slow_srand(long seed)
+static void slow_srand(INT32 seed)
 {
   RandSeed1 = (seed - 1) ^ 0xA5B96384UL;
   RandSeed2 = (seed + 1) ^ 0x56F04021UL;
@@ -94,22 +94,22 @@ static void slow_srand(long seed)
 #define RNDSTEP 7
 #define RNDJUMP 103
 
-static unsigned long rndbuf[ RNDBUF ];
+static unsigned INT32 rndbuf[ RNDBUF ];
 static int rnd_index;
 
 PMOD_EXPORT void my_srand(long seed)
 {
   int e;
-  unsigned long mask;
+  unsigned INT32 mask;
 
   slow_srand(seed);
   
   rnd_index = 0;
   for (e=0;e < RNDBUF; e++) rndbuf[e]=slow_rand();
 
-  mask = (unsigned long) -1;
+  mask = (unsigned INT32) -1;
 
-  for (e=0;e< (int)sizeof(long)*8 ;e++)
+  for (e=0;e< (int)sizeof(INT32)*8 ;e++)
   {
     int d = RNDSTEP * e + 3;
     rndbuf[d % RNDBUF] &= mask;
@@ -118,7 +118,7 @@ PMOD_EXPORT void my_srand(long seed)
   }
 }
 
-PMOD_EXPORT unsigned long my_rand(void)
+PMOD_EXPORT unsigned INT32 my_rand(void)
 {
   if( ++rnd_index == RNDBUF) rnd_index=0;
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
