@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.12 2001/09/19 22:30:40 marcus Exp $
+ * $Id: ppc32.c,v 1.13 2002/04/08 03:08:50 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -34,18 +34,24 @@
     add_to_program(0x4e800021);						\
   } while(0)
 #else
-#define ADD_CALL(X) do {						\
-    INT32 func_=(INT32)(void*)(X);					\
-									\
-    if(func_ < -33554432 || func_ > 33554431)				\
-      fatal("Function pointer %p out of range absolute addressing!\n",	\
-	    func_);							\
-    /* bla func	*/							\
-    add_to_program(0x48000003|(func_&0x03fffffc));			\
+#define ADD_CALL(X) do {				\
+    INT32 func_=(INT32)(void*)(X);			\
+							\
+    if(func_ < -33554432 || func_ > 33554431) {		\
+      /* sigh.  this is so inefficient.  damn linux. */	\
+      SET_REG(0, func_);				\
+      /* mtlr r0 */					\
+      MTSPR(0, 8);					\
+      /* blrl */					\
+      add_to_program(0x4e800021);			\
+    } else {						\
+      /* bla func */					\
+      add_to_program(0x48000003|(func_&0x03fffffc));	\
+    }							\
   } while(0)
 #endif
 
-int ppc32_codegen_state = 0;
+int ppc32_codegen_state = 0, ppc32_codegen_last_pc = 0;
 
 void ppc32_flush_code_generator_state()
 {
@@ -549,3 +555,52 @@ void ppc32_flush_instruction_cache(void *addr, size_t len)
   __asm__("sync");
   __asm__("isync");
 }
+
+#if 0
+#define addstr(s, l) low_my_binary_strcat((s), (l), buf)
+#define adddata2(s,l) addstr((char *)(s),(l) * sizeof((s)[0]));
+
+void ppc32_encode_program(struct program *p, struct dynamic_buffer_s *buf)
+{
+  size_t prev = 0, rel;
+  /* De-relocate the program... */
+  for (rel = 0; rel < p->num_relocations; rel++)
+  {
+    size_t off = p->relocations[rel];
+    INT32 opcode;
+#ifdef PIKE_DEBUG
+    if (off < prev) {
+      fatal("Relocations in bad order!\n");
+    }
+#endif /* PIKE_DEBUG */
+    adddata2(p->program + prev, off - prev);
+
+#ifdef PIKE_DEBUG
+    if ((p->program[off] & 0xfc000002) != 0x48000000)
+      fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",
+	    rel, off, p->program[off]);
+#endif /* PIKE_DEBUG */
+    /* Relocate to 0 */
+    opcode = p->program[off] & 0x03ffffff;
+    opcode += (INT32)(void *)(p->program+off);
+    adddata2(&opcode, 1);
+    prev = off+4;
+  }
+  adddata2(p->program + prev, p->num_program - prev);
+}
+
+void ppc32_decode_program(struct program *p)
+{
+  /* Relocate the program... */
+  PIKE_OPCODE_T *prog = p->program;
+  size_t rel = p->num_relocations;
+  while (rel--) {
+    PIKE_OPCODE_T *o = prog+p->relocations[rel];
+    INT32 disp = *o - (INT32)(void*)o;
+    if(disp < -33554432 || disp > 33554431)
+      fatal("Relocation %d out of range!\n", disp);
+    *o = 0x48000000 | (disp & 0x03ffffff);
+  }
+}
+#endif
+

@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.h,v 1.11 2002/04/07 19:30:12 mast Exp $
+ * $Id: ppc32.h,v 1.12 2002/04/08 03:08:51 marcus Exp $
  */
 
 #define PPC_INSTR_B_FORM(OPCD,BO,BI,BD,AA,LK)			\
@@ -10,6 +10,8 @@
 #define PPC_INSTR_M_FORM(OPCD,S,A,SH,MB,ME,Rc)				\
       add_to_program(((OPCD)<<26)|((S)<<21)|((A)<<16)|((SH)<<11)|	\
 		     ((MB)<<6)|((ME)<<1)|(Rc))
+#define PPC_INSTR_XFX_FORM(OPCD,S,SPR,XO)			\
+      add_to_program(((OPCD)<<26)|((S)<<21)|((SPR)<<11)|((XO)<<1))
 
 #define BC(BO,BI,BD) PPC_INSTR_B_FORM(16,BO,BI,BD,0,0)
 
@@ -24,10 +26,16 @@
 
 #define RLWINM(S,A,SH,MB,ME) PPC_INSTR_M_FORM(21,S,A,SH,MB,ME,0)
 
+#define MFSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),339)
+#define MTSPR(D,SPR) PPC_INSTR_XFX_FORM(31,D,(((SPR)&0x1f)<<5)|(((SPR)&0x3e0)>>5),467)
 
 #define LOW_GET_JUMP()	(PROG_COUNTER[0])
 #define LOW_SKIPJUMP()	(SET_PROG_COUNTER(PROG_COUNTER + 1))
+#ifdef __linux
+#define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[1])
+#else
 #define PROG_COUNTER (((INT32 **)__builtin_frame_address(1))[2])
+#endif
 
 #define SET_REG(REG, X) do {						  \
     INT32 val_ = X;							  \
@@ -51,13 +59,14 @@
 #define PPC_REG_ARG2 4
 #define PPC_REG_ARG3 5
 
+#define PPC_REG_PIKE_PC 7
 #define PPC_REG_PIKE_MARK_SP 8
 #define PPC_REG_PIKE_FP 9
 #define PPC_REG_PIKE_SP 10
 
 #define PPC_REG_PIKE_INTERP 31
 
-extern int ppc32_codegen_state;
+extern int ppc32_codegen_state, ppc32_codegen_last_pc;
 void ppc32_flush_code_generator_state(void);
 #define FLUSH_CODE_GENERATOR_STATE ppc32_flush_code_generator_state
 
@@ -66,6 +75,7 @@ void ppc32_flush_code_generator_state(void);
 #define PPC_CODEGEN_SP_NEEDSSTORE 4
 #define PPC_CODEGEN_MARK_SP_ISSET 8
 #define PPC_CODEGEN_MARK_SP_NEEDSSTORE 16
+#define PPC_CODEGEN_PC_ISSET 32
 
 #define LOAD_FP_REG() do {				\
     if(!(ppc32_codegen_state & PPC_CODEGEN_FP_ISSET)) {	\
@@ -106,12 +116,36 @@ void ppc32_flush_code_generator_state(void);
       ppc32_codegen_state |= PPC_CODEGEN_MARK_SP_NEEDSSTORE;	\
     } while(0)
 
-#define UPDATE_PC() do {				\
-    INT32 tmp = PIKE_PC;				\
-    LOAD_FP_REG();					\
-    SET_REG(0, tmp);					\
-    /* stw r0,pc(pike_fp) */				\
-    STW(0, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, pc));	\
+#define UPDATE_PC() do {						\
+    INT32 tmp = PIKE_PC;						\
+    if(ppc32_codegen_state & PPC_CODEGEN_PC_ISSET) {			\
+      INT32 diff = (tmp-ppc32_codegen_last_pc)*sizeof(PIKE_OPCODE_T);	\
+      if ((-32768 <= diff) && (diff <= 32767)) {			\
+	/* addi pike_pc,pike_pc,diff */					\
+	ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, diff);			\
+      } else {								\
+	/* addis pike_pc,pike_pc,%hi(diff) */				\
+	ADDIS(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, (diff+32768)>>16);	\
+        if ((diff &= 0xffff) > 32767)					\
+          diff -= 65536;						\
+	if (diff) {							\
+	  /* addi pike_pc,pike_pc,%lo(diff) */				\
+	  ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, diff);			\
+	}								\
+      }									\
+    } else {								\
+      /* bl .+4 */							\
+      add_to_program(0x48000005);					\
+      /* mflr pike_pc */						\
+      MFSPR(PPC_REG_PIKE_PC, 8);					\
+      /* addi pike_pc,pike_pc,-4 */					\
+      ADDI(PPC_REG_PIKE_PC, PPC_REG_PIKE_PC, -sizeof(PIKE_OPCODE_T));	\
+    }									\
+    ppc32_codegen_last_pc = tmp;					\
+    ppc32_codegen_state |= PPC_CODEGEN_PC_ISSET;			\
+    LOAD_FP_REG();							\
+    /* stw pike_pc,pc(pike_fp) */					\
+    STW(PPC_REG_PIKE_PC, PPC_REG_PIKE_FP, OFFSETOF(pike_frame, pc));	\
   } while(0)
 
 #define ins_pointer(PTR)  add_to_program((INT32)(PTR))
@@ -135,7 +169,7 @@ INT32 ppc32_read_f_jump(INT32 offset);
     PIKE_OPCODE_T *op_ = NEW;					\
     struct program *p_ = P;					\
     size_t rel_ = p_->num_relocations;				\
-    INT32 delta_ = p_->program - op_;				\
+    INT32 disp_, delta_ = p_->program - op_;			\
     while (rel_--) {						\
       DO_IF_DEBUG(						\
         if ((op_[p_->relocations[rel_]] & 0xfc000002) !=	\
@@ -145,9 +179,14 @@ INT32 ppc32_read_f_jump(INT32 offset);
 		op_[p_->relocations[rel_]]);			\
 	}							\
       );							\
+      disp_ = op_[p_->relocations[rel_]] & 0x03ffffff;		\
+      if(disp_ & 0x02000000)					\
+	disp_ -= 0x04000000;					\
+      disp_ += delta_ << 2;					\
+      if(disp_ < -33554432 || disp_ > 33554431)			\
+	fatal("Relocation %d out of range!\n", disp_);		\
       op_[p_->relocations[rel_]] = 0x48000000 |			\
-	((op_[p_->relocations[rel_]] + (delta_<<2)) &		\
-	 0x03ffffff);						\
+	(disp_ & 0x03ffffff);					\
     }								\
   } while(0)
 #endif
@@ -155,7 +194,7 @@ INT32 ppc32_read_f_jump(INT32 offset);
 extern void ppc32_flush_instruction_cache(void *addr, size_t len);
 #define FLUSH_INSTRUCTION_CACHE ppc32_flush_instruction_cache
 
-/*
+#if 0
 struct dynamic_buffer_s;
 
 void ppc32_encode_program(struct program *p, struct dynamic_buffer_s *buf);
@@ -163,7 +202,7 @@ void ppc32_decode_program(struct program *p);
 
 #define ENCODE_PROGRAM(P, BUF)	ppc32_encode_program(P, BUF)
 #define DECODE_PROGRAM(P)	ppc32_decode_program(p)
-*/
+#endif
 
 #ifdef PIKE_CPU_REG_PREFIX
 #define PPC_REGNAME(n) PIKE_CPU_REG_PREFIX #n
