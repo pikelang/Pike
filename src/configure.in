@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.524 2001/06/12 14:22:39 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.525 2001/06/13 11:55:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -895,7 +895,13 @@ AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[
   esac
 ])
 AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
-AC_ARG_WITH(oob,	 [  --without-oob          disable out-of-band data handling],[],[with_oob=yes])
+AC_ARG_WITH(oob,	 [  --without-oob          disable out-of-band data handling],[
+  if test "$pike_cv_sys_os" = "Windows_NT"; then
+    if test "$with_oob" = "no"; then
+      AC_MSG_ERROR([Support for out of band data is mandatory on NT.])
+    else :; fi
+  else :; fi
+],[with_oob=yes])
 AC_ARG_WITH(thread-trace,[  --without-thread-trace disable individual tracing of threads],[],[with_thread_trace=yes])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
