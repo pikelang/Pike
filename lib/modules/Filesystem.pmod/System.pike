@@ -69,12 +69,12 @@ Filesystem.Base chroot(void|string directory)
   return this_class("/", root+wd, 1, parent);
 }
 
-Filesystem.Stat stat(string file)
+Filesystem.Stat stat(string file, int|void lstat)
 {
    Stdio.Stat a;
    string full = combine_path(wd, file);
 
-   if((a = file_stat("/"+root+full)))
+   if((a = file_stat("/"+root+full, lstat)))
    {
      Filesystem.Stat s = Filesystem.Stat();
      s->fullpath = full;
@@ -120,7 +120,7 @@ array(Filesystem.Stat) get_stats(void|string directory,
   array(string) a = z->get_dir("", globs);
   if(!a) return 0;
 
-  return Array.map(a, z->stat)-({0});
+  return Array.map(a, z->stat, 1)-({0});
 }
 
 Stdio.File open(string filename, string mode)
