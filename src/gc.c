@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.195 2003/01/12 16:00:14 mast Exp $
+|| $Id: gc.c,v 1.196 2003/01/13 02:07:04 mast Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.195 2003/01/12 16:00:14 mast Exp $");
+RCSID("$Id: gc.c,v 1.196 2003/01/13 02:07:04 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -193,7 +193,7 @@ size_t gc_ext_weak_refs;
 static double objects_alloced = 0.0;
 static double objects_freed = 0.0;
 static double gc_time = 0.0, non_gc_time = 0.0;
-static INT32 last_gc_end_time = 0;
+static cpu_time_t last_gc_end_time = 0;
 
 /* These are only collected for the sake of gc_status. */
 static double last_garbage_ratio = 0.0;
@@ -2423,7 +2423,7 @@ static void warn_bad_cycles()
 size_t do_gc(void *ignored, int explicit_call)
 {
   size_t start_num_objs, start_allocs, unreferenced;
-  INT32 gc_start_time;
+  cpu_time_t gc_start_time;
   ptrdiff_t objs, pre_kill_objs;
 #ifdef PIKE_DEBUG
 #ifdef HAVE_GETHRTIME
@@ -2451,7 +2451,7 @@ size_t do_gc(void *ignored, int explicit_call)
   init_gc();
   gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
-  gc_start_time = internal_rusage();
+  gc_start_time = get_cpu_time();
 #ifdef PIKE_DEBUG
   gc_debug = d_flag;
   SET_ONERROR(uwp, fatal_on_error, "Shouldn't get an exception inside the gc.\n");
@@ -2802,7 +2802,7 @@ size_t do_gc(void *ignored, int explicit_call)
   /* Calculate the next alloc_threshold. */
   {
     double multiplier, new_threshold;
-    INT32 last_non_gc_time, last_gc_time;
+    cpu_time_t last_non_gc_time, last_gc_time;
 
     /* If we're at an automatic and timely gc then start_allocs ==
      * alloc_threshold and we're using gc_average_slowness in the
@@ -2880,11 +2880,12 @@ size_t do_gc(void *ignored, int explicit_call)
     if(GC_VERBOSE_DO(1 ||) Pike_interpreter.trace_level)
     {
       if (last_gc_time)
-	fprintf(stderr, "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d "
-		"was unreferenced), %d ms.\n",
-		unreferenced, start_num_objs, last_gc_time);
+	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "
+		"was unreferenced), %ld ms.\n",
+		unreferenced, start_num_objs,
+		(long) (last_gc_time / (CPU_TIME_TICKS / 1000)));
       else
-	fprintf(stderr, "done (%"PRINTPTRDIFFT"d of %"PRINTPTRDIFFT"d "
+	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "
 		"was unreferenced)\n",
 		unreferenced, start_num_objs);
     }
@@ -2915,28 +2916,34 @@ size_t do_gc(void *ignored, int explicit_call)
  *!   A mapping with the following content will be returned:
  *!   @mapping
  *!     @member int "num_objects"
- *!       Number of objects.
+ *!       Number of arrays, mappings, multisets, objects and programs.
  *!     @member int "num_allocs"
- *!       Number of memory allocations.
+ *!       Number of memory allocations since the last gc run.
  *!     @member int "alloc_threshold"
- *!       Threshold where the garbage-collector starts.
+ *!       Threshold for "num_allocs" when another automatic gc run is
+ *!       scheduled.
  *!     @member float "projected_garbage"
  *!       Estimation of the current amount of garbage.
  *!     @member int "objects_alloced"
- *!       Average number of allocated objects between gc runs.
+ *!       Decaying average over the number of allocated objects
+ *!       between gc runs.
  *!     @member int "objects_freed"
- *!       Average number of freed objects in each gc run.
+ *!       Decaying average over the number of freed objects in each gc
+ *!       run.
  *!     @member float "last_garbage_ratio"
  *!       Garbage ratio in the last gc run.
  *!     @member int "non_gc_time"
- *!       Average CPU milliseconds spent outside the garbage collector.
+ *!       Decaying average over the CPU milliseconds spent outside the
+ *!       garbage collector.
  *!     @member int "gc_time"
- *!       Average CPU milliseconds spent inside the garbage collector.
+ *!       Decaying average over the CPU milliseconds spent inside the
+ *!       garbage collector.
  *!     @member string "last_garbage_strategy"
- *!       The garbage accumulation goal that the gc aimed for in the
- *!       last run. The value is either "garbage_ratio_low" or
- *!       "garbage_ratio_high", which corresponds to the gc parameters
- *!       with the same names in @[Pike.gc_parameters].
+ *!       The garbage accumulation goal that the gc aimed for when
+ *!       setting "alloc_threshold" in the last run. The value is
+ *!       either "garbage_ratio_low" or "garbage_ratio_high", which
+ *!       corresponds to the gc parameters with the same names in
+ *!       @[Pike.gc_parameters].
  *!   @endmapping
  *!
  *! @seealso

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.24 2002/12/07 14:14:22 grubba Exp $
+|| $Id: rusage.c,v 1.25 2003/01/13 02:07:04 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.24 2002/12/07 14:14:22 grubba Exp $");
+RCSID("$Id: rusage.c,v 1.25 2003/01/13 02:07:04 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -29,6 +29,9 @@ RCSID("$Id: rusage.c,v 1.24 2002/12/07 14:14:22 grubba Exp $");
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_TIME_H
+#include <time.h>
+#endif
 
 #include "fd_control.h"
 
@@ -36,6 +39,17 @@ RCSID("$Id: rusage.c,v 1.24 2002/12/07 14:14:22 grubba Exp $");
  * Here comes a long blob with stuff to see how to find out about
  * cpu usage.
  */
+
+#if defined (HAVE_TIMES) && !defined (CLK_TCK)
+#define CLK_TCK sysconf(_SC_CLK_TCK)
+#endif
+
+/*
+ * Here's a trick to do TIME * BASE / TICKS without
+ * causing arithmetic overflow
+ */
+#define CONVERT_TIME(TIME, TICKS, BASE) \
+  (((TIME) / (TICKS)) * (BASE) + ((TIME) % (TICKS)) * (BASE) / (TICKS))
 
 #ifdef __NT__
 int pike_get_rusage(pike_rusage_t rusage_values)
@@ -51,15 +65,16 @@ int pike_get_rusage(pike_rusage_t rusage_values)
                       &kernelTime.ft_struct,
                       &userTime.ft_struct))
     {
-      rusage_values[0] = (INT32)userTime.ft_scalar/10000;  /* user time */
-      rusage_values[1] = (INT32)kernelTime.ft_scalar/10000;  /* system time */
+      rusage_values[0] = userTime.ft_scalar/10000;  /* user time */
+      rusage_values[1] = kernelTime.ft_scalar/10000;  /* system time */
+      return 1;
     }
   else
     {
       rusage_values[0] = 0;  /* user time */
       rusage_values[1] = 0;  /* system time */
+      return 0;
     }
-  return 1;
 }
 
 #else /* __NT__ */
@@ -67,9 +82,9 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #include <sys/procfs.h>
 #include "fdlib.h"
 
-static INLINE int get_time_int(timestruc_t * val) 
+static INLINE long get_time_int(timestruc_t * val)
 {
-  return val->tv_sec * 1000 + val->tv_nsec / 1000000;
+  return val->tv_sec * 1000L + val->tv_nsec / 1000000;
 }
 
 int proc_fd = -1;
@@ -163,8 +178,8 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 
   if (getrusage(RUSAGE_SELF, &rus) < 0) return 0;
 
-  utime = rus.ru_utime.tv_sec * 1000 + rus.ru_utime.tv_usec / 1000;
-  stime = rus.ru_stime.tv_sec * 1000 + rus.ru_stime.tv_usec / 1000;
+  utime = rus.ru_utime.tv_sec * 1000L + rus.ru_utime.tv_usec / 1000;
+  stime = rus.ru_stime.tv_sec * 1000L + rus.ru_stime.tv_usec / 1000;
 
 #ifndef GETRUSAGE_RESTRICTED
   maxrss = rus.ru_maxrss;
@@ -192,34 +207,40 @@ int pike_get_rusage(pike_rusage_t rusage_values)
 #endif
   return 1;
 }
+
 #else /* HAVE_GETRUSAGE */
 
 #if defined(HAVE_TIMES) && (defined(CLK_TCK) || defined(_SC_CLK_TCK))
-#ifndef CLK_TCK
-#define CLK_TCK sysconf(_SC_CLK_TCK)
-#endif
 
-#define NEED_CONVERT_TIME
-static long convert_time(long t,long tick);
 int pike_get_rusage(pike_rusage_t rusage_values)
 {
   struct tms tms;
+  clock_t ticks, ret = times (&tms);
+
   MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
-  rusage_values[18] = convert_time(times(&tms), CLK_TCK);
-  rusage_values[0] = convert_time(tms.tms_utime, CLK_TCK);
-  rusage_values[1] = convert_time(tms.tms_utime, CLK_TCK);
+  if (ret == (clock_t) -1) return 0;
+
+  ticks = CLK_TCK;
+  rusage_values[0] = CONVERT_TIME (tms.tms_utime, ticks, 1000);
+  rusage_values[1] = CONVERT_TIME (tms.tms_stime, ticks, 1000);
+
+  /* It's not really clear if ret is real time; in at least Linux it
+   * is, but GNU libc says "The return value is the calling process'
+   * CPU time (the same value you get from `clock()'" and "In the GNU
+   * system, the CPU time is defined to be equivalent to the sum of
+   * the `tms_utime' and `tms_stime' fields returned by `times'." */
+  rusage_values[18] = CONVERT_TIME (ret, ticks, 1000);
 
   return 1;
 }
-#else /*HAVE_TIMES */
-#if defined(HAVE_CLOCK) && defined(CLOCKS_PER_SECOND)
 
-#define NEED_CONVERT_TIME
-static long convert_time(long t,long tick);
+#else /*HAVE_TIMES */
+#if defined(HAVE_CLOCK) && defined(CLOCKS_PER_SEC)
+
 int pike_get_rusage(pike_rusage_t rusage_values)
 {
   MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
-  rusage_values[0]= convert_time(clock(), CLOCKS_PER_SECOND);
+  rusage_values[0]= CONVERT_TIME (clock(), CLOCKS_PER_SEC, 1000);
   return 1;
 }
 
@@ -231,28 +252,120 @@ int pike_get_rusage(pike_rusage_t rusage_values)
   struct timeval tm;
   MEMSET(rusage_values, 0, sizeof(pike_rusage_t));
   GETTIMEOFDAY(&tm);
-  rusage_values[0]=tm.tv_sec*1000 + tm.tv_usec/1000;
+  rusage_values[0]=tm.tv_sec*1000L + tm.tv_usec/1000;
   return 1;
 }
+
 #endif /* HAVE_CLOCK */
 #endif /* HAVE_TIMES */
 #endif /* HAVE_GETRUSAGE */
 #endif /* GETRUSAGE_THROUGH_PROCFS */
 #endif /* __NT__ */
 
-
-#ifdef NEED_CONVERT_TIME
 /*
- * Here's a trick to do t * 1000 / tick without
- * causing arethmic overflow
+ * Fix a good get_cpu_time.
  */
-static long convert_time(long t,long tick)
+
+#ifdef __NT__
+
+cpu_time_t get_cpu_time (void)
 {
-  return (t / tick) * 1000 + (t % tick) * 1000 / tick;
+  union {
+    unsigned __int64 ft_scalar;
+    FILETIME ft_struct;
+  } creationTime, exitTime, kernelTime, userTime;
+  if (GetProcessTimes(GetCurrentProcess(),
+                      &creationTime.ft_struct,
+                      &exitTime.ft_struct,
+                      &kernelTime.ft_struct,
+                      &userTime.ft_struct))
+    return (userTime.ft_scalar + kernelTime.ft_scalar) * 100;
+  else
+    return 0;
 }
+
+#elif defined (GETRUSAGE_THROUGH_PROCFS)
+
+cpu_time_t get_cpu_time (void)
+{
+  prstatus_t  prs;
+
+  while(proc_fd < 0)
+  {
+    char proc_name[30];
+
+    sprintf(proc_name, "/proc/%05ld", (long)getpid());
+    proc_fd = open(proc_name, O_RDONLY);
+    if(proc_fd >= 0) break;
+    if(errno != EINTR) return 0;
+  }
+
+  set_close_on_exec(proc_fd, 1);
+
+  while(ioctl(proc_fd, PIOCSTATUS, &prs) < 0)
+  {
+    if(errno == EINTR)
+      continue;
+
+    return 0;
+  }
+
+  return
+    prs.pr_utime.tv_sec * CPU_TIME_TICKS +
+    prs.pr_utime.tv_nsec * (CPU_TIME_TICKS / 1000000) +
+    prs.pr_stime.tv_sec * CPU_TIME_TICKS +
+    prs.pr_stime.tv_nsec * (CPU_TIME_TICKS / 1000000);
+}
+
+#elif defined (HAVE_TIMES) && (defined (CLK_TCK) || defined (_SC_CLK_TCK))
+
+/* Prefer times() over clock() since CLK_TCK isn't defined by POSIX to
+ * some constant and it thus lies closer to the real accurancy.
+ * (CLOCKS_PER_SEC is always defined to 1000000 which means that
+ * clock() wraps much more often than necessary.) */
+
+cpu_time_t get_cpu_time (void)
+{
+  struct tms tms;
+  if (times (&tms) == (clock_t) -1)
+    return 0;
+  return CONVERT_TIME (tms.tms_utime + tms.tms_stime, CLK_TCK, CPU_TIME_TICKS);
+}
+
+#elif defined (HAVE_CLOCK) && defined (CLOCKS_PER_SEC)
+
+cpu_time_t get_cpu_time (void)
+{
+  clock_t t = clock();
+  if (t == (clock_t) -1)
+    return 0;
+  else
+    return CONVERT_TIME (t, CLOCKS_PER_SEC, CPU_TIME_TICKS);
+}
+
+#elif defined (HAVE_GETRUSAGE)
+
+cpu_time_t get_cpu_time (void)
+{
+  struct rusage rus;
+  if (getrusage(RUSAGE_SELF, &rus) < 0) return 0;
+  return
+    rus.ru_utime.tv_sec * CPU_TIME_TICKS +
+    rus.ru_utime.tv_usec * (CPU_TIME_TICKS / 1000) +
+    rus.ru_stime.tv_sec * CPU_TIME_TICKS +
+    rus.ru_stime.tv_usec * (CPU_TIME_TICKS / 1000);
+}
+
+#else
+
+cpu_time_t get_cpu_time (void)
+{
+  return 0;
+}
+
 #endif
 
-INT32 *low_rusage(void)
+long *low_rusage(void)
 {
   static pike_rusage_t rusage_values;
   if (pike_get_rusage (rusage_values))
@@ -263,9 +376,7 @@ INT32 *low_rusage(void)
 
 INT32 internal_rusage(void)
 {
-  pike_rusage_t rusage_values;
-  pike_get_rusage (rusage_values);
-  return rusage_values[0];
+  return get_cpu_time() / (CPU_TIME_TICKS / 1000);
 }
 
 #if defined(PIKE_DEBUG) || defined(INTERNAL_PROFILING)
@@ -274,12 +385,12 @@ void debug_print_rusage(FILE *out)
   pike_rusage_t rusage_values;
   pike_get_rusage (rusage_values);
   fprintf (out,
-	   " [utime: %d, stime: %d] [maxrss: %d, ixrss: %d, idrss: %d, isrss: %d]\n"
-	   " [minflt: %d, majflt: %d] [nswap: %d] [inblock: %d, oublock: %d]\n"
-	   " [msgsnd: %d, msgrcv: %d] [nsignals: %d] [nvcsw: %d, nivcsw: %d]\n"
-	   " [sysc: %d] [ioch: %d] [rtime: %d, ttime: %d]\n"
-	   " [tftime: %d, dftime: %d, kftime: %d, ltime: %d, slptime: %d]\n"
-	   " [wtime: %d, stoptime: %d] [brksize: %d, stksize: %d]\n",
+	   " [utime: %ld, stime: %ld] [maxrss: %ld, ixrss: %ld, idrss: %ld, isrss: %ld]\n"
+	   " [minflt: %ld, majflt: %ld] [nswap: %ld] [inblock: %ld, oublock: %ld]\n"
+	   " [msgsnd: %ld, msgrcv: %ld] [nsignals: %ld] [nvcsw: %ld, nivcsw: %ld]\n"
+	   " [sysc: %ld] [ioch: %ld] [rtime: %ld, ttime: %ld]\n"
+	   " [tftime: %ld, dftime: %ld, kftime: %ld, ltime: %ld, slptime: %ld]\n"
+	   " [wtime: %ld, stoptime: %ld] [brksize: %ld, stksize: %ld]\n",
 	   rusage_values[0], rusage_values[1],
 	   rusage_values[2], rusage_values[3], rusage_values[4], rusage_values[5],
 	   rusage_values[6], rusage_values[7],
