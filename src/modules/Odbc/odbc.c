@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: odbc.c,v 1.36 2004/10/07 22:49:58 nilsson Exp $
+|| $Id: odbc.c,v 1.37 2005/01/26 18:50:43 grubba Exp $
 */
 
 /*
@@ -248,6 +248,50 @@ static void f_create(INT32 args)
   pop_n_elems(args);
 }
 
+static void f_create_dsn(INT32 args)
+{
+  struct pike_string *connectstring = NULL;
+
+  SQLCHAR outconnectionstring[1024]; // Smallest allowed buffer = 1024
+  SQLSMALLINT stringlength2;
+
+  get_all_args("odbc->create_dsn", args, "%S", &connectstring);
+
+  if (!connectstring->len) {
+    Pike_error("odbc->create_dsn connection string empty.\n");
+  }
+  if (PIKE_ODBC->flags & PIKE_ODBC_CONNECTED) {
+    PIKE_ODBC->flags &= ~PIKE_ODBC_CONNECTED;
+    /* Disconnect old hdbc */
+    odbc_check_error("odbc->create_dsn", "Disconnecting HDBC",
+		     SQLDisconnect(PIKE_ODBC->hdbc), NULL);
+  }
+/* Microsoft ODBC >= 1.0
+	SQLRETURN SQLDriverConnect(
+     SQLHDBC     ConnectionHandle,
+     SQLHWND     WindowHandle,
+     SQLCHAR *     InConnectionString,
+     SQLSMALLINT     StringLength1,
+     SQLCHAR *     OutConnectionString,
+     SQLSMALLINT     BufferLength,
+     SQLSMALLINT *     StringLength2Ptr,
+     SQLUSMALLINT     DriverCompletion);
+*/
+  odbc_check_error("odbc->create_dsn", "Connect failed",
+    SQLDriverConnect(PIKE_ODBC->hdbc, 
+      NULL, 
+      (unsigned char *)connectstring->str,
+      DO_NOT_WARN((SQLSMALLINT)connectstring->len),
+      outconnectionstring,
+      DO_NOT_WARN((SQLSMALLINT)1024),
+      &stringlength2,
+      SQL_DRIVER_NOPROMPT),
+      NULL);
+  PIKE_ODBC->flags |= PIKE_ODBC_CONNECTED;
+  pop_n_elems(args);
+}
+
+
 static void f_affected_rows(INT32 args)
 {
   pop_n_elems(args);
@@ -452,7 +496,8 @@ PIKE_MODULE_INIT
   ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
-
+  /* function(string:void) */
+  ADD_FUNCTION("create_dsn", f_create_dsn,tFunc(tStr,tVoid), ID_PUBLIC);
   /* function(string:void) */
   ADD_FUNCTION("select_db", f_select_db,tFunc(tStr,tVoid), ID_PUBLIC);
   /* function(string:int|object) */
