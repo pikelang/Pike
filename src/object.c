@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.55 1999/01/31 09:01:56 hubbe Exp $");
+RCSID("$Id: object.c,v 1.56 1999/02/01 02:41:40 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -72,7 +72,7 @@ struct object *low_clone(struct program *p)
 
   GC_ALLOC();
 
-  o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed);
+  o=(struct object *)xalloc( ((long)(((struct object *)0)->storage))+p->storage_needed+p->inherits[0].storage_offset);
 
   o->prog=p;
   add_ref(p);

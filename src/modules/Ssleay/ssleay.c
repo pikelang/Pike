@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.9 1998/07/04 17:02:27 grubba Exp $");
+RCSID("$Id: ssleay.c,v 1.10 1999/02/01 02:45:21 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -281,7 +281,7 @@ void pike_module_init(void)
   ssleay_init_threads();
 #endif /* _REENTRANT */
   start_new_program();
-  add_storage(sizeof(struct ssleay_context));
+  ADD_STORAGE(struct ssleay_context);
 
   add_function("create", ssleay_create, "function(void:void)",0);
   add_function("use_certificate_file", ssleay_use_certificate_file, "function(string:void)", 0);
@@ -295,7 +295,7 @@ void pike_module_init(void)
   add_program_constant("ssleay", ssleay_program, 0);
   
   start_new_program();
-  add_storage(sizeof(struct ssleay_connection));
+  ADD_STORAGE(struct ssleay_connection);
 
   add_function("create", ssleay_connection_create, "function(object:void)",0);
   add_function("accept", ssleay_connection_accept, "function(void:int)", 0);

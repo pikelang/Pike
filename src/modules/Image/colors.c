@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.7 1999/01/26 02:02:31 mirar Exp $
+**!	$Id: colors.c,v 1.8 1999/02/01 02:43:09 hubbe Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.7 1999/01/26 02:02:31 mirar Exp $");
+RCSID("$Id: colors.c,v 1.8 1999/02/01 02:43:09 hubbe Exp $");
 
 #include "config.h"
 
@@ -1392,7 +1392,7 @@ void init_image_colors(void)
 
    start_new_program();
 
-   add_storage(sizeof(struct color_struct));
+   ADD_STORAGE(struct color_struct);
    set_init_callback(init_color_struct);
    set_exit_callback(exit_color_struct);
 

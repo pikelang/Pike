@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.8 1998/07/04 16:58:06 grubba Exp $
+ * $Id: msqlmod.c,v 1.9 1999/02/01 02:43:37 hubbe Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.8 1998/07/04 16:58:06 grubba Exp $");
+RCSID("$Id: msqlmod.c,v 1.9 1999/02/01 02:43:37 hubbe Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -706,7 +706,7 @@ static void do_list_index (INT32 args)
 void pike_module_init(void)
 {
 	start_new_program();
-	add_storage(sizeof(struct msql_my_data));
+	ADD_STORAGE(struct msql_my_data);
 
 	set_init_callback (msql_object_created);
 	set_exit_callback (msql_object_destroyed);

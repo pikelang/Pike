@@ -5,7 +5,7 @@
 \*/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.44 1998/11/22 11:03:06 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.45 1999/02/01 02:41:41 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1992,7 +1992,7 @@ void init_operators(void)
 
 
   start_new_program();
-  add_storage(sizeof(struct string_assignment_storage));
+  ADD_STORAGE(struct string_assignment_storage);
   add_function("`[]",f_string_assignment_index,"function(int:int)",0);
   add_function("`[]=",f_string_assignment_assign_index,"function(int,int:int)",0);
   set_init_callback(init_string_assignment_storage);

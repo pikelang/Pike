@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.12 1998/11/22 11:04:48 hubbe Exp $
+ * $Id: odbc.c,v 1.13 1999/02/01 02:44:08 hubbe Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.12 1998/11/22 11:04:48 hubbe Exp $");
+RCSID("$Id: odbc.c,v 1.13 1999/02/01 02:44:08 hubbe Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -325,7 +325,7 @@ void pike_module_init(void)
   }
 
   start_new_program();
-  add_storage(sizeof(struct precompiled_odbc));
+  ADD_STORAGE(struct precompiled_odbc);
 
   add_function("error", f_error, "function(void:int|string)", ID_PUBLIC);
   add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);

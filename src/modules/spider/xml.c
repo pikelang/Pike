@@ -2284,7 +2284,7 @@ void init_xml(void)
 {
   INT32 off;
   start_new_program();
-  off=add_storage(sizeof(struct xmlobj));
+  off=ADD_STORAGE(struct xmlobj);
   map_variable("__entities","mapping",0,
 	       off + OFFSETOF(xmlobj, entities),T_MAPPING);
   map_variable("__attributes","mapping",0,

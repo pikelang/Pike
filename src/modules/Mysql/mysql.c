@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.24 1998/09/01 17:01:04 hubbe Exp $
+ * $Id: mysql.c,v 1.25 1999/02/01 02:43:55 hubbe Exp $
  *
  * SQL database functionality for Pike
  *
@@ -79,7 +79,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.24 1998/09/01 17:01:04 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.25 1999/02/01 02:43:55 hubbe Exp $");
 
 /*
 **! module Mysql
@@ -91,7 +91,7 @@ RCSID("$Id: mysql.c,v 1.24 1998/09/01 17:01:04 hubbe Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.24 1998/09/01 17:01:04 hubbe Exp $
+**!	$Id: mysql.c,v 1.25 1999/02/01 02:43:55 hubbe Exp $
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables
@@ -1369,7 +1369,7 @@ void pike_module_init(void)
    */
  
   start_new_program();
-  add_storage(sizeof(struct precompiled_mysql));
+  ADD_STORAGE(struct precompiled_mysql);
 
   add_function("error", f_error, "function(void:int|string)", ID_PUBLIC);
   add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);

@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.41 1998/08/08 13:53:37 grubba Exp $
+ * $Id: dumudp.c,v 1.42 1999/02/01 02:47:03 hubbe Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.41 1998/08/08 13:53:37 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.42 1999/02/01 02:47:03 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -438,7 +438,7 @@ void init_udp(void)
 {
   start_new_program();
 
-  add_storage(sizeof(struct dumudp));
+  ADD_STORAGE(struct dumudp);
   add_function("bind",udp_bind,"function(int,void|function,void|string:int)",0);
   add_function("enable_broadcast", udp_enable_broadcast, "function(:void)", 0);
   add_function("read",udp_read,"function(int|void:mapping(string:int|string))",0);

@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.101 1999/01/16 01:32:06 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.102 1999/02/01 02:41:47 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2262,7 +2262,7 @@ void init_signals(void)
 #endif
 
   start_new_program();
-  add_storage(sizeof(struct pid_status));
+  ADD_STORAGE(struct pid_status);
   set_init_callback(init_pid_status);
   set_exit_callback(exit_pid_status);
   add_function("wait",f_pid_status_wait,"function(:int)",0);

@@ -28,7 +28,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: yp.c,v 1.14 1998/08/08 13:56:56 grubba Exp $");
+RCSID("$Id: yp.c,v 1.15 1999/02/01 02:45:31 hubbe Exp $");
 
 #define YPERROR(fun,err) do{ if(err) error("yp->%s(): %s\n", (fun), \
                                            yperr_string(err)); }while(0)
@@ -221,7 +221,7 @@ void pike_module_init(void)
 
   start_new_program();
 
-  add_storage(sizeof(struct my_yp_domain));
+  ADD_STORAGE(struct my_yp_domain);
   
   set_init_callback( init_yp_struct );
   set_exit_callback( exit_yp_struct );

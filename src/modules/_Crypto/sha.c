@@ -1,4 +1,4 @@
-/* $Id: sha.c,v 1.13 1998/07/19 23:08:06 grubba Exp $
+/* $Id: sha.c,v 1.14 1999/02/01 02:46:07 hubbe Exp $
  *
  * Written by Niels Möller
  */
@@ -16,7 +16,7 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.13 1998/07/19 23:08:06 grubba Exp $");
+RCSID("$Id: sha.c,v 1.14 1999/02/01 02:46:07 hubbe Exp $");
 
 #include <sha.h>
 
@@ -98,7 +98,7 @@ void pike_sha_exit(void)
 void pike_sha_init(void)
 {
   start_new_program();
-  add_storage(sizeof(struct sha_ctx));
+  ADD_STORAGE(struct sha_ctx);
   add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
   add_function("create", f_create, "function(void|object:void)", 0);
   add_function("update", f_update, "function(string:object)", 0);

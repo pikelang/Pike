@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.11 1998/04/24 00:59:26 hubbe Exp $
+ * $Id: idea.c,v 1.12 1999/02/01 02:46:02 hubbe Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -158,7 +158,7 @@ void pike_idea_init(void)
    */
 
   start_new_program();
-  add_storage(sizeof(INT16[IDEA_KEYLEN]));
+  low_add_storage(sizeof(INT16[IDEA_KEYLEN]),ALIGNOF(INT16),0);
 
   add_function("name", f_name, "function(void:string)", 0);
   add_function("query_block_size", f_query_block_size, "function(void:int)", 0);

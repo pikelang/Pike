@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.41 1998/11/03 08:38:05 per Exp $ */
+/* $Id: font.c,v 1.42 1999/02/01 02:43:12 hubbe Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.41 1998/11/03 08:38:05 per Exp $
+**!	$Id: font.c,v 1.42 1999/02/01 02:43:12 hubbe Exp $
 **! class font
 **!
 **! note
@@ -881,7 +881,7 @@ int baseline();             // font baseline
 void init_font_programs(void)
 {
    start_new_program();
-   add_storage(sizeof(struct font*));
+   ADD_STORAGE(struct font*);
 
    add_function("load",font_load,
                 "function(string:object|int)",0);

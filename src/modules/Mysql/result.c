@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.13 1998/09/01 17:01:06 hubbe Exp $
+ * $Id: result.c,v 1.14 1999/02/01 02:43:56 hubbe Exp $
  *
  * mysql query result
  *
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.13 1998/09/01 17:01:06 hubbe Exp $");
+RCSID("$Id: result.c,v 1.14 1999/02/01 02:43:56 hubbe Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -436,7 +436,7 @@ void init_mysql_res_programs(void)
    */
  
   start_new_program();
-  add_storage(sizeof(struct precompiled_mysql_result));
+  ADD_STORAGE(struct precompiled_mysql_result);
 
   add_function("create", f_create, "function(object:void)", ID_PUBLIC);
   add_function("num_rows", f_num_rows, "function(void:int)", ID_PUBLIC);

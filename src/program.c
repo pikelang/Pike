@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.107 1999/01/31 09:02:00 hubbe Exp $");
+RCSID("$Id: program.c,v 1.108 1999/02/01 02:41:43 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -488,6 +488,7 @@ struct program *low_allocate_program(void)
   struct program *p;
   p=ALLOC_STRUCT(program);
   MEMSET(p, 0, sizeof(struct program));
+  p->alignment_needed=1;
   
   GC_ALLOC();
   p->refs=1;
@@ -775,12 +776,7 @@ static int alignof_variable(int run_time_type)
   switch(run_time_type)
   {
     case T_FUNCTION:
-    case T_MIXED:
-#ifdef HAVE_ALIGNOF
-      return ALIGNOF(struct svalue);
-#else
-      return ALIGNOF(union anything);
-#endif
+    case T_MIXED: return ALIGNOF(struct svalue);
     case T_INT: return ALIGNOF(INT_TYPE);
     case T_FLOAT: return ALIGNOF(FLOAT_TYPE);
     default: return ALIGNOF(char *);
@@ -868,13 +864,6 @@ void check_program(struct program *p)
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
 
-#if 0
-    /* This test doesn't really work... */
-    if(p->inherits[e].storage_offset & (ALIGN_BOUND-1))
-    {
-      fatal("inherit[%d].storage_offset is not properly aligned (%d).\n",e,p->inherits[e].storage_offset);
-    }
-#endif
   }
 }
 #endif
@@ -981,24 +970,31 @@ struct program *debug_end_program(void)
  * Allocate needed for this program in the object structure.
  * An offset to the data is returned.
  */
-SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment)
+SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo)
 {
   SIZE_T offset;
-  offset=DO_ALIGN(new_program->storage_needed, alignment);
+#ifdef PIKE_DEBUG
+  if(alignment <=0 || (alignment & (alignment-1)) || alignment > 256)
+    fatal("Alignment must be 1,2,4,8,16,32,64,128 or 256 not %d\n",alignment);
+#endif
+  offset=DO_ALIGN(OFFSETOF(object,storage)+
+		  new_program->storage_needed,
+		  alignment)+modulo-OFFSETOF(object,storage);
+
+  if(!new_program->storage_needed)
+    new_program->inherits[0].storage_offset=offset;
+
+  if(new_program->alignment_needed<alignment)
+    new_program->alignment_needed=alignment;
+
   new_program->storage_needed = offset + size;
 #ifdef PIKE_DEBUG
-  if(alignment <=0) fatal("Alignment must be at least 1\n");
   if(new_program->storage_needed<0)
     fatal("add_storage failed horribly!\n");
 #endif
   return offset;
 }
 
-SIZE_T add_storage(SIZE_T storage)
-{
-  return low_add_storage(storage,
-			 storage>ALIGN_BOUND? ALIGN_BOUND : storage ? (1<<my_log2(storage)) : 1);
-}
 
 /*
  * set a callback used to initialize clones of this program
@@ -1162,7 +1158,11 @@ void low_inherit(struct program *p,
 
   inherit_offset = new_program->num_inherits;
 
-  storage_offset=add_storage(p->storage_needed);
+  /* alignment magic */
+  storage_offset=p->inherits[0].storage_offset % p->alignment_needed;
+  storage_offset=low_add_storage(p->storage_needed,
+				 p->alignment_needed,
+				 storage_offset)-storage_offset;
 
   for(e=0; e<(int)p->num_inherits; e++)
   {
@@ -1520,7 +1520,7 @@ int define_variable(struct pike_string *name,
   
   n=low_define_variable(name,type,flags,
 			low_add_storage(sizeof_variable(run_time_type),
-					alignof_variable(run_time_type)),
+					alignof_variable(run_time_type),0),
 			run_time_type);
   
 
@@ -2406,6 +2406,8 @@ void check_all_programs(void)
 }
 #endif
 
+#undef THIS
+#define THIS ((struct pike_trampoline *)(fp->current_storage))
 struct program *pike_trampoline_program=0;
 
 static void apply_trampoline(INT32 args)
@@ -2413,11 +2415,66 @@ static void apply_trampoline(INT32 args)
   error("Internal error: Trampoline magic failed!\n");
 }
 
+static void init_trampoline(struct object *o)
+{
+  THIS->frame=0;
+}
+
+static void exit_trampoline(struct object *o)
+{
+  if(THIS->frame)
+  {
+    free_pike_frame(THIS->frame);
+    THIS->frame=0;
+  }
+}
+
+static void gc_check_frame(struct pike_frame *f)
+{
+  if(!f) return;
+  if(!debug_gc_check(f,T_UNKNOWN,f) && f->malloced_locals)
+  {
+    if(f->current_object) gc_check(f->current_object);
+    if(f->context.prog)   gc_check(f->context.prog);
+    if(f->context.parent) gc_check(f->context.parent);
+    gc_check_svalues(f->locals,f->num_locals);
+    if(f->scope)          gc_check_frame(f->scope);
+  }
+}
+
+static void gc_check_trampoline(struct object *o)
+{
+  gc_check_frame(THIS->frame);
+}
+
+static void gc_mark_frame(struct pike_frame *f)
+{
+  if(!f) return;
+  if(gc_mark(f))
+  {
+    if(f->current_object) gc_mark_object_as_referenced(f->current_object);
+    if(f->context.prog)   gc_mark_program_as_referenced(f->context.prog);
+    if(f->context.parent) gc_mark_object_as_referenced(f->context.parent);
+    if(f->malloced_locals)gc_mark_svalues(f->locals,f->num_locals);
+    if(f->scope)          gc_mark_frame(f->scope);
+  }
+}
+
+static void gc_mark_trampoline(struct object *o)
+{
+  gc_mark_frame(THIS->frame);
+}
+
+
 void init_program(void)
 {
   start_new_program();
-  add_storage(sizeof(struct pike_trampoline));
+  ADD_STORAGE(struct pike_trampoline);
   add_function("`()",apply_trampoline,"function(mixed...:mixed)",0);
+  set_init_callback(init_trampoline);
+  set_exit_callback(exit_trampoline);
+  set_gc_check_callback(gc_check_trampoline);
+  set_gc_mark_callback(gc_mark_trampoline);
   pike_trampoline_program=end_program();
 }
 

@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.7 1999/01/05 15:38:06 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.8 1999/02/01 02:45:42 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1065,7 +1065,7 @@ void pike_module_init(void)
     add_program_constant("ISO2022", iso2022_program, ID_STATIC|ID_NOMASK);
 
   start_new_program();
-  add_storage(sizeof(struct std_cs_stor));
+  ADD_STORAGE(struct std_cs_stor);
   add_function("drain", f_drain, "function(:string)", 0);
   add_function("clear", f_clear, "function(:object)", 0);
   add_function("create", f_create, "function(string|void:void)", 0);
@@ -1083,7 +1083,7 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  utf7_stor_offs = add_storage(sizeof(struct utf7_stor));
+  utf7_stor_offs = ADD_STORAGE(struct utf7_stor);
   add_function("feed", f_feed_utf7, "function(string:object)", 0);
   add_function("clear", f_clear_utf7, "function(:object)", 0);
   set_init_callback(utf7_init_stor);
@@ -1109,7 +1109,7 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  std8e_stor_offs = add_storage(sizeof(struct std8e_stor));
+  std8e_stor_offs = ADD_STORAGE(struct std8e_stor);
   add_function("feed", f_feed_std8e, "function(string:object)", 0);
   set_init_callback(std_8bite_init_stor);
   set_exit_callback(std_8bite_exit_stor);
@@ -1117,7 +1117,7 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  std16e_stor_offs = add_storage(sizeof(struct std16e_stor));
+  std16e_stor_offs = ADD_STORAGE(struct std16e_stor);
   add_function("feed", f_feed_std16e, "function(string:object)", 0);
   set_init_callback(std_16bite_init_stor);
   set_exit_callback(std_16bite_exit_stor);
@@ -1125,7 +1125,7 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  std_rfc_stor_offs = add_storage(sizeof(struct std_rfc_stor));
+  std_rfc_stor_offs = ADD_STORAGE(struct std_rfc_stor);
   std_rfc_program = end_program();
 
   prog.u.program = std_rfc_program;
@@ -1152,7 +1152,7 @@ void pike_module_init(void)
 
   start_new_program();
   do_inherit(&prog, 0, NULL);
-  std_misc_stor_offs = add_storage(sizeof(struct std_misc_stor));
+  std_misc_stor_offs = ADD_STORAGE(struct std_misc_stor);
   add_function("feed", f_feed_8bit, "function(string:object)", 0);
   std_8bit_program = end_program();
 

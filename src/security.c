@@ -140,7 +140,7 @@ void init_pike_security(void)
   start_new_program();
 
   start_new_program();
-  add_storage(sizeof(struct pike_creds));
+  ADD_STORAGE(struct pike_creds);
   add_function("set_default_creds",set_default_creds,"function(object:void)",0);
   add_function("get_default_creds",get_default_creds,"function(:object)",0);
   add_function("init_creds",init_creds,"function(object,int,int:void)",0);

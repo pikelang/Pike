@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.8 1999/02/01 00:03:03 per Exp $
+ * $Id: image_ttf.c,v 1.9 1999/02/01 02:46:21 hubbe Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.8 1999/02/01 00:03:03 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.9 1999/02/01 02:46:21 hubbe Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -1278,7 +1278,7 @@ void pike_module_init(void)
       /* make face program */
 
       start_new_program();
-      add_storage(sizeof(struct image_ttf_face_struct));
+      ADD_STORAGE(struct image_ttf_face_struct);
 
       add_function("properties",image_ttf_face_properties,
 		   "function(:mapping)",0);
@@ -1298,7 +1298,7 @@ void pike_module_init(void)
       /* make face instance program */
 
       start_new_program();
-      add_storage(sizeof(struct image_ttf_faceinstance_struct));
+      ADD_STORAGE(struct image_ttf_faceinstance_struct);
       
       add_function("create",image_ttf_faceinstance_create,
 		   "function(object:void)",0);

@@ -62,7 +62,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.10 1998/11/22 11:05:17 hubbe Exp $");
+RCSID("$Id: postgres.c,v 1.11 1999/02/01 02:45:01 hubbe Exp $");
 
 #define THIS ((struct pgres_object_data *) fp->current_storage)
 
@@ -429,7 +429,7 @@ static void f_host_info (INT32 args)
 void pike_module_init (void)
 {
 	start_new_program();
-	add_storage(sizeof(struct pgres_object_data));
+	ADD_STORAGE(struct pgres_object_data);
 	set_init_callback(pgres_create);
 	set_exit_callback(pgres_destroy);
 

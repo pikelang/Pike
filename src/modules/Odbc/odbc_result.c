@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.15 1998/10/19 00:56:27 grubba Exp $
+ * $Id: odbc_result.c,v 1.16 1999/02/01 02:44:10 hubbe Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.15 1998/10/19 00:56:27 grubba Exp $");
+RCSID("$Id: odbc_result.c,v 1.16 1999/02/01 02:44:10 hubbe Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -491,7 +491,7 @@ void init_odbc_res_programs(void)
    */
  
   start_new_program();
-  add_storage(sizeof(struct precompiled_odbc_result));
+  ADD_STORAGE(struct precompiled_odbc_result);
 
   map_variable("_odbc", "object", 0,
 	       OFFSETOF(precompiled_odbc_result, obj), T_OBJECT);

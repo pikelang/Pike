@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.109 1999/01/26 02:23:33 mirar Exp $ */
+/* $Id: image.c,v 1.110 1999/02/01 02:43:13 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.109 1999/01/26 02:23:33 mirar Exp $
+**!	$Id: image.c,v 1.110 1999/02/01 02:43:13 hubbe Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.109 1999/01/26 02:23:33 mirar Exp $");
+RCSID("$Id: image.c,v 1.110 1999/02/01 02:43:13 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3546,7 +3546,7 @@ void pike_module_init(void)
    image_noise_init();
 
    start_new_program();
-   add_storage(sizeof(struct image));
+   ADD_STORAGE(struct image);
 
    add_function("create",image_create,
 		"function(int|void,int|void,"RGB_TYPE":void)",0);

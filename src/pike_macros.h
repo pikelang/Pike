@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.10 1999/01/31 22:22:05 grubba Exp $
+ * $Id: pike_macros.h,v 1.11 1999/02/01 02:41:42 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -52,18 +52,12 @@
 #define isgraph(X)	(ispunct(X) || isupper(X) || islower(X) || isdigit(X))
 #endif /* !HAVE_ISGRAPH */
 
-/* FIXME: On some OS's sizeof(long long) is 8 and sizeof(char *) 4 bytes.
+/*
+ * #define ALIGNOF(X) __alignof__(X)
+ * #define ALIGNOF(X) (sizeof(X)>ALIGN_BOUND?ALIGN_BOUND:( 1<<my_log2(sizeof(X))))
  */
-#define ALIGN_BOUND 16 /* sizeof(char *) */
 
-#ifdef __GNUC__
-#define ALIGNOF(X) __alignof__(X)
-#define HAVE_ALIGNOF
-#else
-#define ALIGNOF(X) (sizeof(X)>ALIGN_BOUND?ALIGN_BOUND:( 1<<my_log2(sizeof(X))))
-#endif
+#define ALIGNOF(X) ((int)&(((struct { char ignored_ ; X fooo_; } *)0)->fooo_))
 
 #define DO_ALIGN(X,Y) (((long)(X)+((Y)-1)) & -(Y))
-#define MY_ALIGN(X) DO_ALIGN((X),ALIGN_BOUND)
-#define SMART_ALIGN(X,Y) DO_ALIGN((X),(Y)>ALIGN_BOUND? (((Y)-1) & ~(Y)) :ALIGN_BOUND)
 #endif

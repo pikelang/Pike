@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.4 1998/04/24 00:59:26 hubbe Exp $
+ * $Id: cast.c,v 1.5 1999/02/01 02:45:57 hubbe Exp $
  *
  * CAST crypto module for Pike
  *
@@ -172,7 +172,7 @@ void pike_cast_init(void)
    */
 
   start_new_program();
-  add_storage(sizeof(struct pike_crypto_cast));
+  ADD_STORAGE(struct pike_crypto_cast);
 
   add_function("name", f_name, "function(void:string)", 0);
   add_function("query_block_size", f_query_block_size, "function(void:int)", 0);

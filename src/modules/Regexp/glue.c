@@ -19,7 +19,7 @@
 #include "threads.h"
 #include "module_support.h"
 
-RCSID("$Id: glue.c,v 1.12 1998/07/04 17:02:00 grubba Exp $");
+RCSID("$Id: glue.c,v 1.13 1999/02/01 02:45:11 hubbe Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -204,7 +204,7 @@ void pike_module_exit(void) {}
 void pike_module_init(void)
 {
   start_new_program();
-  add_storage(sizeof(struct regexp_glue));
+  ADD_STORAGE(struct regexp_glue);
   
   add_function("create",regexp_create,"function(void|string:void)",0);
   add_function("match",regexp_match,"function(string:int)",0);

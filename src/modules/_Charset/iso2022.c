@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: iso2022.c,v 1.2 1998/11/06 02:27:20 marcus Exp $");
+RCSID("$Id: iso2022.c,v 1.3 1999/02/01 02:45:44 hubbe Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -409,7 +409,7 @@ static void exit_stor(struct object *o)
 struct program *iso2022_init(void)
 {
   start_new_program();
-  add_storage(sizeof(struct iso2022_stor));
+  ADD_STORAGE(struct iso2022_stor);
   add_function("feed", f_feed, "function(string:object)", 0);
   add_function("drain", f_drain, "function(:string)", 0);
   add_function("clear", f_clear, "function(:object)", 0);

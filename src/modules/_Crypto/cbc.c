@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.12 1998/08/26 16:33:48 nisse Exp $
+ * $Id: cbc.c,v 1.13 1999/02/01 02:45:58 hubbe Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -331,7 +331,7 @@ void pike_cbc_init(void)
    */
 
   start_new_program();
-  add_storage(sizeof(struct pike_crypto_cbc));
+  ADD_STORAGE(struct pike_crypto_cbc);
 
   add_function("create", f_create, "function(program|object:void)", 0);
 

@@ -221,7 +221,7 @@ void pike_module_init(void)
 {
   perl_destruct_level=2;
   start_new_program();
-  add_storage(sizeof(struct perlmod_storage));
+  ADD_STORAGE(struct perlmod_storage);
   add_function("create",perlmod_create,"function(array(string),void|mapping(string:string):int)",0);
   add_function("run",perlmod_run,"function(:int)",0);
   add_function("eval",perlmod_eval,"function(string:int)",0);

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.36 1998/07/19 21:57:45 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.37 1999/02/01 02:42:21 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -920,7 +920,7 @@ void pike_module_init(void)
 {
 #if defined(USE_GMP) || defined(USE_GMP2)
   start_new_program();
-  add_storage(sizeof(MP_INT));
+  ADD_STORAGE(MP_INT);
   
   add_function("create", mpzmod_create,
   "function(void|string|int|float|object:void)"

@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.136 1999/01/31 20:35:04 grubba Exp $");
+RCSID("$Id: file.c,v 1.137 1999/02/01 02:46:41 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2298,7 +2298,7 @@ static void init_file_locking(void)
 {
   INT32 off;
   start_new_program();
-  off=add_storage(sizeof(struct file_lock_key_storage));
+  off=ADD_STORAGE(struct file_lock_key_storage);
 #ifdef _REENTRANT
   map_variable("_owner","object",0,
 	       off + OFFSETOF(file_lock_key_storage, owner),
@@ -2391,7 +2391,7 @@ void pike_module_init(void)
   init_files_efuns();
 
   start_new_program();
-  add_storage(sizeof(struct my_file));
+  ADD_STORAGE(struct my_file);
 
 #define FILE_FUNC(X,Y,Z) PIKE_CONCAT(Y,_function_number)=add_function(X,Y,Z,0);
 #include "file_functions.h"
@@ -2429,7 +2429,7 @@ void pike_module_init(void)
   free_object(o);
   
   start_new_program();
-  add_storage(sizeof(struct object *));
+  ADD_STORAGE(struct object *);
   map_variable("_fd","object",0,0,T_OBJECT);
 
 #define FILE_FUNC(X,Y,Z) add_function(X,PIKE_CONCAT(Y,_ref),Z,0);

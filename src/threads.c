@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.86 1999/01/21 09:15:19 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.87 1999/02/01 02:41:50 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -990,7 +990,7 @@ void th_init(void)
   add_efun("thread_local",f_thread_local,"function(:object)",OPT_SIDE_EFFECT);
 
   start_new_program();
-  add_storage(sizeof(struct mutex_storage));
+  ADD_STORAGE(struct mutex_storage);
   add_function("lock",f_mutex_lock,"function(int|void:object)",0);
   add_function("trylock",f_mutex_trylock,"function(int|void:object)",0);
   set_init_callback(init_mutex_obj);
@@ -998,7 +998,7 @@ void th_init(void)
   end_class("mutex", 0);
 
   start_new_program();
-  mutex_key_offset = add_storage(sizeof(struct key_storage));
+  mutex_key_offset = ADD_STORAGE(struct key_storage);
   /* This is needed to allow the gc to find the possible circular reference.
    * It also allows a process to take over ownership of a key.
    */
@@ -1014,7 +1014,7 @@ void th_init(void)
 #endif
 
   start_new_program();
-  add_storage(sizeof(COND_T));
+  ADD_STORAGE(COND_T);
   add_function("wait",f_cond_wait,"function(void|object:void)",0);
   add_function("signal",f_cond_signal,"function(:void)",0);
   add_function("broadcast",f_cond_broadcast,"function(:void)",0);
@@ -1034,7 +1034,7 @@ void th_init(void)
   }
 
   start_new_program();
-  add_storage(sizeof(struct thread_local));
+  ADD_STORAGE(struct thread_local);
   add_function("get",f_thread_local_get,"function(:mixed)",0);
   add_function("set",f_thread_local_set,"function(mixed:mixed)",0);
   thread_local_prog=end_program();
@@ -1042,7 +1042,7 @@ void th_init(void)
     fatal("Failed to initialize thread_local program!\n");
 
   start_new_program();
-  add_storage(sizeof(struct thread_state));
+  ADD_STORAGE(struct thread_state);
   thread_id_result_variable=simple_add_variable("result","mixed",0);
   add_function("backtrace",f_thread_backtrace,"function(:array)",0);
   add_function("wait",f_thread_id_result,"function(:mixed)",0);

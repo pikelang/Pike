@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.6 1998/10/22 00:33:55 hubbe Exp $
+ * $Id: nt.c,v 1.7 1999/02/01 02:47:18 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -529,7 +529,7 @@ void init_nt_system_calls(void)
       SIMPCONST(LOGON32_PROVIDER_DEFAULT);
       
       start_new_program();
-      add_storage(sizeof(HANDLE));
+      ADD_STORAGE(HANDLE);
       set_init_callback(init_token);
       set_exit_callback(exit_token);
       token_program=end_program();

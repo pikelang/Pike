@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.25 1998/04/20 18:53:55 grubba Exp $
+ * $Id: crypto.c,v 1.26 1999/02/01 02:45:59 hubbe Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -465,7 +465,7 @@ void pike_crypto_init(void)
    */
   
   start_new_program();
-  add_storage(sizeof(struct pike_crypto));
+  ADD_STORAGE(struct pike_crypto);
 
   add_function("create", f_create, "function(program|object:void)", 0);
 

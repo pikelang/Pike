@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: gdbmmod.c,v 1.5 1997/08/30 22:21:49 grubba Exp $");
+RCSID("$Id: gdbmmod.c,v 1.6 1999/02/01 02:42:09 hubbe Exp $");
 #include "gdbm_machine.h"
 #include "threads.h"
 
@@ -334,7 +334,7 @@ void pike_module_init(void)
 {
 #if defined(HAVE_GDBM_H) && defined(HAVE_LIBGDBM)
   start_new_program();
-  add_storage(sizeof(struct gdbm_glue));
+  ADD_STORAGE(struct gdbm_glue);
   
   add_function("create",gdbmmod_create,"function(void|string,void|string:void)",0);
 

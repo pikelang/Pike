@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.48 1999/01/31 09:02:02 hubbe Exp $
+ * $Id: program.h,v 1.49 1999/02/01 02:41:45 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -13,6 +13,7 @@
 #include <stdarg.h>
 #include "global.h"
 #include "pike_types.h"
+#include "pike_macros.h"
 #include "svalue.h"
 #include "time_stuff.h"
 
@@ -193,6 +194,7 @@ struct program
   INT32 id;             /* used to identify program in caches */
   INT32 flags;
   INT32 storage_needed; /* storage needed in the object struct */
+  unsigned INT8 alignment_needed;
   struct timeval timestamp;
 
   struct program *next;
@@ -250,6 +252,8 @@ extern struct program *pike_trampoline_program;
 
 #define COMPILER_IN_CATCH 1
 
+#define ADD_STORAGE(X) low_add_storage(sizeof(X), ALIGNOF(X),0)
+
 #define FOO(NUMTYPE,TYPE,NAME) void PIKE_CONCAT(add_to_,NAME(TYPE ARG));
 #include "program_areas.h"
 
@@ -275,8 +279,7 @@ int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
 struct program *debug_end_program(void);
-SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment);
-SIZE_T add_storage(SIZE_T storage);
+SIZE_T low_add_storage(SIZE_T size, SIZE_T alignment, int modulo);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
 void set_gc_mark_callback(void (*m)(struct object *));

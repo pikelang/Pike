@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.125 1999/01/24 12:02:20 hubbe Exp $
+# $Id: Makefile.in,v 1.126 1999/02/01 02:41:39 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -392,14 +392,14 @@ TAGS:
 	etags -t *.h *.c
 
 # verify / debug
-verify_modules:
-	( cd modules ; $(MAKE) $(MAKE_FLAGS) verify )
-
 module_testsuites:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
 
 verify: module_testsuites testsuite master.pike
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
+
+verify_installed: module_testsuites testsuite master.pike
+	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
 
 check: verify
 

@@ -1,5 +1,5 @@
 /*
- * $Id: pgresult.c,v 1.8 1998/07/15 19:01:31 grubba Exp $
+ * $Id: pgresult.c,v 1.9 1999/02/01 02:45:00 hubbe Exp $
  *
  * Postgres95 support for pike/0.5 and up
  *
@@ -63,7 +63,7 @@
 #include "builtin_functions.h"
 #include "module_support.h"
 
-RCSID("$Id: pgresult.c,v 1.8 1998/07/15 19:01:31 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.9 1999/02/01 02:45:00 hubbe Exp $");
 
 #ifdef _REENTRANT
 MUTEX_T pike_postgres_result_mutex;
@@ -216,7 +216,7 @@ struct program * pgresult_program;
 void pgresult_init (void)
 {
 	start_new_program();
-	add_storage(sizeof(struct postgres_result_object_data));
+	ADD_STORAGE(struct postgres_result_object_data);
 	set_init_callback(result_create);
 	set_exit_callback(result_destroy);
 
