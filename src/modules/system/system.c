@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.25 1997/09/07 12:37:58 grubba Exp $
+ * $Id: system.c,v 1.26 1997/09/08 03:29:08 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.25 1997/09/07 12:37:58 grubba Exp $");
+RCSID("$Id: system.c,v 1.26 1997/09/08 03:29:08 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -423,22 +423,22 @@ void f_getpgrp(INT32 args)
 }
 #endif /* HAVE_GETPGID || HAVE_GETPGRP */
 
-#define get(X) void f_##X(INT32 args){ pop_n_elems(args); push_int((INT32)X()); }
+#define f_get(X,Y) void X(INT32 args){ pop_n_elems(args); push_int((INT32)Y()); }
 
-get(getuid)
-get(getgid)
+f_get(f_getuid, getuid)
+f_get(f_getgid, getgid)
  
 #ifdef HAVE_GETEUID
-get(geteuid)
-get(getegid)
+f_get(f_geteuid, geteuid)
+f_get(f_getegid, getegid)
 #endif
-get(getpid)
+f_get(f_getpid, getpid)
 
 #ifdef HAVE_GETPPID
-get(getppid)
+f_get(f_getppid, getppid)
 #endif
  
-#undef get
+#undef f_get
 
 #ifdef HAVE_CHROOT
 /* int chroot(string|object newroot) */
