@@ -65,7 +65,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.142 2002/06/25 14:26:41 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.143 2002/07/02 17:56:20 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -784,8 +784,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     return is_same_string(a->u.string,b->u.string);
 
   case T_TYPE:
-    return pike_types_le(a->u.type, b->u.type) &&
-      pike_types_le(b->u.type, a->u.type);
+    return a->u.type == b->u.type;
 
   case T_FUNCTION:
     if (a->subtype != b->subtype) return 0;
@@ -873,7 +872,6 @@ PMOD_EXPORT int low_is_equal(const struct svalue *a,
       return 0;
 
     case T_TYPE:
-      if (a->u.type == b->u.type) return 1;
       return pike_types_le(a->u.type, b->u.type) &&
 	pike_types_le(b->u.type, a->u.type);
 
