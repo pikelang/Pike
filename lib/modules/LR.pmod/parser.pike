@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.25 2000/12/01 19:55:47 js Exp $
+ * $Id: parser.pike,v 1.26 2001/11/19 00:44:34 nilsson Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,24 +9,16 @@
 
 #pike __REAL_VERSION__
 
-//.
-//. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.25 2000/12/01 19:55:47 js Exp $
-//. Author:	Henrik Grubbström (grubba@infovav.se)
-//.
-//. Synopsis:	LALR(1) parser and compiler.
-//.
-//. +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//.
-//. This object implements an LALR(1) parser and compiler.
-//.
-//. Normal use of this object would be:
-//.
-//. {add_rule, set_priority, set_associativity}*
-//. set_symbol_to_string
-//. compile
-//. {parse}*
-//.
+//! This object implements an LALR(1) parser and compiler.
+//!
+//! Normal use of this object would be:
+//!
+//! @pre{
+//! {add_rule, set_priority, set_associativity}*
+//! set_symbol_to_string
+//! compile
+//! {parse}*
+//! @}
 
 /*
  * Includes
@@ -62,44 +54,37 @@ import LR;
  * Classes
  */
 
-//. o kernel
-//.   Implements an LR(1) state
+//! Implements an LR(1) state
 class kernel {
-  //. + rules
-  //.   Used to check if a rule already has been added when doing closures.
+
+  //! Used to check if a rule already has been added when doing closures.
   multiset(object(rule)) rules = (<>);
 
-  //. + items
-  //.   Contains the items in this state.
+  //! Contains the items in this state.
   array(object(item)) items = ({});
 
-  //. + item_id_to_items
-  //.   Used to lookup items given rule and offset
+  //! Used to lookup items given rule and offset
   mapping(int:object(item)) item_id_to_item = ([]);
 
-  //. + symbol_items
-  //.   Contains the items whose next symbol is this non-terminal.
+  //! Contains the items whose next symbol is this non-terminal.
   mapping(int : multiset(object(item))) symbol_items = ([]);
 
-  //. + action
-  //.   The action table for this state
-  //.
-  //.   object(kernel)	SHIFT to this state on this symbol.
-  //.   object(rule)	REDUCE according to this rule on this symbol.
+  //! The action table for this state
+  //!
+  //! @pre{
+  //! object(kernel)    SHIFT to this state on this symbol.
+  //! object(rule)      REDUCE according to this rule on this symbol.
+  //! @}
   mapping(int|string : object(kernel)|object(rule)) action = ([]);
 
-  //. + closure_set
-  //.   The symbols that closure has been called on.
+  //! The symbols that closure has been called on.
   multiset closure_set = (<>);
 
   /*
    * Functions
    */
 
-  //. - add_item
-  //.   Add an item to the state.
-  //. > i
-  //.   Item to add.
+  //! Add an item to the state.
   void add_item(object(item) i)
   {
     int|string symbol;
@@ -118,10 +103,10 @@ class kernel {
     }
   }
 
-  //. - closure
-  //.   Make the closure of this state.
-  //. > nonterminal
-  //.   nonterminal to make the closure on.
+  //! Make the closure of this state.
+  //!
+  //! @param nonterminal
+  //!   Nonterminal to make the closure on.
   void closure(int nonterminal)
   {
     closure_set[nonterminal] = 1;
@@ -154,8 +139,7 @@ class kernel {
     }
   }
 
-  //. - goto_set
-  //.   Make the goto-set of this state.
+  //! Make the goto-set of this state.
   multiset(int|string) goto_set()
   {
     multiset(int|string) set = (<>);
@@ -174,11 +158,11 @@ class kernel {
     return (set);
   }
 
-  //. - do_goto
-  //.   Generates the state reached when doing goto on the specified symbol.
-  //.   i.e. it compiles the LR(0) state.
-  //. > symbol
-  //.   symbol to make goto on.
+  //! Generates the state reached when doing goto on the specified symbol.
+  //! i.e. it compiles the LR(0) state.
+  //!
+  //! @param symbol
+  //!   Symbol to make goto on.
   object(kernel) do_goto(int|string symbol)
   {
     multiset(object(item)) items;
@@ -245,24 +229,22 @@ class kernel {
 
 };
 
-//. o state_queue
-//.
-//. This is a queue, which keeps the elements even after they are retrieved.
+//! This is a queue, which keeps the elements even after they are retrieved.
 class state_queue {
-  //. + head
-  //. Index of the head of the queue.
+
+  //! Index of the head of the queue.
   int head;
-  //. + tail
-  //. Index of the tail of the queue.
+
+  //! Index of the tail of the queue.
   int tail;
-  //. + arr
-  //. The queue itself.
+
+  //! The queue itself.
   array(object(kernel)) arr = allocate(64);
 
-  //. - push
-  //.   Pushes the state on the queue.
-  //. > state
-  //.   State to push.
+  //! Pushes the state on the queue.
+  //!
+  //! @param state
+  //!   State to push.
   object(kernel) push(object(kernel) state)
   {
     if (tail == sizeof(arr)) {
@@ -273,8 +255,7 @@ class state_queue {
     return(state);
   }
 
-  //. - next
-  //.   Return the next state from the queue.
+  //! Return the next state from the queue.
   int|object(kernel) next()
   {
     if (head == tail) {
@@ -285,8 +266,7 @@ class state_queue {
   }
 }
 
-//. + grammar
-//.   The grammar itself.
+//! The grammar itself.
 mapping(int|string : array(object(rule))) grammar = ([]);
 
 /* Priority table for terminal symbols */
@@ -307,25 +287,26 @@ static private mapping(mixed : multiset(object(rule))) begins = ([]);
  */
 static private mapping(int : multiset(object(rule))) used_by = ([]);
 
-//. + start_state
-//.   The initial LR0 state.
+//! The initial LR0 state.
 object(kernel) start_state;
 
-//. + verbose
-//.   Verbosity level
-//.   0 - none
-//.   1 - some
+//! Verbosity level
+//!
+//! @int
+//!   @value 0
+//!    None
+//!   @value 1
+//!    Some
+//! @endint
 int verbose=1;
 
-//. + error
-//.   Error code
+//! Error code
 int error=0;
 
 /* Number of next rule (used only for conflict resolving) */
 static private int next_rule_number = 1;
 
-//. + known_states
-//.   LR0 states that are already known to the compiler.
+//! LR0 states that are already known to the compiler.
 mapping(string:object(kernel)) known_states = ([]);
 
 /*
@@ -347,10 +328,10 @@ static private string builtin_symbol_to_string(int|string symbol)
 
 static private function(int|string : string) symbol_to_string = builtin_symbol_to_string;
 
-//. - rule_to_string
-//.   Pretty-prints a rule to a string.
-//. > r
-//.   Rule to print.
+//! Pretty-prints a rule to a string.
+//!
+//! @param r
+//!   Rule to print.
 string rule_to_string(object(rule) r)
 {
   string res = symbol_to_string(r->nonterminal) + ":\t";
@@ -365,10 +346,10 @@ string rule_to_string(object(rule) r)
   return(res);
 }
 
-//. - item_to_string
-//.   Pretty-prints an item to a string.
-//. > i
-//.   Item to pretty-print.
+//! Pretty-prints an item to a string.
+//!
+//! @param i
+//!   Item to pretty-print.
 string item_to_string(object(item) i)
 {
   array(string) res = ({ symbol_to_string(i->r->nonterminal), ":\t" });
@@ -392,17 +373,16 @@ string item_to_string(object(item) i)
   return(res * "");
 }
 
-//. - state_to_string
-//.   Pretty-prints a state to a string.
-//. > state
-//.   State to pretty-print.
+//! Pretty-prints a state to a string.
+//!
+//! @param state
+//!   State to pretty-print.
 string state_to_string(object(kernel) state)
 {
   return (map(state->items, item_to_string) * "\n");
 }
 
-//. - cast_to_string
-//.   Pretty-prints the current grammar to a string.
+//! Pretty-prints the current grammar to a string.
 string cast_to_string()
 {
   array(string) res = ({});
@@ -425,10 +405,10 @@ string cast_to_string()
   return (res * "");
 }
 
-//. - cast
-//.   Implements casting.
-//. > type
-//.   Type to cast to.
+//! Implements casting.
+//!
+//! @param type
+//!   Type to cast to.
 mixed cast(string type)
 {
   if (type == "string") {
@@ -439,12 +419,12 @@ mixed cast(string type)
 
 /* Here come the functions that actually do some work */
 
-//. - set_priority
-//.   Sets the priority of a terminal.
-//. > terminal
-//.   Terminal to set the priority for.
-//. > pri_val
-//.   Priority; higher = prefer this terminal.
+//! Sets the priority of a terminal.
+//!
+//! @param terminal
+//!   Terminal to set the priority for.
+//! @param pri_val
+//!   Priority; higher = prefer this terminal.
 void set_priority(string terminal, int pri_val)
 {
   object(priority) pri;
@@ -456,12 +436,12 @@ void set_priority(string terminal, int pri_val)
   }
 }
 
-//. - set_associativity
-//.   Sets the associativity of a terminal.
-//. > terminal
-//.   Terminal to set the associativity for.
-//. > assoc
-//.   Associativity; negative - left, positive - right, zero - no associativity.
+//! Sets the associativity of a terminal.
+//!
+//! @param terminal
+//!   Terminal to set the associativity for.
+//! @param assoc
+//!   Associativity; negative - left, positive - right, zero - no associativity.
 void set_associativity(string terminal, int assoc)
 {
   object(priority) pri;
@@ -473,13 +453,13 @@ void set_associativity(string terminal, int assoc)
   }
 }
 
-//. - set_symbol_to_string
-//.   Sets the symbol to string conversion function.
-//.   The conversion function is used by the various *_to_string functions
-//.   to make comprehensible output.
-//. > s_to_s
-//.   Symbol to string conversion function.
-//.   If zero or not specified, use the built-in function.
+//! Sets the symbol to string conversion function.
+//! The conversion function is used by the various *_to_string functions
+//! to make comprehensible output.
+//!
+//! @param s_to_s
+//! Symbol to string conversion function.
+//! If zero or not specified, use the built-in function.
 void set_symbol_to_string(void|function(int|string:string) s_to_s)
 {
   if (s_to_s) {
@@ -489,10 +469,10 @@ void set_symbol_to_string(void|function(int|string:string) s_to_s)
   }
 }
 
-//. - add_rule
-//.   Add a rule to the grammar.
-//. > r
-//.   Rule to add.
+//! Add a rule to the grammar.
+//!
+//! @param r
+//! Rule to add.
 void add_rule(object(rule) r)
 {
   array(object(rule)) rules;
@@ -661,9 +641,8 @@ static private object(kernel) first_state()
   return(state);
 }
 
-//. + s_q
-//.   Contains all states used.
-//.   In the queue-part are the states that remain to be compiled.
+//! Contains all states used.
+//! In the queue-part are the states that remain to be compiled.
 object(state_queue) s_q;
 
 static private object(ADT.Stack) item_stack;
@@ -1114,8 +1093,7 @@ static private int repair(object(kernel) state, multiset(int|string) conflicts)
   }
 }
 
-//. - compile
-//.   Compiles the grammar into a parser, so that parse() can be called.
+//! Compiles the grammar into a parser, so that parse() can be called.
 int compile()
 {
   int error = 0;	/* No error yet */
@@ -1435,22 +1413,25 @@ int compile()
   return (error);
 }
 
-//. - parse
-//.   Parse the input according to the compiled grammar.
-//.   The last value reduced is returned.
-//. NOTA BENE:
-//.   The parser must have been compiled (with compile())
-//.   prior to calling this function.
-//. BUGS
-//.   Errors should be throw()n.
-//. > scanner
-//.   The scanner function. It returns the next symbol from the input.
-//.   It should either return a string (terminal) or an array with
-//.   a string (terminal) and a mixed (value).
-//.   EOF is indicated with the empty string.
-//. > action_object
-//.   Object used to resolve those actions that have been specified as
-//.   strings.
+//! Parse the input according to the compiled grammar.
+//! The last value reduced is returned.
+//!
+//! @note
+//!   The parser must have been compiled (with compile())
+//!   prior to calling this function.
+//!
+//! @bugs
+//!   Errors should be throw()n.
+//!
+//! @param scanner
+//!   The scanner function. It returns the next symbol from the input.
+//!   It should either return a string (terminal) or an array with
+//!   a string (terminal) and a mixed (value).
+//!   EOF is indicated with the empty string.
+//!
+//! @param action_object
+//!   Object used to resolve those actions that have been specified as
+//!   strings.
 mixed parse(object|function(void:string|array(string|mixed)) scanner,
 	    void|object action_object)
 {

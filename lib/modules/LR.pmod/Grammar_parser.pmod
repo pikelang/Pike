@@ -3,42 +3,34 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Grammar_parser.pmod,v 1.11 2000/12/01 19:55:47 js Exp $
+ * $Id: Grammar_parser.pmod,v 1.12 2001/11/19 00:44:34 nilsson Exp $
  *
  * Generates a parser from a textual specification.
  *
  * Henrik Grubbström 1996-12-06
  */
 
-//.
-//. File:	Grammar_parser.pmod
-//. RCSID:	$Id: Grammar_parser.pmod,v 1.11 2000/12/01 19:55:47 js Exp $
-//. Author:	Henrik grubbström (grubba@infovav.se)
-//.
-//. Synopsis:	Generates an LR parser from a textual specification.
-//.
-//. ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//.
-//. This module generates an LR parser from a grammar specified according
-//. to the following grammar:
-//.
-//.        directives : directive ;
-//.	   directives : directives directive ;
-//.	   directive : declaration ;
-//.	   directive : rule ;
-//.	   declaration : "%token" terminals ";" ;
-//.	   rule : nonterminal ":" symbols ";" ;
-//.	   rule : nonterminal ":" symbols action ";" ;
-//.	   symbols : symbol ;
-//.	   symbols : symbols symbol ;
-//.	   terminals : terminal ;
-//.	   terminals : terminals terminal ;
-//.	   symbol : nonterminal ;
-//.	   symbol : "string" ;
-//.	   action : "{" "identifier" "}" ;
-//.	   nonterminal : "identifier" ;
-//.	   terminal : "string";
-//.
+//! This module generates an LR parser from a grammar specified according
+//! to the following grammar:
+//!
+//! @pre{
+//!        directives : directive ;
+//!	   directives : directives directive ;
+//!	   directive : declaration ;
+//!	   directive : rule ;
+//!	   declaration : "%token" terminals ";" ;
+//!	   rule : nonterminal ":" symbols ";" ;
+//!	   rule : nonterminal ":" symbols action ";" ;
+//!	   symbols : symbol ;
+//!	   symbols : symbols symbol ;
+//!	   terminals : terminal ;
+//!	   terminals : terminals terminal ;
+//!	   symbol : nonterminal ;
+//!	   symbol : "string" ;
+//!	   action : "{" "identifier" "}" ;
+//!	   nonterminal : "identifier" ;
+//!	   terminal : "string";
+//! @}
 
 /*
  * Includes
@@ -187,8 +179,7 @@ static private object(parser) g;
 
 static private object master;
 
-//. + error
-//.   Error code from the parsing.
+//! Error code from the parsing.
 int error;
 
 static private int add_nonterminal(string id)
@@ -320,14 +311,13 @@ void create()
   _parser->compile();
 }
 
-//. - make_parser
-//.
-//. Compiles the parser-specification given in the first argument.
-//. Named actions are taken from the object if available, otherwise
-//. left as is.
-//.
-//. BUGS: Returns error-code in both Grammar_parser.error and
-//. return_value->error.
+//! Compiles the parser-specification given in the first argument.
+//! Named actions are taken from the object if available, otherwise
+//! left as is.
+//!
+//! @bugs
+//! Returns error-code in both Grammar_parser.error and
+//! return_value->error.
 object(parser) make_parser(string str, object|void m)
 {
   object(parser) res = 0;
@@ -370,20 +360,13 @@ object(parser) make_parser(string str, object|void m)
   return (res);
 }
 
-//. - make_parser_from_file
-//.
-//. Compiles the file specified in the first argument into an LR parser.
-//.
-//. SEE ALSO: Grammar_parser.make_parser
+//! Compiles the file specified in the first argument into an LR parser.
+//!
+//! @seealso
+//!   @[make_parser]
 int|object(parser) make_parser_from_file(string fname, object|void m)
 {
-  object(Stdio.File) f = Stdio.File();
-  int|object(parser) g = 0;
-  if (f->open(fname, "r")) {
-    g = make_parser(f->read(0x7fffffff), m);
-    f->close();
-  }
-  return(g);
+  return make_parser(Stdio.read_file(fname), m);
 }
 
 /*
