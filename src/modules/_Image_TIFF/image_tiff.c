@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.16 2000/08/12 23:06:54 grubba Exp $");
+RCSID("$Id: image_tiff.c,v 1.17 2000/08/24 17:08:19 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -44,7 +44,7 @@ static struct program *image_colortable_program=NULL;
 #else
 /* The image module is probably linked static too... */
 extern struct program *image_program; 
-extern struct program *image_colortable_program=NULL;
+extern struct program *image_colortable_program;
 #endif
 
 #ifndef MIN
