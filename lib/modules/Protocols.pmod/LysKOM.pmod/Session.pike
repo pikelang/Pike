@@ -1,19 +1,14 @@
 #pike __REAL_VERSION__
 
-//  $Id: Session.pike,v 1.24 2000/11/26 17:31:45 nilsson Exp $
-//! module Protocols
-//! submodule LysKOM
-//! class Session
+//  $Id: Session.pike,v 1.25 2001/04/23 12:59:30 grubba Exp $
 
 import ".";
 
 Connection con;
 
-//! variable user
-//!	This variable contains the
-//!	<link to=Protocols.LysKOM.Session.Person>person</link>
-//!	that are logged in.
-
+//! This variable contains the
+//! @[Protocols.LysKOM.Session.Person]
+//! that is logged in.
 object user; // logged in as this Person
 
 string server;
@@ -24,24 +19,29 @@ mapping(int:object) _text=([]);
 mapping(int:object) _person=([]);
 mapping(int:object) _conference=([]);
 
-//! method void create(string server)
-//! method void create(string server,mapping options)
+//! @decl void create(string server)
+//! @decl void create(string server, mapping options)
 //!	Initializes the session object, and opens
 //!	a connection to that server.
 //!
-//!	options is a mapping of options,
-//!	<data_description type=mapping>
-//!	<elem name=login type="int|string">login as this person number<br>(get number from name)</elem>
-//!	<elem name=create type="string"><br>create a new person and login with it</elem>
-//!	<elem name=password type=string>send this login password</elem>
-//!	<elem name=invisible type="int(0..1)">if set, login invisible</elem>
-//!	<elem>advanced</elem>
-//!	<elem name=port type=int(0..65535)>server port (default is 4894)</elem>
-//!	<elem name=whoami type=string>present as this user<br>(default is from uid/getpwent and hostname)</elem>
-//!	</data_description>
+//!	@[options] is a mapping of options:
+//!	@mapping
+//!	  @member int|string "login"
+//!	    login as this person number (get number from name).
+//!	  @member string "create"
+//!	    create a new person and login with it.
+//!	  @member string "password"
+//!	    send this login password.
+//!	  @member int(0..1) "invisible"
+//!	    if set, login invisible.
+//!	  @member int(0..65535) "port"
+//!	    server port (default is 4894).
+//!	  @member string "whoami"
+//!	    present as this user (default is from uid/getpwent and hostname).
+//!	@endmapping
 //!
-//! see also: Connection
-
+//! @seealso
+//!   @[Connection]
 void create(object|string _server,void|mapping options)
 {
    if (objectp(_server)) // clone
@@ -538,10 +538,14 @@ class Text
       no=_no;
    }
 
+   //! @ignore
+
    FETCHERC(text,array(string),_text,get_text,@({no,0,0x7fffffff}),
-	    array_sscanf(res,"%s\n%s"))
+	    array_sscanf(res,"%s\n%s"));
    FETCHERC2b(stat,object,_stat,get_text_stat,@({no}),
-	      (_misc=MiscInfo(res->misc_info),res))
+	      (_misc=MiscInfo(res->misc_info),res));
+
+   //! @endignore
 
    void update_misc(MiscInfo m)
    {
@@ -798,12 +802,16 @@ class Person
 
    object err;
 
+   //! @ignore
+
    FETCHER(stat,ProtocolTypes.Person,_person,get_person_stat,no);
    FETCHERC(unread,array(object),_unread,get_unread_confs,no,
 	    Array.map(res,conference));
    FETCHERC2b(membership,array(object),_membership,get_membership,
 	      @({no,0,65535,1}),
 	      Array.map(res,Membership,no));
+
+   //! @endignore
 
    void create(int _no)
    {
@@ -901,9 +909,14 @@ class Conference
 
   private object err;
 
+
+  //! @ignore
+
   FETCHER2(stat,ProtocolTypes.Conference,_conf,
 	   ProtocolTypes.ConferenceOld,_confold,
 	   get_conf_stat,get_conf_stat_old,no)
+
+  //! @endignore
 
   void create(int _no)
   {
@@ -978,21 +991,17 @@ object conference(int no)
    return _conference[no] || (_conference[no]=Conference(no));
 }
 
-//!
-//! method array(object) try_complete_person(string orig)
 //!	Runs a LysKOM completion on the given string,
 //!	returning an array of confzinfos of the match.
-
 array(ProtocolTypes.ConfZInfo) try_complete_person(string orig)
 {
    return con->lookup_z_name(orig,1,0);
 }
 
-//! method object login(int user_no,string password)
-//! method object login(int user_no,string password,int invisible)
+//! @decl object login(int user_no,string password)
+//! @decl object login(int user_no,string password,int invisible)
 //!	Performs a login. Returns 1 on success or throws a lyskom error.
 //! returns the called object
-
 object login(int user_no,string password,
 	     void|int invisible)
 {
@@ -1001,10 +1010,8 @@ object login(int user_no,string password,
    return this_object();
 }
 
-//! method object create_person(string name,string password)
 //!	Create a person, which will be logged in.
 //! returns the new person object
-
 object create_person(string name,string password)
 {
    if (!stringp(name)||!stringp(password))
@@ -1012,10 +1019,8 @@ object create_person(string name,string password)
    return user=person(con->create_person_old(name,password));
 }
 
-//! method object logout()
 //!	Logouts from the server.
 //! returns the called object
-
 object logout()
 {
    if (con)
@@ -1023,34 +1028,39 @@ object logout()
    return this_object();
 }
 
-//! method object create_text(string subject,string body,mapping options)
-//! method object create_text(string subject,string body,mapping options,function callback,mixed ...extra)
+//! @decl object create_text(string subject, string body, mapping options)
+//! @decl object create_text(string subject, string body, mapping options, @
+//!                          function callback, mixed ...extra)
 //! 	Creates a new text.
 //!
-//! 	if "callback" are given, this function will be called when the text
-//! 	is created, with the text as first argument.
+//! 	if @[callback] is given, the function will be called when the text
+//! 	has been created, with the text as first argument.
 //!	Otherwise, the new text is returned.
 //!
-//!	options is a mapping that may contain:
-//!	<data_description type=mapping>
-//!	<elem name=recpt type="Conference|array(Conference)">recipient conferences</elem>
-//!	<elem name=cc type="Conference|array(Conference)">cc-recipient conferences</elem>
-//!	<elem name=bcc type="Conference|array(Conference)">bcc-recipient conferences *</elem>
-//!	<elem></elem>
-//!	<elem name=comm_to type="Text|array(Text)">what text(s) is commented</elem>
-//!	<elem name=foot_to type="Text|array(Text)">what text(s) is footnoted</elem>
-//!	<elem></elem>
-//!	<elem name=anonymous type="int(0..1)">send text anonymously</elem>
-//!	<elem></elem>
-//!	<elem name=aux_items type="array(AuxItemInput)">AuxItems you want to set for the text *</elem>
-//!	</data_description>
+//!	@[options] is a mapping that may contain:
+//!	@mapping
+//!	  @member Conference|array(Conference) "recpt"
+//!	    recipient conferences.
+//!	  @member Conference|array(Conference) "cc"
+//!	    cc-recipient conferences.
+//!	  @member Conference|array(Conference) "bcc"
+//!	    bcc-recipient conferences*.
+//!	  @member Text|array(Text) "comm_to"
+//!	    The text(s) to be commented.
+//!	  @member Text|array(Text) "foot_to"
+//!	    The text(s) to be footnoted.
+//!	  @member int(0..1) "anonymous"
+//!	    send text anonymously.
+//!	  @member array(AuxItemInput) "aux_items"
+//!	    AuxItems you want to set for the text*.
+//!	@endmapping
 //!
-//! note:
-//!	The above marked with a '*' is only available on a protocol 10
-//!	server. A LysKOM error will be thrown if the call fails.
+//! @note
+//!	The items above marked with '*' are only available on protocol 10
+//!	servers. A LysKOM error will be thrown if the call fails.
 //!
-//! see also: Conference.create_text, Text.comment, Text.footnote
-
+//! @seealso
+//!   @[Conference.create_text()], @[Text.comment()], @[Text.footnote()]
 object|void create_text(string subject,string body,
 			void|mapping options,
 			void|function callback,
@@ -1104,14 +1114,13 @@ object|void _create_text(string textstring,
    return text(res);
 }
 
-//! method object send_message(string message, mapping options)
 //! 	Sends a message.
 //!
-//!	options is a mapping that may contain:
-//!	<data_description type=mapping>
-//!	<elem name=recpt type="Conference">recipient conference</elem>
-//!	</data_description>
-
+//!	@[options] is a mapping that may contain:
+//!	@mapping
+//!	  @member Conference "recpt"
+//!	    recipient conference.
+//!	@endmapping
 object|void send_message(string textstring, mapping options)
 {
   int|object res;
