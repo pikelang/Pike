@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.19 1998/05/08 03:35:55 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.20 1998/06/06 03:15:20 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -489,11 +489,19 @@ long fd_lseek(FD fd, long pos, int where)
     errno=ENOTSUPP;
     return -1;
   }
+#if FILE_BEGIN != SEEK_SET || FILE_CURRENT != SEEK_CUR || FILE_END != SEEK_END
+  switch(where)
+  {
+    case SEEK_SET: where=FILE_BEGIN; break;
+    case SEEK_CUR: where=FILE_CURRENT; break;
+    case SEEK_END: where=FILE_END; break;
+  }
+#endif
   ret=da_handle[fd];
   mt_unlock(&fd_mutex);
 
-  ret=LZSeek((HANDLE)ret, pos, where);
-  if(ret<0)
+  ret=SetFilePointer((HANDLE)ret, pos, 0, where);
+  if(ret == 0xffffffff)
   {
     errno=GetLastError();
     return -1;
