@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.355 2005/02/18 13:48:47 grubba Exp $
+|| $Id: language.yacc,v 1.356 2005/02/18 18:17:57 grubba Exp $
 */
 
 %pure_parser
@@ -1836,7 +1836,7 @@ statements: { $$=0; }
   }
   ;
 
-statement_with_semicolon: unused2 ';' ;
+statement_with_semicolon: unused2 expected_semicolon ;
 
 normal_label_statement: statement_with_semicolon
   | import { $$=0; }
