@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.72 2000/04/19 14:14:29 grubba Exp $");
+RCSID("$Id: lex.c,v 1.73 2000/04/19 20:20:16 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -89,9 +89,6 @@ struct keyword instr_names[]=
 { "!=",			F_NE,0 },	
 { "%",			F_MOD,0 },	
 { "%=",			F_MOD_EQ,0 },	
-{ "& global",           F_GLOBAL_LVALUE, I_HASARG },
-{ "& lexical local",	F_LEXICAL_LOCAL_LVALUE, I_HASARG },	
-{ "& local",            F_LOCAL_LVALUE, I_HASARG },
 { "&",			F_AND,0 },
 { "&=",			F_AND_EQ,0 },	
 { "*",			F_MULTIPLY,0 },	
@@ -159,14 +156,10 @@ struct keyword instr_names[]=
 { "local function call",F_CALL_LFUN, I_HASARG },
 { "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
 { "local",		F_LOCAL, I_HASARG },	
-{ "lexical local",	F_LEXICAL_LOCAL, I_HASARG },	
 { "& external",		F_EXTERNAL_LVALUE, I_HASARG },
 { "LDA",			F_LDA, I_HASARG },
 { "mark & local",	F_MARK_AND_LOCAL, I_HASARG },	
-{ "ltosval2",		F_LTOSVAL2,0 },
-{ "lvalue to svalue",	F_LTOSVAL,0 },	
 { "lvalue_list",	F_LVALUE_LIST,0 },	
-{ "[ lvalues ]",	F_ARRAY_LVALUE, I_HASARG },	
 { "mark",               F_MARK,0 },
 { "mark mark",          F_MARK2,0 },
 { "return",		F_RETURN,0 },
@@ -180,19 +173,13 @@ struct keyword instr_names[]=
 { "label",		F_LABEL,I_HASARG },
 { "align",		F_ALIGN, I_HASARG },
 { "call",		F_APPLY, I_HASARG },
-{ "clear local",	F_CLEAR_LOCAL, I_HASARG },
-{ "clear 2 local",	F_CLEAR_2_LOCAL, I_HASARG },
-{ "clear 4 local",	F_CLEAR_4_LOCAL, I_HASARG },
-{ "++local",		F_INC_LOCAL, I_HASARG },
 { "++local and pop",	F_INC_LOCAL_AND_POP, I_HASARG },
 { "local++",		F_POST_INC_LOCAL, I_HASARG },
-{ "--local",		F_DEC_LOCAL, I_HASARG },
 { "--local and pop",	F_DEC_LOCAL_AND_POP, I_HASARG },
 { "local--",		F_POST_DEC_LOCAL, I_HASARG },
 { "int index",          F_POS_INT_INDEX, I_HASARG },
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },
-{ "2 locals",           F_2_LOCALS, I_HASARG },
 { "byte",               F_BYTE, I_HASARG },
 { "nop",                F_NOP,0 },
 { "add integer",        F_ADD_INT, I_HASARG },
@@ -205,10 +192,6 @@ struct keyword instr_names[]=
 { "call lfun & return", F_CALL_LFUN_AND_RETURN, I_HASARG },
 { "call function",      F_CALL_FUNCTION, 0 },
 { "call function & return", F_CALL_FUNCTION_AND_RETURN, 0 },
-{ "+= and pop",         F_ADD_TO_AND_POP, 0 },
-{ "local=local;",       F_LOCAL_2_LOCAL, I_HASARG },
-{ "local=global;",      F_GLOBAL_2_LOCAL, I_HASARG },
-{ "global=local;",      F_LOCAL_2_GLOBAL, I_HASARG },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];

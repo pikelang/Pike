@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.8 2000/04/19 14:14:12 grubba Exp $
+ * $Id: interpret_functions.h,v 1.9 2000/04/19 20:20:01 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -247,150 +247,149 @@ BREAK;
       print_return_value();
       break;
 
-      CASE(F_2_LOCALS);
-      assign_svalue_no_free(Pike_sp++,Pike_fp->locals+GET_ARG());
-      print_return_value();
-      assign_svalue_no_free(Pike_sp++,Pike_fp->locals+GET_ARG2());
-      print_return_value();
-      break;
+OPCODE2(F_2_LOCALS, "2 locals")
+  assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg1);
+  print_return_value();
+  assign_svalue_no_free(Pike_sp++, Pike_fp->locals + arg2);
+  print_return_value();
+BREAK;
 
-      CASE(F_LOCAL_2_LOCAL);
-      {
-	int tmp=GET_ARG();
-	assign_svalue(Pike_fp->locals+tmp, Pike_fp->locals+GET_ARG2());
-	break;
-      }
+OPCODE2(F_LOCAL_2_LOCAL, "local=local;")
+{
+  int tmp=arg1;
+  assign_svalue(Pike_fp->locals + tmp, Pike_fp->locals + arg2);
+}
+BREAK;
 
-      CASE(F_LOCAL_2_GLOBAL);
-      {
-	INT32 tmp=GET_ARG() + Pike_fp->context.identifier_level;
-	struct identifier *i;
+OPCODE2(F_LOCAL_2_GLOBAL, "global=local;")
+{
+  INT32 tmp = arg1 + Pike_fp->context.identifier_level;
+  struct identifier *i;
 
-	if(!Pike_fp->current_object->prog)
-	  error("Cannot access global variables in destructed object.\n");
+  if(!Pike_fp->current_object->prog)
+    error("Cannot access global variables in destructed object.\n");
 
-	i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
-	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-	  error("Cannot assign functions or constants.\n");
-	if(i->run_time_type == T_MIXED)
-	{
-	  assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp), Pike_fp->locals + GET_ARG2());
-	}else{
-	  assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
-				 i->run_time_type,
-				 Pike_fp->locals + GET_ARG2());
-	}
-	break;
-      }
+  i = ID_FROM_INT(Pike_fp->current_object->prog, tmp);
+  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+    error("Cannot assign functions or constants.\n");
+  if(i->run_time_type == T_MIXED)
+  {
+    assign_svalue((struct svalue *)GLOBAL_FROM_INT(tmp),
+		  Pike_fp->locals + arg2);
+  }else{
+    assign_to_short_svalue((union anything *)GLOBAL_FROM_INT(tmp),
+			   i->run_time_type,
+			   Pike_fp->locals + arg2);
+  }
+}
+BREAK;
 
-      CASE(F_GLOBAL_2_LOCAL);
-      {
-	INT32 tmp=GET_ARG() + Pike_fp->context.identifier_level;
-	INT32 tmp2=GET_ARG2();
-	free_svalue(Pike_fp->locals + tmp2);
-	low_object_index_no_free(Pike_fp->locals + tmp2,
-				 Pike_fp->current_object,
-				 tmp);
-	break;
-      }
+OPCODE2(F_GLOBAL_2_LOCAL, "local=global;")
+{
+  INT32 tmp = arg1 + Pike_fp->context.identifier_level;
+  INT32 tmp2 = arg2;
+  free_svalue(Pike_fp->locals + tmp2);
+  low_object_index_no_free(Pike_fp->locals + tmp2,
+			   Pike_fp->current_object,
+			   tmp);
+}
+BREAK;
 
-      CASE(F_LOCAL_LVALUE);
-      Pike_sp[0].type=T_LVALUE;
-      Pike_sp[0].u.lval=Pike_fp->locals+GET_ARG();
-      Pike_sp[1].type=T_VOID;
-      Pike_sp+=2;
-      break;
+OPCODE1(F_LOCAL_LVALUE, "& local")
+  Pike_sp[0].type = T_LVALUE;
+  Pike_sp[0].u.lval = Pike_fp->locals + arg1;
+  Pike_sp[1].type = T_VOID;
+  Pike_sp += 2;
+BREAK;
 
-      CASE(F_LEXICAL_LOCAL);
-      {
-	struct pike_frame *f=Pike_fp;
-	while(accumulator--)
-	{
-	  f=f->scope;
-	  if(!f) error("Lexical scope error.\n");
-	}
-	push_svalue(f->locals + GET_ARG());
-	print_return_value();
-	break;
-      }
+OPCODE1ACC(F_LEXICAL_LOCAL, "lexical local")
+{
+  struct pike_frame *f = Pike_fp;
+  while(acc--)
+  {
+    f=f->scope;
+    if(!f) error("Lexical scope error.\n");
+  }
+  push_svalue(f->locals + arg1);
+  print_return_value();
+}
+BREAK;
 
-      CASE(F_LEXICAL_LOCAL_LVALUE);
-      {
-	struct pike_frame *f=Pike_fp;
-	while(accumulator--)
-	{
-	  f=f->scope;
-	  if(!f) error("Lexical scope error.\n");
-	}
-	Pike_sp[0].type=T_LVALUE;
-	Pike_sp[0].u.lval=f->locals+GET_ARG();
-	Pike_sp[1].type=T_VOID;
-	Pike_sp+=2;
-	break;
-      }
+OPCODE1ACC(F_LEXICAL_LOCAL_LVALUE, "& lexical local")
+{
+  struct pike_frame *f = Pike_fp;
+  while(acc--)
+  {
+    f = f->scope;
+    if(!f) error("Lexical scope error.\n");
+  }
+  Pike_sp[0].type = T_LVALUE;
+  Pike_sp[0].u.lval = f->locals+arg1;
+  Pike_sp[1].type = T_VOID;
+  Pike_sp += 2;
+}
+BREAK;
 
-      CASE(F_ARRAY_LVALUE);
-      f_aggregate(GET_ARG()*2);
-      Pike_sp[-1].u.array->flags |= ARRAY_LVALUE;
-      Pike_sp[-1].u.array->type_field |= BIT_UNFINISHED | BIT_MIXED;
-      Pike_sp[0]=Pike_sp[-1];
-      Pike_sp[-1].type=T_ARRAY_LVALUE;
-      Pike_sp++;
-      break;
+OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]")
+  f_aggregate(arg1*2);
+  Pike_sp[-1].u.array->flags |= ARRAY_LVALUE;
+  Pike_sp[-1].u.array->type_field |= BIT_UNFINISHED | BIT_MIXED;
+  /* FIXME: Shouldn't a ref be added here? */
+  Pike_sp[0] = Pike_sp[-1];
+  Pike_sp[-1].type = T_ARRAY_LVALUE;
+  Pike_sp++;
+BREAK;
 
-      CASE(F_CLEAR_2_LOCAL);
-      instr=GET_ARG();
-      free_svalues(Pike_fp->locals + instr, 2, -1);
-      Pike_fp->locals[instr].type=PIKE_T_INT;
-      Pike_fp->locals[instr].subtype=0;
-      Pike_fp->locals[instr].u.integer=0;
-      Pike_fp->locals[instr+1].type=PIKE_T_INT;
-      Pike_fp->locals[instr+1].subtype=0;
-      Pike_fp->locals[instr+1].u.integer=0;
-      break;
+OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local")
+  instr = arg1;
+  free_svalues(Pike_fp->locals + instr, 2, -1);
+  Pike_fp->locals[instr].type = PIKE_T_INT;
+  Pike_fp->locals[instr].subtype = 0;
+  Pike_fp->locals[instr].u.integer = 0;
+  Pike_fp->locals[instr+1].type = PIKE_T_INT;
+  Pike_fp->locals[instr+1].subtype = 0;
+  Pike_fp->locals[instr+1].u.integer = 0;
+BREAK;
 
-      CASE(F_CLEAR_4_LOCAL);
-      {
-	int e;
-	instr=GET_ARG();
-	free_svalues(Pike_fp->locals + instr, 4, -1);
-	for(e=0;e<4;e++)
-	{
-	  Pike_fp->locals[instr+e].type=PIKE_T_INT;
-	  Pike_fp->locals[instr+e].subtype=0;
-	  Pike_fp->locals[instr+e].u.integer=0;
-	}
-	break;
-      }
+OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local")
+{
+  int e;
+  instr = arg1;
+  free_svalues(Pike_fp->locals + instr, 4, -1);
+  for(e = 0; e < 4; e++)
+  {
+    Pike_fp->locals[instr+e].type = PIKE_T_INT;
+    Pike_fp->locals[instr+e].subtype = 0;
+    Pike_fp->locals[instr+e].u.integer = 0;
+  }
+}
+BREAK;
 
-      CASE(F_CLEAR_LOCAL);
-      instr=GET_ARG();
-      free_svalue(Pike_fp->locals + instr);
-      Pike_fp->locals[instr].type=PIKE_T_INT;
-      Pike_fp->locals[instr].subtype=0;
-      Pike_fp->locals[instr].u.integer=0;
-      break;
+OPCODE1(F_CLEAR_LOCAL, "clear local")
+  instr = arg1;
+  free_svalue(Pike_fp->locals + instr);
+  Pike_fp->locals[instr].type = PIKE_T_INT;
+  Pike_fp->locals[instr].subtype = 0;
+  Pike_fp->locals[instr].u.integer = 0;
+BREAK;
 
-      CASE(F_INC_LOCAL);
-      instr=GET_ARG();
+OPCODE1(F_INC_LOCAL, "++local")
+  instr = arg1;
+  if( (Pike_fp->locals[instr].type == PIKE_T_INT)
 #ifdef AUTO_BIGNUM
-      if(Pike_fp->locals[instr].type == PIKE_T_INT &&
-         !INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
-#else
-      if(Pike_fp->locals[instr].type == PIKE_T_INT)
+      && (!INT_TYPE_ADD_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
 #endif /* AUTO_BIGNUM */
-      {
-	  Pike_fp->locals[instr].u.integer++;
-	  assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-      }
-      else
-      {
-	assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-	push_int(1);
-	f_add(2);
-	assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
-      }
-      break;
+      )
+  {
+    Pike_fp->locals[instr].u.integer++;
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+  } else {
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+    push_int(1);
+    f_add(2);
+    assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
+  }
+BREAK;
 
       CASE(F_POST_INC_LOCAL);
       instr=GET_ARG();
@@ -417,24 +416,23 @@ BREAK;
       }
       break;
 
-      CASE(F_DEC_LOCAL);
-      instr=GET_ARG();
+OPCODE1(F_DEC_LOCAL, "--local")
+  instr = arg1;
+  if( (Pike_fp->locals[instr].type == PIKE_T_INT)
 #ifdef AUTO_BIGNUM
-      if(Pike_fp->locals[instr].type == PIKE_T_INT &&
-         !INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
-#else
-      if(Pike_fp->locals[instr].type == PIKE_T_INT)
+      && (!INT_TYPE_SUB_OVERFLOW(Pike_fp->locals[instr].u.integer, 1))
 #endif /* AUTO_BIGNUM */
-      {
-	Pike_fp->locals[instr].u.integer--;
-	assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-      }else{
-	assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
-	push_int(1);
-	o_subtract();
-	assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
-      }
-      break;
+      )
+  {
+    Pike_fp->locals[instr].u.integer--;
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+  } else {
+    assign_svalue_no_free(Pike_sp++,Pike_fp->locals+instr);
+    push_int(1);
+    o_subtract();
+    assign_svalue(Pike_fp->locals+instr,Pike_sp-1);
+  }
+BREAK;
 
       CASE(F_POST_DEC_LOCAL);
       instr=GET_ARG();
@@ -463,85 +461,87 @@ BREAK;
       }
       break;
 
-      CASE(F_LTOSVAL);
-      lvalue_to_svalue_no_free(Pike_sp,Pike_sp-2);
-      Pike_sp++;
-      break;
+OPCODE0(F_LTOSVAL, "lvalue to svalue")
+  lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2);
+  Pike_sp++;
+BREAK;
 
-      CASE(F_LTOSVAL2);
-      Pike_sp[0]=Pike_sp[-1];
-      Pike_sp[-1].type=PIKE_T_INT;
-      Pike_sp++;
-      lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
+OPCODE0(F_LTOSVAL2, "ltosval2")
+  Pike_sp[0] = Pike_sp[-1];
+  Pike_sp[-1].type = PIKE_T_INT;
+  Pike_sp++;
+  lvalue_to_svalue_no_free(Pike_sp-2, Pike_sp-4);
 
-      /* this is so that foo+=bar (and similar things) will be faster, this
-       * is done by freeing the old reference to foo after it has been pushed
-       * on the stack. That way foo can have only 1 reference if we are lucky,
-       * and then the low array/multiset/mapping manipulation routines can be
-       * destructive if they like
-       */
-      if( (1 << Pike_sp[-2].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
-      {
-	struct svalue s;
-	s.type=PIKE_T_INT;
-	s.subtype=0;
-	s.u.integer=0;
-	assign_lvalue(Pike_sp-4,&s);
-      }
-      break;
+  /* this is so that foo+=bar (and similar things) will be faster, this
+   * is done by freeing the old reference to foo after it has been pushed
+   * on the stack. That way foo can have only 1 reference if we are lucky,
+   * and then the low array/multiset/mapping manipulation routines can be
+   * destructive if they like
+   */
+  if( (1 << Pike_sp[-2].type) &
+      (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
+  {
+    struct svalue s;
+    s.type = PIKE_T_INT;
+    s.subtype = 0;
+    s.u.integer = 0;
+    assign_lvalue(Pike_sp-4, &s);
+  }
+BREAK;
 
 
-      CASE(F_ADD_TO_AND_POP);
-      Pike_sp[0]=Pike_sp[-1];
-      Pike_sp[-1].type=PIKE_T_INT;
-      Pike_sp++;
-      lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
+OPCODE0(F_ADD_TO_AND_POP, "+= and pop")
+  Pike_sp[0]=Pike_sp[-1];
+  Pike_sp[-1].type=PIKE_T_INT;
+  Pike_sp++;
+  lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
 
-      /* this is so that foo+=bar (and similar things) will be faster, this
-       * is done by freeing the old reference to foo after it has been pushed
-       * on the stack. That way foo can have only 1 reference if we are lucky,
-       * and then the low array/multiset/mapping manipulation routines can be
-       * destructive if they like
-       */
-      if( (1 << Pike_sp[-2].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
-      {
-	struct svalue s;
-	s.type=PIKE_T_INT;
-	s.subtype=0;
-	s.u.integer=0;
-	assign_lvalue(Pike_sp-4,&s);
-      }
-      f_add(2);
-      assign_lvalue(Pike_sp-3,Pike_sp-1);
-      pop_n_elems(3);
-      break;
+  /* this is so that foo+=bar (and similar things) will be faster, this
+   * is done by freeing the old reference to foo after it has been pushed
+   * on the stack. That way foo can have only 1 reference if we are lucky,
+   * and then the low array/multiset/mapping manipulation routines can be
+   * destructive if they like
+   */
+  if( (1 << Pike_sp[-2].type) &
+      (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
+  {
+    struct svalue s;
+    s.type=PIKE_T_INT;
+    s.subtype=0;
+    s.u.integer=0;
+    assign_lvalue(Pike_sp-4,&s);
+  }
+  f_add(2);
+  assign_lvalue(Pike_sp-3,Pike_sp-1);
+  pop_n_elems(3);
+BREAK;
 
-      CASE(F_GLOBAL_LVALUE);
-      {
-	struct identifier *i;
-	INT32 tmp=GET_ARG() + Pike_fp->context.identifier_level;
+OPCODE1(F_GLOBAL_LVALUE, "& global")
+{
+  struct identifier *i;
+  INT32 tmp=arg1 + Pike_fp->context.identifier_level;
 
-	if(!Pike_fp->current_object->prog)
-	  error("Cannot access global variables in destructed object.\n");
+  if(!Pike_fp->current_object->prog)
+    error("Cannot access global variables in destructed object.\n");
 
-	i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
+  i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
 
-	if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
-	  error("Cannot re-assign functions or constants.\n");
+  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+    error("Cannot re-assign functions or constants.\n");
 
-	if(i->run_time_type == T_MIXED)
-	{
-	  Pike_sp[0].type=T_LVALUE;
-	  Pike_sp[0].u.lval=(struct svalue *)GLOBAL_FROM_INT(tmp);
-	}else{
-	  Pike_sp[0].type=T_SHORT_LVALUE;
-	  Pike_sp[0].u.short_lval= (union anything *)GLOBAL_FROM_INT(tmp);
-	  Pike_sp[0].subtype=i->run_time_type;
-	}
-	Pike_sp[1].type=T_VOID;
-	Pike_sp+=2;
-	break;
-      }
+  if(i->run_time_type == T_MIXED)
+  {
+    Pike_sp[0].type=T_LVALUE;
+    Pike_sp[0].u.lval=(struct svalue *)GLOBAL_FROM_INT(tmp);
+  }else{
+    Pike_sp[0].type=T_SHORT_LVALUE;
+    Pike_sp[0].u.short_lval= (union anything *)GLOBAL_FROM_INT(tmp);
+    Pike_sp[0].subtype=i->run_time_type;
+  }
+  Pike_sp[1].type=T_VOID;
+  Pike_sp+=2;
+}
+BREAK;
       
 OPCODE0(F_INC, "++x")
 {
