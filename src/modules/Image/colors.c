@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.12 1999/04/13 12:32:12 mirar Exp $
+**!	$Id: colors.c,v 1.13 1999/04/18 22:05:16 mirar Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.12 1999/04/13 12:32:12 mirar Exp $");
+RCSID("$Id: colors.c,v 1.13 1999/04/18 22:05:16 mirar Exp $");
 
 #include "config.h"
 
@@ -945,8 +945,8 @@ int image_color_svalue(struct svalue *v,rgb_group *rgb)
 
 int image_color_arg(INT32 args,rgb_group *rgb)
 {
-   if (args<=0) return 0;
-   return image_color_svalue(sp-args,rgb);
+   if (args>=0) return 0;
+   return image_color_svalue(sp+args,rgb);
 }
 
 
@@ -954,8 +954,8 @@ static void image_color_add(INT32 args)
 {
    rgb_group rgb;
 
-   if (!image_color_arg(args,&rgb))
-      error("Image.Color.Color->`+: Illegal argument(s)");
+   if (!image_color_arg(-args,&rgb))
+      SIMPLE_BAD_ARG_ERROR("Image.Color.Color->`+",1,"Color");
 
    pop_n_elems(args);
    _image_make_rgb_color((int)(THIS->rgb.r+rgb.r),
