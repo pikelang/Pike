@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.48 1999/12/10 22:40:33 grubba Exp $");
+RCSID("$Id: encode.c,v 1.49 1999/12/11 00:02:14 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -331,13 +331,14 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     case T_STRING:
       adddata(val->u.string);
       break;
-      
+
     case T_FLOAT:
     {
       if(val->u.float_number==0.0)
       {
-	code_entry(T_FLOAT,0,data);
-	code_entry(T_FLOAT,0,data);
+	/* Backward compatibility! */
+	code_entry(T_TYPE,0,data);
+	code_entry(T_TYPE,0,data);
       }else{
 	INT32 x;
 	int y;
@@ -353,8 +354,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  y++;
 	}
 #endif
-	code_entry(T_FLOAT,x,data);
-	code_entry(T_FLOAT,y,data);
+	/* Backward compatibility! */
+	code_entry(T_TYPE,x,data);
+	code_entry(T_TYPE,y,data);
       }
       break;
     }
@@ -578,6 +580,9 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
       pop_stack();
       break;
       }
+    case T_TYPE:
+      error("Encoding of the type type not supported yet!");
+      break;
   }
 }
 
@@ -831,6 +836,7 @@ one_more_type:
     case '8':
     case '9':
     case T_FLOAT:
+    case T_TYPE:
     case T_STRING:
     case T_PROGRAM:
     case T_MIXED:
@@ -924,7 +930,10 @@ static void decode_value2(struct decode_data *data)
       push_string(str);
       break;
     }
-      
+
+    case T_TYPE:
+      /* Used to be T_FLOAT at this code (7). */
+      /* FALL_THROUGH */
     case T_FLOAT:
     {
       INT32 num2=num;
@@ -1477,6 +1486,9 @@ static void rec_restore_value(char **v, INT32 *l)
   {
   case T_INT: push_int(t); return;
     
+  case T_TYPE:
+    /* Backward compatibility! */
+    /* FALL_THROUGH */
   case T_FLOAT:
     if(sizeof(INT32) < sizeof(float))  /* FIXME FIXME FIXME FIXME */
       error("Float architecture not supported.\n"); 
