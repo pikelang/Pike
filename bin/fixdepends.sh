@@ -22,7 +22,7 @@ d3="`echo \"$3\" | sed -e 's:[.*[\\^$@]:\\\\&:g'`"
 
 if grep .protos $1/Makefile.in >/dev/null 2>&1; then
   sed -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
-      -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
+      -e "s@\([ 	]\)$d2/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
       -e "s@\([ 	]\)$d3/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
       -e "s@\([ 	]\)`pwd`\([^ 	]\)*@\1\2@" \
       -e 's/^\([-a-zA-Z0-9.,_]*\)\.o: /\1.o \1.protos: /g' \
@@ -30,7 +30,7 @@ if grep .protos $1/Makefile.in >/dev/null 2>&1; then
       -e '/^[ 	]*\\$/d'
 else
   sed -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(SRCDIR)/\2@g" \
-      -e "s@\([ 	]\)$d1/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
+      -e "s@\([ 	]\)$d2/\([-a-zA-Z0-9.,_]*\)@\1\$(PIKE_SRC_DIR)/\2@g" \
       -e "s@\([ 	]\)$d3/\([-a-zA-Z0-9.,_]*\)@\1\$(BUILD_BASE)/\2@g" \
       -e "s@\([ 	]\)`pwd`\([^ 	]\)*@\1\2@" \
       -e 's@\([ 	]\)/[^ 	]*@\1@g' \
