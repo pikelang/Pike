@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.45 2000/08/04 14:50:00 grubba Exp $
+ * $Id: stralloc.h,v 1.46 2000/08/04 18:07:52 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -147,7 +147,7 @@ INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *
 
 
 /* Prototypes begin here */
-PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos);
+PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, ptrdiff_t pos);
 PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, int pos, int value);
 PMOD_EXPORT INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
 CONVERT(0,1)

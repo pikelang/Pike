@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.87 2000/08/04 14:49:59 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.88 2000/08/04 18:07:51 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -91,7 +91,7 @@ static INLINE int min_magnitude(const unsigned INT32 c)
   return 2;
 }
 
-static INLINE unsigned INT32 generic_extract (const void *str, int size, int pos)
+static INLINE unsigned INT32 generic_extract (const void *str, int size, ptrdiff_t pos)
 {
   switch(size)
   {
@@ -103,7 +103,7 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, int pos
   return 0;
 }
 
-PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
+PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, ptrdiff_t pos)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
