@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.40 1999/02/23 02:21:15 grubba Exp $
+ * $Id: cpp.c,v 1.41 1999/02/24 01:50:20 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -2080,6 +2080,145 @@ static int do_safe_index_call(struct pike_string *s)
   return res;
 }
 
+static struct pike_string *recode_string(struct pike_string *data)
+{
+  fprintf(stderr, "recode_string()\n");
+
+  /* Observations:
+   *
+   * * At least a prefix of two bytes need to be 7bit in a valid
+   *   Pike program.
+   *
+   * * NUL isn't valid in a Pike program.
+   */
+  /* Heuristic:
+   *
+   * Index 0 | Index 1 | Interpretation
+   * --------+---------+------------------------------------------
+   *       0 |       0 | 32bit wide string.
+   *       0 |      >0 | 16bit Unicode string.
+   *      >0 |       0 | 16bit Unicode string reverse byte order.
+   *    0xfe |    0xff | 16bit Unicode string.
+   *    0xff |    0xfe | 16bit Unicode string reverse byte order.
+   *    0x7b |    0x83 | EBCDIC-US ("#c").
+   *    0x7b |    0x40 | EBCDIC-US ("# ").
+   *    0x7b |    0x09 | EBCDIC-US ("#\t").
+   * --------+---------+------------------------------------------
+   *   Other |   Other | 8bit standard string.
+   *
+   * Note that the tests below are more lenient than the table above.
+   * This shouldn't matter, since the other cases would be erroneus
+   * anyway.
+   */
+
+  /* Add an extra reference to data, since we may return it as is. */
+  add_ref(data);
+
+  if ((!((unsigned char *)data->str)[0]) ||
+      (((unsigned char *)data->str)[0] == 0xfe) ||
+      (((unsigned char *)data->str)[0] == 0xff) ||
+      (!((unsigned char *)data->str)[1])) {
+    /* Unicode */
+    if ((!((unsigned char *)data->str)[0]) &&
+	(!((unsigned char *)data->str)[1])) {
+      /* 32bit Unicode (UCS4) */
+    } else {
+      /* 16bit Unicode */
+      if ((!((unsigned char *)data->str)[1]) ||
+	  (((unsigned char *)data->str)[1] == 0xfe)) {
+	/* Reverse Byte-order */
+      }
+      // Note: We lose the extra reference to data here.
+      push_string(data);
+      f_unicode_to_string(1);
+      add_ref(data = sp[-1].u.string);
+      pop_stack();
+    }
+  } else if (((unsigned char *)data->str)[0] == 0x7b) {
+    /* EBCDIC */
+    /* Notes on EBCDIC:
+     *
+     * * EBCDIC conversion needs to first convert the first line
+     *   according to EBCDIC-US, and then the rest of the string
+     *   according to the encoding specified by the first line.
+     *
+     * * It's an error for a program written in EBCDIC not to
+     *   start with a #charset directive.
+     *
+     * Obfuscation note:
+     *
+     * * This still allows the rest of the file to be written in
+     *   another encoding than EBCDIC.
+     */
+  }
+  return data;
+}
+
+static struct pike_string *filter_bom(struct pike_string *data)
+{
+  /* More notes:
+   *
+   * * Character 0xfeff (ZERO WIDTH NO-BREAK SPACE = BYTE ORDER MARK = BOM)
+   *   needs to be filtered away before processing continues.
+   */
+  int i;
+  int j = 0;
+  int len = data->len;
+  struct string_builder buf;
+
+  fprintf(stderr, "filter_bom()\n");
+
+  /* Add an extra reference to data here, since we may return it as is. */
+  add_ref(data);
+
+  if (!data->size_shift) {
+    return(data);
+  }
+  
+  init_string_builder(&buf, data->size_shift);
+  if (data->size_shift == 1) {
+    /* 16 bit string */
+    p_wchar1 *ptr = STR1(data);
+    for(i = 0; i<len; i++) {
+      if (ptr[i] == 0xfeff) {
+	if (i != j) {
+	  string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
+	  j = i+1;
+	}
+      }
+    }
+    if ((j) && (i != j)) {
+      /* Add the trailing string */
+      string_builder_append(&buf, MKPCHARP(ptr + j, 1), i - j);
+      free_string(data);
+      data = finish_string_builder(&buf);
+    } else {
+      /* String didn't contain 0xfeff */
+      free_string_builder(&buf);
+    }
+  } else {
+    /* 32 bit string */
+    p_wchar2 *ptr = STR2(data);
+    for(i = 0; i<len; i++) {
+      if (ptr[i] == 0xfeff) {
+	if (i != j) {
+	  string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
+	  j = i+1;
+	}
+      }
+    }
+    if ((j) && (i != j)) {
+      /* Add the trailing string */
+      string_builder_append(&buf, MKPCHARP(ptr + j, 2), i - j);
+      free_string(data);
+      data = finish_string_builder(&buf);
+    } else {
+      /* String didn't contain 0xfeff */
+      free_string_builder(&buf);
+    }
+  }
+  return(data);
+}
 
 void f_cpp(INT32 args)
 {
@@ -2111,131 +2250,19 @@ void f_cpp(INT32 args)
     this.current_file=make_shared_string("-");
   }
 
-  data = sp[-args].u.string;
+  add_ref(data = sp[-args].u.string);
 
   if (auto_convert && (!data->size_shift) && (data->len > 1)) {
     /* Try to determine if we need to recode the string */
-
-    /* Observations:
-     *
-     * * At least a prefix of two bytes need to be 7bit in a valid
-     *   Pike program.
-     *
-     * * NUL isn't valid in a Pike program.
-     */
-    /* Heuristic:
-     *
-     * Index 0 | Index 1 | Interpretation
-     * --------+---------+------------------------------------------
-     *       0 |       0 | 32bit wide string.
-     *       0 |      >0 | 16bit Unicode string.
-     *      >0 |       0 | 16bit Unicode string reverse byte order.
-     *    0xfe |    0xff | 16bit Unicode string.
-     *    0xff |    0xfe | 16bit Unicode string reverse byte order.
-     *    0x7b |    0x83 | EBCDIC-US ("#c").
-     *    0x7b |    0x40 | EBCDIC-US ("# ").
-     *    0x7b |    0x09 | EBCDIC-US ("#\t").
-     * --------+---------+------------------------------------------
-     *   Other |   Other | 8bit standard string.
-     *
-     * Note that the tests below are more lenient than the table above.
-     * This shouldn't matter, since the other cases would be erroneus
-     * anyway.
-     *
-     * Note:
-     *
-     * * The code below may leave some extra strings on the stack.
-     */
-    if ((!((unsigned char *)data->str)[0]) ||
-	(((unsigned char *)data->str)[0] == 0xfe) ||
-	(((unsigned char *)data->str)[0] == 0xff) ||
-	(!((unsigned char *)data->str)[1])) {
-      /* Unicode */
-      if ((!((unsigned char *)data->str)[0]) &&
-	  (!((unsigned char *)data->str)[1])) {
-	/* 32bit Unicode (UCS4) */
-      } else {
-	/* 16bit Unicode */
-	if ((!((unsigned char *)data->str)[1]) ||
-	    (((unsigned char *)data->str)[1] == 0xfe)) {
-	  /* Reverse Byte-order */
-	}
-	push_string(data);
-	f_unicode_to_string(1);
-	data = sp[-1].u.string;
-      }
-    } else if (((unsigned char *)data->str)[0] == 0x7b) {
-      /* EBCDIC */
-      /* Notes on EBCDIC:
-       *
-       * * EBCDIC conversion needs to first convert the first line
-       *   according to EBCDIC-US, and then the rest of the string
-       *   according to the encoding specified by the first line.
-       *
-       * * It's an error for a program written in EBCDIC not to
-       *   start with a #charset directive.
-       *
-       * Obfuscation note:
-       *
-       * * This still allows the rest of the file to be written in
-       *   another encoding than EBCDIC.
-       */
-    }
+    struct pike_string *new_data = recode_string(data);
+    free_string(data);
+    data = new_data;
   }
   if (data->size_shift) {
-    /* More notes:
-     *
-     * * Character 0xfeff (ZERO WIDTH NO-BREAK SPACE = BYTE ORDER MARK = BOM)
-     *   needs to be filtered away before processing continues.
-     *
-     * * The code below may leave some extra strings on the stack.
-     */
-    int i;
-    int j = 0;
-    int len = data->len;
-
-    init_string_builder(&this.buf, data->size_shift);
-    if (data->size_shift == 1) {
-      /* 16 bit string */
-      p_wchar1 *ptr = STR1(data);
-      for(i = 0; i<len; i++) {
-	if (ptr[i] == 0xfeff) {
-	  if (i != j) {
-	    string_builder_append(&this.buf, MKPCHARP(ptr + j, 1), i - j);
-	    j = i+1;
-	  }
-	}
-      }
-      if ((j) && (i != j)) {
-	/* Add the trailing string */
-	string_builder_append(&this.buf, MKPCHARP(ptr + j, 1), i - j);
-	push_string(finish_string_builder(&this.buf));
-	data = sp[-1].u.string;
-      } else {
-	/* String didn't contain 0xfeff */
-	free_string_builder(&this.buf);
-      }
-    } else {
-      /* 32 bit string */
-      p_wchar2 *ptr = STR2(data);
-      for(i = 0; i<len; i++) {
-	if (ptr[i] == 0xfeff) {
-	  if (i != j) {
-	    string_builder_append(&this.buf, MKPCHARP(ptr + j, 2), i - j);
-	    j = i+1;
-	  }
-	}
-      }
-      if ((j) && (i != j)) {
-	/* Add the trailing string */
-	string_builder_append(&this.buf, MKPCHARP(ptr + j, 2), i - j);
-	push_string(finish_string_builder(&this.buf));
-	data = sp[-1].u.string;
-      } else {
-	/* String didn't contain 0xfeff */
-	free_string_builder(&this.buf);
-      }
-    }
+    /* Get rid of any byte order marks (0xfeff) */
+    struct pike_string *new_data = filter_bom(data);
+    free_string(data);
+    data = new_data;
   }
 
   init_string_builder(&this.buf, 0);
@@ -2275,6 +2302,8 @@ void f_cpp(INT32 args)
     free_hashtable(this.defines, free_one_define);
 
   free_string(this.current_file);
+
+  free_string(data);
 
   if(this.compile_errors)
   {
