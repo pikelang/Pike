@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.24 1999/06/10 23:14:49 hubbe Exp $ */
+/* $Id: export.pike,v 1.25 2001/04/06 15:37:52 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -95,14 +95,22 @@ int main(int argc, string *argv)
   except_modules=mklist(argv[1..]);
 
   e=search(tmp,"pike");
-  if(e==-1)
-  {
-    werror("Couldn't find Pike source dir.\n");
-    werror("Use /full/path/export.pike <except modules>.\n");
-    exit(1);
+  if(e == -1) {
+    if ((e = search(tmp, "0.6")) == -1)
+    {
+      werror("Couldn't find Pike source dir.\n");
+      werror("Use /full/path/export.pike <except modules>.\n");
+      exit(1);
+    }
+    // Make s symlink to the proper place...
+    tmp=reverse(tmp[e+1..]);
+    system("rm -f tmp/pike; mkdir tmp; ln -s "+tmp*"/"+"/0.6 tmp/pike");
+    cd("tmp");
+    tmp = getcwd()/"/" - ({ "" });
+  } else {
+    tmp=reverse(tmp[e+1..]);
+    cd(tmp*"/");
   }
-  tmp=reverse(tmp[e+1..]);
-  cd(tmp*"/");
   werror("Sourcedir = "+tmp*"/"+"/pike\n");
 
   if(file_stat("pike/CVS"))
