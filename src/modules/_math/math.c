@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.79 2004/09/18 20:50:56 nilsson Exp $
+|| $Id: math.c,v 1.80 2005/01/18 17:41:33 grubba Exp $
 */
 
 #include "global.h"
@@ -139,7 +139,13 @@ void f_sin(INT32 args)
 void f_asin(INT32 args)
 {
   ARG_CHECK("asin");
-  sp[-1].u.float_number = FL1(asin,sp[-1].u.float_number);
+  if ((sp[-1].u.float_number >= -1.0) &&
+      (sp[-1].u.float_number <= 1.0)) {
+    sp[-1].u.float_number = FL1(asin,sp[-1].u.float_number);
+  } else {
+    DECLARE_NAN;
+    sp[-1].u.float_number = MAKE_NAN();
+  }
 }
 
 /*! @decl float cos(float f)
@@ -167,7 +173,13 @@ void f_cos(INT32 args)
 void f_acos(INT32 args)
 {
   ARG_CHECK("acos");
-  sp[-1].u.float_number = FL1(acos,sp[-1].u.float_number);
+  if ((sp[-1].u.float_number >= -1.0) &&
+      (sp[-1].u.float_number <= 1.0)) {
+    sp[-1].u.float_number = FL1(acos,sp[-1].u.float_number);
+  } else {
+    DECLARE_NAN;
+    sp[-1].u.float_number = MAKE_NAN();
+  }
 }
 
 /*! @decl float tan(float f)
