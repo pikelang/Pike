@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.124 2001/08/10 22:11:44 grubba Exp $");
+RCSID("$Id: encode.c,v 1.125 2001/08/13 21:47:57 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -62,27 +62,6 @@ RCSID("$Id: encode.c,v 1.124 2001/08/10 22:11:44 grubba Exp $");
 #define sp Pike_sp
 #undef STACK_POINTER_WAS_DEFINED
 #endif /* STACKPOINTER_WAS_DEFINED */
-
-#ifdef HAVE_FREXP
-#define FREXP frexp
-#else
-double FREXP(double x, int *exp)
-{
-  double ret;
-  *exp = DO_NOT_WARN((int)ceil(log(fabs(x))/log(2.0)));
-  ret = (x*pow(2.0,(double)-*exp));
-  return ret;
-}
-#endif
-
-#if HAVE_LDEXP
-#define LDEXP ldexp
-#else
-double LDEXP(double x, int exp)
-{
-  return x * pow(2.0,(double)exp);
-}
-#endif
 
 #ifdef PIKE_DEBUG
 #define encode_value2 encode_value2_

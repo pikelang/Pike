@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.39 2001/08/03 20:54:46 grubba Exp $
+ * $Id: port.h,v 1.40 2001/08/13 21:47:58 hubbe Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -304,5 +304,17 @@ long long gethrtime(void);
 #endif /* FLOAT_IS_IEEE_BIG */
 #endif /* DOUBLE_IS_IEEE_LITTLE */
 #endif /* DOUBLE_IS_IEEE_BIG */
+
+#ifdef HAVE_FREXP
+#define FREXP frexp
+#else
+double FREXP(double x, int *exp);
+#endif
+
+#if HAVE_LDEXP
+#define LDEXP ldexp
+#else
+double LDEXP(double x, int exp);
+#endif
 
 #endif

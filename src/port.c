@@ -20,7 +20,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.46 2001/03/19 16:04:45 mirar Exp $");
+RCSID("$Id: port.c,v 1.47 2001/08/13 21:47:58 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -935,6 +935,23 @@ long long gethrtime()
    return now;
 }
 
+#endif
+
+#ifndef HAVE_LDEXP
+double LDEXP(double x, int exp)
+{
+  return x * pow(2.0,(double)exp);
+}
+#endif
+
+#ifndef HAVE_FREXP
+double FREXP(double x, int *exp)
+{
+  double ret;
+  *exp = DO_NOT_WARN((int)ceil(log(fabs(x))/log(2.0)));
+  ret = (x*pow(2.0,(double)-*exp));
+  return ret;
+}
 #endif
 
 #endif
