@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.193 2000/06/26 18:30:55 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.194 2000/06/29 00:08:15 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1627,7 +1627,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
     }else{
-      if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+      if(Pike_compiler->compiler_frame->lexical_scope & 
+	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
 	$$ = mknode(F_ASSIGN, mktrampolinenode($<number>3),
 		    mklocalnode(localid,0));
@@ -1746,7 +1747,8 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       $$=copy_node(Pike_compiler->compiler_frame->variable[localid].def);
     }else{
-      if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+      if(Pike_compiler->compiler_frame->lexical_scope & 
+	 (SCOPE_SCOPE_USED | SCOPE_SCOPED))
       {
         $$ = mknode(F_ASSIGN, mktrampolinenode($<number>5),
 	  mklocalnode(localid,0));
