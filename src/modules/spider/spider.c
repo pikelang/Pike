@@ -37,10 +37,12 @@
 #include "mapping.h"
 #include "array.h"
 #include "builtin_functions.h"
+#include "module_support.h"
+#include "backend.h"
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.52 1998/03/03 14:25:34 grubba Exp $");
+RCSID("$Id: spider.c,v 1.53 1998/03/05 13:05:00 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -79,9 +81,10 @@ RCSID("$Id: spider.c,v 1.52 1998/03/03 14:25:34 grubba Exp $");
 
 #include <errno.h>
 
-#include "accesseddb.h"
+/* #include <stdlib.h> */
 
 #include "dmalloc.h"
+#include "accesseddb.h"
 
 #define MAX_PARSE_RECURSE 102
 
@@ -409,9 +412,9 @@ void f_parse_html_lines(INT32 args)
 
   free_mapping(cont);
   free_mapping(single);
-  if (strings > 1)
+  if(strings > 1)
     f_add(strings);
-  else
+  else if(!strings)
     push_text("");
 }
 
@@ -672,8 +675,8 @@ void do_html_parse(struct pike_string *ss,
 	}
 
 	apply_svalue(&sval1,2+(extra_args?extra_args->size:0));
-	free_svalue(&sval1);
 	free_svalue(&sval2);
+	free_svalue(&sval1);
 
 	if (sp[-1].type==T_STRING)
 	{
@@ -756,7 +759,7 @@ void do_html_parse(struct pike_string *ss,
 	  i=last=j=m;
 	  do_html_parse(ss2,cont,single,strings,recurse_left-1,extra_args);
 	  continue;
-
+ 
 	} else if (sp[-1].type==T_ARRAY) {
 	  push_text("");
 	  f_multiply(2);
@@ -801,48 +804,49 @@ void do_html_parse(struct pike_string *ss,
   }
 }
 
-#define PARSE_RECURSE(END) do {                                 \
-  copy_shared_string(ss2,sp[-1].u.string);                      \
-  pop_stack();                                                  \
-  if (last!=i-1)                                                \
-  {                                                             \
-    push_string(make_shared_binary_string(s+last,i-last-1));    \
-    (*strings)++;                                               \
-  }                                                             \
-  for (;i<END; i++) if (s[i]==10) line++;                       \
-  i=last=j=END;                                                 \
-  do_html_parse_lines(ss2,cont,single,strings,                  \
-                      recurse_left-1,extra_args,line);          \
+
+#define PARSE_RECURSE(END) do {					\
+  copy_shared_string(ss2,sp[-1].u.string); 			\
+  pop_stack();							\
+  if (last!=i-1)						\
+  {								\
+    push_string(make_shared_binary_string(s+last,i-last-1));	\
+    (*strings)++; 						\
+  }								\
+  for (;i<END; i++) if (s[i]==10) line++;			\
+  i=last=j=END;							\
+  do_html_parse_lines(ss2,cont,single,strings,			\
+		      recurse_left-1,extra_args,line);		\
 } while(0)
 
 
-#define PARSE_RETURN(END) do{                                   \
-  push_text("");                                                \
-  f_multiply(2);                                                \
-  (*strings)++;                                                 \
-  if (last!=i-1)                                                \
-  {                                                             \
-    copy_shared_string(ss2,sp[-1].u.string);                    \
-    pop_stack();                                                \
-    push_string(make_shared_binary_string(s+last,i-last-1));    \
-    (*strings)++;                                               \
-    push_string(ss2);                                           \
-  }                                                             \
-  for (;i<END; i++) if (s[i]==10) line++;                       \
-  i=last=END;                                                   \
+#define PARSE_RETURN(END) do{					\
+  push_text("");						\
+  f_multiply(2);						\
+  (*strings)++;							\
+  if (last!=i-1)						\
+  {								\
+    copy_shared_string(ss2,sp[-1].u.string);			\
+    pop_stack();						\
+    push_string(make_shared_binary_string(s+last,i-last-1)); 	\
+    (*strings)++; 						\
+    push_string(ss2);						\
+  }								\
+  for (;i<END; i++) if (s[i]==10) line++;			\
+  i=last=END;							\
 } while(0)
 
-#define HANDLE_RETURN_VALUE(END) do {           \
+#define HANDLE_RETURN_VALUE(END) do {		\
   free_svalue(&sval1);                          \
-  if (sp[-1].type==T_STRING)                    \
-  {                                             \
-    PARSE_RECURSE(END);                         \
-    continue;                                   \
-  } else if (sp[-1].type==T_ARRAY) {            \
-    PARSE_RETURN(END);                          \
-    continue;                                   \
-  }                                             \
-  pop_stack();                                  \
+  if (sp[-1].type==T_STRING)			\
+  {						\
+    PARSE_RECURSE(END);				\
+    continue;					\
+  } else if (sp[-1].type==T_ARRAY) {		\
+    PARSE_RETURN(END);				\
+    continue;					\
+  }						\
+  pop_stack();					\
 } while(0)
 
 void do_html_parse_lines(struct pike_string *ss,
@@ -874,11 +878,11 @@ void do_html_parse_lines(struct pike_string *ss,
   last=0;
   for (i=0; i<len-1;)
   {
-    if (s[i]==10) 
+    if (s[i]==10)
     {
       line++;
       i++;
-    } else if (s[i]=='<') {
+    }  else if (s[i]=='<') {
       /* skip all spaces */
       i++;
       for (j=i; j<len && s[j]!='>' && !isspace(((unsigned char *)s)[j]); j++);
@@ -898,74 +902,70 @@ void do_html_parse_lines(struct pike_string *ss,
       if (sval1.type==T_STRING)
       {
 	/* A simple string ... */
-	*(sp++) = sval1;
+	*(sp++)=sval1;
 #ifdef DEBUG
 	sval1.type=99;
-#endif /* DEBUG */
+#endif
 	(*strings)++;
 	find_endtag(sval2.u.string ,s+j, len-j, &l); /* bug /law 960805 */
+	free_svalue(&sval2);
 	j+=l;
 	i=last=j;
 	continue;
       }
       else if (sval1.type!=T_INT)
       {
-	*(sp++) = sval2;
+	*(sp++)=sval2;
 #ifdef DEBUG
-	sval2.type = 99;
-#endif /* DEBUG */
-	k=push_parsed_tag(s+j,len-j); 
+	sval2.type=99;
+#endif
+	k=push_parsed_tag(s+j,len-j);
 	push_int(line);
 	if (extra_args)
 	{
 	  extra_args->refs++;
 	  push_array_items(extra_args);
 	}
-
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
 	HANDLE_RETURN_VALUE(j+k);
 	continue;
       }
+      free_svalue(&sval1);
 
       /* Is it a container then? */
       mapping_index_no_free(&sval1,cont,&sval2);
       if (sval1.type==T_STRING)
       {
-	*(sp++) = sval1;
+	*(sp++)=sval1;
 #ifdef DEBUG
-	sval1.type = 99;
-#endif /* DEBUG */
+	sval1.type=99;
+#endif
 	(*strings)++;
 	find_endtag(sval2.u.string,s+j,len-j,&l);
 	free_svalue(&sval2);
-
 	j+=l;
 	for (; i<j; i++) if (s[i]==10) line++;
-
 	i=last=j;
 	continue;
       }
       else if (sval1.type != T_INT)
       {
-	*(sp++) = sval2;
+	*(sp++)=sval2;
 #ifdef DEBUG
-	sval2.type = 99;
-#endif /* DEBUG */
+	sval2.type=99;
+#endif
 	m=push_parsed_tag(s+j,len-j) + j;
 	k=find_endtag(sval2.u.string,s+m,len-m,&l);
 	push_string(make_shared_binary_string(s+m,k));
 	m+=l;
         /* M == just after end tag, from s */
-
 	push_int(line);
 	if (extra_args)
 	{
 	  extra_args->refs++;
 	  push_array_items(extra_args);
 	}
-
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
-
 	HANDLE_RETURN_VALUE(m);
 	continue;
       }
@@ -1234,8 +1234,135 @@ static struct program *streamed_parser;
 
 extern void init_udp(void);
 
+
+/* Hohum. Here we go. This is try number three for a more optimized Roxen. */
+
+#if 0 && defined(_REENTRANT)
+struct thread_args
+{
+  struct thread_args *next;
+  struct object *from;
+  struct object *to;
+  int to_fd, from_fd;
+  struct svalue cb;
+  struct svalue args;
+  int len;
+  int sent;
+  THREAD_T tid;
+};
+
+MUTEX_T done_lock;
+struct thread_args *done;
+
+/* WARNING! This function is running _without_ any stack etc. */
+void *do_shuffle(void *_a)
+{
+  struct thread_args *a = (struct thread_args *)_a;
+  char buffer[8192];
+
+#ifdef DIRECTIO_ON
+  if(a->len >= 65536)
+    directio(a->from_fd, DIRECTIO_ON);
+#endif
+
+  while(a->len)
+  {
+    int nread;
+    nread = read(a->from_fd, buffer, 8192);
+    if(nread <= 0)
+      break;
+
+    while(nread)
+    {
+      int nsent = write(a->to_fd, buffer, nread);
+      if(nsent < 0)
+	goto end;
+      a->sent += nsent;
+      nread -= nsent;
+      a->len -= nsent;
+    }
+  }
+
+  /* We are done. It is up to the backend callback to call the 
+   * finish function
+   */
+ end:
+  mt_lock(&done_lock);
+  a->next = done;
+  done = a;
+  mt_unlock(&done_lock);
+  wake_up_backend();
+  return 0;
+}
+
+static int num_shuffles = 0;
+static struct callback *my_callback;
+
+void finished_p(struct callback *foo, void *b, void *c)
+{
+  while(done)
+  {
+    struct thread_args *d;
+
+    mt_lock(&done_lock);
+    d = done;
+    done = d->next;
+    mt_unlock(&done_lock);
+
+    num_shuffles--;
+
+    push_int( d->sent );
+    *(sp++) = d->args;
+    push_object( d->from );
+    push_object( d->to );
+    apply_svalue( &d->cb, 4 );
+    free_svalue( &d->cb );
+    pop_stack();
+    free(d);
+  }
+
+  if(!num_shuffles)
+  {
+    remove_callback( foo );
+    my_callback = 0;
+  }
+}
+
+void f_shuffle(INT32 args)
+{
+  struct thread_args *a = malloc(sizeof(struct thread_args));
+  struct svalue *q, *w;
+  get_all_args("shuffle", args, "%o%o%*%*%d", &a->from, &a->to,&q,&w,&a->len);
+  a->sent = 0;
+
+  num_shuffles++;
+  apply(a->to, "query_fd", 0); 
+  apply(a->from, "query_fd", 0);
+  get_all_args("shuffle", 2, "%d%d", &a->to_fd, &a->from_fd);
+
+  a->from->refs++; 
+  a->to->refs++; 
+  
+  assign_svalue_no_free(&a->cb, q);
+  assign_svalue_no_free(&a->args, w);
+  
+  th_create_small(&a->tid, do_shuffle, (void *)a);
+
+  if(!my_callback)
+    my_callback = add_backend_callback( finished_p, 0, 0 );
+
+  pop_n_elems(args+2);
+}
+#endif
+
+
 void pike_module_init(void) 
 {
+#if 0 && defined(_REENTRANT)
+  add_function("shuffle", f_shuffle, 
+	       "function(object,object,function,mixed,int:void)", 0);
+#endif
+
 #if 0
   add_efun("fcgi_create_listen_socket", f_fcgi_create_listen_socket,
 	   "function(int:int)", OPT_SIDE_EFFECT);
@@ -1260,11 +1387,11 @@ void pike_module_init(void)
 	   OPT_EXTERNAL_DEPEND);
 
   add_efun("parse_html",f_parse_html,
-	   "function(string,mapping(string:function(string,mapping(string:string),mixed ...:string)),mapping(string:function(string,mapping(string:string),string,mixed ...:string)),mixed ...:string)",
+	   "function(string,mapping(string:function(string|void,mapping(string:string)|void,mixed ...:string)),mapping(string:function(string|void,mapping(string:string)|void,string|void,mixed ...:string)),mixed ...:string)",
 	   0);
 
   add_efun("parse_html_lines",f_parse_html_lines,
-	   "function(string,mapping(string:function(string,mapping(string:string),int,mixed ...:string)),mapping(string:function(string,mapping(string:string),string,int,mixed ...:string)),mixed ...:string)",
+	   "function(string,mapping(string:function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string)",
 	   0);
   
 #ifdef HAVE_PERROR
