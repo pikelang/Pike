@@ -62,7 +62,7 @@ _typeof
 	abs
 all_threads (link to threads)
 	atan2
-atexit
+	atexit -fixed by hubbe
 (chmod fixed /Mirar)
 chroot
 cleargroups
@@ -91,13 +91,13 @@ getpwent
 getpwnam
 getpwuid
 getuid
-gmtime
+	gmtime - already exists /Hubbe
 hardlink
 initgroups
 innetgr
 	max
 	min
-object_variablep
+	object_variablep - done /Hubbe
 openlog
 readlink
 resolvepath
@@ -110,16 +110,17 @@ setgrent
 setgroups
 setpwent
 setuid
-sgn
+	sgn - documented /hubbe
 symlink
 syslog
 this_program (Well, not really a function. Don't know where it belongs. /mast)
-this_thread
-thread_create
-thread_local
+this_thread - doc exists, ptr from global list to module needed?
+thread_create - doc exists, ptr from global list to module needed?
+thread_local - doc exists, ptr from global list to module needed?
 thread_set_concurrency
 umask
 uname
+utime
 werror
 
 
@@ -131,13 +132,6 @@ typeof         (Not a function and is documented in one way in misc
                 and another way in 16 (with a typo `?))
 
 
-
-
-Errors:
-explode_path (error in "explode_path - exit Pike interpreter")
-
-Chapter 16 should be named "builtin functions"
-
 "This chapter is a reference for all the builtin functions in
  Pike. They are listed in alphabetical order." is not correct if not
 all global functions are included (like threads and Stdio-stuff).
@@ -145,7 +139,7 @@ If the Threads och Stdio-functions begin to work in the modules,
 this comment can be erased.
 
 
-Process.create_process ?
+Process.create_process ?  done  -hubbe
 
 
 --> 
@@ -1236,7 +1230,7 @@ the modem by using the functions <tt>write</tt> and <tt>gets</tt>.
 
 </section>
 
-<section title="foreach">
+<section title="foreach" name=foreach>
 
 <tt>Foreach</tt> is unique in that it does not have an explicit test expression
 evaluated for each iteration in the loop. Instead, <tt>foreach</tt> executes
@@ -7087,6 +7081,206 @@ system call.
 <section title="Process">
 The Process module contains functions to start and control other programs from Pike.
 
+<class name=create_process title="Create a new process">
+<man_syntax>
+Process.create_process Process.create_process(array(string) <i>command</i>,
+                                      void | mapping(string:mixed) modifiers);
+</man_syntax>
+<man_description>
+This is the recommended and most portable way to start processes in
+Pike. The command name and arguments are sent as an array of strings
+so that you do not have to worry about qouting them. The optional mapping
+<i>modifiers</i> can can contain zero or more of the following parameters:
+<dl>
+<dt><tt>"cwd" : string dir</tt>
+<dd>This parameter executes the command in another directory than the
+    current directory of this process. Please note that if the command
+    is given is a relative path, it will be relative to this directory
+    rather than the current directory of this process.
+
+<dt><tt>"stdin" : Stdio.File stdin</tt>
+<dt><tt>"stdout" : Stdio.File stdout</tt>
+<dt><tt>"stderr" : Stdio.File stderr</tt>
+<dd>These parameters allows you to change the standard input, output
+    and error streams of the newly created process. This is particularly
+    useful in combination with
+    <link to=Stdio.File.pipe>Stdio.File-&gt;pipe</link>.
+
+<dt><tt>"env" : mapping(string:string) env</tt>
+<dd>This mapping will become the environment variables for the created
+    process. Normally you will want to only add or change variables
+    which can be achived by getting the environment mapping for this
+    process with <link to=getenv>getenv</link>. Example:
+    <example language=pike>(["env" : getenv() + (["TERM":"vt100"])</example>.
+
+</dl>
+
+The following options are only available on some systems.
+
+<dl>
+
+<dt><tt>"uid" : int|string uid</tt>
+<dd>This parameter changes which user the new process will execute
+    as. Note that the current process must be running as root
+    to use this option. The uid can be given either as an integer
+    as a string containing the login name of that user. Please
+    note that using a string here can be noticably slower than
+    using an integer.
+    The "gid" and "groups" for the new process will be set to
+    the right values for that user unless overriden by opions
+    blow. If maximum performance is an issue, you should
+    use the "gid" and "group" options to set those values
+    explicitly.
+    (See <link to=setuid>setuid</link> and
+    <link to=getpwuid>getpwuid</link> for more info)
+
+<dt><tt>"gid" : int|string gid</tt>
+<dd>This parameter changes the primary group for the new process.
+    When the new process creates files, they will will be created
+    with this group.  The group can either be given as an int or
+    a string containing the name of the group. As with the "uid"
+    parameters, integers are faster than numbers.
+    (See <link to=setuid>setgid</link> and
+    <link to=getgrgid>getgrgid</link> for more info)
+
+<dt><tt>"setgroups" : array(int|string) groups</tt>
+<dd>This parameter allows you to the set the list of groups
+    that the new process belongs to. It is recommended that
+    if you use this parameter you supply at least one at
+    no more than 16 groups. (Some system only supports 8
+    groups even...) The groups can be given as gids or
+    as strings with the group names. If maximum performance
+    is an issue, please use integers.
+
+<dt><tt>"noinitgroups" : int(0..1) yesno</tt>
+<dd>This parameter overrides a behaviour of the "uid"
+    parameter. If this parameter is used, the gid and
+    groups of the new process will be inherited from
+    the current process rather than changed to the
+    approperiate values for that uid.
+
+<dt><tt>"priority" : string pri</tt>
+<dd>This sets the priority of the new process,
+    see <link to=set_priority>set_priority</link>
+    for more info.
+
+<dt><tt>"nice" : int nice</tt>
+<dd>This sets the nice level of the new process.
+    Note that a negative number means higher priority
+    positive numbers means higher priority. Only root
+    may use negative numbers.
+    
+<dt><tt>"keep_signals" : int(0..1) yesno</tt>
+<dd>This prevents Pike to restore all signal
+    handlers to their default value for the
+    new process. Useful to ignore certain signals
+    in the new process.
+</dl>
+
+These parameter limits the new process in certain ways,
+they are not available on all systems. Each of these
+can either be given as a mapping
+<tt>(["soft":soft_limit,"hard":hard_limit])</tt>
+or as an integer. If an integer is given both the
+hard limit and the soft limit will be changed.
+The new process may change the soft limit, but may
+not change it any higher than the hard limit.
+
+<dl>
+<dt><tt>"cpu" : int|mapping(string:int) seconds</tt>
+<dd>Limit the CPU time of the new process.
+<dt><tt>"core" : int|mapping(string:int) bytes</tt>
+<dd>Limit the core file size.
+<dt><tt>"data" : int|mapping(string:int) bytes</tt>
+<dd>Limit the data size of the new process.
+<dt><tt>"fsize" : int|mapping(string:int) bytes</tt>
+<dd>Limits the maximum file size of the new process.
+<dt><tt>"nofile" : int|mapping(string:int) num_files</tt>
+<dd>Maximum open files for the new process.
+<dt><tt>"stack" : int|mapping(string:int) bytes</tt>
+<dd>Limit the stack size of the nwe process.
+<dt><tt>"map_mem" : int|mapping(string:int) bytes</tt>
+<dt><tt>"vmem" : int|mapping(string:int) vmem</tt>
+<dd>Maximum amount of mmapped memory.
+<dd>
+<dt><tt>"as" : int|mapping(string:int) memory</tt>
+<dt><tt>"mem" : int|mapping(string:int) memory</tt>
+<dd>Maximum amount of total memory. <!-- FIXME: is this true -->
+</dl>
+
+</man_description>
+<man_see>
+Process.popen, Process.system
+</man_see>
+
+<method name=set_priority title="Set the priority of this process">
+<man_syntax>
+int set_priority(string pri);
+</man_syntax>
+</man_description>
+This function sets the priority of this process, the string <i>pri</i>
+should be one of:
+<table nicer>
+<tr><td><tt>"realtime"</tt> or <tt>"highest"</tt></td><td>This gives the process realtime priority,
+this basically gives the process access to the cpu whenever it wants.</td></tr>
+<tr><td><tt>"higher"</tt></td><td>This gives the process higher priority than most other
+processes on your system.</td></tr>
+<tr><td><tt>"high"</tt></td><td>This gives your proces a little bit higher priority
+than what is 'normal'.</td></tr>
+<tr><td><tt>"normal"</tt></td><td>This sets the process' priority to whatever is
+'normal' for new processes on your system.</td></tr>
+<tr><td><tt>"low"</tt></td><td>This will give the process a lower priority than
+what is normal on your system.</td></tr>
+<tr><td><tt>"lowest"</tt></td><td>This will give the process a lower priority than
+most processes on your system.</td></tr>
+</table>
+</man_description>
+</method>
+
+<method name=wait title="Wait for this process to finish">
+<man_syntax>
+int wait();
+</man_syntax>
+<man_description>
+This function makes the calling thread wait for the process
+to finish. It returns the exit code of that process.
+</man_description>
+</method>
+
+<method name=status title="Check if process is still running">
+<man_syntax>
+int status();
+</man_syntax>
+<man_description>
+This function returns zero if the process is still running.
+If the process has exited, it will return one.
+</man_description>
+</method>
+
+<method name=pid title="Get the process id of this process">
+<man_syntax>
+int pid();
+</man_syntax>
+<man_description>
+This function returns the process identifier for the
+process.
+</man_description>
+</method>
+
+<method name=kill title="Kill this process">
+<man_syntax>
+int kill(int signal);
+</man_syntax>
+<man_description>
+This function sends the given signal to the process, it returns
+one if the operation succeded, zero otherwise.
+</man_description>
+</man_see>
+signum
+</man_see>
+</method>
+</class>
+
 <function name=Process.popen title="pipe open">
 <man_syntax>
 string popen(string <I>cmd</I>);<br>
@@ -7109,7 +7303,7 @@ is finished. Standard /bin/sh completions/redirections/etc. can
 be used.
 </man_description>
 <man_see>
-Process.popen, Process.exec, Process.spawn
+Process.create_process, Process.popen, Process.exec, Process.spawn
 </man_see>
 </function>
 
@@ -10754,7 +10948,7 @@ This puts the file <tt>index.html</tt> into the string
 
 </chapter>
 
-<chapter title="All the builtin functions" name=functions>
+<chapter title="Builtin functions" name=functions>
 
 This chapter is a reference for all the builtin functions in Pike.
 They are listed in alphabetical order.
@@ -11199,6 +11393,20 @@ Returns the arcus tangent value for <i>f1</i>/<i>f2</i>.
 </man_description>
 <man_see>
 atan, tan, asin, acos
+</man_see>
+</function>
+
+<function name=atexit title="schedule a callback for when pike exits">
+<man_syntax>
+void atexit(function <i>callback</i>);
+</man_syntax>
+<man_description>
+This function puts the <i>callback</i> in a queue of callbacks to
+call when pike exits. Please note that atexit callbacks are not
+called if pike exits abnormally.
+</man_description>
+<man_see>
+exit
 </man_see>
 </function>
 
@@ -11780,7 +11988,7 @@ exece("/bin/sh", ({"-c", "echo $HOME"}), (["HOME":"/not/home"]));<br>
 
 
 
-<function name=explode_path fullpath title="exit Pike interpreter">
+<function name=explode_path fullpath title="Split a path into components">
 <man_syntax>
 array(string) explode_path(string <I>path</I>);
 </man_syntax>
@@ -12688,6 +12896,19 @@ clone, new
 </man_see>
 </function>
 
+<function name=object_variablep title="find out if an object identifier is a variable">
+<man_syntax>
+int object_variablep(object <I>o</I>, string <i>var</i>);
+</man_syntax>
+<man_description>
+This function return 1 if <i>var</i> exists is a non-static variable
+in <i>o</i>, zero otherwise.
+</man_description>
+<man_see>
+indices, values
+</man_see>
+</function>
+
 
 
 <function name=objectp title="the argument an object?">
@@ -13084,6 +13305,23 @@ and zero_type() will return 1 for this zero.
 </man_description>
 <man_see>
 indices, values, zero_type
+</man_see>
+</function>
+
+<function name=sgn title="check the sign of a value">
+<man_syntax>
+int sgn(mixed <i>value</i>);<br>
+int sgn(mixed <i>value</i>, mixed <i>base</i>);
+</man_syntax>
+<man_description>
+This function returns -1 if <i>value</i> is less than zero,
+1 if <i>value</i> is greater than zero and 0 otherwise.
+If <i>base</i> is given, -1 is returned if <i>value</i> is
+lesser than <i>base</i>, 1 if <i>value</i> is greater than
+<i>base</i> and 0 otherwise.
+</man_description>
+<man_see>
+abs
 </man_see>
 </function>
 
