@@ -2,7 +2,7 @@ NAME
 	Gz_deflate - gzip packer
 
 DESCRIPTION
-	Gz_inflate is a builtin program written in C. It interfaces the
+	Gz_deflate is a builtin program written in C. It interfaces the
 	packing routines in the libz library.
 
 NOTA BENE
