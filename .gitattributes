@@ -162,6 +162,7 @@ testfont binary
 /lib/modules/Standards.pmod/ASN1.pmod/Types.pmod foreign_ident
 /lib/modules/Standards.pmod/EXIF.pmod foreign_ident
 /lib/modules/Standards.pmod/FIPS10_4.pmod foreign_ident
+/lib/modules/Standards.pmod/ID3.pmod foreign_ident
 /lib/modules/Standards.pmod/URI.pike foreign_ident
 /lib/modules/Stdio.pmod foreign_ident
 /lib/modules/Stdio.pmod/Readline.pike foreign_ident
