@@ -961,6 +961,12 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_ASSIGN:
+    if(CAR(n) && CDR(n) && 
+       !match_types(CDR(n)->type,CAR(n)->type))
+      my_yyerror("Bad type in assignment.\n");
+    break;
+
   case F_INDEX:
     type_a=CAR(n)->type;
     type_b=CDR(n)->type;
