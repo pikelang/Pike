@@ -39,7 +39,7 @@ Ruleset.Timezone Timezone_UTC=Ruleset()->Timezone(0,"UTC"); // needed for dumpin
 string calendar_name() { return "Time"; }
 
 //------------------------------------------------------------------------
-//! class TimeOfDay
+//! class TimeofDay
 //------------------------------------------------------------------------
 
 class TimeofDay
@@ -1592,6 +1592,13 @@ class cFraction
       }
       else switch (args[0])
       {
+	 case "timeofday":
+	    rules=[object(.Ruleset)]args[1];
+	    ux=[int]args[2];
+	    len=[int]args[3];
+	    ls=CALUNKNOWN;
+	    ns=[int]args[4];
+	    return;
 	 case "unix":
 	    rules=default_rules;
 	    create_unixtime(@args[1..]);
@@ -1615,7 +1622,7 @@ class cFraction
 	    @args,0,0,0);
    }
 
-   int create_backtry(mixed ...args) 
+   int create_backtry(mixed ...args)
    {
       if (sizeof(args)>1 && objectp(args[0]) && args[0]->is_day) 
       {
@@ -1736,6 +1743,13 @@ class cFraction
 	 return Second("timeofday",rules,ux,len_s)->autopromote();
 
       return this_object();
+   }
+
+   TimeofDay set_ruleset(.Ruleset r)
+   {
+      return 
+	 Fraction("timeofday",r,ux,len,ns)
+	 ->autopromote();
    }
 
    TimeofDay _move(int n,int z_s,void|int z_ns)
@@ -1941,6 +1955,11 @@ class cFraction
 	 return sprintf("%d.%06d",
 			len_s,len_ns/1000);
       return sprintf("0.%09d",len_ns);
+   }
+
+   float fraction_no()
+   {
+      return ns / 1e9;
    }
 }
 
