@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.6 2003/01/20 17:44:00 nilsson Exp $
+// $Id: module.pmod,v 1.7 2003/02/01 20:07:42 marcus Exp $
 
 
 //! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
@@ -1078,10 +1078,18 @@ class Message {
 	error("multipart message improperly terminated (%O)\n", parts[-1]);
       encoded_data = 0;
       decoded_data = parts[0][1..];
+      if(sizeof(decoded_data) && decoded_data[-1]=='\r')
+	decoded_data = decoded_data[..sizeof(decoded_data)-2];
       body_parts = map(parts[1..sizeof(parts)-2], lambda(string part){
 	if(sizeof(part) && part[-1]=='\r')
 	  part = part[..sizeof(part)-2];
-	return object_program(this_object())(part[1..], 0, 0, guess);
+	if(has_prefix(part, "\r\n"))
+	  part = part[2..];
+	else if(has_prefix(part, "\n"))
+	  part = part[1..];
+	else if(!guess)
+	  error("newline missing after multipart boundary\n");
+	return object_program(this_object())(part, 0, 0, guess);
       });
     }
     if((hdrs || parts) && !decoded_data) {
