@@ -342,6 +342,9 @@ if test "x$with_java" = xyes; then
           JavaVMOption vm_options[2];
 	  jint res;
 	  jmp_buf jbuf;
+#ifndef __NT__
+	  alarm(50);
+#endif
 #ifdef __NT__
 	  switch(open_nt_dll()) {
 	    case -1:
