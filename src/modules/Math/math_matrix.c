@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.24 2001/04/18 12:01:45 mirar Exp $ */
+/* $Id: math_matrix.c,v 1.25 2001/04/18 19:02:47 mirar Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -415,7 +415,7 @@ void matrix__sprintf(INT32 args)
 	       push_text(buf); n++;
 	    }
 	    if (y<THIS->ysize-1)
-	       push_constant_text("})\n                ({ "); 
+	       push_constant_text("}),\n                ({ "); 
 	    n++;
 	 }
 	 push_constant_text("}) }) )"); 
@@ -444,7 +444,7 @@ static INLINE struct matrix_storage * _push_new_matrix(int xsize,int ysize)
 /* --- real math stuff --------------------------------------------- */
 
 /*
-**! method object transpose()
+**! method Matrix transpose()
 **! 	Transpose of the matrix as a new object.
 */
 
@@ -475,7 +475,7 @@ static void matrix_transpose(INT32 args)
 /*
 **! method float norm()
 **! method float norm2()
-**! method object normv()
+**! method Matrix normv()
 **! 	Norm of the matrix, and the square of the norm
 **!	of the matrix. (The later method is because you
 **!	may skip a square root sometimes.)
@@ -547,16 +547,16 @@ static void matrix_normv(INT32 args)
 }
 
 /*
-**! method object `+(object with)
-**! method object ``+(object with)
-**! method object add(object with)
+**! method Matrix `+(object with)
+**! method Matrix ``+(object with)
+**! method Matrix add(object with)
 **! 	Add this matrix to another matrix. A new matrix is returned.
 **!	The matrices must have the same size.
 **!
-**! method object `-()
-**! method object `-(object with)
-**! method object ``-(object with)
-**! method object sub(object with)
+**! method Matrix `-()
+**! method Matrix `-(object with)
+**! method Matrix ``-(object with)
+**! method Matrix sub(object with)
 **!	Subtracts this matrix from another. A new matrix is returned.
 **!	-<i>m</i> is equal to -1*<i>m</i>.
 */
@@ -639,9 +639,9 @@ static void matrix_sub(INT32 args)
 }
 
 /*
-**! method object `*(object with)
-**! method object ``*(object with)
-**! method object mult(object with)
+**! method Matrix `*(object with)
+**! method Matrix ``*(object with)
+**! method Matrix mult(object with)
 **!	Matrix multiplication.
 */
 
@@ -714,9 +714,9 @@ scalar_mult:
 }
 
 /*
-**! method object `×(object with)
-**! method object ``×(object with)
-**! method object cross(object with)
+**! method Matrix `×(object with)
+**! method Matrix ``×(object with)
+**! method Matrix cross(object with)
 **!	Matrix cross-multiplication.
 */
 
@@ -800,6 +800,173 @@ static void matrix_dot(INT32 args)
   pop_stack();
 }
 
+/*
+**! method Matrix convolve(object with)
+**!	Convolve called matrix with the argument.
+*/
+
+static void matrix_convolve(INT32 args)
+{
+   struct matrix_storage *mx=NULL;
+   struct matrix_storage *dmx,*amx,*bmx;
+   INT32 ax,ay;
+   INT32 axb,ayb;
+   INT32 dxz,dyz,axz,ayz,bxz,byz;
+   double *bs,*as,*d;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`*",1);
+
+   if (sp[-args].type!=T_OBJECT ||
+       !((bmx=(struct matrix_storage*)
+	  get_storage(sp[-args].u.object,math_matrix_program))))
+      SIMPLE_BAD_ARG_ERROR("matrix->something",1,"object(Math.Matrix)");
+
+   if (bmx->xsize==0 || bmx->ysize==0 ||
+       THIS->xsize==0 || THIS->ysize==0)
+      math_error("matrix->something",sp-args,args,0,
+		 "source or argument matrix too small (zero size)");
+
+   bxz=bmx->xsize;
+   byz=bmx->ysize;
+
+   amx=THIS; /* matrix a */
+   axz=amx->xsize;
+   ayz=amx->ysize;
+
+   dxz=axz+bxz-1;
+   dyz=ayz+byz-1;
+
+   dmx=_push_new_matrix(dxz,dyz);
+   d=dmx->m; /* destination pointer */
+
+/* matrix a source pointer: forwards */
+   as=amx->m-axz*(byz-1)-(bxz-1);
+/* matrix b source pointer: backwards */
+   bs=bmx->m+bxz*byz-1; 
+
+/*
+
+   bbb         d.....
+   bb#aaa   -> ......  ax=-bxz+1
+     aaaa      ......  ay=-byz+1
+
+    bbb        :d....  
+    b##aa   -> ......  ax=-axz+1 +1
+     aaaa      ......  
+
+     bbb       :d....  
+     ###a   -> ......  ax=0
+     aaaa      ......  
+
+      bbb      :::d..
+     a###  ->  ......  ax=axz-bxz
+     aaaa      ......  
+...
+        bbb    :::::d  ax=axz-1
+     aaa#bb -> ......
+     aaaa      ......
+...
+     aaaa      ::::::
+     aaa#bb -> ::::::  ax=axz-1
+        bbb    :::::d  ay=ayz-1
+
+*/
+
+#define DO_SOME_CONVOLVING(CHECK_X,CHECK_Y)				\
+	 do								\
+	 {								\
+	    double *a=as;						\
+	    double *b=bs;						\
+	    double sum=0.0;						\
+	    INT32 yn=byz;						\
+	    INT32 y=ay;							\
+            INT32 x=0;							\
+									\
+	    while (yn--)						\
+	    {								\
+	       if (!(CHECK_Y && (y<0 || y>=ayz)))			\
+	       {							\
+		  INT32 xn=bxz;						\
+		  if (CHECK_X) x=ax;					\
+									\
+		  while (xn--)						\
+		  {							\
+		     if (!(CHECK_X && (x<0 || x>=axz)))			\
+		     {							\
+/*  			fprintf(stderr, */				\
+/*  				"a=%d,%d[%d]:%g b=[%d]:%g a*b=%g\n", */	\
+/*  				x,y,(a-amx->m),*a, */			\
+/*  				(b-bmx->m),*b, */			\
+/*  				*a**b); */				\
+			sum+=*a**b;					\
+		     }							\
+/*  		     else */						\
+/*  			fprintf(stderr, */				\
+/*  				"a=%d,%d[%d]:outside b=[%d]:%g\n", */	\
+/*  				x,y,(a-amx->m), */			\
+/*  				(b-bmx->m),*b); */			\
+		     b--;						\
+		     a++;						\
+		     if (CHECK_X) x++;					\
+		  }							\
+		  a+=axz-bxz; /* skip to next line */			\
+	       }							\
+	       else							\
+	       {							\
+/*  		  fprintf(stderr,"skip y=%d\n",y); */			\
+		  a+=axz;						\
+		  b-=bxz;						\
+	       }							\
+	       if (CHECK_Y) y++;					\
+	    }								\
+/*  	    fprintf(stderr,"=== a=%d,%d:%g\n", */			\
+/*  		    ax,ay,sum); */					\
+									\
+	    *(d++)=sum;							\
+            as++;							\
+	 }								\
+	 while(0)
+
+   ayb=ayz-byz+1; /* 0,0-axb,ayb         */
+   axb=axz-bxz+1; /* doesn't need checks */
+
+   for (ay=-byz+1; ay<0; ay++) 
+   {
+      for (ax=-bxz+1; ax<0; ax++)
+	 DO_SOME_CONVOLVING(1,1);
+      for (; ax<axb; ax++)
+	 DO_SOME_CONVOLVING(0,1);
+      for (; ax<axz; ax++)
+	 DO_SOME_CONVOLVING(1,1);
+      as-=bxz-1;
+   }
+
+   for (; ay<ayb; ay++) 
+   {
+      for (ax=-bxz+1; ax<0; ax++)
+	 DO_SOME_CONVOLVING(1,0);
+      for (; ax<axb; ax++)
+	 DO_SOME_CONVOLVING(0,0);
+      for (; ax<axz; ax++)
+	 DO_SOME_CONVOLVING(1,0);
+      as-=bxz-1;
+   }
+
+   for (; ay<ayz; ay++) 
+   {
+      for (ax=-bxz+1; ax<0; ax++)
+	 DO_SOME_CONVOLVING(1,1);
+      for (; ax<axb; ax++)
+	 DO_SOME_CONVOLVING(0,1);
+      for (; ax<axz; ax++)
+	 DO_SOME_CONVOLVING(1,1);
+      as-=bxz-1;
+   }
+
+   stack_pop_n_elems_keep_top(args);
+}
+
 
 /* ---------------------------------------------------------------- */
 
@@ -862,6 +1029,9 @@ void init_math_matrix(void)
 		"function(object|float|int:object)",0);
 
    add_function("dot_product",matrix_dot,"function(object:object)",0);
+
+   add_function("convolve",matrix_convolve,
+		"function(object:object)",0);
    
    add_function("cross",matrix_cross,
 		"function(object:object)",0);
@@ -869,6 +1039,8 @@ void init_math_matrix(void)
 		"function(object:object)",0);
    add_function("``×",matrix_cross,
 		"function(object:object)",0);
+
+
    Pike_compiler->new_program->flags |= 
      PROGRAM_CONSTANT |
      PROGRAM_NO_EXPLICIT_DESTRUCT ;
