@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.51 2001/09/06 18:52:55 nilsson Exp $
+ * $Id: Sql.pike,v 1.52 2001/10/03 08:54:15 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -451,14 +451,16 @@ array(string) list_dbs(string|void wild)
       res = res_obj_to_array(res);
     }
   } else {
-    res = query("show databases");
+    catch {
+      res = query("show databases");
+    };
   }
-  if (sizeof(res) && mappingp(res[0])) {
+  if (res && sizeof(res) && mappingp(res[0])) {
     res = Array.map(res, lambda (mapping m) {
       return(values(m)[0]);	/* Hope that there's only one field */
     } );
   }
-  if (wild) {
+  if (res && wild) {
     res = filter(res,
 		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
   }
@@ -478,14 +480,16 @@ array(string) list_tables(string|void wild)
       res = res_obj_to_array(res);
     }
   } else {
-    res = query("show tables");
+    catch {
+      res = query("show tables");
+    };
   }
-  if (sizeof(res) && mappingp(res[0])) {
+  if (res && sizeof(res) && mappingp(res[0])) {
     res = Array.map(res, lambda (mapping m) {
       return(values(m)[0]);	/* Hope that there's only one field */
     } );
   }
-  if (wild) {
+  if (res && wild) {
     res = filter(res,
 		 Regexp(replace(wild, ({"%", "_"}), ({".*", "."})))->match);
   }
@@ -513,13 +517,15 @@ array(mapping(string:mixed)) list_fields(string table, string|void wild)
     }
     return(res);
   }
-  if (wild) {
-    res = query("show fields from \'" + table +
-		"\' like \'" + wild + "\'");
-  } else {
-    res = query("show fields from \'" + table + "\'");
-  }
-  res = Array.map(res, lambda (mapping m, string table) {
+  catch {
+    if (wild) {
+      res = query("show fields from \'" + table +
+		  "\' like \'" + wild + "\'");
+    } else {
+      res = query("show fields from \'" + table + "\'");
+    }
+  };
+  res = res && Array.map(res, lambda (mapping m, string table) {
     foreach(indices(m), string str) {
       /* Add the lower case variants */
       string low_str = lower_case(str);
