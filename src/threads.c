@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.215 2003/04/02 00:55:09 mast Exp $
+|| $Id: threads.c,v 1.216 2003/05/02 15:42:52 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.215 2003/04/02 00:55:09 mast Exp $");
+RCSID("$Id: threads.c,v 1.216 2003/05/02 15:42:52 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -51,9 +51,10 @@ PMOD_EXPORT size_t thread_stack_size=256 * 1204;
 #include "pike_threadlib.h"
 #endif	/* !CONFIGURE_TEST */
 
-PMOD_EXPORT void thread_low_error (int errcode)
+PMOD_EXPORT void thread_low_error (int errcode, const char *fname, int lineno)
 {
-  Pike_fatal ("Unexpected error from thread function: %d\n", errcode);
+  Pike_fatal ("%s:%d: Unexpected error from thread function: %d\n",
+	      fname, lineno, errcode);
 }
 
 /* SCO magic... */
