@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.24 1997/09/07 11:37:01 per Exp $
+ * $Id: system.c,v 1.25 1997/09/07 12:37:58 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.24 1997/09/07 11:37:01 per Exp $");
+RCSID("$Id: system.c,v 1.25 1997/09/07 12:37:58 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -135,6 +135,14 @@ static void report_error(const char *function_name)
   case EXDEV:
     error_msg = "Different filesystems";
     break;
+#ifdef ESTALE
+  case ESTALE:
+    error_msg = "Stale NFS file handle";
+    break;
+#endif /* ESTALE */
+  case ESRCH:
+    error_msg = "No suck process";
+    break;
   }
   error("%s(): Failed:%s\n", function_name, error_msg);
 }
@@ -233,7 +241,9 @@ void f_chmod(INT32 args)
 
   get_all_args("chmod", args, "%s%i", &path, &mode);
   THREADS_ALLOW();
-  err = chmod(path, mode);
+  do {
+    err = chmod(path, mode);
+  } while ((err < 0) && (errno == EINTR));
   THREADS_DISALLOW();
   if (err < 0) {
     report_error("chmod");
@@ -241,8 +251,27 @@ void f_chmod(INT32 args)
   pop_n_elems(args);
 }
 
+void f_chown(INT32 args)
+{
+  char *path;
+  int uid;
+  int gid;
+  int err;
+
+  get_all_args("chown", args, "%s%i%i", &path, &uid, &gid);
+  THREADS_ALLOW();
+  do {
+    err = chown(path, uid, gid);
+  } while((err < 0) && (errno == EINTR));
+  THREADS_DISALLOW();
+  if (err < 0) {
+    report_error("chown");
+  }
+  pop_n_elems(args);
+}
+
 #ifdef HAVE_INITGROUPS
-/* int initgroups(string name, int gid) */
+/* void initgroups(string name, int gid) */
 void f_initgroups(INT32 args)
 {
   char *user;
@@ -250,18 +279,24 @@ void f_initgroups(INT32 args)
   INT32 group;
   get_all_args("initgroups", args, "%s%i", &user, &group);
   err = initgroups(user, group);
+  if (err < 0) {
+    report_error("initgroups");
+  }
   pop_n_elems(args);
-  push_int(err);
 }
 #endif /* HAVE_INITGROUPS */
 
 #ifdef HAVE_SETGROUPS
-/* int cleargroups() */
+/* void cleargroups() */
 void f_cleargroups(INT32 args)
 {
   static gid_t gids[1] = { 65534 };	/* To safeguard against stupid OS's */
+  int err;
   pop_n_elems(args);
-  push_int(setgroups(0, gids));
+  err = setgroups(0, gids);
+  if (err < 0) {
+    report_error("cleargroups");
+  }
 }
 
 /* int setgroup(array(int) gids) */
@@ -280,7 +315,8 @@ void f_setuid(INT32 args)
   } else {
     id = sp[-args].u.integer;
   }
- 
+
+  /* FIXME: Check return-code */
   setuid(id);
   pop_n_elems(args-1);
 }
@@ -298,6 +334,7 @@ void f_setgid(INT32 args)
     id = sp[-args].u.integer;
   }
 
+  /* FIXME: Check return-code */
   setgid(id);
   pop_n_elems(args-1);
 }
@@ -318,6 +355,7 @@ void f_seteuid(INT32 args)
     id = sp[-args].u.integer;
   }
 
+  /* FIXME: Check return-code */
 #ifdef HAVE_SETEUID
   err = seteuid(id);
 #else
@@ -345,6 +383,7 @@ void f_setegid(INT32 args)
     id = sp[-args].u.integer;
   }
  
+  /* FIXME: Check return-code */
 #ifdef HAVE_SETEGID
   err = setegid(id);
 #else
@@ -370,26 +409,15 @@ void f_getpgrp(INT32 args)
   pop_n_elems(args);
 #ifdef HAVE_GETPGID
   pgid = getpgid(pid);
-
-  if (pgid < 0) {
-    char *error_msg = "Unknown reason";
-
-    switch (errno) {
-    case EPERM:
-      error_msg = "Permission denied";
-      break;
-    case ESRCH:
-      error_msg = "No such process";
-      break;
-    }
-    error("getpgrp(): Failed: %s\n", error_msg);
-  }
 #elif defined(HAVE_GETPGRP)
   if (pid && (pid != getpid())) {
     error("getpgrp(): Mode not supported on this OS\n");
   }
   pgid = getpgrp();
 #endif
+  if (pgid < 0) {
+    report_error("getpgrp");
+  }
 
   push_int(pgid);
 }
@@ -752,11 +780,12 @@ void pike_module_init(void)
   add_efun("readlink", f_readlink, "function(string:string)", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
   add_efun("chmod", f_chmod, "function(string, int:void)", OPT_SIDE_EFFECT);
+  add_efun("chown", f_chown, "function(string, int, int:void)", OPT_SIDE_EFFECT);
 #ifdef HAVE_INITGROUPS
-  add_efun("initgroups", f_initgroups, "function(string, int:int)", OPT_SIDE_EFFECT);
+  add_efun("initgroups", f_initgroups, "function(string, int:void)", OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */
 #ifdef HAVE_SETGROUPS
-  add_efun("cleargroups", f_cleargroups, "function(:int)", OPT_SIDE_EFFECT);
+  add_efun("cleargroups", f_cleargroups, "function(:void)", OPT_SIDE_EFFECT);
   /* NOT Implemented in Pike 0.5 */
   /* add_efun("setgroups", f_setgroups, "function(array(int):int)", OPT_SIDE_EFFECT); */
 #endif /* HAVE_SETGROUPS */
