@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.232 2002/10/11 01:39:37 nilsson Exp $
+|| $Id: signal_handler.c,v 1.233 2002/10/31 16:21:55 jhs Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.232 2002/10/11 01:39:37 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.233 2002/10/31 16:21:55 jhs Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1182,6 +1182,9 @@ static TH_RETURN_TYPE wait_thread(void *data)
  */
 
 /*! @decl int wait()
+ *! Waits for the process to end.
+ *! @returns
+ *!   The exit code of the process.
  */
 static void f_pid_status_wait(INT32 args)
 {
@@ -1337,7 +1340,16 @@ static void f_pid_status_wait(INT32 args)
 #endif /* __NT__ */
 }
 
-/*! @decl int status()
+/*! @decl int(-1..1) status()
+ *! Returns the status of the process:
+ *! @int
+ *!   @value -1
+ *!     Unknown
+ *!   @value 0
+ *!     Running
+ *!   @value 1
+ *!     Exited
+ *! @endint
  */
 static void f_pid_status_status(INT32 args)
 {
@@ -1358,6 +1370,7 @@ static void f_pid_status_status(INT32 args)
 }
 
 /*! @decl int pid()
+ *! Returns the process identifier of the process.
  */
 static void f_pid_status_pid(INT32 args)
 {
@@ -1366,6 +1379,15 @@ static void f_pid_status_pid(INT32 args)
 }
 
 /*! @decl int set_priority(string priority)
+ *! Sets the priority of the process. @[priority] is one of the strings
+ *! @dl
+ *!   @item "realtime"
+ *!   @item "highest"
+ *!   @item "higher"
+ *!   @item "high"
+ *!   @item "low"
+ *!   @item "lowest"
+ *! @enddl
  */
 static void f_pid_status_set_priority(INT32 args)
 {
