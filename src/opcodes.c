@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.145 2003/04/28 00:32:43 mast Exp $
+|| $Id: opcodes.c,v 1.146 2003/04/28 18:08:35 mast Exp $
 */
 
 #include "global.h"
@@ -30,12 +30,10 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.145 2003/04/28 00:32:43 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.146 2003/04/28 18:08:35 mast Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
-  INT32 i;
-
 #ifdef PIKE_SECURITY
   if(what->type <= MAX_COMPLEX)
     if(!CHECK_DATA_SECURITY(what->u.array, SECURITY_BIT_INDEX))
@@ -53,17 +51,18 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       index_no_free(to, what, ind);
       if(IS_UNDEFINED(to)) {
 	if (val) {
-	  if (ind->type == T_STRING)
+	  if (ind->type == T_STRING && !ind->u.string->size_shift)
 	    Pike_error("Indexing the integer %"PRINTPIKEINT"d "
 		       "with unknown method \"%s\".\n", val, ind->u.string->str);
 	  else
-	    Pike_error("Indexing the integer %"PRINTPIKEINT"d "
-		       "with an unknown method.\n", val);
+	    Pike_error("Indexing the integer %"PRINTPIKEINT"d with %s.\n",
+		       val, get_name_of_type (ind->type));
 	} else {
-          if(ind->type == T_STRING)
+	  if(ind->type == T_STRING && !ind->u.string->size_shift)
             Pike_error("Indexing the NULL value with \"%s\".\n", ind->u.string->str);
           else
-            Pike_error("Indexing the NULL value.\n");
+	    Pike_error("Indexing the NULL value with %s.\n",
+		       get_name_of_type (ind->type));
        }
       }
     }
@@ -82,26 +81,27 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     object_index_no_free(to, what->u.object, ind);
     break;
 
-  case T_MULTISET:
-    i=multiset_member(what->u.multiset, ind);
+  case T_MULTISET: {
+    int i=multiset_member(what->u.multiset, ind);
     to->type=T_INT;
     to->subtype=i ? NUMBER_UNDEFINED : 0;
     to->u.integer=i;
     break;
+  }
 
   case T_STRING:
     if(ind->type==T_INT)
     {
-      i=ind->u.integer;
+      INT_TYPE i=ind->u.integer;
       if(i<0)
 	i+=what->u.string->len;
       if(i<0 || i>=what->u.string->len)
       {
 	if(what->u.string->len == 0)
-	  Pike_error("Attempt to index the empty string with %d.\n", i);
+	  Pike_error("Attempt to index the empty string with %"PRINTPIKEINT"d.\n", i);
 	else
-	  Pike_error("Index %d is out of string range 0 - %ld.\n",
-		i, PTRDIFF_T_TO_LONG(what->u.string->len - 1));
+	  Pike_error("Index %"PRINTPIKEINT"d is out of string range "
+		     "0 - %"PRINTPTRDIFFT"d.\n", i, what->u.string->len - 1);
       } else
 	i=index_shared_string(what->u.string,i);
       to->type=T_INT;
@@ -109,7 +109,12 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
       to->u.integer=i;
       break;
     }else{
-      Pike_error("Index is not an integer.\n");
+      if (ind->type == T_STRING && !ind->u.string->size_shift)
+	Pike_error ("Expected integer as string index, got \"%s\".\n",
+		    ind->u.string->str);
+      else
+	Pike_error ("Expected integer as string index, got %s.\n",
+		    get_name_of_type (ind->type));
     }
 
   case T_PROGRAM:
@@ -127,7 +132,18 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     /* FALL THROUGH */
 
   default:
-    Pike_error("Indexing a basic type.\n");
+    if (ind->type == T_INT)
+      Pike_error ("Cannot index %s with %"PRINTPIKEINT"d.\n",
+		  get_name_of_type (what->type), ind->u.integer);
+    else if (ind->type == T_FLOAT)
+      Pike_error ("Cannot index %s with %"PRINTPIKEFLOAT"g.\n",
+		  get_name_of_type (what->type), ind->u.float_number);
+    else if (ind->type == T_STRING && !ind->u.string->size_shift)
+      Pike_error ("Cannot index %s with \"%s\".\n", get_name_of_type (what->type),
+		  ind->u.string->str);
+    else
+      Pike_error ("Cannot index %s with %s.\n", get_name_of_type (what->type),
+		  get_name_of_type (ind->type));
   }
 }
 

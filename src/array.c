@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.144 2003/04/28 17:15:35 mast Exp $
+|| $Id: array.c,v 1.145 2003/04/28 18:08:35 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.144 2003/04/28 17:15:35 mast Exp $");
+RCSID("$Id: array.c,v 1.145 2003/04/28 18:08:35 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1264,7 +1264,8 @@ PMOD_EXPORT union anything *array_get_item_ptr(struct array *a,
 {
   INT32 i;
   if(ind->type != T_INT)
-    Pike_error("Index is not an integer.\n");
+    Pike_error("Expected integer as array index, got %s.\n",
+	       get_name_of_type (ind->type));
   i=ind->u.integer;
   if(i<0) i+=a->size;
   if(i<0 || i>=a->size) {
