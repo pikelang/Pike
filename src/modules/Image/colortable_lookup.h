@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.4 1997/11/07 06:06:08 mirar Exp $ */
+/* $Id: colortable_lookup.h,v 1.5 1998/01/11 20:50:34 mirar Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.4 1997/11/07 06:06:08 mirar Exp $
+**!	$Id: colortable_lookup.h,v 1.5 1998/01/11 20:50:34 mirar Exp $
 **! class colortable
 */
 
@@ -215,21 +215,24 @@ static void NCTLU_FLAT_FULL_NAME(rgb_group *s,
       m=mprim;
       
       while (m--)
-      {
-	 int dist=sf.r*SQ(fe->color.r-rgbr)+
-	          sf.g*SQ(fe->color.g-rgbg)+
-	          sf.b*SQ(fe->color.b-rgbb);
-	 
-	 if (dist<mindist)
+	 if (fe->no!=-1)
 	 {
-	    lc->dest=fe->color;
-	    mindist=dist;
-	    lc->index=fe->no;
-	    NCTLU_CACHE_HIT_WRITE;
-	 }
+	    int dist=
+	       sf.r*SQ(fe->color.r-rgbr)+
+	       sf.g*SQ(fe->color.g-rgbg)+
+	       sf.b*SQ(fe->color.b-rgbb);
 	 
-	 fe++;
-      }
+	    if (dist<mindist)
+	    {
+	       lc->dest=fe->color;
+	       mindist=dist;
+	       lc->index=fe->no;
+	       NCTLU_CACHE_HIT_WRITE;
+	    }
+	 
+	    fe++;
+	 }
+	 else fe++;
 
 done_pixel:
       if (dither_got)

@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.31 1998/01/10 21:20:04 hubbe Exp $ */
+/* $Id: colortable.c,v 1.32 1998/01/11 20:50:33 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.31 1998/01/10 21:20:04 hubbe Exp $
+**!	$Id: colortable.c,v 1.32 1998/01/11 20:50:33 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
-RCSID("$Id: colortable.c,v 1.31 1998/01/10 21:20:04 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.32 1998/01/11 20:50:33 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -831,6 +831,15 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
    for (i=0; i<arr->size; i++)
    {
       array_index(&s,arr,i);
+      if (s.type==T_INT && !s.u.integer)
+      {
+	 flat.entries[i].weight=0;
+	 flat.entries[i].no=-1;
+	 flat.entries[i].color.r=
+	 flat.entries[i].color.g=
+	 flat.entries[i].color.b=0;
+	 continue;
+      }
       if (s.type!=T_ARRAY || s.u.array->size<3)
       {
 	 free(flat.entries);
@@ -847,6 +856,27 @@ static struct nct_flat _img_get_flat_from_array(struct array *arr)
    }
    free_svalue(&s);
    free_svalue(&s2);
+
+   return flat;
+}
+
+static struct nct_flat _img_get_flat_from_string(struct pike_string *str)
+{
+   struct nct_flat flat;
+   int i;
+
+   flat.numentries=str->len/3;
+   flat.entries=(struct nct_flat_entry*)
+      xalloc(flat.numentries*sizeof(struct nct_flat_entry));
+
+   for (i=0; i<flat.numentries; i++)
+   {
+      flat.entries[i].color.r=str->str[i*3];
+      flat.entries[i].color.g=str->str[i*3+1];
+      flat.entries[i].color.b=str->str[i*3+2];
+      flat.entries[i].weight=1;
+      flat.entries[i].no=i;
+   }
 
    return flat;
 }
@@ -2062,6 +2092,11 @@ static void image_colortable_add(INT32 args)
       THIS->u.flat=_img_get_flat_from_array(sp[-args].u.array);
       THIS->type=NCT_FLAT;
    }
+   else if (sp[-args].type==T_STRING)
+   {
+      THIS->u.flat=_img_get_flat_from_string(sp[-args].u.string);
+      THIS->type=NCT_FLAT;
+   }
    else if (sp[-args].type==T_INT)
    {
       THIS->u.cube=_img_get_cube_from_args(args);
@@ -2237,12 +2272,17 @@ void image_colortable_cast_to_array(struct neo_colortable *nct)
    /* sort in number order? */
 
    for (i=0; i<flat.numentries; i++)
-   {
-      push_int(flat.entries[i].color.r);
-      push_int(flat.entries[i].color.g);
-      push_int(flat.entries[i].color.b);
-      f_aggregate(3);
-   }
+      if (flat.entries[i].no==-1)
+      {
+	 push_int(0);
+      }
+      else
+      {
+	 push_int(flat.entries[i].color.r);
+	 push_int(flat.entries[i].color.g);
+	 push_int(flat.entries[i].color.b);
+	 f_aggregate(3);
+      }
    f_aggregate(flat.numentries);
 
    if (nct->type==NCT_CUBE)
@@ -2291,6 +2331,14 @@ void image_colortable_write_rgb(struct neo_colortable *nct,
       free(flat.entries);
 }
 
+void image_colortable_cast_to_string(struct neo_colortable *nct)
+{
+   struct pike_string *str;
+   str=begin_shared_string(image_colortable_size(nct)*3);
+   image_colortable_write_rgb(nct,str->str);
+   push_string(end_shared_string(str));
+}
+
 /*
 **! method object cast(string to)
 **!	cast the colortable to an array
@@ -2311,12 +2359,21 @@ void image_colortable_cast(INT32 args)
        sp[-args].type!=T_STRING) 
       error("Illegal argument 1 to Image.colortable->cast\n");
 
-   if (sp[-args].u.string!=make_shared_string("array"))
+   if (sp[-args].u.string==make_shared_string("array"))
+   {
+      pop_n_elems(args);
+      image_colortable_cast_to_array(THIS);
+   }
+   else if (sp[-args].u.string==make_shared_string("string"))
+   {
+      pop_n_elems(args);
+      image_colortable_cast_to_string(THIS);
+   }
+   else
+   {
       error("Image.colortable->cast: can't cast to %s\n",
 	    sp[-args].u.string->str);
-
-   pop_n_elems(args);
-   image_colortable_cast_to_array(THIS);
+   }
 }
 
 /*
@@ -2577,20 +2634,23 @@ static INLINE int _cub_find_full_add(int **pp,int *i,int *p,int n,
    int c=0;
 
    while (n--)
-   {
-      int dist=sf.r*SQ(fe->color.r-r)+
-	       sf.g*SQ(fe->color.g-g)+
-	       sf.b*SQ(fe->color.b-b);
-      
-      if (dist<mindist)
+      if (fe->no==-1) fe++;
+      else
       {
-	 c=fe->no;
-	 if (!dist) break;
-	 mindist=dist;
+	 int dist=
+	    sf.r*SQ(fe->color.r-r)+
+	    sf.g*SQ(fe->color.g-g)+
+	    sf.b*SQ(fe->color.b-b);
+      
+	 if (dist<mindist)
+	 {
+	    c=fe->no;
+	    if (!dist) break;
+	    mindist=dist;
+	 }
+	 
+	 fe++;
       }
-
-      fe++;
-   }
 
    n=*i;
    while (n--)
@@ -2737,17 +2797,19 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    pp=p;
 
    while (n--)
-   {
-      if ((int)fe->color.r>=rmin && (int)fe->color.r<=rmax &&
-	  (int)fe->color.g>=gmin && (int)fe->color.g<=gmax &&
-	  (int)fe->color.b>=bmin && (int)fe->color.b<=bmax)
+      if (fe->no==-1) fe++;
+      else 
       {
-	 *pp=fe->no;
-	 pp++; i++;
+	 if ((int)fe->color.r>=rmin && (int)fe->color.r<=rmax &&
+	     (int)fe->color.g>=gmin && (int)fe->color.g<=gmax &&
+	     (int)fe->color.b>=bmin && (int)fe->color.b<=bmax)
+	 {
+	    *pp=fe->no;
+	    pp++; i++;
+	 }
+	 
+	 fe++;
       }
-
-      fe++;
-   }
 
    /* add closest to sides */
    _cub_add_cs(nct,cub,&pp,&i,p,r-1,g,b,red,green,blue,rmin,gmin,bmin,0,gmax-gmin,0,0,0,bmax-bmin);
