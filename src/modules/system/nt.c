@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.49 2002/05/11 00:15:50 nilsson Exp $
+ * $Id: nt.c,v 1.50 2002/08/17 12:41:52 peter Exp $
  *
  * NT system calls for Pike
  *
@@ -20,7 +20,7 @@
 
 /*
  * Get some wrappers for functions not implemented in old versions
- * of WIN32.
+ * of WIN32. Needs a new Platform SDK installed.
  */
 #define COMPILE_NEWAPIS_STUBS
 /* We want GetLongPathName()... */
