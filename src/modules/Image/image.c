@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.66 1997/11/23 06:03:49 per Exp $ */
+/* $Id: image.c,v 1.67 1997/11/23 07:22:45 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.66 1997/11/23 06:03:49 per Exp $
+**!	$Id: image.c,v 1.67 1997/11/23 07:22:45 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.66 1997/11/23 06:03:49 per Exp $");
+RCSID("$Id: image.c,v 1.67 1997/11/23 07:22:45 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -184,7 +184,7 @@ static void exit_image_struct(struct object *obj)
     set_rgb_group_alpha(THIS->img[(x)+(y)*THIS->xsize],THIS->rgb,THIS->alpha): \
     ((pixel(THIS,x,y)=THIS->rgb),0))
 
-#define color_equal(A,B) ((A.r == B.r) && (A.g == B.g) && (A.b == B.b))
+#define color_equal(A,B) (((A).r == (B).r) && ((A).g == (B).g) && ((A).b == (B).b))
 
 #define setpixel_test(x,y) \
    ((((int)x)<0||((int)y)<0||((int)x)>=(int)THIS->xsize||((int)y)>=(int)THIS->ysize)? \

@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.20 1997/11/23 06:03:48 per Exp $ */
+/* $Id: blit.c,v 1.21 1997/11/23 07:22:44 per Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.20 1997/11/23 06:03:48 per Exp $
+**!	$Id: blit.c,v 1.21 1997/11/23 07:22:44 per Exp $
 **! class image
 */
 
@@ -167,7 +167,7 @@ CHRONO("image_blit begin");
 
    THREADS_ALLOW();
    if(!moddest && !modsrc)
-     MEMCPY(dest,src,sizeof(rgb_group*width*lines));
+     MEMCPY(dest,src,sizeof(rgb_group)*width*lines);
    else
      while (lines--)
      {
