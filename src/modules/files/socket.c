@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.85 2004/04/05 01:36:05 mast Exp $
+|| $Id: socket.c,v 1.86 2004/04/11 14:53:46 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.85 2004/04/05 01:36:05 mast Exp $");
+RCSID("$Id: socket.c,v 1.86 2004/04/11 14:53:46 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -523,11 +523,14 @@ void port_setup_program(void)
 {
   ptrdiff_t offset;
   START_NEW_PROGRAM_ID (STDIO_PORT);
-  offset=ADD_STORAGE(struct port);
-  map_variable("_accept_callback","mixed",0,offset+OFFSETOF(port,accept_callback),PIKE_T_MIXED);
-  map_variable("_id","mixed",0,offset+OFFSETOF(port,id),PIKE_T_MIXED);
+  offset = ADD_STORAGE(struct port);
+  map_variable("_accept_callback", "mixed", 0,
+	       offset + OFFSETOF(port, accept_callback), PIKE_T_MIXED);
+  map_variable("_id", "mixed", 0,
+	       offset + OFFSETOF(port, id), PIKE_T_MIXED);
   /* function(int|string,void|mixed,void|string:int) */
-  ADD_FUNCTION("bind",port_bind,tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt),0);
+  ADD_FUNCTION("bind", port_bind,
+	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt), 0);
   ADD_FUNCTION("close",port_close,tFunc(tNone,tVoid),0);
   /* function(int,void|mixed:int) */
   ADD_FUNCTION("listen_fd",port_listen_fd,tFunc(tInt tOr(tVoid,tMix),tInt),0);
@@ -542,7 +545,9 @@ void port_setup_program(void)
   /* function(:object) */
   ADD_FUNCTION("accept",port_accept,tFunc(tNone,tObjIs_STDIO_FD),0);
   /* function(void|string|int,void|mixed,void|string:void) */
-  ADD_FUNCTION("create",port_create,tFunc(tOr3(tVoid,tStr,tInt) tOr(tVoid,tMix) tOr(tVoid,tStr),tVoid),0);
+  ADD_FUNCTION("create", port_create,
+	       tFunc(tOr3(tVoid,tStr,tInt) tOr(tVoid,tMix) tOr(tVoid,tStr),
+		     tVoid), 0);
   ADD_FUNCTION ("set_backend", port_set_backend, tFunc(tObj,tVoid), 0);
   ADD_FUNCTION ("query_backend", port_query_backend, tFunc(tVoid,tObj), 0);
 
