@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.24 2002/09/24 15:32:24 grubba Exp $
+# $Id: configure.in,v 1.25 2003/03/10 23:35:42 kiwi Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
@@ -19,20 +19,24 @@ AC_SUBST(ASSEMBLY_OBJECTS)
 ASSEMBLY_OBJECTS=""
 AC_MSG_CHECKING( [if nasm can be used] )
 
-if nasm -f elf -o assembly.o $srcdir/assembly.s ; then
-  # nasm/ia64 can compile ia32 code...
-  if test "`uname -m`" = "ia64"; then
-    AC_MSG_RESULT([yes, but we are on an IA64 machine])
-  elif test "`uname -s`" = "OpenBSD"; then
-    #nasm on OpenBSD is braindamaged
-    AC_MSG_RESULT(no)
-  else
-    ASSEMBLY_OBJECTS=assembly.o
-    AC_DEFINE(ASSEMBLY_OK)
-    AC_MSG_RESULT(yes)
-  fi
-else
+if test "x$with_machine_code" = "xno" ; then
   AC_MSG_RESULT(no)
+else
+  if nasm -f elf -o assembly.o $srcdir/assembly.s ; then
+    # nasm/ia64 can compile ia32 code...
+    if test "`uname -m`" = "ia64"; then
+      AC_MSG_RESULT([yes, but we are on an IA64 machine])
+    elif test "`uname -s`" = "OpenBSD"; then
+      #nasm on OpenBSD is braindamaged
+      AC_MSG_RESULT(no)
+    else
+      ASSEMBLY_OBJECTS=assembly.o
+      AC_DEFINE(ASSEMBLY_OK)
+      AC_MSG_RESULT(yes)
+    fi
+  else
+    AC_MSG_RESULT(no)
+  fi
 fi
 
 # Perform this test by hand since Sun cc fails otherwise.
