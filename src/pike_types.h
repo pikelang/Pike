@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.49 2001/02/20 15:59:50 grubba Exp $
+ * $Id: pike_types.h,v 1.50 2001/02/20 22:03:49 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -124,7 +124,11 @@ PMOD_EXPORT extern struct pike_type *zero_type_string;
 PMOD_EXPORT extern struct pike_type *any_type_string;
 PMOD_EXPORT extern struct pike_type *weak_type_string;
 
+#ifdef USE_PIKE_TYPE
+#define CONSTTYPE(X) make_pike_type(X)
+#else /* !USE_PIKE_TYPE */
 #define CONSTTYPE(X) make_shared_binary_string(X,CONSTANT_STRLEN(X))
+#endif /* USE_PIKE_TYPE */
 
 #ifdef PIKE_DEBUG
 #define init_type_stack() type_stack_mark()
@@ -214,8 +218,8 @@ int check_indexing(struct pike_type *type,
 		   node *n);
 int count_arguments(struct pike_type *s);
 int minimum_arguments(struct pike_type *s);
-struct pike_string *check_call(struct pike_string *args,
-			       struct pike_string *type,
+struct pike_string *check_call(struct pike_type *args,
+			       struct pike_type *type,
 			       int strict);
 INT32 get_max_args(struct pike_type *type);
 struct pike_type *zzap_function_return(char *a, INT32 id);

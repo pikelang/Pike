@@ -110,7 +110,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.225 2001/02/20 15:59:49 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.226 2001/02/20 22:03:48 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -141,9 +141,9 @@ RCSID("$Id: language.yacc,v 1.225 2001/02/20 15:59:49 grubba Exp $");
 #endif
 
 
-int add_local_name(struct pike_string *,struct pike_string *,node *);
+int add_local_name(struct pike_string *, struct pike_type *, node *);
 int low_add_local_name(struct compiler_frame *,
-		       struct pike_string *,struct pike_string *,node *);
+		       struct pike_string *, struct pike_type *, node *);
 static node *lexical_islocal(struct pike_string *);
 
 static int inherit_depth;
@@ -543,7 +543,7 @@ block_or_semi: block
 type_or_error: simple_type
   {
 #ifdef PIKE_DEBUG
-    check_type_string(check_node_hash($1)->u.sval.u.string);
+    check_type_string(check_node_hash($1)->u.sval.u.type);
 #endif /* PIKE_DEBUG */
     if(Pike_compiler->compiler_frame->current_type)
       free_type(Pike_compiler->compiler_frame->current_type); 
@@ -631,7 +631,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
     push_type(T_FUNCTION);
 
     {
-      struct pike_string *s=compiler_pop_type();
+      struct pike_type *s=compiler_pop_type();
       int i = isidentifier($4->u.sval.u.string);
 
       if (Pike_compiler->compiler_pass == 1) {
@@ -644,7 +644,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	  if (i >= 0) {
 	    struct identifier *id = ID_FROM_INT(Pike_compiler->new_program, i);
 	    if (id) {
-	      struct pike_string *new_type;
+	      struct pike_type *new_type;
 	      fprintf(stderr, "Defined, type:\n");
 #ifdef PIKE_DEBUG
 	      simple_describe_type(id->type);
@@ -695,7 +695,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	}
       }
 
-      $<n>$=mkstrnode(s);
+      $<n>$ = mktypenode(s);
       free_type(s);
     }
 
@@ -707,7 +707,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
        */
       Pike_compiler->compiler_frame->current_function_number=
 	define_function(check_node_hash($4)->u.sval.u.string,
-			check_node_hash($<n>$)->u.sval.u.string,
+			check_node_hash($<n>$)->u.sval.u.type,
 			$1 & (~ID_EXTERN),
 			IDENTIFIER_PIKE_FUNCTION,
 			0,
@@ -748,7 +748,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	} else {
 	  if (Pike_compiler->compiler_pass == 2) {
 	    if ($1 & ID_VARIANT) {
-	      struct pike_string *arg_type =
+	      struct pike_type *arg_type =
 		Pike_compiler->compiler_frame->variable[e].type;
 
 	      /* FIXME: Generate code that checks the arguments. */
@@ -817,7 +817,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 
       f=dooptcode(check_node_hash($4)->u.sval.u.string,
 		  check_node_hash($10),
-		  check_node_hash($<n>9)->u.sval.u.string,
+		  check_node_hash($<n>9)->u.sval.u.type,
 		  $1);
 
       i = ID_FROM_INT(Pike_compiler->new_program, f);
@@ -1050,16 +1050,16 @@ optional_stars: optional_stars '*' { $$=$1 + 1; }
 
 cast: '(' type ')'
     {
-      struct pike_string *s=compiler_pop_type();
-      $$=mkstrnode(s);
+      struct pike_type *s = compiler_pop_type();
+      $$ = mktypenode(s);
       free_type(s);
     }
     ;
 
 soft_cast: '[' type ']'
     {
-      struct pike_string *s=compiler_pop_type();
-      $$=mkstrnode(s);
+      struct pike_type *s = compiler_pop_type();
+      $$ = mktypenode(s);
       free_type(s);
     }
     ;
@@ -1088,12 +1088,11 @@ type7: type7 '*'
 
 simple_type: type4
   {
-    struct pike_string *s=compiler_pop_type();
-    $$=mkstrnode(s);
+    struct pike_type *s = compiler_pop_type();
+    $$ = mktypenode(s);
 #ifdef PIKE_DEBUG
-    if ($$->u.sval.u.string != s) {
-      fatal("mkstrnode(%p:\"%s\") created node with %p:\"%s\"\n",
-	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
+    if ($$->u.sval.u.type != s) {
+      fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
     }
 #endif /* PIKE_DEBUG */
     free_type(s);
@@ -1102,12 +1101,11 @@ simple_type: type4
 
 simple_type2: type2
   {
-    struct pike_string *s=compiler_pop_type();
-    $$=mkstrnode(s);
+    struct pike_type *s = compiler_pop_type();
+    $$ = mktypenode(s);
 #ifdef PIKE_DEBUG
-    if ($$->u.sval.u.string != s) {
-      fatal("mkstrnode(%p:\"%s\") created node with %p:\"%s\"\n",
-	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
+    if ($$->u.sval.u.type != s) {
+      fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
     }
 #endif /* PIKE_DEBUG */
     free_type(s);
@@ -1116,12 +1114,11 @@ simple_type2: type2
 
 simple_identifier_type: identifier_type
   {
-    struct pike_string *s=compiler_pop_type();
-    $$=mkstrnode(s);
+    struct pike_type *s = compiler_pop_type();
+    $$ = mktypenode(s);
 #ifdef PIKE_DEBUG
-    if ($$->u.sval.u.string != s) {
-      fatal("mkstrnode(%p:\"%s\") created node with %p:\"%s\"\n",
-	    s, s->str, $$->u.sval.u.string, $$->u.sval.u.string->str);
+    if ($$->u.sval.u.type != s) {
+      fatal("mktypenode(%p) created node with %p\n", s, $$->u.sval.u.type);
     }
 #endif /* PIKE_DEBUG */
     free_type(s);
@@ -1134,7 +1131,7 @@ identifier_type: idents
 
     if (Pike_sp[-1].type == T_TYPE) {
       /* "typedef" */
-      push_finished_type(Pike_sp[-1].u.string);
+      push_finished_type(Pike_sp[-1].u.type);
     } else {
       /* object type */
       struct program *p = NULL;
@@ -1388,7 +1385,7 @@ name_list: new_name
 
 new_name: optional_stars TOK_IDENTIFIER
   {
-    struct pike_string *type;
+    struct pike_type *type;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
@@ -1403,7 +1400,7 @@ new_name: optional_stars TOK_IDENTIFIER
   | optional_stars bad_identifier {}
   | optional_stars TOK_IDENTIFIER '='
   {
-    struct pike_string *type;
+    struct pike_type *type;
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
@@ -1444,7 +1441,7 @@ new_name: optional_stars TOK_IDENTIFIER
 
 new_local_name: optional_stars TOK_IDENTIFIER
   {    
-    push_finished_type($<n>0->u.sval.u.string);
+    push_finished_type($<n>0->u.sval.u.type);
     if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
@@ -1456,7 +1453,7 @@ new_local_name: optional_stars TOK_IDENTIFIER
   | optional_stars bad_identifier { $$=0; }
   | optional_stars TOK_IDENTIFIER '=' expr0 
   {
-    push_finished_type($<n>0->u.sval.u.string);
+    push_finished_type($<n>0->u.sval.u.type);
     if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
@@ -1487,16 +1484,16 @@ new_local_name: optional_stars TOK_IDENTIFIER
 
 new_local_name2: TOK_IDENTIFIER
   {
-    add_ref($<n>0->u.sval.u.string);
-    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string, 0);
+    add_ref($<n>0->u.sval.u.type);
+    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
     $$=mknode(F_ASSIGN,mkintnode(0),mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
   | bad_identifier { $$=0; }
   | TOK_IDENTIFIER '=' safe_expr0
   {
-    add_ref($<n>0->u.sval.u.string);
-    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.string, 0);
+    add_ref($<n>0->u.sval.u.type);
+    add_local_name($1->u.sval.u.string, $<n>0->u.sval.u.type, 0);
     $$=mknode(F_ASSIGN,$3, mklocalnode(islocal($1->u.sval.u.string),0));
     free_node($1);
   }
@@ -1551,7 +1548,7 @@ local_name_list2: new_local_name2
 
 local_constant_name: TOK_IDENTIFIER '=' safe_expr0
   {
-    struct pike_string *type;
+    struct pike_type *type;
 
     /* Ugly hack to make sure that $3 is optimized */
     {
@@ -1705,7 +1702,7 @@ lambda: TOK_LAMBDA push_compiler_frame1
   }
   failsafe_block
   {
-    struct pike_string *type;
+    struct pike_type *type;
     char buf[40];
     int f,e;
     struct pike_string *name;
@@ -1772,7 +1769,8 @@ lambda: TOK_LAMBDA push_compiler_frame1
 local_function: TOK_IDENTIFIER push_compiler_frame1 func_args 
   {
     char buf[40];
-    struct pike_string *name,*type;
+    struct pike_string *name;
+    struct pike_type *type;
     int id,e;
     node *n;
     struct identifier *i=0;
@@ -1886,7 +1884,8 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
 local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args 
   {
     char buf[40];
-    struct pike_string *name,*type;
+    struct pike_string *name;
+    struct pike_type *type;
     int id,e;
     node *n;
     struct identifier *i=0;
@@ -1894,7 +1893,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     /***/
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
     
-    push_finished_type($<n>0->u.sval.u.string);
+    push_finished_type($<n>0->u.sval.u.type);
     if ($1 && (Pike_compiler->compiler_pass == 2)) {
       yywarning("The *-syntax in types is obsolete. Use array instead.");
     }
@@ -2009,7 +2008,7 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
 
 create_arg: modifiers type_or_error optional_stars TOK_IDENTIFIER
   {
-    struct pike_string *type;
+    struct pike_type *type;
 
     push_finished_type(Pike_compiler->compiler_frame->current_type);
     if ($3 && (Pike_compiler->compiler_pass == 2)) {
@@ -2058,7 +2057,7 @@ optional_create_arguments: /* empty */ { $$ = 0; }
   {
     int e;
     node *create_code = NULL;
-    struct pike_string *type = NULL;
+    struct pike_type *type = NULL;
     struct pike_string *create_string = NULL;
     int f;
 
@@ -2604,12 +2603,12 @@ expr1: expr2
 expr2: expr3
   | cast expr2
   {
-    $$=mkcastnode($1->u.sval.u.string,$2);
+    $$ = mkcastnode($1->u.sval.u.type, $2);
     free_node($1);
   }
   | soft_cast expr2
   {
-    $$=mksoftcastnode($1->u.sval.u.string,$2);
+    $$ = mksoftcastnode($1->u.sval.u.type, $2);
     free_node($1);
   }
   | TOK_INC expr4       { $$=mknode(F_INC,$2,0); }
@@ -2658,7 +2657,7 @@ optional_block: /* EMPTY */ { $$=0; }
   }
   statements end_block
   {
-    struct pike_string *type;
+    struct pike_type *type;
     char buf[40];
     int f,e;
     struct pike_string *name;
@@ -3101,7 +3100,7 @@ gauge: TOK_GAUGE catch_arg
 
 typeof: TOK_TYPEOF '(' expr0 ')'
   {
-    struct pike_string *s;
+    struct pike_type *t;
     node *tmp;
 
     /* FIXME: Why build the node at all? */
@@ -3110,14 +3109,14 @@ typeof: TOK_TYPEOF '(' expr0 ')'
      */
     tmp=mknode(F_COMMA_EXPR, $3, 0);
 
-    s=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
+    t=(tmp && CAR(tmp) && CAR(tmp)->type ? CAR(tmp)->type : mixed_type_string);
     if(TEST_COMPAT(7,0))
     {
-      s=describe_type(s);
+      struct pike_string *s=describe_type(t);
       $$ = mkstrnode(s);
       free_string(s);
     }else{
-      $$ = mktypenode(s);
+      $$ = mktypenode(t);
     }
     free_node(tmp);
   } 
@@ -3414,9 +3413,9 @@ static int low_islocal(struct compiler_frame *f,
 
 
 int low_add_local_name(struct compiler_frame *frame,
-			struct pike_string *str,
-			struct pike_string *type,
-			node *def)
+		       struct pike_string *str,
+		       struct pike_type *type,
+		       node *def)
 {
 
   if (str->len && !TEST_COMPAT(7,0)) {
@@ -3487,7 +3486,7 @@ int low_add_local_name(struct compiler_frame *frame,
 /* Note that this function eats a reference to 'type' */
 /* If def is nonzero, it also eats a ref to def */
 int add_local_name(struct pike_string *str,
-		   struct pike_string *type,
+		   struct pike_type *type,
 		   node *def)
 {
   return low_add_local_name(Pike_compiler->compiler_frame,

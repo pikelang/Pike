@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.82 2001/02/20 15:59:49 grubba Exp $");
+RCSID("$Id: encode.c,v 1.83 2001/02/20 22:03:47 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -688,7 +688,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	for(d=0;d<p->num_identifiers;d++)
 	{
 	  adddata(p->identifiers[d].name);
+	  /* FIXME! */
+#ifndef USE_PIKE_TYPE
 	  encode_type(p->identifiers[d].type->str, data);
+#endif /* !USE_PIKE_TYPE */
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
