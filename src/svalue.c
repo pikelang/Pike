@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.190 2004/04/04 02:29:08 mast Exp $
+|| $Id: svalue.c,v 1.191 2004/04/05 00:02:27 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.190 2004/04/04 02:29:08 mast Exp $");
+RCSID("$Id: svalue.c,v 1.191 2004/04/05 00:02:27 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -2194,7 +2194,7 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
 
 void real_gc_free_svalue(struct svalue *s)
 {
-  if (Pike_in_gc) {
+  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE) {
 #ifdef PIKE_DEBUG
     if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
@@ -2208,7 +2208,7 @@ void real_gc_free_svalue(struct svalue *s)
 
 void real_gc_free_short_svalue(union anything *u, TYPE_T type)
 {
-  if (Pike_in_gc) {
+  if (Pike_in_gc && Pike_in_gc < GC_PASS_FREE) {
 #ifdef PIKE_DEBUG
     if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
 	Pike_in_gc != GC_PASS_ZAP_WEAK)
