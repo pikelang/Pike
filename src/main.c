@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.84 2000/03/28 08:10:53 hubbe Exp $");
+RCSID("$Id: main.c,v 1.85 2000/03/30 04:39:17 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -618,6 +618,17 @@ void low_exit_main(void)
   {
     INT32 num,size,recount=0;
     fprintf(stderr,"Exited normally, counting bytes.\n");
+
+#ifdef _REENTRANT
+    if(count_pike_threads()>1)
+    {
+      fprintf(stderr,"Byte counting aborted, because all threads have not exited properly.\n");
+      verbose_debug_exit=0;
+      return;
+    }
+#endif
+
+
     search_all_memheaders_for_references();
 
     count_memory_in_arrays(&num, &size);

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.115 2000/03/25 20:58:30 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.116 2000/03/30 04:39:17 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -378,6 +378,7 @@ void exit_interleave_mutex(IMUTEX_T *im)
 #define THREAD_TABLE_SIZE 127  /* Totally arbitrary prime */
 
 static struct thread_state *thread_table_chains[THREAD_TABLE_SIZE];
+static int num_pike_threads=0;
 
 void thread_table_init(void)
 {
@@ -421,6 +422,7 @@ void thread_table_insert(struct object *o)
 /*  dumpmem("thread_table_insert",&s->id, sizeof(THREAD_T)); */
 #endif
   mt_lock( & thread_table_lock );
+  num_pike_threads++;
   if((s->hashlink = thread_table_chains[h]) != NULL)
     s->hashlink->backlink = &s->hashlink;
   thread_table_chains[h] = s;
@@ -433,6 +435,7 @@ void thread_table_delete(struct object *o)
   struct thread_state *s = OBJ2THREAD(o);
 /*  dumpmem("thread_table_delete",&s->id, sizeof(THREAD_T)); */
   mt_lock( & thread_table_lock );
+  num_pike_threads--;
   if(s->hashlink != NULL)
     s->hashlink->backlink = s->backlink;
   *(s->backlink) = s->hashlink;
@@ -519,6 +522,10 @@ void f_all_threads(INT32 args)
   f_aggregate(sp-oldsp);
 }
 
+int count_pike_threads(void)
+{
+  return num_pike_threads;
+}
 
 static void check_threads(struct callback *cb, void *arg, void * arg2)
 {
