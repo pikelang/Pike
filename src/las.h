@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.23 1999/11/08 16:29:31 grubba Exp $
+ * $Id: las.h,v 1.24 1999/11/11 13:53:14 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -48,6 +48,18 @@ struct compiler_frame
   struct local_variable variable[MAX_LOCAL];
 };
 
+#ifdef SHARED_NODES
+
+struct node_hash_table
+{
+  node **table;
+  INT32 size;
+};
+
+extern struct node_hash_table node_hash;
+
+#endif /* SHARED_NODES */
+
 #define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
 				    * only used in node_info
 				    */
@@ -72,9 +84,11 @@ struct pike_string *find_return_type(node *n);
 struct node_chunk;
 void free_all_nodes(void);
 void free_node(node *n);
+node *debug_check_node_hash(node *n);
 node *mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
 node *mkintnode(int nr);
+node *mknewintnode(int nr);
 node *mkfloatnode(FLOAT_TYPE foo);
 node *mkprgnode(struct program *p);
 node *mkapplynode(node *func,node *args);
@@ -115,8 +129,20 @@ int dooptcode(struct pike_string *name,
 void resolv_program(node *n);
 /* Prototypes end here */
 
-#define CAR(n) (dmalloc_touch(node *,(n))->u.node.a)
-#define CDR(n) (dmalloc_touch(node *,(n))->u.node.b)
+#if defined(PIKE_DEBUG) && defined(SHARED_NODES)
+#define check_node_hash(X)	debug_check_node_hash(X)
+#else /* !PIKE_DEBUG || !SHARED_NODES */
+#define check_node_hash(X)	(X)
+#endif /* PIKE_DEBUG && SHARED_NODES */
+
+#define _CAR(n) (dmalloc_touch(node *,(n))->u.node.a)
+#define _CDR(n) (dmalloc_touch(node *,(n))->u.node.b)
+#define _CAAR(n) _CAR(_CAR(n))
+#define _CADR(n) _CAR(_CDR(n))
+#define _CDAR(n) _CDR(_CAR(n))
+#define _CDDR(n) _CDR(_CDR(n))
+#define CAR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.a)))
+#define CDR(n)  (check_node_hash(dmalloc_touch(node *, (n)->u.node.b)))
 #define CAAR(n) CAR(CAR(n))
 #define CADR(n) CAR(CDR(n))
 #define CDAR(n) CDR(CAR(n))

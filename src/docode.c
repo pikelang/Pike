@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.53 1999/11/05 23:21:26 grubba Exp $");
+RCSID("$Id: docode.c,v 1.54 1999/11/11 13:55:58 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -78,7 +78,7 @@ int do_docode(node *n,INT16 flags)
   int save_current_line=lex.current_line;
   if(!n) return 0;
   lex.current_line=n->line_number;
-  i=do_docode2(n, flags);
+  i=do_docode2(check_node_hash(n), flags);
 
   lex.current_line=save_current_line;
   return i;
@@ -93,7 +93,7 @@ static int is_efun(node *n, c_fun fun)
 
 static void code_expression(node *n, int flags, char *err)
 {
-  switch(do_docode(n, flags & ~ DO_POP))
+  switch(do_docode(check_node_hash(n), flags & ~ DO_POP))
   {
   case 0: my_yyerror("Void expression for %s",err);
   case 1: return;
@@ -439,13 +439,13 @@ static int do_docode2(node *n,int flags)
 	break;
 
       case F_IDENTIFIER:
-	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(new_program, CDR(n)->u.number)->identifier_flags))
+	if(!IDENTIFIER_IS_VARIABLE( ID_FROM_INT(new_program, CDR(n)->u.id.number)->identifier_flags))
 	{
 	  yyerror("Cannot assign functions or constants.\n");
 	}else{
 	  code_expression(CAR(n), 0, "RHS");
 	  emit(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
-	       CDR(n)->u.number);
+	       CDR(n)->u.id.number);
 	}
 	break;
 
@@ -575,8 +575,8 @@ static int do_docode2(node *n,int flags)
     
     if(arr->token==F_RANGE)
     {
-      node **a1=my_get_arg(&CDR(n),0);
-      node **a2=my_get_arg(&CDR(n),1);
+      node **a1=my_get_arg(&_CDR(n),0);
+      node **a2=my_get_arg(&_CDR(n),1);
       if(a1 && a2 && a2[0]->token==F_CONSTANT &&
 	 a2[0]->u.sval.type==T_INT &&
 	 a2[0]->u.sval.type==0x7fffffff &&
@@ -741,11 +741,11 @@ static int do_docode2(node *n,int flags)
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER &&
-	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, CAR(n)->u.number)->identifier_flags))
+	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, CAR(n)->u.id.number)->identifier_flags))
     {
       emit2(F_MARK);
       do_docode(CDR(n),0);
-      emit(F_CALL_LFUN, CAR(n)->u.number);
+      emit(F_CALL_LFUN, CAR(n)->u.id.number);
       return 1;
     }
     else
@@ -1175,43 +1175,43 @@ static int do_docode2(node *n,int flags)
       emit(F_LDA,n->u.integer.b);
       if(flags & WANT_LVALUE)
       {
-	emit(F_LEXICAL_LOCAL_LVALUE,n->u.number);
+	emit(F_LEXICAL_LOCAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
-	emit(F_LEXICAL_LOCAL,n->u.number);
+	emit(F_LEXICAL_LOCAL,n->u.id.number);
 	return 1;
       }
     }else{
       if(flags & WANT_LVALUE)
       {
-	emit(F_LOCAL_LVALUE,n->u.number);
+	emit(F_LOCAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
-	emit(F_LOCAL,n->u.number);
+	emit(F_LOCAL,n->u.id.number);
 	return 1;
       }
     }
 
     case F_TRAMPOLINE:
-      emit(F_TRAMPOLINE,n->u.number);
+      emit(F_TRAMPOLINE,n->u.id.number);
       return 1;
 
   case F_IDENTIFIER:
-    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, n->u.number)->identifier_flags))
+    if(IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, n->u.id.number)->identifier_flags))
     {
       if(flags & WANT_LVALUE)
       {
 	yyerror("Cannot assign functions.\n");
       }else{
-	emit(F_LFUN,n->u.number);
+	emit(F_LFUN,n->u.id.number);
       }
     }else{
       if(flags & WANT_LVALUE)
       {
-	emit(F_GLOBAL_LVALUE,n->u.number);
+	emit(F_GLOBAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
-	emit(F_GLOBAL,n->u.number);
+	emit(F_GLOBAL,n->u.id.number);
       }
     }
     return 1;
