@@ -1,7 +1,7 @@
-# $Id: configure.in,v 1.5 1998/03/28 14:01:02 grubba Exp $
+# $Id: configure.in,v 1.6 1998/09/20 08:33:16 hubbe Exp $
 AC_INIT(call_out.c)
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 AC_HAVE_HEADERS(sys/time.h)
 

@@ -1,4 +1,4 @@
-dnl $Id: configure.in,v 1.7 1998/08/25 13:11:50 grubba Exp $
+dnl $Id: configure.in,v 1.8 1998/09/20 08:32:20 hubbe Exp $
 dnl (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
 AC_INIT(postgres.c)
@@ -16,7 +16,7 @@ AC_ARG_WITH(libpq-dir,
 	[  --with-libpq-dir=dir               look for library-files in dir],
 	[pike_postgres_user_lib_directory=$withval])
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 ac_pike_postgres_skip=no
 

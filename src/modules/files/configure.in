@@ -1,8 +1,8 @@
-# $Id: configure.in,v 1.58 1998/08/07 00:21:33 grubba Exp $
+# $Id: configure.in,v 1.59 1998/09/20 08:33:25 hubbe Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h \
  sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h sys/param.h \

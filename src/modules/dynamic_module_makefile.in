@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.43 1998/08/02 11:53:50 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.44 1998/09/20 08:30:42 hubbe Exp $
 #
 
 
@@ -8,7 +8,12 @@ CPP=@CPP@
 AR=@AR@
 LIBGCC=@LIBGCC@
 
-PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS) $(DEFINES) -DDYNAMIC_MODULE
+PIKE_SRC_DIR=$(SRCDIR)/../..
+BUILD_BASE=../..
+MODULE_BASE=..
+PIKE_INCLUDES=-I$(PIKE_SRC_DIR) -I$(BUILD_BASE)
+
+PREFLAGS=-I. -I$(SRCDIR) $(PIKE_INCLUDES) -I. $(MODULE_CPPFLAGS) $(DEFINES) -DDYNAMIC_MODULE
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC) @CCSHARED@" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "AR=$(AR)" $(MODULE_MAKE_FLAGS)
@@ -33,14 +38,14 @@ modlist_headers: Makefile
 modlist_segment: Makefile
 	echo "" >modlist_segment
 
-Makefile: ../dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
+Makefile: $(MODULE_BASE)/dynamic_module_makefile $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
 	touch remake
 	@echo "Run make again"
 	@exit 1
 
-$(SRCDIR)/configure: $(SRCDIR)/configure.in $(SRCDIR)/../module_configure.in
-	cd $(SRCDIR) && autoconf
+$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
+	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
 	if [ -f $(SRCDIR)/acconfig.h ]; then \
 	  cd $(SRCDIR) && autoheader; \
 	else :; fi
@@ -58,7 +63,11 @@ clean:
 
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c \
+	|sed -e "s@ $(PIKE_SRC_DIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(PIKE_SRC_DIR)/\1@g" \
+	|sed -e "s@ $(SRCDIR)/\([-a-zA-Z0-9.,_]*\)@ \$$(SRCDIR)/\1@g" \
+	|sed -e "s@ $(BUILD_BASE)/\([-a-zA-Z0-9.,_]*\)@ \$$(BUILD_BASE)/\1@g" \
+	>$(SRCDIR)/dependencies
 	for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo making depend in $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) depend ) ; fi ; done
 
 #verify / debug

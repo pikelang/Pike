@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.22 1998/04/03 14:00:10 grubba Exp $
+# $Id: run_autoconfig,v 1.23 1998/09/20 08:30:32 hubbe Exp $
 #
 # Bootstrap script
 
@@ -15,14 +15,16 @@ else
   cd "$1"
 fi
 
+localdir=`pwd`
+
 find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
 
   if [ -f $dir/Makefile.am -a -f $dir/configure.in ]; then
     # aclocal needs to be run before autoconf
     echo "Running aclocal in $dir"
-    (cd $dir ; aclocal)
+    (cd $dir ; aclocal )
     echo "Running automake in $dir"
-    (cd $dir ; automake)
+    (cd $dir ; automake )
   fi
 
   if [ -f $dir/acconfig.h -a $dir/configure.in ]; then
@@ -33,7 +35,7 @@ find . -type d -print|egrep -v '/(CVS)|(RCS)$'| while read dir; do
   if [ -f $dir/configure.in ]; then
     if grep AC_INIT $dir/configure.in >/dev/null; then
       echo "Running autoconf in $dir"
-      ( cd $dir ; autoconf )
+      ( cd $dir ; autoconf --localdir=$localdir )
     else
       echo "$dir seems to use Cygnus-configure."
     fi

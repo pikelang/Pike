@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.116 1998/09/05 15:20:39 grubba Exp $
+# $Id: Makefile.in,v 1.117 1998/09/20 08:30:31 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -201,7 +201,7 @@ interpret.o: $(SRCDIR)/interpret.c
 force :
 
 # install
-install: pike hilfe
+install: pike hilfe pike-module aclocal
 	@echo
 	@echo Installing Pike...
 	@echo
@@ -260,12 +260,29 @@ install: pike hilfe
 	    chmod u+w "$(exec_prefix)/hilfe"; \
 	  fi; \
 	else : ; fi
+	@if [ -f ./pike-module ]; then \
+	  echo ; echo "Installing pike-module..."; \
+	  if cmp "$(exec_prefix)/pike-module" ./pike-module >/dev/null 2>&1 ; \
+	  then \
+	    echo "$(exec_prefix)/pike-module already installed." ; \
+	  else \
+	    if [ -f "$(exec_prefix)/pike-module" ]; then \
+	      mv "$(exec_prefix)/pike-module" "$(exec_prefix)/pike-module.old" || exit 1; \
+	    else : ; fi; \
+	    echo "$(exec_prefix)/pike-module"; \
+	    $(INSTALL) ./pike-module "$(exec_prefix)" || exit 1; \
+	    chmod a+rx "$(exec_prefix)/pike-module"; \
+	    chmod u+w "$(exec_prefix)/pike-module"; \
+	  fi; \
+	else : ; fi
 	@echo ; echo "Installing header-files..."; \
 	for a in $(SRCDIR)/*.h *.h ; do \
 	  $(INSTALL) $$a "$(prefix)/include/pike" || exit 1; \
 	  chmod a+r "$(prefix)/include/pike" ; \
 	  chmod u+w "$(prefix)/include/pike" ; \
 	done
+	@$(INSTALL) modules/dynamic_module_makefile $(prefix)/include/pike/dynamic_module_makefile
+	@$(INSTALL) ./aclocal $(prefix)/include/pike/aclocal.m4
 	@echo ; echo "Installing modules written in Pike..."; \
 	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print | grep -v '/CVS/'`; do \
 	  if cmp "$(share_prefix)/$$f" "$(LIBDIR_SRC)/$$f" >/dev/null 2>&1 ; \
@@ -407,6 +424,19 @@ lib: $(LIBDIR_SRC)/master.pike.in Makefile
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	sed -e 's!¤lib_prefix¤!$(TMP_LIBDIR)!' <$(LIBDIR_SRC)/master.pike.in \
 	  | sed -e 's!¤share_prefix¤!$(LIBDIR_SRC)!' >master.pike
+
+pike-module: $(SRCDIR)/pike-module.in Makefile ./pike
+	$(RUNPIKE) $(SRCDIR)/pike-module.in --fixate=$(SRCDIR)/pike-module.in \
+	   --set='make=$(MAKE)' --set='make_flags=$(MAKE_FLAGS)' \
+	   --set='prefix=$(prefix)' --set='pike=$(exec_prefix)/pike' \
+	   --set='include_path=$(prefix)/include/pike' \
+	   --set='lib_prefix=$(TMP_LIBDIR)' --set='share_prefix=$(LIBDIR_SRC)' \
+           --output=pike-module
+	-@chmod +x pike-module
+
+aclocal: $(SRCDIR)/aclocal.m4
+	echo >aclocal "define(PIKE_INCLUDE_PATH,$(prefix)/include/pike)"
+	cat >>aclocal $(SRCDIR)/aclocal.m4
 
 # make export archive (requires compiled Pike)
 # Do not compile in source tree if you want to use this!

@@ -1,10 +1,10 @@
-# $Id: configure.in,v 1.8 1998/03/28 14:48:42 grubba Exp $
+# $Id: configure.in,v 1.9 1998/09/20 08:31:15 hubbe Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_SET_MAKE
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 AC_FUNC_MMAP
 

@@ -1,7 +1,7 @@
-# $Id: configure.in,v 1.4 1998/03/28 13:48:43 grubba Exp $
+# $Id: configure.in,v 1.5 1998/09/20 08:33:58 hubbe Exp $
 AC_INIT(sprintf.c)
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 

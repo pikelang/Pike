@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.5 1998/09/01 17:01:04 hubbe Exp $
+# $Id: configure.in,v 1.6 1998/09/20 08:31:46 hubbe Exp $
 #
 # Configure script for the mysql-module
 #
@@ -20,7 +20,7 @@
 AC_INIT(mysql.c)
 AC_CONFIG_HEADER(config.h)
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS

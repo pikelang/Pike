@@ -1,8 +1,8 @@
-# $Id: configure.in,v 1.6 1998/07/23 00:13:12 hubbe Exp $
+# $Id: configure.in,v 1.7 1998/09/20 08:33:34 hubbe Exp $
 AC_INIT(math.c)
 
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 AC_CHECK_LIB(m, floor)
 if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then

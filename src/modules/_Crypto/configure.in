@@ -1,9 +1,9 @@
-# $Id: configure.in,v 1.5 1998/03/28 14:28:56 grubba Exp $
+# $Id: configure.in,v 1.6 1998/09/20 08:32:53 hubbe Exp $
 AC_INIT(crypto.c)
 
 AC_SET_MAKE
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 AC_CONFIG_SUBDIRS(lib)
 

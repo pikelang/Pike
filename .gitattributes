@@ -80,6 +80,7 @@ testfont binary
 /man/pike.1 foreign_ident
 /src/Makefile.in foreign_ident
 /src/acconfig.h foreign_ident
+/src/aclocal.m4 foreign_ident
 /src/alloca.c foreign_ident
 /src/array.c foreign_ident
 /src/array.h foreign_ident
