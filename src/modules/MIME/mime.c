@@ -1,16 +1,16 @@
 /*
- * $Id: mime.c,v 1.18 1999/03/09 22:46:19 marcus Exp $
+ * $Id: mime.c,v 1.19 1999/03/09 23:42:59 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
- * Marcus Comstedt 1996-1997
+ * Marcus Comstedt 1996-1999
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.18 1999/03/09 22:46:19 marcus Exp $");
+RCSID("$Id: mime.c,v 1.19 1999/03/09 23:42:59 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -150,16 +150,15 @@ static void f_decode_base64( INT32 args )
 
     /* Decode the string in sp[-1].u.string.  Any whitespace etc
        must be ignored, so the size of the result can't be exactly
-       calculated from the input size.  We'll use a dynamic buffer
+       calculated from the input size.  We'll use a string builder
        instead. */
 
-    dynamic_buffer buf;
+    struct string_builder buf;
     SIGNED char *src;
     INT32 cnt, d = 1;
     int pads = 0;
 
-    buf.s.str = NULL;
-    initialize_buf( &buf );
+    init_string_builder( &buf, 0 );
 
     for (src = (SIGNED char *)sp[-1].u.string->str, cnt = sp[-1].u.string->len;
 	 cnt--; src++)
@@ -167,9 +166,9 @@ static void f_decode_base64( INT32 args )
 	/* 6 more bits to put into d */
 	if((d=(d<<6)|base64rtab[*src-' '])>=0x1000000) {
 	  /* d now contains 24 valid bits.  Put them in the buffer */
-	  low_my_putchar( (d>>16)&0xff, &buf );
-	  low_my_putchar( (d>>8)&0xff, &buf );
-	  low_my_putchar( d&0xff, &buf );
+	  string_builder_putchar( &buf, (d>>16)&0xff );
+	  string_builder_putchar( &buf, (d>>8)&0xff );
+	  string_builder_putchar( &buf, d&0xff );
 	  d=1;
 	}
       } else if (*src=='=') {
@@ -182,14 +181,14 @@ static void f_decode_base64( INT32 args )
     /* If data size not an even multiple of 3 bytes, output remaining data */
     switch(pads) {
     case 1:
-      low_my_putchar( (d>>8)&0xff, &buf );
+      string_builder_putchar( &buf, (d>>8)&0xff );
     case 2:
-      low_my_putchar( d&0xff, &buf );
+      string_builder_putchar( &buf, d&0xff );
     }
 
     /* Return result */
     pop_n_elems( 1 );
-    push_string( low_free_buf( &buf ) );
+    push_string( finish_string_builder( &buf ) );
   }
 }
 
@@ -301,14 +300,13 @@ static void f_decode_qp( INT32 args )
 
     /* Decode the string in sp[-1].u.string.  We have absolutely no idea
        how much of the input is raw data and how much is encoded data,
-       so we'll use a dynamic buffer to hold the result. */
+       so we'll use a string builder to hold the result. */
 
-    dynamic_buffer buf;
+    struct string_builder buf;
     SIGNED char *src;
     INT32 cnt;
 
-    buf.s.str=NULL;
-    initialize_buf(&buf);
+    init_string_builder(&buf, 0);
 
     for (src = (SIGNED char *)sp[-1].u.string->str, cnt = sp[-1].u.string->len;
 	 cnt--; src++)
@@ -327,17 +325,17 @@ static void f_decode_qp( INT32 args )
 	} else if (cnt >= 2 && src[1] >= '0' && src[2] >= '0' &&
 		   qprtab[src[1]-'0'] >= 0 && qprtab[src[2]-'0'] >= 0) {
 	  /* A '=' followed by a hexadecimal number. */
-	  low_my_putchar( (qprtab[src[1]-'0']<<4)|qprtab[src[2]-'0'], &buf );
+	  string_builder_putchar( &buf, (qprtab[src[1]-'0']<<4)|qprtab[src[2]-'0'] );
 	  cnt -= 2;
 	  src += 2;
 	}
       } else
 	/* Raw data */
-	low_my_putchar( *src, &buf );
+	string_builder_putchar( &buf, *(unsigned char *)src );
 
     /* Return the result */
     pop_n_elems( 1 );
-    push_string( low_free_buf( &buf ) );
+    push_string( finish_string_builder( &buf ) );
   }
 }
 
@@ -355,42 +353,41 @@ static void f_encode_qp( INT32 args )
 
     /* Encode the string in sp[-args].u.string.  We don't know how
        much of the data has to be encoded, so let's use that trusty
-       dynamic buffer once again. */
+       string builder once again. */
 
-    dynamic_buffer buf;
+    struct string_builder buf;
     unsigned char *src = (unsigned char *)sp[-args].u.string->str;
     INT32 cnt;
     int col = 0;
     int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
 			sp[-1].u.integer != 0);
 
-    buf.s.str = NULL;
-    initialize_buf( &buf );
+    init_string_builder( &buf, 0 );
 
     for (cnt = sp[-args].u.string->len; cnt--; src++) {
       if ((*src >= 33 && *src <= 60) ||
 	  (*src >= 62 && *src <= 126))
 	/* These characters can always be encoded as themselves */
-	low_my_putchar( *src, &buf );
+	string_builder_putchar( &buf, *(unsigned char *)src );
       else {
 	/* Better safe than sorry, eh?  Use the dreaded hex escape */
-	low_my_putchar( '=', &buf );
-	low_my_putchar( qptab[(*src)>>4], &buf );
-	low_my_putchar( qptab[(*src)&15], &buf );
+	string_builder_putchar( &buf, '=' );
+	string_builder_putchar( &buf, qptab[(*src)>>4] );
+	string_builder_putchar( &buf, qptab[(*src)&15] );
 	col += 2;
       }
       /* We'd better not let the lines get too long */
       if (++col >= 73 && insert_crlf) {
-	low_my_putchar( '=', &buf );
-	low_my_putchar( 13, &buf );
-	low_my_putchar( 10, &buf );
+	string_builder_putchar( &buf, '=' );
+	string_builder_putchar( &buf, 13 );
+	string_builder_putchar( &buf, 10 );
 	col = 0;
       }
     }
     
     /* Return the result */
     pop_n_elems( args );
-    push_string( low_free_buf( &buf ) );
+    push_string( finish_string_builder( &buf ) );
   }
 }
 
@@ -409,12 +406,11 @@ static void f_decode_uue( INT32 args )
     /* Decode string in sp[-1].u.string.  This is done much like in
        the base64 case, but we'll look for the "begin" line first.  */
 
-    dynamic_buffer buf;
+    struct string_builder buf;
     char *src;
     INT32 cnt;
 
-    buf.s.str = NULL;
-    initialize_buf( &buf );
+    init_string_builder( &buf, 0 );
 
     src = sp[-1].u.string->str;
     cnt = sp[-1].u.string->len;
@@ -459,15 +455,19 @@ static void f_decode_uue( INT32 args )
 	d |= ((*src++-' ')&63)<<6;
 	d |= ((*src++-' ')&63);
 	/* Output it into the buffer */
-	low_my_putchar( (d>>16)&0xff, &buf );
-	low_my_putchar( (d>>8)&0xff, &buf );
-	low_my_putchar( d&0xff, &buf );
+	string_builder_putchar( &buf, (d>>16)&0xff );
+	string_builder_putchar( &buf, (d>>8)&0xff );
+	string_builder_putchar( &buf, d&0xff );
       }
 
       /* If the line didn't contain an even multiple of 24 bits, remove
 	 spurious bytes from the buffer */
-      while (l++)
-	low_make_buf_space( -1, &buf );
+
+      /*  while (l++)
+	    string_builder_allocate( &buf, -1 ); */
+      /* Hmm...  string_builder_allocate is static.  Cheat a bit... */
+      if (l<0)
+	buf.s->len += l;
 
       /* Skip to EOL */
       while (cnt-- && *src++!=10);
@@ -475,7 +475,7 @@ static void f_decode_uue( INT32 args )
 
     /* Return the result */
     pop_n_elems( 1 );
-    push_string( low_free_buf( &buf ) );
+    push_string( finish_string_builder( &buf ) );
   }
 }
 
@@ -893,7 +893,7 @@ static void f_quote( INT32 args )
 {
   struct svalue *item;
   INT32 cnt;
-  dynamic_buffer buf;
+  struct string_builder buf;
   int prev_atom = 0;
 
   if (args != 1)
@@ -902,28 +902,27 @@ static void f_quote( INT32 args )
     error( "Wrong type of argument to MIME.quote()\n" );
 
   /* Quote array in sp[-1].u.array.  Once again we'll rely on a
-     dynamic_buffer to collect the output string. */
+     string_builder to collect the output string. */
 
-  buf.s.str = NULL;
-  initialize_buf( &buf );
+  init_string_builder( &buf, 0 );
 
   for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
 
     if (item->type == T_INT) {
 
       /* Single special character */
-      low_my_putchar( item->u.integer, &buf );
+      string_builder_putchar( &buf, item->u.integer );
       prev_atom = 0;
 
     } else if (item->type != T_STRING) {
 
       /* Neither int or string.  Too bad... */
-      toss_buffer( &buf );
+      free_string_builder( &buf );
       error( "Wrong type of argument to MIME.quote()\n" );
 
     } else if (item->u.string->size_shift != 0) {
 
-      toss_buffer( &buf );
+      free_string_builder( &buf );
       error( "Char out of range for MIME.quote()\n" );
 
     } else {
@@ -935,28 +934,28 @@ static void f_quote( INT32 args )
       /* In case the previous item was also a string, we'll add a single
 	 whitespace as a delimiter */
       if (prev_atom)
-	low_my_putchar( ' ', &buf );
+	string_builder_putchar( &buf, ' ' );
 
       if ((str->len>5 && str->str[0]=='=' && str->str[1]=='?' &&
 	   check_encword((unsigned char *)str->str, str->len)) ||
 	  check_atom_chars((unsigned char *)str->str, str->len)) {
 
 	/* Valid atom without quotes... */
-	low_my_binary_strcat( str->str, str->len, &buf );
+	string_builder_binary_strcat( &buf, str->str, str->len );
 
       } else {
 
 	/* Have to use quoted-string */
 	INT32 len = str->len;
 	char *src = str->str;
-	low_my_putchar( '"', &buf );
+	string_builder_putchar( &buf, '"' );
 	while(len--) {
 	  if(*src=='"' || *src=='\\' || *src=='\r')
 	    /* Some characters have to be escaped even within quotes... */
-	    low_my_putchar( '\\', &buf );
-	  low_my_putchar( *src++, &buf );
+	    string_builder_putchar( &buf, '\\' );
+	  string_builder_putchar( &buf, (*src++)&0xff );
 	}
-	low_my_putchar( '"', &buf );
+	string_builder_putchar( &buf, '"' );
 
       }
 
@@ -967,14 +966,14 @@ static void f_quote( INT32 args )
 
   /* Return the result */
   pop_n_elems( 1 );
-  push_string( low_free_buf( &buf ) );
+  push_string( finish_string_builder( &buf ) );
 }
 
 static void f_quote_labled( INT32 args )
 {
   struct svalue *item;
   INT32 cnt;
-  dynamic_buffer buf;
+  struct string_builder buf;
   int prev_atom = 0;
 
   if (args != 1)
@@ -983,39 +982,38 @@ static void f_quote_labled( INT32 args )
     error( "Wrong type of argument to MIME.quote_labled()\n" );
 
   /* Quote array in sp[-1].u.array.  Once again we'll rely on a
-     dynamic_buffer to collect the output string. */
+     string_builder to collect the output string. */
 
-  buf.s.str = NULL;
-  initialize_buf( &buf );
+  init_string_builder( &buf, 0 );
 
   for (cnt=sp[-1].u.array->size, item=sp[-1].u.array->item; cnt--; item++) {
 
     if (item->type != T_ARRAY || item->u.array->size<2 ||
 	item->u.array->item[0].type != T_STRING) {
-      toss_buffer( &buf );
+      free_string_builder( &buf );
       error( "Wrong type of argument to MIME.quote_labled()\n" );
     }
 
     if (c_compare_string( item->u.array->item[0].u.string, "special", 7 )) {
 
       if(item->u.array->item[1].type != T_INT) {
-	toss_buffer( &buf );
+	free_string_builder( &buf );
 	error( "Wrong type of argument to MIME.quote_labled()\n" );
       }
 
       /* Single special character */
-      low_my_putchar( item->u.array->item[1].u.integer, &buf );
+      string_builder_putchar( &buf, item->u.array->item[1].u.integer );
       prev_atom = 0;
 
     } else if(item->u.array->item[1].type != T_STRING) {
 
       /* All the remaining lexical items require item[1] to be a string */
-      toss_buffer( &buf );
+      free_string_builder( &buf );
       error( "Wrong type of argument to MIME.quote_labled()\n" );
 
     } else if (item->u.array->item[1].u.string->size_shift != 0) {
 
-      toss_buffer( &buf );
+      free_string_builder( &buf );
       error( "Char out of range for MIME.quote_labled()\n" );
 
     } else if (c_compare_string( item->u.array->item[0].u.string, "word", 4 )){
@@ -1027,28 +1025,28 @@ static void f_quote_labled( INT32 args )
       /* In case the previous item was also a string, we'll add a single
 	 whitespace as a delimiter */
       if (prev_atom)
-	low_my_putchar( ' ', &buf );
+	string_builder_putchar( &buf, ' ' );
 
       if ((str->len>5 && str->str[0]=='=' && str->str[1]=='?' &&
 	   check_encword((unsigned char *)str->str, str->len)) ||
 	  check_atom_chars((unsigned char *)str->str, str->len)) {
 
 	/* Valid atom without quotes... */
-	low_my_binary_strcat( str->str, str->len, &buf );
+	string_builder_binary_strcat( &buf, str->str, str->len );
 
       } else {
 
 	/* Have to use quoted-string */
 	INT32 len = str->len;
 	char *src = str->str;
-	low_my_putchar( '"', &buf );
+	string_builder_putchar( &buf, '"' );
 	while(len--) {
 	  if(*src=='"' || *src=='\\' || *src=='\r')
 	    /* Some characters have to be escaped even within quotes... */
-	    low_my_putchar( '\\', &buf );
-	  low_my_putchar( *src++, &buf );
+	    string_builder_putchar( &buf, '\\' );
+	  string_builder_putchar( &buf, (*src++)&0xff );
 	}
-	low_my_putchar( '"', &buf );
+	string_builder_putchar( &buf, '"' );
 
       }
 
@@ -1060,7 +1058,7 @@ static void f_quote_labled( INT32 args )
       struct pike_string *str = item->u.array->item[1].u.string;
 
       /* Insert 'as is'. */
-      low_my_binary_strcat( str->str, str->len, &buf );
+      string_builder_binary_strcat( &buf, str->str, str->len );
 
       prev_atom = 1;
 
@@ -1072,14 +1070,14 @@ static void f_quote_labled( INT32 args )
       /* Encode comment */
       INT32 len = str->len;
       char *src = str->str;
-      low_my_putchar( '(', &buf );
+      string_builder_putchar( &buf, '(' );
       while(len--) {
 	if(*src=='(' || *src==')' || *src=='\\' || *src=='\r')
 	  /* Some characters have to be escaped even within comments... */
-	  low_my_putchar( '\\', &buf );
-	low_my_putchar( *src++, &buf );
+	  string_builder_putchar( &buf, '\\' );
+	string_builder_putchar( &buf, (*src++)&0xff );
       }
-      low_my_putchar( ')', &buf );
+      string_builder_putchar( &buf, ')' );
 
       prev_atom = 0;
       
@@ -1093,28 +1091,28 @@ static void f_quote_labled( INT32 args )
       char *src = str->str;
 
       if (len<2 || src[0] != '[' || src[len-1] != ']') {
-	toss_buffer( &buf );
+	free_string_builder( &buf );
 	error( "Illegal domain-literal passed to MIME.quote_labled()\n" );
       }
 
       len -= 2;
       src++;
 
-      low_my_putchar( '[', &buf );
+      string_builder_putchar( &buf, '[' );
       while(len--) {
 	if(*src=='[' || *src==']' || *src=='\\' || *src=='\r')
 	  /* Some characters have to be escaped within domain-literals... */
-	  low_my_putchar( '\\', &buf );
-	low_my_putchar( *src++, &buf );
+	  string_builder_putchar( &buf, '\\' );
+	string_builder_putchar( &buf, (*src++)&0xff );
       }
-      low_my_putchar( ']', &buf );
+      string_builder_putchar( &buf, ']' );
 
       prev_atom = 0;
 
     } else {
 
       /* Unknown label.  Too bad... */
-      toss_buffer( &buf );
+      free_string_builder( &buf );
       error( "Unknown label passed to MIME.quote_labled()\n" );
 
     }
@@ -1123,5 +1121,5 @@ static void f_quote_labled( INT32 args )
 
   /* Return the result */
   pop_n_elems( 1 );
-  push_string( low_free_buf( &buf ) );
+  push_string( finish_string_builder( &buf ) );
 }
