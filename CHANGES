@@ -16,58 +16,98 @@ o unbug
 New concepts:
 -------------
 
+o foreach(X; Y; Z)
+    The foreach statement has been extended to allow iterations over
+    mappings, multisets and any object that implements the iterator
+    interface (see below). To make it possible to use this
+    conveniently, a new syntax has been added to get both the index
+    and the value in each iteration:
+
+    	foreach (something; index-expr; value-expr) ...
+
+    This iterates over something, assigning in turn each index to
+    index-expr and each value to value-expr. The index and value
+    expressions can be declarations or lvalues, and they can also be
+    left out if the index and/or value part isn't interesting.
+
+    Note that it depends on the data type whether the iteration order
+    is well defined or not; arrays and multisets are iterated over
+    starting with the first element while mappings are visited in some
+    arbitrary order (each element is still visited only once, though).
+
+o Iterators
+    As noted above, an iterator interface has been added that is now
+    used in various places to iterate over different data structures.
+    Not only the built-in data types are supported, but actually any
+    object that fulfills the interface for iterators:
+
+    When iterating over an object o, o->_get_iterator() is called to
+    get an iterator object. It should at least have two functions
+    index() and value() to get the index and value at the current
+    position, a function `+=(int steps) to advance the current
+    position the specified number of steps, and a `!() that returns
+    zero if the position hasn't reached the end of the data set.
+
+    Also, if the object o lacks a _get_iterator function, it's assumed
+    to be an iterator itself. This makes it possible to pass an
+    iterator explicitly to e.g. the foreach statement.
+
+    The built-in data types also have iterator classes with this
+    interface. They are found as Array.Iterator, Mapping.Iterator, etc
+    and can be used to iterate over these data types in some custom
+    fashion. This is especially useful for mappings and multisets,
+    which cannot be iterated over directly in any other way. For
+    example, to get some arbitrary index in a mapping m:
+
+	mixed any_index = Mapping.Iterator(m)->index();
+
 o Automap
 
 o Implicit lambda.
 
+o Access to hidden variables in surrounding scopes.
+    Include the names of the surrounding classes themselves in the lookup for
+    Foo::, to make it possible to adress hidden variables in the scopes of
+    surrounding classes, e.g:
+
+       class Foo {
+         int i;
+	 void create (int i) {Foo::i = i;}
+       }
+
 o global::
     Added new keyword global to be able to access identifiers on the
-    top level of the compilation unit using global::foo. (Deactivated
-    in 7.2 compatibility mode, of course.)
-
-    It's now possible to use e.g: global::this_program.
-
-    Added an optional level argument to this_object(). *FIXME: Do we
-    really want this documented?*
+    top level of the compilation unit using global::foo.
 
 o global.
     All top level modules (and other identifiers in that scope) can now
-    also be accessed with a "global." prefix. This is useful in cases where
+    be accessed with a "global." prefix. This is useful in cases where
     local identifiers overshadow the top level, for instance in the Image
     module, where the Image.Image class would occasionally block your view.
 
 o this
     Added a magic identifier "this" that can be used instead of
     this_object(). Like this_program, it only exists when there's no
-    other identifier with that name. The object of a surrounding class
-    can be adressed with Foo::this.
+    other identifier with that name. The primary reason for adding
+    this magic identifier is to make it possible to address the object
+    of a surrounding class with Foo::this.
 
-o Local
-
-o Iterators  (Mapping.pmod Multiset.pmod)
-
-o for(X; Y; Z)
+o The Local module
 
 o enum reserved
 
 o enum and typedef have implicit local binding
 
-o ::_indices ::_values
-
-o access mechanism for named scopes
-    Include the names of the surrounding classes themselves in the lookup for
-    Foo::, to make it possible to adress hidden variables in the scopes of
-    surrounding classes, e.g:
-
-       class X {
-         int i;
-         void create (int i) {X::i = i;}
-       }
-
-    Since this change is mostly but not completely compatible with the earlier
-    lookup rule, it's disabled in 7.2 compatibility mode.
+o ::_indices(), ::_values().
+   There are now two "magic" functions ::_indices() and ::_values()
+   that can be used by an object to list all identifiers and their
+   values in itself. They are primarily intended when the _indices()
+   and _values() lfuns have been defined, to get the default
+   implementations. This is to complement the "magic" ::`->() and
+   ::`->=() functions that exist in earlier releases.
 
 o 
+
 
 Other:
 ------
@@ -76,10 +116,6 @@ sp -> Pike_sp
 fp -> Pike_fp
 fatal -> Pike_fatal
 empty_string -> empty_pike_string
-
---with-internal-profiling
---with-new-multisets
-
 
 
 New modules / classes / methods added:
@@ -148,6 +184,7 @@ o Image.DWG
 o Gmp.mpq and Gmp.mpf
     Multi precision fractions.    
 
+
 Optimizations:
 --------------
 
@@ -157,10 +194,32 @@ o Improvement and bug tickets closed: 1499
 Compatibility changes:
 ----------------------
 
-Bugfixes and API-fixes that break compatibility. The old behaviour is
-emulated in the compatibility layer that is activated by adding the
-preprocessor directive "#pike 7.2" to your program or by precifying
-the "-V7.2" argument to the pike executable.
+The following changes are known to break compatibility. The old
+behaviour is emulated in the compatibility layer that is activated by
+adding the preprocessor directive "#pike 7.2" to your program or by
+giving the argument "-V7.2" to the pike executable.
+
+o "global" has become a reserved keyword.
+
+o Changed lookup rule for ::.
+    Previously the identifier in front of :: was only looked up among
+    the preceding inherits. Now the lookup additionally includes the
+    names of the surrounding classes. The inherits inside a class
+    still take precedence over the name of the class, though.
+
+o Using local:: on variables is an error.
+    Previously the construct local::foo could be used to access the
+    identifier "foo" in the class scope if it had been overridden by
+    an argument or function variable. That is however only a
+    side-effect of the real use for local::, namely to bind the
+    identifier statically at that point only, to avoid getting an
+    overridden version. In the case of variables this leads to
+    questionable semantics, which is the reason it's been made an
+    error in this version. Pike 7.2 didn't implement it correctly;
+    there local:: on variables had only the effect to access the class
+    scope. Now a proper way to access hidden identifiers has been
+    added, so all such uses of local:: should be replaced with
+    this_program::.
 
 o Protocols.LDAP.client
     The return code from all methods was changed to follow Pike's
@@ -182,8 +241,7 @@ Bugs fixed:
 o Reworked trampolines to cause less circular references. (solves 1937)
 
 
-(to browse bug tickets, either visit
- http://community.roxen.com/crunch/ - or append the ticket id to
- "http://bugs.roxen.com/" for a address directly to the ticket itself)
-
-
+(To browse bug tickets, either visit
+http://community.roxen.com/crunch/ - or append the ticket id to
+"http://bugs.roxen.com/" for an address directly to the ticket
+itself.)
