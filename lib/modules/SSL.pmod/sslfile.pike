@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.32 2001/08/15 16:29:19 grubba Exp $
+/* $Id: sslfile.pike,v 1.33 2001/08/17 15:02:15 noy Exp $
  *
  */
 
@@ -380,7 +380,7 @@ private void ssl_write_callback(mixed id)
     }
     res = queue_write();
   }
-  if (!strlen(write_buffer))
+  if (!strlen(write_buffer) && socket)
     socket->set_write_callback(0);
   if (res)
     die(res);
