@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.13 1999/08/06 22:15:40 hubbe Exp $ */
+/* $Id: socktest.pike,v 1.14 2000/10/13 17:15:58 nilsson Exp $ */
 
 
 import Stdio;
@@ -125,12 +125,12 @@ void die()
 }
 
 int counter;
-
+int quiet;
 
 void got_callback()
 {
   counter++;
-  if(!(counter & 0xf))
+  if(!quiet && !(counter & 0xf))
     predef::write(sprintf("%c\b","|/-\\" [ (counter>>4) & 3 ]));
   remove_call_out(die);
   call_out(die,20);
@@ -369,6 +369,12 @@ void accept_callback()
 
 int main()
 {
+  string testargs=getenv()->TESTARGS;
+  if(testargs &&
+     (has_value(testargs/" ", "-q") ||
+      has_value(testargs/" ", "-quiet") ) )
+    quiet=1;
+
   if(!port1::bind(0, accept_callback))
   {
     werror("Bind failed. (%d)\n",port1::errno());

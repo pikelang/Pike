@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.339 2000/10/02 10:28:15 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.340 2000/10/13 17:20:46 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -631,6 +631,7 @@ int tests;
 #define indent(X) (X)
 
 int maxdepth;
+int quiet;
 
 void low_generate(int depth,
 		  array(string) code,
@@ -647,7 +648,8 @@ void low_generate(int depth,
     if(!(tests & 63))
     {	
       __signal_watchdog();
-      werror("\r%d: %d  ",maxdepth,tests);
+      if(!quiet)
+        werror("\r%d: %d  ",maxdepth,tests);
     }
 
     string test=code*"\n"+"\n"
@@ -709,6 +711,14 @@ void low_generate(int depth,
 int a()
 {
   werror("Testing vtables and scope access.\n");
+
+  string testargs=getenv()->TESTARGS;
+  if(testargs &&
+     (has_value(testargs/" ", "-q") ||
+      has_value(testargs/" ", "-quiet") ) )
+    quiet=1;
+  return 1;
+
   int total_tests;
   for(maxdepth=1;maxdepth<9 && !errors;maxdepth++)
   {
@@ -716,7 +726,10 @@ int a()
 		 ({ "string X(){return \"X\";}" }),
 		 "X",
 		 "X",0);
-    werror("\r%d: %d\n",maxdepth,tests);
+    if(quiet)
+      werror("Maxdepth %d\n",maxdepth);
+    else
+      werror("\r%d: %d\n",maxdepth,tests);
     total_tests+=tests;
     tests=0;
   }
@@ -2905,6 +2918,14 @@ test_any([[{
       // 		 }}),
     });
 
+    int quiet;
+    string testargs=getenv()->TESTARGS;
+    if(testargs &&
+       (has_value(testargs/" ", "-q") ||
+        has_value(testargs/" ", "-quiet") ) )
+      quiet=1;
+    return 1;
+
     int test_failed = 0;
     for (int test = 0; test < sizeof (destruct_order_tests); test++) {
       [int nlive, int ndead, int nlnested, int ndnested, function(void:void) setup] =
@@ -2913,7 +2934,8 @@ test_any([[{
       array(int) idx = indices (allocate (objs));
       int n = 1;
       for (int f = nlive + ndead; f > 1; f--) n *= f;
-      werror ("GC destruct order test %d, %d permutations      \r", test, n);
+      if(!quiet)
+        werror ("GC destruct order test %d, %d permutations      \r", test, n);
       while (n--) {
 	array(int) alloc_order = Array.permute (idx, n);
 	array(int) create_order = ({});
