@@ -289,7 +289,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 #ifdef DEBUG
 void debug_mark_spot(char *desc,struct piece *feed,int c)
 {
-   int l,m,i,i0;
+   ptrdiff_t l, i, i0, m;
    char buf[40];
 
    if (!(THIS->flags & FLAG_DEBUG_MODE)) return;
@@ -1242,9 +1242,9 @@ static void put_out_feed(struct parser_html_storage *this,
 
 static void put_out_feed_range(struct parser_html_storage *this,
 			       struct piece *head,
-			       int c_head,
+			       ptrdiff_t c_head,
 			       struct piece *tail,
-			       int c_tail)
+			       ptrdiff_t c_tail)
 {
    DEBUG((stderr,"put out feed range %p:%d - %p:%d\n",
 	  head,c_head,tail,c_tail));
@@ -1278,9 +1278,9 @@ static void put_out_feed_range(struct parser_html_storage *this,
 /* push feed range on stack */
 
 static INLINE void push_feed_range(struct piece *head,
-				   int c_head,
+				   ptrdiff_t c_head,
 				   struct piece *tail,
-				   int c_tail)
+				   ptrdiff_t c_tail)
 {
    int n=0;
    if (head==tail && c_head==c_tail)
@@ -1333,8 +1333,8 @@ static INLINE void push_feed_range(struct piece *head,
   }									\
 } while (0)
 
-static INLINE int n_pos_forward (struct piece *feed, int c,
-				 struct piece **dest, int *dp)
+static INLINE int n_pos_forward (struct piece *feed, ptrdiff_t c,
+				 struct piece **dest, ptrdiff_t *dp)
 {
   while (feed->s->len <= c) {
     if (!feed->next) {
@@ -1378,8 +1378,8 @@ static INLINE int cmp_feed_pos(struct piece *piece_a, int pos_a,
 /* count lines, etc */
 static INLINE void skip_piece_range(struct location *loc,
 				    struct piece *p,
-				    int start,
-				    int stop)
+				    ptrdiff_t start,
+				    ptrdiff_t stop)
 {
    int b=loc->byteno;
    switch (p->s->size_shift)
@@ -1475,9 +1475,9 @@ static void skip_feed_range(struct feed_stack *st,
 /* scan forward for certain chars */
 
 static int scan_forward(struct piece *feed,
-			int c,
+			ptrdiff_t c,
 			struct piece **destp,
-			int *d_p,
+			ptrdiff_t *d_p,
 			p_wchar2 *look_for,
 			int num_look_for) /* negative = skip those */
 {
@@ -1536,7 +1536,7 @@ static int scan_forward(struct piece *feed,
 	 if (!rev) {
 	    while (feed)
 	    {
-	       int ce=feed->s->len-c;
+	       ptrdiff_t ce = feed->s->len - c;
 	       p_wchar2 f=(p_wchar2)*look_for;
 	       SCAN_DEBUG_MARK_SPOT("scan_forward piece loop (1)",feed,c);
 	       switch (feed->s->size_shift)
@@ -1588,7 +1588,7 @@ static int scan_forward(struct piece *feed,
       default:  /* num_look_for > 1 */
 	 while (feed)
 	 {
-	    int ce=feed->s->len-c;
+	    ptrdiff_t ce = feed->s->len - c;
 	    SCAN_DEBUG_MARK_SPOT("scan_forward piece loop (>1)",feed,c);
 	    switch (feed->s->size_shift)
 	    {
@@ -1672,9 +1672,9 @@ found:
 
 static int scan_for_string (struct parser_html_storage *this,
 			    struct piece *feed,
-			    int c,
+			    ptrdiff_t c,
 			    struct piece **destp,
-			    int *d_p,
+			    ptrdiff_t *d_p,
 			    struct pike_string *str)
 {
   if (!str->len) {
@@ -1688,7 +1688,7 @@ static int scan_for_string (struct parser_html_storage *this,
     for (;;) {								\
       TYPE *p, *e;							\
       struct piece *dst;						\
-      int cdst;								\
+      ptrdiff_t cdst;							\
       if (!scan_forward (feed, c, &feed, &c, &look_for, 1)) {		\
 	*destp = feed;							\
 	*d_p = c;							\
@@ -2638,13 +2638,13 @@ static newstate quote_tag_callback(struct parser_html_storage *this,
 
 static newstate find_end_of_container(struct parser_html_storage *this,
 				      struct svalue *tagname,
-				      struct piece *feed,int c,
-				      struct piece **e1,int *ce1,
-				      struct piece **e2,int *ce2,
+				      struct piece *feed, ptrdiff_t c,
+				      struct piece **e1, ptrdiff_t *ce1,
+				      struct piece **e2, ptrdiff_t *ce2,
 				      int finished)
 {
    struct piece *s1,*s2,*s3;
-   int c1,c2,c3;
+   ptrdiff_t c1,c2,c3;
    newstate res;
 
    DEBUG_MARK_SPOT("find_end_of_container",feed,c);
