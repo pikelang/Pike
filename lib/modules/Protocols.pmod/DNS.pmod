@@ -211,6 +211,45 @@ class protocol
 class client {
   inherit protocol;
 
+  static private int is_ip(string ip)
+  {
+    return(replace(rest,
+		   ({ "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "." }),
+		   ({  "", "", "", "", "", "", "", "", ""; "", ""  })) == "");
+  }
+
+  static private mapping etc_hosts;
+
+  static private string match_etc_hosts(string host)
+  {
+    if (!etc_hosts) {
+      string raw = Stdio.read_file("/etc/hosts");
+
+      etc_hosts = ([ "localhost", "127.0.0.1" ]);
+
+      if (raw) {
+	foreach(raw/"\n", string line) {
+	  // Handle comments, and split the line on white-space
+	  line = replace((line/"#")[0], "\t", " ");
+	  array arr = (line/" ") - ({ "" });
+
+	  if (sizeof(arr) > 1) {
+	    if (is_ip(arr[0])) {
+	      foreach(arr[1..], name) {
+		etc_hosts[name] = arr[0];
+	      }
+	    } else {
+	      // Bad /etc/hosts entry ignored.
+	    }
+	  }
+	}
+      } else {
+	// Couldn't read /etc/hosts.
+      }
+    }
+    return(etc_hosts[host]);
+  }
+
   array(string) nameservers = ({});
   array domains = ({});
   void create(void|string server)
@@ -236,18 +275,29 @@ class client {
 	sscanf(line,"%s%*[ \t]%s",line,rest);
 	switch(line)
 	{
-	 case "domain":
+	case "domain":
 	  // Save domain for later.
 	  domain = rest;
 	  break;
-	 case "search":
+	case "search":
 	  rest = replace(rest, "\t", " ");
 	  foreach(rest / " " - ({""}), string dom)
 	    domains += ({dom});
 	  break;
 	      
-	 case "nameserver":
-	  nameservers += ({ rest });
+	case "nameserver":
+	  if (!is_ip(rest)) {
+	    // Not an IP-number!
+	    string host = rest;
+	    if (!(rest = match_etc_hosts(host))) {
+	      werror(sprintf("Protocols.DNS.client(): "
+			     "Can't resolv nameserver \"%s\"\n", host));
+	      break;
+	    }
+	  }
+	  if (sizeof(rest)) {
+	    nameservers += ({ rest });
+	  }
 	  break;
 	}
       }
