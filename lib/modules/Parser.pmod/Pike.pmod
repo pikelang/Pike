@@ -6,7 +6,7 @@ array(string) split(string data)
   int line=1;
   array(string) ret=({});
   int pos;
-  data+="\0";
+  data += "\n\0";	/* End sentinel. */
 
   while(1)
   {
@@ -29,10 +29,18 @@ array(string) split(string data)
 	  error("Failed to find end of preprocessor statement.\n");
 	
 	while(data[pos-1]=='\\') pos=search(data,"\n",pos+1);
+        sscanf(data[start..pos], 
+	       "#%*[ \t]charset%*[ \t\\]%s%*[ \n]", string charset);
+	if(charset)
+	  data = (data[0..pos]+
+		  master()->decode_charset(data[pos+1..sizeof(data)-3], 
+					   charset)
+		  +"\n\0");  // New end sentinel.
 	break;
 
       case 'a'..'z':
       case 'A'..'Z':
+      case 128..:     // Lets simplify things for now...
       case '_':
 	while(1)
 	{
@@ -41,6 +49,7 @@ array(string) split(string data)
 	    case 'a'..'z':
 	    case 'A'..'Z':
 	    case '0'..'9':
+	    case 128..:      // Lets simplify things for now...
 	    case '_':
 	      pos++;
 	      continue;
@@ -88,7 +97,8 @@ array(string) split(string data)
 	break;
 
       default:
-	werror("Unknown token %s\n",data[pos..pos+5]);
+	werror("%O\n",ret);
+	werror("Unknown token %O\n",data[pos..pos+20]);
 	exit(1);
 
       case  '`':
