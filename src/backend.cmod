@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.5 2001/03/12 15:59:25 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.6 2001/03/12 16:34:15 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -347,7 +347,7 @@ struct selectors
 struct active_selectors
 {
   fd_set rset, wset;
-#ifdef WITH_OOB;
+#ifdef WITH_OOB
   fd_set eset;
 #endif
   int max_fd;
