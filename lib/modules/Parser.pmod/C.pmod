@@ -260,8 +260,8 @@ array(Token) tokenize(array(string) s, void|string file)
     ret[e]=Token(s[e],line,file);
     if(s[e][0]=='#')
     {
-      if( sscanf(s[e],"#%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file) == 4 ||
-          sscanf(s[e],"#%*[ \t\14]line%*[ \t\14]%d%*[ \t\14]\"%s\"",line,file)==5)
+      if( (sscanf(s[e],"#%*[ \t\14]%d%*[ \t\14]\"%s\"", line,file) == 4) ||
+          (sscanf(s[e],"#%*[ \t\14]line%*[ \t\14]%d%*[ \t\14]\"%s\"",line,file)==5))
         line--;
     }
     line+=sizeof(s[e]/"\n")-1;
