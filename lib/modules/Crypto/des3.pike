@@ -16,21 +16,21 @@ int query_key_size() { return 16; }
 
 int query_block_size() { return 8; }
 
+/* An exception will be raised if key is weak */
 object set_encrypt_key(string key)
 {
-  /* An exception will be raised if key is weak */
-  d[0]->set_encrypt_key(key[..7]);
+  pipe :: set_encrypt_key(key[..7], key[8..], key[..7]);
+  /* Switch mode of middle crypto */
   d[1]->set_decrypt_key(key[8..]);
-  d[2]->set_encrypt_key(key[..7]);
   return this_object();
 }
 
+/* An exception will be raised if key is weak */
 object set_decrypt_key(string key)
 {
-  /* An exception will be raised if key is weak */
-  d[0]->set_decrypt_key(key[..7]);
+  pipe :: set_decrypt_key(key[..7], key[8..], key[..7]);
+  /* Switch mode of middle crypto */
   d[1]->set_encrypt_key(key[8..]);
-  d[2]->set_decrypt_key(key[..7]);
   return this_object();
 }
 
