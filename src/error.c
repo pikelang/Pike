@@ -13,8 +13,9 @@
 #include "object.h"
 #include "main.h"
 #include "builtin_functions.h"
+#include "backend.h"
 
-RCSID("$Id: error.c,v 1.14 1998/03/28 15:33:04 grubba Exp $");
+RCSID("$Id: error.c,v 1.15 1998/04/06 04:15:52 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -166,10 +167,8 @@ void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 
   (void)VFPRINTF(stderr, fmt, args);
 
-  fprintf(stderr,"Attempting to dump backlog (may fail).\n");
-
   d_flag=t_flag=0;
-  push_text("Fatal error");
+  push_text("Attempting to dump backlog (may fail).\n");
   f_backtrace(0);
   f_aggregate(2);
   APPLY_MASTER("describe_backtrace",1);
