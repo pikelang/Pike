@@ -12,18 +12,21 @@ import Getopt;
  *  strstr(string,string *) -> return first occurance of first string...
  *  inherit doesn't work
  *  preprocessor stuff
+ *  for simple evaluations, re-use (and inherit) compiled program.
  */
 
 #!define catch(X) ((X),0)
 
   // #pragma all_inline
 
-/* #define DEBUG */
+  #define DEBUG
 
   mapping variables=([]);
-  mapping constants=([]);
+  mapping(string:mixed) constants=([]);
   string *functions=({});
   string *function_names=({});
+  string *imports_and_inherits=({});
+
   mapping query_variables() { return variables; }
 /* do nothing */
   
@@ -34,10 +37,12 @@ import Getopt;
     string prog,file;
     object o;
     mixed err;
-    prog=("#pragma unpragma_strict_types\n" // "#pragma all_inline\n"+
-	  "function write;\n"+
+    prog=("#pragma unpragma_strict_types\n"+ // "#pragma all_inline\n"+
+
+	  imports_and_inherits*""+
+
 	  map(indices(constants),lambda(string f)
-	      { return constants[f]&&sprintf("constant %s=%s;",f,constants[f]); })*"\n"+
+	      { return constants[f]&&sprintf("constant %s=___hilfe.%s;",f,f); })*"\n"+
 	      map(indices(variables),lambda(string f)
 		  { return sprintf("mixed %s;",f,f); })*"\n"+
 		  "\nmapping query_variables() { return ([\n"+
@@ -52,7 +57,15 @@ import Getopt;
     write("program:"+prog);
 #endif
     program p;
-    if(err=catch(p=compile_string(prog)))
+
+    mixed oldwrite=all_constants()->write;
+    add_constant("write",write);
+    add_constant("___hilfe",constants);
+    err=catch(p=compile_string(prog));
+    add_constant("___hilfe");
+    add_constant("write",oldwrite);
+
+    if(err)
     {
 #ifdef DEBUG
       write(describe_backtrace(err));
@@ -67,7 +80,6 @@ import Getopt;
       return 0;
     }
     foreach(indices(variables), string f) o[f]=variables[f];
-    o->write=write;
     return o;
   }
   
@@ -431,6 +443,9 @@ import Getopt;
 #endif
     switch(first_word)
     {
+      // Things to implement:
+      // import and inherit
+
       case "if":
       case "for":
       case "do":
@@ -439,18 +454,60 @@ import Getopt;
 	/* parse loop */
 	do_evaluate("mixed ___Foo4711() { "+ex+" ; }\n",0);
 	return 1;
+
+
+      case "inherit":
+      {
+	/* parse variable def. */
+	sscanf(ex,first_word+"%s",b);
+	b=skipwhite(b);
+
+	imports_and_inherits+=({"inherit "+b+";\n"});
+	if(!eval(""))
+	{
+	  imports_and_inherits=imports_and_inherits[..sizeof(imports_and_inherits)-2];
+	}
+	return 1;
+      }
+
+      case "import":
+      {
+	sscanf(ex,first_word+"%s",b);
+	b=skipwhite(b);
+	if(object o=eval("mixed ___Foo4711() { return "+b+"; }\n"))
+	{
+	  mixed const_value=o->___Foo4711();
+//	  werror("%O\n",const_value);
+	  string name="___import"+sizeof(imports_and_inherits);
+	  constants[name]=const_value;
+	  imports_and_inherits+=({"import ___hilfe."+name+";\n"});
+	  if(!eval(""))
+	  {
+	    m_delete(constants,name);
+	    imports_and_inherits=imports_and_inherits[..sizeof(imports_and_inherits)-2];
+	  }
+	}
+	return 1;
+      }
 	
       case "constant":
+      {
 	/* parse variable def. */
 	sscanf(ex,first_word+"%s",b);
 	b=skipwhite(b);
 	c=get_name(b);
 	name=c[0];
 	sscanf(c[1],"=%s",c[1]);
-	a=constants[name];
-	constants[name]=c[1];
-	if(!eval("")) constants[name]=a;
+	mixed old_value=constants[name];
+	if(object o=eval("mixed ___Foo4711() { return "+c[1]+"; }\n"))
+	{
+	  mixed const_value=o->___Foo4711();
+	  constants[name]=const_value;
+	  if(!eval(""))
+	    constants[name]=old_value;
+	}
 	return 1;
+      }
 	
       case "int":
       case "void":
@@ -550,6 +607,15 @@ class StdinHilfe
     {
       write=predef::write;
       ::create();
+
+      if(string home=getenv("HOME"))
+      {
+	if(string s=Stdio.read_file(home+"/.hilferc"))
+	{
+	  add_buffer(s);
+	}
+      }
+	
       object(Stdio.Readline) readline = Stdio.Readline();
       readline->enable_history(512);
 
