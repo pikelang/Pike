@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.15 2004/05/02 18:26:43 nilsson Exp $
+dnl $Id: testsuite.in,v 1.16 2004/06/20 23:23:04 nilsson Exp $
 
 dnl - ADT.BitBuffer
 
@@ -103,6 +103,27 @@ test_equal(indices(adth),[[ ({9,10}) ]])
 test_equal(values(adth),[[ ({26,27}) ]])
 test_do(add_constant("adth"))
 
+
+dnl - ADT.Priority_queue
+
+test_eval_error( ADT.Priority_queue()->pop(); )
+test_any([[
+  object q=ADT.Priority_queue();
+  q->push(1,"a");
+  return q->pop();
+]], "a")
+test_any([[
+  object q=ADT.Priority_queue();
+  q->push(1,"a");
+  q->push(2,"b");
+  return q->pop();
+]], "a")
+test_any([[
+  object q=ADT.Priority_queue();
+  q->push(2,"a");
+  q->push(1,"b");
+  return q->pop();
+]], "b")
 
 
 dnl - ADT.Stack
