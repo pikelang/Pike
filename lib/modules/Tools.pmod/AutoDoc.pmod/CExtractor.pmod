@@ -107,6 +107,8 @@ static private class Extractor {
 		"class":Class,
 		"namespace":NameSpace])[meta->type]();
           c->name = meta->name;
+	  foreach(meta->inherits, PikeObject p)
+	    c->AddInherit(p);
         }
         decls = ({ c });
         tokens = tokens[1..];
