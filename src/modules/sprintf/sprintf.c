@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.47 1999/10/21 21:57:10 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.48 1999/10/21 23:25:08 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -735,44 +735,44 @@ INLINE static int do_one(struct format_stack *fs,
      break; \
    }
 
-#define CHECK_OBJECT_SPRINTF()						    \
-	/* FIXME: Check that the stack/reference operations are correct. */ \
-	{								    \
-	   /* NOTE: It would be nice if this was a do { } while(0) macro */ \
-	   /* but it cannot be since we need to break out of the case... */ \
-	  struct svalue *sv;						    \
-	  PEEK_SVALUE(sv);						    \
-	  if(sv->type == T_OBJECT && sv->u.object->prog)		    \
-	  {                                                                 \
-            int fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	    \
-	    if(fun != -1)                                                   \
-            {                                                               \
-              int n=0;							    \
-	      push_int(EXTRACT_PCHARP(a));				    \
-	      if (fsp->precision!=SPRINTF_UNDECIDED)			    \
-	      {								    \
-		 push_constant_text("precision");			    \
-		 push_int(fsp->precision);				    \
-                 n+=2;							    \
-	      }								    \
-	      f_aggregate_mapping(n);					    \
-									    \
-	      apply_low(sv->u.object, fun, 2);                              \
-	      if(sp[-1].type == T_STRING)				    \
-	      {	                                                            \
-                DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
-                             fatal("OOps in sprintf\n"); )                  \
-                fs->fsp->to_free_string = (--sp)->u.string;	            \
-									    \
-		fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);		    \
-		fsp->len = fs->fsp->to_free_string->len;		    \
-									    \
-		pop_stack();						    \
-		break;							    \
-	      }								    \
-              if(!IS_ZERO(sp-1))					    \
-	      {								    \
-		 sprintf_error(fs,"argument %d (object) returned "	    \
+#define CHECK_OBJECT_SPRINTF()						      \
+	{								      \
+	   /* NOTE: It would be nice if this was a do { } while(0) macro */   \
+	   /* but it cannot be since we need to break out of the case... */   \
+	  struct svalue *sv;						      \
+	  PEEK_SVALUE(sv);						      \
+	  if(sv->type == T_OBJECT && sv->u.object->prog)		      \
+	  {                                                                   \
+            int fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	      \
+	    if(fun != -1)                                                     \
+            {                                                                 \
+              int n=0;							      \
+	      push_int(EXTRACT_PCHARP(a));				      \
+	      if (fsp->precision!=SPRINTF_UNDECIDED)			      \
+	      {								      \
+		 push_constant_text("precision");			      \
+		 push_int(fsp->precision);				      \
+                 n+=2;							      \
+	      }								      \
+	      f_aggregate_mapping(n);					      \
+									      \
+	      apply_low(sv->u.object, fun, 2);                                \
+	      if(sp[-1].type == T_STRING)				      \
+	      {	                                                              \
+                DO_IF_DEBUG( if(fs->fsp->to_free_string)                      \
+                             fatal("OOps in sprintf\n"); )                    \
+                fs->fsp->to_free_string = (--sp)->u.string;	              \
+									      \
+		fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);		      \
+		fsp->len = fs->fsp->to_free_string->len;		      \
+	       								      \
+                /* We have to lift one argument from the format stack. */     \
+                GET_SVALUE(sv);                                               \
+		break;							      \
+	      }								      \
+              if(!IS_ZERO(sp-1))					      \
+	      {								      \
+		 sprintf_error(fs,"argument %d (object) returned "	      \
 			       "illegal value from _sprintf()\n",argument+1); \
 	      }								      \
 	      pop_stack();						      \
