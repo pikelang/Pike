@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.112 2001/12/19 23:44:47 mast Exp $");
+RCSID("$Id: spider.c,v 1.113 2002/04/01 15:57:01 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1084,10 +1084,6 @@ void f__dump_obj_table(INT32 args)
   }
   f_aggregate(n);
 }
-
-#ifndef MIN
-#define MIN(A,B) ((A)<(B)?(A):(B))
-#endif
 
 /*! @endmodule
  */
