@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.16 1997/09/03 04:59:12 per Exp $ */
+/* $Id: font.c,v 1.17 1997/09/05 22:18:00 per Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.16 1997/09/03 04:59:12 per Exp $<br>
+**!	$Id: font.c,v 1.17 1997/09/05 22:18:00 per Exp $<br>
 **! class font
 **!
 **! note
@@ -188,8 +188,23 @@ static void exit_font_struct(struct object *obj)
 
 /***************** internals ***********************************/
 
+static INLINE int char_space(struct font *this, unsigned char c)
+{
+  if(c==0x20)
+    return (int)((float)(this->height*this->xspacing_scale)/4.5);
+  else if(c==0x20+128)
+    return (this->height*this->xspacing_scale)/18;
+  return this->charinfo[c].spacing*this->xspacing_scale;
+}
 
-static inline int my_read(int from, char *buf, int towrite)
+static INLINE int char_width(struct font *this, unsigned char c)
+{
+  if(c==0x20 || c==0x20+128)  return 0;
+  return this->charinfo[c].width;
+}  
+
+
+static INLINE int my_read(int from, char *buf, int towrite)
 {
   int res;
   while((res = read(from, buf, towrite)) < 0)
@@ -207,7 +222,7 @@ static inline int my_read(int from, char *buf, int towrite)
   return res;
 }
 
-static inline long file_size(int fd)
+static INLINE long file_size(int fd)
 {
   struct stat tmp;
   int res;
@@ -218,7 +233,7 @@ static inline long file_size(int fd)
   return -1;
 }
 
-static inline void write_char(struct _char *ci,
+static INLINE void write_char(struct _char *ci,
 			      rgb_group *pos,
 			      INT32 xsize,
 			      INT32 height)
@@ -433,31 +448,16 @@ void font_load(INT32 args)
 **!	One or more lines of text.
 **! see also: text_extents, load, image::paste_mask, image::paste_alpha_color
 */
-static INLINE int char_space(struct font *this, unsigned char c)
-{
-  if(c==0x20)
-    return this->charinfo[SPACE_CHAR].spacing*this->xspacing_scale;
-  else if(c==0x20+128)
-    return (this->charinfo['m'].spacing/16)*this->xspacing_scale;
-  return this->charinfo[c].spacing*this->xspacing_scale;
-}  
-
-static INLINE int char_width(struct font *this, unsigned char c)
-{
-  if(c==0x20)          return 0;
-  else if(c==0x20+128) return 0;
-  return this->charinfo[c].width;
-}  
-
 
 void font_write(INT32 args)
 {
    struct object *o;
    struct image *img;
-   INT32 xsize=0,i,c,maxwidth2,j;
+   INT32 xsize=0,i,maxwidth2,j;
    int *width_of;
    unsigned char *to_write;
    int to_write_len;
+   int c;
    struct font *this = (*(struct font **)(fp->current_storage));
    if (!this)
       error("font->write: no font loaded\n");
@@ -511,14 +511,16 @@ void font_write(INT32 args)
      THREADS_ALLOW();
      for (i = 0; i < to_write_len; i++)
      {
-       c=(unsigned char)*(to_write++);
+       c=*(to_write++);
+/*     if(c<0) fatal("IDI compiler\n");*/
        if (c < (INT32)this->chars)
        {
- 	 write_char(this->charinfo+c,
-		    (img->img+xsize)+
-		    (img->xsize*(int)(j*this->height*this->yspacing_scale)),
-		    img->xsize,
-		    this->height);
+	 if(char_width(this,c))
+	   write_char(this->charinfo+c,
+		      (img->img+xsize)+
+		      (img->xsize*(int)(j*this->height*this->yspacing_scale)),
+		      img->xsize,
+		      this->height);
 	 xsize += char_space(this, c);
        }
      }
@@ -565,7 +567,7 @@ void font_text_extents(INT32 args)
   maxwidth2=0;
 
   for (j=0; j<args; j++) 
- {
+  {
     if (sp[j-args].type!=T_STRING) error("font->text_extents: illegal argument(s)\n");
     xsize = 0;
     for (i = 0; i < sp[j-args].u.string->len; i++)
