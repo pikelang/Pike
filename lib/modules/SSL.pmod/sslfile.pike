@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.43 2002/03/20 16:40:02 nilsson Exp $
+/* $Id: sslfile.pike,v 1.44 2002/04/28 18:41:13 nilsson Exp $
  *
  */
 
@@ -377,6 +377,11 @@ private void ssl_write_callback(mixed id)
 #endif
 	  die(-1);
     }
+  }
+
+  if (!this_object()) {
+    // We've been destructed.
+    return;
   }
   int res = queue_write();
 #ifdef SSL3_DEBUG
