@@ -5,6 +5,10 @@
  * Good side: No problems compiling unless --run-unlocked is used
  * Bad side: Can't use these things for other purposes..
  */
+/* Since the memlock stuff doesn't work yet, I disable the code for now.
+ *	/grubba
+ */
+#ifdef PIKE_RUN_UNLOCKED
 
 #define pike_atomic_fool_gcc(x) (*(volatile struct { int a[100]; } *)x)
 
@@ -210,6 +214,8 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 #undef PIKE_NEED_MEMLOCK
 #define PIKE_NEED_MEMLOCK
 
+#include "threads.h"
+
 static inline int
 pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 {
@@ -265,6 +271,8 @@ static inline INT32 pike_atomic_swap32(INT32 *addr, INT32 newval)
 #define PIKE_HAS_COMPARE_AND_SWAP64
 #undef PIKE_NEED_MEMLOCK
 #define PIKE_NEED_MEMLOCK
+
+#include "threads.h"
 
 static inline int
 pike_atomic_compare_and_swap64 (INT64 *p, INT64 oldval, INT64 newval)
@@ -406,5 +414,6 @@ extern void init_pike_cpulib(void);
 #define init_pike_cpulib()
 #endif
 
+#endif /* PIKE_RUN_UNLOCKED */
 
 #endif /* PIKE_CPULIB_H */
