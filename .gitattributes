@@ -107,6 +107,7 @@ testfont binary
 /lib/modules/Parser.pmod/LR.pmod/lr.pike foreign_ident
 /lib/modules/Parser.pmod/LR.pmod/module.pmod foreign_ident
 /lib/modules/Parser.pmod/Pike.pmod foreign_ident
+/lib/modules/Parser.pmod/Python.pmod foreign_ident
 /lib/modules/Parser.pmod/RCS.pike foreign_ident
 /lib/modules/Parser.pmod/XML.pmod/Tree.pmod foreign_ident
 /lib/modules/Parser.pmod/module.pmod foreign_ident
