@@ -122,7 +122,7 @@ if test "x$with_java" = xyes; then
     CPPFLAGS="-I$pike_cv_java_include_dir -I$pike_cv_java_include_dir/$pike_cv_java_sysos ${CPPFLAGS}"
   fi
 
-  AC_CHECK_HEADERS(jni.h)
+  AC_CHECK_HEADERS(jni.h winbase.h)
 
   pike_cv_java=no
 
@@ -218,8 +218,15 @@ if test "x$with_java" = xyes; then
   else
     AC_DEFINE(HAVE_JAVA)
     JAVA_AVAILABLE=1
-    if test "x$pike_cv_java_java_home" = x; then :; else
+    if test "x$pike_cv_java_java_home" = xno; then :; else
       AC_DEFINE_UNQUOTED(JAVA_HOME, "${pike_cv_java_java_home}")
+    fi
+    if test "x$pike_cv_sys_os" = xWindows_NT ; then
+      dnl We'll do LoadLibrary ourselves instead of relying on jvm.lib to
+      dnl do it for us.  That way we'll avoid nasty popup dialogs...
+      JAVA_LIBS=""
+    else
+      :
     fi
   fi
 

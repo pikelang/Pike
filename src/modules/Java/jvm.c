@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.2 1999/03/05 22:01:32 marcus Exp $
+ * $Id: jvm.c,v 1.3 1999/06/09 23:44:33 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.2 1999/03/05 22:01:32 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.3 1999/06/09 23:44:33 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -36,11 +36,22 @@ RCSID("$Id: jvm.c,v 1.2 1999/03/05 22:01:32 marcus Exp $");
 #include <jni.h>
 #endif /* HAVE_JNI_H */
 
+#ifdef HAVE_WINBASE_H
+#include <winbase.h>
+#endif /* HAVE_WINBASE_H */
+
 #ifdef _REENTRANT
 #if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU)
 #define SUPPORT_NATIVE_METHODS
 #endif /* HAVE_SPARC_CPU || HAVE_X86_CPU */
 #endif /* _REENTRANT */
+
+#ifdef __NT__
+#define JNI_CreateJavaVM createjavavm
+typedef jint JNICALL (*createjavavmtype)(JavaVM **, void **, void *);
+static createjavavmtype JNI_CreateJavaVM = NULL;
+static HINSTANCE jvmdll = NULL;
+#endif /* __NT___ */
 
 static struct program *jvm_program = NULL;
 static struct program *jobj_program = NULL, *jclass_program = NULL;
@@ -353,7 +364,7 @@ static void f_jobj_cast(INT32 args)
     jstr = (*env)->CallObjectMethod(env, jo->jobj, j->method_tostring);
     wstr = (*env)->GetStringChars(env, jstr, NULL);
     l = (*env)->GetStringLength(env, jstr);
-    push_string(make_shared_binary_string1((INT16*)wstr, l));
+    push_string(make_shared_binary_string1((p_wchar1 *)wstr, l));
     (*env)->ReleaseStringChars(env, jstr, wstr);
     jvm_vacate_env(jo->jvm, env);
   } else
@@ -2673,6 +2684,21 @@ void pike_module_init(void)
   prog.type = T_PROGRAM;
   prog.subtype = 0;
 
+#ifdef __NT__
+  if((jvmdll=LoadLibrary("jvm"))==NULL)
+    return;
+  else {
+    FARPROC proc;
+    if(proc=GetProcAddress(jvmdll, "JNI_CreateJavaVM"))
+      JNI_CreateJavaVM = (createjavavmtype)proc;
+    else {
+      if(FreeLibrary(jvmdll))
+	jvmdll = NULL;
+      return;
+    }
+  }
+#endif /* __NT___ */
+
   start_new_program();
   ADD_STORAGE(struct jobj_storage);
   add_function("cast", f_jobj_cast, "function(string:mixed)", 0);
@@ -2866,6 +2892,10 @@ void pike_module_exit(void)
     free_program(jvm_program);
     jvm_program=NULL;
   }
+#ifdef __NT__
+  if(jvmdll != NULL && FreeLibrary(jvmdll))
+    jvmdll = NULL;
+#endif /* __NT __ */
 #endif /* HAVE_JAVA */
 }
 
