@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.227 1999/11/17 20:16:17 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.228 1999/11/18 04:16:13 hubbe Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2380,6 +2380,23 @@ test_any(switch('a') { case "a": return 1; case "b": return 2; case "c": return 
 test_any(switch('1') { case "a": return 1; case "b": return 2; case "c": return 3; case "d": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9,6)
 test_any(switch('0') { case "a": return 1; case "b": return 2; case "c": return 3; case "d": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9,7)
 test_any(switch('9') { case "a": return 1; case "b": return 2; case "c": return 3; case "d": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9,8)
+
+test_program([[
+void bar() {}
+int a()
+{
+  foreach( ({1}), int n)
+  {
+    switch(n)
+    {
+      default:
+      bar();
+      break;
+    }
+  }
+  return 1;
+}
+]])
 
 
 define(test_switch0,[[
