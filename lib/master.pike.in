@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.241 2003/02/26 16:35:09 mast Exp $
+// $Id: master.pike.in,v 1.242 2003/03/20 18:02:57 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -1672,7 +1672,7 @@ void _main(array(string) orig_argv, array(string) env)
       ({"ignore",         HAS_ARG, ({"-s"}), 0, 0}),
       ({"run_tool",       NO_ARG,  ({"-x"}), 0, 0}),
     }), 1);
-    
+
     /* Parse -M and -I backwards */
     for(i=sizeof(q)-1; i>=0; i--)
     {
@@ -1818,9 +1818,27 @@ void _main(array(string) orig_argv, array(string) env)
 #ifdef __AUTO_BIGNUM__
 	main_resolv( "Gmp", "bignum" );
 #endif /* __AUTO_BIGNUM__ */
+
+	program prog =
+	  compile_string("mixed create(int argc, array(string) argv,array(string) env){"+
+			 opts[1]+";}");
+
+#if constant(_debug)
+	if(debug) _debug(debug);
+#endif
 	if(trace) predef::trace(trace);
-	compile_string("mixed create(int argc, array(string) argv,array(string) env){"+
-		        opts[1]+";}")(sizeof(argv),argv,env);
+	mixed err = catch {
+	    // One reason for this catch is to get a new call to
+	    // eval_instruction in interpret.c so that the debug and
+	    // trace levels set above take effect in the bytecode
+	    // evaluator.
+	    prog(sizeof(argv),argv,env);
+	  };
+	if(trace) predef::trace(0);
+	if (err) {
+	  handle_error (err);
+	  exit (10);
+	}
 	exit(0);
 
       case "preprocess":
@@ -1903,17 +1921,25 @@ void _main(array(string) orig_argv, array(string) env)
   if(!prog)
     _error("Pike: Couldn't find script to execute\n(%O)\n", argv[0]);
 
-  object script=prog();
-
 #if constant(_debug)
   if(debug) _debug(debug);
 #endif
-
-  if(!script->main)
-    _error("Error: %s has no main().\n", argv[0]);
-
   if(trace) predef::trace(trace);
-  i=script->main(sizeof(argv),argv,env);
+
+  mixed err = catch {
+      // The main reason for this catch is actually to get a new call
+      // to eval_instruction in interpret.c so that the debug and
+      // trace levels set above take effect in the bytecode evaluator.
+      object script=prog();
+      if(!script->main)
+	_error("Error: %s has no main().\n", argv[0]);
+      i=script->main(sizeof(argv),argv,env);
+    };
+  if(trace) predef::trace(0);
+  if (err) {
+    handle_error (err);
+    i = 10;
+  }
   if(i >=0) exit(i);
   _async=1;
   
