@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.308 1999/08/12 18:22:02 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.309 1999/08/12 18:22:31 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2253,11 +2253,11 @@ if test "x$ac_cv_header_mmx_h" = xyes ; then
   ])
 
   AC_MSG_RESULT($pike_cv_sys_has_working_mmx)
-else :; fi
 
-if test "x$pike_cv_sys_has_working_mmx" = xyes ; then
-  AC_DEFINE(TRY_USE_MMX)
-fi
+  if test "x$pike_cv_sys_has_working_mmx" = xyes ; then
+    AC_DEFINE(TRY_USE_MMX)
+  else :; fi
+else :; fi
 
 #############################################################################
 
