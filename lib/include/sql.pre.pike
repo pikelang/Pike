@@ -1,10 +1,15 @@
 /*
- * $Id: sql.pre.pike,v 1.5 1997/01/14 17:08:24 grubba Exp $
+ * $Id: sql.pre.pike,v 1.6 1997/01/15 19:58:44 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
  * Henrik Grubbström 1996-01-09
  */
+
+/* Needed for regexp() */
+#include <simulate.h>
+/* Needed for map() */
+#include <array.h>
 
 #define throw_error(X)	throw(({ (X), backtrace() }))
 
