@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.104 2001/11/08 23:34:29 nilsson Exp $
+ * $Id: interpret.h,v 1.105 2001/11/10 19:43:52 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -108,7 +108,8 @@ extern struct op_2_f {
 #endif /* HAVE_COMPUTED_GOTO */
 
 #ifdef PIKE_DEBUG
-#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal("Stack error.\n");}while(0)
+PMOD_EXPORT extern const char msg_stack_error[];
+#define debug_check_stack() do{if(Pike_sp<Pike_interpreter.evaluator_stack)fatal(msg_stack_error);}while(0)
 #define check__positive(X,Y) if((X)<0) fatal Y
 #include "pike_error.h"
 #else
@@ -120,7 +121,7 @@ extern struct op_2_f {
   (Pike_sp - Pike_interpreter.evaluator_stack + \
    Pike_interpreter.svalue_stack_margin + (X) >= Pike_stack_size)
 
-extern const char *Pike_check_stack_errmsg;
+PMOD_EXPORT extern const char Pike_check_stack_errmsg[];
 
 #define check_stack(X) do { \
   if(low_stack_check(X)) \
@@ -131,14 +132,14 @@ extern const char *Pike_check_stack_errmsg;
 	       PTRDIFF_T_TO_LONG(X)); \
   }while(0)
 
-extern const char *Pike_check_mark_stack_errmsg;
+PMOD_EXPORT extern const char Pike_check_mark_stack_errmsg[];
 
 #define check_mark_stack(X) do {		\
   if(Pike_mark_sp - Pike_interpreter.mark_stack + (X) >= Pike_stack_size) \
     ((void (*)(const char*, ...))Pike_error)(Pike_check_mark_stack_errmsg); \
   }while(0)
 
-extern const char *Pike_check_c_stack_errmsg;
+PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 
 #define check_c_stack(X) do {						\
   ptrdiff_t x_= ((char *)&x_) +						\
@@ -168,10 +169,10 @@ extern const char *Pike_check_c_stack_errmsg;
 #define MAYBE_CAST_TO_LONG(X)	((long)(X))
 #endif /* __ECL */
 
+PMOD_EXPORT extern const char msg_pop_neg[];
 #define pop_n_elems(X)							\
  do { ptrdiff_t x_=(X); if(x_) { 					\
-   check__positive(x_, ("Popping negative number of args.... (%ld) \n",	\
-		   MAYBE_CAST_TO_LONG(x_)));				\
+   check__positive(x_, (msg_pop_neg, x_));				\
    Pike_sp -= x_; debug_check_stack();					\
    free_mixed_svalues(Pike_sp, x_);					\
  } } while (0)

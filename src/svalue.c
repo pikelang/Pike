@@ -62,7 +62,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.126 2001/10/05 13:13:30 tomas Exp $");
+RCSID("$Id: svalue.c,v 1.127 2001/11/10 19:43:52 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -70,6 +70,15 @@ struct svalue dest_ob_zero = {
   {0}, /* Only to avoid warnings. */
 #endif
 };
+
+#ifdef PIKE_DEBUG
+PMOD_EXPORT const char msg_type_error[] =
+  "Type error: %d\n";
+PMOD_EXPORT const char msg_sval_obj_wo_refs[] =
+  "Svalue to object without references.\n";
+PMOD_EXPORT const char msg_ssval_obj_wo_refs[] =
+  "(short) Svalue to object without references.\n";
+#endif
 
 /*
  * This routine frees a short svalue given a pointer to it and

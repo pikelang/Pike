@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.97 2001/09/25 05:55:13 hubbe Exp $
+ * $Id: svalue.h,v 1.98 2001/11/10 19:43:52 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -77,7 +77,7 @@ union anything
 #define STRUCT_SVALUE_DECLARED
 #endif
 
-/* Note: At least rbtree overlays the type field and uses the top 4
+/* Note: At least multisets overlays the type field and uses the top 4
  * bits in it internally. */
 
 struct svalue
@@ -301,20 +301,23 @@ do{ \
 
 #ifdef PIKE_DEBUG
 PMOD_EXPORT extern void describe(void *); /* defined in gc.c */
-#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal("Type error: %d\n",T)
+PMOD_EXPORT extern const char msg_type_error[];
+#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal(msg_type_error,T)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 
+PMOD_EXPORT extern const char msg_sval_obj_wo_refs[];
 #define check_refs(S) do {\
  if((S)->type <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
  describe((S)->u.refs); \
- fatal("Svalue to object without references.\n"); \
+ fatal(msg_sval_obj_wo_refs); \
 } }while(0)
 
+PMOD_EXPORT extern const char msg_ssval_obj_wo_refs[];
 #define check_refs2(S,T) do { \
 if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
  describe((S)->refs); \
- fatal("(short) Svalue to object without references.\n"); \
+ fatal(msg_ssval_obj_wo_refs); \
 } }while(0)
 
 #ifdef DEBUG_MALLOC
@@ -393,7 +396,7 @@ static inline union anything *dmalloc_check_union(union anything *u,int type, ch
   if(_s->type<=MAX_REF_TYPE) {					\
     debug_malloc_touch(_s->u.refs);				\
     if(sub_ref(_s->u.dummy) <=0) { really_free_svalue(_s); }	\
-    DO_IF_DMALLOC(_s->u.refs=(void *)-1;)			\
+    DO_IF_DMALLOC(_s->type=PIKE_T_UNKNOWN;_s->u.refs=(void *)-1;) \
   }								\
 }while(0)
 

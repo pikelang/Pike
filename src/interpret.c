@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.251 2001/10/22 19:09:48 mast Exp $");
+RCSID("$Id: interpret.c,v 1.252 2001/11/10 19:43:51 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -70,13 +70,19 @@ PIKE_OPCODE_T *fcode_to_opcode = NULL;
 struct op_2_f *opcode_to_fcode = NULL;
 #endif /* HAVE_COMPUTED_GOTO */
 
-PMOD_EXPORT const char *Pike_check_stack_errmsg =
+PMOD_EXPORT const char Pike_check_stack_errmsg[] =
   "Svalue stack overflow. "
   "(%ld of %ld entries on stack, needed %ld more entries)\n";
-PMOD_EXPORT const char *Pike_check_mark_stack_errmsg =
+PMOD_EXPORT const char Pike_check_mark_stack_errmsg[] =
   "Mark stack overflow.\n";
-PMOD_EXPORT const char *Pike_check_c_stack_errmsg =
+PMOD_EXPORT const char Pike_check_c_stack_errmsg[] =
   "C stack overflow.\n";
+#ifdef PIKE_DEBUG
+PMOD_EXPORT const char msg_stack_error[] =
+  "Stack error.\n";
+PMOD_EXPORT const char msg_pop_neg[] =
+  "Popping negative number of args.... (%"PRINTPTRDIFFT"d) \n";
+#endif
 
 
 #ifdef PIKE_DEBUG

@@ -22,10 +22,36 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.78 2001/11/08 23:34:28 nilsson Exp $");
+RCSID("$Id: error.c,v 1.79 2001/11/10 19:43:51 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
+
+PMOD_EXPORT const char msg_fatal_error[] =
+  "%s:%d: Fatal error:\n";
+#ifdef PIKE_DEBUG
+PMOD_EXPORT const char msg_unsetjmp_nosync_1[] =
+  "UNSETJMP out of sync! (last SETJMP at %s)!\n";
+PMOD_EXPORT const char msg_unsetjmp_nosync_2[] =
+  "UNSETJMP out of sync! (Pike_interpreter.recoveries = 0)\n";
+PMOD_EXPORT const char msg_last_setjmp[] =
+  "LAST SETJMP: %s\n";
+PMOD_EXPORT const char msg_unset_onerr_nosync_1[] =
+  "UNSET_ONERROR out of sync (%p != %p).\n"
+  "Last SET_ONERROR is from %s\n";
+PMOD_EXPORT const char msg_unset_onerr_nosync_2[] =
+  "UNSET_ONERROR out of sync. No Pike_interpreter.recoveries left.\n";
+PMOD_EXPORT const char msg_assert_onerr[] =
+  "%s ASSERT_ONERROR(%p) failed\n";
+#endif
+PMOD_EXPORT const char msg_bad_arg[] =
+  "Bad argument %d to %s(). Expected %s\n";
+PMOD_EXPORT const char msg_too_few_args[] =
+  "Too few arguments to %s().\n";
+PMOD_EXPORT const char msg_out_of_mem[] =
+  "Out of memory.\n";
+PMOD_EXPORT const char msg_div_by_zero[] =
+  "Division by zero.\n";
 
 /*
  * Attempt to inhibit throwing of errors if possible.
@@ -257,7 +283,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
-PMOD_EXPORT void exit_on_error(void *msg)
+PMOD_EXPORT void exit_on_error(const void *msg)
 {
   ONERROR tmp;
   SET_ONERROR(tmp,fatal_on_error,"Fatal in exit_on_error!");
@@ -301,7 +327,7 @@ static void do_abort()
 #define do_abort()	abort()
 #endif /* __NT__ */
 
-PMOD_EXPORT void fatal_on_error(void *msg)
+PMOD_EXPORT void fatal_on_error(const void *msg)
 {
 #ifdef PIKE_DEBUG
   dump_backlog();
@@ -523,9 +549,9 @@ static void f_error__sprintf(INT32 args)
 
 
 DECLSPEC(noreturn) void generic_error_va(struct object *o,
-					 char *func,
+					 const char *func,
 					 struct svalue *base_sp,  int args,
-					 char *fmt,
+					 const char *fmt,
 					 va_list foo)
      ATTRIBUTE((noreturn))
 {
@@ -586,9 +612,9 @@ DECLSPEC(noreturn) void generic_error_va(struct object *o,
 
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)))
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)))
 {
   va_list foo;
   va_start(foo,desc);
@@ -598,20 +624,20 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
 {
   INIT_ERROR(generic);
   ERROR_DONE(generic);
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
   struct svalue *val,
   struct svalue *ind,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
 {
   INIT_ERROR(index);
   ERROR_COPY_SVALUE(index, val);
@@ -620,12 +646,12 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
   int which_arg,
-  char *expected_type,
+  const char *expected_type,
   struct svalue *got,
-  char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)))
+  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)))
 {
   INIT_ERROR(bad_arg);
   ERROR_COPY(bad_arg, which_arg);
@@ -644,10 +670,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void math_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)))
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)))
 {
   INIT_ERROR(math);
   if(number)
@@ -662,11 +688,11 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
-  char *resource_type,
+  const char *resource_type,
   size_t howmuch_,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
 {
   INT_TYPE howmuch = DO_NOT_WARN((INT_TYPE)howmuch_);
   INIT_ERROR(resource);
@@ -676,10 +702,10 @@ PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
 }
 
 PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp, int args,
-  char *permission_type,
-  char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)))
+  const char *permission_type,
+  const char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)))
 {
   INIT_ERROR(permission);
   ERROR_STRUCT(permission,o)->permission_type=
@@ -687,7 +713,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   ERROR_DONE(generic);
 }
 
-PMOD_EXPORT void wrong_number_of_args_error(char *name, int args, int expected)
+PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
 {
   char *msg;
   if(expected>args)

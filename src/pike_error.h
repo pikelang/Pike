@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.15 2001/11/09 02:09:13 nilsson Exp $
+ * $Id: pike_error.h,v 1.16 2001/11/10 19:43:51 mast Exp $
  */
 #ifndef PIKE_ERROR_H
 #define PIKE_ERROR_H
@@ -20,8 +20,9 @@
 #include <stdarg.h>
 
 #if 1
+PMOD_EXPORT extern const char msg_fatal_error[];
 #define fatal \
- (fprintf(stderr,"%s:%d: Fatal error:\n",__FILE__,__LINE__),debug_fatal)
+ (fprintf(stderr,msg_fatal_error,__FILE__,__LINE__),debug_fatal)
 #else
 /* This is useful when debugging assembler code sometimes... -Hubbe */
 #define fatal \
@@ -85,15 +86,17 @@ PMOD_EXPORT extern struct svalue throw_value;
 extern int throw_severity;
 
 #ifdef PIKE_DEBUG
+PMOD_EXPORT extern const char msg_unsetjmp_nosync_1[];
+PMOD_EXPORT extern const char msg_unsetjmp_nosync_2[];
 #define UNSETJMP(X) do{ \
    check_recovery_context(); \
    OED_FPRINTF((stderr, "unsetjmp(%p) %s:%d\n", \
                 &(X),  __FILE__, __LINE__)); \
   if(Pike_interpreter.recoveries != &X) { \
     if(Pike_interpreter.recoveries) \
-      fatal("UNSETJMP out of sync! (last SETJMP at %s)!\n",Pike_interpreter.recoveries->file); \
+      fatal(msg_unsetjmp_nosync_1,Pike_interpreter.recoveries->file); \
     else \
-      fatal("UNSETJMP out of sync! (Pike_interpreter.recoveries = 0)\n"); \
+      fatal(msg_unsetjmp_nosync_2); \
     } \
     Pike_interpreter.recoveries=X.previous; \
    check_recovery_context(); \
@@ -130,30 +133,33 @@ extern int throw_severity;
      Pike_interpreter.recoveries->onerror=&X; \
   }while(0)
 
+PMOD_EXPORT extern const char msg_last_setjmp[];
+PMOD_EXPORT extern const char msg_unset_onerr_nosync_1[];
+PMOD_EXPORT extern const char msg_unset_onerr_nosync_2[];
 #define UNSET_ONERROR(X) do {\
     check_recovery_context(); \
     OED_FPRINTF((stderr, "UNSET_ONERROR(%p) %s:%d\n", \
                  &(X), __FILE__, __LINE__)); \
     if(!Pike_interpreter.recoveries) break; \
     if(Pike_interpreter.recoveries->onerror != &(X)) { \
-      fprintf(stderr,"LAST SETJMP: %s\n",Pike_interpreter.recoveries->file); \
+      fprintf(stderr,msg_last_setjmp,Pike_interpreter.recoveries->file); \
       if (Pike_interpreter.recoveries->onerror) { \
-        fatal("UNSET_ONERROR out of sync (%p != %p).\n" \
-              "Last SET_ONERROR is from %s\n",\
-              Pike_interpreter.recoveries->onerror, &(X), \
+	fatal(msg_unset_onerr_nosync_1,\
+	      Pike_interpreter.recoveries->onerror, &(X), \
               Pike_interpreter.recoveries->onerror->file); \
       } else { \
-        fatal("UNSET_ONERROR out of sync. No Pike_interpreter.recoveries left.\n"); \
+        fatal(msg_unset_onerr_nosync_2); \
       } \
     } \
     Pike_interpreter.recoveries->onerror=(X).previous; \
   } while(0)
 
+PMOD_EXPORT extern const char msg_assert_onerr[];
 #define ASSERT_ONERROR(X) \
   do{ \
     if (!Pike_interpreter.recoveries) break; \
     if (Pike_interpreter.recoveries->onerror != &X) { \
-      fatal("%s:%d ASSERT_ONERROR(%p) failed\n", \
+      fatal(msg_assert_onerr, \
             __FILE__, __LINE__, &(X)); \
     } \
   }while(0)
@@ -196,55 +202,55 @@ PMOD_EXPORT DECLSPEC(noreturn) void low_error(const char *buf) ATTRIBUTE((noretu
 void DECLSPEC(noreturn) va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
-PMOD_EXPORT void exit_on_error(void *msg);
-PMOD_EXPORT void fatal_on_error(void *msg);
+PMOD_EXPORT void exit_on_error(const void *msg);
+PMOD_EXPORT void fatal_on_error(const void *msg);
 PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 void DECLSPEC(noreturn) generic_error_va(struct object *o,
-		      char *func,
+		      const char *func,
 		      struct svalue *base_sp,  int args,
-		      char *fmt,
+		      const char *fmt,
 		      va_list foo)
   ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)));
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)));
 PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)));
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)));
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
   struct svalue *val,
   struct svalue *ind,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
   int which_arg,
-  char *expected_type,
+  const char *expected_type,
   struct svalue *got,
-  char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
+  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)));
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)));
 PMOD_EXPORT void DECLSPEC(noreturn) resource_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp,  int args,
-  char *resource_type,
+  const char *resource_type,
   size_t howmuch,
-  char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
+  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
 PMOD_EXPORT void DECLSPEC(noreturn) permission_error(
-  char *func,
+  const char *func,
   struct svalue *base_sp, int args,
-  char *permission_type,
-  char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)));
-PMOD_EXPORT void wrong_number_of_args_error(char *name, int args, int expected);
+  const char *permission_type,
+  const char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)));
+PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected);
 void init_error(void);
 void cleanup_error(void);
 /* Prototypes end here */
@@ -252,20 +258,23 @@ void cleanup_error(void);
 /* Some useful error macros. */
 
 
+PMOD_EXPORT extern const char msg_bad_arg[];
 #define SIMPLE_BAD_ARG_ERROR(FUNC, ARG, EXPECT) \
    bad_arg_error(FUNC, Pike_sp-args, args, ARG, EXPECT, Pike_sp+ARG-1-args,\
-                 "Bad argument %d to %s(). Expected %s\n", \
-                  ARG, FUNC, EXPECT)
+                 msg_bad_arg, ARG, FUNC, EXPECT)
 
+PMOD_EXPORT extern const char msg_too_few_args[];
 #define SIMPLE_TOO_FEW_ARGS_ERROR(FUNC, ARG) \
    bad_arg_error(FUNC, Pike_sp-args, args, ARG, "void", 0,\
-                 "Too few arguments to %s().\n",FUNC)
+                 msg_too_few_args,FUNC)
 
+PMOD_EXPORT extern const char msg_out_of_mem[];
 #define SIMPLE_OUT_OF_MEMORY_ERROR(FUNC, AMOUNT) \
-   resource_error(FUNC, Pike_sp-args, args, "memory", AMOUNT, "Out of memory.\n")
+   resource_error(FUNC, Pike_sp-args, args, "memory", AMOUNT, msg_out_of_mem)
 
+PMOD_EXPORT extern const char msg_div_by_zero[];
 #define SIMPLE_DIVISION_BY_ZERO_ERROR(FUNC) \
-     math_error(FUNC, Pike_sp-args, args, 0, "Division by zero.\n")
+     math_error(FUNC, Pike_sp-args, args, 0, msg_div_by_zero)
 
 #ifndef PIKE_DEBUG
 #define check_recovery_context() ((void)0)
