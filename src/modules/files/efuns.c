@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.131 2003/07/21 23:23:19 mast Exp $
+|| $Id: efuns.c,v 1.132 2003/09/05 19:35:41 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.131 2003/07/21 23:23:19 mast Exp $");
+RCSID("$Id: efuns.c,v 1.132 2003/09/05 19:35:41 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -173,6 +173,8 @@ void f_file_stat(INT32 args)
   int i, l;
   struct pike_string *str;
   
+  VALID_FILE_IO("file_stat","read");
+
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_stat", 1);
   if(sp[-args].type != T_STRING)
@@ -180,8 +182,6 @@ void f_file_stat(INT32 args)
 
   str = sp[-args].u.string;
   l = (args>1 && !UNSAFE_IS_ZERO(sp+1-args))?1:0;
-
-  VALID_FILE_IO("file_stat","read");
 
   if (strlen(str->str) != (size_t)str->len) {
     /* Filenames with NUL are not supported. */
@@ -226,6 +226,8 @@ void f_file_truncate(INT32 args)
   struct pike_string *str;
   int res;
 
+  VALID_FILE_IO("file_truncate","write");
+
   if(args < 2)
     SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
   if(sp[-args].type != T_STRING)
@@ -254,8 +256,6 @@ void f_file_truncate(INT32 args)
     push_int(0);
     return;
   }
-
-  VALID_FILE_IO("file_truncate","write");
 
 #ifdef __NT__
   {
@@ -580,6 +580,8 @@ void f_filesystem_stat(INT32 args)
  */
 void f_werror(INT32 args)
 {
+  VALID_FILE_IO("werror","werror");
+
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("werror", 1);
   if(sp[-args].type != T_STRING)
@@ -590,8 +592,6 @@ void f_werror(INT32 args)
     f_sprintf(args);
     args=1;
   }
-
-  VALID_FILE_IO("werror","werror");
 
   /* FIXME: Wide string handling. */
   write_to_stderr(sp[-args].u.string->str, sp[-args].u.string->len);
@@ -616,13 +616,13 @@ void f_rm(INT32 args)
 
   destruct_objects_to_destruct();
 
+  VALID_FILE_IO("rm","write");
+
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("rm", 1);
 
   if(sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("rm", 1, "string");
-
-  VALID_FILE_IO("rm","write");
 
   str = sp[-args].u.string;
   
@@ -697,6 +697,8 @@ void f_mkdir(INT32 args)
   int mode;
   int i;
 
+  VALID_FILE_IO("mkdir","write");
+
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("mkdir", 1);
 
@@ -712,8 +714,6 @@ void f_mkdir(INT32 args)
 
     mode = sp[1-args].u.integer;
   }
-
-  VALID_FILE_IO("mkdir","write");
 
   str = sp[-args].u.string;
 
@@ -1019,13 +1019,13 @@ void f_cd(INT32 args)
   INT32 i;
   struct pike_string *str;
 
+  VALID_FILE_IO("cd","status");
+
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("cd", 1);
 
   if(sp[-args].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("cd", 1, "string");
-
-  VALID_FILE_IO("cd","status");
 
   str = sp[-args].u.string;
 
@@ -1251,6 +1251,8 @@ void f_mv(INT32 args)
   PIKE_STAT_T st;
 #endif
 
+  VALID_FILE_IO("mv","write");
+
   if(args<2)
     SIMPLE_TOO_FEW_ARGS_ERROR("mv", 2);
 
@@ -1259,8 +1261,6 @@ void f_mv(INT32 args)
 
   if(sp[-args+1].type != T_STRING)
     SIMPLE_BAD_ARG_ERROR("mv", 2, "string");
-
-  VALID_FILE_IO("mv","write");
 
   str1 = sp[-args].u.string;
   str2 = sp[1-args].u.string;
