@@ -11,6 +11,27 @@ string image_prefix()
   return image_path;
 } 
 
+class Position {
+  string file;
+  int line;
+
+  void update(Node n) {
+    mapping m = n->get_attributes();
+    if(!m->file || !m["first-line"]) {
+      werror("Missing attribute in source-position element. %O\n", m);
+      return;
+    }
+    file = m->file;
+    line = (int) m["first-line"];
+  }
+
+  string get() {
+    return file + ":" + line;
+  }
+}
+
+Position position = Position();
+
 string quote(string in) {
   if(in-" "-"\t"=="") return "";
   if(String.trim_all_whites(in)=="") return "\n";
@@ -34,9 +55,37 @@ array(Node) get_tags(Node n, string name) {
 
 Node get_first_element(Node n) {
   foreach(n->get_children(), Node c)
-    if(c->get_node_type()==XML_ELEMENT && c->get_any_name()!="source-position")
-      return c;
+    if(c->get_node_type()==XML_ELEMENT) {
+      if(c->get_any_name()!="source-position")
+	return c;
+      else
+	position->update(c);
+    }
   throw( ({ "Node had no element child.\n", backtrace() }) );
+}
+
+string parse_appendix(Node n, void|int noheader) {
+  string ret ="";
+  if(!noheader)
+    ret += "<dl><dt>"
+      "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
+      "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; APPENDIX <b>" +
+      n->get_attributes()->name + "</b></font></td></tr></table><br />\n"
+      "</dt><dd>";
+
+  Node c = get_tag(n, "doc");
+  if(c)
+    ret += "<dl>" + parse_text(c) + "</dl>";
+
+#ifdef DEBUG
+  if(sizeof(get_tags(n, "doc"))>1)
+    throw( ({ "More than one doc element in appendix node.\n", backtrace() }) );
+#endif
+
+  if(!noheader)
+    ret = ret + "</dd></dl>"; 
+
+  return ret;
 }
 
 string parse_module(Node n, void|int noheader) {
@@ -125,25 +174,31 @@ string parse_text(Node n) {
     switch(name) {
     case "text":
       ret += "<dd>" + parse_text(c) + "</dd>\n";
+      break;
+
     case "p":
     case "b":
     case "i":
     case "tt":
       ret += "<"+name+">" + parse_text(c) + "</"+name+">";
       break;
+
     case "pre":
     case "code":
       ret += "<font face='courier'><"+name+">" + parse_text(c) + "</"+name+"></font>";
       break;
+
     case "ref":
       string ref = parse_text(c);
       if(resolve_reference && resolve_reference(ref))
 	ref = sprintf("<a href='%s'>%s</a>", resolve_reference(ref), ref);
       ret += "<font face='courier'>" + ref + "</font>";
       break;
+
     case "dl":
       ret += "<dl>" + map(get_tags(c, "group"), parse_text)*"" + "</dl>";
       break;
+
     case "item":
       ret += "<dt>" + parse_text(c) + "</dt>\n";
       break;
@@ -272,6 +327,7 @@ string parse_text(Node n) {
 
 
     case "source-position":
+      position->update(c);
       break;
 
     default:
@@ -473,9 +529,14 @@ string parse_not_doc(Node n) {
 
     Node cc;
     switch(c->get_any_name()) {
+
     case "doc":
-    case "source-position":
       continue;
+
+    case "source-position":
+      position->update(c);
+      continue;
+
     case "method":
       if(method++) ret += "<br />\n";
 #ifdef DEBUG
@@ -582,6 +643,7 @@ string start_parsing(Node n) {
   ret += parse_children(n, "docgroup", parse_docgroup);
   ret += parse_children(n, "module", parse_module);
   ret += parse_children(n, "class", parse_class);
+  ret += parse_children(n, "appendix", parse_appendix);
 
   return ret + "</body></html>\n";
 }
