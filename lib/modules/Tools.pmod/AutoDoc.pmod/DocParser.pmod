@@ -50,6 +50,7 @@ mapping(string : int) keywordtype =
   "ref" : BRACEKEYWORD,
   "xml" : BRACEKEYWORD,  // well, not really, but....
   "code" : BRACEKEYWORD,
+  "expr" : BRACEKEYWORD,
   "image" : BRACEKEYWORD,
 
   "deprecated" : SINGLEKEYWORD,
