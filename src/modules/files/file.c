@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.189 2000/08/19 11:22:23 grubba Exp $");
+RCSID("$Id: file.c,v 1.190 2000/08/19 11:42:40 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1086,7 +1086,7 @@ static void file_write(INT32 args)
 #ifdef WITH_OOB
 static void file_write_oob(INT32 args)
 {
-  ptrdiff_t written,i;
+  ptrdiff_t written, i;
   struct pike_string *str;
 
   if(args<1 || Pike_sp[-args].type != PIKE_T_STRING)
@@ -1126,7 +1126,7 @@ static void file_write_oob(INT32 args)
 	if (!written) {
 	  push_int(-1);
 	} else {
-	  push_int(written);
+	  push_int64(written);
 	}
 	return;
 
@@ -1152,7 +1152,7 @@ static void file_write_oob(INT32 args)
   ERRNO=0;
 
   pop_n_elems(args);
-  push_int(written);
+  push_int64(written);
 }
 #endif /* WITH_OOB */
 
