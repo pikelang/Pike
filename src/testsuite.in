@@ -4,7 +4,7 @@ test_true(arrayp( _next(({})) || _prev(({}))))
 test_any(object o=this_object(); while(o=_next(o)));
 test_any(object o=this_object(); while(o=_prev(o)));
 
-test_true([["$Id: testsuite.in,v 1.12 1996/12/05 04:49:38 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.13 1996/12/05 21:38:23 hubbe Exp $"]])
 test_any([[object(File) o=File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)
@@ -284,7 +284,11 @@ test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),2)]],[[({3,7,0})]])
 ifefun(gc,
 [[
   test_true(intp(gc()));
-  test_any([[ gc(); array a=({0}); a[0]=a; a=0; return gc() > 0; ]],1);
+  test_any([[ array a=({0}); a[0]=a; gc(); a=0; return gc() > 0; ]],1);
+  test_any([[object o=class {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
+  test_any([[object o=class {object o;}(); o->o=o; gc(); o=0; return gc() > 0; ]],1);
+  test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
+  test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
 ]])
 
 
