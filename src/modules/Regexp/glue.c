@@ -18,8 +18,9 @@
 #include "pike_macros.h"
 #include "threads.h"
 #include "module_support.h"
+#include "builtin_functions.h"
 
-RCSID("$Id: glue.c,v 1.19 2000/12/01 08:10:22 hubbe Exp $");
+RCSID("$Id: glue.c,v 1.20 2000/12/13 16:27:06 noring Exp $");
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>
@@ -94,27 +95,80 @@ static void regexp_create(INT32 args)
   }
 }
 
+#ifdef USE_SYSTEM_REGEXP
+int regexp_match_low(regex_t *regexp, char *str)
+{
+  int i;
+  THREADS_ALLOW();
+  i = !regexec(regexp, str, 0, NULL, 0);
+  THREADS_DISALLOW();
+  return i;
+}
+#else
+#define regexp_match_low pike_regexec
+#endif /* USE_SYSTEM_REGEXP */
+
+/*!
+ *! @decl int match(string str)
+ *!
+ *! Returns 1 if @[str] matches the regexp bound to the regexp object.
+ *! Zero otherwise.
+ *!
+ *! @decl array(string) match(array(string) strs)
+ *!
+ *! Returns an array containing strings in @[strs] that matches the
+ *! regexp bound to the regexp object.
+ *!
+*/
 static void regexp_match(INT32 args)
 {
   int i;
-  char *str;
 #ifdef USE_SYSTEM_REGEXP
   regex_t *regexp = &(THIS->regexp);
 #else
   struct regexp *regexp = THIS->regexp;
 #endif /* USE_SYSTEM_REGEXP */
 
-  get_all_args("Regexp.regexp->match", args, "%s", &str);
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Regexp.regexp->match", 1);
   
-#ifdef USE_SYSTEM_REGEXP
-  THREADS_ALLOW();
-  i = !regexec(regexp, str, 0, NULL, 0);
-  THREADS_DISALLOW();
-#else
-  i=pike_regexec(regexp, str);
-#endif /* USE_SYSTEM_REGEXP */
-  pop_n_elems(args);
-  push_int(i);
+  if(Pike_sp[-args].type == T_STRING)
+  {
+    if(Pike_sp[-args].u.string->size_shift)
+      SIMPLE_BAD_ARG_ERROR("Regexp.regexp->match", 1, "Expected string (8bit)");
+    
+    i = regexp_match_low(regexp, STR0(Pike_sp[-args].u.string));
+    pop_n_elems(args);
+    push_int(i);
+    return;
+  }
+  else if(Pike_sp[-args].type == T_ARRAY)
+  {
+    struct array *arr;
+    int i, n;
+
+    arr = Pike_sp[-args].u.array;
+
+    for(i = n = 0; i < arr->size; i++)
+    {
+      struct svalue *sv = ITEM(arr) + i;
+      
+      if(sv->type != T_STRING || sv->u.string->size_shift)
+	SIMPLE_BAD_ARG_ERROR("Regexp.regexp->match",1,"Expected string (8bit)");
+
+      if(regexp_match_low(regexp, STR0(sv->u.string)))
+      {
+	ref_push_string(sv->u.string);
+	n++;
+      }
+    }
+    
+    f_aggregate(n);
+    stack_pop_n_elems_keep_top(args);
+    return;
+  }
+  else
+    SIMPLE_BAD_ARG_ERROR("Regexp.regexp->match", 1, "string|array(string)");
 }
 
 static void regexp_split(INT32 args)
@@ -211,7 +265,9 @@ void pike_module_init(void)
   /* function(void|string:void) */
   ADD_FUNCTION("create",regexp_create,tFunc(tOr(tVoid,tStr),tVoid),0);
   /* function(string:int) */
-  ADD_FUNCTION("match",regexp_match,tFunc(tStr,tInt),0);
+  ADD_FUNCTION("match",regexp_match,
+	       tOr(tFunc(tStr, tInt),
+		   tFunc(tArr(tStr), tArr(tStr))), 0);
   /* function(string:string*) */
   ADD_FUNCTION("split",regexp_split,tFunc(tStr,tArr(tStr)),0);
 
