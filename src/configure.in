@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.102 1997/07/09 00:57:04 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.103 1997/07/09 02:23:48 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1433,7 +1433,7 @@ then
 	;;
 	IRIX*) LDSHARED="ld -shared";;
 	SunOS*) LDSHARED="ld";;
-	Solaris) LDSHARED="ld -G";;
+	Solaris) LDSHARED="/usr/ccs/bin/ld -G";;
 	hp*|HP*) LDSHARED="ld -b";;
 	OSF*)
            LDSHARED="ld -expect_unresolved '*' -shared -msym -O3"
