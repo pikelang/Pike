@@ -119,3 +119,9 @@ void UPDATE_F_JUMP(INT32 offset, INT32 to_offset)
         If you define INS_F_JUMP you must also define UPDATE_F_JUMP.
         UPDATE_F_JUMP is called when the compiler knows where to jump.
         (See ia32.c for an example of this and INS_F_JUMP)
+
+INT32 READ_F_JUMP(INT32 offset)
+	If you define INS_F_JUMP you must also define READ_F_JUMP.
+	READ_F_JUMP is called when the compiler needs to read back the
+	to_offset that was passed to UPDATE_F_JUMP.
+
