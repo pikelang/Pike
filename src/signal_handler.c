@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.225 2002/08/15 14:49:25 marcus Exp $");
+RCSID("$Id: signal_handler.c,v 1.226 2002/08/21 17:13:15 marcus Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -86,6 +86,14 @@ RCSID("$Id: signal_handler.c,v 1.225 2002/08/15 14:49:25 marcus Exp $");
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
+#endif
+
+#ifdef HAVE_SYS_TERMIO_H
+# include <sys/termio.h>
+#endif
+
+#ifdef HAVE_SYS_TERMIOS_H
+# include <sys/termios.h>
 #endif
 
 #ifdef __amigaos__
@@ -1580,6 +1588,7 @@ extern int pike_make_pipe(int *);
 #define PROCE_CLOEXEC		9
 #define PROCE_DUP		10
 #define PROCE_SETSID		11
+#define PROCE_SETCTTY		12
 
 #define PROCERROR(err, id)	do { int _l, _i; \
     buf[0] = err; buf[1] = errno; buf[2] = id; \
@@ -1901,8 +1910,11 @@ static void internal_add_limit( struct perishables *storage,
  *!  string containing the name of the group. (See @[setuid]
  *!  and @[getgrgid] for more info.)
  *!
- *! @member int(0..1) "setsid"
+ *! @member int(0..1)|object(Stdio.File) "setsid"
  *!  Set this to @tt{1@} to create a new session group.
+ *!  It is also possible to set it to a File object, in which
+ *!  case a new session group will be created with this file
+ *!  as the controlling terminal.
  *!
  *! @member array(int|string) "setgroups"
  *!  This parameter allows you to the set the list of groups that the
@@ -2365,12 +2377,14 @@ void f_create_process(INT32 args)
 
     int nice_val;
     int stds[3]; /* stdin, out and err */
+    int cterm; /* controlling terminal */
     char *tmp_cwd; /* to CD to */
     char *priority = NULL;
     int *fds;
     int num_fds = 3;
 
     stds[0] = stds[1] = stds[2] = -1;
+    cterm = -1;
     fds = stds;
     nice_val = 0;
     tmp_cwd = NULL;
@@ -2446,7 +2460,9 @@ void f_create_process(INT32 args)
         tmp_cwd = tmp->u.string->str;
 
       if((tmp = simple_mapping_string_lookup( optional, "setsid" )) &&
-         tmp->type == T_INT && tmp->u.integer)
+	 ((tmp->type == T_INT && tmp->u.integer) ||
+	  (tmp->type == T_OBJECT &&
+	   (cterm = fd_from_object(tmp->u.object)) >= 0)))
         setsid_request=1;
 
       if ((tmp = simple_mapping_string_lookup( optional, "fds" )) &&
@@ -2998,6 +3014,9 @@ void f_create_process(INT32 args)
 	case PROCE_SETSID:
           Pike_error("Process.create_process(): setsid() failed.\n");
 	  break;
+	case PROCE_SETCTTY:
+          Pike_error("Process.create_process(): failed to set controlling TTY. errno:%d\n", buf[1]);
+	  break;
 	case PROCE_EXEC:
 	  switch(buf[1]) {
 	  case ENOENT:
@@ -3050,6 +3069,8 @@ void f_create_process(INT32 args)
 #ifdef PROC_DEBUG
       write(2, "Child\n", 6);
 #endif /* PROC_DEBUG */
+
+      pid = getpid();
 
       /* Close our parent's end of the pipe. */
       while(close(control_pipe[0]) < 0 && errno==EINTR);
@@ -3131,6 +3152,45 @@ void f_create_process(INT32 args)
       }
 #endif
 
+#ifdef HAVE_SETSID
+      if (setsid_request) {
+	int fd;
+#ifdef TIOCNOTTY
+	fd = open("/dev/tty", O_RDWR | O_NOCTTY);
+	if (fd >= 0) {
+	  (void) ioctl(fd, TIOCNOTTY, NULL);
+	  close(fd);
+	}
+#endif
+	if (setsid()==-1)
+	  PROCERROR(PROCE_SETSID,0);
+
+#ifdef TCSETCTTY
+	 if (cterm >= 0)
+	   if (ioctl(cterm, TCSETCTTY, NULL)<0)
+	     PROCERROR(PROCE_SETCTTY,0);
+#else
+	 if (cterm >= 0) {
+	   char *ttn;
+#ifdef TIOCSCTTY
+	   if (ioctl(cterm, TIOCSCTTY, NULL)<0)
+	     PROCERROR(PROCE_SETCTTY,0);
+#endif
+	   ttn = ttyname(cterm);
+	   if (ttn == NULL)
+	     PROCERROR(PROCE_SETCTTY,0);
+	   fd = open(ttn, O_RDWR);
+	   if (fd < 0)
+	     PROCERROR(PROCE_SETCTTY,0);
+	   close(fd);
+	 }
+/* FIXME: else... what? error or ignore? */
+#endif
+      }
+
+/* FIXME: else... what? error or ignore? */
+#endif
+
       /* Perform fd remapping */
       {
         int fd;
@@ -3197,13 +3257,6 @@ void f_create_process(INT32 args)
 
       if(priority)
         set_priority( 0, priority );
-
-#ifdef HAVE_SETSID
-      if (setsid_request)
-	 if (setsid()==-1)
-	    PROCERROR(PROCE_SETSID,0);
-/* FIXME: else... what? error or ignore? */
-#endif
 
 #ifdef HAVE_SETGID
 #ifdef HAVE_GETGID
