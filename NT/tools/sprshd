@@ -86,6 +86,7 @@ void my_proxy(Stdio.File from, Stdio.File to)
 void handle_incoming_connection(object(Stdio.File) io)
 {
   object p;
+  mapping env=getenv();
   sscanf(io->read(4),"%4c",int args);
   string *cmd=allocate(args);
   for(int e=0;e<args;e++)
@@ -104,6 +105,12 @@ void handle_incoming_connection(object(Stdio.File) io)
   cmd=cmd[1..];
 
   write("Doing %s in %s\n",cmd*" ",dir);
+
+  while(sscanf(cmd[0],"%s=%s",string key, string val))
+  {
+    env[key]=val;
+    cmd=cmd[1..];
+  }
 
   switch(lower_case(cmd[0]))
   {
@@ -160,7 +167,7 @@ void handle_incoming_connection(object(Stdio.File) io)
     }
     case "getenv":
     {
-      string s=getenv(cmd[1])+"\n";
+      string s=(env[cmd[1]] || "")+"\n";
       io->write(sprintf("%4c%s",strlen(s),s));
       io->write(sprintf("%4c",0));
       io->write(sprintf("%4c",0));
@@ -191,6 +198,7 @@ void handle_incoming_connection(object(Stdio.File) io)
 				   "stderr":p2,
 #endif
 				   "cwd":dir,
+				   "env":env,
 				   ]));
       };
       destruct(p2);
