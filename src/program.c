@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.207 2000/02/16 00:10:25 grubba Exp $");
+RCSID("$Id: program.c,v 1.208 2000/02/22 21:29:15 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3438,6 +3438,7 @@ void gc_free_all_unreferenced_programs(void)
       add_ref(p);
       for(e=0;e<p->num_constants;e++)
 	free_svalue(& p->constants[e].sval);
+      p->num_constants=0; /* evil */
 
       for(e=0;e<p->num_inherits;e++)
       {
@@ -3447,7 +3448,16 @@ void gc_free_all_unreferenced_programs(void)
 	  p->inherits[e].parent=0;
 	}
       }
-      next=p->next;
+
+      /* FIXME: Is there anything else that needs to be freed here? */
+
+      while((next=p->next) && p->refs == 1)
+      {
+	add_ref(next);
+	free_program(p);
+	p=next;
+      }
+
       free_program(p);
     }else{
       next=p->next;
