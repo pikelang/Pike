@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.15 2000/08/04 19:08:07 sigge Exp $
+/* $Id: cipher.pike,v 1.16 2001/04/18 14:30:41 noy Exp $
  *
  */
 
@@ -87,15 +87,65 @@ class mac_md5 {
   constant algorithm = Crypto.md5;
 }
 
-#if 0
-class crypt_none
-{
-  /* Dummy stream cipher */
-  object set_encrypt_key(string k) { return this_object(); }
-  object set_decrypt_key(string k) { return this_object(); }  
-  string crypt(string s) { return s; }
+class mac_hmac_sha {
+
+  string secret;
+  object hmac;
+  
+  string hash(object packet,object seq_num) {
+
+    string s = sprintf("%~8s%c%c%c%2c%s",
+		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
+		       packet->content_type,
+		       packet->protocol_version[0],packet->protocol_version[1],
+		       strlen(packet->fragment),
+		       packet->fragment);
+
+    return  hmac(secret)(s);
+  }
+
+  void create(string|void s) {
+    secret = s || "";
+    hmac=Crypto.hmac(Crypto.sha);
+  }
 }
-#endif
+
+class mac_hmac_md5 {
+  inherit mac_hmac_sha;
+
+  void create(string|void s) {
+    secret = s || "";
+    hmac=Crypto.hmac(Crypto.md5);
+  }
+}
+
+// Hashfn is either a Crypto.md5 or Crypto.sha 
+static string P_hash(object hashfn,int hlen,string secret,string seed,int len) {
+   
+  Crypto.hmac hmac=Crypto.hmac(hashfn);
+  string temp=seed;
+  string res="";
+  
+  int noblocks=(int)ceil((1.0*len)/hlen);
+
+  for(int i=0 ; i<noblocks ; i++) {
+    temp=hmac(secret)(temp);
+    res+=hmac(secret)(temp+seed);
+  }
+    return res[..(len-1)];  
+} 
+
+string prf(string secret,string label,string seed,int len) { 
+
+  string s1=secret[..(int)(ceil(strlen(secret)/2.0)-1)];
+  string s2=secret[(int)(floor(strlen(secret)/2.0))..];
+
+  string a=P_hash(Crypto.md5,16,s1,label+seed,len);
+  string b=P_hash(Crypto.sha,20,s2,label+seed,len);
+
+  return a ^ b;
+}
+
 
 class des
 {
@@ -264,7 +314,7 @@ class dh_key_exchange
 }
 
 /* Return array of auth_method, cipher_spec */
-array lookup(int suite)
+array lookup(int suite,int version)
 {
   object res = CipherSpec();
   int ke_method;
@@ -367,11 +417,17 @@ array lookup(int suite)
   switch(algorithms[2])
   {
   case HASH_sha:
-    res->mac_algorithm = mac_sha;
+    if(version==1)
+      res->mac_algorithm = mac_hmac_sha;
+    else
+      res->mac_algorithm = mac_sha;
     res->hash_size = 20;
     break;
   case HASH_md5:
-    res->mac_algorithm = mac_md5;
+    if(version==1)
+      res->mac_algorithm = mac_hmac_md5;
+    else
+      res->mac_algorithm = mac_md5;
     res->hash_size = 16;
     break;
   case 0:

@@ -1,4 +1,4 @@
-/* $Id: constants.pike,v 1.7 1999/05/22 23:08:59 mast Exp $
+/* $Id: constants.pike,v 1.8 2001/04/18 14:30:41 noy Exp $
  *
  */
 
@@ -180,3 +180,7 @@ constant AUTH_dss_fixed_dh	= 4;
 constant AUTH_rsa_ephemeral_dh	= 5;
 constant AUTH_dss_ephemeral_dh	= 6;
 constant AUTH_fortezza_dms	= 20;
+
+
+
+

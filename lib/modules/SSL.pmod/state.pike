@@ -1,4 +1,4 @@
-/* $Id: state.pike,v 1.6 2000/08/04 19:07:11 sigge Exp $
+/* $Id: state.pike,v 1.7 2001/04/18 14:30:41 noy Exp $
  *
  */
 
@@ -23,6 +23,33 @@ void create(object s)
 }
 
 
+
+string tls_pad(string data,int blocksize  ) {
+
+  int plen=(blocksize-(strlen(data)+1)%blocksize)%blocksize;
+  string res=data + sprintf("%c",plen)*plen+sprintf("%c",plen);
+  return res;
+}
+
+string tls_unpad(string data ) {
+
+  int plen=data[-1];
+
+  string res=reverse(reverse(data)[plen+1..]);
+  string padding=reverse(data)[..plen];
+  int tmp;
+
+  /* Checks that the padding is correctly done */
+  foreach(values(padding),tmp)
+    {
+      if(tmp!=plen)
+	werror("Incorrect padding detected!!!");
+	throw(0);
+    }
+  
+  return res;
+}
+
 /* Destructively decrypt a packet. Returns an Alert object if
  * there was an error, otherwise 0. */
 object decrypt_packet(object packet)
@@ -41,8 +68,15 @@ object decrypt_packet(object packet)
     if (! msg)
       return Alert(ALERT_fatal, ALERT_unexpected_message);
     if (session->cipher_spec->cipher_type == CIPHER_block)
-      if (catch { msg = crypt->unpad(msg); })
-	return Alert(ALERT_fatal, ALERT_unexpected_message);
+
+      if(version==0) {
+	if (catch { msg = crypt->unpad(msg); })
+	  return Alert(ALERT_fatal, ALERT_unexpected_message);
+      } else {
+	if (catch { msg = tls_unpad(msg); })
+	  return Alert(ALERT_fatal, ALERT_unexpected_message);
+      }
+    
     packet->fragment = msg;
   }
 
@@ -58,9 +92,11 @@ object decrypt_packet(object packet)
     int length = strlen(packet->fragment) - session->cipher_spec->hash_size;
     string digest = packet->fragment[length ..];
     packet->fragment = packet->fragment[.. length - 1];
-    
+
+
     if (digest != mac->hash(packet, seq_num))
       return Alert(ALERT_fatal, ALERT_bad_record_mac);
+
     seq_num += 1;
   }
 
@@ -78,9 +114,10 @@ object decrypt_packet(object packet)
   return packet->check_size() || packet;
 }
 
-object encrypt_packet(object packet)
+object encrypt_packet(object packet,int version)
 {
   string digest;
+  packet->protocol_version=({3,version});
   
   if (compress)
   {
@@ -95,12 +132,22 @@ object encrypt_packet(object packet)
   
   if (crypt)
   {
-    packet->fragment = crypt->crypt(packet->fragment + digest);
     if (session->cipher_spec->cipher_type == CIPHER_block)
-      packet->fragment += crypt->pad();
+      {
+	if(version==0) {
+	  packet->fragment = crypt->crypt(packet->fragment + digest);
+	  packet->fragment += crypt->pad();
+	} else {
+	  packet->fragment = tls_pad(packet->fragment+digest,crypt->query_block_size());
+	  packet->fragment = crypt->crypt(packet->fragment);
+	}
+      } else {
+	packet->fragment=crypt->crypt(packet->fragment + digest);
+      }
   }
   else
     packet->fragment += digest;
-
   return packet->check_size(2048) || packet;
 }
+
+

@@ -9,7 +9,7 @@ SSL.sslfile sslfile;
 void write_callback(mixed id)
 {
   sslfile->set_write_callback(0);
-  sslfile->write("GET / HTTP/1.0\r\n\r\n");
+  //  sslfile->write("GET / HTTP/1.0\r\n\r\n");
 }
 
 void read_callback(mixed id, string s)
@@ -37,7 +37,7 @@ int main(int argc, array(string) argv)
     exit(-1);
   }
   socket->set_nonblocking();
-  sslfile = SSL.sslfile(socket, context, 1);
+  sslfile = SSL.sslfile(socket, context, 1,0);
 
   sslfile->set_nonblocking(read_callback, write_callback, exit);
 

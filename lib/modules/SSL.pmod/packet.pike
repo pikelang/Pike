@@ -1,9 +1,10 @@
-/* $Id: packet.pike,v 1.5 2000/04/06 11:01:55 nilsson Exp $
+/* $Id: packet.pike,v 1.6 2001/04/18 14:30:41 noy Exp $
  *
  * SSL Record Layer
  */
 
 inherit "constants";
+
 
 constant SUPPORT_V2 = 1;
 
@@ -27,7 +28,6 @@ void create(void|int extra)
   marginal_size = extra;
   buffer = "";
   needed_chars = HEADER_SIZE;
-  protocol_version = ({ 3, 0 });
 }
 
 object check_size(int|void extra)
