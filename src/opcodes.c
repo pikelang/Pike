@@ -253,11 +253,11 @@ static int read_set(char *match,int cnt,char *set,int match_len)
 static INT32 low_sscanf(INT32 num_arg)
 {
   char *input;
-  int input_len;
+  INT32 input_len;
   char *match;
-  int match_len;
+  INT32 match_len;
   struct svalue sval;
-  int e,cnt,matches,eye,arg;
+  INT32 e,cnt,matches,eye,arg;
   int no_assign;
   char set[256];
   struct svalue *argp;
