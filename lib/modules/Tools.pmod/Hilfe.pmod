@@ -4,14 +4,9 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.112 2004/04/23 14:53:25 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.113 2004/04/25 13:38:18 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
-- Hilfe can not handle sscanf statements like
-  int a = sscanf(\"12\", \"%d\", int b);
-- The variable scope is not correctly adjusted for sscanf
-  constructions like sscanf(x, \"%2d%2d\", int a, int b);
-- int x=x; does not generate an error when x is undefined.
 - Hilfe can not handle enums.
 - Hilfe can not handle typedefs.
 - Hilfe can not handle implicit lambdas.
@@ -808,14 +803,24 @@ private constant notype = (< "(", ")", "->", "[", "]", ":", ";",
 private class Expression {
   private array(string) tokens;
   private mapping(int:int) positions;
+  private array(int) depths;
 
   void create(array(string) t) {
     tokens = t;
+
     positions = ([]);
     int pos;
     for(int i; i<sizeof(t); i++) {
       if(whitespace[t[i][0]]) continue;
       positions[pos++] = i;
+    }
+
+    int depth;
+    depths = allocate(sizeof(t));
+    for(int i; i<sizeof(t); i++) {
+      if(t[i]=="(") depth++;
+      else if(t[i]==")") depth--;
+      depths[i]=depth;
     }
   }
 
@@ -838,6 +843,10 @@ private class Expression {
 
   string `[]= (int f, string v) {
     return tokens[positions[f]] = v;
+  }
+
+  int depth(int f) {
+    return depths[positions[f]];
   }
 
   // See if there are any forbidden modifiers used in the expression,
@@ -1601,7 +1610,6 @@ class Evaluator {
   private int relocate( Expression expr, multiset(string) symbols,
 			multiset(string) next_symbols, int p,
 			void|string safe_word, void|int(0..1) top) {
-
     // Type declaration?
     int pos = expr->endoftype(p);
     if(pos>=0) {
@@ -1625,14 +1633,43 @@ class Evaluator {
 	  }
 
 	  // Relocate symbols in the variable assignment.
-	  for(int i=from+1; i<pos; i++)
-	    if(symbols[expr[i]]) {
-	      if(types[expr[i]])
-		expr[i] = "(([mapping(string:"+types[expr[i]]+")]___hilfe)->"+
-		  expr[i]+")";
-	      else
-		expr[i] = "(___hilfe->"+expr[i]+")";
+	  ADT.Stack sscanf_level = ADT.Stack();
+	  sscanf_level->push(-1);
+	  for(int i=from+1; i<pos; i++){
+	    string t = expr[i];
+
+	    if(t=="sscanf")
+	      sscanf_level->push(expr->depth(i)+1);
+	    else if(expr->depth(i)==sscanf_level->top()-1)
+	      sscanf_level->pop();
+	    else if(sscanf_level->top()==expr->depth(i)) {
+	      int nv = expr->endoftype(i);
+	      if(nv>=0) {
+		if(top) {
+		  string var = expr[nv+1];
+		  types[var] = expr[i..nv];
+		  variables[var] = 0;
+		  symbols[var] = 1;
+		  for(int j=i; j<=nv; j++)
+		    expr[j]="";
+		  i=nv;
+		  continue;
+		}
+		else {
+		  i=nv+1;
+		  continue;
+		}
+	      }
 	    }
+
+	    if(symbols[t]) {
+	      if(types[t])
+		expr[i] = "(([mapping(string:"+types[expr[i]]+")]___hilfe)->"+
+		  t+")";
+	      else
+		expr[i] = "(___hilfe->"+t+")";
+	    }
+	  }
 
 	  if(next_symbols)
 	    next_symbols[expr[from]] = 0;
