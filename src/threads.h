@@ -3,6 +3,7 @@
 
 #include "machine.h"
 #include "interpret.h"
+#include "object.h"
 #include "error.h"
 #ifdef HAVE_SYS_TYPES_H
 /* Needed for pthread_t on OSF/1 */
@@ -176,41 +177,50 @@ struct thread_state {
 #define THREADS_FPRINTF(X)	fprintf X
 #endif /* VERBOSE_THREADS_DEBUG */
 
+#define SWAP_OUT_THREAD(_tmp) do { \
+       (_tmp)->swapped=1; \
+\
+       (_tmp)->evaluator_stack=evaluator_stack;\
+       (_tmp)->evaluator_stack_malloced=evaluator_stack_malloced;\
+       (_tmp)->fp=fp;\
+       (_tmp)->mark_sp=mark_sp;\
+       (_tmp)->mark_stack=mark_stack;\
+       (_tmp)->mark_stack_malloced=mark_stack_malloced;\
+       (_tmp)->recoveries=recoveries;\
+       (_tmp)->sp=sp; \
+       (_tmp)->thread_id=thread_id;\
+      } while(0)
+
+#define SWAP_IN_THREAD(_tmp) do {\
+       (_tmp)->swapped=0; \
+\
+       evaluator_stack=(_tmp)->evaluator_stack;\
+       evaluator_stack_malloced=(_tmp)->evaluator_stack_malloced;\
+       fp=(_tmp)->fp;\
+       mark_sp=(_tmp)->mark_sp;\
+       mark_stack=(_tmp)->mark_stack;\
+       mark_stack_malloced=(_tmp)->mark_stack_malloced;\
+       recoveries=(_tmp)->recoveries;\
+       sp=(_tmp)->sp;\
+       thread_id=(_tmp)->thread_id;\
+     } while(0)
+
 #define THREADS_ALLOW() \
   do {\
-     struct thread_state _tmp; \
-     _tmp.swapped=0; \
+     struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
      if(num_threads > 1 && !threads_disabled) { \
-       _tmp.swapped=1; \
-       _tmp.sp=sp; \
-       _tmp.evaluator_stack=evaluator_stack; \
-       _tmp.mark_sp=mark_sp; \
-       _tmp.mark_stack=mark_stack; \
-       _tmp.fp=fp; \
-       _tmp.recoveries=recoveries; \
-       _tmp.evaluator_stack_malloced=evaluator_stack_malloced; \
-       _tmp.mark_stack_malloced=mark_stack_malloced; \
-       _tmp.thread_id = thread_id; \
+       SWAP_OUT_THREAD(_tmp); \
        THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x\n", \
-			__FILE__, __LINE__, (unsigned int)_tmp.thread_id)); \
+			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
        mt_unlock(& interpreter_lock); \
-       /*th_yield();*/\
      }
 
 #define THREADS_DISALLOW() \
-     if(_tmp.swapped) { \
+     if(_tmp->swapped) { \
        mt_lock(& interpreter_lock); \
        THREADS_FPRINTF((stderr, "THREADS_DISALLOW() %s:%d ... t:%08x\n", \
-			__FILE__, __LINE__, (unsigned int)_tmp.thread_id)); \
-       sp=_tmp.sp; \
-       evaluator_stack=_tmp.evaluator_stack; \
-       mark_sp=_tmp.mark_sp; \
-       mark_stack=_tmp.mark_stack; \
-       fp=_tmp.fp; \
-       recoveries=_tmp.recoveries; \
-       evaluator_stack_malloced=_tmp.evaluator_stack_malloced; \
-       mark_stack_malloced=_tmp.mark_stack_malloced; \
-       thread_id = _tmp.thread_id; \
+			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+       SWAP_IN_THREAD(_tmp);\
      } \
    } while(0)
 

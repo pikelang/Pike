@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.29 1997/09/03 03:39:58 per Exp $");
+RCSID("$Id: threads.c,v 1.30 1997/09/03 04:58:17 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -18,7 +18,7 @@ int threads_disabled = 0;
 struct object *thread_id;
 static struct callback *threads_evaluator_callback=0;
 
-MUTEX_T interpreter_lock = PTHREAD_MUTEX_INITIALIZER;
+MUTEX_T interpreter_lock /*= PTHREAD_MUTEX_INITIALIZER*/;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 #ifdef POSIX_THREADS
@@ -50,8 +50,9 @@ void *new_thread_func(void * data)
     fatal("Failed to lock interpreter, errno %d\n",tmp);
   THREADS_FPRINTF((stderr,"THREADS_DISALLOW() Thread created...\n"));
   init_interpreter();
-
   thread_id=arg.id;
+  SWAP_OUT_THREAD((struct thread_state *)thread_id->storage); /* Init struct */
+  ((struct thread_state *)thread_id->storage)->swapped=0;
 
   if(SETJMP(back))
   {
@@ -168,7 +169,7 @@ struct key_storage
   int initialized;
 };
 
-static MUTEX_T mutex_kluge = PTHREAD_MUTEX_INITIALIZER;
+static MUTEX_T mutex_kluge/* = PTHREAD_MUTEX_INITIALIZER*/;
 
 #define OB2KEY(X) ((struct key_storage *)((X)->storage))
 
@@ -361,6 +362,34 @@ void f_cond_broadcast(INT32 args) { pop_n_elems(args); co_broadcast(THIS_COND); 
 void init_cond_obj(struct object *o) { co_init(THIS_COND); }
 void exit_cond_obj(struct object *o) { co_destroy(THIS_COND); }
 
+void f_thread_backtrace(INT32 args)
+{
+  struct thread_state *foo = (struct thread_state *)fp->current_object->storage;
+  struct thread_state *bar = (struct thread_state *)thread_id->storage;
+  struct svalue *osp = sp;
+  pop_n_elems(args);
+  if(foo->sp)
+  {
+    SWAP_OUT_THREAD(bar);
+    SWAP_IN_THREAD(foo);
+    sp=osp;
+    f_backtrace(0);
+    osp=sp;
+    sp=foo->sp;
+    SWAP_OUT_THREAD(foo);
+    SWAP_IN_THREAD(bar);
+    sp=osp;
+  } else {
+    push_int(0);
+    f_allocate(1);
+  }
+}
+
+void init_thread_obj(struct object *o)
+{
+  MEMSET(o->storage, 0, sizeof(struct thread_state));
+}
+
 void th_init(void)
 {
   struct program *tmp;
@@ -420,6 +449,9 @@ void th_init(void)
   end_class("condition", 0);
 
   start_new_program();
+  add_storage(sizeof(struct thread_state));
+  add_function("backtrace",f_thread_backtrace,"function(:array)",0);
+  set_init_callback(init_thread_obj);
   thread_id_prog=end_program();
   if(!mutex_key)
     fatal("Failed to initialize thread program!\n");
