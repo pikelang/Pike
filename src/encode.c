@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.182 2003/06/05 16:01:26 mast Exp $
+|| $Id: encode.c,v 1.183 2003/06/05 20:51:39 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.182 2003/06/05 16:01:26 mast Exp $");
+RCSID("$Id: encode.c,v 1.183 2003/06/05 20:51:39 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -3255,7 +3255,10 @@ static void decode_value2(struct decode_data *data)
 			    "Didn't get program embryo "
 			    "for delay encoded program <%d>: ", entry_id.u.integer);
 	    }
-	    add_ref (p = delayed_enc_val->u.program);
+	    /* No new ref here; low_start_new_program will add one for
+	     * Pike_compiler->new_program and we want ride on that one
+	     * just like when it's created there. */
+	    p = delayed_enc_val->u.program;
 	  }
 	  else
 	    p = NULL;
