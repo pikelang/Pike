@@ -1,15 +1,4 @@
-// $Id: testsuite.in,v 1.4 1998/07/18 17:10:22 grubba Exp $
-
-// Test if a constant is defined.
-define(const_cond, [[
-  cond([[
-#if constant($1)
-  1
-#else
-  0
-#endif /* constant($1) */
-  ]], [[ $2 ]])
-]])
+// $Id: testsuite.in,v 1.5 1998/07/18 17:41:49 grubba Exp $
 
 
 // system.c:
@@ -21,25 +10,25 @@ define(const_cond, [[
 // chroot		HAVE_CHROOT
 // cleargroups		HAVE_SETGROUPS
 // getegid		HAVE_GETEUID
-const_cond(getegid, [[ test_true(intp(getegid())) ]])
+ifefun(getegid, [[ test_true(intp(getegid())) ]])
 // geteuid		HAVE_GETEUID
-const_cond(geteuid, [[ test_true(intp(geteuid())) ]])
+ifefun(geteuid, [[ test_true(intp(geteuid())) ]])
 // getgid		HAVE_GETGID
-const_cond(getgid, [[ test_true(intp(getgid())) ]])
+ifefun(getgid, [[ test_true(intp(getgid())) ]])
 // getgroups		HAVE_GETGROUPS
-const_cond(getgroups, [[ test_true(arrayp(getgroups())) ]])
+ifefun(getgroups, [[ test_true(arrayp(getgroups())) ]])
 // gethostbyaddr	GETHOST_DECLARE
 // gethostbyname	GETHOST_DECLARE
 // gethostname		HAVE_GETHOSTNAME || HAVE_UNAME
-const_cond(gethostname, [[ test_true(stringp(gethostname())) ]])
+ifefun(gethostname, [[ test_true(stringp(gethostname())) ]])
 // getpgrp		HAVE_GETPGRP
-const_cond(getpgrp, [[ test_true(intp(getpgrp())) ]])
+ifefun(getpgrp, [[ test_true(intp(getpgrp())) ]])
 // getpid
 test_true(intp(getpid()))
 // getppid		HAVE_GETPPID
-const_cond(getppid, [[ test_true(intp(getppid())) ]])
+ifefun(getppid, [[ test_true(intp(getppid())) ]])
 // getuid		HAVE_GETUID
-const_cond(getuid, [[ test_true(intp(getuid())) ]])
+ifefun(getuid, [[ test_true(intp(getuid())) ]])
 // hardlink		HAVE_LINK
 // initgroups		HAVE_INITGROUPS
 // readlink		HAVE_READLINK
@@ -57,8 +46,28 @@ const_cond(getuid, [[ test_true(intp(getuid())) ]])
 // endgrent		HAVE_ENDGRENT
 // endpwent		HAVE_ENDPWENT
 // get_all_groups	HAVE_GETGRENT
+ifefun(get_all_groups, [[
+  test_any([[
+    array a = get_all_groups();
+    if (!arrayp(a)) {
+      return(sprintf("a is %t", a));
+    }
+    foreach(a, array b) {
+      if (!arrayp(b)) {
+	return(sprintf("b is %t", b));
+      }
+      if (sizeof(b) != 4) {
+	return(sprintf("b has bad size %d", sizeof(b)));
+      }
+      if (!stringp(b[0]) || !stringp(b[1]) || !intp(b[2]) || !arrayp(b[3])) {
+	return(sprintf("b has bad contents: %O", b));
+      }
+    }
+    return 0;
+  ]], 0)
+]])
 // get_all_users	HAVE_GETPWENT
-const_cond(get_all_users, [[
+ifefun(get_all_users, [[
   test_any([[
     array a = get_all_users();
     if (!arrayp(a)) {
@@ -80,13 +89,16 @@ const_cond(get_all_users, [[
   ]], 0)
 ]])
 // get_groups_for_user	HAVE_GETPWENT
+ifefun(get_groups_for_user, [[
+  test_true(arrayp(get_groups_for_user(0)||({})))
+]])
 // getgrent		HAVE_GETGRENT
 // getgrgid		HAVE_GETGRGID
 // getgrnam		HAVE_GETGRNAM
 // getpwent		HAVE_GETPWENT
 // getpwnam		HAVE_GETPWNAM
 // getpwuid		HAVE_GETPWUID
-const_cond(getpwuid, [[
+ifefun(getpwuid, [[
   test_any([[
     array b = getpwuid(0);
     if (b) {
@@ -100,7 +112,7 @@ const_cond(getpwuid, [[
     }
     return 0;
   ]], 0)
-  const_cond(getpwnam, [[
+  ifefun(getpwnam, [[
     const([[ getpwuid(0) ]], [[
       test_equal([[ getpwnam(getpwuid(0)[0]) ]], [[ getpwuid(0) ]])
     ]])
