@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.86 2004/04/11 14:53:46 grubba Exp $
+|| $Id: socket.c,v 1.87 2004/05/13 17:53:44 bill Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,10 +24,14 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.86 2004/04/11 14:53:46 grubba Exp $");
+RCSID("$Id: socket.c,v 1.87 2004/05/13 17:53:44 bill Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_UN_H
+#include <sys/un.h>
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
@@ -308,6 +312,101 @@ static void port_bind(INT32 args)
   push_int(1);
 }
 
+
+#ifdef HAVE_SYS_UN_H
+
+/*! @decl int bind_unix(string path, void|function accept_callback)
+ *!
+ *! Bind opens a Unix domain socket at the filesystem location path.
+ *! If the second argument is present, the socket is set to nonblocking
+ *! and the callback funcition is called whenever something connects to
+ *! it. The callback will receive the id for this port as argument.
+ *! 
+ *! @returns 
+ *!    1 on success, and zero on failiure.
+ *!
+ *! @note
+ *!   this function is only available on systems that support Unix domain 
+ *!   sockets.
+ *! 
+ *! @seealso
+ *!   @[accept]
+ */
+static void unix_bind(INT32 args)
+{
+  struct port *p = THIS;
+  struct sockaddr_un addr;
+  int addr_len,fd,tmp;
+
+  do_close(p);
+
+  if(args < 1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Port->bind", 1);
+
+  if((Pike_sp[-args].type != PIKE_T_STRING ||
+      Pike_sp[-args].u.string->size_shift))
+    SIMPLE_BAD_ARG_ERROR("Port->bind", 1, "string (8bit)");
+
+  tmp = sizeof(addr.sun_path);
+
+  if(Pike_sp[-args].u.string->len > tmp)
+    SIMPLE_BAD_ARG_ERROR("Port->Bind", 1, "path too long");
+
+  strcpy(addr.sun_path, Pike_sp[-args].u.string->str);
+  addr.sun_family = AF_UNIX;
+
+  addr_len = sizeof(struct sockaddr_un);
+
+  fd=fd_socket(AF_UNIX, SOCK_STREAM, 0);
+
+  if(fd < 0)
+  {
+    p->my_errno=errno;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+#ifndef __NT__
+  {
+    int o=1;
+    if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
+    {
+      p->my_errno=errno;
+      while (fd_close(fd) && errno == EINTR) {}
+      errno = p->my_errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+  }
+#endif
+
+  my_set_close_on_exec(fd,1);
+
+  THREADS_ALLOW_UID();
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, addr_len) < 0 || fd_listen(fd, 16384) < 0;
+  THREADS_DISALLOW_UID();
+
+  if(tmp)
+  {
+    p->my_errno=errno;
+    while (fd_close(fd) && errno == EINTR) {}
+    errno = p->my_errno;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  change_fd_for_box (&p->box, fd);
+  if(args > 1) assign_accept_cb (p, Pike_sp+1-args);
+  p->my_errno=0;
+  pop_n_elems(args);
+  push_int(1);
+}
+
+#endif /* HAVE_SYS_UN_H */
+
 /*! @decl void close()
  *!
  *! Closes the socket.
@@ -531,6 +630,11 @@ void port_setup_program(void)
   /* function(int|string,void|mixed,void|string:int) */
   ADD_FUNCTION("bind", port_bind,
 	       tFunc(tOr(tInt,tStr) tOr(tVoid,tMix) tOr(tVoid,tStr),tInt), 0);
+#ifdef HAVE_SYS_UN_H
+  /* function(int|string,void|mixed,void|string:int) */
+  ADD_FUNCTION("bind_unix", unix_bind,
+	       tFunc(tStr tOr(tVoid,tMix),tInt), 0);
+#endif /* HAVE_SYS_UN_H */
   ADD_FUNCTION("close",port_close,tFunc(tNone,tVoid),0);
   /* function(int,void|mixed:int) */
   ADD_FUNCTION("listen_fd",port_listen_fd,tFunc(tInt tOr(tVoid,tMix),tInt),0);
