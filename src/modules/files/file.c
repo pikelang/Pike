@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.117 1998/08/06 16:43:14 grubba Exp $");
+RCSID("$Id: file.c,v 1.118 1998/08/06 23:11:06 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1351,7 +1351,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
    *
    * FIXME: Configure-test?
    */
-  int len;
+  PIKE_ACCEPT_TYPE len;
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -1386,7 +1386,7 @@ int my_socketpair(int family, int type, int protocol, int sv[2])
     }
 
     /* Check what ports we got.. */
-    len=sizeof(my_addr);
+    len = sizeof(my_addr);
     if(fd_getsockname(fd,(struct sockaddr *)&my_addr,&len) < 0)
     {
       fd_close(fd);
@@ -1422,7 +1422,9 @@ retry_connect:
       int tmp2;
       for(tmp2=0;tmp2<20;tmp2++)
       {
-	int tmp, len2;
+	int tmp;
+	PIKE_ACCEPT_TYPE len2;
+
 	len2=sizeof(addr);
 	tmp=fd_accept(fd,(struct sockaddr *)&addr,&len2);
 	
@@ -1446,7 +1448,8 @@ retry_connect:
    */
   do
   {
-    int len3;
+    PIKE_ACCEPT_TYPE len3;
+
     len3=sizeof(addr);
   retry_accept:
     sv[0]=fd_accept(fd,(struct sockaddr *)&addr,&len3);
@@ -1905,11 +1908,11 @@ static void file_query_address(INT32 args)
 {
   struct sockaddr_in addr;
   int i;
-  /* Solaris thinks this variable should a size_t, everybody else thinks
-   * it should be an int.
-   */
-  int len;
   char buffer[496],*q;
+  /* XOPEN GROUP think this variable should a size_t, BSD thinks it should
+   * be an int.
+   */
+  PIKE_ACCEPT_TYPE len;
 
   if(FD <0)
     error("file->query_address(): Connection not open.\n");
