@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.205 2000/02/15 23:39:33 grubba Exp $");
+RCSID("$Id: program.c,v 1.206 2000/02/16 00:04:38 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -571,22 +571,9 @@ void fixate_program(void)
 
 
   /* Yes, it is supposed to start at 1  /Hubbe */
-  for(i=1;i<3;i++)
-  {
-    struct pike_string *tmp=findstring(lfun_names[i]);
-    if(tmp)
-    {
-      new_program->lfuns[i]=really_low_find_shared_string_identifier(
-	tmp,
-	new_program,
-	SEE_STATIC);
-    }else{
-      new_program->lfuns[i]=-1;
-    }
+  for(i=1;i<NUM_LFUNS;i++) {
+    new_program->lfuns[i] = low_find_lfun(new_program, i);
   }
-
-  for(;i<NUM_LFUNS;i++)
-    new_program->lfuns[i]=find_identifier(lfun_names[i],new_program);
 
   new_program->flags |= PROGRAM_FIXED;
 }
@@ -2530,9 +2517,9 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 
 int low_find_lfun(struct program *p, int lfun)
 {
-  struct pike_string *tmp = find_string(lfun_names[lfun]);
+  struct pike_string *lfun_name = find_string(lfun_names[lfun]);
   unsigned int flags = 0;
-  if (!tmp) return -1;
+  if (!lfun_name) return -1;
   if ((1 <= lfun) && (lfun < 3)) {
     /* create() and destroy() are used even if they are static. */
     flags = SEE_STATIC;
