@@ -911,7 +911,12 @@ class YMD
    { return get_timeofday("hours",0,3600,Hour,@range); }
 
    int number_of_minutes() { return (number_of_seconds()+59)/60; }
-   cMinute minute(void|int n) { return get_unit("minute",n); }
+   cMinute minute(void|int n,int ... time) 
+   { 
+      if (sizeof(time))
+	 return hour(n)->minute(time[0]);
+      return get_unit("minute",n); 
+   }
    array(cMinute) minutes(int ...range)
    { return get_timeofday("minutes",0,60,Minute,@range); }
 
@@ -2312,7 +2317,10 @@ class cSuperTimeRange
 //!	see <ref>Ruleset.set_abbr2zone</ref>.
 
 
-TimeRange dwim_zone(TimeRange origin,string zonename,int ...args)
+// this API may change without further notice
+
+TimeRange dwim_zone(TimeRange origin,string zonename,
+		    string whut,int ...args)
 {
    if (zonename=="") return 0;
    if (origin->rules->abbr2zone[zonename])
@@ -2324,13 +2332,13 @@ TimeRange dwim_zone(TimeRange origin,string zonename,int ...args)
       if (!pz) return 0;
       foreach (pz,string zn)
       {
-	 TimeRange try=dwim_zone(origin,zn,@args);
+	 TimeRange try=dwim_zone(origin,zn,whut,@args);
 	 if (try->tzname()==zonename) return try;
       }
       return 0;
    }
    else
-      return origin->set_timezone(zone)->second(@args);
+      return origin->set_timezone(zone)[whut](@args);
 }
 
 TimeRange parse(string fmt,string arg)
@@ -2449,21 +2457,22 @@ TimeRange parse(string fmt,string arg)
 	    }
       }
 
-      int h=0,mi=0,s=0,g=0;
+      int h=0,mi=0,s=0;
+      string g=0;
       
       if (m->t)
       {
 	 if (strlen(m->t)==6)
-	    [h,mi,s]=(array(int))(m->t/2),g=1;
+	    [h,mi,s]=(array(int))(m->t/2),g="second";
 	 else if (strlen(m->t)==4)
-	    [h,mi]=(array(int))(m->t/2),g=1;
+	    [h,mi]=(array(int))(m->t/2),g="minute";
 	 else return 0;
       }
       else
       {
-	 if (!zero_type(m->h)) h=m->h,g=1;
-	 if (!zero_type(m->m)) mi=m->m,g=1;
-	 if (!zero_type(m->s)) s=m->s,g=1;
+	 if (!zero_type(m->h)) h=m->h,g="hour";
+	 if (!zero_type(m->m)) mi=m->m,g="minute";
+	 if (!zero_type(m->s)) s=m->s,g="second";
       }
 
       if (!zero_type(m->p))
@@ -2482,9 +2491,9 @@ TimeRange parse(string fmt,string arg)
       }
 
       if (m->z) // zone
-	 return dwim_zone(low,m->z,h,mi,s);
+	 return dwim_zone(low,m->z,g,h,mi,s);
       else if (g)
-	 return low->second(h,mi,s);
+	 return low[g](h,mi,s);
       else
 	 return low;
    })
