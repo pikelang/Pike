@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.342 2005/01/23 01:50:41 nilsson Exp $
+|| $Id: file.c,v 1.343 2005/01/27 14:01:29 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -678,10 +678,10 @@ static struct pike_string *do_read_oob(int fd,
  *!
  *! If @[not_all] is nonzero, @[read()] does not try its best to read
  *! as many bytes as you have asked for, but merely returns as much as
- *! the system read function returns. This mainly useful with stream
- *! devices which can return exactly one row or packet at a time. If
- *! @[not_all] is used in blocking mode, @[read()] only blocks if
- *! there's no data at all available.
+ *! the system read function returns. This is mainly useful with
+ *! stream devices which can return exactly one row or packet at a
+ *! time. If @[not_all] is used in blocking mode, @[read()] only
+ *! blocks if there's no data at all available.
  *!
  *! If something goes wrong and @[not_all] is set, zero is returned.
  *! If something goes wrong and @[not_all] is zero or left out, then
@@ -739,15 +739,17 @@ static void file_read(INT32 args)
 
   pop_n_elems(args);
 
-  /* FIMXE: Race. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
-
   if((tmp=do_read(FD, len, all, & ERRNO)))
     push_string(tmp);
   else {
     errno = ERRNO;
     push_int(0);
   }
+
+  /* Race: A backend in another thread might have managed to set these
+   * again for something that arrived after the read above. Not that
+   * bad - it will get through in a later backend round. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
 #ifdef HAVE_AND_USE_POLL
@@ -947,15 +949,17 @@ static void file_read_oob(INT32 args)
 
   pop_n_elems(args);
 
-  /* FIMXE: Race. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
-
   if((tmp=do_read_oob(FD, len, all, & ERRNO)))
     push_string(tmp);
   else {
     errno = ERRNO;
     push_int(0);
   }
+
+  /* Race: A backend in another thread might have managed to set these
+   * again for something that arrived after the read above. Not that
+   * bad - it will get through in a later backend round. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_READ|PIKE_BIT_FD_READ_OOB);
 }
 
 static void set_fd_event_cb (struct my_file *f, struct svalue *cb, int event)
@@ -1229,9 +1233,6 @@ static void file_write(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write(): cannot output wide strings.\n");
 
-  /* FIMXE: Race. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-
   for(written=0;written < str->len;check_signals(0,0,0))
   {
     int fd=FD;
@@ -1259,6 +1260,8 @@ static void file_write(INT32 args)
 	} else {
 	  push_int64(written);
 	}
+	/* Minor race - see below. */
+	THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 	return;
 
       case EINTR: continue;
@@ -1273,6 +1276,11 @@ static void file_write(INT32 args)
 	break;
     }
   }
+
+  /* Race: A backend in another thread might have managed to set these
+   * again for buffer space available after the write above. Not that
+   * bad - it will get through in a later backend round. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE);
@@ -1339,9 +1347,6 @@ static void file_write_oob(INT32 args)
   if(str->size_shift)
     Pike_error("Stdio.File->write_oob(): cannot output wide strings.\n");
 
-  /* FIMXE: Race. */
-  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
-
   while(written < str->len)
   {
     int fd=FD;
@@ -1369,6 +1374,8 @@ static void file_write_oob(INT32 args)
 	} else {
 	  push_int64(written);
 	}
+	/* Minor race - see below. */
+	THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 	return;
 
       case EINTR: continue;
@@ -1383,6 +1390,11 @@ static void file_write_oob(INT32 args)
 	break;
     }
   }
+
+  /* Race: A backend in another thread might have managed to set these
+   * again for buffer space available after the write above. Not that
+   * bad - it will get through in a later backend round. */
+  THIS->box.revents &= ~(PIKE_BIT_FD_WRITE|PIKE_BIT_FD_WRITE_OOB);
 
   if(!SAFE_IS_ZERO(& THIS->event_cbs[PIKE_FD_WRITE_OOB]))
     ADD_FD_EVENTS (THIS, PIKE_BIT_FD_WRITE_OOB);
