@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.42 2004/03/08 17:57:14 anders Exp $
+// $Id: Utils.pmod,v 1.43 2004/09/20 12:46:14 mast Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -38,8 +38,6 @@ public string normalize(string in)
   return Unicode.normalize( lower_case(in), "KD" );
 }
 
-
-#define THROW(X) throw( ({ (X), backtrace() }) )
 
 //! A result entry from the @[ProfileCache].
 class ProfileEntry {
@@ -102,7 +100,7 @@ class ProfileEntry {
       db = Search.Database.MySQL( DBManager.db_url( get_database_value("db_name"), 1) );
 #endif
       if(!db)
-	THROW("Could not aquire the database URL to database " +
+	error("Could not aquire the database URL to database " +
 	      get_database_value("db_name") + ".\n");
     }
     return db;
@@ -154,7 +152,7 @@ class ProfileEntry {
       case "array": return indices(vals);
       case "multiset": return (multiset)indices(vals);
       default:
-	THROW("Can not cast ADTSet to "+to+".\n");
+	error("Can not cast ADTSet to "+to+".\n");
       }
     }
   }
@@ -197,7 +195,7 @@ class ProfileCache (string db_name) {
 #if constant(DBManager)
     db = DBManager.cached_get(db_name);
 #endif
-    if(!db) THROW("Could not connect to database " + db_name + ".\n");
+    if(!db) error("Could not connect to database " + db_name + ".\n");
     return db;
   }
 
@@ -275,7 +273,7 @@ class ProfileCache (string db_name) {
     array res = get_db()->
       query("SELECT id FROM profile WHERE name=%s AND type=2", name);
     if(!sizeof(res))
-      THROW("No database profile " + name + " found.\n");
+      error("No database profile " + name + " found.\n");
 
     return db_profile_names[name] = (int)res[0]->id;
   }
@@ -290,7 +288,7 @@ class ProfileCache (string db_name) {
     array res = get_db()->
       query("SELECT id FROM profile WHERE name=%s AND type=1", name);
     if(!sizeof(res))
-      THROW("No query profile " + name + " found.\n");
+      error("No query profile " + name + " found.\n");
 
     return query_profile_names[name] = (int)res[0]->id;
   }
