@@ -1,32 +1,105 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.10 2004/03/10 00:43:37 nilsson Exp $
+// $Id: Random.pmod,v 1.11 2004/03/20 00:50:08 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
 
 #if constant(Nettle.Yarrow)
 
-#if !constant(Nettle.NT)
-static string dev_urandom;
-static string dev_random;
+#if constant(Nettle.NT)
 
-void create() {
-  if(file_stat("/dev/urandom")) dev_urandom = "/dev/urandom";
-  if(file_stat("/dev/random")) dev_random = "/dev/random";
-  if(dev_random && !dev_urandom) dev_urandom=dev_random;
-  if(!dev_random && dev_urandom) dev_random=dev_urandom;
+class Source {
+  static Nettle.NT.CryptContext ctx;
+
+  static void create(int(0..1) no_block) {
+    ctx = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
+				 Nettle.NT.CRYPT_VERIFYCONTEXT );
+  }
+
+  string read(int bytes) {
+    return ctx->read(bytes);
+  }
 }
+
+#else
+
+class Source {
+  static Stdio.File f;
+  static string data = "";
+
+  static void create(int(0..1) no_block) {
+    if(no_block) {
+      if(file_stat("/dev/urandom"))
+	f = Stdio.File("/dev/urandom");
+      else if(file_stat("/dev/random"))
+	f = Stdio.File("/dev/random");
+    }
+    else {
+      if(file_stat("/dev/random"))
+	f = Stdio.File("/dev/random");
+      else if(file_stat("/dev/urandom"))
+	f = Stdio.File("/dev/urandom");
+    }
+  }
+
+  string read(int bytes) {
+    bytes *= 2;
+    if(f) return f->read(bytes);
+    bytes *= 4;
+    while(sizeof(data)<bytes)
+      data += get_data();
+    string ret = data[..bytes-1];
+    data = data[bytes..];
+    return ret;
+  }
+
+  static string get_data() {
+    Stdio.File f = Stdio.File();
+    Stdio.File child_pipe = f->pipe();
+    if(!child_pipe) error("Could not generate random data.\n");
+
+    // Attempt to generate some entropy by running some
+    // statistical commands.
+    mapping(string:string) env = getenv() + ([
+      "PATH":"/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin",
+    ]);
+    mapping(string:mixed) modifiers = ([
+      "stdin":Stdio.File("/dev/null", "rw"),
+      "stdout":child_pipe,
+      "stderr":child_pipe,
+      "env":env,
+    ]);
+    foreach(({ ({ "last", "-256" }),
+	       ({ "arp", "-a" }),
+	       ({ "netstat", "-anv" }), ({ "netstat", "-mv" }),
+	       ({ "netstat", "-sv" }),
+	       ({ "uptime" }),
+	       ({ "ps", "-fel" }), ({ "ps", "aux" }),
+	       ({ "vmstat", "-f" }), ({ "vmstat", "-s" }),
+	       ({ "vmstat", "-M" }),
+	       ({ "iostat" }), ({ "iostat", "-t" }),
+	       ({ "iostat", "-cdDItx" }),
+	       ({ "ipcs", "-a" }),
+	       ({ "pipcs", "-a" }),
+    }), array(string) cmd) {
+      catch {
+	Process.create_process(cmd, modifiers);
+      };
+    }
+    child_pipe->close();
+    destruct(child_pipe);
+    data = f->read();
+    f->close();
+  }
+}
+
 #endif
 
 static class RND {
   inherit Nettle.Yarrow;
   static int bytes_left = 32;
 
-#if constant(Nettle.NT)
-  static Nettle.NT.CryptContext ctx;
-#else
-  static Stdio.File f;
-#endif
+  static Source s;
 
   static int last_tick;
   static function ticker;
@@ -36,64 +109,8 @@ static class RND {
     // Source 1: ticker
     // Source 2: external
     ::create(3);
-    int entropy_needed = min_seed_size()*2;
-
-#if constant(Nettle.NT)
-    ctx = Nettle.NT.CryptContext(0, 0, Nettle.NT.PROV_RSA_FULL,
-				 Nettle.NT.CRYPT_VERIFYCONTEXT );
-    seed( ctx->read(entropy_needed) );
-#else
-    if (dev_random) {
-      if(no_block)
-	f = Stdio.File(dev_urandom, "r");
-      else
-	f = Stdio.File(dev_random, "r");
-    } else {
-      // No entropy device.
-      f = Stdio.File();
-      Stdio.File child_pipe = f->pipe();
-      if (!child_pipe) {
-	f = 0;
-      } else {
-	// Attempt to generate some entropy by running some
-	// statistical commands.
-	mapping(string:string) env = getenv() + ([
-	  "PATH":"/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin",
-	]);
-	mapping(string:mixed) modifiers = ([
-	  "stdin":Stdio.File("/dev/null", "rw"),
-	  "stdout":child_pipe,
-	  "stderr":child_pipe,
-	  "env":env,
-	]);
-	foreach(({ ({ "last", "-256" }),
-		   ({ "arp", "-a" }), 
-		   ({ "netstat", "-anv" }), ({ "netstat", "-mv" }),
-		   ({ "netstat", "-sv" }), 
-		   ({ "uptime" }),
-		   ({ "ps", "-fel" }), ({ "ps", "aux" }),
-		   ({ "vmstat", "-f" }), ({ "vmstat", "-s" }),
-		   ({ "vmstat", "-M" }),
-		   ({ "iostat" }), ({ "iostat", "-t" }),
-		   ({ "iostat", "-cdDItx" }),
-		   ({ "ipcs", "-a" }),
-		   ({ "pipcs", "-a" }),
-		   }), array(string) cmd) {
-	  catch {
-	    Process.create_process(cmd, modifiers);
-	  };
-	}
-	child_pipe->close();
-	destruct(child_pipe);
-	// We need as much as we can get.
-	entropy_needed = 0x7fffffff;
-      }
-    }
-    if (!f) {
-      error("Failed to open entropy source.\n");
-    }
-    seed( f->read(entropy_needed) );
-#endif
+    s = Source(no_block);
+    seed( s->read(min_seed_size()) );
 
 #if constant(System.rdtsc)
     ticker = System.rdtsc;
@@ -116,13 +133,7 @@ static class RND {
       bytes_left -= pass;
       len -= pass;
       if(!bytes_left) {
-#if constant(Nettle.NT)
-	// CryptGenRandom claims to be cryptographically strong.
-	update( ctx->read(32), 0, 256 );
-#else
-	// Only trust 50% randomness.
-	update( f->read(64), 0, 256 );
-#endif
+	update( s->read(32), 0, 256 );
 	bytes_left = 32;
       }
     }
@@ -167,8 +178,9 @@ Gmp.mpz random(int top) {
 		 256) % top;
 }
 
-//! Works as @[random_string], but may block in order to gather
-//! enough entropy to make a truely random output.
+//! Works as @[random_string], but may block in order to gather enough
+//! entropy to make a truely random output. Using this function is
+//! probably overkill for about all applications.
 string blocking_random_string(int len) {
   return rnd_block_func(len);
 }
