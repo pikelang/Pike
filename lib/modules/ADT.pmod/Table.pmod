@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.17 2001/01/05 21:10:06 grubba Exp $
+// $Id: Table.pmod,v 1.18 2001/01/05 21:12:19 grubba Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
@@ -107,7 +107,7 @@ class table {
   //! Same as @[col()].
   array `[](int|string column)
   {
-    return col(c);
+    return col(column);
   }
 
   //! This method compares two tables. They are equal if the contents
@@ -177,10 +177,10 @@ class table {
   object select(int|string ... columns)
   {
     array t = ({});
-    cs = remap(cs);
+    columns = remap(columns);
     for(int r = 0; r < sizeof(table); r++)
-      t += ({ rows(table[r], cs) });
-    return copy(t, rows(fields, cs), rows(types, cs));
+      t += ({ rows(table[r], columns) });
+    return copy(t, rows(fields, columns), rows(types, columns));
   }
 
   //! Like @[select()], but the given @[columns] will not be in the
