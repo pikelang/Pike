@@ -1,5 +1,5 @@
 #include <config.h>
-/* $Id: quant.c,v 1.6 1997/03/18 16:00:48 mirar Exp $ */
+/* $Id: quant.c,v 1.7 1997/03/18 16:15:24 mirar Exp $ */
 
 /*
 
@@ -536,7 +536,7 @@ static struct colortable *colortable_allocate(int numcol)
    ct->rgb_node=malloc(sizeof(unsigned long)*numcol*2);
    ct->index=malloc(sizeof(unsigned short)*numcol);
    MEMSET(ct->rgb_node,0,
-	  sizeof(unsigned long)*numcol*4);
+	  sizeof(unsigned long)*numcol*2);
    return ct;
 }
 
