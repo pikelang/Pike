@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.302 2001/03/12 23:46:22 hubbe Exp $");
+RCSID("$Id: program.c,v 1.303 2001/03/17 16:36:04 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -566,7 +566,7 @@ static char *raw_lfun_types[] = {
  *! Iterator creation callback.
  *!
  *! Should return an object that implements the iterator API:
- *! @ul
+ *! @dl
  *!   @item
  *!     @[lfun::`!()] should return @tt{1@} when not at end of stream,
  *!     and @tt{0@} (zero) at end of stream.
@@ -576,7 +576,7 @@ static char *raw_lfun_types[] = {
  *!     @[index()] should return the current index.
  *!   @item
  *!     @[value()] should return the current value.
- *! @endul
+ *! @enddl
  *!
  *! @seealso
  *!   @[Iterator], @[foreach()]
