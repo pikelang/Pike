@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.56 2001/06/27 16:09:17 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.57 2001/07/05 22:21:00 hubbe Exp $ */
 
 import Stdio;
 
@@ -495,11 +495,14 @@ int main(int argc, array(string) argv)
 
 	  if((shift/6)&1)
 	  {
-	    fname+=" (save parent)";
-	    to_compile=
-	      "#pragma save_parent\n"
-	      "# 1\n"
-	      +to_compile;
+	    if(search("don't save parent",to_compile) != -1)
+	    {
+	      fname+=" (save parent)";
+	      to_compile=
+		"#pragma save_parent\n"
+		"# 1\n"
+		+to_compile;
+	    }
 	  }
 
 	  if((shift/3)&1)
