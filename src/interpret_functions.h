@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.103 2002/05/11 21:07:59 mast Exp $
+ * $Id: interpret_functions.h,v 1.104 2002/05/15 09:11:21 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -284,7 +284,17 @@ OPCODE1(F_LFUN, "local function", 0, {
 OPCODE2(F_TRAMPOLINE, "trampoline", 0, {
   struct object *o=low_clone(pike_trampoline_program);
   struct pike_frame *f=Pike_fp;
-  while(arg2--) f=f->scope;
+  DO_IF_DEBUG(INT32 arg2_ = arg2);
+
+  while(arg2--) {
+    DO_IF_DEBUG({
+      if (!f->scope) {
+	fatal("F_TRAMPOLINE %d, %d: Missing %d levels of scope!\n", 
+	      arg1, arg2_, arg2+1);
+      }
+    });
+    f=f->scope;
+  }
   add_ref( ((struct pike_trampoline *)(o->storage))->frame=f );
   ((struct pike_trampoline *)(o->storage))->func=arg1+Pike_fp->context.identifier_level;
   push_object(o);

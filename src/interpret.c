@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.259 2002/05/10 23:41:57 nilsson Exp $");
+RCSID("$Id: interpret.c,v 1.260 2002/05/15 09:11:21 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1235,6 +1235,13 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 
   case APPLY_LOW:
     o = (struct object *)arg1;
+      if(o->prog == pike_trampoline_program)
+      {
+	fun=((struct pike_trampoline *)(o->storage))->func;
+	scope=((struct pike_trampoline *)(o->storage))->frame;
+	o=scope->current_object;
+	goto apply_low_with_scope;
+      }
     fun = (ptrdiff_t)arg2;
 
   apply_low:
