@@ -1,0 +1,45 @@
+NAME
+	lambda - write nameless functions
+
+SYNTAX
+	lambda(<argument specifications>) { <code> }
+
+DESCRIPTION
+	Lambda let's you write a function as a value to a function call
+	or anywhere where you can enter an expression. Using lambda is
+	basically the same as defining the function before the current
+	function with a temporary name and then use the name instead.
+
+EXAMPLES
+	/* These two lettersort routines are equal */
+	string *lettersort(string *words)
+	{
+	  return sort_array(lettersort, lambda(string a,string b)
+	    {
+	      return a < b;
+	    });
+	}
+
+	int tmp_cmp_fun(string a, string b)
+	{
+	  return a < b;
+	}
+
+	string *lettersort(string *words)
+	{
+	  return sort_array(lettersort, tmp_cmp_fun);
+	}
+
+NOTA BENE
+	function_name() will return something for lambda functions,
+	what it returns is unspecified though.
+
+BUGS
+	confuses the hell out of C indent programs
+
+KEYWORDS
+	lpc
+
+SEE ALSO
+	class, function
+

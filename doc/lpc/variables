@@ -1,0 +1,35 @@
+NAME
+	variables - how to declare a variable
+
+SYNTAX
+	modifier type variable_name_list;
+
+DESCRIPTION
+	This is how you declare a global variable. Local variables are defined
+	in the same way, but you may not use any modifiers for local variables.
+	The variable_name_list is a comma separated list of the variables
+	to declare as the type 'type'. Note that '*' binds to the variable
+	names, not the type. This means that:
+
+		int * i,j;
+
+	Declares i as an array of int, but j will be declared as int. To
+	declare both i and j as arrays of int you have to write.
+
+		int * i, * j;
+
+	or
+
+		array(int) i,j;
+
+	Modifiers can be zero or more of: static, no_mask and private.
+	Private means that the variable can not be accessed from programs
+	that inherit this program. Static means that it can not be accessed
+	from other objects with the index operator. No_mask means that it
+	can not be redefined in inheriting programs.
+
+KEYWORDS
+	lpc
+
+SEE ALSO
+	functions
