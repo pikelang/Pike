@@ -1,0 +1,22 @@
+NAME
+	spawn - spawn a process
+
+SYNTAX
+	int spawn(string cmd);
+	or
+	int spawn(string cmd, object stdin);
+	or
+	int spawn(string cmd, object stdin, object stdout);
+	or
+	int spawn(string cmd, object stdin, object stdout, object stderr);
+
+DESCRIPTION
+	This function spawns a process but does not wait for it to finish.
+	Optionally, clones of /precompiled/file can be sent to it to
+	specify where stdin, stdout and stderr of the spawned processes
+	should go.
+
+SEE ALSO
+	popen, files/fork, files/exec, files/files->pipe,
+	files/files->dup2
+

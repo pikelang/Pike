@@ -1,0 +1,10 @@
+NAME
+	query_host_name - return the name of the host we are running on
+
+SYNTAX
+	string query_host_name();
+
+DESCRIPTION
+	This function returns the name of the machine the interpreter is
+	running on. This is the same thing that the command 'hostname'
+	prints.

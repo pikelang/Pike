@@ -1,0 +1,48 @@
+NAME
+	array - an array of values
+
+SYNTAX EXAMPLE
+	({ 1, 2, 3 })
+	allocate(10);
+
+DESCRIPTION
+	Arrays are basically a place to store a number of other values.
+
+DESCRIPTION
+	Arrays in lpc are allocated blocks of values. They are dynamically
+	allocated and does not need to be declared as in C. The values in
+	the array can be set when creating the array as in the first
+	construction or anytime afterwards like this: arr[index]=data where
+	index is an integer greater or equal to 0 and smaller than the array
+	size. Note that arrays are shared and use reference counts to keep
+	track of their references. This will have the effect that you can
+        have two variables pointing to the same array, and when you change
+	an index in in it, both variables will show the change.
+
+	Here follows a list of operators that applies to arrays:
+	In this list a and b is used to represent an array expression:
+
+	a + b  : summation ( ({1}) + ({2}) returns ({1,2}) )
+	a - b  : subtraction, returns a copy of a with all values that are
+                 present in b removed, ( ({1, 2, 3}) - ({2}) returns ({1,3}) )
+        a & b  : intersection, return an array with all values that are
+		 present in both a and b
+        a | b  : union, return an array with all values that are present in
+                 a or b, differs from summation in that values that are
+                 present in both a and b are only returned once.
+        a ^ b  : xor, return an array with all values that are present in
+                 a or b but not in both.
+        a * c  : multiplication (c is a string) same thing as implode(a,c)
+        a == b : returns 1 if a is the same array as b, same size and values
+                 is not enough.
+        a != b : returns 0 if a is the same array as b, same size and values
+                 is not enough.
+        ! a    : boolean not, returns 1
+	a[c]   : indexing, returns element c in the array (c is an int)
+	a[c]=d : setting, sets element c in the array to d (c is an int)
+	a[c..d]: range (c & d are ints) returns an array containing a pice of
+                 the array a. The piece starts at element c and ends (and
+                 includes) element d.
+
+SEE ALSO
+	mapping, list, builtin/allocate, builtin/sizeof, builtin/values

@@ -1,0 +1,18 @@
+NAME
+	reverse - reverse a string, array or int
+
+SYNTAX
+	string reverse(string s);
+	or
+	array reverse(arary a);
+	or
+	int reverse(int i);
+
+DESCRIPTION
+	This function reverseses a string, char by char, an array, value
+	by value or an int, bit by bit and returns the result. Reversing
+	strings can be particularly useful for parsing difficult syntaxes
+	which require scanning backwards.
+
+SEE ALSO
+	sscanf

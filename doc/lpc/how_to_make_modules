@@ -1,0 +1,31 @@
+This file describes briefly how to add modules with functions and programs
+written in C to uLPC.
+
+1) decide upon a name for your module
+2) create a dir with this name in src/modules
+3) create a configure script and a Makefile or Makefile.in in this directory
+  Look at the src/modules/files/configure.in and src/modules/files/Makefile.in
+  I recommend using autoconf 2.0 or later for creating the configure scripts.
+4) Hack away
+  Your module needs to contain a few functions:
+  init_<module name>_efuns()
+	This function is meant to add any efuns this module wants to add,
+	normally this function is called before any lpc is compiled, but
+	in the future modules might be loaded dynamically, and then this
+	will be called when the module is loaded.
+  init_<module name>_programs()
+	This is called after all modules has been inited and the master has
+	been compiled, this allows this function to call lpc functions and
+	and add LPC programs with C functions to the pool of precompiled
+	programs. (see src/modules/files/file.c for an example)
+  exit_<module name>()
+	This is called when the module is unloaded, it must free any memory
+	allocated by the module that is not freed anywhere else. 
+
+  There will be other required functions in the future, for instanece there
+  will be an garbage_collect_<module name>().
+
+  For now you will have to look at the file module to see how C programs
+  and efuns are added.
+
+  

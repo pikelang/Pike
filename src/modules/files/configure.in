@@ -1,0 +1,62 @@
+AC_INIT(file.c)
+AC_CONFIG_HEADER(file_machine.h)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_SUBST(RANLIB)
+
+AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h netinet/in.h)
+AC_HEADER_DIRENT
+AC_CHECK_LIB(socket, socket)
+
+AC_HAVE_FUNCS(socketpair)
+
+AC_MSG_CHECKING(size of socket buffers)
+AC_CACHE_VAL(lpc_cv_socket_buffer_max,
+[
+AC_TRY_RUN([
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/param.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <sys/socket.h>
+
+int main()
+{
+  FILE *f;
+  int fd, try, tmp;
+
+  fd=socket(AF_INET, SOCK_STREAM, 0);
+
+  if(fd < 0) return 1;
+
+  try=1024;
+  while(try < 65000)
+  {
+    tmp=try*2;
+    if(setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (char *)&tmp, sizeof(int)) < 0)
+    {
+      break;
+    }
+    try*=2;
+  }
+  f=fopen("conftest.out.2","w");
+  fprintf(f,"%d\n",try);
+  fclose(f);
+  
+  return 0;
+}],
+lpc_cv_socket_buffer_max=`cat conftest.out.2`
+,
+lpc_cv_socket_buffer_max=0
+)])
+
+AC_DEFINE_UNQUOTED(SOCKET_BUFFER_MAX,$lpc_cv_socket_buffer_max)
+AC_MSG_RESULT($lpc_cv_socket_buffer_max)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

@@ -1,0 +1,9 @@
+NAME
+	member_array - find first occurance of a value in an array
+
+SYNTAX
+	int member_array(mixed item, mixed *arr);
+
+DESCRIPTION
+	Returns the index of the first occurence of item in array arr.
+	If not found, then -1 is returned.

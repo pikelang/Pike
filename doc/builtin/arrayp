@@ -1,0 +1,12 @@
+NAME
+	arrayp - is the argument an array?
+
+SYNTAX
+	int arrayp(mixed arg);
+
+DESCRIPTION
+	Returns 1 if arg is an array, zero otherwise.
+
+SEE ALSO
+	allocate, intp, programp, floatp, stringp, objectp, regexpp,
+	mappingp, listp, functionp

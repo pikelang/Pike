@@ -1,0 +1,14 @@
+NAME
+	trace - change debug trace level
+
+SYNTAX
+	int trace(int t);
+
+DESCRIPTION
+	This function affects the debug trace level. (also set by the -t
+	command line option) The old level is returned. Trace level 1 or
+	higher means that calls to lpc functions are printed to stderr,
+	level 2 or higer means calls to builtin functions are printed, 3
+	means every opcode interpreted is printed, 4 means arguments to
+	these opcodes are printed as well. See the command lines options
+	for more information

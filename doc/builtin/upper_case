@@ -1,0 +1,12 @@
+NAME
+	upper_case - convert a string to upper case
+
+SYNTAX
+	string upper_case(string s);
+
+DESCRIPTION
+	Return a copy of the string s with all lower case character converted
+	to upper case character.
+
+SEE ALSO
+	lower_case

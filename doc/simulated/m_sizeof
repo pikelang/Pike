@@ -1,0 +1,11 @@
+NAME
+	m_sizeof - Return the size of a mapping
+
+SYNTAX
+	int m_sizeof(mapping m);
+
+DESCRIPTION
+	This function is equal to builtin/sizeof.
+
+SEE ALSO
+	builtin/sizeof

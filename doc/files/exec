@@ -1,0 +1,22 @@
+NAME
+	exec - execute a program
+
+SYNTAX
+	int exec(string ... args);
+
+DESCRIPTION
+	This function transforms the uLPC process into a process running
+	the program specified in args. The args will be sent as argv[] to
+	the new program. This function only returns if something went wrong
+	during exec(), and in that case it returns zero.
+
+NOTA BENE
+	The uLPC driver _dies_ when this function is called. You must use
+	fork() if you wish to execute a program and still run the uLPC
+	driver.
+
+EXAMPLE
+	exec("ls","-l");
+
+SEE ALSO
+	files/fork, file->pipe

@@ -1,0 +1,11 @@
+NAME
+	m_values - return all values from a mapping
+
+SYNTAX
+	mixed *m_values(mapping m);
+
+DESCRIPTION
+	This function is equal to builtin/values
+
+SEE ALSO
+	builtin/values

@@ -1,0 +1,22 @@
+NAME
+	object - an instance of a class (program)
+
+DESCRIPTION
+	There is no syntax example in this file because there is no way to
+	write constant object. The only way to make new objects is to use
+	clone() on a program.
+
+	Here follows a list of operators that applies to objects:
+	In this list, o and o2 are used to represent object expressions,
+	and s is a string expression:
+
+	o[s]     : indexing, returns the identifier named s in the object o,
+                   an identifier is a global variable or a function.
+	o[s]=c   : This sets the global variable s int the object o to c,
+		   if s is a function however, an error is produced.
+	o -> foo : same as o["foo"]
+	o == o2  : return 1 if o and o2 are the same object
+	o != o2  : return 0 if o and o2 are the same object
+
+SEE ALSO
+	program, function, builtin/clone, builtin/destruct

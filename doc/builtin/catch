@@ -1,0 +1,13 @@
+NAME
+	catch - catch any errors that may occur.
+SYNTAX
+	mixed catch(mixed expr);
+
+DESCRIPTION
+	Evaluate expr. If there is no error or throw 0 is returned. Otherwise
+	the value thrown will be returned. Driver errors such as 1/0 will
+	throw an array where the first index is a string describing the error
+	and the second the backtrace() at that point.
+
+SEE ALSO
+	throw

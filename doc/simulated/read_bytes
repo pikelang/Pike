@@ -1,0 +1,13 @@
+NAME
+	read_bytes - read a number of bytes into a string from a file
+
+SYNTAX
+	string read_bytes(string file,int start,int len);
+
+DESCRIPTION
+	Read len number of bytes from file file staring at byte start and
+	return it as a string.
+
+SEE ALSO
+	write_file
+

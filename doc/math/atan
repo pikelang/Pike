@@ -1,0 +1,11 @@
+NAME
+	atan - Trigonometrical inverse tangent
+
+SYNTAX
+	float atan(float f);
+
+DESCRIPTION
+	Return the arcus tangent value for f.
+
+SEE ALSO
+	math/tan, math/asin, math/acos

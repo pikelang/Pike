@@ -1,0 +1,22 @@
+NAME
+	equal - check if two values are equal or not
+
+SYNTAX
+	int equal(mixed a, mixed b);
+
+DESCRIPTION
+	This function checks if the values a and b are equal. For all types but
+	arrays, lists and mappings, this operation is the same as doing a == b.
+	For arrays, mappings and lists however, their contents are checked
+	recursively, and if all their contents are the same and in the same
+	place, they are considered equal.
+
+EXAMPLES
+	> ({ 1 }) == ({ 1 });
+	Result: 0
+	> equal( ({ 1 }), ({ 1 }) );
+	Result: 1
+	> 
+
+SEE ALSO
+	copy_value

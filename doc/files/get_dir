@@ -1,0 +1,12 @@
+NAME
+	get_dir - read a directory
+
+SYNTAX
+	string *get_dir(string dirname);
+
+DESCRIPTION
+	Return an array of all filenames in the directory dir, or zero if
+	no such directory exists.
+
+SEE ALSO
+	files/mkdir, files/cd

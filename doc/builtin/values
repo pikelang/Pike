@@ -1,0 +1,16 @@
+NAME
+	values - return an array of all possible values from indexing
+
+SYNTAX
+	mixed *values(string|list|mapping|array foo);
+
+DESCRIPTION
+	Values return an array of all values you can get when indexing the
+	value foo. For strings, an array of int with the ascii values of the
+	characters in the string is returned. For a list, an array filled with
+	ones is return. For mappings and arrays, the returned array may
+	contain any kind of value.
+
+SEE ALSO
+	indices
+

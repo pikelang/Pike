@@ -1,0 +1,12 @@
+NAME
+	cd - change directory
+
+SYNTAX
+	int cd(string s);
+
+DESCRIPTION
+	Change the current directory for the whole LPC process, return
+	1 for success, 0 otherwise.
+
+SEE ALSO
+	files/getcwd

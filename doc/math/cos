@@ -1,0 +1,11 @@
+NAME
+	cos - Trigonometrical cosine
+
+SYNTAX
+	float cos(float f);
+
+DESCRIPTION
+	Return the cosinus value for f.
+
+SEE ALSO
+	math/acos, math/sin

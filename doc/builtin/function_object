@@ -1,0 +1,13 @@
+NAME
+	function_object - return what object a function is in
+
+SYNTAX
+	object function_object(function f);
+
+DESCRIPTION
+	Function_object will return the object the function f is in. If the
+	function is a predefined function from the driver, zero will be
+	returned.
+
+SEE ALSO
+	function_name, get_function

@@ -1,0 +1,12 @@
+NAME
+	previous_object - return the calling object
+
+SYNTAX
+	object previous_object();
+
+DESCRIPTION
+	Returns an object pointer to the object that called current function,
+	if any.
+
+SEE ALSO
+	builtin/call_function, builtin/backtrace

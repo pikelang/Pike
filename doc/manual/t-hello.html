@@ -1,0 +1,66 @@
+<h1>Hello world!</h1>
+
+In this chapter, you will learn to write a complete program in the
+킠PC language. All this program does is to print "Hello world!" on
+your screen. You can then make additions and changes to the program,
+as you learn to handle more features of the language in the following
+chapters.
+
+<p>This is typical for how you develop programs in 킠PC: step by step,
+making them more advanced, adding functionality, as you go.  Since
+킠PC is an interpreted language, you don't get lagged by frequent
+recompilations.  You just change the program, and it is ready to run.
+
+<p>Enough said!  Let's take a look at the program now:
+
+<pre>
+        #!/usr/local/bin/ulpc
+
+        int main(int argc, string *argv)
+        {
+          write ("Hello world!\n");
+	  return 0;
+        }
+</pre>
+
+<p>That's all there is!  Use your favorite text editor and save the
+results in a file called <b>hello.lpc</b>.
+
+<p>We are not quite ready to run yet.  First, you must use the
+<b>chmod</b> command to make your program executable.  You only have
+to do this once for each program.  Here, the dollar sign is your UNIX
+prompt, which could also be any odd character (such as % or #).
+
+<pre>
+        $ chmod +x hello.lpc
+        $ hello.lpc
+        Hello world!
+        $
+</pre>
+
+<p>Obviously, our program is a success!  Let's try and understand why.
+
+<p>The first line of <b>hello.lpc</b> starts with the two characters
+<b>#!</b> (hash bang) followed by a file name. This is a UNIX trick to
+make script programs executable.  Normally, scripts are written in
+shell commands, awk or perl.  All script programs need an interpreter
+to read the script commands and execute them.  The "hash bang" tells
+UNIX that the this is a script file and that the file name of an
+interpreter follows.  For example, shell scripts use a UNIX shell
+/bin/sh as their interpreter, so their first line should be #!/bin/sh.
+
+<dl>
+<dt>NOTE:
+
+<dd>For this to work properly, the "hash bang" (#!) must be the first
+two characters of the file.  There must not be any white space before
+or empty line above them!
+
+</dl>
+
+<p>For 킠PC programs, the interpreter is the <b>ulpc</b> program,
+which we shall assume is installed in <b>/usr/local/bin</b>
+directory.  Turn to appendices A and B if this program is not
+properly installed on your computer.
+
+<p>The next few lines of the program ... (to be continued)

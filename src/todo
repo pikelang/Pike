@@ -1,0 +1,175 @@
+
+a) Ska jag ha en hashtabell f|r att resolva string->program?
+  Svar nej, bison-pure / patchat byacc fixar biffen
+b) Hur ska initialisering av globala variabler g} till? Ska __INIT anv{ndas
+   rakt |ver?
+c) typerna typerna typerna ...........
+
+ny switch
+	done
+
+fix the opertors to use sp[-1] instead of sp-> and fix them to use the correct
+sub-functions
+
+check everything that use T_FUNCTION and fix for C functions.
+	done, except for opcodes.c and sprintf.c
+list.c
+	done
+skriv om internal_parse_type till att anv{nda typstacken ist{llet f|r
+ zillioner malloc
+	done
+
+finish fsort
+	done
+
+arg! efunpekarna funkar fortfarande inte!
+	 (binder till ett efun-namn, inte en funktion, tror jag...)
+	done
+
+convert opcodes.c
+	done
+
+convert sprintf.c ..........
+	done
+
+fixa define_include dirs.
+	done
+fixa #include <>
+	done
+fixa lex.c
+	done (n{stan)
+
+fixa !x && !y -> !(x || y)
+	done
+fixa !x || !y -> !(x && y)
+	done
+
+does clone initialize variables?
+	yes, now it does....
+
+internal_parse_type must be able to parse '|'
+	done
+
+F_ARG_LIST ska inte l{gga till TRY_OPTIMIZE
+	done
+
+F_OFFSET {r 257 men borde vara 258
+	done
+
+fixa main() till att skicka vidare argumenten.
+	done
+
+skall ID_VARARGS lagras i functionsheadern eller functionsstructen?
+	done (for now)
+
+fixa kompilatorn till att vara reentrant.
+	done
+
+({ foo, bar, gazonk }) ();
+	done
+
+fixa backtrace()
+	done
+
+fixa en master.lpc
+	done (for nwo)
+
+fixa error(), catch() & throw()
+	done
+
+fixa en funktion som skriver ut en backtrace... (i lpc?)
+	done (for now)
+
+l{r den hantera filer .....
+	done
+
+fixa foo::bar
+	done
+
+files::get_dir()
+	done
+
+skall program ha namn?
+	nej
+
+convert efuns.c ..
+	done
+
+hmm, read_callback() funkar inte med accept()....
+	done
+
+fixa sockets
+	done
+
+porta hilfe
+	done
+
+fixa file->copy_file & file->assign_file	
+	done (file->dup & file->assign)
+
+fixa radnumren: problemet {r at mknode k|rs l}ng senare {n tokenet l{sts...
+	done
+
+a+=b -> a=a+b {r ju inte helt r{tt alltid...
+   man kan skriva om det till:
+     { mixed *tmp; tmp=&a; *a=*a+b; }
+   OM det fanns pekare....
+	done (utan pekare)
+
+reverse() ... done
+next_object() ... done
+indices() ... done
+values()  ... done (don't copy array if refs == 1)
+object_program() ... done
+replace() ... done
+compile_string() ... done
+call_out() ... done
+find_call_out() ... done
+call_out_info() ... done
+remove_call_out() ... done
+
+file->write ska st{nga filen om saker g}r snett... (tror jag)
+	nej, det {r upp till anv{ndaren
+
+patch byacc
+
+dokumentera
+
+ta bort MAX_LOCAL (& MAX_GLOBAL)
+
+ta bort EXPANDMAX
+
+kommentera mera
+
+"make: Fatal error: Don't know how to make target `builtin_efuns.o'" (p} metoo)
+
+typkollen m}ste generera b{ttre felmeddelanden..
+
+putenv? setugid? 
+
+function_exists()
+inherit_list()
+function_args()
+get_function_list()
+fuzzymatch()
+file->rename()
+sort()
+mkmapping()
+mklist()
+this_function()
+kolla upp |vriga efunnar som skall portas 
+
+signals
+
+++++ -> sum()
+
+update README
+
+flytta cheken f|r libsocket till modulen (och se till att moduler kan addera libs)
+(eller s{tt tillbaka AC_HAVE_DIRENT (?) i configure.in)
+
+add garbage collect
+
+addera generisk callback
+
+set_socket_nonblocking adderar ingen referens till objektet...

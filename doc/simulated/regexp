@@ -1,0 +1,11 @@
+NAME
+	regexp - filter an array through a regexp
+
+SYNTAX
+	string *regexp(string *arr, string reg);
+
+DESCRIPTION
+	Return those strings in arr that matches the regexp in reg.
+
+SEE ALSO
+	regexp/regexp

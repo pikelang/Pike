@@ -1,0 +1,23 @@
+NAME
+	combine_path - concatenate paths
+
+SYNTAX
+	string combine_path(string absolute, string relative);
+
+DESCRIPTION
+	Concatenate a relative path to an absolute path and remove any
+	"//", "/.." or "/." to produce a straightforward absolute path
+	as a result.
+
+EXAMPLES
+	> combine_path("/foo/bar/","..");
+	Result: /foo
+	> combine_path("/foo/bar/","../apa.c");
+	Result: /foo/apa.c
+	> combine_path("/foo/bar","./sune.c");
+	Result: /foo/bar/sune.c
+
+SEE ALSO
+	getcwd
+
+	

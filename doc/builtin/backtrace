@@ -1,0 +1,22 @@
+NAME
+	backtrace - get a description of the call stack
+
+SYNTAX
+	mixed *backtrace();
+
+DESCRIPTION
+	This function returns a description of the call stack at this moment.
+	The description is returned in an array with one entry for each call
+	in the stack. Each entry has this format:
+
+	({
+	   file, /* a string with the filename if known, else zero */
+	   function, /* The function-pointer to the called function */
+	   line, /* an integer containing the line if known, else zero */
+	})
+
+	The current call frame will be last in the array, and the one above
+	that the last but one and so on.
+
+SEE ALSO
+	catch, throw

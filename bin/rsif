@@ -1,0 +1,32 @@
+#!/usr/local/bin/ulpc
+
+int main(int argc,string *argv)
+{
+  int e,len;
+  string file;
+  if(argc<4)
+  {
+    write("Usage: rsif <from> <to> <files>\n");
+    return 0;
+  }
+
+  for(e=3;e<sizeof(argv);e++)
+  {
+    if(file=read_bytes(argv[e]))
+    {
+      if(-1!=strstr(file,argv[1]))
+      {
+	write("Processing "+argv[e]+".\n");
+	len=strlen(file);
+	file=replace(file,argv[1],argv[2]);
+
+	if(mv(argv[e],argv[e]+"~"))
+	{
+	  write_file(argv[e],file);
+	}else{
+	  write("Failed to create backup file.\n");
+	}
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+NAME
+	mappingp - is the argument an mapping?
+
+SYNTAX
+	int mappingp(mixed arg);
+
+DESCRIPTION
+	Returns 1 if arg is a mapping, zero otherwise.
+
+SEE ALSO
+	intp, programp, arrayp, stringp, objectp, regexpp,
+	listp, floatp, functionp

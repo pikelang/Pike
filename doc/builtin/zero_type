@@ -1,0 +1,17 @@
+NAME
+	zero_type - return the type of zero
+
+SYNTAX
+	int zero_type(int a);
+
+DESCRIPTION
+	There are many types of zeros out there, or at least there are two.
+	One is returned by normal functions, and one returned by mapping
+	lookups and find_call_out() when what you looked for wasn't there.
+	The only way to separate these two kinds of zeros is zero_type.
+	When doing a find_call_out or mapping lookup, zero_type on this value
+	will return 1 if there was no such thing present in the mappping, or
+	no such call_out could be found. Otherwize zero_type will return zero.
+
+SEE ALSO
+	find_call_out

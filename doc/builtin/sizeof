@@ -1,0 +1,11 @@
+NAME
+	sizeof - return the size of an array, string, list or mapping
+
+SYNTAX
+	int sizeof(string|list|mapping|array a);
+
+DESCRIPTION
+	This function returns the number of indexes available in the argument
+	given to it. It replaces older functions like strlen, m_sizeof and
+	size.
+	

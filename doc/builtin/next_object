@@ -1,0 +1,21 @@
+NAME
+	next_object - get next object
+
+SYNTAX
+	object next_object(object o);
+	or
+	object next_object();
+
+DESCRIPTION
+	All objects are stored in a linked list, next_object() returns the
+	first object in this list, and next_object(o) the next object in the
+	list after o.
+
+EXAMPLES
+	/* This example calls shutting_down() in all cloned objects */
+	object o;
+	for(o=next_object();o;o=next_object(o))
+	  o->shutting_down();
+
+SEE ALSO
+	clone, destruct

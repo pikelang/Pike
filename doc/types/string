@@ -1,0 +1,35 @@
+NAME
+	string - a string of characters
+
+SYNTAX EXAMPLE
+	"foo"
+
+DESCRIPTION
+	This type can contain a string, or list of characters, strings can
+	contain any character, even null characters. Strings are a basic
+	type in LPC, as opposed to C where strings are represented by an
+	array of char. This means that you cannot set individual characters
+	in a string with the index operator for instance. In fact, there are
+	no functions that alters strings destructively. Also, all strings
+	are 'shared', that means that if the same string is used in several
+	places, only one will be stored in memory.
+
+	A list of operators that applies to strings follow:
+	In this list a and b is used to represent a string expression:
+
+	a + b  : summation ( "a"+"b" returns "a"
+	a - b  : subtraction ( same as replace(a,b,"") )
+	a / b  : division ( same thing as explode(a,b) )
+	! a    : boolean not, returns 1
+
+	The following operators compare two string alphabetically:	
+	a == b : return 1 if a is equal to b, 0 otherwise
+	a != b : return 0 if a is equal to b, 1 otherwise
+	a < b  : returns 1 if a is lesser than b, 0 otherwise
+	a <= b : returns 1 if a is lesser or equal to b, 0 otherwise
+	a > b  : returns 1 if a is greater than b, 0 otherwise
+	a >= b : returns 1 if a is greater or equal to b, 0 otherwise
+
+SEE ALSO
+	builtin/indices, builtin/values, builtin/sscanf, builtin/sprintf,
+	builtin/sizeof

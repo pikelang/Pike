@@ -1,0 +1,17 @@
+NAME
+	time - return the current time
+
+SYNTAX
+	int time();
+	or
+	int time(1);
+
+DESCRIPTION
+	This function returns the number of secons since 1 Jan 1970.
+	The function ctime() converts this integer to a readable string.
+
+	The second syntax does not call the system call time() as often,
+	but is only updated in the backed. (when lpc code isn't running)
+
+SEE ALSO
+	time

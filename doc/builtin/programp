@@ -1,0 +1,12 @@
+NAME
+	programp - is the argument an program?
+
+SYNTAX
+	int programp(mixed arg);
+
+DESCRIPTION
+	Returns 1 if arg is a program, zero otherwise.
+
+SEE ALSO
+	intp, listp, arrayp, stringp, objectp, regexpp,
+	mappingp, floatp, functionp

@@ -1,0 +1,11 @@
+NAME
+	strlen - Return the length of a string
+
+SYNTAX
+	int strlen(string s);
+
+DESCRIPTION
+	This function is equal to builtin/sizeof.
+
+SEE ALSO
+	builtin/sizeof

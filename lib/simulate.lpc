@@ -1,0 +1,342 @@
+inherit "/precompiled/file";
+inherit "/precompiled/regexp";
+
+#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
+
+string current_file, current_mode;
+
+static int open(string file, string how)
+{
+  if(file == current_file && how == current_mode)
+  {
+    seek(0);
+    return 1;
+  }else{
+    if(file::open(file,how))
+    {
+      current_file=file;
+      current_mode=how;
+      return 1;
+    }else{
+      current_file=current_mode=0;
+      return 1;
+    }
+  }
+}
+
+string read_bytes(string filename,void|int start,void|int len)
+{
+  if(!open(filename,"r"))
+    error("Couldn't open file "+filename+".\n");
+  
+  switch(query_num_arg())
+  {
+  case 1:
+  case 2:
+    len=0x7fffffff;
+  case 3:
+    seek(start);
+  }
+  return read(len);
+}
+
+int write_file(string filename,string what)
+{
+  if(!open(filename,"wc"))
+    error("Couldn't open file "+filename+".\n");
+  
+  seek(-1);
+  return write(what);
+}
+
+mixed *map_array(mixed *arr, mixed fun, mixed ... args)
+{
+  int e;
+  mixed *ret;
+
+  if(intp(fun))
+    return arr(@args);
+
+  ret=allocate(sizeof(arr));
+  if(stringp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      ret[e]=call_other(arr[e],fun,@args);
+  }
+  else if(functionp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      ret[e]=fun(arr[e],@args);
+  }else{
+    error("Bad argument 2 to map_array().\n");
+  }
+  return ret;
+}
+
+mixed *filter_array(mixed *arr, mixed fun, mixed ... args)
+{
+  int e,d;
+  mixed *ret;
+
+  ret=allocate(sizeof(arr));
+  if(stringp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      if(call_other(arr[e],fun,@args))
+	ret[d++]=arr[e];
+  }
+  else if(functionp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      if(fun(arr[e],@args))
+	ret[d++]=arr[e];
+  }
+  else if(intp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      if(arr[e](@args))
+	ret[d++]=arr[e];
+  }
+  else
+  {
+    error("Bad argument 2 to filter_array().\n");
+  }
+
+  return ret[0..d-1];
+}
+
+int search_array(mixed *arr, mixed fun, mixed ... args)
+{
+  int e;
+
+  if(stringp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      if(call_other(arr[e],fun,@args))
+	return e;
+    return -1;
+  }
+  else if(functionp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      if(fun(arr[e],@args))
+	return e;
+    return -1;
+  }
+  else if(intp(fun))
+  {
+    for(e=0;e<sizeof(arr);e++)
+      if(arr[e](@args))
+	return e;
+    return -1;
+  }
+  else
+  {
+    error("Bad argument 2 to filter_array().\n");
+  }
+}
+
+varargs int exec(string file,string ... foo)
+{
+  string path;
+  if(search(file,"/"))
+    return exece(combine_path(getcwd(),file),foo);
+
+  path=getenv("PATH");
+
+  foreach(path/":",path)
+    if(file_stat(path=combine_path(path,file)))
+      return exece(path, foo);
+
+  return 69;
+}
+
+string popen(string s)
+{
+  object p;
+  current_file=current_mode=0;
+
+  p=file::pipe();
+  if(!p) error("Popen failed. (couldn't create pipe)\n");
+  if(!fork())
+  {
+    p->dup2(clone((program)"/precompiled/file","stdout"));
+    exec("/bin/sh","-c",s);
+    exit(69);
+  }else{
+    string t;
+    destruct(p);
+    t=read(0x7fffffff);
+    close();
+    return t;
+  }
+}
+
+varargs int spawn(string s,object stdin,object stdout,object stderr)
+{
+  object p;
+  int pid;
+  string t;
+  current_file=current_mode=0;
+
+  if(pid=fork())
+  {
+    return pid;
+  }else{
+    program f=(program)"/precompiled/file";
+    if(stdin)
+      stdin->dup2(clone(f,"stdin"));
+
+    if(stdout)
+      stdout->dup2(clone(f,"stdout"));
+
+    if(stderr)
+      stderr->dup2(clone(f,"stderr"));
+
+    exec("/bin/sh","-c",s);
+    exit(0);
+  }
+}
+
+int file_size(string s)
+{
+  int *stat;
+  stat=file_stat(s);
+  if(!stat) return -1;
+  return stat[1]; 
+}
+
+varargs string code_value(mixed s,int a)
+{
+  s=sprintf("%O",s);
+  if(a) s=replace(s,({"\n","\"","\\"}),({"\\n","\\\"","\\\\"}));
+  return s;
+}
+
+mixed *sum_arrays(function foo, mixed * ... args)
+{
+  mixed *tmp,*ret;
+  int e,d;
+  tmp=allocate(sizeof(args));
+  ret=allocate(sizeof(args[0]));
+  for(e=0;e<sizeof(args[0]);e++)
+  {
+    for(d=0;d<sizeof(args);d++) tmp[d]=args[d][e];
+    ret[e]=foo(@tmp);
+  }
+  return ret;
+}
+
+varargs int member_array(mixed needle,mixed *haystack,int start)
+{
+  return search(haystack,needle,start);
+}
+
+object previous_object()
+{
+  int e;
+  mixed **trace;
+  object o,ret;
+  trace=backtrace();
+  o=function_object(trace[-2][2]);
+  for(e=sizeof(trace)-3;e>=0;e--)
+  {
+    if(!trace[1][2]) continue;
+    ret=function_object(trace[1][2]);
+    if(o!=ret) return ret;
+  }
+  return 0;
+}
+
+function this_function()
+{
+  return backtrace()[-2][2];
+}
+
+mixed *sort_array(array *foo,void|function cmp,mixed ... args)
+{
+  int ap,bp,retp;
+  mixed *a,*b,*ret;
+
+  if(sizeof(foo)<2) return copy_value(foo);
+
+  if(!cmp) cmp=lambda(mixed a,mixed b) { return a > b; };
+
+  a=sort_array(foo[0..sizeof(foo)/2-1],cmp,@args);
+  b=sort_array(foo[sizeof(foo)/2..sizeof(foo)],cmp,@args);
+  ret=allocate(sizeof(foo));
+
+  while(1)
+  {
+    if(cmp(a[ap],b[bp],@args) <= 0)
+    {
+      ret[retp++]=a[ap++];
+      if(ap == sizeof(a))
+      {
+	while(bp < sizeof(b)) ret[retp++]=b[bp++];
+	return ret;
+      }
+    }else{
+      ret[retp++]=b[bp++];
+      if(bp == sizeof(b))
+      {
+	while(ap < sizeof(a)) ret[retp++]=a[ap++];
+	return ret;
+      }
+    }
+  }
+}
+
+string capitalize(string s)
+{
+  return upper_case(s[0..0])+s[1..sizeof(s)];
+}
+
+function get_function(object o, string a)
+{
+  mixed ret;
+  ret=o[a];
+  return functionp(ret) ? ret : 0;
+}
+
+string *regexp(string *s, string reg)
+{
+  regexp::create(reg);
+  return filter_array(s,match);
+  regexp::create(); /* Free compiled regexp */
+}
+
+list mklist(mixed *a)
+{
+  return aggregate_list(@a);
+}
+
+void create()
+{
+  add_efun("PI",3.1415926535897932384626433832795080);
+  add_efun("capitalize",capitalize);
+  add_efun("code_value",code_value);
+  add_efun("file_size",file_size);
+  add_efun("filter_array",filter_array);
+  add_efun("l_sizeof",sizeof);
+  add_efun("m_indices",indices);
+  add_efun("m_sizeof",sizeof);
+  add_efun("m_values",values);
+  add_efun("map_array",map_array);
+  add_efun("member_array",member_array);
+  add_efun("mklist",mklist);
+  add_efun("popen",popen);
+  add_efun("spawn",spawn);
+  add_efun("previous_object",previous_object);
+  add_efun("read_bytes",read_bytes);
+  add_efun("search_array",search_array);
+  add_efun("sort_array",sort_array);
+  add_efun("strlen",sizeof);
+  add_efun("strstr",search);
+  add_efun("sum_arrays",sum_arrays);
+  add_efun("this_function",this_function);
+  add_efun("version",lambda() { return "uLPC v1.0E-30"; }); /* for now */
+  add_efun("write_file",write_file);
+  add_efun("get_function",get_function);
+  add_efun("regexp",regexp);
+}

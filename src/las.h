@@ -1,0 +1,146 @@
+#ifndef LAS_H
+#define LAS_H
+
+#include "config.h"
+#include "types.h"
+#include "svalue.h"
+#include "dynamic_buffer.h"
+#include "program.h"
+
+#define MAX_GLOBAL_VARIABLES 1000
+
+struct local_variable
+{
+  struct lpc_string *name;
+  struct lpc_string *type;
+};
+
+struct locals
+{
+  struct locals *next;
+  int current_number_of_locals;
+  struct local_variable variable[MAX_LOCAL];
+};
+
+void yyerror(char *s);
+int islocal(struct lpc_string *str);
+int verify_declared(struct lpc_string *str);
+
+struct node_s
+{
+  unsigned INT16 token;
+  INT16 line_number;
+  INT16 node_info;
+  INT16 tree_info;
+  struct lpc_string *type;
+  struct node_s *parent;
+  union 
+  {
+    int number;
+    struct svalue sval;
+    struct
+    {
+      struct node_s *a,*b;
+    } node;
+  } u;
+};
+
+typedef struct node_s node;
+
+extern struct locals *local_variables;
+extern node *init_node;
+extern int num_parse_error;
+
+#define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
+				    * only used in node_info
+				    */
+#define OPT_NOT_CONST       0x2    /* isn't constant */
+#define OPT_SIDE_EFFECT     0x4    /* has side effects */
+#define OPT_ASSIGNMENT      0x8    /* does assignments */
+#define OPT_TRY_OPTIMIZE    0x10   /* might be worth optimizing */
+#define OPT_EXTERNAL_DEPEND 0x20   /* the value depends on external
+				    * influences (such as read_file or so)
+				    */
+#define OPT_CASE            0x40   /* contains case(s) */
+#define OPT_CONTINUE        0x80   /* contains continue(s) */
+#define OPT_BREAK           0x100  /* contains break(s) */
+#define OPT_RETURN          0x200  /* contains return(s) */
+
+/* Prototypes begin here */
+int car_is_node(node *n);
+int cdr_is_node(node *n);
+INT32 count_args(node *n);
+void free_node(node *n);
+node *mknode(short token,node *a,node *b);
+node *mkstrnode(struct lpc_string *str);
+node *mkintnode(int nr);
+node *mkfloatnode(FLOAT_TYPE foo);
+node *mkapplynode(node *func,node *args);
+node *mkefuncallnode(char *function, node *args);
+node *mklocalnode(int var);
+node *mkidentifiernode(int i);
+node *mkcastnode(struct lpc_string *type,node *n);
+int node_is_eq(node *a,node *b);
+node *mkconstantsvaluenode(struct svalue *s);
+node *mksvaluenode(struct svalue *s);
+node *copy_node(node *n);
+int is_const(node *n);
+int node_is_tossable(node *n);
+int node_is_true(node *n);
+int node_is_false(node *n);
+void print_tree(node *n);
+struct used_vars;
+void fix_type_field(node *n);
+int eval_low(node *n);
+void dooptcode(struct lpc_string *name,node *n, int args);
+INT32 get_opt_info();
+/* Prototypes end here */
+
+#define CAR(n) ((n)->u.node.a)
+#define CDR(n) ((n)->u.node.b)
+#define CAAR(n) CAR(CAR(n))
+#define CADR(n) CAR(CDR(n))
+#define CDAR(n) CDR(CAR(n))
+#define CDDR(n) CDR(CDR(n))
+
+#define GAUGE_RUSAGE_INDEX 0
+
+#define A_PROGRAM 0
+#define A_STRINGS 1
+#define A_INHERITS 2
+#define A_IDENTIFIERS 3
+#define A_IDENTIFIER_REFERENCES 4
+#define A_CONSTANTS 5
+#define A_LINENUMBERS 6
+#define NUM_AREAS 7
+
+#define add_to_mem_block(N,Data,Size) low_my_binary_strcat(Data,Size,areas+N)
+#define IDENTIFIERP(i) (((struct reference *)areas[A_IDENTIFIER_REFERENCES].s.str)+i)
+#define INHERIT(i) (((struct inherit *)areas[A_INHERITS].s.str)+i)
+#define PC (areas[A_PROGRAM].s.len)
+
+extern dynamic_buffer areas[NUM_AREAS];
+
+struct compilation
+{
+  struct compilation *previous;
+  node *init_node;
+  dynamic_buffer areas[NUM_AREAS];
+  dynamic_buffer inherit_names; 
+  INT32 current_line;
+  INT32 old_line;
+  INT32 nexpands;
+  INT32 last_line;
+  INT32 last_pc;
+  struct lpc_string *current_file;
+  int pragma_all_inline;     /* inline all possible inlines */
+  struct program fake_program;
+  struct inputstate *istate;
+  struct hash_table *defines;
+  int comp_stackp;
+  int num_parse_error;
+  struct locals *local_variables;
+  struct hash_table *identifier_hash;
+};
+
+#endif

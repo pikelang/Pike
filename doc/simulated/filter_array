@@ -1,0 +1,25 @@
+NAME
+	filter_array - filter an array through a function
+
+SYNTAX
+	mixed *filter_array(mixed *arr,function fun,mixed ... args);
+	or
+	mixed *filter_array(object *arr,string fun,mixed ... args);
+	or
+	mixed *filter_array(function *arr,-1,mixed ... args);
+
+DESCRIPTION
+	First syntax:
+	Filter array returns an array holding the items of arr for which
+	fun returns true.
+
+	Second syntax:
+	Filter array calls fun in all the objects in the array arr, and
+	return all objects that returned true.
+
+	Third syntax:
+	Filter array calls all functionpointers in the array arr, and
+	return all that returned true.
+
+SEE ALSO
+	sum_arrays, map_array

@@ -1,0 +1,12 @@
+NAME
+	stringp - is the argument an string?
+
+SYNTAX
+	int stringp(mixed arg);
+
+DESCRIPTION
+	Returns 1 if arg is a string, zero otherwise.
+
+SEE ALSO
+	intp, listp, arrayp, programp, objectp, regexpp,
+	mappingp, floatp, functionp

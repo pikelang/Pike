@@ -1,0 +1,12 @@
+NAME
+	floatp - is the argument an float?
+
+SYNTAX
+	int floatp(mixed arg);
+
+DESCRIPTION
+	Returns 1 if arg is a float, zero otherwise.
+
+SEE ALSO
+	intp, programp, arrayp, stringp, objectp, regexpp,
+	mappingp, listp, functionp

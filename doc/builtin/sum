@@ -1,0 +1,20 @@
+NAME
+	sum - add values together
+
+SYNTAX
+	int sum(int ... i);
+	or
+	float sum(float ... f);
+	or
+	string sum(string|float|int ... p);
+	or
+	array sum(array ... a);
+	or
+	mapping sum(mapping ... m);
+	or
+	list sum(list ... l);
+
+DESCRIPTION
+	This function does exactly the same thing as adding all the arguments
+	together with +. It's just here so you can get a function-pointer to
+	the summation operator.

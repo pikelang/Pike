@@ -1,0 +1,8 @@
+NAME
+	this_object - return the object we are evaluating in currently
+
+SYNTAX
+	object this_object();
+
+DESCRIPTION
+	This function returns the object we are curently evaluating in.

@@ -1,0 +1,13 @@
+NAME
+	describe_bactrace - make a backtrace readable
+
+SYNTAX
+	string describe_backtrace(mixed **backtrace);
+
+DESCRIPTION
+	Describe backtrace returns a string containing a readable message
+	that describes where the backtrace was made. The argument 'backtrace'
+	should normally be the return value from a call to backtrace()
+
+SEE ALSO
+	builtin/backtrace

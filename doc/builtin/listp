@@ -1,0 +1,12 @@
+NAME
+	listp - is the argument an list?
+
+SYNTAX
+	int listp(mixed arg);
+
+DESCRIPTION
+	Returns 1 if arg is a list, zero otherwise.
+
+SEE ALSO
+	intp, programp, arrayp, stringp, objectp, regexpp,
+	mappingp, floatp, functionp

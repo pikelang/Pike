@@ -1,0 +1,47 @@
+NAME
+	rusage - return resource usage
+
+SYNTAX
+	int *rusage();
+
+DESCRIPTION
+	This function returns an array of ints describing how much resources
+	the intepreter process has used so far. This array will have at least
+	29 elements, of which those values not available on this system will
+	be zero. The elements are as follows:
+
+	0: user time
+	1: system time
+	2: maxrss
+	3: idrss
+	4: isrss
+	5: minflt
+	6: minor pagefaults
+	7: major pagefaults
+	8: swaps
+	9: block input op.
+	10: block output op.
+	11: messages sent
+	12: messages received
+	13: signals received
+	14: voluntary context switches
+	15: involuntary context switches
+	16: sysc
+	17: ioch
+	18: rtime
+	19: ttime
+	20: tftime
+	21: dftime
+	22: kftime
+	23: ltime
+	24: slptime
+	25: wtime
+	26: stoptime
+	27: brksize
+	28: stksize
+
+	Don't ask me to explain these values, read your system manuals for
+	more information. (Note that all values may not be present though)
+
+SEE ALSO
+	time

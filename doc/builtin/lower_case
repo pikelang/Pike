@@ -1,0 +1,11 @@
+NAME
+	lower_case - convert a string to lower case
+
+SYNTAX
+	string lower_case(string s);
+
+DESCRIPTION
+	Return a string with all capital letters converted to lower case.
+
+SEE ALSO
+	upper_case

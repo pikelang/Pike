@@ -1,0 +1,11 @@
+NAME
+	pow - Raise a number to the power of another.
+
+SYNTAX
+	float exp(float n, float x);
+
+DESCRIPTION
+	Return n raised to the power of x.
+
+SEE ALSO
+	math/exp, math/log

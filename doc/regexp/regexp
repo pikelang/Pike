@@ -1,0 +1,68 @@
+NAME
+	/precompiled/regexp - regexp handling module
+
+DESCRIPTION
+	/precompiled/regexp is a precompiled LPC program that interfaces a
+	regexp package written in C. It contains a few simple functions to
+	handle regexps. For more documentation about regexps, consult your
+	unix manual for 'ed' or 'sed'.
+
+	Descriptions of all functions in /precompiled/file follows:
+
+============================================================================
+NAME
+	create - compile regexp
+
+SYNTAX
+	void create();
+	or
+	void create(string regexp);
+	or
+	object clone((program)"/precompiled/file");
+	or
+	object clone((program)"/precompiled/file",string regexp);
+
+DESCRIPTION
+	When create is called, the current regexp bound to this object is
+	cleared. If a string is sent to create(), this string will be compiled
+	to an internal representation of the regexp and bound to this object
+	for laters calls to match or split. Calling create() without an
+	argument can be used to free up a little memory after the regexp has
+	been used.
+
+SEE ALSO
+	builtin/clone, regexp->match
+
+============================================================================
+NAME
+	match - match a regexp
+
+SYNTAX
+	int regexp->match(string s)
+
+DESCRIPTION
+	Return 1 if s matches the regexp bound to the object regexp,
+	zero otherwise
+
+SEE ALSO
+	regexp->create, regexp->split
+
+============================================================================
+NAME
+	split - split a string according to a pattern
+
+SYNTAX
+	string *regexp->split(string s)
+
+DESCRIPTION
+	Works as regexp->match, but returns an array of the strings that
+	matched the subregexps.
+
+SEE ALSO
+	regexp->create, regexp->split
+
+============================================================================
+
+
+
+

@@ -1,0 +1,28 @@
+NAME
+	search - search for a value in a string or array
+
+SYNTAX
+	int search(string haystack, string needle, [ int start ]);
+	or
+	int search(mixed *haystack, mixed needle, [ int start ]);
+	or
+	mixed search(mapping haystack, mixed needle, [ mixed start ]);
+
+DESCRIPTION
+	Search for needle in haystack. Return the position of needle in
+	haystack or -1 if not found. If the optional argument start is present
+	search is started at this position. Note that when haystack is a string
+	needle must be a string, and the first occurance of this string is
+	returned. However, when haystack is an array, needle is compared only
+	to one value at a time in haystack.
+
+	When the haystack is a mapping, search tries to find the index
+	connected to the data needle. That is, it tries to lookup the mapping
+	backwards. If needle isn't present in the mapping, zero is returned,
+	and zero_type() will return 1 for this zero.
+
+NOTA BENE
+	This function replaces strstr and member_array from LPC4.
+
+SEE ALSO
+	indices, values, zero_type

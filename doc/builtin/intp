@@ -1,0 +1,12 @@
+NAME
+	intp - is the argument an int?
+
+SYNTAX
+	array intp(mixed arg);
+
+DESCRIPTION
+	Returns 1 if arg is an int, zero otherwise.
+
+SEE ALSO
+	arrayp, programp, floatp, stringp, objectp, regexpp,
+	mappingp, listp, functionp

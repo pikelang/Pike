@@ -1,0 +1,14 @@
+NAME
+	clone - clone an object from a program
+
+SYNTAX
+	object clone(program p,mixed ... args);
+
+DESCRIPTION
+	clone() creates an object from the program p. Or in C++ terms:
+	It creates an instance of the class p. This clone will first have
+	all global variables initalized, and then create() will be called
+	with args as arguments.
+
+SEE ALSO
+	destruct, compile_string, compile_file

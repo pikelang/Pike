@@ -1,0 +1,2117 @@
+#!ulpc
+int main(int argc, string *argv)
+{
+
+  int e, verbose, successes, errors, t;
+  string *tests;
+  program testprogram;
+  int start, fail;
+
+  for(e=1;e<argc;e++)
+  {
+    switch(argv[e])
+    {
+      case "-h":
+      case "--help":
+        perror("Usage: "+argv[e]+" [-v | --verbose] [-h | --help] [-t <testno>]\n");
+        return 0;
+
+      case "-v":
+      case "--verbose":
+        verbose++;
+        break;
+
+      case "-s":
+      case "--start-test":
+	sscanf(argv[++e],"%d",start);
+	start--;
+	break;
+
+      case "-f":
+      case "--fail":
+	fail++;
+	break;
+
+
+      case "-t":
+      case "--trace":
+	t++;
+	break;
+
+      default:
+        perror("Unnown argument "+argv[e]+" (try "+argv[0]+" --help for more info).\n");
+
+    }
+  }
+
+   tests = ({
+
+// Not yet cataloged
+  "emixed a() { return ({ lambda() { return 3; } , lambda() { return 7; }, lambda() { return 9; } })(); }\n"+	// test 1
+  "mixed b() { return ({ 3,7,9 }); }",
+  "tmixed a() { return stringp(sprintf(\"%O\",({1,2,\"foo\"}))); }",	// test 2
+  "tmixed a() { return stringp(sprintf(\"%O\",([1:2,\"foo\":\"bar\"]))); }",	// test 3
+  "=mixed a() { int *a=({10}); a[0]++; return a[0]; }\n"+	// test 4
+  "mixed b() { return 11; }",
+  "=mixed a() { mapping a=([10:11]); a[10]++; return a[10]; }\n"+	// test 5
+  "mixed b() { return 12; }",
+  "=mixed a() { int e; object o=clone((program)\"/precompiled/file\"); if(!o->open(\"conftest.h\",\"wct\")) return -1; e=o->write(\"return 17;\\n\"); if(!o->close()) return -1; return e; }\n"+	// test 6
+  "mixed b() { return 11; }",
+  "emixed a() { return mkmapping( ({3,6,2}), ({\"3\",\"6\",\"2\"})); }\n"+	// test 7
+  "mixed b() { return ([3:\"3\", 6:\"6\", 2:\"2\"]); }",
+  "emixed a() { return sum(([3:\"3\", 6:\"6\", 2:\"2\"])); }\n"+	// test 8
+  "mixed b() { return ([3:\"3\", 6:\"6\", 2:\"2\"]); }",
+  "tmixed a() { return sum(([3:\"3\", 6:\"6\", 2:\"2\"])) != ([3:\"3\", 6:\"6\", 2:\"2\"]); }",	// test 9
+  "=mixed a() { \n#include \"conftest.h\"\n; }\n"+	// test 10
+  "mixed b() { return 17; }",
+  "=mixed a() { \n#include <conftest.h>\n; }\n"+	// test 11
+  "mixed b() { return 17; }",
+  "tmixed a() { return intp(__LINE__); }",	// test 12
+  "tmixed a() { return stringp(__FILE__); }",	// test 13
+  "tmixed a() { return stringp(__DATE__); }",	// test 14
+  "tmixed a() { return stringp(__TIME__); }",	// test 15
+  "tmixed a() { return efun::stringp(\"\"); }",	// test 16
+  "emixed a() { return \"a,b,4,7,8s,asfd,a,d,f\" / \",\"; }\n"+	// test 17
+  "mixed b() { return \"a,b,4,7,8s,asfd,a,d,f\" / \",\"; }",
+  "=mixed a() { string *a=\"a,b\"/\",\"; a[0]=\"c\"; return equal(a,({\"c\",\"b\"})); }\n"+	// test 18
+  "mixed b() { return 1; }",
+  "tmixed a() { return 0||1; }",	// test 19
+  "tmixed a() { return 1||0; }",	// test 20
+  "tmixed a() { return !0||!0; }",	// test 21
+  "tmixed a() { return !0&&!0; }",	// test 22
+  "=mixed a() { mixed a=1; a+=1; return a; }\n"+	// test 23
+  "mixed b() { return 2; }",
+  "=mixed a() { mixed a=1; a-=1; return a; }\n"+	// test 24
+  "mixed b() { return 0; }",
+  "emixed a() { return \"abcd\"/\"\" - indices(\"abcd\"); }\n"+	// test 25
+  "mixed b() { return ({\"a\",\"b\",\"c\",\"d\"}); }",
+  "emixed a() { return \"abcd\"/\"\" & indices(\"abcd\"); }\n"+	// test 26
+  "mixed b() { return ({}); }",
+  "=mixed a() { return sizeof(\"abcd\"/\"\" & \"de\"/\"\"); }\n"+	// test 27
+  "mixed b() { return 1; }",
+  "emixed a() { return ({0,0,0,0,0}); }\n"+	// test 28
+  "mixed b() { return ({0,0,0,0,0}); }",
+  "emixed a() { return ({0,0,0,0,0}); }\n"+	// test 29
+  "mixed b() { return allocate(5,\"object\"); }",
+  "emixed a() { return mkmapping(\"abcd\"/\"\",\"jklm\"/\"\") | mkmapping(\"jclm\"/\"\",\"alcd\"/\"\"); }\n"+	// test 30
+  "mixed b() { return mkmapping(\"abcdjlm\"/\"\",\"jklmacd\"/\"\"); }",
+  "t\n"+"int foo() { return 17;} mixed a() { return foo() == 17; }\n",	// test 31 
+  "=mixed a() { mixed a; a=2; a=a*3; return a; }\n"+	// test 32
+  "mixed b() { return 6; }",
+  "=mixed a() { mixed a = ({1}); a=a+({2}); return equal(a,({1,2})); }\n"+	// test 33
+  "mixed b() { return 1; }",
+  "Pstring a() { return \"/test\"; }\n"+	// test 34
+  "string b() { return \"void foo() { return 17; }\"; }",
+  "=mixed a() { function bar=clone((program)\"/test\")->foo; return bar(); }\n"+	// test 35
+  "mixed b() { return 17; }",
+  "=mixed a() { return popen(\"echo foo\"); }\n"+	// test 36
+  "mixed b() { return \"foo\\n\"; }",
+
+// sscanf
+  "=mixed a() { mixed a; return sscanf(\"11\",\"%d\",a); }\n"+	// test 37
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a; sscanf(\"11\",\"%d\",a); return a; }\n"+	// test 38
+  "mixed b() { return 11; }",
+  "=mixed a() { mixed a,b; return sscanf(\"11foo\",\"%dfoo\",a); }\n"+	// test 39
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a,b; sscanf(\"11foo\",\"%dfoo\",a); return a; }\n"+	// test 40
+  "mixed b() { return 11; }",
+  "=mixed a() { mixed a,b; return sscanf(\"11foo\",\"%d%s\",a,b); }\n"+	// test 41
+  "mixed b() { return 2; }",
+  "=mixed a() { mixed a,b; sscanf(\"11foo\",\"%d%s\",a,b); return b; }\n"+	// test 42
+  "mixed b() { return \"foo\"; }",
+  "=mixed a() { mixed a,b; return sscanf(\"foo\",\"%c%s\",b,a); }\n"+	// test 43
+  "mixed b() { return 2; }",
+  "=mixed a() { mixed a,b; sscanf(\"foo\",\"%c%s\",b,a); return b; }\n"+	// test 44
+  "mixed b() { return 'f'; }",
+  "=mixed a() { mixed a,b; sscanf(\"foo\",\"%c%s\",b,a); return a; }\n"+	// test 45
+  "mixed b() { return \"oo\"; }",
+  "=mixed a() { mixed a,b; return sscanf(\"1.0\",\"%f\",a); }\n"+	// test 46
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a,b; sscanf(\"1.0\",\"%f\",a); return a; }\n"+	// test 47
+  "mixed b() { return 1.0; }",
+  "=mixed a() { mixed a,b; sscanf(\"abcdeFGji\",\"%[a-z]%s\",a,b); return a; }\n"+	// test 48
+  "mixed b() { return \"abcde\"; }",
+  "=mixed a() { mixed a,b; sscanf(\"abcdeFGji\",\"%[a-z]%s\",a,b); return b; }\n"+	// test 49
+  "mixed b() { return \"FGji\"; }",
+
+  "=mixed a() { mixed a,b; return sscanf(\"foo-%-bar\",\"%s-%%-%s\",a,b);; }\n"+	// test 50
+  "mixed b() { return 2; }",
+  "=mixed a() { mixed a,b; sscanf(\"foo-%-bar\",\"%s-%%-%s\",a,b); return a; }\n"+	// test 51
+  "mixed b() { return \"foo\"; }",
+  "=mixed a() { mixed a,b; sscanf(\"foo-%-bar\",\"%s-%%-%s\",a,b); return b; }\n"+	// test 52
+  "mixed b() { return \"bar\"; }",
+
+// Basics
+  "tmixed a() { return 1; }",	// test 53
+  "tmixed a() { return \"\"; }",	// test 54
+  "tmixed a() { return !0; }",	// test 55
+  "tmixed a() { return !(!1); }",	// test 56
+  "tmixed a() { return this_object(); }",	// test 57
+  "tmixed a() { return a; }",	// test 58 // a is the test function
+  "tmixed a() { return 0.0; }",	// test 59
+  "tmixed a() { return ([]); }",	// test 60
+  "tmixed a() { return ({}); }",	// test 61
+  "tmixed a() { return (<>); }",	// test 62
+  "tmixed a() { return object_program(this_object()); }",	// test 63
+
+// testing !
+  "emixed a() { return !\"\"; }\n"+	// test 64
+  "mixed b() { return 0; }",
+  "emixed a() { return !this_object(); }\n"+	// test 65
+  "mixed b() { return 0; }",
+  "emixed a() { return !this_function(); }\n"+	// test 66
+  "mixed b() { return 0; }",
+
+// testing ==
+  "tmixed a() { return 1==1; }",	// test 67
+  "tmixed a() { return !(1==2); }",	// test 68
+  "tmixed a() { return \"\"==\"\"; }",	// test 69
+  "tmixed a() { return !(\"\"==\"foo\"); }",	// test 70
+  "tmixed a() { return this_object()==this_object(); }",	// test 71
+//   "tmixed a() { return this_function()==main; }",	// test 72
+  "tmixed a() { return 2.0==2.0; }",	// test 73
+  "tmixed a() { return ({})==({}); }",	// test 74
+
+// testing !=
+  "tmixed a() { return ({1})!=({1}); }",	// test 75
+  "tmixed a() { return 1!=2; }",	// test 76
+  "tmixed a() { return !(1==2); }",	// test 77
+  "tmixed a() { return !(\"\"!=\"\"); }",	// test 78
+  "tmixed a() { return \"\"!=\"foo\"; }",	// test 79
+
+// testing < > <= >=
+
+
+
+
+  "tmixed a() { return 1<2; }",	// test 80
+  "tmixed a() { return !(1>2); }",	// test 81
+  "tmixed a() { return 2>1; }",	// test 82
+  "tmixed a() { return !(2<1); }",	// test 83
+  "tmixed a() { return 1<=2; }",	// test 84
+  "tmixed a() { return !(1>=2); }",	// test 85
+  "tmixed a() { return 2>=1; }",	// test 86
+  "tmixed a() { return !(2<=1); }",	// test 87
+  "tmixed a() { return 2<=2; }",	// test 88
+  "tmixed a() { return 1>=1; }",	// test 89 
+
+  "tmixed a() { return 1.0<2.0; }",	// test 90
+  "tmixed a() { return !(1.0>2.0); }",	// test 91
+  "tmixed a() { return 2.0>1.0; }",	// test 92
+  "tmixed a() { return !(2.0<1.0); }",	// test 93
+  "tmixed a() { return 1.0<=2.0; }",	// test 94
+  "tmixed a() { return !(1.0>=2.0); }",	// test 95
+  "tmixed a() { return 2.0>=1.0; }",	// test 96
+  "tmixed a() { return !(2.0<=1.0); }",	// test 97
+  "tmixed a() { return 2.0<=2.0; }",	// test 98
+  "tmixed a() { return 1.0>=1.0; }",	// test 99 
+
+  "tmixed a() { return \"a\"<\"b\"; }",	// test 100
+  "tmixed a() { return !(\"a\">\"b\"); }",	// test 101
+  "tmixed a() { return \"b\">\"a\"; }",	// test 102
+  "tmixed a() { return !(\"b\"<\"a\"); }",	// test 103
+  "tmixed a() { return \"a\"<=\"b\"; }",	// test 104
+  "tmixed a() { return !(\"a\">=\"b\"); }",	// test 105
+  "tmixed a() { return \"b\">=\"a\"; }",	// test 106
+  "tmixed a() { return !(\"b\"<=\"a\"); }",	// test 107
+  "tmixed a() { return \"b\"<=\"b\"; }",	// test 108
+  "tmixed a() { return \"a\">=\"a\"; }",	// test 109 
+
+  "tmixed a() { return \"\"<\"b\"; }",	// test 110
+  "tmixed a() { return !(\"\">\"b\"); }",	// test 111
+  "tmixed a() { return \"b\">\"\"; }",	// test 112
+  "tmixed a() { return !(\"b\"<\"\"); }",	// test 113
+  "tmixed a() { return \"\"<=\"b\"; }",	// test 114
+  "tmixed a() { return !(\"\">=\"b\"); }",	// test 115
+  "tmixed a() { return \"b\">=\"\"; }",	// test 116
+  "tmixed a() { return !(\"b\"<=\"\"); }",	// test 117
+  "tmixed a() { return \"b\"<=\"b\"; }",	// test 118
+  "tmixed a() { return \"\">=\"\"; }",	// test 119 
+
+// hex construction
+  "=mixed a() { return 0; }\n"+	// test 120
+  "mixed b() { return 0x0; }",
+  "=mixed a() { return 1; }\n"+	// test 121
+  "mixed b() { return 0x1; }",
+  "=mixed a() { return 10; }\n"+	// test 122
+  "mixed b() { return 0xa; }",
+  "=mixed a() { return 16; }\n"+	// test 123
+  "mixed b() { return 0x10; }",
+  "=mixed a() { return 65535; }\n"+	// test 124
+  "mixed b() { return 0xffff; }",
+  "=mixed a() { return 17*257*65537; }\n"+	// test 125
+  "mixed b() { return 0x11111111; }",
+
+// octal construction
+  "=mixed a() { return 0; }\n"+	// test 126
+  "mixed b() { return 00; }",
+  "=mixed a() { return 1; }\n"+	// test 127
+  "mixed b() { return 01; }",
+  "=mixed a() { return 8; }\n"+	// test 128
+  "mixed b() { return 010; }",
+  "=mixed a() { return 64; }\n"+	// test 129
+  "mixed b() { return 0100; }",
+  "=mixed a() { return 1073741824; }\n"+	// test 130
+  "mixed b() { return 010000000000; }",
+  "=mixed a() { return (8+1)*(8*8+1)*(8*8*8*8+1); }\n"+	// test 131
+  "mixed b() { return 011111111; }",
+
+// string construction tests
+  "=mixed a() { return 16; }\n"+	// test 132
+  "mixed b() { return \"\\20\"[0]; }",
+  "=mixed a() { return 16; }\n"+	// test 133
+  "mixed b() { return \"\\020\"[0]; }",
+  "=mixed a() { return 255; }\n"+	// test 134
+  "mixed b() { return \"\\377\"[0]; }",
+  "=mixed a() { return 4; }\n"+	// test 135
+  "mixed b() { return '\\4'; }",
+  "tmixed a() { return \"\\r\"[0]!='r'; }",	// test 136
+  "=mixed a() { return \"\\r\"[0]; }\n"+	// test 137
+  "mixed b() { return '\\r'; }",
+  "=mixed a() { return \"\\n\"[0]; }\n"+	// test 138
+  "mixed b() { return '\\n'; }",
+
+// testing +
+  "=mixed a() { return 1+1; }\n"+	// test 139
+  "mixed b() { return 2; }",
+  "=mixed a() { return 1+(-2); }\n"+	// test 140
+  "mixed b() { return -1; }",
+  "=mixed a() { return (-2)+(-2); }\n"+	// test 141
+  "mixed b() { return -4; }",
+  "=mixed a() { return \"hi\"+\"there\"; }\n"+	// test 142
+  "mixed b() { return \"hithere\"; }",
+  "=mixed a() { return \"human\"+\"number\"+666; }\n"+	// test 143
+  "mixed b() { return \"humannumber666\"; }",
+  "=mixed a() { return \"human\"+(\"number\"+666); }\n"+	// test 144
+  "mixed b() { return \"humannumber666\"; }",
+  "=mixed a() { return (\"human\"+\"number\")+666; }\n"+	// test 145
+  "mixed b() { return \"humannumber666\"; }",
+  "=mixed a() { return (\"human\"+\"number\")+666+111; }\n"+	// test 146
+  "mixed b() { return \"humannumber666111\"; }",
+  "=mixed a() { return \"humannumber\"+(666+111); }\n"+	// test 147
+  "mixed b() { return \"humannumber777\"; }",
+  "=mixed a() { return \"a\"+\"b\"+\"c\"+\"d\"+\"e\"+\"f\"+\"g\"+\"h\"+\"i\"+\"j\"+\"k\"+\"l\"+\"m\"+\"n\"+\"o\"+\"p\"+\"q\"+\"r\"+\"s\"+\"t\"+\"u\"+\"v\"+\"x\"+\"y\"; }\n"+	// test 148
+  "mixed b() { return \"abcdefghijklmnopqrstuvxy\"; }",
+  "=mixed a() { return 1.0+1.0; }\n"+	// test 149
+  "mixed b() { return 2.0; }",
+  "=mixed a() { return 1.0+(-1.0); }\n"+	// test 150
+  "mixed b() { return 0.0; }",
+  "=mixed a() { return (-1.0)+(-1.0); }\n"+	// test 151
+  "mixed b() { return -2.0; }",
+  "emixed a() { return ({1,2,3})+({4,5,6}); }\n"+	// test 152
+  "mixed b() { return ({1,2,3,4,5,6}); }",
+  "emixed a() { return (<1,2,3,4>)+(<4,5,6>); }\n"+	// test 153
+  "mixed b() { return (<1,2,3,4,4,5,6>); }",
+  "emixed a() { return ([0:1,3:6])+([5:2,3:6]); }\n"+	// test 154
+  "mixed b() { return ([0:1,3:6,3:6,5:2]); }",
+  "Emixed a() { return this_object() + this_object(); }\n",	// test 155
+
+// testing -
+  "=mixed a() { return 10-3; }\n"+	// test 156
+  "mixed b() { return 7; }",
+  "=mixed a() { return 3-10; }\n"+	// test 157
+  "mixed b() { return -7; }",
+  "=mixed a() { return 10.0-3.0; }\n"+	// test 158
+  "mixed b() { return 7.0; }",
+  "=mixed a() { return 3.0-10.0; }\n"+	// test 159
+  "mixed b() { return -7.0; }",
+  "=mixed a() { return \"foobargazonk\"-\"o\"; }\n"+	// test 160
+  "mixed b() { return \"fbargaznk\"; }",
+  "emixed a() { return ({\"foo\",\"bar\",\"gazonk\"})-({\"foo\",\"gazonk\"}); }\n"+	// test 161
+  "mixed b() { return ({\"bar\"}); }",
+  "emixed a() { return ({\"c\",\"foo\",\"bar\",\"gazonk\",\"a\",\"b\",})-({\"foo\",\"gazonk\"}); }\n"+	// test 162
+  "mixed b() { return ({\"c\",\"bar\",\"a\",\"b\"}); }",
+  "emixed a() { return (<\"foo\",\"bar\",\"gazonk\">)-(<\"foo\",\"gazonk\">); }\n"+	// test 163
+  "mixed b() { return (<\"bar\">); }",
+  "emixed a() { return ([\"foo\":3,\"bar\":4,\"gazonk\":5])-([\"foo\":3,\"gazonk\":8]); }\n"+	// test 164
+  "mixed b() { return ([\"bar\":4]); }",
+
+// testing ~
+  "=mixed a() { return -1-4; }\n"+	// test 165
+  "mixed b() { return ~4; }",
+  "=mixed a() { return -1-627893874; }\n"+	// test 166
+  "mixed b() { return ~627893874; }",
+
+// testing *
+  "=mixed a() { return 3*4; }\n"+	// test 167
+  "mixed b() { return 12; }",
+  "=mixed a() { return 4*3; }\n"+	// test 168
+  "mixed b() { return 12; }",
+  "=mixed a() { return 2*2*2*2*2; }\n"+	// test 169
+  "mixed b() { return 32; }",
+  "=mixed a() { return 3.0*4.0; }\n"+	// test 170
+  "mixed b() { return 12.0; }",
+  "=mixed a() { return 4.0*3.0; }\n"+	// test 171
+  "mixed b() { return 12.0; }",
+  "=mixed a() { return 2.0*2.0*2.0*2.0*2.0; }\n"+	// test 172
+  "mixed b() { return 32.0; }",
+  "=mixed a() { return ({\"foo\",\"bar\",\"gazonk\"})*\"-\"; }\n"+	// test 173
+  "mixed b() { return \"foo-bar-gazonk\"; }",
+
+// testing /
+  "=mixed a() { return 12/3; }\n"+	// test 174
+  "mixed b() { return 4; }",
+  "=mixed a() { return 13/3; }\n"+	// test 175
+  "mixed b() { return 4; }",
+  "=mixed a() { return 14/3; }\n"+	// test 176
+  "mixed b() { return 4; }",
+  "=mixed a() { return 15/3; }\n"+	// test 177
+  "mixed b() { return 5; }",
+  "Emixed a() { return 15/0; }\n",	// test 178
+  "=mixed a() { return 12.0/3.0; }\n"+	// test 179
+  "mixed b() { return 4.0; }",
+  "=mixed a() { return 14.0/4.0; }\n"+	// test 180
+  "mixed b() { return 3.5; }",
+  "=mixed a() { return 15.0/3.0; }\n"+	// test 181
+  "mixed b() { return 5.0; }",
+  "Emixed a() { return 15.0/0.0; }\n",	// test 182
+  "emixed a() { return \"foo-bar-gazonk\"/\"-\"; }\n"+	// test 183
+  "mixed b() { return ({\"foo\",\"bar\",\"gazonk\"}); }",
+  "emixed a() { return \"foobargazonk\"/\"\"; }\n"+	// test 184
+  "mixed b() { return ({\"f\",\"o\",\"o\",\"b\",\"a\",\"r\",\"g\",\"a\",\"z\",\"o\",\"n\",\"k\"}); }",
+
+// testing %
+  "=mixed a() { return 12%3; }\n"+	// test 185
+  "mixed b() { return 0; }",
+  "=mixed a() { return 13%3; }\n"+	// test 186
+  "mixed b() { return 1; }",
+  "=mixed a() { return 14%3; }\n"+	// test 187
+  "mixed b() { return 2; }",
+  "=mixed a() { return 15%3; }\n"+	// test 188
+  "mixed b() { return 0; }",
+  "Emixed a() { return 15 % 0; }\n",	// test 189
+  "=mixed a() { return 12.0 % 3.0; }\n"+	// test 190
+  "mixed b() { return 0.0; }",
+  "=mixed a() { return 13.0 % 3.0; }\n"+	// test 191
+  "mixed b() { return 1.0; }",
+  "=mixed a() { return 14.0 % 3.0; }\n"+	// test 192
+  "mixed b() { return 2.0; }",
+  "=mixed a() { return 14.5 % 3.0; }\n"+	// test 193
+  "mixed b() { return 2.5; }",
+  "=mixed a() { return 15.0 % 3.0; }\n"+	// test 194
+  "mixed b() { return 0.0; }",
+  "Emixed a() { return 15.0 % 0.0; }\n",	// test 195
+
+// testing &&
+  "=mixed a() { return 0 && 1; }\n"+	// test 196
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1 && 0; }\n"+	// test 197
+  "mixed b() { return 0; }",
+  "=mixed a() { return 0 && 0; }\n"+	// test 198
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1 && 1; }\n"+	// test 199
+  "mixed b() { return 1; }",
+  "=mixed a() { return 78 && 1; }\n"+	// test 200
+  "mixed b() { return 1; }",
+  "=mixed a() { return 78 && 99; }\n"+	// test 201
+  "mixed b() { return 99; }",
+  "=mixed a() { return 78 && 99; }\n"+	// test 202
+  "mixed b() { return 99; }",
+
+// testing ||
+  "=mixed a() { return 0 || 1; }\n"+	// test 203
+  "mixed b() { return 1; }",
+  "=mixed a() { return 1 || 0; }\n"+	// test 204
+  "mixed b() { return 1; }",
+  "=mixed a() { return 0 || 0; }\n"+	// test 205
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1 || 1; }\n"+	// test 206
+  "mixed b() { return 1; }",
+  "=mixed a() { return 78 || 1; }\n"+	// test 207
+  "mixed b() { return 78; }",
+  "=mixed a() { return 78 || 0; }\n"+	// test 208
+  "mixed b() { return 78; }",
+
+// testing |
+  "=mixed a() { return 0 | 0; }\n"+	// test 209
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1 | 1; }\n"+	// test 210
+  "mixed b() { return 1; }",
+  "=mixed a() { return 4 | 1; }\n"+	// test 211
+  "mixed b() { return 5; }",
+  "=mixed a() { return 1 | 9; }\n"+	// test 212
+  "mixed b() { return 9; }",
+  "emixed a() { return sort_array(({1,2,3,4,4}) | ({3,5,6})); }\n"+	// test 213
+  "mixed b() { return ({1,2,3,4,4,5,6}); }",
+  "emixed a() { return (<4,5,6>) | (<5,5,5>); }\n"+	// test 214
+  "mixed b() { return (<4,5,5,5,6>) ; }",
+  "emixed a() { return ([-4:8,8:7]) | ([3:3,8:3]); }\n"+	// test 215
+  "mixed b() { return ([-4:8,8:3,3:3]) ; }",
+
+// testing &
+  "=mixed a() { return 0 & 0; }\n"+	// test 216
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1 & 1; }\n"+	// test 217
+  "mixed b() { return 1; }",
+  "=mixed a() { return 4 & 1; }\n"+	// test 218
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1 & 9; }\n"+	// test 219
+  "mixed b() { return 1; }",
+  "emixed a() { return ({1,2,3,4,4}) & ({3,5,6}); }\n"+	// test 220
+  "mixed b() { return ({3}); }",
+  "emixed a() { return (<4,5,6>) & (<5,5,5>); }\n"+	// test 221
+  "mixed b() { return (<5>) ; }",
+  "emixed a() { return ([-4:8,8:7]) & ([3:3,8:3]); }\n"+	// test 222
+  "mixed b() { return ([8:3]) ; }",
+
+// testing ^
+  "=mixed a() { return 0 ^ 0; }\n"+	// test 223
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1 ^ 1; }\n"+	// test 224
+  "mixed b() { return 0; }",
+  "=mixed a() { return 4 ^ 1; }\n"+	// test 225
+  "mixed b() { return 5; }",
+  "=mixed a() { return 1 ^ 9; }\n"+	// test 226
+  "mixed b() { return 8; }",
+  "emixed a() { return ({1,2,3,4,4}) ^ ({3,5,6}); }\n"+	// test 227
+  "mixed b() { return ({1,2,4,4,5,6}); }",
+  "emixed a() { return (<4,5,6>) ^ (<5,5,5>); }\n"+	// test 228
+  "mixed b() { return (<4,5,5,6>) ; }",
+  "emixed a() { return ([-4:8,8:7]) ^ ([3:3,8:3]); }\n"+	// test 229
+  "mixed b() { return ([-4:8,3:3]) ; }",
+
+// testing <<
+  "=mixed a() { return 1<<0; }\n"+	// test 230
+  "mixed b() { return 1; }",
+  "=mixed a() { return 1<<1; }\n"+	// test 231
+  "mixed b() { return 2; }",
+  "=mixed a() { return 1<<10; }\n"+	// test 232
+  "mixed b() { return 1024; }",
+  "=mixed a() { return 5<<3; }\n"+	// test 233
+  "mixed b() { return 40; }",
+
+// testing >>
+  "=mixed a() { return 9>>2; }\n"+	// test 234
+  "mixed b() { return 2; }",
+  "=mixed a() { return 1>>1; }\n"+	// test 235
+  "mixed b() { return 0; }",
+  "=mixed a() { return 1024>>10; }\n"+	// test 236
+  "mixed b() { return 1; }",
+  "=mixed a() { return 47>>3; }\n"+	// test 237
+  "mixed b() { return 5; }",
+
+// testing ? :
+  "tmixed a() { return 0?0:1; }",	// test 238
+  "tmixed a() { return 1?1:0; }",	// test 239
+  "tmixed a() { return \"\"?1:0; }",	// test 240
+  "tmixed a() { return !0?1:0; }",	// test 241
+  "tmixed a() { return !(!1)?1:0; }",	// test 242
+  "tmixed a() { return this_object()?1:0; }",	// test 243
+  "tmixed a() { return a?1:0; }",	// test 244 // a is the test function
+  "tmixed a() { return 0.0?1:0; }",	// test 245
+  "tmixed a() { return ([])?1:0; }",	// test 246
+  "tmixed a() { return ({})?1:0; }",	// test 247
+  "tmixed a() { return (<>)?1:0; }",	// test 248
+  "tmixed a() { return object_program(this_object())?1:0; }",	// test 249
+
+// testing indexing
+  "=mixed a() { return \"foo\"[0]; }\n"+	// test 250
+  "mixed b() { return 'f'; }",
+  "=mixed a() { return \"foo\"[1]; }\n"+	// test 251
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return \"foo\"[2]; }\n"+	// test 252
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return \"foo\"[-1]; }\n"+	// test 253
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return \"foo\"[-2]; }\n"+	// test 254
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return \"foo\"[-3]; }\n"+	// test 255
+  "mixed b() { return 'f'; }",
+  "=mixed a() { return ({'f','o','o'})[0]; }\n"+	// test 256
+  "mixed b() { return 'f'; }",
+  "=mixed a() { return ({'f','o','o'})[1]; }\n"+	// test 257
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return ({'f','o','o'})[2]; }\n"+	// test 258
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return ({'f','o','o'})[-1]; }\n"+	// test 259
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return ({'f','o','o'})[-2]; }\n"+	// test 260
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return ({'f','o','o'})[-3]; }\n"+	// test 261
+  "mixed b() { return 'f'; }",
+  "=mixed a() { return ([0:'f',1:'o',2:'o'])[0]; }\n"+	// test 262
+  "mixed b() { return 'f'; }",
+  "=mixed a() { return ([0:'f',1:'o',2:'o'])[1]; }\n"+	// test 263
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return ([0:'f',1:'o',2:'o'])[2]; }\n"+	// test 264
+  "mixed b() { return 'o'; }",
+  "=mixed a() { return ([0:'f',1:'o',2:'o'])[3]; }\n"+	// test 265
+  "mixed b() { return 0; }",
+  "=mixed a() { return ([0:'f',1:'o',2:'o'])[-1]; }\n"+	// test 266
+  "mixed b() { return 0; }",
+  "=mixed a() { return (<'f','o','o'>)['o']; }\n"+	// test 267
+  "mixed b() { return 1; }",
+  "=mixed a() { return (<'f','o','o'>)['f']; }\n"+	// test 268
+  "mixed b() { return 1; }",
+  "=mixed a() { return (<'f','o','o'>)['b']; }\n"+	// test 269
+  "mixed b() { return 0; }",
+  "=mixed a() { return (<'f','o','o'>)[-1]; }\n"+	// test 270
+  "mixed b() { return 0; }",
+
+// index assigning
+  "=mixed a() { mixed a=({1}); a[0]=2; return equal(a,({2})); }\n"+	// test 271
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a=(<1>); a[1]=2; return equal(a,(<1>)); }\n"+	// test 272
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a=(<1>); a[0]=2; return equal(a,(<1,0>)); }\n"+	// test 273
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a=(<1>); a[1]=0; return equal(a,(<>)); }\n"+	// test 274
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a=(<1>); a[0]=0; return equal(a,(<1>)); }\n"+	// test 275
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a=([1:1]); a[0]=0; return equal(a,([1:1,0:0])); }\n"+	// test 276
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed a=([1:1]); a[1]=0; return equal(a,([1:0])); }\n"+	// test 277
+  "mixed b() { return 1; }",
+
+  "Pstring a() { return \"/test\"; }\n"+	// test 278
+  "string b() { return \"public int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }\"; }",
+  "=mixed a() { return clone((program)\"/test\")->q; }\n"+	// test 279
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")->w; }\n"+	// test 280
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")->e; }\n"+	// test 281
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")->r; }\n"+	// test 282
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")->getw(); }\n"+	// test 283
+  "mixed b() { return 0; }",
+  "=mixed a() { object o=clone((program)\"/test\"); o->setw(17); return o->w; }\n"+	// test 284
+  "mixed b() { return 17; }",
+  "=mixed a() { object o=clone((program)\"/test\"); o->w=17; return o->getw(); }\n"+	// test 285
+  "mixed b() { return 17; }",
+
+  "=mixed a() { return clone((program)\"/test\")[\"q\"]; }\n"+	// test 286
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")[\"w\"]; }\n"+	// test 287
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")[\"e\"]; }\n"+	// test 288
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")[\"r\"]; }\n"+	// test 289
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/test\")[\"getw\"](); }\n"+	// test 290
+  "mixed b() { return 0; }",
+  "=mixed a() { object o=clone((program)\"/test\"); o[\"setw\"](17); return o[\"w\"]; }\n"+	// test 291
+  "mixed b() { return 17; }",
+  "=mixed a() { object o=clone((program)\"/test\"); o[\"w\"]=17; return o[\"getw\"](); }\n"+	// test 292
+  "mixed b() { return 17; }",
+
+// testing range
+  "=mixed a() { return \"foObar\"[0..0]; }\n"+	// test 293
+  "mixed b() { return \"f\"; }",
+  "=mixed a() { return \"foobargazonk\"[3..5]; }\n"+	// test 294
+  "mixed b() { return \"bar\"; }",
+  "=mixed a() { return \"foo\"[1..10]; }\n"+	// test 295
+  "mixed b() { return \"oo\"; }",
+  "=mixed a() { return \"foo\"[-100..0]; }\n"+	// test 296
+  "mixed b() { return \"f\"; }",
+  "=mixed a() { return \"foo\"[-100..100]; }\n"+	// test 297
+  "mixed b() { return \"foo\"; }",
+  "=mixed a() { return \"foo\"[1..0]; }\n"+	// test 298
+  "mixed b() { return \"\"; }",
+  "=mixed a() { return \"foo\"[0..-100]; }\n"+	// test 299
+  "mixed b() { return \"\"; }",
+  "emixed a() { return ({1,2,3})[0..0]; }\n"+	// test 300
+  "mixed b() { return ({1}); }",
+  "emixed a() { return ({1,2,3})[1..2]; }\n"+	// test 301
+  "mixed b() { return ({2,3}); }",
+  "emixed a() { return ({1,2,3})[2..10]; }\n"+	// test 302
+  "mixed b() { return ({3}); }",
+  "emixed a() { return ({1,2,3})[-100..0]; }\n"+	// test 303
+  "mixed b() { return ({1}); }",
+  "emixed a() { return ({1,2,3})[-100..100]; }\n"+	// test 304
+  "mixed b() { return ({1,2,3}); }",
+  "emixed a() { return ({1,2,3})[1..0]; }\n"+	// test 305
+  "mixed b() { return ({}); }",
+  "emixed a() { return ({1,2,3})[0..-100]; }\n"+	// test 306
+  "mixed b() { return ({}); }",
+
+// testing @
+  "emixed a() { return ({1,2,3}); }\n"+	// test 307
+  "mixed b() { return lambda(mixed ... x) { return x; }(@a()); }",
+  "emixed a() { return explode(\"foo\",\"\"); }\n"+	// test 308
+  "mixed b() { return lambda(mixed ... x) { return x; }(@a()); }",
+  "=mixed a() { mixed *a=({1,2,3}); return lambda(mixed ... x) { return x; }(@a) !=a; }\n"+	// test 309
+  "mixed b() { return 1; }",
+
+// testing +=
+  "=mixed a() { int a=1; a+=10; return a; }\n"+	// test 310
+  "mixed b() { return 11; }",
+// testing -=
+  "=mixed a() { int a=1; a-=10; return a; }\n"+	// test 311
+  "mixed b() { return -9; }",
+// testing &=
+  "=mixed a() { int a=3; a&=10; return a; }\n"+	// test 312
+  "mixed b() { return 2; }",
+// testing |=
+  "=mixed a() { int a=3; a|=10; return a; }\n"+	// test 313
+  "mixed b() { return 11; }",
+// testing ^=
+  "=mixed a() { int a=3; a^=10; return a; }\n"+	// test 314
+  "mixed b() { return 9; }",
+// testing <<=
+  "=mixed a() { int a=3; a<<=2; return a; }\n"+	// test 315
+  "mixed b() { return 12; }",
+// testing <<=
+  "=mixed a() { int a=12; a>>=2; return a; }\n"+	// test 316
+  "mixed b() { return 3; }",
+// testing *=
+  "=mixed a() { int a=12; a*=2; return a; }\n"+	// test 317
+  "mixed b() { return 24; }",
+// testing /=
+  "=mixed a() { int a=12; a/=2; return a; }\n"+	// test 318
+  "mixed b() { return 6; }",
+// testing %=
+  "=mixed a() { int a=12; a%=7; return a; }\n"+	// test 319
+  "mixed b() { return 5; }",
+
+// testing control structs
+  "=mixed a() { return 1; }\n"+	// test 320
+  "mixed b() { return 1; }",
+  "=mixed a() { return lambda(){return 1;} (); }\n"+	// test 321
+  "mixed b() { return 1 ; }",
+  "=mixed a() { if(0) return 0; else return 1; }\n"+	// test 322
+  "mixed b() { return 1; }",
+  "=mixed a() { if(0) return 0; return 1; }\n"+	// test 323
+  "mixed b() { return 1; }",
+  "=mixed a() { if(1) return 1; else return 0; }\n"+	// test 324
+  "mixed b() { return 1; }",
+  "=mixed a() { if(\"\") return 1; else return 0; }\n"+	// test 325
+  "mixed b() { return 1; }",
+  "=mixed a() { if(!0) return 1; else return 0; }\n"+	// test 326
+  "mixed b() { return 1; }",
+  "=mixed a() { if(!(!1)) return 1; else return 0; }\n"+	// test 327
+  "mixed b() { return 1; }",
+  "=mixed a() { if(this_object()) return 1; else return 0; }\n"+	// test 328
+  "mixed b() { return 1; }",
+  "=mixed a() { if(a) return 1; else return 0; }\n"+	// test 329
+  "mixed b() { return 1; }",   "=mixed a() { if(0.0) return 1; else return 0; }\n"+	// test 330
+  "mixed b() { return 1; }",
+  "=mixed a() { if(([])) return 1; else return 0; }\n"+	// test 331
+  "mixed b() { return 1; }",
+  "=mixed a() { if(({})) return 1; else return 0; }\n"+	// test 332
+  "mixed b() { return 1; }",
+  "=mixed a() { if((<>)) return 1; else return 0; }\n"+	// test 333
+  "mixed b() { return 1; }",
+  "=mixed a() { if(object_program(this_object())) return 1; else return 0; }\n"+	// test 334
+  "mixed b() { return 1; }",
+
+  "=mixed a() { int e; for(e=0;e<10;e++) break; return e; }\n"+	// test 335
+  "mixed b() { return 0; }",
+  "=mixed a() { int e; for(e=0;e<10;e++) continue; return e; }\n"+	// test 336
+  "mixed b() { return 10; }",
+  "=mixed a() { while(1) break; return 1; }\n"+	// test 337
+  "mixed b() { return 1; }",
+  "=mixed a() { while(1) if(1) break; return 1; }\n"+	// test 338
+  "mixed b() { return 1; }",
+  "=mixed a() { int e;string t=\"\"; for(e=0;e<10;e++) t+=e; return t; }\n"+	// test 339
+  "mixed b() { return \"0123456789\"; }",
+  "=mixed a() { int e;string t=\"\"; for(e=0;e>-10;e--) t+=e; return t; }\n"+	// test 340
+  "mixed b() { return \"0-1-2-3-4-5-6-7-8-9\"; }",
+  "=mixed a() { int e;string t=\"\"; foreach(({7,6,3,8}),e) t+=e; return t; }\n"+	// test 341
+  "mixed b() { return \"7638\"; }",
+  "=mixed a() { string s;if(1) foreach(({}),s); else foreach(({}),s); return 1; }\n"+	// test 342
+  "mixed b() { return 1; }",
+  "=mixed a() { int e;string t=\"\"; e=0; do{ t+=e; }while(++e<6); return t; }\n"+	// test 343
+  "mixed b() { return \"012345\";; }",
+  "=mixed a() { int e;string t=\"\"; e=8; while(--e) t+=e; return t; }\n"+	// test 344
+  "mixed b() { return \"7654321\";; }",
+  "=mixed a() { int e;string t=\"\"; e=8; while(e--) t+=e; return t; }\n"+	// test 345
+  "mixed b() { return \"76543210\";; }",
+  "=mixed a() { int e;string t=\"\"; e=0; while(++e<6) t+=e; return t; }\n"+	// test 346
+  "mixed b() { return \"12345\";; }",
+  "=mixed a() { int e=1;string t=\"\"; while(e<20){t+=e;e*=2;} return t; }\n"+	// test 347
+  "mixed b() { return \"124816\";; }",
+  "=mixed a() { switch(0) { case \"\": } return 1; }\n"+	// test 348
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(1) { case 1: return 1; default: } return 0; }\n"+	// test 349
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(2) { case 1: return 0; default: return 1;} return 0; }\n"+	// test 350
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(1) { default: return 0; case 1: return 1; } return 0; }\n"+	// test 351
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(2) { default: return 1; case 1: return 0; } return 0; }\n"+	// test 352
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(0) { case \"apa\": case 1.0: return 0; }  return 1; }\n"+	// test 353
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(\"apa\") { case \"apa\": return 1; case 1.0: }  return 0; }\n"+	// test 354
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(1.0) { case \"apa\": return 0; case 1.0: return 1; } return 0; }\n"+	// test 355
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(\"sune\") { case \"gunnel\": return 0; case \"gunnar\": return 1; case \"sune\": case \"gusten\": return 0; } return 0; ; }\n"+	// test 356
+  "mixed b() { return ; }",
+  "=mixed a() { switch(\"a\") { case \"a\": return 1; case \"b\": case \"c\": case \"d\": case 'a': case '1': case '0': default: } return 0; }\n"+	// test 357
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(\"b\") { case \"a\": return 0; case \"b\": return 1; case \"c\": case \"d\": case 'a': case '1': case '0': default: } return 0; }\n"+	// test 358
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(\"c\") { case \"a\": case \"b\": return 0; case \"c\": return 1; case \"d\": case 'a': case '1': case '0': default: } return 0; }\n"+	// test 359
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(\"d\") { case \"a\": case \"b\": case \"c\": return 0; case \"d\": return 1; case 'a': case '1': case '0': default: } return 0; }\n"+	// test 360
+  "mixed b() { return 1; }",
+  "=mixed a() { switch('a') { case \"a\": case \"b\": case \"c\": case \"d\": return 0; case 'a': return 1; case '1': case '0': default: } return 0; }\n"+	// test 361
+  "mixed b() { return 1; }",
+  "=mixed a() { switch('1') { case \"a\": case \"b\": case \"c\": case \"d\": case 'a': return 0; case '1': return 1; case '0': default: } return 0; }\n"+	// test 362
+  "mixed b() { return 1; }",
+  "=mixed a() { switch('0') { case \"a\": case \"b\": case \"c\": case \"d\": case 'a': case '1': return 0; case '0': return 1; default: } return 0; }\n"+	// test 363
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(\"a\") { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 364
+  "mixed b() { return 1; }",
+  "=mixed a() { switch(\"b\") { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 365
+  "mixed b() { return 2; }",
+  "=mixed a() { switch(\"c\") { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 366
+  "mixed b() { return 3; }",
+  "=mixed a() { switch(\"d\") { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 367
+  "mixed b() { return 4; }",
+  "=mixed a() { switch('a') { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 368
+  "mixed b() { return 5; }",
+  "=mixed a() { switch('1') { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 369
+  "mixed b() { return 6; }",
+  "=mixed a() { switch('0') { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 370
+  "mixed b() { return 7; }",
+  "=mixed a() { switch('9') { case \"a\": return 1; case \"b\": return 2; case \"c\": return 3; case \"d\": return 4; case 'a': return 5; case '1': return 6; case '0': return 7; default: return 8; } return 9; }\n"+	// test 371
+  "mixed b() { return 8; }",
+
+  "=mixed a() { int e;string t=\"\"; for(e=0;e<10;e++) switch(e) { default: t+=e; case 4..8: } return t; }\n"+	// test 372
+  "mixed b() { return \"01239\"; }",
+  "=mixed a() { float e,q; q=0.0; for(e=0.1;e<10.0;e+=1.0) switch(e) { default: q+=e; case 4.0..8.0: } return q; }\n"+	// test 373
+  "mixed b() { return 0.1+1.1+2.1+3.1+8.1+9.1; }",
+
+// testing preprocessor
+// #define
+  "=mixed a() { \n#define FOOa 1\nreturn FOOa;\n; }\n"+	// test 374
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#define FOOb 17\n#undef FOOb\n#define FOOb 1\nreturn FOOb;\n; }\n"+	// test 375
+  "mixed b() { return 1; }",
+
+  "cmixed a() { \n#define FOOc FOOc FOO\nFOO\n; }\n",	// test 376
+
+  "cmixed a() { \n#error FOOd\nFOO\n; }\n",	// test 377
+
+// /* */
+  "=mixed a() { \n/* return 99; * /  /* */\nreturn 1;\n; }\n"+	// test 378
+  "mixed b() { return 1; }",
+
+// //
+  "=mixed a() { \n// return 99;\nreturn 1;\n; }\n"+	// test 379
+  "mixed b() { return 1; }",
+
+// #if
+
+
+
+  "=mixed a() { \n#if 1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 380
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 381
+  "mixed b() { return 0; }",
+
+// #if ==
+  "=mixed a() { \n#if 1==1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 382
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 1==2\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 383
+  "mixed b() { return 0; }",
+
+// #if !=
+  "=mixed a() { \n#if 1!=2\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 384
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 1!=1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 385
+  "mixed b() { return 0; }",
+
+// #if ( )
+  "=mixed a() { \n#if (((1))==1) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 386
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if ((1)==(2)) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 387
+  "mixed b() { return 0; }",
+
+// #if -1
+  "=mixed a() { \n#if -1 \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 388
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if (-1) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 389
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if (-1==0-1) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 390
+  "mixed b() { return 1; }",
+
+// #if ~
+  "=mixed a() { \n#if (-1-1==~1) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 391
+  "mixed b() { return 1; }",
+
+// #if ?:
+  "=mixed a() { \n#if 17 == ( 1 ? 17 : 18 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 392
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 18 == ( 0 ? 17 : 18 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 393
+  "mixed b() { return 1; }",
+
+// #if ||
+  "=mixed a() { \n#if 10 == ( 10 || 20 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 394
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 20 == ( 0 || 20 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 395
+  "mixed b() { return 1; }",
+
+// #if &&
+  "=mixed a() { \n#if 0 == ( 0 && 20 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 396
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 20 == ( 10 && 20 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 397
+  "mixed b() { return 1; }",
+
+// #if |
+  "=mixed a() { \n#if 3 == ( 1 | 2 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 398
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2 == ( 2 | 2 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 399
+  "mixed b() { return 1; }",
+
+// #if ^
+  "=mixed a() { \n#if 0 == ( 2 ^ 2 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 400
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 3 == ( 1 ^ 2 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 401
+  "mixed b() { return 1; }",
+
+// #if &
+  "=mixed a() { \n#if 0 == ( 1 & 2 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 402
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2 == ( 2 & 7 ) \nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 403
+  "mixed b() { return 1; }",
+
+// #if <= >= < > ! strings, floats
+
+
+
+
+  "=mixed a() { \n#if 1<2\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 404
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(1>2)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 405
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2>1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 406
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(2<1)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 407
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 1<=2\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 408
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(1>=2)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 409
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2>=1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 410
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(2<=1)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 411
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2<=2\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 412
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 1>=1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 413
+  "mixed b() { return 1; }", 
+
+  "=mixed a() { \n#if 1.0<2.0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 414
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(1.0>2.0)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 415
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2.0>1.0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 416
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(2.0<1.0)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 417
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 1.0<=2.0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 418
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(1.0>=2.0)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 419
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2.0>=1.0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 420
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(2.0<=1.0)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 421
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 2.0<=2.0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 422
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 1.0>=1.0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 423
+  "mixed b() { return 1; }", 
+
+  "=mixed a() { \n#if \"a\"<\"b\"\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 424
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(\"a\">\"b\")\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 425
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if \"b\">\"a\"\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 426
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(\"b\"<\"a\")\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 427
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if \"a\"<=\"b\"\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 428
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(\"a\">=\"b\")\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 429
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if \"b\">=\"a\"\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 430
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if !(\"b\"<=\"a\")\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 431
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if \"b\"<=\"b\"\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 432
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if \"a\">=\"a\"\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 433
+  "mixed b() { return 1; }", 
+
+// #if <<
+  "=mixed a() { \n#if 1<<10==1024\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 434
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 5<<3==40\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 435
+  "mixed b() { return 1; }",
+
+// #if >>
+  "=mixed a() { \n#if 1024>>10==1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 436
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 47>>3==5\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 437
+  "mixed b() { return 1; }",
+
+// #if +
+  "=mixed a() { \n#if 1024+10==1034\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 438
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 47+3==50\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 439
+  "mixed b() { return 1; }",
+
+// #if -
+  "=mixed a() { \n#if 1024-10==1014\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 440
+  "mixed b() { return 1; }",
+  "=mixed a() { \n#if 47-3==44\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 441
+  "mixed b() { return 1; }",
+
+// #if *
+  "=mixed a() { \n#if 1024*10==10240\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 442
+  "mixed b() { return 1; }",
+
+// #if /
+  "=mixed a() { \n#if 47/3==15\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 443
+  "mixed b() { return 1; }",
+
+  "cmixed a() { \n#if 1/0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n",	// test 444
+
+// #if %
+  "=mixed a() { \n#if 47%3==2\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 445
+  "mixed b() { return 1; }",
+  "cmixed a() { \n#if 1%0\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n",	// test 446
+
+// #if [ ]
+  "=mixed a() { \n#if \"foo\"[0]=='f'\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 447
+  "mixed b() { return 1; }",
+
+// #if defined
+  "=mixed a() { \n#define FOOe 0\n#if defined(FOOe)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 448
+  "mixed b() { return 1; }",
+
+// #if define < x
+  "=mixed a() { \n#define FOOf 1\n#if FOOf < 2\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 449
+  "mixed b() { return 1; }",
+
+// #if define < x
+  "=mixed a() { \n#define FOOg 1\n#if FOOg < 0\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 450
+  "mixed b() { return 1; }",
+
+// #if x < define
+  "=mixed a() { \n#define FOOh 1\n#if 0 < FOOh\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 451
+  "mixed b() { return 1; }",
+
+// #if x < define
+  "=mixed a() { \n#define FOOi 1\n#if 2 < FOOi\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 452
+  "mixed b() { return 1; }",
+
+// #if efun
+// see test for add_efun()
+
+// #if /* */
+  "=mixed a() { \n#if 1 /* trying to be mean //  * / */ /* /* */\nreturn 1;  /* */\n#define foo\n# 1 \"---\"\n#undef foo\n#else /* trying to be mean //  * / */ /* /* */\nreturn 0;  //\n#endif /* trying to be mean //  * / */ /* /* */\n; }\n"+	// test 453
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 0 /* trying to be mean //  * / */ /* /* */\nreturn 0; /* */\n#define foo\n# 1 \"---\"\n#undef foo\n#else /* trying to be mean //  * / */ /* /* */\nreturn 1; //\n#endif /* trying to be mean //  * / */ /* /* */\n; }\n"+	// test 454
+  "mixed b() { return 1; }",
+
+// #if //
+  "=mixed a() { \n#if 1 //* trying to be mean //  */ */\nreturn 1;\n#else //* trying to be mean //  */ */\nreturn 0;\n#endif //* trying to be mean //  */ */\n; }\n"+	// test 455
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 0 //* trying to be mean //  */ */\nreturn 0;\n#else //* trying to be mean //  */ */\nreturn 1;\n#endif //* trying to be mean // */ */\n; }\n"+	// test 456
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#define FOOj\n#if defined(FOOj)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 457
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if defined(FOOk)\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 458
+  "mixed b() { return 1; }",
+
+// #ifdef
+  "=mixed a() { \n#ifdef FOOl\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 459
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#define FOOm\n#ifdef FOOm\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 460
+  "mixed b() { return 1; }",
+
+// #ifndef
+  "=mixed a() { \n#define FOOo\n#ifndef FOOo\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 461
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#ifndef FOOp\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 462
+  "mixed b() { return 1; }",
+
+// #else
+  "=mixed a() { \n#if 1\nreturn 1;\n#else\nFEL\n#if 0\nFEL\n#else\nFEL\n#endif\nreturn 0;\n#endif\n; }\n"+	// test 463
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 0\nFEL\n#if 0\nFEL\n#else\nFEL\n#if 1\nFEL\n#else\nFEL\n#endif\n#endif\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 464
+  "mixed b() { return 1; }",
+
+// #elif
+  "=mixed a() { \n#if 0\nreturn 0;\n#elif 0\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 465
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 0\nreturn 0;\n#elif 1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 466
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 1\nreturn 1;\n#elif 1\nreturn 0;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 467
+  "mixed b() { return 1; }",
+
+// #elseif
+  "=mixed a() { \n#if 0\nreturn 0;\n#elseif 0\nreturn 0;\n#else\nreturn 1;\n#endif\n; }\n"+	// test 468
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 0\nreturn 0;\n#elseif 0\nreturn 0;\n#elseif 1\nreturn 1;\n#elseif 0\nreturn 0;\n#elseif 0\nreturn 0;\n#else\nFEL\n#endif\n; }\n"+	// test 469
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 0\nreturn 0;\n#elseif 1\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 470
+  "mixed b() { return 1; }",
+
+  "=mixed a() { \n#if 1\nreturn 1;\n#elseif 1\nreturn 0;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 471
+  "mixed b() { return 1; }",
+
+// #pragma
+// FIXME: add tests for real pragmas
+  "=mixed a() { \n#pragma whatever\nreturn 1;\n; }\n"+	// test 472
+  "mixed b() { return 1; }",
+
+// #include
+// FIXME add test for #include
+
+// tests for file module
+  "tmixed a() { return programp((program)\"/precompiled/file\"); }",	// test 473
+  "tmixed a() { return programp((program)\"/precompiled/port\"); }",	// test 474
+  "=mixed a() { object o; o=clone((program)\"/precompiled/file\"); destruct(o); return 1; }\n"+	// test 475
+  "mixed b() { return 1; }",
+
+// - file->open
+// - file->close
+  "=mixed a() { object o=clone((program)\"/precompiled/file\"); return o->open(\"conftest\",\"wct\") && o->close(); }\n"+	// test 476
+  "mixed b() { return 1; }",
+
+// - file_stat
+  "=mixed a() { return file_stat(\"conftest\")[1]; }\n"+	// test 477
+  "mixed b() { return 0; }",
+
+// - rm
+  "tmixed a() { return rm(\"conftest\"); }",	// test 478
+  "=mixed a() { return file_stat(\"conftest\"); }\n"+	// test 479
+  "mixed b() { return 0; }",
+
+// - file->write
+  "=mixed a() { int e; object o=clone((program)\"/precompiled/file\"); if(!o->open(\"conftest\",\"wct\")) return -1; e=o->write(\"sune\"); if(!o->close()) return -1; return e; }\n"+	// test 480
+  "mixed b() { return 4; }",
+
+// - file->read
+  "=mixed a() { string s; object o=clone((program)\"/precompiled/file\"); if(!o->open(\"conftest\",\"r\")) return -1; s=o->read(4); if(!o->close()) return -1; return s; }\n"+	// test 481
+  "mixed b() { return \"sune\"; }",
+
+  "=mixed a() { string s; object o=clone((program)\"/precompiled/file\"); if(!o->open(\"conftest\",\"r\")) return -1; s=o->read(999999); if(!o->close()) return -1; return s; }\n"+	// test 482
+  "mixed b() { return \"sune\"; }",
+
+  "=mixed a() { int e; object o=clone((program)\"/precompiled/file\"); if(!o->open(\"conftest\",\"wct\")) return -1; e=o->write(sprintf(\"%'+-*'100000s\",\"\")); if(!o->close()) return -1; return e; }\n"+	// test 483
+  "mixed b() { return 100000; }",
+
+  "=mixed a() { string s; object o=clone((program)\"/precompiled/file\"); if(!o->open(\"conftest\",\"r\")) return -1; s=o->read(9999999); if(!o->close()) return -1; return s; }\n"+	// test 484
+  "mixed b() { return sprintf(\"%'+-*'100000s\",\"\"); }",
+
+// - file->seek
+// - file->tell
+  "=mixed a() { object o=clone((program)\"/precompiled/file\"); return o->open(\"conftest\",\"r\") && o->read(4711) && o->tell() == 4711 && o->close(); }\n"+	// test 485
+  "mixed b() { return 1; }",
+
+// - file->stat
+  "=mixed a() { object o=clone((program)\"/precompiled/file\"); return equal(o->open(\"conftest\",\"r\") && o->stat(), file_stat(\"conftest\")); }\n"+	// test 486
+  "mixed b() { return 1; }",
+
+// - file->errno
+  "dmixed a() { clone((program)\"/precompiled/file\")->errno(); }\n",	// test 487
+
+// - file->set_nonblocking
+// - file->set_blocking
+// - file->set_id
+// - file->query_id
+  "=mixed a() { object o=clone((program)\"/precompiled/file\"); return o->query_id()==o; }\n"+	// test 488
+  "mixed b() { return 1; }",
+
+// - file->query_read_callback
+  "dmixed a() { clone((program)\"/precompiled/file\")->query_read_callback(); }\n",	// test 489
+
+// - file->query_write_callback
+  "dmixed a() { clone((program)\"/precompiled/file\")->query_write_callback(); }\n",	// test 490
+
+// - file->query_close_callback
+  "dmixed a() { clone((program)\"/precompiled/file\")->query_close_callback(); }\n",	// test 491
+
+// - file->dup
+// - file->assign
+// - file->assign2
+// - file->open_socket
+// - file->connect
+// - file->query_address
+
+// - socket->bind
+// - socket->set_id
+// - socket->query_id
+// - socket->errno
+// - socket->accept
+
+  "tmixed a() { return rm(\"conftest\"); }",	// test 492
+  "=mixed a() { return file_stat(\"conftest\"); }\n"+	// test 493
+  "mixed b() { return 0; }",
+
+// - file_stat
+// - perror
+// - rm
+// - mkdir
+// - get_dir
+// - cd
+// - getcwd
+  "tmixed a() { return stringp(getcwd()); }",	// test 494
+  "=mixed a() { return '/'; }\n"+	// test 495
+  "mixed b() { return getcwd()[0]; }",
+
+// - sprintf module
+  "tmixed a() { return stringp(sprintf(\"\")); }",	// test 496
+  "=mixed a() { return sprintf(\"%d\",1); }\n"+	// test 497
+  "mixed b() { return \"1\"; }",
+  "=mixed a() { return sprintf(\"%%\"); }\n"+	// test 498
+  "mixed b() { return \"%\"; }",
+  "=mixed a() { return sprintf(\"%d\",1); }\n"+	// test 499
+  "mixed b() { return \"1\"; }",
+  "=mixed a() { return sprintf(\"%d\",-1); }\n"+	// test 500
+  "mixed b() { return \"-1\"; }",
+  "=mixed a() { return sprintf(\"%u\",1<<31); }\n"+	// test 501
+  "mixed b() { return \"2147483648\"; }",
+  "=mixed a() { return sprintf(\"%o\",255); }\n"+	// test 502
+  "mixed b() { return \"377\"; }",
+  "=mixed a() { return sprintf(\"%x\",255); }\n"+	// test 503
+  "mixed b() { return \"ff\"; }",
+  "=mixed a() { return sprintf(\"%X\",255); }\n"+	// test 504
+  "mixed b() { return \"FF\"; }",
+  "=mixed a() { return sprintf(\"%c\",255); }\n"+	// test 505
+  "mixed b() { return \"\\377\"; }",
+  "tmixed a() { return stringp(sprintf(\"%f\",255.0)); }",	// test 506
+  "tmixed a() { return stringp(sprintf(\"%g\",255.0)); }",	// test 507
+  "tmixed a() { return stringp(sprintf(\"%e\",255.0)); }",	// test 508
+  "tmixed a() { return stringp(sprintf(\"%e\",255.0)); }",	// test 509
+  "=mixed a() { return sprintf(\"%s\",\"foobaR\"); }\n"+	// test 510
+  "mixed b() { return \"foobaR\"; }",
+  "=mixed a() { return sprintf(\"%s\",\"foo\\nbar\"); }\n"+	// test 511
+  "mixed b() { return \"foo\\nbar\"; }",
+  "tmixed a() { return stringp(sprintf(\"%O\",this_object())); }",	// test 512
+  "tmixed a() { return stringp(sprintf(\"%O\",({}))); }",	// test 513
+  "=mixed a() { return sprintf(\"%n\"); }\n"+	// test 514
+  "mixed b() { return \"\"; }",
+  "=mixed a() { return sprintf(\"%t\",1); }\n"+	// test 515
+  "mixed b() { return \"int\"; }",
+  "=mixed a() { return sprintf(\"%t\",this_object()); }\n"+	// test 516
+  "mixed b() { return \"object\"; }",
+  "=mixed a() { return sprintf(\"%{%d\\n%}\",({1,2,3,4})); }\n"+	// test 517
+  "mixed b() { return \"1\\n2\\n3\\n4\\n\"; }",
+
+  "=mixed a() { return strlen(sprintf(\"%1000s\",\"\")); }\n"+	// test 518
+  "mixed b() { return 1000; }",
+  "=mixed a() { return sprintf(\"%2d\",1); }\n"+	// test 519
+  "mixed b() { return \" 1\"; }",
+  "=mixed a() { return sprintf(\"%2d\",1); }\n"+	// test 520
+  "mixed b() { return \" 1\"; }",
+  "=mixed a() { return sprintf(\"%2d\",2222); }\n"+	// test 521
+  "mixed b() { return \"2222\"; }",
+  "=mixed a() { return sprintf(\"%!2d\",2222); }\n"+	// test 522
+  "mixed b() { return \"22\"; }",
+  "=mixed a() { return sprintf(\"%!!2d\",2222); }\n"+	// test 523
+  "mixed b() { return \"2222\"; }",
+  "=mixed a() { return sprintf(\"% d\",2); }\n"+	// test 524
+  "mixed b() { return \" 2\"; }",
+  "=mixed a() { return sprintf(\"% d\",-2); }\n"+	// test 525
+  "mixed b() { return \"-2\"; }",
+  "=mixed a() { return sprintf(\"%+d\",2); }\n"+	// test 526
+  "mixed b() { return \"+2\"; }",
+  "=mixed a() { return sprintf(\"%+d\",-2); }\n"+	// test 527
+  "mixed b() { return \"-2\"; }",
+  "=mixed a() { return sprintf(\"%-2d\",2); }\n"+	// test 528
+  "mixed b() { return \"2 \"; }",
+  "=mixed a() { return sprintf(\"%|3d\",2); }\n"+	// test 529
+  "mixed b() { return \" 2 \"; }",
+  "=mixed a() { return sprintf(\"%-=3s\",\"f o bar gaz\"); }\n"+	// test 530
+  "mixed b() { return \"f o\\nbar\\ngaz\"; }",
+  "=mixed a() { return sprintf(\"%*d\",3,3); }\n"+	// test 531
+  "mixed b() { return \"  3\"; }",
+  "=mixed a() { return sprintf(\"%'FOO'10s\",\"BAR\"); }\n"+	// test 532
+  "mixed b() { return \"FOOFOOFBAR\"; }",
+  "=mixed a() { return sprintf(\"%d %<d %<d\",2); }\n"+	// test 533
+  "mixed b() { return \"2 2 2\"; }",
+  "Emixed a() { sprintf(\"%d\"); }\n",	// test 534
+
+// - Here we try the regexp module
+  "tmixed a() { return programp((program)\"/precompiled/regexp\"); }",	// test 535
+  "=mixed a() { object o; o=clone((program)\"/precompiled/regexp\"); destruct(o); return 1; }\n"+	// test 536
+  "mixed b() { return 1; }",
+
+// regexp->create
+  "=mixed a() { object o; o=clone((program)\"/precompiled/regexp\",\"^.*$\"); destruct(o); return 1; }\n"+	// test 537
+  "mixed b() { return 1; }",
+
+// regexp->match
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^.*$\")->match(\"\"); }\n"+	// test 538
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^.*$\")->match(\"a\"); }\n"+	// test 539
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^.*$\")->match(\"-\"); }\n"+	// test 540
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^$\")->match(\"\"); }\n"+	// test 541
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^.$\")->match(\"a\"); }\n"+	// test 542
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^.$\")->match(\"-\"); }\n"+	// test 543
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^[abc]$\")->match(\"-\"); }\n"+	// test 544
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^[abc]$\")->match(\"a\"); }\n"+	// test 545
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^[abc]$\")->match(\"c\"); }\n"+	// test 546
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^[^abc]$\")->match(\"-\"); }\n"+	// test 547
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^[^abc]$\")->match(\"a\"); }\n"+	// test 548
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^[^abc]$\")->match(\"c\"); }\n"+	// test 549
+  "mixed b() { return 0; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^a*$\")->match(\"aaaa\"); }\n"+	// test 550
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^a|b$\")->match(\"a\"); }\n"+	// test 551
+  "mixed b() { return 1; }",
+  "=mixed a() { return clone((program)\"/precompiled/regexp\",\"^a|b$\")->match(\"b\"); }\n"+	// test 552
+  "mixed b() { return 1; }",
+
+// regexp->split
+  "emixed a() { return clone((program)\"/precompiled/regexp\",\"^(a*)[^a]*$\")->split(\"aaabbb\"); }\n"+	// test 553
+  "mixed b() { return ({\"aaa\"}); }",
+
+
+// - Here we try the math module
+
+// - tan
+  "tmixed a() { return floatp(tan(0.5)); }",	// test 554
+  "=mixed a() { return 0.5; }\n"+	// test 555
+  "mixed b() { return tan(atan(0.5)); }",
+  "=mixed a() { return 0.5; }\n"+	// test 556
+  "mixed b() { return atan(tan(0.5)); }",
+// - asin
+  "tmixed a() { return floatp(asin(0.7)); }",	// test 557
+  "=mixed a() { return asin(0.0); }\n"+	// test 558
+  "mixed b() { return 0.0; }",
+// - atan
+  "tmixed a() { return floatp(atan(0.7)); }",	// test 559
+  "=mixed a() { return 3.1415 > 4.0*atan(1.0); }\n"+	// test 560
+  "mixed b() { return ; }",
+  "=mixed a() { return 3.1416 < 4.0*atan(1.0); }\n"+	// test 561
+  "mixed b() { return ; }",
+// - sin
+  "tmixed a() { return floatp(sin(1.2)); }",	// test 562
+  "tmixed a() { return sin(atan(1.0))>0.707; }",	// test 563
+  "tmixed a() { return sin(atan(1.0))<0.708; }",	// test 564
+// - acos
+  "tmixed a() { return acos(0.7) > 0.795; }",	// test 565
+  "tmixed a() { return acos(0.7) < 0.796; }",	// test 566
+// - cos
+  "tmixed a() { return floatp(cos(1.2)); }",	// test 567
+  "tmixed a() { return cos(atan(1.0))>0.707; }",	// test 568
+  "tmixed a() { return cos(atan(1.0))<0.708; }",	// test 569
+// - sqrt
+  "=mixed a() { return 4; }\n"+	// test 570
+  "mixed b() { return sqrt(16); }",
+  "=mixed a() { return 4; }\n"+	// test 571
+  "mixed b() { return sqrt(17); }",
+  "=mixed a() { return 4; }\n"+	// test 572
+  "mixed b() { return sqrt(24); }",
+  "=mixed a() { return 4.0; }\n"+	// test 573
+  "mixed b() { return sqrt(16.0); }",
+// - floor
+  "=mixed a() { return 17.0; }\n"+	// test 574
+  "mixed b() { return floor(17.0); }",
+  "=mixed a() { return 17.0; }\n"+	// test 575
+  "mixed b() { return floor(17.1); }",
+  "=mixed a() { return 17.0; }\n"+	// test 576
+  "mixed b() { return floor(17.7); }",
+// - ceil
+  "=mixed a() { return 17.0; }\n"+	// test 577
+  "mixed b() { return ceil(17.0); }",
+  "=mixed a() { return 18.0; }\n"+	// test 578
+  "mixed b() { return ceil(17.1); }",
+  "=mixed a() { return 18.0; }\n"+	// test 579
+  "mixed b() { return ceil(17.7); }",
+// - exp
+// - log
+  "tmixed a() { return 2.70001>exp(log(2.7)); }",	// test 580
+  "tmixed a() { return 2.69999<exp(log(2.7)); }",	// test 581
+  "tmixed a() { return 2.70001>log(exp(2.7)); }",	// test 582
+  "tmixed a() { return 2.69999<log(exp(2.7)); }",	// test 583
+// - pow
+  "=mixed a() { return pow(10.0,10.0); }\n"+	// test 584
+  "mixed b() { return 10000000000.0; }",
+
+// foop
+
+
+
+  "=mixed a() { return intp (17); }\n"+	// test 585
+  "mixed b() { return !(0); }",
+  "=mixed a() { return intp (1.7); }\n"+	// test 586
+  "mixed b() { return !(0-1); }",
+  "=mixed a() { return intp (\"17\"); }\n"+	// test 587
+  "mixed b() { return !(0-2); }",
+  "=mixed a() { return intp (this_object()); }\n"+	// test 588
+  "mixed b() { return !(0-3); }",
+  "=mixed a() { return intp (a); }\n"+	// test 589
+  "mixed b() { return !(0-4); }", // a is the test function
+  "=mixed a() { return intp (({})); }\n"+	// test 590
+  "mixed b() { return !(0-5); }",
+  "=mixed a() { return intp (([])); }\n"+	// test 591
+  "mixed b() { return !(0-6); }",
+  "=mixed a() { return intp ((<>)); }\n"+	// test 592
+  "mixed b() { return !(0-7); }",
+  "=mixed a() { return intp (object_program(this_object())); }\n"+	// test 593
+  "mixed b() { return !(0-8); }",
+
+
+  "=mixed a() { return floatp (17); }\n"+	// test 594
+  "mixed b() { return !(1); }",
+  "=mixed a() { return floatp (1.7); }\n"+	// test 595
+  "mixed b() { return !(1-1); }",
+  "=mixed a() { return floatp (\"17\"); }\n"+	// test 596
+  "mixed b() { return !(1-2); }",
+  "=mixed a() { return floatp (this_object()); }\n"+	// test 597
+  "mixed b() { return !(1-3); }",
+  "=mixed a() { return floatp (a); }\n"+	// test 598
+  "mixed b() { return !(1-4); }", // a is the test function
+  "=mixed a() { return floatp (({})); }\n"+	// test 599
+  "mixed b() { return !(1-5); }",
+  "=mixed a() { return floatp (([])); }\n"+	// test 600
+  "mixed b() { return !(1-6); }",
+  "=mixed a() { return floatp ((<>)); }\n"+	// test 601
+  "mixed b() { return !(1-7); }",
+  "=mixed a() { return floatp (object_program(this_object())); }\n"+	// test 602
+  "mixed b() { return !(1-8); }",
+
+
+  "=mixed a() { return stringp (17); }\n"+	// test 603
+  "mixed b() { return !(2); }",
+  "=mixed a() { return stringp (1.7); }\n"+	// test 604
+  "mixed b() { return !(2-1); }",
+  "=mixed a() { return stringp (\"17\"); }\n"+	// test 605
+  "mixed b() { return !(2-2); }",
+  "=mixed a() { return stringp (this_object()); }\n"+	// test 606
+  "mixed b() { return !(2-3); }",
+  "=mixed a() { return stringp (a); }\n"+	// test 607
+  "mixed b() { return !(2-4); }", // a is the test function
+  "=mixed a() { return stringp (({})); }\n"+	// test 608
+  "mixed b() { return !(2-5); }",
+  "=mixed a() { return stringp (([])); }\n"+	// test 609
+  "mixed b() { return !(2-6); }",
+  "=mixed a() { return stringp ((<>)); }\n"+	// test 610
+  "mixed b() { return !(2-7); }",
+  "=mixed a() { return stringp (object_program(this_object())); }\n"+	// test 611
+  "mixed b() { return !(2-8); }",
+
+
+  "=mixed a() { return objectp (17); }\n"+	// test 612
+  "mixed b() { return !(3); }",
+  "=mixed a() { return objectp (1.7); }\n"+	// test 613
+  "mixed b() { return !(3-1); }",
+  "=mixed a() { return objectp (\"17\"); }\n"+	// test 614
+  "mixed b() { return !(3-2); }",
+  "=mixed a() { return objectp (this_object()); }\n"+	// test 615
+  "mixed b() { return !(3-3); }",
+  "=mixed a() { return objectp (a); }\n"+	// test 616
+  "mixed b() { return !(3-4); }", // a is the test function
+  "=mixed a() { return objectp (({})); }\n"+	// test 617
+  "mixed b() { return !(3-5); }",
+  "=mixed a() { return objectp (([])); }\n"+	// test 618
+  "mixed b() { return !(3-6); }",
+  "=mixed a() { return objectp ((<>)); }\n"+	// test 619
+  "mixed b() { return !(3-7); }",
+  "=mixed a() { return objectp (object_program(this_object())); }\n"+	// test 620
+  "mixed b() { return !(3-8); }",
+
+
+  "=mixed a() { return functionp (17); }\n"+	// test 621
+  "mixed b() { return !(4); }",
+  "=mixed a() { return functionp (1.7); }\n"+	// test 622
+  "mixed b() { return !(4-1); }",
+  "=mixed a() { return functionp (\"17\"); }\n"+	// test 623
+  "mixed b() { return !(4-2); }",
+  "=mixed a() { return functionp (this_object()); }\n"+	// test 624
+  "mixed b() { return !(4-3); }",
+  "=mixed a() { return functionp (a); }\n"+	// test 625
+  "mixed b() { return !(4-4); }", // a is the test function
+  "=mixed a() { return functionp (({})); }\n"+	// test 626
+  "mixed b() { return !(4-5); }",
+  "=mixed a() { return functionp (([])); }\n"+	// test 627
+  "mixed b() { return !(4-6); }",
+  "=mixed a() { return functionp ((<>)); }\n"+	// test 628
+  "mixed b() { return !(4-7); }",
+  "=mixed a() { return functionp (object_program(this_object())); }\n"+	// test 629
+  "mixed b() { return !(4-8); }",
+
+
+  "=mixed a() { return arrayp (17); }\n"+	// test 630
+  "mixed b() { return !(5); }",
+  "=mixed a() { return arrayp (1.7); }\n"+	// test 631
+  "mixed b() { return !(5-1); }",
+  "=mixed a() { return arrayp (\"17\"); }\n"+	// test 632
+  "mixed b() { return !(5-2); }",
+  "=mixed a() { return arrayp (this_object()); }\n"+	// test 633
+  "mixed b() { return !(5-3); }",
+  "=mixed a() { return arrayp (a); }\n"+	// test 634
+  "mixed b() { return !(5-4); }", // a is the test function
+  "=mixed a() { return arrayp (({})); }\n"+	// test 635
+  "mixed b() { return !(5-5); }",
+  "=mixed a() { return arrayp (([])); }\n"+	// test 636
+  "mixed b() { return !(5-6); }",
+  "=mixed a() { return arrayp ((<>)); }\n"+	// test 637
+  "mixed b() { return !(5-7); }",
+  "=mixed a() { return arrayp (object_program(this_object())); }\n"+	// test 638
+  "mixed b() { return !(5-8); }",
+
+
+  "=mixed a() { return mappingp (17); }\n"+	// test 639
+  "mixed b() { return !(6); }",
+  "=mixed a() { return mappingp (1.7); }\n"+	// test 640
+  "mixed b() { return !(6-1); }",
+  "=mixed a() { return mappingp (\"17\"); }\n"+	// test 641
+  "mixed b() { return !(6-2); }",
+  "=mixed a() { return mappingp (this_object()); }\n"+	// test 642
+  "mixed b() { return !(6-3); }",
+  "=mixed a() { return mappingp (a); }\n"+	// test 643
+  "mixed b() { return !(6-4); }", // a is the test function
+  "=mixed a() { return mappingp (({})); }\n"+	// test 644
+  "mixed b() { return !(6-5); }",
+  "=mixed a() { return mappingp (([])); }\n"+	// test 645
+  "mixed b() { return !(6-6); }",
+  "=mixed a() { return mappingp ((<>)); }\n"+	// test 646
+  "mixed b() { return !(6-7); }",
+  "=mixed a() { return mappingp (object_program(this_object())); }\n"+	// test 647
+  "mixed b() { return !(6-8); }",
+
+
+  "=mixed a() { return listp (17); }\n"+	// test 648
+  "mixed b() { return !(7); }",
+  "=mixed a() { return listp (1.7); }\n"+	// test 649
+  "mixed b() { return !(7-1); }",
+  "=mixed a() { return listp (\"17\"); }\n"+	// test 650
+  "mixed b() { return !(7-2); }",
+  "=mixed a() { return listp (this_object()); }\n"+	// test 651
+  "mixed b() { return !(7-3); }",
+  "=mixed a() { return listp (a); }\n"+	// test 652
+  "mixed b() { return !(7-4); }", // a is the test function
+  "=mixed a() { return listp (({})); }\n"+	// test 653
+  "mixed b() { return !(7-5); }",
+  "=mixed a() { return listp (([])); }\n"+	// test 654
+  "mixed b() { return !(7-6); }",
+  "=mixed a() { return listp ((<>)); }\n"+	// test 655
+  "mixed b() { return !(7-7); }",
+  "=mixed a() { return listp (object_program(this_object())); }\n"+	// test 656
+  "mixed b() { return !(7-8); }",
+
+
+  "=mixed a() { return programp (17); }\n"+	// test 657
+  "mixed b() { return !(8); }",
+  "=mixed a() { return programp (1.7); }\n"+	// test 658
+  "mixed b() { return !(8-1); }",
+  "=mixed a() { return programp (\"17\"); }\n"+	// test 659
+  "mixed b() { return !(8-2); }",
+  "=mixed a() { return programp (this_object()); }\n"+	// test 660
+  "mixed b() { return !(8-3); }",
+  "=mixed a() { return programp (a); }\n"+	// test 661
+  "mixed b() { return !(8-4); }", // a is the test function
+  "=mixed a() { return programp (({})); }\n"+	// test 662
+  "mixed b() { return !(8-5); }",
+  "=mixed a() { return programp (([])); }\n"+	// test 663
+  "mixed b() { return !(8-6); }",
+  "=mixed a() { return programp ((<>)); }\n"+	// test 664
+  "mixed b() { return !(8-7); }",
+  "=mixed a() { return programp (object_program(this_object())); }\n"+	// test 665
+  "mixed b() { return !(8-8); }",
+
+
+// add_efun
+  "dmixed a() { add_efun(\"foobar\",lambda() { return 1; }); }\n",	// test 666
+  "=mixed a() { \n#if efun(foobar)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 667
+  "mixed b() { return 1; }",
+  "=mixed a() { return foobar(); }\n"+	// test 668
+  "mixed b() { return 1; }",
+  "dmixed a() { add_efun(\"foobar\"); }\n",	// test 669
+  "=mixed a() { \n#if efun(foobar)\nreturn 1;\n#else\nreturn 0;\n#endif\n; }\n"+	// test 670
+  "mixed b() { return 0; }",
+
+// - aggregate
+  "tmixed a() { return arrayp(aggregate()); }",	// test 671
+  "=mixed a() { return sizeof(aggregate()); }\n"+	// test 672
+  "mixed b() { return 0; }",
+  "emixed a() { return aggregate(1,2,3,4); }\n"+	// test 673
+  "mixed b() { return ({1,2,3,4}); }",
+
+// - aggregate_list
+  "tmixed a() { return listp(aggregate_list()); }",	// test 674
+
+// - aggregate_mapping
+  "tmixed a() { return listp(aggregate_list()); }",	// test 675
+
+// - all_efuns
+  "tmixed a() { return mappingp(all_efuns()); }",	// test 676
+  "tmixed a() { return all_efuns()[\"all_efuns\"]; }",	// test 677
+  "=mixed a() { return all_efuns()[\"all_efuns\"]; }\n"+	// test 678
+  "mixed b() { return all_efuns; }",
+
+// - allocate
+  "tmixed a() { return arrayp(allocate(0)); }",	// test 679
+  "emixed a() { return allocate(2)==({0,0}); }\n"+	// test 680
+  "mixed b() { return ; }",
+
+// - backtrace
+  "tmixed a() { return arrayp(backtrace()); }",	// test 681
+  "=mixed a() { return backtrace()[-1][2]; }\n"+	// test 682
+  "mixed b() { return a; }",
+
+// - call_function
+  "=mixed a() { return 1; }\n"+	// test 683
+  "mixed b() { return call_function(a); }",
+  "=mixed a() { return 1; }\n"+	// test 684
+  "mixed b() { return call_function(lambda(int a){ return a; },1); }",
+  "=mixed a() { return 1; }\n"+	// test 685
+  "mixed b() { return call_function(intp,1); }",
+
+// - capitalize
+  "=mixed a() { return capitalize(\"fubar\"); }\n"+	// test 686
+  "mixed b() { return \"Fubar\"; }",
+  "=mixed a() { return capitalize(\"FooBar\"); }\n"+	// test 687
+  "mixed b() { return \"FooBar\"; }",
+  "=mixed a() { return capitalize(\"-\"); }\n"+	// test 688
+  "mixed b() { return \"-\"; }",
+
+// - clone
+// clone is already tested a lot by this script
+  "tmixed a() { return objectp(clone(compile_string(\"int foo() { return 17; }\"))); }",	// test 689
+  "=mixed a() { return clone(compile_string(\"int foo() { return 17; }\"))->foo(); }\n"+	// test 690
+  "mixed b() { return 17; }",
+
+// - combine_path
+  "=mixed a() { return combine_path(\"/foo/bar/gazonk/\",\"..\"); }\n"+	// test 691
+  "mixed b() { return \"/foo/bar\"; }",
+  "=mixed a() { return combine_path(\"/.../\",\"sune\"); }\n"+	// test 692
+  "mixed b() { return \"/.../sune\"; }",
+  "=mixed a() { return combine_path(\"/\",\"foo/.../sune\"); }\n"+	// test 693
+  "mixed b() { return \"/foo/.../sune\"; }",
+  "=mixed a() { return combine_path(\"/./foo/bar//gazonk/\",\"../\"); }\n"+	// test 694
+  "mixed b() { return \"/foo/bar/\"; }",
+  "=mixed a() { return combine_path(\"/\",\"/foo/./bar/gazonk/..\"); }\n"+	// test 695
+  "mixed b() { return \"/foo/bar\"; }",
+  "=mixed a() { return combine_path(\"/\",\"/foo/bar/gazonk/../../\"); }\n"+	// test 696
+  "mixed b() { return \"/foo/\"; }",
+  "=mixed a() { return combine_path(\"/\",\"/foo//bar/gazonk/../..\"); }\n"+	// test 697
+  "mixed b() { return \"/foo\"; }",
+  "=mixed a() { return combine_path(\"/\",\"/foo/bar/./gazonk/../../..\"); }\n"+	// test 698
+  "mixed b() { return \"/\"; }",
+  "=mixed a() { return combine_path(\"/\",\"/foo/../bar//./gazonk/../..\"); }\n"+	// test 699
+  "mixed b() { return \"/\"; }",
+  "=mixed a() { return combine_path(\"/\",\"/foo/././/bar/gazonk/../../../..\"); }\n"+	// test 700
+  "mixed b() { return \"/\"; }",
+
+// - compile_file
+// FIXME: add tests for compile_file
+
+// - compile_string
+// see test for clone()
+
+// - copy_value
+  "=mixed a() { return copy_value(1); }\n"+	// test 701
+  "mixed b() { return 1; }",
+  "=mixed a() { return copy_value(\"\"); }\n"+	// test 702
+  "mixed b() { return \"\"; }",
+  "=mixed a() { return copy_value(1.0); }\n"+	// test 703
+  "mixed b() { return 1.0; }",
+  "=mixed a() { return copy_value(this_object()); }\n"+	// test 704
+  "mixed b() { return this_object(); }",
+  "=mixed a() { return copy_value(a); }\n"+	// test 705
+  "mixed b() { return a; }",
+
+
+  "=mixed a() { mixed x=({1}) ; return x==x; }\n"+	// test 706
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=({1}) ; return copy_value(x)!=x; }\n"+	// test 707
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=({1}) ; return equal(copy_value(x),x); }\n"+	// test 708
+  "mixed b() { return 1; }",
+
+  "=mixed a() { mixed x=([]) ; return x==x; }\n"+	// test 709
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=([]) ; return copy_value(x)!=x; }\n"+	// test 710
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=([]) ; return equal(copy_value(x),x); }\n"+	// test 711
+  "mixed b() { return 1; }",
+
+  "=mixed a() { mixed x=(<>) ; return x==x; }\n"+	// test 712
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=(<>) ; return copy_value(x)!=x; }\n"+	// test 713
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=(<>) ; return equal(copy_value(x),x); }\n"+	// test 714
+  "mixed b() { return 1; }",
+
+  "=mixed a() { mixed x=(< ([]), ({1}) ,\"\" , 1.0 >) ; return x==x; }\n"+	// test 715
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=(< ([]), ({1}) ,\"\" , 1.0 >) ; return copy_value(x)!=x; }\n"+	// test 716
+  "mixed b() { return 1; }",
+  "=mixed a() { mixed x=(< ([]), ({1}) ,\"\" , 1.0 >) ; return equal(copy_value(x),x); }\n"+	// test 717
+  "mixed b() { return 1; }",
+
+// - crypt
+  "tmixed a() { return stringp(crypt(\"hej\")); }",	// test 718
+  "tmixed a() { return crypt(\"hej\",crypt(\"hej\")); }",	// test 719
+
+// - ctime
+  "tmixed a() { return stringp(ctime(0)); }",	// test 720
+
+// - destruct
+// FIXME put tests for destruct here.
+
+// - equal
+// equl is already tested by this script
+
+// - exit
+// FIXME put test for exit here
+
+// - explode
+  "emixed a() { return ({\"a\",\"b\",\"c\",}); }\n"+	// test 721
+  "mixed b() { return explode(\"anna bnna c\",\"nna \"); }",
+  "emixed a() { return ({\"\",\"\",}); }\n"+	// test 722
+  "mixed b() { return explode(\"hej\",\"hej\"); }",
+  "emixed a() { return ({\"\",}); }\n"+	// test 723
+  "mixed b() { return explode(\"\",\"hej\"); }",
+
+// - fork()
+// FIXME: add tests for fork
+
+// - function_name
+  "=mixed a() { return function_name(a); }\n"+	// test 724
+  "mixed b() { return \"a\"; }",
+  "=mixed a() { return function_name(function_name); }\n"+	// test 725
+  "mixed b() { return 0; }",
+
+// - function_object
+  "=mixed a() { return function_object(a); }\n"+	// test 726
+  "mixed b() { return this_object(); }",
+  "=mixed a() { return function_name(function_object); }\n"+	// test 727
+  "mixed b() { return 0; }",
+
+// - get_function (actually in simulate.lpc)
+  "=mixed a() { return a; }\n"+	// test 728
+  "mixed b() { return get_function(this_object(),\"a\"); }",
+  "=mixed a() { return a; }\n"+	// test 729
+  "mixed b() { return this_object()->a; }",
+
+// - hash
+  "tmixed a() { return intp(hash(\"foo\")); }",	// test 730
+  "tmixed a() { return intp(hash(\"foo\",10)); }",	// test 731
+  "tmixed a() { return hash(\"foo\",10)<10; }",	// test 732
+  "tmixed a() { return hash(\"bar\",10)<10; }",	// test 733
+  "tmixed a() { return hash(\"gazonk\",10)<10; }",	// test 734
+  "=mixed a() { return hash(\"foobargazonk\"); }\n"+	// test 735
+  "mixed b() { return hash(\"foobargazonk\"); }",
+
+// - implode
+  "=mixed a() { return implode(({}),\"\"); }\n"+	// test 736
+  "mixed b() { return \"\"; }",
+  "=mixed a() { return implode(explode(\"foo\",\"o\"),\"o\"); }\n"+	// test 737
+  "mixed b() { return \"foo\"; }",
+  "=mixed a() { return implode(({\"foo\",\"bar\"}),\"-\"); }\n"+	// test 738
+  "mixed b() { return \"foo-bar\"; }",
+  "=mixed a() { return implode(({\"foo\",0,\"bar\"}),\"-\"); }\n"+	// test 739
+  "mixed b() { return \"foo-bar\"; }",
+  "=mixed a() { return implode(({1.0,\"foo\",0,\"bar\",this_object(),([])}),\"-\"); }\n"+	// test 740
+  "mixed b() { return \"foo-bar\"; }",
+  "=mixed a() { return implode(({\"f\",\"o\",\"o\"})); }\n"+	// test 741
+  "mixed b() { return \"foo\"; }",
+
+// - indices
+  "emixed a() { return indices(\"foo\"); }\n"+	// test 742
+  "mixed b() { return ({0,1,2}); }",
+  "emixed a() { return indices(({'f','o','o'})); }\n"+	// test 743
+  "mixed b() { return ({0,1,2}); }",
+  "emixed a() { return sort_array(indices(([7:3,8:9,99:12]))); }\n"+	// test 744
+  "mixed b() { return ({7,8,99}); }",
+  "emixed a() { return sort_array(indices((<7,8,99>))); }\n"+	// test 745
+  "mixed b() { return ({7,8,99}); }",
+
+// - lower_case
+  "emixed a() { return lower_case(\"foo\"); }\n"+	// test 746
+  "mixed b() { return \"foo\"; }",
+  "emixed a() { return lower_case(\"Foo\"); }\n"+	// test 747
+  "mixed b() { return \"foo\"; }",
+  "emixed a() { return lower_case(\"Foo1234-*~\\n\"); }\n"+	// test 748
+  "mixed b() { return \"foo1234-*~\\n\"; }",
+
+// - next_object
+  "tmixed a() { return objectp(next_object()); }",	// test 749
+  "=mixed a() { int e;object o=next_object(); for(e=0;e<1000 && o;e++) o=next_object(o); return o; }\n"+	// test 750
+  "mixed b() { return 0; }",
+
+// - object_program
+  "tmixed a() { return programp(object_program(this_object())); }",	// test 751
+
+// - query_host_name
+  "tmixed a() { return stringp(query_host_name()); }",	// test 752
+
+// - query_num_arg
+  "=mixed a() { return lambda(int ... q) { return query_num_arg(); }(); }\n"+	// test 753
+  "mixed b() { return 0; }",
+  "=mixed a() { return lambda(int ... q) { return query_num_arg(); }(1); }\n"+	// test 754
+  "mixed b() { return 1; }",
+  "=mixed a() { return lambda(int ... q) { return query_num_arg(); }(1,1); }\n"+	// test 755
+  "mixed b() { return 2; }",
+  "=mixed a() { return lambda(int ... q) { return query_num_arg(); }(1,1,1); }\n"+	// test 756
+  "mixed b() { return 3; }",
+  "=mixed a() { return lambda(int ... q) { return query_num_arg(); }(1,1,1,1); }\n"+	// test 757
+  "mixed b() { return 4; }",
+
+// - random
+  "=mixed a() { int e,d;for(e=0;e<1000;e++){d=random(10); if(d<0 || d>=10) return 0;} return 1; }\n"+	// test 758
+  "mixed b() { return 1; }",
+
+// - replace
+  "=mixed a() { return replace(\"foobargazonk\",\"o\",\"-\"); }\n"+	// test 759
+  "mixed b() { return \"f--bargaz-nk\"; }",
+  "=mixed a() { return replace(\"foobargazonk\",({\"o\",\"a\"}),({\"()\",\"<>\"})); }\n"+	// test 760
+  "mixed b() { return \"f()()b<>rg<>z()nk\"; }",
+  "=mixed a() { return replace(\"f--barf--\",({\"f--\",\"f--bar\"}),({\"f--bar\",\"f--\"})); }\n"+	// test 761
+  "mixed b() { return \"f--f--bar\"; }",
+  "=mixed a() { return replace(\"f--barf--\",({\"f--bar\",\"f--\"}),({\"f--\",\"f--bar\"})); }\n"+	// test 762
+  "mixed b() { return \"f--f--bar\"; }",
+  "emixed a() { return replace(({1,2,3,4,5,1,2,3,4}),3,-1); }\n"+	// test 763
+  "mixed b() { return ({1,2,-1,4,5,1,2,-1,4}); }",
+  "emixed a() { return replace(([1:2,3:4,5:1,2:3]),3,-1); }\n"+	// test 764
+  "mixed b() { return ([1:2,3:4,5:1,2:-1]); }",
+
+// - reverse
+  "=mixed a() { return reverse(\"reverse\"); }\n"+	// test 765
+  "mixed b() { return \"esrever\"; }",
+  "=mixed a() { return reverse(\"\"); }\n"+	// test 766
+  "mixed b() { return \"\"; }",
+  "=mixed a() { return reverse(\"a\"); }\n"+	// test 767
+  "mixed b() { return \"a\"; }",
+  "emixed a() { return reverse(({1,5,9})); }\n"+	// test 768
+  "mixed b() { return ({9,5,1}); }",
+  "emixed a() { return reverse(0x12345678); }\n"+	// test 769
+  "mixed b() { return 0x1e6a2c48; }",
+
+// - rusage
+  "tmixed a() { return arrayp(rusage()); }",	// test 770
+  "tmixed a() { return sizeof(rusage())>0; }",	// test 771
+
+// - search
+  "=mixed a() { return search(\"foolbar\",\"gazonk\"); }\n"+	// test 772
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(\"qowiueproqiuweproiwqueoplkjljlklksjjriwueproiuwerowieu\",\"lkjljlklksjj\"); }\n"+	// test 773
+  "mixed b() { return 24; }",
+  "=mixed a() { return search(\"lkjljlklksjjriwueproiuwerlskjdvlaskjfowieu\",\"lkjljlklksjj\"); }\n"+	// test 774
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(\"aaaaaaaaaaaaaaaaaaaaaaaalkjljlklksjj\",\"lkjljlklksjj\"); }\n"+	// test 775
+  "mixed b() { return 24; }",
+  "=mixed a() { return search(\"foobargazonk\",\"oo\"); }\n"+	// test 776
+  "mixed b() { return 1; }",
+  "=mixed a() { return search(\"foobargazonk\",\"o\",3); }\n"+	// test 777
+  "mixed b() { return 9; }",
+  "=mixed a() { return search(\"foobargazonk\",\"o\",9); }\n"+	// test 778
+  "mixed b() { return 9; }",
+  "=mixed a() { return search(\"foobargazonk\",\"o\",10); }\n"+	// test 779
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(\"foobargazonk\",\"x\",9); }\n"+	// test 780
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(({56,8,2,6,2,7,3,56,7}),8); }\n"+	// test 781
+  "mixed b() { return 1; }",
+  "=mixed a() { return search(({56,8,2,6,2,7,3,56,7}),56,0); }\n"+	// test 782
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(({56,8,2,6,2,7,3,56,7}),56,1); }\n"+	// test 783
+  "mixed b() { return 7; }",
+  "=mixed a() { return search(({56,8,2,6,2,7,3,56,7}),56,7); }\n"+	// test 784
+  "mixed b() { return 7; }",
+  "=mixed a() { return search(({56,8,2,6,2,7,3,56,7}),56,8); }\n"+	// test 785
+  "mixed b() { return -1; }",
+  "=mixed a() { return search(({\"foo\"}),\"foo\"); }\n"+	// test 786
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(\"fo-obar|gazonk\"/\"|\",\"fo-obar\"); }\n"+	// test 787
+  "mixed b() { return 0; }",
+  "=mixed a() { return search(\"fo-obar|gazonk\"/\"|\",\"gazonk\"); }\n"+	// test 788
+  "mixed b() { return 1; }",
+  "=mixed a() { return search(([1:2,3:4,5:6,7:8]),4); }\n"+	// test 789
+  "mixed b() { return 3; }",
+  "tmixed a() { return zero_type(search(([1:2,3:4,5:6,7:8]),1)); }",	// test 790
+  "=mixed a() { return search(([1:2,3:4,5:6,7:8]),8); }\n"+	// test 791
+  "mixed b() { return 7; }",
+
+// - sizeof
+  "=mixed a() { return sizeof(\"felbar\"); }\n"+	// test 792
+  "mixed b() { return 6; }",
+  "=mixed a() { return sizeof(({\"fulbar\",\"gazonk\",7})); }\n"+	// test 793
+  "mixed b() { return 3; }",
+  "=mixed a() { return sizeof(([8:3,6:6,7:0])); }\n"+	// test 794
+  "mixed b() { return 3; }",
+  "=mixed a() { return sizeof((<8,7,6,5,4,7>)); }\n"+	// test 795
+  "mixed b() { return 6; }",
+
+// - sum
+  "=mixed a() { return sum(1,1); }\n"+	// test 796
+  "mixed b() { return 2; }",
+  "=mixed a() { return sum(1,-2); }\n"+	// test 797
+  "mixed b() { return -1; }",
+  "=mixed a() { return sum(-2,-2); }\n"+	// test 798
+  "mixed b() { return -4; }",
+  "=mixed a() { return sum(\"hi\",\"there\"); }\n"+	// test 799
+  "mixed b() { return \"hithere\"; }",
+  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 800
+  "mixed b() { return \"humannumber666\"; }",
+  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 801
+  "mixed b() { return \"humannumber666\"; }",
+  "=mixed a() { return sum(\"human\",\"number\",666); }\n"+	// test 802
+  "mixed b() { return \"humannumber666\"; }",
+  "=mixed a() { return sum(\"human\",\"number\",666,111); }\n"+	// test 803
+  "mixed b() { return \"humannumber666111\"; }",
+  "=mixed a() { return sum(\"humannumber\",sum(666+111)); }\n"+	// test 804
+  "mixed b() { return \"humannumber777\"; }",
+  "=mixed a() { return sum(\"a\",\"b\",\"c\",\"d\",\"e\",\"f\",\"g\",\"h\",\"i\",\"j\",\"k\",\"l\",\"m\",\"n\",\"o\",\"p\",\"q\",\"r\",\"s\",\"t\",\"u\",\"v\",\"x\",\"y\"); }\n"+	// test 805
+  "mixed b() { return \"abcdefghijklmnopqrstuvxy\"; }",
+  "=mixed a() { return sum(1.0+1.0); }\n"+	// test 806
+  "mixed b() { return 2.0; }",
+  "=mixed a() { return sum(1.0,-1.0); }\n"+	// test 807
+  "mixed b() { return 0.0; }",
+  "=mixed a() { return sum(-1.0,-1.0); }\n"+	// test 808
+  "mixed b() { return -2.0; }",
+  "emixed a() { return sum(({1,2,3}),({4,5,6})); }\n"+	// test 809
+  "mixed b() { return ({1,2,3,4,5,6}); }",
+  "emixed a() { return sum((<1,2,3,4>),(<4,5,6>)); }\n"+	// test 810
+  "mixed b() { return (<1,2,3,4,4,5,6>); }",
+  "emixed a() { return sum(([0:1,3:6]),([5:2,3:6])); }\n"+	// test 811
+  "mixed b() { return ([0:1,3:6,3:6,5:2]); }",
+
+// - this_object
+  "tmixed a() { return objectp(this_object()); }",	// test 812
+
+// - throw
+  "=mixed a() { return 20; }\n"+	// test 813
+  "mixed b() { return catch(throw(a())); }",
+
+// - time
+  "tmixed a() { return intp(time()); }",	// test 814
+
+// - trace
+  "dmixed a() { trace(0); }\n",	// test 815
+  "=mixed a() { return trace(0); }\n"+	// test 816
+  "mixed b() { return 0; }",
+
+// - upper_case
+  "emixed a() { return upper_case(\"fooq\"); }\n"+	// test 817
+  "mixed b() { return \"FOOQ\"; }",
+  "emixed a() { return upper_case(\"FooR\"); }\n"+	// test 818
+  "mixed b() { return \"FOOR\"; }",
+  "emixed a() { return upper_case(\"Foo1234-*~\\n\"); }\n"+	// test 819
+  "mixed b() { return \"FOO1234-*~\\n\"; }",
+
+// - values
+  "emixed a() { return values(\"foo\"); }\n"+	// test 820
+  "mixed b() { return ({'f','o','o'}); }",
+  "emixed a() { return values(({'f','o','o'})); }\n"+	// test 821
+  "mixed b() { return ({'f','o','o'}); }",
+  "emixed a() { return sort_array(values(([7:3,8:9,99:12]))); }\n"+	// test 822
+  "mixed b() { return ({3,9,12}); }",
+  "emixed a() { return values((<7,8,99>)); }\n"+	// test 823
+  "mixed b() { return ({1,1,1}); }",
+
+// - zero_type
+  "=mixed a() { return zero_type(0); }\n"+	// test 824
+  "mixed b() { return 0; }",
+  "=mixed a() { return zero_type(([])[7]); }\n"+	// test 825
+  "mixed b() { return 1; }",
+
+// - call_out, call_out_info, remove_call_out, find_call_out
+  "dmixed a() { call_out(a,100000); }\n",	// test 826
+  "tmixed a() { return arrayp(call_out_info()); }",	// test 827
+  "tmixed a() { return sizeof(call_out_info()) > 0; }",	// test 828
+  "tmixed a() { return call_out_info()[-1][0] > 1; }",	// test 829
+  "=mixed a() { return find_call_out(call_out_info()[-1][2]); }\n"+	// test 830
+  "mixed b() { return call_out_info()[-1][0]; }",
+  "=mixed a() { return find_call_out(a); }\n"+	// test 831
+  "mixed b() { return -1; }",
+  "tmixed a() { return zero_type(find_call_out(a)); }",	// test 832
+  "dmixed a() { remove_call_out(call_out_info()[-1][2]); }\n",	// test 833
+  "tmixed a() { return !sizeof(call_out_info()) || function_name(call_out_info()[-1][2])!=\"a\"; }",	// test 834
+
+// m_delete
+  "emixed a() { return ([1:1]); }\n"+	// test 835
+  "mixed b() { return m_delete(a(),0); }",
+  "emixed a() { return ([1:1]); }\n"+	// test 836
+  "mixed b() { return m_delete(([1:1,0:3]),0); }",
+  "=mixed a() { mapping a=([1:1]); return a==m_delete(a,1); }\n"+	// test 837
+  "mixed b() { return 1; }",
+
+  "t\n"+"int b=10; mixed a() { return 1; }\n",	// test 838 
+  "t\n"+"mixed b=10; mixed a() { return 1;}\n",	// test 839 
+  "Pstring a() { return \"/test\"; }\n"+	// test 840
+  "string b() { return \"int q,w,e,r,t; mixed foo() { return 10; }\"; }",
+
+  "t\n"+"inherit \"/test\"; mixed a() { return foo()==10; }\n",	// test 841 
+  "t\n"+"inherit \"/test\"; mixed a() { return test::foo()==10; }\n",	// test 842 
+  "t\n"+"inherit \"/test\" : bar; mixed a() { return bar::foo()==10; }\n",	// test 843 
+
+  "Pstring a() { return \"/test2\"; }\n"+	// test 844
+  "string b() { return \"int z,x,c,v,b; mixed bar() { return 11; }\"; }",
+  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { return foo()==10 && bar()==11; }\n",	// test 845 
+  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { return foo()==10 && bar()==11; }\n",	// test 846 
+
+  "Pstring a() { return \"/test\"; }\n"+	// test 847
+  "string b() { return \"int q,w,e,r; mixed t; mixed getw() { return w; } void setw(int _) { w=_; }\"; }",
+  "Pstring a() { return \"/test2\"; }\n"+	// test 848
+  "string b() { return \"int z,x,c,v,b; mixed getb() { return b; } void setb(int _) { b=_; }\"; }",
+
+  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; }\n",	// test 849 
+  "t\n"+"inherit \"/test\"; inherit \"/test2\"; mixed a() { setw(20); setb(22); return w==20 && b==22; }\n",	// test 850 
+  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { w=20; b=22; return getw()==20 && getb()==22; }\n",	// test 851 
+  "t\n"+"inherit \"/test2\"; inherit \"/test\"; mixed a() { setw(20); setb(22); return w==20 && b==22; }\n",	// test 852 
+
+
+  });
+
+  for(e=start;e<sizeof(tests);e++)
+  {
+    string test;
+    int type;
+    object o;
+    mixed a,b;
+
+    test=tests[e];
+    type=test[0];
+    test=test[1..strlen(test)-1];
+
+    if(verbose)
+    {
+      perror("Doing test "+(e+1)+"\n");
+      if(verbose>1)
+	perror(test+"\n");
+    }
+
+    switch(type)
+    {
+    case 'c':
+      master()->set_inhibit_compile_errors(1);
+      if(catch(compile_string(test,"Test "+(e+1))))
+      {
+	successes++;
+      }else{
+	perror("Test "+(e+1)+" failed.\n");
+	if(verbose) perror(test+"\n");
+	errors++;
+      }
+      master()->set_inhibit_compile_errors(0);
+      break;
+
+    case 'E':
+      master()->set_inhibit_compile_errors(1);
+      if(catch(clone(compile_string(test,"Test "+(e+1)))->a()))
+      {
+	successes++;
+      }else{
+	perror("Test "+(e+1)+" failed.\n");
+	if(verbose) perror(test+"\n");
+	errors++;
+      }
+      master()->set_inhibit_compile_errors(0);
+      break;
+
+    default:
+      o=clone(compile_string(test,"Test "+(e+1)));
+
+      if(t) trace(t);
+      a=b=0;
+      if(functionp(o->a)) a=o->a();
+      if(functionp(o->b)) b=o->b();
+      if(t) trace(0);
+      switch(type)
+      {
+      case 'P':
+	b=compile_string(b,"Test "+(e+1));
+	master()->add_precompiled_program(a,b);
+	successes++;
+	break;
+
+      case 'f':
+	a=!a;
+	
+      case 't':
+	if(!a)
+	{
+	  perror("Test "+(e+1)+" failed.\n");
+	  if(verbose) perror(test+"\n");
+	  errors++;
+	}else{
+	  successes++;
+	}
+	break;
+
+      case 'd':
+	successes++;
+	break;
+
+      case '=':
+	if(a!=b)
+	{
+	  perror("Test "+(e+1)+" failed.\n");
+	  if(verbose)
+	  {
+	    perror(test+"\n");
+	    perror(sprintf("o->a(): %O\n",a));
+	    perror(sprintf("o->b(): %O\n",b));
+	  }
+	  errors++;
+	}else{
+	  successes++;
+	}
+	break;
+      
+      case 'e':
+	if(!equal(a,b))
+	{
+	  perror("Test "+(e+1)+" failed.\n");
+	  if(verbose)
+	  {
+	    perror(test+"\n");
+	    perror(sprintf("o->a(): %O\n",a));
+	    perror(sprintf("o->b(): %O\n",b));
+	  }
+	  errors++;
+	}else{
+	  successes++;
+	}
+	break;
+
+      default:
+	perror("Unknown test type.\n");
+	errors++;
+      }
+    }
+    if(fail && errors)
+      exit(1);
+  }
+
+  if(errors + successes != sizeof(tests))
+  {
+    perror("Errors + Successes != number of tests!\n");
+    errors++;
+  }
+  if(errors || verbose)
+  {
+    perror("Failed tests: "+errors+".\n");
+  }
+
+  return errors;
+}
+

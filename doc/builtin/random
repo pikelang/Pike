@@ -1,0 +1,8 @@
+NAME
+	random - return a random number
+
+SYNTAX
+	int random(int max);
+
+DESCRIPTION
+	This function returns a random number in the range 0 - max-1.

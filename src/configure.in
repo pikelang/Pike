@@ -1,0 +1,653 @@
+AC_INIT(interpret.c)
+AC_PROG_CC
+
+OLD_CFLAGS="$CFLAGS"
+OPTIMIZE="";
+
+AC_MSG_CHECKING(-O)
+AC_CACHE_VAL(lpc_cv_option_opt,
+[
+  CFLAGS="$OLD_CFLAGS -O"
+  AC_TRY_LINK([],[ exit(0); ],lpc_cv_option_opt=yes,lpc_cv_option_opt=no)
+])
+
+if test "$lpc_cv_option_opt" = "yes" ; then
+  CFLAGS="$OLD_CFLAGS -O"
+  OPTIMIZE="$OPTIMIZE -O"
+  AC_MSG_RESULT(-O found)
+else
+  AC_MSG_RESULT(-O not found)
+fi
+
+AC_MSG_CHECKING(warning flags)
+AC_CACHE_VAL(lpc_cv_option_warn,
+[
+lpc_cv_option_warn=
+for a in -pipe -g -W -Wunused -Wformat
+do
+  case "$CFLAGS" in
+    *\ $a\ *) lpc_cv_option_warn="$lpc_cv_option_warn $a" ;;
+    $a\ *) lpc_cv_option_warn="$lpc_cv_option_warn $a" ;;
+    *\ $a) lpc_cv_option_warn="$lpc_cv_option_warn $a" ;;
+    *)
+  CFLAGS="$OLD_CFLAGS $OPTIMIZE $a"
+  AC_TRY_LINK([],[ exit(0); ], [ lpc_cv_option_warn="$lpc_cv_option_warn $a" ])
+  ;;
+  esac 
+done
+])
+
+AC_MSG_RESULT($lpc_cv_option_warn)
+WARN="$lpc_cv_option_warn"
+CFLAGS="$OLD_CFLAGS"
+
+AC_CONFIG_HEADER(machine.h)
+AC_PROG_INSTALL
+AC_PROG_YACC
+AC_PROG_CPP
+AC_PROG_RANLIB
+AC_SET_MAKE
+
+AC_MSG_CHECKING(first yacc define)
+AC_CACHE_VAL(lpc_cv_yacc_first,
+[
+cat >conftest.y <<\EOF
+%token GURKA
+%%
+all: GURKA
+%%
+EOF
+lpc_cv_yacc_first=257;
+if $YACC -d conftest.y ; then
+  if test -f y.tab.h; then
+    lpc_cv_yacc_first=`egrep GURKA y.tab.h | sed 's/^#[^0-9]*\([0-9]*\)[^0-9]*$/\1/'`
+    echo $lpc_cv_yacc_first >conftest.out
+    if egrep '^(0|1|2|3|4|5|6|7|8|9)+$' conftest.out >/dev/null 2>&1; then
+      echo >/dev/null
+    else
+      lpc_cv_yacc_first=257
+    fi
+  fi
+fi
+])
+AC_MSG_RESULT($lpc_cv_yacc_first)
+AC_DEFINE_UNQUOTED(F_OFFSET,$lpc_cv_yacc_first)
+
+rm -rf conftest.y y.tab.c y.tab.h conftest.out
+
+AC_HAVE_HEADERS(sys/rusage.h sys/time.h unistd.h stdlib.h memory.h values.h \
+ string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h sys/resource.h \
+ sys/select.h)
+AC_STDC_HEADERS
+
+AC_SIZEOF_TYPE(char *)
+AC_SIZEOF_TYPE(long)
+AC_SIZEOF_TYPE(int)
+AC_SIZEOF_TYPE(short)
+AC_SIZEOF_TYPE(float)
+AC_SIZEOF_TYPE(double)
+
+AC_SIZE_T
+AC_PID_T
+AC_UID_T
+AC_RETSIGTYPE
+AC_CHECK_TYPE(time_t,INT32)
+
+OLD_LIBOBJS="${LIBOBJS}"
+
+AC_FUNC_MEMCMP
+
+if test "${OLD_LIBOBJS}" = "${LIBOBJS}" ; then
+  AC_DEFINE(HAVE_MEMCMP)
+fi
+
+LIBOBJS="${OLD_LIBOBJS}"
+
+AC_HAVE_FUNCS(memset memcpy memchr strchr strrchr fchmod getrusage \
+ strcspn crypt _crypt getwd getcwd strtod strtok getenv vfprintf bzero bcopy \
+ strtol index rindex vsprintf clock times setlocale strcoll getrlimit setrlimit)
+
+define(MY_CHECK_HEADERS,
+[
+ AC_MSG_CHECKING(for $1 declaration)
+ AC_CACHE_VAL(lpc_cv_decl_$1,
+ [
+   lpc_cv_decl_$1=nonexistant
+   for a in $2
+   do
+     AC_HEADER_EGREP($1,$a,lpc_cv_decl_$1=existant; break)
+   done
+ ])
+ AC_MSG_RESULT($lpc_cv_decl_$1)
+ if test "$lpc_cv_decl_$1" = nonexistant; then
+   AC_DEFINE(translit($1,[a-z],[A-Z])[]_DECL_MISSING)
+ fi
+])
+
+MY_CHECK_HEADERS(strchr,string.h unistd.h stdlib.h)
+MY_CHECK_HEADERS(malloc,memory.h unistd.h stdlib.h)
+MY_CHECK_HEADERS(getpeername,sys/socket.h sys/socketvar.h sys/socketio.h)
+MY_CHECK_HEADERS(popen,stdio.h unistd.h)
+MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
+MY_CHECK_HEADERS(gethostname,unistd.h)
+
+AC_MSG_CHECKING(return type of free)
+AC_CACHE_VAL(lpc_cv_sys_free_return,
+[AC_TRY_LINK([
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if !defined(STDC_HEADERS) && defined(HAVE_MEMORY_H)
+#include <memory.h>
+#endif
+
+void free();
+
+],
+[],
+  lpc_cv_sys_free_return='char *'
+,
+  lpc_cv_sys_free_return='void'
+)])
+
+if test "$lpc_cv_sys_free_return" = void; then
+  AC_DEFINE(FREE_RETURNS_VOID)
+  AC_MSG_RESULT([void]);
+else
+  AC_MSG_RESULT([not void])
+fi
+
+AC_MSG_CHECKING([void* or char* from malloc])
+AC_CACHE_VAL(lpc_cv_sys_malloc_return,
+[
+AC_TRY_LINK([
+#include <sys/types.h>
+
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+
+#if !defined(STDC_HEADERS) && defined(HAVE_MEMORY_H)
+#include <memory.h>
+#endif
+
+#define POINTER void *
+POINTER malloc(size_t);
+
+#ifdef FREE_RETURNS_VOID
+void free(POINTER);
+#else
+int free(POINTER);
+#endif
+
+],
+[],
+  lpc_cv_sys_malloc_return="void *"
+,
+  lpc_cv_sys_malloc_return="char *"
+)])
+
+AC_MSG_RESULT($lpc_cv_sys_malloc_return)
+AC_DEFINE_UNQUOTED(POINTER,$lpc_cv_sys_malloc_return)
+
+AC_ALLOCA
+
+AC_CONST
+AC_INLINE
+
+AC_CHECK_LIB(m, floor)
+AC_CHECK_LIB(socket, socket)
+
+if test "$ac_cv_lib_socket" = yes -o "$ac_cv_lib_ucb"; then
+ AC_CHECK_LIB(nsl, main)
+fi
+
+AC_REPLACE_FUNCS(ualarm)
+
+case "$LIBOBJS" in
+   *ualarm.o*) ;;
+  *)
+    AC_DEFINE(HAVE_UALARM)
+  ;;
+esac
+
+AC_MSG_CHECKING(byteorder)
+AC_CACHE_VAL(lpc_cv_hardware_byteorder,
+[
+AC_TRY_RUN([
+#include <stdio.h>
+
+int main()
+{
+#ifdef SIZEOF_INT == 4
+#define T int
+#else
+#define T long
+#endif
+  FILE *f;
+  T a;
+  int e;
+  for(e=0;e<sizeof(T);e++)
+    ((char *)&a)[e]=(e+1) % 10;
+
+  f=fopen("conftest.out.2","w");
+  for(e=0;e<sizeof(T);e++)
+  {
+    fprintf(f,"%d",(int)(a & 255));
+    a>>=8;
+  }
+  fprintf(f,"\n");
+  fclose(f);
+  
+  return 0;
+}],
+lpc_cv_hardware_byteorder=`cat conftest.out.2`
+,
+lpc_cv_hardware_byteorder=0
+)])
+
+AC_MSG_RESULT($lpc_cv_hardware_byteorder)
+AC_DEFINE_UNQUOTED(BYTEORDER,$lpc_cv_hardware_byteorder)
+
+AC_MSG_CHECKING(unaligned read/writes)
+AC_CACHE_VAL(lpc_cv_hardware_unalignedRW,
+[
+
+
+AC_TRY_RUN([
+int main()
+{
+  char *c;
+#ifdef __alpha
+  return 1;
+#endif
+  c=(char *)malloc(100);
+
+  *((int *)(c+0))=0x1243abcd;
+  if(*((int *)(c+0))!=0x1243abcd) return 1;
+  *((int *)(c+1))=0x1243abcd;
+  if(*((int *)(c+1))!=0x1243abcd) return 1;
+  *((int *)(c+2))=0x1243abcd;
+  if(*((int *)(c+2))!=0x1243abcd) return 1;
+  *((int *)(c+3))=0x1243abcd;
+  if(*((int *)(c+3))!=0x1243abcd) return 1;
+  *((short *)(c+1))=0x1243;
+  if(*((short *)(c+1))!=0x1243) return 1;
+  *((short *)(c+0))=0x1243;
+  if(*((short *)(c+0))!=0x1243) return 1;
+  return 0;
+}],
+lpc_cv_hardware_unalignedRW=yes,
+lpc_cv_hardware_unalignedRW=no)])
+
+if test "$lpc_cv_hardware_unalignedRW" = "yes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HANDLES_UNALIGNED_MEMORY_ACCESS) 
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(for working memmem)
+AC_CACHE_VAL(lpc_cv_func_memmem,
+[
+AC_TRY_RUN([
+#include <string.h>
+char *a="foo bar gazonk";
+char *b="foo";
+char *c="bar";
+char *d="gazonk";
+void main()
+{
+  if(memmem(b,strlen(b),a,strlen(a))!=a ||
+     memmem(c,strlen(c),a,strlen(a))!=(a+4) ||
+     memmem(d,strlen(d),a,strlen(a))!=(a+8) ||
+     memmem(d,0,a,strlen(a))!=a ||
+     memmem(d,strlen(d)+1,a,strlen(a))!=0)
+    exit(1);
+  exit(0);
+}
+],lpc_cv_func_memmem=yes,lpc_cv_func_memmem=no)])
+
+if test "$lpc_cv_func_memmem" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_MEMMEM)
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(for working memmove)
+AC_CACHE_VAL(lpc_cv_func_memmove,
+[
+AC_TRY_RUN([
+#include <string.h>
+char buf[100];
+void main()
+{
+  strcpy(buf,"foo bar gazonk elefantsnabel.");
+  if(strcmp(buf,"foo bar gazonk elefantsnabel.")) exit(1);
+  memmove(buf,buf+1,8);
+  if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
+  memmove(buf+1,buf+1,9);
+  if(strcmp(buf,"oo bar  gazonk elefantsnabel.")) exit(1);
+  memmove(buf+1,buf,11);
+  if(strcmp(buf,"ooo bar  gaznk elefantsnabel.")) exit(1);
+  exit(0);
+}
+],lpc_cv_func_memmove=yes,lpc_cv_func_memmove=no)])
+
+if test "$lpc_cv_func_memmove" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_MEMMOVE)
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_MSG_CHECKING(how to extract an unsigned char)
+AC_CACHE_VAL(lpc_cv_method_extract_uchar,
+[
+AC_TRY_RUN([
+void main()
+{
+  char i,*p;
+  i=-10;
+  p=&i;
+  if(*(unsigned char *)(p)!= 0x100 - 10) exit(1);
+  exit(0);
+}
+],lpc_cv_method_extract_uchar=by_cast,
+lpc_cv_method_extract_uchar=not_by_cast)])
+
+if test "$lpc_cv_method_extract_uchar" = by_cast; then
+  AC_MSG_RESULT(by cast)
+  AC_DEFINE(EXTRACT_UCHAR_BY_CAST)
+else
+  AC_MSG_RESULT(not by cast)
+fi
+
+AC_MSG_CHECKING(how to extract a signed char)
+AC_CACHE_VAL(lpc_cv_method_extract_char,
+[
+AC_TRY_RUN([
+void main()
+{
+  char i,*p;
+  i=-10;
+  p=&i;
+  if(*(signed char *)(p)!= -10) exit(1);
+  exit(0);
+}
+],lpc_cv_method_extract_char=by_cast,
+lpc_cv_method_extract_char=not_by_cast)])
+
+if test "$lpc_cv_method_extract_char" = by_cast; then
+  AC_MSG_RESULT(by cast)
+  AC_DEFINE(EXTRACT_CHAR_BY_CAST)
+else
+  AC_MSG_RESULT(not by cast)
+fi
+
+AC_MSG_CHECKING(available file descriptors)
+AC_CACHE_VAL(lpc_cv_max_open_fd,
+[
+AC_TRY_RUN([
+#include <stdio.h>
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
+#ifndef MAX_FD
+#define MAX_FD 256
+#endif
+
+int main()
+{
+  FILE *f;
+  int limit;
+#ifdef HAVE_GETRLIMIT
+  struct rlimit lim;
+
+  if(getrlimit(RLIMIT_NOFILE,&lim))
+  {
+    limit = MAX_FD;
+  }else{
+    limit = lim.rlim_max;
+    if(limit == RLIM_INFINITY)
+      limit=16384; /* noone needs more */
+  }
+#else
+  limit = MAX_FD;
+#endif
+	
+
+  f=fopen("conftest.out.2","w");
+  fprintf(f,"%ld\n",(long)lim.rlim_max);
+  fclose(f);
+
+  return 0;
+}
+],
+lpc_cv_max_open_fd=`cat conftest.out.2`
+,
+lpc_cv_max_open_fd=256
+)])
+AC_MSG_RESULT($lpc_cv_max_open_fd)
+AC_DEFINE_UNQUOTED(MAX_OPEN_FILEDESCRIPTORS,$lpc_cv_max_open_fd)
+
+if test "$ac_cv_func_getrusage" = "yes"; then
+AC_MSG_CHECKING(full availability of struct rusage members)
+AC_CACHE_VAL(lpc_cv_func_getrusage_full,
+[
+AC_TRY_LINK([
+#include <sys/time.h>
+#ifdef HAVE_SYS_RUSAGE_H
+#include <sys/rusage.h>
+#endif
+#include <sys/resource.h>
+#ifndef RUSAGE_SELF
+#define RUSAGE_SELF     0
+#endif
+],[
+    struct rusage rus;
+    long *v = (long *)main;
+    getrusage(RUSAGE_SELF, &rus);
+    *v++ = rus.ru_maxrss;
+    *v++ = rus.ru_ixrss;
+    *v++ = rus.ru_idrss;
+    *v++ = rus.ru_isrss;
+    *v++ = rus.ru_minflt;
+    *v++ = rus.ru_majflt;
+    *v++ = rus.ru_nswap;
+    *v++ = rus.ru_inblock;
+    *v++ = rus.ru_oublock;
+    *v++ = rus.ru_msgsnd;
+    *v++ = rus.ru_msgrcv;
+    *v++ = rus.ru_nsignals;
+    *v++ = rus.ru_nvcsw;
+    *v++ = rus.ru_nivcsw;
+],
+  lpc_cv_func_getrusage_full=yes
+,
+  lpc_cv_func_getrusage_full=no
+)])
+
+if test "$lpc_cv_func_getrusage_full" = yes; then
+  AC_MSG_RESULT(all there)
+else
+  AC_MSG_RESULT(getrusage is restricted)
+  AC_DEFINE(GETRUSAGE_RESTRICTED)
+fi
+
+else
+
+AC_MSG_CHECKING(getrusage() through procfs)
+AC_CACHE_VAL(lpc_cv_getrusage_procfs,
+[
+AC_TRY_LINK([
+#include <sys/procfs.h>
+#include <sys/fcntl.h>
+int proc_fd;
+char proc_name[20];
+],[
+  sprintf(proc_name, "/proc/%05d", getpid());
+  proc_fd = open(proc_name, O_RDONLY);
+],
+  lpc_cv_getrusage_procfs=yes
+,
+  lpc_cv_getrusage_procfs=no
+)])
+
+if test "$lpc_cv_getrusage_procfs" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(GETRUSAGE_THROUGH_PROCFS)
+else
+  AC_MSG_RESULT(no)
+fi
+fi
+
+AC_MSG_CHECKING(checking for volatile)
+AC_CACHE_VAL(lpc_cv_volatile,
+[
+ AC_TRY_LINK([],[ volatile int foo=1;], lpc_cv_volatile=yes,lpc_cv_volatile=no)
+])
+
+if test "$lpc_cv_volatile" = yes; then
+ AC_MSG_RESULT(yes)
+ AC_DEFINE(VOLATILE,volatile)
+else
+ AC_MSG_RESULT(no)
+ AC_DEFINE(VOLATILE,)
+fi
+
+AC_MSG_CHECKING(for gcc function attributes)
+AC_CACHE_VAL(lpc_cv_gcc_attributes,
+[
+AC_TRY_RUN([
+#include <stdarg.h>
+void fatal(char *foo,...) __attribute__ ((noreturn,format (printf,1,2)));
+int sqr(int x) __attribute__ ((const));
+
+int sqr(int x) { return x*x; }
+
+void fatal(char *foo,...)
+{
+  va_list args;
+  va_start(foo,args);
+  printf(foo,args);
+  va_end(args);
+  exit(2);
+}
+main() {  exit(0); }
+
+], lpc_cv_gcc_attributes=yes, lpc_cv_gcc_attributes=no)])
+
+AC_MSG_RESULT($lpc_cv_gcc_attributes)
+if test "$lpc_cv_gcc_attributes" = yes; then
+ AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
+fi
+
+AC_MSG_CHECKING(how to set things nonblocking)
+AC_CACHE_VAL(lpc_cv_sys_nonblock,
+[
+AC_TRY_RUN([
+#define TESTING
+#define USE_FCNTL_FNDELAY
+#include "$srcdir/fd_control.c"
+],lpc_cv_sys_nonblock=USE_FCNTL_FNDELAY,
+AC_TRY_RUN([
+#define TESTING
+#define USE_FCNTL_O_NDELAY
+#include "$srcdir/fd_control.c"
+],lpc_cv_sys_nonblock=USE_FCNTL_O_NDELAY,
+AC_TRY_RUN([
+#define TESTING
+#define USE_FCNTL_O_NONBLOCK
+#include "$srcdir/fd_control.c"
+],lpc_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK,
+AC_TRY_RUN([
+#define TESTING
+#define USE_IOCTL_FIONBIO
+#include "$srcdir/fd_control.c"
+],lpc_cv_sys_nonblock=USE_IOCTL_FIONBIO,
+unset lpc_cv_sys_nonblock
+))))])
+
+if test "${lpc_cv_sys_nonblock}" = ""; then
+  AC_MSG_RESULT(none found)
+else
+ AC_MSG_RESULT($lpc_cv_sys_nonblock)
+ AC_DEFINE_UNQUOTED($lpc_cv_sys_nonblock)
+fi
+
+rm -f core
+
+
+dirs=
+MODULE_OBJS=
+module_names=
+for a in `(cd $srcdir/modules ; echo *)`
+do
+  if test "$a" != "CVS" ; then
+    if test -d "$srcdir/modules/$a" ; then
+      dirs="$dirs modules/$a"
+      MODULE_OBJS="$MODULE_OBJS modules/$a/$a.a"
+      module_names="$module_names $a"
+    fi
+  fi
+done
+
+
+AC_CONFIG_SUBDIRS($dirs)
+
+AC_SUBST(MODULE_OBJS)
+AC_SUBST(INSTALL)
+AC_SUBST(WARN)
+AC_SUBST(COMPARE)
+AC_SUBST(OPTIMIZE)
+AC_SUBST(EXTRA_OBJS)
+AC_SUBST(RANLIB)
+
+AC_OUTPUT(Makefile,
+[
+echo "FOO" >stamp-h
+if test ! -d ./modules ; then
+  mkdir modules
+fi
+
+AC_MSG_RESULT(creating modlist.h)
+echo "void init_main_efuns(void);" >modlist.h
+echo "void init_main_programs(void);" >>modlist.h
+echo "void exit_main(void);" >>modlist.h
+
+for a in $dirs
+do
+  echo "void init_"$a"_efuns(void);" >>modlist.h
+  echo "void init_"$a"_programs(void);" >>modlist.h
+  echo "void exit_"$a"(void);" >>modlist.h
+done
+echo "" >>modlist.h
+echo "struct module module_list UGLY_WORKAROUND={" >>modlist.h
+
+echo "  { \"main\", init_main_efuns, init_main_programs, exit_main, 0 }" >>modlist.h
+for a in $dirs
+do
+  echo " ,{ \"$a\", init_"$a"_efuns, init_"$a"_programs, exit_$a, 0 }" >>modlist.h
+done
+echo "};" >>modlist.h
+]
+,
+dirs="$module_names"
+)
+
+

@@ -1,0 +1,11 @@
+NAME
+	object_program - get the program asociated with the object
+
+SYNTAX
+	program object_program(object o);
+
+DESCRIPTION
+	This function returns the program from which o was cloned.
+
+SEE ALSO
+	clone

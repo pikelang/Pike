@@ -1,0 +1,30 @@
+NAME
+	replace - generic replace function
+
+SYNTAX
+	string replace(string s, string from, string to);
+	or
+	string replace(string s, string *from, string *to);
+	or
+	array replace(array a, mixed from, mixed to);
+	or
+	mapping replace(mapping a, mixed from, mixed to);
+
+DESCRIPTION
+	This function can do several kinds replacement operations, the
+	different syntaxes do different things as follow:
+
+	1) string replace(string s, string from, string to);
+	   When given strings as second and third argument, a copy of
+	   s with every occurance of 'from' return 'to'.
+
+	2) string replace(string s, string *from, string *to);
+	   When given arrays of strings as second and third argument,
+	   every occurance of from[0] in s is replaced by to[0],
+	   from[1] is replaced by to[1] and so on...
+
+	3) array replace(array a, mixed from, mixed to);
+	4) mapping replace(mapping a, mixed from, mixed to);
+	   When the first argument is an array or mapping, the values in
+	   a are searched for values equal to from, which are replaced by
+	   to destructively.

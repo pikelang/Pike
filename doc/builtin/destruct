@@ -1,0 +1,13 @@
+NAME
+	destruct - destruct an object
+
+SYNTAX
+	void destruct(object o);
+
+DESCRIPTION
+	Destruct marks an object as destructed, all pointers and function
+	pointers to this object will become zero. The destructed object will
+	be freed from memory as soon as possible.
+
+SEE ALSO
+	clone

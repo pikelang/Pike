@@ -1,0 +1,88 @@
+<h1>Design overview</h1>
+
+In this document, we will describe how 킠PC works and why it was made that
+way. Examples in this chapgter will be in C because 킠PC is written in C,
+so some knowledge of C syntax and semantics is required.
+
+<p>As mentioned earlier, 킠PC is interpreted. To be more precise the 킠PC
+interpreter compiles 킠PC source into <b>byte-code</b>. <b>Byte-code</b> can
+be compared to machine language, which the 킠PC interpreter will later
+execute. For instance, our simple "Hello world" program would roughly 
+compile to the following bytecode:
+
+<pre>
+	mark
+	push "Hello world\n"
+	write
+</pre>
+
+<p>For now we don't have to know how these instructions are stored,
+instead we will concentrate at what these instructions do. But first
+we have to know about the two stacks that 킠PC uses. One is a stack of
+values each can hold an 킠PC value of any type. You could say that it
+is an mixed * to use 킠PC terminology. This stack hold local
+variables, function arguments and much more.  This stack will be
+refered to as the <b>value stack</b> so not to confuse it with the
+<b>marker stack</b>. The marker stack can only hold pointers to
+elements in the first stack and is used to remember the start of an
+argument list.
+
+<p>What <b>mark</b> does is that it pushes the number of elements on the
+value stack onto the marker stack. Then <b>push</b> will push the string
+"Hello world\n" onto the value stack. Then <b>write</b> will take the top
+value from the marker stack and the differance between this value and the
+number of values on the value stack will tell <b>write</b> how many
+arguments it has received. Write will then write the string to stdout and
+remove all it's arguments from the stack.
+
+<p>All functions in 킠PC receives their arguments on the stack like this,
+builtin and user-defined.
+
+<h2>The value stack</h2>
+
+As mentioned the value stack is an array of elements that can hold any value.
+Each of these elements is a 'struct svalue' which looks like this:
+
+<pre>
+	struct svalue
+	{
+		short	type;
+		short	subtype;
+		union	anything;
+	};
+</pre>
+
+<p>The type is a number representing the type, defines like T_ARRAY
+or T_STRING are made to specify which type has which number. The subtype
+field is not used by most types and can be ignored for now. The 'union
+anything' is a union that can contain a float, integer or a pointer to
+a struct containing additional data.
+
+<p> ... (To be continued)
+
+<h2>The different types (draft)</h2>
+
+<dl>
+<dt>Integers and Floats
+<dd>Integers and Floats are stored directly in the union.
+<dt>Strings
+<dd>For string values, the union contains a pointer to a struct lpc_string,
+this struct is a part of a shared string table. That means that all equal
+strings actually point to the same struct. This makes string comparison very
+fast, but creating new strings somewhat slow.
+<dt>Arrays
+<dd>In an array value, the union contains a pointer to a struct array, which
+in it's turn contains a number of struct svalues.
+<dt>Mappings
+<dd>Mappings are structs which contains one pointer to an array of indices
+and one pointer to an array of values. These two arrays are sorted so that
+lookup can use a binary search algorithm for speed.
+<dt>Lists
+<dd>Lists works just like mappings, except there is no value array.
+<dt>Objects
+<dd>Objects are merely structs containing a pointer to the program for this
+object and any global variables needed this object needs.
+<dt>Programs
+<dd>Programs are pointers to a 'struct program'. This struct contains the
+<b>byte-code</b> and additional information needed by the interpreter.
+</ul>

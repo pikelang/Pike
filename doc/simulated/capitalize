@@ -1,0 +1,11 @@
+NAME
+	capitalize - capitalize a string
+SYNTAX
+	string capitalize(string str)
+
+DESCRIPTION
+	Convert the first character in str to upper case, and return the
+	new string.
+
+SEE ALSO
+	builtin/lower_case, builtin/upper_case

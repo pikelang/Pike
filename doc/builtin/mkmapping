@@ -1,0 +1,13 @@
+NAME
+	mkmapping - make a mapping from two arrays
+
+SYNTAX
+	mapping mkmapping(mixed *ind, mixed *val);
+
+DESCRIPTION
+	Makes a mapping ind[x]:val[x], 0<=x<sizeof(ind).
+	Ind and val must have the same size.
+	This is the inverse operation of indices and values.
+
+SEE ALSO
+	indices, values

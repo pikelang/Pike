@@ -1,0 +1,110 @@
+/* A very small httpd capable of fetching files only.
+ * Written by Fredrik Hübinette as a demonstration of uLPC.
+ */
+
+inherit "/precompiled/port";
+
+/* number of bytes to read for each write */
+#define BLOCK 16060
+
+/* Where do we have the html files ? */
+#define BASE "/home/hubbe/ulpc/src/"
+
+/* File to return when we can't find the file requested */
+#define NOFILE "/home/hubbe/www/html/nofile.html"
+
+/* Port to open */
+#define PORT 1905
+
+#define OUTPUT 0
+#define FILE 1
+#define OFFSET 2
+#define INPUT 3
+
+void write_callback(mapping id)
+{
+  object o;
+  int i;
+  string s;
+
+//  perror(".");
+  if(o=id[OUTPUT])
+  {
+    o->seek(id[OFFSET]);
+    s=o->read(BLOCK);
+    if(strlen(s))
+    {
+      i=id[FILE]->write(s);
+      if(i >= 0)
+      {
+//	write(i+"\n");
+	id[OFFSET]+=i;
+	return;
+      }
+      perror("Error: "+id[FILE]->errno()+".\n");
+    }
+//    perror("!");
+    destruct(o);
+    destruct(id[FILE]);
+  }
+}
+
+void close_callback(mapping id)
+{
+//  perror("#");
+  if(id[FILE]) destruct(id[FILE]);
+  if(id[OUTPUT]) destruct(id[OUTPUT]);
+}
+
+void read_callback(mapping id, string s)
+{
+  object out;
+  id[INPUT]+=s;
+  s=id[INPUT];
+
+//  perror("-");
+  if(sscanf(s,"GET %s%*[\012\015]",s))
+  {
+    sscanf(s,"%s ",s);
+    sscanf(s,"%*[/]%s",s);
+    s=combine_path(BASE,s);
+    out=clone( (program) "/precompiled/file");
+    if(!out->open(s,"r"))
+    {
+      if(!out->open(NOFILE,"r"))
+      {
+	perror("Couldn't find default file.\n");
+	destruct(id[FILE]);
+	return 0;
+      }
+    }
+
+    id[OUTPUT]=out;
+    id[OFFSET]=0;
+    id[FILE]->set_buffer(65536,"w");
+//    id[FILE]->set_nonblocking(read_callback,write_callback,close_callback);
+    write_callback(id);
+  }
+}
+
+
+void accept_callback()
+{
+  object file=accept();
+  if(!file) return;
+  file->set_id( ({0, file, 0, "" }) );
+  file->set_nonblocking(read_callback,write_callback,close_callback);
+}
+
+void main(int argc, string *argv)
+{
+  perror("Starting minimal httpd\n");
+
+  if(!bind(PORT, accept_callback))
+  {
+    perror("Failed to open socket (already bound?)\n");
+    return 17;
+  }
+
+  return - 17;
+}

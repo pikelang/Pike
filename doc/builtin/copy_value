@@ -1,0 +1,15 @@
+NAME
+	copy_value - copy a value recursively
+
+SYNTAX
+	mixed copy_value(mixed value);
+
+DESCRIPTION
+	Copy value will copy the value given to it recursively. If the result
+	value is changed destructively (only possible for lists, arrays and
+	mappings) the copied value will not be changed. The resulting value
+	will always be equal to the copied (tested with the efun equal), but
+	they may not the the same value. (tested with ==)
+
+SEE ALSO
+	equal

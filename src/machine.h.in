@@ -1,0 +1,280 @@
+#ifndef MACHINE_H
+#define MACHINE_H
+
+/* Define if using alloca.c.  */
+#undef C_ALLOCA
+
+/* Define if the closedir function returns void instead of int.  */
+#undef VOID_CLOSEDIR
+
+/* Define if you have alloca.h and it should be used (not Ultrix).  */
+#undef HAVE_ALLOCA_H
+
+/* Define if you have locale.h  */
+#undef HAVE_LOCALE_H
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if you have the <memory.h> header file.  */
+#undef HAVE_MEMORY_H
+
+/* Define if you have the <crypt.h> header file.  */
+#undef HAVE_CRYPT_H
+
+/* Define if you have the <stdlib.h> header file.  */
+#undef HAVE_STDLIB_H
+
+/* Define if you have the <string.h> header file.  */
+#undef HAVE_STRING_H
+
+/* Define if you have the <sys/rusage.h> header file.  */
+#undef HAVE_SYS_RUSAGE_H
+
+/* Define if you have the <sys/time.h> header file.  */
+#undef HAVE_SYS_TIME_H
+
+/* Define if you have the <sys/select.h> header file. */
+#undef HAVE_SYS_SELECT_H
+
+/* Define if you have the <sys/resource.h> header file.  */
+#undef HAVE_SYS_RESOURCE_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* more header files */
+#undef HAVE_FCNTL_H
+#undef HAVE_SYS_FILIO_H
+#undef HAVE_SYS_SOCKIO_H
+
+/* Define as __inline if that's what the C compiler calls it.  */
+#undef inline
+
+/* Define if you compiler _doesn't_ have const */
+#undef const
+
+/* Define to `int' if <sys/types.h> doesn't define.  */
+#undef pid_t
+
+/* Define to `int' if <sys/types.h> doesn't define.  */
+#undef uid_t
+
+/* Define to `int' if <sys/types.h> doesn't define.  */
+#undef gid_t
+
+/* Define to 'int' if <sys/time.h> doesn't */
+#undef time_t
+
+/* Define as the return type of signal handlers (int or void).  */
+#undef RETSIGTYPE
+
+/* Define to `unsigned' if <sys/types.h> doesn't define.  */
+#undef size_t
+
+/* If using the C implementation of alloca, define if you know the
+   direction of stack growth for your system; otherwise it will be
+   automatically deduced at run-time.
+	STACK_DIRECTION > 0 => grows toward higher addresses
+	STACK_DIRECTION < 0 => grows toward lower addresses
+	STACK_DIRECTION = 0 => direction of growth unknown
+ */
+#undef STACK_DIRECTION
+
+/* Is the library function inet_ntoa() compatible with the compiler ? */
+#undef INET_NTOA_OK
+
+/* The following values must be evaluable by the preprocessor */
+#define SIZEOF_CHAR_P 4
+#define SIZEOF_INT 4
+#define SIZEOF_LONG 4
+#define SIZEOF_SHORT 2
+#define SIZEOF_FLOAT 4
+#define SIZEOF_DOUBLE 8
+
+#undef RENAME_HANDLES_DIRECTORIES
+
+/* Does the system have a getrusage call?  */
+#undef HAVE_GETRUSAGE
+/* If so, is it restricted to user and system time? */
+#undef GETRUSAGE_RESTRICTED
+/* Solaris has rusage as an ioctl on procfs */
+#undef GETRUSAGE_THROUGH_PROCFS
+
+/* How to set a socket non-blocking */
+#undef USE_IOCTL_FIONBIO
+#undef USE_FCNTL_O_NDELAY
+#undef USE_FCNTL_FNDELAY
+#undef USE_FCNTL_NONBLOCK
+
+/* Define if you have index */
+#undef HAVE_STRTOL
+
+/* Define if you have rindex */
+#undef HAVE_RINDEX
+
+/* Define if you have strchr */
+#undef HAVE_STRCHR
+
+/* Define if you have strrchr */
+#undef HAVE_STRRCHR
+
+/* Define if you have strstr */
+#undef HAVE_STRSTR
+
+/* Define if you have strtok */
+#undef HAVE_STRTOK
+
+/* Define if you have strtod */
+#undef HAVE_STRTOD
+
+/* Define if you have bzero.  */
+#undef HAVE_BZERO
+
+/* Define if you have crypt.  */
+#undef HAVE_CRYPT
+
+/* Define if you have _crypt.  */
+#undef HAVE__CRYPT
+
+/* Define if you have ualarm (else put ualarm.o in the makefile).  */
+#undef HAVE_UALARM
+
+/* Define if you have fchmod.  */
+#undef HAVE_FCHMOD
+
+/* Define if you have getwd.  */
+#undef HAVE_GETWD
+
+/* Define if you have getcwd.  */
+#undef HAVE_GETCWD
+
+/* Define if you have getenv.  */
+#undef HAVE_GETENV
+
+/* Does your unix have a putenv function? */
+#undef HAVE_PUTENV
+
+/* Define if you have memchr */
+#undef HAVE_MEMCMP
+
+/* Define if you have memchr */
+#undef HAVE_MEMCHR
+
+/* Define if you have memcpy.  */
+#undef HAVE_MEMCPY
+
+/* Define if you have memmove.  */
+#undef HAVE_MEMMOVE
+
+/* Define if you have memmem.  */
+#undef HAVE_MEMMEM
+
+/* Define if you have memset.  */
+#undef HAVE_MEMSET
+
+/* Define if you have strcspn.  */
+#undef HAVE_STRCSPN
+
+/* Define if you have vfprintf.  */
+#undef HAVE_VFPRINTF
+
+/* Define if you have vsprintf.  */
+#undef HAVE_VSPRINTF
+
+/* Define if you have setlocale.  */
+#undef HAVE_SETLOCALE
+
+/* Define if you have strcoll.  */
+#undef HAVE_STRCOLL
+
+/* Define if you have setrlimit */
+#undef HAVE_SETRLIMIT
+
+/* Define if you have getrlimit */
+#undef HAVE_GETRLIMIT
+
+/* Define if you have the m library (-lm).  */
+#undef HAVE_LIBM
+
+/* Define if you have the nsl library (-lnsl).  */
+#undef HAVE_LIBNSL
+
+/* Define if you have the socket library (-lsocket).  */
+#undef HAVE_LIBSOCKET
+
+/* You have gcc stype function attributes? */
+#undef HAVE_FUNCTION_ATTRIBUTES
+
+/* Do your compiler grock 'volatile' */
+#define VOLATILE volatile
+
+#ifdef HAVE_FUNCTION_ATTRIBUTES
+#define ATTRIBUTE(X) __attribute__ (X)
+#else
+#define ATTRIBUTE(X)
+#endif
+
+/* Do we need to use '#pragma alloca' ? */
+#undef USE_PRAGMA_ALLOCA
+
+/* AIX requires this to be the first thing in the file.  */
+#ifdef __GNUC__
+# define alloca __builtin_alloca
+#else
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+#pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
+
+/* How to extract a char and an unsigned char from a char * */
+#undef EXTRACT_CHAR_BY_CAST
+#undef EXTRACT_UCHAR_BY_CAST
+
+/* The rest of this file is just to eliminate warnings */
+
+/* define if declaration of strchr is missing */
+#undef STRCHR_DECL_MISSING
+
+/* define if declaration of malloc is missing */
+#undef MALLOC_DECL_MISSING
+
+/* define if declaration of getpeername is missing */
+#undef GETPEERNAME_DECL_MISSING
+
+/* define if declaration of gethostname is missing */
+#undef GETHOSTNAME_DECL_MISSING
+
+/* define if declaration of popen is missing */
+#undef POPEN_DECL_MISSING
+
+/* define if declaration of getenv is missing */
+#undef GETENV_DECL_MISSING
+
+/* what type does malloc return? */
+#undef POINTER
+
+/* what type does free return? */
+#undef FREE_RETURNS_VOID
+
+/* Does your processor handle reading ints from odd adresses? */
+#undef HANDLES_UNALIGNED_MEMORY_ACCESS
+
+/* What byteorder doe your machie use most machines use 4321, PC use 1234 */
+#define BYTEORDER 0
+
+/* Number of possible filedesriptors */
+#define MAX_OPEN_FILEDESCRIPTORS 1024
+
+/* Value of first constant defined by byacc/bison/yacc or whatever you use. */
+#define F_OFFSET 257
+
+#endif /* MACHINE_H */

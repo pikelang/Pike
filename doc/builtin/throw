@@ -1,0 +1,16 @@
+NAME
+	throw - throw a value to catch or global error handling
+
+SYNTAX
+	void throw(mixed value);
+
+DESCRIPTION
+	This function throws a value to a waiting catch. If no catch is
+	waiting global error handling will send the value to handle_error
+	in the master object. If you throw an array with where the first
+	index contains an error message and the second index is a backtrace,
+	(the output from backtrace() that is) then it will be treated exactly
+	like a real error by overlying functions.
+
+SEE ALSO
+	catch

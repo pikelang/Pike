@@ -1,0 +1,8 @@
+NAME
+	get_function - fetch a function from an object
+
+SYNTAX
+	function get_function(object o, string name);
+
+DESCRIPTION
+	Defined as: return o[name];

@@ -1,0 +1,10 @@
+NAME
+	code_value - code a value into a string.
+
+SYNTAX
+	string code_value(mixed v);
+
+DESCRIPTION
+	Return a string that contains an almost readable representation of the value v.
+
+	

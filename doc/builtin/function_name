@@ -1,0 +1,12 @@
+NAME
+	function_name - return the name of a function, if known
+
+SYNTAX
+	string function_name(function f);
+
+DESCRIPTION
+	This function returns the name of the function f. If the function is
+	a pre-defined function in the driver, zero will be returned.
+
+SEE ALSO
+	function_object, get_function

@@ -1,0 +1,32 @@
+#ifndef FILE_MACHINE_H
+#define FILE_MACHINE_H
+
+/* Define if you have arpa/inhet.h */
+#undef HAVE_ARPA_INET_H
+
+/* Define if you have the <sys/socketvar.h> header file.  */
+#undef HAVE_SYS_SOCKETVAR_H
+
+/* Define if you have the <netinet/in.h> header file.  */
+#undef HAVE_NETINET_IN_H
+
+/* Define if you have dirent.h.  */
+#undef HAVE_DIRENT_H
+
+/* Define if you don't have dirent.h, but have ndir.h.  */
+#undef HAVE_NDIR_H
+
+/* Define if you don't have dirent.h, but have sys/dir.h.  */
+#undef HAVE_SYS_DIR_H
+
+/* Define if you don't have dirent.h, but have sys/ndir.h.  */
+#undef HAVE_SYS_NDIR_H
+
+/* Buffer size to use on open sockets */
+#undef SOCKET_BUFFER_MAX 
+
+/* Do we have socketpair() ? */
+#undef HAVE_SOCKETPAIR
+
+#endif
+

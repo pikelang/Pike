@@ -1,0 +1,11 @@
+NAME
+	l_sizeof - Return the size of a list
+
+SYNTAX
+	int l_sizeof(list m);
+
+DESCRIPTION
+	This function is equal to builtin/sizeof.
+
+SEE ALSO
+	builtin/sizeof
