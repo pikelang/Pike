@@ -26,6 +26,27 @@ class imap_atom
   string format() { return name; }
 }
 
+class imap_atom_options
+{
+  string name;
+  array options;
+  array range;
+
+  void create(string s, array o, array r)
+    {
+      name = s;
+      options = o;
+      range = r;
+    }
+
+  string format()
+    {
+      return name + "[" + Array.map(options, imap_format) + "]"
+	// NOTE: Only the start index is sent
+	+ (range ? sprintf("<%d>", range[0]) : "");
+    }
+}
+
 class imap_string
 {
   string data;
