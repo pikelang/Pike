@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.33 1998/05/25 10:38:46 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.34 1998/05/25 16:42:07 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1795,10 +1795,10 @@ static void exit_string_assignment_storage(struct object *o)
 void init_operators(void)
 {
   add_efun2("`[]",f_index,
-	    "function(string,int:int)|function(object,string:mixed)|function(array(0=mixed),int:0)|function(mapping(mixed:1=mixed),mixed:1)|function(multiset,mixed:int)|function(string,int,int:string)|function(array(2=mixed),int,int:array(2))",OPT_TRY_OPTIMIZE,0,0);
+	    "function(string,int:int)|function(object,string:mixed)|function(array(0=mixed),int:0)|function(mapping(mixed:1=mixed),mixed:1)|function(multiset,mixed:int)|function(string,int,int:string)|function(array(2=mixed),int,int:array(2))|function(program:mixed)",OPT_TRY_OPTIMIZE,0,0);
 
   add_efun2("`->",f_arrow,
-	    "function(array(object|mapping|multiset|array),string:array(mixed))|function(object|mapping|multiset,string:mixed)",OPT_TRY_OPTIMIZE,0,0);
+	    "function(array(object|mapping|multiset|array),string:array(mixed))|function(object|mapping|multiset|program,string:mixed)",OPT_TRY_OPTIMIZE,0,0);
 
   add_efun2("`==",f_eq,"function(mixed...:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
   add_efun2("`!=",f_ne,"function(mixed...:int)",OPT_TRY_OPTIMIZE,0,generate_comparison);
