@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.64 1998/07/19 22:50:44 grubba Exp $");
+RCSID("$Id: las.c,v 1.65 1998/08/05 22:48:01 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1274,7 +1274,7 @@ static void find_written_vars(node *n,
     if(lvalue) p->locals[n->u.number]=VAR_USED;
     break;
 
-  case F_GLOBAL:
+  case F_IDENTIFIER:
      if(lvalue)
      {
        if(n->u.number>=MAX_GLOBAL)
