@@ -1,6 +1,9 @@
 #include <string.h>
 inherit files;
 
+constant File=file;
+constant Port=port;
+
 object stderr=File("stderr");
 object stdout=File("stdout");
 

@@ -408,6 +408,6 @@ void port_setup_program(void)
   set_init_callback(init_port_struct);
   set_exit_callback(exit_port_struct);
 
-  end_class("Port",0);
+  end_class("port",0);
 }
 

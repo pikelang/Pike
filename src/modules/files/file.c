@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.70 1998/01/28 00:33:15 hubbe Exp $");
+RCSID("$Id: file.c,v 1.71 1998/01/28 01:36:30 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1722,7 +1722,7 @@ void pike_module_init(void)
   set_gc_mark_callback(gc_mark_file_struct);
 
   file_program=end_program();
-  add_program_constant("File",file_program,0);
+  add_program_constant("file",file_program,0);
 
   port_setup_program();
 
