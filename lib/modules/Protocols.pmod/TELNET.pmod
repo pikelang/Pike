@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.13 2000/10/10 19:58:05 hubbe Exp $
+// $Id: TELNET.pmod,v 1.14 2000/12/28 15:03:30 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -16,17 +16,18 @@
 #define DWRITE(X)
 #endif /* TELNET_DEBUG */
 
-//. Implements TELNET as described by RFC 764 and RFC 854
-//.
-//. Also implements the Q method of TELNET option negotiation
-//. as specified by RFC 1143.
+//! Implements TELNET as described by RFC 764 and RFC 854
+//!
+//! Also implements the Q method of TELNET option negotiation
+//! as specified by RFC 1143.
 
+//! Table of IAC-codes.
 class TelnetCodes {
 
 constant IAC = 255;		/* interpret as command: */
-constant DONT=254;		/* you are not to use option */
+constant DONT = 254;		/* you are not to use option */
 constant DO = 253;		/* please, you use option */
-constant WONT=252;		/* I won't use option */
+constant WONT = 252;		/* I won't use option */
 constant WILL = 251;		/* I will use option */
 constant SB = 250;		/* interpret as subnegotiation */
 constant GA = 249;		/* you may reverse the line */
@@ -50,7 +51,7 @@ constant SYNCH = 242;		/* for telfunc calls */
 inherit TelnetCodes;
 
 
-/* telnet options */
+//! Table of TELNET options.
 class Telopts {
 
 constant TELOPT_BINARY = 0;	/* 8-bit data path */
@@ -123,17 +124,17 @@ constant	LM_SLC = 3;
 constant	MODE_EDIT =     0x01;
 constant	MODE_TRAPSIG =  0x02;
 constant	MODE_ACK =	0x04;
-constant MODE_SOFT_TAB=	0x08;
-constant MODE_LIT_ECHO=	0x10;
+constant	MODE_SOFT_TAB =	0x08;
+constant	MODE_LIT_ECHO =	0x10;
 
-constant	MODE_MASK=	0x1f;
+constant	MODE_MASK =	0x1f;
 
 /* Not part of protocol, but needed to simplify things... */
-constant MODE_FLOW=		0x0100;
-constant MODE_ECHO=		0x0200;
-constant MODE_INBIN=		0x0400;
-constant MODE_OUTBIN=		0x0800;
-constant MODE_FORCE=		0x1000;
+constant	MODE_FLOW =	0x0100;
+constant	MODE_ECHO =	0x0200;
+constant	MODE_INBIN =	0x0400;
+constant	MODE_OUTBIN =	0x0800;
+constant	MODE_FORCE =	0x1000;
 
 constant	SLC_SYNCH=	1;
 constant	SLC_BRK=	2;
@@ -184,9 +185,9 @@ constant	ENV_USERVAR=	3;
 /*
  * Who is authenticating who ...
  */
-constant	AUTH_WHO_CLIENT=	0;	/* Client authenticating server */
-constant	AUTH_WHO_SERVER=	1;	/* Server authenticating client */
-constant	AUTH_WHO_MASK=		1;
+constant	AUTH_WHO_CLIENT= 0;	/* Client authenticating server */
+constant	AUTH_WHO_SERVER= 1;	/* Server authenticating client */
+constant	AUTH_WHO_MASK=	 1;
 
 /*
  * amount of authentication done
@@ -214,7 +215,7 @@ constant ENCRYPT_REPLY=		2;	/* Initial setup response */
 constant ENCRYPT_START=		3;	/* Am starting to send encrypted */
 constant ENCRYPT_END=		4;	/* Am ending encrypted */
 constant ENCRYPT_REQSTART=	5;	/* Request you start encrypting */
-constant ENCRYPT_REQEND=		6;	/* Request you send encrypting */
+constant ENCRYPT_REQEND=	6;	/* Request you send encrypting */
 constant ENCRYPT_ENC_KEYID=	7;
 constant ENCRYPT_DEC_KEYID=	8;
 constant ENCRYPT_CNT=		9;
@@ -228,32 +229,25 @@ constant ENCTYPE_CNT=		3;
 #define C2(X,Y) sprintf("%c%c",X,Y)
 #define C3(X,Y,Z) sprintf("%c%c%c",X,Y,Z)
 
-//. o protocol
-//.   Implementation of the TELNET protocol.
+//! Implementation of the TELNET protocol.
 class protocol
 {
-  //. + fd
-  //.   The connection.
+  //! The connection.
   static object fd;
 
-  //. + cb
-  //.   Mapping containing extra callbacks.
+  //! Mapping containing extra callbacks.
   static mapping cb;
 
-  //. + id
-  //.   Value to send to the callbacks.
+  //! Value to send to the callbacks.
   static mixed id;
 
-  //. + write_cb
-  //.   Write callback.
+  //! Write callback.
   static function(mixed|void:string) write_cb;
 
-  //. + read_cb
-  //.   Read callback.
+  //! Read callback.
   static function(mixed,string:void) read_cb;
 
-  //. + close_cb
-  //.   Close callback.
+  //! Close callback.
   static function(mixed|void:void) close_cb;
 
   // See RFC 1143 for the use and meaning of these.
@@ -264,27 +258,22 @@ class protocol
   static constant WANT = 4;
   static constant OPPOSITE = 8;
 
-  //. + option_states
-  //.   Negotiation states of all WILL/WON'T options.
-  //.   See RFC 1143 for a description of the states.
+  //! Negotiation states of all WILL/WON'T options.
+  //! See RFC 1143 for a description of the states.
   static array(int) remote_options = allocate(256,NO);
   static array(int) local_options = allocate(256,NO);
 
 
-  //. + to_send
-  //.   Data queued to be sent.
+  //! Data queued to be sent.
   static string to_send = "";
 
-  //. + done
-  //.   Indicates that connection should be closed
+  //! Indicates that connection should be closed
   static int done;
 
-  //. + nonblocking_write
-  //.   Tells if we have set the nonblocking write callback or not.
+  //! Tells if we have set the nonblocking write callback or not.
   static int nonblocking_write;
 
-  //. - enable_write
-  //.   Turns on the write callback if apropriate.
+  //! Turns on the write callback if apropriate.
   static void enable_write()
   {
     if (!nonblocking_write && (write_cb || sizeof(to_send) || done)) {
@@ -293,8 +282,7 @@ class protocol
     }
   }
 
-  //. - disable_write
-  //.   Turns off the write callback if apropriate.
+  //! Turns off the write callback if apropriate.
   static void disable_write()
   {
     if (!write_cb && !sizeof(to_send) && !done && nonblocking_write) {
@@ -303,9 +291,8 @@ class protocol
     }
   }
 
-  //. - write
-  //.   Queues data to be sent to the other end of the connection.
-  //. > s - String to send.
+  //! Queues data to be sent to the other end of the connection.
+  //! @[s] - string to send.
   void write(string s)
   {
     DWRITE(sprintf("TELNET, writing :%O\n",s));
@@ -313,26 +300,23 @@ class protocol
     enable_write();
   }
 
-  //. - write_raw
-  //.   Queues raw data to be sent to the other end of the connection.
-  //. > s - String with raw telnet data to send.
+  //! Queues raw data to be sent to the other end of the connection.
+  //! @[s] - string with raw telnet data to send.
   void write_raw(string s)
   {
     to_send += s;
     enable_write();
   }
 
-  //. - close
-  //.  Closes the connetion neatly
+  //! Closes the connetion neatly
   void close()
   {
     done=1;
     enable_write();
   }
 
-  //. - send_data
-  //.   Callback called when it is clear to send data over the connection.
-  //.   This function does the actual sending.
+  //! Callback called when it is clear to send data over the connection.
+  //! This function does the actual sending.
   static void send_data()
   {
     if (!sizeof(to_send)) {
@@ -364,8 +348,7 @@ class protocol
     disable_write();
   }
 
-  //. - send_synch
-  //.   Sends a TELNET synch command.
+  //! Sends a TELNET synch command.
   void send_synch()
   {
     // Clear send-queue.
@@ -381,13 +364,17 @@ class protocol
     }
   }
 
-  //. - send_DO
-  //.   Starts negotiation to enable a TELNET option.
-  //. > option - The option to enable.
+  //! @decl void send_DO(int option)
+  //!
+  //! Starts negotiation to enable a TELNET option.
+  //!
+  //! @[option] - the option to enable.
 
-  //. - send_DONT
-  //.   Starts negotiation to disable a TELNET option.
-  //. > option - The option to disable.
+  //! @decl void send_DONT(int option)
+  //!
+  //! Starts negotiation to disable a TELNET option.
+  //!
+  //! @[option] - the option to disable.
 
 
 #define CONTROL(OPTIONS,DO,DONT,WILL,WONT,YES,NO)					\
@@ -486,8 +473,7 @@ class protocol
   }
   
 
-  //. + synch
-  //.   Indicates wether we are in synch-mode or not.
+  //! Indicates wether we are in synch-mode or not.
   static int synch = 0;
 
   static mixed call_callback(mixed what, mixed ... args)
@@ -519,10 +505,12 @@ class protocol
     }
   }
 
-  //. - got_oob
-  //.   Callback called when Out-Of-Band data has been received.
-  //. > ignored - The id from the connection.
-  //. > s - The Out-Of-Band data received.
+  //! Callback called when Out-Of-Band data has been received.
+  //!
+  //! @[ignored] - the id from the connection.
+  //!
+  //! @[s] - the Out-Of-Band data received.
+  //!
   static void got_oob(mixed ignored, string s)
   {
 #ifdef TELNET_DEBUG
@@ -541,19 +529,22 @@ class protocol
     call_callback("URG",id,s);
   }
 
-  //. - call_read_cb
-  //. specifically provided for overloading
+  //! Calls @[read_cb()].
+  //!
+  //! Specifically provided for overloading
+  //!
   static void call_read_cb(string data)
   {
     DWRITE("Fnurgel!\n");
     if(read_cb && strlen(data)) read_cb(id,data);
   }
 
-  //. - got_data
-  //.   Callback called when normal data has been received.
-  //.   This function also does most of the TELNET protocol parsing.
-  //. > ignored - The id from the connection.
-  //. > s - The received data.
+  //! Callback called when normal data has been received.
+  //! This function also does most of the TELNET protocol parsing.
+  //!
+  //! @[ignored] - the id from the connection.
+  //! @[s] - the received data.
+  //!
   static void got_data(mixed ignored, string line)
   {
 #ifdef TELNET_DEBUG
@@ -755,9 +746,9 @@ class protocol
     enable_write();
   }
 
-  //. - set_write_callback
-  //.   Sets the callback to be called when it is clear to send.
-  //. > w_cb - The new read callback.
+  //! Sets the callback to be called when it is clear to send.
+  //!
+  //! @[w_cb] - the new write callback.
   void set_write_callback(function(mixed|void:string) w_cb)
   {
     write_cb = w_cb;
@@ -768,20 +759,23 @@ class protocol
     }
   }
 
-  //. - create
-  //. created specifically for overloading
+  //! Called when the initial setup is done.
+  //!
+  //! Created specifically for overloading
+  //!
   void setup()
   {
   }
 
-  //. - create
-  //.   Creates a TELNET protocol handler, and sets its callbacks.
-  //. > f - File to use for the connection.
-  //. > r_cb - Function to call when data has arrived.
-  //. > w_cb - Function to call when data can be sent.
-  //. > c_cb - Function to call when the connection is closed.
-  //. > callbacks - Mapping with callbacks for the various TELNET commands.
-  //. > new_id - Value to send to the various callbacks.
+  //! Creates a TELNET protocol handler, and sets its callbacks.
+  //!
+  //! @[f] - file to use for the connection.
+  //! @[r_cb] - function to call when data has arrived.
+  //! @[w_cb] - function to call when data can be sent.
+  //! @[c_cb] - function to call when the connection is closed.
+  //! @[callbacks] - mapping with callbacks for the various TELNET commands.
+  //! @[new_id] - value to send to the various callbacks.
+  //!
   void create(object f,
 	      function(mixed,string:void) r_cb,
 	      function(mixed|void:string) w_cb,
@@ -825,7 +819,7 @@ class protocol
   }
 }
 
-
+//! Line-oriented TELNET protocol handler.
 class LineMode
 {
   inherit protocol;
