@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.38 2001/11/08 18:59:57 nilsson Exp $ */
+/* $Id: export.pike,v 1.39 2001/12/18 21:20:25 nilsson Exp $ */
 
 import Stdio;
 
@@ -218,8 +218,6 @@ int main(int argc, string *argv)
 	      vpath+"/refdoc/syntax.txt",
 	      vpath+"/refdoc/tags.txt",
 	      vpath+"/refdoc/template.xsl",	      
-	      vpath+"/refdoc/tree-split-style.css",
-	      vpath+"/refdoc/tree-split-template.html",
 	      vpath+"/refdoc/xml.txt",
 	      vpath+"/refdoc/.cvsignore",
 	   }));
