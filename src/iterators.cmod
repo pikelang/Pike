@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.32 2002/12/29 16:30:56 grubba Exp $
+|| $Id: iterators.cmod,v 1.33 2002/12/31 14:14:13 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.32 2002/12/29 16:30:56 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.33 2002/12/31 14:14:13 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -698,9 +698,16 @@ PIKECLASS file_line_iterator
 	  start_off = 0;
 	  goto again;
 	}
+	// Wide string.
       }
-      else
+      else {
+	// End of stream.
 	pop_stack();
+	if (start != ptr) {
+	  ssi->current = make_shared_binary_string(start, ptr-start);
+	  ssi->index++;
+	}
+      }
       free_string( ssi->buffer );
       ssi->buffer = NULL;
       return;
