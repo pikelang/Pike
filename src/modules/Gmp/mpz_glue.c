@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.116 2003/02/21 17:42:21 grubba Exp $
+|| $Id: mpz_glue.c,v 1.117 2003/09/19 13:19:41 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.116 2003/02/21 17:42:21 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.117 2003/09/19 13:19:41 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -196,7 +196,7 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
   switch(s->type)
   {
   case T_INT:
-#if BIG_PIKE_INT
+#ifdef BIG_PIKE_INT
 /*  INT_TYPE is bigger then long int  */
   {
      INT_TYPE x=s->u.integer;
