@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.117 2002/11/23 16:38:54 grubba Exp $
+|| $Id: interpret.h,v 1.118 2002/11/23 17:42:16 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -182,7 +182,7 @@ PMOD_EXPORT extern const char Pike_check_c_stack_errmsg[];
 #define STACK_LEVEL_CHECK(depth)
 #endif /* PIKE_DEBUG */
 
-#define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); PIKE_MEM_WO(Pike_sp, sizeof(*Pike_sp)); }while(0)
+#define pop_stack() do{ free_svalue(--Pike_sp); debug_check_stack(); PIKE_MEM_WO(*Pike_sp); }while(0)
 #define pop_2_elems() do { pop_stack(); pop_stack(); }while(0)
 
 #ifdef __ECL
@@ -197,7 +197,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
    check__positive(x_, (msg_pop_neg, x_));				\
    Pike_sp -= x_; debug_check_stack();					\
    free_mixed_svalues(Pike_sp, x_);					\
-   PIKE_MEM_WO(Pike_sp, x_*sizeof(*Pike_sp));				\
+   PIKE_MEM_WO_RANGE(Pike_sp, x_*sizeof(*Pike_sp));			\
  } } while (0)
 
 #define stack_pop_n_elems_keep_top(X) \
@@ -254,7 +254,7 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     Pike_sp=s_;					\
 }while(0)
 
-#define stack_pop_to_no_free(X) do { *(X)=*--Pike_sp; PIKE_MEM_WO(Pike_sp, sizeof(*Pike_sp)); } while(0)
+#define stack_pop_to_no_free(X) do { *(X)=*--Pike_sp; PIKE_MEM_WO(*Pike_sp); } while(0)
 #define stack_pop_to(X) do { struct svalue *_=(X); free_svalue(_); stack_pop_to_no_free(_); }while(0)
 
 /* This pops a number of arguments from the stack but keeps the top
