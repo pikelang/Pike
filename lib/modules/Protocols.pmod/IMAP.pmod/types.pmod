@@ -5,7 +5,7 @@
 string imap_format(mixed x)
 {
   if (!x)
-    return "nil";
+    return "NIL";
   else if (stringp(x))
     return x;
   else return x->format();
