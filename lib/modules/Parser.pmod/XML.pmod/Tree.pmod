@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.22 2002/11/29 16:22:26 grubba Exp $
+ * $Id: Tree.pmod,v 1.23 2002/11/29 16:29:07 grubba Exp $
  *
  */
 
@@ -653,7 +653,7 @@ class Node {
 	       n->mChildren);
       }
 
-      if (n->count_children)
+      if (n->count_children())
 	if (strlen(n->get_tag_name()))
 	  data->add("</", n->get_tag_name(), ">");
     }
