@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.40 2001/01/08 13:32:35 mirar Exp $
+ * $Id: image_jpeg.c,v 1.41 2001/01/08 19:37:36 mirar Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.40 2001/01/08 13:32:35 mirar Exp $");
+RCSID("$Id: image_jpeg.c,v 1.41 2001/01/08 19:37:36 mirar Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -96,11 +96,10 @@ static struct pike_string *param_grayscale;
 
 static int reverse_quality[101]=
 {
-   4950,4950,2475,1649,1238,990,825,707,619,549,495,449,412,380,353,330,309,
-   291,274,260,248,236,225,215,206,198,190,183,176,170,164,159,154,149,146,
-   141,137,134,130,127,124,120,118,115,112,110,107,105,103,101,99,97,95,93,
-   91,89,87,85,83,81,79,77,75,73,71,69,67,65,63,61,59,57,55,53,51,50,48,46,
-   44,42,40,38,36,34,32,30,28,26,24,22,20,18,16,14,12,10,8,6,4,2,1
+   3400,3400,1700,1133,850,680,566,486,425,377,340,309,283,261,243,
+   226,212,200,188,179,170,162,154,148,141,136,131,126,121,117,113,109,
+   106,103,100,97,94,92,89,87,85,82,81,79,77,75,73,72,71,69,68,67,65,64,
+   63,61,60,58,57,56,54,53,52,50,49,48,46,45
 };
 
 #ifdef HAVE_JPEGLIB_H
@@ -883,7 +882,7 @@ static void img_jpeg_decode(INT32 args,int mode)
 
 	 if (cinfo.quant_tbl_ptrs[0])
 	 {
-	    int q=cinfo.quant_tbl_ptrs[0]->quantval[DCTSIZE2-1];
+	    int q=cinfo.quant_tbl_ptrs[0]->quantval[4*DCTSIZE+4];
 	    int a=0,b=100,c,w;
 	    while (b>a)
 	    {
@@ -1039,7 +1038,7 @@ void pike_module_init(void)
    {
 #define tOptions tMap(tStr,tOr(tInt,tMap(tInt,tArr(tOr(tInt,tArr(tInt))))))
       ADD_FUNCTION("decode",image_jpeg_decode,tFunc(tStr tOr(tVoid,tOptions),tObj),0);
-      ADD_FUNCTION("_decode",image_jpeg__decode,tFunc(tStr tOr(tVoid,tOptions),tObj),0);
+      ADD_FUNCTION("_decode",image_jpeg__decode,tFunc(tStr tOr(tVoid,tOptions),tMap(tStr,tMixed)),0);
       ADD_FUNCTION("decode_header",image_jpeg_decode_header,tFunc(tStr tOr(tVoid,tOptions),tObj),0);
       ADD_FUNCTION("encode",image_jpeg_encode,tFunc(tObj tOr(tVoid,tOptions),tStr),0);
    }
