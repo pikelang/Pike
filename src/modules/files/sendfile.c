@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.64 2003/10/27 23:25:35 mast Exp $
+|| $Id: sendfile.c,v 1.65 2003/12/08 17:35:31 grubba Exp $
 */
 
 /*
@@ -688,7 +688,7 @@ static void sf_create(INT32 args)
   struct pike_sendfile sf;
   int iovcnt = 0;
   struct svalue *cb = NULL;
-  INT_TYPE offset, len;
+  LONGEST offset, len;
 
   if (THIS->to_file) {
     Pike_error("sendfile->create(): Called a second time!\n");
@@ -708,7 +708,7 @@ static void sf_create(INT32 args)
   MEMSET(&sf, 0, sizeof(struct pike_sendfile));
   sf.callback.type = T_INT;
 
-  get_all_args("sendfile", args, "%A%O%i%i%A%o%*",
+  get_all_args("sendfile", args, "%A%O%l%l%A%o%*",
 	       &(sf.headers), &(sf.from_file), &offset,
 	       &len, &(sf.trailers), &(sf.to_file), &cb);
 
