@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.144 2003/05/17 15:47:47 grubba Exp $
+|| $Id: mpz_glue.c,v 1.145 2003/05/17 17:26:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.144 2003/05/17 15:47:47 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.145 2003/05/17 17:26:56 grubba Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -77,7 +77,7 @@ struct program *bignum_program;
 #define PIKE_MPZ_SET_SI(MPZ_VAL, VALUE)	do {		\
     long val_ = (VALUE);				\
     if (val_ < 0) {					\
-      mpz_set_ui((MPZ_VAL), (unsigned long) val_);	\
+      mpz_set_ui((MPZ_VAL), (unsigned long) -val_);	\
       mpz_neg((MPZ_VAL), (MPZ_VAL));			\
     } else {						\
       mpz_set_ui((MPZ_VAL), (unsigned long) val_);	\
