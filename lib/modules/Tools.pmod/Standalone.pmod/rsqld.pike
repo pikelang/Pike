@@ -1,5 +1,5 @@
 #! /usr/bin/env pike
-// $Id: rsqld.pike,v 1.7 2003/01/27 01:39:55 nilsson Exp $
+// $Id: rsqld.pike,v 1.8 2003/06/01 21:54:31 nilsson Exp $
 
 constant description = "Implements an rsql daemon.";
 
@@ -144,7 +144,7 @@ class Connection
   static void cmd_selectdb(string url)
   {
     sqlobj = 0;
-    sqlobj = Sql.sql(url);
+    sqlobj = Sql.Sql(url);
   }
 
   static int|string cmd_error()
