@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.55 1998/01/30 06:19:51 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.56 1998/02/19 05:15:20 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -605,7 +605,7 @@ void th_init(void)
 #ifdef POSIX_THREADS
   pthread_attr_init(&pattr);
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
-  pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
+  pthread_attr_setstacksize(&pattr, 1024 * 1204);
 #endif
   pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
 
