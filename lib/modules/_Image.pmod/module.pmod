@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.25 2002/01/18 01:07:42 nilsson Exp $
+// $Id: module.pmod,v 1.26 2002/01/29 08:30:03 nilsson Exp $
 
 //! @decl Image.Layer load()
 //! @decl Image.Image load(object file)
@@ -123,7 +123,7 @@ array(Image.Layer) decode_layers( string data, mapping|void opt )
 #endif
 
   if(!i)
-    foreach( ({ "XCF", "PSD","ILBM" }), string fmt )
+    foreach( ({ "XCF", "PSD" }), string fmt )
       if( (f=Image[fmt]["decode_layers"]) &&
 	  !catch(i = f( data, opt )) && i )
 	break;
