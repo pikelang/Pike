@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.140 2001/09/24 15:02:13 grubba Exp $");
+RCSID("$Id: operators.c,v 1.141 2001/09/25 17:39:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -443,9 +443,8 @@ PMOD_EXPORT void f_add(INT32 args)
 	INC_PCHARP(buf,strlen(buffer));
       }
     }
-    r->len=SUBTRACT_PCHARP(buf,MKPCHARP_STR(r));
-    low_set_index(r,r->len,0);
-    r=low_end_shared_string(r);
+    r = realloc_unlinked_string(r, SUBTRACT_PCHARP(buf, MKPCHARP_STR(r)));
+    r = low_end_shared_string(r);
     pop_n_elems(args);
     push_string(r);
     break;
