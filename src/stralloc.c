@@ -15,10 +15,15 @@
 #include "stuff.h"
 
 #include <errno.h>
+#include <float.h>
 #include <ctype.h>
 #include <math.h>
 
-RCSID("$Id: stralloc.c,v 1.56 1999/03/04 06:05:11 hubbe Exp $");
+#ifndef HUGE
+#define HUGE HUGE_VAL
+#endif /*!HUGE*/
+
+RCSID("$Id: stralloc.c,v 1.57 1999/03/23 03:04:00 marcus Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
