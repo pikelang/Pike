@@ -10,5 +10,5 @@
 /module_testsuite
 /stamp-h
 /stamp-h.in
-/zlib_machine.h
-/zlib_machine.h.in
+/config.h
+/config.h.in
