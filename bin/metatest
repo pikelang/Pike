@@ -11,17 +11,27 @@ esac
 set -e
 set -x
 
-docompile4() {
+docompile5() {
   mkdir test1
   cd test1
   $SRCPATH/src/configure --cache-file ../testcache
-  d="DEBUGDEF=$1"
-  make "$d"
-  make verify "$d"
-  make verify LPCOPTS=-d2 "$d"
-#  make verify LPCOPTS=-d99 "$d"
+
+  # Modify makefile to simplify debugging...
+  mv Makefile Makefile.orig
+  sed <Makefile.orig >Makefile "s/^DEBUGDEF=.*$/DEBUGDEF=$1/g"
+
+  make
+  make verify 
+  make verify LPCOPTS=-d2
+#  make verify LPCOPTS=-d99
   cd ..
   rm -rf test1
+}
+
+docompile4() {
+  docompile5 "$1"
+#  docompile5 "$1 -DDYNAMIC_STACK"
+#  docompile5 "$1 -DDYNAMIC_STACK -DREALLOC_STACK_ALWAYS"
 }
 
 docompile3() {
