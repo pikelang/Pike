@@ -1,14 +1,17 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.16 2001/02/20 08:57:17 mirar Exp $
+//! $Id: module.pmod,v 1.17 2001/03/30 01:42:24 per Exp $
 
-//! method object(Image.Image) load()
-//! method object(Image.Image) load(object file)
-//! method object(Image.Image) load(string filename)
-//! method object(Image.Layer) load_layer()
-//! method object(Image.Layer) load_layer(object file)
-//! method object(Image.Layer) load_layer(string filename)
+//! method Image.Layer load()
+//! method Image.Image load(object file)
+//! method Image.Image load(string filename)
+//! method Image.Layer load_layer()
+//! method Image.Layer load_layer(object file)
+//! method Image.Layer load_layer(string filename)
+//! method array(Image.Layer) load_layers()
+//! method array(Image.Layer) load_layers(object file)
+//! method array(Image.Layer) load_layers(string filename)
 //! method mapping _load()
 //! method mapping _load(object file)
 //! method mapping _load(string filename)
@@ -72,7 +75,7 @@ mapping _decode( string data, mixed|void tocolor )
 #endif
 
   if(!i)
-    foreach( ({ "GIF", "JPEG", "XWD", "PNM", "RAS" }), string fmt )
+    foreach( ({ "JPEG", "XWD", "PNM", "RAS" }), string fmt )
     {
       catch {
         i = Image[fmt]->decode( data );
@@ -114,11 +117,7 @@ array(Image.Layer) decode_layers( string data, mixed|void tocolor )
   function f;
   if(!data)
     return 0;
-
-  foreach( ({ "GIF", "JPEG", "XWD", "PNM",
-              "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
-              "XBM", "XPM", "TIFF", "ILBM", "PS",
-  }), string fmt )
+  foreach( ({ "GIF", "XCF", "PSD","ILBM" }), string fmt )
     if( (f=Image[fmt]["decode_layers"]) && !catch(i = f( data,tocolor )) && i )
       break;
 
@@ -126,6 +125,8 @@ array(Image.Layer) decode_layers( string data, mixed|void tocolor )
     catch
     {
       mapping q = _decode( data, tocolor );
+      if( !q->img )
+	return 0;
       i = ({
         Image.Layer( ([
           "image":q->img,
@@ -200,11 +201,10 @@ object(Image.Layer) load_layer(void|object|string file)
 
 array(Image.Layer) load_layers(void|object|string file, mixed|void opts)
 {
-  string d = load_file( file );
-  return decode_layers( file, opts );
+  return decode_layers( load_file( file ), opts );
 }
 
-object(Image.Image) load(void|object|string file)
+object(Image.Image) load(object|string file)
 {
    return _load(file)->image;
 }
