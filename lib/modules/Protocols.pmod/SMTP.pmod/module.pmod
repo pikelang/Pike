@@ -526,6 +526,119 @@ class Connection {
      return message;
    }
    
+   private static string fixmail (string mail) {
+     // Fix mails which the MIME module cannot parse. This function is
+     // called recursively for each mailpart
+
+     int headend1 = search(mail, "\n\n");
+     int headend2 = search(mail, "\r\n\r\n");
+     int headend = (headend1<0? headend2 :
+                    (headend2<0? headend1 :
+                     (headend1<headend2? headend1 : headend2)));
+     array (string) headers = (replace(mail[0..headend-1], ({"\r", "\t", "\n "}), ({ "", " ", " "})))/"\n";
+     string newheaders = "", contenttype = "", boundary = "";
+
+     foreach (headers, string h) {
+       string key = "", data = "";
+       if (sscanf (h, "%[!-9;-~]%*[ ]:%*[ ]%s", key, data) > 2) {
+         if (lower_case (key) == "content-type") {
+           //write ("content-type: data= " + data + "\n");
+           string k1 = "", k2 = "", opts = "";
+           sscanf (data, "%s/%s;%s", contenttype, k2, opts);
+           foreach (opts/";", string opt) {
+             string l1 = "", l2 = "";
+             if (sscanf (opt, "%*[ ]%s=%s", l1, l2) > 1) {
+               if (lower_case (l1) == "boundary") {
+                 boundary = l2;
+                 sscanf (boundary, "\"%s\"", boundary);
+               }
+             }
+           }
+         }
+       }
+     }
+
+     foreach (headers, string h) {
+       string key = "", data = "";
+       if (sscanf (h, "%[!-9;-~]%*[ ]:%*[ ]%s", key, data) > 2)
+       {
+         string lc_key = lower_case (key);
+
+         if (lc_key == "content-transfer-encoding" &&
+             ((lower_case (contenttype) == "multipart") || (lower_case (data) == "8bits"))) {
+           data = "8bit";
+         }
+
+         if (lc_key == "content-transfer-encoding" &&
+             ((lower_case (contenttype) == "multipart") || (lower_case (data) == "7-bit"))) {
+           data = "7bit";
+         }
+
+         if ((lc_key == "content-type" ||
+              lc_key == "content-description" ||
+              lc_key == "content-disposition") && sizeof (data) > 0)
+           while (data[-1] == ' ' || data[-1] == '\t' || data[-1] == ';')
+             data = data[0..sizeof(data)-2];
+
+         if (lc_key == "content-disposition") {
+           array foo = data / " ";
+           for (int i = 1; i < sizeof (foo); i++)
+             if (!has_value (foo[i], "="))
+               foo[i] += "=fixed";
+           data = foo * " ";
+         }
+
+         if (lc_key == "content-type") {
+           /*
+             yet another fix for those spam-bots:
+             "content-type: foo/bar, baz"   instead of
+             "content-type: foo/bar; baz"
+           */
+
+           /* RFC 2045, §5.1
+
+                content := "Content-Type" ":" type "/" subtype
+           *(";" parameter)
+           ; Matching of media type and subtype
+           ; is ALWAYS case-insensitive. */
+           string type, subtype, parameter;
+           if (sscanf (data, "%s/%s, %s", type, subtype, parameter) == 3) {
+             //write ("bad content-type: " + data + "...\n");
+             data = type + "/" + subtype + "; " + parameter;
+           }
+
+           /*
+             and here we go again...
+
+             MIME.Message failed: invalid parameter in Content-Type
+             content-type: data= text/plain;X-Mailer: cls_mail
+           */
+           string junk_header, junk_data;
+           if (sscanf (data, "%s/%s;%s:%s", type, subtype, junk_header, junk_data) == 4) {
+             //write ("Header: " + type + "/" + subtype + ";\n");
+             //write ("Junk: " + junk_header + ":" + junk_data + ";\n");
+             newheaders += junk_header + ":" + junk_data + ";\n";
+             data = type + "/" + subtype + ";";
+           }
+         }
+
+         newheaders += key + ": " + data + "\n";
+       }
+     }
+
+     string newmail = "";
+     if (sizeof(boundary) > 0) {
+       array (string) mailparts = mail[headend+2..] / ("--"+boundary);
+       newmail += newheaders+"\n"+mailparts[0];
+       for (int i = 1; i < sizeof(mailparts)-1; i++)
+         newmail += "--"+boundary+"\r\n"+fixmail(mailparts[i]);
+       newmail += "--"+boundary+"--\r\n\r\n";
+     }
+     else
+       newmail = newheaders + "\n" + mail[headend+2..];
+     return(newmail);
+   }
+   
    static MIME.Message low_message(string content)
    {
      datamode = 0;
@@ -535,7 +648,7 @@ class Connection {
        return 0;
      }
      MIME.Message message;
-     mixed err = catch (message = MIME.Message(content));
+     mixed err = catch (message = MIME.Message(fixmail(content)));
      if(err)
      {
        outcode(554);
@@ -555,26 +668,26 @@ class Connection {
      return message;
    }
 
-  void message(string content) {
-    MIME.Message message = low_message(content);
-    if(!message) return;
+   void message(string content) {
+     MIME.Message message = low_message(content);
+     if(!message) return;
 
-    // SMTP mode, cb_data is called one time with an array of recipients
-    // and the same MIME object
-    int check;
-    mixed err;
-    if(givedata)
-      err = catch(check = cb_data(message, mailfrom, mailto, content));
-    else
-      err = catch(check = cb_data(message, mailfrom, mailto));
-    if(err || !check)
-    {
-      outcode(554);
-      log(describe_backtrace(err));
-      return;
-    }
-    outcode(check);
-  }
+     // SMTP mode, cb_data is called one time with an array of recipients
+     // and the same MIME object
+     int check;
+     mixed err;
+     if(givedata)
+       err = catch(check = cb_data(message, mailfrom, mailto, content));
+     else
+       err = catch(check = cb_data(message, mailfrom, mailto));
+     if(err || !check)
+     {
+       outcode(554);
+       log(describe_backtrace(err));
+       return;
+     }
+     outcode(check);
+   }
 
    void noop()
    {
@@ -624,7 +737,11 @@ class Connection {
 #ifdef SMTP_DEBUG
             log("calling %O\n", _command);
 #endif
+#if constant(this)
 	    function fun = this[_command];
+#else
+      function fun = this_object()[_command];
+#endif
 	    fun(command[1..] * " ");
          };
        }
@@ -666,7 +783,11 @@ class Connection {
          launch_functions(inputbuffer[..end]);
          if(lower_case(inputbuffer[..end]) == "quit")
          {
+#if constant(this)
            destruct(this);
+#else
+           destruct(this_object());
+#endif
            return;
          }
          pattern = "\r\n";
@@ -674,7 +795,7 @@ class Connection {
        if(datamode)
        {
          if(pattern=="\r\n.\r\n")
-           message(inputbuffer[..end-2]);
+           message(inputbuffer[..end]);
          pattern = "\r\n.\r\n";
        }
        // end of buffer detection
