@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.197 2001/06/20 11:50:45 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.198 2001/08/14 21:19:01 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1152,7 +1152,13 @@ static TH_RETURN_TYPE wait_thread(void *data)
 }
 #endif
 
-/*! @class Pid_Status
+/*! @module Process
+ */
+
+/*! @class create_process
+ *! This is the recommended and most portable way to start processes
+ *! in Pike. The process object is a pike abstraction of the running
+ *! system process, with methods for various process housekeeping.
  */
 
 /*! @decl int wait()
@@ -1306,6 +1312,9 @@ static void f_pid_status_set_priority(INT32 args)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 
 #ifdef __amigaos__
@@ -1764,9 +1773,6 @@ static void internal_add_limit( struct perishables *storage,
 /*! @module Process */
 
 /*! @class create_process
- *! This is the recommended and most portable way to start processes
- *! in Pike. The process object is a pike abstraction of the running
- *! system process, with methods for various process housekeeping.
  */
 
 /*! @decl constant limit_value = int|array(int|string)|mapping(string:int|string)|string
@@ -3358,7 +3364,10 @@ static void f_kill(INT32 args)
   push_int(res);
 }
 
-/*! @class Pid_Status
+/*! @module Process
+ */
+
+/*! @class create_process
  */
 
 /*! @decl int kill(int signal)
@@ -3394,6 +3403,9 @@ static void f_pid_status_kill(INT32 args)
 }
 
 /*! @endclass
+ */
+
+/*! @endmodule
  */
 #else
 
