@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.64 2002/01/31 12:39:30 stewa Exp $
+ * $Id: oracle.c,v 1.65 2002/01/31 13:10:38 stewa Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.64 2002/01/31 12:39:30 stewa Exp $");
+RCSID("$Id: oracle.c,v 1.65 2002/01/31 13:10:38 stewa Exp $");
 
 
 /* User-changable defines: */
@@ -392,6 +392,7 @@ struct inout
     char str[STATIC_BUFFERS];
 #endif
   } u;
+  OCILobLocator *lob;
 };
 
 static void free_inout(struct inout *i);
@@ -769,6 +770,13 @@ static sb4 output_callback(struct inout *inout,
 #endif
       return OCI_CONTINUE;
 
+  case SQLT_CLOB:
+  case SQLT_BLOB:
+    *bufpp=inout->lob;
+    inout->xlen=sizeof(inout->lob); /* ? */
+    *piecep = OCI_ONE_PIECE;
+    return OCI_CONTINUE;
+
     case SQLT_FLT:
       *bufpp=&inout->u.f;
       inout->xlen=sizeof(inout->u.f);
@@ -981,6 +989,28 @@ static void f_fetch_fields(INT32 args)
 	  data_size=-1;
 	  type=SQLT_LNG;
 	  break;
+	  
+      case SQLT_CLOB:
+      case SQLT_BLOB:
+	if(type == SQLT_BLOB)
+	  type_name = "blob";
+	else
+	  type_name="clob";
+	if (OCIDescriptorAlloc(
+			       (dvoid *) get_oracle_environment(),
+			       (dvoid **) &info->data.lob, 
+			       (ub4)OCI_DTYPE_LOB, 
+			       (size_t) 0, 
+			       (dvoid **) 0))
+	  {
+#ifdef ORACLE_DEBUG
+	    fprintf(stderr,"OCIDescriptorAlloc failed!\n");
+#endif
+	    info->data.lob = 0;
+	    /* FIXME: throw error */
+	  }
+	data_size=sizeof(info->data.lob); /* ? */
+	break;
 
 	case SQLT_RID:
 	case SQLT_RDD:
@@ -1028,6 +1058,8 @@ static void f_fetch_fields(INT32 args)
 			&info->define_handle,
 			dbcon->error_handle,
 			i+1,
+			info->data.lob ? 
+			& info->data.lob :
 			& info->data.u,
 #ifdef STATIC_BUFFERS
 			data_size<0? STATIC_BUFFERS :data_size,
@@ -1077,6 +1109,14 @@ static void f_fetch_fields(INT32 args)
 static void push_inout_value(struct inout *inout,
 			     struct dbcon *dbcon)
 {
+  ub4   loblen = 0;
+  ub1   *bufp = 0;
+  ub4   amtp = 0;
+  char buffer[100];
+  sword rc;
+  sb4 bsize=100;
+  int rslt;
+  
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s .. (type = %d, indicator = %d, len= %d)\n",__FUNCTION__,inout->ftype,inout->indicator, inout->xlen);
 #endif
@@ -1085,6 +1125,8 @@ static void push_inout_value(struct inout *inout,
   {
     switch(inout->ftype)
     {
+      case SQLT_CLOB:
+      case SQLT_BLOB:
       case SQLT_BIN:
       case SQLT_LBI:
       case SQLT_AFC:
@@ -1094,7 +1136,7 @@ static void push_inout_value(struct inout *inout,
       case SQLT_STR:
 	ref_push_object(nullstring_object);
 	break;
-	
+
       case SQLT_ODT:
       case SQLT_DAT:
 	ref_push_object(nulldate_object);
@@ -1141,6 +1183,55 @@ static void push_inout_value(struct inout *inout,
       STRING_BUILDER_STR(inout->output)=0;;
       break;
 
+    case SQLT_CLOB:
+    case SQLT_BLOB:
+      if(OCILobGetLength(dbcon->context, dbcon->error_handle,inout->lob, &loblen)) {
+#ifdef ORACLE_DEBUG
+	fprintf(stderr,"OCILobGetLength failed.\n");
+#endif
+	/* FIXME: throw error here */
+	loblen = 0;
+      }
+      else {
+	amtp = loblen;
+      }
+#ifdef ORACLE_DEBUG
+      fprintf(stderr,"LOB length: %d\n",loblen);
+#endif
+      if(loblen && (bufp=malloc(loblen))) {
+	if(OCILobRead(dbcon->context,
+		      dbcon->error_handle,
+		      inout->lob, 
+		      &amtp, 
+		      1, 
+		      (dvoid *) bufp,
+		      loblen, 
+		      (dvoid *)0, 
+		      (sb4 (*)(dvoid *, CONST dvoid *, ub4, ub1)) 0,
+		      (ub2) 0, 
+		      (ub1) SQLCS_IMPLICIT)) 
+	  {
+	    /* FIXME: throw error here */
+#ifdef ORACLE_DEBUG
+	    fprintf(stderr,"OCILobRead failed\n");
+#endif
+	    loblen = 0;
+	  }
+      }
+      else {
+	loblen = 0;
+      }
+      push_string(make_shared_binary_string(loblen ? bufp : "",loblen));
+      if(bufp)
+	free(bufp);
+#if 0
+      /*  Handle automatically freed when environment handle is deallocated.
+	  Not needed according according to doc.*/
+      if(inout->lob)
+	OCIDescriptorFree((dvoid *) inout->lob, (ub4) OCI_DTYPE_LOB);
+#endif
+      break;
+	
     case SQLT_ODT:
     case SQLT_DAT:
       push_object(low_clone(Date_program));
