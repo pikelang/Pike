@@ -11,11 +11,13 @@
 struct svalue auto_bignum_program = { T_INT };
 
 int gmp_library_loaded=0;
+int gmp_library_resolving=0;
 
 static void resolve_auto_bignum_program(void)
 {
   if(auto_bignum_program.type == T_INT)
   {
+    gmp_library_resolving=1;
     push_text("Gmp.bignum");
     SAFE_APPLY_MASTER("resolv", 1);
     
@@ -25,6 +27,7 @@ static void resolve_auto_bignum_program(void)
     auto_bignum_program=sp[-1];
     sp--;
     dmalloc_touch_svalue(sp);
+    gmp_library_resolving=0;
   }
 }
 
@@ -36,7 +39,7 @@ struct program *get_auto_bignum_program(void)
 
 struct program *get_auto_bignum_program_or_zero(void)
 {
-  if(!gmp_library_loaded) return 0;
+  if(!gmp_library_loaded || gmp_library_resolving) return 0;
   resolve_auto_bignum_program();
   return program_from_function(&auto_bignum_program);
 }
@@ -73,7 +76,8 @@ int is_bignum_object(struct object *o)
    * /Hubbe
    */
 
-  if(!gmp_library_loaded) return 0; /* not possible */
+  if(!gmp_library_loaded || gmp_library_resolving)
+    return 0; /* not possible */
  
   resolve_auto_bignum_program();
   return o->prog == program_from_function(&auto_bignum_program);

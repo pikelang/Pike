@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.204 1999/11/08 20:50:48 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.205 1999/11/12 07:33:36 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1962,7 +1962,11 @@ void f_objectp(INT32 args)
 {
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("objectp", 1);
-  if(sp[-args].type != T_OBJECT || !sp[-args].u.object->prog)
+  if(sp[-args].type != T_OBJECT || !sp[-args].u.object->prog
+#ifdef AUTO_BIGNUM
+     || is_bignum_object(sp[-args].u.object)
+#endif
+     )
   {
     pop_n_elems(args);
     push_int(0);
