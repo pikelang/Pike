@@ -559,10 +559,6 @@ mixed sum(array a)
    }
 }
 
-//! @decl array uniq(array a)
-//! Perform uniq on an array:
-//! aabbbcaababb -> abc
-
 //! Perform the same action as the Unix uniq command on an array,
 //! that is, fold consecutive occurrences of the same element into
 //! a single element of the result array:
