@@ -398,7 +398,7 @@ void check_mapping_for_destruct(struct mapping *m)
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
-  if((m->ind_types | m->val_types) & BIT_OBJECT)
+  if((m->ind_types | m->val_types) & (BIT_OBJECT | BIT_FUNCTION))
   {
     val_types = ind_types = 0;
     m->val_types |= BIT_INT;
@@ -408,7 +408,8 @@ void check_mapping_for_destruct(struct mapping *m)
       {
 	check_destructed(& k->val);
 	
-	if(k->ind.type == T_OBJECT && !k->ind.u.object->prog)
+	if((k->ind.type == T_OBJECT || k->ind.type == T_FUNCTION) &&
+	   !k->ind.u.object->prog)
 	{
 	  *prev=k->next;
 	  free_svalue(& k->ind);
