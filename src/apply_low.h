@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.19 2003/06/30 17:06:08 mast Exp $
+|| $Id: apply_low.h,v 1.20 2003/07/30 18:50:10 mast Exp $
 */
 
     {
@@ -11,12 +11,20 @@
       struct pike_frame *new_frame;
       struct identifier *function;
       
+#if 0
+      /* This kind of fault tolerance is braindamaged. /mast */
       if(fun<0)
       {
 	pop_n_elems(Pike_sp-save_sp);
 	push_undefined();
 	return 0;
       }
+#else
+#ifdef PIKE_DEBUG
+      if (fun < 0)
+	Pike_fatal ("Invalid function offset.\n");
+#endif
+#endif
 
       check_stack(256);
       check_mark_stack(256);
