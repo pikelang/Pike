@@ -1,0 +1,12 @@
+# $Id: configure.in,v 1.1 1998/11/02 23:54:36 marcus Exp $
+AC_INIT(top.c)
+
+AC_MODULE_INIT()
+
+AC_PATH_XTRA()
+
+AC_CHECK_LIB(GL, glOrtho,,,[$X_LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS])
+AC_CHECK_FUNC(glXChooseVisual)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+

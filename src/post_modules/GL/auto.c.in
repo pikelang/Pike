@@ -1,0 +1,164 @@
+/*
+ * $Id: auto.c.in,v 1.1 1998/11/02 23:54:34 marcus Exp $
+ *
+ */
+
+#include "global.h"
+
+RCSID("$Id: auto.c.in,v 1.1 1998/11/02 23:54:34 marcus Exp $");
+#include "stralloc.h"
+#include "pike_macros.h"
+#include "object.h"
+#include "program.h"
+#include "interpret.h"
+#include "builtin_functions.h"
+#include "error.h"
+
+#include <GL/gl.h>
+
+#define ZT_INT    1
+#define ZT_FLOAT  2
+#define ZT_DOUBLE 4
+#define ZT_ARRAY  8
+
+struct zvalue4 {
+  union {
+    GLint i[4];
+    GLfloat f[4];
+    GLdouble d[4];
+  } v;
+  int ty;
+};
+
+union zvalue16 {
+  GLint i[16];
+  GLfloat f[16];
+  GLdouble d[16];
+};
+
+static int check_234_args(char *func, INT32 args, int mn, int mx, int ty,
+			  int rty, struct zvalue4 *ret)
+{
+  struct svalue *s;
+  int i, tt, tr=0;
+
+  if(args==1 && sp[-1].type==T_ARRAY) {
+    struct array *a = sp[-1].u.array;
+    args = a->size;
+    if(args<mn || args>mx)
+      error("%s: expected array of size %d-%d.\n", func, mn, mx);
+    s = ITEM(a);
+  } else {
+    if(args<mn || args>mx)
+      error("%s: too %s arguments.\n", func, (args<mn? "few":"many"));
+    s = sp-args;
+  }
+  for(i=0; i<args; i++)
+    if(!((tt=1<<s[i].type)&ty)) {
+      char buf[32];
+      int n=0;
+      buf[0]='\0';
+      for(tt=0; ty; tt++)
+	if(ty&(1<<tt)) {
+	  ty&=~(1<<tt);
+	  if(n++)
+	    strcat(buf, " or ");
+	  strcat(buf, get_name_of_type(tt));
+	}
+      error("%s: got %s, expected %s.\n", func,
+	    get_name_of_type(s[i].type), buf);
+    } else
+      tr|=tt;
+  if(tr==(BIT_INT|BIT_FLOAT))
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+  else if(tr==BIT_FLOAT)
+    tt=((rty&ZT_FLOAT)? ZT_FLOAT:ZT_DOUBLE);
+  else if(tr!=BIT_INT)
+    error("Internal error in check_234_args for %s!\n", func);
+  else if(rty&ZT_INT)
+    tt=ZT_INT;
+  else 
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+  ret->ty=tt;
+  for(i=0; i<args; i++) 
+    switch(tt)
+    {
+    case ZT_INT:
+      ret->v.i[i]=s[i].u.integer;
+      break;
+    case ZT_FLOAT:
+      ret->v.f[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      break;      
+    case ZT_DOUBLE:
+      ret->v.d[i]=(s[i].type==T_INT?(double)s[i].u.integer:
+		   s[i].u.float_number);
+      break;      
+    }
+  return args;
+}
+
+static int check_1n_args(char *func, INT32 args, int ty, int rty,
+			 union zvalue16 *ret)
+{
+  int i, tt, tr=0, arr=0;
+  struct svalue *s;
+
+  if(args!=1)
+    error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
+  
+  if(sp[-1].type==T_ARRAY) {
+    struct array *a = sp[-1].u.array;
+    args = a->size;
+    if(args>16)
+      error("%s: array too large.\n", func);
+    arr++;
+    s = ITEM(a);
+  } else
+    s = sp-args;
+
+  for(i=0; i<args; i++)
+    if(!((tt=1<<s[i].type)&ty)) {
+      char buf[32];
+      int n=0;
+      buf[0]='\0';
+      for(tt=0; ty; tt++)
+	if(ty&(1<<tt)) {
+	  ty&=~(1<<tt);
+	  if(n++)
+	    strcat(buf, " or ");
+	  strcat(buf, get_name_of_type(tt));
+	}
+      error("%s: got %s, expected %s.\n", func,
+	    get_name_of_type(s[i].type), buf);
+    } else
+      tr|=tt;
+  if(tr==(BIT_INT|BIT_FLOAT))
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+  else if(tr==BIT_FLOAT)
+    tt=((rty&ZT_FLOAT)? ZT_FLOAT:ZT_DOUBLE);
+  else if(tr!=BIT_INT)
+    error("Internal error in check_1n_args for %s!\n", func);
+  else if(rty&ZT_INT)
+    tt=ZT_INT;
+  else 
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+
+  for(i=0; i<args; i++) 
+    switch(tt)
+    {
+    case ZT_INT:
+      ret->i[i]=s[i].u.integer;
+      break;
+    case ZT_FLOAT:
+      ret->f[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      break;      
+    case ZT_DOUBLE:
+      ret->d[i]=(s[i].type==T_INT?(double)s[i].u.integer:s[i].u.float_number);
+      break;      
+    }  
+
+  return tt|(arr?ZT_ARRAY:0);
+}
+
+@@
+
