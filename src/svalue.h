@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.131 2004/06/23 14:29:40 nilsson Exp $
+|| $Id: svalue.h,v 1.132 2004/09/30 15:22:38 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -380,7 +380,11 @@ if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
 #ifdef DEBUG_MALLOC
 static INLINE struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
 {
+#if 0
+  /* What's this supposed to accomplish? Dmalloc tracks memory blocks,
+   * not single svalues that point to them. /mast */
   debug_malloc_update_location(s,l);
+#endif
 #if 1
   if(s && s->type <= MAX_REF_TYPE)
     debug_malloc_update_location(s->u.refs,l);
@@ -388,9 +392,17 @@ static INLINE struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
   return s;
 }
 
+static INLINE struct svalue *dmalloc_check_svalues(struct svalue *s, size_t num, char *l)
+{
+  while (num--) dmalloc_check_svalue (s + num, l);
+  return s;
+}
+
 static INLINE union anything *dmalloc_check_union(union anything *u,int type, char * l)
 {
+#if 0
   debug_malloc_update_location(u,l);
+#endif
 #if 1
   if(u && type <= MAX_REF_TYPE)
     debug_malloc_update_location(u->refs,l);
@@ -412,6 +424,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 
 #else
 #define dmalloc_check_svalue(S,L) (S)
+#define dmalloc_check_svalues(S,L,N) (S)
 #define dmalloc_check_union(U,T,L) (U)
 
 #endif
@@ -424,6 +437,7 @@ static INLINE union anything *dmalloc_check_union(union anything *u,int type, ch
 #define check_refs2(S,T)
 #define check_type_hint(SVALS, NUM, TYPE_HINT)
 #define dmalloc_check_svalue(S,L) (S)
+#define dmalloc_check_svalues(S,L,N) (S)
 #define dmalloc_check_union(U,T,L) (U)
 
 #endif	/* !PIKE_DEBUG */
@@ -625,13 +639,31 @@ int svalues_are_constant(struct svalue *s,
 #define gc_cycle_check_without_recurse gc_mark_without_recurse
 #define gc_cycle_check_weak_without_recurse gc_mark_without_recurse
 
-#define gc_mark_external_svalues(S, NUM, PLACE)				\
-  real_gc_mark_external_svalues (dmalloc_check_svalue (S, DMALLOC_LOCATION()), NUM, PLACE)
-#define gc_check_svalues(S,N) real_gc_check_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)
+#define gc_mark_external_svalues(S, NUM, PLACE) do {			\
+    size_t num__ = (NUM);						\
+    real_gc_mark_external_svalues (					\
+      dmalloc_check_svalues ((S), num__, DMALLOC_LOCATION()), num__, (PLACE)); \
+  } while (0)
+#define gc_check_svalues(S, NUM) do {					\
+    size_t num__ = (NUM);						\
+    real_gc_check_svalues (						\
+      dmalloc_check_svalues ((S), num__, DMALLOC_LOCATION()), num__);	\
+  } while (0)
+
+#ifdef DEBUG_MALLOC
+static INLINE TYPE_FIELD dmalloc_gc_mark_svalues (struct svalue *s, size_t num, char *l)
+  {return real_gc_mark_svalues (dmalloc_check_svalues (s, num, l), num);}
+#define gc_mark_svalues(S, NUM) dmalloc_gc_mark_svalues ((S), (NUM), DMALLOC_LOCATION())
+static INLINE TYPE_FIELD dmalloc_gc_cycle_check_svalues (struct svalue *s, size_t num, char *l)
+  {return real_gc_cycle_check_svalues (dmalloc_check_svalues (s, num, l), num);}
+#define gc_cycle_check_svalues(S, NUM) dmalloc_gc_cycle_check_svalues ((S), (NUM), DMALLOC_LOCATION())
+#else
+#define gc_mark_svalues real_gc_mark_svalues
+#define gc_cycle_check_svalues real_gc_cycle_check_svalues
+#endif
+
 #define gc_check_short_svalue(U,T) real_gc_check_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),T)
-#define gc_mark_svalues(S,N) real_gc_mark_svalues(dmalloc_check_svalue((S),DMALLOC_LOCATION()),N)
 #define gc_mark_short_svalue(U,T) real_gc_mark_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),T)
-#define gc_cycle_check_svalues(S,N) real_gc_cycle_check_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)
 #define gc_cycle_check_short_svalue(U,T) real_gc_cycle_check_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),(T))
 #define gc_free_svalue(S) real_gc_free_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 #define gc_free_short_svalue(U,T) real_gc_free_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),(T))
