@@ -31,12 +31,12 @@ o Reworked codec
     and has a significally improved successrate at encoding modules.
 
 o Less magic hacks
-    Several Pike modules has been cleaned up and old hacks and
-    workarounds for which it now exists real solutions has been
-    rewritten. This should increase size, performance, dumpability and
-    readability of the affected code. In addition lots of internal
-    types in Pike has been tightened up and several more files uses
-    the strict types pragma, which has resulted in some bugfixes.
+    Several Pike modules have been cleaned up from old hacks and
+    workarounds for problems which now have proper solutions. This
+    should improve size, performance, dumpability and readability
+    of the affected code. In addition lots of internal types in Pike
+    have been tightened up and several more files now use the pragma
+    strict_types, which has resulted in some additional bugfixes.
 
 o IPv6
 o INT64
