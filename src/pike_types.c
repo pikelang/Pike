@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.112 1999/12/23 21:22:37 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.113 1999/12/26 18:53:33 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2373,8 +2373,8 @@ static int low_pike_types_le2(char *a, char *b,
     b+=type_length(b);
 
     /* check the returntype */
-    if (EXTRACT_UCHAR(b) != T_VOID) {
-      /* FIXME: Check if a has type void here? */
+    /* FIXME: Check array_cnt */
+    if ((EXTRACT_UCHAR(b) != T_VOID) && (EXTRACT_UCHAR(a) != T_VOID)) {
       if(!low_pike_types_le(a, b, array_cnt, flags)) return 0;
     }
     return 1;
@@ -3446,4 +3446,10 @@ void yyexplain_nonmatching_types(struct pike_string *type_a,
 
   if(implements_a && implements_b)
     yyexplain_not_implements(implements_a,implements_b);
+}
+
+
+struct pike_string *make_pike_type(char *t)
+{
+  return make_shared_binary_string(t, type_length(t));
 }
