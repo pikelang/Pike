@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.358 2003/09/08 16:22:55 mast Exp $
+# $Id: Makefile.in,v 1.359 2003/10/08 18:54:46 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -896,7 +896,7 @@ precompile.sh: $(SRCDIR)/precompile.sh.in ./config.status
 # The date stamp used to be 0103000070, but that seems to confuse some
 # recent OS's, that haven't heard of the 70's...
 precompile.sh-stamp: precompile.sh
-	@touch 0101010185 precompile.sh-stamp
+	@touch -t 198501010000.00 precompile.sh-stamp
 
 $(SRCDIR)/machine.h.in: $(SRCDIR)/stamp-h.in
 	@if test -f $(SRCDIR)/machine.h.in; then :; else \
