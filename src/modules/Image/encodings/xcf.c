@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.10 1999/06/24 23:15:21 hubbe Exp $");
+RCSID("$Id: xcf.c,v 1.11 1999/08/16 18:10:23 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1135,7 +1135,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     unsigned char *s;
     ewidth = MINIMUM(TILE_WIDTH, i->xsize-x);
     eheight = MINIMUM(TILE_HEIGHT, i->ysize-y);
-    tile->refs++;
+    add_ref(tile);
 
 /*     fprintf(stderr, "       tile %d/%d [%dx%d]  %dbpp      \n", */
 /*             l+1, tiles->size, ewidth, eheight,bpp); */
@@ -1147,7 +1147,7 @@ void image_xcf_f__decode_tiles( INT32 args )
       push_int( ewidth );
       push_int( eheight );
       image_xcf_f__rle_decode( 4 );
-      tile = sp[-1].u.string;
+      tile = (struct pike_string *)debug_malloc_pass(sp[-1].u.string);
       if(sp[-1].type != T_STRING)
         fatal("Internal disaster in XCF module\n");
       sp--;

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.6 1999/05/30 20:12:20 mirar Exp $");
+RCSID("$Id: xbm.c,v 1.7 1999/08/16 18:08:58 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -313,13 +313,13 @@ static void image_xbm__decode( INT32 args )
     if(invert)
     {
       apply(a, "invert", 0);
-      i = sp[-1].u.object;
+      i = (struct object *)debug_malloc_pass(sp[-1].u.object);
       sp--;
     }
     else
     {
       i = a;
-      a->refs++;
+      add_ref(a);
     }
   } else {
     if(!bg)
@@ -328,7 +328,7 @@ static void image_xbm__decode( INT32 args )
       push_int(255);
       push_int(255);
       f_aggregate(3);
-      bg = sp[-1].u.array;
+      bg = (struct array *)debug_malloc_pass(sp[-1].u.array);
       sp--;
     }
     if(invert)
