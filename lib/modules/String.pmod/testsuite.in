@@ -1,5 +1,5 @@
 START_MARKER
-dnl $Id: testsuite.in,v 1.22 2004/07/24 10:14:13 grubba Exp $
+dnl $Id: testsuite.in,v 1.23 2005/01/07 20:07:57 grubba Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -156,7 +156,7 @@ test_any([[
   sizeof("foobar gazonk gurka baz"/" ");
 ]])
 
-test_eval_error( String.Replace(({}),({}))("") )
+test_eq( String.Replace(({}),({}))(""), "" )
 test_eq( String.Replace("bar"/1,"foo"/1)(""), "" )
 test_eq( String.Replace("bax"/1,"fox"/1)("bar"), "for" )
 
