@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.6 1997/06/13 15:58:02 grubba Exp $
+# $Id: configure.in,v 1.7 1997/10/05 03:41:43 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -14,7 +14,6 @@ sinclude(../module_configure.in)
 OLD_LIBS=$LIBS
 OLD_LDFLAGS=$LDFLAGS
 OLD_CPPFLAGS=$CPPFLAGS
-ODBC_LIBS=""
 
 AC_ARG_WITH(odbc,  [  --without-odbc       no support for the ODBC databases],[],[with_odbc=yes])
 
@@ -97,7 +96,6 @@ if test x$with_odbc = xyes; then
     else
       AC_CHECK_LIB(socket, socket, [
         LIBS="-lsocket $LIBS"
-        ODBC_LIBS="-lsocket ${ODBC_LIBS}"
       ], [])
     fi
     if echo $LIBS|grep -- -lnsl >&5 2>&5; then
@@ -105,7 +103,6 @@ if test x$with_odbc = xyes; then
     else
       AC_CHECK_LIB(nsl, gethostbyname, [
         LIBS="-lnsl $LIBS"
-        ODBC_LIBS="-lnsl ${ODBC_LIBS}"
       ], [])
     fi
     if echo $LIBS|grep -- -lm >&5 2>&5; then
@@ -113,13 +110,11 @@ if test x$with_odbc = xyes; then
     else
       AC_CHECK_LIB(m, floor, [
         LIBS="-lm $LIBS"
-        ODBC_LIBS="-lm ${ODBC_LIBS}"
       ], [])
     fi
 
     AC_CHECK_LIB(odbc, SQLConnect, [
       LIBS="-lodbc $LIBS"
-      ODBC_LIBS="-lodbc ${ODBC_LIBS}"
       pike_cv_odbc=yes;
     ], [])
   else
@@ -131,7 +126,6 @@ if test x$with_odbc = xyes; then
     LIBS=$OLD_LIBS
     CPPFLAGS=$OLD_CPPFLAGS
     LDFLAGS=$OLD_LDFLAGS
-    ODBC_LIBS=""
   else
     AC_DEFINE(HAVE_ODBC)
 
@@ -139,7 +133,5 @@ if test x$with_odbc = xyes; then
 else
   :
 fi
-
-AC_SUBST(ODBC_LIBS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

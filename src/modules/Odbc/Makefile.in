@@ -1,12 +1,12 @@
 #
-# $Id: Makefile.in,v 1.1 1997/03/10 19:01:49 grubba Exp $
+# $Id: Makefile.in,v 1.2 1997/10/05 03:41:42 grubba Exp $
 #
 
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=odbc.o odbc_result.o
-MODULE_LDFLAGS=@LDFLAGS@ @ODBC_LIBS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 @dynamic_module_makefile@
 @dependencies@
