@@ -179,13 +179,18 @@ class mergenode
   }
 };
 
-object findmodule(string fullname)
+object low_findmodule(string fullname)
 {
   mixed *stat;
   program p;
-  if(p=(program)(fullname+".pmod"))
-    return (object)(fullname+".pmod");
-
+  if(mixed *stat=file_stat(fullname+".pmod"))
+  {
+    if(stat[1]==-2)
+      return dirnode(fullname+".pmod");
+    else
+      return (object)(fullname+".pmod");
+  }
+    
 #if constant(load_module)
   if(file_stat(fullname+".so"))
   {
@@ -193,43 +198,41 @@ object findmodule(string fullname)
   }
 #endif
 
+#ifdef NOT_INSTALLED
   /* Hack for pre-install testing */
   if(mixed *stat=file_stat(fullname))
   {
     if(stat[1]==-2)
-      return findmodule(fullname+"/module");
+      return low_findmodule(fullname+"/module");
   }
+#endif
 
-  if(mixed *stat=file_stat(fullname+".pmd"))
-  {
-    if(stat[1]==-2)
-      return dirnode(fullname+".pmd");
-  }
-    
   return UNDEFINED;
 }
 
-static mixed idiresolv(string identifier)
+mixed findmodule(string path)
 {
-  string path=combine_path(pike_library_path+"/modules",identifier);
-  if(mixed ret=findmodule(path)) return ret;
-  return _static_modules[identifier];
+  if(object o=low_findmodule(path))
+  {
+    if(mixed tmp=o->_module_value)
+    {
+      return tmp;
+    }
+  }
+  return o;
 }
 
-mixed resolv(string identifier, string current_file)
+varargs mixed resolv(string identifier, string current_file)
 {
   mixed ret;
   string *tmp,path;
-  multiset tested=(<>);
-  mixed *modules=({});
 
-  tmp=current_file/"/";
-  tmp[-1]=identifier;
-  path=combine_path(getcwd(), tmp*"/");
-  if(!tested[path])
+  if(current_file)
   {
-    tested[path]=1;
-    if(ret=findmodule(path)) modules+=({ret});
+    tmp=current_file/"/";
+    tmp[-1]=identifier;
+    path=combine_path(getcwd(), tmp*"/");
+    if(ret=findmodule(path)) return ret;
   }
 
   if(path=getenv("PIKE_MODULE_PATH"))
@@ -238,39 +241,14 @@ mixed resolv(string identifier, string current_file)
       {
 	if(!sizeof(path)) continue;
 	path=combine_path(path,identifier);
-	if(!tested[path])
-	{
-	  tested[path]=1;
-	  if(ret=findmodule(path)) modules+=({ret});
-	}
+	if(ret=findmodule(path)) return ret;
       }
   }
   string path=combine_path(pike_library_path+"/modules",identifier);
-  if(!tested[path])
-  {
-    tested[path]=1;
-    if(ret=findmodule(path)) modules+=({ret});
-  }
-  if(ret=_static_modules[identifier]) modules+=({ret});
+  if(ret=findmodule(path)) return ret;
 
-  switch(sizeof(modules))
-  {
-  default:
-    mixed tmp=mergenode(modules);
-    werror(sprintf("%O\n",tmp["file"]));
-    return tmp;
-  case 1:
-    return modules[0];
-  case 0:
-    switch(identifier)
-    {
-    case "readline":
-      if(!resolv("readlinemod", current_file))
-	werror("No readline module.\n");
-      return all_constants()->readline;
-    }
-    return UNDEFINED;
-  }
+  if(ret=_static_modules[identifier]) return ret;;
+  return UNDEFINED;
 }
 
 /* This function is called when all the driver is done with all setup
@@ -291,13 +269,13 @@ void _main(string *argv, string *env)
   add_constant("getenv",getenv);
   add_constant("putenv",putenv);
 
-  add_constant("write",idiresolv("files")->file("stdout")->write);
+  add_constant("write",_static_modules.files.file("stdout")->write);
 
   a=backtrace()[-1][0];
   q=a/"/";
   pike_library_path = q[0..sizeof(q)-2] * "/";
 
-  tmp=idiresolv("getopt");
+  tmp=resolv("Getopt");
 
   foreach(tmp->find_all_options(argv,({
     ({"version",tmp->NO_ARG,({"-v","--version"})}),
