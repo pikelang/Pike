@@ -1,6 +1,7 @@
 #!/usr/local/bin/pike
 
-program p;
+int quiet=0;
+program p; /* program being dumped */
 
 string fakeroot;
 
@@ -12,6 +13,61 @@ class FakeMaster
       return ::master_read_file(fakeroot+combine_path_with_cwd(s));
     }
 }
+
+class ProgressBar
+{
+  private constant width = 45;
+
+  private float phase_base, phase_size;
+  private int max, cur;
+  private string name;
+
+  void set_current(int _cur)
+  {
+    cur = _cur;
+  }
+
+  void set_phase(float _phase_base, float _phase_size)
+  {
+    phase_base = _phase_base;
+    phase_size = _phase_size;
+  }
+  
+  void update(int increment)
+  {
+    cur += increment;
+    cur = min(cur, max);
+    
+    float ratio = phase_base + ((float)cur/(float)max) * phase_size;
+    if(1.0 < ratio)
+      ratio = 1.0;
+    
+    int bar = (int)(ratio * (float)width);
+    int is_full = (bar == width);
+    
+    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
+	  name+":",
+	  "="*bar,
+	  is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
+	  is_full ? "" : " "*(width-bar-1),
+	  is_full ? "" : "|",
+	  100.0 * ratio);
+  }
+
+  void create(string _name, int _cur, int _max,
+	      float|void _phase_base, float|void _phase_size)
+    /* NOTE: max must be greater than zero. */
+  {
+    name = _name;
+    max = _max;
+    cur = _cur;
+    
+    phase_base = _phase_base || 0.0;
+    phase_size = _phase_size || 1.0 - phase_base;
+  }
+}
+
+ProgressBar progress_bar;
 
 #define error(X) throw( ({ (X), backtrace() }) )
 
@@ -140,8 +196,6 @@ class Codec
   }
 }
 
-int quiet=0;
-
 Stdio.File logfile;
 
 class Handler
@@ -262,6 +316,18 @@ int main(int argc, string *argv)
     logfile=0;
   }
 
+  if(argv[1] == "--progress-bar")
+  {
+    quiet = 2;
+    logfile = Stdio.File("dumpmodule.log","caw");
+    
+    progress_bar = ProgressBar("Precompiling",
+			       @array_sscanf(argv[2], "%d,%d"),
+			       0.2, 0.8);
+    
+    argv = argv[2..];
+  }
+
   if(sscanf(argv[1],"--fakeroot=%s",fakeroot))
   {
     argv=argv[1..];
@@ -269,7 +335,12 @@ int main(int argc, string *argv)
   }
 
   foreach(argv[1..],string file)
+  {
+    if(progress_bar)
+      progress_bar->update(1);
+    
     dumpit(file);
+  }
 
   if(quiet==1)
     werror("\n");

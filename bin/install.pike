@@ -2,6 +2,10 @@
 
 #define USE_GTK
 
+#if !constant(GTK.parse_rc)
+#undef USE_GTK
+#endif
+
 int last_len;
 int redump_all;
 string pike;
@@ -13,7 +17,67 @@ array(string) to_export=({});
 int export;
 int no_gui;
 
+class ProgressBar
+{
+  private constant width = 45;
+
+  private float phase_base, phase_size;
+  private int max, cur;
+  private string name;
+
+  void set_current(int _cur)
+  {
+    cur = _cur;
+  }
+
+  void set_phase(float _phase_base, float _phase_size)
+  {
+    phase_base = _phase_base;
+    phase_size = _phase_size;
+  }
+  
+  void update(int increment)
+  {
+    cur += increment;
+    cur = min(cur, max);
+    
+    float ratio = phase_base + ((float)cur/(float)max) * phase_size;
+    if(1.0 < ratio)
+      ratio = 1.0;
+    
+    int bar = (int)(ratio * (float)width);
+    int is_full = (bar == width);
+    
+    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
+	  name+":",
+	  "="*bar,
+	  is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
+	  is_full ? "" : " "*(width-bar-1),
+	  is_full ? "" : "|",
+	  100.0 * ratio);
+  }
+
+  void create(string _name, int _cur, int _max,
+	      float|void _phase_base, float|void _phase_size)
+    /* NOTE: max must be greater than zero. */
+  {
+    name = _name;
+    max = _max;
+    cur = _cur;
+    
+    phase_base = _phase_base || 0.0;
+    phase_size = _phase_size || 1.0 - phase_base;
+  }
+}
+
+ProgressBar progress_bar;
+
+/* for progress bar */
+int files_to_install;
+int installed_files;
+
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
+
 
 int istty_cache;
 int istty()
@@ -40,11 +104,10 @@ int istty()
 #endif
 }
 
-
 void status1(string fmt, mixed ... args)
 {
   status_clear();
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
   if(label1)
   {
     label7->set_text(sprintf(fmt,@args)-"\n");
@@ -71,7 +134,7 @@ string some_strerror(int err)
 void fail(string fmt, mixed ... args)
 {
   int err=errno();
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
   if(label1)
   {
     status1(fmt,@args);
@@ -97,7 +160,7 @@ void fail(string fmt, mixed ... args)
 void status(string doing, void|string file, string|void msg)
 {
   if(!file) file="";
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
   if(label1)
   {
     last_len=1;
@@ -110,43 +173,56 @@ void status(string doing, void|string file, string|void msg)
   }
 #endif
 
-
   if(!istty()) return;
 
+  if(progress_bar)
+  {
+    last_len = 75;
+    progress_bar->set_current(installed_files);
+    progress_bar->update(0);
+    return;
+  }
+
   file=replace(file,"\n","\\n");
-  if(strlen(file)>49)
-    file="..."+file[strlen(file)-47..];
+  if(strlen(file)>45)
+    file=".."+file[strlen(file)-44..];
 
   if(msg) file+=" "+msg;
-  if(doing) file=doing+" "+file;
-  string s="\r"+file;
+  if(doing) file=doing+": "+file;
+  string s="\r   "+file;
   int t=strlen(s);
   if(t<last_len) s+=" "*(last_len-t);
   last_len=t;
   write(s);
 }
 
-void status_clear()
+void status_clear(void|int all)
 {
-  if(last_len)
-  {
+    if(all)
+	last_len = 75;
     status(0,"");
     status(0,"");
-  }
 }
 
-int mkdirhier(string dir)
+
+mapping already_created=([]);
+int mkdirhier(string orig_dir)
 {
   int tomove;
   if(export) return 1;
+  string dir=orig_dir;
+  if(already_created[orig_dir]) return 1;
 
   if(dir=="" || (strlen(dir)==2 && dir[-1]==':')) return 1;
-  status("creating",dir+"/");
+  dir=fakeroot(dir);
+
+  status("Creating",dir+"/");
+
   mixed s=file_stat(dir);
   if(s)
   {
     if(s[1]<0)
-      return 1;
+      return already_created[orig_dir]=1;
 
     if(glob("*.pmod",dir))
     {
@@ -171,7 +247,7 @@ int mkdirhier(string dir)
     if(!mv(dir+".tmp",dir+"/module.pmod"))
       fail("mv(%s,%s)",dir+".tmp",dir+"/module.pmod");
 
-  return 1;
+  return already_created[orig_dir]=1;
 }
 
 int compare_files(string a,string b)
@@ -187,18 +263,21 @@ int low_install_file(string from,
 		     string to,
 		     void|int mode)
 {
+  installed_files++;
   if(export)
   {
 //    werror("FROM: %O\n",from);
     to_export+=({ from });
     return 1;
   }
+  
+  to=fakeroot(to);
 
-  status("installing",to);
+  status("Installing",to);
 
   if(compare_files(from,to))
   {
-    status("installing",to,"Already installed");
+    status("Installing",to,"Already installed");
     return 0;
   }
   mkdirhier(dirname(to));
@@ -279,6 +358,7 @@ void install_dir(string from, string to,int dump)
   from=stripslash(from);
   to=stripslash(to);
 
+  installed_files++;
   mkdirhier(to);
 //  werror("\nFOO (from=%s, cwd=%s)\n",from,getcwd());
   foreach(get_dir(from),string file)
@@ -307,6 +387,7 @@ void install_dir(string from, string to,int dump)
 
 void install_header_files(string from, string to)
 {
+  installed_files++;
   from=stripslash(from);
   to=stripslash(to);
   mkdirhier(to);
@@ -320,14 +401,43 @@ void install_header_files(string from, string to)
 
 mapping vars=([]);
 
+object reg;
+string regexp;
+
+string regquote(string s)
+{
+  while(s[-1] == '/' || s[-1]=='\\') s=s[..strlen(s)-2];
+  return
+    replace(s,
+	    ({".","[","]","*","\\","(",")","|","+"}),
+	    ({"\\.","\\[","\\]","\\*","\\\\","\\(","\\)","\\|","\\+"}) );
+}
+
+string globify(string s)
+{
+  if(s[-1]=='/') s=s[..strlen(s)-2];
+  return s+"*";
+}
+
 string fakeroot(string s)
 {
-  if(vars->fakeroot)
+  if(!vars->fakeroot) return s;
+  if(!reg)
   {
-    return vars->fakeroot+combine_path(getcwd(),s);
-  }else{
-    return s;
+    reg=Regexp(regexp=sprintf("^([^/])%{|(%s)%}",
+			      Array.map(
+				({
+				  getcwd(),
+				    vars->LIBDIR_SRC,
+				    vars->SRCDIR,
+				    vars->TMP_BINDIR,
+				    vars->MANDIR_SRC,
+				    vars->TMP_LIBDIR,
+				    vars->fakeroot,
+				    }),regquote)));
   }
+  if(reg->match(s)) return s;
+  return vars->fakeroot+s;
 }
 
 string export_base_name;
@@ -369,7 +479,7 @@ void do_export()
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
   Stdio.File p=Stdio.File(export_base_name+".burk","wc");
-  string msg="Loading installation script, please wait...";
+  string msg="   Loading Pike installation script, please wait...";
   p->write("w%4c%s",strlen(msg),msg);
 
 #define TRANSLATE(X,Y) combine_path(".",X) : Y
@@ -473,7 +583,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2000 Fredrik Hübinette and Idonex AB
+#" Copyright (C) 1994-2000 Fredrik Hübinette and Roxen Internet Software AB
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are
 welcome to redistribute it under certain conditions; Read the files
 COPYING and DISCLAIMER in the Pike distribution for more details.
@@ -493,7 +603,7 @@ COPYING and DISCLAIMER in the Pike distribution for more details.
     shift
 done
 "
-		   "echo \"Loading installation script, please wait...\"\n"
+		   "echo \"   Loading Pike installation script, please wait...\"\n"
 		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
@@ -599,7 +709,7 @@ string make_absolute_path(string path)
   return path;
 }
 
-class ReadInteractive
+class Readline
 {
   inherit Stdio.Readline;
 
@@ -617,9 +727,10 @@ class ReadInteractive
     signal(signum("SIGINT"));
   }
 
-  static private string low_edit(mixed ... args)
+  static private string low_edit(string data, string|void local_prompt,
+				 array(string)|void attrs)
   {
-    string r = ::edit(@args);
+    string r = ::edit(data, local_prompt, (attrs || ({})) | ({ "bold" }));
     if(!r)
     {
       // ^D?
@@ -705,7 +816,7 @@ class ReadInteractive
 }
 
 
-#if defined(USE_GTK) && constant(GTK.parse_rc)
+#ifdef USE_GTK
 object window1;
 object vbox1;
 object label4;
@@ -901,41 +1012,39 @@ int pre_install(array(string) argv)
 
     case "--interactive":
 
-#if constant(GTK.parse_rc) && defined(USE_GTK)
+#ifdef USE_GTK
       catch  {
 	if(!no_gui)
 	{
-	  begin_wizard(argv);
-	  return -1; 
+#ifndef __NT__ /* We are using GTK on Win32!! no DISPLAY required */
+	  if(getenv("DISPLAY"))
+#endif
+	  {
+	    begin_wizard(argv);
+	    return -1; 
+	  }
 	}
       };
 #endif
 
-	// FIXME: 
-	// The following introduction is not quite true on NT
-	// and other platforms where Readline falls back on 
-	// 'dummy' mode.
+      status1("");
+  
+      interactive=Readline();
 
-      write("\n"
-	    "   Welcome to the interactive "+version()+
+      write("   Welcome to the interactive "+version()+
 	    " installation script.\n"
-	    "\n"
-#ifndef __NT__
-	    "   The script will guide you through the installation process by asking\n"
-	    "   a few questions. Whenever you input a path or a filename, you may use\n"
-	    "   the <tab> key to perform filename completion. You will be able to\n"
-	    "   confirm your settings before the installation begin.\n"
-
-#else
-
-	    "   The script will guide you through the installation process by asking\n"
-	    "   a few questions.  You will be able to confirm your settings before\n"
-	    "   the installation begin.\n"
-#endif
+	    "\n" +
+	    (interactive->get_input_controller()->dumb ?
+	     "   The script will guide you through the installation process by asking\n"
+	     "   a few questions. You will be able to confirm your settings before\n"
+	     "   the installation begins.\n"
+	     :
+	     "   The script will guide you through the installation process by asking\n"
+	     "   a few questions. Whenever you input a path or a filename, you may use\n"
+	     "   the <tab> key to perform filename completion. You will be able to\n"
+	     "   confirm your settings before the installation begins.\n")
 	    );
       
-      interactive=ReadInteractive();
-
       string confirm, bin_path = vars->pike_name;
       do {
 	write("\n");
@@ -974,6 +1083,8 @@ int pre_install(array(string) argv)
 
       } while(!(confirm == "" || confirm == "y"));
 
+      write("\n");
+      
       vars->pike_name = bin_path;
       
       destruct(interactive);
@@ -1066,11 +1177,18 @@ void do_install()
   pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
-    status1("Installing Pike in %s...\n",prefix);
+    status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
   }
+  catch {
+    files_to_install = (int)Stdio.read_file("num_files_to_install");
+    
+    if(!export && files_to_install)
+      progress_bar = ProgressBar("Installing", 0, files_to_install, 0.0, 0.2);
+  };
 
   mixed err=catch {
-      
+
+    /* Ugly way to detect NT installation */
     string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
     if(Stdio.file_size(pike_bin_file) < 10000 &&
        file_stat(pike_bin_file+".exe"))
@@ -1119,22 +1237,22 @@ void do_install()
 		  lib_prefix);
     }
     
-    install_dir(fakeroot(vars->TMP_LIBDIR),lib_prefix,1);
-    install_dir(fakeroot(vars->LIBDIR_SRC),lib_prefix,1);
+    install_dir(vars->TMP_LIBDIR,lib_prefix,1);
+    install_dir(vars->LIBDIR_SRC,lib_prefix,1);
     
-    install_header_files(fakeroot(vars->SRCDIR),include_prefix);
-    install_header_files(fakeroot(vars->TMP_BUILDDIR),include_prefix);
+    install_header_files(vars->SRCDIR,include_prefix);
+    install_header_files(vars->TMP_BUILDDIR,include_prefix);
     
-    install_file(fakeroot(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile")),
+    install_file(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
 		 combine_path(include_prefix,"dynamic_module_makefile"));
-    install_file(fakeroot(combine_path(vars->TMP_BUILDDIR,"aclocal")),
+    install_file(combine_path(vars->TMP_BUILDDIR,"aclocal"),
 		 combine_path(include_prefix,"aclocal.m4"));
     
     if(file_stat(vars->MANDIR_SRC))
     {
 //      trace(9);
 //      _debug(5);
-      install_dir(fakeroot(vars->MANDIR_SRC),combine_path(man_prefix,"man1"),0);
+      install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
     }
   };
 
@@ -1158,39 +1276,81 @@ void do_install()
         "PIKE_INCLUDE_PATH":"",
         "PIKE_MASTER":"",
       ]) ]); 
+
+
     if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
     {
-      Process.create_process( ({pike,"-m",
+      Process.create_process( ({fakeroot(pike),"-m",
 				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
 				  @(vars->fakeroot?({"--fakeroot="+
                                                      vars->fakeroot}):({})),
 				  master}), options)->wait();
     }
+
+    catch {
+      Stdio.write_file("num_files_to_install",
+		       sprintf("%d\n",installed_files));
+    };
+    files_to_install=0;
     
     if(sizeof(to_dump))
     {
       rm("dumpmodule.log");
-      status("Dumping modules, please ignore any errors at this point..");
-      foreach(to_dump, string mod) rm(mod+".o");
+      
+      foreach(to_dump, string mod)
+	  rm(mod+".o");
+      
       /* Dump 50 modules at a time */
-      write("\n");
-      foreach(to_dump/50.0,to_dump)
-	{
-	  write("    ");
-	  Process.create_process( ({pike,
-				      combine_path(vars->SRCDIR,
-                                                   "dumpmodule.pike"),
-#if defined(USE_GTK) && constant(GTK.parse_rc)
-				      label1?"--distquiet":
+
+      array cmd=({fakeroot(pike) });
+
+      if(vars->fakeroot)
+	cmd+=({
+	  sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
+	    sprintf("-DPIKE_FAKEROOT_OMIT=%O",
+		    Array.map( ({
+				  getcwd(),
+				    vars->LIBDIR_SRC,
+				    vars->SRCDIR,
+				    vars->TMP_BINDIR,
+				    vars->MANDIR_SRC,
+				    vars->TMP_LIBDIR,
+				    vars->fakeroot,
+				    }), globify)*":"),
+	    "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
+	    });
+
+      cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
+
+#ifdef USE_GTK
+		label1?"--distquiet":
 #endif
-	    "--quiet",
-				      @(vars->fakeroot? 
-                                        ({"--fakeroot="+vars->fakeroot}):({})),
-                                  }) + to_dump,
-                                  options)->wait();
+	"--quiet"});
+
+//      werror("%O\n",cmd);
+
+      int offset = 1;
+      foreach(to_dump/50.0, array delta_dump)
+	{
+	  Process.create_process(cmd +
+				 ( istty() ? 
+				   ({
+				   "--progress-bar",
+				     sprintf("%d,%d", offset, sizeof(to_dump))
+				     }) : ({"--quiet"}) ) +
+				 delta_dump, options)->wait();
+
+	  offset += sizeof(delta_dump);
 	}
+      
+      status_clear(1);
     }
 
+    if(progress_bar)
+      /* The last files copied does not really count (should
+	 really be a third phase)... */
+      progress_bar->set_phase(1.0, 0.0);
+    
     // Delete any .pmod files that would shadow the .so
     // files that we just installed. For a new installation
     // this never does anything. -Hubbe
@@ -1199,26 +1359,28 @@ void do_install()
 #if constant(symlink)
     if(lnk)
     {
-      status("creating",lnk);
-      mixed s=file_stat(lnk,1);
+      status("Creating",lnk);
+      mixed s=file_stat(fakeroot(lnk),1);
       if(s)
       {
-	if(!mv(lnk,lnk+".old"))
+	if(!mv(fakeroot(lnk),fakeroot(lnk+".old")))
 	{
 	  werror("Failed to move %s\n",lnk);
 	  exit(1);
 	}
       }
       if (old_exec_prefix) {
-	mkdirhier(old_exec_prefix);
+	mkdirhier(fakeroot(old_exec_prefix));
       }
-      mkdirhier(dirname(lnk));
-      symlink(pike,lnk);
-      status("creating",lnk,"done");
+      mkdirhier(fakeroot(dirname(lnk)));
+      symlink(pike,fakeroot(lnk));
+      status("Creating",lnk,"done");
     }
 #endif
   }
-  status1("Installation completed successfully.");
+
+  progress_bar = 0;
+  status1("Pike installation completed successfully.");
 }
 
 int main(int argc, array(string) argv)
@@ -1240,7 +1402,7 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "help":
-	  werror(helptext);
+	  write(helptext);
 	  exit(0);
 
 	case "notty":
@@ -1253,10 +1415,25 @@ int main(int argc, array(string) argv)
     }
 
   argv=Getopt.get_args(argv);
-      
+
   foreach(argv[1..], string foo)
     if(sscanf(foo,"%s=%s",string var, string value)==2)
       vars[var]=value;
 
+  /* Some magic for the fakeroot stuff */
+  string tmp=vars->fakeroot;
+  m_delete(vars,"fakeroot");
+  if(tmp && tmp!="")
+  {
+    if(tmp[-1]=='/' || tmp[-1]=='\\')
+      tmp=tmp[..sizeof(tmp)-2];
+
+    /* Create the fakeroot if it doesn't exist
+    /* This must be done with fakeroot unset since
+     * it would create fakeroot/fakeroot otherwise
+     */
+    mkdirhier(tmp);
+    vars->fakeroot=tmp;
+  }
   return pre_install(argv);
 }
