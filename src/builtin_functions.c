@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.120 1998/07/28 23:01:52 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.121 1998/09/18 21:37:30 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1184,7 +1184,6 @@ void f_replace(INT32 args)
 
 void f_compile(INT32 args)
 {
-  
   struct program *p;
   if(args < 1)
     PIKE_ERROR("compile", "Too few arguments.\n", sp, args);
@@ -2984,6 +2983,34 @@ void f__locate_references(INT32 args)
 }
 #endif
 
+void f_map_array(INT32 args)
+{
+  ONERROR tmp;
+  INT32 e;
+  struct svalue *fun;
+  struct array *ret,*foo;
+
+  if(sp[-args].type != T_ARRAY)
+    error("Bad argument 1 to map_array().\n");
+  
+  foo=sp[-args].u.array;
+  fun=sp-args+1;
+
+  ret=allocate_array(foo->size);
+  SET_ONERROR(tmp, do_free_array, ret);
+  for(e=0;e<foo->size;e++)
+  {
+    push_svalue(foo->item+e);
+    assign_svalues_no_free(sp,fun+1,args-2,-1);
+    sp+=args-2;
+    apply_svalue(fun,args-1);
+    ret->item[e]=*(--sp);
+  }
+  pop_n_elems(args);
+  UNSET_ONERROR(tmp);
+  push_array(ret);
+}
+
 void init_builtin_efuns(void)
 {
   add_efun("gethrtime", f_gethrtime,"function(int|void:int)", OPT_EXTERNAL_DEPEND);
@@ -3011,7 +3038,7 @@ void init_builtin_efuns(void)
 
   add_efun("column",f_column,"function(array,mixed:array)",0);
   add_efun("combine_path",f_combine_path,"function(string...:string)",0);
-  add_efun("compile",f_compile,"function(string:program)",OPT_EXTERNAL_DEPEND);
+  add_efun("compile",f_compile,"function(string,mixed...:program)",OPT_EXTERNAL_DEPEND);
   add_efun("copy_value",f_copy_value,"function(1=mixed:1)",0);
   add_efun("crypt",f_crypt,"function(string:string)|function(string,string:int)",OPT_EXTERNAL_DEPEND);
   add_efun("ctime",f_ctime,"function(int:string)",OPT_TRY_OPTIMIZE);
