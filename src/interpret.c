@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.278 2002/11/10 20:19:18 grubba Exp $
+|| $Id: interpret.c,v 1.279 2002/11/11 13:13:09 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.278 2002/11/10 20:19:18 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.279 2002/11/11 13:13:09 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1761,6 +1761,7 @@ PMOD_EXPORT void low_safe_apply_handler(const char *fun,
   }
 }
 
+/* NOTE: Returns 1 if result on stack, 0 otherwise. */
 PMOD_EXPORT int safe_apply_handler(const char *fun,
 				   struct object *handler,
 				   struct object *compat,
@@ -1769,20 +1770,20 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
 {
   JMP_BUF recovery;
   int ret;
+
+  STACK_LEVEL_START(args);
+
 #if 0
   fprintf(stderr, "safe_apply_handler(\"%s\", 0x%08p, 0x%08p, %d)\n",
 	  fun, handler, compat, args);
 #endif /* 0 */
 
-  Pike_sp-=args;
   free_svalue(& throw_value);
   throw_value.type=T_INT;
 
-  if (SETJMP(recovery))
+  if (SETJMP(recovery)) { 
     ret = 0;
-  else {
-    Pike_sp += args;
-
+  } else {
     if (low_unsafe_apply_handler (fun, handler, compat, args) &&
 	rettypes && !((1 << Pike_sp[-1].type) & rettypes)) {
       if ((rettypes & BIT_ZERO) && SAFE_IS_ZERO (Pike_sp - 1)) {
@@ -1805,6 +1806,9 @@ PMOD_EXPORT int safe_apply_handler(const char *fun,
   }
 
   UNSETJMP(recovery);
+
+  STACK_LEVEL_DONE(ret);
+
   return ret;
 }
 
