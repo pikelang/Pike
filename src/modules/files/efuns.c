@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.104 2001/06/30 23:20:12 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.105 2001/07/16 14:52:55 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -157,14 +157,20 @@ struct array *encode_stat(struct stat *s)
  *!
  *!   The indices are:
  *!   @array
- *!     @item 0 int mode
- *!     @item 1 int size
+ *!     @elem int mode
+ *!
+ *!     @elem int size
  *!        Size of the file, or -2=directory, -3=symlink and -4=device.
- *!     @item 2 int atime
- *!     @item 3 int mtime
- *!     @item 4 int ctime
- *!     @item 5 int uid
- *!     @item 6 int gid
+ *!
+ *!     @elem int atime
+ *!
+ *!     @elem int mtime
+ *!
+ *!     @elem int ctime
+ *!
+ *!     @elem int uid
+ *!
+ *!     @elem int gid
  *!   @endarray
  */
 /*! @endclass
