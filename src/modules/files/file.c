@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.41 1997/05/20 13:23:52 grubba Exp $");
+RCSID("$Id: file.c,v 1.42 1997/05/29 02:07:35 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -785,6 +785,7 @@ static void file_set_nonblocking(INT32 args)
   case 3: file_set_close_callback(1);
   case 2: file_set_write_callback(1);
   case 1: file_set_read_callback(1);
+  case 0: break;
   }
   set_nonblocking(FD,1);
   THIS->open_mode |= FILE_NONBLOCKING;
