@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.3 1998/03/08 13:24:54 grubba Exp $
+# $Id: configure.in,v 1.4 1998/10/20 20:29:22 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -29,9 +29,10 @@ MYSQL_LIBS=""
 
 AC_ARG_WITH(mysql,  [  --without-mysql       no support for the Mysql database],[],[with_mysql=yes])
 
-if test x$with_mysql = xyes; then
-
-  AC_MSG_CHECKING(Checking for Mysql lib-directory)
+if test x$with_mysql = xno; then
+  :
+else
+  AC_MSG_CHECKING(for Mysql lib-directory)
 
   AC_CACHE_VAL(pike_cv_mysql_lib_dir, [
     for pike_cv_mysql_lib_dir in /usr/local/lib/mysql /usr/local/mysql/lib/mysql /usr/gnu/lib/mysql /usr/lib/mysql /lib/mysql /usr/local/mysql/lib /usr/local/mysql/mach-lib-thread no; do
@@ -50,7 +51,7 @@ if test x$with_mysql = xyes; then
     LDFLAGS="-L$pike_cv_mysql_lib_dir ${LDFLAGS}"
   fi
 
-  AC_MSG_CHECKING(Checking for Mysql include-directory)
+  AC_MSG_CHECKING(for Mysql include-directory)
 
   AC_CACHE_VAL(pike_cv_mysql_include_dir, [
     for pike_cv_mysql_include_dir in /usr/local/include/mysql /usr/local/mysql/include/mysql /usr/gnu/include/mysql /usr/include/mysql /include/mysql /usr/local/mysql/include no; do
@@ -173,8 +174,6 @@ if test x$with_mysql = xyes; then
 
     AC_CHECK_FUNCS(mysql_real_query mysql_fetch_lengths mysql_port)
   fi
-else
-  :
 fi
 
 AC_SUBST(MYSQL_LIBS)
