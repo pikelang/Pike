@@ -842,8 +842,7 @@ class Gdb
 	      switch(s[0])
 	      {
 		case '0' .. '9':
-		  sscanf(s[0..2],"%o",c);
-		  s=s[3..];
+		  sscanf(s,"%3o%s",c,s);
 		  break;
 
 		case 'a': c=7; s=s[1..]; break;
@@ -876,6 +875,7 @@ class Gdb
 #if DEBUG > 3
 	werror("parse_return_value(%O)\n",data);
 #endif
+
 	if(arrayp(data[0]) && "{" == (string) data[0][0])
 	{
 	  v=([]);
@@ -915,11 +915,12 @@ class Gdb
 #if DEBUG > 3
 	  werror("Got: %O\n",ret);
 #endif
+
 	  if(sscanf(ret,"$%d = %s\n",__varno,ret)!=2)
 	  {
 	    error(sprintf("Failed to evaluate: %s\n",__expr));
 	  }
-	    
+
 	  mixed data=Parser.C.split(ret);
 	  data=Parser.C.tokenize(data);
 	  data=Parser.C.hide_whitespaces(data);
@@ -1066,8 +1067,8 @@ class Debug
       werror("Get line numbers for %O\n",prog);
 #endif
 
-      ret=mkhandle(prog, "->linenumbers[0]@ ", prog,
-		   "->num_linenumbers")->_value();
+      ret = mkhandle(prog, "->linenumbers[0]@ ", prog,
+		     "->num_linenumbers")->_value();
       if(sizeof(ret) != prog->num_linenumbers->_value())
       {
 	werror("Failed to get line number info!\n");
@@ -1126,9 +1127,11 @@ class Debug
       {
 	if(lineinfo[cnt] == 127)
 	{
-	  int end=search(lineinfo,"\0",cnt+1);
-	  file=lineinfo[cnt+1..end-1];
-	  cnt=end+1;
+	  cnt++;
+	  int len=get_small_number();
+	  int shift = lineinfo[cnt++];
+	  file=lineinfo[cnt..cnt+len-1];
+	  cnt += len<<shift;
 	}
 	off+=get_small_number();
 
@@ -1474,6 +1477,8 @@ class Debug
     void create(Handle h)
       {
 	::create(h);
+	/* FIXME: New multiset doesn't have ->ind but ->msd->nodes */
+	return;
 	arr=MKSH(ArrayHandle,h->ind);
       }
 
@@ -2725,8 +2730,11 @@ class Debug
       if(line < 1) return sprintf("negative line: %s:%d\n",file,line);
       line--;
       array(string) source;
-      if(!(source=source_cache[file]))
+      if(!(source=source_cache[file])) {
+	if(!file_stat(file))
+	  return sprintf("Could not load source file %O\n", file);
 	source=source_cache[file]=Stdio.read_file(file)/"\n";
+      }
 
       if(line >= sizeof(source))
 	return sprintf("line out of range: %s:%d\n",file,line);
@@ -2783,7 +2791,10 @@ class Debug
 	string loc;
 	if(sizeof(foo)==1)
 	  if(!current_file)
-	    foo+=({current_frame->location()});
+	    if(current_frame)
+	      foo+=({current_frame->location()});
+	    else
+	      return "No current frame to read file location from.\n";
 
 	if(sizeof(foo)>1)
 	{
@@ -2822,6 +2833,8 @@ class Debug
       }
 
       case "locals":
+	if(!current_frame)
+	  return "No current frame to read locals from.\n";
 	for(int e=1;e<=current_frame->num_locals();e++)
 	  write("@%d = %O\n",e,current_frame->get_local(e));
 	return "";
@@ -2896,6 +2909,7 @@ class Debug
       case "atta":
 
       case "handle": /* for exceptions */
+	return "Not implemented yet.\n";
 
       case "help":
       case "h":
@@ -3001,7 +3015,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.11 2003/12/07 22:39:52 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.12 2003/12/08 02:58:44 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2003, Department of Computer and Information Science,
                      Linköping University
