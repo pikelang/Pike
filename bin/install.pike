@@ -17,60 +17,7 @@ array(string) to_export=({});
 int export;
 int no_gui;
 
-class ProgressBar
-{
-  private constant width = 45;
-
-  private float phase_base, phase_size;
-  private int max, cur;
-  private string name;
-
-  void set_current(int _cur)
-  {
-    cur = _cur;
-  }
-
-  void set_phase(float _phase_base, float _phase_size)
-  {
-    phase_base = _phase_base;
-    phase_size = _phase_size;
-  }
-  
-  void update(int increment)
-  {
-    cur += increment;
-    cur = min(cur, max);
-    
-    float ratio = phase_base + ((float)cur/(float)max) * phase_size;
-    if(1.0 < ratio)
-      ratio = 1.0;
-    
-    int bar = (int)(ratio * (float)width);
-    int is_full = (bar == width);
-    
-    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
-	  name+":",
-	  "="*bar,
-	  is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
-	  is_full ? "" : " "*(width-bar-1),
-	  is_full ? "" : "|",
-	  100.0 * ratio);
-  }
-
-  void create(string _name, int _cur, int _max,
-	      float|void _phase_base, float|void _phase_size)
-    /* NOTE: max must be greater than zero. */
-  {
-    name = _name;
-    max = _max;
-    cur = _cur;
-    
-    phase_base = _phase_base || 0.0;
-    phase_size = _phase_size || 1.0 - phase_base;
-  }
-}
-
-ProgressBar progress_bar;
+Tools.Install.ProgressBar progress_bar;
 
 /* for progress bar */
 int files_to_install;
@@ -479,7 +426,7 @@ void do_export()
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
   Stdio.File p=Stdio.File(export_base_name+".burk","wc");
-  string msg="   Loading Pike installation script, please wait...";
+  string msg="   Loading installation script, please wait...";
   p->write("w%4c%s",strlen(msg),msg);
 
 #define TRANSLATE(X,Y) combine_path(".",X) : Y
@@ -603,7 +550,7 @@ COPYING and DISCLAIMER in the Pike distribution for more details.
     shift
 done
 "
-		   "echo \"   Loading Pike installation script, please wait...\"\n"
+		   "echo \"   Loading installation script, please wait...\"\n"
 		   "tar xf \"$TARFILE\" "+tmpname+".tar.gz\n"
 		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"
 		   "rm -rf "+tmpname+".tar.gz\n"
@@ -708,113 +655,6 @@ string make_absolute_path(string path)
 
   return path;
 }
-
-class Readline
-{
-  inherit Stdio.Readline;
-
-  int match_directories_only;
-
-  void trap_signal(int n)
-  {
-    destruct(this_object());
-    exit(1);
-  }
-
-  void destroy()
-  {
-    ::destroy();
-    signal(signum("SIGINT"));
-  }
-
-  static private string low_edit(string data, string|void local_prompt,
-				 array(string)|void attrs)
-  {
-    string r = ::edit(data, local_prompt, (attrs || ({})) | ({ "bold" }));
-    if(!r)
-    {
-      // ^D?
-      werror("\nExiting, please wait...\n");
-      destruct(this_object());
-      exit(0);
-    }
-    return r;
-  }
-  
-  string edit(mixed ... args)
-  {
-    return low_edit(@args);
-  }
-  
-  string edit_filename(mixed ... args)
-  {
-    match_directories_only = 0;
-
-    get_input_controller()->bind("^I", file_completion);
-    string s = low_edit(@args);
-    get_input_controller()->unbind("^I");
-    
-    return s;
-  }
-  
-  string edit_directory(mixed ... args)
-  {
-    match_directories_only = 1;
-    
-    get_input_controller()->bind("^I", file_completion);
-    string s = low_edit(@args);
-    get_input_controller()->unbind("^I");
-    
-    return s;
-  }
-  
-  static private string file_completion(string tab)
-  {
-    string text = gettext();
-    int pos = getcursorpos();
-    
-    array(string) path = make_absolute_path(text[..pos-1])/"/";
-    array(string) files =
-      glob(path[-1]+"*",
-	   get_dir(sizeof(path)>1? path[..sizeof(path)-2]*"/"+"/":".")||({}));
-
-    if(match_directories_only)
-      files = Array.filter(files, lambda(string f, string p)
-				  { return (file_stat(p+f)||({0,0}))[1]==-2; },
-			   path[..sizeof(path)-2]*"/"+"/");
-    
-    switch(sizeof(files))
-    {
-    case 0:
-      get_output_controller()->beep();
-      break;
-    case 1:
-      insert(files[0][sizeof(path[-1])..], pos);
-      if((file_stat((path[..sizeof(path)-2]+files)*"/")||({0,0}))[1]==-2)
-	insert("/", getcursorpos());
-      break;
-    default:
-      string pre = String.common_prefix(files)[sizeof(path[-1])..];
-      if(sizeof(pre))
-      {
-	insert(pre, pos);
-      } else {
-	if(!sizeof(path[-1]))
-	  files = Array.filter(files, lambda(string f)
-				      { return !(sizeof(f) && f[0] == '.'); });
-	list_completions(sort(files));
-      }
-      break;
-    }
-  }
-  
-  void create(mixed ... args)
-  {
-    signal(signum("SIGINT"), trap_signal);
-    ::create(@args);
-  }
-}
-
 
 #ifdef USE_GTK
 object window1;
@@ -1029,7 +869,7 @@ int pre_install(array(string) argv)
 
       status1("");
   
-      interactive=Readline();
+      interactive=Tools.Install.Readline();
 
       write("   Welcome to the interactive "+version()+
 	    " installation script.\n"
@@ -1177,13 +1017,14 @@ void do_install()
   pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
-    status1("Please wait, installing Pike in %s...\n", fakeroot(prefix));
+    status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
   }
   catch {
     files_to_install = (int)Stdio.read_file("num_files_to_install");
     
     if(!export && files_to_install)
-      progress_bar = ProgressBar("Installing", 0, files_to_install, 0.0, 0.2);
+      progress_bar =
+	Tools.Install.ProgressBar("Installing", 0, files_to_install, 0.0, 0.2);
   };
 
   mixed err=catch {
@@ -1380,7 +1221,7 @@ void do_install()
   }
 
   progress_bar = 0;
-  status1("Installation completed successfully.");
+  status1("Pike installation completed successfully.");
 }
 
 int main(int argc, array(string) argv)

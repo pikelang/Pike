@@ -12,60 +12,7 @@ string fakeroot(string s)
 #define fakeroot(X) X
 #endif
 
-class ProgressBar
-{
-  private constant width = 45;
-
-  private float phase_base, phase_size;
-  private int max, cur;
-  private string name;
-
-  void set_current(int _cur)
-  {
-    cur = _cur;
-  }
-
-  void set_phase(float _phase_base, float _phase_size)
-  {
-    phase_base = _phase_base;
-    phase_size = _phase_size;
-  }
-  
-  void update(int increment)
-  {
-    cur += increment;
-    cur = min(cur, max);
-    
-    float ratio = phase_base + ((float)cur/(float)max) * phase_size;
-    if(1.0 < ratio)
-      ratio = 1.0;
-    
-    int bar = (int)(ratio * (float)width);
-    int is_full = (bar == width);
-    
-    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
-	  name+":",
-	  "="*bar,
-	  is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
-	  is_full ? "" : " "*(width-bar-1),
-	  is_full ? "" : "|",
-	  100.0 * ratio);
-  }
-
-  void create(string _name, int _cur, int _max,
-	      float|void _phase_base, float|void _phase_size)
-    /* NOTE: max must be greater than zero. */
-  {
-    name = _name;
-    max = _max;
-    cur = _cur;
-    
-    phase_base = _phase_base || 0.0;
-    phase_size = _phase_size || 1.0 - phase_base;
-  }
-}
-
-ProgressBar progress_bar;
+Tools.Install.ProgressBar progress_bar;
 
 #define error(X) throw( ({ (X), backtrace() }) )
 
@@ -323,9 +270,9 @@ int main(int argc, string *argv)
       quiet = 2;
       logfile = Stdio.File("dumpmodule.log","caw");
       
-      progress_bar = ProgressBar("Precompiling",
-				 @array_sscanf(argv[1], "%d,%d"),
-				 0.2, 0.8);
+      progress_bar = Tools.Install.ProgressBar("Precompiling",
+					       @array_sscanf(argv[1], "%d,%d"),
+					       0.2, 0.8);
       
       argv = argv[2..];
   }
