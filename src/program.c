@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.479 2003/02/08 03:49:22 mast Exp $
+|| $Id: program.c,v 1.480 2003/02/12 23:59:17 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.479 2003/02/08 03:49:22 mast Exp $");
+RCSID("$Id: program.c,v 1.480 2003/02/12 23:59:17 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3806,7 +3806,7 @@ int define_variable(struct pike_string *name,
 			low_add_storage(sizeof_variable(run_time_type),
 					alignof_variable(run_time_type),0),
 			run_time_type);
-
+  ID_FROM_INT(Pike_compiler->new_program, n)->identifier_flags |= IDENTIFIER_NO_THIS_REF;
 
   return n;
 }

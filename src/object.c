@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.219 2003/02/10 20:31:33 mast Exp $
+|| $Id: object.c,v 1.220 2003/02/12 23:59:17 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.219 2003/02/10 20:31:33 mast Exp $");
+RCSID("$Id: object.c,v 1.220 2003/02/12 23:59:17 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -756,25 +756,29 @@ void destruct(struct object *o)
     for(q=0;q<(int)prog->num_variable_index;q++)
     {
       int d=prog->variable_index[q];
+      struct identifier *id = prog->identifiers + d;
+      int id_flags = id->identifier_flags;
+      int rtt = id->run_time_type;
 
-      if (IDENTIFIER_IS_ALIAS(prog->identifiers[d].identifier_flags))
+      if (IDENTIFIER_IS_ALIAS(id_flags))
 	continue;
       
-      if(prog->identifiers[d].run_time_type == T_MIXED)
+      if(rtt == T_MIXED)
       {
 	struct svalue *s;
-	s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
-	if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o)
+	s=(struct svalue *)(storage + id->func.offset);
+	if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
+	    !(id_flags & IDENTIFIER_NO_THIS_REF))
 	  free_svalue(s);
       }else{
 	union anything *u;
-	int rtt = prog->identifiers[d].run_time_type;
-	u=(union anything *)(storage + prog->identifiers[d].func.offset);
+	u=(union anything *)(storage + id->func.offset);
 #ifdef PIKE_DEBUG
 	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
 #endif /* PIKE_DEBUG */
-	if (rtt != T_OBJECT || u->object != o)
-	  free_short_svalue(u, prog->identifiers[d].run_time_type);
+	if (rtt != T_OBJECT || u->object != o ||
+	    !(id_flags & IDENTIFIER_NO_THIS_REF))
+	  free_short_svalue(u, rtt);
 	DO_IF_DMALLOC(u->refs=(void *)-1);
       }
     }
@@ -1141,6 +1145,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 {
   struct identifier *i;
   struct program *p = NULL;
+  int rtt, id_flags;
 
   if(!o || !(p=o->prog))
   {
@@ -1153,53 +1158,61 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
   check_destructed(from);
 
   i=ID_FROM_INT(p, f);
+  rtt = i->run_time_type;
+  id_flags = i->identifier_flags;
 
-  if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
+  if(!IDENTIFIER_IS_VARIABLE(id_flags))
   {
     Pike_error("Cannot assign functions or constants.\n");
   }
-  else if(i->run_time_type == T_MIXED)
+  else if(rtt == T_MIXED)
   {
     /* Don't count references to ourselves to help the gc. DDTAH. */
     struct svalue *to = (struct svalue *) LOW_GET_GLOBAL(o,f,i);
-    if ((to->type != T_OBJECT && to->type != T_FUNCTION) || to->u.object != o)
+    if ((to->type != T_OBJECT && to->type != T_FUNCTION) || to->u.object != o ||
+	!(id_flags & IDENTIFIER_NO_THIS_REF))
       free_svalue(to);
     *to = *from;
     dmalloc_touch_svalue (to);
-    if ((to->type != T_OBJECT && to->type != T_FUNCTION) || to->u.object != o)
+    if ((to->type != T_OBJECT && to->type != T_FUNCTION) || to->u.object != o ||
+	!(id_flags & IDENTIFIER_NO_THIS_REF))
       if(to->type <= MAX_REF_TYPE) add_ref(to->u.dummy);
   }
   else
   {
     /* Partial code duplication from assign_to_short_svalue. */
     union anything *u = (union anything *) LOW_GET_GLOBAL(o,f,i);
-    if(from->type == i->run_time_type)
+    if(from->type == rtt)
     {
-      switch(i->run_time_type)
+      switch(rtt)
       {
 	case T_INT: u->integer=from->u.integer; break;
 	case T_FLOAT: u->float_number=from->u.float_number; break;
 	case T_OBJECT:
-	  /* Don't count references to ourselves to help the gc. */
-	  if ((u->object != o) && u->refs && --*(u->refs) <= 0)
-	    really_free_short_svalue(u,i->run_time_type);
-	  u->refs = from->u.refs;
-	  if (u->object != o) add_ref(u->dummy);
-	  break;
+	  if (id_flags & IDENTIFIER_NO_THIS_REF) {
+	    /* Don't count references to ourselves to help the gc. */
+	    if ((u->object != o) && u->refs && --*(u->refs) <= 0)
+	      really_free_short_svalue(u,rtt);
+	    u->refs = from->u.refs;
+	    if (u->object != o) add_ref(u->dummy);
+	    break;
+	  }
+	  /* FALL THROUGH */
 	default:
 	  if(u->refs && --*(u->refs) <= 0)
-	    really_free_short_svalue(u,i->run_time_type);
+	    really_free_short_svalue(u,rtt);
 	  u->refs = from->u.refs;
 	  add_ref(u->dummy);
       }
-    }else if(i->run_time_type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(from)){
-      if((i->run_time_type != T_OBJECT || u->object != o) &&
+    }else if(rtt<=MAX_REF_TYPE && UNSAFE_IS_ZERO(from)){
+      if((rtt != T_OBJECT || u->object != o) &&
+	 !(id_flags & IDENTIFIER_NO_THIS_REF) &&
 	 u->refs && --*(u->refs) <= 0)
-	really_free_short_svalue(u,i->run_time_type);
+	really_free_short_svalue(u,rtt);
       u->refs=0;
     }else{
       Pike_error("Wrong type in assignment, expected %s, got %s.\n",
-		 get_name_of_type(i->run_time_type),
+		 get_name_of_type(rtt),
 		 get_name_of_type(from->type));
     }
   }
@@ -1542,29 +1555,28 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
 	int d=pike_frame->context.prog->variable_index[q];
+	struct identifier *id = pike_frame->context.prog->identifiers + d;
+	int id_flags = id->identifier_flags;
+	int rtt = id->run_time_type;
 
-	if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
-				identifier_flags))
-	  continue;
+	if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
 	
-	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+	if(rtt == T_MIXED)
 	{
 	  struct svalue *s;
-	  s=(struct svalue *)(pike_frame->current_storage +
-			      pike_frame->context.prog->identifiers[d].func.offset);
+	  s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	  dmalloc_touch_svalue(s);
-	  if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o)
+	  if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
+	      !(id_flags & IDENTIFIER_NO_THIS_REF))
 	    gc_mark_svalues(s, 1);
 	}else{
 	  union anything *u;
-	  TYPE_T rtt =
-	    (TYPE_T)pike_frame->context.prog->identifiers[d].run_time_type;
-	  u=(union anything *)(pike_frame->current_storage +
-			       pike_frame->context.prog->identifiers[d].func.offset);
+	  u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
 	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
 #endif
-	  if (rtt != T_OBJECT || u->object != o)
+	  if (rtt != T_OBJECT || u->object != o ||
+	      !(id_flags & IDENTIFIER_NO_THIS_REF))
 	    gc_mark_short_svalue(u, rtt);
 	}
       }
@@ -1604,28 +1616,28 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
 	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
 	{
 	  int d=pike_frame->context.prog->variable_index[q];
+	  struct identifier *id = pike_frame->context.prog->identifiers + d;
+	  int id_flags = id->identifier_flags;
+	  int rtt = id->run_time_type;
 	
-	  if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
-				  identifier_flags))
-	    continue;
+	  if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
 	
-	  if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+	  if(rtt == T_MIXED)
 	  {
 	    struct svalue *s;
-	    s=(struct svalue *)(pike_frame->current_storage +
-				pike_frame->context.prog->identifiers[d].func.offset);
+	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	    dmalloc_touch_svalue(s);
-	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o)
+	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
+		!(id_flags & IDENTIFIER_NO_THIS_REF))
 	      gc_cycle_check_svalues(s, 1);
 	  }else{
 	    union anything *u;
-	    int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
-	    u=(union anything *)(pike_frame->current_storage +
-				 pike_frame->context.prog->identifiers[d].func.offset);
+	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
 	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
 #endif
-	    if (rtt != T_OBJECT || u->object != o)
+	    if (rtt != T_OBJECT || u->object != o ||
+		!(id_flags & IDENTIFIER_NO_THIS_REF))
 	      gc_cycle_check_short_svalue(u, rtt);
 	  }
 	}
@@ -1671,28 +1683,28 @@ static inline void gc_check_object(struct object *o)
       for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
       {
 	int d=pike_frame->context.prog->variable_index[q];
+	struct identifier *id = pike_frame->context.prog->identifiers + d;
+	int id_flags = id->identifier_flags;
+	int rtt = id->run_time_type;
 	
-	if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
-				identifier_flags))
-	  continue;
+	if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
 	
-	if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+	if(rtt == T_MIXED)
 	{
 	  struct svalue *s;
-	  s=(struct svalue *)(pike_frame->current_storage +
-			      pike_frame->context.prog->identifiers[d].func.offset);
+	  s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
 	  dmalloc_touch_svalue(s);
-	  if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o)
+	  if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
+	      !(id_flags & IDENTIFIER_NO_THIS_REF))
 	    debug_gc_check_svalues(s, 1, T_OBJECT, debug_malloc_pass(o));
 	}else{
 	  union anything *u;
-	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
-	  u=(union anything *)(pike_frame->current_storage +
-			       pike_frame->context.prog->identifiers[d].func.offset);
+	  u=(union anything *)(pike_frame->current_storage + id->func.offset);
 #ifdef DEBUG_MALLOC
 	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
 #endif
-	  if (rtt != T_OBJECT || u->object != o)
+	  if (rtt != T_OBJECT || u->object != o ||
+	      !(id_flags & IDENTIFIER_NO_THIS_REF))
 	    debug_gc_check_short_svalue(u, rtt, T_OBJECT, debug_malloc_pass(o));
 	}
       }
@@ -2224,21 +2236,20 @@ void check_object_context(struct object *o,
   for(q=0;q<(int)context_prog->num_variable_index;q++)
   {
     int d=context_prog->variable_index[q];
+    struct identifier *id = context_prog->identifiers + d;
+
     if(d<0 || d>=context_prog->num_identifiers)
       Pike_fatal("Illegal index in variable_index!\n");
 
-    if(context_prog->identifiers[d].run_time_type == T_MIXED)
+    if(id->run_time_type == T_MIXED)
     {
       struct svalue *s;
-      s=(struct svalue *)(current_storage +
-			  context_prog->identifiers[d].func.offset);
+      s=(struct svalue *)(current_storage + id->func.offset);
       check_svalue(s);
     }else{
       union anything *u;
-      u=(union anything *)(current_storage +
-			   context_prog->identifiers[d].func.offset);
-      check_short_svalue(u, 
-			 context_prog->identifiers[d].run_time_type);
+      u=(union anything *)(current_storage + id->func.offset);
+      check_short_svalue(u, id->run_time_type);
     }
   }
 }
