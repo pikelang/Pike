@@ -2742,6 +2742,7 @@ static void free_xmldata(struct xmldata *data)
 }
 
 /*! @class XML
+ *! @appears Parser.XML.Simple
  */
 
 /*! @decl void define_entity_raw(string entity, string raw)
