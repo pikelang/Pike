@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.40 1999/07/01 16:21:06 mirar Exp $");
+RCSID("$Id: opcodes.c,v 1.41 1999/07/04 12:35:54 mirar Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -843,8 +843,8 @@ static INT32 really_low_sscanf(char *input,
 	     int pos=0;
 	     while(--field_length >= 0)
 	     {
+		sval.u.integer|=(EXTRACT_UCHAR(input+eye))<<pos;
 		pos+=8;
-		sval.u.integer|=EXTRACT_UCHAR(input+eye)<<pos;
 		eye++;
 	     }
 	  }
