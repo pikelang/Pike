@@ -1,51 +1,30 @@
-array(Standards.URI) index_document(Search.Database.Base db,
+void index_document(Search.Database.Base db,
 				    string|Standards.URI uri,
-				    string|Stdio.File data,
-				    string content_type,
-				    void|string language)
+				    void|string language,
+				    mapping fields,
+				    mapping uri_anchors)
 {
-  Search.Filter.Base filter=Search.get_filter(content_type);
-  if(!filter)
-    error("No indexer for content type "+content_type);
-
-  int h = gethrtime();
-  Search.Filter.Base.Output filteroutput=
-    filter->filter(uri, data, content_type);
-  int ms = (gethrtime()-h);
-  werror("filter  : %5dms (%4.1fMb/s)\n", ms/1000,
-	 (strlen(data)/1024.0/1024.0)/(ms/1000000.0) );
-
-  h = gethrtime();
   db->remove_document( uri, language );
-  werror("remove  : %5dms\n", (gethrtime()-h)/1000 );
-  // Tokenize and normalize all the non-anchor fields
 
-  foreach(indices(filteroutput->fields), string field)
+  foreach(indices(fields), string field)
   {
-    if( strlen(filteroutput->fields[field] ) )
+    string f;
+    if( strlen(f = fields[field] ) )
     {
-      h = gethrtime();
-      array words=Search.Utils.tokenize(
-	Search.Utils.normalize(filteroutput->fields[field]));
-      if( field == "body" )
-      {
-      ms = (gethrtime()-h);
-      werror("tokenize: %5dms (%4.1fMb/s)\n", ms/1000,
-	     (strlen(filteroutput->fields[field])/1024.0/1024.0)
-	     /(ms/1000000.0) );
-      }      
-      h = gethrtime();
-      db->insert_words(uri, language, field,words );
-      if( field == "body" )
-      {
-	ms = (gethrtime()-h);
-	werror("insert  : %5dms (%4.1fMb/s)\n", ms/1000,
-	       (strlen(filteroutput->fields[field])/1024.0/1024.0)
-	       /(ms/1000000.0) );
-      }
+      array words=Search.Utils.tokenize(Search.Utils.normalize(f));
+      db->insert_words(uri, language, field, words );
     }
   }
   // Tokenize any anchor fields
+  
+  int source_hash=hash((string)uri)&0xf;
+  foreach(indices(uri_anchors|| ({ })), string link_uri)
+  {
+    array(string) words=
+      Search.Utils.tokenize(Search.Utils.normalize(uri_anchors[link_uri]));
+    db->insert_words(link_uri, 0, "anchor", words, source_hash);
+  }
+  
   h = gethrtime();
   int source_hash=hash((string)uri)&0xf;
   foreach(indices(filteroutput->uri_anchors || ({ })), string link_uri)
@@ -55,24 +34,21 @@ array(Standards.URI) index_document(Search.Database.Base db,
 			    (filteroutput->uri_anchors[link_uri]));
     db->insert_words(link_uri, 0, "anchor", words, source_hash);
   }
-  mapping md = (["title":1,
-		 "keywords": 1,
-		 "description": 1,
-		 "body": 1 ]) & filteroutput->fields;
-  db->set_metadata(uri, language, md);
-  return filteroutput->links;
 }
 
-array(Standards.URI) extract_links(Search.Database.Base db,
-				   string|Standards.URI uri,
-				   string|Stdio.File data,
-				   string content_type)
+
+array(Standards.URI) filter_and_extract_links(Search.Database.Base db,
+					      string|Standards.URI uri,
+					      void|string language,
+					      string|Stdio.File data,
+					      string content_type)
 {
   Search.Filter.Base filter=Search.get_filter(content_type);
   if(!filter)
     throw("No indexer for content type "+content_type);
 
   Search.Filter.Base.Output filteroutput=filter->filter(uri, data, content_type);
+  index_document(db, uri, language, filteroutput->fields, filteroutput->uri_anchors);
   return filteroutput->links;
 }
 
@@ -87,6 +63,6 @@ array(Standards.URI) test_index(Search.Database.Base db, string uri)
 {
   object request=Protocols.HTTP.get_url(uri);
 
-  return index_document(db, uri, request->data(),
-			request->headers["content-type"]);
+  return filter_and_index_document(db, uri, 0, request->data(),
+				   request->headers["content-type"]);
 }
