@@ -55,7 +55,7 @@ class Cons
       new_car = stringp(fun)? car[fun](@extra) : fun(car, @extra);
       if (!new_car)
       {
-	werror("No car");
+	werror("No car\n");
 	return 0;
       }
     
@@ -65,7 +65,7 @@ class Cons
 	return object_program(this_object())(new_car, new_cdr);
       else
       {
-	werror("No cdr");
+	werror("No cdr\n");
 	return 0;
       }
     }
@@ -110,6 +110,9 @@ class Cons
   
   object eval(object env, object globals)
     {
+      // werror(sprintf("eval list: %s\n", print(1)));
+      //if (car->name == "read-line")
+      //  trace(1);
       object fun = car->eval(env, globals);
       if (fun)
       {
@@ -142,6 +145,7 @@ class Symbol
 
   object eval(object env, object globals)
     {
+      // werror(sprintf("eval symbol '%s'\n", name));
 #if 0
       if(globals->eval_limit)
       {
@@ -564,7 +568,7 @@ object s_define(object arglist, object env, object globals)
   object symbol, value;
   if (arglist->car->car)
   { /* Function definition */
-    werror(sprintf("define '%s'\n", arglist->car->car->print(0)));
+    // werror(sprintf("define '%s'\n", arglist->car->car->print(0)));
     symbol = arglist->car->car;
     value = Lexical(env, arglist->car->cdr, arglist->cdr);
   } else {
@@ -579,7 +583,7 @@ object s_define(object arglist, object env, object globals)
 
 object s_defmacro(object arglist, object env, object globals)
 {
-  werror(sprintf("defmacro '%s'\n", arglist->car->car->print(0)));
+  // werror(sprintf("defmacro '%s'\n", arglist->car->car->print(0)));
   object symbol = arglist->car->car;
   object value = Macro(env, arglist->car->cdr, arglist->cdr);
   if (!value)
@@ -668,6 +672,11 @@ object f_car(object arglist, object env, object globals)
 object f_cdr(object arglist, object env, object globals)
 {
   return arglist->car->cdr;
+}
+
+object f_null(object arglist, object env, object globals)
+{
+  return (arglist->car == Lempty) ? Ltrue : Lfalse;
 }
 
 object f_cons(object arglist, object env, object globals)
@@ -792,7 +801,7 @@ object f_concat(object arglist, object env, object globals)
   return String( res );
 }
 
-object f_read(object arglist, object env, object globals)
+object f_read_string(object arglist, object env, object globals)
 {
   if (arglist->car->is_string)
     return Parser(arglist->car->to_string())->read();
@@ -814,6 +823,7 @@ object f_display(object arglist, object env, object globals)
     arglist = arglist->cdr;
   }
   write("\n");
+  return Lfalse;
 }
 
 void init_specials(object environment)
@@ -843,7 +853,7 @@ void init_functions(object environment)
 
   environment->extend(make_symbol("concat"), Builtin(f_concat));
 
-  // environment->extend(make_symbol("read"), Builtin(f_read));
+  environment->extend(make_symbol("read-string"), Builtin(f_read_string));
   // environment->extend(make_symbol("print"), Builtin(f_print));
   // environment->extend(make_symbol("princ"), Builtin(f_print));
   environment->extend(make_symbol("eval"), Builtin(f_eval));
@@ -851,6 +861,7 @@ void init_functions(object environment)
   // environment->extend(make_symbol("global-environment"), environment);
   environment->extend(make_symbol("car"), Builtin(f_car));
   environment->extend(make_symbol("cdr"), Builtin(f_cdr));
+  environment->extend(make_symbol("null?"), Builtin(f_null));
   environment->extend(make_symbol("setcar!"), Builtin(f_setcar));
   environment->extend(make_symbol("setcdr!"), Builtin(f_setcdr));
   environment->extend(make_symbol("cons"), Builtin(f_cons));
@@ -878,9 +889,9 @@ object default_boot_code()
     "	  (cons (quote begin) body)))\n"
     "  \n"
     "  (define (mapcar fun list)\n"
-    "    (if list (cons (fun (car list))\n"
-    "		   (mapcar fun (cdr list)))\n"
-    "      nil))\n"
+    "    (if (null? list) (quote ())\n"
+    "      (cons (fun (car list))\n"
+    "	         (mapcar fun (cdr list)))))\n"
     "\n"
     "  (defmacro (let decl . body)\n"
     "    (cons (cons (quote lambda)\n"
@@ -903,16 +914,16 @@ void main()
   e->extend(make_symbol("global-environment"), e);
   e->extend(make_symbol("read-line"), Builtin(f_readline));
   e->extend(make_symbol("display"), Builtin(f_display));
-  
+
   object o = Parser(
     "(begin\n"
     "   (define (loop)\n"
-    "      (display \"PLIS: \"\n"
-    "      (let ((line (read-line)))\n"
+    "     (let ((line (read-line \"PLIS: \")))\n"
     "         (if line \n"
-    "    	 (let ((res (catch (eval (read line)))))\n"
-    "    	    (display \"==>\" res \"\\n\")\n"
-    "               (loop))))))\n"
+    "    	 (let ((res (catch (eval (read-string line)\n"
+    "                                    global-environment))))\n"
+    "    	    (display res)\n"
+    "               (loop)))))\n"
     "   (loop))\n")->read();
 
   o->eval(e, e);
