@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.225 2003/08/20 16:43:57 mast Exp $
+|| $Id: gc.c,v 1.226 2003/08/20 17:38:37 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.225 2003/08/20 16:43:57 mast Exp $");
+RCSID("$Id: gc.c,v 1.226 2003/08/20 17:38:37 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -2913,7 +2913,7 @@ size_t do_gc(void *ignored, int explicit_call)
     fprintf (stderr, "Lost track of %d extra refs to things in gc.\n"
 	     "Searching for marker(s) with extra refs:\n", gc_extra_refs);
     for (e = 0; e < marker_hash_table_size; e++)
-      while ((m = marker_hash_table[e]))
+      for (m = marker_hash_table[e]; m; m = m->next)
 	if (m->flags & GC_GOT_EXTRA_REF) {
 	  fprintf (stderr, "========================================\n"
 		   "Found marker with extra ref: ");
