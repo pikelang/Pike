@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.247 2001/09/01 00:27:30 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.248 2001/09/13 15:58:18 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -511,7 +511,8 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	   loc->inherit->parent_identifier));
 
       TRACE((4,"-   o->parent_identifier=%d inherit->identifier_level=%d\n",
-	     loc->o->prog->flags & PROGRAM_USES_PARENT ?
+	     loc->o->prog &&
+	     (loc->o->prog->flags & PROGRAM_USES_PARENT) ?
 	     PARENT_INFO(loc->o)->parent_identifier : -1,
 	   loc->inherit->identifier_level));
 
@@ -530,7 +531,6 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 	    tmp.inherit--;
 	  }
 
-
 	  find_external_context(&tmp,
 				loc->inherit->parent_offset);
 	  loc->o=tmp.o;
@@ -548,10 +548,12 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 
       case -18:
 	TRACE((5,"-   Following o->parent\n"));
-	if(loc->o->prog && (loc->o->prog->flags & PROGRAM_USES_PARENT))
+	if(((p=loc->o->prog) ||
+	    (p=get_program_for_object_being_destructed(loc->o))) &&
+	   (p->flags & PROGRAM_USES_PARENT))
 	{
-	  loc->parent_identifier=PARENT_INFO(loc->o)->parent_identifier;
-	  loc->o=PARENT_INFO(loc->o)->parent;
+	  loc->parent_identifier=LOW_PARENT_INFO(loc->o,p)->parent_identifier;
+	  loc->o=LOW_PARENT_INFO(loc->o,p)->parent;
 	}else{
 	  loc->o=0;
 	  loc->parent_identifier=-1;
