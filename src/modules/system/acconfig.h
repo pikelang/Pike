@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.3 1998/05/31 14:07:51 grubba Exp $
+ * $Id: acconfig.h,v 1.4 1999/05/27 18:25:04 grubba Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -12,11 +12,14 @@
 @TOP@
 @BOTTOM@ 
 
-/* Define if you have solaris stype gethostbyname_r.  */
+/* Define if you have solaris style gethostbyname_r. */
 #undef HAVE_SOLARIS_GETHOSTBYNAME_R
  
-/* Define if you have OSF1 stype gethostbyname_r.  */
+/* Define if you have OSF1 style gethostbyname_r. */
 #undef HAVE_OSF1_GETHOSTBYNAME_R
+
+/* Define if you have solaris style getspnam_r. */
+#undef HAVE_SOLARIS_GETSPNAM_R
  
 /* Define if you have h_addr_list in the hostent struct */
 #undef HAVE_H_ADDR_LIST
