@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.32 2003/01/27 10:18:25 mirar Exp $
+|| $Id: bignum.c,v 1.33 2003/02/14 19:19:57 mast Exp $
 */
 
 #include "global.h"
@@ -46,22 +46,24 @@ PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
   apply_svalue(&auto_bignum_program, 1);
 
-  if(sp[-1].type != T_OBJECT)
+  if(sp[-1].type != T_OBJECT) {
      if (auto_bignum_program.type!=T_PROGRAM)
 	Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
      else
 	Pike_error("Gmp.mpz conversion failed (unknown error).\n");
+  }
 }
 
 PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
 {
   apply_svalue(&auto_bignum_program, 2);
 
-  if(sp[-1].type != T_OBJECT)
+  if(sp[-1].type != T_OBJECT) {
      if (auto_bignum_program.type!=T_PROGRAM)
 	Pike_error("Gmp.mpz conversion failed (Gmp.bignum not loaded).\n");
      else
 	Pike_error("Gmp.mpz conversion failed (unknown error).\n");
+  }
 }
 
 int is_bignum_object(struct object *o)
@@ -151,8 +153,10 @@ PMOD_EXPORT void push_int64(INT64 i)
     apply_svalue(&auto_bignum_program, 2);
 
 
-    if(neg)
+    if(neg) {
       apply_low(sp[-1].u.object,FIND_LFUN(sp[-1].u.object->prog,LFUN_COMPL),0);
+      stack_pop_n_elems_keep_top(1);
+    }
   }
 }
 
