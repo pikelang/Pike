@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: security.h,v 1.17 2003/09/05 16:22:19 nilsson Exp $
+|| $Id: security.h,v 1.18 2003/09/06 23:08:22 nilsson Exp $
 */
 
 #include "global.h"
@@ -57,6 +57,9 @@ struct pike_creds
   if(!CHECK_SECURITY(BIT))             \
      Pike_error ERR;					\
  }while(0)
+
+#define ASSERT_SECURITY_ROOT(FUNC) CHECK_SECURITY_OR_ERROR( \
+  SECURITY_BIT_SECURITY, (FUNC ": permission denied.\n"))
 
 #define SET_CURRENT_CREDS(O) do { struct object *_o=(O);		\
  if(Pike_interpreter.frame_pointer)					\
@@ -151,6 +154,7 @@ void exit_pike_security(void);
 #define INITIALIZE_PROT(X)
 #define FREE_PROT(X)
 #define CHECK_SECURITY_OR_ERROR(BIT,ERR)
+#define ASSERT_SECURITY_ROOT(FUNC)
 #define CHECK_DATA_SECURITY_OR_ERROR(DATA,BIT,ERR)
 
 #define init_pike_security()
