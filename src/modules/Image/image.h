@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.3 1997/03/18 17:23:17 mirar Exp $ */
+/* $Id: image.h,v 1.4 1997/03/20 07:57:00 mirar Exp $ */
 
 #define MAX_NUMCOL 32768
 
@@ -110,6 +110,12 @@ void image_paste_alpha(INT32 args);
 void image_paste_mask(INT32 args);
 void image_paste_alpha_color(INT32 args);
 
+void image_add_layers(INT32 args);
+enum layer_method
+   { LAYER_NOP=0, LAYER_MAX=1, LAYER_MIN=2, 
+     LAYER_MULT=3, LAYER_ADD=4, LAYER_DIFF=5 };
+	 
+
 /* matrix.c */
 
 void image_scale(INT32 args);
@@ -149,3 +155,12 @@ void image_operator_plus(INT32 args);
 void image_operator_multiply(INT32 args);
 void image_operator_maximum(INT32 args);
 void image_operator_minimum(INT32 args);
+void image_cast(INT32 args);
+
+/* x.c */
+
+void image_to8bit_closest(INT32 args);
+void image_to8bit(INT32 args);
+void image_to8bit_fs(INT32 args);
+void image_tozbgr(INT32 args);
+void image_to8bit_rgbcube(INT32 args);
