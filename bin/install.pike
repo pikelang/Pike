@@ -284,6 +284,8 @@ void do_export()
 #"TARFILE=\"$1\"; shift
 ARGS=''
 
+INSTALL_SCRIPT='bin/install.pike'
+
 while [ $# != 0 ]
 do
     case \"$1\" in
@@ -299,8 +301,13 @@ COPYING and DISCLAIMER in the Pike distribution for more details.
               -h|\\
           --help) echo \"" + helptext + #"\"
                   exit 0 ;;
+
+              -s|\\
+        --script) shift
+                  INSTALL_SCRIPT=\"$1\" ;;
+
+               *) ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\" ;;
     esac
-    ARGS=\"$ARGS '`echo \\\"$1\\\" | sed -e \\\"s/'/'\\\\\\\"'\\\\\\\"'/g\\\"`'\"
     shift
 done
 "
@@ -312,7 +319,7 @@ done
 		   "  eval \"build/pike -DNOT_INSTALLED -mbuild/master.pike "
 		                "-Mbuild/lib/modules "
 		                "-Mlib/modules "
-		                "bin/install.pike \\\n"
+		                "\"$INSTALL_SCRIPT\" \\\n"
 		   "  TMP_LIBDIR=\"build/lib\"\\\n"
 		   "  LIBDIR_SRC=\"lib\"\\\n"
 		   "  SRCDIR=\"src\"\\\n"
