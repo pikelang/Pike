@@ -1,7 +1,7 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.20 2003/11/25 23:30:40 nilsson Exp $");
+RCSID("$Id: nettle.cmod,v 1.21 2003/12/05 07:00:23 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 /* For this_object() */
@@ -303,15 +303,17 @@ PIKECLASS CBC
     MEMCPY(THIS->iv, source, block_size);
   }
 
-  /*! @decl void create(program|object algorithm, mixed ... args)
+  /*! @decl void create(program|object|function algorithm, mixed ... args)
    */
-  PIKEFUN void create(program|object algorithm, mixed ... more) {
+  PIKEFUN void create(program|object|function algorithm, mixed ... more) {
+    ptrdiff_t fun;
 
     switch(algorithm->type)
     {
     case T_PROGRAM:
       THIS->object = clone_object(algorithm->u.program, args-1);
       break;
+
     case T_FUNCTION:
       apply_svalue(Pike_sp - args, args-1);
 
@@ -321,12 +323,21 @@ PIKECLASS CBC
 
       add_ref(THIS->object = Pike_sp[-1].u.object);
       break;
+
     case T_OBJECT:
-      if(args!=1) Pike_error("Too many arguments.\n");
+      fun = FIND_LFUN(algorithm->u.object->prog, LFUN_CALL);
+      if(fun!=-1) {
+	apply_low(algorithm->u.object, fun, args-1);
+	stack_swap();
+	pop_stack();
+      }
+      else
+	if(args!=1) Pike_error("Too many arguments.\n");
+
       add_ref(THIS->object = algorithm->u.object);
       break;
     default:
-      SIMPLE_BAD_ARG_ERROR("CBC->create", 1, "program|object");
+      SIMPLE_BAD_ARG_ERROR("CBC->create", 1, "program|object|function");
     }
 
     pop_stack(); /* Just one element left on the stack in all cases */
