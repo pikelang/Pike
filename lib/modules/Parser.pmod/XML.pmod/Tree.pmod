@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.46 2004/05/14 18:32:50 grubba Exp $
+ * $Id: Tree.pmod,v 1.47 2004/05/14 18:36:51 grubba Exp $
  *
  */
 
@@ -1100,7 +1100,7 @@ class SimpleNode
   // Needed for cross-overloading
   void low_clone()
   {
-    VirtualNode::low_clone();
+    return VirtualNode::low_clone();
   }
 }
 
@@ -1194,7 +1194,7 @@ class Node
   // Needed for cross-overloading
   void low_clone()
   {
-    VirtualNode::low_clone();
+    return VirtualNode::low_clone();
   }
 
 //   int get_tag_code()
