@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.67 2004/09/16 15:14:17 grubba Exp $
+|| $Id: multiset.c,v 1.68 2004/09/16 15:25:34 grubba Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.67 2004/09/16 15:14:17 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.68 2004/09/16 15:25:34 grubba Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -5279,7 +5279,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.67 2004/09/16 15:14:17 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.68 2004/09/16 15:25:34 grubba Exp $");
 
 struct multiset *first_multiset;
 
@@ -5685,6 +5685,17 @@ void gc_free_all_unreferenced_multisets(void)
       SET_NEXT_AND_FREE(l, free_multiset);
     }else{
       next=l->next;
+    }
+  }
+}
+
+void gc_reallocate_shrunk_multisets(void)
+{
+  struct multiset *l;
+  for(l=first_multiset; l; l=l->next) {
+    if (l->ind->flags & ARRAY_CONSIDER_REALLOC) {
+      l->ind = array_shrink(l->ind, l->ind->size);
+      l->ind->flags &= ~ARRAY_CONSIDER_REALLOC;
     }
   }
 }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.44 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: array.h,v 1.45 2004/09/16 15:25:34 grubba Exp $
 */
 
 #ifndef ARRAY_H
@@ -28,10 +28,11 @@ struct array
   struct svalue real_item[1];
 };
 
-#define ARRAY_WEAK_FLAG 1
-#define ARRAY_CYCLIC 2
-#define ARRAY_LVALUE 4
-#define ARRAY_WEAK_SHRINK 8
+#define ARRAY_WEAK_FLAG		1
+#define ARRAY_CYCLIC		2
+#define ARRAY_LVALUE		4
+#define ARRAY_WEAK_SHRINK	8
+#define ARRAY_CONSIDER_REALLOC	16
 
 PMOD_EXPORT extern struct array empty_array, weak_empty_array, weak_shrink_empty_array;
 extern struct array *gc_internal_array;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.29 2002/11/24 22:47:06 mast Exp $
+|| $Id: multiset.h,v 1.30 2004/09/16 15:25:34 grubba Exp $
 */
 
 #ifndef MULTISET_H
@@ -489,6 +489,7 @@ void gc_check_all_multisets(void);
 void gc_mark_all_multisets(void);
 void gc_cycle_check_all_multisets(void);
 void gc_free_all_unreferenced_multisets(void);
+void gc_reallocate_shrunk_multisets(void);
 void count_memory_in_multisets(INT32 *num_, INT32 *size_);
 int multiset_is_constant(struct multiset *m,
 			 struct processing *p);

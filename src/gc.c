@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.200 2003/10/20 13:17:27 mast Exp $
+|| $Id: gc.c,v 1.201 2004/09/16 15:25:34 grubba Exp $
 */
 
 #include "global.h"
@@ -31,7 +31,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.200 2003/10/20 13:17:27 mast Exp $");
+RCSID("$Id: gc.c,v 1.201 2004/09/16 15:25:34 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -3162,6 +3162,10 @@ int do_gc(void)
   ADD_GC_CALLBACK();
 #else
   if(d_flag > 3) ADD_GC_CALLBACK();
+#endif
+
+#ifndef PIKE_NEW_MULTISETS
+  gc_reallocate_shrunk_multisets();
 #endif
 
   return objs;
