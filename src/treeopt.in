@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.36 2000/03/31 02:06:48 hubbe Exp $
+// $Id: treeopt.in,v 1.37 2000/03/31 19:39:34 grubba Exp $
 //
 // The tree optimizer
 //
@@ -194,6 +194,8 @@ F_COMMA_EXPR(F_COMMA_EXPR(0, F_CONSTANT), 1 = +):
 // Join adjacent F_POP_VALUE's.
 // NOTE: These two rules work only since F_RETURN, F_BREAK and F_CONTINUE
 // have been stripped of F_POP_VALUE by rules above.
+// FIXME: This optimization makes values stay on the stack longer,
+// which might not be a good idea.
 F_COMMA_EXPR(F_POP_VALUE(0, *), F_POP_VALUE(1, *)):
   F_POP_VALUE(F_COMMA_EXPR($0, $1), -);
 
@@ -232,6 +234,8 @@ F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
 F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
   F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
+// Dead-code elimination.
+// FIXME: Should it be a warning here?
 // Is really the OPT_CASE needed for the following three?
 F_COMMA_EXPR(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
@@ -258,6 +262,9 @@ F_ARG_LIST(-, 0):
 F_ARG_LIST(0, -):
   $0;
 
+// Dead-code elimination.
+// FIXME: Should it be a warning here?
+// Do people even write code where this is trigged? return in an srgument-list?
 // Is really the OPT_CASE needed for the following three?
 F_ARG_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
@@ -284,6 +291,9 @@ F_LVALUE_LIST(-, 0):
 F_LVALUE_LIST(0, -):
   $0;
 
+// Dead-code elimination.
+// FIXME: Should it be a warning here?
+// Even more obscure -- return in an lvalue?
 // Is really the OPT_CASE needed for the following three?
 F_LVALUE_LIST(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
   $0;
@@ -310,6 +320,7 @@ F_LOR(-, 0):
 F_LOR(0, -):
   $0;
 
+// DeMorgan
 F_LOR(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LAND($0, $1), -);
 
@@ -341,6 +352,7 @@ F_LAND(-, 0):
 F_LAND(0, -):
   F_COMMA_EXPR($0, 0);
 
+// DeMorgan
 F_LAND(F_NOT(0, *), F_NOT(1, *)):
   F_NOT(F_LOR($0, $1), -);
 
@@ -363,6 +375,7 @@ F_LAND(0 = +[node_is_false($$)], *):
   $0;
 
 
+// Optimizations of if statements.
 '?'(-, -):
   -;
 
@@ -397,6 +410,7 @@ F_LAND(0 = +[node_is_false($$)], *):
   F_COMMA_EXPR('?'($0, ':'($1, $3)), $2);
 
 
+// Optimizations of negations.
 F_NOT(-, *):
   1;
 
@@ -485,7 +499,8 @@ F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
 ;
 
 
-F_DO(0, -):
+// do-while optimizations.
+F_DO(0[!($$->tree_info & (OPT_BREAK|OPT_CONTINUE))], -):
   $0;
 
 F_DO(0[!($$->tree_info & (OPT_BREAK|OPT_CONTINUE))], +[node_is_false($$)]):
@@ -727,6 +742,7 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 ;
 
 
+// Prepare for the return if true optimization.
 '?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, *), 1)) :
 {
   struct pike_string *type = $0->type;
