@@ -19,7 +19,7 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
-RCSID("$Id: arcfour.c,v 1.14 2001/02/10 20:37:41 grubba Exp $");
+RCSID("$Id: arcfour.c,v 1.15 2002/02/24 19:27:54 nilsson Exp $");
 
 #undef THIS
 #define THIS ((struct arcfour_ctx *)(fp->current_storage))
@@ -69,9 +69,10 @@ static void f_query_key_length(INT32 args)
   push_int(1);
 }
 
-/*! @decl void set_key(string key)
+/*! @decl void set_encrypt_key(string key)
+ *! @decl void set_decrypt_key(string key)
  *!
- *! Set the encryption key to @[key].
+ *! Set the encryption/decryption key to @[key].
  */
 static void f_set_key(INT32 args)
 {
