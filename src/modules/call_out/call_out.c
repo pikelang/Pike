@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include "config.h"
-RCSID("$Id: call_out.c,v 1.30 1999/08/06 14:27:46 grubba Exp $");
+RCSID("$Id: call_out.c,v 1.31 1999/11/25 01:25:29 grubba Exp $");
 #include "array.h"
 #include "dynamic_buffer.h"
 #include "object.h"
@@ -714,7 +714,9 @@ void pike_module_init(void)
 {
   
 /* function(function,float|int,mixed...:mixed) */
-  ADD_EFUN("call_out",f_call_out,tFuncV(tFunction tOr(tFlt,tInt),tMix,tMix),OPT_SIDE_EFFECT);
+  ADD_EFUN("call_out",f_call_out,
+	   tFuncV(tFunction tOr(tFlt,tInt),tMix,tOr(tMix,tVoid)),
+	   OPT_SIDE_EFFECT);
   
 /* function(:array*) */
   ADD_EFUN("call_out_info",f_call_out_info,tFunc(tNone,tArr(tArray)),OPT_EXTERNAL_DEPEND);
