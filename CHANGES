@@ -1,0 +1,92 @@
+(to browse bug crunch tickets noted at the end of these notes, either
+visit http://community.roxen.com/crunch/ - or append the ticket id to
+"http://bugs.roxen.com/" for a address directly to the ticket itself)
+
+
+Changes since 2001-07-26 / Pike 7.0.350 (released with Roxen 2.1.262):
+----------------------------------------------------------------------
+
+
+
+Changes since 2001-04-19 / Pike 7.0.332 (released with Roxen 2.1.247):
+----------------------------------------------------------------------
+
+Bug Fixes:
+
+  o Fix for bug where setting the weak flag on an empty array or
+    multiset caused multisets created later to also be weak.
+  o Fix for replace_many function.
+  o Fix for combine_path function with wide-strings.
+  o Fix for cpp.
+  o Added JRE1.3 support for NT.
+  o Fixed a bug causing coredump when a parse is finished inside an
+    HTML tag under certain conditions.
+  o Fixed bug which caused quote_tags to dump core when one of the
+    registered quote tags had "" as end string.
+  o Fixed leaks in parse_html and parse_html_lines when callback
+    functions throw errors.
+  o Fix for sscanf character sets and wide strings.
+  o Fix for a few bugs in decode_truecolor.
+  o Fix for equal.
+  o Fixed compilation problem with the gauge function.
+  o Fixed compatibility problem with Gcc 3.0.
+  o Fixed type mixup between classes.
+  o Fixed problem with compile_string and threads.
+
+Improvement and bug tickets closed: 1304, 1648, 1728, 1739, 1793,
+				    1839, 1859, 1879
+
+
+Changes since 2001-02-21 / Pike 7.0.312 (released with Roxen 2.1.231):
+----------------------------------------------------------------------
+
+Improvements:
+
+  o Poll now default on Linux and MacOSX too.
+  o Improved support for HPUX cc.
+  o Added some support for AIX 5L.
+  o Improved test for memcmp.
+  o Raised the default fd limits.
+  o Make rm more unix-like on NT: It now tries to chmod a file if it
+    can't be removed due to lack of write permission on the file
+    itself.
+
+Bug Fixes:
+
+  o Fixed some DNS problems.
+  o Fixed callback problem with non-blocking i/o.
+  o Various fixes for BSD/OS.
+  o Fixed detection of FreeBSD 4.0 and later.
+  o Fixed disabling of Perl.
+  o Various SCO fixes.
+  o Fix for bignum formatting bug, added workaround and fixed speedup
+    in Oracle module.
+  o Renamed Image.WBF to Image.WBMP.
+  o Fixed missing encoding of + in http_encode_url().
+
+Improvement and bug tickets closed: 761, 1203, 1261, 1373
+
+
+Changes since 2001-01-26 / Pike 7.0.304 (released with Roxen 2.1.221):
+----------------------------------------------------------------------
+
+
+
+Changes since 2000-12-10 / Pike 7.0.288 (released with Roxen 2.1.199):
+----------------------------------------------------------------------
+
+Bug Fixes:
+
+  o Various fixes in the gc to prevent too deep recursion when
+    destroying large number of objects.
+
+
+Changes since 2000-11-08 / Pike 7.0.268 (released with Roxen 2.1.185):
+----------------------------------------------------------------------
+
+Bug Fixes:
+
+  o Removed recursion bug that occurred if there was no _Image_GIF
+    module.
+  o A few Oracle compatibility fixes.
+  o A few fixes in the Photoshop image decoder.
