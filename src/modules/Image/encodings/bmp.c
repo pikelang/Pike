@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.5 1999/04/25 19:01:29 grubba Exp $ */
+/* $Id: bmp.c,v 1.6 1999/05/01 20:17:28 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.5 1999/04/25 19:01:29 grubba Exp $
+**!	$Id: bmp.c,v 1.6 1999/05/01 20:17:28 mirar Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.5 1999/04/25 19:01:29 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.6 1999/05/01 20:17:28 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -32,6 +32,7 @@ RCSID("$Id: bmp.c,v 1.5 1999/04/25 19:01:29 grubba Exp $");
 #include "array.h"
 #include "mapping.h"
 #include "error.h"
+#include "operators.h"
 
 
 #include "image.h"
@@ -255,8 +256,8 @@ void img_bmp_encode(INT32 args)
 
 void i_img_bmp__decode(INT32 args,int header_only)
 {
-   p_wchar0 *s;
-   int len;
+   p_wchar0 *s,*os;
+   int len,olen;
    int xsize=0,ysize=0,bpp=0,comp=0;
    struct image *img=NULL;
    struct neo_colortable *nct=NULL;
@@ -273,8 +274,9 @@ void i_img_bmp__decode(INT32 args,int header_only)
    if (sp[-args].u.string->size_shift)
       SIMPLE_BAD_ARG_ERROR("Image.BMP.decode",1,"8 bit string");
 
-   s=(p_wchar0*)sp[-args].u.string->str;
+   os=s=(p_wchar0*)sp[-args].u.string->str;
    len=sp[-args].u.string->len;
+   olen=len;
 
    pop_n_elems(args-1);
    
@@ -289,6 +291,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
    switch (int_from_32bit(s+14))
    {
       case 40: /* windows mode */
+      case 68: /* fuji jpeg mode */
 
 	 if (len<54)
 	    error("Image.BMP.decode: unexpected EOF in header\n");
@@ -321,8 +324,20 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 push_int(int_from_32bit(s+14+4*6));
 	 n++;
 	 
-	 push_text("windows");
-	 push_int(windows=1);
+	 windows=1;
+
+	 switch (int_from_32bit(s+14))
+	 {
+	    case 40:
+	       push_text("windows");
+	       push_int(1);
+	       break;
+	    case 68:
+	       push_text("fuji");
+	       push_int(1);
+	       break;
+	 }
+
 	 n++;
 
 	 s+=54;
@@ -361,7 +376,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 break;
 
       default:
-	 error("Image.BMP.decode: not a BMP (illegal info)\n");
+	 error("Image.BMP.decode: not a BMP (illegal info size %ld, expected 40 or 12)\n",
+	       int_from_32bit(s+14));
    }
 
    if (header_only)
@@ -372,6 +388,46 @@ void i_img_bmp__decode(INT32 args,int header_only)
       return;
    }
 
+   if (comp==1195724874) /* "JPEG" */
+   {
+      int n=int_from_32bit(os+10);
+
+      push_text("image");
+
+      if (olen-n<0)
+	 error("Image.BMP.decode: unexpected EOF in JFIF data\n");
+
+      push_text("Image");
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      push_text("JPEG");
+      f_index(2);
+      push_text("decode");
+      f_index(2);
+
+      push_string(make_shared_binary_string(os+n,olen-n));
+
+      push_text("quant_tables");
+
+      push_text("Image");
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      push_text("JPEG");
+      f_index(2);
+      push_text("quant_tables");
+      f_index(2);
+      push_int(55);
+      f_call_function(2);
+
+      f_aggregate_mapping(2);
+
+      f_call_function(3);
+
+      n++;
+
+      goto final;
+   }
+   
    if (bpp!=24) /* get palette */
    {
       push_text("colortable");
@@ -511,6 +567,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 error("Image.BMP.decode: unknown bpp: %d\n",bpp);
    }
 
+final:
+
    f_aggregate_mapping(n*2);
    stack_swap();
    pop_stack();
@@ -526,8 +584,6 @@ void img_bmp_decode_header(INT32 args)
 {
    i_img_bmp__decode(args,1);
 }
-
-void f_index(INT32);
 
 void img_bmp_decode(INT32 args)
 {
