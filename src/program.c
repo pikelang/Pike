@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.125 1999/07/01 18:16:37 grubba Exp $");
+RCSID("$Id: program.c,v 1.126 1999/07/01 18:43:53 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -38,6 +38,14 @@ RCSID("$Id: program.c,v 1.125 1999/07/01 18:16:37 grubba Exp $");
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
+
+/* #define COMPILER_DEBUG */
+
+#ifdef COMPILER_DEBUG
+#define CDFPRINTF(X)	fprintf X
+#else /* !COMPILER_DEBUG */
+#define CDFPRINTF(X)
+#endif /* COMPILER_DEBUG */
 
 /*
  * Define the size of the cache that is used for method lookup.
@@ -534,7 +542,8 @@ void low_start_new_program(struct program *p,
 
   compilation_depth++;
 
-  /* fprintf(stderr, "low_start_new_program(): compilation_depth:%d\n", compilation_depth); */
+  CDFPRINTF((stderr, "low_start_new_program(): compilation_depth:%d\n",
+	     compilation_depth));
 
   if(!p)
   {
@@ -633,7 +642,10 @@ void low_start_new_program(struct program *p,
 
 void debug_start_new_program(PROGRAM_LINE_ARGS)
 {
-  /* fprintf(stderr, "start_new_program(): threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
+  CDFPRINTF((stderr,
+	     "start_new_program(): threads_disabled:%d, compilation_depth:%d\n",
+	     threads_disabled, compilation_depth));
+
   low_start_new_program(0,0,0);
 #ifdef PIKE_DEBUG
   {
@@ -972,7 +984,8 @@ struct program *end_first_pass(int finish)
 
   exit_threads_disable(NULL);
 
-  /* fprintf(stderr, "end_first_pass(): compilation_depth:%d\n", compilation_depth); */
+  CDFPRINTF((stderr, "end_first_pass(): compilation_depth:%d\n",
+	     compilation_depth));
 
   free_all_nodes();
   if(!compiler_frame && compiler_pass==2 && resolve_cache)
@@ -1949,7 +1962,8 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
   struct identifier *fun;
   int i,t;
 
-/*  fprintf(stderr,"Trying to find %s see_static=%d\n",name->str,see_static); */
+  CDFPRINTF((stderr,"Trying to find %s see_static=%d\n",
+	     name->str, see_static));
 
   for(i=0;i<(int)prog->num_identifier_references;i++)
   {
@@ -2442,7 +2456,10 @@ struct program *compile(struct pike_string *prog)
   }
 #endif /* PIKE_DEBUG */
   threads_disabled = saved_threads_disabled + 1;
-  /* fprintf(stderr, "compile() Leave: threads_disabled:%d, compilation_depth:%d\n", threads_disabled, compilation_depth); */
+
+  CDFPRINTF((stderr,
+	     "compile() Leave: threads_disabled:%d, compilation_depth:%d\n",
+	     threads_disabled, compilation_depth));
 
   exit_threads_disable(NULL);
 
