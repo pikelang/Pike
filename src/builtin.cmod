@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.125 2003/02/24 21:44:30 mast Exp $
+|| $Id: builtin.cmod,v 1.126 2003/03/12 09:29:57 agehall Exp $
 */
 
 #include "global.h"
@@ -1523,7 +1523,7 @@ void low_backtrace(struct Pike_interpreter *i)
  *!
  *! @note
  *!   Please note that the frame order may be reversed in a later version
- *!   (than 7.1) of Pike to accomodate for deferred backtraces.
+ *!   (than 7.1) of Pike to accommodate for deferred backtraces.
  *!
  *!   Note that the arguments reported in the backtrace are the current
  *!   values of the variables, and not the ones that were at call-time.
