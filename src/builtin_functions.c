@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.280 2000/05/26 00:12:19 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.281 2000/06/09 22:44:47 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2512,9 +2512,7 @@ void f_gc(INT32 args)
 {
   INT32 tmp;
   pop_n_elems(args);
-  tmp=num_objects;
-  do_gc();
-  push_int(tmp - num_objects);
+  push_int(do_gc());
 }
 
 #ifdef TYPEP
@@ -2522,7 +2520,7 @@ void f_gc(INT32 args)
 #endif
 
 #ifdef AUTO_BIGNUM
-/* This should probably be here weather AUTO_BIGNUM is defined or not,
+/* This should probably be here whether AUTO_BIGNUM is defined or not,
  * but it can wait a little. /Hubbe
  */
 
