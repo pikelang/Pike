@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.44 2001/04/28 19:21:03 grubba Exp $
+ * $Id: mysql.c,v 1.45 2001/04/28 19:23:14 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.44 2001/04/28 19:21:03 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.45 2001/04/28 19:23:14 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -1188,7 +1188,7 @@ static void f_list_tables(INT32 args)
  *! @endmultiset
  *!
  *! @note
- *!   Michael Widenius recomends usage of the following query instead:
+ *!   Michael Widenius recomends use of the following query instead:
  *!   @tt{show fields in 'table' like "wild"@}.
  *!
  *! @seealso
