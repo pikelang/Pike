@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.24 1999/01/31 09:01:57 hubbe Exp $
+// $Id: peep.in,v 1.25 1999/06/07 22:48:47 hubbe Exp $
 //
 
 NOP :
@@ -86,7 +86,9 @@ LOCAL_LVALUE DEC_AND_POP : DEC_LOCAL_AND_POP ($1a)
 DEC_LOCAL POP_VALUE : DEC_LOCAL_AND_POP ($1a)
 POST_DEC_LOCAL POP_VALUE : DEC_LOCAL_AND_POP ($1a)
 
-ASSIGN_LOCAL_AND_POP LOCAL ($1a) RETURN : RETURN
+// The ASSIGN_LOCAL can be removed if this frame is not
+// a candidate for surviving after return. (due to lambda functions)
+ASSIGN_LOCAL_AND_POP LOCAL ($1a) RETURN : ASSIGN_LOCAL($1a) RETURN
 
 GLOBAL_LVALUE INC_AND_POP GLOBAL($1a): GLOBAL_LVALUE($1a) INC
 GLOBAL_LVALUE DEC_AND_POP GLOBAL($1a): GLOBAL_LVALUE($1a) DEC
