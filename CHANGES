@@ -26,11 +26,12 @@ o Unicode 3.2.0
     surrogate and byteorder make handling.
 
 o Extended random()
-    random() now works on float, array, multiset and mapping (and
-    int/object).
+    random() now works on floats, arrays, multisets, mappings and
+    objects in addition to integers.
 
 o delay()/sleep()
-    sleep() no longer busywaits.
+    sleep() no longer busywaits, which it previously did for small
+    values. The old behaviour is available from the delay() function.
 
 o search(string, int) / has_value(string, int)
     Both of these methods now handle both looking for strings and
@@ -134,6 +135,12 @@ o UNDEFINED
 
 o _m_delete
 
+o :: includes current class
+   class X {
+     int i;
+     void create (int i) {X::i = i;}
+   }
+
 
 New modules / classes / methods added:
 --------------------------------------
@@ -221,8 +228,12 @@ Optimizations:
 
 o Machine code used on some architectures.
 
+o Computed goto
+
+o Better module dumping
+
 o Overall speed improvements.
-    Function calls
+    Function calls (new opcodes)
     sprintf
     arrays
     replace
@@ -366,3 +377,15 @@ o PIKE_RUN_UNLOCKED
 o Works with Autoconf 2.50
 o Saved 8 bytes per object for objects not using their parent scope
 o constant objects (Gmp.Bignum, Math.Matrix, Image.Color)
+o basetype()
+o it is possible to change predefines without forking a new pike
+o dynamic loading
+o #pragma save_parent
+o #pragma dont_same_parent (overrides constant __pragma_save_parent__)
+o dont_dump_module
+o modules can no longer call functions in other modules directly
+o it is possible to inherit pike programs from C programs.
+o seperate weak flags for indices and values in mappings
+
+Math.inf
+Math.nan
