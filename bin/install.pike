@@ -20,6 +20,7 @@ void fail(string fmt, mixed ... args)
 
 string status(string doing, string file, string|void msg)
 {
+  file=replace(file,"\n","\\n");
   if(strlen(file)>50)
     file="..."+file[strlen(file)-48..];
 
@@ -240,10 +241,13 @@ int mklink(string from, string to)
 void do_export()
 {
   export=0;
+
   cd("..");
+
   string tmpname=sprintf("PtmP%07x",random(0xfffffff));
 
   status("Creating","script glue");
+
   Stdio.write_file(tmpname+".x",
 		   "#!/bin/sh\n"+
 		   "echo Unpacking...\n"+
