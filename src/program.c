@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.132 1999/07/01 22:14:56 grubba Exp $");
+RCSID("$Id: program.c,v 1.133 1999/08/20 05:08:25 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -244,6 +244,8 @@ static struct node_s *index_modules(struct pike_string *ident)
     }
   }
 
+/*  fprintf(stderr,"index_module: %s\n",ident->str); */
+
 
   if(SETJMP(tmp))
   {
@@ -279,6 +281,8 @@ static struct node_s *index_modules(struct pike_string *ident)
   }
   UNSETJMP(tmp);
 
+/*  fprintf(stderr,"***Undefined.\n"); */
+
   return 0;
 }
 
@@ -294,7 +298,9 @@ struct node_s *find_module_identifier(struct pike_string *ident)
     int n;
     for(n=0;n<compilation_depth;n++,p=p->previous)
     {
-      int i=really_low_find_shared_string_identifier(ident, p->new_program,1);
+      int i=really_low_find_shared_string_identifier(ident,
+						     p->new_program,
+						     SEE_STATIC);
       if(i!=-1)
       {
 	struct identifier *id;
@@ -496,7 +502,7 @@ void fixate_program(void)
       new_program->lfuns[i]=really_low_find_shared_string_identifier(
 	tmp,
 	new_program,
-	1);
+	SEE_STATIC);
     }else{
       new_program->lfuns[i]=-1;
     }
@@ -917,7 +923,7 @@ struct program *end_first_pass(int finish)
   {
     int id;
     if(new_program->inherits[e].inherit_level!=1) continue;
-    id=low_reference_inherited_identifier(0, e, s);
+    id=low_reference_inherited_identifier(0, e, s, SEE_STATIC);
     if(id!=-1)
     {
       init_node=mknode(F_ARG_LIST,
@@ -1073,7 +1079,8 @@ void set_gc_check_callback(void (*m)(struct object *))
 
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
-				       struct pike_string *name)
+				       struct pike_string *name,
+				       int flags)
 {
   struct program *np=q?q->new_program:new_program;
   struct reference funp;
@@ -1084,12 +1091,16 @@ int low_reference_inherited_identifier(struct program_state *q,
   i=find_shared_string_identifier(name,p);
   if(i==-1)
   {
-    i=really_low_find_shared_string_identifier(name,p,1);
+    i=really_low_find_shared_string_identifier(name,p, flags);
     if(i==-1) return -1;
   }
 
   if(p->identifier_references[i].id_flags & ID_HIDDEN)
     return -1;
+
+  if(p->identifier_references[i].id_flags & ID_PRIVATE)
+    if(!(flags & SEE_PRIVATE))
+      return -1;
 
   funp=p->identifier_references[i];
   funp.inherit_offset+=e;
@@ -1135,7 +1146,10 @@ node *reference_inherited_identifier(struct pike_string *super_name,
       if(super_name != p->inherits[e].name)
 	continue;
 
-    id=low_reference_inherited_identifier(0,e,function_name);
+    id=low_reference_inherited_identifier(0,
+					  e,
+					  function_name,
+					  SEE_STATIC);
 
     if(id!=-1)
       return mkidentifiernode(id);
@@ -1167,7 +1181,7 @@ node *reference_inherited_identifier(struct pike_string *super_name,
 	if(super_name != p->inherits[e].name)
 	  continue;
       
-      id=low_reference_inherited_identifier(state,e,function_name);
+      id=low_reference_inherited_identifier(state,e,function_name,SEE_STATIC);
 
       if(id!=-1)
 	return mkexternalnode(n,id,ID_FROM_INT(state->new_program, id));
@@ -1560,9 +1574,8 @@ int define_variable(struct pike_string *name,
 
   if(n != -1)
   {
-
     if (IDENTIFIERP(n)->id_flags & ID_NOMASK)
-      my_yyerror("Illegal to redefine 'nomask' variable/functions \"%s\"", name->str);
+      my_yyerror("Illegal to redefine 'nomask/final' variable/functions \"%s\"", name->str);
 
     if(PROG_FROM_INT(new_program, n) == new_program)
       my_yyerror("Variable '%s' defined twice.",name->str);
@@ -1571,9 +1584,13 @@ int define_variable(struct pike_string *name,
     {
       if(ID_FROM_INT(new_program, n)->type != type)
 	my_yyerror("Illegal to redefine inherited variable with different type.");
-      
-      if(ID_FROM_INT(new_program, n)->identifier_flags != flags)
+
+      if(!IDENTIFIER_IS_VARIABLE(ID_FROM_INT(new_program, n)->identifier_flags))
+      {
 	my_yyerror("Illegal to redefine inherited variable with different type.");
+      }
+
+      IDENTIFIERP(n)->id_flags = flags;
       return n;
     }
   }
@@ -1871,10 +1888,6 @@ INT32 define_function(struct pike_string *name,
       }
     }
 
-    if((ref.id_flags & ID_NOMASK) && !(funp->func.offset == -1))
-    {
-      my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
-    }
 
     /* We modify the old definition if it is in this program */
 
@@ -1887,6 +1900,15 @@ INT32 define_function(struct pike_string *name,
       
       funp->identifier_flags=function_flags;
     }else{
+      if((ref.id_flags & ID_NOMASK)
+#if 0
+	 && !(funp->func.offset == -1)
+#endif
+	)
+      {
+	my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
+      }
+
       if(ref.id_flags & ID_INLINE)
       {
 	goto make_a_new_def;
@@ -1954,22 +1976,21 @@ make_a_new_def:
   return i;
 }
 
-
 int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
-					     int see_static)
+					     int flags)
 {
   struct reference *funp;
   struct identifier *fun;
   int i,t;
 
-  CDFPRINTF((stderr,"th(%ld) Trying to find %s see_static=%d\n",
-	     (long)th_self(),name->str, see_static));
+  CDFPRINTF((stderr,"th(%ld) Trying to find %s flags=%d\n",
+	     (long)th_self(),name->str, flags));
 
 #ifdef PIKE_DEBUG
   if (!prog) {
     fatal("really_low_find_shared_string_identifier(\"%s\", NULL, %d)\n"
-	  "prog is NULL!\n", name->str, see_static);
+	  "prog is NULL!\n", name->str, flags);
   }
 #endif /* PIKE_DEBUG */
 
@@ -1978,7 +1999,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
     funp = prog->identifier_references + i;
     if(funp->id_flags & ID_HIDDEN) continue;
     if(funp->id_flags & ID_STATIC)
-      if(!see_static)
+      if(!(flags & SEE_STATIC))
 	continue;
     fun = ID_FROM_PTR(prog, funp);
     /* if(fun->func.offset == -1) continue; * Prototype */
@@ -1994,7 +2015,9 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 	if(t==i) continue;
 	funpb=prog->identifier_references+t;
 	if(funpb->id_flags & ID_HIDDEN) continue;
-	if(funpb->id_flags & ID_STATIC) if(!see_static) continue;
+	if(funpb->id_flags & ID_STATIC)
+	  if(!(flags & SEE_STATIC))
+	    continue;
 	if((funpb->id_flags & ID_INHERITED) && t<i) continue;
 	funb=ID_FROM_PTR(prog,funpb);
 	/* if(funb->func.offset == -1) continue; * prototype */
@@ -2544,7 +2567,7 @@ int quick_add_function(char *name,
   int ret;
   struct pike_string *name_tmp,*type_tmp;
   union idptr tmp;
-  
+/*  fprintf(stderr,"ADD_FUNC: %s\n",name); */
   name_tmp=make_shared_binary_string(name,name_length);
   type_tmp=make_shared_binary_string(type,type_length);
 

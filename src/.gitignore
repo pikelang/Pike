@@ -9,6 +9,8 @@
 /conftest.h
 /dependencies
 /hilfe
+/hsort_template.h
+/isort_template.h
 /language.c
 /language.h
 /lib
@@ -17,10 +19,11 @@
 /master.pike
 /peep_engine.c
 /pike
+/qsort_template.h
+/smartlink
 /stamp-h
 /stamp-h.in
 /testsuite
 /y.output
 /y.tab.c
 /y.tab.h
-/smartlink

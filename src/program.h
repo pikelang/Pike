@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.54 1999/03/19 11:39:49 hubbe Exp $
+ * $Id: program.h,v 1.55 1999/08/20 05:08:26 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -187,10 +187,17 @@ struct inherit
 /* Program has gone through first compiler pass */
 #define PROGRAM_PASS_1_DONE 8
 
-/* Program will be destructed as soon at it runs out of references. */
+/* Program will be destructed as soon at it runs out of references.
+ * Normally only used for mutex lock keys and similar
+ */
 #define PROGRAM_DESTRUCT_IMMEDIATE 16
 
+/* Self explanatory, automatically detected */
 #define PROGRAM_HAS_C_METHODS 32
+
+
+/* All non-static functions are inlinable */
+#define PROGRAM_CONSTANT 64
 
 struct program
 {
@@ -199,7 +206,7 @@ struct program
   struct object *prot;
 #endif
   INT32 id;             /* used to identify program in caches */
-  INT32 flags;
+  INT32 flags;          /* PROGRAM_* */
   INT32 storage_needed; /* storage needed in the object struct */
   unsigned INT8 alignment_needed;
   struct timeval timestamp;
@@ -257,6 +264,11 @@ extern int catch_level;
 extern INT32 num_used_modules;
 extern struct program *pike_trampoline_program;
 
+/* Flags for identifier finding... */
+#define SEE_STATIC 1
+#define SEE_PRIVATE 2
+
+
 #define COMPILER_IN_CATCH 1
 
 #define ADD_STORAGE(X) low_add_storage(sizeof(X), ALIGNOF(X),0)
@@ -293,7 +305,8 @@ void set_gc_mark_callback(void (*m)(struct object *));
 void set_gc_check_callback(void (*m)(struct object *));
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
-				       struct pike_string *name);
+				       struct pike_string *name,
+				       int flags);
 node *reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name);
 void rename_last_inherit(struct pike_string *n);
