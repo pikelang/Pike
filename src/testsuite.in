@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.665 2003/08/10 16:47:32 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.666 2003/08/10 18:19:37 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2656,10 +2656,6 @@ test_any([[int x,y; if(x==y && x==0) return 2; return 0;]],2);
 test_any([[int x,y=1; if(x==y || x==1) return 2; return 0;]],0);
 test_any([[int x,y=1; if(x==y && x==0) return 2; return 0;]],0);
 
-test_eq([[ "\007" & "\023"]],"\003")
-test_eq([[ "\007" | "\023"]],"\027")
-test_eq([[ "\007" ^ "\023"]],"\024")
-
 
 test_any([[
 return class { int i=17; }()["i"]
@@ -3857,9 +3853,6 @@ test_any([[
 ]],1)
 
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
-test_any([[object o=Regexp("foo"); return objectp(o);]],1)
-test_any([[object o=Regexp("foo"); return object_program(o);]],
-	   Regexp.SimpleRegexp)
 test_any([[class Test {}; object(Test) o=Test(); return object_program(o);]],Test)
 test_define_program(test,[[constant foo = 1; int a() { return foo; }]])
 test_true(test()->a())
@@ -3897,8 +3890,10 @@ test_compile(class c { object(Stdio.File) foo=class foobar {} ();})
 test_compile(class c { object(Stdio.File) foo=class {} ();})
 test_compile_error(class c { object(Stdio.File) foo=class {float is_file;} ();})
 test_compile(class c { object(Stdio.File) foo=class { int is_file;} ();})
-test_do(class c { object foo; object(Regexp) bar=foo; })
+test_do(class c { object foo; object(Stdio.File) bar=foo; })
+test_do(class c { object foo; Stdio.File bar=foo; })
 test_do(class c { object(Stdio.File) foo; object bar=foo; })
+test_do(class c { Stdio.File foo; object bar=foo; })
 test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){})
@@ -6357,6 +6352,8 @@ test_eq(0 | 0,0)
 test_eq(1 | 1,1)
 test_eq(4 | 1,5)
 test_eq(1 | 9,9)
+test_eq([[ "\007" | "\023"]],"\027")
+test_eq([[ "\177777x" | "ab" ]], "\177777z")
 test_equal( ({1,2,3,4,4}) | ({3,5,6}), ({1,2,4,4,3,5,6}))
 test_equal( (<4,5,6>) | (<5,5,5>), (<4,5,5,5,6>) )
 test_equal( ([-4:8,8:7]) | ([3:3,8:3]), ([-4:8,8:3,3:3]) )
@@ -6370,6 +6367,8 @@ test_eq(0 & 0,0)
 test_eq(1 & 1,1)
 test_eq(4 & 1,0)
 test_eq(1 & 9,1)
+test_eq([[ "\007" & "\023"]],"\003")
+test_eq([[ "\177777x" & "ab" ]], "a`")
 test_equal( ({1,2,3,4,4}) & ({3,5,6}), ({3}))
 test_equal( (<4,5,6>) & (<5,5,5>), (<5>) )
 test_equal( ([-4:8,8:7]) & ([3:3,8:3]), ([8:3]) )
@@ -6379,6 +6378,8 @@ test_eq(0 ^ 0,0)
 test_eq(1 ^ 1,0)
 test_eq(4 ^ 1,5)
 test_eq(1 ^ 9,8)
+test_eq([[ "\007" ^ "\023"]],"\024")
+test_eq([[ "\177777x" ^ "ab" ]], "\177636\32")
 test_equal( Array.sort( ({1,2,3,4,4}) ^ ({3,5,6}) ) , ({1,2,4,4,5,6}))
 test_equal( (<4,5,6>) ^ (<5,5,5>), (<4,5,5,6>) )
 test_equal( ([-4:8,8:7]) ^ ([3:3,8:3]), ([-4:8,3:3]) )
@@ -7228,11 +7229,6 @@ test_compile_error([[
 FOO
 ]])
 
-test_compile_error([[
-#error FOOd
-FOO
-]])
-
 test_any([[
 #define FOOa(X) (X)
 return FOOa(2);
@@ -7289,11 +7285,24 @@ test_any([[
 return 1;
 ]],1)
 
+test_any([[
+/* return 99; // */
+return 1;
+]],1)
+
 // //
 test_any([[
 // return 99;
-return 1;
+return 1; // return 47;
 ]],1)
+
+// #!
+test_any([[
+#! int i=4;
+int i=3;
+#! i=5;
+return i;
+]],3)
 
 // #if
 define(test_if_true,[[test_any([[
@@ -7685,7 +7694,6 @@ return 1;
 ]],1)
 
 // #include
-// FIXME add test for #include
 test_compile_any([[
 #pike 7.0
 #include <simulate.h>
@@ -7695,6 +7703,16 @@ test_compile_any([[
 test_compile_error([[
 #error Gurgel
 ]])
+
+// <<<<<<<
+test_eval_error( cpp("<<<<<<<") )
+test_compile_error([[
+#if 0
+<<<<<<<
+#endif
+]])
+
+
 
 define(do_test_cpp_string,[[
 test_eq([[ (({""}) + (string)indices("."*256)/"" + ({""})) * $1]],
