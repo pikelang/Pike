@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.40 1999/06/19 09:37:08 mirar Exp $");
+RCSID("$Id: pike_memory.c,v 1.41 1999/08/16 23:55:49 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -816,8 +816,8 @@ static struct fileloc *find_file_location(int locnum)
   exit(127);
 }
 
-void low_add_marks_to_memhdr(struct memhdr *to,
-			     struct memhdr *from)
+static void low_add_marks_to_memhdr(struct memhdr *to,
+				    struct memhdr *from)
 {
   struct memloc *l;
   if(!from) return;
@@ -827,7 +827,11 @@ void low_add_marks_to_memhdr(struct memhdr *to,
 
 void add_marks_to_memhdr(struct memhdr *to, void *ptr)
 {
+  mt_lock(&debug_malloc_mutex);
+
   low_add_marks_to_memhdr(to,my_find_memhdr(ptr,0));
+
+  mt_unlock(&debug_malloc_mutex);
 }
 
 static inline unsigned long lhash(struct memhdr *m, int locnum)
@@ -963,9 +967,18 @@ static struct memhdr *low_make_memhdr(void *p, int s, int locnum)
   return mh;
 }
 
-void dmalloc_register(void *p, int s, const char *file, int line)
+static void low_dmalloc_register(void *p, int s, const char *file, int line)
 {
   low_make_memhdr(p,s,location_number(file, line));
+}
+
+void dmalloc_register(void *p, int s, const char *file, int line)
+{
+  mt_lock(&debug_malloc_mutex);
+
+  low_dmalloc_register(p, s, file, line);
+
+  mt_unlock(&debug_malloc_mutex);
 }
 
 void dmalloc_accept_leak(void *p)
@@ -973,11 +986,16 @@ void dmalloc_accept_leak(void *p)
   if(p)
   {
     struct memhdr *mh;
+
+    mt_lock(&debug_malloc_mutex);
+
     if((mh=my_find_memhdr(p,0))) add_location(mh, 0);
+
+    mt_unlock(&debug_malloc_mutex);
   }
 }
 
-int dmalloc_unregister(void *p, int already_gone)
+static int low_dmalloc_unregister(void *p, int already_gone)
 {
   struct memhdr *mh=find_memhdr(p);
   if(mh)
@@ -989,6 +1007,18 @@ int dmalloc_unregister(void *p, int already_gone)
     return 1;
   }
   return 0;
+}
+
+int dmalloc_unregister(void *p, int already_gone)
+{
+  int res;
+
+  mt_lock(&debug_malloc_mutex);
+
+  res = low_dmalloc_unregister(p, already_gone);
+
+  mt_unlock(&debug_malloc_mutex);
+  return res;
 }
 
 void *debug_malloc(size_t s, const char *fn, int line)
@@ -1034,7 +1064,7 @@ void *debug_realloc(void *p, size_t s, const char *fn, int line)
 
   if(m) {
     m=do_pad(m, s);
-    if(p) dmalloc_unregister(p,1);
+    if(p) low_dmalloc_unregister(p,1);
     low_make_memhdr(m, s, location_number(fn,line))->flags|=MEM_PADDED;
   }
   if(verbose_debug_malloc)
@@ -1087,7 +1117,7 @@ void debug_free(void *p, const char *fn, int line, int mustfind)
   if(mh)
   {
     free( ((char *)p) - DEBUG_MALLOC_PAD );
-    if(!dmalloc_unregister(p,1))
+    if(!low_dmalloc_unregister(p,1))
     {
       fprintf(stderr,"Lost track of a memory block (2): %p!\n",p);
       abort();
@@ -1186,7 +1216,7 @@ void cleanup_memhdrs(void)
     void *p;
     if((p=blocks_to_free[h]))
     {
-      if(dmalloc_unregister(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
+      if(low_dmalloc_unregister(p,0))  p=((char *)p) - DEBUG_MALLOC_PAD;
       free(p);
       blocks_to_free[h]=0;
     }
@@ -1279,8 +1309,13 @@ void * debug_malloc_update_location(void *p,const char *fn, int line)
   if(p)
   {
     struct memhdr *mh;
+
+    mt_lock(&debug_malloc_mutex);
+
     if((mh=my_find_memhdr(p,0)))
       add_location(mh, location_number(fn,line));
+
+    mt_unlock(&debug_malloc_mutex);
   }
   return p;
 }
