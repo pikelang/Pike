@@ -30,6 +30,17 @@ o Reworked codec
     The codec for serialization of Pike data types has been updated
     and has a significally improved successrate at encoding modules.
 
+o Less magic hacks
+    Several Pike modules has been cleaned up and old hacks and
+    workarounds for which it now exists real solutions has been
+    rewritten. This should increase size, performance, dumpability and
+    readability of the affected code. In addition lots of internal
+    types in Pike has been tightened up and several more files uses
+    the strict types pragma, which has resulted in some bugfixes.
+
+o IPv6
+o INT64
+
 
 Language additions:
 -------------------
@@ -43,7 +54,22 @@ o trace() takes another argument to turn on tracing in all threads
     instead the trace() function has been extended to make it possible
     to set the trace level in all threads simultaneously.
 
-o Regexp.PCRE added to give libpcre support
+o Regexp.PCRE added to give libpcre support.
+
+o _ADT
+o ADT.Struct
+o Crypto/Nettle
+o Debug.Wrapper
+o Geography RT38
+o Int
+o Pike.Security
+o Protocols.HTTP.Session
+o Tools.Shoot/Standaone.benchmark
+o Standalone.cgrep
+o Standalone.dump
+o Image.NEO
+o Bz2
+
 
 Optimizations:
 --------------
