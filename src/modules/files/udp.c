@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.5 1999/07/25 18:29:16 grubba Exp $
+ * $Id: udp.c,v 1.6 1999/07/26 11:46:28 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.5 1999/07/25 18:29:16 grubba Exp $");
+RCSID("$Id: udp.c,v 1.6 1999/07/26 11:46:28 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -332,7 +332,7 @@ void udp_read(INT32 args)
 
   if(res<0)
   {
-    switch(errno)
+    switch(e)
     {
 #ifdef WSAEBADF
        case WSAEBADF:
@@ -360,7 +360,7 @@ void udp_read(INT32 args)
 	  return;
 
        default:
-	  error("Socket read failed with errno %d.\n",errno);
+	  error("Socket read failed with errno %d.\n", e);
     }
   }
   /* Now comes the interresting part.
@@ -430,7 +430,7 @@ void udp_sendto(INT32 args)
   
   if(res<0)
   {
-    switch(errno)
+    switch(e)
     {
 #ifdef EMSGSIZE
        case EMSGSIZE:
