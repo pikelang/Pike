@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.32 2003/01/05 00:53:30 nilsson Exp $
+|| $Id: backend.cmod,v 1.33 2003/01/07 10:07:07 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.32 2003/01/05 00:53:30 nilsson Exp $");
+RCSID("$Id: backend.cmod,v 1.33 2003/01/07 10:07:07 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1489,7 +1489,7 @@ PIKECLASS Backend
 	   for(e=0;e<me->num_pending_calls;e++)
 	   {
 	     call_out *c=CALL(e);
-	     hval=(size_t)c->args;
+	     hval=(size_t)(((char *)c->args)-(char *)0);
 
 #define LINK(X,c)							\
 	     hval%=me->hash_size;					\
@@ -1515,7 +1515,7 @@ PIKECLASS Backend
      new->pos=me->num_pending_calls;
      
      {
-       hval=(size_t)args;
+       hval=(size_t)(((char *)args)-(char *)0);
        LINK(arr,new);
        hval=hash_svalue(args->item);
        LINK(fun,new);
@@ -1692,7 +1692,7 @@ PIKECLASS Backend
        
        if(fun->type == T_ARRAY)
        {
-	 hval=(size_t)fun->u.array;
+	 hval=(size_t)(((char *)fun->u.array)-(char *)0);
 	 hval%=me->hash_size;
 	 for(c=me->call_hash[hval].arr;c;c=c->next_arr)
 	 {
