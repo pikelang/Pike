@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.10 1997/08/31 22:25:33 per Exp $");
+RCSID("$Id: zlibmod.c,v 1.11 1997/10/12 18:36:53 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -378,3 +378,11 @@ void pike_module_init(void)
 #endif
 }
 
+#ifdef HAVE___VTBL__9TYPE_INFO
+/* Super-special kluge for IRIX 6.3 */
+extern void __vtbl__9type_info();
+void zlibmod_strap_kluge()
+{
+  __vtbl__9type_info();
+}
+#endif /* HAVE___VTBL__9TYPE_INFO */
