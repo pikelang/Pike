@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.35 1998/03/28 15:36:22 grubba Exp $
+ * $Id: program.h,v 1.36 1998/04/06 04:31:32 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -192,6 +192,7 @@ struct program
   void (*init)(struct object *);
   void (*exit)(struct object *);
   void (*gc_marked)(struct object *);
+  void (*gc_check)(struct object *);
 #ifdef DEBUG
   unsigned INT32 checksum;
 #endif
@@ -255,6 +256,7 @@ SIZE_T add_storage(SIZE_T size);
 void set_init_callback(void (*init)(struct object *));
 void set_exit_callback(void (*exit)(struct object *));
 void set_gc_mark_callback(void (*m)(struct object *));
+void set_gc_check_callback(void (*m)(struct object *));
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name);
@@ -311,6 +313,9 @@ int add_string_constant(char *name,
 int add_program_constant(char *name,
 			 struct program *p,
 			 INT32 flags);
+int add_object_constant(char *name,
+			struct object *o,
+			INT32 flags);
 int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
 int debug_end_class(char *name, INT32 flags);
 INT32 define_function(struct pike_string *name,

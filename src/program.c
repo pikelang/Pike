@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.67 1998/03/26 14:30:58 grubba Exp $");
+RCSID("$Id: program.c,v 1.68 1998/04/06 04:31:32 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -891,6 +891,14 @@ void set_gc_mark_callback(void (*m)(struct object *))
   new_program->gc_marked=m;
 }
 
+/*
+ * Called for all objects and inherits in first pass of gc()
+ */
+void set_gc_check_callback(void (*m)(struct object *))
+{
+  new_program->gc_check=m;
+}
+
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name)
@@ -1510,6 +1518,19 @@ int add_program_constant(char *name,
   return ret;
 }
 
+int add_object_constant(char *name,
+			struct object *o,
+			INT32 flags)
+{
+  INT32 ret;
+  struct svalue tmp;
+  tmp.type=T_OBJECT;
+  tmp.subtype=0;
+  tmp.u.object=o;
+  ret=simple_add_constant(name, &tmp, flags);
+  return ret;
+}
+
 int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags)
 {
   struct svalue s;
@@ -1907,14 +1928,20 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
 
   while(cnt < prog->linenumbers + prog->num_linenumbers)
   {
+    int oline;
     if(*cnt == 127)
     {
       file=cnt+1;
       cnt=file+strlen(file)+1;
     }
     off+=get_small_number(&cnt);
-    if(off > offset) break;
+    oline=line;
     line+=get_small_number(&cnt);
+    if(off > offset)
+    {
+      linep[0]=oline;
+      return file;
+    }
   }
   linep[0]=line;
   return file;
