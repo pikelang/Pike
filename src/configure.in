@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.287 1999/05/26 07:07:04 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.288 1999/05/27 08:22:07 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -268,9 +268,23 @@ AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike
 AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[],[
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|AIX|HP-UX|OSF1|IRIX)
+    Solaris|HP-UX|OSF1|IRIX)
       AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
       with_poll=yes
+    ;;
+    AIX)
+      if test "`uname -r`" -ge 2 -a "`uname -v`" -ge 4 ; then
+        AC_MSG_WARN([Defaulting to --with-poll since the OS is AIX >= 4.2])
+        with_poll=yes
+
+      else
+        if test "`uname -v`" -gt 4 ; then
+          AC_MSG_WARN([Defaulting to --with-poll since the OS is AIX >= 4.2])
+          with_poll=yes
+        else
+          :
+        fi
+      fi
     ;;
   esac
 ])
@@ -3008,7 +3022,7 @@ case "x$pike_cv_sys_os" in
     AC_DEFINE(USE_WAIT_THREAD)
   ;;
 
-  Windows_NT)
+  xWindows_NT)
   ;;
 
   *)
