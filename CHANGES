@@ -6,6 +6,80 @@ o depend_p() bugfix in las.
 o Bugfixed loop over-optimization.
 o Postgres 7.3+ correctly detected.
 
+o "Backported funcion_object fixes from Pike 7.5"/"function_object()
+  now behaves as in Pike 7.2. The other cases have been moved to
+  function_program()."
+o "OOB callback fixes for select(2) mode."
+o "Fixed stack bug in push_int64 for large negative integers."
+o "Fix for running in UNLOCKED mode."
+o "Backported identifier lookup fixes from Pike 7.5."
+o "Fixed identifier sort bug in the old program decode method."
+o "Retain the dumpable flag over the implicit sete?id calls for new
+  threads on Linux."
+o "Backported object index lvalue fixes from Pike 7.5."
+o "Bugfix in F_{INC,DEC}{,_NEQ}_LOOP."
+o "Before invoking the trampoline magic, check properly that it's the
+  `() lfun in the trampoline object that is to be called."
+o "MKREADSET: If elements e and e+1 have their places swapped, it
+  doesn't mean that there are overlapping ranges, just that the sort
+  function is unstable. It doesn't matter. Live with it."
+o "Backported native argument handling fixes from 7.5." (java)
+o "Backported fpsetmask() paranoia from Pike 7.5." (_math)
+o "Fixed LARGE_FILE bug. Thanks to Dan Nelson." (files)
+o "Backported System.dumpable() from Pike 7.5." (system)
+
+o Image.FreeType now selects the hopefully best character map when
+  loading a font, instead of just picking a random one.
+o Fixed a bug that made searching for 8 bit strings in wider strings
+  fail.
+o Fixed fencepost bug on overflow of the sprintf format info stack.
+o Fixed bugs in float parsing code, preventing very large positive or
+  negative floats from being turned into 1.0 or -1.0.
+o More robustness has been added to dlinit() and __alldiv(), which
+  fixes some start up crashes in Microsoft Windows when invoking Pike
+  with the wrong path.
+o set_priority now works on Microsoft Windows.
+o SDL and GL now compiles, links and works on Microsoft Windows.
+o Produce real zeroes and not false function pointers when a local
+  function with only a prototype is referenced. This was a compatibility
+  problem; there's code that assumes that false values can't be
+  function references.
+o Fixed GTK issue where the new and old signal callback signature was
+  randomly used for signals connected with signal_autoconnect(). This
+  method now always uses the old method while a new method,
+  signal_autoconnect_new() uses the new interface.
+o Added missing GTK methof set_style.
+o Fixed a compatibility problem with Getopt, which caused Pike 7.4 to
+  behave slightly different than previous versions when running in
+  posix-me-harder mode.
+o Fixed a bug in the code handling boundaries in multipart messages in
+  the MIME module.
+o Multiline tokens are now hanled better in Parser.Pike when running
+  in streaming mode.
+o It is now not possible to call a read callback on a blocking socket.
+o Fixed a bug in low_backtrace where the backtrace itself could be
+  reported as an argument to the top function if it was of varargs
+  type.
+o Fixed security hole with running next_object in a Pike with
+  security.
+o Fixes to make dumping work in a fakeroot environment.
+o Line numbers for C programs are now shown in backtraces even without
+  having to compile with rtldebug.
+o It is possible to turn on only gc debug with trace(1,"gc").
+o The aim for 20% garbage between gc runs was calculated on the wrong
+  total amount of objects, so in effect the gc aimed for 16.7%
+  instead.
+o The decaying average calculation in the gc had a bug that caused the
+  last reading (i.e. the last gc run) to be weighted very heavily.
+  Thus a single "abnormal" gc run could cause the gc to schedule a
+  fairly short or long gc interval the next time which might make it
+  erratic.
+o More solutions to new and fresh autoconf compatibility problems,
+  willfully introduced by the autoconf team.
+o Threads are disabled by default on OpenBSD/alpha <= 3.x.
+o Pike will now look for the master path in SOFTWARE\Pike\ in the
+  registry on Microsoft Windows.
+o Fix icon transparency on Microsoft Windows.
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
