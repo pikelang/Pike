@@ -14,6 +14,8 @@
 #include "module_support.h"
 #include "mapping.h"
 #include "stralloc.h"
+#include "gc.h"
+#include <ctype.h>
 
 #include "parser.h"
 
@@ -21,8 +23,8 @@ extern struct program *parser_html_program;
 
 /*
 #define SCAN_DEBUG
-#define DEBUG
 */
+#define DEBUG
 
 #ifdef DEBUG
 #undef DEBUG
@@ -95,7 +97,7 @@ struct feed_stack
    struct location pos;
 };
 
-enum types {TYPE_TAG, TYPE_CONT, TYPE_ENTITY, TYPE_DATA};
+enum types {TYPE_TAG, TYPE_CONT, TYPE_ENTITY, TYPE_QTAG, TYPE_DATA};
 
 struct parser_html_storage
 {
@@ -129,6 +131,11 @@ struct parser_html_storage
    struct mapping *maptag;
    struct mapping *mapcont;
    struct mapping *mapentity;
+   struct mapping *mapqtag;
+
+   /* mapqtag is indexed on the first two chars in each tag name. The
+    * values are concatenated tuples of ({name, to_do, end}), where
+    * every name that's a prefix of some other name comes after it. */
 
    /* callback functions */
    struct svalue callback__tag;
@@ -149,6 +156,9 @@ struct parser_html_storage
 
    /* flag: handle mixed data from callbacks */
    int mixed_mode;
+
+   /* flag: treat unknown tags and entities as text */
+   int ignore_unknown;
 
 #ifdef DEBUG
    /* flag: debug output */
@@ -187,7 +197,7 @@ struct parser_html_storage
 };
 
 /* P_WAIT was already used by MSVC++ :(  /Hubbe */
-typedef enum { STATE_DONE=0, STATE_WAIT, STATE_REREAD } newstate;
+typedef enum { STATE_DONE=0, STATE_WAIT, STATE_REREAD, STATE_REPARSE } newstate;
 
 #ifdef THIS
 #undef THIS /* Needed for NT */
@@ -202,6 +212,11 @@ static void tag_name(struct parser_html_storage *this,
 		     struct piece *feed,int c);
 static void tag_args(struct parser_html_storage *this,
 		     struct piece *feed,int c,struct svalue *def);
+
+static int quote_tag_lookup (struct parser_html_storage *this,
+			     struct piece *feed, int c,
+			     struct piece **destp, int *d_p,
+			     int finished, struct svalue **mapqentry);
 
 /****** debug helper ********************************/
 
@@ -401,12 +416,14 @@ static void init_html_struct(struct object *o)
    THIS->maptag=NULL;
    THIS->mapcont=NULL;
    THIS->mapentity=NULL;
+   THIS->mapqtag=NULL;
 
    THIS->case_insensitive_tag=0;
    THIS->lazy_end_arg_quote=0;
    THIS->lazy_entity_end=0;
    THIS->match_tag=1;
    THIS->mixed_mode=0;
+   THIS->ignore_unknown=0;
 
    THIS->extra_args=NULL;
 
@@ -439,6 +456,7 @@ static void init_html_struct(struct object *o)
    THIS->maptag=allocate_mapping(32);
    THIS->mapcont=allocate_mapping(32);
    THIS->mapentity=allocate_mapping(32);
+   THIS->mapqtag=allocate_mapping(8);
 
    recalculate_argq(THIS);
 }
@@ -454,6 +472,7 @@ static void exit_html_struct(struct object *o)
    if (THIS->maptag) free_mapping(THIS->maptag);
    if (THIS->mapcont) free_mapping(THIS->mapcont);
    if (THIS->mapentity) free_mapping(THIS->mapentity);
+   if (THIS->mapqtag) free_mapping(THIS->mapqtag);
 
    dmalloc_touch_svalue(&(THIS->callback__tag));
    dmalloc_touch_svalue(&(THIS->callback__data));
@@ -482,6 +501,7 @@ static void gc_check_html(struct object *o)
    gc_check(THIS->maptag);
    gc_check(THIS->mapcont);
    gc_check(THIS->mapentity);
+   gc_check(THIS->mapqtag);
 
    gc_check_svalues(&(THIS->callback__tag),1);
    gc_check_svalues(&(THIS->callback__data),1);
@@ -496,6 +516,7 @@ static void gc_mark_html(struct object *o)
    gc_mark_mapping_as_referenced(THIS->maptag);
    gc_mark_mapping_as_referenced(THIS->mapcont);
    gc_mark_mapping_as_referenced(THIS->mapentity);
+   gc_mark_mapping_as_referenced(THIS->mapqtag);
 
    gc_mark_svalues(&(THIS->callback__tag),1);
    gc_mark_svalues(&(THIS->callback__data),1);
@@ -508,21 +529,15 @@ static void gc_mark_html(struct object *o)
 /****** setup callbacks *****************************/
 
 /*
-**! method object _set_tag_callback(1)
 **! method object _set_tag_callback(function to_call)
-**! method object _set_entity_callback(1)
 **! method object _set_entity_callback(function to_call)
 **! method object _set_data_callback(function to_call)
 **!	These functions set up the parser object to
 **!	call the given callbacks upon tags, entities
 **!	and/or data.
 **!
-**!	The callbacks will _only_ be called if there isn't another
-**!	tag/container/entity handler for these. An argument 1 to
-**!	_set_tag_callback or _set_entity_callback means that unknown
-**!	tags/containers/entities should be treated as data (differs
-**!	from no callback, i.e. 0, in that unknown items are parsed but
-**!	fed verbatim to the output in that case).
+**!	The callbacks will <em>only</em> be called if there isn't
+**!	another tag/container/entity handler for these.
 **!
 **!	The function will be called with the parser
 **!	object as first argument, and the active string
@@ -565,18 +580,23 @@ static void html__set_entity_callback(INT32 args)
 **! method object add_tag(string name,mixed to_do)
 **! method object add_container(string name,mixed to_do)
 **! method object add_entity(string entity,mixed to_do)
+**! method object add_quote_tag(string name,mixed to_do,string end)
 **! method object add_tags(mapping(string:mixed))
 **! method object add_containers(mapping(string:mixed))
 **! method object add_entities(mapping(string:mixed))
 **!	Registers the actions to take when parsing various things.
+**!	Tags, containers, entities are as usual. add_quote_tag() adds
+**!	a special kind of tag that reads any data until the next
+**!	occurrence of the end string immediately before a tag end.
 **!
 **!	<tt>to_do</tt> can be:
 **!	<ul>
 **!	<li><b>a function</b> to be called. The function is on the form
 **!	<pre>
 **!     mixed tag_callback(object parser,mapping args,mixed ...extra)
-**!	mixed container_callback(object parser,mapping args,string cont,mixed ...extra)
+**!	mixed container_callback(object parser,mapping args,string content,mixed ...extra)
 **!	mixed entity_callback(object parser,mixed ...extra)
+**!	mixed quote_tag_callback(object parser,string content,mixed ...extra)
 **!	</pre>
 **!	depending on what realm the function is called by.
 **!	<li><b>a string</b>. This tag/container/entity is then replaced
@@ -676,6 +696,120 @@ static void html_add_entity(INT32 args)
    ref_push_object(THISOBJ);
 }
 
+static void html_add_quote_tag(INT32 args)
+{
+  int remove;
+  struct pike_string *name, *end;
+  struct pike_string *prefix;
+  struct svalue *val;
+  struct svalue cb;
+
+  check_all_args("add_quote_tag",args,BIT_STRING,BIT_MIXED,BIT_STRING|BIT_VOID,0);
+  remove = IS_ZERO (sp+1-args);
+  if (!remove && args < 3)
+    SIMPLE_TOO_FEW_ARGS_ERROR ("add_quote_tag", 3);
+
+  if (THIS->mapqtag->refs>1)
+  {
+    push_mapping(THIS->mapqtag);
+    THIS->mapqtag=copy_mapping(THIS->mapqtag);
+    pop_stack();
+    DEBUG((stderr,"COPY\n"));
+  }
+
+  if (!remove) {
+    struct pike_string *end = make_shared_binary_string2 (&THIS->tag_end, 1);
+    pop_n_elems (args-3);
+    args = 3;
+    push_string (end);
+    f_add (2);
+  }
+
+  name = dmalloc_touch (struct pike_string *, sp[-args].u.string);
+  if (name->len > 2)
+    prefix = string_slice (name, 0, 2);
+  else
+    copy_shared_string (prefix, name);
+
+  val = low_mapping_string_lookup (THIS->mapqtag, prefix);
+  if (val) {
+    int i;
+    struct array *arr;
+#ifdef PIKE_DEBUG
+    if (val->type != T_ARRAY) fatal ("Expected array as value in mapqtag.\n");
+#endif
+    arr = val->u.array;
+    free_string (prefix);
+
+    for (i = 0; i < arr->size; i += 3) {
+      struct pike_string *curname;
+#ifdef PIKE_DEBUG
+      if (arr->item[i].type != T_STRING) fatal ("Expected string as name in mapqtag.\n");
+#endif
+      curname = dmalloc_touch (struct pike_string *, arr->item[i].u.string);
+
+      if (curname == name) {
+	if (remove) {
+	  if (arr->refs > 1) {
+	    arr = copy_array (arr);
+	    free_array (val->u.array);
+	    val->u.array = arr;
+	  }
+	  free_svalues (arr->item+i, 3, BIT_MIXED);
+	  MEMCPY (arr->item+i, arr->item+i+3, (arr->size-i-3) * sizeof(struct svalue));
+	  arr->size -= 3;
+	}
+	else {
+	  assign_svalue (arr->item+i+1, sp-2);
+	  assign_svalue (arr->item+i+2, sp-1);
+	}
+	pop_n_elems (args);
+	goto done;
+      }
+
+      else if (curname->len < name->len && !remove) {
+	struct pike_string *cmp = string_slice (name, 0, curname->len);
+	if (cmp == curname) { /* Found a shorter prefix to name; insert before. */
+	  free_string (cmp);
+	  if (arr->refs > 1) {
+	    arr = copy_array (arr);
+	    free_array (val->u.array);
+	    val->u.array = arr;
+	  }
+	  arr = val->u.array = resize_array (arr, arr->size+3);
+	  MEMCPY (arr->item+i+3, arr->item+i,
+		  (arr->size-i-3) * sizeof(struct svalue));
+	  MEMCPY (arr->item+i, sp-=3, 3*sizeof(struct svalue));
+	  goto done;
+	}
+	else free_string (cmp);
+      }
+    }
+
+    if (!remove) {
+      if (arr->refs > 1) {
+	arr = copy_array (arr);
+	free_array (val->u.array);
+	val->u.array = arr;
+      }
+      arr = val->u.array = resize_array (arr, arr->size+3);
+      MEMCPY (arr->item+arr->size-3, sp-=3, 3*sizeof(struct svalue));
+    }
+
+  done:
+  }
+
+  else if (!remove) {
+    f_aggregate (3);
+    mapping_string_insert (THIS->mapqtag, prefix, sp-1);
+    free_string (prefix);
+    pop_stack();
+  }
+  else free_string (prefix);
+
+  ref_push_object(THISOBJ);
+}
+
 static void html_add_tags(INT32 args)
 {
    int sz;
@@ -743,7 +877,9 @@ static void html_add_entities(INT32 args)
 **! method mapping tags()
 **! method mapping containers()
 **! method mapping entities()
-**!	Returns the current callback settings.
+**! method mapping quote_tags()
+**!	Returns the current callback settings. For quote_tags, the
+**!	values are arrays ({callback, end_quote}).
 **!
 **!	Note that when matching is done case insensitively, all names
 **!	will be returned in lowercase.
@@ -768,7 +904,32 @@ static void html_entities(INT32 args)
    ref_push_mapping(THIS->mapentity);
 }
 
-/****** try_feed - internal main ********************/
+static void html_quote_tags(INT32 args)
+{
+   struct mapping *res = allocate_mapping (32);
+   INT32 e;
+   struct keypair *k;
+   pop_n_elems(args);
+   MAPPING_LOOP(THIS->mapqtag) {
+     int i;
+     struct array *arr = k->val.u.array;
+     for (i = 0; i < arr->size; i += 3) {
+       struct pike_string *end;
+#ifdef PIKE_DEBUG
+      if (arr->item[i+2].type != T_STRING)
+	fatal ("Expected string as end in mapqtag.\n");
+#endif
+       end = arr->item[i+2].u.string;
+       end = string_slice (end, 0, end->len-2);
+       push_svalue (arr->item+i+1);
+       push_string (end);
+       f_aggregate (2);
+       mapping_insert (res, arr->item+i, sp-1);
+       pop_stack();
+     }
+   }
+   push_mapping (res);
+}
 
 /* ---------------------------------------- */
 /* helper function to figure out what to do */
@@ -778,16 +939,15 @@ static INLINE void recheck_scan(struct parser_html_storage *this,
 				int *scan_tag)
 {
    if (this->callback__tag.type!=T_INT ||
-       this->callback__tag.u.integer == 0 ||
        this->maptag->size ||
-       this->mapcont->size) 
+       this->mapcont->size ||
+       this->mapqtag->size)
       *scan_tag=1;
    else 
       *scan_tag=0;
 
    if (this->callback__entity.type!=T_INT ||
-       this->callback__entity.u.integer == 0 ||
-       this->mapentity->size) 
+       this->mapentity->size)
       *scan_entity=1;
    else 
       *scan_entity=0;
@@ -896,6 +1056,26 @@ static INLINE void push_feed_range(struct piece *head,
    else if (n>1)
       f_add(n);
    DEBUG((stderr,"push len=%d\n",sp[-1].u.string->len));
+}
+
+/* -------------------------------------------------------- */
+/* go forward by adjusting for a positive displacement in c */
+
+static INLINE int n_pos_forward (struct piece *feed, int c,
+				 struct piece **dest, int *dp)
+{
+  while (feed->s->len <= c) {
+    if (!feed->next) {
+      *dest = feed;
+      *dp = feed->s->len;
+      return 0;
+    }
+    c -= feed->s->len;
+    feed = feed->next;
+  }
+  *dest = feed;
+  *dp = c;
+  return 1;
 }
 
 /* ------------------------- */
@@ -1193,14 +1373,69 @@ found:
    return 1;
 }
 
+static int scan_for_string (struct parser_html_storage *this,
+			    struct piece *feed,
+			    int c,
+			    struct piece **destp,
+			    int *d_p,
+			    struct pike_string *str)
+{
+  if (!str->len) {
+    *destp = feed;
+    *d_p = c;
+    return 1;
+  }
+
+#define LOOP(TYPE) {							\
+    p_wchar2 look_for = (p_wchar2) ((TYPE *) str->str)[0];		\
+    for (;;) {								\
+      TYPE *p, *e;							\
+      struct piece *dst;						\
+      int cdst;								\
+      if (!scan_forward (feed, c, &feed, &c, &look_for, 1)) return 0;	\
+									\
+      p = (TYPE *) str->str + 1;					\
+      e = (TYPE *) str->str + str->len;					\
+      dst = feed;							\
+      cdst = c + 1;							\
+      for (; p < e; p++, cdst++) {					\
+	while (cdst == dst->s->len) {					\
+	  if (!(dst = dst->next)) return 0;				\
+	  cdst = 0;							\
+	}								\
+	if ((p_wchar2) *p !=						\
+	    INDEX_CHARP (dst->s->str, cdst, dst->s->size_shift))	\
+	  goto PIKE_CONCAT (cont, TYPE);				\
+      }									\
+									\
+      *destp = feed;							\
+      *d_p = c;								\
+      return 1;								\
+									\
+    PIKE_CONCAT (cont, TYPE):						\
+      c++;								\
+    }									\
+  }
+
+  switch (str->size_shift) {
+    case 0: LOOP (p_wchar0); break;
+    case 1: LOOP (p_wchar1); break;
+    case 2: LOOP (p_wchar2); break;
+    default: error ("Unknown width of string.\n");
+  }
+
+#undef LOOP
+
+  return 0;
+}
+
 static int scan_forward_arg(struct parser_html_storage *this,
 			    struct piece *feed,
 			    int c,
 			    struct piece **destp,
 			    int *d_p,
 			    int do_push,
-			    int finished,
-			    int match_tag)
+			    int finished)
 {
    p_wchar2 ch;
    int res,i;
@@ -1248,7 +1483,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
       }
 
       if (ch==this->tag_end)
-	 if (match_tag && q--)
+	 if (this->match_tag && q--)
 	 {
 	    DEBUG_MARK_SPOT("scan for end of arg: inner tag end",
 			    destp[0],*d_p);
@@ -1262,7 +1497,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 	    break;
 	 }
 
-      if (match_tag && ch==this->tag_start)
+      if (this->match_tag && ch==this->tag_start)
       {
 	 DEBUG_MARK_SPOT("scan for end of arg: inner tag start",
 			 destp[0],*d_p);
@@ -1321,6 +1556,8 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 			       int *d_p,
 			       int finished,
 			       int match_tag)
+/* match_tag == 0: don't match inner tags, > 0: match inner tags, < 0:
+ * consider it an unbalanced tag and break */
 {
    p_wchar2 ch;
    int res,i;
@@ -1380,7 +1617,7 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 	 }
 
       if (ch==this->tag_start)
-	if (match_tag)
+	if (match_tag > 0)
 	{
 	  DEBUG_MARK_SPOT("scan for end of tag: inner tag start",
 			  destp[0],*d_p);
@@ -1388,6 +1625,12 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
 	  feed=*destp;
 	  c=d_p[0]+1;
 	  continue;
+	}
+	else if (match_tag < 0)
+	{
+	  DEBUG_MARK_SPOT("scan for end of tag: unbalanced tag start",
+			  destp[0],*d_p);
+	  return 1;
 	}
 	else
 	{
@@ -1423,15 +1666,130 @@ static int scan_for_end_of_tag(struct parser_html_storage *this,
    }
 }
 
+/* ---------------------------------- */
+
+struct chr_buf_len2
+{
+  p_wchar2 str[2];
+  struct piece *p[2];
+  int c[2];
+};
+
+static int quote_tag_lookup (struct parser_html_storage *this,
+			     struct piece *feed, int c,
+			     struct piece **destp, int *d_p,
+			     int finished, struct svalue **mapqentry)
+/* Checks for a quote tag starting at the given position. If one is
+ * found, scans to the end of it and sets *mapqentry to the first
+ * svalue in the ({name, to_do, end}) tuple in this->mapqtag. */
+{
+  struct chr_buf_len2 buf;
+  struct piece *dst = feed;
+  int cdst = c;
+  size_t checklen;
+  *mapqentry = NULL;
+
+  DEBUG_MARK_SPOT ("quote tag lookup", feed, c);
+
+  for (checklen = 0; checklen < sizeof (buf.str) / sizeof (buf.str[0]); checklen++) {
+    while (cdst == dst->s->len) {
+      if (!(dst = dst->next)) {
+	/* This is not entirely correct; we should continue if mapqtag
+	 * doesn't contain any longer indices whose prefixes match
+	 * what we got so far. But it's not much of a problem as long
+	 * as we're indexing on only two chars or less. */
+	DEBUG ((stderr, "quote tag lookup: wait at prefix\n"));
+	return finished;	/* 0 => wait, 1 => no go - *mapqentry still NULL */
+      }
+      cdst = 0;
+    }
+    buf.str[checklen] = index_shared_string (dst->s, cdst);
+    buf.p[checklen] = dst;
+    buf.c[checklen] = ++cdst;
+  }
+
+  for (; checklen; checklen--) {
+    struct pike_string *indstr = make_shared_binary_string2 (buf.str, checklen);
+    struct svalue *val = low_mapping_string_lookup (this->mapqtag, indstr);
+    free_string (indstr);
+
+    if (val) {
+      int i;
+      struct array *arr;
+      DEBUG ((stderr, "quote tag lookup: found entry %c%c at %d\n",
+	      isprint (buf.str[0]) ? buf.str[0] : '.',
+	      isprint (buf.str[1]) ? buf.str[1] : '.', checklen));
+#ifdef PIKE_DEBUG
+      if (val->type != T_ARRAY) fatal ("Expected array as value in mapqtag.\n");
+#endif
+      arr = val->u.array;
+
+      for (i = 0; i < arr->size; i += 3) {
+	struct pike_string *tag;
+#ifdef PIKE_DEBUG
+	if (arr->item[i].type != T_STRING)
+	  fatal ("Expected string as name in mapqtag.\n");
+#endif
+	tag = arr->item[i].u.string;
+	dst = buf.p[checklen-1];
+	cdst = buf.c[checklen-1];
+
+#define LOOP(TYPE) {							\
+	  TYPE *p = (TYPE *) tag->str + checklen;			\
+	  TYPE *e = (TYPE *) tag->str + tag->len;			\
+	  for (; p < e; p++, cdst++) {					\
+	    while (cdst == dst->s->len) {				\
+	      if (!(dst = dst->next)) {					\
+		DEBUG ((stderr, "quote tag lookup: wait\n"));		\
+		return finished; /* 0/1 => see above */			\
+	      }								\
+	      cdst = 0;							\
+	    }								\
+	    if ((p_wchar2) *p !=					\
+		INDEX_CHARP (dst->s->str, cdst, dst->s->size_shift))	\
+	      goto cont;						\
+	  }								\
+	}
+
+	switch (tag->size_shift) {
+	  case 0: LOOP (p_wchar0); break;
+	  case 1: LOOP (p_wchar1); break;
+	  case 2: LOOP (p_wchar2); break;
+	  default: error ("Unknown width of string.\n");
+	}
+
+#undef LOOP
+
+	DEBUG_MARK_SPOT ("quote tag lookup: matched quote tag", dst, cdst);
+	*mapqentry = arr->item+i;
+	*destp = dst;
+	*d_p = cdst;
+	return 1;
+
+      cont:
+      }
+    }
+#ifdef DEBUG
+    else
+      DEBUG ((stderr, "quote tag lookup: no entry %c%c at %d\n",
+	      isprint (buf.str[0]) ? buf.str[0] : '.',
+	      isprint (buf.str[1]) ? buf.str[1] : '.', checklen));
+#endif
+  }
+
+  DEBUG ((stderr, "quote tag lookup: no quote tag\n"));
+  return 1;			/* 1 => no go - *mapqentry still NULL */
+}
+
 /* ---------------------------------------------------------------- */
 /* this is called to get data from callbacks and do the right thing */
 
 static newstate handle_result(struct parser_html_storage *this,
-			 struct feed_stack *st,
-			 struct piece **head,
-			 int *c_head,
-			 struct piece *tail,
-			 int c_tail)
+			      struct feed_stack *st,
+			      struct piece **head,
+			      int *c_head,
+			      struct piece *tail,
+			      int c_tail)
 {
    struct feed_stack *st2;
    int i;
@@ -1486,7 +1844,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	    case 1:
 	       /* reparse the last thing */
 	       pop_stack();
-	       return STATE_REREAD;
+	       return STATE_REPARSE;
 	 }
 	 error("Parser.HTML: illegal result from callback: %d, "
 	       "not 0 (skip) or 1 (wait)\n",
@@ -1568,8 +1926,6 @@ static void do_callback(struct parser_html_storage *this,
 static newstate entity_callback(struct parser_html_storage *this,
 				struct object *thisobj,
 				struct svalue *v,
-				struct piece *start, int cstart,
-				struct piece *end, int cend,
 				struct feed_stack *st,
 				struct piece **cutstart, int *ccutstart,
 				struct piece *cutend, int ccutend)
@@ -1599,10 +1955,10 @@ static newstate entity_callback(struct parser_html_storage *this,
 	 error("Parser.HTML: illegal type found when trying to call callback\n");
    }
 
-   this->start=start;
-   this->cstart=cstart;
-   this->end=end;
-   this->cend=cend;
+   this->start=*cutstart;
+   this->cstart=*ccutstart;
+   this->end=cutend;
+   this->cend=ccutend;
    this->type=TYPE_ENTITY;
 
    SET_ONERROR(uwp,clear_start,this);
@@ -1637,8 +1993,6 @@ static newstate entity_callback(struct parser_html_storage *this,
 static newstate tag_callback(struct parser_html_storage *this,
 			     struct object *thisobj,
 			     struct svalue *v,
-			     struct piece *start, int cstart,
-			     struct piece *end, int cend,
 			     struct feed_stack *st,
 			     struct piece **cutstart, int *ccutstart,
 			     struct piece *cutend, int ccutend)
@@ -1668,10 +2022,10 @@ static newstate tag_callback(struct parser_html_storage *this,
 	 error("Parser.HTML: illegal type found when trying to call callback\n");
    }
 
-   this->start=start;
-   this->cstart=cstart;
-   this->end=end;
-   this->cend=cend;
+   this->start=*cutstart;
+   this->cstart=*ccutstart;
+   this->end=cutend;
+   this->cend=ccutend;
    this->type=TYPE_TAG;
 
    SET_ONERROR(uwp,clear_start,this);
@@ -1707,8 +2061,6 @@ static newstate tag_callback(struct parser_html_storage *this,
 static newstate container_callback(struct parser_html_storage *this,
 				   struct object *thisobj,
 				   struct svalue *v,
-				   struct piece *start, int cstart,
-				   struct piece *end, int cend,
 				   struct piece *startc, int cstartc,
 				   struct piece *endc, int cendc,
 				   struct feed_stack *st,
@@ -1740,10 +2092,10 @@ static newstate container_callback(struct parser_html_storage *this,
 	 error("Parser.HTML: illegal type found when trying to call callback\n");
    }
 
-   this->start=start;
-   this->cstart=cstart;
-   this->end=end;
-   this->cend=cend;
+   this->start=*cutstart;
+   this->cstart=*ccutstart;
+   this->end=cutend;
+   this->cend=ccutend;
    this->type=TYPE_CONT;
 
    SET_ONERROR(uwp,clear_start,this);
@@ -1769,6 +2121,76 @@ static newstate container_callback(struct parser_html_storage *this,
    }
 
    DEBUG((stderr,"container_callback args=%d\n",args));
+   f_call_function(args);
+
+   UNSET_ONERROR(uwp);
+   this->start=NULL;
+
+   return handle_result(this,st,cutstart,ccutstart,cutend,ccutend);
+}
+
+static newstate quote_tag_callback(struct parser_html_storage *this,
+				   struct object *thisobj,
+				   struct svalue *v,
+				   struct piece *startc, int cstartc,
+				   struct piece *endc, int cendc,
+				   struct feed_stack *st,
+				   struct piece **cutstart, int *ccutstart,
+				   struct piece *cutend, int ccutend)
+{
+   int args;
+   ONERROR uwp;
+
+   switch (v->type)
+   {
+      case T_STRING:
+	 push_svalue(v);
+	 put_out_feed(this,sp-1);
+	 pop_stack();
+	 skip_feed_range(st,cutstart,ccutstart,cutend,ccutend);
+	 return STATE_DONE; /* done */
+      case T_FUNCTION:
+      case T_OBJECT:
+	 push_svalue(v);
+	 break;
+      case T_ARRAY:
+	 if (v->u.array->size)
+	 {
+	    push_svalue(v->u.array->item);
+	    break;
+	 }
+      default:
+	 error("Parser.HTML: illegal type found when trying to call callback\n");
+   }
+
+   this->start=*cutstart;
+   this->cstart=*ccutstart;
+   this->end=cutend;
+   this->cend=ccutend;
+   this->type=TYPE_CONT;
+
+   SET_ONERROR(uwp,clear_start,this);
+
+   args=3;
+   ref_push_object(thisobj);
+   push_feed_range(startc,cstartc,endc,cendc);
+
+   if (v->type==T_ARRAY && v->u.array->size>1)
+   {
+      assign_svalues_no_free(sp,v->u.array->item+1,
+			     v->u.array->size-1,v->u.array->type_field);
+      sp+=v->u.array->size-1;
+      args+=v->u.array->size-1;
+   }
+
+   if (this->extra_args)
+   {
+      add_ref(this->extra_args);
+      push_array_items(this->extra_args);
+      args+=this->extra_args->size;
+   }
+
+   DEBUG((stderr,"quote_tag_callback args=%d\n",args));
    f_call_function(args);
 
    UNSET_ONERROR(uwp);
@@ -1807,6 +2229,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
    for (;;)
    {
+      int found;
+
       DEBUG_MARK_SPOT("find_end_of_cont loop",feed,c);
       if (!scan_forward(feed,c,&s1,&c1,&(this->tag_start),1))
       {
@@ -1825,32 +2249,87 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	    return STATE_DONE; /* end of tag, sure... */
 	 }
       }
-      DEBUG_MARK_SPOT("find_end_of_container got tag",feed,c);
-      if (!scan_for_end_of_tag(this,s1,c1+1,&s2,&c2,finished,0))
+      DEBUG_MARK_SPOT("find_end_of_container found tag",s1,c1);
+
+      /* scan start of tag name */
+      if (!scan_forward(s1,c1+1,&s2,&c2,this->ws,-this->n_ws)) {
+	free_svalue(endtagname);
+	return STATE_WAIT; /* come again */
+      }
+
+      if (this->mapqtag->size) {
+	/* must check nested quote tags, since they affect the syntax itself */
+	struct svalue *v;
+	if (!quote_tag_lookup(this,s2,c2,&s3,&c3,finished,&v)) {
+	  free_svalue(endtagname);
+	  return STATE_WAIT; /* come again */
+	}
+	if (v) {
+	  DEBUG_MARK_SPOT("find_end_of_cont : quote tag",s2,c2);
+	  if (!scan_for_string(this,s3,c3,&s3,&c3,v[2].u.string)) {
+	    free_svalue(endtagname);
+	    return finished ? STATE_DONE : STATE_WAIT;
+	  }
+	  n_pos_forward(s3,c3+v[2].u.string->len,&feed,&c);
+	  DEBUG_MARK_SPOT("find_end_of_cont : quote tag end",feed,c);
+	  continue;
+	}
+      }
+
+      /* scan tag name as argument and push */
+      if (!scan_forward_arg(this,s2,c2,&s3,&c3,1,finished))
       {
-	 DEBUG_MARK_SPOT("find_end_of_cont : wait for end",s1,c1);
+	free_svalue(endtagname);
+	return STATE_WAIT; /* come again */
+      }
+      DEBUG_MARK_SPOT("find_end_of_cont : got tag",s2,c2);
+
+      if (this->case_insensitive_tag)
+	f_lower_case(1);
+      if (is_eq(sp-1,tagname)) found = 't';
+      else if (is_eq(sp-1,endtagname)) found = 'e';
+      else found = 0;
+
+      /* When we should treat unknown tags as text, we have to parse
+       * and lookup just the tag name before continuing. */
+      if (!found && THIS->ignore_unknown &&
+	  (!this->maptag->size || !low_mapping_lookup(this->maptag,sp-1)) &&
+	  (!this->mapcont->size || !low_mapping_lookup(this->mapcont,sp-1))) {
+	DEBUG((stderr,"find_end_of_cont : treating unknown tag as text\n"));
+	feed = s3;
+	c = c3;
+	pop_stack();
+	continue;
+      }
+
+      if (c3 < s3->s->len && index_shared_string (s3->s,c3) == this->tag_start) {
+	struct pike_string *cmp =
+	  string_slice (endtagname->u.string, 0, sp[-1].u.string->len);
+	if (cmp == sp[-1].u.string) {
+	  DEBUG_MARK_SPOT("find_end_of_cont : skipping open endtag prefix",s2,c2);
+	  free_string (cmp);
+	  feed = s3;
+	  c = c3;
+	  pop_stack();
+	  continue;
+	}
+	free_string (cmp);
+      }
+
+      pop_stack();
+
+      if (!scan_for_end_of_tag(this,s3,c3,&s2,&c2,finished,
+			       found == 'e' ? -1 : this->match_tag))
+      {
 	 free_svalue(endtagname);
 	 return STATE_WAIT;
       }
 
-      while (scan_forward(s1,c1+1,&s3,&c3,&(this->tag_start),1) &&
-	     cmp_feed_pos(s3,c3,s2,c2) == -1)
-      {
-	DEBUG_MARK_SPOT("find_end_of_cont : skipping open tag",s3,c3);
-	s1=s3;
-	c1=c3;
-      }
-
-      tag_name(this,s1,c1+1);
-      if (this->case_insensitive_tag)
-	f_lower_case(1);
-
-      if (is_eq(sp-1,tagname)) /* push a new level */
-      {
-	 pop_stack();
-	 DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2);
+      switch (found) {
+	case 't': /* push a new level */
+	 DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2+1);
 	 res=find_end_of_container(this,tagname,endtagname,
-				   s2,c2,e1,ce1,&feed,&c,finished);
+				   s2,++c2,e1,ce1,&feed,&c,finished);
 	 DEBUG_MARK_SPOT("find_end_of_cont : push end",feed,c);
 	 if (res)
 	 {
@@ -1859,10 +2338,15 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	    free_svalue(endtagname);
 	    return res;
 	 }
-      }
-      else if (is_eq(sp-1,endtagname))
-      {
-	 pop_stack();
+	 break;
+
+	case 'e':
+	 if (index_shared_string (s2->s, c2) == this->tag_start) {
+	   DEBUG_MARK_SPOT("find_end_of_cont : skipping open endtag",s2,c2);
+	   feed = s2;
+	   c = c2;
+	   continue;
+	 }
 
 	 free_svalue(endtagname);
 	 
@@ -1875,30 +2359,29 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	 *ce2=c2+1;
 
 	 return STATE_DONE;
-      }
-      else
-      {
+
+	default:
 	 feed=s2;
 	 c=c2;
-	 pop_stack();
       }
    }
 }
 
 /* ---------------------------------------------------------------- */
 
-static int do_try_feed(struct parser_html_storage *this,
-		       struct object *thisobj,
-		       struct feed_stack *st,
-		       struct piece **feed,
-		       int finished)
+static newstate do_try_feed(struct parser_html_storage *this,
+			    struct object *thisobj,
+			    struct feed_stack *st,
+			    struct piece **feed,
+			    int finished,
+			    int ignore_tag_cb)
 {
    p_wchar2 look_for[2 /* entity or tag */];
    p_wchar2 ch;
    int n;
    struct piece *dst;
    int cdst;
-   int res;
+   newstate res;
    int got_data=0;
 
    int scan_entity,scan_tag;
@@ -1938,6 +2421,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	      scan_forward(*feed,st->c,&dst,&cdst,look_for,n);
 	 }
 	 got_data=0;
+	 if (*feed != dst || st->c != cdst) ignore_tag_cb = 0;
 
 	 dmalloc_touch_svalue(&(this->callback__data));
 
@@ -1968,7 +2452,7 @@ static int do_try_feed(struct parser_html_storage *this,
 		  *feed=NULL;
 	       }
 	    }
-	    else if (*feed!=dst || st->c!=cdst)
+	    else if (*feed != dst || st->c != cdst)
 	    {
 	       DEBUG((stderr,"%*d calling _data callback %p:%d..%p:%d\n",
 		      this->stack_count,this->stack_count,
@@ -2010,7 +2494,7 @@ static int do_try_feed(struct parser_html_storage *this,
       {
 	 DEBUG((stderr,"%*d do_try_feed end\n",
 		this->stack_count,this->stack_count));
-	 return 0; /* done */
+	 return STATE_DONE; /* done */
       }
 
       ch=index_shared_string(feed[0]->s,st->c);
@@ -2023,16 +2507,58 @@ static int do_try_feed(struct parser_html_storage *this,
 		*feed,st->c));
 
 	 /* scan start of tag name */
-	 res=scan_forward(*feed,st->c+1,&dst,&cdst,
-			  this->ws,-this->n_ws);
-	 if (res)
-	   /* scan tag name as argument and push */
-	   res=scan_forward_arg(this,dst,cdst,&dst,&cdst,
-				1,finished,0);
-	 if (!res)
+	 if (!scan_forward(*feed,st->c+1,&dst,&cdst,
+			   this->ws,-this->n_ws))
 	 {
 	   st->ignore_data=1;
-	   return 1; /* come again */
+	   return STATE_WAIT; /* come again */
+	 }
+
+	 if (this->mapqtag->size) {
+	   struct piece *e1,*e2; /* <![CDATA[ ... ]]>  */
+	   int ce1,ce2;          /*       e1 ^    ^ e2 */
+
+	   if (!quote_tag_lookup(this,dst,cdst,&e1,&ce1,finished,&v)) {
+	     st->ignore_data=1;
+	     return STATE_WAIT; /* come again */
+	   }
+
+	   if (v) {		/* quote tag */
+	     if (scan_for_string(this,e1,ce1,&e2,&ce2,v[2].u.string))
+	       n_pos_forward(e2,ce2+v[2].u.string->len,&dst,&cdst);
+	     else {
+	       if (!finished) {
+		 st->ignore_data=1;
+		 return STATE_WAIT; /* come again */
+	       }
+	       dst = e2;
+	       cdst = ce2;
+	     }
+
+	     if ((res=quote_tag_callback(this,thisobj,v+1,
+					 e1,ce1,e2,ce2,
+					 st,feed,&(st->c),dst,cdst)))
+	     {
+	       DEBUG((stderr,"%*d quote tag callback return %d %p:%d\n",
+		      this->stack_count,this->stack_count,
+		      res,*feed,st->c));
+	       st->ignore_data=(res==STATE_WAIT);
+	       return res;
+	     }
+
+	     DEBUG((stderr,"%*d quote tag callback done %p:%d\n",
+		    this->stack_count,this->stack_count,
+		    *feed,st->c));
+
+	     goto done;
+	   }
+	 }
+
+	 /* scan tag name as argument and push */
+	 if (!scan_forward_arg(this,dst,cdst,&dst,&cdst,1,finished))
+	 {
+	   st->ignore_data=1;
+	   return STATE_WAIT; /* come again */
 	 }
 	 
 	 if (this->maptag->size ||
@@ -2045,17 +2571,15 @@ static int do_try_feed(struct parser_html_storage *this,
 	    {
 	       pop_stack();
 
-	       res=scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				       finished,this->match_tag);
-	       if (!res)
+	       if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
+					finished,this->match_tag))
 	       {
 		 st->ignore_data=1;
-		 return 1; /* come again */
+		 return STATE_WAIT; /* come again */
 	       }
 
 	       /* low-level tag call */
 	       if ((res=tag_callback(this,thisobj,v,
-				     *feed,st->c,dst,cdst+1,
 				     st,feed,&(st->c),dst,cdst+1)))
 	       {
 		  DEBUG((stderr,"%*d tag callback return %d %p:%d\n",
@@ -2077,13 +2601,12 @@ static int do_try_feed(struct parser_html_storage *this,
 	       struct piece *e1,*e2; /* <tag> ... </tag>     */
 	       int ce1,ce2;          /*        e1 ^     ^ e2 */
 
-	       res=scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				       finished,this->match_tag);
-	       if (!res)
+	       if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
+					finished,this->match_tag))
 	       {
 		 st->ignore_data=1;
 		 pop_stack();
-		 return 1; /* come again */
+		 return STATE_WAIT; /* come again */
 	       }
 
 	       /* this is the hardest part : find the corresponding end tag */
@@ -2106,7 +2629,6 @@ static int do_try_feed(struct parser_html_storage *this,
 
 	       /* low-level container call */
 	       if ((res=container_callback(this,thisobj,v,
-					   *feed,st->c,e2,ce2,
 					   dst,cdst+1,e1,ce1,
 					   st,feed,&(st->c),e2,ce2)))
 	       {
@@ -2124,14 +2646,13 @@ static int do_try_feed(struct parser_html_storage *this,
 
 	 dmalloc_touch_svalue(&(this->callback__tag));
 
-	 if (this->callback__tag.type!=T_INT)
+	 if (this->callback__tag.type!=T_INT && !ignore_tag_cb)
 	 {
-	    res=scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				    finished,this->match_tag);
-	    if (!res) 
+	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
+				     finished,this->match_tag))
 	    {
 	       st->ignore_data=1;
-	       return 1; /* come again */
+	       return STATE_WAIT; /* come again */
 	    }
 
 	    DEBUG((stderr,"%*d calling _tag callback %p:%d..%p:%d\n",
@@ -2150,49 +2671,50 @@ static int do_try_feed(struct parser_html_storage *this,
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
 		      res,*feed,st->c));
-	       st->ignore_data=(res==1);
+	       st->ignore_data=(res==STATE_WAIT);
 	       return res;
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
 	 }
-	 else if (!this->callback__tag.u.integer)
+	 else if (this->ignore_unknown) {
+	   /* Send it to callback__data. */
+	   dst=*feed;
+	   cdst=st->c+1;
+	   got_data=1;
+	   goto done;
+	 }
+	 else
 	 {
-	    res=scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
-				    finished,this->match_tag);
-	    if (!res) return 1; /* come again */
+	    if (!scan_for_end_of_tag(this,dst,cdst,&dst,&cdst,
+				     finished,this->match_tag))
+	      return STATE_WAIT; /* come again */
 
 	    put_out_feed_range(this,*feed,st->c,dst,cdst+1);
 	    skip_feed_range(st,feed,&(st->c),dst,cdst+1);
 	 }
-	 else {
-	   /* Send it to callback__data. */
-	   st->ignore_data=0;
-	   got_data=1;
-	   continue;
-	 }
       }
       else if (scan_entity && ch==this->entity_start) /* entity */
       {
-	 int entity_close = 1;
+	 int end_found, entity_close = 1;
 	 DEBUG((stderr,"%*d do_try_feed scan entity %p:%d\n",
 		this->stack_count,this->stack_count,
 		*feed,st->c));
 	 /* just search for end of entity */
 
 	 if (this->lazy_entity_end) {
-	   res=scan_forward(*feed,st->c+1,&dst,&cdst,
-			    this->lazy_entity_ends,this->n_lazy_entity_ends);
-	   if (res && index_shared_string(dst->s,cdst) != this->entity_end)
+	   end_found=scan_forward(*feed,st->c+1,&dst,&cdst,
+				  this->lazy_entity_ends,this->n_lazy_entity_ends);
+	   if (end_found && index_shared_string(dst->s,cdst) != this->entity_end)
 	     entity_close = 0;
 	 }
 	 else {
 	   look_for[0]=this->entity_end;
-	   res=scan_forward(*feed,st->c+1,&dst,&cdst,look_for,1);
+	   end_found=scan_forward(*feed,st->c+1,&dst,&cdst,look_for,1);
 	 }
-	 if (!res && !finished) 
+	 if (!end_found && !finished)
 	 {
 	    st->ignore_data=1; /* no data first at next call */
-	    return 1; /* no end, call again */
+	    return STATE_WAIT; /* no end, call again */
 	 }
 
 	 if (this->mapentity->size)
@@ -2209,7 +2731,6 @@ static int do_try_feed(struct parser_html_storage *this,
 
 	       /* low-level entity call */
 	       if ((res=entity_callback(this,thisobj,v,
-					*feed,st->c,dst,cdst,
 					st,feed,&(st->c),dst,cdst)))
 	       {
 		  DEBUG((stderr,"%*d entity callback return %d %p:%d\n",
@@ -2232,7 +2753,7 @@ static int do_try_feed(struct parser_html_storage *this,
 
 	 dmalloc_touch_svalue(&(this->callback__entity));
 
-	 if (this->callback__entity.type!=T_INT)
+	 if (this->callback__entity.type!=T_INT && !ignore_tag_cb)
 	 {
 	    DEBUG((stderr,"%*d calling _entity callback %p:%d..%p:%d\n",
 		   this->stack_count,this->stack_count,
@@ -2255,16 +2776,17 @@ static int do_try_feed(struct parser_html_storage *this,
 	    }
 	    recheck_scan(this,&scan_entity,&scan_tag);
 	 }
-	 else if (!this->callback__entity.u.integer)
+	 else if (this->ignore_unknown) {
+	   /* Send it to callback__data. */
+	   dst=*feed;
+	   cdst=st->c+1;
+	   got_data=1;
+	   goto done;
+	 }
+	 else
 	 {
 	    put_out_feed_range(this,*feed,st->c,dst,cdst);
 	    skip_feed_range(st,feed,&(st->c),dst,cdst);
-	 }
-	 else {
-	   /* Send it to callback__data. */
-	   st->ignore_data=0;
-	   got_data=1;
-	   continue;
 	 }
 
 	 DEBUG((stderr,"%*d do_try_feed scan entity %p:%d\n",
@@ -2274,8 +2796,11 @@ static int do_try_feed(struct parser_html_storage *this,
 done:
 
       st->ignore_data=0;
+      ignore_tag_cb=0;
    }
 }
+
+/****** try_feed - internal main ********************/
 
 static void try_feed(int finished)
 {
@@ -2286,17 +2811,23 @@ static void try_feed(int finished)
    */
 
    struct feed_stack *st;
+   int ignore_tag_cb = 0;
 
    if (THIS->start) return;	/* called from a callback - avoid recursion */
 
    for (;;)
    {
-      switch (do_try_feed(THIS,THISOBJ,
-			  THIS->stack,
-			  THIS->stack->prev
-			  ?&(THIS->stack->local_feed)
-			  :&(THIS->feed),
-			  finished||(THIS->stack->prev!=NULL)))
+      newstate res;
+      if (THIS->stack->prev) ignore_tag_cb = 0;
+      res = do_try_feed(THIS,THISOBJ,
+			THIS->stack,
+			THIS->stack->prev
+			?&(THIS->stack->local_feed)
+			:&(THIS->feed),
+			finished||(THIS->stack->prev!=NULL),
+			ignore_tag_cb);
+      ignore_tag_cb = 0;
+      switch (res)
       {
 	 case STATE_DONE: /* done, pop stack */
 	    if (!THIS->feed) THIS->feed_end=NULL;
@@ -2318,6 +2849,10 @@ static void try_feed(int finished)
 
 	 case STATE_WAIT: /* incomplete, call again */
 	    return;
+
+	 case STATE_REPARSE: /* user requested another go at the current data */
+	    if (THIS->ignore_unknown) ignore_tag_cb = 1;
+	    /* FALL THROUGH */
 
 	 case STATE_REREAD: /* reread stack head */
 	    if (THIS->stack_count>THIS->max_stack_depth)
@@ -2679,7 +3214,7 @@ static void tag_name(struct parser_html_storage *this,struct piece *feed,int c)
 		this->ws,-this->n_ws);
 
    /* scan as argument and push*/
-   scan_forward_arg(this,s1,c1,&s2,&c2,1,1,0);
+   scan_forward_arg(this,s1,c1,&s2,&c2,1,1);
 }
 
 static INLINE void tag_push_default_arg(struct svalue *def)
@@ -2701,7 +3236,7 @@ static void tag_args(struct parser_html_storage *this,struct piece *feed,int c,
    /* scan past tag name */
    scan_forward(feed,c,&s1,&c1,
 		this->ws,-this->n_ws);
-   scan_forward_arg(this,s1,c1,&s2,&c2,0,1,this->match_tag);
+   scan_forward_arg(this,s1,c1,&s2,&c2,0,1);
 
    for (;;)
    {
@@ -2720,7 +3255,7 @@ new_arg:
       DEBUG_MARK_SPOT("html_tag_args arg start",s1,c1);
 
       /* scan this argument name and push*/
-      scan_forward_arg(this,s1,c1,&s2,&c2,1,1,this->match_tag);
+      scan_forward_arg(this,s1,c1,&s2,&c2,1,1);
       n++;
 
       /* scan for '=', '>' or next argument */
@@ -2752,7 +3287,7 @@ new_arg:
       DEBUG_MARK_SPOT("html_tag_args value start",s1,c1);
 
       /* scan the argument value */
-      scan_forward_arg(this,s2,c2,&s1,&c1,1,1,this->match_tag);
+      scan_forward_arg(this,s2,c2,&s1,&c1,1,1);
 
       /* next argument in the loop */
       s2 = s1;
@@ -2790,6 +3325,15 @@ static void html_tag_name(INT32 args)
 	 push_feed_range(THIS->start,THIS->cstart+1,THIS->end,end);
        }
        break;
+     case TYPE_QTAG: {
+       struct svalue *v;
+       struct piece *pdummy;
+       int cdummy;
+       quote_tag_lookup (THIS, THIS->start, THIS->cstart, &pdummy, &cdummy, 1, &v);
+       if (!v) push_int (0);
+       else push_svalue (v);
+       break;
+     }
      default:
        push_int(0);
    }
@@ -2869,7 +3413,7 @@ void html__inspect(INT32 args)
    struct feed_stack *st;
 
    pop_n_elems(args);
-   
+
    push_text("feed");
    m=0;
    
@@ -2933,6 +3477,22 @@ void html__inspect(INT32 args)
    f_aggregate(p);
    n++;
 
+   push_text("tags");
+   ref_push_mapping(THIS->maptag);
+   n++;
+
+   push_text("containers");
+   ref_push_mapping(THIS->mapcont);
+   n++;
+
+   push_text("entities");
+   ref_push_mapping(THIS->mapentity);
+   n++;
+
+   push_text("quote_tags");
+   ref_push_mapping(THIS->mapqtag);
+   n++;
+
    push_text("callback__tag");
    push_svalue(&(THIS->callback__tag));
    n++;
@@ -2994,6 +3554,8 @@ static void html_clone(INT32 args)
    add_ref(p->mapcont=THIS->mapcont);
    if (p->mapentity) free_mapping(p->mapentity);
    add_ref(p->mapentity=THIS->mapentity);
+   if (p->mapqtag) free_mapping(p->mapqtag);
+   add_ref(p->mapqtag=THIS->mapqtag);
 
    dmalloc_touch_svalue(&p->callback__tag);
    dmalloc_touch_svalue(&p->callback__data);
@@ -3016,6 +3578,7 @@ static void html_clone(INT32 args)
    p->lazy_entity_end=THIS->lazy_entity_end;
    p->match_tag=THIS->match_tag;
    p->mixed_mode=THIS->mixed_mode;
+   p->ignore_unknown=THIS->ignore_unknown;
 #ifdef DEBUG
    p->debug_mode=THIS->debug_mode;
 #endif
@@ -3075,23 +3638,40 @@ static void html_set_extra(INT32 args)
 **! method int lazy_entity_end(void|int value)
 **! method int match_tag(void|int value)
 **! method int mixed_mode(void|int value)
+**! method int ignore_unknown(void|int value)
 **!	Functions to query or set flags. These set the associated flag
 **!	to the value if any is given and returns the old value.
 **!
 **!	The flags are:
 **!	<ul>
-**!	<li><b>case_insensitive_tag</b>: If this flag is nonzero, all
-**!	tags (and containers) are matched case insensitively.
+**!
+**!	<li><b>case_insensitive_tag</b>: All tags and containers are
+**!	matched case insensitively. Tags added with
+**!	<ref>add_quote_tag</ref>() are not affected, though.
+**!
 **!	<li><b>lazy_entity_end</b>: Normally, the entity end character
 **!	(i.e. ';') is required to end an entity. When this flag is
 **!	set, the characters '&', '<', '>', '"', ''', newline and
 **!	linefeed also breaks an entity.
-**!	<li><b>match_tag</b>: If this flag is nonzero, unquoted nested
-**!	tag starters and enders will be balanced when parsing tags.
-**!	This is the default.
-**!	<li><b>mixed_mode</b>: If the mixed mode flag is nonzero,
-**!	callbacks may return arbitrary data in arrays, which will be
-**!	concatenated in the output.
+**!
+**!	<li><b>match_tag</b>: Unquoted nested tag starters and enders
+**!	will be balanced when parsing tags. This is the default.
+**!
+**!	<li><b>mixed_mode</b>: Allow callbacks to return arbitrary
+**!	data in the arrays, which will be concatenated in the output.
+**!
+**!	<li><b>ignore_unknown</b>: Treat unknown tags and entities as
+**!	text data, continuing parsing for tags and entities inside
+**!	them.
+**!
+**!	Note: When functions are specified with
+**!	<ref>_set_tag_callback</ref>() or
+**!	<ref>_set_entity_callback</ref>(), all tags or entities,
+**!	respectively, are considered known. However, if one of those
+**!	functions return 1 and ignore_unknown is set, they are treated
+**!	as text data instead of making another call to the same
+**!	function again.
+**!
 **!	</ul>
 */
 
@@ -3119,7 +3699,7 @@ static void html_match_tag(INT32 args)
 {
    int o=THIS->match_tag;
    check_all_args("match_tag",args,BIT_VOID|BIT_INT,0);
-   if (args) THIS->match_tag=sp[-args].u.integer;
+   if (args) THIS->match_tag=!!sp[-args].u.integer;
    pop_n_elems(args);
    push_int(o);
 }
@@ -3129,6 +3709,15 @@ static void html_mixed_mode(INT32 args)
    int o=THIS->mixed_mode;
    check_all_args("mixed_mode",args,BIT_VOID|BIT_INT,0);
    if (args) THIS->mixed_mode=sp[-args].u.integer;
+   pop_n_elems(args);
+   push_int(o);
+}
+
+static void html_ignore_unknown(INT32 args)
+{
+   int o=THIS->ignore_unknown;
+   check_all_args("ignore_unknown",args,BIT_VOID|BIT_INT,0);
+   if (args) THIS->ignore_unknown=sp[-args].u.integer;
    pop_n_elems(args);
    push_int(o);
 }
@@ -3146,9 +3735,9 @@ static void html_debug_mode(INT32 args)
 
 /****** module init *********************************/
 
-#define tCbret tOr3(tInt0,tStr,tArr(tMixed))
+#define tCbret tOr4(tZero,tInt1,tStr,tArr(tMixed))
 #define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObj X,tCbret))
-#define tTodo(X) tOr4(tInt0,tStr,tCbfunc(X),tArr(tCbfunc(X)))
+#define tTodo(X) tOr4(tZero,tStr,tCbfunc(X),tArr(tCbfunc(X)))
 #define tTagargs tMap(tStr,tStr)
 
 void init_parser_html(void)
@@ -3201,6 +3790,9 @@ void init_parser_html(void)
 		tFunc(tStr tTodo(tTagargs tStr),tObj),0);
    ADD_FUNCTION("add_entity",html_add_entity,
 		tFunc(tStr tTodo(""),tObj),0);
+   ADD_FUNCTION("add_quote_tag",html_add_quote_tag,
+		tOr(tFunc(tStr tTodo(tStr) tStr,tObj),
+		    tFunc(tStr tZero,tObj)),0);
 
    ADD_FUNCTION("add_tags",html_add_tags,
 		tFunc(tMap(tStr,tTodo( tTagargs )),tObj),0);
@@ -3215,6 +3807,8 @@ void init_parser_html(void)
 		tFunc(tNone,tMap(tStr,tTodo( tTagargs tStr ))),0);
    ADD_FUNCTION("entities",html_entities,
 		tFunc(tNone,tMap(tStr,tTodo( "" ))),0);
+   ADD_FUNCTION("quote_tags",html_quote_tags,
+		tFunc(tNone,tMap(tStr,tTodo( tStr ))),0);
 
    /* setup */
 
@@ -3229,6 +3823,8 @@ void init_parser_html(void)
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("mixed_mode",html_mixed_mode,
 		tFunc(tOr(tVoid,tInt),tInt),0);
+   ADD_FUNCTION("ignore_unknown",html_ignore_unknown,
+		tFunc(tOr(tVoid,tInt),tInt),0);
 #ifdef DEBUG
    ADD_FUNCTION("debug_mode",html_debug_mode,
 		tFunc(tOr(tVoid,tInt),tInt),0);
@@ -3237,11 +3833,11 @@ void init_parser_html(void)
    /* special callbacks */
 
    ADD_FUNCTION("_set_tag_callback",html__set_tag_callback,
-		tFunc(tOr(tFuncV(tObj tStr,tMix,tCbret),tInt),tObj),0);
+		tFunc(tFuncV(tObj tStr,tMix,tCbret),tObj),0);
    ADD_FUNCTION("_set_data_callback",html__set_data_callback,
 		tFunc(tFuncV(tObj tStr,tMix,tCbret),tObj),0);
    ADD_FUNCTION("_set_entity_callback",html__set_entity_callback,
-		tFunc(tOr(tFuncV(tObj tStr,tMix,tCbret),tInt),tObj),0);
+		tFunc(tFuncV(tObj tStr,tMix,tCbret),tObj),0);
 
    /* debug, whatever */
    

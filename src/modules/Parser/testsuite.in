@@ -107,6 +107,21 @@ test_any([[
     });
   return p->finish ("<t>x</t>")->read();
 ]], "C(t|x)");
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", "x");
+  p->add_quote_tag ("!--",
+		    lambda (object p, string s) {
+		      return ({"[", s, "]"});
+		    },
+		    "--");
+  p->add_quote_tag ("!-",
+		    lambda (object p, string s) {
+		      return ({"{", s, "}"});
+		    },
+		    "\'");
+  return p->finish ("<t> <!-- <t a='> -- --> <!-<t a='> -->")->read();
+]], "x [ <t a='> -- ] {<t a=} -->");
 
 // Current context functions
 test_any([[
@@ -124,8 +139,12 @@ test_any([[
     "e", lambda (object p) {
 	   return ({"E(", p->current(), "|", p->tag_name(), ")"});
 	 });
-  return p->finish ("<t a=&e; <t>> &e<c x=y -- >x</c> &e; ")->read();
-]], "T(<t a=&e; <t>>|t) E(&e|e)C(<c x=y -- >x</c>|c) E(&e;|e) ");
+  p->add_quote_tag (
+    "q", lambda (object p, string c) {
+	   return ({"Q(", p->current(), "|", p->tag_name(), ")"});
+	 }, "p");
+  return p->finish ("<t a=&e; <t>> <q <\"' &e; p> &e<c x=y -- >x</c> &e; ")->read();
+]], "T(<t a=&e; <t>>|t) Q(<q <\"' &e; p>|q) E(&e|e)C(<c x=y -- >x</c>|c) E(&e;|e) ");
 
 // Argument quoting
 test_any([[
@@ -232,6 +251,25 @@ test_any([[
   p->add_entity ("e", lambda (object p) {return "e";});
   return p->feed("&e")->read() + " " + p->feed(";")->read();
 ]], " e");
+test_any([[
+  object p = Parser.HTML();
+  p->add_quote_tag ("!--", lambda (object p, string s) {return ({s});}, "--");
+  p->add_quote_tag ("!--[", lambda (object p, string s) {return ({s});}, "]--");
+  p->add_quote_tag ("![", lambda (object p, string s) {return ({s});}, "]");
+  return (p->feed("<!")->read() + " " +
+	  p->feed("--")->read() + " " +
+	  p->feed("x-->")->read());
+]], "  x");
+test_any([[
+  object p = Parser.HTML();
+  p->add_quote_tag ("!--", lambda (object p, string s) {return ({s});}, "--");
+  p->add_quote_tag ("!--[", lambda (object p, string s) {return ({s});}, "]--");
+  p->add_quote_tag ("![", lambda (object p, string s) {return ({s});}, "]");
+  return (p->feed("<!")->read() + " " +
+	  p->feed("--")->read() + " " +
+	  p->feed("x--")->read() + " " +
+	  p->feed("->")->read());
+]], "   x-");
 
 // Mixed mode
 test_any([[
@@ -274,6 +312,23 @@ test_any_equal([[
   p->add_container ("c", lambda (object p, mapping a, string s) {return ({s});});
   return p->finish("<c><</c>")->read();
 ]], "<");
+test_any([[
+  object p = Parser.HTML();
+  p->add_container ("c", "C");
+  return p->finish("<c> <!-- \" </c> --> </c> <c> <!-- \" --> </c> ")->read();
+]], "C ");
+test_any([[
+  object p = Parser.HTML();
+  p->ignore_unknown (1);
+  p->add_container ("c", "C");
+  return p->finish("<c> <!-- \" </c> --> </c> <c> <!-- \" --> </c> ")->read();
+]], "C --> </c> C ");
+test_any([[
+  object p = Parser.HTML();
+  p->add_quote_tag ("!--", ".", "--");
+  p->add_container ("c", "C");
+  return p->finish("<c> <!-- \" </c> --> </c> <c> <!-- \" --> </c> ")->read();
+]], "C C ");
 test_any_equal([[
   object p = Parser.HTML();
   p->mixed_mode (1);
@@ -325,7 +380,7 @@ test_any([[
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", "b");
-  p->_set_tag_callback (1);
+  p->ignore_unknown (1);
   return p->finish("<!-- <t> -->")->read();
 ]], "<!-- b -->");
 test_any([[
@@ -336,7 +391,7 @@ test_any([[
 test_any([[
   object p = Parser.HTML();
   p->add_tag ("t", "b");
-  p->_set_tag_callback (1);
+  p->ignore_unknown (1);
   return p->finish("<a href=\"<t>\">")->read();
 ]], "<a href=\"b\">");
 
@@ -346,7 +401,7 @@ test_any([[
   p->add_container ("t", lambda (object p, mapping a, string s)
 			   {p->write_out("|"); return s;});
   p->add_tag ("t2", "2");
-  p->_set_tag_callback (1);
+  p->ignore_unknown (1);
   p->_set_data_callback (lambda (object p, string s)
 			   {return ({"[",s,"]"});});
   return p->finish("<f <t2>=<t2>><t><t2><a<t2>></t><o>")->read();
@@ -367,7 +422,7 @@ test_any([[
   p->add_container ("t", lambda (object p, mapping a, string s)
 			   {p->write_out("|"); return s;});
   p->add_tag ("t2", "2");
-  p->_set_tag_callback (1);
+  p->ignore_unknown (1);
   p->_set_data_callback (lambda (object p, string s)
 			   {return ({"[",s,"]"});});
   return p->finish("x<f x<t2>=<t2>x>x<t>x<t2>x<a<t2>x>x</t>x<o>x")->read();
