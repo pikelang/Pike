@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.107 2001/02/06 17:38:55 grubba Exp $
+ * $Id: system.c,v 1.108 2001/03/18 21:03:45 mirar Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.107 2001/02/06 17:38:55 grubba Exp $");
+RCSID("$Id: system.c,v 1.108 2001/03/18 21:03:45 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -1706,7 +1706,7 @@ extern void init_system_memory(void);
 
 /*! @decl int sleep(int seconds)
  *!
- *! Call the system sleep.
+ *! Call the system sleep() function.
  *!
  *! This is not to be confused with the global function @[predef::sleep()]
  *! that does more elaborate things and can sleep with better precision
@@ -1720,8 +1720,11 @@ extern void init_system_memory(void);
  *!   If you don't need it to be independant of the system clock, use
  *!   @[predef::sleep()] instead.
  *!
+ *!   May not be present; only exists if the function exists in the 
+ *!   current system.
+ *!
  *! @seealso
- *!   @[predef::sleep()]
+ *!   @[predef::sleep()] @[usleep()] @[nanosleep()]
  */
 static void f_system_sleep(INT32 args)
 {
@@ -1735,6 +1738,84 @@ static void f_system_sleep(INT32 args)
    push_int(seconds);
 }
 #endif /* HAVE_SLEEP */
+
+#ifdef HAVE_USLEEP
+
+/*! @decl void usleep(int usec)
+ *!
+ *! Call the system usleep() function. 
+ *!
+ *! This is not to be confused with the global function @[predef::sleep()]
+ *! that does more elaborate things and can sleep with better precision
+ *! (although dependant on a normal functioning system clock).
+ *!
+ *! @note
+ *!   The system's usleep function often utilizes the alarm(2) call and might
+ *!   not be perfectly thread safe in combination with simultaneous
+ *!   sleep()'s or alarm()'s. It might also be interrupted by other signals.
+ *!
+ *!   If you don't need it to be independant of the system clock, use
+ *!   @[predef::sleep()] instead.
+ *!
+ *!   May not be present; only exists if the function exists in the 
+ *!   current system.
+ *!
+ *! @seealso
+ *!   @[predef::sleep()] @[sleep()] @[nanosleep()]
+ */
+static void f_system_usleep(INT32 args)
+{
+   INT_TYPE usec;
+   get_all_args("usleep", args, "%i", &usec);
+   if (usec<0) usec=0; /* sleep takes unsinged */
+   pop_n_elems(args);
+   THREADS_ALLOW();
+   usleep( (unsigned int)usec );
+   THREADS_DISALLOW();
+   push_int(0);
+}
+#endif /* HAVE_USLEEP */
+
+#ifdef HAVE_NANOSLEEP
+
+/*! @decl float nanosleep(int|float seconds)
+ *!
+ *! Call the system nanosleep() function. 
+ *!
+ *! This is not to be confused with the global function @[predef::sleep()]
+ *! that does more elaborate things and can sleep with better precision
+ *! (although dependant on a normal functioning system clock).
+ *!
+ *! Returns the remaining time to sleep (as the system function does).
+ *!
+ *! @seealso
+ *!   @[predef::sleep()] @[sleep()] @[usleep()]
+ *!
+ *! @note
+ *!   May not be present; only exists if the function exists in the 
+ *!   current system.
+ */
+static void f_system_nanosleep(INT32 args)
+{
+   struct timespec req,rem;
+   FLOAT_TYPE sec;
+
+   get_all_args("nanosleep", args, "%F", &sec);
+   if (sec<0.0) sec=0.0; /* unsigned */
+   pop_n_elems(args);
+   THREADS_ALLOW();
+
+   req.tv_sec=(time_t)sec;
+   req.tv_nsec=(long)((sec-req.tv_sec)*1e9);
+   rem.tv_sec=0;
+   rem.tv_nsec=0;
+
+   nanosleep(&req,&rem);
+   THREADS_DISALLOW();
+
+   push_float(rem.tv_sec+rem.tv_nsec*1e-9);
+}
+#endif /* HAVE_NANOSLEEP */
 
 
 /* can't do this if we don't know the syntax */
@@ -2436,6 +2517,13 @@ void pike_module_init(void)
 
 #ifdef HAVE_SLEEP
   ADD_FUNCTION("sleep",f_system_sleep,tFunc(tInt,tInt), 0);
+#endif /* HAVE_SLEEP */
+#ifdef HAVE_USLEEP
+  ADD_FUNCTION("usleep",f_system_usleep,tFunc(tInt,tVoid), 0);
+#endif /* HAVE_SLEEP */
+#ifdef HAVE_NANOSLEEP
+  ADD_FUNCTION("nanosleep",f_system_nanosleep,
+	       tFunc(tOr(tInt,tFloat),tFloat), 0);
 #endif /* HAVE_SLEEP */
 
 #ifdef ITIMER_TYPE_IS_02

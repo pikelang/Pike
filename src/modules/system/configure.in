@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.47 2001/02/04 21:52:28 mirar Exp $
+# $Id: configure.in,v 1.48 2001/03/18 21:03:45 mirar Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -60,7 +60,8 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	chroot fchroot uname sysinfo gethostname gethostbyname \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
-        getspnam_r innetgr utime sleep getrlimit setrlimit  \
+        getspnam_r innetgr utime sleep usleep nanosleep \
+        getrlimit setrlimit  \
         setitimer getitimer mmap munmap)
 
 
