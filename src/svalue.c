@@ -19,11 +19,12 @@
 #include "interpret.h"
 #include "gc.h"
 #include "pike_macros.h"
+#include "pike_types.h"
 #include <ctype.h>
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.81 2000/07/04 00:43:57 mast Exp $");
+RCSID("$Id: svalue.c,v 1.82 2000/07/06 22:07:41 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -686,6 +687,11 @@ int low_is_equal(struct svalue *a,
     case T_FUNCTION:
     case T_PROGRAM:
       return 0;
+
+    case T_TYPE:
+      if (a->u.string == b->u.string) return 1;
+      return pike_types_le(a->u.string, b->u.string) &&
+	pike_types_le(b->u.string, a->u.string);
 
     case T_OBJECT:
       return object_equal_p(a->u.object, b->u.object, p);
