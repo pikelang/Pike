@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.284 2003/01/15 19:03:26 mast Exp $
+|| $Id: interpret.c,v 1.285 2003/02/17 15:20:46 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.284 2003/01/15 19:03:26 mast Exp $");
+RCSID("$Id: interpret.c,v 1.285 2003/02/17 15:20:46 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -325,7 +325,11 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
       break;
       
     case T_OBJECT:
-      object_index_no_free(to, lval->u.object, lval+1);
+      if (lval[1].type == T_LVALUE) {
+	low_object_index_no_free(to, lval->u.object, lval[1].u.integer);
+      } else {
+	object_index_no_free(to, lval->u.object, lval+1);
+      }
       break;
       
     case T_ARRAY:
@@ -392,7 +396,11 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
 
   case T_OBJECT:
-    object_set_index(lval->u.object, lval+1, from);
+    if (lval[1].type == T_LVALUE) {
+      object_low_set_index(lval->u.object, lval[1].u.integer, from);
+    } else {
+      object_set_index(lval->u.object, lval+1, from);
+    }
     break;
 
   case T_ARRAY:
