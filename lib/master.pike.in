@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.191 2002/02/14 15:23:32 grubba Exp $
+ * $Id: master.pike.in,v 1.192 2002/03/01 02:01:59 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -552,13 +552,22 @@ static program low_findprog(string pname,
 }
 
 //
-// This function is called by the compiler
-// when a delayed compilation error occurs
+// This function is called by the compiler when a delayed compilation
+// error occurs in the given program. It should remove all references
+// to the program so that it can be freed.
 //
 void unregister(program p)
 {
-  if(string fname=search(programs,p))
+  if(string fname=search(programs,p)) {
     m_delete(programs, fname);
+    // FIXME: The following assumes that programs are always stored
+    // with '/' as path separators, even on NT. Haven't checked if
+    // that always is the case.
+    fname = dirname (fname);
+    if (object n = fname != "" && fc[fname])
+      if (n->is_resolv_dirnode || n->is_resolv_joinnode)
+	n->delete_value (p);
+  }
   if (zero_type(objects[p]) != 1)
     m_delete(objects, p);
   foreach (fc; string name; mixed mod)
@@ -1014,6 +1023,12 @@ class dirnode
     return values(cache) - ({ZERO_TYPE});
   }
 
+  void delete_value (mixed val)
+  {
+    if (string name = search (cache, val))
+      m_delete (cache, name);
+  }
+
   string _sprintf(int as)
     {
       return sprintf("master()->dirnode(%O)",dirname);
@@ -1112,6 +1127,23 @@ class joinnode
   {
     fill_cache();
     return values(cache) - ({ZERO_TYPE});
+  }
+
+  void delete_value (mixed val)
+  {
+    if (string name = search (cache, val))
+      m_delete (cache, name);
+    for (int i = 0; i < sizeof (joined_modules); i++) {
+      object|mapping|program o = joined_modules[i];
+      if (o == val) {
+	joined_modules = joined_modules[..i - 1] + joined_modules[i + 1..];
+	i--;
+      }
+      else if (objectp (o) && (o->is_resolv_dirnode || o->is_resolv_joinnode))
+	o->delete_value (val);
+      else if (string name = mappingp (o) && search (o, val))
+	m_delete (o, name);
+    }
   }
 };
 
