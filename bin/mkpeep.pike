@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.28 2003/01/13 21:25:47 nilsson Exp $ */
+/* $Id: mkpeep.pike,v 1.29 2003/01/13 22:31:06 nilsson Exp $ */
 
 string skipwhite(string s)
 {
@@ -22,7 +22,7 @@ int find_end(string s)
 #if DEBUG > 8
   werror("find_end("+s+")\n");
 #endif
-  
+
   for(int e=1; e<strlen(s); e++)
   {
     switch(s[e])
@@ -97,7 +97,7 @@ array(int|string|array(string)) split(string s)
   b=({});
 
   s=skipwhite(s);
-  
+
   /* First, we tokenize */
   while(strlen(s))
   {
@@ -302,7 +302,7 @@ void dump2(array(array(array(string))) data,int ind)
 
       if(sscanf(a[i],"(%s)==%s",cons,var)!=2)
 	sscanf(a[i],"%s==%s",cons,var);
-      
+
       write("%*ncase %s:\n", ind, cons);
 
       foreach(b[i], array(array(string)) d) d[0]-=({a[i]});
@@ -313,14 +313,14 @@ void dump2(array(array(array(string))) data,int ind)
 
     write("%*n}\n", ind);
   }
-  
+
   /* Take care of whatever is left */
   if(sizeof(data))
   {
     foreach(data, array(array(string)) d)
     {
       write("%*n/* %s */\n", ind, d[3]);
-      
+
       if(sizeof(d[0]))
       {
 	string test;
@@ -356,7 +356,6 @@ void dump2(array(array(array(string))) data,int ind)
     }
   }
 }
-  
 
 
 int main(int argc, array(string) argv)
@@ -408,4 +407,3 @@ int main(int argc, array(string) argv)
 
   return 0;
 }
-
