@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.12 2003/08/24 15:03:59 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.13 2003/08/25 02:54:17 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -17,6 +17,7 @@ RCSID("$Id: cipher.cmod,v 1.12 2003/08/24 15:03:59 nilsson Exp $");
 
 #include <nettle/aes.h>
 #include <nettle/arcfour.h>
+#include <nettle/blowfish.h>
 #include <nettle/cast128.h>
 #include <nettle/serpent.h>
 #include <nettle/twofish.h>
@@ -130,7 +131,8 @@ PIKECLASS CipherState
   INHERIT CipherInfo;
   CVAR nettle_crypt_func crypt;
   CVAR void *ctx;
-  
+  CVAR int key_size;
+
   /* FIXME: Create should copy state from the other object, if
    * provided. */
 
@@ -152,6 +154,7 @@ PIKECLASS CipherState
       
       info->meta->set_encrypt_key(THIS->ctx, key->len, key->str);
       THIS->crypt = info->meta->encrypt;
+      THIS->key_size = key->len;
 
       push_object(this_object());
     }
@@ -174,6 +177,7 @@ PIKECLASS CipherState
       
       info->meta->set_decrypt_key(THIS->ctx, key->len, key->str);
       THIS->crypt = info->meta->decrypt;
+      THIS->key_size = key->len;
 
       push_object(this_object());
     }
@@ -208,6 +212,16 @@ PIKECLASS CipherState
 
       THIS->crypt(THIS->ctx, data->len, s->str, data->str);
       push_string(end_shared_string(s));      
+    }
+
+  /*! @decl string key_size(void)
+   *!
+   *! @returns
+   *!   The actual key size for this cipher.
+   */
+  PIKEFUN int key_size()
+    {
+      RETURN THIS->key_size;
     }
 
   INIT
@@ -326,6 +340,59 @@ PIKECLASS ARCFOUR_State
     }
 }
 /*! @endclass ARCFOUR_State */
+
+
+static int
+BLOWFISH_check_key(ptrdiff_t len, const char *key)
+{
+  return (len>=BLOWFISH_MIN_KEY_SIZE && len<=BLOWFISH_MAX_KEY_SIZE);
+}
+
+const struct nettle_cipher nettle_blowfish =
+  _NETTLE_CIPHER_FIX(blowfish, BLOWFISH, 448);
+
+/*! @class BLOWFISH_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo.
+ */
+PIKECLASS BLOWFISH_Info
+{
+  INIT
+    {
+      struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
+
+      if (CipherInfo && !CipherInfo->meta)
+      {
+	CipherInfo->meta = &nettle_blowfish;
+	CipherInfo->check_key = &BLOWFISH_check_key;
+      }
+    }
+}
+
+/*! @endclass BLOWFISH_Info */
+
+/*! @class BLOWFISH_State
+ *!
+ *! State for Blowfish encyption
+ */
+PIKECLASS BLOWFISH_State
+{
+  INHERIT BLOWFISH_Info;
+  INHERIT CipherState;
+  CVAR struct blowfish_ctx blowfish;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->blowfish;
+    }
+}
+/*! @endclass BLOWFISH_State */
 
 static int
 CAST128_check_key(ptrdiff_t len, const char *key)
