@@ -1,0 +1,8 @@
+AC_INIT(crypto.c)
+
+sinclude(../module_configure.in)
+
+AC_CONFIG_SUBDIRS(lib)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
