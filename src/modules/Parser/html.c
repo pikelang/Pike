@@ -24,8 +24,8 @@ extern struct program *parser_html_program;
 
 /*
 #define SCAN_DEBUG
-*/
 #define DEBUG
+*/
 
 #ifdef DEBUG
 #undef DEBUG
@@ -274,7 +274,7 @@ typedef enum { STATE_DONE=0, STATE_WAIT, STATE_REREAD, STATE_REPARSE } newstate;
 static struct pike_string *empty_string;
 
 static void tag_name(struct parser_html_storage *this,
-		     struct piece *feed,int c);
+		     struct piece *feed,int c, int skip_tag_start);
 static void tag_args(struct parser_html_storage *this,
 		     struct piece *feed,int c,struct svalue *def,
 		     int skip_name, int to_tag_end);
@@ -3996,15 +3996,19 @@ static void html_current(INT32 args)
 **!	<tt>({tag_name(),tag_args(), tag_content()})</tt>.
 */
 
-static void tag_name(struct parser_html_storage *this,struct piece *feed,int c)
+static void tag_name(struct parser_html_storage *this,struct piece *feed,
+		     int c, int skip_tag_start)
 {
    struct piece *s1=NULL,*s2=NULL;
    int c1=0,c2=0;
    int pushed = 0;
 
-   p_wchar2 ch=index_shared_string(feed->s,c);
-   if (c < feed->s->len && ch==this->tag_start)
-     FORWARD_CHAR(feed,c,feed,c);
+   if (skip_tag_start) {
+     p_wchar2 ch=index_shared_string(feed->s,c);
+     if (c < feed->s->len && ch==this->tag_start)
+       FORWARD_CHAR(feed,c,feed,c);
+   }
+
    if (c < feed->s->len &&
        index_shared_string (feed->s, c) == this->tag_fin) {
      c++;
@@ -4168,7 +4172,7 @@ static void html_tag_name(INT32 args)
    switch (THIS->type) {
      case TYPE_TAG:
      case TYPE_CONT:
-       tag_name(THIS,THIS->start,THIS->cstart);
+       tag_name(THIS,THIS->start,THIS->cstart,1);
        break;
      case TYPE_ENTITY:
        if (THIS->cend == 0) {
@@ -4333,8 +4337,9 @@ static void html_context(INT32 args)
 
 /*
 **! method string parse_tag_name(string tag)
-**!	Parses the tag name from a string <tt>&lt;tagname some=tag
-**!	args</tt>. The initial '&lt;' is optional.
+**!	Parses the tag name from a tag string without the surrounding
+**!	brackets, i.e. a string on the form <tt>tagname some="tag"
+**!	args</tt>.
 **! returns the tag name or an empty string if none
 */
 
@@ -4344,16 +4349,15 @@ static void html_parse_tag_name(INT32 args)
    check_all_args("parse_tag_name",args,BIT_STRING,0);
    feed.s=sp[-args].u.string;
    feed.next=NULL;
-   tag_name(THIS,&feed,0);
+   tag_name(THIS,&feed,0,0);
    stack_pop_n_elems_keep_top(args);
 }
 
 /*
 **! method mapping parse_tag_args(string tag)
-**!	Parses the tag arguments from a string <tt>&lt;tagname
-**!	some=tag args</tt>. The string is always parsed to the end,
-**!	regardless if there's a '&gt;' in it. The initial '&lt;' is
-**!	optional.
+**!	Parses the tag arguments from a tag string without the
+**!	surrounding brackets, i.e. a string on the form <tt>tagname
+**!	some="tag" args</tt>.
 **! returns a mapping containing the tag arguments
 */
 
