@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: image_xface.c,v 1.3 1998/04/05 21:14:10 mirar Exp $");
+RCSID("$Id: image_xface.c,v 1.4 1998/04/09 00:44:08 marcus Exp $");
 
 #include "config.h"
 
@@ -24,6 +24,8 @@ RCSID("$Id: image_xface.c,v 1.3 1998/04/05 21:14:10 mirar Exp $");
 #include "error.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
+#include "operators.h"
+#include "builtin_functions.h"
 
 #ifdef HAVE_GMP_H
 
@@ -182,6 +184,20 @@ static int pop(mpz_t val, unsigned int *p)
   return r;
 }
 
+static void push(mpz_t val, unsigned int *p, int r)
+{
+  unsigned long int n;
+  mpz_t dum;
+
+  p += r<<1;
+  mpz_init(dum);
+  n = mpz_fdiv_qr_ui(val, dum, val, p[0]);
+  mpz_clear(dum);
+
+  mpz_mul_ui(val, val, 256);
+  mpz_add_ui(val, val, n+p[1]);
+}
+
 static void popg(mpz_t val, unsigned char *face, int s)
 {
   if(s>=4) {
@@ -199,6 +215,19 @@ static void popg(mpz_t val, unsigned char *face, int s)
   }
 }
 
+static void pushg(mpz_t val, unsigned char *face, int s)
+{
+  if(s>=4) {
+    s>>=1;
+    pushg(val, face+s*49, s);
+    pushg(val, face+s*48, s);
+    pushg(val, face+s, s);
+    pushg(val, face, s);    
+  } else
+    push(val, botprob,
+	 (face[0])|((face[1])<<1)|((face[48])<<2)|((face[49])<<3));
+}
+
 static void uncomp(mpz_t val, unsigned char *face, int s, int l)
 {
   switch(pop(val, topprob[l])) {
@@ -213,6 +242,46 @@ static void uncomp(mpz_t val, unsigned char *face, int s, int l)
     uncomp(val, face+s*48, s, l);
     uncomp(val, face+s*49, s, l);
     break;
+  }
+}
+
+static int all_white(unsigned char *face, int s)
+{
+  int i, j;
+  for(i=0; i<s; i++) {
+    for(j=0; j<s; j++)
+      if(face[j])
+	return 0;
+    face += 48;
+  }
+  return 1;
+}
+
+static int all_black(unsigned char *face, int s)
+{
+  if(s>=4) {
+    s>>=1;
+    return all_black(face, s) && all_black(face+s, s) &&
+      all_black(face+s*48, s) && all_black(face+s*49, s);
+  } else
+    return face[0] || face[1] || face[48] || face[49];
+}
+
+static void comp(mpz_t val, unsigned char *face, int s, int l)
+{
+  if(all_white(face, s))
+    push(val, topprob[l], 2);
+  else if(all_black(face, s)) {
+    pushg(val, face, s);
+    push(val, topprob[l], 0);
+  } else {
+    s>>=1;
+    l++;
+    comp(val, face+s*49, s, l);
+    comp(val, face+s*48, s, l);
+    comp(val, face+s, s, l);
+    comp(val, face, s, l);
+    push(val, topprob[l-1], 1);
   }
 }
 
@@ -235,6 +304,7 @@ static void decodeface(char *data, INT32 len, rgb_group *out)
     for(j=0; j<3; j++)
       uncomp(val, &face[i*16][j*16], 16, 0);
   mpz_clear(val);
+
   xform((unsigned char *)face, (unsigned char *)face);
   for(i=0; i<48; i++)
     for(j=0; j<48; j++) {
@@ -245,6 +315,46 @@ static void decodeface(char *data, INT32 len, rgb_group *out)
       out++;
     }
 }
+
+static struct pike_string *encodeface(rgb_group *in)
+{
+  unsigned char face[48][48], newface[48][48];
+  int i, j;
+  unsigned long int n;
+  mpz_t val, dum;
+  dynamic_buffer buf;
+
+  for(i=0; i<48; i++)
+    for(j=0; j<48; j++) {
+      if(in->r || in->g || in->b)
+	face[i][j] = 0;
+      else
+	face[i][j] = 1;
+      in++;
+    }
+  memcpy(newface, face, sizeof(face));
+  xform((unsigned char *)face, (unsigned char *)newface);
+  mpz_init(val);
+  mpz_set_ui(val, 0);
+  for(i=2; i>=0; --i)
+    for(j=2; j>=0; --j)
+      comp(val, &newface[i*16][j*16], 16, 0);
+  buf.s.str = NULL;
+  initialize_buf( &buf );
+  mpz_init(dum);
+  i = 0;
+  while(mpz_cmp_ui(val, 0)) {
+    n = mpz_fdiv_qr_ui(val, dum, val, 94);
+    low_my_putchar( n+'!', &buf );
+    i++;
+  }
+  if (i==0)
+    low_my_putchar( '!', &buf );
+  mpz_clear(dum);
+  mpz_clear(val);
+  return low_free_buf( &buf );
+}
+
 
 /*
 **! method object decode(string data)
@@ -279,6 +389,49 @@ static void image_xface_decode(INT32 args)
   push_object(o);
 }
 
+
+/*
+**! method string encode(object img)
+**! method string encode(object img, mapping options)
+**! 	Encodes an X-Face image. 
+**!
+**!     The <tt>img</tt> argument must be an image of the dimensions
+**!     48 by 48 pixels.  All non-black pixels will be considered white.
+**!
+**!     The <tt>options</tt> argument may be a mapping
+**!	containing zero options.
+**!
+*/
+
+static void image_xface_encode(INT32 args)
+{
+  struct image *img;
+  struct pike_string *res;
+
+  if (args<1 
+      || sp[-args].type!=T_OBJECT
+      || !(img=(struct image*)
+	   get_storage(sp[-args].u.object,image_program))
+      || (args>1 && sp[1-args].type!=T_MAPPING))
+    error("Image.XFace.encode: Illegal arguments\n");
+  
+  if (!img->img)
+    error("Image.XFace.encode: Given image is empty.\n");
+  
+  if (img->xsize != 48 || img->ysize != 48)
+    error("Image.XFace.encode: Wrong image dimensions (must be 48 by 48).\n");
+
+  res = encodeface(img->img);
+
+  pop_n_elems(args);
+  if (res == NULL)
+    push_int(0);
+  else {
+    push_string(res);
+    f_reverse(1);
+  }
+}
+
 #endif /* HAVE_GMP_H */
 
 /*** module init & exit & stuff *****************************************/
@@ -307,6 +460,8 @@ void pike_module_init(void)
    {
       add_function("decode",image_xface_decode,
 		   "function(string,void|mapping(string:int):object)",0);
+      add_function("encode",image_xface_encode,
+		   "function(object,void|mapping(string:int):string)",0);
    }
 
 #endif /* HAVE_GMP_H */
