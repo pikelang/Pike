@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.260 2004/11/15 22:53:35 mast Exp $
+|| $Id: file.c,v 1.261 2004/11/16 14:48:20 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.260 2004/11/15 22:53:35 mast Exp $");
+RCSID("$Id: file.c,v 1.261 2004/11/16 14:48:20 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2090,7 +2090,7 @@ static void file_set_nonblocking(INT32 args)
   if(set_nonblocking(FD,1))
   {
     ERRNO=errno;
-    Pike_error("Stdio.File->set_nonbloblocking() failed.\n");
+    Pike_error("Stdio.File->set_nonblocking() failed.\n");
   }
 
   THIS->open_mode |= FILE_NONBLOCKING;
@@ -2975,7 +2975,7 @@ static void file_connect(INT32 args)
     ERRNO=errno;
     if (was_closed) {
       while (fd_close (FD) && errno == EINTR) {}
-      change_fd_for_box (&THIS->box, -1);
+      FD = -1;
       errno = ERRNO;
     }
     pop_n_elems(args);
@@ -3631,7 +3631,9 @@ static void fd__sprintf(INT32 args)
   {
     case 'O':
     {
-      push_text("Fd()");
+      char buf[20];
+      sprintf (buf, "Fd(%d)", FD);
+      push_text(buf);
       return;
     }
 
