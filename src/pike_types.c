@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.151 2001/02/25 15:03:18 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.152 2001/02/26 00:10:48 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2505,17 +2505,22 @@ static int low_pike_types_le2(char *a, char *b,
  * Note: The difference between this function, and pike_types_le()
  *       is the more lenient check for T_OR, and the handling of T_ARRAY.
  */
-int strict_check_call(char *fun_type, char *arg_type)
+static int low_strict_check_call(char *fun_type, char *arg_type)
 {
   while ((EXTRACT_UCHAR(fun_type) == T_OR) ||
 	 (EXTRACT_UCHAR(fun_type) == T_ARRAY)) {
     if (EXTRACT_UCHAR(fun_type++) == T_OR) {
-      int res = strict_check_call(fun_type, arg_type);
+      int res = low_strict_check_call(fun_type, arg_type);
       if (res) return res;
       fun_type += type_length(fun_type);
     }
   }
   return low_pike_types_le(fun_type, arg_type, 0, 0);
+}
+
+int strict_check_call(struct pike_type *fun_type, struct pike_type *arg_type)
+{
+  return low_strict_check_call(fun_type->str, arg_type->str);
 }
 
 /*
@@ -3117,7 +3122,7 @@ struct pike_type *check_call(struct pike_type *args,
   if(low_get_return_type(type->str,args->str))
   {
     if (strict) {
-      if (!strict_check_call(type->str, args->str)) {
+      if (!strict_check_call(type, args)) {
 	struct pike_string *type_t = describe_type(type);
 
 	if (!low_pike_types_le(type->str, tFuncV(tNone,tZero,tMix), 0, 0)) {
