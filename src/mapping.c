@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.33 1998/05/14 21:45:21 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.34 1998/05/16 08:21:47 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -936,6 +936,9 @@ void mapping_search_no_free(struct svalue *to,
 
 void check_mapping(struct mapping *m)
 {
+  int e,num;
+  struct keypair *k;
+
   if(m->refs <=0)
     fatal("Mapping has zero refs.\n");
 
@@ -965,7 +968,22 @@ void check_mapping(struct mapping *m)
 
   if(!m->hash && m->size)
     fatal("Hey! where did my hashtable go??\n");
+
+  num=0;
+  MAPPING_LOOP(m)
+    {
+      num++;
+
+      if(! ( (1 << k->ind.type) & (m->ind_types) ))
+	fatal("Mapping indices type field lies.\n");
+
+      if(! ( (1 << k->val.type) & (m->val_types) ))
+	fatal("Mapping values type field lies.\n");
+      
+    }
   
+  if(m->size != num)
+    fatal("Shields are failing, hull integrity down to 20%%\n");
 }
 
 void check_all_mappings(void)
