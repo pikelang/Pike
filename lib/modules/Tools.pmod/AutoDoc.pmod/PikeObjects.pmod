@@ -548,7 +548,7 @@ class Enum {
     // need some special handling to make this look as if it
     // were produced by some other stuff
     string s =  standardStart() + standardTags();
-    array(Node) inDocGroups = ({});
+    array(SimpleNode) inDocGroups = ({});
 
     if (documentation && documentation->xml != "") {
 
@@ -570,19 +570,21 @@ class Enum {
       //   </doc>
       // </docgroup>
 
-      Node doc = parse_input("<doc>"+documentation->xml+"</doc>")->
+      SimpleNode doc =
+	simple_parse_input("<doc>"+documentation->xml+"</doc>")->
 	get_first_element();
 
-      foreach (doc->get_children(), Node group) {
+      foreach (doc->get_children(), SimpleNode group) {
         if (group->get_node_type() == XML_ELEMENT
             && group->get_any_name() == "group")
         {
           int constants = 0;
           string homogenName = 0;
-          Node docGroupNode = Node(XML_ELEMENT, "docgroup",
-                                   ([ "homogen-type" : "constant" ]), 0);
-          Node text = 0;
-          foreach (group->get_children(), Node child)
+          SimpleNode docGroupNode =
+	    SimpleNode(XML_ELEMENT, "docgroup",
+		       ([ "homogen-type" : "constant" ]), 0);
+          SimpleNode text = 0;
+          foreach (group->get_children(), SimpleNode child)
             if (child->get_node_type() == XML_ELEMENT)
               if (child->get_any_name() == "constant") {
                 ++constants;
@@ -609,7 +611,7 @@ class Enum {
               // wrap the <text> node in a <doc>,
               // and then put it inside the <docgroup>
               // together with the <constant>s
-              Node d = Node(XML_ELEMENT, "doc", ([]), 0);
+              SimpleNode d = SimpleNode(XML_ELEMENT, "doc", ([]), 0);
               d->add_child(text);
               docGroupNode->add_child(d);
             }
@@ -622,7 +624,7 @@ class Enum {
 
     foreach (children, DocGroup docGroup)
       s += docGroup->xml();
-    foreach (inDocGroups, Node n)
+    foreach (inDocGroups, SimpleNode n)
       s += n->html_of_node();
 
     s += standardEnd();

@@ -250,9 +250,9 @@ string moveImages(string docXMLFile,
   int counter = 0;
   array(int) docgroupcounters = ({}); // docgroup on top level is impossible
   string cwd = getcwd();
-  Node n;
+  SimpleNode n;
   mixed err = catch {
-    n = parse_input(docXMLFile)[0];
+    n = simple_parse_input(docXMLFile)[0];
   };
   if (err) {
     int offset;
@@ -264,7 +264,7 @@ string moveImages(string docXMLFile,
     throw(err);
   }
   n->walk_preorder_2(
-    lambda(Node n) {
+    lambda(SimpleNode n) {
       if (n->get_node_type() == XML_ELEMENT) {
         mapping(string : string) attr = n->get_attributes();
         switch (n->get_any_name()) {
@@ -275,7 +275,7 @@ string moveImages(string docXMLFile,
               parents += ({ attr["homogen-name"] });
             else {
               string name = 0;
-              foreach (n->get_children(), Node c) {
+              foreach (n->get_children(), SimpleNode c) {
                 if (c->get_node_type() == XML_ELEMENT)
                   if (name = c->get_attributes()["name"])
                     break;
@@ -301,7 +301,7 @@ string moveImages(string docXMLFile,
             break;
 
           case "image":
-            array(Node) children = n->get_children();
+            array(SimpleNode) children = n->get_children();
             if (sizeof(children || ({})) != 1
                 || children[0]->get_node_type() != XML_TEXT)
               processError("bad image tag: %s\n", n->html_of_node());
@@ -335,7 +335,7 @@ string moveImages(string docXMLFile,
         }
       }
     },
-    lambda(Node n) {
+    lambda(SimpleNode n) {
       if (n->get_node_type() == XML_ELEMENT) {
         switch (n->get_any_name()) {
           case "class":
@@ -357,13 +357,13 @@ string moveImages(string docXMLFile,
 // BUILDING OF THE BIG TREE
 //========================================================================
 
-static int isAutoDoc(Node node) { return node->get_any_name() == "autodoc"; }
-static int isNameSpace(Node node) { return node->get_any_name() == "namespace"; }
-static int isClass(Node node) { return node->get_any_name() == "class"; }
-static int isModule(Node node) { return node->get_any_name() == "module"; }
-static int isDoc(Node node) { return node->get_any_name() == "doc"; }
+static int isAutoDoc(SimpleNode node) { return node->get_any_name() == "autodoc"; }
+static int isNameSpace(SimpleNode node) { return node->get_any_name() == "namespace"; }
+static int isClass(SimpleNode node) { return node->get_any_name() == "class"; }
+static int isModule(SimpleNode node) { return node->get_any_name() == "module"; }
+static int isDoc(SimpleNode node) { return node->get_any_name() == "doc"; }
 
-static string getName(Node node) { return node->get_attributes()["name"]; }
+static string getName(SimpleNode node) { return node->get_attributes()["name"]; }
 
 //!   Puts all children of @[source] into the tree @[dest], in their right
 //!   place module-hierarchically.
@@ -380,17 +380,17 @@ static string getName(Node node) { return node->get_attributes()["name"]; }
 //!   wrong place in the tree, so @[handleAppears()] (or @[postProcess()])
 //!   must be called on the whole documentation tree to relocate them once
 //!   the tree has been fully merged.
-void mergeTrees(Node dest, Node source) {
-  mapping(string : Node) dest_children = ([]);
+void mergeTrees(SimpleNode dest, SimpleNode source) {
+  mapping(string : SimpleNode) dest_children = ([]);
   int dest_has_doc = 0;
 
-  foreach(dest->get_children(), Node node)
+  foreach(dest->get_children(), SimpleNode node)
     if (isNameSpace(node) || isClass(node) || isModule(node))
       dest_children[getName(node)] = node;
     else if (isDoc(node))
       dest_has_doc = 1;
 
-  foreach(source->get_children(), Node node)
+  foreach(source->get_children(), SimpleNode node)
     switch(node->get_any_name()) {
       case "namespace":
       case "class":
@@ -399,7 +399,7 @@ void mergeTrees(Node dest, Node source) {
       case "typedef":
         {
         string name = getName(node);
-        Node n = dest_children[name];
+        SimpleNode n = dest_children[name];
         if (n) {
           if (node->get_any_name() != n->get_any_name())
             processError("entity '" + name +
@@ -442,17 +442,17 @@ static void reportError(string filename, mixed ... args) {
 // HANDLING @appears directives
 //========================================================================
 
-static Node findNode(Node root, array(string) ref) {
-  Node n = root;
+static SimpleNode findNode(SimpleNode root, array(string) ref) {
+  SimpleNode n = root;
   // top:: is an anchor to the root of the current namespace.
   if (sizeof(ref) && ref[0] == "top::")
     ref = ref[1..];
   if (!sizeof(ref))
     return root;
   while (sizeof(ref)) {
-    array(Node) children = n->get_children();
-    Node found = 0;
-    foreach (children, Node child) {
+    array(SimpleNode) children = n->get_children();
+    SimpleNode found = 0;
+    foreach (children, SimpleNode child) {
       string tag = child->get_any_name();
       if (tag == "namespace" || tag == "module" || tag == "class") {
         string name = child->get_attributes()["name"];
@@ -470,19 +470,20 @@ static Node findNode(Node root, array(string) ref) {
   return n;
 }
 
-static class ReOrganizeTask {
+static class ReOrganizeTask(SimpleNode n, SimpleNode parent) {
   array(string) belongsRef;
   string newName;
-  Node n;
 }
 
 static array(ReOrganizeTask) tasks;
 
 // current is a <module>, <class> or <docgroup> node
-static void recurseAppears(string namespace, Node current) {
+static void recurseAppears(string namespace,
+			   SimpleNode current,
+			   SimpleNode parent) {
   mapping attr = current->get_attributes() || ([]);
   if (attr["appears"] || attr["belongs"] || attr["global"]) {
-    ReOrganizeTask t = ReOrganizeTask();
+    ReOrganizeTask t = ReOrganizeTask(current, parent);
     array(string) a = ({});
     if (string attrRef = attr["appears"]) {
       a = splitRef(attrRef);
@@ -505,13 +506,12 @@ static void recurseAppears(string namespace, Node current) {
     // Strip the :: from the namespace name.
     a[0] = a[0][..sizeof(a[0])-3];
     t->belongsRef = a;
-    t->n = current;
     tasks += ({ t });
   }
   if ( (<"class", "module">)[ current->get_any_name() ] )
-    foreach (current->get_children(), Node child)
+    foreach (current->get_children(), SimpleNode child)
       if ((<"module", "class", "docgroup">)[child->get_any_name()])
-        recurseAppears(namespace, child);
+        recurseAppears(namespace, child, current);
 }
 
 //! Take care of all the @@appears and @@belongs directives everywhere,
@@ -519,13 +519,13 @@ static void recurseAppears(string namespace, Node current) {
 //!
 //! @param root
 //!   The root (@tt{<autodoc>@}) node of the documentation tree.
-void handleAppears(Node root) {
+void handleAppears(SimpleNode root) {
   tasks = ({ });
-  foreach(root->get_elements("namespace"), Node namespaceNode) {
+  foreach(root->get_elements("namespace"), SimpleNode namespaceNode) {
     string namespace = namespaceNode->get_attributes()->name + "::";
-    foreach(namespaceNode->get_children(), Node child) {
+    foreach(namespaceNode->get_children(), SimpleNode child) {
       if ((<"module", "class", "docgroup">)[child->get_any_name()]) {
-	recurseAppears(namespace, child);
+	recurseAppears(namespace, child, namespaceNode);
       }
     }
   }
@@ -535,11 +535,11 @@ void handleAppears(Node root) {
       return sizeof(task1->belongsRef) > sizeof(task2->belongsRef);
     } );
   foreach (tasks, ReOrganizeTask task) {
-    Node n = task->n;
+    SimpleNode n = task->n;
     string type = n->get_any_name();
     array(string) belongsRef = task->belongsRef;
     string newName = task->newName;
-    Node belongsNode = findNode(root, belongsRef);
+    SimpleNode belongsNode = findNode(root, belongsRef);
     if (!belongsNode) {
       werror("Couldn't find the node: %O\n", belongsRef*".");
       continue;
@@ -549,7 +549,7 @@ void handleAppears(Node root) {
 	mapping m = n->get_attributes();
 	if(m["homogen-name"])
 	  m["homogen-name"] = newName;
-        foreach (n->get_children(), Node child)
+        foreach (n->get_children(), SimpleNode child)
           if (child->get_node_type() == XML_ELEMENT) {
             mapping attributes = child->get_attributes();
             if (attributes["name"])
@@ -566,9 +566,7 @@ void handleAppears(Node root) {
     m_delete(n->get_attributes(), "belongs");
     m_delete(n->get_attributes(), "appears");
 
-    Node parent = n->get_parent();
-    if (parent)
-      parent->remove_child(n);
+    task->parent->remove_child(n);
     belongsNode->add_child(n);
   }
 }
@@ -798,9 +796,9 @@ static class ScopeStack {
   }
 }
 
-static void fixupRefs(ScopeStack scopes, Node node) {
+static void fixupRefs(ScopeStack scopes, SimpleNode node) {
   node->walk_preorder(
-    lambda(Node n) {
+    lambda(SimpleNode n) {
       if (n->get_node_type() == XML_ELEMENT) {
         // More cases than just "ref" ??
         // Add them here if we decide that also references in e.g.
@@ -820,19 +818,19 @@ static void fixupRefs(ScopeStack scopes, Node node) {
 }
 
 // expects a <autodoc>, <namespace>, <module> or <class> node
-static void resolveFun(ScopeStack scopes, Node node) {
+static void resolveFun(ScopeStack scopes, SimpleNode node) {
   if (node->get_any_name() == "namespace") {
     // Create the namespace.
     scopes->enter("namespace", node->get_attributes()["name"]);
   }
   // first collect the names of all things inside the scope
-  foreach (node->get_children(), Node child) {
+  foreach (node->get_children(), SimpleNode child) {
     if (child->get_node_type() == XML_ELEMENT) {
       switch (child->get_any_name()) {
         case "docgroup":
           // add the names of all things documented
           // in the docgroup.
-          foreach (child->get_children(), Node thing)
+          foreach (child->get_children(), SimpleNode thing)
             if (child->get_node_type() == XML_ELEMENT) {
               mapping attributes = thing->get_attributes() || ([]);
               string name = attributes["name"];
@@ -852,7 +850,7 @@ static void resolveFun(ScopeStack scopes, Node node) {
       }
     }
   }
-  foreach (node->get_children(), Node child) {
+  foreach (node->get_children(), SimpleNode child) {
     if (child->get_node_type() == XML_ELEMENT) {
       string tag = child->get_any_name();
       switch (tag) {
@@ -870,21 +868,21 @@ static void resolveFun(ScopeStack scopes, Node node) {
         case "docgroup":
           {
             scopes->enter("params");
-            foreach (child->get_children(), Node n) {
+            foreach (child->get_children(), SimpleNode n) {
               if (n->get_any_name() == "method") {
                 foreach (filter(n->get_children(),
-                                lambda (Node n) {
+                                lambda (SimpleNode n) {
                                   return n->get_any_name() == "arguments";
-                                }), Node m)
-                  foreach (m->get_children(), Node argnode) {
+                                }), SimpleNode m)
+                  foreach (m->get_children(), SimpleNode argnode) {
 		    if(argnode->get_node_type() != XML_ELEMENT)
 		      continue;
                     scopes->addName(argnode->get_attributes()["name"]);
 		  }
 	      }
 	    }
-            Node doc = 0;
-	    foreach(child->get_children(), Node n) {
+            SimpleNode doc = 0;
+	    foreach(child->get_children(), SimpleNode n) {
 	      if (n->get_any_name() == "doc") {
 		doc = n;
 		fixupRefs(scopes, n);
@@ -898,14 +896,14 @@ static void resolveFun(ScopeStack scopes, Node node) {
 		(child->get_attributes()["homogen-name"])) {
 	      // Avoid finding ourselves...
 	      scopes->remName(child->get_attributes()["homogen-name"]);
-	      foreach(child->get_children(), Node n) {
+	      foreach(child->get_children(), SimpleNode n) {
 		if (n->get_any_name() != "doc") {
 		  fixupRefs(scopes, n);
 		}
 	      }
 	      scopes->addName(child->get_attributes()["homogen-name"]);
 	    } else {
-	      foreach(child->get_children(), Node n) {
+	      foreach(child->get_children(), SimpleNode n) {
 		if (n->get_any_name() != "doc") {
 		  fixupRefs(scopes, n);
 		}
@@ -938,9 +936,10 @@ static void resolveFun(ScopeStack scopes, Node node) {
   }
 }
 
-// Resolves references, regarding the Node 'tree' as the root of the whole
-// hierarchy. 'tree' might be the node <root> or <module name="Pike">
-void oldResolveRefs(Node tree) {
+// Resolves references, regarding the SimpleNode 'tree' as the root of
+// the whole hierarchy. 'tree' might be the node <root> or <module
+// name="Pike">
+void oldResolveRefs(SimpleNode tree) {
   ScopeStack scopes = ScopeStack();
   scopes->enter("namespace", "predef");    // The default scope
   resolveFun(scopes, tree);
@@ -958,7 +957,7 @@ class NScope
 
   // @[tree] is a node of type autodoc, namespace, module, class, enum,
   // or docgroup.
-  static void create(Node tree, string|void path)
+  static void create(SimpleNode tree, string|void path)
   {
     type = tree->get_any_name();
     name = tree->get_attributes()->name;
@@ -980,15 +979,15 @@ class NScope
     enterNode(tree);
   }
 
-  void enterNode(Node tree)
+  void enterNode(SimpleNode tree)
   {
-    foreach(tree->get_children(), Node child) {
+    foreach(tree->get_children(), SimpleNode child) {
       string n;
       switch (child->get_any_name()) {
       case "docgroup":
 	string h_name = child->get_attributes()["homogen-name"];
 	NScope h_scope = symbols[h_name];
-	foreach(child->get_children(), Node thing) {
+	foreach(child->get_children(), SimpleNode thing) {
 	  n = (thing->get_attributes() || ([]))->name;
 	  string subtype = thing->get_any_name();
 	  switch(subtype) {
@@ -1003,7 +1002,7 @@ class NScope
 	    }
 	    break;
 	  case "import":
-	    Node imp = thing->get_first_element("classname");
+	    SimpleNode imp = thing->get_first_element("classname");
 	    string scope = imp->value_of_node();
 	    if (!n) n = scope;
 	    // We can't lookup the import yet, so put a place holder for it.
@@ -1014,7 +1013,7 @@ class NScope
 	    }
 	    break;
 	  case "inherit":
-	    Node inh = thing->get_first_element("classname");
+	    SimpleNode inh = thing->get_first_element("classname");
 	    scope = inh->value_of_node();
 	    if (!n) n = scope;
 	    // We can't lookup the inherit yet, so put a place holder for it.
@@ -1058,7 +1057,7 @@ class NScope
 	}
 	break;
       case "arguments":
-	foreach(child->get_children(), Node arg) {
+	foreach(child->get_children(), SimpleNode arg) {
 	  if (arg->get_node_type() == XML_ELEMENT) {
 	    symbols[arg->get_attributes()->name] = 1;
 	  }
@@ -1233,11 +1232,14 @@ class NScopeStack
     }
     if (!sizeof(ref[0])) {
       // .module
+#if 0
+      // FIXME: The following does not handle the module.pmod case.
       if (pos) {
 	current = stack[--pos];
       } else {
 	current = top;
       }
+#endif /* 0 */
       ref = ref[1..];
     }
     if (sizeof(ref) == 1) {
@@ -1417,7 +1419,7 @@ class NScopeStack
   }
 }
 
-void doResolveNode(NScopeStack scopestack, Node tree)
+void doResolveNode(NScopeStack scopestack, SimpleNode tree)
 {
   int pop = 0;
   switch(tree->get_any_name()) {
@@ -1441,7 +1443,7 @@ void doResolveNode(NScopeStack scopestack, Node tree)
 	scopestack->enter(n);
 	pop = 1;
       } else {
-	array(Node) methods = tree->get_children();
+	array(SimpleNode) methods = tree->get_children();
 	methods = filter(methods, methods->get_attributes());
 	methods = filter(methods, methods->get_attributes()->name);
 	if (sizeof(methods)) {
@@ -1455,7 +1457,7 @@ void doResolveNode(NScopeStack scopestack, Node tree)
     }
     break;
   case "inherit":
-    foreach(tree->get_children(), Node child) {
+    foreach(tree->get_children(), SimpleNode child) {
       mapping(string:string) m;
       if ((child->get_any_name() == "classname") &&
 	  (!(m = child->get_attributes())->resolved)) {
@@ -1492,7 +1494,7 @@ void doResolveNode(NScopeStack scopestack, Node tree)
     }
     return;	// No need to recurse...
   }
-  foreach(tree->get_children(), Node child) {
+  foreach(tree->get_children(), SimpleNode child) {
     doResolveNode(scopestack, child);
   }
   if (pop) {
@@ -1500,7 +1502,7 @@ void doResolveNode(NScopeStack scopestack, Node tree)
   }
 }
 
-void resolveRefs(Node tree)
+void resolveRefs(SimpleNode tree)
 {
   werror("Building the scope structure...\n");
   NScopeStack scopestack = NScopeStack(NScope(tree));
@@ -1513,22 +1515,29 @@ void resolveRefs(Node tree)
   werror("Done.\n");
 }
 
-void cleanUndocumented(Node tree) {
+void cleanUndocumented(SimpleNode tree) {
 
-  void check_node(Node n) {
+  int(0..1) check_node(SimpleNode n) {
+    array(SimpleNode) children = n->get_children();
+    int num = sizeof(children);
+    children = filter(children, map(children, check_node));
+    if (sizeof(children) != num) {
+      n->replace_children(children);
+      check_node(n);
+    }
+
     string name = n->get_tag_name();
-    if(name!="class" && name!="module") return;
+    if(name!="class" && name!="module") return 1;
+
     array ch = n->get_elements()->get_tag_name();
     ch -= ({ "modifiers" });
     ch -= ({ "source-position" });
-    if(sizeof(ch)) return;
-    Node p = n->get_parent();
-    p->remove_child(n);
+    if(sizeof(ch)) return 1;
     werror("Removed empty %s %O\n", name, n->get_attributes()->name);
-    check_node(p);
+    return 0;
   };
 
-  tree->walk_preorder( check_node );
+  check_node(tree);
 }
 
 //! Perform the last steps on a completed documentation tree.
@@ -1541,7 +1550,7 @@ void cleanUndocumented(Node tree) {
 //!
 //! @seealso
 //!   @[handleAppears()], @[cleanUndocumented()], @[resolveRefs()]
-void postProcess(Node root) {
+void postProcess(SimpleNode root) {
   //  werror("handleAppears\n%s%O\n", ctime(time()), Debug.pp_memory_usage());
   handleAppears(root);
   //  werror("cleanUndocumented\n%s%O\n", ctime(time()), Debug.pp_memory_usage());

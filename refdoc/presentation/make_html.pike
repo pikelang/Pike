@@ -1,4 +1,4 @@
-#define Node Parser.XML.Tree.Node
+#define Node Parser.XML.Tree.SimpleNode
 #define XML_COMMENT Parser.XML.Tree.XML_COMMENT
 #define XML_ELEMENT Parser.XML.Tree.XML_ELEMENT
 #define XML_TEXT Parser.XML.Tree.XML_TEXT
@@ -1174,7 +1174,7 @@ int main(int num, array args) {
   // We are only interested in what's in the
   // module container.
   werror("Parsing %O...\n", args[0]);
-  Node n = Parser.XML.Tree.parse_input(file);
+  Node n = Parser.XML.Tree.simple_parse_input(file);
 
   Node n2 = n->get_first_element("manual");
   if(!n2) {
