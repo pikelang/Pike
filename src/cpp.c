@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.81 2001/01/17 14:22:42 grubba Exp $
+ * $Id: cpp.c,v 1.82 2001/02/23 12:17:35 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1342,7 +1342,7 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__TIME__",insert_current_time_as_string);
   do_magic_define(&this,"__VERSION__",insert_current_version);
   do_magic_define(&this,"__MAJOR__",insert_current_major);
-  do_magic_define(&this,"__MINOR__",insert_current_major);
+  do_magic_define(&this,"__MINOR__",insert_current_minor);
 
   {
     struct define* def=alloc_empty_define(make_shared_string("__dumpdef"),0);
