@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.469 2002/12/20 19:07:07 grubba Exp $
+|| $Id: program.c,v 1.470 2003/01/03 14:56:17 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.469 2002/12/20 19:07:07 grubba Exp $");
+RCSID("$Id: program.c,v 1.470 2003/01/03 14:56:17 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -704,7 +704,7 @@ static char *raw_lfun_types[] = {
  *!
  *!   Sprintf callback.
  *!
- *!   This method is called by @[sprintf()] to print objects. If it is
+ *!   This method is called by @[predef::sprintf()] to print objects. If it is
  *!   not present, printing of the object will not be supported for any
  *!   conversion-type except for the @tt{%O@}-conversion-type, which
  *!   will output @tt{"object"@}.
