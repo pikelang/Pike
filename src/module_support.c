@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.53 2003/06/05 14:56:53 mast Exp $
+|| $Id: module_support.c,v 1.54 2003/11/14 09:24:56 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.53 2003/06/05 14:56:53 mast Exp $");
+RCSID("$Id: module_support.c,v 1.54 2003/11/14 09:24:56 mast Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -258,7 +258,7 @@ int va_get_args(struct svalue *s,
       if(s->type == T_FLOAT)
 	 *va_arg(ap, FLOAT_TYPE *)=s->u.float_number;
       else if(s->type == T_INT)
-	 *va_arg(ap, FLOAT_TYPE *)=(float)s->u.integer;
+	 *va_arg(ap, FLOAT_TYPE *)=(FLOAT_TYPE)s->u.integer;
       else 
       {
         ref_push_type_value(float_type_string);
