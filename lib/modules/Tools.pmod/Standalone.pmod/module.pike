@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.2 2002/09/12 16:37:34 marcus Exp $
+// $Id: module.pike,v 1.3 2002/09/13 01:14:26 marcus Exp $
 
 // Source directory
 string srcdir;
@@ -239,7 +239,8 @@ int main(int argc, array(string) argv)
 		    "CFLAGS="+(specs->CFLAGS||""),
 		    "CPPFLAGS="+(specs->CPPFLAGS||""),
 		    "CPP="+(specs->CPP||""),
-		    "LDFLAGS="+(specs->LDFLAGS||""));
+		    "LDFLAGS="+(specs->LDFLAGS||""),
+		    "LDSHARED="+(specs->LDSHARED||""));
       }
     }
   }

@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.89 2002/09/09 12:50:39 marcus Exp $
+# $Id: static_module_makefile.in,v 1.90 2002/09/13 01:14:27 marcus Exp $
 #
 
 
@@ -7,6 +7,7 @@ CC=@CC@
 CPP=@CPP@
 AR=@AR@
 REAL_LDFLAGS=@LDFLAGS@
+REAL_LDSHARED=@LDSHARED@
 REAL_CFLAGS=@CFLAGS@
 REAL_CPPFLAGS=@CPPFLAGS@
 
@@ -112,7 +113,7 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 module.pmod: Makefile
 	@echo "Making module.pmod" ; if [ -f $(SRCDIR)/module.pmod.in ]; then \

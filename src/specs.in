@@ -1,7 +1,8 @@
-# $Id: specs.in,v 1.1 2002/09/09 13:43:28 marcus Exp $
+# $Id: specs.in,v 1.2 2002/09/13 01:14:26 marcus Exp $
 CC=@CC@
 CFLAGS=@CFLAGS@
 LDFLAGS=@LDFLAGS@
 CPPFLAGS=@CPPFLAGS@
 CPP=@CPP@
+LDSHARED=@LDSHARED@
 configure_args=@ac_configure_args@

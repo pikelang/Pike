@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.98 2002/09/09 12:50:39 marcus Exp $
+# $Id: dynamic_module_makefile.in,v 1.99 2002/09/13 01:14:27 marcus Exp $
 #
 
 
@@ -8,6 +8,7 @@ CPP=@CPP@
 AR=@AR@
 LIBGCC=@LIBGCC@
 REAL_LDFLAGS=@LDFLAGS@
+REAL_LDSHARED=@LDSHARED@
 REAL_CFLAGS=@CFLAGS@
 REAL_CPPFLAGS=@CPPFLAGS@
 LC_REQ=@LC_REQ@
@@ -113,16 +114,16 @@ $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
 	else :; fi
 
 config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
+	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	@echo "Linking $(MODNAME)" ;\
-	if $(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
+	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) ; then \
 	  if test @SO@ != so ; then mv module.@SO@ module.so ; else :; fi ;\
 	else \
 	  echo "Linking failed:" >&2; \
-	  echo $(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
+	  echo $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS) $(LIBGCC) $(LC_REQ) $(LIBGCC) >&2 ;\
 	  exit 1; \
 	fi
 
