@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.149 2003/08/05 12:58:42 mast Exp $
+|| $Id: opcodes.c,v 1.150 2003/08/13 15:45:53 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.149 2003/08/05 12:58:42 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.150 2003/08/13 15:45:53 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -42,33 +42,6 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 
   switch(what->type)
   {
-#ifdef AUTO_BIGNUM
-  case T_INT:
-    {
-      INT_TYPE val = what->u.integer;
-
-      convert_svalue_to_bignum(what);
-      index_no_free(to, what, ind);
-      if(IS_UNDEFINED(to)) {
-	if (val) {
-	  if (ind->type == T_STRING && !ind->u.string->size_shift)
-	    Pike_error("Indexing the integer %"PRINTPIKEINT"d "
-		       "with unknown method \"%s\".\n", val, ind->u.string->str);
-	  else
-	    Pike_error("Indexing the integer %"PRINTPIKEINT"d with %s.\n",
-		       val, get_name_of_type (ind->type));
-	} else {
-	  if(ind->type == T_STRING && !ind->u.string->size_shift)
-            Pike_error("Indexing the NULL value with \"%s\".\n", ind->u.string->str);
-          else
-	    Pike_error("Indexing the NULL value with %s.\n",
-		       get_name_of_type (ind->type));
-       }
-      }
-    }
-    break;
-#endif /* AUTO_BIGNUM */
-    
   case T_ARRAY:
     simple_array_index_no_free(to,what->u.array,ind);
     break;
@@ -132,18 +105,57 @@ void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
     }
     /* FALL THROUGH */
 
+#ifdef AUTO_BIGNUM
+  case T_INT:
+    if (ind->type == T_STRING) {
+      INT_TYPE val = what->u.integer;
+
+      convert_svalue_to_bignum(what);
+      index_no_free(to, what, ind);
+      if(IS_UNDEFINED(to)) {
+	if (val) {
+	  if (!ind->u.string->size_shift)
+	    Pike_error("Indexing the integer %"PRINTPIKEINT"d "
+		       "with unknown method \"%s\".\n",
+		       val, ind->u.string->str);
+	  else
+	    Pike_error("Indexing the integer %"PRINTPIKEINT"d "
+		       "with a wide string.\n",
+		       val);
+	} else {
+	  if(!ind->u.string->size_shift)
+            Pike_error("Indexing the NULL value with \"%s\".\n",
+		       ind->u.string->str);
+          else
+	    Pike_error("Indexing the NULL value with a wide string.\n");
+	}
+      }
+      break;
+    }
+
+    /* FALL_THROUGH */
+#endif /* AUTO_BIGNUM */    
+
   default:
     if (ind->type == T_INT)
       Pike_error ("Cannot index %s with %"PRINTPIKEINT"d.\n",
-		  get_name_of_type (what->type), ind->u.integer);
+		  (what->type == T_INT && !what->u.integer)?
+		  "the NULL value":get_name_of_type(what->type),
+		  ind->u.integer);
     else if (ind->type == T_FLOAT)
       Pike_error ("Cannot index %s with %"PRINTPIKEFLOAT"g.\n",
-		  get_name_of_type (what->type), ind->u.float_number);
+		  (what->type == T_INT && !what->u.integer)?
+		  "the NULL value":get_name_of_type(what->type),
+		  ind->u.float_number);
     else if (ind->type == T_STRING && !ind->u.string->size_shift)
-      Pike_error ("Cannot index %s with \"%s\".\n", get_name_of_type (what->type),
+      Pike_error ("Cannot index %s with \"%s\".\n",
+		  (what->type == T_INT && !what->u.integer)?
+		  "the NULL value":get_name_of_type(what->type),
 		  ind->u.string->str);
     else
-      Pike_error ("Cannot index %s with %s.\n", get_name_of_type (what->type),
+      Pike_error ("Cannot index %s with %s.\n",
+		  (what->type == T_INT && !what->u.integer)?
+		  "the NULL value":get_name_of_type(what->type),
 		  get_name_of_type (ind->type));
   }
 }
@@ -2125,6 +2137,9 @@ static INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
   ptrdiff_t matched_chars;
   int x;
   INT32 i;
+
+  check_c_stack(sizeof(struct sscanf_set)*2 + 512);
+
   switch(data->size_shift*3 + format->size_shift) {
     /* input_shift : match_shift */
   case 0:
