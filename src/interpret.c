@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.295 2003/03/14 15:50:44 grubba Exp $
+|| $Id: interpret.c,v 1.296 2003/03/19 09:44:00 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.295 2003/03/14 15:50:44 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.296 2003/03/19 09:44:00 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1195,7 +1195,8 @@ void really_free_pike_scope(struct pike_frame *scope)
  *   eval_instruction() is done the frame needs to be removed by a call
  *   to low_return() or low_return_pop().
  */
-int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+PIKE_OPCODE_T *low_mega_apply(enum apply_type type, int frame_flags,
+			      INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
   struct pike_frame *scope=0;
@@ -1391,7 +1392,36 @@ int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
     }
     if(Pike_interpreter.trace_level>1) trace_return_value();
   }
-  return 0;
+#if 0
+  if (frame_flags & PIKE_FRAME_RETURN_POP) {
+    pop_stack();
+  }
+  if (frame_flags & PIKE_FRAME_RETURN_INTERNAL) {
+    /* Inlined DO_DUMB_RETURN */
+    if (Pike_fp->flags & PIKE_FRAME_RETURN_INTERNAL) {
+      if (Pike_fp->flags & PIKE_FRAME_RETURN_POP) {
+	low_return_pop();
+      } else {
+	low_return();
+      }
+#ifdef PIKE_DEBUG
+      if (t_flag) {
+	fprintf(stderr, "Returning to 0x%p\n", Pike_fp->pc);
+      }
+#endif /* PIKE_DEBUG */
+      return Pike_fp->pc;
+    } else {
+      /* Inter return */
+#ifdef PIKE_DEBUG
+      if (t_flag) {
+	fprintf(stderr, "Inter return\n");
+      }
+#endif /* PIKE_DEBUG */
+      return 1;
+    }
+  }
+#endif /* 0 */
+  return NULL;
 }
 
 
@@ -1526,7 +1556,7 @@ void unlink_previous_frame(void)
 void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   check_c_stack(8192);
-  if(low_mega_apply(type, args, arg1, arg2))
+  if(low_mega_apply(type, 0, args, arg1, arg2))
   {
     eval_instruction(Pike_fp->pc
 #ifdef ENTRY_PROLOGUE_SIZE
