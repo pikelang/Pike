@@ -1,12 +1,23 @@
 #pike __REAL_VERSION__
 
-import ".";
-
 constant MAXIMUM_REQUEST_SIZE=1000000;
+
+static class Port {
+  Stdio.Port port;
+  int portno;
+  string|int(0..0) interface;
+  function(.Request:void) callback;
+  program request_program=.Request;
+  void create(function(.Request:void) _callback,
+	      void|int _portno,
+	      void|string _interface);
+  void close();
+  void destroy();
+}
 
 Stdio.File my_fd;
 Port server_port;
-HeaderParser headerparser;
+.HeaderParser headerparser;
 
 string buf="";    // content buffer
 
@@ -58,13 +69,13 @@ int connection_timeout_delay=180;
 
 function(this_program:void) request_callback;
 
-void attach_fd(Stdio.File _fd,Port server,
+void attach_fd(Stdio.File _fd, Port server,
 	       function(this_program:void) _request_callback,
 	       void|string already_data)
 {
    my_fd=_fd;
    server_port=server;
-   headerparser=HeaderParser();
+   headerparser = .HeaderParser();
    request_callback=_request_callback;
 
    my_fd->set_nonblocking(read_cb,0,close_cb);
@@ -150,7 +161,7 @@ static void parse_request()
 static int parse_variables()
 {
    if (query!="")
-      http_decode_urlencoded_query(query,variables);
+      .http_decode_urlencoded_query(query,variables);
 
    if (request_type=="POST" &&
        request_headers["content-type"]=="application/x-www-form-urlencoded")
@@ -180,7 +191,7 @@ static void parse_post()
    string s=buf[..n-1];
    buf=buf[n..];
 
-   http_decode_urlencoded_query(s,variables);
+   .http_decode_urlencoded_query(s,variables);
 }
 
 static void read_cb_post(mixed dummy,string s)
@@ -247,13 +258,13 @@ string make_response_header(mapping m)
    }
 
    if (!m->type)
-      m->type=filename_to_type(not_query);
+      m->type = .filename_to_type(not_query);
 
    res+=({"Content-Type: "+m->type});
    
-   res+=({"Server: "+(m->server||http_serverid)});
+   res+=({"Server: "+(m->server || .http_serverid)});
 
-   string http_now=http_date(time());
+   string http_now = .http_date(time());
    res+=({"Date: "+http_now});
 
    if (!m->stat && m->file)
@@ -263,11 +274,11 @@ string make_response_header(mapping m)
       m->data="";
 
    if (m->modified)
-      res+=({"Last-Modified: "+http_date(m->modified)});
+      res+=({"Last-Modified: " + .http_date(m->modified)});
    else if (m->stat)
-      res+=({"Last-Modified: "+http_date(m->stat->mtime)});
+      res+=({"Last-Modified: " + .http_date(m->stat->mtime)});
    else
-      res+=({"Last-Modified: "+http_now});
+      res+=({"Last-Modified: " + http_now});
 
    if (m->extra_heads)
       foreach (m->extra_heads;string name;array|string arr)
@@ -353,7 +364,7 @@ void response_and_finish(mapping m, function|void _log_cb)
 
    if (request_headers["if-modified-since"])
    {
-      int t=http_decode_date(request_headers["if-modified-since"]);
+      int t = .http_decode_date(request_headers["if-modified-since"]);
 
       if (t)
       {
