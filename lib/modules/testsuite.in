@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.26 2004/04/06 13:25:56 nilsson Exp $
+dnl $Id: testsuite.in,v 1.27 2004/04/21 19:27:53 mast Exp $
 
 dnl - Array
 
@@ -800,6 +800,30 @@ test_do([[
   proc->kill (9);
   return threads->wait() - ({-1});
 ]], ({}))
+]])
+
+cond([[all_constants()->thread_create]],
+[[
+  test_any([[
+    int num_ok = 0;
+
+    Thread.Mutex m = Thread.Mutex();
+    Thread.MutexKey l = m->lock();
+
+    void thread_fn ()
+    {
+      m->lock();
+      num_ok++;
+    };
+
+    array(Thread.Thread) t = (({Thread.thread_create}) * 5) (thread_fn);
+
+    sleep (0.5); // Make sure they are waiting for the lock.
+    destruct (m);
+    sleep (0.5); // Wait for them to finish.
+
+    return num_ok;
+  ]], 5)
 ]])
 
 dnl - This test is disabled for now.
