@@ -82,12 +82,11 @@ object do_method(string method,
   mapping default_headers = ([
     "user-agent" : "Mozilla/4.0 compatible (Pike HTTP client)",
     "host" : url->host ]);
-#if MIME.encode_base64
+
   if(url->user || url->passwd)
     default_headers->authorization = "Basic "
 				   + MIME.encode_base64(url->user + ":" +
 							(url->password || ""));
-#endif
   request_headers = default_headers | request_headers;
 
   string query=url->query;
