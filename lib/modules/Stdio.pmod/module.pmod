@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.126 2001/10/28 17:58:57 nilsson Exp $
+// $Id: module.pmod,v 1.127 2001/11/22 12:06:41 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -305,27 +305,25 @@ class File
 
   static private function(int, mixed ...:void) _async_cb;
   static private array(mixed) _async_args;
-  static private void _async_connected(mixed|void ignored)
+  static private void _async_check_cb(mixed|void ignored)
   {
     // Copy the args to avoid races.
-    if(!_async_cb) return;
     function(int, mixed ...:void) cb = _async_cb;
     array(mixed) args = _async_args;
     _async_cb = 0;
     _async_args = 0;
     set_nonblocking(0,0,0);
-    cb(1, @args);
-  }
-  static private void _async_failed(mixed|void ignored)
-  {
-    // Copy the args to avoid races.
-    if(!_async_cb) return;
-    function(int, mixed ...:void) cb = _async_cb;
-    array(mixed) args = _async_args;
-    _async_cb = 0;
-    _async_args = 0;
-    set_nonblocking(0,0,0);
-    cb(0, @args);
+    if (cb) {
+      if (_fd && query_address()) {
+	// Connection OK.
+	cb(1, @args);
+      } else {
+	// Connection failed.
+	// Make sure the state is reset.
+	close();
+	cb(0, @args);
+      }
+    }
   }
 
   function(:string) read_function(int nbytes)
@@ -358,21 +356,21 @@ class File
 		    function(int, mixed ...:void) callback,
 		    mixed ... args)
   {
-    if (!_fd && !open_socket()) {
+    if (!(_fd || query_address()) && !open_socket()) {
       // Out of sockets?
       return 0;
     }
     _async_cb = callback;
     _async_args = args;
-    set_nonblocking(0, _async_connected, _async_failed, _async_failed, 0);
+    set_nonblocking(0, _async_check_cb, _async_check_cb, _async_check_cb, 0);
     mixed err;
     int res;
     if (err = catch(res = connect(host, port))) {
       // Illegal format. -- Bad hostname?
-      call_out(_async_failed, 0);
+      call_out(_async_check_cb, 0);
     } else if (!res) {
       // Connect failed.
-      call_out(_async_failed, 0);
+      call_out(_async_check_cb, 0);
     }
     return(1);	// OK so far. (Or rather the callback will be used).
   }
@@ -517,7 +515,9 @@ class File
       if(___write_callback = _o->___write_callback)
 	_fd->_write_callback=__stdio_write_callback;
 
-      ___close_callback = _o->___close_callback;
+      if ((___close_callback = _o->___close_callback) && (!___read_callback) {
+	_fd->_read_callback = __stdio_close_callback;
+      }
 #if constant(files.__HAVE_OOB__)
       if(___read_oob_callback = _o->___read_oob_callback)
 	_fd->_read_oob_callback = __stdio_read_oob_callback;
@@ -544,13 +544,17 @@ class File
     File to = File();
     to->is_file = is_file;
     to->_fd = _fd;
+
+    // FIXME: This looks broken... Isn't __stdio_*_callback declared static?
     if(to->___read_callback = ___read_callback)
       _fd->_read_callback=to->__stdio_read_callback;
 
     if(to->___write_callback = ___write_callback)
       _fd->_write_callback=to->__stdio_write_callback;
 
-    to->___close_callback = ___close_callback;
+    if ((to->___close_callback = ___close_callback) && (!___read_callback)) {
+      _fd->_read_callback = to->__stdio_close_callback;
+    }
 #if constant(files.__HAVE_OOB__)
     if(to->___read_oob_callback = ___read_oob_callback)
       _fd->_read_oob_callback=to->__stdio_read_oob_callback;
@@ -673,6 +677,35 @@ class File
     }
   }
 
+  static void __stdio_close_callback()
+  {
+    string s=::read(0, 1);
+    if(!s)
+    {
+      switch(errno())
+      {
+#if constant(system.EINTR)
+         case system.EINTR:
+#endif
+
+#if constant(system.EWOULDBLOCK)
+	 case system.EWOULDBLOCK:
+#endif
+	   ::set_read_callback(__stdio_close_callback);
+           return;
+      }
+    } else {
+      // There's data to read...
+      ::set_read_callback(0);
+      ___close_callback = 0;
+      return;
+    }
+    ::set_read_callback(0);
+    if (___close_callback) {
+      ___close_callback(___id);
+    }
+  }
+
   static void __stdio_write_callback() { ___write_callback(___id); }
 
 #if constant(files.__HAVE_OOB__)
@@ -732,7 +765,18 @@ class File
   //! @[set_nonblocking()], @[set_read_callback]
 
   //! @ignore
-  CBFUNC(read_callback)
+  void set_read_callback(mixed read_cb)
+  {
+    CHECK_OPEN();
+    ::set_read_callback(((___read_callback = read_cb) &&
+			 __stdio_read_callback) ||
+			(___close_callback && __stdio_close_callback));
+  }
+
+  mixed query_read_callback()
+  {
+    return ___read_callback;
+  }
   //! @endignore
 
   //! @decl void set_write_callback(function(mixed:void) write_cb)
@@ -803,7 +847,17 @@ class File
   //! @[query_close_callback()], @[set_read_callback()],
   //! @[set_write_callback()]
   //!
-  void set_close_callback(mixed c)  { ___close_callback=c; }
+  void set_close_callback(mixed c)  {
+    CHECK_OPEN();
+    ___close_callback=c;
+    if (!___read_callback) {
+      if (c) {
+	::set_read_callback(__stdio_close_callback);
+      } else {
+	::set_read_callback(0);
+      }
+    }
+  }
 
   //! @decl function(mixed:void) query_close_callback()
   //!
@@ -882,7 +936,9 @@ class File
 
     _SET(read_callback,rcb);
     _SET(write_callback,wcb);
-    ___close_callback=ccb;
+    if ((___close_callback = ccb) && (!rcb)) {
+      ::set_read_callback(__stdio_close_callback);
+    }
 
 #if constant(files.__HAVE_OOB__)
     _SET(read_oob_callback,roobcb);
