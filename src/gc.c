@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.160 2001/06/30 07:05:54 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.161 2001/06/30 21:28:35 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -233,7 +233,7 @@ PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
 #define find_marker(X) ((struct marker *) debug_malloc_pass(debug_find_marker(X)))
 
 int gc_in_cycle_check = 0;
-static unsigned weak_freed, checked, marked, cycle_checked, live_ref;
+static unsigned delayed_freed, weak_freed, checked, marked, cycle_checked, live_ref;
 static unsigned max_gc_frames, num_gc_frames = 0;
 static unsigned gc_extra_refs = 0;
 
@@ -313,12 +313,12 @@ void describe_location(void *real_memblock,
 		       int flags)
 {
   struct program *p;
-  void *memblock=0;
+  void *memblock=0, *descblock;
   int type=real_type;
   if(!location) return;
 /*  fprintf(stderr,"**Location of (short) svalue: %p\n",location); */
 
-  if(real_type!=-1) memblock=real_memblock;
+  if(real_type!=-1 && real_memblock != (void *) -1) memblock=real_memblock;
 
 #ifdef DEBUG_MALLOC
   if(memblock == 0 || type == -1)
@@ -338,15 +338,13 @@ void describe_location(void *real_memblock,
 	    memblock,
 	    DO_NOT_WARN((long)((char *)location - (char *)memblock)));
   else
-    fprintf(stderr,"%*s-> at location %p in unknown memblock (mmaped?)\n",
+    fprintf(stderr,"%*s-> at location %p%s\n",
 	    indent,"",
-	    location);
-
-
-  if(memblock && depth>0)
-    describe_something(memblock,type,indent+2,depth-1,flags | DESCRIBE_MEM);
+	    location,
+	    real_memblock == (void *) -1 ? "" :  " in unknown memblock (mmaped?)");
 
  again:
+  descblock = memblock;
   switch(type)
   {
     case PIKE_T_UNKNOWN:
@@ -484,21 +482,49 @@ void describe_location(void *real_memblock,
       break;
     }
 
+    case T_MULTISET:
+      descblock = ((struct multiset *) memblock)->ind;
+      /* FALL THROUGH */
     case T_ARRAY:
     {
-      struct array *a=(struct array *)memblock;
+      struct array *a=(struct array *)descblock;
       struct svalue *s=(struct svalue *)location;
-      fprintf(stderr,"%*s  **In index %ld\n",indent,"",
+      fprintf(stderr,"%*s  **In index number %ld\n",indent,"",
 	      DO_NOT_WARN((long)(s-ITEM(a))));
       break;
     }
+
+    case T_MAPPING:
+      descblock = ((struct mapping *) memblock)->data;
+      /* FALL THROUGH */
+    case T_MAPPING_DATA: {
+      INT32 e;
+      struct keypair *k;
+      NEW_MAPPING_LOOP((struct mapping_data *) descblock)
+	if (&k->ind == (struct svalue *) location) {
+	  fprintf(stderr, "%*s  **In index ", indent, "");
+	  print_svalue(stderr, &k->ind);
+	  fputc('\n', stderr);
+	  break;
+	}
+	else if (&k->val == (struct svalue *) location) {
+	  fprintf(stderr, "%*s  **In value with index ", indent, "");
+	  print_svalue(stderr, &k->ind);
+	  fputc('\n', stderr);
+	  break;
+	}
+      break;
+    }
   }
+
+  if(memblock && depth>0)
+    describe_something(memblock,type,indent+2,depth-1,flags | DESCRIBE_MEM);
 
 #ifdef DEBUG_MALLOC
   /* FIXME: Is the following call correct?
    * Shouldn't the second argument be an offset?
    */
-  dmalloc_describe_location(memblock, location, indent);
+  dmalloc_describe_location(descblock, location, indent);
 #endif
 }
 
@@ -567,64 +593,95 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
 static void gdb_gc_stop_here(void *a, int weak)
 {
+#if 1
+  if (!found_in) fatal("found_in is zero.\n");
+  if (!found_where) fatal("found_where is zero.\n");
+#endif
   fprintf(stderr,"***One %sref found%s. ",
 	  weak ? "weak " : "",
-	  found_where?found_where:"");
-  describe_location(found_in , found_in_type, gc_svalue_location,0,1,0);
+	  found_in && found_where?found_where:"");
+  if (gc_svalue_location)
+    describe_location(found_in , found_in_type, gc_svalue_location,0,1,0);
+  else {
+    fputc('\n', stderr);
+    describe_something(found_in, found_in_type, 2, 0, DESCRIBE_MEM);
+  }
   fprintf(stderr,"----------end------------\n");
 }
 
 void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere)
 {
-  found_in=(void *)fromwhere;
+  char *old_found_where = found_where;
+  if (fromwhere) found_where = fromwhere;
+  found_in=(void *) -1;
   found_in_type=-1;
   gc_xmark_svalues(s,num);
+  found_where=old_found_where;
   found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
-void debug_gc_check_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data)
+void debug_gc_check_svalues2(struct svalue *s, ptrdiff_t num,
+			     TYPE_T data_type, void *data, char *fromwhere)
 {
+  char *old_found_where = found_where;
+  if (fromwhere) found_where = fromwhere;
   found_in=data;
-  found_in_type=t;
+  found_in_type=data_type;
   gc_check_svalues(s,num);
+  found_where=old_found_where;
   found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
-void debug_gc_check_weak_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data)
+void debug_gc_check_weak_svalues2(struct svalue *s, ptrdiff_t num,
+				  TYPE_T data_type, void *data, char *fromwhere)
 {
+  char *old_found_where = found_where;
+  if (fromwhere) found_where = fromwhere;
   found_in=data;
-  found_in_type=t;
+  found_in_type=data_type;
   gc_check_weak_svalues(s,num);
+  found_where=old_found_where;
   found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
-void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data)
+void debug_gc_check_short_svalue2(union anything *u, TYPE_T type,
+				  TYPE_T data_type, void *data, char *fromwhere)
 {
+  char *old_found_where = found_where;
+  if (fromwhere) found_where = fromwhere;
   found_in=data;
-  found_in_type=t;
+  found_in_type=data_type;
   gc_check_short_svalue(u,type);
+  found_where=old_found_where;
   found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
-void debug_gc_check_weak_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data)
+void debug_gc_check_weak_short_svalue2(union anything *u, TYPE_T type,
+				       TYPE_T data_type, void *data, char *fromwhere)
 {
+  char *old_found_where = found_where;
+  if (fromwhere) found_where = fromwhere;
   found_in=data;
-  found_in_type=t;
+  found_in_type=data_type;
   gc_check_weak_short_svalue(u,type);
+  found_where=old_found_where;
   found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
 }
 
-int debug_low_gc_check(void *x, TYPE_T t, void *data)
+int debug_low_gc_check(void *x, TYPE_T data_type, void *data, char *fromwhere)
 {
   int ret;
+  char *old_found_where = found_where;
+  if (fromwhere) found_where = fromwhere;
   found_in=data;
-  found_in_type=t;
+  found_in_type=data_type;
   ret=gc_check(x);
+  found_where=old_found_where;
   found_in_type=PIKE_T_UNKNOWN;
   found_in=0;
   return ret;
@@ -792,7 +849,8 @@ void low_describe_something(void *a,
       fprintf(stderr,"%*s**Describing mapping:\n",indent,"");
       debug_dump_mapping((struct mapping *)a);
       fprintf(stderr,"%*s**Describing mapping data block:\n",indent,"");
-      describe_something( ((struct mapping *)a)->data, -2, indent+2,depth-1,flags);
+      describe_something( ((struct mapping *)a)->data, T_MAPPING_DATA,
+			  indent+2,-1,flags);
       break;
 
     case T_STRING:
@@ -977,7 +1035,7 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
   struct marker *m;
 
   if (!a) fatal("Got null pointer.\n");
-  if(check_for)
+  if(Pike_in_gc == GC_PASS_LOCATE)
   {
     if(check_for == a)
     {
@@ -1079,6 +1137,7 @@ static void exit_gc(void)
 void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
+  char *orig_found_where = found_where;
   void *orig_check_for=check_for;
   int i=0;
   if(!marker_blocks)
@@ -1125,10 +1184,10 @@ void locate_references(void *a)
   }
 #endif
   
-  found_where=" in a module";
+  found_where=0;
   call_callback(& gc_callbacks, (void *)0);
   
-  found_where="";
+  found_where=orig_found_where;
   check_for=orig_check_for;
 
 #ifdef DEBUG_MALLOC
@@ -1216,10 +1275,8 @@ int gc_external_mark3(void *a, void *in, char *where)
 {
   struct marker *m;
   if (!a) fatal("Got null pointer.\n");
-  if (Pike_in_gc != GC_PASS_CHECK && Pike_in_gc != GC_PASS_LOCATE)
-    fatal("gc_external_mark() called in invalid gc pass.\n");
 
-  if(check_for)
+  if(Pike_in_gc == GC_PASS_LOCATE)
   {
     if(a==check_for)
     {
@@ -1233,11 +1290,13 @@ int gc_external_mark3(void *a, void *in, char *where)
 
       found_where=tmp;
       found_in=tmp2;
-
-      return 1;
     }
     return 0;
   }
+
+  if (Pike_in_gc != GC_PASS_CHECK)
+    fatal("gc_external_mark() called in invalid gc pass.\n");
+
   m=get_marker(a);
   m->xrefs++;
   m->flags|=GC_XREFERENCED;
@@ -1316,6 +1375,9 @@ should_free:
      * instead. */
     gc_add_extra_ref(a);
     m->flags |= GC_GOT_DEAD_REF;
+#ifdef PIKE_DEBUG
+    delayed_freed++;
+#endif
   }
 
   return 1;
@@ -1339,6 +1401,7 @@ void gc_delayed_free(void *a)
   if ((!(m->flags & GC_NOT_REFERENCED) || m->flags & GC_MARKED))
     gc_fatal(a, 1, "gc_delayed_free() got a thing marked as referenced.\n");
   debug_malloc_touch(a);
+  delayed_freed++;
 #else
   m = get_marker(a);
 #endif
@@ -2102,7 +2165,7 @@ int do_gc(void)
    * disallowed now. */
 
 #ifdef PIKE_DEBUG
-  weak_freed = checked = marked = cycle_checked = live_ref = 0;
+  delayed_freed = weak_freed = checked = marked = cycle_checked = live_ref = 0;
   if (gc_debug) {
     unsigned n;
     Pike_in_gc = GC_PASS_PRETOUCH;
@@ -2176,14 +2239,14 @@ int do_gc(void)
 
   GC_VERBOSE_DO(fprintf(stderr,
 			"| mark: %u markers referenced, %u weak references freed,\n"
-			"|       %d things really freed, got %lu tricky weak refs\n",
-			marked, weak_freed, objs - num_objects,
+			"|       %d things to free, got %lu tricky weak refs\n",
+			marked, weak_freed, delayed_freed,
 			SIZE_T_TO_ULONG(gc_ext_weak_refs)));
 
   {
 #ifdef PIKE_DEBUG
     size_t orig_ext_weak_refs = gc_ext_weak_refs;
-    obj_count = num_objects;
+    obj_count = delayed_freed;
     max_gc_frames = 0;
 #endif
     Pike_in_gc=GC_PASS_CYCLE;
@@ -2212,16 +2275,16 @@ int do_gc(void)
 
     GC_VERBOSE_DO(fprintf(stderr,
 			  "| cycle: %u internal things visited, %u cycle ids used,\n"
-			  "|        %u weak references freed, %d things really freed,\n"
+			  "|        %u weak references freed, %d more things to free,\n"
 			  "|        space for %u gc frames used\n",
 			  cycle_checked, last_cycle, weak_freed,
-			  obj_count - num_objects, max_gc_frames));
+			  obj_count - delayed_freed, max_gc_frames));
   }
 
   if (gc_ext_weak_refs) {
     size_t to_free = gc_ext_weak_refs;
 #ifdef PIKE_DEBUG
-    obj_count = num_objects;
+    obj_count = delayed_freed;
 #endif
     Pike_in_gc = GC_PASS_ZAP_WEAK;
     /* Zap weak references from external to internal things. That
@@ -2236,9 +2299,9 @@ int do_gc(void)
     GC_VERBOSE_DO(
       fprintf(stderr,
 	      "| zap weak: freed %ld external weak refs, %lu internal still around,\n"
-	      "|           %d things really freed\n",
+	      "|           %d more things to free\n",
 	      PTRDIFF_T_TO_LONG(to_free - gc_ext_weak_refs),
-	      SIZE_T_TO_ULONG(gc_ext_weak_refs), obj_count - num_objects));
+	      SIZE_T_TO_ULONG(gc_ext_weak_refs), obj_count - delayed_freed));
   }
 
 #ifdef PIKE_DEBUG
@@ -2357,8 +2420,15 @@ int do_gc(void)
 	get_marker(PARENT_INFO(o)->parent)->flags & GC_LIVE_OBJ)
       gc_fatal(o, 0, "GC destructed parent prematurely.\n");
 #endif
-    GC_VERBOSE_DO(fprintf(stderr, "|   Killing %p with %d refs\n",
-			  o, o->refs));
+    GC_VERBOSE_DO(
+      fprintf(stderr, "|   Killing %p with %d refs", o, o->refs);
+      if (o->prog) {
+	INT32 line;
+	char *file = get_program_line (o->prog, &line);
+	fprintf(stderr, ", prog %s:%d\n", file, line);
+      }
+      else fputs(", is destructed\n", stderr);
+    );
     destruct(o);
     free_object(o);
     gc_free_extra_ref(o);
@@ -2429,11 +2499,11 @@ int do_gc(void)
   if(GC_VERBOSE_DO(1 ||) t_flag)
   {
 #ifdef HAVE_GETHRTIME
-    fprintf(stderr,"done (freed %ld of %ld objects), %ld ms.\n",
+    fprintf(stderr,"done (freed %ld of %ld things), %ld ms.\n",
 	    (long)objs,(long)objs + num_objects,
 	    (long)((gethrtime() - gcstarttime)/1000000));
 #else
-    fprintf(stderr,"done (freed %ld of %ld objects)\n",
+    fprintf(stderr,"done (freed %ld of %ld things)\n",
 	    (long)objs,(long)objs + num_objects);
 #endif
   }

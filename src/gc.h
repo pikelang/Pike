@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.77 2001/06/29 18:10:55 mast Exp $
+ * $Id: gc.h,v 1.78 2001/06/30 21:28:35 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -93,11 +93,21 @@ struct marker
   struct marker *next;
   struct gc_frame *frame;	/* Pointer into the cycle check stack. */
   void *data;
-  INT32 refs;			/* Internal references. */
-  INT32 weak_refs;		/* Weak (implying internal) references. */
+  INT32 refs;
+  /* Internal references (both weak and nonweak). Increased during
+   * check pass. */
+  INT32 weak_refs;
+  /* Weak (implying internal) references. Increased during check pass.
+   * Set to -1 during check pass if it reaches the total number of
+   * references. Set to 0 during mark pass if a nonweak reference is
+   * found. Decreased during zap weak pass as gc_do_weak_free() is
+   * called. */
 #ifdef PIKE_DEBUG
-  INT32 xrefs;			/* Known external references. */
-  INT32 saved_refs;		/* Object refcount during check pass. */
+  INT32 xrefs;
+  /* Known external references. Increased by gc_external_mark*(). */
+  INT32 saved_refs;
+  /* References at beginning of gc. Set by pretouch and check passes.
+   * Decreased by gc_do_weak_free() as weak references are removed. */
 #endif
   unsigned INT16 flags;
 };
@@ -190,11 +200,15 @@ void describe_location(void *real_memblock,
 		       int flags);
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere);
-void debug_gc_check_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data);
-void debug_gc_check_weak_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data);
-void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
-void debug_gc_check_weak_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
-int debug_low_gc_check(void *x, TYPE_T t, void *data);
+void debug_gc_check_svalues2(struct svalue *s, ptrdiff_t num,
+			     TYPE_T data_type, void *data, char *fromwhere);
+void debug_gc_check_weak_svalues2(struct svalue *s, ptrdiff_t num,
+				  TYPE_T data_type, void *data, char *fromwhere);
+void debug_gc_check_short_svalue2(union anything *u, TYPE_T type,
+				  TYPE_T data_type, void *data, char *fromwhere);
+void debug_gc_check_weak_short_svalue2(union anything *u, TYPE_T type,
+				       TYPE_T data_type, void *data, char *fromwhere);
+int debug_low_gc_check(void *x, TYPE_T data_type, void *data, char *fromwhere);
 void low_describe_something(void *a,
 			    int t,
 			    int indent,
@@ -258,8 +272,9 @@ void cleanup_gc(void);
 #define gc_check_weak(VP) \
   DMALLOC_TOUCH_MARKER(VP, real_gc_check_weak(debug_malloc_pass(VP)))
 #ifdef PIKE_DEBUG
-#define debug_gc_check(X, T, DATA) \
-  DMALLOC_TOUCH_MARKER(X, debug_low_gc_check(debug_malloc_pass(X), (T), (DATA)))
+#define debug_gc_check2(X, T, DATA, FROM) \
+  DMALLOC_TOUCH_MARKER(X, debug_low_gc_check(debug_malloc_pass(X), (T), (DATA), (FROM)))
+#define debug_gc_check(X, T, DATA) debug_gc_check2(X, T, DATA, 0)
 #endif /* PIKE_DEBUG */
 
 #define gc_recurse_svalues(S,N)						\
@@ -286,13 +301,18 @@ void cleanup_gc(void);
 #define gc_recurse_program(V) GC_RECURSE_THING((V), program)
 
 #ifndef PIKE_DEBUG
-#define debug_gc_check_svalues(S,N,T,V) gc_check_svalues((S),N)
-#define debug_gc_check_weak_svalues(S,N,T,V) gc_check_weak_svalues((S),N)
-#define debug_gc_check_short_svalue(S,N,T,V) gc_check_short_svalue((S),N)
-#define debug_gc_check_weak_short_svalue(S,N,T,V) gc_check_weak_short_svalue((S),N)
+#define debug_gc_check_svalues2(S,N,T,V,F) gc_check_svalues((S),N)
+#define debug_gc_check_weak_svalues2(S,N,T,V,F) gc_check_weak_svalues((S),N)
+#define debug_gc_check_short_svalue2(S,N,T,V,F) gc_check_short_svalue((S),N)
+#define debug_gc_check_weak_short_svalue2(S,N,T,V,F) gc_check_weak_short_svalue((S),N)
 #define debug_gc_xmark_svalues(S,N,X) gc_xmark_svalues((S),N)
 #define debug_gc_check(VP,T,V) gc_check((VP))
 #endif
+
+#define debug_gc_check_svalues(S,N,T,V) debug_gc_check_svalues2(S,N,T,V,0)
+#define debug_gc_check_weak_svalues(S,N,T,V) debug_gc_check_weak_svalues2(S,N,T,V,0)
+#define debug_gc_check_short_svalue(S,N,T,V) debug_gc_check_short_svalue2(S,N,T,V,0)
+#define debug_gc_check_weak_short_svalue(S,N,T,V) debug_gc_check_weak_short_svalue2(S,N,T,V,0)
 
 #ifdef PIKE_DEBUG
 #define gc_is_referenced(X) \
@@ -304,7 +324,7 @@ void cleanup_gc(void);
 #define gc_external_mark2(X,Y,Z) \
   DMALLOC_TOUCH_MARKER(X, gc_external_mark3( debug_malloc_pass(X),(Y),(Z)))
 #define gc_external_mark(X) \
-  DMALLOC_TOUCH_MARKER(X, gc_external_mark2( (X),"externally", 0))
+  DMALLOC_TOUCH_MARKER(X, gc_external_mark2( (X)," externally", 0))
 
 #define add_gc_callback(X,Y,Z) \
   dmalloc_touch(struct callback *,debug_add_gc_callback((X),(Y),(Z)))
@@ -322,8 +342,8 @@ void cleanup_gc(void);
 #define GC_PASS_CHECK		100
 #define GC_PASS_MARK		200
 #define GC_PASS_CYCLE		250
-#define GC_PASS_MIDDLETOUCH	260
-#define GC_PASS_ZAP_WEAK	270
+#define GC_PASS_ZAP_WEAK	260
+#define GC_PASS_MIDDLETOUCH	270
 #define GC_PASS_FREE		300
 #define GC_PASS_KILL		400
 #define GC_PASS_DESTRUCT	500

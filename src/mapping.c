@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.126 2001/06/27 00:01:31 mast Exp $");
+RCSID("$Id: mapping.c,v 1.127 2001/06/30 21:28:36 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2214,7 +2214,8 @@ static void gc_check_mapping(struct mapping *m)
     INT32 e;
     struct keypair *k;
 
-    if(debug_gc_check(md, T_MAPPING, m)) return;
+    if(debug_gc_check2(md, T_MAPPING, m, " as mapping data block of a mapping"))
+      return;
 
     if (!(md->flags & MAPPING_WEAK) || MAPPING_DATA_IN_USE(md))
       /* Disregard the weak flag if the mapping data is busy; we must

@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.35 2001/06/20 15:15:28 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.36 2001/06/30 21:28:36 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -389,7 +389,7 @@ void gc_check_all_multisets(void)
 {
   struct multiset *l;
   for(l=first_multiset;l;l=l->next)
-    debug_gc_check(l->ind, T_MULTISET, l);
+    debug_gc_check2(l->ind, T_MULTISET, l, " as indices array of a multiset");
 }
 
 void gc_mark_all_multisets(void)

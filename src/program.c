@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.337 2001/06/30 02:56:17 mast Exp $");
+RCSID("$Id: program.c,v 1.338 2001/06/30 21:28:36 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4358,21 +4358,31 @@ static void exit_trampoline(struct object *o)
 
 static void gc_check_frame(struct pike_frame *f)
 {
-  if(!f) return;
-  if(!debug_gc_check(f,PIKE_T_UNKNOWN,f) && (f->flags & PIKE_FRAME_MALLOCED_LOCALS))
+  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
   {
-    if(f->current_object) gc_check(f->current_object);
-    if(f->context.prog)   gc_check(f->context.prog);
-    if(f->context.parent) gc_check(f->context.parent);
+    if(f->current_object)
+      debug_gc_check2(f->current_object, PIKE_T_UNKNOWN, f,
+		      " as current_object in trampoline frame");
+    if(f->context.prog)
+      debug_gc_check2(f->context.prog, PIKE_T_UNKNOWN, f,
+		      " as context.prog in trampoline frame");
+    if(f->context.parent)
+      debug_gc_check2(f->context.parent, PIKE_T_UNKNOWN, f,
+		      " as context.parent in trampoline frame");
     if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-      gc_check_svalues(f->locals,f->num_locals);
-    if(f->scope)          gc_check_frame(f->scope);
+      debug_gc_check_svalues2(f->locals, f->num_locals, PIKE_T_UNKNOWN, f,
+			      " in locals of trampoline frame");
+    if(f->scope && !debug_gc_check2(f->scope, PIKE_T_UNKNOWN, f,
+				    " as scope frame of trampoline frame"))
+      gc_check_frame(f->scope);
   }
 }
 
 static void gc_check_trampoline(struct object *o)
 {
-  gc_check_frame(THIS->frame);
+  if (THIS->frame &&
+      !debug_gc_check2(THIS->frame, T_OBJECT, o, " as trampoline frame"))
+    gc_check_frame(THIS->frame);
 }
 
 static void gc_recurse_frame(struct pike_frame *f)
@@ -4586,7 +4596,7 @@ static void gc_check_program(struct program *p)
   }
 
   if(p->parent)
-    debug_gc_check(p->parent, T_PROGRAM, p);
+    debug_gc_check2(p->parent, T_PROGRAM, p, " as parent object of a program");
   
   for(e=0;e<p->num_constants;e++) {
     debug_gc_check_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
@@ -4596,14 +4606,8 @@ static void gc_check_program(struct program *p)
   {
     if(p->inherits[e].parent)
     {
-#ifdef PIKE_DEBUG
-      if(debug_gc_check(p->inherits[e].parent,T_PROGRAM,p)==-2)
-	fprintf(stderr,"(program at 0x%lx -> inherit[%d].parent)\n",
-		DO_NOT_WARN((long)p),
-		e);
-#else
-      debug_gc_check(p->inherits[e].parent, T_PROGRAM, p);
-#endif
+      debug_gc_check2(p->inherits[e].parent, T_PROGRAM, p,
+		      " as inherited parent object of a program");
     }
 
 #ifdef PIKE_DEBUG
@@ -4612,7 +4616,8 @@ static void gc_check_program(struct program *p)
 #endif
 
     if(e && p->inherits[e].prog)
-      debug_gc_check(p->inherits[e].prog, T_PROGRAM, p);
+      debug_gc_check2(p->inherits[e].prog, T_PROGRAM, p,
+		      " as inherited program");
   }
 
 #ifdef PIKE_DEBUG

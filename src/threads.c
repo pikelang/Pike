@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.158 2001/06/20 23:16:32 mast Exp $");
+RCSID("$Id: threads.c,v 1.159 2001/06/30 21:28:36 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1325,7 +1325,8 @@ static void thread_was_checked(struct object *o)
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
-    debug_gc_check(tmp->thread_local, T_OBJECT, o);
+    debug_gc_check2(tmp->thread_local, T_OBJECT, o,
+		    " as mapping for thread local values in thread");
 
 #ifdef PIKE_DEBUG
   if(tmp->swapped)
@@ -1446,6 +1447,35 @@ void f_thread_local_set(INT32 args)
 
   mapping_insert(m, &key, &Pike_sp[-1]);
 }
+
+#ifdef PIKE_DEBUG
+void gc_check_thread_local (struct object *o)
+{
+  /* Only used by with locate_references. */
+  if (Pike_in_gc == GC_PASS_LOCATE) {
+    struct svalue key, *val;
+    INT32 x;
+    struct thread_state *s;
+
+    key.u.integer = ((struct thread_local *)CURRENT_STORAGE)->id;
+    key.type = T_INT;
+    key.subtype = NUMBER_NUMBER;
+
+    /* Hmm, should this be used here? We know we always got the
+     * interpreter lock. */
+    /* mt_lock( & thread_table_lock ); */
+    for(x=0; x<THREAD_TABLE_SIZE; x++)
+      for(s=thread_table_chains[x]; s; s=s->hashlink) {
+	if (s->thread_local &&
+	    (val = low_mapping_lookup(s->thread_local, &key)))
+	  debug_gc_check_svalues2(val, 1, T_OBJECT, o,
+				  " as thread local value in Thread.Local object"
+				  " (indirect ref)");
+      }
+    /* mt_unlock( & thread_table_lock ); */
+  }
+}
+#endif
 
 /*! @endclass
  */
@@ -1688,6 +1718,9 @@ void th_init(void)
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
   ADD_FUNCTION("create", f_thread_local_create,
 	       tFunc(tVoid,tVoid), ID_STATIC);
+#ifdef PIKE_DEBUG
+  set_gc_check_callback(gc_check_thread_local);
+#endif
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);

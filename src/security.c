@@ -343,8 +343,10 @@ static void init_creds_object(struct object *o)
 
 static void creds_gc_check(struct object *o)
 {
-  if(THIS->user) debug_gc_check(THIS->user,T_OBJECT,o);
-  if(THIS->default_creds) debug_gc_check(THIS->default_creds,T_OBJECT,o);
+  if(THIS->user) debug_gc_check2(THIS->user,T_OBJECT,o,
+				 " as user of Creds object");
+  if(THIS->default_creds) debug_gc_check2(THIS->default_creds,T_OBJECT,o,
+					  " as default creds of Creds object");
 }
 
 static void creds_gc_recurse(struct object *o)
