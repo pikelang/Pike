@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: file.h,v 1.11 1998/05/22 08:25:55 neotron Exp $
+ * $Id: file.h,v 1.12 1999/04/20 20:35:04 grubba Exp $
  */
 
 #ifndef FILE_H
@@ -46,6 +46,9 @@ struct my_file
 #endif
   struct object *myself;
 };
+
+extern struct program *file_program;
+extern struct program *file_ref_program;
 
 extern void get_inet_addr(struct sockaddr_in *addr,char *name);
 
@@ -92,5 +95,6 @@ int fd_from_object(struct object *o);
 /* flags */
 #define FILE_HAS_INTERNAL_REF   0x0001
 #define FILE_NO_CLOSE_ON_DESTRUCT 0x0002
+#define FILE_LOCK_FD		0x0004
 
 #endif

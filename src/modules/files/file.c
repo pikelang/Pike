@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.150 1999/04/20 15:58:56 grubba Exp $");
+RCSID("$Id: file.c,v 1.151 1999/04/20 20:35:01 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -105,8 +105,8 @@ RCSID("$Id: file.c,v 1.150 1999/04/20 15:58:56 grubba Exp $");
 
 #define READ_BUFFER 8192
 
-static struct program *file_program;
-static struct program *file_ref_program;
+struct program *file_program;
+struct program *file_ref_program;
 
 static void file_read_callback(int fd, void *data);
 static void file_write_callback(int fd, void *data);

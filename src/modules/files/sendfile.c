@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.8 1999/04/20 15:59:23 grubba Exp $
+ * $Id: sendfile.c,v 1.9 1999/04/20 20:35:05 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -26,6 +26,8 @@
 #include "callback.h"
 #include "backend.h"
 #include "module_support.h"
+
+#include "file.h"
 
 #include <errno.h>
 
@@ -121,6 +123,9 @@ struct pike_sendfile
 
   int from_fd;
   int to_fd;
+
+  struct my_file *from;
+  struct my_file *to;
 
   INT_TYPE offset;
   INT_TYPE len;
@@ -517,6 +522,28 @@ void *worker(void *this_)
 
   mt_lock(&interpreter_lock);
 
+  /*
+   * Unlock the fd's
+   */
+  if (this->from) {
+    if (this->from_file->prog) {
+      this->from->flags &= ~FILE_LOCK_FD;
+    } else {
+      /* Destructed. */
+      fd_close(this->from_fd);
+      /* Paranoia */
+      this->from->fd = -1;
+    }
+  }
+  if (this->to_file->prog) {
+    this->to->flags &= ~FILE_LOCK_FD;
+  } else {
+    /* Destructed */
+    fd_close(this->to_fd);
+    /* Paranoia */
+    this->to->fd = -1;
+  }
+    
   /* Neither of the following can be done in our current context
    * so we do them from a backend callback.
    * * Call the callback.
@@ -569,6 +596,81 @@ static void sf_create(INT32 args)
 
   /* FIXME: Ought to fix fp so that the backtraces look right. */
 
+  /* Check that we're called with the right kind of objects. */
+  if (sf.to_file->prog == file_program) {
+    sf.to = (struct my_file *)(sf.to_file->storage);
+  } else if (!(sf.to = (struct my_file *)get_storage(sf.to_file,
+						     file_program))) {
+    struct object **ob;
+    if (!(ob = (struct object **)get_storage(sf.to_file, file_ref_program)) ||
+	!(*ob) ||
+	!(sf.to = (struct my_file *)get_storage(*ob, file_program))) {
+      SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+    }
+    add_ref(*ob);
+#ifdef PIKE_DEBUG
+    if ((sp[5-args].type != T_OBJECT) ||
+	(sp[5-args].u.object != sf.to_file)) {
+      fatal("sendfile: Stack out of sync(1).\n");
+    }
+#endif /* PIKE_DEBUG */
+    sp[5-args].u.object = *ob;
+    free_object(sf.to_file);
+    sf.to_file = *ob;
+  }
+  if ((sf.to->flags & FILE_LOCK_FD) ||
+      (sf.to->fd < 0)) {
+    SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+  }
+  sf.to_fd = sf.to->fd;
+
+  if (sf.from_file && !sf.len) {
+    /* No need for the from_file object. */
+    /* NOTE: We need to zap from_file from the stack too. */
+    free_object(sf.from_file);
+    sf.from_file = NULL;
+    sf.from = NULL;
+    sp[1-args].type = T_INT;
+    sp[1-args].u.integer = 0;
+  }
+
+  if (sf.from_file) {
+    if (sf.from_file->prog == file_program) {
+      sf.from = (struct my_file *)(sf.from_file->storage);
+    } else if (!(sf.from = (struct my_file *)get_storage(sf.from_file,
+							 file_program))) {
+      struct object **ob;
+      if (!(ob = (struct object **)get_storage(sf.from_file,
+					       file_ref_program)) ||
+	!(*ob) ||
+	!(sf.from = (struct my_file *)get_storage(*ob, file_program))) {
+	SIMPLE_BAD_ARG_ERROR("sendfile", 6, "object(Stdio.File)");
+      }
+      add_ref(*ob);
+#ifdef PIKE_DEBUG
+      if ((sp[1-args].type != T_OBJECT) ||
+	  (sp[1-args].u.object != sf.from_file)) {
+	fatal("sendfile: Stack out of sync(2).\n");
+      }
+#endif /* PIKE_DEBUG */
+      sp[1-args].u.object = *ob;
+      free_object(sf.from_file);
+      sf.from_file = *ob;
+    }
+    if ((sf.from->flags & FILE_LOCK_FD) ||
+	(sf.from->fd < 0)) {
+      SIMPLE_BAD_ARG_ERROR("sendfile", 2, "object(Stdio.File)");
+    }
+    sf.from_fd = sf.from->fd;
+    /* Fix offset */
+    if (sf.offset < 0) {
+      sf.offset = fd_lseek(sf.from_fd, 0, SEEK_CUR);
+      if (sf.offset < 0) {
+	sf.offset = 0;
+      }
+    }
+  }
+
   /* Do some extra arg checking */
   sf.hd_cnt = 0;
   if (sf.headers) {
@@ -597,58 +699,6 @@ static void sf_create(INT32 args)
     iovcnt += a->size;
     sf.tr_cnt = a->size;
   }
-
-  /* Note: No need for safe_apply() */
-  sf.from_fd = -1;
-  if (sf.from_file) {
-    if (sf.len) {
-      apply(sf.from_file, "query_fd", 0);
-      if (sp[-1].type != T_INT) {
-	pop_stack();
-	bad_arg_error("sendfile", sp-args, args, 2, "object", sp+1-args,
-		      "Bad argument 2 to sendfile(): "
-		      "query_fd() returned non-integer.\n");
-      }
-      sf.from_fd = sp[-1].u.integer;
-      pop_stack();
-
-      /* Fix offset */
-      if (sf.offset < 0) {
-	if (sf.from_fd >= 0) {
-	  sf.offset = tell(sf.from_fd);
-	} else {
-	  apply(sf.from_file, "tell", 0);
-	  if (sp[-1].type != T_INT) {
-	    pop_stack();
-	    bad_arg_error("sendfile", sp-args, args, 2, "object", sp+1-args,
-			  "Bad argument 2 to sendfile(): "
-			  "tell() returned non-integer.\n");
-	  }
-	  sf.offset = sp[-1].u.integer;
-	  pop_stack();
-	}
-      }
-      if (sf.offset < 0) {
-	sf.offset = 0;
-      }
-    } else {
-      /* No need for the from_file object. */
-      /* NOTE: We need to zap from_file from the stack too. */
-      free_object(sf.from_file);
-      sf.from_file = NULL;
-      sp[1-args].type = T_INT;
-      sp[1-args].u.integer = 0;
-    }
-  }
-  apply(sf.to_file, "query_fd", 0);
-  if (sp[-1].type != T_INT) {
-    pop_stack();
-    bad_arg_error("sendfile", sp-args, args, 6, "object", sp+5-args,
-		  "Bad argument 2 to sendfile(): "
-		  "query_fd() returned non-integer.\n");
-  }
-  sf.to_fd = sp[-1].u.integer;
-  pop_stack();
 
   /* Set up the iovec's */
   if (iovcnt) {
@@ -705,18 +755,20 @@ static void sf_create(INT32 args)
     sf.buffer = (char *)xalloc(BUF_SIZE);
   }
 
-  if (((sf.from_fd >= 0) || (!sf.from_file)) && (sf.to_fd >= 0)) {
+  {
     /* Threaded blocking mode possible */
     THREAD_T th_id;
 
     /* Make sure both file objects are in blocking mode.
      */
     if (sf.from_file) {
-      apply(sf.from_file, "set_blocking", 0);
-      pop_stack();
+      /* set_blocking */
+      set_nonblocking(sf.from_fd, 0);
+      sf.from->open_mode &= ~FILE_NONBLOCKING;
     }
-    apply(sf.to_file, "set_blocking", 0);
-    pop_stack();
+    /* set_blocking */
+    set_nonblocking(sf.to_fd, 0);
+    sf.to->open_mode &= ~FILE_NONBLOCKING;
     
     /*
      * Setup done. Note that we keep refs to all refcounted svalues in
@@ -733,13 +785,16 @@ static void sf_create(INT32 args)
      */
     add_ref(THIS->self = fp->current_object);
 
+    /*
+     * Make sure the user can't modify the fd's under us.
+     */
+    sf.to->flags |= FILE_LOCK_FD;
+    if (sf.from) {
+      sf.from->flags |= FILE_LOCK_FD;
+    }
+
     /* The worker will have a ref. */
     th_create_small(&th_id, worker, THIS);
-  } else {
-    /* Nonblocking operation needed */
-
-    /* Not supported */
-    error("Unsupported operation\n");
   }
   return;
 }
