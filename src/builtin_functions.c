@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.447 2002/10/15 13:45:34 grubba Exp $
+|| $Id: builtin_functions.c,v 1.448 2002/10/15 14:57:29 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.447 2002/10/15 13:45:34 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.448 2002/10/15 14:57:29 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4257,7 +4257,6 @@ PMOD_EXPORT void f_mktime (INT32 args)
     retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
 #endif /* STRUCT_TM_HAS_GMTOFF */
   }
-#endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 
   if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
       (Pike_sp[6-args].u.integer != -1) &&
@@ -4265,6 +4264,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
     /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
     retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
   }
+#endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 
   pop_n_elems(args);
   push_int(retval);
