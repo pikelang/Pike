@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.20 1999/02/02 22:57:54 grubba Exp $
+ * $Id: requests.pmod,v 1.21 1999/02/02 23:00:12 grubba Exp $
  */
 
 import .types;
@@ -339,7 +339,7 @@ class fetch
   {
     werror("fetch->process_fetch_attr(%O)\n", atom);
 
-    if (atom->type != atom)
+    if (atom->type != "atom")
       return 0;
 
     string wanted = lower_case(atom->atom);
