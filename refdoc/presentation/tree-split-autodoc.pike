@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.12 2001/07/28 13:08:15 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.13 2001/07/28 16:16:01 nilsson Exp $
  *
  */
 
@@ -387,6 +387,7 @@ class Node
 	"$type$": String.capitalize(type),
 	"$title$": make_class_path(),
 	"$style$": style,
+	"$imagedir$":image_prefix(),
       ]));
 
     Stdio.mkdirhier(combine_path(path+"/"+make_filename(), "../"));
