@@ -4,7 +4,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.1 2003/06/03 01:05:58 nilsson Exp $
+|| $Id: dump.pike,v 1.2 2003/06/05 19:45:25 mast Exp $
 */
 
 constant description = "Dumps pike files into object files.";
@@ -66,6 +66,16 @@ class MyMaster
   void handle_error (mixed trace)
   {
     logmsg_long (describe_backtrace (trace));
+  }
+
+  static void create()
+  {
+    object old_master = master();
+    ::create();
+    foreach (indices (old_master), string var)
+      catch {this[var] = old_master[var];};
+    programs["/master"] = this_program;
+    objects[this_program] = this;
   }
 }
 
@@ -166,7 +176,7 @@ do_dump: {
 	string s;
 	if ((err = catch {
 	    s=encode_value(p, master()->Encoder(p));
-	    p=decode_value(s,master()->Decoder());
+	    p=decode_value(s, master()->Decoder());
 	  }))
 	  logmsg_long(describe_backtrace(err));
 
@@ -328,11 +338,6 @@ int main(int argc, array(string) argv)
   argv = argv[1..];
 
   argv=Getopt.get_args(argv);
-
-#if 0
-  // Hack to get Calendar files to compile in correct order.
-  object tmp = Calendar;
-#endif
 
   foreach(argv, string file)
   {
