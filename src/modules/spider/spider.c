@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.72 1998/07/16 18:15:43 grubba Exp $");
+RCSID("$Id: spider.c,v 1.73 1998/07/16 20:34:20 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -661,13 +661,34 @@ void do_html_parse(struct pike_string *ss,
 
       if (sval1.type==T_STRING)
       {
+	int quote = 0;
 	/* A simple string ... */
+	if (last < i-1)
+	{ 
+	  push_string(make_shared_binary_string(s+last, i-last-1)); 
+	  (*strings)++; 
+	}
+
 	assign_svalue_no_free(sp++,&sval1);
-	free_svalue(&sval1);
 	(*strings)++;
-	find_endtag(sval2.u.string, s+j, len-j, &l);	/* FIXME: Bug! */
+	free_svalue(&sval1);
 	free_svalue(&sval2);
-	j+=l;
+
+	/* Scan ahead to the end of the tag... */
+	for (; j<len; j++) {
+	  if (quote) {
+	    if (s[j] == quote) {
+	      quote = 0;
+	    }
+	  } else if (s[j] == '>') {
+	    break;
+	  } else if ((s[j] == '\'') || (s[j] == '\"')) {
+	    quote = s[j];
+	  }
+	}
+	if (j < len) {
+	  j++;
+	}
 	i=last=j;
 	continue;
       }
@@ -724,10 +745,17 @@ void do_html_parse(struct pike_string *ss,
       mapping_index_no_free(&sval1,cont,&sval2);
       if (sval1.type==T_STRING)
       {
+	if (last < i-1)
+	{ 
+	  push_string(make_shared_binary_string(s+last, i-last-1)); 
+	  (*strings)++; 
+	}
+
 	assign_svalue_no_free(sp++,&sval1);
 	free_svalue(&sval1);
 	(*strings)++;
-	find_endtag(sval2.u.string,s+j,len-j,&l);	/* FIXME: Bug? */
+
+	find_endtag(sval2.u.string,s+j,len-j,&l);
 	free_svalue(&sval2);
 	j+=l;
 	i=last=j;
@@ -1420,11 +1448,11 @@ void pike_module_init(void)
 	   OPT_EXTERNAL_DEPEND);
 
   add_efun("parse_html",f_parse_html,
-	   "function(string,mapping(string:function(string|void,mapping(string:string)|void,mixed ...:string)),mapping(string:function(string|void,mapping(string:string)|void,string|void,mixed ...:string)),mixed ...:string)",
+	   "function(string,mapping(string:string|function(string|void,mapping(string:string)|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,mixed ...:string)),mixed ...:string)",
 	   0);
 
   add_efun("parse_html_lines",f_parse_html_lines,
-	   "function(string,mapping(string:function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string)",
+	   "function(string,mapping(string:string|function(string|void,mapping(string:string)|void,int|void,mixed ...:string)),mapping(string:string|function(string|void,mapping(string:string)|void,string|void,int|void,mixed ...:string)),mixed ...:string)",
 	   0);
   
 #ifdef HAVE_PERROR
