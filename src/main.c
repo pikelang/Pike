@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.180 2003/09/05 19:48:14 nilsson Exp $
+|| $Id: main.c,v 1.181 2003/10/08 08:29:37 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.180 2003/09/05 19:48:14 nilsson Exp $");
+RCSID("$Id: main.c,v 1.181 2003/10/08 08:29:37 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -733,7 +733,7 @@ int dbm_main(int argc, char **argv)
 	throw_value.type=T_INT;
 	err = (struct generic_error_struct *)
 	  get_storage (Pike_sp[-1].u.object, generic_error_program);
-	push_string (err->desc);
+	ref_push_string (err->desc);
 	f_werror (1);
 	pop_stack();
       }
