@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.319 2001/05/05 21:00:17 grubba Exp $");
+RCSID("$Id: program.c,v 1.320 2001/05/10 22:14:38 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4238,12 +4238,13 @@ static void exit_trampoline(struct object *o)
 static void gc_check_frame(struct pike_frame *f)
 {
   if(!f) return;
-  if(!debug_gc_check(f,PIKE_T_UNKNOWN,f) && f->malloced_locals)
+  if(!debug_gc_check(f,PIKE_T_UNKNOWN,f) && (f->flags & PIKE_FRAME_MALLOCED_LOCALS))
   {
     if(f->current_object) gc_check(f->current_object);
     if(f->context.prog)   gc_check(f->context.prog);
     if(f->context.parent) gc_check(f->context.parent);
-    if(f->malloced_locals)gc_check_svalues(f->locals,f->num_locals);
+    if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+      gc_check_svalues(f->locals,f->num_locals);
     if(f->scope)          gc_check_frame(f->scope);
   }
 }
@@ -4259,7 +4260,8 @@ static void gc_recurse_frame(struct pike_frame *f)
   if(f->current_object) gc_recurse_object(f->current_object);
   if(f->context.prog)   gc_recurse_program(f->context.prog);
   if(f->context.parent) gc_recurse_object(f->context.parent);
-  if(f->malloced_locals)gc_recurse_svalues(f->locals,f->num_locals);
+  if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
+    gc_recurse_svalues(f->locals,f->num_locals);
   if(f->scope)          gc_recurse_frame(f->scope);
 }
 

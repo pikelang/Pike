@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.192 2001/04/25 21:26:45 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.193 2001/05/10 22:14:36 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -765,6 +765,7 @@ struct light_frame_info
   struct pike_frame *saved_fp;
   struct svalue *expendible;
   struct svalue *locals;
+  unsigned INT16 flags;
 };
 
 static void restore_light_frame_info(struct light_frame_info *info)
@@ -772,6 +773,7 @@ static void restore_light_frame_info(struct light_frame_info *info)
   if (Pike_fp == info->saved_fp) {
     Pike_fp->expendible = info->expendible;
     Pike_fp->locals = info->locals;
+    Pike_fp->flags=info->flags;
   }
 }
 
@@ -863,7 +865,7 @@ static void do_trace_call(INT32 args)
 
 
 #undef INIT_BLOCK
-#define INIT_BLOCK(X) do { X->refs=1; X->malloced_locals=0; X->scope=0; }while(0)
+#define INIT_BLOCK(X) do { X->refs=1; X->flags=0; X->scope=0; }while(0)
 
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(X) do {				\
@@ -871,7 +873,7 @@ static void do_trace_call(INT32 args)
   if(X->context.prog) free_program(X->context.prog);	\
   if(X->context.parent) free_object(X->context.parent);	\
   if(X->scope) free_pike_frame(X->scope);		\
-  if(X->malloced_locals)				\
+  if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)		\
   {							\
     free_svalues(X->locals,X->num_locals,BIT_MIXED);	\
     free((char *)(X->locals));				\
@@ -882,7 +884,7 @@ static void do_trace_call(INT32 args)
     X->context.name=0;					\
     X->scope=0;						\
     X->current_object=0;				\
-    X->malloced_locals=0;				\
+    X->flags=0;						\
     X->expendible=0;					\
     X->locals=0;					\
  )							\
@@ -891,42 +893,14 @@ static void do_trace_call(INT32 args)
 BLOCK_ALLOC(pike_frame,128)
 
 
-
-#ifdef PIKE_SECURITY
-/* Magic trick */
-static
-
-#else
-#define mega_apply2 mega_apply
-#endif
-
-
-PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
+int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
   struct pike_frame *scope=0;
-  int tailrecurse=-1;
   ptrdiff_t fun;
   struct svalue *save_sp=Pike_sp-args;
+  int tailrecurse=-1;
 
-#ifdef PROFILING
-#ifdef HAVE_GETHRTIME
-  long long children_base = Pike_interpreter.accounted_time;
-  long long start_time = gethrtime() - Pike_interpreter.time_base;
-  unsigned INT32 self_time_base;
-#if 0
-#ifdef PIKE_DEBUG
-  if(start_time < 0)
-  {
-    fatal("gethrtime() shrunk\n start_time=%ld\n gethrtime()=%ld\n Pike_interpreter.time_base=%ld\n",
-	  (long)(start_time/100000), 
-	  (long)(gethrtime()/100000), 
-	  (long)(Pike_interpreter.time_base/100000));
-  }
-#endif
-#endif
-#endif
-#endif
 
 #if defined(PIKE_DEBUG) && defined(_REENTRANT)
   if(d_flag)
@@ -1092,6 +1066,595 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
     scope=0;
   apply_low_with_scope:
     {
+      struct program *p;
+      struct reference *ref;
+      struct pike_frame *new_frame;
+      struct identifier *function;
+      
+      if(fun<0)
+      {
+	pop_n_elems(Pike_sp-save_sp);
+	push_int(0);
+	return 0;
+      }
+
+      check_stack(256);
+      check_mark_stack(256);
+      check_c_stack(8192);
+
+
+#ifdef PIKE_DEBUG
+      if(d_flag>2) do_debug();
+#endif
+
+      p=o->prog;
+      if(!p)
+	PIKE_ERROR("destructed object->function",
+	      "Cannot call functions in destructed objects.\n", Pike_sp, args);
+
+#ifdef PIKE_SECURITY
+      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL,
+				   ("Function call permission denied.\n"));
+
+      if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_NOT_SETUID))
+	SET_CURRENT_CREDS(o->prot);
+#endif
+
+
+#ifdef PIKE_DEBUG
+      if(fun>=(int)p->num_identifier_references)
+      {
+	fprintf(stderr, "Function index out of range. %ld >= %d\n",
+		DO_NOT_WARN((long)fun),
+		(int)p->num_identifier_references);
+	fprintf(stderr,"########Program is:\n");
+	describe(p);
+	fprintf(stderr,"########Object is:\n");
+	describe(o);
+	fatal("Function index out of range.\n");
+      }
+#endif
+
+      ref = p->identifier_references + fun;
+#ifdef PIKE_DEBUG
+      if(ref->inherit_offset>=p->num_inherits)
+	fatal("Inherit offset out of range in program.\n");
+#endif
+
+      /* init a new evaluation pike_frame */
+      new_frame=alloc_pike_frame();
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+      new_frame->>children_base = Pike_interpreter.accounted_time;
+      new_frame->start_time = gethrtime() - Pike_interpreter.time_base;
+#endif
+#endif
+      debug_malloc_touch(new_frame);
+
+      new_frame->next = Pike_fp;
+      new_frame->current_object = o;
+      new_frame->context = p->inherits[ ref->inherit_offset ];
+
+      function = new_frame->context.prog->identifiers + ref->identifier_offset;
+
+      
+#ifdef PIKE_DEBUG
+	if(t_flag > 9)
+	{
+	  fprintf(stderr,"-- ref: inoff=%d idoff=%d flags=%d\n",
+		  ref->inherit_offset,
+		  ref->identifier_offset,
+		  ref->id_flags);
+
+	  fprintf(stderr,"-- context: prog->id=%d inlev=%d idlev=%d pi=%d po=%d so=%ld name=%s\n",
+		  new_frame->context.prog->id,
+		  new_frame->context.inherit_level,
+		  new_frame->context.identifier_level,
+		  new_frame->context.parent_identifier,
+		  new_frame->context.parent_offset,
+		  DO_NOT_WARN((long)new_frame->context.storage_offset),
+		  new_frame->context.name ? new_frame->context.name->str  : "NULL");
+	  if(t_flag>19)
+	  {
+	    describe(new_frame->context.prog);
+	  }
+	}
+#endif
+
+
+      new_frame->locals = Pike_sp - args;
+      new_frame->expendible = new_frame->locals;
+      new_frame->args = args;
+      new_frame->fun = DO_NOT_WARN((unsigned INT16)fun);
+      new_frame->current_storage = o->storage+new_frame->context.storage_offset;
+      new_frame->pc = 0;
+      new_frame->scope=scope;
+      new_frame->save_sp=save_sp;
+      
+      add_ref(new_frame->current_object);
+      add_ref(new_frame->context.prog);
+      if(new_frame->context.parent) add_ref(new_frame->context.parent);
+      if(new_frame->scope) add_ref(new_frame->scope);
+
+      if(t_flag)
+      {
+	char buf[50];
+
+	init_buf();
+	sprintf(buf, "%lx->",
+		DO_NOT_WARN((long)o));
+	my_strcat(buf);
+	my_strcat(function->name->str);
+	do_trace_call(args);
+      }
+      
+      Pike_fp = new_frame;
+      
+#ifdef PROFILING
+      function->num_calls++;
+#endif
+  
+      if(function->func.offset == -1)
+	generic_error(NULL, Pike_sp, args,
+		      "Calling undefined function.\n");
+      
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+      new_frame->self_time_base=function->total_time;
+#endif
+#endif
+
+      tailrecurse=-1;
+      switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
+      {
+      case IDENTIFIER_C_FUNCTION:
+	debug_malloc_touch(Pike_fp);
+	Pike_fp->num_args=args;
+	new_frame->num_locals=args;
+	check_threads_etc();
+	(*function->func.c_fun)(args);
+	break;
+	
+      case IDENTIFIER_CONSTANT:
+      {
+	struct svalue *s=&(Pike_fp->context.prog->
+			   constants[function->func.offset].sval);
+	debug_malloc_touch(Pike_fp);
+	if(s->type == T_PROGRAM)
+	{
+	  struct object *tmp;
+	  check_threads_etc();
+	  tmp=parent_clone_object(s->u.program,
+				  o,
+				  fun,
+				  args);
+	  push_object(tmp);
+	  break;
+	}
+	/* Fall through */
+      }
+      
+      case 0:
+      {
+	/* FIXME:
+	 * Use new-style tail-recursion instead
+	 */
+	debug_malloc_touch(Pike_fp);
+	debug_malloc_touch(o);
+	if(Pike_sp-save_sp-args<=0)
+	{
+	  /* Create an extra svalue for tail recursion style call */
+	  Pike_sp++;
+	  MEMMOVE(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
+	  Pike_sp[-args-1].type=T_INT;
+	}else{
+	  free_svalue(Pike_sp-args-1);
+	  Pike_sp[-args-1].type=T_INT;
+	}
+	low_object_index_no_free(Pike_sp-args-1,o,fun);
+	tailrecurse=args+1;
+	break;
+      }
+
+      case IDENTIFIER_PIKE_FUNCTION:
+      {
+	int num_args;
+	int num_locals;
+	unsigned char *pc;
+
+#ifdef PIKE_DEBUG
+	if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_KILL)
+	  fatal("Pike code called within gc.\n");
+#endif
+
+	debug_malloc_touch(Pike_fp);
+	pc=new_frame->context.prog->program + function->func.offset;
+	
+	num_locals=EXTRACT_UCHAR(pc++);
+	num_args=EXTRACT_UCHAR(pc++);
+
+	if(function->identifier_flags & IDENTIFIER_SCOPE_USED)
+	  new_frame->expendible+=num_locals;
+	
+	/* adjust arguments on stack */
+	if(args < num_args) /* push zeros */
+	{
+	  clear_svalues_undefined(Pike_sp, num_args-args);
+	  Pike_sp += num_args-args;
+	  args += num_args-args;
+	}
+	
+	if(function->identifier_flags & IDENTIFIER_VARARGS)
+	{
+	  f_aggregate(args - num_args); /* make array */
+	  args = num_args+1;
+	}else{
+	  if(args > num_args)
+	  {
+	    /* pop excessive */
+	    pop_n_elems(args - num_args);
+	    args=num_args;
+	  }
+	}
+
+	if(num_locals > args)
+	  clear_svalues(Pike_sp, num_locals - args);
+	Pike_sp += num_locals - args;
+#ifdef PIKE_DEBUG
+	if(num_locals < num_args)
+	  fatal("Wrong number of arguments or locals in function def.\n");
+#endif
+	new_frame->num_locals=num_locals;
+	new_frame->num_args=num_args;
+	new_frame->save_mark_sp=Pike_mark_sp;
+	check_threads_etc();
+	new_frame->pc=pc;
+	return 1;
+      }
+      }
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+  {
+    long long time_passed, time_in_children, self_time;
+    time_in_children=  Pike_interpreter.accounted_time - Pike_fp->children_base;
+    time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
+    self_time=time_passed - time_in_children;
+    Pike_interpreter.accounted_time+=self_time;
+    function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
+    function->self_time+=(INT32)( self_time /1000);
+  }
+#endif
+#endif
+
+#if 0
+#ifdef PIKE_DEBUG
+      if(Pike_fp!=new_frame)
+	fatal("Frame stack out of whack!\n");
+#endif
+#endif
+      
+      POP_PIKE_FRAME();
+
+      if(tailrecurse>=0)
+      {
+	args=tailrecurse;
+	goto apply_stack;
+      }
+    }
+  }
+
+  if(save_sp+1 < Pike_sp)
+  {
+    assign_svalue(save_sp,Pike_sp-1);
+    pop_n_elems(Pike_sp-save_sp-1);
+
+    destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
+  }
+
+  if(save_sp+1 > Pike_sp)
+  {
+    if(type != APPLY_SVALUE)
+      push_int(0);
+  }else{
+    if(t_flag>1) trace_return_value();
+  }
+  return 0;
+}
+
+
+void low_return(void)
+{
+  struct svalue *save_sp=Pike_fp->save_sp;
+#ifdef PIKE_DEBUG
+  if(Pike_mark_sp < Pike_fp->save_mark_sp)
+    fatal("Popped below save_mark_sp!\n");
+  if(Pike_sp<Pike_interpreter.evaluator_stack)
+    fatal("Stack error (also simple).\n");
+#endif
+  Pike_mark_sp=Pike_fp->save_mark_sp;
+
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+  {
+    long long time_passed, time_in_children, self_time;
+    time_in_children=  Pike_interpreter.accounted_time - Pike_fp->children_base;
+    time_passed = gethrtime() - Pike_interpreter.time_base - Pike_fp->start_time;
+    self_time=time_passed - time_in_children;
+    Pike_interpreter.accounted_time+=self_time;
+    function->total_time=Pike_fp->self_time_base + (INT32)(time_passed /1000);
+    function->self_time+=(INT32)( self_time /1000);
+  }
+#endif
+#endif
+
+  POP_PIKE_FRAME();
+
+  if(save_sp+1 < Pike_sp)
+  {
+    assign_svalue(save_sp,Pike_sp-1);
+    pop_n_elems(Pike_sp-save_sp-1);
+
+    destruct_objects_to_destruct(); /* consider using a flag for immediate destruct instead... */
+  }
+
+  if(save_sp+1 > Pike_sp)
+  {
+    push_int(0);
+  }else{
+    if(t_flag>1) trace_return_value();
+  }
+}
+
+void unlink_previous_frame(void)
+{
+  struct pike_frame *current, *prev;
+  struct svalue *target, **smsp;
+  int freespace;
+  current=Pike_interpreter.frame_pointer;
+  prev=Pike_interpreter.frame_pointer=current->next;
+
+  target=prev->save_sp;
+  smsp=prev->save_mark_sp;
+  current->flags=prev->flags;
+  POP_PIKE_FRAME();
+  
+  prev=current->next=Pike_interpreter.frame_pointer;
+  Pike_interpreter.frame_pointer=current;
+
+  current->save_sp=target;
+  current->save_mark_sp=smsp;
+
+#if 1
+  /* Move svalues down */
+  freespace=fp->locals - target;
+  if(freespace > ((Pike_sp - fp->locals)<<2) + 32)
+  {
+    assign_svalues(target,
+		   fp->locals,
+		   Pike_sp - fp->locals,
+		   BIT_MIXED);
+    
+    fp->locals-=freespace;
+    fp->expendible-=freespace;
+  }
+
+  /* Move pointers down */
+  freespace=fp->mark_sp_base - smsp;
+  if(freespace > ((Pike_mark_sp - fp->mark_sp_base)<<2)+32)
+  {
+    MEMMOVE(smsp,
+	    fp->save_mark_sp,
+	    sizeof(struct svalue **)*(Pike_mark_sp - fp->mark_sp_base));
+    fp->mark_sp_base-=freespace;
+  }
+#endif
+}
+
+void gdb_stop_here(void)
+{
+  ;
+}
+
+
+
+#ifdef PIKE_SECURITY
+/* Magic trick */
+static
+
+#else
+#define mega_apply2 mega_apply
+#endif
+
+void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
+{
+  if(low_mega_apply(type, args, arg1, arg2))
+  {
+    eval_instruction(Pike_fp->pc);
+    low_return();
+  }
+}
+
+#if 0 /* old mega_apply */
+void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
+{
+  struct object *o;
+  struct pike_frame *scope=0;
+  int tailrecurse=-1;
+  ptrdiff_t fun;
+  struct svalue *save_sp=Pike_sp-args;
+
+
+#if defined(PIKE_DEBUG) && defined(_REENTRANT)
+  if(d_flag)
+    {
+      THREAD_T self = th_self();
+
+      CHECK_INTERPRETER_LOCK();
+
+      if( Pike_interpreter.thread_id && !th_equal( OBJ2THREAD(Pike_interpreter.thread_id)->id, self) )
+	fatal("Current thread is wrong.\n");
+	
+      if(thread_for_id(th_self()) != Pike_interpreter.thread_id)
+	fatal("thread_for_id() (or Pike_interpreter.thread_id) failed in mega_apply! "
+	      "%p != %p\n", thread_for_id(self), Pike_interpreter.thread_id);
+    }
+#endif
+
+  switch(type)
+  {
+  case APPLY_STACK:
+  apply_stack:
+    if(!args)
+      PIKE_ERROR("`()", "Too few arguments (apply stack).\n", Pike_sp, 0);
+    args--;
+    if(Pike_sp-save_sp-args > (args<<2) + 32)
+    {
+      /* The test above assures these two areas
+       * are not overlapping
+       */
+      assign_svalues(save_sp, Pike_sp-args-1, args+1, BIT_MIXED);
+      pop_n_elems(Pike_sp-save_sp-args-1);
+    }
+    arg1=(void *)(Pike_sp-args-1);
+
+  case APPLY_SVALUE:
+  apply_svalue:
+  {
+    struct svalue *s=(struct svalue *)arg1;
+    switch(s->type)
+    {
+    case T_INT:
+      if (!s->u.integer) {
+	PIKE_ERROR("0", "Attempt to call the NULL-value\n", Pike_sp, args);
+      } else {
+	Pike_error("Attempt to call the value %"PRINTPIKEINT"d\n", 
+		   s->u.integer);
+      }
+
+    case T_STRING:
+      if (s->u.string->len > 20) {
+	Pike_error("Attempt to call the string \"%20s\"...\n", s->u.string->str);
+      } else {
+	Pike_error("Attempt to call the string \"%s\"\n", s->u.string->str);
+      }
+    case T_MAPPING:
+      Pike_error("Attempt to call a mapping\n");
+    default:
+      Pike_error("Call to non-function value type:%s.\n",
+	    get_name_of_type(s->type));
+      
+    case T_FUNCTION:
+      if(s->subtype == FUNCTION_BUILTIN)
+      {
+#ifdef PIKE_DEBUG
+	struct svalue *expected_stack = Pike_sp-args;
+	if(t_flag>1)
+	{
+	  init_buf();
+	  describe_svalue(s,0,0);
+	  do_trace_call(args);
+	}
+#endif
+	(*(s->u.efun->function))(args);
+
+#ifdef PIKE_DEBUG
+	if(Pike_sp != expected_stack + !s->u.efun->may_return_void)
+	{
+	  if(Pike_sp < expected_stack)
+	    fatal("Function popped too many arguments: %s\n",
+		  s->u.efun->name->str);
+	  if(Pike_sp>expected_stack+1)
+	    fatal("Function left droppings on stack: %s\n",
+		  s->u.efun->name->str);
+	  if(Pike_sp == expected_stack && !s->u.efun->may_return_void)
+	    fatal("Non-void function returned without return value on stack: %s %d\n",
+		  s->u.efun->name->str,s->u.efun->may_return_void);
+	  if(Pike_sp==expected_stack+1 && s->u.efun->may_return_void)
+	    fatal("Void function returned with a value on the stack: %s %d\n",
+		  s->u.efun->name->str, s->u.efun->may_return_void);
+	}
+#endif
+
+	break;
+      }else{
+	o=s->u.object;
+	if(o->prog == pike_trampoline_program)
+	{
+	  fun=((struct pike_trampoline *)(o->storage))->func;
+	  scope=((struct pike_trampoline *)(o->storage))->frame;
+	  o=scope->current_object;
+	  goto apply_low_with_scope;
+	}
+	fun=s->subtype;
+	goto apply_low;
+      }
+      break;
+
+    case T_ARRAY:
+#ifdef PIKE_DEBUG
+      if(t_flag>1)
+      {
+	init_buf();
+	describe_svalue(s,0,0);
+	do_trace_call(args);
+      }
+#endif
+      apply_array(s->u.array,args);
+      break;
+
+    case T_PROGRAM:
+#ifdef PIKE_DEBUG
+      if(t_flag>1)
+      {
+	init_buf();
+	describe_svalue(s,0,0);
+	do_trace_call(args);
+      }
+#endif
+      push_object(clone_object(s->u.program,args));
+      break;
+
+    case T_OBJECT:
+      o=s->u.object;
+      if(o->prog == pike_trampoline_program)
+      {
+	fun=((struct pike_trampoline *)(o->storage))->func;
+	scope=((struct pike_trampoline *)(o->storage))->frame;
+	o=scope->current_object;
+	goto apply_low_with_scope;
+      }
+      fun=LFUN_CALL;
+      goto call_lfun;
+    }
+    break;
+  }
+
+  call_lfun:
+#ifdef PIKE_DEBUG
+    if(fun < 0 || fun >= NUM_LFUNS)
+      fatal("Apply lfun on illegal value!\n");
+#endif
+    if(!o->prog)
+      PIKE_ERROR("destructed object", "Apply on destructed object.\n", Pike_sp, args);
+    fun = FIND_LFUN(o->prog, fun);
+    goto apply_low;
+  
+
+  case APPLY_LOW:
+    o = (struct object *)arg1;
+    fun = (ptrdiff_t)arg2;
+
+  apply_low:
+    scope=0;
+  apply_low_with_scope:
+    {
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+      long long children_base = Pike_interpreter.accounted_time;
+      long long start_time = gethrtime() - Pike_interpreter.time_base;
+      unsigned INT32 self_time_base;
+#endif
+#endif
       struct program *p;
       struct reference *ref;
       struct pike_frame *new_frame;
@@ -1323,26 +1886,21 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 #endif
 	new_frame->num_locals=num_locals;
 	new_frame->num_args=num_args;
-
+	new_frame->save_mark_sp=Pike_mark_sp;
+	new_frame->mark_sp_base=Pike_mark_sp;
 	check_threads_etc();
 
-	{
-	  struct svalue **save_mark_sp=Pike_mark_sp;
-	  tailrecurse=eval_instruction(pc);
-	  EVAL_INSTR_RET_CHECK(tailrecurse);
-	  Pike_mark_sp=save_mark_sp;
+	tailrecurse=eval_instruction(pc);
+	EVAL_INSTR_RET_CHECK(tailrecurse);
+	Pike_mark_sp=new_frame->save_mark_sp;
 #ifdef PIKE_DEBUG
-	  if(Pike_mark_sp < save_mark_sp)
-	    fatal("Popped below save_mark_sp!\n");
-#endif
-	}
-#ifdef PIKE_DEBUG
+	if(Pike_mark_sp < save_mark_sp)
+	  fatal("Popped below save_mark_sp!\n");
 	if(Pike_sp<Pike_interpreter.evaluator_stack)
 	  fatal("Stack error (also simple).\n");
 #endif
 	break;
       }
-      
       }
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
@@ -1352,39 +1910,10 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	time_passed = gethrtime() - Pike_interpreter.time_base - start_time;
 	self_time=time_passed - time_in_children;
 	Pike_interpreter.accounted_time+=self_time;
-#if 0
-#ifdef PIKE_DEBUG
-	if(self_time < 0 || children_base <0 || Pike_interpreter.accounted_time <0)
-	  fatal("Time is negative\n  self_time=%ld\n  time_passed=%ld\n  time_in_children=%ld\n  children_base=%ld\n  Pike_interpreter.accounted_time=%ld!\n  Pike_interpreter.time_base=%ld\n  start_time=%ld\n",
-		(long)(self_time/100000),
-		(long)(time_passed/100000),
-		(long)(time_in_children/100000),
-		(long)(children_base/100000),
-		(long)(Pike_interpreter.accounted_time/100000),
-		(long)(Pike_interpreter.time_base/100000),
-		(long)(start_time/100000)
-		);
-#endif
-#endif
 	function->total_time=self_time_base + (INT32)(time_passed /1000);
 	function->self_time+=(INT32)( self_time /1000);
       }
 #endif
-#endif
-
-#if 0
-      if(Pike_sp - new_frame->locals > 1)
-      {
-	pop_n_elems(Pike_sp - new_frame->locals -1);
-      }else if(Pike_sp - new_frame->locals < 1){
-#ifdef PIKE_DEBUG
-	if(Pike_sp - new_frame->locals<0) fatal("Frame underflow.\n");
-#endif
-	Pike_sp->u.integer = 0;
-	Pike_sp->subtype=NUMBER_NUMBER;
-	Pike_sp->type = T_INT;
-	Pike_sp++;
-      }
 #endif
 
 #ifdef PIKE_DEBUG
@@ -1399,7 +1928,6 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	args=tailrecurse;
 	goto apply_stack;
       }
-
     }
   }
 
@@ -1419,6 +1947,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
     if(t_flag>1) trace_return_value();
   }
 }
+#endif /* OLD mega_apply */
 
 #ifdef PIKE_SECURITY
 static void restore_creds(struct object *creds)
@@ -1449,6 +1978,8 @@ static int o_catch(unsigned char *pc)
 {
   JMP_BUF tmp;
   struct svalue *expendible=Pike_fp->expendible;
+  int flags=Pike_fp->flags;
+
   debug_malloc_touch(Pike_fp);
   if(SETJMP(tmp))
   {
@@ -1457,11 +1988,15 @@ static int o_catch(unsigned char *pc)
     Pike_sp++;
     UNSETJMP(tmp);
     Pike_fp->expendible=expendible;
+    Pike_fp->flags=flags;
     return 0;
   }else{
     struct svalue **save_mark_sp=Pike_mark_sp;
     int x;
     Pike_fp->expendible=Pike_fp->locals + Pike_fp->num_locals;
+
+    Pike_fp->flags&=~PIKE_FRAME_RETURN_INTERNAL;
+
     x=eval_instruction(pc);
 #ifdef PIKE_DEBUG
     if(Pike_mark_sp < save_mark_sp)
@@ -1469,6 +2004,7 @@ static int o_catch(unsigned char *pc)
 #endif
     Pike_mark_sp=save_mark_sp;
     Pike_fp->expendible=expendible;
+    Pike_fp->flags=flags;
     if(x>=0) mega_apply(APPLY_STACK, x, 0,0);
     UNSETJMP(tmp);
     return x == -2 ? 2 : 1;

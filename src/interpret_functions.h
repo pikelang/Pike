@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.51 2001/04/25 21:26:46 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.52 2001/05/10 22:14:37 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -903,7 +903,8 @@ BREAK;
       CASE(F_CATCH);
       switch (o_catch(pc+sizeof(INT32))) {
 	case 1:
-	  return -1; /* There was a return inside the evaluated code */
+          /* There was a return inside the evaluated code */
+	  goto do_dumb_return;
 	case 2:
 	  pc = Pike_fp->pc;
 	  break;
@@ -1052,47 +1053,6 @@ BREAK;
 	break;
       }
 
-      CASE(F_APPLY_AND_RETURN);
-      {
-	INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
-/*	fprintf(stderr,"%p >= %p\n",Pike_fp->expendible,Pike_sp-args); */
-	if(Pike_fp->expendible >= Pike_sp-args)
-	{
-/*	  fprintf(stderr,"NOT EXPENDIBLE!\n"); */
-	  MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(struct svalue));
-	  Pike_sp++;
-	  Pike_sp[-args-1].type=PIKE_T_INT;
-	}
-	/* We sabotage the stack here */
-	assign_svalue(Pike_sp-args-1,&Pike_fp->context.prog->constants[GET_ARG()].sval);
-	return args+1;
-      }
-
-OPCODE1(F_CALL_LFUN_AND_RETURN,"call lfun & return")
-{
-  INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
-
-  if(Pike_fp->expendible >= Pike_sp-args)
-  {
-    MEMMOVE(Pike_sp-args+1,Pike_sp-args,args*sizeof(struct svalue));
-    Pike_sp++;
-    Pike_sp[-args-1].type=PIKE_T_INT;
-  }else{
-    free_svalue(Pike_sp-args-1);
-  }
-  /* More stack sabotage */
-  Pike_sp[-args-1].u.object=Pike_fp->current_object;
-  Pike_sp[-args-1].subtype=arg1+Pike_fp->context.identifier_level;
-#ifdef PIKE_DEBUG
-  if(t_flag > 9)
-    fprintf(stderr,"-    IDENTIFIER_LEVEL: %d\n",Pike_fp->context.identifier_level);
-#endif
-  Pike_sp[-args-1].type=PIKE_T_FUNCTION;
-  add_ref(Pike_fp->current_object);
-  
-  return args+1;
-}
-BREAK
 
       CASE(F_RETURN_LOCAL);
       instr=GET_ARG();
@@ -1112,7 +1072,7 @@ BREAK
 	push_svalue(Pike_fp->locals+instr);
       }
       print_return_value();
-      return -1;
+      goto do_dumb_return;
 
       CASE(F_RETURN_IF_TRUE);
       if(!IS_ZERO(Pike_sp-1)) goto do_return;
@@ -1138,6 +1098,17 @@ BREAK
       /* fall through */
 
       CASE(F_DUMB_RETURN);
+    do_dumb_return:
+      if(Pike_fp -> flags & PIKE_FRAME_RETURN_INTERNAL)
+      {
+	int f=Pike_fp->flags;
+	gdb_stop_here();
+	low_return();
+        if(f & PIKE_FRAME_RETURN_POP)
+          pop_stack();
+	pc=Pike_fp->pc;
+	break;
+      }
       return -1;
 
 OPCODE0(F_NEGATE, "unary minus")
@@ -1533,71 +1504,178 @@ OPCODE1(F_SSCANF, "sscanf")
 BREAK;
 
 OPCODE1(F_CALL_LFUN,"call lfun")
+#if 0
   apply_low(Pike_fp->current_object,
 	    arg1+Pike_fp->context.identifier_level,
 	    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+#else
+  if(low_mega_apply(APPLY_LOW,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		    Pike_fp->current_object,
+		    (void *)(arg1+Pike_fp->context.identifier_level)))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+    pc=Pike_fp->pc;
+  }
+#endif
 BREAK;
 
 OPCODE1(F_CALL_LFUN_AND_POP,"call lfun & pop")
+#if 1
   apply_low(Pike_fp->current_object,
-            arg1+Pike_fp->context.identifier_level,
-            DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
+	    arg1+Pike_fp->context.identifier_level,
+	    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp));
   pop_stack();
+#else
+  if(low_mega_apply(APPLY_LOW,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		    Pike_fp->current_object,
+		    (void *)(arg1+Pike_fp->context.identifier_level)))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+    pc=Pike_fp->pc;
+  }else{
+    pop_stack();
+  }
+#endif
 BREAK;
 
 OPCODE1(F_MARK_APPLY,"mark apply")
- strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval), 0);
+  if(low_mega_apply(APPLY_SVALUE,
+		    0,
+		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+    pc=Pike_fp->pc;
+  }
 BREAK;
 
 OPCODE1(F_MARK_APPLY_POP,"mark, apply & pop")
-  strict_apply_svalue(&((Pike_fp->context.prog->constants + arg1)->sval), 0);
-  pop_stack();
+  if(low_mega_apply(APPLY_SVALUE,
+		    0,
+		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+    pc=Pike_fp->pc;
+  }else{
+    pop_stack();
+  }
 BREAK;
 
-    CASE(F_APPLY);
-      strict_apply_svalue(&((Pike_fp->context.prog->constants + GET_ARG())->sval),
-			  DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ));
-      break;
-
-    CASE(F_APPLY_AND_POP);
-      strict_apply_svalue(&((Pike_fp->context.prog->constants + GET_ARG())->sval),
-			  DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ));
-      pop_stack();
-      break;
-
-OPCODE0(F_CALL_FUNCTION, "call function")
-  mega_apply(APPLY_STACK,
-	     DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
-	     0,0);
+OPCODE1(F_APPLY,"apply")
+  if(low_mega_apply(APPLY_SVALUE,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+    pc=Pike_fp->pc;
+  }
 BREAK;
 
-OPCODE0(F_CALL_FUNCTION_AND_POP, "call function & pop")
-  mega_apply(APPLY_STACK,
-	     DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
-	     0,0);
-  pop_stack();
+
+OPCODE1(F_APPLY_AND_POP,"apply")
+  if(low_mega_apply(APPLY_SVALUE,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+    pc=Pike_fp->pc;
+  }else{
+    pop_stack();
+  }
 BREAK;
+
+
+OPCODE0(F_CALL_FUNCTION,"call function")
+  if(low_mega_apply(APPLY_STACK,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    0,0))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
+    pc=Pike_fp->pc;
+  }
+BREAK;
+
+
+OPCODE0(F_CALL_FUNCTION_AND_POP,"call function & pop")
+  if(low_mega_apply(APPLY_STACK,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    0,0))
+  {
+    Pike_fp->next->pc=pc;
+    gdb_stop_here();
+    Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL | PIKE_FRAME_RETURN_POP;
+    pc=Pike_fp->pc;
+  }else{
+    pop_stack();
+  }
+BREAK;
+
+OPCODE1(F_APPLY_AND_RETURN,"apply & return")
+{
+  if(low_mega_apply(APPLY_SVALUE,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    &((Pike_fp->context.prog->constants + arg1)->sval),0))
+  {
+#ifdef PIKE_DEBUG
+    Pike_fp->next->pc=0;
+#endif
+    pc=Pike_fp->pc;
+    unlink_previous_frame();
+  }else{
+    goto do_dumb_return;
+  }
+}
+BREAK;
+
+OPCODE1(F_CALL_LFUN_AND_RETURN,"call lfun & return")
+{
+  if(low_mega_apply(APPLY_LOW,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		    Pike_fp->current_object,
+		    (void *)(arg1+Pike_fp->context.identifier_level)))
+  {
+#ifdef PIKE_DEBUG
+    Pike_fp->next->pc=0;
+#endif
+    gdb_stop_here();
+    pc=Pike_fp->pc;
+    unlink_previous_frame();
+  }else{
+    goto do_dumb_return;
+  }
+}
+BREAK
 
 OPCODE0(F_CALL_FUNCTION_AND_RETURN, "call function & return")
 {
-  INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
-  if(!args)
-    PIKE_ERROR("`()", "Too few arguments (call&return).\n", Pike_sp, 0);
-  switch(Pike_sp[-args].type)
+  if(low_mega_apply(APPLY_STACK,
+		    DO_NOT_WARN(Pike_sp - *--Pike_mark_sp ),
+		    0,0))
   {
-    case PIKE_T_INT:
-      if (!Pike_sp[-args].u.integer) {
-	PIKE_ERROR("`()", "Attempt to call the NULL-value\n",
-		   Pike_sp, args);
-      }
-    case PIKE_T_STRING:
-    case PIKE_T_FLOAT:
-    case PIKE_T_MAPPING:
-    case PIKE_T_MULTISET:
-      PIKE_ERROR("`()", "Attempt to call a non-function value.\n",
-		 Pike_sp, args);
+#ifdef PIKE_DEBUG
+    Pike_fp->next->pc=0;
+#endif
+    gdb_stop_here();
+    pc=Pike_fp->pc;
+    unlink_previous_frame();
+  }else{
+    goto do_dumb_return;
   }
-  return args;
 }
 BREAK;
 
@@ -1621,9 +1699,58 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
 /* FALL THROUGH */
 
 /* Assume that the number of arguments is correct */
+/* FIXME: Use new recursion stuff */
 OPCODE0_TAILJUMP(F_RECUR,"recur")
 OPCODE0_TAILJUMP(F_RECUR_AND_POP,"recur & pop")
 {
+#if 1
+  int opcode = instr;
+  char *addr;
+  struct pike_frame *new_frame;
+
+  fast_check_threads_etc(6);
+  check_c_stack(8192);
+  check_stack(256);
+
+  new_frame=alloc_pike_frame();
+  new_frame[0]=Pike_fp[0];
+
+  new_frame->refs=1;
+  new_frame->next=Pike_fp;
+
+  new_frame->save_sp = new_frame->expendible = new_frame->locals = *--Pike_mark_sp;
+  new_frame->num_args = new_frame->args = DO_NOT_WARN(Pike_sp - new_frame->locals);
+  new_frame->save_mark_sp = Pike_mark_sp;
+  new_frame->mark_sp_base = Pike_mark_sp;
+
+  addr=pc+GET_JUMP();
+  new_frame->num_locals=EXTRACT_UCHAR(addr-2);
+
+#ifdef PIKE_DEBUG
+  if(new_frame->num_args != EXTRACT_UCHAR(addr-1))
+    fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
+	  new_frame->num_args, EXTRACT_UCHAR(addr-1));
+
+  if(t_flag > 3)
+    fprintf(stderr,"-    Allocating %d extra locals.\n",
+	    new_frame->num_locals - new_frame->num_args);
+#endif
+
+  clear_svalues(Pike_sp, new_frame->num_locals - new_frame->num_args);
+  Pike_sp += new_frame->num_locals - new_frame->args;
+
+  if(new_frame->scope) add_ref(new_frame->scope);
+  add_ref(new_frame->current_object);
+  add_ref(new_frame->context.prog);
+  if(new_frame->context.parent)
+    add_ref(new_frame->context.parent);
+  Pike_fp->pc=pc+sizeof(INT32);
+  Pike_fp=new_frame;
+  pc=addr;
+  new_frame->flags=PIKE_FRAME_RETURN_INTERNAL;
+  if (opcode == F_RECUR_AND_POP-F_OFFSET)
+    new_frame->flags|=PIKE_FRAME_RETURN_POP;
+#else /* 0 */
   int x, opcode = instr;
   INT32 num_locals, args;
   char *addr;
@@ -1638,6 +1765,7 @@ OPCODE0_TAILJUMP(F_RECUR_AND_POP,"recur & pop")
   info.saved_fp = Pike_fp;
   info.expendible = Pike_fp->expendible;
   info.locals = Pike_fp->locals;
+  info.flags=Pike_fp->flags;
   SET_ONERROR(uwp, restore_light_frame_info, &info);
 
   save_sp = Pike_fp->expendible = Pike_fp->locals = *--Pike_mark_sp;
@@ -1652,7 +1780,6 @@ OPCODE0_TAILJUMP(F_RECUR_AND_POP,"recur & pop")
     fatal("Wrong number of arguments in F_RECUR %d!=%d\n",
 	  args, EXTRACT_UCHAR(addr-1));
 #endif
-
   clear_svalues(Pike_sp, num_locals - args);
   Pike_sp += num_locals - args;
 
@@ -1677,6 +1804,7 @@ OPCODE0_TAILJUMP(F_RECUR_AND_POP,"recur & pop")
     fatal("Stack whack in F_RECUR Pike_sp=%p, expected=%p\n",Pike_sp,save_sp+1);
 #endif
   if (opcode == F_RECUR_AND_POP-F_OFFSET) pop_stack();
+#endif /* 0 */
 }
 BREAK
 

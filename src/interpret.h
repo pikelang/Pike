@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.80 2001/04/28 19:39:20 mast Exp $
+ * $Id: interpret.h,v 1.81 2001/05/10 22:14:37 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -55,16 +55,38 @@ struct pike_frame
   unsigned INT16 fun;
   INT16 num_locals;
   INT16 num_args;
-  INT16 malloced_locals;
+  unsigned INT16 flags;
   struct pike_frame *next;
   struct pike_frame *scope;
   unsigned char *pc;
   struct svalue *locals;
+
+  /*  This is <= locals, and this is where the
+   * return value should go.
+   */
+  struct svalue *save_sp;
+
+  /* This tells us the current level of
+   * svalues on the stack that can be discarded once the
+   * current function is done with them
+   */
   struct svalue *expendible;
+  struct svalue **save_mark_sp;
+  struct svalue **mark_sp_base;
   struct object *current_object;
+
+#if defined(PROFILING) && defined(HAVE_GETHRTIME)
+  long long children_base;
+  long long start_time;
+  INT32 self_time_base;
+#endif
   struct inherit context;
   char *current_storage;
 };
+
+#define PIKE_FRAME_RETURN_INTERNAL 1
+#define PIKE_FRAME_RETURN_POP 2
+#define PIKE_FRAME_MALLOCED_LOCALS 0x8000
 
 struct external_variable_context
 {
@@ -196,7 +218,7 @@ PMOD_EXPORT const char *Pike_check_c_stack_errmsg;
 					       Pike_fp->num_locals);		\
       assign_svalues_no_free(s,Pike_fp->locals,Pike_fp->num_locals,BIT_MIXED);	\
       Pike_fp->locals=s;							\
-      Pike_fp->malloced_locals=1;						\
+      Pike_fp->flags|=PIKE_FRAME_MALLOCED_LOCALS;				\
     }else{								\
       Pike_fp->locals=0;							\
     }									\
@@ -265,7 +287,10 @@ BLOCK_ALLOC(pike_frame,128)
 
 PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 				       int arg2);
-PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+void low_return(void);
+void unlink_previous_frame(void);
+void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
 PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);

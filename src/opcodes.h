@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: opcodes.h,v 1.13 2001/02/24 02:38:33 hubbe Exp $
+ * $Id: opcodes.h,v 1.14 2001/05/10 22:14:38 hubbe Exp $
  */
 #ifndef OPCODES_H
 #define OPCODES_H
@@ -46,9 +46,6 @@ enum Pike_opcodes
   F_PREFIX2_CHARX256,
   F_PREFIX2_WORDX256,
   F_PREFIX2_24BITX256,
-  F_APPLY,
-  F_APPLY_AND_POP,
-  F_APPLY_AND_RETURN,
 
   F_BRANCH_AND_POP_WHEN_ZERO,
   F_BRANCH_AND_POP_WHEN_NON_ZERO,
