@@ -124,6 +124,7 @@ constant CIPHER_SUITES =
    SSL_rsa_with_null_sha :      	({ KE_rsa, 0, HASH_sha }),
    SSL_rsa_export_with_rc4_40_md5 :	({ KE_rsa, CIPHER_rc4_40, HASH_md5 }),
    SSL_rsa_with_rc4_128_sha :   	({ KE_rsa, CIPHER_rc4, HASH_sha }),
+   SSL_rsa_with_rc4_128_md5 :   	({ KE_rsa, CIPHER_rc4, HASH_md5 }),
    SSL_rsa_with_idea_cbc_sha :  	({ KE_rsa, CIPHER_idea, HASH_sha }),
    SSL_rsa_with_des_cbc_sha :   	({ KE_rsa, CIPHER_des, HASH_sha }),
    SSL_rsa_with_3des_ede_cbc_sha :	({ KE_rsa, CIPHER_3des, HASH_sha }) ]);
