@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.36 2003/11/27 19:57:35 mast Exp $
+|| $Id: rusage.c,v 1.37 2004/02/27 23:48:43 mast Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.36 2003/11/27 19:57:35 mast Exp $");
+RCSID("$Id: rusage.c,v 1.37 2004/02/27 23:48:43 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -38,6 +38,7 @@ RCSID("$Id: rusage.c,v 1.36 2003/11/27 19:57:35 mast Exp $");
 #ifndef CONFIGURE_TEST
 #include "time_stuff.h"
 #include "fd_control.h"
+#include "pike_error.h"
 #endif
 
 /*
@@ -339,8 +340,8 @@ cpu_time_t get_cpu_time (void)
 cpu_time_t get_cpu_time (void)
 {
   struct tms tms;
-#ifdef PIKE_DEBUG
-  if (!pike_clk_tck) error ("Called before dbm_main.\n");
+#if defined (PIKE_DEBUG) && !defined (CONFIGURE_TEST)
+  if (!pike_clk_tck) Pike_error ("Called before dbm_main.\n");
 #endif
   if (times (&tms) == (clock_t) -1)
     return (cpu_time_t) -1;
