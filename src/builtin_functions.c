@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.348 2001/03/03 00:23:21 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.349 2001/03/03 17:50:17 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7450,7 +7450,13 @@ void init_builtin_efuns(void)
   pike___master_program = end_program();
   add_program_constant("__master", pike___master_program, 0);
 
+#if USE_PIKE_TYPE
   /* FIXME: */
+  ADD_EFUN("replace_master", f_replace_master,
+	   tFunc(tObj, tVoid), OPT_SIDE_EFFECT);
+  ADD_EFUN("master", f_master,
+	   tFunc(tNone, tObj), OPT_EXTERNAL_DEPEND);
+#else /* !USE_PIKE_TYPE */
   ADD_EFUN_DTYPE("replace_master", f_replace_master,
 		 dtFunc(dtObjImpl(pike___master_program), dtVoid),
 		 OPT_SIDE_EFFECT);
@@ -7460,6 +7466,7 @@ void init_builtin_efuns(void)
   ADD_EFUN_DTYPE("master", f_master,
 		 dtFunc(dtNone, dtObjImpl(pike___master_program)),
 		 OPT_EXTERNAL_DEPEND);
+#endif /* USE_PIKE_TYPE */
   
   /* __master still contains a reference */
   free_program(pike___master_program);
