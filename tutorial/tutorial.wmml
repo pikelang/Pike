@@ -67,6 +67,7 @@ all_threads (link to threads)
 	atan2
 	atexit -fixed by hubbe
 (chmod fixed /Mirar) 	(Move to system module? -Hubbe)
+chown
 chroot		need ref
 cleargroups
 closelog
