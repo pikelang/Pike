@@ -21,7 +21,7 @@
 #include <ctype.h>
 #include "queue.h"
 
-RCSID("$Id: svalue.c,v 1.40 1999/05/27 16:06:34 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.41 2001/06/06 08:17:15 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -630,7 +630,7 @@ int low_short_is_equal(const union anything *a,
     sa.u.integer=0;
   }
 
-  if((sb.u.refs=a->refs))
+  if((sb.u.refs=b->refs))
   {
     sb.type=type;
   }else{
