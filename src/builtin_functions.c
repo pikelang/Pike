@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.367 2001/05/07 22:04:52 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.368 2001/05/10 13:05:59 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -6053,7 +6053,8 @@ PMOD_EXPORT void f_object_variablep(INT32 args)
  *!
  *!   Remove elements that are duplicates.
  *!
- *!   This function returns an copy of the array <i>a</i> with all duplicate
+ *! @returns
+ *!   This function returns an copy of the array @[a] with all duplicate
  *!   values removed. The order of the values is kept in the result.
  */
 PMOD_EXPORT void f_uniq_array(INT32 args)
@@ -7315,9 +7316,10 @@ struct  buffer_str
  *!    You do not need to use this class unless you add very many
  *!    strings together, or very large strings.
  *!
+ *! @example
  *!    For the fastest possible operation, write your code like this:
  *!
- *!    @example{
+ *!    @code{
  *!    String.Buffer b = String.Buffer( );
  *!
  *!    function add = b->add;
@@ -7334,7 +7336,7 @@ static void f_buf_create( INT32 args )
  *!   Initializes a new buffer.
  *!
  *!   If no @[initial_size] is specified, 4096 is used. If you
- *!   know aproximately how big the buffer will be, you can optimize
+ *!   know approximately how big the buffer will be, you can optimize
  *!   the operation of @[add()] (slightly) by passing the size to this
  *!   function.
  */
