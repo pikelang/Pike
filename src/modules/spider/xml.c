@@ -854,104 +854,78 @@ static int gobble(struct xmldata *data, char *s)
    }while(0)
 
 
-#define READ_REFERENCE(X,PARSE_RECURSIVELY) do {			 \
-	READ(1); /* Assume '&' for now */				 \
-	if(PEEK(0)=='#')						 \
-	{								 \
-          READ_CHAR_REF(X);                                              \
-	}else{								 \
-	  /* Entity reference */					 \
-	  if(!THIS->entities)						 \
-          {								 \
-            XMLERROR("XML->__entities is not a mapping");		 \
-	    f_aggregate_mapping(0);					 \
-	  }else{							 \
-	    ref_push_mapping(THIS->entities);				 \
-	  }								 \
-	  SIMPLE_READNAME();						 \
-          IF_XMLDEBUG(fprintf(stderr,"Found entity: %s\n",sp[-1].u.string->str)); \
-	  if(PEEK(0)!=';')						 \
-            XMLERROR("Missing ';' after entity reference.");	 \
-	  READ(1);							 \
-	  /* lookup entry in mapping and parse it recursively */	 \
-	  /* Generate error if entity is not defined */			 \
-	  f_index(2);							 \
-          if(IS_ZERO(sp-1))						 \
-	  {								 \
-	    XMLERROR("No such entity.");			 \
-	    pop_stack();						 \
-	  }else{							 \
-	    if(sp[-1].type!=T_STRING)					 \
-	    {								 \
-	      XMLERROR("XML->__entities value is not a string!");	 \
-	    }else{							 \
-	      struct pike_string *s=sp[-1].u.string;			 \
-	      struct xmldata my_tmp=*data;			      	 \
-	      ONERROR tmp2;						 \
-	      sp--;							 \
-              IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str)); \
-	      SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
-	      check_stack(10);						 \
-              my_tmp.input.to_free=s;\
-	      my_tmp.input.datap=MKPCHARP_STR(s);		     	 \
-	      my_tmp.input.len=s->len;				       	 \
-	      my_tmp.input.pos=0;\
-	      my_tmp.input.next=0;\
-	      PARSE_RECURSIVELY;					 \
-	      UNSET_ONERROR(tmp2);					 \
-	      free_string(s);						 \
-	    }								 \
-	  }								 \
-	}								 \
-        IF_XMLDEBUG(fprintf(stderr,"Read reference at %d done.\n",__LINE__)); \
-      }while(0)
+#define PARSE_REF(PARSE_RECURSIVELY) do {\
+    /* Entity reference */						    \
+    /* lookup entry in mapping and parse it recursively */		    \
+    /* Generate error if entity is not defined */			    \
+    if(THIS->entities)							    \
+    {									    \
+      struct pike_string *name=0;					    \
+      ONERROR tmp3;							    \
+      map_delete_no_free(THIS->entities, sp-1, sp);			    \
+      name=sp[-1].u.string;						    \
+      sp[-1]=*sp;							    \
+      SET_ONERROR(tmp3, do_free_string, name);				    \
+									    \
+      if(IS_ZERO(sp-1))							    \
+      {									    \
+	XMLERROR("No such entity.");					    \
+	pop_stack();							    \
+      }else{								    \
+        if(sp[-1].type!=T_STRING)					    \
+	{								    \
+	  XMLERROR("XML->__entities value is not a string!");		    \
+	}else{								    \
+          struct pike_string *s=sp[-1].u.string;			    \
+	  struct xmldata my_tmp=*data;					    \
+	  ONERROR tmp2;							    \
+	  sp--;								    \
+          IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str));    \
+	  SET_ONERROR(tmp2, free_xmldata, &my_tmp);			    \
+	  check_stack(10);						    \
+          my_tmp.input.to_free=s;					    \
+	  my_tmp.input.datap=MKPCHARP_STR(s);				    \
+	  my_tmp.input.len=s->len;					    \
+	  my_tmp.input.pos=0;						    \
+	  my_tmp.input.next=0;						    \
+	  PARSE_RECURSIVELY;						    \
+	  if(THIS->entities)						    \
+	    mapping_string_insert_string(THIS->entities, name, s);	    \
+	  UNSET_ONERROR(tmp2);						    \
+	  free_string(s);						    \
+        }								    \
+      }									    \
+      CALL_AND_UNSET_ONERROR(tmp3);					    \
+    }									    \
+  }while(0)
+
+#define READ_REFERENCE(X,PARSE_RECURSIVELY) do {			    \
+  READ(1); /* Assume '&' for now */					    \
+  if(PEEK(0)=='#')							    \
+  {									    \
+    READ_CHAR_REF(X);							    \
+  }else{                                                                    \
+    SIMPLE_READNAME();							    \
+    IF_XMLDEBUG(fprintf(stderr,"Found entity: %s\n",sp[-1].u.string->str)); \
+    if(PEEK(0)!=';')							    \
+      XMLERROR("Missing ';' after entity reference.");			    \
+    READ(1);								    \
+    PARSE_REF(PARSE_RECURSIVELY);                                            \
+  }									    \
+  IF_XMLDEBUG(fprintf(stderr,"Read reference at %d done.\n",__LINE__));	    \
+}while(0)
 
 
-
-#define READ_PEREFERENCE(X,PARSE_RECURSIVELY) do {			 \
-	READ(1); /* Assume '%'  */					 \
-	  if(!THIS->entities)						 \
-          {								 \
-            XMLERROR("XML->__entities is not a mapping");	 \
-	    f_aggregate_mapping(0);					 \
-	  }else{							 \
-	    ref_push_mapping(THIS->entities);				 \
-	  }								 \
-	  push_constant_text("%");                                       \
-	  SIMPLE_READNAME();						 \
-          f_add(2);                                                      \
-	  if(PEEK(0)!=';')						 \
-	    XMLERROR("Missing ';' after parsed entity reference.");	 \
-	  READ(1);							 \
-	  /* lookup entry in mapping and parse it recursively */	 \
-	  /* Generate error if entity is not defined */			 \
-	  f_index(2);							 \
-          if(IS_ZERO(sp-1))						 \
-	  {								 \
-	    XMLERROR("No such entity in pereference.");			 \
-	    pop_stack();						 \
-	  }else{							 \
-	    if(sp[-1].type!=T_STRING)					 \
-	    {								 \
-	      XMLERROR("XML->__entities value is not a string!"); \
-	    }else{							 \
-	      struct pike_string *s=sp[-1].u.string;			 \
-	      struct xmldata my_tmp=*data;			      	 \
-	      ONERROR tmp2;						 \
-	      sp--;							 \
-	      SET_ONERROR(tmp2, free_xmldata, &my_tmp);			 \
-	      check_stack(10);						 \
-              my_tmp.input.to_free=s;\
-	      my_tmp.input.datap=MKPCHARP_STR(s);		     	 \
-	      my_tmp.input.len=s->len;				       	 \
-	      my_tmp.input.pos=0;\
-	      my_tmp.input.next=0;\
-	      PARSE_RECURSIVELY;					 \
-	      UNSET_ONERROR(tmp2);					 \
-	      free_string(s);						 \
-	    }								 \
-	}								 \
-      }while(0)
+#define READ_PEREFERENCE(X,PARSE_RECURSIVELY) do {		\
+  READ(1); /* Assume '%'  */					\
+  push_constant_text("%");					\
+  SIMPLE_READNAME();						\
+  f_add(2);							\
+  if(PEEK(0)!=';')						\
+    XMLERROR("Missing ';' after parsed entity reference.");	\
+  READ(1);							\
+  PARSE_REF(PARSE_RECURSIVELY);					\
+}while(0)
 
 
 
@@ -1426,6 +1400,9 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	  case 0:
 	    XMLERROR("End of xml while readin ELEMENT declaration.");
 	    
+	  default:
+	    XMLERROR("Expected | or ,");
+
 	  case ')':
 	    READ(1);
 #if 0
@@ -1472,9 +1449,6 @@ void read_choice_seq_or_name(struct xmldata *data, int maybe_pcdata)
 	    READ(1);
 	    continue;
 	    
-	  default:
-	    XMLERROR("Expected | or ,");
-	  READ(1);
 	}
 	break;
       }
@@ -1719,6 +1693,11 @@ static int really_low_parse_dtd(struct xmldata *data)
 
 		    case '(': /* Mixed or children */
 		      read_choice_seq_or_name(data,1);
+		      break;
+
+		    default:
+		      XMLERROR("Unknown stuff in <!ELEMENT>");
+		      push_int(0);
 		  }
 		  
 		  SKIPSPACE();
