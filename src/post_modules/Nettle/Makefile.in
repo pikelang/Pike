@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.5 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.6 2003/08/01 19:22:49 nilsson Exp $
 @make_variables@
 VPATH=@srcdir@
 
@@ -11,5 +11,6 @@ CONFIG_HEADERS=@CONFIG_HEADERS@
 
 nettle.o: $(SRCDIR)/nettle.c
 hash.o: $(SRCDIR)/hash.c
+cipher.o: $(SRCDIR)/cipher.c
 
 @dependencies@
