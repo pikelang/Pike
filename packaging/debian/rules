@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.3 2002/08/04 22:29:45 grendel Exp $
+# $Id: rules,v 1.4 2002/08/05 00:41:57 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -61,6 +61,7 @@ configure-stamp:
 	for f in $(CURDIR)/debian/patches/*.diff; do \
 	    patch -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
 	done
+	touch patched-stamp
 	# Add here commands to configure the package.
 	(cd $(BUILDDIR); $(CURDIR)/src/configure --prefix=/usr $(CFARGS))
 	touch configure-stamp
@@ -139,9 +140,13 @@ clean:
 	- rm src/post_modules/dynamic_module_makefile
 	- rm -rf build/
 
-	-for f in $(CURDIR)/debian/patches/*.diff; do \
-	    patch -R -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
-	done
+	-if [ -f patched-stamp ]; then \
+	    for f in $(CURDIR)/debian/patches/*.diff; do \
+		patch -R -p1 -f --no-backup-if-mismatch -d $(CURDIR) < $$f ; \
+	    done ; \
+	    rm -f ; \
+	fi
+
 	dh_clean
 
 install: DH_OPTIONS=
