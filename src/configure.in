@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.164 1998/03/05 14:06:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.165 1998/03/06 17:34:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -812,7 +812,7 @@ int main()
   pthread_mutexattr_init(&attr);
 #else
   memset(&attr, 0, sizeof(attr));
-#endif /* HAVE_PTHREAD_MUTEXATTR_INIT
+#endif /* HAVE_PTHREAD_MUTEXATTR_INIT */
   pthread_mutex_init(&tmp, &attr);
   pthread_mutex_lock(&tmp);
   pthread_create(&gazonk,0,foo,0);
