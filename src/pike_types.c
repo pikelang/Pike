@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.136 2000/08/17 19:00:25 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.137 2000/09/03 22:01:22 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3400,6 +3400,7 @@ char *get_name_of_type(int t)
     case T_TYPE: return "type";
     case T_ZERO: return "zero";
     case T_VOID: return "void";
+    case T_MAPPING_DATA: return "mapping_data";
     default: return "unknown";
   }
 }
