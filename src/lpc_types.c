@@ -18,6 +18,8 @@
 #include "macros.h"
 #include "error.h"
 
+static void internal_parse_type(char **s);
+
 /*
  * basic types are represented by just their value in a string
  * basic type are string, int, float, object and program
@@ -80,10 +82,12 @@ static int type_length(char *t)
 
   case T_MAPPING:
   case T_OR:
+  case T_AND:
     t+=type_length(t);
 
   case T_ARRAY:
   case T_LIST:
+  case T_NOT:
     t+=type_length(t);
 
   case T_INT:
@@ -99,7 +103,7 @@ static int type_length(char *t)
   return t-q;
 }
 
-static void internal_parse_type(char **s)
+static void internal_parse_typeA(char **s)
 {
   char buf[80];
   unsigned int len;
@@ -169,8 +173,8 @@ static void internal_parse_type(char **s)
       type_stack_reverse();
       if(**s != ')') error("Missing ')' in function type.\n");
       ++*s;
-      type_stack_reverse();
-    }else{
+      type_stack_reverse(); 
+   }else{
       push_type(T_MIXED);
       push_type(T_MIXED);
       push_type(T_MANY);
@@ -227,19 +231,81 @@ static void internal_parse_type(char **s)
     error("Couldn't parse type. (%s)\n",buf);
 
   while(isspace(**s)) ++*s;
+}
+
+
+static void internal_parse_typeB(char **s)
+{
+  while(isspace(**s)) ++*s;
+  switch(**s)
+  {
+  case '!':
+    ++*s;
+    internal_parse_typeB(s);
+    push_type(T_NOT);
+    break;
+
+  case '(':
+    ++*s;
+    internal_parse_typeB(s);
+    while(isspace(**s)) ++*s;
+    if(**s != ')') error("Expecting ')'.\n");
+    break;
+    
+  default:
+
+    internal_parse_typeA(s);
+  }
+}
+
+static void internal_parse_typeCC(char **s)
+{
+  internal_parse_typeB(s);
+
+  while(isspace(**s)) ++*s;
+  
   while(**s == '*')
   {
     ++*s;
-    push_type(T_ARRAY);
     while(isspace(**s)) ++*s;
+    push_type(T_ARRAY);
   }
+}
 
+static void internal_parse_typeC(char **s)
+{
+  type_stack_mark();
+
+  type_stack_mark();
+  internal_parse_typeCC(s);
+  type_stack_reverse();
+
+  while(isspace(**s)) ++*s;
+  
+  if(**s == '&')
+  {
+    ++*s;
+    type_stack_mark();
+    internal_parse_typeC(s);
+    type_stack_reverse();
+    type_stack_reverse();
+    push_type(T_AND);
+  }else{
+    type_stack_reverse();
+  }
+}
+
+static void internal_parse_type(char **s)
+{
+  internal_parse_typeC(s);
+
+  while(isspace(**s)) ++*s;
+  
   while(**s == '|')
   {
     ++*s;
-    internal_parse_type(s);
+    internal_parse_typeC(s);
     push_type(T_OR);
-    while(isspace(**s)) ++*s;
   }
 }
 
@@ -280,6 +346,8 @@ void stupid_describe_type(char *a,INT32 len)
     case T_UNKNOWN: printf("unknown"); break;
     case T_MANY: printf("many"); break;
     case T_OR: printf("or"); break;
+    case T_AND: printf("and"); break;
+    case T_NOT: printf("not"); break;
     case T_VOID: printf("void"); break;
     case T_MIXED: printf("mixed"); break;
 
@@ -299,33 +367,14 @@ char *low_describe_type(char *t)
 {
   switch(EXTRACT_UCHAR(t++))
   {
-  case T_VOID:
-    my_strcat("void");
-    break;
-
-  case T_MIXED:
-    my_strcat("mixed");
-    break;
-
-  case T_UNKNOWN:
-    my_strcat("unknown");
-    break;
-
-  case T_INT:
-    my_strcat("int");
-    break;
-
-  case T_FLOAT:
-    my_strcat("float");
-    break;
-
-  case T_PROGRAM:
-    my_strcat("program");
-    break;
-
-  case T_OBJECT:
-    my_strcat("object");
-    break;
+  case T_VOID: my_strcat("void"); break;
+  case T_MIXED: my_strcat("mixed"); break;
+  case T_UNKNOWN: my_strcat("unknown"); break;
+  case T_INT: my_strcat("int"); break;
+  case T_FLOAT: my_strcat("float"); break;
+  case T_PROGRAM: my_strcat("program"); break;
+  case T_OBJECT: my_strcat("object"); break;
+  case T_STRING: my_strcat("string"); break;
 
   case T_FUNCTION:
   {
@@ -335,36 +384,49 @@ char *low_describe_type(char *t)
     while(EXTRACT_UCHAR(t) != T_MANY)
     {
       if(s++) my_strcat(", ");
-      low_describe_type(t);
-      t+=type_length(t);
+      t=low_describe_type(t);
     }
     t++;
-    if(EXTRACT_UCHAR(t) != T_VOID)
+    if(EXTRACT_UCHAR(t) == T_VOID)
     {
+      t++;
+    }else{
       if(s++) my_strcat(", ");
-      low_describe_type(t);
+      t=low_describe_type(t);
       my_strcat(" ...");
     }
-    t+=type_length(t);
     my_strcat(" : ");
-    low_describe_type(t);
+    t=low_describe_type(t);
     my_strcat(")");
     break;
   }
 
-  case T_STRING:
-    my_strcat("string");
-    break;
-
   case T_ARRAY:
-    t=low_describe_type(t);
-    my_strcat("*");
+    if(EXTRACT_UCHAR(t)==T_MIXED)
+    {
+      my_strcat("array");
+      t++;
+    }else{
+      t=low_describe_type(t);
+      my_strcat("*");
+    }
     break;
 
   case T_LIST:
-    my_strcat("list (");
+    my_strcat("list");
+    if(EXTRACT_UCHAR(t)!=T_MIXED)
+    {
+      my_strcat("(");
+      t=low_describe_type(t);
+      my_strcat(")");
+    }else{
+      t++;
+    }
+    break;
+
+  case T_NOT:
+    my_strcat("!");
     t=low_describe_type(t);
-    my_strcat(")");
     break;
 
   case T_OR:
@@ -372,28 +434,53 @@ char *low_describe_type(char *t)
     my_strcat(" | ");
     t=low_describe_type(t);
     break;
+
+  case T_AND:
+    t=low_describe_type(t);
+    my_strcat(" & ");
+    t=low_describe_type(t);
+    break;
     
   case T_MAPPING:
-    my_strcat("mapping (");
-    t=low_describe_type(t);
-    my_strcat(":");
-    t=low_describe_type(t);
-    my_strcat(")");
+    my_strcat("mapping");
+    if(EXTRACT_UCHAR(t)==T_MIXED && EXTRACT_UCHAR(t+1)==T_MIXED)
+    {
+      t+=2;
+    }else{
+      my_strcat("(");
+      t=low_describe_type(t);
+      my_strcat(":");
+      t=low_describe_type(t);
+      my_strcat(")");
+    }
     break;
   }
   return t;
 }
 
-TYPE_T compile_type_to_runtime_type(struct lpc_string *s)
+struct lpc_string *describe_type(struct lpc_string *type)
 {
-  char *t;
-  t=s->str;
-  
+  if(!type) return make_shared_string("mixed");
+  init_buf();
+  low_describe_type(type->str);
+  return free_buf();
+}
+
+static TYPE_T low_compile_type_to_runtime_type(char *t)
+{
+  TYPE_T tmp;
   switch(EXTRACT_UCHAR(t))
   {
   case T_OR:
+    t++;
+    tmp=low_compile_type_to_runtime_type(t);
+    if(tmp == low_compile_type_to_runtime_type(t+type_length(t)))
+      return tmp;
+
   case T_MANY:
   case T_UNKNOWN:
+  case T_AND:
+  case T_NOT:
     return T_MIXED;
 
   default:
@@ -401,36 +488,70 @@ TYPE_T compile_type_to_runtime_type(struct lpc_string *s)
   }
 }
 
+TYPE_T compile_type_to_runtime_type(struct lpc_string *s)
+{
+  return low_compile_type_to_runtime_type(s->str);
+}
+
+#define A_EXACT 1
+#define B_EXACT 2
+
 /*
  * match two type strings, return zero if they don't match, and return
  * the part of 'a' that _did_ match if it did.
  */
-static char *low_match_types(char *a,char *b)
+static char *low_match_types(char *a,char *b, int flags)
 {
   char *ret;
   if(a == b) return a;
 
-  if(EXTRACT_UCHAR(a) == T_OR)
+  switch(EXTRACT_UCHAR(a))
   {
+  case T_AND:
     a++;
-    ret=low_match_types(a,b);
+    ret=low_match_types(a,b,flags);
+    if(!ret) return 0;
+    a+=type_length(a);
+    return low_match_types(a,b,flags);
+
+  case T_OR:
+    a++;
+    ret=low_match_types(a,b,flags);
     if(ret) return ret;
     a+=type_length(a);
-    return low_match_types(a,b);
+    return low_match_types(a,b,flags);
+
+  case T_NOT:
+    if(low_match_types(a+1,b,flags | B_EXACT))
+      return 0;
+    return a;
   }
 
-  if(EXTRACT_UCHAR(b) == T_OR)
+  switch(EXTRACT_UCHAR(b))
   {
+  case T_AND:
     b++;
-    ret=low_match_types(a,b);
+    ret=low_match_types(a,b,flags);
+    if(!ret) return 0;
+    b+=type_length(b);
+    return low_match_types(a,b,flags);
+
+  case T_OR:
+    b++;
+    ret=low_match_types(a,b,flags);
     if(ret) return ret;
     b+=type_length(b);
-    return low_match_types(a,b);
+    return low_match_types(a,b,flags);
+
+  case T_NOT:
+    if(low_match_types(a,b+1, flags | A_EXACT))
+      return 0;
+    return a;
   }
 
   /* 'mixed' matches anything */
-  if(EXTRACT_UCHAR(a) == T_MIXED) return a;
-  if(EXTRACT_UCHAR(b) == T_MIXED) return a;
+  if(EXTRACT_UCHAR(a) == T_MIXED && !(flags & A_EXACT)) return a;
+  if(EXTRACT_UCHAR(b) == T_MIXED && !(flags & B_EXACT)) return a;
   if(EXTRACT_UCHAR(a) != EXTRACT_UCHAR(b)) return 0;
 
   ret=a;
@@ -458,7 +579,7 @@ static char *low_match_types(char *a,char *b)
 	b+=type_length(b);
       }
 
-      if(!low_match_types(a_tmp, b_tmp)) return 0;
+      if(!low_match_types(a_tmp, b_tmp, flags)) return 0;
     }
     /* check the 'many' type */
     a++;
@@ -468,20 +589,20 @@ static char *low_match_types(char *a,char *b)
       a+=type_length(a);
       b+=type_length(b);
     }else{
-      if(!low_match_types(a,b)) return 0;
+      if(!low_match_types(a,b,flags)) return 0;
     }
     /* check the returntype */
-    if(!low_match_types(a,b)) return 0;
+    if(!low_match_types(a,b,flags)) return 0;
     break;
 
   case T_MAPPING:
-    if(!low_match_types(++a,++b)) return 0;
-    if(!low_match_types(a+type_length(a),b+type_length(b))) return 0;
+    if(!low_match_types(++a,++b,flags)) return 0;
+    if(!low_match_types(a+type_length(a),b+type_length(b),flags)) return 0;
     break;
 
   case T_LIST:
   case T_ARRAY:
-    if(!low_match_types(++a,++b)) return 0;
+    if(!low_match_types(++a,++b,flags)) return 0;
 
   case T_INT:
   case T_FLOAT:
@@ -503,19 +624,25 @@ static char *low_match_types(char *a,char *b)
  */
 static int low_get_return_type(char *a,char *b)
 {
-  if(EXTRACT_UCHAR(a) == T_OR)
+  int tmp;
+  switch(EXTRACT_UCHAR(a))
   {
-    int tmp;
+  case T_OR:
     a++;
     tmp=low_get_return_type(a,b);
     tmp+=low_get_return_type(a+type_length(a),b);
     if(tmp==2) push_type(T_OR);
     return tmp>0;
-  }
 
-  if(EXTRACT_UCHAR(a) == T_ARRAY)
-  {
-    int tmp;
+  case T_AND:
+    a++;
+    type_stack_mark();
+    tmp=low_get_return_type(a,b);
+    type_stack_pop_to_mark();
+    if(!tmp) return 0;
+    return low_get_return_type(a+type_length(a),b);
+
+  case T_ARRAY:
     a++;
     tmp=low_get_return_type(a,b);
     if(!tmp) return 0;
@@ -523,7 +650,7 @@ static int low_get_return_type(char *a,char *b)
     return 1;
   }
 
-  a=low_match_types(a,b);
+  a=low_match_types(a,b,0);
   if(a)
   {
     switch(EXTRACT_UCHAR(a))
@@ -547,7 +674,7 @@ static int low_get_return_type(char *a,char *b)
 
 int match_types(struct lpc_string *a,struct lpc_string *b)
 {
-  return 0!=low_match_types(a->str, b->str);
+  return 0!=low_match_types(a->str, b->str,0);
 }
 
 
@@ -583,6 +710,12 @@ void pop_type_stack()
   type_stackp--;
   if(type_stackp<type_stack)
     fatal("Type stack underflow\n");
+}
+
+void type_stack_pop_to_mark()
+{
+  pop_stack_mark();
+  type_stackp=*mark_stackp;
 }
 
 void type_stack_reverse()
@@ -651,6 +784,8 @@ static struct lpc_string *low_index_type(char *t)
     return pop_type();
   }
 
+  case T_AND:
+    return low_index_type(t+type_length(t));
 
   case T_STRING: /* always int */
   case T_LIST: /* always int */
@@ -680,17 +815,24 @@ static int low_check_indexing(char *type, char *index_type)
   case T_OR:
     return low_check_indexing(type,index_type) ||
       low_check_indexing(type+type_length(type),index_type);
-    
+
+  case T_AND:
+    return low_check_indexing(type,index_type) &&
+      low_check_indexing(type+type_length(type),index_type);
+
+  case T_NOT:
+    return !low_check_indexing(type,index_type);
+
   case T_STRING:
   case T_ARRAY:
-    return !!low_match_types(int_type_string->str, index_type);
+    return !!low_match_types(int_type_string->str, index_type,0);
 
   case T_OBJECT:
-    return !!low_match_types(string_type_string->str, index_type);
+    return !!low_match_types(string_type_string->str, index_type,0);
 
   case T_LIST:
   case T_MAPPING:
-    return !!low_match_types(type,index_type);
+    return !!low_match_types(type,index_type,0);
 
   case T_MIXED:
     return 1;
@@ -740,7 +882,6 @@ struct lpc_string *check_call(struct lpc_string *args,
     return 0;
   }
 }
-
 
 void check_array_type(struct array *a)
 {

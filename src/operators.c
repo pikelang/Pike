@@ -169,6 +169,24 @@ void f_add(INT32 args)
     break;
   }
 
+  case BIT_FLOAT | BIT_INT:
+  {
+    FLOAT_TYPE sum;
+    sum=0.0;
+    for(e=-args; e<0; e++)
+    {
+      if(sp[e].type==T_FLOAT)
+      {
+	sum+=sp[e].u.float_number;
+      }else{
+	sum+=(FLOAT_TYPE)sp[e].u.integer;
+      }
+    }
+    sp-=args-1;
+    sp[-1].u.float_number=sum;
+    break;
+  }
+
   case BIT_ARRAY:
   {
     struct array *a;
@@ -231,7 +249,8 @@ static node *optimize_binary(node *n)
       fatal("Couldn't find argument!\n");
 #endif
 
-    if((*second_arg)->type == (*first_arg)->type)
+    if((*second_arg)->type == (*first_arg)->type &&
+       compile_type_to_runtime_type((*second_arg)->type) != T_MIXED)
     {
       if((*first_arg)->token == F_APPLY &&
 	 CAR(*first_arg)->token == F_CONSTANT &&
@@ -295,10 +314,26 @@ static int generate_comparison(node *n)
   return 0;
 }
 
+static int float_promote()
+{
+  if(sp[-2].type==T_INT)
+  {
+    sp[-2].u.float_number=(FLOAT_TYPE)sp[-2].u.integer;
+    sp[-2].type=T_FLOAT;
+  }
+
+  if(sp[-1].type==T_INT)
+  {
+    sp[-1].u.float_number=(FLOAT_TYPE)sp[-1].u.integer;
+    sp[-1].type=T_FLOAT;
+  }
+
+  return sp[-2].type == sp[-1].type;
+}
 
 void o_subtract()
 {
-  if (sp[-2].type != sp[-1].type )
+  if (sp[-2].type != sp[-1].type && !float_promote())
     error("Subtract on different types.\n");
 
   switch(sp[-1].type)
@@ -659,15 +694,14 @@ static int generate_rsh(node *n)
   return 0;
 }
 
+
+#define TWO_TYPES(X,Y) (((X)<<8)|(Y))
 void o_multiply()
 {
-  switch(sp[-2].type)
+  switch(TWO_TYPES(sp[-2].type,sp[-1].type))
   {
-  case T_ARRAY:
-    if(sp[-1].type!=T_STRING)
+  case TWO_TYPES(T_ARRAY,T_STRING):
     {
-      error("Bad argument 2 to multiply.\n");
-    }else{
       struct lpc_string *ret;
       sp--;
       ret=implode(sp[-1].u.array,sp[0].u.string);
@@ -678,20 +712,30 @@ void o_multiply()
       return;
     }
 
-  case T_FLOAT:
-    if(sp[-1].type!=T_FLOAT) error("Bad argument 2 to multiply.\n");
+  case TWO_TYPES(T_FLOAT,T_FLOAT):
     sp--;
     sp[-1].u.float_number *= sp[0].u.float_number;
     return;
 
-  case T_INT:
-    if(sp[-1].type!=T_INT) error("Bad argument 2 to multiply.\n");
+  case TWO_TYPES(T_FLOAT,T_INT):
+    sp--;
+    sp[-1].u.float_number *= (FLOAT_TYPE)sp[0].u.integer;
+    return;
+
+  case TWO_TYPES(T_INT,T_FLOAT):
+    sp--;
+    sp[-1].u.float_number= 
+      (FLOAT_TYPE) sp[-1].u.integer * (FLOAT_TYPE)sp[0].u.float_number;
+    sp[-1].type=T_FLOAT;
+    return;
+
+  case TWO_TYPES(T_INT,T_INT):
     sp--;
     sp[-1].u.integer *= sp[0].u.integer;
     return;
 
   default:
-    error("Bad argument 1 to multiply.\n");
+    error("Bad arguments to multiply.\n");
   }
 }
 
@@ -726,7 +770,7 @@ static int generate_multiply(node *n)
 
 void o_divide()
 {
-  if(sp[-2].type!=sp[-1].type)
+  if(sp[-2].type!=sp[-1].type && !float_promote())
     error("Division on different types.\n");
 
   switch(sp[-2].type)
@@ -782,7 +826,7 @@ static int generate_divide(node *n)
 
 void o_mod()
 {
-  if(sp[-2].type != sp[-1].type)
+  if(sp[-2].type != sp[-1].type && !float_promote())
     error("Modulo on different types.\n");
 
   switch(sp[-1].type)
@@ -956,14 +1000,14 @@ void init_operators()
 {
   add_efun2("`==",f_eq,"function(mixed,mixed:int)",0,0,generate_comparison);
   add_efun2("`!=",f_ne,"function(mixed,mixed:int)",0,0,generate_comparison);
-  add_efun2("`<", f_lt,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
-  add_efun2("`<=",f_le,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
-  add_efun2("`>", f_gt,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
-  add_efun2("`>=",f_ge,"function(int,int:int)|function(float,float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`<", f_lt,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`<=",f_le,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`>", f_gt,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
+  add_efun2("`>=",f_ge,"function(int|float,int|float:int)|function(string,string:int)",0,0,generate_comparison);
 
-  add_efun2("`+",f_add,"function(int ...:int)|function(float ...:float)|function(string,string|int|float ...:string)|function(string,string|int|float ...:string)|function(int|float,string,string|int|float:string)|function(array ...:array)|function(mapping ...:mapping)|function(list...:list)",0,optimize_binary,generate_sum);
+  add_efun2("`+",f_add,"function(int...:int)|!function(int...:mixed)&function(int|float...:float)|!function(int|float...:mixed)&function(string|int|float...:string)|function(array...:array)|function(mapping...:mapping)|function(list...:list)",0,optimize_binary,generate_sum);
 
-  add_efun2("`-",f_minus,"function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(list,list:list)|function(float,float:float)|function(int,int:int)|function(string,string:string)",0,0,generate_minus);
+  add_efun2("`-",f_minus,"function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(list,list:list)|function(float|int,float:float)|function(float,int:float)|function(int,int:int)|function(string,string:string)",0,0,generate_minus);
 
   add_efun2("`&",f_and,"function(int...:int)|function(mapping...:mapping)|function(list...:list)|function(array...:array)",0,optimize_binary,generate_and);
 
@@ -974,13 +1018,12 @@ void init_operators()
   add_efun2("`<<",f_lsh,"function(int,int:int)",0,0,generate_lsh);
   add_efun2("`>>",f_rsh,"function(int,int:int)",0,0,generate_rsh);
 
-  add_efun2("`*",f_multiply,"function(int...:int)|function(float...:float)|function(string*,string:string)",0,optimize_binary,generate_multiply);
+  add_efun2("`*",f_multiply,"function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",0,optimize_binary,generate_multiply);
 
-  add_efun2("`/",f_divide,"function(int,int:int)|function(float,float:float)|function(string,string:string*)",0,0,generate_divide);
+  add_efun2("`/",f_divide,"function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",0,0,generate_divide);
 
   add_efun2("`%",f_mod,"function(int,int:int)|function(float,float:float)",0,0,generate_mod);
 
   add_efun2("`!",f_not,"function(mixed:int)",0,0,generate_not);
   add_efun2("`~",f_compl,"function(int:int)",0,0,generate_compl);
-  
 }

@@ -124,6 +124,7 @@ struct keyword reserved_words[] =
 { "static",	F_STATIC, },
 { "string",	F_STRING_ID, },
 { "switch",	F_SWITCH, },
+{ "typeof",	F_TYPEOF, },
 { "varargs",	F_VARARGS, },
 { "void",	F_VOID_ID, },
 { "while",	F_WHILE, },
@@ -1532,8 +1533,6 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       case '|': tmp="`|"; break;
       case '^': tmp="`^"; break;
       case '~': tmp="`~"; break;
-      case '(':
-	if(GOBBLE(')')) { tmp="`()"; break; }
 
       default:
 	yyerror("Illegal ` identifier.");

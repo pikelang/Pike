@@ -55,6 +55,8 @@ struct svalue
 #define T_FLOAT 7
 #define T_INT 8
 
+#define T_NOT 247
+#define T_AND 248
 #define T_UNKNOWN 249
 #define T_MANY 250
 #define T_OR 251
@@ -87,6 +89,7 @@ struct svalue
 #define NUMBER_UNDEFINED 1
 #define NUMBER_DESTRUCTED 2
 
+#define is_gt(a,b) is_lt(b,a)
 #define IS_ZERO(X) ((X)->type==T_INT && (X)->u.integer==0)
 
 #define check_destructed(S) \
@@ -163,7 +166,6 @@ int low_short_is_equal(const union anything *a,
 		       TYPE_T type,
 		       struct processing *p);
 int is_equal(struct svalue *a,struct svalue *b);
-int is_gt(const struct svalue *a,const struct svalue *b);
 int is_lt(const struct svalue *a,const struct svalue *b);
 void describe_svalue(struct svalue *s,int indent,struct processing *p);
 void clear_svalues(struct svalue *s, INT32 num);
@@ -173,6 +175,8 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct processing *p);
 void check_short_svalue(union anything *u,TYPE_T type);
 void check_svalue(struct svalue *s);
+void gc_check_svalues(struct svalue *s, int num);
+void gc_check_short_svalue(union anything *u, TYPE_T type);
 /* Prototypes end here */
 
 #endif

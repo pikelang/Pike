@@ -366,7 +366,6 @@ int is_eq(struct svalue *a, struct svalue *b)
   }
 }
 
-
 int low_is_equal(struct svalue *a,
 		 struct svalue *b,
 		 struct processing *p)
@@ -443,34 +442,6 @@ int is_equal(struct svalue *a,struct svalue *b)
   return low_is_equal(a,b,0);
 }
 
-
-int is_gt(const struct svalue *a,const struct svalue *b)
-{
-  check_type(a->type);
-  check_type(b->type);
-  check_refs(a);
-  check_refs(b);
-
-  if (a->type != b->type)
-  {
-    error("Cannot compare different types.\n");
-  }
-  switch(a->type)
-  {
-  default:
-    error("Bad argument 1 to '>'.\n");
-
-  case T_INT:
-    return a->u.integer > b->u.integer;
-
-  case T_STRING:
-    return my_strcmp(a->u.string, b->u.string) > 0;
-
-  case T_FLOAT:
-    return a->u.float_number > b->u.float_number;
-  }
-}
-
 int is_lt(const struct svalue *a,const struct svalue *b)
 {
   check_type(a->type);
@@ -480,12 +451,18 @@ int is_lt(const struct svalue *a,const struct svalue *b)
 
   if (a->type != b->type)
   {
+    if(a->type == T_FLOAT && b->type==T_INT)
+      return a->u.float_number < (FLOAT_TYPE)b->u.integer;
+
+    if(a->type == T_INT && b->type==T_FLOAT)
+      return (FLOAT_TYPE)a->u.integer < b->u.float_number;
+
     error("Cannot compare different types.\n");
   }
   switch(a->type)
   {
   default:
-    error("Bad arg 1 to '<'.\n");
+    error("Bad type to comparison.\n");
 
   case T_INT:
     return a->u.integer < b->u.integer;
