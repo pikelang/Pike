@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.80 2004/11/30 14:29:37 mast Exp $
+/* $Id: sslfile.pike,v 1.81 2005/01/26 20:02:07 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -91,10 +91,14 @@ static Pike.Backend local_backend;
 
 static int nonblocking_mode;
 
-static int explicitly_closed = 1;
-// 1 if we haven't initialized with a stream, 2 if the caller has
-// requested a normal close, 3 if the caller has requested a clean
-// close.
+static enum CloseState {
+  CLOSE_CB_CALLED = -1,
+  STREAM_OPEN = 0,
+  STREAM_UNINITIALIZED = 1,
+  NORMAL_CLOSE = 2,		// The caller has requested a normal close.
+  CLEAN_CLOSE = 3,		// The caller has requested a clean close.
+}
+static CloseState close_state = STREAM_UNINITIALIZED;
 
 static int close_status;
 // This is conn->closed after shutdown when conn has been destructed.
@@ -347,7 +351,7 @@ static void create (Stdio.File stream, SSL.context ctx,
     callback_id = 0;
     real_backend = stream->query_backend();
     local_backend = 0;
-    explicitly_closed = 0;
+    close_state = STREAM_OPEN;
     local_errno = cb_errno = 0;
     got_extra_read_call_out = 0;
 
@@ -416,12 +420,12 @@ int close (void|string how, void|int clean_close)
     error ("Can only close the connection in both directions simultaneously.\n");
 
   ENTER (0, 0) {
-    if (explicitly_closed) {
-      SSL3_DEBUG_MSG ("SSL.sslfile->close: Already closed\n");
+    if (close_state > 0) {
+      SSL3_DEBUG_MSG ("SSL.sslfile->close: Already closed (%d)\n", close_state);
       local_errno = System.EBADF;
       RETURN (0);
     }
-    explicitly_closed = clean_close ? 3 : 2;
+    close_state = clean_close ? CLEAN_CLOSE : NORMAL_CLOSE;
 
     FIX_ERRNOS (
       SSL3_DEBUG_MSG ("SSL.sslfile->close: Propagating old callback error\n");
@@ -464,7 +468,7 @@ Stdio.File shutdown()
     }
 
     close_status = conn->closing;
-    if (explicitly_closed == 2)
+    if (close_state == NORMAL_CLOSE)
       // If we didn't request a clean close then we pretend to have
       // received a close message. According to the standard it's ok
       // anyway as long as the transport isn't used for anything else.
@@ -481,7 +485,7 @@ Stdio.File shutdown()
 #endif
       read_buffer = String.Buffer (sizeof (conn->left_over));
       read_buffer->add (conn->left_over);
-      explicitly_closed = 0;
+      close_state = STREAM_OPEN;
     }
 
     if (conn->session && !sizeof(conn->session->identity))
@@ -508,7 +512,7 @@ Stdio.File shutdown()
     stream->set_write_callback (0);
     stream->set_close_callback (0);
 
-    if (explicitly_closed == 2) {
+    if (close_state == NORMAL_CLOSE) {
       SSL3_DEBUG_MSG ("SSL.sslfile->shutdown(): Normal close - closing stream\n");
       stream->close();
       RETURN (0);
@@ -535,7 +539,7 @@ static void destroy()
   // happen if somebody has destructed this object explicitly
   // though, and in that case he can have all that's coming.
   ENTER (0, 0) {
-    if (stream && !explicitly_closed &&
+    if (stream && !close_state &&
 	// Don't bother with closing nicely if there's an error from
 	// an earlier operation. close() will throw an error for it.
 	!cb_errno) {
@@ -560,7 +564,7 @@ string read (void|int length, void|int(0..1) not_all)
 
   ENTER (0, 0) {
     // Only signal an error after an explicit close() call.
-    if (explicitly_closed) error ("Not open.\n");
+    if (close_state > 0) error ("Not open.\n");
 
     FIX_ERRNOS (
       SSL3_DEBUG_MSG ("SSL.sslfile->read: Propagating old callback error: %s\n",
@@ -618,7 +622,7 @@ int write (string|array(string) data, mixed... args)
 
   ENTER (0, 0) {
     // Only signal an error after an explicit close() call.
-    if (explicitly_closed) error ("Not open.\n");
+    if (close_state > 0) error ("Not open.\n");
 
     FIX_ERRNOS (
       SSL3_DEBUG_MSG ("SSL.sslfile->write: Propagating old callback error: %s\n",
@@ -663,7 +667,8 @@ int write (string|array(string) data, mixed... args)
 		`+ (data[idx][pos..], @data[idx+1..end-1])) < size)
 	    error ("Unexpected PACKET_MAX_SIZE discrepancy wrt send_streaming_data.\n");
 
-	  SSL3_DEBUG_MSG ("SSL.sslfile->write: Queued data[%d][%d..%d] + data[%d..%d]\n",
+	  SSL3_DEBUG_MSG ("SSL.sslfile->write: "
+			  "Queued data[%d][%d..%d] + data[%d..%d]\n",
 			  idx, pos, sizeof (data[idx]) - 1, idx + 1, end - 1);
 	  written += size;
 	  idx = end;
@@ -710,7 +715,7 @@ int renegotiate()
 
   ENTER (0, 0) {
     // Only signal an error after an explicit close() call.
-    if (explicitly_closed) error ("Not open.\n");
+    if (close_state > 0) error ("Not open.\n");
 
     FIX_ERRNOS (
       SSL3_DEBUG_MSG ("SSL.sslfile->renegotiate: Propagating old callback error: %s\n",
@@ -760,7 +765,7 @@ void set_nonblocking (void|function(mixed,string:void) read,
 
   ENTER (0, 0) {
     // Only signal an error after an explicit close() call.
-    if (explicitly_closed) error ("Not open.\n");
+    if (close_state > 0) error ("Not open.\n");
 
     nonblocking_mode = 1;
 
@@ -810,7 +815,7 @@ void set_blocking()
 		  "" || describe_backtrace (backtrace()));
 
   ENTER (0, 0) {
-    if (!explicitly_closed) {
+    if (!close_state) {
       nonblocking_mode = 0;
       accept_callback = read_callback = write_callback = close_callback = 0;
 
@@ -841,7 +846,8 @@ void set_alert_callback (function(object,int|object,string:void) alert)
   SSL3_DEBUG_MSG ("SSL.sslfile->set_alert_callback (%O)\n", alert);
   CHECK (0, 0);
 #ifdef DEBUG
-  if (explicitly_closed == 1 || !conn) error ("Doesn't have any connection.\n");
+  if (close_state == STREAM_UNINITIALIZED || !conn)
+    error ("Doesn't have any connection.\n");
 #endif
   conn->set_alert_callback (alert);
 }
@@ -866,7 +872,8 @@ void set_accept_callback (function(object,void|mixed:int) accept)
   SSL3_DEBUG_MSG ("SSL.sslfile->set_accept_callback (%O)\n", accept);
   ENTER (0, 0) {
 #ifdef DEBUG
-    if (explicitly_closed == 1) error ("Doesn't have any connection.\n");
+    if (close_state == STREAM_UNINITIALIZED)
+      error ("Doesn't have any connection.\n");
 #endif
     accept_callback = accept;
     if (stream) update_internal_state();
@@ -885,7 +892,8 @@ void set_read_callback (function(mixed,string:int) read)
   SSL3_DEBUG_MSG ("SSL.sslfile->set_read_callback (%O)\n", read);
   ENTER (0, 0) {
 #ifdef DEBUG
-    if (explicitly_closed == 1) error ("Doesn't have any connection.\n");
+    if (close_state == STREAM_UNINITIALIZED)
+      error ("Doesn't have any connection.\n");
 #endif
     read_callback = read;
     if (stream) update_internal_state();
@@ -904,7 +912,8 @@ void set_write_callback (function(void|mixed:int) write)
   SSL3_DEBUG_MSG ("SSL.sslfile->set_write_callback (%O)\n", write);
   ENTER (0, 0) {
 #ifdef DEBUG
-    if (explicitly_closed == 1) error ("Doesn't have any connection.\n");
+    if (close_state == STREAM_UNINITIALIZED)
+      error ("Doesn't have any connection.\n");
 #endif
     write_callback = write;
     if (stream) update_internal_state();
@@ -924,7 +933,8 @@ void set_close_callback (function(void|mixed:int) close)
   SSL3_DEBUG_MSG ("SSL.sslfile->set_close_callback (%O)\n", close);
   ENTER (0, 0) {
 #ifdef DEBUG
-    if (explicitly_closed == 1) error ("Doesn't have any connection.\n");
+    if (close_state == STREAM_UNINITIALIZED)
+      error ("Doesn't have any connection.\n");
 #endif
     close_callback = close;
     if (stream) update_internal_state();
@@ -955,7 +965,8 @@ void set_backend (Pike.Backend backend)
 //! Set the backend used for the file callbacks.
 {
   ENTER (0, 0) {
-    if (explicitly_closed) error ("Not open.\n");
+    // Only signal an error after an explicit close() call.
+    if (close_state > 0) error ("Not open.\n");
 
     if (stream) {
       real_backend = backend;
@@ -974,7 +985,8 @@ void set_backend (Pike.Backend backend)
 Pike.Backend query_backend()
 //! Return the backend used for the file callbacks.
 {
-  if (explicitly_closed) error ("Not open.\n");
+  // Only signal an error after an explicit close() call.
+  if (close_state > 0) error ("Not open.\n");
   return real_backend;
 }
 
@@ -982,14 +994,14 @@ string query_address(int|void arg)
 //!
 {
   // Only signal an error after an explicit close() call.
-  if (explicitly_closed) error ("Not open.\n");
+  if (close_state > 0) error ("Not open.\n");
   return stream->query_address(arg);
 }
 
 int is_open()
 //!
 {
-  return !explicitly_closed && stream && stream->is_open();
+  return close_state <= 0 && stream && stream->is_open();
 }
 
 Stdio.File query_stream()
@@ -1123,9 +1135,9 @@ static int direct_write()
   if (!stream) {
     SSL3_DEBUG_MSG ("direct_write: "
 		    "Connection already closed - simulating System.EPIPE\n");
-    // If it was closed explicitly locally then explicitly_closed
-    // would be set and we'd never get here, so we can report it as a
-    // remote close.
+    // If it was closed explicitly locally then close_state would be
+    // set and we'd never get here, so we can report it as a remote
+    // close.
     local_errno = System.EPIPE;
     return 0;
   }
@@ -1254,9 +1266,10 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 	SSL3_DEBUG_MSG ("ssl_read_callback: Got close message\n");
 	update_internal_state();
 
-	if (called_from_real_backend && close_callback && !explicitly_closed) {
+	if (called_from_real_backend && close_callback && !close_state) {
 	  SSL3_DEBUG_MSG ("ssl_read_callback: Calling close callback %O\n",
 			  close_callback);
+	  close_state = CLOSE_CB_CALLED;
 	  RESTORE;
 	  return close_callback (callback_id);
 	}
@@ -1274,8 +1287,9 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 		      "Got abrupt remote close - simulating System.EPIPE\n");
       local_errno = cb_errno = System.EPIPE;
 
-      if (close_callback) {
+      if (close_callback && !close_state) {
 	// Call the close callback to report the error.
+	close_state = CLOSE_CB_CALLED;
 	RESTORE;
 	close_callback (callback_id);
 	return -1;
@@ -1364,7 +1378,7 @@ static int ssl_write_callback (int called_from_real_backend)
 #endif
 
 	  if (!sizeof (write_buffer) &&
-	      (conn->closing == 3 || explicitly_closed == 2)) {
+	      (conn->closing == 3 || close_state == NORMAL_CLOSE)) {
 	    SSL3_DEBUG_MSG ("ssl_write_callback: %s - shutting down\n",
 			    conn->closing == 3 ? "Close messages exchanged" :
 			    "Close message sent");
@@ -1429,9 +1443,10 @@ static int ssl_close_callback (int called_from_real_backend)
     }
     local_errno = cb_errno;
 
-    if (close_callback) {
+    if (close_callback && !close_state) {
       // Call the close callback to report the error.
       RESTORE;
+      close_state = CLOSE_CB_CALLED;
       close_callback (callback_id);
       return -1;
     }
