@@ -258,6 +258,11 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
 	@echo "Run make again"
 	@exit 1
 
+machine.h.in: stamp-h.in
+stamp-h.in: configure.in acconfig.h
+	cd $(SRCDIR) && autoheader
+	echo foo > $(SRCDIR)/stamp-h.in
+
 machine.h: stamp-h
 stamp-h: machine.h.in config.status
 	CONFIG_FILES= CONFIG_HEADERS=machine.h ./config.status
