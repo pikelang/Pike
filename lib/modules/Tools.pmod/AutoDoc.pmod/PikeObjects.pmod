@@ -255,8 +255,9 @@ class PikeObject {
 
   static void create(string t) { objtype = t; }
   static string standardTags() {
-    return xmltag("modifiers",
-                  map(modifiers, xmltag) * "");
+    return sizeof(modifiers)
+      ? xmltag("modifiers", map(modifiers, xmltag) * "")
+      : "";
   }
 
   string xml() {

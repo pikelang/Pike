@@ -11,6 +11,73 @@ static private void processError(string message) {
 }
 
 //========================================================================
+// From source file to XML
+//========================================================================
+
+static object makeWrapper(array(string) modules, object|void child)
+{
+  foreach(reverse(modules) + ({ "" }), string n) {
+    object m = .PikeObjects.Module();
+    m->name = n;
+    if (child)
+      m->AddChild(child);
+    child = m;
+  }
+  return child;
+}
+
+// filename       The file to extract from.
+// pikeMode       Non-zero if it is a Pike file. If the file contains
+//                  C-style doc comments, C-mode is used despite
+//                  pikeMode != 0.
+//   The following parameters used only when pikeMode != 0:
+// type           "class" or "module".
+// name           The name of the class/module.
+// parentModules  The ancestors of the class/module.
+//
+// EXAMPLE: To extract doc for Foo.Bar.Ippa:
+//   string xml = extractXML("lib/modules/Foo.pmod/Bar.pmod/Ippa.pike", 1,
+//     "class", "Ippa", ({ "Foo", "Bar" }));
+//
+string extractXML(string filename, int|void pikeMode, string|void type,
+                  string|void name, array(string)|void parentModules)
+{
+  werror("extracting file %O\n", filename);
+  // extract the file...
+  // check if there are C style doc comments in it,
+  // because if there are, the CExtractor should be
+  // used instead of the PikeExtractor
+  int styleC = !pikeMode;
+  int stylePike = pikeMode;
+
+  string contents = Stdio.File(filename)->read();
+
+  if (pikeMode) {
+    if (search("/*!", contents)) {
+      array(string) a = Parser.Pike.split(contents);
+      // check if it _really_ is a C-style doc comment ...
+      foreach (a, string s)
+        if (strlen(s) >= strlen("/*!*/") && s[0..2] == "/*!")
+          styleC = 1;
+        else if (isDocComment(s))
+          stylePike = 1;
+      if (stylePike && styleC)
+        processError("both C and Pike style doc comments in file " + filename);
+    }
+  }
+  if (styleC) {
+    object m = .CExtractor.extract(contents, filename);
+    return m->xml();
+  }
+  else {
+    object m = (type == "module")
+      ? .PikeExtractor.extractModule(contents, filename, name)
+      : .PikeExtractor.extractClass(contents, filename, name);
+    return makeWrapper(parentModules, m)->xml();
+  }
+}
+
+//========================================================================
 // BUILDING OF THE BIG TREE
 //========================================================================
 
@@ -70,186 +137,8 @@ void mergeTrees(Node dest, Node source) {
     }
 }
 
-static constant docSuffix = ".doc.xml";
-
-static int hasSuffix(string s, string suffix) {
-  return suffix == reverse(reverse(s)[0 .. strlen(suffix) - 1]);
-}
-
-/*
-array(string) getPikeName(string filename) {
-  string name, exts;
-  if (sscanf(filename, "%s.%s", name, exts) != 2)
-    return 0;
-  switch (exts) {
-    case "pike":
-      return ({ "class", filename });
-    case "pmod.pike":
-    case "pmod":
-      return ({ "module", filename });
-    default:
-      if (reverse(reverse(filename)[0..strlen(docSuffix)-1]) == docSuffix)
-        return "doc";
-      return 0;
-  }
-}
-*/
-
 static void reportError(string filename, mixed ... args) {
   werror("[%s]\t%s\n", filename, sprintf(@args));
-}
-
-static Node fromFile(string kind, string name, string path) {
-  string docFilePath = path + docSuffix;
-  object stat = file_stat(path);
-  object doc_stat = file_stat(docFilePath);
-
-  if (doc_stat && doc_stat->mtime > stat->mtime) {
-    werror("parsing %s file %O [CACHED]\n", kind, path);
-    return parse_file(docFilePath)[0];
-  } else {
-    werror("parsing %s file %O\n", kind, path);
-    // extract the file...
-    // check if there are C style doc comments in it,
-    // because if there are, the CExtractor should be
-    // used instead of the PikeExtractor
-    string contents = Stdio.File(path)->read();
-    if (search("/*!", contents)) {
-      int styleC = 0;
-      int stylePike = 0;
-      array(string) a = Parser.Pike.split(contents);
-      // check if it _really_ is a C-style doc comment ...
-      foreach (a, string s)
-        if (strlen(s) >= strlen("/*!*/") && s[0..2] == "/*!")
-          styleC = 1;
-        else if (isDocComment(s))
-          stylePike = 1;
-      if (stylePike && styleC) {
-        reportError(path, "both C style and Pike style comments in one file");
-        return 0;
-      }
-      if (styleC) {
-        object m = 0;
-        mixed err = catch { m = .CExtractor.extract(contents, path); };
-        if (err) {
-          reportError(path, "%O", err);
-          return 0;
-        }
-        return m;
-      }
-    }
-
-    object m = 0;
-    mixed err = catch {
-      m = (kind == "module")
-        ? .PikeExtractor.extractModule(contents, path, name)
-        : .PikeExtractor.extractClass(contents, path, name);
-    };
-
-    if (err) {
-      // some kind of error report that doesnt throw an exception, please...
-      reportError(path, "%O", err);
-      return 0;
-    }
-    string x = m ? m->xml() : "";
-    Stdio.File(docFilePath, "cwt")->write(x);
-    if (m)
-      return parse_input(x)[0];
-    return 0;
-  }
-}
-
-static Node moduleFromFile(string moduleName, string path) {
-  return fromFile("module", moduleName, path);
-}
-
-static Node classFromFile(string className, string path) {
-  werror("classFromFile(className == %O, path == %O)\n", className, path);
-  return fromFile("class", className, path);
-}
-
-static string getPikeName(string filename) {
-  return array_sscanf(filename, "%s.%*s")[0];
-}
-
-// Don't use this to extract documentation, use rootModuleFromDir instead
-static Node moduleFromDir(string moduleName, string directory) {
-  Node module =
-    parse_input("<module name='" + moduleName + "'></module>")[0];
-  werror("module from directory %O\n", directory);
-  array dir = get_dir(directory);
-  if (!dir)
-    werror("ERROR: getdir(%O) returned NULL\n", directory);
-  foreach (dir, string file) {
-    Filesystem.Stat stat  = file_stat(directory + "/" + file);
-    if (!stat)
-      continue;
-    string name = getPikeName(file);
-    if (stat->isdir) {
-      // it's a directory
-      if (hasSuffix(file, ".pmod")) {
-        string name = getPikeName(file);
-        Node subModule = moduleFromDir(name, directory + "/" + file);
-        if (subModule)
-          module->add_child(subModule);
-      }
-    }
-    else if (stat->size > 0) {
-      // it's an ordinary file
-      if (hasSuffix(file, ".pmod")) {
-        Node subModule = moduleFromFile(name, directory + "/" + file);
-        if (subModule)
-          // if it is a "module.pmod", it's not really a submodule!
-          if (file == "module.pmod") {
-            // This will add any <doc></doc> nodes as well!!
-            foreach(subModule->get_children(), Node node)
-              if (node->get_node_type() == XML_ELEMENT)
-                module->add_child(node);
-          }
-          else
-            module->add_child(subModule);
-      }
-      else if (hasSuffix(file, ".pike")) {
-        Node subClass = classFromFile(name, directory + "/" + file);
-        if (subClass)
-          module->add_child(subClass);
-      }
-    }
-  }
-  werror("leaving directory %O\n", directory);
-  return module;
-}
-
-// Find all root modules that are not at the root. They may appear because
-// the C extractor always produces a root module, and is not aware of
-// the directory structure. Some Pike files might be extracted in C
-// mode if they contained the /*! comment.
-static void rearrangeRootModules(Node n, Node root, mapping|void m) {
-  if (!m)
-    m = ([]);
-  foreach (n->get_children(), Node child)
-    if (child->get_any_name() == "module")
-      if (child->get_attributes()["name"] == "")
-        m[child] = 1;
-      else
-        rearrangeRootModules(child, root, m);
-  if (n == root) {
-    array a = indices(m);
-    foreach (a, Node module) {
-      Node parent = module->get_parent();
-      if (parent)
-        parent->remove_child(module);
-    }
-    foreach (a, Node module)
-      mergeTrees(root, module);
-  }
-}
-
-// Use this function on the lib roots
-Node rootModuleFromDir(string directory) {
-  Node root = moduleFromDir("", directory);
-  rearrangeRootModules(root, root);
-  return root;
 }
 
 //========================================================================
