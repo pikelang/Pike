@@ -7,7 +7,7 @@
  *
  */
 
-import Standards.ASN1
+import Standards.ASN1;
 
 object pkcs_7_id = .Identifiers.pkcs_id->append(7);
 object data_id = pkcs_7_id->append(1);
