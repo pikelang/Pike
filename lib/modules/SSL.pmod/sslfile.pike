@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.38 2002/02/09 06:19:56 per-bash Exp $
+/* $Id: sslfile.pike,v 1.39 2002/02/09 08:13:31 per-bash Exp $
  *
  */
 
@@ -460,7 +460,6 @@ void set_nonblocking(function ...args)
 #ifdef SSL3_DEBUG
   werror(sprintf("SSL.sslfile->set_nonblocking(%O)\n", args));
 #endif
-
   if (is_closed || !socket) return;
 
   switch (sizeof(args))
@@ -490,7 +489,7 @@ void set_blocking()
 {
 #ifdef SSL3_DEBUG
   werror("SSL.sslfile->set_blocking\n");
-#endi
+#endif
   blocking = 1;
 
   if( !socket )
