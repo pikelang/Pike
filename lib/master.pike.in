@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.66 1999/11/04 02:35:31 grubba Exp $
+/* $Id: master.pike.in,v 1.67 1999/11/04 17:00:14 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -103,15 +103,16 @@ mapping(string:int) load_time=([]);
 
 #endif
 
-program compile_string(string data, void|string name)
+program compile_string(string data, void|string name, object|void handler)
 {
-  return compile(cpp(data,name||"-"));
+  return compile(cpp(data,name||"-", 0, handler), handler);
 }
 
-program compile_file(string file)
+program compile_file(string file, object|void handler)
 {
   AUTORELOAD_CHECK_FILE(file);
-  return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),file, 1));
+  return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),
+		     file, 1, handler), handler);
 }
 
 
@@ -262,16 +263,21 @@ static program low_findprog(string pname, string ext, object|void handler)
             AUTORELOAD_CHECK_FILE(fname+".o");
 	    return programs[fname]=decode_value(_static_modules.files()->Fd(fname+".o","r")->read(),Codec());
 	  };
-	  if(want_warnings) {
-	    if (handler) {
-	      handler->compile_warning(fname, 0,
-				       sprintf("Decode failed:\n"
-					       "\t%s", err[0]));
-	    } else {
-	      compile_warning(fname, 0,
-			      sprintf("Decode failed:\n"
-				      "\t%s", err[0]));
-	    }
+	  if (handler) {
+	    handler->compile_warning(fname + ".o", 0,
+				     sprintf("Decode failed:\n"
+					     "\t%s", err[0]));
+	  } else {
+	    compile_warning(fname + ".o", 0,
+			    sprintf("Decode failed:\n"
+				    "\t%s", err[0]));
+	  }
+	} else {
+	  if (handler) {
+	    handler->compile_warning(fname + ".o", 0,
+				     "Compiled file is out of date\n");
+	  } else {
+	    compile_warning(fname + ".o", 0, "Compiled file is out of date\n");
 	  }
 	}
       }
@@ -1002,12 +1008,21 @@ void _main(string *orig_argv, string *env)
   if(i >=0) exit(i);
 }
 
+#if constant(thread_local)
+object inhibit_compile_errors = thread_local();
+
+void set_inhibit_compile_errors(mixed f)
+{
+  inhibit_compile_errors->set(f);
+}
+#else /* !constant(thread_local) */
 mixed inhibit_compile_errors;
 
 void set_inhibit_compile_errors(mixed f)
 {
   inhibit_compile_errors=f;
 }
+#endif /* constant(thread_local) */
 
 string trim_file_name(string s)
 {
@@ -1026,15 +1041,24 @@ string trim_file_name(string s)
  */
 void compile_error(string file,int line,string err)
 {
-  if(!inhibit_compile_errors)
+  mixed val;
+  if(! (val = inhibit_compile_errors
+#if constant(thread_local)
+	->get()
+#endif /* constant(thread_local) */
+	))
   {
     werror(sprintf("%s:%d:%s\n",trim_file_name(file),line,err));
   }
-  else if(objectp(inhibit_compile_errors) ||
-	  programp(inhibit_compile_errors) ||
-	  functionp(inhibit_compile_errors))
+  else if(objectp(val) ||
+	  programp(val) ||
+	  functionp(val))
   {
-    inhibit_compile_errors(file,line,err);
+    if (objectp(val) && val->compile_error) {
+      val->compile_error(file, line, err);
+    } else {
+      inhibit_compile_errors(file,line,err);
+    }
   }
 }
 
@@ -1046,10 +1070,18 @@ void compile_error(string file,int line,string err)
  */
 void compile_warning(string file,int line,string err)
 {
-  if(!inhibit_compile_errors)
+  mixed val;
+
+  if(!(val = inhibit_compile_errors
+#if constant(thread_local)
+       ->get()
+#endif /* constant(thread_local) */
+       ))
   {
     if(want_warnings)
       werror(sprintf("%s:%d:Warning: %s\n",trim_file_name(file),line,err));
+  } else if (objectp(val) && val->compile_warning) {
+    val->compile_warning(file, line, err);
   }
 }
 
