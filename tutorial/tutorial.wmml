@@ -3847,8 +3847,10 @@ int write(string <I>data</I>);<br>
 </man_syntax>
 <man_description>
 Write data to file or stream and return how many bytes that were
-actually written. -1 is returned if something went wrong and no
-bytes were written.
+actually written.
+0 is returned in nonblocking mode if it was not possible to write
+anything without blocking.
+-1 is returned if something went wrong and no bytes were written.
 </man_description>
 <man_see>Stdio.File-&gt;read,Stdio.File-&gt;write_oob</man_see>
 </method>
