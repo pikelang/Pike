@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.77 2004/06/14 07:27:36 mast Exp $
+ * $Id: Sql.pike,v 1.78 2004/06/14 07:31:10 mast Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -108,10 +108,8 @@ static program find_dbm(string program_name) {
   program p;
   // we look in Sql.type and Sql.Provider.type.type for a valid sql class.
   p = Sql[program_name];
-  if(!p) {
-    if(Sql->Provider && Sql->Provider[program_name])
-      p = Sql->Provider[program_name][program_name];
-  }
+  if(!p && Sql->Provider && Sql->Provider[program_name])
+    p = Sql->Provider[program_name][program_name];
   return p;
 }
 
