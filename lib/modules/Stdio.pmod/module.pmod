@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.136 2002/03/02 22:04:29 agehall%shadowbyte.com Exp $
+// $Id: module.pmod,v 1.137 2002/03/05 14:17:23 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1740,10 +1740,11 @@ mixed `[](string index)
   }
 }
 
+#define BLOCK 65536
+
 #if constant(system.cp)
 constant cp=system.cp;
 #else
-#define BLOCK 65536
 int cp(string from, string to)
 {
   string data;
@@ -1768,6 +1769,26 @@ int cp(string from, string to)
   return 1;
 }
 #endif
+
+int file_equal (string file_1, string file_2)
+//! Returns nonzero if the given paths are files with identical
+//! content, returns zero otherwise. Zero is also returned for any
+//! sort of I/O error.
+{
+  File f1 = File(), f2 = File();
+  if (!f1->open (file_1, "r") || !f2->open (file_2, "r")) return 0;
+  function(int,int|void:string) f1_read = f1->read, f2_read = f2->read;
+  string d1, d2;
+  do {
+    d1 = f1_read (BLOCK);
+    if (!d1) return 0;
+    d2 = f2_read (BLOCK);
+    if (d1 != d2) return 0;
+  } while (sizeof (d1) == BLOCK);
+  f1->close();
+  f2->close();
+  return 1;
+}
 
 static void call_cp_cb(int len,
 		       function(int, mixed ...:void) cb, mixed ... args)
