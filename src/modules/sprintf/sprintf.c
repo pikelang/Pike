@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.17 1998/04/23 23:44:09 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.18 1998/04/28 07:50:03 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -414,12 +414,12 @@ INLINE static int do_one(struct format_info *f)
     VAR=arg; \
     arg=0; \
   }else{ \
-    if(!(num_arg--)) \
+    if(argument >= num_arg) \
     { \
       sprintf_error("Too few arguments to sprintf.\n"); \
       break; /* make gcc happy */ \
     } \
-    VAR=lastarg=argp++; \
+    VAR=lastarg=argp+(argument++); \
   }
 
 #define GET(VAR,PIKE_TYPE,TYPE_NAME,EXTENSION) \
@@ -428,7 +428,7 @@ INLINE static int do_one(struct format_info *f)
     GET_SVALUE(tmp_); \
     if(tmp_->type!=PIKE_TYPE) \
     { \
-      sprintf_error("Expected %s, got %s.\n",TYPE_NAME, \
+      sprintf_error("Wrong type for argument %d: expected %s, got %s.\n",argument+1,TYPE_NAME, \
 	get_name_of_type(tmp_->type)); \
       break; /* make gcc happy */ \
     } \
@@ -480,6 +480,7 @@ static string low_pike_sprintf(char *format,
 			       string prefix,
 			       int nosnurkel)
 {
+  int argument=0;
   int tmp,setwhat,pos,d,e;
   char *a,*begin;
   char buffer[40];
