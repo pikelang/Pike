@@ -81,4 +81,7 @@ void create()
   add_constant("listp",multisetp);
   add_constant("mklist",mkmultiset);
   add_constant("aggregage_list",aggregate_multiset);
+#if efun(gethostname)
+  add_constant("query_host_name",gethostname);
+#endif
 }
