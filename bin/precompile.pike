@@ -87,8 +87,9 @@
  *
  * AUTOMATIC ALLOCATION AND DEALLOCATION OF CONSTANT STRINGS
  *   You can use the syntax MK_STRING("my string") to refer to
- *   a struct pike_string with the content "my string". Note
- *   that this syntax can not be used in macros.
+ *   a struct pike_string with the content "my string", or the
+ *   syntax MK_STRING_SVALUE("my string") for the same, but a
+ *   full svalue. Note that this syntax can not be used in macros.
  *
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
@@ -162,6 +163,8 @@ mapping(string:string) strings = ([
 ]);
 int last_str_id = 0;
 array(string) stradd = ({});
+int last_svalue_id = 0;
+mapping(string:string) svalues = ([]);
 
 string parse_string(string str)
 {
@@ -178,7 +181,7 @@ string allocate_string(string orig_str)
   if (str_sym) return str_sym;
 
   if (String.width(str)>8) {
-    error("Automatic allocation of wide strings with MK_STRING() not supported yet.\n");
+    error("Automatic allocation of wide strings with MK_STRING() or MK_STRING_SVALUE() not supported yet.\n");
   }
   int str_id = last_str_id++;
   stradd += ({
@@ -190,6 +193,22 @@ string allocate_string(string orig_str)
   });
   str_sym = strings[str] = sprintf("module_strings[%d]", str_id);
   return str_sym;
+}
+
+string allocate_string_svalue(string orig_str)
+{
+  string str_sym = allocate_string(orig_str);
+  string svalue_sym = svalues[str_sym];
+  if (svalue_sym) return svalue_sym;
+  int svalue_id = last_svalue_id++;
+  stradd += ({
+    sprintf("module_svalues[%d].type = PIKE_T_STRING;\n"
+	    "module_svalues[%d].subtype = 0;\n"
+	    "copy_shared_string(module_svalues[%d].u.string, %s);\n",
+	    svalue_id, svalue_id, svalue_id, str_sym),
+  });
+  svalue_sym = svalues[str_sym] = sprintf("(module_svalues+%d)", svalue_id);
+  return svalue_sym;
 }
 
 /*
@@ -606,7 +625,7 @@ class PikeType
 	case "object":  return "tObj";
 	default:
 	  return sprintf("tName(%O, tObjImpl_%s)",
-			 ret, upper_case(ret));
+			 ret, replace(upper_case(ret), ".", "_"));
       }
     }
 
@@ -2197,6 +2216,13 @@ array(PC.Token) allocate_strings(array(PC.Token) tokens)
       tokens = tokens[..i] + tokens[i+2..];
     }
   }
+  while ((i = search(tokens, PC.Token("MK_STRING_SVALUE"), i+1)) != -1) {
+    // werror("MK_STRING_SVALUE found: %O\n", tokens[i..i+10]);
+    if (arrayp(tokens[i+1]) && (sizeof(tokens[i+1]) == 3)) {
+      tokens[i] = PC.Token(allocate_string_svalue((string)tokens[i+1][1]));
+      tokens = tokens[..i] + tokens[i+2..];
+    }
+  }
   return tokens;
 }
 
@@ -2236,6 +2262,20 @@ int main(int argc, array(string) argv)
 	      "%s};\n",
 	      last_str_id, "  NULL,\n"*last_str_id),
     });
+
+    // Same for svalues.
+    // NOTE: This code needs changing in several aspects if
+    //       support for other svalues than strings is added.
+    if (last_svalue_id) {
+      tmp->exitfuncs += ({
+	sprintf("free_svalues(module_svalues, %d, BIT_STRING);\n",
+		last_svalue_id),
+      });
+      tmp->declarations += ({
+	sprintf("static struct svalue module_svalues[%d];\n",
+		last_svalue_id),
+      });
+    }
   }
 
   x=tmp->code;
