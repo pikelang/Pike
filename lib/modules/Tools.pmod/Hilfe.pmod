@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.89 2002/07/14 11:23:31 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.90 2002/10/10 02:40:58 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -811,6 +811,8 @@ private class Expression {
       return -1;
     if( notype[ t ] )
       return -1;
+
+    if( t=="." ) position++;
 
     for(; position<sizeof(positions); position++) {
       if( notype[ `[](position+1) ] )
