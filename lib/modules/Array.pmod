@@ -42,7 +42,7 @@ mixed filter(mixed arr, mixed fun, mixed ... args)
     r=([]);
     for(e=0;e<sizeof(ret);e++) if(ret[e]) r[i[e]]=v[e];
 
-    return ret;
+    return r;
   }else{
     int d;
     ret=map(arr,fun,@args);
