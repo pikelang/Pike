@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.145 2002/05/13 20:43:17 grubba Exp $");
+RCSID("$Id: encode.c,v 1.146 2002/05/14 12:13:12 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2742,13 +2742,14 @@ static void decode_value2(struct decode_data *data)
 	  if(p->num_linenumbers && p->linenumbers &&
 	     EXTRACT_UCHAR(p->linenumbers)==127)
 	  {
-	    char *foo;
-	    extern int get_small_number(char **);
-	    foo=p->linenumbers+1;
-	    foo+=strlen(foo)+1;
+	    char *foo = p->linenumbers + 1;
+	    int len = get_small_number(&foo);
+	    int shift = *foo;
+	    char *fname = ++foo;
+	    foo += len << shift;
 	    get_small_number(&foo); /* pc offset */
-	    debug_malloc_name(p, p->linenumbers+1,
-			      get_small_number(&foo));
+	    /* FIXME: Dmalloc doesn't support wide filenames. */
+	    debug_malloc_name(p, fname, get_small_number(&foo));
 	  }
 #endif
 
