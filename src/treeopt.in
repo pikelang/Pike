@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.60 2001/03/20 12:48:08 grubba Exp $
+// $Id: treeopt.in,v 1.61 2001/05/18 19:38:10 grubba Exp $
 //
 // The tree optimizer
 //
@@ -814,7 +814,7 @@ F_FOREACH(F_VAL_LVAL(0, *), -):
 F_LOOP(0, -):
   F_POP_VALUE($0, -);
 
-// forech(arr ; ; val) body; -> foreach(arr, val) body;
+// foreach(arr ; ; val) body; -> foreach(arr, val) body;
 F_FOREACH(F_VAL_LVAL(0[ pike_types_le($$->type, array_type_string) ],
 		     ':'(-, 1) ), 2):
   F_FOREACH(F_VAL_LVAL($0, $1), $2);
@@ -832,6 +832,40 @@ F_FOREACH(F_VAL_LVAL(0, ':'(-, -)), 1):
     $$ = mknode(F_LOOP, mkefuncallnode("sizeof", $0), $1);
   }
   ;
+
+// foreach(str/"x", ...)  ==>  foreach(String.SplitIterator(str, 'x'), ...)
+F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
+			     [$$->u.sval.type == T_FUNCTION]
+			     [$$->u.sval.subtype == FUNCTION_BUILTIN]
+			     [$$->u.sval.u.efun->function == f_divide],
+			     F_ARG_LIST(0[$$->type == string_type_string],
+					1 = F_CONSTANT
+					[$$->u.sval.type == T_STRING]
+					[$$->u.sval.u.string->len == 1])),
+		     2), 3):
+{
+  extern struct program *string_split_iterator_program;
+  node *vars;
+  p_wchar2 split = $1->u.sval.u.string->str[0];
+
+  ADD_NODE_REF2($2,
+    if ($2->token == ':') {
+      vars = $2;
+    } else {
+      /* Old-style. Convert to new-style. */
+      vars = mknode(':', NULL, $2);
+    }
+  );
+
+  $$ = mknode(F_FOREACH,
+	      mknode(F_VAL_LVAL,
+		     mkapplynode(mkprgnode(string_split_iterator_program),
+				 mknode(F_ARG_LIST, $0,
+					mkintnode(split))),
+		     vars),
+	      $3);
+}
+;
 
 F_FOR(-, *):
   -;
