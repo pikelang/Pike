@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.118 2000/04/21 23:07:10 hubbe Exp $");
+RCSID("$Id: object.c,v 1.119 2000/04/22 02:25:10 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1222,6 +1222,12 @@ void gc_mark_all_objects(void)
     if(gc_is_referenced(o))
       gc_mark_object_as_referenced(o);
 
+#ifdef PIKE_DEBUG
+  if(d_flag)
+    for(o=objects_to_destruct;o;o=o->next)
+      debug_malloc_touch(o);
+#endif
+
 }
 
 int gc_destroy_all_unreferenced_objects(void)
@@ -1269,23 +1275,6 @@ int gc_free_all_unreferenced_objects(void)
 {
   int n = 0;
   struct object *o,*next;
-
-#ifdef PIKE_DEBUG
-  if(d_flag)
-  {
-    for(o=first_object;o;o=next)
-    {
-      if(!gc_do_free(o))
-      {
-	add_ref(o);
-	gc_check_object(o);
-	SET_NEXT_AND_FREE(o,free_object);
-      }else{
-	next=o->next;
-      }
-    }
-  }
-#endif
 
   for(o=first_object;o;o=next)
   {
