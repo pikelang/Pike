@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.128 2003/11/14 10:26:43 mast Exp $
+|| $Id: cpp.c,v 1.129 2003/11/20 13:46:34 grubba Exp $
 */
 
 #include "global.h"
@@ -1529,6 +1529,10 @@ static int do_safe_index_call(struct pike_string *s)
   UNSETJMP(recovery);
   return res;
 }
+
+/*! @namespace predef:: */
+/*! @decl import cpp:: */
+/*! @endnamespace */
 
 /*! @namespace cpp:: */
 
