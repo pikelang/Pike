@@ -451,7 +451,7 @@ object(TocBuilder) toker;
 
 string name_to_link(string x)
 {
-   return replace(x,({"->","-&gt;"}),({".","."}));
+   return replace(x,({"->","-&gt;", "#"}),({".",".",""}));
 }
 
 string name_to_link_exp(string x)
