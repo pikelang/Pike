@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.h,v 1.15 2002/04/08 00:56:12 mast Exp $
+ * $Id: ia32.h,v 1.16 2002/05/10 22:42:17 mast Exp $
  */
 
 /* #define ALIGN_PIKE_JUMPS 8 */
@@ -76,9 +76,19 @@ void ia32_update_absolute_pc(INT32 pc_offset);
     if(ia32_reg_eax != REG_IS_FP)					\
       MOV2EAX(Pike_interpreter.frame_pointer);				\
     ia32_reg_eax=REG_IS_FP;						\
-    if (ia32_prev_stored_pc < 0) 					\
+    if (ia32_prev_stored_pc < 0) {					\
+      DO_IF_DEBUG(							\
+	if (a_flag >= 60)						\
+	  fprintf (stderr, "pc %d  update pc absolute\n", tmp);		\
+      );								\
       ia32_update_absolute_pc(tmp);					\
-    else {								\
+    }									\
+    else if (tmp - ia32_prev_stored_pc) {				\
+      DO_IF_DEBUG(							\
+	if (a_flag >= 60)						\
+	  fprintf (stderr, "pc %d  update pc relative: %d\n", tmp,	\
+		   tmp - ia32_prev_stored_pc);				\
+      );								\
       add_to_program(0x83); /* addl $nn, yy(%eax) */			\
       if (OFFSETOF(pike_frame, pc)) {					\
 	add_to_program(0x40);						\
@@ -88,8 +98,22 @@ void ia32_update_absolute_pc(INT32 pc_offset);
 	add_to_program(0x0);						\
       add_to_program(tmp - ia32_prev_stored_pc);			\
     }									\
+    else {								\
+      DO_IF_DEBUG(							\
+	if (a_flag >= 60)						\
+	  fprintf (stderr, "pc %d  update pc - already up-to-date\n", tmp); \
+      );								\
+    }									\
     ia32_prev_stored_pc = tmp;						\
   } while(0)
+
+#define ADJUST_PIKE_PC(pc) do {						\
+    ia32_prev_stored_pc = pc;						\
+    DO_IF_DEBUG(							\
+      if (a_flag >= 60)							\
+	fprintf (stderr, "pc %d  adjusted\n", ia32_prev_stored_pc);	\
+    );									\
+  } while (0)
 
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
