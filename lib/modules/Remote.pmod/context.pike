@@ -10,25 +10,37 @@ int counter;
 mapping id2val = ([ ]);
 mapping val2id = ([ ]);
 mapping other  = ([ ]);
+mapping val2other = ([ ]);
 
 string id_for(mixed thing)
 {
   string id;
-  if(id=val2id[thing])
+  if(id=val2id[thing]) {
+    DEBUGMSG(sprintf("id_for(%O) found locally: %s\n", thing, id));
     return id;
+  }
 
-  if(server_context && (id=server_context->id_for(thing)))
+  if(id=val2other[thing]) {
+    DEBUGMSG(sprintf("id_for(%O) found remote: %s\n", thing, id));
     return id;
+  }
+
+  if(server_context && (id=server_context->id_for(thing))) {
+    DEBUGMSG(sprintf("id_for(%O) found in server_context: %s\n", thing, id));
+    return id;
+  }
   
   val2id[thing] = id = (base+(counter++));
   id2val[id] = thing;
+  DEBUGMSG(sprintf("id_for(%O) not found; added %s locally\n", thing, id));
   return id;
 }
 
 object object_for(string id)
 {
   object o;
-  if(o=id2val[id]) {
+  int destructed = zero_type (o = id2val[id]) != 1;
+  if(o) {
     DEBUGMSG("object_for(" + id + ") found locally\n");
     return o;
   }
@@ -41,15 +53,21 @@ object object_for(string id)
     val2id[o]=id;
     return id2val[id]=o;
   }
+  if(destructed) {
+    DEBUGMSG("object_for(" + id + ") found destructed locally\n");
+    return 0;
+  }
   DEBUGMSG("object_for(" + id + ") not found; making remote object\n");
-  return other[id] = Obj(id, con, this_object());
+  o = Obj(id, con, this_object());
+  val2other[o] = id;
+  return other[id] = o;
 }
 
 object function_for(string id)
 {
   object o;
-  if(o=id2val[id]) {
-    DEBUGMSG("function_for(" + id + ") found locally\n");
+  if(zero_type (o=id2val[id]) != 1) {
+    DEBUGMSG("function_for(" + id + ") found " + (o ? "" : "destructed ") + "locally\n");
     return o;
   }
   if(o=other[id]) {
@@ -57,7 +75,9 @@ object function_for(string id)
     return o;
   }
   DEBUGMSG("function_for(" + id + ") not found; making remote object\n");
-  return other[id] = Call(0, id, con, this_object(), 0);
+  o = Call(0, id, con, this_object(), 0);
+  val2other[o] = id;
+  return other[id] = o;
 }
 
 // Encoding:
@@ -184,6 +204,7 @@ function decode_call(array data)
 
 void add(object o, string id)
 {
+  DEBUGMSG(id + " added locally\n");
   id2val[id] = o;
   val2id[o]  = id;
 }
