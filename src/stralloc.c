@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.36 1998/05/25 10:38:46 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.37 1998/05/25 19:38:31 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -380,6 +380,7 @@ void check_string(struct pike_string *s)
 void verify_shared_strings_tables(void)
 {
   unsigned INT32 e, h, num=0;
+  unsigned INT32 orig_full_hash = full_hash_value;
   struct pike_string *s;
 
   for(e=0;e<htable_size;e++)
@@ -425,6 +426,7 @@ void verify_shared_strings_tables(void)
   }
   if(num != num_strings)
     fatal("Num strings is wrong %d!=%d\n",num,num_strings);
+  full_hash_value = orig_full_hash;
 }
 
 int safe_debug_findstring(struct pike_string *foo)
