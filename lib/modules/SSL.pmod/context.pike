@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: context.pike,v 1.15 2002/10/25 20:01:31 nilsson Exp $
+/* $Id: context.pike,v 1.16 2002/11/25 05:51:05 nilsson Exp $
  *
  * Keeps track of global data for an SSL server,
  * such as preferred encryption algorithms and session cache.
@@ -165,12 +165,4 @@ void create()
   session_cache = ([ ]);
   /* Backwards compatibility */
   rsa_mode();
-}
-
-string _sprintf(int t) {
-  switch(t) {
-  case 't': return "SSL.context";
-  case 'O': return "SSL.context()";
-  }
-  error("Can not output SSL.context as %c.\n", t);
 }
