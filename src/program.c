@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.355 2001/07/17 08:33:23 hubbe Exp $");
+RCSID("$Id: program.c,v 1.356 2001/07/18 19:07:25 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4081,24 +4081,31 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
   static INT32 shift;
   ptrdiff_t offset;
 
+  linep[0] = 0;
+
   if (prog == 0) {
     struct pike_string *unknown_program;
-    *linep = 0;
     MAKE_CONSTANT_SHARED_STRING(unknown_program, "Unknown program");
     return unknown_program;
   }
+
+  if(prog == Pike_compiler->new_program)
+  {
+    struct pike_string *optimizer;
+    MAKE_CONSTANT_SHARED_STRING(optimizer, "Optimizer");
+    return optimizer;
+  }
+
 #ifdef PIKE_USE_MACHINE_CODE
   offset = (long) pc;
 #else
   offset = pc - prog->program;
 #endif
 
-  if(prog == Pike_compiler->new_program)
-  {
-    struct pike_string *optimizer;
-    linep[0]=0;
-    MAKE_CONSTANT_SHARED_STRING(optimizer, "Optimizer");
-    return optimizer;
+  if ((offset > (ptrdiff_t)prog->num_program) || (offset < 0)) {
+    struct pike_string *not_found;
+    MAKE_CONSTANT_SHARED_STRING(not_found, "Line not found");
+    return not_found;
   }
 
   if(prog->id != pid || offset < off)
@@ -4109,12 +4116,6 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
     file = 0;
   }else{
     goto fromold;
-  }
-
-  if ((offset > (ptrdiff_t)prog->num_program) || (offset < 0)) {
-    struct pike_string *res = begin_wide_shared_string(len, shift);
-    memcpy(res->str, file, len<<shift);
-    return end_shared_string(res);
   }
 
   while(cnt < prog->linenumbers + prog->num_linenumbers)
@@ -5581,5 +5582,20 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor)
 void make_program_executable(struct program *p)
 {
   mprotect(p->program, p->num_program, PROT_EXEC | PROT_READ | PROT_WRITE);
+#ifdef sparc
+  {
+    register INT32 cnt = 0;
+    register INT32 max = (p->num_program+1)*sizeof(INT32);
+    register void *program = p->program;
+
+    do {
+      __asm__ __volatile__ ("	flush %0+%1"
+			    :
+			    : "r" (program), "r" (cnt)
+			    : "memory");
+      cnt += 8;
+    } while (cnt < max);
+  }
+#endif /* sparc */
 }
 #endif

@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.79 2001/07/18 17:42:36 grubba Exp $
+ * $Id: interpret_functions.h,v 1.80 2001/07/18 19:07:25 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -914,14 +914,20 @@ OPCODE0(F_POP_TO_MARK, "pop to mark", {
  * output. */
 OPCODE0_TAIL(F_CLEANUP_SYNCH_MARK, "cleanup synch mark", {
   OPCODE0(F_POP_SYNCH_MARK, "pop synch mark", {
-    if (*--Pike_mark_sp != Pike_sp && d_flag) {
-      ptrdiff_t should = *Pike_mark_sp - Pike_interpreter.evaluator_stack;
-      ptrdiff_t is = Pike_sp - Pike_interpreter.evaluator_stack;
-      if (Pike_sp - *Pike_mark_sp > 0) /* not always same as Pike_sp > *Pike_mark_sp */
+    if (d_flag) {
+      if (Pike_mark_sp <= Pike_interpreter.mark_stack) {
+	fatal("Mark stack out of synch - 0x%08x <= 0x%08x.\n",
+	      DO_NOT_WARN((unsigned long)Pike_mark_sp),
+	      DO_NOT_WARN((unsigned long)Pike_interpreter.mark_stack));
+      } else if (*--Pike_mark_sp != Pike_sp) {
+	ptrdiff_t should = *Pike_mark_sp - Pike_interpreter.evaluator_stack;
+	ptrdiff_t is = Pike_sp - Pike_interpreter.evaluator_stack;
+	if (Pike_sp - *Pike_mark_sp > 0) /* not always same as Pike_sp > *Pike_mark_sp */
 	/* Some attempt to recover, just to be able to report the backtrace. */
-	pop_n_elems(Pike_sp - *Pike_mark_sp);
-      fatal("Stack out of synch - should be %ld, is %ld.\n",
-	    DO_NOT_WARN((long)should), DO_NOT_WARN((long)is));
+	  pop_n_elems(Pike_sp - *Pike_mark_sp);
+	fatal("Stack out of synch - should be %ld, is %ld.\n",
+	      DO_NOT_WARN((long)should), DO_NOT_WARN((long)is));
+      }
     }
   });
 });
