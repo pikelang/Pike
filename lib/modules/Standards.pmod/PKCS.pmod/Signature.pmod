@@ -4,7 +4,11 @@
 
 #pike __REAL_VERSION__
 
-/* Construct a PKCS-1 digestinfo */
+//! Construct a PKCS-1 digestinfo
+//! @param msg
+//!   message to digest
+//! @param hash
+//!   crypto hash object such as <ref to="Crypto.sha</ref> or <ref to="Crypto.md5">Crypto md5</ref>
 string build_digestinfo(string msg, object hash)
 {
   string d = hash->update(msg)->digest();
