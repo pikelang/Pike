@@ -1,3 +1,8 @@
+Fri Jan 17 10:59:26 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* master.pike, simulate.pike, getopt.pre.pike: cleaned up some
+	  bugs from the 17th
+
 Wed Jan 15 16:56:09 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* main.c, master.pike: --version implemented
