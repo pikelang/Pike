@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.78 2000/08/11 13:22:38 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.79 2000/08/11 13:29:02 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -84,7 +84,7 @@ void reverse(char *memory, INT32 nitems, INT32 size)
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
 #else
-  switch( (((unsigned long)memory) % size) ? 0 : size)
+  switch( (((size_t)memory) % size) ? 0 : size)
 #endif
   {
     DOSIZE(1,B1_T)
@@ -141,7 +141,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
 #else
-  switch( (((unsigned long)memory) % size) ? 0 : size )
+  switch( (((size_t)memory) % size) ? 0 : size )
 #endif
  {
    DOSIZE(1,B1_T)
@@ -300,7 +300,7 @@ void init_memsearch(struct mem_searcher *s,
       s->method=memchr_and_memcmp;
     }else{
       INT32 tmp, h;
-      unsigned INT32 hsize, e, max;
+      size_t hsize, e, max;
       unsigned char *q;
       struct link *ptr;
 
@@ -404,7 +404,7 @@ char *memory_search(struct mem_searcher *s,
       
       end=haystack+haystacklen;
       q=haystack + s->max - sizeof(INT32);
-      q=(char *)( ((long)q) & -sizeof(INT32));
+      q=(char *)( ((ptrdiff_t)q) & -sizeof(INT32));
       for(;q<=end-sizeof(INT32);q+=s->max)
       {
 	h=tmp=*(INT32 *)q;
