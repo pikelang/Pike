@@ -18,6 +18,7 @@ constant filter=predef::filter;
 constant map=predef::map;
 constant permute = __builtin.permute;
 constant enumerate = predef::enumerate;
+constant Iterator = __builtin.array_iterator;
 
 //! @[reduce()] sends the first two elements in @[arr] to @[fun],
 //! then the result and the next element in @[arr] to @[fun] and
