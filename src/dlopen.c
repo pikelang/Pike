@@ -90,7 +90,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.23 2001/09/20 19:00:20 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.24 2001/09/21 21:20:49 hubbe Exp $");
 
 #endif
 
@@ -353,7 +353,9 @@ struct DLHandle
   int flags;
   struct DLHandle *next;
 
+  size_t codesize;
   size_t memsize;
+  void *code;
   void *memory;
   struct Htable *htable;
   struct DLLList *dlls;
@@ -453,9 +455,12 @@ static int append_dlllist(struct DLLList **l,
                 (i1((X)+2)<<16)|(i1((X)+3)<<24))
 
 #define COFF_SECT_NOLOAD (1<<1)
-#define COFF_SECT_MEM_DISCARDABLE (1<<25)
-#define COFF_SECT_MEM_LNK_REMOVE (1<<11)
 #define COFF_SECT_LNK_INFO 0x200
+#define COFF_SECT_MEM_LNK_REMOVE (1<<11)
+#define COFF_SECT_MEM_DISCARDABLE (1<<25)
+#define COFF_SECT_MEM_EXECUTE (1<<29)
+#define COFF_SECT_MEM_READ (1<<30)
+#define COFF_SECT_MEM_WRITE (1<<31)
 
 #define COFF_SYMBOL_EXTERN 2
 #define COFF_SYMBOL_WEAK_EXTERN 105
@@ -724,8 +729,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
 			      int num)
 {
   int e=0,s,r;
-  size_t ptr;
+  size_t memptr,codeptr;
   size_t num_exports=0;
+  int data_protection_mode = PAGE_READWRITE;
 
 #define data (tmp+e)
 #define SYMBOLS(X) (*(struct COFFSymbol *)(18 * (X) + (char *)data->symbols))
@@ -738,6 +744,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
   if(!num) return 0;
 
   ret->memsize=0;
+  ret->codesize=0;
 
   /* Initialize tables and count how much memory is needed */
 #ifdef DLDEBUG
@@ -790,15 +797,32 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #ifdef DLDEBUG
       fprintf(stderr,"DL: section[%d,%d], %d bytes, align=%d (0x%x)\n",e,s,data->sections[s].raw_data_size,align+1,data->sections[s].characteristics);
 #endif
-      ret->memsize+=align;
-      ret->memsize&=~align;
-      ret->memsize+=data->sections[s].raw_data_size;
+      if(data->sections[s].characteristics & COFF_SECT_MEM_WRITE)
+      {
+	if(data->sections[s].characteristics & COFF_SECT_MEM_EXECUTE)
+	{
+	  /* Data section needs to be executable */
+	  data_protection_mode=PAGE_EXECUTE_READWRITE;
+	}
+	  
+	ret->memsize+=align;
+	ret->memsize&=~align;
+	ret->memsize+=data->sections[s].raw_data_size;
+      }else{
+	/* We place all non-writable sections in the code segment
+	 * to protect it from accidental writing.
+	 */
+	ret->codesize+=align;
+	ret->codesize&=~align;
+	ret->codesize+=data->sections[s].raw_data_size;
+      }
     }
     if(data->coff->num_symbols)
     {
       /* Assumes 32 bit pointers! */
-      ret->memsize+=data->coff->num_symbols * 4 + 3;
-      ret->memsize&=~3;
+      /* symbol table in code section as well */
+      ret->codesize+=data->coff->num_symbols * 4 + 3;
+      ret->codesize&=~3;
     }
 
     /* Count export symbols */
@@ -840,16 +864,16 @@ static int dl_load_coff_files(struct DLHandle *ret,
   fprintf(stderr,"DL: allocating %d bytes\n",ret->memsize);
 #endif
 
-  /* Allocate executable memory */
+  /* Allocate data memory */
   ret->memory=VirtualAlloc(0,
 			   ret->memsize,
 			   MEM_COMMIT,
-			   PAGE_EXECUTE_READWRITE);
+			   data_protection_mode);
 
   if(!ret->memory && ret->memsize)
   {
     static char buf[300];
-    sprintf(buf, "Failed to allocate %d bytes RWX-memory.", ret->memsize);
+    sprintf(buf, "Failed to allocate %d bytes RW(X)-memory.", ret->memsize);
 #ifdef DLDEBUG
     fprintf(stderr, "%s\n", buf);
 #endif
@@ -857,10 +881,26 @@ static int dl_load_coff_files(struct DLHandle *ret,
     return -1;
   }
 
+  ret->code=VirtualAlloc(0,
+			 ret->codesize,
+			 MEM_COMMIT,
+			 PAGE_READWRITE); /* changed later */
+
+  if(!ret->code && ret->codesize)
+  {
+    static char buf[300];
+    sprintf(buf, "Failed to allocate %d bytes executable memory.", ret->memsize);
+#ifdef DLDEBUG
+    fprintf(stderr, "%s\n", buf);
+#endif
+    dlerr=buf;
+    return -1;
+  }
+
+
 #ifdef DLDEBUG
   fprintf(stderr,"DL: Got %d bytes RWX memory at %p\n",ret->memsize,ret->memory);
 #endif
-
 
   /* Create a hash table for exported symbols */
   ret->htable=alloc_htable(num_exports?num_exports:1);
@@ -874,7 +914,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif
 
   /* Copy code into executable memory */
-  ptr=0;
+  memptr=0;
+  codeptr=0;
   for(e=0;e<num;e++)
   {
     data->section_addresses =
@@ -890,10 +931,21 @@ static int dl_load_coff_files(struct DLHandle *ret,
       align=(data->sections[s].characteristics>>20) & 0xf;
       if(align)
 	align=(1<<(align-1))-1;
-      ptr+=align;
-      ptr&=~align;
 
-      data->section_addresses[s]=(char *)ret->memory + ptr;
+      if(data->sections[s].characteristics & COFF_SECT_MEM_WRITE)
+      {
+	memptr+=align;
+	memptr&=~align;
+
+	data->section_addresses[s]=(char *)ret->memory + memptr;
+	memptr+=data->sections[s].raw_data_size;
+      }else{
+	codeptr+=align;
+	codeptr&=~align;
+
+	data->section_addresses[s]=(char *)ret->code + codeptr;
+	codeptr+=data->sections[s].raw_data_size;
+      }
 #ifdef DLDEBUG
       fprintf(stderr,"DL: section[%d]=%p { %d, %d }\n",s,
 	      data->section_addresses[s],
@@ -904,23 +956,22 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
       if(data->sections[s].ptr2_raw_data)
       {
-	memcpy((char *)ret->memory + ptr,
+	memcpy((char *)data->section_addresses[s],
 	       data->buffer + data->sections[s].ptr2_raw_data,
 	       data->sections[s].raw_data_size);
       }else{
-	memset((char *)ret->memory + ptr,
+	memset((char *)data->section_addresses[s],
 	       0,
 	       data->sections[s].raw_data_size);
       }
-      ptr+=data->sections[s].raw_data_size;
     }
 
     if(data->coff->num_symbols)
     {
       /* Assumes 32 bit pointers! */
-      ptr+=3;
-      ptr&=~3;
-      data->symbol_addresses=(char **)( ((char *)ret->memory) + ptr);
+      codeptr+=3;
+      codeptr&=~3;
+      data->symbol_addresses=(char **)( ((char *)ret->code) + codeptr);
       MEMSET(data->symbol_addresses,
 	     0,
 	     data->coff->num_symbols * 4);
@@ -928,7 +979,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
       fprintf(stderr,"DL: data->symbol_addresses=%p\n",
 	      data->symbol_addresses);
 #endif
-      ptr+=data->coff->num_symbols * 4;
+      codeptr+=data->coff->num_symbols * 4;
     }
 
 
@@ -956,13 +1007,13 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	  case 7: align=3; break;
 	  default: align=7;
 	}
-	ptr+=align;
-	ptr&=~align;
-	data->symbol_addresses[s]=((char *)ret->memory + ptr);
-	memset((char *)ret->memory + ptr,
+	memptr+=align;
+	memptr&=~align;
+	data->symbol_addresses[s]=((char *)ret->memory + memptr);
+	memset((char *)data->symbol_addresses[s],
 	       0,
 	       SYMBOLS(s).value);
-	ptr+=SYMBOLS(s).value;
+	memptr+=SYMBOLS(s).value;
       }
     }
 
@@ -1239,8 +1290,19 @@ static int dl_load_coff_files(struct DLHandle *ret,
   }
 
   for(e=0;e<num;e++)
-  {
     free((char *) data->section_addresses);
+
+  if(ret->code)
+  {
+    DWORD oldprotect;
+    if(!VirtualProtect(ret->code,
+		       ret->codesize,
+		       PAGE_EXECUTE_READ,
+		       &oldprotect))
+    {
+      dlerr="Failed to set memory executable";
+      return -1;
+    }
   }
 
   return 0; /* Done (I hope) */
@@ -1429,7 +1491,8 @@ int dlclose(struct DLHandle *h)
     if(h->filename) free(h->filename);
     if(h->htable) htable_free(h->htable,0);
     if(h->dlls) dlllist_free(h->dlls);
-    if(h->memory) VirtualFree(h->memory,0,MEM_RELEASE);
+    if(h->memory) VirtualFree(h->memory,h->memsize,MEM_RELEASE);
+    if(h->code) VirtualFree(h->code,h->codesize,MEM_RELEASE);
     free((char *)h);
   }
   return 0;
