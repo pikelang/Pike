@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.49 2003/01/03 18:24:57 grubba Exp $
+|| $Id: jvm.c,v 1.50 2003/01/03 19:37:26 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.49 2003/01/03 18:24:57 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.50 2003/01/03 19:37:26 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1623,7 +1623,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 /* NB: Assumes that pointers are 64bit! */
 
 struct cpu_context {
-  unsigned void *code[8];
+  unsigned void *code[6];
 };
 
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
@@ -1634,19 +1634,23 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
   /* The stub gets 3 parameters in $16, $17 and $18,
    * and must shift them one register to $17, $18 and $19,
    * so that $16 can be set to data, and then jump to dispatch.
+   *
+   * NB: The Alpha calling conventions seem to say that $27
+   *     should contain a pointer to the function on entry.
    */
 
-  /* ro:
+  /*   .text
    *   .quad data
    *   .quad dispatch
    * entry:
    *   mov $18, $19
-   *   ldq $1, ro
+   *   ldq $1, -16($27)	;; Read data temporarily into $1
    *   mov $17, $18
-   *   ldq $2, ro+8
+   *   ldq $27, -8($27)	;; Read dispatch into $27
    *   mov $16, $17
-   *   mov $1, $16
-   *   jmp ($2)
+   *   mov $1, $16	;; Move data into $16
+   *   jmp ($27)	;; Call dispatch
+   *   nop
    */
 
   ctx->code[0] = data;
@@ -1654,20 +1658,20 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 
   /* mov $18, $19 */
   *p++ = 0x46520413;
-  /* ldq $1, ro */
-  *p++ = 0xa43d8010; *p++ = 0xa4210000;
+  /* ldq $1, -16($27) */
+  *p++ = 0xa43bfff0;
   /* mov $17, $18 */
   *p++ = 0x46310412;
-  /* ldq $2, ro+8 */
-  *p++ = 0xa45d8018; *p++ = 0xa4420000;
+  /* ldq $27, -8($27) */
+  *p++ = 0xa77bfff8;
   /* mov $16, $17 */
   *p++ = 0x46100411;
   /* mov $1, $16 */
   *p++ = 0x44210410;
-  /* jmp ($2) */
-  *p++ = 0x6be20000; *p++ = 0x47ff041f;
-  /* Padding? */
-  *p++ = 0x2ffe0000; *p++ = 0x47ff041f;
+  /* jmp ($27) */
+  *p++ = 0x6bfb0000;
+  /* nop */
+  *p++ = 0x47ff041f;
 
   return &ctx->code[2];
 }
