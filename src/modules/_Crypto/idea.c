@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.14 2000/07/28 07:15:16 hubbe Exp $
+ * $Id: idea.c,v 1.15 2000/08/09 13:14:27 grubba Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -110,9 +110,9 @@ static void f_set_decrypt_key(INT32 args)
 /* string crypt_block(string) */
 static void f_crypt_block(INT32 args)
 {
-  int len;
+  ptrdiff_t len;
   struct pike_string *s;
-  INT32 i;
+  ptrdiff_t i;
   
   if (args != 1) {
     error("Wrong number of arguemnts to idea->crypt()\n");

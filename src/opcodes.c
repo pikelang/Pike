@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.79 2000/08/07 09:44:49 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.80 2000/08/09 13:38:29 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -984,7 +984,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 			 int *success)					 \
 {									 \
   struct svalue sval;							 \
-  int matches, arg;							 \
+  INT32 matches, arg;							 \
   ptrdiff_t cnt, eye, e;						 \
   int no_assign = 0, field_length = 0, minus_flag = 0;			 \
   struct sscanf_set set;						 \
@@ -1066,7 +1066,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	case '{':							 \
 	{								 \
 	  ONERROR err;							 \
-	  long tmp;							 \
+	  ptrdiff_t tmp;						 \
 	  for(e=cnt+1,tmp=1;tmp;e++)					 \
 	  {								 \
 	    if(e>=match_len)						 \

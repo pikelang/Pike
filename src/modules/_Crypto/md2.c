@@ -1,5 +1,5 @@
 /*
- * $Id: md2.c,v 1.8 2000/08/01 19:48:35 sigge Exp $
+ * $Id: md2.c,v 1.9 2000/08/09 13:20:46 grubba Exp $
  *
  * A pike module for MD2 hashing.
  *
@@ -21,6 +21,8 @@
 #include "module_support.h"
 
 #include <md2.h>
+
+#include "crypto.h"
 
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
@@ -59,7 +61,8 @@ static void f_update(INT32 args)
   struct pike_string *s;
   get_all_args("_Crypto.md2->update", args, "%S", &s);
 
-  md2_update(THIS, (unsigned INT8 *) s->str, s->len);
+  md2_update(THIS, (unsigned INT8 *) s->str,
+	     DO_NOT_WARN(s->len));
   pop_n_elems(args);
   push_object(this_object());
 }

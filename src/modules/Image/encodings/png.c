@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.35 2000/08/04 10:51:49 grubba Exp $");
+RCSID("$Id: png.c,v 1.36 2000/08/09 12:55:13 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -50,10 +50,10 @@ static struct pike_string *param_background;
 static INLINE void push_nbo_32bit(size_t x)
 {
    char buf[4];
-   buf[0]=(char)(x>>24);
-   buf[1]=(char)(x>>16);
-   buf[2]=(char)(x>>8);
-   buf[3]=(char)(x);
+   buf[0] = DO_NOT_WARN((char)(x>>24));
+   buf[1] = DO_NOT_WARN((char)(x>>16));
+   buf[2] = DO_NOT_WARN((char)(x>>8));
+   buf[3] = DO_NOT_WARN((char)(x));
    push_string(make_shared_binary_string(buf,4));
 }
 
@@ -533,7 +533,7 @@ static int _png_write_rgb(rgb_group *w1,
    size_t n0=n;
 
    unsigned long x;
-   int mz;
+   ptrdiff_t mz;
 
    /* write stuff to d1 */
 

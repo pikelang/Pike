@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.18 2000/08/08 10:54:02 grubba Exp $
+ * $Id: tga.c,v 1.19 2000/08/09 13:03:49 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.18 2000/08/08 10:54:02 grubba Exp $");
+RCSID("$Id: tga.c,v 1.19 2000/08/09 13:03:49 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -210,20 +210,20 @@ static struct image_alpha load_image(struct pike_string *str)
   return ReadImage (&buffer, &hdr);
 }
 
-static int std_fread (unsigned char *buf,
-                      int datasize, int nelems, struct buffer *fp)
+static ptrdiff_t std_fread (unsigned char *buf,
+			    size_t datasize, size_t nelems, struct buffer *fp)
 {
-  size_t amnt = MIN((nelems*datasize),((int)fp->len));
+  size_t amnt = MIN((nelems*datasize), fp->len);
   MEMCPY(buf, fp->str, amnt);
   fp->len -= amnt;
   fp->str += amnt;
   return amnt / datasize;
 }
 
-static int std_fwrite (unsigned char *buf,
-                       int datasize, int nelems, struct buffer *fp)
+static ptrdiff_t std_fwrite (unsigned char *buf,
+			     size_t datasize, size_t nelems, struct buffer *fp)
 {
-  size_t amnt = MIN((nelems*datasize),(int)fp->len);
+  size_t amnt = MIN((nelems*datasize), fp->len);
   MEMCPY(fp->str, buf, amnt);
   fp->len -= amnt;
   fp->str += amnt;
@@ -255,17 +255,18 @@ static int std_fputc( int c, struct buffer *fp )
 
 /* Decode a bufferful of file. */
 
-static int rle_fread (guchar *buf, int datasize, int nelems, struct buffer *fp)
+static size_t rle_fread (guchar *buf, size_t datasize, size_t nelems,
+			 struct buffer *fp)
 {
   /* If we want to call this function more than once per image, change the
      variables below to be static..  */
   guchar *statebuf = 0;
-  int statelen = 0;
-  int laststate = 0;
+  ptrdiff_t statelen = 0;
+  ptrdiff_t laststate = 0;
 
   /* end static variables.. */
-  int j, k;
-  int buflen, count, bytes;
+  ptrdiff_t j, k;
+  ptrdiff_t buflen, count, bytes;
   guchar *p;
 
   /* Scale the buffer length. */
@@ -359,11 +360,11 @@ static int rle_fread (guchar *buf, int datasize, int nelems, struct buffer *fp)
 */
 
 /* RunLength Encode a bufferful of file. */
-static int rle_fwrite (guchar *buf, int datasize, int nelems,
+static int rle_fwrite (guchar *buf, size_t datasize, size_t nelems,
                        struct buffer *fp)
 {
   /* Now runlength-encode the whole buffer. */
-  int count, j, buflen;
+  ptrdiff_t count, j, buflen;
   guchar *begin;
 
   /* Scale the buffer length. */
@@ -459,9 +460,9 @@ static int getbits( unsigned char **pointer, int numbits, int *bittoffset,
   return (result * scale) / scale2;
 }
 
-static void swap_every_other_byte( unsigned char *p, int nelems )
+static void swap_every_other_byte( unsigned char *p, size_t nelems )
 {
-  int i;
+  size_t i;
   for( i = 0; i<nelems; i+=2 )
   {
     unsigned char tmp = p[i];
@@ -489,7 +490,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   unsigned char *cmap=NULL, *data;
   int itype=0;
   int really_no_alpha = 0;
-  int (*myfread)(unsigned char *, int, int, struct buffer *);
+  ptrdiff_t (*myfread)(unsigned char *, int, int, struct buffer *);
 
   /* Find out whether the image is horizontally or vertically reversed.
      The GIMP likes things left-to-right, top-to-bottom. */
@@ -615,7 +616,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   npels = width*height;
   bypp = ROUNDUP_DIVIDE(bpp,8);
  /* Suck in the data. */
-  pels = (*myfread)(data+read_so_far,bypp,npels,fp);
+  pels = myfread(data+read_so_far,bypp,npels,fp);
   read_so_far += pels;
   npels -= pels;
   if(npels)
@@ -748,7 +749,8 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   int pelbytes, bsize;
   int transparent, status;
   struct tga_header hdr;
-  int (*myfwrite)(unsigned char *, int, int, struct buffer *);
+  ptrdiff_t (*myfwrite)(unsigned char *, ptrdiff_t, ptrdiff_t,
+			struct buffer *);
 
   unsigned char *data;
 
@@ -857,7 +859,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
           *(p++) = (is++)->r;
         }
     }
-    if ((*myfwrite)((void *)data, pixsize,datalen/pixsize, fp) !=
+    if (myfwrite((void *)data, pixsize,datalen/pixsize, fp) !=
 	datalen/pixsize)
     {
       free(data);

@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.26 2000/08/08 19:53:50 grubba Exp $
+ * $Id: preprocessor.h,v 1.27 2000/08/09 13:27:43 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -181,11 +181,11 @@ static void PUSH_STRING0(p_wchar0 *, ptrdiff_t, struct string_builder *);
 static void PUSH_STRING1(p_wchar1 *, ptrdiff_t, struct string_builder *);
 static void PUSH_STRING2(p_wchar2 *, ptrdiff_t, struct string_builder *);
 
-static INT32 calc_0(struct cpp *,p_wchar0 *,ptrdiff_t,ptrdiff_t);
-static INT32 calc_1(struct cpp *,p_wchar1 *,ptrdiff_t,ptrdiff_t);
-static INT32 calc_2(struct cpp *,p_wchar2 *,ptrdiff_t,ptrdiff_t);
+static ptrdiff_t calc_0(struct cpp *,p_wchar0 *,ptrdiff_t,ptrdiff_t);
+static ptrdiff_t calc_1(struct cpp *,p_wchar1 *,ptrdiff_t,ptrdiff_t);
+static ptrdiff_t calc_2(struct cpp *,p_wchar2 *,ptrdiff_t,ptrdiff_t);
 
-static INT32 calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t);
+static ptrdiff_t calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t);
 
 /*
  * Functions
@@ -309,7 +309,8 @@ static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
   }
 }
 
-static INT32 calcC(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   FINDTOK();
 
@@ -402,7 +403,8 @@ static INT32 calcC(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calcB(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calcB(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calcB"); */
 
@@ -418,7 +420,8 @@ static INT32 calcB(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calcA(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calcA(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calcA"); */
 
@@ -454,7 +457,8 @@ static INT32 calcA(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc9(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc9(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calc9"); */
 
@@ -485,7 +489,8 @@ static INT32 calc9(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc8(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc8(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calc8"); */
 
@@ -519,7 +524,8 @@ static INT32 calc8(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc7b(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc7b(struct cpp *this, WCHAR *data, ptrdiff_t len,
+			ptrdiff_t pos)
 {
   /* DUMPPOS("before calc7b"); */
 
@@ -564,7 +570,8 @@ static INT32 calc7b(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc7(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc7(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calc7"); */
 
@@ -597,7 +604,8 @@ static INT32 calc7(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc6(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc6(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calc6"); */
 
@@ -615,7 +623,8 @@ static INT32 calc6(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc5(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc5(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calc5"); */
 
@@ -632,7 +641,8 @@ static INT32 calc5(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc4(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc4(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calc4"); */
 
@@ -649,7 +659,8 @@ static INT32 calc4(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc3(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc3(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   static WCHAR land_[] = { '&', '&' };
 
@@ -675,7 +686,8 @@ static INT32 calc3(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc2(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
+static ptrdiff_t calc2(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   static WCHAR lor_[] = { '|', '|' };
 
@@ -701,7 +713,8 @@ static INT32 calc2(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
   return pos;
 }
 
-static INT32 calc1(struct cpp *this, WCHAR *data, ptrdiff_t len, ptrdiff_t pos)
+static ptrdiff_t calc1(struct cpp *this, WCHAR *data, ptrdiff_t len,
+		       ptrdiff_t pos)
 {
   /* DUMPPOS("before calc1"); */
 

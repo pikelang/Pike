@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.9 2000/07/28 07:15:16 hubbe Exp $
+ * $Id: invert.c,v 1.10 2000/08/09 13:18:58 grubba Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -93,8 +93,8 @@ static void f_set_key(INT32 args)
 static void f_crypt_block(INT32 args)
 {
   char *buffer;
-  int i;
-  int len;
+  ptrdiff_t i;
+  ptrdiff_t len;
 
   if (args != 1) {
     error("Wrong number of arguments to invert->crypt_block()\n");

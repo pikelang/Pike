@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.3 2000/07/28 07:15:16 hubbe Exp $
+ * $Id: nt.c,v 1.4 2000/08/09 13:22:06 grubba Exp $
  *
  * NT crypto stuff for Pike
  */
@@ -54,7 +54,7 @@ static void f_CryptGenRandom(INT32 args)
 {
   struct cryptcontext_storage *c = THIS_CRYPTCONTEXT;
   struct pike_string *str = NULL, *res;
-  INT32 siz;
+  ptrdiff_t siz;
 
   get_all_args("CryptGenRandom()", args, (args>1? "%i%S":"%i"), &siz, &str);
 

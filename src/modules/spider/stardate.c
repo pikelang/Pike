@@ -1,5 +1,5 @@
 /*
- * $Id: stardate.c,v 1.9 2000/07/28 07:15:49 hubbe Exp $
+ * $Id: stardate.c,v 1.10 2000/08/09 12:34:46 grubba Exp $
  */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include "builtin_functions.h"
 #include "error.h"
 
-RCSID("$Id: stardate.c,v 1.9 2000/07/28 07:15:49 hubbe Exp $");
+RCSID("$Id: stardate.c,v 1.10 2000/08/09 12:34:46 grubba Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
@@ -74,8 +74,8 @@ double julian_day (int month, int day, int year)
   }
   
   /* fudge for year and month */
-  c = (int) (365.25 * loc_year) - 694025;
-  d = (int) (30.6001 * (loc_month + 1));
+  c = DO_NOT_WARN((int) (365.25 * loc_year)) - 694025;
+  d = DO_NOT_WARN((int) (30.6001 * (loc_month + 1)));
   
   return (double) (b + c + d + day) - .5;
 }
@@ -124,7 +124,8 @@ void f_stardate (INT32 args)
   if (precis < 1) precis = 1;
   if (precis > MAXPRECISION) precis = MAXPRECISION;
   tm = gmtime (&t);
-  jd = julian_day (tm->tm_mon + 1, tm->tm_mday, tm->tm_year + 1900);
+  jd = DO_NOT_WARN((int)julian_day(tm->tm_mon + 1, tm->tm_mday,
+				   tm->tm_year + 1900));
 
   gmt = (double) tm->tm_hour +
     tm->tm_min / 60.0 +

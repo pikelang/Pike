@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.34 2000/08/01 19:48:34 sigge Exp $
+ * $Id: crypto.c,v 1.35 2000/08/09 13:17:17 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -42,8 +42,8 @@
 
 struct pike_crypto {
   struct object *object;
-  INT32 block_size;
-  INT32 backlog_len;
+  ptrdiff_t block_size;
+  ptrdiff_t backlog_len;
   unsigned char *backlog;
 };
 
@@ -312,9 +312,9 @@ static void f_set_decrypt_key(INT32 args)
 static void f_crypto_crypt(INT32 args)
 {
   unsigned char *result;
-  INT32 roffset = 0;
-  INT32 soffset = 0;
-  INT32 len;
+  ptrdiff_t roffset = 0;
+  ptrdiff_t soffset = 0;
+  ptrdiff_t len;
 
   if (args != 1) {
     error("Wrong number of arguments to crypto->crypt()\n");

@@ -1,4 +1,4 @@
-/* $Id: sha.c,v 1.16 2000/07/28 07:15:16 hubbe Exp $
+/* $Id: sha.c,v 1.17 2000/08/09 13:19:44 grubba Exp $
  *
  * Written by Niels Möller
  */
@@ -16,7 +16,7 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.16 2000/07/28 07:15:16 hubbe Exp $");
+RCSID("$Id: sha.c,v 1.17 2000/08/09 13:19:44 grubba Exp $");
 
 #include <sha.h>
 
@@ -57,7 +57,8 @@ static void f_update(INT32 args)
   struct pike_string *s;
   get_all_args("_Crypto.sha->update", args, "%S", &s);
 
-  sha_update(THIS, (unsigned INT8 *) s->str, s->len);
+  sha_update(THIS, (unsigned INT8 *) s->str,
+	     DO_NOT_WARN(s->len));
   pop_n_elems(args);
   push_object(this_object());
 }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.67 2000/08/08 19:44:06 grubba Exp $
+ * $Id: cpp.c,v 1.68 2000/08/09 13:25:10 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -480,7 +480,7 @@ while(1)					\
   SKIPSPACE();					\
   if(data[pos]=='/')				\
   {						\
-    INT32 tmp;					\
+    ptrdiff_t tmp;				\
     switch(data[pos+1])				\
     {						\
     case '/':					\

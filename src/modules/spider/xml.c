@@ -32,8 +32,8 @@ struct xmlinput
 {
   struct xmlinput *next;
   PCHARP datap;
-  INT32 len;
-  INT32 pos;
+  ptrdiff_t len;
+  ptrdiff_t pos;
   struct pike_string *to_free;
 };
 
@@ -1860,7 +1860,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    if(sp<save)
 		      fatal("Stack underflow.\n");
 #endif
-		    f_aggregate(sp-save);
+		    f_aggregate(DO_NOT_WARN(sp - save));
 		    SKIPSPACE();
 		    save=sp;
 		    switch(PEEK(0))
@@ -1994,7 +1994,7 @@ static int really_low_parse_dtd(struct xmldata *data)
 		    if(sp<save)
 		      fatal("Stack underflow.\n");
 #endif
-		    f_aggregate(sp-save);
+		    f_aggregate(DO_NOT_WARN(sp - save));
 		    f_aggregate(2);
 		    assign_lvalue(sp-3, sp-1);
 		    pop_n_elems(2);
@@ -2172,7 +2172,7 @@ static int low_parse_dtd(struct xmldata *data)
 #ifdef VERBOSE_XMLDEBUG
   fprintf(stderr,"Exiting low_parse_dtd %p %p\n",sp,save_sp);
 #endif
-  f_aggregate(sp-save_sp);
+  f_aggregate(DO_NOT_WARN(sp - save_sp));
 #ifdef VERBOSE_XMLDEBUG
   fprintf(stderr,"Exiting low_parse_dtd done\n");
 #endif
@@ -2533,7 +2533,7 @@ static int low_parse_xml(struct xmldata *data,
   if(sp<save_sp)
     fatal("Stack underflow.\n");
 #endif
-  f_aggregate(sp-save_sp);
+  f_aggregate(DO_NOT_WARN(sp - save_sp));
   /* There is now one value on the stack */
   return !!end;
 }
@@ -2811,9 +2811,9 @@ static void autoconvert(INT32 args)
 
 void init_xml(void)
 {
-  INT32 off;
+  ptrdiff_t off;
   start_new_program();
-  off=ADD_STORAGE(struct xmlobj);
+  off = ADD_STORAGE(struct xmlobj);
   map_variable("__entities","mapping",0,
 	       off + OFFSETOF(xmlobj, entities),T_MAPPING);
   map_variable("__attributes","mapping",0,

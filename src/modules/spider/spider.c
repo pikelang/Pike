@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.94 2000/07/28 07:15:49 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.95 2000/08/09 12:41:37 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -180,7 +180,7 @@ void f_parse_accessed_database(INT32 args)
 
   for(i = 0; i < arg->size; i++)
   {
-    int j=0,k=0;
+    ptrdiff_t j=0,k=0;
     char *s=0;
     s=(char *)(ITEM(arg)[i].u.string->str);
     k=(ITEM(arg)[i].u.string->len);
@@ -191,7 +191,7 @@ void f_parse_accessed_database(INT32 args)
       k=atoi(s+j);
       if(k>cnum)
 	cnum=k;
-      push_int(k);
+      push_int(DO_NOT_WARN(k));
       mapping_insert(m, sp-2, sp-1);
       pop_n_elems(2);
     }
@@ -331,11 +331,11 @@ void f_set_start_quote(INT32 args)
 #define STARTQUOTE(C) do{PUSH();j=i+1;inquote = 1;endquote=(C);}while(0)
 #define ENDQUOTE() do{PUSH();j++;inquote=0;endquote=0;}while(0)
 
-int extract_word(char *s, int i, int len, int is_SSI_tag)
+ptrdiff_t extract_word(char *s, ptrdiff_t i, ptrdiff_t len, int is_SSI_tag)
 {
   int inquote = 0;
   char endquote = 0;
-  int j;      /* Start character for this word.. */
+  ptrdiff_t j;      /* Start character for this word.. */
   int strs = 0;
 
   SKIP_SPACE();
@@ -404,9 +404,9 @@ done:
 #undef SKIP_SPACE
 
 
-int push_parsed_tag(char *s,int len)
+ptrdiff_t push_parsed_tag(char *s, ptrdiff_t len)
 {
-  int i=0;
+  ptrdiff_t i=0;
   struct svalue *oldsp;
   int is_SSI_tag;
 
@@ -419,7 +419,7 @@ int push_parsed_tag(char *s,int len)
 
   while (i<len && s[i]!='>')
   {
-    int oldi;
+    ptrdiff_t oldi;
     oldi = i;
     i = extract_word(s, i, len, is_SSI_tag);
     f_lower_case(1);            /* Since SGML wants us to... */
@@ -438,13 +438,13 @@ int push_parsed_tag(char *s,int len)
     }
     if(oldi == i) break;
   }
-  f_aggregate_mapping(sp-oldsp);
+  f_aggregate_mapping(DO_NOT_WARN(sp - oldsp));
   if(i<len) i++;
 
   return i;
 }
 
-INLINE int tagsequal(char *s, char *t, int len, char *end)
+INLINE int tagsequal(char *s, char *t, ptrdiff_t len, char *end)
 {
   if(s+len >= end)  return 0;
 
@@ -463,11 +463,12 @@ INLINE int tagsequal(char *s, char *t, int len, char *end)
   }
 }
 
-int find_endtag(struct pike_string *tag, char *s, int len, int *aftertag)
+ptrdiff_t find_endtag(struct pike_string *tag, char *s, ptrdiff_t len,
+		      ptrdiff_t *aftertag)
 {
-  int num=1;
+  ptrdiff_t num=1;
 
-  int i,j;
+  ptrdiff_t i,j;
 
   for (i=j=0; i < len; i++)
   {
@@ -501,7 +502,7 @@ void do_html_parse(struct pike_string *ss,
 		   int *strings,int recurse_left,
 		   struct array *extra_args)
 {
-  int i,j,k,l,m,len,last;
+  ptrdiff_t i,j,k,l,m,len,last;
   char *s;
   struct svalue sval1,sval2;
   struct pike_string *ss2;
@@ -527,7 +528,7 @@ void do_html_parse(struct pike_string *ss,
   {
     if (s[i]=='<')
     {
-      int n;
+      ptrdiff_t n;
       /* skip all spaces */
       i++;
       for (n=i;n<len && ISSPACE(((unsigned char *)s)[n]); n++);
@@ -781,7 +782,7 @@ void do_html_parse_lines(struct pike_string *ss,
 			 struct array *extra_args,
 			 int line)
 {
-  int i,j,k,l,m,len,last;
+  ptrdiff_t i,j,k,l,m,len,last;
   char *s;
   struct svalue sval1,sval2;
   struct pike_string *ss2;
