@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: accept_and_parse.h,v 1.11 2002/10/25 14:09:44 nilsson Exp $
+|| $Id: accept_and_parse.h,v 1.12 2003/03/30 01:08:53 mast Exp $
 */
 
 /* #define AAP_DEBUG 1 */
@@ -134,10 +134,10 @@ struct log
 
 struct log_object
 {
-  int time;
-  int reply;
-  ptrdiff_t sent_bytes;
-  ptrdiff_t received_bytes;
+  INT_TYPE time;
+  INT_TYPE reply;
+  INT_TYPE sent_bytes;
+  INT_TYPE received_bytes;
   struct pike_string *raw;
   struct pike_string *url;
   struct pike_string *method;
