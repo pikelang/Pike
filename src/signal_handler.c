@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.206 2001/10/10 09:48:38 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.207 2001/10/12 12:54:25 tomas Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2017,26 +2017,59 @@ void f_create_process(INT32 args)
 	{
 	  low_my_putchar(' ', &buf);
 	}
-	quote=STRCHR(ITEM(cmd)[e].u.string->str,'"') ||
-	  STRCHR(ITEM(cmd)[e].u.string->str,' ');
+        /* If the argument begins AND ends with double quote assume
+         * it is already correctly quoted
+         */
+        if (ITEM(cmd)[e].u.string->len <= 1 ||
+            ITEM(cmd)[e].u.string->str[0] != '"' ||
+            ITEM(cmd)[e].u.string->str[ITEM(cmd)[e].u.string->len-1] != '"')
+          {
+            quote=STRCHR(ITEM(cmd)[e].u.string->str,'"') ||
+              STRCHR(ITEM(cmd)[e].u.string->str,' ');
+          }
 
 	if(quote)
 	{
+          int numslash;
 	  low_my_putchar('"', &buf);
 
+          /* Quoting rules used by Microsoft VC startup code:
+           * literal double quote must be preceeded by
+           * a backslash, ONLY backslashes BEFORE double quote must be
+           * escaped by doubling the backslashes
+           */
 	  for(d=0;d<ITEM(cmd)[e].u.string->len;d++)
 	  {
 	    switch(ITEM(cmd)[e].u.string->str[d])
 	    {
-	      /* Hopefully this should work better -Hubbe */
 	      case '\\':
-		/* low_my_putchar('"', &buf); */
-		low_my_putchar('\\', &buf);
-		low_my_putchar('\\', &buf);
-		/* low_my_putchar('"', &buf); */
+                numslash = 1;
+                /* count number of backslashes, used below */
+                while(++d<ITEM(cmd)[e].u.string->len &&
+                      ITEM(cmd)[e].u.string->str[d] == '\\')
+                  {
+                    numslash++;
+                  }
+                if (d >= ITEM(cmd)[e].u.string->len)
+                  numslash *= 2; /* argument ends with backslashes, need to 
+                                    double because we add a doubleqoute below */
+                else if (ITEM(cmd)[e].u.string->str[d] == '"')
+                  numslash = 2*numslash + 1; /* escape backslashes and the
+                                                the doublequote */
+
+                /* insert the correct number of backslashes */
+                for (;numslash > 0; numslash--)
+                  low_my_putchar('\\', &buf);
+
+                /* add the character following backslash, if any */
+                if (d<ITEM(cmd)[e].u.string->len)
+                  low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
+
 		break;
+
 	      case '"':
 		low_my_putchar('\\', &buf);
+                /* fall through */
 	      default:
 		low_my_putchar(ITEM(cmd)[e].u.string->str[d], &buf);
 	    }

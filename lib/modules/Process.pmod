@@ -160,7 +160,13 @@ Process spawn(string s,object|void stdin,object|void stdout,object|void stderr,
   if(stdin) data->stdin=stdin;
   if(stdout) data->stdout=stdout;
   if(stderr) data->stderr=stderr;
-#if defined(__NT__) || defined(__amigaos__)
+#if defined(__NT__)
+  // if the command string s is not quoted, add double quotes to
+  // make sure it is not modified by create_process
+  if (strlen(s) <= 1 || s[0] != '\"' || s[strlen(s)-1] != '\"')
+    s = "\"" + s + "\"";
+  return create_process(({ "cmd", "/c", s }),data);
+#elif defined(__amigaos__)
   return create_process(split_quoted_string(s),data);
 #else /* !__NT__||__amigaos__ */
   return create_process(({ "/bin/sh", "-c", s }),data);
