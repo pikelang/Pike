@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.65 1999/03/04 17:33:56 grubba Exp $
+ * $Id: requests.pmod,v 1.66 1999/03/12 23:58:59 grubba Exp $
  */
 
 import .types;
@@ -950,3 +950,38 @@ constant unsubscribe = unimplemented;
 constant status = unimplemented;
 constant append = unimplemented;
 constant check = unimplemented;
+
+/*
+ * IMAP2 compatibility
+ */
+
+class find
+{
+  inherit request;
+  constant arg_info = ({ ({ "astring" }), ({ "astring" }) });
+
+  mapping easy_process(string type, string glob)
+  {
+    if (lower_case(type) != "mailboxes") {
+      return(bad("Not supported."));
+    }
+    /* Each element of the array should be an array with three elements,
+     * attributes, hierarchy delimiter, and the name. */
+
+    if (lower_case(glob) == "inbox")
+      glob = "INBOX";
+      
+    array mailboxes = server->list(session, reference, glob);
+      
+    if (mailboxes) {
+      foreach(mailboxes, array a)
+	send("*", "MAILBOX", imap_string(a[-1]));
+      
+      send(tag, "OK FIND done");
+    } else {
+      send(tag, "NO FIND failed");
+    }
+    return ([ "action" : "finished" ]);
+  }
+}
+
