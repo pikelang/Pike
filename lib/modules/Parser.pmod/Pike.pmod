@@ -170,7 +170,7 @@ array(string) split(string data)
 	  case "/*":
 	    pos=search(data,"*/",pos);
 	    if(pos==-1)
-	      error("Failed to find end of coment.\n");
+	      error("Failed to find end of comment.\n");
 	    pos+=2;
 	    break;
 
