@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.16 1998/04/11 13:19:14 grubba Exp $
+ * $Id: error.h,v 1.17 1998/04/13 14:19:41 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -91,13 +91,13 @@ extern int throw_severity;
 /* Prototypes begin here */
 JMP_BUF *init_recovery(JMP_BUF *r);
 void pike_throw(void) ATTRIBUTE((noreturn));
-void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn));
+void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
 void exit_on_error(void *msg);
 void fatal_on_error(void *msg);
-void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
-void new_error(char *name, char *text, struct svalue *oldsp, INT32 args,
-	       char *file, int line) ATTRIBUTE((noreturn));
-void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+void new_error(const char *name, const char *text, struct svalue *oldsp,
+	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
+void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 /* Prototypes end here */
 
 #define fatal \

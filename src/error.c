@@ -14,8 +14,9 @@
 #include "main.h"
 #include "builtin_functions.h"
 #include "backend.h"
+#include "operators.h"
 
-RCSID("$Id: error.c,v 1.16 1998/04/10 15:20:48 grubba Exp $");
+RCSID("$Id: error.c,v 1.17 1998/04/13 14:19:40 grubba Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -89,16 +90,16 @@ void push_error(char *description)
 struct svalue throw_value = { T_INT };
 int throw_severity;
 
-static char *in_error;
+static const char *in_error;
 /* FIXME: NOTE: This function uses a static buffer.
  * Check sizes of arguments passed!
  */
-void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
+void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
 {
   char buf[2000];
   if(in_error)
   {
-    char *tmp=in_error;
+    const char *tmp=in_error;
     in_error=0;
     fatal("Recursive error() calls, original error: %s",tmp);
   }
@@ -129,14 +130,14 @@ void va_error(char *fmt, va_list args) ATTRIBUTE((noreturn))
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
-void new_error(char *name, char *text, struct svalue *oldsp, INT32 args,
-	       char *file, int line) ATTRIBUTE((noreturn))
+void new_error(const char *name, const char *text, struct svalue *oldsp,
+	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn))
 {
   int i;
 
   if(in_error)
   {
-    char *tmp=in_error;
+    const char *tmp=in_error;
     in_error=0;
     fatal("Recursive error() calls, original error: %s",tmp);
   }
@@ -203,7 +204,7 @@ void fatal_on_error(void *msg)
   abort();
 }
 
-void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   va_start(args,fmt);
@@ -212,7 +213,7 @@ void error(char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 }
 
 
-void debug_fatal(char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   static int in_fatal = 0;
