@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.5 2001/05/25 19:36:42 per Exp $");
+RCSID("$Id: buffer.c,v 1.6 2001/05/28 20:44:26 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -86,7 +86,7 @@ void wf_buffer_rewind_w( struct buffer *b, int n )
     b->size = 0;
 }
 
-int wf_buffer_rbyte( struct buffer *b )
+unsigned int wf_buffer_rbyte( struct buffer *b )
 {
   if( b->rpos < b->size )
     return ((unsigned char *)b->data)[ b->rpos++ ];

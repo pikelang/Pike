@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.20 2001/05/26 14:11:35 per Exp $");
+RCSID("$Id: blob.c,v 1.21 2001/05/28 20:44:25 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -86,7 +86,7 @@ int wf_blob_eof( Blob *b )
 int wf_blob_nhits( Blob *b )
 {
   if( b->eof ) return 0;
-  return b->b->data[b->b->rpos+4];
+  return ((unsigned char *)b->b->data)[b->b->rpos+4];
 }
 
 Hit wf_blob_hit( Blob *b, int n )

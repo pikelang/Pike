@@ -5,7 +5,7 @@ struct buffer
   int rpos;
   int read_only;
 
-  char *data;
+  unsigned char *data;
   struct pike_string *str;
 };
 
