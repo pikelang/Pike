@@ -123,7 +123,7 @@ tidy:
 clean: tidy
 	-for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
 	-for a in $(MODULES) ; do rm -f $$a/*.o ; done
-	-rm -f language.h language.c TAGS tags
+	-rm -f TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 
 # make _really_ clean
@@ -164,9 +164,14 @@ run_hilfe:
 
 # make export archive (requires compiled uLPC)
 # Do not compile in source tree if you want to use this!
-export: $(SRCDIR)/test/testsuite
+# Beware that export archive this includes bison/yacc/byacc source
+# and thus has to follow the rules stated in that code.
+export: $(SRCDIR)/test/testsuite new_peep_engine $(SRCDIR)/language.c $(SRCDIR)/language.h
 	chmod +x $(SRCDIR)/install-sh
 	$(RUNULPC) $(TMP_BINDIR)/export.lpc
+
+new_peep_engine:
+	$(RUNULPC) $(TMP_BINDIR)/mkpeep.lpc $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
 
 peep_engine.c: peep.in
 	echo "" >$(SRCDIR)/peep_engine.c
@@ -191,14 +196,14 @@ module_objects:
 
 lang.o: lang.c config.h object.h interpret.h program.h
 
-language.h: language.y
+$(SRCDIR)/language.h: language.y
 	@echo "Expect 1 shift/reduce conflict."
 	$(YACC) $(YFLAGS) $(SRCDIR)/language.y
-	mv y.tab.c language.c
-	mv y.tab.h language.h
+	mv y.tab.c $(SRCDIR)/language.c
+	mv y.tab.h $(SRCDIR)/language.h
 
-language.c: language.h
-	touch language.c
+$(SRCDIR)/language.c: language.h
+	touch $(SRCDIR)/language.c
 
 module.c: modlist.h
 
