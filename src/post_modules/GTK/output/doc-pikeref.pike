@@ -86,7 +86,7 @@ static string make_pike_refdoc( string pgtkdoc,
   if( !pgtkdoc || !strlen(pgtkdoc) )
     return "//!\n";
 
-  pgtkdoc = fix_images( trim_xml( fix_const(pgtkdoc) ) );
+  pgtkdoc = fix_images( fix_const( trim_xml(pgtkdoc) ) );
   foreach( pgtkdoc/"\n", string s )
   {
     if( !strlen(s) )
@@ -165,7 +165,18 @@ static string make_function_doc( Function f, Class c )
       if( f->arg_types[i]->name != "null" )
       {
 	j++;
-	res += pike_type_name(f->arg_types[i])+" "+f->arg_names[i];
+	string t = pike_type_name(f->arg_types[i]);
+	if ((< "callback", "callback|void" >)[t]) {
+	  if (t == "callback") {
+	    res += "function "+f->arg_names[i] + "_cb, " +
+	      "mixed " + f->arg_names[i] + "_arg";
+	  } else {
+	    res += "function|void "+f->arg_names[i] + "_cb, " +
+	      "mixed|void " + f->arg_names[i] + "_arg";
+	  }
+	} else {
+	  res += t+" "+f->arg_names[i];
+	}
       }
     }
   if( j ) res += " ";
