@@ -267,16 +267,16 @@ void chown(string filename, int|object owner, int|object group)
 
 array find(void|function(Filesystem.Stat:int) mask, mixed ... extra)
 {
-  array res = ({}),
-	d = get_stats() || ({}),
-	r = filter(d, "isdir");
+  array(Filesystem.Stat) res = ({});
+  array(Filesystem.Stat) d = get_stats() || ({});
+  array(Filesystem.Stat) r = filter(d, "isdir");
 
   if(mask)
     res += filter(d-r, mask, @extra);
   else
     res += d-r;
 
-  foreach(r, Filesystem.Base dir)
+  foreach(r, Filesystem.Stat dir)
   {
     if(!mask || mask(dir, @extra))
       res += ({ dir });

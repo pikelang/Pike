@@ -144,7 +144,7 @@ mapping get_menubar_mapping(  )
   return copy_value(menubar_objects);
 }
 
-mapping(string:GTK.Menu) submenues;
+mapping(string:GTK.Menu|GTK.MenuBar) submenues;
 mapping get_submenu_mapping(  )
 {
   return copy_value(submenues);

@@ -405,7 +405,7 @@ Symbol make_symbol(string name)
 
 Cons make_list(object ...args)
 {
-  Cons res = Lempty;
+  Cons|Nil res = Lempty;
   for (int i = sizeof(args) - 1; i >= 0; i--)
     res = Cons(args[i], res);
   return res;

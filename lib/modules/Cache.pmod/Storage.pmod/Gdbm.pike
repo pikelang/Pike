@@ -2,7 +2,7 @@
  * A GBM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Gdbm.pike,v 1.8 2002/01/15 22:31:24 nilsson Exp $
+ * $Id: Gdbm.pike,v 1.9 2003/11/12 16:43:22 grubba Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -54,8 +54,8 @@ class Data {
     sync();
   }
   
-  void create(string key, Gdbm.gdbm data_db, 
-              Gdbm.gdbm metadata_db, string dumped_metadata) {
+  static void create(string key, Gdbm.gdbm data_db, 
+		     Gdbm.gdbm metadata_db, string dumped_metadata) {
     mapping m=decode_value(dumped_metadata);
     _key=key;
     db=data_db;

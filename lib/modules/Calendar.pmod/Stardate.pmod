@@ -298,7 +298,7 @@ function(mixed...:cTick) Day=cTick;
 //------------------------------------------------------------------------
 
 //! Give the zero-length time period of the current time.
-.Time.TimeofDay now()
+/*.Time.TimeofDay*/cTick now()
 {
    return Tick();
 }
