@@ -11,15 +11,13 @@ int main(int argc, string *argv)
   write("threads ");
 #endif
 
-  // Special case
-  catch { if(sizeof(indices(master()->resolv("_Crypto"))))
-    write("Crypto ");
-  };
-
-  foreach(({ "CommonLog", "Dbm", "Gdbm", "Gmp", "Gz", "MIME", "Msql", "Mysql",
-	 "Odbc", "Oracle", "Postgres", "Ssleay", "WideValues", "X", "Yp" }),
-	 string modname) {
+  foreach(({ "_Crypto", "CommonLog","Dbm","GL","GTK","Gdbm","Gmp","Gz","_Image_JPEG",
+	     "_Image_TIFF","_Image_TTF","MIME","Msql","Mysql","Odbc","Oracle",
+	     "Perl", "Postgres","Ssleay","WideValues","X","Yp" }),
+	  string modname) {
     catch { if (sizeof(indices(master()->resolv(modname))))
+      if(modname[0] == '_')
+	modname = replace(modname[1..], "_", ".");;
       write(modname+" ");
     };
   }
