@@ -1,4 +1,4 @@
-/* $Id: block_alloc.h,v 1.39 2001/10/06 12:04:08 hubbe Exp $ */
+/* $Id: block_alloc.h,v 1.40 2001/11/08 23:34:27 nilsson Exp $ */
 #undef PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
@@ -8,12 +8,14 @@
 #undef PTR_HASH_ALLOC
 #undef COUNT_BLOCK
 #undef COUNT_OTHER
+#undef BLOCK_ALLOC_HSIZE_SHIFT
 
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
 #define EXIT_BLOCK(X)
 #define COUNT_BLOCK(X)
 #define COUNT_OTHER()
+#define BLOCK_ALLOC_HSIZE_SHIFT 2
 
 #ifdef PIKE_RUN_UNLOCKED
 #include "threads.h"
@@ -74,7 +76,10 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
 									\
   tmp=PIKE_CONCAT3(free_,DATA,s);					\
   PIKE_CONCAT3(free_,DATA,s)=(struct DATA *)tmp->BLOCK_ALLOC_NEXT;	\
-  DO_IF_DMALLOC( dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());  )\
+  DO_IF_DMALLOC(                                                        \
+    dmalloc_unregister(tmp, 1);                                         \
+    dmalloc_register(tmp,sizeof(struct DATA), DMALLOC_LOCATION());      \
+  )                                                                     \
   INIT_BLOCK(tmp);							\
   return tmp;								\
 }									\
@@ -136,7 +141,10 @@ static void PIKE_CONCAT3(free_all_,DATA,_blocks_unlocked)(void)		\
      int tmp2;                                                          \
      extern void dmalloc_check_block_free(void *p, char *loc);          \
      for(tmp2=0;tmp2<BSIZE;tmp2++)                                      \
+     {                                                                  \
        dmalloc_check_block_free(tmp->x+tmp2, DMALLOC_LOCATION());       \
+       dmalloc_unregister(tmp->x+tmp2, 1);                              \
+     }                                                                  \
    }                                                                    \
   )                                                                     \
   while((tmp=PIKE_CONCAT(DATA,_blocks)))				\
@@ -405,7 +413,7 @@ struct DATA *PIKE_CONCAT3(make_,DATA,_unlocked)(void *ptr, size_t hval)   \
     fatal("Hash table error!\n"); )					     \
   PIKE_CONCAT(num_,DATA)++;						     \
 									     \
-  if(( PIKE_CONCAT(num_,DATA)>>2 ) >=					     \
+  if(( PIKE_CONCAT(num_,DATA)>>BLOCK_ALLOC_HSIZE_SHIFT ) >=		     \
      PIKE_CONCAT(DATA,_hash_table_size))				     \
   {									     \
     PIKE_CONCAT(DATA,_rehash)();					     \
