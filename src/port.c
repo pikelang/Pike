@@ -20,7 +20,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.41 2001/03/14 20:05:35 mast Exp $");
+RCSID("$Id: port.c,v 1.42 2001/03/14 20:43:29 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -800,10 +800,13 @@ void own_gethrtime_update(struct timeval *ptr)
       * between measurements. */
      if (now - hrtime_rtsc_last < 1000000000) return;
 
+   t=now-hrtime_rtsc_zero;
+   if (t <= 0 || td <= 0)
+     /* Ouch, someone must have backed the clock(s). This situation
+      * could be handled better. */
+     return;
    td_last = td;
    hrtime_rtsc_last=now;
-   t=now-hrtime_rtsc_zero;
-   if (!t) return;
    conv=((long double)td)/t;
 
 /* fixme: add time deviation detection;
