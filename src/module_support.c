@@ -6,20 +6,6 @@
 #include "pike_types.h"
 #include "error.h"
 
-enum error_type {
-  ERR_NONE,
-  ERR_TOO_FEW,
-  ERR_TOO_MANY,
-  ERR_BAD_ARG
-};
-
-struct expect_result {
-  enum error_type error_type;
-  int argno;                 /* Which argument was it */
-  unsigned INT32 expected;   /* What type was expected */
-  TYPE_T got;               /* What type did we actually receive */
-};
-
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
  * If something went wrong, 'exepect_result' tells you what went wrong.
