@@ -14,8 +14,6 @@ string fakeroot(string s)
 
 Tools.Install.ProgressBar progress_bar;
 
-#define error(X) throw( ({ (X), backtrace() }) )
-
 mapping function_names=([]);
 
 static string fixup_path(string x)
@@ -47,18 +45,15 @@ string mkmodulename(mixed x, string dirname)
      sscanf(dirname, "%s.module", dirname);
   if(master()->resolv(dirname) == x)
     return dirname;
+  //  werror("Failed to create a module name for (%O,%O)\n", x, dirname);
   return 0;
 }
 
-class __Codec
+class Codec
 {
-  string last_id;
-
   string nameof(mixed x)
   {
     string tmp;
-//    if(logfile) logfile->write("%O\n",x);
-//    werror("%O\n",x);
     if(p!=x)
       if(tmp = function_names[x])
 	return tmp;
@@ -79,10 +74,10 @@ class __Codec
 	{
 	  if(tmp = search(master()->programs,x))
 	  {
-	    if(reverse(tmp)[..4]=="ekip.")
+	    if(has_suffix(tmp, ".pike"))
 	    {
 	      if(string mod=mkmodulename(x, tmp))
-		return mod;
+		return "resolv:"+mod;
 	    }
 	    return fixup_path(tmp);
 	  }
@@ -100,150 +95,32 @@ class __Codec
 	{
 	  if(tmp = search(master()->programs,p))
 	  {
-	    if(reverse(tmp)[..4]=="domp.")
+	    if(has_suffix(tmp, ".pmod"))
 	    {
 	      if(string mod=mkmodulename(x, tmp))
-		return mod;
+		return "resolv:"+mod;
 	    }
 	    return fixup_path(tmp);
-	  }else{
-#if 0
-	    werror("Completely failed to find this program:\n");
-	    _describe(p);
-#endif
 	  }
 	}
+
+	/*
 	if(object_program(x) == master()->dirnode)
 	{
 	  if(string mod=mkmodulename(x, x->dirname))
 	    return mod;
 	}
-#if 0
-	if (tmp = mkmapping(values(__builtin), indices(__builtin))[x]) {
-	  return "resolv:__builtin."+tmp;
-	}
-#endif
+	*/
 	break;
     }
     return ([])[0];
   } 
 
-  function functionof(string x)
-  {
-    if(sscanf(x,"efun:%s",x))
-      return all_constants()[x];
-
-    if(sscanf(x,"resolv:%s",x))
-      return master()->resolv(x);
-
-    werror("Failed to decode %s\n",x);
-    return 0;
-  }
-
-
-  object objectof(string x)
-  {
-    if(sscanf(x,"efun:%s",x))
-      return all_constants()[x];
-
-    if(sscanf(x,"resolv:%s",x))
-      return master()->resolv(x);
-
-    if(sscanf(x,"mpath:%s",x))
-      foreach(master()->pike_module_path, string path)
-	if(object ret=master()->low_cast_to_object(combine_path(path,x),0))
-	  return ret;
-
-    if(object tmp=(object)x) return tmp;
-    werror("Failed to decode %s\n",x);
-    return 0;
-    
-  }
-
-  program programof(string x)
-  {
-    if(sscanf(x,"efun:%s",x))
-      return all_constants()[x];
-
-    if(sscanf(x,"resolv:%s",x))
-      return master()->resolv(x);
-
-    if(sscanf(x,"_static_modules.%s",x))
-    {
-      return (program)_static_modules[x];
-    }
-
-    if(sscanf(x,"mpath:%s",x))
-      foreach(master()->pike_module_path, string path)
-	if(program ret=master()->cast_to_program(combine_path(path,x),0))
-	  return ret;
-
-    if(program tmp=(program)x) return tmp;
-    werror("Failed to decode %s\n",x);
-    return 0;
-  }
-
   mixed encode_object(object x)
   {
     if(x->_encode) return x->_encode();
-//    if(logfile)
-//      logfile->write("Cannot encode objects yet: %s\n",master()->stupid_describe(x,100000));
-#if 0
-    werror("\n>>>>>>encode object was called for:<<<<<<\n");
-    _describe(x);
-    werror("\n");
-#endif
-    error("Cannot encode objects yet.\n");
-//    error(sprintf("Cannot encode objects yet. %O\n",indices(x)));
+    error("Cannot encode objects yet (%O,%O).\n", x, indices(x)[..10]*",");
   }
-
-  mixed decode_object(program p, mixed data)
-  {
-    object ret=p(@data[0]);
-    if(sizeof(data)>1) ret->_decode(data[1]);
-    error("Cannot encode objects yet.\n");
-  }
-}
-
-class Codec
-{
-  inherit __Codec;
-
-  mapping debug_data=([]);
-
-  string nameof(mixed x)
-    {
-      string ret=::nameof(x);
-      if(ret)
-	debug_data[ret]=x;
-      return ret;
-    }
-
-  function functionof(string x)
-    {
-      function ret=::functionof(x);
-      if(debug_data[x] != ret)
-	werror("functionof(%O) returned the wrong value (%O != %O)\n",x,debug_data[x],ret);
-      return ret;
-    }
-
-  object objectof(string x)
-    {
-      object ret=::objectof(x);
-      if(debug_data[x] != ret)
-	werror("objectof(%O) returned the wrong value (%O != %O)\n",x,debug_data[x],ret);
-      return ret;
-    }
-  
-
-  program programof(string x)
-    {
-      program ret=::programof(x);
-      if(debug_data[x] != ret)
-	werror("programof(%O) returned the wrong value (%O != %O)\n",x,debug_data[x],ret);
-      return ret;
-    }
-  
 }
 
 Stdio.File logfile;
@@ -252,14 +129,14 @@ class Handler
 {
   void compile_error(string file,int line,string err)
     {
-      if(!logfile) return;
-      logfile->write(sprintf("%s:%d:%s\n",file,line,err));
+      if(logfile)
+	logfile->write("%s:%d:%s\n",file,line,err);
     }
 
   void compile_warning(string file,int line,string err)
     {
-      if(!logfile) return;
-      logfile->write(sprintf("%s:%d:%s\n",file,line,err));
+      if(logfile)
+	logfile->write("%s:%d:%s\n",file,line,err);
     }
 }
 
@@ -275,11 +152,8 @@ program compile_file(string file, object|void handler)
 void dumpit(string file)
 {
   if(logfile)
-    logfile->write("##%s##\n",file);
+    logfile->write("\n##%s##\n",file);
 
-  if(!quiet)
-    werror(file +": ");
-  
   mixed err=catch {
     rm(file+".o"); // Make sure no old files are left
     if(mixed s=file_stat(fakeroot(file)))
@@ -332,7 +206,7 @@ void dumpit(string file)
   };
   if(err)
   {
-#ifdef ERRORS
+#ifdef 1 //ERRORS
     err[0]="While dumping "+file+": "+err[0];
     werror(master()->describe_backtrace(err));
 #else
@@ -342,8 +216,6 @@ void dumpit(string file)
 	werror("X");
       if(logfile)
       {
-//	err[0]="While dumping "+file+": "+err[0];
-//	logfile->write("================================================\n");
 	logfile->write(master()->describe_backtrace(err));
       }
     }else{
@@ -361,11 +233,15 @@ int main(int argc, array(string) argv)
   foreach( (array)all_constants(), [string name, mixed func])
     function_names[func]="efun:"+name;
 
+  // It is possible to override functions/objects/programs by
+  // inserting another value into the function_names mapping here.
+  function_names[Image.Color]="resolv:Image.Color";
+  function_names[Image.Color.white]="resolv:Image.Color.white";
+  function_names[Image.PNM]="resolv:Image.PNM";
+  function_names[Image.X]="resolv:Image.X";
   function_names[Stdio.stdin]="resolv:Stdio.stdin";
-  function_names[Stdio.stdout]="resolv:Stdio.stdout";
-  function_names[Stdio.stderr]="resolv:Stdio.stderr";
-  function_names[_static_modules.Builtin]="resolv:__builtin";
-//  function_names[__builtin.__backend]="resolv:__builtin.__backend";
+  // Thread.Thread ?
+  // master() ?
 
   // Remove the name of the program.
   argv = argv[1..];
@@ -379,7 +255,6 @@ int main(int argc, array(string) argv)
     // It should not be done when running a binary dist
     // installation...
     logfile=Stdio.File("dumpmodule.log","caw");
-//    werror("Dumping modules ");
   }
 
   if(argv[0]=="--distquiet")
@@ -401,8 +276,6 @@ int main(int argc, array(string) argv)
       argv = argv[2..];
   }
 
-  // werror("Files to dump: %O\n", argv);
-  
   foreach(argv, string file)
   {
     if(progress_bar)
