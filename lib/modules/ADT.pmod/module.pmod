@@ -1,0 +1,1 @@
+inherit _ADT;
