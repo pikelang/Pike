@@ -25,6 +25,11 @@ class primitive
       tag = t;
       raw = r;
     }
+
+  string debug_string() 
+    {
+      return sprintf("primitive(%d)", tag);
+    }
 }
 
 class constructed
@@ -73,15 +78,22 @@ object|mapping der_decode(object data, mapping types)
   
   program p = types[tag];
   
-  if (raw_tag & 20)
+  if (raw_tag & 0x20)
   {
     /* Constructed encoding */
+
+#ifdef ASN1_DEBUG
+    werror("Decoding constructed\n");
+#endif
 
     array elements = ({ });
     object struct = ADT.struct(contents);
     
     if (!p)
     {
+#ifdef ASN1_DEBUG
+      werror("Unknown constructed type\n");
+#endif
       while (!struct->is_empty())
 	elements += ({ der_decode(struct, types) });
 
@@ -96,14 +108,21 @@ object|mapping der_decode(object data, mapping types)
     /* Ask object which types it expects for field i, decode it, and
      * record the decoded object */
     for(i = 0; !struct->is_empty(); i++)
+    {
+#ifdef ASN1_DEBUG
+      werror(sprintf("Element %d\n", i));
+#endif
       res->decode_constructed_element
 	(i, der_decode(struct,
 		       res->element_types(i, types)));
-    
+    }
     return res->end_decode_constructed(i);
   }
   else
   {
+#ifdef ASN1_DEBUG
+    werror("Decoding primitive\n");
+#endif
     /* Primitive encoding */
     return p ? p()->decode_primitive(contents)
       : primitive(tag, contents);
@@ -124,5 +143,9 @@ object|mapping simple_der_decode(string data)
 		       // 9 : asn1_real,
 		       // 10 : asn1_enumerated,
 		       16 : asn1_sequence,
-		       17 : asn1_set ]));
+		       17 : asn1_set,
+		       19 : asn1_printable_string,
+		       20 : asn1_T61_string,
+		       23 : asn1_utc
+		    ]) );
 }
