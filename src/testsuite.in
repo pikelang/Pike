@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.357 2001/01/01 14:13:51 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.358 2001/01/01 15:18:27 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1552,15 +1552,18 @@ for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(mixed *data) {
 
   test_any([[
   // test if read() hangs when fd is closed by other thread
+       object f=Stdio.File();
+       object g=f->pipe();
        object t=thread_create(
     	  lambda()
     	  {
-    	     werror("got: %O\n",Stdio.stdin->read(4));
+    	     g->read(4);
     	  });
        sleep(0.1); // yield
-       Stdio.stdin->close();
+       g->close(); // close same side of pipe as we have in read above
        sleep(0.1); // yield
        if (!t->status()) return 0; // should be done now
+	  // if not, there's no way to kill that thread
        return 1;]],1);
 
 ]])
