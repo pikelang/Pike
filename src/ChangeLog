@@ -1,3 +1,14 @@
+Tue Jan 14 17:59:06 1997  Niels Möller  <nisse@beldandy.infovav.se>
+
+	* dynamic_load.c (f_load_module): Now strips filename extension,
+	instead of keeping only leading [a-zA-Z]+. Thus handles symbols
+	containing underscore better.
+
+	* main.c (exit_main): Call cleanup_objects() *before*
+ 	exit_dynamic_load(). Otherwise, cleanup_object() will try to
+ 	destruct objects whose corresponding program have been freed and
+ 	unloaded.
+
 Sun Jan 12 02:08:01 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
 
 	* configure.in: Enabled the setting of LDFLAGS and CPPFLAGS.

@@ -9,15 +9,19 @@
 #ifndef PRECOMPILED_CRYPTO_H
 #define PRECOMPILED_CRYPTO_H
 
+#define MODULE_PREFIX "/precompiled/crypto/"
+#define MOD_INIT(x) init_##x##_efuns
+#define MOD_INIT2(x) init_##x##_programs
+#define MOD_EXIT(x)  exit_##x
+
 /*
  * Includes
  */
-
+#if 0
 #include <md2.h>
 #include <md5.h>
 
 #include <idea.h>
-#include <des.h>
 
 /*
  * Black magic
@@ -29,12 +33,14 @@
  * Structures
  */
 
+#if
 struct pike_crypto {
   struct object *object;
   INT32 block_size;
   INT32 backlog_len;
   unsigned char *backlog;
 };
+#endif
 
 struct pike_md2 {
   MD2_CTX ctx;
@@ -54,6 +60,7 @@ struct pike_idea {
 };
 #endif
 
+#if 0
 struct pike_des {
   des_key_schedule key_schedules[2];
   des_cblock ivs[2];
@@ -76,6 +83,7 @@ struct pike_pipe {
   INT32 block_size;
   INT32 mode;
 };
+#endif
 
 /*
  * Defines
@@ -92,6 +100,7 @@ struct pike_pipe {
 #define PIKE_CBC	((struct pike_cbc *)(fp->current_storage))
 #define PIKE_PIPE	((struct pike_pipe *)(fp->current_storage))
 
+#endif
 /*
  * Globals
  */
@@ -102,43 +111,52 @@ struct pike_pipe {
 
 void assert_is_crypto_module(struct object *);
 
+#if 0
 /*
  * Module linkage
  */
 
 /* /precompiled/crypto/md2 */
-void init_md2_efuns(void);
-void init_md2_programs(void);
-void exit_md2(void);
+void MOD_INIT2(md2)(void);
+void MOD_INIT(md2)(void);
+void MOD_EXIT(md2)(void);
 
 /* /precompiled/crypto/md5 */
-void init_md5_efuns(void);
-void init_md5_programs(void);
-void exit_md5(void);
+void MOD_INIT2(md5)(void);
+void MOD_INIT(md5)(void);
+void MOD_EXIT(md5)(void);
+#endif
 
+#if 1
 /* /precompiled/crypto/md5 */
-void init_idea_efuns(void);
-void init_idea_programs(void);
-void exit_idea(void);
+void MOD_INIT2(idea)(void);
+void MOD_INIT(idea)(void);
+void MOD_EXIT(idea)(void);
 
 /* /precompiled/crypto/des */
-void init_des_efuns(void);
-void init_des_programs(void);
-void exit_des(void);
+void MOD_INIT2(des)(void);
+void MOD_INIT(des)(void);
+void MOD_EXIT(des)(void);
 
 /* /precompiled/crypto/invert */
-void init_invert_efuns(void);
-void init_invert_programs(void);
-void exit_invert(void);
+void MOD_INIT2(invert)(void);
+void MOD_INIT(invert)(void);
+void MOD_EXIT(invert)(void);
+
+/* sha */
+void MOD_INIT2(sha)(void);
+void MOD_INIT(sha)(void);
+void MOD_EXIT(sha)(void);
 
 /* /precompiled/crypto/cbc */
-void init_cbc_efuns(void);
-void init_cbc_programs(void);
-void exit_cbc(void);
+void MOD_INIT2(cbc)(void);
+void MOD_INIT(cbc)(void);
+void MOD_EXIT(cbc)(void);
 
 /* /precompiled/crypto/pipe */
-void init_pipe_efuns(void);
-void init_pipe_programs(void);
-void exit_pipe(void);
+void MOD_INIT2(pipe)(void);
+void MOD_INIT(pipe)(void);
+void MOD_EXIT(pipe)(void);
+#endif
 
 #endif /* PRECOMPILED_CRYPTO_H */

@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.9 1996/11/27 11:55:49 nisse Exp $
+ * $Id: crypto.c,v 1.10 1997/01/14 18:26:25 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -19,10 +19,9 @@
 #include "macros.h"
 #include "threads.h"
 #include "object.h"
-#include "stralloc.h"
 #include "interpret.h"
-#include "builtin_functions.h"
-
+/* #include "builtin_functions.h"
+ */
 /* System includes */
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -34,6 +33,13 @@
 
 /* Module specific includes */
 #include "precompiled_crypto.h"
+
+struct pike_crypto {
+  struct object *object;
+  INT32 block_size;
+  INT32 backlog_len;
+  unsigned char *backlog;
+};
 
 /*
  * Globals
@@ -48,6 +54,8 @@ static const char *crypto_functions[] = {
   NULL
 };
 
+#define THIS	((struct pike_crypto *)(fp->current_storage))
+
 static struct program *pike_crypto_program;
 
 /*
@@ -56,19 +64,19 @@ static struct program *pike_crypto_program;
 
 static void init_pike_crypto(struct object *o)
 {
-  memset(PIKE_CRYPTO, 0, sizeof(struct pike_crypto));
+  memset(THIS, 0, sizeof(struct pike_crypto));
 }
 
 static void exit_pike_crypto(struct object *o)
 {
-  if (PIKE_CRYPTO->object) {
-    free_object(PIKE_CRYPTO->object);
+  if (THIS->object) {
+    free_object(THIS->object);
   }
-  if (PIKE_CRYPTO->backlog) {
-    MEMSET(PIKE_CRYPTO->backlog, 0, PIKE_CRYPTO->block_size);
-    free(PIKE_CRYPTO->backlog);
+  if (THIS->backlog) {
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+    free(THIS->backlog);
   }
-  memset(PIKE_CRYPTO, 0, sizeof(struct pike_crypto));
+  memset(THIS, 0, sizeof(struct pike_crypto));
 }
 
 static void check_functions(struct object *o, const char **requiered)
@@ -197,72 +205,72 @@ static void f_create(INT32 args)
     error("Bad argument 1 to crypto->create()\n");
   }
   if (sp[-args].type == T_PROGRAM) {
-    PIKE_CRYPTO->object = clone(sp[-args].u.program, args-1);
+    THIS->object = clone(sp[-args].u.program, args-1);
   } else {
     if (args != 1) {
       error("Too many arguments to crypto->create()\n");
     }
-    PIKE_CRYPTO->object = sp[-args].u.object;
-    PIKE_CRYPTO->object->refs++;
+    THIS->object = sp[-args].u.object;
+    THIS->object->refs++;
   }
   pop_stack(); /* Just one element left on the stack in both cases */
 
-  check_functions(PIKE_CRYPTO->object, crypto_functions);
+  check_functions(THIS->object, crypto_functions);
 
-  safe_apply(PIKE_CRYPTO->object, "query_block_size", 0);
+  safe_apply(THIS->object, "query_block_size", 0);
 
   if (sp[-1].type != T_INT) {
     error("crypto->create(): query_block_size() didn't return an int\n");
   }
-  PIKE_CRYPTO->block_size = sp[-1].u.integer;
+  THIS->block_size = sp[-1].u.integer;
 
   pop_stack();
 
-  if ((!PIKE_CRYPTO->block_size) ||
-      (PIKE_CRYPTO->block_size > 4096)) {
-    error("crypto->create(): Bad block size %d\n", PIKE_CRYPTO->block_size);
+  if ((!THIS->block_size) ||
+      (THIS->block_size > 4096)) {
+    error("crypto->create(): Bad block size %d\n", THIS->block_size);
   }
 
-  PIKE_CRYPTO->backlog = (unsigned char *)xalloc(PIKE_CRYPTO->block_size);
-  PIKE_CRYPTO->backlog_len = 0;
-  MEMSET(PIKE_CRYPTO->backlog, 0, PIKE_CRYPTO->block_size);
+  THIS->backlog = (unsigned char *)xalloc(THIS->block_size);
+  THIS->backlog_len = 0;
+  MEMSET(THIS->backlog, 0, THIS->block_size);
 }
 
 /* int query_block_size(void) */
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
-  push_int(PIKE_CRYPTO->block_size);
+  push_int(THIS->block_size);
 }
 
 /* int query_key_length(void) */
 static void f_query_key_length(INT32 args)
 {
-  safe_apply(PIKE_CRYPTO->object, "query_key_length", args);
+  safe_apply(THIS->object, "query_key_length", args);
 }
 
 /* void set_encrypt_key(INT32 args) */
 static void f_set_encrypt_key(INT32 args)
 {
-  if (PIKE_CRYPTO->block_size) {
-    MEMSET(PIKE_CRYPTO->backlog, 0, PIKE_CRYPTO->block_size);
-    PIKE_CRYPTO->backlog_len = 0;
+  if (THIS->block_size) {
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+    THIS->backlog_len = 0;
   } else {
     error("crypto->set_encrypt_key(): Object has not been created yet\n");
   }
-  safe_apply(PIKE_CRYPTO->object, "set_encrypt_key", args);
+  safe_apply(THIS->object, "set_encrypt_key", args);
 }
 
 /* void set_decrypt_key(INT32 args) */
 static void f_set_decrypt_key(INT32 args)
 {
-  if (PIKE_CRYPTO->block_size) {
-    MEMSET(PIKE_CRYPTO->backlog, 0, PIKE_CRYPTO->block_size);
-    PIKE_CRYPTO->backlog_len = 0;
+  if (THIS->block_size) {
+    MEMSET(THIS->backlog, 0, THIS->block_size);
+    THIS->backlog_len = 0;
   } else {
     error("crypto->set_decrypt_key(): Object has not been created yet\n");
   }
-  safe_apply(PIKE_CRYPTO->object, "set_decrypt_key", args);
+  safe_apply(THIS->object, "set_decrypt_key", args);
 }
 
 /* string crypt(string) */
@@ -279,36 +287,36 @@ static void f_crypt(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to crypto->crypt()\n");
   }
-  if (!(result = alloca(sp[-1].u.string->len + PIKE_CRYPTO->block_size))) {
+  if (!(result = alloca(sp[-1].u.string->len + THIS->block_size))) {
     error("crypto->crypt(): Out of memory\n");
   }
-  if (PIKE_CRYPTO->backlog_len) {
+  if (THIS->backlog_len) {
     if (sp[-1].u.string->len >=
-	(PIKE_CRYPTO->block_size - PIKE_CRYPTO->backlog_len)) {
-      MEMCPY(PIKE_CRYPTO->backlog + PIKE_CRYPTO->backlog_len,
+	(THIS->block_size - THIS->backlog_len)) {
+      MEMCPY(THIS->backlog + THIS->backlog_len,
 	     sp[-1].u.string->str,
-	     (PIKE_CRYPTO->block_size - PIKE_CRYPTO->backlog_len));
-      soffset += (PIKE_CRYPTO->block_size - PIKE_CRYPTO->backlog_len);
-      PIKE_CRYPTO->backlog_len = 0;
-      push_string(make_shared_binary_string((char *)PIKE_CRYPTO->backlog,
-					    PIKE_CRYPTO->block_size));
-      safe_apply(PIKE_CRYPTO->object, "crypt_block", 1);
+	     (THIS->block_size - THIS->backlog_len));
+      soffset += (THIS->block_size - THIS->backlog_len);
+      THIS->backlog_len = 0;
+      push_string(make_shared_binary_string((char *)THIS->backlog,
+					    THIS->block_size));
+      safe_apply(THIS->object, "crypt_block", 1);
       if (sp[-1].type != T_STRING) {
 	error("crypto->crypt(): crypt_block() did not return string\n");
       }
-      if (sp[-1].u.string->len != PIKE_CRYPTO->block_size) {
+      if (sp[-1].u.string->len != THIS->block_size) {
 	error("crypto->crypt(): Unexpected string length %d\n",
 	      sp[-1].u.string->len);
       }
 	
-      MEMCPY(result, sp[-1].u.string->str, PIKE_CRYPTO->block_size);
-      roffset = PIKE_CRYPTO->block_size;
+      MEMCPY(result, sp[-1].u.string->str, THIS->block_size);
+      roffset = THIS->block_size;
       pop_stack();
-      MEMSET(PIKE_CRYPTO->backlog, 0, PIKE_CRYPTO->block_size);
+      MEMSET(THIS->backlog, 0, THIS->block_size);
     } else {
-      MEMCPY(PIKE_CRYPTO->backlog + PIKE_CRYPTO->backlog_len,
+      MEMCPY(THIS->backlog + THIS->backlog_len,
 	     sp[-1].u.string->str, sp[-1].u.string->len);
-      PIKE_CRYPTO->backlog_len += sp[-1].u.string->len;
+      THIS->backlog_len += sp[-1].u.string->len;
       pop_n_elems(args);
       push_string(make_shared_binary_string("", 0));
       return;
@@ -316,13 +324,13 @@ static void f_crypt(INT32 args)
   }
   
   len = (sp[-1].u.string->len - soffset);
-  len -= len % PIKE_CRYPTO->block_size;
+  len -= len % THIS->block_size;
 
   if (len) {
     push_string(make_shared_binary_string(sp[-1].u.string->str + soffset, len));
     soffset += len;
 
-    safe_apply(PIKE_CRYPTO->object, "crypt_block", 1);
+    safe_apply(THIS->object, "crypt_block", 1);
 
     if (sp[-1].type != T_STRING) {
       error("crypto->crypt(): crypt_block() did not return string\n");
@@ -338,9 +346,9 @@ static void f_crypt(INT32 args)
   }
 
   if (soffset < sp[-1].u.string->len) {
-    MEMCPY(PIKE_CRYPTO->backlog, sp[-1].u.string->str + soffset,
+    MEMCPY(THIS->backlog, sp[-1].u.string->str + soffset,
 	   sp[-1].u.string->len - soffset);
-    PIKE_CRYPTO->backlog_len = sp[-1].u.string->len - soffset;
+    THIS->backlog_len = sp[-1].u.string->len - soffset;
   }
 
   pop_n_elems(args);
@@ -358,18 +366,18 @@ static void f_pad(INT32 args)
     error("Too many arguments to crypto->pad()\n");
   }
 
-  for (i=PIKE_CRYPTO->backlog_len; i < (PIKE_CRYPTO->block_size - 1); i++) {
-    PIKE_CRYPTO->backlog[i] = my_rand() & 0xff;
+  for (i=THIS->backlog_len; i < (THIS->block_size - 1); i++) {
+    THIS->backlog[i] = my_rand() & 0xff;
   }
-  PIKE_CRYPTO->backlog[i] = PIKE_CRYPTO->backlog_len;
+  THIS->backlog[i] = THIS->backlog_len;
 
-  push_string(make_shared_binary_string((const char *)PIKE_CRYPTO->backlog,
-					PIKE_CRYPTO->block_size));
+  push_string(make_shared_binary_string((const char *)THIS->backlog,
+					THIS->block_size));
 
-  MEMSET(PIKE_CRYPTO->backlog, 0, PIKE_CRYPTO->block_size);
-  PIKE_CRYPTO->backlog_len = 0;
+  MEMSET(THIS->backlog, 0, THIS->block_size);
+  THIS->backlog_len = 0;
 
-  safe_apply(PIKE_CRYPTO->object, "crypt_block", 1);
+  safe_apply(THIS->object, "crypt_block", 1);
 }
 
 /* string unpad(string) */
@@ -389,7 +397,7 @@ static void f_unpad(INT32 args)
 
   len = str->len;
   
-  len += str->str[len - 1] - PIKE_CRYPTO->block_size;
+  len += str->str[len - 1] - THIS->block_size;
 
   if (len < 0) {
     error("crypto->unpad(): String to short to unpad\n");
@@ -408,25 +416,29 @@ static void f_unpad(INT32 args)
  * Module linkage
  */
 
-void init_crypto_efuns(void)
+void MOD_INIT2(crypto)(void)
 {
   /* add_efun()s */
 
   add_efun("string_to_hex", f_string_to_hex, "function(string:string)", OPT_TRY_OPTIMIZE);
   add_efun("hex_to_string", f_hex_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
 
-  init_md2_efuns();
-  init_md5_efuns();
+#if 0
+  MOD_INIT2(md2)();
+  MOD_INIT2(md5)();
+#endif
+#if 1
+  MOD_INIT2(idea)();
+  MOD_INIT2(des)();
+  MOD_INIT2(invert)();
 
-  init_idea_efuns();
-  init_des_efuns();
-  init_invert_efuns();
-
-  init_cbc_efuns();
-  init_pipe_efuns();
+  MOD_INIT2(sha)();
+  MOD_INIT2(cbc)();
+  MOD_INIT2(pipe)();
+#endif
 }
 
-void init_crypto_programs(void)
+void MOD_INIT(crypto)(void)
 {
   /*
    * start_new_program();
@@ -463,31 +475,37 @@ void init_crypto_programs(void)
   set_init_callback(init_pike_crypto);
   set_exit_callback(exit_pike_crypto);
 
-  pike_crypto_program = end_c_program("/precompiled/crypto");
+  pike_crypto_program = end_c_program(MODULE_PREFIX "crypto");
   pike_crypto_program->refs++;
+#if 0
+  MOD_INIT(md2)();
+  MOD_INIT(md5)();
+#endif
+#if 1
+  MOD_INIT(idea)();
+  MOD_INIT(des)();
+  MOD_INIT(invert)();
 
-  init_md2_programs();
-  init_md5_programs();
-
-  init_idea_programs();
-  init_des_programs();
-  init_invert_programs();
-
-  init_cbc_programs();
-  init_pipe_programs();
+  MOD_INIT(sha)();
+  MOD_INIT(cbc)();
+  MOD_INIT(pipe)();
+#endif
 }
 
-void exit_crypto(void)
+void MOD_EXIT(crypto)(void)
 {
   /* free_program()s */
-  exit_md2();
-  exit_md5();
-
-  exit_idea();
-  exit_des();
-  exit_invert();
-
-  exit_cbc();
-  exit_pipe();
+#if 0
+  MOD_EXIT(md2)();
+  MOD_EXIT(md5)();
+#endif
+#if 1
+  MOD_EXIT(idea)();
+  MOD_EXIT(des)();
+  MOD_EXIT(invert)();
+  MOD_EXIT(sha)();
+  MOD_EXIT(cbc)();
+  MOD_EXIT(pipe)();
+#endif
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: pipe.c,v 1.2 1996/11/13 15:26:51 grubba Exp $
+ * $Id: pipe.c,v 1.3 1997/01/14 18:28:56 nisse Exp $
  *
  * PIPE crypto module for Pike.
  *
@@ -28,33 +28,41 @@
 /* Module specific includes */
 #include "precompiled_crypto.h"
 
+struct pike_crypto_pipe {
+  struct object **objects;
+  INT32 num_objs;
+  INT32 block_size;
+  INT32 mode;
+};
+
+#define THIS	((struct pike_crypto_pipe *)(fp->current_storage))
 /*
  * Globals
  */
 
-struct program *pike_pipe_program;
+struct program *pike_crypto_pipe_program;
 
 /*
  * Functions
  */
 
-void init_pike_pipe(struct object *o)
+void init_pike_crypto_pipe(struct object *o)
 {
-  MEMSET(PIKE_PIPE, 0, sizeof(struct pike_pipe));
+  MEMSET(THIS, 0, sizeof(struct pike_crypto_pipe));
 }
 
-void exit_pike_pipe(struct object *o)
+void exit_pike_crypto_pipe(struct object *o)
 {
   int i;
 
-  if (PIKE_PIPE->objects) {
-    for (i=0; i<PIKE_PIPE->num_objs; i++) {
-      free_object(PIKE_PIPE->objects[i]);
+  if (THIS->objects) {
+    for (i=0; i<THIS->num_objs; i++) {
+      free_object(THIS->objects[i]);
     }
-    MEMSET(PIKE_PIPE->objects, 0,
-	   PIKE_PIPE->num_objs * sizeof(struct object *));
+    MEMSET(THIS->objects, 0,
+	   THIS->num_objs * sizeof(struct object *));
   }
-  MEMSET(PIKE_PIPE, 0, sizeof(struct pike_pipe));
+  MEMSET(THIS, 0, sizeof(struct pike_crypto_pipe));
 }
 
 /*
@@ -70,13 +78,13 @@ static void f_create(INT32 args)
   if (!args) {
     error("Too few arguments to pipe->create()\n");
   }
-  PIKE_PIPE->objects = (struct object **)xalloc(args * sizeof(struct object *));
+  THIS->objects = (struct object **)xalloc(args * sizeof(struct object *));
   for (i=-args; i; i++) {
     if (sp[i].type == T_OBJECT) {
-      PIKE_PIPE->objects[args + i] = sp[i].u.object;
-      PIKE_PIPE->objects[i]->refs++;
+      THIS->objects[args + i] = sp[i].u.object;
+      THIS->objects[i]->refs++;
     } else if (sp[i].type == T_PROGRAM) {
-      PIKE_PIPE->objects[i] = clone(sp[i].u.program, 0);
+      THIS->objects[i] = clone(sp[i].u.program, 0);
     } else if (sp[i].type == T_ARRAY) {
       struct program *prog;
       INT32 n_args;
@@ -92,23 +100,23 @@ static void f_create(INT32 args)
       n_args = sp[i].u.array->size - 1;
 
       push_array_items(sp[i].u.array);	/* Pushes one arg too many */
-      PIKE_PIPE->objects[i] = clone(prog, n_args);
+      THIS->objects[i] = clone(prog, n_args);
 
       pop_stack();	/* Pop the program */
 
-      assert_is_crypto_module(PIKE_PIPE->objects[i]);
+      assert_is_crypto_module(THIS->objects[i]);
     } else {
       error("Bad argument %d to pipe->create()\n", i + args);
     }
   }
-  PIKE_PIPE->num_objs = args;
+  THIS->num_objs = args;
 
-  for (i=0; i<PIKE_PIPE->num_objs; i++) {
+  for (i=0; i<THIS->num_objs; i++) {
     int j;
     int sub_size;
     int factor = 1;
 
-    safe_apply(PIKE_PIPE->objects[i], "block_size", 0);
+    safe_apply(THIS->objects[i], "block_size", 0);
     if (sp[-1].type != T_INT) {
       error("pipe->create(): block_size() returned other than int\n");
     }
@@ -127,7 +135,7 @@ static void f_create(INT32 args)
     block_size *= factor * sub_size;
   }
 
-  PIKE_PIPE->block_size = block_size;
+  THIS->block_size = block_size;
 
   pop_n_elems(args);
 }
@@ -142,15 +150,15 @@ static void f_name(INT32 args)
   }
   push_string(make_shared_string("PIPE("));
   
-  for (i=0; i<PIKE_PIPE->num_objs; i++) {
+  for (i=0; i<THIS->num_objs; i++) {
     if (i) {
       push_string(make_shared_binary_string(", ", 2));
     }
-    safe_apply(PIKE_PIPE->objects[i], "name", 0);
+    safe_apply(THIS->objects[i], "name", 0);
   }
   push_string(make_shared_binary_string(")", 1));
 
-  f_add(2*PIKE_PIPE->num_objs + 1);
+  f_add(2*THIS->num_objs + 1);
 }
 
 /* int query_block_size(void) */
@@ -171,10 +179,10 @@ static void f_query_key_length(INT32 args)
     error("Too many arguments to pipe->query_key_length()\n");
   }
 
-  for (i=0; i<PIKE_PIPE->num_objs; i++) {
-    safe_apply(PIKE_PIPE->objects[i], "query_key_length", 0);
+  for (i=0; i<THIS->num_objs; i++) {
+    safe_apply(THIS->objects[i], "query_key_length", 0);
   }
-  f_aggregate(PIKE_PIPE->num_objs);
+  f_aggregate(THIS->num_objs);
 }
 
 /* void set_encrypt_key(array|string ..) */
@@ -182,10 +190,10 @@ static void f_set_encrypt_key(INT32 args)
 {
   int i;
 
-  if (args != PIKE_PIPE->num_objs) {
+  if (args != THIS->num_objs) {
     error("Wrong number of arguments to pipe->set_encrypt_key()\n");
   }
-  PIKE_PIPE->mode = 0;
+  THIS->mode = 0;
   for (i=-args; i; i++) {
     int n_args;
 
@@ -198,7 +206,7 @@ static void f_set_encrypt_key(INT32 args)
     } else {
       error("Bad argument %d to pipe->set_encrypt_key()\n", 1 + args + i);
     }
-    safe_apply(PIKE_PIPE->objects[args + i], "set_encrypt_key", n_args);
+    safe_apply(THIS->objects[args + i], "set_encrypt_key", n_args);
     pop_stack(); /* Get rid of the void value */
   }
   pop_n_elems(args);
@@ -209,10 +217,10 @@ static void f_set_decrypt_key(INT32 args)
 {
   int i;
 
-  if (args != PIKE_PIPE->num_objs) {
+  if (args != THIS->num_objs) {
     error("Wrong number of arguments to pipe->set_decrypt_key()\n");
   }
-  PIKE_PIPE->mode = 1;
+  THIS->mode = 1;
   for (i=-args; i; i++) {
     int n_args;
 
@@ -225,7 +233,7 @@ static void f_set_decrypt_key(INT32 args)
     } else {
       error("Bad argument %d to pipe->set_decrypt_key()\n", 1 + args + i);
     }
-    safe_apply(PIKE_PIPE->objects[args + i], "set_decrypt_key", n_args);
+    safe_apply(THIS->objects[args + i], "set_decrypt_key", n_args);
     pop_stack(); /* Get rid of the void value */
   }
   pop_n_elems(args);
@@ -242,17 +250,17 @@ static void f_crypt_block(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to pipe->crypt_block()\n");
   }
-  if (sp[-1].u.string->len % PIKE_PIPE->block_size) {
+  if (sp[-1].u.string->len % THIS->block_size) {
     error("Bad length of argument 1 to pipe->crypt_block()\n");
   }
-  if (PIKE_PIPE->mode) {
+  if (THIS->mode) {
     /* Decryption -- Reverse the order */
-    for (i=PIKE_PIPE->num_objs; i--;) {
-      safe_apply(PIKE_PIPE->objects[i], "crypt_block", 1);
+    for (i=THIS->num_objs; i--;) {
+      safe_apply(THIS->objects[i], "crypt_block", 1);
     }
   } else {
-    for (i=0; i<PIKE_PIPE->num_objs; i++) {
-      safe_apply(PIKE_PIPE->objects[i], "crypt_block", 1);
+    for (i=0; i<THIS->num_objs; i++) {
+      safe_apply(THIS->objects[i], "crypt_block", 1);
     }
   }
 }
@@ -261,12 +269,12 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-void init_pipe_efuns(void)
+void init_crypto_pipe_efuns(void)
 {
   /* add_efun()s */
 }
 
-void init_pipe_programs(void)
+void MOD_INIT(pipe)(void)
 {
   /*
    * start_new_program();
@@ -287,7 +295,7 @@ void init_pipe_programs(void)
 
   /* /precompiled/crypto/pipe */
   start_new_program();
-  add_storage(sizeof(struct pike_pipe));
+  add_storage(sizeof(struct pike_crypto_pipe));
 
   add_function("create", f_create, "function(program|object|array(program|mixed) ...:void)", OPT_SIDE_EFFECT);
 
@@ -298,15 +306,15 @@ void init_pipe_programs(void)
   add_function("set_decrypt_key", f_set_decrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
 
-  set_init_callback(init_pike_pipe);
-  set_exit_callback(exit_pike_pipe);
+  set_init_callback(init_pike_crypto_pipe);
+  set_exit_callback(exit_pike_crypto_pipe);
 
-  pike_pipe_program = end_c_program("/precompiled/crypto/pipe");
-  pike_pipe_program->refs++;
+  pike_crypto_pipe_program = end_c_program(MODULE_PREFIX "pipe");
+  pike_crypto_pipe_program->refs++;
 }
 
-void exit_pipe(void)
+void MOD_EXIT(pipe)(void)
 {
   /* free_program()s */
-  free_program(pike_pipe_program);
+  free_program(pike_crypto_pipe_program);
 }

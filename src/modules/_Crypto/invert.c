@@ -1,5 +1,5 @@
 /*
- * $Id: invert.c,v 1.2 1996/11/11 14:23:27 grubba Exp $
+ * $Id: invert.c,v 1.3 1997/01/14 18:28:40 nisse Exp $
  *
  * INVERT crypto module for Pike
  *
@@ -31,17 +31,17 @@
  * Globals
  */
 
-struct program *pike_invert_program;
+struct program *pike_crypto_invert_program;
 
 /*
  * Functions
  */
 
-void init_pike_invert(struct object *o)
+void init_pike_crypto_invert(struct object *o)
 {
 }
 
-void exit_pike_invert(struct object *o)
+void exit_pike_crypto_invert(struct object *o)
 {
 }
 
@@ -85,8 +85,9 @@ static void f_set_key(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to invert->set_key()\n");
   }
-
   pop_n_elems(args);
+  this_object()->refs++;
+  push_object(this_object());
 }
 
 /* string crypt_block(string) */
@@ -125,12 +126,12 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-void init_invert_efuns(void)
+void MOD_INIT2(invert)(void)
 {
   /* add_efun()s */
 }
 
-void init_invert_programs(void)
+void MOD_INIT(invert)(void)
 {
   /*
    * start_new_program();
@@ -159,17 +160,17 @@ void init_invert_programs(void)
   add_function("set_decrypt_key", f_set_key, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_SIDE_EFFECT);
 
-  set_init_callback(init_pike_invert);
-  set_exit_callback(exit_pike_invert);
+  set_init_callback(init_pike_crypto_invert);
+  set_exit_callback(exit_pike_crypto_invert);
 
-  pike_invert_program = end_c_program("/precompiled/crypto/invert");
-  pike_invert_program->refs++;
+  pike_crypto_invert_program = end_c_program(MODULE_PREFIX "invert");
+  pike_crypto_invert_program->refs++;
 }
 
-void exit_invert(void)
+void MOD_EXIT(invert)(void)
 {
   /* free_program()s */
-  free_program(pike_invert_program);
+  free_program(pike_crypto_invert_program);
 }
 
 

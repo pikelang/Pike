@@ -1,5 +1,5 @@
 /*
- * $Id: cbc.c,v 1.1 1996/11/11 14:22:08 grubba Exp $
+ * $Id: cbc.c,v 1.2 1997/01/14 18:26:15 nisse Exp $
  *
  * CBC (Cipher Block Chaining Mode) crypto module for Pike.
  *
@@ -28,45 +28,53 @@
 /* Module specific includes */
 #include "precompiled_crypto.h"
 
+struct pike_crypto_cbc {
+  struct object *object;
+  unsigned char *iv;
+  INT32 block_size;
+  INT32 mode;
+};
+
+#define THIS	((struct pike_crypto_cbc *)(fp->current_storage))
 /*
  * Globals
  */
 
-static struct program *pike_cbc_program;
+static struct program *pike_crypto_cbc_program;
 
 /*
  * Functions
  */
 
-static void init_pike_cbc(struct object *o)
+static void init_pike_crypto_cbc(struct object *o)
 {
-  memset(PIKE_CBC, 0, sizeof(struct pike_cbc));
+  memset(THIS, 0, sizeof(struct pike_crypto_cbc));
 }
 
-static void exit_pike_cbc(struct object *o)
+static void exit_pike_crypto_cbc(struct object *o)
 {
-  if (PIKE_CBC->object) {
-    free_object(PIKE_CBC->object);
+  if (THIS->object) {
+    free_object(THIS->object);
   }
-  if (PIKE_CBC->iv) {
-    MEMSET(PIKE_CBC->iv, 0, PIKE_CBC->block_size);
-    free(PIKE_CBC->iv);
+  if (THIS->iv) {
+    MEMSET(THIS->iv, 0, THIS->block_size);
+    free(THIS->iv);
   }
-  memset(PIKE_CBC, 0, sizeof(struct pike_cbc));
+  memset(THIS, 0, sizeof(struct pike_crypto_cbc));
 }
 
 INLINE static void cbc_encrypt_step(const unsigned char *source,
 				    unsigned char *dest)
 {
-  INT32 block_size = PIKE_CBC->block_size;
+  INT32 block_size = THIS->block_size;
   INT32 i;
   
   for (i=0; i < block_size; i++) {
-    PIKE_CBC->iv[i] ^= source[i];
+    THIS->iv[i] ^= source[i];
   }
 
-  push_string(make_shared_binary_string((char *)PIKE_CBC->iv, block_size));
-  safe_apply(PIKE_CBC->object, "crypt_block", 1);
+  push_string(make_shared_binary_string((char *)THIS->iv, block_size));
+  safe_apply(THIS->object, "crypt_block", 1);
 
   if (sp[-1].type != T_STRING) {
     error("cbc->encrypt(): Expected string from crypt_block()\n");
@@ -75,7 +83,7 @@ INLINE static void cbc_encrypt_step(const unsigned char *source,
     error("cbc->encrypt(): Bad string length %d returned from crypt_block()\n",
 	  sp[-1].u.string->len);
   }
-  MEMCPY(PIKE_CBC->iv, sp[-1].u.string->str, block_size);
+  MEMCPY(THIS->iv, sp[-1].u.string->str, block_size);
   MEMCPY(dest, sp[-1].u.string->str, block_size);
   pop_stack();
 }
@@ -83,11 +91,11 @@ INLINE static void cbc_encrypt_step(const unsigned char *source,
 INLINE static void cbc_decrypt_step(const unsigned char *source,
 				    unsigned char *dest)
 {
-  INT32 block_size = PIKE_CBC->block_size;
+  INT32 block_size = THIS->block_size;
   INT32 i;
   
   push_string(make_shared_binary_string((const char *)source, block_size));
-  safe_apply(PIKE_CBC->object, "crypt_block", 1);
+  safe_apply(THIS->object, "crypt_block", 1);
 
   if (sp[-1].type != T_STRING) {
     error("cbc->decrypt(): Expected string from crypt_block()\n");
@@ -98,11 +106,11 @@ INLINE static void cbc_decrypt_step(const unsigned char *source,
   }
 
   for (i=0; i < block_size; i++) {
-    dest[i] = PIKE_CBC->iv[i] ^ sp[-1].u.string->str[i];
+    dest[i] = THIS->iv[i] ^ sp[-1].u.string->str[i];
   }
 
   pop_stack();
-  MEMCPY(PIKE_CBC->iv, source, block_size);
+  MEMCPY(THIS->iv, source, block_size);
 }
 
 /*
@@ -120,71 +128,89 @@ static void f_create(INT32 args)
     error("Bad argument 1 to cbc->create()\n");
   }
   if (sp[-args].type == T_PROGRAM) {
-    PIKE_CBC->object = clone(sp[-args].u.program, args-1);
+    THIS->object = clone(sp[-args].u.program, args-1);
   } else {
     if (args != 1) {
       error("Too many arguments to cbc->create()\n");
     }
-    PIKE_CBC->object = sp[-args].u.object;
-    PIKE_CBC->object->refs++;
+    THIS->object = sp[-args].u.object;
+    THIS->object->refs++;
   }
   pop_stack(); /* Just one element left on the stack in both cases */
 
-  assert_is_crypto_module(PIKE_CBC->object);
+  assert_is_crypto_module(THIS->object);
 
-  safe_apply(PIKE_CBC->object, "query_block_size", 0);
+  safe_apply(THIS->object, "query_block_size", 0);
 
   if (sp[-1].type != T_INT) {
     error("cbc->create(): query_block_size() didn't return an int\n");
   }
-  PIKE_CBC->block_size = sp[-1].u.integer;
+  THIS->block_size = sp[-1].u.integer;
 
   pop_stack();
 
-  if ((!PIKE_CBC->block_size) ||
-      (PIKE_CBC->block_size > 4096)) {
-    error("cbc->create(): Bad block size %d\n", PIKE_CBC->block_size);
+  if ((!THIS->block_size) ||
+      (THIS->block_size > 4096)) {
+    error("cbc->create(): Bad block size %d\n", THIS->block_size);
   }
 
-  PIKE_CBC->iv = (unsigned char *)xalloc(PIKE_CBC->block_size);
-  MEMSET(PIKE_CBC->iv, 0, PIKE_CBC->block_size);
+  THIS->iv = (unsigned char *)xalloc(THIS->block_size);
+  MEMSET(THIS->iv, 0, THIS->block_size);
 }
 
 /* int query_block_size(void) */
 static void f_query_block_size(INT32 args)
 {
   pop_n_elems(args);
-  push_int(PIKE_CBC->block_size);
+  push_int(THIS->block_size);
 }
 
 /* int query_key_length(void) */
 static void f_query_key_length(INT32 args)
 {
-  safe_apply(PIKE_CBC->object, "query_key_length", args);
+  safe_apply(THIS->object, "query_key_length", args);
 }
 
 /* void set_encrypt_key(INT32 args) */
 static void f_set_encrypt_key(INT32 args)
 {
-  if (PIKE_CBC->block_size) {
-    MEMSET(PIKE_CBC->iv, 0, PIKE_CBC->block_size);
+  if (THIS->block_size) {
+    MEMSET(THIS->iv, 0, THIS->block_size);
   } else {
     error("cbc->set_encrypt_key(): Object has not been created yet\n");
   }
-  PIKE_CBC->mode = 0;
-  safe_apply(PIKE_CBC->object, "set_encrypt_key", args);
+  THIS->mode = 0;
+  safe_apply(THIS->object, "set_encrypt_key", args);
 }
 
 /* void set_decrypt_key(INT32 args) */
 static void f_set_decrypt_key(INT32 args)
 {
-  if (PIKE_CBC->block_size) {
-    MEMSET(PIKE_CBC->iv, 0, PIKE_CBC->block_size);
+  if (THIS->block_size) {
+    MEMSET(THIS->iv, 0, THIS->block_size);
   } else {
     error("cbc->set_decrypt_key(): Object has not been created yet\n");
   }
-  PIKE_CBC->mode = 1;
-  safe_apply(PIKE_CBC->object, "set_decrypt_key", args);
+  THIS->mode = 1;
+  safe_apply(THIS->object, "set_decrypt_key", args);
+}
+
+static void f_set_iv(INT32 args)
+{
+  if (!THIS->iv)
+    {
+      error("cbc->set_iv: uninitialized object\n");
+    }
+  if (args != 1)
+    error("cbc->set_iv: wrong number of arguments\n");
+  if (sp[-args].type != T_STRING)
+    error("cbc->set_iv: non-string argument\n");
+  if (sp[-args].u.string->len != THIS->block_size)
+    error("cbc->set_iv: argument incompatible with cipher blocksize\n");
+  MEMCPY(THIS->iv, sp[-args].u.string->str, THIS->block_size);
+  pop_n_elems(args);
+  this_object()->refs++;
+  push_object(this_object());
 }
 
 /* string encrypt_block(string) */
@@ -199,7 +225,7 @@ static void f_encrypt_block(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to cbc->encrypt_block()\n");
   }
-  if (sp[-1].u.string->len % PIKE_CBC->block_size) {
+  if (sp[-1].u.string->len % THIS->block_size) {
     error("Bad length of argument 1 to cbc->encrypt_block()\n");
   }
   if (!(result = alloca(sp[-1].u.string->len))) {
@@ -210,7 +236,7 @@ static void f_encrypt_block(INT32 args)
 
     cbc_encrypt_step((const unsigned char *)sp[-1].u.string->str + offset,
 		     result + offset);
-    offset += PIKE_CBC->block_size;
+    offset += THIS->block_size;
   }
 
   pop_n_elems(args);
@@ -231,7 +257,7 @@ static void f_decrypt_block(INT32 args)
   if (sp[-1].type != T_STRING) {
     error("Bad argument 1 to cbc->decrypt_block()\n");
   }
-  if (sp[-1].u.string->len & PIKE_CBC->block_size) {
+  if (sp[-1].u.string->len & THIS->block_size) {
     error("Bad length of argument 1 to cbc->decrypt_block()\n");
   }
   if (!(result = alloca(sp[-1].u.string->len))) {
@@ -242,7 +268,7 @@ static void f_decrypt_block(INT32 args)
 
     cbc_decrypt_step((const unsigned char *)sp[-1].u.string->str + offset,
 		     result + offset);
-    offset += PIKE_CBC->block_size;
+    offset += THIS->block_size;
   }
 
   pop_n_elems(args);
@@ -254,7 +280,7 @@ static void f_decrypt_block(INT32 args)
 /* string crypt_block(string) */
 static void f_crypt_block(INT32 args)
 {
-  if (PIKE_CBC->mode) {
+  if (THIS->mode) {
     f_decrypt_block(args);
   } else {
     f_encrypt_block(args);
@@ -265,12 +291,12 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-void init_cbc_efuns(void)
+void MOD_INIT2(cbc)(void)
 {
   /* add_efun()s */
 }
 
-void init_cbc_programs(void)
+void MOD_INIT(cbc)(void)
 {
   /*
    * start_new_program();
@@ -290,7 +316,7 @@ void init_cbc_programs(void)
    */
 
   start_new_program();
-  add_storage(sizeof(struct pike_cbc));
+  add_storage(sizeof(struct pike_crypto_cbc));
 
   add_function("create", f_create, "function(program|object:void)", OPT_EXTERNAL_DEPEND);
 
@@ -299,20 +325,21 @@ void init_cbc_programs(void)
 
   add_function("set_encrypt_key", f_set_encrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("set_decrypt_key", f_set_decrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("set_iv", f_set_iv, "function(string:void)", OPT_SIDE_EFFECT);
   add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
   add_function("encrypt_block", f_encrypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
   add_function("decrypt_block", f_decrypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
 
-  set_init_callback(init_pike_cbc);
-  set_exit_callback(exit_pike_cbc);
+  set_init_callback(init_pike_crypto_cbc);
+  set_exit_callback(exit_pike_crypto_cbc);
 
-  pike_cbc_program = end_c_program("/precompiled/crypto/cbc");
-  pike_cbc_program->refs++;
+  pike_crypto_cbc_program = end_c_program(MODULE_PREFIX "cbc");
+  pike_crypto_cbc_program->refs++;
 }
 
-void exit_cbc(void)
+void MOD_EXIT(cbc)(void)
 {
   /* free_program()s */
-  free_program(pike_cbc_program);
+  free_program(pike_crypto_cbc_program);
 }
 

@@ -15,6 +15,9 @@
 
 #include "sha.h"
 
+/* Module specific includes */
+#include "precompiled_crypto.h"
+
 #define THIS ((struct sha_ctx *)(fp->current_storage))
 #define OBTOCTX(o) ((struct sha_ctx *)(o->storage))
 
@@ -54,19 +57,19 @@ static void shamod_digest(INT32 args)
   push_string(end_shared_string(s));
 }
 
-void init_sha_efuns(void) {}
-void exit_sha(void)
+void MOD_INIT2(sha)(void) {}
+void MOD_EXIT(sha)(void)
 {
   free_program(shamod_program);
 }
 
-void init_sha_programs(void)
+void MOD_INIT(sha)(void)
 {
   start_new_program();
   add_storage(sizeof(struct sha_ctx));
   add_function("create", shamod_create, "function(void|object:void)", 0);
   add_function("update", shamod_update, "function(string:void)", 0);
   add_function("digest", shamod_digest, "function(void:string)", 0);
-  shamod_program = end_c_program("/precompiled/crypto/sha");
+  shamod_program = end_c_program(MODULE_PREFIX "sha");
   shamod_program->refs++;
 }

@@ -8,34 +8,40 @@ PIKESRCDIR=../../pike/src
 PIKEBUILDDIR=../../../work/pike
 
 # The SSLeay root is here
-SSLROOT=/usr/local/ssl/
+#SSLROOT=/usr/local/ssl/
 
 # Include search path
-IFLAGS=-I$(PIKESRCDIR) -I$(PIKEBUILDDIR) -Iinclude -I$(SSLROOT)/include
+IFLAGS=-I$(PIKESRCDIR) -I$(PIKEBUILDDIR) -Iinclude -Ilib/descore
 
 # Additional C preprocessor flags
 CPPFLAGS=
 
 # The flags to generate a shared library
-CFLAGS=-Wall -O -shared -fpic $(IFLAGS) $(CPPFLAGS) -pedantic -Wall
+CFLAGS=-Wall -O -g -shared -fpic $(IFLAGS) $(CPPFLAGS) -pedantic -Wall
 
-LDFLAGS=-shared -fpic -Llib # -R$(SSLROOT)/lib -L$(SSLROOT)/lib
+LD=/usr/ccs/bin/ld
+
+LDFLAGS= -Llib -G # -R$(SSLROOT)/lib -L$(SSLROOT)/lib
 #LOADLIBES=-lcrypto -lssl
 
-OBJS=crypto.o md5.o md2.o idea.o des.o invert.o cbc.o pipe.o sha.o
+OBJS=crypto.o idea.o des.o invert.o cbc.o pipe.o sha.o # md5.o md2.o
+MODS=crypto.so
+#MODS=crypto_crypto.so crypto_idea.so crypto_des.so crypto_invert.so \
+#crypto_cbc.so crypto_pipe.so crypto_sha.so # crypto_md5.so crypto_md2.so
+
+.SUFFIXES: .c .o .so
+all: $(MODS)
 
 # The actual rules
 
-crypto.so: $(OBJS) lib/libib.a
-	$(CC) $(LDFLAGS) $(OBJS) -lib -o crypto.so
+crypto.so : $(OBJS) lib/libib.a
+	$(LD) $(LDFLAGS) $(OBJS) -lib -o $@
 
-idea.so: idea.o lib/libib.a
-	$(CC) $(LDFLAGS) idea.o -lib -o idea.so
-
-sha.so: sha.o lib/libib.a
-	$(CC) $(LDFLAGS) sha.o -lib -o sha.so
+crypto_%.so: %.o
+	$(LD) $(LDFLAGS) $< -lib  -o $@
 
 lib/libib.a:
 	cd lib; $(MAKE) libib.a
 
+$(MODS) : lib/libib.a
 $(OBJS) : precompiled_crypto.h

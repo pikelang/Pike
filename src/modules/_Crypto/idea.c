@@ -1,5 +1,5 @@
 /*
- * $Id: idea.c,v 1.5 1996/11/27 09:41:12 nisse Exp $
+ * $Id: idea.c,v 1.6 1997/01/14 18:28:29 nisse Exp $
  *
  * IDEA crypto module for Pike
  *
@@ -40,10 +40,8 @@
 /* Backend includes */
 #include <idea.h>
 
-#if 0
 /* Module specific includes */
 #include "precompiled_crypto.h"
-#endif
 
 #define THIS ((unsigned INT16 *)(fp->current_storage))
 #define OBTOCTX(o) ((unsigned INT16 *)(o->storage))
@@ -52,18 +50,18 @@
  * Globals
  */
 
-struct program *pike_idea_program;
+struct program *pike_crypto_idea_program;
 
 /*
  * Functions
  */
 
-void init_pike_idea(struct object *o)
+void init_pike_crypto_idea(struct object *o)
 {
   MEMSET(THIS, 0, sizeof(INT16[IDEA_KEYLEN]));
 }
 
-void exit_pike_idea(struct object *o)
+void exit_pike_crypto_idea(struct object *o)
 {
   MEMSET(THIS, 0, sizeof(INT16[IDEA_KEYLEN]));
 }
@@ -114,6 +112,8 @@ static void f_set_encrypt_key(INT32 args)
   idea_expand(THIS, (unsigned char *)sp[-1].u.string->str);
   
   pop_n_elems(args);
+  this_object()->refs++;
+  push_object(this_object());
 }
 
 /* void set_decrypt_key(string) */
@@ -157,12 +157,12 @@ static void f_crypt_block(INT32 args)
  * Module linkage
  */
 
-void init_idea_efuns(void)
+void MOD_INIT2(idea)(void)
 {
   /* add_efun()s */
 }
 
-void init_idea_programs(void)
+void MOD_INIT(idea)(void)
 {
   /*
    * start_new_program();
@@ -188,19 +188,19 @@ void init_idea_programs(void)
   add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
   add_function("query_block_size", f_query_block_size, "function(void:int)", OPT_TRY_OPTIMIZE);
   add_function("query_key_length", f_query_key_length, "function(void:int)", OPT_TRY_OPTIMIZE);
-  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
-  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:void)", OPT_SIDE_EFFECT);
+  add_function("set_encrypt_key", f_set_encrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
+  add_function("set_decrypt_key", f_set_decrypt_key, "function(string:object)", OPT_SIDE_EFFECT);
   add_function("crypt_block", f_crypt_block, "function(string:string)", OPT_EXTERNAL_DEPEND);
 
-  set_init_callback(init_pike_idea);
-  set_exit_callback(exit_pike_idea);
+  set_init_callback(init_pike_crypto_idea);
+  set_exit_callback(exit_pike_crypto_idea);
 
-  pike_idea_program = end_c_program("/precompiled/crypto/idea");
-  pike_idea_program->refs++;
+  pike_crypto_idea_program = end_c_program(MODULE_PREFIX "idea");
+  pike_crypto_idea_program->refs++;
 }
 
-void exit_idea(void)
+void MOD_EXIT(idea)(void)
 {
   /* free_program()s */
-  free_program(pike_idea_program);
+  free_program(pike_crypto_idea_program);
 }
