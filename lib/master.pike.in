@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.276 2003/05/07 10:49:23 grubba Exp $
+// $Id: master.pike.in,v 1.277 2003/05/07 20:10:03 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -918,7 +918,10 @@ program handle_inherit(string pname, string current_file, object|void handler)
   return ret;
 }
 
-mapping (program:object) objects=([object_program(this_object()):this_object()]);
+mapping (program:object) objects=([
+  object_program(this_object()):this_object(),
+  object_program(_static_modules): _static_modules
+]);
 
 object low_cast_to_object(string oname, string current_file,
 			  object|void current_handler)
@@ -2690,8 +2693,9 @@ string describe_object(object o)
   string s;
   if(zero_type (o)) return 0;	// Destructed.
 
-  function(mixed...:void|object) parent_fun =
-    [function(mixed...:void|object)]object_program(o);
+  if (o == _static_modules) return "_static_modules";
+
+  program|function(mixed...:void|object) parent_fun = object_program(o);
 
   /* Constant object? */
   catch {
@@ -2735,6 +2739,9 @@ string describe_program(program|function p)
 {
   string s;
   if(!p) return 0;
+
+  if (p == object_program (_static_modules))
+    return "object_program(_static_modules)";
 
   if(programp(p) &&
      (s=get_clean_program_path([program]p, "object_program(", ")", "")))
