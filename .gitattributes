@@ -152,6 +152,7 @@ testfont binary
 /lib/modules/Protocols.pmod/X.pmod/Xlib.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/_Types.pmod foreign_ident
 /lib/modules/Protocols.pmod/X.pmod/_Xlib.pmod foreign_ident
+/lib/modules/Protocols.pmod/XMLRPC.pmod/testsuite.in foreign_ident
 /lib/modules/SSL.pmod/TODO foreign_ident
 /lib/modules/SSL.pmod/alert.pike foreign_ident
 /lib/modules/SSL.pmod/cipher.pike foreign_ident

@@ -1,0 +1,46 @@
+// $Id: testsuite.in,v 1.1 2002/08/20 19:02:13 nilsson Exp $
+
+define(test_xmlrpc, [[DOTEST(EQUAL,dnl
+array params =
+({
+  4711,
+  "Poderoso caballero es don dinero.",
+  7.0,
+  ([
+    "a":76,
+    "b":77,
+    "b":81,
+    "c":92,
+    "d":({ 8.0, "Samba Pa Ti" })
+  ]),
+  ({ 1, 2, 3 })
+});
+
+string fault_string = "This is a bogus error.";
+
+mixed a() { return [[$1]]; }
+mixed b() { return [[$2]]; }
+)]])
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_call(Protocols.XMLRPC.encode_call("f",params))->params;
+]], params)
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_call(Protocols.XMLRPC.encode_call("f",params))->method_name;
+]], "f")
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response(params));
+]], params)
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response_fault
+					      (42, fault_string))->fault_code;
+]], 42)
+
+test_xmlrpc([[
+  Protocols.XMLRPC.decode_response(Protocols.XMLRPC.encode_response_fault
+					      (42, fault_string))->fault_string;
+]], fault_string)
+
