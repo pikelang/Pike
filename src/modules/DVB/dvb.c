@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dvb.c,v 1.16 2002/11/19 16:11:29 hop Exp $
+|| $Id: dvb.c,v 1.17 2002/11/26 20:47:02 grubba Exp $
 */
 
 /*
@@ -1392,6 +1392,24 @@ static void f_stream_info(INT32 args) {
 
 }
 
+/*! @decl void close()
+ *!
+ *! Closes an open stream.
+ *!
+ *! @seealso
+ *!   @[read()]
+ */
+static void f_stream_close(INT32 args) {
+  if(DVBStream->fd != -1) {
+    close(DVBStream->fd);
+    if(DVBStream->pkt.payload != NULL)
+      free(DVBStream->pkt.payload);
+  }
+  DVBStream->fd = -1;
+  pop_n_elems(args);
+  push_int(0);
+}
+
 /*! @endclass
  */
 
@@ -1714,6 +1732,7 @@ PIKE_MODULE_INIT {
     add_function("read", f_stream_read, "function(int|void:string|int)", 0);
     add_function("set_buffer", f_stream_set_buffer, "function(int:int)", 0);
     add_function("info", f_stream_info, "function(int:mapping|int)", 0);
+    add_function("close", f_stream_info, "function(:void)", 0);
 
   dvb_stream_program = end_program();
   add_program_constant("Stream", dvb_stream_program, 0);
