@@ -281,7 +281,7 @@ function this_function()
   return backtrace()[-2][2];
 }
 
-mixed *sort_array(array *foo,void|function cmp,mixed ... args)
+varargs mixed *sort_array(array foo,function cmp,mixed ... args)
 {
   int ap,bp,retp;
   mixed *a,*b,*ret;
@@ -364,7 +364,7 @@ void create()
   add_efun("strstr",search);
   add_efun("sum_arrays",sum_arrays);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.1E-12"; });
+  add_efun("version",lambda() { return "uLPC v1.6E-12"; });
   add_efun("write_file",write_file);
   add_efun("get_function",get_function);
   add_efun("regexp",regexp);
