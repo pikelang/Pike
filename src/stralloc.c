@@ -196,6 +196,7 @@ void unlink_pike_string(struct pike_string *s)
   h=StrHash(s->str,s->len);
   propagate_shared_string(s,h);
   base_table[h]=s->next;
+  num_strings--;
 }
 
 void really_free_string(struct pike_string *s)
