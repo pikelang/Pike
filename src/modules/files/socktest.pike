@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.32 2005/01/14 20:46:11 grubba Exp $ */
+/* $Id: socktest.pike,v 1.33 2005/02/21 19:37:44 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -18,6 +18,16 @@ import String;
 #else /* !SOCK_DEBUG */
 #define DEBUG_WERR(X...)
 #endif /* SOCK_DEBUG */
+
+#ifdef IPV6
+/* Run in IPv6 mode. */
+#define ANY		"::"
+#define LOOPBACK	"::1"
+#else /* !IPV6 */
+/* Run in IPv4 mode. */
+#define ANY		0
+#define LOOPBACK	"127.0.0.1"
+#endif /* IPV6 */
 
 //int idnum;
 //mapping in_cleanup=([]);
@@ -152,7 +162,7 @@ class Socket {
       assign(o);
       destruct(o);
     }else{
-      if(!open_socket())
+      if(!open_socket(0, ANY))
       {
 	werror("Failed to open socket: "+strerror(errno())+"\n");
 	fd_fail();
@@ -303,6 +313,8 @@ void got_oob0(mixed ignored, string got)
 
 inherit Port : port1;
 inherit Port : port2;
+inherit Port : port1_v6;
+inherit Port : port2_v6;
 void create() {}
 
 int portno1;
@@ -312,7 +324,13 @@ array(object(Socket)) stdtest()
 {
   object sock,sock2;
   sock=Socket();
-  sock->connect("127.0.0.1",portno2);
+  DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
+  if (!sock->connect(LOOPBACK, portno2)) {
+    werror("Connect(2) failed: (%d)\n", sock->errno());
+    sleep(1);
+    fd_fail();
+  }
+  DEBUG_WERR("Accepting...\n");
   sock2=port2::accept();
   if(!sock2)
   {
@@ -320,6 +338,9 @@ array(object(Socket)) stdtest()
     sleep(1);
     fd_fail();
   }
+  DEBUG_WERR("Socket connected: %O <==> %O\n",
+	     sock2->query_address(1),
+	     sock2->query_address());
   sock2=Socket(sock2);
   sock->output_buffer="foo";
   sock2->expected_data="foo";
@@ -333,7 +354,7 @@ array(object) spair(int type)
   sock1=File();
   if(!type)
   {
-    sock1->connect("127.0.0.1",portno2);
+    sock1->connect(LOOPBACK, portno2);
     sock2=port2::accept();
     if(!sock2)
     {
@@ -382,7 +403,7 @@ void finish()
 	for(int e=0;e<10;e++)
 	{
 	  sock1=Socket();
-	  sock1->connect("127.0.0.1",portno1);
+	  sock1->connect(LOOPBACK, portno1);
 	  sock1->output_buffer=data1;
 	}
 	break;
@@ -558,19 +579,20 @@ int main()
   }
 #endif /* constant(fork) */
 
-  if(!port1::bind(0, accept_callback))
+  if(!port1::bind(0, accept_callback, ANY))
   {
     werror("Bind failed. (%d)\n",port1::errno());
     fd_fail();
   }
+  DEBUG_WERR("port1: %O\n", port1::query_address());
   sscanf(port1::query_address(),"%*s %d",portno1);
 
-  if(!port2::bind(0))
+  if(!port2::bind(0, 0, ANY))
   {
     werror("Bind failed(2). (%d)\n",port2::errno());
     fd_fail();
   }
-
+  DEBUG_WERR("port2: %O\n", port2::query_address());
   sscanf(port2::query_address(),"%*s %d",portno2);
 
 #ifdef OOB_DEBUG
