@@ -2,11 +2,14 @@ inherit Tools.Shoot.Test;
 
 constant name="Read binary INT16";
 
-int n = 10000;
+int k = 100;
+int m = 10000;
+int n = m*k; // for reporting
 
 void perform()
 {
-   array_sscanf(Crypto.randomness.pike_random()->read(2*n),"%2c"*n);
+   for (int i=0; i<k; i++)
+      array_sscanf(Crypto.randomness.pike_random()->read(2*m),"%2c"*m);
 }
 
 string present_n(int ntot,int nruns,float tseconds,float useconds,int memusage)
