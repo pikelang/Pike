@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.86 2004/05/29 18:19:25 grubba Exp $
+|| $Id: interpreter.h,v 1.87 2004/09/22 17:55:29 grubba Exp $
 */
 
 #undef LOW_GET_ARG
@@ -94,6 +94,18 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #else /* !HAVE_COMPUTED_GOTO */
   unsigned INT32 prefix2=0,prefix=0;
 #endif /* HAVE_COMPUTED_GOTO */
+  /* Variables that are commonly used by the various opcodes.
+   * They are defined here to reduce the size of the stack frame.
+   */
+  struct svalue tmp, tmp2;
+  struct external_variable_context loc;
+  struct program *p;
+  struct object *o;
+  struct svalue *s;
+  DO_IF_DEBUG(dynamic_buffer save_buf);
+
+#undef LOCAL_VAR
+#define LOCAL_VAR(X)	/* Local variable defined above. */
 
 #ifdef HAVE_COMPUTED_GOTO
   goto *strap;

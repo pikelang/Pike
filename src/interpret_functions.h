@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.169 2004/08/26 16:12:12 grubba Exp $
+|| $Id: interpret_functions.h,v 1.170 2004/09/22 17:55:29 grubba Exp $
 */
 
 /*
@@ -104,6 +104,10 @@
 #define DONT_BRANCH	SKIPJUMP
 #endif
 
+#ifndef LOCAL_VAR
+#define LOCAL_VAR(X)	X
+#endif
+
 #ifndef OVERRIDE_JUMPS
 
 #undef GET_JUMP
@@ -201,14 +205,14 @@
 
 #undef DO_INDEX
 #define DO_INDEX do {				\
-  struct svalue s;				\
-  index_no_free(&s,Pike_sp-2,Pike_sp-1);	\
-  pop_2_elems();				\
-  *Pike_sp=s;					\
-  Pike_sp++;					\
-  dmalloc_touch_svalue(Pike_sp-1);		\
-  print_return_value();				\
-}while(0)
+    LOCAL_VAR(struct svalue tmp);		\
+    index_no_free(&tmp,Pike_sp-2,Pike_sp-1);	\
+    pop_2_elems();				\
+    *Pike_sp=tmp;				\
+    Pike_sp++;					\
+    dmalloc_touch_svalue(Pike_sp-1);		\
+    print_return_value();			\
+  }while(0)
 
 
 OPCODE0(F_UNDEFINED, "push UNDEFINED", I_UPDATE_SP, {
@@ -304,8 +308,8 @@ OPCODE1(F_ARROW_STRING, "->string", I_UPDATE_SP, {
 });
 
 OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
-  struct svalue tmp;
-  struct object *o;
+  LOCAL_VAR(struct object *o);
+  LOCAL_VAR(struct svalue tmp);
 
   if ((Pike_sp[-1].type == T_OBJECT) && ((o = Pike_sp[-1].u.object)->prog) &&
       (FIND_LFUN(o->prog, LFUN_ARROW) == -1)) {
@@ -321,7 +325,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
       tmp.u.integer = 0;
     }
   } else {
-    struct svalue tmp2;
+    LOCAL_VAR(struct svalue tmp2);
     tmp2.type = PIKE_T_STRING;
     tmp2.u.string = lfun_strings[arg1];
     tmp2.subtype = 1;
@@ -339,9 +343,10 @@ OPCODE1(F_LFUN, "local function", I_UPDATE_SP, {
 });
 
 OPCODE2(F_TRAMPOLINE, "trampoline", I_UPDATE_SP, {
-  struct object *o=low_clone(pike_trampoline_program);
   struct pike_frame *f=Pike_fp;
   DO_IF_DEBUG(INT32 arg2_ = arg2);
+  LOCAL_VAR(struct object *o);
+  o = low_clone(pike_trampoline_program);
 
   while(arg2--) {
     DO_IF_DEBUG({
@@ -376,7 +381,7 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, 
   *(Pike_mark_sp++)=Pike_sp;
 
   OPCODE2(F_EXTERNAL,"external", I_UPDATE_SP, {
-    struct external_variable_context loc;
+    LOCAL_VAR(struct external_variable_context loc);
 
     loc.o=Pike_fp->current_object;
     loc.parent_identifier=Pike_fp->fun;
@@ -406,7 +411,7 @@ OPCODE2_TAIL(F_MARK_AND_EXTERNAL, "mark & external", I_UPDATE_SP|I_UPDATE_M_SP, 
 
 
 OPCODE2(F_EXTERNAL_LVALUE, "& external", I_UPDATE_SP, {
-  struct external_variable_context loc;
+  LOCAL_VAR(struct external_variable_context loc);
 
   loc.o=Pike_fp->current_object;
   loc.parent_identifier=Pike_fp->fun;
@@ -662,11 +667,11 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   if( (1 << Pike_sp[-2].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
-    struct svalue s;
-    s.type = PIKE_T_INT;
-    s.subtype = 0;
-    s.u.integer = 0;
-    assign_lvalue(Pike_sp-4, &s);
+    LOCAL_VAR(struct svalue tmp);
+    tmp.type = PIKE_T_INT;
+    tmp.subtype = 0;
+    tmp.u.integer = 0;
+    assign_lvalue(Pike_sp-4, &tmp);
   }
 });
 
@@ -686,11 +691,11 @@ OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
   if( (1 << Pike_sp[-3].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
-    struct svalue s;
-    s.type = PIKE_T_INT;
-    s.subtype = 0;
-    s.u.integer = 0;
-    assign_lvalue(Pike_sp-5, &s);
+    LOCAL_VAR(struct svalue tmp);
+    tmp.type = PIKE_T_INT;
+    tmp.subtype = 0;
+    tmp.u.integer = 0;
+    assign_lvalue(Pike_sp-5, &tmp);
   }
 });
 
@@ -725,11 +730,11 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
   if( (1 << Pike_sp[-2].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
-    struct svalue s;
-    s.type=PIKE_T_INT;
-    s.subtype=0;
-    s.u.integer=0;
-    assign_lvalue(Pike_sp-4,&s);
+    LOCAL_VAR(struct svalue tmp);
+    tmp.type=PIKE_T_INT;
+    tmp.subtype=0;
+    tmp.u.integer=0;
+    assign_lvalue(Pike_sp-4, &tmp);
   } else if (Pike_sp[-2].type == T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
     int i;
@@ -782,11 +787,11 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
   if( (1 << Pike_sp[-2].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
-    struct svalue s;
-    s.type=PIKE_T_INT;
-    s.subtype=0;
-    s.u.integer=0;
-    assign_lvalue(Pike_sp-4,&s);
+    LOCAL_VAR(struct svalue tmp);
+    tmp.type=PIKE_T_INT;
+    tmp.subtype=0;
+    tmp.u.integer=0;
+    assign_lvalue(Pike_sp-4, &tmp);
   } else if (Pike_sp[-2].type == PIKE_T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
     int i;
@@ -1060,7 +1065,7 @@ OPCODE0_BRANCH(F_BRANCH, "branch", 0, {
 });
 
 OPCODE2_BRANCH(F_BRANCH_IF_NOT_LOCAL_ARROW, "branch if !local->x", 0, {
-  struct svalue tmp;
+  LOCAL_VAR(struct svalue tmp);
   tmp.type=PIKE_T_STRING;
   tmp.u.string=Pike_fp->context.prog->strings[arg1];
   tmp.subtype=1;
@@ -1280,11 +1285,11 @@ OPCODE1_JUMP(F_SWITCH, "switch", I_UPDATE_ALL, {
 
 OPCODE1_JUMP(F_SWITCH_ON_INDEX, "switch on index", I_UPDATE_ALL, {
   INT32 tmp;
-  struct svalue s;
   PIKE_OPCODE_T *addr;
+  LOCAL_VAR(struct svalue tmp2);
   JUMP_SET_TO_PC_AT_NEXT (addr);
-  index_no_free(&s,Pike_sp-2,Pike_sp-1);
-  Pike_sp++[0]=s;
+  index_no_free(&tmp2, Pike_sp-2, Pike_sp-1);
+  Pike_sp++[0] = tmp2;
 
   tmp=switch_lookup(Pike_fp->context.prog->
 		    constants[arg1].sval.u.array,Pike_sp-1);
@@ -1630,15 +1635,17 @@ OPCODE0(F_PUSH_ARRAY, "@", I_UPDATE_SP, {
 });
 
 OPCODE2(F_LOCAL_LOCAL_INDEX, "local[local]", I_UPDATE_SP, {
-  struct svalue *s=Pike_fp->locals+arg1;
+  LOCAL_VAR(struct svalue *s);
+  s = Pike_fp->locals + arg1;
   if(s->type == PIKE_T_STRING) s->subtype=0;
   Pike_sp++->type=PIKE_T_INT;
   index_no_free(Pike_sp-1,Pike_fp->locals+arg2,s);
 });
 
 OPCODE1(F_LOCAL_INDEX, "local index", 0, {
-  struct svalue tmp;
-  struct svalue *s = Pike_fp->locals+arg1;
+  LOCAL_VAR(struct svalue *s);
+  LOCAL_VAR(struct svalue tmp);
+  s = Pike_fp->locals + arg1;
   if(s->type == PIKE_T_STRING) s->subtype=0;
   index_no_free(&tmp,Pike_sp-1,s);
   free_svalue(Pike_sp-1);
@@ -1646,8 +1653,8 @@ OPCODE1(F_LOCAL_INDEX, "local index", 0, {
 });
 
 OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
-  struct svalue tmp;
-  struct svalue *s;
+  LOCAL_VAR(struct svalue *s);
+  LOCAL_VAR(struct svalue tmp);
   low_object_index_no_free(Pike_sp,
 			   Pike_fp->current_object,
 			   arg1 + Pike_fp->context.identifier_level);
@@ -1660,7 +1667,7 @@ OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]", I_UPDATE_SP, {
 });
 
 OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
-  struct svalue tmp;
+  LOCAL_VAR(struct svalue tmp);
   tmp.type=PIKE_T_STRING;
   tmp.u.string=Pike_fp->context.prog->strings[arg1];
   tmp.subtype=1;
@@ -1671,8 +1678,8 @@ OPCODE2(F_LOCAL_ARROW, "local->x", I_UPDATE_SP, {
 });
 
 OPCODE1(F_ARROW, "->x", 0, {
-  struct svalue tmp;
-  struct svalue tmp2;
+  LOCAL_VAR(struct svalue tmp);
+  LOCAL_VAR(struct svalue tmp2);
   tmp.type=PIKE_T_STRING;
   tmp.u.string=Pike_fp->context.prog->strings[arg1];
   tmp.subtype=1;
@@ -1683,8 +1690,8 @@ OPCODE1(F_ARROW, "->x", 0, {
 });
 
 OPCODE1(F_STRING_INDEX, "string index", 0, {
-  struct svalue tmp;
-  struct svalue tmp2;
+  LOCAL_VAR(struct svalue tmp);
+  LOCAL_VAR(struct svalue tmp2);
   tmp.type=PIKE_T_STRING;
   tmp.u.string=Pike_fp->context.prog->strings[arg1];
   tmp.subtype=0;
@@ -1796,7 +1803,7 @@ OPCODE0(F_SOFT_CAST, "soft cast", I_UPDATE_SP, {
 OPCODE0_ALIAS(F_RANGE, "range", I_UPDATE_SP, o_range);
 
 OPCODE0(F_COPY_VALUE, "copy_value", 0, {
-  struct svalue tmp;
+  LOCAL_VAR(struct svalue tmp);
   copy_svalues_recursively_no_free(&tmp,Pike_sp-1,1,0);
   free_svalue(Pike_sp-1);
   Pike_sp[-1]=tmp;
@@ -1804,19 +1811,19 @@ OPCODE0(F_COPY_VALUE, "copy_value", 0, {
 });
 
 OPCODE0(F_INDIRECT, "indirect", I_UPDATE_SP, {
-  struct svalue s;
-  lvalue_to_svalue_no_free(&s,Pike_sp-2);
-  if(s.type != PIKE_T_STRING)
+  LOCAL_VAR(struct svalue tmp);
+  lvalue_to_svalue_no_free(&tmp, Pike_sp-2);
+  if(tmp.type != PIKE_T_STRING)
   {
     pop_2_elems();
-    *Pike_sp=s;
+    *Pike_sp = tmp;
     Pike_sp++;
   }else{
-    struct object *o;
+    LOCAL_VAR(struct object *o);
     o=low_clone(string_assignment_program);
     ((struct string_assignment_storage *)o->storage)->lval[0]=Pike_sp[-2];
     ((struct string_assignment_storage *)o->storage)->lval[1]=Pike_sp[-1];
-    ((struct string_assignment_storage *)o->storage)->s=s.u.string;
+    ((struct string_assignment_storage *)o->storage)->s=tmp.u.string;
     Pike_sp-=2;
     push_object(o);
   }
@@ -1940,12 +1947,14 @@ MKAPPLY(OPCODE0,CALL_FUNCTION,"call function",APPLY_STACK, 0,0);
 
 OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
-  struct svalue *s=Pike_sp-args;
+  LOCAL_VAR(struct svalue *s);
+  s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
   if(s->type == T_OBJECT)
   {
-    struct object *o=s->u.object;
-    struct program *p;
+    LOCAL_VAR(struct object *o);
+    LOCAL_VAR(struct program *p);
+    o = s->u.object;
     if((p=o->prog))
     {
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
@@ -1969,8 +1978,8 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
   }
 
   {
-    struct svalue tmp;
-    struct svalue tmp2;
+    LOCAL_VAR(struct svalue tmp);
+    LOCAL_VAR(struct svalue tmp2);
 
     tmp.type=PIKE_T_STRING;
     tmp.u.string=Pike_fp->context.prog->strings[arg1];
@@ -1994,12 +2003,14 @@ OPCODE1_JUMP(F_CALL_OTHER,"call other", I_UPDATE_ALL, {
 
 OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
-  struct svalue *s=Pike_sp-args;
+  LOCAL_VAR(struct svalue *s);
+  s = Pike_sp-args;
   JUMP_SET_TO_PC_AT_NEXT (Pike_fp->return_addr);
   if(s->type == T_OBJECT)
   {
-    struct object *o=s->u.object;
-    struct program *p;
+    LOCAL_VAR(struct object *o);
+    LOCAL_VAR(struct program *p);
+    o = s->u.object;
     if((p=o->prog))
     {
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
@@ -2025,8 +2036,8 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
   }
 
   {
-    struct svalue tmp;
-    struct svalue tmp2;
+    LOCAL_VAR(struct svalue tmp);
+    LOCAL_VAR(struct svalue tmp2);
 
     tmp.type=PIKE_T_STRING;
     tmp.u.string=Pike_fp->context.prog->strings[arg1];
@@ -2051,11 +2062,13 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_POP,"call other & pop", I_UPDATE_ALL, {
 
 OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   INT32 args=DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp));
-  struct svalue *s=Pike_sp-args;
+  LOCAL_VAR(struct svalue *s);
+  s = Pike_sp - args;
   if(s->type == T_OBJECT)
   {
-    struct object *o=s->u.object;
-    struct program *p;
+    LOCAL_VAR(struct object *o);
+    LOCAL_VAR(struct program *p);
+    o = s->u.object;
     if((p=o->prog))
     {
       if(FIND_LFUN(p, LFUN_ARROW) == -1)
@@ -2081,8 +2094,8 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
   }
 
   {
-    struct svalue tmp;
-    struct svalue tmp2;
+    LOCAL_VAR(struct svalue tmp);
+    LOCAL_VAR(struct svalue tmp2);
 
     tmp.type=PIKE_T_STRING;
     tmp.u.string=Pike_fp->context.prog->strings[arg1];
@@ -2109,10 +2122,11 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 #define DO_CALL_BUILTIN(ARGS) do {					 \
   int args=(ARGS);							 \
   struct svalue *expected_stack=Pike_sp-args;				 \
-    struct svalue *s=&Pike_fp->context.prog->constants[arg1].sval;	 \
+  LOCAL_VAR(struct svalue *s);						 \
+  s = &Pike_fp->context.prog->constants[arg1].sval;			 \
   if(Pike_interpreter.trace_level)					 \
   {									 \
-    dynamic_buffer save_buf;						 \
+    LOCAL_VAR(dynamic_buffer save_buf);					 \
     init_buf(&save_buf);						 \
     if (s->u.efun->name->size_shift)					 \
       my_strcat ("[widestring function name]");				 \
@@ -2140,7 +2154,7 @@ OPCODE1_JUMP(F_CALL_OTHER_AND_RETURN,"call other & return", I_UPDATE_ALL, {
 	    s->u.efun->name->str, s->u.efun->may_return_void);		 \
   }									 \
   if(Pike_interpreter.trace_level>1) {					 \
-    dynamic_buffer save_buf;						 \
+    LOCAL_VAR(dynamic_buffer save_buf);					 \
     init_buf(&save_buf);						 \
     if (s->u.efun->name->size_shift)					 \
       my_strcat ("[widestring function name]");				 \
@@ -2278,8 +2292,9 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", I_UPDATE_ALL, {
 
 /* Assume that the number of arguments is correct */
 OPCODE1_PTRJUMP(F_COND_RECUR, "recur if not overloaded", I_UPDATE_ALL, {
-  struct program *p = Pike_fp->current_object->prog;
   PIKE_OPCODE_T *addr;
+  LOCAL_VAR(struct program *p);
+  p = Pike_fp->current_object->prog;
   JUMP_SET_TO_PC_AT_NEXT (addr);
   Pike_fp->return_addr = (PIKE_OPCODE_T *)(((INT32 *)addr) + 1);
 
@@ -2387,10 +2402,12 @@ OPCODE0_JUMP(F_BREAKPOINT, "breakpoint", 0, {
 #endif
 
 OPCODE1(F_THIS_OBJECT, "this_object", I_UPDATE_SP, {
-    struct object *o = Pike_fp->current_object;
     int level;
+    LOCAL_VAR(struct object *o);
+    o = Pike_fp->current_object;
     for (level = 0; level < arg1; level++) {
-      struct program *p = o->prog;
+      LOCAL_VAR(struct program *p);
+      p = o->prog;
       if (!p)
 	Pike_error ("Object %d level(s) up is destructed - cannot get the parent.\n",
 		    level);
