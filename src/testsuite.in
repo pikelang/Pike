@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.151 1999/03/02 03:13:31 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.152 1999/03/03 02:39:43 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2891,8 +2891,13 @@ void test_dir(string dir)
     {
       test_dir(file);
     }else if(stat[1]>=0){
-      if(glob("*.pike",file) || glob("*.pmod",file))
-        (program)file;
+      if(!glob("*/my_struct.pmod",file))
+      {
+        if(glob("*.pike",file) || glob("*.pmod",file))
+        {
+          (program)file;
+        }
+      }
     }
   }
 }
