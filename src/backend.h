@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.24 2004/04/05 01:32:27 mast Exp $
+|| $Id: backend.h,v 1.25 2004/04/05 21:50:12 mast Exp $
 */
 
 #ifndef BACKEND_H
@@ -23,9 +23,11 @@ PMOD_EXPORT extern int fds_size;
 PMOD_EXPORT extern struct program *Backend_program;
 
 PMOD_EXPORT void debug_check_fd_not_in_use (int fd);
+#if 1
 struct Backend_struct *get_backend_for_fd(int fd);
 PMOD_EXPORT struct object *get_backend_obj_for_fd (int fd);
 PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new);
+#endif
 
 PMOD_EXPORT struct object *get_backend_obj (struct Backend_struct *b);
 PMOD_EXPORT void wake_up_backend(void);
@@ -82,13 +84,15 @@ struct fd_callback_box
 #define PIKE_FD_WRITE		1
 #define PIKE_FD_READ_OOB	2
 #define PIKE_FD_WRITE_OOB	3
-#define PIKE_FD_NUM_EVENTS	4
+#define PIKE_FD_ERROR		4
+#define PIKE_FD_NUM_EVENTS	5
 
 /* Flags for event bitfields. */
 #define PIKE_BIT_FD_READ	(1 << PIKE_FD_READ)
 #define PIKE_BIT_FD_WRITE	(1 << PIKE_FD_WRITE)
 #define PIKE_BIT_FD_READ_OOB	(1 << PIKE_FD_READ_OOB)
 #define PIKE_BIT_FD_WRITE_OOB	(1 << PIKE_FD_WRITE_OOB)
+#define PIKE_BIT_FD_ERROR	(1 << PIKE_FD_ERROR)
 
 /* Note: If ref_obj is used, both unhook_fd_callback_box and
  * set_fd_callback_events might free the object containing the box.
@@ -105,6 +109,7 @@ PMOD_EXPORT void change_fd_for_box (struct fd_callback_box *box, int new_fd);
 
 typedef int (*file_callback)(int,void *);
 
+#if 1
 PMOD_EXPORT void set_read_callback(int fd,file_callback cb,void *data);
 PMOD_EXPORT void set_write_callback(int fd,file_callback cb,void *data);
 PMOD_EXPORT void set_read_oob_callback(int fd,file_callback cb,void *data);
@@ -117,6 +122,7 @@ PMOD_EXPORT void *query_read_callback_data(int fd);
 PMOD_EXPORT void *query_write_callback_data(int fd);
 PMOD_EXPORT void *query_read_oob_callback_data(int fd);
 PMOD_EXPORT void *query_write_oob_callback_data(int fd);
+#endif
 
 #define add_backend_callback(X,Y,Z) \
   dmalloc_touch(struct callback *,debug_add_backend_callback((X),(Y),(Z)))

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.124 2004/04/05 16:07:09 mast Exp $
+|| $Id: backend.cmod,v 1.125 2004/04/05 21:50:12 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.124 2004/04/05 16:07:09 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.125 2004/04/05 21:50:12 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2360,8 +2360,6 @@ PIKECLASS Backend
 		if (box->callback (box, PIKE_FD_READ_OOB) == -1)
 		  goto backend_round_done;
 	      }
-	      else if (!WANT_EVENT (box, READ) && !WANT_EVENT (box, WRITE))
-		MY_FD_CLR(&me->set, i, MY_POLLEXCEPT);
 	    }
 	  }
 	  
@@ -2375,8 +2373,6 @@ PIKECLASS Backend
 	      if (box->callback (box, PIKE_FD_READ) == -1)
 		goto backend_round_done;
 	    }
-	    else
-	      MY_FD_CLR(&me->set, i, MY_POLLIN);
 	  }
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
@@ -2399,23 +2395,28 @@ PIKECLASS Backend
 	      if (box->callback (box, PIKE_FD_WRITE) == -1)
 		goto backend_round_done;
 	    }
-	    else
-	      MY_FD_CLR(&me->set, i, MY_POLLOUT);
 	  }
 
 	  if (err) {
+	    int old_events;
 	    errno = err;
-	    /* We don't want to keep this fd anymore. */
-	    MY_FD_CLR(&me->set, i, MY_POLLIN);
-	    MY_FD_CLR(&me->set, i, MY_POLLOUT);
-	    MY_FD_CLR(&me->set, i, MY_POLLEXCEPT);
 	    box = SAFE_GET_ACTIVE_BOX (me, i);
-	    if (WANT_EVENT (box, READ)) {
+	    /* We don't want to keep this fd anymore. */
+	    old_events = box->events;
+	    set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
+	    if (WANT_EVENT (box, ERROR)) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: error event %d on fd %d sent to %p\n",
+			    me->id, err, i, box->ref_obj));
+	      if (box->callback (box, PIKE_FD_ERROR) == -1)
+		goto backend_round_done;
+	    }
+	    /* The following is temporary compat stuff. */
+	    else if (old_events & PIKE_BIT_FD_READ) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
 			    me->id, i, box->ref_obj, err));
 	      if (box->callback (box, PIKE_FD_READ) == -1)
 		goto backend_round_done;
-	    } else if (WANT_EVENT (box, WRITE)) {
+	    } else if (old_events & PIKE_BIT_FD_WRITE) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
 			    me->id, i, box->ref_obj, err));
 	      if (box->callback (box, PIKE_FD_WRITE) == -1)
@@ -2483,15 +2484,6 @@ PIKECLASS Backend
 	      if (box->callback (box, PIKE_FD_READ_OOB) == -1)
 		goto backend_round_done;
 	    }
-	    else {
-#ifndef USE_POLL_DEVICE
-	      if (!WANT_EVENT (box, READ)) {
-		MY_FD_CLR(&me->set, fd, MY_POLLEXCEPT);
-	      } else {
-		MY_FD_CLR_RDBAND(&me->set, fd);
-	      }
-#endif /* !USE_POLL_DEVICE */
-	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
@@ -2507,10 +2499,6 @@ PIKECLASS Backend
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_READ) == -1)
 		goto backend_round_done;
-	    } else {
-#ifndef USE_POLL_DEVICE
-	      MY_FD_CLR(&me->set, fd, MY_POLLIN);
-#endif /* !USE_POLL_DEVICE */
 	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -2527,15 +2515,6 @@ PIKECLASS Backend
 	      if (box->callback (box, PIKE_FD_WRITE_OOB) == -1)
 		goto backend_round_done;
 	    }
-	    else {
-#ifndef USE_POLL_DEVICE
-	      if (!WANT_EVENT (box, WRITE)) {
-		MY_FD_CLR(&me->set, fd, MY_POLLWREXCEPT);
-	      } else {
-		MY_FD_CLR_WRBAND(&me->set, fd);
-	      }
-#endif /* !USE_POLL_DEVICE */
-	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
 #endif /* PIKE_DEBUG */
@@ -2550,10 +2529,6 @@ PIKECLASS Backend
 	      errno = 0;
 	      if (box->callback (box, PIKE_FD_WRITE) == -1)
 		goto backend_round_done;
-	    } else {
-#ifndef USE_POLL_DEVICE
-	      MY_FD_CLR(&me->set, fd, MY_POLLOUT);
-#endif /* !USE_POLL_DEVICE */
 	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
@@ -2567,6 +2542,7 @@ PIKECLASS Backend
 	  if (CHECK_EVENT(ACTIVE_POLLSET[i], POLLHUP|POLLERR))
 	  {
 	    /* Closed or error */
+	    int old_events;
 	    errno = 0;
 	    if (CHECK_EVENT(ACTIVE_POLLSET[i], POLLERR)) {
 	      int err;
@@ -2585,17 +2561,23 @@ PIKECLASS Backend
 	    else {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: POLLHUP on %d\n", me->id, fd));
 	    }
-	    /* We don't want to keep this fd anymore. */
-#ifndef USE_POLL_DEVICE
-	    MY_FD_CLR(&me->set, fd, ~0);
-#endif /* !USE_POLL_DEVICE */
 	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    if (WANT_EVENT (box, READ)) {
+	    /* We don't want to keep this fd anymore. */
+	    old_events = box->events;
+	    set_fd_callback_events (box, box->events & ~PIKE_BIT_FD_ERROR);
+	    if (WANT_EVENT (box, ERROR)) {
+	      IF_PD(fprintf(stderr, "BACKEND[%d]: error event %d on fd %d sent to %p\n",
+			    me->id, err, i, box->ref_obj));
+	      if (box->callback (box, PIKE_FD_ERROR) == -1)
+		goto backend_round_done;
+	    }
+	    /* The following is temporary compat stuff. */
+	    else if (old_events & PIKE_BIT_FD_READ) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p) for error %d\n",
 			    me->id, fd, box->ref_obj, errno));
 	      if (box->callback (box, PIKE_FD_READ) == -1)
 		goto backend_round_done;
-	    } else if (WANT_EVENT (box, WRITE)) {
+	    } else if (old_events & PIKE_BIT_FD_WRITE) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p) for error %d\n",
 			    me->id, fd, box->ref_obj, errno));
 	      if (box->callback (box, PIKE_FD_WRITE) == -1)
@@ -3041,12 +3023,16 @@ PIKECLASS Backend
       if (me->inactive_boxes) {
 	FOR_EACH_INACTIVE_FD_BOX (me, box) {
 	    check_box (box, INT_MAX);
-	    box->backend = NULL;
 #ifdef PIKE_DEBUG
 	    if (box->callback == compat_box_dispatcher)
 	      Pike_fatal ("Got inactive callback in compat interface.\n");
 #endif
-	    if (box->ref_obj) free_object (box->ref_obj);
+
+	    if (box->backend) {
+	      box->backend = NULL;
+	      if (box->ref_obj && box->events)
+		free_object (box->ref_obj);
+	    }
 	  }
 
 	free(me->inactive_boxes);
