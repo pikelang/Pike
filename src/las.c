@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.347 2004/06/30 00:19:27 nilsson Exp $
+|| $Id: las.c,v 1.348 2004/07/05 22:54:13 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.347 2004/06/30 00:19:27 nilsson Exp $");
+RCSID("$Id: las.c,v 1.348 2004/07/05 22:54:13 nilsson Exp $");
 
 #include "interpret.h"
 #include "las.h"
@@ -135,12 +135,12 @@ void check_tree(node *n, int depth)
 	     */
 	    if(id->type != n->type)
 	    {
-	      fprintf(stderr, "Type of external node "
-		      "is not matching its identifier.\nid->type: ");
+	      fputs("Type of external node "
+		    "is not matching its identifier.\nid->type: ",stderr);
 	      simple_describe_type(id->type);
-	      fprintf(stderr, "\nn->type : ");
+	      fputs("\nn->type : ", stderr);
 	      simple_describe_type(n->type);
-	      fprintf(stderr, "\n");
+	      fputc('\n', stderr);
 
 	      Pike_fatal("Type of external node is not matching its identifier.\n");
 	    }
@@ -213,11 +213,11 @@ void check_tree(node *n, int depth)
   }
 
   if (n != orig_n) {
-    fprintf(stderr, "check_tree() lost track.\n");
+    fputs("check_tree() lost track.\n", stderr);
     d_flag = 0;
-    fprintf(stderr, "n:");
+    fputs("n:", stderr);
     print_tree(n);
-    fprintf(stderr, "orig_n:");
+    fputs("orig_n:", stderr);
     print_tree(orig_n);
     Pike_fatal("check_tree() lost track.\n");
   }
@@ -316,7 +316,7 @@ struct pike_type *find_return_type(node *n)
       } else {
 #ifdef PIKE_DEBUG
 	if (l_flag > 2) {
-	  fprintf(stderr, "Return with untyped argument.\n");
+	  fputs("Return with untyped argument.\n", stderr);
 	  print_tree(n);
 	}
 #endif /* PIKE_DEBUG */
@@ -2464,7 +2464,7 @@ static void low_print_tree(node *foo,int needlval)
   switch(l_flag > 99 ? -1 : foo->token)
   {
   case USHRT_MAX:
-    fprintf(stderr, "FREED_NODE");
+    fputs("FREED_NODE", stderr);
     break;
   case F_LOCAL:
     if(needlval) fputc('&', stderr);
@@ -2477,17 +2477,17 @@ static void low_print_tree(node *foo,int needlval)
     break;
 
   case '?':
-    fprintf(stderr, "(");
+    fputc('(', stderr);
     low_print_tree(_CAR(foo),0);
-    fprintf(stderr, ")?(");
+    fputs(")?(", stderr);
     if (_CDR(foo)) {
       low_print_tree(_CADR(foo),0);
-      fprintf(stderr, "):(");
+      fputs("):(", stderr);
       low_print_tree(_CDDR(foo),0);
     } else {
-      fprintf(stderr, "0:0");
+      fputs("0:0", stderr);
     }
-    fprintf(stderr, ")");
+    fputc(')', stderr);
     break;
 
   case F_IDENTIFIER:
@@ -2495,7 +2495,7 @@ static void low_print_tree(node *foo,int needlval)
     if (Pike_compiler->new_program) {
       fprintf(stderr, "id(%s)",ID_FROM_INT(Pike_compiler->new_program, foo->u.id.number)->name->str);
     } else {
-      fprintf(stderr, "unknown identifier");
+      fputs("unknown identifier", stderr);
     }
     break;
 
@@ -2528,20 +2528,20 @@ static void low_print_tree(node *foo,int needlval)
       fprintf(stderr, "trampoline<%s>",
 	      ID_FROM_INT(Pike_compiler->new_program, foo->u.trampoline.ident)->name->str);
     } else {
-      fprintf(stderr, "trampoline<unknown identifier>");
+      fputs("trampoline<unknown identifier>", stderr);
     }
     break;
 
   case F_ASSIGN:
     low_print_tree(_CDR(foo),1);
-    fprintf(stderr, "=");
+    fputc('=', stderr);
     low_print_tree(_CAR(foo),0);
     break;
 
   case F_POP_VALUE:
-    fprintf(stderr, "{");
+    fputc('{', stderr);
     low_print_tree(_CAR(foo), 0);
-    fprintf(stderr, "}");
+    fputc('}', stderr);
     break;
 
   case F_CAST:
@@ -2554,7 +2554,7 @@ static void low_print_tree(node *foo,int needlval)
     fprintf(stderr, "(%s){",s);
     free(s);
     low_print_tree(_CAR(foo),0);
-    fprintf(stderr, "}");
+    fputc('}', stderr);
     break;
   }
 
@@ -2568,7 +2568,7 @@ static void low_print_tree(node *foo,int needlval)
     fprintf(stderr, "[%s]{",s);
     free(s);
     low_print_tree(_CAR(foo),0);
-    fprintf(stderr, "}");
+    fputc('}', stderr);
     break;
   }
 
@@ -2578,9 +2578,9 @@ static void low_print_tree(node *foo,int needlval)
     {
       if(_CAR(foo)->type == void_type_string &&
 	 _CDR(foo)->type == void_type_string)
-	fprintf(stderr, ";\n");
+	fputs(";\n", stderr);
       else
-	fprintf(stderr, ",\n");
+	fputs(",\n", stderr);
     }
     low_print_tree(_CDR(foo),needlval);
     return;
@@ -2591,7 +2591,7 @@ static void low_print_tree(node *foo,int needlval)
     {
       if(_CAR(foo)->type == void_type_string &&
 	 _CDR(foo)->type == void_type_string)
-	fprintf(stderr, ";\n");
+	fputs(";\n", stderr);
       else
 	fputc(',', stderr);
     }
@@ -2624,26 +2624,26 @@ static void low_print_tree(node *foo,int needlval)
 
   case F_VAL_LVAL:
     low_print_tree(_CAR(foo),0);
-    fprintf(stderr, ",&");
+    fputs(",&", stderr);
     low_print_tree(_CDR(foo),0);
     return;
 
   case F_AUTO_MAP:
-    fprintf(stderr, "__automap__ ");
+    fputs("__automap__ ", stderr);
     low_print_tree(_CAR(foo),0);
-    fprintf(stderr, "(");
+    fputc('(', stderr);
     low_print_tree(_CDR(foo),0);
-    fprintf(stderr, ")");
+    fputc(')', stderr);
     return;
   case F_AUTO_MAP_MARKER:
     low_print_tree(_CAR(foo),0);
-    fprintf(stderr, "[*]");
+    fputs("[*]", stderr);
     return;
   case F_APPLY:
     low_print_tree(_CAR(foo),0);
-    fprintf(stderr, "(");
+    fputc('(', stderr);
     low_print_tree(_CDR(foo),0);
-    fprintf(stderr, ")");
+    fputc(')', stderr);
     return;
 
   case F_NORMAL_STMT_LABEL:
@@ -2653,30 +2653,31 @@ static void low_print_tree(node *foo,int needlval)
     return;
 
   case F_LOOP:
-    fprintf(stderr, "loop(");
+    fputs("loop(", stderr);
     if(car_is_node(foo)) low_print_tree(_CAR(foo),0);
-    fprintf(stderr, ",{");
+    fputs(",{", stderr);
     if(cdr_is_node(foo)) low_print_tree(_CDR(foo),0);
-    fprintf(stderr, "})");
+    fputs("})", stderr);
     return;
 
   default:
     if(!car_is_node(foo) && !cdr_is_node(foo))
     {
-      fprintf(stderr, "%s",get_token_name(foo->token));
+      fputs(get_token_name(foo->token), stderr);
       return;
     }
     if(foo->token<256)
     {
-      fprintf(stderr, "%c(",foo->token);
+      fputc(foo->token, stderr);
     }else{
-      fprintf(stderr, "%s(",get_token_name(foo->token));
+      fputs(get_token_name(foo->token), stderr);
     }
+    fputc('(', stderr);
     if(car_is_node(foo)) low_print_tree(_CAR(foo),0);
     if(car_is_node(foo) && cdr_is_node(foo))
       fputc(',', stderr);
     if(cdr_is_node(foo)) low_print_tree(_CDR(foo),0);
-    fprintf(stderr, ")");
+    fputc(')', stderr);
     return;
   }
 }
@@ -2685,8 +2686,7 @@ void print_tree(node *n)
 {
   check_tree(n,0);
   low_print_tree(n,0);
-  fprintf(stderr, "\n");
-  fflush(stdout);
+  fputc('\n', stderr);
 }
 
 
@@ -2852,14 +2852,14 @@ char *find_q(struct scope_info **a, int num, int scope_id)
   if ((*a) && ((*a)->scope_id == scope_id)) {
 #ifdef PIKE_DEBUG
     if (l_flag > 4) {
-      fprintf(stderr, "scope found.\n");
+      fputs("scope found.\n", stderr);
     }
 #endif /* PIKE_DEBUG */
     return (*a)->vars + num;
   }
 #ifdef PIKE_DEBUG
   if (l_flag > 4) {
-    fprintf(stderr, "Creating new scope.\n");
+    fputs("Creating new scope.\n", stderr);
   }
 #endif /* PIKE_DEBUG */
   new = (struct scope_info *)xalloc(sizeof(struct scope_info));
@@ -2931,11 +2931,11 @@ static int find_used_variables(node *n,
 	*q = VAR_BLOCKED;
 #ifdef PIKE_DEBUG
 	if (l_flag > 2) {
-	  fprintf(stderr, "blocked\n");
+	  fputs("blocked\n", stderr);
 	}
       } else {
 	if (l_flag > 2) {
-	  fprintf(stderr, "overwritten\n");
+	  fputs("overwritten\n", stderr);
 	}
 #endif /* PIKE_DEBUG */
       }
@@ -2946,11 +2946,11 @@ static int find_used_variables(node *n,
 	*q = VAR_USED;
 #ifdef PIKE_DEBUG
 	if (l_flag > 2) {
-	  fprintf(stderr, "used\n");
+	  fputs("used\n", stderr);
 	}
       } else {
 	if (l_flag > 2) {
-	  fprintf(stderr, "kept\n");
+	  fputs("kept\n", stderr);
 	}
 #endif /* PIKE_DEBUG */
       }
@@ -3203,7 +3203,7 @@ static int depend_p2(node *a, node *b)
   if (l_flag > 2) {
     struct scope_info *aaa = aa.locals;
     while (aaa) {
-      fprintf(stderr, "Used locals:\n");
+      fputs("Used locals:\n", stderr);
       for (e = 0; e < MAX_VAR; e++) {
 	if (aaa->vars[e] == VAR_USED) {
 	  fprintf(stderr, "\t%d:%d\n", aaa->scope_id, e);
@@ -3213,7 +3213,7 @@ static int depend_p2(node *a, node *b)
     }
     aaa = bb.locals;
     while (aaa) {
-      fprintf(stderr, "Written locals:\n");
+      fputs("Written locals:\n", stderr);
       for (e = 0; e < MAX_VAR; e++) {
 	if (aaa->vars[e] != VAR_UNUSED) {
 	  fprintf(stderr, "\t%d:%d\n", aaa->scope_id, e);
@@ -3330,16 +3330,16 @@ static int depend_p(node *a,node *b)
   int ret;
   if(l_flag > 3)
   {
-    fprintf(stderr,"Checking if: ");
+    fputs("Checking if: ", stderr);
     print_tree(a);
-    fprintf(stderr,"Depends on: ");
+    fputs("Depends on: ", stderr);
     print_tree(b);
     if(depend_p3(a,b))
     {
-      fprintf(stderr,"The answer is (durumroll) : yes\n");
+      fputs("The answer is (drumroll) : yes\n", stderr);
       return 1;
     }else{
-      fprintf(stderr,"The answer is (durumroll) : no\n");
+      fputs("The answer is (drumroll) : no\n", stderr);
       return 0;
     }
   }
@@ -3575,7 +3575,7 @@ void fix_type_field(node *n)
 	  struct pike_string *t2 = describe_type(CDR(n)->type);
 #ifdef PIKE_DEBUG
 	  if (l_flag > 0) {
-	    fprintf(stderr, "Warning: Invalid assignment: ");
+	    fputs("Warning: Invalid assignment: ", stderr);
 	    print_tree(n);
 	  }
 #endif /* PIKE_DEBUG */
@@ -5118,10 +5118,10 @@ static node *localopt(node *n)
 #ifdef PIKE_DEBUG
   if (l_flag > 0) {
     if ((n2 != n) || (l_flag > 4)) {
-      fprintf(stderr, "\nBefore localopt: ");
+      fputs("\nBefore localopt: ", stderr);
       print_tree(n);
 
-      fprintf(stderr,   "After localopt:  ");
+      fputs("After localopt:  ", stderr);
       print_tree(n2);
     }
   }
@@ -5293,9 +5293,9 @@ static void optimize(node *n)
     use_tmp1:
 #ifdef PIKE_DEBUG
       if (l_flag > 4) {
-	fprintf(stderr, "Optimized: ");
+	fputs("Optimized: ", stderr);
 	print_tree(n);
-	fprintf(stderr, "Result:    ");
+	fputs("Result:    ", stderr);
 	print_tree(tmp1);
       }
 #endif /* PIKE_DEBUG */
@@ -5332,7 +5332,7 @@ static void optimize(node *n)
 #ifdef PIKE_DEBUG
       if(l_flag > 3)
       {
-	fprintf(stderr,"Result:    ");
+	fputs("Result:    ", stderr);
 	print_tree(n);
       }
 #endif    
@@ -5693,7 +5693,7 @@ int dooptcode(struct pike_string *name,
 #ifdef PIKE_DEBUG
     if(a_flag > 4)
     {
-      fprintf(stderr,"Making prototype (pass 1) for: ");
+      fputs("Making prototype (pass 1) for: ", stderr);
       print_tree(n);
     }
 #endif
@@ -5743,7 +5743,7 @@ int dooptcode(struct pike_string *name,
 #ifdef PIKE_DEBUG
     if(a_flag > 2)
     {
-      fprintf(stderr,"Coding: ");
+      fputs("Coding: ", stderr);
       print_tree(check_node_hash(n));
     }
 #endif
