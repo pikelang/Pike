@@ -58,7 +58,7 @@
 
 #test Image.image->test(), ==
    object img=Image.image(10,10);
-   img=img->test();
+   img=img->test(42);
    if (equal(img->max(),({0,0,0}))) fail("failed");
    img->setpixel(2,2,0,255,0);
    if (img==img->invert()) fail("failed");
@@ -68,7 +68,7 @@
 #chapter copy
 
 #test Image.image->copy
-   object img=Image.image(100,100)->test();
+   object img=Image.image(100,100)->test(42);
    if (img!=img->copy()) fail("differ");
    if (img->copy(25,25,75,75)!=img->copy(25,25,75,75)) fail("subregion differ");
    if (img->copy(25,25,75,75)==img) fail("subregion doesn't differ");
@@ -77,14 +77,14 @@
    ok();
 
 #test Image.image->clear
-   object img=Image.image(100,100)->test();
+   object img=Image.image(100,100)->test(42);
    if (img->clear()==img) fail("doesn't differ");
    if (img->clear(0,0,0)!=0) fail("wrong color (black)");
    if (img->clear(1,255,0)!=({1,255,0})) fail("wrong color (color)");
    ok();
 
 #test Image.image->clone
-   object img=Image.image(100,100)->test();
+   object img=Image.image(100,100)->test(42);
    if (img!=img->clone()) fail("differ");
    img->setpixel(2,2,0,255,0);
    if (img->clone()==img->invert()->clone()) fail("clone of other doesn't differ");
@@ -321,7 +321,7 @@
 #chapter colortable
 
 #test colortable - standard
-   object img=Image.image(200,200)->test();
+   object img=Image.image(200,200)->test(42);
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
    object c=Image.colortable(img,1000)->cubicles(16,16,16,4);
    if (sizeof(c)<200) fail("too few colors");
@@ -330,7 +330,7 @@
    ok();
 
 #test colortable - floyd-steinberg
-   object img=Image.image(200,200)->test();
+   object img=Image.image(200,200)->test(42);
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
    object c=Image.colortable(32,32,32)->floyd_steinberg();
    object img1=(c*img);
@@ -338,7 +338,7 @@
    ok();
    
 #test colortable - ordered
-   object img=Image.image(200,200)->test();
+   object img=Image.image(200,200)->test(42);
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
    object c=Image.colortable(32,32,32)->ordered();
    object img1=(c*img);
@@ -350,13 +350,13 @@
 #chapter encoding/decoding
 
 #test Image.PNM.encode/decode
-   object img=Image.image(100,100)->test();
+   object img=Image.image(100,100)->test(40);
    object img1=Image.PNM.decode(Image.PNM.encode(img));
    if (img!=img1) fail("differ");
    ok();
 
 #test Image.GIF.encode/decode
-   object img=Image.image(100,100)->test();
+   object img=Image.image(100,100)->test(41);
    object c=Image.colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
    img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img));
@@ -364,7 +364,7 @@
    ok();
 
 #test Image.GIF.encode/decode colortable 
-   object img=Image.image(100,100)->test();
+   object img=Image.image(100,100)->test(42);
    object c=Image.colortable(img,256)->cubicles(16,16,16,1);
    img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img,c));
@@ -372,7 +372,7 @@
    ok();
 
 #test Image.GIF.encode/decode colortable w/ floyd-steinberg
-   object img=Image.image(100,100)->test();
+   object img=Image.image(100,100)->test(43);
    object c=Image.colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
    img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img,c));
@@ -386,12 +386,12 @@
    foreach (
     ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
        ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
-       ({ "cyan", ({ 0, 255, 255 }), ({ 128, 255, 255 }), 168 }),
+       ({ "cyan", ({ 0, 255, 255 }), ({ 127, 255, 255 }), 168 }),
        ({ "green", ({ 0, 255, 0 }), ({ 85, 255, 255 }), 127 }),
-       ({ "magenta", ({ 255, 0, 255 }), ({ 213, 255, 255 }), 128 }),
+       ({ "magenta", ({ 255, 0, 255 }), ({ 212, 255, 255 }), 128 }),
        ({ "red", ({ 255, 0, 0 }), ({ 0, 255, 255 }), 87 }),
        ({ "white", ({ 255, 255, 255 }), ({ 0, 0, 255 }), 255 }),
-       ({ "yellow", ({ 255, 255, 0 }), ({ 43, 255, 255 }), 214 }) }),
+       ({ "yellow", ({ 255, 255, 0 }), ({ 42, 255, 255 }), 214 }) }),
     array i)
    {
       object c1=Image.color(i[0]);

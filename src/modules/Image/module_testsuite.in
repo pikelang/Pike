@@ -117,7 +117,7 @@ mixed a(){
 
 #60 "testsuite.in.in"
 object img=Image.image(10,10);
-img=img->test();
+img=img->test(42);
 if (equal(img->max(),({0,0,0}))) do { werror("failure; Image.image/testsuite II/Image.image->test(), ==: "+( "failed" )+"\n"); return 0; } while (0);
 img->setpixel(2,2,0,255,0);
 if (img==img->invert()) do { werror("failure; Image.image/testsuite II/Image.image->test(), ==: "+( "failed" )+"\n"); return 0; } while (0);
@@ -134,7 +134,7 @@ mixed a(){
 
 
 #71 "testsuite.in.in"
-object img=Image.image(100,100)->test();
+object img=Image.image(100,100)->test(42);
 if (img!=img->copy()) do { werror("failure; Image.image/copy/Image.image->copy: "+( "differ" )+"\n"); return 0; } while (0);
 if (img->copy(25,25,75,75)!=img->copy(25,25,75,75)) do { werror("failure; Image.image/copy/Image.image->copy: "+( "subregion differ" )+"\n"); return 0; } while (0);
 if (img->copy(25,25,75,75)==img) do { werror("failure; Image.image/copy/Image.image->copy: "+( "subregion doesn't differ" )+"\n"); return 0; } while (0);
@@ -152,7 +152,7 @@ mixed a(){
 
 
 #80 "testsuite.in.in"
-object img=Image.image(100,100)->test();
+object img=Image.image(100,100)->test(42);
 if (img->clear()==img) do { werror("failure; Image.image/copy/Image.image->clear: "+( "doesn't differ" )+"\n"); return 0; } while (0);
 if (img->clear(0,0,0)!=0) do { werror("failure; Image.image/copy/Image.image->clear: "+( "wrong color (black)" )+"\n"); return 0; } while (0);
 if (img->clear(1,255,0)!=({1,255,0})) do { werror("failure; Image.image/copy/Image.image->clear: "+( "wrong color (color)" )+"\n"); return 0; } while (0);
@@ -168,7 +168,7 @@ mixed a(){
 
 
 #87 "testsuite.in.in"
-object img=Image.image(100,100)->test();
+object img=Image.image(100,100)->test(42);
 if (img!=img->clone()) do { werror("failure; Image.image/copy/Image.image->clone: "+( "differ" )+"\n"); return 0; } while (0);
 img->setpixel(2,2,0,255,0);
 if (img->clone()==img->invert()->clone()) do { werror("failure; Image.image/copy/Image.image->clone: "+( "clone of other doesn't differ" )+"\n"); return 0; } while (0);
@@ -514,7 +514,7 @@ mixed a(){
 
 
 #324 "testsuite.in.in"
-object img=Image.image(200,200)->test();
+object img=Image.image(200,200)->test(42);
 img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
 object c=Image.colortable(img,1000)->cubicles(16,16,16,4);
 if (sizeof(c)<200) do { werror("failure; Image.image/colortable/colortable - standard: "+( "too few colors" )+"\n"); return 0; } while (0);
@@ -532,7 +532,7 @@ mixed a(){
 
 
 #333 "testsuite.in.in"
-object img=Image.image(200,200)->test();
+object img=Image.image(200,200)->test(42);
 img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
 object c=Image.colortable(32,32,32)->floyd_steinberg();
 object img1=(c*img);
@@ -549,7 +549,7 @@ mixed a(){
 
 
 #341 "testsuite.in.in"
-object img=Image.image(200,200)->test();
+object img=Image.image(200,200)->test(42);
 img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
 object c=Image.colortable(32,32,32)->ordered();
 object img1=(c*img);
@@ -568,7 +568,7 @@ mixed a(){
 
 
 #353 "testsuite.in.in"
-object img=Image.image(100,100)->test();
+object img=Image.image(100,100)->test(40);
 object img1=Image.PNM.decode(Image.PNM.encode(img));
 if (img!=img1) do { werror("failure; Image.image/encoding/decoding/Image.PNM.encode/decode: "+( "differ" )+"\n"); return 0; } while (0);
 return 1;
@@ -583,7 +583,7 @@ mixed a(){
 
 
 #359 "testsuite.in.in"
-object img=Image.image(100,100)->test();
+object img=Image.image(100,100)->test(41);
 object c=Image.colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
 img=c*img;
 object img1=Image.GIF.decode(Image.GIF.encode(img));
@@ -600,7 +600,7 @@ mixed a(){
 
 
 #367 "testsuite.in.in"
-object img=Image.image(100,100)->test();
+object img=Image.image(100,100)->test(42);
 object c=Image.colortable(img,256)->cubicles(16,16,16,1);
 img=c*img;
 object img1=Image.GIF.decode(Image.GIF.encode(img,c));
@@ -617,7 +617,7 @@ mixed a(){
 
 
 #375 "testsuite.in.in"
-object img=Image.image(100,100)->test();
+object img=Image.image(100,100)->test(43);
 object c=Image.colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
 img=c*img;
 object img1=Image.GIF.decode(Image.GIF.encode(img,c));
@@ -638,12 +638,12 @@ mixed a(){
 foreach (
 ({ ({ "black", ({ 0, 0, 0 }), ({ 0, 0, 0 }), 0 }),
 ({ "blue", ({ 0, 0, 255 }), ({ 170, 255, 255 }), 41 }),
-({ "cyan", ({ 0, 255, 255 }), ({ 128, 255, 255 }), 168 }),
+({ "cyan", ({ 0, 255, 255 }), ({ 127, 255, 255 }), 168 }),
 ({ "green", ({ 0, 255, 0 }), ({ 85, 255, 255 }), 127 }),
-({ "magenta", ({ 255, 0, 255 }), ({ 213, 255, 255 }), 128 }),
+({ "magenta", ({ 255, 0, 255 }), ({ 212, 255, 255 }), 128 }),
 ({ "red", ({ 255, 0, 0 }), ({ 0, 255, 255 }), 87 }),
 ({ "white", ({ 255, 255, 255 }), ({ 0, 0, 255 }), 255 }),
-({ "yellow", ({ 255, 255, 0 }), ({ 43, 255, 255 }), 214 }) }),
+({ "yellow", ({ 255, 255, 0 }), ({ 42, 255, 255 }), 214 }) }),
 array i)
 {
 object c1=Image.color(i[0]);

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.108 1999/01/22 01:01:29 mirar Exp $ */
+/* $Id: image.c,v 1.109 1999/01/26 02:23:33 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.108 1999/01/22 01:01:29 mirar Exp $
+**!	$Id: image.c,v 1.109 1999/01/26 02:23:33 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.108 1999/01/22 01:01:29 mirar Exp $");
+RCSID("$Id: image.c,v 1.109 1999/01/26 02:23:33 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1673,6 +1673,7 @@ static void image_gradients(INT32 args)
 
 /*
 **! method object test()
+**! method object test(int seed)
 **!    	Generates a test image, currently random gradients.
 **!
 **!	<table><tr valign=center>
@@ -1693,7 +1694,8 @@ static void image_gradients(INT32 args)
 void image_test(INT32 args)
 {
    int i;
-   pop_n_elems(args);
+
+   if (args) f_random_seed(args);
 
    for (i=0; i<5; i++)
    {
@@ -3774,7 +3776,7 @@ void pike_module_init(void)
                 "function(:object)",0);
 
    add_function("test",image_test,
-		"function(:object)",0);
+		"function(void|int:object)",0);
 
    set_init_callback(init_image_struct);
    set_exit_callback(exit_image_struct);
