@@ -15,6 +15,7 @@ mixed `->(string s)
     }
     return tmp;
   }
+  return UNDEFINED;
 }
 
 
