@@ -72,6 +72,7 @@ test_eq([[Crypto.idea()
 
 // CAST
 test_true([[objectp(Crypto.cast())]])
+// encryption
 test_eq([[Crypto.cast()
           ->set_encrypt_key(Crypto.hex_to_string("0123456712345678"
 						 "234567893456789A"))
@@ -86,6 +87,21 @@ test_eq([[Crypto.cast()
           ->set_encrypt_key(Crypto.hex_to_string("0123456712"))
 	  ->crypt_block(Crypto.hex_to_string("0123456789ABCDEF"))]],
 	[[Crypto.hex_to_string("7AC816D16E9B302E")]])
+// decryption
+test_eq([[Crypto.cast()
+          ->set_decrypt_key(Crypto.hex_to_string("0123456712345678"
+						 "234567893456789A"))
+	  ->crypt_block(Crypto.hex_to_string("238B4FE5847E44B2"))]],
+	[[Crypto.hex_to_string("0123456789ABCDEF")]])
+test_eq([[Crypto.cast()
+          ->set_decrypt_key(Crypto.hex_to_string("0123456712345678"
+						 "2345"))
+	  ->crypt_block(Crypto.hex_to_string("EB6A711A2C02271B"))]],
+	[[Crypto.hex_to_string("0123456789ABCDEF")]])
+test_eq([[Crypto.cast()
+          ->set_decrypt_key(Crypto.hex_to_string("0123456712"))
+	  ->crypt_block(Crypto.hex_to_string("7AC816D16E9B302E"))]],
+	[[Crypto.hex_to_string("0123456789ABCDEF")]])
 
 // RC4
 test_true([[objectp(Crypto.rc4())]])
