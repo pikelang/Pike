@@ -84,6 +84,9 @@ string anchor(mixed a, mixed b, mixed c)
       add_to(foo[e], foo[..e]*".");
   }
 
+  if (a=="anchor")
+     return "<a name="+b->name+">"+c+"</a name="+b->name+">";
+
   return 0;
 }
 
@@ -276,7 +279,7 @@ string link(string tag, mapping params, string data)
   mixed tmp=aliases[params->to];
   if(!tmp)
     {
-      werror("Unlinked <link> :"+params->to+"\n");
+      werror("Unresolved <link> :"+params->to+"\n");
       return 0;
     }
 
@@ -321,6 +324,7 @@ string mkgif(object o)
 }
 
 mapping gifcache2=([]);
+mapping srccache=([]);
 
 string illustration(string tag, mapping params, string data)
 {
@@ -337,11 +341,26 @@ string illustration(string tag, mapping params, string data)
   string file;
   if(!(file=gifcache2[key]))
   {
-    if(params->src) img=img->fromppm(Process.popen("anytopnm "+src));
+    mixed e;
+    if(params->src) 
+       img=srccache[src] ||
+	  (srccache[src]=img->fromppm(Process.popen("anytopnm "+src)));
     if(scale!=1.0) img=img->scale(scale);
-    img=compile_string("object `()(object src){ "+data+" ; }")()(img);
-    file=mkgif(img);
-    gifcache2[key]=file;
+    if (e=catch 
+    {
+       img=compile_string("import Image;\n"
+			  "object `()(object src){ "+data+" ; }")()(img);
+       file=mkgif(img);
+       gifcache2[key]=file;
+    })
+    {
+	werror("error while compiling and running\n"+data+"\n");
+	if (params->__from__) 
+	   werror("from "+params->__from__+":\n");
+	werror(master()->describe_backtrace(e)+"\n");
+	return "<!-- failed to illustrate -->";
+    }
+    params-=(["__from__":0]);
   }
 
   return end_img_tag("<img src="+file,params);
@@ -385,7 +404,7 @@ int main()
   data=parse_html(data,(["include":do_include]),([]));
 
   /* Pass 1, find links for the index */
-  data=parse_html(data, ([]) , (["a":anchor]));
+  data=parse_html(data, ([]) , (["a":anchor,"anchor":anchor]));
 
   /* Pass 2, parse chapters and sections */
   data=parse_html(data, ([]) , TAGS);

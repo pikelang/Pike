@@ -101,10 +101,11 @@ static private int verify_any(SGML data, string in)
 	  i=0;
 	}
       case "p":
+      case "wbr":
       }
 
       if(x->data)
-	if(!verify_any(x->data,"  In tag "+x->tag+" near pos "+x->pos+"\n"+in))
+	if(!verify_any(x->data,"  In tag "+(x->tag=="anchor"?x->tag+" (name="+x->params->name+")":x->tag)+" near pos "+x->pos+"\n"+in))
 	  i=0;
     }
   }
@@ -731,6 +732,7 @@ void save_image_cache();
 
 int gifnum;
 mapping gifcache=([]);
+mapping srccache=([]);
 
 string mkgif(object o)
 {
@@ -771,9 +773,13 @@ object render_illustration(string pike_code, mapping params, float dpi)
   if(params->scale) dpi/=(float)params->scale;
   float scale=75.0/dpi;
 
-  if(params->src) img=img->fromppm(Process.popen("anytopnm 2>/dev/null "+src));
+  if(params->src) 
+     img=srccache[params->src]||
+	(srccache[params->src]=
+	 img->fromppm(Process.popen("anytopnm 2>/dev/null "+src)));
   if(scale!=1.0) img=img->scale(scale);
-  return compile_string("object `()(object src){ "+pike_code+" ; }")()(img);
+  return compile_string("import Image;\n"
+			"object `()(object src){ "+pike_code+" ; }")()(img);
 }
 
 private static string mkkey(mapping params, mixed ... other)
@@ -801,9 +807,20 @@ string illustration_to_gif(TAG data, float dpi)
   string ret=illustration_cache[key];
   if(!ret)
   {
-    ret=mkgif(render_illustration(pike_code,params, dpi));
-    illustration_cache[key]=ret;
-    save_image_cache();
+    mixed err=catch 
+    {
+       ret=mkgif(render_illustration(pike_code,params, dpi));
+       illustration_cache[key]=ret;
+       save_image_cache();
+    };
+    if (err)
+    {
+	werror("error while compiling and running\n"+pike_code+"\n");
+	if (params->__from__) 
+	   werror("from "+params->__from__+":\n");
+	werror(master()->describe_backtrace(err)+"\n");
+	return "failed to illustrate...";
+    }
   }
   return ret;
 }

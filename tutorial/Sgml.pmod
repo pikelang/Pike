@@ -128,6 +128,8 @@ SGML group(SGML data)
       if(strlen(foo->tag) && foo->tag[0]=='/')
       {
 	string tag=foo->tag[1..];
+	string t;
+	if (sscanf(tag,"%[^ \t\r\n>]%*s",t)==2) foo->tag=tag=t;
 	for(int d=sizeof(ret)-1;d>=0;d--)
 	{
 	  if(objectp(ret[d]) && !ret[d]->data && ret[d]->tag==tag)
