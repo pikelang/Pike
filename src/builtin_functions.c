@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.129 1998/10/14 05:48:45 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.130 1998/10/14 15:21:59 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -230,11 +230,14 @@ void f_search(INT32 args)
 
       start=sp[2-args].u.integer;
       if(start<0)
-	PIKE_ERROR("search", "Start must be greater or equal to zero.\n", sp, args);
+	PIKE_ERROR("search",
+		   "Start must be greater or equal to zero.\n", sp, args);
     }
 
-    if(len<0)
-      PIKE_ERROR("search", "Start must not be greater than the length of the string.\n", sp, args);
+    if(sp[-args].u.string->len < start)
+      PIKE_ERROR("search",
+		 "Start must not be greater than the length of the string.\n",
+		 sp, args);
 
     start=string_search(sp[-args].u.string,
 			sp[1-args].u.string,
