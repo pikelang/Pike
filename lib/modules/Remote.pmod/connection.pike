@@ -109,9 +109,8 @@ void close()
 {
   want_close = 1;
   if (!(reading || sizeof (write_buffer))) {
-    con->set_blocking();
-    con->close();
-    closed_connection();
+    if (!catch {con->set_blocking(); con->close();})
+      closed_connection();
   }
   else
     DEBUGMSG("close delayed\n");
@@ -149,11 +148,9 @@ void write_some(int|void ignore)
     write_buffer = write_buffer[c..];
     DEBUGMSG("wrote "+c+" bytes\n");
   }
-  if (want_close && !(reading || sizeof(write_buffer))) {
-    con->set_blocking();
-    con->close();
-    closed_connection();
-  }
+  if (want_close && !(reading || sizeof(write_buffer)))
+    if (!catch {con->set_blocking(); con->close();})
+      closed_connection();
 }
 
 void send(string s)
@@ -242,9 +239,9 @@ void read_some(int ignore, string s)
   if (request_size && sizeof(read_buffer) >= request_size && !want_close)
   {
     array data = decode_value(read_buffer[0..request_size-1]);
+    DEBUGMSG("got " + request_size + " bytes of message: "+ctx->describe(data)+"\n");
     read_buffer = read_buffer[request_size..];
     request_size = 0;
-    DEBUGMSG("got message: "+ctx->describe(data)+"\n");
     reading = 1;
     switch(data[0]) {
 
@@ -294,6 +291,10 @@ void read_some(int ignore, string s)
   }
 }
 
+#if constant(Thread.Mutex)
+object(Thread.Mutex) block_read_mutex = Thread.Mutex();
+#endif
+
 
 // - call_sync
 //
@@ -312,17 +313,31 @@ mixed call_sync(array data)
   send(sprintf("%4c%s", sizeof(s), s));
   while(zero_type(finished_calls[refno]))
   {
-    string s = con->read(8192,1);
-    if(!s || !strlen(s))
-    {
-      con->close();
-      closed_connection();
-      if (!nice)
-	 error("Could not read");
+#if constant(Thread.Mutex)
+    // Only one thread does read(), the rest just waits. When the
+    // read() finishes, all threads loop once.
+    object lock = block_read_mutex->trylock();
+    if (lock) {
+#endif
+      string s = con->read(8192,1);
+      if(s && strlen(s)) read_some(0,s);
       else
-	 return ([])[0]; // failed, like
+      {
+#if constant(Thread.Mutex)
+	lock = 0;
+#endif
+	if (!catch (con->close()))
+	  closed_connection();
+	if (!nice)
+	  error("Could not read");
+	else
+	  return ([])[0]; // failed, like
+      }
+#if constant(Thread.Mutex)
+      lock = 0;
     }
-    read_some(0,s);
+    else block_read_mutex->lock();
+#endif
   }
   con->set_nonblocking(read_some, write_some, closed_connection);
   return get_result(refno);
