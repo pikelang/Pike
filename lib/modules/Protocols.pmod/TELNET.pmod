@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.1 1998/04/04 14:23:18 grubba Exp $
+// $Id: TELNET.pmod,v 1.2 1998/04/05 19:05:44 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -71,10 +71,18 @@ class protocol
   //.   Data queued to be sent.
   static private string to_send = "";
 
-  //. - send
+  //. - write
   //.   Queues data to be sent to the other end of the connection.
   //. > s - String to send.
-  static private void send(string s)
+  void write(string s)
+  {
+    to_send += replace(s, "\377", "\377\377");
+  }
+
+  //. + write_raw
+  //.   Queues raw data to be sent to the other end of the connection.
+  //. > s - String with raw telnet data to send.
+  void write_raw(string s)
   {
     to_send += s;
   }
@@ -92,6 +100,11 @@ class protocol
       fd->close();
       fd = 0;
     } else if (sizeof(to_send)) {
+      if (to_send[0] == 242) {
+	// DataMark needs extra quoting... Stupid.
+	to_send = "\377\361" + to_send;
+      }
+
       int n = fd->write(to_send);
 
       to_send = to_send[n..];
@@ -106,15 +119,32 @@ class protocol
 	    throw(0);
 	  },
     "AYT":lambda() {
-	    send("\377\361");	// NOP
+	    to_send += "\377\361";	// NOP
 	  },
     "WILL":lambda(int code) {
-	      send(sprintf("\377\376%c", code));	// DON'T xxx
+	     to_send += sprintf("\377\376%c", code);	// DON'T xxx
 	   },
     "DO":lambda(int code) {
-	   send(sprintf("\377\374%c", code));	// WON'T xxx
+	   to_send += sprintf("\377\374%c", code);	// WON'T xxx
 	 },
   ]);
+
+  //. - send_synch
+  //.   Sends a TELNET synch command.
+  void send_synch()
+  {
+    // Clear send-queue.
+    to_send = "";
+
+    if (fd->write_oob) {
+      fd->write_oob("\377");
+
+      fd->write("\362");
+    } else {
+      // Fallback...
+      fd->write("\377\362");
+    }
+  }
 
   //. + synch
   //.   Indicates wether we are in synch-mode or not.
