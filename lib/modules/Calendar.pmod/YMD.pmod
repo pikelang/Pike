@@ -2752,6 +2752,7 @@ static constant dwim_day_strings=
   "%M%*[- /]%D",
   "%M-%D-%y",
   "%D-%M-%y",
+  "%e%*[- /]%D%*[- /]%M",
   "%e%*[- /]%M%*[- /]%D",
   "%e%*[- /wv]%W%*[ -/]%y",
   "%e%*[- /wv]%W", 
