@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.438 2000/12/14 06:05:46 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.439 2000/12/17 19:30:58 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -616,7 +616,7 @@ AC_ARG_WITH(long-double-precision,  [  --with-long-double-precision          use
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
 AC_ARG_WITH(debug,       [  --without-debug        disable run debugging],[],[with_debug=])
-AC_ARG_WITH(rtldebug,    [  --without-rtldebug     disable run time self tests],[],[with_rtldebug=])
+AC_ARG_WITH(rtldebug,    [  --with-rtldebug        enable run time self tests],[],[with_rtldebug=])
 AC_ARG_WITH(cdebug,      [  --without-cdebug       disable -g],[],[
   case "$pike_cv_sys_os:$GCC" in
     Solaris:no)
@@ -761,7 +761,8 @@ if test "x$with_cdebug" = x ; then
 fi
 
 if test "x$with_rtldebug" = x ; then
-  with_rtldebug=yes
+  with_rtldebug=no
+#  with_rtldebug=yes
 fi
 
 if test "x$with_rtldebug" = xyes ; then
