@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.63 2001/08/15 09:26:02 hubbe Exp $
+ * $Id: builtin.cmod,v 1.64 2001/09/05 23:44:32 hubbe Exp $
  */
 
 #include "global.h"
@@ -1106,6 +1106,68 @@ PIKECLASS backtrace_frame
 /*! @endmodule
  */
 
+void low_backtrace(struct Pike_interpreter *i)
+{
+  struct pike_frame *f, *of = 0;
+  int size = 0;
+  struct array *res = NULL;
+
+  for (f = i->frame_pointer; f; f = f->next) {
+    size++;
+  }
+
+  res = allocate_array_no_init(size, 0);
+  push_array(res);
+
+  for (f = i->frame_pointer; f && size; f = (of = f)->next) {
+    struct object *o = low_clone(backtrace_frame_program);
+    struct backtrace_frame_struct *bf;
+
+    call_c_initializers(o);
+
+    size--;
+
+    res->item[size].u.object = o;
+    res->item[size].type = PIKE_T_OBJECT;
+    res->item[size].subtype = 0;
+
+    bf = OBJ2_BACKTRACE_FRAME(o);
+
+    if ((bf->prog = f->context.prog)) {
+      add_ref(bf->prog);
+      bf->pc = f->pc;
+    }
+
+    if ((bf->fun.u.object = f->current_object) &&
+	(bf->fun.u.object->prog)) {
+      add_ref(bf->fun.u.object);
+      bf->fun.subtype = f->fun;
+      bf->fun.type = PIKE_T_FUNCTION;
+    } else {
+      bf->fun.u.integer = 0;
+      bf->fun.subtype = NUMBER_DESTRUCTED;
+      bf->fun.type = PIKE_T_INT;
+    }
+
+    if (f->locals) {
+      INT32 numargs = DO_NOT_WARN((INT32) MINIMUM(f->num_args,
+						  i->stack_pointer - f->locals));
+      if(of)
+	/* f->num_args can be too large, so this is necessary for some
+	 * reason. I don't know why. /mast */
+	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
+
+      numargs = MAXIMUM(numargs, 0);
+
+      if (numargs) {
+	bf->args = allocate_array_no_init(numargs, 0);
+	assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
+      }
+    }
+  }
+  /* NOTE: res has already been pushed on the stack. */
+}
+
 /*! @decl array(Pike.BacktraceFrame) backtrace()
  *!
  *!   FIXME: This documentation is not up to date!
@@ -1146,64 +1208,7 @@ PIKEFUN array(mixed) backtrace()
      efun;
      optflags OPT_EXTERNAL_DEPEND;
 {
-  struct pike_frame *f, *of = 0;
-  int size = 0;
-  struct array *res = NULL;
-
-  for (f = Pike_fp; f; f = f->next) {
-    size++;
-  }
-
-  res = allocate_array_no_init(size, 0);
-  push_array(res);
-
-  for (f = Pike_fp; f && size; f = (of = f)->next) {
-    struct object *o = low_clone(backtrace_frame_program);
-    struct backtrace_frame_struct *bf;
-
-    call_c_initializers(o);
-
-    size--;
-
-    res->item[size].u.object = o;
-    res->item[size].type = PIKE_T_OBJECT;
-    res->item[size].subtype = 0;
-
-    bf = OBJ2_BACKTRACE_FRAME(o);
-
-    if ((bf->prog = f->context.prog)) {
-      add_ref(bf->prog);
-      bf->pc = f->pc;
-    }
-
-    if ((bf->fun.u.object = f->current_object) &&
-	(bf->fun.u.object->prog)) {
-      add_ref(bf->fun.u.object);
-      bf->fun.subtype = f->fun;
-      bf->fun.type = PIKE_T_FUNCTION;
-    } else {
-      bf->fun.u.integer = 0;
-      bf->fun.subtype = NUMBER_DESTRUCTED;
-      bf->fun.type = PIKE_T_INT;
-    }
-
-    if (f->locals) {
-      INT32 numargs = DO_NOT_WARN((INT32) MINIMUM(f->num_args,
-						  Pike_sp - f->locals));
-      if(of)
-	/* f->num_args can be too large, so this is necessary for some
-	 * reason. I don't know why. /mast */
-	numargs = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
-
-      numargs = MAXIMUM(numargs, 0);
-
-      if (numargs) {
-	bf->args = allocate_array_no_init(numargs, 0);
-	assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
-      }
-    }
-  }
-  /* NOTE: res has already been pushed on the stack. */
+  low_backtrace(& Pike_interpreter);
 }
 
 #define INITIAL_BUF_LEN 4096
