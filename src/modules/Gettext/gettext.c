@@ -23,7 +23,7 @@
 /* This must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: gettext.c,v 1.6 2000/12/01 08:09:57 hubbe Exp $");
+RCSID("$Id: gettext.c,v 1.7 2002/03/03 16:01:03 marcus Exp $");
 
 /*
 **! module Locale.Gettext
@@ -31,7 +31,7 @@ RCSID("$Id: gettext.c,v 1.6 2000/12/01 08:09:57 hubbe Exp $");
 **!	This module enables access to localization functions from within Pike.
 **!
 **! note
-**!	$Id: gettext.c,v 1.6 2000/12/01 08:09:57 hubbe Exp $
+**!	$Id: gettext.c,v 1.7 2002/03/03 16:01:03 marcus Exp $
 */
 
 /******************** PUBLIC FUNCTIONS BELOW THIS LINE */
@@ -438,7 +438,9 @@ void pike_module_init(void)
   add_integer_constant("LC_ALL", LC_ALL, 0);
   add_integer_constant("LC_COLLATE", LC_COLLATE, 0);
   add_integer_constant("LC_CTYPE", LC_CTYPE, 0);
+#ifdef LC_MESSAGES
   add_integer_constant("LC_MESSAGES", LC_MESSAGES, 0);
+#endif
   add_integer_constant("LC_MONETARY", LC_MONETARY, 0);
   add_integer_constant("LC_NUMERIC", LC_NUMERIC, 0);
   add_integer_constant("LC_TIME", LC_TIME, 0);
