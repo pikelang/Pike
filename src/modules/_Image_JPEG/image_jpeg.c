@@ -27,6 +27,7 @@ RCSID("$id: $");
 
 static struct program *image_program=NULL;
 
+#endif /* HAVE_JPEGLIB_H */
 
 static struct pike_string *param_baseline;
 static struct pike_string *param_quality;
@@ -39,6 +40,7 @@ static struct pike_string *param_density_unit;
 static struct pike_string *param_method;
 static struct pike_string *param_progressive;
 
+#ifdef HAVE_JPEGLIB_H
 
 /*
 **! module Image
