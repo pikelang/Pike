@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.40 1999/02/13 17:56:34 grubba Exp $
+ * $Id: requests.pmod,v 1.41 1999/02/13 20:05:33 grubba Exp $
  */
 
 import .types;
@@ -13,17 +13,19 @@ class request
   object parser;
   object server;
   mapping session;
+  int state;
 
   function send;
 
-  void create(string t, object line)
-    {
-      tag = t;
-      parser = .parser(line);
+  void create(string t, object line, int s)
+  {
+    tag = t;
+    parser = .parser(line);
+    state = s;
 
-      args = allocate(sizeof(arg_info));
-      argc = 0;
-    }
+    args = allocate(sizeof(arg_info));
+    argc = 0;
+  }
 
   constant arg_info = ({ });
 
@@ -276,6 +278,9 @@ class select
   }
 }
 
+// UID is state 1
+constant uid = 1;
+
 class copy
 {
   inherit request;
@@ -284,6 +289,10 @@ class copy
 
   mapping easy_process(object message_set, string mailbox_name)
   {
+    if (state) {
+      // UID mode.
+      message_set = server->uid_to_local(session, message_set);
+    }
     switch (server->copy(session, message_set, mailbox_name)) {
     case -1:
       // RFC 2060, Section 6.4.7:
@@ -314,11 +323,15 @@ class fetch
 
   constant arg_info = ({ ({ "set" }), ({ "any", 3 }) });
 
-  constant is_uid = 0;
-
   mapping easy_process(object message_set, mapping request)
   {
     werror(sprintf("fetch->easy_process(X, %O)\n", request));
+
+    if (state) {
+      // UID mode.
+      message_set = server->uid_to_local(session, message_set);
+    }
+
     array fetch_attrs = 0;
     switch(request->type)
     {
@@ -377,7 +390,7 @@ class fetch
       throw( ({ "Internal error!\n", backtrace() }) );
     }
 
-    if (is_uid) {
+    if (state) {
       // RFC 2060, Section 6.4.8:
       //   However, server implementations MUST implicitly include the UID
       //   message data item as part of any FETCH response caused by a UID
@@ -777,31 +790,6 @@ class search
 	array a = parse_all();
 	return a && make_intersection(a);
       }
-  }
-}
-
-class uid {
-  inherit fetch;
-
-  constant arg_info = ({ ({ "string" }), ({ "set" }), ({ "any", 3 }) });
-  constant is_uid = 1;
-
-  mapping easy_process(string cmd, object message_set, mapping request)
-  {
-    werror("uid->easy_process(%O, X, %O)\n", cmd, request);
-
-    switch(lower_case(cmd)) {
-    case "fetch":
-      object local_set = server->uid_to_local(session, message_set);
-      return(fetch::easy_process(local_set, request));
-      break;
-    case "search":
-    case "copy":
-    default:
-      throw(({ sprintf("UID: Command %O not implemented.\n",
-		       upper_case(cmd)) }));
-      break;
-    }
   }
 }
 
