@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.34 2005/02/22 09:14:44 grubba Exp $ */
+/* $Id: socktest.pike,v 1.35 2005/02/22 09:22:07 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -324,7 +324,16 @@ array(object(Socket)) stdtest()
   sock=Socket();
   DEBUG_WERR("Connecting to %O port %d...\n", LOOPBACK, portno2);
   if (!sock->connect(LOOPBACK, portno2)) {
-    werror("Connect(2) failed: (%d)\n", sock->errno());
+#ifdef IPV6
+#if constant(System.ENETUNREACH)
+    if (sock->errno() == System.ENETUNREACH) {
+      werror("Connect failed: Network unreachable.\n"
+	     "IPv6 not configured?\n");
+      exit(0);
+    }
+#endif /* ENETUNREACH */
+#endif /* IPV6 */
+    werror("Connect failed: (%d)\n", sock->errno());
     sleep(1);
     fd_fail();
   }
