@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.154 1999/05/13 07:21:54 hubbe Exp $");
+RCSID("$Id: file.c,v 1.155 1999/05/17 20:29:40 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2270,6 +2270,7 @@ static TH_RETURN_TYPE proxy_thread(void * data)
   num_threads--;
   mt_unlock(&interpreter_lock);
   free((char *)p);
+  th_exit(0);
   return 0;
 }
 
