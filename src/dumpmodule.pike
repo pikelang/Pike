@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.38 2003/02/21 18:49:32 marcus Exp $
+|| $Id: dumpmodule.pike,v 1.39 2003/05/03 15:10:09 grubba Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -60,12 +60,18 @@ string mkmodulename(mixed x, string dirname)
 
 class Codec
 {
+  static mapping(mixed:string) static_lookup;
+
   string nameof(mixed x)
   {
     string tmp;
     if(p!=x)
       if(tmp = function_names[x])
 	return tmp;
+
+    if (tmp = static_lookup[x]) {
+      return "resolv:_static_modules."+tmp;
+    }
 
     switch(sprintf("%t",x))
     {
@@ -123,6 +129,21 @@ class Codec
   {
     if(x->_encode) return x->_encode();
     error("Cannot encode objects yet (%O,%O).\n", x, indices(x)[..10]*",");
+  }
+
+  void create()
+  {
+    static_lookup = 
+      mkmapping(values(_static_modules), indices(_static_modules));
+    foreach(static_lookup; mixed module; string name) {
+      if (objectp(module)) {
+	program p = object_program(module);
+	if (!static_lookup[p]) {
+	  // Some people inherit modules...
+	  static_lookup[p] = name;
+	}
+      }
+    }
   }
 }
 
