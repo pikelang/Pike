@@ -25,7 +25,7 @@
 extern struct program *parser_html_program;
 
 /* #define SCAN_DEBUG */
-/* #define DEBUG */
+#define DEBUG
 
 #ifdef DEBUG
 #undef DEBUG
@@ -1301,7 +1301,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
       c_head=0;
       head=head->next;
    }
-   fatal("internal Pike_error: tail not found in feed (put_out_feed_range)\n");
+   fatal("internal error: tail not found in feed (put_out_feed_range)\n");
 }
 
 /* ------------------------ */
@@ -1343,7 +1343,7 @@ static INLINE void push_feed_range(struct piece *head,
       head=head->next;
    }
    if (!head)
-      fatal("internal Pike_error: tail not found in feed (push_feed_range)\n");
+      fatal("internal error: tail not found in feed (push_feed_range)\n");
    if (!n)
       ref_push_string(empty_string);
    else if (n>1)
@@ -2297,7 +2297,7 @@ static newstate handle_result(struct parser_html_storage *this,
 		 this->out_ctx = CTX_TAG;
 		 return STATE_REREAD;
 	       }
-	       else {
+	       else if (*head) {
 		 /* just output the whole range */
 		 put_out_feed_range(this,*head,*c_head,tail,c_tail);
 		 skip_feed_range(st,head,c_head,tail,c_tail);
@@ -2312,8 +2312,8 @@ static newstate handle_result(struct parser_html_storage *this,
 	       return STATE_REPARSE;
 	 }
 	 Pike_error("Parser.HTML: illegal result from callback: %d, "
-	       "not 0 (skip) or 1 (wait)\n",
-	       sp[-1].u.integer);
+		    "not 0 (skip) or 1 (wait)\n",
+		    sp[-1].u.integer);
 
       case T_ARRAY:
 	 /* output element(s) */
@@ -2321,7 +2321,8 @@ static newstate handle_result(struct parser_html_storage *this,
 	 {
 	    if (!(THIS->flags & FLAG_MIXED_MODE) &&
 		sp[-1].u.array->item[i].type!=T_STRING)
-	       Pike_error("Parser.HTML: illegal result from callback: element in array not string\n");
+	       Pike_error("Parser.HTML: illegal result from callback: "
+			  "element in array not string\n");
 	    push_svalue(sp[-1].u.array->item+i);
 	    put_out_feed(this,sp-1,0);
 	    pop_stack();
@@ -2333,7 +2334,8 @@ static newstate handle_result(struct parser_html_storage *this,
 	 return STATE_DONE; /* continue */
 
       default:
-	 Pike_error("Parser.HTML: illegal result from callback: not 0, string or array(string)\n");
+	 Pike_error("Parser.HTML: illegal result from callback: "
+		    "not 0, string or array(string)\n");
    }
    /* NOT_REACHED */
    return STATE_DONE;
@@ -2419,7 +2421,7 @@ static newstate entity_callback(struct parser_html_storage *this,
 	 }
       default:
 	 Pike_error("Parser.HTML: illegal type found "
-	       "when trying to call entity callback\n");
+		    "when trying to call entity callback\n");
    }
 
    this->start=*cutstart;
@@ -2486,7 +2488,7 @@ static newstate tag_callback(struct parser_html_storage *this,
 	 }
       default:
 	 Pike_error("Parser.HTML: illegal type found "
-	       "when trying to call tag callback\n");
+		    "when trying to call tag callback\n");
    }
 
    this->start=*cutstart;
@@ -2557,7 +2559,7 @@ static newstate container_callback(struct parser_html_storage *this,
 	 }
       default:
 	 Pike_error("Parser.HTML: illegal type found "
-	       "when trying to call container callback\n");
+		    "when trying to call container callback\n");
    }
 
    this->start=*cutstart;
@@ -2629,7 +2631,7 @@ static newstate quote_tag_callback(struct parser_html_storage *this,
 	 }
       default:
 	 Pike_error("Parser.HTML: illegal type found "
-	       "when trying to call quote tag callback\n");
+		    "when trying to call quote tag callback\n");
    }
 
    this->start=*cutstart;
@@ -2900,7 +2902,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	     scan_entity,st->ignore_data));
 
 #ifdef DEBUG
-      if (*feed && feed[0]->s->len < st->c) 
+      if (*feed && feed[0]->s->len < st->c)
 	 fatal("len (%ld) < st->c (%ld)\n",
 	       TO_LONG(feed[0]->s->len), TO_LONG(st->c));
       if (*feed && cmp_feed_pos (*feed, st->c, dst, cdst) > 0)
