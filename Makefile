@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.125 2004/02/27 16:51:12 nilsson Exp $
+# $Id: Makefile,v 1.126 2004/02/27 17:02:03 grubba Exp $
 #
 # Meta Makefile
 #
@@ -235,7 +235,7 @@ snapshot: snapshot_export
 
 xenofarm_export:
 	@echo Begin export
-	-cp ~/pike_bundles/* bundles
+	-cp "$$HOME/pike_bundles/"* bundles
 	@$(DO_MAKE) "CONFIGUREARGS=--disable-binary $(CONFIGUREARGS)" \
 	  "OS=source" "LIMITED_TARGETS=yes" "METATARGET=snapshot_export" \
 	  "EXPORT_NAME=Pike%maj.%min-%Y%M%D-%h%m%s" \
