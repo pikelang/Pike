@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.87 2000/03/24 01:24:50 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.88 2000/04/08 15:29:02 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -2453,13 +2453,13 @@ void init_operators(void)
 		tFunc(tArr(tSetvar(1,tMix)) tInt tVar(1), tVar(1)),
 		tFunc(tMap(tSetvar(2,tMix), tSetvar(3,tMix)) tVar(2) tVar(3), tVar(3)),
 		tFunc(tSet(tSetvar(4,tMix)) tVar(4) tSetvar(5,tMix), tVar(5))),
-	   0); /* OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE); ? */
+	   OPT_SIDE_EFFECT|OPT_TRY_OPTIMIZE);
 
   ADD_EFUN("`->=", f_arrow_assign,
 	   tOr3(tFunc(tArr(tOr4(tArray,tObj,tMultiset,tMapping)) tStr tSetvar(0,tMix), tVar(0)),
 		tFunc(tOr(tObj, tMultiset) tStr tSetvar(1,tMix), tVar(1)),
 		tFunc(tMap(tMix, tSetvar(2,tMix)) tStr tVar(2), tVar(2))),
-	   0); /* OPT_ASSIGNMENT|OPT_TRY_OPTIMIZE); ? */
+	   OPT_SIDE_EFFECT|OPT_TRY_OPTIMIZE);
 
   /* function(mixed...:int) */
   ADD_EFUN2("`==",f_eq,
