@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.271 2002/10/16 13:56:52 marcus Exp $
+|| $Id: interpret.c,v 1.272 2002/10/16 15:08:15 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.271 2002/10/16 13:56:52 marcus Exp $");
+RCSID("$Id: interpret.c,v 1.272 2002/10/16 15:08:15 marcus Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -240,28 +240,34 @@ use_malloc:
 #endif
 #endif
 #if defined(HAVE_COMPUTED_GOTO) || defined(PIKE_USE_MACHINE_CODE)
-  /* Initialize the fcode_to_opcode table / jump labels. */
-  eval_instruction(NULL);
-#endif /* HAVE_COMPUTED_GOTO || PIKE_USE_MACHINE_CODE */
+  {
+    static int tables_need_init=1;
+    if(tables_need_init) {
+      /* Initialize the fcode_to_opcode table / jump labels. */
+      eval_instruction(NULL);
 #if defined(PIKE_USE_MACHINE_CODE) && !defined(PIKE_DEBUG)
-  /* Simple operator opcodes... */
+      /* Simple operator opcodes... */
 #define SET_INSTR_ADDRESS(X, Y)	(instrs[(X)-F_OFFSET].address = (void *)Y)
-  SET_INSTR_ADDRESS(F_COMPL,		o_compl);
-  SET_INSTR_ADDRESS(F_LSH,		o_lsh);
-  SET_INSTR_ADDRESS(F_RSH,		o_rsh);
-  SET_INSTR_ADDRESS(F_SUBTRACT,		o_subtract);
-  SET_INSTR_ADDRESS(F_AND,		o_and);
-  SET_INSTR_ADDRESS(F_OR,		o_or);
-  SET_INSTR_ADDRESS(F_XOR,		o_xor);
-  SET_INSTR_ADDRESS(F_MULTIPLY,		o_multiply);
-  SET_INSTR_ADDRESS(F_DIVIDE,		o_divide);
-  SET_INSTR_ADDRESS(F_MOD,		o_mod);
-  SET_INSTR_ADDRESS(F_CAST,		f_cast);
-  SET_INSTR_ADDRESS(F_CAST_TO_INT,	o_cast_to_int);
-  SET_INSTR_ADDRESS(F_CAST_TO_STRING,	o_cast_to_string);
-  SET_INSTR_ADDRESS(F_RANGE,		o_range);
-  SET_INSTR_ADDRESS(F_SSCANF,		o_sscanf);
+      SET_INSTR_ADDRESS(F_COMPL,		o_compl);
+      SET_INSTR_ADDRESS(F_LSH,			o_lsh);
+      SET_INSTR_ADDRESS(F_RSH,			o_rsh);
+      SET_INSTR_ADDRESS(F_SUBTRACT,		o_subtract);
+      SET_INSTR_ADDRESS(F_AND,			o_and);
+      SET_INSTR_ADDRESS(F_OR,			o_or);
+      SET_INSTR_ADDRESS(F_XOR,			o_xor);
+      SET_INSTR_ADDRESS(F_MULTIPLY,		o_multiply);
+      SET_INSTR_ADDRESS(F_DIVIDE,		o_divide);
+      SET_INSTR_ADDRESS(F_MOD,			o_mod);
+      SET_INSTR_ADDRESS(F_CAST,			f_cast);
+      SET_INSTR_ADDRESS(F_CAST_TO_INT,		o_cast_to_int);
+      SET_INSTR_ADDRESS(F_CAST_TO_STRING,	o_cast_to_string);
+      SET_INSTR_ADDRESS(F_RANGE,		o_range);
+      SET_INSTR_ADDRESS(F_SSCANF,		o_sscanf);
 #endif /* PIKE_USE_MACHINE_CODE && !PIKE_DEBUG */
+      tables_need_init=0;
+    }
+  }
+#endif /* HAVE_COMPUTED_GOTO || PIKE_USE_MACHINE_CODE */
 }
 
 
@@ -785,7 +791,7 @@ static int o_catch(PIKE_OPCODE_T *pc);
 /* FIXME: Replace these with assembler lables */
 void *do_inter_return_label = NULL;
 void *do_escape_catch_label;
-void *dummy_label;
+void *dummy_label = NULL;
 
 #ifndef DEF_PROG_COUNTER
 #define DEF_PROG_COUNTER
@@ -860,7 +866,9 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
     do_inter_return_label = && inter_return_label;
     do_escape_catch_label = && inter_escape_catch_label;
 
-    return 0;
+    /* Trick optimizer */
+    if(!dummy_label)
+      return 0;
   }
 
 #ifdef PIKE_DEBUG
