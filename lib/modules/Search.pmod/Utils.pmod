@@ -1,10 +1,18 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.31 2001/08/31 16:20:04 js Exp $
+// $Id: Utils.pmod,v 1.32 2001/09/12 23:36:16 nilsson Exp $
 
 #if !constant(report_error)
 #define report_error werror
+#define report_debug werror
+#define report_warning werror
+#endif
+
+#ifdef SEARCH_DEBUG
+# define WERR(X) report_debug("search: "+(X)+"\n");
+#else
+# define WERR(X)
 #endif
 
 public array(string) tokenize_and_normalize( string what )
@@ -205,7 +213,6 @@ class ProfileCache (string db_name) {
   //!    The profile is up to date.
   //!  @endint
   int(-1..1) up_to_datep(int profile_id) {
-    //    werror("Called up-to-date...\n");
     array(mapping(string:string)) res;
     res = get_db()->query("SELECT altered,type FROM profile WHERE id=%d", profile_id);
 
@@ -402,14 +409,158 @@ class ProfileCache (string db_name) {
 
 private mapping(string:ProfileCache) profile_cache_cache = ([]);
 
+//! Returns a @[ProfileCache] for the profiles stored
+//! in the database @[db_name].
 ProfileCache get_profile_cache(string db_name) {
   if(profile_cache_cache[db_name])
     return profile_cache_cache[db_name];
   return profile_cache_cache[db_name] = ProfileCache(db_name);
 }
 
+//! Flushes the profile @[p] from all @[ProfileCache] objects
+//! obtained with @[get_profile_cache].
 void flush_profile(int p) {
   values(profile_cache_cache)->flush_profile(p);
+}
+
+private mapping(string:mapping) profile_storages = ([]);
+
+//! Returns a profile storage mapping, which will be shared
+//! between all callers with the same @[db_name] given.
+mapping get_profile_storage(string db_name) {
+  if(profile_storages[db_name])
+    return profile_storages[db_name];
+  return profile_storages[db_name] = ([]);
+}
+
+private mapping(string:Scheduler) scheduler_storage = ([]);
+
+//! Returns a scheduler for the given profile database.
+Scheduler get_scheduler(string db_name) {
+  mapping dbp = get_profile_storage(db_name);
+  if(scheduler_storage[db_name])
+    return scheduler_storage[db_name];
+  scheduler_storage[db_name] = Scheduler(dbp);
+  return scheduler_storage[db_name] = Scheduler(dbp);
+}
+
+class Scheduler {
+
+  private int next_run;
+  private mapping(int:int) crawl_queue;
+  private mapping(int:int) compact_queue;
+  private mapping db_profiles;
+
+  void create(mapping _db_profiles) {
+    db_profiles = _db_profiles;
+    schedule();
+  }
+
+  //! Call this method to indicate that a new entry has been added
+  //! to the queue. The scheduler will delay indexing with at most
+  //! @[latency] minutes.
+  void new_entry(int latency, array(int) profiles) {
+    int would_be_indexed = time() + latency*60;
+    foreach(profiles, int profile)
+      crawl_queue[profile] = 0;
+    WERR("New entry.  time: "+(would_be_indexed-time(1))+" profiles: "+(array(string))profiles*",");
+    if(next_run && next_run < would_be_indexed)
+      return;
+    next_run = would_be_indexed;
+    reschedule();
+  }
+
+  private void reschedule() {
+    remove_call_out(do_scheduled_stuff);
+    WERR("Scheduler runs next event in "+(next_run-time(1))+" seconds.");
+    call_out(do_scheduled_stuff, next_run-time(1));
+  }
+
+  void unschedule() {
+    remove_call_out(do_scheduled_stuff);
+  }
+
+  void schedule() {
+    crawl_queue = ([]);
+    compact_queue = ([]);
+
+    foreach(indices(db_profiles), int id) {
+      object dbp = db_profiles[id];
+      if(!dbp) {
+	report_warning("Search database profile %d destructed.\n", id);
+	m_delete(db_profiles, id);
+	continue;
+      }
+      WERR("Scheduling for database profile "+dbp->name);
+      int next = dbp->next_crawl();
+      if(next != -1) {
+	crawl_queue[dbp->id] = next;
+	WERR(" Crawl: "+(next-time(1)));
+      }
+      next = dbp->next_compact();
+      if(next != -1) {
+	compact_queue[dbp->id] = next;
+	WERR(" Compact: "+(next-time(1)));
+      }
+      WERR("\n");
+    }
+
+    if(!sizeof(crawl_queue) && !sizeof(compact_queue)) return;
+    next_run = min( @values(crawl_queue)+values(compact_queue) );
+    reschedule();
+  }
+
+  private void do_scheduled_stuff() {
+    remove_call_out(do_scheduled_stuff);
+    WERR("Running scheduler event.");
+
+    int t = time();
+
+    WERR(sizeof(crawl_queue)+" profiles in crawl queue.");
+    foreach(indices(crawl_queue), int id) {
+      if(crawl_queue[id]>t || !db_profiles[id]) continue;
+      object dbp = db_profiles[id];
+      if(dbp && dbp->ready_to_crawl()) {
+	WERR("Scheduler starts crawling "+id);
+	dbp->start_indexer();
+      }
+    }
+
+    WERR(sizeof(compact_queue)+" profiles in compact queue.");
+    foreach(indices(compact_queue), int id) {
+      if(compact_queue[id]>t || !db_profiles[id]) continue;
+      db_profiles[id]->start_compact();
+    }
+
+    schedule();
+  }
+
+  string info() {
+    string res = "<table border='1' cellspacing='0' cellpadding='2'>"
+      "<tr><th>Profile</th><th>Crawl</th>"
+      "<th>Compact</th><th>Next</th></tr>";
+    foreach(values(db_profiles), object dbp) {
+      if(!dbp) continue;
+      res += "</tr><td>" + dbp->name + "</td>";
+      int next = dbp->next_crawl();
+      if(next == -1)
+	res += "<td>Never</td>";
+      else
+	res +="<td>"+ (next-time()) + "</td>";
+
+      next = dbp->next_compact();
+      if(next == -1)
+	res += "<td>Never</td>";
+      else
+	res +="<td>"+ (next-time()) + "</td>";
+      res += "</tr>";
+    }
+    res += "</table>";
+
+    res += "<br />Next run: " + (next_run-time()) + "<br />";
+
+    return res;
+  }
 }
 
 
