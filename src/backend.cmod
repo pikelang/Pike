@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.7 2001/03/12 16:43:21 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.8 2001/03/12 16:46:33 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1145,27 +1145,27 @@ PIKECLASS Backend
 		  int i;
 		  for(i=0;i<me->fds_size;i++)
 		  {
-		    if(!my_FD_ISSET(i, &me->selectors.read) &&
-		       !my_FD_ISSET(i, &me->selectors.write)
+		    if(!my_FD_ISSET(i, &me->set.read) &&
+		       !my_FD_ISSET(i, &me->set.write)
 #ifdef WITH_OOB
-		       && !my_FD_ISSET(i, &me->selectors.except)
+		       && !my_FD_ISSET(i, &me->set.except)
 #endif /* WITH_OOB */
 		      )
 		      continue;
 		    
-		    fd_FD_ZERO(& me->active_selectors.rset);
-		    fd_FD_ZERO(& me->active_selectors.wset);
+		    fd_FD_ZERO(& me->active_set.rset);
+		    fd_FD_ZERO(& me->active_set.wset);
 #ifdef WITH_OOB
-		    fd_FD_ZERO(& me->active_selectors.eset);
+		    fd_FD_ZERO(& me->active_set.eset);
 #endif /* WITH_OOB */
 		    
-		    if(my_FD_ISSET(i, &me->selectors.read))
-		      fd_FD_SET(i, & me->active_selectors.rset);
-		    if(my_FD_ISSET(i, &me->selectors.write))
-		      fd_FD_SET(i, & me->active_selectors.wset);
+		    if(my_FD_ISSET(i, &me->set.read))
+		      fd_FD_SET(i, & me->active_set.rset);
+		    if(my_FD_ISSET(i, &me->set.write))
+		      fd_FD_SET(i, & me->active_set.wset);
 #ifdef WITH_OOB
-		    if(my_FD_ISSET(i, &me->selectors.except))
-		      fd_FD_SET(i, & me->active_selectors.eset);
+		    if(my_FD_ISSET(i, &me->set.except))
+		      fd_FD_SET(i, & me->active_set.eset);
 #endif /* WITH_OOB */
 		    
 		    timeout.tv_usec=0;
