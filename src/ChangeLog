@@ -1,3 +1,8 @@
+Sat Oct 12 20:03:39 1996  Fredrik Hubinette  <hubbe@skuld.infovav.se>
+
+	* string hash table now grows when needed
+	* v0.2 realeased
+
 Wed Oct  9 04:02:29 1996  Fredrik Hubinette  <hubbe@nuala.infovav.se>
 
 	* /precompiled/string_buffer added
