@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.72 2000/01/11 04:01:20 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.73 2000/03/01 08:41:35 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -715,8 +715,9 @@ static void name(INT32 args)						\
     double ret;								\
     for(e=0; e<args; e++)						\
     {									\
-      if(sp[e-args].type == T_FLOAT)					\
+      switch(sp[e-args].type)						\
       {									\
+       case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
 	for(e=0; e<args; e++)						\
 	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
@@ -724,6 +725,15 @@ static void name(INT32 args)						\
 	pop_n_elems(args);						\
 	push_float( ret );						\
 	return;								\
+ STRINGCONV(                                                            \
+       case T_STRING:                                                   \
+        MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
+        sp++; args++;                                                   \
+        sp[-args].type=T_INT;                                           \
+        sp[-args].u.string=low_get_digits(THIS, 10);                    \
+        sp[-args].type=T_STRING;                                        \
+        f_add(args);                                                    \
+	return; )							\
       }									\
     }									\
   } )									\
@@ -742,6 +752,51 @@ static void name(INT32 args)						\
   pop_n_elems(args);							\
   PUSH_REDUCED(res);							\
 }									\
+                                                                        \
+STRINGCONV(                                                             \
+static void PIKE_CONCAT(name,_rhs)(INT32 args)				\
+{									\
+  INT32 e;								\
+  struct object *res;							\
+  DO_IF_AUTO_BIGNUM(                                                    \
+  if(THIS_PROGRAM == bignum_program)					\
+  {									\
+    double ret;								\
+    for(e=0; e<args; e++)						\
+    {									\
+      switch(sp[e-args].type)						\
+      {									\
+       case T_FLOAT:                                                    \
+	ret=mpz_get_d(THIS);						\
+	for(e=0; e<args; e++)						\
+	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
+									\
+	pop_n_elems(args);						\
+	push_float( ret );						\
+	return;								\
+       case T_STRING:                                                   \
+        push_string(low_get_digits(THIS, 10));                          \
+        f_add(args+1);                                                  \
+	return; 							\
+      }									\
+    }									\
+  } )									\
+  for(e=0; e<args; e++)							\
+   if(sp[e-args].type != T_INT || sp[e-args].u.integer<=0)		\
+    get_mpz(sp+e-args, 1);						\
+  res = fast_clone_object(THIS_PROGRAM, 0);				\
+  mpz_set(OBTOMPZ(res), THIS);						\
+  for(e=0;e<args;e++)							\
+    if(sp[e-args].type != T_INT)					\
+      fun(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));	\
+    else								\
+      PIKE_CONCAT(fun,_ui)(OBTOMPZ(res), OBTOMPZ(res),			\
+                           sp[e-args].u.integer);			\
+									\
+  pop_n_elems(args);							\
+  PUSH_REDUCED(res);							\
+}									\
+)									\
 									\
 static void PIKE_CONCAT(name,_eq)(INT32 args)				\
 {									\
@@ -752,14 +807,23 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
     double ret;								\
     for(e=0; e<args; e++)						\
     {									\
-      if(sp[e-args].type == T_FLOAT)					\
+      switch(sp[e-args].type)						\
       {									\
+       case T_FLOAT:                                                    \
 	ret=mpz_get_d(THIS);						\
 	for(e=0; e<args; e++)						\
 	  ret PIKE_CONCAT(OP,=) double_from_sval(sp-args);		\
 									\
 	pop_n_elems(args);						\
 	push_float( ret );						\
+	return;								\
+       case T_STRING:                                                   \
+        MEMMOVE(sp-args+1, sp-args, sizeof(struct svalue)*args);        \
+        sp++; args++;                                                   \
+        sp[-args].type=T_INT;                                           \
+        sp[-args].u.string=low_get_digits(THIS, 10);                    \
+        sp[-args].type=T_STRING;                                        \
+        f_add(args);                                                    \
 	return;								\
       }									\
     }									\
@@ -776,7 +840,11 @@ static void PIKE_CONCAT(name,_eq)(INT32 args)				\
   PUSH_REDUCED(fp->current_object);					\
 }
 
+#define STRINGCONV(X) X
 BINFUN2(mpzmod_add,mpz_add,+)
+
+#undef STRINGCONV
+#define STRINGCONV(X)
 BINFUN2(mpzmod_mul,mpz_mul,*)
 
 
@@ -1354,7 +1422,7 @@ void pike_module_exit(void)
 									\
   ADD_FUNCTION("`+",mpzmod_add,tMpz_binop_type,0);			\
   ADD_FUNCTION("`+=",mpzmod_add_eq,tMpz_binop_type,0);			\
-  ADD_FUNCTION("``+",mpzmod_add,tMpz_binop_type,0);			\
+  ADD_FUNCTION("``+",mpzmod_add_rhs,tMpz_binop_type,0);			\
   ADD_FUNCTION("`-",mpzmod_sub,tMpz_binop_type,0);			\
   ADD_FUNCTION("``-",mpzmod_rsub,tMpz_binop_type,0);			\
   ADD_FUNCTION("`*",mpzmod_mul,tMpz_binop_type,0);			\
