@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.7 1998/07/18 22:50:42 grubba Exp $
+// $Id: testsuite.in,v 1.8 1998/07/19 01:25:29 grubba Exp $
 
 
 // system.c:
@@ -95,7 +95,24 @@ ifefun(get_groups_for_user, [[
 ]])
 // getgrent		HAVE_GETGRENT
 // getgrgid		HAVE_GETGRGID
+ifefun(getgrgid, [[
+  test_any([[
+    array b = getgrgid(0);
+    if (b) {
+      if (!arrayp(b)) {
+	return(sprintf("b is %t", b));
+      }
+      if (!stringp(b[0]) || !stringp(b[1]) || !intp(b[2]) || !arrayp(b[3])) {
+	return(sprintf("b has bad contents: %O", b));
+      }
+    }
+    return 0;
+  ]], 0)
+]])
 // getgrnam		HAVE_GETGRNAM
+cond([[ all_constants()->getgrgid && all_constants()->getgrnam && getgrgid(0) ]], [[
+  test_equal([[ getgrnam(getgrgid(0)[0]) ]], [[ getgrgid(0) ]])
+]])
 // getpwent		HAVE_GETPWENT
 // getpwnam		HAVE_GETPWNAM
 // getpwuid		HAVE_GETPWUID
