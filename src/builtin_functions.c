@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.173 1999/06/19 19:56:29 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.174 1999/07/27 17:36:09 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3965,6 +3965,289 @@ void f_map_array(INT32 args)
   push_array(ret);
 }
 
+void f_map(INT32 args)
+{
+   /*
+     map(arr,fun,extra) => ret
+
+     arr	fun		goes 
+     array	function |	array ret; ret[i]=fun(arr[i],@extra);
+       		program |	
+           	object | 
+                array
+
+     array	multiset |	ret = rows(fun,arr)
+     		mapping 
+
+     array	string  	array ret; ret[i]=arr[i][fun](@extra);
+
+     array      void|int(0)     array ret; ret=arr(@extra)
+
+     mapping |	*               mapping ret = 
+     program |                     mkmapping(indices(arr),
+     function			             map(values(arr),fun,@extra));
+
+     multiset	*               multiset ret = 
+                                   (multiset)(map(indices(arr),fun,@extra));
+
+     string     *               string ret = 
+                                   (string)map((array)arr,fun,@extra);
+
+     object	*               if arr->cast :              
+                                   try map((array)arr,fun,@extra);
+                                   try map((mapping)arr,fun,@extra);
+				   try map((multiset)arr,fun,@extra);
+                                if arr->_sizeof && arr->`[] 
+                                   array ret; ret[i]=arr[i];
+				   ret=map(ret,fun,@extra);
+                                error
+
+     *          *               error (ie arr or fun = float or bad int )
+
+    */
+
+   struct svalue *mysp;
+   struct array *a,*d,*f;
+   int splice,i,n;
+
+   if (args<1)
+      SIMPLE_TOO_FEW_ARGS_ERROR("map", 1);
+   else if (args<2)
+      { push_int(0); args++; }
+
+   switch (sp[-args].type)
+   {
+      case T_ARRAY:
+	 break;
+
+      case T_MAPPING:
+      case T_PROGRAM:
+      case T_FUNCTION:
+	 /* mapping ret =                             
+	       mkmapping(indices(arr),                
+	                 map(values(arr),fun,@extra)); */
+	 f_aggregate(args-2);
+	 mysp=sp;
+	 splice=mysp[-1].u.array->size;
+
+	 push_svalue(mysp-3); /* arr */
+	 f_values(1);
+	 push_svalue(mysp-2); /* fun */
+	 *sp=mysp[-1];        /* extra */
+	 mysp[-1].type=T_INT;
+	 push_array_items(sp->u.array);
+	 f_map(splice+2);     /* ... arr fun extra -> ... retval */
+	 stack_pop_n_elems_keep_top(2); /* arr fun extra ret -> arr retval */
+	 stack_swap();        /* retval arr */
+	 f_indices(1);        /* retval retind */
+	 stack_swap();        /* retind retval */
+	 f_mkmapping(2);      /* ret :-) */
+	 return;
+
+      case T_MULTISET:
+	 /* multiset ret =                             
+	       (multiset)(map(indices(arr),fun,@extra)); */
+	 push_svalue(sp-args);      /* take indices from arr */
+	 free_svalue(sp-args-1);    /* move it to top of stack */
+	 sp[-args-1].type=T_INT;    
+	 f_indices(1);              /* call f_indices */
+	 sp--;                       
+	 sp[-args]=sp[0];           /* move it back */
+	 f_map(args);               
+	 sp--;                      /* allocate_multiset is destructive */
+	 push_multiset(allocate_multiset(sp->u.array));
+	 return;
+
+      case T_STRING:
+	 /* multiset ret =                             
+	       (string)(map((array)arr,fun,@extra)); */
+	 push_svalue(sp-args);      /* take indices from arr */
+	 free_svalue(sp-args-1);    /* move it to top of stack */
+	 sp[-args-1].type=T_INT;    
+	 o_cast(NULL,T_ARRAY);      /* cast the string to an array */
+	 sp--;                       
+	 sp[-args]=sp[0];           /* move it back */
+	 f_map(args);               
+	 o_cast(NULL,T_STRING);     /* cast the array to a string */
+	 return;
+
+      case T_OBJECT:
+	 /* if arr->cast :              
+               try map((array)arr,fun,@extra);
+               try map((mapping)arr,fun,@extra);
+               try map((multiset)arr,fun,@extra); */
+
+	 mysp=sp+3-args;
+
+	 push_svalue(mysp-3);
+	 push_constant_text("cast");
+	 f_arrow(2);
+	 if (!IS_ZERO(sp-1))
+	 {
+	    pop_stack();
+
+	    push_constant_text("array");
+	    safe_apply(mysp[-3].u.object,"cast",1);
+	    if (sp[-1].type==T_ARRAY)
+	    {
+	       free_svalue(mysp-3);
+	       mysp[-3]=*(--sp);
+	       f_map(args);
+	       return;
+	    }
+	    pop_stack();
+
+	    push_constant_text("mapping");
+	    safe_apply(mysp[-3].u.object,"cast",1);
+	    if (sp[-1].type==T_MAPPING)
+	    {
+	       free_svalue(mysp-3);
+	       mysp[-3]=*(--sp);
+	       f_map(args);
+	       return;
+	    }
+	    pop_stack();
+
+	    push_constant_text("multiset");
+	    safe_apply(mysp[-3].u.object,"cast",1);
+	    if (sp[-1].type==T_MULTISET)
+	    {
+	       free_svalue(mysp-3);
+	       mysp[-3]=*(--sp);
+	       f_map(args);
+	       return;
+	    }
+	    pop_stack();
+	 }
+	 pop_stack();
+
+         /* if arr->_sizeof && arr->`[] 
+               array ret; ret[i]=arr[i];
+               ret=map(ret,fun,@extra); */
+
+	 /* class myarray { int a0=1,a1=2; int `[](int what) { return ::`[]("a"+what); } int _sizeof() { return 2; } } 
+	    map(myarray(),lambda(int in){ werror("in=%d\n",in); }); */
+
+	 push_svalue(mysp-3);
+	 push_constant_text("`[]");
+	 f_arrow(2);
+	 push_svalue(mysp-3);
+	 push_constant_text("_sizeof");
+	 f_arrow(2);
+	 if (!IS_ZERO(sp-2)&&!IS_ZERO(sp-1))
+	 {
+	    f_call_function(1);
+	    if (sp[-1].type!=T_INT)
+	       SIMPLE_BAD_ARG_ERROR("map", 1, 
+				    "object sizeof() returning integer");
+	    n=sp[-1].u.integer;
+	    pop_stack();
+	    push_array(d=allocate_array(n));
+	    stack_swap();
+	    for (i=0; i<n; i++)
+	    {
+	       stack_dup(); /* `[] */
+	       push_int(i);
+	       f_call_function(2);
+	       d->item[i]=*(--sp);
+	    }
+	    pop_stack();
+	    free_svalue(mysp-3);
+	    mysp[-3]=*(--sp);
+	    f_map(args);
+	    return;
+	 }
+	 pop_stack();
+	 pop_stack();
+
+	 SIMPLE_BAD_ARG_ERROR("map",1,
+			      "object that works in map");
+
+      default:
+	 SIMPLE_BAD_ARG_ERROR("map",1,
+			      "array|mapping|program|function|"
+			      "multiset|string|object");
+   }
+
+   f_aggregate(args-2);
+   mysp=sp;
+   splice=mysp[-1].u.array->size;
+
+   a=mysp[-3].u.array;
+   n=a->size;
+
+   switch (mysp[-2].type)
+   {
+      case T_FUNCTION:
+      case T_PROGRAM:
+      case T_OBJECT:
+      case T_ARRAY:
+	 /* ret[i]=fun(arr[i],@extra); */
+         push_array(d=allocate_array(n));
+	 d=sp[-1].u.array;
+	 for (i=0; i<n; i++)
+	 {
+	    push_svalue(a->item+i);
+	    if (splice) 
+	    {
+	       add_ref_svalue(mysp-1);
+	       push_array_items(mysp[-1].u.array);
+	       apply_svalue(mysp-2,1+splice);
+	    }
+	    else
+	    {
+	       apply_svalue(mysp-2,1);
+	    }
+	    d->item[i]=*--sp;
+	 }
+	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
+	 return;
+
+      case T_MAPPING:
+      case T_MULTISET:
+	 /* ret[i]=fun[arr[i]]; */
+	 pop_stack();
+	 stack_swap();
+	 f_rows(2);
+	 return; 
+
+      case T_STRING:
+	 /* ret[i]=arr[i][fun](@extra); */
+         push_array(d=allocate_array(n));
+	 d=sp[-1].u.array;
+	 for (i=0; i<n; i++)
+	 {
+	    push_svalue(a->item+i);
+	    push_svalue(mysp-2);
+	    f_arrow(2);
+	    add_ref_svalue(mysp-1);
+	    push_array_items(mysp[-1].u.array);
+	    f_call_function(splice+1);
+	    d->item[i]=*--sp;
+	 }
+	 stack_pop_n_elems_keep_top(3); /* fun arr extra d -> d */
+	 return;
+
+      case T_INT:
+	 if (mysp[-2].u.integer==0)
+	 {
+	    /* ret=arr(@extra); */
+	    stack_swap(); /* arr fun extra -> arr extra fun */
+	    pop_stack();  /* arr extra */
+	    sp--;
+	    push_array_items(sp->u.array);
+	    f_call_function(1+splice);
+	    apply_svalue(mysp-2,1+mysp[-1].u.array->size);
+	    return; 
+	 }	    
+	 /* no break here */
+      default:
+	 SIMPLE_BAD_ARG_ERROR("map",2,
+			      "function|program|object|"
+			      "string|int(0)|multiset");
+   }      
+}
+
 void f_string_count(INT32 args)
 {
    struct pike_string * haystack=NULL;
@@ -4282,6 +4565,62 @@ void init_builtin_efuns(void)
   /* function(array(mixed),array(mixed)...:array(mixed)) */
   ADD_FUNCTION("sort",f_sort,tFuncV(tArr(tMix),tArr(tMix),tArr(tMix)),OPT_SIDE_EFFECT);
   ADD_FUNCTION("string_count",f_string_count,tFunc(tString tString,tInt),OPT_TRY_OPTIMIZE);
+
+#define tMapStuff(IN,SUB,OUTFUN,OUTSET,OUTPROG,OUTMIX,OUTARR,OUTMAP) \
+  tOr7( tFuncV(IN tFuncV(SUB,tMix,tSetvar(2,tMix)),tMix,OUTFUN), \
+        tIfnot(tFuncV(IN tFunction,tMix,tMix), \
+	       tOr(tFuncV(IN tProgram, tMix, OUTPROG), \
+	       tFuncV(IN tObj, tMix, OUTMIX))), \
+	tFuncV(IN tSet(tMix),tMix,OUTSET), \
+	tFuncV(IN tMap(tMix, tSetvar(2,tMix)), tMix, OUTMAP), \
+        tFuncV(IN tArray, tMix, OUTARR), \
+        tFuncV(IN tInt0, tMix, OUTMIX), \
+	tFuncV(IN, tVoid, OUTMIX) )
+
+  ADD_EFUN("map",f_map,
+	   tOr7( tMapStuff(tArr(tSetvar(1,tMix)),tVar(1),
+			   tArr(tVar(2)),
+			   tArr(tInt01),
+			   tArr(tObj),
+			   tArr(tMix),
+			   tArr(tArr(tMix)),
+			   tArr(tOr(tInt0,tVar(2)))),
+
+		 tMapStuff(tMap(tSetvar(3,tMix),tSetvar(1,tMix)),tVar(1),
+			   tMap(tVar(3),tVar(2)),
+			   tMap(tVar(3),tInt01),
+			   tMap(tVar(3),tObj),
+			   tMap(tVar(3),tMix),
+			   tMap(tVar(3),tArr(tMix)),
+			   tMap(tVar(3),tOr(tInt0,tVar(2)))),
+		
+ 		 tMapStuff(tSet(tSetvar(1,tMix)),tVar(1),
+			   tSet(tVar(2)),
+			   tSet(tInt01),
+			   tSet(tObj),
+			   tSet(tMix),
+			   tSet(tArr(tMix)),
+			   tSet(tOr(tInt0,tVar(2)))),
+
+		 tMapStuff(tOr(tProgram,tFunction),tMix,
+			   tMap(tStr,tVar(2)),
+			   tMap(tStr,tInt01),
+			   tMap(tStr,tObj),
+			   tMap(tStr,tMix),
+			   tMap(tStr,tArr(tMix)),
+			   tMap(tStr,tOr(tInt0,tVar(2)))),
+
+		 tOr4( tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString), 
+		       tFuncV(tString tFuncV(tInt,tMix,tInt),tMix,tString),
+		       tFuncV(tString tSet(tMix),tMix,tString),
+		       tFuncV(tString tMap(tMix,tInt), tMix, tString) ),
+		 
+		 tFuncV(tArr(tStringIndicable) tString,tMix,tMix),
+
+		 tFuncV(tObj,tMix,tMix) ),
+
+	   OPT_TRY_OPTIMIZE);
+
 #ifdef DEBUG_MALLOC
   
 /* function(void:void) */
