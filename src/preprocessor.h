@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.68 2004/06/29 17:01:29 grubba Exp $
+|| $Id: preprocessor.h,v 1.69 2004/06/29 21:15:36 nilsson Exp $
 */
 
 /*
@@ -2243,6 +2243,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 #undef PUSH_STRING
 #undef STRCAT
 #undef WC_STRCAT
+#undef MAKE_BINARY_STRING
 
 #undef lower_cpp
 #undef find_end_parenthesis
