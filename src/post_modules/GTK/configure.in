@@ -433,6 +433,7 @@ if test "x$WITH_GTK" = x1 ; then
    GNOME_LIBS="`$GNOME_CONFIG --libs gnome gnomeui gnorba gtkxmhtml applets`"
    pgtk_has_gnome=gnome
    AC_MSG_RESULT(yes);
+   PIKE_FEATURE_OK(Gnome)
  fi
  
  AC_MSG_CHECKING([gnome docklets])
@@ -455,32 +456,33 @@ if test "x$WITH_GTK" = x1 ; then
  oCFLAG="$CFLAGS"
  CFLAGS="$GNOME_CFLAGS"
 
- # Do some extra effort to check for the header files, since some
- # Gnome packagings doesn't include them all (e.g. applet-widget.h on
- # Debian systems). Can't use AC_CHECK_HEADERS here since it doesn't
- # use $CFLAGS.
- define(REALLY_CHECK_HEADER, [
-   AC_CACHE_CHECK([for $1], [pgtk_cv_header_]translit($1,./-,___), [
-     AC_TRY_COMPILE([#include <$1>],,
-     [[pgtk_cv_header_]translit($1,./-,___)=yes],
-     [[pgtk_cv_header_]translit($1,./-,___)=no])
+ if test "x$pgtk_has_gnome" = xgnome ; then
+   # Do some extra effort to check for the header files, since some
+   # Gnome packagings doesn't include them all (e.g. applet-widget.h on
+   # Debian systems). Can't use AC_CHECK_HEADERS here since it doesn't
+   # use $CFLAGS.
+   define(REALLY_CHECK_HEADER, [
+     AC_CACHE_CHECK([for $1], [pgtk_cv_header_]translit($1,./-,___), [
+       AC_TRY_COMPILE([#include <$1>],,
+		      [[pgtk_cv_header_]translit($1,./-,___)=yes],
+		      [[pgtk_cv_header_]translit($1,./-,___)=no])
+     ])
    ])
- ])
- REALLY_CHECK_HEADER(gnome.h)
- REALLY_CHECK_HEADER(libgnorba/gnorba.h)
- REALLY_CHECK_HEADER(applet-widget.h)
- if test "$pgtk_cv_header_gnome_h" != "yes" ; then
-   pgtk_has_gnome=nognome
-   PIKE_FEATURE(Gnome, [no (gnome.h not found)])
- elif test "$pgtk_cv_header_libgnorba_gnorba_h" != "yes" ; then
-   pgtk_has_gnome=nognome
-   PIKE_FEATURE(Gnome, [no (libgnorba/gnorba.h not found)])
- elif test "$pgtk_cv_header_applet_widget_h" != "yes" ; then
-   pgtk_has_gnome=nognome
-   PIKE_FEATURE(Gnome, [no (applet-widget.h not found)])
- else
-   AC_DEFINE(HAVE_GNOME)
-   PIKE_FEATURE_OK(Gnome)
+   REALLY_CHECK_HEADER(gnome.h)
+   REALLY_CHECK_HEADER(libgnorba/gnorba.h)
+   REALLY_CHECK_HEADER(applet-widget.h)
+   if test "$pgtk_cv_header_gnome_h" != "yes" ; then
+     pgtk_has_gnome=nognome
+     PIKE_FEATURE(Gnome, [no (gnome.h not found)])
+   elif test "$pgtk_cv_header_libgnorba_gnorba_h" != "yes" ; then
+     pgtk_has_gnome=nognome
+     PIKE_FEATURE(Gnome, [no (libgnorba/gnorba.h not found)])
+   elif test "$pgtk_cv_header_applet_widget_h" != "yes" ; then
+     pgtk_has_gnome=nognome
+     PIKE_FEATURE(Gnome, [no (applet-widget.h not found)])
+   else
+     AC_DEFINE(HAVE_GNOME)
+   fi
  fi
  
  AC_MSG_CHECKING([if HAVE_SAVE_SESSION_SIGNAL is defined in applet-widget.h])
