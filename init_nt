@@ -49,6 +49,13 @@ INCLUDE="$watcom\\H;$watcom\\H\\NT"
 # Used for IA64 cross-compiling.
 IA64SDK=${IA64SDK-'C:\ia64sdk17'}
 
+# Fool broken configure test
+ac_cv_header_stdc=yes
+export ac_cv_header_stdc
+
+ac_cv_exeext=''
+export ac_cv_exeext
+
 case "/$CC" in
   */rntcl)
 
@@ -61,11 +68,13 @@ case "/$CC" in
     if [ "${USER-}@${HOST-}" = "hubbe@adenin" ]; then
       echo "I am Hubbe"
       MSVC='j:\winshare\vc98'
+      MSVC_UPDATE='C:\Program Files\Microsoft SDK'
       local='j:\winshare\local'
       REMOTE_VARIABLES="
-path=$MSVC\\bin;
-include=$MSVC\\Include;$local\\include
-lib=$MSVC\\Lib;$local\\lib
+path=$MSVC_UPDATE\\bin;$MSVC\\bin;
+include=$MSVC_UPDATE\\Include;$MSVC\\Include;$local\\include
+lib=$MSVC_UPDATE\\Lib;$MSVC\\Lib;$local\\lib
+PIKE_DEBUG=1
 "
 
       # This variable is used by pntld to find
