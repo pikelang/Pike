@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.66 2000/08/24 04:04:41 hubbe Exp $
+ * $Id: interpret.h,v 1.67 2000/09/12 17:06:08 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -98,6 +98,15 @@ struct external_variable_context
   x_*=STACK_DIRECTION;							\
   if(x_>0)								\
     low_error("C stack overflow.\n");					\
+  }while(0)
+
+#define fatal_check_c_stack(X) do { 			\
+    ptrdiff_t x_= 					\
+      ((char *)&x_) + STACK_DIRECTION * (X) - Pike_interpreter.stack_top ; \
+    x_*=STACK_DIRECTION;						\
+    if(x_>0) {								\
+      fatal("C stack overflow.\n");					\
+    }									\
   }while(0)
 
 
