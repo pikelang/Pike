@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.533 2004/03/07 02:05:24 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.534 2004/03/30 12:50:56 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.533 2004/03/07 02:05:24 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.534 2004/03/30 12:50:56 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -41,7 +41,6 @@ RCSID("$Id: builtin_functions.c,v 1.533 2004/03/07 02:05:24 nilsson Exp $");
 #include "security.h"
 #include "builtin_functions.h"
 #include "bignum.h"
-#include "language.h"
 #include "peep.h"
 #include "docode.h"
 #include "lex.h"
@@ -4383,8 +4382,10 @@ static time_t my_timegm(struct tm *target_tm)
   struct tm *current_tm;
   int loop_cnt = 0;
 
+#if 0	/* The dst offset is part of tz. */
   /* Assume dst is one hour. */
   target_tm->tm_hour -= target_tm->tm_isdst;
+#endif /* 0 */
 
   /* This loop seems stable, and usually converges in two passes.
    * The loop counter is for paranoia reasons.
