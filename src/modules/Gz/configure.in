@@ -14,6 +14,11 @@ if test x$with_zlib = xyes ; then
 int foo = (int)(Z_NO_COMPRESSION | Z_VERSION_ERROR);
     ],[ AC_MSG_RESULT(yes) ],[ AC_MSG_RESULT(no); ac_cv_header_zlib_h=no ])
     if test $ac_cv_header_zlib_h = yes ; then
+      if test x$pike_cv_sys_os = xIRIX ; then
+        # The libz.so supplied with IRIX 6.3 needs this obscure symbol
+        # C++?
+        AC_CHECK_LIB(Csup, __vtbl__9type_info)
+      fi
       AC_CHECK_LIB(z, compress, [
         AC_DEFINE(HAVE_LIBZ) 
         LIBS="${LIBS-} -lz"
