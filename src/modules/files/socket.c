@@ -239,6 +239,7 @@ static void port_create(INT32 args)
     if(sp[-args].type == T_INT)
     {
       port_bind(args);
+      return;
     }else{
       if(sp[-args].type != T_STRING)
 	error("Bad argument 1 to port->create()\n");
