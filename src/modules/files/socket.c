@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.87 2004/05/13 15:30:52 bill Exp $
+|| $Id: socket.c,v 1.88 2004/05/13 15:35:32 bill Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.87 2004/05/13 15:30:52 bill Exp $");
+RCSID("$Id: socket.c,v 1.88 2004/05/13 15:35:32 bill Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -311,7 +311,7 @@ static void port_bind(INT32 args)
 
 #ifdef HAVE_SYS_UN_H
 
-/*! @decl int bind_unix(int|string path, void|function accept_callback)
+/*! @decl int bind_unix(string path, void|function accept_callback)
  *!
  *! Bind opens a Unix domain socket at the filesystem location path.
  *! If the second argument is present, the socket is set to nonblocking
