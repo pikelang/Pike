@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.101 1998/04/28 22:59:11 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.102 1998/04/30 03:44:11 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -569,7 +569,7 @@ test_equal(sort(indices(mtest_m2^mtest_m)),sort(mtest_i2^mtest_i))
 test_do(add_constant("mtest_m"); add_constant("mtest_i"); )
 test_do(add_constant("mtest_m2"); add_constant("mtest_i2"); )
 
-define(MTEST,[[test_equal([[mkmultiset(indices(allocate($1)))]],[[mkmultiset(reverse(indices(allocate($1))))]])]])
+define([[MTEST]],[[test_equal([[mkmultiset(indices(allocate($1)))]],[[mkmultiset(reverse(indices(allocate($1))))]])]])
 
 MTEST(0)
 MTEST(1)
@@ -702,7 +702,7 @@ test_equal(sort(indices(mtest_m2^mtest_m)),sort(mtest_i2^mtest_i))
 test_do(add_constant("mtest_m"); add_constant("mtest_i"); add_constant("mtest_v");)
 test_do(add_constant("mtest_m2"); add_constant("mtest_i2"); add_constant("mtest_v2");)
 
-define(MTEST,[[test_equal([[mkmapping(indices(allocate($1)),reverse(indices(allocate($1))))]],[[mkmapping(reverse(indices(allocate($1))),indices(allocate($1)))]])]])
+define([[MTEST]],[[test_equal([[mkmapping(indices(allocate($1)),reverse(indices(allocate($1))))]],[[mkmapping(reverse(indices(allocate($1))),indices(allocate($1)))]])]])
 
 MTEST(0)
 MTEST(1)
