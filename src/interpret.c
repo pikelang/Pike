@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.191 2001/04/14 09:44:20 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.192 2001/04/25 21:26:45 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -786,7 +786,7 @@ static void restore_light_frame_info(struct light_frame_info *info)
 
 #ifdef PIKE_DEBUG
 #define eval_instruction eval_instruction_with_debug
-#include "interpreter.h"
+#include "interpreter_debug.h"
 
 #undef eval_instruction
 #define eval_instruction eval_instruction_without_debug

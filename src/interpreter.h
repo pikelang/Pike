@@ -36,6 +36,10 @@
 #define DOJUMP() \
  do { int tmp; tmp=GET_JUMP(); pc+=tmp; if(tmp < 0) fast_check_threads_etc(6); }while(0)
 
+#ifndef STEP_BREAK_LINE
+#define STEP_BREAK_LINE
+#endif
+
 static int eval_instruction(unsigned char *pc)
 {
   unsigned INT32 prefix2=0,instr, prefix=0;
@@ -45,6 +49,8 @@ static int eval_instruction(unsigned char *pc)
     Pike_fp->pc = pc;
     instr=EXTRACT_UCHAR(pc++);
 
+    STEP_BREAK_LINE
+    
 #ifdef PIKE_DEBUG
     if(t_flag > 2)
     {

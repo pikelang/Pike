@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.50 2001/03/19 00:42:11 grubba Exp $
+ * $Id: interpret_functions.h,v 1.51 2001/04/25 21:26:46 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1723,3 +1723,11 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
   pc=addr;
 }
 BREAK
+
+OPCODE0(F_BREAKPOINT,"breakpoint")
+{
+  extern void o_breakpoint(void);
+  o_breakpoint();
+  pc--;
+}
+BREAK;

@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.105 2001/03/31 15:41:58 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.106 2001/04/25 21:26:46 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1859,3 +1859,8 @@ PMOD_EXPORT void f_sscanf(INT32 args)
   push_array(a);
 }
 
+
+void o_breakpoint(void)
+{
+  /* Does nothing */
+}
