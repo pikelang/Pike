@@ -34,7 +34,7 @@ Gnome.Dialog close( );
 //!
 //!
 
-static Gnome.Dialog create( string title, string buttons );
+static Gnome.Dialog create( string title, string... buttons );
 //! Creates a new Gnome.Dialog, with the given title, and any button
 //! names in the arg list. Buttons can be simple names, such as "My
 //! Button", or gnome-stock defines such as GNOME.StockButtonOK,
@@ -57,7 +57,7 @@ Gnome.Dialog editable_enters( GTK.Editable widget );
 //!
 //!
 
-GTK.Widget get_vbox( );
+GTK.Vbox get_vbox( );
 //!
 
 int run( );

@@ -22,7 +22,7 @@
 
 inherit Gnome.Dialog;
 
-static Gnome.MessageBox create( string message, string messagebox_type, string buttons );
+static Gnome.MessageBox create( string message, string messagebox_type, string... buttons );
 //! Creates a dialog box of type message_box_type with message. A
 //! number of buttons are inserted on it. You can use the GNOME stock
 //! identifiers to create gnome stock buttons.
