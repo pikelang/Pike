@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.2 1999/04/11 05:48:51 per Exp $");
+RCSID("$Id: xcf.c,v 1.3 1999/04/11 07:21:23 per Exp $");
 
 #include "config.h"
 
@@ -101,6 +101,29 @@ typedef enum
   INDEXED_GIMAGE,
   INDEXEDA_GIMAGE
 } layer_type;
+
+
+typedef enum {  /*< chop=_MODE >*/
+  NORMAL_MODE,
+  DISSOLVE_MODE,
+  BEHIND_MODE,
+  MULTIPLY_MODE,      /*< nick=MULTIPLY/BURN >*/
+  SCREEN_MODE,
+  OVERLAY_MODE,
+  DIFFERENCE_MODE,
+  ADDITION_MODE,
+  SUBTRACT_MODE,
+  DARKEN_ONLY_MODE,   /*< nick=DARKEN-ONLY >*/
+  LIGHTEN_ONLY_MODE,  /*< nick=LIGHTEN-ONLY >*/
+  HUE_MODE,
+  SATURATION_MODE,
+  COLOR_MODE,
+  VALUE_MODE,
+  DIVIDE_MODE,        /*< nick=DIVIDE/DODGE >*/
+  ERASE_MODE,
+  REPLACE_MODE,
+} LayerModeEffects;
+
 
 typedef enum
 {
@@ -1213,6 +1236,27 @@ void init_image_xcf()
   add_integer_constant( "COMPRESS_RLE", COMPRESS_RLE, 0 );
   add_integer_constant( "COMPRESS_ZLIB", COMPRESS_ZLIB, 0 );
   add_integer_constant( "COMPRESS_FRACTAL", COMPRESS_FRACTAL, 0 );
+
+
+  add_integer_constant("NORMAL_MODE", NORMAL_MODE, 0);
+  add_integer_constant("DISSOLVE_MODE", DISSOLVE_MODE, 0);
+  add_integer_constant("BEHIND_MODE",BEHIND_MODE, 0);
+  add_integer_constant("MULTIPLY_MODE",MULTIPLY_MODE, 0);
+  add_integer_constant("SCREEN_MODE",SCREEN_MODE, 0);
+  add_integer_constant("OVERLAY_MODE",OVERLAY_MODE, 0);
+  add_integer_constant("DIFFERENCE_MODE",DIFFERENCE_MODE, 0);
+  add_integer_constant("ADDITION_MODE",ADDITION_MODE, 0);
+  add_integer_constant("SUBTRACT_MODE",SUBTRACT_MODE, 0);
+  add_integer_constant("DARKEN_ONLY_MODE",DARKEN_ONLY_MODE, 0);
+  add_integer_constant("LIGHTEN_ONLY_MODE",LIGHTEN_ONLY_MODE, 0);
+  add_integer_constant("HUE_MODE",HUE_MODE, 0);
+  add_integer_constant("SATURATION_MODE",SATURATION_MODE, 0);
+  add_integer_constant("COLOR_MODE",COLOR_MODE, 0);
+  add_integer_constant("VALUE_MODE",VALUE_MODE, 0);
+  add_integer_constant("DIVIDE_MODE",DIVIDE_MODE, 0);
+  add_integer_constant("ERASE_MODE",ERASE_MODE, 0);
+  add_integer_constant("REPLACE_MODE",REPLACE_MODE, 0);
+
 
   add_integer_constant( "Red", Red, 0 );
   add_integer_constant( "Green", Green, 0 );

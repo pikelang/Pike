@@ -70,8 +70,8 @@ class Hierarchy
   int height;
   int bpp;
   
-  void create( int x, int y, int bp, array tiles, int compression,
-               Image.colortable cmap)
+  Hierarchy set_image( int x, int y, int bp, array tiles, int compression,
+                       Image.colortable cmap)
   {
     width = x;
     height = y;
@@ -87,18 +87,43 @@ class Hierarchy
      default:
        error("Image tile compression type not supported\n");
     }
+    return this_object();
   }
+
+  Hierarchy qsi(object _i, object _a, int _w, int _h,int _b)
+  {
+    img = _i;
+    alpha = _a;
+    width = _w;
+    height = _h;
+    bpp = _b;
+    return this_object();
+  }
+
+  Hierarchy copy()
+  {
+    return Hierarchy()->qsi( img->copy(),alpha->copy(),width,height,bpp );
+  }
+
+  Hierarchy get_opaqued( int opaque_value )
+  {
+    Hierarchy res = copy();
+    if(opaque_value != 255)
+      res->alpha *= opaque_value/255.0;
+    return res;
+  }
+
 }
 
 int iid;
 Hierarchy decode_image_data( mapping what, object i )
 {
   Hierarchy h = 
-    Hierarchy( what->width, what->height, what->bpp,
-               what->tiles, i->compression, i->colormap );
+    Hierarchy( )->set_image(what->width, what->height, what->bpp,
+                            what->tiles, i->compression, i->colormap );
 
 
-#if 1
+#if 0
   object bg = Image.image( what->width, what->height )->test();
   bg = bg->paste_mask( h->img, h->alpha );
   rm("/tmp/xcftest_"+iid);
@@ -197,9 +222,17 @@ class Layer
        case PROP_SELECTION:
          parent->selection = this_object();
          break;
+       case PROP_OFFSETS:
+         sscanf(p->data, "%4c%4c", xoffset, yoffset);
+         break;
        INT(OPACITY,opacity);
        FLAG(VISIBLE,visible);
-       FLAG(SHOW_MASKED,show_masked);
+       FLAG(LINKED,linked);
+       FLAG(PRESERVE_TRANSPARENCY,preserve_transparency);
+       FLAG(APPLY_MASK,apply_mask);
+       FLAG(EDIT_MASK,edit_mask);
+       FLAG(SHOW_MASK,show_mask);
+       INT(MODE,mode);
        INT(TATTOO,tattoo);
        case PROP_PARASITES:
          parasites = decode_parasites( p->data );
@@ -374,14 +407,63 @@ GimpImage __decode( string|mapping what )
 }
 
 
-mapping _decode( string|mapping what )
+mapping _decode( string|mapping what, mapping|void opts )
 {
+  if(!opts) opts = ([]);
+  mixed e=
+    catch {
   GimpImage data = __decode( what );
-  /* This is rather non-trivial.. */
+  object img = Image.image(data->width, data->height, 
+                           @(opts->background||({255,255,255})));
+  object alpha = Image.image(data->width, data->height,
+                             @(opts->background?({255,255,255}):({0,0,0})));
+
+  foreach(reverse(data->layers), object l)
+  {
+    if(l->flags->visible)
+    {
+      Hierarchy h = l->image->get_opaqued( l->opacity );
+      switch( l->mode )
+      {
+      case NORMAL_MODE:
+        img->paste_mask( h->img, h->alpha, l->xoffset, l->yoffset );
+        alpha->paste_alpha_color( h->alpha, 255,255,255, 
+                                  l->xoffset, l->yoffset );
+        break;
+      case DISSOLVE_MODE:
+      case BEHIND_MODE:
+      case MULTIPLY_MODE:
+      case SCREEN_MODE:
+      case OVERLAY_MODE:
+      case DIFFERENCE_MODE:
+      case ADDITION_MODE:
+      case SUBTRACT_MODE:
+      case DARKEN_ONLY_MODE:
+      case LIGHTEN_ONLY_MODE:
+      case HUE_MODE:
+      case SATURATION_MODE:
+      case COLOR_MODE:
+      case VALUE_MODE:
+      case DIVIDE_MODE:
+      case ERASE_MODE:
+      case REPLACE_MODE:
+        werror("More "+l->mode+" not yet implemented.\n");
+        break;
+      }
+    }
+  }
+
+  return ([
+    "image":img,
+    "alpha":alpha,
+    "gimpimage":data,
+  ]);
+  };
+  werror(describe_backtrace(e));
 }
 
 
-object decode( string what )
+object decode( string what,mapping|void opts )
 {
-  return _decode( what )->image;
+  return _decode( what,opts )->image;
 }
