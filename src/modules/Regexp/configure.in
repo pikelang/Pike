@@ -1,7 +1,24 @@
-AC_INIT(regexp.c)
+AC_INIT(pike_regexp.c)
+AC_CONFIG_HEADER(config.h)
 
 sinclude(../module_configure.in)
 
+AC_HAVE_HEADERS(regexp.h)
+
+AC_CHECK_FUNCS(regcomp regexec regerror regfree)
+
+AC_MSG_CHECKING(C lib has regexps)
+
+if test $ac_cv_header_regexp_h$ac_cv_func_regcomp$ac_cv_func_regexec$ac_cv_func_regerror$ac_cv_func_regfree = yesyesyesyesyes ; then
+    AC_DEFINE(USE_SYSTEM_REGEXP)
+    REGEXP_OBJS=""
+    AC_MSG_RESULT(yes)
+else
+    REGEXP_OBJS="pike_regexp.o"
+    AC_MSG_RESULT(no)
+fi
+
+AC_SUBST(REGEXP_OBJS)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
