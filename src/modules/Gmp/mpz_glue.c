@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.13 1997/04/18 20:05:25 nisse Exp $");
+RCSID("$Id: mpz_glue.c,v 1.14 1997/04/25 16:23:21 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -26,8 +26,12 @@ RCSID("$Id: mpz_glue.c,v 1.13 1997/04/18 20:05:25 nisse Exp $");
 #include "error.h"
 #include "builtin_functions.h"
 #include "opcodes.h"
+#include "module_support.h"
 
 #include <gmp.h>
+#include "my_gmp.h"
+
+#include <limits.h>
 
 #define THIS ((MP_INT *)(fp->current_storage))
 #define OBTOMPZ(o) ((MP_INT *)(o->storage))
@@ -531,8 +535,56 @@ CMPEQU(mpzmod_nq, !=, 1)
 
 static void mpzmod_probably_prime_p(INT32 args)
 {
+  int count;
+  if (args)
+  {
+    get_all_args("Gmp.mpz->probably_prime_p", args, "%i", &count);
+    count = sp[-1].u.integer;
+    if (count <= 0)
+      error("Gmp.mpz->probably_prime_p: count argument must be positive.\n");
+  } else
+    count = 25;
   pop_n_elems(args);
-  push_int(mpz_probab_prime_p(THIS, 25));
+  push_int(mpz_probab_prime_p(THIS, count));
+}
+
+static void mpzmod_small_factor(INT32 args)
+{
+  int limit;
+
+  if (args)
+    {
+      get_all_args("Gmp.mpz->small_factor", args, "%i", &limit);
+      if (limit <= 2)
+	error("Gmp.mpz->small_factor: limit argument must be at least 2.\n");
+    }
+  else
+    limit = INT_MAX;
+  pop_n_elems(args);
+  push_int(mpz_small_factor(THIS, limit));
+}
+
+static void mpzmod_next_prime(INT32 args)
+{
+  int count = 25;
+  int limit = INT_MAX;
+  struct object *o;
+
+  switch(args)
+  {
+  case 0:
+    break;
+  case 1:
+    get_all_args("Gmp.mpz->next_prime", args, "%i", &count);
+  default:
+    get_all_args("Gmp.mpz->next_prime", args, "%i%i", &count, &limit);
+  }
+  pop_n_elems(args);
+  
+  o = clone_object(mpzmod_program, 0);
+  push_object(o);
+  
+  mpz_next_prime(OBTOMPZ(o), THIS, count, limit);
 }
 
 static void mpzmod_sgn(INT32 args)
@@ -736,6 +788,9 @@ void pike_module_init(void)
   add_function("cast_to_float",mpzmod_get_float,"function(:float)",0);
 
   add_function("probably_prime_p",mpzmod_probably_prime_p,"function(:int)",0);
+  add_function("small_factor", mpzmod_small_factor, "function(int|void:int)", 0);
+  add_function("next_prime", mpzmod_next_prime, "function(int|void,int|void:object)", 0);
+  
   add_function("gcd",mpzmod_gcd, MPZ_BINOP_TYPE, 0);
   add_function("gcdext", mpzmod_gcdext,
   "function(" MPZ_ARG_TYPE ":array(object))", 0);
