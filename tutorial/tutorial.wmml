@@ -3154,6 +3154,8 @@ to the following table:
 <tr valign=top><td> %f </td><td> reads a float </td></tr>
 <tr valign=top><td> %c </td><td> matches one char and returns it as an integer </td></tr>
 <tr valign=top><td> %2c </td><td> matches two chars and returns them as an integer (short) </td></tr>
+<tr valign=top><td> %4F </td><td> matches four chars and returns them as a float (IEEE single precision) </td></tr>
+<tr valign=top><td> %8F </td><td> matches eigth chars and returns them as a float (IEEE double precision) </td></tr>
 <tr valign=top><td> %s </td><td> reads a string. If followed by %d, %s will
  read any non-numerical characters. If followed by a %[], %s will read any
  characters not present in the set. If followed by normal text, %s will match
