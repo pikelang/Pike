@@ -3,7 +3,7 @@
 //! This module implements EXIF (Exchangeable image file format for
 //! Digital Still Cameras) 2.2 parsing.
 
-// $Id: EXIF.pmod,v 1.18 2003/04/14 13:39:19 nilsson Exp $
+// $Id: EXIF.pmod,v 1.19 2003/06/08 08:20:55 mirar Exp $
 //  Johan Schön <js@roxen.com>, July 2001.
 //  Based on Exiftool by Robert F. Tobler <rft@cg.tuwien.ac.at>.
 //
@@ -18,7 +18,7 @@ static void add_field(mapping m, string field,
 		      mapping|array alts,
 		      array(int) from, int index)
 {
-  if(index>sizeof(from))
+  if(index>=sizeof(from))
     return;
   index = from[index];
   if(mappingp(alts)) {
@@ -172,8 +172,11 @@ static mapping canon_multi0(array(int) data)
   else
     res->CanonFlashDetails="No flash";
 
-  add_field(res, "CanonFocusMode",
-	    ({ "Single", "Continuous" }), data, 32);
+  if (sizeof(data)>32)
+  {
+     add_field(res, "CanonFocusMode",
+	       ({ "Single", "Continuous" }), data, 32);
+  }
 
   return res;
 }
