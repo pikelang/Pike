@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.18 2005/04/06 16:49:16 mast Exp $
+// $Id: module.pmod,v 1.19 2005/04/06 16:51:08 mast Exp $
 
 #include "ldap_globals.h"
 
@@ -503,17 +503,32 @@ constant SYNTAX_SUPPORTED_ALGORITHM = "1.3.6.1.4.1.1466.115.121.1.49"; // RFC 22
 // NB: According to <http://msdn.microsoft.com/library/en-us/
 // adschema/adschema/syntaxes.asp>, Microsoft AD can use a bunch of
 // X.500 syntaxes (mostly for the same types as those covered above),
-// but they are very vaguely described and I doubt they actually
-// occurs over an LDAP connection. /mast
+// but they are very vaguely described. Also, they are apparently
+// translated to LDAP syntax attributes over the LDAP protocol (at
+// least for some attributes, e.g. msDS-hasMasterNCs).
 
-constant SYNTAX_AD_CASE_IGNORE_STR = "1.2.840.113556.1.4.905";
 //constant SYNTAX_AD_OR_NAME = "1.2.840.113556.1.4.1221";
-//constant SYNTAX_AD_DN_WITH_OCTET_STR = "1.2.840.113556.1.4.903";
-//constant SYNTAX_AD_DN_WITH_STR = "1.2.840.113556.1.4.904";
-// The three syntaxes above can contain DN:s. It's unknown whether
-// those DN:s are UTF-8 encoded according to RFC 2253 or (obsolete)
-// unencoded according to RFC 1779. They are commented out to enable
-// the debug warning in LDAP.Protocol.client.result.decode_entries.
+constant SYNTAX_AD_DN_WITH_OCTET_STR = "1.2.840.113556.1.4.903";
+constant SYNTAX_AD_DN_WITH_STR = "1.2.840.113556.1.4.904";
+// The three syntaxes above can contain DN:s. It's not entirely clear
+// whether those DN:s are UTF-8 encoded according to RFC 2253 or
+// (obsolete) unencoded according to RFC 1779.
+//
+// Anyway, the AD attribute msDS-hasMasterNCs is associated with
+// SYNTAX_DN (i.e. is UTF-8 encoded), and msDS-HasInstantiatedNCs is
+// associated with SYNTAX_AD_DN_WITH_OCTET_STR. Both are automatically
+// updated DNs in AD (see
+// http://msdn.microsoft.com/library/en-us/adschema/adschema/s_object_ds_dn.asp
+// and
+// http://msdn.microsoft.com/library/en-us/adschema/adschema/s_object_dn_binary.asp,
+// respectively), so it seems reasonable to assume that both are
+// modern UTF-8 thingies. And SYNTAX_AD_DN_WITH_STR is another close
+// variant
+// (http://msdn.microsoft.com/library/en-us/adschema/adschema/s_object_dn_string.asp).
+//
+// However, SYNTAX_AD_OR_NAME is still uncertain, so it's commented
+// out to enable the debug warning in client.pike.
+constant SYNTAX_AD_CASE_IGNORE_STR = "1.2.840.113556.1.4.905";
 constant SYNTAX_AD_LARGE_INT = "1.2.840.113556.1.4.906";
 constant SYNTAX_AD_OBJECT_SECURITY_DESCRIPTOR = "1.2.840.113556.1.4.907";
 //! LDAP syntax: Microsoft AD: Additional syntaxes used in AD. C.f.
@@ -532,6 +547,8 @@ constant syntax_decode_fns = ([
   SYNTAX_POSTAL_ADDR:			utf8_to_string,
   SYNTAX_LDAP_SYNTAX_DESCR:		utf8_to_string,
   SYNTAX_DIT_STRUCTURE_RULE_DESCR:	utf8_to_string,
+  SYNTAX_AD_DN_WITH_OCTET_STR:		utf8_to_string,
+  SYNTAX_AD_DN_WITH_STR:		utf8_to_string,
 ]);
 
 //! @decl constant mapping(string:function(string:string)) syntax_decode_fns;
