@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.319 2002/12/20 15:25:20 grubba Exp $
+|| $Id: las.c,v 1.320 2002/12/25 18:18:01 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.319 2002/12/20 15:25:20 grubba Exp $");
+RCSID("$Id: las.c,v 1.320 2002/12/25 18:18:01 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -35,6 +35,11 @@ RCSID("$Id: las.c,v 1.319 2002/12/20 15:25:20 grubba Exp $");
 #include "pikecode.h"
 
 #define LASDEBUG
+
+/* Define this if you want the optimizer to be paranoid about aliasing
+ * effects to to indexing.
+ */
+/* #define PARANOID_INDEXING */
 
 int lasdebug=0;
 
@@ -849,11 +854,13 @@ static node *debug_mkemptynode(void)
 {
   node *res=alloc_node_s();
 
-#ifdef SHARED_NODES
+#if defined(SHARED_NODES) || defined(__CHECKER__)
   MEMSET(res, 0, sizeof(node));
+#ifdef SHARED_NODES
   res->hash = 0;  
   res->refs = 1;
 #endif /* SHARED_NODES */
+#endif /* SHARED_NODES || __CHECKER__ */
 
   res->token=0;
   res->line_number=lex.current_line;
@@ -2867,6 +2874,9 @@ char *find_q(struct scope_info **a, int num, int scope_id)
 
 /* FIXME: Ought to use parent pointer to avoid recursion. */
 /* Find the variables that are used in the tree n. */
+/* noblock: Don't mark unused variables that are written to as blocked.
+ * overwrite: n is an lvalue that is overwritten.
+ */
 static int find_used_variables(node *n,
 			       struct used_vars *p,
 			       int noblock,
@@ -2951,7 +2961,10 @@ static int find_used_variables(node *n,
 
   case F_ARROW:
   case F_INDEX:
+#ifdef PARANOID_INDEXING
+    /* Be paranoid, and assume aliasing. */
     p->ext_flags = VAR_USED;
+#endif /* PARANOID_INDEXING */
     if(car_is_node(n)) find_used_variables(CAR(n),p,noblock,0);
     if(cdr_is_node(n)) find_used_variables(CDR(n),p,noblock,0);
     break;
@@ -3071,10 +3084,22 @@ static void find_written_vars(node *n,
 
   case F_INDEX:
   case F_ARROW:
+#ifdef PARANOID_INDEXING
+    /* Be paranoid and assume aliasing. */
     if (lvalue)
       p->ext_flags = VAR_USED;
     find_written_vars(CAR(n), p, 0);
+#else /* !PARAONID_INDEXING */
+    /* Propagate the change to the indexed value.
+     * Note: This is sensitive to aliasing effects.
+     */
+    find_written_vars(CAR(n), p, lvalue);
+#endif /* PARANOID_INDEXING */
     find_written_vars(CDR(n), p, 0);
+    break;
+
+  case F_SOFT_CAST:
+    find_written_vars(CAR(n), p, lvalue);
     break;
 
   case F_INC:
