@@ -11,6 +11,20 @@ int main()
   packed += gzd(data0, Gz.NO_FLUSH);
   packed += gzd(data1, Gz.NO_FLUSH);
   packed += gzd("", Gz.FINISH);
-  
-  return !(data0 + data1 == gzi(packed));
+
+  string unpacked=gzi(packed);
+
+  if(data0 + data1 != unpacked)
+  {
+    werror("Input length:  %d (%d+%d)\n",
+	   strlen(data0)+strlen(data0),
+	   strlen(data0),strlen(data1));
+    werror("Packed length: %d (should be %d)\n",
+	   strlen(packed),
+	   strlen(Gz.deflate()->deflate(data0+data1)));
+    werror("Output length: %d\n",strlen(unpacked));
+    return 1;
+  }else{
+    return 0;
+  }
 }
