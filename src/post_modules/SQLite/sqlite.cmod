@@ -62,6 +62,7 @@ PIKECLASS ResObj
     for(i=0; i<THIS->columns; i++) {
       push_constant_text("name");
       push_text(sqlite3_column_name(THIS->stmt, i));
+      f_utf8_to_string(1);
       f_aggregate_mapping(2);
     }
     f_aggregate(THIS->columns);
@@ -78,16 +79,17 @@ PIKECLASS ResObj
 
   PIKEFUN array fetch_row() {
     int i;
+    sqlite3_stmt *stmt = THIS->stmt;
 
     if(THIS->eof) {
       push_int(0);
       return;
     }
 
-    switch( step(THIS->stmt) ) {
+    switch( step(stmt) ) {
     case SQLITE_DONE:
       THIS->eof = 1;
-      sqlite3_finalize(THIS->stmt);
+      sqlite3_finalize(stmt);
       THIS->stmt = 0;
       push_int(0);
       return;
@@ -99,8 +101,10 @@ PIKECLASS ResObj
 
     for(i=0; i<THIS->columns; i++) {
       push_string( make_shared_binary_string
-		   ( sqlite3_column_blob(THIS->stmt, i),
-		     sqlite3_column_bytes(THIS->stmt, i) ) );
+		   ( sqlite3_column_blob(stmt, i),
+		     sqlite3_column_bytes(stmt, i) ) );
+      if( sqlite3_column_type(stmt, i) )
+	f_utf8_to_string(1);
     }
     f_aggregate(THIS->columns);
   }
@@ -127,14 +131,21 @@ PIKECLASS SQLite
   /* @decl void create(string path)
    */
   PIKEFUN void create(string path, mixed|void a, mixed|void b, mixed|void c) {
+    pop_n_elems(args-1);
+    f_string_to_utf8(1);
     ERR( sqlite3_open(path->str, &THIS->db) );
+    pop_stack();
   }
 
-  PIKEFUN object big_query(string q) {
+  PIKEFUN object big_query(string query) {
     struct object *res;
     sqlite3_stmt *stmt;
     const char *tail;
     struct ResObj_struct *store;
+    struct pike_string *q;
+
+    f_string_to_utf8(1);
+    q = Pike_sp[-1].u.string;
 
     ERR( sqlite3_prepare(THIS->db, q->str, q->len, &stmt, &tail) );
     if( tail[0] )
@@ -171,6 +182,7 @@ PIKECLASS SQLite
 
   PIKEFUN string error() {
     push_text(sqlite3_errmsg(THIS->db));
+    f_utf8_to_string(1);
   }
 
   PIKEFUN void select_db(string db) {
@@ -198,6 +210,7 @@ PIKECLASS SQLite
     tbls=0;
     while( (err=step(stmt))==SQLITE_ROW ) {
       push_text( sqlite3_column_text(stmt, 0) );
+      f_utf8_to_string(1);
       tbls++;
     }
     sqlite3_finalize(stmt);
@@ -209,9 +222,12 @@ PIKECLASS SQLite
     int fields, i;
     sqlite3_stmt *stmt;
     char q[2048];
+    struct pike_string *tbl;
 
-    if(table->len > 2047) Pike_error("Table name to long.\n");
-    snprintf(q, 2048, "SELECT * FROM %s LIMIT 1", table->str);
+    f_string_to_utf8(1);
+    tbl = Pike_sp[-1].u.string;
+    if(tbl->len > 2047) Pike_error("Table name to long.\n");
+    snprintf(q, 2048, "SELECT * FROM %s LIMIT 1", tbl->str);
 
     ERR( sqlite3_prepare(THIS->db, q, -1, &stmt, NULL) );
     pop_n_elems(args);
@@ -221,6 +237,7 @@ PIKECLASS SQLite
     for(i=0; i<fields; i++) {
       push_constant_text("name");
       push_text(sqlite3_column_name(stmt, i));
+      f_utf8_to_string(1);
       f_aggregate_mapping(2);
     }
     f_aggregate(fields);
