@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.239 2000/03/08 15:47:04 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.240 2000/03/08 15:56:23 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -705,7 +705,7 @@ static char *combine_path(char *cwd,char *file)
 
   my_cwd=0; 
 
-  if(tmp=IS_ABS(file))
+  if((tmp=IS_ABS(file)))
   {
     MEMCPY(cwdbuf,file,tmp);
     cwdbuf[tmp]=0;
