@@ -7,7 +7,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.40 2001/12/10 02:08:16 mast Exp $");
+RCSID("$Id: multiset.c,v 1.41 2001/12/10 02:26:45 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -2166,8 +2166,6 @@ add:
  * node because that would break the order. This is always checked,
  * since it might occur due to concurrent changes of the multiset.
  *
- * -2 is returned if the given node is (or becomes) deleted.
- *
  * Otherwise the offset of the new node is returned (as usual). */
 PMOD_EXPORT ptrdiff_t multiset_add_after (struct multiset *l,
 					  ptrdiff_t nodepos,
@@ -3546,7 +3544,8 @@ PMOD_EXPORT void f_aggregate_multiset (INT32 args)
   f_aggregate (args);
   push_multiset (mkmultiset_2 (sp[-1].u.array, NULL, NULL));
   free_array (sp[-2].u.array);
-  sp[-2] = *--sp;
+  sp[-2] = sp[-1];
+  sp--;
 }
 
 struct multiset *copy_multiset_recursively (struct multiset *l,
@@ -3987,7 +3986,7 @@ void gc_mark_all_multisets (void)
 
 void real_gc_cycle_check_multiset (struct multiset *l, int weak)
 {
-  GC_CYCLE_ENTER (l, weak) {
+  GC_CYCLE_ENTER (l, T_MULTISET, weak) {
     struct multiset_data *msd = l->msd;
 
     if (msd->root && ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
@@ -5164,7 +5163,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.40 2001/12/10 02:08:16 mast Exp $");
+RCSID("$Id: multiset.c,v 1.41 2001/12/10 02:26:45 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -5503,7 +5502,7 @@ void gc_mark_multiset_as_referenced(struct multiset *l)
 
 void real_gc_cycle_check_multiset(struct multiset *l, int weak)
 {
-  GC_CYCLE_ENTER(l, weak) {
+  GC_CYCLE_ENTER(l, T_MULTISET, weak) {
     gc_cycle_check_array(l->ind, 0);
   } GC_CYCLE_LEAVE;
 }
