@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.11 1998/05/01 15:36:29 grubba Exp $
+ * $Id: oracle.c,v 1.12 1998/05/14 22:34:21 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -25,6 +25,7 @@
 #include "threads.h"
 #include "module_support.h"
 #include "mapping.h"
+#include "multiset.h"
 #include "builtin_functions.h"
 
 #ifdef HAVE_ORACLE
@@ -34,7 +35,7 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.11 1998/05/01 15:36:29 grubba Exp $");
+RCSID("$Id: oracle.c,v 1.12 1998/05/14 22:34:21 marcus Exp $");
 
 #ifdef HAVE_ORACLE
 
@@ -452,9 +453,15 @@ static void f_big_query(INT32 args)
   struct pike_string *query;
   struct dbcurs *curs;
   sword rc;
+  struct mapping *bnds;
   /*  INT32 cols=0; */
 
-  get_all_args("Oracle.oracle->big_query", args, "%S", &query);
+  if(args>1)
+    get_all_args("Oracle.oracle->big_query", args, "%S%m", &query, &bnds);
+  else {
+    get_all_args("Oracle.oracle->big_query", args, "%S", &query);
+    bnds = NULL;
+  }
 
   if(!(curs = THIS->cdas))
     curs = make_cda(THIS);
@@ -473,6 +480,65 @@ static void f_big_query(INT32 args)
     curs->next = THIS->cdas;
     THIS->cdas = curs;
     error_handler(THIS, curs->cda.rc);
+  } else if(bnds != NULL) {
+    INT32 e;
+    struct keypair *k;
+    MAPPING_LOOP(bnds) {
+	sword rc = 0;
+	ub1 *addr;
+	sword len, fty;
+	switch(k->val.type) {
+	case T_STRING:
+	  addr = (ub1 *)k->val.u.string->str;
+	  len = k->val.u.string->len;
+	  fty = SQLT_CHR;
+	  break;
+	case T_FLOAT:
+	  addr = (ub1 *)&k->val.u.float_number;
+	  len = sizeof(k->val.u.float_number);
+	  fty = SQLT_FLT;
+	  break;
+	case T_INT:
+	  addr = (ub1 *)&k->val.u.integer;
+	  len = sizeof(k->val.u.integer);
+	  fty = SQLT_INT;
+	  break;
+	case T_MULTISET:
+	  if(k->val.u.multiset->ind->size == 1 &&
+	     ITEM(k->val.u.multiset->ind)[0].type == T_STRING) {
+	    addr = (ub1 *)ITEM(k->val.u.multiset->ind)[0].u.string->str;
+	    len = ITEM(k->val.u.multiset->ind)[0].u.string->len;
+	    fty = SQLT_BIN;
+	    break;
+	  }
+	default:
+	  ocan(&curs->cda);
+	  curs->next = THIS->cdas;
+	  THIS->cdas = curs;
+	  error("Bad value type in argument 2 to "
+		"Oracle.oracle->big_query()\n");
+	}
+	if(k->ind.type == T_INT)
+	  rc = obndrn(&curs->cda, k->ind.u.integer, addr, len, fty,
+		      -1, NULL, NULL, -1, 0);
+	else if(k->ind.type == T_STRING)
+	  rc = obndrv(&curs->cda, k->ind.u.string->str, k->ind.u.string->len,
+		      addr, len, fty, -1, NULL, NULL, -1, 0);
+	else {
+	  ocan(&curs->cda);
+	  curs->next = THIS->cdas;
+	  THIS->cdas = curs;
+	  error("Bad index type in argument 2 to "
+		"Oracle.oracle->big_query()\n");
+	}
+	if(rc) {
+	  rc = curs->cda.rc;
+	  ocan(&curs->cda);
+	  curs->next = THIS->cdas;
+	  THIS->cdas = curs;
+	  error_handler(THIS, rc);
+	}
+      }
   }
 
   THREADS_ALLOW();
@@ -630,7 +696,7 @@ void pike_module_init(void)
   add_storage(sizeof(struct dbcon));
 
   add_function("create", f_create, "function(string|void, string|void, string|void, string|void:void)", ID_PUBLIC);
-  add_function("big_query", f_big_query, "function(string:object)", ID_PUBLIC);
+  add_function("big_query", f_big_query, "function(string,mapping(int|string:int|float|string|multiset(string))|void:object)", ID_PUBLIC);
   add_function("list_tables", f_list_tables, "function(void|string:object)", ID_PUBLIC);
 
   set_init_callback(init_dbcon_struct);
