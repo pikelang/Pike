@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.261 2001/07/24 13:51:52 grubba Exp $");
+RCSID("$Id: las.c,v 1.262 2001/08/13 23:15:57 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4966,7 +4966,7 @@ ptrdiff_t eval_low(node *n)
   num_relocations = Pike_compiler->new_program->num_relocations;
 #endif /* PIKE_USE_MACHINE_CODE */
 
-  jump = DO_NOT_WARN((INT32)PC);
+  jump = DO_NOT_WARN((INT32)PIKE_PC);
 
 #ifdef INS_ENTRY
   INS_ENTRY();
@@ -5242,7 +5242,7 @@ int dooptcode(struct pike_string *name,
 #ifdef PIKE_DEBUG
   if(a_flag > 1)
     fprintf(stderr, "Doing function '%s' at %lx\n", name->str,
-	    DO_NOT_WARN((unsigned long)PC));
+	    DO_NOT_WARN((unsigned long)PIKE_PC));
 #endif
 
   args=count_arguments(type);
@@ -5308,7 +5308,7 @@ int dooptcode(struct pike_string *name,
       }
     }
 
-    tmp.offset=PC;
+    tmp.offset=PIKE_PC;
     Pike_compiler->compiler_frame->num_args=args;
   
 #ifdef PIKE_DEBUG

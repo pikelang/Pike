@@ -19,7 +19,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.65 2001/07/24 13:51:53 grubba Exp $");
+RCSID("$Id: peep.c,v 1.66 2001/08/13 23:15:58 mast Exp $");
 
 static void asm_opt(void);
 
@@ -268,7 +268,7 @@ void assemble(void)
     {
       if (c->opcode == F_POP_SYNCH_MARK) synch_depth--;
       fprintf(stderr, "===%4d %4lx %*s", c->line,
-	      DO_NOT_WARN((unsigned long)PC), synch_depth, "");
+	      DO_NOT_WARN((unsigned long)PIKE_PC), synch_depth, "");
       dump_instr(c);
       fprintf(stderr,"\n");
       if (c->opcode == F_SYNCH_MARK) synch_depth++;
@@ -311,7 +311,7 @@ void assemble(void)
       if(labels[c->arg] != -1)
 	fatal("Duplicate label!\n");
 #endif
-      labels[c->arg] = DO_NOT_WARN((INT32)PC);
+      labels[c->arg] = DO_NOT_WARN((INT32)PIKE_PC);
       UPDATE_PC();
       FLUSH_CODE_GENERATOR_STATE();
       break;
@@ -340,7 +340,7 @@ void assemble(void)
 #ifdef PIKE_DEBUG
 	if(c->arg > max_label || c->arg < 0) fatal("Jump to unknown label?\n");
 #endif
-	tmp = DO_NOT_WARN((INT32)PC);
+	tmp = DO_NOT_WARN((INT32)PIKE_PC);
 	ins_pointer(jumps[c->arg]);
 	jumps[c->arg]=tmp;
 	break;
@@ -384,7 +384,7 @@ void assemble(void)
 	    CALLS(CALL_FUNCTION)
 	    CALLS(CALL_LFUN)
 	    CALLS(CALL_BUILTIN)
-	    while( ((INT32) PC & (ALIGN_PIKE_JUMPS-1) ) )
+	    while( ((INT32) PIKE_PC & (ALIGN_PIKE_JUMPS-1) ) )
 	      ins_byte(0);
       }
     }

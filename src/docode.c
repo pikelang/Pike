@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.127 2001/07/24 13:51:52 grubba Exp $");
+RCSID("$Id: docode.c,v 1.128 2001/08/13 23:15:58 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1919,11 +1919,11 @@ INT32 do_code_block(node *n)
   label_no=1;
 
 #ifdef ALIGN_PIKE_FUNCTION_BEGINNINGS
-  while( ( (((INT32) PC)+2) & (ALIGN_PIKE_JUMPS-1)))
+  while( ( (((INT32) PIKE_PC)+2) & (ALIGN_PIKE_JUMPS-1)))
     ins_byte(0);
 #endif
 
-  ret=PC;
+  ret=PIKE_PC;
   emit1(F_BYTE,Pike_compiler->compiler_frame->max_number_of_locals);
   emit1(F_BYTE,Pike_compiler->compiler_frame->num_args);
   emit0(F_ENTRY);

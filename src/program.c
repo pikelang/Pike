@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.361 2001/08/02 22:24:10 hubbe Exp $");
+RCSID("$Id: program.c,v 1.362 2001/08/13 23:15:58 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4017,7 +4017,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
      Pike_compiler->last_file != current_file)
   {
     if((Pike_compiler->last_file != current_file) ||
-       (DO_NOT_WARN((INT32)(PC - Pike_compiler->last_pc)) == 127))
+       (DO_NOT_WARN((INT32)(PIKE_PC - Pike_compiler->last_pc)) == 127))
     {
       char *tmp;
       INT32 remain = DO_NOT_WARN((INT32)current_file->len)<<
@@ -4031,10 +4031,10 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 	add_to_linenumbers(*tmp);
       copy_shared_string(Pike_compiler->last_file, current_file);
     }
-    insert_small_number(DO_NOT_WARN((INT32)(PC-Pike_compiler->last_pc)));
+    insert_small_number(DO_NOT_WARN((INT32)(PIKE_PC-Pike_compiler->last_pc)));
     insert_small_number(current_line-Pike_compiler->last_line);
     Pike_compiler->last_line = current_line;
-    Pike_compiler->last_pc = DO_NOT_WARN((INT32)PC);
+    Pike_compiler->last_pc = DO_NOT_WARN((INT32)PIKE_PC);
   }
 }
 
