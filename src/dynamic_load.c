@@ -1,6 +1,6 @@
 #include "global.h"
 
-#if !defined(HAVE_DLFCN_H) || !defined(HAVE_DLSYM) || !defined(HAVE_DLOPEN)
+#if !defined(HAVE_DLSYM) || !defined(HAVE_DLOPEN)
 #undef HAVE_DLOPEN
 #endif
 
@@ -11,7 +11,10 @@
 #include "module.h"
 #include "stralloc.h"
 #include "macros.h"
+
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
+#endif
 
 struct module_list
 {

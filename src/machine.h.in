@@ -339,12 +339,12 @@
 #undef _THREAD_SAFE
 
 /* Define this if you have dlopen() */
-#define HAVE_DLOPEN
+#undef HAVE_DLOPEN
 
 /* Define this if you have dlsym() */
-#define HAVE_DLSYM
+#undef HAVE_DLSYM
 
 /* Define this if you have <dlfcn.h> */
-#define HAVE_DLFCN_H
+#undef HAVE_DLFCN_H
 
 #endif /* MACHINE_H */
