@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.359 2001/01/02 03:18:21 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.360 2001/01/03 19:47:09 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5852,7 +5852,7 @@ test_eval_error(return clone(class c{int i;void foo(){ destruct(this_object());i
 
 // Pike modules
 
-// Calendar
+// - Calendar
 test_true(Calendar.Day())
 
 // the more elaborate tests
@@ -5877,7 +5877,7 @@ test_eq([[
 //       your Pike until you've got Calendar to compile again. /Mirar
 (int)(Calendar.Stardate.Tick("julian",2500000)->tic())]],-190335)
 
-// LR
+// - LR
 test_program([[ object(LR.parser) p=LR.Grammar_parser.make_parser("foo : bar;foo : foo bar;bar : \"a\";"); int pos; array(string) data="aaaaaaaaa"/""; string scan() { if (pos < sizeof(data)) return(data[pos++]); else return ""; } int a() { return(p->parse(scan) == "a"); }]])
 
 // - ADT
@@ -5986,7 +5986,7 @@ return Fnord()->start()->wait()-({ -1 });
 ]],[[ ({}) ]])
 ]])
 
-
+// - Array
 test_equal(Array.splice(({7,8,99}),({"h","h",99})),
 	({7,"h",8,"h",99,99}))
 test_equal(Array.splice(({7,8}),({"h","h",99})),
@@ -6014,8 +6014,30 @@ test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
 test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
 	   [[ ({ ({ "", 2 }) }) ]])
 
+// - Graphics
 test_true(!Graphics.Graph.test()->main(1,({"test"})))
+
+// - Yabu
 test_true(!Yabu.test()->main(1,({"test"})))
+
+// - Standards.ISO639_2
+test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
+test_equal(Standards.ISO639_2.get_language("xxx"),0)
+test_true(sizeof(Standards.ISO639_2.list_languages())>400)
+test_egual(Standards.ISO639_2.map_639_1("sv"),"swe")
+test_egual(Standards.ISO639_2.map_639_1("xx"),0)
+test_true(sizeof(Standards.ISO639_2.list_639_1())==158)
+
+// - Colors
+test_equal(Colors.parse_color("red"),({255,0,0}))
+test_equal(Colors.parse_color("RED"),({255,0,0}))
+test_equal(Colors.parse_color("lightred"),({255,61,61}))
+test_equal(Colors.parse_color("LIGHT RED"),({255,61,61}))
+test_equal(Colors.parse_color("#ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("ff0000"),({255,0,0}))
+test_equal(Colors.parse_color("@0,255,255"),({255,0,0}))
+test_equal(Colors.parse_color("%0,100,100,0"),({255,0,0}))
+
 test_do([[
   string s;
   for(s="foobar";strlen(s)<78;s+=s)
@@ -6047,7 +6069,7 @@ void test_dir(string dir, int|void base_size)
   {
     switch(s)
     {
-      case "db":	/* Protocols.pmod/X.pmod/db */
+      case "db":	// Protocols.pmod/X.pmod/db
       case "frontbase.pike":
       case "msql.pike":
       case "mysql.pike":
