@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.398 2004/12/30 14:24:23 nilsson Exp $
+# $Id: Makefile.in,v 1.399 2005/01/03 18:59:51 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -386,7 +386,7 @@ undump_modules: delete_dumped_modules
 	-rm dumpversion 2>/dev/null
 
 .SUFFIXES:
-.SUFFIXES: .c .h .o .cmod .pp .pph .protos .h_src .wxs .wixobj .msi .msm
+.SUFFIXES: .c .h .o .cmod .symlist .pp .pph .protos .h_src .wxs .wixobj .msi .msm
 
 .c.pp:
 	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT \
@@ -437,6 +437,10 @@ undump_modules: delete_dumped_modules
 #
 .cmod.c: precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 	./precompile.sh --cache precompile.pike >"$@" "$<" || { rm "$@"; exit 1; }
+
+# The same applies to this.
+.symlist.c: precompile.sh-stamp $(SRCDIR)/mklibpike.pike
+	./precompile.sh --cache $(SRCDIR)/mklibpike.pike -I. -I "$(SRCDIR)" -S "$<" -o "$@"
 
 # This rule is used for some header files that are generated from the
 # source, to avoid excessive rebuilding when the source change in ways
@@ -1052,6 +1056,8 @@ iterators.o: $(SRCDIR)/iterators.c
 facetgroup.o: $(SRCDIR)/facetgroup.c
 
 backend.o: $(SRCDIR)/backend.c
+
+libpike.o: $(SRCDIR)/libpike.c
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
