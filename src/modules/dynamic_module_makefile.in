@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.35 1998/04/29 22:20:48 hubbe Exp $
+# $Id: dynamic_module_makefile.in,v 1.36 1998/04/30 02:39:23 hubbe Exp $
 #
 
 
@@ -53,7 +53,7 @@ depend:
 
 #verify / debug
 module_testsuite: $(SRCDIR)/testsuite.in $(REAL_TESTSUITE)
-	if test "x$(REAL_TESTSUITE)" != x ; then cp $(SRCDIR)/$(REAL_TESTSUITE module_testsuite; else $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR); fi
+	if test "x$(REAL_TESTSUITE)" != x ; then cp $(SRCDIR)/$(REAL_TESTSUITE) module_testsuite; else $(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR); fi
 
 extra_tests: $(MODULE_TESTS)
 
