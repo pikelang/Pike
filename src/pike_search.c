@@ -12,6 +12,7 @@
 #include "interpret.h"
 #include "pike_macros.h"
 #include "pike_search.h"
+#include "bignum.h"
 
 ptrdiff_t pike_search_struct_offset;
 #define OB2MSEARCH(O) ((struct pike_mem_searcher *)((O)->storage+pike_search_struct_offset))
@@ -58,7 +59,7 @@ void free_mem_searcher(void *m)
 #define GENERIC_GET4_CHARS(PTR) \
  ( ((PTR)[0] << 24) + ( (PTR)[1] << 16 ) +( (PTR)[2] << 8 ) +  (PTR)[3] )
 
-#define HUBBE_ALIGN0(q) q=(char *)( ((long)q) & -sizeof(INT32))
+#define HUBBE_ALIGN0(q) q=(char *)( ((ptrdiff_t)q) & -sizeof(INT32))
 #define GET_4_ALIGNED_CHARS0(PTR)  (*(INT32 *)(PTR))
 #define GET_4_UNALIGNED_CHARS0(PTR)  EXTRACT_INT(PTR)
 
@@ -205,8 +206,7 @@ static void f_pike_search(INT32 args)
 			     s->len - start);
 
   pop_n_elems(args);
-  push_int( SUBTRACT_PCHARP(in, ret) );
-  
+  push_int64( SUBTRACT_PCHARP(in, ret) );  
 }
 
 /* Compatibility: All functions using these two functions

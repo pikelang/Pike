@@ -11,7 +11,8 @@
 struct hubbe_search_link
 {
   struct hubbe_search_link *next;
-  INT32 key, offset;
+  ptrdiff_t offset;
+  INT32 key;
 };
 
 struct hubbe_searcher
@@ -20,7 +21,7 @@ struct hubbe_searcher
   void *needle;
   ptrdiff_t needlelen;
 
-  unsigned INT32 hsize, max;
+  size_t hsize, max;
   struct hubbe_search_link links[MEMSEARCH_LINKS];
   struct hubbe_search_link *set[MEMSEARCH_LINKS];
 };

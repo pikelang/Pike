@@ -1,5 +1,5 @@
 /*
- * $Id: rijndael.c,v 1.2 2000/10/02 20:06:45 grubba Exp $
+ * $Id: rijndael.c,v 1.3 2000/10/10 20:52:56 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -101,7 +101,7 @@ static void f_set_encrypt_key(INT32 args)
 	  "(must be 16, 24 or 32).\n");
   }
   MEMCPY(k, key->str, key->len);
-  THIS->rounds = 6 + key->len/32;
+  DO_NOT_WARN(THIS->rounds = 6 + key->len/32);
   rijndaelKeySched(k, THIS->keySchedule, THIS->rounds);
   THIS->crypt_fun = rijndaelEncrypt;
 }
@@ -118,7 +118,7 @@ static void f_set_decrypt_key(INT32 args)
 	  "(must be 16, 24 or 32).\n");
   }
   MEMCPY(k, key->str, key->len);
-  THIS->rounds = 6 + key->len/32;
+  DO_NOT_WARN(THIS->rounds = 6 + key->len/32);
   rijndaelKeySched(k, THIS->keySchedule, THIS->rounds);
   rijndaelKeyEncToDec(THIS->keySchedule, THIS->rounds);
   THIS->crypt_fun = rijndaelDecrypt;

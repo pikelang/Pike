@@ -104,7 +104,7 @@ int NameN(init_hubbe_search)(struct hubbe_searcher *s,
   if(max > MEMSEARCH_LINKS) max=MEMSEARCH_LINKS;
   
   /* This assumes 512 buckets - Hubbe */
-  maxlinklength=my_sqrt(max/2)+1;
+  maxlinklength = my_sqrt(DO_NOT_WARN((unsigned int)max/2))+1;
   
   ptr=& s->links[0];
   
@@ -219,7 +219,7 @@ void NameN(init_memsearch)(
       return;
 
     case 1:
-      s->mojt.data=(void *)(long)(needle[0]);
+      s->mojt.data=(void *)(ptrdiff_t)(needle[0]);
       s->mojt.vtab=& PxC3(memchr_search,NSHIFT,_vtable);
       return;
 
@@ -266,7 +266,7 @@ void NameN(init_memsearch)(
 
 
 SearchMojt NameN(compile_memsearcher)(NCHAR *needle,
-				      int len,
+				      ptrdiff_t len,
 				      int max_haystacklen,
 				      struct pike_string *hashkey)
 {
