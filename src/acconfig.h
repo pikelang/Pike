@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.126 2003/10/03 14:38:18 nilsson Exp $
+|| $Id: acconfig.h,v 1.127 2003/10/03 22:34:47 nilsson Exp $
 */
 
 #ifndef MACHINE_H
@@ -597,10 +597,8 @@
 
 #ifndef HAVE_WORKING___FUNC__
 #ifdef HAVE_WORKING___FUNCTION__
-#undef __func__
 #define __func__	__FUNCTION__
 #else /* !HAVE_WORKING___FUNCTION__ */
-#undef __func__
 #define __func__	"unknown"
 #endif /* HAVE_WORKING___FUNCTION__ */
 #endif /* !HAVE_WORKING___FUNC__ */
