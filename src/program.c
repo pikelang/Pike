@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.411 2002/04/09 10:33:56 mast Exp $");
+RCSID("$Id: program.c,v 1.412 2002/04/12 22:53:00 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -995,10 +995,15 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 
   /* Handle this_program */
   if (ident == this_program_string) {
-    struct svalue s;
-    s.type=T_PROGRAM;
-    s.u.program=Pike_compiler->new_program;
-    return mkconstantsvaluenode(&s);
+    if (compilation_depth > 0)
+      return mkexternalnode(Pike_compiler->previous->new_program,
+			    Pike_compiler->previous->parent_identifier);
+    else {
+      struct svalue s;
+      s.type=T_PROGRAM;
+      s.u.program=Pike_compiler->new_program;
+      return mkconstantsvaluenode(&s);
+    }
   }
   /* Handle UNDEFINED */
   if (ident == UNDEFINED_string) {
@@ -1502,10 +1507,10 @@ void low_start_new_program(struct program *p,
   if(idp) *idp=id;
 
   CDFPRINTF((stderr, "th(%ld) %p low_start_new_program() %s "
-	     "pass=%d: threads_disabled:%d, compilation_depth:%d\n",
+	     "pass=%d: threads_disabled:%d, compilation_depth:%d %d\n",
 	     (long)th_self(), p, name ? name->str : "-",
 	     Pike_compiler->compiler_pass,
-	     threads_disabled, compilation_depth));
+	     threads_disabled, compilation_depth, id));
 
   init_type_stack();
 
