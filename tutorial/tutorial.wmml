@@ -6674,7 +6674,7 @@ Gz.deflate-&gt;deflate
 
 <hr noshade size=1>
 
-<module name=Yp>
+<module name=Yp title="Yellow Pages, also known as NIS">
 <section title="Yp">
 This module is an interface to the Yellow Pages functions. Yp is also
 known as NIS (Network Information System) and is most commonly used to
@@ -6965,7 +6965,7 @@ Yp.
 
 <hr noshade size=1>
 
-<anchor name=MIME>
+<module name=MIME>
 <section title="MIME">
 
 <a href="http://www.roxen.com/rfc/rfc1521.txt">RFC1521</a>, the
@@ -7023,16 +7023,11 @@ containing raw uninterpreted data:
 
 <section title="Global functions">
 
-<anchor name=MIME.decode>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.decode</tt> - Remove transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string decode(string <i>data</i>, string <i>encoding</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=MIME.decode title="Remove transfer encoding">
+<man_syntax>
+string decode(string <i>data</i>, string <i>encoding</i>);
+</man_syntax>
+<man_description>
 Extract raw data from an encoded string suitable for transport between systems.
 The encoding can be any of
 <tt><ul>
@@ -7045,91 +7040,71 @@ The encoding can be any of
 <li>x-uuencode
 </ul></tt>
 The encoding string is not case sensitive.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode>MIME.encode</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.encode
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.decode_base64>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.decode_base64</tt> - Decode <tt>base64</tt> transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string decode_base64(string <i>encoded_data</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.decode_base64 title="Decode <tt>base64</tt> transfer encoding">
+<man_syntax>
+string decode_base64(string <i>encoded_data</i>);
+</man_syntax>
+<man_description>
 This function decodes data encoded using the <tt>base64</tt> transfer encoding.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_base64>MIME.encode_base64</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.encode_base64
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.decode_qp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.decode_qp</tt> - Decode <tt>quoted-printable</tt> transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string decode_qp(string <i>encoded_data</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.decode_qp title="Decode <tt>quoted-printable</tt> transfer encoding">
+<man_syntax>
+string decode_qp(string <i>encoded_data</i>);
+</man_syntax>
+<man_description>
 This function decodes data encoded using the <tt>quoted-printable</tt>
 (a.k.a. quoted-unreadable) transfer encoding.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_qp>MIME.encode_qp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.encode_qp
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.decode_uue>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.decode_uue</tt> - Decode <tt>x-uue</tt> transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string decode_uue(string <i>encoded_data</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.decode_uue title="Decode <tt>x-uue</tt> transfer encoding">
+<man_syntax>
+string decode_uue(string <i>encoded_data</i>);
+</man_syntax>
+<man_description>
 This function decodes data encoded using the <tt>x-uue</tt> transfer encoding.
 It can also be used to decode generic UUEncoded files.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_uue>MIME.encode_uue</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.encode_uue
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.decode_word>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.decode_word</tt> - De-scramble RFC1522 encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string) decode_word(string <i>word</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.decode_word title="De-scramble RFC1522 encoding">
+<man_syntax>
+array(string) decode_word(string <i>word</i>);
+</man_syntax>
+<man_description>
 Extracts the textual content and character set from an <i>encoded word</i>
 as specified by RFC1522.  The result is an array where the first element
 is the raw text, and the second element the name of the character set.
 If the input string is not an encoded word, the result is still an array,
 but the char set element will be set to 0.  Note that this function can only
 be applied to individual encoded words.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
+</man_description>
+<man_example>
 <pre>
 &gt; Array.map("=?iso-8859-1?b?S2lscm95?= was =?us-ascii?q?h=65re?="/" ",
             MIME.decode_word);
@@ -7148,26 +7123,22 @@ Result: ({ /* 3 elements */
     })
 })
 </pre>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.encode_word>MIME.encode_word</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+MIME.encode_word
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.encode>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.encode</tt> - Apply transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode(string <i>data</i>, string <i>encoding</i>,
- void|string <i>filename</i>,<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;void|int <i>no_linebreaks</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.encode title="Apply transfer encoding">
+<man_syntax>
+string encode(string <i>data</i>, string <i>encoding</i>,<br>
+<dl><dt><dd>void|string <i>filename</i>,<br>
+void|int <i>no_linebreaks</i>);<br>
+</dl>
+</man_syntax>
+<man_description>
 Encode raw data into something suitable for transport to other systems.
 The encoding can be any of
 <tt><ul>
@@ -7183,143 +7154,112 @@ The encoding string is not case sensitive.  For the <tt>x-uue</tt> encoding,
 an optional filename string may be supplied.  If a nonzero value is passed
 as <i>no_linebreaks</i>, the result string will not contain any linebreaks
 (base64 and quoted-printable only).
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode>MIME.decode</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.decode
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.encode_base64>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.encode_base64</tt> - Encode string using <tt>base64</tt> transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode_base64(string <i>data</i>, void|int <i>no_linebreaks</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.encode_base64 title="Encode string using <tt>base64</tt> transfer encoding">
+<man_syntax>
+string encode_base64(string <i>data</i>, void|int <i>no_linebreaks</i>);
+</man_syntax>
+<man_description>
 This function encodes data using the <tt>base64</tt> transfer encoding.
 If a nonzero value is passed as <i>no_linebreaks</i>, the result string
 will not contain any linebreaks.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_base64>MIME.decode_base64</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.decode_base64
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.encode_qp>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.encode_qp</tt> - Encode string using <tt>quoted-printable</tt> transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode_qp(string <i>data</i>, void|int <i>no_linebreaks</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.encode_qp title="Encode string using <tt>quoted-printable</tt> transfer encoding">
+<man_syntax>
+string encode_qp(string <i>data</i>, void|int <i>no_linebreaks</i>);
+</man_syntax>
+<man_description>
 This function encodes data using the <tt>quoted-printable</tt>
 (a.k.a. quoted-unreadable) transfer encoding.  If a nonzero value is passed as <i>no_linebreaks</i>, the result string will not contain any linebreaks.
 <strong>Please do not use this function.  QP is evil, and there's no
 excuse for using it.</strong>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_qp>MIME.decode_qp</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.decode_qp
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.encode_uue>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.encode_uue</tt> - Encode string using <tt>x-uue</tt> transfer encoding
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode_uue(string <i>encoded_data</i>,
- void|string <i>filename</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.encode_uue title="Encode string using <tt>x-uue</tt> transfer encoding">
+<man_syntax>
+string encode_uue(string <i>encoded_data</i>,  void|string <i>filename</i>);
+</man_syntax>
+<man_description>
 This function encodes data using the <tt>x-uue</tt> transfer encoding.
 The optional argument filename specifies an advisory filename to include
 in the encoded data, for extraction purposes.
 This function can also be used to produce generic UUEncoded files.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_uue>MIME.decode_uue</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.decode_uue
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.encode_word>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.encode_word</tt> - Encode word according to RFC1522
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string encode_word(array(string) <i>word</i>, string <i>encoding</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.encode_word title="Encode word according to RFC1522">
+<man_syntax>
+string encode_word(array(string) <i>word</i>, string <i>encoding</i>);
+</man_syntax>
+<man_description>
 Create an <i>encoded word</i> as specified in RFC1522 from an array containing
 a raw text string and a char set name.  The text will be transfer encoded
 according to the encoding argument, which can be either <tt>"base64"</tt> or
 <tt>"quoted-printable"</tt> (or either <tt>"b"</tt> or <tt>"q"</tt> for
 short).  If either the second element of the array (the char set name), or
 the encoding argument is 0, the raw text is returned as is.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
+</man_description>
+<man_example>
 <pre>
 > MIME.encode_word( ({ "Quetzalcoatl", "iso-8859-1" }), "base64" );
 Result: =?iso-8859-1?b?UXVldHphbGNvYXRs?=
 > MIME.encode_word( ({ "Foo", 0 }), "base64" );
 Result: Foo
 </pre>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.decode_word>MIME.decode_word</link>
-<p>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+MIME.decode_word
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.generate_boundary>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.generate_boundary</tt> - Create a suitable boundary string for multiparts
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string generate_boundary();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.generate_boundary title="Create a suitable boundary string for multiparts">
+<man_syntax>
+string generate_boundary();
+</man_syntax>
+<man_description>
 This function will create a string that can be used as a separator string
 for multipart messages.  The generated string is guaranteed not to appear
 in <tt>base64</tt>, <tt>quoted-printable</tt>, or <tt>x-uue</tt> encoded data.
 It is also unlikely to appear in normal text.  This function is used by
 the cast method of the <tt>Message</tt> class if no boundary string is
 specified.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <hr newpage>
-<anchor name=MIME.guess_subtype>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.guess_subtype</tt> - Provide a reasonable default for the subtype field
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string guess_subtype(string <i>type</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.guess_subtype title="Provide a reasonable default for the subtype field">
+<man_syntax>
+string guess_subtype(string <i>type</i>);
+</man_syntax>
+<man_description>
 Some pre-RFC1521 mailers provide only a type and no subtype in the
 Content-Type header field.  This function can be used to obtain a
 reasonable default subtype given the type of a message.  (This is done
@@ -7331,21 +7271,16 @@ the following guesses:
 <tr><td>message</td><td>rfc822</td></tr>
 <tr><td>multipart</td><td>mixed</td></tr>
 </table>
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <hr newpage>
-<anchor name=MIME.parse_headers>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.parse_headers</tt> - Separate a bytestream into headers and body
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(mapping(string:string)|string) parse_headers(string <i>message</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.parse_headers title="Separate a bytestream into headers and body">
+<man_syntax>
+array(mapping(string:string)|string) parse_headers(string <i>message</i>);
+</man_syntax>
+<man_description>
 This is a low level function that will separate the headers from the body
 of an encoded message.  It will also translate the headers into a mapping.
 It will however not try to analyze the meaning of any particular header,
@@ -7356,54 +7291,44 @@ of a message, in which case an empty body will be returned.
 The result is returned in the form of an array containing two elements.
 The first element is a mapping containing the headers found.  The second
 element is a string containing the body.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <hr newpage>
-<anchor name=MIME.quote>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.quote</tt> - Create an RFC822 header field from lexical elements
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string quote(array(string|int) <i>lexical_elements</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.quote title="Create an RFC822 header field from lexical elements">
+<man_syntax>
+string quote(array(string|int) <i>lexical_elements</i>);
+</man_syntax>
+<man_description>
 This function is the inverse of the <link to=MIME.tokenize>tokenize</link> function.
 A header field value is constructed from a sequence of lexical elements.
 Characters (<tt>int</tt>s) are taken to be special-characters, whereas
 strings are encoded as atoms or quoted-strings, depending on whether
 they contain any special characters.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
+</man_description>
+<man_example>
 <pre>
 > MIME.quote( ({ "attachment", ';', "filename", '=', "/usr/dict/words" }) );
 Result: attachment;filename="/usr/dict/words"
 </pre>
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_example>
+<man_note>
 There is no way to construct a domain-literal using this function.
 Neither can it be used to produce comments.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.tokenize>MIME.tokenize</link>
-<p>
-</dl>
-</anchor>
+</man_note>
+<man_see>
+MIME.tokenize
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.reconstruct_partial>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.reconstruct_partial</tt> - Join a fragmented message to its original form
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int|object reconstruct_partial(array(object) <i>collection</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.reconstruct_partial title="Join a fragmented message to its original form">
+<man_syntax>
+int|object reconstruct_partial(array(object) <i>collection</i>);
+</man_syntax>
+<man_description>
 This function will attempt to reassemble a fragmented message from its
 parts.  The array <i>collection</i> should contain <tt>MIME.Message</tt>
 objects forming a complete set of parts for a single fragmented message.
@@ -7424,24 +7349,19 @@ number of additional messages needed is returned.
 <li>If more fragments are needed, but the function can't tell exactly how
 many, -1 is returned.
 </ul>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.Message.is_partial>MIME.Message-&gt;is_partial</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+MIME.Message-&gt;is_partial
+</man_see>
+</function>
 
 <hr newpage>
-<anchor name=MIME.tokenize>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>MIME.tokenize</tt> - Separate an RFC822 header field into lexical elements
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array(string|int) tokenize(string <i>header</i>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=MIME.tokenize title="Separate an RFC822 header field into lexical elements">
+<man_syntax>
+array(string|int) tokenize(string <i>header</i>);
+</man_syntax>
+<man_description>
 A structured header field, as specified by RFC822, is constructed from
 a sequence of lexical elements.  These are:
 <ul>
@@ -7456,8 +7376,8 @@ an array containing the lexical elements.  Individual special characters
 will be returned as characters (i.e. <tt>int</tt>s).  Quoted-strings,
 domain-literals and atoms will be decoded and returned as strings.
 Comments are not returned in the array at all.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
+</man_description>
+<man_example>
 <pre>
 > MIME.tokenize("multipart/mixed; boundary=\"foo/bar\" (Kilroy was here)");
 Result: ({ /* 7 elements */
@@ -7470,8 +7390,8 @@ Result: ({ /* 7 elements */
     "foo/bar"
 })
 </pre>
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_example>
+<man_note>
 As domain-literals are returned as strings, there is no way to tell the
 domain-literal <tt>[127.0.0.1]</tt> from the quoted-string
 <tt>"[127.0.0.1]"</tt>.  Hopefully this won't cause any problems.
@@ -7480,12 +7400,11 @@ Domain-literals are used seldom, if at all, anyway...
 The set of special-characters is the one specified in RFC1521 (i.e. <tt>"&lt;",
 "&gt;", "@", ",", ";", ":", "\", "/", "?", "="</tt>), and not the one
 specified in RFC822.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=MIME.quote>MIME.quote</link>
-<p>
-</dl>
-</anchor>
+</man_note>
+<man_see>
+MIME.quote
+</man_see>
+</function>
 
 <hr newpage>
 </section>
@@ -8058,7 +7977,7 @@ the <tt>Content-Type</tt> header directly, please use this function instead.
 </section>
 </section>
 </section>
-</anchor>
+</module>
 
 <anchor name=Simulate>
 <section title="Simulate">
