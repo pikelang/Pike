@@ -192,7 +192,7 @@ void describe_list(struct list *l,struct processing *p,int indent)
     }
   }
   
-  sprintf(buf,"(< /* %ld elements */\n",l->ind->size);
+  sprintf(buf,"(< /* %ld elements */\n",(long)l->ind->size);
   my_strcat(buf);
   describe_array_low(l->ind,&doing,indent);
   my_putchar('\n');

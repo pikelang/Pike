@@ -137,12 +137,11 @@ void main(int argc, char **argv, char **env)
 #endif
   {
     struct rlimit lim;
-    int tmp;
+    long tmp;
     if(!getrlimit(RLIMIT_NOFILE, &lim))
     {
-      tmp=lim.rlim_max;
-      if(tmp == RLIM_INFINITY) tmp=0x7fffffff;
-      tmp=MINIMUM(tmp, MAX_OPEN_FILEDESCRIPTORS);
+      if(lim.rlim_max == RLIM_INFINITY) tmp=0x7fffffff;
+      tmp=MINIMUM(lim.rlim_max, MAX_OPEN_FILEDESCRIPTORS);
       lim.rlim_cur=tmp;
       setrlimit(RLIMIT_NOFILE, &lim);
     }

@@ -561,7 +561,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
       break;
 
     case T_INT:
-      sprintf(buf,"%ld",s->u.integer);
+      sprintf(buf,"%ld",(long)s->u.integer);
       my_strcat(buf);
       break;
 

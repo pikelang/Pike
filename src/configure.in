@@ -44,6 +44,11 @@ CFLAGS="$OLD_CFLAGS"
 AC_CONFIG_HEADER(machine.h)
 AC_PROG_INSTALL
 AC_PROG_YACC
+if test "$ac_cv_prog_YACC" != "bison -y"; then
+  echo PANIC! Bison not found! Exiting...
+  exit 1
+fi
+
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
@@ -262,7 +267,9 @@ AC_DEFINE_UNQUOTED(BYTEORDER,$lpc_cv_hardware_byteorder)
 AC_MSG_CHECKING(unaligned read/writes)
 AC_CACHE_VAL(lpc_cv_hardware_unalignedRW,
 [
-
+if test -x /usr/bin/uac ; then
+  /usr/bin/uac p sigbus
+fi
 
 AC_TRY_RUN([
 int main()
@@ -415,17 +422,24 @@ AC_TRY_RUN([
 int main()
 {
   FILE *f;
-  int limit;
-#ifdef HAVE_GETRLIMIT
+  long limit;
+#if !defined(RLIMIT_NOLIMIT) && defined(RLIMIT_OFILE)
+#define RLIMIT_NOFILE RLIMIT_OFILE
+#endif
+#if defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE)
   struct rlimit lim;
 
   if(getrlimit(RLIMIT_NOFILE,&lim))
   {
     limit = MAX_FD;
   }else{
-    limit = lim.rlim_max;
-    if(limit == RLIM_INFINITY)
+    if(lim.rlim_max == RLIM_INFINITY)
+    {
       limit=16384; /* noone needs more */
+    }else{
+      limit=lim.rlim_max;
+      if(limit > 16384) limit=16384;
+    }
   }
 #else
   limit = MAX_FD;
@@ -433,7 +447,7 @@ int main()
 	
 
   f=fopen("conftest.out.2","w");
-  fprintf(f,"%ld\n",(long)lim.rlim_max);
+  fprintf(f,"%ld\n",(long)limit);
   fclose(f);
 
   return 0;
@@ -599,8 +613,8 @@ MODULE_OBJS=
 module_names=
 for a in `(cd $srcdir/modules ; echo *)`
 do
-  if test "$a" != "CVS" ; then
-    if test -d "$srcdir/modules/$a" ; then
+  if test "$a" != "CVS" -a "$a" != "RCS"; then
+      if test -d "$srcdir/modules/$a" ; then
       dirs="$dirs modules/$a"
       MODULE_OBJS="$MODULE_OBJS modules/$a/$a.a"
       module_names="$module_names $a"

@@ -19,7 +19,7 @@
 #endif
 
 #define isidchar(X) (isalnum(X) || (X)=='_')
-#define ALIGN_BOUND 4
-#define ALIGN(X) (((long)(X)+(ALIGN_BOUND-1)) & ~(ALIGN_BOUND-1))
+#define ALIGN_BOUND sizeof(char *)
+#define MY_ALIGN(X) (((long)(X)+(ALIGN_BOUND-1)) & ~(ALIGN_BOUND-1))
 
 #endif

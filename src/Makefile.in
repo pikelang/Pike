@@ -75,7 +75,7 @@ MODULE_OBJS=@MODULE_OBJS@
 all: ulpc
 
 module_objects:
-	for a in $(MODULES) ; do ( cd $$a ; make $(MAKE_FLAGS) ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) ) ; done
 
 ulpc: $(OBJ) module_objects
 	-mv ulpc ulpc.old
@@ -123,7 +123,7 @@ tidy:
 	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~
 
 clean: tidy
-	-for a in $(MODULES) ; do ( cd $$a ; make $(MAKE_FLAGS) clean ) ; done
+	-for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
 	-for a in $(MODULES) ; do rm -f $$a/*.o ; done
 	-rm -f language.h language.c efun_protos.h opc_cost.h
 	-rm -f TAGS tags
@@ -164,6 +164,6 @@ verbose_verify: $(TMP_LIBDIR)/testsuite.lpc
 
 depend: language.c
 	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
-	for a in $(MODULES) ; do ( cd $$a ; make $(MAKE_FLAGS) depend ) ; done
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
 
 include @srcdir@/dependencies

@@ -58,6 +58,8 @@ void exit_lex()
       free_string(local_variables->variable[e].name);
       free_string(local_variables->variable[e].type);
     }
+    if(local_variables->current_type)
+      free_string(local_variables->current_type);
     l=local_variables->next;
     free((char *)local_variables);
     local_variables=l;
@@ -105,7 +107,6 @@ struct keyword reserved_words[] =
 { "varargs",	F_VARARGS, },
 { "void",	F_VOID_ID, },
 { "while",	F_WHILE, },
-{ "call_other",	F_CALL_OTHER, },
 };
 
 struct keyword instr_names[]=
@@ -935,7 +936,7 @@ static void handle_include(char *name)
 
   UNGETSTR("\" 2",3);
   UNGETSTR(current_file->str,current_file->len);
-  sprintf(buf,"\n# %ld \"",current_line+1);
+  sprintf(buf,"\n# %ld \"",(long)current_line+1);
   UNGETSTR(buf,strlen(buf));
 
   total_lines+=current_line-old_line;
@@ -1869,7 +1870,7 @@ static int calc()
 void insert_current_line()
 {
   char buf[20];
-  sprintf(buf," %ld ",current_line);
+  sprintf(buf," %ld ",(long)current_line);
   UNGETSTR(buf,strlen(buf));
 }
 
@@ -1917,6 +1918,7 @@ static void start_new()
     local_variables=ALLOC_STRUCT(locals);
   local_variables->next=0;
   local_variables->current_number_of_locals=0;
+  local_variables->current_type=0;
   simple_add_define("__uLPC__", "1",0);
   
   for (tmpf=lpc_predefs; tmpf; tmpf=tmpf->next)
@@ -1965,6 +1967,10 @@ void end_new_file()
       free_string(local_variables->variable[e].name);
       free_string(local_variables->variable[e].type);
     }
+  
+    if(local_variables->current_type)
+      free_string(local_variables->current_type);
+
     l=local_variables->next;
     free((char *)local_variables);
     local_variables=l;

@@ -188,13 +188,11 @@ static int funcmp(const void *a,const void *b)
  */
 
 #define INS_BLOCK(PTR,PTRS,TYPE,AREA) \
+prog->PTR=(TYPE *)p; \
 if((prog->PTRS = areas[AREA].s.len/sizeof(TYPE))) \
 { \
-  prog->PTR = (TYPE *)p; \
   MEMCPY(p,areas[AREA].s.str, areas[AREA].s.len); \
-  p+=ALIGN(areas[AREA].s.len); \
-}else{ \
-  prog->PTR = 0; \
+  p+=MY_ALIGN(areas[AREA].s.len); \
 }
 
 struct program *end_program()
@@ -231,16 +229,16 @@ struct program *end_program()
     prog=0;
   }else{
     setup_fake_program();
-    size = ALIGN(sizeof (struct program));
-    for (i=0; i<NUM_AREAS; i++) size += ALIGN(areas[i].s.len);
-    size+=ALIGN(fake_program.num_identifier_references * sizeof(unsigned short));
+    size = MY_ALIGN(sizeof (struct program));
+    for (i=0; i<NUM_AREAS; i++) size += MY_ALIGN(areas[i].s.len);
+    size+=MY_ALIGN(fake_program.num_identifier_references * sizeof(unsigned short));
 
     p = (char *)xalloc(size);
     prog = (struct program *)p;
     *prog = fake_program;
     prog->total_size = size;
     prog->refs = 1;
-    p += ALIGN(sizeof (struct program));
+    p += MY_ALIGN(sizeof (struct program));
 
     INS_BLOCK(program,program_size,unsigned char,A_PROGRAM);
     INS_BLOCK(linenumbers,num_linenumbers,char,A_LINENUMBERS);
@@ -286,7 +284,7 @@ struct program *end_program()
     prog->num_identifier_indexes=e;
     fsort((void *)prog->identifier_index, e,sizeof(unsigned short),(fsortfun)funcmp);
 
-    p+=ALIGN(prog->num_identifier_indexes*sizeof(unsigned short));
+    p+=MY_ALIGN(prog->num_identifier_indexes*sizeof(unsigned short));
 
     for (i=0; i<NUM_AREAS; i++) toss_buffer(areas+i);
 
@@ -345,7 +343,7 @@ SIZE_T add_storage(SIZE_T size)
 {
   SIZE_T offset;
   offset=fake_program.storage_needed;
-  size=ALIGN(size);
+  size=MY_ALIGN(size);
   fake_program.storage_needed += size;
   return offset;
 }
@@ -824,7 +822,7 @@ int find_shared_string_identifier(struct lpc_string *name,
     unsigned int hashval;
     hashval=my_hash_string(name);
     hashval+=prog->id;
-    hashval^=(unsigned int)prog;
+    hashval^=(unsigned long)prog;
     hashval-=name->str[0];
     hashval%=FIND_FUNCTION_HASHSIZE;
     if(is_same_string(cache[hashval].name,name) &&
@@ -1124,24 +1122,24 @@ void check_program(struct program *p, int pass)
   if(p->storage_needed < 0)
     fatal("Program->storage_needed < 0.\n");
 
-  size=ALIGN(sizeof(struct program));
-  size+=ALIGN(p->num_linenumbers);
-  size+=ALIGN(p->program_size);
-  size+=ALIGN(p->num_constants * sizeof(struct svalue));
-  size+=ALIGN(p->num_strings * sizeof(struct lpc_string *));
-  size+=ALIGN(p->num_identifiers * sizeof(struct identifier));
-  size+=ALIGN(p->num_identifier_references * sizeof(struct reference));
-  size+=ALIGN(p->num_inherits * sizeof(struct inherit));
+  size=MY_ALIGN(sizeof(struct program));
+  size+=MY_ALIGN(p->num_linenumbers);
+  size+=MY_ALIGN(p->program_size);
+  size+=MY_ALIGN(p->num_constants * sizeof(struct svalue));
+  size+=MY_ALIGN(p->num_strings * sizeof(struct lpc_string *));
+  size+=MY_ALIGN(p->num_identifiers * sizeof(struct identifier));
+  size+=MY_ALIGN(p->num_identifier_references * sizeof(struct reference));
+  size+=MY_ALIGN(p->num_inherits * sizeof(struct inherit));
 
-  size+=ALIGN(p->num_identifier_indexes * sizeof(INT16));
-
-  if(size < p->total_size)
-    fatal("Program size is in error.\n");
-
-  size-=ALIGN(p->num_identifier_indexes * sizeof(INT16));
-  size+=ALIGN(p->num_identifier_references * sizeof(INT16));
+  size+=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
 
   if(size > p->total_size)
+    fatal("Program size is in error.\n");
+
+  size-=MY_ALIGN(p->num_identifier_indexes * sizeof(INT16));
+  size+=MY_ALIGN(p->num_identifier_references * sizeof(INT16));
+
+  if(size < p->total_size)
     fatal("Program size is in error.\n");
 
 
@@ -1185,7 +1183,8 @@ void check_program(struct program *p, int pass)
     if(p->identifiers[e].flags & ~7)
       fatal("Unknown flags in identifier flag field.\n");
 
-    check_type(p->identifiers[e].run_time_type);
+    if(p->identifiers[e].run_time_type!=T_MIXED)
+      check_type(p->identifiers[e].run_time_type);
   }
 
   for(e=0;e<p->num_identifier_references;e++)

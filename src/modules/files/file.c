@@ -844,7 +844,7 @@ static void file_dup2(INT32 args)
 
 static void file_open_socket(INT32 args)
 {
-  int fd;
+  int fd, tmp;
 
   do_close(THIS, FILE_READ | FILE_WRITE);
   fd=socket(AF_INET, SOCK_STREAM, 0);
@@ -863,6 +863,8 @@ static void file_open_socket(INT32 args)
     return;
   }
 
+  tmp=1;
+  setsockopt(fd,SOL_SOCKET, SO_KEEPALIVE, (char *)&tmp, sizeof(tmp));
   reference_fd(fd);
   set_close_on_exec(fd,1);
   open_mode[fd]=FILE_READ | FILE_WRITE;

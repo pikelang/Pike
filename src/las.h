@@ -18,6 +18,7 @@ struct local_variable
 struct locals
 {
   struct locals *next;
+  struct lpc_string *current_type;
   int current_number_of_locals;
   struct local_variable variable[MAX_LOCAL];
 };

@@ -233,7 +233,7 @@ char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack, SIZE_T haystacklen)
       end=haystack+haystacklen+1;
     
       q=haystack+max-sizeof(INT32);
-      q=(char *)( ((INT32)q) & -sizeof(INT32));
+      q=(char *)( ((long)q) & -sizeof(INT32));
       for(;q<end-sizeof(INT32)+1;q+=max)
       {
 	h=tmp=*(INT32 *)q;
@@ -578,26 +578,21 @@ int VFPRINTF(FILE *f,char *s,va_list args)
 unsigned INT16 EXTRACT_UWORD(unsigned char *p)
 {
   unsigned INT16 a;
-  ((unsigned char *)&a)[0]=p[0];
-  ((unsigned char *)&a)[1]=p[1];
+  MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
 INT16 EXTRACT_WORD(unsigned char *p)
 {
   INT16 a;
-  ((unsigned char *)&a)[0]=p[0];
-  ((unsigned char *)&a)[1]=p[1];
+  MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
 INT32 EXTRACT_INT(unsigned char *p)
 {
-  INT16 a;
-  ((unsigned char *)&a)[0]=p[0];
-  ((unsigned char *)&a)[1]=p[1];
-  ((unsigned char *)&a)[2]=p[2];
-  ((unsigned char *)&a)[3]=p[3];
+  INT32 a;
+  MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 #endif

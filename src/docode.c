@@ -1,4 +1,4 @@
-#include "machine.h"
+#include "global.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "config.h"
@@ -48,8 +48,7 @@ static void upd_short(int offset, INT16 l)
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   *((INT16 *)(areas[A_PROGRAM].s.str+offset))=l;
 #else
-  areas[A_PROGRAM].s.str[offset + 0] = ((char *)&l)[0];
-  areas[A_PROGRAM].s.str[offset + 1] = ((char *)&l)[1];
+  MEMCPY(areas[A_PROGRAM].s.str+offset, (char *)&l,sizeof(l));
 #endif
 }
 
@@ -58,20 +57,16 @@ static void upd_int(int offset, INT32 tmp)
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   *((int *)(areas[A_PROGRAM].s.str+offset))=tmp;
 #else
-  areas[A_PROGRAM].s.str[offset + 0] = ((char *)&tmp)[0];
-  areas[A_PROGRAM].s.str[offset + 1] = ((char *)&tmp)[1];
-  areas[A_PROGRAM].s.str[offset + 2] = ((char *)&tmp)[2];
-  areas[A_PROGRAM].s.str[offset + 3] = ((char *)&tmp)[3];
+  MEMCPY(areas[A_PROGRAM].s.str+offset, (char *)&tmp,sizeof(tmp));
 #endif
 }
 
 /*
- * Store a 4 byte number. It is stored in such a way as to be sure
- * that correct byte order is used, regardless of machine architecture.
+ * Store an INT32.
  */
-void ins_long(long l,int area)
+void ins_long(INT32 l,int area)
 {
-  add_to_mem_block(area, (char *)&l+0, sizeof(long));
+  add_to_mem_block(area, (char *)&l+0, sizeof(INT32));
 }
 
 int store_linenumbers=1;
@@ -112,7 +107,7 @@ void ins_f_byte(unsigned int b)
 {
 #ifdef DEBUG
   if(a_flag>2)
-    fprintf(stderr,">%6lx: %s\n",PC,get_f_name(b));
+    fprintf(stderr,">%6lx: %s\n",(long)PC,get_f_name(b));
 #endif
   low_ins_f_byte(b);
 }
@@ -145,7 +140,7 @@ static void ins_f_byte_with_numerical_arg(unsigned int a,unsigned int b)
   ins_f_byte(a);
 #ifdef DEBUG
   if(a_flag>2)
-    fprintf(stderr,">%6lx: argument = %u\n",PC,b);
+    fprintf(stderr,">%6lx: argument = %u\n",(long)PC,b);
 #endif
   ins_byte(b, A_PROGRAM);
 }
@@ -334,46 +329,54 @@ static INT32 do_jump(int token,INT32 whereto)
 
 static void clean_jumptable() { max_jumps=jump_ptr=-1; }
 
-static void push_break_stack()
+struct jump_list
 {
-  push_explicit((int)break_stack);
-  push_explicit(current_break);
-  push_explicit(break_stack_size);
+  int *stack;
+  int current;
+  int size;
+};
+
+static void push_break_stack(struct jump_list *x)
+{
+  x->stack=break_stack;
+  x->current=current_break;
+  x->size=break_stack_size;
   break_stack_size=10;
   break_stack=(int *)xalloc(sizeof(int)*break_stack_size);
   current_break=0;
 }
 
-static void pop_break_stack(int jump)
+static void pop_break_stack(struct jump_list *x,int jump)
 {
   for(current_break--;current_break>=0;current_break--)
     set_branch(break_stack[current_break],jump);
 
   free((char *)break_stack);
-  break_stack_size=pop_address();
-  current_break=pop_address();
-  break_stack=(int *)pop_address();
+  
+  break_stack_size=x->size;
+  current_break=x->current;
+  break_stack=x->stack;
 }
 
-static void push_continue_stack()
+static void push_continue_stack(struct jump_list *x)
 {
-  push_explicit((int)continue_stack);
-  push_explicit(current_continue);
-  push_explicit(continue_stack_size);
+  x->stack=continue_stack;
+  x->current=current_continue;
+  x->size=continue_stack_size;
   continue_stack_size=10;
   continue_stack=(int *)xalloc(sizeof(int)*continue_stack_size);
   current_continue=0;
 }
 
-static void pop_continue_stack(int jump)
+static void pop_continue_stack(struct jump_list *x,int jump)
 {
   for(current_continue--;current_continue>=0;current_continue--)
     set_branch(continue_stack[current_continue],jump);
 
   free((char *)continue_stack);
-  continue_stack_size=pop_address();
-  current_continue=pop_address();
-  continue_stack=(int *)pop_address();
+  continue_stack_size=x->size;
+  current_continue=x->current;
+  continue_stack=x->stack;
 }
 
 static int do_docode2(node *n,int flags);
@@ -760,24 +763,25 @@ static int do_docode2(node *n,int flags)
 
   case F_FOR:
   {
+    struct jump_list brk,cnt;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     current_switch_jumptable=0;
 
-    push_break_stack();
-    push_continue_stack();
+    push_break_stack(&brk);
+    push_continue_stack(&cnt);
     if(CDR(n))
     {
       tmp1=do_jump(F_BRANCH,-1);
       tmp2=PC;
       if(CDR(n)) DO_CODE_BLOCK(CADR(n));
-      pop_continue_stack(PC);
+      pop_continue_stack(&cnt,PC);
       if(CDR(n)) DO_CODE_BLOCK(CDDR(n));
       set_branch(tmp1,PC);
     }else{
       tmp2=PC;
     }
     do_jump_when_non_zero(CAR(n),tmp2);
-    pop_break_stack(PC);
+    pop_break_stack(&brk,PC);
 
     current_switch_jumptable = prev_switch_jumptable;
     return 0;
@@ -788,6 +792,7 @@ static int do_docode2(node *n,int flags)
 
   case F_FOREACH:
   {
+    struct jump_list cnt,brk;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     current_switch_jumptable=0;
 
@@ -795,13 +800,13 @@ static int do_docode2(node *n,int flags)
     ins_f_byte(F_CONST0);
     tmp3=do_jump(F_BRANCH,-1);
     tmp1=PC;
-    push_break_stack();
-    push_continue_stack();
+    push_break_stack(&brk);
+    push_continue_stack(&cnt);
     DO_CODE_BLOCK(CDR(n));
-    pop_continue_stack(PC);
+    pop_continue_stack(&cnt,PC);
     set_branch(tmp3,PC);
     do_jump(n->token,tmp1);
-    pop_break_stack(PC);
+    pop_break_stack(&brk,PC);
 
     current_switch_jumptable = prev_switch_jumptable;
     return 0;
@@ -812,19 +817,20 @@ static int do_docode2(node *n,int flags)
   case F_INC_LOOP:
   case F_DEC_LOOP:
   {
+    struct jump_list cnt,brk;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     current_switch_jumptable=0;
 
     tmp2=do_docode(CAR(n),0);
     tmp3=do_jump(F_BRANCH,-1);
     tmp1=PC;
-    push_break_stack();
-    push_continue_stack();
+    push_break_stack(&brk);
+    push_continue_stack(&cnt);
     DO_CODE_BLOCK(CDR(n));
-    pop_continue_stack(PC);
+    pop_continue_stack(&cnt,PC);
     set_branch(tmp3,PC);
     do_jump(n->token,tmp1);
-    pop_break_stack(PC);
+    pop_break_stack(&brk,PC);
 
     current_switch_jumptable = prev_switch_jumptable;
     return 0;
@@ -832,16 +838,17 @@ static int do_docode2(node *n,int flags)
 
   case F_DO:
   {
+    struct jump_list cnt,brk;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     current_switch_jumptable=0;
 
     tmp2=PC;
-    push_break_stack();
-    push_continue_stack();
+    push_break_stack(&brk);
+    push_continue_stack(&cnt);
     DO_CODE_BLOCK(CAR(n));
-    pop_continue_stack(PC);
+    pop_continue_stack(&cnt,PC);
     do_jump_when_non_zero(CDR(n),tmp2);
-    pop_break_stack(PC);
+    pop_break_stack(&brk,PC);
 
     current_switch_jumptable = prev_switch_jumptable;
     return 0;
@@ -926,6 +933,7 @@ static int do_docode2(node *n,int flags)
 
   case F_SWITCH:
   {
+    struct jump_list brk;
     INT32 e,cases,*order;
     INT32 *jumptable;
     INT32 prev_switch_values_on_stack = current_switch_values_on_stack;
@@ -936,14 +944,14 @@ static int do_docode2(node *n,int flags)
     if(do_docode(CAR(n),0)!=1)
       fatal("Internal compiler error, time to panic\n");
 
-    push_break_stack();
+    push_break_stack(&brk);
 
     cases=count_cases(CDR(n));
 
     ins_f_byte(F_SWITCH);
     tmp1=PC;
     ins_short(0, A_PROGRAM);
-    while(PC != (unsigned int)ALIGN(PC)) ins_byte(0, A_PROGRAM);
+    while(PC != (unsigned int)MY_ALIGN(PC)) ins_byte(0, A_PROGRAM);
     tmp2=PC;
     current_switch_values_on_stack=0;
     current_switch_case=0;
@@ -1001,7 +1009,7 @@ static int do_docode2(node *n,int flags)
     current_switch_case = prev_switch_case;
     current_switch_values_on_stack = prev_switch_values_on_stack ;
 
-    pop_break_stack(PC);
+    pop_break_stack(&brk,PC);
 
     return 0;
   }
@@ -1113,15 +1121,16 @@ static int do_docode2(node *n,int flags)
 
   case F_CATCH:
   {
+    struct jump_list cnt,brk;
     INT32 *prev_switch_jumptable = current_switch_jumptable;
     current_switch_jumptable=0;
 
     tmp1=do_jump(F_CATCH,-1);
-    push_break_stack();
-    push_continue_stack();
+    push_break_stack(&brk);
+    push_continue_stack(&cnt);
     DO_CODE_BLOCK(CAR(n));
-    pop_continue_stack(PC);
-    pop_break_stack(PC);
+    pop_continue_stack(&cnt,PC);
+    pop_break_stack(&brk,PC);
     ins_f_byte(F_DUMB_RETURN);
     set_branch(tmp1,PC);
 
