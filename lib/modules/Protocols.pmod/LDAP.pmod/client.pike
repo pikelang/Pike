@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.56 2004/05/25 13:59:55 grubba Exp $
+// $Id: client.pike,v 1.57 2004/05/26 16:18:16 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -79,10 +79,6 @@
 import SSL.Constants;
 #endif
 
-#ifdef LDAP_PROTOCOL_PROFILE
-int _prof_gtim;
-#endif
-
 // ------------------------
 
 // ASN.1 decode macros
@@ -102,15 +98,16 @@ int _prof_gtim;
 
   inherit .protocol;
 
-    private int binded = 0;	// flag for v2 operations
-    private string ldap_basedn = "";	// baseDN
-    private int ldap_scope = 0;		// 0: base, 1: onelevel, 2: subtree
-    private int ldap_deref = 0;		// 0: ...
-    private int ldap_sizelimit = 0;
-    private int ldap_timelimit = 0;
-    private mapping lauth = ([]);
-    private object last_rv = 0; // last returned value
-
+  private {
+    int binded = 0;	// flag for v2 operations
+    string ldap_basedn = "";	// baseDN
+    int ldap_scope = 0;		// 0: base, 1: onelevel, 2: subtree
+    int ldap_deref = 0;		// 0: ...
+    int ldap_sizelimit = 0;
+    int ldap_timelimit = 0;
+    mapping lauth = ([]);
+    object last_rv = 0; // last returned value
+  }
 
   //! Contains the result of a LDAP search.
   //!
@@ -301,7 +298,19 @@ int _prof_gtim;
 
   } // end of class 'result' ---------------
 
-  // helper functions
+  // helper functions and macros
+
+#ifdef ENABLE_PAGED_SEARCH
+#define IF_ELSE_PAGED_SEARCH(X,Y)	X
+#else /* !ENABLE_PAGED_SEARCH */
+#define IF_ELSE_PAGED_SEARCH(X,Y)	Y
+#endif
+
+#ifdef LDAP_PROTOCOL_PROFILE
+#define PROFILE(STR, CODE) DWRITE_PROF(STR + ": %O\n", gauge {CODE;})
+#else
+#define PROFILE(STR, CODE) do { CODE; } while(0)
+#endif
 
   private int chk_ver() {
 
@@ -361,7 +370,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.56 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.57 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -985,86 +994,66 @@ int _prof_gtim;
     }
 
     object cookie = Standards.ASN1.Types.asn1_octet_string("");
-    object controls =
-#ifdef ENABLE_PAGED_SEARCH
-      Standards.ASN1.Types.asn1_sequence(({
-      // RFC 2696 2.
-      Standards.ASN1.Types.asn1_sequence(({
-						// controlType
-	Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.319"),
-	ASN1_BOOLEAN(0),			// criticality (FALSE)
-	Standards.ASN1.Types.asn1_sequence(({	// controlValue
-	  0x7fffffff,				// size
-	  cookie,				// cookie
-	  })),
-	})),
-      }))
-#else /* !ENABLE_PAGED_SEARCH */
-      0
-#endif /* ENABLE_PAGED_SEARCH */
-      ;
-
     rawarr = ({});
     do {
-#ifdef LDAP_PROTOCOL_PROFILE
-      _prof_gtim = gauge{ 
-#endif
-	  if(intp(raw = do_op(search_request, controls))) {
+      PROFILE("send_search_op", {
+	  IF_ELSE_PAGED_SEARCH(
+	    // LDAP Control Extension for Simple Paged Results Manipulation
+	    // RFC 2696.
+	    object controls =
+	      .ldap_privates.asn1_sequence(({
+		// RFC 2696 2.
+		.ldap_privates.asn1_sequence(({
+						// controlType
+		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.319"),
+		  //ASN1_BOOLEAN(0),		// criticality (FALSE)
+						// controlValue
+		  Standards.ASN1.Types.asn1_octet_string(
+		    .ldap_privates.asn1_sequence(({
+						// size
+		      Standards.ASN1.Types.asn1_integer(0x7fffffff),
+		      cookie,			// cookie
+		    }))->get_der()),
+		  })),
+		})),);
+
+	  if(intp(raw = do_op(search_request,
+			      IF_ELSE_PAGED_SEARCH(controls, 0)))) {
 	    THROW(({error_string()+"\n",backtrace()}));
 	    return 0;
 	  }
-#ifdef LDAP_PROTOCOL_PROFILE
-	};
-      DWRITE_PROF("send_search_op: %O\n", _prof_gtim);
-#endif
+	});
 
-      rawarr += ({raw});
-#ifdef LDAP_PROTOCOL_PROFILE
-      _prof_gtim = gauge{ 
-#endif
+      PROFILE("rawarr++", {
+	  rawarr += ({raw});
 	  while (ASN1_DECODE_RESULTAPP(raw) != 5) {
-#ifdef LDAP_PROTOCOL_PROFILEx
-	    DWRITE_PROF("readmsg: %O\n", gauge { raw = readmsg(id); });
-#else
-	    raw = readmsg(id);
-#endif
+	    PROFILE("readmsg", raw = readmsg(id));
 	    if (intp(raw)) {
 	      THROW(({error_string()+"\n",backtrace()}));
 	      return 0;
 	    }
 	    rawarr += ({raw});
 	  } // while
-#ifdef LDAP_PROTOCOL_PROFILE
-	};
-      DWRITE_PROF("rawarr++: %O\n", _prof_gtim);
-#endif
+	});
+
       // At this point @[raw] contains a SearchResultDone.
-#ifdef LDAP_DEBUG
-      werror("searchResultDone: %O\n", ASN1_DECODE_RAWDEBUG(raw));
-#endif /* LDAP_DEBUG */
       cookie = 0;
-#ifdef ENABLE_PAGED_SEARCH
-      if ((ASN1_DECODE_RESULTCODE(raw) != 10) &&
-	  (sizeof(.ldap_privates.ldap_der_decode(X)->elements[1]->elements) > 2)) {
-	cookie = ASN1_DECODE_RESULTREFS(raw)->elements[2]->elements[1];
-	controls->elements[0]->elements[0]->elements[2]->elements[1] = cookie;
-	if (!sizeof(cookie)) {
-	  // End marker.
-	  cookie = 0;
-	} else {
-#ifdef LDAP_DEBUG
-	  werror("Got cookie: %O\n", cookie);
-#endif /* LDAP_DEBUG */
-	}
-      }
-#endif /* ENABLE_PAGED_SEARCH */
+      IF_ELSE_PAGED_SEARCH({
+	  if ((ASN1_DECODE_RESULTCODE(raw) != 10) &&
+	      (sizeof(.ldap_privates.ldap_der_decode(raw)->elements[1]->elements) > 3)) {
+	    cookie = ASN1_DECODE_RESULTREFS(raw)->elements[2]->elements[1];
+	    if (!sizeof(cookie)) {
+	      // End marker.
+	      cookie = 0;
+	    } else {
+	      // Remove the extra end marker.
+	      rawarr = rawarr[..sizeof(rawarr)-2];
+	    }
+	  }
+	},);
     } while (cookie);
-#ifdef LDAP_PROTOCOL_PROFILE
-      _prof_gtim = gauge{ last_rv = result(rawarr); };
-      DWRITE_PROF("result: %O\n", _prof_gtim);
-#else
-      last_rv = result(rawarr);
-#endif
+
+    PROFILE("result", last_rv = result(rawarr));
     if(objectp(last_rv))
       seterr (last_rv->error_number());
     //if (rv->error_number() || !rv->num_entries())	// if error or entries=0
