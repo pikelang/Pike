@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: httpd.pike,v 1.2 1997/05/31 22:03:38 grubba Exp $ */
+/* $Id: httpd.pike,v 1.3 1999/03/19 19:59:33 neotron Exp $ */
 
 /* A very small httpd capable of fetching files only.
  * Written by Fredrik Hübinette as a demonstration of Pike
@@ -8,7 +8,7 @@
 
 #include <simulate.h>
 
-inherit "/precompiled/port";
+inherit Stdio.Port;
 
 /* number of bytes to read for each write */
 #define BLOCK 16060
@@ -24,8 +24,8 @@ inherit "/precompiled/port";
 
 program output_class=class
 {
-  inherit "/precompiled/file" : socket;
-  inherit "/precompiled/file" : file;
+  inherit Stdio.File : socket;
+  inherit Stdio.File : file;
 
   int offset=0;
 
@@ -36,7 +36,7 @@ program output_class=class
 
     file::seek(offset);
     data=file::read(BLOCK);
-    if(strlen(data))
+    if(data && strlen(data))
     {
       written=socket::write(data);
       if(written >= 0)

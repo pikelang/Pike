@@ -1,37 +1,36 @@
 #!/usr/local/bin/pike
-
-#include <simulate.h>
+import Stdio;
 
 int main(int argc, string *argv)
 {
   int i;
   string file;
-
-  if(argc<4)
+  
+  if(argc < 4)
   {
-    perror("Usage: rsif <from> <to> <files>\n");
+    werror("Usage: rsif <from> <to> <files>\n");
     return 1;
   }
 
-  for(i=3; i<argc; i++)
+  for(i = 3; i < argc; i++)
   {
     string file_contents;
-    if(file_contents=read_bytes(argv[i]))
+    if(file_contents = read_bytes(argv[i]))
     {
-      if(-1!=strstr(file_contents,argv[1]))
+      if(-1 != search(file_contents,argv[1]))
       {
-	write("Processing "+argv[i]+".\n");
-	file_contents=replace(file_contents,argv[1],argv[2]);
+	write("Processing %s.\n", argv[i]);
+	file_contents = replace(file_contents,argv[1],argv[2]);
 
-	if( mv(argv[i],argv[i]+"~") )
+	if( mv(argv[i], argv[i]+"~") )
 	{
-	  write_file(argv[i],file_contents);
-	}else{
+	  write_file(argv[i], file_contents);
+	} else {
 	  write("Failed to create backup file.\n");
 	}
       }
     }
   }
-
+  
   return 0;
 }
