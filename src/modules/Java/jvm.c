@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.11 1999/12/21 00:04:38 marcus Exp $
+ * $Id: jvm.c,v 1.12 2000/01/12 04:45:30 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.11 1999/12/21 00:04:38 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.12 2000/01/12 04:45:30 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1633,8 +1633,11 @@ static void do_native_dispatch(struct native_method_context *ctx,
 
   memset(rc, 0, sizeof(*rc));
 
-  if(*p != 'V')
+  if(*p != 'V') {
     make_jargs(rc, -1, p, ctx->nat->jvm, env);
+    if((*p == 'L' || *p == '[') && rc->l != NULL)
+      rc->l = (*env)->NewGlobalRef(env, rc->l);
+  }
 
   pop_n_elems(sp-osp);
   UNSETJMP(recovery);
