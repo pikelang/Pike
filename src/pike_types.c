@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.99 1999/12/15 19:42:09 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.100 1999/12/16 23:59:45 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -26,7 +26,7 @@ RCSID("$Id: pike_types.c,v 1.99 1999/12/15 19:42:09 hubbe Exp $");
 #include "bignum.h"
 #include "main.h"
 
-/* #define PIKE_TYPE_DEBUG */
+#define PIKE_TYPE_DEBUG
 
 int max_correct_args;
 
@@ -2269,7 +2269,11 @@ static int low_pike_types_le2(char *a, char *b, int array_cnt)
       }
 
       if (EXTRACT_UCHAR(a_tmp) != T_VOID) {
-	/* if (EXTRACT_UCHAR(b_tmp) == T_VOID) return 0; */
+	if ((EXTRACT_UCHAR(b_tmp) == T_VOID) &&
+	    (a_tmp != a+1)) {
+	  /* a is not a many arg */
+	  return 0;
+	}
 	if (!low_pike_types_le(b_tmp, a_tmp, 0)) return 0;
       }
     }
