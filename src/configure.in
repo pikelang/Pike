@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.512 2001/03/23 22:24:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.513 2001/03/27 19:21:57 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -787,10 +787,10 @@ AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for
 AC_ARG_WITH(double-precision, [  --with-double-precision          use double precision floats ], [ AC_DEFINE(WITH_DOUBLE_PRECISION_SVALUE) ] )
 AC_ARG_WITH(long-double-precision,[  --with-long-double-precision          use long double precision floats ], [ AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE) ] )
 
-AC_ARG_WITH(long-int,         [  --with-long-int                  use long native type int (experimental)], [ AC_DEFINE(WITH_LONG_INT) ] )
-AC_ARG_WITH(long-long-int,    [  --with-long-long-int             use long long native type int (experimental)], [ AC_DEFINE(WITH_LONG_LONG_INT) ] )
-AC_ARG_WITH(short-int,        [  --with-short-int                 use short native type int (experimental)], [ AC_DEFINE(WITH_SHORT_INT) ] )
-AC_ARG_WITH(int-int,          [  --with-int-int                   use int native type int (experimental)], [ AC_DEFINE(WITH_INT_INT) ] )
+AC_ARG_WITH(long-int,         [  --with-long-int                  use long native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_LONG_INT) ] )
+AC_ARG_WITH(long-long-int,    [  --with-long-long-int             use long long native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_LONG_LONG_INT) ] )
+AC_ARG_WITH(short-int,        [  --with-short-int                 use short native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_SHORT_INT) ] )
+AC_ARG_WITH(int-int,          [  --with-int-int                   use int native type int (EXPERIMENTAL)], [ AC_DEFINE(WITH_INT_INT) ] )
 
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
@@ -878,7 +878,7 @@ AC_ARG_WITH(security,    [  --with-security        enable internal pike security
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --without-shared-nodes disable the SHARED_NODES mode of the optimizer],[],[with_shared_nodes=yes])
 
-AC_ARG_WITH(lock,        [  --without-lock         Enable experimental code for multicpu machines.],[
+AC_ARG_WITH(lock,        [  --without-lock         Enable experimental code for multicpu machines (EXPERIMENTAL).],[
   if test "$with_lock" = "no"; then
     AC_DEFINE(PIKE_RUN_UNLOCKED)
   else :; fi
@@ -892,21 +892,14 @@ AC_ARG_WITH(perl,        [  --with-perl            enable the embedded Perl modu
 ]
 )
 
-AC_ARG_WITH(pike-type,   [  --with-pike-type       enable struct pike_type (EXPERIMENTAL)], [
-  if test "x$with_pike_type" = "xyes"; then
-    AC_MSG_WARN([
+AC_ARG_WITH(pike-type,   [  --without-pike-type       disable struct pike_type.], [], [])
 
-WARNING: Enabling struct pike_type.
+if test "x$with_pike_type" = "xno"; then :; else
+  echo 'Enabling the USE_PIKE_TYPE mode of the compiler.'
+  AC_DEFINE(USE_PIKE_TYPE)
+fi
 
-WARNING: Are you sure you know what you are doing?
-
-WARNING: This is highly experimental, and most likely will not compile.
-])
-    AC_DEFINE(USE_PIKE_TYPE)
-  else :; fi
-],[])
-
-if test "x$with_oob" = xyes; then
+if test "x$with_oob" = "xno"; then :; else
   AC_DEFINE(WITH_OOB)
 fi
 
@@ -924,8 +917,7 @@ with the option --without-bignums instead.
 else :; fi
 
 if test "x$with_shared_nodes" != xno; then
-  AC_MSG_WARN([Enabling the SHARED_NODES mode of the optimizer.])
-  AC_MSG_WARN([Note that this is EXPERIMENTAL.])
+  echo 'Enabling the SHARED_NODES mode of the optimizer.'
   AC_DEFINE(SHARED_NODES)
 else :; fi
 
@@ -1034,7 +1026,7 @@ if test "$cflags_is_set" = "no"; then
 ### no extra optimization will be done, but nothing should break either.
   case "`uname -m 2>/dev/null`" in
    sun4c)
-    # The -sparclite option seems to generate assembler that /bin/as doesn't
+    # The -msparclite option seems to generate assembler that /bin/as doesn't
     # understand.	/grubba 1998-07-17
     # AC_SYS_COMPILER_FLAG(-msparclite,sparclite,CFLAGS) 
    ;;
