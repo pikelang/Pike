@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.98 2001/01/15 18:53:24 mast Exp $");
+RCSID("$Id: docode.c,v 1.99 2001/01/17 20:14:34 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -410,9 +410,11 @@ int do_lfun_call(int id,node *args)
 					    Pike_compiler->compiler_frame->recur_label);
       }
     }
+    else
+      emit1(F_CALL_LFUN, id);
   }
-  else
 #endif
+  else
     emit1(F_CALL_LFUN, id);
   POP_AND_DONT_CLEANUP;
   return 1;
