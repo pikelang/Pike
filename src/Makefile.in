@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.126 1999/05/31 00:15:42 grubba Exp $
+# $Id: Makefile.in,v 1.127 1999/06/10 23:16:54 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -485,6 +485,7 @@ all_exports: full_export
 	( cd .. ; $(TMP_BINDIR)/makedists )
 
 bin_export:
+	-rm log
 	PATH=$(TMP_BINDIR)/fakes:$$PATH INSTALL_LOG=`pwd`/log make install INSTALL=install
 	$(RUNPIKE) $(TMP_BINDIR)/parse_install_log <log $(SRCDIR) $(prefix)
 
