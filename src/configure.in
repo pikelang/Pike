@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.502 2001/03/19 11:25:16 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.503 2001/03/19 12:29:43 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3591,13 +3591,17 @@ else
 fi
 
 #############################################################################
-if test "x$ac_cv_header_mmx_h" = xyes ; then
+mmx_reason=' (no mmx.h found)'
+if test "x$ac_cv_header_mmx_h" = xyes -o "x$ac_cv_header_asm_mmx_h" ; then
   AC_MSG_CHECKING(for working MMX)
+  mmx_reason=' (mmx.h found, but mmx operations failed)'
 
   AC_CACHE_VAL(pike_cv_sys_has_working_mmx,
   [
     AC_TRY_LINK([
+#ifdef HAVE_MMX_H
 #include <mmx.h>
+#endif
     ],[
     {
       int try_use_mmx;
@@ -3607,13 +3611,14 @@ if test "x$ac_cv_header_mmx_h" = xyes ; then
       movq_r2m( mm0, *a );
       try_use_mmx=mmx_ok();
     }
-    ], pike_cv_sys_has_working_mmx=yes,pike_cv_sys_has_working_mmx=no)
+    ],pike_cv_sys_has_working_mmx=yes,pike_cv_sys_has_working_mmx=no)
   ])
 
   AC_MSG_RESULT($pike_cv_sys_has_working_mmx)
 
   if test "x$pike_cv_sys_has_working_mmx" = xyes ; then
     AC_DEFINE(TRY_USE_MMX)
+    mmx_reason=''
   else :; fi
 else :; fi
 
@@ -5370,6 +5375,10 @@ fi
 if test "x$with_dmalloc" = x; then
   with_dmalloc=no
 fi
+with_mmx=$pike_cv_sys_has_working_mmx
+if test "x$with_mmx" = x; then
+  with_mmx=no
+fi
 
 rm config.info 2>/dev/null
 
@@ -5416,6 +5425,7 @@ PAD_FEATURE([threads])$using_threads
 PAD_FEATURE([debug])$with_debug
 PAD_FEATURE([dmalloc])$with_dmalloc
 PAD_FEATURE([rtldebug])$with_rtldebug
+PAD_FEATURE([mmx])$with_mmx$mmx_reason
 EOF
 
 touch confdefs.h 2>/dev/null
