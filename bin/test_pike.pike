@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.100 2004/05/02 01:51:56 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.101 2004/05/23 01:57:36 nilsson Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -417,11 +417,15 @@ int main(int argc, array(string) argv)
 #endif // else WATCHDOG_PIPE
 
   testsuites += Getopt.get_args(argv, 1)[1..];
-  if(!sizeof(testsuites))
-  {
-    werror("No tests found. Use --help for more information.\n");
-    exit(1);
+  foreach(testsuites; int pos; string ts) {
+    if(Stdio.is_dir(ts))
+      testsuites[pos] = ts = combine_path(ts, "testsuite");
+    if(!file_stat(ts))
+      exit(1, "Could not find test %O.\n", ts);
   }
+
+  if(!sizeof(testsuites))
+    exit(1, "No tests found. Use --help for more information.\n");
 
 #if 1
   // Store the name of all constants so that we can see
