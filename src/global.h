@@ -5,10 +5,14 @@
 \*/
 
 /*
- * $Id: global.h,v 1.33 1999/04/25 20:32:38 grubba Exp $
+ * $Id: global.h,v 1.34 1999/05/12 04:41:36 hubbe Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
+
+#if defined(__WINNT__) && !defined(__NT__)
+#define __NT__
+#endif
 
 /* The worlds most stringent C compiler? */
 #ifdef __TenDRA__
