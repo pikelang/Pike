@@ -1,5 +1,5 @@
 /*
- * $Id: requestobject.c,v 1.16 2000/12/01 08:09:58 hubbe Exp $
+ * $Id: requestobject.c,v 1.17 2001/04/13 16:22:19 grubba Exp $
  */
 
 #include "global.h"
@@ -724,7 +724,7 @@ void actually_send(struct send_args *a)
   foo[9]=0; foo[6]=0;
   if( a->data )
   {
-    data = a->data->str;
+    data = (unsigned char *)a->data->str;
     data_len = a->data->len;
   }
 #ifdef HAVE_FREEBSD_SENDFILE
@@ -841,7 +841,7 @@ void actually_send(struct send_args *a)
       setsockopt( a->to->fd, SOL_TCP, TCP_CORK, &true, 4 );
     }
 #endif
-    fail = WRITE(a->to->fd, data, data_len);
+    fail = WRITE(a->to->fd, (char *)data, data_len);
     a->sent += fail;
     if(fail != data_len)
       goto end;
