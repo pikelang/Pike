@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.25 2002/10/21 17:06:54 marcus Exp $
+|| $Id: auto.c.in,v 1.26 2003/02/14 17:48:41 per Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.25 2002/10/21 17:06:54 marcus Exp $");
+RCSID("$Id: auto.c.in,v 1.26 2003/02/14 17:48:41 per Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -22,11 +22,11 @@ RCSID("$Id: auto.c.in,v 1.25 2002/10/21 17:06:54 marcus Exp $");
 #include "mapping.h"
 
 #ifdef HAVE_WINDEF_H
-#include <windef.h>
+#include <windows.h>
 #endif /* HAVE_WINDEF_H */
-#ifdef HAVE_WINGDI_H
-#include <wingdi.h>
-#endif /* HAVE_WINGDI_H */
+/* #ifdef HAVE_WINGDI_H */
+/* #include <wingdi.h> */
+/* #endif /* HAVE_WINGDI_H */ */
 #ifdef HAVE_GL_GL_H
 #include <GL/gl.h>
 #endif /* HAVE_GL_GL_H */
@@ -231,7 +231,7 @@ static void check_img_arg(struct svalue *a, struct zimage *img,
 	  Pike_error("Need mem_type for memory texture\n");
 	img->pixels = stor_mem->p;
 	if( (v=simple_mapping_string_lookup(a->u.mapping, "mem_offset" )) )
-	  img->pixels += v->u.integer;
+	  img->pixels = (char *)img->pixels + v->u.integer;
 	if(!img_inited)
 	  img_init();
 	return;

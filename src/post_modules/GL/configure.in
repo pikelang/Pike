@@ -1,6 +1,8 @@
-# $Id: configure.in,v 1.16 2002/12/15 19:24:33 grubba Exp $
+# $Id: configure.in,v 1.17 2003/02/14 17:48:51 per Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
+
+PIKE_FEATURE_WITHOUT(GL)
 
 AC_MODULE_INIT()
 
@@ -58,6 +60,7 @@ else
     AC_CACHE_VAL(pike_cv_lib_OpenGL32, [
       LIBS="$oldLIBS -lOpenGL32"
       AC_TRY_LINK([
+#include <windows.h>
 #ifdef HAVE_WINDEF_H
 #include <windef.h>
 #endif /* HAVE_WINDEF_H */
@@ -80,13 +83,10 @@ else
     tmp_gl_fail=no
     if test x"$with_lib_GL" = "xyes" -a x"$ac_cv_lib_GL_glOrtho" = xyes; then
       LIBS="-lGL $LIBS"
-      AC_DEFINE(HAVE_GL)
     elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL" = xyes; then
       LIBS="-lOpenGL $LIBS"
-      AC_DEFINE(HAVE_GL)
     elif test x"$with_lib_GL" = "xyes" -a x"$pike_cv_lib_OpenGL32" = xyes; then
       LIBS="-lOpenGL32 $LIBS"
-      AC_DEFINE(HAVE_GL)
     elif test x"$with_lib_MesaGL" = "xyes" -a x"$ac_cv_lib_MesaGL_glOrtho" = xyes; then
       LIBS="-lMesaGL $LIBS"
     elif test x"$ac_cv_lib_GL_glOrtho" = xyes; then
@@ -99,13 +99,16 @@ else
       LIBS="-lMesaGL $LIBS"
     else
       AC_MSG_WARN([No GL or MesaGL libraries, disabling GL support.])
+      PIKE_FEATURE_NODEP(GL)
       tmp_gl_fail=yes
     fi
     
     if test x"$tmp_gl_fail" = xno; then
       AC_DEFINE(HAVE_GL)
+      PIKE_FEATURE_OK(GL)
       AUTO_OBJS="auto.o"
     fi
+    
   fi
 
 fi
