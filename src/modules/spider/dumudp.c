@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.21 1997/09/29 21:09:41 marcus Exp $");
+RCSID("$Id: dumudp.c,v 1.22 1997/10/02 18:13:59 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -114,6 +114,7 @@ static void udp_bind(INT32 args)
   }
 
   addr.sin_port = htons( ((u_short)sp[-args].u.integer) );
+  addr.sin_family = AF_INET;
 
   tmp=bind(fd, (struct sockaddr *)&addr, sizeof(addr))<0;
 
