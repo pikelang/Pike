@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.99 2001/01/30 23:37:17 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.100 2001/02/28 04:25:30 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -566,7 +566,6 @@ PMOD_EXPORT char *debug_xalloc(size_t size)
   if(!size) 
      Pike_error("Allocating zero bytes.\n");
 
-
   ret=(char *)malloc(size);
   if(ret) return ret;
 
@@ -672,6 +671,8 @@ static MUTEX_T debug_malloc_mutex;
 #include <dlfcn.h>
 #endif
 
+#define ENCAPSULATE_MALLOC
+
 #ifdef ENCAPSULATE_MALLOC
 #ifdef RTLD_NEXT
 
@@ -718,15 +719,42 @@ void init_fake_malloc(void)
   fake_free_list->body.next=0;
 }
 
+#if 0
+#define LOWDEBUG2(X) write(2,X,strlen(X) - strlen(""));
+#define LOWDEBUG(X) LOWDEBUG2( __FILE__ ":" DEFINETOSTR(__LINE__) ":" X)
+
+void debug_output(char *x, void *p)
+{
+  char buf[120];
+  write(2,x,strlen(x));
+  sprintf(buf," (%p %d)\n",p,p);
+  write(2,buf,strlen(buf));
+}
+
+#define LOWDEBUG3(X,Y) debug_output( __FILE__ ":" DEFINETOSTR(__LINE__) ":" X,Y)
+#else
+#define LOWDEBUG(X)
+#define LOWDEBUG3(X,Y)
+#endif
+
 void *fake_malloc(size_t x)
 {
+  void *ret;
   struct fakemallocblock *block, **prev;
 
-  if(real_malloc) return real_malloc(x);
+  LOWDEBUG3("fakemalloc",x);
+
+  if(real_malloc)
+  {
+    ret=real_malloc(x);
+    LOWDEBUG3("fakemalloc --> ",ret);
+    return ret;
+  }
+    
   if(!x) return 0;
 
   if(!fake_free_list) init_fake_malloc();
-    
+
   x+=ALIGNMENT-1;
   x&=-ALIGNMENT;
 
@@ -744,17 +772,41 @@ void *fake_malloc(size_t x)
 	/* just return block */
 	*prev = block->body.next;
       }
+      LOWDEBUG3("fakemalloc --> ",block->body.block);
       return block->body.block;
     }
   }
+
+  LOWDEBUG("Out of memory.\n");
   return 0;
 }
 
 PMOD_EXPORT void *malloc(size_t x)
 {
+  void *ret;
+  LOWDEBUG3("malloc",x);
   if(!x) return 0;
-  if(real_malloc) return debug_malloc(x,DMALLOC_LOCATION());
-  return fake_malloc(x);
+  if(real_malloc)
+  {
+#ifdef DMALLOC_REMEMBER_LAST_LOCATION
+    char * tmp=(char *)th_getspecific(dmalloc_last_seen_location);
+    if(tmp)
+    {
+      if(tmp[0] == 'S' && tmp[-1]=='N')
+	ret=debug_malloc(x,tmp-1);
+      else
+	ret=debug_malloc(x,tmp);
+    }else{
+      ret=debug_malloc(x,DMALLOC_LOCATION());
+    }
+#else
+    ret=debug_malloc(x,DMALLOC_LOCATION());
+#endif
+  }else{
+    ret=fake_malloc(x);
+  }
+  LOWDEBUG3("malloc --> ",ret);
+  return ret;
 }
 
 PMOD_EXPORT void fake_free(void *x)
@@ -762,6 +814,9 @@ PMOD_EXPORT void fake_free(void *x)
   struct fakemallocblock * block;
 
   if(!x) return;
+
+  LOWDEBUG3("fake_free",x);
+
   if(FAKEMALLOCED(x))
   {
     block=BASEOF(x,fakemallocblock,body.block);
@@ -777,6 +832,7 @@ PMOD_EXPORT void free(void *x)
   struct fakemallocblock * block;
 
   if(!x) return;
+  LOWDEBUG3("free",x);
   if(FAKEMALLOCED(x))
   {
     block=BASEOF(x,fakemallocblock,body.block);
@@ -793,18 +849,23 @@ PMOD_EXPORT void *realloc(void *x,size_t y)
   size_t old_size;
   struct fakemallocblock * block;
 
+  LOWDEBUG3("realloc <-",x);
+  LOWDEBUG3("realloc ",y);
+
   if(FAKEMALLOCED(x) || !real_realloc)
   {
     old_size = x?BASEOF(x,fakemallocblock,body.block)->size :0;
+    LOWDEBUG3("realloc oldsize",old_size);
     if(old_size >= y) return x;
     ret=malloc(y);
     if(!ret) return 0;
     MEMCPY(ret, x, old_size);
     if(x) free(x);
-    return ret;
   }else{
-    return debug_realloc(x, y, DMALLOC_LOCATION());
+    ret=debug_realloc(x, y, DMALLOC_LOCATION());
   }
+  LOWDEBUG3("realloc --> ",ret);
+  return ret;
 }
 
 void *fake_realloc(void *x,size_t y)
@@ -813,6 +874,9 @@ void *fake_realloc(void *x,size_t y)
   size_t old_size;
   struct fakemallocblock * block;
 
+  LOWDEBUG3("fake_realloc <-",x);
+  LOWDEBUG3("fake_realloc ",y);
+
   if(FAKEMALLOCED(x) || !real_realloc)
   {
     old_size = x?BASEOF(x,fakemallocblock,body.block)->size :0;
@@ -821,17 +885,21 @@ void *fake_realloc(void *x,size_t y)
     if(!ret) return 0;
     MEMCPY(ret, x, old_size);
     if(x) free(x);
-    return ret;
   }else{
-    return real_realloc(x,y);
+    ret=real_realloc(x,y);
   }
+  LOWDEBUG3("fake_realloc --> ",ret);
+  return ret;
 }
 
 void *calloc(size_t x, size_t y)
 {
   void *ret;
+  LOWDEBUG3("calloc x",x);
+  LOWDEBUG3("calloc y",y);
   ret=malloc(x*y);
   if(ret) MEMSET(ret,0,x*y);
+  LOWDEBUG3("calloc --> ",ret);
   return ret;
 }
 
@@ -840,6 +908,7 @@ void *fake_calloc(size_t x, size_t y)
   void *ret;
   ret=fake_malloc(x*y);
   if(ret) MEMSET(ret,0,x*y);
+  LOWDEBUG3("fake_calloc --> ",ret);
   return ret;
 }
 
@@ -1945,6 +2014,9 @@ static void initialize_dmalloc(void)
   if(!initialized)
   {
     initialized=1;
+#ifdef DMALLOC_REMEMBER_LAST_LOCATION
+    th_key_create(&dmalloc_last_seen_location, 0);
+#endif
     init_memhdr_hash();
 
     for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;

@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.29 2001/01/30 23:37:17 hubbe Exp $
+ * $Id: dmalloc.h,v 1.30 2001/02/28 04:25:30 hubbe Exp $
  */
 
 PMOD_EXPORT extern char *debug_xalloc(size_t);
@@ -8,7 +8,7 @@ PMOD_EXPORT extern void *debug_xmalloc(size_t);
 PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
 PMOD_EXPORT extern void *debug_xrealloc(void *,size_t);
 
-#define DMALLOC_LOCATION() ("S"  __FILE__ ":" DEFINETOSTR(__LINE__) )
+#define DMALLOC_LOCATION() (("NS"  __FILE__ ":" DEFINETOSTR(__LINE__) )+1)
 
 #ifdef DMALLOC_TRACE
 #define DMALLOC_TRACELOGSIZE 131072
