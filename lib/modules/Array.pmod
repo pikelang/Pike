@@ -8,7 +8,7 @@ constant diff_compare_table = __builtin.diff_compare_table;
 constant longest_ordered_sequence = __builtin.longest_ordered_sequence;
 constant interleave_array = __builtin.interleave_array;
 
-constant sort = __builtin.sort;
+constant sort = predef::sort;
 constant everynth = __builtin.everynth;
 constant splice = __builtin.splice;
 constant transpose = __builtin.transpose;
