@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.58 2000/05/20 13:30:50 grubba Exp $
+ * $Id: acconfig.h,v 1.59 2000/06/16 17:52:46 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -37,11 +37,17 @@
 /* Define this if your ld sets the run path with -R */
 #undef USE_R
 
+/* Define this if your ld sets the run path with -YP, */
+#undef USE_YP_
+
 /* Define this if your ld uses -rpath, but your cc wants -Wl,-rpath, */
 #undef USE_Wl
 
 /* Define this if your ld uses -R, but your cc wants -Wl,-R */
 #undef USE_Wl_R
+
+/* Define this if your ld uses -YP, , but your cc wants -Xlinker -YP, */
+#undef USE_XLINKER_YP_
 
 /* Define this if your ld doesn't have an option to set the run path */
 #undef USE_LD_LIBRARY_PATH
