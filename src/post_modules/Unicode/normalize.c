@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: normalize.c,v 1.4 2001/07/03 23:44:18 per Exp $");
+RCSID("$Id: normalize.c,v 1.5 2001/07/03 23:55:21 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -237,15 +237,6 @@ struct buffer *unicode_decompose_buffer( struct buffer *source,	int how )
   return res;
 }
 
-struct pike_string *unicode_decompose( struct pike_string *source,
-				       int how )
-{
-  struct buffer *src = uc_buffer_new(), *res;
-  uc_buffer_write_pikestring( src, source );
-  res = unicode_decompose_buffer( src, how );
-  return uc_buffer_to_pikestring( res );
-}
-
 struct buffer *unicode_compose_buffer( struct buffer *source, int how )
 {
   int startch = source->data[0];
@@ -276,27 +267,26 @@ struct buffer *unicode_compose_buffer( struct buffer *source, int how )
   return source;
 }
 
-struct pike_string *unicode_compose( struct pike_string *source,
-				     int how )
-{
-  struct buffer *src = uc_buffer_new();
-  uc_buffer_write_pikestring( src, source );
-  return uc_buffer_to_pikestring( unicode_compose_buffer( src, how ) );
-}
-
 
 struct pike_string *unicode_normalize( struct pike_string *source,
 				       int how )
 {
-  struct pike_string *d = unicode_decompose( source, how );
+  /* What, me lisp? */
   if( how & COMPOSE_BIT )
-  {
-    struct pike_string *d2;
-    debug_malloc_touch(d);
-    d2 = unicode_compose( d, how );
-    debug_malloc_touch(d2);
-    free_string(d);
-    return d2;
-  }
-  return d;
+    return
+      uc_buffer_to_pikestring(
+	unicode_compose_buffer(
+	  unicode_decompose_buffer(
+	    uc_buffer_write_pikestring(
+	      uc_buffer_new(),
+	      source ),
+	    how ),
+	  how ) );
+  return
+    uc_buffer_to_pikestring(
+      unicode_decompose_buffer(
+	uc_buffer_write_pikestring(
+	  uc_buffer_new(),
+	  source ),
+	how ) );
 }
