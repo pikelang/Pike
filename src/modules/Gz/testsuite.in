@@ -1,14 +1,14 @@
-cond([[ master()->programs["/precompiled/gz_inflate"] ]],
+cond([[ master()->resolv("Gz") ]],
 [[
-  test_true(Gz_deflate())
-  test_true(Gz_deflate()->deflate)
-  test_true(Gz_inflate())
-  test_true(Gz_inflate()->inflate)
+  test_true(Gz.deflate())
+  test_true(Gz.deflate()->deflate)
+  test_true(Gz.inflate())
+  test_true(Gz.inflate()->inflate)
 define(dotest,[[
-  test_true(Gz_deflate(1)->deflate($1))
-  test_eq(Gz_inflate()->inflate(Gz_deflate(1)->deflate($1)),$1)
-  test_eq(Gz_inflate()->inflate(Gz_deflate(9)->deflate($1)),$1)
-  test_any([[object o=Gz_deflate(); return Gz_inflate()->inflate(o->deflate($1,o->PARTIAL_FLUSH) + o->deflate($1,o->FINISH))]], [[($1)+($1)]])
+  test_true(Gz.deflate(1)->deflate($1))
+  test_eq(Gz.inflate()->inflate(Gz.deflate(1)->deflate($1)),$1)
+  test_eq(Gz.inflate()->inflate(Gz.deflate(9)->deflate($1)),$1)
+  test_any([[object o=Gz.deflate(); return Gz.inflate()->inflate(o->deflate($1,o->PARTIAL_FLUSH) + o->deflate($1,o->FINISH))]], [[($1)+($1)]])
 ]])
   dotest("")
   dotest("foo")

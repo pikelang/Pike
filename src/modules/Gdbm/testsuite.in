@@ -1,14 +1,14 @@
 // gdbm
-cond( [[ master()->programs["/precompiled/gdbm"] ]],
+cond( [[ master()->resolv("Gdbm") ]],
 [[
-  define([[GDBM]],[[ (program)"/precompiled/gdbm" ]])
+  define([[GDBM]],[[ Gdbm.gdbm ]])
   test_true(programp(GDBM))
   test_do(destruct(clone(GDBM)))
 
   define([[GDBMTESTS]],
   [[
     test_do(rm("test.gdbm"))
-    test_do(add_efun("GDBMBASE",clone(GDBM,"test.gdbm")))
+    test_do(add_constant("GDBMBASE",clone(GDBM,"test.gdbm")))
     test_true(file_stat("test.gdbm"))
 
     GDBMNULLTEST

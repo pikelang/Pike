@@ -1,34 +1,34 @@
-// - Here we try the regexp module
-test_true([[programp(regexp)]])
-test_any([[object o; o=clone(regexp); destruct(o); return 1]],1)
+// - Here we try the Regexp module
+test_true([[programp(Regexp)]])
+test_any([[object o; o=clone(Regexp); destruct(o); return 1]],1)
 
-// regexp->create
-test_any([[object o; o=regexp("^.*$"); destruct(o); return 1]],1)
+// Regexp->create
+test_any([[object o; o=Regexp("^.*$"); destruct(o); return 1]],1)
 
-// regexp->match
-test_eq([[regexp("^.*$")->match("")]],1)
-test_eq([[regexp(".*")->match("foo")]],1)
-test_eq([[regexp("^.*$")->match("a")]],1)
-test_eq([[regexp("^.*$")->match("-")]],1)
-test_eq([[regexp("^$")->match("")]],1)
-test_eq([[regexp("^.$")->match("a")]],1)
-test_eq([[regexp("^.$")->match("-")]],1)
-test_eq([[regexp("^[abc]$")->match("-")]],0)
-test_eq([[regexp("^[abc]$")->match("a")]],1)
-test_eq([[regexp("^[abc]$")->match("c")]],1)
-test_eq([[regexp("^[^abc]$")->match("-")]],1)
-test_eq([[regexp("^[^abc]$")->match("a")]],0)
-test_eq([[regexp("^[^abc]$")->match("c")]],0)
-test_eq([[regexp("^a*$")->match("aaaa")]],1)
-test_eq([[regexp("^(a|bb)*$")->match("aabbabb")]],1)
-test_eq([[regexp("^(a|bb)*$")->match("")]],1)
-test_eq([[regexp("^(a|bb)+$")->match("")]],0)
-test_eq([[regexp("^(a|bb)+$")->match("aaa")]],1)
-test_eq([[regexp("^(a|bb)+$")->match("bbb")]],0)
-test_eq([[regexp("^(a|bb)+$")->match("bbaabba")]],1)
-test_eq([[regexp("^a|b$")->match("a")]],1)
-test_eq([[regexp("^a|b$")->match("b")]],1)
+// Regexp->match
+test_eq([[Regexp("^.*$")->match("")]],1)
+test_eq([[Regexp(".*")->match("foo")]],1)
+test_eq([[Regexp("^.*$")->match("a")]],1)
+test_eq([[Regexp("^.*$")->match("-")]],1)
+test_eq([[Regexp("^$")->match("")]],1)
+test_eq([[Regexp("^.$")->match("a")]],1)
+test_eq([[Regexp("^.$")->match("-")]],1)
+test_eq([[Regexp("^[abc]$")->match("-")]],0)
+test_eq([[Regexp("^[abc]$")->match("a")]],1)
+test_eq([[Regexp("^[abc]$")->match("c")]],1)
+test_eq([[Regexp("^[^abc]$")->match("-")]],1)
+test_eq([[Regexp("^[^abc]$")->match("a")]],0)
+test_eq([[Regexp("^[^abc]$")->match("c")]],0)
+test_eq([[Regexp("^a*$")->match("aaaa")]],1)
+test_eq([[Regexp("^(a|bb)*$")->match("aabbabb")]],1)
+test_eq([[Regexp("^(a|bb)*$")->match("")]],1)
+test_eq([[Regexp("^(a|bb)+$")->match("")]],0)
+test_eq([[Regexp("^(a|bb)+$")->match("aaa")]],1)
+test_eq([[Regexp("^(a|bb)+$")->match("bbb")]],0)
+test_eq([[Regexp("^(a|bb)+$")->match("bbaabba")]],1)
+test_eq([[Regexp("^a|b$")->match("a")]],1)
+test_eq([[Regexp("^a|b$")->match("b")]],1)
 
-// regexp->split
-test_equal([[regexp("^(a*)[^a]*$")->split("aaabbb")]],({"aaa"}))
+// Regexp->split
+test_equal([[Regexp("^(a*)[^a]*$")->split("aaabbb")]],({"aaa"}))
 
