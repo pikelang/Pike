@@ -93,6 +93,13 @@ test_eq(AFJLLAF,17)
 test_do(add_efun("AFJLLAF"))
 test_do(signal(signum("SIGUSR1")))
 
+// typeof
+test_eq(typeof(1),"int")
+test_eq(typeof(""),"string")
+test_eq(typeof(""[0]),"int")
+test_eq(typeof(0.0),"float")
+test_eq(typeof(all_efuns()["all_efuns"]),"mixed")
+
 // class
 test_true(programp(class {}))
 test_true(functionp(clone(class { int foo() { return 1; }})->foo))
