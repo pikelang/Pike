@@ -15,11 +15,30 @@ string *srt(string *foo)
   return foo;
 }
 
+string quote_param(string s)
+{
+  string ret="";
+  while(sscanf(s,"%[-a-zA-Z0-9/()*,.]%c%s",string a, int c,s)==3)
+    ret+=sprintf("%s%%02x",a,c);
+
+  return ret+s;
+}
+
+string unquote_param(string s)
+{
+  string *tmp=s/"%";
+  for(int e=1;e<sizeof(tmp);e++)
+    if(sscanf(tmp[e],"%2x%s",int x, string rest))
+      tmp[e]=sprintf("%c%s",x,rest);
+
+  return tmp*"";
+}
+
 string code_params(mapping s)
 {
   string ret="";
   foreach(indices(s), string data)
-    ret+=" "+data+"=\""+s[data]+"\"";
+    ret+=" "+data+"="+quote_param(s[data]);
   return ret;
 }
 
@@ -45,7 +64,7 @@ void _add_to(mapping foo, string bar, string full)
 
 void add_to(string bar, string full)
 {
-  sscanf(lower_case(bar),"%*[_ ]%c",int c);
+  sscanf(lower_case(unquote_param(bar)),"%*[_ ]%c",int c);
   mapping m;
   if(!(m=links[c])) m=links[c]=([]);
   _add_to(m, bar, full);
@@ -68,7 +87,7 @@ string anchor(mixed a, mixed b, mixed c)
   return 0;
 }
 
-string mklink(string lnk) {   return "<a href=#"+lnk+">"+lnk+"</a>"; }
+string mklink(string lnk) {   return "<a href=#"+lnk+">"+unquote_param(lnk)+"</a>"; }
 
 string genindex(mapping m, string prefix)
 {
@@ -81,13 +100,15 @@ string genindex(mapping m, string prefix)
   m_delete(m,0);
   foreach(srt(indices(m)), string ind)
     {
-      if(m[ind][0] && sizeof(m[ind])==1 && sizeof(m[ind][0])==1 &&
+      if(m[ind][0] &&
+	 sizeof(m[ind])==1 &&
+	 sizeof(m[ind][0])==1 &&
 	m[ind][0][0]==prefix+ind)
       {
 	foreach(srt(m[ind][0]), string lnk)
 	  ret+="<dt>"+mklink(lnk)+"\n";
       }else{
-	ret+="<dt>"+prefix+ind+"\n"+
+	ret+="<dt>"+unquote_param(prefix+ind)+"\n"+
 	"<dd>\n"+
 	genindex(m[ind], prefix+ind+".");
       }
@@ -269,23 +290,113 @@ string box(string tag, mapping params, string data)
     "</table></center>\n";
 }
 
+string do_include(string tag, mapping params, string data)
+{
+  return Stdio.read_file(params->file);
+}
+
+string end_img_tag(string ret, mapping params)
+{
+  if(params->align) ret+=" align="+quote_param(params->align);
+  if(params->alt) ret+=" alt="+quote_param(params->align);
+
+  return ret+">";
+}
+
+int gifnum;
+mapping gifcache=([]);
+
+string mkgif(object o)
+{
+  string g=o->togif();
+  if(gifcache[g]) return gifcache[g];
+
+  gifnum++;
+  string gifname="illustration"+gifnum+".gif";
+  rm(gifname);
+  write_file(gifname,g);
+
+  gifcache[g]=gifname;
+  return gifname;
+}
+
+mapping gifcache2=([]);
+
+string illustration(string tag, mapping params, string data)
+{
+  string src=params->src;
+  object img=Image.image();
+
+  float dpi=75.0;
+  if(params->dpi) dpi=(float)params->dpi;
+  if(params->scale) dpi/=(float)params->scale;
+  float scale=75.0/dpi;
+
+  string key=encode_value(({src,scale,data}));
+
+  string file;
+  if(!(file=gifcache2[key]))
+  {
+    if(params->src) img=img->fromppm(Process.popen("anytopnm "+src));
+    if(scale!=1.0) img=img->scale(scale);
+    img=compile_string("object `()(object src){ "+data+" ; }")()(img);
+    file=mkgif(img);
+    gifcache2[key]=file;
+  }
+
+  return end_img_tag("<img src="+file,params);
+}
+
+string image(string tag, mapping params, string data)
+{
+  string ret;
+  if(params->xfig)	
+  {
+    Process.system("fig2dev -L ps "+params->xfig+".fig ___tmp.ps;echo showpage >>___tmp.ps");
+    object o=Image.image()->fromppm(
+      Process.popen("gs -q -sDEVICE=pbmraw -r225 -g2500x2500 -sOutputFile=- ___tmp.ps"));
+
+    o=o->autocrop()->scale(1.0/3)->rotate(-90);
+    o=Image.image(o->xsize()+40, o->ysize()+40, 255,255,255)->paste(o,20,20);
+    string gifname=mkgif(o);
+    rm("___tmp.ps");
+    ret="<img src="+quote_param(gifname);
+  }
+  else if(params->src)
+  {
+    return illustration(tag,params,"return src");
+  }
+  else
+  {
+    return "";
+    werror("Unknown image type\n");
+  }
+
+  return end_img_tag(ret,params);
+}
+
 int main()
 {
-  string data=stdin->read(0x7fffffff);
+  string data=Stdio.stdin.read(0x7fffffff);
 
   data+="\n<!--END-->";
 
+  /* Preprocess */
+  data=parse_html(data,(["include":do_include]),([]));
+
   /* Pass 1, find links for the index */
-  string data=parse_html(data, ([]) , (["a":anchor]));
+  data=parse_html(data, ([]) , (["a":anchor]));
 
   /* Pass 2, parse chapters and sections */
-  string data=parse_html(data, ([]) , TAGS);
+  data=parse_html(data, ([]) , TAGS);
 
   /* Build index */
   string index="<dl>\n";
   foreach(sort(indices(links)), int letter)
   {
-    index+="<dt><font size=+2>"+upper_case(sprintf("%c",letter))+"</font>\n"+
+    index+="<dt><font size=+2>"+
+      (letter=='`'?"Operators": upper_case(sprintf("%c",letter)))+
+      "</font>\n"+
       "<dd>\n"+
       genindex(links[letter],"");
   }
@@ -303,10 +414,12 @@ int main()
 		     "index":do_replace,
 		     "table-of-contents":do_replace,
 		     "link":link,
+		     "image":image,
 		     ]),
 		   ([
 		     "box":box,
 		     "encaps":encaps,
+		     "illustration":illustration,
 		     ])));
 }
 

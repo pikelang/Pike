@@ -63,7 +63,7 @@ examples and explanations about some of the basics.
 <p>
 
 <h2> The history of Pike </h2>
-<a name=uLPC> <!-- FIXME replace uLPC with (micro)LPC -->
+<a name=uLPC>
 In the beginning, there was Zork. Then a bunch of people decided to make
 multiplayer adventure games. One of those people was Lars Pensjö at the
 Chalmers university in Gothenburg, Sweden. For his game he needed a simple,
@@ -75,15 +75,15 @@ dialect called LPC4. LPC4 was still geared towards writing adventure games,
 but was quite useful for writing other things with as well. A major problem
 with LPC4 was the copyright. Since it was based on Lars Pensjö's code, it
 came with a license that did not allow it to be used for commercial gain.
-So, in 1994 I started writing uLPC, which was a new but similar LPC interpreter.
-I got financial backing from Signum Support AB for writing uLPC. Signum
+So, in 1994 I started writing µLPC, which was a new but similar LPC interpreter.
+I got financial backing from Signum Support AB for writing µLPC. Signum
 is a company dedicated to supporting GNU and GPL software and they wanted
 to create more GPL software.
 <p>
-When uLPC became usable, Informationsvävarna AB started using it for
+When µLPC became usable, Informationsvävarna AB started using it for
 their webserver. Before then, Roxen (then called Spinner) was non-commercial
 and written in LPC4. Then in 1996 I started working for Informationsvävarna
-developing uLPC for them. We also changed the name of uLPC to Pike to
+developing µLPC for them. We also changed the name of µLPC to Pike to
 get a more commercially viable name.
 <p>
 </a>
@@ -1029,7 +1029,7 @@ it could look something like this:
 <pre>
 	do {
 	  modem-&gt;write("ATDT441-9109\n"); // Dial 441-9109
-        } while(modem-&gt;gets()[..6]] == "CONNECT");
+        } while(modem-&gt;gets()[..6]] != "CONNECT");
 </pre>
 This example assumes you have written something that can communicate with
 the modem by using the functions <tt>write</tt> and <tt>gets</tt>.
@@ -1262,7 +1262,7 @@ Also, these functions operates on floats:
 <dt><tt>float floor(float <i>x</i>)</tt>
 <dd>This function computes the highest integer value lower or equal to <i>x</i>.
 
-<dt><tt>float ciel(float <i>x</i>)</tt>, 
+<dt><tt>float ceil(float <i>x</i>)</tt>, 
 <dd>This function computes the lowest integer value higher or equal to <i>x</i>.
 </dl>
 </section>
@@ -1401,7 +1401,7 @@ which creates a new array. Figure 4.1 shows how the schematics of an array.
 As you can see, it is a very simple memory structure.
 <p>
 <center>
-<img src=array.gif><br>
+<image xfig=array><br>
 fig 4.1
 </center>
 <p>
@@ -1521,7 +1521,7 @@ What makes mappings special is that they can be indexed on other things than
 integers. We can imagine that a mapping looks like this:
 <p>
 <center>
-<img src=mapping.gif><br>
+<image xfig=mapping><br>
 fig 4.2
 </center>
 <p>
@@ -1613,7 +1613,7 @@ A multiset is almost the same thing as a mapping. The differance is that there
 are no values:
 <p>
 <center>
-<img src=multiset.gif><br>
+<image xfig=multiset><br>
 fig 4.3
 </center>
 <p>
@@ -1648,7 +1648,7 @@ space needed to execute the code in the program is stored in an <tt>object</tt>
 which is the next data type we will discuss. 
 <p>
 <center>
-  <img src=program.gif><br>
+  <image xfig=program><br>
 fig 4.4
 </center>
 Writing a <tt>program</tt> is easy, in fact, every example we have tried so
@@ -1767,7 +1767,7 @@ with a reference to the program from which it was cloned. Many objects can
 be made from one program. The <tt>program</tt> outlines where in the object
 different variables are stored.
 <center>
-  <img src=object.gif><br>
+  <image xfig=object><br>
 fig 4.5
 </center>
 Each object has its own set of variables, and when calling a function in that
@@ -1861,7 +1861,7 @@ When indexing an object on a string, and that string is the name of a function
 in the object a <tt>function</tt> is returned. Despite is name, a
 <tt>function</tt> is really a <b>function pointer</b>.
 <center>
-  <img src=function.gif><br>
+  <image xfig=function><br>
 fig 4.6
 </center>
 
@@ -2745,7 +2745,9 @@ in front of the function name. The argument to inherit can be one of the followi
 
 Let's look at an example. We'll split up an eariler example into three parts
 and let each inherit the previous part. It would look something like this:
-<img src=inherit.gif>
+<center>
+<image xfig=inherit><br>
+</center>
 Note that the actual code is not copied, only the list of references.
 Also note that the list of inherits is copied when you inherit a program
 this does not mean you can access those copied inherit with the <tt>::</tt>
@@ -9228,7 +9230,7 @@ prints.
 
 </chapter>
 
-<a name=#Image>
+<a name=Image>
 <chapter title="The Image module">
 The Image module is used to manipulate bit-mapped color images. 
 It can read PPM images and do various manipulations, or it can be
@@ -10562,7 +10564,7 @@ the new image object
 <dt><encaps>DESCRIPTION</encaps><dd>
 mirrors an image:
 <center>
-<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-mirrorx.gif><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->mirrorx();</illustration><br>
 </center>
 </p>
 <dt><encaps>RETURNS</encaps><dd>
@@ -10582,7 +10584,7 @@ the new image object
 <dt><encaps>DESCRIPTION</encaps><dd>
 mirrors an image:
 <center>
-<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-mirrory.gif><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;;<illustration align=center src=lenna.rs dpi=225>return src->mirrory();</illustration><br>
 </center>
 </p>
 </dl>
@@ -10818,7 +10820,7 @@ object rotate_expand(int|float&nbsp;angle, int&nbsp;r, int&nbsp;g, int&nbsp;b)</
 Rotates an image a certain amount of degrees (360° is 
      a complete rotation) counter-clockwise:
 <center>
-<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-rotate.gif><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->rotate(45)</illustration><br>
 </center>
      The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
@@ -11011,7 +11013,7 @@ object skewx_expand(int&nbsp;yfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 Skews an image an amount of pixels or a factor;
      a skew-x is a transformation:
 <center>
-<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-skewx.gif><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->skewx(0.3)</illustration><br>
 </center>
 </p>
 <dt><encaps>ARGUMENTS</encaps><dd><dl>
@@ -11055,7 +11057,7 @@ object skewy_expand(int&nbsp;xfactor, int&nbsp;r, int&nbsp;g, int&nbsp;b)</tt>
 Skews an image an amount of pixels or a factor;
      a skew-y is a transformation:
 <center>
-<img align=center src=lenna.gif>&nbsp-&gt;&nbsp;<img align=center src=lenna-skewy.gif><br>
+<image src=lenna.rs dpi=225 align=center>&nbsp-&gt;&nbsp;<illustration align=center src=lenna.rs dpi=225>return src->skewy(0.3)</illustration><br>
 </center>
      The "expand" variant of functions stretches the 
      image border pixels rather then filling with 
