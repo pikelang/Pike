@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.85 2001/01/30 23:38:37 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.86 2002/03/08 09:51:10 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -359,7 +359,7 @@ static void mpzmod__sprintf(INT32 args)
 {
   INT_TYPE precision, width, width_undecided, base = 0, mask_shift = 0;
   struct pike_string *s = 0;
-  INT_TYPE flag_left;
+  INT_TYPE flag_left, method;
   
   if(args < 1 || sp[-args].type != T_INT)
     Pike_error("Bad argument 1 for Mpz->_sprintf().\n");
@@ -389,7 +389,7 @@ static void mpzmod__sprintf(INT32 args)
   flag_left=sp[-1].u.integer;
   pop_stack();
 
-  switch(sp[-args].u.integer)
+  switch(method = sp[-args].u.integer)
   {
 #ifdef AUTO_BIGNUM
     case 't':
@@ -511,9 +511,12 @@ static void mpzmod__sprintf(INT32 args)
 
   pop_n_elems(args);
 
-  if(s)
+  if(s) {
     push_string(s);
-  else {
+    if (method == 'X') {
+      f_upper_case(1);
+    }
+  } else {
     push_int(0);   /* Push false? */
     sp[-1].subtype = 1;
   }
