@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.59 1999/10/05 19:48:37 grubba Exp $
+# $Id: dynamic_module_makefile.in,v 1.60 1999/10/09 23:29:58 hubbe Exp $
 #
 
 
@@ -63,7 +63,7 @@ dummy:	$(DUMMY) linker_options modlist_headers modlist_segment module.so
 	fi
 
 linker_options: Makefile
-	@if test "x$(LINKER_OPTIONS)" != x ; then echo "LINKER_OPTIONS+=$(LINKER_OPTIONS)" else : ; fi ; echo "$(LINKER_OPTIONS)" >linker_options
+	@if test "x$(LINKER_OPTIONS)" != x ; then echo "LINKER_OPTIONS+=$(LINKER_OPTIONS)" ; else : ; fi ; echo "$(LINKER_OPTIONS)" >linker_options
 
 modlist_headers: Makefile
 	@echo "" >modlist_headers
