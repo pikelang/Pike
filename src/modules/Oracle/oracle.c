@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.40 2000/05/13 02:45:26 hubbe Exp $
+ * $Id: oracle.c,v 1.41 2000/05/24 00:05:06 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -42,7 +42,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.40 2000/05/13 02:45:26 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.41 2000/05/24 00:05:06 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -50,6 +50,19 @@ RCSID("$Id: oracle.c,v 1.40 2000/05/13 02:45:26 hubbe Exp $");
 /* #define ORACLE_DEBUG */
 #define ORACLE_USE_THREADS
 #define SERIALIZE_CONNECT
+
+/*
+ * This define crippes the Pike module to use static define buffers.
+ * It may be required to work around bugs in some versions of the
+ * oracle libraries - Hubbe
+ */
+
+/* For some reason this crashes if I make this larger than 8000
+ * I suspect a static buffer somewhere in Oracle, but I have no proof.
+ * -Hubbe
+ */
+
+/* #define STATIC_BUFFERS 8000 */
 
 #ifndef ORACLE_USE_THREADS
 
@@ -298,6 +311,9 @@ struct inout
     int i;
     char shortstr[32];
     OCIDate date;
+#ifdef STATIC_BUFFERS
+    char str[STATIC_BUFFERS];
+#endif
   } u;
 };
 
@@ -882,22 +898,34 @@ static void f_fetch_fields(INT32 args)
 			dbcon->error_handle,
 			i+1,
 			& info->data.u,
+#ifdef STATIC_BUFFERS
+			data_size<0? STATIC_BUFFERS :data_size,
+#else
 			data_size<0? (0x7fffffff) :data_size,
+#endif
 			type,
 			& info->data.indicator,
 			& info->data.len,
 			& info->data.rcode,
-			OCI_DYNAMIC_FETCH);
+#ifdef STATIC_BUFFERS
+			0
+#else
+			OCI_DYNAMIC_FETCH
+#endif
+	);
 
       if(rc != OCI_SUCCESS)
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineByPos");
 
+#ifndef STATIC_BUFFERS
       rc=OCIDefineDynamic(info->define_handle,
 			  dbcon->error_handle,
 			  info,
 			  define_callback);
       if(rc != OCI_SUCCESS)
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
+#endif
+
     }
     f_aggregate(dbquery->cols);
     add_ref( dbquery->field_info=sp[-1].u.array );
@@ -959,6 +987,14 @@ static void push_inout_value(struct inout *inout)
     case SQLT_LNG:
     case SQLT_CHR:
     case SQLT_STR:
+
+#ifdef STATIC_BUFFERS
+      if(!STRING_BUILDER_STR(inout->output))
+      {
+	push_string(make_shared_binary_string(inout->u.str,inout->len));
+	break;
+      }
+#endif
       STRING_BUILDER_LEN(inout->output)+=inout->xlen-BLOCKSIZE;
       if(inout->ftype == SQLT_STR) 
 	STRING_BUILDER_LEN(inout->output)--;
@@ -1314,8 +1350,10 @@ static void f_big_query_create(INT32 args)
   INT32 autocommit=0;
   int i,num;
   struct object *new_parent=0;
-
   struct bind_block bind;
+
+  extern int d_flag;
+
   bind.bindnum=-1;
 
 #ifdef ORACLE_DEBUG
@@ -1327,6 +1365,15 @@ static void f_big_query_create(INT32 args)
 		 BIT_VOID | BIT_INT,
 		 BIT_VOID | BIT_OBJECT,
 		 0);
+
+#ifdef _REENTRANT
+  if(d_flag)
+  {
+      CHECK_INTERPRETER_LOCK();
+      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
+        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+  }
+#endif
 
   switch(args)
   {
@@ -1367,6 +1414,15 @@ static void f_big_query_create(INT32 args)
     free_object(PARENTOF(PARENTOF(THISOBJ)));
     add_ref( PARENTOF(PARENTOF(THISOBJ)) = new_parent );
   }
+
+#ifdef _REENTRANT
+  if(d_flag)
+  {
+      CHECK_INTERPRETER_LOCK();
+      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
+        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+  }
+#endif
 
   SET_ONERROR(err, free_bind_block, &bind);
 
@@ -1547,6 +1603,15 @@ static void f_big_query_create(INT32 args)
 #endif
   THREADS_DISALLOW();
 
+#ifdef _REENTRANT
+  if(d_flag)
+  {
+      CHECK_INTERPRETER_LOCK();
+      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
+        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+  }
+#endif
+
   if(rc)
     ora_error_handler(dbcon->error_handle, rc, 0);
 
@@ -1582,6 +1647,16 @@ static void f_big_query_create(INT32 args)
 
   free_bind_block(&bind);
   UNSET_ONERROR(err);
+
+#ifdef _REENTRANT
+  if(d_flag)
+  {
+      CHECK_INTERPRETER_LOCK();
+      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
+        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+  }
+#endif
+
 }
 
 static void dbdate_create(INT32 args)
