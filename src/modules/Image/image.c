@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.106 1998/07/04 16:00:11 mast Exp $ */
+/* $Id: image.c,v 1.107 1998/11/03 08:37:49 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.106 1998/07/04 16:00:11 mast Exp $
+**!	$Id: image.c,v 1.107 1998/11/03 08:37:49 per Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.106 1998/07/04 16:00:11 mast Exp $");
+RCSID("$Id: image.c,v 1.107 1998/11/03 08:37:49 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3480,7 +3480,8 @@ extern void exit_image_png(void);
 static struct pike_string 
    *magic_JPEG, 
    *magic_XFace, 
-   *magic_PNG;
+   *magic_PNG,
+   *magic_TTF;
 
 static struct object *png_object=NULL;
 
@@ -3514,7 +3515,16 @@ static void image_index_magic(INT32 args)
 	 png_object=init_image_png();
       ref_push_object(png_object);
       return;
+   }   
+   else if (sp[-1].u.string==magic_TTF)
+   {
+      pop_stack();
+      push_string(make_shared_string("_Image_TTF"));
+      push_int(0);
+      SAFE_APPLY_MASTER("resolv",2);
+      return;
    }
+
    ref_push_object(THISOBJ);
    tmp=sp[-1], sp[-1]=sp[-2], sp[-2]=tmp;
    f_arrow(2);
@@ -3525,6 +3535,7 @@ void pike_module_init(void)
    int i;
 
    magic_JPEG=make_shared_string("JPEG");
+   magic_TTF=make_shared_string("TTF");
    magic_PNG=make_shared_string("PNG");
    magic_XFace=make_shared_string("XFace");
 
