@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.117 2000/05/07 00:39:52 hubbe Exp $
+ * $Id: master.pike.in,v 1.118 2000/05/11 04:30:25 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -588,6 +588,7 @@ object cast_to_object(string oname, string current_file)
 
 class dirnode
 {
+  constant is_resolv_dirnode = 1;
   string dirname;
   mixed module=module_checker();
   mapping(string:mixed) cache=([]);
@@ -710,6 +711,7 @@ static class ZERO_TYPE {};
 
 class joinnode
 {
+  constant is_resolv_joinnode = 1;
   array(object|mapping) joined_modules;
   mapping(string:mixed) cache=([]);
 
@@ -727,7 +729,8 @@ class joinnode
       if (!zero_type(ret = o[index])) 
       {
 	if (objectp(ret = o[index]) &&
-	    (< joinnode, dirnode >)[object_program(ret)]) 
+	    (object_program(ret)->is_resolv_dirnode ||
+	     object_program(ret)->is_resolv_joinnode))
         {
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
@@ -845,7 +848,8 @@ mixed resolv_base(string identifier, string|void current_file)
     string file=combine_path(path,identifier);
     if(mixed ret=findmodule(file)) {
       if ((objectp(ret)) &&
-	  (< joinnode, dirnode >)[object_program(ret)]) {
+	  (object_program(ret)->is_resolv_dirnode ||
+	   object_program(ret)->is_resolv_joinnode)) {
 	if (mixed new_ret = ret->_module_value) {
 	  ret = new_ret;
 	}
