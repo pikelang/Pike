@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.55 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: fdlib.c,v 1.56 2002/10/15 17:51:05 mast Exp $
 */
 
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.55 2002/10/11 01:39:31 nilsson Exp $");
+RCSID("$Id: fdlib.c,v 1.56 2002/10/15 17:51:05 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -129,6 +129,190 @@ void fd_exit()
   mt_destroy(&fd_mutex);
 }
 
+/* The following replaces stat(2) in MS libc since it contains a bug
+ * which causes the timestamps for a file to be offset with one hour
+ * whenever a timestamp which has been set during DST is read during
+ * normal time, or vice versa. */
+
+#define ISSEPARATOR(a)  ((a) == '\\' || (a) == '/')
+
+/*
+ * IsUncRoot - returns TRUE if the argument is a UNC name specifying a
+ *             root share.  That is, if it is of the form
+ *             \\server\share\.  This routine will also return true if
+ *             the argument is of the form \\server\share (no trailing
+ *             slash).
+ *
+ *             Forward slashes ('/') may be used instead of
+ *             backslashes ('\').
+ */
+
+static int IsUncRoot(char *path)
+{
+  /* root UNC names start with 2 slashes */
+  if ( strlen(path) >= 5 &&     /* minimum string is "//x/y" */
+       ISSEPARATOR(path[0]) &&
+       ISSEPARATOR(path[1]) )
+  {
+    char * p = path + 2 ;
+    
+    /* find the slash between the server name and share name */
+    while ( *++p )
+      if ( ISSEPARATOR(*p) )
+        break ;
+    
+    if ( *p && p[1] )
+    {
+      /* is there a further slash? */
+      while ( *++p )
+        if ( ISSEPARATOR(*p) )
+          break ;
+      
+      /* final slash (if any) */
+      if ( !*p || !p[1])
+        return 1;
+    }
+  }
+  
+  return 0 ;
+}
+
+static int low_stat (char *file, struct stat *buf)
+{
+  char            *path;
+  int              drive;       /* A: = 1, B: = 2, ... */
+  char             pathbuf[ _MAX_PATH ];
+  HANDLE           hFind;
+  WIN32_FIND_DATA  findbuf;
+
+  /* don't allow wildcards */
+  if (strpbrk(file, "?*"))
+  {
+    errno = ENOENT;
+    return(-1);
+  }
+  
+  /* get disk from file */
+  if (file[1] == ':')
+  {
+    if ( *file && !file[2] )
+    {
+      /* return an error if file is just drive letter and colon */
+      errno = ENOENT;           
+      return( -1 );
+    }
+    drive = toupper(*file) - 'A' + 1;
+  }
+  else
+    drive = _getdrive();
+  
+  /* get info for file */
+  hFind = FindFirstFile(file, &findbuf);
+  if ( hFind == INVALID_HANDLE_VALUE )
+  {
+    
+    if ( !(strpbrk(file, "./\\") &&
+           (path = _fullpath( pathbuf, file, _MAX_PATH )) &&
+           /* root dir. ('C:\') or UNC root dir. ('\\server\share\') */
+           ((strlen( path ) == 3) || IsUncRoot(path)) &&
+           (GetDriveType( path ) > 1) ) )
+    {
+      errno = ENOENT;
+      return( -1 );
+    }
+    
+    /* Root directories ( C:\ and \\server\share\) are faked */
+    findbuf.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+    findbuf.nFileSizeHigh = 0;
+    findbuf.nFileSizeLow = 0;
+    findbuf.cFileName[0] = '\0';
+    
+    buf->st_mtime = __loctotime_t(1980,1,1,0,0,0, -1);
+    buf->st_atime = buf->st_mtime;
+    buf->st_ctime = buf->st_mtime;
+  }
+  else
+  {
+    SYSTEMTIME SystemTime;
+    SYSTEMTIME UtcSTime;
+    
+    if ( !FileTimeToSystemTime( &findbuf.ftLastWriteTime,
+                                &UtcSTime )                    ||
+         !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
+                                          &SystemTime) )
+    {
+      _dosmaperr( GetLastError() );
+      FindClose( hFind );
+      return( -1 );
+    }
+
+    buf->st_mtime = __loctotime_t( SystemTime.wYear,
+                                   SystemTime.wMonth,
+                                   SystemTime.wDay,
+                                   SystemTime.wHour,
+                                   SystemTime.wMinute,
+                                   SystemTime.wSecond,
+                                   -1 );
+    
+    if ( findbuf.ftLastAccessTime.dwLowDateTime ||
+         findbuf.ftLastAccessTime.dwHighDateTime )
+    {
+      if ( !FileTimeToSystemTime( &findbuf.ftLastAccessTime,
+                                  &UtcSTime )                    ||
+           !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
+                                            &SystemTime) )
+      {
+        _dosmaperr( GetLastError() );
+        FindClose( hFind );
+        return( -1 );
+      }
+      
+      buf->st_atime = __loctotime_t( SystemTime.wYear,
+                                     SystemTime.wMonth,
+                                     SystemTime.wDay,
+                                     SystemTime.wHour,
+                                     SystemTime.wMinute,
+                                     SystemTime.wSecond,
+                                     -1 );
+    } else
+      buf->st_atime = buf->st_mtime ;
+    
+    if ( findbuf.ftCreationTime.dwLowDateTime ||
+         findbuf.ftCreationTime.dwHighDateTime )
+    {
+      if ( !FileTimeToSystemTime( &findbuf.ftCreationTime,
+                                  &UtcSTime )                    ||
+           !SystemTimeToTzSpecificLocalTime(NULL, &UtcSTime,
+                                            &SystemTime) )
+      {
+        _dosmaperr( GetLastError() );
+        FindClose( hFind );
+        return( -1 );
+      }
+      
+      buf->st_ctime = __loctotime_t( SystemTime.wYear,
+                                     SystemTime.wMonth,
+                                     SystemTime.wDay,
+                                     SystemTime.wHour,
+                                     SystemTime.wMinute,
+                                     SystemTime.wSecond,
+                                     -1 );
+    } else
+      buf->st_ctime = buf->st_mtime ;
+    
+    FindClose(hFind);
+  }
+  
+  buf->st_mode = __dtoxmode(findbuf.dwFileAttributes, file);
+  buf->st_nlink = 1;
+  buf->st_size = findbuf.nFileSizeLow;
+  
+  buf->st_uid = buf->st_gid = buf->st_ino = 0; /* unused entries */
+  buf->st_rdev = buf->st_dev = (_dev_t)(drive - 1); /* A=0, B=1, ... */
+  
+  return(0);
+}
+
 int debug_fd_stat(const char *file, struct stat *buf)
 {
   ptrdiff_t l = strlen(file);
@@ -148,7 +332,7 @@ int debug_fd_stat(const char *file, struct stat *buf)
     fname[l]=0;
     file=fname;
   }
-  return stat(file, buf);
+  return low_stat(file, buf);
 }
 
 PMOD_EXPORT FD debug_fd_open(const char *file, int open_mode, int create_mode)
