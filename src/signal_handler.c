@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.51 1998/04/21 16:09:42 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.52 1998/04/21 16:27:37 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -676,8 +676,8 @@ static void free_perishables(struct perishables *storage)
  *
  * only on UNIX:
  *
- *   uid		int
- *   gid		int
+ *   uid		int|string
+ *   gid		int|string
  *   nice		int
  *   noinitgroups	int
  *   setgroups		array(int|string)
@@ -863,7 +863,7 @@ void f_create_process(INT32 args)
 #ifdef HAVE_GETEUID
     wanted_uid=geteuid();
 #else
-    wanted_uid=getgid();
+    wanted_uid=getuid();
 #endif
 
 #ifdef HAVE_GETEGID
