@@ -8,6 +8,7 @@
 #include <sane.h>
 #endif
 #endif
+#include <stdio.h>
 
 #include "global.h"
 #include "stralloc.h"
@@ -21,6 +22,7 @@
 #include "error.h"
 #include "mapping.h"
 #include "multiset.h"
+#include "backend.h"
 #include "operators.h"
 #include "module_support.h"
 #include "builtin_functions.h"
@@ -353,6 +355,8 @@ static void assert_image_program()
     image_program = program_from_svalue( sp - 1  );
     sp--;/* Do not free image program.. */
   }
+  if( !image_program )
+    error("No Image.Image?!\n");
 }
 
 static void f_scanner_simple_scan( INT32 args )
@@ -468,6 +472,141 @@ static void f_scanner_row_scan( INT32 args )
   push_int( 0 );
 }
 
+struct row_scan_struct
+{
+  SANE_Handle h;
+  SANE_Parameters p;
+  rgb_group *r;
+  struct object *o;
+  struct object *t;
+  int current_row;
+  char *buffer;
+  int bufferpos, nonblocking;
+  struct svalue callback;
+};
+
+static void nonblocking_row_scan_callback( int fd, void *_c )
+{
+  struct row_scan_struct *c = (struct row_scan_struct *)_c;
+  int done = 0;
+  int nbytes;
+
+  do
+  {
+    int ec;
+    THREADS_ALLOW();
+    if( (ec = sane_read( c->h, c->buffer+c->bufferpos,
+                         c->p.bytes_per_line-c->bufferpos, &nbytes) ) )
+    {
+      done = 1;
+    }
+    else
+    {
+      c->bufferpos += nbytes;
+      if( c->bufferpos == c->p.bytes_per_line )
+      {
+        int i;
+        switch( c->p.format )
+        {
+         case SANE_FRAME_GRAY:
+           for( i=0; i<c->p.bytes_per_line; i++ )
+           {
+             c->r[i].r = c->buffer[i];
+             c->r[i].g = c->buffer[i];
+             c->r[i].b = c->buffer[i];
+           }
+           break;
+         case SANE_FRAME_RGB:
+           MEMCPY( (char *)c->r, c->buffer, c->p.bytes_per_line );
+           break;
+         default:break;
+        }
+        c->bufferpos=0;
+      }
+    }
+    THREADS_DISALLOW();
+
+    if( !nbytes || c->bufferpos )
+      return; /* await more data */
+
+    c->current_row++;
+
+    if( c->current_row == c->p.lines )
+      done = 1;
+
+    ref_push_object( c->o );
+    push_int( c->current_row-1 );
+    ref_push_object( c->t );
+    push_int( done );
+    apply_svalue( &c->callback, 4 );
+    pop_stack();
+  } while( c->nonblocking && !done );
+
+  if( done )
+  {
+    set_read_callback( fd, 0, 0 );
+    free_object( c->o );
+    free_object( c->t );
+    free_svalue( &c->callback );
+    free( c->buffer );
+    free( c );
+  }
+}
+
+static void f_scanner_nonblocking_row_scan( INT32 args )
+{
+  SANE_Parameters p;
+  SANE_Handle h = THIS->h;
+  struct svalue *s;
+  int fd;
+  struct row_scan_struct *rsp;
+
+  if( sane_start( THIS->h ) )               error("Start failed\n");
+  if( sane_get_parameters( THIS->h, &p ) )  error("Get parameters failed\n");
+  if( p.depth != 8 )  error("Sorry, only depth 8 supported right now.\n");
+
+  switch( p.format )
+  {
+   case SANE_FRAME_GRAY:
+   case SANE_FRAME_RGB:
+     break;
+   case SANE_FRAME_RED:
+   case SANE_FRAME_GREEN:
+   case SANE_FRAME_BLUE:
+     error("Composite frame mode not supported for row_scan\n");
+     break;
+  }
+
+  assert_image_program();
+
+  rsp = malloc( sizeof(struct row_scan_struct) );
+  push_int( p.pixels_per_line );
+  push_int( 1 );
+  rsp->o = clone_object( image_program, 2 );
+  rsp->t = fp->current_object;
+  fp->current_object->refs++;
+  rsp->r = ((struct image *)rsp->o->storage)->img;
+  rsp->h = THIS->h;
+  rsp->p = p;
+  rsp->buffer = malloc( p.bytes_per_line );
+  rsp->current_row = 0;
+  rsp->bufferpos = 0;
+  rsp->callback = sp[-1];
+  rsp->nonblocking = !sane_set_io_mode( THIS->h, 1 );
+  sp--;
+
+  if( sane_get_select_fd( THIS->h, &fd ) )
+  {
+    free_object( rsp->o );
+    free_object( rsp->t );
+    free( rsp->buffer );
+    free( rsp );
+    error("Failed to get select fd for scanning device!\n");
+  }
+  set_read_callback( fd, nonblocking_row_scan_callback, (void*)rsp );
+  push_int( 0 );
+}
+
 static void f_scanner_cancel_scan( INT32 args )
 {
   sane_cancel( THIS->h );
@@ -484,13 +623,18 @@ static void exit_scanner_struct( struct object *p )
     sane_close( THIS->h );
 }
 
-
-
 void pike_module_init()
 {
   struct program *p;
   add_function( "list_scanners", f_list_scanners,
                 "function(void:array(mapping))", 0 );
+
+  add_integer_constant( "FrameGray", SANE_FRAME_GRAY,0  );
+  add_integer_constant( "FrameRGB",  SANE_FRAME_RGB,0   );
+  add_integer_constant( "FrameRed",  SANE_FRAME_RED,0   );
+  add_integer_constant( "FrameGreen",SANE_FRAME_GREEN,0 );
+  add_integer_constant( "FrameBlue", SANE_FRAME_BLUE,0  );
+
 
   start_new_program();
   ADD_STORAGE( struct scanner );
@@ -507,6 +651,9 @@ void pike_module_init()
   add_function( "row_scan", f_scanner_row_scan,
                 "function(function(object,int,object:void):void)", 0 );
 
+  add_function( "nonblocking_row_scan", f_scanner_nonblocking_row_scan,
+                "function(function(object,int,object,int:void):void)", 0 );
+
   add_function( "cancel_scan", f_scanner_cancel_scan,
                 "function(void:object)", 0 );
 
@@ -514,7 +661,7 @@ void pike_module_init()
                 "function(void:mapping)", 0 );
 
   add_function( "create", f_scanner_create,
-                "function(string:void)", 0 );
+                "function(string:void)", ID_STATIC );
 
    set_init_callback(init_scanner_struct);
    set_exit_callback(exit_scanner_struct);
