@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.604 2002/08/20 12:47:48 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.605 2002/08/20 13:02:40 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -670,10 +670,11 @@ fi #if test "x$enable_binary" != "xno"
 #############################################################################
 
 # Restore the -O2 that the default AC_PROG_CC adds.
-AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE)
-if test "x$pike_cv_option_O2" != "xyes"; then
-  AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
-fi
+AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE, [
+  AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE, [
+    AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
+  ])
+])
 
 if test "$GCC" = "yes"; then
   if test "$cflags_is_set" = "no"; then
@@ -1521,7 +1522,6 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(+ESlit,plus_ESlit,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(+Odataprefetch,plus_Odataprefetch,OPTIMIZE)
     AC_SYS_COMPILER_FLAG(+Ofailsafe,plus_Ofailsafe,OPTIMIZE)
-    AC_SYS_COMPILER_FLAG(+O3,plus_O3,OPTIMIZE)
     # Ignore the following warnings if you enable +w1
     #   414 Optimization reduced to +O2 for compatibility with Debug.
     #   530 Casting from loose to strict alignment
@@ -5681,26 +5681,6 @@ case "x$LDSHARED $LDFLAGS" in
 esac
 fi
 
-#######################################################################
-# Since all $OPTIMIZE flags have to be automatically included in $CFLAGS
-# (because otherwise the tests will not be accurate) we have to remove all
-# OPTIMIZE flags from the regular CFLAGS...
-
-NEW_CFLAGS=
-for opt in ${CFLAGS-}
-do
-   case " $OPTIMIZE " in
-     *\ $opt\ *) ;;
-     *)
-       case "$opt" in
-         -O2|-pipe|-O) OPTIMIZE="${OPTIMIZE-} $opt" ;;
-          *)  NEW_CFLAGS="$NEW_CFLAGS $opt" ;;
-       esac
-     ;;
-   esac
-done
-CFLAGS="$NEW_CFLAGS"
-
 ##########################################################################
 
 case "x$pike_cv_sys_os" in
@@ -5725,6 +5705,26 @@ case "x$pike_cv_sys_os" in
     fi
   ;;
 esac
+
+#######################################################################
+# Since all $OPTIMIZE flags have to be automatically included in $CFLAGS
+# (because otherwise the tests will not be accurate) we have to remove all
+# OPTIMIZE flags from the regular CFLAGS...
+
+NEW_CFLAGS=
+for opt in ${CFLAGS-}
+do
+   case " $OPTIMIZE " in
+     *\ $opt\ *) ;;
+     *)
+       case "$opt" in
+         -O2|-pipe|-O) OPTIMIZE="${OPTIMIZE-} $opt" ;;
+          *)  NEW_CFLAGS="$NEW_CFLAGS $opt" ;;
+       esac
+     ;;
+   esac
+done
+CFLAGS="$NEW_CFLAGS"
 
 #############################################################################
 if test "x$with_copt" = xno ; then
