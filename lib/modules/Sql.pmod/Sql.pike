@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.68 2003/07/30 02:30:33 nilsson Exp $
+ * $Id: Sql.pike,v 1.69 2003/10/23 01:38:42 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -318,13 +318,14 @@ string|object compile_query(string q)
 }
 
 //! Handle sprintf-based quoted arguments
-private array(string|mapping(string|int:mixed)) handle_extraargs(string query, array(mixed) extraargs) {
+private array(string|mapping(string|int:mixed))
+  handle_extraargs(string query, array(mixed) extraargs) {
+
   array(mixed) args=allocate(sizeof(extraargs));
-  mixed s;
-  int j, a=0;
   mapping(string|int:mixed) b = 0;
-  for (j=0;j<sizeof(extraargs);j++) {
-    s=extraargs[j];
+
+  int a;
+  foreach(extraargs; int j; mixed s) {
     if (intp(s) || floatp(s)) {
       args[j]=s;
       continue;
@@ -337,6 +338,7 @@ private array(string|mapping(string|int:mixed)) handle_extraargs(string query, a
     }
     ERROR("Wrong type to query argument #"+(j+1)+"\n");
   }
+
   return ({sprintf(query,@args), b});
 }
 
@@ -377,25 +379,23 @@ array(mapping(string:mixed)) query(object|string q,
                                    mixed ... extraargs)
 {
   mapping(string|int:mixed) bindings=0;
-  if (extraargs && sizeof(extraargs)) {
-    if (mappingp(extraargs[0])) {
+  if (sizeof(extraargs)) {
+    if (mappingp(extraargs[0]))
       bindings=extraargs[0];
-    } else {
+    else
       [q,bindings]=handle_extraargs(q,extraargs);
-    }
   }
-  if (functionp(master_sql->query)) {
-    if (bindings) {
+
+  if (master_sql->query) {
+    if (bindings)
       return master_sql->query(q, bindings);
-    } else {
+    else
       return master_sql->query(q);
-    }
   }
-  if (bindings) {
+
+  if (bindings)
     return res_obj_to_array(master_sql->big_query(q, bindings));
-  } else {
-    return res_obj_to_array(master_sql->big_query(q));
-  }
+  return res_obj_to_array(master_sql->big_query(q));
 }
 
 //! Send an SQL query to the underlying SQL-server. The result is returned
@@ -408,25 +408,24 @@ int|object big_query(object|string q, mixed ... extraargs)
   object|array(mapping) pre_res;
   mapping(string|int:mixed) bindings=0;
 
-  if (extraargs && sizeof(extraargs)) {
-    if (mappingp(extraargs[0])) {
+  if (sizeof(extraargs)) {
+    if (mappingp(extraargs[0]))
       bindings=extraargs[0];
-    } else {
+    else
       [q,bindings]=handle_extraargs(q,extraargs);
-    }
   }
 
-  if (functionp(master_sql->big_query)) {
-    if (bindings) {
+  if (master_sql->big_query) {
+    if (bindings)
       pre_res = master_sql->big_query(q, bindings);
-    } else {
+    else
       pre_res = master_sql->big_query(q);
-    }
-  } else if (bindings) {
-    pre_res = master_sql->query(q, bindings);
-  } else {
-    pre_res = master_sql->query(q);
   }
+  else if (bindings)
+    pre_res = master_sql->query(q, bindings);
+  else
+    pre_res = master_sql->query(q);
+
   return pre_res && Sql.sql_result(pre_res);
 }
 
