@@ -27,6 +27,8 @@
 #include "types.h"
 #include "idea.h"
 
+#include <string.h>
+
 /*-------------------------------------------------------------*/
 
 #define low16(x)  ((x) & 0xffff)
@@ -109,7 +111,7 @@ idea_expand(unsigned INT16 *ctx,
   }
   for (i=0; j < IDEA_KEYLEN; j++) {
     i++;
-    ctx[i+7] = ctx[i & 7] << 9 | ctx[i+1 & 7] >> 7;
+    ctx[i+7] = ctx[i & 7] << 9 | ctx[(i+1) & 7] >> 7;
     ctx += i & 8;
     i &= 7;
   }
@@ -214,7 +216,6 @@ idea_crypt(unsigned INT8 *dest,
 	   const unsigned INT8 *src)
 {
   register unsigned INT16 x1, x2, x3, x4, s2, s3;
-  int i;
   
   /* Setup */
     
