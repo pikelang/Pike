@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.62 2001/06/19 23:59:33 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.63 2001/06/28 10:23:58 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -420,11 +420,16 @@ OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop")
 BREAK;
 
 OPCODE0(F_LTOSVAL, "lvalue to svalue")
+  dmalloc_touch_svalue(Pike_sp-2);
+  dmalloc_touch_svalue(Pike_sp-1);
   lvalue_to_svalue_no_free(Pike_sp, Pike_sp-2);
   Pike_sp++;
 BREAK;
 
 OPCODE0(F_LTOSVAL2, "ltosval2")
+  dmalloc_touch_svalue(Pike_sp-3);
+  dmalloc_touch_svalue(Pike_sp-2);
+  dmalloc_touch_svalue(Pike_sp-1);
   Pike_sp[0] = Pike_sp[-1];
   Pike_sp[-1].type = PIKE_T_INT;
   Pike_sp++;
@@ -487,7 +492,8 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop")
       /* Optimization for a rather common case. Makes it 30% faster. */
       Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
       assign_lvalue(Pike_sp-4,Pike_sp-1);
-      Pike_sp-=4;  /* known integers and a lvalue */
+      Pike_sp-=2;
+      pop_n_elems(2);
       goto add_and_pop_done;
     }
   }
