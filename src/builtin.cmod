@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.140 2003/08/20 11:55:49 grubba Exp $
+|| $Id: builtin.cmod,v 1.141 2003/08/26 16:12:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -250,6 +250,88 @@ PIKEFUN string int2hex(int|object x)
       n>>=4;
     }
   }
+  RETURN end_shared_string(s);
+}
+
+/*! @decl string string2hex(string data)
+ *! @appears String.string2hex
+ *!
+ *! Convert a string of binary data to a hexadecimal string.
+ *!
+ *! @seealso
+ *!   @[hex2string()]
+ */
+PIKEFUN string string2hex(string s)
+  errname String.string2hex;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  struct pike_string *hex;
+  INT32 i;
+
+  if (s->size_shift)
+    Pike_error("Bad argument 1 to string2hex(), expected 8-bit string.\n");
+
+  hex = begin_shared_string(2 * s->len);
+  
+  for (i=0; i<s->len; i++)
+    sprintf(hex->str + i*2, "%02x", s->str[i] & 0xff);
+
+  RETURN end_shared_string(hex);
+}
+
+/*! @decl string hex2string(string hex)
+ *! @appears String.hex2string
+ *!
+ *! Convert a string of hexadecimal digits to binary data.
+ *!
+ *! @seealso
+ *!   @[string2hex()]
+ */
+PIKEFUN string hex2string(string hex)
+  errname String.hex2string;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  struct pike_string *s;
+  INT32 i;
+
+  if(hex->len&1)
+    Pike_error("Can't have odd number of digits.\n");
+
+  s = begin_shared_string(hex->len/2);
+  for (i=0; i*2<hex->len; i++)
+  {
+    switch (hex->str[i*2])
+    {
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+      s->str[i] = (hex->str[i*2] - '0')<<4;
+      break;
+    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+      s->str[i] = (hex->str[i*2] + 10 - 'A')<<4;
+      break;
+    default:
+      free_string(end_shared_string(s));
+      Pike_error("hex2string(): Illegal character (0x%02x) in string\n",
+	    hex->str[i*2] & 0xff);
+    }
+    switch (hex->str[i*2+1])
+    {
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+      s->str[i] |= hex->str[i*2+1] - '0';
+      break;
+    case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+    case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+      s->str[i] |= (hex->str[i*2+1] + 10 - 'A') & 0x0f;
+      break;
+    default:
+      free_string(end_shared_string(s));
+      Pike_error("hex2string(): Illegal character (0x%02x) in string\n",
+	    hex->str[i*2+1] & 0xff);
+    }
+  }
+
   RETURN end_shared_string(s);
 }
 
