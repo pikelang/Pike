@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.154 2003/02/03 16:39:37 grubba Exp $
+|| $Id: svalue.c,v 1.155 2003/02/24 21:09:46 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.154 2003/02/03 16:39:37 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.155 2003/02/24 21:09:46 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -573,6 +573,8 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 	return 0;
       }
     } else {
+#if 0
+      /* We should never get a function svalue for a prototype. */
       struct identifier *i = ID_FROM_INT(s->u.object->prog, s->subtype);
       if (((i->identifier_flags & (IDENTIFIER_FUNCTION|IDENTIFIER_CONSTANT)) ==
 	   IDENTIFIER_PIKE_FUNCTION) &&
@@ -580,6 +582,7 @@ PMOD_EXPORT int svalue_is_true(const struct svalue *s)
 	/* Prototype. */
 	return 0;
       }
+#endif
     }
     return 1;
 
@@ -629,6 +632,8 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 	return 0;
       }
     } else {
+#if 0
+      /* We should never get a function svalue for a prototype. */
       struct identifier *i = ID_FROM_INT(s->u.object->prog, s->subtype);
       if (((i->identifier_flags & (IDENTIFIER_FUNCTION|IDENTIFIER_CONSTANT)) ==
 	   IDENTIFIER_PIKE_FUNCTION) &&
@@ -636,6 +641,7 @@ PMOD_EXPORT int safe_svalue_is_true(const struct svalue *s)
 	/* Prototype. */
 	return 0;
       }
+#endif
     }
     return 1;
 
