@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.19 1999/08/16 18:05:42 grubba Exp $ */
+/* $Id: bmp.c,v 1.20 2000/02/03 12:25:18 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.19 1999/08/16 18:05:42 grubba Exp $
+**!	$Id: bmp.c,v 1.20 2000/02/03 12:25:18 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.19 1999/08/16 18:05:42 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.20 2000/02/03 12:25:18 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -643,7 +643,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
       push_text("decode");
       f_index(2);
 
-      push_string(make_shared_binary_string(os+n,olen-n));
+      push_string(make_shared_binary_string((char *)os+n,olen-n));
 
       push_text("quant_tables");
 
@@ -675,7 +675,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 if ((4<<bpp)>len)
 	    error("Image.BMP.decode: unexpected EOF in palette\n");
 
-	 push_string(make_shared_binary_string(s,(4<<bpp)));
+	 push_string(make_shared_binary_string((char *)s,(4<<bpp)));
 	 push_int(2);
 	 push_object(o=clone_object(image_colortable_program,2));
 	 nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
@@ -688,7 +688,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 if ((3<<bpp)>len)
 	    error("Image.BMP.decode: unexpected EOF in palette\n");
 
-	 push_string(make_shared_binary_string(s,(3<<bpp)));
+	 push_string(make_shared_binary_string((char *)s,(3<<bpp)));
 	 push_int(1);
 	 push_object(o=clone_object(image_colortable_program,2));
 	 nct=(struct neo_colortable*)get_storage(o,image_colortable_program);
