@@ -398,6 +398,9 @@ static private class Extractor {
           doc->xml = parse->doc((["class" : "_class",
                                   "module" : "_module"])[c->objtype]);
           filedoc = doc;
+          // The @appears and @belongs directives regarded _this_file_
+          c->appears = appears;
+          c->belongs = belongs;
           doc = 0;
         }
 
