@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.247 2003/03/06 18:12:33 grubba Exp $
+|| $Id: signal_handler.c,v 1.248 2003/03/13 22:12:59 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.247 2003/03/06 18:12:33 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.248 2003/03/13 22:12:59 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1326,7 +1326,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
  *!       The process was killed by a signal.
  *!   @endint
  *!
- *! @seelalso
+ *! @seealso
  *!   @[TraceProcess()->wait()]
  */
 static void f_pid_status_wait(INT32 args)
