@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.7 1999/04/23 01:20:38 mirar Exp $
+**!	$Id: layers.c,v 1.8 1999/04/23 15:50:04 mirar Exp $
 **! class Layer
 */
 
@@ -10,7 +10,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.7 1999/04/23 01:20:38 mirar Exp $");
+RCSID("$Id: layers.c,v 1.8 1999/04/23 15:50:04 mirar Exp $");
 
 #include "config.h"
 
@@ -100,6 +100,12 @@ LMFUNC(lm_modulo);
 LMFUNC(lm_invsubtract);
 LMFUNC(lm_invdivide);
 LMFUNC(lm_invmodulo);
+LMFUNC(lm_difference);
+LMFUNC(lm_min);
+LMFUNC(lm_max);
+LMFUNC(lm_bitwise_and);
+LMFUNC(lm_bitwise_or);
+LMFUNC(lm_bitwise_xor);
 
 LMFUNC(lm_dissolve);
 
@@ -115,8 +121,6 @@ LMFUNC(lm_value);
 LMFUNC(lm_color); 
 
 LMFUNC(lm_behind);
-LMFUNC(lm_screen);
-LMFUNC(lm_overlay);
 LMFUNC(lm_difference);
 LMFUNC(lm_darken);
 LMFUNC(lm_lighten);
@@ -143,8 +147,12 @@ struct layer_mode_desc
    {"invsubtract",   lm_invsubtract,   1, NULL            }, 
    {"invdivide",     lm_invdivide,     1, NULL            }, 
    {"invmodulo",     lm_invmodulo,     1, NULL            }, 
-
-   {"dissolve",      lm_dissolve,      1, NULL            }, 
+   {"difference",    lm_difference,    1, NULL            }, 
+   {"max",           lm_max,           1, NULL            }, 
+   {"min",           lm_min,           1, NULL            }, 
+   {"bitwize_and",   lm_bitwise_and,   1, NULL            }, 
+   {"bitwize_or",    lm_bitwise_or,    1, NULL            }, 
+   {"bitwize_xor",   lm_bitwise_xor,   1, NULL            }, 
 
    {"replace",       lm_replace,       1, NULL            },
    {"red",           lm_red,           1, NULL            },
@@ -156,15 +164,16 @@ struct layer_mode_desc
    {"saturation",    lm_saturation,    1, NULL            },
    {"value",         lm_value,         1, NULL            },
    {"color",         lm_color,         1, NULL            }, /* h+s */
-   
-/* {"behind",        lm_behind,        1, NULL            }, */
+
+   {"darken",        lm_darken,        1, NULL            }, 
+   {"lighten",       lm_lighten,       1, NULL            }, 
+
+   {"dissolve",      lm_dissolve,      1, NULL            }, 
+   {"behind",        lm_behind,        1, NULL            }, 
+   {"erase",         lm_erase,         1, NULL            }, 
+
 /* {"screen",        lm_screen,        1, NULL            }, */
 /* {"overlay",       lm_overlay,       1, NULL            }, */
-/* {"difference",    lm_difference,    1, NULL            }, */
-/* {"darken",        lm_darken,        1, NULL            }, */
-/* {"lighten",       lm_lighten,       1, NULL            }, */
-/* {"erase",         lm_erase,         1, NULL            }, */
-/* {"replace",       lm_replace,       1, NULL            }, */
 } ;
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
@@ -179,46 +188,58 @@ Xd=målbild
 normal 		Pd=(Pl*Al+Ps*(1-Al)*As)/(Al+(1-Al)*As)
 		Ad=(Al+(1-Al)*As)
 
-add             Pd=Pl*Al+Ps*As
-		Ad=(Al+(1-Al)*As)
+operand layers: 
+   (Ad=(Al+(1-Al)*As))
 
-subtract        Pd=Ps-Pl*Al
-		Ad=(Al+(1-Al)*As)
-
+add             Pd=Pl+Ps
+subtract        Pd=Ps-Pl
 multiply        Pd=Ps*Pl
-		Ad=(Al+(1-Al)*As)
-
 divide          Pd=Ps/Pl
-		Ad=(Al+(1-Al)*As)
-
 invmodulo       Pd=Ps%Pl (measured in color values)
-		Ad=(Al+(1-Al)*As)
-
 invsubtract     Pd=Pl*Al-Ps
-		Ad=(Al+(1-Al)*As)
-
 invdivide       Pd=Pl/Ps
-		Ad=(Al+(1-Al)*As)
-
 invmodulo       Pd=Pl%Ps (measured in color values)
-		Ad=(Al+(1-Al)*As)
+difference      Pd=abs(Ps-Pl)
+min             Pd=min(Ps,Pl)
+max             Pd=max(Ps,Pl)
+bitwise_and     Pd=Ps&Pl
+bitwise_or      Pd=Ps|Pl
+bitwise_xor     Pd=Ps^Pl
+
+
+replace channel layers: 
+    (Ad=As)
+replace		Pd=(Pl*Al+Ps*(1-Al)*As)/(Al+(1-Al)*As)
+red             Pd=Ps,Rd=(Rl*Al+Rs*(1-Al)*As)/(Al+(1-Al)*As)
+green           Pd=Ps,Gd=(Gl*Al+Gs*(1-Al)*As)/(Al+(1-Al)*As)
+blue            Pd=Ps,Bd=(Bl*Al+Bs*(1-Al)*As)/(Al+(1-Al)*As)
+
+replace_hsv     same as replace, but r,g,b alpha is operating on h,s,v
+hue             Pd=Ps,Hd=(Hl*Al+Hs*(1-Al)*As)/(Al+(1-Al)*As)
+saturation      Pd=Ps,Sd=(Sl*Al+Ss*(1-Al)*As)/(Al+(1-Al)*As)
+value           Pd=Ps,Vd=(Vl*Al+Vs*(1-Al)*As)/(Al+(1-Al)*As)
+color           Vd=Vs,HSd=(HSl*Al+HSs*(1-Al)*As)/(Al+(1-Al)*As)
+
+darken          Pd=Ps,Vd=min(Vs,Vl)
+lighten         Pd=Ps,Vd=max(Vs,Vl)
+
+
+special layers:
 
 dissolve        i=round(random(Al)) typ
                 Pd=Al*i+As*(1-i)
 		Ad=i+As
 
-behind          
+erase           Pd=Ps
+                Ad=As*(1-Al)
+
+behind          Pd=(Ps*As+Pl*(1-As)*Al)/(As+(1-As)*Al)
+		Ad=(As+(1-As)*Al)
+		note: alpha value connects to layer below,
+		tuning how "much" behind the image is placed
+
 screen          
 overlay         
-difference      
-darken          
-lighten         
-hue             
-saturation      
-color           
-value           
-erase           
-replace         
 
 */
 
@@ -281,43 +302,44 @@ replace
 
 #define F2C(Z) ((COLORTYPE)(COLORMAX*(Z)))
 
-#define ALPHA_ADD(S,L,D,SA,LA,DA,C)					\
-	    if (!LA->C) d->C=S->C,DA->C=SA->C;				\
-	    else if (!SA->C) D->C=l->C,DA->C=LA->C;			\
-	    else if (LA->C==COLORMAX) D->C=l->C,DA->C=LA->C;		\
-	    else							\
-	       D->C=COMBINE_ALPHA(S->C,l->C,SA->C,LA->C),		\
-		  DA->C=COMBINE_ALPHA_SUM(SA->C,LA->C);
+#define ALPHA_ADD(S,L,D,SA,LA,DA,C)					 \
+	    if (!(LA)->C) (D)->C=(S)->C,(DA)->C=(SA)->C;		 \
+	    else if (!(SA)->C) (D)->C=(L)->C,(DA)->C=(LA)->C;		 \
+	    else if ((LA)->C==COLORMAX) (D)->C=(L)->C,(DA)->C=(LA)->C; \
+	    else							 \
+	       (D)->C=COMBINE_ALPHA((S)->C,(L)->C,(SA)->C,(LA)->C),	 \
+		  (DA)->C=COMBINE_ALPHA_SUM((SA)->C,(LA)->C);
 
-#define ALPHA_ADD_V_NOLA(L,S,D,SA,DA,V,C)				\
-            do {							\
-               if (!SA->C) D->C=l->C,DA->C=0;				\
-               else							\
-               {							\
-                 if (SA->C==COLORMAX)					\
-		 	D->C=COMBINE_ALPHA_V(S->C,l->C,COLORMAX,255,V);	\
-  	         else D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,255,V);	\
-     	         DA->C=COMBINE_ALPHA_SUM_V(SA->C,255,V);		\
-               }							\
+#define ALPHA_ADD_V_NOLA(L,S,D,SA,DA,V,C)		  \
+            do {							  \
+               if (!(SA)->C) (D)->C=(L)->C,(DA)->C=0;			  \
+               else							  \
+               {							  \
+                 if ((SA)->C==COLORMAX)					  \
+		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,COLORMAX,255,V); \
+  	         else 							  \
+                  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,255,V);	  \
+     	         (DA)->C=COMBINE_ALPHA_SUM_V((SA)->C,255,V);		  \
+               }							  \
 	    } while(0)
 
-#define ALPHA_ADD_V(L,S,D,LA,SA,DA,V,C) 				\
-            do { 							\
-	       if (!LA->C) 						\
-	       {							\
-		  D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,0,V); 		\
-		  DA->C=COMBINE_ALPHA_SUM_V(0,SA->C,V);  		\
-	       }							\
-	       else if (!SA->C) 					\
-	       {							\
-		  D->C=COMBINE_ALPHA_V(S->C,l->C,0,LA->C,V); 		\
-		  DA->C=COMBINE_ALPHA_SUM_V(LA->C,0,V);  		\
-	       }							\
-	       else 							\
-	       {							\
-		  D->C=COMBINE_ALPHA_V(S->C,l->C,SA->C,LA->C,V); 	\
-		  DA->C=COMBINE_ALPHA_SUM_V(LA->C,SA->C,V);  		\
-	       }							\
+#define ALPHA_ADD_V(L,S,D,LA,SA,DA,V,C)			   \
+            do {							   \
+	       if (!(LA)->C)						   \
+	       {							   \
+		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,0,V);	   \
+		  (DA)->C=COMBINE_ALPHA_SUM_V(0,(SA)->C,V);		   \
+	       }							   \
+	       else if (!(SA)->C)					   \
+	       {							   \
+		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,0,(LA)->C,V);	   \
+		  (DA)->C=COMBINE_ALPHA_SUM_V((LA)->C,0,V);		   \
+	       }							   \
+	       else							   \
+	       {							   \
+		  (D)->C=COMBINE_ALPHA_V((S)->C,(L)->C,(SA)->C,(LA)->C,V); \
+		  (DA)->C=COMBINE_ALPHA_SUM_V((LA)->C,(SA)->C,V);	   \
+	       }							   \
 	    } while (0) 
 
 
@@ -812,6 +834,11 @@ static void image_layer_fill_alpha(INT32 args)
 **! method int xoffset()
 **! method int yoffset()
 **!	Set/query layer offset.
+**!
+**! method int xsize()
+**! method int ysize()
+**!	Query layer offset. This is the same as layer
+**!	image/alpha image size.
 */
 
 static void image_layer_set_offset(INT32 args)
@@ -832,6 +859,18 @@ static void image_layer_yoffset(INT32 args)
 {
    pop_n_elems(args);
    push_int(THIS->yoffs);
+}
+
+static void image_layer_xsize(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->xsize);
+}
+
+static void image_layer_ysize(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(THIS->ysize);
 }
 
 /*
@@ -1175,6 +1214,54 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_TRUNC
 #undef L_OPER
 
+#define LM_FUNC lm_difference
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) abs((A)-(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_max
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) MAXIMUM((A),(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_min
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) MINIMUM((A),(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_bitwise_and
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) ((A)&(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_bitwise_or
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) ((A)|(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_bitwise_xor
+#define L_TRUNC(X) ((COLORTYPE)(X))
+#define L_OPER(A,B) ((A)^(B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
 /* channels from template */
 
 /* replace rgb by alpha channel */
@@ -1298,7 +1385,6 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
       dv=lv*(V)*C2F((A).b)+sv*(1-(V)*C2F((A).b));			\
       hsv_to_rgb(sh,ss,dv,&(D));					\
    } while (0)
-
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
@@ -1317,10 +1403,42 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
       ds=ls*(V)*C2F((A).g)+ss*(1-(V)*C2F((A).g));			\
       hsv_to_rgb(dh,ds,sv,&(D));					\
    } while (0)
-
 #include "layer_channel.h"
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
+
+/* lighten: max v */
+
+#define LM_FUNC lm_lighten
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      hsv_to_rgb(sh,ss,MAXIMUM(sv,lv),&(D));				\
+   } while (0)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
+/* darken: min v */
+
+#define LM_FUNC lm_darken
+#define L_CHANNEL_DO_V(S,L,D,A,V)					\
+   do {									\
+      double lh,ls,lv;							\
+      double sh,ss,sv;							\
+      double dh,ds,dv;							\
+      rgb_to_hsv((S),&sh,&ss,&sv);					\
+      rgb_to_hsv((L),&lh,&ls,&lv);					\
+      hsv_to_rgb(sh,ss,MINIMUM(sv,lv),&(D));				\
+   } while (0)
+#include "layer_channel.h"
+#undef L_CHANNEL_DO_V
+#undef LM_FUNC
+
 
 #undef L_CHANNEL_DO
 
@@ -1380,6 +1498,115 @@ static void lm_dissolve(rgb_group *s,rgb_group *l,rgb_group *d,
       }
    }
 }
+
+static void lm_behind(rgb_group *s,rgb_group *l,rgb_group *d,
+		      rgb_group *sa,rgb_group *la,rgb_group *da,
+		      int len,double alpha)
+{
+   /* la may be NULL, no other */
+
+   if (alpha==0.0) /* optimized */
+   {
+      MEMCPY(d,s,sizeof(rgb_group)*len);
+      MEMCPY(da,sa,sizeof(rgb_group)*len);
+      return; 
+   }
+   else if (alpha==1.0)
+      while (len--)
+      {
+	 if (sa->r==COLORMAX && sa->g==COLORMAX && sa->b==COLORMAX)
+	 {
+	    *d=*s;
+	    *da=*sa;
+	 }
+	 else if (sa->r==0 && sa->g==0 && sa->b==0)
+	 {
+	    *d=*l;
+	    if (la) *da=*la; else *da=white;
+	 }
+	 else if (la)
+	 {
+	    ALPHA_ADD(l,s,d,la,sa,da,r);
+	    ALPHA_ADD(l,s,d,la,sa,da,g);
+	    ALPHA_ADD(l,s,d,la,sa,da,b);
+	 }
+	 else 
+	 {
+	    ALPHA_ADD(l,s,d,(&white),sa,da,r);
+	    ALPHA_ADD(l,s,d,(&white),sa,da,g);
+	    ALPHA_ADD(l,s,d,(&white),sa,da,b);
+	 }
+	 l++; s++; sa++; d++; da++;
+	 if (la) la++; 
+      }
+   else
+      while (len--)
+      {
+	 if (sa->r==COLORMAX && sa->g==COLORMAX && sa->b==COLORMAX)
+	 {
+	    *d=*s;
+	    *da=*sa;
+	 }
+	 else if (sa->r==0 && sa->g==0 && sa->b==0)
+	 {
+	    *d=*l;
+	    if (la) *da=*la; else *da=white;
+	 }
+	 else if (la)
+	 {
+	    ALPHA_ADD_V(l,s,d,la,sa,da,alpha,r);
+	    ALPHA_ADD_V(l,s,d,la,sa,da,alpha,g);
+	    ALPHA_ADD_V(l,s,d,la,sa,da,alpha,b);
+	 }
+	 else 
+	 {
+	    ALPHA_ADD_V(l,s,d,(&white),sa,da,alpha,r);
+	    ALPHA_ADD_V(l,s,d,(&white),sa,da,alpha,g);
+	    ALPHA_ADD_V(l,s,d,(&white),sa,da,alpha,b);
+	 }
+	 l++; s++; sa++; d++; da++;
+	 if (la) la++; 
+      }
+}
+
+static void lm_erase(rgb_group *s,rgb_group *l,rgb_group *d,
+		     rgb_group *sa,rgb_group *la,rgb_group *da,
+		     int len,double alpha)
+{
+   /* la may be NULL, no other */
+
+   MEMCPY(d,s,sizeof(rgb_group)*len);
+
+   if (alpha==1.0)
+      if (!la) /* full opaque */
+	 smear_color(da,black,len);
+      else
+	 while (len--)
+	 {
+	    da->r=CCUT(sa->r*(int)(COLORMAX-la->r));
+	    da->g=CCUT(sa->g*(int)(COLORMAX-la->g));
+	    da->b=CCUT(sa->b*(int)(COLORMAX-la->b));
+
+	    la++; sa++; da++;
+	 }
+   else
+      if (!la) /* full opaque */
+      {
+	 rgb_group a;
+	 a.r=a.g=a.b=COLORMAX-(COLORTYPE)(alpha*COLORMAX);
+	 smear_color(da,a,len);
+      }
+      else
+	 while (len--)
+	 {
+	    da->r=CCUT(sa->r*(int)(COLORMAX-alpha*la->r));
+	    da->g=CCUT(sa->g*(int)(COLORMAX-alpha*la->g));
+	    da->b=CCUT(sa->b*(int)(COLORMAX-alpha*la->b));
+
+	    la++; sa++; da++;
+	 }
+}
+
 
 /*** the add-layer function ***************************/
 
@@ -1869,6 +2096,9 @@ void init_image_layers(void)
 
    ADD_FUNCTION("available_modes",image_layer_available_modes,
 		tFunc(,tArr(tStr)),0);
+
+   ADD_FUNCTION("xsize",image_layer_xsize,tFunc(,tInt),0);
+   ADD_FUNCTION("ysize",image_layer_ysize,tFunc(,tInt),0);
 
    ADD_FUNCTION("xoffset",image_layer_xoffset,tFunc(,tInt),0);
    ADD_FUNCTION("yoffset",image_layer_yoffset,tFunc(,tInt),0);
