@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.224 1998/07/29 00:56:43 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.225 1998/08/05 22:45:44 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -185,7 +185,7 @@ fi
 ])
 AC_MSG_RESULT($pike_cv_sys_os)
 
-LD='$(CC)'
+LD='$(CC) $(CFLAGS)'
 
 case "$pike_cv_sys_os" in
   SCO*)
@@ -262,12 +262,18 @@ WARN=""
 OPTIMIZE=""
 
 if test $cflags_is_set = no; then
+  if test "x$with_cdebug" = "xno" ; then
+    CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @ @g'`
+  else
+    :
+  fi  
+
+
  if test "x${GCC-}" = xyes ; then
   WARN="-W -Wall -Wpointer-arith -Wno-unused"
 
   if test "x$with_cdebug" = "xno" ; then
     AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
-    CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @ @g'`
   else
     :
   fi  
