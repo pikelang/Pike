@@ -1166,6 +1166,8 @@ void do_install()
 		   combine_path(exec_prefix, dll_name));
 #endif
     install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),combine_path(exec_prefix,"hilfe"));
+    install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
+		 pike+".syms");
     string master=combine_path(vars->LIBDIR_SRC,"master.pike.in");
     
     if(export)
