@@ -54,6 +54,12 @@ testfont binary
 /src/modules/_Crypto/idea.pike foreign_ident
 /src/modules/_Crypto/include/des.h foreign_ident
 /src/modules/_Crypto/invert.c foreign_ident
+/src/modules/_Crypto/lib/desCode.h foreign_ident
+/src/modules/_Crypto/lib/desKerb.c foreign_ident
+/src/modules/_Crypto/lib/desQuick.c foreign_ident
+/src/modules/_Crypto/lib/desTest.c foreign_ident
+/src/modules/_Crypto/lib/desUtil.c foreign_ident
+/src/modules/_Crypto/lib/descore.README foreign_ident
 /src/modules/_Crypto/lib/descore/Makefile foreign_ident
 /src/modules/_Crypto/lib/descore/README foreign_ident
 /src/modules/_Crypto/lib/descore/desCode.h foreign_ident
@@ -64,6 +70,8 @@ testfont binary
 /src/modules/_Crypto/lib/descore/desUtil.c foreign_ident
 /src/modules/_Crypto/lib/descore/desdata.c foreign_ident
 /src/modules/_Crypto/lib/descore/desinfo.h foreign_ident
+/src/modules/_Crypto/lib/desdata.c foreign_ident
+/src/modules/_Crypto/lib/desinfo.h foreign_ident
 /src/modules/_Crypto/md2.c foreign_ident
 /src/modules/_Crypto/md5.c foreign_ident
 /src/modules/_Crypto/md5.pike foreign_ident
