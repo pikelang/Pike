@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.27 2004/02/27 16:20:43 bill Exp $
+ * $Id: Tar.pmod,v 1.28 2004/11/20 17:04:43 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -270,10 +270,6 @@ class _TarFS
 
     sscanf(_root, "%*[/]%s", root);
     parent = _parent;
-  }
-
-  void destroy() {
-    if(tar && tar->fd) tar->fd->close();
   }
 
   string _sprintf(int t)
