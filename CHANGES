@@ -5,10 +5,17 @@ New/improved functionality:
 ---------------------------
 
 o New Hilfe
+    The interactive pike environment you get when running pike without
+    giving a program name, has been thoroughly rewritten. Most notably
+    it now supports more of the common pike constructs, and is more
+    extendable and configurable. Start it and type help for more info.
 
 o pike -x
-    rsif
-    pv
+    When starting pike with the -x parameter, the pike process will
+    run the named script in Tools.Standalone, giving the rest of the
+    arguments as command-line switches. This is a convenient way of
+    running rsif (replace string in file) and pv (the image viewer
+    you may be familiar with from Tools.PV).
 
 o unbug
 
@@ -25,7 +32,10 @@ o Extended random()
 o delay()/sleep()
     sleep() no longer busywaits.
 
-o search(string, int)/has_value(string, int)
+o search(string, int) / has_value(string, int)
+    Both of these methods now handle both looking for strings and
+    integers; search("hi, ho!", ',') or has_value("Nope.", ' '), for
+    instance.
 
 Language additions:
 -------------------
@@ -165,7 +175,7 @@ o Standards.FIPS10_4
 
 o Standards.ID3
     ID3 tags decoder/encoder. Supports versions: 1.0, 1.1,
-    2.2-2.4. Frequently used in MP3 files.
+    2.2-2.4. Frequently used in MP3 files for encapsulating metadata.
 
 o Standards.RDF
 
@@ -192,7 +202,7 @@ o Image.Fonts
     accessing the Freetype, TTF and *FIXME* modules directly.
 
 o Image.DWG
-    AutoCAD thumbnail images.
+    Decodes AutoCAD thumbnail images.
 
 o Gmp.mpq and Gmp.mpf
     Multi precision fractions.    
