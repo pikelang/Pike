@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.54 2003/03/26 03:03:58 nilsson Exp $
+# $Id: Makefile,v 1.55 2003/04/15 14:46:09 nisse Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -85,6 +85,9 @@ touch-mirardoc:
 
 
 # Cleanup
+
+clean:
+	true
 
 spotless:
 	-test -f .cvsignore && rm -rf `cat .cvsignore`
