@@ -189,9 +189,52 @@ PIKECLASS SQLite
     Pike_error("This operation is not possible with SQLite.\n");
   }
 
-  /* List tables */
-  /* List fields */
-  /* Compile query */
+  PIKEFUN array(string) list_tables() {
+    int err, tbls;
+    sqlite3_stmt *stmt;
+    ERR( sqlite3_prepare(THIS->db,
+			 "SELECT name FROM sqlite_master WHERE type='table'",
+			 -1, &stmt, NULL) );
+    tbls=0;
+    while( (err=step(stmt))==SQLITE_ROW ) {
+      push_text( sqlite3_column_text(stmt, 0) );
+      tbls++;
+    }
+    sqlite3_finalize(stmt);
+    if(err!=SQLITE_DONE) SQLite_handle_error();
+    f_aggregate(tbls);
+  }
+
+  PIKEFUN array(mapping(string:mixed)) list_fields(string table) {
+    int fields, i;
+    sqlite3_stmt *stmt;
+    char q[2048];
+
+    if(table->len > 2047) Pike_error("Table name to long.\n");
+    snprintf(q, 2048, "SELECT * FROM %s LIMIT 1", table->str);
+
+    ERR( sqlite3_prepare(THIS->db, q, -1, &stmt, NULL) );
+    pop_n_elems(args);
+
+    fields = sqlite3_column_count(stmt);
+
+    for(i=0; i<fields; i++) {
+      push_constant_text("name");
+      push_text(sqlite3_column_name(stmt, i));
+      f_aggregate_mapping(2);
+    }
+    f_aggregate(fields);
+    sqlite3_finalize(stmt);
+  }
+
+  /* compile_query */
+
+  INIT {
+  }
+  EXIT {
+    /* FIXME: This call can fail. What do we do then? */
+    sqlite3_close(THIS->db);
+  }
 
 }
 
