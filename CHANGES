@@ -130,9 +130,6 @@ o By default pike want you to build a documentation source file, i.e.
   file, use "make install_nodoc" instead of "make install".
 
 
-Language additions:
--------------------
-
 Changes and additions to -x utilities:
 --------------------------------------
 
@@ -323,9 +320,23 @@ o GLUE
         GLUE.swap_buffers();
       }
 
+o ADT.CircularList
+    This is an circular list implemented as a C wrapper around an
+    array. It has a constant time complexity for pop and push. It has
+    a limited max size but it can be increased manually by calling the
+    allocate. It supports pushing, popping and peeking at both ends of
+    the list, as well as removing and insering elemtns at any
+    positioin in the list.
 
-o _ADT
-o Geography RT38
+o ADT.Sequence
+    The sequence work similar to an array but has the possibilities to
+    insert and remove elements at any position. It also has functions
+    to retrieve iterators that work from either side of the sequence.
+
+
+o Geography
+    The Geography.Position object can now convert to and from the
+    Swedish RT38 (Rikets Triangulering 1938) position format.
 
 o Int
     The Int module contains a few functions and constants that deals
@@ -364,6 +375,7 @@ o Error
       > object_program(err)==Error.Math;
       (2) Result: 1
 
+
 o Float
     Here constants and functions that deals specifically with the
     float data type is stored. Currently contains only various
@@ -371,6 +383,11 @@ o Float
     type Pike is compiled with.
 
 o Protocols.Bittorrent
+    This is a Pike implementation of the client side of the popular
+    Bittorrent protocol. Both creating torrent files and seeding as
+    well as downloading and verifying files are supported. There are
+    also several functions to retreive auxillary information such as
+    identifying the other peer clients.
 
 o Protocols.LMTP/Protocols.SMTP
     Protocols.LMTP Implements a server for the Local Mail Transfer
@@ -409,7 +426,8 @@ o Web.RDF/RDFS/OWL/RSS
 
        return 0;
      }  
- 
+
+
 o Array
     The Array module has been extended with Array.all and Array.any
     which determines if all or any of the elements in an array meets a
@@ -439,6 +457,7 @@ o Filesystem.Traversion
       foreach(Filesystem.Traversion("."); string dir; string file)
         if(file[-1]=='~' || file=="core") rm(dir+file);
 
+
 o Calendar module
     The %S format is added to Calendar.parse() to parse seconds since
     the Epoch. The TimeRange class is extended with a format method
@@ -448,8 +467,9 @@ o Calendar module
     pre-1901 namedays and Finnish namedays.
 
 o SSL
-
-o Sql.Provider
+    Large parts of the SSL module has been rewritten, either as part
+    of the rewrite of the Crypto module or in an attempt to fix many
+    issues regarding blocking/nonblocking files, threads etc.
 
 o EXIF
     The EXIF module is now much more robust than before and can handle
@@ -465,7 +485,8 @@ o Standards.IDNA
 Optimizations:
 --------------
 
-o Instantiation and destruction of pike-classes is now significantly faster.
+o Instantiation and destruction of pike-classes is now significantly
+  faster.
 
 o Handling of bignums has been optimized, especially conversion
   to/from normal integers.
@@ -476,6 +497,16 @@ o String case conversion is now five times faster than before on
 
 Compatibility changes:
 ----------------------
+
+o Incompatible changes has been done to ADT.Heap, Array.diff3_old,
+  Crypto, Locale.Charset, Protocols.SMTP, SSL, Sql.sql,
+  Standards.ASN1, Standards.PKCS, Stdio.File, Thread.Mutex and
+  rusage(). Please refer to the 7.4 namespace in the compatibility
+  section of the documentation for a complete description of these
+  changes. Using #pike 7.4 or starting Pike with -V7.4 activates the
+  compatibility layer, which should make it possible to run old code
+  with newer pikes.
+
 
 Compatibility changes without backward compatibility:
 -----------------------------------------------------
@@ -518,15 +549,3 @@ o The header file module_magic.h is deprecated. Use the
 
 o The backend has a new interface to handle references from backend
   objects to callbacks in files.
-
-
-Bugs fixed:
------------
-
-
-Uncategorized misc changes:
----------------------------
-
-kqueue
-OOB fixes
-epoll
