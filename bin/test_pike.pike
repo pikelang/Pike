@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.53 2001/01/01 14:11:27 mirar Exp $ */
+/* $Id: test_pike.pike,v 1.54 2001/02/21 16:31:43 mirar Exp $ */
 
 import Stdio;
 
@@ -524,7 +524,7 @@ int main(int argc, array(string) argv)
 		successes++;
 	      }else{
 		_dmalloc_set_name();
-		werror(fname + " failed.\n");
+		werror(fname + " failed (expected compile error).\n");
 		bzot(test);
 		errors++;
 	      }
@@ -548,7 +548,7 @@ int main(int argc, array(string) argv)
 		  werror("Time in a(): %f\n",at);
 	      }else{
 		_dmalloc_set_name();
-		werror(fname + " failed.\n");
+		werror(fname + " failed (expected eval error).\n");
 		bzot(test);
 		errors++;
 	      }
