@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.8 1997/06/08 19:51:16 grubba Exp $
+ * $Id: sql.pike,v 1.9 1997/06/20 12:28:58 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.8 1997/06/08 19:51:16 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.9 1997/06/20 12:28:58 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -69,10 +69,25 @@ void create(void|string|object host, void|string db,
 	array(mixed) err;
 
 	err = catch {
-	  program p = Sql[program_name];
+	  program p;
+#ifdef PIKE_SQL_DEBUG
+	  err = catch {p = Sql[program_name];};
+#else /* !PIKE_SQL_DEBUG */
+	  // Ignore compiler errors for the various sql-modules,
+	  // since we might not have some.
+	  // This is NOT a nice way to do it, but...
+	  mixed old_inhib = master()->inhibit_compiler_errors;
+	  master()->inhibit_compiler_errors = lambda(){};
+	  err = catch {p = Sql[program_name];};
+	  // Restore compiler errors mode to whatever it was before.
+	  master()->inhibit_compiler_errors = old_inhib;
+#endif /* PIKE_SQL_DEBUG */
+	  if (err) {
+	    throw(err);
+	  }
 
 	  if (p) {
-	    array err2 = catch {
+	    err = catch {
 	      if (password && password != "") {
 		master_sql = p(host||"", db||"", user||"", password);
 	      } else if (user && user != "") {
@@ -87,7 +102,7 @@ void create(void|string|object host, void|string db,
 	      return;
 	    };
 #ifdef PIKE_SQL_DEBUG
-	    if (err2) {
+	    if (err) {
 	      Stdio.stderr->write(sprintf("Sql.sql(): Failed to connect using module Sql.%s\n",
 					  program_name));
 	    }
