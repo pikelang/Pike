@@ -487,9 +487,9 @@ constant int GTK_CALENDAR_SHOW_WEEK_NUMBERS;
 constant int GTK_CALENDAR_WEEK_START_MONDAY;
 
 require gnome;
-constant int GNORBA_INIT_SERVER_FUNC;
-constant int GNORBA_INIT_DISABLE_COOKIES;
-constant int GNORBA_INIT_CORBA_PRIO_HIGH;
+/* constant int GNORBA_INIT_SERVER_FUNC; */
+/* constant int GNORBA_INIT_DISABLE_COOKIES; */
+/* constant int GNORBA_INIT_CORBA_PRIO_HIGH; */
 
 constant int GNOME_DOCK_ITEM_BEH_NORMAL;
 constant int GNOME_DOCK_ITEM_BEH_EXCLUSIVE;
