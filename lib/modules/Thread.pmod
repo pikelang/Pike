@@ -32,8 +32,9 @@ class Fifo {
 	w_cond::broadcast();
     }else{
       num--;
-      w_cond::signal();
+      w_cond::broadcast();
     }
+    key = 0;
     return tmp;
   }
 
@@ -53,6 +54,7 @@ class Fifo {
       ptr=num=0;
       buffer=allocate(sizeof(buffer)); // Throw away any references.
     }
+    key = 0;
     w_cond::broadcast();
     return ret;
   }
@@ -68,8 +70,9 @@ class Fifo {
 	r_cond::broadcast();
     }else{
       num++;
-      r_cond::signal();
+      r_cond::broadcast();
     }
+    key = 0;
   }
 
   void create(int|void size)
