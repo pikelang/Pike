@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.158 2005/01/08 16:09:02 grubba Exp $
+|| $Id: efuns.c,v 1.159 2005/01/08 16:41:08 grubba Exp $
 */
 
 #include "global.h"
@@ -808,8 +808,7 @@ void f_get_dir(INT32 args)
 #ifdef __NT__
   HANDLE dir;
   WIN32_FIND_DATAW d;
-  p_wchar1 *dir_str;
-  p_wchar1 *to_free = NULL;
+  struct string_builder sb;
 #else /* !__NT__ */
   DIR *dir;
 #endif /* __NT__ */
@@ -834,23 +833,30 @@ void f_get_dir(INT32 args)
   }
 
 #ifdef __NT__
-  /* FIXME: Consider using a stringbuilder with width 1? */
+
+  if (str->size_shift == 2) {
+    /* Filenames that are too wide are not supported. */
+    errno = ENOENT;
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  }
+
+  init_string_builder_alloc(&sb, str->len+2, 1);
+
+  string_builder_shared_strcat(&sb, str);
 
   /* Append "/" "*". */
-  if (str->len && (str->str[str->len-1] != '/') &&
-      (str->str[str->len-1] != '\\')) {
-    push_constant_text("/*");
-  } else {
-    push_constant_text("*");
+  if (sb.s->len && (STR1(sb.s)[sb.s->len-1] != '/') &&
+      (STR1(sb.s)[sb.s->len-1] != '\\')) {
+    STR1(sb.s)[sb.s->len++] = '/';
   }
-  f_add(2);
-  str = Pike_sp[-1].u.string;
+  STR1(sb.s)[sb.s->len++] = '*';
+  STR1(sb.s)[sb.s->len] = '\0';
 
-  if ((!(dir_str = require_wstring1(str, &to_free))) ||
-      (wcslen(dir_str) != (size_t)str->len)) {
-    /* Filenames with NUL and filenames that are
-     * too wide are not supported. */
-    if (to_free) free(to_free);
+  if (wcslen(STR1(sb.s)) != (size_t)sb.s->len) {
+    /* Filenames with NUL are not supported. */
+    free_string_builder(&sb);
     errno = ENOENT;
     pop_n_elems(args);
     push_int(0);
@@ -858,12 +864,12 @@ void f_get_dir(INT32 args)
   }
 
 #ifdef READDIR_DEBUG
-  fprintf(stderr, "FindFirstFile(\"%S\")...\n", dir_str);
+  fprintf(stderr, "FindFirstFile(\"%S\")...\n", STR1(str));
 #endif /* READDIR_DEBUG */
 
-  dir = FindFirstFileW(dir_str, &d);
+  dir = FindFirstFileW(STR1(sb.s), &d);
 
-  if (to_free) free(to_free);
+  free_string_builder(&sb);
 
   if (dir == DO_NOT_WARN(INVALID_HANDLE_VALUE)) {
 #ifdef READDIR_DEBUG
