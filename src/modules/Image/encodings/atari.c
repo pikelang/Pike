@@ -2,8 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: atari.c,v 1.1 2003/09/14 18:50:13 sigge Exp $
+|| $Id: atari.c,v 1.2 2003/12/13 23:33:21 nilsson Exp $
 */
+
+#include "global.h"
+#include "interpret.h"
+#include "object.h"
 
 #include "atari.h"
 
