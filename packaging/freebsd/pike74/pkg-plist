@@ -449,7 +449,7 @@ pike/%%PORTVERSION%%/man/man1/pike.1
 @dirrm pike/%%PORTVERSION%%/lib/7.0
 @unexec rm -rf %D/pike/%%PORTVERSION%%/lib/7.2/modules
 @dirrm pike/%%PORTVERSION%%/lib/7.2
-@dirrm pike/%%PORTVERSION%%/lib/tools
+@unexec rm -rf %D/pike/%%PORTVERSION%%/lib/tools
 @unexec rm -rf %D/pike/%%PORTVERSION%%/include/pike
 @dirrm pike/%%PORTVERSION%%/include
 @dirrm pike/%%PORTVERSION%%/man/man1

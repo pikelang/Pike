@@ -26,7 +26,8 @@ BUILD_DEPENDS+=	nasm:${PORTSDIR}/devel/nasm/
 
 LIB_DEPENDS=	jpeg.9:${PORTSDIR}/graphics/jpeg \
 		tiff.4:${PORTSDIR}/graphics/tiff \
-		gdbm.3:${PORTSDIR}/databases/gdbm
+		gdbm.3:${PORTSDIR}/databases/gdbm \
+		fftw.2:${PORTSDIR}/math/fftw
 
 WRKSRC=		${WRKDIR}/${DISTNAME}/src/
 
@@ -71,6 +72,10 @@ PLIST_SUB+=	PORTVERSION=${PORTVERSION}
 # FreeBSD 5.0 Needs to have libgmp port to support gmp.
 .if ${OSVERSION} >= 500000
 LIB_DEPENDS+=	gmp.6:${PORTSDIR}/math/libgmp4
+.endif
+
+.if exists(${LOCALBASE}/lib/libavcodec.so.0)
+WITH_FFMPEG=	yes
 .endif
 
 .if exists(${LOCALBASE}/lib/libttf.so.4)
@@ -145,6 +150,13 @@ CFLAGS+=	-O3 -ffast-math -fomit-frame-pointer
 .else
 CFLAGS+=	-ffast-math -fomit-frame-pointer
 .endif
+.endif
+
+.if defined(WITH_FFMPEG)
+LIB_DEPENDS+=	avcodec.0:${PORTSDIR}/multimedia/ffmpeg
+CONFIGURE_ARGS+= --with-ffmpeg
+.else
+CONFIGURE_ARGS+= --without-ffmpeg
 .endif
 
 .if defined(WITH_TTF)
@@ -255,6 +267,9 @@ pre-everything::
 .if !defined(WITH_OPTIMIZED_CFLAGS)
 	@${ECHO_MSG} "You can enable additional compilation optimizations"
 	@${ECHO_MSG} "by defining WITH_OPTIMIZED_CFLAGS"
+.endif
+.if !defined(WITH_FFMPEG)
+	@${ECHO_MSG} "You can enable FFmpeg support by defining WITH_FFMPEG."
 .endif
 .if !defined(WITH_TTF) && !defined(WITH_MOST)
 	@${ECHO_MSG} "You can enable _Image_TTF support by defining WITH_TTF."
