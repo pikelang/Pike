@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.40 2001/07/05 01:50:12 hubbe Exp $");
+RCSID("$Id: zlibmod.c,v 1.41 2002/10/29 09:26:15 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -29,8 +29,12 @@ RCSID("$Id: zlibmod.c,v 1.40 2001/07/05 01:50:12 hubbe Exp $");
 
 #include <zlib.h>
 
+#endif /* HAVE_ZLIB_H */
+
 /* This must be included last! */
 #include "module_magic.h"
+
+#ifdef HAVE_ZLIB_H
 
 struct zipper
 {
