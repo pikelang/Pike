@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.35 2001/01/16 11:08:34 hubbe Exp $ */
+/* $Id: export.pike,v 1.36 2001/05/31 12:54:11 grubba Exp $ */
 
 import Stdio;
 
@@ -21,6 +21,8 @@ string *get_files(string path)
 {
   string *files,tmp,*ret;
   files=get_dir(path);
+
+  // if (!files) return ({});
 
   if(!getenv("PIKE_EXPORT_CVS_DIRS"))
     files-=({"CVS","RCS",".cvsignore"});
@@ -199,10 +201,15 @@ int main(int argc, string *argv)
   symlink(".",vpath);
 //    system("ln -s pike "+vpath);
 
-  files=`+(({ vpath+"/README", vpath+"/ANNOUNCE" }),
+  files=`+(({ vpath+"/README", vpath+"/ANNOUNCE", vpath+"/Makefile" }),
 	   get_files(vpath+"/src"),
 	   get_files(vpath+"/lib"),
-	   get_files(vpath+"/bin"));
+	   get_files(vpath+"/bin"),
+	   get_files(vpath+"/man"),
+	   ({ vpath+"/autodoc/Makefile", vpath+"/autodoc/Makefile.in",
+	      vpath+"/autodoc/structure.xml", vpath+"/autodoc/tags.txt",
+	      vpath+"/autodoc/.cvsignore",
+	   }));
 
   werror("Creating "+vpath+"-indigo.tar.gz:\n");
   object o=Stdio.File();
