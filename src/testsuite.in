@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.347 2000/11/06 02:11:59 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.348 2000/11/18 18:07:08 marcus Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3530,6 +3530,28 @@ test_any([[mixed a; sscanf("\102\052\100\000","%4F",a); return a]],42.5625)
 test_any([[mixed a; sscanf("\100\105\110\000\0\0\0\0","%8F",a); return a]],42.5625)
 test_any([[mixed a; sscanf("\275\007\053\002","%4F",a); return a]],-0.032999999821186065673828125)
 test_any([[mixed a; sscanf("\277\240\345\140\100\0\0\0","%8F",a); return a]],-0.032999999821186065673828125)
+
+test_any([[mixed a; sscanf("\177\200\0\0","%4F",a); return a>0.0]],1)
+test_any([[mixed a; sscanf("\177\200\0\0","%4F",a); return (a/2)==a]],1)
+test_any([[mixed a; sscanf("\377\200\0\0","%4F",a); return a<0.0]],1)
+test_any([[mixed a; sscanf("\377\200\0\0","%4F",a); return (a/2)==a]],1)
+test_any([[mixed a; sscanf("\177\300\0\0","%4F",a); return a>0.0]],0)
+test_any([[mixed a; sscanf("\177\300\0\0","%4F",a); return a<0.0]],0)
+test_any([[mixed a; sscanf("\177\300\0\0","%4F",a); return a==0.0]],0)
+test_any([[mixed a; sscanf("\377\300\0\0","%4F",a); return a>0.0]],0)
+test_any([[mixed a; sscanf("\377\300\0\0","%4F",a); return a<0.0]],0)
+test_any([[mixed a; sscanf("\377\300\0\0","%4F",a); return a==0.0]],0)
+
+test_any([[mixed a; sscanf("\177\360\0\0\0\0\0\0","%8F",a); return a>0.0]],1)
+test_any([[mixed a; sscanf("\177\360\0\0\0\0\0\0","%8F",a); return(a/2)==a]],1)
+test_any([[mixed a; sscanf("\377\360\0\0\0\0\0\0","%8F",a); return a<0.0]],1)
+test_any([[mixed a; sscanf("\377\360\0\0\0\0\0\0","%8F",a); return(a/2)==a]],1)
+test_any([[mixed a; sscanf("\177\370\0\0\0\0\0\0","%8F",a); return a>0.0]],0)
+test_any([[mixed a; sscanf("\177\370\0\0\0\0\0\0","%8F",a); return a<0.0]],0)
+test_any([[mixed a; sscanf("\177\370\0\0\0\0\0\0","%8F",a); return a==0.0]],0)
+test_any([[mixed a; sscanf("\377\370\0\0\0\0\0\0","%8F",a); return a>0.0]],0)
+test_any([[mixed a; sscanf("\377\370\0\0\0\0\0\0","%8F",a); return a<0.0]],0)
+test_any([[mixed a; sscanf("\377\370\0\0\0\0\0\0","%8F",a); return a==0.0]],0)
 
 test_equal([[array_sscanf("10 20 30","%d %d %d")]],[[({10,20,30})]])
 test_equal([[array_sscanf("1 2 3 4 5 6 7 8 9","%d %d %d %d %d %d %d %d %s")]],[[({1,2,3,4,5,6,7,8,"9"})]])
