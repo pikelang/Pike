@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.134 2003/02/01 15:37:22 mast Exp $
+|| $Id: array.c,v 1.135 2003/09/08 15:28:14 mast Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.134 2003/02/01 15:37:22 mast Exp $");
+RCSID("$Id: array.c,v 1.135 2003/09/08 15:28:14 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2110,14 +2110,14 @@ void gc_mark_array_as_referenced(struct array *a)
 #endif
 	  t = 0;
 	  for(e=0;e<a->size;e++)
-	    if (!gc_mark_weak_svalues(a->item+e, 1)) {
+	    if (!debug_gc_mark_weak_svalues(a->item+e, 1, T_ARRAY, a)) {
 	      a->item[d++]=a->item[e];
 	      t |= 1 << a->item[e].type;
 	    }
 	  a->size=d;
 	}
 	else
-	  if (!(t = gc_mark_weak_svalues(a->item, a->size)))
+	  if (!(t = debug_gc_mark_weak_svalues(a->item, a->size, T_ARRAY, a)))
 	    t = a->type_field;
 
 	/* Ugly, but we are not allowed to change type_field
@@ -2133,7 +2133,7 @@ void gc_mark_array_as_referenced(struct array *a)
       }
       else {
 	TYPE_FIELD t;
-	if ((t = gc_mark_svalues(ITEM(a), a->size))) {
+	if ((t = debug_gc_mark_svalues(ITEM(a), a->size, T_ARRAY, a))) {
 	  if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
 	    a->type_field = t;
 	  else
@@ -2239,7 +2239,7 @@ void gc_zap_ext_weak_refs_in_arrays(void)
     gc_mark_array_pos = a->next;
     gc_mark_array_as_referenced(a);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 void gc_free_all_unreferenced_arrays(void)

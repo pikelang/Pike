@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.477 2003/08/20 19:39:25 mast Exp $
+|| $Id: program.c,v 1.478 2003/09/08 15:28:14 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.477 2003/08/20 19:39:25 mast Exp $");
+RCSID("$Id: program.c,v 1.478 2003/09/08 15:28:14 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6328,7 +6328,7 @@ void gc_mark_program_as_referenced(struct program *p)
       gc_mark_program_as_referenced(p->parent);
 
     for(e=0;e<p->num_constants;e++)
-      gc_mark_svalues(& p->constants[e].sval, 1);
+      debug_gc_mark_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
 
     for(e=0;e<p->num_inherits;e++)
     {
@@ -6477,7 +6477,7 @@ void gc_zap_ext_weak_refs_in_programs(void)
     gc_mark_program_pos = p->next;
     gc_mark_program_as_referenced(p);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 void gc_free_all_unreferenced_programs(void)

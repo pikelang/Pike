@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.155 2003/02/24 21:09:46 mast Exp $
+|| $Id: svalue.c,v 1.156 2003/09/08 15:28:15 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.155 2003/02/24 21:09:46 mast Exp $");
+RCSID("$Id: svalue.c,v 1.156 2003/09/08 15:28:15 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1894,9 +1894,8 @@ void gc_check_weak_short_svalue(const union anything *u, TYPE_T type)
       }
 
 #define GC_DO_MARK(U, TN)						\
-      enqueue(&gc_mark_queue,						\
-	(queue_call) PIKE_CONCAT3(gc_mark_, TN, _as_referenced),	\
-	U.TN)
+      gc_mark_enqueue((queue_call) PIKE_CONCAT3(gc_mark_, TN, _as_referenced), \
+		      U.TN)
 
 #define GC_DONT_MARK(U, TN) do {} while (0)
 
