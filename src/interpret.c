@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.56 1997/12/22 17:35:23 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.57 1998/03/05 13:19:39 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -268,6 +268,10 @@ void assign_lvalue(struct svalue *lval,struct svalue *from)
       multiset_insert(lval->u.multiset, lval+1);
     break;
     
+  case T_VOID:
+    error("Indexing a void.\n");	  /* Grubba */
+    return(0);
+
   default:
    if(IS_ZERO(lval))
      error("Indexing the NULL value.\n"); /* Per */
@@ -298,6 +302,10 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
     return mapping_get_item_ptr(lval->u.mapping,lval+1,t);
 
   case T_MULTISET: return 0;
+
+  case T_VOID:
+    error("Indexing a void.\n");	   /* Grubba */
+    return(0);
 
   default:
     if(IS_ZERO(lval))
@@ -381,6 +389,9 @@ pop_n_elems(2); \
 push_int(instr); \
 break
 
+/* Example usage:
+ *      LOOP(F_INC_LOOP, ++, <, f_add(2), is_lt);
+ */
 #define LOOP(ID, OP1, OP2, OP3, OP4)				\
 CASE(ID)							\
 {								\
