@@ -1,4 +1,4 @@
-/* $Id: togif.c,v 1.18 1996/11/30 13:14:41 law Exp $ */
+/* $Id: togif.c,v 1.19 1996/12/01 04:08:21 law Exp $ */
 /*
 
 togif 
@@ -184,6 +184,8 @@ struct pike_string *
    struct lzw lzw;
    int colors,bpp;
 
+CHRONO("image_encode_gif begin");
+   
    buf.s.str=NULL;
    initialize_buf(&buf);
 
@@ -249,6 +251,8 @@ struct pike_string *
    i=img->xsize*img->ysize;
    rgb=img->img;
 
+CHRONO("image_encode_gif header done");
+
    lzw_init(&lzw,bpp);
    if (!fs)
       while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
@@ -280,6 +284,8 @@ struct pike_string *
 
    lzw_write_last(&lzw);
 
+CHRONO("lzw done");
+
    for (i=0; i<(int)lzw.outpos; i+=254)
    {
       int wr;
@@ -290,10 +296,14 @@ struct pike_string *
    }
    low_my_putchar( 0, &buf ); /* terminate stream */
 
+CHRONO("image_encode_gif wrote ok");
+
    lzw_quit(&lzw);
 
    low_my_putchar( ';', &buf ); /* end gif file */
-   
+
+CHRONO("image_encode_gif done");
+
    return low_free_buf(&buf);
 }
 

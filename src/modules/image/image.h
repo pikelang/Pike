@@ -1,11 +1,21 @@
-/* $Id: image.h,v 1.12 1996/12/01 00:01:14 law Exp $ */
+/* $Id: image.h,v 1.13 1996/12/01 04:08:18 law Exp $ */
 
 #define MAX_NUMCOL 32768
-#define QUANT_MAP_BITS 4
-#define QUANT_MAP_SKIP_BITS (8-(QUANT_MAP_BITS))
-#define QUANT_MAP_THIS(X) ((X)>>QUANT_MAP_SKIP_BITS)
-#define QUANT_MAP_REAL (1L<<QUANT_MAP_BITS)
-#define QUANT_SELECT_CACHE 5
+
+#define QUANT_MAP_BITSR 3
+#define QUANT_MAP_SKIP_BITSR (8-(QUANT_MAP_BITSR))
+#define QUANT_MAP_THISR(X) ((X)>>QUANT_MAP_SKIP_BITSR)
+#define QUANT_MAP_REALR (1L<<QUANT_MAP_BITSR)
+#define QUANT_MAP_BITSG 8
+#define QUANT_MAP_SKIP_BITSG (8-(QUANT_MAP_BITSG))
+#define QUANT_MAP_THISG(X) ((X)>>QUANT_MAP_SKIP_BITSG)
+#define QUANT_MAP_REALG (1L<<QUANT_MAP_BITSG)
+#define QUANT_MAP_BITSB 2
+#define QUANT_MAP_SKIP_BITSB (8-(QUANT_MAP_BITSB))
+#define QUANT_MAP_THISB(X) ((X)>>QUANT_MAP_SKIP_BITSB)
+#define QUANT_MAP_REALB (1L<<QUANT_MAP_BITSB)
+
+#define QUANT_SELECT_CACHE 4
 
 #define COLOURTYPE unsigned char
 
@@ -47,7 +57,7 @@ struct colortable
       unsigned char cl;
       unsigned char used; 
       struct map_entry *next;
-   } map[QUANT_MAP_REAL][QUANT_MAP_REAL][QUANT_MAP_REAL];
+   } map[QUANT_MAP_REALR][QUANT_MAP_REALG][QUANT_MAP_REALB];
    struct rgb_cache
    {
       rgb_group index;

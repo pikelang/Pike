@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.13 1996/11/22 20:28:18 law Exp $ */
+/* $Id: quant.c,v 1.14 1996/12/01 04:08:20 law Exp $ */
 
 /*
 
@@ -26,12 +26,12 @@ David Kågedal, kg@infovav.se
 /*
 #define QUANT_DEBUG
 #define QUANT_DEBUG_DEEP
-#define QUANT_CHRONO
+#define QUANT_DEBUG_RGB
 */
 
 /**********************************************************************/
 
-#ifdef QUANT_CHRONO
+#if 0
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X)
 
@@ -249,12 +249,12 @@ static void sort_tbl(rgb_hashtbl *ht,
 	   lower.r,lower.g,lower.b,upper.r,upper.g,upper.b);
 
    fprintf(stderr,"[%d,%d,%d] - [%d,%d,%d]\n",
-	      QUANT_MAP_THIS(lower.r), 
-	      QUANT_MAP_THIS(lower.g), 
-	      QUANT_MAP_THIS(lower.b), 
-	      QUANT_MAP_THIS(upper.r), 
-	      QUANT_MAP_THIS(upper.g), 
-	      QUANT_MAP_THIS(upper.b));
+	      QUANT_MAP_THISR(lower.r), 
+	      QUANT_MAP_THISG(lower.g), 
+	      QUANT_MAP_THISB(lower.b), 
+	      QUANT_MAP_THISR(upper.r), 
+	      QUANT_MAP_THISG(upper.g), 
+	      QUANT_MAP_THISB(upper.b));
 
 #endif
 
@@ -363,26 +363,26 @@ static void sort_tbl(rgb_hashtbl *ht,
 	      lower.r, lower.g, lower.b, upper.r, upper.g, upper.b,
 	      (upper.r-lower.r+1)*(upper.g-lower.g+1)*(upper.b-lower.b+1));
       fprintf(stderr,"[%d,%d,%d] - [%d,%d,%d]\n",
-	      QUANT_MAP_THIS(lower.r), 
-	      QUANT_MAP_THIS(lower.g), 
-	      QUANT_MAP_THIS(lower.b), 
-	      QUANT_MAP_THIS(upper.r), 
-	      QUANT_MAP_THIS(upper.g), 
-	      QUANT_MAP_THIS(upper.b));
+	      QUANT_MAP_THISR(lower.r), 
+	      QUANT_MAP_THISG(lower.g), 
+	      QUANT_MAP_THISB(lower.b), 
+	      QUANT_MAP_THISR(upper.r), 
+	      QUANT_MAP_THISG(upper.g), 
+	      QUANT_MAP_THISB(upper.b));
 #endif      
 
 #ifdef QUANT_DEBUG
 #ifndef QUANT_DEBUG_DEEP
       fprintf(stderr,"[%d,%d,%d]-[%d,%d,%d] = %lu (%d,%d,%d)\n",
-   QUANT_MAP_THIS(lower.r), QUANT_MAP_THIS(lower.g), QUANT_MAP_THIS(lower.b),
-   QUANT_MAP_THIS(upper.r), QUANT_MAP_THIS(upper.g), QUANT_MAP_THIS(upper.b),
+   QUANT_MAP_THISR(lower.r), QUANT_MAP_THISR(lower.g), QUANT_MAP_THISB(lower.b),
+   QUANT_MAP_THISR(upper.r), QUANT_MAP_THISG(upper.g), QUANT_MAP_THISB(upper.b),
 	      idx, ct->clut[idx].r,ct->clut[idx].g,ct->clut[idx].b);
 #endif
 #endif
 
-      for(r = QUANT_MAP_THIS(lower.r); r <= QUANT_MAP_THIS(upper.r); r++)
-	 for(g = QUANT_MAP_THIS(lower.g); g <= QUANT_MAP_THIS(upper.g); g++)
-	    for(b = QUANT_MAP_THIS(lower.b); b <= QUANT_MAP_THIS(upper.b); b++)
+      for(r = QUANT_MAP_THISR(lower.r); r <= QUANT_MAP_THISR(upper.r); r++)
+	 for(g = QUANT_MAP_THISG(lower.g); g <= QUANT_MAP_THISG(upper.g); g++)
+	    for(b = QUANT_MAP_THISB(lower.b); b <= QUANT_MAP_THISB(upper.b); b++)
 	    {
 #ifdef QUANT_DEBUG_DEEP
 	       fprintf(stderr,"%*s[%d,%d,%d] = %lu (%d,%d,%d)\n",level,"",
@@ -594,15 +594,15 @@ int colortable_rgb(struct colortable *ct,rgb_group rgb)
        ct->cache->index.b==rgb.b) 
       return ct->cache->value;
 
-   feme=me=&(ct->map[QUANT_MAP_THIS(rgb.r)]
-	            [QUANT_MAP_THIS(rgb.g)]
- 	            [QUANT_MAP_THIS(rgb.b)]);
+   feme=me=&(ct->map[QUANT_MAP_THISR(rgb.r)]
+	            [QUANT_MAP_THISG(rgb.g)]
+ 	            [QUANT_MAP_THISB(rgb.b)]);
 
 #ifdef QUANT_DEBUG_RGB
    fprintf(stderr,"%d,%d,%d -> %lu %lu %lu: ",rgb.r,rgb.g,rgb.b,
-   QUANT_MAP_THIS(rgb.r),
-   QUANT_MAP_THIS(rgb.g),
-   QUANT_MAP_THIS(rgb.b));
+   QUANT_MAP_THISR(rgb.r),
+   QUANT_MAP_THISG(rgb.g),
+   QUANT_MAP_THISB(rgb.b));
    fprintf(stderr,"%lx %d,%d,%d %lu ",me,ct->clut[me->cl].r,ct->clut[me->cl].g,ct->clut[me->cl].b,me->cl);
    if (!me->used) { fprintf(stderr,"unused "); }
 #endif
@@ -679,11 +679,11 @@ fprintf(stderr," -> %lu: %d,%d,%d\n",best,
 void colortable_free(struct colortable *ct)
 {
    int r,g,b;
-   for (r=0; r<QUANT_MAP_REAL; r++)
+   for (r=0; r<QUANT_MAP_REALR; r++)
    {
-      for (g=0; g<QUANT_MAP_REAL; g++)
+      for (g=0; g<QUANT_MAP_REALG; g++)
       {
-	 for (b=0; b<QUANT_MAP_REAL; b++)
+	 for (b=0; b<QUANT_MAP_REALB; b++)
 	 {
 	    struct map_entry *me;
 	    while (me=ct->map[r][g][b].next)
