@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.136 2000/07/18 05:48:20 mast Exp $");
+RCSID("$Id: object.c,v 1.137 2000/07/28 17:16:55 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -70,7 +70,7 @@ RCSID("$Id: object.c,v 1.136 2000/07/18 05:48:20 mast Exp $");
 
 struct object *master_object = 0;
 struct program *master_program =0;
-struct object *first_object;
+PMOD_EXPORT struct object *first_object;
 
 struct object *gc_internal_object = 0;
 static struct object *gc_mark_object_pos = 0;
@@ -253,13 +253,13 @@ static void call_pike_initializers(struct object *o, int args)
   pop_stack();
 }
 
-void do_free_object(struct object *o)
+PMOD_EXPORT void do_free_object(struct object *o)
 {
   if (o)
     free_object(o);
 }
 
-struct object *debug_clone_object(struct program *p, int args)
+PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args)
 {
   ONERROR tmp;
   struct object *o;
@@ -278,7 +278,7 @@ struct object *debug_clone_object(struct program *p, int args)
   return o;
 }
 
-struct object *fast_clone_object(struct program *p, int args)
+PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args)
 {
   ONERROR tmp;
   struct object *o=low_clone(p);
@@ -291,7 +291,7 @@ struct object *fast_clone_object(struct program *p, int args)
   return o;
 }
 
-struct object *parent_clone_object(struct program *p,
+PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 				   struct object *parent,
 				   int parent_identifier,
 				   int args)
@@ -340,7 +340,7 @@ static struct pike_string *low_read_file(char *file)
   return 0;
 }
 
-struct object *get_master(void)
+PMOD_EXPORT struct object *get_master(void)
 {
   extern char *master_file;
   struct pike_string *master_name;
@@ -455,7 +455,7 @@ struct object *get_master(void)
   return master_object;
 }
 
-struct object *debug_master(void)
+PMOD_EXPORT struct object *debug_master(void)
 {
   struct object *o;
   o=get_master();
@@ -611,7 +611,7 @@ void low_destruct(struct object *o,int do_free)
   free_program(p);
 }
 
-void destruct(struct object *o)
+PMOD_EXPORT void destruct(struct object *o)
 {
   low_destruct(o,1);
 }
@@ -624,7 +624,7 @@ static struct callback *destruct_object_evaluator_callback =0;
  * destructed by schedule_really_free_object. It links the object back into the
  * list of objects first. Adds a reference, destructs it and then frees it.
  */
-void destruct_objects_to_destruct(void)
+PMOD_EXPORT void destruct_objects_to_destruct(void)
 {
   struct object *my_list=0;
   struct object *o, *next;
@@ -669,7 +669,7 @@ void destruct_objects_to_destruct(void)
  * a separate list of objects which will be destructed later.
  */
 
-void schedule_really_free_object(struct object *o)
+PMOD_EXPORT void schedule_really_free_object(struct object *o)
 {
 #ifdef PIKE_DEBUG
   if (o->refs)
@@ -756,7 +756,7 @@ void schedule_really_free_object(struct object *o)
 }
 
 
-void low_object_index_no_free(struct svalue *to,
+PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 			      struct object *o,
 			      INT32 f)
 {
@@ -823,7 +823,7 @@ void low_object_index_no_free(struct svalue *to,
   }
 }
 
-void object_index_no_free2(struct svalue *to,
+PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 			  struct object *o,
 			  struct svalue *index)
 {
@@ -862,7 +862,7 @@ void object_index_no_free2(struct svalue *to,
 
 #define ARROW_INDEX_P(X) ((X)->type==T_STRING && (X)->subtype)
 
-void object_index_no_free(struct svalue *to,
+PMOD_EXPORT void object_index_no_free(struct svalue *to,
 			   struct object *o,
 			   struct svalue *index)
 {
@@ -889,7 +889,7 @@ void object_index_no_free(struct svalue *to,
 }
 
 
-void object_low_set_index(struct object *o,
+PMOD_EXPORT void object_low_set_index(struct object *o,
 			  int f,
 			  struct svalue *from)
 {
@@ -925,7 +925,7 @@ void object_low_set_index(struct object *o,
   }
 }
 
-void object_set_index2(struct object *o,
+PMOD_EXPORT void object_set_index2(struct object *o,
 		      struct svalue *index,
 		      struct svalue *from)
 {
@@ -971,7 +971,7 @@ void object_set_index2(struct object *o,
   }
 }
 
-void object_set_index(struct object *o,
+PMOD_EXPORT void object_set_index(struct object *o,
 		       struct svalue *index,
 		       struct svalue *from)
 {
@@ -1080,7 +1080,7 @@ union anything *object_get_item_ptr(struct object *o,
 }
 
 
-int object_equal_p(struct object *a, struct object *b, struct processing *p)
+PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct processing *p)
 {
   struct processing curr;
 
@@ -1154,7 +1154,7 @@ void cleanup_objects(void)
   destruct_objects_to_destruct();
 }
 
-struct array *object_indices(struct object *o)
+PMOD_EXPORT struct array *object_indices(struct object *o)
 {
   struct program *p;
   struct array *a;
@@ -1184,7 +1184,7 @@ struct array *object_indices(struct object *o)
   return a;
 }
 
-struct array *object_values(struct object *o)
+PMOD_EXPORT struct array *object_values(struct object *o)
 {
   struct program *p;
   struct array *a;

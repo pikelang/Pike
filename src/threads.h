@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.98 2000/07/12 05:57:39 neotron Exp $
+ * $Id: threads.h,v 1.99 2000/07/28 17:16:56 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -396,8 +396,9 @@ struct thread_state {
 #endif /* VERBOSE_THREADS_DEBUG */
 
 #ifdef THREAD_TRACE
-#define SWAP_OUT_TRACE(_tmp)	do { extern int t_flag; (_tmp)->status.t_flag = t_flag; } while(0)
-#define SWAP_IN_TRACE(_tmp)	do { extern int t_flag; t_flag = (_tmp)->status.t_flag; } while(0)
+extern int t_flag;
+#define SWAP_OUT_TRACE(_tmp)	do { (_tmp)->status.t_flag = t_flag; } while(0)
+#define SWAP_IN_TRACE(_tmp)	do { t_flag = (_tmp)->status.t_flag; } while(0)
 #else /* !THREAD_TRACE */
 #define SWAP_OUT_TRACE(_tmp)
 #define SWAP_IN_TRACE(_tmp)
@@ -459,10 +460,10 @@ struct thread_state {
 
 #define THREADSTATE2OBJ(X) ((X)->state.thread_id)
 
+extern int Pike_in_gc;
 #define THREADS_ALLOW() do { \
      struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \
-       extern int Pike_in_gc; \
        if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
 	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed!" \
                " %p != %p\n", \
@@ -500,7 +501,6 @@ struct thread_state {
 #define THREADS_ALLOW_UID() do { \
      struct thread_state *_tmp_uid=OBJ2THREAD(Pike_interpreter.thread_id); \
      DO_IF_DEBUG({ \
-       extern int Pike_in_gc; \
        if(thread_for_id(th_self()) != Pike_interpreter.thread_id) \
 	 fatal("thread_for_id() (or Pike_interpreter.thread_id) failed! %p != %p\n",thread_for_id(th_self()),Pike_interpreter.thread_id); \
        if (Pike_in_gc > 50 && Pike_in_gc < 300) \

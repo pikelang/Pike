@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: operators.h,v 1.7 1999/03/04 06:19:41 hubbe Exp $
+ * $Id: operators.h,v 1.8 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef OPERATORS_H
 #define OPERATORS_H
@@ -29,34 +29,34 @@ COMPARISON(f_le,"`<=",!is_gt)
 COMPARISON(f_gt,"`>" , is_gt)
 COMPARISON(f_ge,"`>=",!is_lt)
 
-void f_add(INT32 args);
-void o_subtract(void);
-void f_minus(INT32 args);
-void o_and(void);
-void f_and(INT32 args);
-void o_or(void);
-void f_or(INT32 args);
-void o_xor(void);
-void f_xor(INT32 args);
-void o_lsh(void);
-void f_lsh(INT32 args);
-void o_rsh(void);
-void f_rsh(INT32 args);
-void o_multiply(void);
-void f_multiply(INT32 args);
-void o_divide(void);
-void f_divide(INT32 args);
-void o_mod(void);
-void f_mod(INT32 args);
-void o_not(void);
-void f_not(INT32 args);
-void o_compl(void);
-void f_compl(INT32 args);
-void o_negate(void);
-void o_range(void);
-void f_index(INT32 args);
-void f_arrow(INT32 args);
-void f_sizeof(INT32 args);
+PMOD_EXPORT void f_add(INT32 args);
+PMOD_EXPORT void o_subtract(void);
+PMOD_EXPORT void f_minus(INT32 args);
+PMOD_EXPORT void o_and(void);
+PMOD_EXPORT void f_and(INT32 args);
+PMOD_EXPORT void o_or(void);
+PMOD_EXPORT void f_or(INT32 args);
+PMOD_EXPORT void o_xor(void);
+PMOD_EXPORT void f_xor(INT32 args);
+PMOD_EXPORT void o_lsh(void);
+PMOD_EXPORT void f_lsh(INT32 args);
+PMOD_EXPORT void o_rsh(void);
+PMOD_EXPORT void f_rsh(INT32 args);
+PMOD_EXPORT void o_multiply(void);
+PMOD_EXPORT void f_multiply(INT32 args);
+PMOD_EXPORT void o_divide(void);
+PMOD_EXPORT void f_divide(INT32 args);
+PMOD_EXPORT void o_mod(void);
+PMOD_EXPORT void f_mod(INT32 args);
+PMOD_EXPORT void o_not(void);
+PMOD_EXPORT void f_not(INT32 args);
+PMOD_EXPORT void o_compl(void);
+PMOD_EXPORT void f_compl(INT32 args);
+PMOD_EXPORT void o_negate(void);
+PMOD_EXPORT void o_range(void);
+PMOD_EXPORT void f_index(INT32 args);
+PMOD_EXPORT void f_arrow(INT32 args);
+PMOD_EXPORT void f_sizeof(INT32 args);
 void init_operators(void);
 void exit_operators(void);
 /* Prototypes end here */

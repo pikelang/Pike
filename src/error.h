@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.45 2000/07/07 00:21:48 hubbe Exp $
+ * $Id: error.h,v 1.46 2000/07/28 17:16:54 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -169,18 +169,18 @@ extern int throw_severity;
 
 /* Prototypes begin here */
 void check_recovery_context(void);
-void pike_gdb_breakpoint(void);
-JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
-void pike_throw(void) ATTRIBUTE((noreturn));
-void push_error(char *description);
-void low_error(char *buf) ATTRIBUTE((noreturn));
+PMOD_EXPORT void pike_gdb_breakpoint(void);
+PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
+PMOD_EXPORT void pike_throw(void) ATTRIBUTE((noreturn));
+PMOD_EXPORT void push_error(char *description);
+PMOD_EXPORT void low_error(char *buf) ATTRIBUTE((noreturn));
 void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn));
-void new_error(const char *name, const char *text, struct svalue *oldsp,
+PMOD_EXPORT void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
-void exit_on_error(void *msg);
-void fatal_on_error(void *msg);
-void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
-void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+PMOD_EXPORT void exit_on_error(void *msg);
+PMOD_EXPORT void fatal_on_error(void *msg);
+PMOD_EXPORT void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+PMOD_EXPORT void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
 void f_error_cast(INT32 args);
 void f_error_index(INT32 args);
 void f_error_describe(INT32 args);

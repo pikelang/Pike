@@ -16,11 +16,11 @@
 #include "error.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.21 2000/04/13 20:14:35 hubbe Exp $");
+RCSID("$Id: constants.c,v 1.22 2000/07/28 17:16:54 hubbe Exp $");
 
 struct mapping *builtin_constants = 0;
 
-struct mapping *get_builtin_constants(void)
+PMOD_EXPORT struct mapping *get_builtin_constants(void)
 {
   if(!builtin_constants)
     builtin_constants=allocate_mapping(20);
@@ -55,7 +55,7 @@ void low_add_constant(char *name, struct svalue *fun)
   free_string(p);
 }
 
-void add_global_program(char *name, struct program *p)
+PMOD_EXPORT void add_global_program(char *name, struct program *p)
 {
   struct svalue s;
   s.type=T_PROGRAM;
@@ -72,7 +72,7 @@ void add_global_program(char *name, struct program *p)
 BLOCK_ALLOC(callable,128)
 
 /* Eats one ref to 'type' and 'name' */
-struct callable *low_make_callable(c_fun fun,
+PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 				   struct pike_string *name,
 				   struct pike_string *type,
 				   INT16 flags,
@@ -98,7 +98,7 @@ struct callable *low_make_callable(c_fun fun,
   return f;
 }
 
-struct callable *make_callable(c_fun fun,
+PMOD_EXPORT struct callable *make_callable(c_fun fun,
 			       char *name,
 			       char *type,
 			       INT16 flags,
@@ -108,7 +108,7 @@ struct callable *make_callable(c_fun fun,
   return low_make_callable(fun,make_shared_string(name),parse_type(type),flags,optimize,docode);
 }
 
-struct callable *add_efun2(char *name,
+PMOD_EXPORT struct callable *add_efun2(char *name,
 			    c_fun fun,
 			    char *type,
 			    INT16 flags,
@@ -129,12 +129,12 @@ struct callable *add_efun2(char *name,
   return ret;
 }
 
-struct callable *add_efun(char *name, c_fun fun, char *type, INT16 flags)
+PMOD_EXPORT struct callable *add_efun(char *name, c_fun fun, char *type, INT16 flags)
 {
   return add_efun2(name,fun,type,flags,0,0);
 }
 
-struct callable *quick_add_efun(char *name, int name_length,
+PMOD_EXPORT struct callable *quick_add_efun(char *name, int name_length,
 				c_fun fun,
 				char *type, int type_length,
 				INT16 flags,

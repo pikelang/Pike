@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.93 2000/07/18 05:48:20 mast Exp $");
+RCSID("$Id: mapping.c,v 1.94 2000/07/28 17:16:55 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -170,7 +170,7 @@ static void init_mapping(struct mapping *m, INT32 size)
 
 /* This function allocates an empty mapping with room for 'size' values
  */
-struct mapping *debug_allocate_mapping(int size)
+PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
 {
   struct mapping *m;
 
@@ -190,7 +190,7 @@ struct mapping *debug_allocate_mapping(int size)
 }
 
 
-void really_free_mapping_data(struct mapping_data *md)
+PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md)
 {
   INT32 e;
   struct keypair *k;
@@ -210,7 +210,7 @@ void really_free_mapping_data(struct mapping_data *md)
   free((char *) md);
 }
 
-void do_free_mapping(struct mapping *m)
+PMOD_EXPORT void do_free_mapping(struct mapping *m)
 {
   if (m)
     free_mapping(m);
@@ -514,7 +514,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
  * I only use it when the type fields MUST be correct, which is not
  * very often.
  */
-void mapping_fix_type_field(struct mapping *m)
+PMOD_EXPORT void mapping_fix_type_field(struct mapping *m)
 {
   INT32 e;
   struct keypair *k;
@@ -542,7 +542,7 @@ void mapping_fix_type_field(struct mapping *m)
 /* This function inserts key:val into the mapping m.
  * Same as doing m[key]=val; in pike.
  */
-void low_mapping_insert(struct mapping *m,
+PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 			struct svalue *key,
 			struct svalue *val,
 			int overwrite)
@@ -640,14 +640,14 @@ void low_mapping_insert(struct mapping *m,
 #endif
 }
 
-void mapping_insert(struct mapping *m,
+PMOD_EXPORT void mapping_insert(struct mapping *m,
 		    struct svalue *key,
 		    struct svalue *val)
 {
   low_mapping_insert(m,key,val,1);
 }
 
-union anything *mapping_get_item_ptr(struct mapping *m,
+PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 				     struct svalue *key,
 				     TYPE_T t)
 {
@@ -753,7 +753,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   return & ( k->val.u );
 }
 
-void map_delete_no_free(struct mapping *m,
+PMOD_EXPORT void map_delete_no_free(struct mapping *m,
 			struct svalue *key,
 			struct svalue *to)
 {
@@ -834,7 +834,7 @@ void map_delete_no_free(struct mapping *m,
   return;
 }
 
-void check_mapping_for_destruct(struct mapping *m)
+PMOD_EXPORT void check_mapping_for_destruct(struct mapping *m)
 {
   INT32 e;
   struct keypair *k, **prev;
@@ -906,7 +906,7 @@ void check_mapping_for_destruct(struct mapping *m)
   }
 }
 
-struct svalue *low_mapping_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *low_mapping_lookup(struct mapping *m,
 				  struct svalue *key)
 {
   unsigned INT32 h,h2;
@@ -932,7 +932,7 @@ struct svalue *low_mapping_lookup(struct mapping *m,
   return 0;
 }
 
-struct svalue *low_mapping_string_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *low_mapping_string_lookup(struct mapping *m,
 					 struct pike_string *p)
 {
   struct svalue tmp;
@@ -941,7 +941,7 @@ struct svalue *low_mapping_string_lookup(struct mapping *m,
   return low_mapping_lookup(m, &tmp);
 }
 
-void mapping_string_insert(struct mapping *m,
+PMOD_EXPORT void mapping_string_insert(struct mapping *m,
 			   struct pike_string *p,
 			   struct svalue *val)
 {
@@ -951,7 +951,7 @@ void mapping_string_insert(struct mapping *m,
   mapping_insert(m, &tmp, val);
 }
 
-void mapping_string_insert_string(struct mapping *m,
+PMOD_EXPORT void mapping_string_insert_string(struct mapping *m,
 				  struct pike_string *p,
 				  struct pike_string *val)
 {
@@ -961,7 +961,7 @@ void mapping_string_insert_string(struct mapping *m,
   mapping_string_insert(m, p, &tmp);
 }
 
-struct svalue *simple_mapping_string_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *simple_mapping_string_lookup(struct mapping *m,
 					    char *p)
 {
   struct pike_string *tmp;
@@ -970,7 +970,7 @@ struct svalue *simple_mapping_string_lookup(struct mapping *m,
   return 0;
 }
 
-struct svalue *mapping_mapping_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *mapping_mapping_lookup(struct mapping *m,
 				      struct svalue *key1,
 				      struct svalue *key2,
 				      int create)
@@ -1014,7 +1014,7 @@ struct svalue *mapping_mapping_lookup(struct mapping *m,
 }
 
 
-struct svalue *mapping_mapping_string_lookup(struct mapping *m,
+PMOD_EXPORT struct svalue *mapping_mapping_string_lookup(struct mapping *m,
 				      struct pike_string *key1,
 				      struct pike_string *key2,
 				      int create)
@@ -1029,7 +1029,7 @@ struct svalue *mapping_mapping_string_lookup(struct mapping *m,
 
 
 
-void mapping_index_no_free(struct svalue *dest,
+PMOD_EXPORT void mapping_index_no_free(struct svalue *dest,
 			   struct mapping *m,
 			   struct svalue *key)
 {
@@ -1048,7 +1048,7 @@ void mapping_index_no_free(struct svalue *dest,
   }
 }
 
-struct array *mapping_indices(struct mapping *m)
+PMOD_EXPORT struct array *mapping_indices(struct mapping *m)
 {
   INT32 e;
   struct array *a;
@@ -1075,7 +1075,7 @@ struct array *mapping_indices(struct mapping *m)
   return a;
 }
 
-struct array *mapping_values(struct mapping *m)
+PMOD_EXPORT struct array *mapping_values(struct mapping *m)
 {
   INT32 e;
   struct keypair *k;
@@ -1102,7 +1102,7 @@ struct array *mapping_values(struct mapping *m)
   return a;
 }
 
-struct array *mapping_to_array(struct mapping *m)
+PMOD_EXPORT struct array *mapping_to_array(struct mapping *m)
 {
   INT32 e;
   struct keypair *k;
@@ -1132,7 +1132,7 @@ struct array *mapping_to_array(struct mapping *m)
   return a;
 }
 
-void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to)
+PMOD_EXPORT void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to)
 {
   INT32 e;
   struct keypair *k;
@@ -1164,7 +1164,7 @@ void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to)
 #endif
 }
 
-struct mapping *mkmapping(struct array *ind, struct array *val)
+PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
 {
   struct mapping *m;
   struct svalue *i,*v;
@@ -1184,7 +1184,7 @@ struct mapping *mkmapping(struct array *ind, struct array *val)
 }
 
 #if 0
-struct mapping *copy_mapping(struct mapping *m)
+PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 {
   INT32 e;
   struct mapping *n;
@@ -1205,7 +1205,7 @@ struct mapping *copy_mapping(struct mapping *m)
 #else
 
 /* deferred mapping copy! */
-struct mapping *copy_mapping(struct mapping *m)
+PMOD_EXPORT struct mapping *copy_mapping(struct mapping *m)
 {
   struct mapping *n;
 
@@ -1231,7 +1231,7 @@ struct mapping *copy_mapping(struct mapping *m)
 
 #endif
 
-struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
+PMOD_EXPORT struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
 {
   struct array *ai, *av;
   struct array *bi, *bv;
@@ -1285,7 +1285,7 @@ struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op)
   return m;
 }
 
-struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_ordered(struct mapping *a, 
 					    struct array *b, INT32 op)
 {
   struct array *ai, *av;
@@ -1331,7 +1331,7 @@ struct mapping *merge_mapping_array_ordered(struct mapping *a,
   return m;
 }
 
-struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a, 
 					      struct array *b, INT32 op)
 {
   struct array *b_temp;
@@ -1351,7 +1351,7 @@ struct mapping *merge_mapping_array_unordered(struct mapping *a,
   return m;
 }
 
-struct mapping *add_mappings(struct svalue *argp, INT32 args)
+PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
 {
   INT32 e,d;
   struct mapping *ret;
@@ -1388,7 +1388,7 @@ struct mapping *add_mappings(struct svalue *argp, INT32 args)
   return ret;
 }
 
-int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
+PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
 {
   struct processing curr;
   struct keypair *k;
@@ -1549,7 +1549,7 @@ node *make_node_from_mapping(struct mapping *m)
   }
 }
 
-void f_aggregate_mapping(INT32 args)
+PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 {
   INT32 e;
   struct keypair *k;
@@ -1569,7 +1569,7 @@ void f_aggregate_mapping(INT32 args)
   push_mapping(m);
 }
 
-struct mapping *copy_mapping_recursively(struct mapping *m,
+PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
 					 struct processing *p)
 {
   struct processing doing;
@@ -1627,7 +1627,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
 }
 
 
-void mapping_search_no_free(struct svalue *to,
+PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    struct svalue *look_for,
 			    struct svalue *key /* start */)

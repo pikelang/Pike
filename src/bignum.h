@@ -5,6 +5,9 @@
 
 #ifdef AUTO_BIGNUM
 
+extern int gmp_library_loaded;
+
+
 /* Note: These functions assume some properties of the CPU. */
 
 #define INT_TYPE_SIGN(x)             ((x) < 0)

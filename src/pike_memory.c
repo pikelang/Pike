@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.70 2000/06/27 15:22:38 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.71 2000/07/28 17:16:55 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -553,7 +553,7 @@ void *generic_memory_search(struct generic_mem_searcher *s,
 }
 		    
 
-char *my_memmem(char *needle,
+PMOD_EXPORT char *my_memmem(char *needle,
 		SIZE_T needlelen,
 		char *haystack,
 		SIZE_T haystacklen)
@@ -609,7 +609,7 @@ static long softlim_should_be=0;
 #endif
 
 
-char *debug_xalloc(long size)
+PMOD_EXPORT char *debug_xalloc(long size)
 {
   char *ret;
   if(!size) 
@@ -685,6 +685,29 @@ static MUTEX_T debug_malloc_mutex;
 #undef calloc
 #undef strdup
 #undef main
+
+#ifdef DMALLOC_USE_RTLD_NEXT
+#define malloc(X)  (dl_setup(),real_malloc((X),(Y))
+#define free(X)    (dl_setup(),real_free((X)))
+#define realloc(X,Y) (dl_setup(),real_realloc((X),(Y)))
+#define calloc(X,Y)  (dl_setup(),real_calloc((X),(Y)))
+
+#define dl_setup()  ( real_malloc ? 0 : real_dl_setup() )
+
+void *(*real_malloc)(size_t);
+void (*real_free)(void *);
+void *(*real_realloc)(void *,size_t);
+void *(*real_calloc)(size_t,size_t);
+
+void real_dl_setup()
+{
+  real_malloc=dlsym(RTLD_NEXT,"malloc");
+  real_free=dlsym(RTLD_NEXT,"free");
+  real_realloc=dlsym(RTLD_NEXT,"realloc");
+  real_calloc=dlsym(RTLD_NEXT,"calloc");
+}
+
+#endif
 
 
 #ifdef WRAP

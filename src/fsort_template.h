@@ -1,5 +1,5 @@
 /*
- * $Id: fsort_template.h,v 1.6 1999/05/03 07:04:16 hubbe Exp $
+ * $Id: fsort_template.h,v 1.7 2000/07/28 17:16:55 hubbe Exp $
  */
 
 #ifndef SWAP
@@ -46,10 +46,6 @@ static void MKNAME(_do_sort)(register TYPE *bas,
       if(--max_recursion <= 0)
       {
 	long howmany,x,y,z;
-#ifdef PIKE_DEBUG
-	extern int d_flag;
-#endif
-	
 	howmany=((((char *)last)-((char *)bas))/SIZE)+1;
 	if(howmany<2) return;
 	
@@ -159,7 +155,6 @@ void ID(register TYPE *bas,
 #endif
   )
 {
-  extern int my_log2(unsigned INT32 x);
   MKNAME(_do_sort)(bas,last, my_log2( last-bas ) * 2 XARGS);;
 }
 

@@ -24,7 +24,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.84 2000/07/18 05:48:20 mast Exp $");
+RCSID("$Id: svalue.c,v 1.85 2000/07/28 17:16:55 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -33,7 +33,7 @@ struct svalue dest_ob_zero = { T_INT, 0 };
  * its type.
  */
 
-void really_free_short_svalue(union anything *s, TYPE_T type)
+PMOD_EXPORT void really_free_short_svalue(union anything *s, TYPE_T type)
 {
   union anything tmp=*s;
   s->refs=0; /* Prevent cyclic calls */
@@ -70,7 +70,7 @@ void really_free_short_svalue(union anything *s, TYPE_T type)
   }
 }
 
-void really_free_svalue(struct svalue *s)
+PMOD_EXPORT void really_free_svalue(struct svalue *s)
 {
   int tmp=s->type;
   s->type=T_INT;
@@ -131,7 +131,7 @@ void really_free_svalue(struct svalue *s)
   }
 }
 
-void do_free_svalue(struct svalue *s)
+PMOD_EXPORT void do_free_svalue(struct svalue *s)
 {
   free_svalue(s);
 }
@@ -140,7 +140,7 @@ void do_free_svalue(struct svalue *s)
  * We put this routine here so the compiler can optimize the call
  * inside the loop if it wants to
  */
-void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS)
+PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS)
 {
   switch(type_hint)
   {
@@ -247,7 +247,7 @@ void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LI
   }
 }
 
-void assign_svalues_no_free(struct svalue *to,
+PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
 			    size_t num,
 			    INT32 type_hint)
@@ -282,7 +282,7 @@ void assign_svalues_no_free(struct svalue *to,
   while(num--) assign_svalue_no_free(to++,from++);
 }
 
-void assign_svalues(struct svalue *to,
+PMOD_EXPORT void assign_svalues(struct svalue *to,
 		    struct svalue *from,
 		    size_t num,
 		    TYPE_FIELD types)
@@ -291,7 +291,7 @@ void assign_svalues(struct svalue *to,
   assign_svalues_no_free(to,from,num,types);
 }
 
-void assign_to_short_svalue(union anything *u,
+PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    struct svalue *s)
 {
@@ -320,7 +320,7 @@ void assign_to_short_svalue(union anything *u,
   }
 }
 
-void assign_to_short_svalue_no_free(union anything *u,
+PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 				    TYPE_T type,
 				    struct svalue *s)
 {
@@ -348,7 +348,7 @@ void assign_to_short_svalue_no_free(union anything *u,
 }
 
 
-void assign_from_short_svalue_no_free(struct svalue *s,
+PMOD_EXPORT void assign_from_short_svalue_no_free(struct svalue *s,
 				      union anything *u,
 				      TYPE_T type)
 {
@@ -374,7 +374,7 @@ void assign_from_short_svalue_no_free(struct svalue *s,
   }
 }
 
-void assign_short_svalue_no_free(union anything *to,
+PMOD_EXPORT void assign_short_svalue_no_free(union anything *to,
 				 union anything *from,
 				 TYPE_T type)
 {
@@ -392,7 +392,7 @@ void assign_short_svalue_no_free(union anything *to,
   }
 }
 
-void assign_short_svalue(union anything *to,
+PMOD_EXPORT void assign_short_svalue(union anything *to,
 			 union anything *from,
 			 TYPE_T type)
 {
@@ -411,7 +411,7 @@ void assign_short_svalue(union anything *to,
   }
 }
 
-unsigned INT32 hash_svalue(struct svalue *s)
+PMOD_EXPORT unsigned INT32 hash_svalue(struct svalue *s)
 {
   unsigned INT32 q;
 
@@ -450,7 +450,7 @@ unsigned INT32 hash_svalue(struct svalue *s)
   return q;
 }
 
-int svalue_is_true(struct svalue *s)
+PMOD_EXPORT int svalue_is_true(struct svalue *s)
 {
   unsigned INT32 q;
   check_type(s->type);
@@ -490,7 +490,7 @@ int svalue_is_true(struct svalue *s)
 
 #define TWO_TYPES(X,Y) (((X)<<8)|(Y))
 
-int is_identical(struct svalue *a, struct svalue *b)
+PMOD_EXPORT int is_identical(struct svalue *a, struct svalue *b)
 {
   if(a->type != b->type) return 0;
   switch(a->type)
@@ -520,7 +520,7 @@ int is_identical(struct svalue *a, struct svalue *b)
 
 }
 
-int is_eq(struct svalue *a, struct svalue *b)
+PMOD_EXPORT int is_eq(struct svalue *a, struct svalue *b)
 {
   check_type(a->type);
   check_type(b->type);
@@ -630,7 +630,7 @@ int is_eq(struct svalue *a, struct svalue *b)
   }
 }
 
-int low_is_equal(struct svalue *a,
+PMOD_EXPORT int low_is_equal(struct svalue *a,
 		 struct svalue *b,
 		 struct processing *p)
 {
@@ -713,7 +713,7 @@ int low_is_equal(struct svalue *a,
   return 1; /* survived */
 }
 
-int low_short_is_equal(const union anything *a,
+PMOD_EXPORT int low_short_is_equal(const union anything *a,
 		       const union anything *b,
 		       TYPE_T type,
 		       struct processing *p)
@@ -749,12 +749,12 @@ int low_short_is_equal(const union anything *a,
   return low_is_equal(&sa,&sb,p);
 }
 
-int is_equal(struct svalue *a,struct svalue *b)
+PMOD_EXPORT int is_equal(struct svalue *a,struct svalue *b)
 {
   return low_is_equal(a,b,0);
 }
 
-int is_lt(struct svalue *a,struct svalue *b)
+PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b)
 {
   check_type(a->type);
   check_type(b->type);
@@ -883,7 +883,7 @@ int is_lt(struct svalue *a,struct svalue *b)
   }
 }
 
-void describe_svalue(struct svalue *s,int indent,struct processing *p)
+PMOD_EXPORT void describe_svalue(struct svalue *s,int indent,struct processing *p)
 {
   char buf[50];
 
@@ -1103,7 +1103,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
   }
 }
 
-void print_svalue (FILE *out, struct svalue *s)
+PMOD_EXPORT void print_svalue (FILE *out, struct svalue *s)
 {
   string orig_str;
   string str;
@@ -1117,7 +1117,7 @@ void print_svalue (FILE *out, struct svalue *s)
 }
 
 /* NOTE: Must handle num being negative. */
-void clear_svalues(struct svalue *s, ptrdiff_t num)
+PMOD_EXPORT void clear_svalues(struct svalue *s, ptrdiff_t num)
 {
   struct svalue dum;
   dum.type=T_INT;
@@ -1128,7 +1128,7 @@ void clear_svalues(struct svalue *s, ptrdiff_t num)
 }
 
 /* NOTE: Must handle num being negative. */
-void clear_svalues_undefined(struct svalue *s, ptrdiff_t num)
+PMOD_EXPORT void clear_svalues_undefined(struct svalue *s, ptrdiff_t num)
 {
   struct svalue dum;
   dum.type=T_INT;
@@ -1138,7 +1138,7 @@ void clear_svalues_undefined(struct svalue *s, ptrdiff_t num)
   while(num-- > 0) *(s++)=dum;
 }
 
-void copy_svalues_recursively_no_free(struct svalue *to,
+PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct svalue *from,
 				      size_t num,
 				      struct processing *p)
@@ -1574,7 +1574,7 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type)
   return freed;
 }
 
-INT32 pike_sizeof(struct svalue *s)
+PMOD_EXPORT INT32 pike_sizeof(struct svalue *s)
 {
   switch(s->type)
   {

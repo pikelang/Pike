@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.13 1999/10/24 14:17:41 grubba Exp $
+ * $Id: pike_memory.h,v 1.14 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -60,43 +60,43 @@ struct generic_mem_searcher
 #define MEMCHR0 MEMCHR
 
 /* Note to self: Prototypes must be updated manually /Hubbe */
-int pcharp_memcmp(PCHARP a, PCHARP b, int sz);
-long pcharp_strlen(PCHARP a);
-INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e);
-INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e);
-void swap(char *a, char *b, INT32 size);
-void reverse(char *memory, INT32 nitems, INT32 size);
-void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
-unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen);
-unsigned INT32 hashstr(const unsigned char *str,INT32 maxn);
-unsigned INT32 simple_hashmem(const unsigned char *str,INT32 len, INT32 maxn);
-void init_memsearch(struct mem_searcher *s,
+PMOD_EXPORT int pcharp_memcmp(PCHARP a, PCHARP b, int sz);
+PMOD_EXPORT long pcharp_strlen(PCHARP a);
+PMOD_EXPORT INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e);
+PMOD_EXPORT INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e);
+PMOD_EXPORT void swap(char *a, char *b, INT32 size);
+PMOD_EXPORT void reverse(char *memory, INT32 nitems, INT32 size);
+PMOD_EXPORT void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order);
+PMOD_EXPORT unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen);
+PMOD_EXPORT unsigned INT32 hashstr(const unsigned char *str,INT32 maxn);
+PMOD_EXPORT unsigned INT32 simple_hashmem(const unsigned char *str,INT32 len, INT32 maxn);
+PMOD_EXPORT void init_memsearch(struct mem_searcher *s,
 		    char *needle,
 		    SIZE_T needlelen,
 		    SIZE_T max_haystacklen);
-char *memory_search(struct mem_searcher *s,
+PMOD_EXPORT char *memory_search(struct mem_searcher *s,
 		    char *haystack,
 		    SIZE_T haystacklen);
-void init_generic_memsearcher(struct generic_mem_searcher *s,
+PMOD_EXPORT void init_generic_memsearcher(struct generic_mem_searcher *s,
 			      void *needle,
 			      SIZE_T needlelen,
 			      char needle_shift,
 			      SIZE_T estimated_haystack,
 			      char haystack_shift);
-void *generic_memory_search(struct generic_mem_searcher *s,
+PMOD_EXPORT void *generic_memory_search(struct generic_mem_searcher *s,
 			    void *haystack,
 			    SIZE_T haystacklen,
 			    char haystack_shift);
-char *my_memmem(char *needle,
+PMOD_EXPORT char *my_memmem(char *needle,
 		SIZE_T needlelen,
 		char *haystack,
 		SIZE_T haystacklen);
-void memfill(char *to,
+PMOD_EXPORT void memfill(char *to,
 	     INT32 tolen,
 	     char *from,
 	     INT32 fromlen,
 	     INT32 offset);
-char *debug_xalloc(long size);
+PMOD_EXPORT char *debug_xalloc(long size);
 
 #undef BLOCK_ALLOC
 

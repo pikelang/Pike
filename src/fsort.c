@@ -9,8 +9,9 @@
 #include "global.h"
 #include "error.h"
 #include "fsort.h"
+#include "main.h"
 
-RCSID("$Id: fsort.c,v 1.12 1999/04/30 07:25:07 hubbe Exp $");
+RCSID("$Id: fsort.c,v 1.13 2000/07/28 17:16:55 hubbe Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun

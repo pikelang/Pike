@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.131 2000/06/24 00:48:13 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.132 2000/07/28 17:16:55 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -66,21 +66,21 @@ static int low_check_indexing(char *type, char *index_type, node *n);
  * Everything except T_VOID matches T_ZERO.
  */
 
-struct pike_string *string_type_string;
-struct pike_string *int_type_string;
-struct pike_string *float_type_string;
-struct pike_string *function_type_string;
-struct pike_string *object_type_string;
-struct pike_string *program_type_string;
-struct pike_string *array_type_string;
-struct pike_string *multiset_type_string;
-struct pike_string *mapping_type_string;
-struct pike_string *type_type_string;
-struct pike_string *mixed_type_string;
-struct pike_string *void_type_string;
-struct pike_string *zero_type_string;
-struct pike_string *any_type_string;
-struct pike_string *weak_type_string;	/* array|mapping|multiset|function */
+PMOD_EXPORT struct pike_string *string_type_string;
+PMOD_EXPORT struct pike_string *int_type_string;
+PMOD_EXPORT struct pike_string *float_type_string;
+PMOD_EXPORT struct pike_string *function_type_string;
+PMOD_EXPORT struct pike_string *object_type_string;
+PMOD_EXPORT struct pike_string *program_type_string;
+PMOD_EXPORT struct pike_string *array_type_string;
+PMOD_EXPORT struct pike_string *multiset_type_string;
+PMOD_EXPORT struct pike_string *mapping_type_string;
+PMOD_EXPORT struct pike_string *type_type_string;
+PMOD_EXPORT struct pike_string *mixed_type_string;
+PMOD_EXPORT struct pike_string *void_type_string;
+PMOD_EXPORT struct pike_string *zero_type_string;
+PMOD_EXPORT struct pike_string *any_type_string;
+PMOD_EXPORT struct pike_string *weak_type_string;	/* array|mapping|multiset|function */
 
 static struct pike_string *a_markers[10],*b_markers[10];
 

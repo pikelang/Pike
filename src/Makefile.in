@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.197 2000/07/26 16:59:11 nilsson Exp $
+# $Id: Makefile.in,v 1.198 2000/07/28 17:16:54 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -143,6 +143,15 @@ OBJ= \
  builtin.o \
  svalue.o @EXTRA_OBJS@
 
+MODULE_REQUIREMENTS= \
+  machine.h \
+  global.h \
+  modules/static_module_makefile \
+  modules/dynamic_module_makefile \
+  $(SRCDIR)/language.h \
+  lib \
+  master.pike @EXTRA_MODULE_REQUIREMENTS@
+  
 
 DEPEND= \
  $(SRCDIR)/language.c \
@@ -267,7 +276,17 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Done."
 
 
-.SUFFIXES: .c .o .cmod
+.SUFFIXES: .c .o .cmod .pp .protos
+
+.c.pp:
+	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
+
+.c.protos:
+	./precompile.sh fake_dynamic_load.pike "$@" --cpp --protos $(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT -DPMOD_PROTO=PMOD_PROTO "$<"
+
+.h.pph:
+	$(CPP) $(PREFLAGS) -DPMOD_EXPORT=PMOD_EXPORT -DPMOD_PROTO=PMOD_PROTO "$<" >"$@"
+
 
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
@@ -289,7 +308,7 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 # -Hubbe
 #
 .cmod.c:
-	./precompile.sh "$<" "$@"
+	./precompile.sh precompile.pike "$@" "$<"
 
 force :
 	@:
@@ -312,7 +331,7 @@ install_interactive: pike hilfe pike-module aclocal
 
 # tidy up a bit
 tidy:
-	-rm -f *.o core y.output y.tab.c y.tab.h
+	-rm -f *.o *.pp *.protos core y.output y.tab.c y.tab.h
 	-rm -f $(TMP_BINDIR)/core *.o *.i *.i~ testsuite
 
 # make clean
@@ -322,7 +341,7 @@ clean: tidy
 	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
-	-rm -f tpike stamp-tpike-predep
+	-rm -f tpike stamp-tpike-predep import-stamp
 	-find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
 #	-rm -f lib/master.pike
 
@@ -543,7 +562,7 @@ lobotomize_crypto:
 #
 # Pike internal targets
 #
-module_objects: machine.h global.h modules/static_module_makefile modules/dynamic_module_makefile $(SRCDIR)/language.h lib master.pike
+module_objects: $(MODULE_REQUIREMENTS)
 	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
 	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
 	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
@@ -576,7 +595,7 @@ $(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod ./precompile.sh $(TMP_BINDIR)/precom
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
 
-modules/modlist.h:
+modules/modlist.h: $(MODULE_REQUIREMENTS)
 	( cd modules && $(MAKE) $(MAKE_FLAGS) )
 
 modules/modlist_headers.h: modules/modlist.h
@@ -633,65 +652,61 @@ uncompress_header: $(SRCDIR)/uncompressor.c header_uncompress
 	test "`wc -c header_uncompress|sed 's/[^0-9]//g'`" = "`wc -c uncompress_header|sed 's/[^0-9]//g'`"
 
 HFILES=						\
-  operators.h					\
-  array.h					\
-  fd_control.h					\
-  peep.h					\
-  backend.h					\
-  fdlib.h					\
-  pike_macros.h					\
-  bignum.h					\
-  fsort.h					\
-  pike_memory.h					\
-  block_alloc.h					\
-  pike_types.h					\
-  block_alloc_h.h				\
-  gc.h						\
-  port.h					\
-  builtin_functions.h				\
-  global.h					\
-  callback.h					\
-  hashtable.h					\
-  program.h					\
-  interpret.h					\
-  program_id.h					\
-  constants.h					\
-  language.h					\
-  queue.h					\
-  cpp.h						\
-  las.h						\
-  rusage.h					\
-  cyclic.h					\
-  lex.h						\
-  security.h					\
-  dmalloc.h					\
-  signal_handler.h				\
-  docode.h					\
-  main.h					\
-  stralloc.h					\
-  mapping.h					\
-  stuff.h					\
-  dynamic_buffer.h				\
-  module.h					\
-  svalue.h					\
-  dynamic_load.h				\
-  module_support.h				\
-  threads.h					\
-  efun.h					\
-  multiset.h					\
-  time_stuff.h					\
-  encode.h					\
-  object.h					\
-  error.h					\
-  opcodes.h					\
-  version.h
+  operators.protos					\
+  array.protos					\
+  fd_control.protos					\
+  backend.protos					\
+  fdlib.protos					\
+  bignum.protos					\
+  fsort.protos					\
+  pike_memory.protos					\
+  pike_types.protos					\
+  gc.protos						\
+  port.protos					\
+  builtin_functions_t.protos				\
+  callback.protos					\
+  hashtable.protos					\
+  program.protos					\
+  interpret.protos					\
+  constants.protos					\
+  language.protos					\
+  queue.protos					\
+  cpp.protos						\
+  las_t.protos						\
+  peep_t.protos                                     \
+  rusage.protos					\
+  cyclic.protos					\
+  lex.protos						\
+  security.protos					\
+  signal_handler.protos				\
+  docode.protos					\
+  main.protos					\
+  stralloc.protos					\
+  mapping.protos					\
+  stuff.protos					\
+  dynamic_buffer.protos				\
+  svalue.protos					\
+  dynamic_load.protos				\
+  module_support.protos				\
+  threads.protos					\
+  multiset.protos					\
+  encode.protos					\
+  object.protos					\
+  error.protos					\
+  opcodes.protos					\
+  version.protos                                    \
+  builtin.protos
 
+import-stamp: $(HFILES) precompile.sh
+	@./precompile.sh fake_dynamic_load.pike import_functions.tmp $(HFILES)
+	@cmp import_functions.tmp import_functions.h >/dev/null || mv import_functions.tmp import_functions.h
+	@echo hej >import-stamp
 
-export_functions.c: $(HFILES)
-	$(TMP_BINDIR)/fake_dynamic_load.pike --cpp='$(CPP)' $(HFILES) 
+import_functions.h: import-stamp
+	test -f import-stamp || ( rm import-stamp ; $(MAKE) import-stamp )
 
-import_functions.h: export_functions.h
-	@touch import_functions.h
+export_functions.c: import_functions.h
+	touch export_functions.c
 
 @dependencies@
 

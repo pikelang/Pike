@@ -21,6 +21,7 @@ machine.h
 machine.h.in
 make_variables
 master.pike
+module_magic.c
 peep_engine.c
 pike
 pike.tmp

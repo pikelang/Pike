@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.92 2000/05/01 03:33:47 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.93 2000/07/28 17:16:55 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -36,7 +36,7 @@ RCSID("$Id: operators.c,v 1.92 2000/05/01 03:33:47 hubbe Exp $");
      math_error(FUNC, sp-2, 2, 0, "Modulo by zero.\n")
 
 #define COMPARISON(ID,NAME,FUN)			\
-void ID(INT32 args)				\
+PMOD_EXPORT void ID(INT32 args)				\
 {						\
   int i;					\
   switch(args)					\
@@ -57,7 +57,7 @@ void ID(INT32 args)				\
   }						\
 }
 
-void f_ne(INT32 args)
+PMOD_EXPORT void f_ne(INT32 args)
 {
   f_eq(args);
   o_not();
@@ -83,7 +83,7 @@ COMPARISON(f_ge,"`>=",!is_lt)
  sp--; \
  dmalloc_touch_svalue(sp);
 
-void f_add(INT32 args)
+PMOD_EXPORT void f_add(INT32 args)
 {
   INT_TYPE e,size;
   TYPE_FIELD types;
@@ -688,7 +688,7 @@ struct mapping *merge_mapping_array_ordered(struct mapping *a,
 struct mapping *merge_mapping_array_unordered(struct mapping *a, 
 					      struct array *b, INT32 op);
 
-void o_subtract(void)
+PMOD_EXPORT void o_subtract(void)
 {
   if (sp[-2].type != sp[-1].type && !float_promote())
   {
@@ -802,7 +802,7 @@ void o_subtract(void)
   }
 }
 
-void f_minus(INT32 args)
+PMOD_EXPORT void f_minus(INT32 args)
 {
   switch(args)
   {
@@ -842,7 +842,7 @@ static int generate_minus(node *n)
   return 0;
 }
 
-void o_and(void)
+PMOD_EXPORT void o_and(void)
 {
   if(sp[-1].type != sp[-2].type)
   {
@@ -1108,7 +1108,7 @@ static void speedup(INT32 args, void (*func)(void))
   }
 }
 
-void f_and(INT32 args)
+PMOD_EXPORT void f_and(INT32 args)
 {
   switch(args)
   {
@@ -1143,7 +1143,7 @@ static int generate_and(node *n)
   }
 }
 
-void o_or(void)
+PMOD_EXPORT void o_or(void)
 {
   if(sp[-1].type != sp[-2].type)
   {
@@ -1282,7 +1282,7 @@ void o_or(void)
   }
 }
 
-void f_or(INT32 args)
+PMOD_EXPORT void f_or(INT32 args)
 {
   switch(args)
   {
@@ -1318,7 +1318,7 @@ static int generate_or(node *n)
 }
 
 
-void o_xor(void)
+PMOD_EXPORT void o_xor(void)
 {
   if(sp[-1].type != sp[-2].type)
   {
@@ -1461,7 +1461,7 @@ void o_xor(void)
   }
 }
 
-void f_xor(INT32 args)
+PMOD_EXPORT void f_xor(INT32 args)
 {
   switch(args)
   {
@@ -1496,7 +1496,7 @@ static int generate_xor(node *n)
   }
 }
 
-void o_lsh(void)
+PMOD_EXPORT void o_lsh(void)
 {
 #ifdef AUTO_BIGNUM
   if(INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
@@ -1517,7 +1517,7 @@ void o_lsh(void)
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
 }
 
-void f_lsh(INT32 args)
+PMOD_EXPORT void f_lsh(INT32 args)
 {
   if(args != 2) {
     /* FIXME: Not appropriate if too many args. */
@@ -1537,7 +1537,7 @@ static int generate_lsh(node *n)
   return 0;
 }
 
-void o_rsh(void)
+PMOD_EXPORT void o_rsh(void)
 {
   if(sp[-2].type != T_INT || sp[-1].type != T_INT)
   {
@@ -1562,7 +1562,7 @@ void o_rsh(void)
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
 }
 
-void f_rsh(INT32 args)
+PMOD_EXPORT void f_rsh(INT32 args)
 {
   if(args != 2) {
     /* FIXME: Not appropriate if too many args. */
@@ -1584,7 +1584,7 @@ static int generate_rsh(node *n)
 
 
 #define TWO_TYPES(X,Y) (((X)<<8)|(Y))
-void o_multiply(void)
+PMOD_EXPORT void o_multiply(void)
 {
   int args = 2;
   switch(TWO_TYPES(sp[-2].type,sp[-1].type))
@@ -1685,7 +1685,7 @@ void o_multiply(void)
   }
 }
 
-void f_multiply(INT32 args)
+PMOD_EXPORT void f_multiply(INT32 args)
 {
   switch(args)
   {
@@ -1720,7 +1720,7 @@ static int generate_multiply(node *n)
   }
 }
 
-void o_divide(void)
+PMOD_EXPORT void o_divide(void)
 {
   if(sp[-2].type!=sp[-1].type && !float_promote())
   {
@@ -1976,7 +1976,7 @@ void o_divide(void)
   }
 }
 
-void f_divide(INT32 args)
+PMOD_EXPORT void f_divide(INT32 args)
 {
   switch(args)
   {
@@ -2010,7 +2010,7 @@ static int generate_divide(node *n)
   return 0;
 }
 
-void o_mod(void)
+PMOD_EXPORT void o_mod(void)
 {
   if(sp[-2].type != sp[-1].type && !float_promote())
   {
@@ -2113,7 +2113,7 @@ void o_mod(void)
   }
 }
 
-void f_mod(INT32 args)
+PMOD_EXPORT void f_mod(INT32 args)
 {
   if(args != 2) {
     /* FIXME: Not appropriate when too many args. */
@@ -2133,7 +2133,7 @@ static int generate_mod(node *n)
   return 0;
 }
 
-void o_not(void)
+PMOD_EXPORT void o_not(void)
 {
   switch(sp[-1].type)
   {
@@ -2160,7 +2160,7 @@ void o_not(void)
   }
 }
 
-void f_not(INT32 args)
+PMOD_EXPORT void f_not(INT32 args)
 {
   if(args != 1) {
     /* FIXME: Not appropriate with too many args. */
@@ -2180,7 +2180,7 @@ static int generate_not(node *n)
   return 0;
 }
 
-void o_compl(void)
+PMOD_EXPORT void o_compl(void)
 {
   switch(sp[-1].type)
   {
@@ -2252,7 +2252,7 @@ void o_compl(void)
   }
 }
 
-void f_compl(INT32 args)
+PMOD_EXPORT void f_compl(INT32 args)
 {
   if(args != 1) {
     /* FIXME: Not appropriate with too many args. */
@@ -2272,7 +2272,7 @@ static int generate_compl(node *n)
   return 0;
 }
 
-void o_negate(void)
+PMOD_EXPORT void o_negate(void)
 {
   switch(sp[-1].type)
   {
@@ -2301,7 +2301,7 @@ void o_negate(void)
   }
 }
 
-void o_range(void)
+PMOD_EXPORT void o_range(void)
 {
   INT32 from,to;
 
@@ -2367,7 +2367,7 @@ void o_range(void)
   }
 }
 
-void f_index(INT32 args)
+PMOD_EXPORT void f_index(INT32 args)
 {
   switch(args)
   {
@@ -2387,7 +2387,7 @@ void f_index(INT32 args)
   }
 }
 
-void f_arrow(INT32 args)
+PMOD_EXPORT void f_arrow(INT32 args)
 {
   switch(args)
   {
@@ -2405,7 +2405,7 @@ void f_arrow(INT32 args)
   }
 }
 
-void f_index_assign(INT32 args)
+PMOD_EXPORT void f_index_assign(INT32 args)
 {
   switch (args) {
     case 0:
@@ -2424,7 +2424,7 @@ void f_index_assign(INT32 args)
   }
 }
 
-void f_arrow_assign(INT32 args)
+PMOD_EXPORT void f_arrow_assign(INT32 args)
 {
   switch (args) {
     case 0:
@@ -2443,7 +2443,7 @@ void f_arrow_assign(INT32 args)
   }
 }
 
-void f_sizeof(INT32 args)
+PMOD_EXPORT void f_sizeof(INT32 args)
 {
   INT32 tmp;
   if(args<1)

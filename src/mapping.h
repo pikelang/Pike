@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.27 2000/07/18 05:48:20 mast Exp $
+ * $Id: mapping.h,v 1.28 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -74,6 +74,8 @@ extern struct mapping *gc_internal_mapping;
  if(!--md_->refs) really_free_mapping_data(md_); \
  /* FIXME: What about valrefs & hardlinks? */ \
 }while(0)
+
+PMOD_PROTO void really_free_mapping(struct mapping *md);
 
 /* Prototypes begin here */
 BLOCK_ALLOC(mapping, 511)

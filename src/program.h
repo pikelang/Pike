@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.96 2000/07/18 05:48:20 mast Exp $
+ * $Id: program.h,v 1.97 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -23,6 +23,9 @@
 
 #define EXTERN
 #include "compilation.h"
+
+/* Needed to support dynamic loading on NT */
+PMOD_PROTO extern struct program_state * Pike_compiler;
 
 
 #ifdef PIKE_DEBUG
@@ -329,29 +332,31 @@ void ins_int(INT32 i, void (*func)(char tmp));
 void ins_short(INT16 i, void (*func)(char tmp));
 void use_module(struct svalue *s);
 void unuse_modules(INT32 howmany);
-struct node_s *find_module_identifier(struct pike_string *ident, int see_inherit);
+struct node_s *find_module_identifier(struct pike_string *ident,
+				      int see_inherit);
 struct program *parent_compilation(int level);
 struct program *id_to_program(INT32 id);
 void optimize_program(struct program *p);
 int program_function_index_compare(const void *a,const void *b);
+char *find_program_name(struct program *p, INT32 *line);
 void fixate_program(void);
 struct program *low_allocate_program(void);
 void low_start_new_program(struct program *p,
 			   struct pike_string *name,
 			   int flags,
 			   int *idp);
-void debug_start_new_program(PROGRAM_LINE_ARGS);
-void really_free_program(struct program *p);
+PMOD_EXPORT void debug_start_new_program(PROGRAM_LINE_ARGS);
+PMOD_EXPORT void really_free_program(struct program *p);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void check_program(struct program *p);
 struct program *end_first_pass(int finish);
-struct program *debug_end_program(void);
-size_t low_add_storage(size_t size, size_t alignment, int modulo_orig);
-void set_init_callback(void (*init)(struct object *));
-void set_exit_callback(void (*exit)(struct object *));
-void set_gc_recurse_callback(void (*m)(struct object *));
-void set_gc_check_callback(void (*m)(struct object *));
+PMOD_EXPORT struct program *debug_end_program(void);
+PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment, int modulo_orig);
+PMOD_EXPORT void set_init_callback(void (*init)(struct object *));
+PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *));
+PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *));
+PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *));
 int low_reference_inherited_identifier(struct program_state *q,
 				       int e,
 				       struct pike_string *name,
@@ -366,7 +371,7 @@ void low_inherit(struct program *p,
 		 int parent_offset,
 		 INT32 flags,
 		 struct pike_string *name);
-void do_inherit(struct svalue *s,
+PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name);
 void compiler_do_inherit(node *n,
@@ -381,12 +386,12 @@ int low_define_variable(struct pike_string *name,
 			INT32 flags,
 			size_t offset,
 			INT32 run_time_type);
-int map_variable(char *name,
+PMOD_EXPORT int map_variable(char *name,
 		 char *type,
 		 INT32 flags,
 		 size_t offset,
 		 INT32 run_time_type);
-int quick_map_variable(char *name,
+PMOD_EXPORT int quick_map_variable(char *name,
 		       int name_length,
 		       size_t offset,
 		       char *type,
@@ -396,36 +401,36 @@ int quick_map_variable(char *name,
 int define_variable(struct pike_string *name,
 		    struct pike_string *type,
 		    INT32 flags);
-int simple_add_variable(char *name,
+PMOD_EXPORT int simple_add_variable(char *name,
 			char *type,
 			INT32 flags);
-int add_constant(struct pike_string *name,
+PMOD_EXPORT int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags);
-int simple_add_constant(char *name,
+PMOD_EXPORT int simple_add_constant(char *name,
 			struct svalue *c,
 			INT32 flags);
-int add_integer_constant(char *name,
+PMOD_EXPORT int add_integer_constant(char *name,
 			 INT32 i,
 			 INT32 flags);
-int quick_add_integer_constant(char *name,
+PMOD_EXPORT int quick_add_integer_constant(char *name,
 			       int name_length,
 			       INT32 i,
 			       INT32 flags);
-int add_float_constant(char *name,
+PMOD_EXPORT int add_float_constant(char *name,
 			 double f,
 			 INT32 flags);
-int add_string_constant(char *name,
+PMOD_EXPORT int add_string_constant(char *name,
 			char *str,
 			INT32 flags);
-int add_program_constant(char *name,
+PMOD_EXPORT int add_program_constant(char *name,
 			 struct program *p,
 			 INT32 flags);
-int add_object_constant(char *name,
+PMOD_EXPORT int add_object_constant(char *name,
 			struct object *o,
 			INT32 flags);
-int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
-int debug_end_class(char *name, int namelen, INT32 flags);
+PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
+PMOD_EXPORT int debug_end_class(char *name, int namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
 		      INT16 flags,
@@ -457,7 +462,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 struct program *compile(struct pike_string *prog,
 			struct object *handler);
 int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags);
-int quick_add_function(char *name,
+PMOD_EXPORT int quick_add_function(char *name,
 		       int name_length,
 		       void (*cfun)(INT32),
 		       char *type,
@@ -468,10 +473,10 @@ void check_all_programs(void);
 void init_program(void);
 void cleanup_program(void);
 void gc_mark_program_as_referenced(struct program *p);
+void real_gc_cycle_check_program(struct program *p, int weak);
 unsigned gc_touch_all_programs(void);
 void gc_check_all_programs(void);
 void gc_mark_all_programs(void);
-void real_gc_cycle_check_program(struct program *p, int weak);
 void gc_cycle_check_all_programs(void);
 void gc_zap_ext_weak_refs_in_programs(void);
 void gc_free_all_unreferenced_programs(void);

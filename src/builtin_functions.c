@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.292 2000/07/27 17:47:29 lange Exp $");
+RCSID("$Id: builtin_functions.c,v 1.293 2000/07/28 17:16:54 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -58,7 +58,7 @@ RCSID("$Id: builtin_functions.c,v 1.292 2000/07/27 17:47:29 lange Exp $");
 /* #define DIFF_DEBUG */
 /* #define ENABLE_DYN_DIFF */
 
-void f_equal(INT32 args)
+PMOD_EXPORT void f_equal(INT32 args)
 {
   int i;
   if(args != 2)
@@ -69,7 +69,7 @@ void f_equal(INT32 args)
   push_int(i);
 }
 
-void debug_f_aggregate(INT32 args)
+PMOD_EXPORT void debug_f_aggregate(INT32 args)
 {
   struct array *a;
 #ifdef PIKE_DEBUG
@@ -125,7 +125,7 @@ void f_hash(INT32 args)
   push_int(i);
 }
 
-void f_copy_value(INT32 args)
+PMOD_EXPORT void f_copy_value(INT32 args)
 {
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("copy_value",1);
@@ -270,7 +270,7 @@ static struct case_info *find_ci_shift0(int c)
    } \
   } while(0)
 
-void f_lower_case(INT32 args)
+PMOD_EXPORT void f_lower_case(INT32 args)
 {
   INT32 i;
   struct pike_string *orig;
@@ -309,7 +309,7 @@ void f_lower_case(INT32 args)
   push_string(end_shared_string(ret));
 }
 
-void f_upper_case(INT32 args)
+PMOD_EXPORT void f_upper_case(INT32 args)
 {
   INT32 i;
   struct pike_string *orig;
@@ -369,7 +369,7 @@ void f_upper_case(INT32 args)
   }
 }
 
-void f_random(INT32 args)
+PMOD_EXPORT void f_random(INT32 args)
 {
   INT_TYPE i;
 
@@ -394,7 +394,7 @@ void f_random(INT32 args)
   push_int(i);
 }
 
-void f_random_string(INT32 args)
+PMOD_EXPORT void f_random_string(INT32 args)
 {
   struct pike_string *ret;
   INT32 e,len;
@@ -405,7 +405,7 @@ void f_random_string(INT32 args)
   push_string(end_shared_string(ret));
 }
 
-void f_random_seed(INT32 args)
+PMOD_EXPORT void f_random_seed(INT32 args)
 {
   INT_TYPE i;
 #ifdef AUTO_BIGNUM
@@ -429,7 +429,7 @@ void f_query_num_arg(INT32 args)
   push_int(Pike_fp ? Pike_fp->args : 0);
 }
 
-void f_search(INT32 args)
+PMOD_EXPORT void f_search(INT32 args)
 {
   INT32 start;
 
@@ -506,7 +506,7 @@ void f_search(INT32 args)
 }
 
 /* int has_prefix(string a, string prefix) */
-void f_has_prefix(INT32 args)
+PMOD_EXPORT void f_has_prefix(INT32 args)
 {
   struct pike_string *a, *b;
 
@@ -562,7 +562,7 @@ void f_has_prefix(INT32 args)
 #undef TWO_SHIFTS
 }
 
-void f_has_index(INT32 args)
+PMOD_EXPORT void f_has_index(INT32 args)
 {
   int t = 0;
   
@@ -625,7 +625,7 @@ void f_has_index(INT32 args)
   }
 }
 
-void f_has_value(INT32 args)
+PMOD_EXPORT void f_has_value(INT32 args)
 {
   if(args != 2)
     PIKE_ERROR("has_value", "Bad number of arguments.\n", Pike_sp, args);
@@ -674,7 +674,7 @@ void f_has_value(INT32 args)
 
 /* Old backtrace */
 
-void f_backtrace(INT32 args)
+PMOD_EXPORT void f_backtrace(INT32 args)
 {
   INT32 frames;
   struct pike_frame *f,*of;
@@ -749,7 +749,7 @@ void f_backtrace(INT32 args)
   a->type_field = BIT_ARRAY | BIT_INT;
 }
 
-void f_add_constant(INT32 args)
+PMOD_EXPORT void f_add_constant(INT32 args)
 {
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("add_constant: permission denied.\n"));
   if(args<1)
@@ -931,7 +931,7 @@ static char *combine_path(char *cwd,char *file)
   return ret;
 }
 
-void f_combine_path(INT32 args)
+PMOD_EXPORT void f_combine_path(INT32 args)
 {
   char *path=0;
   int e,dofree=0;
@@ -966,7 +966,7 @@ void f_combine_path(INT32 args)
   push_string(ret);
 }
 
-void f_function_object(INT32 args)
+PMOD_EXPORT void f_function_object(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("function_object",1);
@@ -983,7 +983,7 @@ void f_function_object(INT32 args)
   }
 }
 
-void f_function_name(INT32 args)
+PMOD_EXPORT void f_function_name(INT32 args)
 {
   struct pike_string *s;
   if(args < 1)
@@ -1010,7 +1010,7 @@ void f_function_name(INT32 args)
   }
 }
 
-void f_zero_type(INT32 args)
+PMOD_EXPORT void f_zero_type(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
@@ -1037,7 +1037,7 @@ void f_zero_type(INT32 args)
  * Some wide-strings related functions
  */
 
-void f_string_to_unicode(INT32 args)
+PMOD_EXPORT void f_string_to_unicode(INT32 args)
 {
   struct pike_string *in;
   struct pike_string *out = NULL;
@@ -1144,7 +1144,7 @@ void f_string_to_unicode(INT32 args)
   push_string(out);
 }
 
-void f_unicode_to_string(INT32 args)
+PMOD_EXPORT void f_unicode_to_string(INT32 args)
 {
   struct pike_string *in;
   struct pike_string *out = NULL;
@@ -1303,7 +1303,7 @@ void f_string_to_utf8(INT32 args)
   push_string(out);
 }
 
-void f_utf8_to_string(INT32 args)
+PMOD_EXPORT void f_utf8_to_string(INT32 args)
 {
   struct pike_string *in;
   struct pike_string *out;
@@ -1455,13 +1455,13 @@ static void f_parse_pike_type( INT32 args )
   push_string( res );
 }
 
-void f_all_constants(INT32 args)
+PMOD_EXPORT void f_all_constants(INT32 args)
 {
   pop_n_elems(args);
   ref_push_mapping(get_builtin_constants());
 }
 
-void f_allocate(INT32 args)
+PMOD_EXPORT void f_allocate(INT32 args)
 {
   INT32 size;
   struct array *a;
@@ -1534,7 +1534,7 @@ node *fix_this_object_type(node *n)
   return NULL;
 }
 
-void f_throw(INT32 args)
+PMOD_EXPORT void f_throw(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("throw", 1);
@@ -1544,7 +1544,7 @@ void f_throw(INT32 args)
   pike_throw();
 }
 
-void f_exit(INT32 args)
+PMOD_EXPORT void f_exit(INT32 args)
 {
   static int in_exit=0;
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY, ("exit: permission denied.\n"));
@@ -1574,7 +1574,7 @@ void f__exit(INT32 args)
   exit(Pike_sp[-args].u.integer);
 }
 
-void f_time(INT32 args)
+PMOD_EXPORT void f_time(INT32 args)
 {
   if(!args)
   {
@@ -1596,7 +1596,7 @@ void f_time(INT32 args)
   push_int(current_time.tv_sec);
 }
 
-void f_crypt(INT32 args)
+PMOD_EXPORT void f_crypt(INT32 args)
 {
   char salt[2];
   char *ret, *saltp;
@@ -1650,7 +1650,7 @@ void f_crypt(INT32 args)
   }
 }
 
-void f_destruct(INT32 args)
+PMOD_EXPORT void f_destruct(INT32 args)
 {
   struct object *o;
   if(args)
@@ -1675,7 +1675,7 @@ void f_destruct(INT32 args)
   pop_n_elems(args);
 }
 
-void f_indices(INT32 args)
+PMOD_EXPORT void f_indices(INT32 args)
 {
   INT32 size;
   struct array *a;
@@ -1941,7 +1941,7 @@ static node *fix_aggregate_mapping_type(node *n)
   return NULL;
 }
 
-void f_values(INT32 args)
+PMOD_EXPORT void f_values(INT32 args)
 {
   INT32 size;
   struct array *a;
@@ -2008,7 +2008,7 @@ void f_values(INT32 args)
   push_array(a);
 }
 
-void f_next_object(INT32 args)
+PMOD_EXPORT void f_next_object(INT32 args)
 {
   struct object *o;
   if(args < 1)
@@ -2029,7 +2029,7 @@ void f_next_object(INT32 args)
   }
 }
 
-void f_object_program(INT32 args)
+PMOD_EXPORT void f_object_program(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("object_program", 1);
@@ -2088,7 +2088,7 @@ node *fix_object_program_type(node *n)
   return NULL;
 }
 
-void f_reverse(INT32 args)
+PMOD_EXPORT void f_reverse(INT32 args)
 {
   if(args < 1)
     SIMPLE_TOO_FEW_ARGS_ERROR("reverse", 1);
@@ -2329,7 +2329,7 @@ static struct pike_string * replace_many(struct pike_string *str,
   return finish_string_builder(&ret);
 }
 
-void f_replace(INT32 args)
+PMOD_EXPORT void f_replace(INT32 args)
 {
   if(args < 3)
     SIMPLE_TOO_FEW_ARGS_ERROR("replace", 3);
@@ -2386,7 +2386,7 @@ void f_replace(INT32 args)
   }
 }
 
-void f_compile(INT32 args)
+PMOD_EXPORT void f_compile(INT32 args)
 {
   struct program *p;
 
@@ -2442,7 +2442,7 @@ void f_set_weak_flag(INT32 args)
 
 
 
-void f_objectp(INT32 args)
+PMOD_EXPORT void f_objectp(INT32 args)
 {
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("objectp", 1);
@@ -2460,7 +2460,7 @@ void f_objectp(INT32 args)
   }
 }
 
-void f_functionp(INT32 args)
+PMOD_EXPORT void f_functionp(INT32 args)
 {
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("functionp", 1);
@@ -2479,7 +2479,7 @@ void f_functionp(INT32 args)
 #undef HAVE_POLL
 #endif
 
-void f_sleep(INT32 args)
+PMOD_EXPORT void f_sleep(INT32 args)
 {
 #define POLL_SLEEP_LIMIT 0.02
 
@@ -2592,7 +2592,7 @@ void f_gc(INT32 args)
  */
 
 #define TYPEP(ID,NAME,TYPE,TYPE_NAME)				\
-void ID(INT32 args)						\
+PMOD_EXPORT void ID(INT32 args)						\
 {								\
   int t;							\
   if(args<1)							\
@@ -2625,7 +2625,7 @@ void ID(INT32 args) \
 #endif /* AUTO_BIGNUM */
 
 
-void f_programp(INT32 args)
+PMOD_EXPORT void f_programp(INT32 args)
 {
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("programp", 1);
@@ -2666,7 +2666,7 @@ TYPEP(f_stringp, "stringp", T_STRING)
 TYPEP(f_floatp, "floatp", T_FLOAT)
 #endif /* AUTO_BIGNUM */
      
-void f_sort(INT32 args)
+PMOD_EXPORT void f_sort(INT32 args)
 {
   INT32 e,*order;
 
@@ -2694,7 +2694,7 @@ void f_sort(INT32 args)
   }
 }
 
-void f_rows(INT32 args)
+PMOD_EXPORT void f_rows(INT32 args)
 {
   INT32 e;
   struct array *a,*tmp;
@@ -2731,7 +2731,7 @@ void f_rows(INT32 args)
 
 
 #ifdef PIKE_DEBUG
-void f__verify_internals(INT32 args)
+PMOD_EXPORT void f__verify_internals(INT32 args)
 {
   INT32 tmp=d_flag;
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
@@ -2743,7 +2743,7 @@ void f__verify_internals(INT32 args)
   pop_n_elems(args);
 }
 
-void f__debug(INT32 args)
+PMOD_EXPORT void f__debug(INT32 args)
 {
   INT_TYPE d;
 
@@ -2756,7 +2756,7 @@ void f__debug(INT32 args)
   d_flag = d;
 }
 
-void f__optimizer_debug(INT32 args)
+PMOD_EXPORT void f__optimizer_debug(INT32 args)
 {
   INT_TYPE l;
 
@@ -2771,7 +2771,7 @@ void f__optimizer_debug(INT32 args)
 
 #ifdef YYDEBUG
 
-void f__compiler_trace(INT32 args)
+PMOD_EXPORT void f__compiler_trace(INT32 args)
 {
   extern int yydebug;
   INT_TYPE yyd;
@@ -2813,7 +2813,7 @@ static void encode_struct_tm(struct tm *tm)
 #endif
 
 #ifdef HAVE_GMTIME
-void f_gmtime(INT32 args)
+PMOD_EXPORT void f_gmtime(INT32 args)
 {
   struct tm *tm;
   INT_TYPE tt;
@@ -2833,7 +2833,7 @@ void f_gmtime(INT32 args)
 #endif
 
 #ifdef HAVE_LOCALTIME
-void f_localtime(INT32 args)
+PMOD_EXPORT void f_localtime(INT32 args)
 {
   struct tm *tm;
   INT_TYPE tt;
@@ -2863,7 +2863,7 @@ void f_localtime(INT32 args)
 #endif
 
 #ifdef HAVE_MKTIME
-void f_mktime (INT32 args)
+PMOD_EXPORT void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year, isdst;
   struct tm date;
@@ -3099,7 +3099,7 @@ static int does_match(struct pike_string *s,int j,
   return j==s->len;
 }
 
-void f_glob(INT32 args)
+PMOD_EXPORT void f_glob(INT32 args)
 {
   INT32 i,matches;
   struct array *a;
@@ -4096,7 +4096,7 @@ static struct array* diff_build(struct array *a,
    return aggregate_array(2);
 }
 
-void f_diff(INT32 args)
+PMOD_EXPORT void f_diff(INT32 args)
 {
    struct array *seq;
    struct array *cmptbl;
@@ -4205,7 +4205,7 @@ struct callback *add_memory_usage_callback(callback_func call,
 }
 
 
-void f__memory_usage(INT32 args)
+PMOD_EXPORT void f__memory_usage(INT32 args)
 {
   INT32 num,size;
   struct svalue *ss;
@@ -4271,7 +4271,7 @@ void f__memory_usage(INT32 args)
   f_aggregate_mapping(Pike_sp-ss);
 }
 
-void f__next(INT32 args)
+PMOD_EXPORT void f__next(INT32 args)
 {
   struct svalue tmp;
 
@@ -4304,7 +4304,7 @@ void f__next(INT32 args)
   }
 }
 
-void f__prev(INT32 args)
+PMOD_EXPORT void f__prev(INT32 args)
 {
   struct svalue tmp;
 
@@ -4335,7 +4335,7 @@ void f__prev(INT32 args)
   }
 }
 
-void f__refs(INT32 args)
+PMOD_EXPORT void f__refs(INT32 args)
 {
   INT32 i;
 
@@ -4356,7 +4356,7 @@ void f__refs(INT32 args)
 /* This function is for debugging *ONLY*
  * do not document please. /Hubbe
  */
-void f__leak(INT32 args)
+PMOD_EXPORT void f__leak(INT32 args)
 {
   INT32 i;
 
@@ -4374,7 +4374,7 @@ void f__leak(INT32 args)
   push_int(i);
 }
 
-void f__typeof(INT32 args)
+PMOD_EXPORT void f__typeof(INT32 args)
 {
   struct pike_string *s;
   if(!args)
@@ -4387,7 +4387,7 @@ void f__typeof(INT32 args)
   Pike_sp[-1].type = T_TYPE;
 }
 
-void f_replace_master(INT32 args)
+PMOD_EXPORT void f_replace_master(INT32 args)
 {
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("replace_master: permission denied.\n"));
@@ -4411,7 +4411,7 @@ void f_replace_master(INT32 args)
   pop_n_elems(args);
 }
 
-void f_master(INT32 args)
+PMOD_EXPORT void f_master(INT32 args)
 {
   pop_n_elems(args);
   ref_push_object(master());
@@ -4420,13 +4420,13 @@ void f_master(INT32 args)
 #ifdef HAVE_GETHRVTIME
 #include <sys/time.h>
 
-void f_gethrvtime(INT32 args)
+PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
   pop_n_elems(args);
   push_int64(gethrvtime()/1000);
 }
 
-void f_gethrtime(INT32 args)
+PMOD_EXPORT void f_gethrtime(INT32 args)
 {
   pop_n_elems(args);
   if(args)
@@ -4435,7 +4435,7 @@ void f_gethrtime(INT32 args)
     push_int64(gethrtime()/1000);
 }
 #else
-void f_gethrtime(INT32 args)
+PMOD_EXPORT void f_gethrtime(INT32 args)
 {
   struct timeval tv;
   pop_n_elems(args);
@@ -4496,7 +4496,7 @@ static void f_get_prof_info(INT32 args)
 }
 #endif /* PROFILING */
 
-void f_object_variablep(INT32 args)
+PMOD_EXPORT void f_object_variablep(INT32 args)
 {
   struct object *o;
   struct pike_string *s;
@@ -4520,7 +4520,7 @@ void f_object_variablep(INT32 args)
 }
 
 /* uniqify an array while at the same time keeping the order intact */
-void f_uniq_array(INT32 args)
+PMOD_EXPORT void f_uniq_array(INT32 args)
 {
   struct array *a, *b;
   struct mapping *m;
@@ -4548,7 +4548,7 @@ void f_uniq_array(INT32 args)
   push_array(b);
 }
 
-void f_splice(INT32 args)
+PMOD_EXPORT void f_splice(INT32 args)
 {
   struct array *out;
   INT32 size=0x7fffffff;
@@ -4626,7 +4626,7 @@ void f_everynth(INT32 args)
 }
 
 
-void f_transpose(INT32 args)
+PMOD_EXPORT void f_transpose(INT32 args)
 {
   struct array *out;
   struct array *in;
@@ -4698,7 +4698,7 @@ void f_transpose(INT32 args)
 }
 
 #ifdef DEBUG_MALLOC
-void f__reset_dmalloc(INT32 args)
+PMOD_EXPORT void f__reset_dmalloc(INT32 args)
 {
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_reset_dmalloc: permission denied.\n"));
@@ -4706,7 +4706,7 @@ void f__reset_dmalloc(INT32 args)
   reset_debug_malloc();
 }
 
-void f__dmalloc_set_name(INT32 args)
+PMOD_EXPORT void f__dmalloc_set_name(INT32 args)
 {
   char *s;
   INT_TYPE i;
@@ -4723,7 +4723,7 @@ void f__dmalloc_set_name(INT32 args)
   pop_n_elems(args);
 }
 
-void f__list_open_fds(INT32 args)
+PMOD_EXPORT void f__list_open_fds(INT32 args)
 {
   extern void list_open_fds(void);
   list_open_fds();
@@ -4731,7 +4731,7 @@ void f__list_open_fds(INT32 args)
 #endif
 
 #ifdef PIKE_DEBUG
-void f__locate_references(INT32 args)
+PMOD_EXPORT void f__locate_references(INT32 args)
 {
   CHECK_SECURITY_OR_ERROR(SECURITY_BIT_SECURITY,
 			  ("_locate_references: permission denied.\n"));
@@ -4740,7 +4740,7 @@ void f__locate_references(INT32 args)
   pop_n_elems(args-1);
 }
 
-void f__describe(INT32 args)
+PMOD_EXPORT void f__describe(INT32 args)
 {
   struct svalue *s;
 
@@ -4753,7 +4753,7 @@ void f__describe(INT32 args)
 
 #endif
 
-void f_map_array(INT32 args)
+PMOD_EXPORT void f_map_array(INT32 args)
 {
   ONERROR tmp;
   INT32 e;
@@ -4785,7 +4785,7 @@ void f_map_array(INT32 args)
   push_array(ret);
 }
 
-void f_map(INT32 args)
+PMOD_EXPORT void f_map(INT32 args)
 {
    /*
      map(arr,fun,extra) => ret
@@ -5120,7 +5120,7 @@ void f_map(INT32 args)
    }      
 }
 
-void f_filter(INT32 args)
+PMOD_EXPORT void f_filter(INT32 args)
 {
    /* filter(mixed arr,mixed fun,mixed ... extra) ->
 
@@ -5460,7 +5460,7 @@ void f_enumerate(INT32 args)
    }
 }
 
-void f_inherit_list(INT32 args)
+PMOD_EXPORT void f_inherit_list(INT32 args)
 {
   struct program *p;
   struct svalue *arg;
@@ -5548,7 +5548,7 @@ void f_inherit_list(INT32 args)
 }
 
 
-void f_function_defined(INT32 args)
+PMOD_EXPORT void f_function_defined(INT32 args)
 {
   check_all_args("Function.defined",args,BIT_FUNCTION, 0);
 

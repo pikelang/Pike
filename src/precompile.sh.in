@@ -2,9 +2,19 @@
 
 #set -x
 
+SCRIPT="$1"
+TARGET="$2"
+shift 2
+
 TMP_BUILDDIR="@BUILDDIR@"
 TMP_BINDIR="@BINDIR@"
 LIBDIR_SRC="@LIBDIR@"
+SRCDIR="@srcdir@"
+
+export TMP_BUILDDIR
+export LIBDIR_SRC
+export TMP_BUILDDIR
+export SRCDIR
 
 if test -f "$TMP_BUILDDIR/precompile-method" ; then
   . "$TMP_BUILDDIR/precompile-method"
@@ -69,13 +79,13 @@ esac
 
 #
 # By linking these two files to the current directory I can make
-# precompile.pike work with older versions of Pike - Hubbe
+# $SCRIPT work with older versions of Pike - Hubbe
 #
 
-if test -f ./precompile.pike ; then
+if test -f ./$SCRIPT ; then
   :
 else
-  ln -s "$TMP_BINDIR/precompile.pike"  ./precompile.pike
+  ln -s "$TMP_BINDIR/$SCRIPT"  ./$SCRIPT
 fi
 
 if test -f ./C.pmod ; then
@@ -87,8 +97,8 @@ fi
 
 
 if test "x${RUNPIKE-}" != x ; then
-echo "precompile: $RUNPIKE ./precompile.pike $1 >$2 (method=$method)"
-if $RUNPIKE ./precompile.pike "$1" >"$2" ; then
+echo "precompile: $RUNPIKE ./$SCRIPT $@ >$TARGET (method=$method)"
+if $RUNPIKE ./$SCRIPT "$@" >"$TARGET" ; then
 
 cat > "$TMP_BUILDDIR/precompile-method" <<EOF
 LAST_PIKE=$LAST_PIKE
@@ -104,4 +114,5 @@ retries=.$retries
 
 done # retry
 # Total failure
-rm "$2"
+rm "$TARGET"
+exit 1

@@ -9,11 +9,11 @@
 #include "error.h"
 #include "pike_memory.h"
 
-RCSID("$Id: dynamic_buffer.c,v 1.9 1998/11/22 11:02:42 hubbe Exp $");
+RCSID("$Id: dynamic_buffer.c,v 1.10 2000/07/28 17:16:54 hubbe Exp $");
 
 static dynamic_buffer buff;
 
-char *low_make_buf_space(INT32 space, dynamic_buffer *buf)
+PMOD_EXPORT char *low_make_buf_space(INT32 space, dynamic_buffer *buf)
 {
   char *ret;
 #ifdef PIKE_DEBUG
@@ -37,7 +37,7 @@ char *low_make_buf_space(INT32 space, dynamic_buffer *buf)
   return ret;
 }
 
-void low_my_putchar(char b,dynamic_buffer *buf)
+PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf)
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
@@ -46,7 +46,7 @@ void low_my_putchar(char b,dynamic_buffer *buf)
   low_make_buf_space(1,buf)[0]=b;
 }
 
-void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
+PMOD_EXPORT void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
 {
 #ifdef PIKE_DEBUG
   if(!buf->s.str)
@@ -56,14 +56,14 @@ void low_my_binary_strcat(const char *b,INT32 l,dynamic_buffer *buf)
   MEMCPY(low_make_buf_space(l,buf),b,l);
 }
 
-void debug_initialize_buf(dynamic_buffer *buf)
+PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf)
 {
   buf->s.str=(char *)xalloc((buf->bufsize=BUFFER_BEGIN_SIZE));
   *(buf->s.str)=0;
   buf->s.len=0;
 }
 
-void low_reinit_buf(dynamic_buffer *buf)
+PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf)
 {
   if(!buf->s.str)
   {
@@ -74,7 +74,7 @@ void low_reinit_buf(dynamic_buffer *buf)
   }
 }
 
-void low_init_buf_with_string(string s, dynamic_buffer *buf)
+PMOD_EXPORT void low_init_buf_with_string(string s, dynamic_buffer *buf)
 {
   if(buf->s.str) { free(buf->s.str); buf->s.str=NULL; } 
   buf->s=s;
@@ -89,7 +89,7 @@ void low_init_buf_with_string(string s, dynamic_buffer *buf)
 #endif
 }
 
-string complex_free_buf(void)
+PMOD_EXPORT string complex_free_buf(void)
 {
   string tmp;
   if(!buff.s.str) return buff.s;
@@ -100,19 +100,19 @@ string complex_free_buf(void)
   return tmp;
 }
 
-void toss_buffer(dynamic_buffer *buf)
+PMOD_EXPORT void toss_buffer(dynamic_buffer *buf)
 {
   if(buf->s.str) free(buf->s.str);
   buf->s.str=0;
 }
 
-char *simple_free_buf(void)
+PMOD_EXPORT char *simple_free_buf(void)
 {
   if(!buff.s.str) return 0;
   return complex_free_buf().str;
 }
 
-struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
+PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
 {
   struct pike_string *q;
   if(!buf->s.str) return 0;
@@ -123,14 +123,14 @@ struct pike_string *debug_low_free_buf(dynamic_buffer *buf)
   return q;
 }
 
-struct pike_string *debug_free_buf(void) { return low_free_buf(&buff); }
-char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
-void my_putchar(char b) { low_my_putchar(b,&buff); }
-void my_binary_strcat(const char *b,INT32 l) { low_my_binary_strcat(b,l,&buff); }
-void my_strcat(const char *b) { my_binary_strcat(b,strlen(b)); }
-void init_buf(void) { low_reinit_buf(&buff); }
-void init_buf_with_string(string s) { low_init_buf_with_string(s,&buff); }
-char *debug_return_buf(void)
+PMOD_EXPORT struct pike_string *debug_free_buf(void) { return low_free_buf(&buff); }
+PMOD_EXPORT char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
+PMOD_EXPORT void my_putchar(char b) { low_my_putchar(b,&buff); }
+PMOD_EXPORT void my_binary_strcat(const char *b,INT32 l) { low_my_binary_strcat(b,l,&buff); }
+PMOD_EXPORT void my_strcat(const char *b) { my_binary_strcat(b,strlen(b)); }
+PMOD_EXPORT void init_buf(void) { low_reinit_buf(&buff); }
+PMOD_EXPORT void init_buf_with_string(string s) { low_init_buf_with_string(s,&buff); }
+PMOD_EXPORT char *debug_return_buf(void)
 {
   my_putchar(0);
   return buff.s.str;

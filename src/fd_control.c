@@ -10,7 +10,7 @@
 #include "error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.31 2000/07/07 15:23:06 grubba Exp $");
+RCSID("$Id: fd_control.c,v 1.32 2000/07/28 17:16:54 hubbe Exp $");
 
 #else /* TESTING */
 
@@ -69,7 +69,7 @@ RCSID("$Id: fd_control.c,v 1.31 2000/07/07 15:23:06 grubba Exp $");
 #endif
 
 
-int set_nonblocking(int fd,int which)
+PMOD_EXPORT int set_nonblocking(int fd,int which)
 {
   int ret;
 #ifdef PIKE_DEBUG
@@ -105,7 +105,7 @@ int set_nonblocking(int fd,int which)
   return ret;
 }
 
-int query_nonblocking(int fd)
+PMOD_EXPORT int query_nonblocking(int fd)
 {
   int ret;
 #ifdef PIKE_DEBUG
@@ -178,7 +178,7 @@ void cleanup_close_on_exec(void)
 }
 #endif /* HAVE_BROKEN_F_SETFD */
 
-int set_close_on_exec(int fd, int which)
+PMOD_EXPORT int set_close_on_exec(int fd, int which)
 {
 #ifndef HAVE_BROKEN_F_SETFD
   int ret;

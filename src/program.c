@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.251 2000/07/18 05:48:20 mast Exp $");
+RCSID("$Id: program.c,v 1.252 2000/07/28 17:16:55 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -876,7 +876,7 @@ void low_start_new_program(struct program *p,
   debug_malloc_touch(Pike_compiler->fake_object->storage);
 }
 
-void debug_start_new_program(PROGRAM_LINE_ARGS)
+PMOD_EXPORT void debug_start_new_program(PROGRAM_LINE_ARGS)
 {
   CDFPRINTF((stderr,
 	     "th(%ld) start_new_program(): threads_disabled:%d, compilation_depth:%d\n",
@@ -894,7 +894,7 @@ void debug_start_new_program(PROGRAM_LINE_ARGS)
 }
 
 
-void really_free_program(struct program *p)
+PMOD_EXPORT void really_free_program(struct program *p)
 {
   unsigned INT16 e;
 
@@ -1372,7 +1372,7 @@ struct program *end_first_pass(int finish)
 /*
  * Finish this program, returning the newly built program
  */
-struct program *debug_end_program(void)
+PMOD_EXPORT struct program *debug_end_program(void)
 {
   return end_first_pass(1);
 }
@@ -1382,7 +1382,7 @@ struct program *debug_end_program(void)
  * Allocate needed for this program in the object structure.
  * An offset to the data is returned.
  */
-size_t low_add_storage(size_t size, size_t alignment, int modulo_orig)
+PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment, int modulo_orig)
 {
   long offset;
   int modulo;
@@ -1446,7 +1446,7 @@ size_t low_add_storage(size_t size, size_t alignment, int modulo_orig)
  * set a callback used to initialize clones of this program
  * the init function is called at clone time
  */
-void set_init_callback(void (*init)(struct object *))
+PMOD_EXPORT void set_init_callback(void (*init)(struct object *))
 {
   Pike_compiler->new_program->init=init;
 }
@@ -1455,7 +1455,7 @@ void set_init_callback(void (*init)(struct object *))
  * set a callback used to de-initialize clones of this program
  * the exit function is called at destruct
  */
-void set_exit_callback(void (*exit)(struct object *))
+PMOD_EXPORT void set_exit_callback(void (*exit)(struct object *))
 {
   Pike_compiler->new_program->exit=exit;
 }
@@ -1472,7 +1472,7 @@ void set_exit_callback(void (*exit)(struct object *))
  * during a gc pass. The gc assumes that the references are enumerated
  * in the same order in that case.
  */
-void set_gc_recurse_callback(void (*m)(struct object *))
+PMOD_EXPORT void set_gc_recurse_callback(void (*m)(struct object *))
 {
   Pike_compiler->new_program->gc_recurse_func=m;
 }
@@ -1488,7 +1488,7 @@ void set_gc_recurse_callback(void (*m)(struct object *))
  * to ensure this; it's zero when called the first time for its
  * argument.
  */
-void set_gc_check_callback(void (*m)(struct object *))
+PMOD_EXPORT void set_gc_check_callback(void (*m)(struct object *))
 {
   Pike_compiler->new_program->gc_check_func=m;
 }
@@ -1823,7 +1823,7 @@ void low_inherit(struct program *p,
   }
 }
 
-void do_inherit(struct svalue *s,
+PMOD_EXPORT void do_inherit(struct svalue *s,
 		INT32 flags,
 		struct pike_string *name)
 {
@@ -1998,7 +1998,7 @@ int low_define_variable(struct pike_string *name,
   return n;
 }
 
-int map_variable(char *name,
+PMOD_EXPORT int map_variable(char *name,
 		 char *type,
 		 INT32 flags,
 		 size_t offset,
@@ -2020,7 +2020,7 @@ int map_variable(char *name,
   return ret;
 }
 
-int quick_map_variable(char *name,
+PMOD_EXPORT int quick_map_variable(char *name,
 		       int name_length,
 		       size_t offset,
 		       char *type,
@@ -2161,7 +2161,7 @@ int define_variable(struct pike_string *name,
   return n;
 }
 
-int simple_add_variable(char *name,
+PMOD_EXPORT int simple_add_variable(char *name,
 			char *type,
 			INT32 flags)
 {
@@ -2176,7 +2176,7 @@ int simple_add_variable(char *name,
   return ret;
 }
 
-int add_constant(struct pike_string *name,
+PMOD_EXPORT int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags)
 {
@@ -2314,7 +2314,7 @@ int add_constant(struct pike_string *name,
   return n;
 }
 
-int simple_add_constant(char *name,
+PMOD_EXPORT int simple_add_constant(char *name,
 			struct svalue *c,
 			INT32 flags)
 {
@@ -2326,7 +2326,7 @@ int simple_add_constant(char *name,
   return ret;
 }
 
-int add_integer_constant(char *name,
+PMOD_EXPORT int add_integer_constant(char *name,
 			 INT32 i,
 			 INT32 flags)
 {
@@ -2337,7 +2337,7 @@ int add_integer_constant(char *name,
   return simple_add_constant(name, &tmp, flags);
 }
 
-int quick_add_integer_constant(char *name,
+PMOD_EXPORT int quick_add_integer_constant(char *name,
 			       int name_length,
 			       INT32 i,
 			       INT32 flags)
@@ -2355,7 +2355,7 @@ int quick_add_integer_constant(char *name,
   return ret;
 }
 
-int add_float_constant(char *name,
+PMOD_EXPORT int add_float_constant(char *name,
 			 double f,
 			 INT32 flags)
 {
@@ -2366,7 +2366,7 @@ int add_float_constant(char *name,
   return simple_add_constant(name, &tmp, flags);
 }
 
-int add_string_constant(char *name,
+PMOD_EXPORT int add_string_constant(char *name,
 			char *str,
 			INT32 flags)
 {
@@ -2380,7 +2380,7 @@ int add_string_constant(char *name,
   return ret;
 }
 
-int add_program_constant(char *name,
+PMOD_EXPORT int add_program_constant(char *name,
 			 struct program *p,
 			 INT32 flags)
 {
@@ -2393,7 +2393,7 @@ int add_program_constant(char *name,
   return ret;
 }
 
-int add_object_constant(char *name,
+PMOD_EXPORT int add_object_constant(char *name,
 			struct object *o,
 			INT32 flags)
 {
@@ -2406,7 +2406,7 @@ int add_object_constant(char *name,
   return ret;
 }
 
-int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags)
+PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags)
 {
   struct svalue s;
   struct pike_string *n;
@@ -2421,7 +2421,7 @@ int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 fl
 }
 
 
-int debug_end_class(char *name, int namelen, INT32 flags)
+PMOD_EXPORT int debug_end_class(char *name, int namelen, INT32 flags)
 {
   INT32 ret;
   struct svalue tmp;
@@ -2798,7 +2798,7 @@ int find_shared_string_identifier(struct pike_string *name,
   return low_find_shared_string_identifier(name,prog);
 }
 
-int find_identifier(char *name,struct program *prog)
+PMOD_EXPORT int find_identifier(char *name,struct program *prog)
 {
   struct pike_string *n;
   if(!prog) {
@@ -3079,7 +3079,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
  * program, and line will be initialized to the line
  * in that file.
  */
-char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
+PMOD_EXPORT char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
 {
   static char *file, *cnt;
   static INT32 off,line,pid;
@@ -3318,7 +3318,7 @@ struct program *compile(struct pike_string *prog,
   return p;
 }
 
-int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
+PMOD_EXPORT int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 {
   int ret;
   struct pike_string *name_tmp,*type_tmp;
@@ -3347,7 +3347,7 @@ int pike_add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
   return ret;
 }
 
-int quick_add_function(char *name,
+PMOD_EXPORT int quick_add_function(char *name,
 		       int name_length,
 		       void (*cfun)(INT32),
 		       char *type,
@@ -3892,7 +3892,7 @@ int low_get_storage(struct program *o, struct program *p)
   return offset;
 }
 
-char *get_storage(struct object *o, struct program *p)
+PMOD_EXPORT char *get_storage(struct object *o, struct program *p)
 {
   int offset;
 
@@ -3917,7 +3917,7 @@ struct program *low_program_from_function(struct program *p,
   return f->u.program;
 }
 
-struct program *program_from_function(struct svalue *f)
+PMOD_EXPORT struct program *program_from_function(struct svalue *f)
 {
   struct identifier *id;
   if(f->type != T_FUNCTION) return 0;
@@ -3926,7 +3926,7 @@ struct program *program_from_function(struct svalue *f)
   return low_program_from_function(f->u.object->prog, f->subtype);
 }
 
-struct program *program_from_svalue(struct svalue *s)
+PMOD_EXPORT struct program *program_from_svalue(struct svalue *s)
 {
   switch(s->type)
   {
@@ -4070,7 +4070,7 @@ struct implements_cache_s { INT32 aid, bid, ret; };
 static struct implements_cache_s implements_cache[IMPLEMENTS_CACHE_SIZE];
 
 /* returns 1 if a implements b, but faster */
-int implements(struct program *a, struct program *b)
+PMOD_EXPORT int implements(struct program *a, struct program *b)
 {
   unsigned long hval;
   if(!a || !b) return -1;
@@ -4137,7 +4137,7 @@ static struct implements_cache_s is_compatible_cache[IMPLEMENTS_CACHE_SIZE];
 /* Returns 1 if a is compatible with b
  * ie it's possible to write a hypothetical c that implements both.
  */
-int is_compatible(struct program *a, struct program *b)
+PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
 {
   unsigned long hval;
   unsigned long rhval;
@@ -4238,7 +4238,7 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
   return 1;
 }
 
-void *parent_storage(int depth)
+PMOD_EXPORT void *parent_storage(int depth)
 {
   struct inherit *inherit;
   struct program *p;

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.56 2000/07/18 06:53:58 mast Exp $
+ * $Id: gc.h,v 1.57 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -102,22 +102,32 @@ extern size_t gc_ext_weak_refs;
 typedef void gc_cycle_check_cb (void *data, int weak);
 
 /* Prototypes begin here */
+struct gc_frame;
 struct callback *debug_add_gc_callback(callback_func call,
 				 void *arg,
 				 callback_func free_func);
 void dump_gc_info(void);
 TYPE_T attempt_to_identify(void *something);
-void describe_location(void *memblock, int type, void *location,int indent, int depth, int flags);
-void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
-  ATTRIBUTE((format(printf, 3, 4)));
+void describe_location(void *real_memblock,
+		       int real_type,
+		       void *location,
+		       int indent,
+		       int depth,
+		       int flags);
+void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
 void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
 void debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 void debug_gc_check_weak_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 int debug_gc_check(void *x, TYPE_T t, void *data);
+void low_describe_something(void *a,
+			    int t,
+			    int indent,
+			    int depth,
+			    int flags);
 void describe_something(void *a, int t, int indent, int depth, int flags);
-void describe(void *x);
+PMOD_EXPORT void describe(void *x);
 void debug_describe_svalue(struct svalue *s);
 void debug_gc_touch(void *a);
 INT32 real_gc_check(void *a);
@@ -127,18 +137,17 @@ void gc_add_extra_ref(void *a);
 void gc_free_extra_ref(void *a);
 int debug_gc_is_referenced(void *a);
 int gc_external_mark3(void *a, void *in, char *where);
+void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
 int gc_mark(void *a);
+void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
+void gc_cycle_run_queue();
 int gc_cycle_push(void *x, struct marker *m, int weak);
-void gc_set_rec_last(struct marker *m);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, TYPE_T type);
 int gc_do_free(void *a);
-int gc_is_internal(void *a);
 int do_gc(void);
 void f__gc_status(INT32 args);
-void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
-void gc_cycle_run_queue();
 /* Prototypes end here */
 
 #define gc_fatal \

@@ -5,12 +5,11 @@
 \*/
 
 /*
- * $Id: module_support.h,v 1.6 1998/03/28 15:09:51 grubba Exp $
+ * $Id: module_support.h,v 1.7 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef MODULE_SUPPORT_H
 #include <stdarg.h>
 
-/* Prototypes begin here */
 enum error_type {
   ERR_NONE,
   ERR_TOO_FEW,
@@ -25,16 +24,18 @@ struct expect_result {
   TYPE_T got;               /* What type did we actually receive */
 };
 
-int check_args(int args, ...);
-void check_all_args(const char *fnname, int args, ... );
+
+/* Prototypes begin here */
+PMOD_EXPORT int check_args(int args, ...);
+PMOD_EXPORT void check_all_args(const char *fnname, int args, ... );
 int va_get_args(struct svalue *s,
 		INT32 num_args,
 		char *fmt,
 		va_list ap);
-int get_args(struct svalue *s,
+PMOD_EXPORT int get_args(struct svalue *s,
 	     INT32 num_args,
 	     char *fmt, ...);
-void get_all_args(char *fname, INT32 args, char *format,  ... );
+PMOD_EXPORT void get_all_args(char *fname, INT32 args, char *format,  ... );
 /* Prototypes end here */
 
 #endif

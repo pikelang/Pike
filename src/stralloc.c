@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.84 2000/07/06 23:25:26 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.85 2000/07/28 17:16:55 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -103,7 +103,7 @@ static INLINE unsigned INT32 generic_extract (const void *str, int size, int pos
   return 0;
 }
 
-INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
+PMOD_EXPORT INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0) {
@@ -117,7 +117,7 @@ INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos)
   return generic_extract(s->str,s->size_shift,pos);
 }
 
-INLINE void low_set_index(struct pike_string *s, int pos, int value)
+PMOD_EXPORT INLINE void low_set_index(struct pike_string *s, int pos, int value)
 {
 #ifdef PIKE_DEBUG
   if(pos > s->len || pos<0)
@@ -137,7 +137,7 @@ INLINE void low_set_index(struct pike_string *s, int pos, int value)
 }
 
 #ifdef PIKE_DEBUG
-INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift)
+PMOD_EXPORT INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift)
 {
   if(a->size_shift != shift)
     fatal("Wrong STRX macro used!\n");
@@ -160,7 +160,7 @@ CONVERT(2,0)
 CONVERT(2,1)
 
 
-int generic_compare_strings(const void *a,int alen, int asize,
+PMOD_EXPORT int generic_compare_strings(const void *a,int alen, int asize,
 			    const void *b,int blen, int bsize)
 {
 #define TWO_SIZES(X,Y) (((X)<<2)+(Y))
@@ -178,7 +178,7 @@ int generic_compare_strings(const void *a,int alen, int asize,
 }
 
 
-void generic_memcpy(PCHARP to,
+PMOD_EXPORT void generic_memcpy(PCHARP to,
 		    PCHARP from,
 		    int len)
 {
@@ -221,7 +221,7 @@ void generic_memcpy(PCHARP to,
   }
 }
 
-INLINE void pike_string_cpy(PCHARP to,
+PMOD_EXPORT INLINE void pike_string_cpy(PCHARP to,
 			    struct pike_string *from)
 {
   generic_memcpy(to,MKPCHARP_STR(from),from->len);
@@ -334,12 +334,12 @@ static struct pike_string *internal_findstring(const char *s,
   return 0; /* not found */
 }
 
-struct pike_string *binary_findstring(const char *foo, INT32 l)
+PMOD_EXPORT struct pike_string *binary_findstring(const char *foo, INT32 l)
 {
   return internal_findstring(foo, l, 0, StrHash(foo,l));
 }
 
-struct pike_string *findstring(const char *foo)
+PMOD_EXPORT struct pike_string *findstring(const char *foo)
 {
   return binary_findstring(foo, strlen(foo));
 }
@@ -411,7 +411,7 @@ static void rehash(void)
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
-struct pike_string *debug_begin_shared_string(int len)
+PMOD_EXPORT struct pike_string *debug_begin_shared_string(int len)
 {
   struct pike_string *t;
 #ifdef PIKE_DEBUG
@@ -471,7 +471,7 @@ static void link_pike_string(struct pike_string *s, unsigned int h)
 #endif
 }
 
-struct pike_string *debug_begin_wide_shared_string(int len, int shift)
+PMOD_EXPORT struct pike_string *debug_begin_wide_shared_string(int len, int shift)
 {
   struct pike_string *t;
 #ifdef PIKE_DEBUG
@@ -490,7 +490,7 @@ struct pike_string *debug_begin_wide_shared_string(int len, int shift)
  * This function assumes that the shift size is already the minimum it
  * can be.
  */
-struct pike_string *low_end_shared_string(struct pike_string *s)
+PMOD_EXPORT struct pike_string *low_end_shared_string(struct pike_string *s)
 {
   int len,h;
   struct pike_string *s2;
@@ -520,7 +520,7 @@ struct pike_string *low_end_shared_string(struct pike_string *s)
  * This function checks if the shift size can be decreased before
  * entering the string in the shared string table
  */
-struct pike_string *end_shared_string(struct pike_string *s)
+PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 {
   struct pike_string *s2;
 
@@ -565,7 +565,7 @@ struct pike_string *end_shared_string(struct pike_string *s)
 }
 
 
-struct pike_string * debug_make_shared_binary_string(const char *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,int len)
 {
   struct pike_string *s;
   int h=StrHash(str,len);
@@ -583,7 +583,7 @@ struct pike_string * debug_make_shared_binary_string(const char *str,int len)
   return s;
 }
 
-struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len)
 {
   switch(str.shift)
   {
@@ -600,17 +600,17 @@ struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len)
   return NULL;	/* Keep the compiler happy */
 }
 
-struct pike_string * debug_make_shared_pcharp(const PCHARP str)
+PMOD_EXPORT struct pike_string * debug_make_shared_pcharp(const PCHARP str)
 {
   return debug_make_shared_binary_pcharp(str, pcharp_strlen(str));
 }
 
-struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,int len)
 {
   return debug_make_shared_binary_string((const char *)str, len);
 }
 
-struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len)
 {
   struct pike_string *s;
   int h;
@@ -638,7 +638,7 @@ struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int le
   return s;
 }
 
-struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int len)
+PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int len)
 {
   struct pike_string *s;
   int h;
@@ -673,24 +673,24 @@ struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int le
   return s;
 }
 
-struct pike_string *debug_make_shared_string(const char *str)
+PMOD_EXPORT struct pike_string *debug_make_shared_string(const char *str)
 {
   return make_shared_binary_string(str, strlen(str));
 }
 
-struct pike_string *debug_make_shared_string0(const p_wchar0 *str)
+PMOD_EXPORT struct pike_string *debug_make_shared_string0(const p_wchar0 *str)
 {
   return debug_make_shared_string((const char *)str);
 }
 
-struct pike_string *debug_make_shared_string1(const p_wchar1 *str)
+PMOD_EXPORT struct pike_string *debug_make_shared_string1(const p_wchar1 *str)
 {
   INT32 len;
   for(len=0;str[len];len++);
   return debug_make_shared_binary_string1(str,len);
 }
 
-struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
+PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 {
   INT32 len;
   for(len=0;str[len];len++);
@@ -699,7 +699,7 @@ struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 /*** Free strings ***/
 
-void unlink_pike_string(struct pike_string *s)
+PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
 {
   unsigned int h=s->hval % htable_size;
   propagate_shared_string(s,h);
@@ -710,13 +710,13 @@ void unlink_pike_string(struct pike_string *s)
   num_strings--;
 }
 
-void do_free_string(struct pike_string *s)
+PMOD_EXPORT void do_free_string(struct pike_string *s)
 {
   if (s)
     free_string(s);
 }
 
-void really_free_string(struct pike_string *s)
+PMOD_EXPORT void really_free_string(struct pike_string *s)
 {
 #ifdef PIKE_DEBUG
   extern int d_flag;
@@ -738,7 +738,7 @@ void really_free_string(struct pike_string *s)
   debug_free((char *)s,DMALLOC_LOCATION(),1);
 }
 
-void debug_free_string(struct pike_string *s)
+PMOD_EXPORT void debug_free_string(struct pike_string *s)
 {
   if(--s->refs<=0)
     really_free_string(s);
@@ -801,7 +801,7 @@ struct pike_string *add_string_status(int verbose)
 /*** PIKE_DEBUG ***/
 #ifdef PIKE_DEBUG
 
-void check_string(struct pike_string *s)
+PMOD_EXPORT void check_string(struct pike_string *s)
 {
   do_hash(s);
   if(full_hash_value != s->hval)
@@ -820,7 +820,7 @@ void check_string(struct pike_string *s)
   }
 }
 
-void verify_shared_strings_tables(void)
+PMOD_EXPORT void verify_shared_strings_tables(void)
 {
   unsigned INT32 e, h, num=0;
   unsigned INT32 orig_full_hash = full_hash_value;
@@ -872,7 +872,7 @@ void verify_shared_strings_tables(void)
   full_hash_value = orig_full_hash;
 }
 
-int safe_debug_findstring(struct pike_string *foo)
+PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo)
 {
   unsigned INT32 e;
   if(!base_table) return 0;
@@ -885,7 +885,7 @@ int safe_debug_findstring(struct pike_string *foo)
   return 0;
 }
 
-struct pike_string *debug_findstring(const struct pike_string *foo)
+PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo)
 {
   struct pike_string *tmp;
   tmp=propagate_shared_string(foo, foo->hval % htable_size);
@@ -928,7 +928,7 @@ struct pike_string *debug_findstring(const struct pike_string *foo)
   return tmp;
 }
 
-void debug_dump_pike_string(struct pike_string *s, INT32 max)
+PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max)
 {
   INT32 e;
   fprintf(stderr,"0x%p: %ld refs, len=%ld, size_shift=%d, hval=%lux (%lx)\n",
@@ -981,7 +981,7 @@ void dump_stralloc_strings(void)
 /*** String compare functions ***/
 
 /* does not take locale into account */
-int low_quick_binary_strcmp(char *a,INT32 alen,
+PMOD_EXPORT int low_quick_binary_strcmp(char *a,INT32 alen,
 			    char *b,INT32 blen)
 {
   int tmp;
@@ -1001,7 +1001,7 @@ int low_quick_binary_strcmp(char *a,INT32 alen,
 
 
 /* does not take locale into account */
-int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
+PMOD_EXPORT int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
 				const char *b,INT32 blen, int bsize)
 {
   if(!asize && !bsize)
@@ -1031,14 +1031,14 @@ int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
   }
 }
 
-int c_compare_string(struct pike_string *s, char *foo, int len)
+PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
 {
   return s->len == len && s->size_shift == 0 && !MEMCMP(s->str,foo,len);
 }
 
 #ifndef HAVE_STRCOLL
 /* No locale function available */
-static int low_binary_strcmp(char *a,INT32 alen,
+int low_binary_strcmp(char *a,INT32 alen,
 		      char *b,INT32 blen)
 {
   low_quick_binary_strcmp(a,alen,b,blen);
@@ -1068,7 +1068,7 @@ static int low_binary_strcmp(char *a,INT32 alen,
 
 /* Does not take locale into account */
 
-int my_quick_strcmp(struct pike_string *a,struct pike_string *b)
+PMOD_EXPORT int my_quick_strcmp(struct pike_string *a,struct pike_string *b)
 {
   if(a==b) return 0;
 
@@ -1077,7 +1077,7 @@ int my_quick_strcmp(struct pike_string *a,struct pike_string *b)
 }
 
 /* Does take locale into account */
-int my_strcmp(struct pike_string *a,struct pike_string *b)
+PMOD_EXPORT int my_strcmp(struct pike_string *a,struct pike_string *b)
 {
   if(a==b) return 0;
 
@@ -1114,7 +1114,7 @@ int my_strcmp(struct pike_string *a,struct pike_string *b)
   }
 }
 
-struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size)
+PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size)
 {
   struct pike_string *r;
   r=(struct pike_string *)realloc((char *)a,
@@ -1134,7 +1134,7 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size)
 }
 
 /* Returns an unlinked string ready for end_shared_string */
-struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
+PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
 {
   struct pike_string *r;
   if(a->refs==1)
@@ -1149,7 +1149,7 @@ struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
   }
 }
 
-struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift)
+PMOD_EXPORT struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift)
 {
   struct pike_string *r;
   if(shift == a->size_shift) return realloc_shared_string(a,size);
@@ -1168,7 +1168,7 @@ struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size,
  * Phew, this function become complicated when I inserted magic for wide
  * characters...
  */
-struct pike_string *modify_shared_string(struct pike_string *a,
+PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 index,
 					 INT32 c)
 {
@@ -1304,7 +1304,7 @@ struct pike_string *modify_shared_string(struct pike_string *a,
 }
 
 /*** Add strings ***/
-struct pike_string *add_shared_strings(struct pike_string *a,
+PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b)
 {
   struct pike_string *ret;
@@ -1319,7 +1319,7 @@ struct pike_string *add_shared_strings(struct pike_string *a,
   return end_shared_string(ret);
 }
 
-struct pike_string *add_and_free_shared_strings(struct pike_string *a,
+PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
 						struct pike_string *b)
 {
   INT32 alen=a->len;
@@ -1338,7 +1338,7 @@ struct pike_string *add_and_free_shared_strings(struct pike_string *a,
 }
 
 
-int string_search(struct pike_string *haystack,
+PMOD_EXPORT int string_search(struct pike_string *haystack,
 		  struct pike_string *needle,
 		  int start)
 {
@@ -1365,7 +1365,7 @@ int string_search(struct pike_string *haystack,
   return (r-haystack->str)>>haystack->size_shift;
 }
 
-struct pike_string *string_slice(struct pike_string *s,
+PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 				 INT32 start,
 				 INT32 len)
 {
@@ -1398,7 +1398,7 @@ struct pike_string *string_slice(struct pike_string *s,
 }
 
 /*** replace function ***/
-struct pike_string *string_replace(struct pike_string *str,
+PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
 				   struct pike_string *del,
 				   struct pike_string *to)
 {
@@ -1585,7 +1585,7 @@ void gc_mark_all_strings(void)
   }
 }
 
-void init_string_builder(struct string_builder *s, int mag)
+PMOD_EXPORT void init_string_builder(struct string_builder *s, int mag)
 {
   s->malloced=256;
   s->s=begin_wide_shared_string(256,mag);
@@ -1619,7 +1619,7 @@ static void string_build_mkspace(struct string_builder *s, int chars, int mag)
   }
 }
 
-void *string_builder_allocate(struct string_builder *s, int chars, int mag)
+PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, int chars, int mag)
 {
   void *ret;
   string_build_mkspace(s,chars,mag);
@@ -1629,7 +1629,7 @@ void *string_builder_allocate(struct string_builder *s, int chars, int mag)
   return ret;
 }
 
-void string_builder_putchar(struct string_builder *s, int ch)
+PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 {
   INT32 i;
   string_build_mkspace(s,1,min_magnitude(ch));
@@ -1639,7 +1639,7 @@ void string_builder_putchar(struct string_builder *s, int ch)
 }
 
 
-void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len)
+PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len)
 {
   string_build_mkspace(s,len,0);
   switch(s->s->size_shift)
@@ -1654,7 +1654,7 @@ void string_builder_binary_strcat(struct string_builder *s, char *str, INT32 len
 }
 
 
-void string_builder_append(struct string_builder *s,
+PMOD_EXPORT void string_builder_append(struct string_builder *s,
 			   PCHARP from,
 			   INT32 len)
 {
@@ -1663,7 +1663,7 @@ void string_builder_append(struct string_builder *s,
   s->s->len+=len;
 }
 
-void string_builder_fill(struct string_builder *s,
+PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 			 int howmany,
 			 PCHARP from,
 			 INT32 len,
@@ -1717,12 +1717,12 @@ void string_builder_fill(struct string_builder *s,
   }
 }
 
-void string_builder_strcat(struct string_builder *s, char *str)
+PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str)
 {
   string_builder_binary_strcat(s,str,strlen(str));
 }
 
-void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str)
+PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str)
 {
   string_build_mkspace(s,str->len,str->size_shift);
 
@@ -1732,18 +1732,18 @@ void string_builder_shared_strcat(struct string_builder *s, struct pike_string *
 }
 
 
-void reset_string_builder(struct string_builder *s)
+PMOD_EXPORT void reset_string_builder(struct string_builder *s)
 {
   s->known_shift=0;
   s->s->len=0;
 }
 
-void free_string_builder(struct string_builder *s)
+PMOD_EXPORT void free_string_builder(struct string_builder *s)
 {
   free((char *)s->s);
 }
 
-struct pike_string *finish_string_builder(struct string_builder *s)
+PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s)
 {
   low_set_index(s->s,s->s->len,0);
   if(s->known_shift == s->s->size_shift)
@@ -1751,7 +1751,7 @@ struct pike_string *finish_string_builder(struct string_builder *s)
   return end_shared_string(s->s);
 }
 
-PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
+PMOD_EXPORT PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
 {
   switch(ptr.shift)
   {
@@ -1767,7 +1767,7 @@ PCHARP MEMCHR_PCHARP(PCHARP ptr, int chr, int len)
 			 WIDE_ISLOWER(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
 
-long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
+PMOD_EXPORT long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
 {
   register long val;
   register int c;
@@ -1822,7 +1822,7 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   return (neg ? val : -val);
 }
 
-int string_to_svalue_inumber(struct svalue *r,
+PMOD_EXPORT int string_to_svalue_inumber(struct svalue *r,
 			     char * str,
 			     char **ptr,
 			     int base,
@@ -1838,7 +1838,7 @@ int string_to_svalue_inumber(struct svalue *r,
   return ret;
 }
 
-int wide_string_to_svalue_inumber(struct svalue *r,
+PMOD_EXPORT int wide_string_to_svalue_inumber(struct svalue *r,
 				  void * str,
 				  void **ptr,
 				  int base,
@@ -1855,7 +1855,7 @@ int wide_string_to_svalue_inumber(struct svalue *r,
   return ret;
 }
 
-int pcharp_to_svalue_inumber(struct svalue *r,
+PMOD_EXPORT int pcharp_to_svalue_inumber(struct svalue *r,
 			     PCHARP str,
 			     PCHARP *ptr,
 			     int base,
@@ -1990,7 +1990,7 @@ int pcharp_to_svalue_inumber(struct svalue *r,
   return 1;
 }
 
-int convert_stack_top_string_to_inumber(int base)
+PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
 {
   struct svalue r;
   int i;
@@ -2008,7 +2008,7 @@ int convert_stack_top_string_to_inumber(int base)
 
 /* Convert PCHARP to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
-double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
+PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 {
   register PCHARP s;
   short int sign;
@@ -2156,7 +2156,7 @@ double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 }
 
 
-p_wchar0 *require_wstring0(struct pike_string *s,
+PMOD_EXPORT p_wchar0 *require_wstring0(struct pike_string *s,
 			   char **to_free)
 {
   switch(s->size_shift)
@@ -2174,7 +2174,7 @@ p_wchar0 *require_wstring0(struct pike_string *s,
   return 0;
 }
 
-p_wchar1 *require_wstring1(struct pike_string *s,
+PMOD_EXPORT p_wchar1 *require_wstring1(struct pike_string *s,
 			   char **to_free)
 {
   switch(s->size_shift)
@@ -2198,7 +2198,7 @@ p_wchar1 *require_wstring1(struct pike_string *s,
 }
 
 
-p_wchar2 *require_wstring2(struct pike_string *s,
+PMOD_EXPORT p_wchar2 *require_wstring2(struct pike_string *s,
 			   char **to_free)
 {
   switch(s->size_shift)

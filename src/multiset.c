@@ -16,14 +16,14 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.25 2000/07/18 05:48:20 mast Exp $");
+RCSID("$Id: multiset.c,v 1.26 2000/07/28 17:16:55 hubbe Exp $");
 
 struct multiset *first_multiset;
 
 struct multiset *gc_internal_multiset = 0;
 static struct multiset *gc_mark_multiset_pos = 0;
 
-int multiset_member(struct multiset *l, struct svalue *ind)
+PMOD_EXPORT int multiset_member(struct multiset *l, struct svalue *ind)
 {
   return set_lookup(l->ind, ind) >= 0;
 }
@@ -31,7 +31,7 @@ int multiset_member(struct multiset *l, struct svalue *ind)
 /*
  * allocate and init a new multiset
  */
-struct multiset *allocate_multiset(struct array *ind)
+PMOD_EXPORT struct multiset *allocate_multiset(struct array *ind)
 {
   struct multiset *l;
   l=ALLOC_STRUCT(multiset);
@@ -48,7 +48,7 @@ struct multiset *allocate_multiset(struct array *ind)
 /*
  * free a multiset
  */
-void really_free_multiset(struct multiset *l)
+PMOD_EXPORT void really_free_multiset(struct multiset *l)
 {
 #ifdef PIKE_DEBUG
   if(l->refs)
@@ -70,14 +70,14 @@ void really_free_multiset(struct multiset *l)
   GC_FREE();
 }
 
-void do_free_multiset(struct multiset *l)
+PMOD_EXPORT void do_free_multiset(struct multiset *l)
 {
   if (l)
     free_multiset(l);
 }
 
 
-void order_multiset(struct multiset *l)
+PMOD_EXPORT void order_multiset(struct multiset *l)
 {
   INT32 *order;
   int flags;
@@ -89,7 +89,7 @@ void order_multiset(struct multiset *l)
   free((char *)order);
 }
 
-struct multiset *mkmultiset(struct array *ind)
+PMOD_EXPORT struct multiset *mkmultiset(struct array *ind)
 {
   struct multiset *l;
   l=allocate_multiset(copy_array(ind));
@@ -97,7 +97,7 @@ struct multiset *mkmultiset(struct array *ind)
   return l;
 }
 
-void multiset_insert(struct multiset *l,
+PMOD_EXPORT void multiset_insert(struct multiset *l,
 		 struct svalue *ind)
 {
   INT32 i;
@@ -117,7 +117,7 @@ struct array *multiset_indices(struct multiset *l)
 }
 #endif
 
-void multiset_delete(struct multiset *l,struct svalue *ind)
+PMOD_EXPORT void multiset_delete(struct multiset *l,struct svalue *ind)
 {
   INT32 i;
   i=set_lookup(l->ind, ind);
@@ -130,7 +130,7 @@ void multiset_delete(struct multiset *l,struct svalue *ind)
   }
 }
 
-void check_multiset_for_destruct(struct multiset *l)
+PMOD_EXPORT void check_multiset_for_destruct(struct multiset *l)
 {
 /* Horrifying worst case!!!!! */
   INT32 i;
@@ -140,13 +140,13 @@ void check_multiset_for_destruct(struct multiset *l)
   l->ind->flags = flags;
 }
 
-struct multiset *copy_multiset(struct multiset *tmp)
+PMOD_EXPORT struct multiset *copy_multiset(struct multiset *tmp)
 {
   check_multiset_for_destruct(tmp);
   return allocate_multiset(copy_array(tmp->ind));
 }
 
-struct multiset *merge_multisets(struct multiset *a,
+PMOD_EXPORT struct multiset *merge_multisets(struct multiset *a,
 			  struct multiset *b,
 			  INT32 operator)
 {
@@ -162,7 +162,7 @@ struct multiset *merge_multisets(struct multiset *a,
   return ret;
 }
 
-struct multiset *add_multisets(struct svalue *argp,INT32 args)
+PMOD_EXPORT struct multiset *add_multisets(struct svalue *argp,INT32 args)
 {
   struct multiset *ret,*a,*b;
   switch(args)
@@ -252,7 +252,7 @@ node * make_node_from_multiset(struct multiset *l)
   }
 }
 
-void f_aggregate_multiset(INT32 args)
+PMOD_EXPORT void f_aggregate_multiset(INT32 args)
 {
   struct multiset *l;
   f_aggregate(args);

@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.27 2000/07/11 19:05:54 neotron Exp $");
+RCSID("$Id: port.c,v 1.28 2000/07/28 17:16:55 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -92,7 +92,7 @@ static void slow_srand(long seed)
 static unsigned long rndbuf[ RNDBUF ];
 static int rnd_index;
 
-void my_srand(long seed)
+PMOD_EXPORT void my_srand(long seed)
 {
   int e;
   unsigned long mask;
@@ -113,7 +113,7 @@ void my_srand(long seed)
   }
 }
 
-unsigned long my_rand(void)
+PMOD_EXPORT unsigned long my_rand(void)
 {
   if( ++rnd_index == RNDBUF) rnd_index=0;
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
@@ -169,7 +169,7 @@ long STRTOL(char *str,char **ptr,int base)
 }
 
 #ifndef HAVE_STRCASECMP
-int STRCASECMP(const char *a,const char *b)
+PMOD_EXPORT int STRCASECMP(const char *a,const char *b)
 {
   int ac, bc;
 
@@ -199,7 +199,7 @@ void *MEMSET(void *s,int c,size_t n)
 #ifdef TRY_USE_MMX
 #include <mmx.h>
 #endif
-void MEMCPY(void *bb,const void *aa,size_t s)
+PMOD_EXPORT void MEMCPY(void *bb,const void *aa,size_t s)
 {
   if(!s) return;
 #ifdef TRY_USE_MMX
@@ -285,7 +285,7 @@ void MEMCPY(void *bb,const void *aa,size_t s)
 #endif
 
 #ifndef HAVE_MEMMOVE
-void MEMMOVE(void *b,const void *aa,size_t s)
+PMOD_EXPORT void MEMMOVE(void *b,const void *aa,size_t s)
 {
   char *t=(char *)b;
   char *a=(char *)aa;
@@ -299,7 +299,7 @@ void MEMMOVE(void *b,const void *aa,size_t s)
 
 
 #ifndef HAVE_MEMCMP
-int MEMCMP(const void *bb,const void *aa,size_t s)
+PMOD_EXPORT int MEMCMP(const void *bb,const void *aa,size_t s)
 {
   char *a=(char *)aa;
   char *b=(char *)bb;
@@ -317,7 +317,7 @@ int MEMCMP(const void *bb,const void *aa,size_t s)
 #endif
 
 #ifndef HAVE_MEMCHR
-void *MEMCHR(const void *p,char c,size_t e)
+PMOD_EXPORT void *MEMCHR(const void *p,char c,size_t e)
 {
   const char *t = p;
   while(e--) if(*(t++)==c) return t-1;
@@ -327,7 +327,7 @@ void *MEMCHR(const void *p,char c,size_t e)
 
 
 #if !defined(HAVE_INDEX) && !defined(HAVE_STRCHR)
-char *STRCHR(char *s,char c)
+PMOD_EXPORT char *STRCHR(char *s,char c)
 {
   for(;*s;s++) if(*s==c) return s;
   return NULL;
@@ -335,7 +335,7 @@ char *STRCHR(char *s,char c)
 #endif
 
 #if !defined(HAVE_RINDEX) && !defined(HAVE_STRRCHR)
-char *STRRCHR(char *s,int c)
+PMOD_EXPORT char *STRRCHR(char *s,int c)
 {
   char *p;
   for(p=NULL;*s;s++) if(*s==c) p=s;
@@ -344,7 +344,7 @@ char *STRRCHR(char *s,int c)
 #endif
 
 #ifndef HAVE_STRSTR
-char *STRSTR(char *s1,const char *s2)
+PMOD_EXPORT char *STRSTR(char *s1,const char *s2)
 {
   for(;*s1;s1++)
   {
@@ -358,7 +358,7 @@ char *STRSTR(char *s1,const char *s2)
 
 #ifndef HAVE_STRTOK
 static char *temporary_for_strtok;
-char *STRTOK(char *s1,char *s2)
+PMOD_EXPORT char *STRTOK(char *s1,char *s2)
 {
   if(s1!=NULL) temporary_for_strtok=s1;
   for(s1=temporary_for_strtok;*s1;s1++)
@@ -382,7 +382,7 @@ char *STRTOK(char *s1,char *s2)
 
 /* Convert NPTR to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
-double STRTOD(char * nptr, char **endptr)
+PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
 {
   register unsigned char *s;
   short int sign;
@@ -526,7 +526,7 @@ double STRTOD(char * nptr, char **endptr)
 }
 
 #ifndef HAVE_VSPRINTF
-int VSPRINTF(char *buf,char *fmt,va_list args)
+PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args)
 {
   char *b=buf;
   char *s;
@@ -598,7 +598,7 @@ int VSPRINTF(char *buf,char *fmt,va_list args)
 #endif
 
 #ifndef HAVE_VFPRINTF
-int VFPRINTF(FILE *f,char *s,va_list args)
+PMOD_EXPORT int VFPRINTF(FILE *f,char *s,va_list args)
 {
   int i;
   char buffer[10000];
@@ -612,21 +612,21 @@ int VFPRINTF(FILE *f,char *s,va_list args)
 
 #if defined(PIKE_DEBUG) && !defined(HANDLES_UNALIGNED_MEMORY_ACCESS)
 
-unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
+PMOD_EXPORT unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
 {
   unsigned INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
-INT16 EXTRACT_WORD_(unsigned char *p)
+PMOD_EXPORT INT16 EXTRACT_WORD_(unsigned char *p)
 {
   INT16 a;
   MEMCPY((char *)&a,p,sizeof(a));
   return a;
 }
 
-INT32 EXTRACT_INT_(unsigned char *p)
+PMOD_EXPORT INT32 EXTRACT_INT_(unsigned char *p)
 {
   INT32 a;
   MEMCPY((char *)&a,p,sizeof(a));

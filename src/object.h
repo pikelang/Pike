@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.49 2000/07/18 05:48:20 mast Exp $
+ * $Id: object.h,v 1.50 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -56,55 +56,55 @@ extern struct program *magic_set_index_program;
 BLOCK_ALLOC(object, 511)
 struct object *low_clone(struct program *p);
 void call_c_initializers(struct object *o);
-void do_free_object(struct object *o);
-struct object *debug_clone_object(struct program *p, int args);
-struct object *fast_clone_object(struct program *p, int args);
-struct object *parent_clone_object(struct program *p,
+PMOD_EXPORT void do_free_object(struct object *o);
+PMOD_EXPORT struct object *debug_clone_object(struct program *p, int args);
+PMOD_EXPORT struct object *fast_clone_object(struct program *p, int args);
+PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 				   struct object *parent,
 				   int parent_identifier,
 				   int args);
-struct object *get_master(void);
-struct object *debug_master(void);
+PMOD_EXPORT struct object *get_master(void);
+PMOD_EXPORT struct object *debug_master(void);
 struct destroy_called_mark;
 PTR_HASH_ALLOC(destroy_called_mark,128)
+static void call_destroy(struct object *o, int foo);
 void low_destruct(struct object *o,int do_free);
-void destruct(struct object *o);
-void destruct_objects_to_destruct(void);
+PMOD_EXPORT void destruct(struct object *o);
+PMOD_EXPORT void destruct_objects_to_destruct(void);
 void schedule_really_free_object(struct object *o);
-void low_object_index_no_free(struct svalue *to,
+PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
 			      struct object *o,
 			      INT32 f);
-void object_index_no_free2(struct svalue *to,
+PMOD_EXPORT void object_index_no_free2(struct svalue *to,
 			  struct object *o,
 			  struct svalue *index);
-void object_index_no_free(struct svalue *to,
+PMOD_EXPORT void object_index_no_free(struct svalue *to,
 			   struct object *o,
 			   struct svalue *index);
-void object_low_set_index(struct object *o,
+PMOD_EXPORT void object_low_set_index(struct object *o,
 			  int f,
 			  struct svalue *from);
-void object_set_index2(struct object *o,
+PMOD_EXPORT void object_set_index2(struct object *o,
 		      struct svalue *index,
 		      struct svalue *from);
-void object_set_index(struct object *o,
+PMOD_EXPORT void object_set_index(struct object *o,
 		       struct svalue *index,
 		       struct svalue *from);
 union anything *object_get_item_ptr(struct object *o,
 				    struct svalue *index,
 				    TYPE_T type);
-int object_equal_p(struct object *a, struct object *b, struct processing *p);
+PMOD_EXPORT int object_equal_p(struct object *a, struct object *b, struct processing *p);
 void cleanup_objects(void);
-struct array *object_indices(struct object *o);
-struct array *object_values(struct object *o);
+PMOD_EXPORT struct array *object_indices(struct object *o);
+PMOD_EXPORT struct array *object_values(struct object *o);
 void gc_mark_object_as_referenced(struct object *o);
+void real_gc_cycle_check_object(struct object *o, int weak);
 unsigned gc_touch_all_objects(void);
 void gc_check_all_objects(void);
 void gc_mark_all_objects(void);
-void real_gc_cycle_check_object(struct object *o, int weak);
 void gc_cycle_check_all_objects(void);
 void gc_zap_ext_weak_refs_in_objects(void);
 void gc_free_all_unreferenced_objects(void);
-void count_memory_in_objects(INT32 *num_, INT32 *size_);
 struct magic_index_struct;
 void push_magic_index(struct program *type, int inherit_no, int parent_level);
 void init_object(void);

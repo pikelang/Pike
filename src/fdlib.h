@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.33 2000/07/07 15:40:25 grubba Exp $
+ * $Id: fdlib.h,v 1.34 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -69,11 +69,11 @@
 
 typedef int FD;
 
-#define SOCKFUN1(NAME,T1) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
-#define SOCKFUN2(NAME,T1,T2) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
-#define SOCKFUN3(NAME,T1,T2,T3) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
-#define SOCKFUN4(NAME,T1,T2,T3,T4) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3,T4);
-#define SOCKFUN5(NAME,T1,T2,T3,T4,T5) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3,T4,T5);
+#define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
+#define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
+#define SOCKFUN3(NAME,T1,T2,T3) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
+#define SOCKFUN4(NAME,T1,T2,T3,T4) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3,T4);
+#define SOCKFUN5(NAME,T1,T2,T3,T4,T5) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3,T4,T5);
 
 
 #define fd_info(fd) debug_fd_info(dmalloc_touch_fd(fd))
@@ -116,13 +116,13 @@ char *debug_fd_info(int fd);
 int debug_fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
-int debug_fd_stat(char *file, struct stat *buf);
-FD debug_fd_open(char *file, int open_mode, int create_mode);
-FD debug_fd_socket(int domain, int type, int proto);
-int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
-FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen);
+PMOD_EXPORT int debug_fd_stat(char *file, struct stat *buf);
+PMOD_EXPORT FD debug_fd_open(char *file, int open_mode, int create_mode);
+PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto);
+PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
+PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen);
 SOCKFUN2(bind, struct sockaddr *, int)
-int debug_fd_connect (FD fd, struct sockaddr *a, int len);
+PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len);
 SOCKFUN4(getsockopt,int,int,void*,ACCEPT_SIZE_T *)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
@@ -133,17 +133,17 @@ SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,unsigned int)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
-int debug_fd_close(FD fd);
-long debug_fd_write(FD fd, void *buf, long len);
-long debug_fd_read(FD fd, void *to, long len);
-long debug_fd_lseek(FD fd, long pos, int where);
-long debug_fd_ftruncate(FD fd, long len);
-int debug_fd_flock(FD fd, int oper);
-int debug_fd_fstat(FD fd, struct stat *s);
-int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
-int debug_fd_ioctl(FD fd, int cmd, void *data);
-FD debug_fd_dup(FD from);
-FD debug_fd_dup2(FD from, FD to);
+PMOD_EXPORT int debug_fd_close(FD fd);
+PMOD_EXPORT long debug_fd_write(FD fd, void *buf, long len);
+PMOD_EXPORT long debug_fd_read(FD fd, void *to, long len);
+PMOD_EXPORT long debug_fd_lseek(FD fd, long pos, int where);
+PMOD_EXPORT long debug_fd_ftruncate(FD fd, long len);
+PMOD_EXPORT int debug_fd_flock(FD fd, int oper);
+PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s);
+PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
+PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data);
+PMOD_EXPORT FD debug_fd_dup(FD from);
+PMOD_EXPORT FD debug_fd_dup2(FD from, FD to);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -408,5 +408,10 @@ typedef struct my_fd_set_s my_fd_set;
 #endif
 
 #endif /* Don't HAVE_WINSOCK */
+
+PMOD_PROTO extern int pike_make_pipe(int *fds);
+PMOD_PROTO extern int fd_from_object(struct object *o);
+PMOD_PROTO extern void create_proxy_pipe(struct object *o, int for_reading);
+PMOD_PROTO struct object *file_make_object_from_fd(int fd, int mode, int guess);
 
 #endif /* FDLIB_H */

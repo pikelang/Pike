@@ -5,14 +5,14 @@
 \*/
 
 /*
- * $Id: stuff.c,v 1.10 1999/03/24 16:31:38 grubba Exp $
+ * $Id: stuff.c,v 1.11 2000/07/28 17:16:55 hubbe Exp $
  */
 #include "global.h"
 #include "stuff.h"
 #include "stralloc.h"
 
 /* Not all of these are primes, but they should be adequate */
-INT32 hashprimes[32] =
+PMOD_EXPORT INT32 hashprimes[32] =
 {
   31,        /* ~ 2^0  = 1 */
   31,        /* ~ 2^1  = 2 */
@@ -51,7 +51,7 @@ INT32 hashprimes[32] =
 /* same thing as (int)floor(log((double)x) / log(2.0)) */
 /* Except a bit quicker :) (hopefully) */
 
-int my_log2(unsigned INT32 x)
+PMOD_EXPORT int my_log2(unsigned INT32 x)
 {
   static signed char bit[256] =
   {
@@ -84,7 +84,7 @@ int my_log2(unsigned INT32 x)
 
 
 /* Return the number of bits in a 32-bit integer */
-int count_bits(unsigned INT32 x)
+PMOD_EXPORT int count_bits(unsigned INT32 x)
 {
 #define B(X) X+0,X+1,X+1,X+2,\
              X+1,X+2,X+2,X+3,\
@@ -105,12 +105,12 @@ int count_bits(unsigned INT32 x)
 }
 
 /* Return true for integers with more than one bit set */
-int is_more_than_one_bit(unsigned INT32 x)
+PMOD_EXPORT int is_more_than_one_bit(unsigned INT32 x)
 {
   return !!(x & (x-1));
 }
 
-double my_strtod(char *nptr, char **endptr)
+PMOD_EXPORT double my_strtod(char *nptr, char **endptr)
 {
   double tmp=STRTOD(nptr,endptr);
   if(*endptr>nptr)

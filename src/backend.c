@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.52 2000/07/11 19:04:06 neotron Exp $");
+RCSID("$Id: backend.c,v 1.53 2000/07/28 17:16:54 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -55,7 +55,7 @@ struct fd_datum
 };
 
 struct fd_datum *fds;
-int fds_size = 0;
+PMOD_EXPORT int fds_size = 0;
 
 #define ASSURE_FDS_SIZE(X) do{while(fds_size-1 < X) grow_fds();}while(0)
 
@@ -198,14 +198,14 @@ void switch_poll_set(void)
 
 
 static int max_fd;
-struct timeval current_time;
-struct timeval next_timeout;
+PMOD_EXPORT struct timeval current_time;
+PMOD_EXPORT struct timeval next_timeout;
 static int wakeup_pipe[2];
 static int may_need_wakeup=0;
 
 static struct callback_list backend_callbacks;
 
-struct callback *debug_add_backend_callback(callback_func call,
+PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 				      void *arg,
 				      callback_func free_func)
 {
@@ -221,7 +221,7 @@ static void wakeup_callback(int fd, void *foo)
 /* This is used by threaded programs and signals to wake up the
  * master 'thread'.
  */
-void wake_up_backend(void)
+PMOD_EXPORT void wake_up_backend(void)
 {
   char foo=0;
   if(may_need_wakeup)
@@ -492,7 +492,7 @@ void set_write_oob_callback(int fd,file_callback cb,void *data)
 }
 #endif /* WITH_OOB */
 
-file_callback query_read_callback(int fd)
+PMOD_EXPORT file_callback query_read_callback(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -502,7 +502,7 @@ file_callback query_read_callback(int fd)
   return fds[fd].read.callback;
 }
 
-file_callback query_write_callback(int fd)
+PMOD_EXPORT file_callback query_write_callback(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -513,7 +513,7 @@ file_callback query_write_callback(int fd)
 }
 
 #ifdef WITH_OOB
-file_callback query_read_oob_callback(int fd)
+PMOD_EXPORT file_callback query_read_oob_callback(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -523,7 +523,7 @@ file_callback query_read_oob_callback(int fd)
   return fds[fd].read_oob.callback;
 }
 
-file_callback query_write_oob_callback(int fd)
+PMOD_EXPORT file_callback query_write_oob_callback(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -535,7 +535,7 @@ file_callback query_write_oob_callback(int fd)
 }
 #endif /* WITH_OOB */
 
-void *query_read_callback_data(int fd)
+PMOD_EXPORT void *query_read_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -546,7 +546,7 @@ void *query_read_callback_data(int fd)
   return fds[fd].read.data;
 }
 
-void *query_write_callback_data(int fd)
+PMOD_EXPORT void *query_write_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -558,7 +558,7 @@ void *query_write_callback_data(int fd)
 }
 
 #ifdef WITH_OOB
-void *query_read_oob_callback_data(int fd)
+PMOD_EXPORT void *query_read_oob_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -569,7 +569,7 @@ void *query_read_oob_callback_data(int fd)
   return fds[fd].read_oob.data;
 }
 
-void *query_write_oob_callback_data(int fd)
+PMOD_EXPORT void *query_write_oob_callback_data(int fd)
 {
 #ifdef PIKE_DEBUG
   if(fd<0)
@@ -1012,7 +1012,7 @@ void backend(void)
   UNSETJMP(back);
 }
 
-int write_to_stderr(char *a, size_t len)
+PMOD_EXPORT int write_to_stderr(char *a, size_t len)
 {
 #ifdef __NT__
   size_t e;

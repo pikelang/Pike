@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.93 2000/07/07 01:47:05 hubbe Exp $");
+RCSID("$Id: main.c,v 1.94 2000/07/28 17:16:55 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -64,15 +64,15 @@ int try_use_mmx;
 char *master_file;
 char **ARGV;
 
-int debug_options=0;
-int runtime_options=0;
-int d_flag=0;
-int c_flag=0;
-int t_flag=0;
-int default_t_flag=0;
-int a_flag=0;
-int l_flag=0;
-int p_flag=0;
+PMOD_EXPORT int debug_options=0;
+PMOD_EXPORT int runtime_options=0;
+PMOD_EXPORT int d_flag=0;
+PMOD_EXPORT int c_flag=0;
+PMOD_EXPORT int t_flag=0;
+PMOD_EXPORT int default_t_flag=0;
+PMOD_EXPORT int a_flag=0;
+PMOD_EXPORT int l_flag=0;
+PMOD_EXPORT int p_flag=0;
 #ifdef YYDEBUG
 extern int yydebug;
 #endif /* YYDEBUG */
@@ -97,7 +97,7 @@ static void time_to_exit(struct callback *cb,void *tmp,void *ignored)
 
 static struct callback_list post_master_callbacks;
 
-struct callback *add_post_master_callback(callback_func call,
+PMOD_EXPORT struct callback *add_post_master_callback(callback_func call,
 					  void *arg,
 					  callback_func free_func)
 {
@@ -107,7 +107,7 @@ struct callback *add_post_master_callback(callback_func call,
 
 static struct callback_list exit_callbacks;
 
-struct callback *add_exit_callback(callback_func call,
+PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
 				   void *arg,
 				   callback_func free_func)
 {

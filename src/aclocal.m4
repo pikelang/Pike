@@ -104,7 +104,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.16 1999/11/18 07:58:19 hubbe Exp $
+# $Id: aclocal.m4,v 1.17 2000/07/28 17:16:54 hubbe Exp $
 
 MY_AC_PROG_CC
 
@@ -183,6 +183,8 @@ pushdef([AC_OUTPUT],
   AC_SUBST(OPTIMIZE)
   export WARN
   AC_SUBST(WARN)
+  export CCSHARED
+  AC_SUBST(CCSHARED)
 
 ifdef([PIKE_INCLUDE_PATH],
 [

@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.172 2000/07/11 17:52:16 neotron Exp $");
+RCSID("$Id: signal_handler.c,v 1.173 2000/07/28 17:16:55 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -629,7 +629,7 @@ static int signalling=0;
 
 static void unset_signalling(void *notused) { signalling=0; }
 
-void check_signals(struct callback *foo, void *bar, void *gazonk)
+PMOD_EXPORT void check_signals(struct callback *foo, void *bar, void *gazonk)
 {
   ONERROR ebuf;
 #ifdef PIKE_DEBUG

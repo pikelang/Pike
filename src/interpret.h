@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.51 2000/07/07 15:23:56 grubba Exp $
+ * $Id: interpret.h,v 1.52 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -216,33 +216,35 @@ int pop_sp_mark(void);
 void init_interpreter(void);
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
 void assign_lvalue(struct svalue *lval,struct svalue *from);
-union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
+PMOD_EXPORT union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
 void print_return_value(void);
 void reset_evaluator(void);
 struct backlog;
 void dump_backlog(void);
 BLOCK_ALLOC(pike_frame,128)
 
-void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
-void f_call_function(INT32 args);
-int apply_low_safe_and_stupid(struct object *o, INT32 offset);
-void safe_apply_low(struct object *o,int fun,int args);
-void safe_apply(struct object *o, char *fun ,INT32 args);
-void apply_lfun(struct object *o, int fun, int args);
-void apply_shared(struct object *o,
+PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2);
+PMOD_EXPORT void f_call_function(INT32 args);
+PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
+PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
+PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args);
+PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args);
+PMOD_EXPORT void apply_shared(struct object *o,
 		  struct pike_string *fun,
 		  int args);
-void apply(struct object *o, char *fun, int args);
-void apply_svalue(struct svalue *s, INT32 args);
-void slow_check_stack(void);
+PMOD_EXPORT void apply(struct object *o, char *fun, int args);
+PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args);
+PMOD_EXPORT void slow_check_stack(void);
 void cleanup_interpret(void);
 void really_clean_up_interpret(void);
 /* Prototypes end here */
 
-extern int Pike_stack_size;
-struct callback;
-extern struct callback_list evaluator_callbacks;
-extern void call_callback(struct callback_list *, void *);
+PMOD_EXPORT extern int d_flag; /* really in main.c */
+
+PMOD_EXPORT extern int Pike_stack_size;
+PMOD_EXPORT struct callback;
+PMOD_EXPORT extern struct callback_list evaluator_callbacks;
+PMOD_EXPORT extern void call_callback(struct callback_list *, void *);
 
 /* Things to try:
  * we could reduce thread swapping to a pointer operation if
@@ -255,7 +257,7 @@ extern void call_callback(struct callback_list *, void *);
  * The above define could also be used to facilitate dynamic loading
  * on Win32..
  */
-extern struct Pike_interpreter Pike_interpreter;
+PMOD_EXPORT extern struct Pike_interpreter Pike_interpreter;
 
 #define Pike_sp Pike_interpreter.stack_pointer
 #define Pike_fp Pike_interpreter.frame_pointer

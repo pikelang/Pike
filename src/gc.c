@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.109 2000/07/18 06:53:58 mast Exp $");
+RCSID("$Id: gc.c,v 1.110 2000/07/28 17:16:55 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -96,7 +96,7 @@ RCSID("$Id: gc.c,v 1.109 2000/07/18 06:53:58 mast Exp $");
 INT32 num_objects = 1;		/* Account for empty_array. */
 INT32 num_allocs =0;
 INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
-int Pike_in_gc = 0;
+PMOD_EXPORT int Pike_in_gc = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
 
@@ -771,7 +771,7 @@ void describe_something(void *a, int t, int indent, int depth, int flags)
   d_flag=tmp;
 }
 
-void describe(void *x)
+PMOD_EXPORT void describe(void *x)
 {
   describe_something(x, attempt_to_identify(x), 0, 2, 0);
 }

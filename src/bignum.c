@@ -10,7 +10,7 @@
 
 struct svalue auto_bignum_program = { T_INT };
 
-int gmp_library_loaded=0;
+PMOD_EXPORT int gmp_library_loaded=0;
 int gmp_library_resolving=0;
 
 static void resolve_auto_bignum_program(void)
@@ -34,13 +34,13 @@ static void resolve_auto_bignum_program(void)
   }
 }
 
-struct program *get_auto_bignum_program(void)
+PMOD_EXPORT struct program *get_auto_bignum_program(void)
 {
   resolve_auto_bignum_program();
   return program_from_function(&auto_bignum_program);
 }
 
-struct program *get_auto_bignum_program_or_zero(void)
+PMOD_EXPORT struct program *get_auto_bignum_program_or_zero(void)
 {
   if(!gmp_library_loaded ||
      gmp_library_resolving  ||
@@ -55,7 +55,7 @@ void exit_auto_bignum(void)
   auto_bignum_program.type=T_INT;
 }
 
-void convert_stack_top_to_bignum(void)
+PMOD_EXPORT void convert_stack_top_to_bignum(void)
 {
   resolve_auto_bignum_program();
   apply_svalue(&auto_bignum_program, 1);
@@ -64,7 +64,7 @@ void convert_stack_top_to_bignum(void)
     error("Gmp.mpz conversion failed.\n");
 }
 
-void convert_stack_top_with_base_to_bignum(void)
+PMOD_EXPORT void convert_stack_top_with_base_to_bignum(void)
 {
   resolve_auto_bignum_program();
   apply_svalue(&auto_bignum_program, 2);
@@ -90,25 +90,25 @@ int is_bignum_object(struct object *o)
   return o->prog == program_from_function(&auto_bignum_program);
 }
 
-int is_bignum_object_in_svalue(struct svalue *sv)
+PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
 {
   return sv->type == T_OBJECT && is_bignum_object(sv->u.object);
 }
 
-struct object *make_bignum_object(void)
+PMOD_EXPORT struct object *make_bignum_object(void)
 {
   convert_stack_top_to_bignum();
   return (--sp)->u.object;
 }
 
-struct object *bignum_from_svalue(struct svalue *s)
+PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s)
 {
   push_svalue(s);
   convert_stack_top_to_bignum();
   return (--sp)->u.object;
 }
 
-struct pike_string *string_from_bignum(struct object *o, int base)
+PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
 {
   push_int(base);
   safe_apply(o, "digits", 1);
@@ -119,7 +119,7 @@ struct pike_string *string_from_bignum(struct object *o, int base)
   return (--sp)->u.string;
 }
 
-void convert_svalue_to_bignum(struct svalue *s)
+PMOD_EXPORT void convert_svalue_to_bignum(struct svalue *s)
 {
   push_svalue(s);
   convert_stack_top_to_bignum();
@@ -135,7 +135,7 @@ void convert_svalue_to_bignum(struct svalue *s)
 #define BIGNUM_INT64_MASK  0xffff
 #define BIGNUM_INT64_SHIFT 16
 
-void push_int64(INT64 i)
+PMOD_EXPORT void push_int64(INT64 i)
 {
   if(i == (INT_TYPE)i)
   {
@@ -181,7 +181,7 @@ void push_int64(INT64 i)
   }
 }
 
-int int64_from_bignum(INT64 *i, struct object *bignum)
+PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
 {
   int neg, pos, rshfun, andfun;
 

@@ -21,14 +21,14 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.55 2000/07/07 01:46:21 hubbe Exp $");
+RCSID("$Id: error.c,v 1.56 2000/07/28 17:16:54 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
 
 
 #ifdef PIKE_DEBUG
-void check_recovery_context(void)
+PMOD_EXPORT void check_recovery_context(void)
 {
   char foo;
 #define TESTILITEST ((((char *)Pike_interpreter.recoveries)-((char *)&foo))*STACK_DIRECTION)
@@ -38,12 +38,12 @@ void check_recovery_context(void)
   /* Add more stuff here when required */
 }
 
-void pike_gdb_breakpoint(void) 
+PMOD_EXPORT void pike_gdb_breakpoint(void) 
 {
 }
 #endif
 
-JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
+PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
 {
   check_recovery_context();
 #ifdef PIKE_DEBUG
@@ -62,7 +62,7 @@ JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS)
   return r;
 }
 
-void pike_throw(void) ATTRIBUTE((noreturn))
+PMOD_EXPORT void pike_throw(void) ATTRIBUTE((noreturn))
 {
   while(Pike_interpreter.recoveries && throw_severity > Pike_interpreter.recoveries->severity)
   {
@@ -104,7 +104,7 @@ void pike_throw(void) ATTRIBUTE((noreturn))
   longjmp(Pike_interpreter.recoveries->recovery,1);
 }
 
-void push_error(char *description)
+PMOD_EXPORT void push_error(char *description)
 {
   push_text(description);
   f_backtrace(0);
@@ -115,7 +115,7 @@ struct svalue throw_value = { PIKE_T_INT };
 int throw_severity;
 static const char *in_error;
 
-void low_error(char *buf) ATTRIBUTE((noreturn))
+PMOD_EXPORT void low_error(char *buf) ATTRIBUTE((noreturn))
 {
   push_error(buf);
   free_svalue(& throw_value);
@@ -163,7 +163,7 @@ void va_error(const char *fmt, va_list args) ATTRIBUTE((noreturn))
   low_error(buf);
 }
 
-void new_error(const char *name, const char *text, struct svalue *oldsp,
+PMOD_EXPORT void new_error(const char *name, const char *text, struct svalue *oldsp,
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn))
 {
   int i;
@@ -223,7 +223,7 @@ void new_error(const char *name, const char *text, struct svalue *oldsp,
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
-void exit_on_error(void *msg)
+PMOD_EXPORT void exit_on_error(void *msg)
 {
   ONERROR tmp;
   SET_ONERROR(tmp,fatal_on_error,"Fatal in exit_on_error!");
@@ -248,7 +248,7 @@ void exit_on_error(void *msg)
   exit(1);
 }
 
-void fatal_on_error(void *msg)
+PMOD_EXPORT void fatal_on_error(void *msg)
 {
 #ifdef PIKE_DEBUG
   dump_backlog();
@@ -257,7 +257,7 @@ void fatal_on_error(void *msg)
   abort();
 }
 
-void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+PMOD_EXPORT void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   va_start(args,fmt);
@@ -265,7 +265,7 @@ void error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
   va_end(args);
 }
 
-void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+PMOD_EXPORT void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
 {
   va_list args;
   static int in_fatal = 0;
@@ -463,7 +463,7 @@ void generic_error_va(struct object *o,
   pike_throw();  /* Hope someone is catching, or we will be out of balls. */
 }
 
-void generic_error(
+PMOD_EXPORT void generic_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
@@ -472,7 +472,7 @@ void generic_error(
   ERROR_DONE(generic);
 }
 
-void index_error(
+PMOD_EXPORT void index_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *val,
@@ -485,7 +485,7 @@ void index_error(
   ERROR_DONE(generic);
 }
 
-void bad_arg_error(
+PMOD_EXPORT void bad_arg_error(
   char *func,
   struct svalue *base_sp,  int args,
   int which_arg,
@@ -509,7 +509,7 @@ void bad_arg_error(
   ERROR_DONE(generic);
 }
 
-void math_error(
+PMOD_EXPORT void math_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
@@ -527,7 +527,7 @@ void math_error(
   ERROR_DONE(generic);
 }
 
-void resource_error(
+PMOD_EXPORT void resource_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *resource_type,
@@ -540,7 +540,7 @@ void resource_error(
   ERROR_DONE(generic);
 }
 
-void permission_error(
+PMOD_EXPORT void permission_error(
   char *func,
   struct svalue *base_sp, int args,
   char *permission_type,
@@ -552,7 +552,7 @@ void permission_error(
   ERROR_DONE(generic);
 }
 
-void wrong_number_of_args_error(char *name, int args, int expected)
+PMOD_EXPORT void wrong_number_of_args_error(char *name, int args, int expected)
 {
   char *msg;
   if(expected>args)

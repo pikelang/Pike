@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_macros.h,v 1.16 2000/06/27 15:19:33 grubba Exp $
+ * $Id: pike_macros.h,v 1.17 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef MACROS_H
 #define MACROS_H
@@ -94,5 +94,8 @@
   if(o->next) o->next->prev=o->prev;		\
 }while(0)
 
+
+/* Needed for fsort_template.h */
+int my_log2(unsigned INT32 x);
 
 #endif

@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.77 2000/07/07 15:31:14 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.78 2000/07/28 17:16:55 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -616,7 +616,7 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 }
 
 
-void f_cast(void)
+PMOD_EXPORT void f_cast(void)
 {
 #ifdef PIKE_DEBUG
   struct svalue *save_sp=sp;
@@ -1682,7 +1682,7 @@ void o_sscanf(INT32 args)
   push_int(i);
 }
 
-void f_sscanf(INT32 args)
+PMOD_EXPORT void f_sscanf(INT32 args)
 {
 #ifdef PIKE_DEBUG
   extern int t_flag;

@@ -1,8 +1,8 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.132 2000/07/07 01:24:14 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.133 2000/07/28 17:16:55 hubbe Exp $");
 
-int num_threads = 1;
-int threads_disabled = 0;
+PMOD_EXPORT int num_threads = 1;
+PMOD_EXPORT int threads_disabled = 0;
 
 #ifdef _REENTRANT
 #include "threads.h"
@@ -23,10 +23,10 @@ int threads_disabled = 0;
 
 #include <errno.h>
 
-int live_threads = 0;
-COND_T live_threads_change;
-COND_T threads_disabled_change;
-size_t thread_stack_size=1024 * 1204;
+PMOD_EXPORT int live_threads = 0;
+PMOD_EXPORT COND_T live_threads_change;
+PMOD_EXPORT COND_T threads_disabled_change;
+PMOD_EXPORT size_t thread_stack_size=1024 * 1204;
 
 #ifndef HAVE_PTHREAD_ATFORK
 #include "callback.h"
@@ -103,7 +103,7 @@ static int IsValidHandle(HANDLE h)
   return 1;
 }
 
-HANDLE CheckValidHandle(HANDLE h)
+PMOD_EXPORT HANDLE CheckValidHandle(HANDLE h)
 {
   if(!IsValidHandle(h))
     fatal("Invalid handle!\n");
@@ -115,7 +115,7 @@ HANDLE CheckValidHandle(HANDLE h)
 #endif
 
 #ifdef SIMULATE_COND_WITH_EVENT
-int co_wait(COND_T *c, MUTEX_T *m)
+PMOD_EXPORT int co_wait(COND_T *c, MUTEX_T *m)
 {
   struct cond_t_queue me;
   event_init(&me.event);
@@ -146,7 +146,7 @@ int co_wait(COND_T *c, MUTEX_T *m)
   return 0;
 }
 
-int co_signal(COND_T *c)
+PMOD_EXPORT int co_signal(COND_T *c)
 {
   struct cond_t_queue *t;
   mt_lock(& c->lock);
@@ -162,7 +162,7 @@ int co_signal(COND_T *c)
   return 0;
 }
 
-int co_broadcast(COND_T *c)
+PMOD_EXPORT int co_broadcast(COND_T *c)
 {
   struct cond_t_queue *t,*n;
   mt_lock(& c->lock);
@@ -180,7 +180,7 @@ int co_broadcast(COND_T *c)
   return 0;
 }
 
-int co_destroy(COND_T *c)
+PMOD_EXPORT int co_destroy(COND_T *c)
 {
   struct cond_t_queue *t;
   mt_lock(& c->lock);
@@ -204,7 +204,8 @@ int th_running = 0;
 int debug_interpreter_is_locked = 0;
 THREAD_T debug_locking_thread;
 #endif
-MUTEX_T interpreter_lock, thread_table_lock, interleave_lock;
+PMOD_EXPORT MUTEX_T interpreter_lock;
+MUTEX_T thread_table_lock, interleave_lock;
 struct program *mutex_key = 0;
 struct program *thread_id_prog = 0;
 struct program *thread_local_prog = 0;
@@ -212,7 +213,7 @@ struct program *thread_local_prog = 0;
 pthread_attr_t pattr;
 pthread_attr_t small_pattr;
 #endif
-int thread_storage_offset;
+PMOD_EXPORT int thread_storage_offset;
 
 struct thread_starter
 {
@@ -449,7 +450,7 @@ void thread_table_delete(struct object *o)
   mt_unlock( & thread_table_lock );
 }
 
-struct thread_state *thread_state_for_id(THREAD_T tid)
+PMOD_EXPORT struct thread_state *thread_state_for_id(THREAD_T tid)
 {
   unsigned INT32 h = thread_table_hash(&tid);
   struct thread_state *s = NULL;
@@ -500,7 +501,7 @@ struct thread_state *thread_state_for_id(THREAD_T tid)
      as you have the interpreter lock, unless tid == th_self() */
 }
 
-struct object *thread_for_id(THREAD_T tid)
+PMOD_EXPORT struct object *thread_for_id(THREAD_T tid)
 {
   struct thread_state *s = thread_state_for_id(tid);
   return (s == NULL? NULL : THREADSTATE2OBJ(s));
@@ -509,7 +510,7 @@ struct object *thread_for_id(THREAD_T tid)
 }
 
 
-void f_all_threads(INT32 args)
+PMOD_EXPORT void f_all_threads(INT32 args)
 {
   /* Return an unordered array containing all threads that was running
      at the time this function was invoked */
@@ -531,7 +532,7 @@ void f_all_threads(INT32 args)
 }
 
 
-int count_pike_threads(void)
+PMOD_EXPORT int count_pike_threads(void)
 {
   return num_pike_threads;
 }
@@ -1479,7 +1480,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
   return me;
 }
 
-void th_farm(void (*fun)(void *), void *here)
+PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 {
   if(!fun) fatal("The farmers don't known how to handle empty fields\n");
   mt_lock( &rosie );

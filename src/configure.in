@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.386 2000/07/11 19:04:06 neotron Exp $")
+AC_REVISION("$Id: configure.in,v 1.387 2000/07/28 17:16:54 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -454,7 +454,7 @@ else :; fi
 
 
 
-AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[with_dynamic_modules=yes])
+AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[])
 AC_ARG_WITH(static_linking,    [  --with-static-linking            link statically, if possible],[with_static_linking=yes],[])
 AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
 AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for libraries.])
@@ -859,6 +859,9 @@ if test $cflags_is_set = no; then
         AC_SYS_COMPILER_FLAG(-GZ,GZ,WARN)
       fi
     else :; fi
+
+    EXTRA_MODULE_REQUIREMENTS="${EXTRA_MODULE_REQUIREMENTS} import_functions.h"
+    EXTRA_OBJS="${EXTRA_OBJS} export_functions.o"
   ])
 
 dnl
@@ -3561,8 +3564,20 @@ void testfunc2(void) { exit(0); }
 ])
 AC_MSG_RESULT($pike_cv_sys_dynamic_loading)
 
-if test x$pike_cv_sys_dynamic_loading = xno ; then
-  with_dynamic_modules=no
+
+if test "x$with_dynamic_modules" = "x" ; then
+  if test x$pike_cv_sys_dynamic_loading = xno ; then
+    with_dynamic_modules=no
+  else
+    with_dynamic_modules=yes
+    if test x$pike_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
+    then
+#     Dynamic loading is now WORKING
+#      if test x"$pike_cv_sys_os" != xWindows_NT ; then
+        with_dynamic_modules=no
+#      fi
+    fi
+  fi
 fi
 
 #######################################################################
@@ -3627,6 +3642,16 @@ esac
 if test "x$with_copt" = xno ; then
   OPTIMIZE=
 fi
+
+#############################################################################
+
+if test x$with_dynamic_modules = xyes ; then
+  dmmsrc="modules/dynamic_module_makefile.in"
+  CCSHARED="${CCSHARED} -DDYNAMIC_MODULE"
+else
+  dmmsrc="modules/static_module_makefile.in"
+fi
+
 #############################################################################
 
 echo
@@ -3637,6 +3662,7 @@ echo "Linker:        $LD"
 echo "Shared linker: $LDSHARED"
 echo
 echo "Shared object extension: $SO"
+echo "Dynamic modules: $with_dynamic_modules"
 echo
 echo "CPPFLAGS:      $CPPFLAGS"
 echo "CFLAGS:        $CFLAGS"
@@ -3673,21 +3699,9 @@ AC_SUBST(OPTIMIZE)
 AC_SUBST(EXTRA_OBJS)
 AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
+AC_SUBST(EXTRA_MODULE_REQUIREMENTS)
 AC_SUBST(ac_configure_args)
 pike_cv_prog_CC="${CC}"
-
-if test x$pike_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
-then
-  if test x"$pike_cv_sys_os" != xWindows_NT ; then
-    with_dynamic_modules=no
-  fi
-fi
-
-if test x$with_dynamic_modules = xyes ; then
-  dmmsrc="modules/dynamic_module_makefile.in"
-else
-  dmmsrc="modules/static_module_makefile.in"
-fi
 
 AC_SUBST(dmmsrc)
 

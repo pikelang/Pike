@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.157 2000/07/07 01:24:14 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.158 2000/07/28 17:16:55 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -62,8 +62,8 @@ RCSID("$Id: interpret.c,v 1.157 2000/07/07 01:24:14 hubbe Exp $");
 /* Pike_sp points to first unused value on stack
  * (much simpler than letting it point at the last used value.)
  */
-struct Pike_interpreter Pike_interpreter;
-int stack_size = EVALUATOR_STACK_SIZE;
+PMOD_EXPORT struct Pike_interpreter Pike_interpreter;
+PMOD_EXPORT int stack_size = EVALUATOR_STACK_SIZE;
 
 
 /* mark stack, used to store markers into the normal stack */
@@ -266,7 +266,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
   }
 }
 
-void assign_lvalue(struct svalue *lval,struct svalue *from)
+PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
 {
 #ifdef PIKE_SECURITY
   if(lval->type <= MAX_COMPLEX)
@@ -668,7 +668,7 @@ static
 #endif
 
 
-void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
+PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
   struct pike_frame *scope=0;
@@ -1182,7 +1182,7 @@ static void restore_creds(struct object *creds)
   Pike_interpreter.current_creds = creds;
 }
 
-void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
+PMOD_EXPORT void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   ONERROR tmp;
   if(Pike_interpreter.current_creds)
@@ -1229,12 +1229,12 @@ static int o_catch(unsigned char *pc)
   }
 }
 
-void f_call_function(INT32 args)
+PMOD_EXPORT void f_call_function(INT32 args)
 {
   mega_apply(APPLY_STACK,args,0,0);
 }
 
-int apply_low_safe_and_stupid(struct object *o, INT32 offset)
+PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
   JMP_BUF tmp;
   struct pike_frame *new_frame=alloc_pike_frame();
@@ -1279,7 +1279,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
   return ret;
 }
 
-void safe_apply_low(struct object *o,int fun,int args)
+PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args)
 {
   JMP_BUF recovery;
 
@@ -1327,7 +1327,7 @@ void safe_apply_low(struct object *o,int fun,int args)
 }
 
 
-void safe_apply(struct object *o, char *fun ,INT32 args)
+PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args)
 {
 #ifdef PIKE_DEBUG
   if(!o->prog) fatal("Apply safe on destructed object.\n");
@@ -1335,7 +1335,7 @@ void safe_apply(struct object *o, char *fun ,INT32 args)
   safe_apply_low(o, find_identifier(fun, o->prog), args);
 }
 
-void apply_lfun(struct object *o, int fun, int args)
+PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args)
 {
 #ifdef PIKE_DEBUG
   if(fun < 0 || fun >= NUM_LFUNS)
@@ -1347,20 +1347,20 @@ void apply_lfun(struct object *o, int fun, int args)
   apply_low(o, (int)FIND_LFUN(o->prog,fun), args);
 }
 
-void apply_shared(struct object *o,
+PMOD_EXPORT void apply_shared(struct object *o,
 		  struct pike_string *fun,
 		  int args)
 {
   apply_low(o, find_shared_string_identifier(fun, o->prog), args);
 }
 
-void apply(struct object *o, char *fun, int args)
+PMOD_EXPORT void apply(struct object *o, char *fun, int args)
 {
   apply_low(o, find_identifier(fun, o->prog), args);
 }
 
 
-void apply_svalue(struct svalue *s, INT32 args)
+PMOD_EXPORT void apply_svalue(struct svalue *s, INT32 args)
 {
   if(s->type==T_INT)
   {

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.61 2000/07/04 01:43:34 mast Exp $
+ * $Id: svalue.h,v 1.62 2000/07/28 17:16:55 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -174,6 +174,9 @@ struct svalue
 #define tIfnot(X,Y) tAnd(tNot(X),Y)
 #define tAny tOr(tVoid,tMix)
 
+#define tSimpleCallable tOr3(tArray,tFunction,tObj)
+#define tCallable tOr3(tArr(tSimpleCallable),tFunction,tObj)
+
 #define BIT_ARRAY (1<<PIKE_T_ARRAY)
 #define BIT_MAPPING (1<<PIKE_T_MAPPING)
 #define BIT_MULTISET (1<<PIKE_T_MULTISET)
@@ -326,51 +329,51 @@ extern struct svalue dest_ob_zero;
 #endif
 
 /* Prototypes begin here */
-void really_free_short_svalue(union anything *s, TYPE_T type);
-void really_free_svalue(struct svalue *s);
-void do_free_svalue(struct svalue *s);
-void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
-void assign_svalues_no_free(struct svalue *to,
+PMOD_EXPORT void really_free_short_svalue(union anything *s, TYPE_T type);
+PMOD_EXPORT void really_free_svalue(struct svalue *s);
+PMOD_EXPORT void do_free_svalue(struct svalue *s);
+PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hint DMALLOC_LINE_ARGS);
+PMOD_EXPORT void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
 			    size_t num,
 			    INT32 type_hint);
-void assign_svalues(struct svalue *to,
+PMOD_EXPORT void assign_svalues(struct svalue *to,
 		    struct svalue *from,
 		    size_t num,
 		    TYPE_FIELD types);
-void assign_to_short_svalue(union anything *u,
+PMOD_EXPORT void assign_to_short_svalue(union anything *u,
 			    TYPE_T type,
 			    struct svalue *s);
-void assign_to_short_svalue_no_free(union anything *u,
+PMOD_EXPORT void assign_to_short_svalue_no_free(union anything *u,
 				    TYPE_T type,
 				    struct svalue *s);
-void assign_from_short_svalue_no_free(struct svalue *s,
+PMOD_EXPORT void assign_from_short_svalue_no_free(struct svalue *s,
 				      union anything *u,
 				      TYPE_T type);
-void assign_short_svalue_no_free(union anything *to,
+PMOD_EXPORT void assign_short_svalue_no_free(union anything *to,
 				 union anything *from,
 				 TYPE_T type);
-void assign_short_svalue(union anything *to,
+PMOD_EXPORT void assign_short_svalue(union anything *to,
 			 union anything *from,
 			 TYPE_T type);
-unsigned INT32 hash_svalue(struct svalue *s);
-int svalue_is_true(struct svalue *s);
-int is_identical(struct svalue *a, struct svalue *b);
-int is_eq(struct svalue *a, struct svalue *b);
-int low_is_equal(struct svalue *a,
+PMOD_EXPORT unsigned INT32 hash_svalue(struct svalue *s);
+PMOD_EXPORT int svalue_is_true(struct svalue *s);
+PMOD_EXPORT int is_identical(struct svalue *a, struct svalue *b);
+PMOD_EXPORT int is_eq(struct svalue *a, struct svalue *b);
+PMOD_EXPORT int low_is_equal(struct svalue *a,
 		 struct svalue *b,
 		 struct processing *p);
-int low_short_is_equal(const union anything *a,
+PMOD_EXPORT int low_short_is_equal(const union anything *a,
 		       const union anything *b,
 		       TYPE_T type,
 		       struct processing *p);
-int is_equal(struct svalue *a,struct svalue *b);
-int is_lt(struct svalue *a,struct svalue *b);
-void describe_svalue(struct svalue *s,int indent,struct processing *p);
-void print_svalue (FILE *out, struct svalue *s);
-void clear_svalues(struct svalue *s, ptrdiff_t num);
-void clear_svalues_undefined(struct svalue *s, ptrdiff_t num);
-void copy_svalues_recursively_no_free(struct svalue *to,
+PMOD_EXPORT int is_equal(struct svalue *a,struct svalue *b);
+PMOD_EXPORT int is_lt(struct svalue *a,struct svalue *b);
+PMOD_EXPORT void describe_svalue(struct svalue *s,int indent,struct processing *p);
+PMOD_EXPORT void print_svalue (FILE *out, struct svalue *s);
+PMOD_EXPORT void clear_svalues(struct svalue *s, ptrdiff_t num);
+PMOD_EXPORT void clear_svalues_undefined(struct svalue *s, ptrdiff_t num);
+PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 				      struct svalue *from,
 				      size_t num,
 				      struct processing *p);
@@ -378,18 +381,18 @@ void check_short_svalue(union anything *u, TYPE_T type);
 void debug_check_svalue(struct svalue *s);
 void real_gc_xmark_svalues(struct svalue *s, ptrdiff_t num);
 void real_gc_check_svalues(struct svalue *s, size_t num);
-void real_gc_check_short_svalue(union anything *u, TYPE_T type);
 void gc_check_weak_svalues(struct svalue *s, size_t num);
+void real_gc_check_short_svalue(union anything *u, TYPE_T type);
 void gc_check_weak_short_svalue(union anything *u, TYPE_T type);
 TYPE_FIELD real_gc_mark_svalues(struct svalue *s, size_t num);
-int real_gc_mark_short_svalue(union anything *u, TYPE_T type);
 TYPE_FIELD gc_mark_weak_svalues(struct svalue *s, size_t num);
+int real_gc_mark_short_svalue(union anything *u, TYPE_T type);
 int gc_mark_weak_short_svalue(union anything *u, TYPE_T type);
 TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num);
-int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type);
 TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num);
+int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type);
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
-INT32 pike_sizeof(struct svalue *s);
+PMOD_EXPORT INT32 pike_sizeof(struct svalue *s);
 /* Prototypes end here */
 
 #define gc_xmark_svalues(S,N) real_gc_xmark_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)

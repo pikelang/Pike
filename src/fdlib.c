@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.36 2000/07/02 16:04:07 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.37 2000/07/28 17:16:55 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -23,7 +23,7 @@ int first_free_handle;
 #define FDDEBUG(X)
 #endif
 
-char *debug_fd_info(int fd)
+PMOD_EXPORT char *debug_fd_info(int fd)
 {
   if(fd<0)
     return "BAD";
@@ -41,7 +41,7 @@ char *debug_fd_info(int fd)
   }
 }
 
-int debug_fd_query_properties(int fd, int guess)
+PMOD_EXPORT int debug_fd_query_properties(int fd, int guess)
 {
   switch(fd_type[fd])
   {
@@ -111,7 +111,7 @@ int debug_fd_stat(char *file, struct stat *buf)
   return stat(file, buf);
 }
 
-FD debug_fd_open(char *file, int open_mode, int create_mode)
+PMOD_EXPORT FD debug_fd_open(char *file, int open_mode, int create_mode)
 {
   HANDLE x;
   FD fd;
@@ -211,7 +211,7 @@ FD debug_fd_open(char *file, int open_mode, int create_mode)
   return fd;
 }
 
-FD debug_fd_socket(int domain, int type, int proto)
+PMOD_EXPORT FD debug_fd_socket(int domain, int type, int proto)
 {
   FD fd;
   SOCKET s;
@@ -245,7 +245,7 @@ FD debug_fd_socket(int domain, int type, int proto)
   return fd;
 }
 
-int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
+PMOD_EXPORT int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
 {
   HANDLE files[2];
   mt_lock(&fd_mutex);
@@ -288,7 +288,7 @@ int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
   return 0;
 }
 
-FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen)
+PMOD_EXPORT FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen)
 {
   FD new_fd;
   SOCKET s;
@@ -332,7 +332,7 @@ FD debug_fd_accept(FD fd, struct sockaddr *addr, ACCEPT_SIZE_T *addrlen)
 
 
 #define SOCKFUN(NAME,X1,X2) \
-int PIKE_CONCAT(debug_fd_,NAME) X1 { SOCKET ret; \
+PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) X1 { SOCKET ret; \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%d)\n",fd,da_handle[fd])); \
   mt_lock(&fd_mutex); \
   if(fd_type[fd] != FD_SOCKET) { \
@@ -376,7 +376,7 @@ SOCKFUN5(sendto,void *,int,int,struct sockaddr *,unsigned int)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
 
-int debug_fd_connect (FD fd, struct sockaddr *a, int len)
+PMOD_EXPORT int debug_fd_connect (FD fd, struct sockaddr *a, int len)
 {
   SOCKET ret;
   mt_lock(&fd_mutex);
@@ -399,7 +399,7 @@ int debug_fd_connect (FD fd, struct sockaddr *a, int len)
   return (int)ret; 
 }
 
-int debug_fd_close(FD fd)
+PMOD_EXPORT int debug_fd_close(FD fd)
 {
   long h;
   int type;
@@ -438,7 +438,7 @@ int debug_fd_close(FD fd)
   return 0;
 }
 
-long debug_fd_write(FD fd, void *buf, long len)
+PMOD_EXPORT long debug_fd_write(FD fd, void *buf, long len)
 {
   DWORD ret;
   long handle;
@@ -484,7 +484,7 @@ long debug_fd_write(FD fd, void *buf, long len)
   }
 }
 
-long debug_fd_read(FD fd, void *to, long len)
+PMOD_EXPORT long debug_fd_read(FD fd, void *to, long len)
 {
   DWORD ret;
   int rret;
@@ -534,7 +534,7 @@ long debug_fd_read(FD fd, void *to, long len)
   }
 }
 
-long debug_fd_lseek(FD fd, long pos, int where)
+PMOD_EXPORT long debug_fd_lseek(FD fd, long pos, int where)
 {
   long ret;
   mt_lock(&fd_mutex);
@@ -564,7 +564,7 @@ long debug_fd_lseek(FD fd, long pos, int where)
   return ret;
 }
 
-long debug_fd_ftruncate(FD fd, long len)
+PMOD_EXPORT long debug_fd_ftruncate(FD fd, long len)
 {
   long ret;
   LONG oldfp_lo, oldfp_hi;
@@ -599,7 +599,7 @@ long debug_fd_ftruncate(FD fd, long len)
   return 0;
 }
 
-int debug_fd_flock(FD fd, int oper)
+PMOD_EXPORT int debug_fd_flock(FD fd, int oper)
 {
   long ret;
   mt_lock(&fd_mutex);
@@ -658,7 +658,7 @@ static long convert_filetime_to_time_t(FILETIME tmp)
   return (long)floor(t);
 }
 
-int debug_fd_fstat(FD fd, struct stat *s)
+PMOD_EXPORT int debug_fd_fstat(FD fd, struct stat *s)
 {
   DWORD x;
 
@@ -738,7 +738,7 @@ static void dump_FDSET(FD_SET *x, int fds)
  * If the backend works correctly, fds is zero when there are no fds.
  * /Hubbe
  */
-int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
+PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
 {
   int ret;
 
@@ -771,7 +771,7 @@ int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
 }
 
 
-int debug_fd_ioctl(FD fd, int cmd, void *data)
+PMOD_EXPORT int debug_fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
   FDDEBUG(fprintf(stderr,"ioctl(%d (%d,%d,%p)\n",fd,da_handle[fd],cmd,data));
@@ -794,7 +794,7 @@ int debug_fd_ioctl(FD fd, int cmd, void *data)
 }
 
 
-FD debug_fd_dup(FD from)
+PMOD_EXPORT FD debug_fd_dup(FD from)
 {
   FD fd;
   HANDLE x,p=GetCurrentProcess();
@@ -819,7 +819,7 @@ FD debug_fd_dup(FD from)
   return fd;
 }
 
-FD debug_fd_dup2(FD from, FD to)
+PMOD_EXPORT FD debug_fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
   if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,0,0,DUPLICATE_SAME_ACCESS))
@@ -860,7 +860,7 @@ FD debug_fd_dup2(FD from, FD to)
 #endif /* HAVE_WINSOCK_H */
 
 #ifdef EMULATE_DIRECT
-DIR *opendir(char *dir)
+PMOD_EXPORT DIR *opendir(char *dir)
 {
   int len=strlen(dir);
   char *foo;
@@ -890,7 +890,7 @@ DIR *opendir(char *dir)
   return ret;
 }
 
-int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
+PMOD_EXPORT int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
 {
   if(dir->first)
   {
@@ -908,7 +908,7 @@ int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d)
   }
 }
 
-void closedir(DIR *dir)
+PMOD_EXPORT void closedir(DIR *dir)
 {
   FindClose(dir->h);
   free((char *)dir);

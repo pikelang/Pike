@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: backend.h,v 1.8 2000/06/29 16:52:25 grubba Exp $
+ * $Id: backend.h,v 1.9 2000/07/28 17:16:54 hubbe Exp $
  */
 #ifndef BACKEND_H
 #define BACKEND_H
@@ -18,6 +18,7 @@ extern struct timeval current_time;
 extern struct timeval next_timeout;
 typedef void (*file_callback)(int,void *);
 extern struct callback_list do_debug_callbacks;
+extern int fds_size;
 
 /* Prototypes begin here */
 struct selectors;

@@ -23,9 +23,9 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.78 2000/07/18 05:48:20 mast Exp $");
+RCSID("$Id: array.c,v 1.79 2000/07/28 17:16:54 hubbe Exp $");
 
-struct array empty_array=
+PMOD_EXPORT struct array empty_array=
 {
   1,                     /* Never free */
 #ifdef PIKE_SECURITY
@@ -48,7 +48,7 @@ static struct array *gc_mark_array_pos = 0;
  * NOTE: the new array have zero references
  */
 
-struct array *low_allocate_array(INT32 size,INT32 extra_space)
+PMOD_EXPORT struct array *low_allocate_array(INT32 size,INT32 extra_space)
 {
   struct array *v;
   INT32 e;
@@ -109,7 +109,7 @@ static void array_free_no_free(struct array *v)
 /*
  * Free an array, call this when the array has zero references
  */
-void really_free_array(struct array *v)
+PMOD_EXPORT void really_free_array(struct array *v)
 {
 #ifdef PIKE_DEBUG
   if(v == & empty_array)
@@ -127,7 +127,7 @@ void really_free_array(struct array *v)
   array_free_no_free(v);
 }
 
-void do_free_array(struct array *a)
+PMOD_EXPORT void do_free_array(struct array *a)
 {
   if (a)
     free_array(a);
@@ -136,7 +136,7 @@ void do_free_array(struct array *a)
 /*
  * Extract an svalue from an array
  */
-void array_index_no_free(struct svalue *s,struct array *v,INT32 index)
+PMOD_EXPORT void array_index_no_free(struct svalue *s,struct array *v,INT32 index)
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
@@ -149,7 +149,7 @@ void array_index_no_free(struct svalue *s,struct array *v,INT32 index)
 /*
  * Extract an svalue from an array
  */
-void array_index(struct svalue *s,struct array *v,INT32 index)
+PMOD_EXPORT void array_index(struct svalue *s,struct array *v,INT32 index)
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
@@ -161,7 +161,7 @@ void array_index(struct svalue *s,struct array *v,INT32 index)
   free_array(v);
 }
 
-void simple_array_index_no_free(struct svalue *s,
+PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
 				struct array *a,struct svalue *ind)
 {
   INT32 i;
@@ -208,7 +208,7 @@ void simple_array_index_no_free(struct svalue *s,
 /*
  * Extract an svalue from an array
  */
-void array_free_index(struct array *v,INT32 index)
+PMOD_EXPORT void array_free_index(struct array *v,INT32 index)
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>=v->size)
@@ -221,7 +221,7 @@ void array_free_index(struct array *v,INT32 index)
 /*
  * Set an index in an array
  */
-void array_set_index(struct array *v,INT32 index, struct svalue *s)
+PMOD_EXPORT void array_set_index(struct array *v,INT32 index, struct svalue *s)
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>v->size)
@@ -237,7 +237,7 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s)
 }
 
 
-void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
+PMOD_EXPORT void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 {
   INT32 i;
   switch (ind->type) {
@@ -281,7 +281,7 @@ void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
 /*
  * Insert an svalue into an array, grow the array if nessesary
  */
-struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
+PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
 {
 #ifdef PIKE_DEBUG
   if(index<0 || index>v->size)
@@ -326,7 +326,7 @@ struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
 /*
  * resize array, resize an array destructively
  */
-struct array *resize_array(struct array *a, INT32 size)
+PMOD_EXPORT struct array *resize_array(struct array *a, INT32 size)
 {
 #ifdef PIKE_DEBUG
   if(d_flag > 1)  array_check_type_field(a);
@@ -367,7 +367,7 @@ struct array *resize_array(struct array *a, INT32 size)
 /*
  * Shrink an array destructively
  */
-struct array *array_shrink(struct array *v,INT32 size)
+PMOD_EXPORT struct array *array_shrink(struct array *v,INT32 size)
 {
   struct array *a;
 
@@ -399,7 +399,7 @@ struct array *array_shrink(struct array *v,INT32 size)
 /*
  * Remove an index from an array and shrink the array
  */
-struct array *array_remove(struct array *v,INT32 index)
+PMOD_EXPORT struct array *array_remove(struct array *v,INT32 index)
 {
   struct array *a;
 
@@ -443,7 +443,7 @@ struct array *array_remove(struct array *v,INT32 index)
  * Search for in svalue in an array.
  * return the index if found, -1 otherwise
  */
-INT32 array_search(struct array *v, struct svalue *s,INT32 start)
+PMOD_EXPORT INT32 array_search(struct array *v, struct svalue *s,INT32 start)
 {
   INT32 e;
 #ifdef PIKE_DEBUG
@@ -485,7 +485,7 @@ INT32 array_search(struct array *v, struct svalue *s,INT32 start)
  * Slice a pice of an array (nondestructively)
  * return an array consisting of v[start..end-1]
  */
-struct array *slice_array(struct array *v,INT32 start,INT32 end)
+PMOD_EXPORT struct array *slice_array(struct array *v,INT32 start,INT32 end)
 {
   struct array *a;
 
@@ -514,7 +514,7 @@ struct array *slice_array(struct array *v,INT32 start,INT32 end)
  * Slice a pice of an array (nondestructively)
  * return an array consisting of v[start..end-1]
  */
-struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end)
+PMOD_EXPORT struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end)
 {
   struct array *a;
 
@@ -536,7 +536,7 @@ struct array *friendly_slice_array(struct array *v,INT32 start,INT32 end)
 /*
  * Copy an array
  */
-struct array *copy_array(struct array *v)
+PMOD_EXPORT struct array *copy_array(struct array *v)
 {
   struct array *a;
 
@@ -551,7 +551,7 @@ struct array *copy_array(struct array *v)
 /*
  * Clean an array from destructed objects
  */
-void check_array_for_destruct(struct array *v)
+PMOD_EXPORT void check_array_for_destruct(struct array *v)
 {
   int e;
   INT16 types;
@@ -588,7 +588,7 @@ void check_array_for_destruct(struct array *v)
  * it could be optimized to search out the object part with a binary 
  * search lookup if the array is mixed
  */
-INT32 array_find_destructed_object(struct array *v)
+PMOD_EXPORT INT32 array_find_destructed_object(struct array *v)
 {
   INT32 e;
   TYPE_FIELD types;
@@ -753,7 +753,7 @@ static int alpha_svalue_cmpfun(struct svalue *a, struct svalue *b)
 #undef ID
 
 
-void sort_array_destructively(struct array *v)
+PMOD_EXPORT void sort_array_destructively(struct array *v)
 {
   if(!v->size) return;
   low_sort_svalues(ITEM(v), ITEM(v)+v->size-1);
@@ -764,7 +764,7 @@ void sort_array_destructively(struct array *v)
 /*
  * return an 'order' suitable for making mappings and multisets
  */
-INT32 *get_set_order(struct array *a)
+PMOD_EXPORT INT32 *get_set_order(struct array *a)
 {
   return get_order(a, set_svalue_cmpfun);
 }
@@ -776,7 +776,7 @@ INT32 *get_set_order(struct array *a)
  * sorting rules for all the types that function allows in multiset
  * and mapping indices.
  */
-INT32 *get_switch_order(struct array *a)
+PMOD_EXPORT INT32 *get_switch_order(struct array *a)
 {
   return get_order(a, switch_svalue_cmpfun);
 }
@@ -785,7 +785,7 @@ INT32 *get_switch_order(struct array *a)
 /*
  * return an 'order' suitable for sorting.
  */
-INT32 *get_alpha_order(struct array *a)
+PMOD_EXPORT INT32 *get_alpha_order(struct array *a)
 {
   return get_order(a, alpha_svalue_cmpfun);
 }
@@ -852,7 +852,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
 /*
  * reorganize an array in the order specifyed by 'order'
  */
-struct array *order_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *order_array(struct array *v, INT32 *order)
 {
   reorder((char *)ITEM(v),v->size,sizeof(struct svalue),order);
   return v;
@@ -862,7 +862,7 @@ struct array *order_array(struct array *v, INT32 *order)
 /*
  * copy and reorganize an array
  */
-struct array *reorder_and_copy_array(struct array *v, INT32 *order)
+PMOD_EXPORT struct array *reorder_and_copy_array(struct array *v, INT32 *order)
 {
   INT32 e;
   struct array *ret;
@@ -876,7 +876,7 @@ struct array *reorder_and_copy_array(struct array *v, INT32 *order)
 }
 
 /* Maybe I should have a 'clean' flag for this computation */
-void array_fix_type_field(struct array *v)
+PMOD_EXPORT void array_fix_type_field(struct array *v)
 {
   int e;
   TYPE_FIELD t;
@@ -929,7 +929,7 @@ void array_check_type_field(struct array *v)
 }
 #endif
 
-struct array *compact_array(struct array *v) { return v; }
+PMOD_EXPORT struct array *compact_array(struct array *v) { return v; }
 
 /*
  * Get a pointer to the 'union anything' specified IF it is of the specified
@@ -1036,7 +1036,7 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
  * This routine merges two arrays in the order specified by 'zipper'
  * zipper normally produced by merge() above
  */
-struct array *array_zip(struct array *a, struct array *b,INT32 *zipper)
+PMOD_EXPORT struct array *array_zip(struct array *a, struct array *b,INT32 *zipper)
 {
   INT32 size,e;
   struct array *ret;
@@ -1056,7 +1056,7 @@ struct array *array_zip(struct array *a, struct array *b,INT32 *zipper)
   return ret;
 }
 
-struct array *add_arrays(struct svalue *argp, INT32 args)
+PMOD_EXPORT struct array *add_arrays(struct svalue *argp, INT32 args)
 {
   INT32 e, size;
   struct array *v;
@@ -1090,7 +1090,7 @@ struct array *add_arrays(struct svalue *argp, INT32 args)
   return v;
 }
 
-int array_equal_p(struct array *a, struct array *b, struct processing *p)
+PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processing *p)
 {
   struct processing curr;
   INT32 e;
@@ -1162,7 +1162,7 @@ static int array_merge_fun(INT32 *a, INT32 *b)
  * into ordered sets, merging them as sets and then rearranging the zipper
  * before zipping the sets together. 
  */
-struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op)
+PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op)
 {
   INT32 *zipper;
   struct array *tmpa,*tmpb,*ret;
@@ -1204,7 +1204,7 @@ struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op)
  * into ordered sets, merging them as sets and then rearranging the zipper
  * before zipping the sets together. 
  */
-struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op)
+PMOD_EXPORT struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 op)
 {
   INT32 ap,bp,i;
   struct svalue *arra,*arrb;
@@ -1277,7 +1277,7 @@ struct array *merge_array_without_order2(struct array *a, struct array *b,INT32 
 /* merge two arrays without paying attention to the order
  * the elements has presently
  */
-struct array *merge_array_without_order(struct array *a,
+PMOD_EXPORT struct array *merge_array_without_order(struct array *a,
 					struct array *b,
 					INT32 op)
 {
@@ -1313,7 +1313,7 @@ struct array *merge_array_without_order(struct array *a,
 }
 
 /* subtract an array from another */
-struct array *subtract_arrays(struct array *a, struct array *b)
+PMOD_EXPORT struct array *subtract_arrays(struct array *a, struct array *b)
 {
 #ifdef PIKE_DEBUG
   if(d_flag > 1)
@@ -1337,7 +1337,7 @@ struct array *subtract_arrays(struct array *a, struct array *b)
 }
 
 /* and two arrays */
-struct array *and_arrays(struct array *a, struct array *b)
+PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b)
 {
 #ifdef PIKE_DEBUG
   if(d_flag > 1)
@@ -1449,7 +1449,7 @@ node *make_node_from_array(struct array *a)
   }
 }
 
-void push_array_items(struct array *a)
+PMOD_EXPORT void push_array_items(struct array *a)
 {
   check_stack(a->size);
   check_array_for_destruct(a);
@@ -1479,7 +1479,7 @@ void describe_array_low(struct array *a, struct processing *p, int indent)
   }
 }
 
-void simple_describe_array(struct array *a)
+PMOD_EXPORT void simple_describe_array(struct array *a)
 {
   char *s;
   init_buf();
@@ -1531,7 +1531,7 @@ void describe_array(struct array *a,struct processing *p,int indent)
   my_strcat("})");
 }
 
-struct array *aggregate_array(INT32 args)
+PMOD_EXPORT struct array *aggregate_array(INT32 args)
 {
   struct array *a;
 
@@ -1543,14 +1543,14 @@ struct array *aggregate_array(INT32 args)
   return a;
 }
 
-struct array *append_array(struct array *a, struct svalue *s)
+PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
 {
   a=resize_array(a,a->size+1);
   array_set_index(a, a->size-1, s);
   return a;
 }
 
-struct array *explode(struct pike_string *str,
+PMOD_EXPORT struct array *explode(struct pike_string *str,
 		       struct pike_string *del)
 {
   INT32 e;
@@ -1626,7 +1626,7 @@ struct array *explode(struct pike_string *str,
   return ret;
 }
 
-struct pike_string *implode(struct array *a,struct pike_string *del)
+PMOD_EXPORT struct pike_string *implode(struct array *a,struct pike_string *del)
 {
   INT32 len,e, inited;
   PCHARP r;
@@ -1669,7 +1669,7 @@ struct pike_string *implode(struct array *a,struct pike_string *del)
   return low_end_shared_string(ret);
 }
 
-struct array *copy_array_recursively(struct array *a,struct processing *p)
+PMOD_EXPORT struct array *copy_array_recursively(struct array *a,struct processing *p)
 {
   struct processing doing;
   struct array *ret;
@@ -1699,7 +1699,7 @@ struct array *copy_array_recursively(struct array *a,struct processing *p)
   return ret;
 }
 
-void apply_array(struct array *a, INT32 args)
+PMOD_EXPORT void apply_array(struct array *a, INT32 args)
 {
   INT32 e;
   struct array *ret;
@@ -1720,7 +1720,7 @@ void apply_array(struct array *a, INT32 args)
   push_array(ret);
 }
 
-struct array *reverse_array(struct array *a)
+PMOD_EXPORT struct array *reverse_array(struct array *a)
 {
   INT32 e;
   struct array *ret;
@@ -1732,7 +1732,7 @@ struct array *reverse_array(struct array *a)
   return ret;
 }
 
-void array_replace(struct array *a,
+PMOD_EXPORT void array_replace(struct array *a,
 		   struct svalue *from,
 		   struct svalue *to)
 {
@@ -1742,7 +1742,7 @@ void array_replace(struct array *a,
 }
 
 #ifdef PIKE_DEBUG
-void check_array(struct array *a)
+PMOD_EXPORT void check_array(struct array *a)
 {
   INT32 e;
 
@@ -2049,7 +2049,7 @@ void count_memory_in_arrays(INT32 *num_, INT32 *size_)
   *size_=size;
 }
 
-struct array *explode_array(struct array *a, struct array *b)
+PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
 {
   INT32 e,d,q,start;
   struct array *tmp;
@@ -2092,7 +2092,7 @@ struct array *explode_array(struct array *a, struct array *b)
   return tmp;
 }
 
-struct array *implode_array(struct array *a, struct array *b)
+PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
 {
   INT32 e,size;
   struct array *ret;
