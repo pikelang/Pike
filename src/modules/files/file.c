@@ -1,8 +1,8 @@
-n/*
+/*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.336 2004/11/30 17:53:43 mast Exp $
+|| $Id: file.c,v 1.337 2004/11/30 18:52:12 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
