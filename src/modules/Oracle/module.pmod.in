@@ -53,7 +53,7 @@ class oracle
     // Convert to the standard result coding. 
     static string|int(0..0) compat_convert(mixed x)
     {
-      if(!x && intp(x)) return 0;
+      if(!x && !intp(x)) return 0;
       if(multisetp(x)) return ((array(string))x)*",";
       return (string)x;
     }
