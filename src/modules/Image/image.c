@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.168 2000/08/06 13:53:31 grubba Exp $ */
+/* $Id: image.c,v 1.169 2000/08/06 14:43:02 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.168 2000/08/06 13:53:31 grubba Exp $
+**!	$Id: image.c,v 1.169 2000/08/06 14:43:02 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.168 2000/08/06 13:53:31 grubba Exp $");
+RCSID("$Id: image.c,v 1.169 2000/08/06 14:43:02 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2575,7 +2575,7 @@ void image_hsv_to_rgb(INT32 args)
 #undef p
 #undef q
 #undef t
-#define FIX(X) ((X)<0.0?0:(X)>=1.0?255:DOULE_TO_INT((X)*255.0))
+#define FIX(X) ((X)<0.0?0:(X)>=1.0?255:DOUBLE_TO_INT((X)*255.0))
      d->r = FIX(r);
      d->g = FIX(g);
      d->b = FIX(b);
