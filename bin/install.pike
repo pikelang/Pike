@@ -1,4 +1,4 @@
-#!/usr/local/bin/pike
+#! /usr/bin/env pike
 
 #define USE_GTK
 
@@ -848,7 +848,17 @@ string install_type="--interactive";
 
 int pre_install(array(string) argv)
 {
-  prefix = vars->prefix || "/usr/local";
+  if( vars->prefix )
+    prefix = vars->prefix;
+  else {
+#ifdef __NT__
+    prefix = RegGetValue(HKEY_LOCAL_MACHINE,
+                         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
+                         "ProgramFilesDir");
+#else
+    prefix = vars->prefix || "/usr/local";
+#endif
+  }
 
   if(!vars->TMP_BINDIR)
     vars->TMP_BINDIR=combine_path(vars->SRCDIR,"../bin");
@@ -918,7 +928,13 @@ int pre_install(array(string) argv)
 				 combine_path(prefix, "bin"),
 				 "pike"), "Pike binary name: ");
 #else
-	  bin_path=combine_path("/",getcwd(),prefix,"pike",
+          bin_path=combine_path(
+#ifdef __NT__
+                                "\\",
+#else
+                                "/",
+#endif
+				getcwd(),prefix,"pike",
 				replace(version()-"Pike v"," release ","."),
 				"bin","pike");
 #endif
@@ -1237,10 +1253,12 @@ void do_install()
 		   combine_path(exec_prefix, "pike.pdb"));
 #endif
 
+#ifndef __NT__
     install_file(combine_path(vars->TMP_BUILDDIR,"rsif"),
 		 combine_path(exec_prefix,"rsif"));
     install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),
 		 combine_path(exec_prefix,"hilfe"));
+#endif
     install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
 		 pike+".syms");
 
