@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.793 2004/02/29 20:24:48 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.794 2004/03/06 15:39:12 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6992,6 +6992,23 @@ $bundle_info])
 	) || exit 1
       fi
     done
+    # Kludge for rntcl in case *.lib hasn't been copied on install.
+    if echo foo "$CC" | egrep 'rntc.|rnt.cl' >/dev/null; then
+      echo "Fixing libraries..."
+      for f in `(cd bundles/lib && echo lib*.a)` no; do
+        if test "$f" = "no"; then
+	  break
+	fi
+        lib_name="`echo $f|sed -e 's/^lib\(.*\).a$/\1.lib/`"
+	if cmp "bundles/lib/$f" "bundles/lib/$lib_name" 2>/dev/null; then
+	  :
+	else
+	  echo "  $f ==> $lib_name"
+	  rm -f "bundles/lib/$lib_name" 2>/dev/null
+	  cp "bundles/lib/$f" "bundles/lib/$lib_name"
+	fi
+      done
+    fi
     # Clear the caches.
     echo Clearing cached variables related to the bundles.
     for varname in `cat $bundle_info|sed -e 's/^[[ 	]]*//'|sort|uniq` no; do
