@@ -33,17 +33,6 @@ string buf="";
 mapping(int:function(string:void)) async=([]);
 int ref=1;
 
-int raw_serial=lambda()
-{
-#if constant(LYSKOM_RAW)
-  add_constant("LysKOM_RAW",LysKOM_RAW+1);
-  return LysKOM_RAW+1;
-#else
-  add_constant("LysKOM_RAW",1);
-  return 0;
-#endif
-}();
-
 /* asynchronous messages callback list */
 mapping(int:array(function(string:void))) async_callbacks=([]);
 
@@ -90,7 +79,7 @@ class Send
       async[ref]=callback;
       conwrite(ref+" "+request+"\r\n");
 #ifdef LYSKOM_DEBUG
-//       werror("LYSKOM "+raw_serial+" inserting callback %O for call %d\n",callback,ref);
+//       werror("LYSKOM inserting callback %O for call %d\n",callback,ref);
 //       werror("async: %O\n",async);
 #endif
       komihåg+=({function_object(callback)});
@@ -152,7 +141,7 @@ mixed sync_do(int ref,string|void request)
 	 if (!async[ref])
 	    error("request ref %d not in queue, but no callback\n",ref);
 #ifdef LYSKOM_DEBUG
-// 	 werror("LYSKOM "+raw_serial+" removing callback %O for call %d (handling ref %d in sync mode)\n",
+// 	 werror("LYSKOM removing callback %O for call %d (handling ref %d in sync mode)\n",
 // 		async[ref],ref);
 #endif
 	 m_delete(async,ref);
@@ -511,7 +500,7 @@ void got_reply(int ref,object|array what)
 //   werror("got_reply(): async: %O\n",async);
    function call=async[ref];
 #ifdef LYSKOM_DEBUG
-//    werror("LYSKOM "+raw_serial+" removing callback %O for call %d\n",call,ref);
+//    werror("LYSKOM removing callback %O for call %d\n",call,ref);
 #endif
    m_delete(async,ref);
    if (!call)
