@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.43 1998/03/03 10:51:38 mast Exp $
+ * $Id: system.c,v 1.44 1998/03/12 18:45:01 per Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.43 1998/03/03 10:51:38 mast Exp $");
+RCSID("$Id: system.c,v 1.44 1998/03/12 18:45:01 per Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -726,7 +726,7 @@ static MUTEX_T gethostbyname_mutex;
 
 #endif /* REENTRANT */
 
-/* this is used from modules/file/file.c ! */
+/* this is used from modules/file/*.c, and modules/spider/*.c! */
 void get_inet_addr(struct sockaddr_in *addr,char *name)
 {
   MEMSET((char *)addr,0,sizeof(struct sockaddr_in));
