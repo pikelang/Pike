@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.28 2000/03/30 19:47:17 hubbe Exp $
+ * $Id: oracle.c,v 1.29 2000/03/31 17:54:55 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -41,7 +41,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.28 2000/03/30 19:47:17 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.29 2000/03/31 17:54:55 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -687,6 +687,7 @@ static void f_fetch_fields(INT32 args)
 	  break;
 
 	case SQLT_RID:
+	case SQLT_RDD:
 	  type_name="rowid";
 	  data_size=-1;
 	  type=SQLT_LNG;
