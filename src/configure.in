@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.740 2003/10/24 23:41:45 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.741 2003/10/25 02:59:28 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4693,7 +4693,7 @@ if test "x$with_mmx" = xno; then
    mmx_reason=' (--without-mmx)'
    unset pike_cv_sys_has_working_mmx
 else
-if test "x$ac_cv_header_mmx_h" = xyes; then
+if test "x$ac_cv_header_mmx_h" = xyes -o "x$ac_cv_header_asm_mmx_h" = xyes; then
   AC_MSG_CHECKING(for working MMX)
   mmx_reason=' (mmx.h found, but mmx operations failed)'
 
