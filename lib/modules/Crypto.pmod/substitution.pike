@@ -193,6 +193,7 @@ string encode(string m) {
 
 //! Decrypts the cryptogram @[c].
 string decode(string c) {
+  c = (c/1 - null_chars)*"";
   return replace(c, dec_key);
 }
 
