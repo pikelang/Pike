@@ -13,7 +13,6 @@
 #include "object.h"
 #include "types.h"
 #include "error.h"
-#include "call_out.h"
 #include "fd_control.h"
 #include "main.h"
 #include "callback.h"
@@ -33,19 +32,22 @@ struct selectors
 
 static struct selectors selectors;
 
-callback read_callback[MAX_OPEN_FILEDESCRIPTORS];
+file_callback read_callback[MAX_OPEN_FILEDESCRIPTORS];
 void *read_callback_data[MAX_OPEN_FILEDESCRIPTORS];
-callback write_callback[MAX_OPEN_FILEDESCRIPTORS];
+file_callback write_callback[MAX_OPEN_FILEDESCRIPTORS];
 void *write_callback_data[MAX_OPEN_FILEDESCRIPTORS];
 
 static int max_fd;
-time_t current_time;
+struct timeval current_time;
+struct timeval next_timeout;
 
-static struct callback_list *backend_callbacks;
+static struct callback *backend_callbacks = 0;
 
-struct callback_list *add_backend_callback(struct array *a)
+struct callback *add_backend_callback(callback_func call,
+				      void *arg,
+				      callback_func free_func)
 {
-  return add_to_callback_list(&backend_callbacks, a);
+  return add_to_callback(&backend_callbacks, call, arg, free_func);
 }
 
 void init_backend()
@@ -54,7 +56,7 @@ void init_backend()
   FD_ZERO(&selectors.write);
 }
 
-void set_read_callback(int fd,callback cb,void *data)
+void set_read_callback(int fd,file_callback cb,void *data)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -83,7 +85,7 @@ void set_read_callback(int fd,callback cb,void *data)
   }
 }
 
-void set_write_callback(int fd,callback cb,void *data)
+void set_write_callback(int fd,file_callback cb,void *data)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -112,7 +114,7 @@ void set_write_callback(int fd,callback cb,void *data)
   }
 }
 
-callback query_read_callback(int fd)
+file_callback query_read_callback(int fd)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -122,7 +124,7 @@ callback query_read_callback(int fd)
   return read_callback[fd];
 }
 
-callback query_write_callback(int fd)
+file_callback query_write_callback(int fd)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -168,7 +170,6 @@ void do_debug()
   check_all_programs();
   verify_all_objects();
   verify_shared_strings_tables();
-  verify_all_call_outs();
 }
 #endif
 
@@ -176,7 +177,6 @@ void backend()
 {
   JMP_BUF back;
   int i, delay;
-  struct timeval timeout;
   struct selectors sets;
 
   if(SETJMP(back))
@@ -190,24 +190,26 @@ void backend()
 
   while(first_object)
   {
-    delay = get_next_call_out();
-    if(delay)
-    {
-      delay -= get_current_time();
-      if(delay < 0) delay = 0;
-    } else {
-      delay = 7 * 24 * 60 * 60; /* See you in a week */
-    }
-    timeout.tv_usec = 0;
-    timeout.tv_sec = delay;
+    next_timeout.tv_usec = 0;
+    next_timeout.tv_sec = 7 * 24 * 60 * 60;  /* See you in a week */
+    my_add_timeval(&next_timeout, &current_time);
 
+    call_callback(& backend_callbacks);
     sets=selectors;
 
-    i=select(max_fd+1, &sets.read, &sets.write, 0, &timeout);
+    alloca(0);			/* Do garbage collect */
+#ifdef DEBUG
+    if(d_flag > 1) do_debug();
+#endif
 
-    current_time = get_current_time();
+    GETTIMEOFDAY(&current_time);
+    my_subtract_timeval(&next_timeout, &current_time);
+    i=select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
+
+    GETTIMEOFDAY(&current_time);
+
     check_signals();
-
+    
     if(i>=0)
     {
       for(i=0; i<max_fd+1; i++)
@@ -234,15 +236,6 @@ void backend()
 
       }
     }
-
-    do_call_outs();
-    call_callback_list(& backend_callbacks);
-
-    alloca(0);			/* Do garbage collect */
-#ifdef DEBUG
-    if(d_flag > 1)
-      do_debug();
-#endif
   }
 
   UNSETJMP(back);

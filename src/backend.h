@@ -7,35 +7,23 @@
 #define BACKEND_H
 
 #include "global.h"
+#include "time_stuff.h"
+#include "callback.h"
 
-#if TIME_WITH_SYS_TIME
-# include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  if HAVE_TIME_H
-#   include <time.h>
-#  endif
-# endif
-#endif
-
-#undef HAVE_SYS_TIME_H
-#undef HAVE_TIME_H
-#undef TIME_WITH_SYS_TIME
-
-extern time_t current_time;
-typedef void (*callback)(int,void *);
+extern struct timeval current_time;
+extern struct timeval next_timeout;
+typedef void (*file_callback)(int,void *);
 
 /* Prototypes begin here */
 struct selectors;
-struct callback_list *add_backend_callback(struct array *a);
+struct callback *add_backend_callback(callback_func call,
+				      void *arg,
+				      callback_func free_func);
 void init_backend();
-void set_read_callback(int fd,callback cb,void *data);
-void set_write_callback(int fd,callback cb,void *data);
-callback query_read_callback(int fd);
-callback query_write_callback(int fd);
+void set_read_callback(int fd,file_callback cb,void *data);
+void set_write_callback(int fd,file_callback cb,void *data);
+file_callback query_read_callback(int fd);
+file_callback query_write_callback(int fd);
 void *query_read_callback_data(int fd);
 void *query_write_callback_data(int fd);
 void do_debug();
