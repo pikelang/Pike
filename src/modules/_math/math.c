@@ -26,7 +26,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.24 1999/10/30 13:17:08 noring Exp $");
+RCSID("$Id: math.c,v 1.25 1999/10/31 00:28:27 noring Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -155,9 +155,18 @@ void f_sqrt(INT32 args)
     sp[-args].u.float_number=sqrt(sp[-args].u.float_number);
   }
 #ifdef AUTO_BIGNUM
-  else if(is_bignum_object_in_svalue(&sp[-args]))
+  else if(sp[-args].type == T_OBJECT)
   {
-    safe_apply(sp[-args].u.object, "_sqrt", 1);
+    pop_n_elems(args-1);
+    stack_dup();
+    push_constant_text("_sqrt");
+    o_index();
+    if(IS_UNDEFINED(&sp[-1]))
+      error("Object to to sqrt() does not have _sqrt.\n");
+    pop_stack(); /* Maybe we can use this result instead of throwing it? */
+    apply(sp[-1].u.object, "_sqrt", 0);
+    stack_swap();
+    pop_stack();
   }
 #endif /* AUTO_BIGNUM */
   else
@@ -301,7 +310,9 @@ void pike_module_init(void)
   ADD_EFUN("atan2",f_atan2,tFunc(tFlt tFlt,tFlt),0);
   
 /* function(float:float)|function(int:int) */
-  ADD_EFUN("sqrt",f_sqrt,tOr(tFunc(tFlt,tFlt),tFunc(tInt,tInt)),0);
+  ADD_EFUN("sqrt",f_sqrt,tOr3(tFunc(tFlt,tFlt),
+			      tFunc(tInt,tInt),
+			      tFunc(tObj,tMix)),0);
   
 /* function(float:float) */
   ADD_EFUN("log",f_log,tFunc(tFlt,tFlt),0);
