@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.3 2003/01/17 16:46:28 grubba Exp $
+// $Id: module.pmod.in,v 1.4 2003/01/18 15:07:52 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -18,12 +18,13 @@ class Compiler
   inherit compiler;
   //! @endignore
 
-  void report(SeverityLevel severity, string subsystem, string msg,
+  void report(SeverityLevel severity, Position|string pos,
+	      string subsystem, string msg,
 	      mixed ... extra_args)
   {
     if (sizeof(extra_args))
       msg = sprintf(msg, @extra_args);
-    werror("%O:%O:%O\n", severity, subsystem, msg);
+    werror("%O:%O:%O:%O\n", severity, pos, subsystem, msg);
   }
 
 // NOTE: Assumes the variables symbol and pos contain the current
@@ -44,10 +45,17 @@ class Compiler
 
     static Position pos;
 
+    void report(SeverityLevel severity, Position|int|string pos,
+		string subsystem, string msg, mixed ... extra_args)
+    {
+      if (intp(pos)) pos = pike_tokenizer::pos;
+      ::report(severity, pos, subsystem, msg, extra_args);
+    }
+
     static {
       void yyerror(mixed ... args)
       {
-	report(ERROR, "scanner", @args);
+	report(ERROR, pos, "scanner", @args);
       }
 
       void handle_pragma(string pragma, string args)
@@ -169,11 +177,11 @@ class Compiler
 	  return;
 
 	case "error":
-	  report(ERROR, "#error: %s", args);
+	  report(ERROR, pos, "preprocessor", "#error: %s", args);
 	  return;
 
 	case "warning":
-	  report(WARNING, "#warning: %s", args);
+	  report(WARNING, pos, "preprocessor", "#warning: %s", args);
 	  return;
 
 	case "line":
@@ -349,13 +357,12 @@ class Compiler
 	g = Group(token);
       } else if ((< "]", "}", ")" >)[sym]) {
 	if (g->group_terminator) {
-	  report(ERROR, "grouping",
-		 sprintf("%O: Unexpected %O (expected %O).\n",
-			 token->pos, sym, g->group_terminator));
+	  report(ERROR, token->pos, "grouping",
+		 sprintf("Unexpected %O (expected %O).\n",
+			 sym, g->group_terminator));
 	} else {
-	  report(ERROR, "grouping",
-		 sprintf("%O: Unexpected %O.\n",
-			 token->pos, sym));
+	  report(ERROR, token->pos, "grouping",
+		 sprintf("Unexpected %O.\n", sym));
 	}
 	return 0;
       } else {
@@ -364,7 +371,7 @@ class Compiler
     }
     if (g->terminator) {
       while (g->group_terminator) {
-	report(ERROR, "grouping",
+	report(ERROR, "EOF", "grouping",
 	       sprintf("Missing %O at end of file.\n",
 		       g->group_terminator));
 	g = group_stack->pop();
@@ -402,7 +409,7 @@ class TokenParser
   Token handle(string symbol, Position pos, CompilerContext context);
 }
 
-class MetaProgram
+class OldMetaProgram
 {
   Token handle_symbol(string symbol, Position pos, CompilerContext context);
 }
@@ -529,11 +536,11 @@ TokenParser Pike73TokenParser = Pike73TokenParser_();
 //! Pike 7.5 token parser.
 class Pike75TokenParser_
 {
-  array(MetaProgram) meta_programs = ({});
+  array(OldMetaProgram) meta_programs = ({});
 
   Token handle(string symbol, Position pos, CompilerContext context)
   {
-    foreach(meta_programs, MetaProgram meta) {
+    foreach(meta_programs, OldMetaProgram meta) {
       Token t = meta->handle_symbol(symbol, pos, context);
       if (t) {
 	return t;
@@ -551,8 +558,6 @@ class Group
   Token group_start;
   Token group_end;
   string group_terminator;
-
-  function(Group:int(0..1)) parse_method;
 
   static void create(Token|void token)
   {
@@ -578,7 +583,6 @@ class Group
       return sprintf("%O%{ %O%} %O\n", group_start, tokens, group_end);
     }
   }
-
 }
 
 class Identifier(array(Token) tokens)
@@ -586,6 +590,68 @@ class Identifier(array(Token) tokens)
   string _sprintf(int c)
   {
     return sprintf("IDENTIFIER(%d)", sizeof(tokens));
+  }
+}
+
+class MetaProgram(Group group)
+{
+  void parse();
+}
+
+class ClassMetaProgram
+{
+  inherit MetaProgram;
+
+  array(Group) statements;
+
+  void parse()
+  {
+    if (statements) return;
+
+    statements = ({});
+
+    int g_start;
+    int(0..1) is_expr;
+    int i;
+    object(Group)|Token tok;
+    foreach(group->tokens; i; tok) {
+      if ((tok->symbol == ";") ||
+	  (!is_expr && tok->group_start && tok->group_start->symbol == "{")) {
+	// ; always terminates a statement.
+	// {} terminates a statement if it isn't in an expression.
+	Group g = Group();
+	g->tokens = group->tokens[g_start..i];
+	statements += ({ g });
+	g_start = i+1;
+	is_expr = 0;
+	continue;
+      }
+      if (tok->symbol == "=") {
+	// Expressions with {}'s are always introduced with an assignment.
+	is_expr = 1;
+      }
+    }
+    if (g_start != i) {
+      if ((tok->symbol == ";") ||
+	  (!is_expr && tok->group_start && tok->group_start->symbol == "{")) {
+	// ; always terminates a statement.
+	// {} terminates a statement if it isn't in an expression.
+	Group g = Group();
+	g->tokens = group->tokens[g_start..i];
+	statements += ({ g });
+      }
+    }
+    foreach(statements; i; Group g) {
+      statements[i] = identify_meta(g);
+    }
+  }
+}
+
+MetaProgram identify_meta(Group g)
+{
+  foreach(g->tokens; int i; object(Group)|Token tok) {
+    if (tok->symbol) {
+    }      
   }
 }
 
@@ -707,9 +773,11 @@ class Parser
 	array items = ({});
       }
 
+#if 0
       while (un_op[top->token]) {
 	break;
       }
+#endif /* 0 */
     }
     
   }

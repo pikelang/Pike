@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.3 2003/01/17 17:36:09 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.4 2003/01/18 15:07:52 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -31,23 +31,41 @@
 PIKECLASS compiler
   flags ID_STATIC;
 {
-  /* Identifier number for the report() function.
-   * Note that this is a global variable, and not
-   * part of the struct.
-   */
-  static ptrdiff_t report_fun_num = 0;
-
-  /*! @decl void report(SeverityLevel severity, string subsystem, string msg)
+  /*! @decl void report(SeverityLevel severity, mixed pos, @
+   *!                   string subsystem, string msg, mixed ... extra_args)
    *!   Function called to report messages.
+   *!
+   *! @param severity
+   *!   Message severity.
+   *!
+   *! @param pos
+   *!   Position where the message occurred.
+   *!
+   *! @param subsystem
+   *!   Subsystem where the message was generated. Currently one of
+   *!   @string
+   *!     vvalue "preprocessor"
+   *!     @value "scanner"
+   *!     @value "grouping"
+   *!   @endstring
+   *!
+   *! @param msg
+   *!   Message. This is taken to be a @[sprintf()] format string
+   *!   if @[extra_args] are specified.
+   *!
+   *! @param extra_args
+   *!   Parameters to @[sprintf()] @[msg].
    *!
    *!   The default implementation reports to stderr.
    *!
+   *! @note
    *!   Overload this function to change the report behaviour.
    *!
    *! @seealso
    *!   @[SeverityLevel]
    */
-  PIKEFUN void report(int(0..3) severity, string subsystem, string msg)
+  PIKEFUN void report(int(0..3) severity, mixed pos,
+		      string subsystem, string msg, mixed ... extra_args)
     prototype;
   /* NB: Just a prototype. Actual implementation is in module.pmod.in. */
   {}
@@ -70,25 +88,43 @@ PIKECLASS compiler
     PIKEVAR int(1..) line_no;
 
     /*! @decl string current_symbol
-    *!
-    *!   Current symbol.
-    *!
-    *!   Set by @[scan()]. Is set to @tt{0@} (zero) at end of stream.
-    *!
-    *! @seealso
-    *!   @[scan()]
-    */
+     *!
+     *!   Current symbol.
+     *!
+     *!   Set by @[scan()]. Is set to @tt{0@} (zero) at end of stream.
+     *!
+     *! @seealso
+     *!   @[scan()]
+     */
     PIKEVAR string current_symbol;
 
     // Current scanner.
     CVAR void (*scanner)(struct basic_tokenizer_struct *);
 
-    static void report_error(char *msg, ...)
+    /*! @decl void report(SeverityLevel severity, mixed pos, @
+     *!                   string subsystem, string msg, mixed ... extra_args)
+     *!   Function called to report messages.
+     *!
+     *!   This function acts as a relay to @[Tokenizer.compiler()->report()],
+     *!   and exists for overloading purposes.
+     *!
+     *! @seealso
+     *!   @[Tokenizer.compiler()->report()]
+     */
+    PIKEFUN void report(int(0..3) severity, mixed pos, string subsystem,
+			string msg, mixed ... extra_args)
+    {
+      apply_external(1, f_compiler_report_fun_num, args);
+    }
+
+    /* Helper function for the most common case. */
+    static void report_error(const char *msg)
     {
       push_int(2);
+      push_int(THIS->line_no);
       push_constant_text("scanner");
       push_text(msg);
-      apply_external(1, report_fun_num, 3);
+      apply_current(f_basic_tokenizer_report_fun_num, 4);
       pop_stack();
     }
 
@@ -352,7 +388,14 @@ PIKECLASS compiler
 	  }								\
 									\
 	  /* Error. */							\
-	  report_error("Illegal character (hex %02x) '%c'", c, c);	\
+	  push_int(2);							\
+	  push_int(THIS->line_no);					\
+	  push_constant_text("scanner");				\
+	  push_constant_text("Illegal character (hex %02x) '%c'");	\
+	  push_int(c);							\
+	  push_int(c);							\
+	  apply_current(f_basic_tokenizer_report_fun_num, 6);		\
+	  pop_stack();							\
 	  continue;							\
 	}								\
 	this->current_symbol = string_slice(this->data,			\
@@ -364,12 +407,6 @@ PIKECLASS compiler
     MAKE_SCANNER(0)
     MAKE_SCANNER(1)
     MAKE_SCANNER(2)
-
-    /* Identifier number for the scan() function.
-     * Note that this is a global variable, and not
-     * part of the struct.
-     */
-    static ptrdiff_t scan_fun_num = 0;
 
     /*! @decl void scan()
      *!
@@ -433,8 +470,7 @@ PIKECLASS compiler
 
       THIS->scanner = NULL;
 
-      mega_apply(APPLY_LOW, 0, Pike_fp->current_object,
-		 (void *)(scan_fun_num + Pike_fp->context.identifier_level));
+      apply_current(f_basic_tokenizer_scan_fun_num, 0);
       pop_stack();
     }
 
@@ -455,8 +491,7 @@ PIKECLASS compiler
       flags ID_STATIC;
     {
       while (n-- > 0) {
-	mega_apply(APPLY_LOW, 0, Pike_fp->current_object,
-		   (void *)(scan_fun_num + Pike_fp->context.identifier_level));
+	apply_current(f_basic_tokenizer_scan_fun_num, 0);
 	pop_stack();
       }
       pop_n_elems(args);
@@ -687,24 +722,6 @@ void pike_module_init(void)
   }
 
   INIT
-
-  {
-    struct pike_string *fun_name;
-
-    MAKE_CONSTANT_SHARED_STRING(fun_name, "scan");
-    scan_fun_num =
-      really_low_find_shared_string_identifier(fun_name,
-					       basic_tokenizer_program,
-					       SEE_STATIC|SEE_PRIVATE);
-    free_string(fun_name);
-
-    MAKE_CONSTANT_SHARED_STRING(fun_name, "report");
-    report_fun_num =
-      really_low_find_shared_string_identifier(fun_name,
-					       compiler_program,
-					       SEE_STATIC|SEE_PRIVATE);
-    free_string(fun_name);
-  }
 
 #if 0
   init_tokenizer_yyparse();
