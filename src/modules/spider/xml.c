@@ -863,7 +863,7 @@ static int gobble(struct xmldata *data, char *s)
       struct pike_string *name=0;					    \
       ONERROR tmp3;							    \
       map_delete_no_free(THIS->entities, sp-1, sp);			    \
-      name=sp[-1].u.string;						    \
+      name=dmalloc_touch(struct pike_string *, sp[-1].u.string);	    \
       sp[-1]=*sp;							    \
       SET_ONERROR(tmp3, do_free_string, name);				    \
 									    \
@@ -878,6 +878,7 @@ static int gobble(struct xmldata *data, char *s)
 	}else{								    \
           struct pike_string *s=sp[-1].u.string;			    \
 	  struct xmldata my_tmp=*data;					    \
+	  debug_malloc_touch(s);					    \
 	  ONERROR tmp2;							    \
 	  sp--;								    \
           IF_XMLDEBUG(fprintf(stderr,"Entity expands to: %s\n",s->str));    \
@@ -2616,6 +2617,7 @@ static void create(INT32 args)
     f_aggregate_mapping(10);
     THIS->entities=sp[-1].u.mapping;
     sp--;
+    dmalloc_touch_svalue(sp);
   }
 
   if(!THIS->attributes)
@@ -2623,6 +2625,7 @@ static void create(INT32 args)
     f_aggregate_mapping(0);
     THIS->attributes=sp[-1].u.mapping;
     sp--;
+    dmalloc_touch_svalue(sp);
   }
 
   if(!THIS->is_cdata)
@@ -2630,6 +2633,7 @@ static void create(INT32 args)
     f_aggregate_mapping(0);
     THIS->is_cdata=sp[-1].u.mapping;
     sp--;
+    dmalloc_touch_svalue(sp);
   }
 
   push_int(0);
