@@ -1329,7 +1329,7 @@ static void put_out_feed_range(struct parser_html_storage *this,
       c_head=0;
       head=head->next;
    }
-   error("internal error: tail not found in feed (put_out_feed_range)\n");
+   fatal("internal error: tail not found in feed (put_out_feed_range)\n");
 }
 
 /* ------------------------ */
@@ -1371,7 +1371,7 @@ static INLINE void push_feed_range(struct piece *head,
       head=head->next;
    }
    if (!head)
-      error("internal error: tail not found in feed (push_feed_range)\n");
+      fatal("internal error: tail not found in feed (push_feed_range)\n");
    if (!n)
       ref_push_string(empty_string);
    else if (n>1)
@@ -3656,7 +3656,7 @@ static void try_feed(int finished)
 	       return; /* all done, but keep last stack elem */
 
 	    if (THIS->stack->local_feed && THIS->stack->free_feed)
-	       error("internal wierdness in Parser.HTML: feed left\n");
+	       fatal("internal wierdness in Parser.HTML: feed left\n");
 
 	    free(THIS->stack);
 	    THIS->stack=st;
