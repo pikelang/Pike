@@ -186,3 +186,153 @@ array transpose(array x)
   for(int e=0;e<sizeof(x[0]);e++) ret[e]=column(x,e);
   return ret;
 }
+
+// diff3, complement to diff (alpha stage)
+
+array(array(array(mixed))) diff3(array mid,array left,array right)
+{
+   array lmid,ldst;
+   array rmid,rdst;
+
+   [lmid,ldst]=diff(mid,left);
+   [rmid,rdst]=diff(mid,right);
+
+   array res=({});
+   int pos;
+   int lpos=0,rpos=0;
+   int l=0,r=0;
+   array eq=({});
+
+   for (l=0; l<sizeof(lmid); l++)
+   {
+      lpos=-1;
+      // find next equal l--m
+      while (l<sizeof(lmid) && lmid[l]!=ldst[l])
+      {
+	 res+=({({lmid[l],ldst[l],({})})});
+	 
+	 // skip these
+
+	 for (lpos=0; r<sizeof(rmid) && lpos<sizeof(lmid[l]); lpos++)
+	 {
+	    mixed x=lmid[l][lpos];
+	    for(;;)
+	    {
+	       if (rpos>=sizeof(rmid[r]))
+	       {
+		  if (rpos<sizeof(rdst[r]))
+		     res+=({({({}),({}),rdst[r][rpos..]})});
+		  rpos=0;
+		  r++;
+		  if (r==sizeof(rmid)) break;
+	       }
+	       else if (rmid[r][rpos]==x) 
+	       {
+		  if (rpos<sizeof(rdst[r]))
+		     res+=({({({}),({}),({rdst[r][rpos]})})});
+		  rpos++;
+		  break;
+	       }
+	       else
+	       {
+		  if (rpos<sizeof(rdst[r]))
+		     res+=({({({}),({}),({rdst[r][rpos]})})});
+		  rpos++;
+	       }
+	    }
+	 }
+	 l++;
+      }
+      if (l==sizeof(lmid)) break;
+      
+      // loop over this, find this in r
+      for (lpos=0; r<sizeof(rmid) && lpos<sizeof(lmid[l]); lpos++)
+      {
+	 mixed x=lmid[l][lpos];
+         for(;;)
+	 {
+	    if (rpos>=sizeof(rmid[r]))
+	    {
+	       if (rpos<sizeof(rdst[r]))
+		  res+=({({({}),({}),rdst[r][rpos..]})});
+	       rpos=0;
+	       r++;
+	       if (r==sizeof(rmid)) break;
+	    }
+	    else if (rmid[r][rpos]==x) 
+	    {
+	       if (rmid[r]!=rdst[r]) // unequal
+		  if (r<sizeof(rdst[r]))
+		     res+=({({({x}),({x}),({rdst[r][rpos]})})});
+		  else
+		     res+=({({({x}),({x}),({})})});
+	       else  // equal!
+	       {
+		  array ax=({x});
+		  res+=({({ax,ax,ax})});
+	       }
+	       rpos++;
+	       break;
+	    }
+	    else
+	    {
+	       if (rpos<sizeof(rdst[r]))
+		  res+=({({({}),({}),({rdst[r][rpos]})})});
+	       rpos++;
+	    }
+	 }
+      }
+   }
+
+   // flush what's left
+
+   if (r<sizeof(rmid))
+   {
+      if (rmid[r]!=rdst[r])
+      {
+	 if (rpos<sizeof(rmid[r]))
+	    res+=({({rmid[r][rpos..],({}),({})})});
+	 if (rpos<sizeof(rdst[r]))
+	    res+=({({({}),({}),rdst[r][rpos..]})});
+      }
+      else
+	 res+=({({rmid[r][rpos..],({}),rdst[r][rpos..]})});
+      r++;
+   }
+
+   if (l<sizeof(lmid) && lpos!=-1)
+   {
+      if (lpos<sizeof(lmid[l]))
+	 res+=({({lmid[l][lpos..],({}),({})})});
+      if (lpos<sizeof(ldst[l]))
+	 res+=({({({}),({}),ldst[l][lpos..]})});
+   }
+   
+   res+=transpose( ({ldst[l..],lmid[l..],
+			   map(allocate(sizeof(lmid)-l),
+				     lambda(int x) { return ({}); })}) );
+
+   res+=transpose( ({rmid[r..],
+			   map(allocate(sizeof(rmid)-r),
+				     lambda(int x) { return ({}); }),
+			   rdst[r..]}) );
+
+   array res2=({});
+
+   for (l=0; l<sizeof(res); )
+   {
+      int ol;
+      for (ol=l; 
+	   l<sizeof(res) && res[l][0]==res[l][1] && res[l][1]==res[l][2]; 
+	   l++);
+      if (ol!=l) // got some equal
+	 res2+=({sum_arrays(`+,@res[ol..l-1])});
+      for (ol=l; 
+	   l<sizeof(res) && !(res[l][0]==res[l][1] && res[l][1]==res[l][2]); 
+	   l++);
+      if (ol!=l) // got some unequal
+	 res2+=({sum_arrays(`+,@res[ol..l-1])});
+   }
+   
+   return transpose(res2);
+}
