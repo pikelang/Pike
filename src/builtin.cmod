@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.116 2003/02/10 18:57:21 grendel Exp $
+|| $Id: builtin.cmod,v 1.117 2003/02/11 00:38:34 grendel Exp $
 */
 
 #include "global.h"
@@ -744,6 +744,8 @@ PIKEFUN int(8 .. 8)|int(16 .. 16)|int(32 .. 32) string_width(string s)
  *!
  *! If @[map] is an object that implements @[lfun::_m_delete()],
  *! that function will be called with @[index] as its single argument.
+ *! If @[map] is an object that does not contain the @[lfun::_m_delete()]
+ *! implementation, an errorw will be thrown.
  *!
  *! Otherwise if @[map] is a mapping the entry with index @[index]
  *! will be removed from @[map] destructively.
@@ -782,7 +784,7 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
     int id = FIND_LFUN(map->u.object->prog, LFUN__M_DELETE);
 
     if( id == -1 )
-      SIMPLE_BAD_ARG_ERROR("m_delete", 1, "object with _m_delete");
+      SIMPLE_BAD_ARG_ERROR("m_delete", 1, "object containing the _m_delete method");
     
     apply_low( map->u.object, id, 1 );
     stack_swap();
