@@ -19,7 +19,7 @@ doc:	$(DOCFILES) mkdoc.pike Makefile
 	$(pike) mkdoc.pike $(DOCFILES)
 
 $(WMMLDOCPLACE): $(DOCFILES) mkwmml.pike Makefile
-	$(pike) mkwmml.pike $(DOCFILES) >$(WMMLDOCPLACE)
+	$(pike) mkwmml.pike --nonverbose $(DOCFILES) >$(WMMLDOCPLACE)
 
 wmml:	$(WMMLDOCPLACE)
 

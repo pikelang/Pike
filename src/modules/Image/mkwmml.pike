@@ -1,10 +1,21 @@
-/* $Id: mkwmml.pike,v 1.5 1997/11/11 22:17:50 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.6 1997/12/06 22:09:33 mirar Exp $ */
 
 import Stdio;
 import Array;
 
 mapping parse=([]);
 int illustration_counter;
+
+mapping manpage_suffix=
+([
+   "Image":"I",
+   "Image.image":"i",
+   "Image.colortable":"c",
+   "Image.font":"f",
+]);
+
+
+function verbose=werror;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
@@ -61,7 +72,7 @@ mapping lower_nowM()
 
 void report(string s)
 {
-   stderr->write(s+"\n");
+   verbose("mkwmml:   "+s+"\n");
 }
 
 #define complain(X) (X)
@@ -258,7 +269,9 @@ string addprefix(string suffix,string prefix)
    return prefix+suffix;
 }
 
-void document(mapping huh,string name,string prefix,object f)
+void document(string enttype,
+	      mapping huh,string name,string prefix,
+	      object f)
 {
    string *names;
 
@@ -267,45 +280,35 @@ void document(mapping huh,string name,string prefix,object f)
    else
       names=({name});
 
-   werror(name+" : "+names*","+"\n");
+   verbose("mkwmml: "+name+" : "+names*","+"\n");
 
-// ANCHOR
+   f->write("\n<"+enttype+" name="+
+	    replace(names*",", ">", "&gt;"));
 
-   f->write("<hr newpage>\n");
-   
-   foreach (names,string n)
-      f->write("<anchor name="+linkify(n)+">\n");
+   if (manpage_suffix[replace(name,"->",".")])
+      f->write(" mansuffix="+manpage_suffix[replace(name,"->",".")]);
 
-   f->write("<dl>\n");
-
-// NAME
-
-   f->write("<dt><encaps>NAME</encaps><dd>\n");
-
-   foreach (nice_order(names),n)
-      f->write("\t<tt>"+n+"</tt><br>\n");
-
-   f->write("<p>\n");
+   f->write(">\n");
 
 // [SYNTAX]
 
    if (huh->decl)
    {
-      f->write("<dt><encaps>SYNTAX</encaps><dd>\n");
+      f->write("<man_syntax>\n");
 
       f->write(replace(htmlify(map(huh->decl,synopsis_to_html)*
 			       "<br>\n"),"\n","\n\t")+"\n");
 
-      f->write("<p>\n\n");
+      f->write("</man_syntax>\n\n");
    }
 
 // [DESCRIPTION]
 
    if (huh->desc)
    {
-      f->write("<dt><encaps>DESCRIPTION</encaps><dd>\n");
+      f->write("<man_description>\n");
       f->write(fixdesc(huh->desc,prefix,huh->_line)+"\n");
-      f->write("<p>\n\n");
+      f->write("</man_description>\n\n");
    }
 
 // [ARGUMENTS]
@@ -313,45 +316,40 @@ void document(mapping huh,string name,string prefix,object f)
    if (huh->args)
    {
       string rarg="";
-      f->write("<dt><encaps>ARGUMENTS</encaps><dd>\n");
+      f->write("<man_arguments>\n");
       
-      f->write("\t<table border=1 cellspacing=0><tr>\n"
-	       "\t<td align=left><font size=-2>argument(s)</font></td>"
-	       "\t<td align=left><font size=-2>description</font></td>"
-	       "</tr>\n\n");
-
       foreach (huh->args,mapping arg)
       {
 	 if (arg->desc)
 	 {
-	    f->write("\t<tr align=left><td valign=top>\n"
-		     +fixdesc(rarg+"\t\t<tt>"
-			      +arg->args*"</tt><br>\n\t\t<tt>"
-			      +"</tt></td>\n",prefix,arg->_line)
-		     +"\t<td valign=bottom>"
+	    f->write("\t<aargdesc>\n"
+		     +fixdesc(rarg+"\t\t<aarg>"
+			      +arg->args*"</aarg>\n\t\t<aarg>"
+			      +"</aarg>",prefix,arg->_line)
+		     +"\n\t\t<adesc>"
 		     +fixdesc(arg->desc,prefix,arg->_line)
-		     +"</td></tr>\n\n");
+		     +"</adesc></aargdesc>\n\n");
 	    rarg="";
 	 }
 	 else
 	 {
-	    rarg+="\t\t<tt>"
-	       +arg->args*"</tt><br>\n\t\t<tt>"+
-	       "</tt><br>\n";
+	    rarg+="\t\t<aarg>"
+	       +arg->args*"</aarg>\n\t\t<aarg>"+
+	       "</aarg>\n";
 	 }
       }
       if (rarg!="") error("trailing args w/o desc on "+arg->_line+"\n");
 
-      f->write("</table><p>\n\n");
+      f->write("</man_arguments>\n\n");
    }
 
 // [RETURN VALUE]
 
    if (huh->returns)
    {
-      f->write("<dt><encaps>RETURN VALUE</encaps><dd>\n");
+      f->write("<man_returns>\n");
       f->write(fixdesc(huh->returns,prefix,huh->_line)+"\n");
-      f->write("<p>\n\n");
+      f->write("</man_returns>\n\n");
    }
 
 
@@ -359,22 +357,19 @@ void document(mapping huh,string name,string prefix,object f)
 
    if (huh->note && huh->note->desc)
    {
-      f->write("<dt><encaps>NOTA BENE</encaps><dd>\n");
+      f->write("<man_note>\n");
       f->write(fixdesc(huh->note->desc,prefix,huh->_line)+"\n");
-      f->write("<p>\n\n");
+      f->write("</man_note>\n\n");
    }
 
 // [SEE ALSO]
 
    if (huh["see also"])
    {
-      f->write("<dt><encaps>SEE ALSO</encaps><dd>\n");
-      f->write(map(huh["see also"],
-		    make_nice_reference,prefix)*",\n     "+"\n");
-      f->write("<p>\n\n");
+      f->write("<man_see exp>\n");
+      f->write(huh["see also"]*", ");
+      f->write("</man_see>\n\n");
    }
-
-   f->write("</dl>\n\n");
 
 // ---childs----
 
@@ -401,7 +396,7 @@ void document(mapping huh,string name,string prefix,object f)
 	    foreach (huh->methods,method)
 	       if ( method->names[method_name] )
 	       {
-		  document(method,prefix,prefix,f);
+		  document("method",method,prefix,prefix,f);
 		  method_names-=method->names;
 	       }
 	    if (method_names[method_name])
@@ -414,7 +409,7 @@ void document(mapping huh,string name,string prefix,object f)
       foreach(nice_order(indices(huh->classes)),string n)
       {
 	 f->write("\n\n\n<section title=\""+prefix+n+"\">\n");
-	 document(huh->classes[n],
+	 document("class",huh->classes[n],
 		  prefix+n,prefix+n+"->",f);
 	 f->write("</section title=\""+prefix+n+"\">\n");
       }
@@ -425,16 +420,14 @@ void document(mapping huh,string name,string prefix,object f)
       foreach(nice_order(indices(huh->modules)),string n)
       {
 	 f->write("\n\n\n<section title=\""+prefix+n+"\">\n");
-	 document(huh->modules[n],
+	 document("module",huh->modules[n],
 		  prefix+n,prefix+n+".",f);
 	 f->write("</section title=\""+prefix+n+"\">\n");
       }
    }
 // end ANCHOR
 
-   foreach (names,string n)
-      f->write("</anchor name="+linkify(n)+">\n");
-   f->write("\n\n\n");
+   f->write("</"+enttype+">\n\n");
 }
 
 void make_doc_files()
@@ -442,7 +435,7 @@ void make_doc_files()
    stderr->write("modules: "+sort(indices(parse))*", "+"\n");
    
    foreach (sort(indices(parse)),string module)
-      document(parse[module],module,module+".",stdout);
+      document("module",parse[module],module,module+".",stdout);
 }
 
 int main(int ac,string *files)
@@ -460,6 +453,11 @@ int main(int ac,string *files)
 
    files=files[1..];
 
+   if (sizeof(files) && files[0]=="--nonverbose") 
+      files=files[1..],verbose=lambda(){};
+   
+   stderr->write("mkwmml: reading files...\n");
+
    for (;;)
    {
       int i;
@@ -467,7 +465,7 @@ int main(int ac,string *files)
       if (!f) 
       {
 	 if (!sizeof(files)) break;
-	 stderr->write("reading "+files[0]+"...\n");
+	 verbose("mkwmml: reading "+files[0]+"...\n");
 	 f=File();
 	 currentfile=files[0];
 	 files=files[1..];
@@ -498,7 +496,8 @@ int main(int ac,string *files)
 	    string err;
 	    if ( (err=keywords[kw](arg,currentfile+" line "+line)) )
 	    {
-	       stderr->write(currentfile+" line "+line+": "+err+"\n");
+	       stderr->write("mkwmml: "+
+			     currentfile+" line "+line+": "+err+"\n");
 	       return 1;
 	    }
 	 }
@@ -508,7 +507,9 @@ int main(int ac,string *files)
 	    if (!descM) descM=methodM;
 	    if (!descM)
 	    {
-	       stderr->write("Error on line "+line+": illegal description position\n");
+	       stderr->write("mkwmml: "
+			     "Error on line "+line+
+			     ": illegal description position\n");
 	       return 1;
 	    }
 	    if (!descM->desc) descM->desc="";
@@ -521,7 +522,7 @@ int main(int ac,string *files)
 
 //   stderr->write(sprintf("%O",parse));
 
-   stderr->write("making docs...\n\n");
+   stderr->write("mkwmml: making docs...\n\n");
 
    make_doc_files();
 
