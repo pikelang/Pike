@@ -1,5 +1,5 @@
 /*
- * $Id: fsort_template.h,v 1.9 2001/09/24 14:31:16 grubba Exp $
+ * $Id: fsort_template.h,v 1.10 2001/09/24 17:07:13 grubba Exp $
  */
 
 #ifndef SWAP
@@ -33,7 +33,7 @@ static void MKNAME(_do_sort)(register TYPE *bas,
 #endif
   )
 {
-  register TYPE *a,*b;
+  register TYPE *a, *b, tmp;
 
   while(bas < last)
   {
