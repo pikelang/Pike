@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.170 1998/03/26 03:10:36 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.171 1998/03/27 02:17:32 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -58,12 +58,10 @@ AC_MINIX
 
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
-DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
 AC_SUBST(LIBDIR)
 AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
-AC_SUBST(DOCDIR)
 
 case $CC in
  *smartlink*) ;;
@@ -998,6 +996,7 @@ AC_CHECK_FUNCS( \
  getpwent getpwnam getpwuid \
  getgrent getgrnam \
  initgroups setgroups \
+ socketpair \
 )
 
 if test x$pike_cv_sys_os = xWindows_NT ; then
