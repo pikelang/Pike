@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.166 1999/11/11 17:50:59 grubba Exp $
+# $Id: Makefile.in,v 1.167 1999/11/18 07:58:17 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -85,8 +85,7 @@ LDFLAGS=@LDFLAGS@ @LINKFORSHARED@ $(EXTRALDFLAGS)
 RUNPIKE=$(TMP_BUILDDIR)/pike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 RUNTPIKE=$(TMP_BUILDDIR)/tpike -DNOT_INSTALLED -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS)
 
-MOST_MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" "NOOPTFLAGS=$(NOOPTFLAGS)" "AR=$(AR)" "CC=$(CC)" "MAKE=$(MAKE)"
-MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)"
+MAKE_FLAGS=
 
 # Add alloca.o if you don't have alloca() on your machine.
 #

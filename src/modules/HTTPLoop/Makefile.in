@@ -1,5 +1,5 @@
-# $Id: Makefile.in,v 1.1 1999/11/14 00:43:14 per Exp $
-SRCDIR=@srcdir@
+# $Id: Makefile.in,v 1.2 1999/11/18 07:59:12 hubbe Exp $
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=accept_and_parse.o util.o cache.o requestobject.o log.o timeout.o 
 # filesystem.o

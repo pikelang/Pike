@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.4 1999/04/23 21:38:32 grubba Exp $
+# $Id: Makefile.in,v 1.5 1999/11/18 08:01:05 hubbe Exp $
 # (C) 1997 Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it>
 
-SRCDIR=@srcdir@
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@

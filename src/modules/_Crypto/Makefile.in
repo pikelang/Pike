@@ -1,5 +1,5 @@
-# $Id: Makefile.in,v 1.18 1999/04/23 21:41:37 grubba Exp $
-SRCDIR=@srcdir@
+# $Id: Makefile.in,v 1.19 1999/11/18 08:01:48 hubbe Exp $
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 
 # BEGIN NATIONAL SECURITY

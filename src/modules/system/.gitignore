@@ -1,10 +1,12 @@
 /.pure
 /Makefile
+/add-errnos.h
 /config.log
 /config.status
 /configure
 /dependencies
 /linker_options
+/make_variables
 /modlist_headers
 /modlist_segment
 /module.pmod
@@ -13,4 +15,3 @@
 /stamp-h.in
 /system_machine.h
 /system_machine.h.in
-/add-errnos.h

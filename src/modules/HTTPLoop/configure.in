@@ -1,10 +1,10 @@
-# $Id: configure.in,v 1.1 1999/11/14 00:43:14 per Exp $
+# $Id: configure.in,v 1.2 1999/11/18 07:59:13 hubbe Exp $
 AC_INIT(accept_and_parse.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_SET_MAKE
 
-sinclude(../module_configure.in)
+AC_MODULE_INIT()
 
 AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile)
 

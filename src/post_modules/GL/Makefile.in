@@ -1,5 +1,5 @@
-# $Id: Makefile.in,v 1.5 1999/11/15 19:13:10 neotron Exp $
-SRCDIR=@srcdir@
+# $Id: Makefile.in,v 1.6 1999/11/18 08:03:44 hubbe Exp $
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=top.o @AUTO_OBJS@
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@

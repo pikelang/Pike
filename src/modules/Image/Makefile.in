@@ -1,5 +1,5 @@
-# $Id: Makefile.in,v 1.30 1999/10/05 05:32:40 hubbe Exp $
-SRCDIR=@srcdir@
+# $Id: Makefile.in,v 1.31 1999/11/18 07:59:21 hubbe Exp $
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image_module.o \
 	image.o font.o matrix.o blit.o pattern.o dct.o \

@@ -6,6 +6,7 @@ dependencies
 dynamic_module_makefile
 lib_dirs
 linker_options
+make_variables
 master_lib_dirs
 modlist.h
 modlist_headers.h

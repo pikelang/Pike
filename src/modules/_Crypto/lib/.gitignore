@@ -10,5 +10,6 @@
 /desSmallFips.c
 /desdata
 /keymap.h
+/make_variables
 /parity.h
 /rotors.h

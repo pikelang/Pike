@@ -11,8 +11,10 @@
 /docs
 /files_to_compile
 /linker_options
+/make_variables
 /modlist_headers
 /modlist_segment
 /options
 /prototypes.h
+/sources
 /stamp-h.in

@@ -1,5 +1,5 @@
 # This line is needed on some machines.
-SRCDIR=@srcdir@
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..:.
 MODNAME=GTK
 DEST=@prefix@/lib/pike/modules/

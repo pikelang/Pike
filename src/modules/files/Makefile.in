@@ -1,5 +1,5 @@
-# $Id: Makefile.in,v 1.10 1999/07/15 17:36:33 mirar Exp $
-SRCDIR=@srcdir@
+# $Id: Makefile.in,v 1.11 1999/11/18 08:02:59 hubbe Exp $
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=file.o efuns.o socket.o termios.o sendfile.o udp.o
 MODULE_LDFLAGS=@LIBS@

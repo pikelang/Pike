@@ -104,7 +104,7 @@ rm -rf conftest*])
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.15 1999/11/15 21:39:26 grubba Exp $
+# $Id: aclocal.m4,v 1.16 1999/11/18 07:58:19 hubbe Exp $
 
 MY_AC_PROG_CC
 
@@ -117,6 +117,7 @@ dependencies=$srcdir/dependencies
 
 AC_SUBST_FILE(dynamic_module_makefile)
 AC_SUBST_FILE(static_module_makefile)
+
 ])
 
 
@@ -150,4 +151,80 @@ static_module_makefile=PIKE_INCLUDE_PATH/dynamic_module_makefile
   done
   AC_MSG_RESULT(found)
 ])
+
 ])
+
+pushdef([AC_OUTPUT],
+[
+  AC_SET_MAKE
+
+  AC_SUBST(prefix)
+  export prefix
+  AC_SUBST(exec_prefix)
+  export exec_prefix
+  AC_SUBST(CC)
+  export CC
+  AC_SUBST(BINDIR)
+  export BINDIR
+  AC_SUBST(BUILDDIR)
+  export BUILDDIR
+  AC_SUBST(TMP_LIBDIR)
+  export TMP_BUILDDIR
+  AC_SUBST(TMP_BUILDDIR)
+  export INSTALL
+  AC_SUBST(INSTALL)
+  export AR
+  AC_SUBST(AR)
+  export CFLAGS
+  AC_SUBST(CFLAGS)
+  export CPPFLAGS
+  AC_SUBST(CPPFLAGS)
+  export OPTIMIZE
+  AC_SUBST(OPTIMIZE)
+  export WARN
+  AC_SUBST(WARN)
+
+ifdef([PIKE_INCLUDE_PATH],
+[
+  make_variables_in=PIKE_INCLUDE_PATH/make_variables_in
+],[
+  AC_MSG_CHECKING([for the Pike base directory])
+
+  make_variables_in=make_variables.in
+
+  counter=.
+
+  while test ! -f "$srcdir/$make_variables_in"
+  do
+    counter=.$counter
+    if test $counter = .......... ; then
+      AC_MSG_RESULT(failed)
+      exit 1
+    else
+      :
+    fi
+    make_variables_in=../$make_variables_in
+  done
+
+  AC_MSG_RESULT(found)
+])
+
+  AC_SUBST_FILE(make_variables)
+  make_variables=make_variables
+
+popdef([AC_OUTPUT])
+AC_OUTPUT(make_variables:$make_variables_in $][1,$][2,$][3)
+])
+dnl
+dnl
+dnl
+define(MY_CHECK_FUNCTION,[
+AC_MSG_CHECKING(for working $1)
+AC_CACHE_VAL(pike_cv_func_$1,[
+AC_TRY_RUN([$2],pike_cv_func_$1=yes,pike_cv_func_$1=no,pike_cv_func_$1=no)
+])
+AC_MSG_RESULT([$]pike_cv_func_$1)
+if test [$]pike_cv_func_$1 = yes; then
+AC_DEFINE(translit(HAVE_$1,[a-z],[A-Z]))
+fi])
+

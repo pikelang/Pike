@@ -17,10 +17,12 @@
 /lib
 /machine.h
 /machine.h.in
+/make_variables
 /master.pike
 /peep_engine.c
 /pike
 /qsort_template.h
+/remake
 /smartlink
 /stamp-h
 /stamp-h.in

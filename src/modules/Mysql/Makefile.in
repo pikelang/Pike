@@ -1,8 +1,8 @@
 #
-# $Id: Makefile.in,v 1.4 1999/04/23 21:36:16 grubba Exp $
+# $Id: Makefile.in,v 1.5 1999/11/18 08:00:13 hubbe Exp $
 #
 
-SRCDIR=@srcdir@
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
 MODULE_CPPFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=mysql.o result.o
