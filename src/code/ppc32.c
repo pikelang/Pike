@@ -1,5 +1,5 @@
 /*
- * $Id: ppc32.c,v 1.11 2001/08/16 21:35:41 marcus Exp $
+ * $Id: ppc32.c,v 1.12 2001/09/19 22:30:40 marcus Exp $
  *
  * Machine code generator for 32 bit PowerPC
  *
@@ -338,6 +338,15 @@ void ppc32_mark(void)
   INCR_MARK_SP_REG(sizeof(struct svalue *));
 }
 
+static void ppc32_escape_catch(void)
+{
+  extern void *do_escape_catch_label;
+  void *pc;
+  __asm__("\tmflr %0" : "=r" (pc));
+  Pike_fp->pc = pc;
+  goto *do_escape_catch_label;
+}
+
 void ins_f_byte(unsigned int b)
 {
   void *addr;
@@ -399,6 +408,10 @@ void ins_f_byte(unsigned int b)
   case F_ADD - F_OFFSET:
     SET_REG(PPC_REG_ARG1, 2);
     addr = (void *)f_add;
+    break;
+
+  case F_ESCAPE_CATCH - F_OFFSET:
+    addr = (void *)ppc32_escape_catch;
     break;
   }
 #endif
