@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.159 1999/03/15 01:29:35 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.160 1999/03/19 11:43:35 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -24,6 +24,8 @@ test_eq([[#"foo
 bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
 test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
+
+test_eval_error([[mixed x; return mkmapping(x,x)]])
 
 test_any([[return class Z {
 string bonk() { return "oiff"; }
