@@ -13,6 +13,30 @@ AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_FUNCS(socketpair getwd strerror)
 
+AC_MSG_CHECKING(for working (and failsafe) strerror)
+AC_CACHE_VAL(pike_cv_failsafe_strerror)
+[
+AC_TRY_RUN([
+#include <stdio.h>
+#include <string.h>
+int main()
+{
+  int e;
+  char *s;
+  for(e=0;e<256;e++) if(sterror(e)) if(strerror(e)[0]=='\b') exit(1);
+  exit(0);
+}
+],pike_cv_failsafe_strerror=yes,pike_cv_failsafe_strerror=no)
+])
+
+if test "$pike_cv_failsafe_streror" = yes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_STRERROR)
+else
+  AC_MSG_RESULT(no)
+fi
+
+
 AC_MSG_CHECKING(size of socket buffers)
 AC_CACHE_VAL(pike_cv_socket_buffer_max,
 [

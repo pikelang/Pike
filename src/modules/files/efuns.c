@@ -15,7 +15,9 @@
 
 #include "file_machine.h"
 
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <signal.h>
@@ -352,7 +354,10 @@ void f_strerror(INT32 args)
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to strerror()\n");
 
-  s=strerror(sp[-args].u.integer);
+  if(sp[-args].u.integer < 0 || sp[-args].u.integer > 256 )
+    s=0;
+  else
+    s=strerror(sp[-args].u.integer);
   pop_n_elems(args);
   if(s)
     push_text(s);
