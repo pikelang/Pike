@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.46 2000/08/03 16:18:49 grubba Exp $
+ * $Id: global.h,v 1.47 2000/08/07 15:54:20 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -325,6 +325,8 @@ typedef struct p_wchar_p
 #define DO_IF_SECURITY(X)
 #endif
 
+/* Used by the AutoBuild system to mark known warnings. */
+#define DO_NOT_WARN(X)	(X)
 
 #include "port.h"
 #include "dmalloc.h"
