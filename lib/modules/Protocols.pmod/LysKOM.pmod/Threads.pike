@@ -19,10 +19,15 @@ class Thread
 
     array(mapping) flatten(int depth)
     {
-//       werror("%d, ",text->no);
+      string author_name;
+      catch {
+	author_name=text->author->name;
+      };
+      if(!author_name)
+	author_name="Deleted person";
       return ({ ([ "no":         (string)text->no,
-		   "author_no":  (string)text->author->name,
-		   "author_name":text->author->name,
+		   "author_no":  (string)text->author->no,
+		   "author_name":author_name,
 		   "subject":    text->subject,
 		   "unread":     (unread?"un":""),
 		   "depth":      (string)depth ]),
