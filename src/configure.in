@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.109 1997/09/05 00:16:25 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.110 1997/09/06 16:53:49 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -181,9 +181,9 @@ if test $cflags_is_set = no; then
 ### Non-gcc thingies. This should probably be enhanced...
 
   # HP-UX
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_odataprefetch)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_ofailsafe)
-  AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_o3)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Odataprefetch,plus_Odataprefetch)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+Ofailsafe,plus_Ofailsafe)
+  AC_SYS_OS_COMPILER_FLAG(HP-UX,+O3,plus_O3)
   AC_SYS_OS_COMPILER_FLAG(HP-UX,+w1,plus_w1)
 
   # OSF/1
@@ -197,7 +197,6 @@ if test $cflags_is_set = no; then
   AC_SYS_OS_COMPILER_FLAG(IRIX,-sopt,sopt)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-g3,g3)
   AC_SYS_OS_COMPILER_FLAG(IRIX,-fullwarn,fullwarn)
-  AC_SYS_COMPILER_FLAG(-O2,o2)
   if test x$with_debug = xyes ; then
     AC_SYS_OS_COMPILER_FLAG(IRIX,-trapuw,trapuw)
   fi
@@ -226,7 +225,10 @@ esac
      *+O*) ;;
      *-fast*) ;;
      *)
-      AC_SYS_COMPILER_FLAG(-O,O)
+      AC_SYS_COMPILER_FLAG(-O2,O2)
+      if test "x$pike_cv_option_O2" != "xyes"; then
+        AC_SYS_COMPILER_FLAG(-O,O)
+      fi
      ;;
   esac
  fi
