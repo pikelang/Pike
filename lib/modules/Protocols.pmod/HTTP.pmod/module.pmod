@@ -72,13 +72,9 @@ object do_method(string method,
 		 void|mapping request_headers,
 		 void|Protocols.HTTP.Query con, void|string data)
 {
-  if(!con) {
+  if(!con)
     con = Protocols.HTTP.Query();
-  }
-  if(!request_headers)
-    request_headers = ([]);
-  
-  
+
   if(stringp(url))
     url=Standards.URI(url);
   
