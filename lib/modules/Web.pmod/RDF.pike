@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.22 2003/11/12 16:47:22 grubba Exp $
+// $Id: RDF.pike,v 1.23 2003/11/25 15:33:45 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -113,6 +113,10 @@ class LiteralResource {
 
   string get_xml() {
     return id; // FIXME: XML quote.
+  }
+
+  string get_literal() {
+    return id;
   }
 
   string _sprintf(int t) { return __sprintf("LiteralResource", t); }
