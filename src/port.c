@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.29 2000/08/24 13:57:32 grubba Exp $");
+RCSID("$Id: port.c,v 1.30 2000/08/29 12:34:02 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -385,6 +385,9 @@ PMOD_EXPORT char *STRTOK(char *s1,char *s2)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
 {
+#ifdef HAVE_STRTOD
+  return strtod(nptr, endptr);
+#else /* !HAVE_STRTOD */
   register unsigned char *s;
   short int sign;
 
@@ -524,6 +527,7 @@ PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
   if (endptr != NULL)
     *endptr = (char *) nptr;
   return 0.0;
+#endif /* HAVE_STRTOD */
 }
 
 #ifndef HAVE_VSPRINTF
