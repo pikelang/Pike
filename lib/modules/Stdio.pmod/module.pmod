@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.38 1999/03/12 01:11:57 hubbe Exp $
+// $Id: module.pmod,v 1.39 1999/03/13 02:13:52 marcus Exp $
 
 import String;
 
@@ -621,7 +621,7 @@ mixed `[](string index)
   if(x) return x;
   switch(index)
   {
-  case "readline": return master()->resolv("readline");
+  case "readline": return master()->resolv("Stdio")["Readline"]->readline;
   default: return ([])[0];
   }
 }

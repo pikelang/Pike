@@ -837,7 +837,7 @@ object f_readline(object arglist, object env, object globals)
 {
   if (!arglist->car->is_string)
     return 0;
-  string s = readline(arglist->car->to_string());
+  string s = Stdio.Readline.readline(arglist->car->to_string());
   return s ? String(s) : Lfalse;
 }
 

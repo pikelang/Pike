@@ -546,7 +546,7 @@ class StdinHilfe
       write=predef::write;
       ::create();
 
-      while(string s=readline(strlen(input) ? ">> " : "> "))
+      while(string s=Stdio.Readline.readline(strlen(input) ? ">> " : "> "))
       {
 	signal(signum("SIGINT"),signal_trap);
 	add_input_line(s+"\n");
