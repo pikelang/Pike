@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.207 2004/11/27 22:48:11 mast Exp $
+|| $Id: svalue.c,v 1.208 2004/11/28 14:21:02 grubba Exp $
 */
 
 #include "global.h"
@@ -1112,7 +1112,7 @@ static void dsv_add_string_to_buf (struct pike_string *str)
 	my_putchar (j);
 	my_putchar (j);
       }
-      else if (j < 256 && isprint (j))
+      else if ((j < 256) && (isprint(j) || (j=='\n' || j=='\r')))
 	my_putchar (j);
       else {
 	char buf[11];
