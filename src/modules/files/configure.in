@@ -9,7 +9,6 @@ AC_HAVE_HEADERS(arpa/inet.h sys/socketvar.h netinet/in.h \
  sys/stream.h sys/protosw.h)
 AC_HEADER_DIRENT
 AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(crypt, crypt)
 if test "$ac_cv_lib_socket" = yes -o "${ac_cv_lib_ucb}" = yes; then
  AC_CHECK_LIB(nsl, main)
 fi
