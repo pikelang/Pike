@@ -1,8 +1,10 @@
-# $Id: configure.in,v 1.16 2000/09/11 16:04:56 grubba Exp $
+# $Id: configure.in,v 1.17 2001/01/26 02:19:51 mast Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(image_machine.h)
 
 AC_SET_MAKE
+
+AC_CONFIG_SUBDIRS(encodings)
 
 AC_MODULE_INIT()
 
@@ -65,8 +67,4 @@ fi
 
 AC_SUBST(RANLIB)
 
-AC_CONFIG_SUBDIRS(encodings)
-
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
-
-
