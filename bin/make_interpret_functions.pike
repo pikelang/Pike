@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 #ifdef OLD
-#import OLD;
+import OLD;
 #define PC Pike
 #else /* !OLD */
 #define PC Parser.Pike
