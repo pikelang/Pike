@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.44 2000/06/10 19:20:40 mast Exp $
+ * $Id: gc.h,v 1.45 2000/06/11 02:41:01 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -127,7 +127,7 @@ int gc_external_mark3(void *a, void *in, char *where);
 int gc_do_weak_free(void *a);
 int gc_mark(void *a);
 int gc_cycle_push(void *x, struct marker *m, int weak);
-void gc_cycle_pop(void *a);
+int gc_cycle_pop(void *a);
 void gc_cycle_pop_object(struct object *o);
 void gc_set_rec_last(struct marker *m);
 void do_gc_recurse_svalues(struct svalue *s, int num);

@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.88 2000/06/10 23:20:47 mast Exp $");
+RCSID("$Id: gc.c,v 1.89 2000/06/11 02:41:01 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1427,9 +1427,9 @@ static void pop_cycle_to_kill_list()
   base->link = 0;
 }
 
-void gc_cycle_pop(void *a)
+INLINE int gc_cycle_pop(void *a)
 {
-  struct marker *m = get_marker(a);
+  struct marker *m = find_marker(a);
 
 #ifdef PIKE_DEBUG
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -1453,7 +1453,7 @@ void gc_cycle_pop(void *a)
 	    gc_cycle_indent, "", a, gc_rec_last);
     describe_marker(m);
 #endif
-    return;
+    return 0;
   }
 
 #ifdef PIKE_DEBUG
@@ -1476,6 +1476,7 @@ void gc_cycle_pop(void *a)
     if (gc_rec_last->cycle != m->cycle)
       /* Time to pop the cycle. */
       pop_cycle_to_kill_list();
+    return 0;
   }
 
   else {
@@ -1496,91 +1497,22 @@ void gc_cycle_pop(void *a)
 	    gc_cycle_indent, "", a, gc_rec_last);
     describe_marker(m);
 #endif
+    return 1;
   }
 }
 
 void gc_cycle_pop_object(struct object *o)
 {
-  struct marker *m = get_marker(o);
-
-#ifdef PIKE_DEBUG
-  if (Pike_in_gc != GC_PASS_CYCLE)
-    fatal("GC cycle pop attempted in invalid pass.\n");
-  if (!(m->flags & GC_CYCLE_CHECKED))
-    gc_fatal(o, 0, "Marker being popped doesn't have GC_CYCLE_CHECKED.\n");
-  if (m->flags & (GC_REFERENCED))
-    gc_fatal(o, 1, "Got a referenced marker to gc_cycle_pop_object.\n");
-  if (m->flags & GC_XREFERENCED)
-    gc_fatal(o, 1, "Doing cycle check in externally referenced thing "
-	     "missed in mark pass.\n");
-#endif
+  struct marker *m;
+  if (gc_cycle_pop(o) && (m = find_marker(o))->flags & GC_LIVE_OBJ) {
+    gc_add_extra_ref(o); /* This extra ref is taken away in the kill pass. */
+    m->link = kill_list;
+    kill_list = m;
 #ifdef GC_CYCLE_DEBUG
-  gc_cycle_indent -= 2;
-#endif
-
-  if (!(m->flags & GC_RECURSING)) {
-    m->flags &= ~GC_LIVE_RECURSE;
-#ifdef GC_CYCLE_DEBUG
-    fprintf(stderr, "%*sgc_cycle_pop_object, pop ign:   %8p, [%8p] ",
+    fprintf(stderr, "%*sgc_cycle_pop_object, for kill:  %8p, [%8p] ",
 	    gc_cycle_indent, "", o, gc_rec_last);
     describe_marker(m);
 #endif
-    return;
-  }
-
-#ifdef PIKE_DEBUG
-  if (m->flags & GC_GOT_DEAD_REF)
-    gc_fatal(o, 0, "Didn't expect a dead extra ref.\n");
-#endif
-
-  if (m->cycle) {
-    /* Part of a cycle. Leave for now so we pop the whole cycle at once. */
-    m->flags &= ~GC_WEAK_REF;
-#ifdef GC_CYCLE_DEBUG
-    fprintf(stderr,"%*sgc_cycle_pop_object, in cycle:  %8p, [%8p] ",
-	    gc_cycle_indent, "", o, gc_rec_last);
-    describe_marker(m);
-#endif
-    if (!(gc_rec_last->flags & GC_RECURSING))
-      for (gc_rec_last = &rec_list;
-	   gc_rec_last->link != m && gc_rec_last->link->cycle != m->cycle;
-	   gc_rec_last = gc_rec_last->link) {}
-    if (gc_rec_last->cycle != m->cycle)
-      /* Time to pop the cycle. */
-      pop_cycle_to_kill_list();
-  }
-
-  else {
-    struct marker *p;
-    m->flags &= ~(GC_RECURSING|GC_WEAK_REF);
-    if (gc_rec_last->flags & GC_RECURSING) p = gc_rec_last;
-    else p = &rec_list;
-    for (; p->link != m; p = p->link) {
-#ifdef PIKE_DEBUG
-      if (!p->link || m->link)
-	gc_fatal(o, 0, "Object not in cycle not last on rec_list.\n");
-#endif
-    }
-    p->link = 0;
-
-    if (m->flags & GC_LIVE_OBJ) {
-      gc_add_extra_ref(o); /* This extra ref is taken away in the kill pass. */
-      m->link = kill_list;
-      kill_list = m;
-#ifdef GC_CYCLE_DEBUG
-      fprintf(stderr, "%*sgc_cycle_pop_object, for kill:  %8p, [%8p] ",
-	      gc_cycle_indent, "", o, gc_rec_last);
-      describe_marker(m);
-#endif
-    }
-    else {
-      ADD_REF_IF_DEAD(m);
-#ifdef GC_CYCLE_DEBUG
-      fprintf(stderr,"%*sgc_cycle_pop_object:            %8p, [%8p] ",
-	      gc_cycle_indent, "", o, gc_rec_last);
-      describe_marker(m);
-#endif
-    }
   }
 }
 
