@@ -28,22 +28,35 @@ string id_for(mixed thing)
 object object_for(string id)
 {
   object o;
-  if(o=id2val[id])
+  if(o=id2val[id]) {
+    DEBUGMSG("object_for(" + id + ") found locally\n");
     return o;
-  if(o=other[id])
+  }
+  if(o=other[id]) {
+    DEBUGMSG("object_for(" + id + ") found remote\n");
     return o;
-  if(server_context && (o=server_context->object_for(id, con)))
-    return other[id]=o;
+  }
+  if(server_context && (o=server_context->object_for(id, con))) {
+    DEBUGMSG("object_for(" + id + ") found in server_context\n");
+    val2id[o]=id;
+    return id2val[id]=o;
+  }
+  DEBUGMSG("object_for(" + id + ") not found; making remote object\n");
   return other[id] = Obj(id, con, this_object());
 }
 
 object function_for(string id)
 {
   object o;
-  if(o=id2val[id])
+  if(o=id2val[id]) {
+    DEBUGMSG("function_for(" + id + ") found locally\n");
     return o;
-  if(o=other[id])
+  }
+  if(o=other[id]) {
+    DEBUGMSG("function_for(" + id + ") found remote\n");
     return o;
+  }
+  DEBUGMSG("function_for(" + id + ") not found; making remote object\n");
   return other[id] = Call(0, id, con, this_object(), 0);
 }
 
@@ -80,6 +93,7 @@ array encode(mixed val)
 
 array encode_error(string e)
 {
+  if (e[-1] == '\n') e = e[..sizeof(e)-2];
   return ({ CTX_ERROR, gethostname()+":"+replace(e, "\n", "\n"+gethostname()+":") });
 }
 
@@ -144,11 +158,28 @@ function decode_call(array data)
     error("This is not a call");
   if(data[1])
   {
-    object o = decode(data[1]);
-    return o[data[2]];
+    string id = data[1][1];
+    object o = id2val[id];
+    if (o)
+      DEBUGMSG(id + " found locally\n");
+    else if(!o && server_context && (o=server_context->object_for(id, con))) {
+      DEBUGMSG(id + " found in server_context\n");
+      val2id[o] = id;
+      id2val[id] = o;
+    }
+#ifdef REMOTE_DEBUG
+    if (!o) DEBUGMSG(id + " not found\n");
+#endif
+    return o && o[data[2]];
   }
-  else
-    return decode(data[2]);
+  else {
+    string id = data[2][1];
+    object o = id2val[id];
+#ifdef REMOTE_DEBUG
+    if (!o) DEBUGMSG(id + " not found\n");
+#endif
+    return o;
+  }
 }
 
 void add(object o, string id)
@@ -163,9 +194,7 @@ string describe(array data)
   case CTX_ERROR:
     return "ERROR "+sprintf("%O",data[1]);
   case CTX_OTHER:
-    if(stringp(data[1]))
-      return "\""+data[1]+"\"";
-    return (string)data[1];
+    return sprintf("%O",data[1]);
   case CTX_OBJECT:
     return "<object "+data[1]+">";
   case CTX_FUNCTION:
