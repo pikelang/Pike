@@ -1,7 +1,7 @@
 //
 // Creates testsuit files form the testsuit.in files
 // found in the lib directory.
-// $Id: mklibtests.pike,v 1.2 2002/08/03 12:23:10 nilsson Exp $
+// $Id: mklibtests.pike,v 1.3 2002/08/03 13:46:27 nilsson Exp $
 //
 
 string src_dir;
@@ -32,7 +32,7 @@ void recurse(string path) {
     ds = file_stat(dest_dir+path+"testsuite");
     if(!ds || ds->mtime<ls->mtime) {
       object f;
-      if(catch(Stdio.File(dest_dir+path+"testsuite", "cwt"))) {
+      if(catch(f=Stdio.File(dest_dir+path+"testsuite", "cwt"))) {
 	werror("Could not create %s\n", dest_dir+path+"testsuite");
 	continue;
       }
