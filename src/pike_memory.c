@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.142 2003/03/16 19:26:03 grubba Exp $
+|| $Id: pike_memory.c,v 1.143 2003/03/29 20:09:23 mast Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.142 2003/03/16 19:26:03 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.143 2003/03/29 20:09:23 mast Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1958,7 +1958,7 @@ void debug_free(void *p, LOCATION location, int mustfind)
   mt_unlock(&debug_malloc_mutex);
 }
 
-void dmalloc_check_block_free(void *p, char *location)
+void dmalloc_check_block_free(void *p, LOCATION location)
 {
   struct memhdr *mh;
   mt_lock(&debug_malloc_mutex);
@@ -2024,6 +2024,80 @@ void *__wrap_strdup(const char *s)
 }
 #endif
 
+struct parsed_location
+{
+  const char *file;
+  size_t file_len;
+  int line;
+  const char *extra;
+};
+
+static void parse_location (struct memloc *l, struct parsed_location *pl)
+{
+  const char *p;
+  pl->file = LOCATION_NAME (l->location);
+
+  p = strchr (pl->file, ' ');
+  if (p)
+    pl->extra = p;
+  else
+    pl->extra = strchr (pl->file, 0);
+
+  p = strchr (pl->file, ':');
+  if (p && p < pl->extra) {
+    const char *pp;
+    while ((pp = strchr (p + 1, ':')) && pp < pl->extra) p = pp;
+    pl->line = atoi (p + 1);
+    pl->file_len = p - pl->file;
+  }
+  else {
+    pl->line = -1;
+    pl->file_len = pl->extra - pl->file;
+  }
+}
+
+static void sort_locations (struct memhdr *hdr)
+{
+  /* A silly bubble sort, but it shouldn't matter much in this case. */
+
+  struct memloc *end;
+
+  for (end = NULL; hdr->locations != end;) {
+    struct memloc **bubble_ptr = &hdr->locations;
+    struct memloc *bubble = *bubble_ptr;
+    struct memloc *next, *new_end = bubble;
+    struct parsed_location parsed_bubble;
+    parse_location (bubble, &parsed_bubble);
+
+    for (next = bubble->next; next != end; next = bubble->next) {
+      int cmp;
+      struct parsed_location parsed_next;
+      parse_location (next, &parsed_next);
+
+      cmp = strcmp (parsed_next.extra, parsed_bubble.extra);
+      if (!cmp)
+	cmp = strncmp (parsed_bubble.file, parsed_next.file,
+		       parsed_bubble.file_len > parsed_next.file_len ?
+		       parsed_bubble.file_len : parsed_next.file_len);
+      if (!cmp)
+	cmp = parsed_bubble.line - parsed_next.line;
+
+      if (cmp > 0) {
+	bubble->next = next->next;
+	*bubble_ptr = next;
+	bubble_ptr = &next->next;
+	new_end = next->next = bubble;
+      }
+      else {
+	bubble_ptr = &bubble->next;
+	bubble = next;
+	parsed_bubble = parsed_next;
+      }
+    }
+
+    end = new_end;
+  }
+}
 
 void dump_memhdr_locations(struct memhdr *from,
 			   struct memhdr *notfrom,
@@ -2035,13 +2109,19 @@ void dump_memhdr_locations(struct memhdr *from,
   merge_location_list(from);
 #endif
 
-  fprintf(stderr,"%*s gc generation: %d/%d  gc pass: %d/%d\n",
+  fprintf(stderr,"%*sLocations that handled %p: (gc generation: %d/%d  gc pass: %d/%d)\n",
 	  indent,"",
+	  from->data,
 	  from->gc_generation / 1000,
 	  gc_generation,
 	  from->gc_generation % 1000,
 	  Pike_in_gc);
-	  
+
+  if (notfrom)
+    fprintf (stderr, "%*sIgnoring locations that also handled %p.\n",
+	     indent, "", notfrom->data);
+
+  sort_locations (from);
 
   for(l=from->locations;l;l=l->next)
   {
@@ -2049,7 +2129,7 @@ void dump_memhdr_locations(struct memhdr *from,
       continue;
 
     
-    fprintf(stderr,"%*s %s %s (%d times) %s\n",
+    fprintf(stderr,"%*s%s %s (%d times) %s\n",
 	    indent,"",
 	    LOCATION_IS_DYNAMIC(l->location) ? "-->" : "***",
 	    LOCATION_NAME(l->location),
@@ -2179,6 +2259,7 @@ void debug_malloc_dump_references(void *x, int indent, int depth, int flags)
 {
   struct memhdr *mh=my_find_memhdr(x,0);
   if(!mh) return;
+  dump_memhdr_locations(mh,0, indent);
   if(memheader_references_located)
   {
     if(mh->flags & MEM_IGNORE_LEAK)
@@ -2196,7 +2277,6 @@ void debug_malloc_dump_references(void *x, int indent, int depth, int flags)
       fprintf(stderr,"%*s<<<=- No known references to this block -=>>>\n",indent,"");
     }
   }
-  dump_memhdr_locations(mh,0, indent+2);
 }
 
 void list_open_fds(void)
