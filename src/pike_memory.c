@@ -58,7 +58,7 @@ void reverse(char *memory, INT32 nitems, INT32 size)
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
 #else
-  switch( (((unsigned long)memory) % size) ? size : 0 )
+  switch( (((unsigned long)memory) % size) ? 0 : size)
 #endif
   {
     DOSIZE(1,B1_T)
@@ -115,7 +115,7 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
   switch(size)
 #else
-  switch( (((unsigned long)memory) % size) ? size : 0 )
+  switch( (((unsigned long)memory) % size) ? 0 : size )
 #endif
  {
    DOSIZE(1,B1_T)
