@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.30 1999/12/22 21:11:46 grubba Exp $
+ * $Id: mysql.c,v 1.31 1999/12/30 16:22:57 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -80,7 +80,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.30 1999/12/22 21:11:46 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.31 1999/12/30 16:22:57 grubba Exp $");
 
 /*
 **! module Mysql
@@ -92,7 +92,7 @@ RCSID("$Id: mysql.c,v 1.30 1999/12/22 21:11:46 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.30 1999/12/22 21:11:46 grubba Exp $
+**!	$Id: mysql.c,v 1.31 1999/12/30 16:22:57 grubba Exp $
 **!
 **! class mysql
 **!
@@ -581,7 +581,18 @@ static void f_big_query(INT32 args)
 
     MYSQL_DISALLOW();
   }
-  if (!socket || (tmp < 0)) {
+  if (!socket
+#if defined(CR_SERVER_GONE) || defined(CR_UNKNOWN_ERROR)
+#ifdef CR_SERVER_GONE
+      || (tmp == CR_SERVER_GONE)
+#endif /* CR_SERVER_GONE */
+#ifdef CR_UNKNOWN_ERROR
+      || (tmp == CR_UNKNOWN_ERROR)
+#endif /* CR_UNKNOWN_ERROR */
+#else /* !CR_SERVER_GONE && !CR_UNKNOWN_ERROR */
+      || (tmp < 0)
+#endif /* CR_SERVER_GONE || CR_UNKNOWN_ERROR */
+      ) {
     /* The connection might have been closed. */
     pike_mysql_reconnect();
 
