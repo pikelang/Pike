@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.6 2003/06/16 16:41:45 mast Exp $
+# $Id: common_module_makefile.in,v 1.7 2003/10/10 14:33:43 grubba Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -97,10 +97,7 @@ $(CONFIG_HEADERS) dummy_config_header: config.status
 	fi
 
 $(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
-	if [ -f $(SRCDIR)/acconfig.h ]; then \
-	  cd $(SRCDIR) && autoheader; \
-	else :; fi
+	cd $(SRCDIR) && $(PIKE_SRC_DIR)/run_autoconfig .
 
 config.status: $(SRCDIR)/configure
 	AR="$(AR)" CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" LDSHARED="$(REAL_LDSHARED)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
@@ -109,7 +106,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.6 2003/06/16 16:41:45 mast Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.7 2003/10/10 14:33:43 grubba Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
