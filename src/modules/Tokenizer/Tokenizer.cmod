@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.6 2003/07/24 14:40:48 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.7 2003/11/27 16:49:32 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -15,6 +15,7 @@
 #include "interpret.h"
 #include "operators.h"
 #include "builtin_functions.h"
+#include "pike_types.h"
 
 /*! @module Tokenizer
  */
@@ -547,7 +548,6 @@ PIKECLASS compiler
 
 /*! @class Token
  */
-
 PIKECLASS Token
 {
   /*! @decl string symbol
@@ -555,12 +555,6 @@ PIKECLASS Token
    *! Raw symbol as found in the source code.
    */
   PIKEVAR string symbol;
-
-  /*! @decl string token
-   *!
-   *! Token group the symbol belongs to.
-   */
-  PIKEVAR string token;
 
   /*! @decl mixed pos
    *!
@@ -575,22 +569,12 @@ PIKECLASS Token
    */
   PIKEVAR mixed pos;
 
-  /*! @decl mixed value
-   *!
-   *! @[symbol] parsed according to the rules of @[token].
-   */
-  PIKEVAR mixed value;
-
   INIT
   {
     THIS->symbol = NULL;
-    THIS->token = NULL;
     THIS->pos.type = PIKE_T_INT;
     THIS->pos.subtype = NUMBER_UNDEFINED;
     THIS->pos.u.integer = 0;
-    THIS->value.type = PIKE_T_INT;
-    THIS->value.subtype = NUMBER_UNDEFINED;
-    THIS->value.u.integer = 0;
   }
 
   EXIT
@@ -599,34 +583,29 @@ PIKECLASS Token
       free_string(THIS->symbol);
       THIS->symbol = NULL;
     }
-    if (THIS->token) {
-      free_string(THIS->token);
-      THIS->token = NULL;
-    }
     free_svalue(&THIS->pos);
     THIS->pos.type = PIKE_T_INT;
     THIS->pos.subtype = NUMBER_UNDEFINED;
     THIS->pos.u.integer = 0;
-    free_svalue(&THIS->value);
-    THIS->value.type = PIKE_T_INT;
-    THIS->value.subtype = NUMBER_UNDEFINED;
-    THIS->value.u.integer = 0;
   }
 
-  PIKEFUN void create(string symbol, string token, mixed value, mixed pos)
+  EXTRA
+  {
+    struct svalue tmp = {
+      PIKE_T_STRING, 0, 0,
+    };
+    MAKE_CONST_STRING(tmp.u.string, "token");
+    add_constant(tmp.u.string, &tmp, 0);
+  }
+
+  PIKEFUN void create(string symbol, mixed pos)
     flags ID_STATIC;
   {
     if (THIS->symbol) {
       free_string(THIS->symbol);
       THIS->symbol = NULL;
     }
-    if (THIS->token) {
-      free_string(THIS->token);
-      THIS->token = NULL;
-    }
     copy_shared_string(THIS->symbol, symbol);
-    copy_shared_string(THIS->token, token);
-    assign_svalue(&THIS->value, value);
     assign_svalue(&THIS->pos, pos);
   }
 
@@ -640,20 +619,14 @@ PIKECLASS Token
 	push_text("NONE");
       }
     } else {
-      push_text("%O:%s:%s:%O");
+      push_text("%O:%s");
       push_svalue(&THIS->pos);
       if (THIS->symbol) {
 	ref_push_string(THIS->symbol);
       } else {
 	push_text("NONE");
       }
-      if (THIS->token) {
-	ref_push_string(THIS->token);
-      } else {
-	push_text("NONE");
-      }
-      push_svalue(&THIS->value);
-      f_sprintf(5);
+      f_sprintf(3);
     }
     stack_pop_n_elems_keep_top(args);
     return;
