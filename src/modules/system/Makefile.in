@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.9 1999/11/18 08:03:26 hubbe Exp $
+# $Id: Makefile.in,v 1.10 2001/02/03 23:08:40 mirar Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..:.
-OBJS=system.o syslog.o passwords.o nt.o
+OBJS=system.o syslog.o passwords.o nt.o memory.o
 MODULE_LDFLAGS=@LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
