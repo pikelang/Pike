@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.21 1998/10/14 05:48:46 hubbe Exp $
+ * $Id: stralloc.h,v 1.22 1998/10/14 08:18:17 neotron Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -151,7 +151,7 @@ INLINE INT32 PIKE_CONCAT4(compare_,FROM,_to_,TO)(const PIKE_CONCAT(p_wchar,TO) *
 /* Prototypes begin here */
 INLINE unsigned INT32 index_shared_string(struct pike_string *s, int pos);
 INLINE void low_set_index(struct pike_string *s, int pos, int value);
-struct INLINE pike_string *debug_check_size_shift(struct pike_string *a,int shift);
+INLINE struct pike_string *debug_check_size_shift(struct pike_string *a,int shift);
 CONVERT(0,1)
 CONVERT(0,2)
 CONVERT(1,0)
