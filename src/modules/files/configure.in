@@ -3,6 +3,8 @@ AC_CONFIG_HEADER(file_machine.h)
 
 sinclude(../module_configure.in)
 
+AC_ARG_ENABLE(socketpair, [  --enable-socketpair    Force the system socketpair to be used ])
+
 AC_HAVE_HEADERS(sys/types.h arpa/inet.h sys/socketvar.h netinet/in.h \
  sys/mount.h ustat.h sys/statfs.h sys/statvfs.h sys/vfs.h sys/param.h \
  sys/socket.h sys/stream.h sys/protosw.h netdb.h sys/sysproto.h)
@@ -449,6 +451,11 @@ int main()
 AC_MSG_RESULT($pike_cv_select_on_unix_sockets)
 if test x$pike_cv_select_on_unix_sockets = xyes ; then
   AC_DEFINE(HAVE_SOCKETPAIR)
+else
+  if test x$enable_socketpair = xyes ; then
+    echo 'WARNING: Forcing socketpair() to be used.'
+    AC_DEFINE(HAVE_SOCKETPAIR)
+  else :; fi
 fi
 
 
