@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.88 2000/12/04 21:31:14 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.89 2000/12/05 21:08:17 per Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -149,7 +149,7 @@ static void code_expression(node *n, INT16 flags, char *err)
   case 0: my_yyerror("Void expression for %s",err);
   case 1: return;
   case 2:
-    fatal("Internal compiler Pike_error (%s), line %ld, file %s\n",
+    fatal("Internal compiler error (%s), line %ld, file %s\n",
 	  err,
 	  (long)lex.current_line,
 	  lex.current_file?lex.current_file->str:"Unknown");
@@ -623,12 +623,12 @@ static int do_docode2(node *n, INT16 flags)
   case F_NOT:
   case F_COMPL:
   case F_NEGATE:
-    fatal("Optimizer Pike_error.\n");
+    fatal("Optimizer error.\n");
 
   case F_RANGE:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
-      fatal("Compiler internal Pike_error (at %ld).\n",(long)lex.current_line);
+      fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
     emit0(n->token);
     return DO_NOT_WARN((INT32)tmp1);
 
@@ -972,7 +972,7 @@ static int do_docode2(node *n, INT16 flags)
 #endif
 
     if(do_docode(CAR(n),0)!=1)
-      fatal("Internal compiler Pike_error, time to panic\n");
+      fatal("Internal compiler error, time to panic\n");
 
     if (!(CAR(n) && (current_switch_type = CAR(n)->type))) {
       current_switch_type = mixed_type_string;
@@ -1065,7 +1065,7 @@ static int do_docode2(node *n, INT16 flags)
     current_break=break_save;
 #ifdef PIKE_DEBUG
     if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-      fatal("Stack Pike_error after F_SWITCH (underflow)\n");
+      fatal("Stack error after F_SWITCH (underflow)\n");
 #endif
     return 0;
   }
@@ -1225,7 +1225,7 @@ static int do_docode2(node *n, INT16 flags)
       tmp1=do_docode(CAR(n),DO_LVALUE);
 #ifdef PIKE_DEBUG
       if(tmp1 & 1)
-	fatal("Very internal compiler Pike_error.\n");
+	fatal("Very internal compiler error.\n");
 #endif
       emit1(F_ARRAY_LVALUE, DO_NOT_WARN((INT32)(tmp1>>1)));
       return 2;
@@ -1267,7 +1267,7 @@ static int do_docode2(node *n, INT16 flags)
       }
       
       if(do_docode(CDR(n),0) != 1)
-	fatal("Internal compiler Pike_error, please report this (1).");
+	fatal("Internal compiler error, please report this (1).");
       if(CDR(n)->token != F_CONSTANT &&
 	match_types(CDR(n)->type, string_type_string))
 	emit0(F_CLEAR_STRING_SUBTYPE);
@@ -1333,7 +1333,7 @@ static int do_docode2(node *n, INT16 flags)
 #ifdef PIKE_DEBUG
       case T_OBJECT:
 	if(n->u.sval.u.object->next == n->u.sval.u.object)
-	  fatal("Internal Pike_error: Pointer to parent cannot be a compile time constant!\n");
+	  fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
 #endif
 
     default:
@@ -1413,7 +1413,7 @@ static int do_docode2(node *n, INT16 flags)
       do_docode(CDR(n), (INT16)(flags | DO_LVALUE));
     
   default:
-    fatal("Infernal compiler Pike_error (unknown parse-tree-token).\n");
+    fatal("Infernal compiler error (unknown parse-tree-token).\n");
     return 0;			/* make gcc happy */
   }
 }

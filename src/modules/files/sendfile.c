@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.52 2000/12/02 22:59:07 grubba Exp $
+ * $Id: sendfile.c,v 1.53 2000/12/05 21:08:36 per Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -247,7 +247,7 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
   remove_callback(cb);
 
   if (this->self) {
-    /* Make sure we get freed in case of Pike_error */
+    /* Make sure we get freed in case of error */
     push_object(this->self);
     this->self = NULL;
   }

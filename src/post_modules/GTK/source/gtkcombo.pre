@@ -64,7 +64,7 @@ NAME_ARGS(popdows_strings);
     if(a->item[i].type == PIKE_T_STRING)
       s = g_list_append( s, a->item[i].u.string->str );
   if(!s)
-    error("No items in list!\n");
+    Pike_error("No items in list!\n");
   gtk_combo_set_popdown_strings( GTK_COMBO( THIS->obj ), s );
   g_list_free( s );
 

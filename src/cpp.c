@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.78 2000/12/01 08:09:45 hubbe Exp $
+ * $Id: cpp.c,v 1.79 2000/12/05 21:08:16 per Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -640,7 +640,7 @@ static struct pike_string *recode_string(struct pike_string *data)
      *   according to EBCDIC-US, and then the rest of the string
      *   according to the encoding specified by the first line.
      *
-     * * It's an Pike_error for a program written in EBCDIC not to
+     * * It's an error for a program written in EBCDIC not to
      *   start with a #charset directive.
      *
      * Obfuscation note:

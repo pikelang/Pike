@@ -67,7 +67,7 @@ NAME_ARGS(font_name);
     get_all_args("Gdk.Font", args, "%s", &n);
     THIS->obj = (void*)gdk_font_load( n );
     if(!THIS->obj)
-      error("Failed to load font.\n");
+      Pike_error("Failed to load font.\n");
   } else {
   }
 }

@@ -135,7 +135,7 @@ NAME_ARGS(text);
 
 
 #define TWIN  (GTK_WIDGET(THIS->obj)->window)
-#define GC(X) ((GdkGC*)get_gdkobject(X,GC))
+#define _GC(X) ((GdkGC*)get_gdkobject(X,GC))
 
 FUNCTION(set_background, "function(object:object)");
 NAME_ARGS(background);
@@ -174,7 +174,7 @@ NAME_ARGS(gc,xdest,ydest,source,xsource,ysource,width,height);
   else
     win = GTK_WIDGET( get_gtkobject( source ) )->window;
 
-  gdk_window_copy_area( TWIN, GC(gc), xd, yd, win, xs, ys, w, h);
+  gdk_window_copy_area( TWIN, _GC(gc), xd, yd, win, xs, ys, w, h);
   RETURN_THIS();
 }
 
@@ -409,7 +409,7 @@ NAME_ARGS(cursor_type, fg, bg);
     get_all_args("set_cursor", args, "%d", &i);
 
   if(i>255)
-    error("No such cursor\n");
+    Pike_error("No such cursor\n");
   if( i >= 0 )
     c = gdk_cursor_new( i );
   else
@@ -695,7 +695,6 @@ RETURNS(GTK.Widget);
   GtkTargetEntry *entries = NULL;
   get_all_args( "drag_dest_set", args, "%d%a%d", &i, &a, &f );
   if(a->size)
-//     error("You must accept at least one target type\n");
     entries = malloc(sizeof(GtkTargetEntry)*a->size);
 
   for(j=0; j<a->size; j++)
@@ -708,7 +707,7 @@ RETURNS(GTK.Widget);
        a->item[j].u.array->item[2].type != PIKE_T_INT)
     {
       free(entries);
-      error("The array is malformed.\n");
+      Pike_error("The array is malformed.\n");
     }
     entries[j].target = a->item[j].u.array->item[0].u.string->str;
     entries[j].flags = a->item[j].u.array->item[1].u.integer;
@@ -738,7 +737,6 @@ RETURNS(GTK.Widget);
   get_all_args( "drag_source_set", args, "%d%a%d", &i, &a, &f );
 
   if(a->size)
-//     error("You must provide at least one target type\n");
     entries = malloc(sizeof(GtkTargetEntry)*a->size);
 
   for(j=0; j<a->size; j++)
@@ -751,7 +749,7 @@ RETURNS(GTK.Widget);
        a->item[j].u.array->item[2].type != PIKE_T_INT)
     {
       free(entries);
-      error("The array is malformed.\n");
+      Pike_error("The array is malformed.\n");
     }
     entries[j].target = a->item[j].u.array->item[0].u.string->str;
     entries[j].flags = a->item[j].u.array->item[1].u.integer;

@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.34 2000/12/01 08:10:01 hubbe Exp $ */
+/* $Id: operator.c,v 1.35 2000/12/05 21:08:26 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.34 2000/12/01 08:10:01 hubbe Exp $
+**!	$Id: operator.c,v 1.35 2000/12/05 21:08:26 per Exp $
 **! class Image
 */
 
@@ -504,7 +504,7 @@ STANDARD_OPERATOR_HEADER("`& 'minimum'")
 **!	
 **! note:
 **!	`&lt; or `> on empty ("no image") image objects or images
-**!	with different size will result in an Pike_error. 
+**!	with different size will result in an error. 
 **!	`== is always true on two empty image objects and
 **!	always false if one and only one of the image objects
 **!	is empty or the images differs in size.

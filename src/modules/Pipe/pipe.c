@@ -30,7 +30,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.44 2000/12/01 08:10:19 hubbe Exp $");
+RCSID("$Id: pipe.c,v 1.45 2000/12/05 21:08:31 per Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -669,7 +669,7 @@ static INLINE void output_try_write_some(struct object *obj)
     if(sp[-1].type == T_INT) ret=sp[-1].u.integer;
     pop_stack();
 
-    if (ret==-1)		/* Pike_error, byebye */
+    if (ret==-1)		/* error, byebye */
     {
       output_finish(obj);
       return;

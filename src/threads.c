@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.148 2000/12/01 12:39:46 mast Exp $");
+RCSID("$Id: threads.c,v 1.149 2000/12/05 21:08:23 per Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1297,7 +1297,7 @@ PMOD_EXPORT void th_farm(void (*fun)(void *), void *here)
 void low_th_init(void)
 {
 #ifdef SGI_SPROC_THREADS
-#Pike_error /* Need to specify a filename */
+#error /* Need to specify a filename */
   us_cookie = usinit("");
 #endif /* SGI_SPROC_THREADS */
 

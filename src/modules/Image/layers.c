@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.58 2000/12/01 08:10:01 hubbe Exp $
+**!	$Id: layers.c,v 1.59 2000/12/05 21:08:25 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.58 2000/12/01 08:10:01 hubbe Exp $");
+RCSID("$Id: layers.c,v 1.59 2000/12/05 21:08:25 per Exp $");
 
 #include "image_machine.h"
 
@@ -531,7 +531,7 @@ struct layer_mode_desc
     COMBINE_ALPHA_SUM(aS,(aL)*(V))
 
 #else /* unknown COMBINE_METHOD */
-#Pike_error unknown COMBINE_METHOD
+#error unknown COMBINE_METHOD
 #endif /* COMBINE_METHOD_FLOAT  */
 
 #endif

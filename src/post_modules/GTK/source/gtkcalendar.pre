@@ -115,10 +115,10 @@ NAME_ARGS(index,color);
   struct object *o;
   get_all_args( "set_marked_date_color", args, "%d%o", &n, &o );
   if(!get_gdkobject(o, Color))
-    error("Argument 2 is not a GDK.Color object\n");
+    Pike_error("Argument 2 is not a GDK.Color object\n");
   n--;
   if(n > 30 || n<0)
-    error("Argument 1 is not between 1 and 31, inclusive\n");
+    Pike_error("Argument 1 is not between 1 and 31, inclusive\n");
   GTK_CALENDAR( THIS->obj )->marked_date_color[n] = *get_gdkobject(o, Color);
   RETURN_THIS();
 }

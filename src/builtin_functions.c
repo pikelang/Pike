@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.318 2000/12/01 08:09:44 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.319 2000/12/05 21:08:16 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -603,7 +603,7 @@ PMOD_EXPORT void f_has_index(INT32 args)
       
     case T_OBJECT:
       /* FIXME: If the object behaves like an array, it will throw an
-	 Pike_error for non-valid indices. Therefore it's not a good idea
+	 error for non-valid indices. Therefore it's not a good idea
 	 to use the index operator.
 
 	 Maybe we should use object->_has_index(index) provided that
@@ -1164,7 +1164,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
       }
 #ifdef PIKE_DEBUG
       if (j) {
-	fatal("string_to_unicode(): Indexing Pike_error: len:%ld, j:%ld.\n",
+	fatal("string_to_unicode(): Indexing error: len:%ld, j:%ld.\n",
 	      PTRDIFF_T_TO_LONG(len), PTRDIFF_T_TO_LONG(j));
       }
 #endif /* PIKE_DEBUG */
@@ -3461,7 +3461,7 @@ static struct array *longest_ordered_sequence(struct array *a)
     stack[pos] = i;
   }
 
-  /* FIXME(?) memory unfreed upon Pike_error here */
+  /* FIXME(?) memory unfreed upon error here */
   res = low_allocate_array(top, 0); 
   while (ltop != -1)
   {
@@ -3901,7 +3901,7 @@ static struct array *diff_longest_sequence(struct array *cmptbl, int blen)
 
    free(marks);
 
-   /* FIXME(?) memory unfreed upon Pike_error here. */
+   /* FIXME(?) memory unfreed upon error here. */
    a=low_allocate_array(top,0); 
    if (top)
    {
@@ -4075,7 +4075,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   while(dml) {
 #ifdef PIKE_DEBUG
     if (i >= sz) {
-      fatal("Consistency Pike_error in diff_dyn_longest_sequence()\n");
+      fatal("Consistency error in diff_dyn_longest_sequence()\n");
     }
 #endif /* PIKE_DEBUG */
 #ifdef DIFF_DEBUG
@@ -4089,7 +4089,7 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   }
 #ifdef PIKE_DEBUG
   if (i != sz) {
-    fatal("Consistency Pike_error in diff_dyn_longest_sequence()\n");
+    fatal("Consistency error in diff_dyn_longest_sequence()\n");
   }
 #endif /* PIKE_DEBUG */
 
@@ -4104,7 +4104,7 @@ static struct array* diff_build(struct array *a,
    struct array *ad,*bd;
    ptrdiff_t bi, ai, lbi, lai, i, eqstart;
 
-   /* FIXME(?) memory unfreed upon Pike_error here (and later) */
+   /* FIXME(?) memory unfreed upon error here (and later) */
    ad=low_allocate_array(0,32);
    bd=low_allocate_array(0,32);
    
@@ -4930,9 +4930,9 @@ PMOD_EXPORT void f_map(INT32 args)
                                 if arr->_sizeof && arr->`[] 
                                    array ret; ret[i]=arr[i];
 				   ret=map(ret,fun,@extra);
-                                Pike_error
+                                error
 
-     *          *               Pike_error (ie arr or fun = float or bad int )
+     *          *               error (ie arr or fun = float or bad int )
 
     */
 

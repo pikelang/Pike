@@ -61,7 +61,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.20 2000/12/01 08:10:21 hubbe Exp $");
+RCSID("$Id: postgres.c,v 1.21 2000/12/05 21:08:31 per Exp $");
 
 #define THIS ((struct pgres_object_data *) Pike_fp->current_storage)
 
@@ -205,7 +205,7 @@ static void f_create (INT32 args)
 	}
 	THIS->dblink=conn;
 	if (!THIS->dblink)
-		Pike_error ("Huh? Weirdness here! Internal Pike_error!\n");
+		Pike_error ("Huh? Weirdness here! Internal error!\n");
 	pop_n_elems(args);
 }
 
@@ -217,8 +217,8 @@ static void f_select_db (INT32 args)
 	check_all_args("Postgres->select_db",args,BIT_STRING,0);
 	
 	if (!THIS->dblink)
-		Pike_error ("Driver Pike_error. How can you possibly not be linked to a "
-				"database already?\n");
+	  Pike_error ("Driver error. How can you possibly not be linked to a "
+		      "database already?\n");
 	conn=THIS->dblink;
 	THREADS_ALLOW();
 	PQ_LOCK();
@@ -347,12 +347,12 @@ static void f_big_query(INT32 args)
 		default:
 			Pike_error ("Unimplemented server feature.\n");
 	}
-	Pike_error ("Internal Pike_error in postgresmodule.\n");
+	Pike_error ("Internal error in postgresmodule.\n");
 }
 
 static void f_error (INT32 args)
 {
-	check_all_args("Postgres->Pike_error",args,0);
+	check_all_args("Postgres->error",args,0);
 
 	if (THIS->last_error)
 		ref_push_string(THIS->last_error);
@@ -462,7 +462,7 @@ void pike_module_init (void)
   ADD_FUNCTION("big_query",f_big_query,tFunc(tStr,tOr(tInt,tObj)),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* function(void:string) */
-  ADD_FUNCTION("Pike_error",f_error,tFunc(tVoid,tStr),
+  ADD_FUNCTION("error",f_error,tFunc(tVoid,tStr),
 			OPT_EXTERNAL_DEPEND|OPT_RETURN);
 	/* function(void:string) */
   ADD_FUNCTION("host_info",f_host_info,tFunc(tVoid,tStr),

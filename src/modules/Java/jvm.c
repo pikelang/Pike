@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.30 2000/12/01 08:10:09 hubbe Exp $
+ * $Id: jvm.c,v 1.31 2000/12/05 21:08:28 per Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.30 2000/12/01 08:10:09 hubbe Exp $");
+RCSID("$Id: jvm.c,v 1.31 2000/12/05 21:08:28 per Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1578,7 +1578,7 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 }
 
 #else
-#Pike_error How did you get here?  It should never happen.
+#error How did you get here?  It should never happen.
 #endif /* HAVE_PPC_CPU */
 #endif /* HAVE_X86_CPU */
 #endif /* HAVE_SPARC_CPU */

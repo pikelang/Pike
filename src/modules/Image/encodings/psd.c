@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.26 2000/12/01 08:10:05 hubbe Exp $");
+RCSID("$Id: psd.c,v 1.27 2000/12/05 21:08:27 per Exp $");
 
 #include "image_machine.h"
 
@@ -355,7 +355,7 @@ static void f_decode_packbits_encoded(INT32 args)
   int compression = 0;
   struct buffer b, ob, d;
   if(sp[-args].type != T_STRING)
-    Pike_error("internal argument Pike_error");
+    Pike_error("Internal argument error");
 
 
   if(args == 5)

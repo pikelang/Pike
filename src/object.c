@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.154 2000/12/01 08:09:51 hubbe Exp $");
+RCSID("$Id: object.c,v 1.155 2000/12/05 21:08:19 per Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1551,7 +1551,7 @@ static void f_magic_index(INT32 args)
   get_all_args("::`->",args,"%S",&s);
 
   if(!(o=MAGIC_THIS->o))
-    Pike_error("Magic index Pike_error\n");
+    Pike_error("Magic index error\n");
 
   if(!o->prog)
     Pike_error("Magic index on destructed object!\n");
@@ -1586,7 +1586,7 @@ static void f_magic_set_index(INT32 args)
   get_all_args("::`->=",args,"%S%*",&s,&val);
 
   if(!(o=MAGIC_THIS->o))
-    Pike_error("Magic index Pike_error\n");
+    Pike_error("Magic index error\n");
 
   if(!o->prog)
     Pike_error("Magic index on destructed object!\n");

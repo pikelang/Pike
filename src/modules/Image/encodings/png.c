@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.40 2000/12/01 08:10:05 hubbe Exp $");
+RCSID("$Id: png.c,v 1.41 2000/12/05 21:08:27 per Exp $");
 
 #include "image_machine.h"
 
@@ -86,7 +86,7 @@ static INLINE INT32 call_gz_crc32(INT32 args)
    INT32 z;
    apply_svalue(&gz_crc32,args);
    if (sp[-1].type!=T_INT)
-      Pike_error("Image.PNG: internal Pike_error (not integer from Gz.crc32)\n");
+      Pike_error("Image.PNG: internal error (not integer from Gz.crc32)\n");
    z=sp[-1].u.integer;
    pop_stack();
    return z;
@@ -130,7 +130,7 @@ static void png_decompress(int style)
    struct object *o;
 
    if (style)
-      Pike_error("internal Pike_error: illegal decompression style %d\n",style);
+      Pike_error("Internal error: illegal decompression style %d\n",style);
    
    o=clone_object(gz_inflate,0);
    apply(o,"inflate",1);
@@ -142,7 +142,7 @@ static void png_compress(int style)
    struct object *o;
 
    if (style)
-      Pike_error("internal Pike_error: illegal decompression style %d\n",style);
+      Pike_error("Internal error: illegal decompression style %d\n",style);
    
    push_int(8);
    o=clone_object(gz_deflate,1);
@@ -374,7 +374,7 @@ static void image_png___decode(INT32 args)
 **!	This function ignores any checksum errors in the file.
 **!	A PNG of higher color resolution than the Image module
 **!	supports (8 bit) will lose that information in the conversion.
-**!	It throws an Pike_error if the image data is erroneous.
+**!	It throws an error if the image data is erroneous.
 */
 
 static struct pike_string *_png_unfilter(unsigned char *data,
@@ -521,7 +521,7 @@ static int _png_write_rgb(rgb_group *w1,
 			  struct pike_string *trns)
 {
    /* returns 1 if alpha channel, 0 if not */
-   /* w1, wa1 will be freed upon Pike_error */
+   /* w1, wa1 will be freed upon error */
 
    static rgb_group white={255,255,255};
    static rgb_group grey4[4]={{0,0,0},{85,85,85},{170,170,170},{255,255,255}};
@@ -684,7 +684,7 @@ static int _png_write_rgb(rgb_group *w1,
 	 {
 	    free(w1);
 	    free(wa1);
-	    Pike_error("Image.PNG->decode: Internal Pike_error (created palette isn't flat)\n");
+	    Pike_error("Image.PNG->decode: Internal error (created palette isn't flat)\n");
 	 }
 	 mz=ct->u.flat.numentries;
 	 if (mz==0)
@@ -1008,7 +1008,7 @@ static void img_png_decode(INT32 args,int header_only)
 	    ct=(struct neo_colortable*)get_storage(sp[-1].u.object,
 						   image_colortable_program);
 	    if (!ct)
-	       Pike_error("Image.PNG._decode: internal Pike_error: cloned colortable isn't colortable\n");
+	       Pike_error("Image.PNG._decode: internal error: cloned colortable isn't colortable\n");
 	    ref_push_string(param_palette);
 	    mapping_insert(m,sp-1,sp-2);
 	    pop_n_elems(2);
@@ -1634,7 +1634,7 @@ static void image_png_decode_header(INT32 args)
 **!	</pre>
 **!
 **! note
-**!	Throws upon Pike_error in data.
+**!	Throws upon error in data.
 */
 
 static void image_png_decode(INT32 args)

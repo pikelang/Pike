@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.18 2000/12/01 08:10:37 hubbe Exp $
+ * $Id: udp.c,v 1.19 2000/12/05 21:08:37 per Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.18 2000/12/01 08:10:37 hubbe Exp $");
+RCSID("$Id: udp.c,v 1.19 2000/12/05 21:08:37 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -360,7 +360,7 @@ void udp_read(INT32 args)
 #endif
        case EIO:
 	  set_read_callback( FD, 0, 0 );
-	  Pike_error("I/O Pike_error\n");
+	  Pike_error("I/O error\n");
        case ENOMEM:
 #ifdef ENOSR
        case ENOSR:

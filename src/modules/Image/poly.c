@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: poly.c,v 1.11 2000/12/01 08:10:02 hubbe Exp $
+**!	$Id: poly.c,v 1.12 2000/12/05 21:08:26 per Exp $
 **! class Poly
 **!
 */
@@ -18,7 +18,7 @@ another?
 
 #include "global.h"
 
-RCSID("$Id: poly.c,v 1.11 2000/12/01 08:10:02 hubbe Exp $");
+RCSID("$Id: poly.c,v 1.12 2000/12/05 21:08:26 per Exp $");
 
 #include "image_machine.h"
 
@@ -457,7 +457,7 @@ static void mend_crossed_lines(struct poly *p)
 	       v=vertex_find_or_insert(p,x,y);
 
 	       if (v-p->vertex<from) 
-		  Pike_error("internal Pike_error: unexpected v-p->vertex<from\n");
+		  Pike_error("internal error: unexpected v-p->vertex<from\n");
 
 	       v1=active[i]->down;
 	       v2=active[new]->down;
@@ -566,7 +566,7 @@ static void image_poly_create(INT32 args)
    if (THIS->nvertex || THIS->nline) 
       Pike_error("Poly: create called on initialised object\n");
 
-   /* this is to get the correct Pike_error message */
+   /* this is to get the correct error message */
    for (i=0; i<args; i++)
       if (sp[i-args].type!=T_ARRAY) 
 	 SIMPLE_BAD_ARG_ERROR("Poly",i+1,"array");
@@ -777,7 +777,7 @@ static void image_poly_cast(INT32 args)
 	 free(mark);
 
 	 if (ni!=THIS->nline) 
-	    Pike_error("Poly: internal Pike_error; ni!=nline\n");
+	    Pike_error("Poly: internal error; ni!=nline\n");
 
 	 f_aggregate(na);
 

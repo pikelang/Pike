@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.144 2000/12/01 20:24:00 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.145 2000/12/05 21:08:20 per Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -150,7 +150,7 @@ one_more_type:
   switch(EXTRACT_UCHAR(t++))
   {
     default:
-      fatal("Pike_error in type string %d.\n",EXTRACT_UCHAR(t-1));
+      fatal("Error in type string %d.\n",EXTRACT_UCHAR(t-1));
       /*NOTREACHED*/
       
       break;
@@ -1952,7 +1952,7 @@ static char *low_match_types2(char *a,char *b, int flags)
     break;
 
   default:
-    fatal("Pike_error in type string.\n");
+    fatal("Error in type string.\n");
   }
   return ret;
 }
@@ -2469,7 +2469,7 @@ static int low_pike_types_le2(char *a, char *b,
     break;
 
   default:
-    fatal("Pike_error in type string.\n");
+    fatal("Error in type string.\n");
   }
   return 1;
 }
@@ -3175,7 +3175,7 @@ struct pike_string *zzap_function_return(char *a, INT32 id)
       /* I wonder when this occurrs, but apparently it does... */
       return zzap_function_return(tFuncV(tVoid,tOr(tMix,tVoid),tObj), id);
   }
-/* This Pike_error is bogus /Hubbe
+/* This error is bogus /Hubbe
   fatal("zzap_function_return() called with unexpected value: %d\n",
 	EXTRACT_UCHAR(a));
 */

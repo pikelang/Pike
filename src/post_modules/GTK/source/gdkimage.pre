@@ -98,7 +98,7 @@ NAME_ARGS(widget,xoffset,yoffset,width,height);
     win = GTK_WIDGET(get_pgtkobject( o, pgtk_widget_program))->window;
 
   if(!win)
-    error("This is not a window, and this widget have a window\n");
+    Pike_error("This is not a window, and this widget have a window\n");
 
   if(THIS->obj)
     gdk_image_destroy( (void *)THIS->obj );
@@ -132,7 +132,7 @@ NAME_ARGS(image|xsize,void|ysize);
 				      gdk_visual_get_system(),
 				      x, y);
     if(!THIS->obj)
-      error("Failed to create gdkImage from size.\n");
+      Pike_error("Failed to create gdkImage from size.\n");
   }
   RETURN_THIS();
 }
@@ -145,7 +145,7 @@ NAME_ARGS(x,y);
 {
   INT_TYPE x, y;
   get_all_args("get_pixel", args, "%d%d", &x, &y);
-  if(!THIS->obj) error("No image.\n");
+  if(!THIS->obj) Pike_error("No image.\n");
   my_pop_n_elems(args);
   push_int( gdk_image_get_pixel( (void *)THIS->obj, x, y ) );
 }
@@ -158,7 +158,7 @@ NAME_ARGS(x,y,pixel);
 {
   INT_TYPE x, y, to;
   get_all_args("set_pixel", args, "%d%d%d", &x, &y, &to);
-  if(!THIS->obj) error("No image.\n");
+  if(!THIS->obj) Pike_error("No image.\n");
   gdk_image_put_pixel( (void *)THIS->obj, x, y, to );
   RETURN_THIS();
 }

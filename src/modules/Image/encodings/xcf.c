@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.34 2000/12/01 08:10:08 hubbe Exp $");
+RCSID("$Id: xcf.c,v 1.35 2000/12/05 21:08:28 per Exp $");
 
 #include "image_machine.h"
 
@@ -946,7 +946,7 @@ static unsigned char read_char( struct buffer *from )
 **! 	Decodes a XCF image to a single image object.
 **!
 **! note
-**!	Throws upon Pike_error in data, you will loose quite a lot of
+**!	Throws upon error in data, you will loose quite a lot of
 **!     information by doing this. See Image.XCF._decode and Image.XCF.__decode
 */
 
@@ -983,7 +983,7 @@ static unsigned char read_char( struct buffer *from )
 **!     ])</pre>
 **!
 **! note
-**!	Throws upon Pike_error in data. For more information, see Image.XCF.__decode
+**!	Throws upon error in data. For more information, see Image.XCF.__decode
 */
 
 /*

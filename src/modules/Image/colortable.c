@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.101 2000/12/01 08:09:59 hubbe Exp $ */
+/* $Id: colortable.c,v 1.102 2000/12/05 21:08:24 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.101 2000/12/01 08:09:59 hubbe Exp $
+**!	$Id: colortable.c,v 1.102 2000/12/05 21:08:24 per Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.101 2000/12/01 08:09:59 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.102 2000/12/05 21:08:24 per Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -3749,7 +3749,7 @@ void image_colortable_spacefactors(INT32 args)
 **! arg int|float downforward
 **! arg int|float down
 **! arg int|float downback
-**!	Set Pike_error correction directions. Default is 
+**!	Set error correction directions. Default is 
 **!	forward=7, downforward=1, down=5, downback=3.
 **! arg int|float factor
 **!     Error keeping factor. 
@@ -3861,9 +3861,9 @@ void image_colortable_nodither(INT32 args)
 **! method object randomgrey(int err)
 **!	Set random cube dithering.
 **!	Color choosen is the closest one to color in picture
-**!	plus (flat) random Pike_error; <tt>color±random(Pike_error)</tt>.
+**!	plus (flat) random error; <tt>color±random(error)</tt>.
 **!
-**!	The randomgrey method uses the same random Pike_error on red, green
+**!	The randomgrey method uses the same random error on red, green
 **!	and blue and the randomcube method has three random errors.
 **!
 **!	<table><tr valign=center>
@@ -3904,7 +3904,7 @@ void image_colortable_nodither(INT32 args)
 **! arg int g
 **! arg int b
 **! arg int err
-**!	The maximum Pike_error. Default is 32, or colorcube step.
+**!	The maximum error. Default is 32, or colorcube step.
 **!
 **! returns the called object
 **!
@@ -4103,7 +4103,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **! method object ordered(int r,int g,int b,int xsize,int ysize)
 **! method object ordered(int r,int g,int b,int xsize,int ysize,int x,int y)
 **! method object ordered(int r,int g,int b,int xsize,int ysize,int rx,int ry,int gx,int gy,int bx,int by)
-**!	Set ordered dithering, which gives a position-dependent Pike_error added
+**!	Set ordered dithering, which gives a position-dependent error added
 **!	to the pixel values. 
 **!
 **!	<table><tr valign=center>
@@ -4152,11 +4152,11 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **! arg int r
 **! arg int g
 **! arg int b
-**!	The maximum Pike_error. Default is 32, or colorcube steps (256/size).
+**!	The maximum error. Default is 32, or colorcube steps (256/size).
 **!
 **! arg int xsize
 **! arg int ysize
-**!	Size of Pike_error matrix. Default is 8×8.
+**!	Size of error matrix. Default is 8×8.
 **!	Only values which factors to multiples of 2 and 3 are
 **!	possible to choose (2,3,4,6,8,12,...).
 **!
@@ -4168,7 +4168,7 @@ static int *ordered_make_diff(int *errors,int sz,int err)
 **! arg int gy
 **! arg int bx
 **! arg int by
-**!	Offset for the Pike_error matrix. <tt>x</tt> and <tt>y</tt> is for
+**!	Offset for the error matrix. <tt>x</tt> and <tt>y</tt> is for
 **!	both red, green and blue values, the other is individual.
 **!
 **! returns the called object

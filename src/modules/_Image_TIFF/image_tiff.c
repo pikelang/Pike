@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.22 2000/12/01 08:10:32 hubbe Exp $");
+RCSID("$Id: image_tiff.c,v 1.23 2000/12/05 21:08:34 per Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -82,7 +82,7 @@ static void increase_buffer_size( struct buffer * buffer )
   if(!buffer->extendable)
     Pike_error("Extending non-extendable buffer!\n");
   if(buffer->len > 1024*1024*400)
-    Pike_error("Too large buffer (temprary Pike_error..)\n");
+    Pike_error("Too large buffer (temprary error..)\n");
   if(!buffer->len) buffer->len = INITIAL_WRITE_BUFFER_SIZE;
 
   /* FIXME: According to DMALLOC this leaks.
@@ -301,7 +301,7 @@ void low_image_tiff_encode( struct buffer *buf,
     if(TIFFWriteScanline(tif, buffer, y, 0) < 0)
     {
       free(buffer);
-      Pike_error("TIFFWriteScanline returned Pike_error on line %d\n", y );
+      Pike_error("TIFFWriteScanline returned error on line %d\n", y );
     }
   }
   free(buffer);
@@ -483,7 +483,7 @@ void low_image_tiff_decode( struct buffer *buf,
          push_text( "halftone or dithered scan" );
          break;
        case THRESHHOLD_ERRORDIFFUSE:
-         push_text( "Pike_error diffused" );
+         push_text( "error diffused" );
          break;
        default:
          push_text( "unknown" );
@@ -628,7 +628,7 @@ static void image_tiff_decode( INT32 args )
 **! 	Decodes a TIFF image. 
 **!
 **! note
-**!	Throws upon Pike_error in data.
+**!	Throws upon error in data.
 */
 
 /*
@@ -637,7 +637,7 @@ static void image_tiff_decode( INT32 args )
 **!     image and alpha. 
 **!
 **! note
-**!	Throws upon Pike_error in data.
+**!	Throws upon error in data.
 */
 static void image_tiff__decode( INT32 args )
 {

@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.204 2000/12/01 08:10:35 hubbe Exp $");
+RCSID("$Id: file.c,v 1.205 2000/12/05 21:08:36 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -261,7 +261,7 @@ static void just_close_fd(void)
 	  Pike_error("Failed to close file: %s\n", Pike_sp[-1].u.string->str);
 
 	case EBADF:
-	  Pike_error("Internal Pike_error: Closing a non-active file descriptor %d.\n",fd);
+	  Pike_error("Internal error: Closing a non-active file descriptor %d.\n",fd);
 #ifdef SOLARIS
        // it's actually OK. This is a bug in Solaris 8.
        case EAGAIN:

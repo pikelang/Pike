@@ -31,7 +31,7 @@ FUNCTION(_index, "function(string:mixed)");
 {
   struct pike_string *index;
   GdkEvent *e = (GdkEvent *)THIS->obj;
-  if(!e) error("No event\n");
+  if(!e) Pike_error("No event\n");
   get_all_args( "`[]", args, "%S", &index );
   if( !s_type ) define_gdkeventstrings();
   switch( e->type )
@@ -232,11 +232,11 @@ FUNCTION(cast, "function(string:mixed)");
   char *a;
   GdkEvent *e = (GdkEvent *)THIS->obj;
 
-  if(!e) error("No event\n");
+  if(!e) Pike_error("No event\n");
 
   if( !s_type ) define_gdkeventstrings();
   if( !args  || Pike_sp[-args].u.string != s_mapping )
-    error("Can only cast to mapping\n");
+    Pike_error("Can only cast to mapping\n");
   pop_n_elems( args );
 
   switch(e->type)

@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.185 2000/12/01 08:09:54 hubbe Exp $");
+RCSID("$Id: signal_handler.c,v 1.186 2000/12/05 21:08:22 per Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1102,7 +1102,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 	  break;
 
 	default:
-	  fprintf(stderr,"Wait thread: waitpid returned Pike_error: %d\n",errno);
+	  fprintf(stderr,"Wait thread: waitpid returned error: %d\n",errno);
       }
     }
   }
@@ -2507,7 +2507,7 @@ void f_create_process(INT32 args)
 
 
 #ifdef USE_SIGCHILD
-      /* FIXME: Can anything of the following throw an Pike_error? */
+      /* FIXME: Can anything of the following throw an error? */
       if(!signal_evaluator_callback)
       {
 	signal_evaluator_callback=add_to_callback(&evaluator_callbacks,
@@ -2545,7 +2545,7 @@ void f_create_process(INT32 args)
 	while(close(control_pipe[0]) < 0 && errno==EINTR);
 	gnapp=1;
       } else {
-        /* Wait for exec or Pike_error */
+        /* Wait for exec or error */
         while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	  ;
         /* Paranoia in case close() sets errno. */
@@ -2569,7 +2569,7 @@ void f_create_process(INT32 args)
 	      e ,olderrno);
       }
 
-      /* Wait for exec or Pike_error */
+      /* Wait for exec or error */
       while (((e = read(control_pipe[0], buf, 3)) < 0) && (errno == EINTR))
 	;
       /* Paranoia in case close() sets errno. */
@@ -2796,7 +2796,7 @@ void f_create_process(INT32 args)
       if (setsid_request)
 	 if (setsid()==-1)
 	    PROCERROR(PROCE_SETSID,0);
-/* fixme: else... what? Pike_error or ignore? */
+/* fixme: else... what? error or ignore? */
 #endif
 
 #ifdef HAVE_SETGID

@@ -1,17 +1,17 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.23 2000/12/01 08:09:59 hubbe Exp $
+**!	$Id: colortable.h,v 1.24 2000/12/05 21:08:25 per Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
-#Pike_error colortable.h included twice
+#error colortable.h included twice
 #endif
 
 #define PIKE_IMAGE_COLORTABLE_H
 
 #ifndef PIKE_IMAGE_IMAGE_H
-#Pike_error colortable.h needs image.h
+#error colortable.h needs image.h
 #endif /* !PIKE_IMAGE_IMAGE_H */
 
 

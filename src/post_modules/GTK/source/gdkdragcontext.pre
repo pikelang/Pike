@@ -103,7 +103,7 @@ NAME_ARGS(image,mask,hot_x,hot_y);
   struct object *p=NULL, *m=NULL;
   int x, y;
   if(args != 4)
-    error("Too few arguments to drag_set_icon_pixmap\n");
+    Pike_error("Too few arguments to drag_set_icon_pixmap\n");
   if(Pike_sp[-args].type == PIKE_T_OBJECT)
     p = Pike_sp[-args].u.object;
   if(Pike_sp[-args+1].type == PIKE_T_OBJECT)

@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.37 2000/12/01 08:10:33 hubbe Exp $
+ * $Id: image_ttf.c,v 1.38 2000/12/05 21:08:34 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.37 2000/12/01 08:10:33 hubbe Exp $");
+RCSID("$Id: image_ttf.c,v 1.38 2000/12/05 21:08:34 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -194,7 +194,7 @@ void my_tt_error(char *where,char *extra,int err)
       errc="TT_Err_Raster_Invalid_Value";
    else if (err==TT_Err_Raster_Not_Initialized)
       errc="TT_Err_Raster_Not_Initialized";
-   Pike_error("%s: %sFreeType Pike_error 0x%03x (%s)\n",
+   Pike_error("%s: %sFreeType error 0x%03x (%s)\n",
 	 where,extra,err,errc);
 }
 
@@ -552,7 +552,7 @@ static void image_ttf_face_names(INT32 args)
    image_ttf_face__names(args);
 
    if (sp[-1].type!=T_ARRAY)
-      Pike_error("Image.TTF.Face->names(): internal Pike_error, wierd _names()\n");
+      Pike_error("Image.TTF.Face->names(): internal error, wierd _names()\n");
 
    a=sp[-1].u.array;
 

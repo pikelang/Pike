@@ -61,7 +61,7 @@ NAME_ARGS(type);
     push_int( r->height );
     f_aggregate( 4 );
   } else {
-    error("Cannot cast to %s.\n", type );
+    Pike_error("Cannot cast to %s.\n", type );
   }
 }
 

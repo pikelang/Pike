@@ -50,7 +50,7 @@ static int eval_instruction(unsigned char *pc)
       Pike_sp[3].type=99;
       
       if(Pike_sp<Pike_interpreter.evaluator_stack || Pike_mark_sp < Pike_interpreter.mark_stack || Pike_fp->locals>Pike_sp)
-	fatal("Stack Pike_error (generic) Pike_sp=%p/%p Pike_mark_sp=%p/%p locals=%p.\n",
+	fatal("Stack error (generic) sp=%p/%p mark_sp=%p/%p locals=%p.\n",
 	      Pike_sp,
 	      Pike_interpreter.evaluator_stack,
 	      Pike_mark_sp,
@@ -58,24 +58,24 @@ static int eval_instruction(unsigned char *pc)
 	      Pike_fp->locals);
       
       if(Pike_mark_sp > Pike_interpreter.mark_stack+Pike_stack_size)
-	fatal("Mark Stack Pike_error (overflow).\n");
+	fatal("Mark Stack error (overflow).\n");
 
 
       if(Pike_mark_sp < Pike_interpreter.mark_stack)
-	fatal("Mark Stack Pike_error (underflow).\n");
+	fatal("Mark Stack error (underflow).\n");
 
       if(Pike_sp > Pike_interpreter.evaluator_stack+Pike_stack_size)
-	fatal("stack Pike_error (overflow).\n");
+	fatal("stack error (overflow).\n");
       
       if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
 	 Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
-	fatal("Stack Pike_error (stupid!).\n");
+	fatal("Stack error (stupid!).\n");
 
       if(Pike_interpreter.recoveries && Pike_sp-Pike_interpreter.evaluator_stack < Pike_interpreter.recoveries->stack_pointer)
-	fatal("Stack Pike_error (underflow).\n");
+	fatal("Stack error (underflow).\n");
 
       if(Pike_mark_sp > Pike_interpreter.mark_stack && Pike_mark_sp[-1] > Pike_sp)
-	fatal("Stack Pike_error (underflow?)\n");
+	fatal("Stack error (underflow?)\n");
       
       if(d_flag > 9) do_debug();
 

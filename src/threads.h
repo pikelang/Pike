@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.107 2000/12/01 08:09:56 hubbe Exp $
+ * $Id: threads.h,v 1.108 2000/12/05 21:08:23 per Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -167,7 +167,7 @@ extern pthread_attr_t small_pattr;
 #define co_broadcast(X) pthread_cond_broadcast(X)
 #define co_destroy(X) pthread_cond_destroy(X)
 #else
-#Pike_error No way to make cond-vars
+#error No way to make cond-vars
 #endif /* HAVE_PTHREAD_COND_INIT */
 
 #endif /* POSIX_THREADS */
@@ -538,7 +538,7 @@ extern int Pike_in_gc;
                thread_for_id(th_self()),Pike_interpreter.thread_id); \
        } \
        if ((Pike_in_gc > 50) && (Pike_in_gc < 300)) { \
-         fprintf(stderr, __FILE__ ":" DEFINETOSTR(__LINE__) ": Fatal Pike_error:\n"); \
+         fprintf(stderr, __FILE__ ":" DEFINETOSTR(__LINE__) ": Fatal error:\n"); \
 	 debug_fatal("Threads allowed during garbage collection (%d).\n", \
                      Pike_in_gc); \
        } \

@@ -39,7 +39,7 @@ NAME_ARGS(message, messagebox_type, buttons);
     if( Pike_sp[-args+i].type != PIKE_T_STRING )
     {
       free( buttons );
-      error( "Bad argument %d, should be string\n", i );
+      Pike_error( "Bad argument %d, should be string\n", i );
     }
     else
       buttons[i-2] = Pike_sp[-args+i].u.string->str;

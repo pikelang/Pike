@@ -60,7 +60,7 @@ void INAME(INT32 args)
 
       if ((needle->xsize>haystack->xsize)||
 	  (needle->ysize>haystack->ysize))
-	Pike_error("Haystack must be bigger than needle Pike_error in image->"NAME"()\n");
+	Pike_error("Haystack must be bigger than needle, error in image->"NAME"()\n");
       needlei=needle->img;
       haystacki=haystack->img;
 
@@ -75,7 +75,7 @@ void INAME(INT32 args)
 	  else
 	    if ((haystack->xsize!=haystack_cert->xsize)||
 		(haystack->ysize!=haystack_cert->ysize))
-	      Pike_error("Argument 3 must be the same size as haystack Pike_error in image->"NAME"()\n");
+	      Pike_error("Argument 3 must be the same size as haystack error in image->"NAME"()\n");
 	  
 	  if ((sp[3-args].type==T_INT))
 	    {
@@ -92,7 +92,7 @@ void INAME(INT32 args)
 	    {
 	      if ((needle_cert->xsize!=needle->xsize)||
 		  (needle_cert->ysize!=needle->ysize))
-		Pike_error("Needle_cert must be the same size as needle Pike_error in image->"NAME"()\n");
+		Pike_error("Needle_cert must be the same size as needle error in image->"NAME"()\n");
 	      type=2;
 	    }
 	  if (args>=6)
@@ -111,7 +111,7 @@ void INAME(INT32 args)
 	      else
 		if ((haystack->xsize!=haystack_avoid->xsize)||
 		    (haystack->ysize!=haystack_avoid->ysize))
-		  Pike_error("Haystack_avoid must be the same size as haystack Pike_error in image->"NAME"()\n");
+		  Pike_error("Haystack_avoid must be the same size as haystack error in image->"NAME"()\n");
 	    }
 	}
       push_int(this->xsize);

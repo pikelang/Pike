@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.25 2000/12/01 08:10:06 hubbe Exp $
+ * $Id: tga.c,v 1.26 2000/12/05 21:08:27 per Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.25 2000/12/01 08:10:06 hubbe Exp $");
+RCSID("$Id: tga.c,v 1.26 2000/12/05 21:08:27 per Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -596,7 +596,7 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
     if (std_fread (cmap + (index * pelbytes), pelbytes, length, fp) != length)
     {
       free(cmap);
-      Pike_error ("TGA: Pike_error reading colormap\n");
+      Pike_error ("TGA: error reading colormap\n");
     }
 
     /* Now pretend as if we only have 8 bpp. */
@@ -808,12 +808,12 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   if (std_fwrite((void *)&hdr, sizeof (hdr), 1, fp) != 1)
   {
     free(obuf.str);
-    Pike_error("Internal Pike_error: Out of space in buffer.\n");
+    Pike_error("Internal error: Out of space in buffer.\n");
   }
   if (std_fwrite ((void *)SAVE_ID_STRING, hdr.idLength, 1, fp) != 1)
   {
     free(obuf.str);
-    Pike_error("Internal Pike_error: Out of space in buffer.\n");
+    Pike_error("Internal error: Out of space in buffer.\n");
   }
 
   /* Allocate a new set of pixels. */
@@ -866,7 +866,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
     {
       free(data);
       free(obuf.str);
-      Pike_error("Internal Pike_error: Out of space in buffer.\n");
+      Pike_error("Internal error: Out of space in buffer.\n");
     }
     free(data);
   }
@@ -887,7 +887,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
 **!           ([ "image":img_object, "alpha":alpha_channel ])
 **!
 **! note
-**!	Throws upon Pike_error in data.
+**!	Throws upon error in data.
 */
 void image_tga__decode( INT32 args )
 {
@@ -919,7 +919,7 @@ void image_tga__decode( INT32 args )
 **! 	Decodes a Targa image.
 **!
 **! note
-**!	Throws upon Pike_error in data.
+**!	Throws upon error in data.
 */
 void image_tga_decode( INT32 args )
 {

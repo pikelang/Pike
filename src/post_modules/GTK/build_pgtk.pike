@@ -205,12 +205,17 @@ int data_offset( string what )
   return ocache[what]=strlen(data)-strlen(what);
 }
 
+string GS( string what, int|void nul )
+{
+  return sprintf("(char*)__pgtk_string_data+%d /* %O */",
+		 data_offset(what+(nul?"\0":"")),what);
+}
+
 string emit_function_def( string fun, string cfun, string type, int opt )
 {
   type = function_type( type );
-  emit_nl( "    quick_add_function((char*)_data+"+data_offset(fun)+","+
-           strlen(fun)+","+cfun+",(char*)_data+"+data_offset( type )+
-           ","+strlen(type)+","+(fun=="create"?"ID_STATIC":"0")+","
+  emit_nl( "    quick_add_function("+GS(fun)+","+strlen(fun)+","+cfun+","+
+	   GS(type)+","+strlen(type)+","+(fun=="create"?"ID_STATIC":"0")+","
            "OPT_SIDE_EFFECT|OPT_EXTERNAL_DEPEND);\n");
 }
 
@@ -326,7 +331,7 @@ int main(int argc, array argv)
 void do_default_sprintf( int args, int offset, int len )
 {
   my_pop_n_elems( args );
-  push_string( make_shared_binary_string( _data+offset, len ) );
+  push_string( make_shared_binary_string( __pgtk_string_data+offset, len ) );
 }
 "; 
   string signal_doc, current_require, current_define;
@@ -747,8 +752,6 @@ void do_default_sprintf( int args, int offset, int len )
         continue;
       }
 
-//       werror(rest+" "+fn+" ( "+types+" )\n");
-
       if( rest == "void" )
         rest = "";
 
@@ -819,7 +822,7 @@ void do_default_sprintf( int args, int offset, int len )
 		    "    if(_arg"+na+"->item[_i].type != PIKE_T_STRING)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
-		    "      error(\"Wrong type array argument.\\n\");\n"
+		    "      Pike_error("+GS("Wrong type array argument.\n",1)+");\n"
 		    "    }\n"
 		    "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.string->str;\n"
 		    "  }\n");
@@ -845,7 +848,7 @@ void do_default_sprintf( int args, int offset, int len )
 		    "    if(_arg"+na+"->item[_i].type != PIKE_T_FLOAT)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
-		    "      error(\"Wrong type array argument. Expected float\\n\");\n"
+		    "      Pike_error("+GS("Wrong type array argument.\n",1)+");\n"
 		    "    }\n"
 		    "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.float_number;\n"
 		    "  }\n");
@@ -869,7 +872,7 @@ void do_default_sprintf( int args, int offset, int len )
 		    "    if(_arg"+na+"->item[_i].type != PIKE_T_FLOAT)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
-		    "      error(\"Wrong type array argument. Expected float\\n\");\n"
+		    "      error("+GS("Wrong type array argument.\n",1)+");\n"
 		    "    }\n"
 		    "    arg"+na+"[_i] = (gdouble)_arg"+na+"->item[_i].u.float_number;\n"
 		    "  }\n");
@@ -892,7 +895,7 @@ void do_default_sprintf( int args, int offset, int len )
 		    "    if(_arg"+na+"->item[_i].type != PIKE_T_INT)\n"
 		    "    {\n"
 		    "      free(arg"+na+");\n"
-		    "      error(\"Wrong type array argument. Expected int\\n\");\n"
+		    "      Pike_error("+GS("Wrong type array argument.\n")+");\n"
 		    "    }\n"
 		    "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.integer;\n"
 		    "  }\n"
@@ -946,13 +949,13 @@ void do_default_sprintf( int args, int offset, int len )
 	      post += ("  if (_arg"+na+"->size != "+
 		       (t=replace(t,({"{","}"}),({"(",")"})))+
 		       ") \n"
-		       "    error(\"argument "+na+" (array(string)) has wrong size (columns=%d, elements=%d)\\n\",\n"
-		       "          "+t+",_arg"+na+"->size);\n"
+		       "    Pike_error("+GS("argument %d (array(string)) has wrong size (columns=%d, elements=%d)\n",1)
+		       +","+na+",\n          "+t+",_arg"+na+"->size);\n"
 		       "  arg"+na+"=alloca(sizeof(char *)* (_arg"+na+"->size));\n"
 		       "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		       "  {\n"
 		       "    if(_arg"+na+"->item[_i].type != PIKE_T_STRING)\n"
-		       "      error(\"Wrong type array argument.\\n\");\n"
+		       "      Pike_error("+GS("Wrong type array argument.\n",1)+");\n"
 		       "    arg"+na+"[_i] = _arg"+na+"->item[_i].u.string->str;\n"
 		       "  }\n");
 	      break;
@@ -982,8 +985,9 @@ void do_default_sprintf( int args, int offset, int len )
              post+=(" arg"+na+" = get_gdkobject( _arg"+na+", "+t+");\n");
              if(!opt)
              {
-               post +=("  if(!arg"+na+") error(\"Argument "+
-                       na+": Wanted GDK object of type "+t+".\\n\");\n");
+               post +=("  if(!arg"+na+") Pike_error("+
+		       GS("Argument %d: Wanted GDK object of type %s\n",1)+
+		       ","+na+","+GS(t,1)+");\n");
               args += "  struct object *_arg"+na+";\n";
               args += "  Gdk"+t+" *arg"+na+";\n";
              } else {
@@ -1007,8 +1011,9 @@ void do_default_sprintf( int args, int offset, int len )
              if(opt)
                post += " else\n    arg"+na+" = NULL;\n";
              else
-               post += ("  if(!arg"+na+") error(\"Argument "+
-                        na+": Wanted GTK object of type "+t+".\\n\");\n");
+               post += ("  if(!arg"+na+") Pike_error("+
+			GS("Argument %d: Wanted GTK object of type %s\n",1)
+			+","+na+","+GS(t,1)+");\n");
            }
            break;
 	}
@@ -1127,8 +1132,7 @@ void do_default_sprintf( int args, int offset, int len )
 	fn = line;
       constants_name += ({ fn });
       if( current_define ) constants += ( "#ifdef "+current_define+"\n");
-      constants += ("  add_string_constant((char*)_data+"+
-                    data_offset(fn+"\0")+", "+line+", 0);\n");
+      constants += ("  add_string_constant("+GS(fn,1)+","+GS(line,1)+",0);\n");
       if( current_define ) constants += ( "#endif\n");
     }
     else if(sscanf(line, "constant int %s;", line)==1 ||
@@ -1139,8 +1143,7 @@ void do_default_sprintf( int args, int offset, int len )
 	fn = line;
       constants_name += ({ fn });
       if( current_define ) constants += ( "#ifdef "+current_define+"\n");
-      constants += ("  add_integer_constant((char*)_data+"+
-                    data_offset(fn+"\0")+", "+line+", 0);\n");
+      constants += ("  add_integer_constant("+GS(fn,1)+", "+line+", 0);\n");
       if( current_define ) constants += ( "#endif\n");
     }
     else if(sscanf(line, "ARGS(%s);", line)==1)
@@ -1190,10 +1193,8 @@ void do_default_sprintf( int args, int offset, int len )
   emit_nl("static void _2()\n{\n");
   _inits += ({ "_2" });
   foreach(sort(indices(`+(@values(signals)))), string s)
-    emit_nl("  add_string_constant( (char*)_data+"+data_offset("s_"+
-                                                               replace(s,"-","_")
-                                                               +"\0")+
-            ", (char*)_data+"+data_offset(s+"\0")+", 0 );\n");
+    emit_nl("  add_string_constant( "+GS("s_"+replace(s,"-","_"),1)+", "
+	    +GS(s,1)+", 0 );\n");
 
   emit_program_block( struct->global, "global" );
   emit_nl("}\n");
@@ -1350,8 +1351,7 @@ void do_default_sprintf( int args, int offset, int len )
     emit( "  {\n" );
     emit_program_block( q, w );
     emit( "  }\n" );
-    emit_nl("  add_program_constant((char*)_data+"+
-            data_offset(String.capitalize(w)+"\0")+",\n"
+    emit_nl("  add_program_constant("+GS(String.capitalize(w),1)+",\n"
 	    "                       (pgtk_"+w+"_program = end_program()), 0);"
 	    "\n");
     pre += "/*ext*/ struct program *pgtk_"+w+"_program;\n";
@@ -1407,7 +1407,7 @@ void do_default_sprintf( int args, int offset, int len )
     string q =replace(Stdio.read_bytes(dir+"/pgtk.c.head"),
                       "PROTOTYPES",
                       replace(pre, "/*ext*/ ", "")+
-                      "\nstatic const char _data[] =\n"+
+                      "\nconst char __pgtk_string_data[] =\n"+
                       make_c_string( data )+";");
     pre = replace(pre, "/*ext*/", "extern");
     if(Stdio.read_bytes("prototypes.h") != pre )

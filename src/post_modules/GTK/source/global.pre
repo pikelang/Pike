@@ -114,7 +114,7 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
   INT_TYPE argc, flags=0;
   struct array *a;
   if( pigtk_is_setup )
-    error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
+    Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
   gnome_is_setup = 1;
   pigtk_is_setup = 1;
   if( args == 4 )
@@ -127,8 +127,8 @@ NAME_ARGS(app_id, app_version, argv, corba_init_flags);
     if(a->item[argc].type != PIKE_T_STRING)
     {
       free(data);
-      error("Index %d in the array given as argument to setup_gtk "
-            "is not a string.\n", argc);
+      Pike_error("Index %d in the array given as argument to setup_gtk "
+		 "is not a string.\n", argc);
     }
     data[argc] = a->item[argc].u.string->str;
   }
@@ -227,7 +227,7 @@ NAME_ARGS(argv, do_not_parse_rc);
 #endif /* ! HAVE_SIGACTION */
 
   if( pigtk_is_setup )
-    error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
+    Pike_error( "You should only call GTK.setup_gtk() or Gnome.init() once\n");
   pigtk_is_setup = 1;
 
   if(args)
@@ -241,8 +241,8 @@ NAME_ARGS(argv, do_not_parse_rc);
       if(a->item[argc].type != PIKE_T_STRING)
       {
         free(data);
-        error("Index %d in the array given as argument to setup_gtk "
-              "is not a string.\n", argc);
+        Pike_error("Index %d in the array given as argument to setup_gtk "
+		   "is not a string.\n", argc);
       }
       data[argc] = a->item[argc].u.string->str;
     }
@@ -297,7 +297,7 @@ NAME_ARGS(argv, do_not_parse_rc);
     Display *d = GDK_DISPLAY();
     int fd;
     if(!d) {
-      error("Failed to get GDK display.\n");
+      Pike_error("Failed to get GDK display.\n");
       free(data);
     }
     fd = ConnectionNumber( d );

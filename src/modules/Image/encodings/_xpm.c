@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.15 2000/12/01 08:10:03 hubbe Exp $");
+RCSID("$Id: _xpm.c,v 1.16 2000/12/05 21:08:26 per Exp $");
 
 #include "image_machine.h"
 
@@ -103,10 +103,10 @@ static rgba_group decode_color( struct buffer *s )
     push_text("Image");
     push_int(0);
     SAFE_APPLY_MASTER( "resolv", 2 );
-    if(IS_ZERO(sp-1)) Pike_error("Internal Pike_error: No Image module!\n");
+    if(IS_ZERO(sp-1)) Pike_error("Internal error: No Image module!\n");
     push_text("Color");
     f_index(2);
-    if(IS_ZERO(sp-1)) Pike_error("Internal Pike_error: No Image[] function!\n");
+    if(IS_ZERO(sp-1)) Pike_error("Internal error: No Image[] function!\n");
     _parse_color = sp[-1];
     parse_color = &_parse_color;
     sp--;

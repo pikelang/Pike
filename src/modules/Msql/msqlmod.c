@@ -2,7 +2,7 @@
  * This code is (C) Francesco Chemolli, 1997.
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.15 2000/12/01 08:10:12 hubbe Exp $
+ * $Id: msqlmod.c,v 1.16 2000/12/05 21:08:29 per Exp $
  *
  * This version is intended for Pike/0.5 and later.
  * It won't compile under older versions of the Pike interpreter.
@@ -35,7 +35,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.15 2000/12/01 08:10:12 hubbe Exp $");
+RCSID("$Id: msqlmod.c,v 1.16 2000/12/05 21:08:29 per Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -514,7 +514,7 @@ static void do_host_info (INT32 args)
 /* string Pike_error() */
 static void do_error (INT32 args)
 {
-	check_all_args("Msql->Pike_error",args,0);
+	check_all_args("Msql->error",args,0);
 	pop_n_elems(args);
 	if (THIS->error_msg)
 		ref_push_string(THIS->error_msg);
@@ -751,9 +751,9 @@ void pike_module_init(void)
 	  database */
 
 	/* function(void:void|string) */
-  ADD_FUNCTION("Pike_error",do_error,tFunc(tVoid,tOr(tVoid,tStr)),
+  ADD_FUNCTION("error",do_error,tFunc(tVoid,tOr(tVoid,tStr)),
 		OPT_RETURN|OPT_EXTERNAL_DEPEND);
-	/* return the last Pike_error reported by the server. */
+	/* return the last error reported by the server. */
 
 	/* function(void:string) */
   ADD_FUNCTION("server_info", do_info,tFunc(tVoid,tStr),

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.183 2000/12/03 17:20:19 mirar Exp $ */
+/* $Id: image.c,v 1.184 2000/12/05 21:08:25 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.183 2000/12/03 17:20:19 mirar Exp $
+**!	$Id: image.c,v 1.184 2000/12/05 21:08:25 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.183 2000/12/03 17:20:19 mirar Exp $");
+RCSID("$Id: image.c,v 1.184 2000/12/05 21:08:25 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3693,9 +3693,9 @@ static void image_apply_curve_2( struct object *o,
   THREADS_ALLOW();
   switch( channel ) 
   {
-   case 0: for( ; i>0; i-- ) d->r = curve[(d++)->r]; break;
-   case 1: for( ; i>0; i-- ) d->g = curve[(d++)->g]; break;
-   case 2: for( ; i>0; i-- ) d->b = curve[(d++)->b]; break;
+   case 0: for( ; i>0; i--,d++ ) d->r = curve[d->r]; break;
+   case 1: for( ; i>0; i--,d++ ) d->g = curve[d->g]; break;
+   case 2: for( ; i>0; i--,d++ ) d->b = curve[d->b]; break;
   }
   THREADS_DISALLOW();
 

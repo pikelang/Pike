@@ -96,8 +96,8 @@ NAME_ARGS(signal_name,callback_function,callback_arg);
   if(!signal_id)
   {
     free(b);
-    error("Signal \"%s\" not defined in the `%s' class ancestry\n",
-	  a, gtk_type_name (GTK_OBJECT_TYPE(THIS->obj)));
+    Pike_error("Signal \"%s\" not defined in the `%s' class ancestry\n",
+	       a, gtk_type_name (GTK_OBJECT_TYPE(THIS->obj)));
   }
   id = gtk_signal_connect_full(THIS->obj, a, 0,
                                (void *)pgtk_signal_func_wrapper, b,

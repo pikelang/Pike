@@ -59,7 +59,7 @@ void pgtk_index_stack( char *what )
   f_index(2);
 #ifdef DEBUG
   if (Pike_sp[-1].type==PIKE_T_INT)
-    Pike_error("Internal indexing Pike_error.\n");
+    Pike_error("Internal indexing error.\n");
 #endif
 }
 

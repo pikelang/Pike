@@ -67,7 +67,7 @@ NAME_ARGS(rectangle);
   get_all_args( "rect_in", args, "%o", &o );
   if(!(r = get_gdkobject( o, Rectangle )))
   {
-    error("Bad argument 1 to GDK.rect_in( GDK.Rectangle r )\n");
+    Pike_error("Bad argument 1 to GDK.rect_in( GDK.Rectangle r )\n");
   } else {
     int b = gdk_region_rect_in((GdkRegion *)THIS->obj,  r);
     my_pop_n_elems(args);
@@ -119,7 +119,7 @@ NAME_ARGS(with);
   else if( (v=get_gdkobject(o, Region )) )
     r = gdk_regions_union( (GdkRegion *)THIS->obj, v);
   else
-    error("Bad argument to union: Not Region or Rectangle\n");
+    Pike_error("Bad argument to union: Not Region or Rectangle\n");
   return_gdkregion( args, r );
   return;
 }
@@ -138,7 +138,7 @@ NAME_ARGS(with);
   if( (v=get_gdkobject(o, Region )) ) {
     r = gdk_regions_union( (GdkRegion *)THIS->obj, v);
   } else {
-    error("Bad argument to intersect: Not a GDK.Region object\n");
+    Pike_error("Bad argument to intersect: Not a GDK.Region object\n");
   }
   return_gdkregion( args, r );
   return;
@@ -158,7 +158,7 @@ NAME_ARGS(with);
   if( (v=get_gdkobject(o, Region )) ) {
     r = gdk_regions_subtract( (GdkRegion *)THIS->obj, v);
   } else {
-    error("Bad argument to subtract: Not a GDK.Region object\n");
+    Pike_error("Bad argument to subtract: Not a GDK.Region object\n");
   }
   return_gdkregion( args, r );
   return;
@@ -178,7 +178,7 @@ NAME_ARGS(with);
   if( (v=get_gdkobject(o, Region )) ) {
     r = gdk_regions_xor( (GdkRegion *)THIS->obj, v);
   } else {
-    error("Bad argument to xor: Not a GDK.Region object\n");
+    Pike_error("Bad argument to xor: Not a GDK.Region object\n");
   }
   return_gdkregion( args, r );
   return;

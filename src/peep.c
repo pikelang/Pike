@@ -15,7 +15,7 @@
 #include "bignum.h"
 #include "opcodes.h"
 
-RCSID("$Id: peep.c,v 1.44 2000/12/02 14:24:45 grubba Exp $");
+RCSID("$Id: peep.c,v 1.45 2000/12/05 21:08:20 per Exp $");
 
 static void asm_opt(void);
 
@@ -411,7 +411,7 @@ void assemble(void)
     {
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
-	fatal("Hyperspace Pike_error: unknown jump point %ld at %d (pc=%x).\n",
+	fatal("Hyperspace error: unknown jump point %ld at %d (pc=%x).\n",
 	      PTRDIFF_T_TO_LONG(e), labels[e], jumps[e]);
 #endif
       tmp=read_int(jumps[e]);

@@ -67,6 +67,7 @@ struct my_pixel
   unsigned char padding;
 };
 
+extern const char __pgtk_string_data[];
 extern int pigtk_is_setup;
 struct program *pgtk_type_to_program(GtkWidget *widget);
 void my_pop_n_elems( int n );

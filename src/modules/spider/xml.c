@@ -887,7 +887,7 @@ static int gobble(struct xmldata *data, char *s)
 #define PARSE_REF(PARSE_RECURSIVELY) do {\
     /* Entity reference */						    \
     /* lookup entry in mapping and parse it recursively */		    \
-    /* Generate Pike_error if entity is not defined */			    \
+    /* Generate error if entity is not defined */			    \
     if(THIS->entities)							    \
     {									    \
       struct pike_string *name=0;					    \
@@ -1078,7 +1078,7 @@ static void xmlerror(char *desc, struct xmldata *data)
 {
   struct svalue * save_sp=sp;
 
-  push_constant_text("Pike_error");
+  push_constant_text("error");
   push_int(0); /* no name */
   push_int(0); /* no attributes */
   push_text(desc);
@@ -1105,7 +1105,7 @@ static int read_smeg_pereference(struct xmldata *data)
     XMLERROR("Missing ';' after parsed entity reference.");
   READ(1);
   /* lookup entry in mapping and parse it recursively */
-  /* Generate Pike_error if entity is not defined */
+  /* Generate error if entity is not defined */
   f_index(2);
   if(IS_ZERO(sp-1))
   {

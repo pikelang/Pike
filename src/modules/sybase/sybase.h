@@ -23,8 +23,8 @@ typedef struct {
   CS_COMMAND *cmd;
   char busy; /* only one pending command per connection */
   
-  char had_error; /* non-zero if had Pike_error */
-  char Pike_error[256]; /* The last Pike_error string. The size is determined by the */
+  char had_error; /* non-zero if had error */
+  char error[256]; /* The last error string. The size is determined by the */
                     /* sybase API */
 
   char **results;

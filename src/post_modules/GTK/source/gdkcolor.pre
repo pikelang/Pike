@@ -20,7 +20,7 @@ NAME_ARGS(r|color,g,b);
     struct object *o;
     get_all_args("GdkColor", args, "%o", &o);
     if( !get_color_from_pikecolor( o, &r, &g, &b ) )
-      error("Bad argument 1 to GDK.Color(). Exptected color object\n");
+      Pike_error("Bad argument 1 to GDK.Color(). Exptected color object\n");
   }
   else
   {
@@ -40,7 +40,7 @@ NAME_ARGS(r|color,g,b);
   {
     free(c);
     THIS->obj = 0;
-    error("Failed to allocate color.\n");
+    Pike_error("Failed to allocate color.\n");
   }
 }
 

@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.34 2000/12/01 08:09:53 hubbe Exp $");
+RCSID("$Id: port.c,v 1.35 2000/12/05 21:08:21 per Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -133,7 +133,7 @@ long STRTOL(char *str,char **ptr,int base)
   if (ptr != (char **)0)
     *ptr = str;			/* in case no number is formed */
   if (base < 0 || base > MBASE)
-    return (0);			/* base is invalid -- should be a fatal Pike_error */
+    return (0);			/* base is invalid -- should be a fatal error */
   if (!isalnum(c = *str)) {
     while (ISSPACE(c))
       c = *++str;
@@ -509,12 +509,12 @@ PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
   return num * sign;
 
  overflow:
-  /* Return an overflow Pike_error.  */
+  /* Return an overflow error.  */
   errno = ERANGE;
   return HUGE * sign;
 
  underflow:
-  /* Return an underflow Pike_error.  */
+  /* Return an underflow error.  */
   if (endptr != NULL)
     *endptr = (char *) nptr;
   errno = ERANGE;

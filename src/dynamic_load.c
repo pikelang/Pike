@@ -8,7 +8,7 @@
 #  include "pike_macros.h"
 #  include "main.h"
 
-RCSID("$Id: dynamic_load.c,v 1.47 2000/12/01 08:09:46 hubbe Exp $");
+RCSID("$Id: dynamic_load.c,v 1.48 2000/12/05 21:08:17 per Exp $");
 
 #endif /* !TESTING */
 
@@ -82,7 +82,7 @@ static void *dlopen(const char *foo, int how)
 static char * dlerror(void)
 {
   static char buffer[200];
-  sprintf(buffer,"LoadLibrary failed with Pike_error: %d",GetLastError());
+  sprintf(buffer,"LoadLibrary failed with error: %d",GetLastError());
   return buffer;
 }
 

@@ -130,7 +130,7 @@ struct args *new_args( )
 
 /* This should probably be improved to include the reason for the 
  * failure. Currently, all failed requests get the same (hardcoded) 
- * Pike_error message.
+ * error message.
  * 
  * It is virtually impossible to call a pike function from here, so that
  * is not an option.
@@ -339,7 +339,7 @@ void aap_handle_connection(struct args *arg)
     if(data_read <= 0)
     {
 #ifdef AAP_DEBUG
-      fprintf(stderr, "AAP: Read Pike_error/eof.\n");
+      fprintf(stderr, "AAP: Read error/eof.\n");
 #endif /* AAP_DEBUG */
       arg->res.data = buffer;
       free_args( arg );

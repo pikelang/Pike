@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.285 2000/12/02 01:36:51 hubbe Exp $");
+RCSID("$Id: program.c,v 1.286 2000/12/05 21:08:21 per Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2110,7 +2110,7 @@ int low_define_variable(struct pike_string *name,
     fatal("Attempting to add variable to fixed program\n");
 
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal Pike_error: Not allowed to add more identifiers during second compiler pass.\n"
+    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n"
 	  "Added identifier: \"%s\"\n", name->str);
 #endif
 
@@ -2399,7 +2399,7 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     fatal("Attempting to add constant to fixed program\n");
 
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal Pike_error: Not allowed to add more identifiers during second compiler pass.\n");
+    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   copy_shared_string(dummy.name, name);
@@ -2763,7 +2763,7 @@ make_a_new_def:
 
 #ifdef PIKE_DEBUG
   if(Pike_compiler->compiler_pass==2)
-    fatal("Internal Pike_error: Not allowed to add more identifiers during second compiler pass.\n");
+    fatal("Internal error: Not allowed to add more identifiers during second compiler pass.\n");
 #endif
 
   /* define a new function */
@@ -3293,7 +3293,7 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
 }
 
 struct program *compile(struct pike_string *prog,
-			struct object *handler,/* Pike_error handler */
+			struct object *handler,/* error handler */
 			int major, int minor)
 {
 #ifdef PIKE_DEBUG
@@ -3580,7 +3580,7 @@ struct program *pike_trampoline_program=0;
 
 static void apply_trampoline(INT32 args)
 {
-  Pike_error("Internal Pike_error: Trampoline magic failed!\n");
+  Pike_error("Internal error: Trampoline magic failed!\n");
 }
 
 static void init_trampoline(struct object *o)
@@ -4177,7 +4177,7 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
   /* If we have parse errors we might get erroneous warnings,
    * so don't print them.
    * This has the additional benefit of making it easier to
-   * visually locate the actual Pike_error message.
+   * visually locate the actual error message.
    */
   if (Pike_compiler->num_parse_error) return;
 

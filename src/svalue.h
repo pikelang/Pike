@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.71 2000/12/01 08:09:55 hubbe Exp $
+ * $Id: svalue.h,v 1.72 2000/12/05 21:08:22 per Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -263,7 +263,7 @@ do{ \
 
 #ifdef PIKE_DEBUG
 extern void describe(void *); /* defined in gc.c */
-#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal("Type Pike_error: %d\n",T)
+#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal("Type error: %d\n",T)
 
 #define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
 

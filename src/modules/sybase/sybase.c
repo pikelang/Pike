@@ -24,7 +24,7 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.5 2000/12/01 08:10:39 hubbe Exp $");
+RCSID("$Id: sybase.c,v 1.6 2000/12/05 21:08:38 per Exp $");
 
 #ifdef HAVE_SYBASE
 
@@ -229,8 +229,8 @@ static void flush_results_queue(pike_sybase_connection *this) {
  * returns 1 if there's any Pike_error
  * the same thread-safety rules as flush_results_queue apply
  * QUESTION: 
- * Should I explore all messages, and leave in this->Pike_error the
- * last one with an Pike_error-level severity?
+ * Should I explore all messages, and leave in this->error the
+ * last one with an error-level severity?
  * or should we maybe only consider server messages?
  */
 static int handle_errors (pike_sybase_connection *this) {
@@ -263,7 +263,7 @@ static int handle_errors (pike_sybase_connection *this) {
     show_severity(severity);
   }
 
-  MEMCPY(this->Pike_error,message.sqlerrm.sqlerrmc,
+  MEMCPY(this->error,message.sqlerrm.sqlerrmc,
          message.sqlerrm.sqlerrml+1);
 
   this->had_error=1;
@@ -394,7 +394,7 @@ static void f_error(INT32 args) {
   pop_n_elems(args);
 
   if (this->had_error)
-    push_text(this->Pike_error);
+    push_text(this->error);
   else
     push_int(0);
 }
@@ -440,7 +440,7 @@ static void f_connect (INT32 args) {
   /* It's OK not to lock here. It's just a check that should never happen.
    * if it happens, we're in deep sh*t already.*/
   if (!(context=this->context)) {
-    err="Internal Pike_error: connection attempted, but no context available\n";
+    err="Internal error: connection attempted, but no context available\n";
   }
   
   if (!err) {
@@ -453,16 +453,16 @@ static void f_connect (INT32 args) {
   }
   errdebug(err);
   
-  if (!err) { /* initialize Pike_error-handling code */
+  if (!err) { /* initialize error-handling code */
     ret=ct_diag(connection,CS_INIT,CS_UNUSED,CS_UNUSED,NULL);
     show_status(ret);
     if (FAILED(ret)) {
-      err="Can't initialize Pike_error-handling code\n";
+      err="Can't initialize error-handling code\n";
     }
   }
   errdebug(err);
 
-  /* if there already was an Pike_error, we just locked uselessly.
+  /* if there already was an error, we just locked uselessly.
    * No big deal, it should never happen anyways... */
 
   /* username */
@@ -558,11 +558,11 @@ static void f_create (INT32 args) {
     }
   }
 
-  /* if there was no Pike_error, we can try to connect. Since f_connect
+  /* if there was no error, we can try to connect. Since f_connect
    * will do its own threads meddling, we must disable threads first
    */
 
-  if (err) { /* there was an Pike_error. bail out */
+  if (err) { /* there was an error. bail out */
     cs_ctx_drop(context);
     this->context=NULL;
   }
@@ -906,12 +906,12 @@ static void f_big_query(INT32 args) {
     function_result=NULL;
     break;
   default:
-    fatal("Internal Pike_error! Wrong result in big_query\n");
+    fatal("Internal error! Wrong result in big_query\n");
     break;
   }
   /* extra safety check. Paranoia. */
   if (function_result) {
-    sybdebug((stderr,"Internal Pike_error! Function_result!=NULL"));
+    sybdebug((stderr,"Internal error! Function_result!=NULL"));
     free(function_result);
   }
 }
@@ -971,14 +971,14 @@ static void f_fetch_row(INT32 args) {
     return;
   case CS_ROW_FAIL:
     handle_errors(this);
-    Pike_error("Recoverable Pike_error while fetching row\n");
+    Pike_error("Recoverable error while fetching row\n");
     break;
   case CS_FAIL:
     handle_errors(this);
     ct_cancel(this->connection,cmd,CS_CANCEL_ALL);
     this->busy--;
     sybdebug((stderr,"Busy status: %d\n",this->busy));
-    Pike_error("Unrecoverable Pike_error while fetching row\n");
+    Pike_error("Unrecoverable error while fetching row\n");
     break;
   case CS_CANCELED:
     sybdebug((stderr,"Canceled\n"));
@@ -991,7 +991,7 @@ static void f_fetch_row(INT32 args) {
     Pike_error("Asynchronous operations are not supported\n");
     break;
   }
-  Pike_error("Internal Pike_error. We shouldn't get here\n");
+  Pike_error("Internal error. We shouldn't get here\n");
 }
 
 /* int num_fields() */
@@ -1202,7 +1202,7 @@ void pike_module_init (void) {
                                          tOr(tVoid,tStr) tOr(tVoid,tStr)
                                          tOr(tInt,tVoid), tVoid),
                0);
-  ADD_FUNCTION("Pike_error",f_error,tFunc(tVoid,tOr(tVoid,tStr)),
+  ADD_FUNCTION("error",f_error,tFunc(tVoid,tOr(tVoid,tStr)),
                OPT_RETURN);
 
   ADD_FUNCTION("big_query",f_big_query,tFunc(tString,tOr(tInt,tObj)),
@@ -1226,7 +1226,7 @@ void pike_module_init (void) {
   add_function("connect",f_connect,
                "function(void|string,void|string,void|string,void|string,int|void:void)",
                0);
-  add_function("Pike_error",f_error,"function(void:void|string)",OPT_RETURN);
+  add_function("error",f_error,"function(void:void|string)",OPT_RETURN);
   add_function("big_query",f_big_query,"function(string:void|object)",
                OPT_RETURN);
   add_function("fetch_row", f_fetch_row,"function(void:void|array(mixed))",

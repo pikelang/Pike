@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.228 2000/12/01 20:43:10 grubba Exp $");
+RCSID("$Id: las.c,v 1.229 2000/12/05 21:08:19 per Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1455,7 +1455,7 @@ void resolv_constant(node *n)
 	  {
 	    yyerror("Expected constant, got void expression");
 	  }else{
-	    yyerror("Possible internal Pike_error!!!");
+	    yyerror("Possible internal error!!!");
 	    pop_n_elems(DO_NOT_WARN(args-1));
 	    return;
 	  }
@@ -1627,9 +1627,9 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	  struct svalue *save_sp = Pike_sp-2;
 	  JMP_BUF recovery;
 	  if (SETJMP(recovery)) {
-	    /* f_index() threw an Pike_error!
+	    /* f_index() threw an error!
 	     *
-	     * FIXME: Report the Pike_error thrown.
+	     * FIXME: Report the error thrown.
 	     */
 	    if (Pike_sp > save_sp) {
 	      pop_n_elems(Pike_sp - save_sp);
@@ -3535,7 +3535,7 @@ static void find_usage(node *n, unsigned char *usage,
     {
       int i;
 
-      /* catch_usage is restored if sscanf throws an Pike_error. */
+      /* catch_usage is restored if sscanf throws an error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -3564,7 +3564,7 @@ static void find_usage(node *n, unsigned char *usage,
     {
       int i;
 
-      /* catch_usage is restored if the function throws an Pike_error. */
+      /* catch_usage is restored if the function throws an error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -3819,7 +3819,7 @@ static node *low_localopt(node *n,
     {
       int i;
       
-      /* catch_usage is restored if sscanf throws an Pike_error. */
+      /* catch_usage is restored if sscanf throws an error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -3856,7 +3856,7 @@ static node *low_localopt(node *n,
     {
       int i;
 
-      /* catch_usage is restored if the function throws an Pike_error. */
+      /* catch_usage is restored if the function throws an error. */
       for (i=0; i < MAX_LOCAL; i++) {
 	usage[i] |= catch_u[i];
       }
@@ -4500,7 +4500,7 @@ ptrdiff_t eval_low(node *n)
 				 
     if(apply_low_safe_and_stupid(Pike_compiler->fake_object, jump))
     {
-      /* Generate Pike_error message */
+      /* Generate error message */
       if(!Pike_compiler->catch_level)
       {
         if(throw_value.type == T_ARRAY && throw_value.u.array->size)
@@ -4511,7 +4511,7 @@ ptrdiff_t eval_low(node *n)
 	  {
 	    yyerror(a->string->str);
 	  }else{
-	    yyerror("Nonstandard Pike_error format.");
+	    yyerror("Nonstandard error format.");
 	  }
 	}
 	else if(throw_value.type == T_OBJECT)
@@ -4520,14 +4520,14 @@ ptrdiff_t eval_low(node *n)
 	  push_int(0);
 	  f_index(2);
 	  if(Pike_sp[-1].type != T_STRING)
-	    yyerror("Nonstandard Pike_error format.");
+	    yyerror("Nonstandard error format.");
 	  else
 	    yyerror(Pike_sp[-1].u.string->str);
 	  pop_stack();
 	}
 	else
 	{
-	  yyerror("Nonstandard Pike_error format.");
+	  yyerror("Nonstandard error format.");
 	}
       }
     }else{

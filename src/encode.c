@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.78 2000/12/01 08:09:46 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.79 2000/12/05 21:08:17 per Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -271,7 +271,7 @@ one_more_type:
   switch(EXTRACT_UCHAR(t++))
   {
     default:
-      fatal("Pike_error in type string.\n");
+      fatal("error in type string.\n");
       /*NOTREACHED*/
 
       break;
@@ -797,7 +797,7 @@ static void decode_value2(struct decode_data *data);
 static int my_extract_char(struct decode_data *data)
 {
   if(data->ptr >= data->len)
-    Pike_error("Format Pike_error, not enough data in string.\n");
+    Pike_error("Format error, not enough data in string.\n");
   return data->data [ data->ptr++ ];
 }
 
@@ -847,7 +847,7 @@ static int my_extract_char(struct decode_data *data)
 
 #define getdata2(S,L) do {						\
       if(data->ptr + (ptrdiff_t)(sizeof(S[0])*(L)) > data->len)		\
-	Pike_error("Failed to decode string. (string range Pike_error)\n");	\
+	Pike_error("Failed to decode string. (string range error)\n");	\
       MEMCPY((S),(data->data + data->ptr), sizeof(S[0])*(L));		\
       data->ptr+=sizeof(S[0])*(L);					\
   }while(0)
@@ -870,7 +870,7 @@ static int my_extract_char(struct decode_data *data)
     DECODE("get_string_data");						    \
     what &= TAG_MASK;							    \
     if(data->ptr + num > data->len || num <0)				    \
-      Pike_error("Failed to decode string. (string range Pike_error)\n");		    \
+      Pike_error("Failed to decode string. (string range error)\n");		    \
     if(what<0 || what>2)						    \
       Pike_error("Failed to decode string. (Illegal size shift)\n");		    \
     STR=begin_wide_shared_string(num, what);				    \
@@ -880,7 +880,7 @@ static int my_extract_char(struct decode_data *data)
     STR=end_shared_string(STR);                                             \
   }else{								    \
     if(data->ptr + (LEN) > data->len || (LEN) <0)			    \
-      Pike_error("Failed to decode string. (string range Pike_error)\n");		    \
+      Pike_error("Failed to decode string. (string range error)\n");		    \
     STR=make_shared_binary_string((char *)(data->data + data->ptr), (LEN)); \
     data->ptr+=(LEN);							    \
   }									    \
@@ -963,7 +963,7 @@ one_more_type:
   switch(tmp)
   {
     default:
-      fatal("Pike_error in type string.\n");
+      fatal("error in type string.\n");
       /*NOTREACHED*/
       break;
 
@@ -1358,7 +1358,7 @@ static void decode_value2(struct decode_data *data)
 	  data->counter.u.integer++;
 	  decode_value2(data);
 
-	  /* Keep the value so that we can make a good Pike_error-message. */
+	  /* Keep the value so that we can make a good error-message. */
 	  prog_code = Pike_sp-1;
 	  stack_dup();
 
@@ -1410,7 +1410,7 @@ static void decode_value2(struct decode_data *data)
 	  decode_value2(data);
 	  f_version(0);
 	  if(!is_eq(Pike_sp-1,Pike_sp-2))
-	    Pike_error("Cannot decode programs encoded with other driver version.\n");
+	    Pike_error("Cannot decode programs encoded with other pike version.\n");
 	  pop_n_elems(2);
 
 	  decode_number(p->flags,data);
@@ -1668,7 +1668,7 @@ static INT32 my_decode(struct pike_string *tmp,
 
 static unsigned char extract_char(char **v, ptrdiff_t *l)
 {
-  if(!*l) Pike_error("Format Pike_error, not enough place for char.\n");
+  if(!*l) Pike_error("Format error, not enough place for char.\n");
   else (*l)--;
   (*v)++;
   return ((unsigned char *)(*v))[-1];
@@ -1683,7 +1683,7 @@ static ptrdiff_t extract_int(char **v, ptrdiff_t *l)
   if(j & 0x80) return (j & 0x7f);
 
   if((j & ~8) > 4)
-    Pike_error("Format Error: Error in format string, invalid integer.\n");
+    Pike_error("Format error: Error in format string, invalid integer.\n");
   i=0;
   while(j & 7) { i=(i<<8) | extract_char(v,l); j--; }
   if(j & 8) return -i;
@@ -1710,33 +1710,33 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   case TAG_TYPE:
-    Pike_error("Format Pike_error:decoding of the type type not supported yet.\n");
+    Pike_error("Format error: decoding of the type type not supported yet.\n");
     return;
 
   case TAG_STRING:
-    if(t<0) Pike_error("Format Pike_error, length of string is negative.\n");
-    if(*l < t) Pike_error("Format Pike_error, string to short\n");
+    if(t<0) Pike_error("Format error: length of string is negative.\n");
+    if(*l < t) Pike_error("Format error: string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l)-= t;
     (*v)+= t;
     return;
 
   case TAG_ARRAY:
-    if(t<0) Pike_error("Format Pike_error, length of array is negative.\n");
+    if(t<0) Pike_error("Format error: length of array is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate(DO_NOT_WARN(t));
     return;
 
   case TAG_MULTISET:
-    if(t<0) Pike_error("Format Pike_error, length of multiset is negative.\n");
+    if(t<0) Pike_error("Format error: length of multiset is negative.\n");
     check_stack(t);
     for(i=0;i<t;i++) rec_restore_value(v,l);
     f_aggregate_multiset(DO_NOT_WARN(t));
     return;
 
   case TAG_MAPPING:
-    if(t<0) Pike_error("Format Pike_error, length of mapping is negative.\n");
+    if(t<0) Pike_error("Format error: length of mapping is negative.\n");
     check_stack(t*2);
     for(i=0;i<t;i++)
     {
@@ -1747,31 +1747,31 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
     return;
 
   case TAG_OBJECT:
-    if(t<0) Pike_error("Format Pike_error, length of object is negative.\n");
-    if(*l < t) Pike_error("Format Pike_error, string to short\n");
+    if(t<0) Pike_error("Format error: length of object is negative.\n");
+    if(*l < t) Pike_error("Format error: string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("objectof", 1);
     return;
 
   case TAG_FUNCTION:
-    if(t<0) Pike_error("Format Pike_error, length of function is negative.\n");
-    if(*l < t) Pike_error("Format Pike_error, string to short\n");
+    if(t<0) Pike_error("Format error: length of function is negative.\n");
+    if(*l < t) Pike_error("Format error: string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("functionof", 1);
     return;
 
   case TAG_PROGRAM:
-    if(t<0) Pike_error("Format Pike_error, length of program is negative.\n");
-    if(*l < t) Pike_error("Format Pike_error, string to short\n");
+    if(t<0) Pike_error("Format error: length of program is negative.\n");
+    if(*l < t) Pike_error("Format error: string to short\n");
     push_string(make_shared_binary_string(*v, t));
     (*l) -= t; (*v) += t;
     APPLY_MASTER("programof", 1);
     return;
 
   default:
-    Pike_error("Format Pike_error. Unknown type tag %ld:%ld\n",
+    Pike_error("Format error: Unknown type tag %ld:%ld\n",
 	  PTRDIFF_T_TO_LONG(i), PTRDIFF_T_TO_LONG(t));
   }
 }

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.12 2000/12/01 08:10:07 hubbe Exp $");
+RCSID("$Id: xbm.c,v 1.13 2000/12/05 21:08:27 per Exp $");
 
 #define NO_PIKE_SHORTHAND
 
@@ -218,7 +218,7 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
 **! 	Decodes a XBM image. 
 **!
 **! note
-**!	Throws upon Pike_error in data.
+**!	Throws upon error in data.
 */
 static void image_xbm_decode( INT32 args )
 {
@@ -246,7 +246,7 @@ static void image_xbm_decode( INT32 args )
 **!	</pre>
 **!
 **! note
-**!	Throws upon Pike_error in data.
+**!	Throws upon error in data.
 */
 
 

@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.36 2000/12/01 08:10:31 hubbe Exp $
+ * $Id: image_jpeg.c,v 1.37 2000/12/05 21:08:33 per Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.36 2000/12/01 08:10:31 hubbe Exp $");
+RCSID("$Id: image_jpeg.c,v 1.37 2000/12/05 21:08:33 per Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -116,7 +116,7 @@ static void my_error_exit(struct jpeg_common_struct *cinfo)
    (*cinfo->err->format_message) (cinfo, buffer);
 
    jpeg_destroy(cinfo);
-   Pike_error("Image.JPEG: fatal Pike_error in libjpeg; %s\n",buffer);
+   Pike_error("Image.JPEG: fatal error in libjpeg; %s\n",buffer);
 }
 
 static void my_emit_message(struct jpeg_common_struct *cinfo,int msg_level)

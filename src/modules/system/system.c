@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.94 2000/12/01 08:10:40 hubbe Exp $
+ * $Id: system.c,v 1.95 2000/12/05 21:08:40 per Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.94 2000/12/01 08:10:40 hubbe Exp $");
+RCSID("$Id: system.c,v 1.95 2000/12/05 21:08:40 per Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -142,13 +142,13 @@ static void report_error(const char *function_name)
     error_msg = "Destination already exists";
     break;
   case EFAULT:
-    error_msg = "Internal Pike Pike_error:Bad Pike string!";
+    error_msg = "Internal Pike error: Bad Pike string!";
     break;
   case EINVAL:
     error_msg = "Bad argument";
     break;
   case EIO:
-    error_msg = "I/O Pike_error";
+    error_msg = "I/O error";
     break;
 #ifdef ELOOP
   case ELOOP:

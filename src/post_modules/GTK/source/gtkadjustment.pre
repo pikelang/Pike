@@ -37,10 +37,10 @@ NAME_ARGS(value,lower,upper,step_increment,page_increment,page_size);
   else if(args == 3 )   get_all_args("Adjustment", args,"%f%f%f", &l,&u,&v);
   else if(args == 2 )   get_all_args("Adjustment", args,"%f%f", &l,&u);
 
-  if(THIS->obj) error("GTK.Adjustment->create() can only be called once.\n");
+  if(THIS->obj) Pike_error("GTK.Adjustment->create() can only be called once.\n");
   THIS->obj = GTK_OBJECT( gtk_adjustment_new( l, u, v, si, pi, ps ) );
   if(!THIS->obj)
-    error("Failed to initiate adjustment\n");
+    Pike_error("Failed to initiate adjustment\n");
   pgtk__init_this_object();
   my_pop_n_elems(args);
   push_int( 0 );

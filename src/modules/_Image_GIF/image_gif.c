@@ -1,9 +1,9 @@
-/* $Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $ */
+/* $Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $
+**!	$Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.2 2000/12/01 08:10:31 hubbe Exp $");
+RCSID("$Id: image_gif.c,v 1.3 2000/12/05 21:08:33 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1024,7 +1024,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    nct=(struct neo_colortable*)
 	       get_storage(nctobj,image_colortable_program);
 	    if (!nct)
-	       Pike_error("Image.GIF.encode(): Internal Pike_error; colortable isn't colortable\n");
+	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
 	    arg=2;
 	 }
 	 else arg=1;
@@ -1095,7 +1095,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    nct=(struct neo_colortable*)
 	       get_storage(nctobj,image_colortable_program);
 	    if (!nct)
-	       Pike_error("Image.GIF.encode(): Internal Pike_error; colortable isn't colortable\n");
+	       Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
 	 }
    
 	 tr.r=(unsigned char)sp[arg-args].u.integer;
@@ -1117,7 +1117,7 @@ void _image_gif_encode(INT32 args,int fs)
       nct=(struct neo_colortable*)
 	 get_storage(nctobj,image_colortable_program);
       if (!nct)
-	 Pike_error("Image.GIF.encode(): Internal Pike_error; colortable isn't colortable\n");
+	 Pike_error("Image.GIF.encode(): Internal error; colortable isn't colortable\n");
    }
 
    if (fs) image_colortable_internal_floyd_steinberg(nct);
@@ -1761,7 +1761,7 @@ fprintf(stderr,"_gif_decode_lzw(%lx,%lu,%d,%lx,%lx,%lx,%lu,%d)\n",
 #ifdef GIF_DEBUG
 		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
 #endif
-		  break; /* Pike_error! too much codes */
+		  break; /* error! too much codes */
 	       }
 	    }
 	 }
@@ -1822,7 +1822,7 @@ void image_gif__decode(INT32 args)
       image_gif___decode(args);
 
    if (sp[-1].type!=T_ARRAY)
-      Pike_error("Image.GIF._decode: internal Pike_error: "
+      Pike_error("Image.GIF._decode: internal error: "
 	    "illegal result from __decode\n");
    
    a=sp[-1].u.array;
@@ -2035,7 +2035,7 @@ void image_gif_decode(INT32 args)
       image_gif__decode(args);
 
    if (sp[-1].type!=T_ARRAY)
-      Pike_error("Image.GIF.decode: internal Pike_error: "
+      Pike_error("Image.GIF.decode: internal error: "
 	    "illegal result from _decode\n");
 
    a=sp[-1].u.array;
@@ -2128,7 +2128,7 @@ void image_gif_decode_layers(INT32 args)
       image_gif__decode(args);
 
    if (sp[-1].type!=T_ARRAY)
-      Pike_error("Image.GIF.decode: internal Pike_error: "
+      Pike_error("Image.GIF.decode: internal error: "
 	    "illegal result from _decode\n");
 
    a=sp[-1].u.array;
@@ -2680,7 +2680,7 @@ static void image_gif_lzw_decode(INT32 args)
 #ifdef GIF_DEBUG
 		  fprintf(stderr,"cancel; gif codes=%ld m=%ld\n",maxcode,m);
 #endif
-		  break; /* Pike_error! too much codes */
+		  break; /* error! too much codes */
 	       }
 	    }
 	 }

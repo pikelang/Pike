@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.41 2000/12/01 08:09:58 hubbe Exp $
+**!	$Id: colors.c,v 1.42 2000/12/05 21:08:24 per Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -152,9 +152,9 @@
 **!	pike 0.7
 **!	
 **! note: 
-**!	<tt>Image.Color["something"]</tt> will never(!) generate an Pike_error, 
+**!	<tt>Image.Color["something"]</tt> will never(!) generate an error, 
 **!	but a zero_type 0, if the color is unknown. This is enough
-**!	to give the Pike_error "not present in module", if used 
+**!	to give the error "not present in module", if used 
 **!	as <tt>Image.Color.something</tt>, though.
 **!
 **!     If you are using colors from for instance a webpage, you might
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.41 2000/12/01 08:09:58 hubbe Exp $");
+RCSID("$Id: colors.c,v 1.42 2000/12/05 21:08:24 per Exp $");
 
 #include "image_machine.h"
 
@@ -482,7 +482,7 @@ static void image_color_hsvf(INT32 args)
    if(max != 0.0)
       s = (max - min)/max;
    else
-      Pike_error("internal Pike_error, max==0.0\n");
+      Pike_error("internal error, max==0.0\n");
 
    delta = max-min;
 
@@ -1571,7 +1571,7 @@ static void image_make_hsv_color(INT32 args)
 	 case 3: r = p;	 g = q;	 b = v;	 break;
 	 case 4: r = t;	 g = p;	 b = v;	 break;
 	 case 5: r = v;	 g = p;	 b = q;	 break;
-	 default: Pike_error("internal Pike_error (hue=%d <= hsv[%f,%f,%f])\n",
+	 default: Pike_error("internal error (hue=%d <= hsv[%f,%f,%f])\n",
 			DOUBLE_TO_INT(i), h, s, v);
       }
    }

@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.35 2000/12/01 08:09:53 hubbe Exp $
+ * $Id: preprocessor.h,v 1.36 2000/12/05 21:08:21 per Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -8,7 +8,7 @@
  */
 
 #ifndef SHIFT
-#Pike_error Internal Pike_error: SHIFT not defined
+#error Internal error: SHIFT not defined
 #endif
 
 /*
@@ -120,7 +120,7 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
 #if (SHIFT == 2)
   s = make_shared_binary_string2(str, len);
 #else /* SHIFT != 2 */
-#Pike_error Bad SHIFT
+#error Bad SHIFT
 #endif /* SHIFT == 2 */
 #endif /* SHIFT == 1 */
 
@@ -380,10 +380,10 @@ static ptrdiff_t calcC(struct cpp *this, WCHAR *data, ptrdiff_t len,
     fprintf(stderr, "Bad char %c (%d)\n", data[pos], data[pos]);
 #ifdef PIKE_DEBUG
     if(WC_ISIDCHAR(data[pos]))
-      cpp_error(this, "Syntax Pike_error in #if (should not happen).");
+      cpp_error(this, "Syntax error in #if (should not happen).");
 #endif
 
-    cpp_error(this, "Syntax Pike_error in #if.");
+    cpp_error(this, "Syntax error in #if.");
   }
   
 
@@ -755,10 +755,10 @@ static ptrdiff_t calc(struct cpp *this, WCHAR *data, ptrdiff_t len,
       {
 	cpp_error(this, a->string->str);
       }else{
-	cpp_error(this, "Nonstandard Pike_error format.");
+	cpp_error(this, "Nonstandard error format.");
       }
     }else{
-      cpp_error(this, "Nonstandard Pike_error format.");
+      cpp_error(this, "Nonstandard error format.");
     }
     FIND_EOL();
     push_int(0);
@@ -1523,7 +1523,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 
       goto unknown_preprocessor_directive;
       }
-    case 'e': /* endif, else, elif, Pike_error */
+    case 'e': /* endif, else, elif, error */
       {
 	static WCHAR endif_[] = { 'e', 'n', 'd', 'i', 'f' };
 	static WCHAR else_[] = { 'e', 'l', 's', 'e' };
@@ -1763,7 +1763,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		{
 #ifdef PIKE_DEBUG
 		  if(Pike_sp[-1].type != PIKE_T_INT)
-		    fatal("Internal Pike_error in CPP\n");
+		    fatal("Internal error in CPP\n");
 #endif
 		  Pike_sp[-1].u.integer|=DEF_ARG_NOPOSTSPACE;
 		}
@@ -1864,12 +1864,12 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    
 	    for(e=0;e<def->num_parts;e++)
 	    {
-#if 1
+#ifdef PIKE_DEBUG
 	      if(partbase[e*2+1].type != PIKE_T_INT)
-		fatal("Cpp internal Pike_error, expected integer!\n");
+		fatal("Cpp internal error, expected integer!\n");
 	      
 	      if(partbase[e*2+2].type != PIKE_T_STRING)
-		fatal("Cpp internal Pike_error, expected string!\n");
+		fatal("Cpp internal error, expected string!\n");
 #endif
 	      def->parts[e].argument=partbase[e*2+1].u.integer;
 	      copy_shared_string(def->parts[e].postfix,
@@ -1879,7 +1879,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 #ifdef PIKE_DEBUG
 	    if(def->num_parts==1 &&
 	       (def->parts[0].argument & DEF_ARG_MASK) > MAX_ARGS)
-	      fatal("Internal Pike_error in define\n");
+	      fatal("Internal error in define\n");
 #endif	  
 	    
 	    this->defines=hash_insert(this->defines, & def->link);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.177 2000/12/04 19:39:45 mast Exp $");
+RCSID("$Id: interpret.c,v 1.178 2000/12/05 21:08:18 per Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1306,7 +1306,7 @@ PMOD_EXPORT void mega_apply2(enum apply_type type, INT32 args, void *arg1, void 
 	}
 #ifdef PIKE_DEBUG
 	if(Pike_sp<Pike_interpreter.evaluator_stack)
-	  fatal("Stack Pike_error (also simple).\n");
+	  fatal("Stack error (also simple).\n");
 #endif
 	break;
       }
@@ -1501,7 +1501,7 @@ PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     
 #ifdef PIKE_DEBUG
     if(Pike_sp<Pike_interpreter.evaluator_stack)
-      fatal("Stack Pike_error (simple).\n");
+      fatal("Stack error (simple).\n");
 #endif
     ret=0;
   }

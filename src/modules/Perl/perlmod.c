@@ -1,4 +1,4 @@
-/* $Id: perlmod.c,v 1.22 2000/12/01 08:10:18 hubbe Exp $ */
+/* $Id: perlmod.c,v 1.23 2000/12/05 21:08:31 per Exp $ */
 
 #define NO_PIKE_SHORTHAND
 
@@ -24,7 +24,7 @@
 #include <perl.h>
 
 #ifdef USE_THREADS
-/* #Pike_error Threaded Perl not supported. */
+/* #error Threaded Perl not supported. */
 #endif
 
 #define MY_XS 1
@@ -155,11 +155,11 @@ static int _perl_parse(struct perlmod_storage *ps,
 #endif
 
   if (!ps)
-         Pike_error("Internal Pike_error: no Perl storage allocated.\n");
+         Pike_error("Internal error: no Perl storage allocated.\n");
   if (!ps->perl)
-         Pike_error("Internal Pike_error: no Perl interpreter allocated.\n");
+         Pike_error("Internal error: no Perl interpreter allocated.\n");
   if (!ps->constructed)
-         Pike_error("Internal Pike_error: Perl interpreter not constructed.\n");
+         Pike_error("Internal error: Perl interpreter not constructed.\n");
   if (!envp && !ps->env)
   { /* Copy environment data, since Perl may wish to modify it. */
 
@@ -599,7 +599,7 @@ static void _perlmod_call(INT32 args, int perlflags)
 
   if (n < 0)
   { PUTBACK; FREETMPS; LEAVE;
-    Pike_error("Internal Pike_error: perl_call_pv returned a negative number.\n");
+    Pike_error("Internal error: perl_call_pv returned a negative number.\n");
   }
 
   if (!(perlflags & G_ARRAY) && n > 1)
@@ -675,7 +675,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
                    (hv, key, _sv_2mortal(_pikev2sv(Pike_sp+2-args)), 0)))
          sv_setsv(HeVAL(he), _sv_2mortal(_pikev2sv(Pike_sp+2-args)));
       else
-         Pike_error("Internal Pike_error: hv_store_ent returned NULL.\n");
+         Pike_error("Internal error: hv_store_ent returned NULL.\n");
     }
     pop_n_elems(args);
     if (op == 'R')
@@ -685,7 +685,7 @@ static void _perlmod_varop(INT32 args, int op, int type)
          _push_zerotype();
     }
   }
-  else Pike_error("Internal Pike_error in _perlmod_varop.\n");
+  else Pike_error("Internal error in _perlmod_varop.\n");
 
   if (op != 'R') push_int(0);
 }
@@ -711,7 +711,7 @@ static void perlmod_array_size(INT32 args)
       Pike_error("Array name must be given as an 8-bit string.\n");
 
   av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
-  if (!av) Pike_error("Interal Pike_error: perl_get_av() return NULL.\n");
+  if (!av) Pike_error("Interal error: perl_get_av() return NULL.\n");
   pop_n_elems(args);
   /* Return av_len()+1, since av_len() returns the value of the highest
    * index, which is 1 less than the size. */
@@ -726,7 +726,7 @@ static void perlmod_get_whole_array(INT32 args)
       Pike_error("Array name must be given as an 8-bit string.\n");
 
   av = perl_get_av(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
-  if (!av) Pike_error("Interal Pike_error: perl_get_av() returned NULL.\n");
+  if (!av) Pike_error("Interal error: perl_get_av() returned NULL.\n");
   n = av_len(av) + 1;
 
   if (n > _THIS->array_size_limit)
@@ -749,7 +749,7 @@ static void perlmod_get_hash_keys(INT32 args)
       Pike_error("Hash name must be given as an 8-bit string.\n");
 
   hv = perl_get_hv(Pike_sp[-args].u.string->str, TRUE | GV_ADDMULTI);
-  if (!hv) Pike_error("Interal Pike_error: perl_get_av() return NULL.\n");
+  if (!hv) Pike_error("Interal error: perl_get_av() return NULL.\n");
 
   /* count number of elements in hash */
   for(n = 0, hv_iterinit(hv); (he = hv_iternext(hv)); ++n);
@@ -873,7 +873,7 @@ void pike_module_exit(void)
 #else /* HAVE_PERL */
 
 #ifdef ERROR_IF_NO_PERL
-#Pike_error "No Perl!"
+#error "No Perl!"
 #endif
 
 void pike_module_init(void) {}

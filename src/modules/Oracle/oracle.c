@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.51 2000/12/01 08:10:15 hubbe Exp $
+ * $Id: oracle.c,v 1.52 2000/12/05 21:08:30 per Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.51 2000/12/01 08:10:15 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.52 2000/12/05 21:08:30 per Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -591,7 +591,7 @@ OCIError *get_global_error_handle(void)
 		    0);
 
   if(rc != OCI_SUCCESS)
-    Pike_error("Failed to allocate Pike_error handle.\n");
+    Pike_error("Failed to allocate error handle.\n");
   
   return global_error_handle;
 }

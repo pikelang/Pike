@@ -73,7 +73,7 @@ RETURNS(GTK.CTreeNode);
   int is_leaf, expanded;
 
   if(args < 5)
-    error("Too few arguments to insert_node\n");
+    Pike_error("Too few arguments to insert_node\n");
 
   if(Pike_sp[-args].type == PIKE_T_OBJECT)
     parent = get_pgdkobject( Pike_sp[-args].u.object, pgtk_CTreeNode_program );
@@ -89,7 +89,7 @@ RETURNS(GTK.CTreeNode);
     int i;
 
     if (GTK_CLIST(THIS->obj)->columns != text->size)
-       error("Argument 3 to insert_node (text) has wrong size (columns=%d, elements=%d)\n",GTK_CLIST(THIS->obj)->columns,text->size);
+      Pike_error("Argument 3 to insert_node (text) has wrong size (columns=%d, elements=%d)\n",GTK_CLIST(THIS->obj)->columns,text->size);
 
     text_arr = alloca(GTK_CLIST(THIS->obj)->columns * sizeof(gchar *));
     for(i=0; i<GTK_CLIST(THIS->obj)->columns; i++)

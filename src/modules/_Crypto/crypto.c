@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.40 2000/12/01 08:10:27 hubbe Exp $
+ * $Id: crypto.c,v 1.41 2000/12/05 21:08:32 per Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -91,7 +91,7 @@ static void check_functions(struct object *o, const char **requiered)
   struct program *p;
 
   if (!o) {
-    Pike_error("/precompiled/crypto: internal Pike_error -- no object\n");
+    Pike_error("Crypto: internal error -- no object\n");
   }
   if (!requiered) {
     return;
@@ -101,7 +101,7 @@ static void check_functions(struct object *o, const char **requiered)
 
   while (*requiered) {
     if (find_identifier( (char *) *requiered, p) < 0) {
-      Pike_error("/precompiled/crypto: Object is missing identifier \"%s\"\n",
+      Pike_error("Crypto: Object is missing identifier \"%s\"\n",
 	    *requiered);
     }
     requiered++;
@@ -223,7 +223,7 @@ static void f_des_parity(INT32 args)
 }
 
 /*
- * /precompiled/crypto
+ * Crypto
  */
 
 /* void create(program|object, ...) */

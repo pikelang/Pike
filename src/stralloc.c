@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.111 2000/12/01 20:36:41 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.112 2000/12/05 21:08:22 per Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -2347,12 +2347,12 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
   return num * sign;
 
  overflow:
-  /* Return an overflow Pike_error.  */
+  /* Return an overflow error.  */
   errno = ERANGE;
   return HUGE * sign;
 
  underflow:
-  /* Return an underflow Pike_error.  */
+  /* Return an underflow error.  */
   if (endptr != NULL)
     *endptr = nptr;
   errno = ERANGE;

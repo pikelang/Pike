@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.88 2000/12/01 08:10:35 hubbe Exp $");
+RCSID("$Id: efuns.c,v 1.89 2000/12/05 21:08:35 per Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -306,7 +306,7 @@ void f_filesystem_stat(INT32 args)
   struct fs_data st;
 #else /* !HAVE_STRUCT_FS_DATA */
     /* Should not be reached */
-#Pike_error No struct to hold statfs() data.
+#error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
@@ -315,7 +315,7 @@ void f_filesystem_stat(INT32 args)
   struct ustat st;
 #else /* !HAVE_USTAT */
   /* Should not be reached */
-#Pike_error No stat function for filesystems.
+#error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
@@ -354,7 +354,7 @@ void f_filesystem_stat(INT32 args)
   }
 #else
   /* Should not be reached */
-#Pike_error No stat function for filesystems.
+#error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
@@ -417,7 +417,7 @@ void f_filesystem_stat(INT32 args)
     f_aggregate_mapping(4*2);
 #else /* !HAVE_STRUCT_FS_DATA */
     /* Should not be reached */
-#Pike_error No struct to hold statfs() data.
+#error No struct to hold statfs() data.
 #endif /* HAVE_STRUCT_FS_DATA */
 #endif /* HAVE_STRUCT_STATFS */
 #else /* !HAVE_STATFS */
@@ -428,7 +428,7 @@ void f_filesystem_stat(INT32 args)
     f_aggregate_mapping(3*2);
 #else
     /* Should not be reached */
-#Pike_error No stat function for filesystems.
+#error No stat function for filesystems.
 #endif /* HAVE_USTAT */
 #endif /* HAVE_STATFS */
 #endif /* HAVE_STATVFS */
@@ -660,7 +660,7 @@ void f_get_dir(INT32 args)
       {
 #if defined(HAVE_SOLARIS_READDIR_R)
 	/* Solaris readdir_r returns the second arg on success,
-	 * and returns NULL on Pike_error or at end of dir.
+	 * and returns NULL on error or at end of dir.
 	 */
 	errno=0;
 	do {
@@ -680,7 +680,7 @@ void f_get_dir(INT32 args)
 	/* HPUX's readdir_r returns an int instead:
 	 *
 	 *  0	- Successfull operation.
-	 * -1	- End of directory or encountered an Pike_error (sets errno).
+	 * -1	- End of directory or encountered an error (sets errno).
 	 */
 	errno=0;
 	if (readdir_r(dir, tmp)) {
@@ -725,7 +725,7 @@ void f_get_dir(INT32 args)
 		str->str, d->d_name);
 #endif /* READDIR_DEBUG */
 #else
-#Pike_error Unknown readdir_r variant
+#error Unknown readdir_r variant
 #endif
 	if(d->d_name[0]=='.')
 	{

@@ -34,7 +34,7 @@ FUNCTION(id, "function(void:int)");
 // <br />You must realize this widget before calling this function.
 {
   if( !GTK_WIDGET( THIS->obj )->window )
-    error("You must realize this widget before calling this function.\n");
+    Pike_error("You must realize this widget before calling this function.\n");
   my_pop_n_elems( args );
   push_int((INT_TYPE)GDK_WINDOW_XWINDOW( GTK_WIDGET( THIS->obj )->window ));
 }

@@ -15,7 +15,7 @@ class GladeXML;
 #include <glade/glade.h>
 
 int glade_is_setup = 0;
-RCSID("$Id: gladexml.pre,v 1.9 2000/10/17 17:41:07 per Exp $");
+RCSID("$Id: gladexml.pre,v 1.10 2000/12/05 21:08:47 per Exp $");
 
 %{
 /* This function is used by signal_autoconnect to handle signal
@@ -95,7 +95,7 @@ RETURNS(GTK.GladeXML);
   char *root = NULL, *domain = NULL;
 
   if(THIS->obj)
-    error("GladeXML->new_from_memory(): Already initialized!\n");
+    Pike_error("GladeXML->new_from_memory(): Already initialized!\n");
 
   switch(args)
   {
@@ -105,25 +105,25 @@ RETURNS(GTK.GladeXML);
       pop_n_elems(1);
       args--;
     } else
-      error("GladeXML->new_from_memory(): Invalid argument 3, expected string.\n");
+      Pike_error("GladeXML->new_from_memory(): Invalid argument 3, expected string.\n");
    case 2:
     if(Pike_sp[-1].type == PIKE_T_STRING) {
       root = Pike_sp[-1].u.string->str;
       pop_n_elems(1);
       args--;
     } else
-      error("GladeXML->new_from_memory(): Invalid argument 2, expected string.\n");
+      Pike_error("GladeXML->new_from_memory(): Invalid argument 2, expected string.\n");
    case 1:
     if(Pike_sp[-1].type == PIKE_T_STRING) {
       data = Pike_sp[-1].u.string;
       pop_n_elems(1);
       args--;
     } else
-      error("GladeXML->new_from_memory(): Invalid argument 1, expected string.\n");
+      Pike_error("GladeXML->new_from_memory(): Invalid argument 1, expected string.\n");
 
     break;
    default:
-    error("Invalid number or arguments to GladeXML->new_from_memory()\n");
+     Pike_error("Invalid number or arguments to GladeXML->new_from_memory()\n");
   }
   xml = glade_xml_new_from_memory(data->str,
 				  data->len,
@@ -149,7 +149,7 @@ NAME_ARGS(filename, root, domain);
   char *data = NULL, *root = NULL, *domain = NULL;
 
   if(THIS->obj)
-    error("GladeXML->new: Already initialized!\n");
+    Pike_error("GladeXML->new: Already initialized!\n");
 
   switch(args)
   {
@@ -159,7 +159,7 @@ NAME_ARGS(filename, root, domain);
       pop_n_elems(1);
       args--;
     } else
-      error("GladeXML->new(): Invalid argument 3, expected string.\n");
+      Pike_error("GladeXML->new(): Invalid argument 3, expected string.\n");
 
    case 2:
     if(Pike_sp[-1].type == PIKE_T_STRING) {
@@ -167,7 +167,7 @@ NAME_ARGS(filename, root, domain);
       pop_n_elems(1);
       args--;
     } else
-      error("GladeXML->new(): Invalid argument 2, expected string.\n");
+      Pike_error("GladeXML->new(): Invalid argument 2, expected string.\n");
 
    case 1:
     if(Pike_sp[-1].type == PIKE_T_STRING) {
@@ -175,10 +175,10 @@ NAME_ARGS(filename, root, domain);
       pop_n_elems(1);
       args--;
     } else
-      error("GladeXML->new(): Invalid argument 3, expected string.\n");
+      Pike_error("GladeXML->new(): Invalid argument 3, expected string.\n");
     break;
    default:
-    error("Invalid number or arguments to GladeXML->new().\n");
+     Pike_error("Invalid number or arguments to GladeXML->new().\n");
   }
   if(domain != NULL)
     xml = glade_xml_new_with_domain(data, root, domain);
@@ -219,14 +219,14 @@ NAME_ARGS(name);
   GtkWidget *widget = NULL;
   GladeXML *xml;
   if(!THIS->obj)
-    error("GladeXML->get_widget(): No widgets are loaded.\n");
+    Pike_error("GladeXML->get_widget(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
   if(args == 1 && Pike_sp[-1].type == PIKE_T_STRING) {
     widget = glade_xml_get_widget(xml, Pike_sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
   } else
-    error("GladeXML->get_widget(): Invalid argument, expected string.\n");
+    Pike_error("GladeXML->get_widget(): Invalid argument, expected string.\n");
 }
 
 
@@ -242,14 +242,14 @@ NAME_ARGS(long_name);
   GtkWidget *widget = NULL;
   GladeXML *xml;
   if(!THIS->obj)
-    error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
+    Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
   if(args == 1 && Pike_sp[-1].type == PIKE_T_STRING) {
     widget = glade_xml_get_widget_by_long_name(xml, Pike_sp[-1].u.string->str);
     pop_n_elems(args);
     push_gtkobjectclass( widget, pgtk_type_to_program(widget));
   } else
-    error("GladeXML->get_widget_by_long_name(): Invalid argument, expected string.\n");
+    Pike_error("GladeXML->get_widget_by_long_name(): Invalid argument, expected string.\n");
 }
 
 FUNCTION(get_widget_long_name, "function(object:string)");
@@ -265,7 +265,7 @@ ARGS(GTK.Widget);
   get_all_args("GladeXML->get_widget_long_name", args, "%o", &obj);
   widget = GTK_WIDGET(get_gtkobject(obj));
   if(!widget)
-    error("GladeXML->get_widget_long_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");
+    Pike_error("GladeXML->get_widget_long_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");
 
   name = glade_get_widget_long_name(widget);
   pop_n_elems(args);
@@ -292,7 +292,7 @@ ARGS(GTK.Widget);
   get_all_args("GladeXML->get_widget_name", args, "%o", &obj);
   widget = GTK_WIDGET(get_gtkobject(obj));
   if(!widget)
-    error("GladeXML->get_widget_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");
+    Pike_error("GladeXML->get_widget_name: Invalid argument 1, wanted GTK object of type WIDGET.\n");
 
   name = glade_get_widget_name(widget);
   pop_n_elems(args);
@@ -318,12 +318,12 @@ RETURNS(void);
 {
   GladeXML *xml;
   if(args != 2 || Pike_sp[-args].type != PIKE_T_MAPPING)
-    error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
+    Pike_error("GTK.GladeXML->signal_autoconnect: Invalid arguments, expected (mapping,mixed)\n");
   if(!THIS->obj)
-    error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
+    Pike_error("GladeXML->get_widget_by_long_name(): No widgets are loaded.\n");
   xml = (GladeXML *)THIS->obj;
   glade_xml_signal_autoconnect_full(xml, pgtk__signal_connect, &args);
   pop_n_elems(args);
 }
 
-// <p align="right"><font size="2"><i>$Id: gladexml.pre,v 1.9 2000/10/17 17:41:07 per Exp $</i></font></p>
+// <p align="right"><font size="2"><i>$Id: gladexml.pre,v 1.10 2000/12/05 21:08:47 per Exp $</i></font></p>

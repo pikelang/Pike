@@ -21,7 +21,7 @@ NAME_ARGS(XWindowID|parent,void|atrributes);
     get_all_args( "GdkWindow", args, "%d", &id );
     THIS->obj = (void *)gdk_window_foreign_new( id );
     if( !THIS->obj )
-      error("The window with id 0x%x does not exist\n", id);
+      Pike_error("The window with id 0x%x does not exist\n", id);
   } else if(Pike_sp[-args].type == PIKE_T_OBJECT) {
     struct object *parent;
     struct mapping *m;
@@ -148,7 +148,7 @@ NAME_ARGS(cursor_type);
   get_all_args("set_cursor", args, "%d", &i);
 
   if(i>255)
-    error("No such cursor\n");
+    Pike_error("No such cursor\n");
 
   if(font_cursors[ i ])
     c = font_cursors[ i ];
@@ -519,7 +519,7 @@ NAME_ARGS(background);
   else if(get_gdkobject(o,Color))
     gdk_window_set_background((GdkWindow *)THIS->obj, get_gdkobject(o,Color));
   else
-    error("Set the background to what?\n");
+    Pike_error("Set the background to what?\n");
 
 /*   if(gdk_error_trap_pop()) */
 /*     error("Failed to set the background\n"); */

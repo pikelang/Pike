@@ -259,7 +259,7 @@ NAME_ARGS(percent);
 RETURNS(Gnome.AppProgressKey);
 {
   if(args!=1 || Pike_sp[-1].type != PIKE_T_FLOAT )
-    error("Bad argument 1 to set\n");
+    Pike_error("Bad argument 1 to set\n");
   gnome_app_set_progress( (GnomeAppProgressKey)THIS->obj,
                           (gdouble)Pike_sp[-1].u.float_number );
   RETURN_THIS();

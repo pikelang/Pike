@@ -77,7 +77,7 @@ RETURNS(GTK.Pixmap);
   struct object *o;
   get_all_args( "set_pixmap_insensitive", args, "%o", &o );
   if(!get_gdkobject( o, Pixmap ))
-    error("This is not a GDK.Pixmap\n");
+    Pike_error("This is not a GDK.Pixmap\n");
   if( GTK_PIXMAP( THIS->obj )->pixmap_insensitive !=
       get_gdkobject( o, Pixmap ) )
   {

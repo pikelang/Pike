@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.38 2000/12/01 08:10:12 hubbe Exp $
+ * $Id: mysql.c,v 1.39 2000/12/05 21:08:29 per Exp $
  *
  * SQL database functionality for Pike
  *
@@ -34,7 +34,7 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
-#Pike_error Need mysql.h header-file
+#error Need mysql.h header-file
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.38 2000/12/01 08:10:12 hubbe Exp $");
+RCSID("$Id: mysql.c,v 1.39 2000/12/05 21:08:29 per Exp $");
 
 /*
 **! module Mysql
@@ -103,7 +103,7 @@ RCSID("$Id: mysql.c,v 1.38 2000/12/01 08:10:12 hubbe Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.38 2000/12/01 08:10:12 hubbe Exp $
+**!	$Id: mysql.c,v 1.39 2000/12/05 21:08:29 per Exp $
 **!
 **! class mysql
 **!
@@ -459,7 +459,7 @@ static void f_insert_id(INT32 args)
 /*
 **! method string Pike_error()
 **!
-**!	Returns a string describing the last Pike_error from the Mysql-server.
+**!	Returns a string describing the last error from the Mysql-server.
 **!
 */
 /* int|string Pike_error() */
@@ -1413,7 +1413,7 @@ void pike_module_init(void)
   ADD_STORAGE(struct precompiled_mysql);
 
   /* function(void:int|string) */
-  ADD_FUNCTION("Pike_error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
+  ADD_FUNCTION("error", f_error,tFunc(tVoid,tOr(tInt,tStr)), ID_PUBLIC);
   /* function(string|void, string|void, string|void, string|void:void) */
   ADD_FUNCTION("create", f_create,tFunc(tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid) tOr(tStr,tVoid),tVoid), ID_PUBLIC);
   /* function(void:int) */

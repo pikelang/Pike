@@ -459,7 +459,7 @@ NAME_ARGS(row);
   get_all_args("get_foreground", args, "%d", &row );
   my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)
-    error("Invalid row.\n");
+    Pike_error("Invalid row.\n");
   clist_row = (g_list_nth (clist->row_list, row))->data;
   if( clist_row->fg_set )
   {
@@ -489,7 +489,7 @@ NAME_ARGS(row);
   get_all_args("get_background", args, "%d", &row );
   my_pop_n_elems(args);
   if (row < 0 || row >= clist->rows)
-    error("Invalid row.\n");
+    Pike_error("Invalid row.\n");
   clist_row = (g_list_nth (clist->row_list, row))->data;
   if( clist_row->bg_set )
   {

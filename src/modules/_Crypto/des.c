@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.18 2000/12/01 08:10:27 hubbe Exp $
+ * $Id: des.c,v 1.19 2000/12/05 21:08:33 per Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -104,7 +104,7 @@ static void set_key(INT32 args)
   switch (DesMethod(THIS->method, (unsigned INT8 *)sp[-1].u.string->str))
     {
     case -1:
-      Pike_error("des->set_key: parity Pike_error\n");
+      Pike_error("des->set_key: parity error\n");
       break;
     case -2:
       Pike_error("des->set_key: key is weak!\n");

@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.17 2000/12/01 08:10:13 hubbe Exp $
+ * $Id: result.c,v 1.18 2000/12/05 21:08:29 per Exp $
  *
  * mysql query result
  *
@@ -32,7 +32,7 @@
 #ifdef HAVE_MYSQL_MYSQL_H
 #include <mysql/mysql.h>
 #else
-#Pike_error Need mysql.h header-file
+#error Need mysql.h header-file
 #endif /* HAVE_MYSQL_MYSQL_H */
 #endif /* HAVE_MYSQL_H */
 #ifndef _mysql_h
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.17 2000/12/01 08:10:13 hubbe Exp $");
+RCSID("$Id: result.c,v 1.18 2000/12/05 21:08:29 per Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -211,7 +211,7 @@ void mysqlmod_parse_field(MYSQL_FIELD *field, int support_default)
     }
   } else {
     /*
-     * Should this be an Pike_error?
+     * Should this be an error?
      */
     push_int(0);
   }
