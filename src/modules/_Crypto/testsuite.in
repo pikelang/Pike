@@ -249,3 +249,49 @@ test_eq([[Crypto.crypt_md5("Hello","sl5hO7j4")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
 test_eq([[Crypto.crypt_md5("Hello","$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig.")]],
 	[["$1$sl5hO7j4$glLmY.ttmi1hWK8ucIrig."]])
+
+// ->name
+test_eq(Crypto.des()->name(),"DES")
+test_eq(Crypto.rijndael()->name(),"RIJNDAEL")
+test_eq(Crypto.aes()->name(),"AES")
+test_eq(Crypto.idea()->name(),"IDEA")
+test_eq(Crypto.cast()->name(),"CAST")
+test_eq(Crypto.arcfour()->name(),"ARCFOUR")
+test_eq(Crypto.md5()->name(),"MD5")
+test_eq(Crypto.md4()->name(),"MD4")
+test_eq(Crypto.md2()->name(),"MD2")
+test_eq(Crypto.sha()->name(),"SHA")
+
+// ->query_key_length
+test_eq(Crypto.des()->query_key_length(),8)
+test_eq(Crypto.aes()->query_key_length(),32)
+test_eq(Crypto.idea()->query_key_length(),16)
+test_eq(Crypto.cast()->query_key_length(),16)
+test_eq(Crypto.arcfour()->query_key_length(),1)
+
+// ->query_block_size
+test_eq(Crypto.des()->query_block_size(),8)
+test_eq(Crypto.aes()->query_block_size(),16)
+test_eq(Crypto.idea()->query_block_size(),8)
+test_eq(Crypto.cast()->query_block_size(),8)
+test_eq(Crypto.arcfour()->query_block_size,0)
+
+// pipe
+test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+  Crypto.cast(), Crypto.arcfour() )->name(),
+  "PIPE(DES, AES, IDEA, CAST, ARCFOUR)")
+test_equal( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+   Crypto.cast(), Crypto.arcfour() )->query_key_length(),
+   ({ 8, 32, 16, 16, 1 }) )
+test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+   Crypto.cast(), Crypto.arcfour() )->query_block_size(), 16)
+test_eq( Crypto.pipe( Crypto.des(), Crypto.idea(), Crypto.cast(),
+   Crypto.arcfour() )->query_block_size(), 8)
+test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+   Crypto.cast() )->
+     set_encrypt_key( Crypto.des_parity("A"*8), "B"*32, "C"*16,
+       "D"*16 )->crypt_block("F"*16), "ü\"/5\204­ß\32_\227N\20J>\"1" )
+test_eq( Crypto.pipe( Crypto.des(), Crypto.aes(), Crypto.idea(),
+   Crypto.cast() )->
+     set_decrypt_key( Crypto.des_parity("A"*8), "B"*32, "C"*16,
+       "D"*16 )->crypt_block("ü\"/5\204­ß\32_\227N\20J>\"1"), "F"*16 )
