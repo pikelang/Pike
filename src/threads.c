@@ -25,14 +25,13 @@ void *new_thread_func(void * data)
 {
   struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
-  INT32 args;
+  INT32 tmp;
 
   free((char *)data);
 
-  if(args=mt_lock( & interpreter_lock))
-    fatal("Failed to lock interpreter, errno %d\n",args);
+  if(tmp=mt_lock( & interpreter_lock))
+    fatal("Failed to lock interpreter, errno %d\n",tmp);
 
-  args=arg.args->size;
   init_interpreter();
 
   thread_id=arg.id;
@@ -46,6 +45,8 @@ void *new_thread_func(void * data)
     pop_stack();
     UNSET_ONERROR(tmp);
   } else {
+    INT32 args=arg.args->size;
+    
     push_array_items(arg.args);
     f_call_function(args);
     arg.args=0;
