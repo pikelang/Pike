@@ -156,7 +156,7 @@ array lookup(int suite)
     res->bulk_cipher_algorithm = des;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
-    res->key_material = 7;
+    res->key_material = 8;
     res->iv_size = 8;
     break;
   case CIPHER_3des:
