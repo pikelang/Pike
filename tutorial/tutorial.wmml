@@ -7274,6 +7274,18 @@ returns a new table object.
 
 <hr noshade size=1>
 
+<method name=Table.table-&gt;type title="fetch or set the type for a column">
+<man_syntax>
+mapping type(string|int <i>column</i>, string|void <i>type</i>);<br>
+</man_syntax>
+<man_description>
+This method gives the type for the given column. If the second argument is
+given, the old type will be replaced with <i>type</i>.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
 <method name=Table.table-&gt;truncate title="truncate the table">
 <man_syntax>
 object truncate(int <i>n</i>);<br>
@@ -7321,12 +7333,12 @@ unique rows. When no columns are given, all rows will be unique.
 
 <hr noshade size=1>
 
-<method name=Table.table-&gt;sum title="computes the sum of the columns">
+<method name=Table.table-&gt;sum title="computes the sum of equal rows">
 <man_syntax>
 object sum(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
 <man_description>
-This method sums all non unique rows. The table will be grouped by the
+This method sums all equal rows. The table will be grouped by the
 columns not listed. The result will be returned as a new table object.
 </man_description>
 </method>
@@ -7335,8 +7347,8 @@ columns not listed. The result will be returned as a new table object.
 
 <method name=Table.table-&gt;map title="map the table over functions">
 <man_syntax>
-object map(mapping(string|int:funcion) <i>fus</i>, string|int <i>column1</i>, mixed ... <i>arg</i>)
-object map(mapping(string|int:funcion) <i>fus</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>)
+object map(mapping(string|int:funcion) <i>fus</i>, string|int <i>column1</i>, mixed ... <i>arg</i>);<br>
+object map(mapping(string|int:funcion) <i>fus</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>);<br>
 </man_syntax>
 <man_description>
 This method calls the function for each column each time a non uniqe row
@@ -7347,10 +7359,25 @@ result will be returned as a new table object.
 
 <hr noshade size=1>
 
+<method name=Table.table-&gt;map_col title="map columns over a function">
+<man_syntax>
+object map_col(funcion <i>fu</i>, string|int|array(int|string) <i>columns</i>, mixed ... <i>arg</i>);<br>
+</man_syntax>
+<man_description>
+This method calls the function for all rows in the table. The value returned
+will replace the values in the columns given as argument to map_col. If
+the function returns an array, several columns will be replaced. Otherwise
+on the first column will be replaced. The result will be returned as a new
+table object.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
 <method name=Table.table-&gt;filter title="filter the table through a function">
 <man_syntax>
-object filter(funcion <i>fu</i>, string|int <i>column1</i>, mixed ... <i>arg</i>)
-object filter(funcion <i>fu</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>)
+object filter(funcion <i>fu</i>, string|int <i>column1</i>, mixed ... <i>arg</i>);<br>
+object filter(funcion <i>fu</i>, array(string|int) <i>columns</i>, mixed ... <i>arg</i>);<br>
 </man_syntax>
 <man_description>
 This method calls the function for each row. If the function returns zero,
@@ -7363,10 +7390,115 @@ the row will be kept. The result will be returned as a new table object.
 
 <method name=Table.table-&gt;select title="keep only the given columns">
 <man_syntax>
-object select(string|int <i>column1</i>, string|int <i>column2</i>, ...)
+object select(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
 </man_syntax>
 <man_description>
 This method returns a new table object with the selected columns only.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;remove title="remove columns">
+<man_syntax>
+object remove(string|int <i>column1</i>, string|int <i>column2</i>, ...);<br>
+</man_syntax>
+<man_description>
+Like select, but the given columns will not be in the resulted table.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;encode title="encode the table to a binary string">
+<man_syntax>
+string encode();<br>
+</man_syntax>
+<man_description>
+This method returns a binary string representation of the table.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;decode title="decode an encoded table">
+<man_syntax>
+string decode(string <i>table_string</i>);<br>
+</man_syntax>
+<man_description>
+This method returns a table object from a binary string representation of
+a table.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;col title="fetch a column">
+<man_syntax>
+array col(string|int <i>column</i>);<br>
+</man_syntax>
+<man_description>
+This method returns the contents of a given column as an array.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;`[] title="fetch a column">
+<man_syntax>
+array `[](string|int <i>column</i>);<br>
+</man_syntax>
+<man_description>
+Same as col.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;row title="fetch a row">
+<man_syntax>
+array row(int <i>row_number</i>);<br>
+</man_syntax>
+<man_description>
+This method returns the contents of a given row as an array.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;`== title="compare two tables">
+<man_syntax>
+int `==(object <i>table</i>);<br>
+</man_syntax>
+<man_description>
+This method compares two tables. They are equal if the contents
+of the tables and the field names are equal.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;append_bottom title="concatenate two tables">
+<man_syntax>
+object append_bottom(object <i>table</i>);<br>
+</man_syntax>
+<man_description>
+This method appends two tables. The table given as an argument will be
+added at the bottom of the current table. Note, the field names must
+be equal.
+</man_description>
+</method>
+
+<hr noshade size=1>
+
+<method name=Table.table-&gt;append_right title="concatenate two tables">
+<man_syntax>
+object append_right(object <i>table</i>);<br>
+</man_syntax>
+<man_description>
+This method appends two tables. The table given as an argument will be
+added on the right side of the current table. Note, the number of rows
+in both tables must be equal.
 </man_description>
 </method>
 
