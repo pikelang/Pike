@@ -340,15 +340,15 @@ Examples:     You really look @b{bold@}! - You mean @b{bald@}, don't you?
 XML:          <b>...</b>
 _______________________________________________________________________________
 
-Keyword:      @code{ ... @}
+Keyword:      @code ... @endcode
 Description:  Encapsulates a code block.
 Children:     Text that will be rendered as program code.
-Examples:     @code{
+Examples:     @code
               int fac(int i) {
                 if(i<2) return i;
                 return i*fac(i-1);
               }
-              @}
+              @endcode
 
 XML:          <code>...</code>
 _______________________________________________________________________________
@@ -397,6 +397,15 @@ XML:          `@elem string 1..2' =>
                 <minindex>1</minindex>
                 <maxindex>2</maxindex>
               </elem>
+_______________________________________________________________________________
+
+Keyword:      @expr{ ... @}
+Description:  Mark up a code expression.
+Children:     Text that will be rendered in a fixed font.
+Examples:
+              The expression @{i=i++@} is a noop.
+
+XML:          <expr>...</expr>
 _______________________________________________________________________________
 
 Keyword:      @i{ ... @}
