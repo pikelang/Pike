@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.337 2000/01/02 23:31:37 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.338 2000/01/10 00:48:44 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1173,6 +1173,7 @@ AC_CHECK_SIZEOF(float,4)
 AC_CHECK_SIZEOF(double,8)
 AC_CHECK_SIZEOF(long,4)
 AC_CHECK_SIZEOF(long long,0)
+AC_CHECK_SIZEOF(__int64,0)
 
 AC_MY_CHECK_TYPE(size_t,long)
 AC_MY_CHECK_TYPE(off_t,long)
