@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.311 2004/01/22 23:14:09 nilsson Exp $
+|| $Id: file.c,v 1.312 2004/04/03 23:33:22 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.311 2004/01/22 23:14:09 nilsson Exp $");
+RCSID("$Id: file.c,v 1.312 2004/04/03 23:33:22 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -3878,7 +3878,11 @@ static void fd__sprintf(INT32 args)
     case 'O':
     {
       char buf[20];
+#ifdef PIKE_DEBUG
+      sprintf (buf, "Fd(%"PRINTPIKEINT"d)", FD);
+#else
       sprintf (buf, "Fd(%d)", FD);
+#endif
       push_text(buf);
       return;
     }
@@ -3916,6 +3920,9 @@ PIKE_MODULE_INIT
   map_variable("_write_callback","mixed",0,OFFSETOF(my_file, write_callback),PIKE_T_MIXED);
   map_variable("_read_oob_callback","mixed",0,OFFSETOF(my_file, read_oob_callback),PIKE_T_MIXED);
   map_variable("_write_oob_callback","mixed",0,OFFSETOF(my_file, write_oob_callback),PIKE_T_MIXED);
+#ifdef PIKE_DEBUG
+  map_variable("fd", "int", ID_STATIC|ID_PRIVATE, OFFSETOF (my_file, fd), PIKE_T_INT);
+#endif
 
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",fd__sprintf,

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.33 2003/12/08 17:35:31 grubba Exp $
+|| $Id: file.h,v 1.34 2004/04/03 23:33:22 mast Exp $
 */
 
 #ifndef FILE_H
@@ -31,7 +31,13 @@ struct my_file
 {
   short open_mode;
   short flags;
+#ifdef PIKE_DEBUG
+  /* It can be useful to have this mapped as a pike variable for debug
+   * messages. */
+  INT_TYPE fd;
+#else
   FD fd;
+#endif
   int my_errno;
   struct svalue read_callback;
   struct svalue write_callback;
