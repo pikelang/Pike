@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.50 1999/10/22 16:50:56 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.51 1999/10/22 18:16:17 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -172,7 +172,7 @@ static void mpzmod_get_float(INT32 args)
 
 static struct pike_string *low_get_digits(MP_INT *mpz, int base)
 {
-  struct pike_string *s;
+  struct pike_string *s = 0;   /* Make gcc happy. */
   INT32 len;
   
   if ( (base >= 2) && (base <= 36))

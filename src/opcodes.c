@@ -24,7 +24,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.46 1999/10/22 16:50:53 noring Exp $");
+RCSID("$Id: opcodes.c,v 1.47 1999/10/22 18:16:15 noring Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -235,7 +235,8 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	
       case T_FLOAT:
       {
-	FLOAT_TYPE f;
+	FLOAT_TYPE f = 0.0;
+	
 	switch(sp[-1].type)
 	{
 	  case T_INT:
@@ -249,7 +250,6 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	    
 	  default:
 	    error("Cannot cast %s to float.\n",get_name_of_type(sp[-1].type));
-	    f=0.0;
 	}
 	
 	sp[-1].type=T_FLOAT;
@@ -742,7 +742,7 @@ static INT32 really_low_sscanf(char *input,
 {
   struct svalue sval;
   int e,cnt,matches,eye,arg;
-  int no_assign,field_length,minus_flag;
+  int no_assign = 0, field_length = 0, minus_flag = 0;
   char set[256];
   struct svalue *argp;
   
