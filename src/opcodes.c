@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.151 2003/08/26 17:35:15 grubba Exp $
+|| $Id: opcodes.c,v 1.152 2003/09/10 09:42:05 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.151 2003/08/26 17:35:15 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.152 2003/09/10 09:42:05 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1496,7 +1496,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
   struct svalue sval;							 \
   INT32 matches, arg;							 \
   ptrdiff_t cnt, eye, e, field_length = 0;				 \
-  int no_assign = 0, minus_flag = 0;					 \
+  int no_assign = 0, minus_flag = 0, plus_flag = 0;			 \
   struct sscanf_set set;						 \
 									 \
 									 \
@@ -1541,6 +1541,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
     no_assign=0;							 \
     field_length=-1;							 \
     minus_flag=0;							 \
+    plus_flag=0;							 \
 									 \
     cnt++;								 \
     if(cnt>=match_len)							 \
@@ -1569,6 +1570,11 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 									 \
         case '-':							 \
 	  minus_flag=1;							 \
+	  cnt++;							 \
+	  continue;							 \
+									 \
+        case '+':							 \
+	  plus_flag=1;							 \
 	  cnt++;							 \
 	  continue;							 \
 									 \
@@ -1661,39 +1667,39 @@ CHAROPT2(								 \
 	  if (minus_flag)						 \
 	  {								 \
 	     int x, pos=0;						 \
-									 \
+	     if (field_length >= 0) {					 \
+	       pos = (eye += field_length);				 \
+	     }								 \
+	     if (plus_flag && (--field_length >= 0)) {			 \
+	       sval.u.integer = (signed char)input[--pos];		 \
+	     }								 \
 	     while(--field_length >= 0)					 \
 	     {								 \
-	       x = input[eye];						 \
-									 \
                DO_IF_BIGNUM(						 \
-	       if(INT_TYPE_LSH_OVERFLOW(x, pos))			 \
+	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))		 \
 	       {							 \
 		 push_int(sval.u.integer);				 \
 		 convert_stack_top_to_bignum();				 \
 									 \
 		 while(field_length-- >= 0)				 \
 		 {							 \
-		   push_int(input[eye]);				 \
-		   convert_stack_top_to_bignum();			 \
-		   push_int(pos);					 \
+		   push_int(8);						 \
 		   o_lsh();						 \
+		   push_int(input[--pos]);				 \
 		   o_or();						 \
-		   pos+=8;						 \
-		   eye++;						 \
 		 }							 \
                  dmalloc_touch_svalue(Pike_sp-1);			 \
 		 sval=*--sp;						 \
 		 break;							 \
 	       }							 \
-               );							 \
-	       sval.u.integer|=x<<pos;					 \
-									 \
-	       pos+=8;							 \
-	       eye++;							 \
+	       );							 \
+	       sval.u.integer<<=8;					 \
+	       sval.u.integer |= input[--pos];				 \
 	     }								 \
-	  }								 \
-	  else								 \
+	  } else {							 \
+	     if (plus_flag && (--field_length >= 0)) {			 \
+	       sval.u.integer = (signed char)input[eye++];		 \
+	     }								 \
 	     while(--field_length >= 0)					 \
 	     {								 \
                DO_IF_BIGNUM(						 \
@@ -1719,6 +1725,7 @@ CHAROPT2(								 \
 	       sval.u.integer |= input[eye];				 \
 	       eye++;							 \
 	     }								 \
+	  }								 \
 	  break;							 \
         }								 \
 									 \
