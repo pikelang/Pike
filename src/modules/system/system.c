@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.19 1997/07/10 14:54:43 grubba Exp $
+ * $Id: system.c,v 1.20 1997/08/05 17:03:14 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.19 1997/07/10 14:54:43 grubba Exp $");
+RCSID("$Id: system.c,v 1.20 1997/08/05 17:03:14 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -228,16 +228,31 @@ void f_readlink(INT32 args)
 #endif /* HAVE_READLINK */
 
 #ifdef HAVE_INITGROUPS
-/* void initgroups(string name, int gid) */
+/* int initgroups(string name, int gid) */
 void f_initgroups(INT32 args)
 {
   char *user;
+  int err;
   INT32 group;
   get_all_args("initgroups", args, "%s%i", &user, &group);
-  initgroups(user, group);
+  err = initgroups(user, group);
   pop_n_elems(args);
+  push_int(err);
 }
 #endif /* HAVE_INITGROUPS */
+
+#ifdef HAVE_SETGROUPS
+/* int cleargroups() */
+void f_cleargroups(INT32 args)
+{
+  static gid_t gids[1] = { 65534 };	/* To safeguard against stupid OS's */
+  pop_n_elems(args);
+  push_int(setgroups(0, gids));
+}
+
+/* int setgroup(array(int) gids) */
+/* NOT Implemented in Pike 0.5 */
+#endif /* HAVE_SETGROUPS */
  
 void f_setuid(INT32 args)
 {
@@ -717,8 +732,13 @@ void pike_module_init(void)
   add_efun("readlink", f_readlink, "function(string:string)", OPT_EXTERNAL_DEPEND);
 #endif /* HAVE_READLINK */
 #ifdef HAVE_INITGROUPS
-  add_efun("initgroups", f_initgroups, "function(string, int:void)", OPT_SIDE_EFFECT);
+  add_efun("initgroups", f_initgroups, "function(string, int:int)", OPT_SIDE_EFFECT);
 #endif /* HAVE_INITGROUPS */
+#ifdef HAVE_SETGROUPS
+  add_efun("cleargroups", f_cleargroups, "function(:int)", OPT_SIDE_EFFECT);
+  /* NOT Implemented in Pike 0.5 */
+  /* add_efun("setgroups", f_setgroups, "function(array(int):int)", OPT_SIDE_EFFECT); */
+#endif /* HAVE_SETGROUPS */
   add_efun("setuid", f_setuid, "function(int:void)", OPT_SIDE_EFFECT);
   add_efun("setgid", f_setgid, "function(int:void)", OPT_SIDE_EFFECT);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
