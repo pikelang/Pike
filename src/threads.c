@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.201 2004/04/21 19:25:23 mast Exp $
+|| $Id: threads.c,v 1.202 2004/04/23 19:35:28 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: threads.c,v 1.201 2004/04/21 19:25:23 mast Exp $");
+RCSID("$Id: threads.c,v 1.202 2004/04/23 19:35:28 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1314,8 +1314,11 @@ void exit_mutex_key_obj(struct object *o)
     struct mutex_storage *mut = THIS_KEY->mut;
 
 #ifdef PIKE_DEBUG
-    if(mut->key != o)
-      Pike_fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
+    /* Note: mut->key can be NULL if our corresponding mutex
+     *       has been destructed.
+     */
+    if(mut->key && (mut->key != o))
+      Pike_fatal("Mutex unlock from wrong key %p != %p!\n", mut->key, o);
 #endif
     mut->key=0;
     if (THIS_KEY->owner) {
@@ -1404,6 +1407,7 @@ void f_cond_wait(INT32 args)
   /* Unlock mutex */
   mut->key=0;
   OB2KEY(key)->mut=0;
+  mut->num_waiting++;
   co_signal(& mut->condition);
     
   /* Wait and allow mutex operations */
@@ -1420,6 +1424,7 @@ void f_cond_wait(INT32 args)
   }
   mut->key=key;
   OB2KEY(key)->mut=mut;
+  mut->num_waiting--;
       
   pop_stack();
   return;
