@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.15 1998/02/10 13:28:18 mirar Exp $ */
+/* $Id: matrix.c,v 1.16 1998/04/16 01:22:59 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.15 1998/02/10 13:28:18 mirar Exp $
+**!	$Id: matrix.c,v 1.16 1998/04/16 01:22:59 mirar Exp $
 **! class image
 */
 
@@ -163,7 +163,6 @@ void img_scale(struct image *dest,
    rgb_group *d;
    INT32 y,yd;
    double yn,dx,dy;
-   char *err = NULL;
 
 CHRONO("scale begin");
 
@@ -626,7 +625,7 @@ static void img_skewx(struct image *src,
 		      int xpn) /* expand pixel for use with alpha instead */
 {
    double x0,xmod,xm;
-   INT32 y,x,len;
+   INT32 y,len;
    rgb_group *s,*d;
    rgb_group rgb;
 
@@ -702,7 +701,7 @@ static void img_skewy(struct image *src,
 		      int xpn) /* expand pixel for use with alpha instead */
 {
    double y0,ymod,ym;
-   INT32 y,x,len,xsz;
+   INT32 x,len,xsz;
    rgb_group *s,*d;
    rgb_group rgb;
 
