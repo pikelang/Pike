@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.40 2002/03/08 23:04:32 mast Exp $
+// $Id: Hilfe.pmod,v 1.41 2002/03/14 14:02:27 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -460,6 +460,7 @@ private class Expression {
   }
 
   // We do not test for out of boundery indexing here...
+  //! Returns a token or a token range without whitespaces.
   string `[](int f, void|int t) {
     if(!t)
       return tokens[positions[f]];
@@ -469,6 +470,8 @@ private class Expression {
     return tokens[positions[f]..positions[t]]*"";
   }
 
+  //! See if there is any forbidden modifiers used in the expression,
+  //! e.g. "private int x;" is not valid inside Hilfe.
   string check_modifiers() {
     foreach(sort(values(positions)), int pos)
       if(modifier[tokens[pos]])
@@ -479,8 +482,17 @@ private class Expression {
     return 0;
   }
 
+  //! Returns the expression verbatim.
   string code() {
     return tokens*"";
+  }
+
+  //! Returns the first complex entity in the expression,
+  //! e.g. "Stdio.File" is returned from ({ "Stdio", ".", "File", " ", "f", ";" }).
+  string first_complex() {
+    int p = search(tokens, " ");
+    if(p==-1) p = sizeof(tokens)-1;
+    return tokens[..p]*"";
   }
 
   string _sprintf(int t) {
@@ -918,7 +930,7 @@ class Evaluator {
     // Identify the type of statement so that we can intercept
     // variable declarations and store them locally.
     string type = expr[0];
-    if(expr[1]==".") type=".object";
+    if(has_value(expr->first_complex(), ".")) type=".object";
     if(programs[expr[0]] && expr[1]!="(") type=".local";
 
     switch(type)
@@ -1109,6 +1121,7 @@ class Evaluator {
 	  !trace->is_cpp_error && !trace->is_compilation_error) {
 	// Errors thrown directly by cpp() and compile() are normally not
 	// interesting; they've already been reported to compile_error.
+	errors += "Compiler Exception: " + describe_backtrace (trace);
 	catch {
 	  trace = ({trace[0], trace[1][stack_level + 1..]});
 	  if (trace[1][0][0] == "Optimizer")
@@ -1116,7 +1129,6 @@ class Evaluator {
 	    // somewhat odd frame "Optimizer:0 0()" at the top.
 	    trace[1] = trace[1][1..];
 	};
-	errors += "Compiler Exception: " + describe_backtrace (trace);
       }
       return 1;
     }
