@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.238 2000/05/13 02:44:36 hubbe Exp $");
+RCSID("$Id: program.c,v 1.239 2000/05/23 21:12:05 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4103,7 +4103,6 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
   return 1;
 }
 
-/* This will be moved to program.c - Hubbe */
 void *parent_storage(int depth)
 {
   struct inherit *inherit;

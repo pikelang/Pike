@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.88 2000/05/09 01:17:59 hubbe Exp $
+ * $Id: program.h,v 1.89 2000/05/23 21:12:05 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -475,6 +475,7 @@ struct implements_cache_s;
 int implements(struct program *a, struct program *b);
 int is_compatible(struct program *a, struct program *b);
 int yyexplain_not_implements(struct program *a, struct program *b, int flags);
+void *parent_storage(int depth);
 /* Prototypes end here */
 
 #define ADD_FUNCTION(NAME,FUNC,TYPE,FLAGS) \
