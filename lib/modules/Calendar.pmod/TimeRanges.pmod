@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.21 2003/03/12 09:23:37 agehall Exp $
+// $Id: TimeRanges.pmod,v 1.22 2003/03/12 15:52:43 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -920,7 +920,7 @@ class TimeRange
       return rules->timezone;
    }
 
-//! method TimeRange set_language(Language lang)
+//! method TimeRange set_language(Rule.Language lang)
 //! method TimeRange set_language(string lang)
 //! method Language language()
 //!	Set or get the current language rule.
