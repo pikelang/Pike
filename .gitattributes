@@ -231,7 +231,6 @@ testfont binary
 /refdoc/Makefile foreign_ident
 /refdoc/bin/extract.pike foreign_ident
 /refdoc/bin/join.pike foreign_ident
-/refdoc/bin/mirardoc.pike foreign_ident
 /refdoc/presentation/tree-split-autodoc.pike foreign_ident
 /refdoc/presentation/wiki.pike foreign_ident
 /refdoc/structure/modref.xml foreign_ident
