@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.191 2001/12/19 10:50:30 mast Exp $");
+RCSID("$Id: object.c,v 1.192 2001/12/19 15:19:24 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1769,7 +1769,6 @@ static void f_magic_index(INT32 args)
     case 0:
       SIMPLE_TOO_FEW_ARGS_ERROR ("::`->", 1);
   }
-  pop_n_elems(args);
 
   if(!(o=MAGIC_THIS->o))
     Pike_error("Magic index error\n");
@@ -1794,6 +1793,7 @@ static void f_magic_index(INT32 args)
       Pike_error("Unknown indexing type.\n");
   }
 
+  pop_n_elems(args);
   if(f<0)
   {
     push_int(0);
@@ -1895,7 +1895,6 @@ static void f_magic_indices (INT32 args)
     if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
     type = sp[-args].u.integer;
   }
-  pop_n_elems (args);
 
   if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
@@ -1911,6 +1910,7 @@ static void f_magic_indices (INT32 args)
       break;
     case 1:
       prog = MAGIC_THIS->inherit->prog;
+      pop_n_elems (args);
       push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
       for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
 	struct reference *ref = prog->identifier_references + e;
@@ -1930,6 +1930,7 @@ static void f_magic_indices (INT32 args)
       Pike_error("Unknown indexing type.\n");
   }
 
+  pop_n_elems (args);
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
   for (e = 0; e < (int) prog->num_identifier_index; e++) {
     copy_shared_string (ITEM(res)[e].u.string,
@@ -1958,7 +1959,6 @@ static void f_magic_values (INT32 args)
     if (sp[-args].type != T_INT) SIMPLE_BAD_ARG_ERROR ("::_indices", 1, "void|int");
     type = sp[-args].u.integer;
   }
-  pop_n_elems (args);
 
   if (!(obj = MAGIC_THIS->o)) Pike_error ("Magic index error\n");
   if (!obj->prog) Pike_error ("Object is destructed.\n");
@@ -1976,6 +1976,7 @@ static void f_magic_values (INT32 args)
     case 1:
       inherit = MAGIC_THIS->inherit;
       prog = inherit->prog;
+      pop_n_elems (args);
       push_array (res = allocate_array_no_init (prog->num_identifier_references, 0));
       for (e = i = 0; e < (int) prog->num_identifier_references; e++) {
 	struct reference *ref = prog->identifier_references + e;
@@ -1996,6 +1997,7 @@ static void f_magic_values (INT32 args)
       Pike_error("Unknown indexing type.\n");
   }
 
+  pop_n_elems (args);
   push_array (res = allocate_array_no_init (prog->num_identifier_index, 0));
   for (e = 0; e < (int) prog->num_identifier_index; e++)
     low_object_index_no_free (ITEM(res) + e, obj,
