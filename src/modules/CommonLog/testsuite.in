@@ -1,0 +1,27 @@
+dnl $Id: testsuite.in,v 1.2 2003/04/09 18:18:17 nilsson Exp $
+
+test_do([[
+Stdio.write_file("clf",#"
+host id auth [21/Nov/2002:22:23:24 +0000] \"GET /a/b HTTP/1.1\" 200 14
+127.0.0.1 - - [1/Jan/2001:00:00:01 -0000] \"KILL /me HTTP/07.8\" 417 666
+junk
+host - auth [21/Nov/2002:22:23:24 +0000] \"GET /a/b HTTP/1.1\" 200 14
+"+ ("*"*3850) + #"
+host - auth [21/Nov/2002:22:23:24 +0000] \"GET / HTTP/1.1\" 200 14
+" ); ]])
+
+test_eq( CommonLog.read(lambda(mixed ... x){}, Stdio.File("clf"), 0), 4130)
+test_any_equal([[
+  array res = ({});
+  CommonLog.read( lambda(array a, int b) {
+      res += ({ a+({b}) });
+    }, Stdio.File("clf"), 0);
+  return res;
+]], [[ ({
+({"host","id","auth",2002,11,21,22,23,24,0,"GET","/a/b","HTTP/1.1",200,14,71}),
+({"127.0.0.1",0,0,2001,1,1,0,0,1,0,"KILL","/me","HTTP/07.8",417,666,142}),
+({"host",0,"auth",2002,11,21,22,23,24,0,"GET","/a/b","HTTP/1.1",200,14,215}),
+({"host",0,"auth",2002,11,21,22,23,24,0,"GET","/","HTTP/1.1",200,14,4130}),
+}) ]])
+
+test_do( rm("clf"); )

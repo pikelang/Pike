@@ -346,6 +346,7 @@ testfont binary
 /src/modules/CommonLog/acconfig.h foreign_ident
 /src/modules/CommonLog/clf.c foreign_ident
 /src/modules/CommonLog/configure.in foreign_ident
+/src/modules/CommonLog/testsuite.in foreign_ident
 /src/modules/DVB/Makefile.in foreign_ident
 /src/modules/DVB/acconfig.h foreign_ident
 /src/modules/DVB/configure.in foreign_ident
