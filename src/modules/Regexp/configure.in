@@ -3,7 +3,7 @@ AC_CONFIG_HEADER(config.h)
 
 sinclude(../module_configure.in)
 
-dnl AC_HAVE_HEADERS(regexp.h)
+AC_HAVE_HEADERS(string.h)
 dnl
 dnl AC_CHECK_FUNCS(regcomp regexec regerror regfree)
 dnl
