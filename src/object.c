@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.28 1997/10/29 11:23:25 hubbe Exp $");
+RCSID("$Id: object.c,v 1.29 1997/11/08 01:34:42 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -779,8 +779,6 @@ struct array *object_values(struct object *o)
   return a;
 }
 
-#ifdef GC2
-
 
 void gc_mark_object_as_referenced(struct object *o)
 {
@@ -897,8 +895,6 @@ void gc_free_all_unreferenced_objects(void)
     }
   }
 }
-
-#endif /* GC2 */
 
 void count_memory_in_objects(INT32 *num_, INT32 *size_)
 {

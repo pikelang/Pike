@@ -6,8 +6,6 @@
 
 #include "global.h"
 
-#ifdef GC2
-
 struct callback *gc_evaluator_callback=0;
 
 #include "array.h"
@@ -163,11 +161,12 @@ TYPE_T attempt_to_identify(void *something)
 static void *check_for =0;
 static char *found_where="";
 static void *found_in=0;
-static TYPE_T found_in_type=0;
+static int found_in_type=0;
 void *gc_svalue_location=0;
 
 void describe_location(void *memblock, TYPE_T type, void *location)
 {
+  if(!location) return;
   fprintf(stderr,"**Location of (short) svalue: %p\n",location);
   if(type==T_OBJECT)
   {
@@ -206,9 +205,18 @@ void describe_location(void *memblock, TYPE_T type, void *location)
 
 static void gdb_gc_stop_here(void *a)
 {
-  fprintf(stderr,"**One ref found%s.\n",found_where);
+  fprintf(stderr,"***One ref found%s.\n",found_where);
   describe_something(found_in, found_in_type);
   describe_location(found_in, found_in_type, gc_svalue_location);
+}
+
+void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere)
+{
+  found_in=(void *)fromwhere;
+  found_in_type=-1;
+  gc_xmark_svalues(s,num);
+  found_in_type=T_UNKNOWN;
+  found_in=0;
 }
 
 TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data)
@@ -218,6 +226,7 @@ TYPE_FIELD debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *dat
   found_in_type=t;
   ret=gc_check_svalues(s,num);
   found_in_type=T_UNKNOWN;
+  found_in=0;
   return ret;
 }
 
@@ -227,12 +236,19 @@ void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void 
   found_in_type=t;
   gc_check_short_svalue(u,type);
   found_in_type=T_UNKNOWN;
+  found_in=0;
 }
 
-void describe_something(void *a, TYPE_T t)
+void describe_something(void *a, int t)
 {
   struct program *p=(struct program *)a;
   if(!a) return;
+  if(t==-1)
+  {
+    fprintf(stderr,"**Location description: %s\n",(char *)a);
+    return;
+  }
+
   fprintf(stderr,"**Location: %p  Type: %s  Refs: %d\n",a,
 	  get_name_of_type(t),
 	  *(INT32 *)a);
@@ -544,5 +560,4 @@ void do_gc(void)
   in_gc=0;
 }
 
-#endif
 

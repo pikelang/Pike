@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.54 1997/11/01 21:57:49 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.55 1997/11/08 01:34:38 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -87,7 +87,7 @@ struct frame *fp; /* frame pointer */
 #ifdef DEBUG
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
-  gc_xmark_svalues(evaluator_stack,sp-evaluator_stack-1);
+  debug_gc_xmark_svalues(evaluator_stack,sp-evaluator_stack-1,"interpreter stack");
 }
 #endif
 
@@ -1140,7 +1140,7 @@ static void eval_instruction(unsigned char *pc)
       }
 
     do_return:
-#if defined(DEBUG) && defined(GC2)
+#ifdef DEBUG
       if(d_flag > 2)
 	do_gc();
 #endif

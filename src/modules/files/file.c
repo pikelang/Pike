@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.60 1997/11/07 19:42:21 grubba Exp $");
+RCSID("$Id: file.c,v 1.61 1997/11/08 01:35:41 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -1536,8 +1536,8 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
       gc_check_svalues( & files[e].close_callback, 1);
     }else{
 #ifdef DEBUG
-      gc_xmark_svalues( & files[e].read_callback, 1);
-      gc_xmark_svalues( & files[e].close_callback, 1);
+      debug_gc_xmark_svalues( & files[e].read_callback, 1, "File->read_callback");
+      debug_gc_xmark_svalues( & files[e].close_callback, 1, "File->close_callback");
 #endif
       tmp=0;
     }
@@ -1547,7 +1547,7 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
       gc_check_svalues( & files[e].write_callback, 1);
     }else{
 #ifdef DEBUG
-      gc_xmark_svalues( & files[e].write_callback, 1);
+      debug_gc_xmark_svalues( & files[e].write_callback, 1, "File->write_callback");
 #endif
       tmp=0;
     }
@@ -1559,7 +1559,7 @@ void mark_ids(struct callback *foo, void *bar, void *gazonk)
 #ifdef DEBUG
     else
     {
-      gc_xmark_svalues( & files[e].id, 1);
+      debug_gc_xmark_svalues( & files[e].id, 1, "File->id");
     }
 #endif
   }

@@ -263,8 +263,6 @@ struct multiset *copy_multiset_recursively(struct multiset *l,
 }
 
 
-#ifdef GC2
-
 void gc_mark_multiset_as_referenced(struct multiset *l)
 {
   if(gc_mark(l))
@@ -305,8 +303,6 @@ void gc_free_all_unreferenced_multisets(void)
     }
   }
 }
-
-#endif /* GC2 */
 
 void count_memory_in_multisets(INT32 *num_, INT32 *size_)
 {

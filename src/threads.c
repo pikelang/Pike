@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.45 1997/10/16 06:34:28 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.46 1997/11/08 01:34:45 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -405,7 +405,7 @@ static void thread_was_marked(struct object *o)
   struct thread_state *tmp=(struct thread_state *)(o->storage);
   if(tmp->swapped)
   {
-    gc_xmark_svalues(tmp->evaluator_stack,tmp->sp-tmp->evaluator_stack-1);
+    debug_gc_xmark_svalues(tmp->evaluator_stack,tmp->sp-tmp->evaluator_stack-1,"idle thread stack");
   }
 }
 #endif

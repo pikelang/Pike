@@ -621,8 +621,6 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
   size[0]=size_;
 }
 
-#ifdef GC2
-
 void gc_mark_all_strings(void)
 {
   unsigned INT32 e;
@@ -633,4 +631,3 @@ void gc_mark_all_strings(void)
     for(p=base_table[e];p;p=p->next) gc_is_referenced(p);
   }
 }
-#endif

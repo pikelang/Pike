@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.29 1997/10/27 09:59:22 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.30 1997/11/08 01:34:40 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1088,7 +1088,7 @@ static int char_const(void)
 	  break;
 
 	case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-	  c=GETC()-'a'+10;
+	  c=GETC()-'A'+10;
 	  break;
       }
       switch(LOOK())

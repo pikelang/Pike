@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.55 1997/11/07 05:36:02 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.56 1997/11/08 01:34:36 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1216,7 +1216,6 @@ void f_sleep(INT32 args)
   }
 }
 
-#ifdef GC2
 void f_gc(INT32 args)
 {
   INT32 tmp;
@@ -1225,7 +1224,6 @@ void f_gc(INT32 args)
   do_gc();
   push_int(tmp - num_objects);
 }
-#endif
 
 #ifdef TYPEP
 #undef TYPEP
@@ -1891,9 +1889,7 @@ void init_builtin_efuns(void)
 #endif
   add_efun("_memory_usage",f__memory_usage,"function(:mapping(string:int))",OPT_EXTERNAL_DEPEND);
 
-#ifdef GC2
   add_efun("gc",f_gc,"function(:int)",OPT_SIDE_EFFECT);
-#endif
   add_efun("version", f_version, "function(:string)", OPT_TRY_OPTIMIZE);
 
   add_efun("encode_value", f_encode_value, "function(mixed:string)", OPT_TRY_OPTIMIZE);

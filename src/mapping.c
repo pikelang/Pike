@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.23 1997/10/16 06:34:26 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.24 1997/11/08 01:34:41 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -948,8 +948,6 @@ void check_all_mappings(void)
 #endif
 
 
-#ifdef GC2
-
 void gc_mark_mapping_as_referenced(struct mapping *m)
 {
   INT32 e;
@@ -1056,8 +1054,6 @@ void gc_free_all_unreferenced_mappings(void)
     }
   }
 }
-
-#endif /* GC2 */
 
 void zap_all_mappings(void)
 {

@@ -1447,7 +1447,6 @@ void check_all_arrays(void)
 }
 #endif /* DEBUG */
 
-#ifdef GC2
 
 void gc_mark_array_as_referenced(struct array *a)
 {
@@ -1523,8 +1522,6 @@ void gc_free_all_unreferenced_arrays(void)
   } while (a != & empty_array);
 }
 
-
-#endif /* GC2 */
 
 #ifdef DEBUG
 
