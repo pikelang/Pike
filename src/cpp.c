@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.49 1999/03/09 00:07:51 grubba Exp $
+ * $Id: cpp.c,v 1.50 1999/03/27 17:17:00 grubba Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -27,6 +27,8 @@
 #include "constants.h"
 #include "time.h"
 #include "stuff.h"
+#include "version.h"
+
 #include <ctype.h>
 
 #define CPP_NO_OUTPUT 1
@@ -1110,14 +1112,26 @@ void f_cpp(INT32 args)
     this.defines=hash_insert(this.defines, & def->link);
   }
 
-  simple_add_define(&this,"__PIKE__"," 1 ");
-  simple_add_define(&this,"__VERSION__"," 0.7 ");
+  {
+    char buffer[128];
+
+    simple_add_define(&this, "__PIKE__", " 1 ");
+
+    sprintf(buffer, " %d.%d ", PIKE_MAJOR_VERSION, PIKE_MINOR_VERSION);
+    simple_add_define(&this, "__VERSION__", buffer);
+    sprintf(buffer, " %d ", PIKE_MAJOR_VERSION);
+    simple_add_define(&this, "__MAJOR__", buffer);
+    sprintf(buffer, " %d ", PIKE_MINOR_VERSION);
+    simple_add_define(&this, "__MINOR__", buffer);
+    sprintf(buffer, " %d ", PIKE_BUILD_VERSION);
+    simple_add_define(&this, "__BUILD__", buffer);
 #ifdef __NT__
-  simple_add_define(&this,"__NT__"," 1 ");
+    simple_add_define(&this, "__NT__", " 1 ");
 #endif
 #ifdef __amigaos__
-  simple_add_define(&this,"__amigaos__"," 1 ");
+    simple_add_define(&this, "__amigaos__", " 1 ");
 #endif
+  }
 
   for (tmpf=pike_predefs; tmpf; tmpf=tmpf->next)
     simple_add_define(&this, tmpf->name, tmpf->value);
