@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.176 2001/11/09 14:06:49 mast Exp $
+ * $Id: master.pike.in,v 1.177 2001/11/12 13:38:04 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -888,7 +888,11 @@ class dirnode
     }
 
     if( !files )
-      files = get_dir(fakeroot(dirname));
+      if (!(files = get_dir(fakeroot(dirname)))) {
+	werror ("Error listing module directory %O: %s\n",
+		dirname, strerror (errno()));
+	files = ({});
+      }
 
     int ret;
     foreach( files, string s )
@@ -962,7 +966,12 @@ class dirnode
     }
 
     if( !files )
-      files = get_dir(fakeroot(dirname));
+      if (!(files = get_dir(fakeroot(dirname)))) {
+	werror ("Error listing module directory %O: %s\n",
+		dirname, strerror (errno()));
+	files = ({});
+      }
+
     foreach(files, string fname) {
       mixed err = catch {
 	if (((< ".pike", ".pmod" >)[fname[sizeof(fname)-5..]]) &&
@@ -2279,7 +2288,7 @@ string describe_function (function f)
 string describe_backtrace(mixed trace, void|int linewidth)
 {
   int e;
-  string ret;
+  string ret = "";
   int backtrace_len=((int)getenv("PIKE_BACKTRACE_LEN")) || bt_max_string_len;
 
   if(!linewidth)
@@ -2301,14 +2310,13 @@ string describe_backtrace(mixed trace, void|int linewidth)
     }) {
       return "Error indexing backtrace!\n";
     }
-  }else{
-    ret="";
-  }
+    if(!arrayp(trace))
+      return ret + "No backtrace.\n";
+  }else
+    if (!arrayp (trace))
+      return sprintf ("Unrecognized backtrace format: %O\n", trace);
 
-  if(!arrayp(trace))
   {
-    ret+="No backtrace.\n";
-  }else{
     Describer desc = Describer();
     desc->identify_parts (trace);
 
@@ -2451,7 +2459,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
     ret += frames * "";
   }
 
-  return ret || "No backtrace!\n";;
+  return ret;
 }
 
 //! @appears describe_error
@@ -2623,10 +2631,16 @@ CompatResolver get_compilation_handler(int major, int minor)
   
   if(!zero_type(ret=compat_handler_cache[v])) return ret;
 
+  array files;
   array(Version) available=({});
 
 #if "¤share_prefix¤"[0]!='¤'
-  foreach(get_dir("¤share_prefix¤"), string ver)
+  if (!(files = get_dir("¤share_prefix¤"))) {
+    werror ("Error listing directory %O: %s\n",
+	    "¤share_prefix¤", strerror (errno()));
+    files = ({});
+  }
+  foreach(files, string ver)
     {
       if(sscanf(ver,"%d.%d",int maj, int min))
       {
@@ -2638,7 +2652,12 @@ CompatResolver get_compilation_handler(int major, int minor)
 #endif
 
 #if "¤lib_prefix¤"[0]!='¤'
-  foreach(get_dir("¤lib_prefix¤"), string ver)
+  if (!(files = get_dir("¤lib_prefix¤"))) {
+    werror ("Error listing directory %O: %s\n",
+	    "¤lib_prefix¤", strerror (errno()));
+    files = ({});
+  }
+  foreach(files, string ver)
     {
       if(sscanf(ver,"%d.%d",int maj, int min))
       {
