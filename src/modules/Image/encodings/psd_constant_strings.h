@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd_constant_strings.h,v 1.6 2002/10/11 01:39:44 nilsson Exp $
+|| $Id: psd_constant_strings.h,v 1.7 2003/09/24 08:47:35 jonasw Exp $
 */
 
 STRING(height);
@@ -19,6 +19,7 @@ STRING(mask_left);
 STRING(mask_right);
 STRING(mask_bottom);
 STRING(mask_flags);
+STRING(mask_default_color);
 STRING(opacity);
 STRING(clipping);
 STRING(flags);
