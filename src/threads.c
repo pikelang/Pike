@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.11 1996/11/17 01:57:49 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.12 1996/11/19 10:04:29 neotron Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -124,7 +124,9 @@ void th_init()
 {
   mt_lock( & interpreter_lock);
   pthread_attr_init(&pattr);
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
   pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
+#endif
   pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
 
   add_efun("thread_create",f_thread_create,"function(mixed ...:int)",OPT_SIDE_EFFECT);

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.21 1996/11/18 23:09:40 hubbe Exp $
+# $Id: configure.in,v 1.22 1996/11/19 10:04:30 neotron Exp $
 
 AC_INIT(interpret.c)
 
@@ -374,6 +374,7 @@ if test $pike_cv_posix_threads = yes ; then
   AC_DEFINE(_REENTRANT)
   AC_DEFINE(_THREAD_SAFE)
   AC_DEFINE(_MIT_POSIX_THREADS)
+  AC_CHECK_FUNCS(pthread_attr_setstacksize)
 else
   AC_MSG_RESULT(no)
   LIBS="$OLDLIBS"

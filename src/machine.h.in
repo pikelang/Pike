@@ -339,6 +339,10 @@
 #undef _THREAD_SAFE
 #undef _MIT_POSIX_THREADS
 
+/* Define this if you have pthread_attr_setstacksize() */
+#undef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+
+
 /* Define this if you have dlopen() */
 #undef HAVE_DLOPEN
 
