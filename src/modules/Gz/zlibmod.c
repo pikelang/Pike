@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.16 1997/11/11 03:12:04 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.17 1997/11/11 03:56:25 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -37,6 +37,7 @@ struct zipper
 };
 
 #define BUF 32768
+#define MAX_BUF	(64*BUF)
 
 #define THIS ((struct zipper *)(fp->current_storage))
 
@@ -106,11 +107,18 @@ static int do_deflate(dynamic_buffer *buf,
       char *loc;
       int ret;
       loc=low_make_buf_space(BUF,buf);
-      THREADS_ALLOW();
       this->gz.next_out=(Bytef *)loc;
       this->gz.avail_out=BUF;
-      ret=deflate(& this->gz, flush);
-      THREADS_DISALLOW();
+      while (1) {
+        THREADS_ALLOW();
+        ret=deflate(& this->gz, flush);
+        THREADS_DISALLOW();
+	if ((ret != Z_BUF_ERROR) || (this->gz.avail_out > MAX_BUF)) {
+	  break;
+	}
+	low_make_buf_space(BUF, buf);
+	this->gz.avail_out += BUF;
+      } 
       low_make_buf_space(-this->gz.avail_out,buf);
       if(ret != Z_OK)
       {
