@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.14 2002/11/05 19:14:51 grubba Exp $
+|| $Id: sparc.c,v 1.15 2002/11/05 19:29:38 grubba Exp $
 */
 
 /*
@@ -92,7 +92,7 @@
       SPARC_SETHI(reg_, val_);						\
       if (val_ & 0x3ff) {						\
 	/* or reg, %lo(val_), reg */					\
-        SPARC_OR(reg_, reg_, val_, 1);					\
+        SPARC_OR(reg_, reg_, val_ & 0x3ff, 1);				\
       }									\
       if (val_ < 0) {							\
         /* Sign extend. */						\
@@ -134,6 +134,7 @@ void sparc_ins_entry(void)
 		 (SPARC_REG_O6<<14)|((-112)&0x1fff));
 }
 
+/* Update Pike_fp->pc */
 void sparc_update_pc(void)
 {
   /* call .+8 */
