@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.266 2003/04/02 12:22:59 mast Exp $
+// $Id: master.pike.in,v 1.267 2003/04/03 21:09:16 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -69,7 +69,7 @@ int compat_minor=-1;
 
 #define Stat _static_modules.files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
-#define write(X) _static_modules.files()->_stdout->write(X)
+#define write(X ...) _static_modules.files()->_stdout->write(X)
 
 #ifdef RESOLV_DEBUG
 
@@ -1798,6 +1798,7 @@ void _main(array(string) orig_argv, array(string) env)
     q=tmp->find_all_options(argv,({
       ({"compat_version", HAS_ARG, ({"-V", "--compat"}), 0, 0}),
       ({"version",        NO_ARG,  ({"-v", "--version"}), 0, 0}),
+      ({"dumpversion",    NO_ARG,  ({"--dumpversion"}), 0, 0}),
       ({"help",           NO_ARG,  ({"-h", "--help"}), 0, 0}),
       ({"features",       NO_ARG,  ({"--features"}), 0, 0}),
       ({"info",           NO_ARG,  ({"--info"}), 0, 0}),
@@ -1923,6 +1924,10 @@ void _main(array(string) orig_argv, array(string) env)
     {
       switch(opts[0])
       {
+      case "dumpversion":
+	write("%d.%d.%d\n", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);
+	exit(0);
+
       case "version":
 	werror(version() + " Copyright © 1994-2003 Linköping University\n"
 	       "Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you are\n"
