@@ -173,26 +173,22 @@ void pgtk_free_str( gchar *s );
 # define PGTK_FREESTR(X) pgtk_free_str( X )
 # define PGTK_PUSH_GCHAR(X) pgtk_push_gchar( X )
 #else
-# define PGTK_ISSTR( X ) (((X)->type==PIKE_T_STRING) && ((X)->u.string->size_shift==0))
-# define PGTK_GETSTR(X)  ((char *)((X)->u.string->str))
+# define PGTK_ISSTR( X ) (((X)->type==PIKE_T_STRING)&&((X)->u.string->size_shift==0))
+# define PGTK_GETSTR(X)  ((char*)((X)->u.string->str))
 # define PGTK_FREESTR(X)  
 # define PGTK_PUSH_GCHAR(X) push_text( X )
 #endif
 
-#if defined(AUTO_BIGNUM) && defined(INT64)
 /* Somewhat more complex than one could expect. Consider bignums. */
-# define PGTK_ISINT(X)    pgtk_is_int( X )
-# define PGTK_GETINT(X)   pgtk_get_int( X )
-INT64  pgtk_get_int( struct svalue *s );
+LONGEST  pgtk_get_int( struct svalue *s );
 int pgtk_is_int( struct svalue *s );
-# define PGTK_PUSH_INT(X) push_int64( (INT64)(X) )
-#else
-# define PGTK_ISINT(X)  ((X)->type == PIKE_T_INT )
-# define PGTK_GETINT(X) ((X)->u.integer)
-# define PGTK_PUSH_INT(X) push_int( (INT_TYPE)(X) )
-#endif
-/* Somewhat more complex than one could expect. Can convert from int
- * to float, and, if bignum is present, bignum to float.
+
+# define PGTK_ISINT(X)    (((X)->type == PIKE_T_INT) || pgtk_is_int( X ))
+# define PGTK_GETINT(X)   pgtk_get_int( X )
+# define PGTK_PUSH_INT(X) push_int64( (LONGEST)(X) )
+
+/* Can convert from int to float, and, if bignum is present, bignum to
+ * float.
  */
 double pgtk_get_float( struct svalue *s );
 int pgtk_is_float( struct svalue *s );
