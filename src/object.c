@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.112 2000/04/17 21:06:24 hubbe Exp $");
+RCSID("$Id: object.c,v 1.113 2000/04/19 14:00:43 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -627,7 +627,10 @@ void really_free_object(struct object *o)
     FREE_PROT(o);
 
     free((char *)o);
-    GC_FREE_OBJ();
+
+    /* Not using GC_FREE_OBJ here, since it balks in gc pass 3. This
+     * case is ok, since no destroy() is called. */
+    LOW_GC_FREE();
   }
 }
 
