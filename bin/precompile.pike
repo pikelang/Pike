@@ -1686,9 +1686,20 @@ class ParseBlock
 
 	    else if(arg->may_be_void())
 	    {
-	      ret+=({
-		PC.Token(sprintf("if (args > %d) {",argnum)),
-	      });
+	      if ((arg->basetype() == "int") || (arg->basetype() == "mixed")) {
+		ret+=({
+		  PC.Token(sprintf("if (args > %d) {",argnum)),
+		});
+	      } else {
+		ret+=({
+		  PC.Token(sprintf("if ((args > %d) && \n"
+				   "    ((Pike_sp[%d%s].type != PIKE_T_INT) ||\n"
+				   "     (Pike_sp[%d%s].u.integer))) {",
+				   argnum,
+				   argnum, check_argbase,
+				   argnum, check_argbase)),
+		});
+	      }
 	    }
 
 	    if(arg->is_c_type() && arg->basetype() == "string")
@@ -1703,7 +1714,7 @@ class ParseBlock
 				 argnum,check_argbase,
 				 upper_case(arg->basetype())),arg->line())
 	      });
-	    }else
+	    } else {
 
 	      switch(arg->basetype())
 	      {
@@ -1727,7 +1738,7 @@ class ParseBlock
 
 	      case "mixed":
 	      }
-
+	    }
 	    switch(arg->basetype())
 	    {
 	    default:
