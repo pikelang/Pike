@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.147 2003/04/08 08:37:36 grubba Exp $
+|| $Id: interpret_functions.h,v 1.148 2003/04/18 15:41:12 mast Exp $
 */
 
 /*
@@ -1363,8 +1363,7 @@ OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, X, i */
 });
 
 OPCODE0(F_MAKE_ITERATOR, "Iterator", 0, {
-  extern void f_Iterator(INT32);
-  f_Iterator(1);
+  f_get_iterator(1);
 });
 
 OPCODE0_BRANCH(F_NEW_FOREACH, "foreach++", 0, { /* iterator, lvalue, lvalue */

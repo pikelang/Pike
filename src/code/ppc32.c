@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.30 2003/02/16 13:33:42 mast Exp $
+|| $Id: ppc32.c,v 1.31 2003/04/18 15:41:12 mast Exp $
 */
 
 /*
@@ -14,6 +14,7 @@
 #include "operators.h"
 #include "constants.h"
 #include "object.h"
+#include "builtin_functions.h"
 
 #if PIKE_BYTEORDER == 1234
 #define MAKE_TYPE_WORD(t,st) ((t)|((st)<<16))
@@ -435,9 +436,8 @@ void ins_f_byte(unsigned int b)
      
   case F_MAKE_ITERATOR - F_OFFSET:
     {
-      extern void f_Iterator(INT32);
       SET_REG(PPC_REG_ARG1, 1);
-      addr = (void *)f_Iterator;
+      addr = (void *)f_get_iterator;
     }
     break;
   case F_ADD - F_OFFSET:
