@@ -1,11 +1,11 @@
 #
-# $Id: configure.in,v 1.5 2003/09/23 12:46:59 grubba Exp $
+# $Id: configure.in,v 1.6 2003/09/24 12:46:47 mirar Exp $
 #
 AC_INIT(pcre_glue.cmod)
 AC_CONFIG_HEADER(pcre_machine.h)
 AC_ARG_WITH(libpcre,     [  --with(out)-libpcre       Support Regexp.PCRE],[],[with_libpcre=yes])
 
-AC_MODULE_INIT()
+AC_MODULE_INIT(_Regexp_PCRE)
 
 PIKE_FEATURE_WITHOUT(Regexp.PCRE)
 

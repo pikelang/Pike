@@ -1,0 +1,389 @@
+// -*- Pike -*-
+// $Id: module.pmod.in,v 1.1 2003/09/24 12:46:47 mirar Exp $
+// original author: mirar
+
+#pike __REAL_VERSION__
+
+inherit @module@; // C-module
+
+// there are other maybe useful stuff in _Regexp_PCRE
+// so don't stop compiling because it's not complete:
+#if constant(@module@._pcre) // there are other maybe useful stuff
+
+//! The main regexp class. Will provide anything needed 
+//! for matching regexps. 
+//!
+//! There are subclasses that adds wrappers for widestrings,
+//! and to optimize the regexp pattern.
+
+class Plain
+{
+   inherit _pcre;
+
+/***************************************************************/
+
+   inline int(0..0) handle_exec_error(int error_no)
+   {
+      switch (error_no)
+      {
+	 case ERROR.NOMATCH: 
+	    return UNDEFINED; 
+	 case ERROR.NOMEMORY:
+	    error("out of memory in exec() (ERROR.NOMEMORY)\n");
+	 default:
+	    error("error returned from exec: %s\n",
+		  ([ERROR.NULL   :"ERROR.NULL",
+		    ERROR.BADOPTION:"ERROR.BADOPTION",
+		    ERROR.BADMAGIC :"ERROR.BADMAGIC",
+		    ERROR.UNKNOWN_NODE:"ERROR.UNKNOWN_NODE",
+		    ERROR.MATCHLIMIT  :"ERROR.MATCHLIMIT",
+		    ERROR.CALLOUT     :"ERROR.CALLOUT"])[error_no]
+		  ||sprintf("unknown error: %d\n",error_no));
+      }
+   }
+
+//! Matches a subject against the pattern,
+//! returns an array where the first element are the whole match,
+//! and the subsequent are the matching subpatterns.
+//! Returns 0 if there was no match.
+//!
+//! example:
+//! > Regexp.PCRE.Plain("i\(.*\) is \(.*\)u")->split2("pike is fun");
+//! Result: ({ 
+//!              "ike is fu",
+//!              "ke",
+//!              "f"
+//!          })
+
+   array(string)|int(0..0) split2(string subject,void|int startoffset)
+   {
+      array(int)|int v=exec(subject,startoffset);
+      if (intp(v)) return handle_exec_error([int]v);
+      return split_subject(subject,[array(int)]v); 
+   }
+
+//! Matches a subject against the pattern,
+//! compatible with the old split method:
+//! returns an array of the subpatterns,
+//! or if there are no subpattern but still a match, ({0}).
+//! Returns 0 if there was no match.
+//!
+//! example:
+//! > Regexp.PCRE.Plain("i\(.*\) is \(.*\)u")->split("pike is fun");
+//! (1) Result: ({
+//!                 "ke",
+//!                 "f"
+//!             })
+//! > Regexp.PCRE.Plain("is fun")->split("pike is fun"); 
+//! (4) Result: ({
+//!                 0
+//!             })
+
+   array(string)|int(0..0) split(string subject,void|int startoffset)
+   {
+      array(string)|int(0..0) v=split2(subject,startoffset);
+      if (intp(v)) return v;
+      if (sizeof(v)>1) return v[1..];
+      else return copy_value(({0}));
+   }
+
+//! returns true (1) if a match is found,
+//! false otherwise
+//!
+//! example:
+//! > Regexp.PCRE.Plain("is fun")->match("pike is fun");
+//! Result: 1
+//! > Regexp.PCRE.Plain("is fun")->match("pike isn't fun");
+//! Result: 0
+
+   int(0..1) match(string subject,void|int startoffset)
+   {
+      array(int)|int v=exec(subject,startoffset);
+      if (intp(v)) return handle_exec_error([int]v);
+      return 1;
+   }
+
+//! replace all occurances of a pattern in a subject;
+//! callbacks and replacements will be from the first occurance,
+//! not from the last as in Regexp.Builtin.replace.
+//!
+//! example:
+//! > Regexp.PCRE("b[^-]*m")->replace("abam-boom-fooabadoom","gurka");
+//! Result: "agurka-gurka-fooagurka"
+//! > Regexp.PCRE("b[^-]*m")->replace("abam-boom-fooabadoom",
+//!      lambda(string s) { werror("%O\n",s); return "gurka"; });
+//! "bam"
+//! "boom"
+//! "badoom"
+//! Result: "agurka-gurka-fooagurka"
+
+   string replace(string subject,string|function(string:string) with)
+   {
+      int i=0;
+      String.Buffer res=String.Buffer();
+      for (;;)
+      {
+	 array(int)|int v=exec(subject,i);
+
+	 if (intp(v) && !handle_exec_error([int]v)) break;
+
+	 if (v[0]>i) res->add(subject[i..v[0]-1]);
+
+	 if (stringp(with)) res->add(with);
+	 else res->add(with(subject[v[0]..v[1]-1]));
+
+	 i=v[1];
+      }
+
+      res->add(subject[i..]);
+
+      return (string)res;
+   }
+
+//! replace one (first) occurance of a pattern in a subject
+//!
+//! example:
+//! > Regexp.PCRE("b[^-]*m")->replace1("abam-boom-fooabadoom","gurka");
+//! Result: "agurka-boom-fooabadoom"
+
+   string replace1(string subject,string|function(string:string) with)
+   {
+      array(int)|int v=exec(subject,0);
+      if (intp(v) && !handle_exec_error([int]v))
+	 return subject;
+      
+      String.Buffer res=String.Buffer();
+      if (v[0]>0) res->add(subject[0..v[0]-1]);
+
+      if (stringp(with)) res->add(with);
+      else res->add(with(subject[v[0]..v[1]-1]));
+
+      res->add(subject[v[1]..]);
+
+      return (string)res;
+   }
+
+//! Will give a callback for each match in a subject.
+//! Called arguments will be matching patterns and subpatterns
+//! in an array and as second argument the exec result array.
+//!
+//! returns called object
+//!
+//! example:
+//! > Regexp.PCRE("b(a*)([^-\1234]*)(\1234*)m")
+//!     ->matchall("abam-boom-fooabado\1234m",
+//!                lambda(mixed s) { werror("%O\n",s); return "gurka"; });
+//! ({ /* 4 elements */
+//!     "bam",
+//!     "a",
+//!     "",
+//!     ""
+//! })
+//! ({ /* 4 elements */
+//!     "boom",
+//!     "",
+//!     "oo",
+//!     ""
+//! })
+//! ({ /* 4 elements */
+//!     "bado\1234m",
+//!     "a",
+//!     "do",
+//!     "\1234"
+//! })
+//! Result: Regexp.PCRE.StudiedWidestring("b(a*)([^-Ê\234]*)(Ê\234*)m")
+
+   this_program matchall(string subject,
+			 function(array(string)|void,
+				  array(int)|void:mixed|void) callback)
+   {
+      int i=0;
+      for (;;)
+      {
+	 array(int)|int v=exec(subject,i);
+	 if (intp(v) && !handle_exec_error([int]v)) 
+	    return this_object();
+	 callback(split_subject(subject,v),v);
+	 i=v[1];
+      }
+   }
+
+/**** "internal" ***********************************************/
+
+   string _sprintf(int t,mapping fum)
+   {
+      if (t=='t') return "Regexp.PCRE.Plain";
+      return ::_sprintf(t,fum);
+   }
+
+   string cast(string to)
+   {
+      if (to=="string") return pattern; 
+      else error("can't cast %t to %O\n",this_object(),to);
+   }
+}
+
+//! Same as Plain,
+//! but will be studied to match faster; useful if you're doing
+//! many matches on the same pattern
+
+class Studied
+{
+   inherit Plain;
+
+   void create(string pattern,void|int options,void|object table)
+   {
+      ::create(pattern,options,table);
+      study();
+   }
+
+   string _sprintf(int t,mapping fum)
+   {
+      if (t=='t') return "Regexp.PCRE.Studied";
+      return ::_sprintf(t,fum);
+   }
+}
+
+#if constant(@module@.buildconfig_UTF8)
+#define PCRE_GOT_WIDESTRINGS
+
+//! Wrapper class around Plain, that will allow widestring
+//! patterns and subjects.
+//!
+//! Widestring support and this class will not be implemented if the
+//! linked libpcre lacks UTF8 support.
+
+class Widestring
+{
+   inherit Plain;
+
+   void create(string pattern,void|int options,void|object table)
+   {
+      ::create(string_to_utf8(pattern),options|OPTION.UTF8,table);
+   }
+   
+   string _sprintf(int t,mapping fum)
+   {
+      if (t=='t') return "Regexp.PCRE.Widestring";
+      return ::_sprintf(t,fum);
+   }
+
+   array(string)|int(0..0) split2(string subject,void|int startoffset)
+   {
+      string subject_utf8=string_to_utf8(subject);
+
+      if (startoffset && subject_utf8!=subject) 
+	 startoffset=char_number_to_utf8_byte_index(startoffset,subject);
+
+      array(int)|int v=::exec(subject_utf8,startoffset);
+
+      if (intp(v)) return handle_exec_error([int]v);
+      return map(split_subject(subject_utf8,[array(int)]v),
+		 utf8_to_string);
+   }
+
+//! The exec function is wrapped to give the correct indexes for 
+//! the widestring. 
+
+   array(int)|int exec(string subject,void|int startoffset)
+   {
+      string subject_utf8=string_to_utf8(subject);
+
+      if (startoffset && subject_utf8!=subject) 
+	 startoffset=char_number_to_utf8_byte_index(startoffset,subject);
+
+      array(int)|int v=::exec(subject_utf8,startoffset);
+
+      if (arrayp(v))
+	 if (subject_utf8!=subject) 
+	    return utf8_byte_index_to_char_number(v,subject_utf8);
+	 else
+	    return v;
+
+      return v;
+   }
+}
+
+// really slow helper functions -- FIXME! and add to String or something
+static array(int)|int 
+   utf8_byte_index_to_char_number(array(int)|int c,string utf8)
+{
+   if (arrayp(c)) return map(c,utf8_byte_index_to_char_number,utf8);
+   return c && strlen(utf8_to_string(utf8[..c-1]));
+}
+
+static array(int)|int 
+   char_number_to_utf8_byte_index(array(int)|int c,string wide)
+{
+   if (arrayp(c)) return map(c,char_number_to_utf8_byte_index,wide);
+   return c && strlen(string_to_utf8(wide[..c-1]));
+}
+
+
+//! Same as Widestring,
+//! but will be studied to match faster; useful if you're doing
+//! many matches on the same pattern
+
+class StudiedWidestring
+{
+   inherit Widestring;
+
+   void create(string pattern,void|int options,void|object table)
+   {
+      ::create(pattern,options,table);
+      study();
+   }
+
+   string _sprintf(int t,mapping fum)
+   {
+      if (t=='t') return "Regexp.PCRE.StudiedWidestring";
+      return ::_sprintf(t,fum);
+   }
+}
+
+#define GOOD StudiedWidestring
+#define QUICK Widestring
+#else
+#define GOOD Studied
+#define QUICK Plain
+#endif // buildconfig_UTF8
+
+//! Convencience function to create a suitable PCRE Regexp object;
+//! will create a StudiedWidestring from the arguments.
+//!
+//! That means the result will be able to handle widestrings,
+//! and will produce fast matchings by studying the pattern, but the
+//! widestring wrapping will on the other hand add overhead.
+//!
+//! If you need a faster regexp and doesn't use widestring,
+//! create a Regexp.PCRE.Studied instead.
+//!
+//! Widestring support will not be used if the linked libpcre
+//! lacks UTF8 support. This can be tested with
+//! checking that the Regexp.PCRE.Widestring class exist.
+
+GOOD `()(string pattern,void|int options,void|object table)
+{
+   return GOOD(pattern,options,table);
+}
+
+// ****************************************************************
+
+int(0..1) match(string regexp, string data) {
+  return QUICK(regexp)->match(data);
+}
+
+array split(string regexp, string data) {
+  return QUICK(regexp)->split(data);
+}
+
+array split2(string regexp, string data) {
+  return QUICK(regexp)->split2(data);
+}
+
+string replace(string regexp, string data,
+	       string|function(string:string) transform) {
+  return QUICK(regexp)->replace(data, transform);
+}
+
+#endif // constant(_pcre)

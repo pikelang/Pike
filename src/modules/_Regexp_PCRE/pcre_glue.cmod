@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcre_glue.cmod,v 1.7 2003/09/23 12:48:27 grubba Exp $
+|| $Id: pcre_glue.cmod,v 1.8 2003/09/24 12:46:47 mirar Exp $
 || (original author: mirar)
 */
 
 #include "global.h"
-RCSID("$Id: pcre_glue.cmod,v 1.7 2003/09/23 12:48:27 grubba Exp $");
+RCSID("$Id: pcre_glue.cmod,v 1.8 2003/09/24 12:46:47 mirar Exp $");
 #include "pcre_machine.h"
 
 #include "pike_macros.h"
@@ -78,9 +78,12 @@ PIKECLASS _pcre
 	 switch (args)
 	 {
 	    default:
-	       get_all_args("pcre->create",args,"%S%d%o",
-			    &(THIS->pattern),&options,&table);
-	       break;
+	       if (Pike_sp[2-args].type!=T_INT) /* allow NULL table */
+	       {
+		  get_all_args("pcre->create",args,"%S%d%o",
+			       &(THIS->pattern),&options,&table);
+		  break;
+	       }
 	    case 2:
 	       get_all_args("pcre->create",args,"%S%d",
 			    &(THIS->pattern),&options);
@@ -142,12 +145,13 @@ PIKECLASS _pcre
 	    return;
 
 	 case 'O':
-	    push_constant_text ("Regexp.PCRE(%O)");
+	    push_constant_text ("%t(%O)");
+	    ref_push_object(Pike_fp->current_object);
 	    if (THIS->pattern)
 	       ref_push_string(THIS->pattern);
 	    else
 	       push_undefined();
-	    f_sprintf(2);
+	    f_sprintf(3);
 	    return;
 
 	 case 's':
@@ -155,6 +159,10 @@ PIKECLASS _pcre
 	       ref_push_string(THIS->pattern);
 	    else
 	       push_undefined();
+	    return;
+
+	 case 't':
+	    push_text("Regexp.PCRE._pcre");
 	    return;
       }
    }
@@ -624,7 +632,7 @@ PIKE_MODULE_INIT
    add_integer_constant("NULL",PCRE_ERROR_NULL,0);
    add_integer_constant("BADOPTION",PCRE_ERROR_BADOPTION,0);
    add_integer_constant("BADMAGIC",PCRE_ERROR_BADMAGIC,0);
-   add_integer_constant("NODE",PCRE_ERROR_UNKNOWN_NODE,0);
+   add_integer_constant("UNKNOWN_NODE",PCRE_ERROR_UNKNOWN_NODE,0);
    add_integer_constant("NOMEMORY",PCRE_ERROR_NOMEMORY,0);
    add_integer_constant("NOSUBSTRING",PCRE_ERROR_NOSUBSTRING,0);
 #ifdef PCRE_ERROR_MATCHLIMIT
