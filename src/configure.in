@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.495 2001/03/04 19:27:17 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.496 2001/03/06 18:29:09 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -778,10 +778,10 @@ AC_ARG_WITH(lib-path,    [  --with-lib-path        A list of paths to search for
 AC_ARG_WITH(double-precision, [  --with-double-precision          use double precision floats ], [ AC_DEFINE(WITH_DOUBLE_PRECISION_SVALUE) ] )
 AC_ARG_WITH(long-double-precision,[  --with-long-double-precision          use long double precision floats ], [ AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE) ] )
 
-AC_ARG_WITH(long-int,         [  --with-long-int                  use "long" native type int (experimental)], [ AC_DEFINE(WITH_LONG_INT) ] )
-AC_ARG_WITH(long-long-int,    [  --with-long-long-int             use "long long" native type int (experimental)], [ AC_DEFINE(WITH_LONG_LONG_INT) ] )
-AC_ARG_WITH(short-int,        [  --with-short-int                 use "short" native type int (experimental)], [ AC_DEFINE(WITH_SHORT_INT) ] )
-AC_ARG_WITH(int-int,          [  --with-int-int                   use "int" native type int (experimental)], [ AC_DEFINE(WITH_INT_INT) ] )
+AC_ARG_WITH(long-int,         [  --with-long-int                  use long native type int (experimental)], [ AC_DEFINE(WITH_LONG_INT) ] )
+AC_ARG_WITH(long-long-int,    [  --with-long-long-int             use long long native type int (experimental)], [ AC_DEFINE(WITH_LONG_LONG_INT) ] )
+AC_ARG_WITH(short-int,        [  --with-short-int                 use short native type int (experimental)], [ AC_DEFINE(WITH_SHORT_INT) ] )
+AC_ARG_WITH(int-int,          [  --with-int-int                   use int native type int (experimental)], [ AC_DEFINE(WITH_INT_INT) ] )
 
 AC_ARG_WITH(gdbm,        [  --without-gdbm         no GNU database manager support ])
 AC_ARG_WITH(gmp,         [  --without-gmp          no support for Gmp bignums])
