@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.27 2000/12/05 21:08:27 per Exp $");
+RCSID("$Id: psd.c,v 1.28 2003/09/24 08:48:06 jonasw Exp $");
 
 #include "image_machine.h"
 
@@ -273,7 +273,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
         layer->mask_bottom = psd_read_int( &tmp2 );
         layer->mask_right  = psd_read_int( &tmp2 );
         layer->mask_default_color = psd_read_uchar( &tmp2 );
-/*         layer->mask_flags = psd_read_uchar( &tmp2 ); */
+        layer->mask_flags = psd_read_uchar( &tmp2 );
       }
       tmp2 = psd_read_string( &tmp );
       if( tmp2.len )
@@ -563,6 +563,7 @@ void push_layer( struct layer  *l)
   ref_push_string( s_mask_right );    push_int( l->mask_right );
   ref_push_string( s_mask_bottom );   push_int( l->mask_bottom );
   ref_push_string( s_mask_flags );    push_int( l->mask_flags );
+  ref_push_string( s_mask_default_color ); push_int( l->mask_default_color );
   ref_push_string( s_opacity );       push_int( l->opacity );
   ref_push_string( s_clipping );      push_int( l->clipping );
   ref_push_string( s_flags );         push_int( l->flags );

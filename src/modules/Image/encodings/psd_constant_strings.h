@@ -12,6 +12,7 @@ STRING(mask_left);
 STRING(mask_right);
 STRING(mask_bottom);
 STRING(mask_flags);
+STRING(mask_default_color);
 STRING(opacity);
 STRING(clipping);
 STRING(flags);
