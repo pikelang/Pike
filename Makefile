@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.146 2004/07/04 12:56:04 mast Exp $
+# $Id: Makefile,v 1.147 2004/09/27 21:55:31 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -368,7 +368,7 @@ docclean:
 	-rm -f "$(BUILDDIR)/onepage.xml"
 	-rm -f "$(BUILDDIR)/traditional.xml"
 
-docspotless:
+docspotless: docclean
 	if test -f "refdoc/Makefile"; then \
 	  cd refdoc; $(DO_MAKE) spotless; \
 	else :; fi
