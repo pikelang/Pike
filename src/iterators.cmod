@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.9 2001/05/26 18:02:56 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.10 2001/06/05 10:14:58 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -104,6 +104,31 @@ PIKECLASS mapping_iterator
       RETURN step_bucket(THIS);
     }
 
+  /* Hubbe: Should this really be destructive ?? */
+  PIKEFUN object _random()
+    {
+      if(THIS->md->hashsize)
+      {
+	size_t k;
+	struct keypair *tmp;
+	THIS->bucket=my_rand() % THIS->md->hashsize;
+	k=0;
+	for(tmp=THIS->md->hash[THIS->bucket];tmp;tmp=tmp->next) k++;
+	tmp=THIS->md->hash[THIS->bucket];
+	if(k)
+	{
+	  k=my_rand() % k;
+	  while(--k > 0) tmp=tmp->next;
+	}
+	THIS->current=tmp;
+      }else{
+	THIS->bucket=-1;
+	THIS->current=0;
+      }
+      step_bucket(THIS);
+      REF_RETURN Pike_fp->current_object;
+    }
+
   PIKEFUN int next() { RETURN mi_step(THIS); }
   PIKEFUN int `!() { RETURN !THIS->current; }
 
@@ -183,6 +208,17 @@ PIKECLASS array_iterator
       THIS->pos=0;
       RETURN THIS->a && THIS->a->size < THIS->pos;
     }
+
+  /* Hubbe: Should this really be destructive ?? */
+  PIKEFUN object _random()
+    {
+      if(THIS->a->size)
+	THIS->pos=my_rand() % THIS->a->size;
+      else
+	THIS->pos=0;
+      REF_RETURN Pike_fp->current_object;
+    }
+
   PIKEFUN int next()
     {
       THIS->pos++;
@@ -262,6 +298,17 @@ PIKECLASS multiset_iterator
       THIS->pos=0;
       RETURN THIS->a && THIS->a->size < THIS->pos;
     }
+
+  /* Hubbe: Should this really be destructive ?? */
+  PIKEFUN object _random()
+    {
+      if(THIS->a->size)
+	THIS->pos=my_rand() % THIS->a->size;
+      else
+	THIS->pos=0;
+      REF_RETURN Pike_fp->current_object;
+    }
+
   PIKEFUN int next()
     {
       THIS->pos++;
@@ -341,6 +388,17 @@ PIKECLASS string_iterator
       THIS->pos=0;
       RETURN THIS->s && THIS->s->len < THIS->pos;
     }
+
+  /* Hubbe: Should this really be destructive ?? */
+  PIKEFUN object _random()
+    {
+      if(THIS->s->len)
+	THIS->pos=my_rand() % THIS->s->len;
+      else
+	THIS->pos=0;
+      REF_RETURN Pike_fp->current_object;
+    }
+
   PIKEFUN int next()
     {
       THIS->pos++;
@@ -595,6 +653,11 @@ PIKECLASS string_split_iterator
   }
 
   PIKEFUN int first()
+    {
+      Pike_error("Not supported.\n");
+    }
+
+  PIKEFUN object _random()
     {
       Pike_error("Not supported.\n");
     }
