@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.17 1997/04/16 03:09:13 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.18 1997/04/23 23:06:16 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -763,7 +763,7 @@ node * make_node_from_mapping(struct mapping *m)
     struct array *ind, *val;
     node *n;
     ind=mapping_indices(m);
-    val=mapping_indices(m);
+    val=mapping_values(m);
     n=mkefuncallnode("mkmapping",
 		     mknode(F_ARG_LIST,
 			    make_node_from_array(ind),
