@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.64 2003/12/19 22:08:16 marcus Exp $
+|| $Id: jvm.c,v 1.65 2003/12/19 22:19:40 marcus Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.64 2003/12/19 22:08:16 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.65 2003/12/19 22:19:40 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1662,6 +1662,8 @@ struct cpu_context {
   unsigned INT32 code[23];
 };
 
+#define FLT_ARG_OFFS (args+wargs)
+
 static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 			   void (*dispatch)(), int args,
 			   int flt_args, int dbl_args)
@@ -2130,6 +2132,10 @@ static void *make_stub(struct cpu_context *ctx, void *data, int statc, int rt,
   return low_make_stub(ctx, data, statc, disp, args, flt_args, dbl_args);
 }
 
+#ifndef FLT_ARG_OFFS
+#define FLT_ARG_OFFS args
+#endif
+
 static void build_native_entry(JNIEnv *env, jclass cls,
 			       struct native_method_context *con,
 			       JNINativeMethod *jnm,
@@ -2161,13 +2167,13 @@ static void build_native_entry(JNIEnv *env, jclass cls,
     case '(':
       break;
     case 'D':
-      dbl_args |= 1<<args;
+      dbl_args |= 1<<FLT_ARG_OFFS;
     case 'J':
       args ++;
       wargs ++;
       break;
     case 'F':
-      flt_args |= 1<<args;
+      flt_args |= 1<<FLT_ARG_OFFS;
       args ++;
       break;
     case '[':
