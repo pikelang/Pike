@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.62 2001/05/18 22:41:31 grubba Exp $
+// $Id: treeopt.in,v 1.63 2001/05/19 21:38:05 grubba Exp $
 //
 // The tree optimizer
 //
@@ -846,7 +846,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
 {
   extern struct program *string_split_iterator_program;
   node *vars;
-  p_wchar2 split = $1->u.sval.u.string->str[0];
+  p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -892,7 +892,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
 {
   extern struct program *string_split_iterator_program;
   node *vars;
-  p_wchar2 split = $1->u.sval.u.string->str[0];
+  p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
@@ -942,7 +942,7 @@ F_FOREACH(F_VAL_LVAL(F_APPLY(F_CONSTANT
 {
   extern struct program *string_split_iterator_program;
   node *vars;
-  p_wchar2 split = $1->u.sval.u.string->str[0];
+  p_wchar2 split = index_shared_string($1->u.sval.u.string, 0);
 
   ADD_NODE_REF2($2,
     if ($2->token == ':') {
