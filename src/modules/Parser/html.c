@@ -24,10 +24,8 @@
 
 extern struct program *parser_html_program;
 
-/*
-#define SCAN_DEBUG
-#define DEBUG
-*/
+/* #define SCAN_DEBUG */
+/* #define DEBUG */
 
 #ifdef DEBUG
 #undef DEBUG
@@ -2653,7 +2651,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
    for (;;)
    {
-      int found, got_fin;
+      int found, endtag, got_fin;
 
       DEBUG_MARK_SPOT("find_end_of_cont : loop",feed,c);
       if (!scan_forward(feed,c,&s1,&c1,&(this->tag_start),1))
@@ -2701,11 +2699,8 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       }
 
       /* tag or end tag? */
-      if (index_shared_string (s2->s, c2) == this->tag_fin) {
-	c2++;
-	found = 'e';
-      }
-      else found = 't';
+      endtag = index_shared_string (s2->s, c2) == this->tag_fin;
+      if (endtag) c2++;
 
       /* scan tag name as argument and push */
       if (!scan_forward_arg(this,s2,c2,&s3,&c3,SCAN_ARG_PUSH,finished,NULL))
@@ -2714,7 +2709,7 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 	return STATE_WAIT; /* come again */
       }
 #ifdef DEBUG
-      if (found == 'e')
+      if (endtag)
 	DEBUG_MARK_SPOT("find_end_of_cont : got end tag",s2,c2);
       else
 	DEBUG_MARK_SPOT("find_end_of_cont : got tag",s2,c2);
@@ -2722,20 +2717,37 @@ static newstate find_end_of_container(struct parser_html_storage *this,
 
       if (this->flags & FLAG_CASE_INSENSITIVE_TAG)
 	f_lower_case(1);
-      if (!is_eq(sp-1,tagname)) found = 0;
+      found = is_eq(sp-1,tagname);
 
       /* When we should treat unknown tags as text, we have to parse
-       * and lookup just the tag name before continuing. */
-      if (!found && (THIS->flags & FLAG_IGNORE_UNKNOWN) &&
-	  (!m_sizeof(this->maptag) || !low_mapping_lookup(this->maptag,sp-1)) &&
-	  (!m_sizeof(this->mapcont) || !low_mapping_lookup(this->mapcont,sp-1))) {
-	/* Known buglet: This doesn't correctly handle the case when a
-	 * tag is registered that begins with the '/' character. */
-	DEBUG((stderr,"find_end_of_cont : treating unknown tag as text\n"));
-	feed = s3;
-	c = c3;
+       * and lookup just the tag name before continuing. This is an
+       * awkward situation, since there's no telling whether the
+       * parser used for the contents will define the same tags. */
+      if (!found && (THIS->flags & FLAG_IGNORE_UNKNOWN)) {
+	if (endtag) {
+	  struct pike_string *s;
+	  push_string (make_shared_binary_string2 (&this->tag_fin, 1));
+	  s = add_shared_strings (sp[-1].u.string, sp[-2].u.string);
+	  pop_stack();
+	  push_string (s);
+	}
+	else
+	  stack_dup();
+	if (!((m_sizeof(this->maptag) &&
+	       (low_mapping_lookup(this->maptag,sp-1) ||
+	       ((THIS->flags & (FLAG_XML_TAGS|FLAG_STRICT_TAGS)) ==
+		(FLAG_XML_TAGS|FLAG_STRICT_TAGS) &&
+		low_mapping_lookup(this->maptag,sp-2)))) ||
+	      (m_sizeof(this->mapcont) &&
+	       (low_mapping_lookup(this->mapcont,sp-1) ||
+		low_mapping_lookup(this->mapcont,sp-2))))) {
+	  DEBUG((stderr,"find_end_of_cont : treating unknown tag as text\n"));
+	  feed = s3;
+	  c = c3;
+	  pop_n_elems (2);
+	  continue;
+	}
 	pop_stack();
-	continue;
       }
 
       if (c3 < s3->s->len && index_shared_string (s3->s,c3) == this->tag_start) {
@@ -2755,55 +2767,57 @@ static newstate find_end_of_container(struct parser_html_storage *this,
       pop_stack();
 
       if (!scan_for_end_of_tag(this,s3,c3,&s2,&c2,finished,
-			       found == 'e' ? -1 : this->flags & FLAG_MATCH_TAG,
+			       found && endtag ? -1 : this->flags & FLAG_MATCH_TAG,
 			       &got_fin))
       {
 	DEBUG_MARK_SPOT("find_end_of_cont : wait at tag end",s2,c2);
 	 return STATE_WAIT;
       }
 
-      switch (found) {
-	case 't': /* push a new level */
-	 if (got_fin && this->flags & FLAG_XML_TAGS) {
-	   DEBUG_MARK_SPOT("find_end_of_cont : skipping empty element tag",s2,c2+1);
-	   feed = s2;
-	   c = c2+1;
-	   break;
-	 }
+      if (found) {
+	if (!endtag) { /* push a new level */
+	  if (got_fin && this->flags & FLAG_XML_TAGS) {
+	    DEBUG_MARK_SPOT("find_end_of_cont : skipping empty element tag",s2,c2+1);
+	    feed = s2;
+	    c = c2+1;
+	    continue;
+	  }
 
-	 DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2+1);
-	 res=find_end_of_container(this,tagname,
-				   s2,++c2,e1,ce1,&feed,&c,finished);
-	 DEBUG_MARK_SPOT("find_end_of_cont : push end",feed,c);
-	 if (res)
-	 {
+	  DEBUG_MARK_SPOT("find_end_of_cont : push",s2,c2+1);
+	  res=find_end_of_container(this,tagname,
+				    s2,++c2,e1,ce1,&feed,&c,finished);
+	  DEBUG_MARK_SPOT("find_end_of_cont : push end",feed,c);
+	  if (res)
+	  {
 	    DEBUG((stderr,"find_end_of_cont : (pushed) return %d %p:%d\n",
 		   res,s1,c1));
 	    return res;
-	 }
-	 break;
+	  }
+	}
 
-	case 'e':
-	 if (index_shared_string (s2->s, c2) == this->tag_start) {
-	   DEBUG_MARK_SPOT("find_end_of_cont : skipping open endtag",s2,c2);
-	   feed = s2;
-	   c = c2;
-	   continue;
-	 }
+	else {
+	  if (index_shared_string (s2->s, c2) == this->tag_start) {
+	    DEBUG_MARK_SPOT("find_end_of_cont : skipping open endtag",s2,c2);
+	    feed = s2;
+	    c = c2;
+	    continue;
+	  }
 
-	 DEBUG_MARK_SPOT("find_end_of_cont : got cont end   --> ",s1,c1);
-	 DEBUG_MARK_SPOT("find_end_of_cont : got endtag end --> ",s2,c2);
+	  DEBUG_MARK_SPOT("find_end_of_cont : got cont end   --> ",s1,c1);
+	  DEBUG_MARK_SPOT("find_end_of_cont : got endtag end --> ",s2,c2);
 
-	 *e1=s1;
-	 *ce1=c1;
-	 *e2=s2;
-	 *ce2=c2+1;
+	  *e1=s1;
+	  *ce1=c1;
+	  *e2=s2;
+	  *ce2=c2+1;
 
-	 return STATE_DONE;
+	  return STATE_DONE;
+	}
+      }
 
-	default:
-	 feed=s2;
-	 c=c2;
+      else {
+	feed=s2;
+	c=c2;
       }
    }
 }

@@ -543,6 +543,43 @@ test_any([[{
   p->add_container ("t", lambda (object p, mapping a, string s) {return ({"[",s,"]"});});
   return p->finish ("a<t>b<t>c</t>d</t>e")->read();
 }]], "a[b<t>c</t>d]e");
+test_any([[{
+  object p = Parser.HTML();
+  p->ignore_unknown (1);
+  p->match_tag (0);
+  p->add_container ("c", "");
+  p->add_tag ("X", "");
+  p->add_container ("Y", "");
+  p->add_tag ("/x", "");
+  p->add_container ("/y", "");
+  return p->finish ("1<c>-<a </c>-</c>-"
+		    "2<c>-<X </c>-</c>-"
+		    "3<c>-</X </c>-</c>-"
+		    "4<c>-<//X </c>-</c>-"
+		    "5<c>-<Y </c>-</c>-"
+		    "6<c>-</Y </c>-</c>-"
+		    "7<c>-<//Y </c>-</c>-"
+		    "8<c>-<x </c>-</c>-"
+		    "9<c>-</x </c>-</c>-"
+		    "10<c>-<//x </c>-</c>-"
+		    "11<c>-<y </c>-</c>-"
+		    "12<c>-</y </c>-</c>-"
+		    "13<c>-<//y </c>-</c>-"
+		    "14<c>-<c </c>-</c>-</c>-")->read();
+}]],               ("1-</c>-"
+		    "2-"
+		    "3-</c>-"
+		    "4-</c>-"
+		    "5-"
+		    "6-"
+		    "7-</c>-"
+		    "8-</c>-"
+		    "9-"
+		    "10-</c>-"
+		    "11-</c>-"
+		    "12-"
+		    "13-"
+		    "14-"));
 
 // Redefinition during parsing
 test_any([[
