@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Gdbm.pike,v 1.4 2000/09/28 03:38:30 hubbe Exp $
+ * $Id: Gdbm.pike,v 1.5 2000/12/14 04:17:47 nilsson Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -17,7 +17,7 @@
 //after this many deletion ops, the databases will be compacted.
 #define CLUTTERED 100
 
-
+#if constant(Gdbm.gdbm)
 Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
 
@@ -165,6 +165,7 @@ void create(string path) {
   metadb=Gdbm.gdbm(path+"_meta.db","rwcf");
 }
 
+#endif // constant(Gdbm.gdbm)
 
 /**************** thoughts and miscellanea ******************/
 //maybe we should split the database into two databases, one for the data
