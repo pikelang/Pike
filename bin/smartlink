@@ -151,6 +151,11 @@ if test x$# != x0 ; then
       LDOPTS="$LDOPTS -Wl,-rpath,$RPATH"
      fi
    ;;
+   UnixWare\ 7.*)
+     if test x$LINKING != xno -a "x$RPATH" != x ; then
+       LDOPTS="$LDOPTS -Xlinker -YP, -Xlinker $RPATH"
+     fi
+   ;;
    *)
     LD_LIBRARY_PATH="$RPATH"
     LD_RUN_PATH="$RPATH"
