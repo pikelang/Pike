@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.24 2000/06/20 03:26:53 hubbe Exp $");
+RCSID("$Id: port.c,v 1.25 2000/06/29 18:16:00 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -183,7 +183,7 @@ int STRCASECMP(const char *a,const char *b)
 #endif
 
 #ifndef HAVE_MEMSET
-char *MEMSET(char *s,int c,int n)
+char *MEMSET(char *s,int c,size_t n)
 {
   char *t;
   for(t=s;n;n--) *(s++)=c;
@@ -195,7 +195,7 @@ char *MEMSET(char *s,int c,int n)
 #ifdef TRY_USE_MMX
 #include <mmx.h>
 #endif
-void MEMCPY(void *bb,const void *aa,int s)
+void MEMCPY(void *bb,const void *aa,size_t s)
 {
   if(!s) return;
 #ifdef TRY_USE_MMX
@@ -281,7 +281,7 @@ void MEMCPY(void *bb,const void *aa,int s)
 #endif
 
 #ifndef HAVE_MEMMOVE
-void MEMMOVE(void *b,const void *aa,int s)
+void MEMMOVE(void *b,const void *aa,size_t s)
 {
   char *t=(char *)b;
   char *a=(char *)aa;
@@ -295,7 +295,7 @@ void MEMMOVE(void *b,const void *aa,int s)
 
 
 #ifndef HAVE_MEMCMP
-int MEMCMP(const void *bb,const void *aa,int s)
+int MEMCMP(const void *bb,const void *aa,size_t s)
 {
   char *a=(char *)aa;
   char *b=(char *)bb;
@@ -313,9 +313,9 @@ int MEMCMP(const void *bb,const void *aa,int s)
 #endif
 
 #ifndef HAVE_MEMCHR
-char *MEMCHR(char *p,char c,int e)
+char *MEMCHR(char *p,char c,size_t e)
 {
-  while(--e >= 0) if(*(p++)==c) return p-1;
+  while(e--) if(*(p++)==c) return p-1;
   return (char *)0;
 }
 #endif
@@ -379,7 +379,7 @@ char *STRTOK(char *s1,char *s2)
    character after the last one used in the number is put in *ENDPTR.  */
 double STRTOD(char * nptr, char **endptr)
 {
-  register char *s;
+  register unsigned char *s;
   short int sign;
 
   /* The number so far.  */
@@ -397,7 +397,7 @@ double STRTOD(char * nptr, char **endptr)
     goto noconv;
   }
 
-  s = nptr;
+  s = (unsigned char *)nptr;
 
   /* Eat whitespace.  */
   while (ISSPACE(*s)) ++s;
@@ -413,7 +413,7 @@ double STRTOD(char * nptr, char **endptr)
   exponent = 0;
   for (;; ++s)
   {
-    if (isdigit (*s))
+    if (isdigit(*s))
     {
       got_digit = 1;
 
@@ -435,7 +435,7 @@ double STRTOD(char * nptr, char **endptr)
       if (got_dot)
 	--exponent;
     }
-    else if (!got_dot && (char) *s == '.')
+    else if (!got_dot && (*s == '.'))
       /* Record that we have found the decimal point.  */
       got_dot = 1;
     else
@@ -455,7 +455,7 @@ double STRTOD(char * nptr, char **endptr)
 
       errno = 0;
       ++s;
-      exp = STRTOL(s, &end, 10);
+      exp = STRTOL((char *)s, &end, 10);
       if (errno == ERANGE)
       {
 	/* The exponent overflowed a `long int'.  It is probably a safe
@@ -468,12 +468,12 @@ double STRTOD(char * nptr, char **endptr)
 	else
 	  goto overflow;
       }
-      else if (end == s)
+      else if (end == (char *)s)
 	/* There was no exponent.  Reset END to point to
 	   the 'e' or 'E', so *ENDPTR will be set there.  */
 	end = (char *) s - 1;
       errno = save;
-      s = end;
+      s = (unsigned char *)end;
       exponent += exp;
     }
 

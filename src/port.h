@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.27 2000/06/08 22:06:48 hubbe Exp $
+ * $Id: port.h,v 1.28 2000/06/29 18:16:01 grubba Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -76,13 +76,13 @@ int STRCASECMP(const char *a,const char *b);
 #endif
 
 #ifndef HAVE_MEMSET
-char *MEMSET (char *s,int c,int n);
+char *MEMSET (char *s,int c,size_t n);
 #else
 #  define MEMSET memset
 #endif
 
 #ifdef TRY_USE_MMX
-void MEMCPY(void *b,const void *a,int s);
+void MEMCPY(void *b,const void *a,size_t s);
 # define __builtin_memcpy MEMCPY
 #else
 # ifndef HAVE_MEMCPY
@@ -90,7 +90,7 @@ void MEMCPY(void *b,const void *a,int s);
 #    define MEMCPY(X,Y,Z) bcopy(Y,X,Z)
 #    define __builtin_memcpy(X,Y,Z) bcopy(Y,X,Z)
 #  else
-void MEMCPY(void *b,const void *a,int s);
+void MEMCPY(void *b,const void *a,size_t s);
 #    define __builtin_memcpy MEMCPY
 #  endif
 # else
@@ -99,19 +99,19 @@ void MEMCPY(void *b,const void *a,int s);
 #endif
 
 #ifndef HAVE_MEMMOVE
-void MEMMOVE(void *b,const void *a,int s);
+void MEMMOVE(void *b,const void *a,size_t s);
 #else
 #  define MEMMOVE memmove
 #endif
 
 #ifndef HAVE_MEMCMP
-int MEMCMP(const void *b,const void *a,int s);
+int MEMCMP(const void *b,const void *a,size_t s);
 #else
 #  define MEMCMP(X,Y,Z) memcmp((char*)(X),(char*)(Y),(Z))
 #endif
 
 #ifndef HAVE_MEMCHR
-char *MEMCHR(char *p,char c,int e);
+char *MEMCHR(char *p,char c,size_t e);
 #else
 #  define MEMCHR(X,Y,Z) ((char *)memchr(X,Y,Z))
 #endif
