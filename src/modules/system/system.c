@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.16 1997/04/16 03:14:06 hubbe Exp $
+ * $Id: system.c,v 1.17 1997/05/18 22:25:09 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.16 1997/04/16 03:14:06 hubbe Exp $");
+RCSID("$Id: system.c,v 1.17 1997/05/18 22:25:09 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -52,7 +52,9 @@ RCSID("$Id: system.c,v 1.16 1997/04/16 03:14:06 hubbe Exp $");
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif /* HAVE_NETDB_H */
-
+#ifdef HAVE_GRP_H
+#include <grp.h>
+#endif /* HAVE_GRP_H */
 
 /*
  * Functions
