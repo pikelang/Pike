@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.57 2003/04/01 18:30:24 mast Exp $
+dnl $Id: aclocal.m4,v 1.58 2003/04/03 16:58:36 mast Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -220,6 +220,31 @@ ifelse([$3], , , [  rm -rf conftest*
 fi
 rm -rf conftest*])
 
+dnl PIKE_CHECK_CONSTANTS(checking_message, constant_names, includes, define_name)
+dnl
+dnl define_name will be defined to the first constant in
+dnl constant_names that exists. It will remain undefined if none of
+dnl them exists.
+AC_DEFUN(PIKE_CHECK_CONSTANTS,
+[
+  AC_MSG_CHECKING([$1])
+  AC_CACHE_VAL(pike_cv_$4_value, [
+    pike_cv_$4_value=""
+    for const in $2
+    do
+      AC_TRY_COMPILE([$3], [int tmp = (int) $const;], [
+	pike_cv_$4_value="$const"
+	break
+      ])
+    done
+  ])
+  if test x"$pike_cv_$4_value" != x; then
+    AC_MSG_RESULT($pike_cv_$4_value)
+    AC_DEFINE_UNQUOTED([$4], $pike_cv_$4_value)
+  else
+    AC_MSG_RESULT(none)
+  fi
+])
 
 
 dnl 
@@ -262,7 +287,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.57 2003/04/01 18:30:24 mast Exp $
+# $Id: aclocal.m4,v 1.58 2003/04/03 16:58:36 mast Exp $
 
 MY_AC_PROG_CC
 

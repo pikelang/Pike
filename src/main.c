@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.159 2003/01/22 15:12:24 nilsson Exp $
+|| $Id: main.c,v 1.160 2003/04/03 16:58:36 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.159 2003/01/22 15:12:24 nilsson Exp $");
+RCSID("$Id: main.c,v 1.160 2003/04/03 16:58:36 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -445,6 +445,11 @@ int dbm_main(int argc, char **argv)
 	      p++;
 	      goto more_d_flags;
 
+	    case 'T':
+	      debug_options |= ERRORCHECK_MUTEXES;
+	      p++;
+	      goto more_d_flags;
+
 	    default:
 	      d_flag += (p[0] == 'd');
 	      p++;
@@ -518,6 +523,13 @@ int dbm_main(int argc, char **argv)
       break;
     }
   }
+
+#ifndef PIKE_MUTEX_ERRORCHECK
+  if (debug_options & ERRORCHECK_MUTEXES)
+    fputs ("Warning: -dT (error checking mutexes) not supported on this system.\n",
+	   stderr);
+#endif
+  if (d_flag) debug_options |= ERRORCHECK_MUTEXES;
 
 #if !defined(RLIMIT_NOFILE) && defined(RLIMIT_OFILE)
 #define RLIMIT_NOFILE RLIMIT_OFILE

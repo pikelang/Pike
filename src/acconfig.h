@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.110 2003/03/29 01:45:22 mast Exp $
+|| $Id: acconfig.h,v 1.111 2003/04/03 16:58:36 mast Exp $
 */
 
 #ifndef MACHINE_H
@@ -397,14 +397,14 @@
 /* Define this if you have Windows NT threads */
 #undef NT_THREADS
 
+/* Define to the flag to get an error checking mutex, if supported. */
+#undef PIKE_MUTEX_ERRORCHECK
+
+/* Define to the flag to get a recursive mutex, if supported. */
+#undef PIKE_MUTEX_RECURSIVE
+
 /* Define this if your pthreads have pthread_condattr_default */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT
-
-/* Define if your pthreads have PTHREAD_MUTEX_RECURSIVE */
-#undef HAVE_PTHREAD_MUTEX_RECURSIVE
-
-/* Define if your pthreads have PTHREAD_MUTEX_RECURSIVE_NP */
-#undef HAVE_PTHREAD_MUTEX_RECURSIVE_NP
 
 /* Define this if you need to use &pthread_condattr_default in cond_init() */
 #undef HAVE_PTHREAD_CONDATTR_DEFAULT_AIX
