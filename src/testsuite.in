@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.432 2001/07/01 23:42:41 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.433 2001/07/03 13:39:20 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -143,6 +143,21 @@ test_any([[mapping(string:int) foo;
 	  array(string) bar;
 	  return sprintf("%O", typeof(rows(foo, bar))); ]],
 	 "array(int)")
+
+test_any([[{
+  class Foo
+  {
+    mixed m;
+  }
+  class Bar
+  {
+    inherit Foo;
+    string m;
+    Foo b;
+    string f() {return werror ("%O", typeof (b->m));}
+  }
+  return Bar()->f();
+}]], "mixed")
 
 // type checks
 
