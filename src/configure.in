@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.26 1996/12/03 21:52:36 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.27 1996/12/04 02:23:54 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -387,7 +387,6 @@ fi
 
 LIBOBJS="${OLD_LIBOBJS}"
 
-AC_FUNC_STRCOLL
 AC_FUNC_MMAP
 
 AC_CHECK_FUNCS(
@@ -437,6 +436,31 @@ fi
 
 AC_STRUCT_TM
 
+#############################################################################
+AC_MSG_CHECKING(working strcoll)
+AC_CACHE_VAL(pike_cv_func_strcoll,
+[
+AC_TRY_RUN([
+#include <string.h>
+#include <locale.h>
+int main()
+{
+  setlocale(LC_CTYPE, "ISO-8859-1");
+  exit(strcoll("abc", "def") >= 0 ||
+       strcoll("ABC", "DEF") >= 0 ||
+       strcoll("ABC", "ABCD") >= 0 ||
+       strcoll("ABCD", "ABC") <= 0 ||
+       strcoll("*^#", "*^#") != 0 ||
+       strcoll("123", "456") >= 0);
+}
+],pike_cv_func_strcoll=yes,pike_cv_func_strcoll=no)
+])
+
+if test $pike_cv_func_strcoll = yes; then
+  AC_DEFINE(HAVE_STRCOLL)
+fi
+
+AC_MSG_RESULT($pike_cv_func_strcoll)
 #############################################################################
 
 AC_MSG_CHECKING(extern int timezone)
