@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.181 2003/11/10 01:42:32 mast Exp $
+|| $Id: operators.c,v 1.182 2003/11/12 18:59:17 mast Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.181 2003/11/10 01:42:32 mast Exp $");
+RCSID("$Id: operators.c,v 1.182 2003/11/12 18:59:17 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -231,17 +231,14 @@ COMPARISON(f_ge,"`>=",!is_lt)
     dmalloc_touch_svalue(sp);						\
   } while (0)
 
-/*! @decl mixed `+(mixed arg1)
- *! @decl mixed `+(object arg1, mixed ... extras)
- *! @decl mixed `+(mixed arg1, mixed arg2, mixed ... extras)
- *! @decl int `+(int arg1, int arg2)
- *! @decl float `+(float arg1, int|float arg2)
- *! @decl float `+(int|float arg1, float arg2)
- *! @decl string `+(int|float arg1, string arg2)
- *! @decl string `+(string arg1, string|int|float arg2)
- *! @decl array `+(array arg1, array arg2)
- *! @decl mapping `+(mapping arg1, mapping arg2)
- *! @decl multiset `+(multiset arg1, multiset arg2)
+/*! @decl mixed `+(mixed arg)
+ *! @decl mixed `+(object arg, mixed ... more)
+ *! @decl int `+(int arg, int ... more)
+ *! @decl float `+(float|int arg, float|int ... more)
+ *! @decl string `+(string|float|int arg, string|float|int ... more)
+ *! @decl array `+(array arg, array ... more)
+ *! @decl mapping `+(mapping arg, mapping ... more)
+ *! @decl multiset `+(multiset arg, multiset ... more)
  *!
  *!   Addition/concatenation.
  *!
@@ -254,11 +251,11 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *! @returns
  *!   If there's a single argument, that argument is returned.
  *!
- *!   If @[arg1] is an object with only one reference and an
+ *!   If @[arg] is an object with only one reference and an
  *!   @[lfun::`+=()], that function is called with the rest of the
  *!   arguments, and its result is returned.
  *!
- *!   Otherwise, if @[arg1] is an object with an @[lfun::`+()], that
+ *!   Otherwise, if @[arg] is an object with an @[lfun::`+()], that
  *!   function is called with the rest of the arguments, and its
  *!   result is returned.
  *!
@@ -267,35 +264,34 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   arguments leading up to it, and @[`+()] is then called
  *!   recursively with the result and the rest of the arguments.
  *!
- *!   Otherwise, if there are more than two arguments the result is:
- *!   @expr{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
+ *!   Otherwise, if @[arg] is @[UNDEFINED] and the other arguments are
+ *!   either arrays, mappings or multisets, the first argument is
+ *!   ignored and the remaining are added together as described below.
+ *!   This is useful primarily when appending to mapping values since
+ *!   @expr{m[x] += ({foo})@} will work even if @expr{m[x]@} doesn't
+ *!   exist yet.
  *!
  *!   Otherwise the result depends on the argument types:
- *!   @mixed arg1
+ *!   @mixed
  *!     @type int|float
- *!       @mixed arg2
- *!         @type int|float
- *!           The result is @expr{@[arg1] + @[arg2]@}, and is a float
- *!           if either @[arg1] or @[arg2] is a float.
- *!         @type string
- *!           @[arg1] is converted to string which is concatenated
- *!           with @[arg2].
- *!       @endmixed
- *!     @type string
- *!       @[arg2] is converted to a string, and the result is
- *!       concatenated to the end of @[arg1].
+ *!       The result is the sum of all the arguments. It's a float if
+ *!       any argument is a float.
+ *!     @type string|int|float
+ *!       If any argument is a string, all will be converted to
+ *!       strings and concatenated in order to form the result.
  *!     @type array
- *!       The result is @[arg2] concatenated to the end of @[arg1].
+ *!       The array arguments are concatened in order to form the
+ *!       result.
  *!     @type mapping
- *!       The result is like @[arg1] but extended with the entries
- *!       from @[arg2]. If the same index (according to @[hash_value]
- *!       and @[`==]) occur in both, the value from @[arg2] is used.
+ *!       The result is like @[arg] but extended with the entries from
+ *!       the other arguments. If the same index (according to
+ *!       @[hash_value] and @[`==]) occur in several arguments, the
+ *!       value from the last one is used.
  *!     @type multiset
- *!       The result is like @[arg1] but extended with the entries
- *!       from @[arg2]. Subsequences with orderwise equal indices
- *!       (i.e. where @[`<] returns false) are concatenated into the
- *!       result with the subsequence from @[arg1] before the one from
- *!       @[arg2].
+ *!       The result is like @[arg] but extended with the entries from
+ *!       the other arguments. Subsequences with orderwise equal
+ *!       indices (i.e. where @[`<] returns false) are concatenated
+ *!       into the result in argument order.
  *!   @endmixed
  *!   The function is not destructive on the arguments - the result is
  *!   always a new instance.
@@ -303,8 +299,7 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *! @note
  *!   In Pike 7.0 and earlier the addition order was unspecified.
  *!
- *!   If @[arg1] is @expr{UNDEFINED@} it will behave as the empty
- *!   array/mapping/multiset if needed. This behaviour was new
+ *!   The treatment of @[UNDEFINED] was new
  *!   in Pike 7.0.
  *!
  *! @seealso
@@ -600,98 +595,64 @@ PMOD_EXPORT void f_add(INT32 args)
     break;
   }
 
-  case BIT_ARRAY|BIT_INT:
-  {
-    if(IS_UNDEFINED(sp-args))
-    {
-      int e;
-      struct array *a;
+#define ADD_WITH_UNDEFINED(TYPE, T_TYPEID, ADD_FUNC, PUSH_FUNC) do {	\
+    int e;								\
+    if (sp[-args].type == T_INT) {					\
+      if(IS_UNDEFINED(sp-args))						\
+      {									\
+	struct TYPE *x;							\
+									\
+	for(e=1;e<args;e++)						\
+	  if(sp[e-args].type != T_TYPEID)				\
+	    SIMPLE_ARG_TYPE_ERROR("`+", e+1, #TYPE);			\
+									\
+	x = ADD_FUNC(sp-args+1,args-1);					\
+	pop_n_elems(args);						\
+	PUSH_FUNC(x);							\
+	return;								\
+      }									\
+      									\
+      for(e=1;e<args;e++)						\
+	if (sp[e-args].type != T_INT)					\
+	  SIMPLE_ARG_TYPE_ERROR("`+", e+1, "int");			\
+    }									\
+									\
+    else {								\
+      for(e=1;e<args;e++)						\
+	if (sp[e-args].type != T_TYPEID)				\
+	  SIMPLE_ARG_TYPE_ERROR("`+", e+1, #TYPE);			\
+    }									\
+									\
+    DO_IF_DEBUG (Pike_fatal ("Shouldn't be reached.\n"));		\
+  } while (0)
 
-      for(e=1;e<args;e++)
-	if(sp[e-args].type != T_ARRAY)
-	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "array");
-      
-      a=add_arrays(sp-args+1,args-1);
-      pop_n_elems(args);
-      push_array(a);
-      return;
-    }
-    if (sp[-args].type == T_INT) {
-      int e;
-      for(e=1;e<args;e++)
-	if (sp[e-args].type != T_INT)
-	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "int");
-    } else {
-      int e;
-      for(e=0;e<args;e++)
-	if (sp[e-args].type != T_ARRAY)
-	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "array");
-    }
-    /* Probably not reached, but... */
-    bad_arg_error("`+", sp-args, args, 1, "array", sp-args,
-		  "trying to add integers and arrays.\n");
-  }
+#define ADD(TYPE, ADD_FUNC, PUSH_FUNC) do {				\
+    struct TYPE *x = ADD_FUNC (sp - args, args);			\
+    pop_n_elems (args);							\
+    PUSH_FUNC (x);							\
+    return;								\
+  } while (0)
+
+  case BIT_ARRAY|BIT_INT:
+    ADD_WITH_UNDEFINED (array, T_ARRAY, add_arrays, push_array);
       
   case BIT_ARRAY:
-  {
-    struct array *a;
-    a=add_arrays(sp-args,args);
-    pop_n_elems(args);
-    push_array(a);
-    break;
-  }
+    ADD (array, add_arrays, push_array);
 
   case BIT_MAPPING|BIT_INT:
-  {
-    if(IS_UNDEFINED(sp-args))
-    {
-      int e;
-      struct mapping *a;
-
-      for(e=1;e<args;e++)
-	if(sp[e-args].type != T_MAPPING)
-	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "mapping");
-
-      a=add_mappings(sp-args+1,args-1);
-      pop_n_elems(args);
-      push_mapping(a);
-      return;
-    }
-    if (sp[-args].type == T_INT) {
-      int e;
-      for(e=1;e<args;e++)
-	if (sp[e-args].type != T_INT)
-	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "int");
-    } else {
-      int e;
-      for(e=0;e<args;e++)
-	if (sp[e-args].type != T_MAPPING)
-	  SIMPLE_BAD_ARG_ERROR("`+", e+1, "mapping");
-    }
-    /* Probably not reached, but... */
-    bad_arg_error("`+", sp-args, args, 1, "mapping", sp-args,
-		  "Trying to add integers and mappings.\n");
-  }
+    ADD_WITH_UNDEFINED (mapping, T_MAPPING, add_mappings, push_mapping);
 
   case BIT_MAPPING:
-  {
-    struct mapping *m;
+    ADD (mapping, add_mappings, push_mapping);
 
-    m = add_mappings(sp - args, args);
-    pop_n_elems(args);
-    push_mapping(m);
-    break;
-  }
+  case BIT_MULTISET|BIT_INT:
+    ADD_WITH_UNDEFINED (multiset, T_MULTISET, add_multisets, push_multiset);
 
   case BIT_MULTISET:
-  {
-    struct multiset *l;
+    ADD (multiset, add_multisets, push_multiset);
 
-    l = add_multisets(sp - args, args);
-    pop_n_elems(args);
-    push_multiset(l);
-    break;
-  }
+#undef ADD_WITH_UNDEFINED
+#undef ADD
   }
 }
 
