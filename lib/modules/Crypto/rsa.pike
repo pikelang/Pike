@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.21 2000/06/13 19:28:10 grubba Exp $
+/* $Id: rsa.pike,v 1.22 2000/06/13 21:37:58 grubba Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -256,14 +256,38 @@ bignum get_d()
   return BIGNUM(cooked_get_d(), 256);
 }
 
+/* Handle p and q by hand.
+ * They are only used for key-generation.
+ */
+static bignum p;
+static bignum q;
+
 bignum get_p()
 {
-  return BIGNUM(cooked_get_p(), 256);
+  return p;
 }
 
 bignum get_q()
 {
-  return BIGNUM(cooked_get_q(), 256);
+  return q;
+}
+
+bignum cooked_get_p()
+{
+  return p->digits(256);
+}
+
+bignum get_q()
+{
+  return q->digits(256);
+}
+
+object set_private_key(bignum priv, array(bignum)|void extra)
+{
+  if (extra) {
+    [p, q] = extra;
+  }
+  return ::set_private_key(priv);
 }
 #endif /* !USE_PIKE_RSA && !USE_RSA_WRAPPER && constant(_Crypto._rsa) */
 
