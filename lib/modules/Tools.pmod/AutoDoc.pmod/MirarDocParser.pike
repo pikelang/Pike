@@ -1,4 +1,4 @@
-/* $Id: MirarDocParser.pike,v 1.23 2003/11/06 15:11:19 grubba Exp $ */
+/* $Id: MirarDocParser.pike,v 1.24 2003/11/06 15:17:54 grubba Exp $ */
 
 #pike __REAL_VERSION__
 
@@ -565,6 +565,9 @@ void document(string enttype,
 	      sscanf(prot, "%*s %s(", n)==2 ||
 		sscanf(prot, "%*s %s ", n)==2 ||
 		sscanf(prot+"\n", "%*s %s\n", n);
+	      if (n == "`" && has_value(prot, "`()")) {
+		n = "`()";
+	      }
 	      if(!m) { m=n; continue; }
 	      if(n!=m) return;
 	    }
