@@ -2,12 +2,15 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.h,v 1.82 2004/09/27 21:37:23 mast Exp $
+|| $Id: stralloc.h,v 1.83 2004/11/05 15:23:32 grubba Exp $
 */
 
 #ifndef STRALLOC_H
 #define STRALLOC_H
 #include "global.h"
+
+#include <stdarg.h>
+
 #include "pike_macros.h"
 #include "block_alloc_h.h"
 
@@ -264,7 +267,8 @@ PMOD_EXPORT void string_build_mkspace(struct string_builder *s,
 				      ptrdiff_t chars, int mag);
 PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t chars, int mag);
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch);
-PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, ptrdiff_t len);
+PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s,
+					      const char *str, ptrdiff_t len);
 PMOD_EXPORT void string_builder_append(struct string_builder *s,
 				       PCHARP from,
 				       ptrdiff_t len);
@@ -275,6 +279,11 @@ PMOD_EXPORT void string_builder_fill(struct string_builder *s,
 				     ptrdiff_t offset);
 PMOD_EXPORT void string_builder_strcat(struct string_builder *s, char *str);
 PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct pike_string *str);
+PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
+					 const char *fmt,
+					 va_list args);
+PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
+					const char *fmt, ...);
 PMOD_EXPORT void reset_string_builder(struct string_builder *s);
 PMOD_EXPORT void free_string_builder(struct string_builder *s);
 PMOD_EXPORT struct pike_string *finish_string_builder(struct string_builder *s);

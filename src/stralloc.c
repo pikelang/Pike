@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.168 2004/09/27 21:37:23 mast Exp $
+|| $Id: stralloc.c,v 1.169 2004/11/05 15:23:15 grubba Exp $
 */
 
 #include "global.h"
@@ -2052,7 +2052,8 @@ PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 }
 
 
-PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s, char *str, ptrdiff_t len)
+PMOD_EXPORT void string_builder_binary_strcat(struct string_builder *s,
+					      const char *str, ptrdiff_t len)
 {
   string_build_mkspace(s,len,0);
   switch(s->s->size_shift)
@@ -2171,6 +2172,150 @@ PMOD_EXPORT void string_builder_shared_strcat(struct string_builder *s, struct p
   s->s->len+=str->len;
   /* Ensure NUL-termination */
   s->s->str[s->s->len << s->s->size_shift] = 0;
+}
+
+PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
+					 const char *fmt,
+					 va_list args)
+{
+  while (*fmt) {
+    if (*fmt == '%') {
+      fmt++;
+      switch (*fmt) {
+      case '%':
+	string_builder_putchar(s, '%');
+	break;
+      case 'O':
+	{
+	  dynamic_buffer old_buf;
+	  init_buf(&old_buf);
+	  describe_svalue(va_arg(args, struct svalue *), 0, NULL);
+	  string_builder_binary_strcat(s, pike_global_buffer.s.str,
+				       pike_global_buffer.s.len);
+	  toss_buffer(&pike_global_buffer);
+	  restore_buffer(&old_buf);
+	}
+	break;
+      case 'S':
+	string_builder_shared_strcat(s, va_arg(args, struct pike_string *));
+	break;
+      case 's':
+	{
+	  const char *str = va_arg(args, char *);
+	  string_builder_binary_strcat(s, str, strlen(str));
+	}
+	break;
+      case 'c':
+	string_builder_putchar(s, va_arg(args, INT32));
+	break;
+      case 'b':
+      case 'o':
+      case 'x':
+      case 'X':
+	{
+	  int delta;
+	  unsigned int val = va_arg(args, unsigned int);
+	  char *numbers = "0123456789abcdef";
+	  int shift;
+	  unsigned int mask;
+
+	  switch (*fmt) {
+	  case 'b':
+	    delta = 1;
+	    break;
+	  case 'o':
+	    delta = 3;
+	    break;
+	  case 'X':
+	    numbers = "0123456789ABCDEF";
+	    /* FALL_THROUGH */
+	  case 'x':
+	    delta = 4;
+	    break;
+	  default:
+	    fatal("Unsupported binary integer formatting directive '%c'\n",
+		  *fmt);
+	    break;
+	  }
+	  mask = (1<<delta)-1;
+
+	  for (shift = 0; val >> shift; shift += delta)
+	    ;
+	  while(shift >= 0) {
+	    string_builder_putchar(s, numbers[(val>>shift) & mask]);
+	    shift -= delta;
+	  }
+	}
+	break;
+      case 'd':
+      case 'u':
+	{
+	  unsigned int val = va_arg(args, unsigned int);
+	  unsigned int tmp;
+	  int len;
+	  if ((*fmt == 'd') && ((int)val < 0)) {
+	    string_builder_putchar(s, '-');
+	    val = -val;
+	  }
+	  tmp = val;
+	  len = 0;
+	  do {
+	    len++;
+	    tmp /= 10;
+	  } while (tmp);
+
+	  switch(s->s->size_shift) {
+	  case 0:
+	    {
+	      p_wchar0 *p = string_builder_allocate(s, len, 0);
+	      do {
+		*(p++) = '0' + val%10;
+		val /= 10;
+	      } while (val);
+	    }
+	    break;
+	  case 1:
+	    {
+	      p_wchar1 *p = string_builder_allocate(s, len, 0);
+	      do {
+		*(p++) = '0' + val%10;
+		val /= 10;
+	      } while (val);
+	    }
+	    break;
+	  case 2:
+	    {
+	      p_wchar2 *p = string_builder_allocate(s, len, 0);
+	      do {
+		*(p++) = '0' + val%10;
+		val /= 10;
+	      } while (val);
+	    }
+	    break;
+	  }
+	}
+	break;
+	
+      default:
+	Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
+		   "'%c' 0x%x.\n", *fmt, *fmt);
+      }
+    } else {
+      const char *start = fmt;
+      while (*fmt && (*fmt != '%'))
+	fmt++;
+      string_builder_binary_strcat(s, start, fmt-start);
+    }
+  }
+}
+
+PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
+					const char *fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  string_builder_vsprintf(s, fmt, args);
+  va_end(args);
 }
 
 
