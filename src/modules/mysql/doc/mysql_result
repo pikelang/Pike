@@ -80,7 +80,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-	field_seek - skip to specified field (NOT USEFUL)
+	field_seek - skip to specified field
 
 SYNTAX
 	#include <mysql.h>
@@ -97,7 +97,7 @@ BUGS
 	affects which field fetch_field() starts with.
 
 SEE ALSO
-	mysql_result->fetch_field
+	mysql_result->fetch_field, mysql_result->fetch_fields
 
 
 ============================================================================
@@ -153,8 +153,7 @@ BUGS
 	The "default" value handling does not work correctly yet (DISABLED).
 
 SEE ALSO
-	mysql_result->fetch_fields
-	mysql_result->field_seek
+	mysql_result->fetch_fields, mysql_result->field_seek
 
 
 ============================================================================
@@ -179,8 +178,7 @@ BUGS
 	See mysql_result->fetch_field.
 
 SEE ALSO
-	mysql_result->fetch_field
-	mysql_result->field_seek
+	mysql_result->fetch_field, mysql_result->field_seek
 
 
 ============================================================================
