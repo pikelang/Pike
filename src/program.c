@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.291 2001/02/05 14:37:11 grubba Exp $");
+RCSID("$Id: program.c,v 1.292 2001/02/05 21:13:11 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -125,6 +125,10 @@ char *lfun_names[] = {
   "_equal",
   "_m_delete",
 };
+
+struct pike_string *lfun_strings[NELEM(lfun_names)];
+
+static struct mapping *lfun_ids;
 
 /* mapping(string:type) */
 static struct mapping *lfun_types;
@@ -2849,14 +2853,22 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 
 int low_find_lfun(struct program *p, ptrdiff_t lfun)
 {
-  struct pike_string *lfun_name = findstring(lfun_names[lfun]);
+  struct pike_string *lfun_name = lfun_strings[lfun];
   unsigned int flags = 0;
-  if (!lfun_name) return -1;
   return
     really_low_find_shared_string_identifier(lfun_name,
 					     dmalloc_touch(struct program *,
 							   p),
 					     SEE_STATIC);
+}
+
+int lfun_lookup_id(struct pike_string *lfun_name)
+{
+  struct svalue *id = low_mapping_string_lookup(lfun_ids, lfun_name);
+  if (!id) return -1;
+  if (id->type == T_INT) return id->u.integer;
+  my_yyerror("Bad entry in lfun lookup table for %s.", lfun_name->str);
+  return -1;
 }
 
 /*
@@ -3632,18 +3644,25 @@ void init_program(void)
   int i;
   struct svalue key;
   struct svalue val;
+  struct svalue id;
 
   MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
 
+  lfun_ids = allocate_mapping(NUM_LFUNS);
   lfun_types = allocate_mapping(NUM_LFUNS);
   key.type = T_STRING;
+  id.type = T_INT;
   val.type = T_TYPE;
   for (i=0; i < NUM_LFUNS; i++) {
-    key.u.string = make_shared_string(lfun_names[i]);
+    lfun_strings[i] = make_shared_string(lfun_names[i]);
+
+    id.u.integer = i;
+    key.u.string = lfun_strings[i];
+    mapping_insert(lfun_ids, &key, &id);
+
     val.u.string = make_pike_type(raw_lfun_types[i]);
     mapping_insert(lfun_types, &key, &val);
     free_string(val.u.string);
-    free_string(key.u.string);
   }
   start_new_program();
   debug_malloc_touch(Pike_compiler->fake_object);
@@ -3666,6 +3685,10 @@ void cleanup_program(void)
   free_string(this_program_string);
 
   free_mapping(lfun_types);
+  free_mapping(lfun_ids);
+  for (e=0; e < NUM_LFUNS; e++) {
+    free_string(lfun_strings[e]);
+  }
 #ifdef FIND_FUNCTION_HASHSIZE
   for(e=0;e<FIND_FUNCTION_HASHSIZE;e++)
   {

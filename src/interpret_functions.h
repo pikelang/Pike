@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.43 2001/01/31 21:50:57 mast Exp $
+ * $Id: interpret_functions.h,v 1.44 2001/02/05 21:13:10 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -58,6 +58,37 @@ OPCODE1(F_ARROW_STRING,"->string")
   Pike_sp->subtype=1; /* Magic */
   Pike_sp++;
   print_return_value();
+BREAK;
+
+OPCODE1(F_LOOKUP_LFUN, "->lfun")
+{
+  struct svalue tmp;
+  struct object *o;
+  int id;
+  if ((sp[-1].type == T_OBJECT) && ((o = Pike_sp[-1].u.object)->prog) &&
+      (FIND_LFUN(o->prog, LFUN_ARROW) == -1)) {
+    int id = FIND_LFUN(o->prog, arg1);
+    if ((id != -1) &&
+	(!(o->prog->identifier_references[id].id_flags &
+	   (ID_STATIC|ID_PRIVATE|ID_HIDDEN)))) {
+      low_object_index_no_free(&tmp, o, id);
+    } else {
+      /* Not found. */
+      tmp.type = T_INT;
+      tmp.subtype = 1;
+      tmp.u.integer = 0;
+    }
+  } else {
+    struct svalue tmp2;
+    tmp2.type = PIKE_T_STRING;
+    tmp2.u.string = lfun_strings[arg1];
+    tmp2.subtype = 1;
+    index_no_free(&tmp, Pike_sp-1, &tmp2);
+  }
+  free_svalue(Pike_sp-1);
+  Pike_sp[-1] = tmp;
+  print_return_value();
+}
 BREAK;
 
 OPCODE0(F_FLOAT,"push float")

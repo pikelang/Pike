@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.114 2001/02/05 11:47:48 per Exp $
+ * $Id: program.h,v 1.115 2001/02/05 21:13:11 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -83,6 +83,8 @@ extern struct pike_string *this_program_string;
 #define NUM_LFUNS 43
 
 extern char *lfun_names[];
+
+extern struct pike_string *lfun_strings[];
 
 #ifndef STRUCT_SVALUE_DECLARED
 #define STRUCT_SVALUE_DECLARED
@@ -442,6 +444,7 @@ int really_low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog,
 					     int flags);
 int low_find_lfun(struct program *p, ptrdiff_t lfun);
+int lfun_lookup_id(struct pike_string *lfun_name);
 int low_find_shared_string_identifier(struct pike_string *name,
 				      struct program *prog);
 struct ff_hash;
