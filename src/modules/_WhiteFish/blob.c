@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.15 2001/05/25 19:36:42 per Exp $");
+RCSID("$Id: blob.c,v 1.16 2001/05/25 20:16:31 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -267,14 +267,13 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
   {
     int docid = wf_buffer_rint( b );
     int nhits = wf_buffer_rbyte( b );
-    int i;
     struct hash *h = find_hash( d, docid );
-    /* Make use of the fact that this blob is currently empty, and
-     * assume that the incoming data is valid
-     */
-    wf_buffer_rewind_r( b, 5 );
-    wf_buffer_rewind_w( h->data, -1 );
-    wf_buffer_memcpy( h->data, b, nhits*2+5 );    
+    int ohits = h->data->data[4];
+    int i;
+    if( ohits + nhits > 255 )
+      nhits = 255-ohits;
+    h->data->data[4] = nhits+ohits;
+    wf_buffer_memcpy( h->data, b, nhits*2+5 );
   }
   wf_buffer_free( b );
 }
@@ -288,6 +287,13 @@ static void f_blob_create( INT32 args )
       Pike_error("Expected a string\n");
     _append_blob( THIS, s );
   }
+}
+
+static void f_blob_merge( INT32 args )
+{
+  if(!args || sp[-1].type != PIKE_T_STRING )
+    Pike_error("Expected a string\n");
+  _append_blob( THIS, sp[-1].u.string );
 }
 
 static void f_blob_remove( INT32 args )
@@ -482,6 +488,7 @@ void init_blob_program()
   start_new_program();
   ADD_STORAGE( struct blob_data );
   add_function( "create", f_blob_create, "function(string|void:void)", 0 );
+  add_function( "merge", f_blob_merge, "function(string:void)", 0 );
   add_function( "add", f_blob_add, "function(int,int:void)",0 );
   add_function( "remove", f_blob_remove, "function(int:void)",0 );
   add_function( "data", f_blob__cast, "function(void:string)", 0 );
