@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.169 2003/04/07 17:15:05 nilsson Exp $
+// $Id: module.pmod,v 1.170 2003/04/18 15:45:01 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -333,7 +333,9 @@ class File
     return lambda(){ return read( nbytes); };
   }
 
-  object line_iterator( int|void trim )
+  constant LineIterator = __builtin.file_line_iterator;
+
+  String.SplitIterator|LineIterator line_iterator( int|void trim )
   //! Returns an iterator that will loop over the lines in this file. 
   //! If trim is true, all '\r' characters will be removed from the
   //! input.
@@ -341,7 +343,7 @@ class File
     if( trim )
       return String.SplitIterator( "",(<'\n','\r'>),1,read_function(8192));
     // This one is about twice as fast, but it's way less flexible.
-    return __builtin.file_line_iterator( read_function(8192) );
+    return LineIterator( read_function(8192) );
   }
 
 
