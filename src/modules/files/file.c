@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.143 1999/04/01 15:20:27 grubba Exp $");
+RCSID("$Id: file.c,v 1.144 1999/04/02 02:07:40 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -930,9 +930,14 @@ static void file_write(INT32 args)
 	int fd = FD;
 	int cnt = iovcnt;
 	THREADS_ALLOW();
-	if (cnt > IOV_MAX) {
-	  cnt = IOV_MAX;
-	}
+
+#ifdef IOV_MAX
+	if (cnt > IOV_MAX) cnt = IOV_MAX;
+#endif
+
+#ifdef MAX_IOVEC
+	if (cnt > MAX_IOVEC) cnt = MAX_IOVEC;
+#endif
 	i = writev(fd, iov, cnt);
 	THREADS_DISALLOW();
 
