@@ -160,6 +160,26 @@ class Drawable
     return GC(display, req->gc);
   }
 
+  object CreatePixmap_req(int width, int height, int depth)
+  {
+    object req = Requests.CreatePixmap();
+
+    req->pid = display->alloc_id();
+    req->drawable = id;
+    req->width = width;
+    req->height = height;
+    req->depth = depth;
+    return req;
+  }
+
+  object CreatePixmap(int width, int height, int depth)
+  {
+    object req = CreatePixmap_req(width, height, depth);
+    display->send_request(req);
+    
+    return Pixmap(display, req->pid, this_object());
+  }
+
   object FillPoly_req(int gc, int shape, int coordMode, array(object) p)
   {
     object req = Requests.FillPoly();
@@ -224,16 +244,27 @@ class Drawable
   }
   
   void PutImage(object gc, int depth,
-		int tx, int ty, int width, int height, string data)
+		int tx, int ty, int width, int height, string data,
+		int|void format)
   {
-    display->send_request(PutImage_req(gc, depth, tx, ty,
-				       width, height, data));
+    object req = PutImage_req(gc, depth, tx, ty, width, height, data);
+    req->format = format;
+    display->send_request(req);
   }
 }
 
 class Pixmap
 {
   inherit Drawable;
+
+  object parent;
+
+  // Init function.
+  void create(mixed ... args)
+  {
+    ::create( @args );
+    if(sizeof(args)>2 && objectp(args[2]))  parent = args[2];
+  }
 }
 
 class Window

@@ -598,8 +598,8 @@ class PutImage
 
   string to_string()
   {
-    werror(sprintf("PutImage>to_string: %d, %d, %d, %d\n",
-		   dst_x, dst_y, width, height));
+    //    werror(sprintf("PutImage>to_string: %d, %d, %d, %d\n",
+    //		   dst_x, dst_y, width, height));
     string pad="";
     while(((strlen(data)+strlen(pad))%4)) pad += "\0";
     pad =  build_request(sprintf("%4c" "%4c"
@@ -658,6 +658,27 @@ class AllocColor
   mixed handle_error(string reply)
   {
     return 0;
+  }
+}
+
+class CreatePixmap
+{
+  inherit request;
+  constant reqType = 53;
+
+  int depth;
+  
+  int pid;
+  int drawable;
+
+  int width, height;
+
+  string to_string()
+  {
+    return build_request
+      (sprintf("%4c%4c" "%2c%2c",
+		      pid, drawable,
+		      width, height), depth);
   }
 }
 
@@ -729,7 +750,7 @@ class ExtensionRequest
 
   // End preamble..
 
-  varargs void create( int m, function reply_handler, function error_handler )
+  void create( int|void m, function|void reply_handler, function|void error_handler )
   {
     type = m;
     handle_reply = reply_handler;
