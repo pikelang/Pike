@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.69 1998/04/08 20:51:50 grubba Exp $
+# $Id: Makefile.in,v 1.70 1998/04/09 02:49:17 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -149,6 +149,11 @@ quant: $(OBJ) compile_interpret module_objects
 	-@mv pike pike.old 2>/dev/null || true
 	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
 
+atom: pike
+	atom pike -tool third -env threads -g -v `find lib/modues -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
+	mv pike pike.pre-atom
+	mv pike.third.threads pike
+	@echo Make sure you have '.' in your LD_LIBRARY_PATH.
 
 hilfe: $(TMP_BINDIR)/hilfe Makefile
 	@echo "Creating ./hilfe..."; \
