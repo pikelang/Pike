@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.5 2002/05/23 15:14:48 grubba Exp $
+ * $Id: module.pmod,v 1.6 2002/05/24 12:53:15 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -159,11 +159,49 @@ class Rule
   }
 }
 
+
+//! Severity level
+enum SeverityLevel {
+  NOTICE = 0,
+  WARNING,
+  ERROR,
+};
+
+//! Class handling reporting of errors and warnings.
+class ErrorHandler
+{
+  //! Verbosity level
+  //!
+  //! @int
+  //!   @value -1
+  //!    Just errors.
+  //!   @value 0
+  //!    Errors and warnings.
+  //!   @value 1
+  //!    Also notices.
+  //! @endint
+  optional int verbose=1;
+
+  static constant severity_kind = ([ NOTICE:"Notice",
+				     WARNING:"Warning",
+				     ERROR:"Error" ]);
+
+  void report(SeverityLevel level, string subsystem, string msg,
+	      mixed ... args)
+  {
+    if (level > -verbose) {
+      werror("%s: %s: "+msg+"\n",
+	     severity_kind[level], subsystem, @args);
+    }
+  }
+}
+
 //! This object implements an LALR(1) parser and compiler.
 //!
 //! Normal use of this object would be:
 //!
 //! @pre{
+//! set_error_handler
 //! {add_rule, set_priority, set_associativity}*
 //! set_symbol_to_string
 //! compile
@@ -186,7 +224,6 @@ class Parser
   static mapping(mixed : multiset(Rule)) begins = ([]);
 #endif /* 0 */
 
-
   /* Maps from symbol to the rules that use the symbol
    * (used for finding nullable symbols)
    */
@@ -194,16 +231,6 @@ class Parser
 
   //! The initial LR0 state.
   Kernel start_state;
-
-  //! Verbosity level
-  //!
-  //! @int
-  //!   @value 0
-  //!    None
-  //!   @value 1
-  //!    Some
-  //! @endint
-  int verbose=1;
 
   //! Error code
   int lr_error=0;
@@ -213,6 +240,18 @@ class Parser
 
   //! LR0 states that are already known to the compiler.
   mapping(string:Kernel) known_states = ([]);
+
+  //! Compile error and warning handler.
+  ErrorHandler error_handler = ErrorHandler();
+
+  void report(SeverityLevel level, string subsystem, string msg,
+	      mixed ... args)
+  {
+    if (!error_handler) {
+      error_handler = ErrorHandler();
+    }
+    error_handler->report(level, subsystem, msg, @args);
+  }
 
   /*
    * Sub-classes
@@ -357,7 +396,8 @@ class Parser
 	  }
 	}
       } else {
-	werror("Error: Definition missing for non-terminal %s\n",
+	report(ERROR, "closure",
+	       "Definition missing for non-terminal %s",
 	       symbol_to_string(nonterminal));
 	lr_error |= ERROR_MISSING_DEFINITION;
       }
@@ -374,11 +414,8 @@ class Parser
 	}
       }
 
-      if (verbose) {
-	werror("goto_set()=> (< %s >)\n",
-	       map(indices(set), symbol_to_string) * ", ");
-      }
-
+      report(NOTICE, "goto_set", "=> (< %s >)",
+	     map(indices(set), symbol_to_string) * ", ");
       return (set);
     }
 
@@ -391,9 +428,9 @@ class Parser
     {
       multiset(Item) items;
 
-      if (verbose) {
-	werror("Performing GOTO on <%s>\n", symbol_to_string(symbol));
-      }
+      report(NOTICE, "do_goto",
+	     "Performing GOTO on <%s>",
+	     symbol_to_string(symbol));
 
       items = symbol_items[symbol];
       if (items) {
@@ -428,15 +465,14 @@ class Parser
 
 	  s_q->push(new_state);
 	} else {
-	  // werror("Known state\n");
+	  // report(NOTICE, "do_goto", "Known state");
 	}
 	/* DEBUG */
 
-	if (verbose) {
-	  werror("GOTO on %s generated state:\n%s\n",
-		 symbol_to_string(symbol),
-		 state_to_string(new_state));
-	}
+	report(NOTICE, "do_goto",
+	       "GOTO on %s generated state:\n%s",
+	       symbol_to_string(symbol),
+	       state_to_string(new_state));
 
 	/* !DEBUG */
 
@@ -446,7 +482,8 @@ class Parser
 	  }
 	}
       } else {
-	werror("WARNING: do_goto() on unknown symbol <%s>\n",
+	report(WARNING, "do_goto",
+	       "do_goto() on unknown symbol <%s>",
 	       symbol_to_string(symbol));
       }
     }
@@ -652,9 +689,7 @@ class Parser
     int|string symbol;
 
     /* DEBUG */
-    if (verbose) {
-      werror("Adding rule: " + rule_to_string(r) + "\n");
-    }
+    report(NOTICE, "add_rule", "Adding rule: %s", rule_to_string(r));
 
     /* !DEBUG */
 
@@ -696,10 +731,8 @@ class Parser
 
 	while (new_nullables->ptr) {
 	  symbol = [int]new_nullables->pop();
-	  if (verbose) {
-	    werror("Nulling symbol %s\n",
-		   symbol_to_string(symbol));
-	  }
+	  report(NOTICE, "add_rule", "Nulling symbol %s",
+		 symbol_to_string(symbol));
 	  nullable[symbol] = 1;
 	  if (used_by[symbol]) {
 	    foreach (indices(used_by[symbol]), Rule r2) {
@@ -857,10 +890,8 @@ class Parser
       i->count = 0x7fffffff;
 
       if (cyclic) {
-	if (verbose) {
-	  werror("Cyclic item\n%s\n",
-		 item_to_string(i));
-	}
+	report(NOTICE, "traverse_items", "Cyclic item\n%s",
+	       item_to_string(i));
 	conflict_func(empty_cycle && !(sizeof(i->error_lookahead)));
       }
     }
@@ -939,11 +970,13 @@ class Parser
 
     /* What to do if not found? */
     if (!i) {
-      werror("go_through: item %d not found in state\n"
-	     "%s\n",
+      report(ERROR, "go_through",
+	     "Item %d not found in state\n"
+	     "%s\n"
+	     "Backtrace:\n%s",
 	     item_id,
-	     state_to_string(state));
-      werror("Backtrace:\n%s\n", describe_backtrace(backtrace()));
+	     state_to_string(state),
+	     describe_backtrace(backtrace()));
       return 0;
     }
 
@@ -978,12 +1011,11 @@ class Parser
   {
     multiset(int|string) conflict_set = (<>);
 
-    if (verbose) {
-      werror("Repairing conflict in state:\n%s\n"
-	     "Conflicts on (< %s >)\n",
-	     state_to_string(state),
-	     map(indices(conflicts), symbol_to_string) * ", ");
-    }
+    report(NOTICE, "repair",
+	   "Repairing conflict in state:\n%s\n"
+	   "Conflicts on (< %s >)",
+	   state_to_string(state),
+	   map(indices(conflicts), symbol_to_string) * ", ");
   
     foreach (indices(conflicts), int|string symbol) {
       int reduce_count = 0;
@@ -1043,68 +1075,62 @@ class Parser
 	    if (i->direct_lookahead[symbol]) {
 	      Priority new_pri;
 	      if ((new_pri = i->r->pri)->value < pri->value) {
-		if (verbose) {
-		  werror("Ignoring reduction of item\n%s\n"
-			 "on lookahead %s (Priority %d < %d)\n",
-			 item_to_string(i),
-			 symbol_to_string(symbol),
-			 new_pri->value, pri->value);
-		}
+		report(NOTICE, "repair",
+		       "Ignoring reduction of item\n%s\n"
+		       "on lookahead %s (Priority %d < %d)",
+		       item_to_string(i),
+		       symbol_to_string(symbol),
+		       new_pri->value, pri->value);
 		i->direct_lookahead[symbol] = 0;
 		if (!sizeof(indices(i->direct_lookahead))) {
 		  i->direct_lookahead = (<>);
 		}
 	      } else if ((pri->assoc >= 0) &&
 			 (shift_pri->value == pri->value)) {
-		if (verbose) {
-		  werror("Ignoring reduction of item\n%s\n"
-			 "on lookahead %s (Right associative)\n",
-			 item_to_string(i),
-			 symbol_to_string(symbol));
-		}
+		report(NOTICE, "repair",
+		       "Ignoring reduction of item\n%s\n"
+		       "on lookahead %s (Right associative)",
+		       item_to_string(i),
+		       symbol_to_string(symbol));
 		i->direct_lookahead[symbol] = 0;
 		if (!sizeof(indices(i->direct_lookahead))) {
 		  i->direct_lookahead = (<>);
 		}
 	      } else {
-		if (verbose) {
-		  werror("Kept item\n%s\n"
-			 "on lookahead %s\n",
-			 item_to_string(i),
-			 symbol_to_string(symbol));
-		}
+		report(NOTICE, "repair",
+		       "Kept item\n%s\n"
+		       "on lookahead %s",
+		       item_to_string(i),
+		       symbol_to_string(symbol));
 		reduce_rest++;
 	      }
 	    }
 	  } else if (i->r->symbols[i->offset] == symbol) {
 	    /* Shift */
 	    if (shift_pri->value < pri->value) {
-	      if (verbose) {
-		werror("Ignoring shift on item\n%s\n"
-		       "on lookahead %s (Priority %d < %d)\n",
-		       item_to_string(i),
-		       symbol_to_string(symbol),
-		       i->r->pri->value, pri->value);
-	      }
+	      report(NOTICE, "repair",
+		     "Ignoring shift on item\n%s\n"
+		     "on lookahead %s (Priority %d < %d)",
+		     item_to_string(i),
+		     symbol_to_string(symbol),
+		     i->r->pri->value, pri->value);
 	      i->direct_lookahead = (<>);
 	      i->next_state = 0;
 	    } else if ((pri->assoc <= 0) &&
 		       (reduce_pri->value == pri->value)) {
-	      if (verbose) {
-		werror("Ignoring shift on item\n%s\n"
-		       "on lookahead %s (Left associative)\n",
-		       item_to_string(i),
-		       symbol_to_string(symbol));
-	      }
+	      report(NOTICE, "repair",
+		     "Ignoring shift on item\n%s\n"
+		     "on lookahead %s (Left associative)",
+		     item_to_string(i),
+		     symbol_to_string(symbol));
 	      i->direct_lookahead = (<>);
 	      i->next_state = 0;
 	    } else {
-	      if (verbose) {
-		werror("Kept item\n%s\n"
-		       "on lookahead %s\n",
-		       item_to_string(i),
-		       symbol_to_string(symbol));
-	      }
+	      report(NOTICE, "repair",
+		     "Kept item\n%s\n"
+		     "on lookahead %s",
+		     item_to_string(i),
+		     symbol_to_string(symbol));
 	      shift_rest++;
 	    }
 	  }
@@ -1117,12 +1143,11 @@ class Parser
 	    if (i->offset == sizeof(i->r->symbols)) {
 	      /* Reduction */
 	      if (i->direct_lookahead[symbol]) {
-		if (verbose) {
-		  werror("Ignoring reduction on item\n%s\n"
-			 "on lookahead %s (can shift)\n",
-			 item_to_string(i),
-			 symbol_to_string(symbol));
-		}
+		report(NOTICE, "repair",
+		       "Ignoring reduction on item\n%s\n"
+		       "on lookahead %s (can shift)",
+		       item_to_string(i),
+		       symbol_to_string(symbol));
 		i->direct_lookahead[symbol] = 0;
 		if (!sizeof(indices(i->direct_lookahead))) {
 		  i->direct_lookahead = (<>);
@@ -1131,12 +1156,11 @@ class Parser
 	    } else {
 	      /* Shift */
 	      if (i->r->symbols[i->offset] == symbol) {
-		if (verbose) {
-		  werror("Kept item\n%s\n"
-			 "on lookahead (shift)%s\n",
-			 item_to_string(i),
-			 symbol_to_string(symbol));
-		}
+		report(NOTICE, "repair",
+		       "Kept item\n%s\n"
+		       "on lookahead (shift)%s",
+		       item_to_string(i),
+		       symbol_to_string(symbol));
 		shift_rest++;
 	      }
 	    }
@@ -1145,20 +1169,18 @@ class Parser
 	  /* Select the first reduction */
 	  foreach (state->items, Item i) {
 	    if (i->r == min_rule) {
-	      if (verbose) {
-		werror("Kept item\n%s\n"
-		       "on lookahead %s (first rule)\n",
-		       item_to_string(i),
-		       symbol_to_string(symbol));
-	      }
+	      report(NOTICE, "repair",
+		     "Kept item\n%s\n"
+		     "on lookahead %s (first rule)",
+		     item_to_string(i),
+		     symbol_to_string(symbol));
 	      reduce_rest++;
 	    } else {
-	      if (verbose) {
-		werror("Ignoring reduction on item\n%s\n"
-		       "on lookahead %s (not first rule)\n",
-		       item_to_string(i),
-		       symbol_to_string(symbol));
-	      }
+	      report(NOTICE, "repair",
+		     "Ignoring reduction on item\n%s\n"
+		     "on lookahead %s (not first rule)",
+		     item_to_string(i),
+		     symbol_to_string(symbol));
 	      i->direct_lookahead[symbol] = 0;
 	      if (!sizeof(indices(i->direct_lookahead))) {
 		i->direct_lookahead = (<>);
@@ -1172,15 +1194,18 @@ class Parser
 
       if (reduce_rest > 1) {
 	if (shift_rest) {
-	  werror("Error: Shift-Reduce-Reduce conflict on lookahead %s\n",
+	  report(ERROR, "repair",
+		 "Shift-Reduce-Reduce conflict on lookahead %s",
 		 symbol_to_string(symbol));
 	} else {
-	  werror("Error: Reduce-Reduce conflict on lookahead %s\n",
+	  report(ERROR, "repair",
+		 "Reduce-Reduce conflict on lookahead %s",
 		 symbol_to_string(symbol));
 	}
       } else if (reduce_rest) {
 	if (shift_rest) {
-	  werror("Error: Shift-Reduce conflict on lookahead %s\n",
+	  report(ERROR, "repair",
+		 "Shift-Reduce conflict on lookahead %s",
 		 symbol_to_string(symbol));
 	} else {
 	  /* REDUCE
@@ -1199,50 +1224,30 @@ class Parser
       if (conflict_free) {
 	if (reduce_count > 1) {
 	  if (shift_count) {
-	    if (only_operators) {
-	      if (verbose) {
-		werror("Repaired Shift-Reduce-Reduce conflict on %s\n",
-		       symbol_to_string(symbol));
-	      }
-	    } else {
-	      werror("Warning: Repaired Shift-Reduce-Reduce conflict on %s\n",
-		     symbol_to_string(symbol));
-	    }
+	    report(only_operators?NOTICE:WARNING, "repair",
+		   "Repaired Shift-Reduce-Reduce conflict on %s",
+		   symbol_to_string(symbol));
 	  } else {
-	    if (only_operators) {
-	      if (verbose) {
-		werror("Repaired Reduce-Reduce conflict on %s\n",
-		       symbol_to_string(symbol));
-	      }
-	    } else {
-	      werror("Warning: Repaired Reduce-Reduce conflict on %s\n",
-		     symbol_to_string(symbol));
-	    }
+	    report(only_operators?NOTICE:WARNING, "repair",
+		   "Repaired Reduce-Reduce conflict on %s",
+		   symbol_to_string(symbol));
 	  }
 	} else if (reduce_count) {
 	  if (shift_count) {
-	    if (only_operators) {
-	      if (verbose) {
-		werror("Repaired Shift-Reduce conflict on %s\n",
-		       symbol_to_string(symbol));
-	      }
-	    } else {
-	      werror("Warning: Repaired Shift-Reduce conflict on %s\n",
-		     symbol_to_string(symbol));
-	    }
+	    report(only_operators?NOTICE:WARNING, "repair",
+		   "Repaired Shift-Reduce conflict on %s",
+		   symbol_to_string(symbol));
 	  } else {
 	    /* No conflict */
-	    if (verbose) {
-	      werror("No conflict on symbol %s (Plain REDUCE)\n",
-		     symbol_to_string(symbol));
-	    }
+	    report(NOTICE, "repair",
+		   "No conflict on symbol %s (Plain REDUCE)",
+		   symbol_to_string(symbol));
 	  }
 	} else {
 	  /* No conflict */
-	  if (verbose) {
-	    werror("No conflict on symbol %s (SHIFT)\n",
-		   symbol_to_string(symbol));
-	  }
+	  report(NOTICE, "repair",
+		 "No conflict on symbol %s (SHIFT)",
+		 symbol_to_string(symbol));
 	}
 
       } else {
@@ -1252,21 +1257,22 @@ class Parser
     }
   
     if (sizeof(indices(conflict_set))) {
-      werror("Still conflicts remaining in state\n%s\n"
-	     "on symbols (< %s >)\n",
+      report(ERROR, "repair",
+	     "Still conflicts remaining in state\n%s\n"
+	     "on symbols (< %s >)",
 	     state_to_string(state),
 	     map(indices(conflict_set), symbol_to_string) * ", ");
       return (ERROR_CONFLICTS);
     } else {
-      if (verbose) {
-	werror("All conflicts removed!\n");
-      }
+      report(WARNING, "repair",
+	     "All conflicts removed!");
       return (0);
     }
   }
 
 #ifdef LR_PROFILE
-#define LR_GAUGE(X, BLOCK)	werror(X ": %f\n", gauge BLOCK)
+#define LR_GAUGE(X, BLOCK)	\
+	report(NOTICE, "compile", X ": %f\n", gauge BLOCK)
 #else /* !LR_PROFILE */
 #define LR_GAUGE(X, BLOCK)	do BLOCK while(0)
 #endif /* LR_PROFILE */
@@ -1287,10 +1293,8 @@ class Parser
     LR_GAUGE("LR0", {
       while (state = s_q->next()) {
 
-	if (verbose) {
-	  werror("Compiling state %d:\n%s", state_no++,
-		 state_to_string(state) + "\n");
-	}
+	report(NOTICE, "compile", "Compiling state %d:\n%s", state_no++,
+	       state_to_string(state) + "\n");
 
 	/* Probably better implemented as a stack */
 	foreach (indices(state->goto_set()), int|string symbol) {
@@ -1301,10 +1305,8 @@ class Parser
 
     /* Compute nullables */
     /* Done during add_rule */
-    if (verbose) {
-      werror("Nullable nonterminals: (< %s >)\n",
-	     map(indices(nullable), symbol_to_string) * ", ");
-    }
+    report(NOTICE, "compile", "Nullable nonterminals: (< %s >)\n",
+	   map(indices(nullable), symbol_to_string) * ", ");
 
     LR_GAUGE("Master items", {
       /* Mark Transition and Reduction master items */
@@ -1405,9 +1407,10 @@ class Parser
 	    if (!lookup[symbol]) {
 	      // Foo? Shouldn't these always exist since we've made
 	      // a closure earlier?
-	      werror("WARNING: No item for symbol <%s>\n"
+	      report(WARNING, "compile",
+		     "No item for symbol <%s>\n"
 		     "in state:\n"
-		     "%s\n",
+		     "%s",
 		     symbol_to_string(symbol),
 		     state_to_string(s_q->arr[index]));
 	      continue;
@@ -1499,8 +1502,8 @@ class Parser
 	  // verbose = 1;
 	  lr_error = repair(state, conflicts);
 	  // verbose = ov;
-	} else if (verbose) {
-	  werror("No conflicts in state:\n%s\n",
+	} else {
+	  report(NOTICE, "compile", "No conflicts in state:\n%s",
 		 state_to_string(s_q->arr[index]));
 	}
       }
@@ -1528,7 +1531,7 @@ class Parser
     });
 
 #ifdef LR_PROFILE
-    werror("DONE\n");
+    report(NOTICE, "compile", "DONE\n");
 #endif /* LR_PROFILE */
 
     return (lr_error);
@@ -1567,7 +1570,7 @@ class Parser
 
     if (!functionp(scanner) &&
 	!(objectp(scanner) && functionp(scanner->`()))) {
-      werror("parser->parse(): scanner not set!\n");
+      report(ERROR, "parse", "parser->parse(): scanner not set!\n");
       lr_error = ERROR_NO_SCANNER;
       return(0);
     }
@@ -1589,10 +1592,8 @@ class Parser
 	while (object_program(a = state->action[input]) == Rule) {
 	  Rule r = [object(Rule)]a;
 
-	  if (verbose) {
-	    werror("Reducing according to rule\n%s\n",
-		   rule_to_string(r));
-	  }
+	  report(NOTICE, "parse", "Reducing according to rule\n%s\n",
+		 rule_to_string(r));
 
 	  do {
 	    if (r->action) {
@@ -1604,18 +1605,20 @@ class Parser
 		  func = [string|function]action_object[r->action];
 		  if (!functionp(func)) {
 		    if (!func) {
-		      werror("Missing action \"%s\" in object\n",
+		      report(ERROR, "parse",
+			     "Missing action \"%s\" in object",
 			     r->action);
 		      lr_error |= ERROR_MISSING_ACTION;
 		    } else {
-		      werror("Bad type (%s) for action \"%s\" in object\n",
+		      report(ERROR, "parse",
+			     "Bad type (%s) for action \"%s\" in object",
 			     typeof(func), r->action);
 		      lr_error |= ERROR_BAD_ACTION_TYPE;
 		      func = 0;
 		    }
 		  }
 		} else {
-		  werror("Missing object for action \"%s\"\n",
+		  report(ERROR, "parse", "Missing object for action \"%s\"",
 			 r->action);
 		  lr_error |= ERROR_NO_OBJECT;
 		  func = 0;
@@ -1656,9 +1659,8 @@ class Parser
 	    return(value_stack->pop());
 	  }
 	  /* SHIFT */
-	  if (verbose) {
-	    werror("Shifting \"%s\", value \"%O\"\n", input, value);
-	  }
+	  report(NOTICE, "parse",
+		 "Shifting \"%s\", value \"%O\"", input, value);
 	  value_stack->push(value);
 	  state_stack->push(state);
 	  state = [object(Kernel)]a;
@@ -1670,22 +1672,22 @@ class Parser
 
 	    if (value_stack->ptr != 1) {
 	      if (value_stack->ptr) {
-		werror("Error: Bad state at EOF -- Throwing \"%O\"\n",
+		report(ERROR, "parse", "Bad state at EOF -- Throwing \"%O\"",
 		       value_stack->pop());
 		state = [object(Kernel)]state_stack->pop();
 		continue;
 	      } else {
-		werror("Error: Empty stack at EOF!\n");
+		report(ERROR, "parse", "Empty stack at EOF!");
 		return (0);
 	      }
 	    } else {
-	      werror("Error: Bad state at EOF\n");
+	      report(ERROR, "parse", "Bad state at EOF");
 	      return(value_stack->pop());
 	    }
 	  } else {
 	    lr_error |= ERROR_SYNTAX;
 
-	    werror("Error: Bad input: %O(%O)\n", input, value);
+	    report(ERROR, "parse", "Bad input: %O(%O)", input, value);
 	  }
 	}
 	break;	/* Break out of the inner while(1) to read more input. */
