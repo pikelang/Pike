@@ -1,9 +1,9 @@
-/* $Id: operator.c,v 1.24 1999/05/30 20:11:59 mirar Exp $ */
+/* $Id: operator.c,v 1.25 1999/09/14 23:17:15 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: operator.c,v 1.24 1999/05/30 20:11:59 mirar Exp $
+**!	$Id: operator.c,v 1.25 1999/09/14 23:17:15 marcus Exp $
 **! class Image
 */
 
@@ -169,9 +169,9 @@ STANDARD_OPERATOR_HEADER("`+")
    else
    while (i--)
    {
-      d->r=MINIMUM(s1->r+rgb.r,255);
-      d->g=MINIMUM(s1->g+rgb.g,255);
-      d->b=MINIMUM(s1->b+rgb.b,255);
+      d->r=MAXIMUM(MINIMUM(s1->r+rgb.r,255),0);
+      d->g=MAXIMUM(MINIMUM(s1->g+rgb.g,255),0);
+      d->b=MAXIMUM(MINIMUM(s1->b+rgb.b,255),0);
       s1++; d++;
    }
    THREADS_DISALLOW();
