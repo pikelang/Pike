@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.95 2001/08/15 03:31:56 hubbe Exp $
+ * $Id: svalue.h,v 1.96 2001/08/20 18:06:55 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -105,7 +105,6 @@ struct svalue
 
 #define PIKE_T_RING 240
 #define PIKE_T_NAME 241		/* Only supported in USE_PIKE_TYPE-mode. */
-#define T_MAPPING_DATA 242
 #define PIKE_T_SCOPE 243	/* Not supported yet */
 #define PIKE_T_TUPLE 244	/* Not supported yet */
 #define T_ASSIGN 245
@@ -119,6 +118,10 @@ struct svalue
 #define T_AND 254
 #define T_OR 255
 
+/* These are only used together with describe() and friends. */
+#define T_STORAGE 10000
+#define T_MAPPING_DATA 10001
+#define T_PIKE_FRAME 10002
 
 #define tArr(VAL) "\000" VAL
 #define tArray tArr(tMix)
