@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.335 2003/10/20 13:11:22 mast Exp $
+|| $Id: interpret.c,v 1.336 2003/10/20 14:59:42 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.335 2003/10/20 13:11:22 mast Exp $");
+RCSID("$Id: interpret.c,v 1.336 2003/10/20 14:59:42 marcus Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2518,7 +2518,7 @@ void gdb_backtrace (
 	    struct program *p = arg->u.program;
 	    if (p->num_linenumbers) {
 	      file = low_get_program_line_plain (p, &line, 0);
-	      fprintf (stderr, "program(%s:%d)", file->str, line);
+	      fprintf (stderr, "program(%s:%d)", file, line);
 	    }
 	    else
 	      fputs ("program", stderr);
