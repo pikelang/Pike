@@ -1,4 +1,4 @@
-// $Id: Stdio.pmod,v 1.37 1999/01/30 01:22:09 grubba Exp $
+// $Id: Stdio.pmod,v 1.38 1999/04/21 06:55:40 js Exp $
 
 #include <string.h>
 
@@ -394,7 +394,10 @@ class FILE {
       string s;
       s=b[bpos..bpos+bytes-1];
       bpos += bytes+skip;
-      return s;
+      if(sizeof(s) && s[-1]=='\r')
+	return s[..sizeof(s)-2];
+      else
+	return s;
     }
 
 
