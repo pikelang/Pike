@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.3 1997/03/28 18:23:08 grubba Exp $
+ * $Id: result.c,v 1.4 1997/03/28 18:30:57 grubba Exp $
  *
  * mysql query result
  *
@@ -74,7 +74,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.3 1997/03/28 18:23:08 grubba Exp $");
+RCSID("$Id: result.c,v 1.4 1997/03/28 18:30:57 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -217,7 +217,8 @@ static void f_create(INT32 args)
     error("Too few arguments to mysql_result()\n");
   }
   if ((sp[-args].type != T_OBJECT) ||
-      (!(mysql = get_storage(sp[-args].u.object, mysql_program)))) {
+      (!(mysql = (struct precompiled_mysql *)get_storage(sp[-args].u.object,
+							 mysql_program)))) {
     error("Bad argument 1 to mysql_result()\n");
   }
 
