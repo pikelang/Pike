@@ -349,6 +349,8 @@ void build_box(Node n, String.Buffer ret, string first, string second, function 
 }
 
 string parse_text(Node n, void|String.Buffer ret) {
+  if(!n)
+    return "";
 
   if(n->get_node_type()==XML_TEXT && n->get_text()) {
     if(ret)
@@ -593,6 +595,8 @@ string parse_text(Node n, void|String.Buffer ret) {
 
   if(cast)
     return ret->get();
+    
+  return "";
 }
 
 string parse_doc(Node n, void|int no_text) {
