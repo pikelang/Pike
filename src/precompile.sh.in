@@ -101,7 +101,7 @@ fi
 if test -f ./C.pmod ; then
   :
 else
-  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod"  ./C.pmod then :; else
+  if ln -s "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" ./C.pmod; then :; else
     # We might be on a filesystem that doesn't support symlinks (eg FAT).
     echo "Trying copying instead..."
     cp "$LIBDIR_SRC/modules/Parser.pmod/C.pmod" ./C.pmod
