@@ -16,21 +16,37 @@ string raw;
 //! raw unparsed body of the request (@[raw] minus request line and headers)
 string body_raw;
 
+//! full request line (@[request_type] + @[full_query] + @[protocol])
 string request_raw;
+
+//! HTTP request method, eg. POST, GET, etc.
 string request_type;
+
+//! full resource requested, including attached GET query
 string full_query;
+
+//! resource requested minus any attached query
 string not_query;
+
+//! query portion of requested resource, starting after the first "?"
 string query;
+
+//! request protocol and version, eg. HTTP/1.0
 string protocol;
 
 int started = time();
 
+//! all headers included as part of the HTTP request, ie content-type.
 mapping(string:string|array(string)) request_headers=([]);
 
+//! all variables included as part of a GET or POST request.
 mapping(string:string|array(string)) variables=([]);
+
+//! cookies set by client
 mapping(string:string) cookies=([]);
 
-mapping misc=([]); // external use only
+//! external use only
+mapping misc=([]);
 
 function(this_program:void) request_callback;
 
@@ -62,6 +78,7 @@ static void read_cb(mixed dummy,string s)
       if (parse_variables())
       {
 	 my_fd->set_blocking();
+	 populate_raw();
 	 request_callback(this_object());
       }
    }
@@ -118,16 +135,23 @@ static int parse_variables()
 	 parse_post();
 	 return 1;
       }
-	  
       my_fd->set_read_callback(read_cb_post);
       return 0; // delay
    }
    return 1;
 }
 
+static void populate_raw()
+{
+   int i=search(raw, "\r\n\r\n");
+   if(i>0) body_raw=raw[i+4..];
+   return;
+}
+
 static void parse_post()
 {
    int n=(int)request_headers["content-length"];
+
    string s=buf[..n-1];
    buf=buf[n..];
 
@@ -138,12 +162,12 @@ static void read_cb_post(mixed dummy,string s)
 {
    raw+=s;
    buf+=s;
+
    if (strlen(buf)>=(int)request_headers["content-length"] ||
        strlen(buf)>MAXIMUM_REQUEST_SIZE)
    {
-      int i=search(raw, "\r\n\r\n");
-      if(i>0) body_raw=raw[i+4..];
       my_fd->set_blocking();
+      populate_raw();
       parse_post();
       request_callback(this_object());
    }
@@ -226,6 +250,29 @@ string make_response_header(mapping m)
    return res*"\r\n"+"\r\n\r\n";
 }
 
+//! return a properly formatted response to the HTTP client
+//! @param m 
+//! Contains elements for generating a response to the client.
+//! @mapping m
+//! @member string "data"
+//!   Data to be returned to the client.
+//! @member object "file"
+//!   File object, the contents of which will be returned to the client.
+//! @member int "error"
+//!   HTTP error code
+//! @member int "length"
+//!   length of content returned. If @i{file@} is provided, @i{size@} 
+//!   bytes will be returned to client.
+//! @member string "modified"
+//!   contains optional modification date.
+//! @member string "type"
+//!   contains optional content-type
+//! @member mapping "extra_heads"
+//!   contains a mapping of additional headers to be 
+//! returned to client.
+//! @member string "server" 
+//!   contains the server identification header.
+//! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
 // insert HTTP 1.1 stuff here
