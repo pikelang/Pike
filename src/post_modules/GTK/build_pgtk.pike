@@ -1,5 +1,6 @@
 int ln, eml=-100;
 string buffer="";
+#include "docs.pike"
 
 mapping warn =
 ([
@@ -94,7 +95,8 @@ void end_last_program()
 {
   eml=-1;
   files += "pgtk_"+internal_progname+".c ";
-  if(do_docs) return;
+  if(do_docs) 
+    return;
 //   werror(internal_progname+"...\n");
   string data;
   if((Stdio.file_size("pgtk_"+internal_progname+".c") !=
@@ -269,475 +271,7 @@ void emit_program_block(mapping block, string cl)
 mapping docs = ([]), true_types = ([]), named = ([]);
 mapping lines = ([]), examples = ([]);
 
-void print_inherited_functions( string cl, object fd )
-{
-  foreach(sort(indices(struct[cl]))-({"inherit"}), string fun)
-  {
-    string a,b;
-    string a = true_types[cl+fun][1],b=true_types[cl+fun][0];
-    if( (a-" ") == "void"  )
-      a = "";
-//     sscanf(struct[cl][fun], "\"function(%s:%s)\"", a, b);
-    fd->write("<dt><b>"+b+" <a href="+cl+".html#"+fun+">"+
-	      classname(cl)+"."+fun+"</a>"
-	      "( "+replace(a, ",", ", ")+" );</b>\n");
-  }
-
-  if(struct[cl]["inherit"])
-    print_inherited_functions( struct[cl]["inherit"], fd );
-
-}
-
-void print_signals( mapping sigs, object on, string|void p)
-{
-  if(!sigs) return;
-  if(p)
-    p = sillycaps(p,1)+".";
-  else
-    p="";
-  foreach(sort(indices(sigs)), string s)
-    on->write("<dt><b>GTK.s_"+s+"</b><dd>"+sigs[s]+"\n");
-}
-
-void print_inherited_signals( string cl, object fd )
-{
-  print_signals( signals[cl], fd, cl );
-  if(struct[cl]["inherit"])
-    print_inherited_signals( struct[cl]["inherit"], fd );
-}
-
-void print_function_defs( string f, int|void global )
-{
-  rm("docs/"+f+".html");
-  if(f == "global")
-    global = 1;
-//   if(global)
-//     werror("global functions\n");
-  object fd = Stdio.File("docs/"+f+".html", "wct");
-
-//   fd->write("<body bgcolor=white text=black><a href=\"\">Index</a><p>\n");
-
-
-
-  if(global)
-    fd->write("<h1>Global Pike GTK functions</h1><p>\n");
-  else if( struct[f]->create )
-  {
-    if( warn->noexample )
-      if( !examples[ lower_case(f) ]  )
-        werror(lines[f]+": Warning: No example image\n");
-    fd->write("<h1>"+classname(f)+"</h1>\n");
-  } else {
-    fd->write("<h1>"+classname(f)+" (abstract class)</h1>\n");
-  }
-  fd->write("<blockquote>"+(docs[f]?docs[f]:"")+"</blockquote>\n");
-
-  if(!global)
-  {
-    if(struct[f]["inherit"])
-      fd->write("Inherits <a href="+struct[f]["inherit"]+".html>"+
-                classname( struct[f]["inherit"] )+"</a><p>");
-
-    foreach(sort(indices(struct)), string w)
-      if(struct[w]["inherit"] == f)
-        fd->write("Inherited by <a href="+w+".html>"+classname(w)+"</a><br>");
-  }
-  fd->write("<p>");
-
-  if(sizeof(indices(struct[f])) > 1)
-  {
-    if(struct[f]->create)
-    {
-      string a = true_types[f+"create"][1];
-      if( (a-" ") == "void"  )
-        a = "";
-      if( warn->noargs )
-        if(strlen(a) && !named[ f + "create" ] )
-          werror(lines[ f + "create" ]+": Warning: Arguments not named\n");
-
-//       sscanf(struct[f]->create, "\"function(%s:%s)\"", a, b);
-      fd->write("<h2>Constructor</h2>\n");
-      fd->write("<dl>");
-      fd->write("<dt><b>"+
-                (global?"GTK":(classname(f)+" "+classname(f)))
-                +"( "+replace(a, ",", ", ")+" );</b>\n");
-      if( warn->nodocs )
-        if(!docs[f+"create"])
-          werror(lines[ f + "create" ]+
-                 ": Warning: No documentation for constructor\n");
-
-      fd->write("<dd>"+(docs[f+"create"]?docs[f+"create"]:"")+"\n");
-      fd->write("</dl>");
-    }
-    if(!global)
-      fd->write("<h2>Methods</h2>\n");
-    fd->write("<dl>");
-    foreach(sort(indices(struct[f])), string fun)
-    {
-      if(fun != "inherit")
-      {
-	string a = true_types[f+fun][1],b=true_types[f+fun][0];
-        if( (a-" ") == "void"  )
-          a = "";
-// 	sscanf(struct[f][fun], "\"function(%s:%s)\"", a, b);
-	if(fun == "create" || fun == "destroy")
-	  ;
-	else
-	{
-          if( warn->noargs )
-            if(strlen(a) && !named[ f + fun ] )
-              werror(lines[f+fun]+": Warning: Arguments not named\n");
-	  fd->write("<a name=\""+fun+"\"><dt><b>"+b+" "+(global?"GTK.":"")
-                    +fun+"( "+replace(a, ",", ", ")+" );</b>\n");
-          if(!docs[f+fun] || !strlen(docs[f+fun]))
-          {
-            if( warn->nodocs )
-              werror(lines[ f + fun ]+
-                     ": Warning: No documentation for "+fun+"\n");
-          }
-          else
-          {
-            if( warn->cstyle )
-            {
-              if( search(docs[f+fun], "GTK_") != -1)
-                werror(lines[ f + fun ]+
-                       ": Warning: Possible C-style GTK constant name\n");
-              if( search(docs[f+fun], "gtk_") != -1)
-                if(search( docs[f+fun], "C-") == -1)
-                  werror(lines[ f + fun ]+
-                         ": Warning: Possible C-style GTK function name\n");
-            }
-          }
-	  fd->write("<dd>"+(docs[f+fun]?docs[f+fun]:"")+"</a>\n");
-	}
-      }
-    }
-  }
-
-  if(signals[f] && sizeof(signals[f]))
-  {
-    fd->write("</dl><h2>Signals</h2>\n");
-    fd->write("<dl>");
-    print_signals( signals[f], fd, f );
-  }
-
-  if(struct[f]["inherit"])
-  {
-    fd->write("</dl><h2>Inherited methods</h2><dl>\n");
-    print_inherited_functions( struct[f]["inherit"], fd );
-    fd->write("</dl><h2>Inherited signals</h2><dl>\n");
-    print_inherited_signals( struct[f]["inherit"], fd );
-  }
-  fd->write("</dl>\n");
-  fd->close();
-}
-
-void print_rec_tree(array plane, mapping t, int ind, object to)
-{
-  foreach(sort(plane), string n)
-  {
-    print_function_defs( n );
-//     werror(" "*ind + n+"\n");
-
-    to->write("<li><a href="+n+".html>"+classname(n)+"</a>");
-    if(t[n])
-    {
-      to->write("<ul>\n");
-      print_rec_tree(sort(t[n]), t, ind+1, to);
-      to->write("</ul>\n");
-    }
-  }
-}
-
-int fnamesfun( string a, string b )
-{
-  return (classname(a) > classname(b));
-}
-
-string wmml_section( string w, mapping data )
-{
-  string wmml;
-  if( w != "global" )
-  {
-    wmml = (
-            "<anchor name=\""+classname(w)+"\">\n"
-            "<section name=\""+classname(w)+"\" title=\""+classname(w)+"\">\n"
-            "<class name=\""+classname(w)+"\" title=\"  \">\n"
-            );
-  } else {
-   wmml="<section name=\"Toplevel functions\" title=\"Toplevel functions\">\n";
-  }
-
-
-                 //"<class name=\""+classname(w)+"\" title=\""+classname(w)+
-                 //                 "\">\n");
-
-  int global;
-
-  if(w == "global")
-    global = 1;
-
-  wmml += (docs[w]||"");
-  if(!docs[w])
-    werror(lines[ w ]+
-           ": Warning: No documentation for class\n");
-
-  if( data["inherit"] )
-  {
-    wmml += "<p>Inherits <ref to=\""+classname( data["inherit"] )+"\"><br>";
-  }
-
-  foreach(sort(indices(struct)), string a)
-    if(struct[a]["inherit"] == w)
-      wmml += ("Inherited by <ref to="+classname( a )+"><br>");
-
-  if( data->create )
-  {
-    string a = true_types[w+"create"][1];
-    if( (a-" ") == "void"  )
-      a = "";
-    if( warn->noargs )
-      if(strlen(a) && !named[ w + "create" ] )
-        werror(lines[ w + "create" ]+": Warning: Arguments not named\n");
-    wmml += "<method name=\""+classname(w)+"\">";
-    wmml += "<man_syntax>";
-    wmml += classname( w )+" "+classname( w )+
-         "( "+replace( a, ",", ", ")+");<br>";
-    wmml += "</man_syntax>";
-    wmml += "<man_description>"+docs[w+"create"]+"</man_description></method>";
-
-    if(!docs[w+"create"])
-      werror(lines[ w + "create" ]+
-             ": Warning: No documentation for constructor\n");
-  }
-  foreach( sort(indices(data)-({"create","inherit","destroy"})), string fun )
-  {
-    string a = true_types[w+fun][1],
-           b = true_types[w+fun][0];
-    if( (a-" ") == "void"  )
-      a = "";
-    if( warn->noargs )
-      if(strlen(a) && !named[ w + fun ] )
-        werror(lines[w+fun]+": Warning: Arguments not named\n");
-    if(!docs[w+fun] || !strlen(docs[w+fun]))
-    {
-      if( warn->nodocs )
-        werror(lines[ w + fun ]+
-               ": Warning: No documentation for "+fun+"\n");
-
-    } else if( warn->cstyle ) {
-      if( search(docs[w+fun], "GTK_") != -1)
-        if(search( docs[w+fun], "C-") == -1)
-          werror(lines[ w + fun ]+
-                 ": Warning: Possible C-style GTK constant name\n");
-      if( search(docs[w+fun], "gtk_") != -1)
-        if(search( docs[w+fun], "C-") == -1)
-          werror(lines[ w + fun ]+
-                 ": Warning: Possible C-style GTK function name\n");
-    }
-    wmml += ("\n\n<method name="+fun+" title=\"\">\n<man_syntax>\n  "+
-             "<b>"+b+" "+(global?"GTK.":"")+fun+"( "+
-             replace( a, ",",", ")+" );</b>"
-             "\n</man_syntax>\n" +
-             "<man_description>\n"+docs[w+fun]+"\n</man_description>\n"
-             "</method>\n");
-  }
-  if( w != "global" )
-    wmml += "</class></section></anchor>";
-  else
-    wmml += "</section>";
-  return wmml ;
-}
-
-string rec_make_wmml_tree( array plane, mapping t )
-{
-  string wmml="\n<ul>";
-  foreach(sort(plane), string n)
-  {
-    wmml += ("<li><ref to=\""+classname(n)+"\">");
-    if(t[n])
-      wmml += rec_make_wmml_tree( sort(t[n]), t );
-  }
-  return wmml+"</ul>\n";
-}
-
-void make_wmml_docs( array root_widgets, mapping inheriting )
-{
-  string wmml="<anchor name=GTK><chapter title=\"GTK Reference\">";
-  wmml +=
-       "<section title=\"GTK Inheritance Tree\" name=tree>\n"
-       + rec_make_wmml_tree( root_widgets, inheriting ) +
-       "\n</section>";
-
-  wmml += wmml_section( "global", struct->global );
-
-  array in_order = indices(struct);
-  sort( map(map( in_order, classname ),lower_case), in_order );
-  foreach(in_order, string s)
-    wmml += wmml_section( s, struct[s] );
-  Stdio.write_file( "wmml/gtk_reference.wmml", wmml+"</chapter></anchor>" );
-}
-
-int do_docs;
-array (string) sort_dependencies( array bunch, mapping extra )
-{
-  mapping inheriting = ([]);
-  foreach(bunch, string s)
-  {
-    if(inheriting[extra[s]["inherit"]])
-      inheriting[extra[s]["inherit"]] += ({ s });
-    else
-      inheriting[extra[s]["inherit"]] = ({ s });
-  }
-  array (string) result = sort(inheriting[0]);
-
-  if( mkwmml )
-  {
-    array roots=
-          indices(inheriting)-
-          `+(({}),@values(inheriting));;
-    foreach( roots, mixed q )
-      make_wmml_docs( inheriting[q], inheriting );
-  }
-
-  if(do_docs && !mkwmml)
-  {
-    multiset roots=
-      mkmultiset(indices(inheriting))-mkmultiset(`+(@values(inheriting)));;
-
-    mkdir("docs");
-    rm("docs/index.html");
-    object fd = Stdio.File("docs/index.html", "wc");
-    fd->write("<a href=global.html><h1>Global functions</h1></a>\n");
-    fd->write("<h1>Pike GTK Inheritance tree</h1>\n");
-    fd->write("<ul>");
-//     print_function_defs( "global", 1 );
-    foreach(sort(indices(roots)), string r)
-      if(r != "global")
-        print_rec_tree( inheriting[r], inheriting, 1, fd);
-    fd->write("</ul>");
-    foreach( sort(indices(requires)), string req )
-    {
-      fd->write("<h1>All classes requiring "+req+"</h1>\n" );
-      fd->write("<ul>");
-      foreach(Array.sort_array(requires[req], fnamesfun), string s)
-        fd->write("<li> <a href="+s+".html>"+classname(s)+"</a>\n");
-      fd->write("</ul>\n");
-    }
-    fd->write("<h1>All classes in alphabetical order</h1>\n");
-    fd->write("<ul>");
-    foreach(Array.sort_array(indices(struct), fnamesfun), string s)
-      if(s != "global")
-        fd->write("<li> <a href="+s+".html>"+classname(s)+"</a>\n");
-    fd->write("</ul>\n");
-    fd->write("<h1>All constants in alphabetical order</h1>\n");
-    fd->write("<ul>");
-    array consts =constants_name;
-    foreach(Array.sort_array(consts,fnamesfun), string s)
-      fd->write("<li> "+classname(String.capitalize(lower_case(s)))+"\n");
-    fd->write("</ul>");
-  }
-  m_delete(inheriting, 0);
-  while(sizeof(inheriting))
-  {
-    int mod;
-    foreach(result, string s)
-    {
-      if(inheriting[s])
-      {
-	result += sort(inheriting[s]);
-	m_delete(inheriting, s);
-	mod++;
-      }
-    }
-    if(!mod)
-    {
-      werror("Inconsistent inheritance tree!\n");
-      multiset roots=mkmultiset(indices(inheriting))-mkmultiset(`+(@values(inheriting)));;
-      werror("orphans:\n");
-      foreach(indices(roots), string r)
-      {
-	if(extra[r])
-	  werror("\n+ "+r+"   [ "+extra[r]["inherit"]+"]\n");
-	else
-	  werror("\n+ "+r+" UNDEFINED\n");
-	print_rec_tree( inheriting[r], inheriting, 1, Stdio.stdout);
-      }
-      exit(1);
-    }
-  }
- return result;
-}
 string constants="";
-
-string PIKE;
-
-void find_pike()
-{
-  PIKE="../../pike -DNOT_INSTALLED -m../../master.pike";
-}
-
-
-
-string make_example_image(string from, int top)
-{
-  object mei;
-  if(!mei)
-    mei = (object)("make_example_image.pike");
-  mei->wmml = mkwmml;
-  if(file_stat( (mkwmml?"wmml/gtkimg":"docs")+"/"+mei->file_name(from)))
-    return mei->tags( from );
-
-  if(!PIKE)
-    find_pike();
-
-  string res=Process.popen(PIKE+" "+dirname(__FILE__)+
-                           "/make_example_image.pike '"+from+"'"+
-                           (top?" TOP":" POT") + (mkwmml?" WMML":" HTML"));
-  if(!strlen(res))
-    werror("Failed to make example image from '"+from+"'\n");
-  return res;
-}
-
-int in_img, img_toplevel;
-string delay_slot="", normal_slot="";
-
-string handle_img(string line)
-{
-  if(line=="toplevel")
-    img_toplevel=1;
-  else if(sscanf(line, "delay: %s", line))
-    delay_slot += line+"\n";
-  else if(line == "img_end" || sscanf(line, "img_end%*s"))
-  {
-    string code = ("lambda() {\n"+"GDK.GC g;\nGTK.Widget w;\n"+ normal_slot+"\n");
-    if(strlen(delay_slot))
-      code += "call_out(lambda(object w,object g) {\n"+delay_slot+"}, 0.05, w,g);\n";
-    code+="return w;\n}()";
-    delay_slot=normal_slot="";
-    in_img = 0;
-    return make_example_image(code,img_toplevel);
-  } else
-    normal_slot += line+"\n";
-  return "";
-}
-array constants_name = ({});
-string find_constants(string prefix, string where)
-{
-  array res = ({});
-  sscanf(prefix, "GTK_%s", prefix );
-  foreach(constants_name, string c)
-    if(search(c,prefix) != -1)
-      res += ({ classname(String.capitalize(lower_case(c))) });
-
-  if(!sizeof(res))
-  {
-    werror("Fatal error: "+where+": CONST("+prefix+") in doc string: No consts found\n");
-    exit(1);
-  }
-  return String.implode_nicely( res );
-}
-
 
 string gödsla_med_line(string s, string f)
 {
@@ -769,58 +303,11 @@ int has_cond_widget( string what )
 {
   if(!options)
     options = mkmultiset( (Stdio.read_bytes( "options" )-" ")/"\n" );
-//   werror( "has_cond_widget("+what+") -> "+options[what]+"\n");
   return options[what];
 }
 
-int odd;
-string build_cursor( string a )
-{
-  int num=0;
-  sscanf( a, "GDK.%s", a );
-  num = master()->resolv("GDK")[a];
-
-  if( mkwmml )
-    return "<tr><td>GDK."+a+"</td>"
-           "<td><img src=gtkimg/cursor_"+num+".gif></td>"
-           "<td><img src=gtkimg/cursor_"+num+"_inv.gif></td>"
-           "<td><img src=gtkimg/cursor_"+num+"_red.gif></td>"
-           "<td><img src=gtkimg/cursor_"+num+"_red_inv.gif></td>"
-           "<td><img src=gtkimg/cursor_"+num+"_green.gif></td>"
-           "<td><img src=gtkimg/cursor_"+num+"_green_inv.gif></td>"
-           "<td><img src=gtkimg/cursor_"+num+"_blue.gif></td>"
-           "<td><img src=gtkimg/cursor_"+num+"_blue_inv.gif></td>"
-           "</tr>";
-  else
-    return "<tr bgcolor="+(odd++%2?"#f6e0d0":"#faebd7")+
-           "><td><font color=black>GDK."+a+"</font></td>"
-           "<td><img src=cursor_"+num+".gif></td>"
-           "<td><img src=cursor_"+num+"_inv.gif></td>"
-           "<td><img src=cursor_"+num+"_red.gif></td>"
-           "<td><img src=cursor_"+num+"_red_inv.gif></td>"
-           "<td><img src=cursor_"+num+"_green.gif></td>"
-           "<td><img src=cursor_"+num+"_green_inv.gif></td>"
-           "<td><img src=cursor_"+num+"_blue.gif></td>"
-           "<td><img src=cursor_"+num+"_blue_inv.gif></td>"
-           "</tr>";
-}
-
-
 string dir;
-int mkwmml;
 mapping requires = ([]);
-
-string unsillycaps(string what)
-{
-  sscanf( what, "Gtk%s", what );
-  string res=upper_case(what[0..0]);
-  foreach(what[1..]/"", string q)
-    if(lower_case(q)==q)
-      res += q;
-    else
-      res += "_"+lower_case(q);
-  return replace(res,"__","_");
-}
 
 int main(int argc, array argv)
 {
@@ -847,11 +334,6 @@ void do_default_sprintf( int args, int offset, int len )
       warn[w] = 1;
     if( sscanf( w, "--no-warn-%s", w ) )
       warn[w] = 0;
-    if( w=="--wmml" )
-    {
-      mkwmml=1;
-      do_docs=1;
-    }
   }
 
   dir = argv[1];
@@ -997,11 +479,9 @@ void do_default_sprintf( int args, int offset, int len )
 	  while(sscanf(line, "%sCURS(%s)%s", a, b, line)==3)
 	    line = a+build_cursor(b)+line;
 	  while(sscanf(line, "%sW(%s)%s", a, b, line)==3)
-	    line = a+"<a href="+lower_case( unsillycaps(b) )+".html>"+
-                 classname(b)+"</a>"+line;
+	    line = a+link_class( b )+line;
 	  while(sscanf(line, "%sGDK(%s)%s", a, b, line)==3)
-	    line = a+"<a href="+replace("Gdk"+b,"GdkAtom","Gdk_Atom")+
-                 ".html>GDK."+b+"</a>"+line;
+	    line = a+link_class( "GDK."+b )+line;
         }
         if( signal_doc )
           signals[progname][signal_doc] += line;
@@ -1159,8 +639,7 @@ void do_default_sprintf( int args, int offset, int len )
       last_function=line;
       NUMBER_FUNCTION();
       struct[progname][line] = "\"function(void:object)\"";
-      true_types[progname+line] = ({ "<a href=\""+lower_case(type)+".html\">"+
-				     classname(lower_case(type))+"</a>", "" });
+      true_types[progname+line] = ({ link_class( type ), "" });
 
       emit("/* "+oline+" */\n");
       emit_proto("void pgtk_"+progname+"_"+line+"(int args)\n");
@@ -1708,6 +1187,11 @@ void do_default_sprintf( int args, int offset, int len )
             line = make_example_image(line,1);
             examples[progname]++;
           }
+          else if(sscanf(line, "%sW(%s)%s", a,b,line))
+          {
+            line = a+link_class( b )+line;
+            examples[progname]++;
+          }
           else
             while(sscanf(line, "%sCONST(%s)%s", a, b, line)==3)
               line = a+find_constants(b,lines[progname+last_function]||progname)+line;
@@ -1721,8 +1205,7 @@ void do_default_sprintf( int args, int offset, int len )
           last_function=line;
           NUMBER_FUNCTION();
           struct[progname][line] = "\"function(void:object)\"";
-          true_types[progname+line] = ({ "<a href=\""+lower_case(type)+".html\">"+
-                                         classname(lower_case(type))+"</a>", "" });
+          true_types[progname+line] = ({ link_class( type ), "" });
         } else if(sscanf(line, "ARGS(%s);", line)==1) {
           true_types[progname+last_function][1] = line;
         } else if(sscanf(line, "RETURNS(%s);", line)==1) {
@@ -1740,10 +1223,6 @@ void do_default_sprintf( int args, int offset, int len )
       }
     }
   }
-
-// werror(sizeof(struct)+" classes\n");
-// werror(sizeof(constants/"\n")+" constants\n");
-// werror(sizeof(signals)+" signal constants (strings)\n");
 
   string to_free="";
 
