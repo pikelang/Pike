@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.27 2001/06/11 09:56:14 per Exp $
+// $Id: MySQL.pike,v 1.28 2001/06/11 09:59:36 per Exp $
 
 inherit .Base;
 
@@ -438,7 +438,6 @@ class Queue
     while( sizeof( possible ) > p_c )
     {
       empty_count=0;
-
       if( possible[ p_c ] )
       {
 	Standards.URI ur = Standards.URI( possible[p_c++] );
@@ -452,13 +451,10 @@ class Queue
 	possible[p_c] = 0;
 	retry_count=0;
 	set_stage( ur, 1 );
+	return ur;
       }
-      else
-      {
-	p_c++;
-	continue;
-      }
-      return ur;
+      p_c++;
+      continue;
     }
 
     if( stats->concurrent_fetchers() )
