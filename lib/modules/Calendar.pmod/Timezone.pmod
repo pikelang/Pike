@@ -964,10 +964,13 @@ class Runtime_timezone_compiler
 	 {
 	    z->add(b);
 	    foreach (q/"\n",string line)
+	    {
+	       werror("%O\n",line);
 	       if (sscanf(line,"%*[ \t]%[-0-9]%s",a,b)==3 && strlen(a))
 		  z->add(a+b);
-	       else 
+	       else if (sscanf(line,"%*[ ]#%*s")<2)
 		  break; // end of zone
+	    }
 	    break;
 	 }
 	 i=max(n-100,0)-1;
