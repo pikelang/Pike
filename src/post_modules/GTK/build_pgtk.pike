@@ -178,9 +178,9 @@ int data_offset( string what )
 string emit_function_def( string fun, string cfun, string type, int opt )
 {
   type = function_type( type );
-  emit_nl( "    quick_add_function(_data+"+data_offset(fun)+","+
-           strlen(fun)+","+cfun+",_data+"+data_offset( type )+
-           ","+strlen(type)+",0,0);\n");
+  emit_nl( "    quick_add_function((char*)_data+"+data_offset(fun)+","+
+           strlen(fun)+","+cfun+",(char*)_data+"+data_offset( type )+
+           ","+strlen(type)+","+(fun=="create"?"ID_STATIC":"0")+",0);\n");
 }
 
 int _num_functions;
@@ -1319,7 +1319,8 @@ int main(int argc, array argv)
     } else if(sscanf(line, "CONSTANT(%s)", line)==1) {
       if(!sscanf(line, "GTK_%s", fn))
 	fn = line;
-      constants += ("  add_integer_constant(\""+fn+"\", "+line+", 0);\n");
+      constants += ("  add_integer_constant((char*)_data+"+
+                    data_offset(fn+"\0")+", "+line+", 0);\n");
     } else if(sscanf(line, "SIMPLE%sFUNCTION(%s)", line, fn)==2) {
       last_function=fn;
       NUMBER_FUNCTION();
@@ -1401,7 +1402,8 @@ int main(int argc, array argv)
   emit_nl("static void _2()\n{\n");
   _inits += ({ "_2" });
   foreach(sort(indices(`+(@values(signals)))), string s)
-    emit_nl("  add_string_constant( \"s_"+s+"\", \""+s+"\", 0 );\n");
+    emit_nl("  add_string_constant( (char*)_data+"+data_offset("s_"+s+"\0")+
+            ", (char*)_data+"+data_offset(s+"\0")+", 0 );\n");
 
   emit_program_block( struct->global, "global" );
   emit_nl("}\n");
@@ -1592,7 +1594,8 @@ int main(int argc, array argv)
     string q =replace(Stdio.read_bytes(dir+"/pgtk.c.head"),
                       "PROTOTYPES",
                       replace(pre, "/*ext*/ ", "")+
-                      "\nstatic char _data[] =\n"+make_c_string( data )+";");
+                      "\nstatic const char _data[] =\n"+
+                      make_c_string( data )+";");
     pre = replace(pre, "/*ext*/", "extern");
     if(Stdio.read_bytes("prototypes.h") != pre )
     {
