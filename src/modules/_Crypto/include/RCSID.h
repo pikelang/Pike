@@ -9,7 +9,7 @@
 #elif __GNUC__ == 2
 #define RCSID2(name, X) \
  static char *name = X; \
- static void *use_#name=(&use_rcsid, (void *)&name)
+ static void *use_##name=(&use_rcsid, (void *)&name)
 #else
 #define RCSID2(name, X) \
  static char *name = X
