@@ -1,0 +1,18 @@
+NAME
+	free_mapping - free one reference to a mapping
+
+SYNTAX
+	#include "mapping.h"
+
+	void free_mapping(struct mapping *m)
+
+DESCRIPTION
+	This function frees one reference to the mapping m. If the reference
+	is the last reference to the mapping, it will free the memory used
+	by the mapping m.
+
+NOTA BENE
+	free_mapping is a macro
+
+KEYWORDS
+	mapping

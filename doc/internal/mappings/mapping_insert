@@ -1,0 +1,23 @@
+NAME
+	mapping_insert - insert a key-value pair into a mapping
+
+SYNTAX
+	#include "mapping.h"
+
+	void mapping_insert(struct mapping *m,
+	                    struct svalue *key,
+	                    struct svalue *value)
+
+DESCRIPTION
+	This function inserts a new key-value pair into the mapping m.
+	If there is a already key-value pair with the same key in the mapping
+	it will be replaced with the new key-value pair. If there isn't
+	such a key-value pair in the mapping the mapping will grow in size
+	to accomodate the new key-value pair. This is identical to the
+	Pike operation: m[key]=value
+
+KEYWORDS
+	mapping
+
+SEE ALSO
+	map_delete, low_mapping_lookup

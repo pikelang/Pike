@@ -1,0 +1,16 @@
+NAME
+	mapping_replace - replace values in a mapping
+
+SYNTAX
+	#include "mapping.h"
+
+	void mapping_replace(struct mapping *m,
+	                     struct svalue *from,
+	                     struct svalue *to)
+
+DESCRIPTION
+	This function replaces all values of the value 'from' in the mapping
+	'm' with 'to'. It is a part of the Pike function replace().
+
+KEYWORDS
+	mapping

@@ -1,0 +1,25 @@
+NAME
+	array_index - get an index from an array
+
+SYNTAX
+	#include "array.h"
+
+	void array_index(struct svalue *to, struct array *a, INT32 n);
+
+DESCRIPTION
+	This function frees the contents of the svalue 'to' and replaces
+	it with a copy of the contents from index 'n' in the array 'a'.
+	Basically, what it does is:
+
+		assign_svalue(to, a->item + n);
+
+	The only differance is that it adds some debug and safety
+	measures. Usually you don't really need to use this function.
+
+NOTA BENE
+	If n is out of bounds (n < 0 or n >= a->size) Pike will dump
+	core. If Pike was compiled with DEBUG, a message will be written
+	first stating what the problem was.
+
+SEE ALSO
+	assign_svalue

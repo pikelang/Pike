@@ -1,0 +1,15 @@
+NAME
+	copy_mapping - copy a mapping
+
+SYNTAX
+	#include "mapping.h"
+
+	struct mapping *copy_mapping(struct mapping *m)
+
+DESCRIPTION
+	This function returns a copy of the mapping m. If you change the
+	contents of the new mapping the contents of the mapping m will not
+	change. Note that this function is not recursive.
+
+KEYWORDS
+	mapping	

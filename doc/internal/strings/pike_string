@@ -14,5 +14,5 @@ DESCRIPTION
 	creating a new shared string with begin_shared_string which has
 	not yet been linked to the hash table with end_shared_string.
 
-KEYWORD
+KEYWORDS
 	internals

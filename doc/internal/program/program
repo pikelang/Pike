@@ -1,0 +1,16 @@
+NAME
+	program - internal representation of a program
+
+DESCRIPTION
+	A 'struct program' is basically what C++ hackers call a 'class'.
+	It contains the byte code, information about line numbers,
+	global variables etc. etc. Mostly you won't have to bother with
+	any of the contents of a 'struct program'. Usually you only need
+	to create them with start_new_program()/end_c_program() or
+	clone them with clone().
+
+SEE ALSO
+	frame
+
+KEYWORDS
+	internal

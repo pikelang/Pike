@@ -1,0 +1,18 @@
+NAME
+	mkmapping - make a mapping
+
+SYNTAX
+	#include <mapping.h>
+
+	struct mapping *mkmapping(struct array *keys, struct array *values)
+
+DESCRIPTION
+	This function is the same as the Pike function mkmapping. It
+	makes a mapping out of an array of keys and an array of values.
+	Note that the returned mapping will have one extra reference.
+
+KEYWORDS
+	mapping
+
+SEE ALSO
+	mapping_indices, mapping_values

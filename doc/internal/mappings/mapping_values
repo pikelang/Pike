@@ -1,0 +1,31 @@
+NAME
+	mapping_values - return all the values from a mapping
+
+SYNTAX
+	#include "mapping.h"
+
+	struct array *mapping_values(struct mapping *m)
+
+DESCRIPTION
+	This function returns an array with all the values from the mapping m.
+	The values in the array are ordered in the same order as the keys
+	when using mapping_indices, but only if no other mapping operations
+	are done between the mapping_values and the mapping_indices.
+
+EXAMPLE
+	struct mapping *slow_copy_mapping(struct mapping *m)
+	{
+	  struct array *indices, *values;
+	  indices=mapping_indices(m);
+	  values=mapping_indices(m);
+	  m=mkmapping(indices,values);
+	  free_array(indices);
+	  free_array(values);
+	  return m;
+	}
+
+KEYWORDS
+	mapping
+
+SEE ALSO
+	mapping_indices, copy_mapping, mkmapping

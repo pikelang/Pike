@@ -1,5 +1,5 @@
 NAME
-	make_shared_binary_string - make a shared string
+	make_shared_string - make a shared string
 
 SYNTAX
 	#include "stralloc.h"

@@ -1,0 +1,22 @@
+NAME
+	mapping - internal pike mappings
+
+DESCRIPTION
+	'struct mapping' is the C representation of a Pike mapping. The struct
+	itself contains no user servicable parts except for the member 'refs'
+	which has to be increased when putting a 'struct mapping *' into a
+	svalue. Never _ever_ decrease the ref counter manually, use
+	free_mapping instead. Also note that you should never ever allocate
+	a mapping statically, you should always use the functions provided by
+	pike to allocate mappings.
+
+	A mapping is basically a hash table with a linked list of key-value
+	pairs in each hash bin. The hash table and the key-index pairs are
+	allocated together in one large block to minimize memory fragmentation.
+	Also note that whenever you search for a specific key-value pair in
+	the mapping that key-value pair is propagated to the top of the linked
+	list in that hash bin, which makes the search time very very small for
+	most cases.
+
+KEYWORDS
+	internals
