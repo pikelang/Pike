@@ -4,7 +4,7 @@
 
   creator: Honza Petrous, hop@unibase.cz
 
-  $Id: Codec.pmod,v 1.6 2002/09/15 00:24:45 manual Exp $
+  $Id: Codec.pmod,v 1.7 2002/11/26 12:30:59 grubba Exp $
 
  */
 
@@ -46,7 +46,7 @@ class decoder {
   //!
   //! @seealso
   //!  @[_Ffmpeg.ffmpeg], @[_Ffmpeg.CODEC_ID_MP2]
-  void create(string|void codecname) {
+  static void create(string|void codecname, object|void _codec) {
     if(stringp(codecname))
       init(codecname);
   }
@@ -116,7 +116,7 @@ class decoder {
     return codec && codec->get_codec_status();
   }
 
-  mixed _sprintf(int|void type) {
+  static mixed _sprintf(int|void type) {
     if(type == 't')
       return "Audio.Codec";
 
