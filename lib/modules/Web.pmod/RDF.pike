@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.44 2004/05/12 12:09:11 nilsson Exp $
+// $Id: RDF.pike,v 1.45 2005/01/06 01:44:56 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -276,7 +276,6 @@ int(0..1) has_statement(Resource subj, Resource pred, Resource obj) {
 int(0..1) remove_statement(Resource subj, Resource pred, Resource obj) {
   if(!has_statement(subj, pred, obj)) return 0;
   ADT.Relation.Binary rel = statements[pred];
-  rel->contains(subj,obj);
   rel->remove(subj,obj);
   if(!sizeof(statements[pred])) m_delete(statements, pred);
   return 1;
