@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.26 2004/01/11 00:50:18 nilsson Exp $
+ * $Id: Tar.pmod,v 1.27 2004/02/27 16:20:43 bill Exp $
  */
 
 #pike __REAL_VERSION__
@@ -25,7 +25,7 @@ class _Tar  // filesystem
 
   class ReadFile
   {
-    inherit Stdio.File;
+    inherit Stdio.FakeFile;
 
     static private int start, pos, len;
 
@@ -35,31 +35,13 @@ class _Tar  // filesystem
 		     start, len, pos);
     }
 
-    int seek(int p)
-    {
-      if(p<0)
-	if((p += len)<0)
-	  p = 0;
-      if(p>=len) {
-	p = len-1;
-	if (!len) p = 0;
-      }
-      return ::seek((pos = p)+start);
-    }
-
-    string read(int|void n)
-    {
-      if(!query_num_arg() || n>len-pos)
-	n = len-pos;
-      pos += n;
-      return ::read(n);
-    }
-
     void create(int p, int l)
     {
-      assign(fd/*->dup()*/);
+//      assign(fd/*->dup()*/);
       start = p;
       len = l;
+      fd->seek(start);
+      ::create(fd->read(len));
       seek(0);
     }
   }
