@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.32 2001/09/12 23:36:16 nilsson Exp $
+// $Id: Utils.pmod,v 1.33 2001/11/22 14:48:16 js Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -299,8 +299,9 @@ class ProfileCache (string db_name) {
 
   //! Returns a list of available database profiles.
   array(string) list_db_profiles() {
-    if (time(1) - last_db_prof_stat < 5*60)
-      return indices(db_profile_names);
+    /*
+      if (time(1) - last_db_prof_stat < 5*60)
+      return indices(db_profile_names);*/
     array res = get_db()->query("SELECT name, id FROM profile WHERE type=2");
     db_profile_names = mkmapping(
       res->name,
@@ -315,13 +316,13 @@ class ProfileCache (string db_name) {
   //! Returns a list of available query profiles.
   array(string) list_query_profiles()
   {
-    if (time(1) - last_query_prof_stat >= 5*60) {
-      array res = get_db()->query("SELECT name, id FROM profile WHERE type=1");
-      query_profile_names = mkmapping( res->name, (array(int)) res->id );
-      if(sizeof(query_profile_names))
-	last_query_prof_stat = time(1);
-    }
-    return indices(query_profile_names);
+    /*
+      if (time(1) - last_query_prof_stat < 5*60)
+      return indices(query_profile_names);*/    
+    array res = get_db()->query("SELECT name, id FROM profile WHERE type=1");
+    query_profile_names = mkmapping( res->name, (array(int)) res->id );
+    if(sizeof(query_profile_names))
+      last_query_prof_stat = time(1);
   }
 
   // Used when decoding text encoded pike data types.
