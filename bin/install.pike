@@ -17,6 +17,61 @@ array(string) to_export=({});
 int export;
 int no_gui;
 
+class ProgressBar
+{
+  private constant width = 45;
+
+  private float phase_base, phase_size;
+  private int max, cur;
+  private string name;
+
+  void set_current(int _cur)
+  {
+    cur = _cur;
+  }
+
+  void set_phase(float _phase_base, float _phase_size)
+  {
+    phase_base = _phase_base;
+    phase_size = _phase_size;
+  }
+  
+  void update(int increment)
+  {
+    cur += increment;
+    cur = min(cur, max);
+    
+    float ratio = phase_base + ((float)cur/(float)max) * phase_size;
+    if(1.0 < ratio)
+      ratio = 1.0;
+    
+    int bar = (int)(ratio * (float)width);
+    int is_full = (bar == width);
+    
+    write("\r   %-13s |%s%c%s%s %4.1f %%  ",
+	  name+":",
+	  "="*bar,
+	  is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
+	  is_full ? "" : " "*(width-bar-1),
+	  is_full ? "" : "|",
+	  100.0 * ratio);
+  }
+
+  void create(string _name, int _cur, int _max,
+	      float|void _phase_base, float|void _phase_size)
+    /* NOTE: max must be greater than zero. */
+  {
+    name = _name;
+    max = _max;
+    cur = _cur;
+    
+    phase_base = _phase_base || 0.0;
+    phase_size = _phase_size || 1.0 - phase_base;
+  }
+}
+
+ProgressBar progress_bar;
+
 /* for progress bar */
 int files_to_install;
 int installed_files;
@@ -47,24 +102,6 @@ int istty()
   }
   return istty_cache>0;
 #endif
-}
-
-constant progress_width = 45;
-
-void update_progress(string name, int cur, int max)
-{
-    float ratio = (float)cur/(float)max;
-    int bar = (int)(ratio * (float)progress_width);
-
-    int is_full = bar == progress_width;
-    
-    werror("\r   %s: |%s%c%s%s %4.1f %%  ",
-	   name,
-	   "="*bar,
-	   is_full ? '|' : ({ '\\', '|', '/', '-' })[cur & 3],
-	   is_full ? "" : " "*(progress_width-bar-1),
-	   is_full ? "" : "|",
-	   100.0 * ratio);
 }
 
 void status1(string fmt, mixed ... args)
@@ -138,11 +175,11 @@ void status(string doing, void|string file, string|void msg)
 
   if(!istty()) return;
 
-  if(files_to_install)
+  if(progress_bar)
   {
-    update_progress("Installing",
-		    min(installed_files,files_to_install),
-		    files_to_install);
+    last_len = 75;
+    progress_bar->set_current(installed_files);
+    progress_bar->update(0);
     return;
   }
 
@@ -672,7 +709,7 @@ string make_absolute_path(string path)
   return path;
 }
 
-class ReadInteractive
+class Readline
 {
   inherit Stdio.Readline;
 
@@ -992,7 +1029,7 @@ int pre_install(array(string) argv)
 
       status1("");
   
-      interactive=ReadInteractive();
+      interactive=Readline();
 
       write("   Welcome to the interactive "+version()+
 	    " installation script.\n"
@@ -1000,12 +1037,12 @@ int pre_install(array(string) argv)
 	    (interactive->get_input_controller()->dumb ?
 	     "   The script will guide you through the installation process by asking\n"
 	     "   a few questions. You will be able to confirm your settings before\n"
-	     "   the installation begin.\n"
+	     "   the installation begins.\n"
 	     :
 	     "   The script will guide you through the installation process by asking\n"
 	     "   a few questions. Whenever you input a path or a filename, you may use\n"
 	     "   the <tab> key to perform filename completion. You will be able to\n"
-	     "   confirm your settings before the installation begin.\n")
+	     "   confirm your settings before the installation begins.\n")
 	    );
       
       string confirm, bin_path = vars->pike_name;
@@ -1144,6 +1181,9 @@ void do_install()
   }
   catch {
     files_to_install = (int)Stdio.read_file("num_files_to_install");
+    
+    if(!export && files_to_install)
+      progress_bar = ProgressBar("Installing", 0, files_to_install, 0.0, 0.2);
   };
 
   mixed err=catch {
@@ -1306,6 +1346,11 @@ void do_install()
       status_clear(1);
     }
 
+    if(progress_bar)
+      /* The last files copied does not really count (should
+	 really be a third phase)... */
+      progress_bar->set_phase(1.0, 0.0);
+    
     // Delete any .pmod files that would shadow the .so
     // files that we just installed. For a new installation
     // this never does anything. -Hubbe
@@ -1333,6 +1378,8 @@ void do_install()
     }
 #endif
   }
+
+  progress_bar = 0;
   status1("Installation completed successfully.");
 }
 
@@ -1355,7 +1402,7 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "help":
-	  werror(helptext);
+	  write(helptext);
 	  exit(0);
 
 	case "notty":
