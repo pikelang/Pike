@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: Pike.pmod,v 1.22 2002/07/14 17:05:52 nilsson Exp $
+// $Id: Pike.pmod,v 1.23 2002/10/10 02:41:55 nilsson Exp $
 
 //! This module parses and tokanizes Pike source code.
 
@@ -179,22 +179,31 @@ array(string) split(string data, void|mapping state)
         break;
 
       case '0'..'9':
-	if(data[pos]=='0' && (data[pos+1]=='x' || data[pos+1]=='X'))
-	{
-	  pos+=2;
-	  while(1)
-	  {
-	    switch(data[pos])
+	if(data[pos]=='0') {
+	  if(data[pos+1]=='x' || data[pos+1]=='X') {
+	    pos+=2;
+	    while(1)
 	    {
+	      switch(data[pos])
+	      {
 	      case '0'..'9':
 	      case 'a'..'f':
 	      case 'A'..'F':
 		pos++;
 		continue;
+	      }
+	      break;
 	    }
 	    break;
 	  }
-	  break;
+	  else if(data[pos+1]=='b' || data[pos+1]=='B') {
+	    pos+=2;
+	    while(1) {
+	      if(data[pos]!='0' && data[pos]!='1')
+		break;
+	      pos++;
+	    }
+	  }
 	}
 	while(data[pos]>='0' && data[pos]<='9') pos++;
         if(data[pos]=='.' && data[pos+1]>='0' && data[pos+1]<='9')
