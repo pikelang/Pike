@@ -1,10 +1,10 @@
-/* $Id: blit.c,v 1.13 1997/09/10 20:16:36 grubba Exp $ */
+/* $Id: blit.c,v 1.14 1997/09/18 23:32:00 grubba Exp $ */
 #include "global.h"
 
 /*
 **! module Image
 **! note
-**!	$Id: blit.c,v 1.13 1997/09/10 20:16:36 grubba Exp $<br>
+**!	$Id: blit.c,v 1.14 1997/09/18 23:32:00 grubba Exp $<br>
 **! class image
 */
 
@@ -593,7 +593,11 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 {   
    if (x1>x2) x1^=x2,x2^=x1,x1^=x2;
    if (y1>y2) y1^=y2,y2^=y1,y1^=y2;
+   if (x2 >= THIS->xsize) x2 = THIS->xsize-1;
+   if (y2 >= THIS->ysize) y2 = THIS->ysize-1;
    if (x2<0||y2<0||x1>=THIS->xsize||y1>=THIS->ysize) return;
+   if (x1<0) x1 = 0;
+   if (y1<0) y1 = 0;
    img_box_nocheck(max(x1,0),max(y1,0),min(x2,THIS->xsize-1),min(y2,THIS->ysize-1));
 }
 
