@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.29 2004/09/27 21:25:33 mast Exp $
+|| $Id: backend.h,v 1.30 2005/01/19 18:34:04 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -64,6 +64,9 @@ struct fd_callback_box
 				 * set_fd_callback_events to change this. It's
 				 * ok to have hooked boxes where no events are
 				 * wanted. */
+  int revents;			/* Bitfield with active events. Always clear
+				 * the corresponding event if you perform an
+				 * action that might affect it. */
   fd_box_callback callback;	/* Function to call. Assumed to be valid if
 				 * any event is wanted. */
 };
@@ -74,6 +77,7 @@ struct fd_callback_box
     box__->ref_obj = (REF_OBJ);						\
     box__->fd = (FD);							\
     box__->events = (EVENTS);						\
+    box__->revents = 0;							\
     box__->callback = (CALLBACK);					\
     hook_fd_callback_box (box__);					\
   } while (0)
@@ -97,7 +101,7 @@ struct fd_callback_box
  * PIKE_BIT_FD_ERROR are cleared from fd_callback_box.events. */
 
 /* Note: If ref_obj is used, both unhook_fd_callback_box and
- * set_fd_callback_events might free the object containing the box.
+ * set_fd_callback_events may free the object containing the box.
  * They may be used from within the gc recurse passes. */
 PMOD_EXPORT void hook_fd_callback_box (struct fd_callback_box *box);
 PMOD_EXPORT void unhook_fd_callback_box (struct fd_callback_box *box);
