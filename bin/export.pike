@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.55 2002/07/18 00:46:51 nilsson Exp $ */
+/* $Id: export.pike,v 1.56 2002/07/24 19:11:11 nilsson Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -133,6 +133,7 @@ array(string) build_file_list(string vpath, string list_file)
 }
 
 constant stamp=#"Pike export stamp
+time:%t
 major:%maj
 minor:%min
 build:%bld
@@ -234,7 +235,8 @@ int main(int argc, array(string) argv)
     cvs = Process.create_process( ({"cvs", "tag", "-R", "-F", tag}) );
   }
 
-  mapping m = gmtime(time());
+  int t = time();
+  mapping m = gmtime(t);
   array(int) version = getversion();
   mapping symbols=([
     "%maj":(string) version[0],
@@ -245,7 +247,8 @@ int main(int argc, array(string) argv)
     "%D":sprintf("%02d",m->mday),
     "%h":sprintf("%02d",m->hour),
     "%m":sprintf("%02d",m->min),
-    "%s":sprintf("%02d",m->sec)
+    "%s":sprintf("%02d",m->sec),
+    "%t":(string)t,
   ]);
 
   vpath=replace(filename,symbols);
