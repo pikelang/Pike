@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.391 2004/11/02 11:31:07 grubba Exp $
+# $Id: Makefile.in,v 1.392 2004/11/08 12:45:24 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -428,24 +428,24 @@ undump_modules: delete_dumped_modules
 	)
 
 .wxs.wixobj:
+	@if test -f "$@"; then rm "$@"; else :; fi # Paranoia
 	$(CANDLE) "$<"
 
 .wixobj.msm:
 	@test -d cab_cache || mkdir cab_cache
-	$(LIGHT) "$<" -cc cab_cache
+	@if test -f "$@"; then rm "$@"; else :; fi # Paranoia
+	$(LIGHT) "$<" -cc cab_cache -o "$@"
 
 .wixobj.msi:
 	@test -d cab_cache || mkdir cab_cache
-	$(LIGHT) "$<" -cc cab_cache
+	@if test -f "$@"; then rm "$@"; else :; fi # Paranoia
+	$(LIGHT) "$<" -cc cab_cache -o "$@"
 
 Pike_banner.bmp: $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_logo.gif
 	$(RUNPIKE) $(SRCDIR)/make_banner.pike $(SRCDIR)/../refdoc/src_images/pike_logo.gif >Pike_banner.bmp || rm Pike_banner.bmp
 
 Pike.wxs: $(SRCDIR)/../packaging/windows/pike.wxs
 	@cp $(SRCDIR)/../packaging/windows/pike.wxs Pike.wxs
-
-Pike_actions.wxs: $(SRCDIR)/../packaging/windows/actions.wxs
-	@cp $(SRCDIR)/../packaging/windows/actions.wxs Pike_actions.wxs
 
 Pike_ui.wxs: $(SRCDIR)/../packaging/windows/wix_ui.wxs
 	@cp $(SRCDIR)/../packaging/windows/wix_ui.wxs Pike_ui.wxs
@@ -461,10 +461,10 @@ Pike_module.wxs: force
 	BASEDIR="$(BASEDIR)" man_prefix="$(man_prefix)" \
 	pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
-Pike.msi: Pike.wixobj Pike_actions.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp
+Pike.msi: Pike.wixobj Pike_ui.wixobj Pike_module.msm Pike_banner.bmp
 	@test -d cab_cache || mkdir cab_cache
-	@test -f Pike.msi && rm Pike.msi # Paranoia
-	$(LIGHT) Pike.wixobj Pike_actions.wixobj Pike_ui.wixobj -o Pike.msi -cc cab_cache
+	@if test -f Pike.msi; then rm Pike.msi; else :; fi # Paranoia
+	$(LIGHT) Pike.wixobj Pike_ui.wixobj -o Pike.msi -cc cab_cache
 
 wix: Pike.msi
 
