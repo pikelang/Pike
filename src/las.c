@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.331 2003/03/20 21:26:31 grubba Exp $
+|| $Id: las.c,v 1.332 2003/03/20 21:27:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.331 2003/03/20 21:26:31 grubba Exp $");
+RCSID("$Id: las.c,v 1.332 2003/03/20 21:27:55 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3127,6 +3127,8 @@ static void find_written_vars(node *n,
 
   case F_SSCANF:
     find_written_vars(CAR(n), p, 0);
+    /* FIXME: Marks arg 2 as written for now.
+     */
     find_written_vars(CDR(n), p, 1);
     break;
 
