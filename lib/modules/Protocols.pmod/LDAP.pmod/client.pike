@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.2 1999/08/12 00:44:16 marcus Exp $
+// $Id: client.pike,v 1.3 1999/08/25 05:04:30 hubbe Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -58,6 +58,7 @@
 //	RFC 2307   (LDAP as network information services; draft?)
 
 
+#if constant(.ldap_privates.ldap_der_decode)
 
 #include "ldap_globals.h"
 
@@ -931,3 +932,4 @@
   } // modify
 
 
+#endif

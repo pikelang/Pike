@@ -7,6 +7,8 @@
 /* NOTE: Unlike the functions in RSA.pmod, this function returns
  * an object rather than a string. */
 
+#if constant(Gmp.mpz)
+
 import Standards.ASN1.Types;
 
 object algorithm_identifier(object|void dsa)
@@ -48,3 +50,5 @@ object parse_private_key(string key)
 
     return dsa;
 }
+
+#endif

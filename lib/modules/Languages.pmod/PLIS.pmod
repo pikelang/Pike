@@ -11,6 +11,14 @@
 #define WERROR(x)
 #endif
 
+#if constant(Gmp.mpz)
+#define BIGNUM object
+#define NUMBER(X) Gmp.mpz(X)
+#else
+#define BIGNUM int
+#define NUMBER(X) ( (int) (X) )
+#endif
+
 /* Data shared between all Lisp objects */
 mapping symbol_table = ([ ]);
 
@@ -482,7 +490,7 @@ class Parser
 	//	werror("Scanning number\n");
 	string s = `+(@ a);
 	buffer = buffer[ strlen(s) ..];
-	return Number(Gmp.mpz(s));
+	return Number( NUMBER(s) );
       }
       if (a = symbol_re->split(buffer))
       {
@@ -751,7 +759,8 @@ object f_apply(object arglist, object env, object globals)
 
 object f_add(object arglist, object env, object globals)
 {
-  object sum = Gmp.mpz(0);
+  BIGNUM sum = NUMBER(0);
+
   while(arglist != Lempty)
   {
     if (!arglist->car->is_number)
@@ -764,7 +773,8 @@ object f_add(object arglist, object env, object globals)
 
 object f_mult(object arglist, object env, object globals)
 {
-  object product = Gmp.mpz(1);
+  BIGNUM product = NUMBER(1);
+
   while(arglist != Lempty)
   {
     if (!arglist->car->is_number)
@@ -778,7 +788,7 @@ object f_mult(object arglist, object env, object globals)
 object f_subtract(object arglist, object env, object globals)
 {
   if (arglist == Lempty)
-    return Number(Gmp.mpz(0));
+    return Number( NUMBER(0) );
 
   if (!arglist->car->is_number)
     return 0;

@@ -11,6 +11,8 @@
 #define WERROR(x)
 #endif
 
+#if constant(Gmp.mpz)
+
 class asn1_object
 {
   constant cls = 0;
@@ -264,3 +266,5 @@ class asn1_utc
   inherit asn1_octet_string;
   constant tag = 23;
 }
+
+#endif

@@ -12,6 +12,8 @@
 import ".";
 #endif /* __VERSION__ >= 0.6 */
 
+#if constant(Standards.ASN1.Decode.simple_der_decode)
+
 import Standards.ASN1.Types;
 
 /* Create a DER-coded RSAPublicKey structure */
@@ -87,3 +89,4 @@ object build_rsa_public_key(object rsa)
       ({ asn1_integer(rsa->n), asn1_integer(rsa->e) }) )->get_der()) }) );
 }
 
+#endif

@@ -13,6 +13,8 @@
  * FIXME: Handling of implicit and explicit ASN.1 tagging, as well as
  * other context dependence, is next to non_existant. */
 
+#if constant(Gmp.mpz)
+
 import .Types;
 
 class primitive
@@ -170,3 +172,5 @@ object|mapping simple_der_decode(string data)
 {
   return der_decode(ADT.struct(data), universal_types);
 }
+
+#endif

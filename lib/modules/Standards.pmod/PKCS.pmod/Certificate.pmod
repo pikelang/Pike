@@ -128,6 +128,8 @@ Version ::= INTEGER
 import ".";
 #endif /* __VERSION__ >= 0.6 */
 
+#if constant(Standards.ASN1.Types.asn1_sequence)
+
 import Standards.ASN1.Types;
 import Identifiers;
 
@@ -204,3 +206,4 @@ class Attributes
     }
 }
       
+#endif

@@ -4,6 +4,8 @@
  *
  */
 
+#if constant(Standards.ASN1.Types.asn1_sequence)
+
 import Standards.ASN1.Types;
 import Standards.PKCS;
 
@@ -452,3 +454,5 @@ object verify_certificate(string s, mapping authorities)
 			cert->elements[2]->value)
     && tbs;
 }
+
+#endif

@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.1 1999/08/12 00:44:16 marcus fake $
+// $Id: protocol.pike,v 1.2 1999/08/25 05:04:33 hubbe Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -18,6 +18,8 @@
 //			   to new method 'xchgmsg'
 //			 - added core for async operation
 //
+
+#if constant(Standards.ASN1.Types.asn1_integer)
 
 
 #include "ldap_globals.h"
@@ -468,3 +470,4 @@ DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
   }
 
 
+#endif

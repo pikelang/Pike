@@ -3,6 +3,8 @@
  * The Digital Signature Algorithm (aka DSS, Digital Signature Standard).
  */
 
+#if constant(Gmp.mpz)
+
 #define bignum object(Gmp.mpz)
 
 bignum p; /* Modulo */
@@ -264,3 +266,5 @@ int public_key_equal (object dsa)
 {
   return p == dsa->p && q == dsa->q && g == dsa->g && y == dsa->y;
 }
+
+#endif

@@ -62,6 +62,8 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
+#if constant(Standards.ASN1.Types.asn1_identifier)
+
 import Standards.ASN1.Types;
 
 object pkcs_id = asn1_identifier(1, 2, 840, 113549, 1);
@@ -204,3 +206,5 @@ object ad_id = pkix_id->append(48);
 
 mapping ad_ids =
 ([ "caIssuers" : ad_id->append(2) ]);
+
+#endif

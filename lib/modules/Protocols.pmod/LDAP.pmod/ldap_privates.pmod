@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: ldap_privates.pmod,v 1.2 1999/08/12 00:44:16 marcus Exp $
+// $Id: ldap_privates.pmod,v 1.3 1999/08/25 05:04:32 hubbe Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -31,6 +31,8 @@
 // --------------- Standards.ASN1.Types private add-on --------------------
 // This is very poor defined own ASN.1 objects (not enough time to clean it!)
 //import Standards.ASN1.Encode;
+
+#if constant(Standards.ASN1.Types.asn1_integer)
 
 class asn1_enumerated
 {
@@ -254,6 +256,8 @@ object|mapping ldap_der_decode(string data)
 {
   return der_decode(ADT.struct(data), ldap_type_proc);
 }
+
+#endif
 
 // ------------- end of ASN.1 API hack -----------------------------
 

@@ -7,6 +7,8 @@
 import ".";
 #endif /* __VERSION__ >= 0.6 */
 
+#if constant(Standards.ASN1.Types.asn1_identifier)
+
 import Standards.ASN1.Types;
 
 class CSR_Attributes
@@ -36,4 +38,6 @@ object build_csr_dsa(object dsa, object name)
 {
   object info = asn1_sequence( ({ asn1_integer }) );
 }
+#endif
+
 #endif
