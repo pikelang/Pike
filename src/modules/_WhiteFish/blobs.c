@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blobs.c,v 1.4 2001/07/03 16:09:33 per Exp $");
+RCSID("$Id: blobs.c,v 1.5 2001/07/04 22:02:26 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -183,6 +183,10 @@ static void f_blobs_read( INT32 args )
   a->item[0].u.string = t->next_h->id;
   a->item[1].type = PIKE_T_OBJECT;
   a->item[1].u.object = t->next_h->bl;
+
+  t->next_h->id = 0;
+  t->next_h->bl = 0;
+
   push_array( a );
 
   t->next_h = THIS->next_h->next;
