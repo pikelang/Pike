@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.101 2002/12/01 18:58:20 mast Exp $
+|| $Id: builtin.cmod,v 1.102 2003/01/08 13:59:24 grubba Exp $
 */
 
 #include "global.h"
@@ -44,9 +44,8 @@ PIKEFUN array(array(int|string)) _describe_program(mixed x)
   struct array *res;
   int i;
 
-  if (!(p = program_from_svalue(Pike_sp - args))) {
-    Pike_error("_describe_program(): Bad argument 1 (expected program).\n");
-  }
+  if (!(p = program_from_svalue(Pike_sp - args)))
+    SIMPLE_BAD_ARG_ERROR("_describe_program", 1, "program");
 
   for (i=0; i < (int)p->num_identifier_references;i++) {
     struct reference *ref = p->identifier_references + i;
@@ -158,7 +157,7 @@ PIKEFUN string int2char(int|object x)
     }
   }
   if(x->type != T_INT)
-    Pike_error("Bad argument 1 to int2char.\n");
+    SIMPLE_BAD_ARG_ERROR("int2char", 1, "int");
 
   c=x->u.integer;
 
@@ -211,7 +210,7 @@ PIKEFUN string int2hex(int|object x)
     }
   }
   if(x->type != T_INT)
-    Pike_error("Bad argument 1 to int2hex.\n");
+    SIMPLE_BAD_ARG_ERROR("int2hex", 1, "int");
 
   c=x->u.integer;
 
@@ -684,9 +683,7 @@ PIKEFUN string function_name(program|function func)
   switch(func->type)
   {
     default:
-      bad_arg_error("function_name", Pike_sp-args, args, 1,
-		    "function|program", Pike_sp-args,
-		    "Bad argument.\n");
+      SIMPLE_BAD_ARG_ERROR("function_name", 1, "function|program");
       return; /* NOTREACHED */
 	
     case PIKE_T_PROGRAM:
@@ -738,32 +735,29 @@ PIKEFUN string function_name(program|function func)
   push_int(0);
 }
 
-/*! @decl object function_object(function|program f)
+/*! @decl object function_object(function f)
  *!
- *! Return the object the function @[f] is in.
+ *!   Return the object the function @[f] is in.
  *!
- *! If @[f] is a global function defined in the runtime @tt{0@} (zero)
- *! will be returned.
+ *!   If @[f] is a global function defined in the runtime @tt{0@} (zero)
+ *!   will be returned.
+ *!
+ *!   Zero will also be returned if @[f] is a constant in the
+ *!   parent class. In that case @[function_program()] can be
+ *!   used to get the parent program.
  *!
  *! @seealso
- *! @[function_name()]
+ *!   @[function_name()], @[function_program()]
  */
-PIKEFUN object|program function_object(object|program|function func)
+PIKEFUN object|program function_object(function|program func)
   efun;
   optflags OPT_TRY_OPTIMIZE;
-  type function(function|object:object)|function(program:program);
+  type function(function:object);
 {
   switch(func->type)
   {
     case PIKE_T_PROGRAM:
-    {
-      struct program *p;
-      if(!(p=func->u.program->parent)) break;
-      add_ref(p);
-      free_program(func->u.program);
-      func->u.program=p;
-      return;
-    }
+      break;
       
     case PIKE_T_FUNCTION:
       if(func->subtype == FUNCTION_BUILTIN) break;
@@ -782,6 +776,57 @@ PIKEFUN object|program function_object(object|program|function func)
 
     default:
       SIMPLE_BAD_ARG_ERROR("function_object",1,"function");
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+
+/*! @decl program function_program(function|program f)
+ *!
+ *!   Return the program the function @[f] is in.
+ *!
+ *!   If @[f] is a global function defined in the runtime @tt{0@} (zero)
+ *!   will be returned.
+ *!
+ *! @seealso
+ *!   @[function_name()], @[function_object()]
+ */
+PIKEFUN program function_program(program|function func)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  switch(func->type)
+  {
+    case PIKE_T_PROGRAM:
+    {
+      struct program *p;
+      if(!(p=func->u.program->parent)) break;
+      add_ref(p);
+      free_program(func->u.program);
+      func->u.program=p;
+      return;
+    }
+      
+    case PIKE_T_FUNCTION:
+      {
+	struct program *p;
+	if(func->subtype == FUNCTION_BUILTIN) break;
+	p = func->u.object->prog;
+	if(p == pike_trampoline_program)
+	{
+	  p = ((struct pike_trampoline *)func->u.object->storage)->
+	    frame->current_object->prog;
+	}
+	if (p) {
+	  ref_push_program(p);
+	  stack_pop_n_elems_keep_top(args);
+	  return;
+	}
+      }
+      break;
+
+    default:
+      SIMPLE_BAD_ARG_ERROR("function_program", 1, "function");
   }
   pop_n_elems(args);
   push_int(0);
