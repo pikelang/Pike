@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: combine_path.h,v 1.12 2003/06/11 23:02:07 nilsson Exp $
+|| $Id: combine_path.h,v 1.13 2003/12/18 21:22:24 marcus Exp $
 */
 
 /*
@@ -11,10 +11,13 @@
  */
 
 #undef IS_SEP
+#undef IS_ANY_SEP
 #undef IS_ABS
 #undef IS_ROOT
 #undef F_COMBINE_PATH
 #undef APPEND_PATH
+#undef CHAR_CURRENT
+#undef CHAR_ROOT
 
 #define COMBINE_PATH_DEBUG 0
 
@@ -23,6 +26,8 @@
 #define IS_ABS(X) (IS_SEP( INDEX_PCHARP((X),0))?1:0)
 #define APPEND_PATH append_path_unix
 #define F_COMBINE_PATH f_combine_path_unix
+#define CHAR_CURRENT '.'
+#define CHAR_ROOT '/'
 #endif /* UNIX_COMBINE_PATH */
 
 
@@ -52,7 +57,39 @@ static int find_absolute(PCHARP s)
 #define APPEND_PATH append_path_nt
 #define F_COMBINE_PATH f_combine_path_nt
 
+#define CHAR_CURRENT '.'
+#define CHAR_ROOT '/'
+
 #endif /* NT_COMBINE_PATH */
+
+
+#ifdef AMIGAOS_COMBINE_PATH
+#define IS_SEP(X) ( (X)=='/' )
+#define IS_ANY_SEP(X) ( (X) == '/' || (X) == ':' )
+#define IS_ABS(X) find_absolute2((X))
+#define IS_ROOT(X) ( ( INDEX_PCHARP((X),0) == CHAR_ROOT)?1:0)
+#define APPEND_PATH append_path_amigaos
+#define F_COMBINE_PATH f_combine_path_amigaos
+#define CHAR_ROOT ':'
+
+static int find_absolute2(PCHARP s)
+{
+  int r=0, p=0;
+  int c;
+  while((c=INDEX_PCHARP(s,p))) {
+    ++p;
+    if(c == CHAR_ROOT)
+      r = p;
+  }
+  return r>1? r:0;
+}
+
+#endif /* AMIGAOS_COMBINE_PATH */
+
+
+#ifndef IS_ANY_SEP
+#define IS_ANY_SEP(X) IS_SEP(X)
+#endif
 
 static void APPEND_PATH(struct string_builder *s,
 			PCHARP path,
@@ -94,21 +131,23 @@ static void APPEND_PATH(struct string_builder *s,
 #define PUSH(X) string_builder_putchar(s,(X))
 
   /* Ensure s ends with a separator. */
-  if(s->s->len && !IS_SEP(LAST_PUSHED()))
+  if(s->s->len && !IS_ANY_SEP(LAST_PUSHED()))
     PUSH('/');
 
   if (!len) return;
 
+#ifdef CHAR_CURRENT
   /* Remove initial "./" if any. */
   if(s->s->len==2)
   {
     PCHARP to=MKPCHARP_STR(s->s);
-    if(INDEX_PCHARP(to, 0) == '.')
+    if(INDEX_PCHARP(to, 0) == CHAR_CURRENT)
     {
       s->s->len=0;
       s->known_shift=0;
     }
   }
+#endif
 
   while(1)
   {
@@ -120,6 +159,19 @@ static void APPEND_PATH(struct string_builder *s,
 #endif
     if(IS_SEP(LAST_PUSHED()))
     {
+#ifdef AMIGAOS_COMBINE_PATH
+      if(from<len && INDEX_PCHARP(path, from) == '/' &&
+	 s->s->len>1 && !IS_ANY_SEP(index_shared_string(s->s,s->s->len-2))) {
+	/* Handle "//" */
+	int tmp=s->s->len-2;
+	while(tmp>0 && !IS_ANY_SEP(index_shared_string(s->s,tmp-1)))
+	  --tmp;
+	s->s->len=tmp;
+	s->known_shift=0;
+	from++;
+	continue;
+      }
+#else /* !AMIGAOS_COMBINE_PATH */
       while(s->s->len && IS_SEP(LAST_PUSHED()))
 	s->s->len--;
       PUSH('/');
@@ -182,6 +234,7 @@ static void APPEND_PATH(struct string_builder *s,
 	    continue;
 	}
       }
+#endif /* !AMIGAOS_COMBINE_PATH */
     }
 
     if(from>=len) break;
@@ -196,9 +249,11 @@ static void APPEND_PATH(struct string_builder *s,
   {
     if(abs)
     {
-      PUSH('/');
+      PUSH(CHAR_ROOT);
+#ifdef CHAR_CURRENT
     }else{
-      PUSH('.');
+      PUSH(CHAR_CURRENT);
+#endif
     }
   }
 }
@@ -257,3 +312,4 @@ void F_COMBINE_PATH(INT32 args)
 
 #undef UNIX_COMBINE_PATH
 #undef NT_COMBINE_PATH
+#undef AMIGAOS_COMBINE_PATH

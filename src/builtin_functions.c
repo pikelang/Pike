@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.522 2003/12/06 10:08:55 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.523 2003/12/18 21:22:23 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.522 2003/12/06 10:08:55 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.523 2003/12/18 21:22:23 marcus Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1248,6 +1248,7 @@ PMOD_EXPORT void f_add_constant(INT32 args)
 /*! @decl string combine_path(string absolute, string ... relative)
  *! @decl string combine_path_unix(string absolute, string ... relative)
  *! @decl string combine_path_nt(string absolute, string ... relative)
+ *! @decl string combine_path_amigaos(string absolute, string ... relative)
  *!
  *!   Concatenate a relative path to an absolute path and remove any
  *!   @expr{"//"@}, @expr{"/.."@} or @expr{"/."@} to produce a
@@ -1255,10 +1256,13 @@ PMOD_EXPORT void f_add_constant(INT32 args)
  *!
  *!   @[combine_path_nt()] concatenates according to NT-filesystem conventions,
  *!   while @[combine_path_unix()] concatenates according to UNIX-style.
+ *!   @[combine_path_amigaos()] concatenates according to AmigaOS filesystem
+ *!   conventions.
  *!
  *!   @[combine_path()] is equvivalent to @[combine_path_unix()] on UNIX-like
- *!   operating systems, and equvivalent to @[combine_path_nt()] on NT-like
- *!   operating systems.
+ *!   operating systems, and equivalent to @[combine_path_nt()] on NT-like
+ *!   operating systems, and equivalent to @[combine_path_amigaos()] on
+ *!   AmigaOS-like operating systems.
  *!
  *! @seealso
  *!   @[getcwd()], @[Stdio.append_path()]
@@ -1268,6 +1272,9 @@ PMOD_EXPORT void f_add_constant(INT32 args)
 #include "combine_path.h"
 
 #define UNIX_COMBINE_PATH
+#include "combine_path.h"
+
+#define AMIGAOS_COMBINE_PATH
 #include "combine_path.h"
 
 
@@ -7997,10 +8004,15 @@ void init_builtin_efuns(void)
 /* function(string...:string) */
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+  ADD_EFUN("combine_path_amigaos",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
 #ifdef __NT__
   ADD_EFUN("combine_path",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
 #else
+#ifdef __amigaos__
+  ADD_EFUN("combine_path",f_combine_path_amigaos,tFuncV(tNone,tStr,tStr),0);
+#else
   ADD_EFUN("combine_path",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
+#endif
 #endif
   
   ADD_EFUN("compile", f_compile,
