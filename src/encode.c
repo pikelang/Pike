@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.201 2003/11/25 15:59:41 grubba Exp $
+|| $Id: encode.c,v 1.202 2003/11/25 16:46:03 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.201 2003/11/25 15:59:41 grubba Exp $");
+RCSID("$Id: encode.c,v 1.202 2003/11/25 16:46:03 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1572,6 +1572,13 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  /* constants */
 	  for(d=0;d<p->num_constants;d++)
 	  {
+#ifdef PIKE_PORTABLE_BYTECODE
+	    if ((p->constants[d].sval.type == T_FUNCTION) &&
+		(p->constants[d].sval.subtype == FUNCTION_BUILTIN)) {
+	      /* Already encoded above. */
+	      continue;
+	    }
+#endif /* PIKE_PORTABLE_BYTECODE */
 	    /* value */
 	    encode_value2(&p->constants[d].sval, data, 0);
 
@@ -4005,8 +4012,9 @@ static void decode_value2(struct decode_data *data)
 #endif
 
 	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
-	    /* We've regenerated p->program, so this may be off. */
+	    /* We've regenerated p->program, so these may be off. */
 	    local_num_program = p->num_program;
+	    local_num_linenumbers = p->num_linenumbers;
 	  }
 
 	  /* Verify... */
