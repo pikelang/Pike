@@ -1,5 +1,5 @@
 START_MARKER
-// $Id: testsuite.in,v 1.9 2004/08/17 20:15:09 nilsson Exp $
+// $Id: testsuite.in,v 1.10 2005/02/17 16:37:29 grubba Exp $
 
 // _Charset.decoder
 test_true([[objectp(_Charset)]])
@@ -36,6 +36,14 @@ test_eq([[_Charset.encoder("iso-2022")->
 	[["\33$B`T\33$Dlt\33$AYd\33$C|\\"]])
 test_eval_error([[_Charset.encoder("iso-2022-jp")->
 		feed("\x9ed8\x9ed5\x9ec9\x9ec3")->drain()]])
+test_any([[
+  // Test encoding (and decoding) of characters from various
+  // different character sets.
+  string vector = "\x1b7\x1f5\x2bf\x2c7\x2c9\x391\x402\x5d0";
+  return _Charset.decoder("iso-2022")->
+	feed(_Charset.encoder("iso-2022")->feed(vector)->drain())->drain() ==
+	vector;
+]], 1)
 
 // _Charset.UTF7
 test_eq([[_Charset.decoder("utf-7")->
