@@ -24,7 +24,7 @@ Architecture: all
 Depends: pike7.4-core (=${Source-Version}), pike7.4-image (=${Source-Version}), pike7.4-gdbm (=${Source-Version})
 Recommends: pike7.4-doc (=${Source-Version})
 Suggests: pike7.4-mysql (=${Source-Version}), pike7.4-pg (=${Source-Version}), pike7.4-dev (=${Source-Version})
-Description: Recommended meta package for Pike 7.3
+Description: Recommended meta package for Pike 7.4
  This is a meta package which depends upon several other Pike
  packages that together make up the recommended Pike installation.
  If you want to install every packaged component of the Pike 
@@ -110,7 +110,7 @@ Description: Perl module for Pike
 Package: pike7.4-dev
 Architecture: all
 Depends: ${shlibs:Depends}
-Description: Development files for Pike 7.3
+Description: Development files for Pike 7.4
  This package contains files you will need to develop
  C extension modules for Pike. The package depends on
  the recommended set of packages for the Pike
@@ -119,28 +119,28 @@ Description: Development files for Pike 7.3
 Package: pike7.4-manual
 Architecture: all
 Section: doc
-Description: Pike 7.3 manual
+Description: Pike 7.4 manual
  The Pike manual auto-generated from the sources.
 
 Package: pike7.4-reference
 Architecture: all
 Section: doc
-Description: Pike 7.3 reference
+Description: Pike 7.4 reference
  The Pike reference auto-generated from the sources.
 
 Package: pike7.4-doc
 Architecture: all
 Section: doc
 Depends: pike7.4-manual (=${Source-Version}), pike7.4-reference (=${Source-Version})
-Description: Pike 7.3 documentation meta package
- This package depends upon all the Pike 7.3 documentation
+Description: Pike 7.4 documentation meta package
+ This package depends upon all the Pike 7.4 documentation
  packages. Note that the download and installation sizes
  might be very large.
 
 Package: pike7.4-meta
 Architecture: all
 Depends: pike7.4 (=${Source-Version}), pike7.4-mysql (=${Source-Version}), pike7.4-pg (=${Source-Version}), pike7.4-odbc (=${Source-Version}), pike7.4-image (=${Source-Version}), pike7.4-sdl (=${Source-Version}), pike7.4-gdbm (=${Source-Version}), pike7.4-gtk (=${Source-Version}), pike7.4-gl (=${Source-Version}), pike7.4-sane (=${Source-Version}), pike7.4-doc (=${Source-Version}), pike7.4-dev (=${Source-Version})
-Description: Meta package for Pike 7.3
+Description: Meta package for Pike 7.4
  This package depends on all the components that make up the Pike
  language distribution. It will pull in a LOT of packages the
  Pike components depend upon!
