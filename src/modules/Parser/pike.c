@@ -129,7 +129,8 @@ static void f_tokenize( INT32 args )
 
 void init_parser_pike()
 {
-  ADD_FUNCTION("tokenize", f_tokenize, tFunc(tStr,tArr(tStr)), 0);
+  ADD_FUNCTION("tokenize", f_tokenize,
+	       tFunc(tStr,tArr(tOr(tArr(tStr),tStr))), 0);
 }
 
 void exit_parser_pike()
