@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.71 2003/10/26 03:41:52 nilsson Exp $
+ * $Id: Sql.pike,v 1.72 2003/12/21 20:20:56 bill Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -239,7 +239,7 @@ void create(string|object host, void|string|mapping(string:int|string) db,
     }
     /* Don't call ourselves... */
     if ((sizeof(program_name / "_result") != 1) ||
-	(lower_case(program_name[..2]) == "sql")) {
+	  ((< "Sql", "sql", "sql_util", "module" >)[program_name]) ) {
       ERROR("Unsupported protocol: %O\n", program_name);
     }
 
