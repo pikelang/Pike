@@ -1,6 +1,14 @@
 configure
+config.cache
+config.log
+config.status
 dependencies
 language.c
 language.h
 peep_engine.c
+machine.h
+modlist.h
 stamp-h
+y.output
+Makefile
+pike
