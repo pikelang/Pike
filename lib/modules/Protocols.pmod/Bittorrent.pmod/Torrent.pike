@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.23 2004/01/11 13:47:01 jhs Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.24 2004/02/02 22:59:37 nilsson Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -429,7 +429,7 @@ private static inline string generate_peer_id()
    int day=Calendar.Day(@v[2..4])->julian_day()-2452991;
    string s=sprintf("Pi%c%c%2c%s",
 		    v[0],v[1],day,
-		    Crypto.randomness.pike_random()->read(14));
+		    random_string(14));
    return s;
 };
 
