@@ -170,7 +170,7 @@ class cYear
       return ::place(what);
    }
 
-   int year_no() { return y+1166; }
+   int year_no() { return y; /*+1166;*/ }
 }
 
 class cDay
