@@ -1,3 +1,8 @@
+Wed Nov 27 10:15:59 1996  Niels Möller  <nisse@morpheus.infovav.se>
+
+	* dynamic_load.c (f_load_module): Fixed bugs when building file
+	name.
+
 Tue Nov 26 21:36:40 1996  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* master()->cast_to_program() now searches through
