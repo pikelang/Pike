@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.759 2004/01/09 15:25:05 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.760 2004/01/12 11:39:56 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2545,17 +2545,20 @@ if test "$ac_cv_sizeof_long_double" != 0 -a \
   AC_DEFINE(WITH_LONG_DOUBLE_PRECISION_SVALUE)
   AC_DEFINE(FLOAT_TYPE, long double)
   AC_DEFINE(SIZEOF_FLOAT_TYPE, SIZEOF_LONG_DOUBLE)
+  float_type="long double"
   sizeof_float_type="$ac_cv_sizeof_long_double"
 elif test "x$with_double_precision" = xyes ; then
   AC_MSG_RESULT(double)
   AC_DEFINE(WITH_DOUBLE_PRECISION_SVALUE)
   AC_DEFINE(FLOAT_TYPE, double)
   AC_DEFINE(SIZEOF_FLOAT_TYPE, SIZEOF_DOUBLE)
+  float_type="double"
   sizeof_float_type="$ac_cv_sizeof_double"
 else
   AC_MSG_RESULT(float)
   AC_DEFINE(FLOAT_TYPE, float)
   AC_DEFINE(SIZEOF_FLOAT_TYPE, SIZEOF_FLOAT)
+  float_type="float"
   sizeof_float_type="$ac_cv_sizeof_float"
 fi
 
@@ -2589,17 +2592,23 @@ if test "$ac_cv_sizeof_long_long" != 0 -a \
   AC_DEFINE(WITH_LONG_LONG_INT)
   AC_DEFINE(INT_TYPE, long long)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG_LONG)
+  int_type="long long"
+  sizeof_int_type="$ac_cv_sizeof_long_long"
 elif test "$ac_cv_sizeof___int64" != 0 -a \
 	  "x$with_long_long_int" = xyes ; then
   AC_MSG_RESULT(__int64)
   AC_DEFINE(WITH_LONG_LONG_INT)
   AC_DEFINE(INT_TYPE, __int64)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF___INT64)
+  int_type="__int64"
+  sizeof_int_type="$ac_cv_sizeof___int64"
 elif test "x$with_long_int" = xyes ; then
   AC_MSG_RESULT(long)
   AC_DEFINE(WITH_LONG_INT)
   AC_DEFINE(INT_TYPE, long)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_LONG)
+  int_type="long"
+  sizeof_int_type="$ac_cv_sizeof_long"
 dnl elif test "x$with_short_int" = xyes ; then
 dnl   AC_MSG_RESULT(short)
 dnl   AC_DEFINE(WITH_SHORT_INT)
@@ -2627,6 +2636,8 @@ else
   AC_DEFINE(WITH_INT_INT)
   AC_DEFINE(INT_TYPE, int)
   AC_DEFINE(SIZEOF_INT_TYPE, SIZEOF_INT)
+  int_type="int"
+  sizeof_int_type="$ac_cv_sizeof_int"
 fi
 
 AC_TYPE_SIGNAL
@@ -6810,16 +6821,6 @@ PIKE_VERSION="`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$s
 PIKE_VERSION_LONG="Pike v`sed -n -e 's/^.*PIKE_MAJOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`.`sed -n -e 's/^.*PIKE_MINOR_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h` release `sed -n -e 's/^.*PIKE_BUILD_VERSION[[ \t]]*\([[^ \t]]*\)/\1/p' <$srcdir/version.h`"
 
 
-cat >conftest.c <<EOF
-#include "global.h"
---
-FLOAT_TYPE
-INT_TYPE
-EOF
-
-$CPP -I. -I$srcdir conftest.c > conftest.cpp
-sed <conftest.cpp >conftypes.txt '1,/^--$/d'
-
 if test "x$with_cdebug" = x; then
   with_cdebug=no
 fi
@@ -6841,6 +6842,17 @@ else
 fi
 
 rm config.info 2>/dev/null
+
+float_is_ieee=""
+if test "x$float_type" = "xfloat" -a "x$pike_cv_float_type" = "xieee_big"; then
+  float_is_ieee=" (ieee big endian)"
+else if test "x$float_type" = "xfloat" -a "x$pike_cv_float_type" = "xieee_little"; then
+  float_is_ieee=" (ieee little endian)"
+else if test "x$float_type" = "xdouble" -a "x$pike_cv_double_type" = "xieee_big"; then
+  float_is_ieee=" (ieee big endian)"
+else if test "x$float_type" = "xdouble" -a "x$pike_cv_double_type" = "xieee_little"; then
+  float_is_ieee=" (ieee little endian)"
+fi; fi; fi; fi
 
 cat >>config.info <<EOF
 =========================================================
@@ -6904,6 +6916,9 @@ PAD_FEATURE([mmx])$with_mmx$mmx_reason
 PAD_FEATURE([byte code format])$byte_code_format
 PAD_FEATURE([module reloc])${with_relocatable_dumped_modules:-no}
 PAD_FEATURE([use machine code])$with_machine_code
+PAD_FEATURE([int type])$int_type ($sizeof_int_type bytes)
+PAD_FEATURE([float type])$float_type ($sizeof_float_type bytes)$float_is_ieee
+PAD_FEATURE([pointer size])$ac_cv_sizeof_char_p bytes
 EOF
 
 touch confdefs.h 2>/dev/null
@@ -6925,24 +6940,6 @@ int main()
    out=fopen("config.info", "a");
    if (!out) return 1;
 
-   fp=fopen("conftypes.txt", "r");
-   if (fp)
-   {
-      fgets(float_type, 79, fp);
-      fgets(int_type, 79, fp);
-      s=float_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
-      s=int_type; while (*s && *s!='\n' && *s!='\r') s++; *s=0;
-      
-      fprintf(out,"]PAD_FEATURE([float type])[%s (%d bytes)\n",
-              float_type, sizeof(FLOAT_TYPE));
-      fprintf(out,"]PAD_FEATURE([int type])[%s (%d bytes)\n",
-              int_type, sizeof(INT_TYPE));
-   
-      fclose(fp);
-   }
-
-   fprintf(out,"]PAD_FEATURE([pointer size])[%d bytes\n",
-           sizeof(void*));
    fprintf(out,"]PAD_FEATURE([svalue size])[%d bytes (%d+%d+%d)\n",
            sizeof(sval),
            sizeof(sval.type),
