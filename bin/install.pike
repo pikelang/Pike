@@ -264,7 +264,7 @@ void do_export()
 		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
     );
   chmod(tmpname+".x",0755);
-  string script=sprintf("#!/bin/sh\ntar xf \"$0\" %s.x\nexec %s.x \"$0\" \"$@\"\n",tmpname,tmpname,tmpname);
+  string script=sprintf("#!/bin/sh\ntar xf \"$0\" %s.x\nexec ./%s.x \"$0\" \"$@\"\n",tmpname,tmpname,tmpname);
   if(strlen(script) >= 100)
   {
     werror("Script too long!!\n");
