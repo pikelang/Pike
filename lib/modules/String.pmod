@@ -5,23 +5,10 @@
 
 constant Buffer = __builtin.Buffer;
 
-//! @decl string count(string haystack, string needle)
-//!
-//! This function counts the number of times the @[needle]
-//! can be found in @[haystack]. 
-//!
-//! @note
-//! Intersections between needles are not counted, ie
-//! @tt{count("....","..")@} is @tt{2@}.
-//!
 constant count=__builtin.string_count;
-
-//! @decl int width(string s)
-//!
-//! Returns the width in bits (8, 16 or 32) of the widest character
-//! in @[s].
-//!
 constant width=__builtin.string_width;
+constant trim_whites = __builtin.string_trim_whites;
+constant trim_all_whites = __builtin.string_trim_all_whites;
 
 /*
  * Implode an array of strings to an english 'list'
@@ -228,15 +215,6 @@ int fuzzymatch(string a, string b)
 
   return fuzz;
 }
-
-//! Trim leading and trailing spaces and tabs from the string @[s].
-//!
-constant trim_whites = __builtin.string_trim_whites;
-
-//! Trim leading and trailing white spaces characters (@tt{" \t\r\n"@}) from
-//! the string @[s].
-//!
-constant trim_all_whites = __builtin.string_trim_all_whites;
 
 //! Returns the soundex value of @[word] according to
 //! the original Soundex algorithm, patented by Margaret O´Dell

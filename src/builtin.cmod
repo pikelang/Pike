@@ -157,7 +157,7 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) ind, array(2=mixed) val)
   RETURN mkmapping(ind, val);
 }
 
-/*! @decl int string_count(string haystack, string needle)
+/*! @decl int String.count(string haystack, string needle)
  *!
  *! Count the number of non-overlapping times the string @[needle] occurrs
  *! in the string @[haystack].
@@ -197,7 +197,7 @@ PIKEFUN int string_count(string haystack, string needle)
    RETURN DO_NOT_WARN((INT_TYPE)c);
 }
 
-/*! @decl string string_trim_whites (string s)
+/*! @decl string String.trim_whites (string s)
  *!
  *! Trim leading and trailing spaces and tabs from the string @[s].
  */
@@ -227,7 +227,7 @@ PIKEFUN string string_trim_whites (string s)
   RETURN string_slice (s, start, end + 1 - start);
 }
 
-/*! @decl string string_trim_all_whites (string s)
+/*! @decl string String.trim_all_whites (string s)
  *!
  *! Trim leading and trailing white spaces characters (space, tab,
  *! newline and carriage return) from the string @[s].
@@ -321,7 +321,7 @@ PIKEFUN string program_defined(program p)
   push_int(0);
 }
 
-/*! @decl int(8..8)|int(16..16)|int(32..32) string_width(string s)
+/*! @decl int(8..8)|int(16..16)|int(32..32) String.width(string s)
  *!
  *! Returns the width of a string.
  *!
