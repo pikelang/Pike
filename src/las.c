@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.328 2003/03/08 17:28:12 grubba Exp $
+|| $Id: las.c,v 1.329 2003/03/09 13:10:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.328 2003/03/08 17:28:12 grubba Exp $");
+RCSID("$Id: las.c,v 1.329 2003/03/09 13:10:40 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1862,6 +1862,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
     case T_OBJECT:
     case T_PROGRAM:
+      if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
       {
 	struct program *p;
 	if(Pike_sp[-1].type == T_OBJECT)
@@ -1869,45 +1870,16 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	else
 	  p=Pike_sp[-1].u.program;
 
-	if (p == Pike_compiler->new_program) {
-	  /* We're looking at ourselves...
-	   *
-	   * FIXME: This code isn't correct since it changes the reference
-	   *        to a local reference, and not a global reference.
-	   */
-	  int i = really_low_find_shared_string_identifier(id, p, 0);
-	  UNSETJMP(tmp);
-	  pop_stack();
-	  if (i == -1) {
-	    if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
-	    {
-	      if (node_name) {
-		my_yyerror("Index '%s' not present in self.",
-			   id->str);
-	      } else {
-		my_yyerror("Index '%s' not present in self.", id->str);
-	      }
-	      return NULL;
-	    } else {
-	      return mknode(F_UNDEFINED, 0, 0);
-	    }
-	  }
-	  return mkidentifiernode(i);
-	}
-	
-	if(!(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE))
+	if(p && !(p->flags & PROGRAM_PASS_1_DONE))
 	{
-	  if(p && !(p->flags & PROGRAM_PASS_1_DONE))
+	  if(report_compiler_dependency(p))
 	  {
-	    if(report_compiler_dependency(p))
-	    {
-	      pop_stack();
+	    pop_stack();
 #if 0
-	      fprintf(stderr, "Placeholder deployed for %p\n", p);
+	    fprintf(stderr, "Placeholder deployed for %p\n", p);
 #endif
-	      ref_push_object(placeholder_object);
-	      break;
-	    }
+	    ref_push_object(placeholder_object);
+	    break;
 	  }
 	}
       }

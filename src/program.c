@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.484 2003/03/08 17:25:19 grubba Exp $
+|| $Id: program.c,v 1.485 2003/03/09 13:10:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.484 2003/03/08 17:25:19 grubba Exp $");
+RCSID("$Id: program.c,v 1.485 2003/03/09 13:10:40 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5553,6 +5553,11 @@ int report_compiler_dependency(struct program *p)
 {
   int ret=0;
   struct Supporter *c,*cc;
+
+  if (p == Pike_compiler->new_program) {
+    /* Depends on self... */
+    return 0;
+  }
   verify_supporters();
   if (force_resolve)
     return 0;
