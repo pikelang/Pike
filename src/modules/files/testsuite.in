@@ -129,5 +129,5 @@ cond([[Stdio.File()->lock]],
 
 test_do(rm("conftest"))
 
-test_false(Process.system("RUNPIKE SRCDIR/socktest.pike"))
+test_false(Process.system(RUNPIKE+" SRCDIR/socktest.pike"))
 

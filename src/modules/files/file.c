@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.87 1998/04/09 03:08:03 hubbe Exp $");
+RCSID("$Id: file.c,v 1.88 1998/04/09 21:55:55 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1861,15 +1861,31 @@ void file_proxy(INT32 args)
 {
   struct my_file *f;
   struct new_thread_data *p;
+  int from, to;
+
   THREAD_T id;
   check_all_args("Stdio.File->proxy",args, BIT_OBJECT,0);
   f=get_file_storage(sp[-args].u.object);
   if(!f)
     error("Bad argument 1 to Stdio.File->proxy, not a Stdio.File object.\n");
 
+  from=fd_dup(f->fd);
+  if(from<0)
+  {
+    ERRNO=errno;
+    error("Failed to dup proxy fd.\n");
+  }
+  to=fd_dup(FD);
+  if(from<0)
+  {
+    ERRNO=errno;
+    fd_close(from);
+    error("Failed to dup proxy fd.\n");
+  }
+  
   p=ALLOC_STRUCT(new_thread_data);
-  p->from=f->fd;
-  p->to=FD;
+  p->from=from;
+  p->to=to;
 
   num_threads++;
   if(th_create_small(&id,proxy_thread,p))
@@ -1877,21 +1893,6 @@ void file_proxy(INT32 args)
     free((char *)p);
     error("Failed to create thread.\n");
   }
-
-  /* Protect ourself from harm */
-  REMOVE_INTERNAL_REFERENCE(f);
-  f->open_mode=0;
-  REMOVE_INTERNAL_REFERENCE(THIS);
-  THIS->open_mode=0;
-  f->fd=-1;
-  FD=-1;
-  set_read_callback(THIS->fd,0,0);
-  set_write_callback(THIS->fd,0,0);
-#ifdef WITH_OOB
-  set_read_oob_callback(THIS->fd,0,0);
-  set_write_oob_callback(THIS->fd,0,0);
-#endif
-  check_internal_reference(THIS);
 
   th_destroy(& id);
   pop_n_elems(args);
