@@ -1,5 +1,5 @@
 /*
- * $Id: preprocessor.h,v 1.25 2000/06/16 15:37:11 lange Exp $
+ * $Id: preprocessor.h,v 1.26 2000/08/08 19:53:50 grubba Exp $
  *
  * Preprocessor template.
  * Based on cpp.c 1.45
@@ -111,7 +111,7 @@
 #endif /* SHIFT == 1 */
 
 
-static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, INT32 len)
+static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, ptrdiff_t len)
 {
   struct pike_string *s;
 #if (SHIFT == 1)
@@ -138,7 +138,7 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, INT32 len)
  * Generic macros
  */
 #define STRCAT(STR,LEN) do {				\
-  INT32 x_,len_=(LEN);					\
+  ptrdiff_t x_,len_=(LEN);				\
   char *str_=(STR);					\
   if(OUTP())						\
     string_builder_binary_strcat(&this->buf, str_, len_);	\
@@ -149,7 +149,7 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, INT32 len)
 }while(0)
 
 #define WC_STRCAT(STR,LEN) do {				\
-  INT32 x_,len_=(LEN);					\
+  ptrdiff_t x_,len_=(LEN);				\
   WCHAR *str_=(STR);					\
   if(OUTP())						\
     string_builder_append(&this->buf, MKPCHARP(str_, SHIFT), len_);	\
@@ -177,22 +177,22 @@ static struct pike_string *WC_BINARY_FINDSTRING(WCHAR *str, INT32 len)
  * Some prototypes
  */
 
-static void PUSH_STRING0(p_wchar0 *, INT32, struct string_builder *);
-static void PUSH_STRING1(p_wchar1 *, INT32, struct string_builder *);
-static void PUSH_STRING2(p_wchar2 *, INT32, struct string_builder *);
+static void PUSH_STRING0(p_wchar0 *, ptrdiff_t, struct string_builder *);
+static void PUSH_STRING1(p_wchar1 *, ptrdiff_t, struct string_builder *);
+static void PUSH_STRING2(p_wchar2 *, ptrdiff_t, struct string_builder *);
 
-static INT32 calc_0(struct cpp *,p_wchar0 *,INT32,INT32);
-static INT32 calc_1(struct cpp *,p_wchar1 *,INT32,INT32);
-static INT32 calc_2(struct cpp *,p_wchar2 *,INT32,INT32);
+static INT32 calc_0(struct cpp *,p_wchar0 *,ptrdiff_t,ptrdiff_t);
+static INT32 calc_1(struct cpp *,p_wchar1 *,ptrdiff_t,ptrdiff_t);
+static INT32 calc_2(struct cpp *,p_wchar2 *,ptrdiff_t,ptrdiff_t);
 
-static INT32 calc1(struct cpp *,WCHAR *,INT32,INT32);
+static INT32 calc1(struct cpp *,WCHAR *,ptrdiff_t,ptrdiff_t);
 
 /*
  * Functions
  */
 
 #if (SHIFT == 0)
-static void PUSH_STRING_SHIFT(void *str, INT32 len, int shift,
+static void PUSH_STRING_SHIFT(void *str, ptrdiff_t len, int shift,
 			      struct string_builder *buf)
 {
   switch(shift) {
@@ -214,10 +214,10 @@ static void PUSH_STRING_SHIFT(void *str, INT32 len, int shift,
 #endif /* SHIFT == 0 */
 
 static void PUSH_STRING(WCHAR *str,
-			INT32 len,
+			ptrdiff_t len,
 			struct string_builder *buf)
 {
-  INT32 p2;
+  ptrdiff_t p2;
   string_builder_putchar(buf, '"');
   for(p2=0; p2<len; p2++)
   {
@@ -285,10 +285,10 @@ static void PUSH_STRING(WCHAR *str,
   string_builder_putchar(buf, '"');
 }
 
-static INLINE int find_end_parenthesis(struct cpp *this,
-				       WCHAR *data,
-				       INT32 len,
-				       INT32 pos) /* position of first " */
+static INLINE ptrdiff_t find_end_parenthesis(struct cpp *this,
+					     WCHAR *data,
+					     ptrdiff_t len,
+					     ptrdiff_t pos)/* pos of first " */
 {
   while(1)
   {
@@ -309,7 +309,7 @@ static INLINE int find_end_parenthesis(struct cpp *this,
   }
 }
 
-static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calcC(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   FINDTOK();
 
@@ -402,7 +402,7 @@ static INT32 calcC(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calcB(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calcB(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calcB"); */
 
@@ -418,7 +418,7 @@ static INT32 calcB(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calcA(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calcA(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calcA"); */
 
@@ -454,7 +454,7 @@ static INT32 calcA(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc9(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc9(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calc9"); */
 
@@ -485,7 +485,7 @@ static INT32 calc9(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc8(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc8(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calc8"); */
 
@@ -519,7 +519,7 @@ static INT32 calc8(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc7b(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc7b(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calc7b"); */
 
@@ -564,7 +564,7 @@ static INT32 calc7b(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc7(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc7(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calc7"); */
 
@@ -597,7 +597,7 @@ static INT32 calc7(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc6(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc6(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calc6"); */
 
@@ -615,7 +615,7 @@ static INT32 calc6(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc5(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc5(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calc5"); */
 
@@ -632,7 +632,7 @@ static INT32 calc5(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc4(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc4(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   /* DUMPPOS("before calc4"); */
 
@@ -649,7 +649,7 @@ static INT32 calc4(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc3(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc3(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   static WCHAR land_[] = { '&', '&' };
 
@@ -675,7 +675,7 @@ static INT32 calc3(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc2(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
+static INT32 calc2(struct cpp *this,WCHAR *data,ptrdiff_t len,ptrdiff_t pos)
 {
   static WCHAR lor_[] = { '|', '|' };
 
@@ -701,7 +701,7 @@ static INT32 calc2(struct cpp *this,WCHAR *data,INT32 len,INT32 pos)
   return pos;
 }
 
-static INT32 calc1(struct cpp *this, WCHAR *data, INT32 len, INT32 pos)
+static INT32 calc1(struct cpp *this, WCHAR *data, ptrdiff_t len, ptrdiff_t pos)
 {
   /* DUMPPOS("before calc1"); */
 
@@ -723,7 +723,7 @@ static INT32 calc1(struct cpp *this, WCHAR *data, INT32 len, INT32 pos)
   return pos;
 }
 
-static int calc(struct cpp *this, WCHAR *data, INT32 len, INT32 tmp)
+static int calc(struct cpp *this, WCHAR *data, ptrdiff_t len, ptrdiff_t tmp)
 {
   JMP_BUF recovery;
   INT32 pos;
@@ -761,12 +761,13 @@ static int calc(struct cpp *this, WCHAR *data, INT32 len, INT32 tmp)
 
 static INT32 lower_cpp(struct cpp *this,
 		       WCHAR *data,
-		       INT32 len,
+		       ptrdiff_t len,
 		       int flags,
 		       int auto_convert,
 		       struct pike_string *charset)
 {
-  INT32 pos, tmp, e, tmp2;
+  ptrdiff_t pos, tmp, e;
+  int tmp2;
   
   for(pos=0; pos<len;)
   {
@@ -835,7 +836,7 @@ static INT32 lower_cpp(struct cpp *this,
       {
 	struct pike_string *s=0;
 	struct define *d=0;
-	tmp=pos-1;
+	tmp = pos-1;
 	while(WC_ISIDCHAR(data[pos])) pos++;
 
 	if(flags & CPP_DO_IF)
@@ -1028,7 +1029,7 @@ static INT32 lower_cpp(struct cpp *this,
 	  }
 	  
 	  /* FIXME */
-	  for(e=0;e<(long)tmp.s->len;e++)
+	  for(e=0; e< (ptrdiff_t)tmp.s->len; e++)
 	    if(tmp.s->str[e]=='\n')
 	      tmp.s->str[e]=' ';
 
@@ -1621,7 +1622,7 @@ static INT32 lower_cpp(struct cpp *this,
 
 	      while(data[pos]!=')')
 		{
-		  INT32 tmp2;
+		  ptrdiff_t tmp2;
 		  if(argno)
 		    {
 		      if(!GOBBLE(','))
