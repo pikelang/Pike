@@ -4,7 +4,7 @@ OBJS = image.o font.o togif.o matrix.o pnm.o blit.o \
 	pattern.o dct.o operator.o x.o colortable.o polyfill.o 
 MODNAME=image
 MODULE_SUBDIRS=encodings
-MODULE_ARCHIVES=encodings/gif.a encodings/pnm.a
+MODULE_ARCHIVES=encodings/gif.a encodings/pnm.a encodings/png.a encodings/x.a
 MODULE_LDFLAGS=@LDFLAGS@
 
 @SET_MAKE@

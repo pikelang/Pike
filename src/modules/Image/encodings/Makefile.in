@@ -4,7 +4,8 @@ GIF_OBJS = gif.o gif_lzw.o png.o
 JPEG_OBJS = jpeg.o
 PNG_OBJS = png.o
 PNM_OBJS = pnm.o 
-OBJS=gif.a pnm.a png.a
+X_OBJS = x.o
+OBJS=gif.a pnm.a png.a x.a
 
 @SET_MAKE@
 
@@ -22,6 +23,11 @@ gif.a : $(GIF_OBJS)
 	rm -f gif.a
 	$(AR) cq gif.a $(GIF_OBJS)
 	$(RANLIB) gif.a
+
+x.a : $(X_OBJS)
+	rm -f x.a
+	$(AR) cq x.a $(X_OBJS)
+	$(RANLIB) x.a
 
 png.a : $(PNG_OBJS)
 	rm -f png.a

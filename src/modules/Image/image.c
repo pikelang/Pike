@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.70 1997/12/22 23:26:46 hubbe Exp $ */
+/* $Id: image.c,v 1.71 1998/01/07 01:11:26 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.70 1997/12/22 23:26:46 hubbe Exp $
+**!	$Id: image.c,v 1.71 1998/01/07 01:11:26 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.70 1997/12/22 23:26:46 hubbe Exp $");
+RCSID("$Id: image.c,v 1.71 1998/01/07 01:11:26 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2981,6 +2981,7 @@ void pike_module_init(void)
    init_image_gif();
    init_image_pnm();
    init_image_png();
+   init_image_x();
 }
 
 void pike_module_exit(void) 
@@ -2996,6 +2997,7 @@ void pike_module_exit(void)
   exit_image_gif();
   exit_image_pnm();
   exit_image_png();
+  exit_image_x();
 }
 
 
