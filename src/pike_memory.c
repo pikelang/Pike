@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.52 2000/02/03 19:09:12 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.53 2000/03/07 21:23:42 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -691,11 +691,22 @@ int verbose_debug_malloc = 0;
 int verbose_debug_exit = 1;
 int debug_malloc_check_all = 0;
 
+/* #define DMALLOC_PROFILE */
+#define DMALLOC_AD_HOC
+
+#ifdef DMALLOC_AD_HOC
+/* A gigantic size (16Mb) will help a lot in AD_HOC mode */
+#define LHSIZE 4100011
+#else
 #define LHSIZE 1109891
-#define FLSIZE 8803
+#endif
+
+#define FLSIZE 43391
 #define DEBUG_MALLOC_PAD 32
 #define FREE_DELAY 4096
 #define MAX_UNFREE_MEM 1024*1024*32
+#define RNDSIZE 1777 /* A small size will help keep it in the cache */
+#define AD_HOC_CHECK_INTERVAL 620 * 10
 
 static void *blocks_to_free[FREE_DELAY];
 static unsigned int blocks_to_free_ptr=0;
@@ -734,27 +745,45 @@ struct memhdr
   struct memhdr *next;
   long size;
   int flags;
+#ifdef DMALLOC_AD_HOC
+  int misses;
+#endif
   void *data;
   struct memloc *locations;
 };
 
 static struct fileloc *flhash[FLSIZE];
 static struct memloc *mlhash[LHSIZE];
+static char rndbuf[RNDSIZE + DEBUG_MALLOC_PAD*2];
 
 static struct memhdr no_leak_memlocs;
 static int file_location_number=10;
 static int loc_accepted_leak=0;
 static int loc_referenced=0;
+static int memheader_references_located=0;
+
+
+#ifdef DMALLOC_PROFILE
+static int add_location_calls=0;
+static int add_location_seek=0;
+static int add_location_new=0;
+static int add_location_cache_hits=0;
+static int add_location_duplicate=0;  /* Used in AD_HOC mode */
+#endif
 
 #if DEBUG_MALLOC_PAD - 0 > 0
 char *do_pad(char *mem, long size)
 {
-  long q,e;
+  unsigned long q,e;
   mem+=DEBUG_MALLOC_PAD;
   q= (((long)mem) ^ 0x555555) + (size * 9248339);
   
 /*  fprintf(stderr,"Padding  %p(%d) %ld\n",mem, size, q); */
 #if 1
+  q%=RNDSIZE;
+  MEMCPY(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD);
+  MEMCPY(mem + size, rndbuf+q, DEBUG_MALLOC_PAD);
+#else
   for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
   {
     char tmp;
@@ -781,7 +810,7 @@ char *do_pad(char *mem, long size)
 void check_pad(struct memhdr *mh, int freeok)
 {
   static int out_biking=0;
-  long q,e;
+  unsigned long q,e;
   char *mem=mh->data;
   long size=mh->size;
   if(out_biking) return;
@@ -802,6 +831,25 @@ void check_pad(struct memhdr *mh, int freeok)
 
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
+  q%=RNDSIZE;
+  if(MEMCMP(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
+  {
+    out_biking=1;
+    fprintf(stderr,"Pre-padding overwritten for "
+	    "block at %p (size %ld)!\n", mem, size);
+    describe(mem);
+    abort();
+  }
+
+  if(MEMCMP(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
+  {
+    out_biking=1;
+    fprintf(stderr,"Pre-padding overwritten for "
+	    "block at %p (size %ld)!\n", mem, size);
+    describe(mem);
+    abort();
+  }
+#else
   for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
   {
     char tmp;
@@ -1011,7 +1059,7 @@ static int find_location(struct memhdr *mh, int locnum)
 
 static void add_location(struct memhdr *mh, int locnum)
 {
-  struct memloc *ml;
+  struct memloc *ml=0;
   unsigned long l;
 
 #ifndef __NT__
@@ -1023,29 +1071,118 @@ static void add_location(struct memhdr *mh, int locnum)
   if(find_location(&no_leak_memlocs, locnum)) return;
 #endif
 
+#ifdef DMALLOC_PROFILE
+  add_location_calls++;
+#endif
+
   l=lhash(mh,locnum);
 
   if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->locnum==locnum)
   {
     mlhash[l]->times++;
+#ifdef DMALLOC_PROFILE
+    add_location_cache_hits++;
+#endif
     return;
   }
 
+#ifdef DMALLOC_AD_HOC
+  if(mh->misses > AD_HOC_CHECK_INTERVAL)
+  {
+    unsigned long l2;
+    struct memloc **prev=&mh->locations;
+    while((ml=*prev))
+    {
+#ifdef DMALLOC_PROFILE
+      add_location_seek++;
+#endif
+      if(ml->locnum == locnum)
+	break;
+
+      l2=lhash(mh, ml->locnum);
+
+      if(mlhash[l2] && mlhash[l2]!=ml &&
+	 mlhash[l2]->mh == mh && mlhash[l2]->locnum == ml->locnum)
+      {
+	/* We found a duplicate */
+#ifdef DMALLOC_PROFILE
+	add_location_duplicate++;
+#endif
+	mlhash[l2]->times+=ml->times;
+	*prev=ml->next;
+	really_free_memloc(ml);
+      }else{
+	prev=&ml->next;
+      }
+    }
+    if(!ml) mh->misses=0;
+  }
+#else
   for(ml=mh->locations;ml;ml=ml->next)
+  {
+#ifdef DMALLOC_PROFILE
+    add_location_seek++;
+#endif
     if(ml->locnum==locnum)
       break;
+  }
+#endif
 
   if(!ml)
   {
+#ifdef DMALLOC_PROFILE
+    add_location_new++;
+#endif
     ml=alloc_memloc();
     ml->times=0;
     ml->locnum=locnum;
     ml->next=mh->locations;
     ml->mh=mh;
     mh->locations=ml;
+
+#ifdef DMALLOC_AD_HOC
+    mh->misses++;
+#endif
+
   }
   ml->times++;
   mlhash[l]=ml;
+}
+
+static void remove_location(struct memhdr *mh, int locnum)
+{
+  struct memloc *ml,**prev;
+  unsigned long l;
+
+#ifndef __NT__
+  if(!mt_trylock(& debug_malloc_mutex))
+    fatal("remove_location running unlocked!\n");
+#endif
+  
+#if DEBUG_MALLOC - 0 < 2
+  if(find_location(&no_leak_memlocs, locnum)) return;
+#endif
+
+  l=lhash(mh,locnum);
+
+  if(mlhash[l] && mlhash[l]->mh==mh && mlhash[l]->locnum==locnum)
+    mlhash[l]=0;
+
+  
+  prev=&mh->locations;
+  while((ml=*prev))
+  {
+    if(ml->locnum==locnum)
+    {
+      *prev=ml->next;
+      really_free_memloc(ml);
+#ifndef DMALLOC_AD_HOC
+      break;
+#endif
+    }else{
+      prev=&ml->next;
+    }
+  }
 }
 
 int dmalloc_default_location=0;
@@ -1268,6 +1405,31 @@ void dump_memhdr_locations(struct memhdr *from,
 
 void debug_malloc_dump_references(void *x)
 {
+  struct memhdr *mh=my_find_memhdr(x,0);
+  if(!mh) return;
+  if(memheader_references_located)
+  {
+    int referenced=0;
+    struct memloc *l;
+
+    for(l=mh->locations;l;l=l->next)
+    {
+      if(l->locnum == loc_accepted_leak) referenced|=2;
+      if(l->locnum == loc_referenced) referenced|=1;
+    }
+    if(referenced & 2)
+    {
+      fprintf(stderr,"<<<This leak has been ignored>>>\n");
+    }
+    else if(referenced & 1)
+    {
+      fprintf(stderr,"<<<Possibly referenced>>>\n");
+    }
+    else
+    {
+      fprintf(stderr,"<<<=- No known references to this block -=>>>\n");
+    }
+  }
   dump_memhdr_locations(my_find_memhdr(x,0),0);
 }
 
@@ -1309,6 +1471,45 @@ void list_open_fds(void)
   mt_unlock(&debug_malloc_mutex);
 }
 
+static void low_search_all_memheaders_for_references(void)
+{
+  unsigned long h;
+  struct memhdr *m;
+
+  for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
+    for(m=memhdr_hash_table[h];m;m=m->next)
+      remove_location(m, loc_referenced);
+
+  for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
+  {
+    for(m=memhdr_hash_table[h];m;m=m->next)
+    {
+      unsigned int e;
+      struct memhdr *tmp;
+      void **p=m->data;
+      
+      if( ! ((sizeof(void *)-1) & (long) p ))
+      {
+	if(m->size > 0)
+	{
+	  for(e=0;e<m->size/sizeof(void *);e++)
+	    if((tmp=find_memhdr(p[e])))
+	      add_location(tmp, loc_referenced);
+	}
+      }
+    }
+  }
+
+  memheader_references_located=1;
+}
+
+void search_all_memheaders_for_references(void)
+{
+  mt_lock(&debug_malloc_mutex);
+  low_search_all_memheaders_for_references();
+  mt_unlock(&debug_malloc_mutex);
+}
+
 void cleanup_memhdrs(void)
 {
   unsigned long h;
@@ -1328,24 +1529,7 @@ void cleanup_memhdrs(void)
   if(verbose_debug_exit)
   {
     int first=1;
-    for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
-    {
-      struct memhdr *m;
-      for(m=memhdr_hash_table[h];m;m=m->next)
-      {
-	unsigned int e;
-	struct memhdr *tmp;
-	void **p=m->data;
-
-	if( ! ((sizeof(void *)-1) & (long) p ))
-	{
-	  for(e=0;e<m->size/sizeof(void *);e++)
-	    if((tmp=find_memhdr(p[e])))
-	      add_location(tmp, loc_referenced);
-	}
-      }
-    }
-
+    low_search_all_memheaders_for_references();
 
     for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
     {
@@ -1415,6 +1599,30 @@ void cleanup_memhdrs(void)
 	}
       }
     }
+
+
+#ifdef DMALLOC_PROFILE
+    {
+      INT32 num,mem;
+      
+      fprintf(stderr,"add_location %d cache %d (%3.3f%%) new: %d (%3.3f%%)\n",
+	      add_location_calls,
+	      add_location_cache_hits,
+	      add_location_cache_hits*100.0/add_location_calls,
+	      add_location_new,
+	      add_location_new*100.0/add_location_calls);
+      fprintf(stderr,"             seek: %3.7f  duplicates: %d\n",
+	      ((double)add_location_seek)/(add_location_calls-add_location_cache_hits),
+	      add_location_duplicate);
+
+      count_memory_in_memhdrs(&num,&mem);
+      fprintf(stderr,"memhdrs:  %8ld, %10ld bytes\n",(long)num,(long)mem);
+
+      count_memory_in_filelocs(&num,&mem);
+      fprintf(stderr,"filelocs: %8ld, %10ld bytes\n",(long)num,(long)mem);
+    }
+#endif
+
   }
   mt_unlock(&debug_malloc_mutex);
   mt_destroy(&debug_malloc_mutex);
@@ -1435,7 +1643,10 @@ static void unlock_da_lock(void)
 
 int main(int argc, char *argv[])
 {
+  int e;
   extern int dbm_main(int, char **);
+
+  for(e=0;e<NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
 
 #if DEBUG_MALLOC_PAD & 3
   fprintf(stderr,"DEBUG_MALLOC_PAD not dividable by four!\n");

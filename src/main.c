@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.80 1999/12/13 04:58:53 per Exp $");
+RCSID("$Id: main.c,v 1.81 2000/03/07 21:23:41 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -611,6 +611,7 @@ void low_exit_main(void)
   {
     INT32 num,size,recount=0;
     fprintf(stderr,"Exited normally, counting bytes.\n");
+    search_all_memheaders_for_references();
 
     count_memory_in_arrays(&num, &size);
     if(num)
