@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.12 2003/06/26 11:53:55 peta Exp $
+|| $Id: circular_list.cmod,v 1.13 2003/09/10 15:19:09 mast Exp $
 */
 
 #include "global.h"
@@ -19,7 +19,7 @@
 
 #include "module_support.h"
 #include "sequence.h"
-
+#include "circular_list.h"
 
 
 
@@ -87,18 +87,7 @@ PIKECLASS CircularList
 
   PIKEFUN mixed `[](int index) {
     struct svalue ind;
-    if(index<0) index+=THIS->a->size;
-    if(index<0 || index>=THIS->size) {
-      if (THIS->size) {
-	Pike_error("Index %d is out of array range 0 - %d.\n", 
-		   index, 
-		   THIS->size-1);
-      } else {
-	
-	Pike_error("Attempt to index the empty array with %d.\n", index);
-      }
-    }
-   
+    FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     ind.u.integer = circ2array(index);
     ind.type = T_INT;
     simple_array_index_no_free(Pike_sp, THIS->a, &ind);
@@ -125,17 +114,7 @@ PIKECLASS CircularList
   
   PIKEFUN mixed `[]=(int index, mixed value) {
     struct svalue ind;
-    if(index<0) index+=THIS->a->size;
-    if(index<0 || index>=THIS->size) {
-      if (THIS->size) {
-	Pike_error("Index %d is out of array range 0 - %d.\n", 
-		   index, 
-		   THIS->size-1);
-      } else {
-	
-	Pike_error("Attempt to index the empty array with %d.\n", index);
-      }
-    }
+    FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     ind.u.integer = circ2array(index);
     ind.type = T_INT;
     should_copy();  	
@@ -329,18 +308,7 @@ PIKECLASS CircularList
 
   PIKEFUN void _insert_element(int index, mixed value)
   {
-    if(index<0) index+=THIS->a->size;
-    if(index<0 || index>=THIS->size) {
-      if (THIS->size) {
-	Pike_error("Index %d is out of array range 0 - %d.\n", 
-		   index, 
-		   THIS->size-1);
-      } else {
-	
-	Pike_error("Attempt to index the empty array with %d.\n", index);
-      }
-    }
-    
+    FIX_AND_CHECK_INDEX(index, THIS->size, 0);
     should_copy();
     index = circ2array(index);
     THIS->a = array_insert(THIS->a, value, index);
@@ -364,18 +332,9 @@ PIKECLASS CircularList
   PIKEFUN mixed _remove_element(int index)
   {
     struct svalue s;
-    
-    if(index<0) index+=THIS->size;
-    if(index<0 || index>=THIS->size) {
-      if (THIS->a->size) {
-	Pike_error("Index %d is out of array range 0 - %d.\n", 
-		   index, 
-		   THIS->size-1);
-      } else {
-	Pike_error("Attempt to index the empty array with %d.\n", index);
-      }
-    }
-    
+
+    FIX_AND_CHECK_INDEX(index, THIS->size, 0);
+
     index = circ2array(index);
     s = *(THIS->a->item + index);    
     should_copy();
@@ -416,11 +375,11 @@ PIKECLASS CircularList
       }
       if(start->u.integer <0 || start->u.integer>=THIS->size) {
 	if (THIS->a->size) {
-	  Pike_error("Start %d is out of array range 0 - %d.\n", 
+	  Pike_error("Start %"PRINTPIKEINT"d is out of array range 0 - %d.\n",
 		     start->u.integer, 
 		   THIS->size-1);
 	} else {
-	  Pike_error("Attempt to index the empty array with %d.\n", 
+	  Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n",
 		     start->u.integer);
 	}
       }

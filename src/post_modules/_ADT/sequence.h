@@ -1,7 +1,25 @@
 /*
- * $Id: sequence.h,v 1.2 2003/04/03 14:37:39 grubba Exp $
+ * $Id: sequence.h,v 1.3 2003/09/10 15:19:09 mast Exp $
  */
 
 void pike_init_Sequence_module(void);
 void pike_exit_Sequence_module(void);
 
+#define FIX_AND_CHECK_INDEX(INDEX, SIZE, EXTRA)				\
+  do {									\
+    INT_TYPE _orig_index_ = (INDEX);					\
+    ptrdiff_t _size_ = (SIZE);						\
+    if((INDEX)<0) (INDEX)+=_size_;					\
+    if((INDEX)<0 || (INDEX)>=_size_+(EXTRA)) {				\
+      if (_size_) {							\
+	Pike_error("Index %"PRINTPIKEINT"d is out of array range "	\
+		   "%"PRINTPTRDIFFT"d - %"PRINTPTRDIFFT"d.\n",		\
+		   _orig_index_,					\
+		   -_size_,						\
+		   _size_+(EXTRA)-1);					\
+      } else {								\
+	Pike_error("Attempt to index the empty array with %"PRINTPIKEINT"d.\n",	\
+		   _orig_index_);					\
+      }									\
+    }									\
+  } while (0)

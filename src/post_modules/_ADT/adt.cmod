@@ -2,12 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: adt.cmod,v 1.5 2003/04/04 15:18:47 peta Exp $
+|| $Id: adt.cmod,v 1.6 2003/09/10 15:19:09 mast Exp $
 */
 #include "global.h"
 
 #include "module_support.h"
 #include "sequence.h"
+#include "circular_list.h"
 
 DECLARATIONS
 
