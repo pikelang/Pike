@@ -1,6 +1,6 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.1 2002/09/09 13:47:09 marcus Exp $
+// $Id: module.pike,v 1.2 2002/09/12 16:37:34 marcus Exp $
 
 // Source directory
 string srcdir;
@@ -246,7 +246,7 @@ int main(int argc, array(string) argv)
 
   if(run->depend)
   {
-    if(run->depend == ALWAYS || !max_time_of_files("$src/dependencies"))
+    if(!max_time_of_files("$src/dependencies") || run->depend == ALWAYS)
     {
       // Create an empty file first..
       Stdio.write_file(srcdir+"/dependencies","");
