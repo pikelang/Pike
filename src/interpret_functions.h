@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.145 2003/04/07 18:17:05 grubba Exp $
+|| $Id: interpret_functions.h,v 1.146 2003/04/07 19:33:09 grubba Exp $
 */
 
 /*
@@ -679,7 +679,7 @@ OPCODE0(F_LTOSVAL3, "ltosval3", 0, {
   }
 });
 
-OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
+OPCODE0(F_ADD_TO, "+=", 0, {
   Pike_sp[0]=Pike_sp[-1];
   Pike_sp[-1].type=PIKE_T_INT;
   Pike_sp++;
@@ -693,11 +693,12 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
     )
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
-      Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
+      INT_TYPE val = (Pike_sp[-1].u.integer += Pike_sp[-2].u.integer);
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
       pop_2_elems();
-      goto add_and_pop_done;
+      push_int(val);
+      goto add_to_done;
     }
   }
   /* this is so that foo+=bar (and similar things) will be faster, this
@@ -720,14 +721,66 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
        FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ) != -1)
     {
       apply_lfun(Pike_sp[-2].u.object, LFUN_ADD_EQ, 1);
-      goto add_and_pop_set_lvalue;
+      goto add_to_set_lvalue;
     }
   }
   f_add(2);
- add_and_pop_set_lvalue:
+ add_to_set_lvalue:
+  assign_lvalue(Pike_sp-3,Pike_sp-1);
+  stack_pop_n_elems_keep_top(2);
+ add_to_done:
+   ; /* make gcc happy */
+});
+
+OPCODE0(F_ADD_TO_AND_POP, "+= and pop", 0, {
+  Pike_sp[0]=Pike_sp[-1];
+  Pike_sp[-1].type=PIKE_T_INT;
+  Pike_sp++;
+  lvalue_to_svalue_no_free(Pike_sp-2,Pike_sp-4);
+
+  if( Pike_sp[-1].type == PIKE_T_INT &&
+      Pike_sp[-2].type == PIKE_T_INT  )
+  {
+    DO_IF_BIGNUM(
+    if(!INT_TYPE_ADD_OVERFLOW(Pike_sp[-1].u.integer, Pike_sp[-2].u.integer))
+    )
+    {
+      /* Optimization for a rather common case. Makes it 30% faster. */
+      Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
+      assign_lvalue(Pike_sp-4,Pike_sp-1);
+      Pike_sp-=2;
+      pop_2_elems();
+      goto add_to_and_pop_done;
+    }
+  }
+  /* this is so that foo+=bar (and similar things) will be faster, this
+   * is done by freeing the old reference to foo after it has been pushed
+   * on the stack. That way foo can have only 1 reference if we are lucky,
+   * and then the low array/multiset/mapping manipulation routines can be
+   * destructive if they like
+   */
+  if( (1 << Pike_sp[-2].type) &
+      (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
+  {
+    struct svalue s;
+    s.type=PIKE_T_INT;
+    s.subtype=0;
+    s.u.integer=0;
+    assign_lvalue(Pike_sp-4,&s);
+  } else if (Pike_sp[-2].type == T_OBJECT) {
+    /* One ref in the lvalue, and one on the stack. */
+    if(Pike_sp[-2].u.object->refs <= 2 &&
+       FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ) != -1)
+    {
+      apply_lfun(Pike_sp[-2].u.object, LFUN_ADD_EQ, 1);
+      goto add_to_and_pop_set_lvalue;
+    }
+  }
+  f_add(2);
+ add_to_and_pop_set_lvalue:
   assign_lvalue(Pike_sp-3,Pike_sp-1);
   pop_n_elems(3);
- add_and_pop_done:
+ add_to_and_pop_done:
    ; /* make gcc happy */
 });
 
