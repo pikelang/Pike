@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.49 1999/10/22 00:04:39 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.50 1999/10/22 00:27:43 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -704,33 +704,34 @@ INLINE static int do_one(struct format_stack *fs,
 #define GET_ARRAY(VAR) GET(VAR,T_ARRAY,"array",array)
 #define GET_OBJECT(VAR) GET(VAR,T_OBJECT,"object",object)
 
-#define DO_OP() \
-   if(fsp->flags & SNURKEL) \
-   { \
-     ONERROR _e; \
-     struct array *_v; \
-     struct string_builder _b; \
-     init_string_builder(&_b,0); \
-     SET_ONERROR(_e, free_string_builder, &_b); \
-     GET_ARRAY(_v); \
-     for(tmp=0;tmp<_v->size;tmp++) \
-     { \
-       struct svalue *save_sp=sp; \
-       array_index_no_free(sp,_v,tmp); \
-       sp++; \
-       low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,sp-1,1,nosnurkel+1); \
-       if(save_sp < sp) pop_stack(); \
-     } \
-     fsp->b=MKPCHARP_STR(_b.s); \
-     fsp->len=_b.s->len; \
-     fsp->fi_free_string=(char *)_b.s; \
-     fsp->pad_string=MKPCHARP(" ",0); \
-     fsp->pad_length=1; \
-     fsp->column_width=0; \
-     fsp->pos_pad=fsp->flags=0; \
-     fsp->width=fsp->precision=SPRINTF_UNDECIDED; \
-     UNSET_ONERROR(_e); \
-     break; \
+#define DO_OP()								\
+   if(fs->fsp->flags & SNURKEL)						\
+   {									\
+     ONERROR _e;							\
+     struct array *_v;							\
+     struct string_builder _b;						\
+     init_string_builder(&_b,0);					\
+     SET_ONERROR(_e, free_string_builder, &_b);				\
+     GET_ARRAY(_v);							\
+     for(tmp=0;tmp<_v->size;tmp++)					\
+     {									\
+       struct svalue *save_sp=sp;					\
+       array_index_no_free(sp,_v,tmp);					\
+       sp++;								\
+       low_pike_sprintf(fs, &_b,begin,SUBTRACT_PCHARP(a,begin)+1,	\
+			sp-1,1,nosnurkel+1);				\
+       if(save_sp < sp) pop_stack();					\
+     }									\
+     fs->fsp->b=MKPCHARP_STR(_b.s);					\
+     fs->fsp->len=_b.s->len;						\
+     fs->fsp->fi_free_string=(char *)_b.s;				\
+     fs->fsp->pad_string=MKPCHARP(" ",0);				\
+     fs->fsp->pad_length=1;						\
+     fs->fsp->column_width=0;						\
+     fs->fsp->pos_pad=fs->fsp->flags=0;					\
+     fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;		\
+     UNSET_ONERROR(_e);							\
+     break;                                                             \
    }
 
 #define CHECK_OBJECT_SPRINTF()						      \
@@ -746,10 +747,10 @@ INLINE static int do_one(struct format_stack *fs,
             {                                                                 \
               int n=0;							      \
 	      push_int(EXTRACT_PCHARP(a));				      \
-	      if (fsp->precision!=SPRINTF_UNDECIDED)			      \
+	      if(fs->fsp->precision!=SPRINTF_UNDECIDED)			      \
 	      {								      \
 		 push_constant_text("precision");			      \
-		 push_int(fsp->precision);				      \
+		 push_int(fs->fsp->precision);				      \
                  n+=2;							      \
 	      }								      \
 	      f_aggregate_mapping(n);					      \
@@ -761,8 +762,8 @@ INLINE static int do_one(struct format_stack *fs,
                              fatal("OOps in sprintf\n"); )                    \
                 fs->fsp->to_free_string = (--sp)->u.string;	              \
 									      \
-		fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);		      \
-		fsp->len = fs->fsp->to_free_string->len;		      \
+		fs->fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);           \
+		fs->fsp->len = fs->fsp->to_free_string->len;		      \
 	       								      \
                 /* We have to lift one argument from the format stack. */     \
                 GET_SVALUE(sv);                                               \
@@ -806,31 +807,29 @@ static void low_pike_sprintf(struct format_stack *fs,
   for(a=format;COMPARE_PCHARP(a,<,format_end);INC_PCHARP(a,1))
   {
     int num_snurkel;
-    struct format_info *fsp;
 
-    fsp = ++fs->fsp;   /* WARNING: Do not change fsp unless fs->fsp
-			  is changed accordingly. */
+    fs->fsp++;
 #ifdef PIKE_DEBUG
-    if(fsp < fs->format_info_stack)
-      fatal("sprintf: fsp out of bounds.\n");
+    if(fs->fsp < fs->format_info_stack)
+      fatal("sprintf: fs->fsp out of bounds.\n");
 #endif
-    if(fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE)
+    if(fs->fsp-fs->format_info_stack==FORMAT_INFO_STACK_SIZE)
       sprintf_error(fs, "Sprintf stack overflow.\n");
-    fsp->pad_string=MKPCHARP(" ",0);
-    fsp->pad_length=1;
-    fsp->fi_free_string=0;
-    fsp->to_free_string=0;
-    fsp->column_width=0;
-    fsp->pos_pad=fsp->flags=0;
-    fsp->width=fsp->precision=SPRINTF_UNDECIDED;
+    fs->fsp->pad_string=MKPCHARP(" ",0);
+    fs->fsp->pad_length=1;
+    fs->fsp->fi_free_string=0;
+    fs->fsp->to_free_string=0;
+    fs->fsp->column_width=0;
+    fs->fsp->pos_pad=fs->fsp->flags=0;
+    fs->fsp->width=fs->fsp->precision=SPRINTF_UNDECIDED;
 
     if(EXTRACT_PCHARP(a)!='%')
     {
       for(e=0;INDEX_PCHARP(a,e)!='%' &&
 	    COMPARE_PCHARP(ADD_PCHARP(a,e),<,format_end);e++);
-      fsp->b=a;
-      fsp->len=e;
-      fsp->width=e;
+      fs->fsp->b=a;
+      fs->fsp->len=e;
+      fs->fsp->width=e;
       INC_PCHARP(a,e-1);
       continue;
     }
@@ -859,7 +858,7 @@ static void low_pike_sprintf(struct format_stack *fs,
       case '0': 
 	 if (setwhat<2) 
 	 { 
-	    fsp->flags|=ZERO_PAD; 
+	    fs->fsp->flags|=ZERO_PAD; 
 	    continue; 
 	 }
       case '1': case '2': case '3':
@@ -875,13 +874,13 @@ static void low_pike_sprintf(struct format_stack *fs,
       got_arg:
 	switch(setwhat)
 	{
-	case 0: fsp->width=tmp; break;
-	case 1: fsp->width=tmp;
-	case 2: fsp->precision=tmp; break;
-	case 3: fsp->column_width=tmp; break;
-	case 4: fsp->precision=-tmp; break;
+	case 0: fs->fsp->width=tmp; break;
+	case 1: fs->fsp->width=tmp;
+	case 2: fs->fsp->precision=tmp; break;
+	case 3: fs->fsp->column_width=tmp; break;
+	case 4: fs->fsp->precision=-tmp; break;
 	}
-	if(fsp->width!=SPRINTF_UNDECIDED && fsp->width<1)
+	if(fs->fsp->width!=SPRINTF_UNDECIDED && fs->fsp->width<1)
 	  sprintf_error(fs, "Illegal width.\n");
 	continue;
 
@@ -889,27 +888,27 @@ static void low_pike_sprintf(struct format_stack *fs,
       case '.': setwhat=2; continue;
       case ':': setwhat=1; continue;
 
-      case '=': fsp->flags|=LINEBREAK; continue;
-      case '/': fsp->flags|=ROUGH_LINEBREAK; continue;
-      case '#': fsp->flags|=COLUMN_MODE; continue;
-      case '$': fsp->flags|=INVERSE_COLUMN_MODE; continue;
+      case '=': fs->fsp->flags|=LINEBREAK; continue;
+      case '/': fs->fsp->flags|=ROUGH_LINEBREAK; continue;
+      case '#': fs->fsp->flags|=COLUMN_MODE; continue;
+      case '$': fs->fsp->flags|=INVERSE_COLUMN_MODE; continue;
 
       case '-':
 	if(setwhat==2)
 	  setwhat=4;
 	else
-	  fsp->flags|=FIELD_LEFT;
+	  fs->fsp->flags|=FIELD_LEFT;
 	continue;
-      case '|': fsp->flags|=FIELD_CENTER; continue;
-      case ' ': fsp->pos_pad=' '; continue;
-      case '+': fsp->pos_pad='+'; continue;
-      case '!': fsp->flags^=DO_TRUNC; continue;
-      case '^': fsp->flags|=REPEAT; continue;
-      case '>': fsp->flags|=MULTI_LINE_BREAK; continue;
-      case '_': fsp->flags|=WIDTH_OF_DATA; continue;
+      case '|': fs->fsp->flags|=FIELD_CENTER; continue;
+      case ' ': fs->fsp->pos_pad=' '; continue;
+      case '+': fs->fsp->pos_pad='+'; continue;
+      case '!': fs->fsp->flags^=DO_TRUNC; continue;
+      case '^': fs->fsp->flags|=REPEAT; continue;
+      case '>': fs->fsp->flags|=MULTI_LINE_BREAK; continue;
+      case '_': fs->fsp->flags|=WIDTH_OF_DATA; continue;
       case '@':
 	if(++num_snurkel > nosnurkel)
-	  fsp->flags|=SNURKEL;
+	  fs->fsp->flags|=SNURKEL;
 	continue;
 
       case '\'':
@@ -922,8 +921,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	}
 	if(tmp)
 	{
-	  fsp->pad_string=a;
-	  fsp->pad_length=tmp;
+	  fs->fsp->pad_string=a;
+	  fs->fsp->pad_length=tmp;
 	}
 	INC_PCHARP(a,tmp);
 	continue;
@@ -932,8 +931,8 @@ static void low_pike_sprintf(struct format_stack *fs,
       {
 	struct pike_string *s;
 	GET_STRING(s);
-	fsp->pad_string=MKPCHARP_STR(s);
-	fsp->pad_length=s->len;
+	fs->fsp->pad_string=MKPCHARP_STR(s);
+	fs->fsp->pad_length=s->len;
 	continue;
       }
 
@@ -950,7 +949,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	struct array *w;
 	struct string_builder b;
 #ifdef PIKE_DEBUG
-	struct format_info *fsp_save=fsp;
+	struct format_info *fsp_save=fs->fsp;
 #endif
 	DO_OP();
 	for(e=1,tmp=1;tmp;e++)
@@ -974,8 +973,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	GET_ARRAY(w);
 	if(!w->size)
 	{
-	  fsp->b=MKPCHARP("",0);
-	  fsp->len=0;
+	  fs->fsp->b=MKPCHARP("",0);
+	  fs->fsp->len=0;
 	}else{
 	  ONERROR err;
 	  init_string_builder(&b,0);
@@ -1000,14 +999,14 @@ static void low_pike_sprintf(struct format_stack *fs,
 	    pop_n_elems(sp-s);
 	  }
 #ifdef PIKE_DEBUG
-	  if(fsp < fs->format_info_stack)
-	    fatal("sprintf: fsp out of bounds.\n");
-	  if(fsp!=fsp_save)
-	    fatal("sprintf: fsp incorrect after recursive sprintf.\n");
+	  if(fs->fsp < fs->format_info_stack)
+	    fatal("sprintf: fs->fsp out of bounds.\n");
+	  if(fs->fsp!=fsp_save)
+	    fatal("sprintf: fs->fsp incorrect after recursive sprintf.\n");
 #endif
-	  fsp->b=MKPCHARP_STR(b.s);
-	  fsp->len=b.s->len;
-	  fsp->fi_free_string=(char *)b.s;
+	  fs->fsp->b=MKPCHARP_STR(b.s);
+	  fs->fsp->len=b.s->len;
+	  fs->fsp->fi_free_string=(char *)b.s;
 	  UNSET_ONERROR(err);
 	}
 	
@@ -1016,14 +1015,14 @@ static void low_pike_sprintf(struct format_stack *fs,
       }
 
       case '%':
-	fsp->b=MKPCHARP("%",0);
-	fsp->len=fsp->width=1;
+	fs->fsp->b=MKPCHARP("%",0);
+	fs->fsp->len=fs->fsp->width=1;
 	break;
 
       case 'n':
 	DO_OP();
-	fsp->b=MKPCHARP("",0);
-	fsp->len=0;
+	fs->fsp->b=MKPCHARP("",0);
+	fs->fsp->len=0;
 	break;
 
       case 't':
@@ -1032,8 +1031,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 	DO_OP();
 	CHECK_OBJECT_SPRINTF()
 	GET_SVALUE(t);
-	fsp->b=MKPCHARP(get_name_of_type(t->type),0);
-	fsp->len=strlen((char *)fsp->b.ptr);
+	fs->fsp->b=MKPCHARP(get_name_of_type(t->type),0);
+	fs->fsp->len=strlen((char *)fs->fsp->b.ptr);
 	break;
       }
 
@@ -1043,21 +1042,21 @@ static void low_pike_sprintf(struct format_stack *fs,
 	char *x;
         DO_OP();
 	CHECK_OBJECT_SPRINTF()
-	if(fsp->width == SPRINTF_UNDECIDED)
+	if(fs->fsp->width == SPRINTF_UNDECIDED)
 	{
 	  GET_INT(tmp);
 	  x=(char *)alloca(4);
-	  if(tmp<256) fsp->b=MKPCHARP(x,0);
-	  else if(tmp<65536) fsp->b=MKPCHARP(x,1);
-	  else  fsp->b=MKPCHARP(x,2);
-	  SET_INDEX_PCHARP(fsp->b,0,tmp);
-	  fsp->len=1;
+	  if(tmp<256) fs->fsp->b=MKPCHARP(x,0);
+	  else if(tmp<65536) fs->fsp->b=MKPCHARP(x,1);
+	  else  fs->fsp->b=MKPCHARP(x,2);
+	  SET_INDEX_PCHARP(fs->fsp->b,0,tmp);
+	  fs->fsp->len=1;
 	}else{
 	  l=1;
-	  if(fsp->width > 0) l=fsp->width;
+	  if(fs->fsp->width > 0) l=fs->fsp->width;
 	  x=(char *)alloca(l);
-	  fsp->b=MKPCHARP(x,0);
-	  fsp->len=l;
+	  fs->fsp->b=MKPCHARP(x,0);
+	  fs->fsp->len=l;
 	  GET_INT(tmp);
 	  while(--l>=0)
 	  {
@@ -1085,9 +1084,9 @@ static void low_pike_sprintf(struct format_stack *fs,
 	buffer[1]=EXTRACT_PCHARP(a);
 	buffer[2]=0;
 	x=(char *)alloca(100);
-	fsp->b=MKPCHARP(x,0);
+	fs->fsp->b=MKPCHARP(x,0);
 	sprintf(x,buffer,tmp);
-	fsp->len=strlen(x);
+	fs->fsp->len=strlen(x);
 	break;
       }
 
@@ -1100,39 +1099,39 @@ static void low_pike_sprintf(struct format_stack *fs,
 	char *x;
 	DO_OP();
 	CHECK_OBJECT_SPRINTF()
-	if (fsp->precision==SPRINTF_UNDECIDED) fsp->precision=3;
+	if (fs->fsp->precision==SPRINTF_UNDECIDED) fs->fsp->precision=3;
 
-	x=(char *)xalloc(100+MAXIMUM(fsp->precision,3));
-	fsp->b=MKPCHARP(x,0);
+	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
+	fs->fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
 	GET_FLOAT(tf);
 
-	if(fsp->precision<0) {
-	  double m=pow(10.0, (double)fsp->precision);
+	if(fs->fsp->precision<0) {
+	  double m=pow(10.0, (double)fs->fsp->precision);
 	  tf=rint(tf*m)/m;
 	}
 	
-	sprintf(x,buffer,1,fsp->precision<0?0:fsp->precision,tf);
-	fsp->len=strlen(x);
+	sprintf(x,buffer,1,fs->fsp->precision<0?0:fs->fsp->precision,tf);
+	fs->fsp->len=strlen(x);
 	
 	/* Make sure that the last digits really are zero. */
-	if(fsp->precision<0)
+	if(fs->fsp->precision<0)
 	{
 	  INT32 i, j;
 	  /* Find the ending of the number.  Yes, this can be made
 	     simpler now when the alignment bug for floats is fixed. */
-	  for(i=fsp->len-1; i>=0; i--)
+	  for(i=fs->fsp->len-1; i>=0; i--)
  	    if('0'<=x[i] && x[i]<='9')
 	    {
-	      i+=fsp->precision+1;
+	      i+=fs->fsp->precision+1;
 	      if(i>=0 && '0'<=x[i] && x[i]<='9')
-		for(j=0; j<-fsp->precision; j++)
+		for(j=0; j<-fs->fsp->precision; j++)
 		  x[i+j]='0';
 	      break;
 	    }
 	}
 
-	fsp->fi_free_string=x;
+	fs->fsp->fi_free_string=x;
 	break;
       }
 
@@ -1145,12 +1144,12 @@ static void low_pike_sprintf(struct format_stack *fs,
 #endif
         DO_OP();
         l=4;
-        if(fsp->width > 0) l=fsp->width;
+        if(fs->fsp->width > 0) l=fs->fsp->width;
 	if(l != 4 && l != 8)
 	  sprintf_error(fs, "Invalid IEEE width %d.\n", l);
 	x=(char *)alloca(l);
-	fsp->b=MKPCHARP(x,0);
-	fsp->len=l;
+	fs->fsp->b=MKPCHARP(x,0);
+	fs->fsp->len=l;
 	GET_FLOAT(tf);
 	switch(l) {
 	case 4:
@@ -1202,9 +1201,9 @@ static void low_pike_sprintf(struct format_stack *fs,
 	init_buf();
 	describe_svalue(t,0,0);
 	s=complex_free_buf();
-	fsp->b=MKPCHARP(s.str,0);
-	fsp->len=s.len;
-	fsp->fi_free_string=s.str;
+	fs->fsp->b=MKPCHARP(s.str,0);
+	fs->fsp->len=s.len;
+	fs->fsp->fi_free_string=s.str;
 	break;
       }
 
@@ -1214,10 +1213,10 @@ static void low_pike_sprintf(struct format_stack *fs,
 	DO_OP();
 	CHECK_OBJECT_SPRINTF()
 	GET_STRING(s);
-	fsp->b=MKPCHARP_STR(s);
-	fsp->len=s->len;
-	if(fsp->precision != SPRINTF_UNDECIDED && fsp->precision < fsp->len)
-	  fsp->len = (fsp->precision < 0 ? 0 : fsp->precision);
+	fs->fsp->b=MKPCHARP_STR(s);
+	fs->fsp->len=s->len;
+	if(fs->fsp->precision != SPRINTF_UNDECIDED && fs->fsp->precision < fs->fsp->len)
+	  fs->fsp->len = (fs->fsp->precision < 0 ? 0 : fs->fsp->precision);
 	break;
       }
       }
@@ -1227,7 +1226,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 
   for(f=fs->fsp;f>start;f--)
   {
-    if(f->flags & WIDTH_OF_DATA) f->width=f->len;
+    if(f->flags & WIDTH_OF_DATA)
+      f->width=f->len;
 
     if(((f->flags & INVERSE_COLUMN_MODE) && !f->column_width) ||
        (f->flags & COLUMN_MODE))
@@ -1245,11 +1245,15 @@ static void low_pike_sprintf(struct format_stack *fs,
 	tmp++;
       }
       nr++;
-      if(max_len<tmp) max_len=tmp;
-      if(!f->column_width) f->column_width=max_len;
+      if(max_len<tmp)
+	max_len=tmp;
+      if(!f->column_width)
+	f->column_width=max_len;
       f->column_entries=nr;
       columns=f->width/(f->column_width+1);
-      if(f->column_width<1 || columns<1) columns=1;
+      
+      if(f->column_width<1 || columns<1)
+	columns=1;
       f->column_modulo=(nr+columns-1)/columns;
     }
   }
@@ -1263,17 +1267,19 @@ static void low_pike_sprintf(struct format_stack *fs,
       if(! MEMCHR_PCHARP(f->b, '\n', f->len).ptr ) f->flags|=MULTI_LINE;
     }
   }
+  
   for(f=start+1;f<=fs->fsp;)
   {
     for(;f<=fs->fsp && !(f->flags&MULTILINE);f++)
       do_one(fs, r, f);
-    do
-    {
+    
+    do {
       d=0;
       for(e=0;f+e<=fs->fsp && (f[e].flags & MULTILINE);e++)
 	d |= do_one(fs, r, f+e);
-      if(d) string_builder_putchar(r,'\n');
-    }while(d);
+      if(d)
+	string_builder_putchar(r,'\n');
+    } while(d);
 
     for(;f<=fs->fsp && (f->flags&MULTILINE); f++);
   }
@@ -1284,11 +1290,16 @@ static void low_pike_sprintf(struct format_stack *fs,
     if(fs->fsp < fs->format_info_stack)
       fatal("sprintf: fsp out of bounds.\n");
 #endif
-    if(fs->fsp->fi_free_string) free(fs->fsp->fi_free_string);
+    
+    if(fs->fsp->fi_free_string)
+      free(fs->fsp->fi_free_string);
     fs->fsp->fi_free_string=0;
-    if(fs->fsp->to_free_string) free_string(fs->fsp->to_free_string);
+    
+    if(fs->fsp->to_free_string)
+      free_string(fs->fsp->to_free_string);
     fs->fsp->to_free_string=0;
-    --fs->fsp;
+    
+    fs->fsp--;
   }
 }
 
