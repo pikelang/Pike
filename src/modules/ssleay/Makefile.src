@@ -1,9 +1,8 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+PREFLAGS=$(DEFINES) @DEFS@ -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. @CPPFLAGS@
 
-SSLEAY_FLAGS=@SSLEAY_FLAGS@
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(SSLEAY_FLAGS)
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 OBJS=ssleay.o
 
