@@ -241,8 +241,16 @@ void do_export()
 {
   export=0;
   cd("..");
-  Stdio.write_file(export_base_name+".x",
-		   "#!/bin/sh\n"
+  string tmpname=sprintf("PtmP%07x",random(0xfffffff));
+
+  status("Creating","script glue");
+  Stdio.write_file(tmpname+".x",
+		   "#!/bin/sh\n"+
+		   "echo Unpacking...\n"+
+		   "tar xf \"$1\" "+tmpname+".tar.gz\n"+
+		   "gzip -dc "+tmpname+".tar.gz | tar xf -\n"+
+		   "rm -rf "+tmpname+".tar.gz\n"+
+		   "shift\n"+
 		   "( cd "+export_base_name+".dir\n"+
 		   "  build/pike -DNOT_INSTALLED -mbuild/master.pike -Mbuild/lib/modules -Mlib/modules bin/install.pike --interactive \\\n"+
 		   "  TMP_LIBDIR=\"build/lib\"\\\n"+
@@ -250,13 +258,14 @@ void do_export()
 		   "  SRCDIR=\"src\"\\\n"+
 		   "  TMP_BINDIR=\"bin\"\\\n"+
 		   "  TMP_BUILDDIR=\"build\"\\\n"+
-		   "  MANDIR_SRC=\"man\"\n"+
+		   "  MANDIR_SRC=\"man\"\\\n"+
+		   "  \"$@\"\n"+
 		   ")\n"+
-		   "rm -rf '#!' "+export_base_name+".dir "+export_base_name+".x\n"
+		   "rm -rf "+export_base_name+".dir "+tmpname+".x\n"
     );
-  chmod(export_base_name+".x",0755);
-  string script="#!/bin/sh\ntar xf $0\nexec "+export_base_name+".x\n";
-  if(strlen(script) > 100)
+  chmod(tmpname+".x",0755);
+  string script=sprintf("#!/bin/sh\ntar xf \"$0\" %s.x\nexec %s.x \"$0\" \"$@\"\n",tmpname,tmpname,tmpname);
+  if(strlen(script) >= 100)
   {
     werror("Script too long!!\n");
     exit(1);
@@ -266,26 +275,44 @@ void do_export()
   mkdirhier( parts[..sizeof(parts)-2]*"/");
   Stdio.write_file(script,"");
 
-  to_export=({script,export_base_name+".x"})+
-    Array.map(to_export,
+  to_export=Array.map(to_export,
 	      lambda(string s)
 	      {
-		werror("FOO: %O\n",s);
 		return combine_path(export_base_name+".dir",s);
 	      });
 
-  werror("To export_base_name = %O\n",export_base_name);
-  werror("To export = %O\n",to_export);
 
-  Process.create_process( ({ "tar","cvf", export_base_name})+ to_export)
+  status("Creating",tmpname+".tar");
+  
+  Process.create_process(({"tar","cf",tmpname+".tar"})+ to_export)
+    ->wait();
+
+  status("Creating",tmpname+".tar.gz");
+
+  Process.create_process(({"gzip","-9",tmpname+".tar"}))->wait();
+
+  to_export=({script,tmpname+".x",tmpname+".tar.gz"});
+
+  status("Creating",export_base_name);
+
+  Process.create_process( ({ "tar","cf", export_base_name})+ to_export)
     ->wait();
 
   chmod(export_base_name,0755);
+
+  status("Cleaning up","");
 
   Process.create_process( ({ "rm","-rf",
 			       export_base_name+".dir",
 			       export_base_name+".x"
 			       }) ) ->wait();
+
+
+  if(last_len)
+  {
+    status(0,"");
+    status(0,"");
+  }
 
   exit(0);
 }
@@ -329,17 +356,21 @@ int main(int argc, string *argv)
       break;
 
     case "--interactive":
+      write("\n");
+      write("   Welcome to the interactive Pike installation script.\n");
+      write("\n");   
       interactive=Stdio.Readline();
-      prefix=interactive->edit(prefix,"Install prefix: ");
-      vars->pike_name=interactive->edit(
-	vars->pike_name || 
-	combine_path(vars->exec_prefix || combine_path(prefix, "bin"),"pike"), "Pike binary name: ");
+      if(!vars->prefix)
+	prefix=interactive->edit(prefix,"Install prefix: ");
+      
+      if(!vars->pike_name)
+	vars->pike_name=interactive->edit(
+	  combine_path(vars->exec_prefix || combine_path(prefix, "bin"),"pike"), "Pike binary name: ");
       destruct(interactive);
       install_type="--new-style";
 //      trace(2);
       continue;
 
-    default:
     case "--export":
       string ver=replace(replace(version()," ","-"),"-release-",".");
       export_base_name=sprintf("%s-%s",ver,uname()->sysname);
@@ -365,6 +396,7 @@ int main(int argc, string *argv)
       to_export+=({ combine_path(vars->TMP_BINDIR,"install.pike") });
       
     case "":
+    default:
     case "--new-style":
       if(!(lnk=vars->pike_name) || !strlen(lnk)) {
 	lnk=combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),"pike");
