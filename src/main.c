@@ -48,11 +48,13 @@ int t_flag=0;
 int a_flag=0;
 int l_flag=0;
 
-static struct callback_list *post_master_callbacks =0;
+static struct callback *post_master_callbacks =0;
 
-struct callback_list *add_post_master_callback(struct array *a)
+struct callback *add_post_master_callback(callback call,
+					  void *arg,
+					  callback free_func)
 {
-  return add_to_callback_list(&post_master_callbacks, a);
+  return add_to_callback_list(&post_master_callbacks, call, arg, free_func);
 }
 
 
@@ -166,7 +168,8 @@ void main(int argc, char **argv, char **env)
 
   init_modules_efuns();
   master();
-  call_and_free_callback_list(& post_master_callbacks);
+  call_callback(& post_master_callbacks);
+  free_callback(& post_master_callbacks);
   init_modules_programs();
 
   a=allocate_array_no_init(argc-e,0);

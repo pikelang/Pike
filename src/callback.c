@@ -6,108 +6,95 @@
 #include "macros.h"
 #include "callback.h"
 
-struct callback_list
+struct callback
 {
-  struct callback_list *next;
-  struct callback call;
+  struct callback *next;
+  callback_func call;
+  callback_func free_func;
+  void *arg;
 };
 
 struct callback *first_callback =0;
+struct callback *free_callbacks =0;
 
-void unlink_callback(struct callback *c)
+#define CALLBACK_CHUNK 128
+
+struct callback_block {
+  struct callback_block *next;
+  struct callback callbacks[CALLBACK_CHUNK];
+};
+
+static struct callback *get_free_callback()
 {
-  if(c->next) c->next->prev=c->prev;
-  if(c->prev) c->prev->next=c->next;
+  struct callback *tmp;
+  if(!(tmp=free_callbacks))
+  {
+    int e;
+    struct callback_block *tmp2;
+    tmp1=ALLOC_STRUCT(callback_block);
+
+    for(e=0;e<sizeof(CALLBACK_CHUNK);e++)
+    {
+      tmp1->callbacks[e].next=tmp;
+      tmp=tmp1->callbacks+e;
+    }
+  }
+  free_callbacks=tmp->next;
+  return tmp;
 }
 
-void link_callback(struct callback *c)
+void call_callback(struct callback **ptr)
 {
-  if(first_callback) first_callback->prev=c;
-  first_callback=c;
-  c->next=first_callback;
-  c->prev=0;
-}
-
-void do_callback(struct callback *c)
-{
-  c->args->refs++;
-  push_array_items(c->args);
-  f_call_function(c->args->size);
-}
-
-void unlink_and_call_callback(struct callback *c)
-{
-  int size;
-  size=c->args->size;
-  push_array_items(c->args);
-  c->args=0;
-  f_call_function(size);
-  unlink_callback(c);
-}
-
-/*** ***/
-
-void call_callback_list(struct callback_list **ptr)
-{
-  struct callback_list *l;
+  struct callback *l;
   while(l=*ptr)
   {
-    if(l->call.args)
+    if(l->call) l->call(l,l->arg);
+
+    if(!l->call)
     {
-      do_callback(& l->call);
-      ptr=& l->next;
-    }else{
-      unlink_callback(& l->call);
       *ptr=l->next;
       free((char *)l);
+    }else{
+      ptr=& l->next;
+      l->next=free_callbacks;
+      free_callbacks=l;
     }
   }
 }
 
-/* NOTICE, eats one reference off array! */
-struct callback_list *add_to_callback_list(struct callback_list **ptr, struct array *a)
+struct callback *add_to_callback(struct callback **ptr,
+					   callback call,
+					   void *arg,
+					   callback free_func)
 {
-  struct callback_list *l;
-  l=ALLOC_STRUCT(callback_list);
-  link_callback(& l->call);
-  l->call.args=a;
+  struct callback *l;
+  l=get_free_callback();
+  l->call=call;
+  l->arg=arg;
+
   l->next=*ptr;
   *ptr=l;
+
   return l;
 }
 
-void remove_callback(struct callback_list *l)
+/* It is not actually freed until next time this callback is called
+ */
+void *remove_callback(struct callback *l)
 {
-  free_array(l->call.args);
-  l->call.args=0;
+  l->call=0;
+  return l->arg;
 }
 
-void free_callback_list(struct callback_list **ptr)
+void free_callback(struct callback **ptr)
 {
-  struct callback_list *l;
+  struct callback *l;
   while(l=*ptr)
   {
-    if(l->call.args)
-      free_array(l->call.args);
-      
-    unlink_callback(& l->call);
+    if(l->call.arg && l->call.free_func)
+      l->call.free_func(l, l->call.arg);
     *ptr=l->next;
-    free((char *)l);
+    l->next=free_callbacks;
+    free_callbacks=l;
   }
 }
-
-void call_and_free_callback_list(struct callback_list **ptr)
-{
-  struct callback_list *l;
-  while(l=*ptr)
-  {
-    if(l->call.args)
-      unlink_and_call_callback(& l->call);
-    else
-      unlink_callback(& l->call);
-      
-    *ptr=l->next;
-    free((char *)l);
-  }
-}
-

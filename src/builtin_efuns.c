@@ -657,12 +657,13 @@ void f_throw(INT32 args)
   throw();
 }
 
-static struct callback_list *exit_callbacks=0;
+static struct callback *exit_callbacks=0;
 
-struct callback_list *add_exit_callback(struct array *a)
+struct callback *add_exit_callback(callback call,
+				   void *arg,
+				   callback free_func)
 {
-  return add_to_callback_list(&exit_callbacks, a);
-
+  return add_to_callback(&exit_callbacks, call, arg, free_func);
 }
 
 void f_exit(INT32 args)
@@ -674,7 +675,8 @@ void f_exit(INT32 args)
   if(sp[-args].type != T_INT)
     error("Bad argument 1 to exit.\n");
 
-  call_and_free_callback_list(& exit_callbacks);
+  call_callback(&exit_callbacks);
+  free_callback(&exit_callbacks);
 
   i=sp[-args].u.integer;
 #ifdef DEBUG
