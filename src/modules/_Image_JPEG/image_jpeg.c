@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.50 2002/10/03 14:02:09 norrby Exp $
+ * $Id: image_jpeg.c,v 1.51 2002/10/03 14:56:08 nilsson Exp $
  */
 
 #include "global.h"
@@ -38,9 +38,9 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.50 2002/10/03 14:02:09 norrby Exp $");
+RCSID("$Id: image_jpeg.c,v 1.51 2002/10/03 14:56:08 nilsson Exp $");
 
-/* jpeglib defines EXTERN For some reason.
+/* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
  * In that case redefined below, since transupp.h needs it.
  */
@@ -117,14 +117,15 @@ static int reverse_quality[101]=
 
 #ifdef HAVE_JPEGLIB_H
 
-/*
-**! module Image
-**! submodule JPEG
-**!
-**! note
-**!	This module uses <tt>libjpeg</tt>, a software from
-**!	Independent JPEG Group.
-*/
+/*! @module Image
+ */
+
+/*! @module JPEG
+ *!
+ *! @note
+ *!	This module uses @tt{libjpeg@}, a software from
+ *!	Independent JPEG Group.
+ */
 
 static void my_output_message(struct jpeg_common_struct *cinfo)
 {
@@ -552,59 +553,60 @@ static void init_src(struct pike_string *raw_img,
    jpeg_read_header(&mds->cinfo,TRUE);
 }
 
-/*
-**! method string encode(object image)
-**! method string encode(string|object image, mapping options)
-**! 	Encodes a JPEG image. 
-**!
-**!     The <tt>options</tt> argument may be a mapping
-**!	containing zero or more encoding options:
-**!
-**!	<pre>
-**!	normal options:
-**!	    "quality":0..100
-**!		Set quality of result. Default is 75.
-**!	    "optimize":0|1
-**!		Optimize Huffman table. Default is on (1) for
-**!		images smaller than 50kpixels.
-**!	    "progressive":0|1
-**!		Make a progressive JPEG. Default is off.
-**!	    "grayscale":0|1
-**!             Make a grayscale JPEG instead of color (YCbCr).
-**!
-**!	advanced options:
-**!	    "smooth":1..100
-**!		Smooth input. Value is strength.
-**!	    "method":JPEG.IFAST|JPEG.ISLOW|JPEG.FLOAT|JPEG.DEFAULT|JPEG.FASTEST
-**!		DCT method to use.
-**!		DEFAULT and FASTEST is from the jpeg library,
-**!		probably ISLOW and IFAST respective.
-**!
-**!	    "density_unit":int
-**!	    "x_density":int
-**!	    "y_density":int
-**!		density of image; unit is 1:dpi 2:dpcm 0:no units
-**!	    "comment":8 bit string
-**!		Write a comment to the JPEG image
-**!
-**!	wizard options:
-**!	    "baseline":0|1
-**!		Force baseline output. Useful for quality&lt;25.
-**!		Default is off for quality&lt;25.
-**!	    "quant_tables":mapping(int,array(array(int)))
-**!		Tune quantisation tables manually.
-**!	    "marker":mapping(int:string)
-**!		Application and comment markers;
-**!		the integer should be one of JPEG.Marker.COM, APP0, 
-**!		APP1, ..., APP15. The string is up to the application;
-**!		most notable are Adobe and Photoshop markers.
-**!	</pre>
-**!
-**! note
-**!	Please read some about JPEG files. A quality 
-**!	setting of 100 does not mean the result is 
-**!	lossless.
-*/
+/*! @decl string encode(object image)
+ *! @decl string encode(string|object image, mapping options)
+ *! Encodes an @[image] object with JPEG compression. The
+ *! @[options] argument may be a mapping containing zero or more
+ *! encoding options:
+ *!
+ *! @mapping
+ *!   @member int(0..100) "quality"
+ *!     Set quality of result. Default is 75.
+ *!   @member int(0..1) "optimize"
+ *!     Optimize Huffman table. Default is on (1) for
+ *!     images smaller than 50kpixels.
+ *!   @member int(0..1) "progressive"
+ *!     Make a progressive JPEG. Default is off (0).
+ *!   @member int(0..1) "grayscale"
+ *!     Make a grayscale JPEG instead of color (YCbCr).
+ *!   @member int(1..100) "smooth"
+ *!     Smooth input. Value is strength.
+ *!   @member int "method"
+ *!     DCT method to use. Any of
+ *!     @[IFAST], @[ISLOW], @[FLOAT], @[DEFAULT] or @[FASTEST].
+ *!     @[DEFAULT] and @[FASTEST] is from the jpeg library,
+ *!     probably @[ISLOW] and @[IFAST] respective.
+ *!   @member int(0..2) "density_unit"
+ *!     The unit used for x_density and y_density.
+ *!     @int
+ *!       @value 0
+ *!         No unit
+ *!       @value 1
+ *!         dpi
+ *!       @value 2
+ *!         dpcm
+ *!     @endint
+ *!   @member int "x_density"
+ *!   @member int "y_density"
+ *!     Density of image.
+ *!   @member string "comment"
+ *!     Comment to be written in the JPEG file. Must not be a wide string.
+ *!   @member int(0..1) "baseline"
+ *!     Force baseline output. Useful for quality<25.
+ *!     Default is off for quality<25.
+ *!   @member mapping(int:array(array(int))) "quant_tables"
+ *!     Tune quantisation tables manually.
+ *!   @member mapping(int:string) "marker"
+ *!     Application and comment markers;
+ *!     the integer should be one of @[Marker.COM], @[Marker.APP0],
+ *!     @[Marker.APP1], ..., @[Marker.APP15]. The string is up to the application;
+ *!     most notable are Adobe and Photoshop markers.
+ *! @endmapping
+ *!
+ *! @note
+ *!   Please read some about JPEG files. A quality
+ *!   setting of 100 does not mean the result is lossless.
+ */
 
 static void image_jpeg_encode(INT32 args)
 {
@@ -809,80 +811,74 @@ static void image_jpeg_encode(INT32 args)
    jpeg_destroy_compress(&cinfo);
 }
 
-/*
-**! method object decode(string data)
-**! method object decode(string data, mapping options)
-**! method mapping _decode(string data)
-**! method mapping _decode(string data, mapping options)
-**! method mapping decode_header(string data)
-**! 	Decodes a JPEG image. The simple <ref>decode</ref> function
-**!	simply gives the image object, the other functions gives
-**!	a mapping of information (see below)
-**!
-**!     The <tt>options</tt> argument may be a mapping
-**!	containing zero or more encoding options:
-**!
-**!	<pre>
-**!	advanced options:
-**!	    "block_smoothing":0|1
-**!		Do interblock smoothing. Default is on (1).
-**!	    "fancy_upsampling":0|1
-**!		Do fancy upsampling of chroma components. 
-**!		Default is on (1).
-**!	    "method":JPEG.IFAST|JPEG.ISLOW|JPEG.FLOAT|JPEG.DEFAULT|JPEG.FASTEST
-**!		DCT method to use.
-**!		DEFAULT and FASTEST is from the jpeg library,
-**!		probably ISLOW and IFAST respective.
-**!	    "comment":8 bit string
-**!		The comment marker from the JPEG.
-**!
-**!	wizard options:
-**!	    "scale_num":1..
-**!	    "scale_denom":1..
-**!	        Rescale the image when read from JPEG data.
-**!		My (Mirar) version (6a) of jpeglib can only handle
-**!		1/1, 1/2, 1/4 and 1/8. 
-**!	    "marker":mapping(int:string)
-**!		Application and comment markers;
-**!		the integer should be one of JPEG.Marker.COM, APP0, 
-**!		APP1, ..., APP15. The string is up to the application;
-**!		most notable are Adobe and Photoshop markers.
-**!
-**!	</pre>
-**!
-**!	<ref>_decode</ref> and <ref>decode_header</ref> gives
-**!	a mapping as result, with this content:
-**!
-**!	<pre>
-**!	    "xsize":int
-**!	    "ysize":int
-**!		size of image
-**!	    "xdpi":float
-**!	    "ydpi":float
-**!		image dpi, if known
-**!	    "type":"image/jpeg"
-**!		file type information as MIME type
-**!
-**!	JPEG specific:
-**!	    "num_compontents":int
-**!		number of channels in JPEG image
-**!	    "color_space":"GRAYSCALE"|"RGB"|"YUV"|"CMYK"|"YCCK"|"UNKNOWN"
-**!		color space of JPEG image
-**!	    "density_unit":int
-**!	    "x_density":int
-**!	    "y_density":int
-**!		density of image; unit is 1:dpi 2:dpcm 0:no units
-**!	    "adobe_marker":0|1
-**!		if the file has an adobe marker
-**!         "quant_tables":mapping(int:array(array(int)))
-**!             JPEG quant tables
-**!         "quality":int
-**!             JPEG quality guess (0-100)
-**!	</pre>
-**!
-**! note
-**!	Please read some about JPEG files. 
-*/
+/*! @decl object decode(string data)
+ *! @decl object decode(string data, mapping options)
+ *! @decl mapping _decode(string data)
+ *! @decl mapping _decode(string data, mapping options)
+ *! @decl mapping decode_header(string data)
+ *! Decodes a JPEG image. The simple @[decode] function
+ *! simply gives the image object, the other functions gives
+ *! a mapping of information (see below).
+ *!
+ *! The @[options] argument may be a mapping
+ *! containing zero or more decoding options:
+ *!
+ *! @mapping
+ *!   @member int(0..1) "block_smoothing"
+ *!     Do interblock smoothing. Default is on (1).
+ *!   @member int(0..1) "fancy_upsampling"
+ *!     Do fancy upsampling of chroma components.
+ *!     Default is on (1).
+ *!   @member int "method"
+ *!     DCT method to use. Any of
+ *!     @[IFAST], @[ISLOW], @[FLOAT], @[DEFAULT] or @[FASTEST].
+ *!     @[DEFAULT] and @[FASTEST] is from the jpeg library,
+ *!     probably @[ISLOW] and @[IFAST] respective.
+ *!   @member int(1..) "scale_num"
+ *!   @member int(1..) "scale_denom"
+ *!     Rescale the image when read from JPEG data.
+ *!     My (Mirar) version (6a) of jpeglib can only handle
+ *!     1/1, 1/2, 1/4 and 1/8.
+ *! @endmapping
+ *!
+ *! @[_decode] and @[decode_header] gives
+ *! a mapping as result, with this content:
+ *!
+ *! @mapping
+ *!   @member int "xsize"
+ *!   @member int "ysize"
+ *!     Size of image
+ *!   @member float "xdpi"
+ *!   @member float "ydpi"
+ *!     Image dpi, if known.
+ *!   @member string "type"
+ *!     File type information as MIME type. Always "image/jpeg".
+ *!   @member int "num_compontents"
+ *!     Number of channels in JPEG image.
+ *!   @member string "color_space"
+ *!     Color space of JPEG image. Any of "GRAYSCALE", "RGB", "YUV",
+ *!     "CMYK", "YCCK" or "UNKNOWN".
+ *!   @member int(0..2) "density_unit"
+ *!     The unit used for x_density and y_density.
+ *!     @int
+ *!       @value 0
+ *!         No unit
+ *!       @value 1
+ *!         dpi
+ *!       @value 2
+ *!         dpcm
+ *!     @endint
+ *!   @member int "x_density"
+ *!   @member int "y_density"
+ *!     Density of image.
+ *!   @member int(0..1) "adobe_marker"
+ *!     If the file has an Adobe marker.
+ *!   @member mapping(int:array(array(int))) "quant_tables"
+ *!     JPEG quant tables.
+ *!   @member int(0..100) "quality"
+ *!     JPEG quality guess.
+ *! @endmapping
+ */
 
 enum { IMG_DECODE_MUCH,IMG_DECODE_IMAGE,IMG_DECODE_HEADER };
 
@@ -1192,6 +1188,10 @@ void image_jpeg__decode(INT32 args)
    img_jpeg_decode(args,IMG_DECODE_MUCH);
 }
 
+/*! @decl mapping(int:array(array(int))) quant_tables(int|void a)
+ *! @fixme
+ *!   Document this function
+ */
 void image_jpeg_quant_tables(INT32 args)
 {
    struct jpeg_error_mgr errmgr;
@@ -1248,6 +1248,90 @@ void image_jpeg_quant_tables(INT32 args)
 }
 
 #endif /* HAVE_JPEGLIB_H */
+
+/*! @decl constant IFAST
+ */
+
+/*! @decl constant FLOAT
+ */
+
+/*! @decl constant DEFAULT
+ */
+
+/*! @decl constant ISLOW
+ */
+
+/*! @decl constant FASTEST
+ */
+
+/*! @class Marker
+ */
+
+/*! @decl constant EOI
+ */
+
+/*! @decl constant RST0
+ */
+
+/*! @decl constant COM
+ */
+
+/*! @decl constant APP0
+ */
+
+/*! @decl constant APP1
+ */
+
+/*! @decl constant APP2
+ */
+
+/*! @decl constant APP3
+ */
+
+/*! @decl constant APP4
+ */
+
+/*! @decl constant APP5
+ */
+
+/*! @decl constant APP6
+ */
+
+/*! @decl constant APP7
+ */
+
+/*! @decl constant APP8
+ */
+
+/*! @decl constant APP9
+ */
+
+/*! @decl constant APP10
+ */
+
+/*! @decl constant APP11
+ */
+
+/*! @decl constant APP12
+ */
+
+/*! @decl constant APP13
+ */
+
+/*! @decl constant APP14
+ */
+
+/*! @decl constant APP15
+ */
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
+
+/*! @endmodule
+ */
 
 /*** module init & exit & stuff *****************************************/
 
