@@ -1,6 +1,6 @@
 // -*- c-mode -*-
 //
-// $Id: treeopt.in,v 1.9 1999/11/09 19:43:04 grubba Exp $
+// $Id: treeopt.in,v 1.10 1999/11/10 00:33:17 grubba Exp $
 //
 // The tree optimizer
 //
@@ -19,6 +19,9 @@
 ;
 
 F_CAST(-,*):
+  -;
+
+F_CAST[$$->type == void_type_string](-, *):
   -;
 
 F_CAST[$$->type == void_type_string](F_CONSTANT, *):
@@ -238,6 +241,9 @@ F_LAND(0 = +[node_is_false($$)], *):
 '?'(+[node_is_false($$)], ':'(*, 0)):
   $0;
 
+'?'(0, ':'(1, $1)):
+  F_COMMA_EXPR($0, $1);
+
 
 F_NOT(-, *):
   1;
@@ -384,11 +390,6 @@ F_FOR(F_POST_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
 			    2[!($$->tree_info & OPT_CONTINUE)])):
   F_DEC_NEQ_LOOP(F_VAL_LVAL(-1, $0), F_COMMA_EXPR($1, $2));
 
-F_FOR(0, ':'(*, -)):
-{
-}
-;
-
 F_FOR(0, ':'(1, F_CAST[$$->type == void_type_string](2, *))):
   F_FOR($0, ':'($1, $2));
 
@@ -529,22 +530,6 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
   }
  next_for_opt:
   ;
-}
-;
-
-// NULL protection of F_FOR
-
-F_FOR(*, ':'(*, -)):
-{
-  /* Protect the rest from the NULL */
-  break;
-}
-;
-
-F_FOR(*, -):
-{
-  /* Protect the rest from the NULL */
-  break;
 }
 ;
 
