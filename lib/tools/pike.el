@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.30 2001/05/16 23:49:42 mast Exp $
+;;; $Id: pike.el,v 1.31 2001/05/17 05:16:08 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -38,7 +38,10 @@
 (defvar pike-font-lock-refdoc-init-face 'pike-font-lock-refdoc-init-face)
 (defvar pike-font-lock-refdoc-init2-face 'pike-font-lock-refdoc-init2-face)
 (defvar pike-font-lock-refdoc-keyword-face 'pike-font-lock-refdoc-keyword-face)
-(defvar pike-font-lock-refdoc-error-face 'pike-font-lock-refdoc-error-face)
+(defvar pike-font-lock-refdoc-error-face
+  (if (facep 'font-lock-warning-face)
+      'font-lock-warning-face		; Use the standard warning face in Emacs 20.
+    'pike-font-lock-refdoc-error-face))
 
 (defgroup pike-faces nil
   "Extra faces used by the Pike color highlighting mode."
@@ -64,13 +67,14 @@ It's overlaid over the `font-lock-comment-face'."
   "Face to use for markup keywords Pike documentation comments.
 It's overlaid over the `font-lock-builtin-face'."
   :group 'pike-faces)
-(defface pike-font-lock-refdoc-error-face
-  '((((class color) (background light)) (:foreground "red"))
-    (((class color)) (:foreground "hotpink"))
-    (((background light)) (:foreground "white" :background "black"))
-    (t (:foreground "black" :background "white")))
-  "Face to use for invalid markup in Pike documentation comments."
-  :group 'pike-faces)
+(unless (facep 'font-lock-warning-face)
+  (defface pike-font-lock-refdoc-error-face
+    '((((class color) (background light)) (:foreground "red"))
+      (((class color)) (:foreground "hotpink"))
+      (((background light)) (:foreground "white" :background "black"))
+      (t (:foreground "black" :background "white")))
+    "Face to use for invalid markup in Pike documentation comments."
+    :group 'pike-faces))
 
 (defconst pike-font-lock-type-regexp
   (concat "\\<\\("
@@ -501,6 +505,10 @@ reposition the cursor to fontify more identifiers."
   ;; This part matches a block with no line oriented keywords.
   ;; (Negations become messy easily, especially while ensuring
   ;; that no bad backtracking occurs...)
+  ;;
+  ;; Note: This regexp used to handle continued lines beginning with a
+  ;; line keyword correctly (i.e. marking it as an error), but the
+  ;; regexp engine in Emacs 20 has become too brittle, poor thing..
   (concat "\\(//\\)\\([.!|]\\)"		; 1 2
 	  "\\("				; 10
 	  "\\s *"
@@ -512,26 +520,24 @@ reposition the cursor to fontify more identifiers."
 				  "[A-Za-z_]+[^A-Za-z_ \t\n\r]"
 				  "\\)")
 			  "\\)"
-			  "\\([^@\n\r]\\|@.\\)*") ; 14
+			  "[^\n\r]*")
 		  "\\)?")
-	  (concat "\\("			; 15
-		  "@[\n\r]\\s *//[.!|]\\([^@\n\r]\\|@.\\)*" ; 16
-		  "\\|"
+	  (concat "\\("			; 14
 		  "[\n\r]\\s *//[.!|]"
 		  "\\s *"
-		  (concat "\\("		; 17
-			  (concat "\\("	; 18
+		  (concat "\\("		; 15
+			  (concat "\\("	; 16
 				  "[^@ \t\n\r]\\|"
-				  (concat "@\\(" ; 19
+				  (concat "@\\(" ; 17
 					  "[^A-Za-z_\n\r]\\|"
 					  "[A-Za-z_]+[^A-Za-z_ \t\n\r]"
 					  "\\)")
 				  "\\)"
-				  "\\([^@\n\r]\\|@.\\)*") ; 20
+				  "[^\n\r]*")
 			  "\\)?")
 		  "\\)*")
 	  "@?\\)"
-	  "\\([\n\r]\\|\\'\\)"))	; 21
+	  "\\([\n\r]\\|\\'\\)"))	; 18
 
 (defun pike-font-lock-find-autodoc (limit)
   (catch 'found
