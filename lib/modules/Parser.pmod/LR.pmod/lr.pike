@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.1 2002/05/09 17:51:04 nilsson Exp $
+ * $Id: lr.pike,v 1.2 2002/05/10 23:31:24 nilsson Exp $
  *
  * An LR(1) Parser in Pike
  *
@@ -10,9 +10,9 @@
 
 #pike __REAL_VERSION__
 
-import LR;
+import Parser.LR;
 
-object(parser) g;
+Parser g;
 
 /*
  * Test actions
@@ -147,11 +147,11 @@ void create()
   
 #if 0
   foreach (g_init, array(string|int) i) {
-    g->add_rule(rule(i[0], i[1..], a_init));
+    g->add_rule(Rule(i[0], i[1..], a_init));
   }
 #else
   foreach (indices(g_init), int i) {
-    g->add_rule(rule(g_init[i][0], g_init[i][1..], action_init[i]));
+    g->add_rule(Rule(g_init[i][0], g_init[i][1..], action_init[i]));
   }
 #endif
 }
@@ -190,7 +190,7 @@ int main(int argc, array(string) argv)
   werror("Grammar:\n\n" + (string) g);
 
 #if efun(_memory_usage)
-  werror(sprintf("Memory usage:\n%O\n", _memory_usage()));
+  werror("Memory usage:\n%O\n", _memory_usage());
 #endif
 
   werror("Compiling...\n");
@@ -202,10 +202,10 @@ int main(int argc, array(string) argv)
   werror("Compilation finished!\n");
 
 #if efun(_memory_usage)
-  werror(sprintf("Memory usage:\n%O\n", _memory_usage()));
+  werror("Memory usage:\n%O\n", _memory_usage());
 #endif
 
   result = g->parse(scanner->scan);
 
-  werror(sprintf("Result of parsing: \"%s\"\n", result + ""));
+  werror("Result of parsing: \"%s\"\n", result + "");
 }
