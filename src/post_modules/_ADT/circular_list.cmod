@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: circular_list.cmod,v 1.13 2003/09/10 15:19:09 mast Exp $
+|| $Id: circular_list.cmod,v 1.14 2003/11/29 15:39:51 grubba Exp $
 */
 
 #include "global.h"
@@ -982,9 +982,9 @@ PIKECLASS CircularList
 
     PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(CircularListIterator_program);
-      struct CircularListIterator_struct *new;
-      new = OBJ2_CIRCULARLISTITERATOR(o);
+      struct object *o=low_clone(CircularList_CircularListIterator_program);
+      struct CircularList_CircularListIterator_struct *new;
+      new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
       new->pos+=steps;
@@ -1035,9 +1035,9 @@ PIKECLASS CircularList
 
     PIKEFUN object `-(int steps)
     {
-      struct object *o=low_clone(CircularListIterator_program);
-      struct CircularListIterator_struct *new;
-      new = OBJ2_CIRCULARLISTITERATOR(o);
+      struct object *o=low_clone(CircularList_CircularListIterator_program);
+      struct CircularList_CircularListIterator_struct *new;
+      new = OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
       new->pos-=steps;
@@ -1124,10 +1124,10 @@ PIKECLASS CircularList
     PIKEFUN int(0..1) _equal(mixed iter)
     {
       if (iter->type == T_OBJECT && 
-	  iter->u.object->prog == CircularListIterator_program)
+	  iter->u.object->prog == CircularList_CircularListIterator_program)
       {
-	struct CircularListIterator_struct *i = 
-	  OBJ2_CIRCULARLISTITERATOR(iter->u.object);
+	struct CircularList_CircularListIterator_struct *i = 
+	  OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter->u.object);
 	RETURN (THIS->list == i->list && THIS->pos == i->pos);
       }
       else
@@ -1148,10 +1148,10 @@ PIKECLASS CircularList
     PIKEFUN int(0..1) `<(mixed iter)
     {
       if (iter->type == T_OBJECT &&
-	  iter->u.object->prog == CircularListIterator_program)
+	  iter->u.object->prog == CircularList_CircularListIterator_program)
       {
-	struct CircularListIterator_struct *i = 
-	  OBJ2_CIRCULARLISTITERATOR(iter->u.object);
+	struct CircularList_CircularListIterator_struct *i = 
+	  OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter->u.object);
 	RETURN (THIS->pos < i->pos);
       }
       else
@@ -1173,10 +1173,10 @@ PIKECLASS CircularList
     PIKEFUN int(0..1) `>(mixed iter)
     {
       if (iter->type == T_OBJECT &&
-	  iter->u.object->prog == CircularListIterator_program)
+	  iter->u.object->prog == CircularList_CircularListIterator_program)
       {
-	struct CircularListIterator_struct *i = 
-	  OBJ2_CIRCULARLISTITERATOR(iter->u.object);
+	struct CircularList_CircularListIterator_struct *i = 
+	  OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter->u.object);
 	RETURN (THIS->pos > i->pos);
       }
       else
@@ -1197,11 +1197,11 @@ PIKECLASS CircularList
 
     PIKEFUN int distance(object iter)
     {
-      if (iter->prog == CircularListIterator_program)
+      if (iter->prog == CircularList_CircularListIterator_program)
       {
 	
-	struct CircularListIterator_struct *i = 
-	  OBJ2_CIRCULARLISTITERATOR(iter);
+	struct CircularList_CircularListIterator_struct *i = 
+	  OBJ2_CIRCULARLIST_CIRCULARLISTITERATOR(iter);
 	RETURN (i->pos - THIS->pos);
       }
       else
@@ -1286,7 +1286,8 @@ PIKECLASS CircularList
     {
       push_svalue(ind);
     }
-    push_object(clone_object(CircularListIterator_program, args+1));
+    push_object(clone_object(CircularList_CircularListIterator_program,
+			     args+1));
   }
 
   
@@ -1294,7 +1295,7 @@ PIKECLASS CircularList
   PIKEFUN object first()
   {
     ref_push_object(Pike_fp->current_object);
-    push_object(clone_object(CircularListIterator_program, 1));
+    push_object(clone_object(CircularList_CircularListIterator_program, 1));
   }
 
 
@@ -1306,7 +1307,7 @@ PIKECLASS CircularList
     ind.type=T_INT;
     ref_push_object(Pike_fp->current_object);
     push_svalue(&ind);
-    push_object(clone_object(CircularListIterator_program, 2));
+    push_object(clone_object(CircularList_CircularListIterator_program, 2));
   }
 
   

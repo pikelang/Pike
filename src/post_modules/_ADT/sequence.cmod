@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sequence.cmod,v 1.12 2003/09/10 15:19:09 mast Exp $
+|| $Id: sequence.cmod,v 1.13 2003/11/29 15:39:51 grubba Exp $
 */
 
 #include "global.h"
@@ -652,9 +652,9 @@ PIKECLASS Sequence
 
     PIKEFUN object `+(int steps)
     {
-      struct object *o=low_clone(SequenceIterator_program);
-      struct SequenceIterator_struct *new;
-      new = OBJ2_SEQUENCEITERATOR(o);
+      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct Sequence_SequenceIterator_struct *new;
+      new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
       new->pos+=steps;
@@ -704,9 +704,9 @@ PIKECLASS Sequence
 
     PIKEFUN object `-(int steps)
     {
-      struct object *o=low_clone(SequenceIterator_program);
-      struct SequenceIterator_struct *new;
-      new = OBJ2_SEQUENCEITERATOR(o);
+      struct object *o=low_clone(Sequence_SequenceIterator_program);
+      struct Sequence_SequenceIterator_struct *new;
+      new = OBJ2_SEQUENCE_SEQUENCEITERATOR(o);
       new[0]=*THIS;
       add_ref(THIS->obj);
       new->pos-=steps;
@@ -793,11 +793,11 @@ PIKECLASS Sequence
     PIKEFUN int(0..1) _equal(mixed iter)
     {
       if (iter->type == T_OBJECT && 
-	  iter->u.object->prog == SequenceIterator_program)
+	  iter->u.object->prog == Sequence_SequenceIterator_program)
       {
 	//to do: Check so that it is an SequenceIterator
-	struct SequenceIterator_struct *i = 
-	  OBJ2_SEQUENCEITERATOR(iter->u.object);
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter->u.object);
 	RETURN (THIS->sequence == i->sequence && THIS->pos == i->pos);
       }
       else
@@ -818,11 +818,11 @@ PIKECLASS Sequence
     PIKEFUN int(0..1) `<(mixed iter)
     {
       if (iter->type == T_OBJECT &&
-	  iter->u.object->prog == SequenceIterator_program)
+	  iter->u.object->prog == Sequence_SequenceIterator_program)
       {
 	//to do: Check so that it is an SequenceIterator
-	struct SequenceIterator_struct *i = 
-	  OBJ2_SEQUENCEITERATOR(iter->u.object);
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter->u.object);
 	RETURN (THIS->pos < i->pos);
       }
       else
@@ -844,11 +844,11 @@ PIKECLASS Sequence
     PIKEFUN int(0..1) `>(mixed iter)
     {
       if (iter->type == T_OBJECT &&
-	  iter->u.object->prog == SequenceIterator_program)
+	  iter->u.object->prog == Sequence_SequenceIterator_program)
       {
 	//to do: Check so that it is an SequenceIterator
-	struct SequenceIterator_struct *i = 
-	  OBJ2_SEQUENCEITERATOR(iter->u.object);
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter->u.object);
 	RETURN (THIS->pos > i->pos);
       }
       else
@@ -870,11 +870,11 @@ PIKECLASS Sequence
 
     PIKEFUN int distance(object iter)
     {
-      if (iter->prog == SequenceIterator_program)
+      if (iter->prog == Sequence_SequenceIterator_program)
       {
 	
-	struct SequenceIterator_struct *i = 
-	  OBJ2_SEQUENCEITERATOR(iter);
+	struct Sequence_SequenceIterator_struct *i = 
+	  OBJ2_SEQUENCE_SEQUENCEITERATOR(iter);
 	RETURN (i->pos - THIS->pos);
       }
       else
@@ -959,7 +959,7 @@ PIKECLASS Sequence
     {
       push_svalue(ind);
     }
-    push_object(clone_object(SequenceIterator_program, args+1));
+    push_object(clone_object(Sequence_SequenceIterator_program, args+1));
   }
 
   
@@ -967,7 +967,7 @@ PIKECLASS Sequence
   PIKEFUN object first()
   {
     ref_push_object(Pike_fp->current_object);
-    push_object(clone_object(SequenceIterator_program, 1));
+    push_object(clone_object(Sequence_SequenceIterator_program, 1));
   }
 
 
@@ -979,7 +979,7 @@ PIKECLASS Sequence
     ind.type=T_INT;
     ref_push_object(Pike_fp->current_object);
     push_svalue(&ind);
-    push_object(clone_object(SequenceIterator_program, 2));
+    push_object(clone_object(Sequence_SequenceIterator_program, 2));
   }
 
   
