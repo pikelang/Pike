@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.26 1999/06/19 19:59:39 hubbe Exp $
+ * $Id: fdlib.h,v 1.27 1999/06/22 18:58:37 marcus Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -16,7 +16,7 @@
 #endif
 
 #ifdef HAVE_FCNTL_H
-#include <errno.h>
+#include <fcntl.h>
 #endif
 
 #ifdef HAVE_SYS_STAT_H
