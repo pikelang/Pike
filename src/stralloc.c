@@ -26,7 +26,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.112 2000/12/05 21:08:22 per Exp $");
+RCSID("$Id: stralloc.c,v 1.113 2000/12/18 23:59:10 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1706,7 +1706,7 @@ void cleanup_shared_string_table(void)
   free_all_short_pike_string0_blocks();
   free_all_short_pike_string1_blocks();
   free_all_short_pike_string2_blocks();
-#endif DEBUG_MALLOC
+#endif /* DEBUG_MALLOC */
 }
 
 void count_memory_in_strings(INT32 *num, INT32 *size)
