@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.286 2002/06/07 02:16:42 mast Exp $");
+RCSID("$Id: language.yacc,v 1.287 2002/06/10 20:49:50 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3358,8 +3358,6 @@ low_idents: TOK_IDENTIFIER
     if(($$=lexical_islocal(Pike_compiler->last_identifier)))
     {
       /* done, nothing to do here */
-    }else if((i=isidentifier(Pike_compiler->last_identifier))>=0){
-      $$=mkidentifiernode(i);
     }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1)) &&
 	     !($$ = program_magic_identifier (Pike_compiler, 0, 0,
 					      Pike_compiler->last_identifier, 0))) {
