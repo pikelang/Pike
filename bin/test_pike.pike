@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.75 2002/11/14 15:28:58 marcus Exp $ */
+/* $Id: test_pike.pike,v 1.76 2002/11/26 18:48:35 nilsson Exp $ */
 
 import Stdio;
 
@@ -348,6 +348,8 @@ int main(int argc, array(string) argv)
     }
 
   add_constant("_verbose", verbose);
+  if(verbose)
+    werror("Begin tests at "+ctime(time()));
 
 #ifdef WATCHDOG
   int watchdog_time=time();
@@ -379,6 +381,13 @@ int main(int argc, array(string) argv)
     werror("No tests found. Use --help for more information.\n");
     exit(1);
   }
+
+#if 1
+  // Store the name of all constants so that we can see
+  // if any constant has been leaked from the testsuite.
+  spider;
+  array const_names = indices(all_constants());
+#endif
 
 #if constant(_assembler_debug)
   if(asmdebug)
@@ -648,7 +657,7 @@ int main(int argc, array(string) argv)
 
 	  at = gauge {
 	    err=catch {
-	      clone(compile_string(to_compile, testsuite))->a();
+	      a = compile_string(to_compile, testsuite)()->a();
 	    };
 	  };
 	  if(err)
@@ -661,6 +670,7 @@ int main(int argc, array(string) argv)
 	  else {
 	    _dmalloc_set_name();
 	    werror(pad_on_error + fname + " failed (expected eval error).\n");
+	    werror("Got %O\n", a);
 	    bzot(test);
 	    errors++;
 	  }
@@ -670,7 +680,7 @@ int main(int argc, array(string) argv)
 	default:
 	  if (err = catch{
 	    _dmalloc_set_name(fname,0);
-	    o=clone(compile_string(to_compile,testsuite));
+	    o=compile_string(to_compile,testsuite)();
 	    _dmalloc_set_name();
 	
 	    if(check > 1) _verify_internals();
@@ -867,6 +877,17 @@ int main(int argc, array(string) argv)
   }
 
   werror("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
+  if(verbose)
+    werror("Finished tests at "+ctime(time()));
+
+#if 1
+  if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
+    multiset const_names = (multiset)const_names;
+    foreach(indices(all_constants()), string const)
+      if( !const_names[const] )
+	werror("Leaked constant %O\n", const);
+  }
+#endif
 
 #ifdef WATCHDOG_SIGNAL
   if(use_watchdog)
