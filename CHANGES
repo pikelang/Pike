@@ -8,10 +8,6 @@ o Postgres 7.3+ correctly detected.
 o "Backported funcion_object fixes from Pike 7.5"/"function_object()
   now behaves as in Pike 7.2. The other cases have been moved to
   function_program()."
-o "MKREADSET: If elements e and e+1 have their places swapped, it
-  doesn't mean that there are overlapping ranges, just that the sort
-  function is unstable. It doesn't matter. Live with it."
-o "Backported native argument handling fixes from 7.5." (java)
 
 o Added System.dumpable() which can be used on Linux to enable
   coredumping even for seteuid/setegid processes.
@@ -43,6 +39,7 @@ o Fixed a bug in the code handling boundaries in multipart messages in
   the MIME module.
 o Multiline tokens are now handled better in Parser.Pike when running
   in streaming mode.
+o Fixed a bug in sscanf when using %[] with wide characters.
 o Fixed a bug in low_backtrace where the backtrace itself could be
   reported as an argument to the top function if it was of varargs
   type.
@@ -63,6 +60,9 @@ o The decaying average calculation in the gc had a bug that caused the
 o More solutions to new and fresh autoconf compatibility problems,
   willfully introduced by the autoconf team.
 o Threads are disabled by default on OpenBSD/alpha <= 3.x.
+o Java module now supports native method registration on alpha.
+o Fixed floating point argument handling with native calls in Java module
+  for Linux/PPC.
 o Pike will now look for the master path in SOFTWARE\Pike\ in the
   registry on Microsoft Windows.
 o Fixed icon transparency on Microsoft Windows.
