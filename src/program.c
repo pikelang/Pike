@@ -1303,44 +1303,43 @@ void cleanup_program()
 
 #ifdef GC2
 
-void gc_check_program(struct program *p)
+void gc_mark_program_as_referenced(struct program *p)
 {
-  if(p==gc_ptr) gc_refs++;
-  if(p->flags & GC_MARK) return;
-  p->flags |= GC_MARK;
-  gc_check_svalues(p->constants, p->num_constants);
+  if(gc_mark(p))
+    gc_mark_svalues(p->constants, p->num_constants);
 }
 
 void gc_check_all_programs()
 {
-  struct program *p, *next;
+  struct program *p;
+  for(p=first_program;p;p=p->next)
+    gc_check_svalues(p->constants, p->num_constants);
+}
+
+void gc_mark_all_programs()
+{
+  struct program *p;
+  for(p=first_program;p;p=p->next)
+    if(gc_is_referenced(p))
+      gc_mark_program_as_referenced(p);
+}
+
+void gc_free_all_unreferenced_programs()
+{
+  struct program *p,*next;
+
   for(p=first_program;p;p=next)
   {
-    if(!(p->flags & GC_MARK))
+    if(gc_do_free(p))
     {
-      gc_ptr=p;
-      gc_refs=0;
-
-      gc_check_program(p);
-      
       p->refs++;
-      
-      if(gc_refs == p->refs)
-	free_svalues(p->constants, p->num_constants, -1);
-      
+      free_svalues(p->constants, p->num_constants, -1);
       next=p->next;
       free_program(p);
     }else{
       next=p->next;
     }
   }
-}
-
-void gc_clear_program_marks()
-{
-  struct program *p;
-
-  for(p=first_program;p;p=p->next) p->flags &=~ GC_MARK;
 }
 
 #endif /* GC2 */

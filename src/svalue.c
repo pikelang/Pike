@@ -641,23 +641,24 @@ void gc_check_svalues(struct svalue *s, int num)
   {
     switch(s->type)
     {
-    case T_ARRAY: gc_check_array(s->u.array); break;
-    case T_LIST:
-      gc_check_array(s->u.list->ind);
-      break;
-    case T_MAPPING:
-      gc_check_array(s->u.mapping->ind);
-      gc_check_array(s->u.mapping->val);
-      break;
+    case T_FUNCTION:
+      if(s->subtype == -1) break;
+
     case T_OBJECT:
       if(s->u.object->prog)
       {
-	gc_check_object(s->u.object);
+	gc_check(s->u.object);
       }else{
 	free_svalue(s);
       }
       break;
-    case T_PROGRAM: gc_check_program(s->u.program); break;
+
+    case T_PROGRAM:
+    case T_ARRAY:
+    case T_LIST:
+    case T_MAPPING:
+      gc_check(s->u.refs);
+      break;
     }
   }
 }
@@ -667,21 +668,69 @@ void gc_check_short_svalue(union anything *u, TYPE_T type)
   if(!u->refs) return;
   switch(type)
   {
-  case T_ARRAY: gc_check_array(u->array); break;
-  case T_LIST: gc_check_array(u->list->ind); break;
-  case T_MAPPING:
-    gc_check_array(u->mapping->ind);
-    gc_check_array(u->mapping->val);
-    break;
   case T_OBJECT:
     if(u->object->prog)
     {
-      gc_check_object(u->object);
+      gc_check(u->object);
     }else{
       free_short_svalue(u,T_OBJECT);
     }
     break;
-  case T_PROGRAM: gc_check_program(u->program); break;
+
+  case T_ARRAY:
+  case T_LIST:
+  case T_MAPPING:
+  case T_PROGRAM:
+    gc_check(u->refs);
+    break;
+  }
+}
+
+void gc_mark_svalues(struct svalue *s, int num)
+{
+  INT32 e;
+  for(e=0;e<num;e++,s++)
+  {
+    switch(s->type)
+    {
+    case T_ARRAY:   gc_mark_array_as_referenced(s->u.array);     break;
+    case T_LIST:    gc_mark_list_as_referenced(s->u.list);       break;
+    case T_MAPPING: gc_mark_mapping_as_referenced(s->u.mapping); break;
+    case T_PROGRAM: gc_mark_program_as_referenced(s->u.program); break;
+
+    case T_FUNCTION:
+      if(s->subtype == -1) break;
+
+    case T_OBJECT:
+      if(s->u.object->prog)
+      {
+	gc_mark_object_as_referenced(s->u.object);
+      }else{
+	free_svalue(s);
+      }
+      break;
+    }
+  }
+}
+
+void gc_mark_short_svalue(union anything *u, TYPE_T type)
+{
+  if(!u->refs) return;
+  switch(type)
+  {
+  case T_ARRAY:   gc_mark_array_as_referenced(u->array);     break;
+  case T_LIST:    gc_mark_list_as_referenced(u->list);       break;
+  case T_MAPPING: gc_mark_mapping_as_referenced(u->mapping); break;
+  case T_PROGRAM: gc_mark_program_as_referenced(u->program); break;
+
+  case T_OBJECT:
+    if(u->object->prog)
+    {
+      gc_mark_object_as_referenced(u->object);
+    }else{
+      free_short_svalue(u,T_OBJECT);
+    }
+    break;
   }
 }
 #endif /* GC2 */

@@ -7,6 +7,13 @@
 #include "global.h"
 
 #ifdef GC2
+
+#include "array.h"
+#include "list.h"
+#include "mapping.h"
+#include "object.h"
+#include "program.h"
+
 #include "gc.h"
 #include "main.h"
 
@@ -17,10 +24,10 @@
 
 #define GC_CONST 20
 #define MIN_ALLOC_THRESHOLD 1000
+#defien MAX_ALLOC_THRESHOLD 10000000
 #define MULTIPLIER 0.9
+#define MARKER_CHUNK_SIZE 1023
 
-void *gc_ptr;
-INT32 gc_refs;
 INT32 num_objects;
 INT32 num_allocs;
 INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
@@ -28,10 +35,143 @@ INT32 alloc_threshold = MIN_ALLOC_THRESHOLD;
 static double objects_alloced;
 static double objects_freed;
 
+#define GC_REFERENCED 1
+
+struct marker
+{
+  struct marker *next;
+  void *marked;
+  INT32 refs;
+  INT32 flags;
+};
+
+struct marker_chunk
+{
+  struct marker_chunk *next;
+  struct marker markers[MARKER_CHUNK_SIZE];
+};
+
+static struct marker_chunk *chunk=0;
+static int markers_left_in_chunk=0;
+
+static struct marker *new_marker()
+{
+  if(!markers_left_in_chunk)
+  {
+    struct marker_chunk *m;
+    m=(struct marker_chunk *)xalloc(sizeof(struct marker_chunk));
+    m->next=chunk;
+    chunk=m;
+    markers_left_in_chunk=MARKER_CHUNK_SIZE;
+  }
+  markers_left_in_chunk--;
+
+  return chunk->markers + markers_left_in_chunk;
+}
+
+static struct marker **hash=0;
+static int hashsize=0;
+
+static struct marker *getmark(void *a)
+{
+  int hashval;
+  struct marker *m;
+
+  hashval=((long)a)%hashsize;
+
+  for(m=hash[hashval];m;m=m->next)
+    if(m->marked == a)
+      return m;
+
+  m=new_marker();
+  m->marked=a;
+  m->refs=0;
+  m->flags=0;
+  m->next=hash[hashval];
+  hash[hashval]=m;
+
+  return m;
+}
+
+void gc_check(void *a)
+{
+  getmark(a)->refs++;
+}
+
+int gc_is_referenced(void *a)
+{
+  struct marker *m;
+  m=getmark(a);
+#ifdef DEBUG
+  if(m->refs > *(INT32 *)a)
+    fatal("Ref counts are totally wrong!!!\n");
+#endif
+  return m->refs < *(INT32 *)a;
+}
+
+int gc_mark(void *a)
+{
+  struct marker *m;
+  m=getmark(a);
+
+  if(m->flags & GC_REFERENCED)
+  {
+    return 0;
+  }else{
+    m->flags |= GC_REFERENCED;
+    return 1;
+  }
+}
+
+int gc_do_free(void *a)
+{
+  struct marker *m;
+  m=getmark(a);
+  return !(m->flags & GC_REFERENCED);
+}
+
+/* Not all of these are primes, but they should be adequate */
+static INT32 hashprimes[] =
+{
+  31,        /* ~ 2^0  = 1 */
+  31,        /* ~ 2^1  = 2 */
+  31,        /* ~ 2^2  = 4 */
+  31,        /* ~ 2^3  = 8 */
+  31,        /* ~ 2^4  = 16 */
+  31,        /* ~ 2^5  = 32 */
+  61,        /* ~ 2^6  = 64 */
+  127,       /* ~ 2^7  = 128 */
+  251,       /* ~ 2^8  = 256 */
+  541,       /* ~ 2^9  = 512 */
+  1151,      /* ~ 2^10 = 1024 */
+  2111,      /* ~ 2^11 = 2048 */
+  4327,      /* ~ 2^12 = 4096 */
+  8803,      /* ~ 2^13 = 8192 */
+  17903,     /* ~ 2^14 = 16384 */
+  32321,     /* ~ 2^15 = 32768 */
+  65599,     /* ~ 2^16 = 65536 */
+  133153,    /* ~ 2^17 = 131072 */
+  270001,    /* ~ 2^18 = 264144 */
+  547453,    /* ~ 2^19 = 524288 */
+  1109891,   /* ~ 2^20 = 1048576 */
+  2000143,   /* ~ 2^21 = 2097152 */
+  4561877,   /* ~ 2^22 = 4194304 */
+  9248339,   /* ~ 2^23 = 8388608 */
+  16777215,  /* ~ 2^24 = 16777216 */
+  33554431,  /* ~ 2^25 = 33554432 */
+  67108863,  /* ~ 2^26 = 67108864 */
+  134217727, /* ~ 2^27 = 134217728 */
+  268435455, /* ~ 2^28 = 268435456 */
+  536870911, /* ~ 2^29 = 536870912 */
+  1073741823,/* ~ 2^30 = 1073741824 */
+  2147483647,/* ~ 2^31 = 2147483648 */
+};
+
 void do_gc()
 {
   double tmp;
   INT32 tmp2;
+  struct marker_chunk *m;
 
   tmp2=num_objects;
 
@@ -45,14 +185,45 @@ void do_gc()
   
   objects_freed*=MULTIPLIER;
   objects_freed += (double) num_objects;
-  
-  gc_clear_array_marks();
-  gc_clear_object_marks();
-  gc_clear_program_marks();
+
+
+  /* init hash , hashsize will be a prime between num_objects/8 and
+   * num_objects/4, this will assure that no re-hashing is needed.
+   */
+  hashsize=my_log2(num_objects);
+  hashsize-=2;
+  if(hashsize<0) hashsize=0;
+  hashsize=hashprimes[hashsize];
+  hash=(struct marker **)xalloc(sizeof(struct marker **)*hashsize);
+  MEMSET((char *)hash,0,sizeof(struct marker **)*hashsize);
+  markers_left_in_chunk=0;
   
   gc_check_all_arrays();
+  gc_check_all_lists();
+  gc_check_all_mappings();
   gc_check_all_programs();
   gc_check_all_objects();
+
+  gc_mark_all_arrays();
+  gc_mark_all_lists();
+  gc_mark_all_mappings();
+  gc_mark_all_programs();
+  gc_mark_all_objects();
+
+  gc_free_all_unreferenced_arrays();
+  gc_free_all_unreferenced_lists();
+  gc_free_all_unreferenced_mappings();
+  gc_free_all_unreferenced_programs();
+  gc_free_all_unreferenced_objects();
+
+
+  /* Free hash table */
+  free((char *)hash);
+  while(m=chunk)
+  {
+    chunk=m->next;
+    free((char *)m);
+  }
   
   objects_freed -= (double) num_objects;
 
@@ -76,14 +247,6 @@ void do_gc()
 	    (long)(tmp2-num_objects),(long)tmp2);
 #endif
 }
+
 #endif
-
-
-
-
-
-
-
-
-
 

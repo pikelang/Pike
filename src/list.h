@@ -37,6 +37,10 @@ node * make_node_from_list(struct list *l);
 void f_aggregate_list(INT32 args);
 struct list *copy_list_recursively(struct list *l,
 				   struct processing *p);
+void gc_mark_list_as_referenced(struct list *l);
+void gc_check_all_lists();
+void gc_mark_all_lists();
+void gc_free_all_unreferenced_lists();
 /* Prototypes end here */
 
 #endif

@@ -14,6 +14,7 @@
 #include "dynamic_buffer.h"
 #include "interpret.h"
 #include "builtin_efuns.h"
+#include "gc.h"
 
 struct list *first_list;
 
@@ -28,6 +29,7 @@ int list_member(struct list *l, struct svalue *ind)
 static struct list *allocate_list(struct array *ind)
 {
   struct list *l;
+  GC_ALLOC();
   l=ALLOC_STRUCT(list);
   l->next = first_list;
   l->prev = 0;
@@ -56,6 +58,7 @@ void really_free_list(struct list *l)
   if(first_list == l) first_list = 0;
 
   free((char *)l);
+  GC_FREE();
 }
 
 static void order_list(struct list *l)
@@ -247,7 +250,7 @@ struct list *copy_list_recursively(struct list *l,
     }
   }
 
-  ret=allocate_list(0);
+  ret=allocate_list( & empty_array );
   doing.pointer_b=(void *)ret;
 
   ret->ind=copy_array_recursively(l->ind,&doing);
@@ -256,3 +259,49 @@ struct list *copy_list_recursively(struct list *l,
 
   return ret;
 }
+
+
+#ifdef GC2
+
+void gc_mark_list_as_referenced(struct list *l)
+{
+  if(gc_mark(l))
+    gc_mark_array_as_referenced(l->ind);
+}
+
+void gc_check_all_lists()
+{
+  struct list *l;
+  for(l=first_list;l;l=l->next)
+    gc_check(l->ind);
+}
+
+void gc_mark_all_lists()
+{
+  struct list *l;
+  for(l=first_list;l;l=l->next)
+    if(gc_is_referenced(l))
+      gc_mark_list_as_referenced(l);
+}
+
+void gc_free_all_unreferenced_lists()
+{
+  struct list *l,*next;
+
+  for(l=first_list;l;l=next)
+  {
+    if(gc_do_free(l))
+    {
+      l->refs++;
+      free_svalues(ITEM(l->ind), l->ind->size, l->ind->type_field);
+      l->ind->size=0;
+      next=l->next;
+
+      free_list(l);
+    }else{
+      next=l->next;
+    }
+  }
+}
+
+#endif /* GC2 */

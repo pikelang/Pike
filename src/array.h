@@ -20,10 +20,11 @@ struct array
 			 * Bits can be set that don't exist in the array
 			 * though.
 			 */
-  INT16 flags;		/* flags, like gc_cycle */
   struct svalue item[1];
 };
 
+
+extern struct array empty_array;
 
 #define ITEM(X) ((X)->item)
 
@@ -120,9 +121,10 @@ void array_replace(struct array *a,
 		   struct svalue *to);
 void check_array(struct array *a);
 void check_all_arrays();
-void gc_check_array(struct array *a);
+void gc_mark_array_as_referenced(struct array *a);
 void gc_check_all_arrays();
-void gc_clear_array_marks();
+void gc_mark_all_arrays();
+void gc_free_all_unreferenced_arrays();
 /* Prototypes end here */
 
 

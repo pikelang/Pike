@@ -14,6 +14,7 @@
 #include "memory.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
+#include "gc.h"
 
 struct mapping *first_mapping;
 
@@ -67,6 +68,7 @@ void mapping_index(struct svalue *dest,
 static struct mapping *allocate_mapping(struct array *ind, struct array *val)
 {
   struct mapping *m;
+  GC_ALLOC();
   m=ALLOC_STRUCT(mapping);
   m->next = first_mapping;
   m->prev = 0;
@@ -97,6 +99,8 @@ void really_free_mapping(struct mapping *m)
   if(first_mapping == m) first_mapping = 0;
 
   free((char *)m);
+
+  GC_FREE();
 }
 
 static void order_mapping(struct mapping *m)
@@ -369,7 +373,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
     }
   }
 
-  ret=allocate_mapping(0,0);
+  ret=allocate_mapping(&empty_array, &empty_array);
   doing.pointer_b=(void *)ret;
 
   ret->ind=copy_array_recursively(m->ind,&doing);
@@ -436,3 +440,57 @@ void check_all_mappings()
     check_mapping(m);
 }
 #endif
+
+
+#ifdef GC2
+
+void gc_mark_mapping_as_referenced(struct mapping *m)
+{
+  if(gc_mark(m))
+  {
+    gc_mark_array_as_referenced(m->ind);
+    gc_mark_array_as_referenced(m->val);
+  }
+}
+
+void gc_check_all_mappings()
+{
+  struct mapping *m;
+  for(m=first_mapping;m;m=m->next)
+  {
+    gc_check(m->ind);
+    gc_check(m->val);
+  }
+}
+
+void gc_mark_all_mappings()
+{
+  struct mapping *m;
+  for(m=first_mapping;m;m=m->next)
+    if(gc_is_referenced(m))
+      gc_mark_mapping_as_referenced(m);
+}
+
+void gc_free_all_unreferenced_mappings()
+{
+  struct mapping *m,*next;
+
+  for(m=first_mapping;m;m=next)
+  {
+    if(gc_do_free(m))
+    {
+      m->refs++;
+      free_svalues(ITEM(m->ind), m->ind->size, m->ind->type_field);
+      free_svalues(ITEM(m->val), m->val->size, m->val->type_field);
+      m->ind->size=0;
+      m->val->size=0;
+      next=m->next;
+
+      free_mapping(m);
+    }else{
+      next=m->next;
+    }
+  }
+}
+
+#endif /* GC2 */
