@@ -10,6 +10,8 @@ o New Hilfe
     it now supports more of the common pike constructs, and is more
     extendable and configurable. Start it and type help for more info.
 
+o AutoDoc
+
 o pike -x
     When starting pike with the -x parameter, the pike process will
     run the named script in Tools.Standalone, giving the rest of the
@@ -323,6 +325,47 @@ o Identifier lookup
       |
       +-A---foo
 
+o Image.Layer modes modified
+
+    Alpha channel handling for modes add, subtract, multiply, divide,
+    modulo, invsubtract, invdivide, invmodulo, difference, max, min,
+    bitwise_and, bitwise_or, bitwise_xor, screen and overlay modified so
+    that the source layer alpha channel copied to the destination layer
+    alpha channel rather then mixed with the current layer alpha channel:
+
+    aD=aS
+
+    rather then the behavior before:
+
+    aD=(aL+(1-aL)*aS)
+
+    (which is the behavior of the 'normal' mode.)
+
+    Bug fixes in the above modes so that alpha r,g,b channels
+    are handled properly (separate).
+    
+    Bug fixes in equal, not_equal, less, more, less_or_equal,
+    more_or_equal modes so that the alpha channel is handled as
+    documented (which is, in fact, as above; aD=aS).
+    
+    Bug fix in divide, invdivide to actually do what the modes
+    are supposed to do (rather then just black the layer).
+    
+    And while on it, adding some modes:
+    
+    'imultiply'  - D=(1-L)*S
+    'idivide'    - D=S/(1-L)
+    'invidivide' - D=L/(1-S)
+    
+    'value_mul' - multiplying the source layer value
+    (as in h,s,v) with the curreny layer value to the destination layer
+    ("true burn").
+
+    NOTE: There is no backward compatibility functions added for use
+    with #pike.
+
+o Thread.Condition()->wait
+
 o Protocols.LDAP.client
     The return code from all methods was changed to follow Pike's
     logic better. 0 is now a failure. The old behaviour is emulated in
@@ -389,3 +432,30 @@ o seperate weak flags for indices and values in mappings
 
 Math.inf
 Math.nan
+Gmp.mpf
+Gmp.mpq (Rational numbers)
+Gz._file
+Image.Image()->blur
+Image.Image()->grey_blur
+Image.PVR: VQ compression/decompression added
+MIME.Message: guess mode added
+Math.Transforms (FFT iFFT)
+Math.Matrix()->sum,max,min
+Math.Matrix.convolve
+Math.Matrix.dot_product
+Oracle: CLOB and BLOB support
+Charset: Shift_JS, UTF-7.5, EUC, Big5, CP950, UTF-16, UTF-16BE, UTF-16LE
+Crypto.MD4
+Crypto.crypt_md5
+_Ffmpeg
+Image.JPEG: transforms
+Stdio.File->sync
+Stdio.get_all_active_fd (from spider)
+system.normalize_path
+system.gettimeofday
+system.get_netinfo_property (Max OS X)
+system.usleep/nanosleep
+system.Memory (a class to read/write from mmap'ed or allocated memory)
+SDL
+Suffler
+Image.SVG
