@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.32 2002/11/10 20:19:18 grubba Exp $
+|| $Id: opcodes.h,v 1.33 2004/05/11 15:25:26 grubba Exp $
 */
 
 #ifndef OPCODES_H
@@ -115,7 +115,11 @@ enum Pike_opcodes
   /* Alias for F_RETURN, but cannot be optimized into a tail recursion call */
   F_VOLATILE_RETURN,
 
-  F_MAX_INSTR
+  F_MAX_INSTR,
+
+  /* These are only used for dumping. */
+  F_FILENAME,
+  F_LINE,
 };
 
 #undef OPCODE0
