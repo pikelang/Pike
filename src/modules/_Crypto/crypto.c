@@ -1,5 +1,5 @@
 /*
- * $Id: crypto.c,v 1.13 1997/02/15 22:03:03 nisse Exp $
+ * $Id: crypto.c,v 1.14 1997/02/27 13:51:54 nisse Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -367,15 +367,17 @@ static void f_crypt(INT32 args)
 static void f_pad(INT32 args)
 {
   int i;
-
+  int len;
+  
   if (args) {
     error("Too many arguments to crypto->pad()\n");
   }
 
-  for (i=THIS->backlog_len; i < (THIS->block_size - 1); i++) {
-    THIS->backlog[i] = my_rand() & 0xff;
-  }
-  THIS->backlog[i] = THIS->backlog_len;
+  len = THIS->block_size - 1 - THIS->backlog_len;
+  for (i=0; i < len; i++)
+    THIS->backlog[THIS->backlog_len + i] = my_rand() & 0xff;
+  
+  THIS->backlog[i] = len;
 
   push_string(make_shared_binary_string((const char *)THIS->backlog,
 					THIS->block_size));
@@ -392,29 +394,26 @@ static void f_unpad(INT32 args)
   int len;
   struct pike_string *str;
 
-  if (args != 1) {
+  if (args != 1) 
     error("Wrong number of arguments to crypto->unpad()\n");
-  }
-  if (sp[-1].type != T_STRING) {
-    error("Bad argument 1 to crypto->unpad()\n");
-  }
-
-  str = sp[-1].u.string;
-
-  len = str->len;
   
-  len += str->str[len - 1] - THIS->block_size;
+  if (sp[-1].type != T_STRING) 
+    error("Bad argument 1 to crypto->unpad()\n");
+  
+  str = sp[-1].u.string;
+  len = str->len;
 
-  if (len < 0) {
+  if (str->str[len - 1] > (THIS->block_size - 1))
+    error("crypto->unpad(): Invalid padding\n");
+
+  len -= (str->str[len - 1] + 1);
+
+  if (len < 0) 
     error("crypto->unpad(): String to short to unpad\n");
-  }
   
   str->refs++;
-
   pop_stack();
-
   push_string(make_shared_binary_string(str->str, len));
-
   free_string(str);
 }
 
@@ -491,9 +490,9 @@ void pike_module_init(void)
   add_function("hex_to_string", f_hex_to_string, "function(string:string)", OPT_TRY_OPTIMIZE);
 #if 0
   MOD_INIT(md2)();
-  MOD_INIT(md5)();
 #endif
 #if 1
+  MOD_INIT(md5)();
   MOD_INIT(crypto)();
   MOD_INIT(idea)();
   MOD_INIT(des)();
@@ -510,9 +509,9 @@ void pike_module_exit(void)
   /* free_program()s */
 #if 0
   MOD_EXIT(md2)();
-  MOD_EXIT(md5)();
 #endif
 #if 1
+  MOD_EXIT(md5)();
   MOD_EXIT(crypto)();
   MOD_EXIT(idea)();
   MOD_EXIT(des)();
