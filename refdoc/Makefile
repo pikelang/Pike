@@ -1,14 +1,14 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.40 2002/03/09 15:54:36 nilsson Exp $
+# $Id: Makefile,v 1.41 2002/03/11 20:09:16 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
 
 PIKE=pike
 
-all: modref traditional one_page
+all: modref traditional
 
 # These are the actual build targets for making manuals...
 
@@ -55,18 +55,18 @@ low_traditional:
 # Sub targets used by the above targets.
 
 build/autodoc.xml: build/src/sub_manual.xml build/lib/sub_manual.xml bin/join.pike
-	@$(PIKE) bin/join.pike --post-process build/autodoc.xml build/src/sub_manual.xml \
+	$(PIKE) bin/join.pike --post-process build/autodoc.xml build/src/sub_manual.xml \
 	  build/lib/sub_manual.xml
 
 build/src/sub_manual.xml: build/src build/images bin/extract.pike \
 			  bin/mirardoc.pike bin/join.pike
-	@$(PIKE) bin/extract.pike ../src/ build/src/ build/images/
-	@$(PIKE) bin/join.pike build/src/sub_manual.xml build/src/
+	$(PIKE) bin/extract.pike ../src/ build/src/ build/images/
+	$(PIKE) bin/join.pike build/src/sub_manual.xml build/src/
 
 build/lib/sub_manual.xml: build/lib build/images images bin/extract.pike \
 			  bin/mirardoc.pike bin/join.pike
-	@$(PIKE) bin/extract.pike ../lib/ build/lib/ build/images/
-	@$(PIKE) bin/join.pike build/lib/sub_manual.xml build/lib/
+	$(PIKE) bin/extract.pike ../lib/ build/lib/ build/images/
+	$(PIKE) bin/join.pike build/lib/sub_manual.xml build/lib/
 
 images: build/src/post_modules/GTK/refdoc/images
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
