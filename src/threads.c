@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.113 2000/03/24 01:24:52 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.114 2000/03/24 22:24:28 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -924,14 +924,20 @@ void exit_mutex_key_obj(struct object *o)
 void f_cond_wait(INT32 args)
 {
   COND_T *c;
-  struct object *key;
 
-  if(args > 1) pop_n_elems(args - 1);
+  if(threads_disabled)
+    error("Cannot wait for conditions when threads are disabled!\n");
+      
+  if(args > 1) {
+    pop_n_elems(args - 1);
+    args = 1;
+  }
 
   c=THIS_COND;
 
-  if(args > 0)
+  if((args > 0) && !((sp[-1].type == T_INT) && (!sp[-1].u.integer)))
   {
+    struct object *key;
     struct mutex_storage *mut;
 
     if(sp[-1].type != T_OBJECT)
@@ -941,36 +947,39 @@ void f_cond_wait(INT32 args)
     
     if(key->prog != mutex_key)
       error("Bad argument 1 to condition->wait()\n");
-    
-    mut=OB2KEY(key)->mut;
-    if(!mut) error("Bad argument 1 to condition->wait()\n");
 
-    if(threads_disabled)
-      error("Cannot wait for conditions when threads are disabled!\n");
+    if (OB2KEY(key)->initialized) {
 
-    /* Unlock mutex */
-    mut->key=0;
-    OB2KEY(key)->mut=0;
-    co_signal(& mut->condition);
+      mut = OB2KEY(key)->mut;
+      if(!mut)
+	error("Bad argument 1 to condition->wait()\n");
+
+      /* Unlock mutex */
+      mut->key=0;
+      OB2KEY(key)->mut=0;
+      co_signal(& mut->condition);
     
-    /* Wait and allow mutex operations */
-    SWAP_OUT_CURRENT_THREAD();
-    co_wait(c, &interpreter_lock);
+      /* Wait and allow mutex operations */
+      SWAP_OUT_CURRENT_THREAD();
+      co_wait(c, &interpreter_lock);
     
-    if(OB2KEY(key)->initialized)
-    {
       /* Lock mutex */
-      while(mut->key) co_wait(& mut->condition, &interpreter_lock);
+      while(mut->key)
+	co_wait(& mut->condition, &interpreter_lock);
       mut->key=key;
       OB2KEY(key)->mut=mut;
+      
+      SWAP_IN_CURRENT_THREAD();
+      pop_n_elems(args);
+      return;
     }
-    SWAP_IN_CURRENT_THREAD();
-    pop_stack();
-  } else {
-    SWAP_OUT_CURRENT_THREAD();
-    co_wait(c, &interpreter_lock);
-    SWAP_IN_CURRENT_THREAD();
   }
+
+  SWAP_OUT_CURRENT_THREAD();
+  co_wait(c, &interpreter_lock);
+  SWAP_IN_CURRENT_THREAD();
+
+  pop_n_elems(args);
 }
 
 void f_cond_signal(INT32 args) { pop_n_elems(args); co_signal(THIS_COND); }
