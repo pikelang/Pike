@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.49 1999/05/28 13:33:25 mirar Exp $ */
+/* $Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.49 1999/05/28 13:33:25 mirar Exp $
+**!	$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.49 1999/05/28 13:33:25 mirar Exp $");
+RCSID("$Id: gif.c,v 1.50 1999/11/14 22:16:08 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1379,6 +1379,7 @@ static void image_gif___decode(INT32 args)
    unsigned long len;
    struct pike_string *str;
    int n;
+   ONERROR uwp;
 
    if (args!=1 
        || sp[-args].type!=T_STRING) 
@@ -1388,6 +1389,7 @@ static void image_gif___decode(INT32 args)
    s=(unsigned char *)str->str;
    len=str->len;
    pop_n_elems(args);
+   SET_ONERROR(uwp,do_free_string,str);
 
 /* byte ... is 
    0  'G'
@@ -1507,6 +1509,7 @@ static void image_gif___decode(INT32 args)
    /* all done */
 
    f_aggregate(n);
+   UNSET_ONERROR(uwp);
    free_string(str);
 }
 
