@@ -10,7 +10,7 @@ low_all: tutorial.html tutorial_onepage.html tutorial_split.html \
 	 tutorial.ps.gz tutorial.pdf
 
 MADEFILES=Image.wmml Math.wmml Mysql.wmml Parser.wmml Calendar.wmml \
-	  Protocols.wmml Gettext.wmml
+	  Protocols.wmml Gettext.wmml Modules.wmml
 
 SRCFILES=tutorial.wmml $(MADEFILES)
 
