@@ -1,34 +1,78 @@
 // XML-RPC by Fredrik Noring. Copyright © 2001 Roxen Internet Software AB.
-// The Implementation is based on specifications from http://xml-rpc.org/.
+// The implementation is based on specifications from http://xml-rpc.org/.
 
-class Call(string name, array args)
+//! The @[Protocols.XMLRPC] module implements most features of the
+//! XML-RPC standard (see @url{http://xml-rpc.org/}).
+//!
+//! Translation rules for conversions from Pike datatypes to XML-RPC
+//! datatypes:
+//!
+//! Pike @code{int@} is translated to XML-RPC @code{<int>@}.
+//! Pike @code{string@} is translated to XML-RPC @code{<string>@}.
+//! Pike @code{float@} is translated to XML-RPC @code{<double>@}.
+//! Pike @code{mapping@} is translated to XML-RPC @code{<struct>@}.
+//! Pike @code{array@} is translated to XML-RPC @code{<array>@}.
+//!
+//! Translation rules for conversions from XML-RPC datatypes to Pike
+//! datatypes:
+//!
+//! XML-RPC @code{<i4>@}, @code{<int>@} and @code{<boolean>@} are
+//!   translated to Pike @code{int@}.
+//! XML-RPC @code{<string>@} and @code{<base64>@} are translated to
+//!   Pike @code{string@}. XML_RPC
+//! @code{<double>@} is translated to @code{float@}. XML-RPC
+//! @code{<struct>@} is translated to Pike @code{mapping@}. XML-RPC
+//! @code{<array>@} is translated to Pike @code{array@}.
+//!
+//! @note
+//! The XML-RPC @code{dateTime.iso8601@} datatype is not currently
+//! implemented.
+
+//! @[Call] represents a function call made to a XML-RPC server.
+class Call(string method_name, array params)
 {
+  //! @decl int method_name
+  //! This value represents methodName in the XML-RPC standard.
+
+  //! @decl array params
+  //! This value represents params in the XML-RPC standard where all
+  //! datatypes have been converted to equivalent or similar datatypes
+  //! in Pike.
+  
   string _sprintf()
   {
-    return sprintf("Protocols.XMLRPC.Call(%O, ...)", name);
+    return sprintf("Protocols.XMLRPC.Call(%O, ...)", method_name);
   }
 }
 
-class Fault(int code, string reason)
+//! @[Fault] represents a fault response which can be one of the
+//! return values from a XML-RPC function call.
+class Fault(int fault_code, string fault_string)
 {
+  //! @decl int fault_code
+  //! This value represents faultCode in the XML-RPC standard.
+
+  //! @decl int fault_string
+  //! This value represents faultString in the XML-RPC standard.
+  
   string _sprintf()
   {
-    return sprintf("Protocols.XMLRPC.Fault(%O, %O)", code, reason);
+    return sprintf("Protocols.XMLRPC.Fault(%O, %O)", fault_code, fault_string);
   }
 }
 
+//! @[decode_call()] decodes a XML-RPC representation of a function
+//! call and returns a @[Call] object.
 Call decode_call(string xml_input)
-  // Returns an array where the first element is the function name and
-  // the rest of the elements are the function arguments.
 {
   array r = decode(xml_input, call_dtd);
   return Call(r[0], r[1..]);
 }
 
+//! @[decode_response()] decodes a XML-RPC representation of a
+//! response and returns an array containing response values, or a
+//! @[Fault] object.
 array|Fault decode_response(string xml_input)
-  // Returns an array with reponse values, or a mapping representing
-  // an error message. The mapping contains a "faultCode" integer and
-  // a "faultString" message according to the XMLRPC protocol.
 {
   array|mapping r = decode(xml_input, response_dtd);
   if(arrayp(r))
@@ -36,32 +80,39 @@ array|Fault decode_response(string xml_input)
   return Fault(r->faultCode, r->faultString);
 }
 
-string encode_call(string name, array args)
-  // Returns the XMLRPC XML representation of a function call.
+//! @[encode_call()] encodes a function call with the name @[name] and
+//! the arguments @[args] and returns the XML-RPC string
+//! representation.
+string encode_call(string method_name, array params)
 {
   return
     "<?xml version=\"1.0\"?>\n"
     "<methodCall>\n"
-    "<methodName>"+xml_encode_string(name)+"</methodName>\n"
-    +encode_params(args)+
+    "<methodName>"+xml_encode_string(method_name)+"</methodName>\n"
+    +encode_params(params)+
     "</methodCall>\n";
 }
 
-string encode_response(array args)
+//! @[encode_response()] encodes a response containing the multiple
+//! values in @[params] and returns the XML-RPC string representation.
+string encode_response(array params)
   // Returns the XMLRPC XML representation of a response.
 {
   return
     "<?xml version=\"1.0\"?>\n"
-    "<methodResponse>\n"+encode_params(args)+"</methodResponse>\n";
+    "<methodResponse>\n"+encode_params(params)+"</methodResponse>\n";
 }
 
-string encode_response_fault(int code, string reason)
+//! @[encode_response_fault()] encodes a response fault containing a
+//! @[fault_code] and a @[fault_string] and returns the XML-RPC string
+//! representation.
+string encode_response_fault(int fault_code, string fault_string)
   // Returns the XMLRPC XML representation of a fault.
 {
   return
     "<?xml version=\"1.0\"?>\n"
     "<methodResponse>\n<fault>\n"
-    +encode(([ "faultCode":code, "faultString":reason ]))+
+    +encode(([ "faultCode":fault_code, "faultString":fault_string ]))+
     "</fault>\n</methodResponse>\n";
 }
 
