@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.349 2003/02/20 16:11:52 grubba Exp $
+# $Id: Makefile.in,v 1.350 2003/03/25 21:19:05 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -212,7 +212,8 @@ all: module_objects tools
 	fi
 
 documentation: onepage.xml traditional.xml modref.xml
-	cd $(DOCDIR) && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" $(DOCTARGET)
+	cd $(DOCDIR) && $(MAKE) $(MAKE_FLAGS) PIKE="$(RUNPIKE)" \
+	  BUILDDIR="$(TMP_BUILDDIR)" $(DOCTARGET)
 
 # Backward compat.
 post_modules: post_module_objects
