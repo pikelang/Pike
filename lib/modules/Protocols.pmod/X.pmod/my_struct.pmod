@@ -46,7 +46,7 @@ class struct {
   void put_var_string(string s, int len)
   {
     if ( (len <= 3) && (strlen(s) >= ({ -1, 0x100, 0x10000, 0x1000000 })[len] ))
-      error("ADT.struct->put_var_String: Field overflow.\n");
+      error("ADT.struct->put_var_string: Field overflow.\n");
     put_uint(strlen(s), len);
     add_data(s);
   }
