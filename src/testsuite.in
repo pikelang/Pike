@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.45 1997/07/09 00:57:07 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.46 1997/08/26 22:29:18 grubba Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -1458,6 +1458,7 @@ test_eq(clone(compile_string("int foo() { return 17; }"))->foo(),17)
 // - combine_path
 test_eq([[combine_path("/foo/bar/gazonk/","..")]],"/foo/bar")
 test_eq([[combine_path("/.../","sune")]],"/.../sune")
+test_eq([[combine_path("/",".")]],"/")
 test_eq([[combine_path("/","foo/.../sune")]],"/foo/.../sune")
 test_eq([[combine_path("/./foo/bar//gazonk/","../")]],"/foo/bar/")
 test_eq([[combine_path("/","/foo/./bar/gazonk/..")]],"/foo/bar")
