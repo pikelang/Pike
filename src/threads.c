@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.223 2003/10/19 13:47:42 mast Exp $
+|| $Id: threads.c,v 1.224 2003/10/19 14:10:05 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.223 2003/10/19 13:47:42 mast Exp $");
+RCSID("$Id: threads.c,v 1.224 2003/10/19 14:10:05 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -499,7 +499,7 @@ void dumpmem(const char *desc, void *x, int size)
 {
   int e;
   unsigned char *tmp=(unsigned char *)x;
-  fprintf(stderr,"%s: ",desc);
+  fprintf(stderr, "%s0x", desc);
   for(e=0;e<size;e++)
     fprintf(stderr,"%02x",tmp[e]);
   fprintf(stderr,"\n");
@@ -520,7 +520,7 @@ PMOD_EXPORT void thread_table_insert(struct thread_state *s)
     else
       Pike_fatal("Forgot to unregister thread!\n");
   }
-/*  dumpmem("thread_table_insert",&s->id, sizeof(THREAD_T)); */
+/*  dumpmem("thread_table_insert: ",&s->id, sizeof(THREAD_T)); */
 #endif
   mt_lock( & thread_table_lock );
   num_pike_threads++;
@@ -533,7 +533,7 @@ PMOD_EXPORT void thread_table_insert(struct thread_state *s)
 
 PMOD_EXPORT void thread_table_delete(struct thread_state *s)
 {
-/*  dumpmem("thread_table_delete",&s->id, sizeof(THREAD_T)); */
+/*  dumpmem("thread_table_delete: ",&s->id, sizeof(THREAD_T)); */
   mt_lock( & thread_table_lock );
   num_pike_threads--;
   if(s->hashlink != NULL)
@@ -665,20 +665,30 @@ void debug_list_all_threads(void)
 
   fprintf(stderr,"--Listing all threads--\n");
   dumpmem("Current thread: ",&self, sizeof(self));
-  fprintf(stderr,"Current interpreter thread state: %p\n",Pike_interpreter.thread_state);
+  fprintf(stderr,"Current interpreter thread state: %p%s\n",
+	  Pike_interpreter.thread_state,
+	  Pike_interpreter.thread_state == (struct thread_state *) (ptrdiff_t) -1 ?
+	  " (swapped)" : "");
   fprintf(stderr,"Current thread state according to thread_state_for_id(): %p\n",
 	  thread_state_for_id (self));
   fprintf(stderr,"Current thread obj: %p\n",
-	  Pike_interpreter.thread_state?
-	  Pike_interpreter.thread_state->thread_obj:NULL);
+	  (Pike_interpreter.thread_state &&
+	   Pike_interpreter.thread_state != (struct thread_state *) (ptrdiff_t) -1) ?
+	  Pike_interpreter.thread_state->thread_obj : NULL);
   fprintf(stderr,"Current thread hash: %d\n",thread_table_hash(&self));
   fprintf(stderr,"Current stack pointer: %p\n",&self);
   for(x=0; x<THREAD_TABLE_SIZE; x++)
   {
     for(s=thread_table_chains[x]; s; s=s->hashlink) {
       struct object *o = THREADSTATE2OBJ(s);
-      fprintf(stderr,"ThTab[%d]: %p (stackbase=%p)",x,o,s->state.stack_top);
-      dumpmem(" ",&s->id, sizeof(s->id));
+      fprintf(stderr,"ThTab[%d]: state=%p, obj=%p, "
+	      "swapped=%d, sp=%p (%+d), fp=%p, stackbase=%p",
+	      x, s, o, s->swapped,
+	      s->state.stack_pointer,
+	      s->state.stack_pointer - s->state.evaluator_stack,
+	      s->state.frame_pointer,
+	      s->state.stack_top);
+      dumpmem(", id=",&s->id, sizeof(s->id));
     }
   }
   fprintf(stderr,"-----------------------\n");
