@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.16 2003/03/21 13:33:09 jhs Exp $
+dnl $Id: testsuite.in,v 1.17 2004/03/20 12:57:41 grubba Exp $
 
 test_eq([[ Image.PNM.decode("P1\n5 5\n0 1 1 1 1\n1 0 1 1 1\n"
   "1 1 0 1 1\n1 1 1 0 1\n1 1 1 1 0") ]],
@@ -409,7 +409,7 @@ test_coltab([[
 
 
 define(test_encoding,[[
-  cond( master()->resolv("Image.$1")->encode,[[
+  cond( (master()->resolv("Image.$1")||([]))->encode,[[
     test_any([[
       object img=Image.Image(100,100)->test(40);
       $2
@@ -482,7 +482,7 @@ test_encoding(ILBM,[[
   img=Image.Colortable(img,16)*img;
 ]],)
 
-cond( master()->resolv("Image.JPEG")->encode,[[
+cond( (master()->resolv("Image.JPEG")||([]))->encode,[[
   test_any([[
     object img=Image.Image(100,100)->test(43);
     object img1=Image.JPEG.decode(Image.JPEG.encode(img,(["quality":100])));
@@ -509,7 +509,7 @@ test_encoding(XBM,[[
   img=c*img;
 ]],)
 
-cond( master()->resolv("Image.XFace")->encode,[[
+cond( (master()->resolv("Image.XFace")||([]))->encode,[[
   test_any([[
     object img=Image.Image(48,48)->test(43);
     object c=Image.Colortable(({Image.Color.white,Image.Color.black}));
