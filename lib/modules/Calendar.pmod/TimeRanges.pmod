@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.18 2001/06/09 15:00:50 mirar Exp $
+// $Id: TimeRanges.pmod,v 1.19 2003/01/26 09:11:16 mirar Exp $
 
 #pike __REAL_VERSION__
 
@@ -1153,7 +1153,7 @@ class cSuperTimeRange
       return ::_sprintf(t,m);
    }
 
-   TimeRange set_timezone(string|Timezone tz)
+   TimeRange set_timezone(string|Ruleset.Timezone tz)
    {
 // fixme?
       return `|(@map(parts,"set_timezone",tz));
