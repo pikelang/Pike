@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.81 1997/04/15 03:47:42 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.82 1997/04/15 08:59:12 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -45,8 +45,8 @@ done
 
 if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
 then
-  AC_MSG_WARN(CC is different than last time Pike was compiled,
-It is probably best to delete ./config.cache before proceeding)
+  AC_MSG_WARN([CC is different than last time Pike was compiled,
+It is probably best to delete ./config.cache before proceeding])
 fi
 
 
@@ -219,8 +219,8 @@ else
     AC_TRY_COMPILE([int foo(int bar);],[],[],
     [
       OLD_CC="${CC-cc}"
-      if test "$CC" = "cc" -a -x /usr/bin/cc ; then
-        CC=/usr/bin/cc
+      if test "$CC" = "$BINDIR/smartlink cc" -a -x /usr/bin/cc ; then
+        CC="$BINDIR/smartlink /usr/bin/cc"
       fi
       CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
       AC_TRY_COMPILE([int foo(int bar);],[],[],[CC="$OLD_CC"])
