@@ -678,6 +678,7 @@ testfont binary
 /src/post_modules/Shuffler/b_source_normal_file.c foreign_ident
 /src/post_modules/Shuffler/c_source_stream.c foreign_ident
 /src/post_modules/Shuffler/configure.in foreign_ident
+/src/post_modules/Shuffler/d_source_pikestream.c foreign_ident
 /src/post_modules/Unicode/Makefile.in foreign_ident
 /src/post_modules/Unicode/acconfig.h foreign_ident
 /src/post_modules/Unicode/buffer.c foreign_ident

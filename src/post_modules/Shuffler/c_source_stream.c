@@ -12,7 +12,7 @@
 #include "shuffler.h"
 
 #define CHUNK 8192
-/* $Id: c_source_stream.c,v 1.2 2002/05/30 01:53:46 per Exp $ */
+/* $Id: c_source_stream.c,v 1.3 2002/05/30 03:55:24 per Exp $ */
 
 
 /* Source: Stream
@@ -140,7 +140,6 @@ struct source *source_stream_make( struct svalue *s,
 				   INT64 start, INT64 len )
 {
   struct fd_source *res;
-/*    struct stat st; */
   if( (s->type != PIKE_T_OBJECT) ||
       !get_storage( s->u.object, Fd_ref_program ) )
     return 0;
@@ -151,17 +150,9 @@ struct source *source_stream_make( struct svalue *s,
   apply( s->u.object, "query_fd", 0 );
   res->fd = Pike_sp[-1].u.integer;
   pop_stack();
-
-/*    if( fd_fstat( res->fd, &st ) < 0 )   goto fail; */
-/*    if( S_ISREG(st.st_mode) )            goto fail; */
   
-  if( len != -1 )
-    res->len = len;
-  else
-    res->len = -1;
-
-  if( start )
-    res->skip = start;
+  res->len = len;
+  res->skip = start;
 
   res->s.get_data = get_data;
   res->s.free_source = free_source;
@@ -171,10 +162,6 @@ struct source *source_stream_make( struct svalue *s,
   res->obj = s->u.object;
   res->obj->refs++;
   return (struct source *)res;
-
-fail:
-  free(res);
-  return 0;
 }
 
 void source_stream_exit( )
