@@ -1,8 +1,7 @@
-// $Id: module.pmod.in,v 1.3 2002/11/24 22:14:39 agehall Exp $
+// $Id: module.pmod.in,v 1.4 2002/11/25 01:54:00 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
-
 
 
 //! Allows the user to open a Gzip archive and read and write
@@ -15,7 +14,7 @@ inherit @module@;
 //! after a write, you must close the file before calling open or
 //! strange effects might be the result.
 class File {
-  inherit @module@._file;
+  inherit _file;
 
   private int is_open = 0;
 
