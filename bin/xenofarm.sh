@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.20 2003/09/12 09:40:20 nilsson Exp $
+# $Id: xenofarm.sh,v 1.21 2003/09/12 17:50:57 nilsson Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -39,6 +39,11 @@ xenofarm_post_build() {
   
   log_start export
   $MAKE $MAKE_FLAGS bin_export > xenofarm_result/exportlog.txt 2>&1
+  log_end $?
+  [ $LASTERR = 0 ] || return 1
+
+  log_start benchmark
+  $MAKE $MAKE_FLAGS benchmark > xenofarm_result/benchmark.txt 2>&1
   log_end $?
   [ $LASTERR = 0 ] || return 1
 }
