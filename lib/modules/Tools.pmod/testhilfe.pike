@@ -1,6 +1,6 @@
 
 // Test suite for Hilfe.
-// $Id: testhilfe.pike,v 1.5 2002/04/18 12:30:49 nilsson Exp $
+// $Id: testhilfe.pike,v 1.6 2002/04/24 15:32:01 nilsson Exp $
 
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -49,9 +49,12 @@ class TestHilfe {
 TestHilfe testhilfe=TestHilfe();
 int tests;
 int fails;
+int verbose;
 
 void test(string|array(string) in, string result) {
   tests++;
+  if(verbose)
+    write("%03d %s\n", tests, replace(sprintf("%O", in), "\n", "\n    "));
   if(!testhilfe->test(in, result))
     fails++;
 }
@@ -61,6 +64,9 @@ int main(int num, array(string) args) {
   if(has_value(args, "--help")) {
     write("Test suite for Hilfe.\n");
     return 0;
+  }
+  if(has_value(args, "--verbose")) {
+    verbose++;
   }
 
   test(".", version() + " running Hilfe v3.3 (Incremental Pike Frontend)\n");
@@ -111,6 +117,8 @@ int main(int num, array(string) args) {
   test("void foo() { i++; }", "");
   test("foo();", "0");
   test("i;", "1");
+  test("i*2;", "2");
+  test("2*i;", "2");
 
   test("int n=0;", "");
   test("foreach(({1,2,3}), int m){n+=m;}", "Ok.\n");
@@ -123,6 +131,9 @@ int main(int num, array(string) args) {
   test("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n");
   test("i;", "1");
   test("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340");
+  test("i;", "1");
+  test("class A (int i) { int foo() { return i; } }", "");
+  test("A(2)->foo();", "2");
   test("i;", "1");
 
   // Clear history...
@@ -137,5 +148,5 @@ int main(int num, array(string) args) {
   test("_==__[-1];", "1");
   test("__[1]+__[2]+__[-1];", "7");
 
-  werror("Did %d tests, %d failed.\n", tests, fails);
+  write("Did %d tests, %d failed.\n", tests, fails);
 }
