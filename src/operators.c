@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.190 2004/09/20 12:10:52 mast Exp $
+|| $Id: operators.c,v 1.191 2004/09/20 15:05:08 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.190 2004/09/20 12:10:52 mast Exp $");
+RCSID("$Id: operators.c,v 1.191 2004/09/20 15:05:08 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -496,7 +496,7 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	Pike_error("No cast method in object.\n");
       s=describe_type(type);
       push_string(s);
-      apply_lfun(o, f, 1);
+      apply_low(o, f, 1);
       stack_pop_keep_top();
     }else
 
