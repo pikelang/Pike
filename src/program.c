@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.503 2003/06/03 18:02:28 mast Exp $
+|| $Id: program.c,v 1.504 2003/06/04 09:09:23 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.503 2003/06/03 18:02:28 mast Exp $");
+RCSID("$Id: program.c,v 1.504 2003/06/04 09:09:23 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1844,12 +1844,10 @@ void low_start_new_program(struct program *p,
 	      compilation_depth);
 #endif
     }
-    if(compilation_depth >= 1)
-      add_ref(p->parent = Pike_compiler->new_program);
   }else{
     tmp.u.program=p;
     add_ref(p);
-    if(name)
+    if((pass == 2) && name)
     {
       struct identifier *i;
       id=isidentifier(name);
@@ -1859,6 +1857,10 @@ void low_start_new_program(struct program *p,
       free_type(i->type);
       i->type=get_type_of_svalue(&tmp);
     }
+  }
+  if (pass == 1) {
+    if(compilation_depth >= 1)
+      add_ref(p->parent = Pike_compiler->new_program);
   }
   p->flags &=~ PROGRAM_VIRGIN;
   Pike_compiler->parent_identifier=id;
@@ -2320,6 +2322,11 @@ static ptrdiff_t alignof_variable(int run_time_type)
 void dump_program_tables (struct program *p, int indent)
 {
   int d;
+
+  if (!p) {
+    fprintf(stderr, "%*sProgram: NULL\n\n", indent, "");
+    return;
+  }
 
   fprintf(stderr,
 	  "%*sProgram flags: 0x%04x\n\n",
@@ -3910,6 +3917,7 @@ int define_variable(struct pike_string *name,
 			low_add_storage(sizeof_variable(run_time_type),
 					alignof_variable(run_time_type),0),
 			run_time_type);
+
   ID_FROM_INT(Pike_compiler->new_program, n)->identifier_flags |= IDENTIFIER_NO_THIS_REF;
 
   return n;
@@ -4508,6 +4516,34 @@ make_a_new_def:
 
   return i;
 }
+
+#if 0
+
+int add_ext_ref(struct program_state *state, struct program *target, int i)
+{
+  struct reference ref, *r;
+  int j;
+  if (state->new_program == target) return i;
+  i = add_ext_ref(state->previous, target, i);
+  for (r = state->new_program->identifier_references, j = 0;
+       j < state->new_program->num_identifier_references;
+       j++, r++) {
+    if (((r->id_flags & ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN) ==
+	 ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN) &&
+	(r->identifier_offset == i) &&
+	(!(r->inherit_offset))) {
+      return j;
+    }
+  }
+  ref.id_flags = ID_PARENT_REF|ID_STATIC|ID_PRIVATE|ID_HIDDEN;
+  ref.identifier_offset = i;
+  ref.inherit_offset = 0;
+  add_to_identifier_references(ref);
+  state->new_program->flags |= PROGRAM_USES_PARENT | PROGRAM_NEEDS_PARENT;
+  return j;
+}
+
+#endif /* 0 */
 
 /* Identifier lookup
  *
