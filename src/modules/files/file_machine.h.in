@@ -43,8 +43,17 @@
 /* Define if you have fork1.  */
 #undef HAVE_FORK1
 
-/* Define if you have a solaris compatible readdir_r.  */
+/* Define if you have readdir_r.  */
 #undef HAVE_READDIR_R
+
+/* Define if your readdir_r is POSIX compatible. */
+#undef HAVE_POSIX_READDIR_R
+
+/* Define if your readdir_r is Solaris compatible. */
+#undef HAVE_SOLARIS_READDIR_R
+
+/* Define if your readdir_r is HPUX compatible. */
+#undef HAVE_HPUX_READDIR_R
 
 /* Define if you have strerror.  */
 #undef HAVE_STRERROR
