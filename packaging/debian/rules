@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.6 2002/08/05 23:08:50 grendel Exp $
+# $Id: rules,v 1.7 2002/08/07 22:09:59 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -14,6 +14,9 @@
 
 # This is the debhelper compatibility version to use.
 export DH_COMPAT=3
+
+PIKEV=7.3
+PIKE=pike$(PIKEV)
 
 VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
@@ -85,7 +88,7 @@ build-indep-stamp:
 	# Add here command to compile/build the arch indep package.
 	# It's ok not to do anything here, if you don't need to build
 	#  anything for this package.
-	#/usr/bin/docbook-to-man debian/pike7.3.sgml > pike7.3.1
+	#/usr/bin/docbook-to-man debian/$(PIKE).sgml > $(PIKE).1
 	$(MAKE) -C$(CURDIR)/refdoc PIKE="$(RUNPIKE)"
 
 	touch build-indep-stamp
@@ -157,67 +160,72 @@ install: build
 	dh_clean -k
 	dh_installdirs
 
-	# Add here commands to install the package into debian/pike7.3.
-	$(MAKE) -C$(BUILDDIR)/ buildroot=$(CURDIR)/debian/pike7.3-core \
+	# Add here commands to install the package into debian/$(PIKE).
+	$(MAKE) -C$(BUILDDIR)/ buildroot=$(CURDIR)/debian/$(PIKE)-core \
 	        prefix=/usr \
-		share_prefix=/usr/lib/pike7.3/$(VERSION) \
-		lib_prefix=/usr/lib/pike7.3/$(VERSION) \
+		share_prefix=/usr/lib/$(PIKE)/$(VERSION) \
+		lib_prefix=/usr/lib/$(PIKE)/$(VERSION) \
 		INSTALLARGS=--traditional install
 
+	# we dump the modules ourselves
+	-rm -f `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/ -name "*.o" -type f -print`
+
 	# install the docs
-	install -d -m 755 -o root -g root $(CURDIR)/debian/pike7.3-manual/usr/share/doc/pike7.3-doc/html/manual
-	install -d -m 755 -o root -g root $(CURDIR)/debian/pike7.3-reference/usr/share/doc/pike7.3-doc/html/reference
-	cp -pr refdoc/traditional_manual/* $(CURDIR)/debian/pike7.3-manual/usr/share/doc/pike7.3-doc/html/manual
-	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/pike7.3-manual/usr/share/doc/pike7.3-doc/html/manual/.dhelp
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual
+	install -d -m 755 -o root -g root $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference
+	cp -pr refdoc/traditional_manual/* $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual/.dhelp
 
-	cp -pr refdoc/modref/* $(CURDIR)/debian/pike7.3-reference/usr/share/doc/pike7.3-doc/html/reference
-	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/pike7.3-reference/usr/share/doc/pike7.3-doc/html/reference/.dhelp
+	cp -pr refdoc/modref/* $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
 
-	mv $(CURDIR)/debian/pike7.3-core/usr/bin/pike debian/pike7.3-core/usr/bin/pike7.3
-	rm $(CURDIR)/debian/pike7.3-core/usr/bin/hilfe
-	install -d $(CURDIR)/debian/pike7.3-core/usr/share/man/man1/
-	mv $(CURDIR)/debian/pike7.3-core/usr/man/man1/pike.1 $(CURDIR)/debian/pike7.3-core/usr/share/man/man1/pike7.3.1
-	rm -rf $(CURDIR)/debian/pike7.3-core/usr/man/
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike debian/$(PIKE)-core/usr/bin/$(PIKE)
+	rm $(CURDIR)/debian/$(PIKE)-core/usr/bin/hilfe
+	install -d $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/man/man1/pike.1 $(CURDIR)/debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
+	rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/man/
 
-	mkdir -p $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/include ; \
-	mv $(CURDIR)/debian/pike7.3-core/usr/include/pike \
-	   $(CURDIR)/debian/pike7.3-core/usr/include/pike7.3 ; \
-	chmod 644 `find $(CURDIR)/debian/pike7.3-core/usr/include/pike7.3/ -type f -print`
+	mkdir -p $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/include ; \
+	mv $(CURDIR)/debian/$(PIKE)-core/usr/include/pike \
+	   $(CURDIR)/debian/$(PIKE)-core/usr/include/$(PIKE) ; \
+	chmod 644 `find $(CURDIR)/debian/$(PIKE)-core/usr/include/$(PIKE)/ -type f -print`
 
-	install -m 755 -d -o root -g root $(CURDIR)/debian/pike7.3-dev/usr/share/emacs
-	cp -p $(CURDIR)/debian/pike.el $(CURDIR)/debian/pike7.3-dev/usr/share/emacs
+	install -m 755 -o root -g root $(CURDIR)/src/dumpmodule.pike \
+		      $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/
+	install -m 755 -d -o root -g root $(CURDIR)/debian/$(PIKE)-dev/usr/share/emacs
+	cp -p $(CURDIR)/debian/pike.el $(CURDIR)/debian/$(PIKE)-dev/usr/share/emacs
         # Remove some files that shouldn't be there...
 
-	-rm -f $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/master.pike.in
-	-rm -f $(CURDIR)/debian/pike7.3-core/usr/bin/pike-module
-	-rm -rf $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/tools
-	-rm -f $(CURDIR)/debian/pike7.3-core/usr/bin/pike.syms
-	-rm -f $(CURDIR)/debian/pike7.3-core/usr/bin/rsif
+	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/master.pike.in
+	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike-module
+	-rm -rf $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/tools
+	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/pike.syms
+	-rm -f $(CURDIR)/debian/$(PIKE)-core/usr/bin/rsif
 
         # Fix permissions
 
-	find $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3 -type f -exec chmod -x '{}' ';'
+	find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE) -type f -exec chmod -x '{}' ';'
 
-	for f in `find $(CURDIR)/debian/pike7.3-core/usr/bin -type f` \
-                 `find $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3 -type f`; \
+	for f in `find $(CURDIR)/debian/$(PIKE)-core/usr/bin -type f` \
+                 `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE) -type f`; \
 	do \
 	  file $$f | grep "script" >/dev/null \
-            && perl -pi -e 's@#\!.*NOMODULE@#\!/usr/bin/pike7.3@' $$f \
+            && perl -pi -e 's@#\!.*NOMODULE@#\!/usr/bin/$(PIKE)@' $$f \
 	    && chmod a+x $$f; \
 	  file $$f | grep "script" >/dev/null \
-            && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/pike7.3@' $$f; \
+            && perl -pi -e 's@#\!.*/usr/local/bin/pike@#\!/usr/bin/$(PIKE)@' $$f; \
 	done; exit 0
 
 	# Remove disabled modules
-	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/Ssleay.so
-	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/*Java*
+	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Ssleay.so
+	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/*Java*
 
         # msql is non-free
-	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/include/msql.h
-	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/Msql.so
-	-rm $(CURDIR)/debian/pike7.3-core/usr/lib/pike7.3/$(VERSION)/modules/Sql.pmod/msql.pike
+	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/include/msql.h
+	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Msql.so
+	-rm $(CURDIR)/debian/$(PIKE)-core/usr/lib/$(PIKE)/$(VERSION)/modules/Sql.pmod/msql.pike
 
-	dh_movefiles --sourcedir=debian/pike7.3-core
+	dh_movefiles --sourcedir=debian/$(PIKE)-core
 
 # Build architecture-independent files here.
 # Pass -i to all debhelper commands in this target to reduce clutter.
@@ -261,7 +269,7 @@ binary-arch: build install
 #	dh_installmime -a
 #	dh_installinit -a
 #	dh_installcron -a
-	dh_installman -ppike7.3 debian/pike7.3-core/usr/share/man/man1/pike7.3.1
+	dh_installman -p$(PIKE) debian/$(PIKE)-core/usr/share/man/man1/$(PIKE).1
 #	dh_installinfo -a
 #	dh_undocumented -a
 	dh_installchangelogs  -a
