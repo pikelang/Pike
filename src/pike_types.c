@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.11 1996/12/07 03:23:46 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.12 1997/01/04 05:09:25 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1079,15 +1079,16 @@ char *get_name_of_type(int t)
 {
   switch(t)
   {
-    case T_LVALUE: return "lvalue";
-    case T_INT: return "int";
-    case T_STRING: return "string";
     case T_ARRAY: return "array";
-    case T_OBJECT: return "object";
+    case T_FLOAT: return "float";
+    case T_FUNCTION: return "function";
+    case T_INT: return "int";
+    case T_LVALUE: return "lvalue";
     case T_MAPPING: return "mapping";
     case T_MULTISET: return "multiset";
-    case T_FUNCTION: return "function";
-    case T_FLOAT: return "float";
+    case T_OBJECT: return "object";
+    case T_PROGRAM: return "program";
+    case T_STRING: return "string";
     default: return "unknown";
   }
 }
