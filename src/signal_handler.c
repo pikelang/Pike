@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.196 2001/06/05 12:40:19 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.197 2001/06/20 11:50:45 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2572,6 +2572,10 @@ void f_create_process(INT32 args)
       Pike_error("Failed to create child communication pipe.\n");
     }
 
+#ifdef PROC_DEBUG
+    fprintf(stderr,"control_pipe: %d, %d\n",
+	    control_pipe[0], control_pipe[1]);
+#endif
 #if 0 /* Changed to 0 by hubbe 990306 - why do we need it? */
     init_threads_disable(NULL);
     storage.disabled = 1;
@@ -2597,6 +2601,9 @@ void f_create_process(INT32 args)
 #endif
 	if (pid == -1) {
 	  if (errno == EAGAIN) {
+#ifdef PROC_DEBUG
+	    fprintf(stderr, "Fork failed with EAGAIN\n");
+#endif /* PROC_DEBUG */
 	    /* Process table full or similar.
 	     * Try sleeping for a bit.
 	     *
@@ -2614,24 +2621,63 @@ void f_create_process(INT32 args)
 	      continue;
 	    }
 	  } else if (errno == EINTR) {
+#ifdef PROC_DEBUG
+	    fprintf(stderr, "Fork failed with EINTR\n");
+#endif /* PROC_DEBUG */
 	    /* Try again */
 	    continue;
+#ifdef PROC_DEBUG
+	  } else {
+	    fprintf(stderr, "Fork failed with errno:%d\n", errno);
+#endif /* PROC_DEBUG */
 	  }
 	}
+#ifdef PROC_DEBUG
+	if (pid) {
+	  fprintf(stderr, "Fork ok pid:%d\n", pid);
+	} else {
+	  write(2, "Fork ok pid:0\n", 14);
+	}
+#endif /* PROC_DEBUG */
 	break;
       } while(1);
 
-      while(sigprocmask(SIG_SETMASK, &old_sig, 0))
-	;
+      while(sigprocmask(SIG_SETMASK, &old_sig, 0)) {
+#ifdef PROC_DEBUG
+	char errcode[3] = {
+	  '0'+((errno/100)%10),
+	  '0'+((errno/10)%10),
+	  '0'+(errno%10),
+	};
+	write(2, "sigprocmask() failed with errno:", 32);
+	write(2, errcode, 3);
+	write(2, "\n", 1);
+#endif /* PROC_DEBUG */
+      }
     }
 
     if(pid) {
+#ifdef PROC_DEBUG
+      fprintf(stderr, "th_at_fork_parent()...\n");
+#endif /* PROC_DEBUG */
       th_atfork_parent();
+#ifdef PROC_DEBUG
+      fprintf(stderr, "th_at_fork_parent() done\n");
+#endif /* PROC_DEBUG */
     } else {
+#ifdef PROC_DEBUG
+      write(2, "th_at_fork_child()...\n", 22);
+#endif /* PROC_DEBUG */
       th_atfork_child();
+#ifdef PROC_DEBUG
+      write(2, "th_at_fork_child() done\n", 24);
+#endif /* PROC_DEBUG */
     }
 
-    UNSET_ONERROR(err);
+    if (pid) {
+      /* It's a bad idea to do this in the forked process... */
+      UNSET_ONERROR(err);
+    }
 
     if(pid == -1) {
       int e = errno;
@@ -2658,6 +2704,10 @@ void f_create_process(INT32 args)
 	    e);
     } else if(pid) {
       int olderrno;
+
+#ifdef PROC_DEBUG
+      fprintf(stderr, "Parent\n");
+#endif /* PROC_DEBUG */
 
       process_started(pid);  /* Debug */
       /*
@@ -2836,13 +2886,15 @@ void f_create_process(INT32 args)
       /*
        * The child process
        */
-      ONERROR oe;
-
 #ifdef DECLARE_ENVIRON
       extern char **environ;
 #endif
       extern void my_set_close_on_exec(int,int);
       extern void do_set_close_on_exec(void);
+
+#ifdef PROC_DEBUG
+      write(2, "Child\n", 6);
+#endif /* PROC_DEBUG */
 
       /* Close our parent's end of the pipe. */
       while(close(control_pipe[0]) < 0 && errno==EINTR);
@@ -2850,8 +2902,6 @@ void f_create_process(INT32 args)
       /* Ensure that the pipe will be closed when the child starts. */
       if(set_close_on_exec(control_pipe[1], 1) < 0)
           PROCERROR(PROCE_CLOEXEC, 0);
-
-      SET_ONERROR(oe, exit_on_error, "Error in create_process() child.");
 
       /* Wait for parent to get ready... */
       while ((( e = read(control_pipe[1], buf, 1)) < 0) && (errno == EINTR))
