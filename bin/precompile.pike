@@ -671,6 +671,15 @@ class PikeType
 		if(arrayp(q=tok[1]))
 		{
 		  tmp=q[1..sizeof(q)-2]/({":"});
+		  if(sizeof(tmp)<2)
+		  {
+		    throw( ({
+		      sprintf("%s:%d: Missing return type in function type.\n",
+			      t->file||"-",
+			      t->line),
+			backtrace()
+			}) );
+		  }
 		  array rettmp=tmp[1];
 		  array argstmp=tmp[0]/({","});
 
@@ -858,7 +867,7 @@ array recursive(mixed func, array data, mixed ... args)
  *   "attributename2":"foo2 bar2 gazonk2",
  * ])
  */
-mapping parse_attributes(array attr)
+mapping parse_attributes(array attr, void|string location)
 {
   mapping attributes=([]);
   foreach(attr/ ({";"}), attr)
@@ -867,6 +876,16 @@ mapping parse_attributes(array attr)
       {
 	case 0: break;
 	case 1:
+	  if(arrayp(attr[0]))
+	  {
+	    werror("%s:%d: Expected attribute name!\n",
+		   attr[0][0]->file,
+		   attr[0][0]->line);
+	    if(location)
+	      werror("%s: This is where the attrbutes belongs\n",location);
+	    werror("This is what I got: %O\n",attr[0]);
+	    exit(1);
+	  }
 	  attributes[(string)attr[0]]=1;
 	  break;
 	default:
@@ -1186,7 +1205,9 @@ class ParseBlock
 	array body=func[p];
 	array rest=func[p+1..];
 	string name=(string)proto[-1];
-	mapping attributes=parse_attributes(proto[p+2..]);
+	mapping attributes=parse_attributes(proto[p+2..],
+					    proto[-1]->file+":"+
+					    proto[-1]->line);
 
 	ParseBlock subclass = ParseBlock(body[1..sizeof(body)-2],name);
 	string program_var =mkname(name,"program");
@@ -1404,6 +1425,13 @@ class ParseBlock
 
 	array proto=func[..p-1];
 	p=parse_type(proto,0);
+	if(arrayp(proto[p]))
+	{
+	  werror("%s:%d: Missing return type?\n",
+		 proto[p][0]->file||"-",
+		 proto[p][0]->line);
+	  exit(1);
+	}
 	string name=(string)proto[p];
 	name_occurances[name]++;
       }
@@ -1431,10 +1459,11 @@ class ParseBlock
 		 proto[p][0]->line);
 	  exit(1);
 	}
+	string location=proto[p]->file+":"+proto[p]->line;
 	string name=(string)proto[p];
 	array args_tmp=proto[p+1];
 
-	mapping attributes=parse_attributes(proto[p+2..]);
+	mapping attributes=parse_attributes(proto[p+2..],location);
 #ifdef FUNC_OVERLOAD
 	string common_name=name;
 	if(!attributes->errname)
@@ -1485,7 +1514,16 @@ class ParseBlock
 
 	if(attributes->type)
 	{
-	  type=PikeType(attributes->type);
+	  mixed err=catch {
+	    type=PikeType(attributes->type);
+	  };
+	  if(err)
+	  {
+	    werror("%s: Something went wrong when parsing type: %s\n",
+		   location,
+		   attributes->type);
+	    throw(err);
+	  }
 	}else{
 	  if(last_argument_repeats)
 	  {
