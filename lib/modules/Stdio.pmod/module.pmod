@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.46 1999/04/19 20:56:45 grubba Exp $
+// $Id: module.pmod,v 1.47 1999/04/19 21:19:26 grubba Exp $
 
 import String;
 
@@ -809,7 +809,9 @@ static class nb_sendfile
     function(int, mixed ...:void) cb = callback;
     args = 0;
     callback = 0;
-    cb(sent, @a);
+    if (cb) {
+      cb(sent, @a);
+    }
   }
 
   static int do_write()
@@ -846,10 +848,14 @@ static class nb_sendfile
   {
     if (do_write()) {
       if (from) {
-	if (blocking_from) {
-	  do_read();
-	} else {
-	  if (sizeof(to_write) < READER_RESTART) {
+	if (sizeof(to_write) < READER_RESTART) {
+	  if (blocking_from) {
+	    do_read();
+	    if (!sizeof(to_write)) {
+	      // Done.
+	      writer_done();
+	    }
+	  } else {
 	    if (!sizeof(to_write)) {
 	      // Go to sleep.
 	      to->set_nonblocking(0,0,0);
@@ -885,6 +891,7 @@ static class nb_sendfile
     if (sizeof(to_write) && do_write()) {
       call_out(do_blocking, 0);
     } else {
+      // Done.
       from = 0;
       to = 0;
       writer_done();
