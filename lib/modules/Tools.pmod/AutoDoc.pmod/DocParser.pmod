@@ -65,6 +65,7 @@ mapping(string : int) keywordtype =
   "multiset" : CONTAINERKEYWORD, "index" : DELIMITERKEYWORD,
   "array" : CONTAINERKEYWORD, "elem" : DELIMITERKEYWORD,
   "int" : CONTAINERKEYWORD, "value" : DELIMITERKEYWORD,
+  "string" : CONTAINERKEYWORD,
   "mixed" : CONTAINERKEYWORD, "type" : DELIMITERKEYWORD,
 
   "dl" : CONTAINERKEYWORD, "item" : DELIMITERKEYWORD,
@@ -78,6 +79,7 @@ mapping(string : array(string)) attributenames =
   "array" : ({ "name" }),
   "multiset" : ({ "name" }),
   "int" : ({ "name" }),
+  "string" : ({ "name" }),
   "mixed" : ({ "name" }),
 ]);
 
@@ -95,6 +97,7 @@ mapping(string : multiset(string)) allowedChildren =
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
   "int"     : (< "value" >),
+  "string"  : (< "value" >),
   "mixed"   : (< "type" >),
   "dl"      : (< "item" >),
 ]);
@@ -103,6 +106,7 @@ mapping(string : multiset(string)) allowGrouping =
 (["param" : (< "param" >),
   "member" : (< "member" >),
   "type" : (< "type" >),
+  "value" : (< "value" >),
 ]);
 
 // argHandlers:
