@@ -1043,21 +1043,6 @@ void make_master(string dest, string master, string lib_prefix,
   status("Finalizing",master,"done");
 }
 
-// Create an aclocal.m4 with the correct include_prefix
-void make_aclocal(string src, string dest, string include_prefix)
-{
-  status("Finalizing",src);
-  string aclocal_data=Stdio.read_file(src);
-  aclocal_data =
-    "define(PIKE_INCLUDE_PATH,"+include_prefix+")\n" + aclocal_data;
-  if(compare_to_file(aclocal_data, dest)) {
-    status("Finalizing",dest,"Already finalized");
-    return;
-  }
-  Stdio.write_file(dest,aclocal_data);
-  status("Finalizing",dest,"done");
-}
-
 // Install file while fixing CC= w.r.t. smartlink
 void fix_smartlink(string src, string dest, string include_prefix)
 {
@@ -1259,7 +1244,6 @@ void do_install()
 		   combine_path(vars->SRCDIR,"install-welcome"),
 		   combine_path(vars->SRCDIR,"dumpmaster.pike"),
 		   combine_path(vars->SRCDIR,"dumpmodule.pike"),
-		   combine_path(vars->SRCDIR,"aclocal.m4"),
       });
 
       void basefile(string x) {
@@ -1287,6 +1271,8 @@ void do_install()
 
     install_file(combine_path(vars->SRCDIR,"make_variables.in"),
 		 combine_path(include_prefix,"make_variables.in"));
+    install_file(combine_path(vars->SRCDIR,"aclocal.m4"),
+		 combine_path(include_prefix,"aclocal.m4"));
     install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
 		 combine_path(include_prefix,"precompile.sh"));
 
@@ -1300,8 +1286,6 @@ void do_install()
 				 "modules/dynamic_module_makefile"),
 		    combine_path(include_prefix,"dynamic_module_makefile"),
 		    include_prefix);
-      make_aclocal(combine_path(vars->SRCDIR,"aclocal.m4"),
-		   combine_path(include_prefix,"aclocal.m4"), include_prefix);
       fix_smartlink(combine_path(vars->TMP_BUILDDIR,"specs"),
 		    combine_path(include_prefix,"specs"), include_prefix);
     }
