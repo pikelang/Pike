@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.60 2003/03/26 14:15:42 mast Exp $
+|| $Id: sendfile.c,v 1.61 2003/06/02 17:57:40 mast Exp $
 */
 
 /*
@@ -200,6 +200,10 @@ static void exit_pike_sendfile(struct object *o)
   free_svalue(&(THIS->callback));
   THIS->callback.type = T_INT;
   THIS->callback.u.integer = 0;
+  if (THIS->backend_callback) {
+    remove_callback (THIS->backend_callback);
+    THIS->backend_callback = NULL;
+  }
 }
 
 /*
@@ -251,6 +255,7 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
   SF_DFPRINTF((stderr, "sendfile: Calling callback...\n"));
 
   remove_callback(cb);
+  this->backend_callback = NULL;
 
   if (this->self) {
     /* Make sure we get freed in case of error */
@@ -641,7 +646,12 @@ static void worker(void *this_)
    * * Call the callback.
    * * Get rid of extra ref to the object, and free ourselves.
    */
-  add_backend_callback(call_callback_and_free, this, 0);
+#ifdef PIKE_DEBUG
+  if (this->backend_callback)
+    Pike_fatal ("Didn't expect a backend callback to be installed already.\n");
+#endif
+  this->backend_callback =
+    add_backend_callback(call_callback_and_free, this, 0);
 
   /* Call as soon as possible. */
   next_timeout.tv_usec = 0;
