@@ -12399,7 +12399,7 @@ localtime, time, ctime, mktime
 
   <man_description>
       Search for <i>index</i> in <i>haystack</i>. Returns <tt>1</tt>
-      if the <i>index</i> is in the index domain of <i>haystack</i>,
+      if <i>index</i> is in the index domain of <i>haystack</i>,
       or <tt>0</tt> if not found.
 
       The <tt>has_index</tt> function is equivalent (but sometimes
@@ -12415,7 +12415,7 @@ localtime, time, ctime, mktime
   </man_note>
 
   <man_see>
-    indices, values, zero_type, search, has_value
+    has_value, indices, search, values, zero_type 
   </man_see>
 </function>
 
@@ -12430,7 +12430,7 @@ localtime, time, ctime, mktime
 
   <man_description>
       Search for <i>value</i> in <i>haystack</i>. Returns <tt>1</tt>
-      if the <i>value</i> is in the value domain of <i>haystack</i>,
+      if <i>value</i> is in the value domain of <i>haystack</i>,
       or <tt>0</tt> if not found.
 
       The <tt>has_value</tt> function is in all cases except for strings
@@ -12444,7 +12444,7 @@ localtime, time, ctime, mktime
   </man_description>
 
   <man_see>
-    indices, values, zero_type, search, has_index
+    has_index, indices, search, values, zero_type
   </man_see>
 </function>
 
