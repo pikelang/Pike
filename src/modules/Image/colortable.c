@@ -1,11 +1,11 @@
 #include <config.h>
 
-/* $Id: colortable.c,v 1.5 1997/10/15 00:40:32 mirar Exp $ */
+/* $Id: colortable.c,v 1.6 1997/10/15 00:49:59 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.5 1997/10/15 00:40:32 mirar Exp $<br>
+**!	$Id: colortable.c,v 1.6 1997/10/15 00:49:59 mirar Exp $<br>
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -18,6 +18,7 @@
 #undef COLORTABLE_REDUCE_DEBUG
 
 #include "global.h"
+RCSID("$Id: colortable.c,v 1.6 1997/10/15 00:49:59 mirar Exp $");
 
 #include <sys/types.h>
 #include <sys/stat.h>
