@@ -1,9 +1,9 @@
-# $Id: Makefile.in,v 1.24 1999/05/24 14:33:09 mirar Exp $
+# $Id: Makefile.in,v 1.25 1999/05/25 23:05:26 mirar Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS = image_module.o \
-	image.o font.o togif.o matrix.o pnm_compat.o blit.o \
-	pattern.o dct.o operator.o x.o colortable.o polyfill.o \
+	image.o font.o matrix.o blit.o pattern.o dct.o \
+        operator.o x.o colortable.o polyfill.o \
 	orient.o colors.o search.o layers.o default_font.o
 MODNAME=image
 MODULE_SUBDIRS=encodings
