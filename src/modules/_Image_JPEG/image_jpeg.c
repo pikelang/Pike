@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.52 2002/10/04 11:36:10 norrby Exp $
+ * $Id: image_jpeg.c,v 1.53 2002/10/06 11:44:35 norrby Exp $
  */
 
 #include "global.h"
@@ -39,7 +39,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.52 2002/10/04 11:36:10 norrby Exp $");
+RCSID("$Id: image_jpeg.c,v 1.53 2002/10/06 11:44:35 norrby Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -544,13 +544,14 @@ static void init_src(struct pike_string *raw_img,
    jpeg_set_marker_processor(&mds->cinfo, JPEG_APP0+15, my_jpeg_marker_parser);
 
    mds->cinfo.src=(struct jpeg_source_mgr*)srcmgr;
+   jcopy_markers_setup(&mds->cinfo, JCOPYOPT_ALL);
    jpeg_read_header(&mds->cinfo,TRUE);
 }
 
 void set_jpeg_transform_options(INT32 args, jpeg_transform_info *options)
 {
     int transform = 0;
-    if (parameter_int(sp+1-args,param_transform,&transform) &&
+    if (args > 1 && parameter_int(sp+1-args,param_transform,&transform) &&
 	((transform == JXFORM_FLIP_H) || 
 	(transform == JXFORM_FLIP_V) || 
 	(transform == JXFORM_NONE) || 
@@ -859,6 +860,11 @@ static void image_jpeg_encode(INT32 args)
    pop_n_elems(args);
    push_string(my_result_and_clean(&cinfo));
 
+   if (!img) {
+     /* remove extra workspace if data was read from JPEG string */
+     jpeg_finish_decompress(&mds.cinfo);
+     jpeg_destroy_decompress(&mds.cinfo);
+   }
    jpeg_destroy_compress(&cinfo);
 }
 
@@ -1317,6 +1323,30 @@ void image_jpeg_quant_tables(INT32 args)
 /*! @decl constant FASTEST
  */
 
+/*! @decl constant FLIP_H
+ */
+
+/*! @decl constant FLIP_V
+ */
+
+/*! @decl constant NONE
+ */
+
+/*! @decl constant ROT_90
+ */
+
+/*! @decl constant ROT_180
+ */
+
+/*! @decl constant ROT_270
+ */
+
+/*! @decl constant TRANSPOSE
+ */
+
+/*! @decl constant TRANSVERSE
+ */
+
 /*! @class Marker
  */
 
@@ -1375,30 +1405,6 @@ void image_jpeg_quant_tables(INT32 args)
  */
 
 /*! @decl constant APP15
- */
-
-/*! @decl constant FLIP_H
- */
-
-/*! @decl constant FLIP_V
- */
-
-/*! @decl constant NONE
- */
-
-/*! @decl constant ROT_90
- */
-
-/*! @decl constant ROT_180
- */
-
-/*! @decl constant ROT_270
- */
-
-/*! @decl constant TRANSPOSE
- */
-
-/*! @decl constant TRANSVERSE
  */
 
 /*! @endclass
