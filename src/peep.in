@@ -1,5 +1,5 @@
 //
-// $Id: peep.in,v 1.45 2001/01/15 18:36:43 mast Exp $
+// $Id: peep.in,v 1.46 2001/01/18 00:28:39 grubba Exp $
 //
 
 NOP :
@@ -55,11 +55,11 @@ CLEAR_2_LOCAL CLEAR_2_LOCAL($1a+2) : CLEAR_4_LOCAL($1a)
 // CONST_1 MULTIPLY : NEGATE
 // CONST0 MULTIPLY : POP_VALUE CONST0
 // CONST1 MULTIPLY : 
-// NUMBER MULTIPLY [count_bits($1a)==1]: NUMBER(my_log2($1a)) LSH
+// NUMBER MULTIPLY [!($1a & ($1a - 1))]: NUMBER(my_log2($1a)) LSH
 
 // CONST_1 DIVIDE : NEGATE
 // CONST1 DIVIDE : 
-// NUMBER DIVIDE [count_bits($1a)==1]: NUMBER(my_log2($1a)) RSH
+// NUMBER DIVIDE [!($1a & ($1a - 1))]: NUMBER(my_log2($1a)) RSH
 
 CONST0 SUBTRACT:
 CONST0 XOR:
