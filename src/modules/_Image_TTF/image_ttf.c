@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.6 1998/11/03 08:38:56 per Exp $
+ * $Id: image_ttf.c,v 1.7 1998/11/11 16:20:28 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.6 1998/11/03 08:38:56 per Exp $");
+RCSID("$Id: image_ttf.c,v 1.7 1998/11/11 16:20:28 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #include <freetype.h>
@@ -1216,9 +1216,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 	 }
 	 ypos+=face_i->height;
       }
-
-/*       fprintf(stderr,"rastermap.rows=%d cols=%d width=%d\n", */
-/* 	      rastermap.rows,rastermap.cols,rastermap.width); */
+      free(pixmap);
       push_object(o);
    }
    else 
