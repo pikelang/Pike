@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.48 1999/02/18 16:58:53 grubba Exp $
+ * $Id: requests.pmod,v 1.49 1999/02/18 17:34:14 grubba Exp $
  */
 
 import .types;
@@ -381,7 +381,12 @@ class store
 
     int silent_mode = (data_item == "flags.silent");
 
-    if (server->store(session, message_set, list, mode, silent_mode)) {
+    if (state) {
+      // UID mode.
+      message_set = server->uid_to_local(session, message_set);
+    }
+
+    if (server->store(session, message_set, list, mode, silent_mode, state)) {
       send(tag, "OK");
     } else {
       send(tag, "NO");
