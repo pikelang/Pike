@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.188 2004/11/09 12:27:53 grubba Exp $
+|| $Id: stralloc.c,v 1.189 2004/11/11 14:57:11 grubba Exp $
 */
 
 #include "global.h"
@@ -18,6 +18,7 @@
 #include "interpret.h"
 #include "block_alloc.h"
 #include "operators.h"
+#include "pike_float.h"
 
 #include <errno.h>
 #include <float.h>
@@ -2302,10 +2303,6 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
   }
 }
 
-/* Values used internally in string_builder_vsprintf() */
-#define STATE_MIN_WIDTH	1
-#define STATE_PRECISION 2
-
 /* Kludge around brokeness of gcc/x86_64 */
 #ifdef VA_LIST_IS_STATE_PTR
 #define VA_LIST_PTR		va_list
@@ -2343,6 +2340,10 @@ static LONGEST pike_va_int(VA_LIST_PTR args, int flags)
 	     flags);
   return 0;
 }
+
+/* Values used internally in string_builder_vsprintf() */
+#define STATE_MIN_WIDTH	1
+#define STATE_PRECISION 2
 
 PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					 const char *fmt,
@@ -2513,7 +2514,60 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 					min_width, precision);
 	  break;
 
-	  /* FIMXE: TODO: Doubles (ie 'a', 'e', 'E', 'f', 'g', 'G'). */
+	  /* FIMXE: TODO: Doubles (ie 'a', 'e', 'E', 'g', 'G'). */
+
+	  /* %f used in modules/Image/colors.c. */
+	case 'f':
+	  {
+	    double val = va_arg(args, double);
+	    size_t bytes;
+
+	    if (PIKE_ISNAN(val)) {
+	      /* NaN */
+	      string_builder_strcat(s, "nan");
+	      break;
+	    }
+	    if (val < 0.0) {
+	      string_builder_putchar(s, '-');
+	      val = -val;
+	    } else if (flags & APPEND_SIGNED) {
+	      string_builder_putchar(s, '+');
+	    }
+	    if (val+val == val) {
+	      if (val > 0.0) {
+		/* Infinity */
+		string_builder_strcat(s, "inf");
+	      } else {
+		string_builder_strcat(s, "0.0");
+	      }
+	      break;
+	    }
+	    /* FIXME: Field lengths and precision. */
+	    if ((bytes = snprintf(NULL, 0, "%f", val))) {
+	      p_wchar0 *p = string_builder_allocate(s, bytes, 0);
+	      size_t check = snprintf(p, bytes+1, "%f", val);
+	      if (check != bytes) {
+		Pike_fatal("string_builder_vsprintf(): snprintf(%f) is not "
+			   "trustworthy: %"PRINTSIZET"u != %"PRINTSIZET"u\n",
+			   val, bytes, check);
+	      }
+	      if (s->s->size_shift) {
+		/* We need to widen the string we just wrote. */
+		if (s->s->size_shift == 1) {
+		  p_wchar1 *p1 = (p_wchar1 *)p;
+		  while (bytes--) {
+		    p1[bytes] = p[bytes];
+		  }
+		} else {
+		  p_wchar2 *p2 = (p_wchar2 *)p;
+		  while (bytes--) {
+		    p2[bytes] = p[bytes];
+		  }
+		}
+	      }
+	    }
+	  }
+	  break;
 
 	default:
 	  Pike_fatal("string_builder_vsprintf(): Invalid formatting method: "
