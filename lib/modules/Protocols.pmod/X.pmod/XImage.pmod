@@ -5,7 +5,8 @@
 
 
 // Base class.
-class XImage
+// FIXME: Why not inherit Image.Image directly?
+class Image_wrapper
 {
   class funcall
   {
@@ -23,8 +24,6 @@ class XImage
   }
   
   object image; // The real image.
-
-
 
   void clear_caches(int x, int y, int width, int height)
   {
@@ -55,11 +54,12 @@ class XImage
     redraw(x,y,what->xsize(),what->ysize());
   }
 
-  void set_image(object to)
+  void set_image(object to, int|void no_redraw)
   {
     image = to;
     clear_caches(0,0,image->xsize(),image->ysize());
-    redraw(0,0,image->xsize(),image->ysize());
+    if (!no_redraw)
+      redraw(0,0,image->xsize(),image->ysize());
   }
 
   mixed `->( string ind )
@@ -67,17 +67,15 @@ class XImage
     mixed x;
     if((x = `[](this_object(),ind)))
       return x;
-    x = funcall(image[ind], this_object() );
+    return funcall(image[ind], this_object() );
   }
   
 }
 
-
-// Steels a few callbacks from the window.
-
-class WindowImage
+class XImage
 {
-  inherit XImage;
+  inherit Image_wrapper;
+
   object (Types.Window) window;
   object (Types.RootWindow) root; // extends window
   object (Types.Visual) visual;
@@ -92,11 +90,12 @@ class WindowImage
   int linepad;
   int rmask, gmask, bmask;
 
+  int offset_x, offset_y;
+  
   void set_render(string type)
   {
     if(type == "best") best=1;
   }
-
 
   object allocate_colortable()
   {
@@ -146,7 +145,7 @@ class WindowImage
 //  werror(sprintf("colortable: %O\n", res));
     return ct;
   }
-
+  
   void clear_caches(int x, int y, int width, int height)
   {
     // no inteligence yet...
@@ -174,7 +173,8 @@ class WindowImage
       object mimg = image->copy(x,y,x+width-1,y+slice-1);
 
       if(rmask)
-	window->PutImage( dgc, depth, x, y, width, slice,
+	window->PutImage( dgc, depth, x + offset_x, y + offset_y,
+			  width, slice,
 			  converter( mimg, bpp, linepad, rmask, gmask, bmask,
 				     @(ccol?({ccol}):({}))));
       else
@@ -187,15 +187,7 @@ class WindowImage
     }
   }
 
-  void exposed(mixed event)
-  {
-    werror("expose...");
-    redraw(event->x, event->y, event->width, event->height);
-    werror("done\n");
-  }
-
-
-  void create(object (Types.Window) w)
+  void set_window(object w)
   {
     window = w;
     if(!w->visual)
@@ -218,8 +210,6 @@ class WindowImage
 	visual = root->visual;
     } else
       visual = w->visual;
-
-
 
     if(root->visual == visual)
     {
@@ -263,7 +253,31 @@ class WindowImage
        break;
     }
     dgc = window->CreateGC();
+  }
 
+  void set_offset(int x, int y)
+  {
+    offset_x = x;
+    offset_y = y;
+  }
+}  
+  
+// Steels a few callbacks from the window.
+
+class WindowImage
+{
+  inherit XImage;
+
+  void exposed(mixed event)
+  {
+    werror("expose...");
+    redraw(event->x, event->y, event->width, event->height);
+    werror("done\n");
+  }
+
+  void create(object (Types.Window) w)
+  {
+    set_window(w);
     w->set_event_callback("Expose", exposed); // internal callback...
     w->SelectInput("Exposure");
   }
@@ -271,7 +285,7 @@ class WindowImage
 
 class PixmapImage
 {
-  inherit XImage;
+  inherit Image_wrapper;
   object pixmap;
   object (Types.Window) window, root;
   object (Types.Visual) visual;
