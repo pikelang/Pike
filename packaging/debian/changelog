@@ -1,6 +1,8 @@
 pike7.6 (7.6.11-3) unstable; urgency=medium
 
   * Gotten rid of gdk-imlib1-dev build dependency
+  * Delayed upload to wait for the indirect dependencies to get into
+    the archives.
 
  -- Marek Habersack <grendel@debian.org>  Fri, 30 Jul 2004 14:36:10 +0200
 
