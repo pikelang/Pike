@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.219 2002/09/05 15:42:55 marcus Exp $
+// $Id: master.pike.in,v 1.220 2002/09/09 13:46:29 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -794,6 +794,8 @@ constant master_efuns = ({
 #endif
 });
 
+string include_prefix;
+
 /* Note that create is called before add_precompiled_program
  */
 void create()
@@ -829,6 +831,10 @@ void create()
   // add path for architecture-dependant files
   add_include_path("¤lib_prefix¤/include");
   add_module_path("¤lib_prefix¤/modules");
+#endif
+
+#if "¤include_prefix¤"[0]!='¤'
+  include_prefix = "¤include_prefix¤";
 #endif
 }
 
