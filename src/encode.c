@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.169 2004/05/11 11:07:12 grubba Exp $
+|| $Id: encode.c,v 1.170 2004/05/11 11:09:13 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.169 2004/05/11 11:07:12 grubba Exp $");
+RCSID("$Id: encode.c,v 1.170 2004/05/11 11:09:13 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -514,7 +514,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
   switch(val->type)
   {
     case T_INT:
-      /* FIXME: Doesn't encode NUMBER_UNDEFINED et al. */
+      /* NOTE: Doesn't encode NUMBER_UNDEFINED et al. */
       /* But that's a feature; NUMBER_UNDEFINED is an inherently
        * transient value. It would lose its usefulness otherwise.
        * /mast */
