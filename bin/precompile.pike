@@ -39,9 +39,25 @@
  *     // Object cleanup code.
  *   }
  *
+ *   GC_RECURSE
+ *   {
+ *     // Code to run under the gc recurse pass.
+ *   }
+ *
+ *   GC_CHECK
+ *   {
+ *     // Code to run under the gc check pass.
+ *   }
+ *
  *   EXTRA
  *   {
  *     // Code for adding extra constants etc.
+ *   }
+ *
+ *   OPTIMIZE
+ *   {
+ *     // Code for optimizing calls that clone the class.
+ *     // The node for the call is available in the variable n.
  *   }
  * }
  *
