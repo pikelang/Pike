@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.141 1999/03/31 22:42:35 grubba Exp $");
+RCSID("$Id: file.c,v 1.142 1999/03/31 23:29:12 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -18,6 +18,7 @@ RCSID("$Id: file.c,v 1.141 1999/03/31 22:42:35 grubba Exp $");
 #include "module_support.h"
 #include "gc.h"
 #include "opcodes.h"
+#include "operators.h"
 #include "security.h"
 
 #include "file_machine.h"
@@ -873,7 +874,7 @@ static void file_write(INT32 args)
   INT32 written,i;
   struct pike_string *str;
 
-  if(args<1 || (sp[-args].type != T_STRING) && (sp[-args].type != T_ARRAY))
+  if(args<1 || ((sp[-args].type != T_STRING) && (sp[-args].type != T_ARRAY)))
     error("Bad argument 1 to file->write().\n");
 
   if(FD < 0)
@@ -909,14 +910,20 @@ static void file_write(INT32 args)
       push_int(0);
       return;
     } else {
-      struct iovec *iovbase = xalloc(sizeof(struct iovec)*a->size);
+      struct iovec *iovbase =
+	(struct iovec *)xalloc(sizeof(struct iovec)*a->size);
       struct iovec *iov = iovbase;
       int iovcnt = a->size;
 
       i = a->size;
       while(i--) {
-	iov->iov_base = a->item[i].u.string->str;
-	iov->iov_len = a->item[i].u.string->len;
+	if (a->item[i].u.string->len) {
+	  iov[i].iov_base = a->item[i].u.string->str;
+	  iov[i].iov_len = a->item[i].u.string->len;
+	} else {
+	  iov++;
+	  iovcnt--;
+	}
       }
 
       for(written = 0; iovcnt; check_signals(0,0,0)) {
@@ -929,6 +936,9 @@ static void file_write(INT32 args)
 	i = writev(fd, iov, cnt);
 	THREADS_DISALLOW();
 
+	/* fprintf(stderr, "writev(%d, 0x%08x, %d) => %d\n",
+	   fd, (unsigned int)iov, cnt, i); */
+
 #ifdef _REENTRANT
 	if (FD<0) {
 	  free(iovbase);
@@ -937,6 +947,7 @@ static void file_write(INT32 args)
 #endif
 	if(i<0)
 	{
+	  /* perror("writev"); */
 	  switch(errno)
 	  {
 	  default:
@@ -987,6 +998,7 @@ static void file_write(INT32 args)
 
       pop_stack();
       push_int(written);
+      return;
     }
 #endif /* HAVE_WRITEV */
   }
