@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.272 2002/03/02 18:47:39 mast Exp $");
+RCSID("$Id: language.yacc,v 1.273 2002/03/21 17:39:52 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1263,7 +1263,8 @@ identifier_type: idents
       
       default:
 	if (Pike_compiler->compiler_pass!=1)
-	  yyerror("Illegal program identifier.");
+	  my_yyerror("Illegal program identifier (type:%s).",
+		     get_name_of_type(Pike_sp[-1].type));
 	pop_stack();
 	push_int(0);
 	push_object_type(0, 0);
