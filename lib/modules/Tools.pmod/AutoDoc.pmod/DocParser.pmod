@@ -319,15 +319,16 @@ static class DocParserClass {
       s2 = parser->parseLiteral() || parser->parseIdents();
     }
     parser->eat(EOF);
+    string type = xmltag("type", t->xml());
     if (s)
       if (s2)
-        return xmltag("minindex", xmlquote(s))
+        return type + xmltag("minindex", xmlquote(s))
           + xmltag("maxindex", xmlquote(s2));
       else
-        return xmltag(dots ? "minindex" : "index", xmlquote(s));
+        return type + xmltag(dots ? "minindex" : "index", xmlquote(s));
     else
       if (s2)
-        return xmltag("maxindex", xmlquote(s2));
+        return type + xmltag("maxindex", xmlquote(s2));
       else
         parseError("@elem: expected identifier or literal");
   }
