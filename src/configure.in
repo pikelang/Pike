@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.534 2001/07/08 21:49:51 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.535 2001/07/12 12:11:19 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1193,8 +1193,12 @@ if test "$cflags_is_set" = "no"; then
   DO_IF_OS(AIX,
   [
     # Tell the linker to generate a large toc if needed
-    AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
-    AC_SYS_COMPILER_FLAG([-Wl,-bbigtoc],Wlbbigtoc,LDFLAGS)
+    #
+    # This option is not needed on AIX 5L/ia64.
+    if test "x`uname -p`" = "xia64"; then :; else
+      AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
+      AC_SYS_COMPILER_FLAG([-Wl,-bbigtoc],Wlbbigtoc,LDFLAGS)
+    fi
   ])
 
  else if test "x${TCC-}" = xyes ; then
