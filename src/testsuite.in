@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.164 1999/03/30 13:34:17 grubba Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.165 1999/04/02 23:25:01 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -1020,6 +1020,15 @@ ifefun(gc,
   test_any([[mapping m=([]); m[m]=m; gc(); m=0; return gc() > 0; ]],1);
   test_any([[multiset m=(<>); m[m]=1; gc(); m=0; return gc() > 0; ]],1);
   test_any([[mapping q=([ "t":class {} ()]); gc(); if(!objectp(q->t)) return -1; set_weak_flag(q,1); gc(); if(objectp(q->t)) return -2; return 0;]],0);
+
+  test_do([[class bar { object foo; void create(void|object tmp) { foo=tmp; } };
+             object o=bar(),o2=o;
+             for(int e=0;e<10000;e++) o=bar(o);
+             o2->foo=o;
+             o=o2=0;
+             gc();
+          ]])
+             
 ]])
 
 cond([[all_constants()->_verify_internals]],
