@@ -559,6 +559,10 @@ SGML convert(SGML data)
     }
     else
     {
+      if(!objectp(data))
+      {
+	error("Tag is neither string nor object: %O\n",data);
+      }
       cpos=data->pos;
       switch(data->tag)
       {
@@ -903,6 +907,88 @@ SGML wmml_to_html(SGML data)
       });
 }
 
+SGML split_tag(TAG t, TAG t2)
+{
+  array current=({});
+  switch(t2->tag)
+  {
+    case "preface":
+      if(!sections->introduction)
+	sections->introduction=({t});
+      else
+	sections->introduction+=
+	  ({
+	    t,
+	    Sgml.Tag("hr")
+	  })+
+	  sections->introduction;
+	  return current;
+	  
+    case "introduction":
+      if(!sections->introduction)
+	sections->introduction=({});
+      else
+	sections->introduction+=
+	  ({
+	    Sgml.Tag("hr",(["size":"1","noshade":1]),0)
+	  });
+      
+      
+      sections->introduction+=({
+	t
+      });
+      return current;
+      
+    case "index":
+      sections[t2->params->name || "index"]=({ t });
+      return current;
+      
+    case "chapter":
+    case "appendix":
+      t2->data=low_split(t2->data);
+      sections[t2->params->number]=({ t });
+      return current;
+      
+    case "firstpage":
+      current+=
+	t->data+
+	({
+	  Sgml.Tag("hr",(["size":"1","noshade":1]),0)
+	});
+      
+      sections->firstpage=({
+	t,
+      });
+      return current;
+
+    case "table-of-contents":
+      sections->frame=({
+	Sgml.Tag("frameset",(["cols":"30%,*"]),0,
+		 ({
+		   "\n",
+		   Sgml.Tag("frame",(["src":mklinkname("toc_frame"),"name":"toc"])),
+		   "\n",
+		   
+		   Sgml.Tag("frame",(["src":mklinkname("firstpage"),"name":"display"])),
+		   "\n",
+		   
+		 })),
+	"\n",
+      });
+      
+      sections->toc_frame=Sgml.copy(({ t }));
+      TAG t3=get_tag(sections->toc_frame[0]);
+      t3->params->target="display";
+      sections->toc_frame[0]->params->name="toc_frame";
+      break;
+      
+    default:
+      if(t->data)
+	t->data=low_split(t->data);
+  }
+  return ({t});
+}
+
 
 SGML low_split(SGML data)
 {
@@ -911,86 +997,15 @@ SGML low_split(SGML data)
     {
       if(objectp(t))
       {
-	TAG t2=get_tag(t);
-	switch(t2->tag)
+	SGML tmp=split_tag(t,get_tag(t));
+	if(search(tmp,0) != -1)
 	{
-	case "preface":
-	  if(!sections->introduction)
-	    sections->introduction=({t});
-	  else
-	    sections->introduction+=
-	      ({
-		t,
-		  Sgml.Tag("hr")
-		  })+
-	    sections->introduction;
-	  continue;
-
-	case "introduction":
-	  if(!sections->introduction)
-	    sections->introduction=({});
-	  else
-	    sections->introduction+=
-	      ({
-		Sgml.Tag("hr",(["size":"1","noshade":1]),0)
-	       });
-
-
-	  sections->introduction+=({
-	      t
-		});
-	  continue;
-
-	case "index":
-	  sections[t2->params->name || "index"]=({ t });
-	  continue;
-
-	case "chapter":
-	case "appendix":
-	  sections[t2->params->number]=({ t });
-	  if (this_object()->split_and_remove_section)
-	     this_object()->split_and_remove_section(t);
-	  continue;
-
-	case "firstpage":
-	  current+=
-	    t->data+
-	    ({
-	      Sgml.Tag("hr",(["size":"1","noshade":1]),0)
-		    });
-
-	  sections->firstpage=({
-	    t,
-	  });
-	  continue;
-
-	case "table-of-contents":
-	  sections->frame=({
-	    Sgml.Tag("frameset",(["cols":"30%,*"]),0,
-		     ({
-		       "\n",
-		       Sgml.Tag("frame",(["src":mklinkname("toc_frame"),"name":"toc"])),
-		       "\n",
-		       
-		       Sgml.Tag("frame",(["src":mklinkname("firstpage"),"name":"display"])),
-		       "\n",
-
-		     })),
-	    "\n",
-	  });
-
-	  sections->toc_frame=Sgml.copy(({ t }));
-	  TAG t3=get_tag(sections->toc_frame[0]);
-	  t3->params->target="display";
-	  sections->toc_frame[0]->params->name="toc_frame";
-	  break;
-
-	default:
-	  if(t->data)
-	    t->data=low_split(t->data);
+	  error("Got zero! %O\n",tmp);
 	}
+	current+=tmp;
+      }else{
+	current+=({t});
       }
-      current+=({t});
     }
   
   return current;
