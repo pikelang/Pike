@@ -1,5 +1,6 @@
 Mon Sep 23 01:20:00 1996  Fredrik Hubinette  <hubbe@morpheus.infovav.se>
 
+	* svalue.h: forgot to include BIT_FUNCTION in BIT_COMPLEX...
 	* mapping.c: destructed functionpointers might now be handled
 	  correcly
 	* testsuite genration changed so every module has it's own
