@@ -90,6 +90,26 @@ mixed filter(mixed arr, mixed fun, mixed ... args)
   }
 }
 
+mixed foldl(function fun, array arr, mixed|void zero)
+{
+  if(sizeof(arr))
+    zero = arr[0];
+  for(int i=1; i<sizeof(arr); i++)
+    zero = fun(zero, arr[i]);
+  return zero;
+}
+
+mixed foldr(function fun, array arr, mixed|void zero)
+{
+  if(sizeof(arr))
+    zero = arr[-1];
+  for(int i=sizeof(arr)-2; i>=0; --i)
+    zero = fun(arr[i], zero);
+  return zero;
+}
+
+function reduce = foldl;
+
 array shuffle(array arr)
 {
   int i = sizeof(arr);
