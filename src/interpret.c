@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.39 1997/03/24 02:08:34 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.40 1997/04/10 23:07:22 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -506,7 +506,7 @@ static void eval_instruction(unsigned char *pc)
 	 fp->locals+fp->num_locals > sp)
 	fatal("Stack error (stupid!).\n");
       
-      if(d_flag > 9) check_threads_etc();
+      if(d_flag > 9) do_debug();
 
       backlogp++;
       if(backlogp >= BACKLOG) backlogp=0;
