@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.212 2002/12/11 20:27:00 grubba Exp $
+|| $Id: object.c,v 1.213 2002/12/17 19:56:13 per Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.212 2002/12/11 20:27:00 grubba Exp $");
+RCSID("$Id: object.c,v 1.213 2002/12/17 19:56:13 per Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -153,9 +153,25 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   pike_frame->context.parent=0;                        \
   Pike_fp= pike_frame
 
+
+#define LOW_PUSH_FRAME2(O)                      \
+  pike_frame=alloc_pike_frame();		\
+  pike_frame->next=Pike_fp;			\
+  pike_frame->current_object=O;			\
+  pike_frame->locals=0;				\
+  pike_frame->num_locals=0;				\
+  pike_frame->fun=-1;				\
+  pike_frame->pc=0;					\
+  pike_frame->context.prog=0;                        \
+  pike_frame->context.parent=0;                        \
+  Pike_fp= pike_frame
+
 #define PUSH_FRAME(O) \
   LOW_PUSH_FRAME(O); \
   add_ref(pike_frame->current_object)
+
+#define PUSH_FRAME2(O) \
+  do{LOW_PUSH_FRAME2(O); add_ref(pike_frame->current_object);}while(0)
 
 /* Note: there could be a problem with programs without functions */
 #define SET_FRAME_CONTEXT(X)						     \
@@ -195,6 +211,12 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   pike_frame->next=0;				\
   free_pike_frame(pike_frame); }while(0)
 
+#define POP_FRAME2()				\
+  do{CHECK_FRAME()				\
+  Pike_fp=pike_frame->next;			\
+  pike_frame->next=0;				\
+  free_pike_frame(pike_frame);}while(0)
+
 #define LOW_POP_FRAME()				\
   add_ref(Pike_fp->current_object); \
   POP_FRAME();
@@ -205,43 +227,53 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 {
   int e;
   struct program *p=o->prog;
-  PUSH_FRAME(o);
-
+  struct pike_frame *pike_frame=0;
+  int frame_pushed = 0;
+  
   /* clear globals and call C initializers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
-    int q;
-    SET_FRAME_CONTEXT(p->inherits[e]);
-
-    for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+    struct program *prog = p->inherits[e].prog;
+    int n=(int)prog->num_variable_index;
+    if( n )
     {
-      int d=pike_frame->context.prog->variable_index[q];
-      if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+      char *storage = o->storage+p->inherits[e].storage_offset;
+      int q;
+      for(q=0;q<n;q++)
       {
-	struct svalue *s;
-	s=(struct svalue *)(pike_frame->current_storage +
-			    pike_frame->context.prog->identifiers[d].func.offset);
-	s->type=T_INT;
-	s->u.integer=0;
-	s->subtype=0;
-      }else{
-	union anything *u;
-	u=(union anything *)(pike_frame->current_storage +
-			     pike_frame->context.prog->identifiers[d].func.offset);
-	switch(pike_frame->context.prog->identifiers[d].run_time_type)
+	int d=prog->variable_index[q];
+	if(prog->identifiers[d].run_time_type == T_MIXED)
 	{
-	  case T_INT: u->integer=0; break;
-	  case T_FLOAT: u->float_number=0.0; break;
-	  default: u->refs=0; break;
+	  struct svalue *s;
+	  s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
+	  s->type=T_INT;
+	  s->u.integer=0;
+	  s->subtype=0;
+	}else{
+	  union anything *u;
+	  u=(union anything *)(storage + prog->identifiers[d].func.offset);
+	  switch(prog->identifiers[d].run_time_type)
+	  {
+	    case T_INT: u->integer=0; break;
+	    case T_FLOAT: u->float_number=0.0; break;
+	    default: u->refs=0; break;
+	  }
 	}
       }
     }
-
-    if(pike_frame->context.prog->event_handler)
-      pike_frame->context.prog->event_handler(PROG_EVENT_INIT);
+    if(prog->event_handler)
+    {
+      if( !frame_pushed )
+      {
+	PUSH_FRAME2(o);
+	frame_pushed = 1;
+      }
+      SET_FRAME_CONTEXT(p->inherits[e]);
+      prog->event_handler(PROG_EVENT_INIT);
+    }
   }
-
-  POP_FRAME();
+  if( frame_pushed )
+    POP_FRAME2();
 }
 
 
@@ -249,18 +281,26 @@ void call_prog_event(struct object *o, int event)
 {
   int e;
   struct program *p=o->prog;
-  PUSH_FRAME(o);
+  struct pike_frame *pike_frame=0;
+  int frame_pushed = 0;
 
-  /* clear globals and call C initializers */
+  /* call event handlers */
   for(e=p->num_inherits-1; e>=0; e--)
   {
-    SET_FRAME_CONTEXT(p->inherits[e]);
-
-    if(pike_frame->context.prog->event_handler)
-      pike_frame->context.prog->event_handler(event);
+    struct program *prog = p->inherits[e].prog;
+    if(prog->event_handler)
+    {
+      if( !frame_pushed )
+      {
+	PUSH_FRAME2(o);
+	frame_pushed = 1;
+      }
+      SET_FRAME_CONTEXT(p->inherits[e]);
+      prog->event_handler(event);
+    }
   }
-
-  POP_FRAME();
+  if( frame_pushed )
+    POP_FRAME2();
 }
 
 
@@ -598,6 +638,7 @@ PMOD_EXPORT struct program *get_program_for_object_being_destructed(struct objec
 static void call_destroy(struct object *o, int foo)
 {
   int e;
+
   debug_malloc_touch(o);
   if(!o || !o->prog) {
 #ifdef GC_VERBOSE
@@ -649,6 +690,8 @@ void destruct(struct object *o)
 {
   int e;
   struct program *p;
+  struct pike_frame *pike_frame=0;
+  int frame_pushed = 0;
 
 #ifdef PIKE_DEBUG
   ONERROR uwp;
@@ -669,8 +712,6 @@ void destruct(struct object *o)
   }
 #endif
 
-  add_ref(o);
-
   call_destroy(o,0);
 
   /* destructed in destroy() */
@@ -688,8 +729,7 @@ void destruct(struct object *o)
   debug_malloc_touch(o->storage);
   o->prog=0;
 
-  LOW_PUSH_FRAME(o);
-
+  
 #ifdef GC_VERBOSE
   if (Pike_in_gc > GC_PASS_PREPARE)
     fprintf(stderr, "|   Zapping references in %p with %d refs.\n", o, o->refs);
@@ -699,44 +739,40 @@ void destruct(struct object *o)
   for(e=p->num_inherits-1; e>=0; e--)
   {
     int q;
-
-    SET_FRAME_CONTEXT(p->inherits[e]);
-
-    if(pike_frame->context.prog->event_handler)
-      pike_frame->context.prog->event_handler(PROG_EVENT_EXIT);
-
-#if 0
-    if(!do_free)
+    struct program *prog = p->inherits[e].prog;
+    char *storage = o->storage+p->inherits[e].storage_offset;
+    
+    if(prog->event_handler)
     {
-      debug_malloc_touch(o);
-      debug_malloc_touch(o->storage);
-      continue;
+      if( !frame_pushed )
+      {
+	PUSH_FRAME2(o);
+	frame_pushed = 1;
+      }
+      SET_FRAME_CONTEXT(p->inherits[e]);
+      prog->event_handler(PROG_EVENT_EXIT);
     }
-#endif
 
-    for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+    for(q=0;q<(int)prog->num_variable_index;q++)
     {
-      int d=pike_frame->context.prog->variable_index[q];
+      int d=prog->variable_index[q];
 
-      if (IDENTIFIER_IS_ALIAS(pike_frame->context.prog->identifiers[d].
-			      identifier_flags))
+      if (IDENTIFIER_IS_ALIAS(prog->identifiers[d].identifier_flags))
 	continue;
       
-      if(pike_frame->context.prog->identifiers[d].run_time_type == T_MIXED)
+      if(prog->identifiers[d].run_time_type == T_MIXED)
       {
 	struct svalue *s;
-	s=(struct svalue *)(pike_frame->current_storage +
-			    pike_frame->context.prog->identifiers[d].func.offset);
+	s=(struct svalue *)(storage + prog->identifiers[d].func.offset);
 	free_svalue(s);
       }else{
 	union anything *u;
-	int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
-	u=(union anything *)(pike_frame->current_storage +
-			     pike_frame->context.prog->identifiers[d].func.offset);
+	int rtt = prog->identifiers[d].run_time_type;
+	u=(union anything *)(storage + prog->identifiers[d].func.offset);
 #ifdef PIKE_DEBUG
 	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
 #endif /* PIKE_DEBUG */
-	free_short_svalue(u, pike_frame->context.prog->identifiers[d].run_time_type);
+	free_short_svalue(u, prog->identifiers[d].run_time_type);
 	DO_IF_DMALLOC(u->refs=(void *)-1);
       }
     }
@@ -756,7 +792,8 @@ void destruct(struct object *o)
     }
   }
 
-  POP_FRAME();
+  if( frame_pushed )
+    POP_FRAME2();
 
   free_program(p);
 
