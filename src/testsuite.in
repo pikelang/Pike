@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.548 2002/10/12 13:14:44 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.549 2002/10/13 23:11:34 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -534,6 +534,9 @@ add_constant("test_c",compile_string(
 };
 return res;
 	]],1);
+test_do(add_constant("test_a"))
+test_do(add_constant("test_b"))
+test_do(add_constant("test_c"))
 
 test_any( [[
 // bug [1858] ------------------------------------------------------------
@@ -887,6 +890,8 @@ test_program([[
     }
   }
 ]]);
+test_do(add_constant("f"))
+test_do(add_constant("monitor"))
 
 test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"foo")]])
 test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"z")]])
@@ -1596,6 +1601,7 @@ test_do([[
 test_compile_any([[int log() { return 17; } class Greta { int hanna() { return log(); } }]])
 test_compile_any([[int kajsa(int a,int b) { return 17; } class Jenny { int kajsa() { return 17; } class Greta { int hanna() { return kajsa(); } } }]])
 test_any([[add_constant("kajsa",lambda(int a,int b) { return 17; }); return compile_string("int kajsa() { return 17; } class Greta { int hanna() { return kajsa(); } }")()->kajsa()]],17)
+test_do(add_constant("kajsa"))
 
 test_compile([[Stdio.File foo=Stdio.File();]])
 test_compile([[  string|multiset(string) foo;
@@ -7870,6 +7876,7 @@ test_any([[array(object) o=({clone(PROG)}); destruct(o[0]); return o-({0}) ]],({
 test_any([[mapping o=(["foo":clone(PROG)]); destruct(o["foo"]); return o["foo"]; ]],0);
 dnl test_any([[object t; mapping o=([t=clone(PROG):"foo"]); destruct(t); return sizeof(o)]],0);
 test_do([[object t; array(object) o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
+test_do(add_constant("PROG"))
 
 // - Array.diff
 test_equal(Array.diff(({ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 }),
@@ -8255,6 +8262,7 @@ test_eq(replace("f--barf--",({"f--bar","f--"}),({"f--","f--bar"})),"f--f--bar")
 test_eq(replace("test\ntest\n\ntest\ntest",({"\n","\n\n"}),({" ","<p>"})),"test test<p>test test")
 test_eq(replace("test\ntest\n\ntest\ntest",({"\n\n","\n"}),({"<p>"," "})),"test test<p>test test")
 test_eq(replace("\xfffffff0", ({ "\xfffffff0" }), ({ "" })), "")
+test_eq([[ replace("abcdefg", ([ "a":"x", "d":"y", "h":"z" ])) ]], "xbcyefg")
 
 test_eq("123\000456""890"-"\0", "123\456""890")
 test_eq("123\456000""890"-"\0", "123\456000""890")
@@ -8507,8 +8515,6 @@ test_search4("kapit\344l>")
 test_search4("-------------------+")
 test_search4("\345-------------------")
 test_search4(sprintf("%'argel-bargel glop-glyf?'2000n"))
-
-dnl these can be uncommented when sprintf handles wide strings
 test_search4("\34567-------------------")
 test_search4("\345677777-------------------")
 test_search4("kapit\3333l>")
@@ -8533,6 +8539,7 @@ test_eq(sizeof("felbar"),6)
 test_eq(sizeof(({"fulbar","gazonk",7})),3)
 test_eq(sizeof(([8:3,6:6,7:0])),3)
 test_eq(sizeof((<8,7,6,5,4,7>)),6)
+test_eq([[ sizeof( class { int _sizeof() { return 17; } }() ) ]], 17)
 
 // - sleep
 test_do(sleep(1))
