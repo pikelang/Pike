@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.170 2004/03/02 14:19:55 nilsson Exp $
+|| $Id: html.c,v 1.171 2004/03/15 10:38:42 grubba Exp $
 */
 
 #include "global.h"
@@ -863,7 +863,7 @@ static void html__set_entity_callback(INT32 args)
  *!   This argument can be any of the following.
  *!
  *!   @mixed
-' *!	@type function
+ *!	@type function
  *!       The function will be called as a callback function. It will
  *!       get the following arguments, depending on the type of
  *!       callback.
