@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.146 1999/08/11 15:42:31 mast Exp $
+# $Id: Makefile.in,v 1.147 1999/08/13 21:54:35 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -58,6 +58,10 @@ DEFINES=@CPPFLAGS@
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
+
+# Set to a flag for parallelizing make, e.g. -j2. It's given to make
+# at the level where it's most effective.
+MAKE_PARALLEL=
 
 # Preprocessor flags.
 PREFLAGS=-I. -I$(SRCDIR) $(DEFINES)
@@ -133,7 +137,7 @@ OBJ= \
 
 
 all: module_objects hilfe
-	$(MAKE) $(MAKE_FLAGS) pike
+	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) pike
 	@rm -f dummy_engine >/dev/null 2>&1; echo "" >dummy_engine && \
 	  if cmp $(SRCDIR)/peep_engine.c dummy_engine >/dev/null 2>&1; then \
 	    echo "Warning: No peep_engine." >&2; \
@@ -561,8 +565,8 @@ lobotomize_crypto:
 #
 module_objects: machine.h global.h modules/static_module_makefile modules/dynamic_module_makefile $(SRCDIR)/language.h lib master.pike
 	@( cd modules ; rm remake >/dev/null 2>&1 || : ; \
-	   $(MAKE) $(MAKE_FLAGS) || \
-	     ( test -f remake && $(MAKE) $(MAKE_FLAGS) ) ) || exit $$?
+	   $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) || \
+	     ( test -f remake && $(MAKE) $(MAKE_PARALLEL) $(MAKE_FLAGS) ) ) || exit $$?
 
 language.o: $(SRCDIR)/language.c $(SRCDIR)/object.h $(SRCDIR)/interpret.h $(SRCDIR)/program.h
 
