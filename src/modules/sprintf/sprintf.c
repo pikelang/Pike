@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sprintf.c,v 1.117 2004/03/21 02:01:28 nilsson Exp $
+|| $Id: sprintf.c,v 1.118 2004/03/21 17:14:47 nilsson Exp $
 */
 
 /* TODO: use ONERROR to cleanup fsp */
@@ -278,7 +278,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.117 2004/03/21 02:01:28 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.118 2004/03/21 17:14:47 nilsson Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1404,7 +1404,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	/* Special casing for infinity and not a number,
 	 * since many libc's forget about them...
 	 */
-	if (!(tf == tf)) {
+	if (PIKE_ISNAN(tf)) {
 	  /* NaN */
 	  fs->fsp->b = MKPCHARP("nan", 0);
 	  fs->fsp->len = 3;
