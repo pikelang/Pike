@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.63 2003/02/26 12:03:41 mast Exp $
+|| $Id: port.c,v 1.64 2003/02/26 12:31:57 mast Exp $
 */
 
 /*
@@ -27,7 +27,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.63 2003/02/26 12:03:41 mast Exp $");
+RCSID("$Id: port.c,v 1.64 2003/02/26 12:31:57 mast Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -422,6 +422,8 @@ PMOD_EXPORT char *STRTOK(char *s1,char *s2)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 {
+  /* Note: Code duplication in STRTOD_PCHARP. */
+
   register const unsigned char *s;
   short int sign;
 

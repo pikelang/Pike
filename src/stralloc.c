@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.150 2002/12/01 00:16:55 mast Exp $
+|| $Id: stralloc.c,v 1.151 2003/02/26 12:31:57 mast Exp $
 */
 
 #include "global.h"
@@ -28,7 +28,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.150 2002/12/01 00:16:55 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.151 2003/02/26 12:31:57 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -2421,6 +2421,8 @@ PMOD_EXPORT int convert_stack_top_string_to_inumber(int base)
    character after the last one used in the number is put in *ENDPTR.  */
 PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 {
+  /* Note: Code duplication in STRTOD. */
+
   register PCHARP s;
   short int sign;
 
@@ -2554,8 +2556,10 @@ PMOD_EXPORT double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 
  underflow:
   /* Return an underflow error.  */
+#if 0
   if (endptr != NULL)
     *endptr = nptr;
+#endif
   errno = ERANGE;
   return 0.0;
   
