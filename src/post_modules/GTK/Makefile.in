@@ -36,7 +36,7 @@ doit: always_build_files_to_compile
 	$(MAKE) CFLAGS="`echo $(CFLAGS) | sed -e 's/-g//g'`" "OBJS=`cat files_to_compile`" all
 
 sources0:
-	echo Pike-GTK disabled.
+	@echo "Pike-GTK disabled."
 	$(MAKE) all
 
 docs: docs@WITH_GTK@
@@ -52,7 +52,7 @@ docs1:
 
 
 docs0:
-	echo Pike-GTK disabled.
+	@echo "Pike-GTK disabled."
 
 wmml1:
 	-@mkdir wmml
@@ -62,7 +62,7 @@ wmml1:
 
 
 wmml0:
-	echo Pike-GTK disabled.
+	@echo "Pike-GTK disabled."
 
 #
 # Many machines have problems compiling this file with full optimization.
