@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.230 2004/01/28 13:59:10 grubba Exp $
+|| $Id: pike_types.c,v 1.231 2004/03/10 18:08:12 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.230 2004/01/28 13:59:10 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.231 2004/03/10 18:08:12 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -27,6 +27,7 @@ RCSID("$Id: pike_types.c,v 1.230 2004/01/28 13:59:10 grubba Exp $");
 #include "bignum.h"
 #include "main.h"
 #include "opcodes.h"
+#include "cyclic.h"
 #include "block_alloc.h"
 
 #ifdef PIKE_DEBUG
@@ -4456,6 +4457,8 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
 				 struct pike_type *type_b,
 				 int flags)
 {
+  DECLARE_CYCLIC();
+
   implements_a=0;
   implements_b=0;
   implements_mode=0;
@@ -4483,6 +4486,13 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
     free_string(s2);
   }
 
+  /* Protect against circularities. */
+  if (BEGIN_CYCLIC(type_a, type_b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
+
   if(implements_a && implements_b) {
     if (implements_mode) {
       yyexplain_not_implements(implements_a, implements_b, flags);
@@ -4490,6 +4500,7 @@ void yyexplain_nonmatching_types(struct pike_type *type_a,
       yyexplain_not_compatible(implements_a, implements_b, flags);
     }
   }
+  END_CYCLIC();
 }
 
 

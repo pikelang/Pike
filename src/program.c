@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.555 2004/03/02 11:51:14 grubba Exp $
+|| $Id: program.c,v 1.556 2004/03/10 18:08:12 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.555 2004/03/02 11:51:14 grubba Exp $");
+RCSID("$Id: program.c,v 1.556 2004/03/10 18:08:12 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -7746,12 +7746,13 @@ PMOD_EXPORT int is_compatible(struct program *a, struct program *b)
   return is_compatible_cache[hval].ret;
 }
 
-/* Returns 1 if a is compatible with b */
-int yyexplain_not_compatible(struct program *a, struct program *b, int flags)
+/* Explains why a is not compatible with b */
+void yyexplain_not_compatible(struct program *a, struct program *b, int flags)
 {
   int e;
   struct pike_string *s=findstring("__INIT");
   int res = 1;
+  DECLARE_CYCLIC();
 
   /* Optimize the loop somewhat */
   if (a->num_identifier_references < b->num_identifier_references) {
@@ -7759,6 +7760,12 @@ int yyexplain_not_compatible(struct program *a, struct program *b, int flags)
     a = b;
     b = tmp;
   }
+
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
 
   for(e=0;e<b->num_identifier_references;e++)
   {
@@ -7787,17 +7794,25 @@ int yyexplain_not_compatible(struct program *a, struct program *b, int flags)
 	my_yyerror("Identifier \"%s\" is incompatible.",
 		   bid->name->str);
       yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, flags);
-      res = 0;
     }
   }
-  return res;
+  END_CYCLIC();
+  return;
 }
 
-/* returns 1 if a implements b */
-int yyexplain_not_implements(struct program *a, struct program *b, int flags)
+/* Explains why a does not implement b */
+void yyexplain_not_implements(struct program *a, struct program *b, int flags)
 {
   int e;
   struct pike_string *s=findstring("__INIT");
+  DECLARE_CYCLIC();
+
+  if (BEGIN_CYCLIC(a, b)) {
+    END_CYCLIC();
+    return;
+  }
+  SET_CYCLIC_RET(1);
+
   for(e=0;e<b->num_identifier_references;e++)
   {
     struct identifier *bid;
@@ -7814,7 +7829,7 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
 	yywarning("Missing identifier \"%s\".", bid->name->str);
       else
 	my_yyerror("Missing identifier \"%s\".", bid->name->str);
-      return 0;
+      continue;
     }
 
     if (!pike_types_le(bid->type, ID_FROM_INT(a, i)->type)) {
@@ -7827,10 +7842,10 @@ int yyexplain_not_implements(struct program *a, struct program *b, int flags)
 		  bid->name->str);
 	yytype_error(NULL, ID_FROM_INT(a,i)->type, bid->type, YYTE_IS_WARNING);
       }
-      return 0;
+      continue;
     }
   }
-  return 1;
+  END_CYCLIC();
 }
 
 PMOD_EXPORT void *parent_storage(int depth)
