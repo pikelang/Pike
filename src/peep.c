@@ -145,7 +145,7 @@ void update_arg(int instr,INT32 arg)
 {
   p_instr *p;
 #ifdef DEBUG
-  if(instr > instrbuf.s.len / sizeof(p_instr) || instr < 0)
+  if(instr > (long)instrbuf.s.len / (long)sizeof(p_instr) || instr < 0)
     fatal("update_arg outside known space.\n");
 #endif  
   p=(p_instr *)instrbuf.s.str;
@@ -351,7 +351,7 @@ static void debug()
 {
   p_instr *p;
 
-  if(fifo_len > instrbuf.s.len / sizeof(p_instr))
+  if(fifo_len > (long)instrbuf.s.len / (long)sizeof(p_instr))
     fatal("Fifo too long.\n");
 
   if(eye < 0)
