@@ -3307,7 +3307,7 @@ Here is an example of a simple module:
 	constant PI = 3.14159265358979323846264338327950288419716939937510;
 	float cos2(float f) { return pow(cos(f),2.0); }
 </example>
-if we save this short file as <tt>Trig.pike.pmod</tt> we can now use this
+if we save this short file as <tt>Trig.pmod</tt> we can now use this
 module like this:
 <example language=pike>
 	int main()
