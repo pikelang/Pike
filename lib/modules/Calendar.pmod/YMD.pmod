@@ -2150,10 +2150,30 @@ class cDay
    {
       if (what->is_timeofday)
       {
+	 if (what->is_timeofday_f)
+	 {
+	    Second z=
+	       second(what->hour_no(),
+		      what->minute_no(),
+		      what->second_no());
+	    return
+	       Fraction("timeofday_f",rules,
+			z->unix_time(),what->ns,what->s_len,what->ns_len)
+	       ->autopromote();
+	 }
+	    
+	 return second(what->hour_no(),
+		       what->minute_no(),
+		       what->second_no())
+	    ->set_size_seconds(what->len);
+
+#if 0
 	 int lux=
 	    what->ux-
 	    Day("unix_r",what->unix_time(),what->ruleset())
 	    ->unix_time();
+
+	 werror("%O\n",lux);
 
 	 if (what->is_timeofday_f)
 	    return 
@@ -2163,6 +2183,7 @@ class cDay
 
 	 return Second("timeofday",rules,unix_time()+lux,what->len)
 	    ->autopromote();
+#endif
       }
 
       if (what->is_year) 
