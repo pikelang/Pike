@@ -113,6 +113,7 @@ setuid
 sgn
 symlink
 syslog
+this_program (Well, not really a function. Don't know where it belongs. /mast)
 this_thread
 thread_create
 thread_local
@@ -4856,7 +4857,20 @@ Returns true if the given path is a symbolic link, otherwise false.
 <man_see>Stdio.exist, Stdio.is_dir, Stdio.is_file</man_see>
 </function>
 
-
+<function name=mkdirhier title="make a directory hierarchy">
+<man_syntax>
+int mkdirhier(string <I>pathname</I>, void|int <I>mode</I>);<br>
+</man_syntax>
+<man_description>
+Creates zero or more directories to ensure that the given pathname is
+a directory. Returns zero if it fails and nonzero if it is successful.
+If a mode is given, it's used for the new directories after being &'ed
+with the current umask (on OS'es that supports this).
+</man_description>
+<man_see>
+mkdir
+</man_see>
+</function>
 
 <function name=perror title="print error">
 <man_syntax>
@@ -4912,6 +4926,20 @@ was available when Pike was compiled the user will have history and
 line editing at his/her disposal when entering the line.
 </man_description>
 <man_see>Stdio.File</man_see>
+</function>
+
+
+<function name=recursive_rm title="remove a file or a directory tree recursively">
+<man_syntax>
+int recursive_rm(string <I>path</I>);
+</man_syntax>
+<man_description>
+Remove a file or directory a directory tree, return 0 if it fails.
+Nonzero otherwise.
+</man_description>
+<man_see>
+rm
+</man_see>
 </function>
 
 
@@ -11569,12 +11597,27 @@ encode_value
 string describe_backtrace(array(array) <I>backtrace</I>);
 </man_syntax>
 <man_description>
-Describe backtrace returns a string containing a readable message
-that describes where the backtrace was made. The argument 'backtrace'
-should normally be the return value from a call to backtrace()
+Returns a string containing a readable message that describes where
+the backtrace was made. The argument 'backtrace' should normally be
+the return value from a call to backtrace()
 </man_description>
 <man_see>
-backtrace
+backtrace, describe_error
+</man_see>
+</function>
+
+
+
+<function name=describe_error title="get the error message from a backtrace">
+<man_syntax>
+string describe_error(array(array) <I>backtrace</I>);
+</man_syntax>
+<man_description>
+Returns only the error message in a backtrace. If there is no message
+in it, a fallback message is returned.
+</man_description>
+<man_see>
+backtrace, describe_backtrace
 </man_see>
 </function>
 
@@ -12471,13 +12514,15 @@ max
 
 <function name=mkdir title="make directory">
 <man_syntax>
-int mkdir(string <I>dirname</I>);
+int mkdir(string <I>dirname</I>, void|int <I>mode</I>);
 </man_syntax>
 <man_description>
-Create a directory, return zero if it fails and nonzero if it successful.
+Create a directory, return zero if it fails and nonzero if it
+successful. If a mode is given, it's used for the new directory after
+being &'ed with the current umask (on OS'es that supports this).
 </man_description>
 <man_see>
-rm, cd
+rm, cd, Stdio.mkdirhier
 </man_see>
 </function>
 
