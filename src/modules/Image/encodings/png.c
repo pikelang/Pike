@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.57 2003/12/12 17:44:22 nilsson Exp $
+|| $Id: png.c,v 1.58 2004/02/06 02:34:17 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.57 2003/12/12 17:44:22 nilsson Exp $");
+RCSID("$Id: png.c,v 1.58 2004/02/06 02:34:17 jhs Exp $");
 
 #include "image_machine.h"
 
@@ -302,7 +302,7 @@ static void image_png___decode(INT32 args)
  *!     @member Image.Image "image"
  *!       The decoded image.
  *!     @member int "bpp"
- *!       Number of bitplans in the image. One of 1, 2, 4, 8 and 16.
+ *!       Number of bitplanes in the image. One of 1, 2, 4, 8 and 16.
  *!     @member int "type"
  *!       Image color type. Bit values are:
  *!       @int
@@ -407,12 +407,12 @@ static struct pike_string *_png_unfilter(unsigned char *data,
    if(filter!=0)
      Pike_error("Unknown filter type %d.\n", filter);
 
-   switch (type)
+   switch (type) /* Each pixel is ... */
    {
-      case 2: x=3; break;
-      case 4: x=2; break;
-      case 6: x=4; break;
-      default: x=1; 
+      case 2: x=3; break; /* an R,G,B triple */
+      case 4: x=2; break; /* a grayscale sample, followed by an alpha sample */
+      case 6: x=4; break; /* an R,G,B triple, followed by an alpha sample */
+      default: x=1;       /* a palette index / a grayscale sample */
    }
 
    bpp*=x; /* multipy for units/pixel (rgba=4, grey=1, etc) */
@@ -479,7 +479,7 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 	       a=(a+b)>>1;
 
 	       *d=*s+a;
-       
+
 	       d++;
 	       s++;
 	    }
@@ -884,7 +884,7 @@ static int _png_write_rgb(rgb_group *w1,
 	 switch (bpp)
 	 {
 	    case 8:
-	       if (n>len/3) n=len/3;
+	       if (n>len/2) n=len/2;
 	       while (n)
 	       {
 		  d1->r=d1->g=d1->b=*(s++);
@@ -895,7 +895,7 @@ static int _png_write_rgb(rgb_group *w1,
 	       }
 	       break;
 	    case 16:
-	       if (n>len/6) n=len/6;
+	       if (n>len/4) n=len/4;
 	       while (n)
 	       {
 		  d1->r=d1->g=d1->b=*(s++);
@@ -1261,7 +1261,7 @@ static void img_png_decode(INT32 args,int header_only)
    {
       Pike_error("Image.PNG._decode: missing palette (PLTE chunk)\n");
    }
-   
+
    if (ihdr.compression==0)
    {
       png_decompress(ihdr.compression);
@@ -1272,7 +1272,7 @@ static void img_png_decode(INT32 args,int header_only)
       Pike_error("Image.PNG._decode: illegal compression type 0x%02x\n",
 	    ihdr.compression);
 
-   fs=sp[-1].u.string; 
+   fs=sp[-1].u.string;
    push_int(-1);
    mapping_insert(m,sp-1,sp-2);
 
