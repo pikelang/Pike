@@ -288,9 +288,9 @@ test_any([[mapping m=([]);int e;
   b=allocate(100);
   for(e=0;e<100;e++)
   {
-    m[reverse(e)]=e;
-    a[e]=reverse(e);
-    b[e]=reverse(e);
+    m[reverse(e-50)]=e-50;
+    a[e]=reverse(e-50);
+    b[e]=reverse(e-50);
   }
   add_efun("mtest_m2",m);
   add_efun("mtest_i2",a);
@@ -298,14 +298,18 @@ test_any([[mapping m=([]);int e;
   return 1;
 ]],1)
 
-test_equal(sort_array(indices(mtest_m|mtest_m2)),sort_array(mtest_i|mtest_i2))
-test_equal(sort_array(indices(mtest_m&mtest_m2)),sort_array(mtest_i&mtest_i2))
-test_equal(sort_array(indices(mtest_m-mtest_m2)),sort_array(mtest_i-mtest_i2))
-test_equal(sort_array(indices(mtest_m^mtest_m2)),sort_array(mtest_i^mtest_i2))
-test_equal(sort_array(indices(mtest_m2|mtest_m)),sort_array(mtest_i2|mtest_i))
-test_equal(sort_array(indices(mtest_m2&mtest_m)),sort_array(mtest_i2&mtest_i))
-test_equal(sort_array(indices(mtest_m2-mtest_m)),sort_array(mtest_i2-mtest_i))
-test_equal(sort_array(indices(mtest_m2^mtest_m)),sort_array(mtest_i2^mtest_i))
+test_any([[int e;mapping q=([]),p=([]); for(e=0;e<1000;e++) { p[reverse(e)]=e; q+=([reverse(e):e]); if(!equal(sort(indices(p)),sort(indices(q)))) return 0; } return 1;]],1)
+test_any([[mapping m=([]); m+=(["foo":"bar"]); m+=(["bar":"foo"]); m+=(["foo":"foo"]); return m["foo"]=="foo" && m["bar"]=="foo"]],1)
+test_any([[mixed m=([]); m+=(["foo":"bar"]); m+=(["bar":"foo"]); m+=(["foo":"foo"]); return m["foo"]=="foo" && m["bar"]=="foo"]],1)
+
+test_equal(sort(indices(mtest_m|mtest_m2)),sort(mtest_i|mtest_i2))
+test_equal(sort(indices(mtest_m&mtest_m2)),sort(mtest_i&mtest_i2))
+test_equal(sort(indices(mtest_m-mtest_m2)),sort(mtest_i-mtest_i2))
+test_equal(sort(indices(mtest_m^mtest_m2)),sort(mtest_i^mtest_i2))
+test_equal(sort(indices(mtest_m2|mtest_m)),sort(mtest_i2|mtest_i))
+test_equal(sort(indices(mtest_m2&mtest_m)),sort(mtest_i2&mtest_i))
+test_equal(sort(indices(mtest_m2-mtest_m)),sort(mtest_i2-mtest_i))
+test_equal(sort(indices(mtest_m2^mtest_m)),sort(mtest_i2^mtest_i))
 
 define(MTEST,[[test_equal([[mkmapping(indices(allocate($1)),reverse(indices(allocate($1))))]],[[mkmapping(reverse(indices(allocate($1))),indices(allocate($1)))]])]])
 
@@ -1752,6 +1756,13 @@ test_true(stringp(ctime(0)))
 
 // - destruct
 // FIXME put tests for destruct here.
+test_do(add_efun("PROG",compile_string("int foo() { return 1; }")));
+test_any([[object o=clone(PROG); destruct(o); return o]],0);
+test_any([[object o=clone(PROG); destruct(o); return objectp(o)]],0);
+test_any([[object *o=({clone(PROG)}); destruct(o[0]); return o-({0}) ]],({}));
+test_any([[mapping o=(["foo":clone(PROG)]); destruct(o["foo"]); return o["foo"]; ]],0);
+dnl test_any([[object t; mapping o=([t=clone(PROG):"foo"]); destruct(t); return sizeof(o)]],0);
+test_do([[object t,*o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
 
 // - equal
 // equl is already tested by this script
