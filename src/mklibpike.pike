@@ -1,5 +1,5 @@
 /*
- * $Id: mklibpike.pike,v 1.2 2005/01/03 17:59:05 grubba Exp $
+ * $Id: mklibpike.pike,v 1.3 2005/01/03 18:24:11 grubba Exp $
  *
  * Create strapping code for a list of symbols in pike.so,
  * and the pike headerfiles.
@@ -77,26 +77,73 @@ mapping(string:array(array(Parser.C.Token))) parse(array(Parser.C.Token) tokens)
 int main(int argc, array(string) argv)
 {
   array(string) headers = default_headers;
-  array(string) srcdirs = ({ ".", "/home/grubba/src/Pike/7.7/src", });
-  array(string) symbols = ({
-    "init_pike",
-    "init_pike_runtime",
-    "pike_set_default_master",
-    "set_pike_debug_options",
-  });
+  array(string) srcdirs = ({ "." });
+  array(string) symbols = ({ });
 
   Stdio.File out = Stdio.stdout;
 
-  // FIXME: Argument parsing here.
+  foreach(Getopt.find_all_options(argv, ({
+		 ({ "help", Getopt.NO_ARG, ({ "-h", "--help" }) }),
+		 ({ "header", Getopt.HAS_ARG, ({ "-i", "--include" }) }),
+		 ({ "dir", Getopt.HAS_ARG, ({ "-I", "--include-dir" }) }),
+		 ({ "out", Getopt.HAS_ARG, ({ "-o", "--out" }) }),
+		 ({ "sym", Getopt.HAS_ARG, ({ "-s", "--sym" }) }),
+		 ({ "sym-file", Getopt.HAS_ARG, ({ "-S", "--sym-file" }) }),
+			       }), 1), [string key, string val]) {
+    switch(key) {
+    case "help":
+      //   -h	Help.
+      werror("Usage:\n"
+	     "  %s [ -I <include directory> ... ] \\\n"
+	     "     [ -i <header-file> ... ] \\\n"
+	     "     [ -s <symbol> ... ] \\\n"
+	     "     [ -S <symbol-file> ... ] \\\n"
+	     "     [ -o <output-file> ]\n",
+	     argv[0]);
+      exit(0);
+      break;
+    case "header":
+      //   -i	Add include file.
+      headers += ({ val });
+      break;
+    case "dir":
+      //   -I	Add include directory.
+      srcdirs += ({ val });
+      break;
+    case "out":
+      //   -o	Specify output filename.
+      if (out != Stdio.stdout) {
+	werror("Output file specified multiple times.\n");
+	exit(1);
+      }
+      out = Stdio.File();
+      if (!out->open(val, "wct")) {
+	werror("Failed to open %O for writing.\n", val);
+	exit(1);
+      }
+      break;
+    case "sym":
+      //   -s	Add single symbol.
+      symbols += ({ val });
+      break;
+    case "sym-file":
+      //   -S	Specify symbol file.
+      string raw_syms = Stdio.read_file(val);
+      if (!raw_syms) {
+	werror("Failed to open symbol file %O.\n", val);
+	exit(1);
+      }
+      symbols += String.trim_whites((replace(raw_syms, "\r", "")/"\n")[*]);
+      break;
+    }
+  }
 
-  // Suggested arguments:
-  //
-  //   -h	Help.
-  //   -i	Add include file.
-  //   -I	Add include directory.
-  //   -o	Specify output filename.
-  //   -s	Add single symbol.
-  //   -S	Specify symbol file.
+  argv = Getopt.get_args(argv, 1);
+
+  if (sizeof(argv) != 1) {
+    werror("Too many arguments to %s.\n", argv[0]);
+    exit(1);
+  }
 
   string raw = cpp(sprintf("%{#include \"%s\"\n%}", headers), "include_all.c",
 		   0,
@@ -112,7 +159,7 @@ int main(int argc, array(string) argv)
   mapping(string:array(array(Parser.C.Token))) symbol_info = parse(tokens);
 
   int fail;
-  foreach(symbols, string sym) {
+  foreach(Array.uniq(sort(symbols)), string sym) {
     array(array(Parser.C.Token)) info = symbol_info[sym];
     if (!info) {
       werror("Symbol %O not found!\n", sym);
