@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.389 2001/12/13 11:05:57 mast Exp $");
+RCSID("$Id: program.c,v 1.390 2001/12/14 04:09:07 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2536,8 +2536,10 @@ void low_inherit(struct program *p,
   struct inherit inherit;
 
 #if 0
-  fprintf(stderr,"LOW_INHERIT(pid=%d, parent=%p, parid=%d, paroff=%d, flags=0x%x, name=%s);\n",
-	  p->id,
+  fprintf(stderr,"%p low_inherit(pid=%d, parent=%p, parid=%d, "
+	  "paroff=%d, flags=0x%x, name=%s);\n",
+	  Pike_compiler->new_program,
+	  p ? p->id : 0,
 	  parent,
 	  parent_identifier,
 	  parent_offset,
@@ -2551,6 +2553,11 @@ void low_inherit(struct program *p,
     return;
   }
 
+#ifdef PIKE_DEBUG
+  if (p == placeholder_program)
+    fatal("Trying to inherit placeholder_program.\n");
+#endif
+
   if(p->flags & PROGRAM_NEEDS_PARENT)
   {
     struct program_state *state=Pike_compiler;
@@ -2562,7 +2569,7 @@ void low_inherit(struct program *p,
     }
 
 #if 0
-    /* FIXME: we don't really need to set thsi flag on ALL
+    /* FIXME: we don't really need to set this flag on ALL
      * previous compilations, but I'm too lazy to figure out
      * exactly how deep down we need to go...
      */
@@ -4442,6 +4449,7 @@ extern void yyparse(void);
 #endif
 
 struct Supporter *current_supporter=0;
+int force_resolve = 0;
 
 
 #ifdef PIKE_DEBUG
@@ -4506,15 +4514,14 @@ static void low_verify_supporters(struct Supporter *s)
   if(m->verified) return;
   m->verified = 1;
 
-  low_verify_supporters(s->previous);
-  low_verify_supporters(s->depends_on);
   low_verify_supporters(s->dependants);
   low_verify_supporters(s->next_dependant);
 
 #if 0
-  fprintf(stderr, "low_verify_supporters %p, level %d: "
+  fprintf(stderr, "low_verify_supporters %p%s, level %d: "
 	  "previous %p, depends_on %p, dependants %p, next_dependant %p\n",
-	  s, m->level, s->previous, s->depends_on, s->dependants, s->next_dependant);
+	  s, s == current_supporter ? " == current_supporter" : "",
+	  m->level, s->previous, s->depends_on, s->dependants, s->next_dependant);
 #endif
 
   if(s->previous && SNUM(s->previous) <= m->level)
@@ -4523,9 +4530,15 @@ static void low_verify_supporters(struct Supporter *s)
   if(s->depends_on && SNUM(s->depends_on) <= m->level)
     fatal("Que, numbers out of whack2\n");
 
-  for(ss=s->dependants;ss;ss=ss->next_dependant)
+  for(ss=s->dependants;ss;ss=ss->next_dependant) {
+    if (ss->depends_on != s)
+      fatal("Dependant hasn't got depends_on set properly.\n");
     if(SNUM(ss) >= m->level)
       fatal("Que, numbers out of whack3\n");
+  }
+
+  low_verify_supporters(s->previous);
+  low_verify_supporters(s->depends_on);
 }
 
 void verify_supporters()
@@ -4592,14 +4605,30 @@ int unlink_current_supporter(struct Supporter *c)
   verify_supporters();
   if(c->depends_on)
   {
+#ifdef PIKE_DEBUG
+    struct Supporter *s;
+    for (s = c->depends_on->dependants; s; s = s->next_dependant)
+      if (s == c) fatal("Dependant already linked in.\n");
+#endif
     ret++;
     c->next_dependant = c->depends_on->dependants;
     c->depends_on->dependants=c;
-    c->depends_on=0;
   }
   current_supporter=c->previous;
   verify_supporters();
   return ret;
+}
+
+void free_supporter(struct Supporter *c)
+{
+  verify_supporters();
+  if (c->depends_on) {
+    struct Supporter **s;
+    for (s = &c->depends_on->dependants; *s; s = &(*s)->next_dependant)
+      if (*s == c) {*s = c->next_dependant; break;}
+    c->depends_on = 0;
+  }
+  verify_supporters();
 }
 
 int call_dependants(struct Supporter *s, int finish)
@@ -4625,6 +4654,7 @@ int report_compiler_dependency(struct program *p)
   int ret=0;
   struct Supporter *c,*cc;
   verify_supporters();
+  if (force_resolve) return 0;
   for(cc=current_supporter;cc;cc=cc->previous)
   {
     if(cc->prog &&
@@ -4678,6 +4708,7 @@ static void free_compilation(struct compilation *c)
   if(c->target) free_program(c->target);
   if(c->placeholder) free_object(c->placeholder);
   free_svalue(& c->default_module);
+  free_supporter(&c->supporter);
   free((char *)c);
   verify_supporters();
 }
