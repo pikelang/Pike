@@ -1,3 +1,5 @@
+constant contenttypes = ({});
+
 string decode_charset( string data, string charset )
 {
   switch( replace(lower_case( charset ),"-","_")-"_" )
