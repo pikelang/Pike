@@ -44,70 +44,70 @@ object function_for(string id)
     return o;
   if(o=other[id])
     return o;
-  return other[id] = Call(0, id, con, this_object());
+  return other[id] = Call(0, id, con, this_object(), 0);
 }
 
 // Encoding:
 //
-//  error      -> ({ 0, data })
-//  object     -> ({ 2, id })
-//  function   -> ({ 3, id })
-//  program    -> ({ 3, id })
-//  other      -> ({ 1, data })
-//  call       -> ({ 4, ... })
-//  array      -> ({ 5, a })
-//  return     -> ({ 6, id, data })
-//  mapping    -> ({ 7, m })
+//  error      -> ({ CTX_ERROR, data })
+//  object     -> ({ CTX_OBJECT, id })
+//  function   -> ({ CTX_FUNCTION, id })
+//  program    -> ({ CTX_PROGRAM, id })
+//  other      -> ({ CTX_OTHER, data })
+//  call       -> ({ CTX_CALL_SYNC, ... })
+//  array      -> ({ CTX_ARRAY, a })
+//  return     -> ({ CTX_RETURN, id, data })
+//  mapping    -> ({ CTX_MAPPING, m })
 //
 
 array encode(mixed val)
 {
   if (objectp(val))
-    return ({ 2, id_for(val) });
+    return ({ CTX_OBJECT, id_for(val) });
   if (functionp(val) || programp(val))
-    return ({ 3, id_for(val) });
+    return ({ CTX_FUNCTION, id_for(val) });
   if (arrayp(val))
-    return ({ 5, Array.map(val, encode) });
+    return ({ CTX_ARRAY, Array.map(val, encode) });
   if (mappingp(val))
   {
     mapping m = ([ ]);
     foreach(indices(val), mixed i)
       m[i] = encode(val[i]);
-    return ({ 7, m });
+    return ({ CTX_MAPPING, m });
   }
-  return ({ 1, val });
+  return ({ CTX_OTHER, val });
 }
 
 array encode_error(string e)
 {
-  return ({ 0, e });
+  return ({ CTX_ERROR, e });
 }
 
 array encode_error_return(int id, string e)
 {
-  return ({ 6, id, encode_error(e) });
+  return ({ CTX_RETURN, id, encode_error(e) });
 }
 
 array encode_return(int id, mixed val)
 {
-  return ({ 6, id, encode(val) });
+  return ({ CTX_RETURN, id, encode(val) });
 }
 
 mixed decode(array a)
 {
   // werror(sprintf("decode(%O)\n", a));
   switch(a[0]) {
-  case 0:
+  case CTX_ERROR:
     throw(({ "Remote error: "+a[1]+"\n", backtrace() }));
-  case 1:
+  case CTX_OTHER:
     return a[1];
-  case 2:
+  case CTX_OBJECT:
     return object_for(a[1]);
-  case 3:
+  case CTX_FUNCTION:
     return function_for(a[1]);
-  case 5:
+  case CTX_ARRAY:
     return Array.map(a[1], decode);
-  case 7:
+  case CTX_MAPPING:
     mapping m = ([ ]);
     foreach(indices(a[1]), mixed i)
       m[i] = decode(a[1][i]);
@@ -115,31 +115,32 @@ mixed decode(array a)
   }
 }
 
-array encode_call(object|string o, string|function f, array args)
+array encode_call(object|string o, string|function f, array args, int async)
 {
+  int type = (async ? CTX_CALL_ASYNC : CTX_CALL_SYNC);
   if(objectp(o))
     if(stringp(f))
-      return ({ 4, encode(o), f, encode(args), counter++ });
+      return ({ type, encode(o), f, encode(args), counter++ });
     else
       error("If the first argument is an object, the second must be a string");
   else if(stringp(o))
     if(stringp(f))
-      return ({ 4, ({ 2, o }), f, encode(args), counter++ });
+      return ({ type, ({ CTX_OBJECT, o }), f, encode(args), counter++ });
     else
       error("If the first argument is an object reference, "
 	    "the second must be a string");
   else if(o)
     error("Error in arguments");
   else if(functionp(f)||programp(f))
-    return ({ 4, 0, encode(f), encode(args), counter++ });
+    return ({ type, 0, encode(f), encode(args), counter++ });
   else if(stringp(f))
-    return ({ 4, 0, ({ 3, f }), encode(args), counter++ });
+    return ({ type, 0, ({ CTX_FUNCTION, f }), encode(args), counter++ });
   error("Error in arguments");
 }
 
 function decode_call(array data)
 {
-  if(data[0]!=4)
+  if((data[0] != CTX_CALL_SYNC) && (data[0] != CTX_CALL_ASYNC))
     error("This is not a call");
   if(data[1])
   {
@@ -159,25 +160,29 @@ void add(object o, string id)
 string describe(array data)
 {
   switch(data[0]) {
-  case 0:
+  case CTX_ERROR:
     return "ERROR "+sprintf("%O",data[1]);
-  case 1:
+  case CTX_OTHER:
     if(stringp(data[1]))
       return "\""+data[1]+"\"";
     return (string)data[1];
-  case 2:
+  case CTX_OBJECT:
     return "<object "+data[1]+">";
-  case 3:
+  case CTX_FUNCTION:
     return "<function "+data[1]+">";
-  case 4:
+  case CTX_CALL_SYNC:
+  case CTX_CALL_ASYNC:
     return (data[1] ? data[1][1]+"->"+data[2] : "<function "+data[2][1]+">") +
-      "(" + Array.map(data[3][1], describe)*"," + ") ["+data[4]+"]";
-  case 6:
+      "(" + Array.map(data[3][1], describe)*"," + ") ["+data[4]+" "+
+      (data[0]==CTX_CALL_SYNC ? "sync" : "async" ) + "]";
+  case CTX_RETURN:
     return "return["+data[1]+"]: " + describe(data[2]);
-  case 7:
+  case CTX_MAPPING:
     return "<mapping "+sizeof(indices(data[1]))+">";
+  case CTX_ARRAY:
+    return "<array "+sizeof(data[1])+">";
   }
-  return "<unknown>";
+  return "<unknown "+data[0]+">";
 }
 
 void set_server_context(object ctx, object cn)
