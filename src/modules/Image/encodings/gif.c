@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.23 1998/01/14 16:11:55 mirar Exp $ */
+/* $Id: gif.c,v 1.24 1998/01/14 16:30:01 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.23 1998/01/14 16:11:55 mirar Exp $
+**!	$Id: gif.c,v 1.24 1998/01/14 16:30:01 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.23 1998/01/14 16:11:55 mirar Exp $");
+RCSID("$Id: gif.c,v 1.24 1998/01/14 16:30:01 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1279,7 +1279,8 @@ void image_gif_netscape_loop_block(INT32 args)
 static void _decode_get_extension(unsigned char **s,
 				  unsigned long *len)
 {
-   int ext,sz,n;
+   int ext;
+   unsigned long n,sz;
 
    if (*len<3) { (*s)+=*len; (*len)=0; return; }
    n=0;
@@ -1316,7 +1317,8 @@ static void _decode_get_extension(unsigned char **s,
 static void _decode_get_render(unsigned char **s,
 			       unsigned long *len)
 {
-   int n=0,sz,bpp;
+   int n=0,bpp;
+   unsigned long sz;
 
 /* byte ...
    0  0x2c (render block init)
@@ -1354,7 +1356,7 @@ static void _decode_get_render(unsigned char **s,
    push_int( !!((*s)[9]&64) );
 
    if ( ((*s)[9]&128) )
-      if ((*len)>10+(3<<bpp) )
+      if ((*len)>10+(unsigned long)(3<<bpp) )
       {
 	 push_string(make_shared_binary_string((*s)+10,3<<bpp));
 	 (*s)+=10+(3<<bpp);
@@ -1454,7 +1456,7 @@ static void image_gif___decode(INT32 args)
    aspect=s[12];
 
    s+=13; len-=13;
-   if (globalpalette && len<(3<<bpp))
+   if (globalpalette && len<(unsigned long)(3<<bpp))
       error("Image.GIF.__decode: premature EOD (in global palette)\n");
    
    push_int(xsize);
@@ -1686,7 +1688,7 @@ static void _gif_decode_lzw(unsigned char *s,
       else
       {
 	 struct lzwc *myc;
-	 rgb_group *d,*da;
+	 rgb_group *d,*da=NULL;
 	 unsigned short lc;
 	 myc=c+n;
 	 
@@ -1741,7 +1743,7 @@ static void gif_deinterlace(rgb_group *s,
 			    unsigned long ysize)
 {
    rgb_group *tmp;
-   int y,n;
+   unsigned long y,n;
 
    tmp=malloc(xsize*ysize*sizeof(rgb_group));
    if (!tmp) return;
@@ -1768,7 +1770,7 @@ static void image_gif__decode(INT32 args)
    struct object *o,*o2,*cto,*lcto;
    int transparency_index=0,transparency=0,
       disposal=0,user_input=0,delay=0,interlace;
-   unsigned char *s;
+   unsigned char *s=NULL;
    struct image *img,*aimg=NULL;
 
    if (!args)
