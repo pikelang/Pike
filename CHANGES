@@ -43,6 +43,7 @@ o trace() takes another argument to turn on tracing in all threads
     instead the trace() function has been extended to make it possible
     to set the trace level in all threads simultaneously.
 
+o Regexp.PCRE added to give libpcre support
 
 Optimizations:
 --------------
