@@ -517,6 +517,10 @@ void f_fork(INT32 args)
 #else
   push_int(res=fork());
 #endif
+  if(!res && res!=-1)
+  {
+    call_callback(&fork_child_callback, 0);
+  }
 #if defined(_REENTRANT)
   if(!res)
   {

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.27 1997/09/11 19:36:21 grubba Exp $
+ * $Id: system.c,v 1.28 1997/09/17 10:31:52 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.27 1997/09/11 19:36:21 grubba Exp $");
+RCSID("$Id: system.c,v 1.28 1997/09/17 10:31:52 hubbe Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -604,6 +604,7 @@ int my_isipnr(char *s)
 
 #else /* HAVE_OSF1_GETHOSTBYNAME_R */
 static MUTEX_T gethostbyname_mutex;
+#define GETHOSTBYNAME_MUTEX_EXISTS
 
 #define GETHOST_DECLARE struct hostent *ret
 
@@ -761,6 +762,14 @@ void f_gethostbyname(INT32 args)
 }  
 #endif /* HAVE_GETHOSTBYNAME */
 
+
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+static void cleanup_after_fork()
+{
+  mt_init(&gethostbyname_mutex);
+}
+#endif
+
 /*
  * Module linkage
  */
@@ -863,6 +872,10 @@ void pike_module_init(void)
 #endif
 #ifdef HAVE_SETPWENT
   add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif
+
+#ifdef GETHOSTBYNAME_MUTEX_EXISTS
+  add_to_callback(& fork_child_callback, cleanup_after_fork, 0, 0);
 #endif
 }
 

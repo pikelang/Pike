@@ -7,6 +7,8 @@
 #include "callback.h"
 #include "error.h"
 
+struct callback_list fork_child_callback;
+
 /*
  * This file is used to simplify the management of callbacks when certain
  * events occur. The callbacks are managed as linked lists, allocated in
@@ -160,7 +162,6 @@ void call_callback(struct callback_list *lst, void *arg)
       l->call(l,l->arg, arg);
       if(lst->num_calls != this_call) return;
     }
-    check_callback_chain(lst);
 
     if(!l->call)
     {

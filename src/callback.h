@@ -16,6 +16,8 @@ struct callback_list
   int num_calls;
 };
 
+extern struct callback_list fork_child_callback;
+
 typedef void (*callback_func)(struct callback *, void *,void *);
 
 /* Prototypes begin here */
