@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.212 2003/03/15 16:18:32 grubba Exp $
+|| $Id: pike_types.c,v 1.213 2003/03/29 13:47:52 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.212 2003/03/15 16:18:32 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.213 2003/03/29 13:47:52 marcus Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1227,7 +1227,7 @@ static void internal_parse_typeA(const char **_s)
 
 static void internal_parse_typeB(const char **s)
 {
-  while(ISSPACE(**((const unsigned char **)s))) ++*s;
+  while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
   switch(**s)
   {
   case '!':
@@ -1239,7 +1239,7 @@ static void internal_parse_typeB(const char **s)
   case '(':
     ++*s;
     internal_parse_type(s);
-    while(ISSPACE(**((const unsigned char **)s))) ++*s;
+    while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
     if(**s != ')') Pike_error("Expecting ')'.\n");
     ++*s;
     break;
@@ -1254,12 +1254,12 @@ static void internal_parse_typeCC(const char **s)
 {
   internal_parse_typeB(s);
 
-  while(ISSPACE(**((const unsigned char **)s))) ++*s;
+  while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
   
   while(**s == '*')
   {
     ++*s;
-    while(ISSPACE(**((const unsigned char **)s))) ++*s;
+    while(ISSPACE(EXTRACT_UCHAR(*s))) ++*s;
     push_type(T_ARRAY);
   }
 }
