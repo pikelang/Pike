@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.21 1999/11/14 22:48:19 grubba Exp $
+// $Id: treeopt.in,v 1.22 1999/11/15 21:35:17 grubba Exp $
 //
 // The tree optimizer
 //
@@ -21,61 +21,67 @@
 F_CAST(-,*):
   -;
 
-F_CAST[$$->type == void_type_string](-, *):
-  -;
-
 F_CAST[$$->type == void_type_string](F_CONSTANT, *):
   -;
 
-F_CAST[$$->type == void_type_string](F_COMMA_EXPR(0, F_CONSTANT), *):
+// Cast to void overrides other casts.
+F_CAST[$$->type == void_type_string](F_CAST(0, *), *):
 {
   $$ = mkcastnode(void_type_string, $0);
 }
 ;
 
-F_CAST[$$->type == void_type_string]
-      (F_APPLY(F_CONSTANT[($$->node_info &
-			   (OPT_SIDE_EFFECT|
-			    OPT_ASSIGNMENT|
-			    OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
-	       F_ARG_LIST(1, 2)), *):
+// void can't be casted to anything else.
+F_CAST(0 = +[$$->type == void_type_string], *):
+  $0;
+
+// This one is probably not needed, since it's handled by mkcastnode()
+0 = F_CAST(1 = +[$$->type == $0->type](*, *), *):
+  $1;
+
+// Propagate casts towards the leaves
+0 = F_CAST(F_COMMA_EXPR(1, 2), *):
 {
-  $$ = mkcastnode(void_type_string,
-		  mknode(F_COMMA_EXPR, $1, $2));
+  struct pike_string *type = $0->type;
+  $$ = mknode(F_COMMA_EXPR, mkcastnode(void_type_string, $1),
+	      mkcastnode(type, $2));
 }
 ;
 
-F_CAST[$$->type == void_type_string]
-      (F_APPLY(F_CONSTANT[($$->node_info &
-			   (OPT_SIDE_EFFECT|
-			    OPT_ASSIGNMENT|
-			    OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
-	       0), *):
-	$0;
+// Propagate casts toward the leaves
+0 = F_CAST('?'(1, ':'(2, 3)), *):
+{
+  struct pike_string *type = $0->type;
+  $$ = mknode('?', $1, mknode(':', mkcastnode(type, $2),
+			      mkcastnode(type, $3)));
+}
+;
 
-// 0 = F_CAST(F_COMMA_EXPR(F_CAST[$$->type == $0->type](1, *), 2), *):
+// Remove function calls that don't affect the result or the state.
+// FIXME: Disabled since it doesn't check for callbacks.
+// F_CAST[$$->type == void_type_string]
+// 	 (F_APPLY(F_CONSTANT[($$->node_info &
+// 			      (OPT_SIDE_EFFECT|
+// 			       OPT_ASSIGNMENT|
+// 			       OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
+// 		  F_ARG_LIST(1, 2)), *):
 // {
-//   struct pike_string *type = $0->type;
-//   $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $1, $2));
+//   $$ = mkcastnode(void_type_string,
+// 		     mknode(F_COMMA_EXPR, $1, $2));
 // }
 // ;
+// 
+// F_CAST[$$->type == void_type_string]
+// 	 (F_APPLY(F_CONSTANT[($$->node_info &
+// 			      (OPT_SIDE_EFFECT|
+// 			       OPT_ASSIGNMENT|
+// 			       OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
+// 		  0), *):
+// 	   $0;
 
-0 = F_CAST('?'(1, ':'(F_CAST[$$->type == $0->type](2, *), 3)), *):
-{
-  struct pike_string *type = $0->type;
-  $$ = mkcastnode(type, mknode('?', $1, mknode(':', $2, $3)));
-}
-;
-
-0 = F_CAST('?'(1, ':'(2, F_CAST[$$->type == $0->type](3, *))), *):
-{
-  struct pike_string *type = $0->type;
-  $$ = mkcastnode(type, mknode('?', $1, mknode(':', $2, $3)));
-}
-;
-
-0 = F_CAST(1 = F_CAST[$$->type == $0->type](*, *), *):
-  $1;
+// Convert the argument-list to a comma-list.
+F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
+  F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
 
 
 F_RANGE(*, F_ARG_LIST(*, F_CONSTANT[$$->u.sval.type == T_INT]
@@ -114,30 +120,10 @@ F_COMMA_EXPR(F_COMMA_EXPR(0, +[!($$->tree_info & (OPT_SIDE_EFFECT|
 						  OPT_RETURN))]), 1 = +):
   F_COMMA_EXPR($0, $1);
 
-F_COMMA_EXPR(F_ARG_LIST(0, 1), 2):
-  F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
-
 // Ensure that the result value is at the top-node, to ensure
 // proper optimization.
 F_COMMA_EXPR(0, F_COMMA_EXPR(1, 2)):
   F_COMMA_EXPR(F_COMMA_EXPR($0, $1), $2);
-
-// F_COMMA_EXPR(F_CAST[$$->type == void_type_string](0, *), 1):
-//   F_COMMA_EXPR($0, $1);
-
-F_COMMA_EXPR(0, 1 = F_CAST(2, *)):
-{
-  struct pike_string *type = $1->type;
-  $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $0, $2));
-}
-;
-
-// F_COMMA_EXPR(0 = F_CAST(1, *), F_CAST[$$->type == $0->type](2, *)):
-// {
-//   struct pike_string *type = $0->type;
-//   $$ = mkcastnode(type, mknode(F_COMMA_EXPR, $1, $2));
-// }
-// ;
 
 // Is really the OPT_CASE needed for the following three?
 F_COMMA_EXPR(0 = F_RETURN, +[!($$->tree_info & OPT_CASE)]):
@@ -269,9 +255,6 @@ F_LAND(+[node_is_true($$)], 0):
 F_LAND(0 = +[node_is_false($$)], *):
   $0;
 
-// F_LAND(0, 1 = +[node_is_false($$)]):
-//   F_COMMA_EXPR($0, $1);
-
 
 '?'(-, -):
   -;
@@ -302,16 +285,6 @@ F_LAND(0 = +[node_is_false($$)], *):
 
 '?'(0, ':'(F_COMMA_EXPR(1, 2), F_COMMA_EXPR(3, $2))):
   F_COMMA_EXPR('?'($0, ':'($1, $3)), $2);
-
-'?'(0, ':'(1 = F_CAST(2, *), F_CAST[$$->type == $1->type](3, *))):
-{
-  /* NOTE: This temporary variable is needed, since otherwise
-   * $1 will get an extra ref.
-   */
-  struct pike_string *type = $1->type;
-  $$ = mkcastnode(type, mknode('?', $0, mknode(':', $2, $3)));
-}
-;
 
 F_NOT(-, *):
   1;
