@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.92 2004/03/10 17:17:10 grubba Exp $
+|| $Id: backend.cmod,v 1.93 2004/03/19 17:29:55 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.92 2004/03/10 17:17:10 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.93 2004/03/19 17:29:55 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -123,6 +123,9 @@ struct call_out_s
   MESS_UP_BLOCK(X); \
   } while(0)
 BLOCK_ALLOC_FILL_PAGES(call_out_s, 2)
+
+#define alloc_call_out()	debug_malloc_pass(alloc_call_out_s())
+#define really_free_call_out(X)	really_free_call_out_s(debug_malloc_pass(X))
 
 typedef struct call_out_s call_out;
 
@@ -778,10 +781,11 @@ PIKECLASS Backend
 #define CAR(X) (((X)<<1)+1)
 #define CDR(X) (((X)<<1)+2)
 #define PARENT(X) (((X)-1)>>1)
-#define CALL(X) (me->call_buffer[(X)])
-#define MOVECALL(X,Y) do { INT32 p_=(X); (CALL(p_)=CALL(Y))->pos=p_; }while(0)
+#define CALL_(X) (me->call_buffer[(X)])
+#define CALL(X) ((struct call_out_s *)debug_malloc_pass(CALL_(X)))
+#define MOVECALL(X,Y) do { INT32 p_=(X); (CALL_(p_)=CALL(Y))->pos=p_; }while(0)
 #define CMP(X,Y) my_timercmp(& CALL(X)->tv, <, & CALL(Y)->tv)
-#define SWAP(X,Y) do{ call_out *_tmp=CALL(X); (CALL(X)=CALL(Y))->pos=(X); (CALL(Y)=_tmp)->pos=(Y); } while(0)
+#define SWAP(X,Y) do{ call_out *_tmp=CALL(X); (CALL_(X)=CALL(Y))->pos=(X); (CALL_(Y)=_tmp)->pos=(Y); } while(0)
 
 #ifdef PIKE_DEBUG
 #define PROTECT_CALL_OUTS() \
@@ -850,7 +854,7 @@ PIKECLASS Backend
      }
      
      for(d=0;d<10 && e<me->call_buffer_size;d++,e++)
-       CALL(e)=(call_out *)(ptrdiff_t)-1;
+       CALL_(e)=(call_out *)(ptrdiff_t)-1;
 
      for(e=0;e<(int)me->hash_size;e++)
      {
@@ -1011,7 +1015,7 @@ PIKECLASS Backend
      /* time to allocate a new call_out struct */
      args=aggregate_array(num_arg-1);
      
-     CALL(me->num_pending_calls)=new=alloc_call_out_s();
+     CALL_(me->num_pending_calls) = new = alloc_call_out();
      new->pos=me->num_pending_calls;
      
      {
@@ -1169,7 +1173,7 @@ PIKECLASS Backend
 	 }
 	 UNPROTECT_CALL_OUTS();
 	 c=*cc;
-	 really_free_call_out_s(cc);
+	 really_free_call_out(cc);
 	 
 	 if(c.caller) free_object(c.caller);
 	 
@@ -1339,7 +1343,7 @@ PIKECLASS Backend
 	 free_array(CALL(e)->args);
 	 if(CALL(e)->caller)
 	   free_object(CALL(e)->caller);
-	 really_free_call_out_s(CALL(e));
+	 really_free_call_out(CALL(e));
 	 me->num_pending_calls--;
 	 if(e!=me->num_pending_calls)
 	 {
@@ -2770,7 +2774,7 @@ PIKECLASS Backend
       {
 	free_array(CALL(e)->args);
 	if(CALL(e)->caller) free_object(CALL(e)->caller);
-	really_free_call_out_s(CALL(e));
+	really_free_call_out(CALL(e));
       }
       if(me->call_buffer) free((char*)me->call_buffer);
       if(me->call_hash) free((char*)me->call_hash);
