@@ -1,0 +1,30 @@
+#
+# $Id: configure.in,v 1.1 2001/01/13 18:35:18 mirar Exp $
+#
+AC_INIT(pdflib_glue.c)
+AC_CONFIG_HEADER(pdf_machine.h)
+AC_ARG_WITH(libpdf,     [  --with(out)-libpdf       Support PDF through PDFlib],[],[with_libpdf=yes])
+
+AC_MODULE_INIT()
+
+if test x$with_libpdf = xyes ; then
+  AC_CHECK_HEADERS(pdflib.h)
+  if test x$ac_cv_header_pdflib_h = xyes ; then
+
+# PDFlib might need these
+    AC_CHECK_LIB(png, png_read_image, [ LIBS="${LIBS-} -lpng" ])
+    AC_CHECK_LIB(z,   deflate,        [ LIBS="${LIBS-} -lz" ])
+    AC_CHECK_LIB(tiff,TIFFOpen,       [ LIBS="${LIBS-} -ltiff" ])
+
+# now check
+    AC_CHECK_LIB(pdf, PDF_boot, [
+      AC_DEFINE(HAVE_LIBPDF) 
+      LIBS="${LIBS-} -lpdf"
+      ])
+
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

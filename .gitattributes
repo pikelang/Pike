@@ -336,6 +336,11 @@ testfont binary
 /src/modules/Oracle/acconfig.h foreign_ident
 /src/modules/Oracle/configure.in foreign_ident
 /src/modules/Oracle/oracle.c foreign_ident
+/src/modules/PDF/Makefile.in foreign_ident
+/src/modules/PDF/acconfig.h foreign_ident
+/src/modules/PDF/configure.in foreign_ident
+/src/modules/PDF/pdf_machine.h.in foreign_ident
+/src/modules/PDF/pdflib_glue.c foreign_ident
 /src/modules/Parser/Makefile.in foreign_ident
 /src/modules/Parser/acconfig.h foreign_ident
 /src/modules/Parser/configure.in foreign_ident
