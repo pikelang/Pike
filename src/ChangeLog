@@ -1,5 +1,7 @@
 Mon Nov  6 00:26:48 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
+        * v1.0E-12 released
+
 	* master.lpc: now seeds random generator
 	* simulate.lpc: call_other removed
 	* arrays, mappings, objects and lists added as efuns can now
