@@ -1,8 +1,5 @@
-// $Id: module.pmod,v 1.129 2001/11/22 19:59:46 nilsson Exp $
+// $Id: module.pmod,v 1.130 2001/11/24 04:59:03 nilsson Exp $
 #pike __REAL_VERSION__
-
-
-import String;
 
 inherit files;
 
@@ -1490,7 +1487,7 @@ string read_file(string filename,void|int start,void|int len)
     len=0x7fffffff;
   case 3:
     while(start-- && f->gets());
-    object(String_buffer) buf=String_buffer();
+    object(String.String_buffer) buf=String.String_buffer();
     while(len-- && (tmp=f->gets()))
     {
       buf->append(tmp);
