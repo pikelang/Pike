@@ -30,6 +30,7 @@ _$*
 *.elc
 *.ln
 core
+/bottles.lpc
 /build
 /reports
 /test
@@ -44,6 +45,7 @@ core
 /uLPC_v1.0E-8.tar.gz
 /uLPC_v1.0E-9.tar.gz
 /uLPC_v1.1E-12.tar.gz
+/uLPC_v1.1E-6.tar.gz
 /uLPC_v1.1E-7.tar.gz
 /uLPC_v1.2E-7.tar.gz
 /uLPC_v1.7E-12.tar.gz
