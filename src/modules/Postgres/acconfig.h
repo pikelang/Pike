@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.5 2003/12/19 14:02:55 grubba Exp $
+|| $Id: acconfig.h,v 1.6 2003/12/20 15:55:07 grubba Exp $
 */
 
 #undef STDC_HEADERS
@@ -46,9 +46,6 @@
 #include <postgres.h>
 #endif /* HAVE_POSTGRES_FE_H */
 #include <libpq-fe.h>
-
-/* Some versions of Postgres define this, and it conflicts with pike_error.h */
-#undef JMP_BUF
 
 #endif
 

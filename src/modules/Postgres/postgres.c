@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: postgres.c,v 1.36 2003/12/18 14:16:45 grubba Exp $
+|| $Id: postgres.c,v 1.37 2003/12/20 15:55:07 grubba Exp $
 */
 
 /*
@@ -13,6 +13,10 @@
 
 #include "global.h"
 #include "pgres_config.h"
+
+/* Some versions of Postgres define this, and it conflicts with pike_error.h */
+#undef JMP_BUF
+
 #ifdef HAVE_POSTGRES
 
 #include "version.h"
@@ -68,7 +72,7 @@ static void pgdebug (char * a, ...) {}
 
 struct program * postgres_program;
 
-RCSID("$Id: postgres.c,v 1.36 2003/12/18 14:16:45 grubba Exp $");
+RCSID("$Id: postgres.c,v 1.37 2003/12/20 15:55:07 grubba Exp $");
 
 static void set_error (char * newerror)
 {

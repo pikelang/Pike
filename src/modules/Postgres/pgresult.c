@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pgresult.c,v 1.26 2003/12/20 15:17:18 grubba Exp $
+|| $Id: pgresult.c,v 1.27 2003/12/20 15:55:07 grubba Exp $
 */
 
 /*
@@ -40,6 +40,9 @@
 
 #include "global.h"
 #include "pgres_config.h"
+/* Some versions of Postgres define this, and it conflicts with pike_error.h */
+#undef JMP_BUF
+
 #ifdef HAVE_POSTGRES
 
 /* #define PGRESDEBUG */
@@ -81,7 +84,7 @@
 #include <catalog/pg_type.h>
 #endif
 
-RCSID("$Id: pgresult.c,v 1.26 2003/12/20 15:17:18 grubba Exp $");
+RCSID("$Id: pgresult.c,v 1.27 2003/12/20 15:55:07 grubba Exp $");
 
 #ifdef _REENTRANT
 # ifdef PQ_THREADSAFE
