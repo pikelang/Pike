@@ -15,11 +15,14 @@ fix()
 
 
 fix .
+fix modules
 for a in modules/*
 do
-  case $a in
-    modules/CVS) ;;
-    modules/RCS) ;;
-    *) fix $a ;;
-  esac
+  if test -d $a ; then
+    case $a in
+      */CVS) ;;
+      */RCS) ;;
+      *) fix $a ;;
+    esac
+  fi
 done
