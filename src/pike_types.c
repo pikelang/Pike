@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.124 2000/03/10 00:36:44 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.125 2000/03/10 00:53:49 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -2755,6 +2755,7 @@ static struct pike_string *debug_low_index_type(char *t,
 	  type_stack_mark();
 	  push_finished_type(a);
 	  free_string(a);
+	  push_type(T_ARRAY);
 	  push_unfinished_type(t);
 	  push_type(T_OR);
 	  return pop_unfinished_type();
