@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.14 2003/01/01 12:29:09 peter Exp $
+# $Id: configure.in,v 1.15 2003/01/01 14:36:03 grubba Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -35,7 +35,7 @@ else
     oldLIBS="$LIBS"
     AC_MSG_CHECKING(for glOrtho in -lOpenGL)
     AC_CACHE_VAL(pike_cv_lib_OpenGL, [
-      LIBS="$oldLIBS -lOpenGL32"
+      LIBS="$oldLIBS -lOpenGL"
       AC_TRY_LINK([
 #ifdef HAVE_WINDEF_H
 #include <windef.h>
