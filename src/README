@@ -1,17 +1,31 @@
 This is what you need to do to install Pike:
 
 1) Run ./configure, this is a sh script that will generate machine.h and
-   Makefile from machine.h.in and Makefile.in, use --prefix=/foo/bar
-   if you want to install Pike in /foo/bar, default is /usr/local.
+   Makefile from machine.h.in and Makefile.in.
 
-   You might have to set the environment variables C_INCLUDE_PATH and
-   LD_LIBRARY_PATH to enable the configure script to find gdbm, readline
-   and gmp. If the configure script does not find those libraries those
-   modules will not be available.
+  Some options for ./configure are:
+  --prefix=/foo/bar   if you want to install Pike in /foo/bar,
+                      default is /usr/local.
+  --without-gdbm      compile without gdbm support
+  --without-gmp       compile without gmp support
+  --without-readline  compile without readline support
+  --without-debug     compile without runtime debugging
 
-2) edit config.h and Makefile to suit your purposes.
+   You might also want to set the following environment variables:
+   CFLAGS     Put extra flags for your C compiler here.
+   CPPFLAGS   Put extra flags for your C preprocessor here
+              (such as -I/usr/gnu/include)
+   LDFLAGS    Put extra flags to your linker here, such as -L/usr/gnu/lib
+              and -R/usr/gnu/lib
+
+   Use the above flags to make sure the configure script finds the gdbm,
+   gmp and readline libraries and include files if you need or want those 
+   modules. If the configure script doesn't find them, Pike will sill compile,
+   but without those modules.
+
+2) If needed, edit config.h and Makefile to suit your purposes.
    I've tried to make it so that you don't have to change config.h or
-   Makefile very much. If you need to do what you consider 'unnessecary
+   Makefile at all. If you need to do what you consider 'unnessecary
    changes' then mail me and I'll try to fit it into configure.
    If possible, use gnu make, gcc, gnu sed and bison.
 
@@ -44,15 +58,19 @@ What to do when it doesn't work:
 4) configure might have done something wrong, check machine.h and report
    any errors back to me.
 
-5) Try a different compiler, malloc, compiler-compiler and/or make.
+5) Your gmp/readline/gdbm libraries might not be working or incorrectly 
+   installed, start over by running configure with the approperiate
+   --without-xxx arguments.
+
+6) Try a different compiler, malloc, compiler-compiler and/or make.
    (if you have any other)
 
-6) On Linux Slackware machines (older than slackware 3.0), Pike sometimes
+7) On Linux Slackware machines (older than slackware 3.0), Pike sometimes
    fails to find -lm, this is because of a bug in /usr/lib/libm.sa
    (or possibly libg.a) in slackware.
    Compile with 'make EXTRALIBS="-lc -lm"' to get around this bug.
 
-7)
+8)
 If you find a bug in the interpreter, the first thing to do is to make sure
 the interpreter is compiled with DEBUG defined. If not recompile with DEBUG
 and see if you get another error. When you've done this, please report the

@@ -1,6 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-PREFLAGS=-I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+PREFLAGS=$(DEFINES) -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 FILES=math.o

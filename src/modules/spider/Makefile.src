@@ -1,6 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
 
 FILES=spider.o discdate.o stardate.o sdebug.o tree.o lock.o sharedmem.o streamed_parser.o encode_decode.o http_parse.o

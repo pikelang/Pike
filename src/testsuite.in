@@ -74,10 +74,21 @@ test_any([[
 #include <fifo.h>
 return 0;
 ]],0)
-  test_do(clone(Fifo))
-  re
+  test_true(objectp(clone(Fifo)))
+  test_true(objectp(clone(Queue)))
 ]])
 
+test_any([[
+#include <string.h>
+return 0;
+]],0)
+  test_true(objectp(clone(String_buffer)))
+  test_do(clone(String_buffer)->append("foo"))
+  test_do(add_constant("Flurp",clone(String_buffer)))
+  test_do(Flurp->append("test"))
+  test_do(Flurp->append("test"))
+  test_eq((string)Flurp,"testtest")
+  test_do(add_constant("Flurp"))
 
 // m_delete
 test_equal(([1:1]),m_delete(a(),0))

@@ -1,6 +1,22 @@
 AC_INIT(interpret.c)
+
+if test x${CLAGS-} != x ; then
+  cflags_is_set=yes
+else
+  cflags_is_set=no
+fi
+
 AC_PROG_CC
 AC_C_CROSS
+
+AC_ARG_WITH(gdbm,    [  --without-gdbm         no GNU database manager support ])
+AC_ARG_WITH(gmp,     [  --without-gmp          no Support bignums])
+AC_ARG_WITH(readline,[  --without-readline     no support for command line editing])
+AC_ARG_WITH(debug,   [  --without-debug        disable run time self tests],[],[with_debug=yes])
+
+if test x$with_debug = xyes ; then
+  AC_DEFINE(DEBUG)
+fi
 
 #############################################################################
 
@@ -23,54 +39,51 @@ fi
 ])
 AC_MSG_RESULT($pike_cv_sys_os)
 
-dnl
-dnl This enables a mutex lock around accept() unfortunately
-dnl accept bangs out every 20000th time or so when linked
-dnl with libthreads.  Solaris...
-dnl
-dnl if test "$pike_cv_sys_os" = "Solaris"; then
-dnl   AC_DEFINE(SOLARIS)
-dnl  LIBS="$LIBS -lthread"
-dnl fi
-dnl
-
 #############################################################################
 
-OLD_CFLAGS="$CFLAGS"
-OPTIMIZE="";
-
-AC_MSG_CHECKING(-fast)
-AC_CACHE_VAL(pike_cv_option_fast,
-[
-  CFLAGS="$OLD_CFLAGS -fast"
-  AC_TRY_LINK([],[ exit(0); ],pike_cv_option_fast=yes,pike_cv_option_fast=no)
-])
-
-CFLAGS="$OLD_CFLAGS"
-
-if test "$pike_cv_option_fast" = "yes" ; then
-  OPTIMIZE="$OPTIMIZE -fast"
-  AC_MSG_RESULT(-fast found)
-else
-  AC_MSG_RESULT(-fast not found)
-
-  AC_MSG_CHECKING(-O)
-  AC_CACHE_VAL(pike_cv_option_opt,
+if test x${GCC-} != xyes -a $cflags_is_set = no; then
+  OLD_CFLAGS="$CFLAGS"
+  OPTIMIZE="";
+  
+  AC_MSG_CHECKING(-fast)
+  AC_CACHE_VAL(pike_cv_option_fast,
   [
-    CFLAGS="$OLD_CFLAGS -O"
-    AC_TRY_LINK([],[ exit(0); ],pike_cv_option_opt=yes,pike_cv_option_opt=no)
+    CFLAGS="$OLD_CFLAGS -fast"
+    AC_TRY_LINK([],[ exit(0); ],pike_cv_option_fast=yes,pike_cv_option_fast=no)
   ])
-
-  if test "$pike_cv_option_opt" = "yes" ; then
-    CFLAGS="$OLD_CFLAGS -O"
-    OPTIMIZE="$OPTIMIZE -O"
-    AC_MSG_RESULT(-O found)
-  else
-    AC_MSG_RESULT(-O not found)
-  fi
-
+  
   CFLAGS="$OLD_CFLAGS"
+  
+  if test "$pike_cv_option_fast" = "yes" ; then
+    OPTIMIZE="$OPTIMIZE -fast"
+    AC_MSG_RESULT(-fast found)
+  else
+    AC_MSG_RESULT(-fast not found)
+  
+    case "${CFLAGS-}" in
+      *-O*) ;;
+      *)
+        AC_MSG_CHECKING(-O)
+        AC_CACHE_VAL(pike_cv_option_opt,
+        [
+          CFLAGS="$OLD_CFLAGS -O"
+          AC_TRY_LINK([],[ exit(0); ],pike_cv_option_opt=yes,pike_cv_option_opt=no)
+        ])
+      
+        if test "$pike_cv_option_opt" = "yes" ; then
+          CFLAGS="$OLD_CFLAGS -O"
+          OPTIMIZE="$OPTIMIZE -O"
+          AC_MSG_RESULT(-O found)
+        else
+          AC_MSG_RESULT(-O not found)
+        fi
+      
+        CFLAGS="$OLD_CFLAGS"
+      ;;
+    esac
+  fi
 fi
+
 
 
 if test "$GCC" = "yes"; then
@@ -1054,6 +1067,7 @@ AC_SUBST(LIBDIR)
 AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
 AC_SUBST(DOCDIR)
+AC_SUBST(DEBUGDEF)
 
 AC_OUTPUT(Makefile,[echo foo >stamp-h])
 

@@ -1,6 +1,9 @@
 #ifndef MACHINE_H
 #define MACHINE_H
 
+/* Define this if you want run time self tests */
+#undef DEBUG
+
 /* Define for solaris */
 #undef SOLARIS
 

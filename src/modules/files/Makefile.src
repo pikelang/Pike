@@ -1,6 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 FILES=file.o efuns.o socket.o
@@ -32,3 +32,5 @@ gdb_verify: module_testsuite
 	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
 	gdb ../../pike
 	@rm .gdbinit
+
+

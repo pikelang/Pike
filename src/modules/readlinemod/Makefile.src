@@ -1,6 +1,6 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 FILES=readlinemod.o

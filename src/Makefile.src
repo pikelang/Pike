@@ -37,32 +37,28 @@ PROFIL=
 #Enable warnings from the compiler, if wanted.
 #
 WARN=@WARN@
-#WARN=-W -Wunused -Wformat
-#WARN -Wunused -Wformat -Wuninitialized
-#WARN= -Wall -Wshadow -Dlint
 
 #add extra defines here
-# Be sure to use -g and -DDEBUG when looking for bugs
-DEBUGDEF=-DDEBUG
-DEFINES=-DDEFAULT_MASTER=\"$(lib_prefix)/master.pike\"
+# Be sure to use -g  when looking for bugs
+DEFINES=-DDEFAULT_MASTER=\"$(lib_prefix)/master.pike\" @CPPFLAGS@
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
 
 # Preprocessor flags.
 PREFLAGS=-I. -I$(SRCDIR) $(DEFINES)
-OTHERFLAGS=$(DEBUGDEF) $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
+OTHERFLAGS=@CFLAGS@ $(OSFLAGS) $(OPTIMIZE) $(WARN) $(PROFIL)
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
 
 CC=@CC@
 CPP=@CPP@
 
 LD=$(CC)
-LDFLAGS=$(CFLAGS)
+LDFLAGS=$(CFLAGS) @LDFLAGS@
 
 RUNPIKE=$(TMP_BUILDDIR)/pike -m $(TMP_LIBDIR)/master.pike $(PIKEOPTS)
 
-MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEBUGDEF=$(DEBUGDEF)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)"
+MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)"
 
 # Add alloca.o if you don't have alloca() on your machine.
 # Add ualarm.o if you don't have ualarm() on your machine.
