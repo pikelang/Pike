@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.240 1999/11/27 13:59:17 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.241 1999/11/27 14:48:25 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -79,6 +79,11 @@ test_any([[function(:string)|function(mixed, mixed...:int) f;
 test_any([[function(:string)|function(mixed, mixed ...:int) f;
 	  return typeof(f(1)); ]],
 	 "int")
+
+test_compile_any([[
+  constant FOO = 0;
+  mapping(int:string) foo = ([FOO: "foo"]);
+]])
 
 test_any([[return class Z {
 string bonk() { return "oiff"; }
