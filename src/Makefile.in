@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.66 1998/04/02 14:00:11 mirar Exp $
+# $Id: Makefile.in,v 1.67 1998/04/02 16:38:34 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -25,6 +25,7 @@ TMP_LIBDIR = $(TMP_BUILDDIR)/lib
 prefix = @prefix@
 exec_prefix = $(prefix)/bin
 lib_prefix = $(prefix)/lib/pike
+share_prefix = $(prefix)/share/pike
 
 #
 # use bison please, yacc isn't good enough.
@@ -175,8 +176,8 @@ install:
 	@echo
 	@echo "Creating directories..."; \
 	for d in "$(prefix)" "$(exec_prefix)" "$(prefix)/lib" \
-	          "$(lib_prefix)" "$(prefix)/include" \
-	          "$(prefix)/include/pike"; do \
+	          "$(lib_prefix)" "$(prefix)/share" "$(share_prefix)" \
+	          "$(prefix)/include" "$(prefix)/include/pike"; do \
 	  if [ -d "$$d/." ]; then : ; else \
 	    echo "$$d"; \
 	    mkdir "$$d" || exit 1; \
@@ -190,6 +191,14 @@ install:
 	    mkdir "$(lib_prefix)/$$d" || exit 1; \
 	    chmod a+rx "$(lib_prefix)/$$d/."; \
 	    chmod u+w "$(lib_prefix)/$$d/."; \
+	  fi; \
+	done
+	@for d in `cd "$(LIBDIR_SRC)"; find . -type d -print`; do \
+	  if [ -d "$(share_prefix)/$$d/." ]; then : ; else \
+	    echo "$(share_prefix)/$$d"; \
+	    mkdir "$(share_prefix)/$$d" || exit 1; \
+	    chmod a+rx "$(share_prefix)/$$d/."; \
+	    chmod u+w "$(share_prefix)/$$d/."; \
 	  fi; \
 	done
 	@echo ; echo "Installing pike..."; \
@@ -226,7 +235,23 @@ install:
 	  chmod a+r $(prefix)/include/pike ; \
 	  chmod u+w $(prefix)/include/pike ; \
 	done
-	@echo ; echo "Installing modules..."; \
+	@echo ; echo "Installing modules written in Pike..."; \
+	for f in `cd "$(LIBDIR_SRC)"; find . -type f -print`; do \
+	  if cmp "$(share_prefix)/$$f" "$(TMP_LIBDIR)/$$f" >/dev/null 2>&1 ; \
+	  then : ; else \
+	    echo "$(share_prefix)/$$f"; \
+	    if [ -f "$(share_prefix)/$$f" ]; then \
+	      mv -f "$(share_prefix)/$$f" "$(share_prefix)/$$f.old"; \
+	    else : ; fi; \
+	    if [ -f "$(lib_prefix)/$$f" ]; then \
+	      mv -f "$(lib_prefix)/$$f" "$(lib_prefix)/$$f.now_in_share.old"; \
+	    else : ; fi; \
+	    cp "$(LIBDIR_SRC)/$$f" "$(share_prefix)/$$f" || exit 1; \
+	    chmod a+r "$(share_prefix)/$$f"; \
+	    chmod u+w "$(share_prefix)/$$f"; \
+	  fi ; \
+	done
+	@echo ; echo "Installing modules written in C..."; \
 	for f in `cd "$(TMP_LIBDIR)"; find . -type f -print`; do \
 	  if cmp "$(lib_prefix)/$$f" "$(TMP_LIBDIR)/$$f" >/dev/null 2>&1 ; \
 	  then : ; else \
