@@ -61,7 +61,8 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
-import Standards.ASN1.Encode;
+// import Standards.ASN1.Encode;
+import Standards.ASN1.Types;
 
 object pkcs_id = asn1_identifier(1, 2, 840, 113549, 1);
 object pkcs_1_id = pkcs_id->append(1);
