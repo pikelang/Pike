@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.15 1999/02/10 21:49:25 hubbe Exp $
+ * $Id: result.c,v 1.16 2000/03/22 23:42:39 grubba Exp $
  *
  * mysql query result
  *
@@ -83,7 +83,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: result.c,v 1.15 1999/02/10 21:49:25 hubbe Exp $");
+RCSID("$Id: result.c,v 1.16 2000/03/22 23:42:39 grubba Exp $");
 
 struct program *mysql_result_program = NULL;
 
@@ -345,7 +345,8 @@ static void f_fetch_row(INT32 args)
   int num_fields = mysql_num_fields(PIKE_MYSQL_RES->result);
   MYSQL_ROW row = mysql_fetch_row(PIKE_MYSQL_RES->result);
 #ifdef HAVE_MYSQL_FETCH_LENGTHS
-  int *row_lengths = mysql_fetch_lengths(PIKE_MYSQL_RES->result);
+  FETCH_LENGTHS_TYPE *row_lengths =
+    mysql_fetch_lengths(PIKE_MYSQL_RES->result);
 #endif /* HAVE_MYSQL_FETCH_LENGTHS */
 
   pop_n_elems(args);
