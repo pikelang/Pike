@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.4 2000/04/18 19:24:28 grubba Exp $
+ * $Id: interpret_functions.h,v 1.5 2000/04/18 19:28:09 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1137,7 +1137,7 @@ BREAK;
 
 OPCODE1(F_LOCAL_INDEX, "local index")
 {
-  struct svalue tmp,*s=Pike_fp->locals+arg1();
+  struct svalue tmp,*s=Pike_fp->locals+arg1;
   if(s->type == PIKE_T_STRING) s->subtype=0;
   index_no_free(&tmp,Pike_sp-1,s);
   free_svalue(Pike_sp-1);
