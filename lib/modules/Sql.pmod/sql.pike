@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.30 1999/06/14 22:15:33 grubba Exp $
+ * $Id: sql.pike,v 1.31 1999/07/06 21:58:50 kinkie Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.30 1999/06/14 22:15:33 grubba Exp $
+//. RCSID:	$Id: sql.pike,v 1.31 1999/07/06 21:58:50 kinkie Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -35,11 +35,7 @@ int case_convert;
 //. - quote
 //.   Quote a string so that it can safely be put in a query.
 //. > s - String to quote.
-function(string:string) quote = lambda (string s)
-{
-  // This lambda is overridden from master_sql in create().
-  return(replace(s, "\'", "\'\'"));
-};
+function(string:string) quote = .sql_util.quote;
 
 //. - encode_time
 //.   Converts a system time value to an appropriately formatted time
@@ -258,41 +254,41 @@ void create(void|string|object host, void|string db,
       }
   }
 
-  function fallback =
-    lambda () {throw_error ("Function not supported in this database.");};
   if (master_sql->quote) quote = master_sql->quote;
-  encode_time = master_sql->encode_time || fallback;
-  decode_time = master_sql->decode_time || fallback;
-  encode_date = master_sql->encode_date || fallback;
-  decode_date = master_sql->decode_date || fallback;
-  encode_datetime = master_sql->encode_datetime || fallback;
-  decode_datetime = master_sql->decode_datetime || fallback;
+  encode_time = master_sql->encode_time || .sql_util.fallback;
+  decode_time = master_sql->decode_time || .sql_util.fallback;
+  encode_date = master_sql->encode_date || .sql_util.fallback;
+  decode_date = master_sql->decode_date || .sql_util.fallback;
+  encode_datetime = master_sql->encode_datetime || .sql_util.fallback;
+  decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
 }
 
 static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
 {
-  if (res_obj) {
+  if (res_obj) 
+  {
     /* Not very efficient, but sufficient */
     array(mapping(string:mixed)) res = ({});
     array(string) fieldnames;
     array(mixed) row;
-      
-    fieldnames = Array.map(res_obj->fetch_fields(),
-			   lambda (mapping(string:mixed) m) {
-      if (case_convert) {
-	return(lower_case(m->name));	/* Hope this is even more unique */
-      } else {
-	return(m->name);		/* Hope this is unique */
-      }
-    } );
+    array(mapping) fields = res_obj->fetch_fields();
 
-    while (row = res_obj->fetch_row()) {
-      res += ({ mkmapping(fieldnames, row) });
-    }
+    fieldnames = (Array.map(fields,
+                            lambda (mapping(string:mixed) m) {
+                              return((m->table||"") + "." + m->name);
+                            }) +
+                  fields->name);
+
+    if (case_convert)
+      fieldnames = Array.map(fieldnames, lower_case);
+
+
+    while (row = res_obj->fetch_row())
+      res += ({ mkmapping(fieldnames, row + row) });
+
     return(res);
-  } else {
-    return(0);
   }
+  return 0;
 }
 
 //. - error
