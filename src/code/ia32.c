@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.38 2003/12/03 17:50:48 grubba Exp $
+|| $Id: ia32.c,v 1.39 2003/12/11 17:15:40 grubba Exp $
 */
 
 /*
@@ -410,6 +410,8 @@ static void ia32_call_c_function(void *addr)
   CLEAR_REGS();
 }
 
+/* NOTE: This code is not safe for generic since constants, since thay
+ * can be overridden by inherit. */
 static void ia32_push_constant(struct svalue *tmp)
 {
   int e;
@@ -825,12 +827,23 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
        * This would work nicely for all pike types, but we would
        * have to augment dumping
        */
+      /* Unfortunately this doesn't work for PIKE_PORTABLE_BYTECODE,
+       * since then the constant table isn't fully initialized when
+       * assemble() is called by decode_value().
+       *
+       * Note also that this use of ia32_push_constant() probably bugs
+       * when constants are overloaded.
+       *
+       * /grubba 2003-12-11
+       */
+#ifndef PIKE_PORTABLE_BYTECODE
       if(Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE)
       {
 	ins_debug_instr_prologue (a - F_OFFSET, b, 0);
 	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
 	return;
       }
+#endif /* !PIKE_PORTABLE_BYTECODE */
       break;
 
       /*
