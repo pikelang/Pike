@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.148 2001/06/21 10:10:52 wellhard Exp $
+ * $Id: master.pike.in,v 1.149 2001/08/28 21:50:42 marcus Exp $
  * 
  * Master-file for Pike.
  *
@@ -2220,6 +2220,10 @@ class Codec
     {
       if(sscanf(x,"efun:%s",x)) return f[x];
       if(sscanf(x,"resolv:%s",x)) return resolv(x);
+      if(sscanf(x,"mpath:%s",x))
+	foreach(pike_module_path, string path)
+	  if(object ret=low_cast_to_object(combine_path(path,x),0))
+	    return ret;
       return cast_to_object(x,0);
     }
   
@@ -2227,6 +2231,10 @@ class Codec
     {
       if(sscanf(x,"efun:%s",x)) return f[x];
       if(sscanf(x,"resolv:%s",x)) return resolv(x);
+      if(sscanf(x,"mpath:%s",x))
+	foreach(pike_module_path, string path)
+	  if(program ret=cast_to_program(combine_path(path,x),0))
+	    return ret;
       return cast_to_program(x,0);
     }
   
