@@ -11,6 +11,7 @@ test_any(object o=clone(Stdio.File); return o->open("conftest","wct") && o->clos
 // - file_stat
 test_eq(file_stat("conftest")[1],0)
 
+// - filesystem_stat
 // - rm
 test_true(rm("conftest"))
 test_eq(file_stat("conftest"),0)
