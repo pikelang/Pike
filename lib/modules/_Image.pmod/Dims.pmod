@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.5 2004/05/23 14:55:56 nilsson Exp $
+//   $Id: Dims.pmod,v 1.6 2004/05/23 17:22:16 nilsson Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Schön, <js@roxen.com>.
@@ -134,7 +134,7 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF14:		/* Differential progressive, arithmetic */
     case M_SOF15:		/* Differential lossless, arithmetic */
       int image_height, image_width;
-      sscanf(f->read(7), "%*3s%2c%2c", image_width, image_height);
+      sscanf(f->read(7), "%*3s%2c%2c", image_height, image_width);
       return ({ image_width,image_height });
       break;
 	
@@ -172,7 +172,7 @@ array(int) get_GIF(Stdio.File f)
   int offs=f->tell();
   if(f->read(3)!="GIF") return 0;
   f->seek(offs+6);
-  return array_sscanf(file->read(4), "%-2c%-2c");
+  return array_sscanf(f->read(4), "%-2c%-2c");
 }
 
 //! Reads the dimensions from a PNG file and returns an array with
@@ -184,7 +184,7 @@ array(int) get_PNG(Stdio.File f)
   if(f->read(3)!="PNG") return 0;
   f->seek(offs+12);
   if(f->read(4)!="IHDR") return 0;
-  return array_sscanf(file->read(8), "%4c%4c");
+  return array_sscanf(f->read(8), "%4c%4c");
 }
 
 //! Read dimensions from a JPEG, GIF or PNG file and return an array
