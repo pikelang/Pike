@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.38 2001/01/26 19:22:35 mast Exp $
+# $Id: Makefile,v 1.39 2001/01/27 04:06:34 mast Exp $
 #
 # Meta Makefile
 #
@@ -63,7 +63,7 @@ configure: src/configure builddir
 	  MAKE=$(MAKE) ; export MAKE ;\
 	  echo Configure arguments: $$configureargs; \
 	  echo; \
-	  if test -f Makefile -a -f config.cache -a -f .configureargs && \
+	  if test -f Makefile -a -f config.cache -a -f config.status -a -f .configureargs && \
 	     test "`cat .configureargs`" = "$$configureargs"; then :; \
 	  else \
 	    echo Running $$srcdir/configure $$configureargs in $$builddir; \
