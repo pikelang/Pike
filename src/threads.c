@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.238 2004/07/16 12:44:56 grubba Exp $
+|| $Id: threads.c,v 1.239 2004/08/12 12:38:39 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.238 2004/07/16 12:44:56 grubba Exp $");
+RCSID("$Id: threads.c,v 1.239 2004/08/12 12:38:39 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1708,12 +1708,57 @@ static void f_thread_id_result(INT32 args)
   dmalloc_touch_svalue(Pike_sp-1);
 }
 
+static int num_pending_interrupts = 0;
+static struct callback *thread_interrupt_callback = NULL;
+
+static void check_thread_interrupt(struct callback *foo,
+				   void *bar, void *gazonk)
+{
+  if (Pike_interpreter.thread_state->flags & THREAD_FLAG_INTR) {
+    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_INTR;
+    if (!--num_pending_interrupts) {
+      remove_callback(foo);
+      thread_interrupt_callback = NULL;
+    }
+    Pike_error("Interrupted.\n");
+  }
+}
+
+/*! @decl void interrupt()
+ *! @decl void interrupt(string msg)
+ *!
+ *! Interrupt the thread with the message @[msg].
+ *!
+ *! @fixme
+ *!   The argument @[msg] is currently ignored.
+ *!
+ *! @note
+ *!   Interrupts are asynchronous, and are currently not queued.
+ */
+static void f_thread_id_interrupt(INT32 args)
+{
+  /* FIXME: The msg argument is not supported yet. */
+  pop_n_elems(args);
+
+  if (!(THIS_THREAD->flags & THREAD_FLAG_INTR)) {
+    THIS_THREAD->flags |= THREAD_FLAG_INTR;
+    num_pending_interrupts++;
+    if (!thread_interrupt_callback) {
+      thread_interrupt_callback =
+	add_to_callback(&evaluator_callbacks, check_thread_interrupt, 0, 0);
+    }
+    /* FIXME: Actually interrupt the thread. */
+  }
+  push_int(0);
+}
+
 void init_thread_obj(struct object *o)
 {
   MEMSET(&THIS_THREAD->state, 0, sizeof(struct Pike_interpreter));
   THIS_THREAD->thread_obj = Pike_fp->current_object;
   THIS_THREAD->swapped = 0;
   THIS_THREAD->status=THREAD_NOT_STARTED;
+  THIS_THREAD->flags = 0;
   THIS_THREAD->result.type = T_INT;
   THIS_THREAD->result.subtype = NUMBER_UNDEFINED;
   THIS_THREAD->result.u.integer = 0;
@@ -1727,6 +1772,13 @@ void init_thread_obj(struct object *o)
 
 void exit_thread_obj(struct object *o)
 {
+  if (THIS_THREAD->flags & THREAD_FLAG_INTR) {
+    Pike_interpreter.thread_state->flags &= ~THREAD_FLAG_INTR;
+    if (!--num_pending_interrupts) {
+      remove_callback(thread_interrupt_callback);
+      thread_interrupt_callback = NULL;
+    }    
+  }
   if(THIS_THREAD->thread_local != NULL) {
     free_mapping(THIS_THREAD->thread_local);
     THIS_THREAD->thread_local = NULL;
@@ -2149,6 +2201,8 @@ void th_init(void)
   ADD_FUNCTION("status",f_thread_id_status,tFunc(tNone,tInt),0);
   ADD_FUNCTION("_sprintf",f_thread_id__sprintf,tFunc(tNone,tStr),0);
   ADD_FUNCTION("id_number",f_thread_id_id_number,tFunc(tNone,tInt),0);
+  ADD_FUNCTION("interrupt", f_thread_id_interrupt,
+	       tFunc(tOr(tVoid,tStr), tVoid), 0);
   set_gc_recurse_callback(thread_was_recursed);
   set_gc_check_callback(thread_was_checked);
   set_init_callback(init_thread_obj);
