@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 // -*- Pike -*-
 
-// $Id: rntecl,v 1.10 2000/11/21 02:38:22 marcus Exp $
+// $Id: rntecl,v 1.11 2000/12/01 03:19:48 hubbe Exp $
 
 // RNTECL, a front-end to Intel ECL with options similar to GCC
 // Written by Fredrik Hubinette & Henrik Grubbström.
@@ -381,10 +381,8 @@ int main(int argc, string *argv)
 		     "int main(int argc, string *argv) {\n"
 		     "  if (lower_case(getenv(\"CROSSCOMPILING\")||\"no\") != \"no\")\n"
 		     "    exit(1);\n"
-		     "  argv[0]+=\".exe\";\n"
-		     "  argv[0]=getenv(\"NTDRIVE\")+fixpath(combine_path(getcwd(),argv[0]));\n"
-		     "  int ret=silent_do_cmd(argv);\n"
-		     "  exit(ret);\n"
+		     "  argv[0]=getenv(\"NTDRIVE\")+fixpath(follow_symlinks(combine_path(getcwd(),argv[0]))+\".exe\");\n"
+		     "  exit(silent_do_cmd(argv));\n"
 		     "}\n");
     chmod(output,0755);
   }
