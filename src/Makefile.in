@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.403 2005/02/16 15:24:47 grubba Exp $
+# $Id: Makefile.in,v 1.404 2005/03/13 15:53:10 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -699,7 +699,11 @@ verify: testsuites testsuite tinstall
 	if test -f ./test-pike ; then \
 	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
 	else \
-	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  if test -f some-sprsh-test ; then \
+	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  else \
+	    `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike $$args ; \
+	  fi \
 	fi
 
 valgrind_verify: testsuites testsuite tinstall
@@ -716,7 +720,11 @@ bench: tinstall
 	if test -f ./test-pike ; then \
 	  ./test-pike -DNOT_INSTALLED $(PIKEOPTS) -x benchmark; \
 	else \
-	  sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
+	  if test -f some-sprsh-test ; then \
+	    sprsh `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
+          else \
+            `pwd`/test-install/pike/*/bin/pike.exe -DNOT_INSTALLED $(PIKEOPTS) -x benchmark ; \
+          fi \
 	fi
 
 verify_installed: testsuites testsuite master-stamp
