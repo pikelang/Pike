@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.119 2003/01/26 19:41:38 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.120 2003/01/26 20:46:41 mirar Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.119 2003/01/26 19:41:38 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.120 2003/01/26 20:46:41 mirar Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -40,7 +40,7 @@ RCSID("$Id: mpz_glue.c,v 1.119 2003/01/26 19:41:38 nilsson Exp $");
 
 #include <limits.h>
 
-#if SIZEOF_INT_TYPE > 4
+#if SIZEOF_INT_TYPE > SIZEOF_LONG
 #define BIG_PIKE_INT
 #endif
 
@@ -219,6 +219,7 @@ void get_new_mpz(MP_INT *tmp, struct svalue *s)
         mpz_set(tmp,t2);
         mpz_clear(t1);
         mpz_clear(t2);
+	pos+=SHIFT;
      }
      if (neg)
      {
@@ -1468,6 +1469,12 @@ static void mpzmod_pow(INT32 args)
     if (sp[-1].u.integer < 0)
       Pike_error("Gmp.mpz->pow: Negative exponent.\n");
     res = fast_clone_object(THIS_PROGRAM, 0);
+#ifdef BIG_PIKE_INT
+/* unsigned long int is the type of the argument to mpz_pow_ui */
+    if (sp[-1].u.integer != (unsigned long int)sp[-1].u.integer)
+      if(mpz_cmp_si(THIS, -1)<0 || mpz_cmp_si(THIS, 1)>0)
+	Pike_error("Gmp.mpz->pow: Exponent too large.\n");
+#endif
     mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   } else {
     INT32 i;
