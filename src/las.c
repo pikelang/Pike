@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.33 1997/05/19 23:31:01 hubbe Exp $");
+RCSID("$Id: las.c,v 1.34 1997/05/22 23:27:32 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1278,6 +1278,10 @@ void fix_type_field(node *n)
     break;
 
   case F_RETURN:
+    if(CAR(n)->type == void_type_string)
+    {
+      yyerror("You cannot return a void expression");
+    }
     if(local_variables &&
        local_variables->current_return_type &&
        !match_types(local_variables->current_return_type,CAR(n)->type) &&
