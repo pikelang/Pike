@@ -11,9 +11,8 @@
 #include "stralloc.h"
 #include "version.h"
 
-RCSID("$Id: version.c,v 1.135 2002/05/31 22:41:26 nilsson Exp $");
+RCSID("$Id: version.c,v 1.136 2002/09/15 17:52:37 nilsson Exp $");
 
-#define STR(X) #X
 /*! @decl string version()
  *!
  *! Report the version of Pike.
