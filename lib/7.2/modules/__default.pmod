@@ -1,5 +1,5 @@
 // Compatibility module
-// $Id: __default.pmod,v 1.7 2002/11/28 23:46:12 nilsson Exp $
+// $Id: __default.pmod,v 1.8 2002/11/29 02:16:41 nilsson Exp $
 
 #pike 7.3
 
@@ -21,7 +21,7 @@ string dirname(string x)
 //! @note
 //!   This function will busy-wait if the sleep-interval is short.
 //!
-//! @obsolete
+//! @deprecated
 //!   This function was renamed to @[delay()] in Pike 7.3.
 //!
 //! @seealso
@@ -33,7 +33,7 @@ void sleep(float|int t, void|int abort)
 
 //!   Get the default YP domain (Pike 7.2 compatibility).
 //!
-//! @obsolete
+//! @deprecated
 //!   This function was removed in Pike 7.3, use
 //!   @[YP.default_domain()] instead.
 //!
@@ -49,7 +49,7 @@ string default_yp_domain() {
 //!   All global variables in the new object be initialized, and
 //!   then @[lfun::create()] will be called with @[args] as arguments.
 //!
-//! @obsolete
+//! @deprecated
 //!   This function was removed in Pike 7.3, use
 //!   @code{((program)@[prog])(@@@[args])@}
 //!   instead.
@@ -73,7 +73,7 @@ object new(string|program prog, mixed ... args)
 //!
 //!   Alternate name for the function @[new()] (Pike 7.2 compatibility).
 //!
-//! @obsolete
+//! @deprecated
 //!   This function was removed in Pike 7.3, use
 //!   @code{((program)@[prog])(@@@[args])@}
 //!   instead.
