@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.120 2001/02/07 14:58:35 grubba Exp $");
+RCSID("$Id: operators.c,v 1.121 2001/02/08 13:38:27 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -184,12 +184,14 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   @type string
  *!     @[arg2] will be converted to a string, and the result the
  *!     strings concatenated.
- *!   @type int|float
+ *!   @type int
+ *!   @type float
  *!     @mixed @[arg2]
  *!       @type string
  *!         @[arg1] will be converted to string, and the result the
  *!         strings concatenated.
- *!       @type int|float
+ *!       @type int
+ *!       @type float
  *!         The result will be @code{@[arg1] + @[arg2]@}, and will
  *!         be a float if either @[arg1] or @[arg2] is a float.
  *!     @endmixed
@@ -1364,7 +1366,7 @@ static void speedup(INT32 args, void (*func)(void))
  *! If @[arg2] is an object that has an @[lfun::``&()], that function
  *! will be called with @[arg1] as the single argument.
  *!
- *! Otherwise the result will be:
+ *! Otherwise the result will be as follows:
  *! @mixed @[arg1]
  *!   @type int
  *!     The result will be the bitwise and of @[arg1] and @[arg2].
@@ -1378,7 +1380,7 @@ static void speedup(INT32 args, void (*func)(void))
  *!     The result will be the type intersection of @[arg1] and @[arg2].
  *!   @type string
  *!     The result will be the string where the elements of @[arg1]
- *!     and @[arg2] have been pairwise anded.
+ *!     and @[arg2] have been pairwise bitwise anded.
  *! @endmixed
  *!
  *! @seealso
@@ -1558,9 +1560,48 @@ PMOD_EXPORT void o_or(void)
   }
 }
 
-/*! @decl mixed `|(mixed arg1, mixed ... extras)
+/*! @decl mixed `|(mixed arg1)
+ *! @decl mixed `|(object arg1, mixed arg2)
+ *! @decl mixed `|(mixed arg1, object arg2)
+ *! @decl int `|(int arg1, int arg2)
+ *! @decl mapping `|(mapping arg1, mapping arg2)
+ *! @decl multiset `|(multiset arg1, multiset arg2)
+ *! @decl array `|(array arg1, array arg2)
+ *! @decl string `|(string arg1, atring arg2)
+ *! @decl type `|(program|type arg1, program|type arg2)
+ *! @decl mixed `|(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Or operator.
+ *! Bitwise or/join operator.
+ *!
+ *! If there's a single argument, that argument will be returned.
+ *!
+ *! If there are more than two arguments, the result will be:
+ *! @code{`|(`|(@[arg1], @[arg2]), @@@[extras])@}.
+ *!
+ *! If @[arg1] is an object that has an @[lfun::`|()], that function
+ *! will be called with @[arg2] as the single argument.
+ *! 
+ *! If @[arg2] is an object that has an @[lfun::``|()], that function
+ *! will be called with @[arg1] as the single argument.
+ *!
+ *! Otherwise the result will be as follows:
+ *! @mixed @[arg1]
+ *!   @type int
+ *!     The result will be the binary or of @[arg1] and @[arg2].
+ *!   @type mapping
+ *!   @type multiset
+ *!     The result will be the join of @[arg1] and @[arg2].
+ *!   @type array
+ *!     The result will be the concatenation of @[arg1] and @[arg2].
+ *!   @type string
+ *!     The result will be the pairwise bitwose or of @[arg1] and @[arg2].
+ *!   @type type
+ *!   @type program
+ *!     The result will be the type join of @[arg1] and @[arg2].
+ *! @endmixed
+ *!
+ *! @seealso
+ *!   @[`&()], @[lfun::`|()], @[lfun::``|()]
  */
 PMOD_EXPORT void f_or(INT32 args)
 {
@@ -1741,9 +1782,49 @@ PMOD_EXPORT void o_xor(void)
   }
 }
 
-/*! @decl mixed `^(mixed arg1, mixed ... extras)
+/*! @decl mixed `^(mixed arg1)
+ *! @decl mixed `^(object arg1, mixed arg2)
+ *! @decl mixed `^(mixed arg1, object arg2)
+ *! @decl int `^(int arg1, int arg2)
+ *! @decl mapping `^(mapping arg1, mapping arg2)
+ *! @decl multiset `^(multiset arg1, multiset arg2)
+ *! @decl array `^(array arg1, array arg2)
+ *! @decl string `^(string arg1, atring arg2)
+ *! @decl type `^(program|type arg1, program|type arg2)
+ *! @decl mixed `^(mixed arg1, mixed arg2, mixed ... extras)
  *!
- *! Xor operator.
+ *! Exclusive or operator.
+ *!
+ *! If there's a single argument, that argument will be returned.
+ *!
+ *! If there are more than two arguments, the result will be:
+ *! @code{`^(`^(@[arg1], @[arg2]), @@@[extras])@}.
+ *!
+ *! If @[arg1] is an object that has an @[lfun::`^()], that function
+ *! will be called with @[arg2] as the single argument.
+ *! 
+ *! If @[arg2] is an object that has an @[lfun::``^()], that function
+ *! will be called with @[arg1] as the single argument.
+ *!
+ *! Otherwise the result will be as follows:
+ *! @mixed @[arg1]
+ *!   @type int
+ *!     The result will be the bitwise xor of @[arg1] and @[arg2].
+ *!   @type mapping
+ *!   @type multiset
+ *!   @type array
+ *!     The result will be the elements of @[arg1] and @[arg2] that
+ *!     only occurr in one of them.
+ *!   @type string
+ *!     The result will be the pairwise bitwise xor of @[arg1] and @[arg2].
+ *!   @type type
+ *!   @type program
+ *!     The result will be the result of
+ *!     @code{(@[arg1]&~@[arg2])|(~@[arg1]&@[arg2])@}.
+ *! @endmixed
+ *!
+ *! @seealso
+ *!   @[`&()], @[`|()], @[lfun::`^()], @[lfun::``^()]
  */
 PMOD_EXPORT void f_xor(INT32 args)
 {
@@ -1801,9 +1882,22 @@ PMOD_EXPORT void o_lsh(void)
   sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
 }
 
-/*! @decl mixed `<<(mixed arg1, mixed arg2)
+/*! @decl int `<<(int arg1, int arg2)
+ *! @decl mixed `<<(object arg1, int|object arg2)
+ *! @decl mixed `<<(int arg1, object arg2)
  *!
  *! Left shift operator.
+ *!
+ *! If @[arg1] is an object that implements @[lfun::`<<()], that
+ *! function will be called with @[arg2] as the single argument.
+ *!
+ *! If @[arg2] is an object that implements @[lfun::``<<()], that
+ *! function will be called with @[arg1] as the single argument.
+ *!
+ *! Otherwise @[arg1] will be shifted @[arg2] bits left.
+ *!
+ *! @seealso
+ *!   @[`>>()]
  */
 PMOD_EXPORT void f_lsh(INT32 args)
 {
@@ -1850,9 +1944,22 @@ PMOD_EXPORT void o_rsh(void)
   sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
 }
 
-/*! @decl mixed `>>(mixed arg1, mixed arg2)
+/*! @decl int `>>(int arg1, int arg2)
+ *! @decl mixed `>>(object arg1, int|object arg2)
+ *! @decl mixed `>>(int arg1, object arg2)
  *!
  *! Right shift operator.
+ *!
+ *! If @[arg1] is an object that implements @[lfun::`>>()], that
+ *! function will be called with @[arg2] as the single argument.
+ *!
+ *! If @[arg2] is an object that implements @[lfun::``>>()], that
+ *! function will be called with @[arg1] as the single argument.
+ *!
+ *! Otherwise @[arg1] will be shifted @[arg2] bits left.
+ *!
+ *! @seealso
+ *!   @[`<<()]
  */
 PMOD_EXPORT void f_rsh(INT32 args)
 {
@@ -2060,9 +2167,58 @@ PMOD_EXPORT void o_multiply(void)
   }
 }
 
-/*! @decl mixed `*(mixed arg1, mixed ... extras)
+/*! @decl mixed `*(mixed arg1)
+ *! @decl mixed `*(object arg1, mixed arg2, mixed ... extras)
+ *! @decl mixed `*(mixed arg1, object arg2)
+ *! @decl array `*(array arg1, int arg2)
+ *! @decl array `*(array arg1, float arg2)
+ *! @decl string `*(string arg1, int arg2)
+ *! @decl string `*(string arg1, float arg2)
+ *! @decl string `*(array(string) arg1, string arg2)
+ *! @decl array `*(array(array) arg1, array arg2)
+ *! @decl float `*(float arg1, int|float arg2)
+ *! @decl float `*(int arg1, float arg2)
+ *! @decl int `*(int arg1, int arg2)
+ *! @decl mixed `*(mixed arg1, mixed arg2, mixed ... extras)
  *!
  *! Multiplication operator.
+ *!
+ *! If there's only a single argument, that argument will be returned.
+ *!
+ *! If the first argument is an object that implements @[lfun::`*()],
+ *! that function will be called with the rest of the arguments.
+ *!
+ *! If there are more than two arguments, the result will be
+ *! @code{`*(`*(@[arg1], @[arg2]), @@@[extras])@}.
+ *!
+ *! If @[arg2] is an object that implements @[lfun::``*()], that
+ *! function will be called with @[arg1] as the single argument.
+ *!
+ *! Otherwise the result will be as follows:
+ *! @mixed @[arg1]
+ *!   @type array
+ *!     @mixed @[arg2]
+ *!       @type int
+ *!       @type float
+ *!         The result will be @[arg1] concatenated @[arg2] times.
+ *!       @type string
+ *!       @type array
+ *!         The result will be the elements of @[arg1] concatenated with
+ *!         @[arg2] interspersed.
+ *!     @endmixed
+ *!   @type string
+ *!     The result will be @[arg1] concatenated @[arg2] times.
+ *!   @type int
+ *!   @type float
+ *!     The result will be @code{@[arg1] * @[arg2]@}, and will be a
+ *!     float if either @[arg1] or @[arg2] is a float.
+ *! @endmixed
+ *!
+ *! @note
+ *!   In Pike 7.0 and earlier the multiplication order was unspecified.
+ *!
+ *! @seealso
+ *!   @[`+()], @[`-()], [`/()], @[lfun::`*()], @[lfun::``*()]
  */
 PMOD_EXPORT void f_multiply(INT32 args)
 {
