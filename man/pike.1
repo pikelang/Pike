@@ -1,11 +1,11 @@
-.\" $Id: pike.1,v 1.7 1998/05/20 23:07:26 grubba Exp $
+.\" $Id: pike.1,v 1.8 1999/12/13 01:27:29 grubba Exp $
 .\" name section last-modified title section-name product/status architecture
 .ds ]L Pike
-.TH pike 1 "$Date: 1998/05/20 23:07:26 $" Pike "Pike Manual" Pike
-.\" On Solaris ]L will contain "Last modified $Date: 1998/05/20 23:07:26 $"
+.TH pike 1 "$Date: 1999/12/13 01:27:29 $" Pike "Pike Manual" Pike
+.\" On Solaris ]L will contain "Last modified $Date: 1999/12/13 01:27:29 $"
 .\" while HPUX uses ]L to contain "Pike".
 .\" On OSF/1 ]L will already contain the wanted string.
-.if !\*(]LPike .ds ]L $Date: 1998/05/20 23:07:26 $ \" Solaris nroff
+.if !\*(]LPike .ds ]L $Date: 1999/12/13 01:27:29 $ \" Solaris nroff
 .SH NAME
 pike \- pike compiler and interpreter
 .SH SYNOPSIS
@@ -96,6 +96,14 @@ Increase the level of profiling with 1 (debug).
 Set the level of profiling to
 .I num
 (debug).
+.TP
+.B \-rt
+Turn on runtime checking of arguments to function calls, and soft casts.
+.TP
+.B \-rT
+Turn on
+.B \#pragma strict_types
+for all files.
 .LP
 The following options are supported by the default master program:
 .TP
