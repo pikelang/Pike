@@ -14,7 +14,7 @@
 #include <errno.h>
 #include "rusage.h"
 
-RCSID("$Id: rusage.c,v 1.14 2000/08/16 17:18:23 grubba Exp $");
+RCSID("$Id: rusage.c,v 1.15 2001/02/23 14:47:18 grubba Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -85,9 +85,9 @@ INT32 *low_rusage(void)
   rusage_values[0] = get_time_int(&pru.pr_utime);  /* user time */
   rusage_values[1] = get_time_int(&pru.pr_stime);  /* system time */
   rusage_values[2] = 0;                           /* maxrss */
-  rusage_values[3] = 0;                           /* idrss */
-  rusage_values[4] = 0;                           /* isrss */
-  rusage_values[5] = 0;                           /* minflt */
+  rusage_values[3] = 0;                           /* ixrss */
+  rusage_values[4] = 0;                           /* idrss */
+  rusage_values[5] = 0;                           /* isrss */
   rusage_values[6] = pru.pr_minf;           /* minor pagefaults */
   rusage_values[7] = pru.pr_majf;           /* major pagefaults */
   rusage_values[8] = pru.pr_nswap;          /* swaps */
