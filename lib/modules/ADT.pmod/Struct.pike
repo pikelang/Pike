@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.12 2004/03/19 15:54:38 grubba Exp $
+// $Id: Struct.pike,v 1.13 2004/05/28 09:40:03 grubba Exp $
 //
 
 #pike __REAL_VERSION__
@@ -30,21 +30,19 @@
 //!     f->write( (string)tag );
 //!   }
 
-static int item_counter;
-static array(Item) items = ({});
-static mapping(string:Item) names = ([]);
-static int(0..1) booted;
+static local int item_counter;
+static local array(Item) items = ({});
+static local mapping(string:Item) names = ([]);
 
 //! @decl void create(void|string|Stdio.File data)
 //! @param data
 //!   Data to be decoded and populate the struct. Can
 //!   either be a file object or a string.
-void create(void|string|object file) {
-  foreach(indices(this), string index) {
+static void create(void|string|object file) {
+  foreach(::_indices(2), string index) {
     mixed val = ::`[](index, 2);
     if(objectp(val) && val->is_item) names[index]=val;
   }
-  booted = 1;
   items = values(names);
   sort(items->id, items);
 
@@ -95,7 +93,6 @@ static function `->= = `[]=;
 
 //! The indices of a struct is the name of the struct items.
 static array(string) _indices() {
-  if(!booted) return ::_indices(2);
   array ret = indices(names);
   sort(values(names)->id, ret);
   return ret;
@@ -157,7 +154,7 @@ class Byte {
   static int(0..255) value;
 
   //! The byte can be initialized with an optional value.
-  void create(void|int(0..255) initial_value) {
+  static void create(void|int(0..255) initial_value) {
     set(initial_value);
   }
 
@@ -182,8 +179,8 @@ class Word {
   int size = 2;
   static int(0..) value;
 
-  //! The byte can be initialized with an optional value.
-  void create(void|int(0..) initial_value) {
+  //! The word can be initialized with an optional value.
+  static void create(void|int(0..65535) initial_value) {
     set(initial_value);
   }
 
@@ -216,6 +213,11 @@ class Drow {
 class Long {
   inherit Word;
   int size = 4;
+
+  //! The longword can be initialized with an optional value.
+  static void create(void|int(0..) initial_value) {
+    set(initial_value);
+  }
 }
 
 //! One longword (4 bytes) in intel order, integer value between 0 and 2^32.
@@ -224,6 +226,11 @@ class Long {
 class Gnol {
   inherit Drow;
   int size = 4;
+
+  //! The longword can be initialized with an optional value.
+  static void create(void|int(0..) initial_value) {
+    set(initial_value);
+  }
 }
 
 
@@ -294,7 +301,7 @@ class Varchars {
   }
 }
 
-string _sprintf(int t) {
+static string _sprintf(int t) {
   if(t!='O') return UNDEFINED;
   string ret = sprintf("%O(\n", this_program);
   foreach(items, Item item)
