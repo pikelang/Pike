@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.16 1998/04/09 23:11:53 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.17 1998/04/23 23:44:09 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -732,18 +732,13 @@ static string low_pike_sprintf(char *format,
 	struct svalue *t;
 	DO_OP();
 	GET_SVALUE(t);
-	if(t->type!=T_STRING)
-	{
-	  init_buf();
-	  describe_svalue(t,0,0);
-	  s=complex_free_buf();
-	  fsp->b=s.str;
-	  fsp->len=s.len;
-	  fsp->fi_free_string=fsp->b;
-	  break;
-	}else{
-	  arg=t;
-	}
+	init_buf();
+	describe_svalue(t,0,0);
+	s=complex_free_buf();
+	fsp->b=s.str;
+	fsp->len=s.len;
+	fsp->fi_free_string=fsp->b;
+	break;
       }
 
       case 's':
