@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.4 2001/03/12 15:05:08 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.5 2001/03/12 15:59:25 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -129,7 +129,7 @@ struct call_out_s
  (X)->prev_fun=(struct call_out_s **)(ptrdiff_t)-1; \
  (X)->caller=(struct object *)(ptrdiff_t)-1; \
  (X)->args=(struct array *)(ptrdiff_t)-1; \
- (X)->pos=-1 \
+ (X)->pos=-1; \
  } while(0)
 #else
 #define MESS_UP_BLOCK(X)
