@@ -105,7 +105,7 @@ Description: Perl module for Pike
 
 Package: pike7.3-dev
 Architecture: all
-Depends: ${shlibs:Depends}, pike7.3 (=${Source-Version})
+Depends: ${shlibs:Depends}, pike7.3 (=${Source-Version}), pike7.3-core (=${Source-Version})
 Description: Development files for Pike 7.3
  This package contains files you will need to develop
  C extension modules for Pike. The package depends on
