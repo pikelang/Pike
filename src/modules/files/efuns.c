@@ -194,18 +194,49 @@ void f_get_dir(INT32 args)
       int e;
       int num_files=0;
       char *bufptr=buffer;
+      int err;
 
       THREADS_ALLOW();
 
       while(1)
       {
 	/* Should have code for the POSIX variant here also */
+#ifdef HAVE_SOLARIS_READDIR_R
+	/* Solaris readdir_r returns the second arg on success,
+	 * and returns NULL on error or at end of dir.
+	 */
 	do {
 	  d=readdir_r(dir, tmp);
 	} while ((!d) && ((errno == EAGAIN)||(errno == EINTR)));
 	if (!d) {
+	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
+	   */
+	  err = (errno == ENOENT)?0:errno;
 	  break;
 	}
+#elif defined(HAVE_HPUX_READDIR_R)
+	/* HPUX's readdir_r returns an int instead:
+	 *
+	 *  0	- Successfull operation.
+	 * -1	- End of directory or encountered an error (sets errno).
+	 */
+	if (readdir_r(dir, tmp)) {
+	  d = NULL;
+	  err = errno;
+	  break;
+	} else {
+	  d = tmp;
+	}
+#elif defined(HAVE_POSIX_READDIR_R)
+	/* POSIX readdir_r returns 0 on success, and ERRNO on failure.
+	 * at end of dir it sets the third arg to NULL.
+	 */
+	if ((err = readdir_r(dir, tmp, &d)) || !d) {
+	  break;
+	}
+#else
+#error Unknown readdir_r variant
+#endif
 	if(d->d_name[0]=='.')
 	{
 	  if(!d->d_name[1]) continue;
@@ -220,8 +251,8 @@ void f_get_dir(INT32 args)
 	num_files++;
       }
       THREADS_DISALLOW();
-      if ((!d) && (errno != ENOENT)) {
-	error("get_dir(): readdir_r() failed: %d\n", errno);
+      if ((!d) && err) {
+	error("get_dir(): readdir_r() failed: %d\n", err);
       }
       for(e=0;e<num_files;e++)
       {
