@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.16 2003/08/10 19:25:28 nilsson Exp $
+dnl $Id: testsuite.in,v 1.17 2003/10/04 18:18:23 grubba Exp $
 
 dnl - Array
 
@@ -701,6 +701,8 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
+
+  test_do(_gdb_breakpoint();)
   
   test_any([[
     object o=Process.create_process(({"/bin/cat","/dev/null"}));
@@ -799,14 +801,17 @@ test_do([[
 ]], ({}))
 ]])
 
-cond([[ file_stat("/bin/sleep")  && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
+cond([[ file_stat("/bin/cat") && __builtin->TraceProcess && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
 test_any([[
   // Check that tracing works...
-  // Use a spawned pike to make sure the process doesn't exit
-  // prematurely due to EINTR.
+  // Spawn a /bin/cat that hangs on a read from a pipe connected to
+  // this process, so that it will die of SIGPIPE if we die.
+  Stdio.File input_fd = Stdio.File();
   Process.TraceProcess proc =
-    Process.TraceProcess(RUNPIKE_ARRAY + ({ "-e", "sleep(99999)" }));
+    Process.TraceProcess(({ "/bin/cat" }), ([
+      "stdin":input_fd->pipe(),
+    ]));
 
   int initial_sleep = 5;
   int count;
