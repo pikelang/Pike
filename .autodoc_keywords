@@ -342,6 +342,11 @@ Examples:     @member string "name"
               @member int "age"
                 These two entries in the mapping provide personal data.
 
+XML:          `@member float "foo"' => 
+              <member>
+                <type><float/></type>
+                <index>"foo"</index>
+              </member>
 ________________________________________________________________________________
 
 Keyword:      @ref{ ... @}
@@ -352,6 +357,7 @@ Groups with:  -
 Examples:     My favourite class is @ref{Vanilla.Ice.Cream@}, it tastes much
               better than @[Nougat.Glass] or @[`+].
 
+XML:          <ref>...</ref>
 ________________________________________________________________________________
 
 Keyword:      @section - @endsection
@@ -369,6 +375,7 @@ Examples:
                 ...
               @endsection
 
+XML:          <section name=" ... ">
 ________________________________________________________________________________
 
 Keyword:      @tt{ ... @}
@@ -376,6 +383,7 @@ Description:  Teletype.
 Children:     Text that will be rendered in teletype.
 Examples:     Type @tt{rm -rf *@} to erase several days of work.
 
+XML:          <tt> ... </tt>
 ________________________________________________________________________________
 
 Keyword:      @xml{ ... @}
@@ -385,5 +393,6 @@ Description:  XML escape. Inside this tag the characters <>& are not quoted and
 Children:     Text with markup.
 Examples:     @xml{<b>Bold</b> and @i{italic@}@}
 
+XML:          No representation.
 ________________________________________________________________________________
 
