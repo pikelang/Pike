@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.605 2003/02/19 12:13:51 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.606 2003/02/24 21:53:30 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -434,25 +434,45 @@ test_compile_any([[
   }
 ]])
 
-// Test that prototypes evaluate to false.
+// Test that prototypes evaluate to zero.
+test_any([[
+  class Foo {int foo();};
+  return Foo()->foo == 0;
+]], 1)
+test_any_equal([[
+  class Foo {int foo();};
+  return indices(Foo());
+]], ({"foo"}))
+test_any_equal([[
+  class Foo {int foo();};
+  return values(Foo());
+]], ({0}))
 test_any([[
   class Foo
   {
     int foo();
     int(0..1) f()
     {
-      return !foo;
+      return foo == 0;
     }
   };
   return Foo()->f();
 ]], 1)
-
 test_any([[
   class Foo
   {
     int foo();
+    int(0..1) f()
+    {
+      return functionp(foo);
+    }
   };
-  return !Foo()->foo;
+  class Bar
+  {
+    inherit Foo;
+    int foo() {}
+  };
+  return Bar()->f();
 ]], 1)
 
 test_do([[
