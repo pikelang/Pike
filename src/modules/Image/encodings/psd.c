@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.35 2002/10/21 17:06:15 marcus Exp $
+|| $Id: psd.c,v 1.36 2003/07/23 18:18:59 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: psd.c,v 1.35 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: psd.c,v 1.36 2003/07/23 18:18:59 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -193,7 +193,6 @@ struct layer
   unsigned int num_channels;
   unsigned int clipping;
   unsigned int flags;
-  int compression;
   struct channel_info channel_info[24];
   struct buffer mode;
   struct buffer extra_data;
@@ -243,7 +242,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
     layer->opacity = psd_read_uchar( src );
     layer->clipping = psd_read_uchar( src );
     layer->flags = psd_read_uchar( src );
-    psd_read_uchar( src );
+    psd_read_uchar( src ); /* filler byte */
     layer->extra_data = psd_read_string( src );
     layer->extra_data.len++;
     if(layer->extra_data.len)
@@ -263,7 +262,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
       tmp2 = psd_read_string( &tmp );
       if( tmp2.len )
       {
-	/* ranges (?) */
+	/* Layer blending ranges data */
       }
       layer->name = psd_read_pstring( &tmp );
     }
@@ -551,7 +550,6 @@ void push_layer( struct layer  *l)
   ref_push_string( s_opacity );       push_int( l->opacity );
   ref_push_string( s_clipping );      push_int( l->clipping );
   ref_push_string( s_flags );         push_int( l->flags );
-  ref_push_string( s_compression );   push_int( l->compression );
   ref_push_string( s_mode );          push_buffer( &l->mode );
   ref_push_string( s_extra_data );    push_buffer( &l->extra_data );
   ref_push_string( s_name );          push_buffer( &l->name );
@@ -578,10 +576,9 @@ void push_psd_image( struct psd_image *i )
   ref_push_string( s_height ); push_int( i->rows );
   ref_push_string( s_width );  push_int( i->columns );
   ref_push_string( s_compression ); push_int( i->compression );
-  ref_push_string( s_depth ); push_int( i->compression );
+  ref_push_string( s_depth ); push_int( i->depth );
   ref_push_string( s_mode ); push_int( i->mode );
   ref_push_string( s_color_data ); push_buffer( &i->color_data );
-/*   ref_push_string( s_resource_data ); push_buffer( &i->resource_data ); */
   ref_push_string( s_resources ); decode_resources( &i->resource_data );
   ref_push_string( s_image_data ); push_buffer( &i->image_data );
   ref_push_string( s_layers );
@@ -607,6 +604,10 @@ static void decode_resources( struct buffer *b )
     int id;
     struct buffer data;
     struct buffer name;
+
+    /* Non-photoshop software may use another identifier and
+       still be compatible with the Adobe PSD file format specification.
+       FIXME? */
     if( signature[0] != '8' ||  signature[1] != 'B' ||
         signature[2] != 'I' ||  signature[3] != 'M' )
       break;
@@ -663,6 +664,13 @@ static void decode_resources( struct buffer *b )
 	  f_aggregate( num_guides );
 	}
 	break;
+      case 0x040b: /* URL */
+	{
+	  struct buffer b = psd_read_pstring( &data );
+	  push_constant_text( "url" );
+	  push_buffer( &b );
+	}
+	break;
       case 0x03ed: /* res. info. */
 	push_constant_text( "resinfo" );
 
@@ -676,6 +684,61 @@ static void decode_resources( struct buffer *b )
 
 	f_aggregate_mapping( 12 );
 	break;
+
+      case 0x03fc: /* Declared completely obsolete by Adobe */
+      case 0x03ff:
+      case 0x0403:
+	break;
+
+      case 0x03e8: /* Photoshop 2.0. Obsolete! */
+	/* 5*int16  channels, rows, columns, depth, mode */
+
+      case 0x03e9: /* Machintosh print manager print info record. */
+
+      case 0x03eb: /* Photoshop 2.0. Obsolete! Indexed color table */
+
+      case 0x03ee:
+        /* Names of alpha channels as a series of pascal strings */
+
+      case 0x03ef: /* DisplayInfo structure */
+
+      case 0x03f1: /* Border information */
+	/* Contains a fixed-number for the border width and an int16 for the
+	   border units (1=inches, 2=cm, 3=points, 4=picas, 5=columns) */
+
+      case 0x03f2: /* Background color. */
+
+      case 0x03f3: /* Print flags */
+	/* A series of one byte boolean values for
+	   labels, crop marks, color bars, registration marks, negative, flip
+	   interpolate and caption */
+
+      case 0x03f4: /* Grayscale and multichannel halftoning information. */
+      case 0x03f5: /* Color halftoning information. */
+      case 0x03f6: /* Duotone halftoning information. */
+      case 0x03f7: /* Grayscale and multichannel transfer functions. */
+      case 0x03f8: /* Color transfer functions. */
+      case 0x03f9: /* Duotone transfer functions. */
+      case 0x03fa: /* Duotone image information. */
+      case 0x03fb: /* Two bytes for the effective black and white values
+		      for the dot range. */
+      case 0x03fd: /* EPS options */
+      case 0x03fe: /* Quick Mask information. 2 bytes containing Quick Mask
+		      channel ID. One byte boolean indicating whether the
+		      mask was initially empty. */
+      case 0x0401: /* Working path */
+      case 0x0402: /* Layers group information. 2 bytes per layer containing a
+		      group ID for the dragging groups. */
+      case 0x0404: /* IPTC-NAA record */
+      case 0x0405: /* Image mode for raw format files. */
+      case 0x0406: /* JPEG quality */
+      case 0x040A: /* Copyright flag */
+      case 0x07d0-0x0bb6: /* Path information */
+      case 0x0bb7: /* Name of clipping path */
+      case 0x2710: /* Print flags information .
+		      2 bytes version (=1), 1 byte center crop marks,
+		      1 zeroed byte, 4 bytes bleed width value,
+		      2 bytes bleed width scale. */
       default:
 	push_int( id );
 	push_buffer( &data );
@@ -692,6 +755,8 @@ static void image_f_psd___decode( INT32 args )
   get_all_args( "Image.PSD.___decode", args, "%S", &s );
   if(args > 1)
     pop_n_elems( args-1 );
+  if(s->len < 26+4+4+4 ) /* header+color mode+image res+layers */
+    Pike_error("This is not a Photoshop PSD file (too short)\n");
   if(s->str[0] != '8' || s->str[1] != 'B'  
      || s->str[2] != 'P'  || s->str[3] != 'S' )
     Pike_error("This is not a Photoshop PSD file (invalid signature)\n");
