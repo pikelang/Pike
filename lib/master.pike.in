@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.252 2003/01/27 03:49:43 nilsson Exp $
+// $Id: master.pike.in,v 1.253 2003/01/27 04:01:05 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1673,16 +1673,24 @@ void _main(array(string) orig_argv, array(string) env)
 	     "                " + "\n");
   };
 
+  mixed main_resolv(string ... syms) {
+    mixed v = resolv(syms[0]);
+    foreach(syms[1..], string sym)
+      if(v) v = v[sym];
+    if(!v)
+      _error("Could not resolv %s\n"
+	     "Is your PIKE_MODULE_PATH environment variable set correctly?\n",
+	     syms*".");
+    return v;
+  };
+
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
-    tmp=resolv("Getopt");
+    tmp = main_resolv( "Getopt" );
+
     int NO_ARG = tmp->NO_ARG;
     int MAY_HAVE_ARG = tmp->MAY_HAVE_ARG;
     int HAS_ARG = tmp->HAS_ARG;
-
-    if (!tmp)
-      _error("master.pike: Couldn't resolv Getopt module.\n"
-	     "Is your PIKE_MODULE_PATH environment variable set correctly?\n");
 
     q=tmp->find_all_options(argv,({
       ({"compat_version", HAS_ARG, ({"-V", "--compat"}), 0, 0}),
@@ -1882,27 +1890,14 @@ void _main(array(string) orig_argv, array(string) env)
     argv = tmp->get_args(argv,1);
   }
 
-  mixed main_resolv(array syms) {
-    mixed v = resolv(syms[0]);
-    foreach(syms[1..], string sym)
-      if(v) v = v[sym];
-    if(!v)
-      _error("Could not resolv %s\n", syms*".");
-    return v;
-  };
-
 #ifdef __AUTO_BIGNUM__
-  // Load bignum support...
-  {
-    mixed v = resolv("Gmp.bignum");
-    if (!v) _error("Failed to load Gmp.bignum.\n");
-  }
+  main_resolv( "Gmp", "bignum" );
 #endif /* __AUTO_BIGNUM__ */
 
   switch (postparseaction)
   {
      case "features":
-       write( main_resolv( "Tools.Install.features"/"." )()*"\n"+"\n" );
+       write( main_resolv( "Tools", "Install", "features" )()*"\n"+"\n" );
        exit(0);
 
      case "info":
@@ -1913,7 +1908,7 @@ void _main(array(string) orig_argv, array(string) env)
 	     "pike binary..."+_pike_file_name+"\n"+
 	      format_paths() + "\n"
 	     "Features......"+
-	     main_resolv( "Tools.Install.features"/"." )()*"\n              "+
+	     main_resolv( "Tools","Install","features" )()*"\n              "+
 	     "\n");
 	exit(0);
   }
@@ -1927,7 +1922,7 @@ void _main(array(string) orig_argv, array(string) env)
 	     "Available tools:\n");
       mapping t = ([]);
       int i;
-      object ts = main_resolv(({ "Tools", "Standalone" }));
+      object ts = main_resolv( "Tools", "Standalone" );
       foreach(indices(ts), string s) {
 	object o = ts[s]();
 	if(!o->main) continue;
@@ -1938,7 +1933,7 @@ void _main(array(string) orig_argv, array(string) env)
 	werror(" %-"+i+"s %s\n", s, t[s]);
       exit(1);
     }
-    main_resolv( ({ "Tools", "Hilfe" }) )->StdinHilfe();
+    main_resolv( "Tools", "Hilfe" )->StdinHilfe();
     exit(0);
   }
   else
@@ -1948,7 +1943,7 @@ void _main(array(string) orig_argv, array(string) env)
 
   if(run_tool) {
     mixed err = catch {
-      prog=main_resolv( ({ "Tools", "Standalone", argv[0] }) );
+      prog=main_resolv( "Tools", "Standalone", argv[0] );
     };
 
     if (err)
