@@ -1,4 +1,4 @@
-/* $Id: randomness.pmod,v 1.20 2001/11/08 01:45:39 nilsson Exp $
+/* $Id: randomness.pmod,v 1.21 2002/03/09 18:13:09 nilsson Exp $
  */
 
 //! Assorted stronger or weaker randomnumber generators.
@@ -46,12 +46,12 @@ private string some_entropy()
 					     Crypto.nt.CRYPT_VERIFYCONTEXT
 					     /*|Crypto.nt.CRYPT_SILENT*/);
   if(!ctx)
-    throw(({ "Crypto.random: couldn't create crypto context\n", backtrace()}));
+    error( "Crypto.random: couldn't create crypto context.\n" );
 
   string res = ctx->CryptGenRandom(8192);
 
   if(!res)
-    throw(({ "Crypto.random: couldn't generate randomness\n", backtrace()}));
+    error( "Crypto.random: couldn't generate randomness.\n" );
 
   destruct(ctx);
 
@@ -64,7 +64,7 @@ private string some_entropy()
   parent_pipe = Stdio.File();
   child_pipe = parent_pipe->pipe();
   if (!child_pipe)
-    throw( ({ "Crypto.random->popen: couldn't create pipe\n", backtrace() }) );
+    error( "Crypto.random->popen: couldn't create pipe.\n" );
 
   object null=Stdio.File("/dev/null","rw");
   env["PATH"]=PATH;
@@ -160,7 +160,7 @@ object reasonably_random()
   /* Not very random, but at least a fallback... */
   return global_arcfour = pike_random();
 #endif /* constant(Crypto.arcfour) */
-  throw( ({ "Crypto.randomness.reasonably_random: No source found\n", backtrace() }) );
+  error( "Crypto.randomness.reasonably_random: No source found.\n" );
 }
 
 //!
@@ -179,6 +179,6 @@ object really_random(int|void may_block)
       return res;
   }
     
-  throw( ({ "Crypto.randomness.really_random: No source found\n", backtrace() }) );
+  error( "Crypto.randomness.really_random: No source found.\n" );
 }
 

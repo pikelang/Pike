@@ -1,5 +1,5 @@
 // Graph sub-module for drawing pie-charts.
-// $Id: create_pie.pike,v 1.7 2001/11/19 00:04:38 nilsson Exp $
+// $Id: create_pie.pike,v 1.8 2002/03/09 18:17:10 nilsson Exp $
 //
 // These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 // Create_pie can draw pie charts in different forms.
@@ -120,7 +120,7 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
 	  
 	}
     else
-       throw(({"Missing font or similar error!\n", backtrace() }));
+      error("Missing font or similar error!\n");
 
   int nameheight=write_name(diagram_data);
 
@@ -149,8 +149,8 @@ mapping(string:mixed) create_pie(mapping(string:mixed) diagram_data)
   float w=diagram_data["linewidth"];
 
   if (xr<2)
-    throw(({"Image to small for this pie-diagram.\n"
-	    "Try smaller font or bigger image!\n", backtrace() }));
+    error("Image to small for this pie-diagram.\n"
+	  "Try smaller font or bigger image!\n");
 
   //initiate the 0.25*% for different numbers:
   //Ex: If numbers is ({3,3}) pnumbers will be ({200, 200}) 

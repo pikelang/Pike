@@ -49,8 +49,8 @@ class client
     case 200..399:
       break;
     default:
-      throw(({"SMTP: "+c+"\n"+(comment?"SMTP: "+comment+"\n":"")+
-	      "SMTP: "+reply_codes[r]+"\n", backtrace()}));
+      error( "SMTP: "+c+"\n"+(comment?"SMTP: "+comment+"\n":"")+
+	     "SMTP: "+reply_codes[r]+"\n" );
     }
     return r;
   }
@@ -89,12 +89,12 @@ class client
 
        if(!server || !connect(server, port))
        {
-	  throw(({"Failed to connect to mail server.\n",backtrace()}));
+	 error("Failed to connect to mail server.\n");
        }
     }
 
     if(readreturncode()/100 != 2)
-      throw(({"Connection refused by SMTP server.\n",backtrace()}));
+      error("Connection refused by SMTP server.\n");
 
     if(catch(cmd("EHLO "+gethostname())))
       cmd("HELO "+gethostname(), "greeting failed.");

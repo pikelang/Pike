@@ -517,8 +517,7 @@ class Parser (string buffer)
 	  }
 	  return fin;
 	default:
-	  throw( ({ "lisp->parser: internal error\n",
-		    backtrace() }) );
+	  error( "lisp->parser: internal error\n" );
 	}
       object rest = read_list();
       return rest && Cons(item , rest);

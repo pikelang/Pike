@@ -194,8 +194,7 @@ string nist_hash(bignum x)
 array(bignum) nist_primes(int l)
 {
   if ( (l < 0) || (l > 8) )
-    throw( ({ "Crypto.dsa->nist_primes: Unsupported key size.\n",
-		backtrace() }) );
+    error( "Crypto.dsa->nist_primes: Unsupported key size.\n" );
 
   int L = 512 + 64 * l;
   
@@ -269,21 +268,20 @@ bignum find_generator(bignum p, bignum q)
 object generate_parameters(int bits)
 {
   if (bits % 64)
-    throw( ({ "Crypto.dsa->generate_key: Unsupported key size.\n",
-		backtrace() }) );
+    error( "Crypto.dsa->generate_key: Unsupported key size.\n" );
 
   [p, q] = nist_primes(bits / 64 - 8);
 
   if (p % q != 1)
-    throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
+    error( "Crypto.dsa->generate_key: Internal error.\n" );
 
   if (q->size() != 160)
-    throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
+    error( "Crypto.dsa->generate_key: Internal error.\n" );
   
   g = find_generator(p, q);
 
   if ( (g == 1) || (g->powm(q, p) != 1))
-    throw( ({ "Crypto.dsa->generate_key: Internal error.\n", backtrace() }) );
+    error( "Crypto.dsa->generate_key: Internal error.\n" );
 
   return this_object();
 }

@@ -1,4 +1,4 @@
-/* $Id: rsa.pike,v 1.30 2001/12/17 13:28:26 grubba Exp $
+/* $Id: rsa.pike,v 1.31 2002/03/09 18:13:27 nilsson Exp $
  *
  * Follow the PKCS#1 standard for padding and encryption.
  */
@@ -445,8 +445,8 @@ object generate_key(int bits, function|void r)
   if (!r)
     r = Crypto.randomness.really_random()->read;
   if (bits < 128)
-    throw( ({ "Crypto.rsa->generate_key: ridicously small key\n",
-		backtrace() }) );
+    error( "Crypto.rsa->generate_key: ridicously small key.\n" );
+
   int s1 = bits / 2; /* Size of the first prime */
   int s2 = bits - s1;
   

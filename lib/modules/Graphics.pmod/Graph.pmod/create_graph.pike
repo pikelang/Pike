@@ -371,8 +371,8 @@ mapping(string:mixed) init(mapping(string:mixed) diagram_data)
 	    xmaxvalue=10.0;
 	  }
 	  else
-	    throw( ({"\""+diagram_data["type"]
-		     + "\" is an unknown graph type!\n", backtrace()}));
+	    error( "\""+diagram_data["type"]
+		   + "\" is an unknown graph type!\n" );
     }
 
   if (diagram_data["type"]=="sumbars")
@@ -449,8 +449,7 @@ mapping(string:mixed) create_text(mapping(string:mixed) diagram_data)
   {
     r++;
     if (r>9)
-      throw( ({"Very bad error while trying to resize the textfont!\n",
-	       backtrace()}));
+      error( "Very bad error while trying to resize the textfont!\n" );
 
     object notext=GETFONT(xnamesfont);
     int j;
@@ -720,8 +719,7 @@ mapping set_legend_size(mapping diagram_data)
     {
       r++;
       if (r>3)
-	throw( ({"Very bad error while trying to resize the legendfonts!\n",
-		 backtrace()}));
+	error( "Very bad error while trying to resize the legendfonts!\n" );
       {
 	texts=allocate(sizeof(diagram_data["legend_texts"]));
 	plupps=allocate(sizeof(diagram_data["legend_texts"]));
@@ -790,9 +788,8 @@ mapping set_legend_size(mapping diagram_data)
 			      plupps[i]->ysize()-2 );
 	  }
 	else
-	  throw( ({"\""+diagram_data["type"]+"\" is an unknown graph type!\n",
-		   backtrace()}));
-	  
+	  error( "\""+diagram_data["type"]+"\" is an unknown graph type!\n" );
+
 	//Calculate how many colomns it can be
 	b;
 	columnnr=(diagram_data["image"]->xsize()-4)/
@@ -1020,7 +1017,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   {
     if ((diagram_data["xspace"]<LITET)&&
 	(diagram_data["xspace"]>-LITET))
-      throw( ({"Very bad error because xspace is zero!\n", backtrace()}));
+      error( "Very bad error because xspace is zero!\n" );
     float start;
     start=diagram_data["xminvalue"];
     start=diagram_data["xspace"]*ceil((start)/diagram_data["xspace"]);
@@ -1033,7 +1030,7 @@ mapping(string:mixed) create_graph(mapping diagram_data)
   {
     if ((diagram_data["yspace"]<LITET)&&
 	(diagram_data["yspace"]>-LITET))
-      throw( ({"Very bad error because yspace is zero!\n", backtrace()}));
+      error( "Very bad error because yspace is zero!\n" );
     
     float start;
     start=diagram_data["yminvalue"];

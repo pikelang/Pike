@@ -1,7 +1,7 @@
 // Not yet finished -- Fredrik Hubinette
 // RFC 1035
 
-//! $Id: DNS.pmod,v 1.61 2002/01/13 18:44:33 marcus Exp $
+//! $Id: DNS.pmod,v 1.62 2002/03/09 18:27:04 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -40,7 +40,7 @@ class protocol
   string mklabel(string s)
   {
     if(strlen(s)>63)
-      throw(({"Too long component in domain name\n",backtrace()}));
+      error("Too long component in domain name.\n");
     return sprintf("%c%s",strlen(s),s);
   }
 
@@ -189,7 +189,7 @@ class protocol
 	  
 	default:
 	  if((~len)&0xc0) 
-	    throw(({"Invalid message compression mode\n",backtrace()}));
+	    error("Invalid message compression mode.\n");
 	  if(next==-1) next=pos+2;
 	  pos=((len&63)<<8) + msg[pos+1];
 	  continue;
@@ -377,7 +377,7 @@ class server
     if(!port)
       port = 53;
     if(!udp::bind(port))
-      throw(({"DNS: failed to bind port "+port+".\n",backtrace()}));
+      error("DNS: failed to bind port "+port+".\n");
     udp::set_read_callback(rec_data);
   }
 
@@ -531,8 +531,7 @@ class client
 	  resolv_conf = "nameserver 127.0.0.1";
 	}
 #if 0
-	throw(({ "Protocols.DNS.client(): No /etc/resolv.conf!\n",
-		 backtrace() }));
+	error( "Protocols.DNS.client(): No /etc/resolv.conf!\n" );
 #endif /* 0 */
       }
 
@@ -972,7 +971,7 @@ class async_client
   void create(void|string|array(string) server, void|string|array(string) domain)
   {
     if(!udp::bind(0))
-      throw(({"DNS: failed to bind a port.\n",backtrace()}));
+      error( "DNS: failed to bind a port.\n" );
 
     udp::set_read_callback(rec_data);
     ::create(server,domain);

@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.14 2001/10/18 18:54:19 nilsson Exp $
+ * $Id: Tree.pmod,v 1.15 2002/03/09 18:25:37 nilsson Exp $
  *
  */
 
@@ -554,7 +554,7 @@ class Node {
   mixed cast(string to) {
     if(to=="object") return this_object();
     if(to=="string") return render_xml();
-    throw( ({ "Can not case Node to "+to+".\n", backtrace() }) );
+    error( "Can not case Node to "+to+".\n" );
   }
 
   //! Creates an XML representation of the nodes sub tree.

@@ -2,14 +2,14 @@
  * Storage Manager prototype.
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: Base.pike,v 1.6 2002/01/15 22:31:24 nilsson Exp $
+ * $Id: Base.pike,v 1.7 2002/03/09 18:08:04 nilsson Exp $
  *
  * All storage managers must provide these methods.
  */
 
 #pike __REAL_VERSION__
 
-#define T() throw( ({"override this", backtrace()}))
+#define T() error( "Override this\n" );
 
 // The next two functions are an iterator over the cache. There is an
 // internal cursor, which is reset by each call to first(). Subsequent

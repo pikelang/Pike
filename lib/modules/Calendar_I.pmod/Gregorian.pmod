@@ -180,7 +180,7 @@ class Year
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -390,7 +390,7 @@ class Month
 	 case "int": return this->number(); 
 	 case "string":  return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -556,7 +556,7 @@ class Week
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -861,8 +861,7 @@ class Hour
       else 
       {
 	 if (!objectp(arg[0])) 
-	    throw( ({"Calendar...Day(): illegal argument 1\n",
-		     backtrace()}) );
+	   error( "Calendar...Day(): illegal argument 1\n" );
 	 d=arg[0];
 	 h=arg[1];
       } 
@@ -964,7 +963,7 @@ class Hour
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	    error("Can't cast to %O.\n", what);
       }
    }
 
@@ -1044,8 +1043,7 @@ class Minute
       else 
       {
 	 if (!objectp(arg[0])) 
-	    throw( ({"Calendar...Minute(): illegal argument 1\n",
-		     backtrace()}) );
+	   throw( "Calendar...Minute(): illegal argument 1\n" );
 	 h=arg[0];
 	 m=arg[1];
       } 
@@ -1154,7 +1152,7 @@ class Minute
 	 case "int": return this->number(); 
 	 case "string": return this->name();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	   error("Can't cast to %O.\n", what);
       }
    }
 
@@ -1251,8 +1249,7 @@ class Second
       else 
       {
 	 if (!objectp(arg[0])) 
-	    throw( ({"Calendar...Second(): illegal argument 1\n",
-		     backtrace()}) );
+	   error( "Calendar...Second(): illegal argument 1\n" );
 	 m=arg[0];
 	 s=arg[1];
       } 
@@ -1361,7 +1358,7 @@ class Second
 	 case "int": return this->number(); 
 	 case "string": return this->nase();
 	 default:
-	    throw(({"can't cast to "+what+"\n",backtrace()}));
+	   error("Can't cast to %O.\n", what);
       }
    }
 

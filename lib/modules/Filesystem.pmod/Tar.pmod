@@ -1,5 +1,5 @@
 /*
- * $Id: Tar.pmod,v 1.12 2001/08/23 14:29:42 grubba Exp $
+ * $Id: Tar.pmod,v 1.13 2002/03/09 18:15:12 nilsson Exp $
  */
 
 #pike __REAL_VERSION__
@@ -128,7 +128,7 @@ class _Tar  // filesystem
     object open(string mode)
     {
       if(mode!="r")
-	throw(({"Can only read right now.\n", backtrace()}));
+	error("Can only read right now.\n");
       return ReadFile(pos, size);
     }
   };

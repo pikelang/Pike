@@ -30,7 +30,7 @@ class protocol
       sscanf(s,".%s",s);
       ret+=({s});
     }
-    throw(({"NNTP: connection closed by news server.\n",backtrace()}));
+    error("NNTP: connection closed by news server.\n");
   }
 
   string readreturnbody()
@@ -49,7 +49,7 @@ class protocol
 	else
 	  line=line+"\r\n";
 	if(news::write(line) != strlen(line))
-	  throw(({"NNTP: Failed to write body\n",backtrace()}));
+	  error("NNTP: Failed to write body.\n");
       }
     news::write(".\r\n");
   }
@@ -63,7 +63,7 @@ class protocol
   int failsafe_command(string cmd)
   {
     if(command(cmd)/100 != 2)
-      throw(({"NEWS "+cmd+" failed\n",backtrace()}));
+      error("NEWS "+cmd+" failed.\n");
   }
 
   string do_cmd_with_body(string cmd)
@@ -151,15 +151,13 @@ class client
     }
 
     if(!connect(server,119))
-    {
-      throw(({"Failed to connect to news server.\n",backtrace()}));
-    }
+      error("Failed to connect to news server.\n");
 
     if(readreturncode()/100 != 2)
-      throw(({"Connection refused by NNTP server.\n",backtrace()}));
+      error("Connection refused by NNTP server.\n");
 
     if(command("mode reader")/100 !=2)
-      throw(({"NNTP: mode reader failed.\n",backtrace()}));
+      error("NNTP: mode reader failed.\n");
     
   }
 };

@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.8 2002/02/26 02:14:26 nilsson Exp $
+ * $Id: cache.pike,v 1.9 2002/03/09 18:07:45 nilsson Exp $
  *
  */
 
@@ -187,8 +187,7 @@ void create(Cache.Storage.Base storage_mgr,
             Cache.Policy.Base policy_mgr,
             void|int cleanup_cycle_delay) {
   if (!storage_mgr || !policy_mgr)
-    throw ( ({ "I need a storage manager and a policy manager",
-               backtrace() }) );
+    error ( "I need a storage manager and a policy manager\n" );
   storage=storage_mgr;
   policy=policy_mgr;
   if (cleanup_cycle_delay) cleanup_cycle=cleanup_cycle_delay;

@@ -107,8 +107,7 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
   {
     if ((diagram_data["yspace"]<LITET)
 	&& (diagram_data["yspace"]>-LITET))
-      throw( ({"Very bad error because yspace is zero!\n",
-	       backtrace()}));
+      error( "Very bad error because yspace is zero!\n" );
     float start;
     start=diagram_data["yminvalue"];
     start=diagram_data["yspace"]*ceil((start)/diagram_data["yspace"]);
@@ -426,9 +425,8 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 	  draw(barsdiagram, diagram_data["graphlinewidth"],l);
       }
     else
-      throw( ({"\""+diagram_data["drawtype"]
-	       + "\" is an unknown bars-diagram drawtype!\n",
-	       backtrace()}));
+      error( "\""+diagram_data["drawtype"]
+	     + "\" is an unknown bars-diagram drawtype!\n" );
   else
     if (diagram_data["subtype"]=="box")
       if (diagram_data["drawtype"]=="2D")
@@ -474,11 +472,11 @@ mapping(string:mixed) create_bars(mapping(string:mixed) diagram_data)
 	}   
       }
       else
-	throw( ({"\""+diagram_data["drawtype"]
-		 + "\" is an unknown bars-diagram drawtype!\n", backtrace()}));
+	error( "\""+diagram_data["drawtype"]
+	       + "\" is an unknown bars-diagram drawtype!\n" );
     else
-      throw( ({"\""+diagram_data["subtype"]
-	       +"\" is an unknown bars-diagram subtype!\n", backtrace()}));
+      error( "\""+diagram_data["subtype"]
+	     +"\" is an unknown bars-diagram subtype!\n" );
   STOP_DEBUG("draw_values");
 
   //Draw X and Y-axis

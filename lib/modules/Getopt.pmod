@@ -126,8 +126,7 @@ string|int find_option(array(string) argv,
 		if(i == sizeof(argv)-1)
 		{
 		  if (throw_errors) {
-		    throw(({ "No argument to option "+tmp+".\n",
-			       backtrace() }));
+		    error( "No argument to option "+tmp+".\n" );
 		  } else {
 		    werror("No argument to option "+tmp+".\n");
 		    exit(1);
@@ -159,8 +158,7 @@ string|int find_option(array(string) argv,
 		  if(i == sizeof(argv)-1)
                   {
 		    if (throw_errors) {
-		      throw(({ "No argument to option -"+argv[i][j..j]+".\n",
-				 backtrace() }));
+		      error( "No argument to option -"+argv[i][j..j]+".\n" );
 		    } else {
 		      werror("No argument to option -"+argv[i][j..j]+".\n");
 		      exit(1);
@@ -335,8 +333,7 @@ array find_all_options(array(string) argv,
 	    if(e==sizeof(argv)-1)
 	    {
 	      if (throw_errors) {
-		throw(({ "No argument to option "+opt+".\n",
-			   backtrace() }));
+		error( "No argument to option "+opt+".\n" );
 	      } else {
 		werror("No argument to option "+opt+".\n");
 		exit(1);
@@ -365,8 +362,7 @@ array find_all_options(array(string) argv,
 		if(e==sizeof(argv)-1)
 		{
 		  if (throw_errors) {
-		    throw(({ "No argument to option "+opt+".\n",
-			       backtrace() }));
+		    error( "No argument to option "+opt+".\n" );
 		  } else {
 		    werror("No argument to option "+opt+".\n");
 		    exit(1);
@@ -457,8 +453,7 @@ array(string) get_args(array(string) argv, void|int posix_me_harder,
 	  break;
 	}else{
 	  if (throw_errors) {
-	    throw(({ "Unknown option "+argv[i]+".\n",
-		       backtrace() }));
+	    error( "Unknown option "+argv[i]+".\n" );
 	  } else {
 	    werror("Unknown option "+argv[i]+".\n");
 	    exit(1);
@@ -467,15 +462,13 @@ array(string) get_args(array(string) argv, void|int posix_me_harder,
       }else{
 	if(strlen(argv[i]) == 2) {
 	  if (throw_errors) {
-	    throw(({ "Unknown option "+argv[i]+".\n",
-		       backtrace() }));
+	    error( "Unknown option "+argv[i]+".\n" );
 	  } else {
 	    werror("Unknown option "+argv[i]+".\n");
 	  }
 	} else {
 	  if (throw_errors) {
-	    throw(({ "Unknown options "+argv[i]+".\n",
-		       backtrace() }));
+	    error( "Unknown options "+argv[i]+".\n" );
 	  } else {
 	    werror("Unknown options "+argv[i]+".\n");
 	  }
