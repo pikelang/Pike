@@ -1,3 +1,5 @@
+#pike __VERSION__
+
 import ".";
 
 string all_data=0;
