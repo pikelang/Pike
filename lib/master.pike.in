@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.94 2000/01/11 19:16:42 mast Exp $
+ * $Id: master.pike.in,v 1.95 2000/01/16 05:19:20 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -1459,6 +1459,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
     {
       linewidth=_static_modules.files()->_stdin->tcgetattr()->columns;
     };
+    if(linewidth<10) linewidth=99999;
   }
 
   if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
