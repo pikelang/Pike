@@ -1,4 +1,4 @@
-// $Id: module.pmod.in,v 1.10 2003/04/15 13:39:31 marcus Exp $
+// $Id: module.pmod.in,v 1.11 2003/04/15 13:42:34 marcus Exp $
 #pike __REAL_VERSION__
 
 inherit @module@;
@@ -201,11 +201,14 @@ class _file {
 	pos += file_pos;
       if(pos < 0)
 	return -1;
-      if(!f->seek || f->seek(0)<0)
-	return -1;
-      file_pos = 0;
-      read_buf = "";
-      crc = crc32("");
+      if(pos < file_pos) {
+	if(!f->seek || f->seek(0)<0)
+	  return -1;
+	file_pos = 0;
+	read_buf = "";
+	crc = crc32("");
+      } else
+	pos -= file_pos;
       while(pos > 0) {
 	string r = read(pos>16384? 16384:pos);
 	if(!sizeof(r))
