@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.180 2000/09/15 13:25:42 mirar Exp $ */
+/* $Id: image.c,v 1.181 2000/11/29 21:47:53 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.180 2000/09/15 13:25:42 mirar Exp $
+**!	$Id: image.c,v 1.181 2000/11/29 21:47:53 hubbe Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.180 2000/09/15 13:25:42 mirar Exp $");
+RCSID("$Id: image.c,v 1.181 2000/11/29 21:47:53 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4251,7 +4251,6 @@ void image_cast(INT32 args)
 
 static void image__sprintf( INT32 args )
 {
-  extern void f_sprintf( INT32 args );
   int x;
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);

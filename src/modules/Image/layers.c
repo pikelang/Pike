@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.56 2000/09/10 01:23:59 per Exp $
+**!	$Id: layers.c,v 1.57 2000/11/29 21:47:53 hubbe Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.56 2000/09/10 01:23:59 per Exp $");
+RCSID("$Id: layers.c,v 1.57 2000/11/29 21:47:53 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -2892,7 +2892,6 @@ void image_layer_autocrop(INT32 args)
 
 static void image_layer__sprintf( INT32 args )
 {
-  extern void f_sprintf( INT32 args );
   int x;
   if (args != 2 )
     SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
