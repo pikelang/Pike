@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.29 1999/10/22 02:35:41 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.30 1999/10/29 00:13:38 hubbe Exp $ */
 
 import Stdio;
 
@@ -228,12 +228,27 @@ int main(int argc, string *argv)
 	  string widener = ([ 0:"",
 			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
 			    2:"\nint \x10001=0;\n" ])[shift%3];
+	  
+	  if(test[-1]!='\n') test+="\n";
 
+	  int computed_line=sizeof(test/"\n");
+	  array gnapp= test/"#";
+	  for(int e=0;e<sizeof(gnapp);e++)
+	  {
+	    if(sscanf(gnapp[e],"%*d"))
+	    {
+	      computed_line=0;
+	      break;
+	    }
+	  }
+	  string linetester="int __cpp_line=__LINE__; int __rtl_line=backtrace()[-1][1];\n";
+
+	  string to_compile = test + linetester + widener;
 	  switch(type)
 	  {
 	    case "COMPILE":
 	      _dmalloc_set_name(fname,0);
-	      if(catch(compile_string(test + widener, fname)))
+	      if(catch(compile_string(to_compile, fname)))
 	      {
 		_dmalloc_set_name();
 		werror(fname + " failed.\n");
@@ -248,7 +263,7 @@ int main(int argc, string *argv)
 	    case "COMPILE_ERROR":
 	      master()->set_inhibit_compile_errors(1);
 	      _dmalloc_set_name(fname,0);
-	      if(catch(compile_string(test + widener, fname)))
+	      if(catch(compile_string(to_compile, fname)))
 	      {
 		_dmalloc_set_name();
 		successes++;
@@ -264,7 +279,7 @@ int main(int argc, string *argv)
 	    case "EVAL_ERROR":
 	      master()->set_inhibit_compile_errors(1);
 	      _dmalloc_set_name(fname,0);
-	      if(catch(clone(compile_string(test + widener, fname))->a()))
+	      if(catch(clone(compile_string(to_compile, fname))->a()))
 	      {
 		_dmalloc_set_name();
 		successes++;
@@ -281,7 +296,7 @@ int main(int argc, string *argv)
 	      mixed err;
 	      if (err = catch{
 		_dmalloc_set_name(fname,0);
-		o=clone(compile_string(test + widener,fname));
+		o=clone(compile_string(to_compile,fname));
 		_dmalloc_set_name();
 	    
 		if(check > 1) _verify_internals();
@@ -295,6 +310,7 @@ int main(int argc, string *argv)
 
 		if(t) trace(0);
 		if(check > 1) _verify_internals();
+
 	      }) {
 		werror(fname + " failed.\n");
 		bzot(test);
@@ -306,6 +322,18 @@ int main(int argc, string *argv)
 		}
 		errors++;
 		break;
+	      }
+
+	      if( o->__cpp_line != o->__rtl_line ||
+		  ( computed_line && computed_line!=o->__cpp_line))
+	      {
+		werror(fname + " Line numbering failed.\n");
+		bzot(test + linetester);
+		werror("   CPP lines: %d\n",o->__cpp_line);
+		werror("   RTL lines: %d\n",o->__rtl_line);
+		if(computed_line)
+		  werror("Actual lines: %d\n",computed_line);
+		errors++;
 	      }
 	    
 	      switch(type)
