@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.274 2003/06/30 17:06:10 mast Exp $
+|| $Id: signal_handler.c,v 1.275 2003/08/20 12:07:21 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.274 2003/06/30 17:06:10 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.275 2003/08/20 12:07:21 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -724,6 +724,9 @@ static RETSIGTYPE receive_signal(int signum)
 /* This function is intended to work like signal(), but better :) */
 void my_signal(int sig, sigfunctype fun)
 {
+#ifdef PROC_DEBUG
+  fprintf(stderr, "my_signal(%d, 0x%p)\n", sig, (void *)fun);
+#endif
 #ifdef HAVE_SIGACTION
   {
     struct sigaction action;
@@ -878,6 +881,10 @@ static void f_signal(int args)
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
     Pike_error("signal: permission denied.\n");
+#endif
+
+#ifdef PROC_DEBUG
+  fprintf(stderr, "f_signal(%d)\n", args);
 #endif
 
   check_signals(0,0,0);
