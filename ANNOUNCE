@@ -127,7 +127,7 @@ Postgres.
 
 MIME - Multimedia Internet Mail Extension Module
 
-This module makes it easy to create and decode e-mails, including
+This module makes it easy to create and decode e-mail, including
 attachments. 
 
 
@@ -144,8 +144,8 @@ Crypto - Cryptographic Toolkit
 The crypto toolkit is a set of objects implementing various
 cryptographic algorithms, as well as objects used to glue the other
 objects together. The toolkit includes block ciphers IDEA, DES
-(includng tripple DES) and CAST, the RC4 stream cipher, the hash
-functions MD5 and SHA, and the public key cryptography algoritm
+(including tripple DES) and CAST, the RC4 stream cipher, the hash
+functions MD5 and SHA, and the public key cryptography algorithm
 RSA. It also includes a some randomness sources.
 
 The toolkit can be used for most kinds of cryptographic applications,
