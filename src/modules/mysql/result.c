@@ -1,5 +1,5 @@
 /*
- * $Id: result.c,v 1.1 1996/12/28 18:51:42 grubba Exp $
+ * $Id: result.c,v 1.2 1996/12/30 22:52:45 grubba Exp $
  *
  * mysql query result
  *
@@ -44,6 +44,9 @@ typedef struct dynamic_buffer_s dynamic_buffer;
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
+
+/* Define this to get support for field->default. */
+#undef SUPPORT_DEFAULT
 
 /*
  * Globals
@@ -144,12 +147,14 @@ static void f_fetch_field(INT32 args)
     if (field) {
       push_text("name"); push_text(field->name);
       push_text("table"); push_text(field->table);
-      push_text("def");
+#ifdef SUPPORT_DEFAULT
+      push_text("default");
       if (field->def) {
 	push_text(field->def);
       } else {
 	push_int(0);
       }
+#endif /* SUPPORT_DEFAULT */
       push_text("type");
       switch(field->type) {
       case FIELD_TYPE_DECIMAL:
@@ -209,7 +214,11 @@ static void f_fetch_field(INT32 args)
       push_text("flags"); push_int(field->flags);		/*************/
       push_text("decimals"); push_int(field->decimals);
       
+#ifdef SUPPORT_DEFAULT
       f_aggregate_mapping(8*2);
+#else
+      f_aggregate_mapping(7*2);
+#endif /* SUPPORT_DEFAULT */
     } else {
       /*
        * Should this be an error?
@@ -314,7 +323,7 @@ void init_mysql_res_programs(void)
   set_init_callback(init_res_struct);
   set_exit_callback(exit_res_struct);
 
-  mysql_result_program = end_c_program("/precompiled/mysql_res");
+  mysql_result_program = end_c_program("/precompiled/mysql_result");
   mysql_result_program->refs++;
 }
 
