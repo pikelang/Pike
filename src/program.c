@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.347 2001/07/03 17:01:48 grubba Exp $");
+RCSID("$Id: program.c,v 1.348 2001/07/03 18:18:53 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2967,6 +2967,9 @@ int define_variable(struct pike_string *name,
 						  n)->storage_offset,
 				 ID_FROM_INT(Pike_compiler->new_program, n)->
 				 run_time_type);
+	/* Hide the old variable. */
+	Pike_compiler->new_program->identifier_references[n].id_flags |=
+	  ID_STATIC|ID_PRIVATE;
 	return n2;
       }
     }
