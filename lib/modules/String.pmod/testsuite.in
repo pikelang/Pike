@@ -1,4 +1,5 @@
-// $Id: testsuite.in,v 1.2 2002/10/14 14:15:50 nilsson Exp $
+dnl $Id: testsuite.in,v 1.3 2002/11/29 19:49:40 nilsson Exp $
+
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
   String.Buffer s=String.Buffer();
@@ -244,15 +245,15 @@ dnl Compatibility Tests
 
 test_any([[
   #pike 7.2
-  return objectp(clone(String.String_buffer));
+  return objectp(String.String_buffer());
 ]], 1)
 test_do([[
   #pike 7.2
-  clone(String.String_buffer)->append("foo")
+  String.String_buffer()->append("foo")
 ]])
 test_do([[
   #pike 7.2
-  _TEST()->Flurp=clone(String.String_buffer)
+  _TEST()->Flurp=String.String_buffer()
 ]])
 test_do(_TEST()->Flurp->append("test"))
 test_do(_TEST()->Flurp->append("test"))
