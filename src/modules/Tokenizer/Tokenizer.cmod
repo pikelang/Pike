@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.13 2003/12/12 14:47:50 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.14 2003/12/13 17:25:06 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -12,6 +12,7 @@
 
 #include "svalue.h"
 #include "object.h"
+#include "mapping.h"
 #include "interpret.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -589,6 +590,47 @@ PIKECLASS compiler
 /*! @endclass
  */
 
+/*! @class Position
+ *!
+ *! Filename-linenumber pair.
+ */
+PIKECLASS Position
+{
+  /*! @decl string filename
+   */
+  PIKEVAR string filename;
+
+  /*! @decl int line
+   */
+  PIKEVAR int(0..) line;
+
+  PIKEFUN void create(string filename, int line)
+    flags ID_STATIC;
+  {
+    if (THIS->filename) {
+      free_string(THIS->filename);
+    }
+    copy_shared_string(THIS->filename, filename);
+    THIS->line = line;
+  }
+
+  PIKEFUN string _sprintf()
+    flags ID_STATIC;
+  {
+    pop_n_elems(args);
+    push_constant_text("%s:%d");
+    if (THIS->filename) {
+      ref_push_string(THIS->filename);
+    } else {
+      push_constant_text("-");
+    }
+    push_int(THIS->line);
+    f_sprintf(3);
+  }
+}
+/*! @endclass
+ */
+
 /*! @class Token
  */
 PIKECLASS Token
@@ -849,12 +891,15 @@ PIKECLASS TokenizingCompiler
   PIKECLASS pike_tokenizer
   {
     static int tokenizing_compiler_pike_tokenizer_inherited_report = -1;
+    static int tokenizing_compiler_pike_tokenizer_inherited_scan = -1;
     static int tokenizing_compiler_pike_tokenizer_inherited_line_no = -1;
+    static int tokenizing_compiler_pike_tokenizer_inherited_current_symbol = -1;
 
-    /* PIKEVAR object(Token) current_token; */
+    PIKEVAR object(Token) current_token;
     PIKEVAR string current_file;
-    PIKEVAR object pos
-       flags ID_STATIC;
+    PIKEVAR object(Position) pos
+      flags ID_STATIC;
+    PIKEVAR mapping(string:Token) token_lookup;
 
     INIT
     {
@@ -879,12 +924,21 @@ PIKECLASS TokenizingCompiler
       tokenizing_compiler_pike_tokenizer_inherited_report =
 	really_low_reference_inherited_identifier(NULL, 1,
 						  f_compiler_basic_tokenizer_report_fun_num);
+      tokenizing_compiler_pike_tokenizer_inherited_scan =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_scan_fun_num);
       {
 	/* FIXME: Ought to save the identifier numbers for variables too. */
-	struct pike_string *line_no_str = make_shared_string("line_no");
+	struct pike_string *var_name_str = make_shared_string("line_no");
 	tokenizing_compiler_pike_tokenizer_inherited_line_no =
-	  low_reference_inherited_identifier(NULL, 1, line_no_str, SEE_STATIC);
-	free_string(line_no_str);
+	  low_reference_inherited_identifier(NULL, 1, var_name_str,
+					     SEE_STATIC);
+	free_string(var_name_str);
+	var_name_str = make_shared_string("current_symbol");
+	tokenizing_compiler_pike_tokenizer_inherited_current_symbol =
+	  low_reference_inherited_identifier(NULL, 1, var_name_str,
+					     SEE_STATIC);
+	free_string(var_name_str);
       }
     }
 
@@ -1232,6 +1286,202 @@ PIKECLASS TokenizingCompiler
 	pop_n_elems(args-1);
 	/* NOTE: We keep one argument on the stack. */
 	return;
+      }
+    }
+
+    /*! @decl Token handle(string symbol)
+     *!
+     *! Token factory.
+     *!
+     *! @seealso
+     *!   @[token_lookup]
+     */
+    PIKEFUN Token handle(string symbol)
+    {
+      /* Make place for the token program. */
+      Pike_sp[0] = Pike_sp[-1];
+      Pike_sp[-1].type = PIKE_T_INT;
+      Pike_sp[-1].subtype = NUMBER_UNDEFINED;
+      Pike_sp[-1].u.integer = 0;
+      Pike_sp++;
+      ref_push_string(THIS->current_file);
+      low_object_index_no_free(Pike_sp, Pike_fp->current_object,
+			       Pike_fp->context.identifier_level +
+			       tokenizing_compiler_pike_tokenizer_inherited_line_no);
+      Pike_sp++;
+      clone_object(Position_program, 2);
+      if (Pike_sp[-1].type == T_OBJECT) {
+	if (THIS->pos) {
+	  free_object(THIS->pos);
+	  THIS->pos = NULL;
+	}
+	add_ref(THIS->pos = Pike_sp[-1].u.object);
+      }
+
+      /* Stack is now:
+       *
+       * Pike_sp[-3]	UNDEFINED.
+       * Pike_sp[-2]	symbol.
+       * Pike_sp[-1]	pos.
+       */
+
+      args = 3;
+
+      if (THIS->token_lookup) {
+	mapping_index_no_free(Pike_sp-3, THIS->token_lookup, Pike_sp-args);
+	if (UNSAFE_IS_ZERO(Pike_sp-3)) {
+	  goto examine_symbol;
+	}
+      } else {
+	/* Try looking closer at the symbol. */
+      examine_symbol:
+	if (symbol->len) {
+	  struct pike_string *format_str;
+	  switch(index_shared_string(symbol, 0)) {
+	  case '\"':
+	  case '\'':
+	    /* String or character constant. */
+	    ref_push_string(symbol);
+	    APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_parse_string_fun_num, 1);
+	    if (index_shared_string(symbol, 0) == '\'') {
+	      if (!Pike_sp[-1].u.string->len) {
+		push_constant_text("Zero-length character constant: %s");
+		ref_push_string(Pike_sp[-2].u.string);
+		APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+		pop_stack();
+		push_int(0);
+	      } else {
+		INT32 val;
+		if (Pike_sp[-1].u.string->len > 1) {
+		  push_constant_text("Long character constant: %s");
+		  ref_push_string(Pike_sp[-2].u.string);
+		  APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num, 2);
+		  pop_stack();
+		}
+		val = index_shared_string(Pike_sp[-1].u.string, 0);
+		pop_stack();
+		push_int(val);
+	      }
+	      args=4;
+	      add_ref(Pike_sp[-4].u.program = IntegerToken_program);
+	      Pike_sp[-4].type = T_PROGRAM;
+	    } else {
+	      args=4;
+	      add_ref(Pike_sp[-4].u.program = StringToken_program);
+	      Pike_sp[-4].type = T_PROGRAM;
+	    }
+	    break;
+
+	  case '0':
+	    /* Binary, hexadecimal, octal or floating point number. */
+	    if (symbol->len == 1) {
+	      push_int(0);
+	    } else {
+	      MAKE_CONST_STRING(format_str, "0%*[xX]%x");
+	      if (!low_sscanf(symbol, format_str)) {
+		MAKE_CONST_STRING(format_str, "0%*[bB]%b");
+		if (!low_sscanf(symbol, format_str)) {
+		  MAKE_CONST_STRING(format_str, "%o%s");
+		  /* NOTE: This sscanf will always succeed. */
+		  low_sscanf(symbol, format_str);
+		  goto sscanned_int;
+		}
+	      }
+	    }
+	    goto got_int;
+	  case '1': case '2': case '3':
+	  case '4': case '5': case '6':
+	  case '7': case '8': case '9':
+	    /* Decimal or floating point number. */
+	    MAKE_CONST_STRING(format_str, "%d%s");
+	    /* NOTE: This sscanf will always succeed. */
+	    low_sscanf(symbol, format_str);
+	  sscanned_int:
+	    if (Pike_sp[-1].u.string->len) {
+	      /* Possibly a float. */
+	      MAKE_CONST_STRING(format_str, "%f%s");
+	      /* NOTE: This sscanf will always succeed. */
+	      low_sscanf(symbol, format_str);
+	      if (Pike_sp[-1].u.string->len) {
+		push_constant_text("Strange numeric constant: %s");
+		ref_push_string(symbol);
+		APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_yyerror_fun_num,
+			   2);
+		pop_stack();
+	      }
+	      if (Pike_sp[-1].u.string->len > Pike_sp[-3].u.string->len) {
+		/* We've got a float. */
+		assign_svalue(Pike_sp-4, Pike_sp-2);
+		pop_n_elems(3);
+		args=4;
+		add_ref(Pike_sp[-4].u.program = FloatToken_program);
+		Pike_sp[-4].type = T_PROGRAM;
+		break;
+	      }
+	      /* Get rid of the float and the strings. */
+	      pop_n_elems(3);
+	    } else {
+	      /* Get rid of the empty string. */
+	      pop_stack();
+	    }
+	  got_int:
+	    args=4;
+	    add_ref(Pike_sp[-4].u.program = IntegerToken_program);
+	    Pike_sp[-4].type = T_PROGRAM;
+	    break;
+
+	  case '#':
+	    /* Preprocessor directive.
+	     */
+	    MAKE_CONST_STRING(format_str, "#%*[ \t]%[^ \t]%*[ \t]%s");
+	    APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_preprocess_fun_num,
+		       low_sscanf(symbol, format_str));
+	    pop_stack();
+	    /* FALL_THROUGH */
+
+	  case '/':
+	    /* Comment, since all other cases should be handled though
+	     * the mapping token_lookup.
+	     */
+	    pop_n_elems(args);
+	    push_int(0);
+	    return;
+	  }
+	}
+	if (UNSAFE_IS_ZERO(Pike_sp - args)) {
+	  free_svalue(Pike_sp-args);
+	  add_ref(Pike_sp[-args].u.program = IdentifierToken_program);
+	  Pike_sp[-args].type = T_PROGRAM;
+	}
+      }
+      f_call_function(args);
+    }
+
+    PIKEFUN void scan()
+    {
+      if (THIS->current_token) {
+	free_object(THIS->current_token);
+	THIS->current_token = NULL;
+      }
+      push_int(0);	/* Return value. */
+      while (1) {
+	APPLY_SELF(tokenizing_compiler_pike_tokenizer_inherited_scan, 0);
+	pop_stack();
+	low_object_index_no_free(Pike_sp, Pike_fp->current_object,
+				 Pike_fp->context.identifier_level +
+				 tokenizing_compiler_pike_tokenizer_inherited_current_symbol);
+	Pike_sp++;
+	if (SAFE_IS_ZERO(Pike_sp-1)) {
+	  pop_stack();
+	  return;
+	}
+	APPLY_SELF(f_TokenizingCompiler_pike_tokenizer_handle_fun_num, 1);
+	if (Pike_sp[-1].type == T_OBJECT) {
+	  add_ref(THIS->current_token = Pike_sp[-1].u.object);
+	  pop_stack();
+	  return;
+	}
+	pop_stack();
       }
     }
   }
