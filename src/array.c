@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.64 2000/04/12 18:40:12 hubbe Exp $");
+RCSID("$Id: array.c,v 1.65 2000/04/17 16:48:57 grubba Exp $");
 
 struct array empty_array=
 {
@@ -1859,11 +1859,10 @@ void gc_free_all_unreferenced_arrays(void)
       free_svalues(ITEM(a), a->size, a->type_field);
       a->size=0;
 
-      if(!(next=a->next))
-	fatal("Null pointer in array list.\n");
+      SET_NEXT_AND_FREE(a, free_array);
 
-      free_array(a);
-      a=next;
+      if (!(a = next))
+	fatal("Null pointer in array list.\n");
     }
     else if(a->flags & ARRAY_WEAK_FLAG)
     {
@@ -1901,11 +1900,10 @@ void gc_free_all_unreferenced_arrays(void)
 	}
       }
 	  
-      if(!(next=a->next))
-	fatal("Null pointer in array list.\n");
+      SET_NEXT_AND_FREE(a, free_array);
 
-      free_array(a);
-      a=next;
+      if (!(a = next))
+	fatal("Null pointer in array list.\n");
     }
     else
     {
