@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.46 1998/09/28 22:30:15 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.47 1998/10/28 03:17:23 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1429,7 +1429,7 @@ static int low_check_indexing(char *type, char *index_type, node *n)
     return !!low_match_types(type,index_type,0);
 
   case T_PROGRAM:
-    // FIXME: Should check that the index is a string.
+    /* FIXME: Should check that the index is a string. */
     return 1;
 
   case T_MIXED:
