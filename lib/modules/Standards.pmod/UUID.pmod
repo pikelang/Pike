@@ -2,7 +2,7 @@
 //! Support for Universal Unique Identifiers (UUID) and
 //! Globally Unique Identifiers (GUID).
 //!
-// $Id: UUID.pmod,v 1.5 2004/10/05 10:47:55 grubba Exp $
+// $Id: UUID.pmod,v 1.6 2004/10/05 12:38:36 grubba Exp $
 //
 // 2004-10-01 Henrik Grubbström
 // 2004-10-04 Martin Nilsson
@@ -122,7 +122,7 @@ class UUID {
     int seq_mask = ([ 0:~((1<<15)-1),
 		      1:~((1<<14)-1),
 		      2:~((1<<13)-1) ])[var];
-    if(clk_seq & ~((1<<seq_limit)-1))
+    if(clk_seq & seq_mask)
       error("Clock sequence %O out of range.\n", clk_seq);
 
     if(node & ~((1<<48)-1))
@@ -150,12 +150,14 @@ class UUID {
     validate();
     string ret = "";
 
+    // FIXME: The following ought to be a single sprintf().
+
     int t = timestamp;
     ret += sprintf("%4c", t); // time_low
     t >>= 32;
     ret += sprintf("%2c", t); // time_mid
     t >>= 16;
-    t |= version<<4;
+    t |= version<<12;
     ret += sprintf("%2c", t);
 
     int variant_mask = (1<<(16-var))-1;
@@ -198,8 +200,8 @@ class UUID {
       int time_low, time_mid, time_hi_and_version, clk_seq_res;
       sscanf(in, "%4c%2c%2c%2c%6c", time_low, time_mid, time_hi_and_version,
 	     clk_seq, node);
-      version = (time_hi_and_version & 0xf0)>>4;
-      time_hi_and_version &= 0x0f;
+      version = (time_hi_and_version & 0xf000)>>12;
+      time_hi_and_version &= 0x0fff;
       timestamp = time_hi_and_version<<(6*8) | time_mid<<(4*8) | time_low;
       int var_mask = 1<<15;
       for (var = 0; clk_seq & var_mask; var++, var_mask>>=1)
@@ -296,27 +298,33 @@ UUID make_version1(int node) {
 //! representation of a name space UUID.
 UUID make_version3(string name, string namespace) {
 
+  // FIXME: I don't see why the following reversals are needed;
+  //        the namespace should already be in network byte order.
+  //  /grubba 2004-10-05
+
   // step 2
   namespace = reverse(namespace[0..3]) + reverse(namespace[4..5]) +
     reverse(namespace[6..7]) + namespace[8..];
 
   // step 3
-  string h = Crypto.MD5.hash(namespace+name);
+  string ret = Crypto.MD5.hash(namespace+name);
 
-  string ret = reverse(h[0..3]) + reverse(h[4..5]) +
-    reverse(h[6..7]) + h[8..];
+  ret = reverse(ret[0..3]) + reverse(ret[4..5]) +
+    reverse(ret[6..7]) + ret[8..];
 
-  // step 7
-  int ver = ret[6];
-  ver &= 0b00001111;
-  ver |= 0b00110000;
-  ret[6] = ver;
+  ret &=
+    "\xff\xff\xff\xff"		// time_low
+    "\xff\xff"			// time_mid
+    "\x0f\xff"			// time_hi_and_version
+    "\x3f\xff"			// clock_seq_and_variant
+    "\xff\xff\xff\xff\xff\xff";	// node
 
-  // step 9
-  int res = ret[8];
-  res &= 0b00111111;
-  res |= 0b10000000;
-  ret[8] = res;
+  ret |=
+    "\x00\x00\x00\x00"		// time_low
+    "\x00\x00"			// time_mid
+    "\x30\x00"			// time_hi_and_version
+    "\x80\x00"			// clock_seq_and_veriant
+    "\x00\x00\x00\x00\x00\x00";	// node
 
   return UUID(ret);
 }
