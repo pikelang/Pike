@@ -193,7 +193,7 @@ PIKECLASS SQLite
 	  idx = k->ind.u.integer;
 	  break;
 	case T_STRING:
-	  push_string(k->ind.u.string);
+	  ref_push_string(k->ind.u.string);
 	  f_string_to_utf8(1);
 	  idx = sqlite3_bind_parameter_index(stmt, Pike_sp[-1].u.string->str);
 	  pop_stack();
@@ -217,7 +217,7 @@ PIKECLASS SQLite
 	      break;
 	    case 1:
 	    case 2:
-	      push_string(s);
+	      ref_push_string(s);
 	      f_string_to_unicode(1);
 	      s = Pike_sp[-1].u.string;
 	      ERR( sqlite3_bind_text16(stmt, idx, s->str, s->len,
