@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.13 1999/03/04 01:04:56 marcus Exp $
+ * $Id: module.pmod.in,v 1.14 1999/03/07 01:37:10 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -146,6 +146,30 @@ class support {
     return Array.map(decode_words_tokenized(phrase),
 		     lambda(array(string)|int item) {
 		       return intp(item)? item : remap(item);
+		     });
+  }
+
+  array(array(string|int)) decode_words_tokenized_labled( string phrase )
+  {
+    return Array.map( tokenize_labled( phrase ),
+		      lambda(array(string|int) item) {
+			switch(item[0]) {
+			case "encoded-word":
+			  return ({ "word", @decode_word(item[1]) });
+			case "word":
+			  return item + ({ 0 });
+			default:
+			  return item;
+			}
+		      });
+  }
+
+  array(array(string|int)) decode_words_tokenized_labled_remapped(string phrase)
+  {
+    return Array.map(decode_words_tokenized_labled(phrase),
+		     lambda(array(string|int) item) {
+		       return(item[0]=="word"? ({ "word", remap(item[1..]) }) :
+			      item);
 		     });
   }
 

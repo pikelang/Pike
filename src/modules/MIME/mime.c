@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.14 1999/03/04 01:04:54 marcus Exp $
+ * $Id: mime.c,v 1.15 1999/03/07 01:37:08 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.14 1999/03/04 01:04:54 marcus Exp $");
+RCSID("$Id: mime.c,v 1.15 1999/03/07 01:37:08 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -36,6 +36,7 @@ static void f_decode_uue( INT32 args );
 static void f_encode_uue( INT32 args );
 
 static void f_tokenize( INT32 args );
+static void f_tokenize_labled( INT32 args );
 static void f_quote( INT32 args );
 
 
@@ -90,7 +91,7 @@ void pike_module_init( void )
   rfc822ctype['('] = CT_LPAR;
   rfc822ctype[')'] = CT_RPAR;
   rfc822ctype['['] = CT_LBRACK;
-  rfc822ctype[']'] = CT_LBRACK;
+  rfc822ctype[']'] = CT_RBRACK;
   rfc822ctype['"'] = CT_QUOTE;
   rfc822ctype['='] = CT_EQUAL;
   for(i=0; i<10; i++)
@@ -113,6 +114,9 @@ void pike_module_init( void )
 
   add_function_constant( "tokenize", f_tokenize,
 			 "function(string:array(string|int))",
+			 OPT_TRY_OPTIMIZE );
+  add_function_constant( "tokenize_labled", f_tokenize_labled,
+			 "function(string:array(array(string|int)))",
 			 OPT_TRY_OPTIMIZE );
   add_function_constant( "quote", f_quote,
 			 "function(array(string|int):string)",
@@ -593,174 +597,226 @@ static void f_encode_uue( INT32 args )
 
 /* MIME.tokenize() */
 
+static void low_tokenize( INT32 args, int mode )
+{
+
+  /* Tokenize string in sp[-args].u.string.  We'll just push the
+     tokens on the stack, and then do an aggregate_array just
+     before exiting. */
+  
+  unsigned char *src = (unsigned char *)sp[-args].u.string->str;
+  struct array *arr;
+  struct pike_string *str;
+  INT32 cnt = sp[-args].u.string->len, n = 0, l, e, d;
+  char *p;
+
+  while (cnt>0)
+    switch (rfc822ctype[*src]) {
+    case CT_EQUAL:
+      /* Might be an encoded word.  Check it out. */
+      l = 0;
+      if (cnt>5 && src[1] == '?') {
+	int nq = 0;
+	for (l=2; l<cnt && nq<3; l++)
+	  if (src[l]=='?')
+	    nq ++;
+	  else if(rfc822ctype[src[l]]<=CT_WHITE)
+	    break;
+	if (nq == 3 && l<cnt && src[l] == '=')
+	  l ++;
+	else
+	  l = 0;
+      }
+      if (l>0) {
+	/* Yup.  It's an encoded word, so it must be an atom.  */
+	if(mode)
+	  push_constant_text("encoded-word");
+	push_string( make_shared_binary_string( (char *)src, l ) );
+	if(mode)
+	  f_aggregate(2);
+	n++;
+	src += l;
+	cnt -= l;
+	break;
+      }
+    case CT_SPECIAL:
+    case CT_RBRACK:
+    case CT_RPAR:
+      /* Individual special character, push as a char (= int) */
+      if(mode)
+	push_constant_text("special");
+      push_int( *src++ );
+      if(mode)
+	f_aggregate(2);
+      n++;
+      --cnt;
+      break;
+
+    case CT_ATOM:
+      /* Atom, find length then push as a string */
+      for (l=1; l<cnt; l++)
+	if (rfc822ctype[src[l]] != CT_ATOM)
+	  break;
+
+      if(mode)
+	push_constant_text("word");
+      push_string( make_shared_binary_string( (char *)src, l ) );
+      if(mode)
+	f_aggregate(2);
+      n++;
+      src += l;
+      cnt -= l;
+      break;
+
+    case CT_QUOTE:
+      /* Quoted-string, find length then push as a string while removing
+	 escapes. */
+      for (e = 0, l = 1; l < cnt; l++)
+	if (src[l] == '"')
+	  break;
+	else
+	  if (src[l] == '\\') {
+	    e++;
+	    l++;
+	  }
+
+      /* l is the distance to the ending ", and e is the number of \
+	 escapes encountered on the way */
+      str = begin_shared_string( l-e-1 );
+
+      /* Copy the string and remove \ escapes */
+      for (p = str->str, e = 1; e < l; e++)
+	*p++ = (src[e] == '\\'? src[++e] : src[e]);
+
+      /* Push the resulting string */
+      if(mode)
+	push_constant_text("word");
+      push_string( end_shared_string( str ) );
+      if(mode)
+	f_aggregate(2);
+      n++;
+      src += l+1;
+      cnt -= l+1;
+      break;
+
+    case CT_LBRACK:
+      /* Domain literal.  Handled just like quoted-string, except that
+	 ] marks the end of the token, not ". */
+      for (e = 0, l = 1; l < cnt; l++)
+	if(src[l] == ']')
+	  break;
+	else
+	  if(src[l] == '\\') {
+	    e++;
+	    l++;
+	  }
+
+      if (l >= cnt) {
+	/* No ]; seems that this was no domain literal after all... */
+	if(mode)
+	  push_constant_text("special");
+	push_int( *src++ );
+	if(mode)
+	  f_aggregate(2);
+	n++;
+	--cnt;
+	break;
+      }
+
+      /* l is the distance to the ending ], and e is the number of \
+	 escapes encountered on the way */
+      str = begin_shared_string( l-e+1 );
+
+      /* Copy the literal and remove \ escapes */
+      for (p = str->str, e = 0; e <= l; e++)
+	*p++ = (src[e] == '\\'? src[++e] : src[e]);
+
+      /* Push the resulting string */
+      if(mode)
+	push_constant_text("domain-literal");
+      push_string( end_shared_string( str ) );
+      if(mode)
+	f_aggregate(2);
+      n++;
+      src += l+1;
+      cnt -= l+1;
+      break;
+
+    case CT_LPAR:
+      /* Comment.  Nested comments are allowed, so we'll use d to
+	 keep track of the nesting level. */
+      for (e = 0, d = 1, l = 1; l < cnt; l++)
+	if (src[l] == '(')
+	  /* One level deeper nesting */
+	  d++;
+	else if(src[l] == ')') {
+	  /* End of comment level.  If nesting reaches 0, we're done */
+	  if(!--d)
+	    break;
+	} else
+	  /* Skip escaped characters */
+	  if(src[l] == '\\') {
+	    e++;
+	    l++;
+	  }
+
+      if(mode) {
+	push_constant_text("comment");
+
+	str = begin_shared_string( l-e-1 );
+
+	/* Copy the comment and remove \ escapes */
+	for (p = str->str, e = 1; e < l; e++)
+	  *p++ = (src[e] == '\\'? src[++e] : src[e]);
+
+	push_string( end_shared_string( str ) );
+	f_aggregate(2);
+	n++;
+      }
+
+      /* Skip the comment altogether */
+      src += l+1;
+      cnt -= l+1;
+      break;
+
+    case CT_WHITE:
+      /* Whitespace, just ignore it */
+      src++;
+      --cnt;
+      break;
+
+    default:
+      error( "Invalid character in header field\n" );
+    }
+
+  /* Create the resulting array and push it */
+  arr = aggregate_array( n );
+  pop_n_elems( 1 );
+  push_array( arr );
+}
+
 static void f_tokenize( INT32 args )
 {
   if (args != 1)
     error( "Wrong number of arguments to MIME.tokenize()\n" );
 
-  if (sp[-1].type == T_ARRAY)
-  {
-     /* take first entry from array */
-     struct array *a=sp[-1].u.array;
-     if (a->size>0)
-     {
-	sp--;
-	push_svalue(a->item+0);
-	free_array(a);
-     }
-  }
-
   if (sp[-1].type != T_STRING)
     error( "Wrong type of argument to MIME.tokenize()\n" );
-  else {
 
-    /* Tokenize string in sp[-1].u.string.  We'll just push the
-       tokens on the stack, and then do an aggregate_array just
-       before exiting. */
-
-    unsigned char *src = (unsigned char *)sp[-1].u.string->str;
-    struct array *arr;
-    struct pike_string *str;
-    INT32 cnt = sp[-1].u.string->len, n = 0, l, e;
-    char *p;
-
-    while (cnt>0)
-      switch (rfc822ctype[*src]) {
-      case CT_EQUAL:
-	/* Might be an encoded word.  Check it out. */
-	l = 0;
-	if (cnt>5 && src[1] == '?') {
-	  int nq = 0;
-	  for (l=2; l<cnt && nq<3; l++)
-	    if (src[l]=='?')
-	      nq ++;
-	    else if(rfc822ctype[src[l]]<=CT_WHITE)
-	      break;
-	  if (nq == 3 && l<cnt && src[l] == '=')
-	    l ++;
-	  else
-	    l = 0;
-	}
-	if (l>0) {
-	  /* Yup.  It's an encoded word, so it must be an atom.  */
-	  push_string( make_shared_binary_string( (char *)src, l ) );
-	  n++;
-	  src += l;
-	  cnt -= l;
-	  break;
-	}
-      case CT_SPECIAL:
-      case CT_RBRACK:
-      case CT_RPAR:
-	/* Individual special character, push as a char (= int) */
-	push_int( *src++ );
-	n++;
-	--cnt;
-	break;
-
-      case CT_ATOM:
-	/* Atom, find length then push as a string */
-	for (l=1; l<cnt; l++)
-	  if (rfc822ctype[src[l]] != CT_ATOM)
-	    break;
-
-	push_string( make_shared_binary_string( (char *)src, l ) );
-	n++;
-	src += l;
-	cnt -= l;
-	break;
-
-      case CT_QUOTE:
-	/* Quoted-string, find length then push as a string while removing
-	   escapes. */
-	for (e = 0, l = 1; l < cnt; l++)
-	  if (src[l] == '"')
-	    break;
-	  else
-	    if (src[l] == '\\') {
-	      e++;
-	      l++;
-	    }
-
-	/* l is the distance to the ending ", and e is the number of \
-	   escapes encountered on the way */
-	str = begin_shared_string( l-e-1 );
-
-	/* Copy the string and remove \ escapes */
-	for (p = str->str, e = 1; e < l; e++)
-	  *p++ = (src[e] == '\\'? src[++e] : src[e]);
-
-	/* Push the resulting string */
-	push_string( end_shared_string( str ) );
-	n++;
-	src += l+1;
-	cnt -= l+1;
-	break;
-
-      case CT_LBRACK:
-	/* Domain literal.  Handled just like quoted-string, except that
-	   ] marks the end of the token, not ". */
-	for (e = 0, l = 1; l < cnt; l++)
-	  if(src[l] == ']')
-	    break;
-	  else
-	    if(src[l] == '\\') {
-	      e++;
-	      l++;
-	    }
-
-	/* l is the distance to the ending ], and e is the number of \
-	   escapes encountered on the way */
-	str = begin_shared_string( l-e+1 );
-
-	/* Copy the literal and remove \ escapes */
-	for (p = str->str, e = 0; e <= l; e++)
-	  *p++ = (src[e] == '\\'? src[++e] : src[e]);
-
-	/* Push the resulting string */
-	push_string( end_shared_string( str ) );
-	n++;
-	src += l+1;
-	cnt -= l+1;
-	break;
-
-      case CT_LPAR:
-	/* Comment.  Nested comments are allowed, so we'll use e to
-	   keep track of the nesting level. */
-	for (e = 1, l = 1; l < cnt; l++)
-	  if (src[l] == '(')
-	    /* One level deeper nesting */
-	    e++;
-	  else if(src[l] == ')') {
-	    /* End of comment level.  If nesting reaches 0, we're done */
-	    if(!--e)
-	      break;
-	  } else
-	    /* Skip escaped characters */
-	    if(src[l] == '\\')
-	      l++;
-
-	/* Skip the comment altogether */
-	src += l+1;
-	cnt -= l+1;
-	break;
-
-      case CT_WHITE:
-	/* Whitespace, just ignore it */
-	src++;
-	--cnt;
-	break;
-
-      default:
-	error( "Invalid character in header field\n" );
-      }
-
-    /* Create the resulting array and push it */
-    arr = aggregate_array( n );
-    pop_n_elems( 1 );
-    push_array( arr );
-  }
+  low_tokenize( args, 0 );
 }
+
+static void f_tokenize_labled( INT32 args )
+{
+  if (args != 1)
+    error( "Wrong number of arguments to MIME.tokenize_labled()\n" );
+
+  if (sp[-1].type != T_STRING)
+    error( "Wrong type of argument to MIME.tokenize_labled()\n" );
+
+  low_tokenize( args, 1 );
+}
+
 
 /*  Convenience function for quote() which determines if a sequence of
  *  characters can be stored as an atom.

@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.5 1998/03/28 14:46:14 grubba Exp $
+// $Id: testsuite.in,v 1.6 1999/03/07 01:37:11 marcus Exp $
 
 // MIME
 test_true([[objectp(MIME)]])
@@ -60,6 +60,15 @@ test_equal([[MIME.tokenize("   asdf \t[foo\"bar\"ga(zonk)]  \"ghjk\"  ")]],
 	({"asdf","[foo\"bar\"ga(zonk)]","ghjk"}))
 test_equal([[MIME.quote(({"asdf","ghij","a:b","foo",44,"bar",58,44,"едц"}))]],
 	[["asdf ghij \"a:b\" foo,bar:,\"едц\""]])
+
+test_equal([[MIME.tokenize_labled("\":sysmail\"@  Some-Group. Some-Org, "
+	"Muhammed.(I am  the greatest) Ali @(t()\\)he)Vegas.[10.0.3.19]")]],
+	[[({({"word",":sysmail"}),({"special",'@'}),({"word","Some-Group."}),
+	    ({"word","Some-Org"}),({"special",','}),({"word","Muhammed."}),
+	    ({"comment","I am  the greatest"}),({"word","Ali"}),
+	    ({"special",'@'}),({"comment","t())he"}),({"word","Vegas."}),
+	    ({"domain-literal","[10.0.3.19]"})})]])
+
 
 test_any([[int n; string t; return 2==sscanf(MIME.generate_boundary(),
 		"'ThIs-RaNdOm-StRiNg-/=_.%d:%s", n, t) && n>=0 &&
