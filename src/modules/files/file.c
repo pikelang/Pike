@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.343 2005/01/27 14:01:29 mast Exp $
+|| $Id: file.c,v 1.344 2005/03/09 23:10:41 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -1969,6 +1969,10 @@ static void file_seek(INT32 args)
   push_int64(to);
 }
 
+#if defined(INT64) && (defined(HAVE_LSEEK64) || defined(__NT__))
+#define TELL64
+#endif
+
 /*! @decl int tell()
  *!
  *! Returns the current offset in the file.
@@ -1978,7 +1982,7 @@ static void file_seek(INT32 args)
  */
 static void file_tell(INT32 args)
 {
-#if defined (INT64) || defined (HAVE_LSEEK64)
+#ifdef TELL64
   INT64 to;
 #else
   off_t to;
@@ -1988,7 +1992,8 @@ static void file_tell(INT32 args)
     Pike_error("File not open.\n");
 
   ERRNO=0;
-#ifdef HAVE_LSEEK64
+
+#if defined(HAVE_LSEEK64) && !defined(__NT__)
   to = lseek64(FD, 0L, SEEK_CUR);
 #else
   to = fd_lseek(FD, 0L, SEEK_CUR);
@@ -1997,7 +2002,11 @@ static void file_tell(INT32 args)
   if(to<0) ERRNO=errno;
 
   pop_n_elems(args);
+#ifdef TELL64
   push_int64(to);
+#else
+  push_int(to);
+#endif
 }
 
 /*! @decl int(0..1) truncate(int length)
