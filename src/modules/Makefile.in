@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.18 1998/04/09 21:11:28 hubbe Exp $
+# $Id: Makefile.in,v 1.19 1998/04/13 14:13:53 grubba Exp $
 
 @SET_MAKE@
 
@@ -32,6 +32,12 @@ modlist_headers.h: $(MODULE_SEGMENTS)
 
 linker_options: $(MODULE_LINKOPTS)
 	( for a in $(MODULES) ; do cat $$a/linker_options; done ; ) >linker_options
+
+Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies ./config.status
+	CONFIG_FILES=Makefile CONFIG_HEADERS="" ./config.status
+	touch remake
+	@echo "Run make again"
+	@exit 1
 
 depend:
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a depend ) ; done
