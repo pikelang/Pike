@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.135 2003/04/03 14:56:26 grubba Exp $
+|| $Id: interpret.h,v 1.136 2003/04/24 23:48:36 mast Exp $
 */
 
 #ifndef INTERPRET_H
@@ -197,37 +197,206 @@ PMOD_EXPORT extern const char msg_pop_neg[];
    free_mixed_svalues(Pike_sp, x_);					\
  } } while (0)
 
-#define stack_pop_n_elems_keep_top(X) \
- do { struct svalue s=Pike_sp[-1]; Pike_sp[-1]=Pike_sp[-1-(X)]; Pike_sp[-1-(X)]=s; \
-      pop_n_elems(X); } while (0)
+/* This pops a number of arguments from the stack but keeps the top
+ * element on top. Used for popping the arguments while keeping the
+ * return value.
+ */
+#define stack_unlink(X) do {						\
+    if(X) {								\
+      struct svalue *_sp_ = Pike_sp--;					\
+      free_svalue(_sp_-(X)-1);						\
+      _sp_[-(X)-1]=_sp_[-1];						\
+      pop_n_elems(X-1);							\
+    }									\
+  }while(0)
 
-#define push_program(P) do{ struct program *_=(P); debug_malloc_touch(_); Pike_sp->u.program=_; Pike_sp++->type=PIKE_T_PROGRAM; }while(0)
-#define push_int(I) do{ INT_TYPE _=(I); Pike_sp->u.integer=_;Pike_sp->type=PIKE_T_INT;Pike_sp++->subtype=NUMBER_NUMBER; }while(0)
-#define push_undefined() do{  Pike_sp->u.integer=0; Pike_sp->type=PIKE_T_INT; Pike_sp++->subtype=NUMBER_UNDEFINED; }while(0)
-#define push_mapping(M) do{ struct mapping *_=(M); debug_malloc_touch(_); Pike_sp->u.mapping=_; Pike_sp++->type=PIKE_T_MAPPING; }while(0)
-#define push_array(A) do{ struct array *_=(A); debug_malloc_touch(_); Pike_sp->u.array=_ ;Pike_sp++->type=PIKE_T_ARRAY; }while(0)
-#define push_multiset(L) do{ struct multiset *_=(L); debug_malloc_touch(_); Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
-#define push_string(S) do{ struct pike_string *_=(S); debug_malloc_touch(_); Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
-#define push_type_value(S) do{ struct pike_type *_=(S); debug_malloc_touch(_); Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
-#define push_object(O) do{ struct object  *_=(O); debug_malloc_touch(_); Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
-#define push_float(F) do{ FLOAT_TYPE _=(F); Pike_sp->u.float_number=_; Pike_sp++->type=PIKE_T_FLOAT; }while(0)
+#define stack_pop_n_elems_keep_top(X) stack_unlink(X)
+
+#define stack_pop_to_no_free(X) move_svalue(X, --Pike_sp)
+
+#define stack_pop_to(X) do {						\
+    struct svalue *_=(X);						\
+    free_svalue(_);							\
+    stack_pop_to_no_free(_);						\
+  }while(0)
+
+#define push_program(P) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct program *_=(P);						\
+    debug_malloc_touch(_);						\
+    _sp_->u.program=_;							\
+    _sp_++->type=PIKE_T_PROGRAM;					\
+  }while(0)
+
+#define push_int(I) do{							\
+    struct svalue *_sp_ = Pike_sp++;					\
+    INT_TYPE _=(I);							\
+    _sp_->u.integer=_;							\
+    _sp_->type=PIKE_T_INT;						\
+    _sp_->subtype=NUMBER_NUMBER;					\
+  }while(0)
+
+#define push_undefined() do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    _sp_->u.integer=0;							\
+    _sp_->type=PIKE_T_INT;						\
+    _sp_->subtype=NUMBER_UNDEFINED;					\
+  }while(0)
+
+#define push_mapping(M) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct mapping *_=(M);						\
+    debug_malloc_touch(_);						\
+    _sp_->u.mapping=_;							\
+    _sp_->type=PIKE_T_MAPPING;						\
+  }while(0)
+
+#define push_array(A) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct array *_=(A);						\
+    debug_malloc_touch(_);						\
+    _sp_->u.array=_ ;							\
+    _sp_->type=PIKE_T_ARRAY;						\
+  }while(0)
+
+#define push_multiset(L) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct multiset *_=(L);						\
+    debug_malloc_touch(_);						\
+    _sp_->u.multiset=_;							\
+    _sp_->type=PIKE_T_MULTISET;						\
+  }while(0)
+
+#define push_string(S) do {						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct pike_string *_=(S);						\
+    debug_malloc_touch(_);						\
+    _sp_->subtype=0;							\
+    _sp_->u.string=_;							\
+    _sp_->type=PIKE_T_STRING;						\
+  }while(0)
+
+#define push_type_value(S) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct pike_type *_=(S);						\
+    debug_malloc_touch(_);						\
+    _sp_->u.type=_;							\
+    _sp_->type=PIKE_T_TYPE;						\
+  }while(0)
+
+#define push_object(O) do {						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct object *_=(O);						\
+    debug_malloc_touch(_);						\
+    _sp_->u.object=_;							\
+    _sp_->type=PIKE_T_OBJECT;						\
+  }while(0)
+
+#define push_float(F) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    FLOAT_TYPE _=(F);							\
+    _sp_->u.float_number=_;						\
+    _sp_->type=PIKE_T_FLOAT;						\
+  }while(0)
+
 #define push_text(T) push_string(make_shared_string((T)))
-#define push_constant_text(T) do{ Pike_sp->subtype=0; REF_MAKE_CONST_STRING(Pike_sp->u.string,T); Pike_sp++->type=PIKE_T_STRING; }while(0)
-#define push_function(OBJ, FUN) do {struct object *_=(OBJ); debug_malloc_touch(_); Pike_sp->u.object=_; Pike_sp->subtype=(FUN); Pike_sp++->type=PIKE_T_FUNCTION;} while (0)
 
-#define ref_push_program(P) do{ struct program *_=(P); add_ref(_); Pike_sp->u.program=_; Pike_sp++->type=PIKE_T_PROGRAM; }while(0)
-#define ref_push_mapping(M) do{ struct mapping *_=(M); add_ref(_); Pike_sp->u.mapping=_; Pike_sp++->type=PIKE_T_MAPPING; }while(0)
-#define ref_push_array(A) do{ struct array *_=(A); add_ref(_); Pike_sp->u.array=_ ;Pike_sp++->type=PIKE_T_ARRAY; }while(0)
-#define ref_push_multiset(L) do{ struct multiset *_=(L); add_ref(_); Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
-#define ref_push_string(S) do{ struct pike_string *_=(S); add_ref(_); Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
-#define ref_push_type_value(S) do{ struct pike_type *_=(S); add_ref(_); Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
-#define ref_push_object(O) do{ struct object  *_=(O); add_ref(_); Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
-#define ref_push_function(OBJ, FUN) do {struct object *_=(OBJ); add_ref(_); Pike_sp->u.object=_; Pike_sp->subtype=(FUN); Pike_sp++->type=PIKE_T_FUNCTION;} while (0)
+#define push_constant_text(T) do{					\
+    struct svalue *_sp_ = Pike_sp++;					\
+    _sp_->subtype=0;							\
+    REF_MAKE_CONST_STRING(_sp_->u.string,T);				\
+    _sp_->type=PIKE_T_STRING;						\
+  }while(0)
 
-#define push_svalue(S) do { const struct svalue *_=(S); assign_svalue_no_free(Pike_sp,_); Pike_sp++; }while(0)
+#define push_function(OBJ, FUN) do {					\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct object *_=(OBJ);						\
+    debug_malloc_touch(_);						\
+    _sp_->u.object=_;							\
+    _sp_->subtype=(FUN);						\
+    _sp_->type=PIKE_T_FUNCTION;						\
+  } while (0)
+
+#define ref_push_program(P) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct program *_=(P);						\
+    add_ref(_);								\
+    _sp_->u.program=_;							\
+    _sp_->type=PIKE_T_PROGRAM;						\
+  }while(0)
+
+#define ref_push_mapping(M) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct mapping *_=(M);						\
+    add_ref(_);								\
+    _sp_->u.mapping=_;							\
+    _sp_->type=PIKE_T_MAPPING;						\
+  }while(0)
+
+#define ref_push_array(A) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct array *_=(A);						\
+    add_ref(_);								\
+    _sp_->u.array=_ ;							\
+    _sp_->type=PIKE_T_ARRAY;						\
+  }while(0)
+
+#define ref_push_multiset(L) do{					\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct multiset *_=(L);						\
+    add_ref(_);								\
+    _sp_->u.multiset=_;							\
+    _sp_->type=PIKE_T_MULTISET;						\
+  }while(0)
+
+#define ref_push_string(S) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct pike_string *_=(S);						\
+    add_ref(_);								\
+    _sp_->subtype=0;							\
+    _sp_->u.string=_;							\
+    _sp_->type=PIKE_T_STRING;						\
+  }while(0)
+
+#define ref_push_type_value(S) do{					\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct pike_type *_=(S);						\
+    add_ref(_);								\
+    _sp_->u.type=_;							\
+    _sp_->type=PIKE_T_TYPE;						\
+  }while(0)
+
+#define ref_push_object(O) do{						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct object  *_=(O);						\
+    add_ref(_);								\
+    _sp_->u.object=_;							\
+    _sp_->type=PIKE_T_OBJECT;						\
+  }while(0)
+
+#define ref_push_function(OBJ, FUN) do {				\
+    struct svalue *_sp_ = Pike_sp++;					\
+    struct object *_=(OBJ);						\
+    add_ref(_);								\
+    _sp_->u.object=_;							\
+    _sp_->subtype=(FUN);						\
+    _sp_->type=PIKE_T_FUNCTION;						\
+  } while (0)
+
+#define push_svalue(S) do {						\
+    struct svalue *_sp_ = Pike_sp++;					\
+    const struct svalue *_=(S);						\
+    assign_svalue_no_free(_sp_,_);					\
+  }while(0)
 
 #define stack_dup() push_svalue(Pike_sp-1)
-#define stack_swap() do { struct svalue _=Pike_sp[-1]; Pike_sp[-1]=Pike_sp[-2]; Pike_sp[-2]=_; } while(0)
+
+#define stack_swap() do {						\
+    struct svalue *_sp_ = Pike_sp;					\
+    struct svalue _=_sp_[-1];						\
+    _sp_[-1]=_sp_[-2];							\
+    _sp_[-2]=_;								\
+  } while(0)
 
 #define push_zeroes(N) do{			\
     struct svalue *s_=Pike_sp;			\
@@ -253,46 +422,38 @@ PMOD_EXPORT extern const char msg_pop_neg[];
     Pike_sp=s_;					\
 }while(0)
 
-#define stack_pop_to_no_free(X) move_svalue(X, --Pike_sp)
-#define stack_pop_to(X) do { struct svalue *_=(X); free_svalue(_); stack_pop_to_no_free(_); }while(0)
-
-/* This pops a number of arguments from the stack but keeps the top
- * element on top. Used for popping the arguments while keeping the
- * return value.
- */
-#define stack_unlink(X) do { if(X) { free_svalue(Pike_sp-(X)-1); Pike_sp[-(X)-1]=Pike_sp[-1]; Pike_sp--; pop_n_elems(X-1); } }while(0)
-
 #define free_pike_frame(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_frame(f_); }while(0)
 
 /* A scope is any frame which may have malloced locals */
 #define free_pike_scope(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_scope(f_); }while(0)
 
 #define POP_PIKE_FRAME() do {						\
-  struct pike_frame *tmp_=Pike_fp->next;				\
-  if(!sub_ref(Pike_fp))							\
+  struct pike_frame *_fp_ = Pike_fp;					\
+  struct pike_frame *tmp_=_fp_->next;					\
+  if(!sub_ref(_fp_))							\
   {									\
-    really_free_pike_frame(Pike_fp);					\
+    really_free_pike_frame(_fp_);					\
   }else{								\
     DO_IF_DEBUG(							\
-      if( (Pike_fp->locals + Pike_fp->num_locals > Pike_sp) ||		\
-	  (Pike_sp < Pike_fp->expendible))				\
+      if( (_fp_->locals + _fp_->num_locals > Pike_sp) ||		\
+	  (Pike_sp < _fp_->expendible))					\
 	Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n",	\
-		   Pike_fp->locals, Pike_fp->num_locals,		\
-		   Pike_fp->locals+Pike_fp->num_locals,			\
-		   Pike_sp,Pike_fp->expendible));			\
-    debug_malloc_touch(Pike_fp);					\
-    if(Pike_fp->num_locals)						\
+		   _fp_->locals, _fp_->num_locals,			\
+		   _fp_->locals+_fp_->num_locals,			\
+		   Pike_sp,_fp_->expendible));				\
+    debug_malloc_touch(_fp_);						\
+    if(_fp_->num_locals)						\
     {									\
       struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-					       Pike_fp->num_locals);	\
-      assign_svalues_no_free(s, Pike_fp->locals, Pike_fp->num_locals,	\
+					       _fp_->num_locals);	\
+      assign_svalues_no_free(s, _fp_->locals, _fp_->num_locals,		\
 			     BIT_MIXED);				\
-      Pike_fp->locals=s;						\
-      Pike_fp->flags|=PIKE_FRAME_MALLOCED_LOCALS;			\
+      _fp_->locals=s;							\
+      _fp_->flags|=PIKE_FRAME_MALLOCED_LOCALS;				\
     }else{								\
-      Pike_fp->locals=0;						\
+      _fp_->locals=0;							\
     }									\
-    Pike_fp->next=0;							\
+    _fp_->next=0;							\
   }									\
   Pike_fp=tmp_;								\
  }while(0)
