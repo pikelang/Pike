@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.42 1998/05/25 15:22:53 grubba Exp $
+ * $Id: program.h,v 1.43 1998/05/25 16:40:26 grubba Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -345,6 +345,8 @@ int store_prog_string(struct pike_string *str);
 int store_constant(struct svalue *foo, int equal);
 struct array *program_indices(struct program *p);
 struct array *program_values(struct program *p);
+void program_index_no_free(struct svalue *to, struct program *p,
+			   struct svalue *ind);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
 char *get_line(unsigned char *pc,struct program *prog,INT32 *linep);

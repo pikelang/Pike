@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.92 1998/05/25 15:22:23 grubba Exp $");
+RCSID("$Id: program.c,v 1.93 1998/05/25 16:40:05 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2041,6 +2041,45 @@ struct array *program_values(struct program *p)
   add_ref(res);
   pop_stack();
   return(res);
+}
+
+void program_index_no_free(struct svalue *to, struct program *p,
+			   struct svalue *ind)
+{
+  int e;
+  struct pike_string *s;
+
+  if (ind->type != T_STRING) {
+    error("Can't index a program with a %s (expected string)\n",
+	  get_name_of_type(ind->type));
+  }
+  s = ind->u.string;
+  for (e = p->num_identifier_references; e--; ) {
+    struct identifier *id;
+    if (p->identifier_references[e].id_flags & ID_HIDDEN) {
+      continue;
+    }
+    id = ID_FROM_INT(p, e);
+    if (id->name != s) {
+      continue;
+    }
+    if (IDENTIFIER_IS_CONSTANT(id->identifier_flags)) {
+      struct program *p2 = PROG_FROM_INT(p, e);
+      *to = *(p2->constants + id->func.offset);
+      return;
+    } else {
+      if (s->len < 1024) {
+	error("Index \"%s\" is not constant.", s->str);
+      } else {
+	error("Index is not constant.");
+      }
+    }
+  }
+  if (s->len < 1024) {
+    error("No such index \"%s\".", s->str);
+  } else {
+    error("No such index.");
+  }
 }
 
 /*
