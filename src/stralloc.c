@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.138 2001/11/09 02:09:14 nilsson Exp $");
+RCSID("$Id: stralloc.c,v 1.139 2001/12/19 23:44:00 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -90,6 +90,7 @@ unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;
 static struct pike_string **base_table=0;
 unsigned INT32 num_strings=0;
+PMOD_EXPORT struct pike_string *empty_string = 0;
 
 /*** Main string hash function ***/
 
@@ -1800,6 +1801,7 @@ void init_shared_string_table(void)
     for(h=0;h<BUCKET_LOCKS;h++) mt_init(bucket_locks + h);
   }
 #endif
+  empty_string = make_shared_string("");
 }
 
 #ifdef DEBUG_MALLOC
@@ -1811,6 +1813,11 @@ void cleanup_shared_string_table(void)
 {
   unsigned INT32 e;
   struct pike_string *s,*next;
+
+  if (empty_string) {
+    free_string(empty_string);
+    empty_string = 0;
+  }
 
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   while(all_shared_string_locations)
