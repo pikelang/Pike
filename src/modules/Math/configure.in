@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2003/02/20 09:17:43 mirar Exp $
+# $Id: configure.in,v 1.7 2003/03/04 16:05:04 grubba Exp $
 AC_INIT(math_module.c)
 AC_CONFIG_HEADER(config.h)
 AC_ARG_WITH(fftw,     [  --with(out)-fftw       Support for fftw],[],[with_fftw=yes])
@@ -10,26 +10,29 @@ PIKE_FEATURE_OK(Math.)
 AC_C_CHAR_UNSIGNED
 
 if test x$with_fftw = xyes ; then
-    dnl Checks for header files.
+  dnl Checks for header files.
 
-    PIKE_FEATURE(Math.Transforms.FFT,[no (fftw.h not found)])
+  PIKE_FEATURE(Math.Transforms.FFT,[no (fftw.h not found)])
 
-    AC_CHECK_HEADERS(fftw.h)
-    AC_CHECK_HEADERS(rfftw.h)
+  AC_CHECK_HEADERS(fftw.h)
+  AC_CHECK_HEADERS(rfftw.h)
 
-    if test $ac_cv_header_fftw_h = yes; then
-	dnl Checks for libraries.
-	AC_CHECK_LIB(fftw, fftw,,ac_cv_header_fftw_h=no,-lm)
-	AC_CHECK_LIB(rfftw, rfftw,,ac_cv_header_rfftw_h=no,-lm)
+  if test "$ac_cv_header_rfftw_h" = "yes"; then
+    dnl Checks for libraries.
 
-	dnl Checks for typedefs, structures, and compiler characteristics.
+    PIKE_FEATURE(Math.Transforms.FFT,[no (fftw libraries not found)])
 
-	dnl Checks for library functions.
-	AC_HEADER_STDC
-	if test $ac_cv_header_fftw_h = yes; then
-		PIKE_FEATURE_OK(Math.Transforms.FFT)
-	fi
+    AC_CHECK_LIB(fftw, fftw,,,-lm)
+    AC_CHECK_LIB(rfftw, rfftw,,,-lm)
+
+    dnl Checks for typedefs, structures, and compiler characteristics.
+
+    dnl Checks for library functions.
+    AC_HEADER_STDC
+    if test "$ac_cv_lib_fftw_rfftw" = "yes"; then
+      PIKE_FEATURE_OK(Math.Transforms.FFT)
     fi
+  fi
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
