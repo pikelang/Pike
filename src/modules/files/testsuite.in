@@ -226,8 +226,16 @@ cond([[Stdio.File()->lock]],
   test_true(Stdio.File("conftest","wr")->lock()&&1)
   test_true(Stdio.File("conftest","wr")->trylock()&&1)
   test_true(Stdio.File("conftest","wr")->trylock()&&1)
-  test_eval_error([[mixed o=Stdio.File("conftest","wr"); objekt k=o->lock(); o->lock();]])
-  test_any([[mixed o=Stdio.File("conftest","wr"); o->lock(); return o->trylock();]],0)
+  test_eval_error([[
+    mixed o=Stdio.File("conftest","wr");
+    objekt k=o->lock();
+    o->lock();
+  ]])
+  test_any([[
+    mixed o=Stdio.File("conftest","wr");
+    object k = o->lock();
+    return o->trylock();
+  ]], 0)
   test_true(Stdio.File("conftest","wr")->lock()&&1)
 ]])
 
