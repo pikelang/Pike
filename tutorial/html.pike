@@ -825,106 +825,107 @@ void output(string base, WMML data)
 
   werror("linking ");
   foreach(indices(sections), string file)
+  {
+    SGML data=sections[file];
+    SGML links=({});
+    string tmp1;
+
+    if(sizeof(data)>0 && objectp(data[0]))
     {
-      SGML data=sections[file];
-      SGML links=({});
-      string tmp1;
-      if(sizeof(data)>0 && objectp(data[0]))
+      TAG t2=get_tag(data[0]);
+      switch(t2->tag)
       {
-	TAG t2=get_tag(data[0]);
-	switch(t2->tag)
+	string name;
+	string to;
+
+      case "preface":
+      case "index":
+      case "chapter":
+      case "appendix":
+      case "section":
+      case "introduction":
+	tmp1=t2->params->number;
+
+	  
+	if(sections[to=prevify(tmp1)])
 	{
-	  string name;
-	  string to;
-
-	  case "preface":
-	  case "index":
-	  case "chapter":
-	  case "appendix":
-	  case "section":
-	  case "introduction":
-	  tmp1=t2->params->number;
-
-	  
-	  if(sections[to=prevify(tmp1)])
-	  {
-	    name="Previous "+t2->tag;
-	  }
-	  
-	  if(name && sections[to])
-	  {
-	    links+=({ Sgml.Tag("a",(["href":mklinkname(to)]),0,
-			       ({
-				 Sgml.Tag("img",([
-				   "src":"left.gif",
-				   "alt":" < ",
-				   "border":"0"])),
-				 name,
-			       })),
-		      "\n",
-	    });
-	  }
-	  name=0;
-
-	  links+=({ Sgml.Tag("a",(["href":mklinkname("")]),0,
-			     ({
-			       Sgml.Tag("img",
-					([
-					  "src":"up.gif",
-					  "alt":" ^ ",
-					 "border":"0"])),
-			       "To contents",
-			     })),
-		      "\n",
-	  });
-	  name=0;
-	  
-
-
-	  if(sections[to=nextify(tmp1)])
-	  {
-	    name="Next "+t2->tag;
-	  }else{
-	    switch(t2->tag)
-	    {
-	      case "chapter": name="To appendices"; to="A"; break;
-	      case "appendix": name="To index"; to="index"; break;
-	      case "introduction":
-	      case "preface":
-		name="To chapter one"; to="1";
-		break;
-	    }
-	  }
-	  
-	  if(name && sections[to])
-	  {
-	    links+=({ Sgml.Tag("a",(["href":mklinkname(to)]),0,
-			       ({
-				 Sgml.Tag("img",([
-				   "src":"right.gif",
-				   "alt":" > ",
-				   "border":"0"])),
-				 name,
-			       })),
-		      "\n",
-	    });
-	  }
-	  name=0;
-
-	  links+=({
-	    Sgml.Tag("br"),
-	      "\n",
-	      });
-
-	  
-	  sections[file]=links+
-	    ({Sgml.Tag("hr")})+
-	    data+
-	    ({Sgml.Tag("hr")})+
-	    links;
+	  name="Previous "+t2->tag;
 	}
+	  
+	if(name && sections[to])
+	{
+	  links+=({ Sgml.Tag("a",(["href":mklinkname(to)]),0,
+			     ({
+			       Sgml.Tag("img",([
+				 "src":"left.gif",
+				 "alt":" < ",
+				 "border":"0"])),
+			       name,
+			     })),
+		    "\n",
+	  });
+	}
+	name=0;
+	
+	links+=({ Sgml.Tag("a",(["href":mklinkname("")]),0,
+			   ({
+			     Sgml.Tag("img",
+				      ([
+					"src":"up.gif",
+					"alt":" ^ ",
+					"border":"0"])),
+			     "To contents",
+			   })),
+		  "\n",
+	});
+	name=0;
+	  
+
+
+	if(sections[to=nextify(tmp1)])
+	{
+	  name="Next "+t2->tag;
+	}else{
+	  switch(t2->tag)
+	  {
+	  case "chapter": name="To appendices"; to="A"; break;
+	  case "appendix": name="To index"; to="index"; break;
+	  case "introduction":
+	  case "preface":
+	    name="To chapter one"; to="1";
+	    break;
+	  }
+	}
+	  
+	if(name && sections[to])
+	{
+	  links+=({ Sgml.Tag("a",(["href":mklinkname(to)]),0,
+			     ({
+			       Sgml.Tag("img",([
+				 "src":"right.gif",
+				 "alt":" > ",
+				 "border":"0"])),
+			       name,
+			     })),
+		    "\n",
+	  });
+	}
+	name=0;
+
+	links+=({
+	  Sgml.Tag("br"),
+	  "\n",
+	});
+
+	  
+	sections[file]=links+
+	({Sgml.Tag("hr")})+
+	  data+
+	({Sgml.Tag("hr")})+
+	  links;
       }
     }
+  }
 
 
   werror("Converting TOC to WMML\n");
