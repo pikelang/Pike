@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.251 2003/01/26 18:31:02 nilsson Exp $
+// $Id: master.pike.in,v 1.252 2003/01/27 03:49:43 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2694,7 +2694,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
     {
       mixed tmp;
       string row;
-      if (mixed err=catch {
+      if (array err=[array]catch {
 	tmp = trace[e];
 	if(stringp(tmp))
 	{
@@ -2829,11 +2829,12 @@ string describe_backtrace(mixed trace, void|int linewidth)
 //!
 string describe_error (mixed trace)
 {
-  if((arrayp(trace) && sizeof(trace)==2 && stringp(trace[0])) ||
-     (objectp(trace) && trace->is_generic_error))
+  if((arrayp(trace) && sizeof([array]trace)==2 &&
+      stringp(([array]trace)[0])) ||
+     (objectp(trace) && ([object]trace)->is_generic_error))
   {
     if (catch {
-      return trace[0] || "No error message.\n";
+      return ([array(string)]trace)[0] || "No error message.\n";
     }) {
       return "Error indexing backtrace!\n";
     }
@@ -2858,38 +2859,38 @@ class Codec (void|string fname, void|int mkobj)
       return 0;
     }
 
-  mapping f=all_constants();
+  mapping(string:mixed) f=all_constants();
 
   string nameof(mixed x)
     {
-      if(mixed tmp=search(f,x))
-	return "efun:"+tmp;
+      if(string s=search(f,x))
+	return "efun:"+s;
       
       if (programp(x)) {
-	if(mixed tmp=search(programs,x))
-	  return tmp;
+	if(string s=search(programs,x))
+	  return s;
 
-	if(mixed tmp=search(values(_static_modules), x))
+	if(int tmp=search(values(_static_modules), x))
 	  return "_static_modules."+(indices(_static_modules)[tmp]);
       }
       else if (objectp(x))
-	if(mixed tmp=search(objects,x))
-	  if(tmp=search(programs,tmp))
-	    return tmp;
+	if(program p=search(objects,x))
+	  if(string s=search(programs,p))
+	    return s;
       return UNDEFINED;
     } 
   
   function functionof(string x)
     {
-      if(sscanf(x,"efun:%s",x)) return f[x];
-      if(sscanf(x,"resolv:%s",x)) return resolv(x);
+      if(sscanf(x,"efun:%s",x)) return [function]f[x];
+      if(sscanf(x,"resolv:%s",x)) return [function]resolv(x);
       return 0;
     }
   
   object objectof(string x)
     {
-      if(sscanf(x,"efun:%s",x)) return f[x];
-      if(sscanf(x,"resolv:%s",x)) return resolv(x);
+      if(sscanf(x,"efun:%s",x)) return [object]f[x];
+      if(sscanf(x,"resolv:%s",x)) return [object]resolv(x);
       if(sscanf(x,"mpath:%s",x))
 	foreach(pike_module_path, string path) {
 	  object ret = low_cast_to_object(combine_path(path,x),0);
@@ -2900,8 +2901,8 @@ class Codec (void|string fname, void|int mkobj)
   
   program programof(string x)
     {
-      if(sscanf(x,"efun:%s",x)) return f[x];
-      if(sscanf(x,"resolv:%s",x)) return resolv(x);
+      if(sscanf(x,"efun:%s",x)) return [program]f[x];
+      if(sscanf(x,"resolv:%s",x)) return [program]resolv(x);
       if(sscanf(x,"mpath:%s",x))
 	foreach(pike_module_path, string path)
 	  if(program ret=cast_to_program(combine_path(path,x),0))
@@ -2911,7 +2912,7 @@ class Codec (void|string fname, void|int mkobj)
   
   mixed encode_object(object x)
     {
-      if(x->_encode) return x->_encode();
+      if(x->_encode) return ([function]x->_encode)();
       error("Cannot encode objects yet.\n");
     }
   
@@ -2939,13 +2940,13 @@ class Version
     minor = min;
   }
 
-#define CMP(X)  ((major - (X)->major) || (minor - (X)->minor))
+#define CMP(X)  ((major - ([object]X)->major) || (minor - ([object]X)->minor))
   
   //! Methods define so that version objects
   //! can be compared and ordered.
-  int `<(Version v) { return CMP(v) < 0; }
-  int `>(Version v) { return CMP(v) > 0; }
-  int `==(Version v) { return CMP(v)== 0; }
+  int `<(mixed v) { return objectp(v) && CMP(v) < 0; }
+  int `>(mixed v) { return objectp(v) && CMP(v) > 0; }
+  int `==(mixed v) { return objectp(v) && CMP(v)== 0; }
   int _hash() { return major * 4711 + minor ; }
 
   string _sprintf(int t) {
