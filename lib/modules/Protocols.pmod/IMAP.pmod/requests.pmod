@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.83 1999/03/29 15:22:24 grubba Exp $
+ * $Id: requests.pmod,v 1.84 1999/03/30 21:46:50 grubba Exp $
  */
 
 import .types;
@@ -111,6 +111,7 @@ class unimplemented
 
   mapping easy_process()
   {
+    // FIXME: Log.
     return(bad("Not implemented"));
   }
 }
@@ -129,7 +130,7 @@ class noop
 	  send("*", @a);
       
       send(tag, "OK", "NOOP done");
-      
+      server->log(session, "NOOP", "", 200);
       return ([ "action" : "finished" ]);
     }
 }
@@ -143,6 +144,7 @@ class capability
     {
       send("*", "CAPABILITY", @server->capabilities(session));
       send(tag, "OK", "CAPABILITY done");
+      server->log(session, "CAPABILITY", "", 200);
       return ([ "action" : "finished" ]);
     }
 }
@@ -165,9 +167,12 @@ class login
       if (!uid)
       {
 	send(tag, "NO", "LOGIN failed");
+	server->log(session, "LOGIN", name, 401);
 	return ([ "action" : "finished" ]);
       }
       send(tag, "OK", "LOGIN done");
+      session->user_name = name;
+      server->log(session, "LOGIN", name, 200);
       return ([ "action" : "logged_in_state" ]);
     }
 }
@@ -181,6 +186,7 @@ class logout
     {
       send("*", "BYE");
       send(tag, "OK", "LOGOUT done");
+      server->log(session, "LOGOUT", session->user_name, 401);
       return ([ "action" : "close" ]);
     }
 }
@@ -193,8 +199,10 @@ class create_mailbox
   mapping easy_process(string mailbox_name)
   {
     if (server->create_mailbox(session, mailbox_name)) {
+      server->log(session, "CREATE", mailbox_name, 200);
       send(tag, "OK", "CREATE done");
     } else {
+      server->log(session, "CREATE", mailbox_name, 400);
       send(tag, "NO", "CREATE failed");
     }
     return ([ "action" : "finished" ]);
@@ -209,8 +217,10 @@ class delete
   mapping easy_process(string mailbox_name)
   {
     if (server->delete(session, mailbox_name)) {
+      server->log(session, "DELETE", mailbox_name, 200);
       send(tag, "OK", "DELETE done");
     } else {
+      server->log(session, "DELETE", mailbox_name, 400);
       send(tag, "NO", "DELETE failed");
     }
     return ([ "action" : "finished" ]);
@@ -225,8 +235,12 @@ class rename
   mapping easy_process(string old_mailbox_name, string new_mailbox_name)
   {
     if (server->rename(session, old_mailbox_name, new_mailbox_name)) {
+      server->log(session, "RENAME",
+		  old_mailbox_name+":"+new_mailbox_name, 200);
       send(tag, "OK", "RENAME done");
     } else {
+      server->log(session, "RENAME",
+		  old_mailbox_name+":"+new_mailbox_name, 400);
       send(tag, "NO", "RENAME failed");
     }
     return ([ "action" : "finished" ]);
@@ -255,8 +269,10 @@ class list
 	send("*", "LIST", @a);
       
       send(tag, "OK", "LIST done");
+      server->log(session, "LIST", sprintf("%O:%O", reference, glob), 200);
     } else {
       send(tag, "NO", "LIST failed");
+      server->log(session, "LIST", sprintf("%O:%O", reference, glob), 400);
     }
     return ([ "action" : "finished" ]);
   }
@@ -284,6 +300,7 @@ class lsub
 	  send("*", "LSUB", @a);
       
       send(tag, "OK", "LSUB done");
+      server->log(session, "LSUB", sprintf("%O:%O", reference, glob), 200);
       return ([ "action" : "finished" ]);
     }
 }
@@ -312,8 +329,10 @@ class status
 
       // Stupid Outlook 5 looks at the second part...
       send(tag, "OK", "STATUS done");
+      server->log(session, "STATUS", mailbox, 200);
     } else {
       send(tag, "NO", "STATUS failed");
+      server->log(session, "STATUS", mailbox, 400);
     }
     return([ "action" : "finished" ]);
   }
@@ -339,10 +358,12 @@ class select
 	}
       }
       send(tag, "OK", imap_prefix( ({ "READ-WRITE" }) ), "SELECT done" );
-	return ([ "action" : "selected_state" ]);
+      server->log(session, "SELECT", mailbox, 200);
+      return ([ "action" : "selected_state" ]);
     } else {
       send(tag, "NO SELECT failed");
-	return ([ "action" : "logged_in_state" ]);
+      server->log(session, "SELECT", mailbox, 400);
+      return ([ "action" : "logged_in_state" ]);
     }
   }
 }
@@ -372,12 +393,15 @@ class copy
       //   the tagged NO response.
       send(tag, "NO", imap_prefix(({ "TRYCREATE" })),
 	   "COPY mailbox doesn't exist");
+      server->log(session, "COPY", mailbox_name, 404);
       break;
     case 0:
       send(tag, "NO", "COPY failed");
+      server->log(session, "COPY", mailbox_name, 400);
       break;
     case 1:
       send(tag, "OK", "COPY done");
+      server->log(session, "COPY", mailbox_name, 200);
       break;
     default:
       throw(({ "Bad returncode from copy().\n", backtrace() }));
@@ -401,8 +425,10 @@ class expunge
 	send("*", @a);
       }
       send(tag, "OK", "EXPUNGE done");
+      server->log(session, "EXPUNGE", "", 200);
     } else {
       send(tag, "NO", "EXPUNGE failed");
+      server->log(session, "EXPUNGE", "", 400);
     }
     return ([ "action" : "finished" ]);
   }
@@ -419,8 +445,10 @@ class close
     int res = server->close(session);
     if (res) {
       send(tag, "OK", "CLOSE done");
+      server->log(session, "CLOSE", "", 200);
     } else {
       send(tag, "NO", "CLOSE failed");
+      server->log(session, "CLOSE", "", 400);
     }
     return ([ "action" : "logged_in_state" ]);
   }
@@ -469,8 +497,10 @@ class store
 	}
       }
       send(tag, "OK", "STORE done");
+      server->log(session, "STORE", "", 200);
     } else {
       send(tag, "NO", "STORE failed");
+      server->log(session, "STORE", "", 400);
     }
     return ([ "action" : "finished" ]);
   }
@@ -589,9 +619,11 @@ class fetch
       foreach(info, array a)
 	send("*", @a);
       send(tag, "OK", "FETCH done");
-    } else 
+      server->log(session, "FETCH", "", 200);
+    } else {
       send(tag, "NO", "FETCH failed");
-
+      server->log(session, "FETCH", "", 400);
+    }
     return ([ "action" : "finished" ]);
   }
 
@@ -727,9 +759,12 @@ class search
       {
 	send("*", "SEARCH", @matches);
     	send(tag, "OK", "SEARCH done");
+	server->log(session, "SEARCH", "", 200);
       }  
-      else
+      else {
     	send(tag, "NO", "SEARCH failed");
+	server->log(session, "SEARCH", "", 400);
+      }
 
       return ([ "action" : "finished" ]);
     }
@@ -1005,8 +1040,10 @@ class find
 	send("*", "MAILBOX", a[-1]);
       
       send(tag, "OK", "FIND done");
+      server->log(session, "FIND", sprintf("%O:%O", type, glob), 200);
     } else {
       send(tag, "NO", "FIND failed");
+      server->log(session, "FIND", sprintf("%O:%O", type, glob), 200);
     }
     return ([ "action" : "finished" ]);
   }
