@@ -67,15 +67,29 @@ object do_method(string method,
 		 void|mapping request_headers,
 		 void|Protocols.HTTP.Query con, void|string data)
 {
-  if(!con)
+  if(!con) {
     con = Protocols.HTTP.Query();
-
+  }
+  if(!request_headers)
+    request_headers = ([]);
+  
+  
   if(stringp(url))
     url=Standards.URI(url);
-
-  if(url->scheme!="http")
+  
+#if constant(SSL.sslfile) 	
+  if(url->scheme!="http" && url->scheme!="https")
+    error("Protocols.HTTP can't handle %O or any other protocols than HTTP or HTTPS\n",
+	  url->scheme);
+  
+  con->https= (url->scheme=="https")? 1 : 0;
+#else
+  if(url->scheme!="http"	)
     error("Protocols.HTTP can't handle %O or any other protocol than HTTP\n",
 	  url->scheme);
+  
+#endif
+  
 
   if(!request_headers)
     request_headers = ([]);

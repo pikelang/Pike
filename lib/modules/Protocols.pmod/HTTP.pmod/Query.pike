@@ -130,6 +130,11 @@ string status_desc;
 int timeout=120; // seconds
 
 // internal
+#if constant(SSL.sslfile) 
+ import SSL.constants;
+ SSL.sslfile ssl;
+ int https=0;
+#endif
 
 object con;
 string request;
@@ -202,12 +207,12 @@ static void ponder_answer()
    if (request_ok) request_ok(this_object(),@extra_args);
 }
 
-static void connect(string server,int port)
+static void connect(string server,int port,int blocking)
 {
 #ifdef HTTP_QUERY_DEBUG
    werror("<- (connect %O:%d)\n",server,port);
 #endif
-   if (catch { con->connect(server,port); })
+   if (catch { con->connect(server,port,blocking); })
    {
       if (!(errno=con->errno())) errno=22; /* EINVAL */
 #ifdef HTTP_QUERY_DEBUG
@@ -222,6 +227,33 @@ static void connect(string server,int port)
    werror("<- %O\n",request);
 #endif
    con->write(request);
+#if constant(SSL.sslfile) 
+   if(https) {
+     //Gör en context
+     SSL.context context = SSL.context();
+     // Allow only strong crypto
+     context->preferred_suites = ({
+       SSL_rsa_with_idea_cbc_sha,
+       SSL_rsa_with_rc4_128_sha,
+       SSL_rsa_with_rc4_128_md5,
+       SSL_rsa_with_3des_ede_cbc_sha,
+     });
+     string ref;
+     context->random = Crypto.randomness.reasonably_random()->read;
+     
+     object read_callback=con->query_read_callback();
+     object write_callback=con->query_write_callback();
+     object close_callback=con->query_close_callback();
+     
+     ssl = SSL.sslfile(con, context, 1,blocking);
+     if(!blocking) {
+       ssl->set_read_callback(read_callback);
+       ssl->set_write_callback(write_callback);
+       ssl->set_close_callback(close_callback);
+     }
+     con=ssl;
+   }
+#endif
 
    ponder_answer();
 }
@@ -310,7 +342,27 @@ void async_got_host(string server,int port)
 
    //   werror(server+"\n");
 
-   if (catch { con->connect(server,port); })
+   if (catch { con->connect(server,port);
+#if constant(SSL.sslfile) 
+               if(https) {
+		 //Gör en context
+		 SSL.context context = SSL.context();
+		 // Allow only strong crypto
+		 context->preferred_suites = ({
+		   SSL_rsa_with_idea_cbc_sha,
+		   SSL_rsa_with_rc4_128_sha,
+		   SSL_rsa_with_rc4_128_md5,
+		   SSL_rsa_with_3des_ede_cbc_sha,
+		 });
+		 string ref;
+		 context->random = Crypto.randomness.reasonably_random()->read;
+		 
+		 ssl = SSL.sslfile(con, context, 1,0);
+		 ssl->set_nonblocking(0,async_connected,async_failed);
+		 con=ssl;
+   }
+#endif
+   })
    {
       if (!(errno=con->errno())) errno=22; /* EINVAL */
       destruct(con);
@@ -434,6 +486,9 @@ object thread_request(string server,int port,string query,
 
    // prepare the request
 
+   errno = ok = protocol = headers = status_desc = status = datapos = 0;
+   buf = "";
+
    if (!data) data="";
 
    if (!headers) headers="";
@@ -449,7 +504,7 @@ object thread_request(string server,int port,string query,
 
    request=query+"\r\n"+headers+"\r\n"+data;
 
-   conthread=thread_create(connect,server,port);
+   conthread=thread_create(connect,server,port,1);
 
    return this_object();
 }
@@ -511,7 +566,7 @@ object sync_request(string server, int port, string query,
     con->write( request );
     ponder_answer();
   } else
-    connect(server, port);
+    connect(server, port,1);
 
   return this_object();
 }
