@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.249 2001/06/10 00:21:40 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.250 2001/06/25 11:54:09 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3358,7 +3358,8 @@ gauge: TOK_GAUGE catch_arg
     $$=mkefuncallnode("abs",
 		  mkopernode("`/", 
 			     mkopernode("`-", mkefuncallnode("gethrvtime",0),
-					mknode(F_COMMA_EXPR,$2,
+					mknode(F_COMMA_EXPR,
+					       mknode(F_POP_VALUE, $2, NULL),
 					       mkefuncallnode("gethrvtime",0))),
 			     mkfloatnode((FLOAT_TYPE)1000000.0)));
 #else
@@ -3367,7 +3368,7 @@ gauge: TOK_GAUGE catch_arg
 		mkopernode("`-",
 			 mknode(F_INDEX,mkefuncallnode("rusage",0),
 				mkintnode(GAUGE_RUSAGE_INDEX)),
-		         mknode(F_COMMA_EXPR,$2,
+			   mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, $2, NULL),
 				mknode(F_INDEX,mkefuncallnode("rusage",0),
 				       mkintnode(GAUGE_RUSAGE_INDEX)))),
 		mkfloatnode((FLOAT_TYPE)1000.0)));
