@@ -1014,7 +1014,8 @@ class ParseBlock
 		       "  switch(ev) {\n"
 		       })+
 		   ev_handler+
-		   ({"  }\n}\n"}));
+		   ({ "  default: break; \n"
+		      "  }\n}\n" }));
 	
 	addfuncs+=IFDEF(ev_handler_define,
 			({ PC.Token(sprintf("  pike_set_prog_event_callback(%s);\n",funcname)) }));

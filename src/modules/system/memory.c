@@ -1,5 +1,5 @@
 /*
- * $Id: memory.c,v 1.7 2001/03/17 20:50:14 grubba Exp $
+ * $Id: memory.c,v 1.8 2001/03/17 21:13:52 grubba Exp $
  */
 
 //! module system
@@ -14,7 +14,7 @@
 //!	Don't blame Pike if you shoot your foot off.
 
 #include "global.h"
-RCSID("$Id: memory.c,v 1.7 2001/03/17 20:50:14 grubba Exp $");
+RCSID("$Id: memory.c,v 1.8 2001/03/17 21:13:52 grubba Exp $");
 
 #include "system_machine.h"
 
@@ -199,19 +199,21 @@ static void memory__mmap(INT32 args,int complain,int private)
    if (args<1) 
       SIMPLE_TOO_FEW_ARGS_ERROR("Memory.mmap",1);
 
-   if (args>=2)
+   if (args>=2) {
       if (sp[1-args].type!=T_INT ||
 	  sp[1-args].u.integer<0)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",2,"int(0..)");
       else
 	 offset=sp[1-args].u.integer;
+   }
 
-   if (args>=3)
+   if (args>=3) {
       if (sp[2-args].type!=T_INT ||
 	  sp[2-args].u.integer<0)
 	 SIMPLE_BAD_ARG_ERROR("Memory.mmap",3,"int(0..)");
       else
 	 size=sp[2-args].u.integer;
+   }
 
    if (sp[-args].type==T_OBJECT)
    {
@@ -228,12 +230,13 @@ static void memory__mmap(INT32 args,int complain,int private)
 			      "(string or) Stdio.File (wierd query_fd)");
       fd=sp[-1].u.integer;
       sp--;
-      if (fd<0)
+      if (fd<0) {
 	 if (complain)
 	    SIMPLE_BAD_ARG_ERROR("Memory.mmap",1,
 				 "(string or) Stdio.File (file not open)");
 	 else 
 	    RETURN(0);
+      }
 
       THREADS_ALLOW();
       osize=file_size(fd);
@@ -249,11 +252,12 @@ static void memory__mmap(INT32 args,int complain,int private)
       if (fd>=0) osize=file_size(fd);
       THREADS_DISALLOW();
 
-      if (fd<0)
+      if (fd<0) {
 	 if (complain)
 	    Pike_error("Memory.mmap(): Failed to open file\n");
 	 else
 	    RETURN(0);
+      }
       doclose=1;
    }
 
