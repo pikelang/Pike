@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.74 2002/01/01 21:50:06 nilsson Exp $
+ * $Id: builtin.cmod,v 1.75 2002/01/04 13:44:16 grubba Exp $
  */
 
 #include "global.h"
@@ -1167,6 +1167,7 @@ void low_backtrace(struct Pike_interpreter *i)
   for (f = i->frame_pointer; f && size; f = (of = f)->next) {
     struct object *o = low_clone(backtrace_frame_program);
     struct backtrace_frame_struct *bf;
+    struct identifier *function = NULL;
 
     call_c_initializers(o);
 
@@ -1195,6 +1196,7 @@ void low_backtrace(struct Pike_interpreter *i)
       add_ref(bf->fun.u.object);
       bf->fun.subtype = f->fun;
       bf->fun.type = PIKE_T_FUNCTION;
+      function = ID_FROM_INT(f->current_object->prog, f->fun);
     } else {
       bf->fun.u.integer = 0;
       bf->fun.subtype = NUMBER_DESTRUCTED;
@@ -1204,6 +1206,8 @@ void low_backtrace(struct Pike_interpreter *i)
     if (f->locals) {
       INT32 numargs = DO_NOT_WARN((INT32) MINIMUM(f->num_args,
 						  i->stack_pointer - f->locals));
+      INT32 varargs = 0;
+
       if(of)
 	/* f->num_args can be too large, so this is necessary for some
 	 * reason. I don't know why. /mast */
@@ -1211,9 +1215,21 @@ void low_backtrace(struct Pike_interpreter *i)
 
       numargs = MAXIMUM(numargs, 0);
 
-      if (numargs) {
-	bf->args = allocate_array_no_init(numargs, 0);
+      /* Handle varargs... */
+      if (function && (function->identifier_flags & IDENTIFIER_VARARGS) &&
+	  (f->locals + numargs < i->stack_pointer) &&
+	  (f->locals[numargs].type == T_ARRAY)) {
+	varargs = f->locals[numargs].u.array->size;
+      }
+
+      if (numargs + varargs) {
+	bf->args = allocate_array_no_init(numargs + varargs, 0);
 	assign_svalues_no_free(bf->args->item, f->locals, numargs, BIT_MIXED);
+	if (varargs) {
+	  assign_svalues_no_free(bf->args->item + numargs,
+				 f->locals[numargs].u.array->item,
+				 varargs, BIT_MIXED);
+	}
       }
     }
   }
