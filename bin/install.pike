@@ -33,6 +33,7 @@ int mkdirhier(string dir)
 {
   int tomove;
 
+  if(dir=="") return 1;
   status("creating",dir);
   mixed s=file_stat(dir);
   if(s)
@@ -239,7 +240,7 @@ int main(int argc, string *argv)
     if(!(lnk=vars->pike_name) || !strlen(lnk))
       lnk=combine_path(vars->exec_prefix,"pike");
 
-    prefix=combine_path(prefix,"pike",replace(version()-"Pike v"," release ","."));
+    prefix=combine_path("/",getcwd(),prefix,"pike",replace(version()-"Pike v"," release ","."));
     exec_prefix=combine_path(prefix);
     lib_prefix=combine_path(prefix,"lib");
     include_prefix=combine_path(prefix,"include","pike");
@@ -340,7 +341,7 @@ int main(int argc, string *argv)
 	exit(1);
       }
     }
-
+    
     symlink(pike,lnk);
   }
 #endif

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.136 1999/03/26 19:27:26 hubbe Exp $
+# $Id: Makefile.in,v 1.137 1999/04/08 22:19:14 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -356,10 +356,9 @@ tidy:
 # make clean
 clean: tidy
 	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
-	-rm -f TAGS tags
-	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
-	-rm -f hilfe master.pike
-	-rm -f compiler-warnings
+	-rm -rf test-install test-pike
+	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
+	-rm -f hilfe master.pike compiler-warnings
 	find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
 #	-rm -f lib/master.pike
 
@@ -400,8 +399,17 @@ TAGS:
 module_testsuites:
 	( cd modules ; $(MAKE) $(MAKE_FLAGS) testsuites )
 
-verify: module_testsuites testsuite master.pike
+just_verify: module_testsuites testsuite master.pike
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
+
+verify: module_testsuites testsuite master.pike
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
+	pike_name="test-pike" lib_prefix="$(lib_prefix)" \
+	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
+	SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" \
+	man_prefix="$(man_prefix)"
+
+	./test-pike $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
 
 verify_installed: module_testsuites testsuite master.pike
 	$(exec_prefix)/pike $(TMP_BINDIR)/test_pike.pike modules/*/module_testsuite testsuite 
