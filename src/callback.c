@@ -33,6 +33,30 @@ static struct callback_block *callback_chunks=0;
 static struct callback *first_callback =0;
 static struct callback *free_callbacks =0;
 
+#ifdef DEBUG
+static void check_callback_chain(struct callback_list *lst)
+{
+  int len=0;
+  struct callback *foo;
+  for(foo=lst->callbacks;foo;foo=foo->next)
+  {
+    if((len & 1024)==1023)
+    {
+      int len2=0;
+      struct callback *tmp;
+      for(tmp=foo->next;tmp && len2<=len;tmp=tmp->next)
+      {
+	if(tmp==foo)
+	  fatal("Callback list is cyclic!!!\n");
+      }
+    }
+    len++;
+  }
+}
+#else
+#define check_callback_chain(X)
+#endif
+
 /* Return the first free callback struct, allocate more if needed */
 static struct callback *get_free_callback()
 {
@@ -58,12 +82,24 @@ static struct callback *get_free_callback()
 /* Traverse a linked list of callbacks and call all the active callbacks
  * in the list. Deactivated callbacks are freed and placed in the free list.
  */
-void call_callback(struct callback **ptr, void *arg)
+void call_callback(struct callback_list *lst, void *arg)
 {
-  struct callback *l;
+  int this_call;
+  struct callback *l,**ptr;
+
+  lst->num_calls++;
+  this_call=lst->num_calls;
+
+  check_callback_chain(lst);
+  ptr=&lst->callbacks;
   while(l=*ptr)
   {
-    if(l->call) l->call(l,l->arg, arg);
+    if(l->call)
+    {
+      l->call(l,l->arg, arg);
+      if(lst->num_calls != this_call) return;
+    }
+    check_callback_chain(lst);
 
     if(!l->call)
     {
@@ -73,11 +109,12 @@ void call_callback(struct callback **ptr, void *arg)
     }else{
       ptr=& l->next;
     }
+    check_callback_chain(lst);
   }
 }
 
 /* Add a callback to the linked list pointed to by ptr. */
-struct callback *add_to_callback(struct callback **ptr,
+struct callback *add_to_callback(struct callback_list *lst,
 				 callback_func call,
 				 void *arg,
 				 callback_func free_func)
@@ -87,8 +124,10 @@ struct callback *add_to_callback(struct callback **ptr,
   l->call=call;
   l->arg=arg;
 
-  l->next=*ptr;
-  *ptr=l;
+  l->next=lst->callbacks;
+  lst->callbacks=l;
+
+  check_callback_chain(lst);
 
   return l;
 }
@@ -103,9 +142,11 @@ void *remove_callback(struct callback *l)
 }
 
 /* Free all the callbacks in a linked list of callbacks */
-void free_callback(struct callback **ptr)
+void free_callback(struct callback_list *lst)
 {
-  struct callback *l;
+  struct callback *l,**ptr;
+  check_callback_chain(lst);
+  ptr=& lst->callbacks;
   while(l=*ptr)
   {
     if(l->arg && l->free_func)

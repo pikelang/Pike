@@ -11,7 +11,7 @@ extern INT32 num_allocs;
 extern INT32 alloc_threshold;
 
 extern struct callback *gc_evaluator_callback;
-extern struct callback *evaluator_callbacks;
+extern struct callback_list evaluator_callbacks;
 
 #define ADD_GC_CALLBACK() gc_evaluator_callback=add_to_callback(&evaluator_callbacks,(callback_func)do_gc,0,0)
 

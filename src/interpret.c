@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.14 1996/12/01 13:03:55 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.15 1996/12/03 21:41:18 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -307,7 +307,7 @@ void pop_n_elems(INT32 x)
 }
 
 
-struct callback *evaluator_callbacks =0;
+struct callback_list evaluator_callbacks;
 
 /* This function is called 'every now and then'. (1-10000 / sec or so)
  * It should do anything that needs to be done fairly often.

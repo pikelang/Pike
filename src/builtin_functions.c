@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.14 1996/12/02 07:02:25 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.15 1996/12/03 21:41:15 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -595,7 +595,7 @@ void f_throw(INT32 args)
   throw();
 }
 
-static struct callback *exit_callbacks=0;
+static struct callback_list exit_callbacks;
 
 struct callback *add_exit_callback(callback_func call,
 				   void *arg,

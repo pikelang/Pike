@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.11 1996/11/22 20:58:23 hubbe Exp $");
+RCSID("$Id: main.c,v 1.12 1996/12/03 21:41:19 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -40,7 +40,7 @@ int a_flag=0;
 int l_flag=0;
 int p_flag=0;
 
-static struct callback *post_master_callbacks =0;
+static struct callback_list post_master_callbacks;
 
 struct callback *add_post_master_callback(callback_func call,
 					  void *arg,

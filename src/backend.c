@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.6 1996/11/22 00:05:41 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.7 1996/12/03 21:41:15 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -45,7 +45,7 @@ static int max_fd;
 struct timeval current_time;
 struct timeval next_timeout;
 
-static struct callback *backend_callbacks = 0;
+static struct callback_list backend_callbacks;
 
 struct callback *add_backend_callback(callback_func call,
 				      void *arg,
