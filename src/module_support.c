@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.20 1999/02/12 04:26:17 per Exp $");
+RCSID("$Id: module_support.c,v 1.21 1999/03/19 11:40:15 hubbe Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -160,7 +160,7 @@ int va_get_args(struct svalue *s,
       break;
     case 'i':
       if(s->type != T_INT) return ret;
-      *va_arg(ap, INT32 *)=s->u.integer;
+      *va_arg(ap, INT_TYPE *)=s->u.integer;
       break;
     case 'D':
       if(s->type == T_INT)
@@ -178,15 +178,15 @@ int va_get_args(struct svalue *s,
       break;
     case 'I':
       if(s->type == T_INT)
-	 *va_arg(ap, INT32 *)=s->u.integer;
+	 *va_arg(ap, INT_TYPE *)=s->u.integer;
       else if(s->type == T_FLOAT)
-        *va_arg(ap, INT32 *)=(int)s->u.float_number;
+        *va_arg(ap, INT_TYPE *)=(int)s->u.float_number;
       else 
       {
         push_svalue( s );
         push_text( "int" );
         f_cast( );
-        *va_arg(ap, INT32 *)=sp[-1].u.integer;
+        *va_arg(ap, INT_TYPE *)=sp[-1].u.integer;
         pop_stack();
       }
       break;
@@ -303,10 +303,20 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
     default: expected_type = "Unknown"; break;
     }
     if (ret <= args) {
-      error("Bad argument %d to %s(). Expected %s\n",
-	    ret+1, fname, expected_type);
+      bad_arg_error(
+	fname, sp-args, args,
+	ret+1,
+	expected_type,
+	sp+ret-args,
+	"Bad argument %d to %s(). Expected %s\n",
+	ret+1, fname, expected_type);
     } else if ((long)(args*2) < (long)strlen(format)) {
-      error("Too few arguments to %s(). Expected %d arguments, got %d.\n"
+      bad_arg_error(
+	fname, sp-args, args,
+	ret+1,
+	expected_type,
+	0,
+	"Too few arguments to %s(). Expected %d arguments, got %d.\n"
 	    "The type of the next argument is expected to be %s\n",
 	    fname, strlen(format)/2, args, expected_type);
     }

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.155 1999/03/17 21:49:22 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.156 1999/03/19 11:40:14 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -91,9 +91,9 @@ void f_hash(INT32 args)
 {
   INT32 i;
   if(!args)
-    PIKE_ERROR("hash", "Too few arguments.\n", sp, 0);
+    SIMPLE_TOO_FEW_ARGS_ERROR("hash",1);
   if(sp[-args].type != T_STRING)
-    PIKE_ERROR("hash", "Bad argument 1.\n", sp, args);
+    SIMPLE_BAD_ARG_ERROR("hash", 1, "string");
 
   switch(sp[-args].u.string->size_shift)
   {
@@ -120,7 +120,7 @@ void f_hash(INT32 args)
   if(args > 1)
   {
     if(sp[1-args].type != T_INT)
-      PIKE_ERROR("hash", "Bad argument 2.\n", sp, args);
+      SIMPLE_BAD_ARG_ERROR("hash",2,"int");
     
     if(!sp[1-args].u.integer)
       PIKE_ERROR("hash", "Modulo by zero.\n", sp, args);
@@ -134,7 +134,7 @@ void f_hash(INT32 args)
 void f_copy_value(INT32 args)
 {
   if(!args)
-    PIKE_ERROR("copy_value", "Too few arguments.\n", sp, 0);
+    SIMPLE_TOO_FEW_ARGS_ERROR("copy_value",1);
 
   pop_n_elems(args-1);
   copy_svalues_recursively_no_free(sp,sp-1,1,0);
@@ -145,11 +145,9 @@ void f_copy_value(INT32 args)
 void f_ctime(INT32 args)
 {
   time_t i;
-  if(!args)
-    PIKE_ERROR("ctime", "Too few arguments.\n", sp, args);
-  if(sp[-args].type != T_INT)
-    PIKE_ERROR("ctime", "Bad argument 1.\n", sp, args);
-  i=(time_t)sp[-args].u.integer;
+  INT_TYPE x;
+  get_all_args("ctime",args,"%i",&x);
+  i=(time_t)x;
   pop_n_elems(args);
   push_string(make_shared_string(ctime(&i)));
 }
@@ -159,10 +157,7 @@ void f_lower_case(INT32 args)
 {
   INT32 i;
   struct pike_string *ret;
-  if(!args)
-    PIKE_ERROR("lower_case", "Too few arguments.\n", sp, 0);
-  if(sp[-args].type != T_STRING) 
-    PIKE_ERROR("lower_case", "Bad argument 1.\n", sp, args);
+  get_all_args("lower_case",args,"%s",&ret);
 
   ret=begin_shared_string(sp[-args].u.string->len);
   MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
@@ -180,10 +175,7 @@ void f_upper_case(INT32 args)
 {
   INT32 i;
   struct pike_string *ret;
-  if(!args)
-    PIKE_ERROR("upper_case", "Too few arguments.\n", sp, 0);
-  if(sp[-args].type != T_STRING) 
-    PIKE_ERROR("upper_case", "Bad argument 1.\n", sp, args);
+  get_all_args("upper_case",args,"%s",&ret);
 
   ret=begin_shared_string(sp[-args].u.string->len);
   MEMCPY(ret->str, sp[-args].u.string->str,sp[-args].u.string->len);
@@ -198,28 +190,23 @@ void f_upper_case(INT32 args)
 
 void f_random(INT32 args)
 {
-  if(!args)
-    PIKE_ERROR("random", "Too few arguments.\n", sp, 0);
-  if(sp[-args].type != T_INT) 
-    PIKE_ERROR("random", "Bad argument 1.\n", sp, args);
+  INT_TYPE i;
+  get_all_args("random",args,"%i",&i);
 
-  if(sp[-args].u.integer <= 0)
+  if(i <= 0)
   {
     sp[-args].u.integer = 0;
   }else{
-    sp[-args].u.integer = my_rand() % sp[-args].u.integer;
+    sp[-args].u.integer = my_rand() % i;
   }
   pop_n_elems(args-1);
 }
 
 void f_random_seed(INT32 args)
 {
-  if(!args)
-    PIKE_ERROR("random_seed", "Too few arguments.\n", sp, 0);
-  if(sp[-args].type != T_INT) 
-    PIKE_ERROR("random_seed", "Bad argument 1.\n", sp, args);
-
-  my_srand(sp[-args].u.integer);
+  INT_TYPE i;
+  get_all_args("random_seed",args,"%i",&i);
+  my_srand(i);
   pop_n_elems(args);
 }
 
@@ -555,9 +542,9 @@ void f_combine_path(INT32 args)
 void f_function_object(INT32 args)
 {
   if(args < 1)
-    PIKE_ERROR("function_object", "Too few arguments.\n", sp, args);
+    SIMPLE_TOO_FEW_ARGS_ERROR("function_object",1);
   if(sp[-args].type != T_FUNCTION)
-    PIKE_ERROR("function_object", "Bad argument 1.\n", sp, args);
+    SIMPLE_BAD_ARG_ERROR("function_object",1,"function");
 
   if(sp[-args].subtype == FUNCTION_BUILTIN)
   {
@@ -573,9 +560,9 @@ void f_function_name(INT32 args)
 {
   struct pike_string *s;
   if(args < 1)
-    PIKE_ERROR("function_name", "Too few arguments.\n", sp, args);
+    SIMPLE_TOO_FEW_ARGS_ERROR("function_name",1);
   if(sp[-args].type != T_FUNCTION)
-    PIKE_ERROR("function_name", "Bad argument 1.\n", sp, args);
+    SIMPLE_BAD_ARG_ERROR("function_name",1,"function");
 
   if(sp[-args].subtype == FUNCTION_BUILTIN)
   {
@@ -598,7 +585,8 @@ void f_function_name(INT32 args)
 void f_zero_type(INT32 args)
 {
   if(args < 1)
-    PIKE_ERROR("zero_type", "Too few arguments.\n", sp, args);
+    SIMPLE_TOO_FEW_ARGS_ERROR("zero_type",1);
+
   if(sp[-args].type != T_INT)
   {
     pop_n_elems(args);
@@ -1039,11 +1027,10 @@ void f_allocate(INT32 args)
   struct array *a;
 
   if(args < 1)
-    PIKE_ERROR("allocate", "Too few arguments.\n", sp, args);
+    SIMPLE_TOO_FEW_ARGS_ERROR("allocate",1);
 
   if(sp[-args].type!=T_INT)
-    PIKE_ERROR("allocate", "Bad argument 1.\n", sp, args);
-
+    SIMPLE_BAD_ARG_ERROR("allocate",1,"int");
 
   size=sp[-args].u.integer;
   if(size < 0)

@@ -20,7 +20,7 @@
 #include "main.h"
 #include "security.h"
 
-RCSID("$Id: array.c,v 1.44 1999/03/05 02:14:31 hubbe Exp $");
+RCSID("$Id: array.c,v 1.45 1999/03/19 11:40:12 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -168,10 +168,13 @@ void simple_array_index_no_free(struct svalue *s,
       i=ind->u.integer;
       if(i<0) i+=a->size;
       if(i<0 || i>=a->size) {
+	struct svalue tmp;
+	tmp.type=T_ARRAY;
+	tmp.u.array=a;
 	if (a->size) {
-	  error("Index %d is out of range 0 - %d.\n", i, a->size-1);
+	  index_error(0,0,0,&tmp,ind,"Index %d is out of range 0 - %d.\n", i, a->size-1);
 	} else {
-	  error("Attempt to index the empty array with %d.\n", i);
+	  index_error(0,0,0,&tmp,ind,"Attempt to index the empty array with %d.\n", i);
 	}
       }
       array_index_no_free(s,a,i);
@@ -187,7 +190,12 @@ void simple_array_index_no_free(struct svalue *s,
       break;
 	
     default:
-      error("Index is not an integer.\n");
+      {
+	struct svalue tmp;
+	tmp.type=T_ARRAY;
+	tmp.u.array=a;
+	index_error(0,0,0,&tmp,ind,"Index is not an integer.\n");
+      }
   }
 }
 
