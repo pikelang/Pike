@@ -1,7 +1,38 @@
-// Copyright © 2000, Roxen IS.
 // By Martin Nilsson
 
 #pike __REAL_VERSION__
+
+//! The functions and classes in the top level of the Locale
+//! module implements a dynamic localization system, suitable
+//! for programs that needs to change locale often. It is
+//! even possible for different threads to use different locales
+//! at the same time.
+//!
+//! The highest level of the locale system is called projects.
+//! Usually one program consists of only one project, but for
+//! bigger applications, or highly modular applications it is
+//! possible for several projects to coexist.
+//!
+//! Every project in turn contains several unique tokens, each
+//! one representing an entity that is different depending on
+//! the currently selected locale.
+//!
+//! @example
+//!  // The following line tells the locale extractor what to
+//!  // look for.
+//!  // <locale-token project="my_project">LOCALE</locale-token>
+//!
+//!  // The localization macro.
+//!  #define LOCALE(X,Y) Locale.translate("my_project", \
+//!    get_lang(), X, Y)
+//!
+//!  string get_lang() { return random(2)?"eng":"swe"; }
+//!
+//!  int(0..0) main() {
+//!    write(LOCALE(0, "This is a line.")+"\n");
+//!    write(LOCALE(0, "This is another one.\n");
+//!    return 0;
+//!  }
 
 #define CLEAN_CYCLE 60*60
 //#define LOCALE_DEBUG
@@ -524,10 +555,10 @@ class DeferredLocale( static string project,
   {
     if(to=="string") return lookup();
     if(to=="mixed" || to=="object") return this_object();
-    throw( ({ "Cannot cast DeferredLocale to "+to+".\n", backtrace() }) );
+    error( "Cannot cast DeferredLocale to "+to+".\n" );
   }
 
   static int _is_type(string type) {
     return type=="string";
   }
-};
+}
