@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.14 1998/04/18 12:50:19 mirar Exp $
+/* $Id: master.pike.in,v 1.15 1998/04/19 00:08:53 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -45,7 +45,6 @@ string basename(string x)
 string describe_backtrace(mixed *trace);
 object low_cast_to_object(string oname, string current_file);
 
-string _master_file_name;
 string pike_library_path;
 string *pike_include_path=({});
 string *pike_module_path=({});
@@ -514,23 +513,8 @@ void _main(string *orig_argv, string *env)
   add_include_path("¤lib_prefix¤/include");
   add_module_path("¤lib_prefix¤/modules");
 
-  _master_file_name=backtrace()[-1][0];
-#if 0
-  q=explode_path(_master_file_name);
-  // add path for wherever the master is now
-  add_include_path(pike_library_path+"/include");
-  add_module_path(pike_library_path+"/modules");
-
-  pike_library_path = combine_path_with_cwd(q[0..sizeof(q)-2] * "/");
-
-  add_include_path(pike_library_path+"/include");
-  add_module_path(pike_library_path+"/modules");
-
-#endif
   add_program_path(getcwd());
   add_module_path(getcwd());
-
-  _master_file_name=combine_path(getcwd(), _master_file_name);
 
   q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
