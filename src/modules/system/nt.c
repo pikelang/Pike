@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.33 2001/03/09 15:16:33 grubba Exp $
+ * $Id: nt.c,v 1.34 2001/03/09 15:43:36 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -2279,6 +2279,7 @@ static void f_nt_uname(INT32 args)
   /* More info could be added here */
 
   char buf[1024];
+  char *machine = "unknown";
   OSVERSIONINFO osversion;
   SYSTEM_INFO sysinfo;
   int n=0;
@@ -2292,42 +2293,47 @@ static void f_nt_uname(INT32 args)
   GetSystemInfo(&sysinfo);
 
   n+=2;
-  push_text("machine");
+  push_text("architecture");
   switch(sysinfo.wProcessorArchitecture)
   {
     case PROCESSOR_ARCHITECTURE_INTEL:
-      sprintf(buf,"i%d",sysinfo.dwProcessorType);
+      sprintf(buf, "i%d", sysinfo.dwProcessorType);
       push_text(buf);
+      machine = "i86pc";
       break;
 
     case PROCESSOR_ARCHITECTURE_MIPS:
       push_text("mips");
+      machine = "mips";
       break;
 
     case PROCESSOR_ARCHITECTURE_ALPHA:
       push_text("alpha");
+      machine = "alpha";
       break;
 
     case PROCESSOR_ARCHITECTURE_PPC:
-      push_text("PPC");
+      push_text("ppc");
+      machine = "ppc";
       break;
 
 #ifdef PROCESSOR_ARCHITECTURE_SHX
     case PROCESSOR_ARCHITECTURE_SHX:
+      machine = "shx";
       switch (sysinfo.dwProcessorType) {
       case PROCESSOR_HITACHI_SH3:
       case PROCESSOR_SHx_SH3:
-        push_text("SH3");
+        push_text("sh3");
 	break;
       case PROCESSOR_HITACHI_SH3E:
-        push_text("SH3e");
+        push_text("sh3e");
 	break;
       case PROCESSOR_HITACHI_SH4:
       case PROCESSOR_SHx_SH4:
-        push_text("SH4");
+        push_text("sh4");
 	break;
       default:
-	push_text("SHX");
+	push_text("shx");
 	break;
       }
       break;
@@ -2335,33 +2341,61 @@ static void f_nt_uname(INT32 args)
 
 #ifdef PROCESSOR_ARCHITECTURE_ARM
     case PROCESSOR_ARCHITECTURE_ARM:
-      push_text("arm");
+      machine = "arm";
+      switch (sysinfo.dwProcessorType) {
+      case PROCESSOR_STRONGARM:
+	push_text("strongarm");
+	break;
+      case PROCESSOR_ARM720:
+	push_text("arm720");
+	break;
+      case PROCESSOR_ARM820:
+	push_text("arm820");
+	break;
+      case PROCESSOR_ARM920:
+	push_text("arm920");
+	break;
+      case PROCESSOR_ARM_7TDMI:
+	push_text("arm7tdmi");
+	break;
+      default:
+	push_text("arm");
+	break;
+      }
       break;
 #endif /* PROCESSOR_ARCHITECTURE_ARM */
 
 #ifdef PROCESSOR_ARCHITECTURE_IA64
     case PROCESSOR_ARCHITECTURE_IA64:
+      machine = "ia64";
       push_text("ia64");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_IA64 */
 
 #ifdef PROCESSOR_ARCHITECTURE_ALPHA64
     case PROCESSOR_ARCHITECTURE_ALPHA64:
+      machine = "alpha64";
       push_text("alpha64");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_ALPHA64 */
 
 #ifdef PROCESSOR_ARCHITECTURE_MSIL
     case PROCESSOR_ARCHITECTURE_MSIL:
+      machine = "msil";
       push_text("msil");
       break;
 #endif /* PROCESSOR_ARCHITECTURE_MSIL */
 
     default:
     case PROCESSOR_ARCHITECTURE_UNKNOWN:
+      machine = "unknown";
       push_text("unknown");
       break;
   }
+
+  n+=2;
+  push_text("machine");
+  push_text(machine);
 
   n+=2;
   push_text("sysname");
