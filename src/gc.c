@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.33 1998/04/10 04:37:38 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.34 1998/04/10 04:48:41 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -101,7 +101,13 @@ static struct marker *getmark(void *a)
   unsigned long hashval;
   struct marker *m;
 
-  hashval=((unsigned long)a)%hashsize;
+  hashval=(unsigned long)a;
+  hashval%=hashsize;
+
+#ifdef DEBUG
+  if(hashval >= hashsize)
+    fatal("Compiler has buggy modulo operator.\n");
+#endif
 
   for(m=hash[hashval];m;m=m->next)
     if(m->marked == a)
