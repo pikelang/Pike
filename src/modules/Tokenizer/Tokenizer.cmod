@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.27 2004/11/26 19:19:20 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.28 2004/11/27 16:33:22 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -1778,6 +1778,7 @@ PIKECLASS GroupingCompiler
 						 *       reference.
 						 */
     struct object *root_group = clone_object(Group_program, 0);
+    int append_fun_num = -1;
 
     ref_push_object(OBJ2_GROUP(root_group)->contents);
     push_object(root_group);
@@ -1824,13 +1825,24 @@ PIKECLASS GroupingCompiler
        *   o The new token was successfully appended. A plain 0 (zero) will
        *     then be on the stack.
        */
-      apply_shared(Pike_sp[-2].u.object, MK_STRING("append"), 1);
+
+      /* Look up the append function if needed. */
+      if ((append_fun_num == -1) &&
+	  ((append_fun_num =
+	    find_shared_string_identifier(MK_STRING("append"),
+					  Pike_sp[-2].u.object->prog)) == -1))
+	Pike_error("Group without append(): %O\n", Pike_sp-2);
+      apply_low(Pike_sp[-2].u.object, append_fun_num, 1);
 
       if (Pike_sp[-1].type == PIKE_T_OBJECT) {
 	/* New group.
 	 *
-	 * Don't do a thing.
+	 * Basically: Don't do a thing.
 	 */
+	if (Pike_sp[-1].u.object->prog != Pike_sp[-2].u.object->prog) {
+	  /* We need to look up append() again. */
+	  append_fun_num = -1;
+	}
 	continue;
       }
       if ((Pike_sp[-1].type != T_INT) || (Pike_sp[-1].u.integer)) {
@@ -1842,6 +1854,10 @@ PIKECLASS GroupingCompiler
 	 *
 	 * Pop the UNDEFINED, and the group we've just completed.
 	 */
+	if (Pike_sp[-2].u.object->prog != Pike_sp[-3].u.object->prog) {
+	  /* We need to look up append() again. */
+	  append_fun_num = -1;
+	}
 	pop_n_elems(2);
 	continue;
       }
