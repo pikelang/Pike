@@ -64,11 +64,13 @@ mapping _decode( string what, void|mapping opts )
     retopts->hot_y = values[5];
   }
   TD("Colors");
-  mixed colors = ([]);
   if(sizeof(data) < ncolors+2)
     error("Too few elements in array to decode color values\n");
-
-  colors = sort(data[1..ncolors]);
+  array colors;
+  if(cpp < 4)
+    colors = data[1..ncolors];
+  else
+    colors = sort(data[1..ncolors]);
   TD("Creating images");
   object i = Image.image( width, height );
   object a = Image.image( width, height,255,255,255 );
