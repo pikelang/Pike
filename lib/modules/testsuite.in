@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.10 2002/11/17 13:51:38 grubba Exp $
+dnl $Id: testsuite.in,v 1.11 2003/01/02 01:42:29 nilsson Exp $
 
 dnl - Array
 
@@ -223,7 +223,7 @@ test_eval_error( Getop.get_args(({ "x", "a", "-b" }), 0, 1) )
 
 test_equal( Getopt.get_args(({ "x", "a", "-b" }), 1, 1), ({ "x", "a", "-b" }))
 test_equal( Getopt.get_args(({ "x", "ab", "-b" }), 1, 1), ({ "x", "ab", "-b" }))
-test_equal( Getopt.get_args(({ "x", 0, "-b" }), 1, 1), ({ "x", "-b" }))
+test_eval_error( Getopt.get_args(({ "x", 0, "-b" }), 1, 1))
 test_eval_error( Getopt.get_args(({ "x", "-a" }), 1, 1))
 
 test_do( add_constant("opt", lambda(array x, array y, mixed ... z) {
@@ -367,7 +367,7 @@ test_any_equal([[
 test_do( putenv("POSIX_ME_HARDER", "1"); )
 test_eval_error( Getop.get_args(({ "x", "a", "-b" }), -1, 1) )
 test_equal( Getopt.get_args(({ "x", "a", "-b" }), 0, 1), ({ "x", "a", "-b" }))
-test_equal( Getopt.get_args(({ "x", 0, "-b" }), 0, 1), ({ "x", "-b" }))
+test_eval_error( Getopt.get_args(({ "x", 0, "-b" }), 0, 1))
 test_eval_error( opt( ({"x","a","-b"}), ({"y",Getopt.HAS_ARG,"-b"}), -1, 1 ))
 test_any_equal([[
   array x = ({ "x", "a", "-b" });
