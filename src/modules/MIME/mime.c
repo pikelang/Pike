@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.9 1997/05/19 22:51:08 hubbe Exp $
+ * $Id: mime.c,v 1.10 1997/06/26 01:02:48 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -9,7 +9,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: mime.c,v 1.9 1997/05/19 22:51:08 hubbe Exp $");
+RCSID("$Id: mime.c,v 1.10 1997/06/26 01:02:48 marcus Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -267,7 +267,7 @@ static void f_encode_base64( INT32 args )
     }
 
     /* Return the result */
-    pop_n_elems( 1 );
+    pop_n_elems( args );
     push_string( end_shared_string( str ) );
   }
 }
@@ -370,7 +370,7 @@ static void f_encode_qp( INT32 args )
     }
     
     /* Return the result */
-    pop_n_elems( 1 );
+    pop_n_elems( args );
     push_string( low_free_buf( &buf ) );
   }
 }
