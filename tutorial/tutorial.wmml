@@ -5425,7 +5425,7 @@ which says what time it is in white text on a black background.
 Pike also include a number of smaller modules. These modules implement support
 for various algorithms, data structures and system routines.
 
-<anchor name=System>
+<module name=System>
 <section title="System">
 The system module contains some system-specific functions that may or may
 not be available on your system. Most of these functions do exactly the same
@@ -5436,7 +5436,7 @@ Please note that these functions are available globally, you do not
 need to <tt>import System</tt> to use these functions.
 
 <hr noshade size=1>
-<function name=chroot title="change the root directory">
+<function name=chroot title="change the root directory" fullpath>
 <man_syntax>
 int chroot(string <I>newroot</I>);<br>
 int chroot(object(File) <I>obj</I>);<br>
@@ -5458,7 +5458,7 @@ the fchroot(2) system call.
 
 <hr noshade size=1>
 
-<function name=getegid title="get the effective group ID">
+<function name=getegid title="get the effective group ID" fullpath>
 <man_syntax>
 int getegid();<br>
 </man_syntax>
@@ -5472,7 +5472,7 @@ setuid, getuid, setgid, getgid, seteuid, geteuid, setegid
 
 <hr noshade size=1>
 
-<function name=geteuid title="get the effective user ID">
+<function name=geteuid title="get the effective user ID" fullpath>
 <man_syntax>
 int geteuid();<br>
 </man_syntax>
@@ -5486,7 +5486,7 @@ setuid, getuid, setgid, getgid, seteuid, setegid, getegid
 
 <hr noshade size=1>
 
-<function name=getgid title="get the group ID">
+<function name=getgid title="get the group ID" fullpath>
 <man_syntax>
 int getgid();<br>
 </man_syntax>
@@ -5500,7 +5500,7 @@ setuid, getuid, setgid, seteuid, geteuid, setegid, getegid
 
 <hr noshade size=1>
 
-<function name=gethostbyaddr title="gets information about a host given its address">
+<function name=gethostbyaddr title="gets information about a host given its address" fullpath>
 <man_syntax>
 array gethostbyaddr(string <I>addr</I>);<br>
 </man_syntax>
@@ -5520,7 +5520,7 @@ gethostbyname
 
 <hr noshade size=1>
 
-<function name=gethostbyname title="gets information about a host given its name">
+<function name=gethostbyname title="gets information about a host given its name" fullpath>
 <man_syntax>
 array gethostbyname(string <I>hostname</I>);<br>
 </man_syntax>
@@ -5542,7 +5542,7 @@ gethostbyaddr
 
 <hr noshade size=1>
 
-<function name=gethostname title="get the name of this host">
+<function name=gethostname title="get the name of this host" fullpath>
 <man_syntax>
 string gethostname();<br>
 </man_syntax>
@@ -5557,7 +5557,7 @@ or uname(2) system calls.
 
 <hr noshade size=1>
 
-<function name=getpgrp title="get the process group ID">
+<function name=getpgrp title="get the process group ID" fullpath>
 <man_syntax>
 int getpgrp();<br>
 int getpgrp(int <I>pid</I>);<br>
@@ -5574,7 +5574,7 @@ getpid, getppid
 
 <hr noshade size=1>
 
-<function name=getpid title="get the process ID">
+<function name=getpid title="get the process ID" fullpath>
 <man_syntax>
 int getpid();<br>
 </man_syntax>
@@ -5588,7 +5588,7 @@ getppid, getpgrp
 
 <hr noshade size=1>
 
-<function name=getppid title="get the parent process ID">
+<function name=getppid title="get the parent process ID" fullpath>
 <man_syntax>
 int getppid();<br>
 </man_syntax>
@@ -5602,7 +5602,7 @@ getpid, getpgrp
 
 <hr noshade size=1>
 
-<function name=getuid title="get the user ID">
+<function name=getuid title="get the user ID" fullpath>
 <man_syntax>
 int getuid();<br>
 </man_syntax>
@@ -5616,7 +5616,7 @@ setuid, setgid, getgid, seteuid, geteuid, setegid, getegid
 
 <hr noshade size=1>
 
-<function name=hardlink title="create a hardlink">
+<function name=hardlink title="create a hardlink" fullpath>
 <man_syntax>
 void hardlink(string <I>from</I>, string <I>to</I>);<br>
 </man_syntax>
@@ -5630,7 +5630,7 @@ symlink, mv, rm
 
 <hr noshade size=1>
 
-<function name=initgroups title="initialize the group access list">
+<function name=initgroups title="initialize the group access list" fullpath>
 <man_syntax>
 void initgroups(string <I>username</I>, int <I>base_gid</I>);<br>
 </man_syntax>
@@ -5646,7 +5646,7 @@ setuid, getuid, setgid, getgid, seteuid, geteuid, setegid, getegid, getgroups, s
 
 <hr noshade size=1>
 
-<function name=openlog title="initializes the connection to syslogd">
+<function name=openlog title="initializes the connection to syslogd" fullpath>
 <man_syntax>
 void openlog(string <I>ident</I>, int <I>options</I>, <I>facility</I>);<br>
 </man_syntax>
@@ -5695,7 +5695,7 @@ syslog, closelog, setlogmask
 
 <hr noshade size=1>
 
-<function name=readlink title="read a symbolic link">
+<function name=readlink title="read a symbolic link" fullpath>
 <man_syntax>
 string readlink(string <I>linkname</I>);<br>
 </man_syntax>
@@ -5709,7 +5709,7 @@ symlink
 
 <hr noshade size=1>
 
-<function name=setegid title="set the effective group ID">
+<function name=setegid title="set the effective group ID" fullpath>
 <man_syntax>
 void setegid(int <I>uid</I>);<br>
 </man_syntax>
@@ -5723,7 +5723,7 @@ setuid, getuid, setgid, getgid, seteuid, geteuid, getegid
 
 <hr noshade size=1>
 
-<function name=seteuid title="set the effective user ID">
+<function name=seteuid title="set the effective user ID" fullpath>
 <man_syntax>
 void seteuid(int <I>uid</I>);<br>
 </man_syntax>
@@ -5737,7 +5737,7 @@ setuid, getuid, setgid, getgid, geteuid, setegid, getegid
 
 <hr noshade size=1>
 
-<function name=setgid title="set the group ID">
+<function name=setgid title="set the group ID" fullpath>
 <man_syntax>
 void setgid(int <I>gid</I>);<br>
 </man_syntax>
@@ -5751,7 +5751,7 @@ setuid, getuid, getgid, seteuid, geteuid, setegid, getegid
 
 <hr noshade size=1>
 
-<function name=setuid title="set the user ID">
+<function name=setuid title="set the user ID" fullpath>
 <man_syntax>
 void setuid(int <I>uid</I>);<br>
 </man_syntax>
@@ -5765,7 +5765,7 @@ getuid, setgid, getgid, seteuid, geteuid, setegid, getegid
 
 <hr noshade size=1>
 
-<function name=symlink title="create a symbolic link">
+<function name=symlink title="create a symbolic link" fullpath>
 <man_syntax>
 void symlink(string <I>from</I>, string <I>to</I>);<br>
 </man_syntax>
@@ -5779,7 +5779,7 @@ hardlink, readlink, mv, rm
 
 <hr noshade size=1>
 
-<function name=uname title="get operating system information">
+<function name=uname title="get operating system information" fullpath>
 <man_syntax>
 mapping(string:string) <I>uname</I>();<br>
 </man_syntax>
@@ -5798,7 +5798,7 @@ system call.
 </function>
 
 </section>
-</anchor>
+</module>
 
 <hr noshade size=1>
 
@@ -6016,7 +6016,7 @@ Regexp-&gt;create, Regexp-&gt;match
 </section>
 </module>
 
-<anchor name=Gmp>
+<module name=Gmp>
 <section title="Gmp">
 Gmp is short for GNU Multi-Precision library. It is a set of routines that
 can manipulate very large numbers. Although much slower than regular integers
@@ -6028,193 +6028,147 @@ currently Pike only has support for large integers. The others will be added
 later or when demand arises. Large integers are implemented as objects cloned
 from Gmp.Mpz. 
 
-<anchor name=Gmp.mpz>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz</tt> - bignum program
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<class name=Gmp.mpz title="bignum program">
+<man_description>
 Gmp.mpz is a builtin program written in C. It implements
 large, very large integers. In fact, the only limitation on these
 integers is the available memory.
 <p>The mpz object implements all the normal integer operations.
 (except xor) There are also some extra operators:
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 This module is only available if libgmp.a was available and
 found when Pike was compiled.
-</dl>
+</man_note>
+</class>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gmp.mpz.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;create</tt> - initialize a bignum
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object Mpz();<br>
-or<br>
+
+<method name=Gmp.mpz.create title="initialize a bignum">
+<man_syntax>
+object Mpz();<br>
 object Mpz(int|object|float <I>i</I>);<br>
-or<br>
 object Mpz(string <I>digits</I>, int <I>base</I>);<br>
-<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 When cloning an mpz it is by default initialized to zero. However,
 you can give a second argument to clone to initialize the new
 object to that value. The argument can be an int, float another
 mpz object, or a string containing an ascii number. You can also
 give the number in the string in another base by specifying the
 base as a second argument. Valid bases are 2-36 and 256.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=clone>clone</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+clone
+</man_see>
+</method>
+
 <hr noshade size=1>
-<anchor name=Gmp.mpz.powm>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;powm</tt> - raise and modulo
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object powm(int|string|float|object <I>a</I>,int|string|float|object <I>b</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gmp.mpz.powm title="raise and modulo">
+<man_syntax>
+object powm(int|string|float|object <I>a</I>,int|string|float|object <I>b</I>);<br>
+</man_syntax>
+<man_description>
 This function returns ( mpz ** <i>a</i> ) % <i>b</i>.
 For example, <tt> Mpz(2)-&gt;powm(10,42); </tt> would return <tt>16</tt>
 since 2 to the power of 10 is 1024 and 1024 modulo 42 is 16.
-</dl>
-</anchor>
+</man_description>
+</method>
+
 <hr noshade size=1>
-<anchor name=Gmp.mpz.sqrt>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;sqrt</tt> - square root
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object sqrt();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gmp.mpz.sqrt title="square root">
+<man_syntax>
+object sqrt();<br>
+</man_syntax>
+<man_description>
 This function returns the truncated integer part of the square
 root of the value of mpz. 
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gmp.mpz.probably_prime_p>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;probably_prime_p</tt> - is this number a prime?
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int probably_prime_p();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gmp.mpz.probably_prime_p title="is this number a prime?">
+<man_syntax>
+int probably_prime_p();<br>
+</man_syntax>
+<man_description>
 This function returns 1 if mpz is a prime, and 0 most of the time
 if it is not.
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gmp.mpz.gcd>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;gcd</tt> - greatest common divisor
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object gcd(object|int|float|string arg)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gmp.mpz.gcd title="greatest common divisor">
+<man_syntax>
+object gcd(object|int|float|string arg)<br>
+</man_syntax>
+<man_description>
 This function returns the greatest common divisor for <i>arg</i> and mpz.
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gmp.mpz.cast>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;cast</tt> - cast to other type
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>object cast( "string" | "int" | "float" );<br>
-or<br>
+
+<method name=Gmp.mpz.cast title="cast to other type">
+<man_syntax>
+object cast( "string" | "int" | "float" );<br>
 (string) mpz<br>
-or<br>
 (int) mpz<br>
-or<br>
 (float) mpz<br>
-</tt>
-<br>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function converts an mpz to a string, int or float. This is
 necessary when you want to view, store or use the result of an mpz
 calculation.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=cast>cast</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+cast
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gmp.mpz.digits>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;digits</tt> - convert mpz to a string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string digits();<br>
-or<br>
+
+<method name=Gmp.mpz.digits title="convert mpz to a string">
+<man_syntax>
+string digits();<br>
 string digits(int|void <I>base</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function converts an mpz to a string. If a base is given the
 number will be represented in that base. Valid bases are 2-36 and
 256. The default base is 10.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gmp.mpz.cast>Gmp.mpz-&gt;cast</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Gmp.mpz-&gt;cast
+</man_see>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gmp.mpz.size>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gmp.mpz-&gt;size</tt> - how long is a number
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string size();<br>
-or<br>
+
+<method name=Gmp.mpz.size title="how long is a number">
+<man_syntax>
+string size();<br>
 string size(int|void <I>base</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 This function returns how long the mpz would be represented in the
 specified base. The default base is 2.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Gmp.mpz.digits>Gmp.mpz-&gt;digits</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Gmp.mpz-&gt;digits
+</man_see>
+</method>
 
-</anchor>
-<hr noshade size=1>
 </section>
-</anchor>
+</module>
 
-<anchor name=Gdbm>
+<hr noshade size=1>
+
+<module name=Gdbm>
 <section title="Gdbm">
 Gdbm is short for GNU Data Base Manager. It provides a simple data base
 similar to a file system. The functionality is similar to a mapping,
@@ -6229,26 +6183,16 @@ might not be available in your Pike depending on whether the gdbm library
 was available on your system when Pike was compiled.
 
 <hr noshade size=1>
-<anchor name=Gdbm.create>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gdbm.create</tt> - open database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int create();<br>
-or<br>
+<method name=Gdbm.create title="open database">
+<man_syntax>
+int create();<br>
 int create(string <I>file</I>);<br>
-or<br>
 int create(string <I>file</I>, string <I>mode</I>);<br>
-or<br>
 object(Gdbm) Gdbm();
-or<br>
 object(Gdbm) Gdbm(string <i>file</i>);
-or<br>
 object(Gdbm) Gdbm(string <i>file</i>, string <i>mode</i>);
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+</man_syntax>
+<man_description>
 Without arguments, this function does nothing. With one argument it
 opens the given file as a gdbm database, if this fails for some
 reason, an error will be generated. If a second argument is present,
@@ -6266,159 +6210,119 @@ flags in a string:
 in the database immediately. This is dangerous because the database
 can be left in an unusable state if Pike is terminated abnormally.
 <p>The default mode is "rwc".
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.close>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gdbm.close</tt> - close database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void close();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.close title="close database">
+<man_syntax>
+void close();<br>
+</man_syntax>
+<man_description>
 This closes the database.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.store>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gdbm.store</tt> - store a value in the database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int Gdbm.store(string <I>key</I>, string <I>data</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.store title="store a value in the database">
+<man_syntax>
+int Gdbm.store(string <I>key</I>, string <I>data</I>);<br>
+</man_syntax>
+<man_description>
 Associate the contents of <i>data</i> with the key <i>key</i>. If the key <i>key</i>
 already exists in the database the data for that key will be replaced.
 If it does not exist it will be added. An error will be generated if
 the database was not open for writing.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.fetch>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gdbm.fetch</tt> - fetch a value from the database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string fetch(string <I>key</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.fetch title="fetch a value from the database">
+<man_syntax>
+string fetch(string <I>key</I>);<br>
+</man_syntax>
+<man_description>
 Returns the data associated with the key <i>key</i> in the database.
 If there was no such key in the database, zero is returned.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.delete>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gdbm.delete</tt> - delete a value from the database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int delete(string <I>key</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.delete title="delete a value from the database">
+<man_syntax>
+int delete(string <I>key</I>);<br>
+</man_syntax>
+<man_description>
 Remove a key from the database. Note that no error will be generated
 if the key does not exist.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.firstkey>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gdbm.firstkey</tt> - get first key in database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string firstkey();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.firstkey title="get first key in database">
+<man_syntax>
+string firstkey();<br>
+</man_syntax>
+<man_description>
 Returns the first key in the database, this can be any key in the
 database.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.nextkey>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>nextkey</tt> - get next key in database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string nextkey(string <I>key</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.nextkey title="get next key in database">
+<man_syntax>
+string nextkey(string <I>key</I>);<br>
+</man_syntax>
+<man_description>
 This returns the key in database that follows the key <i>key</i>.
 This is of course used to iterate over all keys in the database.
-<p>
-<dt><encaps>EXAMPLE</encaps><dd>
-<tt>/* Write the contents of the database */<br>
+</man_description>
+<man_example>
+/* Write the contents of the database */<br>
 for(key=gdbm-&gt;firstkey(); k; k=gdbm-&gt;nextkey(k))<br>
 <dl><dt><dd>write(k+":"+gdbm-&gt;fetch(k)+"\n");<br>
 </dl>
-</tt>
-<p>
-</dl>
+</man_example>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.reorganize>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Gdbm.reorganize</tt> - reorganize database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int reorganize();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.reorganize title="reorganize database">
+<man_syntax>
+int reorganize();<br>
+</man_syntax>
+<man_description>
 Deletions and insertions into the database can cause fragmentation
 which will make the database bigger. This routine reorganizes the
 contents to get rid of fragmentation. Note however that this function
 can take a LOT of time to run.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Gdbm.sync>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>sync</tt> - synchronize database
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void sync();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Gdbm.sync title="synchronize database">
+<man_syntax>
+void sync();<br>
+</man_syntax>
+<man_description>
 When opening the database with the 'f' flag writings to the database
 can be cached in memory for a long time. Calling sync will write
 all such caches to disk and not return until everything is stored
 on the disk.
-<p>
-</dl>
-</anchor>
+</man_description>
+</method>
+
 </section>
-</anchor>
+</module>
+
 <hr noshade size=1>
 
 <anchor name=Getopt>
