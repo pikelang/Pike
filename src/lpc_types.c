@@ -928,8 +928,8 @@ struct lpc_string *get_type_of_svalue(struct svalue *s)
     return pop_type();
 
   case T_MAPPING:
-    check_array_type(s->u.mapping->ind);
-    check_array_type(s->u.mapping->val);
+    push_type(T_MIXED);
+    push_type(T_MIXED);
     push_type(T_MAPPING);
     return pop_type();
 
