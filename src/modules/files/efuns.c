@@ -216,7 +216,7 @@ void f_filesystem_stat(INT32 args)
     push_text(st.f_basetype);
     f_aggregate_mapping(9*2);
 #else /* !HAVE_STATVFS_ST_BASETYPE */
-    f_aggregete_mapping(8*2);
+    f_aggregate_mapping(8*2);
 #endif /* HAVE_STATVFS_ST_BASETYPE */
 #else /* !HAVE_STATVFS */
 #ifdef HAVE_STATFS
