@@ -116,11 +116,9 @@ static class jmethod {
       return protos[applicable[0]];
 
     if(!sizeof(applicable))
-      throw(({"No method signatures are applicable.  Resolution incomplete.\n",
-	      backtrace()}));
+      error("No method signatures are applicable.  Resolution incomplete.\n");
 
-    throw(({"Multiple method signatures apply.  Resolution incomplete.\n",
-	    backtrace()}));
+    error("Multiple method signatures apply.  Resolution incomplete.\n");
   }
 
   mixed `()(mixed ... args)
