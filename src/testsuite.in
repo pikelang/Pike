@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.94 1998/04/18 06:29:32 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.95 1998/04/20 02:37:41 hubbe Exp $"]])
 cond([[_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -25,6 +25,11 @@ test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
 test_compile_any([[Stdio.File foo(array(Stdio.FILE) f) { return f[0]; }]])
 test_compile([[Stdio.File foo=Stdio.FILE();]])
 
+test_compile_error([[constant x=class {}(); ]])
+cond( [[ master()->resolv("Gmp")->mpz ]],
+[[
+  test_compile_error([[object x = Gmp.mpz(17); constant y = x;]])
+]])
 test_any([[object(Stdio.File) f; f=Stdio.File(); return 1]],1)
 test_compile([[int t=gauge { string foo; };]])
 test_compile_any([[class { object(Stdio.FILE) f; void create() { f=Stdio.FILE(); }}]])
@@ -1590,6 +1595,9 @@ return 1;
 
 // #include
 // FIXME add test for #include
+test_compile_any([[#include <simulate.h>
+]])
+
 
 // foop
 define(do_test_foop,[[
