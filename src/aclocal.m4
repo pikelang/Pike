@@ -126,6 +126,8 @@ AC_TRY_COMPILE([
 #include <stddef.h>
 #endif
 
+$3
+
 ],[
 $1 tmp;
 ],ac_cv_type_$1=yes,ac_cv_type_$1=no)
@@ -206,7 +208,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.29 2001/02/27 18:52:26 grubba Exp $
+# $Id: aclocal.m4,v 1.30 2001/05/10 22:15:11 hubbe Exp $
 
 MY_AC_PROG_CC
 
