@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.32 2003/01/20 17:44:02 nilsson Exp $
+// $Id: module.pmod,v 1.33 2003/01/31 02:02:48 mast Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -256,8 +256,8 @@ Image.Image load(void|object|string file)
 //! @decl Image.Image filled_circle(int xd,int yd)
 //! @decl Image.Layer filled_circle_layer(int d)
 //! @decl Image.Layer filled_circle_layer(int xd,int yd)
-//! @decl Image.Layer filled_circle_layer(int d,Image.Color color)
-//! @decl Image.Layer filled_circle_layer(int xd,int yd,Image.Color color)
+//! @decl Image.Layer filled_circle_layer(int d,Image.Color.Color color)
+//! @decl Image.Layer filled_circle_layer(int xd,int yd,Image.Color.Color color)
 //! @decl Image.Layer filled_circle_layer(int d,int r,int g,int b)
 //! @decl Image.Layer filled_circle_layer(int xd,int yd,int r,int g,int b)
 //! @belongs Image
@@ -286,9 +286,9 @@ Image.Image filled_circle(int xd, void|int yd)
 }
 
 
-Image.Layer filled_circle_layer(int xd,int|Image.Color ...args)
+Image.Layer filled_circle_layer(int xd,int|Image.Color.Color ...args)
 {
-   Image.Color c;
+   Image.Color.Color c;
    int yd=0;
    switch (sizeof(args))
    {
