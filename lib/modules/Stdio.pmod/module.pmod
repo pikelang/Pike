@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.98 2000/12/12 14:39:58 grubba Exp $
+// $Id: module.pmod,v 1.99 2000/12/12 17:06:40 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -247,10 +247,10 @@ class File
     __closed_backtrace=0;
 #endif
     is_file = 0;
-    debug_file="socket";
-    debug_mode=ip+":"+port; 
-    debug_bits=0;
-    return ::connect(ip,port);
+    debug_file = "socket";
+    debug_mode = host+":"+port; 
+    debug_bits = 0;
+    return ::connect(host, port);
   }
 
   static private function(int, mixed ...:void) _async_cb;
