@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.70 2000/08/10 08:29:40 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.71 2000/08/10 19:29:04 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -759,7 +759,7 @@ INLINE static int do_one(struct format_stack *fs,
 	      if (fs->fsp->width!=SPRINTF_UNDECIDED)			      \
 	      {								      \
 		 push_constant_text("width");	           		      \
-		 push_int(fs->fsp->width);				      \
+		 push_int64(fs->fsp->width);				      \
                  n+=2;							      \
 	      }								      \
 	      if ((fs->fsp->flags&FIELD_LEFT))				      \
