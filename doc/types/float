@@ -16,7 +16,7 @@ DESCRIPTION
 	a + b	summation
 	a - b	subtraction
 	a * b	multiplication
-	a / b	integer division
+	a / b	division
 	a % b	modulo ( same thing as  a - floor( a / b ) * b )
 	- a	negation
 	a == b	return 1 if a is equal to b, 0 otherwise
