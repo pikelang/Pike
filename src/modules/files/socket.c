@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: socket.c,v 1.79 2003/10/24 17:54:58 mast Exp $
+|| $Id: socket.c,v 1.80 2003/10/24 19:05:41 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.79 2003/10/24 17:54:58 mast Exp $");
+RCSID("$Id: socket.c,v 1.80 2003/10/24 19:05:41 mast Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -80,7 +80,7 @@ struct port
 
 #undef THIS
 #define THIS ((struct port *)(Pike_fp->current_storage))
-static void port_accept_callback(int fd,void *data);
+static int port_accept_callback(int fd,void *data);
 
 static void do_close(struct port *p, struct object *o)
 {
@@ -148,7 +148,7 @@ static void port_errno(INT32 args)
 }
 
 
-static void port_accept_callback(int fd,void *data)
+static int port_accept_callback(int fd,void *data)
 {
   struct port *f;
   f=(struct port *)data;
@@ -162,7 +162,7 @@ static void port_accept_callback(int fd,void *data)
   assign_svalue_no_free(Pike_sp++, &f->id);
   apply_svalue(& f->accept_callback, 1);
   pop_stack();
-  return;
+  return 0;
 }
 
 /*! @decl int listen_fd(int fd, void|function accept_callback)

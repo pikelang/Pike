@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.302 2003/10/24 17:54:58 mast Exp $
+|| $Id: file.c,v 1.303 2003/10/24 19:05:41 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.302 2003/10/24 17:54:58 mast Exp $");
+RCSID("$Id: file.c,v 1.303 2003/10/24 19:05:41 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -159,9 +159,6 @@ struct program *file_ref_program;
 /*! @class File
  */
 
-static void file_read_callback(int fd, void *data);
-static void file_write_callback(int fd, void *data);
-
 static struct my_file *get_file_storage(struct object *o)
 {
   struct my_file *f;
@@ -206,8 +203,8 @@ static void check_internal_reference(struct my_file *f)
   if(f->fd!=-1)
   {
     if(query_read_callback(f->fd) == file_read_callback ||
-       query_write_callback(f->fd) == file_write_callback
-       || query_read_oob_callback(f->fd) == file_read_oob_callback ||
+       query_write_callback(f->fd) == file_write_callback ||
+       query_read_oob_callback(f->fd) == file_read_oob_callback ||
        query_write_oob_callback(f->fd) == file_write_oob_callback
        )
        {
@@ -945,7 +942,7 @@ static void file_read_oob(INT32 args)
 
 #undef CBFUNCS
 #define CBFUNCS(X)						\
-static void PIKE_CONCAT(file_,X) (int fd, void *data)		\
+static int PIKE_CONCAT(file_,X) (int fd, void *data)		\
 {								\
   struct my_file *f=(struct my_file *)data;			\
   PIKE_CONCAT(set_,X)(fd, 0, 0);				\
@@ -953,8 +950,14 @@ static void PIKE_CONCAT(file_,X) (int fd, void *data)		\
   check_destructed(& f->X );				        \
   if(!UNSAFE_IS_ZERO(& f->X )) {				\
     apply_svalue(& f->X, 0);					\
+    if (Pike_sp[-1].type == PIKE_T_INT &&			\
+	Pike_sp[-1].u.integer == -1) {				\
+      pop_stack();						\
+      return -1;						\
+    }								\
     pop_stack();						\
   }     							\
+  return 0;							\
 }								\
 								\
 static void PIKE_CONCAT(file_set_,X) (INT32 args)		\

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.31 2003/10/23 12:34:02 grubba Exp $
+|| $Id: file.h,v 1.32 2003/10/24 19:05:41 mast Exp $
 */
 
 #ifndef FILE_H
@@ -98,7 +98,7 @@ extern struct program *file_ref_program;
 extern int get_inet_addr(PIKE_SOCKADDR *addr,char *name,char *service, INT_TYPE port, int udp);
 
 #define CBFUNCS(X) \
-static void PIKE_CONCAT(file_,X) (int fd, void *data);		\
+static int PIKE_CONCAT(file_,X) (int fd, void *data);		\
 static void PIKE_CONCAT(file_set_,X) (INT32 args);		\
 static void PIKE_CONCAT(file_query_,X) (INT32 args);		\
 

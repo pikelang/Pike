@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.49 2003/04/30 10:29:29 grubba Exp $
+|| $Id: udp.c,v 1.50 2003/10/24 19:05:41 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.49 2003/04/30 10:29:29 grubba Exp $");
+RCSID("$Id: udp.c,v 1.50 2003/10/24 19:05:41 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -601,14 +601,14 @@ void exit_udp(struct object *ignored)
 
 #define THIS_DATA ((struct udp_storage *)data)
 
-static void udp_read_callback( int fd, void *data )
+static int udp_read_callback( int fd, void *data )
 {
   if(UNSAFE_IS_ZERO(&THIS_DATA->read_callback))
     set_read_callback(THIS_DATA->fd, 0, 0);
   else
     apply_svalue(& THIS_DATA->read_callback, 0);
   pop_stack(); 
-  return;
+  return 0;
 }
 
 static void udp_set_read_callback(INT32 args)
