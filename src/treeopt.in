@@ -1,6 +1,6 @@
 // -*- c-mode -*-
 //
-// $Id: treeopt.in,v 1.2 1999/11/08 16:09:33 grubba Exp $
+// $Id: treeopt.in,v 1.3 1999/11/08 16:32:21 grubba Exp $
 //
 // The tree optimizer
 //
@@ -12,7 +12,7 @@
 	    [$$->u.sval.u.efun->optimize], *):
 
 {
-  if (tmp1 = $1->u.sval.u.efun->optimize($0)) {
+  if ((tmp1 = $1->u.sval.u.efun->optimize($0))) {
     goto use_tmp1;
   }
 }
@@ -31,9 +31,10 @@ F_CAST[$$->type == void_type_string](F_COMMA_EXPR(0, F_CONSTANT), *):
 ;
 
 F_CAST[$$->type == void_type_string]
-      (F_APPLY(F_CONSTANT[($$->node_info & OPT_SIDE_EFFECT|
-			   OPT_ASSIGNMENT|
-			   OPT_TRY_OPTIMIZE) == OPT_TRY_OPTIMIZE],
+      (F_APPLY(F_CONSTANT[($$->node_info &
+			   (OPT_SIDE_EFFECT|
+			    OPT_ASSIGNMENT|
+			    OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
 	       F_ARG_LIST(1, 2)), *):
 {
   $$ = mkcastnode(void_type_string,
@@ -42,9 +43,10 @@ F_CAST[$$->type == void_type_string]
 ;
 
 F_CAST[$$->type == void_type_string]
-      (F_APPLY(F_CONSTANT[($$->node_info & OPT_SIDE_EFFECT|
-			   OPT_ASSIGNMENT|
-			   OPT_TRY_OPTIMIZE) == OPT_TRY_OPTIMIZE],
+      (F_APPLY(F_CONSTANT[($$->node_info & 
+			   (OPT_SIDE_EFFECT|
+			    OPT_ASSIGNMENT|
+			    OPT_TRY_OPTIMIZE)) == OPT_TRY_OPTIMIZE],
 	       0), *):
 	$0;
 
@@ -299,9 +301,9 @@ F_ARROW(0 = F_CONSTANT[$$->u.sval.type == T_OBJECT]
     ref_push_object($0->u.sval.u.object);
     ref_push_string($1->u.sval.u.string);
     f_index(2);
-    tmp = mksvaluenode(sp-1);
+    tmp1 = mksvaluenode(sp-1);
     pop_stack();
-    $$ = tmp;
+    goto use_tmp1;
   }
 }
 ;
@@ -315,9 +317,9 @@ F_FOR(0, ':'(-, -)):
 F_FOR(0 = *[node_is_true($$)], -):
 {
   /* Infinite loop */
-  $$ = mknode(F_FOR($0, mknode(':',
-			       mkefuncallnode("sleep", mkintnode(255)),
-			       0)));
+  $$ = mknode(F_FOR, $0, mknode(':',
+				mkefuncallnode("sleep", mkintnode(255)),
+				0));
 }
 ;
 
@@ -356,14 +358,14 @@ F_FOR(F_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
   F_DEC_NEQ_LOOP(F_VAL_LVAL(0, $0), F_COMMA_EXPR($1, $2));
 
 F_FOR(F_POST_DEC(0, *), -):
-  F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), -);
+  F_DEC_NEQ_LOOP(F_VAL_LVAL(-1, $0), -);
 F_FOR(F_POST_DEC(0, *), ':'(-, 1[!($$->tree_info & OPT_CONTINUE)])):
-  F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), $1);
+  F_DEC_NEQ_LOOP(F_VAL_LVAL(-1, $0), $1);
 F_FOR(F_POST_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)], -)):
-  F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), $1);
-F_FOR(F_POSTDEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
-                           2[!($$->tree_info & OPT_CONTINUE)])):
-  F_DEC_NEQ_LOOP(F_VAL_LVAL(F_NEG(1, -), $0), F_COMMA_EXPR($1, $2));
+  F_DEC_NEQ_LOOP(F_VAL_LVAL(-1, $0), $1);
+F_FOR(F_POST_DEC(0, *), ':'(1[!($$->tree_info & OPT_CONTINUE)],
+			    2[!($$->tree_info & OPT_CONTINUE)])):
+  F_DEC_NEQ_LOOP(F_VAL_LVAL(-1, $0), F_COMMA_EXPR($1, $2));
 
 F_FOR(0, ':'(1, F_CAST[$$->type == void_type_string](2, *))):
   F_FOR($0, ':'($1, $2));
