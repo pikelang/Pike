@@ -64,8 +64,7 @@ string extension_to_type(string extension)
       extensions=res;
    }
 
-   return extensions[extension] || extensions["default"] ||
-      "application/octet-stream";
+   return extensions[extension] || "application/octet-stream";
 }
 
 string filename_to_type(string filename)
