@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.41 2004/01/24 23:31:18 nilsson Exp $
+/* $Id: handshake.pike,v 1.42 2004/01/27 22:33:12 bill Exp $
  *
  */
 
@@ -303,17 +303,18 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
   if (context->auth_level >= AUTHLEVEL_ask)
   {
     // if we have no authorities, this is all rather pointless. throw an error.
-    if(!context->authorities || !sizeof(context->authorities))
+    if(!context->authorities_cache || !sizeof(context->authorities_cache))
       error("No certificate authorities provided.\n");
  
     /* Send a CertificateRequest message */
     ADT.struct struct = ADT.struct();
     struct->put_var_uint_array(context->preferred_auth_methods, 1, 1);
 
-    int len = `+(@ Array.map(context->authorities, sizeof));
-    struct->put_uint(len + 2 * sizeof(context->authorities), 2);
-    foreach(context->authorities, string auth)
-      struct->put_var_string(auth, 2);
+    int len = `+(@ Array.map(context->authorities_cache, lambda(object s)
+       { return sizeof(s->subject->get_der());} ));
+    struct->put_uint(len + 2 * sizeof(context->authorities_cache), 2);
+    foreach(context->authorities_cache, object auth)
+      struct->put_var_string(auth->subject->get_der(), 2);
     send_packet(handshake_packet(HANDSHAKE_certificate_request,
 				 struct->pop_data()));
     certificate_state = CERT_requested;
@@ -536,32 +537,45 @@ string describe_type(int i)
 }
 #endif
 
+// verify that a certificate chain is acceptable
 int verify_certificate_chain(array(string) certs)
 {
-  werror("verify_certificate_chain()\n");
-  int root_trusted = 0;
+  int issuer_known = 0;
 
-  // verify that the root certificate is trusted.
+  // step one: see if the issuer of the certificate is acceptable.
+  string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])
+    ->get_der();
 
-  // step one: get the issuer of the root certificate.
-  string r=Standards.PKCS.Certificate.get_certificate_issuer(certs[-1])->get_der();
-    werror(" R: " + sizeof(r) + "\n");
-
-  // step two: see if the issuer of the root certificate is trusted.
-  foreach(context->authorities, string c)
+  foreach(context->authorities_cache, object c)
   {
-    if((r == c)) // we have a trusted issuer
+    if((r == (c->subject->get_der()))) // we have a trusted issuer
     {
-      werror("root is trusted: subject of authority is issuer of certificate.\n");
-      root_trusted = 1;
+      werror("subject of an authority is issuer of certificate.\n");
+      issuer_known = 1;
       break;
     }
   }
 
-  if(!root_trusted) return 0;
+  if(!issuer_known) return 0;
   
+  // ok, so we have a certificate chain whose client certificate is 
+  // issued by an authority known to us.
+  
+  // next we must verify the chain to see if the chain is unbroken
 
-  return 1;
+  mapping auth=([]);
+
+  foreach(context->trusted_issuers_cache, object i)
+  {
+    auth[i->subject->get_der()] = i->public_key;
+  }
+
+  mapping result = Tools.X509.verify_certificate_chain(certs, auth);
+
+  if(result->verified)
+    return 1;
+  else return 0;  
+
 }
 
 //! Do handshake processing. Type is one of HANDSHAKE_*, data is the
