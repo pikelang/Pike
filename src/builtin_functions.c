@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.408 2001/10/05 01:30:11 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.409 2001/10/28 18:04:06 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -113,8 +113,8 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args)
 }
 
 
-/*! @decl int compat_hash(string s)
- *! @decl int compat_hash(string s, int max)
+/*! @decl int hash_7_0(string s)
+ *! @decl int hash_7_0(string s, int max)
  *!
  *!   This function will return an @tt{int@} derived from the string @[s].
  *!   The same string will always hash to the same value.
@@ -168,10 +168,10 @@ void f_compat_hash( INT32 args )
  *!
  *! @note
  *!   The hash algorithm was changed in Pike 7.1. If you want a hash
- *!   that is compatible with Pike 7.0 and earlier, use @[compat_hash()].
+ *!   that is compatible with Pike 7.0 and earlier, use @[hash_7_0()].
  *!
  *! @seealso
- *!   @[compat_hash()]
+ *!   @[hash_7_0()]
  */
 void f_hash(INT32 args)
 {
@@ -1104,7 +1104,7 @@ static int generate_zero_type(node *n)
  *!   Characters in range 0x010000 - 0x10ffff are encoded using surrogates.
  *!
  *! @seealso
- *!   @[Locale.Charset.decode()], @[string_to_utf8()], @[unicode_to_string()],
+ *!   @[Locale.Charset.decoder()], @[string_to_utf8()], @[unicode_to_string()],
  *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_string_to_unicode(INT32 args)
@@ -1238,7 +1238,7 @@ PMOD_EXPORT void f_string_to_unicode(INT32 args)
  *!   This function did not decode surrogates in Pike 7.2 and earlier.
  *!
  *! @seealso
- *!   @[Locale.Charset.decode()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[Locale.Charset.decoder()], @[string_to_unicode()], @[string_to_utf8()],
  *!   @[utf8_to_string()]
  */
 PMOD_EXPORT void f_unicode_to_string(INT32 args)
@@ -1402,7 +1402,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
  *!   will also be accepted, and encoded using a non-standard UTF8 extension.
  *!
  *! @seealso
- *!   @[Locale.Charset.decode()], @[string_to_unicode()],
+ *!   @[Locale.Charset.encoder()], @[string_to_unicode()],
  *!   @[unicode_to_string()], @[utf8_to_string()]
  */
 void f_string_to_utf8(INT32 args)
@@ -1535,7 +1535,7 @@ void f_string_to_utf8(INT32 args)
  *!   @[extended] is @tt{1@}.
  *!
  *! @seealso
- *!   @[Locale.Charset.decode()], @[string_to_unicode()], @[string_to_utf8()],
+ *!   @[Locale.Charset.encoder()], @[string_to_unicode()], @[string_to_utf8()],
  *!   @[unicode_to_string()]
  */
 PMOD_EXPORT void f_utf8_to_string(INT32 args)
@@ -5914,8 +5914,8 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
   push_array(b);
 }
 
-/*! @decl array(mixed) Array.splice(array(mixed) arr1, array(mixed) arr2, @
- *!                                 array(mixed) ... more_arrays)
+/*! @decl array(mixed) splice(array(mixed) arr1, array(mixed) arr2, @
+ *!                           array(mixed) ... more_arrays)
  *!
  *!   Splice two or more arrays.
  *!
@@ -5962,8 +5962,8 @@ PMOD_EXPORT void f_splice(INT32 args)
   return;
 }
 
-/*! @decl array(mixed) Array.everynth(array(mixed) a, void|int n, @
- *!                                   void|int start)
+/*! @decl array(mixed) everynth(array(mixed) a, void|int n, @
+ *!                             void|int start)
  *!
  *!   Return an array with every @[n]:th element of the array @[a].
  *!
