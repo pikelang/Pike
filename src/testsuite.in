@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.652 2003/06/05 11:01:18 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.653 2003/06/05 11:07:37 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9369,7 +9369,7 @@ test_equal(upper_case((string) ({
 0x1ff8, 0x1ffa, 0x1ffc, 0x1ffd, 0x2126, 0x2127, 0x212a, 0x212b, 
 0x212c, 0x2160, 0x2180, 0x24b6, 0x24b6, 0x24ea, 0xff21, 0xff3b, 
 0xff21, 0xff5b,
-0x010400, 0x010426, 0x010400, 0x01044e, 
+0x010400, 0x010426, 0x010400, 0x010426, 
 }))
 
 // - utf8_to_string
