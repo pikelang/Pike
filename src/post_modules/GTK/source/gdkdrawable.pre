@@ -1,4 +1,5 @@
 PROGRAM(GdkDrawable);
+#include <gdk/gdkx.h>
 // The GDK.Bitmap, GDK.Window and GDK.Pixmap classes are all GDK drawables.
 // <br>
 // This means that you can use the same set of functions to draw in them.<br>

@@ -1,9 +1,10 @@
 /* -*- c -*- */
+#include <gdk/gdkx.h>
 
 /*
 GLOBAL_CFUN( button_box_set_child_size_default, int, int );
 GLOBAL_CFUN( button_box_set_child_ipadding_default, int, int );
-GLOBAL_FUN( button_box_get_child_size_default, "function(void:mapping)"); 
+GLOBAL_FUN( button_box_get_child_size_default, "function(void:mapping)");
 GLOBAL_FUN( button_box_get_child_ipadding_default, "function(void:mapping)");
 */
 
@@ -47,22 +48,22 @@ RETURNS(GDK.Window);
 // Returns the root window of the current display (as a GDK.Window)
 {
   my_pop_n_elems( args );
-  if(pgtk_root_window) 
+  if(pgtk_root_window)
   {
     ref_push_object( pgtk_root_window );
     return;
-  } 
+  }
   pgtk_root_window = low_clone( pgtk_GdkWindow_program );
   call_c_initializers( pgtk_root_window );
   /* ugly...*/
   ((struct object_wrapper *)pgtk_root_window->storage)->obj=
     (void *)&gdk_root_parent;
-  
+
  add_ref(pgtk_root_window);
   ref_push_object( pgtk_root_window );
 }
 
-static void do_error( void *dom, int level, char *err, void *data ) 
+static void do_error( void *dom, int level, char *err, void *data )
 {
   push_text( err );
   f_backtrace( 0 );
@@ -194,7 +195,7 @@ NAME_ARGS(argv, do_not_parse_rc);
   }
 #else
 # error Fixme. This needs some work.
-#endif  
+#endif
 
   my_pop_n_elems(args);
   /*
@@ -297,4 +298,3 @@ NAME_ARGS(widget);
   gtk_grab_remove( GTK_WIDGET( get_gtkobject( o ) ) );
   my_pop_n_elems( args );
 }
-

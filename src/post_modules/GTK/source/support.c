@@ -38,10 +38,10 @@ void pgtk_return_this( int n )
 
 void pgtk_get_image_module()
 {
-  push_constant_text("Image"); 
+  push_constant_text("Image");
   push_int(0);
   SAFE_APPLY_MASTER("resolv", 2);
-  if (sp[-1].type!=T_OBJECT) 
+  if (sp[-1].type!=T_OBJECT)
     error("No Image module.\n");
 }
 
@@ -66,7 +66,7 @@ int get_color_from_pikecolor( struct object *o, int *r, int *g, int *b )
     pgtk_index_stack( "Color" );
     pike_color_program = program_from_svalue(--sp);
   }
-  
+
   col = (struct color_struct *)get_storage( o, pike_color_program );
   if(!col) return 0;
   *r = col->rgbl.r/(COLORLMAX/65535);
@@ -104,7 +104,7 @@ void *get_swapped_string( struct pike_string *s,int force_wide )
        for(i=0;i<s->len;i++)
 	 res[i] = htons( (short)(((unsigned char *)s->str)[i]) );
        return res;
-     case 1: 
+     case 1:
        return 0;
      case 2:
        res = malloc(s->len*2);
@@ -178,8 +178,8 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
        case  1: pad = 2; break;
        default: pad = 4; break;
       }
-      pgtk_encode_truecolor_masks( (void *)img->storage, i->bpp*8, pad*8, 
-                                   (i->byte_order!=MSBFirst), vis->red_mask, 
+      pgtk_encode_truecolor_masks( (void *)img->storage, i->bpp*8, pad*8,
+                                   (i->byte_order!=1), vis->red_mask,
                                    vis->green_mask, vis->blue_mask,
                                    i->mem, i->bpl*y );
     }
@@ -187,7 +187,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
     static int colors_allocated = 0;
     static struct object *pike_cmap;
     /* I hate this... colormaps, here we come.. */
-    /* This is rather complicated, but: 
+    /* This is rather complicated, but:
        1/ build an array of the colors in the colormap
        2/ use that array to build a pike X-image colormap.
        3/ call Image.X.encode_pseudocolor( img, bpp, lpad, depth, colormp )
@@ -223,7 +223,7 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
           if(color.pixel < COLORMAP_SIZE)
             allocated[ color.pixel ] = 1;
       }
-      
+
       for(i=0; i<COLORMAP_SIZE; i++)
       {
 	if( allocated[ i ] )
@@ -256,10 +256,10 @@ GdkImage *gdkimage_from_pikeimage( struct object *img, int fast, GdkImage *i )
 #else
       apply(pike_cmap, "cubicles", 3);    pop_stack();
 #endif
-      apply(pike_cmap, "ordered", 0);    pop_stack(); 
+      apply(pike_cmap, "ordered", 0);    pop_stack();
       pop_stack();
     }
-    
+
     { /* now we have a colormap available. Happy happy joy joy! */
       struct pike_string *s;
       pgtk_get_image_module();
@@ -341,7 +341,7 @@ void push_pgdkobject(void *obj, struct program *def)
 GtkObject *get_pgtkobject(struct object *from, struct program *type)
 {
   struct object_wrapper * o;
-  if(!from) return NULL; 
+  if(!from) return NULL;
   o=(struct object_wrapper *)get_storage( from, type );
   if(!o) return 0;
   return o->obj;
@@ -355,7 +355,7 @@ void *get_pgdkobject(struct object *from, struct program *type)
     f = get_storage( from, type );
   else
     f = from->storage;
-  if(!f) 
+  if(!f)
     return 0;
   return (void *)((struct object_wrapper *)f)->obj;
 }
@@ -395,7 +395,7 @@ void pgtk__init_object( struct object *o )
 /*   if( GTK_IS_WIDGET( go ) ) */
 /*     gtk_signal_connect( go, "parent_set", adjust_refs, NULL ); */
 /*   else */
-  o->refs++; 
+  o->refs++;
 
   gtk_object_set_data_full(go,"pike_object",
 			   (void*)o, (void*)my_destruct);
@@ -483,13 +483,13 @@ struct my_pixel pgtk_pixel_from_xpixel( unsigned int pix, GdkImage *i )
    case GDK_VISUAL_TRUE_COLOR:
    case GDK_VISUAL_DIRECT_COLOR:
      /* Well well well.... */
-     res.r = ((pix&i->visual->red_mask) 
+     res.r = ((pix&i->visual->red_mask)
 	      >> i->visual->red_shift)
 	      << (8-i->visual->red_prec);
-     res.g = ((pix&i->visual->green_mask) 
+     res.g = ((pix&i->visual->green_mask)
 	      >> i->visual->green_shift)
 	      << (8-i->visual->green_prec);
-     res.b = ((pix&i->visual->blue_mask) 
+     res.b = ((pix&i->visual->blue_mask)
 	      >> i->visual->blue_shift)
 	      << (8-i->visual->blue_prec);
      break;
@@ -599,7 +599,7 @@ void push_gdk_event(GdkEvent *e)
      push_text("x_root");  push_float(e->button.x_root);
      push_text("y_root");  push_float(e->button.y_root);
      break;
-     
+
    case GDK_KEY_PRESS:
      push_text("type");   push_text("key_press");
      goto key_event;
@@ -612,7 +612,7 @@ void push_gdk_event(GdkEvent *e)
      push_text("keyval");   push_int(e->key.keyval);
      if(e->key.string)
      {
-       push_text("data");     
+       push_text("data");
        push_string(make_shared_binary_string(e->key.string, e->key.length));
      }
      break;
@@ -697,7 +697,7 @@ void push_gdk_event(GdkEvent *e)
 
    case GDK_CLIENT_EVENT:
      push_text("type"); push_text("client");
-     push_text( "message_type" ); 
+     push_text( "message_type" );
      push_atom( e->client.message_type );
      push_text("data_format"); push_int(e->client.data_format);
      push_text( "data" );
@@ -747,8 +747,8 @@ void push_gdk_event(GdkEvent *e)
      push_text( "send_event" ); push_int( e->dnd.send_event );
      push_text( "x_root" ); push_int( e->dnd.x_root );
      push_text( "y_root" ); push_int( e->dnd.y_root );
-     push_text( "context" ); 
-     push_gdkobject( e->dnd.context, DragContext); 
+     push_text( "context" );
+     push_gdkobject( e->dnd.context, DragContext);
      break;
   }
   f_aggregate_mapping( sp - osp );
@@ -821,17 +821,17 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
            switch(n[3])
            {
             case 'A':
-              if(!strcmp(n, "GtkAccelFlags")) 
+              if(!strcmp(n, "GtkAccelFlags"))
               {
                 push_int( GTK_VALUE_UINT( params[i] ) );
                 ok=1;
-              }           
-              else if(!strcmp(n, "GtkAccelGroup")) 
+              }
+              else if(!strcmp(n, "GtkAccelGroup"))
               {
                 ok=1;
                 gtk_accel_group_ref( (void *)GTK_VALUE_POINTER(params[i]) );
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]), 
-                                 pgtk_accel_group_program); 
+                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
+                                 pgtk_accel_group_program);
               }
               break;
 
@@ -839,23 +839,23 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
               if(!strcmp(n, "GtkCTreeNode"))
               {
                 ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]), 
+                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
                                  pgtk_CTreeNode_program);
-              } 
+              }
               else if(!strcmp(n, "GtkCTreeRow"))
               {
                 ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]), 
+                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
                                  pgtk_CTreeRow_program);
               }
               break;
 
             case 'D':
-              if(!strcmp(n, "GdkDragContext")) 
+              if(!strcmp(n, "GdkDragContext"))
               {
                 ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]), 
-                                 pgtk_GdkDragContext_program); 
+                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
+                                 pgtk_GdkDragContext_program);
               }
               break;
 
@@ -865,11 +865,11 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
                 return_value = 1;
                 ok=1;
                 push_gdk_event( GTK_VALUE_POINTER( params[i] ) );
-              } 
+              }
               break;
 
             case 'M':
-              if(!strcmp(n, "GdkModifierType")) 
+              if(!strcmp(n, "GdkModifierType"))
               {
                 ok=1;
                 push_int( GTK_VALUE_UINT( params[i] ) );
@@ -877,10 +877,10 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
               break;
 
             case 'S':
-              if(!strcmp(n, "GtkSelectionData")) 
+              if(!strcmp(n, "GtkSelectionData"))
               {
                 ok=1;
-                push_pgdkobject( GTK_VALUE_POINTER(params[i]), 
+                push_pgdkobject( GTK_VALUE_POINTER(params[i]),
                                  pgtk_selection_data_program);
               }
               break;
@@ -903,7 +903,7 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
   res = sp[-1].u.integer;
   pop_stack();
   if( return_value )
-  { 
+  {
     if( params[1].type == GTK_TYPE_POINTER)
     {
       gint *return_val;

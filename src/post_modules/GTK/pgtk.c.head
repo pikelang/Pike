@@ -17,7 +17,6 @@
 #include <builtin_functions.h>
 #include <operators.h>
 #include <gtk/gtk.h>
-#include <gdk/gdkx.h>
 #include "prototypes.h"
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>

@@ -1,4 +1,5 @@
 PROGRAM(GdkWindow);
+#include <gdk/gdkx.h>
 // a GDK.Window object.
 //
 // NOIMG

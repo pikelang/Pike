@@ -1,4 +1,5 @@
 PROGRAM(widget);
+#include <gdk/gdkx.h>
 // The basic widget, inherited (directly or indirectly) by all
 // widgets.  Thus, all functions and signals defined in this widget
 // works on all widgets.
@@ -80,10 +81,10 @@ NAME_ARGS(text);
 // Returns the width, in pixels, the string would have if it was
 // written with the default font in the style object assosiated with
 // the widget. Currently, this is always a 8bit string, but that
-// should hopefully change in the future. 
+// should hopefully change in the future.
 {
   struct pike_string *s;
-  get_all_args("text_width", args, "%S", &s); 
+  get_all_args("text_width", args, "%S", &s);
   push_int(gdk_text_width(GTK_WIDGET( THIS->obj )->style->font,s->str,s->len));
 }
 
@@ -114,13 +115,13 @@ ARGS(GDK.GC,int,int,GTK.Widget,int,int,int,int);
 NAME_ARGS(gc,xdest,ydest,source,xsource,ysource,width,height);
 // Copies the rectangle defined by xsource,ysource and width,height
 // from the source widget, and places the results at xdest,ydest in
-// the widget in which this function is called. 
+// the widget in which this function is called.
 // <br>NOTE: The widget must be realized before this function can be used
 {
   struct object *gc, *source;
   GdkWindow *win;
   int xd, yd, xs, ys, w, h;
-  get_all_args("copy_area",args, "%o%d%d%o%d%d%d%d", 
+  get_all_args("copy_area",args, "%o%d%d%o%d%d%d%d",
 	       &gc, &xd, &yd, &source, &xs, &ys, &w, &h);
 
   if(get_gdkobject( source, Drawable ))
@@ -242,7 +243,7 @@ NAME_ARGS(xsize,ysize);
 // Set the absolute size of the widget. It might resize itself anyway,
 // but this size is used as is in most widgets. Beware of this
 // function, it might produce unexpected results. 0 for any size means
-// 'keep old size'. When setting sizes of wtoplevel windows, it is 
+// 'keep old size'. When setting sizes of wtoplevel windows, it is
 // preferable to use set_default_size
 
 COMPLEX_FUNCTION(set_uposition, int, int);
@@ -365,7 +366,7 @@ NAME_ARGS(cursor_type, fg, bg);
   else
     get_all_args("set_cursor", args, "%d", &i);
 
-  if(i>255) 
+  if(i>255)
     error("No such cursor\n");
   if( i >= 0 )
     c = gdk_cursor_new( i );
@@ -383,12 +384,12 @@ NAME_ARGS(cursor_type, fg, bg);
       fgp.pixel = ((GdkColor *)get_gdkobject( fg, Color ))->pixel;
     if( get_gdkobject( bg, Color ) )
       bgp.pixel = ((GdkColor *)get_gdkobject( bg, Color ))->pixel;
-    
+
     XRecolorCursor(((GdkCursorPrivate *)c)->xdisplay,
                    ((GdkCursorPrivate *)c)->xcursor,
                    &fgp, &bgp );
   }
-#endif  
+#endif
   gtk_object_set_data_full(THIS->obj,
                            "cursor_to_free",(void*)c,
                            (void*)gdk_cursor_destroy);
@@ -406,7 +407,7 @@ NAME_ARGS(source,mask,fg,bg,xhot,yhot);
 {
   struct object *s, *m, *fg, *bg;
   int xh, yh;
-  get_all_args("set_bitmap_cursor", args, "%o%o%o%o%d%d", 
+  get_all_args("set_bitmap_cursor", args, "%o%o%o%o%d%d",
 	       &s,&m,&fg,&bg,&xh,&yh);
   gdk_window_set_cursor( TWIN,
 		 gdk_cursor_new_from_pixmap( get_gdkobject( s, Pixmap ),
@@ -514,7 +515,7 @@ int COMPLEX_FUNCTION(get_events);
 int COMPLEX_FUNCTION(is_ancestor, widget);
 NAME_ARGS(of);
 // Returns true if the specified widget is an ancestor of this widget.
- 
+
 Style COMPLEX_FUNCTION(get_style);
 // Return the style associated with this widget
 
@@ -533,7 +534,7 @@ FUNCTION(path, "function(void:string)");
 {
   gchar *path, *prev;
   guint path_length;
-  
+
   gtk_widget_path( GTK_WIDGET( THIS->obj ), &path_length, &path, &prev );
 
   push_text( path );
@@ -664,10 +665,10 @@ RETURNS(GTK.Widget);
   if(a->size)
 //     error("You must accept at least one target type\n");
     entries = malloc(sizeof(GtkTargetEntry)*a->size);
-  
+
   for(j=0; j<a->size; j++)
   {
-    if(a->item[j].type != T_ARRAY || 
+    if(a->item[j].type != T_ARRAY ||
        a->item[j].u.array->size != 3 ||
        a->item[j].u.array->item[0].type != T_STRING ||
        a->item[j].u.array->item[0].u.string->size_shift > 1 ||
@@ -675,7 +676,7 @@ RETURNS(GTK.Widget);
        a->item[j].u.array->item[2].type != T_INT)
     {
       free(entries);
-      error("The array is malformed.\n"); 
+      error("The array is malformed.\n");
     }
     entries[j].target = a->item[j].u.array->item[0].u.string->str;
     entries[j].flags = a->item[j].u.array->item[1].u.integer;
@@ -709,10 +710,10 @@ RETURNS(GTK.Widget);
   if(a->size)
 //     error("You must provide at least one target type\n");
     entries = malloc(sizeof(GtkTargetEntry)*a->size);
-  
+
   for(j=0; j<a->size; j++)
   {
-    if(a->item[j].type != T_ARRAY || 
+    if(a->item[j].type != T_ARRAY ||
        a->item[j].u.array->size != 3 ||
        a->item[j].u.array->item[0].type != T_STRING ||
        a->item[j].u.array->item[0].u.string->size_shift > 1 ||
@@ -720,7 +721,7 @@ RETURNS(GTK.Widget);
        a->item[j].u.array->item[2].type != T_INT)
     {
       free(entries);
-      error("The array is malformed.\n"); 
+      error("The array is malformed.\n");
     }
     entries[j].target = a->item[j].u.array->item[0].u.string->str;
     entries[j].flags = a->item[j].u.array->item[1].u.integer;
@@ -783,7 +784,7 @@ NAME_ARGS(context,time);
   get_all_args( "drag_get_data", args, "%o%d", &_ctx, &t );
   ctx = (GdkDragContext *)get_gdkobject( _ctx, DragContext );
   if(ctx && ctx->targets)
-    gtk_drag_get_data( GTK_WIDGET( THIS->obj ), ctx, 
+    gtk_drag_get_data( GTK_WIDGET( THIS->obj ), ctx,
                        GPOINTER_TO_INT( ctx->targets->data ),
                        t );
 }

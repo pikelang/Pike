@@ -1,7 +1,7 @@
 int ln, eml=-100;
 string buffer="";
 
-mapping warn = 
+mapping warn =
 ([
   "nodocs":1,
   "noargs":1,
@@ -44,7 +44,7 @@ string sillycaps( string what, int|void nolower )
 {
   string a;
   if(what[0]=='_') return what;
-  if(!nolower) 
+  if(!nolower)
     what = lower_case(what);
   what = String.capitalize(what);
   while(sscanf(what, "%s_%s", a, what) == 2)
@@ -62,12 +62,12 @@ void emit_proto(string what)
 string files="", head;
 string internal_progname = "globals";
 void end_last_program()
-{ 
+{
   eml=-1;
   files += "pgtk_"+internal_progname+".c ";
   if(do_docs) return;
 //   werror(internal_progname+"...\n");
-  string data;  
+  string data;
 //   if(Stdio.file_size("pgtk_"+internal_progname+".c") !=
 //      (strlen(buffer)+strlen(head)))
 //   {
@@ -75,7 +75,7 @@ void end_last_program()
      head+buffer )
   {
     werror("Creating pgtk_"+internal_progname+".c\n");
-    object outf = Stdio.File("pgtk_"+internal_progname+".c", "rwct"); 
+    object outf = Stdio.File("pgtk_"+internal_progname+".c", "rwct");
     outf->write(head);
     outf->write(buffer);
   }
@@ -137,7 +137,7 @@ string make_c_string( string from )
      case 'a'..'z':
      case 'A'..'Z':
      case '0'..'9':
-     case 0300..0377:
+     case 0300..0376:
      case '_': case ' ':
        line += from[i..i];
        break;
@@ -162,10 +162,12 @@ string function_type( string what )
 }
 
 string data = "";
+int enclen;
 mapping ocache = ([]);
 int data_offset( string what )
 {
   int off;
+  enclen += strlen(what)+1;
   if( ocache[what] ) return ocache[what];
   if( (off = search( data, what )) != -1 )
     return ocache[what] = off;
@@ -176,7 +178,7 @@ int data_offset( string what )
 string emit_function_def( string fun, string cfun, string type, int opt )
 {
   type = function_type( type );
-  emit_nl( "  quick_add_function(_data+"+data_offset(fun)+","+
+  emit_nl( "    quick_add_function(_data+"+data_offset(fun)+","+
            strlen(fun)+","+cfun+",_data+"+data_offset( type )+
            ","+strlen(type)+",0,0);\n");
 }
@@ -191,8 +193,8 @@ void emit_program_block(mapping block, string cl)
     string cfun = "pgtk_"+cl+"_"+f;
     switch(f)
     {
-     case "union": 
-       emit_function_def("`|",cfun,block[f],1);  
+     case "union":
+       emit_function_def("`|",cfun,block[f],1);
        break;
      case "intersection":
        emit_function_def("`&",cfun,block[f],1);
@@ -245,9 +247,9 @@ void print_inherited_functions( string cl, object fd )
 void print_signals( mapping sigs, object on, string|void p)
 {
   if(!sigs) return;
-  if(p) 
+  if(p)
     p = sillycaps(p,1)+".";
-  else 
+  else
     p="";
   foreach(sort(indices(sigs)), string s)
     on->write("<dt><b>GTK.s_"+s+"</b><dd>"+sigs[s]+"\n");
@@ -374,7 +376,7 @@ void print_function_defs( string f, int|void global )
     fd->write("<dl>");
     print_signals( signals[f], fd, f );
   }
-  
+
   if(struct[f]["inherit"])
   {
     fd->write("</dl><h2>Inherited methods</h2><dl>\n");
@@ -431,7 +433,7 @@ string wmml_section( string w, mapping data )
 
   if(w == "global")
     global = 1;
-  
+
   wmml += (docs[w]||"");
   if(!docs[w])
     werror(lines[ w ]+
@@ -479,7 +481,7 @@ string wmml_section( string w, mapping data )
       if( warn->nodocs )
         werror(lines[ w + fun ]+
                ": Warning: No documentation for "+fun+"\n");
-    
+
     } else if( warn->cstyle ) {
       if( search(docs[w+fun], "GTK_") != -1)
         if(search( docs[w+fun], "C-") == -1)
@@ -519,7 +521,7 @@ string rec_make_wmml_tree( array plane, mapping t )
 void make_wmml_docs( array root_widgets, mapping inheriting )
 {
   string wmml="<anchor name=GTK><chapter title=\"GTK Reference\">";
-  wmml += 
+  wmml +=
        "<section title=\"GTK Inheritance Tree\" name=tree>\n"
        + rec_make_wmml_tree( root_widgets, inheriting ) +
        "\n</section>";
@@ -575,20 +577,20 @@ array (string) sort_dependencies( array bunch, mapping extra )
     fd->write("<ul>");
     mapping ltos=mkmapping(Array.map(indices(struct),String.capitalize),
                            indices(struct));
-    foreach(Array.sort_array(Array.map(indices(struct), String.capitalize), 
+    foreach(Array.sort_array(Array.map(indices(struct), String.capitalize),
                              fnamesfun), string s)
       if(s != "global")
         fd->write("<li> <a href="+ltos[s]+".html>"+classname(s)+"</a>\n");
     fd->write("</ul>\n");
     fd->write("<h1>All constants in alphabetical order</h1>\n");
     fd->write("<ul>");
-    array consts = 
-      Array.map(constants/"\n", 
+    array consts =
+      Array.map(constants/"\n",
                 lambda(string s) {
                   if((sscanf(s, "%*[^\"]\"%s\"", s)==2) && strlen(s))
                     return s;
                 }) - ({ 0 });
-    
+
     foreach(Array.sort_array(consts,fnamesfun), string s)
       fd->write("<li> "+classname(String.capitalize(lower_case(s)))+"\n");
     fd->write("</ul>");
@@ -623,7 +625,7 @@ array (string) sort_dependencies( array bunch, mapping extra )
     }
   }
  return result;
-} 
+}
 string constants="";
 
 string PIKE;
@@ -690,7 +692,7 @@ string find_constants(string prefix)
       res += ({ classname(String.capitalize(lower_case(c))) });
     }
 
-  if(!sizeof(res)) 
+  if(!sizeof(res))
   {
     werror("Fatal error: CONST("+prefix+") in doc string: No consts found\n");
     exit(1);
@@ -775,7 +777,7 @@ int main(int argc, array argv)
   int skip_mode;
   string type_switch="";
   do_docs = argc > 2;
-  
+
   foreach( argv[2..], string w )
   {
     if( sscanf( w, "--warn-%s", w ) )
@@ -840,7 +842,7 @@ int main(int argc, array argv)
       emit("/* "+oline+" */\n");
       emit(" /* Class "+line+" */\n");
     }
-    else if(sscanf(line, "FUNCTION(%s", line)) 
+    else if(sscanf(line, "FUNCTION(%s", line))
     {
       line = reverse(line);
       sscanf(line, "%*s)%s", line);
@@ -858,8 +860,8 @@ int main(int argc, array argv)
       string a,b;
       sscanf(line, "\"function(%s:%s)\"", a, b);
       true_types[progname+fn] = ({ b, a });
-    } 
-    else if(sscanf(line, "SIGNAL(%s\")", line)) 
+    }
+    else if(sscanf(line, "SIGNAL(%s\")", line))
     {
       string name;
       string doc;
@@ -869,15 +871,15 @@ int main(int argc, array argv)
 	signals[progname][name] = doc;
       else
 	signals[progname] = ([ name:doc ]);
-    } 
-    else if(sscanf(line, "INHERIT(%s)", line)) 
+    }
+    else if(sscanf(line, "INHERIT(%s)", line))
     {
       emit("/* "+oline+" */\n");
       struct[progname]["inherit"] = line;
-    } 
-    else if(sscanf(line, "//%s", line)) 
+    }
+    else if(sscanf(line, "//%s", line))
     {
-      if(do_docs) 
+      if(do_docs)
       {
 
 	sscanf(line, "%*[ \t]%s", line);
@@ -889,7 +891,7 @@ int main(int argc, array argv)
 	  in_img=1;
           examples[lower_case(progname)]++;
 	  line="";
-	} 
+	}
 	else if(sscanf(line, "IMG: %s", line))
         {
 	  line = make_example_image(line,0);
@@ -921,8 +923,8 @@ int main(int argc, array argv)
 	else
 	  docs[progname+last_function] += "\n"+line;
       }
-    } 
-    else if(sscanf(line, "CLASSMEMBER(%[^,],%s)", line, string type)) 
+    }
+    else if(sscanf(line, "CLASSMEMBER(%[^,],%s)", line, string type))
     {
       type -= " ";
       line -= " ";
@@ -938,7 +940,7 @@ int main(int argc, array argv)
       emit("  push_"+(type=="string"?"text":type)+"( GTK_"+upper_case( progname )+"( THIS->obj )->"+line+");\n");
       emit("}\n");
     }
-    else if(sscanf(line, "SETCLASSMEMBER(%[^,],%s)", line, string type)) 
+    else if(sscanf(line, "SETCLASSMEMBER(%[^,],%s)", line, string type))
     {
       type -= " ";
       line -= " ";
@@ -967,11 +969,11 @@ int main(int argc, array argv)
            "( THIS->obj )->"+line+");\n");
       emit("  ( GTK_"+upper_case( progname )+
            "( THIS->obj )->"+line+") = to;\n");
-      
+
       emit("  push_"+(type=="string"?"text":type)+"( old );\n");
       emit("}\n");
     }
-    else if(sscanf(line, "SUBWIDGET(%[^,],%s)", line, string type)) 
+    else if(sscanf(line, "SUBWIDGET(%[^,],%s)", line, string type))
     {
       type -= " ";
       line -= " ";
@@ -987,7 +989,7 @@ int main(int argc, array argv)
       emit("  my_pop_n_elems(args);\n");
       emit("  push_gtkobjectclass( GTK_"+upper_case( progname )+"( THIS->obj )->"+line+", pgtk_"+type+"_program );\n");
       emit("}\n");
-    } 
+    }
     else if((sscanf(line, "%sCOMPLEX_FUNCTION(%[^,],%s)",
                     rest,fn,types)==3)  ||
             ((sscanf(line, "%sCOMPLEX_FUNCTION(%[^,)])",
@@ -1001,7 +1003,7 @@ int main(int argc, array argv)
       string sargs="", pre_call="";
       string post = "", fin="", zap="";
       int na, i_added;
-      
+
       sscanf(rest, "%*[\t ]%[^ \t]", rest);
       if(!strlen(rest))
       {
@@ -1173,7 +1175,7 @@ int main(int argc, array argv)
            else
              fundef += ",object";
 	   argument_list+=", "+classname(String.capitalize(lower_case(t)));
-           if(opt) 
+           if(opt)
              argument_list += "|void";
 
            if(!opt)
@@ -1223,7 +1225,7 @@ int main(int argc, array argv)
            break;
 	}
       }
-      
+
       emit( "/* "+oline+" */\n");
       emit_proto("void pgtk_"+progname+"_"+fn+"(int args)\n");
       emit("{\n");
@@ -1235,8 +1237,8 @@ int main(int argc, array argv)
        case "float": srt="float"; emit("  float result;\n"); break;
        case "int": srt="int";emit("  int result;\n"); break;
        case "string": srt="string"; emit("  gchar *result;\n"); break;
-       default: 
-         emit("  void *result;  /* "+rest+" */\n"); 
+       default:
+         emit("  void *result;  /* "+rest+" */\n");
          srt = "object";
          break;
       }
@@ -1264,7 +1266,7 @@ int main(int argc, array argv)
 	sargs = replace(sargs,"&tmp1,&tmp2","(void *)pgtk_button_func_wrapper, b");
 	emit(post);
       }
-      if(fn == "create") 
+      if(fn == "create")
       {
         emit("  pgtk_verify_not_inited();\n");
 	emit("  THIS->obj = GTK_OBJECT( gtk_"+progname+"_new("+
@@ -1280,7 +1282,7 @@ int main(int argc, array argv)
 	emit("gtk_"+progname+"_"+fn+"( GTK_"+upper_case(progname)+
 	     "( THIS->obj )"+replace((sargs-"&")-"_","^^","_")+" );\n");
       }
-      if(strlen(fin)) 
+      if(strlen(fin))
         emit(fin+"\n");
       if(!rest)
       {
@@ -1346,7 +1348,7 @@ int main(int argc, array argv)
 	 line-="_";
 	 emit("  struct object *o;\n");
 	 struct[progname][fn] = "\"function(object:object)\"";
-	 true_types[progname+fn]=({ classname(progname), 
+	 true_types[progname+fn]=({ classname(progname),
 				    "<a href=\""+lower_case(line)+".html\">"+
 				    classname(lower_case(line))+"</a>" });
 	 emit("  GtkObject *f;\n");
@@ -1371,7 +1373,7 @@ int main(int argc, array argv)
       string res="";
       for(i=0; i<min(sizeof(a),sizeof(b)); i++)
 	res += ","+b[i]+" "+a[i];
-      true_types[progname+last_function][1] = res[1..];      
+      true_types[progname+last_function][1] = res[1..];
       named[progname+last_function] = 1;
     } else {
       emit(line+"\n");
@@ -1392,13 +1394,18 @@ int main(int argc, array argv)
   emit_nl("void clear_obj_struct(struct object *o)\n{\n");
   emit_nl("  MEMSET(fp->current_storage, 0, sizeof(struct object_wrapper));\n");
   emit_nl("}\n");
-  emit_nl("void pike_module_init()\n{\n");
+  emit_nl("static void _1()\n{\n");
+  array _inits = ({ "_1" });
   emit_nl(constants);
-
+  emit_nl("}\n");
+  emit_nl("static void _2()\n{\n");
+  _inits += ({ "_2" });
   foreach(sort(indices(`+(@values(signals)))), string s)
     emit_nl("  add_string_constant( \"s_"+s+"\", \""+s+"\", 0 );\n");
-  
+
   emit_program_block( struct->global, "global" );
+  emit_nl("}\n");
+
   if(!do_docs)
     m_delete(struct, "global");
 
@@ -1458,7 +1465,7 @@ int main(int argc, array argv)
             examples[progname]++;
             in_img=1;
             line="";
-          } 
+          }
           else if(sscanf(line, "IMG: %s", line))
           {
             line = make_example_image(line,0);
@@ -1495,7 +1502,7 @@ int main(int argc, array argv)
           string res="";
           for(i=0; i<min(sizeof(a),sizeof(b)); i++)
             res += ","+b[i]+" "+a[i];
-          true_types[progname+last_function][1] = res[1..];      
+          true_types[progname+last_function][1] = res[1..];
           named[progname+last_function] = 1;
         }
       }
@@ -1517,7 +1524,7 @@ int main(int argc, array argv)
           functions |= ({ f, function_type(struct[q][f]) });
     mapping q = ([]);
     // Do a stable sort, to avoid rebuilding pgtk.c all the time.
-  
+
     foreach( functions, function f )
       q[strlen(f)] = (q[strlen(f)]||({})) | ({ f });
 
@@ -1529,10 +1536,14 @@ int main(int argc, array argv)
       data_offset( q );
   }
 
+  int init_num = 2;
   foreach(sort_dependencies(indices(struct),struct), string w)
   {
     mapping q = struct[w];
-    emit_nl("\n\n  start_new_program(); /* "+String.capitalize(w)+" */\n");
+    init_num++;
+    _inits += ({ "_"+init_num });
+    emit_nl( "\nstatic void _"+init_num+"()\n{\n");
+    emit_nl("  start_new_program(); /* "+String.capitalize(w)+" */\n");
     to_free += "  free_program( pgtk_"+w+"_program );\n";
     if(q["inherit"])
     {
@@ -1554,7 +1565,11 @@ int main(int argc, array argv)
     type_switch += "#ifdef GTK_TYPE_"+flop+"\n"
       "  if(PGTK_CHECK_TYPE(widget, GTK_TYPE_"+flop+")) "
       "return pgtk_"+w+"_program;\n#endif\n";
+    emit_nl("}\n");
   }
+  emit_nl( "void pike_module_init()\n{\n");
+  foreach( _inits, string i )
+    emit_nl( "  "+i+"();\n" );
   emit_nl("}\n\n");
   pre +=
     "#define PGTK_CHECK_TYPE(type_object, otype)       ( "
@@ -1563,18 +1578,19 @@ int main(int argc, array argv)
     "#define PGTK_CHECK_CLASS_TYPE(type_class, otype)  ("
     "((GtkTypeClass*) (type_class)) != NULL && "
     "(((GtkTypeClass*) (type_class))->type == (otype)))\n";
-  
+
   emit_nl("\nstruct program *pgtk_type_to_program(GtkWidget *widget)\n{\n");
   emit_nl(type_switch);
   emit_nl("  return pgtk_widget_program;\n}\n\n");
 
   emit_nl("\nvoid pike_module_exit()\n{\n"+to_free+"}\n\n");
-  files += "pgtk.c ";
+  files = "pgtk.c "+files;
   if(!do_docs)
   {
-    werror("%d bytes\n", strlen(data) );
-    string q =replace(Stdio.read_bytes(dir+"/pgtk.c.head"), 
-                      "PROTOTYPES", 
+    werror("Types and function names compressed from %d to %d bytes\n",
+           enclen, strlen(data) );
+    string q =replace(Stdio.read_bytes(dir+"/pgtk.c.head"),
+                      "PROTOTYPES",
                       replace(pre, "/*ext*/ ", "")+
                       "\nstatic char _data[] =\n"+make_c_string( data )+";");
     pre = replace(pre, "/*ext*/", "extern");
@@ -1601,9 +1617,7 @@ int main(int argc, array argv)
 
 //   foreach(reverse(sort(q)), array f )
 //   {
-//     write( "%-20s %6d  %4.2f\n", 
+//     write( "%-20s %6d  %4.2f\n",
 //            f[2], f[1], f[0]/1000000.0 );
 //   }
 }
-
-
