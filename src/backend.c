@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.65 2001/07/02 20:32:54 mast Exp $");
+RCSID("$Id: backend.c,v 1.66 2002/11/15 12:29:24 jonasw Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -67,6 +67,7 @@ PMOD_EXPORT int fds_size = 0;
 
 void grow_fds(void)
 {
+  int old_size = fds_size;
   if( !fds_size )
     fds_size = 16;
   fds_size *= 2;
@@ -74,7 +75,7 @@ void grow_fds(void)
   if( !fds )
     fatal("Out of memory in backend::grow_fds()\n"
           "Tried to allocate %d fd_datum structs\n", fds_size);
-  MEMSET( fds+(fds_size/2), 0, fds_size*sizeof(struct fd_datum)/2 );
+  MEMSET(fds + old_size, 0, (fds_size - old_size) * sizeof(struct fd_datum));
 }
 
 
