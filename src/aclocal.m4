@@ -43,9 +43,31 @@ pushdef([AC_CONFIG_HEADER],
   AC_CONFIG_HEADER($1)
 ])
 
+AC_DEFUN(AC_TRY_ASSEMBLE,
+[ac_c_ext=$ac_ext
+ ac_ext=${ac_s_ext-s}
+ cat > conftest.$ac_ext <<EOF
+	.file "configure"
+[$1]
+EOF
+if AC_TRY_EVAL(ac_compile); then
+  ac_ext=$ac_c_ext
+  ifelse([$2], , :, [  $2
+  rm -rf conftest*])
+else
+  echo "configure: failed program was:" >&AC_FD_CC
+  cat conftest.$ac_ext >&AC_FD_CC
+  ac_ext=$ac_c_ext
+ifelse([$3], , , [  rm -rf conftest*
+  $3
+])dnl
+fi
+rm -rf conftest*])
+])
+
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.10 1999/05/11 23:07:35 grubba Exp $
+# $Id: aclocal.m4,v 1.11 1999/05/30 20:44:25 grubba Exp $
 
 MY_AC_PROG_CC
 
