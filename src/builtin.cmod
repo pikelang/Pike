@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.38 2001/06/19 21:34:28 grubba Exp $
+ * $Id: builtin.cmod,v 1.39 2001/06/19 21:41:01 grubba Exp $
  */
 
 #include "global.h"
@@ -643,7 +643,7 @@ PIKEFUN mapping random(mapping m)
 
 PIKECLASS backtrace_frame
 {
-  PIKEVAR function fun;
+  PIKEVAR mixed fun;
   PIKEVAR array args;
   CVAR struct program *prog;
   CVAR unsigned char *pc;
@@ -653,6 +653,7 @@ PIKECLASS backtrace_frame
   INIT
   {
     THIS->fun.type = T_INT;
+    THIS->fun.u.integer = 0;
     THIS->prog = NULL;
     THIS->pc = 0;
     THIS->lineno = 0;
