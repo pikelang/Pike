@@ -186,7 +186,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.156 1999/12/30 14:45:37 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.157 1999/12/30 16:36:05 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -471,6 +471,9 @@ program_ref: low_program_ref
       
 inheritance: modifiers F_INHERIT low_program_ref optional_rename_inherit ';'
   {
+    if (($1 & ID_EXTERN) && (compiler_pass == 1)) {
+      yywarning("Extern declared inherit.");
+    }
     if(!(new_program->flags & PROGRAM_PASS_1_DONE))
     {
       struct pike_string *s=sp[-1].u.string;
@@ -544,12 +547,16 @@ constant_name: F_IDENTIFIER '=' safe_expr0
     $3=mknode(F_COMMA_EXPR,$3,0);
     compiler_pass=tmp;
 
+    if ((current_modifiers & ID_EXTERN) && (compiler_pass == 1)) {
+      yywarning("Extern declared constant.");
+    }
+
     if(!is_const($3))
     {
       if(compiler_pass==2)
 	yyerror("Constant definition is not constant.");
       else
-	add_constant($1->u.sval.u.string,0, current_modifiers);
+	add_constant($1->u.sval.u.string, 0, current_modifiers & ~ID_EXTERN);
     } else {
       if(!num_parse_error)
       {
@@ -559,7 +566,8 @@ constant_name: F_IDENTIFIER '=' safe_expr0
 	  yyerror("Error in constant definition.");
 	}else{
 	  pop_n_elems(tmp-1);
-	  add_constant($1->u.sval.u.string,sp-1,current_modifiers);
+	  add_constant($1->u.sval.u.string, sp-1,
+		       current_modifiers & ~ID_EXTERN);
 	  pop_stack();
 	}
       }
@@ -692,7 +700,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
     {
       $<number>5=define_function(check_node_hash($4)->u.sval.u.string,
 				 check_node_hash($<n>$)->u.sval.u.string,
-				 $1,
+				 $1 & (~ID_EXTERN),
 				 IDENTIFIER_PIKE_FUNCTION,
 				 0);
     }
@@ -710,6 +718,10 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
       lex.current_file = $8->current_file;
 #endif /* PIKE_DEBUG */
       lex.current_line = $8->line_number;
+
+      if (($1 & ID_EXTERN) && (compiler_pass == 1)) {
+	yywarning("Extern declared function definition.");
+      }
 
       for(e=0; e<$7; e++)
       {
@@ -1240,7 +1252,11 @@ new_name: optional_stars F_IDENTIFIER
     push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
     type=compiler_pop_type();
-    $<number>$=define_variable($2->u.sval.u.string, type, current_modifiers);
+    if ((current_modifiers & ID_EXTERN) && (compiler_pass == 1)) {
+      yywarning("Extern declared variable has initializer.");
+    }
+    $<number>$=define_variable($2->u.sval.u.string, type,
+			       current_modifiers & (~ID_EXTERN));
     free_string(type);
   }
   expr0
@@ -1656,11 +1672,15 @@ class: modifiers F_CLASS optional_identifier
     /* fprintf(stderr, "LANGUAGE.YACC: CLASS start\n"); */
     if(compiler_pass==1)
     {
-      low_start_new_program(0, $3->u.sval.u.string, $1);
+      if ($1 & ID_EXTERN) {
+	yywarning("Extern declared class definition.");
+      }
+      low_start_new_program(0, $3->u.sval.u.string, $1 & ~ID_EXTERN);
       if(lex.current_file)
       {
 	store_linenumber(lex.current_line, lex.current_file);
-	debug_malloc_name(new_program, lex.current_file->str, lex.current_line);
+	debug_malloc_name(new_program, lex.current_file->str,
+			  lex.current_line);
       }
     }else{
       int i;
@@ -1680,7 +1700,8 @@ class: modifiers F_CLASS optional_identifier
 	  s=&PROG_FROM_INT(new_program,i)->constants[id->func.offset].sval;
 	  if(s->type==T_PROGRAM)
 	  {
-	    low_start_new_program(s->u.program, $3->u.sval.u.string, $1);
+	    low_start_new_program(s->u.program, $3->u.sval.u.string,
+				  $1 & ~ID_EXTERN);
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
 	    low_start_new_program(new_program, 0,0);
