@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.26 2003/01/13 03:42:21 mast Exp $
+|| $Id: rusage.c,v 1.27 2003/01/13 16:11:32 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.26 2003/01/13 03:42:21 mast Exp $");
+RCSID("$Id: rusage.c,v 1.27 2003/01/13 16:11:32 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -292,6 +292,9 @@ cpu_time_t get_cpu_time (void)
 }
 
 #elif defined (GETRUSAGE_THROUGH_PROCFS)
+
+/* Note: This code is untested; haven't got access to any system where
+ * this old ioctl method still works. */
 
 cpu_time_t get_cpu_time (void)
 {
