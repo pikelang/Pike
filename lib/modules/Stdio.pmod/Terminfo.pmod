@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.11 2000/09/28 03:39:13 hubbe Exp $
+// $Id: Terminfo.pmod,v 1.12 2002/08/14 16:02:08 jonasw Exp $
 #pike __REAL_VERSION__
 
 
@@ -762,8 +762,12 @@ object(Termcap) getTerm(string|void term)
     if (!t)
     {
       string tc = [string]getenv("TERMCAP");
-      t = (tc && sizeof(tc) && tc[0]!='/'?
-	   Termcap(tc) : getTerm(getenv("TERM")||"dumb"));
+      if (mixed err = catch {
+	t = tc && sizeof(tc) && tc[0] != '/' && Termcap(tc);
+      })
+	werror("%s", describe_backtrace(err));
+      if (!t)
+	t = getTerm(getenv("TERM") || "dumb");
       LOCK;
       if (!defterm)
 	defterm = t;
