@@ -118,6 +118,9 @@ BUGS
 
 	Maybe too stringent definition of the type-field.
 
+SEE ALSO
+	sql->list_fields
+
 
 ============================================================================
 NAME
