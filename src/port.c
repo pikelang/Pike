@@ -18,7 +18,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.32 2000/08/29 16:19:42 grubba Exp $");
+RCSID("$Id: port.c,v 1.33 2000/08/29 18:24:53 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -689,7 +689,7 @@ long long gethrtime()
 /* 2 seconds between updates */
    if (now-hrtime_rtsc_last > 2000000000) 
    {
-      fprintf(stderr,"update: %.8llg\n",1e-9*(now-hrtime_rtsc_last));
+/*      fprintf(stderr,"update: %.8llg\n",1e-9*(now-hrtime_rtsc_last)); */
       own_gethrtime_update(&dummy);
       return gethrtime();
    }
