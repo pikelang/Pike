@@ -411,6 +411,7 @@ testfont binary
 /src/rusage.h foreign_ident
 /src/signal_handler.c foreign_ident
 /src/signal_handler.h foreign_ident
+/src/smartlink.c foreign_ident
 /src/stralloc.c foreign_ident
 /src/stralloc.h foreign_ident
 /src/stuff.c foreign_ident
