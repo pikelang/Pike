@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.32 1997/09/04 21:51:29 per Exp $");
+RCSID("$Id: threads.c,v 1.33 1997/09/04 23:25:15 grubba Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -195,6 +195,7 @@ void f_mutex_lock(INT32 args)
 		     (unsigned int)m,
 		     (unsigned int)OB2KEY(m->key)->mut,
 		     (unsigned int) thread_id));
+    mt_unlock(& m->kludge);
     free_object(o);
     error("Recursive mutex locks!\n");
   }
@@ -289,10 +290,11 @@ void exit_mutex_key_obj(struct object *o)
 		   (unsigned int)THIS_KEY->owner));
   if(THIS_KEY->mut)
   {
-    mt_lock(& THIS_KEY->mut->kludge);
+    MUTEX_T *kludge;
+    mt_lock(kludge = & THIS_KEY->mut->kludge);
 #ifdef DEBUG
     if(THIS_KEY->mut->key != o)
-      fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
+      fatal("Mutex unlock from wrong key %p != %p!\n", THIS_KEY->mut->key, o);
 #endif
     THIS_KEY->mut->key=0;
     if (THIS_KEY->owner) {
@@ -302,7 +304,7 @@ void exit_mutex_key_obj(struct object *o)
     co_signal(& THIS_KEY->mut->condition);
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
-    mt_unlock(& THIS_KEY->mut->kludge);
+    mt_unlock(kludge);
   }
 }
 
@@ -339,7 +341,7 @@ void f_cond_wait(INT32 args)
     co_signal(& mut->condition);
     
     /* Wait and allow mutex operations */
-    co_wait(c,&mut->kludge);
+    co_wait(c, &mut->kludge);
     
     if(OB2KEY(key)->initialized)
     {
@@ -403,7 +405,10 @@ void th_init(void)
   us_cookie = usinit("");
 #endif /* SGI_SPROC_THREADS */
 
+  THREADS_FPRINTF((stderr, "THREADS_DISALLOW() Initializing threads.\n"));
+  mt_init( & interpreter_lock);
   mt_lock( & interpreter_lock);
+  mt_init( & mutex_kluge);
 #ifdef POSIX_THREADS
   pthread_attr_init(&pattr);
 #ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
