@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.244 2003/01/01 17:29:26 nilsson Exp $
+// $Id: master.pike.in,v 1.245 2003/01/01 17:51:56 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1606,10 +1606,8 @@ void _main(array(string) orig_argv, array(string) env)
   array(string) argv=copy_value(orig_argv);
   int i,debug,trace,run_tool;
   object tmp;
-  string a,b;
   array q;
   string postparseaction=0;
-  mixed v;
 
   predefines = _static_modules.Builtin()->_take_over_initial_predefines();
   _pike_file_name = orig_argv[0];
@@ -1617,20 +1615,18 @@ void _main(array(string) orig_argv, array(string) env)
   _backend_thread = this_thread();
 #endif
 
-  foreach(env,a)
-    {
-      if(sscanf(a,"%s=%s",a,b))
-      {
-	if(a=="") // Special hack for NT
-	{
-	  sscanf(b,"%s=%s",a,b);
-	  a="="+a;
-	}
-	putenv(a, b);
-      }else{
-	werror("Broken environment var %s\n",a);
-      }		
+  foreach(env, string a)
+    if( sscanf(a, "%s=%s", a, string b)==2 ) {
+#ifdef __NT__
+      if(a=="") {
+	sscanf(b, "%s=%s", a, b);
+	a="="+a;
+      }
+#endif
+      putenv(a, b);
     }
+    else
+      werror("Broken environment var %s\n",a);
 
   void _error(string a, mixed ... b) {
     werror(a, @b);
@@ -1729,7 +1725,7 @@ void _main(array(string) orig_argv, array(string) env)
            case "threads":
              // not really 100% correct, but good enough for most things.
              no_resolv[ "Thread" ] = 1;
-             add_constant( "thread_create", UNDEFINED );
+             add_constant( "thread_create" );
              break;
            default:
              no_resolv[ feature ] = 1;
