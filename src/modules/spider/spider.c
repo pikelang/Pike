@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.79 2001/07/03 09:31:33 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.80 2001/07/03 21:05:40 david%hedbor.org Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -357,13 +357,14 @@ void f_parse_html(INT32 args)
   strings=0;
   do_html_parse(ss,cont,single,&strings,MAX_PARSE_RECURSE,extra_args);
 
+  UNSET_ONERROR(sserr);
+  UNSET_ONERROR(cerr);
+  UNSET_ONERROR(serr);
+
   if (extra_args) {
     UNSET_ONERROR(eerr);
     free_array(extra_args);
   }
-  UNSET_ONERROR(sserr);
-  UNSET_ONERROR(cerr);
-  UNSET_ONERROR(serr);
 
   free_mapping(cont);
   free_mapping(single);
@@ -1010,6 +1011,7 @@ void do_html_parse_lines(struct pike_string *ss,
       }
       else if (sval1.type!=T_INT)
       {
+	ONERROR sv1;
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
 	sval2.type=99;
@@ -1021,7 +1023,10 @@ void do_html_parse_lines(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+
 	HANDLE_RETURN_VALUE(j+k);
 	continue;
       }
@@ -1048,6 +1053,8 @@ void do_html_parse_lines(struct pike_string *ss,
       }
       else if (sval1.type != T_INT)
       {
+	ONERROR sv1;
+
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
 	sval2.type=99;
@@ -1063,7 +1070,10 @@ void do_html_parse_lines(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+
 	HANDLE_RETURN_VALUE(m);
 	continue;
       } else {
