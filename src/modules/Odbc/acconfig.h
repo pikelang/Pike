@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.5 2000/09/14 17:43:11 grubba Exp $
+ * $Id: acconfig.h,v 1.6 2003/12/23 17:31:43 grubba Exp $
  *
  * Config-file for the Pike ODBC-module.
  *
@@ -31,6 +31,9 @@
 
 /* Define if you have ODBC */
 #undef HAVE_ODBC
+
+/* Define if you want to enable implicit commit (discouraged). */
+#undef ENABLE_IMPLICIT_COMMIT
 
 @BOTTOM@
 

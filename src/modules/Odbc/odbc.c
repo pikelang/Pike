@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.25 2001/10/03 11:46:58 grubba Exp $
+ * $Id: odbc.c,v 1.26 2003/12/23 17:31:43 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.25 2001/10/03 11:46:58 grubba Exp $");
+RCSID("$Id: odbc.c,v 1.26 2003/12/23 17:31:43 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -302,9 +302,12 @@ static void f_big_query(INT32 args)
   if (!sp[-1].u.integer) {
     pop_n_elems(2);	/* Zap the result object too */
 
+#ifdef ENABLE_IMPLICIT_COMMIT
+    /* This breaks with Free TDS. */
     odbc_check_error("odbc->big_query", "Couldn't commit query",
 		     SQLTransact(odbc_henv, PIKE_ODBC->hdbc, SQL_COMMIT),
 		     NULL);
+#endif /* ENABLE_IMPLICIT_COMMIT */
 
     push_int(0);
   } else {
