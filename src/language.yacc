@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.227 2001/05/08 13:17:40 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.228 2001/06/22 18:58:58 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1172,6 +1172,7 @@ identifier_type: idents
 	}
       }
 
+#if 0
       switch(Pike_sp[-1].type) {
       case T_FUNCTION:
 	if((p = program_from_function(Pike_sp-1)))
@@ -1196,6 +1197,47 @@ identifier_type: idents
       }
       push_type(0);
       push_type(T_OBJECT);
+#else
+
+#define push_object_type(IS,ID) do {		\
+  int is=(IS);					\
+  INT32 id=(ID);				\
+  push_type_int(id);				\
+  push_type(is);				\
+  push_type(T_OBJECT);				\
+}while(0)
+  
+
+      switch(Pike_sp[-1].type) {
+	case T_FUNCTION:
+        if((p = program_from_function(Pike_sp-1)))
+	  push_object_type(0, p?(p->id):0);
+	else
+	{
+	  struct pike_type *a,*b;
+	  a=get_type_of_svalue(Pike_sp-1);
+	  b=check_call(function_type_string,a,0);
+	  push_finished_type(b);
+	  free_type(a);
+	  free_type(b);
+	}
+	break;
+
+      
+      default:
+	if (Pike_compiler->compiler_pass!=1)
+	  yyerror("Illegal program identifier.");
+	pop_stack();
+	push_int(0);
+	push_object_type(0, 0);
+	break;
+	
+      case T_PROGRAM:
+	p = Pike_sp[-1].u.program;
+	push_object_type(0, p?(p->id):0);
+	break;
+      }
+#endif
     }
     pop_stack();
     free_node($1);
