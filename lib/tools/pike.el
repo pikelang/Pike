@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.37 2001/12/07 15:31:11 mast Exp $
+;;; $Id: pike.el,v 1.38 2002/02/06 23:09:46 grubba Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -15,7 +15,7 @@
 ;;; want this too in that case:
 ;;;
 ;;; (setq auto-mode-alist
-;;;   (append '(("\\.pike$" . pike-mode)) auto-mode-alist)
+;;;   (append '(("\\.pike$" . pike-mode)) auto-mode-alist))
 
 (require 'font-lock)
 (require 'custom)
