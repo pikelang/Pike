@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.309 2004/10/15 21:47:22 mast Exp $
+|| $Id: signal_handler.c,v 1.310 2004/10/22 20:10:44 grubba Exp $
 */
 
 #include "global.h"
@@ -4027,12 +4027,15 @@ void Pike_f_fork(INT32 args)
 
   th_atfork_prepare();
 /*   THREADS_ALLOW_UID(); */
-#if 0 && defined(HAVE_FORK1) && defined(_REENTRANT)
+#if defined(HAVE_FORK1) && defined(_REENTRANT)
   /* This section is disabled, since fork1() isn't usefull if
    * you aren't about do an exec().
    * In addition any helper threads (like the wait thread) would
    * disappear, so the child whould be crippled.
    *	/grubba 1999-03-07
+   *
+   * Reenabled since fork() usually performs a fork1() anyway.
+   *	/grubba 2004-04-02
    */
   pid=fork1();
 #else
@@ -4112,6 +4115,7 @@ void Pike_f_fork(INT32 args)
     push_int(0);
   }
 }
+
 #endif /* HAVE_FORK */
 
 
