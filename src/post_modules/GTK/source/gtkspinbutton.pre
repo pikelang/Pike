@@ -1,0 +1,134 @@
+PROGRAM(spin_button);
+// The Spin Button widget is generally used to allow the user to
+// select a value from a range of numeric values. It consists of a
+// text entry box with up and down arrow buttons attached to the
+// side. Selecting one of the buttons causes the value to "spin" up
+// and down the range of possible values. The entry box may also be
+// edited directly to enter a specific value.
+
+// <p>
+
+// The Spin Button allows the value to have zero or a number of
+// decimal places and to be incremented/decremented in configurable
+// steps. The action of holding down one of the buttons optionally
+// results in an acceleration of change in the value according to how
+// long it is depressed.
+
+// <p>
+
+// The Spin Button uses an Adjustment object to hold information about
+// the range of values that the spin button can take.
+
+// <p>
+
+// The attributes of an Adjustment are used by the Spin Button in the
+// following way:
+// <ul><li>value: initial value for the Spin Button 
+//     <li>lower: lower range value 
+//     <li>upper: upper range value 
+//     <li>step_increment: value to increment/decrement when pressing mouse button 1 on a button 
+//     <li>page_increment: value to increment/decrement when pressing mouse button 2 on a button 
+//     <li>page_size: unused
+// </ul>
+// <p>
+// The argument order for the W(Adjustment) constructor is:<br>
+// value, lower, upper, step_increment, page_increment, page_size<br>
+// 
+// IMG: GTK.SpinButton( GTK.Adjustment(),0.1, 1 )->set_usize(60,20)
+// <p>
+INHERIT(entry);
+COMPLEX_FUNCTION(create, adjustment, float, int);
+NAME_ARGS(range,climb_rate,precision);
+//  The climb_rate argument take a value between 0.0 and 1.0 and
+//  indicates the amount of acceleration that the Spin Button has. The
+//  digits argument specifies the number of decimal places to which
+//  the value will be displayed.
+COMPLEX_FUNCTION(configure, adjustment, float, int);
+NAME_ARGS(range,climb_rate,precision);
+// Adjustment (with the lower/upper/increse values), climb_rate and digits
+COMPLEX_FUNCTION(set_adjustment, adjustment);
+NAME_ARGS(range);
+// Set a new adjustment.
+COMPLEX_FUNCTION(set_digits, int);
+NAME_ARGS(precision);
+// Set the number of digits to show to the user.
+float COMPLEX_FUNCTION(get_value_as_float);
+// The current value of a Spin Button can be retrieved as a float.
+int COMPLEX_FUNCTION(get_value_as_int);
+// The current value of a Spin Button can be retrieved as a int.
+
+COMPLEX_FUNCTION(set_value, float);
+NAME_ARGS(to);
+// Set the value.
+COMPLEX_FUNCTION(set_update_policy, int);
+NAME_ARGS(policy);
+// The possible values of policy are either GTK.UpdateAlways or
+// GTK.UpdateIfValid.
+// <p>
+// These policies affect the behavior of a Spin Button when parsing
+// inserted text and syncing its value with the values of the
+// Adjustment.
+// <p>
+// In the case of GTK.UpdateIfValid the Spin Button value only gets
+// changed if the text input is a numeric value that is within the
+// range specified by the Adjustment. Otherwise the text is reset 
+// to the current value. 
+// <p>
+// In case of GTK.UpdateAlways errors are ignored while converting text
+// into a numeric value.
+COMPLEX_FUNCTION(set_numeric, int);
+NAME_ARGS(numericp);
+// If true, it is a numeric value.  This prevents a user from typing
+// anything other than numeric values into the text box of a Spin
+// Button
+COMPLEX_FUNCTION(spin, int, float);
+NAME_ARGS(direction,increment);
+// If you want to alter the value of a Spin Value relative to its
+// current value, then this ffunction can be used.
+// <p>
+// The direction paramenter is one of CONST(GTK_SPIN)
+// <p>
+//  GTK.SpinStepForward and GTK.SpinStepBackward change the value
+//  of the Spin Button by the amount specified by increment, unless
+//  increment is equal to 0, in which case the value is changed by the
+//  value of step_increment in theAdjustment.
+// <p>
+// GTK.SpinPageForward and GTK.SpinPageBackward simply alter the
+// value of the Spin Button by increment.
+// <p>
+// GTK.SpinHome sets the value of the Spin Button to the bottom of the
+// Adjustments range.
+// <p>
+// GTK.SpinEnd sets the value of the Spin Button to the top of the
+// Adjustments range.
+// <p>
+// GTK.SpinUserDefined simply alters the value of the Spin Button by
+// the specified amount.
+COMPLEX_FUNCTION(set_wrap, int);
+NAME_ARGS(wrapp);
+// If true, the spin button will wrap from the lowest to the highest
+// value, and the highest to the lowest.
+COMPLEX_FUNCTION(set_shadow_type,int);
+NAME_ARGS(type);
+// Type is one of CONST(GTK_SHADOW)
+COMPLEX_FUNCTION(set_snap_to_ticks,int);
+NAME_ARGS(snapp);
+// Set the Spin Button to round the value to the nearest
+// step_increment, which is set within the Adjustment object used with
+// the Spin Button
+COMPLEX_FUNCTION(update);
+// Explicitly request that the Spin Button updates itself
+
+CLASSMEMBER( climb_rate, float);
+// The amount of acceleration that the Spin Button has. 0.0 is no
+// accelleration and 1.0 is highest accelleration.
+CLASSMEMBER( update_policy, int);
+// The update policy. GTK_UPDATE_ALWAYS or GTK_UPDATE_IF_VALID.
+CLASSMEMBER( digits, int);
+// The number of decimal places to which the value will be displayed.
+CLASSMEMBER( numeric, int);
+// If != 0 the user can not enter anything but numeric values.
+CLASSMEMBER( wrap, int);
+// If != 0 the Spin Button will wrap around between the upper and lower range values.
+CLASSMEMBER( snap_to_ticks, int);
+// If != 0 the Spin Button will round the value to the nearest step_increment.

@@ -1,0 +1,93 @@
+PROGRAM(image);
+// An image is a image object stored in client, not X server, memory.
+// A pixmap, on the other hand, is a image object stored in the X-server.
+// See GDK.Image and GDK.Pixmap.
+//<p>
+// IMG: GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );
+INHERIT(misc);
+FUNCTION(create, "function(object,object|void:void)");
+ARGS(GDK.Image,GDK.Bitmap|void);
+NAME_ARGS(image,mask);
+// You can skip the mask. The mask is used to mask the drawing of the image
+// on it's background. It will not make the container transparent, though.
+// Use shape_combine_mask on the container with the mask for that.
+{
+  struct object *a, *b;
+  GdkImage *img;
+  GdkBitmap *mask = NULL;
+  if(THIS->obj) error("GTK.Image->create() can only be called once.\n");
+  if(args == 2)
+    get_all_args("GDK.Image", args, "%o%o", &a, &b);
+  else
+  {
+    get_all_args("GDK.Image", args, "%o", &a);
+    b = 0;
+  }
+ add_ref(a);
+  img = get_gdkobject( a,Image );
+  if(b)
+  {
+    mask = get_gdkobject( b,Bitmap );
+ add_ref(b);
+  }
+  THIS->obj = GTK_OBJECT( gtk_image_new( img, mask ) );
+  pgtk__init_this_object();
+  pop_n_elems(args);
+}
+
+FUNCTION(set, "function(object,object|void:object)")
+ARGS(GDK.Image,GDK.Bitmap|void);
+NAME_ARGS(image,mask);
+RETURNS(GTK.Image);
+// Args: GDK.Image and GDK.Bitmap, respectively.
+// You can skip the mask. The mask is used to mask the drawing of the image
+// on it's background. It will not make the container transparent, though.
+// Use shape_combine_mask on the container with the mask for that.
+// <p>
+// There is no need to call 'set' with the same GDK.Image again if
+// you have modified the image. You must, however, use -&gt;queue_draw()
+// to redraw the image. Otherwise the old contens would be show until
+// it an refresh is done for any other reason.
+{
+  struct object *a, *b;
+  GdkImage *img;
+  GdkBitmap *mask = NULL;
+  if(args == 2)
+    get_all_args("GDK.Image", args, "%o%o", &a, &b);
+  else
+  {
+    get_all_args("GDK.Image", args, "%o", &a);
+    b = 0;
+  }
+  
+  img = get_gdkobject( a,Image );
+  if(mask)
+    mask = get_gdkobject( a,Bitmap );
+  gtk_image_set( GTK_IMAGE( THIS->obj ), img, mask );
+  RETURN_THIS();
+}
+
+FUNCTION(get, "function(void:mapping)");
+// returns ([ "image":GDK.Image img, "mask":GDK.Bitmap m ])
+{
+  GdkImage *v;
+  GdkBitmap *m;
+  pop_n_elems(args);
+  gtk_image_get( GTK_IMAGE( THIS->obj ), &v, &m );
+  push_text( "image" );
+  if(v)
+  {
+    push_gdkobject( v, Image );
+/*     gdk_image_ref( v );  we cannot do this.. */
+  }
+  else
+    push_int(0);
+  push_text( "mask" );
+  if(m)
+  {
+    push_gdkobject( m, Bitmap );
+    gdk_bitmap_ref( m );
+  }
+  else
+    push_int(0);
+}

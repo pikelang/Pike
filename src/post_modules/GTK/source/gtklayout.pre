@@ -1,0 +1,29 @@
+PROGRAM(layout);
+// Similar to the tcl/tk packing method.
+INHERIT(container);
+COMPLEX_FUNCTION(create, adjustment, adjustment);
+NAME_ARGS(hadjustment,vadjustment);
+COMPLEX_FUNCTION(put, widget, int, int);
+NAME_ARGS(widget, x, y);
+
+COMPLEX_FUNCTION(move, widget, int, int);
+NAME_ARGS(widget, x, y);
+
+COMPLEX_FUNCTION(set_size, int, int);
+NAME_ARGS(xsize, ysize);
+
+SIMPLE_FUNCTION(freeze);
+SIMPLE_FUNCTION(thaw);
+
+adjustment COMPLEX_FUNCTION(get_hadjustment);
+adjustment COMPLEX_FUNCTION(get_vadjustment);
+COMPLEX_FUNCTION(set_hadjustment, adjustment);
+NAME_ARGS(adj);
+COMPLEX_FUNCTION(set_vadjustment, adjustment);
+NAME_ARGS(adj);
+
+CLASSMEMBER( width, int );
+CLASSMEMBER( height, int );
+
+CLASSMEMBER( xoffset, int );
+CLASSMEMBER( yoffset, int );

@@ -1,0 +1,27 @@
+/* This is very much -*- c -*- code */
+#include "config.h"
+#include <gtk/gtk.h>
+#include <gdk/gdkx.h>
+#include <program.h>
+#include <pike_types.h>
+#include <interpret.h>
+#include <module_support.h>
+#include <error.h>
+#include <array.h>
+#include <backend.h>
+#include <stralloc.h>
+#include <mapping.h>
+#include <object.h>
+#include <threads.h>
+#include <builtin_functions.h>
+#include <operators.h>
+#include "prototypes.h"
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
+
+#include "pgtk.h"
+PROTOTYPES

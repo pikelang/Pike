@@ -1,0 +1,135 @@
+PROGRAM(pixmap);
+INHERIT(misc);
+// Pixmaps are data structures that contain pictures. These pictures
+// can be used in various places, but most visibly as icons on the
+// X-Windows desktop, or as cursors. A bitmap is a 2-color pixmap.
+// <p>
+// To use pixmaps in GTK, you must first build a GDK.Pixmap object
+// using GDK.Pixmap.
+
+// <p>
+
+// The pixels in a GTK.Pixmap cannot be manipulated by the application
+// after creation, since under the X Window system the pixel data is
+// stored on the X server and so is not available to the client
+// application. If you want to create graphical images which can be
+// manipulated by the application, look at W(Image).
+
+// <p>
+
+// IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()) )
+// IMG: GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()), GDK.Bitmap(Image.image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))
+
+FUNCTION(create, "function(object,object|void:void)");
+ARGS(GDK.Pixmap,GDK.Bitmap);
+NAME_ARGS(pixmap,mask);
+// Create a new pixmap object.
+{
+  struct object *a, *b;
+  GdkPixmap *img;
+  GdkBitmap *mask = NULL;
+  if(args == 2)
+    get_all_args("GDK.Pixmap", args, "%o%o", &a, &b);
+  else
+  {
+    get_all_args("GDK.Pixmap", args, "%o", &a);
+    b = 0;
+  }
+  img = get_gdkobject( a, Pixmap );
+  if(b)
+    mask = get_gdkobject( b, Bitmap );
+  THIS->obj = GTK_OBJECT( gtk_pixmap_new( img, mask ) );
+  pgtk__init_this_object();
+  pop_n_elems(args);
+}
+
+FUNCTION(set, "function(object,object|void:object)")
+ARGS(GDK.Pixmap,GDK.Bitmap);
+NAME_ARGS(pixmap,mask);
+// Sets the GDK.Pixmap image and the optinal GDK.Bitmap mask
+{
+  struct object *a, *b;
+  GdkPixmap *img;
+  GdkBitmap *mask = NULL;
+  if(args == 2)
+    get_all_args("GDK.Pixmap->set", args, "%o%o", &a, &b);
+  else
+  {
+    get_all_args("GDK.Pixmap->set", args, "%o", &a);
+    b = 0;
+  }
+  img = get_gdkobject( a, Pixmap );
+  if(b)
+    mask = get_gdkobject( b, Bitmap );
+  /* TODO: Free refs for pixmap & mask! */
+  gtk_pixmap_set( GTK_PIXMAP(THIS->obj), img, mask );
+
+  RETURN_THIS();
+}
+
+CLASSMEMBER(build_insensitive, int);
+
+FUNCTION(get, "function(void:mapping)");
+// Returns ([ <br>
+//            "pixmap":pixmap, <br>
+//            "mask":mask,  <br>
+//            "pixmap_insensitive":insensitive version of the pixmap <br>
+//          ]) <br>
+{
+  pop_n_elems( args );
+
+
+  push_text( "pixmap" );
+  if( GTK_PIXMAP( THIS->obj )->pixmap )
+  {
+    gdk_pixmap_ref( GTK_PIXMAP( THIS->obj )->pixmap );
+    push_gdkobject( GTK_PIXMAP( THIS->obj )->pixmap, Pixmap );
+  }
+  else
+    push_int( 0 );
+
+  push_text( "mask" );
+  if( GTK_PIXMAP( THIS->obj )->mask )
+  {
+    gdk_pixmap_ref( GTK_PIXMAP( THIS->obj )->pixmap );
+    push_gdkobject( GTK_PIXMAP( THIS->obj )->mask, Bitmap );
+  }
+  else
+    push_int( 0 );
+
+  push_text( "pixmap_insensitive" );
+  if( GTK_PIXMAP( THIS->obj )->pixmap_insensitive )
+  {
+    gdk_pixmap_ref( GTK_PIXMAP( THIS->obj )->pixmap );
+    push_gdkobject( GTK_PIXMAP( THIS->obj )->pixmap_insensitive, Pixmap );
+  }
+  else
+    push_int( 0 );
+  f_aggregate_mapping( 6 );
+}
+
+COMPLEX_FUNCTION(set_build_insensitive, int);
+NAME_ARGS(buildp);
+// Set to TRUE if an extra pixmap should be automatically created to
+// use when the pixmap is insensitive.
+
+FUNCTION(set_pixmap_insensitive, "function(object:object)");
+ARGS(GDK.Pixmap);
+NAME_ARGS(insensitive_pixmap);
+RETURNS(GTK.Pixmap);
+// Set the pixmap to use when the pixmap is insensitive.
+{
+  struct object *o;
+  get_all_args( "set_pixmap_insensitive", args, "%o", &o );
+  if(!get_gdkobject( o, Pixmap ))
+    error("This is not a GDK.Pixmap\n");
+  if( GTK_PIXMAP( THIS->obj )->pixmap_insensitive != 
+      get_gdkobject( o, Pixmap ) )
+  {
+    gdk_pixmap_ref( get_gdkobject( o, Pixmap ) );
+    if(GTK_PIXMAP( THIS->obj )->pixmap_insensitive)
+      gdk_pixmap_unref( GTK_PIXMAP( THIS->obj )->pixmap_insensitive );
+    GTK_PIXMAP( THIS->obj )->pixmap_insensitive = get_gdkobject( o, Pixmap );
+  }
+  RETURN_THIS();
+}

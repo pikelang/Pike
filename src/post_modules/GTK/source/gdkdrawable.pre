@@ -1,0 +1,236 @@
+PROGRAM(GdkDrawable);
+// The GDK.Bitmap, GDK.Window and GDK.Pixmap classes are all GDK drawables.
+// <br>
+// This means that you can use the same set of functions to draw in them.<br>
+// <p>
+// Pixmaps are offscreen drawables. They can be drawn upon with the
+// standard drawing primitives, then copied to another drawable (such
+// as a GDK.Window) with window->draw_pixmap(), set as the background
+// for a window or widget, or otherwise used to show graphics (in a
+// W(Pixmap), as an example). The depth of a pixmap is the number of
+// bits per pixels. Bitmaps are simply pixmaps with a depth of
+// 1. (That is, they are monochrome bitmaps - each pixel can be either
+// on or off).
+// <p>
+// Bitmaps are mostly used as masks when drawing pixmaps, or as a
+// shape for a GDK.Window or a W(Widget)
+// <p>
+#define TWIN ((GdkWindow *)THIS->obj)
+#define GC(X) (get_gdkobject(X, GC))
+
+FUNCTION(copy_area, "function(object,int,int,object,int,int,int,int:object)");
+RETURNS(GDK.Drawable);
+ARGS(GDK.GC,int,int,GTK.Widget,int,int,int,int);
+NAME_ARGS(gc,xdest,ydest,source,xsource,ysource,width,height);
+// Copies the rectangle defined by xsource,ysource and width,height
+// from the source drawable, and places the results at xdest,ydest in
+// the drawable in which this function is called.
+{
+  struct object *gc, *source;
+  GdkWindow *win;
+  int xd, yd, xs, ys, w, h;
+  get_all_args("copy_area",args, "%o%d%d%o%d%d%d%d", 
+	       &gc, &xd, &yd, &source, &xs, &ys, &w, &h);
+
+  if(get_gdkobject( source, Drawable ))
+    win = get_gdkobject( source, Drawable );
+  else
+    win = GTK_WIDGET( get_gtkobject( source ) )->window;
+
+  gdk_window_copy_area( TWIN, GC(gc), xd, yd, win, xs, ys, w, h);
+  RETURN_THIS();
+}
+
+FUNCTION(clear, "function(int|void,int|void,int|void,int|void:object)");
+NAME_ARGS(x,y,width,height);
+// Either clears the rectangle defined by the arguments, of if no
+// arguments are specified, the whole drawable.
+{
+  int x=0, y=0, w=0, h=0;
+  if(args==4)
+    get_all_args("clear", args, "%d%d%d%d", &x, &y, &w, &h);
+
+  if(h)
+    gdk_window_clear_area(TWIN, x,y,w,h);
+  else
+    gdk_window_clear(TWIN);
+
+  RETURN_THIS();
+}
+
+FUNCTION(draw_point, "function(object,int,int:object)");
+ARGS(GDK.GC,int,int);
+NAME_ARGS(gc,x,y);
+// img_begin
+// w = GTK.DrawingArea()->set_usize(10,10);
+// delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
+// delay:  for(int x = 0; x<10; x++) w->draw_point(g, x, x);
+// img_end
+{
+  struct object *g;
+  int x, y;
+  get_all_args("draw_point", args, "%o%d%d", &g, &x, &y);
+  
+  gdk_draw_point( TWIN, GC(g), x, y );
+  RETURN_THIS();
+}
+FUNCTION(draw_line, "function(object,int,int,int,int:object)");
+ARGS(GDK.GC,int,int,int,int);
+NAME_ARGS(gc,x1,y1,x2,y2);
+// img_begin
+// w = GTK.DrawingArea()->set_usize(100,100);
+// delay: g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
+// delay:  for(int x = 0; x<10; x++) w->draw_line(g,x*10,0,100-x*10,99);
+// img_end
+{
+  struct object *g;
+  int x, y, x2, y2;
+  get_all_args("draw_line", args, "%o%d%d%d%d", &g, &x, &y, &x2, &y2);
+  
+  gdk_draw_line( TWIN, GC(g), x, y, x2, y2 );
+  RETURN_THIS();
+}
+
+FUNCTION(draw_rectangle, "function(object,int,int,int,int,int:object)");
+ARGS(GDK.GC,int,int,int,int,int);
+NAME_ARGS(gc,filledp,x1,y1,x2,y2);
+// img_begin
+//  w = GTK.DrawingArea()->set_usize(100,100);
+// delay:  g = GDK.GC(w)->set_foreground( GDK.Color(255,0,0) );
+// delay: for(int x = 0; x<10; x++) w->draw_rectangle(g,0,x*10,0,100-x*10,99);
+// img_end
+// img_begin
+// w = GTK.DrawingArea()->set_usize(100,100);
+// delay:   g = GDK.GC(w);
+// delay:  for(int x = 0; x<30; x++) {
+// delay:   g->set_foreground(GDK.Color(random(255),random(255),random(255)) );
+// delay:   w->draw_rectangle(g,1,x*10,0,100-x*10,99);
+// delay: }
+// img_end
+{
+  struct object *g;
+  int f, x, y, x2, y2;
+  get_all_args("draw_rectangle",args, "%o%d%d%d%d%d",&g, &f, &x, &y, &x2, &y2);
+  gdk_draw_rectangle( TWIN, GC(g), f, x, y, x2, y2 );
+  RETURN_THIS();
+}
+
+FUNCTION(draw_arc, "function(object,int,int,int,int,int,int,int:object)");
+ARGS(GDK.GC,int,int,int,int,int,int,int);
+NAME_ARGS(gc,filledp,x1,y1,x2,y2,angle1,angle2);
+// Draws a single circular or elliptical arc.  Each arc is specified
+// by a rectangle and two angles. The center of the circle or ellipse
+// is the center of the rectangle, and the major and minor axes are
+// specified by the width and height.  Positive angles indicate
+// counterclockwise motion, and negative angles indicate clockwise
+// motion. If the magnitude of angle2 is greater than 360 degrees,
+// it is truncated to 360 degrees.
+{
+  struct object *g;
+  int f, x, y, x2, y2, a1, a2;
+  get_all_args("draw_arc",args, "%o%d%d%d%d%d%d%d",&g, &f, &x, &y, &x2, &y2,
+	       &a1, &a2);
+  gdk_draw_arc( TWIN, GC(g), f, x, y, x2, y2, a1, a2 );
+  RETURN_THIS();
+}
+FUNCTION(draw_text, "function(object,object,int,int,string,int|void:object)");
+ARGS(GDK.GC,GDK.Font,int,int,string,int|void);
+NAME_ARGS(gc,font,x,y,text,forcewide);
+// y is used as the baseline for the text.<br>
+// If forcewide is true, the string will be expanded to a wide string
+// even if it is not already one. This is useful when writing text
+// using either unicode or some other 16 bit font.
+{
+  struct object *g,*f;
+  int x, y, force_wide=0;
+  struct pike_string *s;
+  char *swapped;
+  get_all_args("draw_text",args, "%o%o%d%d%W",&g,&f,  &x, &y, &s);
+  if(swapped = get_swapped_string( s,args>5 ))
+  {
+    gdk_draw_text( TWIN,get_gdkobject(f,Font), get_gdkobject(g,GC),
+		   x, y, swapped, s->len<<s->size_shift );
+    free(swapped);
+  } else {
+    gdk_draw_text( TWIN, get_gdkobject(f,Font), get_gdkobject(g,GC),
+		   x, y, s->str, s->len<<s->size_shift );
+  }
+  RETURN_THIS();
+}
+
+FUNCTION(draw_pixmap, "function(object,object,int,int,int,int,int,int:object)");
+ARGS(GDK.GC,GDK.Pixmap,int,int,int,int,int,int);
+NAME_ARGS(gc,pixmap,xsrc,ysrc,xdest,ydest,width,height);
+// Draw the rectangle specified by xsrc,ysrc+width,height from the
+// GDK(Pixmap) at xdest,ydest in the destination drawable
+{
+  struct object *g, *p;
+  int xs, ys, xd, yd, w, h;
+  get_all_args("draw_pixmap",args,"%o%o%d%d%d%d%d%d",
+	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
+  gdk_draw_pixmap(TWIN,GC(g),get_gdkobject(p,Drawable),xs,ys,xd,yd,w,h);
+  RETURN_THIS();
+}
+
+FUNCTION(draw_bitmap, "function(object,object,int,int,int,int,int,int:object)");
+ARGS(GDK.GC,GDK.Bitmap,int,int,int,int,int,int);
+NAME_ARGS(gc,bitmap,xsrc,ysrc,xdest,ydest,width,height);
+// Draw a GDK(Bitmap) in this drawable.<br>
+// <b>NOTE:</b> This drawable must be a bitmap as well. This will be
+// fixed in GTK 1.3
+{
+  struct object *g, *p;
+  int xs, ys, xd, yd, w, h;
+  get_all_args("draw_pixmap",args,"%o%o%d%d%d%d%d%d",
+	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
+  /* Hm. gdk_draw_bitmap does not exist? Not that it matters. */
+  gdk_draw_pixmap(TWIN,GC(g),get_gdkobject(p,Drawable),xs,ys,xd,yd,w,h);
+  RETURN_THIS();
+}
+
+FUNCTION(draw_image, "function(object,object,int,int,int,int,int,int:object)");
+ARGS(GDK.GC,GDK.Image,int,int,int,int,int,int);
+NAME_ARGS(gc,image,xsrc,ysrc,xdest,ydest,width,height);
+// Draw the rectangle specified by xsrc,ysrc+width,height from the
+// GDK(Image) at xdest,ydest in the destination drawable
+{
+  struct object *g, *p;
+  int xs, ys, xd, yd, w, h;
+  get_all_args("draw_pixmap",args,"%o%o%d%d%d%d%d%d",
+	       &g,&p,&xs,&ys,&xd,&yd,&w,&h);
+  gdk_draw_image(TWIN,GC(g),get_gdkobject(p,Image),xs,ys,xd,yd,w,h);
+  RETURN_THIS();
+}
+
+FUNCTION(xsize, "function(void:int)");
+// Returns the width of the drawable specified in pixels
+{
+  int s;
+  gdk_window_get_size( TWIN, &s, 0 );
+  push_int( s );
+}
+
+FUNCTION(ysize, "function(void:int)");
+// Returns the height of the drawable specified in pixels
+{
+  int s;
+  gdk_window_get_size( TWIN, 0, &s );
+  push_int( s );
+}
+
+FUNCTION(get_geometry, "function(void:mapping(string:int))");
+// Get width, height position and depth of the drawable as a mapping.
+// <br>
+// ([ "x":xpos, "y":ypos, "width":xsize, "height":ysize, 
+//    "depth":bits_per_pixel ])
+{
+  int x=0, y=0;
+  int w=0, h=0, d=0;
+  gdk_window_get_geometry( TWIN, &x, &y, &w, &h, &d );
+  push_text("x");  push_int(x);
+  push_text("y");  push_int(y);  
+  push_text("width");  push_int(w);
+  push_text("height"); push_int(h);
+  push_text("depth"); push_int(d);
+  f_aggregate_mapping( 10 );
+}

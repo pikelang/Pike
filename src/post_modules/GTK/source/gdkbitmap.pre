@@ -1,0 +1,45 @@
+PROGRAM(GdkBitmap);
+INHERIT(GdkDrawable);
+// A bitmap is a black and white pixmap. Most commonly used as masks
+// for images, widgets and pixmaps.
+//
+// NOIMG
+FUNCTION(create, "function(int|object,int|void,string|void:void)")
+ARGS(object(Image.image)|int,void|int,void|string);
+NAME_ARGS(image|xsize, void|ysize, void|xbitmapdata);
+// Create a new gdkBitmap object. 
+// Argument is either an Image.image object, or {xsisze,ysize,xbitmapdata}.
+{
+  int x, y;
+  char *d;
+  if(args == 3)
+  {
+    get_all_args("create", args, "%d%d%s", &x, &y, &d );
+  } else if(args==1) {
+    struct object *o;
+    get_all_args("create", args, "%o", &o );
+    apply(o, "xsize", 0);  get_all_args("internal", 1, "%d", &x ); pop_stack();
+    apply(o, "ysize", 0);  get_all_args("internal", 1, "%d", &y ); pop_stack();
+
+    /* Now we have the image size.. Lets create the bitmap... */
+    apply(o, "tobitmap", 0);
+    get_all_args( "internal", 1, "%s", &d );
+    args=2; /* evil me.. */
+  } else {
+    error("Wrong number of arguments to GDK.Bitmap()\n");
+  }
+
+  THIS->obj = (void *)gdk_bitmap_create_from_data(0, d, x, y);
+  if(!THIS->obj)
+    error("Failed to create bitmap\n");
+  pop_n_elems(args);
+}
+
+FUNCTION(destroy, "function(void:void)");
+// Destructor. Destroys the bitmap. This will free the bitmap on the X-server.
+{
+  if(THIS->obj)
+    gdk_bitmap_unref( (void *)THIS->obj );
+  THIS->obj = 0;
+}
+

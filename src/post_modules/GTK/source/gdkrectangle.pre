@@ -1,0 +1,62 @@
+PROGRAM(GdkRectangle);
+FUNCTION(create, "function(int,int,int,int:void)");
+NAME_ARGS(x,y,width,height);
+// Create a new rectangle
+// 
+// NOIMG
+{
+  GdkRectangle *r;
+  THIS->obj = (void *)(r=malloc(sizeof(GdkRectangle)));
+  get_all_args( "GDK.Rectangle", args, "%d%d%d%d", &r->x, &r->y, 
+		&r->width, &r->height );
+}
+
+FUNCTION(set, "function(int,int,int,int:object)");
+RETURNS(GDK.Rectangle);
+NAME_ARGS(x,y,width,height);
+// Set the upper left corner and the size of the rectangle.
+{
+  GdkRectangle *r = (GdkRectangle *)THIS->obj;
+  get_all_args( "GDK.Rectangle->set", args, "%d%d%d%d", &r->x, &r->y, 
+		&r->width, &r->height );
+  RETURN_THIS();
+}
+
+FUNCTION(cast, "function(string:mixed)");
+NAME_ARGS(type);
+// Normally used like (mapping)rectangle or (array)rectangle.
+{
+  char *type;
+  GdkRectangle *r = (GdkRectangle *)THIS->obj;
+  get_all_args( "cast", args, "%s", &type );
+
+  if(!strcmp(type, "mapping"))
+  {
+    pop_n_elems(args);
+    push_text( "x" );
+    push_int( r->x );
+    push_text( "y" );
+    push_int( r->y );
+    push_text( "width" );
+    push_int( r->width );
+    push_text( "height" );
+    push_int( r->height );
+    f_aggregate_mapping( 8 );
+  } else if(!strcmp(type, "array")) {
+    pop_n_elems(args);
+    push_int( r->x );
+    push_int( r->y );
+    push_int( r->width );
+    push_int( r->height );
+    f_aggregate( 4 );
+  } else {
+    error("Cannot cast to %s.\n", type );
+  }
+}
+
+FUNCTION(destroy, "function(void:void)")
+{
+  free(THIS->obj);
+}
+
+/* TODO: gdk_region_polygon (GdkPoint    *points, ...*/

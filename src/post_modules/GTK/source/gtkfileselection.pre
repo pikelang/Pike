@@ -1,0 +1,80 @@
+PROGRAM(file_selection);
+
+
+// GtkFileSelection should be used to retrieve file or directory names
+// from the user. It will create a new dialog window containing a
+// directory list, and a file list corresponding to the current
+// working directory. The filesystem can be navigated using the
+// directory list, the drop-down history menu, or the TAB key can be
+// used to navigate using filename completion common in text based
+// editors such as emacs and jed.
+
+// <p>
+
+// The default filename can be set using set_filename() and the
+// selected filename retrieved using get_filename().
+
+// <p>
+
+// Use complete() to display files that match a given pattern. This
+// can be used for example, to show only *.txt files, or only files
+// beginning with gtk*.
+
+// <p> 
+
+// Simple file operations; create directory, delete file, and rename
+// file, are available from buttons at the top of the dialog. These
+// can be hidden using hide_fileop_buttons() and shown again using
+// show_fileop_buttons().
+
+// <p>
+
+// TIMG: GTK.FileSelection("File selector")
+INHERIT(window);
+SUBWIDGET(ok_button, button);
+// The ok button
+SUBWIDGET(cancel_button, button);
+// The cancel button
+SUBWIDGET(help_button, button);
+// The help button
+SUBWIDGET(fileop_c_dir, button);
+// The create directory button in the file operation button group
+SUBWIDGET(fileop_del_file, button);
+// The delete file button in the file operation button group
+SUBWIDGET(fileop_ren_file, button);
+// The rename file button in the file operation button group
+SUBWIDGET(dir_list, clist);
+// The list of directories
+SUBWIDGET(file_list, clist);
+// The list of files
+SUBWIDGET(history_pulldown, option_menu);
+// Used to create the drop-down directory histor
+
+string COMPLEX_FUNCTION(get_filename);
+// Returns the currently entered filename as a string
+COMPLEX_FUNCTION(create, string);
+NAME_ARGS(window_title);
+// Creates a new file selection dialog box. By default it will list
+// the files in the current working directory. Operation buttons
+// allowing the user to create a directory, delete files, and rename
+// files will also be present by default.
+COMPLEX_FUNCTION(set_filename, string);
+NAME_ARGS(fname);
+// Sets a default path for the file requestor. If filename includes a
+// directory path, then the requestor will open with that path as its
+// current working directory.
+SIMPLE_FUNCTION(show_fileop_buttons);
+// Shows the file operation buttons, if they have previously been
+// hidden. The rest of the widgets in the dialog will be resized
+// accordingly.
+SIMPLE_FUNCTION(hide_fileop_buttons);
+// Hides the file operation buttons that normally appear at the top of
+// the dialog. Useful if you wish to create a custom file selector,
+// based on GTK.FileSelection.
+COMPLEX_FUNCTION(complete, string);
+NAME_ARGS(pattern);
+// Will attempt to match pattern to a valid filename in the current
+// directory. If a match can be made, the matched filename will appear
+// in the text entry field of the file selection dialog. If a partial
+// match can be made, the "Files" list will contain those file names
+// which have been partially matched.

@@ -1,0 +1,21 @@
+PROGRAM(color_selection_dialog);
+// The color selection dialog widget is, not surprisingly, a color selection
+// widget in a dialog window. Use the subwidget functions below to access the
+// different subwidgets directly.
+// <p>
+// TIMG: GTK.ColorSelectionDialog("Select color")
+SIGNAL("color_changed", "Called when the color is changed");
+INHERIT(window);
+COMPLEX_FUNCTION(create,string);
+NAME_ARGS(title);
+// Create a new color selection dialog with the specified title.
+SUBWIDGET(colorsel, color_selection);
+// Return the color selection widget
+SUBWIDGET(ok_button, button);
+// Return the ok button
+SUBWIDGET(cancel_button, button);
+// Return the cancel button widget.
+SUBWIDGET(reset_button, button);
+// Return the reset button
+SUBWIDGET(help_button, button);
+// Return the help button

@@ -1,0 +1,111 @@
+PROGRAM(GdkGC);
+// A GC, or Graphics Context, is used for most low-level drawing operation.
+// <p>
+// As an example, the foreground color, background color and drawing
+// function is stored in the GC.
+//
+// NOIMG
+FUNCTION(create, "function(object:void)");
+ARGS(GTK.Widget|GDK.Drawable);
+NAME_ARGS(context);
+// The argument is a either a W(Widget) or a GDK(Drawable) in
+// which the gc will be valid.
+{
+  struct object *o;
+  get_all_args("'()", args, "%o", &o);
+  if(get_gdkobject(o, Drawable))
+    THIS->obj = (void *)gdk_gc_new( (GdkWindow*)get_gdkobject(o,Drawable) );
+  else
+    THIS->obj = (void *)gdk_gc_new( GTK_WIDGET(get_gtkobject(o))->window );
+}
+FUNCTION(destoy, "function(void:void)");
+// Free the gc, called automatically by pike when the object is destroyed.
+{
+  gdk_gc_destroy( (GdkGC*)THIS->obj );
+  destruct(fp->current_object);
+}
+FUNCTION(set_foreground, "function(object:object)");
+ARGS(GDK.Color);
+NAME_ARGS(color);
+RETURNS(GDK.GC);
+// Set the foreground to the specified GDK.Color.
+{
+  struct object *o;
+  get_all_args("set_foreground", args, "%o", &o);
+  gdk_gc_set_foreground( (GdkGC*)THIS->obj, get_gdkobject(o, Color));
+  RETURN_THIS();
+}
+FUNCTION(set_background, "function(object:object)");
+ARGS(GDK.Color);
+NAME_ARGS(color);
+RETURNS(GDK.GC);
+// Set the background to the specified GDK.Color.
+{
+  struct object *o;
+  get_all_args("set_background", args, "%o", &o);
+  gdk_gc_set_background( (GdkGC*)THIS->obj, get_gdkobject(o,Color));
+  RETURN_THIS();
+}
+FUNCTION(set_font, "function(object:object)");
+ARGS(GDK.Font);
+NAME_ARGS(font);
+RETURNS(GDK.GC);
+// Set the font to the specified GDK.Font.
+{
+  struct object *o;
+  get_all_args("set_font", args, "%o", &o);
+  gdk_gc_set_font( (GdkGC*)THIS->obj, get_gdkobject(o,Font));
+  RETURN_THIS();
+}
+FUNCTION(set_clip_origin, "function(int,int:object)");
+NAME_ARGS(x,y);
+RETURNS(GDK.GC);
+// Set the clip mask origin to the specified point.
+{
+  int x, y;
+  get_all_args("set_clip_origin", args, "%d%d", &x, &y);
+  gdk_gc_set_clip_origin((GdkGC*)THIS->obj, x, y );
+  RETURN_THIS();
+}
+
+FUNCTION(set_clip_mask, "function(void|object:object)");
+ARGS(GDK.Bitmap);
+NAME_ARGS(mask);
+RETURNS(GDK.GC);
+// Set the clip mask to the specified GDK.Bitmap
+{
+  if (args == 1)
+  {
+    struct object *o;
+    get_all_args("set_clip_mask", args, "%o", &o);
+    gdk_gc_set_clip_mask( (GdkGC*)THIS->obj, get_gdkobject(o,Bitmap));
+  } else
+    gdk_gc_set_clip_mask( (GdkGC*)THIS->obj, 0);
+
+  RETURN_THIS();
+}
+
+FUNCTION(set_function, "function(int:object)");
+NAME_ARGS(fun);
+RETURNS(GDK.GC);
+// Set the function to the specified one. One of GDK.Xor,
+// GDK.Invert and GDK.Copy.
+{
+  int a;
+  get_all_args("set_function", args, "%d", &a);
+  gdk_gc_set_function( (GdkGC*)THIS->obj, a);
+  RETURN_THIS();
+}
+
+FUNCTION(set_subwindow, "function(int:object)");
+NAME_ARGS(draw_on_subwindows);
+RETURNS(GDK.GC);
+// If set, anything drawn with this GC will draw on subwindows as well
+// as the window in which the drawing is done.
+{
+  int a;
+  get_all_args("set_subwindow", args, "%d", &a);
+  gdk_gc_set_subwindow( (GdkGC*)THIS->obj, a );
+  RETURN_THIS();
+}
+/* TODO: a lot of functions left.. */

@@ -1,0 +1,19 @@
+PROGRAM(arrow);
+INHERIT(misc);
+// An arrow pointing in one of four directions. The 'etched' shadow
+// types does not work.
+
+// IMG: GTK.Arrow(GTK.ARROW_UP, GTK.SHADOW_OUT)
+// IMG: GTK.Arrow(GTK.ARROW_LEFT, GTK.SHADOW_IN)
+// IMG: GTK.Arrow(GTK.ARROW_RIGHT, GTK.SHADOW_IN)
+// IMG: GTK.Arrow(GTK.ARROW_DOWN, GTK.SHADOW_OUT)
+COMPLEX_FUNCTION(create, int, int);
+NAME_ARGS(arrow_type,shadow_type);
+// First argument is one of CONST(GTK_ARROW), second one of CONST(GTK_SHADOW).
+COMPLEX_FUNCTION(set, int, int);
+NAME_ARGS(arrow_type,shadow_type);
+// First argument is one of CONST(GTK_ARROW), second one of CONST(GTK_SHADOW).
+CLASSMEMBER(arrow_type, int);
+// Return the arrow type. One of CONST(GTK_ARROW).
+CLASSMEMBER(shadow_type, int);
+// Return the arrow type. One of CONST(GTK_SHADOW).

@@ -1,0 +1,56 @@
+PROGRAM(menu_item);
+// Menu items, to be added to menues.
+// <p>
+INHERIT(item);
+FUNCTION(create, "function(string|void:void)")
+NAME_ARGS(label);
+// If a string is supplied, a W(Label) widget is created using that
+// string and added to the item. Otherwise, you should add another
+// widget to the list item with -&gt;add().
+{
+  if(THIS->obj) error("GTK.Menu_item->create() can only be called once.\n");
+  if(args)
+  {
+    char *s;
+    get_all_args("GTK.Menu_item", args, "%s", &s);
+    THIS->obj = GTK_OBJECT( gtk_menu_item_new_with_label( s ) );
+  } else {
+    THIS->obj = GTK_OBJECT( gtk_menu_item_new( ) );
+  }
+  pgtk__init_this_object();
+}
+
+COMPLEX_FUNCTION(set_submenu, widget);
+NAME_ARGS(menu);
+// Set the submenu for this menu button.
+COMPLEX_FUNCTION(remove_submenu);
+// Remove the submenu for this menu button.
+COMPLEX_FUNCTION(set_placement,int);
+NAME_ARGS(dir);
+// (sub menu placement) One of CONST(GTK_DIRECTION)
+COMPLEX_FUNCTION(configure, int,int);
+NAME_ARGS(toggle_indicator, submenu_indicator);
+// First argument is 'show_toggle_indicator', second is
+// 'show_submenu_indicator'.
+SIMPLE_FUNCTION(select);
+// Emulate a select signal
+SIMPLE_FUNCTION(deselect);
+// Emulate a deselect signal
+SIMPLE_FUNCTION(activate);
+// Emulate an activate signal
+SIMPLE_FUNCTION(right_justify);
+// Make the menu item stick to the right edge of it's container.
+CLASSMEMBER(right_justify, int);
+// Is the widget right justified?
+CLASSMEMBER(submenu_direction, int);
+// The direction the submenu will be shown in. One of CONST(GTK_DIR_)
+CLASSMEMBER(submenu_placement, int);
+// The placement of the submenu. 
+CLASSMEMBER(show_submenu_indicator, int);
+// Should the submenu indicator be shown?
+CLASSMEMBER(show_toggle_indicator, int);
+// Should the toggle indicator be shown?
+CLASSMEMBER(toggle_size, int);
+// The size of the toggle indicator
+CLASSMEMBER(accelerator_width, int);
+// The width of the accelerator string, in pixels

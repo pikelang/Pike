@@ -1,0 +1,37 @@
+PROGRAM(handle_box);
+// The contents of a handle box can be 'dragged' out of the box by the user.
+// The contents will then be placed in a separate window.
+// IMG: GTK.HandleBox()->add(GTK.Label("The contents")) 
+SIGNAL("child_attached", "Called when a new child is added to the box");
+SIGNAL("child_detached", "Called when a child is removed from the box");
+INHERIT(bin);
+COMPLEX_FUNCTION(create);
+// Create a new handle box widget.
+COMPLEX_FUNCTION(set_shadow_type, int);
+NAME_ARGS(shadow_type);
+// One of CONST(GTK_SHADOW)
+
+COMPLEX_FUNCTION(set_handle_position, int);
+NAME_ARGS(pos);
+// The position of the handle. One of CONST(GTK_POS_)
+
+COMPLEX_FUNCTION(set_snap_edge, int);
+NAME_ARGS(pos);
+// The edge to snap to. One of CONST(GTK_POS_), or -1 for unset.
+
+
+CLASSMEMBER(snap_edge, int);
+// The edge to snap to. One of CONST(GTK_POS_), or -1 for unset.
+CLASSMEMBER(in_drag, int);
+// 1 if the window is beeing dragged around right now.
+CLASSMEMBER(shrink_on_detach, int);
+// True if the container should shrink when the child is detatched
+SETCLASSMEMBER(shrink_on_detach, int);
+NAME_ARGS(shrinkp);
+// True if the container should shrink when the child is detatched
+CLASSMEMBER(child_detached, int);
+// Is the child detatched?
+CLASSMEMBER(float_window_mapped, int);
+// Is the floating window mapped?
+CLASSMEMBER(handle_position, int);
+// The position of the handle. One of CONST(GTK_POS_)

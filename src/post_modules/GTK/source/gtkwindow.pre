@@ -1,0 +1,156 @@
+PROGRAM(window);
+// The basic window. Nothing much to say about it. It can only contain
+// one child widget. Show the main window last to avoid annoying
+// flashes when the subwidet (and it's subwidgets) are added to it,
+// this is done automatically by calling 'window->show_all' when you
+// are done with your widget packing.
+SIGNAL("move_resize", "");
+SIGNAL("set_focus", "");
+INHERIT(bin);
+
+COMPLEX_FUNCTION(create, int);
+NAME_ARGS(window_type);
+// Argument is one of CONST(GTK_WINDOW)
+COMPLEX_FUNCTION(set_wmclass, string, string);
+NAME_ARGS(name,class);
+// Set the window manager application name and class.
+COMPLEX_FUNCTION(set_title, string);
+NAME_ARGS(title);
+// Set the window title. The default title is the value sent to
+// setup_gtk, or if none is sent, Pike GTK.
+COMPLEX_FUNCTION(set_focus, widget);
+NAME_ARGS(child);
+// Set the focus widget to the specified child. Please note that this
+// is normaly handled automatically.
+int COMPLEX_FUNCTION(activate_focus);
+// Activate the focus widget
+int COMPLEX_FUNCTION(activate_default);
+// Activate the default widget
+COMPLEX_FUNCTION(add_accel_group, accel_group);
+NAME_ARGS(group);
+// This function adds an accelerator group to the window. The shortcuts in
+// the table will work in the window, it's child, and all children of
+// it's child that do not select keyboard input.
+
+COMPLEX_FUNCTION(set_transient_for, window);
+NAME_ARGS(parent);
+// Mark this window as a transient window for the parent window.
+// Most window managers renders transient windows differently (different
+// borders, sometimes no resize widgets etc)
+// <p>
+// Useful for short lived dialogs.
+COMPLEX_FUNCTION(set_default_size, int,int);
+NAME_ARGS(width,height);
+// The following differs from set_usize, in that
+// set_usize() overrides the requisition, and thus sets a minimum
+// size, while this only sets the size requested from the WM.
+COMPLEX_FUNCTION(set_modal, int);
+NAME_ARGS(modalp);
+/// Is this a modal dialog?
+
+COMPLEX_FUNCTION(remove_embedded_xid, int);
+NAME_ARGS(x_window_id);
+// Remove the embeded X window
+COMPLEX_FUNCTION(add_embedded_xid, int);
+NAME_ARGS(x_window_id);
+// Add an embedded X-window
+
+COMPLEX_FUNCTION(remove_accel_group, accel_group);
+NAME_ARGS(table);
+// Remove a previously installed table.
+COMPLEX_FUNCTION(set_default, widget);
+NAME_ARGS(default_widget);
+// Set the default widget to the specified widget.
+// The specified widget <b>must</b> have the GTK.CanDefault flag set.
+COMPLEX_FUNCTION(set_position, int);
+NAME_ARGS(pos);
+// one of CONST(GTK_WIN)
+COMPLEX_FUNCTION(set_policy, int,int,int);
+NAME_ARGS(allow_shrink,allow_grow,auto_shrink);
+// If allow shrink is true, the user can resize the window to a
+// smaller size. If allow_grow is true, the window can resize itself,
+// and the user can resize the window, to a bigger size. It auto
+// shrink is true, the window will resize itself to a smaller size
+// when it's subwidget is resized.
+
+FUNCTION(raise, "function(void:object)");
+RETURNS(GTK.Window);
+// Raise this window if the window manager allows that.
+{
+  gdk_window_raise( GTK_WIDGET( THIS->obj )->window );
+  RETURN_THIS();
+}
+
+FUNCTION(lower, "function(void:object)")
+RETURNS(GTK.Window);
+// Lower this window if the window manager allows that.
+{
+  gdk_window_lower( GTK_WIDGET( THIS->obj )->window );
+  RETURN_THIS();
+}
+
+FUNCTION(set_icon_name, "function(string:object)")
+NAME_ARGS(icon_name);
+RETURNS(GTK.Window);
+// Set the icon name to the specified string.
+{
+  gchar *t;
+  get_all_args("set_icon_name", args, "%s", &t);
+  gdk_window_set_icon_name( GTK_WIDGET(THIS->obj)->window, t );
+  RETURN_THIS();
+}
+
+FUNCTION(set_icon, "function(object|void,object|void,object|void:object)");
+RETURNS(GDK.Window);
+NAME_ARGS(window,pixmap,mask);
+ARGS(GDK.Pixmap,GDK.Bitmap,GDK.Window);
+// Set the icon to the specified image (with mask) or the specified GDK.Window.
+// It is up to the window manager to display the icon.
+// Most window manager handles window and pixmap icons, but only a few
+// can handle the mask argument. If you want a shaped icon, the only
+// safe bet is a shaped window.
+{
+  GdkPixmap *p = NULL;
+  GdkBitmap *m = NULL;
+  GdkWindow *w = NULL;
+  switch(args)
+  {
+   default:
+   case 3:
+     if(sp[-args+2].type == T_OBJECT)
+       w = get_gdkobject(sp[-args+2].u.object , Window );
+   case 2:
+     if(sp[-args+1].type == T_OBJECT)
+       m = get_gdkobject(sp[-args+1].u.object , Bitmap );
+   case 1:
+     if(sp[-args].type == T_OBJECT)
+       p = get_gdkobject(sp[-args].u.object , Pixmap );
+  }
+  gdk_window_set_icon(GTK_WIDGET(THIS->obj)->window, w, p, m );
+  RETURN_THIS();
+}
+
+CLASSMEMBER(modal, int);
+// If true, this is a modal dialog window
+CLASSMEMBER(auto_shrink, int);
+// If true, the window will shrink if possible
+CLASSMEMBER(allow_shrink, int);
+// If true, the window can be shrunk by the user
+CLASSMEMBER(allow_grow, int);
+// If true, the window can grow if nessesary
+CLASSMEMBER(type, int);
+// The window type, one of CONST(GTK_WINDOW)
+
+CLASSMEMBER(wmclass_name, string);
+// The window manager name of this application.
+CLASSMEMBER(wmclass_class, string);
+// The window manager class of this application.
+CLASSMEMBER(title, string);
+// The title of the window
+SUBWIDGET(focus_widget, widget);
+// The focus widget
+SUBWIDGET(default_widget, widget);
+// The default widget
+SUBWIDGET(transient_parent, window);
+// The parent window for this window if this is a transient window, 0
+// otherwise.

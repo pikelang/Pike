@@ -1,0 +1,9 @@
+PROGRAM(accel_label);
+INHERIT(label);
+// A label for accelerators.
+COMPLEX_FUNCTION(create,string);
+NAME_ARGS(text);
+int COMPLEX_FUNCTION(get_accel_width);
+COMPLEX_FUNCTION(set_accel_widget, widget);
+NAME_ARGS(accel_widget);
+int COMPLEX_FUNCTION(refetch);

@@ -1,0 +1,234 @@
+/* -*- c -*- */
+
+/*
+GLOBAL_CFUN( button_box_set_child_size_default, int, int );
+GLOBAL_CFUN( button_box_set_child_ipadding_default, int, int );
+GLOBAL_FUN( button_box_get_child_size_default, "function(void:mapping)"); 
+GLOBAL_FUN( button_box_get_child_ipadding_default, "function(void:mapping)");
+*/
+
+/* The main stuff.. */
+void socket_ready_callback(int fd, void *f)
+{
+  g_main_iteration(1);
+}
+
+static void backend_callback()
+{
+  next_timeout = current_time;
+  next_timeout.tv_usec += 20000;
+  if(next_timeout.tv_usec > 1000000)
+  {
+    next_timeout.tv_usec-=1000000;
+    next_timeout.tv_sec+=1;
+  }
+  while(g_main_iteration( 0 ) );
+}
+
+static struct callback *backend_cb;
+FUNCTION(parse_rc, "function(string:void)");
+NAME_ARGS(rc);
+// Takes a string and reads it as a gtkrc file.
+{
+  char *s;
+  get_all_args("parse_rc", args, "%s", &s );
+  gtk_rc_parse_string( s );
+  pop_n_elems(args);
+  push_int( 0 );
+/*   gtk_widget_propagate_default_style(); */
+}
+
+#include <errno.h>
+#include "builtin_functions.h"
+
+struct object *pgtk_root_window;
+FUNCTION(root_window, "function(void:object)");
+RETURNS(GDK.Window);
+// Returns the root window of the current display (as a GDK.Window)
+{
+  pop_n_elems( args );
+  if(pgtk_root_window) 
+  {
+    ref_push_object( pgtk_root_window );
+    return;
+  } 
+  pgtk_root_window = low_clone( pgtk_GdkWindow_program );
+  call_c_initializers( pgtk_root_window );
+  /* ugly...*/
+  ((struct object_wrapper *)pgtk_root_window->storage)->obj=
+    (void *)&gdk_root_parent;
+  
+ add_ref(pgtk_root_window);
+  ref_push_object( pgtk_root_window );
+}
+
+static void do_error( void *dom, int level, char *err, void *data ) 
+{
+  push_text( err );
+  f_backtrace( 0 );
+  f_aggregate( 2 );
+  APPLY_MASTER("describe_backtrace",1);
+  if(sp[-1].type==T_STRING)
+    write_to_stderr(sp[-1].u.string->str, sp[-1].u.string->len);
+  pop_stack();
+}
+
+int pigtk_is_setup = 0;
+
+FUNCTION(setup_gtk, "function(array|void,int|void:array)");
+NAME_ARGS(argv, do_not_parse_rc);
+// Initialize GTK, and all that comes with it.
+// Also parses $HOME/.pgtkrc and $HOME/.gtkrc if they exists.
+// The single argument, if supplied, is the argument array passed to
+// the program. This is used to set default window titles etc.
+// The second argument, if supplied, indicates that pike specific *rc files
+// should <b>not</b> be parsed.
+// <p>
+// The most common usage is GTK.setup_gtk(argv);
+{
+  char **data;
+  int argc;
+#ifndef NSIG
+#define NSIG 32
+#endif
+  int sig;
+#ifdef HAVE_SIGACTION
+  struct sigaction save_sigs[NSIG];
+  for(sig=1;sig<NSIG;sig++)
+  {
+    int ret;
+    do
+    {
+      ret=sigaction(sig,0,save_sigs+sig);
+    }while(ret == -1 && errno==EINTR);
+  }
+#else /* HAVE_SIGACTION */
+
+#if HAVE_SIGNAL
+#ifndef RETSIGTYPE
+#define RETSIGTYPE void
+#endif
+  typedef RETSIGTYPE (*sigtype)(int);
+  sigtype save_sigs[NSIG];
+  for(sig=1;sig<NSIG;sig++)
+    signal(e,save_sigs[e]=signal(e,SIG_IGN));
+
+#endif /* HAVE_SIGNAL */
+#endif /* ! HAVE_SIGACTION */
+
+
+  pigtk_is_setup = 1;
+
+  if(args)
+  {
+    struct array *a;
+    get_all_args("setup_gtk", args, "%a", &a);
+
+    data = malloc(sizeof(char *)*(a->size+1));
+    for(argc=0; argc<a->size; argc++)
+    {
+      if(a->item[argc].type != T_STRING)
+      {
+        free(data);
+        error("Index %d in the array given as argument to setup_gtk "
+              "is not a string.\n", argc);
+      }
+      data[argc] = a->item[argc].u.string->str;
+    }
+  } else {
+    data = malloc(sizeof(char *)*2);
+    data[0] = "Pike GTK";
+    argc=1;
+  }
+  data[argc] = NULL;
+
+  atexit( (void (*)(void))_exit );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
+  gtk_init( &argc, &data );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
+  g_log_set_handler("Gdk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_ERROR,  (void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_WARNING,(void *)do_error, NULL );
+  g_log_set_handler("Glib",G_LOG_LEVEL_MESSAGE,(void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_CRITICAL,(void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_ERROR,   (void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_WARNING, (void *)do_error, NULL );
+  g_log_set_handler("Gtk",G_LOG_LEVEL_MESSAGE, (void *)do_error, NULL );
+  atexit( (void (*)(void))_exit );
+
+#ifdef HAVE_SIGACTION
+  for(sig=1;sig<NSIG;sig++)
+  {
+    int ret;
+    do ret=sigaction(sig,save_sigs+sig,0); while(ret == -1 && errno==EINTR);
+  }
+#else /* HAVE_SIGACTION */
+#if HAVE_SIGNAL
+  for(sig=1;sig<NSIG;sig++)
+    signal(e,save_sigs[e]);
+#endif /* HAVE_SIGNAL */
+#endif /* HAVE_SIGACTION */
+  backend_cb = (void *)add_backend_callback( backend_callback, 0, 0);
+  /* Get the display fd.. */
+#ifndef __NT__
+  {
+    Display *d = GDK_DISPLAY();
+    int fd;
+    if(!d) {
+      error("Failed to get GDK display.\n");
+      free(data);
+    }
+    fd = ConnectionNumber( d );
+    set_read_callback( fd, socket_ready_callback, NULL );
+  }
+#else
+# error Fixme. This needs some work.
+#endif  
+
+  pop_n_elems(args);
+  /*
+   * Now it's time to return the leftovers.
+   */
+  for( sig=0; sig<argc; sig++ )
+    push_text( data[sig] );
+  f_aggregate( argc );
+  free(data);
+}
+
+FUNCTION(flush, "function(void:void)")
+// Flush GDK. Not normally needed, can be useful while doing calculations.
+{
+  gdk_flush();
+  while(g_main_iteration( 0 ) );
+  pop_n_elems(args);
+  push_int(0);
+}
+
+FUNCTION(low_flush, "function(void:void)")
+// Flush X. Not normally needed.
+{
+  XFlush( GDK_DISPLAY() );
+  pop_n_elems( args );
+  push_int( 0 );
+}
+
+FUNCTION(gtk_init, "function(array|void,int|void:array)");
+NAME_ARGS(argc,no_pgtkrc);
+// Low level GTK init function (used by setup_gtk).
+// This function is more or less equivalent to the C-GTK+ function gtk_init
+// setup_gtk does some extra things (such as parsing ~/.pgtkrc).
+{
+  pgtk_global_setup_gtk( args );
+}
+
+

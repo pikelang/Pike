@@ -1,0 +1,13 @@
+# $Id: Makefile.in,v 1.4 1999/11/07 01:43:31 per fake $
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=top.o @AUTO_OBJS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+@dynamic_module_makefile@
+
+$(SRCDIR)/auto.c : $(SRCDIR)/auto.c.in $(SRCDIR)/features.pike $(SRCDIR)/constants.pike $(SRCDIR)/gen.pike
+	$(RUNPIKE) $(SRCDIR)/gen.pike < $(SRCDIR)/auto.c.in > $(SRCDIR)/auto.c
+
+@dependencies@

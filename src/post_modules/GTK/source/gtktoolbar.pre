@@ -1,0 +1,69 @@
+PROGRAM(toolbar);
+// Toolbars are usually used to group some number of widgets in order
+// to simplify customization of their look and layout. Typically a
+// toolbar consists of buttons with icons, labels and tooltips, but
+// any other widget can also be put inside a toolbar. Finally, items
+// can be arranged horizontally or vertically and buttons can be
+// displayed with icons, labels, or both.
+
+// <p>
+// Examples:
+// IMG: lambda(){object t=GTK.Toolbar( GTK.ORIENTATION_HORIZONTAL, GTK.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK.Frame(), lambda(){},0);return t;}()
+// IMG: lambda(){object t=GTK.Toolbar( GTK.ORIENTATION_VERTICAL, GTK.TOOLBAR_TEXT );t->append_item( "Button 1", "Tooltip 1", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK.Frame(), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK.Frame(), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK.Frame(), lambda(){},0);return t;}()
+// IMG: lambda(){object i=GDK.Image()->set(Image.image(20,20)->test());object t=GTK.Toolbar( GTK.ORIENTATION_HORIZONTAL, GTK.TOOLBAR_BOTH );t->append_item( "Button 1", "Tooltip 1", "", GTK.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 2", "Tooltip 2", "", GTK.Image(i), lambda(){},0);t->append_item( "Button 3", "Tooltip 3", "", GTK.Image(i), lambda(){},0);t->append_space();t->append_item( "Button 4", "Tooltip 4", "", GTK.Image(i), lambda(){},0);t->append_item( "Button 5", "Tooltip 5", "", GTK.Image(i), lambda(){},0);return t;}()
+SIGNAL("orientation_changed", "");
+SIGNAL("style_changed", "");
+INHERIT(container);
+COMPLEX_FUNCTION(create, int, int);
+NAME_ARGS(orientation,style);
+// Orientation is one of
+// CONST(GTK_ORIENTATION). Style is one of CONST(GTK_TOOLBAR)
+
+COMPLEX_FUNCTION(append_item,  string, string, string, widget,  callback);
+NAME_ARGS(label,tooltip,private,icon,clicked,cbargument);
+// Arguments are: Label, Tooltip, Private data, Icon, clicked_callback_function, clicked_callback_argument.
+// <p>Adds a new button to the start of the toolbar. 
+COMPLEX_FUNCTION(prepend_item, string, string, string, widget,  callback);
+NAME_ARGS(label,tooltip,private,icon,clicked,cbargument);
+// Arguments as for append_item
+// <p>Adds a new button to the end of the toolbar. 
+COMPLEX_FUNCTION(insert_item,  string, string, string, widget,  callback, int);
+NAME_ARGS(label,tooltip,private,icon,clicked,cbargument,pos);
+// Arguments as for append_item, but an extra position argument at the end.
+// <p>Adds a new button after the item at the specified position.
+SIMPLE_FUNCTION(append_space);
+// Adds a small space.
+SIMPLE_FUNCTION(prepend_space);
+// Adds a small space.
+SIMPLE_INT_FUNCTION(insert_space);
+NAME_ARGS(pixels);
+// Inserts a small space at the specified postion.
+
+COMPLEX_FUNCTION(append_widget, widget, string, string);
+NAME_ARGS(widget,tootip,private);
+// Append a custom widgets. Arguments are widget, tooltip, private
+COMPLEX_FUNCTION(prepend_widget, widget, string, string);
+NAME_ARGS(widget,tootip,private);
+// Prepend a custom widgets. Arguments are widget, tooltip, private
+COMPLEX_FUNCTION(insert_widget, widget, string, string, int);
+NAME_ARGS(widget,tootip,private,pos);
+// Insert a custom widgets.
+
+COMPLEX_FUNCTION(set_orientation, int);
+NAME_ARGS(orientation);
+// Set the orientation, one of CONST(GTK_ORIENTATION)
+COMPLEX_FUNCTION(set_style, int);
+NAME_ARGS(style);
+// Set the style, one of CONST(GTK_TOOLBAR)
+COMPLEX_FUNCTION(set_space_size, int);
+NAME_ARGS(pixels);
+// Set the width (or height) of the space created by append_space.
+COMPLEX_FUNCTION(set_space_style, int);
+NAME_ARGS(style);
+COMPLEX_FUNCTION(set_tooltips, int);
+NAME_ARGS(tootipp);
+// If true, show the tooltips.
+
+COMPLEX_FUNCTION(set_button_relief, int);
+NAME_ARGS(relief);
+int COMPLEX_FUNCTION(get_button_relief);

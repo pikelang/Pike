@@ -1,0 +1,41 @@
+PROGRAM(packer);
+INHERIT(container);
+COMPLEX_FUNCTION(create);
+
+COMPLEX_FUNCTION(add_defaults, widget, int, int, int);
+NAME_ARGS(widget, side, anchor, options);
+// side is one of CONST(GTK_SIDE), anchor is one of CONST(GTK_ANCHOR),
+// options is a bitwise or of GTK.PackExpand, GTK.FillX and GTK.FillY
+
+COMPLEX_FUNCTION(add, widget, int, int, int,int,int,int,int,int);
+NAME_ARGS(widget, side, anchor, options,border_width,pad_x,pad_y,i_pad_x,i_pad_y);
+// side is one of CONST(GTK_SIDE), anchor is one of CONST(GTK_ANCHOR),
+// options is a bitwise or of GTK.PackExpand, GTK.FillX and GTK.FillY
+
+COMPLEX_FUNCTION(set_child_packing, widget, int, int, int,int,int,int,int,int);
+NAME_ARGS(child, side, anchor, options,border_width,pad_x,pad_y,i_pad_x,i_pad_y);
+// side is one of CONST(GTK_SIDE), anchor is one of CONST(GTK_ANCHOR),
+// options is a bitwise or of GTK.PackExpand, GTK.FillX and GTK.FillY
+
+COMPLEX_FUNCTION(reorder_child, widget, int);
+NAME_ARGS(child,pos);
+
+COMPLEX_FUNCTION(set_spacing, int);
+NAME_ARGS(new_spacing);
+
+COMPLEX_FUNCTION(set_default_border_width, int);
+NAME_ARGS(border);
+
+COMPLEX_FUNCTION(set_default_pad, int, int);
+NAME_ARGS(xpad,ypad);
+
+COMPLEX_FUNCTION(set_default_ipad, int, int);
+NAME_ARGS(xpad,ypad);
+
+
+CLASSMEMBER(spacing, int);
+CLASSMEMBER(default_border_width, int);
+CLASSMEMBER(default_pad_x, int);
+CLASSMEMBER(default_pad_y, int);
+CLASSMEMBER(default_i_pad_x, int);
+CLASSMEMBER(default_i_pad_y, int);

@@ -1,0 +1,152 @@
+PROGRAM(GdkImage);
+// A gdk (low level) image.
+// Mainly used for W(Image) objects.
+//
+// NOIMG
+FUNCTION(create, "function(int|void:void)");
+NAME_ARGS(fast_mode);
+// Create a new	GDK.Image object. The argument is either 0, which indicates that
+// you want a 'slow' image. If you use '1', you indicate that you want a 'fast'
+// image. Fast images are stored in shared memory, and thus are not sent over
+// any network. But please limit your usage of fast images, they use up 
+// a possibly limited system resource set. See the man page for shmget(2)
+// for more information on the limits on shared segments on your system.
+//<p>
+// A 'fast' image will automatically revert back to 'slow' mode if no shared
+// memory is available.
+{
+  THIS->extra_int = GDK_IMAGE_NORMAL;
+  if(args && sp[-1].u.integer)
+    THIS->extra_int = GDK_IMAGE_FASTEST;
+/* Do not add one extra ref for the internal gdk object..*/
+/*  add_ref(fp->current_object); */
+}
+FUNCTION(destroy, "function(void:void)");
+// Destructor. Destroys the image. Automatically called by pike when the object
+// is destructed.
+{
+  if(THIS->obj)
+    gdk_image_destroy( (void *)THIS->obj );
+  THIS->obj = 0;
+}
+
+#define HEADER "P6\n%d %d\n255\n"
+#define HEADER_SIZE 20 
+
+FUNCTION(get_pnm, "function(void:string)")
+// Returns the data in the image as a pnm object.
+// Currently, this is always a P6 (true color raw) image.
+// This could change in the future. To get a pike image object
+// do 'Image.PNM.decode( gdkimage->get_pnm() )'
+{
+  GdkImage *i = (GdkImage *)THIS->obj;
+  char *res, *p;
+  char header[100];
+  int x, y, len;
+
+  sprintf(header, HEADER, i->width, i->height );
+  len = strlen(header)+i->width*i->height*3;
+  p = res = malloc(len);
+  strcpy(res, header);
+  p+=strlen(header);
+  
+  for(y=0; y<i->height; y++)
+    for(x=0; x<i->width; x++)
+    {
+      unsigned int pi = gdk_image_get_pixel( i, x, y );
+      struct my_pixel pix = pgtk_pixel_from_xpixel( pi, i );
+      /*      fprintf(stderr, "%d,%d\n", x, y); */
+      (*p++) = pix.r;
+      (*p++) = pix.g;
+      (*p++) = pix.b;
+    }
+  push_string(make_shared_binary_string(res,len));
+}
+
+FUNCTION(grab, "function(object,int,int,int,int:object)");
+ARGS(GTK.Widget,int,int,int,int);
+RETURNS(GDK.Image);
+NAME_ARGS(widget,xoffset,yoffset,width,height);
+// Call this function to grab a portion of a widget (argument 1) to the image.
+// Grabbing non-toplevel widgets may produce unexpected results.
+// To get the size of a widget use -&gt;xsize() and -&gt;ysize().
+// To get the offset of the upper left corner of the widget, relative to it's
+// X-window (this is what you want for the offset arguments), use
+// -&gt;xoffset() and -&gt;yoffset().
+{
+  GdkWindow *win = NULL;
+  struct object *o;
+  int x, y, w, h;
+
+  get_all_args("grab", args, "%o%d%d%d%d", &o, &x, &y, &w, &h);
+
+  if(!((win=get_gdkobject( o, Drawable )))
+     && get_pgtkobject( o, pgtk_widget_program))
+    win = GTK_WIDGET(get_pgtkobject( o, pgtk_widget_program))->window;
+
+  if(!win)
+    error("This is not a window, and this widget have a window\n");
+
+  if(THIS->obj)
+    gdk_image_destroy( (void *)THIS->obj );
+
+  THIS->obj = (void *)gdk_image_get( win, x, y, w, h );
+
+  RETURN_THIS();
+}
+
+FUNCTION(set, "function(object|int,void|int:object)");
+// Call this to set this image to either the contents of a pike image
+// or a blank image of a specified size.
+RETURNS(GDK.Image);
+ARGS(Image.image|int,void|int);
+NAME_ARGS(image|xsize,void|ysize);
+{
+  struct object *img;
+
+  if(args == 1)
+  {
+    get_all_args("init", args, "%o", &img);
+    /* Might throw an error!*/
+    THIS->obj = (void *)gdkimage_from_pikeimage( img, THIS->extra_int, 
+						 (void *)THIS->obj );
+  } else {
+    int x, y;
+    get_all_args("gdkImage", args, "%d%d", &x, &y);
+    if(THIS->obj)
+      gdk_image_destroy( (void *)THIS->obj );
+    THIS->obj = (void *)gdk_image_new(THIS->extra_int, 
+				      gdk_visual_get_system(),
+				      x, y);
+    if(!THIS->obj)
+      error("Failed to create gdkImage from size.\n");
+  }
+  RETURN_THIS();
+}
+
+FUNCTION(get_pixel, "function(int,int:int)");
+NAME_ARGS(x,y);
+// Get the pixel value of a pixel as a X-pixel value.
+// It is usualy not very easy to convert this value to a
+// rgb triple. See get_pnm.
+{
+  int x, y;
+  get_all_args("get_pixel", args, "%d%d", &x, &y);
+  if(!THIS->obj) error("No image.\n");
+  pop_n_elems(args);
+  push_int( gdk_image_get_pixel( (void *)THIS->obj, x, y ) );
+}
+FUNCTION(set_pixel, "function(int,int,int:object)")
+NAME_ARGS(x,y,pixel);
+// Arguments: x,y,color
+// Set the pixel value of a pixel. Please note that the color argument
+// is a X-pixel value, which is not easily gotten from a RGB color.
+// See get_pixel and set.
+{
+  int x, y, to;
+  get_all_args("set_pixel", args, "%d%d%d", &x, &y, &to);
+  if(!THIS->obj) error("No image.\n");
+  gdk_image_put_pixel( (void *)THIS->obj, x, y, to );
+  RETURN_THIS();
+}
+

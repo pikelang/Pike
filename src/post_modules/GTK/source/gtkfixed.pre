@@ -1,0 +1,15 @@
+PROGRAM(fixed);
+// A fixed container is a container that keeps it's children at fixed
+// locations and give them fixed sizes, both given in pixels.
+// <p>
+//  Example:
+// IMG: GTK.Fixed()->put(GTK.Label("100,100"), 100, 100)->put(GTK.Label("0,0"), 0, 0)->set_usize(150,115)
+INHERIT(container);
+COMPLEX_FUNCTION(create);
+// Create a new fixed widget
+COMPLEX_FUNCTION(put,widget,int,int);
+NAME_ARGS(widget,x,y);
+// Place the widget at xpos,ypos.
+COMPLEX_FUNCTION(move,widget,int,int);
+NAME_ARGS(widget,new_xpos,new_ypos);
+// Move the widget to new_xpos,new_ypos from it's old location.

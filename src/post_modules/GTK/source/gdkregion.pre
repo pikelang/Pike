@@ -1,0 +1,187 @@
+PROGRAM(GdkRegion);
+FUNCTION(create, "function(void:void)");
+// Create a new (empty) region
+// 
+// NOIMG
+{
+  THIS->obj = (void *)gdk_region_new();
+}
+FUNCTION(destroy, "function(void:void)");
+{
+  gdk_region_destroy((GdkRegion *)THIS->obj);
+}
+
+FUNCTION(equal, "function(object:int)");
+ARGS(GDK.Region);
+NAME_ARGS(victim);
+// Return true if the region used as an argument is equal to the current region.
+// Also available as a==b when a is a region.
+{
+  struct object *o;
+  GdkRegion *r;
+  get_all_args( "equal", args, "%o", &o);
+  r = get_gdkobject( o, Region );
+  if(!r)
+  {
+    pop_n_elems(args);
+    push_int(0);
+    return;
+  } else {
+    int eq = gdk_region_equal( (GdkRegion *)THIS->obj, r );
+    pop_n_elems(args);
+    push_int(eq);
+  }
+}
+
+FUNCTION(point_in, "function(int,int:int)");
+NAME_ARGS(x,y);
+// Returns true if the given point resides in the given region
+{
+  int x, y;
+  get_all_args( "point_in", args, "%d%d", &x, &y );
+  pop_n_elems(args);
+  push_int( gdk_region_point_in( (GdkRegion *)THIS->obj, x, y ) );
+}
+
+FUNCTION(rect_in, "function(object:int)");
+ARGS(GDK.Rectangle);
+NAME_ARGS(rectangle);
+// Returns true if the given rectangle resides inside the given region
+{
+  struct object *o;
+  GdkRectangle *r;
+  get_all_args( "rect_in", args, "%o", &o );
+  if(!(r = get_gdkobject( o, Rectangle )))
+  {
+    error("Bad argument 1 to GDK.rect_in( GDK.Rectangle r )\n");
+  } else {
+    int b = gdk_region_rect_in((GdkRegion *)THIS->obj,  r);
+    pop_n_elems(args);
+    push_int( b );
+  }
+}
+
+FUNCTION(offset, "function(int,int:object)");
+RETURNS(GDK.Region);
+NAME_ARGS(dx,dy);
+RETURNS(GDK.Region);
+// Offset(move) the region by dx,dy pixels.
+{
+  int dx, dy;
+  get_all_args( "offset", args, "%d%d", &dx, &dy );
+  gdk_region_offset( (GdkRegion *)THIS->obj, dx, dy );
+  RETURN_THIS();
+}
+
+
+FUNCTION(shrink, "function(int,int:object)");
+RETURNS(GDK.Region);
+NAME_ARGS(dx,dy);
+RETURNS(GDK.Region);
+// reduces the size of a region by a
+// specified amount.  Positive values shrink the size of the
+// region, and negative values expand the region.
+{
+  int dx, dy;
+  get_all_args( "shrink", args, "%d%d", &dx, &dy );
+  gdk_region_shrink( (GdkRegion *)THIS->obj, dx, dy );
+  RETURN_THIS();
+}
+
+FUNCTION(union, "function(object:object)");
+ARGS(GDK.Region|GDK.Rectangle);
+RETURNS(GDK.Region);
+NAME_ARGS(with);
+// Computes the union of the given rectangle or region and the region.
+// Also available as region | rectangle, region | region, region + region 
+// and region + rectangle. 
+{
+  struct object *o;
+  void *v;
+  GdkRegion *r;
+  get_all_args( "union", args, "%o", &o );
+  if( (v = get_gdkobject(o, Rectangle )) )
+    r = gdk_region_union_with_rect( (GdkRegion *)THIS->obj, v);
+  else if( (v=get_gdkobject(o, Region )) )
+    r = gdk_regions_union( (GdkRegion *)THIS->obj, v);
+  else
+    error("Bad argument to union: Not Region or Rectangle\n");
+  pop_n_elems(args);
+  o = low_clone( pgtk_GdkRegion_program );
+  call_c_initializers( o );
+  ((struct object_wrapper *)o->storage)->obj = (void *)r;
+  push_object( o );
+  return;
+}
+
+FUNCTION(intersect, "function(object:object)");
+ARGS(GDK.Region);
+RETURNS(GDK.Region);
+NAME_ARGS(with);
+// Computes the intersection of the given region and the region.
+// Also available as region & region
+{
+  struct object *o;
+  void *v;
+  GdkRegion *r;
+  get_all_args( "intersect", args, "%o", &o );
+  if( (v=get_gdkobject(o, Region )) ) {
+    r = gdk_regions_union( (GdkRegion *)THIS->obj, v);
+  } else {
+    error("Bad argument to intersect: Not a GDK.Region object\n");
+  }
+  pop_n_elems(args);
+  o = low_clone( pgtk_GdkRegion_program );
+  call_c_initializers( o );
+  ((struct object_wrapper *)o->storage)->obj = (void *)r;
+  push_object( o );
+  return;
+}
+
+FUNCTION(subtract, "function(object:object)");
+ARGS(GDK.Region);
+RETURNS(GDK.Region);
+NAME_ARGS(with);
+// Computes the difference of the given region and the region.
+// Also available as region - region
+{
+  struct object *o;
+  void *v;
+  GdkRegion *r;
+  get_all_args( "subtract", args, "%o", &o );
+  if( (v=get_gdkobject(o, Region )) ) {
+    r = gdk_regions_subtract( (GdkRegion *)THIS->obj, v);
+  } else {
+    error("Bad argument to subtract: Not a GDK.Region object\n");
+  }
+  pop_n_elems(args);
+  o = low_clone( pgtk_GdkRegion_program );
+  call_c_initializers( o );
+  ((struct object_wrapper *)o->storage)->obj = (void *)r;
+  push_object( o );
+  return;
+}
+
+FUNCTION(xor, "function(object:object)");
+ARGS(GDK.Region);
+RETURNS(GDK.Region);
+NAME_ARGS(with);
+// Computes the exlusive or of the given region and the region.
+// Also available as region ^ region
+{
+  struct object *o;
+  void *v;
+  GdkRegion *r;
+  get_all_args( "xor", args, "%o", &o );
+  if( (v=get_gdkobject(o, Region )) ) {
+    r = gdk_regions_xor( (GdkRegion *)THIS->obj, v);
+  } else {
+    error("Bad argument to xor: Not a GDK.Region object\n");
+  }
+  pop_n_elems(args);
+  o = low_clone( pgtk_GdkRegion_program );
+  call_c_initializers( o );
+  ((struct object_wrapper *)o->storage)->obj = (void *)r;
+  push_object( o );
+  return;
+}

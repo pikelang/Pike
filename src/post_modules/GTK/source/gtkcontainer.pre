@@ -1,0 +1,78 @@
+/* -*- c -*- */
+
+PROGRAM(container)
+// The basic container class.
+SIGNAL("add", "Called when a new object is added to the container. (used internally)");
+SIGNAL("remove", "Called when a object is removed from the container (used internally)");
+SIGNAL("need_resize", "Called when the container needs resizing (used internally)");
+SIGNAL("focus", "Called when the container gets focus (used internally)");
+SIGNAL("set_focus_child", "");
+INHERIT(widget);
+SIMPLE_INT_FUNCTION(set_border_width);
+NAME_ARGS(external_border_width);
+// Set the border width. The border width is the size of the 
+// padding around the container.
+// Calling this function might result in a resize of the container.
+#ifndef gtk_container_border_width
+# define gtk_container_border_width gtk_container_set_border_width 
+#endif
+SIMPLE_INT_FUNCTION(border_width);
+NAME_ARGS(width);
+// Compatibility alias for set_border_width.
+SIMPLE_WIDGET_FUNCTION(add);
+NAME_ARGS(widget);
+// Add a subwidget to the container. Don't forget to call show() in 
+// the subwidget. Some (even most) containers can only contain one child.
+// Calling this function might result in a resize of the container.
+SIMPLE_WIDGET_FUNCTION(remove);
+NAME_ARGS(widget);
+// Remove a child from the container. The argument is the child to remove.
+// Calling this function might result in a resize of the container.
+/* SIMPLE_FUNCTION(disable_resize); */
+/* // Stop all automatic resize actions */
+/* SIMPLE_FUNCTION(enable_resize); */
+/* // Enable all automatic resize actions */
+SIMPLE_INT_FUNCTION(set_resize_mode);
+NAME_ARGS(mode);
+// One of CONST(GTK_RESIZE)
+/* SIMPLE_FUNCTION(block_resize); */
+/* // (temporarily) disable all automatic resize actions */
+/* SIMPLE_FUNCTION(unblock_resize); */
+/* // reenable all automatic resize actions. */
+FUNCTION(children, "function(void:array(object))");
+RETURNS(array(GTK.Widget));
+// This function returns all children of the container
+// as an array.
+{
+  GList *g;
+  int n = 0;
+  pop_n_elems(args);
+  g = gtk_container_children( GTK_CONTAINER( THIS->obj ) );
+  while(g)
+  {
+    push_gtkobjectclass( GTK_OBJECT( g->data ), pgtk_widget_program );
+    n++;
+    g = g->next;
+  }
+  f_aggregate(n);
+}
+
+SIMPLE_WIDGET_FUNCTION(set_focus_child);
+NAME_ARGS(child);
+// Emulate a set_focus_child signal. Focus on the specified child.
+SIMPLE_ADJUSTMENT_FUNCTION(set_focus_vadjustment);
+NAME_ARGS(adj);
+// Set the vadjustment used to focus children.
+SIMPLE_ADJUSTMENT_FUNCTION(set_focus_hadjustment);
+NAME_ARGS(adj);
+// Set the hadjustment used to focus children.
+SIMPLE_INT_FUNCTION(focus);
+NAME_ARGS(focus_direction);
+// Emulate a focus event. direction is one of CONST(GTK_DIR_).
+SIMPLE_FUNCTION(register_toplevel);
+// Register this container as a toplevel widget.
+// Not normally called by applications
+SIMPLE_FUNCTION(unregister_toplevel);
+// Unregister this container as a toplevel widget.
+// Not normally called by applications
+

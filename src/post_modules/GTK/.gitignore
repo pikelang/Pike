@@ -1,0 +1,11 @@
+/*.c
+/configure
+/docs
+/config.h.in
+/ChangeLog
+/Makefile
+/config.status
+/config.cache
+/config.h
+/config.log
+/aclocal.m4

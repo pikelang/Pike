@@ -1,0 +1,133 @@
+PROGRAM(notebook);
+// The NoteBook Widget is a collection of 'pages' that overlap each
+// other, each page contains different information. This widget has
+// become more common lately in GUI programming, and it is a good way
+// to show blocks similar information that warrant separation in their
+// display.
+//
+// IMG: GTK.Notebook( )->set_tab_pos( GTK.POS_LEFT )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))
+// IMG: GTK.Notebook( )->set_tab_pos( GTK.POS_TOP )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))
+// IMG: GTK.Notebook( )->set_tab_pos( GTK.POS_RIGHT )->append_page( GTK.Label("Page 1\nContents"), GTK.Label("Page 1"))->append_page( GTK.Label(""), GTK.Label("Page 2"))->append_page(GTK.Label("Page 3 contents\nare here!"), GTK.Label("Page 3"))->next_page()->next_page()
+SIGNAL("switch_page", "Called when a different page is selected");
+INHERIT(container);
+COMPLEX_FUNCTION(create);
+COMPLEX_FUNCTION(append_page, widget, widget);
+NAME_ARGS(contents,label);
+// Add a new 'page' to the notebook. The first argument is the contents of
+// the page, the second argument is the label.
+COMPLEX_FUNCTION(append_page_menu, widget, widget, widget);
+NAME_ARGS(contents,label,mennu);
+// Add a new 'page' to the notebook. The first argument is the
+// contents of the page, the second argument is the label, the third
+// argument is a menu widget.
+COMPLEX_FUNCTION(prepend_page, widget, widget);
+NAME_ARGS(contents,label);
+// Add a page at the end of the list of pages. The first argument is
+// the contents of the page, the second argument is the label.
+COMPLEX_FUNCTION(prepend_page_menu, widget, widget, widget);
+NAME_ARGS(contents,label,menu);
+// Add a new 'page' at the end of the list of pages. The first
+// argument is the contents of the page, the second argument is the
+// label, the third argument is a menu widget.
+COMPLEX_FUNCTION(insert_page, widget, widget, int);
+NAME_ARGS(contents,label,pos);
+// Insert a page at the specified location, arguments as for
+// append_page, but an aditional integer specifies the location.
+
+COMPLEX_FUNCTION(insert_page_menu, widget, widget, widget, int);
+NAME_ARGS(contents,label,menu,pos);
+// Insert a page at the specified location, arguments as for
+// append_page_menu, but an aditional integer specifies the location.
+
+COMPLEX_FUNCTION(remove_page, int);
+NAME_ARGS(pos);
+// Remove a page.
+
+int COMPLEX_FUNCTION(get_current_page);
+//  Returns the index of the currently selected page
+widget COMPLEX_FUNCTION(get_nth_page, int);
+NAME_ARGS(index);
+//  Returns the page for the specified index
+int COMPLEX_FUNCTION(page_num, widget);
+NAME_ARGS(widget);
+//  Returns the index for the specified page
+COMPLEX_FUNCTION(set_page, int);
+NAME_ARGS(pos);
+// Go to the specified page
+SIMPLE_FUNCTION(next_page);
+// Go to the next page
+SIMPLE_FUNCTION(prev_page);
+// Go to the previous page
+COMPLEX_FUNCTION(set_tab_pos, int);
+NAME_ARGS(pos);
+// One of CONST(GTK_POS)
+COMPLEX_FUNCTION(set_show_tabs, int);
+NAME_ARGS(showtabsp);
+// If supplied with a true value, the tabs will be shown. Otherwise
+// they will not be shown. The user will not be able to select the
+// pages without them, but you can add 'next' and 'previous' buttons
+// to create a wizard-line interface.
+COMPLEX_FUNCTION(set_homogeneous_tabs, int);
+NAME_ARGS(homogeneousp);
+// If true, all tabs will have the same size
+COMPLEX_FUNCTION(set_show_border, int);
+NAME_ARGS(showborderp);
+// If true, show the borders around the contents and tabs.
+COMPLEX_FUNCTION(set_scrollable, int);
+NAME_ARGS(scrollablep);
+// If true, add scrollbars if nessesary.
+COMPLEX_FUNCTION(set_tab_border, int);
+NAME_ARGS(border_width);
+// In pixels. 
+COMPLEX_FUNCTION(set_tab_hborder, int);
+NAME_ARGS(border_width);
+// In pixels. 
+COMPLEX_FUNCTION(set_tab_vborder, int);
+NAME_ARGS(border_width);
+// In pixels. 
+SIMPLE_FUNCTION(popup_enable);
+// Enable the popup menu (set with insert_page_menu)
+SIMPLE_FUNCTION(popup_disable);
+// Disable the popup menu (set with insert_page_menu)
+
+widget COMPLEX_FUNCTION(get_tab_label, widget);
+NAME_ARGS(page);
+COMPLEX_FUNCTION(set_tab_label, widget, widget);
+NAME_ARGS(page,label);
+COMPLEX_FUNCTION(set_tab_label_text, widget, string);
+NAME_ARGS(page,title);
+widget COMPLEX_FUNCTION(get_menu_label, widget);
+NAME_ARGS(page);
+COMPLEX_FUNCTION(set_menu_label, widget, widget);
+NAME_ARGS(page,label);
+COMPLEX_FUNCTION(set_menu_label_text, widget, string);
+NAME_ARGS(page,label);
+COMPLEX_FUNCTION(set_tab_label_packing, widget, int,int,int);
+NAME_ARGS(child,expand,fill,type);
+
+FUNCTION(query_tab_label_packing, "function(object:mapping)");
+NAME_ARGS(page);
+// Returns ([ "expand":expandp, "fill":fillp, "pack_type":type ])
+{
+  struct object *o;
+  gboolean expand=0, fill=0;
+  GtkPackType pack_type=0;
+  get_all_args( "query_tab_label_packing", args, "%o", &o );
+  gtk_notebook_query_tab_label_packing( GTK_NOTEBOOK( THIS->obj ), 
+                                        GTK_WIDGET( get_gtkobject( o ) ),
+                                        &expand,
+                                        &fill,
+                                        &pack_type );
+  pop_n_elems(args);
+  push_text( "expand" );
+  push_int( expand );
+  push_text( "fill" );
+  push_int( fill );
+  push_text( "pack_type" );
+  push_int( pack_type );
+  f_aggregate_mapping( 6 );
+}
+
+COMPLEX_FUNCTION(reorder_child, widget, int);
+NAME_ARGS(page, new_index);
+// Move the specified page to the index new_index

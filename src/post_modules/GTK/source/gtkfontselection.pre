@@ -1,0 +1,38 @@
+PROGRAM(font_selection);
+// IMG: GTK.FontSelection()
+INHERIT(notebook);
+
+SUBWIDGET(main_vbox, vbox);
+SUBWIDGET(font_label, label);
+SUBWIDGET(font_entry, entry);
+SUBWIDGET(font_clist, clist);
+SUBWIDGET(font_style_entry, entry);
+SUBWIDGET(font_style_clist, clist);
+SUBWIDGET(size_entry, entry);
+SUBWIDGET(size_clist, clist);
+SUBWIDGET(pixels_button, button);
+SUBWIDGET(points_button, button);
+SUBWIDGET(filter_button, button);
+SUBWIDGET(preview_entry, entry);
+SUBWIDGET(message_label, label);
+
+SUBWIDGET(info_vbox, vbox);
+SUBWIDGET(info_clist, clist);
+SUBWIDGET(requested_font_name, label);
+SUBWIDGET(actual_font_name, label);
+
+SUBWIDGET(filter_vbox, vbox);
+SUBWIDGET(type_bitmaps_button, button);
+SUBWIDGET(type_scalable_button, button);
+SUBWIDGET(type_scaled_bitmaps_button, button);
+GDK.Font COMPLEX_FUNCTION(get_font);
+string COMPLEX_FUNCTION(get_font_name);
+COMPLEX_FUNCTION(set_font_name, string);
+NAME_ARGS(xlfd);
+// This sets the currently displayed font. It should be a valid X Logical
+// Font Description font name (anything else will be ignored), e.g.
+// "-adobe-courier-bold-o-normal--25-*-*-*-*-*-*-*" 
+COMPLEX_FUNCTION(create);
+string COMPLEX_FUNCTION(get_preview_text);
+COMPLEX_FUNCTION(set_preview_text, string);
+NAME_ARGS(text);

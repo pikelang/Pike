@@ -1,0 +1,28 @@
+PROGRAM(entry);
+// Use this widget when you want the user to input a single line of text.
+// IMG: GTK.Entry()->set_text("Hello world")->set_editable(1)
+INHERIT(editable);
+COMPLEX_FUNCTION(create);
+COMPLEX_FUNCTION(set_text, string);
+NAME_ARGS(text);
+// Set the text to the specified string. The old text is dropped.
+COMPLEX_FUNCTION(append_text, string);
+NAME_ARGS(text);
+// Append the specified string at the end of the entry
+COMPLEX_FUNCTION(prepend_text, string);
+NAME_ARGS(text);
+// Prepend the specified string to the start of the entry
+/* COMPLEX_FUNCTION(set_position, int); */
+/* NAME_ARGS(point); */
+/* COMPLEX_FUNCTION(select_region, int,int); */
+/* NAME_ARGS(from,to); */
+COMPLEX_FUNCTION(set_visibility, int);
+NAME_ARGS(visiblep);
+// 0 indicates invisible text (password boxes, as an example)
+/* COMPLEX_FUNCTION(set_editable, int); */
+/* NAME_ARGS(editablep); */
+COMPLEX_FUNCTION(set_max_length, int);
+NAME_ARGS(maxlen);
+// text is truncated if needed
+string COMPLEX_FUNCTION(get_text);
+// Returns the contents of the entry widget.

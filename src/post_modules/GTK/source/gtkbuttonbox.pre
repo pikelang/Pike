@@ -1,0 +1,49 @@
+/* -*- c -*- */
+PROGRAM(button_box);
+// More or less equivalent to a normal box, but you can set a few
+// layout schemes that are not available for normal boxes.
+// See the hbox and vbox documentation for examples.
+INHERIT(box);
+SIMPLE_INT_FUNCTION(set_spacing);
+NAME_ARGS(spacing);
+// in pixels
+SIMPLE_INT_FUNCTION(set_layout);
+NAME_ARGS(layout);
+// layout is one of CONST(GTK_BUTTONBOX)
+COMPLEX_FUNCTION(set_child_size, int, int);
+NAME_ARGS(child_number, child_size);
+// Set the size of a specified child
+
+COMPLEX_FUNCTION(set_child_ipadding, int, int);
+NAME_ARGS(child_number, child_padding);
+// Set the padding for a specific child.
+
+int COMPLEX_FUNCTION(get_spacing);
+// Return the spacing that is added between the buttons
+int COMPLEX_FUNCTION(get_layout);
+// Returns the currently configured layout.
+// One of  CONST(GTK_BUTTONBOX)
+FUNCTION(get_child_size, "function(void:mapping)");
+// Return the child size as ([ "x":xsize, "y":ysize ]) 
+{
+  int x, y;
+  pop_n_elems(args);
+  gtk_button_box_get_child_size( GTK_BUTTON_BOX( THIS->obj ), &x, &y );
+  push_constant_text( "x" );
+  push_int( x );
+  push_constant_text( "y" );
+  push_int( y );
+  f_aggregate_mapping( 4 );
+}
+FUNCTION(get_child_ipadding, "function(void:mapping)");
+// Return the default inter-child padding ([ "x":xpadding, "y":ypadding ]) 
+{
+  int x, y;
+  pop_n_elems(args);
+  gtk_button_box_get_child_ipadding( GTK_BUTTON_BOX( THIS->obj ), &x, &y );
+  push_constant_text( "x" );
+  push_int( x );
+  push_constant_text( "y" );
+  push_int( y );
+  f_aggregate_mapping( 4 );
+}

@@ -1,0 +1,34 @@
+PROGRAM(font_selection_dialog);
+// The GtkFontSelectionDialog widget is a dialog box for selecting a font.
+// <p>
+// To set the font which is initially selected, use set_font_name().
+// <p>
+// To get the selected font use get_font() or get_font_name().
+// <p>
+// To change the text which is shown in the preview area, use
+// set_preview_text().
+// <p>
+// The base filter is not yet implemented in Pike GTK.
+// <p><i><font size=-1>
+// Filters can be used to limit the fonts shown. There are 2 filters in
+// the GtkFontSelectionDialog - a base filter and a user filter. The
+// base filter can not be changed by the user, so this can be used when
+// the user must choose from the restricted set of fonts (e.g. for a
+// terminal-type application you may want to force the user to select a
+// fixed-width font). The user filter can be changed or reset by the
+// user, by using the 'Reset Filter' button or changing the options on
+// the 'Filter' page of the dialog.
+// <font size=-1></i>
+// TIMG: GTK.FontSelectionDialog("Select a font")
+INHERIT(window);
+SUBWIDGET(fontsel, font_selection);
+// The W(FontSelection) widget
+SUBWIDGET(ok_button, button);
+// The ok button
+SUBWIDGET(apply_button, button);
+// The apply button
+SUBWIDGET(cancel_button, button);
+// The cancel button
+COMPLEX_FUNCTION(create, string);
+NAME_ARGS(title);
+// Create a new font selection dialog with the specified window title

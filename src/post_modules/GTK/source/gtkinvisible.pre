@@ -1,0 +1,6 @@
+PROGRAM(invisible);
+// An invisible container, useful, eh? :)
+#include <gtk/gtkinvisible.h>
+INHERIT(bin);
+COMPLEX_FUNCTION(create);
+// Create a new invisible widget

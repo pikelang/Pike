@@ -1,0 +1,25 @@
+PROGRAM(list_item);
+// This type of items can be placed in a 'List' widget. 
+INHERIT(item);
+FUNCTION(create, "function(string|void:void)");
+NAME_ARGS(label);
+// If a string is supplied, a W(Label) widget is created using that
+// string and added to the item. Otherwise, you should add another
+// widget to the list item with -&gt;add().
+{
+  if(THIS->obj) error("GTK.List_item->create() can only be called once.\n");
+  if(args)
+  {
+    char *s;
+    get_all_args("GTK.List_item", args, "%s", &s);
+    THIS->obj = GTK_OBJECT( gtk_list_item_new_with_label( s ) );
+  } else {
+    THIS->obj = GTK_OBJECT( gtk_list_item_new( ) );
+  }
+  pgtk__init_this_object();
+}
+SIMPLE_FUNCTION(select);
+// Emulate a select event
+SIMPLE_FUNCTION(deselect);
+// Emulate a deselect event
+

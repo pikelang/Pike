@@ -1,0 +1,42 @@
+# This line is needed on some machines.
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..:.
+MODNAME=GTK
+DEST=@prefix@/lib/pike/modules/
+OBJS=dummy.o
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@ @PGTK_LIBS@
+MODULE_CFLAGS=@PGTK_CFLAGS@
+CONFIG_HEADERS=config.h
+
+
+# OK.. This is somewhat confusing
+# 
+# WITH_GTK == 1
+#   override -> sources1 -> [SET OBJS] -> all
+#
+# WITH_GTK == 0
+#   override -> sources0 -> all
+#
+
+override:  sources@WITH_GTK@
+	@:
+
+@dynamic_module_makefile@
+
+sources1:
+	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR)/source
+	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR)
+	$(MAKE) $(MAKE_FLAGS) "OBJS=`cat files_to_compile`" all
+
+sources0:
+	echo Pike-GTK disabled.
+	$(MAKE) $(MAKE_FLAGS) all
+
+quick_docs:
+	-$(RUNPIKE) $(SRCDIR)/dump_cursors.pike docs/cursor_
+	$(RUNPIKE) $(SRCDIR)/build_pgtk.pike $(SRCDIR) docs
+
+docs: install
+	$(MAKE) quick_docs
+
+

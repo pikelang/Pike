@@ -1,0 +1,48 @@
+/* -*- c -*- */
+
+PROGRAM(frame);
+
+
+// The frame widget is a Bin that surrounds its child with a
+// decorative frame and an optional label. If present, the label is
+// drawn in a gap in the top side of the frame. The position of the
+// label can be controlled with set_label_align().
+// <p>
+// Used to visually group objects.
+// <p>
+// IMG: GTK.Frame("Title")->add(GTK.Label("Contents"))
+// IMG: GTK.Frame()->add(GTK.Label("Contents"))
+// IMG: GTK.Frame()->add(GTK.Label("Contents"))->set_shadow_type(GTK.SHADOW_IN)
+INHERIT(container);
+FUNCTION(create, "function(string|void:void)")
+NAME_ARGS(label_text);
+// Create a new Frame, with optional label label_text. If no label is
+// specified, the label is omitted, and there will be no gap in the
+// frame.
+{
+  char *title = NULL;
+  if(args)
+  {
+    if((sp[-1].type == T_STRING) && sp[-1].u.string->len)
+      title = sp[-1].u.string->str;
+  }
+  if(THIS->obj) error("GTK.Frame->create() can only be called once.\n");
+  THIS->obj = GTK_OBJECT( gtk_frame_new( title ) );
+  pgtk__init_this_object();
+}
+
+COMPLEX_FUNCTION(set_label, string);
+NAME_ARGS(label_text);
+// Set the text of the label.
+
+COMPLEX_FUNCTION(set_label_align, float, float);
+NAME_ARGS(xalign,yalign);
+// Arguments are xalignment and yalignment.
+// 0.0 is left or topmost, 1.0 is right or bottommost.<br>
+// The default value for a newly created Frame is 0.0.
+
+COMPLEX_FUNCTION(set_shadow_type,int);
+NAME_ARGS(shadow_type);
+// Set the shadow type for the Frame widget. The type is one of
+// CONST(GTK_SHADOW)
+

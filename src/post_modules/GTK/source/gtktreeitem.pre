@@ -1,0 +1,43 @@
+PROGRAM(tree_item);
+// A item to be places in a W(Tree).
+// <br>The item can have a subtree attached to it.
+// <br>A subtree is a normal tree.
+SIGNAL("expand", "");
+SIGNAL("collapse", "");
+INHERIT(item);
+FUNCTION(create, "function(string|void:void)");
+NAME_ARGS(label);
+// If you specify a string it is used as a label, otherwise pack a widget
+// in the tree item with -&gt;add(widget).
+{
+  if(THIS->obj) error("GTK.Tree_item->create() can only be called once.\n");
+  if(args)
+  {
+    char *s;
+    get_all_args("GTK.Tree_item", args, "%s", &s);
+    THIS->obj = GTK_OBJECT( gtk_tree_item_new_with_label( s ) );
+  } else {
+    THIS->obj = GTK_OBJECT( gtk_tree_item_new( ) );
+  }
+  pgtk__init_this_object();
+}
+COMPLEX_FUNCTION(set_subtree, tree);
+NAME_ARGS(tree);
+// Sets the subtree. 
+SIMPLE_FUNCTION(remove_subtree);
+// Removes the subtree. 
+SIMPLE_FUNCTION(select);
+// Select this item. The item must be realized (the tree and all it's
+// parents shown) for this to work.<br>
+// This generates a 'select' event.
+SIMPLE_FUNCTION(deselect);
+// Deselect this item.<br>
+// This generates a 'deselect' event.
+SIMPLE_FUNCTION(expand);
+// Expand this subtree. The item must be realized (the tree and all it's
+// parents shown) for this to work.<br>
+// This generates a 'expand' event.
+SIMPLE_FUNCTION(collapse);
+// Collapse this subtree. The item must be realized (the tree and all it's
+// parents shown) for this to work.<br>
+// This generates a 'collapse' event.

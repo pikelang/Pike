@@ -1,0 +1,374 @@
+COND_WIDGET(sheet);
+ADD_INCLUDE(#include <gtksheet.h>);
+ADD_INCLUDE(#include <gtksheetentry.h>);
+CONSTANT(GTK_SHEET_FOREGROUND);
+CONSTANT(GTK_SHEET_BACKGROUND);
+CONSTANT(GTK_SHEET_FONT);
+CONSTANT(GTK_SHEET_JUSTIFICATION);
+CONSTANT(GTK_SHEET_BORDER);
+CONSTANT(GTK_SHEET_BORDER_COLOR);
+CONSTANT(GTK_SHEET_IS_EDITABLE);
+CONSTANT(GTK_SHEET_IS_VISIBLE);
+CONSTANT(GTK_SHEET_NORMAL);
+CONSTANT(GTK_SHEET_ROW_SELECTED);
+CONSTANT(GTK_SHEET_COLUMN_SELECTED);
+CONSTANT(GTK_SHEET_RANGE_SELECTED);
+CONSTANT(GTK_SHEET_IS_LOCKED);
+CONSTANT(GTK_SHEET_IS_FROZEN);
+CONSTANT(GTK_SHEET_IN_XDRAG);
+CONSTANT(GTK_SHEET_IN_YDRAG);
+CONSTANT(GTK_SHEET_IN_DRAG);
+CONSTANT(GTK_SHEET_IN_SELECTION);
+CONSTANT(GTK_SHEET_IN_RESIZE);
+CONSTANT(GTK_SHEET_IN_CLIP);
+CONSTANT(GTK_SHEET_ROW_FROZEN);
+CONSTANT(GTK_SHEET_COLUMN_FROZEN);
+CONSTANT(GTK_SHEET_AUTORESIZE);
+CONSTANT(GTK_SHEET_ADJUST_TEXT);
+CONSTANT(GTK_SHEET_ROW_TITLES_VISIBLE);
+CONSTANT(GTK_SHEET_COL_TITLES_VISIBLE);
+CONSTANT(GTK_SHEET_AUTO_SCROLL);
+
+PROGRAM(shentry);
+#include <gtksheetentry.h>
+INHERIT(entry);
+FUNCTION(create, "function(void|int:void)");
+NAME_ARGS(max_width);
+{
+  if(args)
+    THIS->obj = GTK_OBJECT(gtk_shentry_new_with_max_length( sp[-1].u.integer ));
+  else
+    THIS->obj = GTK_OBJECT(gtk_shentry_new(  ));
+}
+COMPLEX_FUNCTION(set_text, string, int );
+NAME_ARGS(text,justifictation);
+COMPLEX_FUNCTION(set_justification, int );
+NAME_ARGS(justifictation);
+
+PROGRAM(sheet);
+#include <gtksheet.h>
+// IMG: GTK.Sheet( 10,10, "example")
+INHERIT(container);
+SIGNAL("activate", "Called when a child is activated");
+SIGNAL("deactivate", "Called when a child is deactivated");
+SIGNAL("new_column_width", "");
+SIGNAL("new_row_height", "");
+SIGNAL("select_row","");
+SIGNAL("select_column","");
+SIGNAL("select_range","");
+SIGNAL("clip_range","");
+SIGNAL("resize_range","");
+SIGNAL("move_range","");
+SIGNAL("traverse","");
+SIGNAL("set_cell","");
+SIGNAL("changed","");
+SIGNAL("new_column_width","");
+SIGNAL("new_row_height","");
+SIGNAL("set_scroll_adjustments","");
+
+
+static void push_gtk_sheet_range( GtkSheetRange range )
+{
+  push_text( "row0" ); push_int( range.row0 );
+  push_text( "rowi" ); push_int( range.rowi );
+  push_text( "col0" ); push_int( range.col0 );
+  push_text( "coli" ); push_int( range.coli );
+  f_aggregate_mapping( 8 );
+}
+
+static void push_gtk_sheet_border( GtkSheetCellBorder b )
+{
+  push_text( "mask" );        push_int( b.mask );
+  push_text( "width" );       push_int( b.width );
+  push_text( "line_style" );  push_int( b.line_style );
+  push_text( "cap_style" );   push_int( b.cap_style );
+  push_text( "join_style" );  push_int( b.join_style );
+  push_text( "color" );       
+  push_pgdkobject( &b.color, pgtk_GdkColor_program );
+  f_aggregate_mapping( 12 );
+}
+
+static void push_gtk_sheet_attr( GtkSheetAttr *a )
+{
+  push_text( "range" ); push_gtk_sheet_range( a->range );
+  push_text( "type" );  push_int( a->type );
+  push_text( "value" );
+  switch( a->type )
+  {
+  case GTK_SHEET_FOREGROUND:
+  case GTK_SHEET_BACKGROUND:
+    push_pgdkobject( &a->value.foreground, pgtk_GdkColor_program );
+    break;
+  case GTK_SHEET_BORDER_COLOR:
+    push_pgdkobject( &a->value.border.color, pgtk_GdkColor_program );
+    break;
+  case GTK_SHEET_FONT:
+    push_pgdkobject( a->value.font, pgtk_GdkFont_program );
+    break;
+  case GTK_SHEET_JUSTIFICATION:
+    push_int( a->value.justification );
+    break;
+  case GTK_SHEET_BORDER:
+    push_gtk_sheet_border( a->value.border );
+    break;
+  case GTK_SHEET_IS_EDITABLE:
+    push_int( a->value.is_editable );
+    break;
+  case GTK_SHEET_IS_VISIBLE:
+    push_int( a->value.is_visible );
+    break;
+  }
+  f_aggregate_mapping( 6 );
+}
+
+FUNCTION(get_attributes, "function(int,int:mapping)");
+{
+  int x, y;
+  GtkSheetCellAttr attr;
+  get_all_args( "get_attributes", args, "%d%d", &x, &y );
+  pop_n_elems( args );
+  if( gtk_sheet_get_attributes( GTK_SHEET(THIS->obj),x,y, &attr ) )
+  {
+    push_text("justification"); 
+    push_int( attr.justification );
+    push_text("font");
+    push_pgdkobject( &attr.font, pgtk_GdkFont_program );
+    push_text("foreground"); 
+    push_pgdkobject( &attr.foreground, pgtk_GdkColor_program );
+    push_text("background"); push_int( attr.justification );
+    push_pgdkobject( &attr.background, pgtk_GdkColor_program );
+    push_text("border");
+    push_gtk_sheet_border( attr.border );
+    push_text("is_editable");
+    push_int( attr.is_editable );
+    push_text("is_visible");
+    push_int( attr.is_visible );
+    f_aggregate_mapping( 14 );
+  }
+  else
+    push_int( 0 );
+}
+
+COMPLEX_FUNCTION(create, int, int, string);
+NAME_ARGS(rows,columns,title);
+entry COMPLEX_FUNCTION(get_entry);
+COMPLEX_FUNCTION(set_hadjustment, adjustment);
+COMPLEX_FUNCTION(set_vadjustment, adjustment);
+
+COMPLEX_FUNCTION(set_column_titles_height, int);
+NAME_ARGS(height);
+COMPLEX_FUNCTION(set_row_titles_width, int);
+NAME_ARGS(height);
+COMPLEX_FUNCTION(put,widget, int, int);
+NAME_ARGS(child,x,y);
+COMPLEX_FUNCTION(move_child,widget, int, int);
+NAME_ARGS(child,x,y);
+COMPLEX_FUNCTION(set_cell_text, int, int, string);
+int COMPLEX_FUNCTION(get_state);
+COMPLEX_FUNCTION(set_title, string);
+NAME_ARGS(title);
+/* COMPLEX_FUNCTION(set_border, int); */
+/* NAME_ARGS(border_style); */
+COMPLEX_FUNCTION(freeze);
+COMPLEX_FUNCTION(thaw);
+COMPLEX_FUNCTION(set_column_title, int, string);
+COMPLEX_FUNCTION(set_row_title, int, string);
+COMPLEX_FUNCTION(row_button_add_label, int, string);
+COMPLEX_FUNCTION(column_button_add_label, int, string);
+COMPLEX_FUNCTION(moveto,int,int,float,float);
+COMPLEX_FUNCTION(show_column_titles);
+COMPLEX_FUNCTION(show_row_titles);
+COMPLEX_FUNCTION(hide_column_titles);
+COMPLEX_FUNCTION(hide_row_titles);
+COMPLEX_FUNCTION(column_set_sensitivity,int,int);
+COMPLEX_FUNCTION(row_set_sensitivity,int,int);
+COMPLEX_FUNCTION(columns_set_sensitivity,int);
+COMPLEX_FUNCTION(rows_set_sensitivity,int);
+COMPLEX_FUNCTION(column_set_visibility,int,int);
+COMPLEX_FUNCTION(row_set_visibility,int,int);
+COMPLEX_FUNCTION(select_row,int);
+COMPLEX_FUNCTION(select_column,int);
+FUNCTION(clip_range, "function(int,int,int,int:object)");
+NAME_ARGS(x0,y0,x1,y1);
+{
+  GtkSheetRange r;
+  get_all_args( "clip_range", args, "%d%d%d%d", &r.col0,&r.row0,&r.coli,&r.rowi);
+  gtk_sheet_clip_range( GTK_SHEET( THIS->obj ), r );
+  RETURN_THIS();
+}
+COMPLEX_FUNCTION(unclip_range);
+adjustment COMPLEX_FUNCTION(get_vadjustment);
+adjustment COMPLEX_FUNCTION(get_hadjustment);
+FUNCTION(select_range, "function(void:mapping)");
+NAME_ARGS(x0,y0,x1,y1);
+{
+  GtkSheetRange r;
+  pop_n_elems(args);
+  gtk_sheet_select_range( GTK_SHEET( THIS->obj ), &r );
+  push_text( "x0" ); push_int( r.col0 );
+  push_text( "y0" ); push_int( r.row0 );
+  push_text( "x1" ); push_int( r.coli );
+  push_text( "y1" ); push_int( r.rowi );
+  f_aggregate_mapping( 4 );
+}
+FUNCTION(unselect_range, "function(void:mapping)");
+NAME_ARGS(x0,y0,x1,y1);
+{
+  GtkSheetRange r;
+  pop_n_elems(args);
+  gtk_sheet_unselect_range( GTK_SHEET( THIS->obj ), &r );
+  push_text( "x0" ); push_int( r.col0 );
+  push_text( "y0" ); push_int( r.row0 );
+  push_text( "x1" ); push_int( r.coli );
+  push_text( "y1" ); push_int( r.rowi );
+  f_aggregate_mapping( 4 );
+}
+int COMPLEX_FUNCTION(set_active_cell, int, int);
+FUNCTION(get_active_cell, "function(void:mapping)");
+{
+  int x, y;
+  pop_n_elems(args);
+  gtk_sheet_get_active_cell( GTK_SHEET(THIS->obj), &x, &y );
+  push_text( "row" ); push_int( x );
+  push_text( "col" ); push_int( y );
+  f_aggregate_mapping( 4 );
+}
+COMPLEX_FUNCTION(set_cell, int, int, int, string);
+NAME_ARGS(row, col, justification, text);
+string COMPLEX_FUNCTION(cell_get_text, int, int);
+COMPLEX_FUNCTION(cell_clear, int, int);
+FUNCTION(clear, "function(void:object)");
+{
+  pop_n_elems(args);
+  gtk_sheet_range_clear(GTK_SHEET(THIS->obj), NULL);
+  RETURN_THIS();
+}
+FUNCTION(range_clear, "function(int,int,int,int:object)");
+NAME_ARGS(x0,y0,x1,y1);
+{
+  GtkSheetRange r;
+  get_all_args( "clip_range", args, "%d%d%d%d", &r.col0,&r.row0,&r.coli,&r.rowi);
+  gtk_sheet_range_clear( GTK_SHEET( THIS->obj ), &r );
+  RETURN_THIS();
+}
+int COMPLEX_FUNCTION(cell_get_state, int, int);
+
+FUNCTION(get_pixel_info, "function(int,int:mapping)");
+{
+  int x, y, r, c;
+  get_all_args( "get_pixel_info", args, "%d%d", &x, &y );
+  
+  pop_n_elems(args);
+  gtk_sheet_get_pixel_info( GTK_SHEET(THIS->obj),x,y, &r, &c );
+  push_text( "row" ); push_int( r );
+  push_text( "col" ); push_int( c );
+  f_aggregate_mapping( 4 );
+}
+FUNCTION(range_set_foreground, "function(int,int,int,int,object:object)");
+NAME_ARGS(x0,y0,x1,y1,color);
+{
+  GtkSheetRange r;
+  struct object *c;
+  get_all_args( "range_set_foreground", args, "%d%d%d%d%o", 
+                &r.col0,&r.row0,&r.coli,&r.rowi,&c);
+  gtk_sheet_range_set_foreground( GTK_SHEET( THIS->obj ), 
+                                  r, get_gdkobject( c, Color ) );
+  RETURN_THIS();
+}
+FUNCTION(range_set_background, "function(int,int,int,int,object:object)");
+NAME_ARGS(x0,y0,x1,y1,color);
+{
+  GtkSheetRange r;
+  struct object *c;
+  get_all_args( "range_set_background", args, "%d%d%d%d%o", 
+                &r.col0,&r.row0,&r.coli,&r.rowi, &c);
+  gtk_sheet_range_set_background( GTK_SHEET( THIS->obj ), 
+                                  r, get_gdkobject( c, Color ) );
+  RETURN_THIS();
+}
+FUNCTION(range_set_font, "function(int,int,int,int,object:object)");
+NAME_ARGS(x0,y0,x1,y1,color);
+{
+  GtkSheetRange r;
+  struct object *c;
+  get_all_args( "range_set_background", args, "%d%d%d%d%o", 
+                &r.col0,&r.row0,&r.coli,&r.rowi, &c);
+  gtk_sheet_range_set_font( GTK_SHEET( THIS->obj ), 
+                            r, get_gdkobject( c, Font ) );
+  RETURN_THIS();
+}
+FUNCTION(range_set_border_color, "function(int,int,int,int,object:object)");
+NAME_ARGS(x0,y0,x1,y1,color);
+{
+  GtkSheetRange r;
+  struct object *c;
+  get_all_args( "range_set_border_color", args, "%d%d%d%d%o", 
+                &r.col0,&r.row0,&r.coli,&r.rowi, &c);
+  gtk_sheet_range_set_border_color( GTK_SHEET( THIS->obj ), 
+                                    r, get_gdkobject( c, Color ) );
+  RETURN_THIS();
+}
+FUNCTION(range_set_justification, "function(int,int,int,int,int:object)");
+NAME_ARGS(x0,y0,x1,y1,justification);
+{
+  GtkSheetRange r;
+  int f;
+  get_all_args( "range_set_justification", args, "%d%d%d%d%d", 
+                &r.col0,&r.row0,&r.coli,&r.rowi,&f);
+  gtk_sheet_range_set_justification( GTK_SHEET( THIS->obj ), r, f );
+  RETURN_THIS();
+}
+FUNCTION(range_set_editable, "function(int,int,int,int,int:object)");
+NAME_ARGS(x0,y0,x1,y1,editable);
+{
+  GtkSheetRange r;
+  int f;
+  get_all_args( "range_set_justification", args, "%d%d%d%d%d", 
+                &r.col0,&r.row0,&r.coli,&r.rowi,&f);
+  gtk_sheet_range_set_editable( GTK_SHEET( THIS->obj ), r, f );
+  RETURN_THIS();
+}
+FUNCTION(range_set_visible, "function(int,int,int,int,int:object)");
+NAME_ARGS(x0,y0,x1,y1,visible);
+{
+  GtkSheetRange r;
+  int f;
+  get_all_args( "range_set_justification", args, "%d%d%d%d%d", 
+                &r.col0,&r.row0,&r.coli,&r.rowi,&f);
+  gtk_sheet_range_set_visible( GTK_SHEET( THIS->obj ), r, f );
+  RETURN_THIS();
+}
+FUNCTION(range_set_border, "function(int,int,int,int,int:object)");
+NAME_ARGS(x0,y0,x1,y1,mask,width,style);
+{
+  GtkSheetRange r;
+  int f,q,w;
+  get_all_args( "range_set_border", args, "%d%d%d%d%d%d%d", 
+                &r.col0,&r.row0,&r.coli,&r.rowi,&f,&q,&w);
+  gtk_sheet_range_set_border( GTK_SHEET( THIS->obj ), r, f,q,w );
+  RETURN_THIS();
+}
+COMPLEX_FUNCTION(column_set_justification, int, int);
+NAME_ARGS(column,justification);
+// justification is one of CONST(GTK_JUSTIFY)
+
+
+COMPLEX_FUNCTION(set_column_width,int,int);
+COMPLEX_FUNCTION(set_row_height,int,int);
+COMPLEX_FUNCTION(add_column,int);
+COMPLEX_FUNCTION(add_row,int);
+COMPLEX_FUNCTION(insert_columns,int,int);
+COMPLEX_FUNCTION(insert_rows,int,int);
+COMPLEX_FUNCTION(delete_columns,int,int);
+COMPLEX_FUNCTION(delete_rows,int,int);
+
+CLASSMEMBER(flags, int);
+CLASSMEMBER(maxrow, int);
+CLASSMEMBER(maxcol, int);
+CLASSMEMBER(maxallocrow, int);
+CLASSMEMBER(maxalloccol, int);
+CLASSMEMBER(maxrange, int);
+CLASSMEMBER(hoffset, int);
+CLASSMEMBER(voffset, int);
+CLASSMEMBER(shadow_type, int);
+END_COND_WIDGET(sheet);

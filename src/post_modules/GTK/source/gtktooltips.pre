@@ -1,0 +1,60 @@
+PROGRAM(tooltips);
+// Tooltips are the messages that appear next to a widget when the
+// mouse pointer is held over it for a short amount of time. They are
+// especially helpful for adding more verbose descriptions of things
+// such as buttons in a toolbar.
+
+// <p>
+
+// An individual tooltip belongs to a group of tooltips. A group is
+// created with a call to GTK.Tooltips(). Every tooltip in the
+// group can then be turned off with a call to disable()
+// and enabled with enable().
+
+// <p>
+
+// The length of time the user must keep the mouse over a widget
+// before the tip is shown, can be altered with set_delay(). This is
+// set on a 'per group of tooltips' basis.
+
+// <p>
+
+// To assign a tip to a particular W(Widget), set_tip() is used.
+
+// <p>
+
+// The default appearance of all tooltips in a program is determined
+// by the current gtk theme that the user has selected. To change the
+// tooltip appearance manually, use set_colors(). Again, this is per
+// group of tooltips.
+INHERIT(data);
+COMPLEX_FUNCTION(create);
+// Creates an empty group of tooltips. This function initialises a
+// GTK.Tooltips structure. Without at least one such structure, you
+// can not add tips to your application.
+SIMPLE_FUNCTION(enable);
+// Enable this tooltip collection
+SIMPLE_FUNCTION(disable);
+// Disable this tooltip collection
+COMPLEX_FUNCTION(set_delay, int);
+NAME_ARGS(delay);
+// Set the delat (in seconds)
+COMPLEX_FUNCTION(set_tip, widget, string, null);
+NAME_ARGS(in,to);
+// Adds a tooltip containing the message tip_text to the specified
+// W(Widget).
+FUNCTION(set_colors, "function(object,object:object)");
+ARGS(GDK.Color,GDK.Color);
+NAME_ARGS(foreground,background);
+RETURNS(GTK.Tooltips);
+// Changes the foreground and background colors.
+{
+  struct object *fg, *bg;
+  get_all_args("set_colors", args, "%o%o", &fg, &bg);
+  gtk_tooltips_set_colors( GTK_TOOLTIPS( THIS->obj ), 
+			   get_gdkobject( fg,Color ),
+			   get_gdkobject( bg,Color ) );
+  RETURN_THIS();
+}
+SIMPLE_FUNCTION(force_window);
+// Realize the tooltip window (as returned from get_gdkwindow())

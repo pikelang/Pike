@@ -1,0 +1,426 @@
+#!/usr/local/bin/pike
+// -*- pike -*-
+
+
+object root()
+{
+  GDK.Window root = GTK.root_window();
+  array maybe=root->children()->get_property(GDK.Atom.__SWM_VROOT)-({0});
+  if(sizeof(maybe)) root=GDK.Window( maybe[0]->data[0] );
+  return root;
+}
+
+array(int) get_max_size( Image.image q)
+{
+  return ({
+    min( q->xsize(), 
+         root()->xsize()-30  ),
+    min( q->ysize(), 
+         root()->ysize()-30  )
+  });
+          
+}
+
+
+class ImageWindow
+{
+  inherit GTK.Image;
+  GDK.Image pix;
+  mapping _img;
+
+  float scale = 1.0;
+
+  void create()
+  {
+    ::create( pix = GDK.Image( 1 )->set(100,100));
+  }
+
+  string pct( float what )
+  {
+    return sprintf("%3d%%", (int)(what*100));
+  }
+
+  void set_image( mapping img )
+  {
+    object alpha;
+    _img = copy_value(img);
+    
+    if( scale != 1.0 )
+    {
+      if( img->alpha )
+        img->alpha = img->alpha->scale( scale );
+      img->img = img->img->scale( scale );
+    }
+
+    if( img->alpha )
+    {
+      alpha = Image.Image( img->img->xsize(),
+                           img->img->ysize(),
+                           120,120,120 );
+      alpha->setcolor( 159,159,159 );
+
+#define STEP 30
+      for(int x=0; x<img->img->xsize(); x+=STEP )
+        for(int y=0; y<img->img->ysize(); y+=STEP*2 )
+          alpha->box( x, y+(x/STEP%2)*STEP, x+(STEP-1), y+(x/STEP%2)*STEP+(STEP-1) );
+      alpha->paste_mask( img->img, img->alpha );
+      img->img = alpha;
+      img->alpha = 0;
+      alpha = 0;
+    }
+
+
+    object r = parent();
+    while( r->parent() )
+      r = r->parent();
+    int x, y;
+    [x,y] = get_max_size( img->img );
+    r->set_usize( x,y );
+
+    if( x != img->img->xsize() || y != img->img->ysize())
+      r->child()->set_policy( GTK.PolicyAlways,GTK.PolicyAlways );
+    else
+      r->child()->set_policy( GTK.PolicyNever,GTK.PolicyNever );
+    r->set_title("PV: "+img->img_name+" "+img->img->xsize()+"x"+
+                 img->img->ysize()+" "+img->format+ " ("+pct( scale )+")" );
+
+
+    pix->set( img->img );
+    set( pix );
+  }
+
+
+
+
+  void scale_image( float to )
+  {
+    if( !to )
+      scale = 1.0;
+    else
+      scale *= to;
+    set_image( _img );
+  }
+
+  ImageWindow load_image( string img )
+  {
+    mapping q = cload_img( img );
+//     scale = 1.0;
+    if( !q || !q->img )
+    {
+      int x, y;
+      int xp, yp;
+      q = ([
+        "img":Image.Image(400,200),
+        "alpha":Image.Image(400,200),
+        "format":"internal"
+      ]);
+      object fnt = Image.Font();
+      fnt->center();
+      object txt = fnt->write("Failed to load image",img,"Sorry.")->scale(1.5);
+
+     preload_image( replace( __FILE__, "pv", "unknown.xcf.gz" ) );
+     xp = q->img->xsize()-preloaded_image_data->img->xsize();
+     yp = q->img->ysize()-preloaded_image_data->img->ysize();
+
+     q->img_name = img;
+     q->img->paste_mask(preloaded_image_data->img,preloaded_image_data->alpha,
+                        xp, yp);
+     q->alpha->paste_alpha_color( preloaded_image_data->alpha, 255,255,255, 
+                                 xp, yp);
+
+
+      xp = q->img->xsize()/2 - txt->xsize()/2;
+      yp = 20;
+      for( x = xp-1; x<xp+2; x++ )
+        for( y = yp-1; y<yp+2; y++ )
+          q->alpha->paste_alpha_color( txt, 255,255,255, x,y );
+      q->img->paste_alpha_color( txt,255,255,0,xp,yp );
+     
+    }
+
+    set_image( q );
+    queue_resize();
+    return this_object();
+  }
+}
+
+
+mapping preloaded_image_data;
+string preloaded_image;
+
+mapping options;
+
+void preload_image( string img )
+{
+  if(preloaded_image == img )
+    return;
+  preloaded_image = preloaded_image_data = 0;
+  preloaded_image_data = GTK.Util.low_load_image( img,options );
+  preloaded_image = img;
+}
+
+mapping cload_img( string img )
+{
+  mapping res;
+  if( img == preloaded_image )
+  {
+    res = preloaded_image_data;
+    if( next_image( img ) != img )
+    {
+      remove_call_out( preload_image );
+      call_out( preload_image, 0.1, next_image( img ) );
+    }
+    if( preloaded_image_data )
+      preloaded_image_data->img_name = img;
+    return preloaded_image_data;
+  }
+  remove_call_out( preload_image );
+  preload_image( img );
+  return cload_img( img );
+}
+
+array images;
+int current_image;
+
+string next_image( string img )
+{
+  int pos = search( images, img );
+  if( sizeof( images ) > pos+1 )
+    return images[pos+1];
+  return images[0];
+}
+
+class CLib
+{
+  int convert( mapping data, function cont );
+}
+
+
+
+string copy_to, default_copy_encode_format;
+CLib copy_library;
+
+class doCopy
+{
+  mapping data = ([]);
+
+  void output()
+  {
+    Stdio.File out = Stdio.File( );
+    if( !out->open( data->to, "wct" ) )
+      werror("Open of "+data->to+" for destination failed.\n");
+    if( data->outdata )
+      out->write( data->outdata );
+    else if( data->outfmt )
+    {
+      data->mask = data->alpha;
+      if(catch(out->write(Image[upper_case( data->outfmt )]
+                          ->encode( data->i, data->img ))))
+        out->write(Image[upper_case( data->outfmt )]->encode( data->i ));
+    } else {
+      out->write( Image.PNG.encode( data->i, data->img ) );
+    }
+  }
+
+  void create( string file )
+  {
+    data->img = GTK.Util.low_load_image( file );
+    data->i = data->img->img;
+    data->from = file;
+    data->to = copy_to + (file - dirname( file ) );
+    data->outfmt = default_copy_encode_format;
+    
+    if( copy_library )
+      switch( copy_library->convert( data, output ) )
+      {
+       case 1:
+         destruct();
+         return;
+       case -1:
+         return;
+      }
+
+    output();
+    destruct();
+    return;
+  }
+}
+
+ImageWindow imgwin;
+
+void key_pressed( object w, object win, mixed e )
+{
+  switch(e->data) 
+  {
+   case "<": imgwin->scale_image( 0.5 );  break;
+   case ">": imgwin->scale_image( 2.0 );  break;
+   case ",": imgwin->scale_image( 0.9 );  break;
+   case ".": imgwin->scale_image( 1.1 );  break;
+   case "n": imgwin->scale_image( 0   );  break;
+   case "s":
+     break;
+   case "D":
+     rm( images[ current_image ] );
+     break;
+   case "q":
+     exit(0);
+   case "c":
+     if( copy_to )
+       doCopy( images[ current_image ] );
+     break;
+   case " ":
+     current_image+=2;
+   case "\b":
+     current_image--;
+     current_image = current_image % sizeof( images );
+     w->load_image( images[ current_image ] );
+     break;
+  }
+}
+
+int main(int argc, array argv)
+{
+  images = ({});
+  options = ([ ]);
+  int all_images;
+  foreach( argv[1..], string i )
+  {
+    if( !all_images )
+      switch( i )
+      {
+       case "--name-layers":
+         options->mark_layer_names = Image.Font();
+         continue;
+       case "--mark-layers":
+         options->mark_layers = 1;
+         continue;
+       case "--mark-active":
+         options->mark_active_layer = 1;
+         continue;
+       case "--mark-selection":
+         options->draw_selection = 1;
+         continue;
+       case "--mark-guides":
+         options->draw_guides = 1;
+         continue;
+       case "--draw-all-layers":
+         options->draw_all_layers = 1;
+         continue;
+
+       case "--help":
+         werror("%s [arguments] file(s)\n"
+               " General options:\n"
+               "  --help              This information\n"
+               "  --copy-to=dir       Bind the 'c' key to copy the current\n"
+               "                      image to 'dir'\n"
+               "  --copy-conv=conv    Convert the image while copying.\n"
+               "                      Default is no conversion.\n"
+               "                      Supported formats:\n"
+               "                       jpeg, gif, png, bmp, pcx, tga, ilbm\n"
+               "                       tiff, xpm, xbm, avs, gd, hrz, pnm\n"
+               "                       ps\n"
+               "  --copy-conv-code=pike\n"
+               "                      Apply the pike code in pike while\n"
+               "                      copying. The image is in 'i', the\n"
+               "                      source file name is in 'src', the\n"
+               "                      destination filename is in 'dest',\n"
+               "                      metadata (like alpha channel) is in\n"
+               "                      the 'img' mapping. Encoding format is\n"
+               "                      in the variable 'outfmt', if 'outdata'\n"
+               "                      is set, this is the data that will be\n"
+               "                      written to the destination file.\n" 
+               "                      Example:\n"
+               "                        'i = i->scale(2.0); rm(src);'\n\n"
+               "  --copy-conv-library=file\n"
+               "                      As above, but the variables are in a\n"
+               "                      mapping passed to the 'convert'\n"
+               "                      function in the specified file.\n"
+               "                      If you return 1, no copying will\n"
+               "                      be done, you can use GTK functions\n"
+               "                      from here.\n"
+               "                      If you return -1, the copy will be\n"
+               "                      postponed. Call the second argument\n"
+               "                      you got to the 'convert' function to\n"
+               "                      finish the copying.\n\n"
+               " XCF specific options:\n"
+               "  --name-layers       Print the name of the layers\n"
+               "  --mark-layers       Draw a border around the layers\n"
+               "  --mark-active       Draw a border around the active layer\n"
+               "  --mark-selection    Draw the selection\n"
+               "  --mark-guides       Draw the guides\n"
+               "  --draw-all-layers   Include all layers, even those marked\n"
+               "                      as invisible\n"
+                ,argv[0]);
+         exit(0);
+       default:
+         string a, b;
+         if( i == "--" ) {
+           all_images = 1;
+           continue;
+         }
+         if( sscanf( i, "--%s=%s", a, b )  == 2)
+         {
+           switch( a )
+           {
+            case "copy-conv-library":
+              if( catch {
+                copy_library = compile_file( b )();
+              }) 
+                exit(1);
+              continue;
+            case "copy-conv-code":
+              if( catch {
+                copy_library = compile_string(
+"  int convert( mapping what, function f ){ "
+"    string from = what->from; "
+"    string to   = what->to; "
+"    mapping img = what->img; "
+"    object i = what->i; "
+"    object outfmt = what->outfmt; "
+"    string outdata; do {" +  b + ";}while(0);\n"
+"   what->img = img;\n"
+"   what->i = i;\n"
+"   what->to = to;\n"
+"   what->outfmt = outfmt;\n"
+"   what->outdata = outdata;\n}")();
+              })
+                exit(1);
+              continue;
+            case "copy-to":
+              copy_to = b;
+              continue;
+            case "copy-conv":
+              default_copy_encode_format = b;
+              continue;
+            default:
+              werror("Unknown argument: --"+a+"\n");
+              exit(1);
+           }
+         }
+         if( sscanf( i, "--%s", a ))
+         {
+           werror("Unknown argument: --"+a+"\n");
+           exit(1);
+         }
+      }
+    images += ({ i });
+  }
+  argv = GTK.setup_gtk( argv )[1..];
+  
+
+
+  object w,win =  GTK.Window( GTK.WindowToplevel );
+
+  object win2 = GTK.ScrolledWindow( 0,0 )->
+         set_policy( GTK.PolicyNever, GTK.PolicyNever );
+
+  win->signal_connect( "destroy", _exit, 0 );
+  imgwin = w = ImageWindow( );
+  win2->add( w->show() );
+  win->add( win2->show() );
+  w->load_image( images[0] )->show();
+  win->signal_connect( "key_press_event", key_pressed, w );
+  win->set_policy( 0,0,1 );
+  win->show();
+  return -1;
+}

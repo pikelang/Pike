@@ -1,0 +1,40 @@
+PROGRAM(toggle_button);
+// Toggle buttons are derived from normal buttons and are very
+// similar, except they will always be in one of two states,
+// alternated by a click. They may be depressed, and when you click
+// again, they will pop back up. Click again, and they will pop back
+// down.
+// <p>
+// IMG: GTK.ToggleButton("Toggle button")
+// IMG: GTK.ToggleButton("Toggle button")->set_active( 1 )
+SIGNAL("toggled", "");
+INHERIT(button);
+FUNCTION(create, "function(string|void:void)");
+NAME_ARGS(label);
+// If you supply a string, a label will be created and inserted in the button.
+// Otherwise, use -&gt;add(widget) to create the contents of the button.
+{
+  if(THIS->obj) error("GTK.Toggle_button->create() can only be called once.\n");
+  if(args)
+  {
+    char *s;
+    get_all_args("GTK.Toggle_button", args, "%s", &s);
+    THIS->obj = GTK_OBJECT( gtk_toggle_button_new_with_label( s ) );
+  } else {
+    THIS->obj = GTK_OBJECT( gtk_toggle_button_new( ) );
+  }
+  pgtk__init_this_object();
+}
+COMPLEX_FUNCTION(set_mode, int);
+NAME_ARGS(mode);
+// If true, draw indicator
+COMPLEX_FUNCTION(set_active, int);
+NAME_ARGS(activep);
+// If activep is true, the toggle button will be activated.
+/* int COMPLEX_FUNCTION(get_active); */
+CLASSMEMBER(active, int);
+// returns 1 if the button is pressed, 0 otherwise.
+SIMPLE_FUNCTION(toggled);
+// emulate a 'toggle' of the button. This will emit a 'toggled' signal.
+
+/* CLASSMEMBER(draw_indicator,int); */

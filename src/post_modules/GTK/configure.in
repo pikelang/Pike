@@ -1,0 +1,140 @@
+AC_INIT(build_pgtk.pike)
+AC_CONFIG_HEADER(config.h)
+
+AC_MODULE_INIT()
+
+AC_CHECK_FUNCS( gethrtime signal sigaction )
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS( signal.h arpa/inet.h )
+
+AM_PATH_GTK(1.1.13,[WITH_GTK=1],W[ITH_GTK=0])
+
+if /bin/test "x$WITH_GTK" = x1 ; then
+AC_SUBST(WITH_GTK)
+WITH_GTK=1
+
+AC_SUBST(PGTK_CFLAGS)
+AC_SUBST(PGTK_LIBS)
+PGTK_CFLAGS="$GTK_CFLAGS"
+PGTK_LIBS="$GTK_LIBS"
+
+CFLAGS="$CFLAGS $GTK_CFLAGS"
+LIBS="$MODULE_LDFLAGS $LIBS"
+
+AC_SUBST(pgtk_has_sheet)
+AC_CHECK_LIB(GtkSheet, main,,,`gtk-config --libs`)
+if test x$ac_cv_lib_GtkSheet_main = xyes ; then
+  pgtk_has_sheet=sheet
+  echo "**********************************"
+  echo "Enabling GTK.Sheet related widgets"
+  if test -f `gtk-config --prefix`/lib/libGtkSheet.a ; then 
+    echo "Forcing addition of .a file to our .so file"
+    LIBS="$LIBS `gtk-config --prefix`/lib/libGtkSheet.a"
+  fi
+  echo "**********************************"
+else
+  pgtk_has_sheet=nosheet
+  unset ac_cv_lib_GtkSheet_main
+  echo "*********************************************"
+  echo " Failed to find the GTK Sheet widget. If you "
+  echo " need it, you can download it from           "
+  echo " ftp://ripley.ifir.edu.ar/pub/gtk/gtksheet/  "
+  echo " When you have installed it, rerun configure "
+  echo "*********************************************"
+fi
+
+dnl Check for GL/MesaGL libraries
+AC_ARG_WITH(GL-prefix,  [  --with-GL-prefix=DIR    Prefix where GL/MesaGL is installed])
+AC_ARG_WITH(lib-GL,     [  --with-lib-GL           use '-lGL'])
+AC_ARG_WITH(lib-MesaGL, [  --with-lib-MesaGL       use '-lMesaGL'])
+
+if test "x$with_GL_prefix" = "x" ; then
+ GL_LDOPTS=""
+ GL_CFLAGS=""
+else
+ GL_LDOPTS="-L$with_GL_prefix/lib"
+ GL_CFLAGS="-I$with_GL_prefix/include"
+fi
+
+saved_LIBS="$LIBS"
+
+AC_MSG_CHECKING([OpenGL])
+
+LIBS="$saved_LIBS $GL_LDOPTS -lGL"
+AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_GL=yes, have_GL=no)
+AC_MSG_RESULT($have_GL)
+
+if test "x$have_GL" = "xno" ; then
+  AC_MSG_CHECKING([Mesa])
+  LIBS="$saved_LIBS $GL_LDOPTS -lMesaGL"
+  AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_MesaGL=yes, have_MesaGL=no)
+  AC_MSG_RESULT($have_MesaGL)
+
+  if test "x$have_MesaGL" = "xno"; then
+   AC_MSG_CHECKING([Mesa with pthreads])
+   LIBS="$saved_LIBS $GL_LDOPTS -lMesaGL -lpthread"
+   AC_TRY_LINK( ,[ char glBegin(); glBegin(); ], have_MesaGL_pthread=yes, have_MesaGL_pthread=no)
+   AC_MSG_RESULT($have_MesaGL_pthread)
+  fi
+fi
+
+LIBS="$saved_LIBS"
+
+
+if test "x$with_lib_GL" = "xyes"; then
+
+ if test "x$have_GL" = "xyes"; then
+  GL_LIBS="$GL_LDOPTS  -lGL"
+ else
+  AC_MSG_ERROR([Missing GL library])
+ fi
+
+elif test "x$with_lib_MesaGL" = "xyes"; then
+
+ if test "x$have_MesaGL" = "xyes"; then
+  GL_LIBS="$GL_LDOPTS -lMesaGL"
+ elif test "x$have_MesaGL_pthread" = "xyes"; then
+  GL_LIBS="$GL_LDOPTS -lMesaGL -lpthread"
+ else
+  AC_MSG_ERROR([Missing MesaGL library])
+ fi
+
+else
+
+ if test "x$have_GL" = "xyes"; then
+  GL_LIBS="$GL_LDOPTS -lGL"
+ elif test "x$have_MesaGL" = "xyes"; then
+  GL_LIBS="$GL_LDOPTS  -lMesaGL"
+ elif test "x$have_MesaGL_pthread" = "xyes"; then
+  GL_LIBS="$GL_LDOPTS  -lMesaGL -lpthread"
+ else
+  have_GL=no
+ fi
+
+fi
+
+CFLAGS="$GL_CFLAGS $CFLAGS"
+
+AC_SUBST(pgtk_has_glarea)
+pgtk_has_glarea=noglarea
+
+if test "x$have_GL" = "xyes" ; then
+  AC_CHECK_LIB(gtkgl, main,,,`gtk-config --libs` $GL_LIBS)
+  if test x$ac_cv_lib_gtkgl_main = xyes ; then
+    pgtk_has_glarea=glarea
+    LIBS="$GL_LIBS $LIBS"
+  else
+    unset ac_cv_lib_gtkgl_main
+    echo "*********************************************"
+    echo " Warning: Failed to find the GTK GL widget.  "
+    echo " GL-support will be disabled.                "
+    echo " The widget is available from                "
+    echo " "
+    echo "*********************************************"
+  fi
+fi
+
+fi
+
+AC_OUTPUT(Makefile options)
