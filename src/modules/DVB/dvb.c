@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: dvb.c,v 1.1 2002/09/09 20:10:15 hop Exp $
+ * $Id: dvb.c,v 1.2 2002/09/09 20:47:52 nilsson Exp $
  *
  * Distro: aconfig.h (automake-> config.h.in), configure.in, Makefile.in
  *
@@ -101,12 +101,10 @@ typedef struct {
   } else 								\
     push_int(1);
 
-/*!
- *! module DVB
+/*! @module DVB
  */
 
-/*!
- *! class dvb
+/*! @class dvb
  *!
  *! Implements Digital Video Broadcasting interface
  *!
@@ -114,8 +112,7 @@ typedef struct {
  *!  Only Linux version is supported.
  */
 
-/*!
- *! @decl create(nt card_number);
+/*! @decl void create(int card_number)
  *!
  *! Create a DVB object.
  *!
@@ -326,8 +323,7 @@ static int do_tune(int fefd, uint ifreq, uint sr)
 }
 
 
-/*
- *! @decl int tune(int(0..3) lnb, int freq, int(0..1)|string pol, int sr, void|mapping(int|string:array(int)));
+/*! @decl int tune(int(0..3) lnb, int freq, int(0..1)|string pol, int sr, void|mapping(int|string:array(int)) pids)
  *!
  *!   Tunes to apropriate transponder's parameters and optionally
  *!   sets PID(s).
@@ -451,8 +447,7 @@ static void f_zap(INT32 args) {
 }
 
 
-/*!
- *! @decl mapping|int get_codec_info();
+/*! @decl mapping|int get_codec_info()
  *!
  *! Returns mapping with info of used codec.
  *!
@@ -898,9 +893,8 @@ fprintf(stderr, "Language = %.3s\n",&buffer[i+2]);
 }
 
 
-/*!
- *! @decl int audio_mute(int mute);
- *! @decl int audio_mute();
+/*! @decl int audio_mute(int mute)
+ *! @decl int audio_mute()
  *!
  *! Mute or unmute audio device.
  *!
@@ -1019,9 +1013,8 @@ static void f_audio_ctrl(INT32 args) {
 
 }
 
-/*!
- *! @decl int audio_mixer(int left, int right);
- *! @decl int audio_mixer(int both);
+/*! @decl int audio_mixer(int left, int right)
+ *! @decl int audio_mixer(int both)
  *!
  *! Sets output level on DVB audio device.
  *!
@@ -1056,12 +1049,10 @@ static void f_audio_mixer(INT32 args) {
 
 }
 
-/*! 
- *! @endclass
+/*! @endclass
  */
 
-/*! 
- *! @endmodule
+/*! @endmodule
  */
 
 static void init_dvb_data(struct object *obj) {
