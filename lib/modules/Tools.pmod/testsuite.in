@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.4 2002/11/23 17:07:52 marcus Exp $
+// $Id: testsuite.in,v 1.5 2002/12/11 14:37:05 nilsson Exp $
 
 // Tools.Hilfe
 test_tests([[
@@ -128,7 +128,7 @@ array(int) a() {
   test("n;", "12");
 
   test("for(int j; j<5; j++) write(\"%d\",j);", "01234Ok.\n");
-  test("j;", "Compiler Error: 1:'j' undefined.\n");
+  test("j;", "Compiler Error: 1:Undefined identifier j.\n");
   test("for(int i; i<5; i++) write(\"%d\",i);", "01234Ok.\n");
   test("i;", "1");
   test("catch { for(int i; i<5; i++) write(\"%d\",i); };", "012340");
