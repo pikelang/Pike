@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.46 1999/10/19 02:06:10 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.47 1999/10/19 15:33:02 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -680,7 +680,9 @@ static struct fileloc *flhash[FLSIZE];
 static struct memloc *mlhash[LHSIZE];
 
 static struct memhdr no_leak_memlocs;
-static int file_location_number=1;
+static int file_location_number=10;
+static int loc_accepted_leak=0;
+static int loc_referenced=0;
 
 #if DEBUG_MALLOC_PAD - 0 > 0
 char *do_pad(char *mem, long size)
@@ -839,8 +841,9 @@ static struct fileloc *find_file_location(int locnum)
     for(r=flhash[e];r;r=r->next)
       if(r->number == locnum)
 	return r;
+
   fprintf(stderr,"Internal error in DEBUG_MALLOC, failed to find location.\n");
-  exit(127);
+  abort();
 }
 
 static void low_add_marks_to_memhdr(struct memhdr *to,
@@ -1020,7 +1023,7 @@ void dmalloc_accept_leak(void *p)
   {
     struct memhdr *mh;
     mt_lock(&debug_malloc_mutex);
-    if((mh=my_find_memhdr(p,0))) add_location(mh, 0);
+    if((mh=my_find_memhdr(p,0))) add_location(mh, loc_accepted_leak);
     mt_unlock(&debug_malloc_mutex);
   }
 }
@@ -1189,8 +1192,12 @@ void dump_memhdr_locations(struct memhdr *from,
       continue;
 
     f=find_file_location(l->locnum);
-    fprintf(stderr," *** %s:%d (%d times)%s\n",f->file,f->line,l->times,
-	    l->locnum<0 ? " -" : " ");
+    fprintf(stderr," %s %s:%d (%d times) %s\n",
+	    l->locnum<0 ? "-->" : "***",
+	    f->file,
+	    f->line,
+	    l->times,
+	    find_location(&no_leak_memlocs, l->locnum) ? "" : "*");
   }
 }
 
@@ -1222,11 +1229,11 @@ void list_open_fds(void)
 	  for(l=m->locations;l;l=l->next)
 	  {
 	    struct fileloc *f=find_file_location(l->locnum);
-	    fprintf(stderr,"  *** %s:%d (%d times) %s%s\n",
+	    fprintf(stderr,"   %s %s:%d (%d times) %s\n",
+		    l->locnum<0 ? "-->" : "***",
 		    f->file,
 		    f->line,
 		    l->times,
-		    l->locnum<0 ? "-" : "",
 		    find_location(&no_leak_memlocs, l->locnum) ? "" : "*"
 		    );
 	  }
@@ -1261,14 +1268,37 @@ void cleanup_memhdrs(void)
       struct memhdr *m;
       for(m=memhdr_hash_table[h];m;m=m->next)
       {
+	int e;
+	struct memhdr *tmp;
+	void **p=m->data;
+
+	if( ! ((sizeof(void *)-1) & (long) p ))
+	{
+	  for(e=0;e<m->size/sizeof(void *);e++)
+	    if((tmp=find_memhdr(p[e])))
+	      add_location(tmp, loc_referenced);
+	}
+      }
+    }
+
+
+    for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
+    {
+      struct memhdr *m;
+      for(m=memhdr_hash_table[h];m;m=m->next)
+      {
+	int referenced=0;
 	struct memhdr *tmp;
 	struct memloc *l;
 	void *p=m->data;
 
 	for(l=m->locations;l;l=l->next)
-          if(!l->locnum)
-            break;
-	if(l) continue; /* acceptable leak */
+	{
+	  if(l->locnum == loc_accepted_leak) referenced|=2;
+	  if(l->locnum == loc_referenced) referenced|=1;
+	}
+
+	if(referenced & 2) continue;
 
 	mt_unlock(&debug_malloc_mutex);
 	if(first)
@@ -1277,7 +1307,11 @@ void cleanup_memhdrs(void)
 	  first=0;
 	}
 
-	fprintf(stderr, "LEAK: (%p) %ld bytes\n",p, m->size);
+	if(referenced & 1)
+	  fprintf(stderr, "possibly referenced memory: (%p) %ld bytes\n",p, m->size);
+	else
+	  fprintf(stderr, "==LEAK==: (%p) %ld bytes\n",p, m->size);
+	  
 	if( 1 & (long) p )
 	{
 	  if( FD2PTR( PTR2FD(p) ) == p)
@@ -1307,12 +1341,12 @@ void cleanup_memhdrs(void)
 	for(l=m->locations;l;l=l->next)
 	{
 	  struct fileloc *f=find_file_location(l->locnum);
-	  fprintf(stderr,"  *** %s:%d (%d times) %s%s\n",
+	  fprintf(stderr,"  %s %s:%d (%d times) %s\n",
+		  l->locnum<0 ? "-->" : "***",
 		  f->file,
 		  f->line,
 		  l->times,
-		  l->locnum<0 ? "-" : "",
-		  find_location(&no_leak_memlocs, l->locnum) ? "" : " *");
+		  find_location(&no_leak_memlocs, l->locnum) ? "" : "*");
 	}
       }
     }
@@ -1332,6 +1366,8 @@ int main(int argc, char *argv[])
     
   mt_init(&debug_malloc_mutex);
   init_memhdr_hash();
+  loc_accepted_leak=location_number("*acceptable leak*", 0);
+  loc_referenced=location_number("*referenced*", 0);
   return dbm_main(argc, argv);
 }
 
@@ -1363,6 +1399,11 @@ void * debug_malloc_name(void *p,const char *fn, int line)
   return p;
 }
 
+/*
+ * This copies all dynamically assigned names from
+ * one pointer to another. Used by clone() to copy
+ * the name(s) of the program.
+ */
 void debug_malloc_copy_names(void *p, void *p2)
 {
   if(p)
