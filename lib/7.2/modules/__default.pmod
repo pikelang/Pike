@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.16 2003/04/01 18:15:58 nilsson Exp $
+// $Id: __default.pmod,v 1.17 2003/11/07 17:27:24 nilsson Exp $
 
 #pike 7.3
 
@@ -14,7 +14,7 @@
 //!
 //! This implementation differs from @[predef::dirname()]
 //! in that it will return @expr{""@} for the input @expr{"/"@}
-//! while @[predef::dirname()] will return @["/"].
+//! while @[predef::dirname()] will return @expr{"/"@}.
 //!
 //! @seealso
 //!   @[predef::dirname()]
