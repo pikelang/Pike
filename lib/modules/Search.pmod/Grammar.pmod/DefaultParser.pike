@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: DefaultParser.pike,v 1.8 2002/03/11 14:26:45 grubba Exp $
+// $Id: DefaultParser.pike,v 1.9 2002/03/11 15:02:56 grubba Exp $
 
 static inherit Search.Grammar.AbstractParser;
 static inherit Search.Grammar.Lexer;
@@ -110,7 +110,9 @@ static ParseNode parseQuery() {
     or->addChild(n);
     if (peek()[0] == TOKEN_OR)
       advance();
-    else
+    else if ((< TOKEN_END,
+                TOKEN_RPAREN >)[ peek()[0] ] ||
+	     options->implicit != "or")
       break;
   }
   if (sizeof(or->children) == 1)
@@ -128,7 +130,8 @@ static ParseNode parseExpr0() {
       advance();
     else if ((< TOKEN_END,
                 TOKEN_RPAREN,
-                TOKEN_OR >)[ peek()[0] ])
+                TOKEN_OR >)[ peek()[0] ] ||
+	     options->implicit != "and")
       break;
     // implicit AND
   }
@@ -213,8 +216,13 @@ static ParseNode parseExpr4() {
 static ParseNode parseExpr5() {
   //  TRACE;
   ParseNode text = TextNode();
-  ParseNode res = AndNode();
+  ParseNode res;
   text->field = fieldstack[0];
+  if (options->implicit == "or") {
+    res = OrNode();
+  } else {
+    res = AndNode();
+  }
   for (;;) {
     int prefix = 0;
 
