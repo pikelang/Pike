@@ -27,7 +27,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.27 1999/12/11 19:30:41 grubba Exp $");
+RCSID("$Id: math.c,v 1.28 2000/03/28 19:37:23 grubba Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -288,6 +288,12 @@ void pike_module_init(void)
 #ifdef HAVE_FPSETMASK
   fpsetmask(0);
 #endif
+#ifdef HAVE_FPSETROUND
+#ifndef FP_RN
+#define FP_RN 0
+#endif
+  fpsetround(FP_RN);
+#endif /* HAVE_FPSETROUND */
   
 /* function(float:float) */
   ADD_EFUN("sin",f_sin,tFunc(tFlt,tFlt),0);
