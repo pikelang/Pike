@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.24 2004/02/26 21:52:12 agehall Exp $
+// $Id: TELNET.pmod,v 1.25 2004/04/25 14:17:54 agehall Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -273,10 +273,13 @@ class protocol
   //! Turns on the write callback if apropriate.
   static void enable_write()
   {
+    DWRITE("TELNET: enable_write()\n");
     if (!nonblocking_write && (write_cb || sizeof(to_send) || done)) {
+      DWRITE("TELNET: enable_write(): Enabling non-blocking() in enable_write()\n");
       fd->set_nonblocking(got_data, send_data, close_cb, got_oob);
       nonblocking_write = 1;
     } else {
+      DWRITE("TELNET: enable_write(): Calling send_data()\n");
       send_data();
     }
   }
@@ -284,7 +287,9 @@ class protocol
   //! Turns off the write callback if apropriate.
   static void disable_write()
   {
+    DWRITE("TELNET: disable_write()\n");
     if (!write_cb && !sizeof(to_send) && !done && nonblocking_write) {
+      DWRITE("TELNET: disable_write(): Calling fd->set_nonblocking()\n");
       fd->set_nonblocking(got_data, 0, close_cb, got_oob);
       nonblocking_write = 0;
     }
@@ -296,7 +301,7 @@ class protocol
   //!   String to send.
   void write(string s)
   {
-    DWRITE(sprintf("TELNET, writing :%O\n",s));
+    DWRITE(sprintf("TELNET: writing :%O\n",s));
     to_send += replace(s, C(IAC), C2(IAC,IAC));
     enable_write();
   }
@@ -322,10 +327,14 @@ class protocol
   //! This function does the actual sending.
   static void send_data()
   {
+    DWRITE("TELNET: Entering send_data()\n");
     if (!sizeof(to_send)) {
+      DWRITE("TELNET: Nothing to send!\n");
       if (write_cb) {
+	DWRITE("TELNET: We have a write callback!\n");
 	if(!(to_send = write_cb(id)))
 	{
+	  DWRITE("TELNET: Write callback did not write anything!\n");
 	  done=1;
 	  to_send="";
 	}
@@ -334,8 +343,10 @@ class protocol
 
     if (sizeof(to_send))
     {
+      DWRITE(sprintf("TELNET: We now have data to send! (%d bytes)\n", sizeof(to_send)));
       if (to_send[0] == 242) {
 	// DataMark needs extra quoting... Stupid.
+	DWRITE("TELNET: Found datamark @ offset 0!\n");
 	to_send = C2(IAC,NOP) + to_send;
       }
 
@@ -343,6 +354,7 @@ class protocol
 
       to_send = to_send[n..];
     } else if(done) {
+      DWRITE("TELNET: Closing fd!\n");
       fd->close();
       fd=0;
       nonblocking_write=0;
@@ -544,7 +556,7 @@ class protocol
   //!
   static void call_read_cb(string data)
   {
-    DWRITE("Fnurgel!\n");
+    DWRITE("TELNET: Fnurgel!\n");
     if(read_cb && sizeof(data)) read_cb(id,data);
   }
 
@@ -667,7 +679,7 @@ class protocol
 			option,remote_options[option]);					\
 		  /* Weird state ! */							\
 	      }										\
-	      DWRITE(sprintf("=> " #WILL " %s, state 0x%04x\n", lookup_telopt[option], state));	\
+	      DWRITE(sprintf("TELNET: => " #WILL " %s, state 0x%04x\n", lookup_telopt[option], state));	\
 	      set_##OPTIONS##_option(option,state);					\
 	      break;}									\
 											\
@@ -710,7 +722,7 @@ class protocol
 		  /* Weird state */							\
 	      }										\
 											\
-	      DWRITE(sprintf("=> " #WONT " %s, state 0x%04x\n", lookup_telopt[option], state));	\
+	      DWRITE(sprintf("TELNET: => " #WONT " %s, state 0x%04x\n", lookup_telopt[option], state));	\
 	      set_##OPTIONS##_option(option,state);					\
 	      }break
 
@@ -763,6 +775,7 @@ class protocol
   //!   The new write callback.
   void set_write_callback(function(mixed|void:string) w_cb)
   {
+    DWRITE(sprintf("TELNET: set_write_callback(%O)\n", w_cb));
     write_cb = w_cb;
     if (w_cb) {
       enable_write();
@@ -818,6 +831,8 @@ class protocol
     read_cb = r_cb;
     write_cb = w_cb;
     close_cb = c_cb;
+    DWRITE(sprintf("TELNET: set_nonblocking(): Calling fd->set_nonblocking() %O %O\n",
+	   w_cb, w_cb || send_data));
     fd->set_nonblocking(got_data, w_cb && send_data, close_cb, got_oob);
     nonblocking_write = !!w_cb;
   }
@@ -841,14 +856,13 @@ class protocol
 class LineMode
 {
   inherit protocol;
-
   static string line_buffer="";
 
   static void call_read_cb(string data)
   {
     if(read_cb)
     {
-      DWRITE(sprintf("Line callback... %O\n",data));
+      DWRITE(sprintf("TELNET: Line callback... %O\n",data));
       data=replace(data,
 		   ({"\r\n", "\n", "\r", "\r\0"}),
 		   ({"\r",   "\r", "\r", "\r",}));
@@ -898,7 +912,7 @@ class Readline
       {
 	if(sizeof(data)) read_cb(id,data);
       }else{
-	DWRITE(sprintf("Line callback... %O\n",data));
+	DWRITE(sprintf("TELNET: Line callback... %O\n",data));
 	data=replace(data,
 		     ({"\r\n","\r\n","\r","\r\0"}),
 		     ({"\r",  "\r",  "\r","\r",}));
@@ -916,19 +930,24 @@ class Readline
   
   int tcsetattr(mapping options)
   {
-//    werror("%O\n",options);
     ( options->ECHO ? send_WONT : send_WILL )(TELOPT_ECHO);
     ( (icanon=options->ICANON) ? send_DONT : send_DO )(TELOPT_LINEMODE);
   }
 
   void set_secret(int onoff)
   {
+    DWRITE(sprintf("TELNET: set_secret(%d)\n", onoff));
     if(readline)
     {
+      DWRITE("TELNET: setting secret via Stdio.Readline\n");
       readline->set_echo(!onoff);
     }else{
+      DWRITE("TELNET: setting secret via telnet option\n");
       ( onoff ? send_WILL : send_WONT )(TELOPT_ECHO);
     }
+    DWRITE(sprintf("TELNET: LOCAL TELNET ECHO STATE IS %O\n", local_options[TELOPT_ECHO]));
+    DWRITE(sprintf("TELNET: REMOTE TELNET ECHO STATE IS %O\n", remote_options[TELOPT_ECHO]));
+
   }
   
   static function(mixed,string:void) read_cb2;
@@ -945,7 +964,7 @@ class Readline
     {
       case SB:
 	string data=args[0];
-	DWRITE(sprintf("SB callback %O\n",data));
+	DWRITE(sprintf("TELNET: SB callback %O\n",data));
 	switch(data[0])
 	{
 	  case TELOPT_TTYPE:
@@ -955,10 +974,21 @@ class Readline
 	      {
 		read_cb2=read_cb;
 		term=data[2..];
-// 		werror("Enabeling READLINE, term=%s\n",term);
+ 		DWRITE(sprintf("TELNET.Readline: Enabeling READLINE, term=%s\n",term));
+		// This fix for the secret mode might not
+		// be the best way to do things, but it seems to
+		// work.
+		int secret_mode = local_options[TELOPT_ECHO]!=2;
+		set_secret(0);
 		readline=Stdio.Readline(this,lower_case(term));
+		set_secret(secret_mode);
+		DWRITE("TELNET.Readline: calling readline->set_nonblocking()\n");
 		readline->set_nonblocking(readline_callback);
+		DWRITE(sprintf("TELNET: Setting the readline prompt to %O\n", prompt));
 		readline->set_prompt(prompt);
+		DWRITE(sprintf("TELNET: LOCAL TELNET ECHO STATE IS %O\n", local_options[TELOPT_ECHO]));
+		DWRITE(sprintf("TELNET: REMOTE TELNET ECHO STATE IS %O\n", remote_options[TELOPT_ECHO]));
+
 		readline->enable_history(200);
 		/* enable data processing */
 	      }
@@ -1011,14 +1041,19 @@ class Readline
   
   void set_prompt(string s)
   {
-//    werror("TELNET: prompt=%O\n",s);
     if(readline)
     {
+      DWRITE(sprintf("TELNET: Setting readline prompt to %O\n", s));
       prompt=s;
       readline->set_prompt(prompt);
     }else{
       if(prompt!=s)
       {
+	DWRITE(sprintf("TELNET: Setting prompt without readline to %O\n", s));
+
+	// What is the point of this if-statement?
+	// I think that write(s) should be called every time!
+	// Agehall 2004-04-25
 	if(s[..sizeof(prompt)-1]==prompt)
 	  write(s);
 	prompt=s;
