@@ -1,17 +1,17 @@
 #!/usr/local/bin/ulpc
 
-int main(int argc,string *argv)
+int main(int argc, string *argv)
 {
   int i;
   string file;
 
   if(argc<4)
   {
-    write("Usage: rsif <from> <to> <files>\n");
-    return 0;
+    perror("Usage: rsif <from> <to> <files>\n");
+    return 1;
   }
 
-  for(i=3; i<sizeof(argv); i++)
+  for(i=3; i<argc; i++)
   {
     if(file=read_bytes(argv[i]))
     {
@@ -29,4 +29,6 @@ int main(int argc,string *argv)
       }
     }
   }
+
+  return 0;
 }
