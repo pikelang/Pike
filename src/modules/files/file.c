@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.304 2003/10/27 23:25:14 mast Exp $
+|| $Id: file.c,v 1.305 2003/10/28 00:01:01 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.304 2003/10/27 23:25:14 mast Exp $");
+RCSID("$Id: file.c,v 1.305 2003/10/28 00:01:01 mast Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -233,6 +233,13 @@ static void init_fd(int fd, int open_mode)
   THIS->write_oob_callback.u.integer=0;
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
+#endif
+#ifdef PIKE_DEBUG
+  {
+    struct Backend_struct *b = get_backend_for_fd (fd);
+    if (fd >= 0 && b && b != default_backend)
+      Pike_fatal ("Got unexpected backend %p for new fd %d\n", b, fd);
+  }
 #endif
 }
 
@@ -2286,6 +2293,13 @@ struct object *file_make_object_from_fd(int fd, int mode, int guess)
   call_c_initializers(o);
   ((struct my_file *)(o->storage))->fd=fd;
   ((struct my_file *)(o->storage))->open_mode=mode | fd_query_properties(fd, guess);
+#ifdef PIKE_DEBUG
+  {
+    struct Backend_struct *b = get_backend_for_fd (fd);
+    if (fd >= 0 && b && b != default_backend)
+      Pike_fatal ("Got unexpected backend %p for new fd %d\n", b, fd);
+  }
+#endif
   return o;
 }
 
