@@ -8,10 +8,11 @@ extract.pike
   implemented in the Locale module.
 
 fake_dynamic_load.pike
-  Used by build process. [FIXME: Better documentation]
+  Used by the build process to generate prototype header files to
+  enable dynamic load of libraries on Microsoft Windows.
 
 fixdepends.sh
-  Used by make depend.
+  Used by make depend to generate dependencies.
 
 hilfe
   Alias for pike without arguments, which starts Hilfe,
@@ -19,7 +20,6 @@ hilfe
 
 install_module
   Installs a Pike module into a pike module directory.
-  [FIXME: Doesn't appear to be fully functional]
 
 install.pike
   The Pike installation script, which is run when a
