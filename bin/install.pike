@@ -85,11 +85,11 @@ void install_file(string from,
   /* Need to rename the old file to .old */
   if(file_stat(to))
   {
+    rm(to+".old"); // Ignore errors
 #if constant(hardlink)
-    hardlink(to,to+".old");
-#else
-    mv(to,to+".old");
+    if( catch { hardlink(to,to+".old"); })
 #endif 
+      mv(to,to+".old");
   }
   if(!mv(tmpfile,to))
     fail("mv(%s,%s)",tmpfile,to);
