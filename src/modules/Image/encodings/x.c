@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.10 1998/02/11 00:58:05 mirar Exp $ */
+/* $Id: x.c,v 1.11 1998/03/23 20:29:34 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.10 1998/02/11 00:58:05 mirar Exp $
+**!	$Id: x.c,v 1.11 1998/03/23 20:29:34 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.10 1998/02/11 00:58:05 mirar Exp $");
+RCSID("$Id: x.c,v 1.11 1998/03/23 20:29:34 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -122,7 +122,7 @@ static unsigned char swap_bits[256] =
   135,71,199,39,167,103,231,23,151,87,215,55,183,119,247,
   15,143,79,207,47,175,111,239,31,159,95,223,63,191,127,255};
 
-static void x_encode_truecolor(INT32 args)
+static void image_x_encode_truecolor(INT32 args)
 {
    struct image *img;
    struct neo_colortable *nct=NULL;
@@ -362,7 +362,7 @@ THREADS_DISALLOW();
    push_string(end_shared_string(dest));
 }
 
-static INLINE void x_examine_mask(struct svalue *mask,
+static INLINE void image_x_examine_mask(struct svalue *mask,
 				  const char *what,
 				  int *bits,int *shift)
 {
@@ -384,13 +384,13 @@ static INLINE void x_examine_mask(struct svalue *mask,
       error("Image.X.encode_truecolor_masks: illegal %s (nonmassive bitfield)\n",what);
 }
 
-static void x_call_examine_mask(INT32 args)
+static void image_x_call_examine_mask(INT32 args)
 {
     int bits,shift;
     if (args<1 || sp[-args].type!=T_INT)
        error("Image.X.examine_mask: illegal argument(s)\n");
 
-    x_examine_mask(sp-args,"argument 1",&bits,&shift);
+   image_x_examine_mask(sp-args,"argument 1",&bits,&shift);
     pop_n_elems(args);
     
     push_int(bits);
@@ -398,7 +398,7 @@ static void x_call_examine_mask(INT32 args)
     f_aggregate(2);
 }
 
-static void x_encode_truecolor_masks(INT32 args)
+static void image_x_encode_truecolor_masks(INT32 args)
 {
    struct object *ct=NULL;
    int rbits,rshift,gbits,gshift,bbits,bshift;
@@ -422,9 +422,9 @@ static void x_encode_truecolor_masks(INT32 args)
    if (sp[3-args].type!=T_INT)
       error("Image.X.encode_truecolor_masks: illegal argument 4 (expected integer)\n");
 
-   x_examine_mask(sp+4-args,"argument 3 (red mask)",&rbits,&rshift);
-   x_examine_mask(sp+5-args,"argument 4 (blue mask)",&gbits,&gshift);
-   x_examine_mask(sp+6-args,"argument 5 (green mask)",&bbits,&bshift);
+  image_x_examine_mask(sp+4-args,"argument 3 (red mask)",&rbits,&rshift);
+  image_x_examine_mask(sp+5-args,"argument 4 (blue mask)",&gbits,&gshift);
+  image_x_examine_mask(sp+6-args,"argument 5 (green mask)",&bbits,&bshift);
 
    if (ct) ct->refs++;
    pop_n_elems(args-4);
@@ -437,10 +437,10 @@ static void x_encode_truecolor_masks(INT32 args)
    if (ct)
    {
       push_object(ct);
-      x_encode_truecolor(11);
+     image_x_encode_truecolor(11);
    }
    else
-      x_encode_truecolor(10);
+     image_x_encode_truecolor(10);
 }
 
 /*
@@ -466,7 +466,7 @@ static void x_encode_truecolor_masks(INT32 args)
 **!	currently, only upto 16 bits pseudocolor are supported.
 */
 
-static void x_encode_pseudocolor_1byte_exact(INT32 args,
+static void image_x_encode_pseudocolor_1byte_exact(INT32 args,
 					     struct image *img,
 					     struct neo_colortable *nct,
 					     int bpp,int vbpp,int alignbits,
@@ -534,7 +534,7 @@ static void x_encode_pseudocolor_1byte_exact(INT32 args,
    while (0);
 }
 					     
-static void x_encode_pseudocolor_1byte(INT32 args,
+static void image_x_encode_pseudocolor_1byte(INT32 args,
 				       struct image *img,
 				       struct neo_colortable *nct,
 				       int bpp,int vbpp,int alignbits,
@@ -621,7 +621,7 @@ static void x_encode_pseudocolor_1byte(INT32 args,
    push_string(end_shared_string(dest2));
 }
 					     
-static void x_encode_pseudocolor_2byte(INT32 args,
+static void image_x_encode_pseudocolor_2byte(INT32 args,
 				       struct image *img,
 				       struct neo_colortable *nct,
 				       int bpp,int vbpp,int alignbits,
@@ -704,7 +704,7 @@ static void x_encode_pseudocolor_2byte(INT32 args,
    push_string(end_shared_string(dest2));
 }
 					     
-static void x_encode_pseudocolor(INT32 args)
+static void image_x_encode_pseudocolor(INT32 args)
 {
    INT32 bpp,alignbits,vbpp;
    struct image *img;
@@ -741,15 +741,153 @@ static void x_encode_pseudocolor(INT32 args)
 	 translate=sp[5-args].u.string->str;
    } 
    if ( vbpp==8 && bpp==8 && !((bpp*img->xsize)%alignbits) )
-      x_encode_pseudocolor_1byte_exact(args,img,nct,vbpp,bpp,alignbits,
+     image_x_encode_pseudocolor_1byte_exact(args,img,nct,vbpp,bpp,alignbits,
 				       (unsigned char*)translate);
    else if (vbpp<=8) 
-      x_encode_pseudocolor_1byte(args,img,nct,bpp,vbpp,alignbits,
+     image_x_encode_pseudocolor_1byte(args,img,nct,bpp,vbpp,alignbits,
 				 (unsigned char*)translate);
    else if (vbpp<=16) 
-      x_encode_pseudocolor_2byte(args,img,nct,bpp,vbpp,alignbits,
+     image_x_encode_pseudocolor_2byte(args,img,nct,bpp,vbpp,alignbits,
 				 (unsigned short*)translate);
    else error("Image.X.encode_pseudocolor: sorry, too many bits\n");
+}
+
+/*
+**! method object decode_zpixmap(string data,int width,int height,int bpp,int alignbits,int swapbytes,int rbits,int rshift,int gbits,int gshift,int bbits,int bshift)
+**! method object decode_zpixmap_masks(string data,int width,int height,int bpp,int alignbits,int swapbytes,int rmask,int gmask,int bmask)
+**!    lazy support for ZPixmaps 
+**!
+**! note:
+**!    currently, only full-byte masks and width are supported
+*/
+
+static void image_x_decode_zpixmap(INT32 args)
+{
+   struct pike_string *ps;
+   unsigned char *s;
+   unsigned long len;
+   INT32 width,height,bpp,alignbits,swapbytes;
+   INT32 rbits,rshift,gbits,gshift,bbits,bshift;
+   int i;
+   INT32 n;
+   rgb_group *d;
+
+   if (args<12) 
+      error("Image.X.decode_zpixmap: too few arguments\n");
+   if (sp[-args].type!=T_STRING) error("Image.X.decode_zpixmap: illegal argument 1\n");
+   for (i=1; i<12; i++)
+      if (sp[i-args].type!=T_INT) 
+	 error("Image.X.decode_zpixmap: illegal argument %d\n",i+1);
+
+   (ps=sp[-args].u.string)->refs++;
+   s=(unsigned char*)ps->str;
+   len=ps->len;
+   width=sp[1-args].u.integer;
+   height=sp[2-args].u.integer;
+   bpp=sp[3-args].u.integer;
+   alignbits=sp[4-args].u.integer;
+   swapbytes=sp[5-args].u.integer;
+   rbits=sp[6-args].u.integer;
+   rshift=sp[7-args].u.integer;
+   gbits=sp[8-args].u.integer;
+   gshift=sp[9-args].u.integer;
+   bbits=sp[10-args].u.integer;
+   bshift=sp[11-args].u.integer;
+
+   pop_n_elems(args);
+
+   if (bbits==8 && rbits==8 && gbits==8  &&
+       !((rshift|gshift|bshift|alignbits|bpp)&7))
+   {
+      int rpos=(rshift>>3);
+      int gpos=(gshift>>3);
+      int bpos=(bshift>>3);
+      int Bpp=(bpp>>3);
+      struct object *o;
+      struct image *img;
+
+      if (rpos>=Bpp || rpos<0 ||
+	  gpos>=Bpp || gpos<0 ||
+	  bpos>=Bpp || bpos<0)
+	 error("Image.X.decode_zpixmap: illegal colorshifts\n");
+      
+      if (swapbytes)
+	 rpos=Bpp-1-rpos,
+	 gpos=Bpp-1-gpos,
+	 bpos=Bpp-1-bpos;
+
+      push_int(width);
+      push_int(height);
+      o=clone_object(image_program,2);
+      img=get_storage(o,image_program);
+
+      d=img->img;
+      n=width*height;
+      while (n--)
+      {
+	 d->r=s[rpos];
+	 d->g=s[gpos];
+	 d->b=s[bpos];
+	 d++;
+
+	 if (n && Bpp>len) 
+	    break;
+	 len-=Bpp;
+	 s+=Bpp;
+      }
+      
+      free_string(ps);
+      push_object(o);
+   }
+   else
+   {
+      free_string(ps);
+      error("Image.X.decode_zpixmap: currently not supported non-byte ranges\n");
+   }
+}
+
+void image_x_decode_zpixmap_masks(INT32 args)
+{
+   struct object *ct=NULL;
+   int rbits,rshift,gbits,gshift,bbits,bshift;
+
+   if (args<9) 
+      error("Image.X.decode_zpixmap_masks: too few arguments (expected 7 arguments)\n");
+   if (sp[-args].type!=T_STRING)
+      error("Image.X.decode_zpixmap_masks: illegal argument 1 (expected image object)\n");
+
+   if (args>9)
+      if (sp[9-args].type!=T_OBJECT ||
+	  !get_storage(ct=sp[9-args].u.object,image_colortable_program))
+	 error("Image.X.decode_zpixmap_masks: illegal argument 8 (expected colortable object)\n");
+ 
+   if (sp[6-args].type!=T_INT)
+      error("Image.X.decode_zpixmap_masks: illegal argument 7 (expected integer)\n");
+   if (sp[7-args].type!=T_INT)
+      error("Image.X.decode_zpixmap_masks: illegal argument 8 (expected integer)\n");
+
+   if (sp[8-args].type!=T_INT)
+      error("Image.X.decode_zpixmap_masks: illegal argument 9 (expected integer)\n");
+
+   image_x_examine_mask(sp+6-args,"argument 7 (red mask)",&rbits,&rshift);
+   image_x_examine_mask(sp+7-args,"argument 8 (blue mask)",&gbits,&gshift);
+   image_x_examine_mask(sp+8-args,"argument 9 (green mask)",&bbits,&bshift);
+
+   if (ct) ct->refs++;
+   pop_n_elems(args-6);
+   push_int(rbits);
+   push_int(rshift);
+   push_int(gbits);
+   push_int(gshift);
+   push_int(bbits);
+   push_int(bshift);
+   if (ct)
+   {
+      push_object(ct);
+      image_x_decode_zpixmap(13);
+   }
+   else
+     image_x_decode_zpixmap(12);
 }
 
 /**** init module ********************************************/
@@ -761,14 +899,14 @@ void init_image_x(void)
   struct pike_string *s;
    start_new_program();
    
-   add_function("encode_truecolor",x_encode_truecolor,
+   add_function("encode_truecolor",image_x_encode_truecolor,
 		"function(object,int,int,int,int,int,int,int,int,int,void|object:string)",0);
-   add_function("encode_truecolor_masks",x_encode_truecolor_masks,
+   add_function("encode_truecolor_masks",image_x_encode_truecolor_masks,
 		"function(object,int,int,int,int,int,int,void|object:string)",0);
-   add_function("encode_pseudocolor",x_encode_pseudocolor,
+   add_function("encode_pseudocolor",image_x_encode_pseudocolor,
 		"function(object,int,int,int,object,void|string:string)",0);
 
-   add_function("examine_mask",x_call_examine_mask,
+   add_function("examine_mask",image_x_call_examine_mask,
 		"function(int:array(int))",0);
 
    image_x_module_program=end_program();
