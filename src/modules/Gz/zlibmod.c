@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.34 2000/12/15 20:40:24 nilsson Exp $");
+RCSID("$Id: zlibmod.c,v 1.35 2001/01/05 18:34:06 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -46,6 +46,41 @@ struct zipper
 #undef THIS
 #define THIS ((struct zipper *)(Pike_fp->current_storage))
 
+/*! @module Gz
+ *!
+ *! The Gz module contains functions to compress and uncompress strings using
+ *! the same algorithm as the program @tt{gzip@}. Compressing can be done in
+ *! streaming mode or all at once.
+ *!
+ *! The Gz module consists of two classes; Gz.deflate and Gz.inflate.
+ *! Gz.deflate is used to pack data
+ *! and Gz.inflate is used to unpack data. (Think "inflatable boat")
+ *!
+ *! @note
+ *!   Note that this module is only available if the gzip library was
+ *!   available when Pike was compiled.
+ *!
+ *!   Note that although these functions use the same @i{algorithm@} as
+ *!   @tt{gzip@}, they do not use the exact same format, so you cannot directly
+ *!   unzip gzipped files with these routines. Support for this will be
+ *!   added in the future.
+ */
+
+/*! @class deflate
+ *!
+ *! @seealso
+ *! @[Gz.inflate()]
+ */
+
+/*! @decl void create(int(0..9)|void X)
+ *!
+ *! If given, @[X] should be a number from 0 to 9 indicating the
+ *! packing / CPU ratio. Zero means no packing, 2-3 is considered 'fast',
+ *! 6 is default and higher is considered 'slow' but gives better packing.
+ *!
+ *! This function can also be used to re-initialize a Gz.deflate object
+ *! so it can be re-used.
+ */
 static void gz_deflate_create(INT32 args)
 {
   int level=Z_DEFAULT_COMPRESSION;
@@ -131,6 +166,27 @@ static int do_deflate(dynamic_buffer *buf,
    return ret;
 }
 
+/*! @decl string deflate(string data, int|void flush)
+ *!
+ *! This function performs gzip style compression on a string @[data] and
+ *! returns the packed data. Streaming can be done by calling this
+ *! function several times and concatenating the returned data.
+ *!
+ *! The optional argument @[flush] should be one of the following:
+ *! @int
+ *!   @value Gz.NO_FLUSH
+ *!     Only data that doesn't fit in the internal buffers is returned.
+ *!   @value Gz.PARTIAL_FLUSH
+ *!     All input is packed and returned.
+ *!   @value Gz.SYNC_FLUSH
+ *!     All input is packed and returned.
+ *!   @value Gz.FINISH
+ *!     All input is packed and an 'end of data' marker is appended.
+ *! @endint
+ *!
+ *! @seealso
+ *! @[Gz.inflate->inflate()]
+ */
 static void gz_deflate(INT32 args)
 {
   struct pike_string *data;
@@ -210,9 +266,16 @@ static void exit_gz_deflate(struct object *o)
   mt_destroy( & THIS->lock );
 }
 
+/*! @endclass
+ */
+
 /*******************************************************************/
 
+/*! @class inflate
+ */
 
+/*! @decl void create()
+ */
 static void gz_inflate_create(INT32 args)
 {
   int tmp;
@@ -283,6 +346,14 @@ static int do_inflate(dynamic_buffer *buf,
   return fail;
 }
 
+/*! @decl string inflate(string data)
+ *!
+ *! This function performs gzip style decompression. It can inflate
+ *! a whole file at once or in blocks.
+ *!
+ *! @seealso
+ *! @[Gz.deflate->deflate()]
+ */
 static void gz_inflate(INT32 args)
 {
   struct pike_string *data;
@@ -344,7 +415,13 @@ static void exit_gz_inflate(struct object *o)
   mt_destroy( & THIS->lock );
 }
 
+/*! @endclass
+ */
 
+/*! @decl int crc32(string data, void|int start_value)
+ *!
+ *! This function calculates the standard ISO3309 Cyclic Redundancy Check.
+ */
 static void gz_crc32(INT32 args)
 {
    unsigned INT32 crc;
@@ -369,6 +446,8 @@ static void gz_crc32(INT32 args)
 }
 
 
+/*! @endmodule
+ */
 #endif
 
 void pike_module_exit(void) {}
