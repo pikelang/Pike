@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.h,v 1.30 2004/12/30 13:25:44 grubba Exp $
+|| $Id: errors.h,v 1.31 2005/01/20 14:29:51 nilsson Exp $
 */
 
 #ifdef ERR_DECLARE
@@ -44,7 +44,7 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 }while(0);
 
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
-  map_variable(#NAME2, #CTYPE, 0, \
+  MAP_VARIABLE(#NAME2, CTYPE, 0, \
 	       current_offset + (((char *)&(foo.NAME2))-((char *)&foo)), RUNTYPE);
 
 #define EMPTY
@@ -79,8 +79,8 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #endif
 
 DECLARE_ERROR(generic, Generic, EMPTY ,
-  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,error_message)
-  ERR_VAR(struct array *,array,PIKE_T_ARRAY,error_backtrace)
+  ERR_VAR(struct pike_string *,tStr,PIKE_T_STRING,error_message)
+  ERR_VAR(struct array *,tArray,PIKE_T_ARRAY,error_backtrace)
   ERR_FUNC("cast",f_error_cast,tFunc(tString,tMixed),ID_STATIC)
   ERR_FUNC("`[]",f_error_index,tFunc(tString,tMixed),ID_STATIC)
   ERR_FUNC("describe",f_error_describe,tFunc(tVoid,tString),0)
@@ -94,31 +94,31 @@ DECLARE_ERROR(generic, Generic, EMPTY ,
 
 DECLARE_ERROR(index, Index,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, value)
-  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, index)
+  ERR_VAR(struct svalue, tMix, PIKE_T_MIXED, value)
+  ERR_VAR(struct svalue, tMix, PIKE_T_MIXED, index)
 )
 
 DECLARE_ERROR(bad_argument, BadArgument,
 	      ERR_INHERIT(generic),
-  ERR_VAR(INT_TYPE, int, PIKE_T_INT, which_argument)
-  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,expected_type)
-  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, got_value)
+  ERR_VAR(INT_TYPE, tInt, PIKE_T_INT, which_argument)
+  ERR_VAR(struct pike_string *, tStr,PIKE_T_STRING,expected_type)
+  ERR_VAR(struct svalue, tMix, PIKE_T_MIXED, got_value)
 )
 
 DECLARE_ERROR(math, Math,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct svalue, mixed, PIKE_T_MIXED, number)
+  ERR_VAR(struct svalue, tMix, PIKE_T_MIXED, number)
 )
 
 DECLARE_ERROR(resource, Resource,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,resource_type)
-  ERR_VAR(INT_TYPE, int, PIKE_T_INT, howmuch)
+  ERR_VAR(struct pike_string *, tStr, PIKE_T_STRING,resource_type)
+  ERR_VAR(INT_TYPE, tInt, PIKE_T_INT, howmuch)
 )
 
 DECLARE_ERROR(permission, Permission,
 	      ERR_INHERIT(generic),
-  ERR_VAR(struct pike_string *,string,PIKE_T_STRING,permission_type)
+  ERR_VAR(struct pike_string *, tStr, PIKE_T_STRING,permission_type)
 )
 
 DECLARE_ERROR(cpp, Cpp, ERR_INHERIT(generic), EMPTY)
@@ -129,8 +129,8 @@ DECLARE_ERROR(master_load, MasterLoad, ERR_INHERIT (generic), EMPTY)
 
 DECLARE_ERROR (module_load, ModuleLoad,
 	       ERR_INHERIT (generic),
-  ERR_VAR (struct pike_string *, string, PIKE_T_STRING, path)
-  ERR_VAR (struct pike_string *, string, PIKE_T_STRING, reason)
+  ERR_VAR (struct pike_string *, tStr, PIKE_T_STRING, path)
+  ERR_VAR (struct pike_string *, tStr, PIKE_T_STRING, reason)
 )
 
 #undef DECLARE_ERROR
