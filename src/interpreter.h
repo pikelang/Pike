@@ -81,7 +81,7 @@ static int eval_instruction(unsigned char *pc)
 	default:
 	case 3:
 	  check_object(fp->current_object);
-	  break;
+/*	  break; */
 
 	case 2:
 	  check_object_context(fp->current_object,

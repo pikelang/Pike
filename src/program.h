@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.56 1999/09/06 11:13:21 hubbe Exp $
+ * $Id: program.h,v 1.57 1999/09/15 07:15:20 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -209,8 +209,8 @@ struct program
   struct object *prot;
 #endif
   INT32 id;             /* used to identify program in caches */
-  INT32 flags;          /* PROGRAM_* */
   INT32 storage_needed; /* storage needed in the object struct */
+  INT16 flags;          /* PROGRAM_* */
   unsigned INT8 alignment_needed;
   struct timeval timestamp;
 

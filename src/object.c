@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.79 1999/09/14 22:51:04 hubbe Exp $");
+RCSID("$Id: object.c,v 1.80 1999/09/15 07:15:19 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1417,6 +1417,7 @@ void check_object_context(struct object *o,
 {
   int q;
   if(o == fake_object) return;
+  if( ! o->prog ) return; /* Variables are already freed */
 
   for(q=0;q<(int)context_prog->num_variable_index;q++)
   {
