@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.97 1998/04/24 18:29:04 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.98 1998/04/26 11:38:50 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -17,6 +17,25 @@ bar"]],[["foo\nbar"]])
 test_true([[stringp(#string "Makefile")]])
 test_any([[class Bar { array(int) foo = ({}); }; class Foo { inherit Bar; array(int) foo = ({1}); }; return sizeof(Foo()->foo);]],1)
 
+test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"foo")]])
+test_false([[object_variablep(class X { int y; int z() { return 1; }}(),"z")]])
+test_true([[object_variablep(class X { int y; int z() { return 1; }}(),"y")]])
+
+test_any([[ int a,b; [a,b]=({1,2}); return a]],1)
+test_any([[ int a,b; [a,b]=({1,2}); return b]],2)
+test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return a]],1)
+test_any([[ int a,b; [ [a],b]=({ ({ 1 }) ,2}); return b]],2)
+test_compile_error([[ default ; ]])
+test_compile_error([[ int a,b; [a,b]++; ]])
+test_compile_eror(0())
+test_compile_eror(1())
+test_compile_eror(""())
+test_compile_eror(([])())
+test_compile_eror(([])())
+test_any([[ class X { int y; class Z { void destroy() { y++; } } }; X x=X(); destruct(x->Z()); return x->y;]],1)
+test_eval_error([[ class Z { int destroy() { return 1/y; } }(); ]])
+
+test_do(_debug(_debug(0)))
 test_do(_static_modules())
 test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
 test_compile([[Stdio.File foo=Stdio.File();]])
@@ -27,6 +46,49 @@ test_compile_any([[void foo(array(Stdio.FILE) f) {}]])
 test_compile_any([[Stdio.File foo(array(Stdio.FILE) f) { return f[0]; }]])
 test_compile([[Stdio.File foo=Stdio.FILE();]])
 
+dnl this should really work...
+dnl test_compile_any([[void foo(int,string,...);]])
+
+test_compile_error([[ int float; ]])
+test_compile_error([[ int array; ]])
+test_compile_error([[ int function; ]])
+test_compile_error([[ int int; ]])
+test_compile_error([[ int mapping; ]])
+test_compile_error([[ int multiset; ]])
+test_compile_error([[ int object; ]])
+test_compile_error([[ int string; ]])
+test_compile_error([[ int void; ]])
+test_compile_error([[ int inline; ]])
+test_compile_error([[ int local; ]])
+test_compile_error([[ int nomask; ]])
+test_compile_error([[ int predef; ]])
+test_compile_error([[ int private; ]])
+test_compile_error([[ int protected; ]])
+test_compile_error([[ int public; ]])
+test_compile_error([[ int static; ]])
+test_compile_error([[ int final; ]])
+test_compile_error([[ int do; ]])
+test_compile_error([[ int else; ]])
+test_compile_error([[ int return; ]])
+test_compile_error([[ int constant; ]])
+test_compile_error([[ int import; ]])
+test_compile_error([[ int inherit; ]])
+test_compile_error([[ int catch; ]])
+test_compile_error([[ int gauge; ]])
+test_compile_error([[ int lambda; ]])
+test_compile_error([[ int sscanf; ]])
+test_compile_error([[ int switch; ]])
+test_compile_error([[ int typeof; ]])
+test_compile_error([[ int break; ]])
+test_compile_error([[ int case; ]])
+test_compile_error([[ int continue; ]])
+test_compile_error([[ int default; ]])
+test_compile_error([[ int for; ]])
+test_compile_error([[ int foreach; ]])
+test_compile_error([[ int if; ]])
+test_compile_error([[ int float = 0; ]])
+test_eval_error([[ return 0.0[0]; ]])
+test_eval_error([[ return 0[0]; ]])
 test_compile_error([[constant x=class {}(); ]])
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -45,6 +107,19 @@ test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
 test_eq([[cpp("#define MAX(X,Y) ((X)>(Y)?(X):(Y))\n#define MAX3(X,Y,Z) MAX(MAX(X,Y),Z)\nMAX3(1,2,3)")]],"# 1 \"-\"\n\n\n(( (( 1 )>( 2 )?( 1 ):( 2 )) )>( 3 )?( (( 1 )>( 2 )?( 1 ):( 2 )) ):( 3 ))")
 
 test_program([[class foo { program x() { return class {}; }}; class bar { inherit foo; program x() { return class {}; }} int a() { return foo()->x != bar()->x(); }]])
+
+test_eq([[object_program(master())]],[[(program)"/master"]])
+test_compile([[object("master") m = master();]])
+test_any([[int x; x++; if(x) return x; return -1;]],1)
+test_any([[int x; if(x) return x; return -1;]],-1)
+test_any([[int x,y; if(x==y || x==1) return 2; return 0;]],2);
+test_any([[int x,y; if(x==y && x==0) return 2; return 0;]],2);
+test_any([[int x,y=1; if(x==y || x==1) return 2; return 0;]],0);
+test_any([[int x,y=1; if(x==y && x==0) return 2; return 0;]],0);
+
+test_eq([[ "\007" & "\023"]],"\003")
+test_eq([[ "\007" | "\023"]],"\027")
+test_eq([[ "\007" ^ "\023"]],"\024")
 
 // Testing the 'inline' keyword
 test_program([[class foo { inline int c() { return time(); } int d() { return c(); } }; class bar { inherit foo; int c() { return 0; } } int a() { return bar()->d(); }]],0)
@@ -123,7 +198,7 @@ test_any([[
 class p1 { int foo() { return 1; } };
 class p2 { int foo() { return 2; } };
 class c1 { inherit p1; inherit p2; };
-return c1()->foo();]],2);
+return c1()->foo();]],2)
 
 test_any([[class foo { int x=random(100); int `<(object o) { return x < o->x; } }; object *o=Array.map(allocate(100),foo); sort(o); for(int e=1;e<100;e++) if(o[e-1]->x > o[e]->x) return e; return -1;]],-1)
 test_compile_error([[void foo() { 1++; }]])
@@ -137,6 +212,7 @@ test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return 
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
 test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
 test_true(time())
+test_true(time(1))
 test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
 test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 0: return 1; } else { case 1: return 2; } } }]])
 
@@ -170,8 +246,8 @@ test_any([[mixed s="foo"; return s++;]],"foo")
 test_any([[mixed s="foo"; s++; return s;]],"foo1")
 test_any([[mixed s="foo"; return ++s;]],"foo1")
 test_any([[float p=2.0; return p--;]],2.0);
-test_any([[float p=2.0; p--; return p;]],1.0);
-test_any([[float p=2.0; return --p;]],1.0);
+test_any([[float p=2.0; p--; return p;]],1.0)
+test_any([[float p=2.0; return --p;]],1.0)
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(clone(class c { constant i=1; })->i)
@@ -184,10 +260,14 @@ test_true(clone(class c { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})-
 test_compile_any(class A {}; class B { inherit A; })
 
 test_true(mappingp(_memory_usage()))
+test_true(_refs(""));
+test_true(_refs(({})));
+test_true(_refs(([])));
+test_true(_refs(this_object()))
 test_true(objectp( _next(this_object()) || _prev(this_object())))
 test_true(arrayp( _next(({})) || _prev(({}))))
-test_any(object o=this_object(); while(o=_next(o)));
-test_any(object o=this_object(); while(o=_prev(o)));
+test_any(object o=this_object(); while(o=_next(o)))
+test_any(object o=this_object(); while(o=_prev(o)))
 
 test_any([[object(Stdio.File) o=Stdio.File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
@@ -210,6 +290,8 @@ test_any(if(int i=1) return i; return 0;,1)
 test_compile(for(int i=0;i<100;i++) return 0;)
 test_compile(foreach(({}),mixed i){})
 test_compile(sscanf("","",mixed foo))
+test_compile_error(sscanf("","",float))
+test_compile_error(sscanf("",float))
 
 // ++
 test_any([[int e; e++; return e;]],1)
@@ -217,6 +299,7 @@ test_any([[int e; ++e; return e;]],1)
 test_any([[int e; return e++;]],0)
 test_any([[int e; return ++e;]],1)
 test_any([[int e; if(e++) return 0; return e;]],1)
+test_any([[string e=""; e++; return e;]],"1")
 
 // --
 test_any([[int e; e--; return e;]],-1)
@@ -224,6 +307,7 @@ test_any([[int e; --e; return e;]],-1)
 test_any([[int e; return e--;]],0)
 test_any([[int e; return --e;]],-1)
 test_any([[int e; if(e--) return 0; return e;]],-1)
+test_any([[string e=""; e--; return e;]],"-1")
 
 test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
 
@@ -253,6 +337,36 @@ test_equal([[glob("foo*bar",({"foobar","foobargazonk","","foofoobar","fobar","fo
 cond([[all_constants()->localtime]],
 [[
 test_true(mappingp(localtime(0)))
+]])
+
+cond([[all_constants()->mktime]],
+[[
+  test_true([[mktime( ([
+  "sec":58,
+  "isdst":1,
+  "year":98,
+  "mon":3,
+  "mday":26,
+  "hour":1,
+  "min":51
+]))]])
+
+  test_eq([[mktime(58,51,1,26,3,98,1,0)]],[[mktime( ([
+  "sec":58,
+  "isdst":1,
+  "year":98,
+  "mon":3,
+  "mday":26,
+  "hour":1,
+  "min":51,
+  "timezone":0,
+]) ) ]])
+
+]])
+
+cond([[all_constants()->localtime && all_constants()->mktime]],
+[[
+  test_any([[ int x=time(); return mktime(localtime(x)) == x;]], 1)
 ]])
 
 cond([[all_constants()->_verify_internals]],
@@ -335,6 +449,134 @@ test_any(mapping a=([1:1]); return a==m_delete(a,1),1)
 test_any([[mapping m=([]); m[1]++; return m[1];]],1)
 test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
 test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
+
+// multiset tests
+
+test_any([[multiset m=(<>);int e;
+  for(e=0;e<1000;e++) m[e]=1;
+  for(e=0;e<1000;e++) if(!m[e]) return e;
+  return -1;
+]],-1)
+
+test_any([[multiset m=(<>);int e;
+  for(e=0;e<1000;e++) m[e]++;
+  for(e=0;e<1000;e++) if(!m[e]) return e;
+  return -1;
+]],-1)
+
+test_any([[multiset m=(<>);int e;
+  for(e=0;e<1000;e++) m[e]=1;
+  for(e=999;e>=0;e--) if(!m[e]) return e;
+  return -1;
+]],-1)
+
+test_any([[multiset m=(<>);int e;
+  for(e=999;e>=0;e--) m[e]=1;
+  for(e=0;e<1000;e++) if(!m[e]) return e;
+  return -1;
+]],-1)
+
+test_any([[multiset m=(<>);int e;
+  for(e=999;e>=0;e--) m[e]=1;
+  for(e=999;e>=0;e--) if(!m[e]) return e;
+  return -1;
+]],-1)
+
+test_any([[multiset m=(<>);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=1;
+  for(e=0;e<1000;e++) if(!m[reverse(e)]) return e;
+  return -1;
+]],-1)
+
+test_any([[multiset m=(<>);int e;
+  for(e=999;e>=0;e--) m[reverse(e)]=1;
+  for(e=0;e<1000;e++) if(!m[reverse(e)]) return e;
+  return -1;
+]],-1)
+
+test_any([[multiset m=(<>);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=1;
+  for(e=0;e<1000;e++) m[reverse(e)]=0;
+  return sizeof(m);
+]],0)
+
+test_any([[multiset m=(<>);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=1;
+  for(e=0;e<1000;e+=2) m[reverse(e)]=0;
+  for(e=0;e<1000;e+=2) if(m[reverse(e)]) return e;
+  for(e=1;e<1000;e+=2) if(!m[reverse(e)]) return e;
+  return -1;
+]],-1)
+
+
+test_any([[multiset m=(<>);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=1;
+  for(e=0;e<1000;e++) m[reverse(e)]++;
+  for(e=0;e<1000;e++) if(m[reverse(e)]!=1) return e;
+  return -1;
+]],-1)
+
+
+test_any([[multiset m=(<>);int e;
+  mixed a;
+  a=allocate(1000);
+  for(e=0;e<1000;e++)
+  {
+    m[reverse(e)]=1;
+    a[e]=reverse(e);
+  }
+  add_constant("mtest_m",m);
+  add_constant("mtest_i",a);
+  return 1;
+]],1)
+
+test_eq([[sizeof(mtest_m)]],sizeof(mtest_i))
+test_equal(Array.sort_array(indices(mtest_m)),Array.sort_array(mtest_i))
+test_equal(mtest_m,copy_value(mtest_m))
+
+test_any([[multiset m=(<>);int e;
+  mixed a;
+  a=allocate(100);
+  for(e=0;e<100;e++)
+  {
+    m[reverse(e-50)]=1;
+    a[e]=reverse(e-50);
+    if(sizeof(m)!=e+1) return e;
+  }
+  add_constant("mtest_m2",m);
+  add_constant("mtest_i2",a);
+  return -1;
+]],-1)
+
+test_eq([[sizeof(mtest_m2)]],sizeof(mtest_i2))
+test_any([[int e;multiset q=(<>),p=(<>); for(e=0;e<1000;e++) { p[reverse(e)]=1; q+=(<reverse(e)>); if(!equal(sort(indices(p)),sort(indices(q)))) return 0; } return 1;]],1)
+
+test_equal(sort(indices(mtest_m|mtest_m2)),sort(mtest_i|mtest_i2))
+test_equal(sort(indices(mtest_m&mtest_m2)),sort(mtest_i&mtest_i2))
+test_equal(sort(indices(mtest_m-mtest_m2)),sort(mtest_i-mtest_i2))
+test_equal(sort(indices(mtest_m^mtest_m2)),sort(mtest_i^mtest_i2))
+test_equal(sort(indices(mtest_m2|mtest_m)),sort(mtest_i2|mtest_i))
+test_equal(sort(indices(mtest_m2&mtest_m)),sort(mtest_i2&mtest_i))
+test_equal(sort(indices(mtest_m2-mtest_m)),sort(mtest_i2-mtest_i))
+test_equal(sort(indices(mtest_m2^mtest_m)),sort(mtest_i2^mtest_i))
+
+test_do(add_constant("mtest_m"); add_constant("mtest_i"); )
+test_do(add_constant("mtest_m2"); add_constant("mtest_i2"); )
+
+define(MTEST,[[test_equal([[mkmultiset(indices(allocate($1)))]],[[mkmultiset(reverse(indices(allocate($1))))]])]])
+
+MTEST(0)
+MTEST(1)
+MTEST(2)
+MTEST(3)
+MTEST(5)
+MTEST(8)
+MTEST(13)
+MTEST(21)
+MTEST(34)
+MTEST(55)
+
+define([[MTEST]])
 
 // mapping tests
 
@@ -631,6 +873,13 @@ test_any([[mixed a; sscanf("ab","%2s",a); return a]],"ab")
 test_any([[mixed a; sscanf("abc","%3s",a); return a]],"abc")
 test_any([[mixed a; sscanf("abc","%2s",a); return a]],"ab")
 test_any([[mixed a; sscanf("ac","%3s",a); return a]],0)
+test_any([[mixed a; sscanf("a3","%*s%d",a); return a]],3)
+test_any([[mixed a; sscanf("a3","%s%*d",a); return a]],"a")
+test_any([[mixed a; sscanf("a93","%s%*o",a); return a]],"a9")
+test_any([[mixed a; sscanf("a93","%*s%o",a); return a]],3)
+test_any([[mixed a; sscanf("a93","%s%*x",a); return a]],"")
+test_any([[mixed a; sscanf("a93","%*s%x",a); return a]],0xa93)
+test_any([[mixed a; sscanf("f","f%n",a); return a]],1)
 
 test_equal([[array_sscanf("10 20 30","%d %d %d")]],[[({10,20,30})]])
 test_equal([[array_sscanf("1 2 3 4 5 6 7 8 9","%d %d %d %d %d %d %d %d %s")]],[[({1,2,3,4,5,6,7,8,"9"})]])
@@ -746,6 +995,8 @@ test_equal((["foo":3,"bar":4,"gazonk":5])-(["foo":3,"gazonk":8]),(["bar":4]))
 // testing ~
 test_eq(-1-4,~4)
 test_eq(-1-627893874,~627893874)
+test_eq(~1.0,-2.0)
+test_eq(~"\x55","\xaa")
 
 // testing *
 test_eq(3*4,12)
@@ -998,6 +1249,8 @@ test_eq([[(string)1]],[["1"]])
 test_equal([[(array)(["1":1])]],[[ ({ ({"1", 1}) }) ]])
 test_equal([[(array(int)) ({"1","4711",2.0,4})]],[[({1,4711,2,4})]])
 
+test_equal([[(array)"foo"]],[[ values("foo") ]])
+test_equal([[(array)(<1,2,3>)]],[[ indices( (<1,2,3>) )]])
 
 // testing @
 test_equal(({1,2,3}),lambda(mixed ... x) { return x; }(@a()))
@@ -1726,6 +1979,8 @@ do_test_copy_value( (< ([]), ({1}) ,"" , 1.0 >) )
 // - crypt
 test_true(stringp(crypt("hej")))
 test_true(crypt("hej",crypt("hej")))
+test_false(crypt("hej","hej"))
+test_false(crypt("h","hej"))
 
 // - ctime
 test_true(stringp(ctime(0)))
@@ -2062,8 +2317,10 @@ test_equal(Array.everynth("0123456789"/"",3),
 test_equal(Array.everynth("0123456789"/"",3,4),
   ({ "4", "7"}))
 
+
+test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
+	({ ({1,4}), ({2,5}), ({3,6}) }))
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
 ]])
-
