@@ -81,6 +81,7 @@ class Process
   }
 }
 
+#if constant(exece)
 //!
 int exec(string file,string ... foo)
 {
@@ -99,6 +100,7 @@ int exec(string file,string ... foo)
   }
   return 69;
 }
+#endif
 
 static array(string) search_path_entries=0;
 
