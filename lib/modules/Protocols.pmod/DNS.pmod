@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.72 2003/04/07 17:12:02 nilsson Exp $
+// $Id: DNS.pmod,v 1.73 2003/04/22 17:39:01 nilsson Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -154,8 +154,21 @@ class protocol
         return sprintf("%2c%2c%2c", entry->priority, entry->weight, entry->port) +
                       mkname(entry->target||"", pos+6, c);
      case T_A:
-     case T_AAAA:
        return sprintf("%@1c", (array(int))((entry->a||"0.0.0.0")/".")[0..3]);
+     case T_AAAA:
+       string addr6 = entry->a||"::";
+       if(has_value(addr6, "::")) {
+	 int parts = sizeof((addr6/":")-({""}));
+	 if(has_value(addr6, ".")) parts++;
+	 addr6 = replace(addr6, "::", ":"+"0:"*(8-parts));
+	 sscanf(addr6, ":%s", addr6);
+       }
+       if(has_value(addr6, "."))
+	 return sprintf("%2c%2c%2c%2c%2c%2c%c%c%c%c",
+			array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x.%x.%x.%x"));
+       else
+	 return sprintf("%@2c",
+			array_sscanf(addr6, "%x:%x:%x:%x:%x:%x:%x:%x"));
      case T_SOA:
        string mname = mkname(entry->mname, pos, c);
        return mname + mkname(entry->rname, pos+sizeof(mname), c) +
@@ -360,8 +373,10 @@ class protocol
         m->ttl=decode_int(s,next);
         break;
       case T_A:
-      case T_AAAA:
 	m->a=sprintf("%{.%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
+	break;
+      case T_AAAA:
+	m->a=sprintf("%{:%d%}",values(s[next[0]..next[0]+m->len-1]))[1..];
 	break;
       case T_SOA:
 	m->mname=decode_domain(s,next);
