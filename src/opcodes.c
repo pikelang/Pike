@@ -18,6 +18,8 @@
 #include "pike_types.h"
 #include "pike_memory.h"
 #include "fd_control.h"
+#include "cyclic.h"
+#include "builtin_functions.h"
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -213,25 +215,19 @@ void cast(struct pike_string *s)
   }
 }
 
-void f_cast(void)
+void o_cast(struct pike_string *type, INT32 run_time_type)
 {
   INT32 i;
-  
-  i=compile_type_to_runtime_type(sp[-1].u.string);
 
-  if(i != sp[-2].type)
+  if(run_time_type != sp[-1].type)
   {
-    if(i == T_MIXED)
-    {
-      pop_stack();
+    if(run_time_type == T_MIXED)
       return;
-    }
 
-    if(sp[-2].type == T_OBJECT)
+    if(sp[-1].type == T_OBJECT)
     {
       struct pike_string *s;
-      s=describe_type(sp[-1].u.string);
-      pop_stack();
+      s=describe_type(type);
       push_string(s);
       if(!sp[-2].u.object->prog)
 	error("Cast called on destructed object.\n");
@@ -244,82 +240,123 @@ void f_cast(void)
       return;
     }
 
-    pop_stack();
-    switch(i)
+    switch(run_time_type)
     {
-    case T_MIXED:
-      break;
-
-    case T_INT:
-      switch(sp[-1].type)
-      {
-      case T_FLOAT:
-	i=(int)(sp[-1].u.float_number);
+      case T_MIXED:
 	break;
+	
+      case T_ARRAY:
+	switch(sp[-1].type)
+	{
+	  case T_MAPPING:
+	  {
+	    struct array *a=mapping_to_array(sp[-1].u.mapping);
+	    pop_stack();
+	    push_array(a);
+	    break;
+	  }
 
-      case T_STRING:
-	i=STRTOL(sp[-1].u.string->str,0,0);
-	free_string(sp[-1].u.string);
+	  case T_STRING:
+	    f_values(1);
+	    break;
+
+	  case T_MULTISET:
+	    f_indices(1);
+	    break;
+
+	  default:
+	    error("Cannot cast to array.\n");
+	      
+	}
 	break;
-      
-      default:
-	error("Cannot cast to int.\n");
-      }
-      
-      sp[-1].type=T_INT;
-      sp[-1].u.integer=i;
-      break;
-
-    case T_FLOAT:
-    {
-      FLOAT_TYPE f;
-      switch(sp[-1].type)
-      {
+	
       case T_INT:
-	f=(FLOAT_TYPE)(sp[-1].u.integer);
+	switch(sp[-1].type)
+	{
+	  case T_FLOAT:
+	    i=(int)(sp[-1].u.float_number);
+	    break;
+	    
+	  case T_STRING:
+	    i=STRTOL(sp[-1].u.string->str,0,0);
+	    free_string(sp[-1].u.string);
+	    break;
+	    
+	  default:
+	    error("Cannot cast to int.\n");
+	}
+	
+	sp[-1].type=T_INT;
+	sp[-1].u.integer=i;
 	break;
-
-      case T_STRING:
-	f=STRTOD(sp[-1].u.string->str,0);
-	free_string(sp[-1].u.string);
-	break;
-      
-      default:
-	error("Cannot cast to float.\n");
-	f=0.0;
-      }
-      
-      sp[-1].type=T_FLOAT;
-      sp[-1].u.float_number=f;
-      break;
-    }
-
-    case T_STRING:
-    {
-      char buf[200];
-      switch(sp[-1].type)
-      {
-      case T_INT:
-	sprintf(buf,"%ld",(long)sp[-1].u.integer);
-	break;
-
+	
       case T_FLOAT:
-	sprintf(buf,"%f",(double)sp[-1].u.float_number);
+      {
+	FLOAT_TYPE f;
+	switch(sp[-1].type)
+	{
+	  case T_INT:
+	    f=(FLOAT_TYPE)(sp[-1].u.integer);
+	    break;
+	    
+	  case T_STRING:
+	    f=STRTOD(sp[-1].u.string->str,0);
+	    free_string(sp[-1].u.string);
+	    break;
+	    
+	  default:
+	    error("Cannot cast to float.\n");
+	    f=0.0;
+	}
+	
+	sp[-1].type=T_FLOAT;
+	sp[-1].u.float_number=f;
 	break;
-      
-      default:
-	error("Cannot cast to string.\n");
       }
       
-      sp[-1].type=T_STRING;
-      sp[-1].u.string=make_shared_string(buf);
-      break;
-    }
-
-    case T_OBJECT:
-      switch(sp[-1].type)
-      {
       case T_STRING:
+      {
+	char buf[200];
+	switch(sp[-1].type)
+	{
+	  case T_INT:
+	    sprintf(buf,"%ld",(long)sp[-1].u.integer);
+	    break;
+	    
+	  case T_FLOAT:
+	    sprintf(buf,"%f",(double)sp[-1].u.float_number);
+	    break;
+	    
+	  default:
+	    error("Cannot cast to string.\n");
+	}
+	
+	sp[-1].type=T_STRING;
+	sp[-1].u.string=make_shared_string(buf);
+	break;
+      }
+      
+      case T_OBJECT:
+	switch(sp[-1].type)
+	{
+	  case T_STRING:
+	    if(fp->pc)
+	    {
+	      INT32 lineno;
+	      push_text(get_line(fp->pc, fp->context.prog, &lineno));
+	    }else{
+	      push_int(0);
+	    }
+	    APPLY_MASTER("cast_to_object",2);
+	    return;
+	    
+	  case T_FUNCTION:
+	    sp[-1].type = T_OBJECT;
+	    break;
+	}
+	break;
+	
+      case T_PROGRAM:
 	if(fp->pc)
 	{
 	  INT32 lineno;
@@ -327,52 +364,96 @@ void f_cast(void)
 	}else{
 	  push_int(0);
 	}
-	APPLY_MASTER("cast_to_object",2);
-	break;
+	APPLY_MASTER("cast_to_program",2);
+	return;
 	
       case T_FUNCTION:
-	sp[-1].type = T_OBJECT;
+      {
+	INT32 i;
+	if(fp->current_object->prog)
+	  error("Cast to function in destructed object.\n");
+	i=find_shared_string_identifier(sp[-1].u.string,fp->current_object->prog);
+	free_string(sp[-1].u.string);
+	/* FIXME, check that it is a indeed a function */
+	if(i==-1)
+	{
+	  sp[-1].type=T_FUNCTION;
+	  sp[-1].subtype=i;
+	  sp[-1].u.object=fp->current_object;
+	  fp->current_object->refs++;
+	}else{
+	  sp[-1].type=T_INT;
+	  sp[-1].subtype=NUMBER_UNDEFINED;
+	  sp[-1].u.integer=0;
+	}
 	break;
       }
-      break;
-
-    case T_PROGRAM:
-      if(fp->pc)
-      {
-	INT32 lineno;
-	push_text(get_line(fp->pc, fp->context.prog, &lineno));
-      }else{
-	push_int(0);
-      }
-      APPLY_MASTER("cast_to_program",2);
-      break;
-
-    case T_FUNCTION:
-    {
-      INT32 i;
-      if(fp->current_object->prog)
-	error("Cast to function in destructed object.\n");
-      i=find_shared_string_identifier(sp[-1].u.string,fp->current_object->prog);
-      free_string(sp[-1].u.string);
-      /* FIXME, check that it is a indeed a function */
-      if(i==-1)
-      {
-	sp[-1].type=T_FUNCTION;
-	sp[-1].subtype=i;
-	sp[-1].u.object=fp->current_object;
-	fp->current_object->refs++;
-      }else{
-	sp[-1].type=T_INT;
-	sp[-1].subtype=NUMBER_UNDEFINED;
-	sp[-1].u.integer=0;
-      }
-      break;
+      
     }
-
-    }
-  }else{
-    pop_stack();
   }
+
+#ifdef DEBUG
+  if(run_time_type != sp[-1].type)
+    fatal("Internal error: Cast failed.\n");
+#endif
+
+  switch(run_time_type)
+  {
+    case T_ARRAY:
+    {
+      struct pike_string *itype;
+      INT32 run_time_itype;
+
+      push_string(itype=index_type(sp[-2].u.string,0));
+      run_time_itype=compile_type_to_runtime_type(itype);
+
+      if(run_time_itype != T_MIXED)
+      {
+	struct array *a;
+	struct array *tmp=sp[-2].u.array;
+	DECLARE_CYCLIC();
+	
+	if((a=(struct array *)BEGIN_CYCLIC(tmp,0)))
+	{
+	  ref_push_array(a);
+	}else{
+	  INT32 e,i;
+	  struct pike_string *s;
+	  push_array(a=allocate_array(tmp->size));
+	  SET_CYCLIC_RET(a);
+	  
+	  for(e=0;e<a->size;e++)
+	  {
+	    push_svalue(tmp->item+e);
+	    o_cast(itype, run_time_itype);
+	    array_set_index(a,e,sp-1);
+	    pop_stack();
+	  }
+	  END_CYCLIC();
+	}
+	assign_svalue(sp-3,sp-1);
+	pop_stack();
+      }
+      pop_stack();
+    }
+  }
+}
+
+
+void f_cast(void)
+{
+#ifdef DEBUG
+  struct svalue *save_sp=sp;
+#endif
+  o_cast(sp[-2].u.string,
+	 compile_type_to_runtime_type(sp[-2].u.string));
+#ifdef DEBUG
+  if(save_sp != sp)
+    fatal("Internal error: o_cast() left droppings on stack.\n");
+#endif
+  free_svalue(sp-2);
+  sp[-2]=sp[-1];
+  sp--;
 }
 
 

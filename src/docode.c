@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.30 1998/02/01 04:01:32 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.31 1998/02/20 00:36:17 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -641,13 +641,13 @@ static int do_docode2(node *n,int flags)
       DO_CODE_BLOCK(CAR(n));
       return 0;
     }
+    tmp1=store_prog_string(n->type);
+    emit(F_STRING,tmp1);
 
     tmp1=do_docode(CAR(n),0);
     if(!tmp1) { emit2(F_CONST0); tmp1=1; }
     if(tmp1>1) do_pop(tmp1-1);
 
-    tmp1=store_prog_string(n->type);
-    emit(F_STRING,tmp1);
     emit2(F_CAST);
     return 1;
 
