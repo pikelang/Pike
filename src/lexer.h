@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.1 1999/02/20 17:47:05 grubba Exp $
+ * $Id: lexer.h,v 1.2 1999/02/20 19:53:00 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -42,6 +42,7 @@
 #define lex_atoi atoi
 #define lex_strtol STRTOL
 #define lex_strtod my_strtod
+#define lex_isidchar isidchar
 
 #else /* SHIFT != 0 */
 
@@ -87,6 +88,8 @@
 #define lex_strtod lex_strtod2
 
 #endif /* SHIFT == 1 */
+
+#define lex_isidchar(X) ((((unsigned) X)>=256) || isidchar(X))
 
 static int low_isword(char *buf, char *X, int len)
 {
@@ -616,11 +619,11 @@ static int low_yylex(YYSTYPE *yylval)
 
   
     default:
-      if(isidchar(c))
+      if(lex_isidchar(c))
       {
 	struct pike_string *s;
 	lex.pos -= (1<<SHIFT);
-	READBUF(isidchar(C));
+	READBUF(lex_isidchar(C));
 
 	yylval->number=lex.current_line;
 
@@ -797,3 +800,4 @@ static int low_yylex(YYSTYPE *yylval)
 #undef lex_atoi
 #undef lex_strtol
 #undef lex_strtod
+#undef lex_isidchar
