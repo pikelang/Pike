@@ -145,11 +145,11 @@ TAGS:
 verify_manual:
 	$(RUNULPC) $(SRCDIR)/test/verifymanual.lpc $(TMP_DOCDIR)
 
-verify: $(SRCDIR)/test/testsuite verify_manual
+verify:
 	$(RUNULPC) $(SRCDIR)/test/test_lpc.lpc $(SRCDIR)/test/testsuite
 
 # verify / debug verbose
-verbose_verify: $(SRCDIR)/test/testsuite verify_manual
+verbose_verify:
 	$(RUNULPC) $(SRCDIR)/test/test_lpc.lpc $(SRCDIR)/test/testsuite --verbose
 
 # verify & debug VERBOSE
@@ -196,7 +196,6 @@ configure: configure.in
 
 config.status: configure
 	./config.status --recheck
-	
 
 Makefile: Makefile.in config.status
 	./config.status
