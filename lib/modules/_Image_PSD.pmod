@@ -28,7 +28,6 @@ class Layer
 }
 
 
-int foo;
 Layer decode_layer(mapping layer, mapping i)
 {
 //   int stt = gethrtime();
@@ -185,10 +184,157 @@ Layer decode_layer(mapping layer, mapping i)
 
 //! @decl mapping __decode(string|mapping data)
 //! 
-//! Decodes a PSD image to a mapping.
-/* FIXME: Someone with free time could check psd.c for what is
-   acctually in the mapping. See XCF.___decode for reference, but note
-   that it is not the same mapping. */
+//! Decodes a PSD image to a mapping, defined as follows.
+//!
+//! @mapping
+//!   @member int(1..24) "channels"
+//!     The number of channels in the image, including any alpha channels.
+//!   @member int(1..30000) "height"
+//!   @member int(1..30000) "width"
+//!     The image dimensions.
+//!   @member int(0..1) "compression"
+//!     1 if the image is compressed, 0 if not.
+//!   @member int(1..1)|int(8..8)|int(16..16) "depth"
+//!     The number of bits per channel.
+//!   @member int(0..4)|int(7..9) "mode"
+//!     The color mode of the file.
+//!     @int
+//!       @value 0
+//!         Bitmap
+//!       @value 1
+//!         Greyscale
+//!       @value 2
+//!         Indexed
+//!       @value 3
+//!         RGB
+//!       @value 4
+//!         CMYK
+//!       @value 7
+//!         Multichannel
+//!       @value 8
+//!         Duotone
+//!       @value 9
+//!         Lab
+//!     @endint
+//!   @member string "color_data"
+//!     Raw color data.
+//!   @member string "image_data"
+//!     Ram image data.
+//!   @member  mapping(string|int:mixed) "resources"
+//!     Additional image data. Se mappping below.
+//!   @member array(mapping) "layers"
+//!     An array with the layers of the image. See mapping below.
+//! @endmapping
+//!
+//! The resources mapping. Unknown resources will be identified
+//! by their ID number (as an int).
+//! @mapping
+//!   @member string "caption"
+//!     Image caption.
+//!   @member string "url"
+//!     Image associated URL.
+//!   @member int "active_layer"
+//!     Which layer is active.
+//!   @member array(mapping(string:int)) "guides"
+//!     An array with all guides stored in the image file.
+//!     @mapping
+//!       @member int "pos"
+//!         The position of the guide.
+//!       @member int(0..1) "vertical"
+//!         1 if the guide is vertical, 0 if it is horizontal.
+//!     @endmapping
+//!   @member mapping(string:int) "resinof"
+//!     Resolution information
+//!     @mapping
+//!       @member int "hres"
+//!       @member int "hres_unit"
+//!       @member int "width_unit"
+//!       @member int "vres"
+//!       @member int "vres_unit"
+//!       @member int "height_unit"
+//!         FIXME: Document these.
+//!     @endmapping
+//! @endmapping
+//!
+//! The layer mapping:
+//! @mapping
+//!   @member int "top"
+//!   @member int "left"
+//!   @member int "right"
+//!   @member int "bottom"
+//!     The rectangle containing the contents of the layer.
+//!   @member int "mask_top"
+//!   @member int "mask_left"
+//!   @member int "mask_right"
+//!   @member int "mask_bottom"
+//!   @member int "mask_flags"
+//!     FIXME: Document these
+//!   @member int(0..255) "opacity"
+//!     0=transparent, 255=opaque.
+//!   @member int "clipping"
+//!     0=base, 1=non-base.
+//!   @member int "flags"
+//!     bit 0=transparency protected
+//!     bit 1=visible
+//!   @member string "mode"
+//!     Blend mode.
+//!     @string
+//!       @value "norm"
+//!         Normal
+//!       @value "dark"
+//!         Darken
+//!       @value "lite"
+//!         Lighten
+//!       @value "hue "
+//!         Hue
+//!       @value "sat "
+//!         Saturation
+//!       @value "colr"
+//!         Color
+//!       @value "lum "
+//!         Luminosity
+//!       @value "mul "
+//!         Multiply
+//!       @value "scrn"
+//!         Screen
+//!       @value "diss"
+//!         Dissolve
+//!       @value "over"
+//!         Overlay
+//!       @value "hLit"
+//!         Hard light
+//!       @value "sLit"
+//!         Soft light
+//!       @value "diff"
+//!         Difference
+//!     @endstring
+//!   @member string "extra_data"
+//!     Raw extra data.
+//!   @member string "name"
+//!     The name of the layer
+//!   @member array(mapping(string:int|string)) "channels"
+//!     The channels of the layer. Each array element is a
+//!     mapping as follows
+//!     @mapping
+//!       @member int "id"
+//!         The ID of the channel
+//!         @int
+//!           @value -2
+//!             User supplied layer mask
+//!           @value -1
+//!             Transparency mask
+//!           @value 0
+//!             Red
+//!           @value 1
+//!             Green
+//!           @value 2
+//!             Blue
+//!         @endint
+//!       @member string "data"
+//!         The image data
+//!     @endmapping
+//! @endmapping
+
 mapping __decode( mapping|string what, mapping|void options )
 {
   mapping data;
@@ -278,9 +424,7 @@ string translate_mode( string mode )
 //!   @value "name"
 //!     Returns string containing the name of the layer.
 //!   @value "visible"
-//!     FIXME: Undocumented.
-//!   @value "active"
-//!     FIXME: Undocumented.
+//!     Is 1 of the layer is visible and 0 if it is hidden.
 //! @endstring
 array decode_layers( string|mapping what, mapping|void opts )
 {
@@ -383,33 +527,41 @@ array decode_layers( string|mapping what, mapping|void opts )
 //! 'image' and possibly an 'alpha' object. Data is either a PSD image, or
 //! a mapping (as received from @[__decode])
 //!
-//! Supported options
+//! @param options
+//! @mapping
+//!   @member array(int)|Image.Color "background"
+//!     Sets the background to the given color. Arrays should be in
+//!     the format ({r,g,b}).
 //!
-//! @string
-//!   @value "background"
-//!     ({r,g,b})||Image.Color object
+//!   @member int(0..1) "draw_all_layers"
+//!     Draw invisible layers as well.
 //!
-//!   @value "draw_all_layers:1"
-//!     Draw invisible layers as well
+//!   @member int(0..1) "draw_guides"
+//!     Draw the guides.
 //!
-//!   @value "draw_guides:1"
-//!     Draw the guides
+//!   @member int(0..1) "draw_selection"
+//!     Mark the selection using an overlay.
 //!
-//!   @value "draw_selection:1"
-//!     Mark the selection using an overlay
-//!
-//!   @value "ignore_unknown_layer_modes:1"
+//!   @member int(0..1) "ignore_unknown_layer_modes"
 //!     Do not asume 'Normal' for unknown layer modes.
 //!
-//!   @value "mark_layers:1"
-//!     Draw an outline around all (drawn) layers
+//!   @member int(0..1) "mark_layers"
+//!     Draw an outline around all (drawn) layers.
 //!
-//!   @value "mark_layer_names:Image.Font object"
+//!   @member Image.Font "mark_layer_names"
 //!     Write the name of all layers using the font object,
 //!
-//!   @value "mark_active_layer:1"
+//!   @member int(0..1) "mark_active_layer"
 //!     Draw an outline around the active layer
-//! @endstring
+//! @endmapping
+//!
+//! @returns
+//! @mapping
+//!   @member Image.Image "image"
+//!     The image object.
+//!   @member Image.Image "alpha"
+//!     The alpha channel image object.
+//! @endmapping
 //!
 //! @note
 //!   Throws upon error in data. For more information, see @[__decode]
