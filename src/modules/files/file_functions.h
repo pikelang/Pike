@@ -65,4 +65,8 @@
 /*    FILE_FUNC("tcsetpgrp",file_tcsetpgrp,"function(int:int)") */
 #endif
 
+#ifdef SO_KEEPALIVE
+   FILE_FUNC("set_keepalive",file_set_keepalive,"function(int:int)")
+#endif
+
 #undef FILE_FUNC
