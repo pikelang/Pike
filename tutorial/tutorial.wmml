@@ -5161,6 +5161,33 @@ complement to those written in C.
 
 <hr noshade size=1>
 
+
+<function name=String.fuzzymatch title="make a fuzzy compare of two strings">
+<man_syntax>
+int fuzzymatch(string word1, string word2);
+</man_syntax>
+<man_description>
+This function compares two strings using a fuzzy matching
+routine. The higher the resulting value, the better the strings match.
+</man_description>
+<man_example>
+&gt; fuzzymatch("cat", "hat");<br>
+Result: 66<br>
+&gt; fuzzymatch("cat", "dog");<br>
+Result: 0<br>
+&gt; fuzzymatch("United States", "United Nations");<br>
+Result: 70
+</man_example>
+<man_note>
+This function is only available in Pike 0.6.82 and later.
+</man_note>
+<man_see>
+Array.diff, Array.diff_compare_table, Array.diff_longest_sequence
+</man_see>
+</function>
+
+<hr noshade size=1>
+
 <function name=String.implode_nicely title="make an English comma separated list">
 <man_syntax>
 string implode_nicely(array(string) words, string|void separator);
@@ -5235,7 +5262,7 @@ Returns an array with two elements, the first is an array of parts in
 array <b>a</b>, and the second is an array of parts in array <b>b</b>.
 
 </man_description>
-<man_example>
+<man_example><pre>
 &gt; Array.diff("Hello world!"/"","Help!"/"");
 Result: ({ /* 2 elements */
     ({ /* 3 elements */
@@ -5272,12 +5299,12 @@ Result: ({ /* 2 elements */
         })
     })
 })
-</man_example>
+</pre></man_example>
 <man_note>
 This function is only available in Pike 0.6 and later.
 </man_note>
 <man_see>
-Array.diff_compare_table, Array.diff_longest_sequence
+Array.diff_compare_table, Array.diff_longest_sequence, String.fuzzymatch
 </man_see>
 </function>
 
@@ -5292,7 +5319,7 @@ array(array(int)) diff_compare_table(array <i>a</i>, array <i>b</i>);<br>
 Returns an array which maps from index in <b>a</b> to corresponding
 indices in <b>b</b>.
 </man_description>
-<man_example>
+<man_example><pre>
 &gt; Array.diff_compare_table("Hello world!"/"","Help!"/"");
 Result: ({ /* 12 elements */
     ({ /* 1 elements */
@@ -5320,12 +5347,12 @@ Result: ({ /* 12 elements */
         4
     })
 })
-</man_example>
+</pre></man_example>
 <man_note>
 This function is only available in Pike 0.6 and later.
 </man_note>
 <man_see>
-Array.diff, Array.diff_longest_sequence
+Array.diff, Array.diff_longest_sequence, String.fuzzymatch
 </man_see>
 </function>
 
@@ -5340,20 +5367,20 @@ array(int) diff_longest_sequence(array <i>a</i>, array <i>b</i>);<br>
 Gives the longest sequence of indices in <b>b</b> that have corresponding
 values in the same order in <b>a</b>.
 </man_description>
-<man_example>
+<man_example><pre>
 &gt; Array.diff_longest_sequence("Hello world!"/"","Help!"/"");
 Result: ({ /* 4 elements */
     0,
     1,
     2,
     4
-})
+})</pre>
 </man_example>
 <man_note>
 This function is only available in Pike 0.6 and later.
 </man_note>
 <man_see>
-Array.diff, Array.diff_compare_table
+Array.diff, Array.diff_compare_table, String.fuzzymatch
 </man_see>
 </function>
 
@@ -5491,6 +5518,7 @@ Array.permute( ({ 1,2,3 }), 3)  -> ({1,3,2})
 Array.shuffle
 </man_see>
 </function>
+<hr noshade size=1>
 
 <function name=Array.search_array title="search for something in an array">
 <man_syntax>
