@@ -48,7 +48,7 @@ extern struct array empty_array;
 #define OP_SUB MINTERM(OP_TAKE_A,OP_SKIP_A ,OP_SKIP_B)
 
 
-#define free_array(V) do{ struct array *v_=(V); if(!--v_->refs) really_free_array(v_); }while(0)
+#define free_array(V) do{ struct array *v_=(V); debug_malloc_touch(v_); if(!--v_->refs) really_free_array(v_); }while(0)
 
 #define allocate_array(X) low_allocate_array((X),0)
 #define allocate_array_no_init(X,Y) low_allocate_array((X),(Y))

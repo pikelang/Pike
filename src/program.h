@@ -212,7 +212,7 @@ struct program
 
 #define FIND_LFUN(P,N) ((P)->flags & PROGRAM_FIXED?(P)->lfuns[(N)]:find_identifier(lfun_names[(N)],(P)))
 
-#define free_program(p) do{ struct program *_=(p); if(!--_->refs) really_free_program(_); }while(0)
+#define free_program(p) do{ struct program *_=(p); debug_malloc_touch(_); if(!--_->refs) really_free_program(_); }while(0)
 
 extern struct object *fake_object;
 extern struct program *new_program;

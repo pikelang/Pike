@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.35 1998/01/29 00:30:35 hubbe Exp $");
+RCSID("$Id: object.c,v 1.36 1998/01/29 22:53:55 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -361,6 +361,12 @@ void really_free_object(struct object *o)
     o->refs++;
     destruct(o);
     if(--o->refs > 0) return;
+  }
+
+  if(o->parent)
+  {
+    free_object(o->parent);
+    o->parent=0;
   }
 
   if(o->prev)

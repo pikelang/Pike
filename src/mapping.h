@@ -23,7 +23,7 @@ extern struct mapping *first_mapping;
 #define m_ind_types(m) ((m)->ind_types)
 #define m_val_types(m) ((m)->val_types)
 
-#define free_mapping(M) do{ struct mapping *m_=(M); if(!--m_->refs) really_free_mapping(m_); }while(0)
+#define free_mapping(M) do{ struct mapping *m_=(M); debug_malloc_touch(m_); if(!--m_->refs) really_free_mapping(m_); }while(0)
 
 /* Prototypes begin here */
 struct keypair;

@@ -756,12 +756,19 @@ static void cleanup_memhdrs()
   mt_lock(&debug_malloc_mutex);
   if(verbose_debug_exit)
   {
+    int first=1;
     for(h=0;h<HSIZE;h++)
     {
       struct memhdr *m;
       for(m=hash[h];m;m=m->next)
       {
 	struct memloc *l;
+	if(first)
+	{
+	  fprintf(stderr,"\n");
+	  first=0;
+	}
+	
 	fprintf(stderr, "LEAK: (%p) %d bytes\n",m->data, m->size);
 	for(l=m->locations;l;l=l->next)
 	  fprintf(stderr,"  *** %s:%d (%d times) %s\n",

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.60 1998/01/29 17:43:22 hubbe Exp $");
+RCSID("$Id: program.c,v 1.61 1998/01/29 22:53:56 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -421,6 +421,7 @@ void low_start_new_program(struct program *p,
 #else
   fake_object=ALLOC_STRUCT(object);
 #endif
+  GC_ALLOC();
 
   fake_object->next=fake_object;
   fake_object->prev=fake_object;
@@ -579,6 +580,14 @@ void dump_program_desc(struct program *p)
 
 static void toss_compilation_resources(void)
 {
+  if(fake_object)
+  {
+    free_program(fake_object->prog);
+    fake_object->prog=0;
+    free_object(fake_object);
+    fake_object=0;
+  }
+
   free_program(new_program);
   new_program=0;
 
@@ -587,13 +596,6 @@ static void toss_compilation_resources(void)
       free((char *)malloc_size_program);
       malloc_size_program=0;
     }
-
-  if(fake_object)
-  {
-    fake_object->prog=0;
-    free_object(fake_object);
-    fake_object=0;
-  }
   
   while(compiler_frame)
     pop_compiler_frame();
