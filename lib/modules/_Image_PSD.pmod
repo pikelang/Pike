@@ -155,9 +155,12 @@ Layer decode_layer(mapping layer, mapping i)
      case -2: /* user mask */
        if(!(l->mask_flags & 2 )) /* layer mask disabled */
        {
-         array pad_color = ({255,255,255});
-         if( (l->mask_flags & 4 ) ) /* invert mask */
+         array pad_color = ({ 0, 0, 0 });
+         if( (l->mask_flags & 4 ) ) {
+	   /* invert mask */
            tmp = tmp->invert();
+	   pad_color = ({ 255, 255, 255 });
+	 }
 
          tmp = tmp->copy( -l->mask_xoffset, -l->mask_yoffset, 
                           l->image->xsize()-1, l->image->ysize()-1,
@@ -262,7 +265,9 @@ string translate_mode( string mode )
 //! Decodes a PSD image to an array of Image.Layer objects
 //!
 //! Takes the same aptions mapping as @[_decode], note especially 
-//! "draw_all_layers":1.
+//! "draw_all_layers":1, but implements "crop_to_bounds" which preserves
+//! the bounding box for the whole image (i.e. discards data that extend
+//! outside of the global bounds).
 //!
 //! The layer object have the following extra variables (to be queried
 //! using @[Image.Layer()->get_misc_value]):
@@ -347,7 +352,22 @@ array decode_layers( string|mapping what, mapping|void opts )
                                                        (int)(255*lo),
                                                        (int)(255*lo)));
         }
-	lay->set_offset( l->xoffset, l->yoffset );
+
+	if (opts->crop_to_bounds) {
+	  //  Crop/expand this layer so it matches the image bounds.
+	  //  This will lose data which extends beyond the image bounds
+	  //  but keeps the image dimensions consistent.
+	  int x0 = -l->xoffset, y0 = -l->yoffset;
+	  int x1 = x0 + what->width - 1, y1 = y0 + what->height - 1;
+	  Image.Image new_img =
+	    lay->image()->copy(x0, y0, x1, y1);
+	  Image.Image new_alpha =
+	    lay->alpha() &&
+	    lay->alpha()->copy(x0, y0, x1, y1);
+	  lay->set_image(new_img, new_alpha);
+	} else
+	  lay->set_offset( l->xoffset, l->yoffset );
+
 	layers += ({ lay });
       }
     }
