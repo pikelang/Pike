@@ -20,7 +20,7 @@
 #include <fcntl.h>
 
 #include "global.h"
-RCSID("$Id: pipe.c,v 1.8 1997/01/27 08:02:32 per Exp $");
+RCSID("$Id: pipe.c,v 1.9 1997/01/29 20:19:35 per Exp $");
 
 #include "stralloc.h"
 #include "types.h"
@@ -192,6 +192,7 @@ static INLINE void free_input(struct input *i)
 #endif
       apply(i->u.obj,"close",0);
       pop_stack();
+      destruct(i->u.obj);
     }
     free_object(i->u.obj);
     nobjects--;
@@ -479,9 +480,9 @@ static INLINE void output_finish(struct object *obj)
 
       apply(o->obj,"close",0);
       pop_stack();
-
       if(!THISOBJ->prog)
 	error("Pipe done callback destructed pipe.\n");
+      destruct(o->obj);
     }
     free_object(o->obj);
     noutputs--;
