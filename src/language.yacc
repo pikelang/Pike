@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.312 2003/12/03 09:35:24 grubba Exp $
+|| $Id: language.yacc,v 1.313 2004/03/12 20:49:51 grubba Exp $
 */
 
 %pure_parser
@@ -113,7 +113,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.312 2003/12/03 09:35:24 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.313 2004/03/12 20:49:51 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -2409,7 +2409,7 @@ class: modifiers TOK_CLASS optional_identifier
       if ($1 & ID_EXTERN) {
 	yywarning("Extern declared class definition.");
       }
-      low_start_new_program(0, $3->u.sval.u.string,
+      low_start_new_program(0, 1, $3->u.sval.u.string,
 			    $1,
 			    &$<number>$);
 
@@ -2429,7 +2429,7 @@ class: modifiers TOK_CLASS optional_identifier
       i=isidentifier($3->u.sval.u.string);
       if(i<0)
       {
-	low_start_new_program(Pike_compiler->new_program,0,
+	low_start_new_program(Pike_compiler->new_program, 2, 0,
 			      $1,
 			      &$<number>$);
 	yyerror("Pass 2: program not defined!");
@@ -2441,7 +2441,7 @@ class: modifiers TOK_CLASS optional_identifier
 	  s=&PROG_FROM_INT(Pike_compiler->new_program,i)->constants[id->func.offset].sval;
 	  if(s->type==T_PROGRAM)
 	  {
-	    low_start_new_program(s->u.program,
+	    low_start_new_program(s->u.program, 2,
 				  $3->u.sval.u.string,
 				  $1,
 				  &$<number>$);
@@ -2451,13 +2451,13 @@ class: modifiers TOK_CLASS optional_identifier
 
 	  }else{
 	    yyerror("Pass 2: constant redefined!");
-	    low_start_new_program(Pike_compiler->new_program, 0,
+	    low_start_new_program(Pike_compiler->new_program, 2, 0,
 				  $1,
 				  &$<number>$);
 	  }
 	}else{
 	  yyerror("Pass 2: class constant no longer constant!");
-	  low_start_new_program(Pike_compiler->new_program, 0,
+	  low_start_new_program(Pike_compiler->new_program, 2, 0,
 				$1,
 				&$<number>$);
 	}
@@ -3363,17 +3363,13 @@ low_idents: TOK_IDENTIFIER
     }else if(!($$=find_module_identifier(Pike_compiler->last_identifier,1)) &&
 	     !($$ = program_magic_identifier (Pike_compiler, 0, 0,
 					      Pike_compiler->last_identifier, 0))) {
-      if(!Pike_compiler->num_parse_error)
-      {
-	if(Pike_compiler->compiler_pass==2)
-	{
-	  my_yyerror("Undefined identifier %s.", Pike_compiler->last_identifier->str);
-	  $$=0;
-	}else{
-	  $$=mknode(F_UNDEFINED,0,0);
-	}
+      if(force_resolve ||
+	 ((!Pike_compiler->num_parse_error) &&
+	  (Pike_compiler->compiler_pass==2))) {
+	my_yyerror("Undefined identifier %s.", Pike_compiler->last_identifier->str);
+	$$=0;
       }else{
-	$$=mkintnode(0);
+	$$=mknode(F_UNDEFINED,0,0);
       }
     }
     free_node($1);
@@ -3426,13 +3422,14 @@ low_idents: TOK_IDENTIFIER
 	/* All done. */
       }
       else {
-	if (Pike_compiler->compiler_pass == 2) {
+	if (force_resolve || (Pike_compiler->compiler_pass == 2)) {
 	  if (inherit_state->new_program->inherits[$1].name) {
 	    my_yyerror("Undefined identifier %s::%s.",
 		       inherit_state->new_program->inherits[$1].name->str,
 		       Pike_compiler->last_identifier->str);
 	  } else {
-	    my_yyerror("Undefined identifier %s.", Pike_compiler->last_identifier->str);
+	    my_yyerror("Undefined identifier %s.",
+		       Pike_compiler->last_identifier->str);
 	  }
 	  $$=0;
 	}
