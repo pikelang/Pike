@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.354 2001/12/03 15:46:53 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.355 2002/01/04 14:28:22 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -937,6 +937,7 @@ void low_backtrace(struct Pike_interpreter *inter)
     if(f->current_object && f->context.prog)
     {
       INT32 args;
+      INT32 varargs = 0;
       if(!f->locals)
       {
 	args=0;
@@ -946,12 +947,28 @@ void low_backtrace(struct Pike_interpreter *inter)
 	if(of)
 	  args = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
 	args=MAXIMUM(args,0);
+
+	if (f->current_object->prog) {
+	  struct identifier *function =
+	    ID_FROM_INT(f->current_object->prog, f->fun);
+	  if (function && (function->identifier_flags & IDENTIFIER_VARARGS) &&
+	      (f->locals + args < inter->stack_pointer) &&
+	      (f->locals[args].type == T_ARRAY)) {
+	    varargs = f->locals[args].u.array->size;
+	  }
+	}
       }
 
-      ITEM(a)[frames].u.array=i=allocate_array_no_init(3+args,0);
+      ITEM(a)[frames].u.array=i=allocate_array_no_init(3 + args + varargs,0);
       ITEM(a)[frames].type=T_ARRAY;
-      if(f->locals)
+      if(f->locals) {
 	assign_svalues_no_free(ITEM(i)+3, f->locals, args, BIT_MIXED);
+	if (varargs) {
+	  assign_svalues_no_free(ITEM(i)+3+args,
+				 f->locals[args].u.array->item,
+				 varargs, BIT_MIXED);
+	}
+      }
       if(f->current_object->prog)
       {
 	ITEM(i)[2].type=T_FUNCTION;
