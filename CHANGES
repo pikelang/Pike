@@ -2,25 +2,16 @@ Changes since Pike 7.4.10:
 ----------------------------------------------------------------------
 
 o Bugfix in Parser.C. "!=" is now considered one token instead of two.
-o depend_p() bugfix in las.
 o Bugfixed loop over-optimization.
 o Postgres 7.3+ correctly detected.
 
 o "Backported funcion_object fixes from Pike 7.5"/"function_object()
   now behaves as in Pike 7.2. The other cases have been moved to
   function_program()."
-o "OOB callback fixes for select(2) mode."
-o "Fix for running in UNLOCKED mode."
-o "Backported identifier lookup fixes from Pike 7.5."
-o "Fixed identifier sort bug in the old program decode method."
-o "Backported object index lvalue fixes from Pike 7.5."
-o "Bugfix in F_{INC,DEC}{,_NEQ}_LOOP."
 o "MKREADSET: If elements e and e+1 have their places swapped, it
   doesn't mean that there are overlapping ranges, just that the sort
   function is unstable. It doesn't matter. Live with it."
 o "Backported native argument handling fixes from 7.5." (java)
-o "Backported fpsetmask() paranoia from Pike 7.5." (_math)
-o "Fixed LARGE_FILE bug. Thanks to Dan Nelson." (files)
 
 o Added System.dumpable() which can be used on Linux to enable
   coredumping even for seteuid/setegid processes.
@@ -35,12 +26,12 @@ o More robustness has been added to dlinit() and __alldiv(), which
   fixes some start up crashes in Microsoft Windows when invoking Pike
   with the wrong path.
 o Process.create_process()->set_priority now works on Microsoft Windows.
-o SDL and GL now compiles, links and works on Microsoft Windows.
+o SDL and GL now compile, link and work on Microsoft Windows.
 o Produce real zeroes and not false function pointers when a local
   function with only a prototype is referenced. This was a compatibility
   problem; there's code that assumes that false values can't be
   function references.
-o Fixed GTK issue where the new and old signal callback signature was
+o Fixed GTK issue where the new and old signal callback signature were
   randomly used for signals connected with signal_autoconnect(). This
   method now always uses the old method while a new method,
   signal_autoconnect_new() uses the new interface.
@@ -81,10 +72,22 @@ o Fixed bug that could cause the stack to get out of synch when large
   64 bit negative integers were converted to bignum objects.
 o Fixed bug in trampoline objects so that they can be indexed and
   printed as normal objects.
+o Accesses from child objects to symbols in their parent objects will no
+  longer pass through LFUN::`[]() and LFUN::`[]=().
+o The object identifier index sorting order is no longer locale-dependent.
+o The opcodes F_{INC,DEC}{,_NEQ}_LOOP are now aware that the upper limit
+  not neccessarily is an integer.
 o Fixed a bug in the dependency analyser. It didn't check arguments to
   side-effect free functions for written variables, which could cause
   overoptimization breakage.
-o Fixed Image.Image(1,1)->scale(0.5)->scale(2.0) segmentation fault bug.
+o The initialization code no longer calls fpsetmask(0) on operating
+  systems where this API call is broken (eg OpenBSD 3.2/alpha).
+o Stdio.Stat()->size is now LARGEFILE aware.
+o Clearing a read-callback on operating systems that use select(2) no
+  longer leaves it active in the read fd set if there is a read
+  out-of-band data callback.
+o Fixed bug in Image.Image()->scale(0.5) where it could generate zero-
+  size image objects.
 
 Changes since Pike 7.2.30:
 ----------------------------------------------------------------------
