@@ -1,5 +1,5 @@
 
-cond([[ Gettext.gettext ]],[[
+cond_resolv(Gettext.gettext,[[
 
 test_eq(Gettext.gettext(""),"")
 test_eq(Gettext.gettext("hej"),"hej")
