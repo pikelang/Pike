@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.89 1999/07/01 01:43:06 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.90 2000/02/11 02:11:26 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -632,7 +632,6 @@ void f_mutex_lock(INT32 args)
   /* Needs to be cloned here, since create()
    * might use threads.
    */
-  o=clone_object(mutex_key,0);
   if(!args || IS_ZERO(sp-args))
   {
     if(m->key && OB2KEY(m->key)->owner == thread_id)
@@ -643,10 +642,10 @@ void f_mutex_lock(INT32 args)
 		       (unsigned int)m,
 		       (unsigned int)OB2KEY(m->key)->mut,
 		       (unsigned int) thread_id));
-      free_object(o);
       error("Recursive mutex locks!\n");
     }
   }
+  o=clone_object(mutex_key,0);
 
   if(m->key)
   {

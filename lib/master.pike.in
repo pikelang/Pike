@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.40 1999/07/01 01:40:41 grubba Exp $
+/* $Id: master.pike.in,v 1.41 2000/02/11 02:11:16 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -199,11 +199,22 @@ mapping (string:program) programs=(["/master":object_program(this_object())]);
 
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 
+#if constant(_static_modules.Builtin.mutex)
+#define THREADED
+object compilation_mutex = _static_modules.Builtin()->mutex();
+#endif
+
 static program low_findprog(string pname, string ext)
 {
   program ret;
   array s;
   string fname=pname+ext;
+
+#ifdef THREADED
+  object key;
+  catch { key=compilation_mutex->lock(); };
+#endif
+
   if(ret=programs[fname]) return ret;
   if( (s=master_file_stat(fname))  && s[1]>=0 )
   {
