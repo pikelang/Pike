@@ -293,3 +293,48 @@ static string encode_params(array params)
     r += "<param>\n"+encode(param)+"</param>\n";
   return r+"</params>\n";
 }
+
+class Client(string|Standards.URI url)
+{
+  //! This class implements an XML-RPC client that uses HTTP transport.
+  //!
+  //! @example
+  //!   > Protocols.XMLRPC.Client client = Protocls.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
+  //!   Result: Protocols.XMLRPC.Client("http://www.oreillynet.com/meerkat/xml-rpc/server.php");
+  //!   > client["system.listMethods"]();
+  //!   Result: ({ /* 1 element */
+  //!  		    ({ /* 9 elements */
+  //!  			"meerkat.getChannels",
+  //!  			"meerkat.getCategories",
+  //!  			"meerkat.getCategoriesBySubstring",
+  //!  			"meerkat.getChannelsByCategory",
+  //!  			"meerkat.getChannelsBySubstring",
+  //!  			"meerkat.getItems",
+  //!  			"system.listMethods",
+  //!  			"system.methodHelp",
+  //!  			"system.methodSignature"
+  //!  		    })
+  //!  		})
+  
+  mixed `[](string call)
+  {
+    return lambda(mixed ... args)
+	   {
+	     object c=Protocols.HTTP.do_method("POST",
+					       url,
+					       0,
+					       ([ "Content-Type":"text/xml"]),
+					       0,
+					       encode_call( call, args ));
+	     return Protocols.XMLRPC.decode_response(c->data());
+	   };
+  }
+
+  string _sprintf()
+  {
+    return sprintf("Protocols.XMLRPC.Client(%O)",
+		   url);
+  }
+
+  
+}
