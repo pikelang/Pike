@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.56 2004/09/06 11:42:18 grubba Exp $
+/* $Id: sslfile.pike,v 1.57 2004/11/30 14:29:37 mast Exp $
  *
  */
 
@@ -76,6 +76,11 @@ int is_closed;
 int query_fd()
 {
   return -1;
+}
+
+int is_open()
+{
+  return !is_closed && socket && socket->is_open();
 }
 
 private void ssl_write_callback(mixed id);
