@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: layers.c,v 1.93 2003/12/09 08:11:31 nilsson Exp $
+|| $Id: layers.c,v 1.94 2003/12/12 17:43:54 nilsson Exp $
 */
 
 /*
@@ -15,7 +15,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.93 2003/12/09 08:11:31 nilsson Exp $");
+RCSID("$Id: layers.c,v 1.94 2003/12/12 17:43:54 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1128,7 +1128,7 @@ static void image_layer_descriptions(INT32 args)
    pop_n_elems(args);
 
    for (i=0; i<LAYER_MODES; i++)
-     push_string(make_shared_string(layer_mode[i].desc));
+     push_text(layer_mode[i].desc);
 
    f_aggregate(LAYER_MODES);
 }

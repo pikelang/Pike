@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: libbzip2mod.cmod,v 1.13 2003/11/07 17:46:05 nilsson Exp $");
+RCSID("$Id: libbzip2mod.cmod,v 1.14 2003/12/12 17:52:01 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -513,7 +513,7 @@ PIKECLASS Deflate
       break;
     case BZ_RUN:
       f_Deflate_feed(1);
-      push_string(make_shared_binary_string("",0));
+      push_constant_text("");
       break;
     }
   }

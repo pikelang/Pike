@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: tim.c,v 1.15 2002/10/21 17:06:15 marcus Exp $
+|| $Id: tim.c,v 1.16 2003/12/12 17:45:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.15 2002/10/21 17:06:15 marcus Exp $");
+RCSID("$Id: tim.c,v 1.16 2003/12/12 17:45:16 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -322,14 +322,14 @@ void img_tim_decode(INT32 args, int header_only)
 static void image_tim_f_decode(INT32 args)
 {
    img_tim_decode(args,0);
-   push_string(make_shared_string("image"));
+   push_constant_text("image");
    f_index(2);
 }
 
 static void image_tim_f_decode_alpha(INT32 args)
 {
    img_tim_decode(args,0);
-   push_string(make_shared_string("alpha"));
+   push_constant_text("alpha");
    f_index(2);
 }
 

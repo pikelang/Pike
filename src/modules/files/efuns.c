@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.133 2003/09/30 02:03:59 nilsson Exp $
+|| $Id: efuns.c,v 1.134 2003/12/12 17:41:00 nilsson Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.133 2003/09/30 02:03:59 nilsson Exp $");
+RCSID("$Id: efuns.c,v 1.134 2003/12/12 17:41:00 nilsson Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -1082,7 +1082,7 @@ void f_getcwd(INT32 args)
   }
 
   pop_n_elems(args);
-  push_string(make_shared_string(e));
+  push_text(e);
   free(e);
 }
 
@@ -1182,7 +1182,7 @@ void f_exece(INT32 args)
     for(e=0;e<i->size;e++)
     {
       push_string(ITEM(i)[e].u.string);
-      push_string(make_shared_string("="));
+      push_constant_text("=");
       push_string(ITEM(v)[e].u.string);
       f_add(3);
       env[e]=sp[-1].u.string->str;

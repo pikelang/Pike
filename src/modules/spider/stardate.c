@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stardate.c,v 1.17 2002/11/28 23:47:29 nilsson Exp $
+|| $Id: stardate.c,v 1.18 2003/12/12 17:46:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -20,7 +20,7 @@
 #include "builtin_functions.h"
 #include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.17 2002/11/28 23:47:29 nilsson Exp $");
+RCSID("$Id: stardate.c,v 1.18 2003/12/12 17:46:19 nilsson Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
@@ -140,7 +140,7 @@ void f_stardate (INT32 args)
   sprintf (fmt, OUTPUTFORMAT, precis + 6, precis);
   sprintf (buf, fmt, (double) jd + gmst / 24.0);
   pop_n_elems(args);
-  push_string(make_shared_string(buf));
+  push_text(buf);
 }
 
 /*! @endmodule

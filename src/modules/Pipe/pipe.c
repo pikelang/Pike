@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pipe.c,v 1.57 2003/10/08 14:53:48 grubba Exp $
+|| $Id: pipe.c,v 1.58 2003/12/12 17:45:51 nilsson Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
 
 #include <fcntl.h>
 
-RCSID("$Id: pipe.c,v 1.57 2003/10/08 14:53:48 grubba Exp $");
+RCSID("$Id: pipe.c,v 1.58 2003/12/12 17:45:51 nilsson Exp $");
 
 #include "threads.h"
 #include "stralloc.h"
@@ -859,14 +859,6 @@ static void pipe_output(INT32 args)
     {
       /* keep the file pointer of the duped fd */
       THIS->pos=fd_lseek(fd, 0L, SEEK_CUR);
-      
-#if 0
-      /* This won't work if the spider-module is dynamically linked. */
-      push_int(THIS->fd);
-      push_string(make_shared_string("pipe.c: file buffer"));
-      f_mark_fd(2);
-      pop_stack();
-#endif /* 0 */
 
       THIS->living_outputs++;
 
@@ -1110,7 +1102,7 @@ static void pipe_close_input_callback(INT32 args)
 static void pipe_version(INT32 args)
 {
    pop_n_elems(args);
-   push_string(make_shared_string("PIPE ver 2.0"));
+   push_text("PIPE ver 2.0");
 }
 
 /********** init/exit *******************************************************/

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pvr.c,v 1.23 2002/10/28 12:59:28 nilsson Exp $
+|| $Id: pvr.c,v 1.24 2003/12/12 17:44:57 nilsson Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.23 2002/10/28 12:59:28 nilsson Exp $");
+RCSID("$Id: pvr.c,v 1.24 2003/12/12 17:44:57 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1225,14 +1225,14 @@ void img_pvr_decode(INT32 args,int header_only)
 static void image_pvr_f_decode(INT32 args)
 {
    img_pvr_decode(args,0);
-   push_string(make_shared_string("image"));
+   push_constant_text("image");
    f_index(2);
 }
 
 static void image_pvr_f_decode_alpha(INT32 args)
 {
    img_pvr_decode(args,0);
-   push_string(make_shared_string("alpha"));
+   push_constant_text("alpha");
    f_index(2);
 }
 

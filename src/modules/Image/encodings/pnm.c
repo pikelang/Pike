@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pnm.c,v 1.30 2003/01/27 11:59:14 mirar Exp $
+|| $Id: pnm.c,v 1.31 2003/12/12 17:44:42 nilsson Exp $
 */
 
 /*
@@ -52,7 +52,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.30 2003/01/27 11:59:14 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.31 2003/12/12 17:44:42 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -339,7 +339,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
    pop_n_elems(args);
 
    sprintf(buf,"P2\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
-   push_string(make_shared_string(buf));
+   push_text(buf);
    n=1;
 
    y=img->ysize;
@@ -350,7 +350,7 @@ void img_pnm_encode_P2(INT32 args) /* ascii PGM */
       while (x--)
       {
 	 sprintf(buf,"%d%c",(s->r+s->g*2+s->b)/4,x?' ':'\n');
-	 push_string(make_shared_string(buf));
+	 push_text(buf);
 	 n++;
 	 if (n>32) { f_add(n); n=1; }
 	 s++;
@@ -380,7 +380,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
    pop_n_elems(args);
 
    sprintf(buf,"P3\n%"PRINTPIKEINT"d %"PRINTPIKEINT"d\n255\n",img->xsize,img->ysize);
-   push_string(make_shared_string(buf));
+   push_text(buf);
    n=1;
 
    y=img->ysize;
@@ -391,7 +391,7 @@ void img_pnm_encode_P3(INT32 args) /* ascii PPM */
       while (x--)
       {
 	 sprintf(buf,"%d %d %d%c",s->r,s->g,s->b,x?' ':'\n');
-	 push_string(make_shared_string(buf));
+	 push_text(buf);
 	 n++;
 	 if (n>32) { f_add(n); n=1; }
 	 s++;

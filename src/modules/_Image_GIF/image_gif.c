@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_gif.c,v 1.18 2003/12/01 20:18:35 nilsson Exp $
+|| $Id: image_gif.c,v 1.19 2003/12/12 17:42:22 nilsson Exp $
 */
 
 /*
@@ -39,7 +39,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.18 2003/12/01 20:18:35 nilsson Exp $");
+RCSID("$Id: image_gif.c,v 1.19 2003/12/12 17:42:22 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -322,7 +322,7 @@ void image_gif_header_block(INT32 args)
 void image_gif_end_block(INT32 args)
 {
    pop_n_elems(args);
-   push_string(make_shared_string("\x3b"));
+   push_constant_text("\x3b");
 }
 
 /*

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gettext.c,v 1.21 2003/10/30 17:04:15 grubba Exp $
+|| $Id: gettext.c,v 1.22 2003/12/12 17:42:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,7 +29,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: gettext.c,v 1.21 2003/10/30 17:04:15 grubba Exp $");
+RCSID("$Id: gettext.c,v 1.22 2003/12/12 17:42:49 nilsson Exp $");
 
 /*! @module Locale
  */
@@ -186,7 +186,7 @@ void f_textdomain(INT32 args)
   }
   returnstring = textdomain(domain);
   pop_n_elems(args);
-  push_string(make_shared_string(returnstring));
+  push_text(returnstring);
 }
 
 /*! @decl string bindtextdomain(string|void domainname, string|void dirname)
@@ -240,7 +240,7 @@ void f_bindtextdomain(INT32 args)
   if(returnstring == NULL)
     push_int(0);
   else 
-    push_string(make_shared_string(returnstring));
+    push_text(returnstring);
 }
 
 /*! @decl int setlocale(int category, string locale)

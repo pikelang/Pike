@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.309 2003/11/26 16:02:47 grubba Exp $
+|| $Id: file.c,v 1.310 2003/12/12 17:41:17 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.309 2003/11/26 16:02:47 grubba Exp $");
+RCSID("$Id: file.c,v 1.310 2003/12/12 17:41:17 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -3238,7 +3238,7 @@ static void file_query_address(INT32 args)
 #endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
-  push_string(make_shared_string(buffer));
+  push_text(buffer);
 }
 
 /*! @decl Stdio.File `<<(string data)

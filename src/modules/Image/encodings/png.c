@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.56 2003/12/01 19:37:40 nilsson Exp $
+|| $Id: png.c,v 1.57 2003/12/12 17:44:22 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.56 2003/12/01 19:37:40 nilsson Exp $");
+RCSID("$Id: png.c,v 1.57 2003/12/12 17:44:22 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1012,11 +1012,11 @@ static void img_png_decode(INT32 args,int header_only)
       switch (sp[-1].type)
       {
 	 case T_OBJECT:
-	    push_string(make_shared_string("cast"));
+	    push_text("cast");
 	    if (sp[-1].type==T_INT)
 	       Pike_error("Image.PNG._decode: illegal value of option \"palette\"\n");
 	    f_index(2);
-	    push_string(make_shared_string("array"));
+	    push_text("array");
 	    f_call_function(2);
 	 case T_ARRAY:
 	 case T_STRING:
@@ -1249,7 +1249,7 @@ static void img_png_decode(INT32 args,int header_only)
 
    /* IDAT stuff on stack, now */
    if (!n) 
-      push_string(make_shared_binary_string("",0));
+      push_text("");
    else
       f_add(n);
 
@@ -1422,11 +1422,11 @@ header_stuff:
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
 
-   push_string(make_shared_string("xsize"));
+   push_constant_text("xsize");
    push_int(ihdr.width);
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
-   push_string(make_shared_string("ysize"));
+   push_constant_text("ysize");
    push_int(ihdr.height);
    mapping_insert(m,sp-2,sp-1);
    pop_n_elems(2);
@@ -1655,7 +1655,7 @@ static void image_png_encode(INT32 args)
    push_png_chunk("IDAT",NULL);
    n++;
 
-   push_string(make_shared_binary_string("",0));
+   push_text("");
    push_png_chunk("IEND",NULL);
    n++;
 
@@ -1697,7 +1697,7 @@ static void image_png_decode(INT32 args)
      SIMPLE_TOO_FEW_ARGS_ERROR("Image.PNG.decode", 1);
    
    image_png__decode(args);
-   push_string(make_shared_string("image"));
+   push_constant_text("image");
    f_index(2);
 }
 
@@ -1718,16 +1718,16 @@ static void image_png_decode_alpha(INT32 args)
 
    image_png__decode(args);
    assign_svalue_no_free(&s,sp-1);
-   push_string(make_shared_string("alpha"));
+   push_constant_text("alpha");
    f_index(2);
 
    if (sp[-1].type==T_INT)
    {
       push_svalue(&s);
-      push_string(make_shared_string("xsize"));
+      push_constant_text("xsize");
       f_index(2);
       push_svalue(&s);
-      ref_push_string(make_shared_string("ysize"));
+      push_constant_text("ysize");
       f_index(2);
       push_int(255);
       push_int(255);
@@ -1765,12 +1765,12 @@ void exit_image_png(void)
 
 void init_image_png(void)
 {
-   push_constant_text("Gz");
+   push_text("Gz");
    SAFE_APPLY_MASTER("resolv",1);
    if (sp[-1].type==T_OBJECT) 
    {
      stack_dup();
-     push_constant_text("inflate");
+     push_text("inflate");
      f_index(2);
      gz_inflate=program_from_svalue(sp-1);
      if(gz_inflate) 
@@ -1778,7 +1778,7 @@ void init_image_png(void)
      pop_stack();
 
      stack_dup();
-     push_constant_text("deflate");
+     push_text("deflate");
      f_index(2);
      gz_deflate=program_from_svalue(sp-1);
      if(gz_deflate) 
@@ -1786,7 +1786,7 @@ void init_image_png(void)
      pop_stack();
 
      stack_dup();
-     push_constant_text("crc32");
+     push_text("crc32");
      f_index(2);
      gz_crc32=sp[-1];
      sp--;

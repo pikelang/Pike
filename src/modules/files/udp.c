@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.61 2003/12/09 08:11:53 nilsson Exp $
+|| $Id: udp.c,v 1.62 2003/12/12 17:41:50 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -10,7 +10,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.61 2003/12/09 08:11:53 nilsson Exp $");
+RCSID("$Id: udp.c,v 1.62 2003/12/12 17:41:50 nilsson Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -802,7 +802,7 @@ static void udp_query_address(INT32 args)
 #endif
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.ipv4.sin_port)));
 
-  push_string(make_shared_string(buffer));
+  push_text(buffer);
 }
 
 /*! @decl int errno()

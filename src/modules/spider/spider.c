@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: spider.c,v 1.124 2003/09/06 23:10:50 nilsson Exp $
+|| $Id: spider.c,v 1.125 2003/12/12 17:46:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -51,7 +51,7 @@
 #include "operators.h"
 #include "security.h"
 
-RCSID("$Id: spider.c,v 1.124 2003/09/06 23:10:50 nilsson Exp $");
+RCSID("$Id: spider.c,v 1.125 2003/12/12 17:46:19 nilsson Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -132,7 +132,7 @@ void f_parse_accessed_database(INT32 args)
   /* Pop all but the first argument */
   pop_n_elems(args-1);
 
-  push_string(make_shared_string("\n"));
+  push_constant_text("\n");
   f_divide(2);
 
   if (sp[-1].type != T_ARRAY) {
@@ -1028,7 +1028,7 @@ void f_fd_info(INT32 args)
   pop_n_elems(args);
   if (fd_fstat(i,&foo))
   {
-    push_string(make_shared_string("non-open filedescriptor"));
+    push_text("non-open filedescriptor");
     return;
   }
   sprintf(buf,"%o,%ld,%d,%ld",
@@ -1036,7 +1036,7 @@ void f_fd_info(INT32 args)
 	  (long)foo.st_size,
 	  (int)foo.st_dev,
 	  (long)foo.st_ino);
-  push_string(make_shared_string(buf));
+  push_text(buf);
 }
 
 static void program_name(struct program *p)
@@ -1086,7 +1086,7 @@ void f__dump_obj_table(INT32 args)
     if(o->prog)
       program_name(o->prog);
     else
-      push_string(make_shared_binary_string("No program (Destructed?)",24));
+      push_text("No program (Destructed?)");
     push_int(o->refs);
     f_aggregate(2);
     ++n;
@@ -1100,7 +1100,7 @@ void f__dump_obj_table(INT32 args)
 
 PIKE_MODULE_INIT
 {
-  ref_push_string(make_shared_string(""));
+  push_constant_text("");
   empty_string_svalue = sp[-1];
   pop_stack();
 
@@ -1183,7 +1183,6 @@ PIKE_MODULE_INIT
 
 PIKE_MODULE_EXIT
 {
-  free_string(empty_string_svalue.u.string);
   {
     extern void exit_xml(void);
     exit_xml();
