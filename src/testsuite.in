@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.402 2001/04/10 09:51:42 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.403 2001/04/16 01:52:17 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6560,6 +6560,24 @@ test_eval_error(return utf8_to_string("\370\277\207\270a"));
 test_eval_error(return utf8_to_string("\367\207\270a"));
 test_eval_error(return utf8_to_string("\347\270a"));
 test_eval_error(return utf8_to_string("\303a"));
+
+// - String.trim_whites, String.trim_all_whites
+test_eq(String.trim_whites (" \t\0 \t"), "\0")
+test_eq(String.trim_whites (" \t\400 \t"), "\400")
+test_eq(String.trim_whites (" \t\200000 \t"), "\200000")
+test_eq(String.trim_whites ("\0"), "\0")
+test_eq(String.trim_whites ("\400"), "\400")
+test_eq(String.trim_whites ("\200000"), "\200000")
+test_eq(String.trim_whites (" \t "), "")
+test_eq(String.trim_whites (""), "")
+test_eq(String.trim_all_whites (" \t\n\r\0 \t\n\r"), "\0")
+test_eq(String.trim_all_whites (" \t\n\r\400 \t\n\r"), "\400")
+test_eq(String.trim_all_whites (" \t\n\r\200000 \t\n\r"), "\200000")
+test_eq(String.trim_all_whites ("\0"), "\0")
+test_eq(String.trim_all_whites ("\400"), "\400")
+test_eq(String.trim_all_whites ("\200000"), "\200000")
+test_eq(String.trim_all_whites (" \t\n\r "), "")
+test_eq(String.trim_all_whites (""), "")
 
 // - sum
 test_eq(`+(1,1),2)

@@ -231,32 +231,12 @@ int fuzzymatch(string a, string b)
 
 //! Trim leading and trailing spaces and tabs from the string @[s].
 //!
-string trim_whites(string s)
-{
-  if (stringp(s)) {
-    sscanf(s, "%*[ \t]%s", s);
-    string rev = reverse(s);
-    sscanf(rev, "%*[ \t]%s", rev);
-    return s[..strlen(rev) - 1];
-  }
-
-  return s;
-}
+constant trim_whites = __builtin.string_trim_whites;
 
 //! Trim leading and trailing white spaces characters (@tt{" \t\r\n"@}) from
 //! the string @[s].
 //!
-string trim_all_whites(string s)
-{
-  if (stringp(s)) {
-    sscanf(s, "%*[ \t\r\n]%s", s);
-    string rev = reverse(s);
-    sscanf(rev, "%*[ \t\r\n]%s", rev);
-    return s[..strlen(rev) - 1];
-  }
-
-  return s;
-}
+constant trim_all_whites = __builtin.string_trim_all_whites;
 
 //! Returns the soundex value of @[word] according to
 //! the original Soundex algorithm, patented by Margaret O´Dell

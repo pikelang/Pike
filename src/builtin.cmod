@@ -197,6 +197,69 @@ PIKEFUN int string_count(string haystack, string needle)
    RETURN DO_NOT_WARN((INT_TYPE)c);
 }
 
+/*! @decl string string_trim_whites (string s)
+ *!
+ *! Trim leading and trailing spaces and tabs from the string @[s].
+ */
+PIKEFUN string string_trim_whites (string s)
+  errname String.trim_whites;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  ptrdiff_t start = 0, end = s->len;
+  int chr;
+  switch (s->size_shift) {
+#define DO_IT(TYPE)							\
+    {									\
+      for (; start < s->len; start++) {					\
+	chr = ((TYPE *) s->str)[start];					\
+	if (chr != ' ' && chr != '\t') break;				\
+      }									\
+      while (--end > start) {						\
+	chr = ((TYPE *) s->str)[end];					\
+	if (chr != ' ' && chr != '\t') break;				\
+      }									\
+    }
+    case 0: DO_IT (p_wchar0); break;
+    case 1: DO_IT (p_wchar1); break;
+    case 2: DO_IT (p_wchar2); break;
+#undef DO_IT
+  }
+  RETURN string_slice (s, start, end + 1 - start);
+}
+
+/*! @decl string string_trim_all_whites (string s)
+ *!
+ *! Trim leading and trailing white spaces characters (space, tab,
+ *! newline and carriage return) from the string @[s].
+ */
+PIKEFUN string string_trim_all_whites (string s)
+  errname String.trim_all_whites;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  ptrdiff_t start = 0, end = s->len;
+  int chr;
+  switch (s->size_shift) {
+#define DO_IT(TYPE)							\
+    {									\
+      for (; start < s->len; start++) {					\
+	chr = ((TYPE *) s->str)[start];					\
+	if (chr != ' ' && chr != '\t' && chr != '\n' && chr != '\r')	\
+	  break;							\
+      }									\
+      while (--end > start) {						\
+	chr = ((TYPE *) s->str)[end];					\
+	if (chr != ' ' && chr != '\t' && chr != '\n' && chr != '\r')	\
+	  break;							\
+      }									\
+    }
+    case 0: DO_IT (p_wchar0); break;
+    case 1: DO_IT (p_wchar1); break;
+    case 2: DO_IT (p_wchar2); break;
+#undef DO_IT
+  }
+  RETURN string_slice (s, start, end + 1 - start);
+}
+
 /*! @decl int program_implements(program prog, program api)
  *!
  *! Returns 1 if @[prog] implements @[api].
