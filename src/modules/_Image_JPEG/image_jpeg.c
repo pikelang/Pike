@@ -1,5 +1,5 @@
 /*
- * $Id: image_jpeg.c,v 1.32 2000/08/10 09:51:55 per Exp $
+ * $Id: image_jpeg.c,v 1.33 2000/08/12 23:06:54 grubba Exp $
  */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.32 2000/08/10 09:51:55 per Exp $");
+RCSID("$Id: image_jpeg.c,v 1.33 2000/08/12 23:06:54 grubba Exp $");
 
 /* For some reason EXTERN can be defined here.
  * This is not good, since it confuses compilation.h.
@@ -59,6 +59,7 @@ RCSID("$Id: image_jpeg.c,v 1.32 2000/08/10 09:51:55 per Exp $");
 #include "threads.h"
 #include "builtin_functions.h"
 #include "module_support.h"
+#include "operators.h"
 
 /* This must be included last! */
 #include "module_magic.h"
@@ -469,8 +470,9 @@ static void image_jpeg_encode(INT32 args)
       INT32 p,q=95;
 
       p=-1;
-      if (parameter_int(sp+1-args,param_quality,&q)) 
+      if (parameter_int(sp+1-args,param_quality,&q)) {
 	 if (q<25) p=1; else p=0;
+      }
       if (parameter_int(sp+1-args,param_baseline,&p) || p!=-1)
       {
 	 if (q<0) q=0; else if (q>100) q=100;

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.53 2000/08/10 09:51:54 per Exp $
+**!	$Id: layers.c,v 1.54 2000/08/12 23:06:54 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.53 2000/08/10 09:51:54 per Exp $");
+RCSID("$Id: layers.c,v 1.54 2000/08/12 23:06:54 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -738,7 +738,7 @@ static void image_layer_set_image(INT32 args)
    THIS->alpha=NULL;
    THIS->alp=NULL;
 
-   if (args>=1)
+   if (args>=1) {
       if ( Pike_sp[-args].type!=T_OBJECT )
       {
 	 if (Pike_sp[-args].type!=T_INT ||
@@ -758,8 +758,9 @@ static void image_layer_set_image(INT32 args)
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
 			      "object(Image)|int(0)");
+   }
 
-   if (args>=2)
+   if (args>=2) {
       if ( Pike_sp[1-args].type!=T_OBJECT )
       {
 	 if (Pike_sp[1-args].type!=T_INT ||
@@ -787,6 +788,7 @@ static void image_layer_set_image(INT32 args)
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
 			      "object(Image)|int(0)");
+   }
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -1003,7 +1005,7 @@ static void image_layer_set_fill(INT32 args)
    smear_color(THIS->sfill,THIS->fill,SNUMPIXS);
 
    THIS->fill_alpha=white;
-   if (args>1)
+   if (args>1) {
       if (Pike_sp[1-args].type==T_INT && !Pike_sp[1-args].u.integer)
 	 ; /* white is good */
       else
@@ -1012,6 +1014,7 @@ static void image_layer_set_fill(INT32 args)
 	    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_fill",2,"color");
 	 }
+   }
    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
 
 #if 0
@@ -2842,7 +2845,7 @@ static void image_layer_find_autocrop(INT32 args)
    if (args>3)
       get_all_args("find_autocrop",args,"%d%d%d%d",&l,&r,&t,&b);
 
-   if (!THIS->tiled)
+   if (!THIS->tiled) {
       if (THIS->alpha)
       {
 	 img_find_autocrop(THIS->alp, &x1,&y1,&x2,&y2,
@@ -2869,7 +2872,7 @@ static void image_layer_find_autocrop(INT32 args)
 	 img_find_autocrop(THIS->img, &x1,&y1,&x2,&y2,
 			   0,l,r,t,b,1,THIS->fill);
       }
-
+   }
    push_int(x1+THIS->xoffs);
    push_int(y1+THIS->yoffs);
    push_int(x2-x1+1);

@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.32 2000/08/10 07:52:35 grubba Exp $
+ * $Id: image_ttf.c,v 1.33 2000/08/12 23:06:54 grubba Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.32 2000/08/10 07:52:35 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.33 2000/08/12 23:06:54 grubba Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -33,6 +33,7 @@ RCSID("$Id: image_ttf.c,v 1.32 2000/08/10 07:52:35 grubba Exp $");
 #include "error.h"
 #include "stralloc.h"
 #include "builtin_functions.h"
+#include "operators.h"
 
 #ifdef HAVE_LIBTTF
 #include "../Image/image.h"
@@ -1260,7 +1261,8 @@ void pike_module_init(void)
    /* First check that we actually can initialize the FreeType library. */
    if ((errcode = TT_Init_FreeType(&engine))) {
 #ifdef PIKE_DEBUG
-     fprintf(stderr, "TT_Init_FreeType() failed with code 0x%03x!\n", errcode);
+     fprintf(stderr, "TT_Init_FreeType() failed with code 0x%03lx!\n",
+	     (unsigned long)errcode);
 #endif /* PIKE_DEBUG */
      return;
    }

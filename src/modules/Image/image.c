@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.173 2000/08/10 09:51:53 per Exp $ */
+/* $Id: image.c,v 1.174 2000/08/12 23:06:53 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.173 2000/08/10 09:51:53 per Exp $
+**!	$Id: image.c,v 1.174 2000/08/12 23:06:53 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.173 2000/08/10 09:51:53 per Exp $");
+RCSID("$Id: image.c,v 1.174 2000/08/12 23:06:53 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1247,12 +1247,13 @@ static void image_find_autocrop(INT32 args)
    rgb_group rgb={0,0,0};
    int left=1,right=1,top=1,bottom=1;
 
-   if (args) 
+   if (args) {
       if (sp[-args].type!=T_INT)
          bad_arg_error("find_autocrop",sp-args,args,0,"",sp-args,
 		"Bad arguments to find_autocrop()\n");
       else
          border=sp[-args].u.integer; 
+   }
 
    if (args>=5)
    {

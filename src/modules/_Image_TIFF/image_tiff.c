@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.15 2000/07/28 07:15:29 hubbe Exp $");
+RCSID("$Id: image_tiff.c,v 1.16 2000/08/12 23:06:54 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -23,6 +23,7 @@ RCSID("$Id: image_tiff.c,v 1.15 2000/07/28 07:15:29 hubbe Exp $");
 #include "module_support.h"
 #include "error.h"
 #include "stralloc.h"
+#include "operators.h"
 #include "../Image/image.h"
 
 #ifdef INLINE

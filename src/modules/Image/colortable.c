@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.91 2000/08/11 19:12:35 grubba Exp $ */
+/* $Id: colortable.c,v 1.92 2000/08/12 23:06:53 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.91 2000/08/11 19:12:35 grubba Exp $
+**!	$Id: colortable.c,v 1.92 2000/08/12 23:06:53 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.91 2000/08/11 19:12:35 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.92 2000/08/12 23:06:53 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -40,6 +40,7 @@ RCSID("$Id: colortable.c,v 1.91 2000/08/11 19:12:35 grubba Exp $");
 #include "module_support.h"
 #include "operators.h"
 #include "dmalloc.h"
+#include "bignum.h"
 
 #include "image.h"
 #include "colortable.h"

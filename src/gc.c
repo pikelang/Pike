@@ -22,6 +22,7 @@ struct callback *gc_evaluator_callback=0;
 #include "time_stuff.h"
 #include "constants.h"
 #include "interpret.h"
+#include "bignum.h"
 
 #include "gc.h"
 #include "main.h"
@@ -29,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.119 2000/08/11 15:44:27 grubba Exp $");
+RCSID("$Id: gc.c,v 1.120 2000/08/12 23:06:53 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is

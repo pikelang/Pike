@@ -1,9 +1,9 @@
-/* $Id: xwd.c,v 1.17 2000/08/08 10:47:52 grubba Exp $ */
+/* $Id: xwd.c,v 1.18 2000/08/12 23:06:54 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: xwd.c,v 1.17 2000/08/08 10:47:52 grubba Exp $
+**!	$Id: xwd.c,v 1.18 2000/08/12 23:06:54 grubba Exp $
 **! submodule XWD
 **!
 **!	This submodule keeps the XWD (X Windows Dump) 
@@ -25,7 +25,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: xwd.c,v 1.17 2000/08/08 10:47:52 grubba Exp $");
+RCSID("$Id: xwd.c,v 1.18 2000/08/12 23:06:54 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -34,7 +34,7 @@ RCSID("$Id: xwd.c,v 1.17 2000/08/08 10:47:52 grubba Exp $");
 #include "threads.h"
 #include "array.h"
 #include "error.h"
-
+#include "mapping.h"
 
 #include "image.h"
 #include "builtin_functions.h"
