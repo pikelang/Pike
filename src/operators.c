@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.145 2002/01/16 02:54:16 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.146 2002/04/20 14:56:14 jhs Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1921,6 +1921,32 @@ static int generate_xor(node *n)
 
 PMOD_EXPORT void o_lsh(void)
 {
+  if(sp[-2].type == T_STRING) /* s[n..] */
+  {
+    struct pike_string *s;
+    ptrdiff_t from, len;
+    int args = 2;
+
+    if(sp[-1].type != T_INT)
+      SIMPLE_BAD_ARG_ERROR("`<<", 2, "int");
+
+    from = sp[-1].u.integer;
+    if(from <= 0) /* NOP */
+    {
+      sp--;
+      return;
+    }
+    if(from > sp[-2].u.string->len)
+      from = sp[-2].u.string->len;
+    len = sp[-2].u.string->len - from;
+
+    s = string_slice(sp[-2].u.string, from, len);
+    free_string(sp[-2].u.string);
+
+    sp--;
+    sp[-1].u.string = s;
+    return;
+  }
 #ifdef AUTO_BIGNUM
   if(INT_TYPE_LSH_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
     convert_stack_top_to_bignum();
@@ -1933,7 +1959,7 @@ PMOD_EXPORT void o_lsh(void)
       return;
 
     if(sp[-2].type != T_INT)
-      SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|object");
+      SIMPLE_BAD_ARG_ERROR("`<<", 1, "int|string|object");
     SIMPLE_BAD_ARG_ERROR("`<<", 2, "int|object");
   }
 #ifndef AUTO_BIGNUM
@@ -1950,6 +1976,7 @@ PMOD_EXPORT void o_lsh(void)
 /*! @decl int `<<(int arg1, int arg2)
  *! @decl mixed `<<(object arg1, int|object arg2)
  *! @decl mixed `<<(int arg1, object arg2)
+ *! @decl string `<<(string arg1, int arg2)
  *!
  *!   Left shift operator.
  *!
@@ -1958,6 +1985,9 @@ PMOD_EXPORT void o_lsh(void)
  *!
  *!   If @[arg2] is an object that implements @[lfun::``<<()], that
  *!   function will be called with @[arg1] as the single argument.
+ *!
+ *!   If @[arg1] is a string, it will be truncated @[arg2] characters
+ *!   from the left ("Hi!" << 2 == "Hi!"[2..] == "!").
  *!
  *!   Otherwise @[arg1] will be shifted @[arg2] bits left.
  *!
@@ -1986,13 +2016,39 @@ static int generate_lsh(node *n)
 
 PMOD_EXPORT void o_rsh(void)
 {
+  if(sp[-2].type == T_STRING) /* s[..sizeof(s)-n-1] */
+  {
+    struct pike_string *s;
+    ptrdiff_t len;
+    int args = 2;
+
+    if(sp[-1].type != T_INT)
+      SIMPLE_BAD_ARG_ERROR("`>>", 2, "int");
+
+    len = sp[-1].u.integer;
+    if(len <= 0) /* NOP */
+    {
+      sp--;
+      return;
+    }
+    if(len > sp[-2].u.string->len)
+      len = sp[-2].u.string->len;
+    len = sp[-2].u.string->len - len;
+
+    s = string_slice(sp[-2].u.string, 0, len);
+    free_string(sp[-2].u.string);
+    sp--;
+    sp[-1].u.string = s;
+    return;
+  }
+
   if(sp[-2].type != T_INT || sp[-1].type != T_INT)
   {
     int args = 2;
     if(call_lfun(LFUN_RSH, LFUN_RRSH))
       return;
     if(sp[-2].type != T_INT)
-      SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|object");
+      SIMPLE_BAD_ARG_ERROR("`>>", 1, "int|string|object");
     SIMPLE_BAD_ARG_ERROR("`>>", 2, "int|object");
   }
   
@@ -2022,6 +2078,7 @@ PMOD_EXPORT void o_rsh(void)
 /*! @decl int `>>(int arg1, int arg2)
  *! @decl mixed `>>(object arg1, int|object arg2)
  *! @decl mixed `>>(int arg1, object arg2)
+ *! @decl string `>>(string arg1, int arg2)
  *!
  *!   Right shift operator.
  *!
@@ -2030,6 +2087,9 @@ PMOD_EXPORT void o_rsh(void)
  *!
  *!   If @[arg2] is an object that implements @[lfun::``>>()], that
  *!   function will be called with @[arg1] as the single argument.
+ *!
+ *!   If @[arg1] is a string, it will be truncated @[arg2] characters
+ *!   from the right ("Hi!" >> 2 == "Hi!"[..sizeof("Hi!")-3] == "H").
  *!
  *!   Otherwise @[arg1] will be shifted @[arg2] bits left.
  *!
@@ -3713,9 +3773,10 @@ multiset & mapping -> mapping
   ADD_EFUN2("`^",f_xor,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_xor);
 
 #define SHIFT_TYPE							\
-  tOr(tOr(tFuncV(tMix tObj,tMix,tMix),					\
-	  tFuncV(tObj tMix,tMix,tMix)),					\
-      tFuncV(tInt,tInt,tInt))
+  tOr3(tOr(tFuncV(tMix tObj,tMix,tMix),					\
+           tFuncV(tObj tMix,tMix,tMix)),				\
+       tFuncV(tInt,tInt,tInt),						\
+       tFuncV(tStr,tInt,tStr))
 
   ADD_EFUN2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
   ADD_EFUN2("`>>",f_rsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_rsh);
