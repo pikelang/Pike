@@ -1,7 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 OBJS=yp.o
-MODULE_LDFLAGS=@LIBS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 @dynamic_module_makefile@
 @dependencies@

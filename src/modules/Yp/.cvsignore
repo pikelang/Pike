@@ -1,0 +1,10 @@
+.pure
+Makefile
+config.log
+config.status
+config.h.in
+configure
+dependencies
+linker_options
+stamp-h
+stamp-h.in

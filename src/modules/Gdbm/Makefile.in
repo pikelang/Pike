@@ -1,7 +1,7 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
-MODULE_LDFLAGS=@LIBS@
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 OBJS=gdbmmod.o
 
-@static_module_makefile@
+@dynamic_module_makefile@
 @dependencies@
