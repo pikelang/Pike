@@ -198,7 +198,7 @@ string eat(multiset(string) | string token) {
 
 // Also ::ident, scope::ident
 string eatIdentifier(void|int allowScopePrefix) {
-  SHOW(({lookAhead(0),lookAhead(1),lookAhead(2)}));
+  //  SHOW(({lookAhead(0),lookAhead(1),lookAhead(2)}));
   string scope = scopeModules[lookAhead(0)] && lookAhead(1) == "::"
     ? readToken()
     : "";
