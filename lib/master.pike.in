@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.38 1999/04/09 04:53:34 hubbe Exp $
+/* $Id: master.pike.in,v 1.39 1999/06/30 20:30:34 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -69,13 +69,25 @@ string *pike_module_path=({});
 string *pike_program_path=({});
 int want_warnings;
 
+#if constant(thread_create)
+object compiler_lock = _static_modules.Builtin.mutex();
+#endif /* constant(thread_create) */
+
 program compile_string(string data, void|string name)
 {
+#if constant(thread_create)
+  mixed key;
+  catch { key = compiler_lock->lock(); };
+#endif /* constant(thread_create) */
   return compile(cpp(data,name||"-"));
 }
 
 program compile_file(string file)
 {
+#if constant(thread_create)
+  mixed key;
+  catch { key = compiler_lock->lock(); };
+#endif /* constant(thread_create) */
   return compile(cpp(_static_modules.files()->Fd(file,"r")->read(),file));
 }
 
