@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.12 1999/04/12 11:34:21 mirar Exp $ */
+/* $Id: mkwmml.pike,v 1.13 1999/04/12 14:37:51 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -182,6 +182,7 @@ string synopsis_to_html(string s,mapping huh)
       sscanf(s,"%s(%s",name,arg),type="";
       werror(huh->_line+": suspicios method %O\n",(s/"(")[0]);
    }
+   if (arg[..1]==")(") name+="()",arg=arg[2..];
 
    if (!arg) arg="";
 
@@ -532,8 +533,9 @@ int main(int ac,string *files)
 	 }
 	 else 
 	 {
-	    sscanf(s[i+3..],"%*[ \t]!%s",s);
-//	    if (search(s,"$Id")!=-1) report("Id: "+s);
+	    string d=s[i+3..];
+	    sscanf(d,"%*[ \t]!%s",d);
+//	    if (search(s,"$Id")!=-1) report("Id: "+d);
 	    if (!descM) descM=methodM;
 	    if (!descM)
 	    {
@@ -544,8 +546,8 @@ int main(int ac,string *files)
 	    }
 	    if (!descM->desc) descM->desc="";
 	    else descM->desc+="\n";
-	    s=getridoftabs(s);
-	    descM->desc+=s[search(s,"**!")+3..];
+	    d=getridoftabs(d);
+	    descM->desc+=d;
 	 }
       }
    }
