@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.96 2001/09/05 05:40:38 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.97 2001/09/20 19:37:32 hubbe Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -282,7 +282,7 @@ static void mpzmod_create(INT32 args)
   if(THIS_PROGRAM == bignum_program)
     gmp_library_loaded=1;
 #endif
-    
+
   switch(args)
   {
   case 1:
@@ -447,6 +447,8 @@ static void mpzmod__sprintf(INT32 args)
   INT_TYPE precision, width, width_undecided, base = 0, mask_shift = 0;
   struct pike_string *s = 0;
   INT_TYPE flag_left;
+
+  debug_malloc_touch(Pike_fp->current_object);
   
   if(args < 1 || sp[-args].type != T_INT)
     Pike_error("Bad argument 1 for Mpz->_sprintf().\n");
@@ -475,6 +477,8 @@ static void mpzmod__sprintf(INT32 args)
     Pike_error("\"flag_left\" argument to Mpz->_sprintf() is not an integer.\n");
   flag_left=sp[-1].u.integer;
   pop_stack();
+
+  debug_malloc_touch(Pike_fp->current_object);
 
   switch(sp[-args].u.integer)
   {
@@ -595,6 +599,8 @@ static void mpzmod__sprintf(INT32 args)
   }
   break;
   }
+
+  debug_malloc_touch(Pike_fp->current_object);
 
   pop_n_elems(args);
 
