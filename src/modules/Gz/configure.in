@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.16 2000/05/19 16:58:05 mast Exp $
+# $Id: configure.in,v 1.17 2000/07/05 17:35:26 grubba Exp $
 AC_INIT(zlibmod.c)
 AC_CONFIG_HEADER(zlib_machine.h)
 AC_ARG_WITH(zlib,     [  --with(out)-zlib       Support gzip compression],[],[with_zlib=yes])
@@ -7,30 +7,34 @@ AC_MODULE_INIT()
 
 define([AC_CHECK_GZ],
 [
-done=no
-AC_MSG_CHECKING(working lib$1)
-AC_CACHE_VAL(pike_cv_working_$1,[
-OLDLIBS="${LIBS-}"
-LIBS="${LIBS-} -l$1"
-AC_TRY_RUN([
-`cat $srcdir/gz_test.c`
-],pike_cv_working_$1=yes,pike_cv_working_$1=no)])
-LIBS="$OLDLIBS"
-
-if test "x$pike_cv_working_$1" = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_LIBZ)
+  done=no
+  AC_MSG_CHECKING(working lib$1)
+  AC_CACHE_VAL(pike_cv_working_$1,[
+  OLDLIBS="${LIBS-}"
   LIBS="${LIBS-} -l$1"
-  done=yes
-else
-  AC_MSG_RESULT(no)
-fi
+  AC_TRY_RUN([
+`cat $srcdir/gz_test.c`
+  ],pike_cv_working_$1=yes,pike_cv_working_$1=no,
+    AC_TRY_LINK([
+`cat $srcdir/gz_test.c`
+#define main notmain
+    ],[],pike_cv_working_$1=yes,pike_cv_working_$1=no)
+  ])
+  LIBS="$OLDLIBS"
 
-if test $done = no; then
-  $2
-  :
-fi
+  if test "x$pike_cv_working_$1" = xyes; then
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_LIBZ)
+    LIBS="${LIBS-} -l$1"
+    done=yes
+  else
+    AC_MSG_RESULT(no)
+  fi
 
+  if test $done = no; then
+    $2
+    :
+  fi
 ])
 
 
