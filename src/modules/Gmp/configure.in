@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.40 2003/05/19 19:22:54 mast Exp $
+# $Id: configure.in,v 1.41 2004/02/26 15:24:50 grubba Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -217,19 +217,22 @@ PIKE_FEATURE_WITHOUT([Gmp (bignums)])
 
 if test x$with_gmp = xyes ; then
   PIKE_FEATURE_NODEP([Gmp (bignums)])
-  AC_CHECK_GMP(gmp2,gmp2/gmp.h,[
-    AC_CHECK_GMP(gmp,gmp.h,[
-      if test "x$with_bignums" = xyes ; then
-        AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
+  AC_CHECK_GMP(gmp2, gmp2/gmp.h, [
+    AC_CHECK_GMP(gmp, gmp.h)
+  ])
+  if test "$ac_cv_header_gmp2_gmp_h" = "no" \
+       -a "$ac_cv_header_gmp_h" = "no"; then
+    PIKE_ENABLE_BUNDLE(gmp, [
+      ac_cv_header_gmp2_gmp_h
+      ac_cv_header_gmp_h
+    ], [Cannot compile --with-bignums without the GMP library
 It is highly recommended that you install a working GMP
 library on your system as that will add features to Pike
 required by many applications.  (Such as Roxen) However,
 if you know that you do not need GMP, you may re-run configure
 with the option --without-bignums instead.
-])
-      fi
     ])
-  ])
+  else
   CHECK_GMP_FUNC(mpz_popcount, [mpz_t a; mpz_popcount(a)])
   CHECK_GMP_FUNC(mpz_xor, [mpz_t a, b, c; mpz_xor(a, b, c)])
   CHECK_GMP_FUNC(mpz_import, [mpz_t a; mpz_import(a, 1, 1, 1, 0, 0, 0)])
@@ -350,7 +353,7 @@ int main()
   if test "$pike_cv_mpz_set_si_works" = yes; then
     AC_DEFINE(MPZ_SET_SI_WORKS)
   fi
-
+  fi
 fi
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
