@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.6 2004/04/01 17:22:46 grubba Exp $
+# $Id: Makefile.in,v 1.7 2004/04/02 19:12:38 grubba Exp $
 @make_variables@
 VPATH=@srcdir@
 OBJS=unicode_module.o normalize.o split.o buffer.o
@@ -6,7 +6,6 @@ MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 CONFIG_HEADERS=@CONFIG_HEADERS@
 SRC_TARGETS=$(SRCDIR)/wordbits.h \
 	$(SRCDIR)/decompositions.h $(SRCDIR)/canonicals.h
-DUMMY=examine_module
 @dynamic_module_makefile@
 
 UNICODEDATA=../../UnicodeData.txt
