@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.71 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.72 2000/08/02 23:24:57 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -686,11 +686,12 @@ static MUTEX_T debug_malloc_mutex;
 #undef strdup
 #undef main
 
-#ifdef DMALLOC_USE_RTLD_NEXT
-#define malloc(X)  (dl_setup(),real_malloc((X),(Y))
-#define free(X)    (dl_setup(),real_free((X)))
-#define realloc(X,Y) (dl_setup(),real_realloc((X),(Y)))
-#define calloc(X,Y)  (dl_setup(),real_calloc((X),(Y)))
+#ifdef HAVE_DLOPEN
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+
+#ifdef RTLD_NEXT
 
 #define dl_setup()  ( real_malloc ? 0 : real_dl_setup() )
 
@@ -699,15 +700,127 @@ void (*real_free)(void *);
 void *(*real_realloc)(void *,size_t);
 void *(*real_calloc)(size_t,size_t);
 
-void real_dl_setup()
+union fake_head {
+  size_t size;
+};
+
+union fake_body
 {
-  real_malloc=dlsym(RTLD_NEXT,"malloc");
-  real_free=dlsym(RTLD_NEXT,"free");
-  real_realloc=dlsym(RTLD_NEXT,"realloc");
-  real_calloc=dlsym(RTLD_NEXT,"calloc");
+  struct fakemallocblock *next;
+  char block[1];
+  char *pad;
+  double pad2;
+};
+
+struct fakemallocblock
+{
+  union fake_head head;
+  union fake_body body;
+};
+
+static struct fakemallocblock fakemallocarea[65536];
+static struct fakemallocblock *fake_free_list;
+#define ALIGNMENT OFFSETOF(fakemallocblock, body)
+#define FAKEMALLOCED(X) \
+  ( ((char *)(X)) >= ((char *)fakemallocarea) && ((char *)(X)) < (((char *)(fakemallocarea))+sizeof(fakemallocarea)))
+static void initialize_dmalloc(void);
+
+void *malloc(size_t x)
+{
+  static int inited=0;
+  struct fakemallocblock *block, **prev;
+
+  if(!x) return 0;
+
+  if(real_malloc) return real_malloc(x);
+  if(!fake_free_list)
+  {
+    fake_free_list=fakemallocarea;
+    fake_free_list->head.size=sizeof(fakemallocarea) - ALIGNMENT;
+    fake_free_list->body.next=0;
+    
+    initialize_dmalloc();
+    
+    real_free=dlsym(RTLD_NEXT,"free");
+    real_realloc=dlsym(RTLD_NEXT,"realloc");
+    real_malloc=dlsym(RTLD_NEXT,"malloc");
+    real_calloc=dlsym(RTLD_NEXT,"calloc");
+  }
+  x+=ALIGNMENT-1;
+  x&=-ALIGNMENT;
+  
+  for(prev=&fake_free_list;(block=*prev);prev=& block->body.next)
+  {
+    if(block->head.size >= x)
+    {
+      if(block->head.size > x + ALIGNMENT)
+      {
+	/* Split block */
+	block->head.size-=x+ALIGNMENT;
+	block=(struct fakemallocblock *)(block->body.block + block->head.size);
+	block->head.size=x;
+      }else{
+	/* just return block */
+	*prev = block->body.next;
+      }
+      return block->body.block;
+    }
+  }
+  return 0;
 }
 
+void free(void *x)
+{
+  struct fakemallocblock * block;
+
+  if(!x) return;
+  if(FAKEMALLOCED(x))
+  {
+    block=BASEOF(x,fakemallocblock,body.block);
+    block->body.next=fake_free_list;
+    fake_free_list=block;
+  }else{
+    real_free(x);
+  }
+}
+
+void *realloc(void *x,size_t y)
+{
+  void *ret;
+  size_t old_size;
+  struct fakemallocblock * block;
+
+  if(FAKEMALLOCED(x) || !real_realloc)
+  {
+    old_size = x?BASEOF(x,fakemallocblock,body.block)->head.size :0;
+    if(old_size >= y) return x;
+    ret=malloc(y);
+    if(!ret) return 0;
+    MEMCPY(ret, x, old_size);
+    if(x) free(x);
+    return ret;
+  }else{
+    return real_realloc(x, y);
+  }
+}
+
+void *calloc(size_t x, size_t y)
+{
+  void *ret;
+  ret=malloc(x*y);
+  if(ret) MEMSET(ret,0,x*y);
+  return ret;
+}
+
+#if 0
+#define malloc(X)  (dl_setup(),real_malloc((X)))
+#define free(X)    (dl_setup(),real_free((X)))
+#define realloc(X,Y) (dl_setup(),real_realloc((X),(Y)))
+#define calloc(X,Y)  (dl_setup(),real_calloc((X),(Y)))
 #endif
+
+#endif /* RTLD_NEXT */
+#endif /* HAVE_DLOPEN */
 
 
 #ifdef WRAP
@@ -1760,25 +1873,34 @@ static void unlock_da_lock(void)
 }
 #endif
 
-
-int main(int argc, char *argv[])
+static void initialize_dmalloc(void)
 {
   long e;
-  extern int dbm_main(int, char **);
-  init_memhdr_hash();
+  static int initialized=0;
+  if(!initialized)
+  {
+    initialized=1;
+    init_memhdr_hash();
 
-  for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
-
+    for(e=0;e<(long)NELEM(rndbuf);e++) rndbuf[e]= (rand() % 511) | 1;
+    
 #if DEBUG_MALLOC_PAD & 3
-  fprintf(stderr,"DEBUG_MALLOC_PAD not dividable by four!\n");
-  exit(99);
+    fprintf(stderr,"DEBUG_MALLOC_PAD not dividable by four!\n");
+    exit(99);
 #endif
     
 #ifdef _REENTRANT
-  mt_init(&debug_malloc_mutex);
-  th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
+    mt_init(&debug_malloc_mutex);
+    th_atfork(lock_da_lock, unlock_da_lock,  unlock_da_lock);
 #endif
+  }
+}
 
+
+int main(int argc, char *argv[])
+{
+  extern int dbm_main(int, char **);
+  initialize_dmalloc();
   return dbm_main(argc, argv);
 }
 
