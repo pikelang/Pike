@@ -1,3 +1,7 @@
+#
+# $Id: configure.in,v 1.2 1997/01/04 13:02:58 grubba Exp $
+#
+
 AC_INIT(mysql.c)
 
 AC_PROG_CC
@@ -21,13 +25,17 @@ if test x$with_mysql = xyes; then
   AC_MSG_RESULT($pike_cv_mysql_exists)
   
   if test x$pike_cv_mysql_exists = xyes; then
+
+    OLD_LDFLAGS=$LDFLAGS
+    OLD_CPPFLAGS=$CPPFLAGS
+    OLD_LIBS=$LIBS
   
     if test -d /usr/local/mysql/mach-lib-thread/. ; then
       echo Added /usr/local/mysql/mach-lib-thread to the library search path.
       LDFLAGS="-L/usr/local/mysql/mach-lib-thread ${LDFLAGS}"
     fi
 
-    if test -d /usr/local/mysql/include ; then
+    if test -d /usr/local/mysql/include/. ; then
       echo Added /usr/local/mysql/include to the include search path.
       CPPFLAGS="-I/usr/local/mysql/include ${CPPFLAGS}"
     fi
@@ -44,9 +52,9 @@ if test x$with_mysql = xyes; then
 
     # Mysql libs
 
-    AC_CHECK_LIB(strings, bchange, [], [ pike_cv_mysql="no" ])
-    AC_CHECK_LIB(dbug, _db_doprnt_, [], [ pike_cv_mysql="no" ])
-    AC_CHECK_LIB(mysys, my_init, [], [ pike_cv_mysql="no" ])
+    AC_CHECK_LIB(strings, bchange, [], [])
+    AC_CHECK_LIB(dbug, _db_doprnt_, [], [])
+    AC_CHECK_LIB(mysys, my_init, [], [])
     AC_CHECK_LIB(mysql, mysql_connect, [], [ pike_cv_mysql="no" ])
 
     AC_MSG_CHECKING(Supported version of Mysql)
@@ -55,6 +63,12 @@ if test x$with_mysql = xyes; then
 
     if test x$pike_cv_mysql = xyes; then
       AC_DEFINE(HAVE_MYSQL)
+    else
+      # Restore variables, so we don't link with unnessesary libs
+
+      LIBS=$OLD_LIBS
+      CPPFLAGS=$OLD_CPPFLAGS
+      LDFLAGS=$OLD_LDFLAGS
     fi
   fi
 fi
