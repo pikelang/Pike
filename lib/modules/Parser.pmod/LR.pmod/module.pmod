@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.2 2002/05/22 12:33:28 nilsson Exp $
+ * $Id: module.pmod,v 1.3 2002/05/22 16:16:35 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -11,6 +11,8 @@
 
 /*! LALR(1) parser generator
  */
+
+// #pragma strict_types
 
 /*
  * Defines
@@ -170,7 +172,7 @@ class Rule
 class Parser
 {
   //! The grammar itself.
-  mapping(int|string : array(Rule)) grammar = ([]);
+  mapping(int : array(Rule)) grammar = ([]);
 
   /* Priority table for terminal symbols */
   static mapping(string : Priority) operator_priority = ([]);
@@ -251,6 +253,29 @@ class Parser
     //! Used to identify the item.
     //! Equal to r->number + offset.
     int item_id;
+
+    static string _sprintf()
+    {
+      array(string) res = ({ symbol_to_string(r->nonterminal), ":\t" });
+
+      if (offset) {
+	foreach(r->symbols[0..offset-1], int|string symbol) {
+	  res += ({ symbol_to_string(symbol), " " });
+	}
+      }
+      res += ({ "· " });
+      if (offset != sizeof(r->symbols)) {
+	foreach(r->symbols[offset..], int|string symbol) {
+	  res += ({ symbol_to_string(symbol), " " });
+	}
+      }
+      if (sizeof(indices(direct_lookahead))) {
+	res += ({ "\t{ ",
+		  map(indices(direct_lookahead), symbol_to_string) * ", ",
+		  " }" });
+      }
+      return res * "";
+    }
   }
 
   //! Implements an LR(1) state
@@ -327,7 +352,7 @@ class Parser
 
 	    if (sizeof(r->symbols) && intp(r->symbols[0]) &&
 		!closure_set[r->symbols[0]]) {
-	      closure(r->symbols[0]);
+	      closure([int]r->symbols[0]);
 	    }
 	  }
 	}
@@ -372,8 +397,8 @@ class Parser
 
       items = symbol_items[symbol];
       if (items) {
-	array(int) item_ids = Array.map(sort(indices(items)->item_id),
-					`+, 1);
+	array(int) item_ids = map(sort(indices(items)->item_id),
+				  `+, 1);
 	string kernel_hash = sprintf("%@4c", item_ids);
 
 	Kernel new_state = known_states[kernel_hash];
@@ -397,7 +422,7 @@ class Parser
 	    if ((offset != sizeof(r->symbols)) &&
 		intp(lookahead = r->symbols[offset]) &&
 		!new_state->closure_set[lookahead]) {
-	      new_state->closure(lookahead);
+	      new_state->closure([int]lookahead);
 	    }
 	  }
 
@@ -424,6 +449,11 @@ class Parser
 	werror("WARNING: do_goto() on unknown symbol <%s>\n",
 	       symbol_to_string(symbol));
       }
+    }
+
+    static string _sprintf()
+    {
+      return sprintf("%{%s\n%}", items);
     }
   }
 
@@ -454,7 +484,7 @@ class Parser
     }
 
     //! Return the next state from the queue.
-    int|Kernel next()
+    Kernel next()
     {
       if (head == tail) {
 	return 0;
@@ -507,25 +537,7 @@ class Parser
   //!   Item to pretty-print.
   string item_to_string(Item i)
   {
-    array(string) res = ({ symbol_to_string(i->r->nonterminal), ":\t" });
-
-    if (i->offset) {
-      foreach(i->r->symbols[0..i->offset-1], int|string symbol) {
-	res += ({ symbol_to_string(symbol), " " });
-      }
-    }
-    res += ({ "· " });
-    if (i->offset != sizeof(i->r->symbols)) {
-      foreach(i->r->symbols[i->offset..], int|string symbol) {
-	res += ({ symbol_to_string(symbol), " " });
-      }
-    }
-    if (sizeof(indices(i->direct_lookahead))) {
-      res += ({ "\t{ ",
-		map(indices(i->direct_lookahead), symbol_to_string) * ", ",
-		" }" });
-    }
-    return res * "";
+    return sprintf("%s", i);
   }
 
   //! Pretty-prints a state to a string.
@@ -534,11 +546,11 @@ class Parser
   //!   State to pretty-print.
   string state_to_string(Kernel state)
   {
-    return (map(state->items, item_to_string) * "\n");
+    return sprintf("%s", state);
   }
 
   //! Pretty-prints the current grammar to a string.
-  string cast_to_string()
+  static string _sprintf()
   {
     array(string) res = ({});
 
@@ -560,6 +572,11 @@ class Parser
     return (res * "");
   }
 
+  string cast_to_string()
+  {
+    return _sprintf();
+  }
+
   //! Implements casting.
   //!
   //! @param type
@@ -567,7 +584,7 @@ class Parser
   mixed cast(string type)
   {
     if (type == "string") {
-      return(cast_to_string());
+      return(_sprintf());
     }
     throw(({ sprintf("Cast to %s not supported\n", type), backtrace() }));
   }
@@ -678,7 +695,7 @@ class Parser
 	new_nullables->push(r->nonterminal);
 
 	while (new_nullables->ptr) {
-	  symbol = new_nullables->pop();
+	  symbol = [int]new_nullables->pop();
 	  if (verbose) {
 	    werror("Nulling symbol %s\n",
 		   symbol_to_string(symbol));
@@ -790,7 +807,7 @@ class Parser
 
 	if ((sizeof(r->symbols)) &&
 	    (intp(r->symbols[0]))) {
-	  state->closure(r->symbols[0]);
+	  state->closure([int]r->symbols[0]);
 	}
       }
     }
@@ -798,7 +815,7 @@ class Parser
   }
 
   //! Contains all states used.
-  //! In the queue-part are the states that remain to be compiled.
+  //! In the queue section are the states that remain to be compiled.
   State_queue s_q;
 
   static ADT.Stack item_stack;
@@ -828,7 +845,7 @@ class Parser
       int empty_cycle = 1;
       Item i2;
 
-      while ((i2 = item_stack->pop()) != i) {
+      while ((i2 = [object(Item)]item_stack->pop()) != i) {
 
 	i2->number = 0x7fffffff;
 
@@ -1249,6 +1266,12 @@ class Parser
     }
   }
 
+#ifdef LR_PROFILE
+#define LR_GAUGE(X, BLOCK)	werror(X ": %f\n", gauge BLOCK)
+#else /* !LR_PROFILE */
+#define LR_GAUGE(X, BLOCK)	do BLOCK while(0)
+#endif /* LR_PROFILE */
+
   //! Compiles the grammar into a parser, so that parse() can be called.
   int compile()
   {
@@ -1262,10 +1285,7 @@ class Parser
 
     /* First make LR(0) states */
 
-#ifdef LR_PROFILE
-    werror("LR0: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("LR0", {
       while (state = s_q->next()) {
 
 	if (verbose) {
@@ -1278,9 +1298,7 @@ class Parser
 	  state->do_goto(symbol);
 	}
       }
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
     /* Compute nullables */
     /* Done during add_rule */
@@ -1289,10 +1307,7 @@ class Parser
 	     map(indices(nullable), symbol_to_string) * ", ");
     }
 
-#ifdef LR_PROFILE
-    werror("Master items: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Master items", {
       /* Mark Transition and Reduction master items */
       for (int index = 0; index < s_q->tail; index++) {
 	mapping(int|string : Item) master_item =([]);
@@ -1308,17 +1323,11 @@ class Parser
 	  }
 	}
       }
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
     /* Probably OK so far */
 
-#ifdef LR_PROFILE
-    werror("LA sets: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("LA sets", {
       /* Calculate look-ahead sets (DR and relation) */
       for (int index = 0; index < s_q->tail; index++) {
 	foreach (s_q->arr[index]->items, Item i) {
@@ -1346,26 +1355,14 @@ class Parser
 	  }
 	}
       }
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
-#ifdef LR_PROFILE
-    werror("Handle shift: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Handle shift", {
       /* Handle SHIFT-conflicts */
       handle_shift_conflicts();
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
-#ifdef LR_PROFILE
-    werror("Check shift: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Check shift", {
       /* Check the shift sets */
       /* (Is this needed?)
        * Yes - initializes error_lookahead
@@ -1379,15 +1376,9 @@ class Parser
 	  }
 	}
       }
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
-#ifdef LR_PROFILE
-    werror("Lookback sets: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Lookback sets", {
       /* Compute lookback-sets */
       for (int index = 0; index < s_q->tail; index++) {
 	array(Item) items =  s_q->arr[index]->items;
@@ -1448,26 +1439,14 @@ class Parser
 	  }
 	}
       }
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
-#ifdef LR_PROFILE
-    werror("Handle follow: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Handle follow", {
       /* Handle follow-conflicts */
       handle_follow_conflicts();
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
-#ifdef LR_PROFILE
-    werror("Compute LA: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Compute LA", {
       /* Compute the lookahead (LA) */
       for (int index = 0; index < s_q->tail; index++) {
 	foreach (s_q->arr[index]->items, Item i) {
@@ -1481,17 +1460,11 @@ class Parser
 	  }
 	}
       }
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
     /* Probably OK from this point onward */
 
-#ifdef LR_PROFILE
-    werror("Check conflicts: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Check conflicts", {
       /* Check for conflicts */
       for (int index = 0; index < s_q->tail; index++) {
 	Kernel state = s_q->arr[index];
@@ -1532,15 +1505,9 @@ class Parser
 		 state_to_string(s_q->arr[index]));
 	}
       }
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
-#ifdef LR_PROFILE
-    werror("Compile actions: %f\n", gauge {
-#endif /* LR_PROFILE */
-
+    LR_GAUGE("Compile actions", {
       /* Compile action tables */
       for (int index = 0; index < s_q->tail; index++) {
 	Kernel state = s_q->arr[index];
@@ -1559,10 +1526,7 @@ class Parser
 	}
       }
       start_state = s_q->arr[0];
-
-#ifdef LR_PROFILE
     });
-#endif /* LR_PROFILE */
 
 #ifdef LR_PROFILE
     werror("DONE\n");
@@ -1612,88 +1576,89 @@ class Parser
     value = scanner();
 
     if (arrayp(value)) {
-      input = value[0];
-      value = value[1];
+      input = ([array(string)]value)[0];
+      value = ([array(mixed)]value)[1];
     } else {
-      input = value;
+      input = [string]value;
     }
 
     while (1) {
       mixed a = state->action[input];
 
       if (object_program(a) == Rule) {
+	Rule r = [object(Rule)]a;
 
 	if (verbose) {
 	  werror("Reducing according to rule\n%s\n",
-		 rule_to_string(a));
+		 rule_to_string(r));
 	}
 
-	if (a->action) {
+	if (r->action) {
 	  /* REDUCE */
-	  string|function (mixed ...:mixed) func = 0;
+	  string|function func = 0;
 
-	  if (stringp(func = a->action)) {
+	  if (stringp(func = r->action)) {
 	    if (action_object) {
-	      func = action_object[a->action];
+	      func = action_object[r->action];
 	      if (!functionp(func)) {
 		if (!func) {
 		  werror("Missing action \"%s\" in object\n",
-			 a->action);
+			 r->action);
 		  lr_error |= ERROR_MISSING_ACTION;
 		} else {
 		  werror("Bad type (%s) for action \"%s\" in object\n",
-			 typeof(func), a->action);
+			 typeof(func), r->action);
 		  lr_error |= ERROR_BAD_ACTION_TYPE;
 		  func = 0;
 		}
 	      }
 	    } else {
 	      werror("Missing object for action \"%s\"\n",
-		     a->action);
+		     r->action);
 	      lr_error |= ERROR_NO_OBJECT;
 	      func = 0;
 	    }
 	  }
 	  if (func) {
-	    if (sizeof(a->symbols)) {
-	      value_stack->push(func(@value_stack->pop(sizeof(a->symbols))));
-	      state = state_stack->pop(sizeof(a->symbols))[0];
+	    if (sizeof(r->symbols)) {
+	      value_stack->push(([function]func)(@value_stack->pop(sizeof(r->symbols))));
+	      state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
 	    } else {
-	      value_stack->push(a->action());
+	      value_stack->push(r->action());
 	    }
 	  } else {
 	    // Default action.
-	    if (sizeof(a->symbols)) {
+	    if (sizeof(r->symbols)) {
 #if 0
-	      value_stack->push(value_stack->pop(sizeof(a->symbols))[0]);
+	      value_stack->push(value_stack->pop(sizeof(r->symbols))[0]);
 #else /* !0 */
-	      if (sizeof(a->symbols) > 1) {
-		value_stack->quick_pop(sizeof(a->symbols) - 1);
+	      if (sizeof(r->symbols) > 1) {
+		value_stack->quick_pop(sizeof(r->symbols) - 1);
 	      }
 #endif /* 0 */
-	      state = state_stack->pop(sizeof(a->symbols))[0];
+	      state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
 	    } else {
 	      value_stack->push(0);
 	    }
 	  }
 	} else {
 	  // Default action.
-	  if (sizeof(a->symbols)) {
+	  if (sizeof(r->symbols)) {
 #if 0
-	    value_stack->push(value_stack->pop(sizeof(a->symbols))[0]);
+	    value_stack->push(value_stack->pop(sizeof(r->symbols))[0]);
 #else /* !0 */
-	    if (sizeof(a->symbols) > 1) {
-	      value_stack->quick_pop(sizeof(a->symbols) - 1);
+	    if (sizeof(r->symbols) > 1) {
+	      value_stack->quick_pop(sizeof(r->symbols) - 1);
 	    }
 #endif /* 0 */
-	    state = state_stack->pop(sizeof(a->symbols))[0];
+	    state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
 	  } else {
 	    value_stack->push(0);
 	  }
 	}
 
 	state_stack->push(state);
-	state = state->action[a->nonterminal];	/* Goto */
+	state = [object(Kernel)]state->action[r->nonterminal];	/* Goto */
       } else if (a) {
 	/* SHIFT or ACCEPT */
 	if (input == "") {
@@ -1707,15 +1672,15 @@ class Parser
 	}
 	value_stack->push(value);
 	state_stack->push(state);
-	state = a;
+	state = [object(Kernel)]a;
 
 	value = scanner();
 
 	if (arrayp(value)) {
-	  input = value[0];
-	  value = value[1];
+	  input = ([array(string)]value)[0];
+	  value = ([array(mixed)]value)[1];
 	} else {
-	  input = value;
+	  input = [string]value;
 	}
       } else {
 	/* ERROR */
@@ -1727,7 +1692,7 @@ class Parser
 	    if (value_stack->ptr) {
 	      werror("Error: Bad state at EOF -- Throwing \"%O\"\n",
 		     value_stack->pop());
-	      state=state_stack->pop();
+	      state = [object(Kernel)]state_stack->pop();
 	    } else {
 	      werror("Error: Empty stack at EOF!\n");
 	      return (0);
@@ -1744,10 +1709,10 @@ class Parser
 	  value = scanner();
 	
 	  if (arrayp(value)) {
-	    input = value[0];
-	    value = value[1];
+	    input = ([array(string)]value)[0];
+	    value = ([array(mixed)]value)[1];
 	  } else {
-	    input = value;
+	    input = [string]value;
 	  }
 	}
       }
