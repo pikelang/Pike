@@ -1,8 +1,8 @@
 /*
- * $Id: dmalloc.h,v 1.32 2001/07/18 20:46:57 hubbe Exp $
+ * $Id: dmalloc.h,v 1.33 2001/10/03 22:21:32 nilsson Exp $
  */
 
-PMOD_EXPORT extern char *debug_xalloc(size_t);
+PMOD_EXPORT extern void *debug_xalloc(size_t);
 PMOD_EXPORT extern void debug_xfree(void *);
 PMOD_EXPORT extern void *debug_xmalloc(size_t);
 PMOD_EXPORT extern void *debug_xcalloc(size_t,size_t);
