@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.76 2001/06/06 22:51:28 grubba Exp $
+# $Id: configure.in,v 1.77 2001/06/07 14:48:14 grubba Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -1044,8 +1044,12 @@ AC_TRY_RUN([
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#endif /* HAVE_DIRECT_H */
 #include <signal.h>
 
+#ifndef __NT__
 int sig_child(int arg)
 {
 #ifdef HAVE_WAITPID
@@ -1070,13 +1074,16 @@ int sig_child(int arg)
 }
 
 int sig_alarm() { exit(1); }
+#endif /* !__NT__ */
 
 int main()
 {
   char *tmp;
+#ifndef __NT__
   signal(SIGCHLD,sig_child);
   signal(SIGALRM,sig_alarm);
   alarm(4);
+#endif /* !__NT__ */
   tmp=getcwd(0,10000);
   if(tmp && strlen(tmp) <10000) exit(0);
   exit(1);
