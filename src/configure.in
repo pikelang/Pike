@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.212 1998/07/06 21:57:27 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.213 1998/07/09 12:46:34 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -669,9 +669,9 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
-sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h grp.h \
-pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
+thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
+winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
+grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
 socket.h ieeefp.h fp_class.h)
 
 AC_CHECK_SIZEOF(char *,4)
@@ -700,6 +700,7 @@ fi
 AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_CHECK_LIB(dl, dlopen)
+AC_CHECK_LIB(dld, shl_load)
 AC_CHECK_LIB(dld, dld_link)
 
 
@@ -1035,6 +1036,7 @@ AC_CHECK_FUNCS( \
  wait4 \
  waitpid \
  munmap \
+ shl_load \
  dld_link \
  dld_get_func \
  pipe \
@@ -2447,7 +2449,8 @@ AC_SUBST(RANLIB)
 AC_SUBST(DEBUGDEF)
 AC_SUBST(ac_configure_args)
 
-if test x$ac_cv_func_dlopen$ac_cv_func_dld_link = xnono ; then
+if test x$ac_cv_func_dlopen$ac_cv_func_dld_link$ac_cv_func_shl_load = xnonono;
+then
   if test x$pike_cv_sys_os != xWindows_NT ; then
     with_dynamic_modules=no
   fi
