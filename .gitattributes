@@ -158,6 +158,7 @@ testfont binary
 /man/pike.1 foreign_ident
 /refdoc/Makefile foreign_ident
 /refdoc/Makefile.in foreign_ident
+/refdoc/PostMakefile.in foreign_ident
 /refdoc/presentation/tree-split-autodoc.pike foreign_ident
 /refdoc/structure.xml foreign_ident
 /src/Makefile.in foreign_ident
