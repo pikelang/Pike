@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.120 1999/04/06 11:36:41 per Exp $ */
+/* $Id: image.c,v 1.121 1999/04/06 17:24:26 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.120 1999/04/06 11:36:41 per Exp $
+**!	$Id: image.c,v 1.121 1999/04/06 17:24:26 marcus Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.120 1999/04/06 11:36:41 per Exp $");
+RCSID("$Id: image.c,v 1.121 1999/04/06 17:24:26 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3486,6 +3486,8 @@ extern void init_image__xpm(void);
 extern void exit_image__xpm(void);
 extern void exit_image_xbm(void);
 extern void init_image_xbm(void);
+extern void exit_image_ilbm(void);
+extern void init_image_ilbm(void);
 
 /* dynamic encoders (dependent on other modules, loaded dynamically) */
 
@@ -3859,6 +3861,7 @@ void pike_module_init(void)
    init_image_pcx();
    init_image_xbm();
    init_image__xpm();
+   init_image_ilbm();
    init_image_x();
 }
 
@@ -3882,6 +3885,7 @@ void pike_module_exit(void)
    exit_image_pcx();
    exit_image__xpm();
    exit_image_xbm();
+   exit_image_ilbm();
    if (png_object) 
    {
       free_object(png_object);

@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.4 1999/03/11 08:29:32 mirar Exp $ */
+/* $Id: any.c,v 1.5 1999/04/06 17:24:30 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.4 1999/03/11 08:29:32 mirar Exp $
+**!	$Id: any.c,v 1.5 1999/04/06 17:24:30 marcus Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.4 1999/03/11 08:29:32 mirar Exp $");
+RCSID("$Id: any.c,v 1.5 1999/04/06 17:24:30 marcus Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -96,6 +96,12 @@ void image_any__decode(INT32 args)
 	 image_gif__decode(1);
 	 error("can't handle gif's yet\n");
 	 return;
+
+      case CHAR2('F','O'):
+	 /* ILBM (probably) */
+	 img_ilbm_decode(1);
+	 push_text("image/x-ilbm");
+	 goto simple_image;
 
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
