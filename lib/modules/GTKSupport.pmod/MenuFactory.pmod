@@ -150,6 +150,77 @@ mapping get_submenu_mapping(  )
   return copy_value(submenues);
 }
 
+array(object) PopupMenuFactory( MenuDef ... definition )
+{
+  GTK.Menu bar = GTK.Menu();
+  GTK.AccelGroup table= GTK.AccelGroup();
+  menubar_objects = ([]);
+  submenues = (["":bar]);
+  mapping(string:GTK.RadioMenuItem) radiogroups = ([]);
+  foreach(definition, object d)
+  {
+    string path="";
+    object parent = bar;
+    array p = d->menu_path/"/";
+    foreach(p[..sizeof(p)-2], string segment)
+    {
+      path += segment+"/";
+      if(!submenues[path])
+      {
+     GTK.MenuItem i = GTK.MenuItem( segment );
+     submenues[path] = GTK.Menu();
+     submenues[path]->set_accel_group( table );
+//         d->menu_obj = submenues[path];
+     parent->append( i );
+     i->set_submenu( submenues[path] );
+     i->show();
+     menubar_objects[ path ] = i;
+      }
+      parent = submenues[path];
+    }
+    GTK.Item i;
+    string q,g;
+    sscanf(p[-1], "<%s>%s", q, p[-1]);
+    if(q) sscanf(q, "%s:%s", q, g);
+    switch( q )
+    {
+     default:
+       i = GTK.MenuItem( p[-1] );
+       break;
+     case "check":
+       i = GTK.CheckMenuItem( p[-1] );
+       break;
+     case "separator":
+       i = GTK.MenuItem();
+       i->set_state( GTK.StateInsensitive );
+       break;
+     case "tearoff":
+       i = GTK.TearoffMenuItem();
+       break;
+    case "radio":
+      if (!radiogroups[path+":"+g]) {
+     i = GTK.RadioMenuItem( p[-1] );
+     radiogroups[path+":"+g] = i;
+      } else {
+     i = GTK.RadioMenuItem( p[-1], radiogroups[path+":"+g] );
+      }
+      break;
+    }
+    menubar_objects[ d->menu_path ] = i;
+    i->show();
+    if(d->shortcut)
+      i->add_accelerator( "activate", table, d->shortcut, d->modifiers,
+                          GTK.AccelVisible);
+    i->signal_connect( "activate", d->selected, 0 );
+    i->signal_connect("add_accelerator", d->install_accelerator,  0);
+    i->signal_connect("remove_accelerator",  d->remove_accelerator,   0);
+    parent->add( i );
+    d->mbc = mbar_mc;
+    d->siblings = definition;
+  }
+  return ({bar,table});
+}
+
 array(object) MenuFactory( MenuDef ... definition )
 {
   GTK.MenuBar bar = GTK.MenuBar();
