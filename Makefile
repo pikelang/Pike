@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.128 2004/02/28 13:36:19 grubba Exp $
+# $Id: Makefile,v 1.129 2004/02/28 16:09:35 grubba Exp $
 #
 # Meta Makefile
 #
@@ -239,7 +239,7 @@ xenofarm_export:
 	@echo "Adding bundles from $$HOME/pike_bundles/..." >>export_result.txt
 	@for f in "$$HOME/pike_bundles/"* no; do \
 	  if test -f "$$f"; then \
-	    echo Bundling `echo "$f"|sed -e 's/.*\///g'`; \
+	    echo "  Bundling" `echo "$$f"|sed -e 's/.*\///g'`; \
 	    cp -f "$$f" bundles/; \
 	  fi; \
 	done >>export_result.txt
