@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.8 1998/05/21 11:53:38 grubba fake $ */
+/* $Id: mkwmml.pike,v 1.9 1998/07/04 15:57:14 mast Exp $ */
 
 import Stdio;
 import Array;
@@ -40,12 +40,14 @@ module : mapping <- moduleM
 					"args" : array of args names and types
 					"desc" : description
 				"names" : multiset of method name(s)
-		
+
+Quoting: Only '<' must be quoted as '&lt;'.
+
 */
 
 mapping moduleM, classM, methodM, argM, nowM, descM;
 
-mapping focM(mapping dest,string name,int line)
+mapping focM(mapping dest,string name,string line)
 {
    return dest[name] || (dest[name]=(["_line":line]));
 }
@@ -76,49 +78,49 @@ void report(string s)
 #define complain(X) (X)
 
 mapping keywords=
-(["module":lambda(string arg,int line) 
+(["module":lambda(string arg,string line) 
 	  { classM=descM=nowM=moduleM=focM(parse,stripws(arg),line); 
 	    methodM=0; 
 	    if (!nowM->classes) nowM->classes=([]); 
 	    if (!nowM->modules) nowM->modules=([]); 
 	    report("module "+arg); },
-  "class":lambda(string arg,int line) 
+  "class":lambda(string arg,string line) 
 	  { if (!moduleM) return complain("class w/o module");
 	    descM=nowM=classM=focM(moduleM->classes,stripws(arg),line); 
 	    methodM=0; report("class "+arg); },
-  "submodule":lambda(string arg,int line) 
+  "submodule":lambda(string arg,string line) 
 	  { if (!moduleM) return complain("submodule w/o module");
 	    classM=descM=nowM=moduleM=focM(moduleM->modules,stripws(arg),line);
 	    methodM=0;
 	    if (!nowM->classes) nowM->classes=([]); 
 	    if (!nowM->modules) nowM->modules=([]); 
 	    report("submodule "+arg); },
-  "method":lambda(string arg,int line)
+  "method":lambda(string arg,string line)
 	  { if (!classM) return complain("method w/o class");
 	    if (!nowM || methodM!=nowM || methodM->desc || methodM->args || descM==methodM) 
 	    { if (!classM->methods) classM->methods=({});
 	      classM->methods+=({methodM=nowM=(["decl":({}),"_line":line])}); }
 	    methodM->decl+=({stripws(arg)}); descM=0; },
-  "arg":lambda(string arg,int line)
+  "arg":lambda(string arg,string line)
 	  {
 	     if (!methodM) return complain("arg w/o method");
 	     if (!methodM->args) methodM->args=({});
 	       methodM->args+=({argM=nowM=(["args":({}),"_line":line])}); 
 	     argM->args+=({arg}); descM=argM;
 	  },
-  "note":lambda(string arg,int line)
+  "note":lambda(string arg,string line)
 	  {
 	     if (!lower_nowM()) 
 	        return complain("note w/o method, class or module");
 	     descM=nowM->note||(nowM->note=(["_line":line]));
 	  },
-  "bugs":lambda(string arg,int line)
+  "bugs":lambda(string arg,string line)
 	  {
 	     if (!lower_nowM()) 
 	        return complain("bugs w/o method, class or module");
 	     descM=nowM->bugs||(nowM->bugs=(["_line":line]));
 	  },
-  "see":lambda(string arg,int line)
+  "see":lambda(string arg,string line)
 	  {
 	     if (arg[0..4]!="also:")
 	        return complain("see w/o 'also:'\n");
@@ -180,7 +182,7 @@ string synopsis_to_html(string s)
 string htmlify(string s) 
 {
 #define HTMLIFY(S) \
-   (replace((S),({"->","&","\240"}),({"-&gt;","&amp;","&nbsp;"})))
+   (replace((S),({"&lt;",">","&","\240"}),({"&lt;","&gt;","&amp;","&nbsp;"})))
 
    string t="",u,v;
    while (sscanf(s,"%s<%s>%s",u,v,s)==3)
@@ -188,7 +190,8 @@ string htmlify(string s)
    return t+HTMLIFY(s);
 }
 
-#define linkify(S) (replace((S),({"->","()"}),({".",""})))
+#define linkify(S) \
+   ("\""+replace((S),({"->","()","&lt;"}),({".","","<"}))+"\"")
 
 string make_nice_reference(string what,string prefix)
 {
@@ -210,7 +213,7 @@ string make_nice_reference(string what,string prefix)
    else 
       q=what;
 
-   return "<link to="+linkify(q)+">"+what+"</link>";
+   return "<link to="+linkify(q)+">"+htmlify(what)+"</link>";
 }
 
 string fixdesc(string s,string prefix,string where)
@@ -222,22 +225,22 @@ string fixdesc(string s,string prefix,string where)
    t=s; s="";
    while (sscanf(t,"%s<ref>%s</ref>%s",t,u,v)==3)
    {
-      s+=t+make_nice_reference(u,prefix);
+      s+=htmlify(t)+make_nice_reference(u,prefix);
       t=v;
    }
-   s+=t;
+   s+=htmlify(t);
 
    t=s; s="";
    while (sscanf(t,"%s<illustration%s>%s</illustration>%s",t,q,u,v)==4)
    {
-      s+=htmlify(replace(t,"\n\n","\n\n<p>"));
+      s+=replace(t,"\n\n","\n\n<p>");
 
       s+="<illustration __from__='"+where+"' src=lena.gif"+q+">\n"
 	 +replace(u,"lena()","src")+"</illustration>";
 
       t=v;
    }
-   s+=htmlify(replace(t,"\n\n","\n\n<p>"));
+   s+=replace(t,"\n\n","\n\n<p>");
 
    return s;
 }
@@ -280,8 +283,9 @@ void document(string enttype,
 
    verbose("mkwmml: "+name+" : "+names*","+"\n");
 
-   f->write("\n<"+enttype+" name="+
-	    replace(names*",", ">", "&gt;"));
+   f->write("\n<!-- " + huh->_line + " -->\n");
+   f->write("<"+enttype+" name="+
+	    linkify(names*","));
 
    if (manpage_suffix[replace(name,"->",".")])
       f->write(" mansuffix="+manpage_suffix[replace(name,"->",".")]);
@@ -365,7 +369,7 @@ void document(string enttype,
    if (huh["see also"])
    {
       f->write("<man_see exp>\n");
-      f->write(huh["see also"]*", ");
+      f->write(htmlify(huh["see also"]*", "));
       f->write("</man_see>\n\n");
    }
 
@@ -453,7 +457,7 @@ int main(int ac,string *files)
 
    if (sizeof(files) && files[0]=="--nonverbose") 
       files=files[1..],verbose=lambda(){};
-   
+
    stderr->write("mkwmml: reading files...\n");
 
    for (;;)
