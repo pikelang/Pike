@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.315 2000/10/13 19:39:37 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.316 2000/10/26 15:05:30 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5495,6 +5495,20 @@ void f_enumerate(INT32 args)
 	 d->item[i].u.integer=start;
 	 d->item[i].type=T_INT;
 	 d->item[i].subtype=NUMBER_NUMBER;
+#ifdef AUTO_BIGNUM
+	 if ((step>0 && start+step<start) ||
+	     (step<0 && start+step>start)) /* overflow */
+	 {
+	    pop_stack();
+	    push_int(n);
+	    push_int(step);
+	    convert_stack_top_to_bignum();
+	    push_int(start);
+	    convert_stack_top_to_bignum();
+	    f_enumerate(3);
+	    return;
+	 }
+#endif
 	 start+=step;
       }
    }
@@ -5556,7 +5570,7 @@ void f_enumerate(INT32 args)
 	 }
       }
       pop_stack();
-      stack_pop_n_elems_keep_top(4);
+      stack_pop_n_elems_keep_top(args);
    }
 }
 
