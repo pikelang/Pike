@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.720 2004/04/29 19:23:49 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.721 2004/04/29 21:26:38 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -8871,6 +8871,10 @@ test_false(glob("o*","foo"))
 test_false(glob("?f?","foo"))
 test_equal([[glob("?f?",({"ff","ffff","off","fff",""}))]],[[({"off","fff"})]])
 test_equal([[glob("foo*bar",({"foobar","foobargazonk","","foofoobar","fobar","fooar"}))]],[[({"foobar","foofoobar"})]])
+test_eval_error([[
+  array a=({"a","b",3});
+  return glob("*", a);
+]])
 
 // - gmtime
 cond([[all_constants()->localtime && all_constants()->mktime]],[[
@@ -9375,6 +9379,18 @@ test_eq(replace("f\7777777\7777777barf\7777777\7777777",({"f\7777777\7777777bar"
 
 test_equal(replace(({1,2,3,4,5,1,2,3,4}),3,-1),({1,2,-1,4,5,1,2,-1,4}))
 test_equal(replace(([1:2,3:4,5:1,2:3]),3,-1),([1:2,3:4,5:1,2:-1]))
+
+test_eval_error([[
+  mapping a = ([ "a":"b", 3:"c" ]);
+  return replace("bar", a);
+]])
+test_eval_error([[
+  mapping a = ([ "a":"b", "c":3 ]);
+  return replace("bar", a);
+]])
+test_eval_error([[
+  return replace("bar", ({"a"}), ({"b","c"}));
+]])
 
 // - replace_master
 
