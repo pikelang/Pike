@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.28 1999/12/22 20:51:09 hubbe Exp $
+ * $Id: fdlib.h,v 1.29 2000/06/17 03:16:34 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -67,6 +67,8 @@ typedef int FD;
 #define fd_info(fd) debug_fd_info(dmalloc_touch_fd(fd))
 #define fd_query_properties(fd,Y) \
         debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
+#define fd_stat(F,BUF) debug_fd_stat(F,BUF)
+#define fd_lstat(F,BUF) debug_fd_stat(F,BUF)
 #define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y),(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
 #define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
@@ -288,6 +290,8 @@ typedef int FD;
 
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
 
+#define fd_stat(F,BUF) stat(F,BUF)
+#define fd_lstat(F,BUF) lstat(F,BUF)
 #define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y),(Z)))
 #define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
 #define fd_pipe pipe /* FIXME */

@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.79 2000/03/16 04:14:35 mast Exp $");
+RCSID("$Id: efuns.c,v 1.80 2000/06/17 03:16:45 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -129,10 +129,10 @@ void f_file_stat(INT32 args)
   THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
   if(l)
-    i=lstat(s, &st);
+    i=fd_lstat(s, &st);
   else
 #endif
-    i=stat(s, &st);
+    i=fd_stat(s, &st);
 
   THREADS_DISALLOW_UID();
   pop_n_elems(args);
@@ -324,7 +324,7 @@ void f_filesystem_stat(INT32 args)
 #endif /* HAVE_SYSV_STATFS */
 #else /* !HAVE_STATFS */
 #ifdef HAVE_USTAT
-  if (!(i = stat(s, &statbuf))) {
+  if (!(i = fd_stat(s, &statbuf))) {
     i = ustat(statbuf.st_rdev, &st);
   }
 #else
@@ -451,9 +451,9 @@ void f_rm(INT32 args)
   
   THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
-  i=lstat(s, &st) != -1;
+  i=fd_lstat(s, &st) != -1;
 #else
-  i=stat(s, &st) != -1;
+  i=fd_stat(s, &st) != -1;
 #endif
   if(i)
   {

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.106 2000/05/05 00:26:25 hubbe Exp $");
+RCSID("$Id: object.c,v 1.107 2000/06/17 03:16:34 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -340,11 +340,11 @@ struct object *get_master(void)
     strcat(tmp,".o");
 
     s = NULL;
-    if (!stat(tmp, &stat_buf)) {
+    if (!fd_stat(tmp, &stat_buf)) {
       long ts1 = stat_buf.st_mtime;
       long ts2 = 0;		/* FIXME: Should really be MIN_INT, but... */
 
-      if (!stat(master_file, &stat_buf)) {
+      if (!fd_stat(master_file, &stat_buf)) {
 	ts2 = stat_buf.st_mtime;
       }
 
