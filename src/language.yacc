@@ -181,7 +181,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.109 1999/01/31 09:01:50 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.110 1999/02/20 17:43:39 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -192,7 +192,6 @@ RCSID("$Id: language.yacc,v 1.109 1999/01/31 09:01:50 hubbe Exp $");
 #include "stralloc.h"
 #include "las.h"
 #include "interpret.h"
-#include "lex.h"
 #include "program.h"
 #include "pike_types.h"
 #include "constants.h"
@@ -236,6 +235,11 @@ static void __yy_memcpy(char *to, char *from, int count);
   FLOAT_TYPE fnum;
   struct node_s *n;
 }
+
+%{
+/* Needs to be included after YYSTYPE is defined. */
+#include "lex.h"
+%}
 
 %{
 /* Include <stdio.h> our selves, so that we can do our magic
