@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.133 2000/08/15 16:00:03 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.134 2000/08/15 16:01:14 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -32,7 +32,7 @@ RCSID("$Id: pike_types.c,v 1.133 2000/08/15 16:00:03 grubba Exp $");
 int max_correct_args;
 
 static void internal_parse_type(char **s);
-static int type_length(char *t);
+static ptrdiff_t type_length(char *t);
 static int low_pike_types_le(char *a, char *b,
 			     int array_cnt, unsigned int flags);
 static int low_check_indexing(char *type, char *index_type, node *n);
@@ -273,7 +273,9 @@ void push_unfinished_type(char *s)
 static void push_unfinished_type_with_markers(char *s,
 					      struct pike_string **am)
 {
-  int d,e,c,len=type_length(s);
+  int d,e,c;
+  ptrdiff_t len=type_length(s);
+
   type_stack_mark();
   for(e=0;e<len;e++)
   {
