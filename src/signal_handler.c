@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.291 2004/01/13 00:51:16 nilsson Exp $
+|| $Id: signal_handler.c,v 1.292 2004/04/01 13:52:57 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.291 2004/01/13 00:51:16 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.292 2004/04/01 13:52:57 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1451,34 +1451,107 @@ static void f_pid_status_wait(INT32 args)
   }
 #else
 
+  if (THIS->pid == getpid())
+    Pike_error("Waiting for self.\n");
+
   /* NB: This function also implements TraceProcess()->wait(). */
   wait_for_stopped = THIS->flags & PROCESS_FLAG_TRACED;
-
-#ifdef USE_WAIT_THREAD
 
   while((THIS->state == PROCESS_RUNNING) ||
 	(!wait_for_stopped && (THIS->state == PROCESS_STOPPED)))
   {
+#ifdef USE_WAIT_THREAD
     SWAP_OUT_CURRENT_THREAD();
     co_wait_interpreter( & process_status_change);
     SWAP_IN_CURRENT_THREAD();
-  }
-
 #else
+    int err;
+    int pid = THIS->pid;
+    WAITSTATUSTYPE status;
 
-  {
-    int err=0;
-    while((THIS->state == PROCESS_RUNNING) ||
-	  (!wait_for_stopped && (THIS->state == PROCESS_STOPPED)))
+#ifdef PROC_DEBUG
+    fprintf(stderr, "[%d] wait(%d): Waiting for child...\n", getpid(), pid);
+#endif
+    THREADS_ALLOW();
+    pid = WAITPID(pid, &status, 0|WUNTRACED);
+    err = errno;
+    THREADS_DISALLOW();
+
+    if(pid > 0)
     {
-      int pid;
-      WAITSTATUSTYPE status;
-      pid=THIS->pid;
-
-      if(err)
+      report_child(pid, status, "->wait");
+    }
+    else if(pid<0)
+    {
+      switch(err)
       {
+      case EINTR: 
+	break;
+	      
 #ifdef _REENTRANT
-	if (err == ECHILD) {
+      case ECHILD:
+	/* Linux stupidity...
+	 * child might be forked by another thread (aka process).
+	 *
+	 * SIGCHILD will be sent to all threads on Linux.
+	 * The sleep in the loop below will thus be awakened by EINTR.
+	 *
+	 * But not if there's a race or if Linux has gotten more
+	 * POSIX compliant (>= 2.4), so don't sleep too long
+	 * unless we can poll the wait data pipe. /mast
+	 */
+	pid = THIS->pid;
+	if ((THIS->state == PROCESS_RUNNING) ||
+	    (!wait_for_stopped && (THIS->state == PROCESS_STOPPED))) {
+	  struct pid_status *this = THIS;
+	  THREADS_ALLOW();
+	  while ((!kill(pid, 0)) &&
+		 (!wait_for_stopped || (this->state != PROCESS_STOPPED))) {
+#ifdef PROC_DEBUG
+	    fprintf(stderr, "[%d] wait(%d): Sleeping...\n", getpid(), pid);
+#endif /* PROC_DEBUG */
+#ifdef HAVE_POLL
+	    {
+	      struct pollfd pfd[1];
+#ifdef NEED_SIGNAL_SAFE_FIFO
+	      pfd[0].fd = wait_fd[0];
+	      pfd[0].events = POLLIN;
+	      poll (pfd, 1, 10000);
+#else
+	      poll(pfd, 0, 100);
+#endif
+	    }
+#else /* !HAVE_POLL */
+	    /* FIXME: If this actually gets used then we really
+	     * ought to do better here. :P */
+	    sleep(1);
+#endif /* HAVE_POLL */
+	  }
+	  THREADS_DISALLOW();
+	}
+	/* The process has died. */
+#ifdef PROC_DEBUG
+	fprintf(stderr, "[%d] wait(%d): Process dead.\n", getpid(), pid);
+#endif /* PROC_DEBUG */
+	if ((THIS->state == PROCESS_RUNNING) ||
+	    (!wait_for_stopped && THIS->state == PROCESS_STOPPED)) {
+	  /* The child hasn't been reaped yet.
+	   * Try waiting some more, and if that
+	   * doesn't work, let the main loop complain.
+	   */
+#ifdef PROC_DEBUG
+	  fprintf(stderr, "[%d] wait(%d): ... but not officially, yet.\n"
+		  "wait(%d): Sleeping some more...\n",
+		  getpid(), pid, pid);
+#endif /* PROC_DEBUG */
+	  THREADS_ALLOW();
+#ifdef HAVE_POLL
+	  poll(NULL, 0, 100);
+#else /* !HAVE_POLL */
+	  sleep(1);
+#endif /* HAVE_POLL */
+	  THREADS_DISALLOW();
+
 	  /* We can get here if several threads are waiting on the
 	   * same process, or if the second sleep below wasn't enough
 	   * for receive_sigchild to put the entry into the wait_data
@@ -1487,119 +1560,22 @@ static void f_pid_status_wait(INT32 args)
 	  fprintf(stderr, "[%d] wait(%d): Child isn't reaped yet, looping.\n",
 		  getpid(), pid);
 #endif
-	  pid = -1;
 	}
-	else
-#endif
-	  Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",pid,err);
-      }
-      else {
-#ifdef PROC_DEBUG
-	fprintf(stderr, "[%d] wait(%d): Waiting for child...\n", getpid(), pid);
-#endif
-	THREADS_ALLOW();
-	pid = WAITPID(pid, &status, 0|WUNTRACED);
-	if (pid < 0) err = errno;
-	THREADS_DISALLOW();
-      }
-
-      if(pid > 0)
-      {
-	report_child(pid, status, "->wait");
-      }
-      else
-      {
-	if(pid<0)
-	{
-	  switch(err)
-	  {
-	    case EINTR: 
-	      err = 0;
-	      break;
-	      
-#ifdef _REENTRANT
-	    case ECHILD:
-	      /* Linux stupidity...
-	       * child might be forked by another thread (aka process).
-	       *
-	       * SIGCHILD will be sent to all threads on Linux.
-	       * The sleep in the loop below will thus be awakened by EINTR.
-	       *
-	       * But not if there's a race or if Linux has gotten more
-	       * POSIX compliant (>= 2.4), so don't sleep too long
-	       * unless we can poll the wait data pipe. /mast
-	       */
-	      pid = THIS->pid;
-	      if ((THIS->state == PROCESS_RUNNING) ||
-		  (!wait_for_stopped && (THIS->state == PROCESS_STOPPED))) {
-		struct pid_status *this = THIS;
-		THREADS_ALLOW();
-		while (!kill(pid, 0) &&
-		       !wait_for_stopped && (this->state == PROCESS_STOPPED)) {
-#ifdef PROC_DEBUG
-		  fprintf(stderr, "[%d] wait(%d): Sleeping...\n", getpid(), pid);
-#endif /* PROC_DEBUG */
-#ifdef HAVE_POLL
-		  {
-		    struct pollfd pfd[1];
-#ifdef NEED_SIGNAL_SAFE_FIFO
-		    pfd[0].fd = wait_fd[0];
-		    pfd[0].events = POLLIN;
-		    poll (pfd, 1, 10000);
-#else
-		    poll(pfd, 0, 100);
-#endif
-		  }
-#else /* !HAVE_POLL */
-		  /* FIXME: If this actually gets used then we really
-		   * ought to do better here. :P */
-		  sleep(1);
-#endif /* HAVE_POLL */
-		}
-		THREADS_DISALLOW();
-	      }
-	      /* The process has died. */
-#ifdef PROC_DEBUG
-	      fprintf(stderr, "[%d] wait(%d): Process dead.\n", getpid(), pid);
-#endif /* PROC_DEBUG */
-	      if (THIS->state == PROCESS_RUNNING &&
-		  !wait_for_stopped && THIS->state == PROCESS_STOPPED) {
-		/* The child hasn't been reaped yet.
-		 * Try waiting some more, and if that
-		 * doesn't work, let the main loop complain.
-		 */
-#ifdef PROC_DEBUG
-		fprintf(stderr, "[%d] wait(%d): ... but not officially, yet.\n"
-			"wait(%d): Sleeping some more...\n",
-			getpid(), pid, pid);
-#endif /* PROC_DEBUG */
-		THREADS_ALLOW();
-#ifdef HAVE_POLL
-		poll(NULL, 0, 100);
-#else /* !HAVE_POLL */
-		sleep(1);
-#endif /* HAVE_POLL */
-		THREADS_DISALLOW();
-		/* In case of failure, report this as an ECHILD error. */
-		err = ECHILD;
-	      }
-	      break;
+	break;
 #endif /* _REENTRANT */
 
-	    default:
-	      break;
-	  }
-	}else{
-	  /* This should not happen! */
-	  Pike_fatal("Pid = 0 in waitpid(%d)\n",pid);
-	}
+      default:
+	Pike_error("Lost track of a child (pid %d, errno from wait %d).\n",pid,err);
+	break;
       }
-	
-      
-      check_threads_etc();
+    } else {
+      /* This should not happen! */
+      Pike_fatal("Pid = 0 in waitpid(%d)\n",pid);
     }
-  }
+    check_threads_etc();
 #endif
+  }
+
   pop_n_elems(args);
 
   if (THIS->state == PROCESS_STOPPED) {
