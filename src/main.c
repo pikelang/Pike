@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.96 2000/08/15 15:56:27 grubba Exp $");
+RCSID("$Id: main.c,v 1.97 2000/08/18 22:27:04 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -115,7 +115,7 @@ PMOD_EXPORT struct callback *add_exit_callback(callback_func call,
 }
 
 #ifdef __NT__
-static void get_master_key(long cat)
+static void get_master_key(HKEY cat)
 {
   HKEY k;
   char buffer[4096];
