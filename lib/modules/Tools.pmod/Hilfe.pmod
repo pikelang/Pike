@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.99 2003/02/21 18:51:10 marcus Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.100 2003/03/12 09:12:56 agehall Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -751,7 +751,7 @@ private class Expression {
     if(t>=sizeof(positions))
       t = sizeof(positions)-1;
 
-    // Negative t not boundry checked.
+    // Negative t not boundary checked.
     return tokens[positions[f]..positions[t]]*"";
   }
 
