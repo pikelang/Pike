@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.55 2002/12/01 00:57:32 mast Exp $
+|| $Id: block_alloc.h,v 1.56 2002/12/01 02:51:51 mast Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -162,6 +162,8 @@ static void PIKE_CONCAT(check_free_,DATA)(struct DATA *d)               \
   {                                                                     \
     if( (char *)d < (char *)tmp) continue;                              \
     if( (char *)d >= (char *)(tmp->x+(BSIZE))) continue;		\
+    if ((char *) d - (char *) tmp->x !=					\
+	(d - tmp->x) * (ptrdiff_t) sizeof (struct DATA)) break;		\
     return;                                                             \
   }                                                                     \
   Pike_fatal("really_free_%s called on non-block_alloc region (%p).\n",      \
@@ -213,6 +215,14 @@ void PIKE_CONCAT3(really_free_,DATA,_unlocked)(struct DATA *d)		\
       PIKE_CONCAT(DATA,_blocks) = blk->next;				\
       blk->next->prev = NULL;						\
     }									\
+    DO_IF_DMALLOC({							\
+	size_t i;							\
+	extern void dmalloc_check_block_free(void *p, char *loc);	\
+	for (i = 0; i < (BSIZE); i++) {					\
+	  dmalloc_check_block_free(blk->x + i, DMALLOC_LOCATION());	\
+	  dmalloc_unregister(blk->x + i, 1);				\
+	}								\
+      });								\
     /* Mark meta-block as available, since libc will mess with it. */	\
     PIKE_MEM_RW(*blk);							\
     free(blk);								\
@@ -265,6 +275,14 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
       PIKE_CONCAT(DATA,_blocks) = blk->next;				\
       blk->next->prev = NULL;						\
     }									\
+    DO_IF_DMALLOC({							\
+	size_t i;							\
+	extern void dmalloc_check_block_free(void *p, char *loc);	\
+	for (i = 0; i < (BSIZE); i++) {					\
+	  dmalloc_check_block_free(blk->x + i, DMALLOC_LOCATION());	\
+	  dmalloc_unregister(blk->x + i, 1);				\
+	}								\
+      });								\
     /* Mark meta-block as available, since libc will mess with it. */	\
     PIKE_MEM_RW(*blk);							\
     free(blk);								\
@@ -421,6 +439,26 @@ int PIKE_CONCAT3(check_,DATA,_semafore)(void *ptr)			     \
   PIKE_CONCAT3(make_,DATA,_unlocked)(ptr, hval);			     \
   DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));                  \
   return 1;								     \
+}									     \
+									     \
+void PIKE_CONCAT(move_,DATA)(struct DATA *block, void *new_ptr)		     \
+{									     \
+  size_t hval = (size_t) block->PTR_HASH_ALLOC_DATA;			     \
+  DO_IF_RUN_UNLOCKED(mt_lock(&PIKE_CONCAT(DATA,_mutex)));		     \
+  hval %= PIKE_CONCAT(DATA,_hash_table_size);				     \
+  if (!PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(			     \
+	block->PTR_HASH_ALLOC_DATA, hval))				     \
+    Pike_fatal("The block to move wasn't found.\n");			     \
+  DO_IF_DEBUG(								     \
+    if (PIKE_CONCAT(DATA,_hash_table)[hval] != block)			     \
+      Pike_fatal("Expected the block to be at the top of the hash chain.\n"); \
+  );									     \
+  PIKE_CONCAT(DATA,_hash_table)[hval] = block->BLOCK_ALLOC_NEXT;	     \
+  block->PTR_HASH_ALLOC_DATA = new_ptr;					     \
+  hval = (size_t) new_ptr % PIKE_CONCAT(DATA,_hash_table_size);		     \
+  block->BLOCK_ALLOC_NEXT = PIKE_CONCAT(DATA,_hash_table)[hval];	     \
+  PIKE_CONCAT(DATA,_hash_table)[hval] = block;				     \
+  DO_IF_RUN_UNLOCKED(mt_unlock(&PIKE_CONCAT(DATA,_mutex)));		     \
 }									     \
 									     \
 int PIKE_CONCAT(remove_,DATA)(void *ptr)				     \
