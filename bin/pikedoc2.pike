@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 /*
- * $Id: pikedoc2.pike,v 1.2 1999/07/09 17:10:06 grubba Exp $
+ * $Id: pikedoc2.pike,v 1.3 2000/10/08 18:16:35 grubba Exp $
  *
  * Pike-doc extractor mk II
  *
@@ -107,9 +107,9 @@ string _extract_pikedoc(string tag, mapping attrs, string contents,
   return("");
 }
 
-string extract_pikedoc(string input)
+string extract_pikedoc(string input, mapping|void res)
 {
-  mapping res = (["res":""]);
+  res = res || (["res":""]);
 
   parse_html(input, ([]), (["pikedoc":_extract_pikedoc]), res);
 
@@ -118,9 +118,20 @@ string extract_pikedoc(string input)
 
 int main(int argc, array(string) argv)
 {
-  string raw = Stdio.stdin->read();
+  if (argc == 1) {
+    string raw = Stdio.stdin->read();
 
-  write(extract_pikedoc(raw));
+    write(extract_pikedoc(raw));
+  } else {
+    foreach(argv[1..], string fname) {
+      string raw = Stdio.File(fname, "r")->read();
+      mapping res = ([]);
+      extract_pikedoc(raw, res);
 
+      foreach(indices(raw), string group) {
+	// Do something interresting.
+      }
+    }
+  }
   return(0);
 }
