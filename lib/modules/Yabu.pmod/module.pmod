@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.15 1999/08/30 10:01:28 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.16 1999/10/19 22:43:15 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -129,10 +129,35 @@ static private class FileIO {
   static private inherit Stdio.File:file;
   static private string filename, filemode;
 
+  static private int mask = 0;
+
+  array(int) fractionalise(int i)
+  {
+    if(!mask)
+    {
+      int size = 0;
+      for(mask = 1; mask; size++)
+	mask <<= 1;
+      mask = ~(0xff << (size-8));
+    }
+    
+    return ({ (i>>8) & mask, i & 0xff });
+  }
+  
   static private void seek(int offset)
   {
-    if(file::seek(offset) == -1)
-      ERR("seek failed");
+    if(offset < 0)
+    {
+      int fraction;
+
+      [offset, fraction] = fractionalise(offset);
+      if(file::seek(offset, 0x100) == -1 ||
+	 (fraction && sizeof(file::read(fraction)) != fraction))
+	ERR("seek failed");
+    }
+    else
+      if(file::seek(offset) == -1)
+	ERR("seek failed");
   }
 
   string read_at(int offset, int|void size)
@@ -353,6 +378,8 @@ class Chunk {
       return f[0];
     }
     int x = eof;
+    if(eof < 0 && 0 <= eof+type)
+      ERR("Database too large!");
     eof += type;
     return x;
   }
