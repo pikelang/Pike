@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.13 2002/05/10 12:27:31 manual Exp $ -->
+<!-- $Id: traditional.xml,v 1.14 2002/05/12 17:07:54 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -62,7 +62,6 @@
       <insert-move entity="Parser.XML"/>
       <insert-move entity="Parser.HTML"/>
       <insert-move entity="Parser"/>
-      <insert-move entity="LR"/>
     </chapter>
   </file>
   <file>
