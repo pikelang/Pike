@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: handshake.pike,v 1.30 2004/07/05 17:21:49 grubba Exp $
+/* $Id: handshake.pike,v 1.31 2004/07/06 16:14:44 grubba Exp $
  *
  */
 
@@ -69,6 +69,7 @@ object dh_state; /* For diffie-hellman key exchange */
 
 int rsa_message_was_bad;
 array(int) version;
+array(int) remote_version;
 
 int reuse;
 
@@ -428,28 +429,29 @@ string server_derive_master_secret(string data)
 #endif
      if (!premaster_secret
 	 || (strlen(premaster_secret) != 48)
-	 || (premaster_secret[0] != 3))
+	 || (premaster_secret[0] != 3)
+	 || (premaster_secret[1] != remote_version[1]))
      {
-
        /* To avoid the chosen ciphertext attack discovered by Daniel
-	* Bleichenbacher, it is essential not to send any error *
-	* messages back to the client until after the client's *
-	* Finished-message (or some other invalid message) has been *
-	* recieved. */
-
+	* Bleichenbacher, it is essential not to send any error
+	* messages back to the client until after the client's
+	* Finished-message (or some other invalid message) has been
+	* recieved.
+	*/
+       /* Also checks for version roll-back attacks.
+	*/
        werror("SSL.handshake: Invalid premaster_secret! "
 	      "A chosen ciphertext attack?\n");
+#ifdef SSL3_DEBUG
+       if (premaster_secret && sizeof(premaster_secret) > 2) {
+	 werror("SSL.handshake: Strange version (%d.%d) detected in "
+		"key exchange message (expected %d.%d).\n",
+		premaster_secret[0], premaster_secret[1],
+		remote_version[0], remote_version[1]);
+       }
+#endif
        premaster_secret = context->random(48);
        rsa_message_was_bad = 1;
-
-     } else {
-       /* FIXME: When versions beyond 3.0 are supported,
-	* the version number here must be checked more carefully
-	* for a version rollback attack. */
-#ifdef SSL3_DEBUG
-       if (premaster_secret[1] > 0)
-	 werror("SSL.handshake: Newer version detected in key exchange message.\n");
-#endif
      }
      break;
    }
@@ -594,7 +596,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
        	if (
 	  catch{
-	  version = input->get_fix_uint_array(1, 2);
+	  version = (remote_version = input->get_fix_uint_array(1, 2)) + ({});
 	  client_random = input->get_fix_string(32);
 	  id = input->get_var_string(1);
 	  cipher_len = input->get_uint(2);
@@ -680,7 +682,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	int ch_len;
 	mixed err;
 	if (err = catch{
-	  version = input->get_fix_uint_array(1, 2);
+	  version = (remote_version = input->get_fix_uint_array(1, 2)) + ({});
 	  ci_len = input->get_uint(2);
 	  id_len = input->get_uint(2);
 	  ch_len = input->get_uint(2);
@@ -925,7 +927,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       string id;
       int cipher_suite, compression_method;
 
-      version = input->get_fix_uint_array(1, 2);
+      version = (remote_version = input->get_fix_uint_array(1, 2)) + ({});
       server_random = input->get_fix_string(32);
       id = input->get_var_string(1);
       cipher_suite = input->get_uint(2);
