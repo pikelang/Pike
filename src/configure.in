@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.586 2002/05/05 13:22:39 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.587 2002/05/08 22:23:27 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -806,7 +806,7 @@ string:
         exit 1
       fi
 
-      if test "x$with_path_gcc" = "xno"; then :; else
+      if test "x$with_patch_gcc" = "xno"; then :; else
         AC_MSG_WARN([Will attempt to patch gcc.])
 
         AC_MSG_CHECKING([for cc1])
