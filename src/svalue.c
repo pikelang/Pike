@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.198 2004/09/24 09:31:45 grubba Exp $
+|| $Id: svalue.c,v 1.199 2004/09/25 19:21:54 grubba Exp $
 */
 
 #include "global.h"
@@ -473,7 +473,10 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 
     if(FIND_LFUN(s->u.object->prog,LFUN___HASH) != -1)
     {
-      safe_apply_low2(s->u.object, FIND_LFUN(s->u.object->prog,LFUN___HASH), 0, 1);
+      STACK_LEVEL_START(0);
+      safe_apply_low2(s->u.object, FIND_LFUN(s->u.object->prog, LFUN___HASH),
+		      0, 1);
+      STACK_LEVEL_CHECK(1);
       if(sp[-1].type == T_INT)
       {
 	q=sp[-1].u.integer;
@@ -481,6 +484,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
 	q=0;
       }
       pop_stack();
+      STACK_LEVEL_DONE(0);
       break;
     }
     /* FALL THROUGH */
