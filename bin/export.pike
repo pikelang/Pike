@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.23 1999/06/03 06:08:20 hubbe Exp $ */
+/* $Id: export.pike,v 1.24 1999/07/02 14:16:54 grubba Exp $ */
 
 #include <simulate.h>
 
@@ -71,16 +71,18 @@ string getversion()
 void bump_version()
 {
   werror("Bumping release number.\n");
-  Process.create_process(({"cvs","update","version.c"}),(["cwd":"pike/src"] ))->wait();
+  Process.create_process(({ "cvs", "update", "version.h" }),
+			 ([ "cwd":"pike/src" ]))->wait();
 
-  string s=Stdio.read_file("pike/src/version.c");
-  sscanf(s,"%s release %d%s",string pre, int rel, string post);
+  string s=Stdio.read_file("pike/src/version.h");
+  sscanf(s,"%s PIKE_BUILD_VERSION %d%s",string pre, int rel, string post);
   rel++;
-  Stdio.File("pike/src/version.c","wct")->write(pre+" release "+rel+post);
-  Process.create_process(({"cvs","commit","-m",
-			     "release number bumped to "+rel+" by export.pike",
-			     "version.c"}),
-			 (["cwd":"pike/src"]))->wait();
+  Stdio.File("pike/src/version.h", "wct")->
+    write(pre+" PIKE_BUILD_VERSION "+rel+post);
+  Process.create_process(({ "cvs", "commit", "-m",
+			    "release number bumped to "+rel+" by export.pike",
+			    "version.h" }),
+			 ([ "cwd":"pike/src" ]))->wait();
 }
 
 
