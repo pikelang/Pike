@@ -61,7 +61,7 @@
       2.5.4.53 - id-at-deltaRevocationList
 */
 
-import Standards.ASN1.Encode;
+import Standards.ASN1.Types;
 
 object pkcs_id = asn1_identifier(1, 2, 840, 113549, 1);
 object pkcs_1_id = pkcs_id->append(1);
@@ -69,6 +69,9 @@ object pkcs_9_id = pkcs_id->append(9);
 
 object rsa_id = pkcs_1_id->append(1);
 object rsa_md5_id = pkcs_1_id->append(4);
+
+object md5_id = asn1_identifier(1, 2, 840, 113549, 2, 5);
+object sha1_id = asn1_identifier(1, 3, 14, 3, 2, 26);
 
 /* Object Identifiers used in X509 distinguished names */
 
@@ -96,5 +99,7 @@ mapping attribute_ids =
   "challengePassword" : pkcs_9_id->append(7),       /* Printable | T61
 						       | Universal */
   "unstructuredAddress" : pkcs_9_id->append(8),     /* Printable | T61 */
-  "extendedCertificateAttributes" : pkcs_9_id->append(9) /* Attributes */
-   ]);
+  "extendedCertificateAttributes" : pkcs_9_id->append(9), /* Attributes */
+  "friendlyName" : pkcs_9_id->append(20),           /* BMPString */
+  "localKeyID" : pkcs_9_id->append(21)              /* OCTET STRING */
+]);
