@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.117 2000/04/11 23:27:27 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.118 2000/04/12 16:54:42 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -523,46 +523,6 @@ void f_all_threads(INT32 args)
   f_aggregate(sp-oldsp);
 }
 
-#ifdef PIKE_DEBUG
-static void gc_check_thread_stacks(struct callback *foo, void *bar, void *gazonk)
-{
-  INT32 x;
-  struct thread_state *s;
-
-  mt_lock( & thread_table_lock );
-  for(x=0; x<THREAD_TABLE_SIZE; x++)
-  {
-    for(s=thread_table_chains[x]; s; s=s->hashlink)
-    {
-      struct pike_frame *f;
-      /* We avoid checking the 'current' thread
-       * as that is handled by interpret.c
-       * This aids compatibility with nonthreaded systems.
-       * -Hubbe
-       */
-      debug_malloc_touch(THREADSTATE2OBJ(s));
-      if(s->swapped)
-      {
-
-	debug_malloc_touch(s->evaluator_stack);
-	debug_gc_xmark_svalues(s->evaluator_stack,
-			       s->sp - s->evaluator_stack-1,
-			       "interpreter stack");
-	
-	for(f=s->fp;f;f=f->next)
-	{
-	  debug_malloc_touch(f);
-	  if(f->context.parent)
-	    gc_external_mark(f->context.parent);
-	  gc_external_mark(f->current_object);
-	  gc_external_mark(f->context.prog);
-	}
-      }
-    }
-  }
-  mt_unlock( & thread_table_lock );
-}
-#endif
 
 int count_pike_threads(void)
 {
@@ -1113,12 +1073,6 @@ static void thread_was_marked(struct object *o)
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     gc_mark_mapping_as_referenced(tmp->thread_local);
-#ifdef PIKE_DEBUG
-  if(tmp->swapped)
-  {
-    debug_gc_xmark_svalues(tmp->evaluator_stack,tmp->sp-tmp->evaluator_stack-1,"idle thread stack");
-  }
-#endif
 }
 
 static void thread_was_checked(struct object *o)
@@ -1126,6 +1080,24 @@ static void thread_was_checked(struct object *o)
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
     gc_check(tmp->thread_local);  
+
+#ifdef PIKE_DEBUG
+  if(tmp->swapped)
+  {
+    struct pike_frame *f;
+    debug_malloc_touch(o);
+    debug_gc_xmark_svalues(tmp->evaluator_stack,tmp->sp-tmp->evaluator_stack-1," in idle thread stack");
+    
+    for(f=tmp->fp;f;f=f->next)
+    {
+      debug_malloc_touch(f);
+      if(f->context.parent)
+	gc_external_mark2(f->context.parent,0," in fp->context.parent of idle thread");
+      gc_external_mark2(f->current_object,0," in fp->current_object of idle thread");
+      gc_external_mark2(f->context.prog,0," in fp->context.prog of idle thread");
+    }
+  }
+#endif
 }
 
 void f_thread_local(INT32 args)
@@ -1345,18 +1317,6 @@ void th_init(void)
   OBJ2THREAD(thread_id)->swapped=0;
   OBJ2THREAD(thread_id)->id=th_self();
   thread_table_insert(thread_id);
-
-#ifdef PIKE_DEBUG
-  {
-    static struct callback *spcb;
-    if(!spcb)
-    {
-      spcb=add_gc_callback(gc_check_thread_stacks,0,0);
-      dmalloc_accept_leak(spcb);
-    }
-  }
-#endif
-
 }
 
 void th_cleanup(void)
