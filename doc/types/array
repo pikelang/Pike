@@ -46,4 +46,4 @@ KEYWORDS
 	types
 
 SEE ALSO
-	mapping, list, builtin/allocate, builtin/sizeof, builtin/values
+	mapping, list, builtin/allocate, builtin/sizeof
