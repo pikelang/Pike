@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.9 2003/10/29 19:46:11 bill Exp $
+# $Id: common_module_makefile.in,v 1.10 2003/10/30 18:51:12 bill Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -33,8 +33,9 @@ force:
 	@:;
 
 dummy:	Makefile $(DUMMY) linker_options modlist_headers modlist_segment $(MODULE_TARGET) module.pmod
-	@$(TMP_BINDIR)/install_module module.pmod \
-	  $(TMP_MODULE_BASE)/$(MODDIR)$(MODNAME).pmod
+	@if [ x"$(PIKE_EXTERNAL_MODULE)" = x ]; then \
+	  $(TMP_BINDIR)/install_module module.pmod $(TMP_MODULE_BASE)/$(MODDIR)$(MODNAME).pmod ; \
+	fi
 
 $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 	@a=`echo $@ | sed -e 's@/[^/]*$$@@'` ; \
@@ -107,7 +108,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.9 2003/10/29 19:46:11 bill Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.10 2003/10/30 18:51:12 bill Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
@@ -131,7 +132,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 
 
 clean:	
-	-rm -f *.o *.fail *.obj *.a *.so linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA); rm -rf module.pmod
+	-rm -f *.o *.fail *.obj *.a *.so linker_options modlist_headers modlist_segment testsuite $(MODULE_CLEAN_EXTRA); rm -rf module.pmod plib
 	@for a in '' $(MODULE_SUBDIRS) ; do if test "x$$a" = "x"; then :; else echo cleaning $$a ; ( cd $$a ; $(MAKE) $(MAKE_FLAGS) clean ) ; fi ; done
 
 

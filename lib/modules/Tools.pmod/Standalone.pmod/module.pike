@@ -1,10 +1,10 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.18 2003/10/30 17:24:36 bill Exp $
+// $Id: module.pike,v 1.19 2003/10/30 18:51:11 bill Exp $
 
 #pike __REAL_VERSION__
 
-constant version = ("$Revision: 1.18 $"/" ")[1];
+constant version = ("$Revision: 1.19 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -20,6 +20,9 @@ string bin_path=combine_path(src_path,"../bin");
 #else
 string src_path=include_path;
 string bin_path=include_path;
+
+// this is not the ideal location for all systems, but it's a start.
+string local_module_path="$$HOME/lib/pike/modules";
 
 // we prefer the last element, because if there are more than one
 // master() puts the lib/modules path last.
@@ -121,6 +124,12 @@ void run_or_fail(mapping options,string ... cmd)
 void do_make(array(string) cmd)
 {
   int tmp1;
+  string lmp;
+
+  if(search(cmd, "testsuite")!=-1)
+    lmp="./plib/modules";
+  else lmp = local_module_path;
+
   array(string) makecmd=(
     ({make})+
     do_split_quoted_string(make_flags)+
@@ -135,6 +144,9 @@ void do_make(array(string) cmd)
       "TMP_BINDIR="+bin_path,
       "SRCDIR="+fix("$src"),
       "TMP_MODULE_BASE=.",
+      "PIKE_EXTERNAL_MODULE=1",
+      "SYSTEM_MODULE_PATH=" + system_module_path,
+      "LOCAL_MODULE_PATH=" + lmp,
       "RUNPIKE="+run_pike,
     })+
     cmd);

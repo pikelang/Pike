@@ -1,5 +1,5 @@
 #
-# $Id: dynamic_module_makefile.in,v 1.108 2003/10/30 06:11:22 bill Exp $
+# $Id: dynamic_module_makefile.in,v 1.109 2003/10/30 18:51:12 bill Exp $
 #
 
 LIBGCC=@LIBGCC@
@@ -9,7 +9,7 @@ LINKAGE_CPPFLAGS=
 LINKAGE_CFLAGS=@CCSHARED@
 
 MODULE_PROGRAM=.___$(MODNAME)
-MODULE_TARGET=$(TMP_MODULE_BASE)/$(MODDIR)___$(MODNAME).so
+MODULE_TARGET=$(TMP_MODULE_BASE)/$(MODDIR)/___$(MODNAME).so
 
 
 @common_module_makefile@
@@ -38,12 +38,11 @@ $(MODULE_TARGET): module.so
 	@if test "x$(OBJS)" = "x" ; then \
 	  exit 0; \
 	fi; \
-	echo "Installing C component"; \
 	$(TMP_BINDIR)/install_module module.so $(MODULE_TARGET)
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
 	@if test "x$(OBJS)" = "x" ; then \
-	  echo "No C components"; exit 0; \
+	  exit 0; \
 	fi; \
 	echo "Linking $(MODNAME)" ;\
 	if $(TMP_BINDIR)/smartlink "$(LDSHARED)" $(LDFLAGS) -o module.@SO@ \
@@ -58,11 +57,25 @@ module.so: $(OBJS)  $(MODULE_ARCHIVES)
 				
 $(OBJS) : $(MODULE_BASE)/dynamic_module_makefile
 
-
-# FIXME: Is the following code correct?
+#
+# install a standard module with optional c component in the system module path
+#
 install: $(MODULE_INSTALL)
-	@if test "x$(OBJS)" = "x" ; then \
-	 exit 0; \
+	@if test "x$(OBJS)" != "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(SYSTEM_MODULE_PATH)/$(MODDIR)/../___$(MODNAME).so ;\
 	fi; \
-	$(TMP_BINDIR)/install_module module.so @prefix@/lib/pike/modules/$(MODNAME).so
+	$(TMP_BINDIR)/install_module module.pmod $(SYSTEM_MODULE_PATH)/$(MODDIR)/$(MODNAME).pmod 
+
+#
+# install the module in LOCAL_MODULE_PATH, creating it if it doesn't already exist.
+#
+local_install: $(MODULE_INSTALL)
+	@if [ ! -d $(LOCAL_MODULE_PATH) ] ; then \
+	  mkdir -p $(LOCAL_MODULE_PATH) ; \
+	fi; \ 
+	if test "x$(OBJS)" != "x" ; then \
+	  $(TMP_BINDIR)/install_module module.so $(LOCAL_MODULE_PATH)/$(MODDIR)/../___$(MODNAME).so ;\
+	fi; \
+	$(TMP_BINDIR)/install_module module.pmod $(LOCAL_MODULE_PATH)/$(MODDIR)/$(MODNAME).pmod 
+
 
