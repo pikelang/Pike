@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.460 2001/01/20 23:24:09 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.461 2001/01/21 19:01:18 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4065,46 +4065,36 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
   if test "$pike_cv_sys_os" = "AmigaOS" ; then
     pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK
   else
-    # Make sure we can run configure in a separate directory.
     OCPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="-I$srcdir $CPPFLAGS"
-    AC_TRY_RUN([
+    pike_cv_sys_nonblock=UNKNOWN
+    for method in USE_FCNTL_FNDELAY USE_FCNTL_O_NDELAY USE_FCNTL_O_NONBLOCK \
+		  USE_IOCTL_FIONBIO USE_IOCTLSOCKET_FIONBIO; do
+      # Make sure we can run configure in a separate directory,
+      # and set the method to try.
+      CPPFLAGS="-I$srcdir $OCPPFLAGS -D$method"
+      AC_TRY_RUN([
 #define TESTING
-#define USE_FCNTL_FNDELAY
 #include "fd_control.c"
-], pike_cv_sys_nonblock=USE_FCNTL_FNDELAY,
-    AC_TRY_RUN([
+      ], [
+        pike_cv_sys_nonblock=$method
+	break;
+      ], [], [
+        AC_TRY_LINK([
 #define TESTING
-#define USE_FCNTL_O_NDELAY
 #include "fd_control.c"
-], pike_cv_sys_nonblock=USE_FCNTL_O_NDELAY,
-    AC_TRY_RUN([
-#define TESTING
-#define USE_FCNTL_O_NONBLOCK
-#include "fd_control.c"
-], pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK,
-    AC_TRY_RUN([
-#define TESTING
-#define USE_IOCTL_FIONBIO
-#include "fd_control.c"
-], pike_cv_sys_nonblock=USE_IOCTL_FIONBIO,
-    AC_TRY_RUN([
-#define TESTING
-#define USE_IOCTLSOCKET_FIONBIO
-#include "fd_control.c"
-], pike_cv_sys_nonblock=USE_IOCTLSOCKET_FIONBIO,
-pike_cv_sys_nonblock=UNKNOWN,
-unset pike_cv_sys_nonblock),
-unset pike_cv_sys_nonblock),
-unset pike_cv_sys_nonblock),
-unset pike_cv_sys_nonblock),
-unset pike_cv_sys_nonblock)
+#define main dummy_main
+        ], [], [
+	  pike_cv_sys_nonblock=$method
+	  break;
+	])
+      ])
+    done
     # Restore CPPFLAGS
     CPPFLAGS="$OCPPFLAGS"
   fi
 ])
 
-if test "${pike_cv_sys_nonblock}" = ""; then
+if test "${pike_cv_sys_nonblock}" = "UNKNOWN"; then
   AC_MSG_RESULT(none found)
 else
  AC_MSG_RESULT($pike_cv_sys_nonblock)
