@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.93 1997/05/07 06:27:30 per Exp $")
+AC_REVISION("$Id: configure.in,v 1.94 1997/05/14 00:40:34 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -159,10 +159,6 @@ if test $cflags_is_set = no; then
   AC_SYS_CPU_COMPILER_FLAG(sun4m,-mv8,microsparc)
   AC_SYS_CPU_COMPILER_FLAG(sun4d,-msupersparc,supersparc)
   AC_SYS_CPU_COMPILER_FLAG(sun4u,-msupersparc,ultrasparc)
-
-### Generic GCC options. O2 and -funroll-loops makes some code _much_ faster,
-### especially the image module.
-  AC_SYS_COMPILER_FLAG(-funroll-loops,unroll_loops)
  else
 
 ### Non-gcc thingies. This should probably be enhanced...
