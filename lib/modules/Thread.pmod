@@ -680,7 +680,7 @@ optional class Farm
 // Simulations of some of the classes for nonthreaded use.
 
 /* Fallback implementation of Thread.Local */
-class Local
+optional class Local
 {
   static mixed data;
   mixed get() {return data;}
@@ -688,7 +688,7 @@ class Local
 }
 
 /* Fallback implementation of Thread.MutexKey */
-class MutexKey (static function(:void) dec_locks)
+optional class MutexKey (static function(:void) dec_locks)
 {
   int `!()
   {
@@ -706,7 +706,7 @@ class MutexKey (static function(:void) dec_locks)
 }
 
 /* Fallback implementation of Thread.Mutex */
-class Mutex
+optional class Mutex
 {
   static int locks = 0;
   static void dec_locks() {locks--;}
@@ -750,7 +750,7 @@ class Mutex
 }
 
 // Fallback implementation of Thread.Fifo.
-class Fifo
+optional class Fifo
 {
   array buffer;
   int ptr, num;
@@ -835,7 +835,7 @@ class Fifo
 }
 
 // Fallback implementation of Thread.Queue.
-class Queue
+optional class Queue
 {
   array buffer=allocate(16);
   int r_ptr, w_ptr;
