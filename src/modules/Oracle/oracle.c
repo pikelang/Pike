@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.4 1997/06/12 19:29:48 marcus Exp $
+ * $Id: oracle.c,v 1.5 1997/09/26 21:05:44 marcus Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -34,9 +34,11 @@
 
 #endif
 
-RCSID("$Id: oracle.c,v 1.4 1997/06/12 19:29:48 marcus Exp $");
+RCSID("$Id: oracle.c,v 1.5 1997/09/26 21:05:44 marcus Exp $");
 
 #ifdef HAVE_ORACLE
+
+#define BLOB_FETCH_CHUNK 16384
 
 #undef THREADS_ALLOW
 #define THREADS_ALLOW()
@@ -195,31 +197,31 @@ static void f_fetch_fields(INT32 args)
     push_string(make_shared_binary_string(nambuf, cbufl));
     push_text("type");
     switch(typ) {
-    case 1:
+    case SQLT_CHR:
       push_text("varchar2");
       break;
-    case 2:
+    case SQLT_NUM:
       push_text("number");
       break;
-    case 8:
+    case SQLT_LNG:
       push_text("long");
       break;
-    case 11:
+    case SQLT_RID:
       push_text("rowid");
       break;
-    case 12:
+    case SQLT_DAT:
       push_text("date");
       break;
-    case 23:
+    case SQLT_BIN:
       push_text("raw");
       break;
-    case 24:
+    case SQLT_LBI:
       push_text("long raw");
       break;
-    case 96:
+    case SQLT_AFC:
       push_text("char");
       break;
-    case 105:
+    case SQLT_LAB:
       push_text("mslabel");
       break;
     default:
@@ -248,6 +250,7 @@ static void f_fetch_row(INT32 args)
     INT32 siz;
     ub2 rsiz, rcode;
     sb2 indp;
+    sword typ;
     char data[1];
   } *s, *s2, *slots = NULL;
   struct dbresult *r = THIS;
@@ -258,10 +261,11 @@ static void f_fetch_row(INT32 args)
 
   for(i=0; i<r->cols || r->cols == 0; i++) {
     sb4 siz, dsiz;
+    sb2 typ;
 
     THREADS_ALLOW();
 
-    rc = odescr(r->cda, i+1, &siz, NULL, NULL, NULL, &dsiz,
+    rc = odescr(r->cda, i+1, &siz, &typ, NULL, NULL, &dsiz,
 		NULL, NULL, NULL);
 
     THREADS_DISALLOW();    
@@ -276,10 +280,10 @@ static void f_fetch_row(INT32 args)
       error_handler(r->dbcon, r->cda->rc);
     }
     
-    s = (struct fetchslot *)xalloc(sizeof(struct fetchslot)+dsiz+2);
+    s = (struct fetchslot *)xalloc(sizeof(struct fetchslot)+dsiz+4);
 
     s->next = slots;
-    s->siz = dsiz+2;
+    s->siz = dsiz+4;
     slots = s;
 
     THREADS_ALLOW();
@@ -287,8 +291,10 @@ static void f_fetch_row(INT32 args)
     s->rcode = 0;
     s->indp = -1;
 
-    rc = odefin(r->cda, i+1, s->data, s->siz, SQLT_STR, -1, &s->indp, NULL,
-		-1, -1, &s->rsiz, &s->rcode);		
+    rc = odefin(r->cda, i+1, s->data, s->siz,
+		s->typ=((typ==SQLT_LNG || typ==SQLT_BIN || typ==SQLT_LBI)?
+			typ : SQLT_STR),
+		-1, &s->indp, NULL, -1, -1, &s->rsiz, &s->rcode);
 
     THREADS_DISALLOW();
 
@@ -332,7 +338,26 @@ static void f_fetch_row(INT32 args)
   for(s=slots, i=0; i<r->cols; i++) {
     if(s->indp == -1)
       push_int(0);
-    else if(s->rcode /* == 1406 */)
+    else if(s->rcode == 1406 && (s->typ == SQLT_LNG || s->typ == SQLT_LBI)) {
+      sb4 retl, offs=0;
+      sb1 *buf = xalloc(BLOB_FETCH_CHUNK);
+      struct pike_string *s1=make_shared_binary_string("", 0), *s2, *s3;
+      for(;;) {
+
+	retl=0;
+	oflng(r->cda, i+1, buf, BLOB_FETCH_CHUNK, s->typ, &retl, offs);
+	if(!retl)
+	  break;
+
+	s3 = add_shared_strings(s1, s2=make_shared_binary_string(buf, retl));
+	free_string(s1);
+	free_string(s2);
+	s1 = s3;
+	offs += retl;
+      }
+      free(buf);
+      push_string(s1);
+    } else if(s->rcode)
       push_int(0);
     else
       push_string(make_shared_binary_string(s->data, s->rsiz));
