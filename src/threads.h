@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.116 2001/11/01 18:19:11 mast Exp $
+ * $Id: threads.h,v 1.117 2001/11/01 18:40:12 mast Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -31,7 +31,7 @@ struct interleave_mutex
 /* If threads are disabled, we already hold the lock. */
 #define LOCK_IMUTEX(im) do { \
     if (!threads_disabled) { \
-      THREADS_FPRINTF(0, (stderr, "Locking IMutex 0x%08p...\n", (im))); \
+      THREADS_FPRINTF(0, (stderr, "Locking IMutex 0x%p...\n", (im))); \
       THREADS_ALLOW(); \
       mt_lock(&((im)->lock)); \
       THREADS_DISALLOW(); \
@@ -41,7 +41,7 @@ struct interleave_mutex
 /* If threads are disabled, the lock will be released later. */
 #define UNLOCK_IMUTEX(im) do { \
     if (!threads_disabled) { \
-      THREADS_FPRINTF(0, (stderr, "Unlocking IMutex 0x%08p...\n", (im))); \
+      THREADS_FPRINTF(0, (stderr, "Unlocking IMutex 0x%p...\n", (im))); \
       mt_unlock(&((im)->lock)); \
     } \
   } while(0)

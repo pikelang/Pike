@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.171 2001/11/01 18:10:28 mast Exp $");
+RCSID("$Id: threads.c,v 1.172 2001/11/01 18:40:12 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -179,6 +179,7 @@ int th_running = 0;
 #ifdef PIKE_DEBUG
 int debug_interpreter_is_locked = 0;
 THREAD_T debug_locking_thread;
+THREAD_T threads_disabled_thread = 0;
 #endif
 PMOD_EXPORT MUTEX_T interpreter_lock;
 MUTEX_T thread_table_lock, interleave_lock;
@@ -255,6 +256,9 @@ void low_init_threads_disable(void)
 			"low_init_threads_disable(): Disabling threads.\n"));
 
     threads_disabled = 1;
+#ifdef PIKE_DEBUG
+    threads_disabled_thread = th_self();
+#endif
   } else {
     threads_disabled++;
   }
@@ -304,7 +308,7 @@ void exit_threads_disable(struct object *o)
       while(im) {
 	THREADS_FPRINTF(0,
 			(stderr,
-			 "exit_threads_disable(): Unlocking IM 0x%08p\n", im));
+			 "exit_threads_disable(): Unlocking IM 0x%p\n", im));
 	mt_unlock(&(im->lock));
 	im = im->next;
       }
@@ -313,6 +317,9 @@ void exit_threads_disable(struct object *o)
 
       THREADS_FPRINTF(0, (stderr, "_exit_threads_disable(): Wake up!\n"));
       co_broadcast(&threads_disabled_change);
+#ifdef PIKE_DEBUG
+      threads_disabled_thread = 0;
+#endif
     }
 #ifdef PIKE_DEBUG
   } else {
@@ -331,7 +338,7 @@ void init_interleave_mutex(IMUTEX_T *im)
   init_threads_disable(NULL);
 
   THREADS_FPRINTF(0, (stderr,
-		      "init_interleave_mutex(): Locking IM 0x%08p\n", im));
+		      "init_interleave_mutex(): Locking IM 0x%p\n", im));
 
   /* Lock it so that it can be unlocked by exit_threads_disable() */
   mt_lock(&(im->lock));

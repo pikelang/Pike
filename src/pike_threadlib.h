@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.9 2001/11/01 18:19:11 mast Exp $
+ * $Id: pike_threadlib.h,v 1.10 2001/11/01 18:40:12 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -410,6 +410,9 @@ static inline int threads_disabled_wait()
 #define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
 #endif
 
+#ifdef PIKE_DEBUG
+PMOD_EXPORT extern THREAD_T threads_disabled_thread;
+#endif
 
 #ifdef THREAD_TRACE
 PMOD_EXPORT extern int t_flag;
@@ -443,11 +446,11 @@ PMOD_EXPORT extern int t_flag;
      struct thread_state *_tmp=OBJ2THREAD(Pike_interpreter.thread_id); \
      SWAP_OUT_THREAD(_tmp); \
      THREADS_FPRINTF(1, (stderr, "SWAP_OUT_CURRENT_THREAD() %s:%d t:%08x\n", \
-			 __FILE__, __LINE__, (unsigned int)_tmp->thread_id)) \
+			 __FILE__, __LINE__, (unsigned int)_tmp->id)) \
 
 #define SWAP_IN_CURRENT_THREAD() \
    THREADS_FPRINTF(1, (stderr, "SWAP_IN_CURRENT_THREAD() %s:%d ... t:%08x\n", \
-		       __FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
+		       __FILE__, __LINE__, (unsigned int)_tmp->id)); \
    SWAP_IN_THREAD(_tmp);\
  } while(0)
 
@@ -514,9 +517,16 @@ PMOD_EXPORT extern int Pike_in_gc;
        SWAP_OUT_THREAD(_tmp); \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp->thread_id, live_threads)); \
+			   (unsigned int)_tmp->id, live_threads)); \
        mt_unlock_interpreter(); \
-     } else {} \
+     } else {								\
+       DO_IF_DEBUG(							\
+	 THREAD_T self = th_self();					\
+	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
+	   fatal("Threads allow blocked from a different thread "	\
+		 "when threads are disabled.\n");			\
+       );								\
+     }									\
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW() \
@@ -525,7 +535,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        low_mt_lock_interpreter(); \
        THREADS_FPRINTF(1, (stderr, "THREADS_DISALLOW() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-                           (unsigned int)_tmp->thread_id, live_threads)); \
+			   (unsigned int)_tmp->id, live_threads)); \
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp);\
      } \
@@ -551,9 +561,16 @@ PMOD_EXPORT extern int Pike_in_gc;
        live_threads++; \
        THREADS_FPRINTF(1, (stderr, "THREADS_ALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-			   (unsigned int)_tmp_uid->thread_id, live_threads)); \
+			   (unsigned int)_tmp_uid->id, live_threads)); \
        mt_unlock_interpreter(); \
-     } else {} \
+     } else {								\
+       DO_IF_DEBUG(							\
+	 THREAD_T self = th_self();					\
+	 if (threads_disabled && !th_equal(threads_disabled_thread, self)) \
+	   fatal("Threads allow blocked from a different thread "	\
+		 "when threads are disabled.\n");			\
+       );								\
+     }									\
      HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW_UID() \
@@ -564,7 +581,7 @@ PMOD_EXPORT extern int Pike_in_gc;
        THREADS_FPRINTF(1, (stderr, \
                            "THREADS_DISALLOW_UID() %s:%d t:%08x(#%d)\n", \
 			   __FILE__, __LINE__, \
-                           (unsigned int)_tmp_uid->thread_id, live_threads)); \
+			   (unsigned int)_tmp_uid->id, live_threads)); \
        co_broadcast(&live_threads_change); \
        if (threads_disabled) threads_disabled_wait(); \
        SWAP_IN_THREAD(_tmp_uid);\
