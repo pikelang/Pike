@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.36 2001/10/31 23:51:43 mast Exp $
+;;; $Id: pike.el,v 1.37 2001/12/07 15:31:11 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -96,55 +96,56 @@ It's overlaid over the `font-lock-builtin-face'."
 	  "local\\|optional\\|private\\|nomask\\|variant\\)\\>")
   "Regexp for modifiers. Must have exactly one submatch.")
 
-(defconst pike-font-lock-operator-identifiers
-  (concat "`->=?\\|`\\+=?\\|`==\\|`\\[\\]=?\\|`()\\|`[!<>~]\\|"
-	  "``?<<\\|``?>>\\|``?[%&*+/^|-]")
-  "Regexp for operator identifiers. Must have zero submatches.")
-
 ; Problems: We really should allow all unicode characters...
-(let ((capital-letter "A-Z\300-\326\330-\337")
-      (letter "a-zA-Z\241-\377_")
-      (digit  "0-9"))
+(eval-and-compile
+  (let ((capital-letter "A-Z\300-\326\330-\337")
+	(letter "a-zA-Z\241-\377_")
+	(digit  "0-9"))
 
-  (defconst pike-font-lock-identifier-regexp
-    (concat "\\(\\<[" letter "][" letter digit "]*\\>\\|"
-	    pike-font-lock-operator-identifiers
-	    "\\)")
-    "Regexp which should match all Pike identifiers.
+    (defconst pike-font-lock-operator-identifiers
+      (concat "`->=?\\|`\\+=?\\|`==\\|`\\[\\]=?\\|`()\\|`[!<>~]\\|"
+	      "``?<<\\|``?>>\\|``?[%&*+/^|-]")
+      "Regexp for operator identifiers. Must have zero submatches.")
+
+    (defconst pike-font-lock-identifier-regexp
+      (concat "\\(\\<[" letter "][" letter digit "]*\\>\\|"
+	      pike-font-lock-operator-identifiers
+	      "\\)")
+      "Regexp which should match all Pike identifiers.
 Must have exactly one submatch.")
 
-  (defconst pike-font-lock-class-name-regexp
-    (concat "\\<\\([" capital-letter "][" letter digit "]*\\)\\>")
-    "Regexp which should match a class name.
+    (defconst pike-font-lock-class-name-regexp
+      (concat "\\<\\([" capital-letter "][" letter digit "]*\\)\\>")
+      "Regexp which should match a class name.
 The name is assumed to begin with a capital letter.")
 
-  (defconst pike-font-lock-identifier-or-integer
-    ;; The identifier should get submatch 1 but not the integer.
-    (concat pike-font-lock-identifier-regexp "\\|-?[" digit "]+")))
+    (defconst pike-font-lock-identifier-or-integer
+      ;; The identifier should get submatch 1 but not the integer.
+      (concat pike-font-lock-identifier-regexp "\\|-?[" digit "]+")))
 
-(let ((non-ws-sem-ws
-       (concat "//[^\n\r]*[\n\r]"	; Line comment.
-	       "\\|"
-	       ;; Block comment. We intentionally don't allow line
-	       ;; breaks in them to avoid going very far and risk
-	       ;; running out of regexp stack; this regexp is intended
-	       ;; to handle only short comments that might be put in
-	       ;; the middle of limited constructs like declarations.
-	       "/\\*\\([^*\n\r]\\|\\*[^/]\\)*\\*/"
-	       "\\|"
-	       "\\\\[\n\r]"		; Macro continuation.
-	       "\\|"
-	       "@[\n\r]\\s *//[.!|]")))	; Line continuations in autodoc comments.
+  (let ((non-ws-sem-ws
+	 (concat "//[^\n\r]*[\n\r]"	; Line comment.
+		 "\\|"
+		 ;; Block comment. We intentionally don't allow line
+		 ;; breaks in them to avoid going very far and risk
+		 ;; running out of regexp stack; this regexp is intended
+		 ;; to handle only short comments that might be put in
+		 ;; the middle of limited constructs like declarations.
+		 "/\\*\\([^*\n\r]\\|\\*[^/]\\)*\\*/"
+		 "\\|"
+		 "\\\\[\n\r]"		; Macro continuation.
+		 "\\|"
+		 "@[\n\r]\\s *//[.!|]"))) ; Line continuations in autodoc comments.
 
-  (defconst pike-font-lock-semantic-whitespace
-    (concat "[ \t\n\r]*\\("		; 1
-	    "\\(" non-ws-sem-ws "\\)"	; 2 3
-	    "[ \t\n\r]*\\)*"))
+    (defconst pike-font-lock-semantic-whitespace
+      (concat "[ \t\n\r]*\\("		; 1
+	      "\\(" non-ws-sem-ws "\\)"	; 2 3
+	      "[ \t\n\r]*\\)*"))
 
-  (defconst pike-font-lock-non-null-semantic-whitespace
-    (concat "\\([ \t\n\r]\\|"		; 1
-	    non-ws-sem-ws		; 2
-	    "\\)+")))
+    (defconst pike-font-lock-non-null-semantic-whitespace
+      (concat "\\([ \t\n\r]\\|"		; 1
+	      non-ws-sem-ws		; 2
+	      "\\)+"))))
 
 (defconst pike-font-lock-qualified-identifier
   (concat "\\([ \t\n\r]*\\(\\.[ \t\n\r]*\\)?" ; 1 2
@@ -163,7 +164,7 @@ The name is assumed to begin with a capital letter.")
 (defun pike-font-lock-hack-file-coding-system-perhaps ( foo )
   (interactive)
   (message "charset %s" (buffer-substring (match-beginning 2) (match-end 2)))
-  (condition-case fel
+  (condition-case nil
       (if (and (fboundp 'set-buffer-file-coding-system)
 	       (fboundp 'symbol-concat))
 	  (let ((coding (buffer-substring 
@@ -214,7 +215,7 @@ Otherwise t is returned."
 
 (defun pike-font-lock-backward-syntactic-ws ()
   (save-match-data
-    (let ((pos (point)) (start (point)) (in-macro 'dont-know) orig)
+    (let ((pos (point)) (start (point)) orig)
       ;; If forward-comment in Emacs 19.34 is given a large negative
       ;; value, it'll loop all the way through if it hits bob.
       (forward-comment -20)
