@@ -5134,7 +5134,7 @@ Calculates which parts of the arrays that are common to both, and which parts
 that are not.
 
 Returns an array with two elements, the first is an array of parts in
-array <b>a</b>, and the second is an array of parts in array <b>b<b>.
+array <b>a</b>, and the second is an array of parts in array <b>b</b>.
 
 </man_description>
 <man_example>
@@ -5358,6 +5358,44 @@ Array.sum_arrays, Array.filter
 </function>
 
 <hr noshade size=1>
+
+<function name=Array.shuffle title="Random-shuffle an array">
+<man_syntax>
+array shuffle(array in);
+</man_syntax>
+<man_description>
+<tt>shuffle</tt> gives back the same elements, but by random order.
+</man_description>
+<man_example>
+Array.shuffle( ({"this","is","an","ordered","array"}) )
+  -> ({"is","ordered","array","this","an"})    
+</man_example>
+<man_see>
+Array.permute
+</man_see>
+</function>
+
+<function name=Array.permute title="Give a specified permutation of an array">
+<man_syntax>
+array permute(array in,int number);
+</man_syntax>
+<man_description>
+<tt>permute</tt> gives you a selected permutation of an array.
+The numbers of permutations equal sizeof(in)! (the faculty of 
+the size of the given array).
+
+<p>Eventual duplicate permutations due to multiple equal (non-unique)
+elements is not regarded.
+
+</man_description> 
+<man_example>
+Array.permute( ({ 1,2,3 }), 0)  -> ({1,2,3})
+Array.permute( ({ 1,2,3 }), 3)  -> ({1,3,2})
+</man_example>
+<man_see>
+Array.shuffle
+</man_see>
+</function>
 
 <function name=Array.search_array title="search for something in an array">
 <man_syntax>
