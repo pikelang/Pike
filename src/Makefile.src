@@ -40,7 +40,7 @@ WARN=@WARN@
 
 #add extra defines here
 # Be sure to use -g  when looking for bugs
-DEFINES=-DDEFAULT_MASTER=\"$(lib_prefix)/master.pike\" @CPPFLAGS@
+DEFINES=@CPPFLAGS@
 
 # -O should work with all compilers
 OPTIMIZE=@OPTIMIZE@
@@ -172,6 +172,8 @@ verbose_verify_modules:
 
 verify: testsuite verify_modules
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike testsuite
+
+check: verify
 
 # verify / debug verbose
 verbose_verify: testsuite verbose_verify_modules

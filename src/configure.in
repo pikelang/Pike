@@ -1,6 +1,6 @@
-# $Id: configure.in,v 1.25 1996/12/01 04:15:38 nisse Exp $
-
+AC_REVISION("$Id: configure.in,v 1.26 1996/12/03 21:52:36 hubbe Exp $")
 AC_INIT(interpret.c)
+AC_CONFIG_HEADER(machine.h)
 
 if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
@@ -177,7 +177,6 @@ fi
 
 #############################################################################
 
-AC_CONFIG_HEADER(machine.h)
 AC_PROG_INSTALL
 AC_PROG_CPP
 AC_PROG_RANLIB
@@ -1102,6 +1101,10 @@ DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
 
 AC_CONFIG_SUBDIRS(modules)
+
+my_libdir=`echo $prefix | sed "s@^NONE@$ac_default_prefix@g"`
+default_master=$my_libdir/lib/pike/master.pike
+AC_DEFINE_UNQUOTED(DEFAULT_MASTER,"$default_master")
 
 AC_SUBST(YACC)
 AC_SUBST(INSTALL)
