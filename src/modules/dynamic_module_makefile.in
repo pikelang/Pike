@@ -1,0 +1,46 @@
+PREFLAGS=$(DEFINES) -I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS)
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
+
+all: module.@SO@ linker_options modlist_segment modlist_headers
+
+linker_options:
+	echo "" >linker_options
+
+modlist_headers:
+	echo "" >modlist_headers
+
+modlist_segment:
+	echo "" >modlist_segment
+
+module.so: $(OBJS)
+	@LDSHARED@ -o module.@SO@ $(OBJS) $(MODULE_LDFLAGS)
+	if test @SO@ != so ; then mv module.@SO@ module.so ; fi
+	echo "" >linker_options
+	echo "" >modlist_headers
+	echo "" >modlist_segment
+
+clean:
+	-rm -f *.o module.so
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+
+#verify / debug
+module_testsuite: $(SRCDIR)/testsuite.in
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite -DSRCDIR=$(SRCDIR) 
+
+verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
+
+verbose_verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
+
+gdb_verify: module_testsuite
+	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	@echo >>.gdbinit run -m $(SRCDIR)/../../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
+	gdb ../../pike
+	@rm .gdbinit
+
+
+install:
+	$(INSTALL) module.so @prefix@/pike/lib/modules/$(MODNAME).so

@@ -1,0 +1,8 @@
+AC_PROG_CC
+
+AC_SUBST_FILE(dependencies)
+dependencies=$srcdir/dependencies
+AC_SUBST_FILE(dynamic_module_makefile)
+dynamic_module_makefile=../dynamic_module_makefile
+AC_SUBST_FILE(static_module_makefile)
+static_module_makefile=../static_module_makefile
