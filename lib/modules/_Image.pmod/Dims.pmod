@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//   $Id: Dims.pmod,v 1.3 2002/09/29 20:51:11 manual Exp $
+//   $Id: Dims.pmod,v 1.4 2004/05/23 14:48:51 nilsson Exp $
 //
 //   Imagedimensionreadermodule for Pike.
 //   Created by Johan Schön, <js@roxen.com>.
@@ -61,10 +61,9 @@ static int first_marker(Stdio.File f)
 {
   int c1, c2;
     
-  c1 = read_1_byte(f);
-  c2 = read_1_byte(f);
+  sscanf(f->read(2), "%c%c", c1, c2);
   if (c1!=0xFF||c2!=M_SOI) return 0;
-  return c2;
+  return 1;
 }
 
 /*
@@ -101,7 +100,7 @@ static int next_marker(Stdio.File f)
 static int skip_variable(Stdio.File f)
 {
   int length = read_2_bytes(f);
-  if (length < 2) return 0;  /* Length includes itself, so must be at least 2 */
+  if (length < 2) return 0;  // Length includes itself, so must be at least 2.
   length -= 2;
   f->seek(f->tell()+length);
   return 1;
@@ -112,8 +111,8 @@ static int skip_variable(Stdio.File f)
 array(int) get_JPEG(Stdio.File f)
 {
   int marker;
-  /* Expect SOI at start of file */
-  if (first_marker(f) != M_SOI)
+
+  if (!first_marker(f))
     return 0;
     
   /* Scan miscellaneous markers until we reach SOS. */
@@ -134,10 +133,8 @@ array(int) get_JPEG(Stdio.File f)
     case M_SOF13:		/* Differential sequential, arithmetic */
     case M_SOF14:		/* Differential progressive, arithmetic */
     case M_SOF15:		/* Differential lossless, arithmetic */
-      int length = read_2_bytes(f);	/* usual parameter length count */
-      int data_precision = read_1_byte(f);
-      int image_height = read_2_bytes(f);
-      int image_width = read_2_bytes(f);
+      int image_height, image_width;
+      sscanf(f->read(7), "%*3s%2c%2c", image_width, image_height);
       return ({ image_width,image_height });
       break;
 	
@@ -148,7 +145,7 @@ array(int) get_JPEG(Stdio.File f)
       return 0;
 	
     default:			/* Anything else just gets skipped */
-      if(!skip_variable(f)) return 0;   /* we assume it has a parameter count... */
+      if(!skip_variable(f)) return 0; // we assume it has a parameter count...
       break;
     }
   }
@@ -198,32 +195,28 @@ array(int) get_PNG(Stdio.File f)
   return ({ image_width, image_height });
 }
 
-//! Read dimensions from a JPEG, GIF or PNG file and return an array with
-//! width and height, or if the file isn't a valid image, 0. The argument
-//! @[file] should be either a path to a file or a file object. The offset
-//! pointer will be assumed to be at the start of the file and will be
-//! modified by the function.
-array(int) get(string|Stdio.File file)
-{
-  if(stringp(file))
-    file=Stdio.File(file,"r");
+//! Read dimensions from a JPEG, GIF or PNG file and return an array
+//! with width and height, or if the file isn't a valid image,
+//! @expr{0@}. The argument @[file] should be file object or the data
+//! from a file. The offset pointer will be assumed to be at the start
+//! of the file data and will be modified by the function.
+array(int) get(string|Stdio.File file) {
+  if(stringp(file)) file = Stdio.FakeFile(file);
 
-  if(!file->tell)
-    return 0; // Not a file object
+  switch(file->read(6)) {
 
-  int offset=file->tell();
-  array a;
+  case "GIF87a":
+  case "GIF89a":
+    return array_sscanf(file->read(4), "%-2c%-2c") + ({ "gif" });
 
-  if(a=get_JPEG(file))
-    return a;
+  case "\x89PNG\r\n":
+    file->read(6+4); // offset+IHDR
+    return array_sscanf(file->read(8), "%4c%4c") + ({ "png" });
 
-  file->seek(offset);
-  if(a=get_GIF(file))
-    return a;
-
-  file->seek(offset);
-  if (a=get_PNG(file))
-    return a;
-
-  return 0;
+  default:
+    // JPEG
+    file->seek(file->tell()-6);
+    array ret = get_JPEG(file);
+    return ret ? ret+({ "jpeg" }) : 0;
+  }
 }
