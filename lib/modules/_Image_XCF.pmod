@@ -1,5 +1,7 @@
 inherit Image._XCF;
 
+#define SIGNED(X) if(X>=(1<<31)) X=-((1<<32)-X)
+
 class PathPoint
 {
   int type;
@@ -25,6 +27,7 @@ class Guide
   void create(string data)
   {
     sscanf(data, "%4c%c", pos,vertical);vertical--;
+    SIGNED(pos);
   }
 }
 
@@ -61,6 +64,7 @@ array(Parasite) decode_parasites( string data )
 
 #define FLAG(X,Y) case PROP_##X: sscanf(p->data, "%4c", flags->Y); break;
 #define INT(X,Y) case PROP_##X: sscanf(p->data, "%4c", Y); break;
+#define SINT(X,Y) case PROP_##X: sscanf(p->data, "%4c", Y); SIGNED(Y); break;
 
 class Hierarchy
 {
@@ -222,6 +226,8 @@ class Layer
          break;
        case PROP_OFFSETS:
          sscanf(p->data, "%4c%4c", xoffset, yoffset);
+         SIGNED(xoffset);
+         SIGNED(yoffset);
          break;
        INT(OPACITY,opacity);
        FLAG(VISIBLE,visible);
@@ -281,6 +287,8 @@ class GimpImage
     object p = PathPoint( );
     int x, y;
     sscanf(data, "%4c%4c%4c%s", p->type, x, y);
+    SIGNED(x);
+    SIGNED(y);
     p->x = (float)x;
     p->y = (float)y;
     return data;
