@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.354 2005/01/27 09:17:38 grubba Exp $
+|| $Id: language.yacc,v 1.355 2005/02/18 13:48:47 grubba Exp $
 */
 
 %pure_parser
@@ -307,6 +307,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> expr1
 %type <n> expr2
 %type <n> expr3 expr0
+%type <n> apply
 %type <n> expr4
 %type <n> expr_list
 %type <n> expr_list2
@@ -1835,16 +1836,7 @@ statements: { $$=0; }
   }
   ;
 
-statement_with_semicolon: unused2 optional_block
-  {
-    if($2)
-    {
-      $$=recursive_add_call_arg($1,$2);
-    }else{
-      $$=$1;
-    }
-  }
-;
+statement_with_semicolon: unused2 ';' ;
 
 normal_label_statement: statement_with_semicolon
   | import { $$=0; }
@@ -3117,7 +3109,7 @@ expr3: expr4
  * -Hubbe
  */
 
-optional_block: ';' /* EMPTY */ { $$=0; }
+optional_block: /* EMPTY */ { $$=0; }
   | '{' line_number_info push_compiler_frame0
   {
     debug_malloc_touch(Pike_compiler->compiler_frame->current_return_type);
@@ -3130,7 +3122,7 @@ optional_block: ';' /* EMPTY */ { $$=0; }
     $<number>1=Pike_compiler->num_used_modules;
     $<number>$=Pike_compiler->compiler_frame->current_number_of_locals;
   }
-  statements end_block expected_semicolon
+  statements end_block
   {
     struct pike_type *type;
     char buf[40];
@@ -3201,26 +3193,16 @@ optional_block: ';' /* EMPTY */ { $$=0; }
   }
   ;
 
-expr4: string
-  | TOK_NUMBER 
-  | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
-  | catch
-  | gauge
-  | typeof
-  | sscanf
-  | lambda
-  | class
-  | enum
-  | idents2
-  | expr4 open_paren_with_line_info expr_list  ')'
-    {
-      $$=mkapplynode($1,$3);
-      COPY_LINE_NUMBER_INFO($$, $2);
-      free_node ($2);
-    }
-  | expr4 open_paren_with_line_info error ')'
+apply:
+  expr4 open_paren_with_line_info expr_list ')' optional_block
   {
-    $$=mkapplynode($1, NULL);
+    $$ = mkapplynode($1, mknode(F_ARG_LIST, $3, $5));
+    COPY_LINE_NUMBER_INFO($$, $2);
+    free_node ($2);
+  }
+  | expr4 open_paren_with_line_info error ')' optional_block
+  {
+    $$=mkapplynode($1, $5);
     free_node ($2);
     yyerrok;
   }
@@ -3243,6 +3225,20 @@ expr4: string
     $$=mkapplynode($1, NULL);
     free_node ($2);
   }
+  ;
+
+expr4: string
+  | TOK_NUMBER 
+  | TOK_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
+  | catch
+  | gauge
+  | typeof
+  | sscanf
+  | lambda
+  | class
+  | enum
+  | idents2
+  | apply
   | expr4 open_bracket_with_line_info '*' ']'
   {
     $$=mknode(F_AUTO_MAP_MARKER, $1, 0);
