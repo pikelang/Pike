@@ -37,6 +37,7 @@ export NTHOST NTDRIVE NTCC CC PATH NTTOOLS MNTREPLACE MNTREPLACE NTPORT USE_SPRS
 
 case x$SHELL-$TERM in
    */bash-xterm)
-     export PROMPT_COMMAND="echo -n ]2\; Remote NT compile ]1\; rntcc"
+     PROMPT_COMMAND="echo -n ]2\; Remote NT compile ]1\; rntcc"
+     export PROMPT_COMMAND
    ;;
 esac
