@@ -1,7 +1,7 @@
-# $Id: Makefile.in,v 1.4 1999/11/18 08:02:05 hubbe Exp $
+# $Id: Makefile.in,v 1.5 2002/10/03 14:03:35 norrby Exp $
 @make_variables@
 VPATH=@srcdir@:@srcdir@/../..:../..
-OBJS=image_jpeg.o
+OBJS=image_jpeg.o transupp.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
 CONFIG_HEADERS=@CONFIG_HEADERS@
