@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.24 2004/08/07 15:26:56 js Exp $");
+RCSID("$Id: resultset.c,v 1.25 2004/08/19 08:58:50 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -206,6 +206,8 @@ static void f_resultset_create( INT32 args )
 	wf_resultset_add( Pike_fp->current_object, ri, 1 );
       }
   }
+  pop_n_elems(args);
+  push_int(0);
 }
 
 static void f_resultset_cast( INT32 args )
@@ -864,8 +866,10 @@ static void f_dateset_finalize( INT32 args )
 {
   int i;
   ResultSet *source = THIS->d;
-  for( i = 0; i<source->num_docs; i++ )
-    source->hits[i].ranking = 0;
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      source->hits[i].ranking = 0;
+  }
   RETURN_THIS();
 }
 
@@ -873,15 +877,19 @@ static void f_resultset_set( INT32 args )
 {
   int i;
   ResultSet *source = THIS->d;
-  for( i = 0; i<source->num_docs; i++ )
-    source->hits[i].ranking = 0;
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      source->hits[i].ranking = 0;
+  }
   RETURN_THIS();
 }
 
-#define DUP_DATESET()   pop_n_elems(args); \
-  o = dup_dateset(); \
-  res = T(o)->d; \
-  push_object( o );
+#define DUP_DATESET()   do {			\
+    pop_n_elems(args);				\
+    o = dup_dateset();				\
+    res = T(o)->d;				\
+    push_object( o );				\
+  } while(0)
 
 
 static void f_dateset_before( INT32 args )
@@ -894,9 +902,11 @@ static void f_dateset_before( INT32 args )
   get_all_args( "before", args, "%d", &before );
   DUP_DATESET();
 
-  for( i = 0; i<source->num_docs; i++ )
-    if( source->hits[i].ranking < before )
-      res->hits[res->num_docs++] = source->hits[i];
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      if( source->hits[i].ranking < before )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
 }
 
 static void f_dateset_after( INT32 args )
@@ -909,9 +919,11 @@ static void f_dateset_after( INT32 args )
   get_all_args( "before", args, "%d", &after );
   DUP_DATESET();
 
-  for( i = 0; i<source->num_docs; i++ )
-    if( source->hits[i].ranking > after )
-      res->hits[res->num_docs++] = source->hits[i];
+  if (source) {
+    for( i = 0; i<source->num_docs; i++ )
+      if( source->hits[i].ranking > after )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
 }
 
 static void f_dateset_between( INT32 args )
@@ -924,13 +936,15 @@ static void f_dateset_between( INT32 args )
   get_all_args( "before", args, "%d%d", &after, &before );
   DUP_DATESET();
 
-  if( before <= after )
-    return;
+  if (source) {
+    if( before <= after )
+      return;
 
-  for( i = 0; i<source->num_docs; i++ )
-    if( (source->hits[i].ranking > after) &&
-	(source->hits[i].ranking < before) )
-      res->hits[res->num_docs++] = source->hits[i];
+    for( i = 0; i<source->num_docs; i++ )
+      if( (source->hits[i].ranking > after) &&
+	  (source->hits[i].ranking < before) )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
 }
 
 static void f_resultset_add( INT32 args )
@@ -938,6 +952,8 @@ static void f_resultset_add( INT32 args )
   LONGEST d, h;
   get_all_args( "add", args, "%l%l", &d, &h );
   wf_resultset_add( Pike_fp->current_object, d, h );
+  pop_n_elems(args);
+  push_int(0);
 }
 
 static void f_resultset_add_many( INT32 args )
@@ -968,6 +984,8 @@ static void f_resultset_add_many( INT32 args )
       ri = b->item[i].u.integer;
     wf_resultset_add( Pike_fp->current_object, di, ri );
   }
+  pop_n_elems(args);
+  push_int(0);
 }
 
 void init_resultset_program(void)
