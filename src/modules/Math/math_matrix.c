@@ -75,7 +75,8 @@ static void exit_matrix(struct object *o)
 **! method void create(int n,int m,string type)
 **! method void create(int n,int m,float|int init)
 **! method void create("identity",int size)
-**! method void create("rotate",int size,float rads,int axis)
+**! method void create("rotate",int size,float rads,Matrix axis)
+**! method void create("rotate",int size,float rads,float x,float y,float z)
 **!
 **!	This method initializes the matrix.
 **!	It is illegal to create and hold an empty matrix.
@@ -103,7 +104,7 @@ static void exit_matrix(struct object *o)
 static void matrix_create(INT32 args)
 {
    int ys=0,xs=0;
-   int i=0,j=0,k=0;
+   int i=0,j=0;
    FTYPE *m=NULL;
 
    if (!args)
@@ -239,16 +240,31 @@ done_made:
       else if (sp[-args].u.string==s_rotate)
       {
 	 float r;
-	 int axis;
+	 float x,y,z;
+	 float c,s;
+	 struct matrix_storage *mx=NULL;
 
-	 /* "rotate",size,degrees,axis */
+	 /* "rotate",size,degrees,x,y,z */
 
-	 get_all_args("matrix",args,"%s%i%F%i",&dummy,&side,&r,&axis);
+	 if (args>3 && sp[3-args].type==T_OBJECT &&
+	     ((mx=(struct matrix_storage*)
+	       get_storage(sp[-1].u.object,math_matrix_program))))
+	 {
+	    if (mx->xsize*mx->ysize!=3)
+	       SIMPLE_BAD_ARG_ERROR("matrix",4,"Matrix of size 1x3 or 3x1");
+	    
+	    x=mx->m[0];
+	    y=mx->m[1];
+	    z=mx->m[2];
+
+	    get_all_args("matrix",args,"%s%i%F",&dummy,&side,&r);
+	 }
+	 else
+	    get_all_args("matrix",args,"%s%i%F%F%F%F",
+			 &dummy,&side,&r,&x,&y,&z);
 	 
 	 if (side<2)
 	    SIMPLE_BAD_ARG_ERROR("matrix",2,"int(2..)");
-	 if (side==2 && axis!=2)
-	    SIMPLE_BAD_ARG_ERROR("matrix",3,"int(2..2)");
 
 	 THIS->xsize=THIS->ysize=side;
 	 THIS->m=m=malloc(sizeof(FTYPE)*side*side);
@@ -256,15 +272,23 @@ done_made:
 
 	 n=side*side;
 	 while (n--) *(m++)=0.0;
-	 for (n=0; i<side; i++)
+	 for (n=3; i<side; i++)
 	    THIS->m[i*(side+1)]=1.0;
-	 if (axis==0) j=1;
-	 k=j+1; 
-	 while (k==axis) k++;
-	 THIS->m[j+j*side]=cos(r);
-	 THIS->m[k+j*side]=-sin(r);
-	 THIS->m[j+k*side]=sin(r);
-	 THIS->m[k+k*side]=cos(r);
+	 c=cos(r);
+	 s=sin(r);
+
+	 THIS->m[0+0*side]=x*x*(1-c)+c;
+	 THIS->m[1+0*side]=x*y*(1-c)-z*s;
+	 THIS->m[0+1*side]=y*x*(1-c)+z*s;
+	 THIS->m[1+1*side]=y*y*(1-c)+c;
+	 if (side>2)
+	 {
+	    THIS->m[2+0*side]=x*z*(1-c)+y*s;
+	    THIS->m[2+1*side]=y*z*(1-c)-x*s;
+	    THIS->m[0+2*side]=z*x*(1-c)-y*s;
+	    THIS->m[1+2*side]=z*y*(1-c)+x*s;
+	    THIS->m[2+2*side]=z*z*(1-c)+c;
+	 }
       }
       else
 	 SIMPLE_BAD_ARG_ERROR("matrix",1,
