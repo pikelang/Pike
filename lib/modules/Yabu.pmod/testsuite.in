@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.2 2002/12/29 22:31:36 nilsson Exp $
+// $Id: testsuite.in,v 1.3 2003/03/08 21:01:03 grubba Exp $
 
 test_do([[ Yabu.db("test.db", "wct")->purge(); ]])
 test_do([[ add_constant("db", Yabu.db("test.db", "wct")) ]])
@@ -25,8 +25,8 @@ test_eq([[ trans["Blixt"] ]], "Gordon")
 
 test_do([[
   // Test multiple commands.
-  mapping m = ([]);
-  mapping multi;
+  mapping(string:mapping(string:int)) m = ([]);
+  mapping(string:mapping(string:int)) multi;
   for(int i = 0; i < 10; i++) {
     string s = (string)(i%3);
     m[s] = m[s] || ([]);
