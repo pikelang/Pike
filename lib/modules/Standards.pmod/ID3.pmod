@@ -1,6 +1,6 @@
 // ID3.pmod
 //
-//  $Id: ID3.pmod,v 1.13 2003/09/04 00:09:06 nilsson Exp $
+//  $Id: ID3.pmod,v 1.14 2003/10/03 23:46:31 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -29,13 +29,18 @@
 
 #define TEST(X,Y) !!((X) & 1<<(Y))
 
+//! A wrapper around a @[Stdio.File] object that provides a read
+//! limit capability.
 class Buffer(Stdio.File buffer) {
 
-  private string peek_data;
-  private int limit;
+  static string peek_data;
+  static int limit=-1;
 
+  //! Read @[bytes] bytes from the buffer. Throw an exception
+  //! if @[bytes] is bigger than the number of bytes left in the
+  //! buffer before reaching the limit set by @[set_limit].
   string read(int bytes) {
-    if(limit) {
+    if(limit!=-1) {
       if(limit-bytes<0)
         error( "Tag ended unexpextedly.\n" );
       limit -= bytes;
@@ -48,15 +53,22 @@ class Buffer(Stdio.File buffer) {
     return buffer->read(bytes);
   }
 
+  //! Preview the next byte. Technically it is read from the
+  //! encapsulated buffer and put locally to avoid seeking.
   string peek() {
+    if(!limit) error( "End of tag reached.\n" );
     if(!peek_data) peek_data = buffer->read(1);
     return peek_data;
   }
 
+  //! Set an artificial EOF @[bytes] bytes further into the
+  //! buffer.
   void set_limit(int bytes) {
     limit = bytes;
   }
 
+  //! The number of bytes left before reaching the limit set by
+  //! @[set_limit].
   int bytes_left() {
     return limit;
   }
@@ -86,6 +98,7 @@ array(int) int_to_synchsafe(int in, void|int no_bytes) {
   return reverse(res);
 }
 
+//! Represents an ID3v2 header.
 class TagHeader {
 
   int(2..2)   major_version = 2;
@@ -99,10 +112,13 @@ class TagHeader {
 
   int tag_size;
 
+  //!
   void create(void|Buffer buffer) {
     if(buffer) decode(buffer);
   }
 
+  //! Decode a tag header from @[buffer] and store its data in
+  //! this object.
   void decode(Buffer buffer) {
     string data = buffer->read(10);
     if(!has_prefix(data, "ID3"))
@@ -124,7 +140,7 @@ class TagHeader {
     tag_size = synchsafe_to_int( bytes[3..] );
   }
 
-  void decode_flags( int byte ) {
+  static void decode_flags( int byte ) {
     if(byte&0b1111)
       error( "Unknown flag set in tag header flag field. (%08b)\n", byte );
 
@@ -134,17 +150,19 @@ class TagHeader {
     flag_footer = TEST(byte,4);
   }
 
-  int encode_flags() {
+  static int encode_flags() {
     return flag_unsynchronisation<<7 + flag_extended_header<<6 +
       flag_experimental<<5 + flag_footer<<4;
   }
 
+  //! Encode the data in this tag and return as a string.
   string encode() {
     return sprintf("ID3%c%c%c", minor_version, sub_version, encode_flags()) +
       (string)int_to_synchsafe(tag_size);
   }
 
-  int set_flag_unsynchronisation(array(Frame) frames) {
+  //! Should the unsynchronisation flag be set or not?
+  int(0..1) set_flag_unsynchronisation(array(Frame) frames) {
     if(sizeof( frames->flag_unsynchronisation - ({ 0 }) ) == sizeof(frames))
       return flag_unsynchronisation = 1;
     return flag_unsynchronisation = 0;
@@ -168,23 +186,24 @@ class ExtendedHeader {
   int size;
   string data;
 
+  //!
   void create(void|Buffer buffer) {
     if(buffer) decode(buffer);
   }
 
-  void decode_flags(string bytes) {
+  static void decode_flags(string bytes) {
     int flags = bytes[0];
     flag_is_update = TEST(flags,6);
     flag_crc = TEST(flags,5);
     flag_restrictions = TEST(flags,4);
   }
 
-  string encode_flags() {
+  static string encode_flags() {
     return sprintf("%c", flag_is_update<<6 + flag_crc<<5 +
 		   flag_restrictions<<4);
   }
 
-  string decode_restrictions(int data) {
+  static string decode_restrictions(int data) {
     restr_size = (data & 0b11000000) >> 6;
     restr_encoding = TEST(data, 5);
     restr_field_size = (data & 0b00011000) >> 3;
@@ -192,12 +211,13 @@ class ExtendedHeader {
     restr_img_size = data & 0b00000011;
   }
 
-  string encode_restrictions() {
+  static string encode_restrictions() {
     return sprintf("%c", restr_size<<6 + restr_encoding<<5 +
 		   restr_field_size<<3 + restr_img_enc<<2 +
 		   restr_img_size);
   }
 
+  //!
   void decode(Buffer buffer) {
     size = synchsafe_to_int( (array)buffer->read(4) );
     int flagbytes = buffer->read(1)[0];
@@ -212,6 +232,7 @@ class ExtendedHeader {
       decode_restrictions(buffer->read(1)[0]);
   }
 
+  //!
   string encode() {
     string ret = encode_flags();
     if(flag_is_update) ret += "\0";
@@ -269,9 +290,9 @@ array(string|int) encode_string(string in) {
 }
 
 //! Encodes several strings in the same way as @[encode_string], but
-//! encodes all the strings with the same method, selected as in @[encode_string].
-//! The first element in the resulting array is the selected method, while the
-//! following elements are the encoded strings.
+//! encodes all the strings with the same method, selected as in
+//! @[encode_string]. The first element in the resulting array is the
+//! selected method, while the following elements are the encoded strings.
 //! @seealso
 //!   @[decode_string], @[encode_string]
 array(string|int) encode_strings(array(string) in) {
@@ -371,7 +392,8 @@ class Frame {
   }
 
   array(int) encode_flags() {
-    return ({ flag_tag_alteration<<6 + flag_file_alteration<<5 + flag_read_only<<4,
+    return ({ flag_tag_alteration<<6 + flag_file_alteration<<5 +
+	      flag_read_only<<4,
 	      flag_grouping<<6 + flag_compression<<3 + flag_encryption<<2 +
 	      flag_unsynchronisation<<1 + flag_dli });
   }
@@ -474,8 +496,11 @@ class Tagv2 {
   array(Frame) frames = ({});
   int padding;
 
-  void create(void|Buffer buffer) {
+  //!
+  void create(void|Buffer|Stdio.File buffer) {
     if(buffer) {
+      if(!buffer->set_limit)
+	buffer = Buffer(buffer);
       decode(buffer);
       return;
     }
@@ -599,7 +624,8 @@ class Frame_TextAofB {
   inherit FrameData;
 
   array(int) low_decode(string data) {
-    if(!sizeof(data)) error( "Malformed text frame. Missing encoding byte.\n" );
+    if(!sizeof(data))
+      error( "Malformed text frame. Missing encoding byte.\n" );
     data = decode_string(data[1..], data[0]);
     int a,b;
     sscanf(data, "%s\0", data);
@@ -716,7 +742,8 @@ class Frame_Dummy {
 }
 
 
-//! ID3 version 1.0 or 1.1 tag
+//! ID3 version 1.0 or 1.1 tag. This is really a clumsy way of reading
+//! ID3v1 tags, but it has the same interface as the v2 reader.
 class Tagv1 {
 
   array frames = ({});
@@ -726,6 +753,17 @@ class Tagv1 {
        "sub_version": 0
     ]);
 
+  static class Parser {
+    inherit ADT.Struct;
+    Item head = Chars(3);
+    Item title = Chars(30);
+    Item artist = Chars(30);
+    Item album = Chars(30);
+    Item year = Chars(4);
+    Item comment = Chars(30);
+    Item genre = Byte();
+  };
+
   void create(Stdio.File file) {
 
     object st = file->stat();
@@ -734,29 +772,28 @@ class Tagv1 {
 
     if(!st)
       error("File not open.\n");
-    if(st->size < 130)
+    if(st->size < 128)
       error("File is too small.\n");
-    if(file->seek(st->size - 128) < 0)
-      error("File seek error.\n");
+    file->seek(-128);
     if(!(buf = file->read(128)) || sizeof(buf) < 128)
       error("File read error.\n");
-    if(buf[..2] != "TAG")
+
+    Parser tag = Parser(buf);
+    if(tag->head != "TAG")
       error("Tag is missing.\n");
 
-    buf = buf[3..];
-    foreach(({ ({ 0, 29, "title" }), ({ 30, 59, "artist" }),
-    	       ({ 60, 89, "album" }), ({ 90, 93, "year" }),
-	       ({ 94, 123, "comment" }), ({ 124, 124, "genre" }) }),
-	    array el1)
-      frames += ({ Framev1(buf[el1[0]..el1[1]], el1[2]) });
-
-    if(buf[122] == 0 && buf[123] != 0) {
-      frames += ({ Framev1(buf[123..123], "track") });
+#define ADD(X) frames += ({ Framev1((string)tag->X,#X) })
+    ADD(title);
+    ADD(artist);
+    ADD(album);
+    ADD(year);
+    ADD(comment);
+    if(tag->comment[-2]==0 && tag->comment[-1]!=0) {
       header->minor_version = 1;
+      frames += ({ Framev1((string)tag->comment[-1], "track") });
     }
-
+    ADD(genre);
   }
-
 }
 
 class Framev1 {
@@ -771,11 +808,14 @@ class Framev1 {
     size = sizeof(buffer);
   }
 
+  string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%s)", this_program, id);
+  }
 }
 
 class FrameDatav1 {
-  private string frame_data;
-  private string id;
+  static string frame_data;
+  static string id;
 
   void create(string buffer, string name) {
     int i;
@@ -791,6 +831,9 @@ class FrameDatav1 {
     return frame_data;
   }
 
+  string _sprintf(int t) {
+    return t=='O' && sprintf("%O(%s %O)", this_program, id, frame_data);
+  }
 }
 
 //! This is a ID3 tag super object, which encapsulates all versions
@@ -816,6 +859,7 @@ class Tag {
     catch(tag = Tagv2(Buffer(fd)));
     if(tag)
       return;
+    tag = Tagv1(fd);
     catch(tag = Tagv1(fd));
     if(tag)
       return;
@@ -845,7 +889,7 @@ class Tag {
     return indices(tag);
   }
 
-  //! Indices will return the values of the tag object.
+  //! Values will return the values of the tag object.
   static array _values() {
     return values(tag);
   }
