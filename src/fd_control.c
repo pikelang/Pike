@@ -7,6 +7,15 @@
 #include "global.h"
 #include "error.h"
 #else
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE 1
+#  define _LARGEFILE64_SOURCE 1
+#endif /* !_LARGERFILE_SOURCE */
+/* HPUX needs these too... */
+#ifndef __STDC_EXT__
+#  define __STDC_EXT__
+#endif /* !__STDC_EXT__ */
 #undef DEBUG
 #endif
 
