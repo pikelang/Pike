@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.91 2003/05/01 15:59:19 grubba Exp $
+|| $Id: global.h,v 1.92 2003/05/02 12:55:29 grubba Exp $
 */
 
 #ifndef GLOBAL_H
@@ -31,12 +31,19 @@
 #define _GNU_SOURCE
 #endif /* !_GNU_SOURCE */
 
+#ifdef __NT__
 /* To get <windows.h> to stop including the entire OS,
  * we need to define this one.
  */
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+
+/* We also need to ensure that we get the WIN32 APIs. */
+#ifndef WIN32
+#define WIN32	100	/* WinNT 1.0 */
+#endif
+#endif /* __NT__ */
 
 /*
  * We want to use __builtin functions.
