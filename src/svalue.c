@@ -24,7 +24,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.71 2001/07/04 11:59:55 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.72 2001/11/14 10:52:47 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -926,7 +926,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	      break;
 
             default:
-	      if(j>=0 && j<256 && isprint(j))
+	      if(j>0 && j<256 && isprint(j))
 	      {
 		my_putchar(j);
 		break;
