@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.1 2001/05/30 23:47:32 js Exp $
+// $Id: Crawler.pmod,v 1.2 2001/06/10 11:39:11 per Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -143,7 +143,28 @@ class Queue
   //! disregarded.
   void put(string|array(string)|Standards.URI|array(Standards.URI) uri);
 
-  void done(Standards.URI uri);
+  void done(Standards.URI uri, int|void callback_called);
+
+  string normalize_query( string query )
+  {
+    array q = query / "&";
+
+    if( sizeof( q ) == 1 )
+      return query;
+
+    multiset h = (<>);
+    string res = "";
+    foreach( q, string p )
+    {
+      string a, b;
+      if( sscanf( p, "%s=%s", a, b ) == 2 )
+	if( !h[a]++ )
+	  res += "&"+a+"="+b;
+    }
+    if( !strlen( res ) )
+      return 0;
+    return res[1..];
+  }
 
   int check_link(Standards.URI link, RuleSet allow, RuleSet deny)
   {
@@ -151,6 +172,8 @@ class Queue
       link->fragment=0;
 
     int a = 1, d = 0;
+//     if( link->query )
+//       link->query = normalize_query( link->query );
 
     if( allow ) a = allow->check(link);
     if( deny )  d = deny->check(link);
@@ -286,7 +309,8 @@ class MySQLQueue
     if( sizeof( possible ) <= p_c )
     {
       p_c = 0;
-      possible = db->query( "select uri from "+table+" where done=0" )->uri;
+      possible=db->query("select uri from "+table+" where done=0 limit 20")
+	->uri;
     }
 
     if( sizeof( possible ) > p_c )
@@ -371,7 +395,6 @@ class MemoryQueue
 	}
     }
 
-//     werror("concurrent_fetchers: %d\n",stats->concurrent_fetchers());
     if(stats->concurrent_fetchers())
       return -1;
 
@@ -605,7 +628,8 @@ class Crawler
 {
   Queue queue;
   function page_cb, done_cb;
-
+  function prepare_cb;
+  
   array(mixed) args;
 
   mapping _hostname_cache=([]);
@@ -617,14 +641,17 @@ class Crawler
     
     void got_data()
     {
+      int called;
       queue->stats->close_callback(uri);
       if(status==200)
+      {
 	add_links(page_cb(uri, data(), headers, @args));
-
+	called=1;
+      }
       if(headers->location)
 	add_links(({ Standards.URI(headers->location) }));
 
-      queue->done(uri);
+      queue->done(uri,called);
     }
     
     void request_ok(object httpquery)
@@ -640,33 +667,39 @@ class Crawler
     
     void create(Standards.URI _uri)
     {
+      string pq;
+      mapping headers;
       string get_path_query(  Standards.URI u )
       {
 	return u->path + (u->query?"?"+u->query:"");
       };
       uri=_uri;
+
+      headers = ([
+	"host": uri->host+":"+uri->port,
+	"user-agent": "Mozilla 4.0 (PikeCrawler)",
+      ]);
+      pq = get_path_query( uri );
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
+
+      if( prepare_cb )
+	[pq, headers] = prepare_cb( uri, pq, headers );
+
       async_request(uri->host, uri->port,
-		    sprintf("GET %s HTTP/1.0", get_path_query(uri)),
-		    (["host": uri->host+":"+uri->port,
-		      "user-agent": "Mozilla 4.0 (PikeCrawler)",
-		    ]));
+		    sprintf("GET %s HTTP/1.0", pq),
+		    headers );
     }
   }
 
-  void add_links(array(Standards.URI) links)
+  void add_links( array(Standards.URI) links )
   {
     map(links,queue->put);
   }
   
   void get_next_uri()
   {
-    //    CRAWLER_MSG("get_next_uri");
     object|int uri=queue->get();
-//      CRAWLER_MSGS("uri: %O",uri);
-
-//      queue->debug();
 
     if(uri==-1)
     {
@@ -688,22 +721,26 @@ class Crawler
       switch(uri->scheme)
       {
         case "http":
-        case "https": HTTPFetcher(uri);
+        case "https":
+	  HTTPFetcher(uri);
       }
     }
   
-    call_out(get_next_uri,0.025);
+    call_out(get_next_uri,0);
   }
   
   void create(Queue _queue,
-	      function _page_cb, function _done_cb,
-	      string|array(string)|Standards.URI|array(Standards.URI) start_uri,
+	      function _page_cb, function _done_cb, function _prepare_cb, 
+
+	      string|array(string)|Standards.URI|
+	      array(Standards.URI) start_uri,
 	      mixed ... _args)
   {
     queue=_queue;
     args=_args;
     page_cb=_page_cb;
     done_cb=_done_cb;
+    prepare_cb=_prepare_cb;
     
     queue->put(start_uri);
     call_out(get_next_uri,0);
