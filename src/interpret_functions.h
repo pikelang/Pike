@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.168 2004/05/21 16:32:07 grubba Exp $
+|| $Id: interpret_functions.h,v 1.169 2004/10/06 18:35:02 mast Exp $
 */
 
 /*
@@ -317,7 +317,7 @@ OPCODE1(F_LOOKUP_LFUN, "->lfun", 0, {
     } else {
       /* Not found. */
       tmp.type = T_INT;
-      tmp.subtype = 1;
+      tmp.subtype = NUMBER_UNDEFINED;
       tmp.u.integer = 0;
     }
   } else {
@@ -510,10 +510,10 @@ OPCODE1(F_ARRAY_LVALUE, "[ lvalues ]", I_UPDATE_SP, {
 OPCODE1(F_CLEAR_2_LOCAL, "clear 2 local", 0, {
   free_mixed_svalues(Pike_fp->locals + arg1, 2);
   Pike_fp->locals[arg1].type = PIKE_T_INT;
-  Pike_fp->locals[arg1].subtype = 0;
+  Pike_fp->locals[arg1].subtype = NUMBER_NUMBER;
   Pike_fp->locals[arg1].u.integer = 0;
   Pike_fp->locals[arg1+1].type = PIKE_T_INT;
-  Pike_fp->locals[arg1+1].subtype = 0;
+  Pike_fp->locals[arg1+1].subtype = NUMBER_NUMBER;
   Pike_fp->locals[arg1+1].u.integer = 0;
 });
 
@@ -523,7 +523,7 @@ OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
   for(e = 0; e < 4; e++)
   {
     Pike_fp->locals[arg1+e].type = PIKE_T_INT;
-    Pike_fp->locals[arg1+e].subtype = 0;
+    Pike_fp->locals[arg1+e].subtype = NUMBER_NUMBER;
     Pike_fp->locals[arg1+e].u.integer = 0;
   }
 });
@@ -531,7 +531,7 @@ OPCODE1(F_CLEAR_4_LOCAL, "clear 4 local", 0, {
 OPCODE1(F_CLEAR_LOCAL, "clear local", 0, {
   free_svalue(Pike_fp->locals + arg1);
   Pike_fp->locals[arg1].type = PIKE_T_INT;
-  Pike_fp->locals[arg1].subtype = 0;
+  Pike_fp->locals[arg1].subtype = NUMBER_NUMBER;
   Pike_fp->locals[arg1].u.integer = 0;
 });
 
@@ -543,6 +543,7 @@ OPCODE1(F_INC_LOCAL, "++local", I_UPDATE_SP, {
       )
   {
     push_int(++(Pike_fp->locals[arg1].u.integer));
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals+arg1);
     push_int(1);
@@ -561,6 +562,7 @@ OPCODE1(F_POST_INC_LOCAL, "local++", I_UPDATE_SP, {
       )
   {
     Pike_fp->locals[arg1].u.integer++;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals + arg1);
     push_int(1);
@@ -577,6 +579,7 @@ OPCODE1(F_INC_LOCAL_AND_POP, "++local and pop", 0, {
       )
   {
     Pike_fp->locals[arg1].u.integer++;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     push_svalue( Pike_fp->locals + arg1);
     push_int(1);
@@ -593,6 +596,7 @@ OPCODE1(F_DEC_LOCAL, "--local", I_UPDATE_SP, {
       )
   {
     push_int(--(Pike_fp->locals[arg1].u.integer));
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals+arg1);
     push_int(1);
@@ -611,13 +615,13 @@ OPCODE1(F_POST_DEC_LOCAL, "local--", I_UPDATE_SP, {
       )
   {
     Pike_fp->locals[arg1].u.integer--;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals + arg1);
     push_int(1);
     o_subtract();
     stack_pop_to(Pike_fp->locals + arg1);
   }
-  /* Pike_fp->locals[instr].u.integer--; */
 });
 
 OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
@@ -628,6 +632,7 @@ OPCODE1(F_DEC_LOCAL_AND_POP, "--local and pop", 0, {
       )
   {
     Pike_fp->locals[arg1].u.integer--;
+    Pike_fp->locals[arg1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   } else {
     push_svalue(Pike_fp->locals + arg1);
     push_int(1);
@@ -653,18 +658,18 @@ OPCODE0(F_LTOSVAL2, "ltosval2", I_UPDATE_SP, {
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-2, Pike_sp-4);
 
-  /* this is so that foo+=bar (and similar things) will be faster, this
-   * is done by freeing the old reference to foo after it has been pushed
-   * on the stack. That way foo can have only 1 reference if we are lucky,
-   * and then the low array/multiset/mapping manipulation routines can be
-   * destructive if they like
+  /* This is so that foo+=bar (and similar things) will be faster.
+   * It's done by freeing the old reference to foo after it has been
+   * pushed on the stack. That way foo can have only 1 reference if we
+   * are lucky, and then the low array/multiset/mapping manipulation
+   * routines can be destructive if they like.
    */
   if( (1 << Pike_sp[-2].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     struct svalue s;
     s.type = PIKE_T_INT;
-    s.subtype = 0;
+    s.subtype = NUMBER_NUMBER;
     s.u.integer = 0;
     assign_lvalue(Pike_sp-4, &s);
   }
@@ -677,18 +682,18 @@ OPCODE0(F_LTOSVAL3, "ltosval3", I_UPDATE_SP, {
   Pike_sp++;
   lvalue_to_svalue_no_free(Pike_sp-3, Pike_sp-5);
 
-  /* this is so that foo=foo[x..y] (and similar things) will be faster, this
-   * is done by freeing the old reference to foo after it has been pushed
-   * on the stack. That way foo can have only 1 reference if we are lucky,
-   * and then the low array/multiset/mapping manipulation routines can be
-   * destructive if they like
+  /* This is so that foo=foo[x..y] (and similar things) will be faster.
+   * It's done by freeing the old reference to foo after it has been
+   * pushed on the stack. That way foo can have only 1 reference if we
+   * are lucky, and then the low array/multiset/mapping manipulation
+   * routines can be destructive if they like.
    */
   if( (1 << Pike_sp[-3].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     struct svalue s;
     s.type = PIKE_T_INT;
-    s.subtype = 0;
+    s.subtype = NUMBER_NUMBER;
     s.u.integer = 0;
     assign_lvalue(Pike_sp-5, &s);
   }
@@ -709,6 +714,7 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       INT_TYPE val = (Pike_sp[-1].u.integer += Pike_sp[-2].u.integer);
+      Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
       pop_2_elems();
@@ -716,11 +722,11 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
       goto add_to_done;
     }
   }
-  /* this is so that foo+=bar (and similar things) will be faster, this
-   * is done by freeing the old reference to foo after it has been pushed
-   * on the stack. That way foo can have only 1 reference if we are lucky,
-   * and then the low array/multiset/mapping manipulation routines can be
-   * destructive if they like
+  /* This is so that foo+=bar (and similar things) will be faster.
+   * It's done by freeing the old reference to foo after it has been
+   * pushed on the stack. That way foo can have only 1 reference if we
+   * are lucky, and then the low array/multiset/mapping manipulation
+   * routines can be destructive if they like.
    */
   if( (1 << Pike_sp[-2].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
@@ -767,24 +773,25 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
     {
       /* Optimization for a rather common case. Makes it 30% faster. */
       Pike_sp[-1].u.integer += Pike_sp[-2].u.integer;
+      Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
       assign_lvalue(Pike_sp-4,Pike_sp-1);
       Pike_sp-=2;
       pop_2_elems();
       goto add_to_and_pop_done;
     }
   }
-  /* this is so that foo+=bar (and similar things) will be faster, this
-   * is done by freeing the old reference to foo after it has been pushed
-   * on the stack. That way foo can have only 1 reference if we are lucky,
-   * and then the low array/multiset/mapping manipulation routines can be
-   * destructive if they like
+  /* This is so that foo+=bar (and similar things) will be faster.
+   * It's done by freeing the old reference to foo after it has been
+   * pushed on the stack. That way foo can have only 1 reference if we
+   * are lucky, and then the low array/multiset/mapping manipulation
+   * routines can be destructive if they like.
    */
   if( (1 << Pike_sp[-2].type) &
       (BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING) )
   {
     struct svalue s;
     s.type=PIKE_T_INT;
-    s.subtype=0;
+    s.subtype=NUMBER_NUMBER;
     s.u.integer=0;
     assign_lvalue(Pike_sp-4,&s);
   } else if (Pike_sp[-2].type == PIKE_T_OBJECT) {
@@ -1379,16 +1386,21 @@ OPCODE0_BRANCH(F_LOOP, "loop", I_UPDATE_SP, { /* loopcnt */
   }
 });
 
-OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, X, i */
+OPCODE0_BRANCH(F_FOREACH, "foreach", 0, { /* array, lvalue, i */
   if(Pike_sp[-4].type != PIKE_T_ARRAY)
     PIKE_ERROR("foreach", "Bad argument 1.\n", Pike_sp-3, 1);
   if(Pike_sp[-1].u.integer < Pike_sp[-4].u.array->size)
   {
     if(Pike_sp[-1].u.integer < 0)
+      /* Isn't this an internal compiler error? /mast */
       Pike_error("Foreach loop variable is negative!\n");
     assign_lvalue(Pike_sp-3, Pike_sp[-4].u.array->item + Pike_sp[-1].u.integer);
     DO_BRANCH();
     Pike_sp[-1].u.integer++;
+    DO_IF_DEBUG (
+      if (Pike_sp[-1].subtype)
+	Pike_fatal ("Got unexpected subtype in loop variable.\n");
+    );
   }else{
     /* write_to_stderr("foreach\n", 8); */
     DONT_BRANCH();
@@ -1480,8 +1492,11 @@ OPCODE0(F_NEGATE, "unary minus", 0, {
 	o_negate();
       }
       else
-      )
+    )
+    {
       Pike_sp[-1].u.integer =- Pike_sp[-1].u.integer;
+      Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
+    }
   }
   else if(Pike_sp[-1].type == PIKE_T_FLOAT)
   {
@@ -1498,6 +1513,7 @@ OPCODE0(F_NOT, "!", 0, {
   {
   case PIKE_T_INT:
     Pike_sp[-1].u.integer =! Pike_sp[-1].u.integer;
+    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
     break;
 
   case PIKE_T_FUNCTION:
@@ -1515,6 +1531,7 @@ OPCODE0(F_NOT, "!", 0, {
   default:
     free_svalue(Pike_sp-1);
     Pike_sp[-1].type=PIKE_T_INT;
+    Pike_sp[-1].subtype = NUMBER_NUMBER;
     Pike_sp[-1].u.integer=0;
   }
 });
@@ -1548,6 +1565,7 @@ OPCODE0(F_ADD_INTS, "int+int", I_UPDATE_SP, {
     )
   {
     Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
+    Pike_sp[-2].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
     dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
   }else{
@@ -1582,6 +1600,7 @@ OPCODE1(F_ADD_INT, "add integer", 0, {
      )
   {
     Pike_sp[-1].u.integer+=arg1;
+    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   }else{
     push_int(arg1);
     f_add(2);
@@ -1596,6 +1615,7 @@ OPCODE1(F_ADD_NEG_INT, "add -integer", 0, {
      )
   {
     Pike_sp[-1].u.integer-=arg1;
+    Pike_sp[-1].subtype = NUMBER_NUMBER; /* Could have UNDEFINED there before. */
   }else{
     push_int(-arg1);
     f_add(2);
