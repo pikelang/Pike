@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: language.yacc,v 1.347 2004/10/30 11:38:26 mast Exp $
+|| $Id: language.yacc,v 1.348 2004/10/30 15:30:02 nilsson Exp $
 */
 
 %pure_parser
@@ -455,13 +455,15 @@ facet: TOK_FACET TOK_IDENTIFIER ':' idents ';'
 	  }
 	  else
 	    yyerror("Could not add facet class to system.");
-	  pop_n_elems(2);
+	  pop_stack();
 	}
 	else
 	  yyerror("Illegal facet group specifier.");
-	free_node($4);
+	pop_stack();
       }
     }
+    free_node($2);
+    free_node($4);
   }
   ;
 
