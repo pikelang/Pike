@@ -1,4 +1,4 @@
-// $Id: Readline.pike,v 1.10 1999/04/02 10:14:03 neotron Exp $
+// $Id: Readline.pike,v 1.11 1999/04/12 02:23:12 hubbe Exp $
 
 class OutputController
 {
@@ -1042,6 +1042,7 @@ void destroy()
 void create(object|void infd, object|string|void interm,
 	    object|void outfd, object|string|void outterm)
 {
+  atexit(destroy);
   output_controller = OutputController(outfd || infd, outterm || interm);
   input_controller = InputController(infd, interm);
   DefaultEditKeys(this_object());
