@@ -4,14 +4,14 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.17 1997/10/07 03:33:33 grubba Exp $ 
+$Id: togif.c,v 1.18 1997/10/12 21:11:12 mirar Exp $ 
 
 */
 
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.17 1997/10/07 03:33:33 grubba Exp $<br>
+**!	$Id: togif.c,v 1.18 1997/10/12 21:11:12 mirar Exp $<br>
 **! class image
 */
 
@@ -549,7 +549,7 @@ CHRONO("gif add init");
    if (args>2 && sp[2-args].type==T_ARRAY)
    {
       ct=colortable_from_array(sp[2-args].u.array,"image->gif_add()\n");
-      closest=1;
+      if (ct->numcol<128) closest=1;
    }
    else if (args>3 && sp[2-args].type==T_INT)
       ct=colortable_quant(THIS,max(256,min(2,sp[2-args].u.integer)));
@@ -620,11 +620,15 @@ CHRONO("begin pack");
    THREADS_ALLOW();
    lzw_init(&lzw,bpp);
    if (!fs)
-      while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
+   {
+      if (closest)
+	 while (i--) lzw_add(&lzw,colortable_rgb_nearest(ct,*(rgb++)));
+      else
+	 while (i--) lzw_add(&lzw,colortable_rgb(ct,*(rgb++)));
+   }
    else
    {
       rgbl_group *errb;
-      rgb_group corgb;
       int w,*cres,j;
       errb=(rgbl_group*)xalloc(sizeof(rgbl_group)*xs);
       cres=(int*)xalloc(sizeof(int)*xs);
