@@ -1,9 +1,13 @@
 #pike __REAL_VERSION__
 
-//! decodes a bittorrent bencoded data chunk
-//! returns ({data,remaining string})
-//! will return ({0,input string}) if no data could be decoded
-
+//! Decodes a Bittorrent bencoded data chunk.
+//! @returns
+//!   @array
+//!     @elem string|int|array|mapping data
+//!       The decoded data. UNDEFINED if no data could be decoded.
+//!     @elem string remainder
+//!       The trailing data that wasn't decoded.
+//!   @endarray
 array(string|int|array|mapping) _decode(string what)
 {
    if (what=="") return ({UNDEFINED,what});
@@ -66,9 +70,8 @@ array(string|int|array|mapping) _decode(string what)
    }
 }
 
-//! decodes a bittorrent bencoded data chunk
-//! ignores the remaining string,
-//! returns UNDEFINED if the data is incomplete
+//! Decodes a Bittorrent bencoded data chunk and ignores the remaining
+//! string. Returns UNDEFINED if the data is incomplete.
 string|int|array|mapping decode(string what)
 {
    array v=_decode(what);
@@ -76,7 +79,7 @@ string|int|array|mapping decode(string what)
    return v[0];
 }
 
-//! encodes a bittorrent bencoded data chunk
+//! Encodes a Bittorrent bencoded data chunk.
 string encode(string|int|array|mapping data)
 {
    switch (sprintf("%t",data))
@@ -110,21 +113,22 @@ private static array(string) bits=
 private static array(string) bobs=
    sprintf("%c",Array.enumerate(256)[*]);
 
-//! convert an array of int(0..1) to a bittorrent style bitstring
-//! input will be padded to even bytes
+//! Convert an array of @expr{int(0..1)@} to a Bittorrent style
+//! bitstring. Input will be padded to even bytes.
 string bits2string(array(int(0..1)) v)
 {
    if (sizeof(v)&7) v+=({0})*(8-sizeof(v)&7);
    return replace(sprintf("%@d",v),bits,bobs);
 }
 
-//! convert a bittorrent style bitstring to an array of int(0..1)
+//! Convert a Bittorrent style bitstring to an array of
+//! @expr{int(0..1)@}.
 array(int(0..1)) string2bits(string s)
 {
    return (array(int(0..1)))(replace(s,bobs,bits)/1);
 }
 
-//! convert a bittorrent style bitstring to an array of indices
+//! Convert a Bittorrent style bitstring to an array of indices.
 array(int) string2arr(string s)
 {
    if (last2arrbits==s) return copy_value(last2arrarr); // simple cache
@@ -134,5 +138,6 @@ array(int) string2arr(string s)
    int i=search(v,1);
    return last2arrarr=w[i..];
 }
+
 static private string last2arrbits=0;
 static private array(int) last2arrarr=0;

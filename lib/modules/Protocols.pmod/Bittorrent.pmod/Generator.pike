@@ -1,8 +1,7 @@
 //! Generate a .torrent binary string from files in the filesystem
 //!
 //! @example
-//!   usage: thisprogram [<file/dir>] [<file/dir>...] <target .torrent>
-//! @code
+//!   // usage: thisprogram [<file/dir>] [<file/dir>...] <target .torrent>
 //!   int main(int ac,array am)
 //!   {
 //!      Generator g=Generator();
@@ -15,7 +14,6 @@
 //!      Stdio.write_file(dest,g->digest());
 //!      return 0;
 //!   }
-//! @endcode
 
 inherit .Torrent;
 
@@ -25,12 +23,15 @@ int piece_size=262144;
 string announce="http://";
 array(array(string)) announce_list=({});
 
+//! @decl void create(void|string base, void|int piece_size)
 //! Create a generator. 
 //!
-//! base is the base filename/path in the torrent. 
+//! @param base
+//!   The base filename/path in the torrent.
 //!
-//! piece_size is default 262144 and is the piece size, the pieces
-//! sha1's are calculated on. This should probably be 2^n.
+//! @param piece_size
+//!   The size of the pieces that the SHA hashes are calculated on.
+//!   Default 262144 and this value should probably be 2^n.
 void create(void|string _base,
 	    void|int _piece_size)
 {
@@ -40,11 +41,9 @@ void create(void|string _base,
    if (_piece_size) piece_size=_piece_size;
 }
 
-//! add one or multiple announcers (trackers)
-//! this is needed to get a valid .torrent file.
-//!
-//! If this is called more then once, more announcers (trackers)
-//! will be added with lower priority.
+//! Add one or multiple announcers (trackers). This is needed to get a
+//! valid .torrent file. If this is called more then once, more
+//! announcers (trackers) will be added with lower priority.
 this_program add_announce(string|array(string) announce_url)
 {
    if (stringp(announce_url))
@@ -57,9 +56,10 @@ this_program add_announce(string|array(string) announce_url)
       if (!announce) announce=announce_url[0];
       announce_list+=({announce_url});
    }
+   return this;
 }
 
-//! add a file to the torrent. The second argument
+//! Add a file to the torrent. The second argument
 //! is what the file will be called in the torrent.
 this_program add_file(string path,void|string filename)
 {
@@ -70,7 +70,7 @@ this_program add_file(string path,void|string filename)
    Stdio.Stat st=fd->stat();
 
    if (!st || !(<"reg","blk","chr">)[st->type])
-      error("not a regular file\n");
+      error("Not a regular file.\n");
 
    string f="";
    if (filename[..strlen(base)-1]==base)
@@ -84,10 +84,10 @@ this_program add_file(string path,void|string filename)
    
    offset+=st->size;
    
-   return this_object();
+   return this;
 }
 
-//! add a directory tree to the torrent. The second argument
+//! Add a directory tree to the torrent. The second argument
 //! is what the directory will be called in the torrent.
 //! This will call add_file on all non-directories in the tree.
 this_program add_directory_tree(string path,void|string dirbase)
@@ -107,22 +107,22 @@ this_program add_directory_tree(string path,void|string dirbase)
 	 add_file(combine_path(path,fn),combine_path(dirbase,fn));
    }
 
-   return this_object();
+   return this;
 }
 
-//! add a file, or a directory tree to the torrent.
+//! Add a file, or a directory tree to the torrent.
 //! This will call add_directory_tree or add_file.
 this_program add(string path,void|string base)
 {
    if (!file_stat(path))
-      error("no such file or directory\n");
+      error("No such file or directory.\n");
    else if (file_stat(path)->isdir)
       return add_directory_tree(path,base);
    else
       return add_file(path,base);
 }
 
-//! build the sha1's from the files.
+//! Build the SHA hashes from the files.
 void build_sha1s(void|function(int,int:void) progress_callback)
 {
    info_sha1="";
@@ -135,11 +135,11 @@ void build_sha1s(void|function(int,int:void) progress_callback)
    if (progress_callback && n<offset) progress_callback(offset,offset);
 }
 
-//! finally make a torrent string out of this information.
-//! will call build_sha1's if the sha1's aren't generated already.
+//! Finally make a torrent string out of this information.
+//! Will call build_sha1's if the sha1's aren't generated already.
 //!
-//! progress_callback is called with (pos,of) arguments, similar
-//! to Torrent.verify_targets.
+//! @[progress_callback] is called with (pos,of) arguments, similar
+//! to @[Torrent.verify_targets].
 string digest(void|function(int,int:void) progress_callback)
 {
    mapping info=([]);

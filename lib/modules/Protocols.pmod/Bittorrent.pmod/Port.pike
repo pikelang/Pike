@@ -5,7 +5,7 @@ Stdio.Port port;
 int portno;
 .Torrent parent;
 
-//! bind a port for this Torrent
+//! Bind a port for this Torrent.
 void create(.Torrent _parent)
 {
    parent=_parent;
@@ -27,7 +27,7 @@ void create(.Torrent _parent)
 	 return;
       }
 
-   error("Torrent: Failed to bind port for incoming traffic\n");
+   error("Failed to bind port for incoming traffic.\n");
 }
 
 void destroy() { destruct(port); }

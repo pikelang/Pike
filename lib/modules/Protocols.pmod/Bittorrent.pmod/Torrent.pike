@@ -2,7 +2,7 @@
 
 //! Bittorrent peer - download and share.
 //! Read more about bittorrent at 
-//! http://bitconjurer.org/BitTorrent/introduction.html
+//! @url{http://bitconjurer.org/BitTorrent/introduction.html@}
 //! 
 //! @example
 //! The smallest usable torrent downloader. As first argument,
@@ -97,26 +97,26 @@ array(.Peer) peers_unused=({});
 // stop adding peers at this number, increased if we need more
 int max_peers=100; 
 
-//! if set, called when we got another piece downloaded (no args)
+//! If set, called when we got another piece downloaded (no args).
 function pieces_update_status=0;
 
-//! if set, called when we start to download another piece (no args)
+//! If set, called when we start to download another piece (no args).
 function downloads_update_status=0;
 
-//! if set, called when peer status changes
+//! If set, called when peer status changes.
 function peer_update_status=0;
 
-//! if set, called when download is completed
+//! If set, called when download is completed.
 function download_completed_callback=0;
 
-//! called if there is a protocol error; defaults to werror
+//! Called if there is a protocol error.
 function(string,mixed...:void|mixed) warning=lambda() {};
 
 
 Protocols.DNS.async_client dns_async=Protocols.DNS.async_client();
 
 
-//! loads the metainfo from a file
+//! Loads the metainfo from a file.
 void load_metainfo(string filename)
 {
    string s=Stdio.read_file(filename);
@@ -196,7 +196,7 @@ class Target(string base,int length,int offset,void|array path)
    void pwrite(int off,string data)
    {
 //       werror("%O: pwrite(%O,%d bytes) =%O..%O of %O\n",
-// 	     this_object(),off,strlen(data),
+// 	     this,off,strlen(data),
 // 	     off-offset,off-offset+strlen(data),length);
       if (off>offset+length) return; // noop
       int end=off+strlen(data);
@@ -219,7 +219,7 @@ class Target(string base,int length,int offset,void|array path)
       int end=off+bytes;
 
 //       werror("%O: pread(%O,%d bytes) =%O..%O of %O\n",
-// 	     this_object(),off,bytes,
+// 	     this,off,bytes,
 // 	     off-offset,off-offset+bytes,length);
 
       if (off<offset)
@@ -259,25 +259,40 @@ class Target(string base,int length,int offset,void|array path)
    }
 }
 
-//! opens target datafile(s)
-//! "allocate" determines allocation procedure if the file doesn't exist:
-//!  0 don't allocate
-//!  1 allocate virtual file size (seek, write end byte)
-//!  2 allocate for real (will call progress_callback(pos,length))
-//!  -1 means never create a file, only open old files
-//! "my_filename" is to substitute the metainfo base target filename
-//!
-//! returns 1 if the (a) file was already there,
-//! 2 if all target files were created 
+//! Opens target datafile(s).
 //!
 //! If all files are created, the verify info will be filled as well,
-//! but if it isn't created, a call to verify_target() is necessary after
-//! this call.
+//! but if it isn't created, a call to @[verify_target()] is necessary
+//! after this call.
 //!
+//! @param allocate
+//!   Determines allocation procedure if the file doesn't exist:
+//!   @int
+//!     @value 0
+//!       Don't allocate.
+//!     @value 1
+//!       Allocate virtual file size (seek, write end byte).
+//!     @value 2
+//!       Allocate for real (will call progress_callback(pos,length)).
+//!     @value -1
+//!       Means never create a file, only open old files.
+//!   @endint
+//!
+//! @param my_filename
+//!   A new base filename to substitute the metainfo base target
+//!   filename with.
+//!
+//! @returns
+//!   @int
+//!     @value 1
+//!       The (a) file was already there.
+//!     @value 2
+//!       All target files were created.
+//!   @endint
 int fix_targets(void|int(-1..2) allocate, void|string base_filename,
 		void|function(int,int:void) progress_callback)
 {
-   if (!metainfo) error("no metainfo initiated\n");
+   if (!metainfo) error("No metainfo initiated.\n");
    if (!base_filename)
       if (!info->name)
 	 error("error in info (name=%O)\n",info->name);
@@ -348,8 +363,8 @@ int fix_targets(void|int(-1..2) allocate, void|string base_filename,
    return search(targets->created,0)==-1 ? 2 : 1;
 }
 
-//! verify the file and fill file_got (necessary after load_info,
-//! but needs open_file before this call)
+//! Verify the file and fill file_got (necessary after load_info,
+//! but needs open_file before this call).
 //! [ progress_callback(at chunk,total chunks) ]
 void verify_targets(void|function(int,int:void) progress_callback)
 {
@@ -371,10 +386,10 @@ void verify_targets(void|function(int,int:void) progress_callback)
 			      lambda(int i) { return !file_got[i]; });
 }
 
-//! open the port we're listening on
+//! Open the port we're listening on.
 void open_port()
 {
-   listen_port=.Port(this_object());
+   listen_port=.Port(this);
 }
 
 // helper functions
@@ -392,7 +407,7 @@ private static inline string generate_peer_id()
    return s[..19];
 };
 
-//! calculate the bytes successfully downloaded (full pieces)
+//! Calculate the bytes successfully downloaded (full pieces).
 int bytes_done()
 {
    if (!file_got)
@@ -409,7 +424,7 @@ int bytes_done()
    return done;
 }
 
-//! calculate the bytes left to download
+//! Calculate the bytes left to download.
 int bytes_left()
 {
    return total_bytes-bytes_done();
@@ -419,8 +434,8 @@ int last_tracker_update;
 int tracker_update_interval=300;
 int tracker_call_if_starved=60; // delay until ok to call if starved
 
-//! contact and update the tracker with current status
-//! will fill the peer list
+//! Contact and update the tracker with current status
+//! will fill the peer list.
 void update_tracker(void|string event,void|int contact)
 {
    last_tracker_update=time(1);
@@ -488,7 +503,7 @@ void update_tracker(void|string event,void|int contact)
 		  .Peer p;
 		  if (peers[m["peer id"]]) continue;
 
-		  peers[m["peer id"]]=(p=peer_program(this_object(),m));
+		  peers[m["peer id"]]=(p=peer_program(this,m));
 		  if (sizeof(peers_ordered)<max_peers && contact) 
 		  {
 		     peers_ordered+=({p});
@@ -552,13 +567,10 @@ void increase_number_of_peers(void|int n)
    v->connect();
 }
 
-//! starts to contact the tracker at regular intervals,
-//! giving it the status and recieving more peers to talk to,
-//! will also contact these peers
-//!
-//! default interval is 5 minutes
-//!
-//! if given an event, will update tracker with it
+//! Starts to contact the tracker at regular intervals, giving it the
+//! status and recieving more peers to talk to. Will also contact
+//! these peers. The default interval is 5 minutes. If given an event,
+//! will update tracker with it.
 void start_update_tracker(void|int interval)
 {
    remove_call_out(update_tracker_loop);
@@ -575,16 +587,15 @@ static void update_tracker_loop()
       update_tracker(0,!we_are_completed);
 }
 
-//! stops updating the tracker; will send the event as a last
-//! event, if set
-//! will not contact new peers
+//! Stops updating the tracker; will send the event as a last event,
+//! if set. It will not contact new peers.
 void stop_update_tracker(void|string event)
 {
    if (event) update_tracker(event,0);
    remove_call_out(update_tracker_loop);
 }
 
-//! contact all or n peers 
+//! Contact all or n peers.
 void contact_peers(void|int n)
 {
    array v=filter(values(peers),"is_connectable");
@@ -593,8 +604,9 @@ void contact_peers(void|int n)
 }
 
 string _file_got_bitfield=0;
+
 // usually called from peers
-//! returns the file got field as a string bitfield (cached)
+//! Returns the file got field as a string bitfield (cached).
 string file_got_bitfield()
 {
    return _file_got_bitfield ||
@@ -615,7 +627,7 @@ string file_got_bitfield()
 
 // ----------------------------------------------------------------
 
-//! initiate the downloading scheme
+//! Initiate the downloading scheme.
 void start_download()
 {
    downloading=1;
@@ -818,7 +830,7 @@ class PieceDownload
       peer=_peer;
       piece=n;
 
-      downloads[piece]=this_object();
+      downloads[piece]=this;
 
       int size=info["piece length"];
       if (piece+1==sizeof(file_got) &&
@@ -844,7 +856,7 @@ class PieceDownload
 
       peer=_peer;
 
-      downloads[piece]=this_object();
+      downloads[piece]=this;
 
       queue_chunks();
    }
@@ -876,7 +888,7 @@ class PieceDownload
 	  sizeof(peer->piece_callback)<download_chunk_max_queue)
       {
 	 peer->handover=1;
-	 handovers[piece]=this_object();
+	 handovers[piece]=this;
 	 disjoin();
 	 handed_over=1;
       }
@@ -985,11 +997,11 @@ class PieceDownload
 	 if (!peer) return; // we're already lost in space, wtf?
 
    // ok, put us in the queue-to-fill
-	 lost_in_space[piece]=this_object();
+	 lost_in_space[piece]=this;
 
    // cancel outstanding
 #ifdef TORRENT_PIECEDOWNLOAD_DEBUG
-	 werror("%O %O->cancel\n",this_object(),peer);
+	 werror("%O %O->cancel\n",this,peer);
 #endif
 	 if (peer->online) peer->cancel_requests(0);
 
@@ -1012,7 +1024,7 @@ class PieceDownload
    void disjoin()
    {
 #ifdef TORRENT_PIECEDOWNLOAD_DEBUG
-      werror("%O disjoin\n",this_object());
+      werror("%O disjoin\n",this);
 #endif
 
       if (!handed_over)
@@ -1030,12 +1042,12 @@ class PieceDownload
       disjoin();
       download_more();
 
-      if (handovers[piece]==this_object() ||
-	  downloads[piece]==this_object())
+      if (handovers[piece]==this ||
+	  downloads[piece]==this)
       {
 	 werror("destruction of download still in structs:\n"
 		"download: %O\ndownloads: %O\nhandovers: %O\n",
-		this_object(),downloads,handovers);
+		this,downloads,handovers);
 
 	 werror("%s\n",master()->describe_backtrace(backtrace()));
 
@@ -1044,7 +1056,7 @@ class PieceDownload
 
       more_peers->cancel_requests(0);
 
-      destruct(this_object());
+      destruct(this);
    }
 
    string _sprintf(int t)

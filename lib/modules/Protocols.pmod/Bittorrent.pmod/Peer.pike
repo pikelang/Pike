@@ -80,7 +80,7 @@ void create(.Torrent _parent,mapping m)
       online=1;
       fd->set_nonblocking(peer_read,0,peer_close);
 
-      parent->peers_ordered+=({this_object()});
+      parent->peers_ordered+=({this});
 
       _status("incoming");
    }
@@ -97,76 +97,76 @@ private static inline void _status(string type,void|string|int data)
    status(type,data);
 }
 
-//! returns true if we can connect to this peer,
-//! when new or disconnected but not fatally
+//! Returns true if we can connect to this peer,
+//! when new or disconnected but not fatally.
 int is_connectable() 
 { 
    return !online && mode!="dead" && mode!="failed"; 
 }
 
-//! returns true if this peer is online and connected
+//! Returns true if this peer is online and connected.
 int is_online() 
 { 
    return !!online;
 }
 
-//! returns true if this peer is completed, as in
+//! Returns true if this peer is completed, as in
 //! has downloaded everything already - and we
-//! shouldn't need to upload to get stuff
+//! shouldn't need to upload to get stuff.
 int is_completed()
 {
    return is_complete;
 }
 
-//! returns true if this peer is available, as in
-//! we can use it to download stuff
+//! Returns true if this peer is available, as in
+//! we can use it to download stuff.
 int is_available()
 {
    return !peer_choking && online==2 && 
       (handover || !sizeof(piece_callback));
 }
 
-//! returns true if this peer is activated, as in
-//! we're downloading from it
+//! Returns true if this peer is activated, as in
+//! we're downloading from it.
 int is_activated()
 {
    return !!sizeof(piece_callback);
 }
 
-//! returns true if this peer is strangled;
+//! Returns true if this peer is strangled;
 //! as in we don't want to upload more, because we're not
-//! getting any back
+//! getting any back.
 int is_strangled()
 {
    return strangled;
 }
 
-//! returns true if this peer is choking, as in
-//! doesn't send more data to us
+//! Returns true if this peer is choking, as in
+//! doesn't send more data to us.
 int is_choked()
 {
    return peer_choking;
 }
 
-//! returns as multiset what this peer is downloading
+//! Returns as multiset what this peer is downloading.
 multiset(int) downloading_pieces()
 {
    return (multiset)(array(int))indices(piece_callback);
 }
 
-//! connect to the peer; this is done async. 
-//! status/mode will change from "connecting" to
-//! "dead" or to "connected" depending on result.
+//! Connect to the peer; this is done async.
+//! status/mode will change from @expr{"connecting"@} to
+//! @expr{"dead"@} or to @expr{"connected"@} depending on result.
 //! Will throw error if already online.
 //!
 //! Upon connect, protocol will be initiated in choked mode.
-//! When the protocol is up, status will change to "online"
-//! (or "failed" if the handshake failed).
+//! When the protocol is up, status will change to @expr{"online"@}
+//! (or @expr{"failed"@} if the handshake failed).
 //!
 void connect()
 {
    if (online)
-      error("can't connect a peer that is already online\n");
+      error("Can't connect a peer that is already online.\n");
 
    _status("connecting");
 
@@ -223,9 +223,9 @@ void connection_timeout()
    fd=Stdio.File();
 }
 
-//! disconnect a peer
-//! does nothing if we aren't online
-//! status/mode will change to "disconnected",1 if we were online
+//! Disconnect a peer.
+//! Does nothing if we aren't online.
+//! status/mode will change to @expr{"disconnected"@},1 if we were online.
 void disconnect()
 {
    if (online)
@@ -234,11 +234,11 @@ void disconnect()
       fd=Stdio.File();
       online=0;
 #ifdef BT_PEER_DEBUG
-      werror("%O call disconnected %O\n",this_object(),piece_callback);
+      werror("%O call disconnected %O\n",this,piece_callback);
 #endif
-      Array.uniq(values(piece_callback))(-1,0,"disconnected",this_object()); 
+      Array.uniq(values(piece_callback))(-1,0,"disconnected",this);
       piece_callback=([]);
-      parent->peer_lost(this_object());
+      parent->peer_lost(this);
       remove_call_out(keepalive); 
       remove_call_out(bandwidth_o_meter); 
       _status("disconnected","we");
@@ -418,7 +418,7 @@ static private void peer_read(mixed dummy,string s)
 	       bytes_out=parent->peers[id]->bytes_out;
 	    }
 
-	    parent->peers[id]=this_object();
+	    parent->peers[id]=this;
 	 }
 	 else if (readbuf[48..67]!=id)
 	 {
@@ -447,9 +447,9 @@ static private void peer_read(mixed dummy,string s)
 	    send_message(MSG_UNCHOKE,"");
 
 
-	 if (-1==search(parent->peers_ordered,this_object()))
-	    parent->peers_ordered+=({this_object()});
-	 parent->peers_unused-=({this_object()});
+	 if (-1==search(parent->peers_ordered,this))
+	    parent->peers_ordered+=({this});
+	 parent->peers_unused-=({this});
 
 
 	 online=2;
@@ -507,11 +507,11 @@ void got_message_from_peer(string msg)
 	    peer_choking_since=time(1);
 
 #ifdef BT_PEER_DEBUG
- 	    werror("%O choke %O\n",this_object(),piece_callback,this_object());
+ 	    werror("%O choke %O\n",this,piece_callback,this);
 #endif
 
 	    Array.uniq(values(piece_callback))
-	       (-1,0,"choked",this_object()); // choked
+	       (-1,0,"choked",this); // choked
 	 }
 	 _status("online","choked");
 	 break;
@@ -520,12 +520,12 @@ void got_message_from_peer(string msg)
 	 {
 	    peer_choking=0;
 #ifdef BT_PEER_DEBUG
- 	    werror("%O unchoke %O\n",this_object(),piece_callback);
+ 	    werror("%O unchoke %O\n",this,piece_callback);
 #endif
 	    Array.uniq(values(piece_callback))
-	       (-1,0,"unchoked",this_object()); // choked
+	       (-1,0,"unchoked",this); // choked
 
-	    parent->peer_unchoked(this_object());
+	    parent->peer_unchoked(this);
 	 }
 	 _status("online","unchoked");
 	 break;
@@ -554,13 +554,13 @@ void got_message_from_peer(string msg)
 	 if (is_complete && !sizeof(parent->file_want))
 	    disconnect(); // we're complete, they're complete
 	 else if (!parent->file_available[n])
-	    parent->peer_have(this_object(),n);
+	    parent->peer_have(this,n);
 
 	 break;
       case MSG_BITFIELD:
 	 bitfield=msg[1..];
 	 is_complete=(bitfield==parent->all_pieces_bits);
-	 parent->peer_gained(this_object());
+	 parent->peer_gained(this);
 
 	 if (is_complete && !sizeof(parent->file_want))
 	    disconnect(); // we're complete, they're complete
@@ -598,7 +598,7 @@ void got_message_from_peer(string msg)
 
 void peer_close()
 {
-   parent->peer_lost(this_object());
+   parent->peer_lost(this);
 
    remove_call_out(keepalive); 
    remove_call_out(bandwidth_o_meter); 
@@ -612,10 +612,10 @@ void peer_close()
       {
 	 online=0;
 #ifdef BT_PEER_DEBUG
-	 werror("%O call disconnected %O\n",this_object(),piece_callback);
+	 werror("%O call disconnected %O\n",this,piece_callback);
 #endif
 	 Array.uniq(values(piece_callback))
-	    (-1,0,"disconnected",this_object()); 
+	    (-1,0,"disconnected",this);
 	 piece_callback=([]);
       }
       else
@@ -635,8 +635,8 @@ void peer_close()
 
 	 if (sizeof(parent->file_want)) // reconnect, we want more stuf
 	 {
-	    parent->peers_unused+=({this_object()});
-	    parent->peers_ordered-=({this_object()});
+	    parent->peers_unused+=({this});
+	    parent->peers_ordered-=({this});
 	 }
 
 	 _status("disconnected","peer");
@@ -653,8 +653,8 @@ static private void keepalive()
    transmit("\0\0\0\0"); // keepalive empty message
 }
 
-//! send a have message to tell I now have piece n
-//! ignored if not online
+//! Send a have message to tell I now have piece n.
+//! Ignored if not online.
 void send_have(int n)
 {
    if (online<2) return;
@@ -665,7 +665,7 @@ void send_have(int n)
 mapping(string:function(int,int,string,object:void|mixed)) piece_callback=([]);
 int handover=0; // more downloads is ok
 
-//! called to request a chunk from this peer
+//! Called to request a chunk from this peer.
 void request(int piece,int offset,int bytes,
 	     function(int,int,string,object:void|mixed) callback)
 {
@@ -673,10 +673,10 @@ void request(int piece,int offset,int bytes,
       show_interest();
 
 //    foreach (map(values(piece_callback),function_object)->peer;;.Peer p)
-//       if (p!=this_object())
+//       if (p!=this)
 //       {
 // 	 werror("%O: funny thing in queue: %O\n",
-// 		this_object(),piece_callback);
+// 		this,piece_callback);
 // 	 exit(1);
 //       }
 
@@ -694,9 +694,9 @@ void got_piece_from_peer(int piece,int offset,string data)
    {
       m_delete(piece_callback,s);
 #ifdef BT_PEER_DEBUG
-      werror("%O got piece %O\n",this_object(),piece);
+      werror("%O got piece %O\n",this,piece);
 #endif
-      f(piece,offset,data,this_object());
+      f(piece,offset,data,this);
    }
    else if (cancelled) 
       cancelled--;
@@ -727,7 +727,7 @@ void cancel_requests(int real)
    piece_callback=([]);
 
 #ifdef BT_PEER_DEBUG
-   werror("%O cancel_requests\n",this_object());
+   werror("%O cancel_requests\n",this);
 #endif
 }
 
@@ -851,10 +851,10 @@ void show_uninterest()
 // ----------------------------------------------------------------
 // stubs
    
-//! called whenever there is a status change for this peer:
-//! "created": always called when the object is created
+//! Called whenever there is a status change for this peer.
+//! Always called with @expr{"created"@} when the object is created.
 //!
-//! does not need to call inherited function
+//! Does not need to call inherited function.
 void status(string type,void|int|string data)
 {
 }
