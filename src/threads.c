@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.36 1997/09/08 19:36:53 hubbe Exp $");
+RCSID("$Id: threads.c,v 1.37 1997/09/08 19:58:42 hubbe Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -187,7 +187,7 @@ void f_mutex_lock(INT32 args)
    * might use threads.
    */
   o=clone_object(mutex_key,0);
-  if(!args && IS_ZERO(sp-args))
+  if(!args || IS_ZERO(sp-args))
   {
     if(m->key && OB2KEY(m->key)->owner == thread_id)
     {
