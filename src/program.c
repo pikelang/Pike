@@ -37,6 +37,30 @@
 #undef FILE_STATE
 #undef PROGRAM_STATE
 
+
+char *lfun_names[] = {
+  "__INIT",
+  "create",
+  "destroy",
+  "`+",
+  "`-",
+  "`&",
+  "`|",
+  "`^",
+  "`<<",
+  "`>>",
+  "`*",
+  "`/",
+  "`%",
+  "`~",
+  "`==",
+  "`<",
+  "`>",
+  "__hash",
+  "cast",
+  "`!",
+};
+
 struct program *first_program = 0;
 
 struct program fake_program;
@@ -457,11 +481,15 @@ struct program *end_program()
       first_program->prev=prog;
     first_program=prog;
 
+    for(i=0;i<NUM_LFUNS;i++)
+      prog->lfuns[i]=find_identifier(lfun_names[i],prog);
+
 #ifdef DEBUG
     check_program(prog);
     if(l_flag)
       dump_program_desc(prog);
 #endif
+
   }
 
   /* Clean up */
@@ -661,12 +689,13 @@ void do_inherit(struct program *p,INT32 flags, struct lpc_string *name)
 	my_yyerror("Illegal to redefine 'nomask' function/variable \"%s\"",name->str);
     }
 
+    if(fun.flags & ID_PRIVATE) fun.flags|=ID_HIDDEN;
+
     if (fun.flags & ID_PUBLIC)
       fun.flags |= flags & ~ID_PRIVATE;
     else
       fun.flags |= flags;
 
-    if(fun.flags & ID_PRIVATE) fun.flags|=ID_HIDDEN;
     fun.flags |= ID_INHERITED;
     add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&fun, sizeof fun);
   }

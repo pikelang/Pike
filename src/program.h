@@ -3,13 +3,38 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#ifndef EXEC_H
-#define EXEC_H
+#ifndef PROGRAM_H
+#define PROGRAM_H
 
 #include <stdarg.h>
 #include "config.h"
 #include "machine.h"
 #include "types.h"
+
+#define LFUN___INIT 0
+#define LFUN_CREATE 1
+#define LFUN_DESTROY 2
+#define LFUN_ADD 3
+#define LFUN_SUBTRACT 4
+#define LFUN_AND 5
+#define LFUN_OR 6
+#define LFUN_XOR 7
+#define LFUN_LSH 8
+#define LFUN_RSH 9
+#define LFUN_MULTIPLY 10
+#define LFUN_DIVIDE 11
+#define LFUN_MOD 12
+#define LFUN_COMPL 13
+#define LFUN_EQ 14
+#define LFUN_LT 15
+#define LFUN_GT 16
+#define LFUN___HASH 17
+#define LFUN_CAST 18
+#define LFUN_NOT 19
+
+#define NUM_LFUNS 20
+
+extern char *lfun_names[];
 
 struct svalue;
 struct module;
@@ -30,12 +55,11 @@ struct object;
 
 /*
  * Max program dimensions:
- * 2^16 functions
+ * 2^16 functions + global variables
  * 2^16 inherits
  * 2^16 arguments to lpc functions
- * 2^32 to efuns and C functions
+ * 2^32 efuns
  * 2^8 local variables (and arguments)
- * 2^16 global variables
  */
 
 union idptr
@@ -122,6 +146,7 @@ struct program
   unsigned INT16 num_identifier_references;
   unsigned INT16 num_identifier_indexes;
   unsigned INT16 num_inherits;
+  INT16 lfuns[NUM_LFUNS];
 };
 
 #define INHERIT_FROM_PTR(P,X) ((P)->inherits + (X)->inherit_offset)
