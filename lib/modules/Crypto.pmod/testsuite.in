@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.25 2004/02/02 23:03:08 nilsson Exp $
+dnl $Id: testsuite.in,v 1.26 2004/02/04 13:10:42 nilsson Exp $
 
 dnl Nettle.Yarrow
 
@@ -935,3 +935,25 @@ test_eq(
        "D"*16 )->
        crypt_block(String.hex2string("fc222f3584addf1a5f974e104a3e2231")),
    "F"*16 )
+// Rijndael CBC decrypt
+test_any([[
+#pike 7.4
+  object aes_cbc = Crypto.cbc(Crypto.aes());
+  aes_cbc->set_decrypt_key(String.hex2string("0"*32));
+  aes_cbc->set_iv(String.hex2string("0"*32));
+  string ct = String.hex2string("0"*32);
+  for(int i = 0; i < 10000; i++) {
+    ct = aes_cbc->crypt_block(ct);
+  }
+  return ct;
+]], [[ String.hex2string("FACA37E0B0C85373DF706E73F7C9AF86") ]])
+test_any([[
+  object aes_cbc = Crypto.CBC(Crypto.AES);
+  aes_cbc->set_decrypt_key(String.hex2string("0"*32));
+  aes_cbc->set_iv(String.hex2string("0"*32));
+  string ct = String.hex2string("0"*32);
+  for(int i = 0; i < 10000; i++) {
+    ct = aes_cbc->crypt(ct);
+  }
+  return ct;
+]], [[ String.hex2string("FACA37E0B0C85373DF706E73F7C9AF86") ]])
