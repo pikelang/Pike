@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-//  $Id: Request.pmod,v 1.10 2003/04/01 17:45:35 nilsson Exp $
+//  $Id: Request.pmod,v 1.11 2005/03/18 11:00:37 grubba Exp $
 //!	This module contains nice abstraction for calls into the
 //!	server. They are named "@tt{@i{call@}@}",
 //!	"@tt{async_@i{call@}@}" or 
@@ -304,7 +304,7 @@ class Set_priv_bits
    {
       return ({7,
                person,
-               @B(@rows(privileges,privbitsnames))});
+               B(@rows(privileges,privbitsnames))});
    }
 
    void reply(array what)
@@ -377,7 +377,7 @@ class Create_conf_old
    {
       return ({10,
                H(name),
-               @B(@rows(type,extendedconftypenames))});
+               B(@rows(type,extendedconftypenames))});
    }
 
    int(0..65535) reply(array what)
@@ -630,7 +630,7 @@ class Set_conf_type
    {
       return ({21,
                conf_no,
-               @B(@rows(type,extendedconftypenames))});
+               B(@rows(type,extendedconftypenames))});
    }
 
    void reply(array what)
@@ -2099,7 +2099,7 @@ class Create_conf
    {
       return ({88,
                H(name),
-               @B(@rows(type,extendedconftypenames)),
+               B(@rows(type,extendedconftypenames)),
                @A(aux_items->encode())});
    }
 
@@ -2399,7 +2399,7 @@ class Add_member
                pers_no,
                priority,
                where,
-               @B(@rows(type,membershiptypenames))});
+               B(@rows(type,membershiptypenames))});
    }
 
    void reply(array what)
@@ -2453,7 +2453,7 @@ class Set_membership_type
       return ({102,
                pers,
                conf,
-               @B(@rows(type,membershiptypenames))});
+               B(@rows(type,membershiptypenames))});
    }
 
    void reply(array what)
