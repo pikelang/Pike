@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.41 2002/05/11 00:26:33 nilsson Exp $
+ * $Id: jvm.c,v 1.42 2002/05/11 00:40:00 nilsson Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -10,12 +10,14 @@
  * Includes
  */
 
+#define NO_PIKE_SHORTHAND
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.41 2002/05/11 00:26:33 nilsson Exp $");
+RCSID("$Id: jvm.c,v 1.42 2002/05/11 00:40:00 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
