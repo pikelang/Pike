@@ -1,3 +1,5 @@
+/* $Id: math_matrix.c,v 1.9 1999/10/26 16:10:43 mirar Exp $ */
+
 #include "global.h"
 #include "config.h"
 
