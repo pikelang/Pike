@@ -241,7 +241,7 @@ int do_parse()
 	case "help":
 	  print_version();
 	  write("Hilfe is a tool to evaluate Pike interactively and incrementally.\n"
-		"Any Pike function, expression or variable declaration can be intered\n"
+		"Any Pike function, expression or variable declaration can be entered\n"
 		"at the command line. There are also a few extra commands:\n"
 		" help       - show this text\n"
 		" quit       - exit this program\n"
