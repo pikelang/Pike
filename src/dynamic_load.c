@@ -57,8 +57,11 @@ void f_load_module(INT32 args)
   module=dlopen(module_name, RTLD_NOW);
   if(!module)
   {
+    char *err =  dlerror();
+    if (err)
+      err = "";
     error("load_module(\"%s\") failed: %s\n",
-	  sp[-args].u.string->str, dlerror());
+	  sp[-args].u.string->str, err);
   }
 #elif defined(USE_DLD)
   dld_create_reference("pike_module_init");
