@@ -9,7 +9,7 @@ int test_constants() {
 			 allocated);
   if(consts>allocated) {
     write("bultin_constants mapping in constants.c needs to be at least %d\n"
-	  "entries big.\n", allocated);
+	  "entries big.\n", consts);
     return 0;
   }
   if(allocated-consts>10)
