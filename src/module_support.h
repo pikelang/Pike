@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: module_support.h,v 1.12 2002/08/13 17:07:28 grubba Exp $
+ * $Id: module_support.h,v 1.13 2002/09/12 13:15:49 marcus Exp $
  */
 #ifndef MODULE_SUPPORT_H
 #include <stdarg.h>
@@ -37,18 +37,19 @@ PMOD_EXPORT int check_args(int args, ...);
 PMOD_EXPORT void check_all_args(const char *fnname, int args, ... );
 int va_get_args(struct svalue *s,
 		INT32 num_args,
-		char *fmt,
+		const char *fmt,
 		va_list ap);
 PMOD_EXPORT int get_args(struct svalue *s,
 	     INT32 num_args,
-	     char *fmt, ...);
-PMOD_EXPORT void get_all_args(char *fname, INT32 args, char *format,  ... );
-PMOD_EXPORT void pike_module_export_symbol(char *str,
+	     const char *fmt, ...);
+PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
+			      const char *format,  ... );
+PMOD_EXPORT void pike_module_export_symbol(const char *str,
 					   int len,
 					   void *ptr);
-PMOD_EXPORT void *pike_module_import_symbol(char *str,
+PMOD_EXPORT void *pike_module_import_symbol(const char *str,
 					    int len,
-					    char *module,
+					    const char *module,
 					    int module_len);
 void cleanup_module_support (void);
 /* Prototypes end here */

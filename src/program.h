@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.165 2002/09/11 16:03:32 mast Exp $
+ * $Id: program.h,v 1.166 2002/09/12 13:15:50 marcus Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -465,7 +465,7 @@ void low_start_new_program(struct program *p,
 			   struct pike_string *name,
 			   int flags,
 			   int *idp);
-PMOD_EXPORT void debug_start_new_program(int line, char *file);
+PMOD_EXPORT void debug_start_new_program(int line, const char *file);
 void dump_program_desc(struct program *p);
 int sizeof_variable(int run_time_type);
 void dump_program_tables (struct program *p, int indent);
@@ -510,51 +510,51 @@ int low_define_variable(struct pike_string *name,
 			INT32 flags,
 			size_t offset,
 			INT32 run_time_type);
-PMOD_EXPORT int map_variable(char *name,
-		 char *type,
+PMOD_EXPORT int map_variable(const char *name,
+		 const char *type,
 		 INT32 flags,
 		 size_t offset,
 		 INT32 run_time_type);
-PMOD_EXPORT int quick_map_variable(char *name,
+PMOD_EXPORT int quick_map_variable(const char *name,
 		       int name_length,
 		       size_t offset,
-		       char *type,
+		       const char *type,
 		       int type_length,
 		       INT32 run_time_type,
 		       INT32 flags);
 int define_variable(struct pike_string *name,
 		    struct pike_type *type,
 		    INT32 flags);
-PMOD_EXPORT int simple_add_variable(char *name,
-			char *type,
+PMOD_EXPORT int simple_add_variable(const char *name,
+			const char *type,
 			INT32 flags);
 PMOD_EXPORT int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags);
-PMOD_EXPORT int simple_add_constant(char *name,
+PMOD_EXPORT int simple_add_constant(const char *name,
 			struct svalue *c,
 			INT32 flags);
-PMOD_EXPORT int add_integer_constant(char *name,
+PMOD_EXPORT int add_integer_constant(const char *name,
 			 INT32 i,
 			 INT32 flags);
-PMOD_EXPORT int quick_add_integer_constant(char *name,
+PMOD_EXPORT int quick_add_integer_constant(const char *name,
 			       int name_length,
 			       INT32 i,
 			       INT32 flags);
-PMOD_EXPORT int add_float_constant(char *name,
+PMOD_EXPORT int add_float_constant(const char *name,
 			 double f,
 			 INT32 flags);
-PMOD_EXPORT int add_string_constant(char *name,
-			char *str,
+PMOD_EXPORT int add_string_constant(const char *name,
+			const char *str,
 			INT32 flags);
-PMOD_EXPORT int add_program_constant(char *name,
+PMOD_EXPORT int add_program_constant(const char *name,
 			 struct program *p,
 			 INT32 flags);
-PMOD_EXPORT int add_object_constant(char *name,
+PMOD_EXPORT int add_object_constant(const char *name,
 			struct object *o,
 			INT32 flags);
-PMOD_EXPORT int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
-PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags);
+PMOD_EXPORT int add_function_constant(const char *name, void (*cfun)(INT32), const char * type, INT16 flags);
+PMOD_EXPORT int debug_end_class(const char *name, ptrdiff_t namelen, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_type *type,
 		      unsigned INT16 flags,
@@ -592,7 +592,7 @@ PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));
 void yy_describe_exception(struct svalue *thrown);
 struct supporter_marker;
-void verify_supporters();
+void verify_supporters(void);
 void init_supporter(struct Supporter *s,
 		    supporter_callback *fun,
 		    void *data);
@@ -606,13 +606,13 @@ struct program *compile(struct pike_string *aprog,
 			int amajor, int aminor,
 			struct program *atarget,
 			struct object *aplaceholder);
-PMOD_EXPORT int pike_add_function2(char *name, void (*cfun)(INT32),
-				   char *type, unsigned INT8 flags,
+PMOD_EXPORT int pike_add_function2(const char *name, void (*cfun)(INT32),
+				   const char *type, unsigned INT8 flags,
 				   unsigned INT16 opt_flags);
-PMOD_EXPORT int quick_add_function(char *name,
+PMOD_EXPORT int quick_add_function(const char *name,
 				   int name_length,
 				   void (*cfun)(INT32),
-				   char *type,
+				   const char *type,
 				   int type_length,
 				   unsigned INT8 flags,
 				   unsigned INT16 opt_flags);

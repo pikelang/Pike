@@ -22,7 +22,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.52 2002/08/15 14:49:24 marcus Exp $");
+RCSID("$Id: port.c,v 1.53 2002/09/12 13:15:49 marcus Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -131,14 +131,14 @@ PMOD_EXPORT unsigned long my_rand(void)
 			islower(x) ? (x) + 10 - 'a' : (x) + 10 - 'A')
 #define MBASE	('z' - 'a' + 1 + 10)
 
-long STRTOL(char *str,char **ptr,int base)
+long STRTOL(const char *str,char **ptr,int base)
 {
   register long val;
   register int c;
   int xx, neg = 0;
 
   if (ptr != (char **)0)
-    *ptr = str;			/* in case no number is formed */
+    *ptr = (char *)str;		/* in case no number is formed */
   if (base < 0 || base > MBASE)
     return (0);			/* base is invalid -- should be a fatal error */
   if (!isalnum(c = *str)) {
@@ -165,14 +165,14 @@ long STRTOL(char *str,char **ptr,int base)
    */
   if (!isalnum(c) || (xx = DIGIT(c)) >= base)
     return (0);			/* no number formed */
-  if (base == 16 && c == '0' && isxdigit(((unsigned char *)str)[2]) &&
+  if (base == 16 && c == '0' && isxdigit(((const unsigned char *)str)[2]) &&
       (str[1] == 'x' || str[1] == 'X'))
     c = *(str += 2);		/* skip over leading "0x" or "0X" */
   for (val = -DIGIT(c); isalnum(c = *++str) && (xx = DIGIT(c)) < base; )
     /* accumulate neg avoids surprises near MAXLONG */
     val = base * val - xx;
   if (ptr != (char **)0)
-    *ptr = str;
+    *ptr = (char *)str;
   return (neg ? val : -val);
 }
 
@@ -410,9 +410,9 @@ PMOD_EXPORT char *STRTOK(char *s1,char *s2)
 
 /* Convert NPTR to a double.  If ENDPTR is not NULL, a pointer to the
    character after the last one used in the number is put in *ENDPTR.  */
-PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
+PMOD_EXPORT double STRTOD(const char * nptr, char **endptr)
 {
-  register unsigned char *s;
+  register const unsigned char *s;
   short int sign;
 
   /* The number so far.  */
@@ -430,7 +430,7 @@ PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
     goto noconv;
   }
 
-  s = (unsigned char *)nptr;
+  s = (const unsigned char *)nptr;
 
   /* Eat whitespace.  */
   while (ISSPACE(*s)) ++s;
@@ -488,7 +488,7 @@ PMOD_EXPORT double STRTOD(char * nptr, char **endptr)
 
       errno = 0;
       ++s;
-      exp = STRTOL((char *)s, &end, 10);
+      exp = STRTOL((const char *)s, &end, 10);
       if (errno == ERANGE)
       {
 	/* The exponent overflowed a `long int'.  It is probably a safe

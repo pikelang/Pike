@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.120 2002/08/15 14:49:24 marcus Exp $");
+RCSID("$Id: pike_memory.c,v 1.121 2002/09/12 13:15:49 marcus Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -2255,7 +2255,7 @@ struct dmalloc_string
 
 static struct dmalloc_string *dstrhash[DSTRHSIZE];
 
-static LOCATION low_dynamic_location(char type, char *file, int line)
+static LOCATION low_dynamic_location(char type, const char *file, int line)
 {
   struct dmalloc_string **prev, *str;
   int len=strlen(file);
@@ -2293,13 +2293,13 @@ static LOCATION low_dynamic_location(char type, char *file, int line)
   return str->str;
 }
 
-LOCATION dynamic_location(char *file, int line)
+LOCATION dynamic_location(const char *file, int line)
 {
   return low_dynamic_location('D',file,line);
 }
 
 
-void * debug_malloc_name(void *p,char *file, int line)
+void * debug_malloc_name(void *p,const char *file, int line)
 {
   if(p)
   {

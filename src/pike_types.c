@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.194 2002/08/15 14:49:24 marcus Exp $");
+RCSID("$Id: pike_types.c,v 1.195 2002/09/12 13:15:49 marcus Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -168,7 +168,7 @@ static int low_pike_types_le(struct pike_type *a, struct pike_type *b,
 static int low_check_indexing(struct pike_type *type,
 			      struct pike_type *index_type,
 			      node *n);
-static void internal_parse_type(char **s);
+static void internal_parse_type(const char **s);
 
 /*
  * New and improved type representation system.
@@ -834,11 +834,11 @@ struct pike_type *debug_pop_unfinished_type(void)
 
 /******/
 
-static void internal_parse_typeA(char **_s)
+static void internal_parse_typeA(const char **_s)
 {
   char buf[80];
   unsigned int len;
-  unsigned char **s = (unsigned char **)_s;
+  const unsigned char **s = (const unsigned char **)_s;
   
   while(ISSPACE(**s)) ++*s;
 
@@ -866,7 +866,7 @@ static void internal_parse_typeA(char **_s)
 	  INT32 min,max;
 	  ++*s;
 	  while(ISSPACE(**s)) ++*s;
-	  min=STRTOL((char *)*s,(char **)s,0);
+	  min=STRTOL((const char *)*s,(char **)s,0);
 	  while(ISSPACE(**s)) ++*s;
 	  if(s[0][0]=='.' && s[0][1]=='.')
 	    s[0]+=2;
@@ -874,7 +874,7 @@ static void internal_parse_typeA(char **_s)
 	    Pike_error("Missing .. in integer type.\n");
 	  
 	  while(ISSPACE(**s)) ++*s;
-	  max=STRTOL((char *)*s,(char **)s,0);
+	  max=STRTOL((const char *)*s,(char **)s,0);
 	  while(ISSPACE(**s)) ++*s;
 
 	  if(**s != ')') Pike_error("Missing ')' in integer range.\n");
@@ -1129,9 +1129,9 @@ static void internal_parse_typeA(char **_s)
 }
 
 
-static void internal_parse_typeB(char **s)
+static void internal_parse_typeB(const char **s)
 {
-  while(ISSPACE(**((unsigned char **)s))) ++*s;
+  while(ISSPACE(**((const unsigned char **)s))) ++*s;
   switch(**s)
   {
   case '!':
@@ -1143,7 +1143,7 @@ static void internal_parse_typeB(char **s)
   case '(':
     ++*s;
     internal_parse_type(s);
-    while(ISSPACE(**((unsigned char **)s))) ++*s;
+    while(ISSPACE(**((const unsigned char **)s))) ++*s;
     if(**s != ')') Pike_error("Expecting ')'.\n");
     ++*s;
     break;
@@ -1154,21 +1154,21 @@ static void internal_parse_typeB(char **s)
   }
 }
 
-static void internal_parse_typeCC(char **s)
+static void internal_parse_typeCC(const char **s)
 {
   internal_parse_typeB(s);
 
-  while(ISSPACE(**((unsigned char **)s))) ++*s;
+  while(ISSPACE(**((const unsigned char **)s))) ++*s;
   
   while(**s == '*')
   {
     ++*s;
-    while(ISSPACE(**((unsigned char **)s))) ++*s;
+    while(ISSPACE(**((const unsigned char **)s))) ++*s;
     push_type(T_ARRAY);
   }
 }
 
-static void internal_parse_typeC(char **s)
+static void internal_parse_typeC(const char **s)
 {
   internal_parse_typeCC(s);
 
@@ -1180,7 +1180,7 @@ static void internal_parse_typeC(char **s)
   }
 }
 
-static void internal_parse_type(char **s)
+static void internal_parse_type(const char **s)
 {
   internal_parse_typeC(s);
 
@@ -1197,7 +1197,7 @@ static void internal_parse_type(char **s)
  * It takes a string on the exact same format as Pike and returns a type
  * struct.
  */
-struct pike_type *parse_type(char *s)
+struct pike_type *parse_type(const char *s)
 {
   struct pike_type *ret;
 #ifdef PIKE_DEBUG

@@ -17,7 +17,7 @@
 #include "security.h"
 #include "block_alloc.h"
 
-RCSID("$Id: constants.c,v 1.38 2002/08/15 14:49:20 marcus Exp $");
+RCSID("$Id: constants.c,v 1.39 2002/09/12 13:15:49 marcus Exp $");
 
 struct mapping *builtin_constants = 0;
 
@@ -42,7 +42,7 @@ void low_add_efun(struct pike_string *name, struct svalue *fun)
   }
 }
 
-void low_add_constant(char *name, struct svalue *fun)
+void low_add_constant(const char *name, struct svalue *fun)
 {
   struct pike_string *p;
   p=make_shared_string(name);
@@ -50,7 +50,7 @@ void low_add_constant(char *name, struct svalue *fun)
   free_string(p);
 }
 
-PMOD_EXPORT void add_global_program(char *name, struct program *p)
+PMOD_EXPORT void add_global_program(const char *name, struct program *p)
 {
   struct svalue s;
   s.type=T_PROGRAM;
@@ -101,8 +101,8 @@ PMOD_EXPORT struct callable *low_make_callable(c_fun fun,
 }
 
 PMOD_EXPORT struct callable *make_callable(c_fun fun,
-			       char *name,
-			       char *type,
+			       const char *name,
+			       const char *type,
 			       INT16 flags,
 			       optimize_fun optimize,
 			       docode_fun docode)
@@ -111,9 +111,9 @@ PMOD_EXPORT struct callable *make_callable(c_fun fun,
 			   flags, optimize, docode);
 }
 
-PMOD_EXPORT struct callable *add_efun2(char *name,
+PMOD_EXPORT struct callable *add_efun2(const char *name,
 			    c_fun fun,
-			    char *type,
+			    const char *type,
 			    INT16 flags,
 			    optimize_fun optimize,
 			    docode_fun docode)
@@ -132,14 +132,14 @@ PMOD_EXPORT struct callable *add_efun2(char *name,
   return ret;
 }
 
-PMOD_EXPORT struct callable *add_efun(char *name, c_fun fun, char *type, INT16 flags)
+PMOD_EXPORT struct callable *add_efun(const char *name, c_fun fun, const char *type, INT16 flags)
 {
   return add_efun2(name,fun,type,flags,0,0);
 }
 
-PMOD_EXPORT struct callable *quick_add_efun(char *name, ptrdiff_t name_length,
+PMOD_EXPORT struct callable *quick_add_efun(const char *name, ptrdiff_t name_length,
 					    c_fun fun,
-					    char *type, ptrdiff_t type_length,
+					    const char *type, ptrdiff_t type_length,
 					    INT16 flags,
 					    optimize_fun optimize,
 					    docode_fun docode)

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.80 2002/09/11 14:03:50 marcus Exp $
+ * $Id: pike_types.h,v 1.81 2002/09/12 13:15:49 marcus Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -239,7 +239,7 @@ void debug_push_finished_type_backwards(struct pike_type *type);
 struct pike_type *debug_pop_unfinished_type(void);
 struct pike_type *debug_pop_type(void);
 struct pike_type *debug_compiler_pop_type(void);
-struct pike_type *parse_type(char *s);
+struct pike_type *parse_type(const char *s);
 void stupid_describe_type(char *a, ptrdiff_t len);
 void simple_describe_type(struct pike_type *s);
 void my_describe_type(struct pike_type *type);

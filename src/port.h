@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: port.h,v 1.43 2002/05/31 22:41:26 nilsson Exp $
+ * $Id: port.h,v 1.44 2002/09/12 13:15:49 marcus Exp $
  */
 #ifndef PORT_H
 #define PORT_H
@@ -60,8 +60,8 @@ time_t TIME(time_t *);
 #define RINT rint
 #endif
 
-long STRTOL(char *str,char **ptr,int base);
-PMOD_EXPORT double STRTOD(char * nptr, char **endptr);
+long STRTOL(const char *str,char **ptr,int base);
+PMOD_EXPORT double STRTOD(const char * nptr, char **endptr);
 
 #ifndef HAVE_STRCSPN
 int STRCSPN(const char *s,const char * set);
@@ -181,15 +181,15 @@ PMOD_EXPORT int VSPRINTF(char *buf,char *fmt,va_list args);
 
 
 #ifdef EXTRACT_UCHAR_BY_CAST
-#  define EXTRACT_UCHAR(p) (*(unsigned char *)(p))
+#  define EXTRACT_UCHAR(p) (*(const unsigned char *)(p))
 #else
 #  define EXTRACT_UCHAR(p) (0xff & (int)*(p))
 #endif
 
 #ifdef EXTRACT_CHAR_BY_CAST
-#  define EXTRACT_CHAR(p) (*(signed char *)(p))
+#  define EXTRACT_CHAR(p) (*(const signed char *)(p))
 #else
-static INLINE int EXTRACT_CHAR(char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
+static INLINE int EXTRACT_CHAR(const char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
 #endif
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
