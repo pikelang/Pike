@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.27 2003/05/15 15:24:06 marcus Exp $
+|| $Id: file_functions.h,v 1.28 2003/09/30 02:06:17 nilsson Exp $
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
@@ -75,7 +75,7 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
    FILE_FUNC("openpt",file_openpt,"function(string:int)")
 #endif
 
-#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD)
+#if defined(HAVE_GRANTPT) || defined(USE_PT_CHMOD) || defined(USE_CHGPT)
    FILE_FUNC("grantpt",file_grantpt,"function(void:string)")
 #endif
 
