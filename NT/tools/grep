@@ -1,0 +1,11 @@
+#!/usr/local/bin/pike
+
+inherit "lib.pike";
+
+int main(int argc, string *argv)
+{
+  if(argc>2 && sscanf(argv[-1],"/usr/%s"))
+    exit(1);
+
+  exece(find_next_in_path(argv[0],"grep"),argv[1..]);
+}

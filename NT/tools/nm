@@ -1,0 +1,22 @@
+#!/usr/local/bin/pike
+
+inherit "lib.pike";
+
+int main(int argc, string *argv)
+{
+  string ext=reverse(argv[-1]);
+  sscanf(ext,"%s.",ext);
+  ext=reverse(ext);
+  switch(ext)
+  {
+    case "a":
+    case "lib":
+    case "dll":
+      argv[0]="wlib";
+      exit(do_cmd( Array.map(argv,fixpath)));
+
+    default:
+      exece(find_next_in_path(argv[0],"nm"),argv[1..]);
+      exit(69);
+  }
+}
