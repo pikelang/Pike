@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.26 2004/01/30 01:01:15 bill Exp $
+// $Id: context.pike,v 1.27 2004/01/30 10:33:35 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -47,7 +47,7 @@ array(string) get_authorities()
 }
 
 static array(string) authorities = ({});
-array(object) authorities_cache = ({});
+array(Tools.X509.TBSCertificate) authorities_cache = ({});
 
 //! Sets the list of trusted certificate issuers. 
 //!
@@ -73,7 +73,7 @@ array(array(string)) get_trusted_issuers()
 }
 
 static array(array(string)) trusted_issuers = ({});
-array(array(object)) trusted_issuers_cache = ({});
+array(array(Tools.X509.TBSCertificate)) trusted_issuers_cache = ({});
 
 //! Temporary, non-certified, private keys, used with a
 //! server_key_exchange message. The rules are as follows:
