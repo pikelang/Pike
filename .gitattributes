@@ -165,6 +165,7 @@ testfont binary
 /src/install-sh foreign_ident
 /src/interpret.c foreign_ident
 /src/interpret.h foreign_ident
+/src/interpret_functions.h foreign_ident
 /src/language.yacc foreign_ident
 /src/las.c foreign_ident
 /src/las.h foreign_ident

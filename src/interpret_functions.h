@@ -1,3 +1,8 @@
+/*
+ * $Id: interpret_functions.h,v 1.4 2000/04/18 19:24:28 grubba Exp $
+ *
+ * Opcode definitions for the interpreter.
+ */
 
 OPCODE0(F_UNDEFINED,"push UNDEFINED")
   push_int(0);
