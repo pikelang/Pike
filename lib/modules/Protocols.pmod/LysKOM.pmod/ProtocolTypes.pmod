@@ -17,6 +17,8 @@ class LysKOMTime
    int              day_of_year;                   // INT32
    int(0..1)        is_dst;                        // BOOL
 
+  string _sprintf(){ return print(1); }
+
    string print(void|int long)
    {
      string res=sprintf("%d-%02d-%02d %02d:%02d",
@@ -65,6 +67,8 @@ class TextStatOld
    int(0..65535)    no_of_marks;                   // INT16
    array(int)       misc_info;                     // ARRAY Misc-Info
 
+  string _sprintf(){ return "TextStatOld()"; }
+
    void create(string|array ...args)
    {
       creation_time=LysKOMTime(@args[0..8]);       // Time
@@ -109,6 +113,12 @@ class TextNumberPair
             global_number,                         // Text-No
          });
    }
+
+  string _sprintf()
+  {
+    return sprintf("TextNumberPair(%d:%d)",
+		   local_number, global_number);
+  }
 }
 
 class LocalToGlobalBlock
@@ -126,6 +136,8 @@ class LocalToGlobalBlock
       sparse=Array.map(args[2..]/2,               // ARRAY Text-Number-Pair
 		       lambda(array z) { return TextNumberPair(@z); });
   }
+
+  string _sprintf(){ return "LocalToGlobalBlock()"; }
 }
 
 class TextMapping
@@ -153,6 +165,8 @@ class TextMapping
             @error("unimplemented"),               // Local-To-Global-Block
          });
    }
+
+  string _sprintf(){ return "TextMapping()"; }
 }
 
 constant sessionflagsnames = 
@@ -200,6 +214,8 @@ class DynamicSessionInfo
             H(what_am_i_doing),                    // HOLLERITH
          });
    }
+
+  string _sprintf(){ return "DynamicSessionInfo()"; }
 }
 
 class SessionInfo
@@ -236,6 +252,8 @@ class SessionInfo
             @connection_time->encode(),            // Time
          });
    }
+
+  string _sprintf(){ return "SessionInfo()"; }
 }
 
 class WhoInfo
@@ -266,6 +284,8 @@ class WhoInfo
             H(username),                           // HOLLERITH
          });
    }
+
+  string _sprintf(){ return "WhoInfo()"; }
 }
 
 constant personalflagsnames = 
@@ -328,6 +348,8 @@ class AuxItem
             H(data),                               // HOLLERITH
          });
    }
+
+  string _sprintf(){ return sprintf("AuxItem(%d)", tag); }
 }
 
 class TextStat
@@ -370,6 +392,8 @@ class TextStat
                                { return z->encode(); }))),
          });
    }
+
+  string _sprintf(){ return "TextStat()"; }
 }
 
 class InfoOld
@@ -403,6 +427,8 @@ class InfoOld
             motd_of_lyskom,                        // Text-No
          });
    }
+
+  string _sprintf(){ return "InfoOld()"; }
 }
 
 constant membershiptypenames = 
@@ -459,6 +485,8 @@ class Membership
             @B(@rows(type,membershiptypenames)),   // Membership-Type
          });
    }
+
+  string _sprintf(){ return "Membership()"; }
 }
 
 class Member
@@ -486,6 +514,8 @@ class Member
             @B(@rows(type,membershiptypenames)),   // Membership-Type
          });
    }
+
+  string _sprintf(){ return "Member()"; }
 }
 
 class MembershipOld
@@ -517,6 +547,8 @@ class MembershipOld
             @A((array(string))read_texts),         // ARRAY Local-Text-No
          });
    }
+
+  string _sprintf(){ return "MembershipOld()"; }
 }
 
 class Info
@@ -558,6 +590,8 @@ class Info
                                { return z->encode(); }))),
          });
    }
+
+  string _sprintf(){ return "Info()"; }
 }
 
 class StaticSessionInfo
@@ -585,6 +619,8 @@ class StaticSessionInfo
             @connection_time->encode(),            // Time
          });
    }
+
+  string _sprintf(){ return "StaticSessionInfo()"; }
 }
 
 constant extendedconftypenames = 
@@ -621,6 +657,8 @@ class TextList
             @A((array(string))texts),              // ARRAY Text-No
          });
    }
+
+  string _sprintf(){ return "TextList()"; }
 }
 
 class AuxItemInput
@@ -648,6 +686,8 @@ class AuxItemInput
             H(data),                               // HOLLERITH
          });
    }
+
+  string _sprintf(){ return "AuxItemInput()"; }
 }
 
 class WhoInfoIdent
@@ -684,6 +724,8 @@ class WhoInfoIdent
             H(ident_user),                         // HOLLERITH
          });
    }
+
+  string _sprintf(){ return "WhoInfoIdent()"; }
 }
 
 constant conftypenames = 
@@ -720,6 +762,8 @@ class ConfZInfo
             conf_no,                               // Conf-No
          });
    }
+
+  string _sprintf(){ return "ConfZInfo()"; }
 }
 
 class WhoInfoOld
@@ -744,6 +788,9 @@ class WhoInfoOld
             H(what_am_i_doing),                    // HOLLERITH
          });
    }
+
+
+  string _sprintf(){ return "WhoInfoOld()"; }
 }
 
 class Mark
@@ -765,6 +812,8 @@ class Mark
             type,                                  // INT8
          });
    }
+
+  string _sprintf(){ return sprintf("Mark(%d, text %d)", text_no, type); }
 }
 
 class Conference
@@ -836,6 +885,8 @@ class Conference
                                { return z->encode(); }))),
          });
    }
+
+  string _sprintf(){ return sprintf("Conference(%s)", name); }
 }
 
 class ConferenceOld
@@ -893,6 +944,8 @@ class ConferenceOld
             no_of_texts,                           // INT32
          });
    }
+
+  string _sprintf(){ return sprintf("ConferenceOld(%s)", name); }
 }
 
 class SessionInfoIdent
@@ -935,6 +988,8 @@ class SessionInfoIdent
             @connection_time->encode(),            // Time
          });
    }
+
+  string _sprintf(){ return "SessionInfoIdent()"; }
 }
 
 class VersionInfo
@@ -959,6 +1014,13 @@ class VersionInfo
             H(software_version),                   // HOLLERITH
          });
    }
+
+
+  string _sprintf()
+  {
+    return sprintf("VersionInfo(%s version %s; protocol %d)",
+		   server_software, software_version, protocol_version);
+  }
 }
 
 class ConfListArchaic
@@ -986,6 +1048,7 @@ class ConfListArchaic
                                { return B(@rows(z,conftypenames)); }))),
          });
    }
+  string _sprintf(){ return "ConfListArchaic()"; }
 }
 
 constant privbitsnames = 
@@ -1028,6 +1091,8 @@ class UConference
             nice,                                  // Garb-Nice
          });
    }
+
+  string _sprintf(){ return "UConference()"; }
 }
 
 class Person
@@ -1094,6 +1159,6 @@ class Person
             no_of_confs,                           // INT16
          });
    }
+
+  string _sprintf(){ return sprintf("Person(%s)", username); }
 }
-
-

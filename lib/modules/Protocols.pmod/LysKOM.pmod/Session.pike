@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.18 2000/08/03 03:32:42 jhs Exp $
+//  $Id: Session.pike,v 1.19 2000/08/05 05:18:47 jhs Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -126,17 +126,34 @@ void async_new_text_old()
 
 class MiscInfo
 {
-   string _sprintf(){ return "MiscInfo()"; }
+  string _sprintf()
+  {
+    array(string) to = ({});
+    if(sizeof(recpt))
+      to += ({ "To: " + String.implode_nicely(recpt->conf->no) });
+    if(sizeof(ccrecpt))
+      to += ({ "Cc: " + String.implode_nicely(ccrecpt->conf->no) });
+    if(sizeof(bccrecpt))
+      to += ({ "Bcc: " + String.implode_nicely(bccrecpt->conf->no) });
 
-   class Recpt
-   {
-      object conf;
-      int local_no;
-      object received_at;
-      object sent_by;
-      object sent_at;
-      string _sprintf(){ return "Recpt()"; }
-   }
+    return sprintf("MiscInfo(%s)", sizeof(to) ? to * "; "
+					      : "No recipients");
+  }
+
+  class Recpt
+  {
+    object conf;
+    int local_no;
+    object received_at;
+    object sent_by;
+    object sent_at;
+    string _sprintf()
+    {
+      return sprintf("Recpt(conf %d: text %d)",
+		     conf && conf->no, local_no);
+    }
+  }
+
    array(Recpt) recpt=({});
    array(Recpt) ccrecpt=({});
    array(Recpt) bccrecpt=({});
@@ -404,7 +421,11 @@ class AuxItems
 {
   string _sprintf()
   {
-    return "AuxItems()";
+    array desc = ({});
+    foreach((array)tag_to_items, [int tag, mixed item])
+      desc += ({ search(name_to_tag, tag) });
+    return sprintf("AuxItems(%s)", sizeof(desc) ? String.implode_nicely(desc)
+						: "none present");
   }
 
   mapping(string:int) name_to_tag= ([ "content-type": 1,
@@ -471,8 +492,12 @@ class AuxItems
     }
   }
 
-//   mixed `->(string what) { return `[](what); }
+  array(string) _indices()
+  {
+    return ({ "create" }) + indices(name_to_tag);
+  }
 
+  mixed `->(string what) { return `[](what); }
 }
 
 class Text
@@ -581,6 +606,16 @@ class Text
    }
 
    mixed `->(string what) { return `[](what); }
+
+  array(string) _indices()
+  {
+    return ({ "create",	"prefetch_text", "misc",
+	      "no",	"prefetch_stat", "marks",
+	      "error",	"characters",	 "lines",
+	      "text",	"clear_stat",	 "subject",
+	      "author",	"creation_time", "aux_items",
+	      "mark_as_read" });
+  }
 }
 
 
@@ -718,7 +753,7 @@ class Membership
 
   string _sprintf()
   {
-    return sprintf("Membership(%d)", person);
+    return sprintf("Membership(%d)", conf->no);
   }
 
   array(string) _indices()
