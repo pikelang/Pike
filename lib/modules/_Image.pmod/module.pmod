@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: module.pmod,v 1.38 2003/09/17 14:17:39 nilsson Exp $
+// $Id: module.pmod,v 1.39 2003/12/03 10:22:29 nilsson Exp $
 
 static constant fmts = ([
   "image/x-pnm" : "PNM",
@@ -15,6 +15,7 @@ static constant fmts = ([
   "image/x-tim" : "TIM",
   "image/x-xwd" : "XWD",
   "image/x-pcx" : "PCX",
+  "application/x-photoshop" : "PSD",
 ]);
 
 //! @belongs Image
@@ -50,7 +51,7 @@ mapping _decode( string data )
   }
 
   // Use the low-level decode function to get the alpha channel.
-#if constant(Image.GIF) && constant(Image.GIF.RENDER)
+#if constant(Image.GIF.RENDER)
   catch
   {
     array chunks = Image.GIF->_decode( data );
@@ -68,7 +69,7 @@ mapping _decode( string data )
   if(!i) {
     catch {
       // PNM, JPEG, XCF, PNG, (GIF), ILBM, BMP, RAS, PVR,
-      // TIM, XWD, PCX
+      // TIM, XWD, PCX, PSD
       mapping res = Image.ANY._decode( data );
       i = res->image;
       a = res->alpha;
@@ -91,8 +92,7 @@ mapping _decode( string data )
   }
 
   if(!i)
-    foreach( ({ "PSD", "TGA", "XBM", "XPM",
-		"TIFF", "SVG", "NEO",
+    foreach( ({ "TGA", "XBM", "XPM", "TIFF", "SVG", "NEO",
        /* Image formats low on headers below this mark */
                 "DSI", "HRZ", "AVS", "WBF",
        /* "XFace" Always succeds*/
