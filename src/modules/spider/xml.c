@@ -37,6 +37,7 @@ struct xmlinput
   ptrdiff_t pos;
   struct mapping *callbackinfo;
   struct pike_string *to_free;
+  struct pike_string *entity;
 };
 
 BLOCK_ALLOC(xmlinput, 64)
@@ -684,6 +685,14 @@ ISWRAP(isHexChar)
 #define POP() do {							\
   struct xmlinput *i=data->input.next;					\
   IF_XMLDEBUG(fprintf(stderr,"SMEG POP\n"));				\
+  if (data->input.entity) {						\
+    if (data->input.to_free) {						\
+      mapping_string_insert_string(THIS->entities,			\
+				   data->input.entity,			\
+				   data->input.to_free);		\
+    }									\
+    free_string(data->input.entity);					\
+  }									\
   if(data->input.to_free) free_string(data->input.to_free);		\
   if(data->input.callbackinfo) free_mapping(data->input.callbackinfo);	\
   data->input=*i;							\
@@ -1152,7 +1161,9 @@ static int read_smeg_pereference(struct xmldata *data)
   }else{
     struct mapping *callbackinfo;
     struct pike_string *name=0;
-    ONERROR tmp3,tmp4;
+    struct pike_string *full_name=0;
+    int external_entity_value=0;
+    ONERROR tmp3,tmp4,tmp5;
 
     push_constant_text("%");
     SIMPLE_READNAME();
@@ -1161,6 +1172,9 @@ static int read_smeg_pereference(struct xmldata *data)
     SET_ONERROR(tmp3, do_free_string, name);
 
     f_add(2);
+    add_ref(full_name=sp[-1].u.string);
+    SET_ONERROR(tmp5, do_free_string, full_name);
+
     if(PEEK(0)!=';')
       XMLERROR("Missing ';' after parsed entity reference.");
     READ(1);
@@ -1182,6 +1196,7 @@ static int read_smeg_pereference(struct xmldata *data)
     do {
       if(UNSAFE_IS_ZERO(sp-1))
       {
+	external_entity_value = 1;
 	pop_stack();
 	push_constant_text("%");
 	ref_push_string(name);
@@ -1202,19 +1217,28 @@ static int read_smeg_pereference(struct xmldata *data)
 	XMLERROR("XML->__entities value is not a string!");
       }else{
 	struct pike_string *s=sp[-1].u.string;
-	struct xmlinput *i=alloc_xmlinput();
 	IF_XMLDEBUG(fprintf(stderr, "ptr=%p len=%d pos=%d to_free=%p\n",
 			    data->input.datap.ptr, data->input.len,
 			    data->input.pos, data->input.to_free));
 
-	*i=data->input;
-	data->input.next=i;
-	data->input.pos=0;
-	data->input.datap=MKPCHARP_STR(s);
-	data->input.len=(s)->len;
-	data->input.callbackinfo=callbackinfo;
+	/* PUSH(s) */
+	{
+	  struct xmlinput *i=alloc_xmlinput();
+	  *i=data->input;
+	  data->input.next=i;
+	  data->input.pos=0;
+	  data->input.datap=MKPCHARP_STR(s);
+	  data->input.len=(s)->len;
+	  data->input.callbackinfo=callbackinfo;
+	  copy_shared_string(data->input.to_free,s);
+	  if (external_entity_value || !full_name) {
+	    data->input.entity = 0;
+	  } else {
+	    copy_shared_string(data->input.entity, full_name);
+	  }
+	}
+	CALL_AND_UNSET_ONERROR(tmp5);
 	UNSET_ONERROR(tmp4);
-	copy_shared_string(data->input.to_free,s);
 
 	READ(0); /* autopop empty strings */
 	pop_stack();
@@ -1223,6 +1247,7 @@ static int read_smeg_pereference(struct xmldata *data)
       }
 
     }while(0);
+    CALL_AND_UNSET_ONERROR(tmp5);
     CALL_AND_UNSET_ONERROR(tmp4);
     CALL_AND_UNSET_ONERROR(tmp3);
   }
@@ -2701,6 +2726,7 @@ static void parse_xml(INT32 args)
   data.input.len=s->len;
   data.input.pos=0;
   data.input.to_free=0;
+  data.input.entity=0;
   data.input.callbackinfo=allocate_mapping(0);
   data.input.next=0;
   data.func=sp+1-args;
@@ -2775,6 +2801,7 @@ static void define_entity(INT32 args)
   data.input.len=s->len;
   data.input.pos=0;
   data.input.to_free=0;
+  data.input.entity=0;
   data.input.callbackinfo=allocate_mapping(0);
   data.func=sp+2-args;
   data.extra_args=sp+3-args;
@@ -2821,6 +2848,7 @@ static void parse_dtd(INT32 args)
   data.input.len=s->len;
   data.input.pos=0;
   data.input.to_free=0;
+  data.input.entity=0;
   data.input.callbackinfo=allocate_mapping(0);
   data.func=sp+1-args;
   data.extra_args=sp+2-args;
