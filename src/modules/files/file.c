@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.173 2000/08/23 12:57:09 grubba Exp $");
+RCSID("$Id: file.c,v 1.174 2000/09/18 15:06:24 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -257,8 +257,12 @@ static void just_close_fd(void)
 	  error("Failed to close file.\n");
 
 	case EBADF:
-	  error("Internal error: Closing a non-active file descriptor %d.\n",fd);
-
+          error("Internal error: Closing a non-active file descriptor %d.\n",fd);
+#ifdef SOLARIS
+       // it's actually OK. This is a bug in Solaris 8.
+       case EAGAIN:
+         break;
+#endif
 	case EINTR:
 	  continue;
       }
