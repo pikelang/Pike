@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.32 2000/04/17 21:06:24 hubbe Exp $
+ * $Id: gc.h,v 1.33 2000/04/18 11:45:58 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -91,7 +91,7 @@ void f__gc_status(INT32 args);
 #define GC_FREE() do {							\
   DO_IF_DEBUG(								\
   if(Pike_in_gc >0 && Pike_in_gc<3)					\
-    fatal("Freeing objects within gc is not allowed!\n");	\
+    fatal("Freeing objects within gc is not allowed!\n");		\
   )									\
   LOW_GC_FREE();							\
 }while(0)
@@ -99,7 +99,7 @@ void f__gc_status(INT32 args);
 #define GC_FREE_OBJ() do {						\
   DO_IF_DEBUG(								\
   if(Pike_in_gc >1 && Pike_in_gc<4)					\
-    fatal("Allocating new objects within gc is not allowed!\n");	\
+    fatal("Freeing objects within gc is not allowed!\n");		\
   )									\
   LOW_GC_FREE();							\
 }while(0)
