@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.560 2001/12/06 10:40:42 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.561 2001/12/07 12:01:07 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -923,6 +923,9 @@ AC_ARG_WITH(dynamic_modules, MY_DESCR([--without-dynamic-modules],
 MY_AC_ARG_WITH(static_linking, MY_DESCR([--with-static-linking],
 					[link statically, if possible]),
 	       [with_static_linking=yes])
+AC_ARG_WITH(site-prefixes,
+	    MY_DESCR([--with-site-prefixes],
+		     [list of prefixes to search for include, lib and bin dirs.]))
 AC_ARG_WITH(include-path,
 	    MY_DESCR([--with-include-path],
 		     [a list of paths to search for include files.]))
@@ -1624,6 +1627,7 @@ echo Searching for include-file directories...
 if test $cppflags_is_set = no -a x${C_INCLUDE_PATH-} = x ; then
   real_include_dirs=''
   for d in `echo ${with_include_path} | sed 's/:/ /g'` \
+    `echo "${with_site_prefixes}/include"|sed -e 's/:/\/include /g'` \
     `echo $prefix | sed "s@^NONE@$with_root$ac_default_prefix@g"`/include \
     $with_root/usr/local/include $with_root/sw/local/include \
     $with_root/usr/gnu/include $with_root/opt/gnu/include \
@@ -1673,6 +1677,7 @@ fi
 echo Searching for library directories...
 if test $ldflags_is_set = no ; then
   for d in `echo ${with_lib_path} | sed 's/:/ /g'` \
+    `echo "${with_site_prefixes}/lib"|sed -e 's/:/\/lib /g'` \
     `echo $exec_prefix | sed "s@^NONE@$prefix/lib@g" | sed "s@^NONE@$with_root$ac_default_prefix/lib@g"` \
     $with_root/usr/local/lib $with_root/sw/local/lib $with_root/sw/lib \
     $with_root/usr/gnu/lib $with_root/opt/gnu/lib $with_root/sw/gnu/lib \
@@ -1700,6 +1705,7 @@ fi
 
 echo Searching for binary directories...
 for d in `echo $exec_prefix | sed "s@^NONE@$prefix@g" | sed "s@^NONE@$with_root$ac_default_prefix@g"` \
+    `echo "${with_site_prefixes}"|sed -e 's/:/ /g'` \
     "$with_root" $with_root/usr $with_root/usr/ccs $with_root/usr/vac \
     $with_root/usr/local $with_root/sw/local $with_root/usr/gnu \
     $with_root/opt/gnu $with_root/sw/gnu $with_root/sw \
