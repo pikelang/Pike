@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.19 1997/02/07 01:34:19 hubbe Exp $");
+RCSID("$Id: program.c,v 1.20 1997/02/11 07:20:15 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1065,6 +1065,21 @@ int add_program_constant(char *name,
   ret=simple_add_constant(name, &tmp, flags);
   return ret;
 }
+
+int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags)
+{
+  struct svalue s;
+  struct pike_string *n;
+  INT32 ret;
+
+  s.type=T_FUNCTION;
+  s.subtype=FUNCTION_BUILTIN;
+  s.u.efun=make_callable(cfun, name, type, flags, 0, 0);
+  ret=simple_add_constant(name, &s, 0);
+  free_svalue(&s);
+  return ret;
+}
+
 
 int end_class(char *name, INT32 flags)
 {

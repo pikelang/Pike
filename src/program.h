@@ -220,6 +220,8 @@ int add_string_constant(char *name,
 int add_program_constant(char *name,
 			 struct program *p,
 			 INT32 flags);
+int add_function_constant(char *name, void (*cfun)(INT32), char * type, INT16 flags);
+int end_class(char *name, INT32 flags);
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
 		      INT16 flags,
