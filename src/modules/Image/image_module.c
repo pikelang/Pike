@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image_module.c,v 1.12 2001/09/24 11:11:57 grubba Exp $");
+RCSID("$Id: image_module.c,v 1.13 2002/05/11 00:24:25 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -16,6 +16,8 @@ RCSID("$Id: image_module.c,v 1.12 2001/09/24 11:11:57 grubba Exp $");
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
+#define fp Pike_fp
 
 #define IMAGE_INITER
 

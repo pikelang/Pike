@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.9 2001/07/12 14:01:45 grubba Exp $");
+RCSID("$Id: pdf_module.c,v 1.10 2002/05/11 00:24:25 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -13,6 +13,8 @@ RCSID("$Id: pdf_module.c,v 1.9 2001/07/12 14:01:45 grubba Exp $");
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
+#define fp Pike_fp
 
 #define PDF_INITER
 

@@ -20,6 +20,9 @@
 
 #include "module_magic.h"
 
+#define sp Pike_sp
+#define fp Pike_fp
+
 #ifdef HAVE_MIRD
 
 #include <mird.h>

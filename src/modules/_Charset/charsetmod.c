@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "../../global.h"
-RCSID("$Id: charsetmod.c,v 1.32 2001/10/07 19:29:13 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.33 2002/05/11 00:24:25 nilsson Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -15,6 +15,9 @@ RCSID("$Id: charsetmod.c,v 1.32 2001/10/07 19:29:13 marcus Exp $");
 
 /* MUST BE LAST INCLUDE */
 #include "module_magic.h"
+
+#define sp Pike_sp
+#define fp Pike_fp
 
 #ifdef __CHAR_UNSIGNED__
 #define SIGNED signed

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.103 2002/04/25 08:47:40 grubba Exp $");
+RCSID("$Id: mpz_glue.c,v 1.104 2002/05/11 00:13:10 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -40,6 +40,9 @@ RCSID("$Id: mpz_glue.c,v 1.103 2002/04/25 08:47:40 grubba Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
+#define fp Pike_fp
 
 #ifdef _MSC_VER
 /* No random()... provide one for gmp

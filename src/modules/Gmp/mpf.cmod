@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.4 2002/04/25 08:55:05 grubba Exp $");
+RCSID("$Id: mpf.cmod,v 1.5 2002/05/11 00:13:10 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -42,6 +42,9 @@ RCSID("$Id: mpf.cmod,v 1.4 2002/04/25 08:55:05 grubba Exp $");
 
 /* This must be included last! */
 #include "module_magic.h"
+
+#define sp Pike_sp
+#define fp Pike_fp
 
 #define THISMPF (&(THIS->n))
 

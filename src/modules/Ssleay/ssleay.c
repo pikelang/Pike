@@ -8,7 +8,7 @@
 
 #include "config.h"
 
-RCSID("$Id: ssleay.c,v 1.15 2002/01/16 03:02:34 nilsson Exp $");
+RCSID("$Id: ssleay.c,v 1.16 2002/05/11 00:24:25 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -35,6 +35,9 @@ RCSID("$Id: ssleay.c,v 1.15 2002/01/16 03:02:34 nilsson Exp $");
 #include <pem.h>
 #include <err.h>
 #include <x509.h>
+
+#define sp Pike_sp
+#define fp Pike_fp
 
 /* SSLeay defines _ as a macro. That's Puckat(TM). */
 #undef _

@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.222 2002/05/10 22:20:21 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.223 2002/05/11 00:29:41 nilsson Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -98,6 +98,9 @@ RCSID("$Id: signal_handler.c,v 1.222 2002/05/10 22:20:21 mast Exp $");
 #include <inline/dos.h>
 #undef timeval
 #endif
+
+#define sp Pike_sp
+#define fp Pike_fp
 
 
 #ifdef NSIG
@@ -4029,5 +4032,3 @@ void exit_signals(void)
     signal_callbacks[e].type=T_INT;
   }
 }
-
-
