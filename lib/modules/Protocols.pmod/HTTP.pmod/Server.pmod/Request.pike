@@ -192,28 +192,36 @@ string _sprintf(int t)
 function log_cb;
 string make_response_header(mapping m)
 {
+   if (protocol!="HTTP/1.0")
+      if (protocol=="HTTP/1.1")
+      {
+   // check for fire and forget here and go back to 1.0 then
+      }
+      else
+	 protocol="HTTP/1.0";
+
    array(string) res=({});
    switch (m->error)
    {
       case 0:
       case 200: 
 	 if (zero_type(m->start))
-	    res+=({"HTTP/1.0 200 OK"}); // HTTP/1.1 when supported
+	    res+=({protocol+" 200 OK"}); // HTTP/1.1 when supported
 	 else
 	 {
-	    res+=({"HTTP/1.0 206 Partial content"});
+	    res+=({protocol+" 206 Partial content"});
 	    m->error=206;
 	 }
 	 break;
       case 302:
-	 res+=({"HTTP/1.0 302 TEMPORARY REDIRECT"}); 
+	 res+=({protocol+" 302 TEMPORARY REDIRECT"}); 
 	 break;
       case 304:
-	 res+=({"HTTP/1.0 304 Not Modified"}); 
+	 res+=({protocol+" 304 Not Modified"}); 
 	 break;
       default:
    // better error names?
-	 res+=({"HTTP/1.0 "+m->error+" ERROR"});
+	 res+=({protocol+" "+m->error+" ERROR"});
 	 break;
    }
 
@@ -229,6 +237,9 @@ string make_response_header(mapping m)
 
    if (!m->stat && m->file)
       m->stat=m->file->stat();
+
+   if (!m->file && !m->data)
+      m->data="";
 
    if (m->modified)
       res+=({"Last-Modified: "+http_date(m->modified)});
@@ -262,12 +273,21 @@ string make_response_header(mapping m)
 	     m->stop>=m->size ||
 	     m->stop<m->size ||
 	     m->size<0)
-	    res[0]="HTTP/1.0 416 Requested range not satisfiable";
+	    res[0]=protocol+" 416 Requested range not satisfiable";
 
 	 res+=({"Content-Range: bytes "+
 		m->start+"-"+m->stop+"/"+m->size});
       }
    }
+
+   if (protocol=="HTTP/1.1" && m->size>=0)
+      if (lower_case(request_headers["connection"]||"")!="keep-alive")
+	 res+=({"Connection: Close"});
+      else
+      {
+	 res+=({"Connection: Keep-Alive"});
+	 keep_alive=1;
+      }
 
    return res*"\r\n"+"\r\n\r\n";
 }
@@ -297,7 +317,6 @@ string make_response_header(mapping m)
 //! @endmapping
 void response_and_finish(mapping m, function|void _log_cb)
 {
-// insert HTTP 1.1 stuff here
    log_cb = _log_cb;
 
    if (request_headers->range && !m->start && zero_type(m->error))
@@ -363,7 +382,7 @@ void response_and_finish(mapping m, function|void _log_cb)
       sent = my_fd->write(send_buf);
       send_buf="";
 
-      finish();
+      finish(1);
       return;
    }
 
@@ -383,15 +402,31 @@ void response_and_finish(mapping m, function|void _log_cb)
       send_buf=send_buf[..send_stop-1];
 
    call_out(send_timeout,send_timeout_delay);
+   raw="";
 }
 
-void finish()
+void finish(int clean)
 {
    if( log_cb )
      log_cb(this);
-   if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
    if (send_fd) { send_fd->close(); destruct(send_fd); send_fd=0; }
    remove_call_out(send_timeout);
+
+   if (!clean 
+       || !my_fd
+       || !keep_alive)
+   {
+      if (my_fd) { my_fd->close(); destruct(my_fd); my_fd=0; }
+      return;
+   }
+
+   // create new request
+
+   this_program r=this_program();
+   r->attach_fd(my_fd,server_port,request_callback);
+   r->raw=raw;
+
+   my_fd=0; // and drop this object
 }
 
 int sent;
@@ -399,6 +434,7 @@ string send_buf="";
 int send_pos;
 Stdio.File send_fd=0;
 int send_stop;
+int keep_alive=0;
 
 void send_write()
 {
@@ -430,7 +466,7 @@ void send_write()
    }
    else if (send_pos==sizeof(send_buf) && !send_fd)
    {
-      finish();
+      finish(1);
       return;
    }
 
@@ -441,16 +477,16 @@ void send_write()
 
 void send_timeout()
 {
-   finish();
+   finish(0);
 }
 
 void send_close()
 {
 /* socket closed by peer */
-   finish();
+   finish(0);
 }
 
-void send_read()
+void send_read(mixed dummy,string s)
 {
-// ignore
+   raw+=s; // for HTTP/1.1
 }
