@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.58 2002/04/02 14:10:40 jhs Exp $
+// $Id: Hilfe.pmod,v 1.59 2002/04/02 14:31:23 jhs Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -947,10 +947,6 @@ class Evaluator {
     int plevel;
     int scanf;
     for( ; p<sizeof(expr); p++) {
-
-      // Ignore whspc tokens
-      if(expr[p][0]==' ')
-	continue;
 
       if(expr[p]=="(") {
 	plevel++;
