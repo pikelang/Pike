@@ -320,10 +320,10 @@ static private void peer_write()
 	 if (parent->do_we_strangle(this,bytes_in,bytes_out) && 
 	     !parent->we_are_completed)
 	 {
-      // #ifdef BT_PEER_DEBUG
+#ifdef BT_PEER_DEBUG
 	    werror("%O doesn't give us enough, i:%d o:%d i-o:%O: choking\n",
 		   ip,bytes_in,bytes_out,bytes_in-bytes_out);
-      // #endif
+#endif
 	    strangle();
 	    fd->set_write_callback(0); 
 	    return; 
@@ -721,10 +721,10 @@ void got_piece_from_peer(int piece,int offset,string data)
    if (strangled &&
        !parent->do_we_strangle(this,bytes_in,bytes_out))
    {
-// #ifdef BT_PEER_DEBUG
+#ifdef BT_PEER_DEBUG
       werror("%O gave us enough, i:%d o:%d i-o:%O: unchoking\n",
 	     ip,bytes_in,bytes_out,bytes_in-bytes_out);
-// #endif
+#endif
       unstrangle();
    }
 }
