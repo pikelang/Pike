@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.212 1999/10/28 23:16:13 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.213 1999/10/29 03:37:42 mast Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1301,7 +1301,22 @@ ifefun(gc,
              o=o2=0;
              gc();
           ]])
-             
+  test_true([[
+    object o = class{}();
+    mapping m = ([class{}(): o, o: class{}()]);
+    set_weak_flag (m, 1);
+    gc();
+    return !sizeof (m);
+  ]])
+    test_true([[
+    object o = class{}();
+    multiset m = (<o>);
+    set_weak_flag (m, 1);
+    m[class{}()] = 1;
+    m[o] = 0;
+    gc();
+    return !sizeof (m);
+  ]])
 ]])
 
 cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
@@ -1505,6 +1520,26 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_true([[   sqrt(0x7ffffffff)+1 ]])
 
   test_true([[ catch { destruct((mixed)0x4783647824687234628462); } ]])
+
+  test_any_equal([[
+    array a = ({4711, 0x54325827a124*0x12348795482485425});
+    set_weak_flag (a, 1);
+    gc();
+    return a;
+  ]], [[ ({4711, 0x54325827a124*0x12348795482485425}) ]])
+
+  test_any_equal([[
+    mapping m = ([
+      4711: 0x54325827a124*0x12348795482485425,
+      0x54325827124*0x1234879548a2485425: 1174,
+    ]);
+    set_weak_flag (m, 1);
+    gc();
+    return m;
+  ]], [[ ([
+    4711: 0x54325827a124*0x12348795482485425,
+    0x54325827124*0x1234879548a2485425: 1174,
+  ]) ]])
 ]])
 
 cond([[all_constants()->_verify_internals]],
