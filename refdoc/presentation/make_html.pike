@@ -264,7 +264,7 @@ string parse_module(Node n, void|int noheader) {
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Module <b>" +
-      render_class_path(n) + n->get_attributes()->name + "</b></font></td></tr></table><br />\n"
+      m->class_path + m->name + "</b></font></td></tr></table><br />\n"
       "</dt><dd>";
 
   Node c = n->get_first_element("doc");
@@ -293,7 +293,7 @@ string parse_class(Node n, void|int noheader) {
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; CLASS <b><font color='#005080'>" +
-      render_class_path(n) + n->get_attributes()->name +
+      n->get_attributes()->class_path + n->get_attributes()->name +
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
 
@@ -322,7 +322,7 @@ string parse_enum(Node n, void|int noheader) {
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; ENUM <b><font color='#005080'>" +
-      render_class_path(n) + n->get_attributes()->name +
+      n->get_attributes()->class_path + n->get_attributes()->name +
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
 
@@ -849,6 +849,93 @@ string parse_type(Node n, void|string debug) {
   return ret;
 }
 
+void resolve_class_paths(Node n, string|void path, Node|void parent)
+{
+  if (!path) path = "";
+  mapping attrs = n->get_attributes() || ([]);
+  string name = attrs->name;
+  switch(n->get_any_name()) {
+  case "arguments":
+  case "returntype":
+  case "type":
+  case "doc":
+  case "source-position":
+  case "modifiers":
+  case "classname":
+    // We're not interrested in the stuff under the above nodes.
+    return;
+  default:
+    werror("Unhandled node: %O path:%O name: %O, parent: %O\n",
+	   n->get_any_name(), path, name, parent&&parent->get_any_name());
+    // FALL_THROUGH
+  case "":
+  case "docgroup":
+    break;
+    
+  case "manual":
+  case "dir":
+  case "file":
+  case "chapter":
+  case "section":
+  case "subsection":
+    foreach(filter(n->get_children(),
+		   lambda(Node n) {
+		     return (<"manual", "dir", "file", "chapter",
+			      "section", "subsection", "autodoc">)
+		       [n->get_any_name()];
+		   }), Node child) {
+      resolve_class_paths(child, "", n);
+    }
+    return;
+  case "autodoc":
+    path = "";
+    break;
+  case "namespace":
+    if ((<"", "lfun">)[name]) {
+      // Censor namespaces other than :: and lfun::
+      path = name+"::";
+    } else {
+      path = "";
+    }
+    break;
+  case "class":
+  case "module":
+    attrs->class_path = path;
+    path += name + ".";
+    break;
+  case "enum":
+    // Enum names don't show up in the path.
+    attrs->class_path = path;
+    break;
+  case "method":
+    // Special case for create().
+    if (name == "create") {
+      // Get rid of the extra dot.
+      attrs->class_path = path[..sizeof(path)-2];
+    }
+    else
+    {
+      // Hide the class path for methods.
+      attrs->class_path = "";
+    }
+    return;
+  case "constant":
+  case "inherit":
+  case "import":
+  case "typedef":
+  case "variable":
+    // These don't have children.
+    attrs->class_path = path;
+    return;
+  }
+  foreach(n->get_children(), Node child)
+  {
+    resolve_class_paths(child, path, n);
+  }
+}
+
+#if 0
+// DEAD code (for reference only).
 string render_class_path(Node n,int|void class_only)
 {
   array a = reverse(n->get_ancestors(0));
@@ -904,6 +991,7 @@ string render_class_path(Node n,int|void class_only)
     return "";
 #endif
 }
+#endif /* 0 */
 
 string parse_not_doc(Node n) {
   string ret = "";
@@ -936,14 +1024,14 @@ string parse_not_doc(Node n) {
 	case "create":
 	  ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
 	  ret += " ";
-	  ret += render_class_path(c,1)+"<b>(</b>";
+	  ret += c->get_attributes()->class_path+"<b>(</b>";
 	  ret += parse_not_doc( c->get_first_element("arguments") );
 	  ret += "<b>)</b></tt>";
 	  break;
 	default:
 	  ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
 	  ret += " ";
-	  ret += render_class_path(c);
+	  ret += c->get_attributes()->class_path;
 	  ret += "<b><font color='#000066'>" + c->get_attributes()->name + "</font>(</b>";
 	  ret += parse_not_doc( c->get_first_element("arguments") );
 	  ret += "<b>)</b></tt>";
@@ -972,14 +1060,14 @@ string parse_not_doc(Node n) {
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
       ret += parse_type(get_first_element(c->get_first_element("type")), "variable") + " " +
-	render_class_path(c) + "<b><font color='#F000F0'>" + c->get_attributes()->name +
+	c->get_attributes()->class_path + "<b><font color='#F000F0'>" + c->get_attributes()->name +
 	"</font></b></tt>";
       break;
 
     case "constant":
       if(const++) ret += "<br />\n";
       ret += "<tt>constant ";
-      ret += render_class_path(c);
+      ret += c->get_attributes()->class_path;
       ret += "<font color='#F000F0'>" + c->get_attributes()->name + "</font>";
       cc = c->get_first_element("typevalue");
       if(cc) ret += " = " + parse_type(get_first_element(cc));
@@ -992,7 +1080,7 @@ string parse_not_doc(Node n) {
       cc = c->get_first_element("modifiers");
       if(cc) ret += map(cc->get_children(), parse_type)*" " + " ";
       ret += parse_type(get_first_element(c->get_first_element("type")), "typedef") + " " +
-	render_class_path(c) + "<font color='#F000F0'>" + c->get_attributes()->name +
+	c->get_attributes()->class_path + "<font color='#F000F0'>" + c->get_attributes()->name +
 	"</font></tt>";
       break;
 
@@ -1198,6 +1286,9 @@ int main(int num, array args) {
   }
   else
     n = n2;
+
+  werror("Resolving class paths...\n");
+  resolve_class_paths(n);
 
   mapping m = n->get_attributes();
 
