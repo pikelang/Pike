@@ -15,6 +15,98 @@ static private void processError(string message, mixed ... args) {
 	     backtrace() }) );
 }
 
+// XML format:
+//
+// <autodoc>
+//   <namespace/>
+//   <appendix/>
+//   <doc/>?
+// </autodoc>
+//
+// <namespace>
+//   <module/>
+//   <class/>
+//   <enum/>
+//   <docgroup/>
+//   <doc/>
+// </namespace>
+//
+// <module>
+//   <module/>
+//   <class/>
+//   <enum/>
+//   <docgroup/>
+//   <doc/>
+// </module>
+//
+// <class>
+//   <modifiers/>
+//   <class/>
+//   <enum/>
+//   <docgroup/>
+//   <doc/>
+// </class>
+//
+// <enum>
+//   <docgroup/>?
+//   <doc/>
+// </enum>
+//
+// <modifiers>
+//   <local/>
+//   <optional/>
+//   <private/>
+//   <static/>
+// </modifiers>
+//
+// <docgroup>
+//   <method/>
+//   <variable/>
+//   <constant/>
+//   <typedef/>
+//   <inherit/>
+//   <doc/>
+// </docgroup>
+//
+// <doc>
+//   <group/>
+//   <text/>
+// </doc>
+//
+// <group>
+//   <bugs/>
+//   <deprecated/>
+//   <elem/>
+//   <example/>
+//   <fixme/>
+//   <index/>
+//   <item/>
+//   <member/>
+//   <note/>
+//   <param/>
+//   <returns/>
+//   <seealso/>
+//   <text/>
+//   <throws/>
+//   <type/>
+//   <value/>
+// </group>
+//
+// <text>
+//   <array/>
+//   <br/>
+//   <dl/>
+//   <int/>
+//   <mapping/>
+//   <mixed/>
+//   <multiset/>
+//   <ol/>
+//   <p/>
+//   <ref/>
+//   <section/>
+//   <string/>
+//   <ul/>
+// </text>
 
 //========================================================================
 // From source file to XML
@@ -307,6 +399,8 @@ void mergeTrees(Node dest, Node source) {
       case "namespace":
       case "class":
       case "module":
+      case "enum":
+      case "typedef":
         {
         string name = getName(node);
         Node n = dest_children[name];
@@ -511,8 +605,12 @@ static array(string) splitRef(string ref) {
       a = a[2..];
     }
   }
-  if (namespace)
+  if (namespace) {
     result = ({ namespace });
+  } else if (a[0] == ".") {
+    result = ({ "" });
+    a = a[1..];
+  }
   for (;;) {
     if (!sizeof(a))
       return result;
@@ -746,12 +844,6 @@ static void resolveFun(ScopeStack scopes, Node node) {
           if (name)
             scopes->addName(name);
           break;
-        case "extends":
-	  if (node->get_any_name() == "namespace") {
-	    scopes->extend_namespace(child->get_attributes()->name,
-				     node->get_attributes()->name);
-	  }
-	  break;
         default:
           break; // do nothing (?)
       }
@@ -843,11 +935,358 @@ static void resolveFun(ScopeStack scopes, Node node) {
 
 // Resolves references, regarding the Node 'tree' as the root of the whole
 // hierarchy. 'tree' might be the node <root> or <module name="Pike">
-void resolveRefs(Node tree) {
+void oldResolveRefs(Node tree) {
   ScopeStack scopes = ScopeStack();
   scopes->enter("namespace", "predef");    // The default scope
   resolveFun(scopes, tree);
   scopes->leave();
+}
+
+class NScope
+{
+  string name;
+  string type;
+  string path;
+  mapping(string:int(1..1)|NScope) symbols = ([]);
+  mapping(string:string|NScope) inherits;
+
+  // @[tree] is a node of type autodoc, namespace, module, class, enum,
+  // or docgroup.
+  static void create(Node tree, string|void path)
+  {
+    type = tree->get_any_name();
+    name = tree->get_attributes()->name;
+    if (path) {
+      name = path + name;
+      path = name + ".";
+    } else if (type == "namespace") {
+      name += "::";
+      path = name;
+    } else if (type != "autodoc") {
+      error("Unsupported node type: %O, name: %O, path: %O\n",
+	    type, name, path);
+    }
+    if (!(<"autodoc", "namespace", "module", "class", "method", "enum">)[type]) {
+      error("Unsupported node type: %O, name: %O, path: %O\n",
+	    type, name, path);
+    }
+    this_program::path = path;
+    enterNode(tree);
+  }
+
+  void enterNode(Node tree)
+  {
+    foreach(tree->get_children(), Node child) {
+      string n;
+      switch (child->get_any_name()) {
+      case "docgroup":
+	string h_name = child->get_attributes()["homogen-name"];
+	NScope h_scope;
+	foreach(child->get_children(), Node thing) {
+	  n = (thing->get_attributes() || ([]))->name;
+	  string subtype = thing->get_any_name();
+	  switch(subtype) {
+	  case "method":
+	    if (n) {
+	      if (!h_name) {
+		h_name = n;
+		child->get_attributes()["homogen-name"] = n;
+	      }
+	      if (!h_scope) {
+		h_scope = NScope(thing, path);
+	      } else {
+		h_scope->enterNode(thing);
+	      }
+	      symbols[n] = h_scope;
+	    }
+	    break;
+	  case "inherit":
+	    Node inh = thing->get_first_element("classname");
+	    string scope = inh->value_of_node();
+	    if (!n) n = scope;
+	    // We can't lookup the inherit yet, so put a place holder for it.
+	    if (inherits) {
+	      inherits[n] = scope;
+	    } else {
+	      inherits = ([ n:scope ]);
+	    }
+	    break;
+	  default:
+	    // variable, constant, typedef, enum, etc.
+	    if (n) {
+	      symbols[n] = 1;
+	    }
+	    break;
+	  }
+	}
+	break;
+      case "namespace":
+      case "module":
+      case "class":
+      case "enum":
+	// FIXME: What about unnamed enums?
+	n = child->get_attributes()->name;	  
+	if (n) {
+	  if (child->get_any_name() == "namespace") {
+	    n += "::";
+	  }
+	  symbols[n] = NScope(child, path);
+	  if (child->get_any_name() == "enum") {
+	    // Ugly kludge:
+	    // Use an implicit inherit to be able to find the values
+	    // where expected...
+	    if (inherits) {
+	      inherits["\0"+n] = symbols[n];
+	    } else {
+	      inherits = ([ "\0"+n:symbols[n] ]);
+	    }
+	    break;
+	  }
+	}
+	break;
+      case "arguments":
+	foreach(child->get_children(), Node arg) {
+	  if (arg->get_node_type() == XML_ELEMENT) {
+	    symbols[arg->get_attributes()->name] = 1;
+	  }
+	}
+	break;
+      default:
+	break;
+      }
+    }
+  }
+  static string _sprintf(int c)
+  {
+    return sprintf("NScope(type:%O, name:%O, symbols:%d, inherits:%d)",
+		   type, name, sizeof(symbols), sizeof(inherits||([])));
+  }
+  string lookup(array(string) path)
+  {
+    int(1..1)|NScope scope = symbols[path[0]];
+    if (!scope) {
+      // Not immediately available in this scope.
+      if (inherits) {
+	foreach(inherits; string inh; scope) {
+	  if (objectp(scope)) {
+	    string res = scope->lookup(path);
+	    if (res) return res;
+	  }
+	}
+      }
+      return 0;
+    } else if (sizeof(path) == 1) {
+      if (objectp(scope)) {
+	return scope->name;
+      }
+      return name + "." + path[0];
+    } else if (!objectp(scope)) {
+      return 0;
+    }
+    return scope->lookup(path[1..]);
+  }
+}
+
+class NScopeStack
+{
+  NScope scopes;
+  NScope top;
+  array(NScope) stack = ({});
+  mapping(string:mapping(string:int(1..))) failures = ([]);
+
+  static void create(NScope scopes)
+  {
+    this_program::scopes = scopes;
+  }
+  static void destroy()
+  {
+    if (sizeof(failures)) {
+      werror("Resolution failures:\n");
+      foreach(failures; string ref; mapping(string:int) where) {
+	werror("  %O: %{%O:%d, %}\n",
+	       ref, (array)where);
+      }
+    }
+  }
+  void reset()
+  {
+    top = scopes;
+    stack = ({});
+  }
+  void enter(string symbol)
+  {
+    int(1..1)|NScope scope = top->symbols[symbol];
+    if (!scope) {
+      error("No such symbol: %O in scope %O\n", symbol, top);
+    }
+    if (!objectp(scope)) {
+      error("Symbol %O is not a scope\n", symbol);
+    }
+    stack += ({ top });
+    top = scope;
+  }
+  void leave()
+  {
+    if (!top) {
+      error("leave() called too many times()\n");
+    }
+    if (sizeof(stack)) {
+      top = stack[-1];
+      stack = stack[..sizeof(stack)-2];
+    } else {
+      top = 0;
+    }
+  }
+  NScope|int(1..1) lookup(string ref)
+  {
+    array(string) path = splitRef(ref);
+    int(1..1)|NScope val = scopes;
+    foreach(path, string sym) {
+      if (objectp(val)) {
+	val = val->symbols[sym];
+      } else {
+	return 0;
+      }
+    }
+    return val;
+  }
+  string resolve(array(string) ref)
+  {
+    if (!sizeof(ref)) {
+      return top->name;
+    }
+    int pos = sizeof(stack);
+    NScope current = top;
+    if (has_suffix(ref[0], "::")) {
+      while(pos) {
+	if (current->inherits && current->inherits[ref[0]]) {
+	  string res = current->inherits[ref[0]]->lookup(ref[1..]);
+	  if (res) return res;
+	}
+	pos--;
+	current = stack[pos];
+      } while(pos);
+      return (scopes->lookup(ref));
+    }
+    if (!sizeof(ref[0])) {
+      if (pos) {
+	current = stack[--pos];
+      } else {
+	current = top;
+      }
+      ref = ref[1..];
+    }
+    while(pos--) {
+      string res = current->lookup(ref);
+      if (res) return res;
+      current = stack[pos];
+    }
+    return 0;
+  }
+  string resolveInherits()
+  {
+    foreach(top->inherits||([]); string inh; string|NScope scope) {
+      if (stringp(scope)) {
+	if (sizeof(scope) && scope[0] == '"') {
+	  // Inherit of files not supported yet.
+	} else {
+	  string path = resolve(splitRef(scope));
+	  if (path) {
+	    int(1..1)|NScope nscope = lookup(path);
+	    // Avoid loops...
+	    if (objectp(nscope) && nscope != top) {
+	      top->inherits[inh] = nscope;
+	      continue;
+	    }
+	    werror("Failed to lookup inherit %O.\n"
+		   "Top: %O Scope: %O Path: %O NewScope: %O\n",
+		   inh, top, scope, path, nscope);
+	  } else {
+	    werror("Failed to resolve inherit %O. Top: %O Scope: %O\n",
+		   inh, top, scope);
+	  }
+	}
+	m_delete(top->inherits, inh);
+      }
+    }
+    foreach(top->symbols; string sym; int(1..1)|NScope scope) {
+      if (objectp(scope)) {
+	enter(sym);
+	resolveInherits();
+	leave();
+      }
+    }
+  }
+}
+
+void doResolveNode(NScopeStack scopestack, Node tree)
+{
+  int pop = 0;
+  switch(tree->get_any_name()) {
+  case "autodoc":
+    scopestack->reset();
+    pop = 1;
+    break;
+  case "namespace":
+    scopestack->enter(tree->get_attributes()->name + "::");
+    pop = 1;
+    break;
+  case "class":
+  case "module":
+    scopestack->enter(tree->get_attributes()->name);
+    pop = 1;
+    break;
+  case "docgroup":
+    if (tree->get_attributes()["homogen-type"] == "method") {
+      string n = tree->get_attributes()["homogen-name"];
+      if (n) {
+	scopestack->enter(n);
+	pop = 1;
+      }
+    }
+    break;
+  case "inherit":
+  case "modifiers":
+  case "enum":
+  case "doc":
+    break;
+  case "ref":
+  case "classname":
+  case "object":
+    mapping(string:string) m = tree->get_attributes();
+    if (!m->resolved) {
+      string ref = m->to || tree->value_of_node();
+      string resolution = scopestack->resolve(splitRef(ref));
+      if (resolution) {
+	m->resolved = resolution;
+      } else {
+	if (!scopestack->failures[ref]) {
+	  scopestack->failures[ref] = ([]);
+	}
+	scopestack->failures[ref][scopestack->top->name]++;
+      }
+    }
+    return;	// No need to recurse...
+  }
+  foreach(tree->get_children(), Node child) {
+    doResolveNode(scopestack, child);
+  }
+  if (pop) {
+    scopestack->leave();
+  }
+}
+
+void resolveRefs(Node tree)
+{
+  werror("Building the scope structure...\n");
+  NScopeStack scopestack = NScopeStack(NScope(tree));
+  werror("Resolving inherits...\n");
+  scopestack->reset();
+  scopestack->resolveInherits();
+  werror("Resolving references...\n");
+  doResolveNode(scopestack, tree);
+  destruct(scopestack);
+  werror("Done.\n");
 }
 
 void cleanUndocumented(Node tree) {
