@@ -451,3 +451,5 @@
 
    COLOR("pikegreen"           ,160,224,192)
    COLOR("avantgardepikegreen" ,0,51,0)
+   COLOR("roxenorange"         ,255,140,0)
+   COLOR("pikeblue"            ,206,96,70)
