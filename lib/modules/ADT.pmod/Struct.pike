@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.1 2003/01/03 16:49:15 nilsson Exp $
+// $Id: Struct.pike,v 1.2 2003/01/03 17:07:03 nilsson Exp $
 //
 
 //! Implements a struct which can be used for serialization and
@@ -129,8 +129,13 @@ class Item {
 //! One byte, integer value between 0 and 255.
 class Byte {
   inherit Item;
-  static int(0..255) value;
   int size = 1;
+  static int(0..255) value;
+
+  //! The byte can be initialized with an optional value.
+  void create(void|int(0..255) initial_value) {
+    set(initial_value);
+  }
 
   void set(int(0..255) in) {
     if(in<0 || in>255) error("Value out of bound\n");
@@ -139,16 +144,21 @@ class Byte {
   void decode(object f) { sscanf(f->read(1), "%c", value); }
   string encode() { return sprintf("%c", value); }
 
-  string _sprintf(int t) {
+  static string _sprintf(int t) {
     return t=='O' && sprintf("%O(%d/%O)", this_program, value, (string)({value}));
   }
 }
 
 //! One word in network order, integer value between 0 and 65535.
 class Word {
-  inherit Byte;
+  inherit Item;
   int size = 2;
   static int(0..65535) value;
+
+  //! The byte can be initialized with an optional value.
+  void create(void|int(0..65535) initial_value) {
+    set(initial_value);
+  }
 
   void set(int(0..65535) in) {
     if(in<0 || in>65535) error("Value out of bound.\n");
@@ -168,9 +178,17 @@ class Chars {
   int size;
   static string value;
 
-  //! @decl static void create(int size)
+  //! @decl static void create(int size, void|string value)
   //! The number of bytes that are part of this struct item.
-  static void create(int _size) { size = _size; }
+  //! The initial value of the char string is @[value] or,
+  //! if not provided, a string of zero bytes.
+  static void create(int _size, void|string _value) {
+    size = _size;
+    if(_value)
+      set(_value);
+    else
+      value = "\0"*size;
+  }
 
   void set(string in) {
     if(sizeof(in)!=size) error("String has wrong size.\n");
