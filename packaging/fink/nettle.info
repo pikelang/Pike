@@ -1,7 +1,7 @@
 Package: nettle
 Version: 1.10
 Revision: 0
-Description: Programming language with a C-like syntax
+Description: Crypto library
 DescDetail: <<
   Nettle is a cryptographic library that is designed to fit easily in
   more or less any context: In crypto toolkits for object-oriented 
