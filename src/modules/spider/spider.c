@@ -32,7 +32,10 @@
 #include "builtin_functions.h"
 #include "lock.h"
 
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#undef HAVE_PWD_H
+#endif
 
 #include "defs.h"
 
