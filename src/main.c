@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.146 2002/01/27 18:25:43 mast Exp $");
+RCSID("$Id: main.c,v 1.147 2002/05/13 22:14:05 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -810,6 +810,7 @@ void low_exit_main(void)
   exit_cpp();
   cleanup_interpret();
   cleanup_added_efuns();
+  cleanup_module_support();
   exit_operators();
   exit_iterators();
   cleanup_program();

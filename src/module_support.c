@@ -11,7 +11,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.43 2002/05/11 00:29:57 nilsson Exp $");
+RCSID("$Id: module_support.c,v 1.44 2002/05/13 22:14:04 mast Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -373,7 +373,6 @@ PMOD_EXPORT void get_all_args(char *fname, INT32 args, char *format,  ... )
  */
    
 static struct mapping *exported_symbols;
-static struct program *function_encapsulation_program;
 
 PMOD_EXPORT void pike_module_export_symbol(char *name,
 					   int len,
@@ -424,3 +423,13 @@ PMOD_EXPORT void *pike_module_import_symbol(char *name,
   free_string(str);
   return 0;
 }
+
+#ifdef DO_PIKE_CLEANUP
+void cleanup_module_support (void)
+{
+  if (exported_symbols) {
+    free_mapping (exported_symbols);
+    exported_symbols = NULL;
+  }
+}
+#endif

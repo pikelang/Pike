@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: module_support.h,v 1.9 2002/01/16 02:54:15 nilsson Exp $
+ * $Id: module_support.h,v 1.10 2002/05/13 22:14:04 mast Exp $
  */
 #ifndef MODULE_SUPPORT_H
 #include <stdarg.h>
@@ -50,6 +50,7 @@ PMOD_EXPORT void *pike_module_import_symbol(char *str,
 					    int len,
 					    char *module,
 					    int module_len);
+void cleanup_module_support (void);
 /* Prototypes end here */
 
 #endif
