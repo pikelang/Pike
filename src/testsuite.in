@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.428 2001/06/27 00:01:32 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.429 2001/06/27 21:11:20 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6692,6 +6692,7 @@ test_eq(replace("f--barf--",({"f--","f--bar"}),({"f--bar","f--"})),"f--f--bar")
 test_eq(replace("f--barf--",({"f--bar","f--"}),({"f--","f--bar"})),"f--f--bar")
 test_eq(replace("test\ntest\n\ntest\ntest",({"\n","\n\n"}),({" ","<p>"})),"test test<p>test test")
 test_eq(replace("test\ntest\n\ntest\ntest",({"\n\n","\n"}),({"<p>"," "})),"test test<p>test test")
+test_eq(replace("\xfffffff0", ({ "\xfffffff0" }), ({ "" })), "")
 
 test_eq("123\000456""890"-"\0", "123\456""890")
 test_eq("123\456000""890"-"\0", "123\456000""890")
