@@ -638,7 +638,16 @@ static void html__set_entity_callback(INT32 args)
 static void html_add_tag(INT32 args)
 {
    struct svalue s;
-   check_all_args("add_tag",args,BIT_STRING,BIT_MIXED,0);
+   check_all_args("add_tag",args,BIT_STRING,
+		  BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
+   if (sp[1-args].type == T_ARRAY) {
+     struct array *a = sp[1-args].u.array;
+     if (!a->size ||
+	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
+	  a->item[0].type != T_PROGRAM))
+       SIMPLE_BAD_ARG_ERROR("add_tag", 1, "array with function as first element");
+   }
+
    if (THIS->maptag->refs>1)
    {
       push_mapping(THIS->maptag);
@@ -661,7 +670,16 @@ static void html_add_tag(INT32 args)
 static void html_add_container(INT32 args)
 {
    struct svalue s;
-   check_all_args("add_container",args,BIT_STRING,BIT_MIXED,0);
+   check_all_args("add_container",args,BIT_STRING,
+		  BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
+   if (sp[1-args].type == T_ARRAY) {
+     struct array *a = sp[1-args].u.array;
+     if (!a->size ||
+	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
+	  a->item[0].type != T_PROGRAM))
+       SIMPLE_BAD_ARG_ERROR("add_container", 1, "array with function as first element");
+   }
+
    if (THIS->mapcont->refs>1)
    {
       push_mapping(THIS->mapcont);
@@ -682,7 +700,16 @@ static void html_add_container(INT32 args)
 
 static void html_add_entity(INT32 args)
 {
-   check_all_args("add_entity",args,BIT_STRING,BIT_MIXED,0);
+   check_all_args("add_entity",args,BIT_STRING,
+		  BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,0);
+   if (sp[1-args].type == T_ARRAY) {
+     struct array *a = sp[1-args].u.array;
+     if (!a->size ||
+	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
+	  a->item[0].type != T_PROGRAM))
+       SIMPLE_BAD_ARG_ERROR("add_entity", 1, "array with function as first element");
+   }
+
    if (THIS->mapentity->refs>1)
    {
       push_mapping(THIS->mapentity);
@@ -705,7 +732,17 @@ static void html_add_quote_tag(INT32 args)
   struct svalue *val;
   struct svalue cb;
 
-  check_all_args("add_quote_tag",args,BIT_STRING,BIT_MIXED,BIT_STRING|BIT_VOID,0);
+  check_all_args("add_quote_tag",args,BIT_STRING,
+		 BIT_STRING|BIT_ARRAY|BIT_FUNCTION|BIT_OBJECT|BIT_PROGRAM,
+		 BIT_STRING|BIT_VOID,0);
+   if (sp[1-args].type == T_ARRAY) {
+     struct array *a = sp[1-args].u.array;
+     if (!a->size ||
+	 (a->item[0].type != T_FUNCTION && a->item[0].type != T_OBJECT &&
+	  a->item[0].type != T_PROGRAM))
+       SIMPLE_BAD_ARG_ERROR("add_quote_tag", 1, "array with function as first element");
+   }
+
   remove = IS_ZERO (sp+1-args);
   if (!remove && args < 3)
     SIMPLE_TOO_FEW_ARGS_ERROR ("add_quote_tag", 3);
@@ -2168,7 +2205,7 @@ static newstate quote_tag_callback(struct parser_html_storage *this,
    this->cstart=*ccutstart;
    this->end=cutend;
    this->cend=ccutend;
-   this->type=TYPE_CONT;
+   this->type=TYPE_QTAG;
 
    SET_ONERROR(uwp,clear_start,this);
 
@@ -3165,8 +3202,10 @@ static void html_at(INT32 args)
 
 /*
 **! method string current()
-**!	Gives the current range of data, ie the contents
-**!	of the tag/entity/etc for the current callback.
+**!	Gives the current range of data, ie the whole tag/entity/etc
+**!	being parsed in the current callback. Returns zero if there's
+**!	no current range, i.e. when the function is not called in a
+**!	callback.
 */
 
 static void html_current(INT32 args)
@@ -3177,17 +3216,19 @@ static void html_current(INT32 args)
       push_feed_range(THIS->start,THIS->cstart,THIS->end,THIS->cend);
    }
    else
-      ref_push_string(empty_string);
+      push_int(0);
 }
 
 /*
 **! method array tag()
 **! method string tag_name()
 **! method string tag_args()
+**! method string tag_content()
 **! method array tag(mixed default_value)
 **! method string tag_args(mixed default_value)
-**!     This gives parsed information about the current thing being
-**!     parsed, e.g. the current tag, container or entity.
+**!     These give parsed information about the current thing being
+**!     parsed, e.g. the current tag, container or entity. They return
+**!     zero if they're not applicable.
 **!
 **!	<tt>tag_name</tt> gives the name of the current tag. If used
 **!	from an entity callback, it gives the string inside the
@@ -3200,8 +3241,11 @@ static void html_current(INT32 args)
 **!	default_value isn't given, the value is set to the same string
 **!	as the key.
 **!
+**!	<tt>tag_content</tt> gives the content of the current tag, if
+**!	it's a container or quote tag.
+**!
 **!	<tt>tag()</tt> gives the equivalent of
-**!	<tt>({tag_name(),tag_args()})</tt>.
+**!	<tt>({tag_name(),tag_args(), tag_content()})</tt>.
 */
 
 static void tag_name(struct parser_html_storage *this,struct piece *feed,int c)
@@ -3330,9 +3374,10 @@ static void html_tag_name(INT32 args)
        break;
      case TYPE_QTAG: {
        struct svalue *v;
-       struct piece *pdummy;
-       int cdummy;
-       quote_tag_lookup (THIS, THIS->start, THIS->cstart, &pdummy, &cdummy, 1, &v);
+       struct piece *beg;
+       int cbeg;
+       scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg, THIS->ws, -THIS->n_ws);
+       quote_tag_lookup (THIS, beg, cbeg, &beg, &cbeg, 1, &v);
        if (!v) push_int (0);
        else push_svalue (v);
        break;
@@ -3366,6 +3411,58 @@ static void html_tag_args(INT32 args)
    }
 }
 
+static void html_tag_content(INT32 args)
+{
+  struct piece *beg;
+  int cbeg;
+
+  pop_n_elems(args);
+
+  if (!THIS->start) error ("Parser.HTML: There's no current range.\n");
+
+  if (!scan_forward (THIS->start, THIS->cstart+1, &beg, &cbeg, THIS->ws, -THIS->n_ws)) {
+    push_int(0);
+    return;
+  }
+
+  switch (THIS->type) {
+    case TYPE_CONT: {
+      struct piece *end, *dummy;
+      int cend, cdummy;
+      if (scan_forward_arg (THIS, beg, cbeg, &beg, &cbeg, 1, 1)) {
+	if (scan_for_end_of_tag (THIS, beg, cbeg, &beg, &cbeg, 1, THIS->match_tag) &&
+	    !find_end_of_container (THIS, sp-1, NULL, beg, cbeg+1,
+				    &end, &cend, &dummy, &cdummy, 1)) {
+	  pop_stack();
+	  if (cmp_feed_pos (end, cend, THIS->end, THIS->cend) < 0)
+	    push_feed_range (beg, cbeg+1, end, cend);
+	  else
+	    push_int(0);
+	}
+	else {
+	  pop_stack();
+	  push_int(0);
+	}
+      }
+      else push_int(0);
+      break;
+    }
+    case TYPE_QTAG: {
+      struct svalue *v;
+      struct piece *end;
+      int cend;
+      if (quote_tag_lookup (THIS, beg, cbeg, &beg, &cbeg, 1, &v) &&
+	  scan_for_string (THIS, beg, cbeg, &end, &cend, v[2].u.string))
+	push_feed_range (beg, cbeg, end, cend);
+      else
+	push_int(0);
+      break;
+    }
+    default:
+      push_int(0);
+  }
+}
+
 static void html_tag(INT32 args)
 {
    check_all_args("tag",args,BIT_MIXED|BIT_VOID,0);
@@ -3373,7 +3470,8 @@ static void html_tag(INT32 args)
    html_tag_args(args);
    html_tag_name(0);
    stack_swap();
-   f_aggregate(2);
+   html_tag_content(0);
+   f_aggregate(3);
 }
 
 static void html_parse_tag_args(INT32 args)
@@ -3740,7 +3838,7 @@ static void html_debug_mode(INT32 args)
 
 #define tCbret tOr4(tZero,tInt1,tStr,tArr(tMixed))
 #define tCbfunc(X) tOr(tFunc(tNone,tCbret),tFunc(tObjImpl_PARSER_HTML X,tCbret))
-#define tTodo(X) tOr4(tZero,tStr,tCbfunc(X),tArr(tCbfunc(X)))
+#define tTodo(X) tOr4(tZero,tStr,tCbfunc(X),tArray)
 #define tTagargs tMap(tStr,tStr)
 
 void init_parser_html(void)
@@ -3785,6 +3883,7 @@ void init_parser_html(void)
    ADD_FUNCTION("tag_args",html_tag_args,
 		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
 		      tMap(tStr,tOr(tStr,tVar(1)))),0);
+   ADD_FUNCTION("tag_content",html_tag_content,tFunc(tNone,tStr),0);
    ADD_FUNCTION("tag",html_tag,
 		tFunc(tOr(tVoid,tSetvar(1,tMixed)),
 		      tArr(tOr(tStr,tMap(tStr,tOr(tStr,tVar(1)))))),0);
