@@ -12030,7 +12030,7 @@ second syntax instead.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Call_out places a call to the function f with the argument args
+Call_out places a call to the function <i>f</i> with the argument <i>args</i>
 in a queue to be called in about delay seconds. The return value
 identifies this call out. The return value can be sent to
 find_call_out or remove_call_out to remove the call out again.
@@ -12738,7 +12738,7 @@ This function cause endless bugs if used without proper care.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function returns the name of the function f. If the function is
+This function returns the name of the function <i>f</i>. If the function is
 a pre-defined function in the driver, zero will be returned.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
@@ -12758,7 +12758,7 @@ a pre-defined function in the driver, zero will be returned.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Function_object will return the object the function f is in. If the
+Function_object will return the object the function <i>f</i> is in. If the
 function is a predefined function from the driver, zero will be
 returned.
 <p>
@@ -13574,7 +13574,7 @@ int remove_call_out(function <I>id</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function finds the first call to the function f in the call
+This function finds the first call to the function <i>f</i> in the call
 out queue and removes it. The time left to that call out will be
 returned. If no call out was found, zero_type(remove_call_out(f))
 will return 1. You can also give a call out id as argument. (as
