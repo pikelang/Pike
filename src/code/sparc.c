@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.33 2002/11/11 16:14:26 grubba Exp $
+|| $Id: sparc.c,v 1.34 2003/02/16 13:33:42 mast Exp $
 */
 
 /*
@@ -428,7 +428,7 @@ void sparc_local_lvalue(unsigned int no)
 {
   LOAD_PIKE_SP();
   LOAD_PIKE_FP();
-  SET_REG(SPARC_REG_I0, T_LVALUE);
+  SET_REG(SPARC_REG_I0, T_SVALUE_PTR);
   /* sth %i0, [ %pike_sp, %g0 ] */
   SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
   SET_REG(SPARC_REG_I0, T_VOID);

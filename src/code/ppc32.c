@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ppc32.c,v 1.29 2002/11/24 20:09:29 marcus Exp $
+|| $Id: ppc32.c,v 1.30 2003/02/16 13:33:42 mast Exp $
 */
 
 /*
@@ -226,8 +226,8 @@ void ppc32_local_lvalue(INT32 arg)
     /* addi r3,r3,offs */
     ADDI(PPC_REG_ARG1, PPC_REG_ARG1, offs);
   }
-  /* li r0,T_LVALUE */
-  SET_REG(0, MAKE_TYPE_WORD(T_LVALUE, 0));
+  /* li r0,T_SVALUE_PTR */
+  SET_REG(0, MAKE_TYPE_WORD(T_SVALUE_PTR, 0));
   /* stw r0,0(pike_sp) */
   STW(0, PPC_REG_PIKE_SP, 0);
   /* li r0,T_VOID */
