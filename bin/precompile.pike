@@ -35,15 +35,16 @@
  * The corresponding cleanup code will be inserted instead of the word EXIT.
  *
  * Currently, the following attributes are understood:
- *   efun;      makes this function a global constant (no value)
- *   flags;     ID_STATIC | ID_NOMASK etc.
- *   optflags;  OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
- *   type;      tInt, tMix etc. use this type instead of automatically
- *              generating a type from the prototype
- *              FIXME: this doesn't quite work
- *   errname;   The name used when throwing errors.
- *   name;      The name used when doing add_function.
- *   prototype; Ignore the function body, just add a prototype entry.
+ *   efun;          makes this function a global constant (no value)
+ *   flags;         ID_STATIC | ID_NOMASK etc.
+ *   optflags;      OPT_TRY_OPTIMIZE | OPT_SIDE_EFFECT etc.
+ *   type;          tInt, tMix etc. use this type instead of automatically
+ *                  generating a type from the prototype
+ *                  FIXME: this doesn't quite work
+ *   errname;       The name used when throwing errors.
+ *   name;          The name used when doing add_function.
+ *   prototype;     Ignore the function body, just add a prototype entry.
+ *   program_flags; PROGRAM_USES_PARENT | PROGRAM_DESTRUCT_IMMEDIATE etc.
  *
  * POLYMORPHIC FUNCTION OVERLOADING
  *   You can define the same function several times with different
@@ -1235,6 +1236,9 @@ class ParseBlock
 		      ({ sprintf("\n  %s_storage_offset=ADD_STORAGE(struct %s_struct);\n",name,name) }) )+
 		subclass->addfuncs+
 		({
+		  attributes->program_flags?
+		  sprintf("  Pike_compiler->new_program->flags |= %s;\n",
+			  attributes->program_flags):"",
 		  sprintf("  %s=end_program();\n",program_var),
 		  sprintf("  add_program_constant(%O,%s,%s);\n",
 			  name,
