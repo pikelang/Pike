@@ -6,7 +6,7 @@
 #ifndef LAS_H
 #define LAS_H
 
-#include "config.h"
+#include "global.h"
 #include "types.h"
 #include "svalue.h"
 #include "dynamic_buffer.h"
