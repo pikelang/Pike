@@ -1,5 +1,5 @@
 /*
- * $Id: des.c,v 1.22 2001/02/12 22:29:31 grubba Exp $
+ * $Id: des.c,v 1.23 2001/04/23 00:13:37 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -163,7 +163,7 @@ static void f_set_decrypt_key(INT32 args)
   THIS->crypt_fun = DesSmallFipsDecrypt;
 }
 
-/*! @decl string encrypt(string data)
+/*! @decl string crypt_block(string data)
  *!
  *! En/decrypt @[data] with DES using the current key.
  */
