@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.248 2002/10/28 17:42:37 nilsson Exp $
+|| $Id: file.c,v 1.249 2002/11/09 21:34:26 per Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.248 2002/10/28 17:42:37 nilsson Exp $");
+RCSID("$Id: file.c,v 1.249 2002/11/09 21:34:26 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1452,6 +1452,27 @@ static int do_close(int flags)
   }
 }
 
+/*! @decl string grantpt()
+ *!
+ *!  If this file has been created by opening /dev/ptmx, return the
+ *!  filename of the associated pts-file. This function should only be
+ *!  called once.
+ */
+static void file_grantpt( INT32 args )
+{
+#if defined(HAVE_GRANTPT)
+  pop_n_elems(args);
+  if( grantpt( FD ) )
+    Pike_error("grantpt failed: %s\n", strerror(errno));
+  push_text( ptsname( FD ) );
+#if defined(HAVE_UNLOCKPT)
+  if( unlockpt( FD ) )
+    Pike_error("unlockpt failed: %s\n", strerror(errno));
+#endif
+#else
+  Pike_error("Not supported\n");
+#endif
+}
 /*! @decl int close()
  *! @decl int close(string direction)
  *!
@@ -3445,6 +3466,10 @@ static void fd__sprintf(INT32 args)
   Pike_sp[-1].subtype = 1;
 }
 
+#ifdef HAVE_OPENPTY
+#include <pty.h>
+#endif
+
 PIKE_MODULE_INIT
 {
   struct object *o;
@@ -3502,7 +3527,6 @@ PIKE_MODULE_INIT
   add_program_constant("Fd_ref",file_ref_program,0);
 
   port_setup_program();
-
   init_sendfile();
   init_udp();
 

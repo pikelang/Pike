@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.23 2002/10/11 01:39:54 nilsson Exp $
+|| $Id: file_functions.h,v 1.24 2002/11/09 21:34:26 per Exp $
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
@@ -69,6 +69,10 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
   FILE_FUNC("lock",file_lock,"function(void|int:object)")
   FILE_FUNC("trylock",file_trylock,"function(void|int:object)")
+#endif
+
+#if defined(HAVE_GRANTPT)
+   FILE_FUNC("grantpt",file_grantpt,"function(void:string)")
 #endif
 
 #if defined(HAVE_TERMIOS_H)
