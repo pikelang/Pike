@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.14 2004/01/14 22:12:59 bill Exp $
+// $Id: Certificate.pmod,v 1.15 2004/01/26 21:50:06 bill Exp $
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -166,7 +166,7 @@ Sequence build_distinguished_name(mapping(string:object) ... args)
 			    } ));
 }
 
-//! Return the certificate issuer from a certificate string.
+//! Return the certificate issuer RDN from a certificate string.
 //!
 //! @param cert
 //! A string containing an X509 certificate.
@@ -181,7 +181,56 @@ Sequence get_certificate_issuer(string cert)
   return Standards.ASN1.Decode.simple_der_decode(cert)->elements[0]->elements[3];
 }
 
-//! Return the certificate subject from a certificate string.
+//! converts an RDN (relative distinguished name) Seqeunce object to a human readable string 
+//! in X500 format.
+//!
+//! @param cert
+//! A string containing an X509 certificate.
+//!
+//! Note that the certificate normally must be decoded using @[MIME.decode_base64].
+//!
+//! @returns
+//!  Astring containing the certificate issuer 
+//!  Distinguished Name (DN) in human readable X500 format.
+//!
+//! @note
+//!  We don't currently handle attributes with multiple values, not all attribute types are
+//!  understood.
+string get_dn_string(Sequence dnsequence)
+{
+  string dn="";
+  array rdns=({});
+
+  foreach(dnsequence->elements, Set att)
+  {
+    foreach(att->elements, Sequence val)
+    {
+      array value = ({});
+      string t = short_name_ids[val->elements[0]];
+      string v = val->elements[1]->value;
+
+      // we must escape characters now.
+      v = replace(v, 
+          ({",", "+", "\"", "\\", "<", ">", ";"}), 
+          ({"\\,", "\\+", "\\\"", "\\\\", "\\<", "\\>", "\\;"}) );
+
+      if(v[0..0] == " ")
+         v="\\" + v;
+      else if(v[0..0] == "#")
+         v="\\" + v;
+
+      if(v[(sizeof(v)-1)..(sizeof(v)-1)] == " ")
+         v=v[0..(sizeof(v)-2)] + "\\ ";
+
+      rdns += ({ (t + "=" + v) });
+    }        
+  }
+  
+  dn = rdns * ",";
+  return dn;  
+}
+
+//! Return the certificate subject RDN from a certificate string.
 //!
 //! @param cert
 //! A string containing an X509 certificate.

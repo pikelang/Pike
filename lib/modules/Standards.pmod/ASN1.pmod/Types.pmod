@@ -1,5 +1,5 @@
 //
-// $Id: Types.pmod,v 1.28 2004/01/11 00:42:00 nilsson Exp $
+// $Id: Types.pmod,v 1.29 2004/01/26 21:50:06 bill Exp $
 //
 
 //! Encodes various asn.1 objects according to the Distinguished
@@ -144,6 +144,7 @@ class Object
   string record_der_contents(string s) {
     record_der(build_der(s));
   }
+
 
   //! Get the DER encoded version of this object.
   //!
@@ -502,6 +503,11 @@ class Identifier
     return "IDENTIFIER " + (array(string)) id * ".";
   }
 #endif
+
+  int __hash()
+  {
+    return hash(get_der());
+  }
 
   int `==(mixed other) {
     return (objectp(other) &&
