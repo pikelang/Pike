@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: zlibmod.c,v 1.55 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: zlibmod.c,v 1.56 2002/10/15 12:43:07 jhs Exp $
 */
 
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.55 2002/10/11 01:39:40 nilsson Exp $");
+RCSID("$Id: zlibmod.c,v 1.56 2002/10/15 12:43:07 jhs Exp $");
 
 #include "zlib_machine.h"
 
@@ -528,8 +528,8 @@ static void gz_crc32(INT32 args)
    push_int((INT32)crc);
 }
 
-/*! @class gzip_file
- *! Read-support for GZip files
+/*! @class _file
+ *! Low-level implementation of read/write support for GZip files
  */
 
 /*! @decl int open(string|int file, void|string mode)
