@@ -586,7 +586,7 @@ static void copy_selectors(struct active_selectors *to,
 /*
  * Backend using kqueue-style poll device.
  *
- * FIXME: Not fully implemented yet!
+ * FIXME: Not fully implemented yet! Out of band data handling is missing.
  *
  * Used on
  *   FreeBSD 4.1 and above.
@@ -609,7 +609,8 @@ static void copy_selectors(struct active_selectors *to,
 #define MY_POLLOUT	EVFILT_WRITE
 
 #define MY_POLLERR	EV_ERROR
-#define MY_POLLHUP	EV_EOF
+/* Let EOF be detected by the read and write callbacks. */
+#define MY_POLLHUP	0	/* EV_EOF */
 
 /* FIXME: The kqueue API has no documented support for out of band data. */
 #define MY_POLLEXCEPT	EVFILT_READ
@@ -2539,54 +2540,7 @@ PIKECLASS Backend
 	  }
 #endif /* MY_POLLNVAL */
 
-	  if (!CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR) &&
-	      CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
-			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (WANT_EVENT (box, READ_OOB))
-	    {
-	      errno = 0;
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      if (box->callback (box, PIKE_FD_READ_OOB) == -1)
-		goto backend_round_done;
-	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
-	  }
-
-	  if (!CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLERR) &&
-	      CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
-	  {
-	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
-	     *        the kqueue case.
-	     */
-	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
-			  getpid(), me->id, fd));
-	    box = SAFE_GET_ACTIVE_BOX (me, fd);
-	    check_box (box, fd);
-	    if (WANT_EVENT (box, READ)) {
-	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
-			    getpid(), me->id, fd, box->ref_obj));
-	      errno = 0;
-	      if (box->callback (box, PIKE_FD_READ) == -1)
-		goto backend_round_done;
-	    }
-#ifdef PIKE_DEBUG
-	    handled = 1;
-#endif /* PIKE_DEBUG */
-	  }
-
-	  /* Note: Only signal POLLHUP on the write end. With kqueue
-	   * we get an EOF event for the last read (with data) which
-	   * we want to ignore. There'll be another read event with no
-	   * data later on, which is what the pike layer expects.
-	   */
-	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR) &&
-	      !CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
+	  if (CHECK_ERROR_EVENT(ACTIVE_POLLSET[i], MY_POLLHUP|MY_POLLERR))
 	  {
 	    /* Closed (write end) or error */
 	    int old_events;
@@ -2637,6 +2591,45 @@ PIKECLASS Backend
 		if (box->callback (box, PIKE_FD_WRITE) == -1)
 		  goto backend_round_done;
 	      }
+	    }
+#ifdef PIKE_DEBUG
+	    handled = 1;
+#endif /* PIKE_DEBUG */
+	  }
+
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLRDBAND)) {
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDBAND on %d\n",
+			  getpid(), me->id, fd));
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
+	    check_box (box, fd);
+	    if (WANT_EVENT (box, READ_OOB))
+	    {
+	      errno = 0;
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_oob_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
+	      if (box->callback (box, PIKE_FD_READ_OOB) == -1)
+		goto backend_round_done;
+	    }
+#ifdef PIKE_DEBUG
+	    handled = 1;
+#endif /* PIKE_DEBUG */
+	  }
+
+	  if (CHECK_EVENT(ACTIVE_POLLSET[i], MY_POLLIN))
+	  {
+	    /* FIXME: Consider utilizing ACTIVE_POLLSET[i].data in
+	     *        the kqueue case.
+	     */
+	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: POLLRDNORM|POLLIN on %d\n",
+			  getpid(), me->id, fd));
+	    box = SAFE_GET_ACTIVE_BOX (me, fd);
+	    check_box (box, fd);
+	    if (WANT_EVENT (box, READ)) {
+	      IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: read_callback(%d, %p)\n",
+			    getpid(), me->id, fd, box->ref_obj));
+	      errno = 0;
+	      if (box->callback (box, PIKE_FD_READ) == -1)
+		goto backend_round_done;
 	    }
 #ifdef PIKE_DEBUG
 	    handled = 1;
