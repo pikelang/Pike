@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.141 2004/04/14 11:42:22 grubba Exp $
+|| $Id: acconfig.h,v 1.142 2004/10/21 14:43:10 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -311,6 +311,9 @@
 
 /* Define if your signals are one-shot */
 #undef SIGNAL_ONESHOT
+
+/* Define this if eval_instruction gets large on your platform. */
+#undef PIKE_SMALL_EVAL_INSTRUCTION
 
 /* Define if you have gcc-style computed goto, and want to use them. */
 #undef HAVE_COMPUTED_GOTO
