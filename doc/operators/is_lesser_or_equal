@@ -11,7 +11,7 @@ DESCRIPTION
 	is lesser than or equal to the second one.
 
 KEYWORDS
-	operator
+	operators
 
 SEE ALSO
 	`!=, `==, `>, `<, `>=

@@ -43,7 +43,7 @@ DESCRIPTION
 		includes) element d.
 
 KEYWORDS
-	type
+	types
 
 SEE ALSO
 	mapping, list, builtin/allocate, builtin/sizeof, builtin/values

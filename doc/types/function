@@ -14,7 +14,7 @@ DESCRIPTION
 	will be returned.
 
 KEYWORDS
-	type
+	types
 
 SEE ALSO
 	object, builtin/call_function, builtin/functionp,

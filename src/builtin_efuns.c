@@ -579,7 +579,14 @@ void f_sizeof(INT32 args)
     tmp=sp[-1].u.list->ind->size;
     free_list(sp[-1].u.list);
     break;
-    
+
+  case T_OBJECT:
+    if(!sp[-1].u.object->prog)
+      error("sizeof() on destructed object.\n");
+    tmp=sp[-1].u.object->prog->num_identifier_indexes;
+    free_object(sp[-1].u.object);
+    break;
+
   default:
     error("Bad argument 1 to sizeof().\n");
     return; /* make apcc happy */
@@ -1263,7 +1270,7 @@ void init_builtin_efuns()
   add_efun("reverse",f_reverse,"function(int:int)|function(string:string)|function(array:array)",0);
   add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
   add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
-  add_efun("sizeof", f_sizeof, "function(string|list|array|mapping:int)",0);
+  add_efun("sizeof", f_sizeof, "function(string|list|array|mapping|object:int)",0);
   add_efun("sleep", f_sleep, "function(int:void)",OPT_SIDE_EFFECT);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
 

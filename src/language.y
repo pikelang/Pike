@@ -113,6 +113,7 @@
 %token F_STRING_ID
 %token F_SUBSCRIPT
 %token F_SUB_EQ
+%token F_TYPEOF
 %token F_VAL_LVAL
 %token F_VARARGS 
 %token F_VOID_ID
@@ -223,7 +224,7 @@ void fix_comp_stack(int sp)
 %type <n> for do cond optional_else_part while statements
 %type <n> local_name_list class catch_arg
 %type <n> unused2 foreach unused switch case return expr_list default
-%type <n> continue break block_or_semi
+%type <n> continue break block_or_semi typeof
 %%
 
 all: program;
@@ -920,6 +921,7 @@ expr4: string
      | F_FLOAT { $$=mkfloatnode($1); }
      | catch
      | gauge
+     | typeof
      | sscanf
      | lambda
      | class
@@ -1029,8 +1031,15 @@ gauge: F_GAUGE '(' unused ')'
 				   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
   } ;
 
+typeof: F_TYPEOF '(' expr0 ')'
+      {
+	node *tmp;
+	tmp=mknode(F_ARG_LIST,$3,0);
+        $$=mkstrnode(describe_type($3->type));
+        free_node(tmp);
+      } ;
 
-catch_arg: '(' unused ')'  { $$=$2; }
+catch_arg: '(' comma_expr ')'  { $$=$2; }
          | block
          ; 
 

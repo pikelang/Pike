@@ -41,7 +41,7 @@ DESCRIPTION
 		already there.
 
 KEYWORDS
-	type
+	types
 
 SEE ALSO
 	array, list, builtin/sizeof, builtin/indices, builtin/values

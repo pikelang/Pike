@@ -1,3 +1,8 @@
+Sun Feb 25 22:42:48 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* operator functions implemented
+	* typeof() added
+
 Sat Feb 24 04:12:52 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* program.c, array.c, object.c, gc.c: 

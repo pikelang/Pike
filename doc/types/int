@@ -33,7 +33,7 @@ DESCRIPTION
 	a >= b	returns 1 if a is greater or equal to b, 0 otherwise
 
 KEYWORDS
-	type
+	types
 
 SEE ALSO
 	float	

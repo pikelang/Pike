@@ -172,6 +172,12 @@ depend: language.c
 	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)/Makefile.in
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
 
+docs:
+	mkdir docs
+
+html_docs: docs
+	$(RUNULPC) $(TMP_BINDIR)/htmlify_docs $(TMP_DOCDIR) docs
+
 #
 # uLPC internal targets
 #

@@ -657,13 +657,13 @@ void gc_check_object(struct object *o)
     
     i=ID_FROM_INT(o->prog, e);
 
-    if(i->run_time_type & IDENTIFIER_FUNCTION) continue;
+    if(i->flags & IDENTIFIER_FUNCTION) continue;
 
     if(i->run_time_type == T_MIXED)
     {
       gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
     }else{
-      gc_check_short_svalue((struct svalue *)LOW_GET_GLOBAL(o,e,i),
+      gc_check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
 			    i->run_time_type);
     }
   }

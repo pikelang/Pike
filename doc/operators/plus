@@ -22,7 +22,7 @@ EXAMPLES
 	`+(2,2,2)	returns 6
 
 KEYWORDS
-	operator
+	operators
 
 SEE ALSO
 	`-, `*
