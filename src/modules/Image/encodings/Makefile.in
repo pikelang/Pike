@@ -1,66 +1,26 @@
-# $Id: Makefile.in,v 1.36 2002/04/06 23:45:31 mast Exp $
-SRCDIR=@srcdir@
+# $Id: Makefile.in,v 1.37 2002/04/30 23:24:10 mast Exp $
+
+@make_variables@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 OBJS = pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o psd.o wbf.o ras.o pvr.o tim.o dsi.o
 
-@SET_MAKE@
-PIKE_SRC_DIR=@PIKE_SRC_DIR@
-BUILD_BASE=@BUILD_BASE@
-
-CC=@CC@
-CPP=@CPP@
-# AR=ar
 RANLIB=@RANLIB@
 
-PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../../.. -I$(SRCDIR)/.. -I../../.. -I.. -I. $(MODULE_CPPFLAGS) $(DEFINES) 
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS) @CCSHARED@ 
+MODULE_CPPFLAGS=-I$(SRCDIR)/.. -I..
+
+@dynamic_module_makefile@
 
 all: encodings.a
-
-.SUFFIXES: .c .o
-
-# GCC dumps core on some files @ OSF1
-# This kluge should work around that...
-# FIXME: Make this a configure option
-.c.o:
-	@echo "Compiling $<" ;\
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
-	else \
-	  echo "Compilation command was:" >&2;\
-	  echo "$(CC) $(CFLAGS) -c $< -o $@" >&2;\
-	  false;\
-	fi
 
 encodings.a : $(OBJS)
 	rm -f encodings.a
 	$(AR) cq encodings.a $(OBJS)
 	$(RANLIB) encodings.a
 
-depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
-
-clean:
-	-rm -f *.o *.a *.so module.so
-
 pike: all
 	cd ../../..; $(MAKE)
 
 pure: all
 	cd ../../..; $(MAKE) pure
-
-Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies config.status
-	CONFIG_FILES=Makefile CONFIG_HEADERS= ./config.status
-	touch remake
-	@echo "Run make again" >&2
-	@exit 1
-
-$(SRCDIR)/configure: $(SRCDIR)/configure.in $(PIKE_SRC_DIR)/aclocal.m4
-	cd $(SRCDIR) && autoconf --localdir=$(PIKE_SRC_DIR)
-	if [ -f $(SRCDIR)/acconfig.h ]; then \
-	  cd $(SRCDIR) && autoheader; \
-	else :; fi
-
-config.status: $(SRCDIR)/configure
-	CFLAGS="$(REAL_CFLAGS)" LDFLAGS="$(REAL_LDFLAGS)" CPPFLAGS="$(REAL_CPPFLAGS)" BUILDDIR="$(TMP_BUILDDIR)" BINDIR="$(TMP_BINDIR)" PIKE_SRC_DIR="$(PIKE_SRC_DIR)" BUILD_BASE="$(BUILD_BASE)" ./config.status --recheck
 
 @dependencies@

@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 2000/09/11 16:04:57 grubba Exp $
+# $Id: configure.in,v 1.7 2002/04/30 23:24:11 mast Exp $
 AC_INIT(pnm.c)
 
 AC_SET_MAKE
@@ -7,7 +7,6 @@ AC_MODULE_INIT()
 
 AC_PROG_RANLIB
 AC_SUBST(RANLIB)
-AC_SUBST(CCSHARED)
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
 
