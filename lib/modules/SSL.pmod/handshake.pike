@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.27 2001/11/02 11:06:04 grubba Exp $
+/* $Id: handshake.pike,v 1.28 2002/03/09 20:30:09 nilsson Exp $
  *
  */
 
@@ -365,7 +365,7 @@ string server_derive_master_secret(string data)
   switch(session->ke_method)
   {
   default:
-    throw( ({ "SSL.handshake: internal error\n", backtrace() }) );
+    error( "SSL.handshake: internal error\n" );
 #if 0
     /* What is this for? */
   case 0:
@@ -563,7 +563,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
   switch(handshake_state)
   {
   default:
-    throw( ({ "SSL.handshake: internal error\n", backtrace() }) );
+    error( "SSL.handshake: internal error\n" );
   case STATE_server_wait_for_hello:
    {
      array(int) cipher_suites;

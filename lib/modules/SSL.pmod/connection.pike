@@ -1,4 +1,4 @@
-/* $Id: connection.pike,v 1.19 2001/09/17 14:51:18 nilsson Exp $
+/* $Id: connection.pike,v 1.20 2002/03/09 20:30:09 nilsson Exp $
  *
  * SSL packet layer
  */
@@ -116,7 +116,7 @@ void send_packet(object packet, int|void priority)
   switch (priority)
   {
   default:
-    throw( ({"SSL.connection->send_packet: internal error\n", backtrace() }) );
+    error( "SSL.connection->send_packet: internal error\n" );
   case PRI_alert:
     alert::put(packet);
     break;

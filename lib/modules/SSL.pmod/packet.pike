@@ -1,4 +1,4 @@
-/* $Id: packet.pike,v 1.9 2001/09/17 14:51:19 nilsson Exp $
+/* $Id: packet.pike,v 1.10 2002/03/09 20:30:09 nilsson Exp $
  *
  * SSL Record Layer
  */
@@ -118,19 +118,19 @@ object|string recv(string data, int version)
 string send()
 {
   if (! PACKET_types[content_type] )
-    throw( ({ "SSL.packet->send: invalid type", backtrace() }) );
+    error( "SSL.packet->send: invalid type" );
   
   if (protocol_version[0] != 3)
-    throw( ({ sprintf("SSL.packet->send: Version %d is not supported\n",
-		      protocol_version[0]), backtrace() }) );
+    error( "SSL.packet->send: Version %d is not supported\n",
+	   protocol_version[0] );
   if (protocol_version[1] > 0)
 #ifdef SSL3_DEBUG
     werror(sprintf("SSL.packet->send: received version %d.%d packet\n",
 		   @ protocol_version));
 #endif
   if (strlen(fragment) > (PACKET_MAX_SIZE + marginal_size))
-    throw( ({ "SSL.packet->send: maximum packet size exceeded\n",
-		backtrace() }) );
+    error( "SSL.packet->send: maximum packet size exceeded\n" );
+
   return sprintf("%c%c%c%2c%s", content_type, @protocol_version,
 		 strlen(fragment), fragment);
 }

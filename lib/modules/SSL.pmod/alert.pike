@@ -1,4 +1,4 @@
-/* $Id: alert.pike,v 1.5 2001/09/17 14:51:18 nilsson Exp $
+/* $Id: alert.pike,v 1.6 2002/03/09 20:30:08 nilsson Exp $
  *
  */
 
@@ -18,9 +18,9 @@ constant is_alert = 1;
 void create(int l, int d, int version, string|void m, mixed|void t)
 {
   if (! ALERT_levels[l])
-    throw( ({ "SSL.alert->create: Invalid level\n", backtrace() }));
+    error( "SSL.alert->create: Invalid level\n" );
   if (! ALERT_descriptions[d])
-    throw( ({ "SSL.alert->create: Invalid description\n", backtrace() }));    
+    error( "SSL.alert->create: Invalid description\n" );
 
   level = l;
   description = d;

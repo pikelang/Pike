@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.18 2001/09/17 21:19:57 nilsson Exp $
+/* $Id: session.pike,v 1.19 2002/03/09 20:30:09 nilsson Exp $
  *
  */
 
@@ -60,8 +60,7 @@ void set_cipher_suite(int suite,int version)
 void set_compression_method(int compr)
 {
   if (compr != COMPRESSION_null)
-    throw( ({ "SSL.session->set_compression_method: Method not supported\n",
-		backtrace() }) );
+    error( "SSL.session->set_compression_method: Method not supported\n" );
   compression_algorithm = compr;
 }
 
