@@ -335,8 +335,8 @@ if test "$GNOME_CONFIG" = "no"; then
   pgtk_has_gnome=nognome
   AC_MSG_RESULT(no);
 else
-  GNOME_CFLAGS="`gnome-config --cflags gnome gnomeui gnorba gtkxmhtml`"
-  GNOME_LIBS="`gnome-config --libs gnome gnomeui gnorba gtkxmhtml`"
+  GNOME_CFLAGS="`gnome-config --cflags gnome gnomeui gnorba gtkxmhtml applets docklets`"
+  GNOME_LIBS="`gnome-config --libs gnome gnomeui gnorba gtkxmhtml applets docklets`"
   pgtk_has_gnome=gnome
   AC_DEFINE(HAVE_GNOME)
   AC_MSG_RESULT(yes);
@@ -425,9 +425,5 @@ fi
 else
   WITH_GTK=0
 fi
-
-echo LIBS: $LIBS
-echo CFLAGS: $CFLAGS
-
 
 AC_OUTPUT(Makefile options)
