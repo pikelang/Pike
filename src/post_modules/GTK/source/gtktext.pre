@@ -110,7 +110,7 @@ string get_text()
   res = begin_wide_shared_string(
     gtk_text_get_length( GTK_TEXT( THIS->obj ) ), 2 );
   for(i=0; i<(unsigned int)res->len; i++)
-    ((int *)res->str)[i] = GTK_TEXT_INDEX( GTK_TEXT( THIS->obj ), i );
+    STR2(res)[i] = GTK_TEXT_INDEX( GTK_TEXT( THIS->obj ), i );
   push_string( end_shared_string( res ) );
 }
 
