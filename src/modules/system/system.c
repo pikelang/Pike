@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.20 1997/08/05 17:03:14 grubba Exp $
+ * $Id: system.c,v 1.21 1997/08/10 00:47:52 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.20 1997/08/05 17:03:14 grubba Exp $");
+RCSID("$Id: system.c,v 1.21 1997/08/10 00:47:52 grubba Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
@@ -289,9 +289,11 @@ void f_setgid(INT32 args)
 }
 
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
+/* int seteuid(int euid) */
 void f_seteuid(INT32 args)
 {
   int id;
+  int err;
 
   get_all_args("seteuid", args, "%i", &id);
  
@@ -303,18 +305,21 @@ void f_seteuid(INT32 args)
   }
 
 #ifdef HAVE_SETEUID
-  seteuid(id);
+  err = seteuid(id);
 #else
-  setresuid(-1, id, -1);
+  err = setresuid(-1, id, -1);
 #endif /* HAVE_SETEUID */
   pop_n_elems(args-1);
+  push_int(err);
 }
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
  
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
+/* int setegid(int egid) */
 void f_setegid(INT32 args)
 {
   int id;
+  int err;
 
   get_all_args("setegid", args, "%i", &id);
 
@@ -327,11 +332,12 @@ void f_setegid(INT32 args)
   }
  
 #ifdef HAVE_SETEGID
-  setegid(id);
+  err = setegid(id);
 #else
-  setresgid(-1, id, -1);
+  err = setresgid(-1, id, -1);
 #endif /* HAVE_SETEUID */
   pop_n_elems(args-1);
+  push_int(err);
 }
 #endif /* HAVE_SETEGID || HAVE_SETRESGID */
 
@@ -742,10 +748,10 @@ void pike_module_init(void)
   add_efun("setuid", f_setuid, "function(int:void)", OPT_SIDE_EFFECT);
   add_efun("setgid", f_setgid, "function(int:void)", OPT_SIDE_EFFECT);
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
-  add_efun("seteuid", f_seteuid, "function(int:void)", OPT_SIDE_EFFECT);
+  add_efun("seteuid", f_seteuid, "function(int:int)", OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
 #if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
-  add_efun("setegid", f_setegid, "function(int:void)", OPT_SIDE_EFFECT);
+  add_efun("setegid", f_setegid, "function(int:int)", OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEGID || HAVE_SETRESGID */
 
   add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
