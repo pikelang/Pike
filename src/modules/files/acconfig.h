@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.4 1997/12/02 21:28:30 grubba Exp $
+ * $Id: acconfig.h,v 1.5 1998/05/17 21:02:03 grubba Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -16,6 +16,12 @@
 
 /* Define if your statfs struct has the f_bavail member */
 #undef HAVE_STATFS_F_BAVAIL
+
+/* Define if you have the struct statvfs */
+#undef HAVE_STRUCT_STATVFS
+
+/* Define if your statvfs struct has the member f_basetype */
+#undef HAVE_STATVFS_F_BASETYPE
 
 /* Define if you have the struct fs_data */
 #undef HAVE_STRUCT_FS_DATA
