@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.22 2000/08/01 19:48:36 sigge Exp $
+# $Id: Makefile.in,v 1.23 2000/08/02 14:05:22 grubba Exp $
 #
 # Makefile for low-level crypto library
 
@@ -82,8 +82,16 @@ desTest.o:	$(SRCDIR)/../include/des.h
 $(GH):		desdata
 		./desdata $@ > $@
 
-desdata:	desdata.o
+desdata:	desdata.@CROSS@
+		test -f ./desdata || ln -s desdata.@CROSS@ desdata
+
+# Not cross-compiling
+desdata.no:	desdata.o
 		$(LINK.c) -o $@ desdata.o
+
+# Cross-compiling
+desdata.yes:	$(SRCDIR)/desdata.pike
+		test -f ./desdata.yes || ln -s $(SRCDIR)/desdata.pike
 
 # new rules  (note: tr|sed|tr is NOT necessary,  just there so .i is readable)
 .c.i:
