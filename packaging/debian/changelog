@@ -1,3 +1,10 @@
+pike7.4 (7.4.11-4) unstable; urgency=low
+
+  * Latest update from CVS
+  * Recompiled with gcc 3.2
+
+ -- Marek Habersack <grendel@debian.org>  Tue,  7 Jan 2003 22:55:22 +0100
+
 pike7.4 (7.4.11-3) unstable; urgency=low
 
   * Recompilation to match the new Postgresql library.
