@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.9 2003/11/28 16:49:37 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.10 2003/11/29 13:23:23 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -876,7 +876,7 @@ PIKEFUN object Compile(object tokenizer, object|void handler)
 /*! @endmodule
  */
 
-void pike_module_init(void)
+PIKE_MODULE_INIT
 {
   {
     struct pike_string *type_name;
@@ -906,7 +906,7 @@ void pike_module_init(void)
   parsetree_module_init();
 }
 
-void pike_module_exit(void) 
+PIKE_MODULE_EXIT
 {
   parsetree_module_exit();
 
