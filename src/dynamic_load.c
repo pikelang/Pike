@@ -7,7 +7,7 @@
 #  include "stralloc.h"
 #  include "pike_macros.h"
 
-RCSID("$Id: dynamic_load.c,v 1.30 1998/07/09 21:55:16 grubba Exp $");
+RCSID("$Id: dynamic_load.c,v 1.31 1998/09/18 21:35:00 hubbe Exp $");
 
 #endif /* !TESTING */
 
@@ -197,12 +197,11 @@ static void dlclose(void *module)
 #endif  /* !EMULATE_DLOPEN */
 
 
+#endif /* HAVE_SOME_DLOPEN */
+
 #ifndef RTLD_NOW
 #define RTLD_NOW 0
 #endif
-
-#endif
-
 
 #ifndef TESTING
 
