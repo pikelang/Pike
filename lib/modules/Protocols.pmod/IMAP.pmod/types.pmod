@@ -39,9 +39,10 @@ array imap_check_array(array a)
 			   if (!item || stringp(item) || objectp(item)) {
 			     return 1;
 			   }
-			   werror(describe_backtrace(
-					   sprintf("Bad array element %O\n",
-						   item), backtrace()));
+			   werror(describe_backtrace( ({
+			     sprintf("Bad array element %O\n", item),
+			     backtrace()
+			   }) ));
 			   return 0;
 			 }));
 }
