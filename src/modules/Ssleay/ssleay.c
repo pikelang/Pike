@@ -4,8 +4,10 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 
+#include "config.h"
+
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.2 1997/03/12 12:20:48 hubbe Exp $");
+RCSID("$Id: ssleay.c,v 1.3 1997/03/13 23:41:08 nisse Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -291,7 +293,7 @@ void pike_module_init(void)
   set_exit_callback(exit_context);
 
   ssleay_program=end_program();
-  add_program_constant("ssleay",ssleay_program);
+  add_program_constant("ssleay", ssleay_program, 0);
   
   start_new_program();
   add_storage(sizeof(struct ssleay_connection));
@@ -306,7 +308,7 @@ void pike_module_init(void)
   set_exit_callback(exit_connection);
 
   ssleay_connection_program=end_program();
-  add_program_constant("connection",ssleay_program);
+  add_program_constant("connection",ssleay_connection_program, 0);
 #endif /* HAVE_SSLEAY */
 }
 
