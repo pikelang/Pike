@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.135 2001/04/14 02:25:49 mast Exp $ */
+/* $Id: html.c,v 1.136 2001/04/14 02:28:12 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -643,18 +643,14 @@ found_start:
 static INLINE void init_calc_chars()
 {
   int i;
-  p_wchar2 chr;
-
   for (i = 0; i < 1 << 3; i++)
     calculate_chars (char_variants + i,
 		     ((i & 1) ? FLAG_STRICT_TAGS : 0) |
 		     ((i & 2) ? FLAG_LAZY_END_ARG_QUOTE : 0) |
 		     ((i & 4) ? FLAG_IGNORE_COMMENTS : 0));
 
-  chr = TAG_END (0);
-  tag_end_string = make_shared_binary_string2 (&chr, 1);
-  chr = TAG_FIN (0);
-  tag_fin_string = make_shared_binary_string2 (&chr, 1);
+  tag_end_string = make_shared_binary_string2 (&TAG_END (0), 1);
+  tag_fin_string = make_shared_binary_string2 (&TAG_FIN (0), 1);
 }
 
 static INLINE void exit_calc_chars()
