@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /* 
- * $Id: X509.pmod,v 1.14 2001/08/23 16:17:17 grubba Exp $
+ * $Id: X509.pmod,v 1.15 2001/10/08 04:32:09 per Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -21,16 +21,14 @@ import Standards.PKCS;
 
 object make_time(int t)
 {
-  object(Calendar.Second) second = Calendar.Second(t)->set_timezone("UTC");
+  Calendar.Second second = Calendar.Second(t)->set_timezone("UTC");
 
-  if (second->year() >= 2050) {
-    throw( ({ "Tools.X509.make_time: "
-	      "Times later than 2049 not supported yet\n",
-	      backtrace() }) );
-  }
+  if (second->year_no() >= 2050) {
+    error( "Tools.X509.make_time: "
+	   "Times later than 2049 not supported yet\n" );
 
   return asn1_utc(sprintf("%02d%02d%02d%02d%02d%02dZ",
-			  second->year() % 100,
+			  second->year_no() % 100,
 			  second->month_no(),
 			  second->month_day(),
 			  second->hour_no(),
@@ -80,12 +78,10 @@ mapping parse_time(object asn1)
 int time_compare(mapping t1, mapping t2)
 {
   foreach( ({ "year", "mon", "mday", "hour", "min", "sec" }), string name)
-    {
-      if (t1->name < t2->name)
-	return -1;
-      if (t1->name > t2->name)
-	return 1;
-    }
+    if (t1[name] < t2[name])
+      return -1;
+    else if (t1[name] > t2[name])
+      return 1;
   return 0;
 }
 
