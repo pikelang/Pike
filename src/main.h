@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: main.h,v 1.10 1999/08/11 22:13:22 hubbe Exp $
+ * $Id: main.h,v 1.11 1999/12/05 15:31:28 grubba Exp $
  */
 #ifndef MAIN_H
 #define MAIN_H
@@ -21,6 +21,7 @@ extern int try_use_mmx;
 
 #define DEBUG_SIGNALS 1
 #define NO_TAILRECURSION 2
+#define DEBUG_TYPES 4
 
 /* Prototypes begin here */
 struct callback *add_post_master_callback(callback_func call,
