@@ -54,6 +54,7 @@ int main(int argc, string *argv)
 		    if(s->pos)
 		    {
 		      werror("\nThis error occured close to tag "+s->tag+" near "+s->location()+"\n");
+		      werror("\nThe tag had the following options: %O\n",s->params);
 		      throw(0);
 		    }
 		  }
