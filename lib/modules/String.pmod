@@ -251,8 +251,8 @@ static private class _Elite
       ({" you are"," your"}),
       ({" you'r"," your"}),
       ({" what the"," wt"}),
-      ({" wt fuck"," wtf"}),
-      ({" wtf?"," wtf!"}),
+      ({" wt fuck"," wt\1001"}),
+      ({" wt\1001?"," wt\1001!"}),
       ({" download"," d/l"}),
       ({" upload"," u/l"}),
       ({"picture","pic"}),
@@ -260,6 +260,15 @@ static private class _Elite
       ({" porn"," pr0n"}),
       ({"cool","kewl"}),
       ({" elite "," 1337 "}),
+      ({"qu","kw"}),
+
+      ({"japanese",".jp"}),
+      ({"japan",".jp"}),
+      ({"swedish",".se"}),
+      ({"sweden",".se"}),
+      ({"chinese",".cn"}),
+      ({"china",".cn"}),
+      ({"france",".fr"}),
    });
 
 // optional recursive translation (in order)
@@ -268,37 +277,48 @@ static private class _Elite
       ({"you",({"u","j00"})}),
       ({" are "," r "}),
       ({" ok "," k "}),
+      ({" any "," ne "}),
       ({"dude","dood"}),
       ({"newbie","noob"}),
+      ({"fuck","\1001-"}),
+      ({"girl","gurl"}),
+      ({"choose","pick"}),
 
       ({"one","1"}),
       ({"two","2"}),
       ({"ate","8"}),
       ({"twi","2"}),
+      ({" to"," 2"}),
       ({"ight","8t"}),
       ({"ite","eet"}),
       ({"four","4"}),
       ({"fore","4"}),
       ({"for","4"}),
 
-      ({"ff","ph"}),
-      ({"f","ph"}),
+      ({"ea","ee"}),
+      ({"nn","n"}),
+      ({"ff","\1002h"}),
+      ({"f","\1002h"}),
+      ({"cks",({"xor"})}),
       ({"cks",({"x","xx","xz"})}),
       ({"cs ",({"kz ","cz "})}),
       ({"ks",({"x","xz"})}),
       ({"cs",({"x","xz"})}),
+      ({"ck ",({"xer "})}),
       ({"ck",({"k","cc"})}),
       ({"ers ",({"ors "})}),
       ({"er ",({"or "})}),
       ({"ed ",({"edz "})}),
+      ({"me ",({"mez "})}),
       ({" el",({" l"})}),
       ({"s ",({"z "})}),
-      ({"s!",({"z."})}),
-      ({"s.",({"z!"})}),
+      ({"s!",({"z!"})}),
+      ({"s.",({"z."})}),
       ({"s,",({"z,"})}),
-      ({"!","!!"}),
-      ({".","!"}),
-      ({"?","??"}),
+      ({"s",({"z"})}),
+      ({". ","! "}),
+      ({"! ","!! "}),
+      ({"? ",({"?? ","!? "})}),
    });
 
 // optional one-time character translation
@@ -311,7 +331,7 @@ static private class _Elite
       "e":({"3"}),
       "f":({}),
       "g":({"6"}),
-      "h":({}),
+      "h":({"|-|"}),
       "i":({"1","|"}),
       "j":({}),
       "k":({"|<"}),
@@ -319,17 +339,17 @@ static private class _Elite
       "m":({"|V|","|\\/|"}),
       "n":({"|\\|"}),
       "o":({"0","()"}),
-      "p":({}),
+      "p":({"I=","p"}),
       "q":({}),
       "r":({}),
       "s":({"5"}),
       "t":({"+","7"}),
-      "u":({}),
+      "u":({"|_|"}),
       "v":({"\\/"}),
-      "w":({}),
+      "w":({"\\/\\/"}),
       "x":({"><"}),
       "y":({}),
-      "z":({"z","Z"}),
+      "z":({}),
 
       "0":({"()"}),
       "1":({"|","l"}),
@@ -356,7 +376,8 @@ static private class _Elite
    string elite_word(string in,void|int leetp)
    {
       if (zero_type(leetp)) leetp=50; // aim for 50% leetness
-      else if (!leetp) return in;
+      else if (!leetp) 
+	 return replace(in,"\1001\1002\1003"/1,"fpl"/1);
 
       array v=rows(elite_char,lower_case(in)/1);
    
@@ -380,10 +401,18 @@ static private class _Elite
 	 {
 	    res+=d[random(sizeof(d))];
 	 }
-	 else if (leetp>50) // add random caps
-	    res+=(random(2)?upper_case:lower_case)(in[i..i]);
 	 else
-	    res+=in[i..i];
+	 {
+	    string s=in[i..i];
+	    if ( (<"\1001","\1002">)[s] )
+	       s=replace(s,"\1001\1002\1003"/1,"fpl"/1);
+
+	       
+	    if (leetp>50) // add random caps
+	       res+=(i&1?upper_case:lower_case)(s);
+	    else
+	       res+=s;
+	 }
 
       return res;
    }
