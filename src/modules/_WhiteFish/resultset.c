@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.10 2001/05/22 14:21:56 per Exp $");
+RCSID("$Id: resultset.c,v 1.11 2001/05/22 14:39:28 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -226,6 +226,13 @@ static int cmp_hits( void *a, void *b )
   return ai < bi ? -1 : ai == bi ? 0 : 1 ;
 }
 
+static int cmp_docid( void *a, void *b )
+{
+  int ai = *(int *)((int *)a);
+  int bi = *(int *)((int *)b);
+  return ai < bi ? -1 : ai == bi ? 0 : 1 ;
+}
+
 static void f_resultset_sort( INT32 args )
 /*
 *! @decl void sort()
@@ -233,6 +240,16 @@ static void f_resultset_sort( INT32 args )
 */
 {
   fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_hits );
+  RETURN_THIS();
+}
+
+static void f_resultset_sort_docid( INT32 args )
+/*
+*! @decl void sort_docid()
+*!   Sort this ResultSet according to document id
+*/
+{
+  fsort( THIS->d->hits, THIS->d->num_docs, 8, (void *)cmp_docid );
   RETURN_THIS();
 }
 
@@ -557,6 +574,8 @@ void init_resultset_program(void)
     add_function("cast", f_resultset_cast, "function(string:mixed)", 0 );
     add_function("test", f_resultset_test, "function(int,int,int:int)", 0 );
     add_function("sort",f_resultset_sort,"function(void:object)",0);
+    add_function("sort_docid",f_resultset_sort_docid,
+		 "function(void:object)",0);
     add_function("dup",f_resultset_dup,"function(void:object)",0);
     add_function("slice",f_resultset_slice,
 		 "function(int,int:array(array(int)))",0);
