@@ -292,16 +292,17 @@ o Audio.Codec and Audio.Codec
     Contains decoders and encoders for audio. Currently WAV and MP3.
     Note: The API remains marked "unstable".
 
-o Calendar.verify
 
-o Crypto.MD4
+o Crypto.md4
     Hash used for NT Lanmanager passwords.
 
 o Crypto.crypt_md5
+    Convenience function to produce crypted $1$ style crypted
+    passwords (commonly called MD5 passwords).
 
 o Debug.Tracer
-
 o Debug.Subject
+    Helper classes that helps in understanding what Pike is doing.
 
 o Locale.Language
 
@@ -314,6 +315,7 @@ o Parser.RCS
 o XML.NSTree
 
 o HTTP.Server
+    A simple HTTP Server.
 
 o Protocols.X.KeySyms
 
@@ -328,12 +330,16 @@ o Standards.ID3
 o Standards.RDF
 
 o System.Time
+    Used to get the current time with sub second precision.
 
 o System.Timer
+    Messures the time between two calls.
 
 o Stdio.FakeFile
+    Wraps a string and exports a Stdio.File interface.
 
-o Stdio.GZipFile
+o Gz.File
+    Pike can now compress and decompress the Gzip format.
 
 o Stdio.expand_symlinks(string path)
     Expands all symlinks along a path (returns 0 for broken links).
@@ -615,3 +621,5 @@ system.get_netinfo_property (Max OS X)
 system.usleep/nanosleep
 system.Memory (a class to read/write from mmap'ed or allocated memory)
 SDL
+
+o Calendar.verify
