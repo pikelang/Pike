@@ -1,7 +1,3 @@
-inherit @module@;
-
-#define INDEX(x) predef::`->(this_object(),(x))
-
 string unsillycaps(string what)
 {
   string res=upper_case(what[0..0]);
@@ -12,6 +8,13 @@ string unsillycaps(string what)
       res += "_"+lower_case(q);
   return res;
 }
+
+
+#if constant(@module@.parse_rc)
+
+inherit @module@;
+
+#define INDEX(x) predef::`->(this_object(),(x))
 
 array setup_gtk(array|string|void name, int|void norc)
 {
@@ -57,3 +60,5 @@ mixed `[](string what)
     return INDEX(upper_case(unsillycaps(what)));
   return  GTKSupport[what];
 }
+
+#endif
