@@ -1,5 +1,5 @@
 /*
- * $Id: join-autodoc.pike,v 1.1 2001/04/18 13:16:12 jhs Exp $
+ * $Id: join-autodoc.pike,v 1.2 2001/04/21 15:05:57 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -16,13 +16,26 @@ int main(int argc, array(string) argv)
 
   werror("Reading %s...\n", argv[2]);
   object dest = Parser.XML.Tree.parse_file(argv[2])[0];
+
+  int fail;
+
   foreach(argv[3..], string filename)
   {
     object src = Parser.XML.Tree.parse_file( filename )[0];
     werror("\rMerging with %s...\n", filename);
-    Tools.AutoDoc.ProcessXML.mergeTrees(dest, src);
+    if (mixed err = catch {
+      Tools.AutoDoc.ProcessXML.mergeTrees(dest, src);
+    }) {
+      if (err->position) {
+	werror("%s %O: %s\n", err->part, err->position, err->message);
+      } else {
+	werror("%s: %s\n", err->part, err->message);
+      }
+      fail = 1;
+    }
   }
-
   werror("\rWriting %s...\n", save_to);
   Stdio.write_file(save_to, dest->html_of_node());
+
+  return fail;
 }
