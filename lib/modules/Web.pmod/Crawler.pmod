@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.5 2001/05/27 17:49:25 js Exp $
+// $Id: Crawler.pmod,v 1.6 2001/05/28 17:01:07 per Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -149,10 +149,12 @@ class Queue
   {
     if(link->fragment)
       link->fragment=0;
-//        werror("allow: %d  deny: %d (%s)\n",
-//  	     allow->check(link), deny->check(link),
-//  	     (string)link);
-    return !deny->check(link) || allow->check(link);
+
+    int a = 1, d = 0;
+
+    if( allow ) a = allow->check(link);
+    if( deny )  d = deny->check(link);
+    return a || !d;
   }
 }
 
@@ -240,7 +242,8 @@ class MySQLQueue
     {
       db->query("create table "+table+" ("
 		"done int(2) unsigned not null, "
-		"uri varchar(255) not null unique primary key)" );
+		"uri varchar(255) not null unique primary key,"
+		"INDEX (done) foo)" );
     };
   }
 
@@ -259,9 +262,10 @@ class MySQLQueue
 
   static void add_uri( Standards.URI uri )
   {
-    if(((!allow && !deny) || check_link(uri, allow, deny))
-       && !has_uri(uri))
+    if(check_link(uri, allow, deny) && !has_uri(uri))
+    {
       db->query( "insert into "+table+" (uri) values (%s)", (string)uri );
+    }
   }
 
   static int empty_count;
@@ -271,7 +275,6 @@ class MySQLQueue
     if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
       return -1;
 
-    db->query( "select GET_LOCK('"+table+"_query',400)");
     array possible =
       db->query( "select uri from "+table+" where done=0 limit 1" );
     if( sizeof( possible ) )
@@ -279,17 +282,18 @@ class MySQLQueue
       string u = possible[0]->uri;
       empty_count=0;
       db->query( "UPDATE "+table+" SET done=1 WHERE uri=%s", (string)u );
-      db->query( "select RELEASE_LOCK('"+table+"_query')");
       return Standards.URI(u);
     }
-    db->query( "select RELEASE_LOCK('"+table+"_query')");
 
     if(stats->concurrent_fetchers())
+    {
       return -1;
-
+    }
     // delay for (quite) a while.
-    if( empty_count++ > 100 )
+    if( empty_count++ > 1000 )
+    {
       return 0;
+    }
     return -1;
   }
 
@@ -323,7 +327,6 @@ class MemoryQueue
   {
     stats=_stats;
     policy=_policy;
-    werror("stats: %O\n",indices(stats));
   }
   
   inherit Queue;
@@ -356,7 +359,7 @@ class MemoryQueue
 	}
     }
 
-    werror("concurrent_fetchers: %d\n",stats->concurrent_fetchers());
+//     werror("concurrent_fetchers: %d\n",stats->concurrent_fetchers());
     if(stats->concurrent_fetchers())
       return -1;
 
@@ -655,7 +658,7 @@ class Crawler
 
     if(uri==-1)
     {
-      call_out(get_next_uri,0.025);
+      call_out(get_next_uri,0.1);
       return;
     }
 
