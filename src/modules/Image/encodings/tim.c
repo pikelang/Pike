@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.1 2000/03/21 06:13:23 peter Exp $");
+RCSID("$Id: tim.c,v 1.2 2000/03/21 15:52:20 peter Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -106,8 +106,8 @@ void img_tim_decode(INT32 args, int header_only)
 {
    struct pike_string *str;
    unsigned char *s;
-   int n = 0;
-   INT32 len, attr;
+   int n=0, hasalpha=0, bpp=0;
+   INT32 len, attr, bsize;
    unsigned int h, w, x;
 
    get_all_args("Image.TIM._decode", args, "%S", &str);
@@ -125,52 +125,53 @@ void img_tim_decode(INT32 args, int header_only)
    n++;
 
    attr = s[4]|(s[5]<<8)|(s[6]<<16)|(s[7]<<24);
+   if(attr&0xfffffff0)
+     error("unknown flags in TIM texture\n");
 
    push_text("attr");
    push_int(attr);
    n++;
 
+   /* note: bsize if bogus when no clut i used. */
+   bsize = s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24);   
+   printf("bsize: %d\n", bsize);
+
+   if(attr&FLAG_CLUT)
+     error("TIM with CLUT not supported\n");
+      
+   switch(attr&7) {
+    case MODE_DC15:
+      //dx and dy word ignored
+      w = s[16]|(s[17]<<8);
+      h = s[18]|(s[19]<<8);
+      bpp = 2;
+      hasalpha = 1;
+      s += 20;
+      len -= 20;
+      break;
+    case MODE_DC24:
+      error("24bit TIMs not supported\n");
+    case MODE_CLUT4:
+    case MODE_CLUT8:
+      error("palette TIMs not supported\n");
+    case MODE_MIXED:
+      error("mixed TIMs not supported\n");
+    default:
+      error("unknown TIM format\n");
+   }
+
+   push_text("xsize");
+   push_int(w);
+   n++;   
+   push_text("ysize");
+   push_int(h);
+   n++;   
+   printf("w: %d, h: %d\n", w, h);
+   
    if(!header_only) {
-     int hasalpha=0, bpp=0;
      struct object *o;
      struct image *img;
      INT32 clut=0;
-
-     if(attr&FLAG_CLUT)
-       error("TIM with CLUT not supported\n");
-
-     /* note: The size part of the CLUT is still present, so it will
-      * take one word. */
-
-     switch(attr&7) {
-      case MODE_DC15:
-	//dx and dy word ignored
-	w = s[16]|(s[17]<<8);
-	h = s[18]|(s[19]<<8);
-	bpp = 2;
-	hasalpha = 1;
-	break;
-      case MODE_DC24:
-	error("24bit TIMs not supported\n");
-      case MODE_CLUT4:
-      case MODE_CLUT8:
-   	error("palette TIMs not supported\n");
-      case MODE_MIXED:
-   	error("mixed TIMs not supported\n");
-      default:
-	error("unknown TIM format\n");
-     }
-
-     s += 20;
-     len -= 20;
-
-     push_text("xsize");
-     push_int(w);
-     n++;   
-     push_text("ysize");
-     push_int(h);
-     n++;   
-     printf("w: %d, h: %d\n", w, h);
 
      if(len < (INT32)(bpp*(h*w)))
        error("short pixel data\n");
