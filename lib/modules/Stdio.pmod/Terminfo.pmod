@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.2 1999/03/17 23:17:42 marcus Exp $
+// $Id: Terminfo.pmod,v 1.3 1999/03/17 23:26:03 marcus Exp $
 
 
 #if constant(thread_create)
@@ -324,7 +324,7 @@ class Terminfo {
     return Array.map(s/2, reverse)*"";
   }
 
-  static private int load_cap(object f)
+  static private int load_cap(object f, int|void bug_compat)
   {
     int magic, sname, nbool, nnum, nstr, sstr;
 
@@ -334,7 +334,10 @@ class Terminfo {
       return 0;
     aliases = (f->read(sname)-"\0")/"|";
     {
-      array(int) bools = values(f->read(nbool/*+(nbool&1)*/)/*[..nbool-1]*/);
+      int blen = nbool;
+      if((nbool&1) && !bug_compat)
+	blen++;
+      array(int) bools = values(f->read(blen)[..nbool-1]);
       if (sizeof(bools)>sizeof(boolnames))
 	bools = bools[..sizeof(boolnames)-1];
       map = mkmapping(boolnames[..sizeof(bools)-1], bools);
@@ -352,6 +355,11 @@ class Terminfo {
     {
       string stroffs = swab(f->read(nstr*2));
       string strbuf = f->read(sstr);
+      if(strlen(strbuf)==sstr-1 && !bug_compat && (nbool&1)) {
+	// Ugh.  Someone didn't pad their bool array properly (one suspects).
+	f->seek(0);
+	return load_cap(f, 1);
+      }
       if(strlen(strbuf)!=sstr)
 	return 0;
       array(string) strarr = Array.map(array_sscanf(stroffs, "%2c"*nstr),
