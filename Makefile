@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.49 2002/01/11 16:50:07 nilsson Exp $
+# $Id: Makefile,v 1.50 2002/01/16 05:27:12 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -126,6 +126,9 @@ install:
 
 install_interactive:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive"
+
+tinstall:
+	@$(MAKE) $(MAKE_FLAGS) "METATARGET=tinstall"
 
 just_verify:
 	@$(MAKE) $(MAKE_FLAGS) "METATARGET=just_verify"
