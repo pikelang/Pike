@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.239 2004/03/15 14:07:39 mast Exp $
+|| $Id: gc.c,v 1.240 2004/03/15 19:03:48 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.239 2004/03/15 14:07:39 mast Exp $");
+RCSID("$Id: gc.c,v 1.240 2004/03/15 19:03:48 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -337,6 +337,8 @@ int attempt_to_identify(void *something, void **inblock)
 
 void *check_for =0;
 void *gc_svalue_location=0;
+static size_t found_ref_count;
+
 char *fatal_after_gc=0;
 
 #ifdef DEBUG_MALLOC
@@ -716,6 +718,7 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
 static void gdb_gc_stop_here(void *a, int weak)
 {
+  found_ref_count++;
   fprintf(stderr,"***One %sref found%s. ",
 	  weak ? "weak " : "",
 	  gc_found_place ? gc_found_place : "");
@@ -1618,6 +1621,7 @@ void locate_references(void *a)
   fprintf(stderr,"**Looking for references to %p:\n", a);
   
   check_for=a;
+  found_ref_count = 0;
 
   GC_ENTER (NULL, PIKE_T_UNKNOWN) {
     mark_externals();
@@ -1640,7 +1644,8 @@ void locate_references(void *a)
   }
 #endif
 
-  fprintf(stderr,"**Done looking for references to %p.\n", a);
+  fprintf(stderr,"**Done looking for references to %p, "
+	  "found %"PRINTSIZET"d refs.\n", a, found_ref_count);
 
   Pike_in_gc = orig_in_gc;
   if(i) exit_gc();
