@@ -345,6 +345,22 @@ static class _ymd_base
 		   enumerate(7,1,1))					\
 	 | mkmapping(map(week_day_names,flat),enumerate(7,1,1))
 
+#define SETUPSTUFF2							\
+      month_n2s=mkmapping(enumerate(12,1,1),month_names);		\
+      month_n2ss= 							\
+	 mkmapping(enumerate(12,1,1),short_month_names);	\
+      month_s2n=							\
+	 mkmapping(map(short_month_names,flat),	\
+		   enumerate(12,1,1))					\
+	 | mkmapping(map(month_names,flat),enumerate(12,1,1));	\
+      week_day_n2s= mkmapping(enumerate(7,1,1),week_day_names);		\
+      week_day_n2ss= mkmapping(enumerate(7,1,1),			\
+			       short_week_day_names);	\
+      week_day_s2n= 							\
+	 mkmapping(map(short_week_day_names,flat),	\
+		   enumerate(7,1,1))					\
+	 | mkmapping(map(week_day_names,flat),enumerate(7,1,1))
+
 
 
 
@@ -925,24 +941,29 @@ class cIRISH
 
    static private constant month_names=
    ({
-      "Eanair",
+      "Eanáir",
       "Feabhra",
-      "Marta",
-      "Aibrean",
-      "Mi na Bealtaine",
+      "Márta",
+      "Aibreán",
+      "Mí na Bealtaine",
       "Meith",
-      "Iuil",
-      "Lunasa",
-      "Mean Fomhair",
-      "Deireadh Fomhair",
-      "Mi na Samhna",
-      "Mi na Nollag",
+      "Iúil",
+      "Lúnasa",
+      "Meán Fómhair",
+      "Deireadh Fómhair",
+      "Mí na Samhna",
+      "Mí na Nollag",
+   });
+
+   static private constant short_month_names=
+   ({
+      "Ean","Fea","Már","Aib","Bea","Mei","Iúi","Lún","MFó","DFó","Sam","Nol"
    });
 
    static private constant week_day_names=
    ({
       "Dé Luain",
-      "Dé Mairt",
+      "Dé Máirt",
       "Dé Céadaoin",
       "Déardaoin",
       "Dé hAoine",
@@ -950,7 +971,12 @@ class cIRISH
       "Dé Domhnaigh",
    });
 
-   void create() { SETUPSTUFF; }
+   static private constant short_week_day_names=
+   ({
+      "Lua","Mai","Céa","Déa","Aoi","Sat", "Dom",
+   });
+
+   void create() { SETUPSTUFF2; }
 }
 
 
