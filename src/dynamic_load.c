@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dynamic_load.c,v 1.69 2003/04/07 17:28:55 nilsson Exp $
+|| $Id: dynamic_load.c,v 1.70 2003/06/06 14:30:02 grubba Exp $
 */
 
 #ifdef TESTING
@@ -24,7 +24,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.69 2003/04/07 17:28:55 nilsson Exp $");
+RCSID("$Id: dynamic_load.c,v 1.70 2003/06/06 14:30:02 grubba Exp $");
 
 #else /* TESTING */
 
@@ -350,7 +350,10 @@ struct compilation_save
 
 static void cleanup_compilation(struct compilation_save *save)
 {
-  free_program(end_program());
+  struct program *p = end_program();
+  if (p) {
+    free_program(p);
+  }
   free_string(lex.current_file);
   compilation_depth = save->compilation_depth;
   lex = save->lex;
@@ -492,11 +495,27 @@ void f_load_module(INT32 args)
 #endif
 
   pop_n_elems(args);
-  push_program(end_program());
-  free_string(lex.current_file);
-  compilation_depth = save.compilation_depth;
-  lex = save.lex;
-  add_ref(new_module->module_prog = Pike_sp[-1].u.program);
+  {
+    struct program *p = end_program();
+    free_string(lex.current_file);
+    compilation_depth = save.compilation_depth;
+    lex = save.lex;
+    if (p) {
+      push_program(p);
+      add_ref(new_module->module_prog = Pike_sp[-1].u.program);
+    } else {
+      /* Initialization failed. */
+      new_module->exit();
+      dlclose(module);
+      dynamic_module_list = new_module->next;
+      free(new_module);
+      if (strlen(module_name) < 1024) {
+	Pike_error("Failed to initialize dynamic module \"%s\".\n", module_name);
+      } else {
+	Pike_error("Failed to initialize dynamic module.\n");
+      }
+    }
+  }
 }
 
 #endif /* USE_DYNAMIC_MODULES */
