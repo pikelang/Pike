@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.182 2004/05/11 15:42:50 grubba Exp $
+|| $Id: encode.c,v 1.183 2004/05/11 19:50:40 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.182 2004/05/11 15:42:50 grubba Exp $");
+RCSID("$Id: encode.c,v 1.183 2004/05/11 19:50:40 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1131,7 +1131,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data, int forc
 	  code_number(p->identifiers[d].identifier_flags,data);
 	  code_number(p->identifiers[d].run_time_type,data);
 	  code_number(p->identifiers[d].opt_flags,data);
-	  if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION)) {
+	  if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags)) {
 	    code_number(p->identifiers[d].func.offset,data);
 	  } else {
 	    Pike_error("Cannot encode functions implemented in C "
@@ -1753,7 +1753,7 @@ void f_encode_value_canonic(INT32 args)
   data->delayed = allocate_array (0);
   data->counter.type=T_INT;
   data->counter.u.integer=COUNTER_START;
-
+  
 #ifdef ENCODE_DEBUG
   data->debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
   data->depth = -2;
@@ -3108,7 +3108,7 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->identifiers[d].identifier_flags,data);
 	    decode_number(p->identifiers[d].run_time_type,data);
 	    decode_number(p->identifiers[d].opt_flags,data);
-	    if (!(p->identifiers[d].identifier_flags & IDENTIFIER_C_FUNCTION))
+	    if (!IDENTIFIER_IS_C_FUNCTION(p->identifiers[d].identifier_flags))
 	    {
 	      decode_number(p->identifiers[d].func.offset,data);
 	    } else {
@@ -3508,7 +3508,7 @@ static void decode_value2(struct decode_data *data)
 	      if (csum != instrs_checksum) {
 		Pike_error("Bad instruction checksum: %d (expected %d)\n",
 			   csum, instrs_checksum);
-	      }       
+	      }	    
 	    }
 #endif /* PIKE_USE_MACHINE_CODE */
 
@@ -4030,6 +4030,7 @@ static void decode_value2(struct decode_data *data)
 	  if (bytecode_method == PIKE_BYTECODE_PORTABLE) {
 	    /* We've regenerated p->program, so these may be off. */
 	    local_num_program = p->num_program;
+	    local_num_relocations = p->num_relocations;
 	    local_num_linenumbers = p->num_linenumbers;
 	  }
 
@@ -4423,15 +4424,16 @@ static void rec_restore_value(char **v, ptrdiff_t *l)
   }
 }
 
-/*! @decl mixed decode_value(string coded_value, object|void codec)
+/*! @decl mixed decode_value(string coded_value, void|Codec codec)
  *!
- *! Decode a value from a string.
+ *! Decode a value from the string @[coded_value].
  *!
  *! This function takes a string created with @[encode_value()] or
  *! @[encode_value_canonic()] and converts it back to the value that was
  *! coded.
  *!
- *! If no codec is specified, the current master object will be used as codec.
+ *! If @[codec] is specified, it's used as the codec for the decode.
+ *! If no codec is specified, the current master object will be used.
  *!
  *! @seealso
  *!   @[encode_value()], @[encode_value_canonic()]
