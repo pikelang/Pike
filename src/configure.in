@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.814 2004/03/11 17:06:19 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.815 2004/03/11 20:36:34 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -7092,7 +7092,7 @@ $bundle_info])
 	  if test "$pike_cv_make_supports_spaces_in_SHELL" = "no"; then
 	    echo "Patching Makefiles..."
 	    echo "Patching Makefiles..." >&AC_FD_CC
-	    for f in `find . -type f \( -name Makefile -o -name makefile \) -print`; do
+	    for f in `find . -type f -name Makefile -print; find . -type f -name makefile -print`; do
 	      echo "  $f" >&AC_FD_CC
 	      if egrep '^[ 	]*SHELL=.*[ 	]*' $f >&AC_FD_CC; then
 	        # SHELL is set to something containing space.
