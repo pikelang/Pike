@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.42 2001/01/15 00:21:47 mast Exp $
+ * $Id: interpret_functions.h,v 1.43 2001/01/31 21:50:57 mast Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -702,6 +702,11 @@ BREAK;
 
 OPCODE0_TAIL(F_MARK2,"mark mark")
   *(Pike_mark_sp++)=Pike_sp;
+
+/* This opcode is only used when running with -d. Identical to F_MARK,
+ * but with a different name to make the debug printouts more clear. */
+OPCODE0_TAIL(F_SYNCH_MARK,"synch mark")
+
 OPCODE0(F_MARK,"mark")
   *(Pike_mark_sp++)=Pike_sp;
 BREAK;
@@ -716,6 +721,22 @@ BREAK;
 
 OPCODE0(F_POP_TO_MARK, "pop to mark")
   pop_n_elems(Pike_sp - *--Pike_mark_sp);
+BREAK;
+
+/* These opcodes are only used when running with -d. The reason for
+ * the two aliases is mainly to keep the indentation in asm debug
+ * output. */
+OPCODE0(F_CLEANUP_SYNCH_MARK, "cleanup synch mark")
+OPCODE0_TAIL(F_POP_SYNCH_MARK, "pop synch mark")
+  if (*--Pike_mark_sp != Pike_sp && d_flag) {
+    ptrdiff_t should = *Pike_mark_sp - Pike_interpreter.evaluator_stack;
+    ptrdiff_t is = Pike_sp - Pike_interpreter.evaluator_stack;
+    if (Pike_sp - *Pike_mark_sp > 0) /* not always same as Pike_sp > *Pike_mark_sp */
+      /* Some attempt to recover, just to be able to report the backtrace. */
+      pop_n_elems(Pike_sp - *Pike_mark_sp);
+    fatal("Stack out of synch - should be %ld, is %ld.\n",
+	  (long) should, (long) is);
+  }
 BREAK;
 
 OPCODE0(F_CLEAR_STRING_SUBTYPE, "clear string subtype")
@@ -860,7 +881,7 @@ BREAK;
 	  pc = Pike_fp->pc;
 	  break;
 	default:
-	  pc+=EXTRACT_INT(pc);
+	  pc+=GET_JUMP();
       }
       break;
 
@@ -963,7 +984,7 @@ BREAK;
 	  assign_lvalue(Pike_sp-4, Pike_sp-1);
 	  free_svalue(Pike_sp-1);
 	  Pike_sp--;
-	  pc+=EXTRACT_INT(pc);
+	  pc+=GET_JUMP();
 	  Pike_sp[-1].u.integer++;
 	}else{
 	  SKIPJUMP();
@@ -1485,34 +1506,41 @@ BREAK;
       pop_stack();
       break;
 
-    CASE(F_CALL_FUNCTION);
-      mega_apply(APPLY_STACK,
-		 DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
-		 0,0);
-      break;
+OPCODE0(F_CALL_FUNCTION, "call function")
+  mega_apply(APPLY_STACK,
+	     DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+	     0,0);
+BREAK;
 
-    CASE(F_CALL_FUNCTION_AND_RETURN);
-    {
-      INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
-      if(!args)
-	PIKE_ERROR("`()", "Too few arguments (call&return).\n", Pike_sp, 0);
-      switch(Pike_sp[-args].type)
-      {
-	case PIKE_T_INT:
-	  if (!Pike_sp[-args].u.integer) {
-	    PIKE_ERROR("`()", "Attempt to call the NULL-value\n",
-		       Pike_sp, args);
-	  }
-	case PIKE_T_STRING:
-	case PIKE_T_FLOAT:
-	case PIKE_T_MAPPING:
-	case PIKE_T_MULTISET:
-	  PIKE_ERROR("`()", "Attempt to call a non-function value.\n",
-		     Pike_sp, args);
+OPCODE0(F_CALL_FUNCTION_AND_POP, "call function & pop")
+  mega_apply(APPLY_STACK,
+	     DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+	     0,0);
+  pop_stack();
+BREAK;
+
+OPCODE0(F_CALL_FUNCTION_AND_RETURN, "call function & return")
+{
+  INT32 args = DO_NOT_WARN(Pike_sp - *--Pike_mark_sp);
+  if(!args)
+    PIKE_ERROR("`()", "Too few arguments (call&return).\n", Pike_sp, 0);
+  switch(Pike_sp[-args].type)
+  {
+    case PIKE_T_INT:
+      if (!Pike_sp[-args].u.integer) {
+	PIKE_ERROR("`()", "Attempt to call the NULL-value\n",
+		   Pike_sp, args);
       }
-      return args;
-    }
-
+    case PIKE_T_STRING:
+    case PIKE_T_FLOAT:
+    case PIKE_T_MAPPING:
+    case PIKE_T_MULTISET:
+      PIKE_ERROR("`()", "Attempt to call a non-function value.\n",
+		 Pike_sp, args);
+  }
+  return args;
+}
+BREAK;
 
 /* Assume that the number of arguments is correct */
 OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
@@ -1535,8 +1563,9 @@ OPCODE1_JUMP(F_COND_RECUR,"recur if not overloaded")
 
 /* Assume that the number of arguments is correct */
 OPCODE0_TAILJUMP(F_RECUR,"recur")
+OPCODE0_TAILJUMP(F_RECUR_AND_POP,"recur & pop")
 {
-  int x;
+  int x, opcode = instr;
   INT32 num_locals, args;
   char *addr;
   struct light_frame_info info;
@@ -1556,7 +1585,7 @@ OPCODE0_TAILJUMP(F_RECUR,"recur")
   args = DO_NOT_WARN(Pike_sp - Pike_fp->locals);
   save_mark_sp = Pike_mark_sp;
 
-  addr=pc+EXTRACT_INT(pc);
+  addr=pc+GET_JUMP();
   num_locals=EXTRACT_UCHAR(addr-2);
 
 #ifdef PIKE_DEBUG
@@ -1588,6 +1617,7 @@ OPCODE0_TAILJUMP(F_RECUR,"recur")
   if(Pike_sp != save_sp+1)
     fatal("Stack whack in F_RECUR Pike_sp=%p, expected=%p\n",Pike_sp,save_sp+1);
 #endif
+  if (opcode == F_RECUR_AND_POP-F_OFFSET) pop_stack();
 }
 BREAK
 
@@ -1602,7 +1632,7 @@ OPCODE0_JUMP(F_TAIL_RECUR,"tail recursion")
 
   fast_check_threads_etc(6);
 
-  addr=pc+EXTRACT_INT(pc);
+  addr=pc+GET_JUMP();
   num_locals=EXTRACT_UCHAR(addr-2);
 
 
