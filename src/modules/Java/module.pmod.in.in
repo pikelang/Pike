@@ -614,10 +614,10 @@ static class package {
 
       i->voidtype = search(i->primitives, "V");
 
-      cls = i->stringwriter_class = find_class("java/io/StringWriter", i);
+      i->stringwriter_class = (cls = find_class("java/io/StringWriter", i))[1];
       i->stringwriter_init = get_method(cls, "<init>", "()V", i);
 
-      cls = i->printwriter_class = find_class("java/io/PrintWriter", i);
+      i->printwriter_class = (cls = find_class("java/io/PrintWriter", i))[1];
       i->printwriter_init = get_method(cls, "<init>", "(Ljava/io/Writer;)V",i);
       i->printwriter_flush = get_method(cls, "flush", "()V", i);
 
