@@ -1,0 +1,31 @@
+Glad you found this file :)
+
+After checking out the files from CVS you will notice that some files
+are missing compared to a regular distribution... To bootstrap your
+Pike development environment you must ddo the following steps:
+
+1) cd src ; ./run_autoconfig
+	This creates configure files and Makefile.in files.
+
+2) Create a build directory an cd to it
+	Do not build in the source dir, doing so will make it impossible
+	to do 'make export' later.
+
+3) run the newly created configure file located in the src dir from the
+   build dir. Make sure to use an absolute path!
+	This creates the Makefiles you need.
+	If you don't use an absolute path the debug information will
+	be all warped...
+
+4) 'make depend'
+	This updates all the Makefile.in files in the source dir to
+	contain the correct dependencies
+
+5) run configure again
+	This updates your Makefiles to include the dependencies.
+	The config.cache file will make this a lot faster.
+
+6) If needed, modify your Makefile
+
+7) 'make'
+	This builds pike.
