@@ -3,6 +3,8 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#define _FILE_OFFSET_BITS 64
+#define _LARGEFILE_SOURCE
 #include <sys/types.h>
 
 #ifndef TESTING

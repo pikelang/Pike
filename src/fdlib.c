@@ -1,6 +1,11 @@
+/* For Solaris 2.6 */
+#define _FILE_OFFSET_BITS 64
+#define _LARGEFILE_SOURCE
+
 #include "fdlib.h"
 #include "error.h"
 #include <math.h>
+
 
 #ifdef HAVE_WINSOCK_H
 

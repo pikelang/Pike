@@ -1,12 +1,14 @@
-/*\
+/* \
 ||| This file a part of Pike, and is copyright by Fredrik Hubinette
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
-\*/
+\ */
+#define _FILE_OFFSET_BITS 64
+#define _LARGEFILE_SOURCE
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.79 1998/03/22 03:25:25 hubbe Exp $");
+RCSID("$Id: file.c,v 1.80 1998/03/22 04:37:19 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -657,24 +659,42 @@ static void file_open(INT32 args)
 
 static void file_seek(INT32 args)
 {
+#ifdef HAVE_LSEEK64
+  long long to;
+#else
   INT32 to;
-
+#endif
   if(args<1 || sp[-args].type != T_INT)
-    error("Bad argument 1 to file->seek().\n");
+    error("Bad argument 1 to file->seek(int to).\n");
 
   if(FD < 0)
     error("File not open.\n");
-  
+
   to=sp[-args].u.integer;
+  if(args>1)
+  {
+    if(sp[-args+1].type != T_INT)
+      error("Bad argument 2 to file->seek(int unit,int mult).\n");
+    to *= sp[-args+1].u.integer;
+  }
+  if(args>2)
+  {
+    if(sp[-args+2].type != T_INT)
+      error("Bad argument 3 to file->seek(int unit,int mult,int add).\n");
+    to += sp[-args+2].u.integer;
+  }
 
   ERRNO=0;
 
+#ifdef HAVE_LSEEK64
+  to=lseek64(FD,to,to<0 ? SEEK_END : SEEK_SET);
+#else
   to=fd_lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
-
+#endif
   if(to<0) ERRNO=errno;
 
   pop_n_elems(args);
-  push_int(to);
+  push_int((INT32)to);
 }
 
 static void file_tell(INT32 args)
@@ -1935,7 +1955,7 @@ void pike_module_init(void)
   add_function("read",file_read,"function(int|void,int|void:int|string)",0);
   add_function("write",file_write,"function(string,void|mixed...:int)",0);
 
-  add_function("seek",file_seek,"function(int:int)",0);
+  add_function("seek",file_seek,"function(int,int|void,int|void:int)",0);
   add_function("tell",file_tell,"function(:int)",0);
   add_function("stat",file_stat,"function(:int *)",0);
   add_function("errno",file_errno,"function(:int)",0);
