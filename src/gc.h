@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.46 2000/06/11 11:59:47 mast Exp $
+ * $Id: gc.h,v 1.47 2000/06/12 03:21:11 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -80,9 +80,10 @@ struct marker
 #define GC_LIVE_OBJ		0x0008
 #define GC_GOT_DEAD_REF		0x0010
 #define GC_RECURSING		0x0020
-#define GC_LIVE_RECURSE		0x0040
-#define GC_WEAK_REF		0x0080
-#define GC_STRONG_REF		0x0100
+#define GC_DONT_POP		0x0040
+#define GC_LIVE_RECURSE		0x0080
+#define GC_WEAK_REF		0x0100
+#define GC_STRONG_REF		0x0200
 
 /* Debug mode flags. */
 #define GC_TOUCHED		0x0400
@@ -126,8 +127,7 @@ int gc_external_mark3(void *a, void *in, char *where);
 int gc_do_weak_free(void *a);
 int gc_mark(void *a);
 int gc_cycle_push(void *x, struct marker *m, int weak);
-int gc_cycle_pop(void *a);
-void gc_cycle_pop_object(struct object *o);
+void gc_cycle_pop(void *a);
 void gc_set_rec_last(struct marker *m);
 void do_gc_recurse_svalues(struct svalue *s, int num);
 void do_gc_recurse_short_svalue(union anything *u, TYPE_T type);
@@ -249,7 +249,7 @@ extern int gc_in_cycle_check;
 	gc_in_cycle_check = 1;						\
       );								\
       enqueue_lifo(&gc_mark_queue,					\
-		   (queue_call) gc_cycle_pop_object, _thing_);		\
+		   (queue_call) gc_cycle_pop, _thing_);			\
       enqueue_lifo(&gc_mark_queue,					\
 		   (queue_call) gc_set_rec_last, _old_last_);		\
       {
