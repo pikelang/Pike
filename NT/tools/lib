@@ -23,13 +23,13 @@ silent_do_cmd() {
   PWD=`pwd`
   RPWD=`fixabspath $PWD`
   if [ x$NT_DEBUG != xyes ]; then
-    echo >$BATFILE "@echo off"
+    echo >$BATFILE "@echo off"
   else
     echo >$BATFILE 
   fi
-  echo >>$BATFILE "$NTDRIVE"
-  echo >>$BATFILE "cd $RPWD"
-  echo >>$BATFILE "$*"
+  echo >>$BATFILE "$NTDRIVE"
+  echo >>$BATFILE "cd $RPWD"
+  echo >>$BATFILE "$*"
   rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
   if [ x$CLEANUP = xyes ]; then
     rm $BATFILE || :
