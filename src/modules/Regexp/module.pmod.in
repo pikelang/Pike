@@ -1,3 +1,5 @@
+// -*- Pike -*-
+
 #pike __REAL_VERSION__
 #define ERR(msg) throw(({ "(Regexp) "+sprintf msg+"\n", backtrace() }))
 

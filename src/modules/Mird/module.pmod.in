@@ -1,4 +1,5 @@
-// $Id: module.pmod.in,v 1.9 2001/08/11 09:10:19 mirar Exp $
+// -*- Pike -*-
+// $Id: module.pmod.in,v 1.10 2002/05/08 19:30:55 nilsson Exp $
 
 #pike __REAL_VERSION__
 

@@ -1,11 +1,9 @@
-/*
- * $Id: module.pmod.in,v 1.26 2001/04/26 14:13:09 grubba Exp $
- *
- * RFC1521 functionality for Pike
- *
- * Marcus Comstedt 1996-1999
- */
-
+// -*- Pike -*-
+//
+// RFC1521 functionality for Pike
+//
+// Marcus Comstedt 1996-1999
+// $Id: module.pmod.in,v 1.27 2002/05/08 19:29:29 nilsson Exp $
 
 #pike __REAL_VERSION__
 inherit @module@;
