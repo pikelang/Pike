@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.16 2001/05/25 20:16:31 per Exp $");
+RCSID("$Id: blob.c,v 1.17 2001/05/25 20:24:59 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -268,13 +268,23 @@ static void _append_blob( struct blob_data *d, struct pike_string *s )
     int docid = wf_buffer_rint( b );
     int nhits = wf_buffer_rbyte( b );
     struct hash *h = find_hash( d, docid );
-    int ohits = h->data->data[4];
-    int i;
-    if( ohits + nhits > 255 )
-      nhits = 255-ohits;
-    h->data->data[4] = nhits+ohits;
-    wf_buffer_memcpy( h->data, b, nhits*2+5 );
+    /* Make use of the fact that this dochash should be empty, and
+     * assume that the incoming data is valid
+     */
+    wf_buffer_rewind_r( b, 5 );
+    wf_buffer_rewind_w( h->data, -1 );
+    wf_buffer_memcpy( h->data, b, nhits*2+5 );    
   }
+/*   { */
+/*     int docid = wf_buffer_rint( b ); */
+/*     int nhits = wf_buffer_rbyte( b ); */
+/*     struct hash *h = find_hash( d, docid ); */
+/*     int i; */
+/*     if( ohits + nhits > 255 ) */
+/*       nhits = 255-ohits; */
+/*     h->data->data[4] = nhits+ohits; */
+/*     wf_buffer_memcpy( h->data, b, nhits*2+5 ); */
+/*   } */
   wf_buffer_free( b );
 }
 
