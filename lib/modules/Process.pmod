@@ -41,8 +41,8 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
       stdout->dup2(File("stdout"));
 
     if(stderr)
-      stderr->dup2(File,"stderr");
-
+      stderr->dup2(File("stderr"));
+    
     exec("/bin/sh","-c",s);
     exit(69);
   }
