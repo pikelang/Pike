@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.33 2000/01/03 19:02:00 grubba Exp $
+ * $Id: mysql.c,v 1.34 2000/07/07 16:05:46 marcus Exp $
  *
  * SQL database functionality for Pike
  *
@@ -89,7 +89,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.33 2000/01/03 19:02:00 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.34 2000/07/07 16:05:46 marcus Exp $");
 
 /*
 **! module Mysql
@@ -101,7 +101,7 @@ RCSID("$Id: mysql.c,v 1.33 2000/01/03 19:02:00 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.33 2000/01/03 19:02:00 grubba Exp $
+**!	$Id: mysql.c,v 1.34 2000/07/07 16:05:46 marcus Exp $
 **!
 **! class mysql
 **!
@@ -656,7 +656,7 @@ static void f_big_query(INT32 args)
   } else {
     /* Return the result-object */
 
-    ref_push_object(fp->current_object);
+    ref_push_object(Pike_fp->current_object);
 
     push_object(clone_object(mysql_result_program, 1));
   }
@@ -1079,7 +1079,7 @@ static void f_list_dbs(INT32 args)
 
   pop_n_elems(args);
 
-  ref_push_object(fp->current_object);
+  ref_push_object(Pike_fp->current_object);
 
   push_object(clone_object(mysql_result_program, 1));
 }
@@ -1155,7 +1155,7 @@ static void f_list_tables(INT32 args)
 
   pop_n_elems(args);
 
-  ref_push_object(fp->current_object);
+  ref_push_object(Pike_fp->current_object);
 
   push_object(clone_object(mysql_result_program, 1));
 }
@@ -1343,7 +1343,7 @@ static void f_list_processes(INT32 args)
     error("mysql->list_processes(): Cannot list databases: %s\n", err);
   }
 
-  ref_push_object(fp->current_object);
+  ref_push_object(Pike_fp->current_object);
 
   push_object(clone_object(mysql_result_program, 1));
 }

@@ -29,7 +29,7 @@
 
 #include "../Image/image.h"
 
-RCSID("$Id: sane.c,v 1.4 2000/03/02 19:22:23 per Exp $");
+RCSID("$Id: sane.c,v 1.5 2000/07/07 16:10:07 marcus Exp $");
 
 /*
 **! module SANE
@@ -38,7 +38,7 @@ RCSID("$Id: sane.c,v 1.4 2000/03/02 19:22:23 per Exp $");
 **!     library from pike
 **!
 **! note
-**!	$Id: sane.c,v 1.4 2000/03/02 19:22:23 per Exp $
+**!	$Id: sane.c,v 1.5 2000/07/07 16:10:07 marcus Exp $
 */
 
 static int sane_is_inited;
@@ -108,7 +108,7 @@ static void f_list_scanners( INT32 args )
   }
 }
 
-#define THIS ((struct scanner *)fp->current_storage)
+#define THIS ((struct scanner *)Pike_fp->current_storage)
 
 static void push_option_descriptor( const SANE_Option_Descriptor *o )
 {
@@ -527,7 +527,7 @@ static void f_scanner_row_scan( INT32 args )
     THREADS_DISALLOW();
     ref_push_object( o );
     push_int( i );
-    ref_push_object( fp->current_object );
+    ref_push_object( Pike_fp->current_object );
     apply_svalue( sp-args-3, 3 );
     pop_stack();
   }
@@ -650,8 +650,8 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
   push_int( p.pixels_per_line );
   push_int( 1 );
   rsp->o = clone_object( image_program, 2 );
-  rsp->t = fp->current_object;
-  fp->current_object->refs++;
+  rsp->t = Pike_fp->current_object;
+  Pike_fp->current_object->refs++;
   rsp->r = ((struct image *)rsp->o->storage)->img;
   rsp->h = THIS->h;
   rsp->p = p;

@@ -1,5 +1,5 @@
 /*
- * $Id: precompiled_mysql.h,v 1.7 2000/02/19 23:59:00 hubbe Exp $
+ * $Id: precompiled_mysql.h,v 1.8 2000/07/07 16:05:47 marcus Exp $
  *
  * SQL database connectivity for Pike
  *
@@ -63,8 +63,8 @@ struct precompiled_mysql_result {
  * Defines
  */
 
-#define PIKE_MYSQL	((struct precompiled_mysql *)(fp->current_storage))
-#define PIKE_MYSQL_RES	((struct precompiled_mysql_result *)(fp->current_storage))
+#define PIKE_MYSQL	((struct precompiled_mysql *)(Pike_fp->current_storage))
+#define PIKE_MYSQL_RES	((struct precompiled_mysql_result *)(Pike_fp->current_storage))
 
 /*
  * Globals
