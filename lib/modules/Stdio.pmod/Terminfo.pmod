@@ -1,4 +1,4 @@
-// $Id: Terminfo.pmod,v 1.3 1999/03/17 23:26:03 marcus Exp $
+// $Id: Terminfo.pmod,v 1.4 1999/03/23 20:48:01 marcus Exp $
 
 
 #if constant(thread_create)
@@ -718,7 +718,7 @@ object defaultTermcapDB()
 {
   object tcdb;
   LOCK;
-  tcdb = deftermcap || (deftermcap = TermcapDB());
+  catch { tcdb = deftermcap || (deftermcap = TermcapDB()); };
   UNLOCK;
   return tcdb;
 }
@@ -727,7 +727,7 @@ object defaultTerminfoDB()
 {
   object tidb;
   LOCK;
-  tidb = defterminfo || (defterminfo = TerminfoDB());
+  catch { tidb = defterminfo || (defterminfo = TerminfoDB()); };
   UNLOCK;
   return tidb;
 }
