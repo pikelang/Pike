@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.105 2000/10/19 13:35:07 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.106 2000/10/20 10:06:50 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1430,7 +1430,7 @@ PMOD_EXPORT struct pike_string *string_replace(struct pike_string *str,
   PCHARP r;
   int shift;
   SearchMojt mojt;
-  replace_searchfunc f;
+  replace_searchfunc f = (replace_searchfunc)0;
 
   if(!str->len)
   {

@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.91 2000/10/19 13:58:45 grubba Exp $");
+RCSID("$Id: array.c,v 1.92 2000/10/20 10:05:40 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1582,7 +1582,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
     }
   }else{
     SearchMojt mojt;
-    explode_searchfunc f;
+    explode_searchfunc f = (explode_searchfunc)0;
     
     s=str->str;
     end=s+(str->len << str->size_shift);
