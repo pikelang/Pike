@@ -238,8 +238,10 @@ static void sha_transform(struct sha_ctx *ctx, unsigned INT32 *data )
 }
 
 #if 1
+
 #ifndef EXTRACT_UCHAR
 #define EXTRACT_UCHAR(p)  (*(unsigned char *)(p))
+#endif
 
 #define STRING2INT(s) ((((((EXTRACT_UCHAR(s) << 8)    \
 			 | EXTRACT_UCHAR(s+1)) << 8)  \
