@@ -97,14 +97,14 @@ boolean my_empty_output_buffer(struct jpeg_compress_struct *cinfo)
    int pos;
    char *new;
 
-   pos=dm->len-dm->pub.free_in_buffer;
-   new=realloc(dm->buf,dm->len+BUF_INCREMENT);
+   pos=dm->len; /* foo! dm->len-dm->pub.free_in_buffer; */
+   new=(char*)realloc(dm->buf,dm->len+BUF_INCREMENT);
    if (!new) return FALSE;
 
    dm->buf=new;
-   dm->pub.free_in_buffer+=BUF_INCREMENT;
    dm->len+=BUF_INCREMENT;
-   dm->pub.next_output_byte=new+pos;
+   dm->pub.free_in_buffer=dm->len-pos;
+   dm->pub.next_output_byte=(JOCTET*)new+pos;
 
    return TRUE;
 }
