@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.162 2000/06/03 21:01:02 per Exp $ */
+/* $Id: image.c,v 1.163 2000/06/05 03:04:10 mast Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.162 2000/06/03 21:01:02 per Exp $
+**!	$Id: image.c,v 1.163 2000/06/05 03:04:10 mast Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.162 2000/06/03 21:01:02 per Exp $");
+RCSID("$Id: image.c,v 1.163 2000/06/05 03:04:10 mast Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2273,8 +2273,8 @@ void image_color(INT32 args)
        x = x%4;
        s -= x;
      }
-   }
 #endif
+   }
    while (x--)
    {
       d->r=( (((long)rgb.r*s->r)/255) );
