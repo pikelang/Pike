@@ -1,5 +1,5 @@
 /*
- * $Id: join-autodoc.pike,v 1.5 2001/04/26 14:37:35 grubba Exp $
+ * $Id: join-autodoc.pike,v 1.6 2001/07/16 20:33:26 grubba Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -15,13 +15,30 @@ int main(int argc, array(string) argv)
   werror("Joining %d file%s...\n", files, (files==1?"":"s"));
 
   werror("Reading %s...\n", argv[2]);
+  //trace(5);
   object dest = Parser.XML.Tree.parse_file(argv[2])[0];
 
   int fail;
 
   foreach(argv[3..], string filename)
-  {
-    object src = Parser.XML.Tree.parse_file( filename )[0];
+  {    
+    object src;
+    if (mixed err = catch {
+      src = Parser.XML.Tree.parse_file( filename )[0];
+    }) {
+      if (arrayp(err)) {
+	throw(err);
+      }
+      if (stringp(err)) {
+	werror("%s: %s", filename, err);
+      } else if (err->position) {
+	werror("%s %O: %s\n", err->part, err->position, err->message);
+      } else {
+	werror("%s: %s\n", err->part, err->message);
+      }
+      fail = 1;
+      continue;
+    }
     if (!src) {
       werror("\rFailed to read %O\n", filename);
       continue;
