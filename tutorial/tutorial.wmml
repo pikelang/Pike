@@ -190,11 +190,11 @@ or go buy a beginners book about UNIX.
 <section title="Your first Pike program">
 
 <example language=pike>
-	int main()
-	{
-	  write("hello world\n");
-	  return 0;
-	}
+int main()
+{
+  write("hello world\n");
+  return 0;
+}
 </example>
 Let's call this file hello_world.pike, and then we try to run it:
 <p>
@@ -205,7 +205,7 @@ Let's call this file hello_world.pike, and then we try to run it:
 </pre>
 Pretty simple, Let's see what everything means:
 <example language=pike>
-	int main()
+int main()
 </example>
 This begins the function <tt>main</tt>. Before the function name the type of value
 it returns is declared, in this case <tt>int</tt> which is the name of the
@@ -216,16 +216,16 @@ Pike is, as many other programming languages, built upon the concept of function
 Now let's examine the body of <tt>main</tt>;
 <p>
 <example language=pike>
-	{
-	  write("hello world\n");
-	  return 0;
-	}
+{
+  write("hello world\n");
+  return 0;
+}
 </example>
 Within the function body, programming instructions, statements, are grouped together in blocks. A block is a series of statements placed between curly brackets. Every statement has to end in a semicolon. This group of statements will
 be executed every time the function is called.
 <p>
 <example language=pike>
-	write("hello world\n");
+write("hello world\n");
 </example>
 The first statement is a call to the builtin function <tt>write</tt>. This will
 execute the code in the function <tt>write</tt> with the arguments as input data.
@@ -235,7 +235,7 @@ character.
 <tt>write</tt> then writes this string to stdout when executed. Stdout is the standard Unix output channel, usually the screen.
 <p>
 <example language=pike>
-	return 0;
+return 0;
 </example>
 This statement exits the function and returns the value zero. Any statements
 following the return statements will not be executed.
@@ -249,13 +249,13 @@ unpractical. Fortunately, Unix provides us with a way of automating this
 somewhat. If we modify hello_world.pike to look like this:
 <p>
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 
-	int main()
-	{
-	  write("hello world\n");
-	  return 0;
-	}
+int main()
+{
+  write("hello world\n");
+  return 0;
+}
 </example>
 And then we tell UNIX that hello_world.pike is executable so we can run
 hello_world.pike without having to bother with running Pike:
@@ -283,18 +283,18 @@ what it should output based on the command line option.
 This is what it could look like:
 <p>
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 
-	int main(int argc, array(string) argv)
-	{
-	  if(argc &gt; 1 &amp;&amp; argv[1]=="--traditional")
-	  {
-	    write("hello world\n"); // old style
-	  }else{
-	    write("Hello world!\n"); // new style
-	  }
-	  return 0;
-	}
+int main(int argc, array(string) argv)
+{
+  if(argc &gt; 1 &amp;&amp; argv[1]=="--traditional")
+  {
+    write("hello world\n"); // old style
+  }else{
+    write("Hello world!\n"); // new style
+  }
+  return 0;
+}
 </example>
 Let's run it:
 <p>
@@ -308,7 +308,7 @@ Let's run it:
 </pre>
 What is new in this version, then?
 <example language=pike>
-	int main(int argc, array(string) argv)
+int main(int argc, array(string) argv)
 </example>
 In this version the space between the parenthesis has been filled.
 What it means is that <tt>main</tt> now takes two arguments.
@@ -321,12 +321,12 @@ words were written on the command line (including the command itself) and
 <tt>argv</tt> is an array formed by these words.
 <p>
 <example language=pike>
-	  if(argc &gt; 1 &amp;&amp; argv[1] == "--traditional")
-	  {
-	    write("hello world\n"); // old style
-	  }else{
-	    write("Hello world!\n"); // new style
-	  }
+if(argc &gt; 1 &amp;&amp; argv[1] == "--traditional")
+{
+  write("hello world\n"); // old style
+}else{
+  write("Hello world!\n"); // new style
+}
 </example>
 This is an if-else statement, it will execute what's between the first set
 of brackets if the expression between the parenthesis evaluate to something
@@ -334,7 +334,7 @@ other than zero. Otherwise what's between the second set of brackets will
 be executed. Let's look at that expression:
 <p>
 <example language=pike>
-	argc &gt; 1 &amp;&amp; argv[1] == "--traditional"
+argc &gt; 1 &amp;&amp; argv[1] == "--traditional"
 </example>
 Loosely translated, this means: argc is greater than one,  and the second
 element in the array argv is equal to the string <tt>--traditional</tt>. Since
@@ -344,7 +344,7 @@ if there was anything after the program invocation.
 Also note the comments:
 <p>
 <example language=pike>
-	    write("hello world\n"); // old style
+write("hello world\n"); // old style
 </example>
 The <tt>//</tt> begins a comment which continues to the end of the line.
 Comments will be ignored by the computer when it reads the code.
@@ -364,18 +364,18 @@ execute pieces of code in more interesting orders than from top to bottom.
 <p>
 We have already seen an example of the <tt>if</tt> statement:
 <example language=pike meta=expression,statement1,statement2>
-	if( expression )
-	   statement1;
-	else
-	   statement2;
+if( expression )
+  statement1;
+else
+  statement2;
 </example>
 <!-- FIXME: should if have a capital letter or not? -->
 <tt>if</tt> simply evaluates the expression and if the result is true it
 executes <i>statement1</i>, otherwise it executes <i>statement2</i>. If you have no need for
 statement2 you can leave out the whole else<!-- FIXME: tt/italics --> part like this:
 <example language=pike meta=expression,statement1>
-	if( expression )
-	  statement1;
+if( expression )
+  statement1;
 </example>
 In this case <i>statement1</i> is evaluated if <i>expression</i> is true, otherwise
 nothing is evaluated.
@@ -384,9 +384,9 @@ nothing is evaluated.
    understand what <tt>if</tt> does.</b>
 <p>
 Another very simple control structure is the <tt>while</tt> statement:
-<example language=pike meta=expression,statemente>
-	while( expression )
-	  statement;
+<example language=pike meta=expression,statement>
+while( expression )
+  statement;
 </example>
 This statement evaluates <i>expression</i> and if it is found to be true it
 evaluates <i>statement</i>. After that it starts over and evaluates <i>expression</i>
@@ -401,10 +401,10 @@ Another control structure we have already seen is the function.
 A function is simply a block of Pike code that can be executed with different arguments from different places in the program.
 A function is declared like this:
 <example language=pike meta=modifiers,type,varname1,varname2,statements>
-	modifiers type name(type varname1, type varname2, ...)
-	{
-	  statements
-	}
+modifiers type name(type varname1, type varname2, ...)
+{
+  statements
+}
 </example>
 The <i>modifiers</i> are optional. See <ref to=modifiers> for more details about
 modifiers. The <i>type </i> specifies what kind of data the function returns.
@@ -419,7 +419,7 @@ body. Those statements will be executed whenever the function is called.
 <p>
 <b>Example:</b>
 <example language=pike>
-	int sqr(int x) { return x*x; }
+int sqr(int x) { return x*x; }
 </example>
 This line defines a function called <tt>sqr</tt> to take one argument of the
 type <tt>int</tt> and also returns an <tt>int</tt>. The code itself returns
@@ -465,12 +465,12 @@ Arrays in Pike are allocated blocks of values.
 They are dynamically allocated and do not need to be declared as in C.
 The values in the array can be set when creating the array like this:
 <example language=pike>
-	arr=({1,2,3});
+arr=({1,2,3});
 </example>
 Or, if you have already created an array, you can change the values
 in the array like this:
 <example language=pike meta=arr,ind,data>
-	arr [ ind ] = data;
+arr [ ind ] = data;
 </example>
 This sets entry number <i>ind</i> in the array <i>arr</i> to <i>data</i>.
 <i>ind</i> must be an integer.
@@ -479,17 +479,17 @@ The first index of an array is 0 (zero). A negative index will count from the en
 To declare that a variable is an array we simply type <tt>array</tt> in
 front of the variable name we want:
 <example language=pike>
-	array i;
+array i;
 </example>
 
 We can also declare several array variables on the same line:
 <example language=pike>
-	array i, j;
+array i, j;
 </example>
 If we want to specify that the variable should hold an array of strings,
 we would write:
 <example language=pike>
-	array (string) i;
+array (string) i;
 </example>
 
 <dt>String
@@ -512,7 +512,7 @@ When writing a string in a program, you enclose it in double quotes. To write sp
 <dd>A mapping is basically an array that can be indexed on any type, not just integers. It can also be seen as a way of linking data (usually strings) together. It consists of a lot of index-data pairs which are linked together in such a way that map[index1] returns data1.
 A mapping can be created in a way similar to arrays:
 <example language=pike>
-	mapping(string:string) map=(["five":"good", "ten":"excellent"]);
+mapping(string:string) map=(["five":"good", "ten":"excellent"]);
 </example>
 You can also set that data by writing map["five"]="good".
 If you try to set an index in a mapping that isn't already present in the mapping it will be added as well.
@@ -534,68 +534,68 @@ where the index is the record name and the data is an array of strings.
 The strings are of course the song names. The default register consists
 of one record.
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 
-	mapping (string:array(string)) records =
-	([
-	  "Star Wars Trilogy" : ({
-	    "Fox Fanfare",
-	    "Main Title",
-	    "Princess Leia's Theme",
-	    "Here They Come",
-	    "The Asteroid Field",
-	    "Yoda's Theme",
-	    "The Imperial March",
-	    "Parade of the Ewoks",
-	    "Luke and Leia",
-	    "Fight with Tie Fighters",
-	    "Jabba the Hut",
-	    "Darth Vader's Death",
-	    "The Forest Battle",
-	    "Finale"
-	  })
-	]);
+mapping (string:array(string)) records =
+([
+  "Star Wars Trilogy" : ({
+    "Fox Fanfare",
+    "Main Title",
+    "Princess Leia's Theme",
+    "Here They Come",
+    "The Asteroid Field",
+    "Yoda's Theme",
+    "The Imperial March",
+    "Parade of the Ewoks",
+    "Luke and Leia",
+    "Fight with Tie Fighters",
+    "Jabba the Hut",
+    "Darth Vader's Death",
+    "The Forest Battle",
+    "Finale"
+  })
+]);
 </example>
 We want to be able to get a simple list of the records in our database. The function <tt>list_records</tt> just goes through the mapping <tt>records</tt> and puts the indices, i.e. the record names, in an array of strings, record_names. By using the builtin function <tt>sort</tt> we put the record names into the array in alphabetical order which might be a nice touch.
 For the printout we just print a header, "Records:", followed by a newline. Then we use the loop control structure <tt>for</tt> to traverse the array and print every item in it, including the number of the record, by counting up from zero to the last item of the array. The builtin function <tt>sizeof</tt> gives the number of items in an array. The printout is formatted through the use of <tt>sprintf</tt> which works more or less like the C function of the same name.
 <example language=pike>
-	void list_records()
-	{
-	  int i;
-	  array (string) record_names=sort(indices(records));
+void list_records()
+{
+  int i;
+  array (string) record_names=sort(indices(records));
 
-	  write("Records:\n");
-	  for(i=0;i&lt;sizeof(record_names);i++)
-	    write(sprintf("%3d: %s\n", i+1, record_names[i]));
-	}
+  write("Records:\n");
+  for(i=0;i&lt;sizeof(record_names);i++)
+    write(sprintf("%3d: %s\n", i+1, record_names[i]));
+}
 </example>
 If the command line contained a number our program will find the record of that number and print its name along with the songs of this record. First we create the same array of record names as in the previous function, then we find the name of the record whose number (<tt>num</tt>) we gave as an argument to this function. Next we put the songs of this record in the array <tt>songs</tt> and print the record name followed by the songs, each song on a separate line.
 <example language=pike>
-	void show_record(int num)
-	{
-	  int i;
-	  array (string) record_names =	sort(indices (records));
-	  string name=record_names[num-1];
-	  array (string) songs=records[name];
+void show_record(int num)
+{
+  int i;
+  array (string) record_names =	sort(indices (records));
+  string name=record_names[num-1];
+  array (string) songs=records[name];
   
-	  write(sprintf("Record %d, %s\n",num,name));
-	  for(i=0;i&lt;sizeof(songs);i++)
-	    write(sprintf("%3d: %s\n", i+1, songs[i]));
-	}
+  write(sprintf("Record %d, %s\n",num,name));
+  for(i=0;i&lt;sizeof(songs);i++)
+    write(sprintf("%3d: %s\n", i+1, songs[i]));
+}
 </example>
 The main function doesn't do much; it checks whether there was anything on the command line after the invocation.
 If this is not the case it calls the list_records function, otherwise it sends the given argument to the show_record function.
 When the called function is done the program just quits.
 <example language=pike>
-	int main(int argc, array (string) argv)
-	{
-	  if(argc &lt;= 1)
-	  {
-	    list_records();
-	  } else {
-	    show_record((int) argv[1]);
-	  }
-	}
+int main(int argc, array (string) argv)
+{
+  if(argc &lt;= 1)
+  {
+    list_records();
+  } else {
+    show_record((int) argv[1]);
+  }
+}
 </example>
 
 <section title="Taking care of input">
@@ -615,22 +615,22 @@ If it is not a dot, the string will be added to the array of songs for this reco
 Note the <tt>+=</tt> operator. It is the same as saying
 <tt>records[record_name]=records[record_name]+({song})</tt>.
 <example language=pike>
-	void add_record()
-	{
-	  string record_name=readline("Record name: ");
-	  records[record_name]=({});
-	  write("Input song names, one per line. End with '.' on its own line.\n");
-	  while(1)
-	  {
-	    string song;
-	    song=readline(sprintf("Song %2d: ",
-	                          sizeof(records[record_name])+1));
-	    if(song==".")
-	       return;
-	    if (strlen(song))
-	      records[record_name]+=({song});
-	  }
-	}
+void add_record()
+{
+  string record_name=readline("Record name: ");
+  records[record_name]=({});
+  write("Input song names, one per line. End with '.' on its own line.\n");
+  while(1)
+  {
+    string song;
+    song=readline(sprintf("Song %2d: ",
+                          sizeof(records[record_name])+1));
+    if(song==".")
+       return;
+    if (strlen(song))
+      records[record_name]+=({song});
+  }
+}
 </example>
 
 </section>
@@ -653,34 +653,34 @@ on it. If there is no argument it shows a list of the records in the database.
 "add" of course turns control over to the function described above.
 If the command given is "quit" the <tt>exit(0)</tt> statement stops the execution of the program and returns 0 (zero) to the operating system, telling it that everything was ok.
 <example language=pike>
-	int main(int argc, array(string) argv)
-	{
-	  string cmd;
-	  while(cmd=readline("Command: "))
-	  {
-	    string args;
-	    sscanf(cmd,"%s %s",cmd,args);
+int main(int argc, array(string) argv)
+{
+  string cmd;
+  while(cmd=readline("Command: "))
+  {
+    string args;
+    sscanf(cmd,"%s %s",cmd,args);
 
-	    switch(cmd)
-	    {
-	    case "list":
-	      if((int)args)
-	      {
-	        show_record((int)args);
-	      } else {
-	        list_records();
-	      }
-	      break;
+    switch(cmd)
+    {
+    case "list":
+      if((int)args)
+      {
+        show_record((int)args);
+      } else {
+        list_records();
+      }
+      break;
 
-	    case "quit":
-	      exit(0);
+    case "quit":
+      exit(0);
 
-	    case "add":
-	      add_record();
-	      break;
-	    }
-	  }
-	}
+    case "add":
+      add_record();
+      break;
+    }
+  }
+}
 </example>
 
 </section>
@@ -707,26 +707,26 @@ We precede record names with the string "Record: " and song names with "Song: ".
 We also put every entry, be it song or record, on its own line by adding a newline to everything we write to the file.<br>
 Finally, remember to close the file.
 <example language=pike>
-	void save(string file_name)
-	{
-	  string name, song;
-	  Stdio.File o=Stdio.File();
+void save(string file_name)
+{
+  string name, song;
+  Stdio.File o=Stdio.File();
 
-	  if(!o-&gt;open(file_name,"wct"))
-	  {
-	    write("Failed to open file.\n");
-	    return;
-	  }
+  if(!o-&gt;open(file_name,"wct"))
+  {
+    write("Failed to open file.\n");
+    return;
+  }
 
-	  foreach(indices(records),name)
-	  {
-	     o-&gt;write("Record: "+name+"\n");
-	     foreach(records[name],song)
-	       o-&gt;write("Song: "+song+"\n");
-	  }
+  foreach(indices(records),name)
+  {
+    o-&gt;write("Record: "+name+"\n");
+    foreach(records[name],song)
+      o-&gt;write("Song: "+song+"\n");
+  }
 
-	  o-&gt;close();
-	}
+  o-&gt;close();
+}
 </example>
 
 </section>
@@ -738,42 +738,42 @@ When receiving data from the file we put it in the string <tt>file_contents</tt>
 The absence of arguments to the method o-&gt;read means that the reading should not end until the end of the file.
 After having closed the file we initialize our database, i.e. the mapping records. Then we have to put <tt>file_contents</tt> into the mapping and we do this by splitting the string on newlines (cf. the split operator in Perl) using the division operator. Yes, that's right: by dividing one string with another we can obtain an array consisting of parts from the first. And by using a <tt>foreach</tt> statement we can take the string <tt>file_contents</tt> apart piece by piece, putting each piece back in its proper place in the mapping records.
 <example language=pike>
-	void load(string file_name)
-	{
-	  string name="ERROR";
-	  string file_contents,line;
+void load(string file_name)
+{
+  string name="ERROR";
+  string file_contents,line;
 
-	  Stdio.File o=Stdio.File();
-	  if(!o-&gt;open(file_name,"r"))
-	  {
-	    write("Failed to open file.\n");
-	    return;
-	  }
+  Stdio.File o=Stdio.File();
+  if(!o-&gt;open(file_name,"r"))
+  {
+    write("Failed to open file.\n");
+    return;
+  }
 
-	  file_contents=o-&gt;read();
-	  o-&gt;close();
+  file_contents=o-&gt;read();
+  o-&gt;close();
 
-	  records=([]);
+  records=([]);
 
-	  foreach(file_contents/"\n",line)
-	  {
-	    string cmd, arg;
-	    if(sscanf(line,"%s: %s",cmd,arg))
-	    {
-	      switch(lower_case(cmd))
-	      {
-	      case "record":
-	        name=arg;
-	        records[name]=({});
-	        break;
+  foreach(file_contents/"\n",line)
+  {
+    string cmd, arg;
+    if(sscanf(line,"%s: %s",cmd,arg))
+    {
+      switch(lower_case(cmd))
+      {
+      case "record":
+        name=arg;
+        records[name]=({});
+        break;
 
-	       case "song":
-	         records[name]+=({arg});
-	         break;
-	      }
-	    }
-	  }
-	}
+       case "song":
+         records[name]+=({arg});
+         break;
+      }
+    }
+  }
+}
 </example>
 </section>
 
@@ -781,13 +781,13 @@ After having closed the file we initialize our database, i.e. the mapping record
 
 <tt>main()</tt> remains almost unchanged, except for the addition of two case statements with which we now can call the load and save functions. Note that you must provide a filename to load and save, respectively, otherwise they will return an error which will crash the program.
 <example language=pike>
-	case "save":
-	  save(args);
-	  break;
+case "save":
+  save(args);
+  break;
 
-	case "load":
-	  load(args);
-	  break;
+case "load":
+  load(args);
+  break;
 </example>
 <p>
 </section>
@@ -802,13 +802,13 @@ If you sell one of your records it might be nice to able to delete that entry fr
 First we set up an array of record names (cf. the <tt>list_records</tt> function).
 Then we find the name of the record of the number <tt>num</tt> and use the builtin function <tt>m_delete()</tt> to remove that entry from <tt>records</tt>.
 <example language=pike>
-	void delete_record(int num)
-	{
-	  array(string) record_names=sort(indices(records));
-	  string name=record_names[num-1];
+void delete_record(int num)
+{
+  array(string) record_names=sort(indices(records));
+  string name=record_names[num-1];
 
-	  m_delete(records,name);
-	}
+  m_delete(records,name);
+}
 </example>
 </section>
 
@@ -817,40 +817,40 @@ Searching for songs is quite easy too. To count the number of hits we declare th
 When a match is found it is immediately written to standard output with the record name followed by the name of the song where the search string was found and a newline.
 If there were no hits at all, the function prints out a message saying just that.
 <example language=pike>
-	void find_song(string title)
-	{
-	  string name, song;
-	  int hits;
+void find_song(string title)
+{
+  string name, song;
+  int hits;
 
-	  title=lower_case(title);
+  title=lower_case(title);
 
-	  foreach(indices(records),name)
-	  {
-	    foreach(records[name],song)
-	    {
-	      if(search(lower_case(song), title) != -1)
-	      {
-	        write(name+"; "+song+"\n");
-	        hits++;
-	      }
-	    }
-	  }
+  foreach(indices(records),name)
+  {
+    foreach(records[name],song)
+    {
+      if(search(lower_case(song), title) != -1)
+      {
+        write(name+"; "+song+"\n");
+        hits++;
+      }
+    }
+  }
 
-	  if(!hits) write("Not found.\n");
-	}
+  if(!hits) write("Not found.\n");
+}
 </example>
 </section>
 
 <section title="main() again">
 Once again <tt>main()</tt> is left unchanged, except for yet another two case statements used to call the <tt>search()</tt> and <tt>delete</tt> functions, respectively. Note that you must provide an argument to delete or it will not work properly.
 <example language=pike>
-	case "delete":
-	  delete_record((int)args);
-	  break;
+case "delete":
+  delete_record((int)args);
+  break;
 
-	case "search":
-	  find_song(args);
-	  break;
+case "search":
+  find_song(args);
+  break;
 </example>
 </section>
 </section>
@@ -914,10 +914,10 @@ described again in this chapter.
 The simplest one is called the <b>if statement</b>. It can be written anywhere
 where a statement is expected and it looks like this:
 <example language=pre meta=expression,statement1,statement2>
-	if( expression )
-	  statement1;
-	else
-	  statement2;
+if( expression )
+  statement1;
+else
+  statement2;
 </example>
 Please note that there is no semicolon after the parenthesis or after the
 <tt>else</tt>. Step by step, <tt>if</tt> does the following:
@@ -936,16 +936,16 @@ otherwise <i>statement2</i> is executed. If you are interested in
 having something executed if the expression is false you can drop the
 whole else part like this:
 <example language=pike meta=expression,statement1>
-	if( expression )
-	  statement1;
+if( expression )
+  statement1;
 </example>
 If on the other hand you are not interested in evaluating something if the
 expression is <b>false</b> you should use the <b>not</b> operator to negate
 the true/false value of the expression. See chapter 5 for more information
 about the <b>not</b> operator. It would look like this:
 <example language=pike meta=expression,statement2>
-	if( ! expression )
-	  statement2 ;
+if( ! expression )
+  statement2 ;
 </example>
 Any of the statements here and in the rest of this chapter can
 also be a <b>block</b> of statements. A block is a list of statements,
@@ -953,12 +953,12 @@ separated by semicolons and enclosed by brackets. Note that you should
 never put a semicolon after a block of statements. The example above
 would look like this;
 <example language=pike meta=expression,statement>
-	if ( ! expression )
-	{
-	  statement;
-	  statement;
-	  statement;
-	}
+if ( ! expression )
+{
+  statement;
+  statement;
+  statement;
+}
 </example>
 </section>
 
@@ -969,23 +969,23 @@ statement</b>.
 A switch lets you select one of many choices depending on the value of an
 expression and it can look something like this:
 <example language=pike meta=expression,constant1,constant2,constant3,constant4,expressions1,expressions2,expressions3,expressions5>
-	switch ( expression )
-	{
-	  case constant1:
-	    statement1;
-	    break;
+switch ( expression )
+{
+  case constant1:
+    statement1;
+    break;
 
- 	  case constant2:
-	    statement2;
-	    break;
+  case constant2:
+    statement2;
+    break;
 
- 	  case constant3 .. constant4:
-	    statement3;
-	    break;
+  case constant3 .. constant4:
+    statement3;
+    break;
 
-	  default:
-	    statement5;
-	}
+  default:
+    statement5;
+}
 </example>
 As you can see, a switch statement is a bit more complicated than an
 if statement. It is still fairly simple however. It starts by evaluating
@@ -1028,12 +1028,12 @@ again, and if it is true the statement is executed again. Then it
 evaluates the expression again and so forth... Here is an example of
 how it could be used:
 <example language=pike>
-	int e=1;
-	while(e&lt;5)
-	{
-	  show_record(e);
-	  e=e+1;
-	}
+int e=1;
+while(e&lt;5)
+{
+  show_record(e);
+  e=e+1;
+}
 </example>
 This would call show_record with the values 1, 2, 3 and 4.
 </section>
@@ -1044,8 +1044,8 @@ This would call show_record with the values 1, 2, 3 and 4.
 even shorter and more compact way of writing loops. The syntax looks
 like this:
 <example language=pike meta=initializer_statement,expression,increment_expression,statement>
-	for ( initializer_statement ; expression ; incrementor_expression )
-	  statement ;
+for ( initializer_statement ; expression ; incrementor_expression )
+  statement ;
 </example>
 For does the following steps:
 <ol>
@@ -1061,8 +1061,8 @@ For does the following steps:
 </ol>
 This means that the example in the while section can be written like this:
 <example language=pike>
-	for(int e=1; e&lt;5; e=e+1)
-	  show_record(e);
+for(int e=1; e&lt;5; e=e+1)
+  show_record(e);
 </example>
 </section>
 
@@ -1073,9 +1073,9 @@ the first time the loop is executed. Quite often you want to execute
 something, and then do it over and over until some condition is satisfied.
 This is exactly when you should use the do-while statement.
 <example language=pike meta=statement,expression>
-	do
-	  statement;
-	while ( expression );
+do
+  statement;
+while ( expression );
 </example>
 As usual, the <i>statement</i> can also be a block of statements, and then
 you do not need a semicolon after it. To clarify, this statement executes
@@ -1085,9 +1085,9 @@ want to make a program that lets your modem dial your Internet provider,
 it could look something like this:
 <!-- Can someone come up with a better example? -->
 <example language=pike>
-	do {
-	  modem-&gt;write("ATDT441-9109\n"); // Dial 441-9109
-        } while(modem-&gt;gets()[..6]] != "CONNECT");
+do {
+  modem-&gt;write("ATDT441-9109\n"); // Dial 441-9109
+} while(modem-&gt;gets()[..6]] != "CONNECT");
 </example>
 This example assumes you have written something that can communicate with
 the modem by using the functions <tt>write</tt> and <tt>gets</tt>.
@@ -1101,8 +1101,8 @@ evaluated for each iteration in the loop. Instead, <tt>foreach</tt> executes
 the statement once for each element in an array. <tt>Foreach</tt> looks like
 this:
 <example language=pike meta=array_expression,variable,statement>
-	foreach ( array_expression, variable )
-	  statement ;
+foreach ( array_expression, variable )
+  statement ;
 </example>
 We have already seen an example of <tt>foreach</tt> in the <tt>find_song</tt>
 function in chapter 2. What foreach does is:
@@ -1118,12 +1118,12 @@ function in chapter 2. What foreach does is:
 <tt>Foreach</tt> is not really necessary, but it is faster and clearer than
 doing the same thing with a <tt>for</tt> loop, as shown here:
 <example language=pike meta=array_expression,variable,statement>
-	array tmp1= array_expression;
-	for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
-	{
-	  variable = tmp1 [ tmp2 ];
-	  statement;
-	}
+array tmp1= array_expression;
+for ( tmp2 = 0; tmp2 &lt; sizeof(tmp1); tmp2++ )
+{
+  variable = tmp1 [ tmp2 ];
+  statement;
+}
 </example>
 <p>
 </section>
@@ -1141,12 +1141,12 @@ executing after the loop. <tt>Break</tt> can not be used outside of a loop or
 switch. It is quite useful in conjunction with <tt>while(1)</tt> to
 construct command parsing loops for instance:
 <example language=pike>
-	while(1)
-	{
-	  string command=readline("&gt; ");
-	  if(command=="quit") break;
-	  do_command(command);
-	}
+while(1)
+{
+  string command=readline("&gt; ");
+  if(command=="quit") break;
+  do_command(command);
+}
 </example>
 </section>
 
@@ -1159,13 +1159,13 @@ incrementor expression. For a <tt>do-while</tt> loop it jumps down to the
 expression at the end. To continue our example above, <tt>continue</tt> can be used
 like this:
 <example language=pike>
-	while(1)
-	{
-	  string command=readline("&gt; ");
-	  if(strlen(command) == 0) continue;
-	  if(command=="quit") break;
-	  do_command(command);
-	}
+while(1)
+{
+  string command=readline("&gt; ");
+  if(strlen(command) == 0) continue;
+  if(command=="quit") break;
+  do_command(command);
+}
 </example>
 This way, <tt>do_command</tt> will never be called with an empty string as
 argument.
@@ -1183,12 +1183,12 @@ For instance, if we wanted to make a program that always returns an error
 code to the system, just like the UNIX command <tt>false</tt> this is how
 it would be done:
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 
-	int main()
-	{
-	  return 1;
-	}
+int main()
+{
+  return 1;
+}
 </example>
 This would return the error code <tt>1</tt> to the system when the program
 is run.
@@ -1245,12 +1245,12 @@ easy to get used to.
 2147483647. Note that on some machines an <tt>int</tt> might be larger
 than 32 bits. Since they are integers, no decimals are allowed. An integer
 constant can be written in several ways:
-<pre>
-	78	// decimal number
-	0116	// octal number
-	0x4e	// hexadecimal number
-	'N'	// Ascii character
-</pre>
+<example language=pike>
+78	// decimal number
+0116	// octal number
+0x4e	// hexadecimal number
+'N'	// Ascii character
+</example>
 All of the above represent the number 78. Octal notation means that
 each digit is worth 8 times as much as the one after. Hexadecimal notation
 means that each digit is worth 16 times as much as the one after.
@@ -1289,9 +1289,9 @@ and very small numbers, but only with 9 accurate digits. To write a floating
 point constant, you just put in the decimals or write it in the exponential
 form:
 <example language=pike>
-	3.14159265358979323846264338327950288419716939937510 // Pi
-	1.0e9  // A billion
-	1.0e-9 // A billionth
+3.14159265358979323846264338327950288419716939937510 // Pi
+1.0e9  // A billion
+1.0e-9 // A billionth
 </example>
 Of course you do not need this many decimals, but it doesn't hurt either.
 Usually digits after the ninth digit are ignored, but on some architectures
@@ -1340,25 +1340,25 @@ which means that identical strings share the same memory space. This
 reduces memory usage very much for most applications and also speeds
 up string comparisons. We have already seen how to write a constant
 string:
-<pre>
-	"hello world" // hello world
-	"he" "llo"    // hello
-	"\116"        // N (116 is the octal ASCII value for N)
-	"\t"          // A tab character
-	"\n"          // A newline character
-	"\r"          // A carriage return character
-	"\b"          // A backspace character
-	"\0"          // A null character
-	"\""          // A double quote character
-	"\\"          // A singe backslash
-	"\x4e"        // N (4e is the hexadecimal ASCII value for N)
-	"\d78"        // N (78 is the decimal ACII value for N)
-	"hello world\116\t\n\r\b\0\"\\" // All of the above
-	"\xff"        // the character 255
-	"\xffff"      // the character 65536
-	"\xffffff"    // the character 16777215
-	"\116""3"     // 'N' followed by a '3'
-</pre>
+<example language=pike>
+"hello world" // hello world
+"he" "llo"    // hello
+"\116"        // N (116 is the octal ASCII value for N)
+"\t"          // A tab character
+"\n"          // A newline character
+"\r"          // A carriage return character
+"\b"          // A backspace character
+"\0"          // A null character
+"\""          // A double quote character
+"\\"          // A singe backslash
+"\x4e"        // N (4e is the hexadecimal ASCII value for N)
+"\d78"        // N (78 is the decimal ACII value for N)
+"hello world\116\t\n\r\b\0\"\\" // All of the above
+"\xff"        // the character 255
+"\xffff"      // the character 65536
+"\xffffff"    // the character 16777215
+"\116""3"     // 'N' followed by a '3'
+</example>
 As you can see, any sequence of characters within double quotes is a string.
 The backslash character is used to escape characters that are not allowed or
 impossible to type. As you can see, <tt>\t</tt> is the sequence to produce
@@ -1389,8 +1389,8 @@ you would change *all* <tt>"foo"</tt> everywhere in the program.
 However, the Pike compiler will allow you to to write code like you could
 change characters within strings, the following code is valid and works:
 <example language=pike>
-	string s="hello torld";
-	s[6]='w';
+string s="hello torld";
+s[6]='w';
 </example>
 However, you should be aware that this does in fact create a new string and
 it may need to copy the string <i>s</i> to do so. This means that the above
@@ -1486,12 +1486,12 @@ memory with a fixed size containing a number of slots which can hold any
 type of value. These slots are called <b>elements</b> and are accessible
 through the index operator. To write a constant array you enclose the
 values you want in the array with <tt>({ })</tt> like this:
-<pre>
-	({ })      // Empty array
-	({ 1 })    // Array containing one element of type int
-	({ "" })   // Array containing a string
-	({ "", 1, 3.0 }) // Array of three elements, each of different type
-</pre>
+<example language=pike>
+({ })      // Empty array
+({ 1 })    // Array containing one element of type int
+({ "" })   // Array containing a string
+({ "", 1, 3.0 }) // Array of three elements, each of different type
+</example>
 As you can see, each element in the array can contain any type of value.
 Indexing and ranges on arrays works just like on strings, except with
 arrays you can change values inside the array with the index operator.
@@ -1650,12 +1650,12 @@ If we on the other hand assign an index in the mapping the value will
 instead be overwritten with the new value. If the index is not found when
 assigning, a new index-value pair will be added to the mapping.
 Writing a constant mapping is easy:
-<pre>
-	([ ])       // Empty mapping
-	([ 1:2 ])   // Mapping with one index-value pair, the 1 is the index
-	([ "one":1, "two":2 ]) // Mapping which maps words to numbers
-	([ 1:({2.0}), "":([]), ]) // Mapping with lots of different types
-</pre>
+<example language=pike>
+([ ])       // Empty mapping
+([ 1:2 ])   // Mapping with one index-value pair, the 1 is the index
+([ "one":1, "two":2 ]) // Mapping which maps words to numbers
+([ 1:({2.0}), "":([]), ]) // Mapping with lots of different types
+</example>
 <p>
 As with arrays, mappings can contain any type. The main difference is that
 the index can be any type too. Also note that the index-value pairs in a
@@ -1738,11 +1738,11 @@ will be added to the multiset <i>mset</i> if <i>val</i> is <b>true</b>.
 Otherwise <i>ind</i> will be removed from the multiset instead.
 <p>
 Writing a constant multiset is similar to writing an array:
-<pre>
-	(&lt; &gt;)      // Empty multiset
-	(&lt; 17 &gt;)  // Multiset with one index: 17
-	(&lt; "", 1, 3.0, 1 &gt;) // Multiset with 3 indices
-</pre>
+<example language=pike>
+(&lt; &gt;)      // Empty multiset
+(&lt; 17 &gt;)  // Multiset with one index: 17
+(&lt; "", 1, 3.0, 1 &gt;) // Multiset with 3 indices
+</example>
 Note that you can actually have more than one of the same index in a multiset. This is
 normally not used, but can be practical at times.
 </section>
@@ -1770,11 +1770,11 @@ far has been a <tt>program</tt>. To load such a program into memory, we can
 use <tt>compile_file</tt> which takes a file name, compiles the file
 and returns the compiled program. It could look something like this:
 <example language=pike>
-	program p = compile_file("hello_world.pike");
+program p = compile_file("hello_world.pike");
 </example>
 You can also use the <b>cast</b> operator like this:
 <example language=pike>
-	program p = (program) "hello_world";
+program p = (program) "hello_world";
 </example>
 This will also load the program <tt>hello_world.pike</tt>, the only difference
 is that it will cache the result so that next time you do <tt>(program)"hello_world"</tt> you will receive the _same_ program. If you call
@@ -1783,11 +1783,11 @@ is that it will cache the result so that next time you do <tt>(program)"hello_wo
 <p>
 There is also a way to write programs inside programs with the help of the
 <tt>class</tt> keyword:
-<pre>
-	class <i>class_name</i> {
-	  <i>inherits, variables and functions </i>
-	}
-</pre>
+<example language=pike meta="class_name,inherits,variables,functions">
+class class_name {
+  inherits, variables and functions
+}
+</example>
 The <tt>class</tt> keyword can be written as a separate entity
 outside of all functions, but it is also an expression which returns the
 <tt>program</tt> written between the brackets. The <i>class_name</i> is
@@ -1798,27 +1798,27 @@ in much the same way. It can also be used to create <b>structs</b>
 (or records if you program Pascal).
  Let's look at an example:
 <example language=pike>
-	class record {
-	  string title;
-	  string artist;
-	  array(string) songs;
-	}
+class record {
+  string title;
+  string artist;
+  array(string) songs;
+}
 
-	array(record) records = ({});
+array(record) records = ({});
 
-	void add_empty_record()
-	{
-	  records+=({ record() });
-	}
+void add_empty_record()
+{
+  records+=({ record() });
+}
 
-	void show_record(record rec)
-	{
-	  write("Record name: "+rec-&gt;title+"\n");
-	  write("Artist: "+rec-&gt;artist+"\n");
-	  write("Songs:\n");
-	  foreach(rec-&gt;songs, string song)
-	    write("   "+song+"\n");
-	}
+void show_record(record rec)
+{
+  write("Record name: "+rec-&gt;title+"\n");
+  write("Artist: "+rec-&gt;artist+"\n");
+  write("Songs:\n");
+  foreach(rec-&gt;songs, string song)
+    write("   "+song+"\n");
+}
 </example>
 This could be a small part of a better record register program. It is not
 a complete executable program in itself.  In this example we create a
@@ -1848,9 +1848,9 @@ section again.
 <dd> All programs are generated by compiling a string. The string may of
      course be read from a file. For this purpose there are three functions:
 <example language=pike meta=p,filename>
-	program compile(string p);
-	program compile_file(string filename);
-	program compile_string(string p, string filename);
+program compile(string p);
+program compile_file(string filename);
+program compile_string(string p, string filename);
 </example>
      <tt>compile_file</tt> simply reads the file given as argument, compiles
      it and returns the resulting program. <tt>compile_string</tt> instead
@@ -1911,32 +1911,32 @@ object, that function will operate on those variables. If we take a look at
 the short example in the section about programs, we see that it would be
 better to write it like this:
 <example language=pike>
-	class record {
-	  string title;
-	  string artist;
-	  array(string) songs;
+class record {
+  string title;
+  string artist;
+  array(string) songs;
 
-	  void show()
-	  {
-	    write("Record name: "+title+"\n");
-	    write("Artist: "+artist+"\n");
-            write("Songs:\n");
-            foreach(songs, string song)
-	      write("   "+song+"\n");
-	  }
-	}
+  void show()
+  {
+    write("Record name: "+title+"\n");
+    write("Artist: "+artist+"\n");
+    write("Songs:\n");
+    foreach(songs, string song)
+      write("   "+song+"\n");
+  }
+}
 
-	array(record) records = ({});
+array(record) records = ({});
 
-	void add_empty_record()
-	{
-	  records+=({ record() });
-	}
+void add_empty_record()
+{
+  records+=({ record() });
+}
 
-	void show_record(object rec)
-	{
-	  rec-&gt;show();
-	}
+void show_record(object rec)
+{
+  rec-&gt;show();
+}
 </example>
 Here we can clearly see how the function <tt>show</tt> prints the
 contents of the variables in that object. In essence, instead of accessing
@@ -2006,10 +2006,10 @@ When the function pointer is called, the interpreter sets
 proceeds to execute the function it points to. Also note that function pointers
 can be passed around just like any other data type:
 <example language=pike>
-	int foo() { return 1; }
-	function bar() { return foo; }
-	int gazonk() { return foo(); }
-	int teleledningsanka() { return bar()(); }
+int foo() { return 1; }
+function bar() { return foo; }
+int gazonk() { return foo(); }
+int teleledningsanka() { return bar()(); }
 </example>
 In this example, the function bar returns a pointer to the function
 <tt>foo</tt>. No indexing is necessary since the function <tt>foo</tt> is
@@ -2024,12 +2024,12 @@ function. To do this you use the <tt>lambda</tt> keyword.  The
 syntax is the same as for a normal function, except you write
 <tt>lambda</tt> instead of the function name:
 <example language=pike meta=types,statements>
-	lambda ( types ) { statements }
+lambda ( types ) { statements }
 </example>
 The major difference is that this is an expression that can be used inside
 an other function. Example:
 <example language=pike>
-	function bar() { return lambda() { return 1; }; )
+function bar() { return lambda() { return 1; }; )
 </example>
 This is the same as the first two lines in the previous example, the keyword
 <tt>lambda</tt> allows you to write the function inside <tt>bar</tt>.
@@ -2070,13 +2070,13 @@ In most situations this does not present a problem, and it speeds up
 Pike's performance. However, you must be aware of this when programming.
 This can be illustrated with an example:
 <example language=pike>
-	int main(int argc, array(string) argv)
-	{
-	  array(string) tmp;
-	  tmp=argv;
-	  argv[0]="Hello world.\n";
-	  write(tmp[0]);
-	}
+int main(int argc, array(string) argv)
+{
+  array(string) tmp;
+  tmp=argv;
+  argv[0]="Hello world.\n";
+  write(tmp[0]);
+}
 </example>
 This program will of course write <tt>Hello world.</tt>
 <p>
@@ -2099,34 +2099,34 @@ When declaring a variable, you also have to specify what type of variable
 it is. For most types, such as <tt>int</tt> and <tt>string</tt> this is
 very easy. But there are much more interesting ways to declare variables
 than that, let's look at a few examples:
-<pre>
-	int x; // x is an integer
-	int|string x; // x is a string or an integer
-	array(string) x; // x is an array of strings
-	array x; // x is an array of mixed
-	mixed x; // x can be any type
-	string *x; // x is an array of strings
+<example language=pike>
+int x; // x is an integer
+int|string x; // x is a string or an integer
+array(string) x; // x is an array of strings
+array x; // x is an array of mixed
+mixed x; // x can be any type
+string *x; // x is an array of strings
 
-	 // x is a mapping from int to string
-	mapping(string:int) x;
+// x is a mapping from int to string
+mapping(string:int) x;
 
-	// x implements Stdio.File
-	Stdio.File x;
+// x implements Stdio.File
+Stdio.File x;
 
-	// x implements Stdio.File
-	object(Stdio.File) x;
+// x implements Stdio.File
+object(Stdio.File) x;
 
-	// x is a function that takes two integer
-	// arguments and returns a string
-	function(int,int:string) x;
+// x is a function that takes two integer
+// arguments and returns a string
+function(int,int:string) x;
 
-	// x is a function taking any amount of
-	// integer arguments and returns nothing.
-	function(int...:void) x;
+// x is a function taking any amount of
+// integer arguments and returns nothing.
+function(int...:void) x;
 
-	// x is ... complicated
-	mapping(string:function(string|int...:mapping(string:array(string)))) x;
-</pre>
+// x is ... complicated
+mapping(string:function(string|int...:mapping(string:array(string)))) x;
+</example>
 As you can see there are some interesting ways to specify types.
 Here is a list of what is possible:
 <dl>
@@ -2716,7 +2716,7 @@ with the arguments given. In fact, the function <tt>clone</tt> is
 implemented like this:
 <p>
 <example language=pike>
-	object clone(mixed p, mixed ... args) { ( (program)p )(@args); }
+object clone(mixed p, mixed ... args) { ( (program)p )(@args); }
 </example>
 <p>
 On the subject of function calls, the splice operator should also be mentioned.
@@ -2920,11 +2920,11 @@ When you write a simple script in Pike, the file is first compiled into a
 <b>program</b> then cloned and then main() is called in that clone. All
 this is done by the <b>master object</b>, which is compiled and cloned before
 before all other objects. What the <b>master object</b> actually does is:
-<pre>
-	program scriptclass=compile_file(argv[0]); // Load script
-	object script=scriptclass();               // clone script
-	int ret=script->main(sizeof(argv), argv);  // call main()
-</pre>
+<example language=pike>
+program scriptclass=compile_file(argv[0]); // Load script
+object script=scriptclass();               // clone script
+int ret=script->main(sizeof(argv), argv);  // call main()
+</example>
 
 Similarly, if you want to load another file and call functions in it, you
 can do it with compile_file(), or you can use the cast operator and cast
@@ -2936,9 +2936,9 @@ If you don't want to put each program in a separate file, you can use the
 already seen an example how this in <ref to=types>, but let's go over it in
 more detail. The syntax looks like this:
 <example language=pike meta=class_name,class_definition>
-	class class_name {
-	  class_definition
-	}
+class class_name {
+  class_definition
+}
 </example>
 This construction can be used almost anywhere within a normal program.
 It can be used outside all functions, but it can also be used as an expression
@@ -2952,21 +2952,21 @@ defining a class is also to define a
 constant with that name. Essentially, these two lines of code do the same
 thing:
 <example language=pike>
-	class foo {};
-	constant foo = class {};
+class foo {};
+constant foo = class {};
 </example>
 Because classes are defined as constants, it is possible to use a class defined
 inside classes you define later, like this:
 <example language=pike>
-	class foo
-	{
-	  int test() { return 17; }
-	};
+class foo
+{
+  int test() { return 17; }
+};
 
-	class bar
-	{
-	  program test2() { return foo; }
-	};
+class bar
+{
+  program test2() { return foo; }
+};
 </example>
 
 <!-- FIXME: tell more -->
@@ -2980,12 +2980,12 @@ Let's say I want to change the <tt>hello_world</tt> program to write a version n
 before it writes hello world, using <tt>inherit</tt> I could do this like
 this:
 <example language=pike>
-	inherit "hello_world";
-	int main(int argc, array(string) argv)
-	{
-	  write("Hello world version 1.0\n");
-	  return ::main(argc,argv);
-	}
+inherit "hello_world";
+int main(int argc, array(string) argv)
+{
+  write("Hello world version 1.0\n");
+  return ::main(argc,argv);
+}
 </example>
 What inherit does is that it copies all the variables and functions from the
 inherited program into the current one. You can then re-define any function
@@ -3024,21 +3024,21 @@ same thing more than once. If you do this you will get a separate set of functio
 and variables for each inherit. To access a specific function you need to name
 your inherits. Here is an example of named inherits:
 <example language=pike>
-	inherit Stdio.File;   // This inherit is named File
-	inherit Stdio.FILE;   // This inherit is named FILE
-	inherit "hello_word"; // This inherit is named hello_world
-	inherit Stdio.File : test1; // This inherit is named test1
-	inherit "hello_world" : test2; // This inherit is named test2
+inherit Stdio.File;   // This inherit is named File
+inherit Stdio.FILE;   // This inherit is named FILE
+inherit "hello_word"; // This inherit is named hello_world
+inherit Stdio.File : test1; // This inherit is named test1
+inherit "hello_world" : test2; // This inherit is named test2
 
-	void test()
-	{
-	  File::read(); // Read data from the first inherit
-	  FILE::read(); // Read data from the second inherit
-	  hello_world::main(0,({})); // Call main in the third inherit
-	  test1::read(); // Read data from the fourth inherit
-	  test2::main(0,({})); // Call main in the fifth inherit
-	  ::read();  // Read data from all inherits
-	}
+void test()
+{
+  File::read(); // Read data from the first inherit
+  FILE::read(); // Read data from the second inherit
+  hello_world::main(0,({})); // Call main in the third inherit
+  test1::read(); // Read data from the fourth inherit
+  test2::main(0,({})); // Call main in the fifth inherit
+  ::read();  // Read data from all inherits
+}
 </example>
 
 As you can see it would be impossible to separate the different read and
@@ -3053,20 +3053,20 @@ read function the results will be returned in an array.
 <p>
 Let's look at another example:
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 	
-	inherit Stdio.File : input;
-	inherit Stdio.File : output;
+inherit Stdio.File : input;
+inherit Stdio.File : output;
 	
-	int main(int argc, array(string) argv)
-	{
-	  output::create("stdout");
-	  for(int e=1;e&lt;sizeof(argv);e++)
-	  {
-	    input::open(argv[e],"r");
-            while(output::write(input::read(4096)) == 4096);
-	  }
-	}
+int main(int argc, array(string) argv)
+{
+  output::create("stdout");
+  for(int e=1;e&lt;sizeof(argv);e++)
+  {
+    input::open(argv[e],"r");
+    while(output::write(input::read(4096)) == 4096);
+  }
+}
 </example>
 This short piece of code works a lot like the UNIX command <tt>cat</tt>.
 It reads all the files given on the command line and writes them to
@@ -3177,15 +3177,15 @@ Here is a really silly example of a program that will write 10
 to stdout when executed.
 
 <example language=pike>
-	#!/usr/local/bin/pike
-	class three {
-	  int `+(int foo) { return 3+foo; }
-	};
+#!/usr/local/bin/pike
+class three {
+  int `+(int foo) { return 3+foo; }
+};
 
-	int main()
-	{
-	  write(sprintf("%d\n",three()+7));
-	}
+int main()
+{
+  write(sprintf("%d\n",three()+7));
+}
 </example>
 
 It is important to know that some optimizations are still performed even
@@ -3207,24 +3207,24 @@ expect, in which case you are better off not using operator overloading.
 </exercise><exercise>
      Modify the register program to use the following search function:
 <example language=pike>
-	void find_song(string title)
-	{
-	  string name, song;
-	  int hits;
+void find_song(string title)
+{
+  string name, song;
+  int hits;
 
-	  title=lower_case(title);
+  title=lower_case(title);
 
-	  foreach(indices(records),name)
-	  {
-	    if(string song=records[name][title])
-            {
-              write(name+"; "+song+"\n");
-              hits++;
-	    }
-	  }
+  foreach(indices(records),name)
+  {
+    if(string song=records[name][title])
+    {
+      write(name+"; "+song+"\n");
+      hits++;
+    }
+  }
 
-	  if(!hits) write("Not found.\n");
-	}
+  if(!hits) write("Not found.\n");
+}
 </example>
 </exercise>
 </exercises>	
@@ -3247,7 +3247,7 @@ can not set the variables you send to it. The purpose of sscanf is to
 match one string against a format string and place the matching results
 into a list of variables. The syntax looks like this:
 <example language=pike meta=str,fmt,lvalue>
-	int sscanf(string str, string fmt, lvalue ...)
+int sscanf(string str, string fmt, lvalue ...)
 </example>
 The string <i>str</i> will be matched against the format string <i>fmt</i>.
 <i>fmt</i> can contain strings
@@ -3288,18 +3288,18 @@ were not matched will not be changed.
 <p>
 Let's look at a couple of examples:
 <example language=pike>
-	// a will be assigned "oo" and 1 will be returned
-	sscanf("foo","f%s",a);
+// a will be assigned "oo" and 1 will be returned
+sscanf("foo","f%s",a);
 
-	// a will be 4711 and b will be "bar", 2 will be returned
-	sscanf("4711bar","%d%s",a,b);
+// a will be 4711 and b will be "bar", 2 will be returned
+sscanf("4711bar","%d%s",a,b);
 
-	// a will become "test"
-	sscanf(" \t test","%*[ \t]%s",a)
+// a will become "test"
+sscanf(" \t test","%*[ \t]%s",a)
 
-	// Remove "the " from the beginning of a string
-	// If 'str' does not begin with "the " it will not be changed
-	sscanf(str,"the %s",str);
+// Remove "the " from the beginning of a string
+// If 'str' does not begin with "the " it will not be changed
+sscanf(str,"the %s",str);
 </example>
 <p>
 <encaps>SEE ALSO</encaps>: <link to=sprintf>sprintf</link>
@@ -3312,24 +3312,24 @@ Let's look at a couple of examples:
 Catch is used to trap errors and other exceptions in Pike.
 It works by making a block of code into an expression, like this:
 <example language=pike meta=statements>
-	catch { statements }
+catch { statements }
 </example>
 If an error occurs, catch will return a description of the error.
 The description of the error has the following format:
 <example language=pike>
-	({
-	   "error description",
-	   backtrace()
-	})
+({
+   "error description",
+   backtrace()
+})
 </example>
 If no error occurs, catch will return zero. You may emulate your own errors
 using the function throw, described in <ref to=functions>.
 <p>
 Example:
 <example language=pike>
-	int x,y;
-	// This might generate "division by zero"
-	mixed error=catch { x/=y; };
+int x,y;
+// This might generate "division by zero"
+mixed error=catch { x/=y; };
 </example>
 </section>
 </anchor>
@@ -3339,7 +3339,7 @@ Example:
 <section title="gauge">
 The syntax for gauge is the same as the syntax for catch:
 <example language=pike meta=statements>
-	gauge { statements }
+gauge { statements }
 </example>
 However, gauge simply returns how many milliseconds the code took to execute.
 This can be used to find out how fast your code actually is.. :)
@@ -3353,7 +3353,7 @@ two seconds to execute but only uses 50% CPU, this function will return 1000.
 This function returns the type of an expression as a string. It does not
 evaluate the expression at all, which might be somewhat confusing. Example:
 <example language=pike>
-	typeof( exit(1) )
+typeof( exit(1) )
 </example>
 This will return the string <tt>"void"</tt> since exit is a function that
 returns void.
@@ -3499,25 +3499,25 @@ access modules in the same directory as the program itself. For instance,
 <section title="How to write a module">
 Here is an example of a simple module:
 <example language=pike>
-	constant PI = 3.14159265358979323846264338327950288419716939937510;
-	float cos2(float f) { return pow(cos(f),2.0); }
+constant PI = 3.14159265358979323846264338327950288419716939937510;
+float cos2(float f) { return pow(cos(f),2.0); }
 </example>
 if we save this short file as <tt>Trig.pmod</tt> we can now use this
 module like this:
 <example language=pike>
-	int main()
-	{
-	  write(sprintf("%f\n",.Trig.cos2(.Trig.PI));
-	}
+int main()
+{
+  write(sprintf("%f\n",.Trig.cos2(.Trig.PI));
+}
 </example>
 or like this:
 <example language=pike>
-	import .Trig;
+import .Trig;
 
-	int main() 
-	{
-	  write(sprintf("%f\n",cos2(PI));
-	}
+int main() 
+{
+  write(sprintf("%f\n",cos2(PI));
+}
 </example>
 </section>
 
@@ -3549,15 +3549,15 @@ or like this:
 
 
 
-<module name=Stdio>
 <chapter title="File I/O" name=io>
+<module name=Stdio>
 Programming without reading and writing data from files, sockets, keyboard
 etc. would be quite pointless. Luckily enough, Pike provides you with an
 object oriented interface to files, pipes and TCP sockets. All I/O functions
 and classes are collected in the module <tt>Stdio</tt>.
 
-<class name=File>
 <section title="Stdio.File">
+<class name=File>
 This is the basic I/O object, it provides socket communication as well
 as file access. It does not buffer reads and writes or provide line-by-line
 reading, that is done in the FILE object. <tt>Stdio.File</tt> is completely
@@ -4067,42 +4067,42 @@ all calls to Stdio.File use <tt>File::</tt> even if that is not strictly
 necessary.
 
 <example language=pike>
-	import Stdio;
-	inherit File;
+import Stdio;
+inherit File;
 
-	int main(int argc, array(string) argv)
-	{
-	  string host;
-	  string path="";
-	  int port=80;
-	  sscanf(argv[1],"http://%s",argv[1]);
-	  sscanf(argv[1],"%s/%s",host,path);
-	  sscanf(host,"%s:%d",host,port);
+int main(int argc, array(string) argv)
+{
+  string host;
+  string path="";
+  int port=80;
+  sscanf(argv[1],"http://%s",argv[1]);
+  sscanf(argv[1],"%s/%s",host,path);
+  sscanf(host,"%s:%d",host,port);
 
-	  if(!File::open_socket())
-	  {
-	    perror("Open socket failed");
-	    exit(1);
-	  }
+  if(!File::open_socket())
+  {
+    perror("Open socket failed");
+    exit(1);
+  }
 
-	  if(!File::connect(host,port))
-	  {
-	    perror("Failed to connect to remote host");
-	    exit(1);
-	  }
+  if(!File::connect(host,port))
+  {
+    perror("Failed to connect to remote host");
+    exit(1);
+  }
 
-	  File::write(sprintf("HEAD /%s HTTP/1.0\n",path));
-	  stdout::write(File::read());
-	}
+  File::write(sprintf("HEAD /%s HTTP/1.0\n",path));
+  stdout::write(File::read());
+}
 </example>
 
 
-</section>
 </class>
+</section>
 
 
-<class name=FILE>
 <section title="Stdio.FILE">
+<class name=FILE>
 Stdio.FILE is a buffered version of Stdio.File, it inherits Stdio.File and
 has most of the functionality of Stdio.File. However, it has an input buffer
 that allows line-by-line input. Note that the output part of Stdio.FILE is
@@ -4157,8 +4157,8 @@ a string containing one character.
 
 <!-- FIX ME, example of how to use Stdio.FILE here -->
 
-</section>
 </class>
+</section>
 
 
 <anchor name=Stdio.stdin>
@@ -4175,12 +4175,12 @@ simply clones of <tt>Stdio.File</tt>.
 <p>
 Example:
 <example language=pike>
-	int main()
-	{
-	  int line;
-	  while(string s=Stdio.stdin.gets())
-	    write(sprintf("%5d: %s\n",line++,s));
-	}
+int main()
+{
+  int line;
+  while(string s=Stdio.stdin.gets())
+    write(sprintf("%5d: %s\n",line++,s));
+}
 </example>
 This example will read lines from standard input for as long as there
 are more lines to read. Each line will then be written to stdout together
@@ -4191,8 +4191,8 @@ of just <tt>write</tt> because they are the same function.
 </anchor>
 </anchor>
 
-<module name="Terminfo">
 <section title="Stdio.Terminfo">
+<module name="Terminfo">
 <function name=Stdio.Terminfo.getFallbackTerm title="get fallback terminal">
 <man_syntax>
 object(Stdio.Terminfo.Terminfo)|object(Stdio.Terminfo.Termcap) getFallbackTerm(string <I>term</I>);
@@ -4261,8 +4261,8 @@ Stdio.Terminfo.getTerm, Stdio.Terminfo.getTermcap
 
 <hr noshade size=1>
 
-<class name="Termcap">
 <section title="Stdio.Terminfo.Termcap">
+<class name="Termcap">
 Termcap terminal decription object.
 
 <method name=create title="initialize termcap object">
@@ -4279,13 +4279,13 @@ object(Stdio.Terminfo.Termcap) Termcap(string <I>cap</I>, object <I>tcdb</I>, in
 </method>
 
 
-</section>
 </class>
+</section>
 
 <hr noshade size=1>
 
-<class name="Terminfo">
 <section title="Stdio.Terminfo.Terminfo">
+<class name="Terminfo">
 Terminfo terminal description object.
 
 </section>
@@ -4294,11 +4294,11 @@ Terminfo terminal description object.
 <hr noshade size=1>
 
 <!-- FIXME: More documentation here. -->
-</section>
 </module>
+</section>
 
-<class name="Readline">
 <section title="Stdio.Readline">
+<class name="Readline">
 
 <hr noshade size=1>
 <method name=create title="init readline">
@@ -4341,8 +4341,8 @@ which case <I>outfd</I> defaults to <tt>Stdio.stdout</tt>.
 </method>
 
 <!-- FIXME: More documentation needed. -->
-</section>
 </class>
+</section>
 
 <section title="Other Stdio functions">
 The Stdio module also contains a collection of high level IO functions
@@ -4491,8 +4491,8 @@ Append the string <i>str</i> onto the file <i>file</i>. Returns number of bytes 
 
 </section>
 
-<class name=Port>
 <section title="Listening to sockets">
+<class name=Port>
 Stdio.File can handle connections to any TCP socket, but it can not listen
 to a local TCP port. For this purpose there is a special class called
 <tt>Stdio.Port</tt>. <tt>Stdio.Port</tt> cannot read or write any data, but
@@ -4611,8 +4611,8 @@ Stdio.File. The new file is by default set to blocking.
 <man_see>Stdio.File</man_see>
 </method>
 
-</section>
 </class>
+</section>
 
 <section title="A more complex example - a simple WWW server">
 
@@ -4628,13 +4628,13 @@ links are normally displayed underlined and if you click them your WWW-
 browser will load whatever document that link leads to.
 <p>
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 	
-	/* A very small httpd capable of fetching files only.
-	 * Written by Fredrik Hübinette as a demonstration of Pike.
-	 */
+/* A very small httpd capable of fetching files only.
+ * Written by Fredrik Hübinette as a demonstration of Pike.
+ */
 	
-	inherit Stdio.Port;
+inherit Stdio.Port;
 </example>
 We inherit Stdio.Port into this program so we can bind a TCP socket to accept
 incoming connection.  A socket is simply a number to separate communications
@@ -4647,17 +4647,17 @@ it is compiled. As an example, after the first define below, all occurrences
 of 'BLOCK' will be replaced with 16060.
 <example language=pike>
 	
-	/* Amount of data moved in one operation */
-	#define BLOCK 16060
+/* Amount of data moved in one operation */
+#define BLOCK 16060
 	
-	/* Where do we have the html files ? */
-	#define BASE "/usr/local/html/"
+/* Where do we have the html files ? */
+#define BASE "/usr/local/html/"
 	
-	/* File to return when we can't find the file requested */
-	#define NOFILE "/user/local/html/nofile.html"
+/* File to return when we can't find the file requested */
+#define NOFILE "/user/local/html/nofile.html"
 	
-	/* Port to open */
-	#define PORT 1905
+/* Port to open */
+#define PORT 1905
 </example>
 A port is a destination for a TCP connection. It is simply a number on the
 local computer. 1905 is not the standard port for HTTP connections though,
@@ -4668,16 +4668,16 @@ Next we declare a class called output_class. Later we will clone one
 instance of this class for each incoming HTTP connection.
 <p>
 <example language=pike>
-	class output_class
-	{
-	  inherit Stdio.File : socket;
-	  inherit Stdio.File : file;
+class output_class
+{
+  inherit Stdio.File : socket;
+  inherit Stdio.File : file;
 </example>
 Our new class inherits Stdio.File twice. To be able to separate them
 they are then named 'socket' and 'file'.
 <p>
 <example language=pike>
-	  int offset=0;
+  int offset=0;
 </example>
 Then there is a global variable called offset which is initialized to zero.
 (Each instance of this class will have its own instance of this variable,
@@ -4695,15 +4695,15 @@ callback and will be called whenever there is room in the socket output
 buffer.
 <example language=pike>
 	
-	  void write_callback()
-	  {
-	    int written;
-	    string data;
+  void write_callback()
+  {
+    int written;
+    string data;
 </example>
 The following line means: call seek in the inherited program 'file'.
 <example language=pike>
 	
-	    file::seek(offset);
+    file::seek(offset);
 </example>
 Move the file pointer to the where we want to the position we want to read
 from. The file pointer is simply a location in the file, usually it is where
@@ -4711,41 +4711,41 @@ the last read() ended and the next will begin. seek() can move this pointer
 to where we want it though.
 <p>
 <example language=pike>
-	    data=file::read(BLOCK);
+    data=file::read(BLOCK);
 </example>
 Read BLOCK (16060) bytes from the file. If there are less that that left to
 read only that many bytes will be returned.
 <p>
 <example language=pike>
-	    if(strlen(data))
-	    {
+    if(strlen(data))
+    {
 </example>
  If we managed to read something...
 <p>
 <example language=pike>
-	      written=socket::write(data);
+      written=socket::write(data);
 </example>
  ... we try to write it to the socket.
 <p>
 <example language=pike>
-	      if(written &gt;= 0)
-	      {
-		offset+=written;
-		return;
-	      }
+      if(written &gt;= 0)
+      {
+	offset+=written;
+	return;
+      }
 </example>
  Update offset if we managed to write to the socket without errors.
 <p>
 <example language=pike>
-	      werror("Error: "+socket::errno()+".\n");
-	    }
+      werror("Error: "+socket::errno()+".\n");
+    }
 </example>
  If something went wrong during writing, or there was nothing left to read
  we destruct this instance of this class.
 <p>
 <example language=pike>
-	    destruct(this_object());
-	  }
+    destruct(this_object());
+  }
 </example>
  That was the end of write_callback()
 <p>
@@ -4754,7 +4754,7 @@ read only that many bytes will be returned.
  to an empty string.
 <example language=pike>
 	
-	  string input="";
+  string input="";
 </example>
  And then we define the function that will be called when there is something
  in the socket input buffer. The first argument 'id' is declared as mixed,
@@ -4762,41 +4762,41 @@ read only that many bytes will be returned.
  the contents of the input buffer.
 <p>
 <example language=pike>
-	  void read_callback(mixed id,string data)
-	  {
-	    string cmd;
+  void read_callback(mixed id,string data)
+  {
+    string cmd;
 	
-	    input+=data;
+    input+=data;
 </example>
 Append data to the string input. Then we check if we have received a
 a complete line yet. If so we parse this and start outputting the file.
 <p>
 <example language=pike>
-	    if(sscanf(input,"%s %s%*[\012\015 \t]",cmd,input)&gt;2)
-	    {
+    if(sscanf(input,"%s %s%*[\012\015 \t]",cmd,input)&gt;2)
+    {
 </example>
 This sscanf is pretty complicated, but in essence it means: put the
 first word in 'input' in 'cmd' and the second in 'input' and return 2
 if successful, 0 otherwise.
 <p>
 <example language=pike>
-	      if(cmd!="GET")
-	      {
-		werror("Only method GET is supported.\n");
-		destruct(this_object());
-		return;
-	      }
+      if(cmd!="GET")
+      {
+	werror("Only method GET is supported.\n");
+	destruct(this_object());
+	return;
+      }
 </example>
 If the first word isn't GET print an error message and terminate
 this instance of the program. (and thus the connection)
 <example language=pike>
 	
-	      sscanf(input,"%*[/]%s",input);
+      sscanf(input,"%*[/]%s",input);
 </example>
 Remove the leading slash.
 <p>
 <example language=pike>
-	      input=BASE+combine_path("/",input);
+      input=BASE+combine_path("/",input);
 </example>
 Combine the requested file with the base of the HTML tree, this gives
 us a full filename beginning with a slash. The HTML tree is the
@@ -4807,45 +4807,45 @@ added to BASE (/home/hubbe/www/html/ in this case) and if that file exists
 it will be returned to the browser.
 <example language=pike>
 	      
-	      if(!file::open(input,"r"))
-	      {
+      if(!file::open(input,"r"))
+      {
 </example>
 Try opening the file in read-only mode. If this fails, try opening NOFILE
 instead. Opening the file will enable us to read it later.
 <p>
 <example language=pike>
-		if(!file::open(NOFILE,"r"))
-		{
+	if(!file::open(NOFILE,"r"))
+	{
 </example>
 If this fails too. Write an error message and destruct this object.
 <p>
 <example language=pike>
-		  werror("Couldn't find default file.\n");
-		  destruct(this_object());
-		  return;
-		}
-	      }
+	  werror("Couldn't find default file.\n");
+	  destruct(this_object());
+	  return;
+	}
+      }
 </example>
 Ok, now we set up the socket so we can write the data back.
 <example language=pike>
 	
-	      socket::set_buffer(65536,"w");
+      socket::set_buffer(65536,"w");
 </example>
 Set the buffer size to 64 kilobytes.
 <p>
 <example language=pike>
-	      socket::set_nonblocking(0,write_callback,0);
+      socket::set_nonblocking(0,write_callback,0);
 </example>
 Make it so that write_callback is called when it is time to write more
 data to the socket.
 <p>
 <example language=pike>
-	      write_callback();
+      write_callback();
 </example>
 Jump-start the writing.
 <example language=pike>
-	    }
-	  }
+    }
+  }
 </example>
 That was the end of read_callback().
 <p>
@@ -4853,7 +4853,7 @@ That was the end of read_callback().
 This function is called if the connection is closed while we are reading
 from the socket.
 <example language=pike>
-	  void selfdestruct() { destruct(this_object()); }
+  void selfdestruct() { destruct(this_object()); }
 
 </example>
 This function is called when the program is instantiated. It is used
@@ -4862,14 +4862,14 @@ sent to this function. In this case it is the object representing the
 new connection.
 <p>
 <example language=pike>
-	  void create(object f)
-	  {
-	    socket::assign(f);
+  void create(object f)
+  {
+    socket::assign(f);
 </example>
 We insert the data from the file f into 'socket'.
 <p>
 <example language=pike>
-	    socket::set_nonblocking(read_callback,0,selfdestruct);
+    socket::set_nonblocking(read_callback,0,selfdestruct);
 </example>
 Then we set up the callback functions and sets the file nonblocking.
 Nonblocking mode means that read() and write() will rather return that
@@ -4877,21 +4877,21 @@ wait for I/O to finish. Then we sit back and wait for read_callback to
 be called.
 <p>
 <example language=pike>
-	  }
+  }
 </example>
 End of create()
 <p>
 <example language=pike>
-	};
+};
 </example>
 End of the new class.
 <p>
 Next we define the function called when someone connects.
 <p>
 <example language=pike>
-	void accept_callback()
-	{
-	  object tmp_output;
+void accept_callback()
+{
+  object tmp_output;
 </example>
 This creates a local variable of type 'object'. An object variable can
 contain a clone of any program. Pike does not consider clones of different
@@ -4899,18 +4899,18 @@ programs different types. This also means that function calls to objects
 have to be resolved at run time.
 <p>
 <example language=pike>
-	  tmp_output=accept();
+  tmp_output=accept();
 </example>
 The function accept  clones a Stdio.File and makes this equal to the
 newly connected socket.
 <p>
 <example language=pike>
-	  if(!tmp_output) return;
+  if(!tmp_output) return;
 </example>
 If it failed we just return.
 <p>
 <example language=pike>
-	  output_class(tmp_output);
+  output_class(tmp_output);
 </example>
 Otherwise we clone an instance of 'output_class' and let it take care of the
 connection. Each clone of output_class will have its own set of global
@@ -4919,30 +4919,30 @@ time without data being mixed up. Note that the programs will not actually
 run simultaneously though.
 <p>
 <example language=pike>
-	  destruct(tmp_output);
+  destruct(tmp_output);
 </example>
 Destruct the object returned by accept(), output_class has already copied
 the contents of this object.
 <p>
 <example language=pike>
-	}
+}
 
 </example>
 Then there is main, the function that gets it all started.
 	
 <example language=pike>
-	int main(int argc, array(string) argv)
-	{
-	  werror("Starting minimal httpd\n");
+int main(int argc, array(string) argv)
+{
+  werror("Starting minimal httpd\n");
 </example>
 Write an encouraging message to stderr.
 <example language=pike>
 	
-	  if(!bind(PORT, accept_callback))
-	  {
-	    werror("Failed to open socket (already bound?)\n");
-	    return 17;
-	  }
+  if(!bind(PORT, accept_callback))
+  {
+    werror("Failed to open socket (already bound?)\n");
+    return 17;
+  }
 
 </example>
 Bind PORT and set it up to call accept_callback as soon as someone connects
@@ -4950,13 +4950,13 @@ to it. If the bind() fails we write an error message and return the 17 to
 indicate failure.
 <example language=pike>
 	
-	  return - 17; /* Keep going */
+  return - 17; /* Keep going */
 </example>
 If everything went ok, we return -17, any negative value returned by main()
 means that the program WON'T exit, it will hang around waiting for events
 instead. (like someone connecting)
 <example language=pike>
-	}
+}
 </example>
 That's it, this simple program can be used as the basis for a simple
 WWW-server. Note that today most WWW servers are very complicated programs,
