@@ -122,12 +122,6 @@ test_any([[
 		    "\'");
   return p->finish ("<t> <!-- <t a='> -- --> <!-<t a='> -->")->read();
 ]], "x [ <t a='> -- ] {<t a=} -->");
-test_any([[
-  object p = Parser.HTML();
-  p->lazy_entity_end (1);
-  p->_set_entity_callback (lambda (object p, string s) {return ({"[",s,"]"});});
-  return p->finish ("&abc|&abc<>&abc;")->read();
-]], "[&abc|][&abc]<>[&abc;]");
 
 // Current context functions
 test_any([[
@@ -154,7 +148,7 @@ test_any([[
 		    (string) p->tag_content(), ")"});
 	 }, "p");
   return p->finish ("<t a=&e; <t>> <q <\"' &e; p> &e<c x=y -- >x</c> &e; ")->read();
-]], "T(<t a=&e; <t>>|t|0) Q(<q <\"' &e; p>|q| <\"' &e; ) E(&e|e|0)C(<c x=y -- >x</c>|c|x) E(&e;|e|0) ");
+]], "T(<t a=&e; <t>>|t|0) Q(<q <\"' &e; p>|q| <\"' &e; ) &eC(<c x=y -- >x</c>|c|x) E(&e;|e|0) ");
 
 // Argument quoting
 test_any([[
@@ -399,8 +393,21 @@ test_any([[
   object p = Parser.HTML();
   p->lazy_entity_end (1);
   p->add_entity ("e", "x");
-  return p->finish("&e; &e<t> &e <t> a='&e&e' &e=f; b=\"&e\" &e>")->read();
-]], "x x<t> &e <t> a='xx' &e=f; b=\"x\" x>");
+  return p->finish("&e; &e<t> &e <t> a='&e;&e' &e=f; b=\"&e\" &e>")->read();
+]], "x &e<t> &e <t> a='x&e' &e=f; b=\"&e\" &e>");
+test_any([[
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->_set_entity_callback (lambda (object p, string s) {return ({"[",s,"]"});});
+  return p->finish ("&abc|&abc<>&abc;")->read();
+]], "&abc|&abc<>[&abc;]");
+test_any([[
+  object p = Parser.HTML();
+  p->lazy_entity_end (1);
+  p->_set_entity_callback (lambda (object p, string s) {return ({"[",s,"]"});});
+  p->_set_data_callback (lambda (object p, string s) {return ({"{",s,"}"});});
+  return p->finish ("&abc|&abc<>&abc;")->read();
+]], "{&abc|}{&abc<>}[&abc;]{}");
 
 // Recursive parsing in tags
 test_any([[

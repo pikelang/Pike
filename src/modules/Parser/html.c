@@ -106,7 +106,7 @@ enum types {TYPE_TAG, TYPE_CONT, TYPE_ENTITY, TYPE_QTAG, TYPE_DATA};
 /* flag: arg quote may have tag_end to end quote and tag */
 #define FLAG_LAZY_END_ARG_QUOTE		0x00000002
 
-/* flag: the entity_break chars ends entity */
+/* flag: the chars in lazy_entity_ends ends the search for entity ends */
 #define FLAG_LAZY_ENTITY_END		0x00000004
 
 /* flag: match '<' and '>' for in-tag-tags (<foo <bar>>) */
@@ -2748,7 +2748,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       }
       else if (scan_entity && ch==this->entity_start) /* entity */
       {
-	 int end_found, entity_close = 1;
+	 int end_found;
 	 DEBUG((stderr,"%*d do_try_feed scan entity %p:%d\n",
 		this->stack_count,this->stack_count,
 		*feed,st->c));
@@ -2757,8 +2757,13 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	 if (this->flags & FLAG_LAZY_ENTITY_END) {
 	   end_found=scan_forward(*feed,st->c+1,&dst,&cdst,
 				  this->lazy_entity_ends,this->n_lazy_entity_ends);
-	   if (end_found && index_shared_string(dst->s,cdst) != this->entity_end)
-	     entity_close = 0;
+	   if (end_found && index_shared_string(dst->s,cdst) != this->entity_end) {
+	     /* Got no entity end; send it to callback__data. */
+	     dst=*feed;
+	     cdst=st->c+1;
+	     got_data=1;
+	     goto done;
+	   }
 	 }
 	 else {
 	   look_for[0]=this->entity_end;
@@ -2775,7 +2780,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    struct svalue *v;
 	    
 	    push_feed_range(*feed,st->c+1,dst,cdst);
-	    cdst+=entity_close;
+	    cdst+=1;
 
 	    v=low_mapping_lookup(this->mapentity,sp-1);
 	    if (v) /* entity we want, do a callback */
@@ -2801,7 +2806,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
 	    }
 	    pop_stack();
 	 }
-	 else cdst+=entity_close;
+	 else cdst+=1;
 
 	 dmalloc_touch_svalue(&(this->callback__entity));
 
@@ -3782,10 +3787,11 @@ static void html_set_extra(INT32 args)
 **!	back won't preserve the case of registered tags and
 **!	containers.
 **!
-**!	<li><b>lazy_entity_end</b>: Normally, the entity end character
-**!	(i.e. ';') is required to end an entity. When this flag is
-**!	set, the characters '&', '<', '>', '"', ''', newline and
-**!	linefeed also breaks an entity.
+**!	<li><b>lazy_entity_end</b>: Normally, the parser search
+**!	indefinitely for the entity end character (i.e. ';'). When
+**!	this flag is set, the characters '&', '<', '>', '"', ''',
+**!	newline and linefeed breaks the search for the entity end, and
+**!	the entity text is then treated as data.
 **!
 **!	<li><b>match_tag</b>: Unquoted nested tag starters and enders
 **!	will be balanced when parsing tags. This is the default.
