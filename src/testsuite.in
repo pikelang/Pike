@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.390 2001/02/28 12:46:27 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.391 2001/02/28 14:44:54 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -4760,6 +4760,18 @@ test_any([[
   foreach( "foobar" ; int a; int b) ret+=a*b;
   return ret;
 ]],1585)
+
+test_any([[
+  int ret;
+  foreach( "foobar" ; int a;) ret+=a;
+  return ret;
+]],21)
+
+test_any([[
+  int ret;
+  foreach( "foobar" ; ; int b) ret+=b;
+  return ret;
+]],633)
 
 test_any([[
   mapping m=([1:2,3:5,7:11,13:17]);
