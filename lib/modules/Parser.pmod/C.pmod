@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.43 2004/04/04 17:32:26 mast Exp $
+// $Id: C.pmod,v 1.44 2005/02/24 23:59:17 nilsson Exp $
 
 //! Splits the @[data] string into an array of tokens. An additional
 //! element with a newline will be added to the resulting array of
@@ -428,6 +428,7 @@ array hide_whitespaces(array tokens)
 	  case ' ':
 	  case '\t':
 	  case '\14':
+	  case '\r':
 	  case '\n':
 	    mixed tmp=ret[-1];
 	    while(arrayp(tmp)) tmp=tmp[-1];
