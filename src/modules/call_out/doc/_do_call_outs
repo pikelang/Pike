@@ -1,0 +1,16 @@
+NAME
+	_do_call_outs - do all pending call_outs.
+
+SYNTAX
+	void _do_call_out();
+
+DESCRIPTION
+        This function runs all pending call_outs that should have been
+        run if pike returned to the backend.  It should not be used in
+        normal operation.
+
+	As a side-effect, this function sets the value returned by
+	time(1) to the current time.
+
+SEE ALSO
+	call_out, remove_call_out, call_out_info, time
