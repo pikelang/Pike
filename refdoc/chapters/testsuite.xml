@@ -21,8 +21,13 @@
   <dd>Runs the test suite with the flags "<tt>-a -v</tt>", without
   installing a new test Pike binary.</dd>
 
+  <dt>testsuites</dt>
+  <dd>Creates testsuite files in the build tree from the
+  testsuite.in-files in the src/ and lib/ trees.</dd>
+
   <dt>verify</dt>
-  <dd>Runs the <tt>tinstall</tt> and <tt>just_verify</tt> targets.</dd>
+  <dd>Runs the <tt>testsuites</tt>, <tt>tinstall</tt> and
+  <tt>just_verify</tt> targets.</dd>
 
   <dt>verify_installed</dt>
   <dd>Runs the test suit with the flags "<tt>-a -v</tt>", with the
@@ -39,14 +44,14 @@
   suite with the flags "<tt>-v -v -a</tt>".</dd>
 
   <dt>gdb_verify</dt>
-
   <dd>Runs the test suite inside of gdb. The test suite is started
   with the flags "<tt>-v -v -a</tt>".</dd>
 
   </dl>
 
   <p>It is possible to alter the flags given to the
-  <tt>test_install</tt> program by using the <tt>TESTARGS</tt> make variable.</p>
+  <tt>test_install</tt> program by using the <tt>TESTARGS</tt> make
+  variable.</p>
 
 <example>
 make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
@@ -74,9 +79,10 @@ make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
 make testsuites
 </example>
 
-  <p>The testsuite files have now appeared in build/<i>arch</i> in locations
-  corresponding to where they lived in the pike tree, except those from the lib/
-  hierarchy; those end up in build/<i>arch</i>/tlib.</p>
+  <p>The testsuite files have now appeared in build/<i>arch</i> in
+  locations corresponding to where they lived in the pike tree, except
+  those from the lib/ hierarchy; those end up in
+  build/<i>arch</i>/tlib.</p>
 
   <p>The test_pike.pike program takes the following attributes.</p>
 
@@ -173,27 +179,46 @@ Total tests: 1  (0 tests skipped)
 </pre>
   </dd>
 
-<!--
--p, --prompt        The user will be asked before every test is run.
--sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
-                    tests in every testsuite.
--eX, --end-after=X  How many tests should be run.
--f, --fail          If set, the testsuite always fails.
--lX, --loop=X       The number of times the testsuite should be run. Default is
-                    1.
--tX, --trace=X      Run tests with trace level X.
--c[X], --check[=X]  The level of extra pike consistency checks performed.
-                    1   _verify_internals is run before every test.
-                    2   _verify_internals is run after every compilation.
-                    3   _verify_internals is run after every test.
-                    4   An extra gc and _verify_internals is run before
-                        every test.
-                    X<0 For values below zero, _verify_internals will be run
-                        before every n:th test, where n=abs(X).
--m, --mem, --memory Print out memory allocations after the tests.
--T, --notty         Format output for non-tty.
--d, --debug         Opens a debug port.
--->
+  <dt>-p, --prompt</dt>
+  <dd>The user will be asked before every test is run.</dd>
+
+  <dt>-sX, --start-test=X</dt>
+  <dd>Where in the testsuite testing should start, e.g. ignores X
+  tests in every testsuite.</dd>
+
+  <dt>-eX, --end-after=X</dt>
+  <dd>How many tests should be run.</dd>
+
+  <dt>-f, --fail</dt>
+  <dd>If set, the test program exits on first failure.</dd>
+
+  <dt>-lX, --loop=X</dt>
+  <dd>The number of times the testsuite should be run. Default is 1.</dd>
+
+  <dt>-tX, --trace=X</dt>
+  <dd>Run tests with trace level X.</dd>
+
+  <dt>-c[X], --check[=X]</dt>
+  <dd>The level of extra pike consistency checks performed.
+  <matrix>
+  <r><c>1</c><c>_verify_internals is run before every test.</c></r>
+  <r><c>2</c><c>_verify_internals is run after every compilation.</c></r>
+  <r><c>3</c><c>_verify_internals is run after every test.</c></r>
+  <r><c>4</c><c>An extra gc and _verify_internals is run before
+    every test.</c></r>
+  <r><c>X&lt;0</c><c>For values below zero, _verify_internals will be run
+    before every n:th test, where n=abs(X).</c></r>
+  </matrix>
+  </dd>
+
+  <dt>-m, --mem, --memory</dt>
+  <dd>Prints out memory allocations after the tests.</dd>
+
+  <dt>-T, --notty</dt>
+  <dd>Format output for non-tty.</dd>
+
+  <dt>-d, --debug</dt>
+  <dd>Opens a debug port.</dd>
 
   </dl>
 
