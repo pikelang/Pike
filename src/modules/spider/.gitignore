@@ -4,3 +4,4 @@
 /configure
 /dependencies
 /stamp-h
+/config.h.in
