@@ -1,3 +1,4 @@
+#define EMPTY
 
 #ifdef ERR_DECLARE
 #define DECLARE_ERROR(NAME, INHERIT, DECL) \
@@ -57,7 +58,7 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #define ERR_FUNC(NAME,FUNC,TYPE,FLAGS)
 #endif
 
-DECLARE_ERROR(generic, /* no inherit */ ,
+DECLARE_ERROR(generic, EMPTY ,
   ERR_VAR(struct pike_string *,string,T_STRING,desc)
   ERR_VAR(struct array *,array,T_ARRAY,backtrace)
   ERR_FUNC("cast",f_error_cast,tFunc(tString,tMixed),0)
