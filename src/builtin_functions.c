@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.302 2000/08/24 19:17:32 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.303 2000/08/28 08:47:18 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4108,6 +4108,41 @@ static struct array* diff_build(struct array *a,
    return aggregate_array(2);
 }
 
+PMOD_EXPORT void f_permute( INT32 args )
+{
+  INT_TYPE q, i=0, n;
+  struct array *a;
+  struct svalue *it;
+
+  if( args != 2 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("permute", 2);
+  if( Pike_sp[ -2 ].type != T_ARRAY )
+     SIMPLE_BAD_ARG_ERROR("diff", 1, "array");
+  if (Pike_sp[ -1 ].type != T_INT)
+    SIMPLE_BAD_ARG_ERROR("diff", 2, "int");
+
+  n  = Pike_sp[ -1 ].u.integer;
+  a = copy_array( Pike_sp[ -2 ].u.array );
+  pop_n_elems( args );
+  q = a->size;
+  it = a->item;
+  while( n && q )
+  {
+    int x = n % q;
+    n /= q;
+    q--;
+    if( x )
+    {
+      struct svalue tmp;
+      tmp     = it[i];
+      it[i]   = it[i+x];
+      it[i+x] = tmp;
+    }
+    i++;
+  }
+  push_array( a );
+}
+
 PMOD_EXPORT void f_diff(INT32 args)
 {
    struct array *seq;
@@ -6051,6 +6086,11 @@ void init_builtin_efuns(void)
 	       tFunc(tArr(tSetvar(0,tMix)) tArr(tSetvar(1,tMix)),
 		     tArr(tArr(tOr(tArr(tVar(0)),tArr(tVar(1)))))),
 	       OPT_TRY_OPTIMIZE);
+
+  /* Generate the n:th permutation of the array given as the first argument */
+  ADD_FUNCTION("permute", f_permute, tFunc(tArray tInt,tArray), 
+               OPT_TRY_OPTIMIZE);
+
   /* function(array,array:array(int)) */
   ADD_FUNCTION("diff_longest_sequence",f_diff_longest_sequence,
 	       tFunc(tArray tArray,tArr(tInt)),OPT_TRY_OPTIMIZE);

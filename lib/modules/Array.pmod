@@ -11,90 +11,10 @@ constant everynth = __builtin.everynth;
 constant splice = __builtin.splice;
 constant transpose = __builtin.transpose;
 constant uniq = __builtin.uniq_array;
-#if 1
+
 constant filter=predef::filter;
 constant map=predef::map;
-#else
-mixed map(mixed arr, mixed fun, mixed ... args)
-{
-  int e,s;
-  mixed *ret;
-
-  if(mappingp(arr))
-    return mkmapping(indices(arr),map(values(arr),fun,@args));
-
-  if(multisetp(arr))
-    return mkmultiset(map(indices(arr,fun,@args)));
-
-  if(!(arrayp(arr) || objectp(arr)))
-    error("Bad argument 1 to Array.map().\n");
-
-  switch(sprintf("%t",fun))
-  {
-  case "int":
-    if(objectp(arr)) {
-      ret=allocate(s=sizeof(arr));
-      for(e=0;e<s;e++)
-	ret[e]=arr[e](@args);
-      return ret;
-    }
-    else return arr(@args);
-
-  case "string":
-    if(objectp(arr)) {
-      ret=allocate(s=sizeof(arr));
-      for(e=0;e<s;e++)
-	ret[e]=arr[e][fun](@args);
-      return ret;
-    }
-    else return column(arr, fun)(@args);
-
-  case "function":
-  case "program":
-  case "object":
-    ret=allocate(s=sizeof(arr));
-    for(e=0;e<s;e++)
-      ret[e]=fun(arr[e],@args);
-    return ret;
-
-  case "multiset":
-    return rows(fun, arr);
-
-  default:
-    error("Bad argument 2 to Array.map().\n");
-  }
-}
-
-
-mixed filter(mixed arr, mixed fun, mixed ... args)
-{
-  int e;
-  mixed *ret;
-
-  if(mappingp(arr))
-  {
-    mixed *i, *v, r;
-    i=indices(arr);
-    ret=map(v=values(arr),fun,@args);
-    r=([]);
-    for(e=0;e<sizeof(ret);e++) if(ret[e]) r[i[e]]=v[e];
-
-    return r;
-  }
-  if(multisetp(arr))
-  {
-    return mkmultiset(filter(indices(arr,fun,@args)));
-  }
-  else
-  {
-    int d;
-    ret=map(arr,fun,@args);
-    for(e=0;e<sizeof(arr);e++) if(ret[e]) ret[d++]=arr[e];
-    
-    return ret[..d-1];
-  }
-}
-#endif
+constant permute = __builtin.permute;
 
 mixed reduce(function fun, array arr, mixed|void zero)
 {
@@ -127,24 +47,6 @@ array shuffle(array arr)
     }
   }
   return(arr);
-}
-
-array permute(array a,int n)
-{
-   int q=sizeof(a);
-   int i;
-   a=a[..]; // copy
-   
-   while (n && q)
-   {
-      int x=n%q; 
-      n/=q; 
-      q--; 
-      if (x) [a[i],a[i+x]]=({ a[i+x],a[i] });
-      i++;
-   }  
-   
-   return a;
 }
 
 int search_array(array arr, mixed fun, mixed ... args)
