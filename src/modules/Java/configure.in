@@ -121,7 +121,7 @@ if test "x$with_java" = xyes; then
     if test "x$JAVA_HOME" = x; then
       pike_cv_java_java_home=no
 
-      # balance brackets: [ 
+      # balance brackets: [ [
       #
       # I know this is bloody ugly, bug in modern (>2.13) 
       # autoconf's changequote doesn't work (and this is 
