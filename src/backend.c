@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.64 2001/06/29 15:06:53 grubba Exp $");
+RCSID("$Id: backend.c,v 1.65 2001/07/02 20:32:54 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -723,8 +723,6 @@ void backend(void)
   if(SETJMP(back))
   {
     call_handle_error();
-    free_svalue(&throw_value);
-    throw_value.type=T_INT;
     throw_value.subtype=NUMBER_UNDEFINED;
     throw_value.u.integer=0;
   }

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.118 2001/06/27 00:01:33 mast Exp $");
+RCSID("$Id: mapping.c,v 1.119 2001/07/02 20:32:55 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1580,7 +1580,11 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
     }
 
     t_flag = 0;
-    if(!SETJMP(catch))
+    if(SETJMP(catch)) {
+      free_svalue(&throw_value);
+      throw_value.type = T_INT;
+    }
+    else
       sort_array_destructively(a);
     UNSETJMP(catch);
     t_flag = save_t_flag;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.80 2001/06/29 23:35:14 hubbe Exp $
+ * $Id: interpret.h,v 1.81 2001/07/02 20:32:54 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -230,7 +230,7 @@ do{ \
     fun_=find_identifier(FUN,master_ob->prog); \
     master_cnt = master_ob->prog->id; \
   } \
-  safe_apply_low(master_ob, fun_, ARGS); \
+  safe_apply_low2(master_ob, fun_, ARGS, 1); \
 }while(0)
 
 #define check_threads_etc() \
@@ -266,6 +266,7 @@ PMOD_EXPORT void f_call_function(INT32 args);
 PMOD_EXPORT void call_handle_error(void);
 PMOD_EXPORT int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 PMOD_EXPORT void safe_apply_low(struct object *o,int fun,int args);
+PMOD_EXPORT void safe_apply_low2(struct object *o,int fun,int args, int handle_errors);
 PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args);
 PMOD_EXPORT void safe_apply_handler(const char *fun,
 				    struct object *handler,

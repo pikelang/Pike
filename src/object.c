@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.161 2001/06/11 19:58:25 mast Exp $");
+RCSID("$Id: object.c,v 1.162 2001/07/02 20:32:55 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -409,6 +409,8 @@ PMOD_EXPORT struct object *get_master(void)
 	if(d_flag)
 	  debug_describe_svalue(&throw_value);
 #endif
+	free_svalue(&throw_value);
+	throw_value.type = T_INT;
 	/* do nothing */
 	UNSETJMP(tmp);
       }else{
@@ -515,7 +517,7 @@ static void call_destroy(struct object *o, int foo)
 		o, o->refs);
 #endif
       if(foo) push_int(1);
-      safe_apply_low(o, e, foo?1:0);
+      safe_apply_low2(o, e, foo?1:0, 1);
       pop_stack();
 #ifdef GC_VERBOSE
       if (Pike_in_gc > GC_PASS_PREPARE)

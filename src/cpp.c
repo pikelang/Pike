@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.85 2001/06/11 16:43:56 grubba Exp $
+ * $Id: cpp.c,v 1.86 2001/07/02 20:32:54 mast Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1226,6 +1226,8 @@ static int do_safe_index_call(struct pike_string *s)
   
   if (SETJMP(recovery)) {
     res = 0;
+    free_svalue(&throw_value);
+    throw_value.type = T_INT;
   } else {
     ref_push_string(s);
     f_index(2);

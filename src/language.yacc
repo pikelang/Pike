@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.230 2001/06/26 21:15:47 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.231 2001/07/02 20:32:54 mast Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -3737,9 +3737,9 @@ static void safe_inc_enum(void)
   struct svalue *save_sp = Pike_sp;
   JMP_BUF recovery;
 
-  free_svalue(&throw_value);
-  throw_value.type = T_INT;
   if (SETJMP(recovery)) {
+    free_svalue(&throw_value);
+    throw_value.type = T_INT;
     yyerror("Bad implicit enum value (failed to add 1).");
     while(Pike_sp > save_sp) pop_stack();
   } else {
