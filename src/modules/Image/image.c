@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.4 1997/03/17 03:08:00 hubbe Exp $ */
+/* $Id: image.c,v 1.5 1997/03/18 12:21:01 per Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.4 1997/03/17 03:08:00 hubbe Exp $");
+RCSID("$Id: image.c,v 1.5 1997/03/18 12:21:01 per Exp $");
 #include "types.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -1619,6 +1619,48 @@ void image_select_colors(INT32 args)
    colortable_free(ct);
 }
 
+void image_cast(INT32 args)
+{
+  /* CHECK TYPE TO CAST TO HERE! FIXME FIXME FIXME! */
+  pop_n_elems(args);
+  push_string(make_shared_binary_string((char *)THIS->img,
+					THIS->xsize*THIS->ysize
+					*sizeof(rgb_group)));
+}
+
+void image_to_8bit_string(INT32 args)
+{
+  struct colortable *ct;
+  struct pike_string *res = begin_shared_string((THIS->xsize*THIS->ysize));
+  unsigned long i;
+  rgb_group *s;
+  unsigned char *d;
+
+  if(!res) error("Out of memory\n");
+
+  if(sp[-args].type != T_ARRAY)
+    error("Wrong type to image->to8bit(COLORTABLE);\n");
+
+  ct=colortable_from_array(sp[-args].u.array,"image->to_8bit_string()\n");
+
+  i=THIS->xsize*THIS->ysize;
+  s=THIS->img;
+  d=res->str;
+
+  THREADS_ALLOW();
+  while (i--)
+  {
+    *d=colortable_rgb_nearest(ct,*s);
+    d++; *s++;
+  }
+  THREADS_DISALLOW();
+
+  pop_n_elems(args);
+  push_string(end_shared_string(res));
+}
+
+
+
 /***************** global init etc *****************************/
 
 #define RGB_TYPE "int|void,int|void,int|void,int|void"
@@ -1634,6 +1676,10 @@ void pike_module_init()
 
    start_new_program();
    add_storage(sizeof(struct image));
+
+   add_function("cast",image_cast, "function(string:string)",0);
+   add_function("to8bit",image_to_8bit_string,
+		"function(array(array(int)):string)",0);
 
    add_function("create",image_create,
 		"function(int|void,int|void,"RGB_TYPE":void)",0);
