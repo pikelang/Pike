@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.246 2004/03/19 02:23:26 mast Exp $
+|| $Id: gc.c,v 1.247 2004/03/21 06:22:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.246 2004/03/19 02:23:26 mast Exp $");
+RCSID("$Id: gc.c,v 1.247 2004/03/21 06:22:16 nilsson Exp $");
 
 int gc_enabled = 1;
 
@@ -1188,7 +1188,8 @@ void debug_describe_svalue(struct svalue *s)
   switch(s->type)
   {
     case T_INT:
-      fprintf(stderr,"    %"PRINTPIKEINT"d\n",s->u.integer);
+      fprintf(stderr,"    %"PRINTPIKEINT"d (subtype %d)\n",s->u.integer,
+	      s->subtype);
       break;
 
     case T_FLOAT:
