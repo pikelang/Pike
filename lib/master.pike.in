@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.239 2002/12/08 21:38:08 mast Exp $
+// $Id: master.pike.in,v 1.240 2002/12/09 22:19:13 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -878,7 +878,7 @@ class dirnode
       dirname=d;
       handler=h;
       fc[dirname]=this_object();
-      if(dirname[sizeof(dirname)-5..]==".pmod")
+      if(has_suffix(dirname,".pmod"))
 	fc[dirname[..sizeof(dirname)-6]]=this_object();
     }
 
@@ -989,6 +989,11 @@ class dirnode
       return UNDEFINED;
     }
     ret=ind(index);
+
+    // We might have gotten placeholder objects in the first pass
+    // which must not be cached to the second.
+    if(ret == predef::__placeholder_object) return ret;
+
     cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
     return ret;
   }
@@ -1119,6 +1124,11 @@ class joinnode
       return UNDEFINED;
     }
     ret = ind(index);
+
+    // We might have gotten placeholder objects in the first pass
+    // which must not be cached to the second.
+    if(ret == predef::__placeholder_object) return ret;
+
     if (zero_type(ret)) {
       cache[index] = ZERO_TYPE;
     } else {
