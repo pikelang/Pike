@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.39 1998/06/03 13:21:32 grubba Exp $ */
+/* $Id: font.c,v 1.40 1998/10/11 19:07:26 marcus Exp $ */
 #include "global.h"
 #include <config.h>
 
@@ -7,7 +7,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.39 1998/06/03 13:21:32 grubba Exp $
+**!	$Id: font.c,v 1.40 1998/10/11 19:07:26 marcus Exp $
 **! class font
 **!
 **! note
@@ -244,7 +244,7 @@ static void exit_font_struct(struct object *obj)
 
 /***************** internals ***********************************/
 
-static INLINE int char_space(struct font *this, unsigned char c)
+static INLINE int char_space(struct font *this, INT32 c)
 {
   if(c==0x20)
     return (int)((float)(this->height*this->xspacing_scale)/4.5);
@@ -253,7 +253,7 @@ static INLINE int char_space(struct font *this, unsigned char c)
   return this->charinfo[c].spacing*this->xspacing_scale;
 }
 
-static INLINE int char_width(struct font *this, unsigned char c)
+static INLINE int char_width(struct font *this, INT32 c)
 {
   if(c==0x20 || c==0x20+128)  return 0;
   return this->charinfo[c].width;
@@ -526,9 +526,11 @@ void font_write(INT32 args)
    struct image *img;
    INT32 xsize=0,i,maxwidth2,j;
    int *width_of;
-   unsigned char *to_write;
+   p_wchar0 *to_write0;
+   p_wchar1 *to_write1;
+   p_wchar2 *to_write2;
    int to_write_len;
-   int c;
+   INT32 c;
    struct font *this = (*(struct font **)(fp->current_storage));
    if (!this)
       error("font->write: no font loaded\n");
@@ -551,14 +553,41 @@ void font_write(INT32 args)
 	 error("font->write: illegal argument(s)\n");
      
       xsize = max = 1;
-      to_write = (unsigned char*)sp[j-args].u.string->str;
       to_write_len = sp[j-args].u.string->len;
-      for (i = 0; i < to_write_len; i++)
+      switch(sp[j-args].u.string->size_shift)
       {
-	 if (xsize+char_width(this,to_write[i]) > max)
-	    max=xsize+char_width(this,to_write[i]);
-	 xsize += char_space(this,to_write[i]);
-	 if (xsize > max) max=xsize;
+       case 0:
+	 to_write0 = STR0(sp[j-args].u.string);
+	 for (i = 0; i < to_write_len; i++)
+	 {
+	   if (xsize+char_width(this,to_write0[i]) > max)
+	     max=xsize+char_width(this,to_write0[i]);
+	   xsize += char_space(this,to_write0[i]);
+	   if (xsize > max) max=xsize;
+	 }
+	 break;
+       case 1:
+	 to_write1 = STR1(sp[j-args].u.string);
+	 for (i = 0; i < to_write_len; i++)
+	 {
+	   if (xsize+char_width(this,to_write1[i]) > max)
+	     max=xsize+char_width(this,to_write1[i]);
+	   xsize += char_space(this,to_write1[i]);
+	   if (xsize > max) max=xsize;
+	 }
+	 break;
+       case 2:
+	 to_write2 = STR2(sp[j-args].u.string);
+	 for (i = 0; i < to_write_len; i++)
+	 {
+	   if (xsize+char_width(this,to_write2[i]) > max)
+	     max=xsize+char_width(this,to_write2[i]);
+	   xsize += char_space(this,to_write2[i]);
+	   if (xsize > max) max=xsize;
+	 }
+	 break;
+       default:
+	 fatal("Illegal shift size!\n");
       }
       width_of[j]=max;
       if (max>maxwidth2) maxwidth2=max;
@@ -580,7 +609,6 @@ void font_write(INT32 args)
 
    for (j=0; j<args; j++)
    {
-     to_write = (unsigned char *)sp[j-args].u.string->str;
      to_write_len = sp[j-args].u.string->len;
      switch(this->justification)
      {
@@ -590,23 +618,68 @@ void font_write(INT32 args)
      }
      if(xsize<0) xsize=0;
 
-     THREADS_ALLOW();
-     for (i = 0; i < to_write_len; i++)
+     switch(sp[j-args].u.string->size_shift)
      {
-       c=*(to_write++);
-/*     if(c<0) fatal("IDI compiler\n");*/
-       if (c < (INT32)this->chars)
-       {
-	 if(char_width(this,c))
-	   write_char(this->charinfo+c,
-		      (img->img+xsize)+
-		      (img->xsize*(int)(j*this->height*this->yspacing_scale)),
-		      img->xsize,
-		      this->height);
-	 xsize += char_space(this, c);
-       }
+      case 0:
+	to_write0 = STR0(sp[j-args].u.string);
+	THREADS_ALLOW();
+	for (i = 0; i < to_write_len; i++)
+        {
+	  c=*(to_write0++);
+          if (c < (INT32)this->chars)
+          {
+	    if(char_width(this,c))
+	      write_char(this->charinfo+c,
+			 (img->img+xsize)+
+			 (img->xsize*(int)(j*this->height*this->yspacing_scale)),
+			 img->xsize,
+			 this->height);
+	    xsize += char_space(this, c);
+	  }
+	}
+	THREADS_DISALLOW();
+	break;
+      case 1:
+	to_write1 = STR1(sp[j-args].u.string);
+	THREADS_ALLOW();
+	for (i = 0; i < to_write_len; i++)
+        {
+	  c=*(to_write1++);
+          if (c < (INT32)this->chars)
+          {
+	    if(char_width(this,c))
+	      write_char(this->charinfo+c,
+			 (img->img+xsize)+
+			 (img->xsize*(int)(j*this->height*this->yspacing_scale)),
+			 img->xsize,
+			 this->height);
+	    xsize += char_space(this, c);
+	  }
+	}
+	THREADS_DISALLOW();
+	break;
+      case 2:
+	to_write2 = STR2(sp[j-args].u.string);
+	THREADS_ALLOW();
+	for (i = 0; i < to_write_len; i++)
+        {
+	  c=*(to_write2++);
+          if (c < (INT32)this->chars)
+          {
+	    if(char_width(this,c))
+	      write_char(this->charinfo+c,
+			 (img->img+xsize)+
+			 (img->xsize*(int)(j*this->height*this->yspacing_scale)),
+			 img->xsize,
+			 this->height);
+	    xsize += char_space(this, c);
+	  }
+	}
+	THREADS_DISALLOW();
+	break;
+      default:
+	fatal("Illegal shift size!\n");
      }
-     THREADS_DISALLOW();
    }
    free(width_of);
 
@@ -657,20 +730,49 @@ void font_text_extents(INT32 args)
   for (j=0; j<args; j++)
   {
      int max;
-     unsigned char *to_write;
+     p_wchar0 *to_write0;
+     p_wchar1 *to_write1;
+     p_wchar2 *to_write2;
      int to_write_len;
      if (sp[j-args].type!=T_STRING)
 	error("font->write: illegal argument(s)\n");
      
      xsize = max = 1;
-     to_write = (unsigned char*)sp[j-args].u.string->str;
      to_write_len = sp[j-args].u.string->len;
-     for (i = 0; i < to_write_len; i++)
+     switch(sp[j-args].u.string->size_shift)
      {
-	if (xsize+char_width(THIS,to_write[i]) > max)
-	   max=xsize+char_width(THIS,to_write[i]);
-	xsize += char_space(THIS,to_write[i]);
-	if (xsize > max) max=xsize;
+      case 0:
+	to_write0 = STR0(sp[j-args].u.string);
+	for (i = 0; i < to_write_len; i++)
+	{
+	  if (xsize+char_width(THIS,to_write0[i]) > max)
+	    max=xsize+char_width(THIS,to_write0[i]);
+	  xsize += char_space(THIS,to_write0[i]);
+	  if (xsize > max) max=xsize;
+	}
+	break;
+      case 1:
+	to_write1 = STR1(sp[j-args].u.string);
+	for (i = 0; i < to_write_len; i++)
+	{
+	  if (xsize+char_width(THIS,to_write1[i]) > max)
+	    max=xsize+char_width(THIS,to_write1[i]);
+	  xsize += char_space(THIS,to_write1[i]);
+	  if (xsize > max) max=xsize;
+	}
+	break;
+      case 2:
+	to_write2 = STR2(sp[j-args].u.string);
+	for (i = 0; i < to_write_len; i++)
+	{
+	  if (xsize+char_width(THIS,to_write2[i]) > max)
+	    max=xsize+char_width(THIS,to_write2[i]);
+	  xsize += char_space(THIS,to_write2[i]);
+	  if (xsize > max) max=xsize;
+	}
+	break;
+      default:
+	fatal("Illegal shift size!\n");
      }
      if (max>maxwidth2) maxwidth2=max;
   }
