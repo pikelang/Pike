@@ -61,7 +61,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.27 2004/02/21 02:11:42 per Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.28 2004/02/21 05:07:57 jhs Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -1190,7 +1190,7 @@ void got_piece(int piece,string data)
    m_delete(file_peers,piece);
    file_available[piece]=0;
 
-   Function.call_callback(pieces_update_status);
+   Function.call_callback( pieces_update_status, piece );
 
    if (!sizeof(file_want) &&
        find_call_out(update_tracker_loop)!=-1)
@@ -1214,6 +1214,10 @@ void destroy()
 
    remove_call_out(update_tracker_loop);
    remove_call_out(increase_number_of_peers);
+   if( listen_port ) 
+     destruct( listen_port);
+   if( http )
+     destruct( http );
 }
 
 // ----------------------------------------------------------------
