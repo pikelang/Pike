@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.19 2002/12/07 14:12:05 grubba Exp $
+|| $Id: xbm.c,v 1.20 2003/01/28 08:27:50 mirar Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
-RCSID("$Id: xbm.c,v 1.19 2002/12/07 14:12:05 grubba Exp $");
+RCSID("$Id: xbm.c,v 1.20 2003/01/28 08:27:50 mirar Exp $");
 
 #include "image_machine.h"
 
@@ -187,11 +187,11 @@ static struct pike_string *save_xbm( struct image *i, struct pike_string *name )
 
   initialize_buf(&buf);
   ccat( "#define ");  cname();  ccat( "_width " );
-  sprintf( size, "%d\n", i->xsize );
+  sprintf( size, "%"PRINTPIKEINT"d\n", i->xsize );
   low_my_binary_strcat( size, strlen(size), &buf );
 
   ccat( "#define ");  cname();  ccat( "_height " );
-  sprintf( size, "%d\n", i->ysize );
+  sprintf( size, "%"PRINTPIKEINT"d\n", i->ysize );
   low_my_binary_strcat( size, strlen(size), &buf );
 
   ccat( "static char " );  cname();  ccat( "_bits[] = {\n" );
