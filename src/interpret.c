@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.26 1997/03/01 03:28:55 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.27 1997/03/05 05:32:14 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -637,7 +637,6 @@ static void eval_instruction(unsigned char *pc)
       fp->locals[instr].subtype=0;
       fp->locals[instr].u.integer=0;
       break;
-
 
       CASE(F_INC_LOCAL);
       instr=GET_ARG();
