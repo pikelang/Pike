@@ -4886,79 +4886,60 @@ This function returns how many values are currently in the fifo. <!-- L}ter fel 
 
 <hr noshade size=1>
 
-<anchor name=Thread.Queue>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Queue</tt> - a queue of values
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<class name=Thread.Queue title="a queue of values">
+<man_description>
 Thread.Queue implements a queue, or a pipeline. The main difference
 between Thread.Queue and Thread.Fifo is that queues
 will never block in write(), only allocate more memory.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Thread.Fifo>Thread.Fifo</link>
-<p>
-<dt><encaps>NOTA BENE</encaps><dd>
+</man_description>
+<man_note>
 Queues are only available on systems with POSIX or UNIX threads support.
-<p>
-</dl>
+</man_note>
+<man_see>
+Thread.Fifo
+</man_see>
+</class>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Queue.write>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Queue-&gt;write</tt> - queue a value
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>void write(mixed <I>value</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Queue-&gt;write title="queue a value">
+<man_syntax>
+void write(mixed <I>value</I>);
+</man_syntax>
+<man_description>
 This function puts a value last in the queue. If the queue is
 too small to hold the value the queue will be expanded to make
 room for it.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Queue.read>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Queue-&gt;read</tt> - read a value from the queue
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed read();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Queue-&gt;read title="read a value from the queue">
+<man_syntax>
+mixed read();
+</man_syntax>
+<man_description>
 This function retrieves a value from the queue. Values will be
 returned in the order they were written. If there are no values
 present in the queue the current thread will sleep until some other
 thread writes a value to the queue.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Thread.Queue.size>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Thread.Queue-&gt;size</tt> - return number of values in queue
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int queue-&gt;size();<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<method name=Thread.Queue-&gt;size title="return number of values in queue">
+<man_syntax>
+int queue-&gt;size();
+</man_syntax>
+<man_description>
 This function returns how many values are currently in the queue.
-<p>
-</dl>
+</man_description>
+</method>
 
-</anchor>
 <hr noshade size=1>
+
 </section>
 
 <section title="Threads example">
@@ -5073,26 +5054,23 @@ such modules are <tt>String</tt> and <tt>Array</tt>, but more are expected to
 show up in the future.
 
 <section title="String">
+<module name="String" title="extra string functionality module">
 The module <tt>String</tt> contains some extra string functionality which
 is not always used. These functions are mostly implemented in Pike as a
 complement to those written in C.
 
 <hr noshade size=1>
-<anchor name=String.implode_nicely>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>String.implode_nicely</tt> - make an English comma separated list
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string implode_nicely(array(string) words, string|void separator)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=String.implode_nicely title="make an English comma separated list">
+<man_syntax>
+string implode_nicely(array(string) words, string|void separator);
+</man_syntax>
+<man_description>
 This function implodes a list of words to a readable string.
 If the separator is omitted, the default is <tt>"and"</tt>.
-<p>
-<dt><encaps>EXAMPLES</encaps><dd>
-<tt>&gt; implode_nicely(({"green"}));<br>
+</man_description>
+<man_example>
+&gt; implode_nicely(({"green"}));<br>
 Result: green<br>
 &gt; implode_nicely(({"green","blue"}));<br>
 Result: green and blue<br>
@@ -5100,52 +5078,42 @@ Result: green and blue<br>
 Result: green, blue and white<br>
 &gt; implode_nicely(({"green","blue","white"}),"or");<br>
 Result: green, blue or white<br>
-</tt>
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=%60*>`*</link>
-</dl>
-</anchor>
+</man_example>
+<man_see>
+`*
+</man_see>
+</function>
 
 <hr noshade size=1>
 
-<anchor name=String.capitalize>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>String.capitalize</tt> - capitalize a string
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string capitalize(string str)<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=String.capitalize title="capitalize a string">
+<man_syntax>
+string capitalize(string str);
+</man_syntax>
+<man_description>
 Convert the first character in str to upper case, and return the
 new string.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=lower_case>lower_case</link> and <link to=upper_case>upper_case</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+lower_case, upper_case
+</man_see>
+</function>
 
 <hr noshade size=1>
 
-<anchor name=String.strmult>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>String.strmult</tt> - multiply strings
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>string strmult(string <I>s</I>, int <I>num</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+<function name=String.strmult title="multiply strings">
+<man_syntax>
+string strmult(string <I>s</I>, int <I>num</I>);
+</man_syntax>
+<man_description>
 This function multiplies 's' by 'num'. The return value is the same
 as appending 's' to an empty string 'num' times.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
+
 <hr noshade size=1>
+
+</module>
 </section>
 
 <section title="Array">
