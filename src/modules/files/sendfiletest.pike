@@ -1,10 +1,10 @@
 #!/usr/local/bin/pike
 
-/* $Id: sendfiletest.pike,v 1.7 2001/10/01 19:55:01 nilsson Exp $ */
+/* $Id: sendfiletest.pike,v 1.8 2004/02/03 10:14:54 nilsson Exp $ */
 
 constant TEST_SIZE = 16384;
 
-string testdata = Crypto.randomness.reasonably_random()->read(TEST_SIZE);
+string testdata = random_string(TEST_SIZE);
 
 int testno;
 
