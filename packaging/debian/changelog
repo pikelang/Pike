@@ -1,8 +1,9 @@
-pike7.5 (7.5.12-1) unstable; urgency=low
+pike7.5 (7.5.12-1) experimental; urgency=low
 
   * Catching up on version numbers.
+  * First upload to Debian/experimental.
 
- -- Marek Habersack <grendel@debian.org>  Sat, 27 Sep 2003 15:53:18 +0200
+ -- Marek Habersack <grendel@debian.org>  Sat, 30 Oct 2003 22:46:18 +0100
 
 pike7.5 (7.5.5-1) unstable; urgency=low
 
