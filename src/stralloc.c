@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.171 2004/11/05 16:05:07 grubba Exp $
+|| $Id: stralloc.c,v 1.172 2004/11/05 16:08:46 grubba Exp $
 */
 
 #include "global.h"
@@ -2241,6 +2241,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 
 	  for (shift = 0; val >> shift; shift += delta)
 	    ;
+	  shift -= delta;
 	  while(shift >= 0) {
 	    string_builder_putchar(s, numbers[(val>>shift) & mask]);
 	    shift -= delta;
