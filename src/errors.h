@@ -1,5 +1,3 @@
-#define EMPTY
-
 #ifdef ERR_DECLARE
 #define DECLARE_ERROR(NAME, INHERIT, DECL) \
 PMOD_EXPORT struct program *PIKE_CONCAT(NAME,_error_program); \
@@ -19,7 +17,6 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME) TYPE NAME ;
 
 /* Some compilers (eg cl) don't like empty structs... */
-#undef EMPTY
 #define EMPTY ERR_VAR(INT_TYPE, int, PIKE_T_INT, ignored__)
 
 #endif /* ERR_EXT_DECLARE */
@@ -42,6 +39,8 @@ struct PIKE_CONCAT(NAME,_error_struct) { \
 #define ERR_VAR(TYPE,CTYPE,RUNTYPE,NAME2) \
   map_variable("__" #NAME2, #CTYPE, 0, \
 	       current_offset + (((char *)&(foo.NAME2))-((char *)&foo)), RUNTYPE);
+
+#define EMPTY
 
 #define ERR_INHERIT(NAME) \
   low_inherit(PIKE_CONCAT(NAME,_error_program),0,0,0,0,0);
@@ -120,6 +119,7 @@ DECLARE_ERROR(compilation, ERR_INHERIT(generic), EMPTY)
 #undef DECLARE_ERROR
 #undef ERR_INHERIT
 #undef ERR_VAR
+#undef EMPTY
 #undef ERR_FUNC
 
 #undef ERR_DECLARE
