@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.17 2002/04/08 01:21:34 nilsson Exp $
+ * $Id: Tree.pmod,v 1.18 2002/10/16 10:09:25 nilsson Exp $
  *
  */
 
@@ -651,10 +651,11 @@ class Node {
   }
 };
 
-//!
-mixed parse_xml_callback(string type, string name,
-			 mapping attr, string|array contents,
-			 mixed location, mixed ...extra)
+
+private Node|int(0..0)
+  parse_xml_callback(string type, string name,
+		     mapping attr, string|array contents,
+		     mixed location, mixed ...extra)
 {
   Node   node;
 
