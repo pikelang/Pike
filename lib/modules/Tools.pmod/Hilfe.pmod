@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.117 2004/05/23 17:51:53 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.118 2005/01/11 08:29:36 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle enums.
@@ -829,7 +829,7 @@ private constant notype = (< "(", ")", "->", "[", "]", ":", ";",
 			     "+", "++", "-", "--",
 			     "%", "*", "/", "&", "&&", "||", ",",
 			     "<", ">", "==", "=", "!=", "?",
-			     "+=", "-=", "%=", "/=", "&=", "|=",
+			     "+=", "-=", "*=", "%=", "/=", "&=", "|=",
 			     "~=", "<<", ">>", "<<=", ">>=", "<=",
 			     ">=", "^", "^=" >);
 
