@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.21 2002/08/10 19:09:57 grendel Exp $
+# $Id: rules,v 1.22 2002/08/10 19:20:43 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -183,7 +183,7 @@ install: build
 
 	# install the docs
 	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-manual refdoc/traditional_manual/* usr/share/doc/$(PIKE)-doc/html/manual
-	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/$(PIKE)-manual)/usr/share/doc/$(PIKE)-doc/html/manual/.dhelp
+	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.manual $(CURDIR)/debian/$(PIKE)-manual/usr/share/doc/$(PIKE)-doc/html/manual/.dhelp
 
 	dh_install --sourcedir=$(CURDIR) -p$(PIKE)-reference refdoc/modref/* usr/share/doc/$(PIKE)-doc/html/reference
 	install -m 644 -o root -g root $(CURDIR)/debian/dhelp.refdoc $(CURDIR)/debian/$(PIKE)-reference/usr/share/doc/$(PIKE)-doc/html/reference/.dhelp
