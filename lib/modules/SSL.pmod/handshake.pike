@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.20 2000/08/08 18:23:15 sigge Exp $
+/* $Id: handshake.pike,v 1.21 2000/09/18 15:24:55 grubba Exp $
  *
  */
 
@@ -479,9 +479,11 @@ int handle_handshake(int type, string data, string raw)
 	  return -1;
 	}
 	other_random = ("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0" + challenge)[..31];
-	int err = reply_new_session(cipher_suites, ({ COMPRESSION_null }) );
-	if (err)
-	  return err;
+	{
+	  int err = reply_new_session(cipher_suites, ({ COMPRESSION_null }) );
+	  if (err)
+	    return err;
+	}
 	handshake_state = STATE_server_wait_for_client;
 	
 	break;
