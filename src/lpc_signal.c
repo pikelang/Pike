@@ -174,9 +174,9 @@ static int my_signal(int sig, sigfunctype fun)
 #ifdef HAVE_SIGVEC
   {
     struct sigvec action;
+    MEMSET((char *)&action, 0, sizeof(action));
     action.sv_handler= fun;
     action.sv_mask=-1;
-    action.sv_flags=0;
 #ifdef SA_INTERRUPT
     if(fun != SIG_IGN)
       action.sv_flags=SV_INTERRUPT;
