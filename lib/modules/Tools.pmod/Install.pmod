@@ -38,7 +38,8 @@ array(string) features()
     catch
     {
       if(([ "Java":2 ])[modname] <
-	 sizeof(indices(master()->resolv(modname) || ({}))))
+	 sizeof(indices(master()->resolv(modname) || ({})) -
+		({ "dont_dump_module" })))
       {
 	if(modname[0] == '_')
 	  modname = replace(modname[1..], "_", ".");
