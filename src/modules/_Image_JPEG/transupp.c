@@ -1,5 +1,5 @@
 /*
- * $Id: transupp.c,v 1.4 2002/10/04 17:51:46 grubba Exp $
+ * $Id: transupp.c,v 1.5 2002/10/06 12:17:25 grubba Exp $
  */
 
 #include "global.h"
@@ -72,12 +72,13 @@
 #endif
 
 
-#ifndef HAVE_JCOPY_SAMPLE_ROWS
-
 GLOBAL(void)
 jcopy_sample_rows (JSAMPARRAY input_array, int source_row,
 		   JSAMPARRAY output_array, int dest_row,
 		   int num_rows, JDIMENSION num_cols)
+#ifdef HAVE_JCOPY_SAMPLE_ROWS
+     ;
+#else /* !HAVE_JCOPY_SAMPLE_ROWS */
 /* Copy some rows of samples from one place to another.
  * num_rows rows are copied from input_array[source_row++]
  * to output_array[dest_row++]; these areas may overlap for duplication.
@@ -107,12 +108,14 @@ jcopy_sample_rows (JSAMPARRAY input_array, int source_row,
   }
 }
 
-#endif /* !HAVE_JCOPY_SAMPLE_ROWS */
-#ifndef HAVE_JCOPY_BLOCK_ROW
+#endif /* HAVE_JCOPY_SAMPLE_ROWS */
 
 GLOBAL(void)
 jcopy_block_row (JBLOCKROW input_row, JBLOCKROW output_row,
 		 JDIMENSION num_blocks)
+#ifdef HAVE_JCOPY_BLOCK_ROW
+     ;
+#else /* HAVE_JCOPY_BLOCK_ROW */
 /* Copy a row of coefficient blocks from one place to another. */
 {
 #ifdef FMEMCOPY
@@ -129,11 +132,13 @@ jcopy_block_row (JBLOCKROW input_row, JBLOCKROW output_row,
 #endif
 }
 
-#endif /* !HAVE_JCOPY_BLOCK_ROW */
-#ifndef HAVE_JZERO_FAR
+#endif /* HAVE_JCOPY_BLOCK_ROW */
 
 GLOBAL(void)
 jzero_far (void FAR * target, size_t bytestozero)
+#ifdef HAVE_JZERO_FAR
+     ;
+#else /* !HAVE_JZERO_FAR */
 /* Zero out a chunk of FAR memory. */
 /* This might be sample-array data, block-array data, or alloc_large data. */
 {
@@ -149,7 +154,7 @@ jzero_far (void FAR * target, size_t bytestozero)
 #endif
 }
 
-#endif /* !HAVE_JZERO_FAR */
+#endif /* HAVE_JZERO_FAR */
 
 /*
  * Lossless image transformation routines.  These routines work on DCT
