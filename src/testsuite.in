@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.336 2000/09/27 19:32:23 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.337 2000/09/30 15:54:42 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1346,7 +1346,7 @@ test_any_equal([[
   return o->a;
 ]], ({1,2}))
 
-dnl dnl Undefined behaviour, don't do this - Hubbe
+dnl // Undefined behaviour, don't do this - Hubbe
 dnl test_any_equal([[
 dnl   class A {
 dnl    array a = ({1});
@@ -2236,6 +2236,93 @@ ifefun(gc,
   test_any([[{
     mapping a = set_weak_flag (([17: set_weak_flag (({({17})}), 1)]), 1);
     return gc() >= 2 && !sizeof (a);
+  }]], 1);
+
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag ((["foo": o]), 1);
+    gc();
+    return sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([o: o]), 1);
+    gc();
+    return sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o1 = class{}(), o2 = class{}();
+    mapping a = set_weak_flag (([o1: o2]), 1);
+    gc();
+    return sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([o: o]), 1);
+    o = 0;
+    return gc() >= 1 && !sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([class{}(): o]), 1);
+    return gc() >= 1 && !sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([o: class{}()]), 1);
+    return gc() >= 1 && !sizeof (a);
+  }]], 1);
+  test_any([[{
+    mapping a = set_weak_flag (([class{}(): class{}()]), 1);
+    return gc() >= 2 && !sizeof (a);
+  }]], 1);
+
+test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag ((["foo": o]), 1);
+    destruct (o);
+    gc();
+    return !sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([o: o]), 1);
+    destruct (o);
+    gc();
+    return !sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([class{}(): o]), 1);
+    destruct (o);
+    return gc() >= 1 && !sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([o: class{}()]), 1);
+    destruct (o);
+    return gc() >= 1 && !sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([o: o]), 0);
+    destruct (o);
+    gc();
+    return !sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([class{}(): o]), 0);
+    destruct (o);
+    gc();
+    return sizeof (a);
+  }]], 1);
+  test_any([[{
+    object o = class{}();
+    mapping a = set_weak_flag (([o: class{}()]), 0);
+    destruct (o);
+    gc();
+    return !sizeof (a);
   }]], 1);
 
   test_do([[{
