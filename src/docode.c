@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.4 1996/11/14 01:24:08 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.5 1996/12/01 13:03:54 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -570,6 +570,7 @@ static int do_docode2(node *n,int flags)
     current_switch_jumptable = prev_switch_jumptable;
     current_break=break_save;
     current_continue=continue_save;
+    do_pop(4);
     return 0;
   }
 
@@ -599,6 +600,7 @@ static int do_docode2(node *n,int flags)
     current_switch_jumptable = prev_switch_jumptable;
     current_break=break_save;
     current_continue=continue_save;
+    do_pop(3);
     return 0;
   }
 

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.13 1996/11/28 03:04:44 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.14 1996/12/01 13:03:55 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -379,7 +379,6 @@ CASE(ID) \
     check_threads_etc(); \
   }else{ \
     pc+=sizeof(INT32); \
-    pop_n_elems(3); \
   } \
   break; \
 }
@@ -874,7 +873,6 @@ static void eval_instruction(unsigned char *pc)
 	  sp[-1].u.integer++;
 	}else{
 	  pc+=sizeof(INT32);
-	  pop_n_elems(4);
 	}
 	break;
       }
