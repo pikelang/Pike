@@ -10,6 +10,14 @@ testfont binary
 # Remove the corresponding line before committing
 # changes to these files.
 /lib/include/sql.pre.pike foreign_ident
+/lib/modules/LR.pmod/Grammar_parser.pmod foreign_ident
+/lib/modules/LR.pmod/item.pike foreign_ident
+/lib/modules/LR.pmod/kernel.pike foreign_ident
+/lib/modules/LR.pmod/lr.pike foreign_ident
+/lib/modules/LR.pmod/parser.pike foreign_ident
+/lib/modules/LR.pmod/priority.pike foreign_ident
+/lib/modules/LR.pmod/rule.pike foreign_ident
+/lib/modules/LR.pmod/scanner.pike foreign_ident
 /src/backend.c foreign_ident
 /src/builtin_functions.c foreign_ident
 /src/configure.in foreign_ident
