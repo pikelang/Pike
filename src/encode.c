@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.177 2004/05/11 14:07:28 grubba Exp $
+|| $Id: encode.c,v 1.178 2004/05/11 14:13:02 grubba Exp $
 */
 
 #include "global.h"
@@ -32,7 +32,7 @@
 #include "opcodes.h"
 #include "peep.h"
 
-RCSID("$Id: encode.c,v 1.177 2004/05/11 14:07:28 grubba Exp $");
+RCSID("$Id: encode.c,v 1.178 2004/05/11 14:13:02 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -4103,8 +4103,6 @@ static INT32 my_decode(struct pike_string *tmp,
 		 (supporter_callback *) re_decode,
 		 (void *)data);
 
-  decode_value2(data);
-
   low_do_decode (data);
 
   return 1;
@@ -4257,10 +4255,6 @@ void f_decode_value(INT32 args)
 		 BIT_VOID | BIT_INT,
 #endif
 		 0);
-
-#ifdef ENCODE_DEBUG
-  debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
-#endif /* ENCODE_DEBUG */
 
   s = Pike_sp[-args].u.string;
 
