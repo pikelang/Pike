@@ -4,6 +4,42 @@
 
 <section title="Running Tests">
 
+  <p>The most common way of running tests from the test suite is to
+  use the top level make target <tt>verify</tt> which installs a test
+  Pike in the build directory and use it while running the entire test
+  suit. The following test-related make targets are defined in the top
+  level make file.</p>
+
+  <dl>
+
+  <dt>tinstall</dt>
+  <dd>Makes and installs a test Pike binary in the build directory. If
+  a test Pike binary was already installed, it will first be
+  removed.</dd>
+
+  <dt>just_verify</dt>
+  <dd>Runs the testsuite without installing a new test Pike binary.</dd>
+
+  <dt>verify</dt>
+  <dd>Runs the <tt>tinstall</tt> and <tt>just_verify</tt> targets.</dd>
+
+  <dt>verify_installed</dt>
+  <dd></dd>
+
+  <dt>check</dt>
+  <dd>Alias for the <tt>verify</tt> make target.</dd>
+
+  <dt>sure</dt>
+  <dd>Alias for the <tt>verify</tt> make target.</dd>
+
+  <dt>verbose_verify</dt>
+  <dd></dd>
+
+  <dt>gdb_verify</dt>
+  <dd></dd>
+
+  </dl>
+
   <p><fixme>Different ways of running the testsuite (all tests, some tests,
   different build dirs, test suite flags</fixme></p>
 
@@ -11,24 +47,27 @@
 
 <section title="Writing new tests">
 
-  <p>Whenever you write a new function in a module or in Pike itself it is
-  good to add a few test cases in the test suite to ensure that regressions
-  are spotted as soon as they appear or to aid in finding problems when porting
-  Pike to another platform. Since you have written the code, you are the one
-  best suited to come up with tricky tests cases. A good test suite for a function
-  includes both some trivial tests to ensure that the basic functionality works and
-  some nasty tests to test the borderlands of what the function is capable of. Don't
-  hesitate to add a few tests that triggers various compilation errors as well.</p>
+  <p>Whenever you write a new function in a module or in Pike itself
+  it is good to add a few test cases in the test suite to ensure that
+  regressions are spotted as soon as they appear or to aid in finding
+  problems when porting Pike to another platform. Since you have
+  written the code, you are the one best suited to come up with tricky
+  tests cases. A good test suite for a function includes both some
+  trivial tests to ensure that the basic functionality works and some
+  nasty tests to test the borderlands of what the function is capable
+  of. Don't hesitate to add a few tests that triggers various
+  compilation errors as well.</p>
 
-  <p>Also, when a bug in Pike has been found, a minimized test case the triggers the
-  bug should also be added to the test suite. After all, this test case has proven to
-  be a useful once.</p>
+  <p>Also, when a bug in Pike has been found, a minimized test case
+  the triggers the bug should also be added to the test suite. After
+  all, this test case has proven to be a useful once.</p>
 
   <subsection title="test_any">
-    <p>The test_any macro tests if the result of two pike expressions are
-    similar, e.g. if a==b. Technically the actual test preformed is !(a!=b).
-    The first expression should be a complete block, that returns a value, while
-    the other expression should be a simple pike statement.</p>
+    <p>The test_any macro tests if the result of two pike expressions
+    are similar, e.g. if a==b. Technically the actual test preformed
+    is !(a!=b). The first expression should be a complete block, that
+    returns a value, while the other expression should be a simple
+    pike statement.</p>
     <example>
 test_any([[
   int f (int i) {i = 0; return i;};
@@ -38,9 +77,10 @@ test_any([[
   </subsection>
 
   <subsection title="test_any_equal">
-    <p>The test_any_equal tests if the result of two pike expressions are
-    identical, e.g. if equal(a,b). The first expression should be a complete
-    block, while the other expression should be a simple pike statement.</p>
+    <p>The test_any_equal macro tests if the result of two pike
+    expressions are identical, e.g. if equal(a,b). The first
+    expression should be a complete block, while the other expression
+    should be a simple pike statement.</p>
     <example>
 test_any_equal([[
   mixed a=({1,2,3});
@@ -51,26 +91,64 @@ test_any_equal([[
   </subsection>
 
   <subsection title="test_eq">
-    <p>The test_eq tests if the result of two pike statements are similar,
-    e.g. if a==b. Technicaly the actual test performed is !(a!=b).</p>
+    <p>The test_eq macro tests if the result of two pike statements
+    are similar, e.g. if a==b. Technicaly the actual test performed is
+    !(a!=b).</p>
 <example>
 test_eq(1e1,10.0);
 </example>
   </subsection>
 
   <subsection title="test_equal">
-    <p>The test_equal tests if the result of two pike statements are identical,
-    e.g. if equal(a,b).</p>
+    <p>The test_equal macro tests if the result of two pike statements
+    are identical, e.g. if equal(a,b).</p>
 <example>
 test_equal([[ ({10,20})[*] + 30  ]], [[ ({40, 50}) ]])
 </example>
   </subsection>
 
-  <subsection title="test_do" />
-  <subsection title="test_true" />
-  <subsection title="test_false" />
-  <subsection title="test_compile" />
-  <subsection title="test_compile_any" />
+  <subsection title="test_do">
+    <p>test_do simply executes its code. This test fails if there is
+    any compilation error or if an error is thrown during
+    execution.</p>
+<example>
+test_do([[
+  int x;
+  if (time())
+    x = 1;
+  else
+    foo: break foo;
+]])
+</example>
+  </subsection>
+
+  <subsection title="test_true">
+    <p>This test succeeds if the pike expression is evaluated into a
+    non-zero value.</p>
+<example>
+test_true([[1.0e-40]]);
+</example>
+  </subsection>
+
+  <subsection title="test_false">
+    <p>This test succeeds if the pike expression is evaluated into a
+    zero value.</p>
+<example>
+test_false(glob("*f","foo"))
+</example>
+  </subsection>
+
+  <subsection title="test_compile">
+    <p>The test_compile macro only tries to compile an expression. It
+    fails upon compilarion warnings or errors.</p>
+<example>
+test_compile([[Stdio.File foo=Stdio.File();]])
+</example>
+  </subsection>
+
+  <subsection title="test_compile_any">
+  </subsection>
+
   <subsection title="test_compile_error" />
   <subsection title="test_compile_error_any" />
   <subsection title="test_compile_warning" />
@@ -85,3 +163,4 @@ test_equal([[ ({10,20})[*] + 30  ]], [[ ({40, 50}) ]])
 </section>
 
 </chapter>
+
