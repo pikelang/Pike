@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.138 2001/12/10 02:08:15 mast Exp $");
+RCSID("$Id: main.c,v 1.139 2001/12/14 04:10:20 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -33,6 +33,11 @@ RCSID("$Id: main.c,v 1.138 2001/12/10 02:08:15 mast Exp $");
 #include "security.h"
 #include "constants.h"
 #include "version.h"
+#include "program.h"
+
+#ifdef AUTO_BIGNUM
+#include "bignum.h"
+#endif
 
 #if defined(__linux__) && defined(HAVE_DLOPEN) && defined(HAVE_DLFCN_H)
 #include <dlfcn.h>
@@ -756,7 +761,6 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 
 void low_init_main(void)
 {
-  void init_builtin(void);
   void init_iterators(void);
 
   init_backend();
@@ -788,21 +792,9 @@ void init_main(void)
 void low_exit_main(void)
 {
 #ifdef DO_PIKE_CLEANUP
-  void cleanup_added_efuns(void);
-  void cleanup_pike_types(void);
-  void cleanup_program(void);
-  void cleanup_compiler(void);
-  void free_all_mapping_blocks(void);
-  void free_all_object_blocks(void);
-  void free_all_program_blocks(void);
-  void exit_builtin(void);
   void exit_iterators(void);
-  void exit_backend(void);
-  void cleanup_pike_type_table(void);
-  void destruct_objects_to_destruct_cb(void);
 
 #ifdef AUTO_BIGNUM
-  void exit_auto_bignum(void);
   exit_auto_bignum();
 #endif
 
@@ -955,5 +947,3 @@ void low_exit_main(void)
 #endif
 #endif
 }
-
-
