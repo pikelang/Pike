@@ -156,6 +156,12 @@
 /* Define if you have the pthread_yield function.  */
 #undef HAVE_PTHREAD_YIELD
 
+/* Define if your cpp supports the ANSI concatenation operator ## */
+#undef HAVE_ANSI_CONCAT
+
+/* Define if your cpp supports K&R-style concatenation */
+#undef HAVE_KR_CONCAT
+
 @BOTTOM@
 
 /* How to set a socket non-blocking */
@@ -178,5 +184,19 @@
 #else
 #define ATTRIBUTE(X)
 #endif
+
+/* NOTE:
+ *    PIKE_CONCAT doesn't get defined if there isn't any way to
+ *    concatenate symbols
+ */
+#ifdef HAVE_ANSI_CONCAT
+#define PIKE_CONCAT(X,Y)	X##Y
+#define PIKE_CONCAT3(X,Y,Z)	X##Y##Z
+#else
+#ifdef HAVE_KR_CONCAT
+#define PIKE_CONCAT(X,Y)	X/**/Y
+#define PIKE_CONCAT3(X,Y,Z)	X/**/Y/**/Z
+#endif /* HAVE_KR_CONCAT */
+#endif /* HAVE_ANSI_CONCAT */
 
 #endif /* MACHINE_H */
