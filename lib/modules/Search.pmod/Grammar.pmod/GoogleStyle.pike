@@ -56,7 +56,7 @@ static array(mapping) evaluate_tree(Search.Database db, array tree)
 	  result=result-current_pages;
 	  break;
 
-        case "^" :  // NOT
+        case "^" :  // XOR
 	  result=result^current_pages;
 	  break;
 
