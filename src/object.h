@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.35 1999/11/23 10:36:39 mast Exp $
+ * $Id: object.h,v 1.36 2000/01/29 08:44:42 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -115,7 +115,7 @@ void check_all_objects(void);
 #endif
 
 #ifdef PIKE_DEBUG
-#define master() ( get_master() ? get_master() : ( fatal("Couldn't load master object at %s:%d.\n",__FILE__,__LINE__), NULL) )
+#define master() ( get_master() ? get_master() : ( fatal("Couldn't load master object at %s:%d.\n",__FILE__,__LINE__), (struct object *)0) )
 #else
 #define master() debug_master()
 #endif
