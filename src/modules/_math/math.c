@@ -25,7 +25,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.21 1999/08/06 15:00:01 grubba Exp $");
+RCSID("$Id: math.c,v 1.22 1999/09/22 23:15:48 hubbe Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -169,20 +169,19 @@ void f_log(INT32 args)
 
 void f_exp(INT32 args)
 {
-  if(args<1) error("Too few arguments to exp()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to exp()\n");
-  sp[-args].u.float_number=exp(sp[-args].u.float_number);
+  FLOAT_TYPE f;
+  get_all_args("exp",args,"%F",&f);
+  f=exp(f);
+  pop_n_elems(args);
+  push_float(f);
 }
 
 void f_pow(INT32 args)
 {
-  float tmp;
-  if(args<2) error("Too few arguments to pow()\n");
-  if(sp[-args].type!=T_FLOAT) error("Bad argument 1 to pow()\n");
-  if(sp[1-args].type!=T_FLOAT) error("Bad argument 2 to pow()\n");
-  tmp = pow(sp[-args].u.float_number, sp[1-args].u.float_number);
-  sp[-args].u.float_number = tmp;
-  pop_n_elems(args-1);
+  FLOAT_TYPE x,y;
+  get_all_args("pow",args,"%F%F",&x,&y);
+  pop_n_elems(args);
+  push_float(pow((double)x, (double)y));
 }
 
 void f_floor(INT32 args)
@@ -263,6 +262,8 @@ void f_sgn(INT32 args)
   }
 }
 
+#define tNUM tOr(tInt,tFlt)
+
 void pike_module_init(void)
 {
 #ifdef HAVE_FPSETMASK
@@ -297,10 +298,10 @@ void pike_module_init(void)
   ADD_EFUN("log",f_log,tFunc(tFlt,tFlt),0);
   
 /* function(float:float) */
-  ADD_EFUN("exp",f_exp,tFunc(tFlt,tFlt),0);
+  ADD_EFUN("exp",f_exp,tFunc(tNUM,tFlt),0);
   
 /* function(float,float:float) */
-  ADD_EFUN("pow",f_pow,tFunc(tFlt tFlt,tFlt),0);
+  ADD_EFUN("pow",f_pow,tFunc(tNUM tNUM,tFlt),0);
   
 /* function(float:float) */
   ADD_EFUN("floor",f_floor,tFunc(tFlt,tFlt),0);
