@@ -1,4 +1,4 @@
-/* $Id: font.c,v 1.31 1998/02/18 18:31:18 per Exp $ */
+/* $Id: font.c,v 1.32 1998/02/24 20:36:17 per Exp $ */
 #include <config.h>
 
 #define SPACE_CHAR 'i'
@@ -6,7 +6,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: font.c,v 1.31 1998/02/18 18:31:18 per Exp $
+**!	$Id: font.c,v 1.32 1998/02/24 20:36:17 per Exp $
 **! class font
 **!
 **! note
@@ -39,7 +39,53 @@
 **!		  unsigned INT32 spacing;  - spacing to next character
 **!		  unsigned char data[1];   - pixmap data (1byte/pixel)
 **!	       } *ch;
-**!	</pre>
+**!
+**!            version 2:
+**!
+**!
+**!            	  On-disk syntax (everything in N.B.O), int is 4 bytes, a byte is 8 bits:
+**!            
+**!            pos
+**!            	0   int cookie = 'FONT';     or 0x464f4e54
+**!            	4   int version = 2;         1 was the old version without the last four chars
+**!            	8   int numchars;            Always 256 in this version of the dump program
+**!            12   int height;              in (whole) pixels
+**!            16   int baseline;            in (whole) pixels
+**!            20   char direction;          1==right to left, 0 is left to right
+**!            21   char format;             Font format
+**!            22   char colortablep;        Colortable format
+**!            23   char kerningtablep;      Kerning table format
+**!            
+**!            24   int offsets[numchars];   pointers into the data, realative to &cookie.
+**!            	    [colortable]
+**!            	    [kerningtable]
+**!            
+**!            	  At each offset:
+**!            
+**!            
+**!            0   int width;               in pixels
+**!            4   int spacing;             in 1/1000:th of a pixels
+**!            8   char data[];             Enough data to plot width * font->height pixels
+**!            				    Please note that if width is 0, there is no data.
+**!            
+**!            Font formats:
+**!            	id type
+**!            	 0 Raw 8bit data
+**!            	 1 RLE encoded data,  char length, char data,   70% more compact than raw data
+**!            	 2 ZLib compressed data                         60% more compact than RLE
+**!            
+**!            Colortable types:
+**!            	 0 No colortable		 (the data is an alpha channel)
+**!            	 1 24bit RGB with alpha         (index->color, 256*4 bytes, rgba)
+**!            	 2 8bit Greyscale with alpha    (index->color, 256*2 bytes)
+**!            
+**!            Kerningtable types:
+**!            	 0 No kerning table
+**!            	 1 numchars*numchars entries, each a signed char with the kerning value
+**!            	 2 numchar entries, each with a list of kerning pairs, like this:
+**!            	    int len
+**!            	    len * (short char, short value)
+**!            **!	</pre>
 **!
 **! see also: Image, Image.image
 */
