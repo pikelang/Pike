@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.355 2004/12/18 21:48:31 grubba Exp $
+|| $Id: las.c,v 1.356 2004/12/19 16:12:28 grubba Exp $
 */
 
 #include "global.h"
@@ -1490,7 +1490,7 @@ node *debug_mkthisnode(struct program *parent_prog, int inherit_num)
   res = mkemptynode();
   res->token = F_THIS;
   type_stack_mark();
-  push_object_type(1, parent_prog->inherits[inherit_num].prog->id);
+  push_object_type(!!inherit_num, parent_prog->inherits[inherit_num].prog->id);
   res->type = pop_unfinished_type();
   res->tree_info = res->node_info = OPT_NOT_CONST;
 
