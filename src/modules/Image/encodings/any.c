@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.13 1999/10/21 22:39:01 marcus Exp $ */
+/* $Id: any.c,v 1.14 2000/02/24 01:11:22 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.13 1999/10/21 22:39:01 marcus Exp $
+**!	$Id: any.c,v 1.14 2000/02/24 01:11:22 marcus Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.13 1999/10/21 22:39:01 marcus Exp $");
+RCSID("$Id: any.c,v 1.14 2000/02/24 01:11:22 marcus Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -43,6 +43,7 @@ void image_pnm_decode(INT32 args);
 void image_xwd__decode(INT32 args);
 void image_ilbm_decode(INT32 args);
 void image_ras_decode(INT32 args);
+void img_pvr_f_decode_header(INT32 args);
 
 /*
 **! method mapping _decode(string data)
@@ -147,6 +148,12 @@ void image_any__decode(INT32 args)
 	 push_text("image/x-sun-raster");
 	 goto simple_image;
 
+      case CHAR2('P','V'):
+      case CHAR2('G','B'):
+	 /* PVR */
+	 img_pvr_f__decode(1);
+	 return;
+
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))
 	 {
@@ -250,6 +257,12 @@ void image_any_decode_header(INT32 args)
       case CHAR2(0x59,0xa6):
 	 /* RAS */
 	 error("Image.ANY.decode: decoding of RAS header unimplemented\n");
+
+      case CHAR2('P','V'):
+      case CHAR2('G','B'):
+	 /* PVR */
+	 img_pvr_f_decode_header(1);
+	 return;
 
       case CHAR2(0,0):
 	 switch (CHAR2(sp[-args].u.string->str[2],sp[-args].u.string->str[3]))

@@ -1,5 +1,5 @@
 //! module Image
-//! $Id: module.pmod,v 1.5 2000/02/08 03:39:46 per Exp $
+//! $Id: module.pmod,v 1.6 2000/02/24 01:11:22 marcus Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -58,7 +58,7 @@ mapping _decode( string data, mixed|void tocolor )
 
   if(!i)
     foreach( ({ "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
-                "XBM", "XPM", "TIFF", "ILBM", "PS",
+                "XBM", "XPM", "TIFF", "ILBM", "PS", "PVR",
        /* Image formats low on headers below this mark */
                 "HRZ", "AVS", "WBF",
        /* "XFace" Always succeds*/
