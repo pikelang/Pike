@@ -79,6 +79,7 @@ static {
  }
 
  float scale_factor = 1.0;
+ int oxs, oys;
 }
 
 void set_alpha_mode( AlphaMode m )
@@ -119,8 +120,19 @@ void set_image( PVImage i )
   i = get_as_image( i );
   if( scale_factor != 1.0 )
     i = i->scale( scale_factor );
-  set_usize( i->xsize(), i->ysize() );
-  set_background( pixmap = GDK.Pixmap( i ) );
+
+  int xs = i->xsize(), ys = i->ysize();
+  if( (xs != oxs) || (ys != oys) )
+  {
+    set_background( pixmap = GDK.Pixmap( i ) );
+    set_usize( xs, ys );
+    oxs = xs;
+    oys = ys;
+  }
+  else
+    pixmap->set( i );
+  GTK.flush();
+  while( GTK.main_iteration_do( 0 ) );
   get_gdkwindow()->clear();
   GTK.flush();
   while( GTK.main_iteration_do( 0 ) );
