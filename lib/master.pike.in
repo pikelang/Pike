@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.262 2003/03/20 18:00:36 mast Exp $
+// $Id: master.pike.in,v 1.263 2003/03/27 02:32:04 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -70,6 +70,37 @@ int compat_minor=-1;
 #define Stat _static_modules.files.Stat
 #define capitalize(X) (upper_case((X)[..0])+(X)[1..])
 #define write(X) _static_modules.files()->_stdout->write(X)
+
+#ifdef RESOLV_DEBUG
+
+#if constant (thread_local)
+static object resolv_msg_depth = thread_local();
+#define GET_RESOLV_MSG_DEPTH (resolv_msg_depth->get())
+#define INC_RESOLV_MSG_DEPTH() (resolv_msg_depth->set (resolv_msg_depth->get() + 1))
+#define DEC_RESOLV_MSG_DEPTH() (resolv_msg_depth->set (resolv_msg_depth->get() - 1))
+#else
+static int resolv_msg_depth;
+#define GET_RESOLV_MSG_DEPTH resolv_msg_depth
+#define INC_RESOLV_MSG_DEPTH() (++resolv_msg_depth)
+#define DEC_RESOLV_MSG_DEPTH() (--resolv_msg_depth)
+#endif
+
+void resolv_debug (string fmt, mixed... args)
+{
+  string pad = "  " * GET_RESOLV_MSG_DEPTH;
+  if (sizeof (args)) fmt = sprintf (fmt, @args);
+  if (fmt[-1] == '\n')
+    fmt = pad + replace (fmt[..sizeof (fmt) - 2], "\n", "\n" + pad) + "\n";
+  else
+    fmt = pad + replace (fmt, "\n", "\n" + pad);
+  werror (fmt);
+}
+
+#else  // !RESOLV_DEBUG
+#define INC_RESOLV_MSG_DEPTH() 0
+#define DEC_RESOLV_MSG_DEPTH() 0
+#define resolv_debug(X...) do {} while (0)
+#endif	// !RESOLV_DEBUG
 
 //! @appears error
 //! Throws an error. A more readable version of the code
@@ -530,10 +561,7 @@ static program low_findprog(string pname,
 #endif
   {
     if(!zero_type (ret=programs[fname])) {
-#ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s returning cached (no autoreload)\n"
-	      "  %O\n", fname, ret);
-#endif
+      resolv_debug ("low_findprog %s: returning cached (no autoreload)\n", fname);
       return ret;
     }
   }
@@ -560,9 +588,7 @@ static program low_findprog(string pname,
 #ifdef PIKE_AUTORELOAD
     if (load_time[fname] > s[3])
       if (!zero_type (ret=programs[fname])) {
-#ifdef RESOLV_DEBUG
-	werror ("low_findprog: %s returning cached (autoreload)\n", fname);
-#endif
+	resolv_debug ("low_findprog %s: returning cached (autoreload)\n", fname);
 	return ret;
       }
 #endif
@@ -578,15 +604,18 @@ static program low_findprog(string pname,
 	  {
 	    mixed err=catch {
 	      AUTORELOAD_CHECK_FILE(oname);
+	      resolv_debug ("low_findprog %s: decoding dumped\n", fname);
+	      INC_RESOLV_MSG_DEPTH();
 	      ret = decode_value(master_read_file(oname),
 				 (handler && handler->get_codec ||
 				  get_codec)(fname, mkobj));
-#ifdef RESOLV_DEBUG
-	      werror ("low_findprog: %s returning decoded dump\n", fname);
-#endif
+	      DEC_RESOLV_MSG_DEPTH();
+	      resolv_debug ("low_findprog %s: dump decode ok\n", fname);
 	      return programs[fname] = ret;
 
 	    };
+	    DEC_RESOLV_MSG_DEPTH();
+	    resolv_debug ("low_findprog %s: dump decode failed\n", fname);
 	    m_delete(programs, fname);
 	    if (handler && handler->compile_warning) {
 	      handler->compile_warning(oname, 0,
@@ -608,9 +637,8 @@ static program low_findprog(string pname,
 	}
       }
       
-#ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s compiling, mkobj:%O\n", fname, mkobj);
-#endif
+      resolv_debug ("low_findprog %s: compiling, mkobj: %O\n", fname, mkobj);
+      INC_RESOLV_MSG_DEPTH();
       programs[fname]=ret=__empty_program(0, fname);
       if ( mixed e=catch {
 	ret=compile_file(fname,
@@ -619,10 +647,14 @@ static program low_findprog(string pname,
 			 mkobj? (objects[ret]=__null_program()) : 0);
       } )
       {
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("low_findprog %s: compilation failed\n", fname);
 	m_delete(objects, ret);
 	ret=programs[fname]=0;	// Negative cache.
         throw(e);
       }
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("low_findprog %s: compilation ok\n", fname);
       break;
 #if constant(load_module)
     case ".so":
@@ -632,9 +664,7 @@ static program low_findprog(string pname,
       }
 
       ret=load_module(fakeroot(fname));
-#ifdef RESOLV_DEBUG
-      werror ("low_findprog: %s loaded binary\n", fname);
-#endif
+      resolv_debug ("low_findprog %s: loaded binary\n", fname);
 #endif /* load_module */
     }
 
@@ -642,9 +672,7 @@ static program low_findprog(string pname,
 
     return programs[fname]=ret;
   }
-#ifdef RESOLV_DEBUG
-  werror ("low_findprog: %s file not found\n", fname);
-#endif
+  resolv_debug ("low_findprog %s: file not found\n", fname);
   return 0;
 }
 
@@ -751,7 +779,12 @@ program cast_to_program(string pname,
 			string current_file, 
 			object|void handler)
 {
-  return low_cast_to_program(pname, current_file, handler);
+  resolv_debug ("cast_to_program(%O, %O)\n", pname, current_file);
+  INC_RESOLV_MSG_DEPTH();
+  program ret = low_cast_to_program(pname, current_file, handler);
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("cast_to_program(%O, %O) => %O\n", pname, current_file, ret);
+  return ret;
 }
 
 
@@ -877,7 +910,12 @@ void create()
 //! is called from the compiler.
 program handle_inherit(string pname, string current_file, object|void handler)
 {
-  return cast_to_program(pname, current_file, handler);
+  resolv_debug ("handle_inherit(%O, %O)\n", pname, current_file);
+  INC_RESOLV_MSG_DEPTH();
+  program ret = low_cast_to_program(pname, current_file, handler);
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("handle_inherit(%O, %O) => %O\n", pname, current_file, ret);
+  return ret;
 }
 
 mapping (program:object) objects=([object_program(this_object()):this_object()]);
@@ -900,7 +938,11 @@ object low_cast_to_object(string oname, string current_file,
 //! may also receive more arguments in the future.
 object cast_to_object(string oname, string current_file)
 {
+  resolv_debug ("cast_to_object(%O, %O)\n", oname, current_file);
+  INC_RESOLV_MSG_DEPTH();
   object o = low_cast_to_object(oname, current_file);
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("cast_to_object(%O, %O) => %O\n", oname, current_file, o);
   if (objectp (o)) return o;
   error("Cast '"+oname+"' to object failed"+
 	((current_file && current_file!="-")?sprintf(" for '%s'",current_file):"")+".\n");
@@ -920,9 +962,7 @@ class dirnode
 
   void create(string d, object|void h)
     {
-#ifdef MODULE_TRACE
-      werror("%*ndirnode(%O,%O);\n",sizeof(backtrace())-1,d,h);
-#endif
+      resolv_debug ("dirnode(%O,%O) created\n",d,h);
       dirname=d;
       handler=h;
       fc[dirname]=this_object();
@@ -942,10 +982,8 @@ class dirnode
   {
     int `!()
     {
-#ifdef MODULE_TRACE
-      werror("%*ndirnode(%O)->module_checker()->`!()\n",
-	     sizeof(backtrace()),dirname);
-#endif
+      resolv_debug ("dirnode(%O)->module_checker()->`!()\n",dirname);
+      INC_RESOLV_MSG_DEPTH();
       if (catch {
 	if(module=findmodule(dirname+"/module", handler))
 	{
@@ -959,6 +997,10 @@ class dirnode
 	  cache=([]);
 	  _cache_full=0;
 	}
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("dirnode(%O)->module_checker()->`!() => %s\n",
+		      dirname, !module ? "doesn't exist" : "exists");
+	return !module;
       }) {
 	// findmodule() failed. This can occur due to circularities
 	// between encode_value()'ed programs.
@@ -966,19 +1008,18 @@ class dirnode
 	// "Cannot call functions in unfinished objects."
 
 	// Pretend not to exist for now...
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("dirnode(%O)->module_checker()->`!() => failure, doesn't exist\n",
+		      dirname);
 	return 1;
       }
-
-      return !module;
     }
 
     mixed `[](string index)
       {
-#ifdef MODULE_TRACE
-	werror("%*ndirnode(%O)->module_checker()[%O]\n",
-	       sizeof(backtrace()),dirname,index);
-#endif
-	if(module) return module[index];
+	resolv_debug ("dirnode(%O)->module_checker()[%O] => %O\n",
+		      dirname, index, module && module[index]);
+	return module && module[index];
       }
     array(string) _indices() { if(module) return indices(module); }
     array _values() { if(module) return values(module); }
@@ -986,24 +1027,18 @@ class dirnode
 
   static mixed ind(string index)
   {
-#ifdef MODULE_TRACE
-    werror("%*nDirnode(%O) ind[%O] -> ???\n",
-	   sizeof(backtrace()),dirname,index);
-#endif
-    if(module) 
+    resolv_debug ("dirnode(%O)->ind(%O)\n", dirname, index);
+    INC_RESOLV_MSG_DEPTH();
+
+    if(module)
     {
-#ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) module[%O] -> ???\n",
-	     sizeof(backtrace()),dirname,index);
-#endif
       mixed o;
 //      _describe(module);
       if(!zero_type(o=module[index]))
       {
-#ifdef MODULE_TRACE
-	werror("%*nDirnode(%O) module[%O] -> %O\n",
-	       sizeof(backtrace()),dirname,index, o);
-#endif
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug ("dirnode(%O)->ind(%O) => found %O\n",
+		      dirname, index, o);
 	return o;
       }
     }
@@ -1017,36 +1052,32 @@ class dirnode
         ret=1;
         break;
       }
-    if(!ret)
+    if(!ret) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("dirnode(%O)->ind(%O) => no file match\n", dirname, index);
       return UNDEFINED;
+    }
 
-    index = dirname+"/"+index;
-#ifdef MODULE_TRACE
-    werror("%*nDirnode(%O) findmodule(%O)\n",
-	   sizeof(backtrace()), dirname, index);
-#endif
+    string fullname = dirname+"/"+index;
     object o;
-    if(objectp(o=findmodule(index, handler)))
+    if(objectp(o=findmodule(fullname, handler)))
     {
       if(mixed tmp=o->_module_value) o=tmp;
-#ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) findmodule(%O) ==> %O\n",
-	     sizeof(backtrace()), dirname, index, o);
-#endif
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("dirnode(%O)->ind(%O) => found submodule %O\n",
+		    dirname, index, o);
       return o;
     }
-    if (program p=cast_to_program( index, 0, handler ))
+    if (program p=cast_to_program( fullname, 0, handler ))
     {
-#ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) cast_to_program(%O) ==> %O\n",
-	     sizeof(backtrace()), dirname, index, p);
-#endif
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("dirnode(%O)->ind(%O) => found subprogram %O\n",
+		    dirname, index, p);
       return p;
     }
-#ifdef MODULE_TRACE
-    werror("%*nDirnode(%O)->`[](%O) FAILED\n",
-	   sizeof(backtrace()), dirname, index);
-#endif
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("dirnode(%O)->ind(%O) => not found\n",
+		  dirname, index);
     return UNDEFINED;
   }
 
@@ -1060,7 +1091,7 @@ class dirnode
     if(!zero_type(ret=cache[index]))
     {
 #ifdef MODULE_TRACE
-      werror("%*nDirnode(%O) cache[%O] -> %O%s\n",
+      werror("%*nDirnode(%O) cache[%O] => %O%s\n",
 	     sizeof(backtrace()),dirname,index, ret,
 	     (ret != ZERO_TYPE)?"":" (zero_type)");
 #endif
@@ -1090,11 +1121,11 @@ class dirnode
   static int(0..1) _cache_full;
   void fill_cache()
   {
-#ifdef RESOLV_DEBUG
+#if 0
     werror(describe_backtrace(({ sprintf("Filling cache in dirnode %O\n",
 					 dirname),
 				 backtrace() })));
-#endif /* RESOLV_DEBUG */
+#endif
     if (_cache_full) {
       return;
     }
@@ -1173,10 +1204,14 @@ class joinnode
   void create(array(object|mapping) _joined_modules)
   {
     joined_modules = _joined_modules;
+    resolv_debug ("joinnode(%O) created\n", joined_modules);
   }
 
   static mixed ind(string index)
   {
+    resolv_debug ("joinnode(%O)->ind(%O)\n", joined_modules, index);
+    INC_RESOLV_MSG_DEPTH();
+
     array(mixed) res = ({});
     foreach(joined_modules, object|mapping o) 
     {
@@ -1189,6 +1224,9 @@ class joinnode
 	  // Only join directorynodes (or joinnodes).
 	  res += ({ ret });
 	} else if ( !zero_type(ret) ) {
+	  DEC_RESOLV_MSG_DEPTH();
+	  resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
+			joined_modules, index, ret);
 	  return (ret);
 	} else {
 	  // Ignore
@@ -1196,10 +1234,23 @@ class joinnode
 	}
       }
     }
-    if (sizeof(res) > 1)
-      return joinnode(res); 
-    else if (sizeof(res))
+
+    if (sizeof(res) > 1) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("joinnode(%O)->ind(%O) => new joinnode\n",
+		    joined_modules, index);
+      return joinnode(res);
+    }
+
+    else if (sizeof(res)) {
+      DEC_RESOLV_MSG_DEPTH();
+      resolv_debug ("joinnode(%O)->ind(%O) => found %O\n",
+		    joined_modules, index, res[0]);
       return res[0];
+    }
+
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("joinnode(%O)->ind(%O) => not found\n", joined_modules, index);
     return UNDEFINED;
   }
 
@@ -1228,10 +1279,10 @@ class joinnode
   static int _cache_full;
   void fill_cache()
   {
-#ifdef RESOLV_DEBUG
+#if 0
     werror(describe_backtrace(({ "Filling cache in joinnode\n",
 				 backtrace() })));
-#endif /* RESOLV_DEBUG */
+#endif
     if (_cache_full) {
       return;
     }
@@ -1280,31 +1331,44 @@ mapping(string:mixed) fc=([]);
 object findmodule(string fullname, object|void handler)
 {
   object o;
-#ifdef MODULE_TRACE
-  werror("%*nfindmodule(%O)\n",sizeof(backtrace()),fullname);
-#endif
+  resolv_debug ("findmodule(%O)\n", fullname);
   if(!zero_type(o=fc[fullname]))
   {
-//    werror("fc[%O] -> %O\n",fullname, o);
-    if (objectp(o)) return o;
-    if (o == 0) return UNDEFINED;
-    return o;
+    if (objectp(o) || o != 0) {
+      resolv_debug ("findmodule(%O) => found %O (cached)\n", fullname, o);
+      return o;
+    }
+    resolv_debug ("findmodule(%O) => not found (cached)\n", fullname);
+    return UNDEFINED;
   }
 
   if(Stat stat=master_file_stat(fakeroot(fullname+".pmod")))
   {
-    if(stat[1]==-2)
+    if(stat[1]==-2) {
+      resolv_debug ("findmodule(%O) => new dirnode\n", fullname);
       return dirnode(fullname+".pmod", handler);
+    }
   }
 
-  if(objectp (o = low_cast_to_object(fullname+".pmod", "/.", handler)))
+  INC_RESOLV_MSG_DEPTH();
+
+  if(objectp (o = low_cast_to_object(fullname+".pmod", "/.", handler))) {
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("findmodule(%O) => got object %O\n", fullname, o);
     return fc[fullname]=o;
+  }
     
 #if constant(load_module)
-  if(master_file_stat(fakeroot(fullname+".so")))
-    return fc[fullname] = low_cast_to_object(fullname, "/.", handler);
+  if(master_file_stat(fakeroot(fullname+".so"))) {
+    o = fc[fullname] = low_cast_to_object(fullname, "/.", handler);
+    DEC_RESOLV_MSG_DEPTH();
+    resolv_debug ("findmodule(%O) => got .so object %O\n", fullname, o);
+    return o;
+  }
 #endif
 
+  DEC_RESOLV_MSG_DEPTH();
+  resolv_debug ("findmodule(%O) => not found\n", fullname);
   return fc[fullname] = 0;
 }
 
@@ -1320,14 +1384,17 @@ mixed handle_import(string what, string|void current_file, object|void handler)
   } else {
     path = combine_path_with_cwd(what);
   }
-#ifdef MODULE_TRACE
-  werror("%*nhandle_import(%O, %O, %O)\n",
-	 sizeof(backtrace()), what, current_file, handler);
-#endif /* MODULE_TRACE */
   if (handler) {
+    resolv_debug ("handle_import(%O, %O, %O) => new dirnode with handler\n",
+		  what, current_file, handler);
     return dirnode(path, handler);
   }
-  if(fc[path]) return fc[path];
+  if(fc[path]) {
+    resolv_debug ("handle_import(%O, %O) => found %O (cached)\n",
+		  what, current_file, fc[path]);
+    return fc[path];
+  }
+  resolv_debug ("handle_import(%O, %O) => new dirnode\n", what, current_file);
   return dirnode(path);
 }
 
@@ -1530,15 +1597,13 @@ class CompatResolver
   mixed resolv(string identifier, string|void current_file,
 	       object|void current_handler)
     {
-#ifdef RESOLV_DEBUG
-      werror("Resolv(%O, %O)\n",identifier, current_file);
-#endif /* RESOLV_DEBUG */
+      resolv_debug("resolv(%O, %O)\n",identifier, current_file);
+      INC_RESOLV_MSG_DEPTH();
 
       // FIXME: Support having the cache in the handler?
       if( no_resolv[ identifier ] ) {
-#ifdef RESOLV_DEBUG
-	werror("Resolv(%O, %O) => excluded\n",identifier, current_file);
-#endif /* RESOLV_DEBUG */
+	DEC_RESOLV_MSG_DEPTH();
+	resolv_debug("resolv(%O, %O) => excluded\n",identifier, current_file);
 	return UNDEFINED;
       }
 
@@ -1552,12 +1617,12 @@ class CompatResolver
       string id=identifier+":"+(current_file ? dirname(current_file) : "-");
       if( zero_type (ret = resolv_cache[id]) != 1 )
       {
-//	werror("Resolv cached(%O) => %O (%d)\n",id,resolv_cache[id],zero_type(resolv_cache[id]));
 #ifdef RESOLV_DEBUG
+	DEC_RESOLV_MSG_DEPTH();
 	if (ret == ZERO_TYPE)
-	  werror("Resolv(%O, %O) => not found (cached)\n",identifier, current_file);
+	  resolv_debug("resolv(%O, %O) => not found (cached)\n",identifier, current_file);
 	else
-	  werror("Resolv(%O, %O) => found %O (cached)\n",identifier, current_file, ret);
+	  resolv_debug("resolv(%O, %O) => found %O (cached)\n",identifier, current_file, ret);
 #endif /* RESOLV_DEBUG */
 	return ret == ZERO_TYPE ? UNDEFINED : ret;
       }
@@ -1569,11 +1634,12 @@ class CompatResolver
 	ret=ret[index];
       }
       resolv_cache[id] = zero_type (ret) ? ZERO_TYPE : ret;
+      DEC_RESOLV_MSG_DEPTH();
 #ifdef RESOLV_DEBUG
       if (zero_type (ret))
-	  werror("Resolv(%O, %O) => not found\n",identifier, current_file);
+	  resolv_debug("resolv(%O, %O) => not found\n",identifier, current_file);
 	else
-	  werror("Resolv(%O, %O) => found %O\n",identifier, current_file, ret);
+	  resolv_debug("resolv(%O, %O) => found %O\n",identifier, current_file, ret);
 #endif /* RESOLV_DEBUG */
       return ret;
     }
