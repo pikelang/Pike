@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.219 1999/11/01 14:28:32 mirar Exp $"]])
+test_true([["$Id: testsuite.in,v 1.220 1999/11/01 15:15:09 mirar Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1478,13 +1478,6 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq([[ sprintf("%08x", @array_sscanf("\8\7\6\5\1\2\3\4", "%8c")) ]], "3807060501020304")
   test_eq([[ sprintf("%08x", @array_sscanf("\010\7\6\5\1\2\3\4", "%8c")) ]], "807060501020304")
 
-  test_eq([[ sprintf("%4c",16909060) ]],"\1\2\3\4")
-  test_eq([[ sprintf("%-4c",16909060) ]],"\4\3\2\1")
-  test_eq([[ array_sscanf(sprintf("%4c",16909060),"%4c")[0] ]],16909060)
-  test_eq([[ array_sscanf(sprintf("%-4c",16909060),"%-4c")[0] ]],16909060)
-  test_eq([[ sprintf("%2c",16909060) ]],"\3\4")
-  test_eq([[ sprintf("%-2c",16909060) ]],"\4\3")
-
   test_equal([[ ({ 0, 118 }) ]], [[ array_sscanf("0x76", "%xx%x") ]])
   test_equal([[ ({ 0, 557239244978618154304871 }) ]],
              [[ array_sscanf("0x76000000000001234567", "%xx%x") ]])
@@ -1568,6 +1561,32 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
     0x54325827124*0x1234879548a2485425: 1174,
   ]) ]])
 ]])
+
+cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
+[[
+  test_any([[int a=2147483648; a=a+17;  return a]], 2147483665)
+  test_any([[int a=2147483648; a=a-17;  return a]], 2147483631)
+  test_any([[int a=2147483648; a=a*17;  return a]], 36507222016)
+  test_any([[int a=2147483648; a=a/17;  return a]], 126322567)
+  test_any([[int a=2147483648; a=a%17;  return a]], 9)
+  test_any([[int a=2147483648; a=a^17;  return a]], 2147483665)
+  test_any([[int a=2147483648; a=a&17;  return a]], 0)
+  test_any([[int a=2147483648; a=a|17;  return a]], 2147483665)
+  test_any([[int a=2147483648; a=a<<17; return a]], 281474976710656)
+  test_any([[int a=2147483648; a=a>>17; return a]], 16384)
+
+  test_eq([[2147483648+17 ]], 2147483665)
+  test_eq([[2147483648-17 ]], 2147483631)
+  test_eq([[2147483648*17 ]], 36507222016)
+  test_eq([[2147483648/17 ]], 126322567)
+  test_eq([[2147483648%17 ]], 9)
+  test_eq([[2147483648^17 ]], 2147483665)
+  test_eq([[2147483648&17 ]], 0)
+  test_eq([[2147483648|17 ]], 2147483665)
+  test_eq([[2147483648<<17]], 281474976710656)
+  test_eq([[2147483648>>17]], 16384)
+]])
+	
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1739,6 +1758,9 @@ test_equal([[array_sscanf("\x7fffffab#", "%c%c")]], [[ ({ 0x7fffffab, '#' }) ]])
 test_equal([[array_sscanf("\x7fffffab#", "%1c%1c")]], [[ ({ 0xab, '#' }) ]])
 
 test_true([[array_sscanf("(02323) 23455 344","%{%*[^0-9]%[0-9]%}")]])
+
+test_eq([[ array_sscanf(sprintf("%4c",16909060),"%4c")[0] ]],16909060)
+test_eq([[ array_sscanf(sprintf("%-4c",16909060),"%-4c")[0] ]],16909060)
 
 // Basics
 test_true(1)
