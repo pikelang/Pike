@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.102 2000/02/29 03:15:43 hubbe Exp $
+ * $Id: master.pike.in,v 1.103 2000/03/20 05:18:21 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1326,11 +1326,9 @@ string stupid_describe(mixed m, int maxlen)
       if(string tmp=describe_program(m)) return tmp;
       return typ;
 
-    case "object":
-      if(string tmp=describe_object(m)) return tmp;
-      return typ;
-
     default:
+      if (objectp(m))
+	if(string tmp=describe_object(m)) return tmp;
       return typ;
   }
 }
@@ -1601,7 +1599,7 @@ string describe_error (mixed trace)
      (objectp(trace) && trace->is_generic_error))
   {
     if (catch {
-      return trace[0] || "No error message!\n";
+      return trace[0] || "No error message.\n";
     }) {
       return "Error indexing backtrace!\n";
     }
@@ -1619,22 +1617,18 @@ class Codec
       if(mixed tmp=search(f,x))
 	return "efun:"+tmp;
       
-      switch(sprintf("%t",x))
-      {
-	case "program":
-	  if(mixed tmp=search(programs,x))
+      if (programp(x)) {
+	if(mixed tmp=search(programs,x))
+	  return tmp;
+
+	if(mixed tmp=search(values(_static_modules), x))
+	  return "_static_modules."+(indices(_static_modules)[tmp]);
+      }
+      else if (objectp(x))
+	if(mixed tmp=search(objects,x))
+	  if(tmp=search(programs,tmp))
 	    return tmp;
 
-	  if(mixed tmp=search(values(_static_modules), x))
-	    return "_static_modules."+(indices(_static_modules)[tmp]);
-	  break;
-	  
-	case "object":
-	  if(mixed tmp=search(objects,x))
-	    if(tmp=search(programs,tmp))
-	      return tmp;
-	  break;
-      }
       return ([])[0];
     } 
   
