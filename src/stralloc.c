@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.68 1999/10/22 16:50:55 noring Exp $");
+RCSID("$Id: stralloc.c,v 1.69 1999/10/23 00:43:44 noring Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -1881,14 +1881,17 @@ int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
 int convert_stack_top_string_to_inumber(int base)
 {
   struct svalue r;
+  int i;
 
   if(sp[-1].type != T_STRING)
     error("Cannot convert stack top to integer number.\n");
   
-  string_to_svalue_inumber(&r, sp[-1].u.string->str, 0, base, 0);
+  i = string_to_svalue_inumber(&r, sp[-1].u.string->str, 0, base, 0);
   
   free_string(sp[-1].u.string);
   sp[-1] = r;
+
+  return i;
 }
 
 /* Convert PCHARP to a double.  If ENDPTR is not NULL, a pointer to the

@@ -969,7 +969,8 @@ static int eval_instruction(unsigned char *pc)
 	pop_stack();
 	break;
       }
-      
+
+      /* FIXME: Does this need bignum tests? */
       LOOP(F_INC_LOOP, ++, <, f_add(2), is_lt);
       LOOP(F_DEC_LOOP, --, >, o_subtract(), is_gt);
       LOOP(F_INC_NEQ_LOOP, ++, !=, f_add(2), !is_eq);
