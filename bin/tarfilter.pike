@@ -34,7 +34,8 @@ void doit(Stdio.File in, Stdio.File out)
     }
     array a =
       array_sscanf(s, "%100s%8s%8s%8s%12s%12s%8s%c%100s%8s%32s%32s%8s%8s");
-    int csum, size;
+    int csum, size, perm;
+    sscanf(a[1], "%o", perm);
     sscanf(a[4], "%o", size);
     sscanf(a[6], "%o", csum);
     s=s[..147]+"        "+s[156..];
@@ -42,7 +43,11 @@ void doit(Stdio.File in, Stdio.File out)
       werror("CHECKSUM ERROR on input!\n");
       exit(1);
     }
-    a[1] = sprintf("%6o \0", array_sscanf(a[1], "%o")[0] & 0x3f1ff);
+    /* Normalize the permission flags. */
+    perm &= 0x3f1ff;
+    if (perm & 0444) perm |= 0444;	/* Propagate r. */
+    if (perm & 0111) perm |= 0111;	/* Propagate x. */
+    a[1] = sprintf("%6o \0", perm);
     a[2] = "     0 \0";
     a[3] = "     0 \0";
     if((a[9]/"\0")[0]-" " == "ustar") {
