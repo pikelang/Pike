@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.16 2003/03/14 15:50:43 grubba Exp $
+|| $Id: apply_low.h,v 1.17 2003/03/15 16:18:32 grubba Exp $
 */
 
     {
@@ -228,10 +228,11 @@
 	  Pike_sp++;
 	  MEMMOVE(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
 #ifdef DEBUG_MALLOC
-	  {
+	  if (args) {
 	    int i;
 	    /* Note: touch the dead svalue too. */
 	    for (i=args+2; i > 0; i--) {
+	      fprintf(stderr, "Checking i:%d\n", i);
 	      dmalloc_touch_svalue(Pike_sp-i);
 	    }
 	  }

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.211 2003/03/14 15:50:46 grubba Exp $
+|| $Id: pike_types.c,v 1.212 2003/03/15 16:18:32 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.211 2003/03/14 15:50:46 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.212 2003/03/15 16:18:32 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -219,6 +219,11 @@ static size_t pike_type_hash_size = 0;
 
 void debug_free_type(struct pike_type *t)
 {
+#ifdef DEBUG_MALLOC
+  if (t == (struct pike_type *)(size_t)0x55555555) {
+    Pike_fatal("Freeing dead type.\n");
+  }
+#endif /* DEBUG_MALLOC */
  loop:
   if (!sub_ref(t)) {
     unsigned INT32 hash = t->hash % pike_type_hash_size;

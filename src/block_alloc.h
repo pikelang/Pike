@@ -2,10 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.63 2003/03/14 15:50:43 grubba Exp $
+|| $Id: block_alloc.h,v 1.64 2003/03/15 16:18:32 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
+#undef DO_PRE_INIT_BLOCK
 #undef INIT_BLOCK
 #undef EXIT_BLOCK
 #undef BLOCK_ALLOC
@@ -23,11 +24,7 @@
 /* Note: The block_alloc mutex is held while PRE_INIT_BLOCK runs. */
 #define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
-#ifdef DEBUG_MALLOC
-#define EXIT_BLOCK(X)	MEMSET((X), 0x55, sizeof(*(X)))
-#else
 #define EXIT_BLOCK(X)
-#endif /* DEBUG_MALLOC */
 #define COUNT_BLOCK(X)
 #define COUNT_OTHER()
 #define BLOCK_ALLOC_HSIZE_SHIFT 2
@@ -36,6 +33,13 @@
 #ifndef BLOCK_ALLOC_USED
 #define BLOCK_ALLOC_USED DO_IF_DMALLOC(real_used) DO_IF_NOT_DMALLOC(used)
 #endif
+
+/* Invalidate the block as far as possible if running with dmalloc.
+ */
+#define DO_PRE_INIT_BLOCK(X)	do {				\
+    DO_IF_DMALLOC(MEMSET((X), 0x55, sizeof(*(X))));		\
+    PRE_INIT_BLOCK(X);						\
+  } while (0)
 
 #ifndef PIKE_HASH_T
 /* Used to be size_t, but that led to performance problems
@@ -122,12 +126,12 @@ static void PIKE_CONCAT(alloc_more_,DATA)(void)				\
   PIKE_CONCAT(DATA,_blocks)=n;						\
   PIKE_CONCAT(DATA,_free_blocks)=n;					\
 									\
+  DO_PRE_INIT_BLOCK( n->x );						\
   n->x[0].BLOCK_ALLOC_NEXT=NULL;					\
-  PRE_INIT_BLOCK( n->x );						\
   for(e=1;e<(BSIZE);e++)						\
   {									\
+    DO_PRE_INIT_BLOCK( (n->x+e) );					\
     n->x[e].BLOCK_ALLOC_NEXT=(void *)&n->x[e-1];			\
-    PRE_INIT_BLOCK( (n->x+e) );						\
   }									\
   n->PIKE_CONCAT3(free_,DATA,s)=&n->x[(BSIZE)-1];			\
   /* Mark the new blocks as unavailable for now... */			\
@@ -251,9 +255,9 @@ void PIKE_CONCAT(really_free_,DATA)(struct DATA *d)			\
       PIKE_CONCAT(DATA,_free_blocks) = blk;				\
   }									\
 									\
+  DO_PRE_INIT_BLOCK(d);							\
   d->BLOCK_ALLOC_NEXT = (void *)blk->PIKE_CONCAT3(free_,DATA,s);	\
   blk->PIKE_CONCAT3(free_,DATA,s)=d;					\
-  PRE_INIT_BLOCK(d);							\
   /* Mark block as unavailable. */					\
   PIKE_MEM_NA(*d);							\
 									\
