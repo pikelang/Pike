@@ -22,7 +22,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.73 1998/07/09 21:22:29 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.74 1998/07/09 21:27:36 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -706,6 +706,7 @@ struct perishables
   struct pike_string *stdout_s;
   struct pike_string *stderr_s;
   struct pike_string *keep_signals_s;
+  int disabled;
 #ifdef HAVE_SETGROUPS
   gid_t *wanted_gids;
   struct array *wanted_gids_array;
