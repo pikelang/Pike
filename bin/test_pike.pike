@@ -1,14 +1,12 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.18 1999/02/20 21:28:09 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.19 1999/03/01 05:32:08 hubbe Exp $ */
 
 #include <simulate.h>
 
 #if !efun(_verify_internals)
 #define _verify_internals()
 #endif
-
-#define SHIFT_MAX 0 /* 2 */
 
 int foo(string opt)
 {
@@ -31,7 +29,7 @@ int main(int argc, string *argv)
   int loop=1;
   int end=0x7fffffff;
   string extra_info="";
-
+  int shift;
 
 #if constant(signal) && constant(signum)
   if(signum("SIGQUIT")>=0)
@@ -130,183 +128,178 @@ int main(int argc, string *argv)
       
       werror("Doing tests in %s (%d tests)\n",argv[f],sizeof(tests));
       
-      
-      for(e=start;e<sizeof(tests);e++)
-      {
-	string test,condition;
-	int type;
-	object o;
-	mixed a,b;
-	
-	if(check) _verify_internals();
-	
-	test=tests[e];	
-	if(sscanf(test,"COND %s\n%s",condition,test)==2)
+	for(e=start;e<sizeof(tests);e++)
 	{
-	  int tmp;
-	  if(!(tmp=cond_cache[condition]))
+	  string test,condition;
+	  int type;
+	  object o;
+	  mixed a,b;
+	
+	  if(check) _verify_internals();
+	
+	  test=tests[e];	
+	  if(sscanf(test,"COND %s\n%s",condition,test)==2)
 	  {
-	    tmp=!!(clone(compile_string("mixed c() { return "+condition+"; }","Cond "+(e+1)))->c());
-	    if(!tmp) tmp=-1;
-	    cond_cache[condition]=tmp;
-	  }
+	    int tmp;
+	    if(!(tmp=cond_cache[condition]))
+	    {
+	      tmp=!!(clone(compile_string("mixed c() { return "+condition+"; }","Cond "+(e+1)))->c());
+	      if(!tmp) tmp=-1;
+	      cond_cache[condition]=tmp;
+	    }
 	  
-	  if(tmp==-1)
-	  {
-	    if(verbose)
-	      werror("Not doing test "+(e+1)+"\n");
-	    successes++;
-	    continue;
+	    if(tmp==-1)
+	    {
+	      if(verbose)
+		werror("Not doing test "+(e+1)+"\n");
+	      successes++;
+	      continue;
+	    }
 	  }
-	}
 	
-	sscanf(test,"%s\n%s",type,test);
-	sscanf(type,"%*s expected result: %s",type);
+	  sscanf(test,"%s\n%s",type,test);
+	  sscanf(type,"%*s expected result: %s",type);
 	
-	if(verbose)
-	{
-	  werror("Doing test %d (%d total)%s\n",e+1,successes+errors+1,extra_info);
-	  if(verbose>1)
-	    werror(test+"\n");
-	}
+	  if(verbose)
+	  {
+	    werror("Doing test %d (%d total)%s\n",e+1,successes+errors+1,extra_info);
+	    if(verbose>1)
+	      werror(test+"\n");
+	  }
 
-	for(int shift=0;shift <= SHIFT_MAX;shift++) {
-
-	if(check > 1) _verify_internals();
+	  if(check > 1) _verify_internals();
 	
-	string fname = argv[f] + ": Test " + (e + 1) +
-	  " (shift " + shift + ")";
+	  shift++;
+	  string fname = argv[f] + ": Test " + (e + 1) +
+	    " (shift " + shift + ")";
 
-	string widener = ([ 0:"",
+	  string widener = ([ 0:"",
 			    1:"\nint \x30c6\x30b9\x30c8=0;\n",
-			    2:"\nint \x10001=0;\n" ])[shift];
+			    2:"\nint \x10001=0;\n" ])[shift%3];
 
-	switch(type)
-	{
-	  case "COMPILE":
-	    if(catch(compile_string(test + widener, fname)))
-	    {
-	      werror(fname + " failed.\n");
-	      werror(test+"\n");
-	      errors++;
-	    }else{
-	      successes++;
-	    }
-	    break;
-	    
-	  case "COMPILE_ERROR":
-	    master()->set_inhibit_compile_errors(1);
-	    if(catch(compile_string(test + widener, fname)))
-	    {
-	      successes++;
-	    }else{
-	      werror(fname + " failed.\n");
-	      werror(test+"\n");
-	      errors++;
-	    }
-	    master()->set_inhibit_compile_errors(0);
-	    break;
-	    
-	  case "EVAL_ERROR":
-	    master()->set_inhibit_compile_errors(1);
-	    if(catch(clone(compile_string(test + widener, fname))->a()))
-	    {
-	      successes++;
-	    }else{
-	      werror(fname + " failed.\n");
-	      werror(test+"\n");
-	      errors++;
-	    }
-	    master()->set_inhibit_compile_errors(0);
-	    break;
-	    
-	  default:
-	    o=clone(compile_string(test + widener,fname));
-	    
-	    if(check > 1) _verify_internals();
-	    
-	    a=b=0;
-	    if(t) trace(t);
-	    if(functionp(o->a)) a=o->a();
-	    if(functionp(o->b)) b=o->b();
-	    if(t) trace(0);
-	    
-	    if(check > 1) _verify_internals();
-	    
-	    switch(type)
-	    {
-	      case "FALSE":
-		if(a)
-		{
-		  werror(fname + " failed.\n");
-		  werror(test+"\n");
-		  werror(sprintf("o->a(): %O\n",a));
-		  errors++;
-		}else{
-		  successes++;
-		}
-		break;
-		
-	      case "TRUE":
-		if(!a)
-		{
-		  werror(fname + " failed.\n");
-		  werror(test+"\n");
-		  werror(sprintf("o->a(): %O\n",a));
-		  errors++;
-		}else{
-		  successes++;
-		}
-		break;
-		
-	      case "RUN":
-		successes++;
-		break;
-		
-	      case "EQ":
-		if(a!=b)
-		{
-		  werror(fname + " failed.\n");
-		  werror(test+"\n");
-		  werror(sprintf("o->a(): %O\n",a));
-		  werror(sprintf("o->b(): %O\n",b));
-		  errors++;
-		}else{
-		  successes++;
-		}
-		break;
-		
-	      case "EQUAL":
-		if(!equal(a,b))
-		{
-		  werror(fname + " failed.\n");
-		  werror(test+"\n");
-		  werror(sprintf("o->a(): %O\n",a));
-		  werror(sprintf("o->b(): %O\n",b));
-		  errors++;
-		}else{
-		  successes++;
-		}
-		break;
-		
-	      default:
-		werror(sprintf("%s: Unknown test type (%O).\n", fname, type));
+	  switch(type)
+	  {
+	    case "COMPILE":
+	      if(catch(compile_string(test + widener, fname)))
+	      {
+		werror(fname + " failed.\n");
+		werror(test+"\n");
 		errors++;
-	    }
-	}
+	      }else{
+		successes++;
+	      }
+	      break;
+	    
+	    case "COMPILE_ERROR":
+	      master()->set_inhibit_compile_errors(1);
+	      if(catch(compile_string(test + widener, fname)))
+	      {
+		successes++;
+	      }else{
+		werror(fname + " failed.\n");
+		werror(test+"\n");
+		errors++;
+	      }
+	      master()->set_inhibit_compile_errors(0);
+	      break;
+	    
+	    case "EVAL_ERROR":
+	      master()->set_inhibit_compile_errors(1);
+	      if(catch(clone(compile_string(test + widener, fname))->a()))
+	      {
+		successes++;
+	      }else{
+		werror(fname + " failed.\n");
+		werror(test+"\n");
+		errors++;
+	      }
+	      master()->set_inhibit_compile_errors(0);
+	      break;
+	    
+	    default:
+	      o=clone(compile_string(test + widener,fname));
+	    
+	      if(check > 1) _verify_internals();
+	    
+	      a=b=0;
+	      if(t) trace(t);
+	      if(functionp(o->a)) a=o->a();
+	      if(functionp(o->b)) b=o->b();
+	      if(t) trace(0);
+	    
+	      if(check > 1) _verify_internals();
+	    
+	      switch(type)
+	      {
+		case "FALSE":
+		  if(a)
+		  {
+		    werror(fname + " failed.\n");
+		    werror(test+"\n");
+		    werror(sprintf("o->a(): %O\n",a));
+		    errors++;
+		  }else{
+		    successes++;
+		  }
+		  break;
+		
+		case "TRUE":
+		  if(!a)
+		  {
+		    werror(fname + " failed.\n");
+		    werror(test+"\n");
+		    werror(sprintf("o->a(): %O\n",a));
+		    errors++;
+		  }else{
+		    successes++;
+		  }
+		  break;
+		
+		case "RUN":
+		  successes++;
+		  break;
+		
+		case "EQ":
+		  if(a!=b)
+		  {
+		    werror(fname + " failed.\n");
+		    werror(test+"\n");
+		    werror(sprintf("o->a(): %O\n",a));
+		    werror(sprintf("o->b(): %O\n",b));
+		    errors++;
+		  }else{
+		    successes++;
+		  }
+		  break;
+		
+		case "EQUAL":
+		  if(!equal(a,b))
+		  {
+		    werror(fname + " failed.\n");
+		    werror(test+"\n");
+		    werror(sprintf("o->a(): %O\n",a));
+		    werror(sprintf("o->b(): %O\n",b));
+		    errors++;
+		  }else{
+		    successes++;
+		  }
+		  break;
+		
+		default:
+		  werror(sprintf("%s: Unknown test type (%O).\n", fname, type));
+		  errors++;
+	      }
+	  }
 	
-	if(check > 2) _verify_internals();
+	  if(check > 2) _verify_internals();
 	
-	if(fail && errors)
-	  exit(1);
+	  if(fail && errors)
+	    exit(1);
 
-	}
-
-	if(!--end) exit(0);
+	  if(!--end) exit(0);
 	
-	a=b=0;
+	  a=b=0;
       }
-      
     }
     if(mem)
     {
