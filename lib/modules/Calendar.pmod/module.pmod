@@ -28,7 +28,6 @@ mixed `[](string what)
       booted++;
       stage++;
 // bootstrap in the right order
-      master()->resolv("Calendar")["Ruleset"];
       master()->resolv("Calendar")["Timezone"];
       master()->resolv("Calendar")["Language"];
       master()->resolv("Calendar")["TimeRanges"];
