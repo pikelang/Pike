@@ -197,8 +197,6 @@ array(array(array(mixed))) diff3(array mid,array left,array right)
    [lmid,ldst]=diff(mid,left);
    [rmid,rdst]=diff(mid,right);
 
-   werror(sprintf("%O\n",({rmid,rdst})));
-
    array res=({});
    int lpos=0,rpos=0;
    int l=0,r=0,n;
