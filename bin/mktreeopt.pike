@@ -1,5 +1,5 @@
 /*
- * $Id: mktreeopt.pike,v 1.24 1999/11/23 22:01:21 grubba Exp $
+ * $Id: mktreeopt.pike,v 1.25 1999/11/25 14:58:46 grubba Exp $
  *
  * Generates tree-transformation code from a specification.
  *
@@ -127,7 +127,7 @@ constant header =
 "/* Tree transformation code.\n"
 " *\n"
 " * This file was generated from %O by\n"
-" * $Id: mktreeopt.pike,v 1.24 1999/11/23 22:01:21 grubba Exp $\n"
+" * $Id: mktreeopt.pike,v 1.25 1999/11/25 14:58:46 grubba Exp $\n"
 " *\n"
 " * Do NOT edit!\n"
 " */\n"
@@ -147,7 +147,7 @@ string tpos = "";
 int pos;
 int line = 1;
 
-array(string) marks = [array(string)]allocate(10);
+array(string) marks = allocate(10);
 
 void eat_whitespace()
 {
@@ -207,7 +207,7 @@ class node
 
   string tpos;
 
-  array(string) extras = [array(string)]({});
+  array(string) extras = ({});
 
   object(node)|string car, cdr;	// 0 == Ignored.
 
@@ -300,7 +300,7 @@ class node
     if (token == "*") {
       return ({ sprintf("C%sR(n)", tpos) });
     }
-    array(string) res = [array(string)]({});
+    array(string) res = ({});
     if (objectp(car)) {
       res += car->used_nodes();
     }
@@ -504,7 +504,7 @@ string fix_action(string s)
 
     array(string) b = new_node/"$";
 
-    multiset(string) used_nodes = [multiset(string)](<>);
+    multiset(string) used_nodes = (<>);
 
     for(int j=1; j < sizeof(b); j++) {
       int tag = -1;
@@ -650,7 +650,7 @@ void parse_data()
 
   eat_whitespace();
   while (pos < sizeof(data)) {
-    marks = [array(string)]allocate(10);
+    marks = allocate(10);
 
     object(node) n = read_node();
 
@@ -689,7 +689,7 @@ void parse_data()
       // werror(sprintf("\t%s;\n\n", n2));
       array(string) t = [array(string)]Array.uniq(n2->used_nodes());
 
-      string expr = [string]n2->generate_code();
+      string expr = n2->generate_code();
 
       // Some optimizations for common cases
       switch(expr) {
@@ -861,7 +861,7 @@ string generate_match(array(object(node)) rule_set, string indent)
     werror(do_indent(sprintf("node_classes: %O\n", node_classes), indent));
   }
 
-  string tpos = [string]rule_set[0]->tpos;
+  string tpos = rule_set[0]->tpos;
 
   string label;
   int any_cdr_last;
@@ -903,8 +903,7 @@ string generate_match(array(object(node)) rule_set, string indent)
     res += "{\n";
     indent += "  ";
     last_was_if = 0;
-    mapping(string:array(object(node))) exacts =
-      [mapping(mixed:array(object(node)))]([]);
+    mapping(string:array(object(node))) exacts = ([]);
     foreach(node_classes[EXACT_CAR], object(node) n) {
       exacts[n->car] += ({ n });
     }
@@ -964,8 +963,7 @@ string generate_match(array(object(node)) rule_set, string indent)
     res += "{\n";
     indent += "  ";
     last_was_if = 0;
-    mapping(string:array(object(node))) exacts =
-      [mapping(mixed:array(object(node)))]([]);
+    mapping(string:array(object(node))) exacts = ([]);
     foreach(node_classes[EXACT_CDR], object(node) n) {
       exacts[n->cdr] += ({ n });
     }
@@ -992,8 +990,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       res += indent + "{\n";
     }
     if (sizeof(node_classes[MATCH_CAR])) {
-      mapping(string:array(object)) token_groups =
-	[mapping(mixed:array(object))]([]);
+      mapping(string:array(object)) token_groups = ([]);
       foreach(node_classes[MATCH_CAR], object(node) n) {
 	token_groups[n->car->token] += ({ n->car });
       }
@@ -1013,8 +1010,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       res += "\n";
     }
     if (sizeof(node_classes[MATCH_CDR])) {
-      mapping(string:array(object)) token_groups =
-	[mapping(mixed:array(object))]([]);
+      mapping(string:array(object)) token_groups = ([]);
       foreach(node_classes[MATCH_CDR], object(node) n) {
 	token_groups[n->cdr->token] += ({ n->cdr });
       }
@@ -1033,8 +1029,7 @@ string generate_match(array(object(node)) rule_set, string indent)
       }
       res += "\n";
     }
-    array(object(node)) not_null =
-      [array(object(node))]({});
+    array(object(node)) not_null = ({});
     if (sizeof(node_classes[NOT_NULL_CAR])) {
       foreach(node_classes[NOT_NULL_CAR], object(node) n) {
 	not_null += ({ n->car });
@@ -1065,9 +1060,9 @@ string generate_match(array(object(node)) rule_set, string indent)
     res += indent + "}\n";
   }
   if (sizeof(node_classes[ANY])) {
-    array(object(node)) parent_set = [array(object(node))]({});
-    array(object(node)) car_set = [array(object(node))]({});
-    array(object(node)) cdr_set = [array(object(node))]({});
+    array(object(node)) parent_set = ({});
+    array(object(node)) car_set = ({});
+    array(object(node)) cdr_set = ({});
     foreach(node_classes[ANY], object(node) n) {
       if (n->car) {
 	car_set += ({ n->car });
@@ -1097,11 +1092,9 @@ string generate_extras_match(array(object(node)) rule_set, string indent)
 {
   string res = "";
 
-  mapping(string:array(object(node))) extra_set =
-    [mapping(mixed:array(object(node)))]([]);
+  mapping(string:array(object(node))) extra_set = ([]);
 
-  array(object(node)) no_extras = 
-    [array(object(node))]({});
+  array(object(node)) no_extras = ({});
 
   foreach(rule_set, object(node) n) {
     string t = 0;
@@ -1167,7 +1160,7 @@ int main(int argc, array(string) argv)
     fail("Filename %O doesn't end with \".in\"\n", fname);
   }
 
-  data = [string]Stdio.File(fname, "r")->read();
+  data = Stdio.File(fname, "r")->read();
 
   parse_data();
 
