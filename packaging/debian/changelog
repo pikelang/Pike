@@ -1,3 +1,9 @@
+pike7.6 (7.6.11-3) unstable; urgency=low
+
+  * Gotten rid of gdk-imlib1-dev build dependency
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 30 Jul 2004 14:36:10 +0200
+
 pike7.6 (7.6.11-2) unstable; urgency=medium
 
   * Changed the build-dep from libxpm4-dev to libxpm-dev
