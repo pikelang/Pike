@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.173 2003/05/15 15:23:53 marcus Exp $
+// $Id: module.pmod,v 1.174 2003/06/18 17:37:29 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1870,23 +1870,15 @@ int exist(string path)
    return !!file_stat(path);
 }
 
-mixed `[](string index)
-{
-  mixed x=`->(this_object(),index);
-  if(x) return x;
-  switch(index)
-  {
-  case "readline": return (master()->resolv("Stdio")["Readline"])->readline;
-  default: return UNDEFINED;
-  }
-}
-
 #define BLOCK 65536
 
 #if constant(System.cp)
 constant cp=System.cp;
 #else
 int cp(string from, string to)
+//! Copies the file @[from] to the new position @[to]. If there is
+//! no system function for cp, a new file will be created and the
+//! old one copied manually in chunks of 65536 bytes.
 {
   string data;
   File f=File(), t;
