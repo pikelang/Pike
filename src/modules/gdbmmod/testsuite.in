@@ -19,7 +19,7 @@ cond( [[ master()->programs["/precompiled/gdbm"] ]],
     GDBMNULLTEST
     test_any(int e; for(e=0;e<100;e++) if(GDBMBASE->fetch("x"+e)!="y"+e) return e; return -1,-1)
     GDBMNULLTEST
-    test_true(GDBMBASE->store(sprintf("%'23'100000s",""),sprintf("%'32'100000s","")))
+    test_true(GDBMBASE->store(sprintf("%'23'100000s","") , sprintf("%'32'100000s","")))
     test_true(GDBMBASE->fetch(sprintf("%'23'100000s",""))==sprintf("%'32'100000s",""))
     GDBMNULLTEST
     test_equal(GDBMBASE->fetch("foo"),"bar")
