@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.83 2004/02/06 20:04:18 grubba Exp $
+|| $Id: backend.cmod,v 1.84 2004/02/07 18:23:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.83 2004/02/06 20:04:18 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.84 2004/02/07 18:23:05 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -308,23 +308,27 @@ int POLL_DEVICE_SET_EVENTS(int pfd, int fd, INT32 events)
 #define POLLRDBAND	POLLPRI
 #endif /* !POLLRDBAND */
 
+#ifndef POLLWRNORM
+#define POLLWRNORM	POLLOUT
+#endif /* POLLWRNORM */
+
 #ifndef POLLWRBAND
 #define POLLWRBAND	POLLOUT
 #endif /* !POLLWRBAND */
 
 #define MY_POLLIN POLLRDNORM|POLLIN
-#define MY_POLLOUT POLLOUT
+#define MY_POLLOUT POLLWRNORM|POLLOUT
 
 #define MY_POLLEXCEPT POLLRDBAND|POLLRDNORM|POLLIN
 #define MY_POLLRDBAND POLLRDBAND
-#define MY_POLLWREXCEPT POLLWRBAND|POLLOUT
+#define MY_POLLWREXCEPT POLLWRBAND|POLLWRNORM|POLLOUT
 #define MY_POLLWRBAND POLLWRBAND
 
 #if (POLLRDBAND != POLLRDNORM) && (POLLRDBAND != POLLIN)
 #define RDBAND_IS_SPECIAL
 #endif
 
-#if  POLLWRBAND != POLLOUT
+#if (POLLWRBAND != POLLOUT) && (POLLWRBAND != POLLWRNORM)
 #define WRBAND_IS_SPECIAL
 #endif
 
