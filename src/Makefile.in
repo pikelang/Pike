@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.233 2001/01/19 19:14:54 grubba Exp $
+# $Id: Makefile.in,v 1.234 2001/01/19 22:38:29 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -662,6 +662,9 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 # This rule makes sure that builtin.c is created in the source dir.
 #
 $(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod $(TMP_BINDIR)/precompile.pike
+
+# UnixWare make needs help to find the source file...
+builtin.o: $(SRCDIR)/builtin.c
 
 # Internal testing target
 run_yacc: $(SRCDIR)/language.c
