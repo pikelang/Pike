@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.362 2000/03/31 17:13:08 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.363 2000/03/31 22:31:15 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -542,6 +542,12 @@ AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compi
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
 AC_ARG_WITH(bignums,     [  --without-bignums      disable internal conversion to bignums],[],[with_bignums=yes])
 AC_ARG_WITH(shared-nodes,[  --with-shared-nodes    enable the SHARED_NODES mode of the optimizer (EXPERIMENTAL)],[],[])
+
+# This makes configure default to --without-Perl
+# Remove this when the Perl module stops crashing and hanging. -Hubbe
+AC_ARG_WITH(with-Perl,   [  --with-Perl            enable the embedded Perl module (EXPERIMENTAL)],[],
+[ac_configure_args="$ac_configure_args --without-Perl"]
+)
 
 if test "x$with_bignums" = xyes; then
   AC_DEFINE(AUTO_BIGNUM)
