@@ -29,3 +29,7 @@ o bin/precompile.pike
 o PIKE_PORTABLE_BYTECODE
    --with-portable-bytecode is now the default. Pike programs that have
    been dumped on one architecture now can be decoded on another.
+
+o Math.Matrix 
+  Multiplication were bugged and gave B*A instead of A*B. Now fixed. 
+

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: matrix_code.h,v 1.8 2003/07/09 01:09:12 agehall Exp $
+|| $Id: matrix_code.h,v 1.9 2004/11/09 15:44:25 mirar Exp $
 */
 
 /*
@@ -647,10 +647,10 @@ scalar_mult:
    n=THIS->ysize; /* == mx->xsize */
    p=mx->ysize;
 
-   dmx=matrixX(_push_new_)(m,p);
+   dmx=matrixX(_push_new_)(p,m);
 
-   s1=THIS->m;
-   s2=mx->m;
+   s1=mx->m;
+   s2=THIS->m;
    d=dmx->m;
    for (k=0; k<p; k++)
       for (i=0; i<m; i++)
