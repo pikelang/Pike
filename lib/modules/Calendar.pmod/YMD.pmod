@@ -557,7 +557,7 @@ class YMD
       if (m==CALUNKNOWN) make_month();
       int u=utc_offset();
       return sprintf("%s, %s %s %s 00:00:00 %+03d%02d",
-		     week_day_name(),
+		     week_day_shortname(),
 		     month_day_name(),month_shortname(),year_name(),
 		     -u/3600,max(u,-u)/60%60);
    }
