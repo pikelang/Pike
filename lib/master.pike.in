@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.291 2003/07/30 17:19:17 mast Exp $
+// $Id: master.pike.in,v 1.292 2003/08/11 15:47:59 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -952,7 +952,7 @@ void create()
   CO(call_out_info);
 
 #if "¤share_prefix¤"[0]!='¤'
-  // add path for architecture-dependant files
+  // add path for architecture-independant files
   add_include_path("¤share_prefix¤/include");
   add_module_path("¤share_prefix¤/modules");
 #endif
@@ -1501,7 +1501,27 @@ mixed handle_import(string what, string|void current_file, object|void handler)
     return fc[path];
   }
   resolv_debug ("handle_import(%O, %O) => new dirnode\n", what, current_file);
-  return fc[path] = dirnode(path, handler);
+#ifdef PIKE_MODULE_RELOC
+  // If we have PIKE_MODULE_RELOC enabled, 
+  // we might need to map to a join node.
+  // FIXME: Ought to use the non-relocate_module() fakeroot().
+  if(path == "/${PIKE_MODULE_PATH}" ||
+     has_prefix(path, "/${PIKE_MODULE_PATH}/")) {
+    string tmp = path[21..];
+    array(dirnode) dirnodes = ({});
+    foreach(pike_module_path, string prefix) {
+      string s2 = fakeroot(sizeof(tmp)? combine_path(prefix, tmp) : prefix);
+      if(master_file_stat(s2))
+	dirnodes += ({ dirnode(s2, handler) });
+    }
+    resolv_debug("handle_import(%O, %O) => Found %d dirnodes\n",
+		 what, current_file, sizeof(dirnodes));
+    if (sizeof(dirnodes) > 1) return fc[path] = joinnode(dirnodes);
+    if (sizeof(dirnodes)) return fc[path] = dirnodes[0];
+    return UNDEFINED;
+  }
+#endif /* PIKE_MODULE_RELOC */
+  return fc[path] = dirnode(fakeroot(path), handler);
 }
 
 
