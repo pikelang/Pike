@@ -5,6 +5,9 @@ AC_MODULE_INIT()
 
 AC_CHECK_FUNCS( gethrtime signal sigaction )
 
+# Force prototypes from X's headerfiles.
+AC_DEFINE(FUNCPROTO)
+
 AC_HEADER_STDC
 AC_CHECK_HEADERS( signal.h arpa/inet.h )
 
