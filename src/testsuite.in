@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.661 2003/07/02 20:09:33 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.662 2003/07/30 18:53:27 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1626,7 +1626,7 @@ cond([[all_constants()->_debug]],
 [[
   test_do(_debug(_debug(0)))
 ]])
-test_do(_static_modules())
+test_do(indices(_static_modules))
 test_compile_any([[import Stdio; class x { string y() { read_file("foo"); } }]])
 
 dnl ----------------------------------------------------------------
