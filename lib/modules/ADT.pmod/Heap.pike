@@ -108,8 +108,8 @@ mixed pop()
     if(num_values * 3 + 10 < sizeof(values))
       values=values[..num_values+10];
   }
-  return ret;
   verify_heap();
+  return ret;
 }
 
 //! Returns the number of elements in the heap.
