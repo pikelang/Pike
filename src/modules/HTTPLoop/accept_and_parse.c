@@ -10,6 +10,7 @@
 #include "global.h"
 	  
 #include "array.h"
+#include "bignum.h"
 #include "backend.h"
 #include "machine.h"
 #include "mapping.h"
@@ -515,7 +516,7 @@ static void low_accept_loop(struct args *arg)
 
 static void finished_p(struct callback *foo, void *b, void *c)
 {
-  extern void f_aap_reqo__init( INT32 );
+  extern void f_low_aap_reqo__init( struct c_request_object * );
 
   aap_clean_cache();
 
@@ -827,7 +828,7 @@ void pike_module_exit()
 	t = e;
 	e = e->next;
 	t->next = 0;
-	aap_free_string(t->data);
+        free_string(t->data);
 	aap_free(t->url);
 	aap_free(t);
       }
