@@ -17,7 +17,7 @@ if test "x$with_java" = xyes; then
 
   AC_MSG_CHECKING(which architecture we're using)
   AC_CACHE_VAL(pike_cv_java_arch, [
-    if pike_cv_java_arch="`uname -p`"; then :; else pike_cv_java_arch=no; fi
+    if pike_cv_java_arch="`/usr/bin/uname -p || uname -p`"; then :; else pike_cv_java_arch=no; fi
 
     dnl Linux kluge
 
@@ -76,21 +76,14 @@ if test "x$with_java" = xyes; then
   AC_MSG_CHECKING(for Java libraries)
   AC_CACHE_VAL(pike_cv_java_lib_dir, [
     pike_cv_java_lib_dir=""
-    if test -d "$pike_cv_java_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type" ; then
-      pike_cv_java_lib_dir="$pike_cv_java_lib_dir$pike_cv_java_java_home/lib/$pike_cv_java_arch/$pike_cv_java_threads_type "
-    else
-      :
-    fi
-    if test -d "$pike_cv_java_java_home/lib/$pike_cv_java_arch/classic" ; then
-      pike_cv_java_lib_dir="$pike_cv_java_lib_dir$pike_cv_java_java_home/lib/$pike_cv_java_arch/classic "
-    else
-      :
-    fi
-    if test -d "$pike_cv_java_java_home/lib/$pike_cv_java_arch" ; then
-      pike_cv_java_lib_dir="$pike_cv_java_lib_dir$pike_cv_java_java_home/lib/$pike_cv_java_arch "
-    else
-      :
-    fi
+    for i in "lib/$pike_cv_java_arch/$pike_cv_java_threads_type" \
+             "lib/$pike_cv_java_arch/classic" "lib/$pike_cv_java_arch"; do
+      if test -d "$pike_cv_java_java_home/$i" ; then
+        pike_cv_java_lib_dir="$pike_cv_java_lib_dir$pike_cv_java_java_home/$i "
+      else
+        :
+      fi
+    done
     if test -z "$pike_cv_java_lib_dir" ; then pike_cv_java_lib_dir=no; else
       :
     fi
@@ -109,7 +102,7 @@ if test "x$with_java" = xyes; then
   AC_MSG_CHECKING(for the Java include directory)
   AC_CACHE_VAL(pike_cv_java_include_dir, [
     pike_cv_java_include_dir=no
-    for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* "$pike_cv_java_java_home"; do
+    for tmp_java_incdir in /usr/java* /usr/local/java* /usr/local/jdk* /usr/local/jre* "$pike_cv_java_java_home"/.. "$pike_cv_java_java_home"; do
       if test -d $tmp_java_incdir/. -a -d $tmp_java_incdir/include/$pike_cv_java_sysos/.; then
         if ls "$tmp_java_incdir/include/jni.h" >/dev/null 2>&1 ; then
 	  pike_cv_java_include_dir="$tmp_java_incdir/include"
