@@ -45,7 +45,7 @@ class Stat
 // fixme
   void attach_statobject(object a)
   {
-     return attach_statarray( (array) a );
+     attach_statarray( (array) a );
   }
 
   Stdio.File open(string mode)
