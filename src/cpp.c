@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.133 2004/04/15 20:32:41 mast Exp $
+|| $Id: cpp.c,v 1.134 2004/04/15 20:34:45 mast Exp $
 */
 
 #include "global.h"
@@ -1534,7 +1534,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
 
   if (SETJMP_SP(recovery, 1)) {
     if (TEST_COMPAT (7, 4)) {
-      free_string (&throw_value);
+      free_svalue (&throw_value);
       throw_value.type = T_INT;
     }
     else {
