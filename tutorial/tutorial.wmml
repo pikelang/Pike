@@ -6137,6 +6137,26 @@ Returns the width in bits (8, 16 or 32) of the widest character in <i>s</i>.
 
 
 
+<function name=String.trim_whites title="trim spaces and tabs from a string">
+<man_syntax>
+string trim_whites(string s);
+</man_syntax>
+<man_description>
+Trim leading and trailing spaces and tabs from the string <i>s</i>.
+</man_description>
+
+
+
+<function name=String.trim_all_whites title="trim all white spaces from a string">
+<man_syntax>
+string trim_all_whites(string s);
+</man_syntax>
+<man_description>
+Trim leading and trailing white space characters (" \t\r\n") from the string <i>s</i>.
+</man_description>
+
+
+
 </module>
 </section>
 
