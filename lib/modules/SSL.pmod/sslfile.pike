@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.82 2005/01/26 20:04:22 mast Exp $
+/* $Id: sslfile.pike,v 1.83 2005/01/26 20:08:11 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -133,8 +133,8 @@ static int got_extra_read_call_out;
   (read_callback || write_callback || close_callback || accept_callback)
 
 #define SSL_HANDSHAKING (!conn->handshake_finished)
-#define SSL_CLOSING (conn->closing == 3 ? !sizeof (write_buffer) : conn->closing)
-#define SSL_INTERNAL_TALK (SSL_HANDSHAKING || SSL_CLOSING)
+#define SSL_READING_CLEAN_CLOSE (close_state == CLEAN_CLOSE && conn->closing == 1)
+#define SSL_INTERNAL_TALK (SSL_HANDSHAKING || SSL_READING_CLEAN_CLOSE)
 
 #ifdef DEBUG
 
@@ -1190,7 +1190,7 @@ static int ssl_read_callback (int called_from_real_backend, string input)
 		  called_from_real_backend, sizeof (input),
 		  nonblocking_mode, !!(CALLBACK_MODE),
 		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
-		  conn && SSL_CLOSING ? ", closing" : "");
+		  conn && conn->closing ? ", closing (" + conn->closing + ")" : "");
 
   ENTER (1, called_from_real_backend) {
     int handshake_already_finished = conn->handshake_finished;
@@ -1313,7 +1313,7 @@ static int ssl_write_callback (int called_from_real_backend)
 		  called_from_real_backend,
 		  nonblocking_mode, !!(CALLBACK_MODE),
 		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
-		  conn && SSL_CLOSING ? ", closing" : "");
+		  conn && conn->closing ? ", closing (" + conn->closing + ")" : "");
 
   int ret = 0;
 
@@ -1424,7 +1424,7 @@ static int ssl_close_callback (int called_from_real_backend)
 		  called_from_real_backend,
 		  nonblocking_mode, !!(CALLBACK_MODE),
 		  conn && SSL_HANDSHAKING ? ", handshaking" : "",
-		  conn && SSL_CLOSING ? ", closing" : "");
+		  conn && conn->closing ? ", closing (" + conn->closing + ")" : "");
 
   ENTER (1, called_from_real_backend) {
 #ifdef DEBUG
