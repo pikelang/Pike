@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.323 2004/07/02 11:17:51 mast Exp $
+|| $Id: file.c,v 1.324 2004/08/31 15:35:15 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.323 2004/07/02 11:17:51 mast Exp $");
+RCSID("$Id: file.c,v 1.324 2004/08/31 15:35:15 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -2807,6 +2807,10 @@ static void low_dup(struct object *toob,
  *! the argument a reference to the same file, it creates a new file
  *! with the same properties and places it in the argument.
  *!
+ *! @note
+ *!   In Pike 7.7 and later @[to] need not be open, in which
+ *!   case a new fd will be allocated.
+ *!
  *! @seealso
  *!   @[assign()], @[dup()]
  */
@@ -2831,20 +2835,26 @@ static void file_dup2(INT32 args)
   if(!fd)
     SIMPLE_BAD_ARG_ERROR("Stdio.File->dup2", 1, "Stdio.File");
 
+  if(fd->box.fd < 0) {
+    if((fd->box.fd = fd_dup(FD)) < 0)
+    {
+      ERRNO = errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
+  } else {
+    if (fd->flags & FILE_LOCK_FD) {
+      Pike_error("File has been temporarily locked from closing.\n");
+    }
 
-  if(fd->box.fd < 0)
-    Pike_error("File given to dup2 not open.\n");
-
-  if (fd->flags & FILE_LOCK_FD) {
-    Pike_error("File has been temporarily locked from closing.\n");
-  }
-
-  if(fd_dup2(FD,fd->box.fd) < 0)
-  {
-    ERRNO=errno;
-    pop_n_elems(args);
-    push_int(0);
-    return;
+    if(fd_dup2(FD, fd->box.fd) < 0)
+    {
+      ERRNO = errno;
+      pop_n_elems(args);
+      push_int(0);
+      return;
+    }
   }
   ERRNO=0;
   low_dup(o, fd, THIS);
