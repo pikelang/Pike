@@ -1447,40 +1447,60 @@ class Debug
 	if(val[0]=='_' && ::`->(val)) return ::`->(val);
 	return `[](val);
       }
+
+    mixed _indices() {
+      return cache->ind;
+    }
+
+    mixed _values() {
+      return cache->val;
+    }
   }
 
   class MultisetHandle
   {
     inherit PtrSvalueHandle;
-    SvalueHandle arr;
+    Handle msd;
 
     string _type() { return "multiset"; }
-    int _sizeof() { return arr->_sizeof(); }
+    int _sizeof() { return msd->size->_value(); }
     string _sprintf(int op)
       {
 	if(op == 't') return _type();
 	if(failsafe) return "MULTISET";
-	string desc= /* sprintf("%O",arr); */ "Multiset representation is broken.";
-	desc[1]='<';
-	desc[-2]='>';
+	string desc="(< ";
+	Handle h = msd->nodes->i;
+	for(int e=0;e<_sizeof();e++) {
+	  desc += sprintf("%O", Svalue(h->ind)->_value());
+	  if(sizeof(desc)>300) {
+	    desc += " ..."+(_sizeof()-e);
+	    break;
+	  }
+	  if(e) desc += ", ";
+	  h=h->next;
+	}
+	desc += ">)";
+
 	return desc;
       }
 
     /* SLOW */
     mixed `[](mixed key)
       {
-	for(int e=0;e<_sizeof();e++)
-	  if(arr[e] == key)
+	Handle h = msd->nodes->i;
+	for(int e=0;e<_sizeof();e++) {
+	  mixed i = Svalue(h->ind)->_value();
+	  if(i == key)
 	    return 1;
+	  h=h->next;
+	}
 	return 0;
       }
 
     void create(Handle h)
       {
 	::create(h);
-	/* FIXME: New multiset doesn't have ->ind but ->msd->nodes */
-	return;
-	arr=MKSH(ArrayHandle,h->ind);
+	msd = h->msd;
       }
 
     mixed `->(string val)
@@ -3016,7 +3036,7 @@ string find_in_path(string cmd)
 
 int main(int argc, array(string) argv)
 {
-  write(#"UNBUG $Id: unbug,v 1.13 2003/12/08 05:09:59 nilsson Exp $
+  write(#"UNBUG $Id: unbug,v 1.14 2003/12/08 06:14:29 nilsson Exp $
 Copyright 2001-2002, Roxen Internet Software AB.
 Copyright 2002-2003, Department of Computer and Information Science,
                      Linköping University
