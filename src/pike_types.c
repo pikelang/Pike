@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.180 2001/06/05 12:32:01 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.181 2001/08/20 18:08:50 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -154,7 +154,9 @@ char *get_name_of_type(int t)
     case T_TYPE: return "type";
     case T_ZERO: return "zero";
     case T_VOID: return "void";
+    case T_STORAGE: return "object storage";
     case T_MAPPING_DATA: return "mapping_data";
+    case T_PIKE_FRAME: return "pike_frame";
     default: return "unknown";
   }
 }
