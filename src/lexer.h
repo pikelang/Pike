@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.44 2003/03/09 14:20:25 grubba Exp $
+|| $Id: lexer.h,v 1.45 2003/03/27 02:10:44 mast Exp $
 */
 
 /*
@@ -334,7 +334,7 @@ static int low_yylex(YYSTYPE *yylval)
       lex.pos -= (1<<SHIFT);
       READBUF(lex_isidchar(C));
 
-      yylval->number=lex.current_line;
+      PIKE_MEM_WO_RANGE (yylval, sizeof (YYSTYPE));
 
       if(len>1 && len<10)
       {
