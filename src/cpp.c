@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.105 2002/10/11 01:39:30 nilsson Exp $
+|| $Id: cpp.c,v 1.106 2002/11/01 16:52:45 nilsson Exp $
 */
 
 #include "global.h"
@@ -1065,66 +1065,6 @@ static void check_defined(struct cpp *this,
   }
 }
 
-static void dumpdef(struct cpp *this,
-		    struct define *def,
-		    struct define_argument *args,
-		    struct string_builder *tmp)
-{
-  struct pike_string *s = NULL;
-  struct define *d;
-
-  switch(args[0].arg.shift) {
-  case 0:
-    s=binary_findstring((char *)args[0].arg.ptr, args[0].len);
-    break;
-  case 1:
-    s=binary_findstring1((p_wchar1 *)args[0].arg.ptr, args[0].len);
-    break;
-  case 2:
-    s=binary_findstring2((p_wchar2 *)args[0].arg.ptr, args[0].len);
-    break;
-  default:
-    Pike_fatal("cpp(): Bad shift in macroname: %d\n", args[0].arg.shift);
-    break;
-  }
-  if(s && (d=find_define(s)))
-  {
-    int e;
-    char buffer[42];
-    PUSH_STRING_SHIFT(d->link.s->str, d->link.s->len,
-		      d->link.s->size_shift, tmp);
-    if(d->magic)
-    {
-      string_builder_binary_strcat(tmp, " defined magically ", 19);
-    }else{
-      string_builder_binary_strcat(tmp, " defined as ", 12);
-      
-      if(d->first)
-	PUSH_STRING_SHIFT(d->first->str, d->first->len,
-			  d->first->size_shift, tmp);
-      for(e=0;e<d->num_parts;e++)
-      {
-	if(!(d->parts[e].argument & DEF_ARG_NOPRESPACE))
-	  string_builder_putchar(tmp, ' ');
-	
-	if(d->parts[e].argument & DEF_ARG_STRINGIFY)
-	  string_builder_putchar(tmp, '#');
-	
-	sprintf(buffer,"%ld",(long)(d->parts[e].argument & DEF_ARG_MASK));
-	string_builder_binary_strcat(tmp, buffer, strlen(buffer));
-	
-	if(!(d->parts[e].argument & DEF_ARG_NOPOSTSPACE))
-	  string_builder_putchar(tmp, ' ');
-	
-	PUSH_STRING_SHIFT(d->parts[e].postfix->str, d->parts[e].postfix->len,
-			  d->parts[e].postfix->size_shift, tmp);
-      } 
-    }
-  }else{
-    string_builder_binary_strcat(tmp, " 0 ", 3);
-  }
-}
-
 static int do_safe_index_call(struct pike_string *s);
 
 static void check_constant(struct cpp *this,
@@ -1657,13 +1597,6 @@ void f_cpp(INT32 args)
   do_magic_define(&this,"__VERSION__",insert_current_version);
   do_magic_define(&this,"__MAJOR__",insert_current_major);
   do_magic_define(&this,"__MINOR__",insert_current_minor);
-
-  {
-    struct define* def=alloc_empty_define(make_shared_string("__dumpdef"),0);
-    def->magic=dumpdef;
-    def->args=1;
-    this.defines=hash_insert(this.defines, & def->link);
-  }
 
   {
     simple_add_define(&this, "__PIKE__", " 1 ");
