@@ -1,6 +1,5 @@
-/* pkcs.pmod
+/* signature.pmod
  *
- * Miscellaneous functions needed for pkcs operation.
  */
 
 /* Construct a PKCS-1 digestinfo */
