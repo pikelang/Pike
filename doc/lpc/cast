@@ -21,7 +21,22 @@ DESCRIPTION
 	given by that string. It will then put the program in a chache in
 	case you cast the same string to a program again later.
 
+	Castring from string to object will call cast_to_object in the
+	master object and request an object to return. The standard master
+	object will consider the string a file name, cast it to a program
+	and return a clone of that file. If the same cast is attempted again
+	later, the _same_ object will be returned.
+
+	When casting an object, the method o->cast will be called with a string
+	with the name of the type as argument. o->cast can then return any
+	value.
+
 	In all other cases, casts are just compiler hints.
+
+EXAMPLES
+	(program)"/precompiled/file"	// returns the file program
+	(object)"/precompiled/file"	// returns a clone of the file program
+	(int)(object)"/precompiled/mpz" // returns 0
 
 KEYWORDS
 	lpc
