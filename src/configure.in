@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.649 2002/11/24 22:37:50 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.650 2002/11/28 17:47:02 kiwi Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1239,7 +1239,7 @@ MY_AC_ARG_WITH(pg, MY_DESCR([--with-pg],[use the gcc -pg option]),
 AC_ARG_WITH(poll, MY_DESCR([--with-poll], [use poll instead of select]), [], [
   # Neither --with-poll nor --without-poll was specified
   case "$pike_cv_sys_os" in
-    Solaris|HP-UX|OSF1|IRIX|Linux|Darwin|UnixWare|OpenUNIX)
+    Solaris|HP-UX|OSF1|IRIX|Linux|UnixWare|OpenUNIX)
       AC_MSG_WARN([Defaulting to --with-poll since the OS is $pike_cv_sys_os.])
       with_poll=yes
     ;;
