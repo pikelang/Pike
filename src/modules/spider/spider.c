@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.103 2001/07/03 09:23:33 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.104 2001/07/03 20:58:35 david%hedbor.org Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -574,6 +574,7 @@ void do_html_parse(struct pike_string *ss,
 	}
 	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	SET_ONERROR(sv2, do_free_svalue, &sval2);
+	dmalloc_touch_svalue(&sval1);
 	apply_svalue(&sval1,2+(extra_args?extra_args->size:0));
 	UNSET_ONERROR(sv2);
 	UNSET_ONERROR(sv1);
@@ -652,6 +653,7 @@ void do_html_parse(struct pike_string *ss,
 
 	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	SET_ONERROR(sv2, do_free_svalue, &sval2);
+	dmalloc_touch_svalue(&sval1);
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
 	UNSET_ONERROR(sv2);
 	UNSET_ONERROR(sv1);
@@ -857,6 +859,7 @@ void do_html_parse_lines(struct pike_string *ss,
       }
       else if (sval1.type!=T_INT)
       {
+	ONERROR sv1;
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
 	sval2.type=99;
@@ -868,7 +871,11 @@ void do_html_parse_lines(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
+	dmalloc_touch_svalue(&sval1);
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
 	apply_svalue(&sval1,3+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+
 	HANDLE_RETURN_VALUE(j+k);
 	continue;
       }
@@ -901,6 +908,8 @@ void do_html_parse_lines(struct pike_string *ss,
       }
       else if (sval1.type != T_INT)
       {
+	ONERROR sv1;
+
 	*(sp++)=sval2;
 #ifdef PIKE_DEBUG
 	sval2.type=99;
@@ -916,7 +925,11 @@ void do_html_parse_lines(struct pike_string *ss,
 	  add_ref(extra_args);
 	  push_array_items(extra_args);
 	}
+	SET_ONERROR(sv1, do_free_svalue, &sval1);
+	dmalloc_touch_svalue(&sval1);
 	apply_svalue(&sval1,4+(extra_args?extra_args->size:0));
+	UNSET_ONERROR(sv1);
+
 	HANDLE_RETURN_VALUE(m);
 	continue;
       } else {
