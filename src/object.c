@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.89 1999/10/26 14:17:10 grubba Exp $");
+RCSID("$Id: object.c,v 1.90 1999/11/16 17:26:41 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -28,6 +28,7 @@ RCSID("$Id: object.c,v 1.89 1999/10/26 14:17:10 grubba Exp $");
 #include "fdlib.h"
 #include "mapping.h"
 #include "constants.h"
+#include "encode.h"
 
 #include "block_alloc.h"
 
@@ -292,7 +293,7 @@ struct object *get_master(void)
 
   if(!master_program)
   {
-    struct pike_string *s,*s2;
+    struct pike_string *s;
     char *tmp;
     struct stat stat_buf;
 
@@ -318,13 +319,18 @@ struct object *get_master(void)
       }
 
       if (ts1 > ts2) {
-	s=low_read_file(tmp);
+	s = low_read_file(tmp);
       }
     }
     free(tmp);
     if(s)
     {
       JMP_BUF tmp;
+
+      /* Moved here to avoid gcc warning: "might be clobbered". */
+      push_string(s);
+      push_int(0);
+
       if(SETJMP(tmp))
       {
 #ifdef DEBUG
@@ -334,10 +340,6 @@ struct object *get_master(void)
 	/* do nothing */
 	UNSETJMP(tmp);
       }else{
-	extern void f_decode_value(INT32);
-
-	push_string(s);
-	push_int(0);
 	f_decode_value(2);
 	UNSETJMP(tmp);
 
@@ -353,10 +355,10 @@ struct object *get_master(void)
 #endif
 
     }
-    s2=low_read_file(master_file);
-    if(s2)
+    s=low_read_file(master_file);
+    if(s)
     {
-      push_string(s2);
+      push_string(s);
       push_text(master_file);
       f_cpp(2);
       f_compile(1);
