@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.293 2003/08/18 13:30:59 tomas Exp $
+// $Id: master.pike.in,v 1.294 2003/08/19 10:49:57 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -49,6 +49,12 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 #define OUT_OF_DATE_WARNING 1
 #endif /* OUT_OF_DATE_WARNING */
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
+
+#ifdef __NT__
+#define PATH_SEPARATOR ";"
+#else
+#define PATH_SEPARATOR ":"
+#endif
 
 //! @decl constant out_of_date_warning = 1
 //! Should Pike complain about out of date compiled files.
@@ -118,7 +124,7 @@ string fakeroot(string s)
 {
   string tmp1=combine_path_with_cwd(s);
 #ifdef PIKE_FAKEROOT_OMIT
-  foreach(PIKE_FAKEROOT_OMIT/":", string x)
+  foreach(PIKE_FAKEROOT_OMIT/PATH_SEPARATOR, string x)
     if(glob(x,tmp1))
       return s;
 #endif
@@ -1902,15 +1908,15 @@ void _main(array(string) orig_argv, array(string) env)
 
 #ifndef NOT_INSTALLED
   {
-    array parts = (getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
+    array parts = (getenv("PIKE_INCLUDE_PATH")||"")/PATH_SEPARATOR-({""});
     int i = sizeof(parts);
     while(i) add_include_path(parts[--i]);
 
-    parts = (getenv("PIKE_PROGRAM_PATH")||"")/":"-({""});
+    parts = (getenv("PIKE_PROGRAM_PATH")||"")/PATH_SEPARATOR-({""});
     i = sizeof(parts);
     while(i) add_program_path(parts[--i]);
 
-    parts = (getenv("PIKE_MODULE_PATH")||"")/":"-({""});
+    parts = (getenv("PIKE_MODULE_PATH")||"")/PATH_SEPARATOR-({""});
     i = sizeof(parts);
     while(i) add_module_path(parts[--i]);
   }
