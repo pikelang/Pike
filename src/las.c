@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.18 1997/02/07 01:06:12 hubbe Exp $");
+RCSID("$Id: las.c,v 1.19 1997/02/11 01:52:26 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1047,6 +1047,8 @@ static int depend_p2(node *a,node *b)
   int e;
 
   if(!a || !b || is_const(a)) return 0;
+  aa.err=0;
+  bb.err=0;
   for(e=0;e<MAX_LOCAL;e++) aa.locals[e]=bb.locals[e]=VAR_UNUSED;
   for(e=0;e<MAX_GLOBAL;e++) aa.globals[e]=bb.globals[e]=VAR_UNUSED;
 

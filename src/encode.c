@@ -168,7 +168,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
     check_stack(1);
     push_svalue(val);
     APPLY_MASTER("nameof", 1);
-    if(sp[-1].type == val[-1].type)
+    if(sp[-1].type == val->type)
       error("Error in master()->nameof(), same type returned.\n");
     code_entry(val->type, 0,data);
     encode_value2(sp-1, data);
