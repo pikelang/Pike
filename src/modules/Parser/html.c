@@ -26,7 +26,7 @@ extern struct program *parser_html_program;
 
 #ifdef DEBUG
 #undef DEBUG
-#define DEBUG(X) fprintf X
+#define DEBUG(X) if (THIS->debug_mode) fprintf X
 #define DEBUG_MARK_SPOT debug_mark_spot
 #else
 #define DEBUG(X) do; while(0)
@@ -133,7 +133,7 @@ struct parser_html_storage
    /* flag: arg quote may have tag_end to end quote and tag */
    int lazy_end_arg_quote; 
 
-   /* flag: nonalphanum ends entity */
+   /* flag: the entity_break chars ends entity */
    int lazy_entity_end; 
 
    /* flag: match '<' and '>' for in-tag-tags (<foo <bar>>) */
@@ -142,6 +142,11 @@ struct parser_html_storage
    /* flag: handle mixed data from callbacks */
    int mixed_mode;
 
+#ifdef DEBUG
+   /* flag: debug output */
+   int debug_mode;
+#endif
+
    p_wchar2 tag_start,tag_end;
    p_wchar2 entity_start,entity_end;
    int nargq;
@@ -149,6 +154,9 @@ struct parser_html_storage
    p_wchar2 argq_start[MAX_ARGQ],argq_stop[MAX_ARGQ];
    p_wchar2 arg_eq; /* = as in foo=bar */
 
+   p_wchar2 *lazy_entity_ends;
+   int n_lazy_entity_ends;
+  
    p_wchar2 *ws;
    int n_ws;
 
@@ -194,6 +202,8 @@ void debug_mark_spot(char *desc,struct piece *feed,int c)
 {
    int l,m,i,i0;
    char buf[40];
+
+   if (!THIS->debug_mode) return;
 
    l=strlen(desc)+1;
    if (l<40) l=40;
@@ -352,7 +362,11 @@ found_start:
 static void init_html_struct(struct object *o)
 {
    static p_wchar2 whitespace[]={' ','\n','\r','\t','\v'};
+   static p_wchar2 def_lazy_eends[]={';','&','<','>','\"','\'','\n','\r'};
 
+#ifdef DEBUG
+   THIS->debug_mode=0;
+#endif
    DEBUG((stderr,"init_html_struct %p\n",THIS));
 
    /* state */
@@ -371,6 +385,7 @@ static void init_html_struct(struct object *o)
    THIS->arg_eq='=';
    
    /* allocated stuff */
+   THIS->lazy_entity_ends=NULL;
    THIS->ws=NULL;
    THIS->ws_or_endarg=NULL;
    THIS->ws_or_endarg_or_quote=NULL;
@@ -404,6 +419,10 @@ static void init_html_struct(struct object *o)
    THIS->max_stack_depth=MAX_FEED_STACK_DEPTH;
 
    /* this may now throw */
+   THIS->lazy_entity_ends=(p_wchar2*)xalloc(sizeof(def_lazy_eends));
+   MEMCPY(THIS->lazy_entity_ends,def_lazy_eends,sizeof(def_lazy_eends));
+   THIS->n_lazy_entity_ends=NELEM(def_lazy_eends);
+
    THIS->ws=(p_wchar2*)xalloc(sizeof(whitespace));
    MEMCPY(THIS->ws,whitespace,sizeof(whitespace));
    THIS->n_ws=NELEM(whitespace);
@@ -439,6 +458,7 @@ static void exit_html_struct(struct object *o)
      free(fsp);
    }
 
+   if (THIS->lazy_entity_ends) free(THIS->lazy_entity_ends);
    if (THIS->ws) free(THIS->ws);
    if (THIS->ws_or_endarg) free(THIS->ws_or_endarg);
    if (THIS->ws_or_endarg_or_quote) free(THIS->ws_or_endarg_or_quote);
@@ -1969,7 +1989,6 @@ static int do_try_feed(struct parser_html_storage *this,
 		this->stack_count,this->stack_count,
 		*feed,st->c));
 
-
 	 /* scan start of tag name */
 	 res=scan_forward(*feed,st->c+1,&dst,&cdst,
 			  this->ws,-this->n_ws);
@@ -2118,13 +2137,22 @@ static int do_try_feed(struct parser_html_storage *this,
       }
       else if (scan_entity && ch==this->entity_start) /* entity */
       {
+	 int entity_close = 1;
 	 DEBUG((stderr,"%*d do_try_feed scan entity %p:%d\n",
 		this->stack_count,this->stack_count,
 		*feed,st->c));
 	 /* just search for end of entity */
-	 
-	 look_for[0]=this->entity_end;
-	 res=scan_forward(*feed,st->c+1,&dst,&cdst,look_for,1);
+
+	 if (this->lazy_entity_end) {
+	   res=scan_forward(*feed,st->c+1,&dst,&cdst,
+			    this->lazy_entity_ends,this->n_lazy_entity_ends);
+	   if (res && index_shared_string(dst->s,cdst) != this->entity_end)
+	     entity_close = 0;
+	 }
+	 else {
+	   look_for[0]=this->entity_end;
+	   res=scan_forward(*feed,st->c+1,&dst,&cdst,look_for,1);
+	 }
 	 if (!res && !finished) 
 	 {
 	    st->ignore_data=1; /* no data first at next call */
@@ -2145,7 +2173,7 @@ static int do_try_feed(struct parser_html_storage *this,
 	       /* low-level entity call */
 	       if ((res=entity_callback(this,thisobj,v,
 					*feed,st->c+1,dst,cdst,
-					st,feed,&(st->c),dst,cdst+1)))
+					st,feed,&(st->c),dst,cdst+entity_close)))
 	       {
 		  DEBUG((stderr,"%*d entity callback return %d %p:%d\n",
 			 this->stack_count,this->stack_count,
@@ -2178,7 +2206,7 @@ static int do_try_feed(struct parser_html_storage *this,
 			*feed,st->c+1,dst,cdst);
 
 	    if ((res=handle_result(this,st,
-				   feed,&(st->c),dst,cdst+1)))
+				   feed,&(st->c),dst,cdst+entity_close)))
 	    {
 	       DEBUG((stderr,"%*d do_try_feed return %d %p:%d\n",
 		      this->stack_count,this->stack_count,
@@ -2190,8 +2218,8 @@ static int do_try_feed(struct parser_html_storage *this,
 	 }
 	 else if (!this->callback__entity.u.integer)
 	 {
-	    put_out_feed_range(this,*feed,st->c,dst,cdst+1);
-	    skip_feed_range(st,feed,&(st->c),dst,cdst+1);
+	    put_out_feed_range(this,*feed,st->c,dst,cdst+entity_close);
+	    skip_feed_range(st,feed,&(st->c),dst,cdst+entity_close);
 	 }
 	 else {
 	   /* Send it to callback__data. */
@@ -2877,7 +2905,7 @@ static void html_clone(INT32 args)
    struct object *o;
    struct parser_html_storage *p;
    int i;
-   p_wchar2 *newws;
+   p_wchar2 *newstr;
 
    DEBUG((stderr,"parse_html_clone object %p\n",THISOBJ));
 
@@ -2913,6 +2941,9 @@ static void html_clone(INT32 args)
    p->lazy_entity_end=THIS->lazy_entity_end;
    p->match_tag=THIS->match_tag;
    p->mixed_mode=THIS->mixed_mode;
+#ifdef DEBUG
+   p->debug_mode=THIS->debug_mode;
+#endif
    
    p->tag_start=THIS->tag_start;
    p->tag_end=THIS->tag_end;
@@ -2926,11 +2957,18 @@ static void html_clone(INT32 args)
       p->argq_start[i]=THIS->argq_start[i];
       p->argq_stop[i]=THIS->argq_stop[i];
    }
+
+   p->n_lazy_entity_ends=THIS->n_lazy_entity_ends;
+   newstr=(p_wchar2*)xalloc(sizeof(p_wchar2)*p->n_lazy_entity_ends);
+   MEMCPY(newstr,THIS->lazy_entity_ends,sizeof(p_wchar2)*p->n_lazy_entity_ends);
+   if (p->lazy_entity_ends) free(p->lazy_entity_ends);
+   p->lazy_entity_ends=newstr;
+
    p->n_ws=THIS->n_ws;
-   newws=(p_wchar2*)xalloc(sizeof(p_wchar2)*p->n_ws);
-   MEMCPY(newws,THIS->ws,sizeof(p_wchar2)*p->n_ws);
+   newstr=(p_wchar2*)xalloc(sizeof(p_wchar2)*p->n_ws);
+   MEMCPY(newstr,THIS->ws,sizeof(p_wchar2)*p->n_ws);
    if (p->ws) free(p->ws); 
-   p->ws=newws;
+   p->ws=newstr;
 
    DEBUG((stderr,"done clone\n"));
 
@@ -2955,6 +2993,26 @@ static void html_set_extra(INT32 args)
    sp--;
    dmalloc_touch_svalue(sp);
    ref_push_object(THISOBJ);
+}
+
+/*
+**! method int lazy_entity_end(void|int value)
+**!	Queries or sets the lazy entity end flag. Sets the flag to the
+**!	value if any is given and returns the old value.
+**!
+**!	Normally, the entity end character (i.e. ';') is required to
+**!	end an entity. When the lazy entity end flag is set, the
+**!	characters '&', '<', '>', '"', ''', newline and linefeed also
+**!	breaks an entity.
+*/
+
+static void html_lazy_entity_end(INT32 args)
+{
+   int o=THIS->lazy_entity_end;
+   check_all_args("lazy_entity_end",args,BIT_VOID|BIT_INT,0);
+   if (args) THIS->lazy_entity_end=sp[-args].u.integer;
+   pop_n_elems(args);
+   push_int(o);
 }
 
 /*
@@ -2993,6 +3051,17 @@ static void html_mixed_mode(INT32 args)
    pop_n_elems(args);
    push_int(o);
 }
+
+#ifdef DEBUG
+static void html_debug_mode(INT32 args)
+{
+   int o=THIS->debug_mode;
+   check_all_args("debug_mode",args,BIT_VOID|BIT_INT,0);
+   if (args) THIS->debug_mode=sp[-args].u.integer;
+   pop_n_elems(args);
+   push_int(o);
+}
+#endif
 
 /****** module init *********************************/
 
@@ -3071,10 +3140,16 @@ void init_parser_html(void)
    ADD_FUNCTION("set_extra",html_set_extra,
 		tFuncV(tNone,tMix,tObj),0);
 
+   ADD_FUNCTION("lazy_entity_end",html_lazy_entity_end,
+		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("match_tag",html_match_tag,
 		tFunc(tOr(tVoid,tInt),tInt),0);
    ADD_FUNCTION("mixed_mode",html_mixed_mode,
 		tFunc(tOr(tVoid,tInt),tInt),0);
+#ifdef DEBUG
+   ADD_FUNCTION("debug_mode",html_debug_mode,
+		tFunc(tOr(tVoid,tInt),tInt),0);
+#endif
 
    /* special callbacks */
 

@@ -271,6 +271,13 @@ test_any([[
   return p->finish("<b><a><b>")->read();
 ]], "BA<b>");
 
+// Delimiters
+test_any([[
+  object p = Parser.HTML();
+  p->add_entity ("e", "x");
+  return p->finish("&e; &e<t> &e <t> a='&e&e' b=\"&e\" &e>")->read();
+]], "x x<t> &e <t> a='xx' b=\"x\" x>");
+
 // Recursive parsing in tags
 test_any([[
   object p = Parser.HTML();
