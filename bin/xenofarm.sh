@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# $Id: xenofarm.sh,v 1.18 2003/02/20 17:02:43 grubba Exp $
+# $Id: xenofarm.sh,v 1.19 2003/03/28 10:19:49 grubba Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -62,21 +62,10 @@ if [ $LASTERR = 0 ]; then
 fi
 
 log_start response_assembly
+  # Basic stuff
   cp buildid.txt build/xenofarm/
+  # Configuration
   cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt || /bin/true
-  if test ! -f "build/xenofarm/exportlog.txt"; then
-    cp "$BUILDDIR/testsuite" build/xenofarm/testsuite.txt || /bin/true;
-  fi
-  find . -name "core" -exec \
-    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-       build/xenofarm/_core.txt ";"
-  find . -name "*.core" -exec \
-    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-      build/xenofarm/_core.txt ";"
-  find . -name "core.*" -exec \
-    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
-      build/xenofarm/_core.txt ";"
-  cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt || /bin/true
   (
     cd "$BUILDDIR"
     test -f config.log && cat config.log
@@ -89,6 +78,32 @@ log_start response_assembly
     done
   ) > build/xenofarm/configlogs.txt
   cp "$BUILDDIR/config.cache" build/xenofarm/configcache.txt || /bin/true;
+  # Compilation
+  if test "`find $BUILDDIR -name '*.fail' -print`" = ""; then :; else
+    (
+      cd "$BUILDDIR"
+      echo
+      echo "The following file(s) failed to compile with full optimization."
+      echo "This may affect performance negatively."
+      find . -name '*.fail' -print | sed -e 's/\.fail$$//' -e 's/^/	/'
+    ) >build/xenofarm/compilation_failure.txt
+  fi
+  # Installation
+  cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt || /bin/true
+  # Testing
+  if test ! -f "build/xenofarm/exportlog.txt"; then
+    cp "$BUILDDIR/testsuite" build/xenofarm/testsuite.txt || /bin/true;
+  fi
+  # Core files
+  find . -name "core" -exec \
+    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
+       build/xenofarm/_core.txt ";"
+  find . -name "*.core" -exec \
+    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
+      build/xenofarm/_core.txt ";"
+  find . -name "core.*" -exec \
+    gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
+      build/xenofarm/_core.txt ";"
 log_end $?
 
 log "END"
