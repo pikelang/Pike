@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.261 2003/03/13 22:13:21 nilsson Exp $
+|| $Id: file.c,v 1.262 2003/03/26 16:47:24 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.261 2003/03/13 22:13:21 nilsson Exp $");
+RCSID("$Id: file.c,v 1.262 2003/03/26 16:47:24 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -3456,9 +3456,6 @@ void file_set_notify(INT32 args) {
  *! available.
  */
 
-/*! @endmodule
- */
-
 void exit_files_stat(void);
 void exit_files_efuns(void);
 void exit_sendfile(void);
@@ -3658,42 +3655,48 @@ PIKE_MODULE_INIT
 
 #ifdef DN_ACCESS
   /*! @decl constant DN_ACCESS
-   *! Used in @[File.notify()] to get a callback when files within a directory are accessed.
+   *! Used in @[File.notify()] to get a callback when files
+   *! within a directory are accessed.
    */
   add_integer_constant("DN_ACCESS", DN_ACCESS, 0);
 #endif
 
 #ifdef DN_MODIFY
   /*! @decl constant DN_MODIFY
-   *! Used in @[File.notify()] to get a callback when files within a directory are modified.
+   *! Used in @[File.notify()] to get a callback when files
+   *! within a directory are modified.
    */
   add_integer_constant("DN_MODIFY", DN_MODIFY, 0);
 #endif
 
 #ifdef DN_CREATE
   /*! @decl constant DN_CREATE
-   *! Used in @[File.notify()] to get a callback when new files are created within a directory.
+   *! Used in @[File.notify()] to get a callback when new
+   *! files are created within a directory.
    */
   add_integer_constant("DN_CREATE", DN_CREATE, 0);
 #endif
 
 #ifdef DN_DELETE
   /*! @decl constant DN_DELETE
-   *! Used in @[File.notify()] to get a callback when files are deleted within a directory.
+   *! Used in @[File.notify()] to get a callback when files
+   *! are deleted within a directory.
    */
   add_integer_constant("DN_DELETE", DN_DELETE, 0);
 #endif
 
 #ifdef DN_RENAME
-  /*! @decl constant DN_ACCESS
-   *! Used in @[File.notify()] to get a callback when files within a directory are renamed.
+  /*! @decl constant DN_RENAME
+   *! Used in @[File.notify()] to get a callback when files
+   *! within a directory are renamed.
    */
   add_integer_constant("DN_RENAME", DN_RENAME, 0);
 #endif
 
 #ifdef DN_ATTRIB
-  /*! @decl constant DN_ACCESS
-   *! Used in @[File.notify()] to get a callback when attributes of files within a directory are changed.
+  /*! @decl constant DN_ATTRIB
+   *! Used in @[File.notify()] to get a callback when attributes
+   *! of files within a directory are changed.
    */
   add_integer_constant("DN_ATTRIB", DN_ATTRIB, 0);
 #endif
@@ -3731,6 +3734,9 @@ PIKE_MODULE_INIT
 				      0));
 #endif
 }
+
+/*! @endmodule
+ */
 
 /* Used from backend */
 int pike_make_pipe(int *fds)
