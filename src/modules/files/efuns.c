@@ -182,18 +182,18 @@ void f_get_dir(INT32 args)
     char buffer[MAXPATHLEN * 4];
     char *ptrs[FPR];
     int lens[FPR];
+    struct dirent *tmp;
     
+    if (!(tmp = alloca(sizeof(struct dirent) + 
+		       pathconf(path, _PC_NAME_MAX) + 1))) {
+      error("get_dir(): Out of memory!\n");
+    }
+
     while(1)
     {
       int e;
-      struct dirent *tmp;
       int num_files=0;
       char *bufptr=buffer;
-
-      if (!(tmp = alloca(sizeof(struct dirent) + 
-			 pathconf(path, _PC_NAME_MAX) + 1))) {
-	error("get_dir(): Out of memory!\n");
-      }
 
       THREADS_ALLOW();
 
@@ -220,7 +220,7 @@ void f_get_dir(INT32 args)
 	num_files++;
       }
       THREADS_DISALLOW();
-      if (!d) {
+      if ((!d) && (errno != ENOENT)) {
 	error("get_dir(): readdir_r() failed: %d\n", errno);
       }
       for(e=0;e<num_files;e++)
