@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.24 1997/02/24 22:10:29 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.25 1997/02/27 10:12:02 hubbe Exp $"]])
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
@@ -122,8 +122,8 @@ cond([[all_constants()->thread_create]],
   test_do(thread_create(lambda() { }))
 
 // /precompiled/mutex
-  test_true(Builtin.mutex())
-  test_do(add_constant("_tmp_mutex",Builtin.mutex()))
+  test_true(Thread.Mutex())
+  test_do(add_constant("_tmp_mutex",Builtin.Mutex()))
   test_true(_tmp_mutex->lock())
   test_true(_tmp_mutex->lock())
   test_true(_tmp_mutex->trylock())
@@ -131,13 +131,12 @@ cond([[all_constants()->thread_create]],
   test_do(add_constant("_tmp_mutex"))
 
 // /precompiled/condition
-  test_true(Builtin.condition())
-  test_do(Builtin.condition()->signal())
-  test_do(Builtin.condition()->broadcast())
+  test_true(Thread.Condition())
+  test_do(Thread.Condition()->signal())
+  test_do(Thread.Condition()->broadcast())
 
-// /precompiled/fifo
-  test_true(objectp(clone(Fifo.Fifo)))
-  test_true(objectp(clone(Fifo.Queue)))
+  test_true(objectp(clone(Thread.Fifo)))
+  test_true(objectp(clone(Thread.Queue)))
 ]])
 
 
