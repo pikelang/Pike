@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.26 2000/07/28 07:13:18 hubbe Exp $
+ * $Id: jvm.c,v 1.27 2000/09/05 16:32:33 grubba Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.26 2000/07/28 07:13:18 hubbe Exp $");
+RCSID("$Id: jvm.c,v 1.27 2000/09/05 16:32:33 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -1571,12 +1571,11 @@ static void make_java_exception(struct object *jvm, JNIEnv *env,
 #define GET_NATIVE_ARG(ty) (((args)=((ty *)(args))+1),(((ty *)(args))[-1]))
 
 static void do_native_dispatch(struct native_method_context *ctx,
-			       JNIEnv *env, jclass cls, void *args,
+			       JNIEnv *env, jclass cls, void *args_,
 			       jvalue *rc)
 {
   JMP_BUF recovery;
   struct svalue *osp = Pike_sp;
-  int nargs = 0;
   char *p;
 
   if (SETJMP(recovery)) {
@@ -1586,66 +1585,71 @@ static void do_native_dispatch(struct native_method_context *ctx,
     return;
   }
 
-  if(!cls) {
-    push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
-    nargs++;
-  }
+  {
+    int nargs = 0;
+    void *args = args_;
 
-  p = ctx->sig->str;
-
-  if(*p == '(')
-    p++;
-
-  while(*p && *p!=')') {
-    switch(*p++) {
-    case 'Z':
-    case 'B':
-    case 'C':
-    case 'S':
-    case 'I':
-    default:
-      push_int(GET_NATIVE_ARG(jint));
-      break;
-      
-    case 'J':
-      push_int(GET_NATIVE_ARG(jlong));
-      break;
-      
-    case 'F':
-      push_float(GET_NATIVE_ARG(jfloat));
-      break;
-      
-    case 'D':
-      push_float(GET_NATIVE_ARG(jdouble));
-      break;
-      
-    case 'L':
+    if(!cls) {
       push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
-      while(*p && *p++!=';') ;
-      break;
-      
-    case '[':
-      push_java_array(GET_NATIVE_ARG(jarray), ctx->nat->jvm, env, *p);
-      while(*p == '[')
-	p++;
-      if(*p++ == 'L')
-	while(*p && *p++!=';') ;
-      break;
+      nargs++;
     }
-    nargs ++;
-  }
 
-  if(*p == ')')
-    p++;
+    p = ctx->sig->str;
 
-  apply_svalue(&ctx->callback, nargs);
+    if(*p == '(')
+      p++;
 
-  memset(rc, 0, sizeof(*rc));
+    while(*p && *p!=')') {
+      switch(*p++) {
+      case 'Z':
+      case 'B':
+      case 'C':
+      case 'S':
+      case 'I':
+      default:
+	push_int(GET_NATIVE_ARG(jint));
+	break;
+      
+      case 'J':
+	push_int(GET_NATIVE_ARG(jlong));
+	break;
+      
+      case 'F':
+	push_float(GET_NATIVE_ARG(jfloat));
+	break;
+      
+      case 'D':
+	push_float(GET_NATIVE_ARG(jdouble));
+	break;
+      
+      case 'L':
+	push_java_anyobj(GET_NATIVE_ARG(jobject), ctx->nat->jvm, env);
+	while(*p && *p++!=';') ;
+	break;
+      
+      case '[':
+	push_java_array(GET_NATIVE_ARG(jarray), ctx->nat->jvm, env, *p);
+	while(*p == '[')
+	  p++;
+	if(*p++ == 'L')
+	  while(*p && *p++!=';') ;
+	break;
+      }
+      nargs ++;
+    }
 
-  if(*p != 'V') {
-    make_jargs(rc, -1, p, ctx->nat->jvm, env);
-    if((*p == 'L' || *p == '[') && rc->l != NULL)
-      rc->l = (*env)->NewGlobalRef(env, rc->l);
+    if(*p == ')')
+      p++;
+
+    apply_svalue(&ctx->callback, nargs);
+
+    memset(rc, 0, sizeof(*rc));
+
+    if(*p != 'V') {
+      make_jargs(rc, -1, p, ctx->nat->jvm, env);
+      if((*p == 'L' || *p == '[') && rc->l != NULL)
+	rc->l = (*env)->NewGlobalRef(env, rc->l);
+    }
   }
 
   pop_n_elems(Pike_sp-osp);
