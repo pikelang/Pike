@@ -60,6 +60,8 @@ Driver options:
 constant environment_help =
 #"The Pike master looks at the following environment variables:
 
+PIKE_MASTER        : This file will be used as the Pike master.
+
 PIKE_INCLUDE_PATH  : These paths will be added to the include paths.
 PIKE_PROGRAM_PATH  : These paths will be added to the program paths.
 PIKE_MODULE_PATH   : These paths will be added to the module paths.
