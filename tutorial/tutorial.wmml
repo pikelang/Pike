@@ -2998,7 +2998,10 @@ to the following table:
 <tr valign=top><td> %f </td><td> reads a float </td></tr>
 <tr valign=top><td> %c </td><td> matches one char and returns it as an integer </td></tr>
 <tr valign=top><td> %2c </td><td> matches two chars and returns them as an integer (short) </td></tr>
-<tr valign=top><td> %s </td><td> gives a string </td></tr>
+<tr valign=top><td> %s </td><td> reads a string. If followed by %d, %s will
+ read any non-numerical characters. If followed by a %[], %s will read any
+ characters not present in the set. If followed by normal text, %s will match
+ all characters up to but not including the first occurance of that text. </td></tr>
 <tr valign=top><td> %5s </td><td> gives a string of 5 characters (5 can be any number) </td></tr>
 <tr valign=top><td> %[set] </td><td> matches a string containing a given set of characters. (thos given inside the brackets) %[^set] means any character ecept those inside brackets. %[0-9H] means any number or 'H'. </td></tr>
 </table>
@@ -3121,6 +3124,8 @@ In this chapter I will explain the basics of modules and how to use them.
 <dd>Support for coding and decoding MIME.
 <dt>Mysql *
 <dd>Sql database support for the mySQL database server.
+<dt>Process
+<dd>Functions to start and control other processes.
 <dt>Regexp
 <dd>Regexp matching routines.
 <dt>Simulate
@@ -3129,6 +3134,8 @@ In this chapter I will explain the basics of modules and how to use them.
 <dd>Routines that operate on strings.
 <dt>Sql *
 <dd>Generic SQL database support.
+<dt>System
+<dd>Support for system specific functions
 <dt>Thread *
 <dd>Thread support functions.
 <dt>Yp *
@@ -11681,7 +11688,7 @@ the user that certain functions are missing and similar things.
 <p>
 <dt><encaps>EXAMPLES</encaps><dd>
 <tt>#if !constant(write_file)<br>
-#error write_file efun is missing<br>
+#error write_file function is missing<br>
 #endif<br>
 <br>
 </tt>
@@ -11904,7 +11911,7 @@ void add_constant(string <I>name</I>);<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function adds a new constant to Pike, it is often used to
-add builin functions (efuns). All programs compiled after add_constant
+add builin functions. All programs compiled after add_constant
 function is called can access 'value' by the name given by 'name'.
 If there is a constant called 'name' already, it will be replaced by
 by the new definition. This will not affect already compiled programs.
