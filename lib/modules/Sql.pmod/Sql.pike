@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.73 2004/01/06 04:44:33 bill Exp $
+ * $Id: Sql.pike,v 1.74 2004/01/06 19:26:00 bill Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -250,7 +250,7 @@ void create(string|object host, void|string|mapping(string:int|string) db,
     // we look in Sql.type and Sql.Provider.type.type for a valid sql class.
     if(Sql[program_name])
       p = Sql[program_name];
-    else if(Sql.Provider[program_name])
+    else if(Sql.Provider && Sql.Provider[program_name] && Sql.Provider[provider][provider])
       p = Sql.Provider[program_name][program_name];
 
     if (p) {
@@ -268,7 +268,7 @@ void create(string|object host, void|string|mapping(string:int|string) db,
 	master_sql = p();
       }
     } else {
-      ERROR("Failed to index module Sql.%s\n", program_name);
+      ERROR("Failed to index module Sql.%s or Sql.Provider.%s\n", program_name, program_name);
     }
   }
 
