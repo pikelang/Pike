@@ -410,9 +410,6 @@ static void image_jpeg_encode(INT32 args)
 **!		My (Mirar) version (6a) of jpeglib can only handle
 **!		1/1, 1/2, 1/4 and 1/8. 
 **!
-**!	wizard options:
-**!	    "baseline":0|1
-**!		Force baseline output. Useful for quality<20.
 **!	</pre>
 **!
 **! note
