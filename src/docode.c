@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.64 2000/01/04 01:32:04 grubba Exp $");
+RCSID("$Id: docode.c,v 1.65 2000/03/07 21:22:08 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -71,7 +71,7 @@ void do_pop(int x)
   }
 }
 
-#define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP));
+#define DO_CODE_BLOCK(X) do_pop(do_docode((X),DO_NOT_COPY | DO_POP | DO_DEFER_POP))
 
 int do_docode(node *n,INT16 flags)
 {
@@ -801,8 +801,8 @@ static int do_docode2(node *n,int flags)
       return 1;
     }
 
-  case F_COMMA_EXPR:
   case F_ARG_LIST:
+  case F_COMMA_EXPR:
     tmp1=do_docode(CAR(n),flags & ~WANT_LVALUE);
     tmp1+=do_docode(CDR(n),flags);
     return tmp1;
