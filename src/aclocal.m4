@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.69 2003/04/02 21:47:00 mast Exp $
+dnl $Id: aclocal.m4,v 1.70 2003/05/04 18:28:53 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -320,79 +320,85 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.69 2003/04/02 21:47:00 mast Exp $
+  # $Id: aclocal.m4,v 1.70 2003/05/04 18:28:53 grubba Exp $
 
-MY_AC_PROG_CC
+  MY_AC_PROG_CC
 
-AC_DEFINE(POSIX_SOURCE)
+  AC_DEFINE(POSIX_SOURCE)
 
-AC_SUBST(CONFIG_HEADERS)
+  AC_SUBST(CONFIG_HEADERS)
 
-AC_SUBST_FILE(dependencies)
-dependencies=$srcdir/dependencies
+  AC_SUBST_FILE(dependencies)
+  dependencies=$srcdir/dependencies
 
-AC_SUBST_FILE(dynamic_module_makefile)
-AC_SUBST_FILE(static_module_makefile)
+  AC_SUBST_FILE(dynamic_module_makefile)
+  AC_SUBST_FILE(static_module_makefile)
 
-AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
-  case "$with_root" in
-    /)
-      with_root=""
-    ;;
-    /*)
-    ;;
-    no)
-      with_root=""
-    ;;
-    *)
-      AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
-      with_root=""
-    ;;
-  esac
-],[with_root=""])
+  AC_ARG_WITH(root,   [  --with-root=path      specify a cross-compilation root-directory],[
+    case "$with_root" in
+      /)
+        with_root=""
+      ;;
+      /*)
+      ;;
+      no)
+        with_root=""
+      ;;
+      *)
+        AC_MSG_WARN([Root path $with_root is not absolute. Ignored.])
+        with_root=""
+      ;;
+    esac
+  ],[with_root=""])
 
-if test "x$enable_binary" = "xno"; then
-  # Fix makefile rules as if we're cross compiling, to use pike
-  # fallbacks etc. Do this without setting $ac_cv_prog_cc_cross to yes
-  # since autoconf macros like AC_TRY_RUN will complain bitterly then.
-  CROSS=yes
-else
-  CROSS="$ac_cv_prog_cc_cross"
-  # newer autoconf
-  if test x"$CROSS" = x; then
-     CROSS="$cross_compiling"
+  if test "x$enable_binary" = "xno"; then
+    # Fix makefile rules as if we're cross compiling, to use pike
+    # fallbacks etc. Do this without setting $ac_cv_prog_cc_cross to yes
+    # since autoconf macros like AC_TRY_RUN will complain bitterly then.
+    CROSS=yes
+  else
+    CROSS="$ac_cv_prog_cc_cross"
+    # newer autoconf
+    if test x"$CROSS" = x; then
+      CROSS="$cross_compiling"
+    fi
   fi
-fi
+  AC_SUBST(CROSS)
 
-AC_SUBST(CROSS)
-
-if test "x$enable_binary" = "xno"; then
-  RUNPIKE="USE_PIKE"
-else
-  RUNPIKE="DEFAULT_RUNPIKE"
-fi
-AC_SUBST(RUNPIKE)
+  if test "x$enable_binary" = "xno"; then
+    RUNPIKE="USE_PIKE"
+  else
+    RUNPIKE="DEFAULT_RUNPIKE"
+  fi
+  AC_SUBST(RUNPIKE)
 ])
 
 
+dnl module_name
 define([AC_MODULE_INIT],
 [
-echo
-echo '###################################################'
-echo '##' `basename "$PWD"`
-echo
+  ifelse([$1], , [
+    MODULE_NAME="`pwd|sed -e 's@.*/@@g'`"
+  ], [
+    MODULE_NAME="$1"
+  ])
+  AC_SUBST(MODULE_NAME)
 
-AC_LOW_MODULE_INIT()
-PIKE_FEATURE_CLEAR()
+  echo
+  echo '###################################################'
+  echo '##' "$MODULE_NAME"
+  echo
 
-if test -d $BUILD_BASE/modules/. ; then
-  dynamic_module_makefile=$BUILD_BASE/modules/dynamic_module_makefile
-  static_module_makefile=$BUILD_BASE/modules/static_module_makefile
-else
-  dynamic_module_makefile=$BUILD_BASE/dynamic_module_makefile
-  static_module_makefile=$BUILD_BASE/dynamic_module_makefile
-fi
+  AC_LOW_MODULE_INIT()
+  PIKE_FEATURE_CLEAR()
 
+  if test -d $BUILD_BASE/modules/. ; then
+    dynamic_module_makefile=$BUILD_BASE/modules/dynamic_module_makefile
+    static_module_makefile=$BUILD_BASE/modules/static_module_makefile
+  else
+    dynamic_module_makefile=$BUILD_BASE/dynamic_module_makefile
+    static_module_makefile=$BUILD_BASE/dynamic_module_makefile
+  fi
 ])
 
 pushdef([AC_OUTPUT],
