@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.330 2001/06/13 14:22:56 grubba Exp $");
+RCSID("$Id: program.c,v 1.331 2001/06/14 11:54:16 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1165,8 +1165,10 @@ void low_start_new_program(struct program *p,
 
   compilation_depth++;
 
-  CDFPRINTF((stderr, "th(%ld) low_start_new_program() pass=%d: compilation_depth:%d\n",
-	     (long)th_self(),compilation_depth,Pike_compiler->compiler_pass));
+  CDFPRINTF((stderr, "th(%ld)  low_start_new_program() pass=%d: threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), compilation_depth,
+	     threads_disabled, Pike_compiler->compiler_pass));
+
 
   tmp.type=T_PROGRAM;
   if(!p)
@@ -1858,7 +1860,7 @@ struct program *end_first_pass(int finish)
   toss_compilation_resources();
 
   CDFPRINTF((stderr,
-	     "th(%ld),end_first_pass(): compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
+	     "th(%ld)  end_first_pass(): compilation_depth:%d, Pike_compiler->compiler_pass:%d\n",
 	     (long)th_self(), compilation_depth, Pike_compiler->compiler_pass));
 
   if(!Pike_compiler->compiler_frame && (Pike_compiler->compiler_pass==2 || !prog) && resolve_cache)
@@ -1875,6 +1877,10 @@ struct program *end_first_pass(int finish)
 #include "compilation.h"
 
   exit_type_stack();
+
+  CDFPRINTF((stderr,
+	     "th(%ld)  end_first_pass(%d): threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), finish, threads_disabled, compilation_depth));
 
   compilation_depth--;
 
@@ -3951,6 +3957,11 @@ struct program *compile(struct pike_string *prog,
   low_init_threads_disable();
   saved_threads_disabled = threads_disabled;
 
+  CDFPRINTF((stderr,
+	     "th(%ld) compile() Start: threads_disabled:%d, compilation_depth:%d\n",
+	     (long)th_self(), threads_disabled, compilation_depth));
+
+
 #ifdef PIKE_DEBUG
   SET_ONERROR(tmp, fatal_on_error,"Compiler exited with longjump!\n");
 #endif
@@ -4022,9 +4033,13 @@ struct program *compile(struct pike_string *prog,
   if(major>=0)
     change_compiler_compatibility(major, minor);
 
-  CDFPRINTF((stderr, "compile(): First pass\n"));
+  CDFPRINTF((stderr, "th(%ld)   compile(): First pass\n",
+	     (long)th_self()));
 
   yyparse();  /* Parse da program */
+
+  CDFPRINTF((stderr, "th(%ld)   compile(): First pass done\n",
+	     (long)th_self()));
 
   p=end_first_pass(0);
 
@@ -4073,12 +4088,17 @@ struct program *compile(struct pike_string *prog,
 
     use_module(Pike_sp-1);
 
-    CDFPRINTF((stderr, "compile(): Second pass\n"));
-
     if(major>=0)
       change_compiler_compatibility(major, minor);
 
+    CDFPRINTF((stderr, "th(%ld)   compile(): Second pass\n",
+	       (long)th_self()));
+
     yyparse();  /* Parse da program again */
+
+    CDFPRINTF((stderr, "th(%ld)   compile(): Second pass done\n",
+	       (long)th_self()));
+
     p=end_program();
 
 #ifdef PIKE_DEBUG
