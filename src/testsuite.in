@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.93 1998/04/17 17:14:47 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.94 1998/04/18 06:29:32 hubbe Exp $"]])
 cond([[_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2024,7 +2024,10 @@ test_true(Process.create_process)
 test_false([[Process.system(RUNPIKE +" -e 'exit(0)'")]])
 test_true([[Process.system(RUNPIKE+" -e 'exit(1)'")]])
 test_eq([[Process.popen(RUNPIKE+" -e 'write(\"test\");'")]],"test")
-
+test_any([[object o=Stdio.Fd(); object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.File(\"stdin\")->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_IPC); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o])); o2->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
+test_any([[object o=Stdio.File(); object o2=o->pipe(Stdio.PROP_BIDIRECTIONAL); object p=Process.create_process(Process.split_quoted_string(RUNPIKE)+({"-e","exit(Stdio.stdin->read(1000)==\"hello\")"}),(["stdin":o2])); o->write("hello"); destruct(o); destruct(o2); return p->wait()]],1)
 
 
 
