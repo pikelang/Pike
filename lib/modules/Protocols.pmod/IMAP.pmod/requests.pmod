@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.86 1999/12/31 18:27:51 grubba Exp $
+ * $Id: requests.pmod,v 1.87 1999/12/31 22:32:02 grubba Exp $
  */
 
 import .types;
@@ -72,7 +72,7 @@ class request
       if (argc == sizeof(args))
 	return easy_process(@args);	
 
-      switch(arg_info[argc][0])
+      switch(((array(array(string)))arg_info)[argc][0])
       {
       case "number":
 	return parser->get_number(append_number);
