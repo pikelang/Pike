@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.17 2002/11/28 23:45:41 marcus Exp $
+|| $Id: mpf.cmod,v 1.18 2002/12/01 19:15:57 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.17 2002/11/28 23:45:41 marcus Exp $");
+RCSID("$Id: mpf.cmod,v 1.18 2002/12/01 19:15:57 nilsson Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -53,6 +53,12 @@ RCSID("$Id: mpf.cmod,v 1.17 2002/11/28 23:45:41 marcus Exp $");
 
 #define PUSH_REDUCED(o) push_object(o)
 
+/*! @module Gmp
+ */
+
+/*! @class mpf
+ */
+
 /*  id PROG_GMP_MPF_ID; */
 PIKECLASS mpf
 {
@@ -65,7 +71,7 @@ PIKECLASS mpf
       p_wchar0 *str;
   
       if(digits->size_shift)
-	Pike_error("Illegal characters, cannot convert to Mpf.\n");
+	Pike_error("Illegal characters, cannot convert to Gmp.mpf.\n");
       str=STR0(digits);
 
       mpf_set_str(THISMPF, (char *)str, base);      
@@ -105,7 +111,7 @@ PIKECLASS mpf
 	  }
 	  
 	  if (s->u.object->prog) {
-	    Pike_error("Wrong type of object (id:%d), cannot convert to mpf.\n",
+	    Pike_error("Wrong type of object (id:%d), cannot convert to Gmp.mpf.\n",
 		       s->u.object->prog->id);
 	  } else {
 	    /* Destructed object. Use as zero. */
@@ -114,11 +120,15 @@ PIKECLASS mpf
 	  break;
 	  
 	default:
-	  Pike_error("cannot convert argument to mpf.\n");
+	  Pike_error("Cannot convert argument to Gmp.mpf.\n");
       }
     }
   
   /* FIXME: */
+  /*! @decl void create(void|string|int|float|object x,@
+   *!                   void|int(1..) precision)
+   *! @decl void create(string x, int(0..) precision, int(2..36) base)
+   */
   PIKEFUN void create(void|string|int|float|object x, void|int precision,
 		      void|int base)
     type function(void|string|int|float|object,void|int(1..):void)|function(string,int(0..),int(2..36):void);
@@ -131,26 +141,26 @@ PIKECLASS mpf
       case 3:
 	base=sp[2-args].u.integer;
 	if(base<2 || base>36)
-	  Pike_error("Bad argument 3 to Mpq.mpf, must be 2 <= base <= 36, not %d\n",base);
+	  Pike_error("Bad argument 3 to Gmp.mpf, must be 2 <= base <= 36, not %d.\n",base);
 	if(sp[-args].type != T_STRING)
-	  Pike_error("First argument to Mpq.mpf must be a string when specifying a base.\n");
+	  Pike_error("First argument to Gmp.mpf must be a string when specifying a base.\n");
 
       case 2:
-	if(sp[1-args].u.integer)
+	if(sp[1-args].type == T_INT)
 	{
-	  if(sp[2-args].u.integer<1) {
-	    Pike_error("Bad argument 2 to Mpq.mpf, must be > 0.\n");
-	  } else if (sp[2-args].u.integer > 0x10000) {
-	    Pike_error("Bad argument 2 to Mpq.mpf, must be <= 0x10000.\n");
+	  if(sp[1-args].u.integer<1) {
+	    Pike_error("Bad argument 2 to Gmp.mpf, must be > 0 (%d).\n");
+	  } else if (sp[1-args].u.integer > 0x10000) {
+	    Pike_error("Bad argument 2 to Gmp.mpf, must be <= 0x10000 (%d).\n");
 	  }
-	  mpf_set_prec(THISMPF, sp[2-args].u.integer);
+	  mpf_set_prec(THISMPF, sp[1-args].u.integer);
 	}
 
       case 1:
 	if(x->type == T_STRING)
 	{
 	  if(x->u.string->size_shift)
-	    Pike_error("First argument to Mpq.mpf must not be a wide string.\n");
+	    Pike_error("First argument to Gmp.mpf must not be a wide string.\n");
 	  mpf_set_str(THISMPF, (char *)STR0(x->u.string), base);
 	}else{
 	  get_new_mpf(THISMPF, sp-args);
@@ -159,7 +169,9 @@ PIKECLASS mpf
       case 0: break;
     }
   }
-  
+
+  /*! @decl int __hash()
+   */
   PIKEFUN int __hash()
     flags ID_STATIC;
     {
@@ -169,6 +181,8 @@ PIKECLASS mpf
 				     16843009.731757771173));
     }
 
+  /*! @decl int|object get_int()
+   */
   PIKEFUN int|object get_int()
     {
       struct object * ret;
@@ -183,12 +197,16 @@ PIKECLASS mpf
 #endif
     }
 
-
+  /*! @decl float get_float()
+   *! Returns the value of the object as a float.
+   */
   PIKEFUN float get_float()
     {
       RETURN (FLOAT_TYPE) mpf_get_d(THISMPF);
     }
 
+  /*! @decl string get_string()
+   */
   PIKEFUN string get_string()
     {
       /* Hmm, maybe I should have used a string builder instead? */
@@ -261,17 +279,20 @@ PIKECLASS mpf
       return def;
     }
 		    
-
+  /*! @decl string _sprintf(int c, mapping flags)
+   */
   PIKEFUN string _sprintf(int c, mapping flags)
     flags ID_STATIC;
     {
+      /* We should use this code for good...
       INT_TYPE precision, width, base = 0, mask_shift = 0;
       struct pike_string *s = 0;
       INT_TYPE flag_left;
 
-      precision=lookup("Gmp.Mpf->_sprintf",flags,"precision",7);
-      width=lookup("Gmp.Mpf->_sprintf",flags,"width",-1);
-      flag_left=lookup("Gmp.Mpf->_sprintf",flags,"flag_left",0);
+      precision=lookup("Gmp.mpf->_sprintf",flags,"precision",7);
+      width=lookup("Gmp.mpf->_sprintf",flags,"width",-1);
+      flag_left=lookup("Gmp.mpf->_sprintf",flags,"flag_left",0);
+      */
       pop_n_elems(args);
       
       switch(c)
@@ -291,14 +312,19 @@ PIKECLASS mpf
       }
     }
   
-
+  /*! @decl void _is_type(string arg)
+   *! @fixme
+   *!   Is this prototype really correct?
+   */
   PIKEFUN void _is_type(string arg)
     flags ID_STATIC;
     {
       push_constant_text("float");
       f_eq(2);
     }
-  
+
+  /*! @decl mixed cast(string to)
+   */
   PIKEFUN void cast(string s)
     flags ID_STATIC;
   {
@@ -353,7 +379,7 @@ PIKECLASS mpf
     }  
     free_string(s);
       
-    Pike_error("mpf->cast() to \"%s\" is other type than int, string or float.\n",
+    Pike_error("Gmp.mpf cast to \"%s\" is other type than int, string or float.\n",
 	       s->str);
   }
 
@@ -382,7 +408,7 @@ PIKECLASS mpf
       switch(s->type)
       {
 	default:
-	  MPF_ERROR("Wrong type of value, cannot convert to mpf.\n");
+	  MPF_ERROR("Wrong type of value, cannot convert to Gmp.mpf.\n");
 	  return 0;
 	  
 	case T_OBJECT:
@@ -466,7 +492,8 @@ PIKECLASS mpf
       }
     }
 
-
+  /*! @decl Gmp.mpf `+(int|float|object ... a)
+   */
   PIKEFUN object `+(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -478,7 +505,9 @@ PIKECLASS mpf
       
       RETURN res;
     }
-  
+
+  /* @decl Gmp.mpf ``+(int|float|object .. a)
+   */
   PIKEFUN object ``+(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -493,6 +522,8 @@ PIKECLASS mpf
       RETURN res;
     }
 
+  /*! @decl Gmp.mpf `+=(int|float|object ... a)
+   */
   PIKEFUN object `+=(int|float|object ... a)
     flags ID_STATIC;
   {
@@ -506,6 +537,11 @@ PIKECLASS mpf
     REF_RETURN fp->current_object;
   }
 
+  /*! @decl Gmp.mpf set_precision(int(1..) prec)
+   *! Sets the precision of the current object. The
+   *! precision is limited to 128Kb. The current object
+   *! will be returned.
+   */
   PIKEFUN object set_precision(int(1..) prec)
     {
       if(prec<1) {
@@ -529,7 +565,7 @@ PIKECLASS mpf
 	  mpf_mul(res, res, OBTOMPF(sp[e-args].u.object));
       }
     }
-  
+
   PIKEFUN object `*(int|float|object ... a)
     flags ID_STATIC;
     {
@@ -764,6 +800,12 @@ PIKECLASS mpf
     }
   
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 #endif /* USE_GMP */
 
