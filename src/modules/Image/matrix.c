@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.35 2001/09/26 12:27:59 grubba Exp $ */
+/* $Id: matrix.c,v 1.36 2001/09/26 12:38:49 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.35 2001/09/26 12:27:59 grubba Exp $
+**!	$Id: matrix.c,v 1.36 2001/09/26 12:38:49 grubba Exp $
 **! class Image
 */
 
@@ -675,7 +675,6 @@ static void img_skewx(struct image *src,
    s=src->img;
 
    if (!src->xsize || !src->ysize) {
-     free(d);
      return;
    }
 
