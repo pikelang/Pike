@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.179 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: docode.c,v 1.180 2004/10/28 20:13:47 mast Exp $
 */
 
 #include "global.h"
@@ -1277,20 +1277,22 @@ static int do_docode2(node *n, int flags)
 
     if(CAR(arr) && CAR(arr)->token==F_RANGE)
     {
-      node **a1=my_get_arg(&_CAR(arr),0);
-      node **a2=my_get_arg(&_CAR(arr),1);
-      if(a1 && a2 && a2[0]->token==F_CONSTANT &&
+      node *range = CAR(arr);
+      node **a1=my_get_arg(&_CDR(range),0);
+      node **a2=my_get_arg(&_CDR(range),1);
+      if(a2[0]->token==F_CONSTANT &&
 	 a2[0]->u.sval.type==T_INT &&
 	 a2[0]->u.sval.u.integer==MAX_INT_TYPE &&
-	a1[0]->type == int_type_string)
+	 match_types (a1[0]->type, int_type_string))
       {
 	/* Optimize foreach(x[start..],y). */
-	do_docode(CAR(arr),DO_NOT_COPY_TOPLEVEL);
-	do_docode(*a1,DO_NOT_COPY);
+	do_docode (CAR(range), DO_NOT_COPY_TOPLEVEL);
+	do_docode (CDR(arr), DO_NOT_COPY|DO_LVALUE);
+	do_docode (*a1, DO_NOT_COPY);
 	goto foreach_arg_pushed;
       }
     }
-    do_docode(CAR(n),DO_NOT_COPY);
+    do_docode(arr,DO_NOT_COPY);
     emit0(F_CONST0);
     current_stack_depth++;
   foreach_arg_pushed:
