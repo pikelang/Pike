@@ -1,7 +1,6 @@
-# $Id: Makefile.in,v 1.6 2003/05/04 13:32:21 mast Exp $
+# $Id: Makefile.in,v 1.7 2003/06/12 20:51:33 mast Exp $
 @make_variables@
 VPATH=@srcdir@
-MODULE_CFLAGS=@DEFS@ @CPPFLAGS@
 OBJS=ssleay.o
 MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
 
