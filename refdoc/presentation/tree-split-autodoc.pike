@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.4 2001/07/27 15:38:30 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.5 2001/07/28 00:27:33 nilsson Exp $
  *
  */
 
@@ -152,26 +152,31 @@ class Node
       return ({ this_object() }) + parent->get_ancestors();
   }
 
-  string my_resolve_reference(string _reference)
+  string my_resolve_reference(string _reference, mapping vars)
   {
-    foreach( ({ _reference,
-		Parser.parse_html_entities(_reference) }),
-	     string reference)
-    {
-      if(refs[reference])
-	return make_link( refs[reference] );
+    if(vars->param)
+      return "<font face='courier'>" + _reference + "</font>";
 
-      if(refs[reference])
-	return make_link( refs[reference] );
+    int(0..1) valid(string ref) {
+      if(refs[ref]) return 1;
 
       foreach(find_siblings(), Node sibling)
-	if(sibling->name==reference ||
-	   sibling->name+"()"==reference)
-	  return make_link( sibling );
+	if(sibling->name==ref ||
+	   sibling->name+"()"==ref)
+	  return 1;
+
+      return 0;
+    };
+
+    if(vars->resolved && valid(vars->resolved)) {
+      return "<font face='courier'><a href='" +
+	"../"*(sizeof(make_filename()/"/") - 1) +
+	map(vars->resolved/".", cquote)*"/" + "'>" + vars->resolved +
+	"</a></font>";
     }
 
     werror("Missed reference: %O\n", _reference);
-    return 0;
+    return "<font face='courier'>" + _reference + "</font>";
   }
 
   string make_class_path()

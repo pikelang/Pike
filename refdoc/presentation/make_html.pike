@@ -189,9 +189,13 @@ string parse_text(Node n) {
       break;
 
     case "ref":
-      string ref = parse_text(c);
-      if(resolve_reference && resolve_reference(ref))
-	ref = sprintf("<a href='%s'>%s</a>", resolve_reference(ref), ref);
+      if(resolve_reference) {
+	ret += resolve_reference(parse_text(c), c->get_attributes());
+	break;
+      }
+      string ref;
+      ref = c->get_attributes()->resolved;
+      if(!ref) ref = parse_text(c);
       ret += "<font face='courier'>" + ref + "</font>";
       break;
 
@@ -592,7 +596,7 @@ string parse_not_doc(Node n) {
 
     case "typedef":
     case "inherit":
-      ret += "<font color='red'>Missing content (" + c->get_any_name() + ")</font>";
+      ret += "<font color='red'>Missing content (" + c->render_xml() + ")</font>";
       // Not implemented yet.
       break;
 
@@ -604,6 +608,8 @@ string parse_not_doc(Node n) {
 
   return ret;
 }
+
+int foo;
 
 string parse_docgroup(Node n) {
   mapping m = n->get_attributes();
