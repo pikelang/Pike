@@ -1,6 +1,6 @@
 /* imap_server.pike
  *
- * $Id: imap_server.pike,v 1.11 1999/02/13 15:50:06 grubba Exp $
+ * $Id: imap_server.pike,v 1.12 1999/02/13 15:59:16 grubba Exp $
  */
 
 mapping unauth_commands =
@@ -17,7 +17,7 @@ mapping auth_commands =
    "capability" : .requests.capability,
    "select" : .requests.select,
    "examine" : .requests.examine,
-   "create" : .requests.create,
+   "create" : .requests.create_mailbox,
    "delete" : .requests.delete,
    "rename" : .requests.rename,
    "subscribe" : .requests.subscribe,
@@ -34,7 +34,7 @@ mapping select_commands =
    "capability" : .requests.capability,
    "select" : .requests.select,
    "examine" : .requests.examine,
-   "create" : .requests.create,
+   "create" : .requests.create_mailbox,
    "delete" : .requests.delete,
    "rename" : .requests.rename,
    "subscribe" : .requests.subscribe,
