@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.173 2003/11/09 01:10:14 mast Exp $
+|| $Id: mapping.c,v 1.174 2003/11/09 01:31:12 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.173 2003/11/09 01:10:14 mast Exp $");
+RCSID("$Id: mapping.c,v 1.174 2003/11/09 01:31:12 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -471,7 +471,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 % md->hashsize;					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & (1 << key->type))			\
+    if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
     {								\
       for(prev= md->hash + h;(k=*prev);prev=&k->next)		\
       {								\
@@ -494,7 +494,7 @@ struct mapping_data *copy_mapping_data(struct mapping_data *md)
   {								\
     h=h2 % md->hashsize;					\
     DO_IF_DEBUG( if(d_flag > 1) check_mapping_type_fields(m); ) \
-    if(md->ind_types & (1 << key->type))			\
+    if(md->ind_types & ((1 << key->type) | BIT_OBJECT))		\
     {								\
       k2=omd->hash[h2 % omd->hashsize];			        \
       prev= md->hash + h;					\
@@ -639,6 +639,11 @@ PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
 
 /* This function inserts key:val into the mapping m.
  * Same as doing m[key]=val; in pike.
+ *
+ * overwrite:
+ *   0: Do not replace the value if the entry exists.
+ *   1: Replace the value if the entry exists.
+ *   2: Replace both the index and the value if the entry exists.
  */
 PMOD_EXPORT void low_mapping_insert(struct mapping *m,
 			struct svalue *key,
@@ -693,6 +698,10 @@ PMOD_EXPORT void low_mapping_insert(struct mapping *m,
   PREPARE_FOR_DATA_CHANGE2();
   PROPAGATE(); /* propagate after preparing */
   md->val_types |= 1 << val->type;
+  if (overwrite == 2 && key->type == T_OBJECT)
+    /* Should replace the index too. It's only for objects that it's
+     * possible to tell the difference. */
+    assign_svalue (&k->ind, key);
   assign_svalue(& k->val, val);
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
@@ -753,6 +762,9 @@ PMOD_EXPORT void mapping_insert(struct mapping *m,
 {
   low_mapping_insert(m,key,val,1);
 }
+
+/* Inline the above in this file. */
+#define mapping_insert(M, KEY, VAL) low_mapping_insert ((M), (KEY), (VAL), 1)
 
 PMOD_EXPORT union anything *mapping_get_item_ptr(struct mapping *m,
 				     struct svalue *key,
@@ -1302,7 +1314,7 @@ PMOD_EXPORT struct mapping *mkmapping(struct array *ind, struct array *val)
   m=allocate_mapping(MAP_SLOTS(ind->size));
   i=ITEM(ind);
   v=ITEM(val);
-  for(e=0;e<ind->size;e++) mapping_insert(m, i++, v++);
+  for(e=0;e<ind->size;e++) low_mapping_insert(m, i++, v++, 2);
 
   return m;
 }
@@ -1542,7 +1554,7 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
     
     add_ref(md);
     NEW_MAPPING_LOOP(md)
-      mapping_insert(ret, &k->ind, &k->val);
+      low_mapping_insert(ret, &k->ind, &k->val, 2);
     free_mapping_data(md);
   }
 #ifdef PIKE_DEBUG
@@ -1813,7 +1825,7 @@ PMOD_EXPORT void f_aggregate_mapping(INT32 args)
 
   m=allocate_mapping(MAP_SLOTS(args / 2));
 
-  for(e=-args;e<0;e+=2) mapping_insert(m, Pike_sp+e, Pike_sp+e+1);
+  for(e=-args;e<0;e+=2) low_mapping_insert(m, Pike_sp+e, Pike_sp+e+1, 2);
   pop_n_elems(args);
 #ifdef PIKE_DEBUG
   if(d_flag)
@@ -1873,7 +1885,7 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
     Pike_sp++;
     dmalloc_touch_svalue(Pike_sp-1);
     
-    mapping_insert(ret, Pike_sp-2, Pike_sp-1);
+    low_mapping_insert(ret, Pike_sp-2, Pike_sp-1, 2);
     pop_n_elems(2);
   }
   md->valrefs--;
