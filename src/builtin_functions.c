@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.182 1999/08/19 23:49:46 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.183 1999/09/06 11:12:08 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4619,6 +4619,193 @@ void f_string_count(INT32 args)
    push_int(c);
 }
 
+void f_inherit_list(INT32 args)
+{
+  struct program *p;
+  struct svalue *arg;
+  struct object *par;
+  int parid,e,q=0;
+
+  get_all_args("inherit_list",args,"%*",&arg);
+  if(sp[-args].type == T_OBJECT)
+    f_object_program(1);
+  
+  p=program_from_svalue(arg);
+  if(!p) 
+    SIMPLE_BAD_ARG_ERROR("inherit_list", 1, "program");
+
+  if(arg->type == T_FUNCTION)
+  {
+    par=arg->u.object;
+    parid=arg->subtype;
+  }else{
+    par=0;
+    parid=-1;
+  }
+
+  check_stack(p->num_inherits);
+  for(e=0;e<p->num_inherits;e++)
+  {
+    struct inherit *in=p->inherits+e;
+    if(in->inherit_level==1)
+    {
+      if(in->parent_offset)
+      {
+	struct inherit *inherit=in;
+	int accumulator;
+	struct object *o=par;
+	int i;
+
+	o=par;
+	i=in->parent_identifier;
+	accumulator=inherit->parent_offset - 1;
+	while(accumulator--)
+	{
+	  struct program *p;
+	  if(inherit->parent_offset)
+	  {
+	    i=o->parent_identifier;
+	    o=o->parent;
+	    accumulator+=inherit->parent_offset-1;
+	  }else{
+	    i=inherit->parent_identifier;
+	    o=inherit->parent;
+	  }
+	  if(!o || !o->prog || i<0) break;
+	  inherit=INHERIT_FROM_INT(o->prog, i);
+	}
+	if(o && o->prog && i>=0)
+	{
+	  ref_push_object(o);
+	  sp[-1].subtype=i;
+	  sp[-1].type=T_FUNCTION;
+#ifdef PIKE_DEBUG
+	  if(program_from_svalue(sp-1) != in->prog)
+	    fatal("Programming error in inherit_list!\n");
+#endif
+	  q++;
+	  continue;
+	}
+      }
+
+      if(in->parent && in->parent->prog)
+      {
+	ref_push_object(in->parent);
+	sp[-1].subtype=in->parent_identifier;
+	sp[-1].type=T_FUNCTION;
+#ifdef PIKE_DEBUG
+	if(program_from_svalue(sp-1) != in->prog)
+	  fatal("Programming error in inherit_list!\n");
+#endif
+      }else{
+	ref_push_program(in->prog);
+      }
+      q++;
+    }
+  }
+  f_aggregate(q);
+}
+
+
+void f_program_implements(INT32 args)
+{
+  struct program *p,*p2;
+  int ret;
+  get_all_args("Program.implements",args,"%p%p",&p,&p2);
+
+  ret=implements(p,p2);
+  pop_n_elems(args);
+  push_int(ret);
+}
+
+void f_program_inherits(INT32 args)
+{
+  struct program *p,*p2;
+  struct svalue *arg,*arg2;
+  int ret;
+  get_all_args("Program.inherits",args,"%p%p",&p,&p2);
+
+  ret=!!low_get_storage(p2,p);
+  pop_n_elems(args);
+  push_int(ret);
+}
+
+void f_program_defined(INT32 args)
+{
+  struct program *p;
+  get_all_args("Program.defined",args,"%p",&p);
+
+  if(p && p->num_linenumbers)
+  {
+    char *tmp;
+    INT32 line;
+    if((tmp=get_line(p->program, p, &line)))
+    {
+      struct pike_string *tmp2;
+      tmp2=make_shared_string(tmp);
+      pop_n_elems(args);
+
+      push_string(tmp2);
+      if(line > 1)
+      {
+	push_constant_text(":");
+	push_int(line);
+	f_add(3);
+      }
+      return;
+    }
+  }
+
+  pop_n_elems(args);
+  push_int(0);
+}
+
+void f_function_defined(INT32 args)
+{
+  check_all_args("Function.defined",args,BIT_FUNCTION, 0);
+
+  if(sp[-args].subtype != FUNCTION_BUILTIN &&
+     sp[-args].u.object->prog)
+  {
+    char *tmp;
+    INT32 line;
+    struct identifier *id=ID_FROM_INT(sp[-args].u.object->prog,
+				      sp[-args].subtype);
+    if(IDENTIFIER_IS_PIKE_FUNCTION( id->identifier_flags ) &&
+      id->func.offset != -1)
+    {
+      if((tmp=get_line(sp[-args].u.object->prog->program + id->func.offset,
+		       sp[-args].u.object->prog,
+		       &line)))
+      {
+	struct pike_string *tmp2;
+	tmp2=make_shared_string(tmp);
+	pop_n_elems(args);
+	
+	push_string(tmp2);
+	push_constant_text(":");
+	push_int(line);
+	f_add(3);
+	return;
+      }
+    }
+  }
+
+  pop_n_elems(args);
+  push_int(0);
+  
+}
+
+void f_string_width(INT32 args)
+{
+  struct pike_string *s;
+  int ret;
+  get_all_args("String.width",args,"%S",&s);
+  ret=s->size_shift;
+  pop_n_elems(args);
+  push_int(8 * (1<<ret));
+}
+
 void init_builtin_efuns(void)
 {
   ADD_EFUN("gethrtime", f_gethrtime,tFunc(tOr(tInt,tVoid),tInt), OPT_EXTERNAL_DEPEND);
@@ -4975,6 +5162,12 @@ void init_builtin_efuns(void)
 		      tFuncV(,tMix,tSetvar(1,tMix)),tArr(tVar(1)))),
 	   OPT_TRY_OPTIMIZE);
 		
+  ADD_FUNCTION("inherit_list",f_inherit_list,tFunc(tProgram,tArr(tProgram)),0);
+  ADD_FUNCTION("program_implements",f_program_implements,tFunc(tProgram tProgram,tInt),0);
+  ADD_FUNCTION("program_inherits",f_program_inherits,tFunc(tProgram tProgram,tInt),0);
+  ADD_FUNCTION("program_defined",f_program_defined,tFunc(tProgram,tString),0);
+  ADD_FUNCTION("function_defined",f_function_defined,tFunc(tFunction,tString),0);
+  ADD_FUNCTION("string_width",f_string_width,tFunc(tString,tInt),0);
 
 #ifdef DEBUG_MALLOC
   
