@@ -99,8 +99,18 @@ string low_parse_chapter(Node n, int chapter, void|int section, void|int subsect
 
     case "ul":
     case "ol":
-    case "dl":
       ret += (string)c;
+      break;
+
+    case "dl":
+      ret += "<dl>\n";
+      foreach(c->get_elements(), Node cc) {
+	string tag = cc->get_any_name();
+	if(tag!="dt" && tag!="dd")
+	  error("dl contained element %O.\n", tag);
+	ret += "<" + tag + ">" + parse_text(cc) + "</" + tag + ">\n";
+      }
+      ret += "</dl>";
       break;
 
     case "matrix":
