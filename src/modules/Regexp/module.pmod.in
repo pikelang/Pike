@@ -2,6 +2,8 @@
 
 #pike __REAL_VERSION__
 
+object PCRE=_Regexp_PCRE; // Regexp.PCRE
+
 inherit @module@;
 
 class SimpleRegexp
@@ -78,3 +80,4 @@ string replace(string regexp, string data,
 	       string|function(string:string) transform) {
   return SimpleRegexp(regexp)->replace(data, transform);
 }
+
