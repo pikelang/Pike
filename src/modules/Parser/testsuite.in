@@ -24,6 +24,16 @@ test_any([[
 ]], "a")
 test_any([[
   object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({sort(indices(a))*","});});
+  return p->finish("<t a=b 1=2>")->read();
+]], [["1,a"]])
+test_any([[
+  object p = Parser.HTML();
+  p->add_tag ("t", lambda (object p, mapping a) {return ({sort(values(a))*","});});
+  return p->finish("<t a=b 1=2>")->read();
+]], [["2,b"]])
+test_any([[
+  object p = Parser.HTML();
   p->add_tag ("t", lambda (object p, mapping a) {return p;});
   if (catch {
     return p->finish("<t>")->read();
