@@ -17,6 +17,8 @@ struct list
 
 #define free_list(L) do{ struct list *l_=(L); if(!--l_->refs) really_free_list(l_); }while(0)
 
+#define l_sizeof(L) ((L)->ind->size)
+
 /* Prototypes begin here */
 int list_member(struct list *l, struct svalue *ind);
 void really_free_list(struct list *l);
