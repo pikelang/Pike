@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.25 2000/10/10 00:02:52 hubbe Exp $
+ * $Id: pike_memory.h,v 1.26 2000/12/01 20:11:19 grubba Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -111,5 +111,88 @@ PMOD_EXPORT void memfill(char *to,
 PMOD_EXPORT char *debug_xalloc(size_t size);
 
 #undef BLOCK_ALLOC
+
+#ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
+#define DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(IF, ELSE)	IF
+#else /* !HANDLES_UNALIGNED_MEMORY_ACCESS */
+#define DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(IF, ELSE)	ELSE
+#endif /* HANDLES_UNALIGNED_MEMORY_ACCESS */
+
+#if SIZEOF_CHAR_P == 4
+#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 3)
+#else /* sizeof(char *) != 4 */
+#if SIZEOF_CHAR_P == 8
+#define DIVIDE_BY_2_CHAR_P(X)	(X >>= 4)
+#else /* sizeof(char *) != 8 */
+#define DIVIDE_BY_2_CHAR_P(X)	(X /= 2*sizeof(size_t))
+#endif /* sizeof(char *) == 8 */
+#endif /* sizeof(char *) == 4 */
+
+#define DO_HASHMEM(A, LEN, MLEN)			\
+  do {							\
+    const unsigned char *a = A;				\
+    size_t len = LEN;					\
+    size_t mlen = MLEN;					\
+    size_t ret;						\
+  							\
+    ret = 9248339*len;					\
+    if(len<mlen)					\
+      mlen=len;						\
+    else						\
+    {							\
+      switch(len-mlen)					\
+      {							\
+  	default: ret^=(ret<<6) + a[len-7];		\
+  	case 7:						\
+  	case 6: ret^=(ret<<7) + a[len-5];		\
+  	case 5:						\
+  	case 4: ret^=(ret<<4) + a[len-4];		\
+  	case 3: ret^=(ret<<3) + a[len-3];		\
+  	case 2: ret^=(ret<<3) + a[len-2];		\
+  	case 1: ret^=(ret<<3) + a[len-1];		\
+      }							\
+    }							\
+    a += mlen & 7;					\
+    switch(mlen&7)					\
+    {							\
+      case 7: ret^=a[-7];				\
+      case 6: ret^=(ret<<4)+a[-6];			\
+      case 5: ret^=(ret<<7)+a[-5];			\
+      case 4: ret^=(ret<<6)+a[-4];			\
+      case 3: ret^=(ret<<3)+a[-3];			\
+      case 2: ret^=(ret<<7)+a[-2];			\
+      case 1: ret^=(ret<<5)+a[-1];			\
+    }							\
+  							\
+    DO_IF_ELSE_UNALIGNED_MEMORY_ACCESS(			\
+      {							\
+  	size_t *b;					\
+  	b=(size_t *)a;					\
+    							\
+  	for(DIVIDE_BY_2_CHAR_P(mlen);mlen--;)		\
+  	{						\
+  	  ret^=(ret<<7)+*(b++);				\
+  	  ret^=(ret>>6)+*(b++);				\
+  	}						\
+      }							\
+    ,							\
+      for(mlen >>= 3; mlen--;)				\
+      {							\
+  	register size_t t1,t2;				\
+  	t1= a[0];					\
+  	t2= a[1];					\
+  	t1=(t1<<5) + a[2];				\
+  	t2=(t2<<4) + a[3];				\
+  	t1=(t1<<7) + a[4];				\
+  	t2=(t2<<5) + a[5];				\
+  	t1=(t1<<3) + a[6];				\
+  	t2=(t2<<4) + a[7];				\
+  	a += 8;						\
+  	ret^=(ret<<7) + (ret>>6) + t1 + (t2<<6);	\
+      }							\
+    )							\
+  							\
+    return ret;						\
+  } while(0)
 
 #endif
