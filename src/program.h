@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.192 2003/11/19 20:21:58 grubba Exp $
+|| $Id: program.h,v 1.193 2003/11/24 17:28:45 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -164,15 +164,6 @@ union idptr
    * inherit that corresponds to the identifier. */
   ptrdiff_t offset;
 };
-
-#ifdef PIKE_PORTABLE_BYTECODE
-struct pike_tripple
-{
-  INT32 opcode;
-  INT32 arg;
-  INT32 arg2;
-};
-#endif /* PIKE_PORTABLE_BYTECODE */
 
 #define IDENTIFIER_VARIABLE 0
 #define IDENTIFIER_PIKE_FUNCTION 1

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.94 2003/11/19 20:20:31 grubba Exp $
+|| $Id: peep.c,v 1.95 2003/11/24 17:28:45 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.94 2003/11/19 20:20:31 grubba Exp $");
+RCSID("$Id: peep.c,v 1.95 2003/11/24 17:28:45 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -156,7 +156,7 @@ INT32 assemble(int store_linenumbers)
   p_instr *c;
   int reoptimize=!(debug_options & NO_PEEP_OPTIMIZING);
 #ifdef PIKE_PORTABLE_BYTECODE
-  struct pike_tripple *tripples = NULL;
+  struct pike_string *tripples = NULL;
 #endif /* PIKE_PORTABLE_BYTECODE */
 #ifdef PIKE_DEBUG
   INT32 max_pointer=-1;
@@ -187,7 +187,7 @@ INT32 assemble(int store_linenumbers)
 #ifdef PIKE_PORTABLE_BYTECODE
   /* No need to do this for constant evaluations. */
   if (store_linenumbers) {
-    struct pike_tripple *current_tripple;
+    p_wchar2 *current_tripple;
     struct pike_string *previous_file = NULL;
     int previous_line = 0;
     ptrdiff_t num_linedirectives = 0;
@@ -208,42 +208,43 @@ INT32 assemble(int store_linenumbers)
      *         length, num_linedirectives);
      */
       
-    if (!(tripples = malloc(sizeof(struct pike_tripple) *
-			    (length+num_linedirectives)))) {
-      Pike_fatal("Failed to allocate %d tripples (%d + %d).\n",
-		 length+num_linedirectives, length, num_linedirectives);
+    if (!(tripples = begin_wide_shared_string(3*(length+num_linedirectives),
+					      2))) {
+      Pike_fatal("Failed to allocate wide string of length %d 3*(%d + %d).\n",
+		 3*(length+num_linedirectives), length, num_linedirectives);
     }
     previous_file = NULL;
     previous_line = 0;
-    current_tripple = tripples;
+    current_tripple = STR2(tripples);
     for (e = 0; e < length; e++) {
       if (c[e].file != previous_file) {
-	current_tripple->opcode = F_FILENAME;
-	current_tripple->arg = store_prog_string(c[e].file);
-	current_tripple->arg2 = 0;
-	current_tripple++;
+	current_tripple[0] = F_FILENAME;
+	current_tripple[1] = store_prog_string(c[e].file);
+	current_tripple[2] = 0;
+	current_tripple += 3;
 	previous_file = c[e].file;
       }
       if (c[e].line != previous_line) {
-	current_tripple->opcode = F_LINE;
-	current_tripple->arg = c[e].line;
-	current_tripple->arg2 = 0;
-	current_tripple++;
+	current_tripple[0] = F_LINE;
+	current_tripple[1] = c[e].line;
+	current_tripple[2] = 0;
+	current_tripple += 3;
 	previous_line = c[e].line;
       }
-      current_tripple->opcode = c[e].opcode;
-      current_tripple->arg = c[e].arg;
-      current_tripple->arg2 = c[e].arg2;
-      current_tripple++;
+      current_tripple[0] = c[e].opcode;
+      current_tripple[1] = c[e].arg;
+      current_tripple[2] = c[e].arg2;
+      current_tripple += 3;
     }
 #ifdef PIKE_DEBUG
-    if (current_tripple != tripples + length + num_linedirectives) {
-      Pike_fatal("Tripple length mismatch %d != %d (%d + %d)\n",
-		 current_tripple - tripples,
-		 length + num_linedirectives,
+    if (current_tripple != STR2(tripples) + 3*(length + num_linedirectives)) {
+      Pike_fatal("Tripple length mismatch %d != %d 3*(%d + %d)\n",
+		 current_tripple - STR2(tripples),
+		 3*(length + num_linedirectives),
 		 length, num_linedirectives);
     }
 #endif /* PIKE_DEBUG */
+    tripples = end_shared_string(tripples);
   }
   
 #endif /* PIKE_PORTABLE_BYTECODE */
@@ -402,9 +403,9 @@ INT32 assemble(int store_linenumbers)
 #endif
 
 #ifdef PIKE_PORTABLE_BYTECODE
-  /* FIXME: What about LP64? */
   if (store_linenumbers) {
-    ins_data(tripples);
+    ins_data(store_prog_string(tripples));
+    free_string(tripples);
   } else {
     ins_data(NULL);
   }
