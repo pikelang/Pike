@@ -829,7 +829,7 @@ static void eval_instruction(unsigned char *pc)
       }
       
       LOOP(F_INC_LOOP, ++, <);
-      LOOP(F_DEC_LOOP, --, <);
+      LOOP(F_DEC_LOOP, --, >);
       LOOP(F_INC_NEQ_LOOP, ++, !=);
       LOOP(F_DEC_NEQ_LOOP, --, !=);
 
