@@ -18,18 +18,18 @@ case "$1" in
     compile=""
     source=""
 
-    for option
+    while test 0 -lt "$#"
     do
-      case "$option" in
+      case "$1" in
         -c)
 	  compile=yes
 	  ;;
 	-o)
 	  shift
-	  prog="$option"
+	  prog="$1"
 	  ;;
 	-o*)
-	  prog=`echo $option | sed -e's/^-o//'`
+	  prog=`echo $1 | sed -e's/^-o//'`
 	  ;;
 	-[ILRDUx])
 	  shift
@@ -38,9 +38,10 @@ case "$1" in
 	  ;;
 	*)
 	  shift
-	  source="`echo \"$optioin\" | sed -e 's:^.*/\([^/]*\)$:\\1:'`"
+	  source="`echo \"$1\" | sed -e 's:^.*/\([^/]*\)$:\\1:'`"
 	  ;;
       esac
+      shift
     done
 
     if [ yes = "$compile" -a a.out = "$prog" ]; then
