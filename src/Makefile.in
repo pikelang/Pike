@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.153 1999/09/10 00:10:44 hubbe Exp $
+# $Id: Makefile.in,v 1.154 1999/09/14 22:50:22 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -217,7 +217,7 @@ force :
 
 # install
 install: pike hilfe pike-module aclocal
-	@$(RUNPIKE) $(TMP_BINDIR)/install.pike \
+	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --new-style \
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
@@ -410,7 +410,7 @@ just_verify: module_testsuites testsuite master.pike
 
 tinstall: aclocal master.pike
 	rm -rf test-install
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)"
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike --new-style pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)"
 
 
 verify: module_testsuites testsuite tinstall
