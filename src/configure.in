@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.80 1997/04/11 21:55:24 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.81 1997/04/15 03:47:42 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -516,7 +516,7 @@ int main()
 
       AC_MSG_CHECKING(for pthread_attr_setstacksize)
       AC_CACHE_VAL(pike_cv_have_pthread_attr_setstacksize,[
-        AC_TRY_COMPILE([#include <pthread.h>
+        AC_TRY_LINK([#include <pthread.h>
           void foo(pthread_attr_t*x) { pthread_attr_setstacksize(x, 1024*1024); }
         ],[],[
 	  pike_cv_have_pthread_attr_setstacksize=yes
@@ -533,7 +533,7 @@ int main()
 
       AC_MSG_CHECKING(for pthread_yield)
       AC_CACHE_VAL(pike_cv_have_pthread_yield,[
-        AC_TRY_COMPILE([#include <pthread.h>
+        AC_TRY_LINK([#include <pthread.h>
           void foo(void) { pthread_yield(); }
         ],[],[
 	  pike_cv_have_pthread_yield=yes
@@ -550,7 +550,7 @@ int main()
 
       AC_MSG_CHECKING(for pthread_cond_init)
       AC_CACHE_VAL(pike_cv_have_pthread_cond_init,[
-        AC_TRY_COMPILE([#include <pthread.h>
+        AC_TRY_LINK([#include <pthread.h>
           void foo(pthread_cond_t*x, pthread_condattr_t*y) { pthread_cond_init(x,y); }
         ],[],[
 	  pike_cv_have_pthread_cond_init=yes
@@ -567,7 +567,7 @@ int main()
 
       AC_MSG_CHECKING(if pthread_condattr_default is defined)
       AC_CACHE_VAL(pike_cv_have_pthread_condattr_default,[
-        AC_TRY_COMPILE([#include <pthread.h>
+        AC_TRY_LINK([#include <pthread.h>
           void foo(pthread_cond_t *bar) { pthread_cond_init(bar, pthread_condattr_default); }
         ],[],[
 	  pike_cv_have_pthread_condattr_default=yes
