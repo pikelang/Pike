@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.136 2001/09/24 16:44:06 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.137 2001/09/27 20:45:57 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -1898,7 +1898,6 @@ unsigned gc_touch_all_strings(void)
   }
   return n;
 }
-#endif
 
 void gc_mark_all_strings(void)
 {
@@ -1910,6 +1909,7 @@ void gc_mark_all_strings(void)
     for(p=base_table[e];p;p=p->next) gc_is_referenced(p);
   }
 }
+#endif
 
 struct pike_string *next_pike_string (struct pike_string *s)
 {
