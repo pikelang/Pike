@@ -1,5 +1,5 @@
 //
-// $Id: LMTP.pmod,v 1.10 2004/06/02 12:13:24 kiwi Exp $
+// $Id: LMTP.pmod,v 1.11 2004/06/04 17:13:03 vida Exp $
 //
 
 #pike __REAL_VERSION__
@@ -51,7 +51,7 @@ class Connection {
 	err = catch(check = cfg->cb_data(copy_value(message), mailfrom, recipient));
       if(err)
       {
-	outcode(554, err[0]);
+	outcode(554, internal_error_name + err[0]);
 	log(describe_backtrace(err));
 	continue;
       }
