@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.517 2002/05/12 01:29:35 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.518 2002/05/24 17:16:18 nilsson Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -278,6 +278,12 @@ test_compile_error([[ float b=17.0; string a; a=b*42; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
 
 test_compile_error([[class F {inherit master()->dirnode;};]]);
+
+// Warnings
+
+test_compile_warning([[ int *a ]])
+test_compile_warning([[ int|float *a ]])
+test_compile_warning([[ [mixed]1 ]])
 
 //
 
@@ -2557,7 +2563,7 @@ class p2 { int foo() { return 2; } };
 class c1 { inherit p1; inherit p2; };
 return c1()->foo();]],2)
 
-test_any([[class foo { int x=random(100); int `<(object o) { return x < o->x; } }; object *o=allocate(100,foo)(); sort(o); for(int e=1;e<100;e++) if(o[e-1]->x > o[e]->x) return e; return -1;]],-1)
+test_any([[class foo { int x=random(100); int `<(object o) { return x < o->x; } }; array(object) o=allocate(100,foo)(); sort(o); for(int e=1;e<100;e++) if(o[e-1]->x > o[e]->x) return e; return -1;]],-1)
 
 test_any([[
   mixed ret=({});
@@ -2695,7 +2701,7 @@ test_eq([[class c { int `()(){ return 4711; } }()(); ]],4711)
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_compile_error([[class T{void p(object e,object f){lambda::create(f);}}]])
-test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
+test_eval_error(array foo=({}); return mkmapping(foo,({1})); )
 test_compile_error([[mapping (string:array(string:string)) foo=([]); ]])
 test_compile_error([[int a() { switch(random(2)) { case 3: if(random(2)) { case 0: return 1; } else { case 1: return 2; } } }]])
 
@@ -3316,7 +3322,7 @@ cond([[all_constants()->thread_create]],
   test_any([[ array data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(array data) {object o=data[1]->lock(); destruct(data[3]); sleep(10); data[0]=1; destruct(o);  },data); object l=data[2]->lock(1); object ll=data[1]->lock(); return data[0]; ]],1)
   test_any([[
 array data=({1, Thread.Mutex(), Thread.Condition(), 0});
-for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(mixed *data) {
+for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(array data) {
   for(int e=0;e<1000;e++) { object o=data[1]->lock(); data[0]*=2;
     for(int d=0;d<5;d++) { data[0]--; data[0]*=2; } data[0]--; destruct(o); }
    data[3]--; data[2]->signal();}, data);}
@@ -8391,7 +8397,7 @@ function reference=lambda(string x, array(string) a, array(string) b)
       base+=({ base[ random(sizeof(base))] + random(10) });
 
     base=Array.uniq(base);
-    string *to=(array(string))Array.map(base,hash);
+    array(string) to=(array(string))Array.map(base,hash);
 
     string text="";
     for(int d=0;d<1+random(random(50));d++)
@@ -8449,35 +8455,37 @@ test_true(arrayp(rusage()))
 test_true(sizeof(rusage())>28)
 
 // - has_index
-test_false([[ has_index([mixed] ({}), 0) ]])
-test_false([[ has_index([mixed] ({}), "foo") ]])
-test_false([[ has_index([mixed] ({ "a" }), -1) ]])
-test_false([[ has_index([mixed] ({ "a" }), "a") ]])
-test_true([[ has_index([mixed] ({ "a" }), 0) ]])
-test_false([[ has_index([mixed] ({ "a" }), 1) ]])
-test_true([[ has_index([mixed] ({ "a", "b" }), 1) ]])
-test_false([[ has_index([mixed] ([ "a":"A" ]), 4711) ]])
-test_true([[ has_index([mixed] ([ "a":"A" ]), "a") ]])
-test_false([[ has_index([mixed] ([ "a":"A" ]), "A") ]])
-test_true([[ has_index([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "b") ]])
-test_false([[ has_index([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "B") ]])
-test_false([[ has_index((class {})(), "foo") ]])
-test_true([[has_index((class{array _indices(){return({"a","b"});}})(),"b")]])
+define(test_has_index,[[test_true([[mixed foo=$1; return has_index(foo,$2)==$3;]])]])
+test_has_index([[ ({}) ]],0,0)
+test_has_index([[ ({}) ]],"foo",0)
+test_has_index([[ ({ "a" }) ]],-1,0)
+test_has_index([[ ({ "a" }) ]],"a",0)
+test_has_index([[ ({ "a" }) ]],0,1)
+test_has_index([[ ({ "a" }) ]],1,0)
+test_has_index([[ ({ "a", "b" }) ]],1,1)
+test_has_index([[ ([ "a":"A" ]) ]],4711,0)
+test_has_index([[ ([ "a":"A" ]) ]],"a",1)
+test_has_index([[ ([ "a":"A" ]) ]],"A",0)
+test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",1)
+test_has_index([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",0)
+test_has_index([[ class {}() ]],"foo",0)
+test_has_index([[ (class{array _indices(){return({"a","b"});}})() ]],"b",1)
 
 // - has_value
-test_false([[ has_value([mixed] ({}), 0) ]])
-test_false([[ has_value([mixed] ({}), "foo") ]])
-test_false([[ has_value([mixed] ({ "a" }), -1) ]])
-test_true([[ has_value([mixed] ({ "a" }), "a") ]])
-test_false([[ has_value([mixed] ({ "a" }), 0) ]])
-test_true([[ has_value([mixed] ({ "a", "b" }), "b") ]])
-test_false([[ has_value([mixed] ([ "a":"A" ]), 4711) ]])
-test_true([[ has_value([mixed] ([ "a":"A" ]), "A") ]])
-test_false([[ has_value([mixed] ([ "a":"A" ]), "a") ]])
-test_true([[ has_value([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "B") ]])
-test_false([[ has_value([mixed] ([ "a":"A", "b":"B", "c":"C" ]), "b") ]])
-test_false([[ has_value((class {})(), "foo") ]])
-test_true([[has_value((class{array _values(){return({"a","b"});}})(),"b")]])
+define(test_has_value,[[test_true([[mixed foo=$1; return has_value(foo,$2)==$3;]])]])
+test_has_value([[ ({}) ]],0,0)
+test_has_value([[ ({}) ]],"foo",0)
+test_has_value([[ ({ "a" }) ]],-1,0)
+test_has_value([[ ({ "a" }) ]],"a",1)
+test_has_value([[ ({ "a" }) ]],0,0)
+test_has_value([[ ({ "a", "b" }) ]],"b",1)
+test_has_value([[ ([ "a":"A" ]) ]],4711,0)
+test_has_value([[ ([ "a":"A" ]) ]],"a",0)
+test_has_value([[ ([ "a":"A" ]) ]],"A",1)
+test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"B",1)
+test_has_value([[ ([ "a":"A", "b":"B", "c":"C" ]) ]],"b",0)
+test_has_value([[ class {}() ]],"foo",0)
+test_has_value([[ (class{array _values(){return({"a","b"});}})() ]],"b",1)
 
 // - search
 test_eval_error(return search("foolbar","o",-10))
@@ -9904,4 +9912,3 @@ test_do(add_constant("call_out_cb"))
 test_do(_do_call_outs())
 test_false(Process.system(RUNPIKE+" SRCDIR/test_co.pike"))
 test_do_([[ catch { _do_call_outs(); }]])
-
