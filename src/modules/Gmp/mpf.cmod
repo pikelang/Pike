@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpf.cmod,v 1.20 2002/12/02 09:39:19 grubba Exp $
+|| $Id: mpf.cmod,v 1.21 2002/12/03 13:09:45 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpf.cmod,v 1.20 2002/12/02 09:39:19 grubba Exp $");
+RCSID("$Id: mpf.cmod,v 1.21 2002/12/03 13:09:45 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -125,7 +125,7 @@ PIKECLASS mpf
     }
   
   /* FIXME: */
-  /*! @decl static void create(void|int|string|float|object x@
+  /*! @decl static void create(void|int|string|float|object x, @
    *!                          void|int(0..) precision)
    *! @decl static void create(string x, int(0..) precision, int(2..36) base)
    */
