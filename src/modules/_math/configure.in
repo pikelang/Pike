@@ -1,6 +1,7 @@
-# $Id: configure.in,v 1.7 1999/03/31 13:12:37 mirar fake $
+# $Id: configure.in,v 1.8 1999/04/24 13:47:49 grubba Exp $
 AC_INIT(math.c)
 
+AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 

@@ -1,5 +1,6 @@
-# $Id: configure.in,v 1.6 1998/09/20 08:33:16 hubbe Exp $
+# $Id: configure.in,v 1.7 1999/04/24 13:42:48 grubba Exp $
 AC_INIT(call_out.c)
+AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
