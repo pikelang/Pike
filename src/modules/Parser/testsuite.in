@@ -1083,3 +1083,10 @@ test_any([[{
   p->_set_data_callback (lambda () {});
   return p->finish ("<x>")->read();
 }]], "<x>");
+test_any(
+[[
+  object p = Parser.HTML();
+  p->add_container ("foo", lambda () {return "";});
+  p->_set_data_callback (lambda () {});
+  return p->finish ("<foo>")->read();
+]], "");

@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.133 2002/02/13 04:47:17 mast Exp $ */
+/* $Id: html.c,v 1.134 2003/09/01 14:43:09 mast Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -3028,7 +3028,7 @@ static newstate do_try_feed(struct parser_html_storage *this,
       }
       /* at end, entity or tag */
 
-      if (!*feed)
+      if (!*feed || cdst == dst->s->len)
       {
 	 DEBUG((stderr,"%*d do_try_feed end\n",
 		this->stack_count,this->stack_count));
