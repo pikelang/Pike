@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.2 2000/03/21 15:52:20 peter Exp $");
+RCSID("$Id: tim.c,v 1.3 2000/03/22 16:59:14 peter Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -33,9 +33,6 @@ extern struct program *image_program;
 **! 	TIM is the framebuffer format of the PSX game system.
 **! 	It is a simple, uncompressed, truecolor or CLUT format. 
 */
-
-//FIXME: Add to ANY.
-//FIXME: header_only doesn't get the width and height.
 
 /*
 **! method object decode(string data)
@@ -66,7 +63,8 @@ extern struct program *image_program;
 #define FLAG_CLUT               8
 
 static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
-			    INT32 stride, unsigned int h, unsigned int w)
+			    unsigned char *clut, unsigned int h,
+			    unsigned int w)
 {
   INT32 cnt = h * w;
   switch(attr&7) {
@@ -80,22 +78,78 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
        dst++;
      }
      break;
+   case MODE_CLUT4:
+     cnt = cnt/2;
+     while(cnt--) {
+       int i, cluti = (src[0]&0xf)*2;
+       unsigned int p;
+
+       for(i=0; i<2; i++)
+       {
+	 p = clut[cluti]|(clut[cluti+1]<<8);
+         dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
+         dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
+         dst->r = ((p&0x001f)<<3)|((p&0x001c)>>2);
+         dst++;
+         cluti = (src[0]>>4)*2;
+       }
+       src++;
+     }
+     break;
+   case MODE_CLUT8:
+     while(cnt--) {
+       int i, cluti = (src[0])*2;
+       unsigned int p = clut[cluti]|(clut[cluti+1]<<8);
+
+       dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
+       dst->g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
+       dst->r = ((p&0x001f)<<3)|((p&0x001c)>>2);
+       dst++;
+       src++;
+     }
+     break;
   }
 }
 
-static void pvr_decode_alpha_rect(INT32 attr, unsigned char *src,
-				  rgb_group *dst, INT32 stride,
+static void tim_decode_alpha_rect(INT32 attr, unsigned char *src,
+				  rgb_group *dst, unsigned char *clut, 
 				  unsigned int h, unsigned int w)
 {
   INT32 cnt = h * w;
   switch(attr&7) {
    case MODE_DC15:
      while(cnt--) {
-       if(src[1]&0x80)
+       if(!(src[1]>>15))
 	 dst->b = dst->g = dst->r = ~0;
        else
 	 dst->b = dst->g = dst->r = 0;
        src+=2;
+       dst++;
+     }
+     break;
+   case MODE_CLUT4:
+     cnt = cnt/2;
+     while(cnt--) {
+       if(!(clut[(src[1]&0xf)*2]>>15))
+	 dst->b = dst->g = dst->r = ~0;
+       else
+	 dst->b = dst->g = dst->r = 0;
+       dst++;
+       if(!(clut[(src[1]>>4)*2]>>15))
+	 dst->b = dst->g = dst->r = ~0;
+       else
+	 dst->b = dst->g = dst->r = 0;
+       src++;
+       dst++;
+     }
+     break;
+   case MODE_CLUT8:
+     while(cnt--) {
+       if(!(clut[(src[1])*2]>>15))
+	 dst->b = dst->g = dst->r = ~0;
+       else
+	 dst->b = dst->g = dst->r = 0;
+       src++;
        dst++;
      }
      break;
@@ -104,105 +158,148 @@ static void pvr_decode_alpha_rect(INT32 attr, unsigned char *src,
 
 void img_tim_decode(INT32 args, int header_only)
 {
-   struct pike_string *str;
-   unsigned char *s;
-   int n=0, hasalpha=0, bpp=0;
-   INT32 len, attr, bsize;
-   unsigned int h, w, x;
+  struct pike_string *str;
+  unsigned char *s, *clut;
+  int n=0, hasalpha=0, bitpp=0, bsize=0;
+  INT32 len, attr;
+  unsigned int h, w, i;
+  
+  get_all_args("Image.TIM._decode", args, "%S", &str);
+  clut=s=(unsigned char *)str->str;
+  clut+=20;
+  len=str->len;
+  pop_n_elems(args-1);
+  
+  if(len < 12 || (s[0] != 0x10 || s[2] != 0 || s[3] != 0))
+    error("not a TIM texture\n");
+  else if(s[2] != 0)
+    error("unknown version of TIM texture\n");     
 
-   get_all_args("Image.TIM._decode", args, "%S", &str);
-   s=(unsigned char *)str->str;
-   len=str->len;
-   pop_n_elems(args-1);
+  s += 4; len -= 4;
+  
+  push_text("type");
+  push_text("image/x-tim");
+  n++;
+  
+  attr = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);
+  if(attr&0xfffffff0)
+    error("unknown flags in TIM texture\n");
+  
+  s += 4; len -= 4;
 
-   if(len < 12 || (s[0] != 0x10 || s[2] != 0 || s[3] != 0))
-     error("not a TIM texture\n");
-   else if(s[2] != 0)
-     error("unknown version of TIM texture\n");     
+  push_text("attr");
+  push_int(attr);
+  n++;
+  
+  if(attr&FLAG_CLUT) {
+    bsize = s[0]|(s[1]<<8)|(s[2]<<16)|(s[3]<<24);   
+#ifdef TIM_DEBUG
+    printf("bsize: %d\n", bsize);
+#endif
+    s += bsize; len -= bsize;
+  }
 
-   push_text("type");
-   push_text("image/x-tim");
-   n++;
+  /* FIXME: Unknown what this comes from */
+  s += 4; len -= 4;
 
-   attr = s[4]|(s[5]<<8)|(s[6]<<16)|(s[7]<<24);
-   if(attr&0xfffffff0)
-     error("unknown flags in TIM texture\n");
+  switch(attr&7) {
+   case MODE_DC15:
+#ifdef TIM_DEBUG
+     printf("15bit\n");
+     printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
+#endif
+     s += 4; len -= 4;
+     w = s[0]|(s[1]<<8);
+     h = s[2]|(s[3]<<8);
+     s += 4; len -= 4;
+     bitpp = 16;
+     hasalpha = 1;
+     break;
+   case MODE_DC24:
+#ifdef TIM_DEBUG
+     printf("24bit\n");
+#endif
+     error("24bit TIMs not supported. Please send an example to peter@roxen.com\n");
+   case MODE_CLUT4:
+     //dx and dy word ignored
+#ifdef TIM_DEBUG
+     printf("CLUT4\n");
+     printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
+#endif
+     s += 4; len -= 4;
+     w = (s[0]|(s[1]<<8))*4;
+     h = s[2]|(s[3]<<8);
+     s += 4; len -= 4;
+     bitpp = 4;
+     hasalpha = 1;
+     break;    
+   case MODE_CLUT8:
+     //dx and dy word ignored
+#ifdef TIM_DEBUG
+     printf("CLUT8\n");
+     printf("dx: %d, dy: %d\n", s[0]|(s[1]<<8), s[2]|(s[3]<<8));
+#endif
+     s += 4; len -= 4;
+     w = (s[0]|(s[1]<<8))*2;
+     h = s[2]|(s[3]<<8);
+     s += 4; len -= 4;
+     bitpp = 8;
+     hasalpha = 1;
+     break;
+   case MODE_MIXED:
+#ifdef TIM_DEBUG
+     printf("Mixed\n");
+#endif
+     error("mixed TIMs not supported\n");
+   default:
+     error("unknown TIM format\n");
+  }
+  
+  push_text("xsize");
+  push_int(w);
+  n++;   
+  push_text("ysize");
+  push_int(h);
+  n++;   
 
-   push_text("attr");
-   push_int(attr);
-   n++;
+#ifdef TIM_DEBUG
+  printf("w: %d, h: %d\n", w, h);
+#endif  
 
-   /* note: bsize if bogus when no clut i used. */
-   bsize = s[8]|(s[9]<<8)|(s[10]<<16)|(s[11]<<24);   
-   printf("bsize: %d\n", bsize);
-
-   if(attr&FLAG_CLUT)
-     error("TIM with CLUT not supported\n");
+  if(!header_only) {
+    struct object *o;
+    struct image *img;
+    
+    if(len < (INT32)(bitpp*(h*w)/8))
+      error("short pixel data\n");
+    
+    push_text("image");
+    push_int(w);
+    push_int(h);
+    o=clone_object(image_program,2);
+    img=(struct image*)get_storage(o,image_program);
+    push_object(o);
+    n++;
+    
+    tim_decode_rect(attr, s, img->img, clut, h, w);
+    
+    if(hasalpha) {
+      push_text("alpha");
+      push_int(w);
+      push_int(h);
+      o=clone_object(image_program,2);
+      img=(struct image*)get_storage(o,image_program);
+      push_object(o);
+      n++;
       
-   switch(attr&7) {
-    case MODE_DC15:
-      //dx and dy word ignored
-      w = s[16]|(s[17]<<8);
-      h = s[18]|(s[19]<<8);
-      bpp = 2;
-      hasalpha = 1;
-      s += 20;
-      len -= 20;
-      break;
-    case MODE_DC24:
-      error("24bit TIMs not supported\n");
-    case MODE_CLUT4:
-    case MODE_CLUT8:
-      error("palette TIMs not supported\n");
-    case MODE_MIXED:
-      error("mixed TIMs not supported\n");
-    default:
-      error("unknown TIM format\n");
-   }
-
-   push_text("xsize");
-   push_int(w);
-   n++;   
-   push_text("ysize");
-   push_int(h);
-   n++;   
-   printf("w: %d, h: %d\n", w, h);
-   
-   if(!header_only) {
-     struct object *o;
-     struct image *img;
-     INT32 clut=0;
-
-     if(len < (INT32)(bpp*(h*w)))
-       error("short pixel data\n");
-
-     push_text("image");
-     push_int(w);
-     push_int(h);
-     o=clone_object(image_program,2);
-     img=(struct image*)get_storage(o,image_program);
-     push_object(o);
-     n++;
-     
-     tim_decode_rect(attr, s, img->img, 0, h, w);
-
-     if(hasalpha) {
-       push_text("alpha");
-       push_int(w);
-       push_int(h);
-       o=clone_object(image_program,2);
-       img=(struct image*)get_storage(o,image_program);
-       push_object(o);
-       n++;
-       
-       pvr_decode_alpha_rect(attr, s, img->img, 0, h, w);
-     }
-   }
-
-   f_aggregate_mapping(2*n);
-
-   stack_swap();
-   pop_stack();
+      tim_decode_alpha_rect(attr, s, img->img, clut, h, w);
+    }
+  }
+  
+  f_aggregate_mapping(2*n);
+  
+  stack_swap();
+  pop_stack();
 }
 
 static void image_tim_f_decode(INT32 args)
