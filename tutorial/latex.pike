@@ -31,7 +31,7 @@ string packages =
 
 object wcache=.Cache("latex_wcache");
 
-array(float) find_max_width(array(SGML) data)
+array(float) find_line_width(array(SGML) data)
 {
   array(string) keys=Array.map(data,Sgml.get_text);
 
@@ -65,10 +65,13 @@ array(float) find_max_width(array(SGML) data)
 	  Stdio.write_file("___tmp.tex",x);
 	  string tmp=Process.popen("latex '\\scrollmode\\input ___tmp.tex'");
 
-	  foreach(keys, key)
+	  sscanf(tmp,"%{%*slength=%f%}",array(array(float)) lengths);
+//	  werror("%O\n",lengths);
+//	  werror("%O\n",keys);
+	  for(int e=0;e<sizeof(keys);e++)
 	    {
-	      sscanf(tmp,"%*slength=%f%s",float w, tmp);
-	      wcache[key]=w / 65536; // convert to points
+	      wcache[keys[e]]=lengths[e][0] / 65536; // convert to points
+//	      werror("Width of %s is %f\n",key, lengths[e][0]/65536);
 	    }
 	  
 	  break;
@@ -78,61 +81,216 @@ array(float) find_max_width(array(SGML) data)
   return rows(wcache, keys);
 }
 
+array(SGML) split_lines(SGML data)
+{
+  array(SGML) lines=({ ({}) });
+
+  for(int e=0;e<sizeof(data);e++)
+  {
+    TAG tag=data[e];
+    if(objectp(tag))
+    {
+      switch(tag->tag)
+      {
+	case "hr":
+	  break;
+	  
+	case "br":
+	  lines+=({ ({}) });
+	  break;
+
+	case "center":
+	case "p":
+	  lines+=({ ({}) });
+	  if(tag->data) lines+=split_lines(tag->data);
+	  lines+=({ ({}) });
+	  break;
+
+	case "h1":
+	case "h2":
+	case "h3":
+	case "h4":
+	case "h5":
+	case "h6":
+	  lines+=({ ({}) });
+	  foreach(split_lines(tag->data),SGML data)
+	    lines+=({ ({ Sgml.Tag(tag->tag,
+				  tag->params,
+				  tag->pos, 
+				  data) }) });
+	  lines+=({ ({}) });
+	  break;
+
+	case "ex_keyword":
+	case "smallcaps":
+	case "sub":
+	case "sup":
+	case "tt":
+	case "ex_meta":
+	case "i":
+	case "b":
+	case "a":
+	{
+	  array tmp=split_lines(tag->data);
+	  lines[-1]+= ({ Sgml.Tag(tag->tag,
+				  tag->params,
+				  tag->pos, 
+				  tmp[0]) });
+	  foreach(tmp[1..],SGML data)
+	    lines+=({ ({ Sgml.Tag(tag->tag,
+				  tag->params,
+				  tag->pos, 
+				  data) }) });
+	  break;
+	}
+
+	case "link":
+	  if(tag->data) 
+	  {
+	    array tmp=split_lines(tag->data);
+	    lines[-1]+=tmp[0];
+	    lines+=tmp[1..];
+	  }
+	  break;
+
+	default:
+	  lines[-1]+=({tag});
+
+      }
+    }else{
+      lines[-1]+=({tag});
+    }
+  }
+
+  return lines;
+}
+
+array(float) find_max_width(array(SGML) datas)
+{
+  array(SGML) pieces=({});
+
+  foreach(datas, SGML data)
+  {
+    pieces+=({ split_lines(data)  });
+  }
+
+  array(float) widths=find_line_width(pieces * ({}));
+  int pos=0;
+  array(float) ret=allocate(sizeof(pieces));
+  for(int q=0;q<sizeof(pieces);q++)
+  {
+    int num=sizeof(pieces[q]);
+    ret[q]=max(0.0,@widths[pos..pos+num-1]);
+    pos+=num;
+  }
+//  werror("%O\n%O\n%O\n",widths,pieces,ret);
+  if(pos != sizeof(widths))
+    error("Major internal error!\n");
+  return ret;
+}
+
 
 // FIXME: improve this!!!
+
+array(SGML) split_words(SGML data)
+{
+  array(SGML) words=({ ({}) });
+
+  for(int e=0;e<sizeof(data);e++)
+  {
+    TAG tag=data[e];
+    if(objectp(tag))
+    {
+      switch(tag->tag)
+      {
+	case "hr":
+	  break;
+	  
+	case "wbr":
+	  words[-1]+=({"-"});
+	case "br":
+	  words+=({ ({}) });
+	  break;
+
+	case "center":
+	case "p":
+	  words+=({ ({}) });
+	  if(tag->data) words+=split_words(tag->data);
+	  words+=({ ({}) });
+	  break;
+
+	case "h1":
+	case "h2":
+	case "h3":
+	case "h4":
+	case "h5":
+	case "h6":
+	  words+=({ ({}) });
+	  foreach(split_words(tag->data),SGML data)
+	    words+=({ ({ Sgml.Tag(tag->tag,
+				  tag->params,
+				  tag->pos, 
+				  data) }) });
+	  words+=({ ({}) });
+	  break;
+
+	case "ex_keyword":
+	case "smallcaps":
+	case "sub":
+	case "sup":
+	case "ex_meta":
+	case "i":
+	case "tt":
+	case "b":
+	case "a":
+	{
+	  array tmp=split_words(tag->data);
+	  words[-1]+=({ Sgml.Tag(tag->tag,
+				  tag->params,
+				  tag->pos, 
+				  tmp[0]) });
+	  foreach(tmp[1..],SGML data)
+	    words+=({ ({ Sgml.Tag(tag->tag,
+				  tag->params,
+				  tag->pos, 
+				  data) }) });
+	  break;
+	}
+
+	case "link":
+	  if(tag->data) 
+	  {
+	    array tmp=split_words(tag->data);
+	    words[-1]+=tmp[0];
+	    words+=tmp[1..];
+	  }
+	  break;
+
+
+
+	default:
+	  words[-1]+=({tag});
+
+      }
+    }else{
+      array tmp=replace(tag,"\n"," ")/" ";
+      words[-1]+=({ tmp[0] });
+      foreach(tmp[1..], string word) words+=({ ({word}) });
+    }
+  }
+
+  return words;
+}
+
+
 array(float) find_min_width(array(SGML) datas)
 {
   array(SGML) pieces=({});
 
   foreach(datas, SGML data)
-  { 
-    SGML z=({});
-    
-    for(int e=0;e<sizeof(data);e++)
-    {
-      TAG tag=data[e];
+    pieces+=({ split_words(data) });
 
-      if(stringp(tag))
-      {
-	foreach(tag/" ", string text)
-	  z+=({ ({text}) });
-
-      }else{
-	switch(tag->tag)
-	{
-//       FIXME
-//	  case "tt":
-//	  case "i":
-//	  case "b":
-
-	  case "hr":
-	    break;
-
-	  case "img":
-	  case "tt":
-	  case "image":
-	  case "illustration":
-	    z+=({ ({ tag }) });
-	    break;
-
-	  default:
-	    if(tag->data)
-	    {
-	      data+=tag->data;
-	      z+=({ ({ Sgml.Tag(tag->tag,tag->params,0,({})) }) });
-	    }
-	    else
-	    {
-	      z+=({ ({ Sgml.Tag(tag->tag,tag->params) }) });
-	    }
-	}
-      }
-    }
-
-    pieces+=({z});
-  }
-
-  array(float) widths=find_max_width(pieces * ({}));
+  array(float) widths=find_line_width(pieces * ({}));
   int pos=0;
   array(float) ret=allocate(sizeof(pieces));
   for(int q=0;q<sizeof(pieces);q++)
@@ -354,6 +512,21 @@ string convert_table(TAG table)
     }
   }
 
+#ifdef TABLE_DEBUG
+  for(int row=0;row<sizeof(table);row++)
+  {
+    for(int col=0;col<columns;col++)
+      werror("%15s ",Sgml.get_text( table[row][col]->tag->data )[0..14]);
+    werror("\n");
+    for(int col=0;col<columns;col++)
+      werror("%15f ",maxwidths[row][col]);
+    werror("\n");
+    for(int col=0;col<columns;col++)
+      werror("%15f ",minwidths[row][col]);
+    werror("\n");
+  }
+#endif
+
 //  werror("%O %O\n",minwidths,maxwidths);
 
   array(float) actual_widths=allocate(columns,0.0);
@@ -524,15 +697,35 @@ string convert_table(TAG table)
 
       for(int col=0;col<columns;col+=row[col]->cols)
       {
+	string r="";
 	int cols=row[col]->cols;
-	if(cols > 1) ltxrow+="\\multicolumn{"+cols+"}{l}{";
-	ltxrow+=({
-	    "\\begin{minipage}{"+actual_widths[col]+"pt}\n"+
-	    convert_to_latex(row[col]->tag->data)+
-	    "\\end{minipage}"
-	  });
-	  if(cols > 1) ltxrow+="}";
+	if(cols > 1) r+="\\multicolumn{"+cols+"}{l}{";
+	r+="\\begin{minipage}{"+actual_widths[col]+"pt}\n";
+	switch(row[col]->tag->params->align)
+	{
+	  // FIXME: might need to add \\ to end of each line
+	  case "right":
+	    r+="\\begin{flushright}\n";
+	    r+=convert_to_latex(row[col]->tag->data);
+	    r+="\\end{flushright}\n";
+	    break;
+
+	  // FIXME: might need to add \\ to end of each line
+	  case "center":
+	    r+="\\begin{center}\n";
+	    r+=convert_to_latex(row[col]->tag->data);
+	    r+="\\end{center}\n";
+	    break;
+
+	  default:
+	  case "left":
+	    r+=convert_to_latex(row[col]->tag->data);
+	    break;
 	}
+	r+="\\end{minipage}";
+	if(cols > 1) r+="}";
+	ltxrow+=({r});
+      }
       ret+=ltxrow*" & "+"\\\\\n";
       if(border) ret+="\\hline\n";
     }
@@ -676,9 +869,11 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 	  case "tt": ret+="{\\tt "+convert_to_latex(tag->data)+"}"; break;
 	  case "ex_keyword":
-	  case "b": ret+="{\\bf "+convert_to_latex(tag->data)+"}"; break;
+	  case "b": ret+="\\textbf{"+convert_to_latex(tag->data)+"}"; break;
 	  case "ex_meta":
-	  case "i": ret+="\\emph{"+convert_to_latex(tag->data)+"}"; break;
+
+	    // FIXME: support <emph> and <i> correctly.
+	  case "i": ret+="\\textit{"+convert_to_latex(tag->data)+"}"; break;
 	  case "sub": ret+="$^{"+convert_to_latex(tag->data)+"}$"; break;
 	  case "sup": ret+="$_{"+convert_to_latex(tag->data)+"}$"; break;
 	  case "h1":
@@ -841,11 +1036,16 @@ string convert_to_latex(SGML data, void|int flags)
 	  case "bloackquote":
 	  case "example":
 	  {
-	    array(string) tmp=
-	      convert_to_latex(tag->data)/"\\\\";
+	    // FIXME: this could probably be fixed better with
+	    // a parbox...
+	    string tmp1=convert_to_latex(tag->data);
+	    if(pre) tmp1=replace(tmp1,"\n","\\\\");
+	    array(string) tmp=tmp1/"\\\\";
+
 	    for(int e=0;e<sizeof(tmp);e++)
 	      tmp[e]="\\indent "+tmp[e];
-	    ret+=tmp*"\\\\";
+	    ret+=tmp* (pre ? "\n" : "\\\\");
+
 	    break;
 	  }
 
