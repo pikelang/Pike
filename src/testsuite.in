@@ -1,5 +1,5 @@
 dnl -*- Pike -*-
-test_true([["$Id: testsuite.in,v 1.285 2000/03/09 21:11:37 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.286 2000/03/10 00:45:19 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -114,6 +114,15 @@ test_any([[mapping(string:int) foo;
 	  array(string) bar;
 	  return typeof(rows(foo, bar)); ]],
 	 "array(int)")
+
+test_any([[
+  class Foo {
+    constant zero = 0;
+    mapping(string:array(int)) m;
+    string foo() { return typeof(m[""][zero]); }
+  };
+  return Foo()->foo();
+]], "int")
 
 test_compile_any([[
   constant FOO = 0;
