@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.52 1999/10/26 02:57:57 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.53 1999/10/26 14:40:12 marcus Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1103,34 +1103,42 @@ static void low_pike_sprintf(struct format_stack *fs,
 #ifdef AUTO_BIGNUM
 	if(mask_size)
 	{
-	  INT_TYPE base = 0, i = 0, m, n;
+	  INT_TYPE base = 0, i = 0, m, xbits;
 
-	  switch(EXTRACT_PCHARP(a))
+	  switch(buffer[1])
 	  {
-	  case 'o': base =  8; break;
-	  case 'x': base = 16; break;
-	  case 'X': base = 16; break;
+	  case 'o': base = 3; break;
+	  case 'x': base = 4; break;
+	  case 'X': base = 4; break;
 	  }
 
 	  if(base)
 	  {
-	    for(n = m = 0; n < mask_size && m >= 0; n++)
-	      m = m*base + base-1;
+	    mask_size *= base;
+	    for(m = 0; mask_size>0 && m >= 0; --mask_size)
+	      m = (m<<1)|1;
 
-	    if(tmp < 0)
-	      if(base == 8)
-		for(i = 0; i < mask_size - n; i++)
+	    xbits = mask_size % base;
+	    mask_size /= base;
+
+	    if((tmp &= m) < 0)
+	      if(base == 3)
+		for(i = 0; i < mask_size ; i++)
 		  x[i] = '7';
 	      else
-		for(i = 0; i < mask_size - n; i++)
+		for(i = 0; i < mask_size ; i++)
 		  x[i] = 'f';
 	    
 	    sprintf(x + i, buffer, tmp & m);
 
 	    /* This is done because octal numbers
 	       don't align very well...   /Noring */
-	    if(base == 8 && (tmp & m) < 0 && x[i] == '3')
-	      x[i] = '7';
+	    if(xbits && tmp<0)
+	      if(base == 3)
+		x[i]|=7^(7>>xbits);
+	      else
+		if((x[i]|=15^(15>>xbits))>'9')
+		  x[i]+=(buffer[1]=='X'? 'A'-'9'-1 : 'a'-'9'-1);
 	  }
 	  else
 	    sprintf(x, buffer, tmp);
