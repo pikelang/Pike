@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.54 1999/04/08 22:20:49 hubbe Exp $ */
+/* $Id: colortable.c,v 1.55 1999/04/09 14:16:08 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.54 1999/04/08 22:20:49 hubbe Exp $
+**!	$Id: colortable.c,v 1.55 1999/04/09 14:16:08 per Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.54 1999/04/08 22:20:49 hubbe Exp $");
+RCSID("$Id: colortable.c,v 1.55 1999/04/09 14:16:08 per Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -185,25 +185,20 @@ static void exit_colortable_struct(struct object *obj)
 
 /***************** internal stuff ******************************/
 
-#if 0
+#if 1
 #include <sys/resource.h>
 #define CHRONO(X) chrono(X);
 
 static void chrono(char *x)
 {
-   struct rusage r;
-   static struct rusage rold;
-   getrusage(RUSAGE_SELF,&r);
-   fprintf(stderr,"%s: %ld.%06ld - %ld.%06ld\n",x,
-	   (long)r.ru_utime.tv_sec,(long)r.ru_utime.tv_usec,
-	   
-	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?-1:0)
-		  +r.ru_utime.tv_sec-rold.ru_utime.tv_sec),
-	   (long)(((r.ru_utime.tv_usec-rold.ru_utime.tv_usec<0)?1000000:0)
-		  + r.ru_utime.tv_usec-rold.ru_utime.tv_usec)
-      );
-
-   rold=r;
+  static long long first;
+  static long long last;
+  long long cur;
+  if(!first)
+    last = first = gethrtime();
+  cur=gethrtime();
+  fprintf(stderr, "CHRONO %-20s ... %4.4f (%4.4f)\n",x,(cur-last)/1000000000.0,(cur-first)/1000000000.0);
+  last=cur;
 }
 #else
 #define CHRONO(X)
@@ -1809,13 +1804,30 @@ static rgbl_group dither_ordered_encode(struct nct_dither *dith,
    return rgb;
 }
 
-
-static void dither_dummy_got(struct nct_dither *dith,
-			     int rowpos,
-			     rgb_group s,
-			     rgb_group d)
+static rgbl_group dither_ordered_encode_same(struct nct_dither *dith,
+                                             int rowpos,
+                                             rgb_group s)
 {
-   /* do-nothing */
+   rgbl_group rgb={1,2,3};
+   int i;
+
+   i=(int)(dith->u.ordered.rdiff
+           [((rowpos+dith->u.ordered.rx)&dith->u.ordered.xa)+
+           ((dith->u.ordered.row+dith->u.ordered.ry)&dith->u.ordered.ya)*dith->u.ordered.xs]); 
+   if (i<0)
+   {
+     rgb.r=s.r+i; rgb.r=rgb.r<0?0:rgb.r;
+     rgb.g=s.g+i; rgb.g=rgb.g<0?0:rgb.g;
+     rgb.b=s.b+i; rgb.b=rgb.b<0?0:rgb.b;
+   }
+   else
+   {
+     rgb.r=s.r+i; rgb.r=rgb.r>255?255:rgb.r;
+     rgb.g=s.g+i; rgb.g=rgb.g>255?255:rgb.g;
+     rgb.b=s.b+i; rgb.b=rgb.b>255?255:rgb.b;
+   }
+   return rgb;
+   return rgb;
 }
 
 
@@ -1860,7 +1872,6 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 dith->u.randomcube=THIS->du.randomcube;
 
 	 dith->encode=dither_randomcube_encode;
-	 dith->got=dither_dummy_got;
 
 	 return 1;
 
@@ -1868,7 +1879,6 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 dith->u.randomcube=THIS->du.randomcube;
 
 	 dith->encode=dither_randomgrey_encode;
-	 dith->got=dither_dummy_got;
 
 	 return 1;
 
@@ -1901,8 +1911,14 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 
 	 dith->u.ordered.row=0;
 
-	 dith->encode=dither_ordered_encode;
-	 dith->got=dither_dummy_got;
+         if (nct->du.ordered.same)
+         {
+           dith->encode=dither_ordered_encode_same;
+           dith->u.ordered.xa=dith->u.ordered.xs-1;
+           dith->u.ordered.ya=dith->u.ordered.ys-1;
+         }
+         else
+           dith->encode=dither_ordered_encode;
 	 dith->newline=dither_ordered_newline;
 
 	 return 1;
@@ -4152,6 +4168,14 @@ void image_colortable_ordered(INT32 args)
    THIS->du.ordered.rdiff=ordered_make_diff(errors,xsize*ysize,r);
    THIS->du.ordered.gdiff=ordered_make_diff(errors,xsize*ysize,g);
    THIS->du.ordered.bdiff=ordered_make_diff(errors,xsize*ysize,b);
+
+   if (r==g && g==b && 
+       THIS->du.ordered.rx==THIS->du.ordered.gx && THIS->du.ordered.gx==THIS->du.ordered.bx) 
+   {
+     THIS->du.ordered.same=1;
+   }
+   else
+     THIS->du.ordered.same=0;
 
    free(errors);
 

@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.6 1999/04/07 22:22:15 mirar Exp $ */
+/* $Id: colortable_lookup.h,v 1.7 1999/04/09 14:16:11 per Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.6 1999/04/07 22:22:15 mirar Exp $
+**!	$Id: colortable_lookup.h,v 1.7 1999/04/09 14:16:11 per Exp $
 **! class colortable
 */
 
@@ -129,9 +129,10 @@ CHRONO("begin flat/cubicles");
       }
 
 done_pixel:
-      if (dither_got)
+      if (dither_encode)
       {
-	 (dither_got)(dith,rowpos,*s,NCTLU_DITHER_GOT);
+         if (dither_got)
+	   dither_got(dith,rowpos,*s,NCTLU_DITHER_GOT);
 	 s+=cd; d+=cd; rowpos+=cd;
 	 if (++rowcount==rowlen)
 	 {
@@ -235,9 +236,10 @@ static void NCTLU_FLAT_FULL_NAME(rgb_group *s,
 	 else fe++;
 
 done_pixel:
-      if (dither_got)
+      if (dither_encode)
       {
-	 dither_got(dith,rowpos,*s,NCTLU_DITHER_GOT);
+         if (dither_got)
+	   dither_got(dith,rowpos,*s,NCTLU_DITHER_GOT);
 	 s+=cd; d+=cd; rowpos+=cd;
 	 if (++rowcount==rowlen)
 	 {
@@ -292,42 +294,39 @@ static void NCTLU_FLAT_RIGID_NAME(rgb_group *s,
 
    while (n--)
    {
-      int rgbr,rgbg,rgbb;
       int mindist;
       int m;
       struct nct_flat_entry *fe;
       struct lookupcache lc;
+      rgbl_group val;
 	 
       if (dither_encode)
       {
-	 rgbl_group val;
 	 val=dither_encode(dith,rowpos,*s);
-	 rgbr=val.r;
-	 rgbg=val.g;
-	 rgbb=val.b;
       }
       else
       {
-	 rgbr=s->r;
-	 rgbg=s->g;
-	 rgbb=s->b;
+	 val.r=s->r;
+	 val.g=s->g;
+	 val.b=s->b;
       }
 
-      i=index[((rgbr*r)>>8)+
-	     r*(((rgbg*g)>>8)+
-		((rgbb*b)>>8)*g)];
+      i=index[((val.r*r)>>8)+
+	     r*(((val.g*g)>>8)+
+		((val.b*b)>>8)*g)];
       NCTLU_RIGID_WRITE;
 
-      if (dither_got)
+      if (dither_encode)
       {
-	 dither_got(dith,rowpos,*s,NCTLU_DITHER_RIGID_GOT);
-	 s+=cd; d+=cd; rowpos+=cd;
-	 if (++rowcount==rowlen)
-	 {
-	    rowcount=0;
-	    if (dither_newline) 
-	       (dither_newline)NCTLU_LINE_ARGS;
-	 }
+        if (dither_got)
+          dither_got(dith,rowpos,*s,NCTLU_DITHER_RIGID_GOT);
+        s+=cd; d+=cd; rowpos+=cd;
+        if (++rowcount==rowlen)
+        {
+          rowcount=0;
+          if (dither_newline) 
+            (dither_newline)NCTLU_LINE_ARGS;
+        }
       }
       else
       {
@@ -506,9 +505,10 @@ static void NCTLU_CUBE_NAME(rgb_group *s,
 	    }
 	 }
 done_pixel:
-	 if (dither_got)
-	 {
-	    dither_got(dith,rowpos,*s,NCTLU_DITHER_GOT);
+         if (dither_encode)
+         {
+            if (dither_got)
+               dither_got(dith,rowpos,*s,NCTLU_DITHER_GOT);
 	    s+=cd; d+=cd; rowpos+=cd;
 	    if (++rowcount==rowlen)
 	    {

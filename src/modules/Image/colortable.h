@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.13 1999/04/07 22:22:14 mirar Exp $
+**!	$Id: colortable.h,v 1.14 1999/04/09 14:16:09 per Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -127,9 +127,11 @@ struct neo_colortable
       struct nctd_ordered
       {
 	 int xs,ys;
+	 int xa,ya;
 	 int *rdiff,*gdiff,*bdiff;
 	 int rx,ry,gx,gy,bx,by;
 	 int row;
+         int same; /* true if rdiff, gdiff & bdiff is the same */
       } ordered;
    } du;
 };
