@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.48 2002/11/27 19:33:13 marcus Exp $
+# $Id: Makefile,v 1.49 2002/12/05 17:01:05 grubba Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -58,11 +58,13 @@ low_traditional:
 
 # Sub targets used by the above targets.
 
-build/autodoc.xml: build/src build/lib build/images images bin/join.pike always
-	$(PIKE) bin/extract.pike ../src/ build/src/ build/images/
-	$(PIKE) bin/extract.pike ../lib/ build/lib/ build/images/
-	$(PIKE) bin/join.pike --post-process build/autodoc.xml build/src/ \
-	  build/lib/
+build/autodoc.xml: build/src build/lib build/images images always
+	$(PIKE) -x extract_autodoc ../src/ src_images/ \
+	  build/src/ build/images/
+	$(PIKE) -x extract_autodoc ../lib/ src_images/ \
+	  build/lib/ build/images/
+	$(PIKE) -x join_autodoc --post-process build/autodoc.xml \
+	  build/src/ build/lib/
 
 always:
 
@@ -70,16 +72,16 @@ images: build/src/post_modules/GTK/refdoc/images
 	@cp ../src/post_modules/GTK/refdoc/images/*.png \
 	  build/src/post_modules/GTK/refdoc/images
 
-build/onepage.xml: build/autodoc.xml structure/onepage.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/onepage.xml build/autodoc.xml \
+build/onepage.xml: build/autodoc.xml structure/onepage.xml
+	@$(PIKE) -x assemble_autodoc structure/onepage.xml build/autodoc.xml \
 	  > build/onepage.xml
 
-build/traditional.xml: build/autodoc.xml structure/traditional.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/traditional.xml build/autodoc.xml \
+build/traditional.xml: build/autodoc.xml structure/traditional.xml
+	@$(PIKE) -x assemble_autodoc structure/traditional.xml build/autodoc.xml \
 	  > build/traditional.xml
 
-build/modref.xml: build/autodoc.xml structure/modref.xml bin/assembler.pike
-	@$(PIKE) bin/assembler.pike structure/modref.xml build/autodoc.xml \
+build/modref.xml: build/autodoc.xml structure/modref.xml
+	@$(PIKE) -x assemble_autodoc structure/modref.xml build/autodoc.xml \
 	  > build/modref.xml
 
 # Directories
