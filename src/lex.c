@@ -966,7 +966,7 @@ static void handle_include(char *name, int local_include)
   reference_shared_string(current_file);
   push_int(local_include);
 
-  SAFE_APPLY_MASTER("handle_include",2);
+  SAFE_APPLY_MASTER("handle_include",3);
 
   if(sp[-1].type != T_STRING)
   {
