@@ -275,8 +275,9 @@ o ADT.Relation.Binary
                       5
                   })
 
-o Audio.Codec and Audio.Codec
-    Contains decoders and encoders for audio. Currently WAV and MP3.
+o Audio.Codec and Audio.Format
+    Contain decoders/encoders and format parsers for audio.
+    Currently WAV and MP3.
     Note: The API remains marked "unstable".
 
 o Crypto.md4
@@ -289,6 +290,12 @@ o Crypto.crypt_md5
 o Debug.Tracer
 o Debug.Subject
     Helper classes that helps in understanding what Pike is doing.
+
+o DVB
+    Access to DVB (digital sat) resources. Controls tuner, MP2
+    audio and video decoders. Allows extract multiple channels
+    at once.
+    Note: Only old 0.9.4 DVB API is supported.
 
 o Locale.Language
     FIXME: nilsson?
@@ -728,7 +735,7 @@ Parser.LR
 Parser.XML.NSTree
 
 Protocols.HTTP.Query supports https
-Protocols.LDP supports ldaps
+Protocols.LDAP supports ldaps
 Protocols.SNMP now works
 Protocols.XMLRPC
 
