@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transupp.c,v 1.10 2002/10/11 01:39:53 nilsson Exp $
+|| $Id: transupp.c,v 1.11 2002/10/17 09:19:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -49,6 +49,11 @@
 #endif /* 0 */
 
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
+
+/* FAR is defined by windef.h and jmorecfg.h */
+#ifdef FAR
+#undef FAR
+#endif
 
 #include <jerror.h>
 #include "jinclude.h"

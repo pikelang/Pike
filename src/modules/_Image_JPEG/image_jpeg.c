@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.57 2002/10/11 01:39:53 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.58 2002/10/17 09:19:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -29,6 +29,11 @@
 
 #define XMD_H /* Avoid INT16 / INT32 being redefined */
 
+/* FAR is defined by windef.h and jmorecfg.h */
+#ifdef FAR
+#undef FAR
+#endif
+
 #include <jpeglib.h>
 #include "transupp.h" /* Support routines for jpeg transformations */
 
@@ -42,7 +47,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.57 2002/10/11 01:39:53 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.58 2002/10/17 09:19:16 nilsson Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
