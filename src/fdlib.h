@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.21 1998/11/22 11:02:47 hubbe Exp $
+ * $Id: fdlib.h,v 1.22 1999/05/13 07:25:42 hubbe Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -57,23 +57,56 @@
 
 typedef int FD;
 
-#define SOCKFUN1(NAME,T1) int PIKE_CONCAT(fd_,NAME) (FD,T1);
-#define SOCKFUN2(NAME,T1,T2) int PIKE_CONCAT(fd_,NAME) (FD,T1,T2);
-#define SOCKFUN3(NAME,T1,T2,T3) int PIKE_CONCAT(fd_,NAME) (FD,T1,T2,T3);
-#define SOCKFUN4(NAME,T1,T2,T3,T4) int PIKE_CONCAT(fd_,NAME) (FD,T1,T2,T3,T4);
-#define SOCKFUN5(NAME,T1,T2,T3,T4,T5) int PIKE_CONCAT(fd_,NAME) (FD,T1,T2,T3,T4,T5);
+#define SOCKFUN1(NAME,T1) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
+#define SOCKFUN2(NAME,T1,T2) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
+#define SOCKFUN3(NAME,T1,T2,T3) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3);
+#define SOCKFUN4(NAME,T1,T2,T3,T4) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3,T4);
+#define SOCKFUN5(NAME,T1,T2,T3,T4,T5) int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2,T3,T4,T5);
+
+
+#define fd_info(fd) debug_fd_info(dmalloc_touch_fd(fd))
+#define fd_query_properties(fd,Y) \
+        debug_fd_query_properties(dmalloc_touch_fd(fd),(Y))
+#define fd_open(X,Y,Z) dmalloc_register_fd(debug_fd_open((X),(Y),(Z)))
+#define fd_socket(X,Y,Z) dmalloc_register_fd(debug_fd_socket((X),(Y),(Z)))
+#define fd_pipe(X) debug_fd_pipe( (X) DMALLOC_POS )
+#define fd_accept(X,Y,Z) dmalloc_register_fd(debug_fd_accept((X),(Y),(Z)))
+
+#define fd_bind(fd,X,Y) debug_fd_bind(dmalloc_touch_fd(fd), (X), (Y))
+#define fd_getsockopt(fd,X,Y,Z,Q) debug_fd_getsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))
+#define fd_setsockopt(fd,X,Y,Z,Q) debug_fd_setsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))
+#define fd_recv(fd,X,Y,Z) debug_fd_recv(dmalloc_touch_fd(fd), (X), (Y),(Z))
+#define fd_getsockname(fd,X,Y) debug_fd_getsockname(dmalloc_touch_fd(fd), (X), (Y))
+#define fd_getpeername(fd,X,Y) debug_fd_getpeername(dmalloc_touch_fd(fd), (X), (Y))
+#define fd_recvfrom(fd,X,Y,Z,Q,P) debug_fd_recvfrom(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q),(P))
+#define fd_send(fd,X,Y,Z) debug_fd_send(dmalloc_touch_fd(fd), (X), (Y),(Z))
+#define fd_sendto(fd,X,Y,Z,Q,P) debug_fd_sendto(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q),(P))
+#define fd_shutdown(fd,X) debug_fd_shutdown(dmalloc_touch_fd(fd), (X))
+#define fd_listen(fd,X) debug_fd_listen(dmalloc_touch_fd(fd), (X))
+#define fd_close(fd) debug_fd_close(dmalloc_close_fd(fd))
+#define fd_write(fd,X,Y) debug_fd_write(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_read(fd,X,Y) debug_fd_read(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_lseek(fd,X,Y) debug_fd_lseek(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_flock(fd,X) debug_fd_flock(dmalloc_touch_fd(fd),(X))
+#define fd_fstat(fd,X) debug_fd_fstat(dmalloc_touch_fd(fd),(X))
+#define fd_select debug_fd_select /* fixme */
+#define fd_ioctl(fd,X,Y) debug_fd_ioctl(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_dup(fd) dmalloc_register_fd(debug_fd_dup(dmalloc_touch_fd(fd)))
+#define fd_dup2(fd,to) dmalloc_register_fd(debug_fd_dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
+#define fd_connect(fd,X,Z) debug_fd_connect(dmalloc_touch_fd(fd),(X),(Z))
+
 
 /* Prototypes begin here */
-char *fd_info(int fd);
-int fd_query_properties(int fd, int guess);
+char *debug_fd_info(int fd);
+int debug_fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
-FD fd_open(char *file, int open_mode, int create_mode);
-FD fd_socket(int domain, int type, int proto);
-int fd_pipe(int fds[2]);
-FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen);
+FD debug_fd_open(char *file, int open_mode, int create_mode);
+FD debug_fd_socket(int domain, int type, int proto);
+int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS);
+FD debug_fd_accept(FD fd, struct sockaddr *addr, int *addrlen);
 SOCKFUN2(bind, struct sockaddr *, int)
-int fd_connect (FD fd, struct sockaddr *a, int len);
+int debug_fd_connect (FD fd, struct sockaddr *a, int len);
 SOCKFUN4(getsockopt,int,int,void*,int*)
 SOCKFUN4(setsockopt,int,int,void*,int)
 SOCKFUN3(recv,void *,int,int)
@@ -82,16 +115,16 @@ SOCKFUN3(send,void *,int,int)
 SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
 SOCKFUN1(shutdown, int)
 SOCKFUN1(listen, int)
-int fd_close(FD fd);
-long fd_write(FD fd, void *buf, long len);
-long fd_read(FD fd, void *to, long len);
-long fd_lseek(FD fd, long pos, int where);
-int fd_flock(FD fd, int oper);
-int fd_fstat(FD fd, struct stat *s);
-int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
-int fd_ioctl(FD fd, int cmd, void *data);
-FD fd_dup(FD from);
-FD fd_dup2(FD from, FD to);
+int debug_fd_close(FD fd);
+long debug_fd_write(FD fd, void *buf, long len);
+long debug_fd_read(FD fd, void *to, long len);
+long debug_fd_lseek(FD fd, long pos, int where);
+int debug_fd_flock(FD fd, int oper);
+int debug_fd_fstat(FD fd, struct stat *s);
+int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
+int debug_fd_ioctl(FD fd, int cmd, void *data);
+FD debug_fd_dup(FD from);
+FD debug_fd_dup2(FD from, FD to);
 /* Prototypes end here */
 
 #undef SOCKFUN1
@@ -209,42 +242,46 @@ typedef int FD;
 #define fd_EXCL O_EXCL
 
 #define fd_query_properties(X,Y) ( fd_INTERPROCESSABLE | (Y))
-#define fd_open open
-#ifdef HAVE_BROKEN_F_SETFD
-#define fd_close(FD__) (set_close_on_exec(FD__,0), close(FD__))
-#else /* !HAVE_BROKEN_F_SETFD */
-#define fd_close close
-#endif /* HAVE_BROKEN_F_SETFD */
-#define fd_read read
-#define fd_write write
-#define fd_ioctl ioctl
-#define fd_pipe pipe
 
-#define fd_socket socket
-#define fd_bind bind
-#define fd_connect connect
-#define fd_getsockopt getsockopt
-#define fd_setsockopt setsockopt
-#define fd_getsockname getsockname
-#define fd_getpeername getpeername
-#define fd_recv recv
-#define fd_send send
-#define fd_sendto sendto
-#define fd_recvfrom recvfrom
-#define fd_shutdown shutdown
-#define fd_accept accept
-#define fd_lseek lseek
-#define fd_fstat fstat
-#define fd_dup dup
-#ifdef HAVE_BROKEN_F_SETFD
-#define fd_dup2(FD__, FD2__)  (set_close_on_exec(FD2__, 0), dup2(FD__, FD2__))
-#else /* !HAVE_BROKEN_F_SETFD */
-#define fd_dup2 dup2
-#endif /* HAVE_BROKEN_F_SETFD */
-#define fd_listen listen
+#define fd_open(X,Y,Z) dmalloc_register_fd(open((X),(Y),(Z)))
+#define fd_socket(X,Y,Z) dmalloc_register_fd(socket((X),(Y),(Z)))
+#define fd_pipe pipe /* FIXME */
+#define fd_accept(X,Y,Z) dmalloc_register_fd(accept((X),(Y),(Z)))
 
-#define fd_select select
-#define fd_socketpair socketpair
+#define fd_bind(fd,X,Y) bind(dmalloc_touch_fd(fd), (X), (Y))
+#define fd_getsockopt(fd,X,Y,Z,Q) getsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))
+#define fd_setsockopt(fd,X,Y,Z,Q) setsockopt(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q))
+#define fd_recv(fd,X,Y,Z) recv(dmalloc_touch_fd(fd), (X), (Y),(Z))
+#define fd_getsockname(fd,X,Y) getsockname(dmalloc_touch_fd(fd), (X), (Y))
+#define fd_getpeername(fd,X,Y) getpeername(dmalloc_touch_fd(fd), (X), (Y))
+#define fd_recvfrom(fd,X,Y,Z,Q,P) recvfrom(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q),(P))
+#define fd_send(fd,X,Y,Z) send(dmalloc_touch_fd(fd), (X), (Y),(Z))
+#define fd_sendto(fd,X,Y,Z,Q,P) sendto(dmalloc_touch_fd(fd), (X),(Y),(Z),(Q),(P))
+#define fd_shutdown(fd,X) shutdown(dmalloc_touch_fd(fd), (X))
+#define fd_listen(fd,X) listen(dmalloc_touch_fd(fd), (X))
+
+#ifdef HAVE_BROKEN_F_SETFD
+#define fd_close(fd) (set_close_on_exec(fd,0),close(dmalloc_close_fd(fd)))
+#else /* !HAVE_BROKEN_F_SETFD */
+#define fd_close(fd) close(dmalloc_close_fd(fd))
+#endif /* HAVE_BROKEN_F_SETFD */
+
+#define fd_write(fd,X,Y) write(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_read(fd,X,Y) read(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_lseek(fd,X,Y) lseek(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_fstat(fd,X) fstat(dmalloc_touch_fd(fd),(X))
+#define fd_select select /* fixme */
+#define fd_ioctl(fd,X,Y) ioctl(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_dup(fd) dmalloc_register_fd(dup(dmalloc_touch_fd(fd)))
+#define fd_connect(fd,X,Z) connect(dmalloc_touch_fd(fd),(X),(Z))
+
+#ifdef HAVE_BROKEN_F_SETFD
+#define fd_dup2(fd,to) (set_close_on_exec(to,0), dmalloc_register_fd(dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to))))
+#else /* !HAVE_BROKEN_F_SETFD */
+#define fd_dup2(fd,to) dmalloc_register_fd(dup2(dmalloc_touch_fd(fd),dmalloc_close_fd(to)))
+#endif /* HAVE_BROKEN_F_SETFD */
+
+#define fd_socketpair socketpair /* fixme */
 
 #define fd_fd_set fd_set
 #define fd_FD_CLR FD_CLR
@@ -254,7 +291,7 @@ typedef int FD;
 
 #ifdef HAVE_FLOCK
 #define HAVE_FD_FLOCK
-#define fd_flock flock
+#define fd_flock(fd,X) flock(dmalloc_touch_fd(fd),(X))
 #define fd_LOCK_SH LOCK_SH
 #define fd_LOCK_EX LOCK_EX
 #define fd_LOCK_UN LOCK_UN
@@ -265,11 +302,10 @@ typedef int FD;
 #define fd_LOCK_EX F_LOCK
 #define fd_LOCK_UN F_ULOCK
 #define fd_LOCK_NB F_TLOCK
-#define fd_lockf(fd,mode) lockf(fd,mode,0)
+
+#define fd_flock(fd,mode) lockf(dmalloc_touch_fd(fd),mode,0)
 #endif
 #endif
-
-
 
 
 #define fd_shutdown_read 0

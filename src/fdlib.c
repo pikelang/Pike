@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.23 1999/01/01 01:03:30 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.24 1999/05/13 07:25:41 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -19,7 +19,7 @@ int first_free_handle;
 
 #define FDDEBUG(X)
 
-char *fd_info(int fd)
+char *debug_fd_info(int fd)
 {
   if(fd<0)
     return "BAD";
@@ -37,7 +37,7 @@ char *fd_info(int fd)
   }
 }
 
-int fd_query_properties(int fd, int guess)
+int debug_fd_query_properties(int fd, int guess)
 {
   switch(fd_type[fd])
   {
@@ -86,7 +86,7 @@ void fd_exit()
   mt_destroy(&fd_mutex);
 }
 
-FD fd_open(char *file, int open_mode, int create_mode)
+FD debug_fd_open(char *file, int open_mode, int create_mode)
 {
   HANDLE x;
   FD fd;
@@ -168,7 +168,7 @@ FD fd_open(char *file, int open_mode, int create_mode)
   return fd;
 }
 
-FD fd_socket(int domain, int type, int proto)
+FD debug_fd_socket(int domain, int type, int proto)
 {
   FD fd;
   SOCKET s;
@@ -202,7 +202,7 @@ FD fd_socket(int domain, int type, int proto)
   return fd;
 }
 
-int fd_pipe(int fds[2])
+int debug_fd_pipe(int fds[2] DMALLOC_LINE_ARGS)
 {
   HANDLE files[2];
   mt_lock(&fd_mutex);
@@ -237,10 +237,15 @@ int fd_pipe(int fds[2])
   mt_unlock(&fd_mutex);
   FDDEBUG(fprintf(stderr,"New pipe: %d (%d) -> %d (%d)\n",fds[0],files[0], fds[1], fds[1]));;
 
+#ifdef DEBUG_MALLOC
+  debug_malloc_register_fd( fds[0], dmalloc_file, dmalloc_line );
+  debug_malloc_register_fd( fds[1], dmalloc_file, dmalloc_line );
+#endif
+  
   return 0;
 }
 
-FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
+FD debug_fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
 {
   FD new_fd;
   SOCKET s;
@@ -284,7 +289,7 @@ FD fd_accept(FD fd, struct sockaddr *addr, int *addrlen)
 
 
 #define SOCKFUN(NAME,X1,X2) \
-int PIKE_CONCAT(fd_,NAME) X1 { SOCKET ret; \
+int PIKE_CONCAT(debug_fd_,NAME) X1 { SOCKET ret; \
   FDDEBUG(fprintf(stderr, #NAME " on %d (%d)\n",fd,da_handle[fd])); \
   mt_lock(&fd_mutex); \
   if(fd_type[fd] != FD_SOCKET) { \
@@ -317,7 +322,18 @@ int PIKE_CONCAT(fd_,NAME) X1 { SOCKET ret; \
 
 
 SOCKFUN2(bind, struct sockaddr *, int)
-int fd_connect (FD fd, struct sockaddr *a, int len)
+SOCKFUN4(getsockopt,int,int,void*,int*)
+SOCKFUN4(setsockopt,int,int,void*,int)
+SOCKFUN3(recv,void *,int,int)
+SOCKFUN2(getsockname,struct sockaddr *,int)
+SOCKFUN2(getpeername,struct sockaddr *,int)
+SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
+SOCKFUN3(send,void *,int,int)
+SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
+SOCKFUN1(shutdown, int)
+SOCKFUN1(listen, int)
+
+int debug_fd_connect (FD fd, struct sockaddr *a, int len)
 {
   SOCKET ret;
   mt_lock(&fd_mutex);
@@ -339,18 +355,8 @@ int fd_connect (FD fd, struct sockaddr *a, int len)
   FDDEBUG(fprintf(stderr, "connect returned %d (%d)\n",ret,errno)); 
   return (int)ret; 
 }
-SOCKFUN4(getsockopt,int,int,void*,int*)
-SOCKFUN4(setsockopt,int,int,void*,int)
-SOCKFUN3(recv,void *,int,int)
-SOCKFUN2(getsockname,struct sockaddr *,int)
-SOCKFUN2(getpeername,struct sockaddr *,int)
-SOCKFUN5(recvfrom,void *,int,int,struct sockaddr *,int*)
-SOCKFUN3(send,void *,int,int)
-SOCKFUN5(sendto,void *,int,int,struct sockaddr *,int*)
-SOCKFUN1(shutdown, int)
-SOCKFUN1(listen, int)
 
-int fd_close(FD fd)
+int debug_fd_close(FD fd)
 {
   long h;
   int type;
@@ -389,7 +395,7 @@ int fd_close(FD fd)
   return 0;
 }
 
-long fd_write(FD fd, void *buf, long len)
+long debug_fd_write(FD fd, void *buf, long len)
 {
   DWORD ret;
   long handle;
@@ -431,7 +437,7 @@ long fd_write(FD fd, void *buf, long len)
   }
 }
 
-long fd_read(FD fd, void *to, long len)
+long debug_fd_read(FD fd, void *to, long len)
 {
   DWORD ret;
   int rret;
@@ -481,7 +487,7 @@ long fd_read(FD fd, void *to, long len)
   }
 }
 
-long fd_lseek(FD fd, long pos, int where)
+long debug_fd_lseek(FD fd, long pos, int where)
 {
   long ret;
   mt_lock(&fd_mutex);
@@ -511,7 +517,7 @@ long fd_lseek(FD fd, long pos, int where)
   return ret;
 }
 
-int fd_flock(FD fd, int oper)
+int debug_fd_flock(FD fd, int oper)
 {
   long ret;
   mt_lock(&fd_mutex);
@@ -570,7 +576,7 @@ static long convert_filetime_to_time_t(FILETIME tmp)
   return (long)floor(t);
 }
 
-int fd_fstat(FD fd, struct stat *s)
+int debug_fd_fstat(FD fd, struct stat *s)
 {
   DWORD x;
 
@@ -621,7 +627,7 @@ int fd_fstat(FD fd, struct stat *s)
   return 0;
 }
 
-int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
+int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
 {
   int ret;
   ret=select(fds,a,b,c,t);
@@ -634,7 +640,7 @@ int fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
 }
 
 
-int fd_ioctl(FD fd, int cmd, void *data)
+int debug_fd_ioctl(FD fd, int cmd, void *data)
 {
   int ret;
   FDDEBUG(fprintf(stderr,"ioctl(%d (%d,%d,%p)\n",fd,da_handle[fd],cmd,data));
@@ -657,7 +663,7 @@ int fd_ioctl(FD fd, int cmd, void *data)
 }
 
 
-FD fd_dup(FD from)
+FD debug_fd_dup(FD from)
 {
   FD fd;
   HANDLE x,p=GetCurrentProcess();
@@ -682,7 +688,7 @@ FD fd_dup(FD from)
   return fd;
 }
 
-FD fd_dup2(FD from, FD to)
+FD debug_fd_dup2(FD from, FD to)
 {
   HANDLE x,p=GetCurrentProcess();
   if(!DuplicateHandle(p,(HANDLE)da_handle[from],p,&x,NULL,0,DUPLICATE_SAME_ACCESS))

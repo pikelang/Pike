@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.38 1999/05/03 07:03:41 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.39 1999/05/13 07:25:43 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -711,6 +711,10 @@ char *do_pad(char *mem, long size)
   return mem;
 }
 
+#define FD2PTR(X) (void *)((X)*4+1)
+#define PTR2FD(X) (((long)(X))>>2)
+
+
 void check_pad(struct memhdr *mh, int freeok)
 {
   static int out_biking=0;
@@ -960,7 +964,7 @@ static struct memhdr *low_make_memhdr(void *p, int s, int locnum)
   return mh;
 }
 
-void dmalloc_register(void *p, int s, char *file, int line)
+void dmalloc_register(void *p, int s, const char *file, int line)
 {
   low_make_memhdr(p,s,location_number(file, line));
 }
@@ -1138,7 +1142,43 @@ void debug_malloc_dump_references(void *x)
   dump_memhdr_locations(my_find_memhdr(x,0),0);
 }
 
-void cleanup_memhdrs()
+void list_open_fds(void)
+{
+  unsigned long h;
+  mt_lock(&debug_malloc_mutex);
+
+  for(h=0;h<memhdr_hash_table_size;h++)
+  {
+    struct memhdr *m;
+    for(m=memhdr_hash_table[h];m;m=m->next)
+    {
+      struct memhdr *tmp;
+      struct memloc *l;
+      void *p=m->data;
+      
+      if( 1 & (long) p )
+      {
+	if( FD2PTR( PTR2FD(p) ) == p)
+	{
+	  fprintf(stderr,"Filedescriptor %ld\n",PTR2FD(p));
+
+	  for(l=m->locations;l;l=l->next)
+	  {
+	    struct fileloc *f=find_file_location(l->locnum);
+	    fprintf(stderr,"  *** %s:%d (%d times) %s\n",
+		    f->file,
+		    f->line,
+		    l->times,
+		    find_location(&no_leak_memlocs, l->locnum) ? "" : " *");
+	  }
+	}
+      }
+    }
+  }
+  mt_unlock(&debug_malloc_mutex);
+}
+
+void cleanup_memhdrs(void)
 {
   unsigned long h;
   mt_lock(&debug_malloc_mutex);
@@ -1178,11 +1218,18 @@ void cleanup_memhdrs()
 	  first=0;
 	}
 
-	
 	fprintf(stderr, "LEAK: (%p) %ld bytes\n",p, m->size);
+	if( 1 & (long) p )
+	{
+	  if( FD2PTR( PTR2FD(p) ) == p)
+	  {
+	    fprintf(stderr," Filedescriptor %ld\n",PTR2FD(p));
+	  }
+	}else{
 #ifdef PIKE_DEBUG
-	describe_something(p, attempt_to_identify(p),0);
+	  describe_something(p, attempt_to_identify(p),0);
 #endif
+	}
 	mt_lock(&debug_malloc_mutex);
 
 	/* Now we must reassure 'm' */
@@ -1237,6 +1284,27 @@ void * debug_malloc_update_location(void *p,const char *fn, int line)
       add_location(mh, location_number(fn,line));
   }
   return p;
+}
+
+int debug_malloc_touch_fd(int fd, const char *fn, int line)
+{
+  if(fd==-1) return fd;
+  debug_malloc_update_location( FD2PTR(fd), fn, line);
+  return fd;
+}
+
+int debug_malloc_register_fd(int fd, const char *fn, int line)
+{
+  if(fd==-1) return fd;
+  dmalloc_register( FD2PTR(fd), 0 , fn, line);
+  return fd;
+}
+
+int debug_malloc_close_fd(int fd, const char *fn, int line)
+{
+  if(fd==-1) return fd;
+  dmalloc_unregister( FD2PTR(fd), 1);
+  return fd;
 }
 
 void reset_debug_malloc(void)

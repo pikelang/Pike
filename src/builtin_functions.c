@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.170 1999/05/12 04:40:08 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.171 1999/05/13 07:25:38 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1505,6 +1505,7 @@ void f_next_object(INT32 args)
     if(sp[-args].type != T_OBJECT)
       SIMPLE_BAD_ARG_ERROR("next_object", 1, "object");
     o=sp[-args].u.object->next;
+    while(o && !o->prog) o=o->next;
   }
   pop_n_elems(args);
   if(!o)
@@ -3908,6 +3909,12 @@ void f__reset_dmalloc(INT32 args)
   pop_n_elems(args);
   reset_debug_malloc();
 }
+
+void f__list_open_fds(INT32 args)
+{
+  extern void list_open_fds(void);
+  list_open_fds();
+}
 #endif
 
 #ifdef PIKE_DEBUG
@@ -4244,6 +4251,7 @@ void init_builtin_efuns(void)
   
 /* function(void:void) */
   ADD_EFUN("_reset_dmalloc",f__reset_dmalloc,tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
+  ADD_EFUN("_list_open_fds",f__list_open_fds,tFunc(tVoid,tVoid),OPT_SIDE_EFFECT);
 #endif
 #ifdef PIKE_DEBUG
   

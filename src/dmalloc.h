@@ -1,5 +1,5 @@
 /*
- * $Id: dmalloc.h,v 1.12 1999/05/03 07:03:40 hubbe Exp $
+ * $Id: dmalloc.h,v 1.13 1999/05/13 07:25:40 hubbe Exp $
  */
 
 extern char *debug_xalloc(long);
@@ -16,7 +16,7 @@ void low_add_marks_to_memhdr(struct memhdr *to,
 
 extern int verbose_debug_malloc;
 extern int verbose_debug_exit;
-extern void dmalloc_register(void *, int,char *, int);
+extern void dmalloc_register(void *, int,const char *, int);
 extern int dmalloc_unregister(void *, int);
 extern void *debug_malloc(size_t, const char *, int);
 extern void *debug_calloc(size_t, size_t, const char *, int);
@@ -25,6 +25,10 @@ extern void debug_free(void *, const char *, int,int);
 extern char *debug_strdup(const char *, const char *, int);
 extern void reset_debug_malloc(void);
 extern void dmalloc_free(void *p);
+extern int debug_malloc_touch_fd(int, const char *, int);
+extern int debug_malloc_register_fd(int, const char *, int);
+extern int debug_malloc_close_fd(int, const char *, int);
+
 void *debug_malloc_update_location(void *,const char *, int);
 #define malloc(x) debug_malloc((x), __FILE__, __LINE__)
 #define calloc(x, y) debug_calloc((x), (y), __FILE__, __LINE__)
@@ -43,7 +47,13 @@ void debug_malloc_dump_references(void *x);
 #define DMALLOC_POS ,__FILE__,__LINE__
 #define DMALLOC_PROXY_ARGS ,dmalloc_file,dmalloc_line
 void dmalloc_accept_leak(void *);
+#define dmalloc_touch_fd(X) debug_malloc_touch_fd((X),__FILE__,__LINE__)
+#define dmalloc_register_fd(X) debug_malloc_register_fd((X),__FILE__,__LINE__)
+#define dmalloc_close_fd(X) debug_malloc_close_fd((X),__FILE__,__LINE__)
 #else
+#define dmalloc_touch_fd(X) (X)
+#define dmalloc_register_fd(X) (X)
+#define dmalloc_close_fd(X) (X)
 #define dmfree(X) free((X))
 #define dmalloc_accept_leak(X) (void)(X)
 #define DMALLOC_LINE_ARGS 
