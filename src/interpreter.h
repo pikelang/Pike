@@ -113,6 +113,7 @@ static int eval_instruction(unsigned char *pc)
       CASE(F_LDA); accumulator=GET_ARG(); break;
 
       /* Push number */
+      CASE(F_UNDEFINED); push_int(0); sp[-1].subtype=NUMBER_UNDEFINED; break;
       CASE(F_CONST0); push_int(0); break;
       CASE(F_CONST1); push_int(1); break;
       CASE(F_CONST_1); push_int(-1); break;

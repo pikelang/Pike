@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.48 1999/06/19 19:57:31 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.49 1999/08/03 00:45:09 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -1078,7 +1078,12 @@ static int do_docode2(node *n,int flags)
     switch(n->u.sval.type)
     {
     case T_INT:
-      emit(F_NUMBER,n->u.sval.u.integer);
+      if(!n->u.sval.u.integer && n->u.sval.subtype==NUMBER_UNDEFINED)
+      {
+	emit2(F_UNDEFINED);
+      }else{
+	emit(F_NUMBER,n->u.sval.u.integer);
+      }
       return 1;
 
     case T_STRING:

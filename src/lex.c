@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.64 1999/03/11 13:44:32 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.65 1999/08/03 00:45:13 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -185,6 +185,7 @@ struct keyword instr_names[]=
 { "number",             F_NUMBER, I_HASARG },
 { "pop",		F_POP_VALUE,0 },	
 { "pop_n_elems",        F_POP_N_ELEMS, I_HASARG },
+{ "push UNDEFINED",     F_UNDEFINED,0 },
 { "push 0",             F_CONST0,0 },
 { "push 1",             F_CONST1,0 },
 { "push 0x7fffffff",    F_BIGNUM,0 },
