@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.55 1999/10/26 15:55:51 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.56 1999/10/28 22:27:35 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -751,6 +751,12 @@ INLINE static int do_one(struct format_stack *fs,
 	      {								      \
 		 push_constant_text("precision");			      \
 		 push_int(fs->fsp->precision);				      \
+                 n+=2;							      \
+	      }								      \
+	      if(fs->fsp->width!=SPRINTF_UNDECIDED)			      \
+	      {								      \
+		 push_constant_text("width");	           		      \
+		 push_int(fs->fsp->width);				      \
                  n+=2;							      \
 	      }								      \
 	      f_aggregate_mapping(n);					      \

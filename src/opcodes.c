@@ -25,7 +25,7 @@
 #include "security.h"
 #include "bignum.h"
 
-RCSID("$Id: opcodes.c,v 1.52 1999/10/26 17:52:48 noring Exp $");
+RCSID("$Id: opcodes.c,v 1.53 1999/10/28 22:27:31 noring Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -886,10 +886,42 @@ static INT32 really_low_sscanf(char *input,
 	  sval.u.integer=0;
 	  if (minus_flag)
 	  {
-	     int pos=0;
+	     int x, pos=0;
+	     
 	     while(--field_length >= 0)
 	     {
-		sval.u.integer|=(EXTRACT_UCHAR(input+eye))<<pos;
+	       x = EXTRACT_UCHAR(input+eye);
+	       
+#ifdef AUTO_BIGNUM
+	       if(INT_TYPE_LSH_OVERFLOW(x, pos))
+	       {
+		 int lshfun, orfun;
+		 push_int(sval.u.integer);
+		 convert_stack_top_to_bignum();
+		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);
+		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);
+
+		 while(field_length-- >= 0)
+		 {
+		   push_int(EXTRACT_UCHAR(input+eye));
+		   convert_stack_top_to_bignum();
+		   push_int(pos);
+		   apply_low(sp[-2].u.object, lshfun, 1);
+		   stack_swap();
+		   pop_stack();
+		   apply_low(sp[-2].u.object, orfun, 1);
+		   stack_swap();
+		   pop_stack();
+		   pos+=8;
+		   eye++;
+		 }
+		 sval=*--sp;
+		 break;
+	       }
+	       else
+#endif /* AUTO_BIGNUM */
+		 sval.u.integer|=x<<pos;
+	       
 		pos+=8;
 		eye++;
 	     }
@@ -897,9 +929,35 @@ static INT32 really_low_sscanf(char *input,
 	  else
 	     while(--field_length >= 0)
 	     {
-		sval.u.integer<<=8;
-		sval.u.integer|=EXTRACT_UCHAR(input+eye);
-		eye++;
+#ifdef AUTO_BIGNUM
+	       if(INT_TYPE_LSH_OVERFLOW(sval.u.integer, 8))
+	       {
+		 int lshfun, orfun;
+		 push_int(sval.u.integer);
+		 convert_stack_top_to_bignum();
+		 lshfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_LSH);
+		 orfun=FIND_LFUN(sp[-1].u.object->prog, LFUN_OR);
+		 
+		 while(field_length-- >= 0)
+		 {
+		   push_int(8);
+		   apply_low(sp[-2].u.object, lshfun, 1);
+		   stack_swap();
+		   pop_stack();
+		   push_int(EXTRACT_UCHAR(input+eye));
+		   apply_low(sp[-2].u.object, orfun, 1);
+		   stack_swap();
+		   pop_stack();
+		   eye++;
+		 }
+		 sval=*--sp;
+		 break;
+	       }
+	       else
+#endif /* AUTO_BIGNUM */
+		 sval.u.integer<<=8;
+	       sval.u.integer|=EXTRACT_UCHAR(input+eye);
+	       eye++;
 	     }
 	  break;
 

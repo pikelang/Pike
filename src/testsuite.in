@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.210 1999/10/26 20:49:43 noring Exp $"]])
+test_true([["$Id: testsuite.in,v 1.211 1999/10/28 22:27:32 noring Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1319,7 +1319,6 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-335812727629498640265", [[ (string)-0x123456789123456789 ]])
   test_eq("718046312823", [[ (string)012345671234567 ]])
   test_eq("-718046312823", [[ (string)-012345671234567 ]])
-  test_eq("", [[ (string)012345671234567 ]])
   test_eq("1125899906842624", [[ (string)0b100000000000000000000000000000000000000000000000000 ]])
   test_eq("-1125899906842624", [[ (string)-0b100000000000000000000000000000000000000000000000000 ]])
     
@@ -1437,6 +1436,15 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("-1125968643114208", [[ (string)array_sscanf("-100000000000001000000000001000000000100010011100000", "%b")[0] ]])
   test_eq("-11", [[ (string)array_sscanf("-0b1011", "%i")[0] ]])
   test_eq("-1125968643114208", [[ (string)array_sscanf("-0b100000000000001000000000001000000000100010011100000", "%i")[0] ]])
+
+  test_eq([[ sprintf("%x", @array_sscanf("\0\0\0\0\1\2\3\4", "%4c")) ]], "0")
+  test_eq([[ sprintf("%x", @array_sscanf("\0\0\0\0\1\2\3\4", "%8c")) ]], "1020304")
+  test_eq([[ sprintf("%08x", @array_sscanf("\0\0\0\0\1\2\3\4", "%8c")) ]], "01020304")
+  test_eq([[ sprintf("%08x", @array_sscanf("\0\0\0\5\1\2\3\4", "%8c")) ]], "501020304")
+  test_eq([[ sprintf("%08x", @array_sscanf("\0\0\6\5\1\2\3\4", "%8c")) ]], "60501020304")
+  test_eq([[ sprintf("%08x", @array_sscanf("\0\7\6\5\1\2\3\4", "%8c")) ]], "7060501020304")
+  test_eq([[ sprintf("%08x", @array_sscanf("\8\7\6\5\1\2\3\4", "%8c")) ]], "3807060501020304")
+  test_eq([[ sprintf("%08x", @array_sscanf("\010\7\6\5\1\2\3\4", "%8c")) ]], "807060501020304")
 
   test_equal([[ ({ 0, 118 }) ]], [[ array_sscanf("0x76", "%xx%x") ]])
   test_equal([[ ({ 0, 557239244978618154304871 }) ]],
@@ -1662,6 +1670,9 @@ test_any([[mixed a; sscanf("\277\240\345\140\100\0\0\0","%8F",a); return a]],-0.
 test_equal([[array_sscanf("10 20 30","%d %d %d")]],[[({10,20,30})]])
 test_equal([[array_sscanf("1 2 3 4 5 6 7 8 9","%d %d %d %d %d %d %d %d %s")]],[[({1,2,3,4,5,6,7,8,"9"})]])
 test_equal([[array_sscanf("abc","%{%c%}")]],[[ ({ ({ ({'a'}), ({'b'}), ({'c'}) }) }) ]])
+
+test_equal([[array_sscanf("\x7fffffab#", "%c%c")]], [[ ({ 0x7fffffab, '#' }) ]])
+test_equal([[array_sscanf("\x7fffffab#", "%1c%1c")]], [[ ({ 0xab, '#' }) ]])
 
 test_true([[array_sscanf("(02323) 23455 344","%{%*[^0-9]%[0-9]%}")]])
 

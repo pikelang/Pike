@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.58 1999/10/26 17:52:52 noring Exp $");
+RCSID("$Id: mpz_glue.c,v 1.59 1999/10/28 22:27:34 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -305,7 +305,7 @@ static void mpzmod_digits(INT32 args)
 
 static void mpzmod__sprintf(INT32 args)
 {
-  INT_TYPE precision, base = 0, mask_shift = 0;
+  INT_TYPE precision, width, width_undecided, base = 0, mask_shift = 0;
   struct pike_string *s = 0;
   
   if(args < 1 || sp[-args].type != T_INT)
@@ -319,6 +319,14 @@ static void mpzmod__sprintf(INT32 args)
   if(sp[-1].type != T_INT)
     error("Precision argument to Mpz->_sprintf() is not an integer.\n");
   precision = (--sp)->u.integer;
+  
+  push_svalue(&sp[1-args]);
+  push_constant_text("width");
+  f_index(2);
+  if(sp[-1].type != T_INT)
+    error("Width argument to Mpz->_sprintf() is not an integer.\n");
+  width_undecided = ((sp-1)->subtype != NUMBER_NUMBER);
+  width = (--sp)->u.integer;
   
   switch(sp[-args].u.integer)
   {
@@ -355,14 +363,77 @@ static void mpzmod__sprintf(INT32 args)
     else
       s = low_get_digits(THIS, base);
     break;
+    
+  case 'c':
+  {
+    INT_TYPE length, neg = 0;
+    unsigned char *dst;
+    mp_limb_t *src;
+    mpz_t tmp;
+    MP_INT *n;
+    INT_TYPE i;
+
+    length = THIS->_mp_size;
+
+    if(width_undecided)
+    {
+      p_wchar2 ch = mpz_get_ui(THIS);
+      if(length<0)
+	ch = (~ch)+1;
+      s = make_shared_binary_string2(&ch, 1);
+      break;
+    }
+    
+    if(length < 0)
+    {
+      mpz_init_set(tmp, THIS);
+      mpz_add_ui(tmp, tmp, 1);
+      length = -tmp->_mp_size;
+      n = tmp;
+      neg = 1;
+    }
+    else
+      n = THIS;
+
+    if(width < 1)
+      width = 1;
+    
+    s = begin_shared_string(width);
+
+    dst = (unsigned char *)STR0(s) + width;
+    src = n->_mp_d;
+
+    while(width > 0)
+    {
+      mp_limb_t x = (length-->0? *(src++) : 0);
+	
+      for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
+      {
+	*(--dst) = (neg ? ~x : x) & 0xff;
+	x >>= 8;
+	if(!--width)
+	  break;
+      }
+    }
+    
+    if(neg)
+    {
+      mpz_clear(tmp);
+    }
+    
+    s = end_shared_string(s);
+  }
+  break;
   }
 
   pop_n_elems(args);
 
   if(s)
     push_string(s);
-  else
+  else {
     push_int(0);   /* Push false? */
+    sp[-1].subtype = 1;
+  }
 }
 
 static void mpzmod__is_type(INT32 args)
@@ -420,16 +491,13 @@ static void mpzmod_cast(INT32 args)
   case 'i':
     if(!strncmp(s->str, "int", 3))
     {
+      free_string(s);
 #ifdef AUTO_BIGNUM_XXXX
-      /* FIXME 1: Do we need to free the string?  Looking
-	 at the case with 'o' makes this confusing...
-
-	 FIXME 2: The run-time cast checking does not work
+      /* FIXME: The run-time cast checking does not work
 	 properly with bignums. Take a look at row 209 and
 	 226 in opcodes.c for more examples on this. */
       push_object(this_object());
 #else
-      free_string(s);
       mpzmod_get_int(0);
 #endif /* AUTO_BIGNUM */
       return;

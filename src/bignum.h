@@ -22,12 +22,12 @@
 	 INT_TYPE_SIGN(a) != INT_TYPE_SIGN((a)-(b)))
 
 #define INT_TYPE_LSH_OVERFLOW(a, b)                                        \
-        (((INT_TYPE)sizeof(INT_TYPE))*CHAR_BIT <= (b) ||                   \
+        ((((INT_TYPE)sizeof(INT_TYPE))*CHAR_BIT <= (b) && (a)) ||          \
 	 (((a)<<(b))>>(b)) != (a))
 
 /* Note: If this gives overflow, set the result to zero. */
 #define INT_TYPE_RSH_OVERFLOW(a, b)                                        \
-        (((INT_TYPE)sizeof(INT_TYPE))*CHAR_BIT <= (b))
+        (((INT_TYPE)sizeof(INT_TYPE))*CHAR_BIT <= (b) && (a))
 
 /* Prototypes begin here */
 struct program *get_auto_bignum_program(void);
