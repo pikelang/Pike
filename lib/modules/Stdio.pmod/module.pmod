@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.203 2004/06/23 10:55:13 grubba Exp $
+// $Id: module.pmod,v 1.204 2004/09/01 17:17:08 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -1791,9 +1791,19 @@ void report_file_open_places (string file)
 //! @decl string read_file(string filename)
 //! @decl string read_file(string filename, int start, int len)
 //!
-//! Read @[len] lines from a file @[filename] after skipping @[start] lines
-//! and return those lines as a string. If both @[start] and @[len] are omitted
-//! the whole file is read.
+//! Read @[len] lines from a regular file @[filename] after skipping
+//! @[start] lines and return those lines as a string. If both
+//! @[start] and @[len] are omitted the whole file is read.
+//!
+//! @throws
+//!   Throws an error on any I/O error except when the file doesn't
+//!   exist.
+//!
+//! @returns
+//!   Returns @expr{0@} (zero) if the file doesn't exist or if
+//!   @[start] is beyond the end of it.
+//!
+//!   Returns a string with the requested data otherwise.
 //!
 //! @seealso
 //! @[read_bytes()], @[write_file()]
@@ -1801,30 +1811,49 @@ void report_file_open_places (string file)
 string read_file(string filename,void|int start,void|int len)
 {
   FILE f;
-  string ret, tmp;
+  string ret;
   f=FILE();
-  if(!f->open(filename,"r")) return 0;
+  if (!f->open(filename,"r")) {
+    if (f->errno() == System.ENOENT)
+      return 0;
+    else
+      error ("Failed to open %O: %s\n", filename, strerror (f->errno()));
+  }
 
   // Disallow devices and directories.
   Stat st;
-  if (f->stat && (st = f->stat()) && !st->isreg) {
-    error( "File %O is not a regular file!\n", filename );
+  if ((st = f->stat()) && !st->isreg) {
+    error( "%O is not a regular file.\n", filename );
   }
 
   switch(query_num_arg())
   {
   case 1:
     ret=f->read();
+    if (!ret)
+      error ("Failed to read %O: %s\n", filename, strerror (f->errno()));
     break;
 
   case 2:
     len=0x7fffffff;
   case 3:
-    while(start-- && f->gets());
+    while(start--) {
+      if (!f->gets())
+	if (int err = f->errno())
+	  error ("Failed to read %O: %s\n", filename, strerror (err));
+	else
+	  return "";		// EOF reached.
+    }
     String.Buffer buf=String.Buffer();
-    while(len-- && (tmp=f->gets()))
+    while(len--)
     {
-      buf->add(tmp, "\n");
+      if (string tmp = f->gets())
+	buf->add(tmp, "\n");
+      else
+	if (int err = f->errno())
+	  error ("Failed to read %O: %s\n", filename, strerror (err));
+	else
+	  break;		// EOF reached.
     }
     ret=buf->get();
     destruct(buf);
@@ -1838,18 +1867,20 @@ string read_file(string filename,void|int start,void|int len)
 //! @decl string read_bytes(string filename, int start)
 //! @decl string read_bytes(string filename)
 //!
-//! Read @[len] number of bytes from the file @[filename] starting at byte
-//! @[start], and return it as a string.
+//! Read @[len] number of bytes from a regular file @[filename]
+//! starting at byte @[start], and return it as a string.
 //!
 //! If @[len] is omitted, the rest of the file will be returned.
 //!
 //! If @[start] is also omitted, the entire file will be returned.
 //!
 //! @throws
-//!   Throws an error if @[filename] isn't a regular file.
+//!   Throws an error on any I/O error except when the file doesn't
+//!   exist.
 //!
 //! @returns
-//!   Returns @expr{0@} (zero) on failure to open @[filename].
+//!   Returns @expr{0@} (zero) if the file doesn't exist or if
+//!   @[start] is beyond the end of it.
 //!
 //!   Returns a string with the requested data otherwise.
 //!
@@ -1861,13 +1892,17 @@ string read_bytes(string filename, void|int start,void|int len)
   string ret;
   File f = File();
 
-  if(!f->open(filename,"r"))
-    return 0;
-  
+  if (!f->open(filename,"r")) {
+    if (f->errno() == System.ENOENT)
+      return 0;
+    else
+      error ("Failed to open %O: %s", filename, strerror (f->errno()));
+  }
+
   // Disallow devices and directories.
   Stat st;
-  if (f->stat && (st = f->stat()) && !st->isreg) {
-    error( "File \"%s\" is not a regular file!\n", filename );
+  if ((st = f->stat()) && !st->isreg) {
+    error( "%O is not a regular file.\n", filename );
   }
 
   switch(query_num_arg())
@@ -1877,9 +1912,12 @@ string read_bytes(string filename, void|int start,void|int len)
     len=0x7fffffff;
   case 3:
     if(start)
-      if (f->seek(start) < 0) {f->close(); return 0;}
+      if (f->seek(start) < 0)
+	error ("Failed to seek in %O: %s\n", filename, f->errno());
   }
   ret=f->read(len);
+  if (!ret)
+    error ("Failed to read %O: %s\n", filename, strerror (f->errno()));
   f->close();
   return ret;
 }
@@ -1893,7 +1931,7 @@ string read_bytes(string filename, void|int start,void|int len)
 //!   Throws an error if @[filename] couldn't be opened for writing.
 //!
 //! @returns
-//!   Returns the number of bytes written.
+//!   Returns the number of bytes written, i.e. @expr{sizeof(str)@}.
 //!
 //! @seealso
 //!   @[append_file()], @[read_bytes()], @[Stdio.File()->open()]
@@ -1903,14 +1941,19 @@ int write_file(string filename, string str, int|void access)
   int ret;
   File f = File();
 
-  if (query_num_arg() < 3) {
+  if (zero_type (access)) {
     access = 0666;
   }
 
   if(!f->open(filename, "twc", access))
-    error("Couldn't open file "+filename+": " + strerror(f->errno()) + "\n");
-  
-  ret=f->write(str);
+    error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
+
+  do {
+    ret=f->write(str[ret..]);
+    if (ret < 0)
+      error ("Couldn't write to %O: %s\n", filename, strerror (f->errno()));
+  } while (ret < sizeof (str));
+
   f->close();
   return ret;
 }
@@ -1923,7 +1966,7 @@ int write_file(string filename, string str, int|void access)
 //!   Throws an error if @[filename] couldn't be opened for writing.
 //!
 //! @returns
-//!   Returns the number of bytes written.
+//!   Returns the number of bytes written, i.e. @expr{sizeof(str)@}.
 //!
 //! @seealso
 //!   @[write_file()], @[read_bytes()], @[Stdio.File()->open()]
@@ -1933,14 +1976,19 @@ int append_file(string filename, string str, int|void access)
   int ret;
   File f = File();
 
-  if (query_num_arg() < 3) {
+  if (zero_type (access)) {
     access = 0666;
   }
 
   if(!f->open(filename, "awc", access))
-    error("Couldn't open file "+filename+": " + strerror(f->errno()) + "\n");
+    error("Couldn't open %O: %s\n", filename, strerror(f->errno()));
 
-  ret=f->write(str);
+  do {
+    ret=f->write(str[ret..]);
+    if (ret < 0)
+      error ("Couldn't write to %O: %s\n", filename, strerror (f->errno()));
+  } while (ret < sizeof (str));
+
   f->close();
   return ret;
 }
