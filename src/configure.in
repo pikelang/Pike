@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.657 2003/03/05 16:18:30 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.658 2003/03/23 01:04:44 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4489,6 +4489,11 @@ int main()
 }
 ]])
 
+case "`uname -m 2>/dev/null`:$pike_cv_sys_os" in
+  alpha:*BSD*)
+    AC_MSG_WARN([Using emulated IEEE support since OS is *BSD/alpha.]);;
+  *)
+
 AC_MSG_CHECKING(for type of float)
 AC_CACHE_VAL(pike_cv_float_type, [
   AC_TRY_RUN(float_check(float,BIG), pike_cv_float_type=ieee_big, [
@@ -4594,6 +4599,9 @@ else
     AC_MSG_RESULT(not IEEE)
   fi
 fi
+
+;;
+esac
 
 #############################################################################
 
