@@ -37,7 +37,7 @@ verbose_verify: module_testsuite
 
 gdb_verify: module_testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
-	@echo >>.gdbinit run -m $(SRCDIR)/../../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
+	@echo >>.gdbinit run -DNOT_INSTALLED -M.. -m $(SRCDIR)/../../../lib/master.pike $(PIKEOPTS) $(SRCDIR)/../../../bin/test_pike.pike module_testsuite -v -v -f
 	gdb ../../pike
 	@rm .gdbinit
 
