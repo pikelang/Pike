@@ -84,7 +84,7 @@
 **! method string data()
 **!	Gives back the data as a string.
 **!
-**! metohd int downloaded_bytes()
+**! method int downloaded_bytes()
 **!	Gives back the number of downloaded bytes.
 **!
 **! method int total_bytes()
