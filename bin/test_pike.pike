@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.52 2000/10/08 18:21:31 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.53 2001/01/01 14:11:27 mirar Exp $ */
 
 import Stdio;
 
@@ -65,19 +65,19 @@ array find_testsuites(string dir)
   {
     foreach(s, string file)
       {
-	string name=combine_path(dir||"",file);
-	if(file_size(name)==-2)
-	  ret+=find_testsuites(name);
-      }
-    
-    foreach(s, string file)
-      {
 	switch(file)
 	{
 	  case "testsuite":
 	  case "module_testsuite":
 	    ret+=({ combine_path(dir||"",file) });
 	}
+      }
+
+    foreach(s, string file)
+      {
+	string name=combine_path(dir||"",file);
+	if(file_size(name)==-2)
+	  ret+=find_testsuites(name);
       }
   }
   return ret;
