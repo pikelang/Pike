@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fsort_template.h,v 1.13 2002/10/11 01:39:31 nilsson Exp $
+|| $Id: fsort_template.h,v 1.14 2003/01/02 22:40:39 grubba Exp $
 */
 
 #ifndef SWAP
@@ -17,7 +17,7 @@
 
 #define INC(X) X=STEP(X,1)
 #define DEC(X) X=STEP(X,-1)
-#define SIZE ((ptrdiff_t)(char *)STEP((TYPE *)0,1))
+#define SIZE (((char *)STEP((TYPE *)0,1))-((char *)0))
 
 #define PARENT(X) (((X)-1)>>1)
 #define CHILD1(X) (((X)<<1)+1)
