@@ -16,6 +16,11 @@
 //! @tt{-t @i{argument@}@} or @tt{-t@i{argument@}@} or
 //! @tt{--test=@i{argument@}@}.
 
+static void my_error(string err, int throw_errors) {
+  if(throw_errors) error(err);
+  werror(err);
+  exit(1);
+}
 
 //!   This is a generic function to parse command line options of the
 //!   type @tt{-f@}, @tt{--foo@} or @tt{--foo=bar@}.
@@ -49,6 +54,12 @@
 //!   option is not present. If @[def] is given and the option does not have an
 //!   argument @[find_option()] will fail.
 //!
+//! @param throw_errors
+//!   If @[throw_errors] has been specified @[find_option()] will throw
+//!   errors on failure. If it has been left out, or is @tt{0@} (zero), it will
+//!   instead print an error message on @[Stdio.stderr] and exit the
+//!   program with result code 1 on failure.
+//!
 //! @returns
 //!   Returns the value the option has been set to if any.
 //!
@@ -61,8 +72,8 @@
 //!   If all else fails, @[def] will be returned.
 //!
 //! @throws
-//!   If an option that requires an argument misses the argument an
-//!   error will be thrown.
+//!   If an option that requires an argument misses the argument and
+//!   @[throw_errors] is set an error will be thrown.
 //!
 //! @note
 //!   @[find_option()] modifies @[argv].
@@ -80,11 +91,12 @@ string|int(0..1) find_option(array(string) argv,
 			     array(string)|string shortform,
 			     array(string)|string|void longform,
 			     array(string)|string|void envvars,
-			     string|int(0..1)|void def)
+			     string|int(0..1)|void def,
+			     int|void throw_errors)
 {
   string|int(0..1) value;
 
-  int(0..1) hasarg = query_num_arg() > 4;
+  int(0..1) hasarg = !zero_type(def);
   if(!arrayp(longform)) longform = ({ [string]longform });
   if(!arrayp(shortform)) shortform = ({ [string]shortform });
   if(stringp(envvars)) envvars = ({ [string]envvars });
@@ -103,7 +115,7 @@ string|int(0..1) find_option(array(string) argv,
 
 	if(hasarg && !value) {
 	  if(i == sizeof(argv)-1)
-	    error( "No argument to option "+tmp+".\n" );
+	    my_error( "No argument to option "+tmp+".\n",throw_errors );
 
 	  value=argv[i+1];
 	  argv[i+1]=0;
@@ -121,7 +133,7 @@ string|int(0..1) find_option(array(string) argv,
 	  if(hasarg) {
 	    if(arg == "") {
 	      if(i == sizeof(argv)-1)
-		error( "No argument to option -"+sopt+".\n" );
+		my_error( "No argument to option -"+sopt+".\n",throw_errors );
 
 	      value=argv[i+1];
 	      argv[i+1] = 0;
@@ -170,11 +182,6 @@ constant MAY_HAVE_ARG=3;
 
 #define SIZE 5
 
-static void my_error(string err, int throw_errors) {
-  if(throw_errors) error(err);
-  werror(err);
-  exit(1);
-}
 
 //!   This function does the job of several calls to @[find_option()].
 //!   The main advantage of this is that it allows it to handle the
