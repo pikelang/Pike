@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.226 1999/11/14 23:36:56 grubba Exp $"]])
+test_true([["$Id: testsuite.in,v 1.227 1999/11/17 20:16:17 grubba Exp $"]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1783,6 +1783,28 @@ test_equal([[array_sscanf("\2000\1000\1111\1001\1110foo","%s%[\1000-\1111]%s")]]
 test_equal([[ array_sscanf("02 00 DC 00 0B","%{%x%*[\0-/:-@]%}")[0] ]],
     [[ ({ ({2}), ({0}), ({220}),({0}), ({11}) }) ]])
 	
+test_any([[
+class Bar {
+  string sum = "";
+  void bar(string s) {
+    sum += s;
+  }
+  string foo()
+  {
+    foreach(({ "foo ", "bar ", "baz " }), string s) {
+      sscanf(s, "%*[\t ]%[^ \t]", s);
+      switch(foo) {
+      default:
+        bar(s);
+        break;
+      }
+    }
+    return sum;
+  }
+};
+  return Bar()->foo()
+]], "foobarbaz")
+
 
 // Basics
 test_true(1)
