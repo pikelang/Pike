@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.124 2001/06/04 23:59:56 mast Exp $");
+RCSID("$Id: mapping.c,v 1.125 2001/06/26 21:03:50 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2104,6 +2104,8 @@ void gc_mark_mapping_as_referenced(struct mapping *m)
   if(m->data->refs <=0)
     fatal("Zero refs in mapping->data\n");
 #endif
+  debug_malloc_touch(m);
+  debug_malloc_touch(m->data);
 
   if(gc_mark(m)) {
     struct mapping_data *md = m->data;
@@ -2153,6 +2155,8 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
 {
   GC_CYCLE_ENTER(m, weak) {
     struct mapping_data *md = m->data;
+    debug_malloc_touch(m);
+    debug_malloc_touch(md);
 
 #ifdef PIKE_DEBUG
     if(md->refs <=0)
@@ -2163,24 +2167,34 @@ void real_gc_cycle_check_mapping(struct mapping *m, int weak)
       TYPE_FIELD ind_types = 0, val_types = 0;
       if (MAPPING_DATA_IN_USE(md)) {
 	/* Must leave the mapping data untouched if it's busy. */
+	debug_malloc_touch(m);
+	debug_malloc_touch(md);
 	GC_RECURSE_MD_IN_USE(md, gc_cycle_check_svalues, ind_types, val_types);
 	gc_assert_checked_as_nonweak(md);
       }
       else
 	switch (md->flags & MAPPING_WEAK) {
 	  case 0:
+	    debug_malloc_touch(m);
+	    debug_malloc_touch(md);
 	    GC_RECURSE(md, GC_REC_KP, gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_nonweak(md);
 	    break;
 	  case MAPPING_WEAK_INDICES:
+	    debug_malloc_touch(m);
+	    debug_malloc_touch(md);
 	    GC_RECURSE(md, GC_REC_KP_IND, gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	  case MAPPING_WEAK_VALUES:
+	    debug_malloc_touch(m);
+	    debug_malloc_touch(md);
 	    GC_RECURSE(md, GC_REC_KP_VAL, gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
 	  default:
+	    debug_malloc_touch(m);
+	    debug_malloc_touch(md);
 	    GC_RECURSE(md, GC_REC_KP_BOTH, gc_cycle_check, ind_types, val_types);
 	    gc_assert_checked_as_weak(md);
 	    break;
@@ -2284,6 +2298,10 @@ void gc_mark_all_mappings(void)
   while (gc_mark_mapping_pos) {
     struct mapping *m = gc_mark_mapping_pos;
     gc_mark_mapping_pos = m->next;
+
+    debug_malloc_touch(m);
+    debug_malloc_touch(m->data);
+
     if(gc_is_referenced(m))
       gc_mark_mapping_as_referenced(m);
   }
@@ -2316,13 +2334,20 @@ void gc_free_all_unreferenced_mappings(void)
 
   for(m=gc_internal_mapping;m;m=next)
   {
+    debug_malloc_touch(m);
+    debug_malloc_touch(m->data);
+
     if(gc_do_free(m))
     {
       /* Got an extra ref from gc_cycle_pop(). */
       md = m->data;
+
+      debug_malloc_touch(m);
+      debug_malloc_touch(md);
+
       /* Protect against unlink_mapping_data() recursing too far. */
       m->data=&empty_data;
-      m->data->refs++;
+      add_ref(m->data);
 
       unlink_mapping_data(md);
 #ifdef MAPPING_SIZE_DEBUG

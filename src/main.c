@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.128 2001/06/25 20:03:40 grubba Exp $");
+RCSID("$Id: main.c,v 1.129 2001/06/26 21:03:50 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -728,6 +728,11 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
   }
 #endif
 
+#ifdef PIKE_DEBUG
+  /* For profiling */
+  exit_lex();
+#endif
+
   exit(num);
 }
 
@@ -785,7 +790,6 @@ void low_exit_main(void)
   exit_dynamic_load();
   exit_signals();
   exit_builtin();
-  exit_lex();
   exit_cpp();
   cleanup_interpret();
   cleanup_added_efuns();

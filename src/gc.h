@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.75 2001/03/22 02:21:15 hubbe Exp $
+ * $Id: gc.h,v 1.76 2001/06/26 21:03:49 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -15,6 +15,7 @@ extern INT32 num_objects;
 extern INT32 num_allocs;
 extern ptrdiff_t alloc_threshold;
 PMOD_EXPORT extern int Pike_in_gc;
+extern int gc_generation;
 extern int gc_debug;
 
 extern struct callback *gc_evaluator_callback;

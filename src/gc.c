@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.153 2001/06/11 19:58:28 mast Exp $");
+RCSID("$Id: gc.c,v 1.154 2001/06/26 21:03:49 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -99,6 +99,7 @@ INT32 num_objects = 3;		/* Account for *_empty_array. */
 INT32 num_allocs =0;
 ptrdiff_t alloc_threshold = MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
+int gc_generation = 0;
 struct pike_queue gc_mark_queue;
 time_t last_gc;
 
@@ -766,6 +767,21 @@ void low_describe_something(void *a,
       debug_dump_array((struct array *)a);
       break;
 
+    case T_MAPPING_DATA:
+    {
+      struct mapping *m;
+      for(m=first_mapping;m;m=m->next)
+      {
+	if(m->data == (struct mapping_data *)a)
+	{
+	  fprintf(stderr,"%*s**Describing mapping:\n",indent,"");
+	  debug_dump_mapping((struct mapping *)m);
+	  describe_something( m, T_MAPPING, indent+2,depth-1,flags);
+	}
+      }
+      break;
+    }
+    
     case T_MAPPING:
       fprintf(stderr,"%*s**Describing mapping:\n",indent,"");
       debug_dump_mapping((struct mapping *)a);
@@ -1116,7 +1132,7 @@ void debug_gc_add_extra_ref(void *a)
     gc_fatal(a, 0, "Thing already got an extra gc ref.\n");
   m->flags |= GC_GOT_EXTRA_REF;
   gc_extra_refs++;
-  ++*(INT32 *) a;
+  add_ref( (struct ref_dummy *)a);
 }
 
 void debug_gc_free_extra_ref(void *a)
@@ -1521,6 +1537,9 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
   struct marker *last = find_marker(gc_rec_last->data);
 
 #ifdef PIKE_DEBUG
+
+  debug_malloc_touch(x);
+
   if (!x) fatal("Got null pointer.\n");
   if (m->data != x) fatal("Got wrong marker.\n");
   if (Pike_in_gc != GC_PASS_CYCLE)
@@ -1724,6 +1743,7 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 
       NEXT(gc_rec_last) = m->frame = l = gc_cycle_enqueue_pop(x);
       m->flags |= GC_CYCLE_CHECKED | (last->flags & GC_LIVE);
+      debug_malloc_touch(x);
       if (weak) {
 	if (weak > 0) l->frameflags |= GC_WEAK_REF;
 	else l->frameflags |= GC_STRONG_REF;
@@ -1752,6 +1772,7 @@ live_recurse:
     fatal("Shouldn't live recurse when there's nothing to do.\n");
 #endif
   m->flags |= GC_LIVE|GC_LIVE_RECURSE;
+  debug_malloc_touch(x);
 
   if (m->flags & GC_GOT_DEAD_REF) {
     /* A thing previously popped as dead is now being marked live.
@@ -1991,6 +2012,7 @@ int do_gc(void)
 
   if(Pike_in_gc) return 0;
   init_gc();
+  gc_generation++;
   Pike_in_gc=GC_PASS_PREPARE;
 #ifdef PIKE_DEBUG
   gc_debug = d_flag;
