@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.9 2001/05/06 15:24:23 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.10 2001/05/06 15:39:50 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -854,8 +854,7 @@ void process_line(string s, string currentfile, int line)
       d=getridoftabs(d);
       descM->desc+=d;
     }
-    else
-    {
+    else if (descM) {
       if (!descM->desc) descM->desc="";
       else descM->desc+="\n";
     }
