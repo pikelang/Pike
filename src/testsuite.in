@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.520 2002/06/07 02:16:42 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.521 2002/06/10 20:46:42 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -9842,6 +9842,19 @@ test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 
 test_any(class A {int f(){return 1;}}; class B {inherit A; nomask int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; local int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; inline int f(){return 2;}}; return B()->f(), 2)
+
+// - modifiers, misc checks
+
+test_program([[
+  class A {int i = 17;}
+  class B {
+    private inherit A;
+    class C {
+      int f() {return i;}
+    }
+  }
+  int a() {return B()->C()->f() == 17;}
+]])
 
 test_any([[
 class Fnord
