@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 1999/11/21 20:29:19 grubba Exp $
+# $Id: configure.in,v 1.6 1999/12/12 21:51:31 per Exp $
 AC_INIT(top.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -11,7 +11,6 @@ if test x$without_GLUT = xyes; then
   AUTO=""
 else
   AC_PATH_XTRA()
-
   # The variables from the PATH_EXTRA macro are missnamed...
   #
   #   Variable     Function	Contents
@@ -26,6 +25,8 @@ else
   echo "X_EXTRA_LIBS: $X_EXTRA_LIBS"
   echo "X_PRE_LIBS:   $X_PRE_LIBS"
 
+  AC_CHECK_HEADERS(GL/glut.h)
+
   CPPFLAGS="$CFLAGS $X_CFLAGS"
   LIBS="$X_EXTRA_LIBS $LIBS"
   LDFLAGS="$LDFLAGS $X_LIBS $X_PRE_LIBS"
@@ -39,8 +40,6 @@ else
   AC_CHECK_LIB(MesaGLU, gluCylinder)
   AC_CHECK_LIB(Xinput, XOpenDevice)
   AC_CHECK_LIB(Xi, XOpenDevice)
-
-  AC_CHECK_HEADERS(GL/glut.h)
 
   AC_MSG_CHECKING(for glutSolidTeapot in -lglut)
   AC_CACHE_VAL(pike_cv_lib_glut, [
