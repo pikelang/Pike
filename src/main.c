@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.68 1999/04/08 22:27:07 hubbe Exp $");
+RCSID("$Id: main.c,v 1.69 1999/04/08 23:54:29 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -540,7 +540,6 @@ void low_exit_main(void)
   free_svalue(& throw_value);
   throw_value.type=T_INT;
 
-  exit_destroy_called_mark_hash();
 #if defined(PIKE_DEBUG) && defined(DEBUG_MALLOC)
   if(verbose_debug_exit)
   {
@@ -610,7 +609,12 @@ void low_exit_main(void)
 
   cleanup_shared_string_table();
 #endif
-  cleanup_callbacks();
+
   really_clean_up_interpret();
+#ifdef DO_PIKE_CLEANUP
+  cleanup_callbacks();
+  free_all_callable_blocks();
+  exit_destroy_called_mark_hash();
+#endif
 }
 

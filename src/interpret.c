@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.118 1999/03/19 11:43:14 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.119 1999/04/08 23:54:28 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1351,5 +1351,7 @@ void cleanup_interpret(void)
 
 void really_clean_up_interpret(void)
 {
+#ifdef DO_PIKE_CLEANUP
   free_all_pike_frame_blocks();
+#endif
 }
