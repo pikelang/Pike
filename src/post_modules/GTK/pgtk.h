@@ -7,7 +7,6 @@
 #include <pike_types.h>
 #include <interpret.h>
 #include <module_support.h>
-#include <error.h>
 #include <array.h>
 #include <backend.h>
 #include <stralloc.h>
