@@ -846,6 +846,10 @@ void pike_module_exit()
 #include "static_strings.h"
 #undef STRING
 
+  if (my_callback) {
+    remove_callback(my_callback);
+  }
+
   free_program(c_request_program);
   free_program(aap_log_object_program);
   free_program(accept_loop_program);
