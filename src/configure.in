@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.470 2001/02/01 08:12:26 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.471 2001/02/03 07:02:06 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4271,6 +4271,347 @@ fi
 
 rm -f core
 
+
+##########################################################################
+AC_MSG_CHECKING(how well OOB handling works)
+AC_CACHE_VAL(pike_cv_system_oob_working,[
+  OCPPFLAGS="$CPPFLAGS"
+  CPPFLAGS="-I. -I../.. -I$srcdir -I$srcdir/../.."
+  AC_TRY_RUN([
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/stat.h>
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#ifdef HAVE_SYS_POLL_H
+#include <sys/poll.h>
+#endif
+#include <fcntl.h>
+#ifdef HAVE_SYS_FILE_H
+#include <sys/file.h>
+#endif
+
+#define SP_DEBUG(X)	fprintf X
+
+#ifndef POLLRDNORM
+#define POLLRDNORM      POLLIN
+#endif
+
+#ifndef POLLRDBAND
+#define POLLRDBAND      POLLPRI
+#endif
+
+#ifndef POLLWRBAND
+#define POLLWRBAND      POLLOUT
+#endif
+
+int set_nonblocking(int fd,int which)
+{
+  int ret;
+  do 
+  {
+#if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
+    ret=ioctl(fd, FIONBIO, &which);
+#else
+
+#ifdef USE_FCNTL_O_NDELAY
+    ret=fcntl(fd, F_SETFL, which?O_NDELAY:0);
+#else
+
+#ifdef USE_FCNTL_O_NONBLOCK
+    ret=fcntl(fd, F_SETFL, which?O_NONBLOCK:0);
+#else
+
+#ifdef USE_FCNTL_FNDELAY
+    ret=fcntl(fd, F_SETFL, which?FNDELAY:0);
+#else
+
+#error Do not know how to set your filedescriptors nonblocking.
+
+#endif
+#endif
+#endif
+#endif
+  } while(ret <0 && errno==EINTR);
+  return ret;
+}
+
+
+static int socketpair_fd = -1;
+int my_socketpair(int family, int type, int protocol, int sv[2])
+{
+  static struct sockaddr_in my_addr;
+  struct sockaddr_in addr,addr2;
+  int retries=0;
+  ACCEPT_SIZE_T len;
+
+  memset((char *)&addr,0,sizeof(struct sockaddr_in));
+
+  if(socketpair_fd==-1)
+  {
+    if((socketpair_fd=socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+      SP_DEBUG((stderr, "my_socketpair:socket() failed, errno:%d\n",
+		errno));
+      return -1;
+    }
+
+    memset((char *)&my_addr,0,sizeof(struct sockaddr_in));
+    my_addr.sin_family=AF_INET;
+    my_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+    my_addr.sin_port=htons(0);
+
+
+    if(bind(socketpair_fd, (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
+    {
+      SP_DEBUG((stderr, "my_socketpair:bind() failed, errno:%d\n",
+		errno));
+      close(socketpair_fd);
+      socketpair_fd=-1;
+      return -1;
+    }
+
+    len = sizeof(my_addr);
+    if(getsockname(socketpair_fd,(struct sockaddr *)&my_addr,&len) < 0)
+    {
+      SP_DEBUG((stderr, "my_socketpair:getsockname() failed, errno:%d\n",
+		errno));
+      close(socketpair_fd);
+      socketpair_fd=-1;
+      return -1;
+    }
+
+    if(listen(socketpair_fd, 5) < 0)
+    {
+      SP_DEBUG((stderr, "my_socketpair:listen() failed, errno:%d\n",
+		errno));
+      close(socketpair_fd);
+      socketpair_fd=-1;
+      return -1;
+    }
+
+    set_nonblocking(socketpair_fd, 1);
+
+    my_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
+  }
+
+
+  if((sv[1]=socket(AF_INET, SOCK_STREAM, 0)) <0) {
+    SP_DEBUG((stderr, "my_socketpair:socket() failed, errno:%d (2)\n",
+	      errno));
+    return -1;
+  }
+
+
+retry_connect:
+  retries++;
+  if(connect(sv[1], (struct sockaddr *)&my_addr, sizeof(addr)) < 0)
+  {
+    SP_DEBUG((stderr, "my_socketpair:connect() failed, errno:%d (%d)\n",
+	      errno, EWOULDBLOCK));
+    if(errno != EWOULDBLOCK)
+    {
+      int tmp2;
+      for(tmp2=0;tmp2<20;tmp2++)
+      {
+	int tmp;
+	ACCEPT_SIZE_T len2;
+
+	len2=sizeof(addr);
+	tmp=accept(socketpair_fd,(struct sockaddr *)&addr,&len2);
+
+	if(tmp!=-1) {
+	  SP_DEBUG((stderr, "my_socketpair:accept() failed, errno:%d\n",
+		    errno));
+	  close(tmp);
+	}
+	else
+	  break;
+      }
+      if(retries > 20) return -1;
+      goto retry_connect;
+    }
+  }
+
+
+  do
+  {
+    ACCEPT_SIZE_T len3;
+
+    len3=sizeof(addr);
+  retry_accept:
+    sv[0]=accept(socketpair_fd,(struct sockaddr *)&addr,&len3);
+
+    if(sv[0] < 0) {
+      SP_DEBUG((stderr, "my_socketpair:accept() failed, errno:%d (2)\n",
+		errno));
+      if(errno==EINTR) goto retry_accept;
+      close(sv[1]);
+      return -1;
+    }
+
+    set_nonblocking(sv[0],0);
+
+    len=sizeof(addr);
+    if(getpeername(sv[0], (struct sockaddr *)&addr,&len)) {
+      SP_DEBUG((stderr, "my_socketpair:getpeername() failed, errno:%d\n",
+		errno));
+      return -1;
+    }
+    len=sizeof(addr);
+    if(getsockname(sv[1],(struct sockaddr *)&addr2,&len) < 0) {
+      SP_DEBUG((stderr, "my_socketpair:getsockname() failed, errno:%d\n",
+		errno));
+      return -1;
+    }
+  }while(len < (int)sizeof(addr) ||
+	 addr2.sin_addr.s_addr != addr.sin_addr.s_addr ||
+	 addr2.sin_port != addr.sin_port);
+
+  SP_DEBUG((stderr, "my_socketpair: succeeded\n",
+	    errno));
+
+  return 0;
+}
+
+int socketpair_ultra(int family, int type, int protocol, int sv[2])
+{
+  int retries=0;
+
+  while(1)
+  {
+    int ret=my_socketpair(family, type, protocol, sv);
+    if(ret>=0) return ret;
+
+    switch(errno)
+    {
+      case EAGAIN: break;
+
+      case EADDRINUSE:
+	if(retries++ > 10) return ret;
+	break;
+
+      default:
+	return ret;
+    }
+  }
+}
+
+
+FILE *output;
+struct pollfd pollset[2];
+int fds[2];
+static int sent=0;
+int xcalls=0;
+
+int ping(int fd)
+{
+  int r;
+  sent++;
+  if(sent > 10000)
+  {
+    fprintf(output,xcalls ? "SEMIWORKING" : "WORKING");
+    exit(0);
+  }
+  do {
+    r=send(fds[fd],"x",1,MSG_OOB);
+  }while(r < 0 && errno==EINTR);
+  if(r!=1)
+  {
+    fprintf(output,"XBYTES\n");
+    exit(0);
+  }
+
+  pollset[fd].events &=~ POLLWRBAND;
+  pollset[!fd].events |= POLLRDBAND;
+}
+
+int pong(int fd)
+{
+  char foo[2];
+  int r;
+   do {
+    r=recv(fds[fd], &foo, 2, MSG_OOB);
+  }while(r < 0 && errno==EINTR);
+  if(r!=1)
+  {
+    fprintf(output,"XBYTES\n");
+    exit(0);
+  }
+
+  pollset[fd].events &=~ POLLRDBAND;
+  pollset[fd].events |=  POLLWRBAND;
+}
+
+void pang(int fd)
+{
+  char foo[2];
+  int r;
+  xcalls++;
+   do {
+    r=recv(fds[fd], &foo, 2, 0);
+  }while(r < 0 && errno==EINTR);
+  if(r<0 && errno==EAGAIN) return;
+
+  fprintf(output,"INLINED\n");
+  exit(0);
+}
+
+int main(int argc, char **argv)
+{
+  int e;
+  output=fopen("conftest.out.2","w");
+  socketpair_ultra(AF_UNIX, SOCK_STREAM, 0, fds);
+
+#define INIT(X) do {\
+  set_nonblocking(fds[X],1); \
+  pollset[X].fd=fds[X]; \
+  pollset[X].events=POLLIN; \
+}while(0);
+
+  INIT(0);
+  INIT(1);
+
+  ping(0);
+
+  while(1)
+  {
+    if(!poll(pollset, 2, 10000))
+    {
+      fprintf(output,sent>1 ? "WORKS_A_LITTLE\n" : "TIMEOUT\n");
+      exit(0);
+    }
+
+    for(e=0;e<2;e++)
+    {
+      if(pollset[e].revents & POLLRDBAND) pong(e);
+      if(pollset[e].revents & POLLWRBAND) ping(e);
+      if(pollset[e].revents & POLLIN) pang(e);
+    }
+  }
+}  ],
+pike_cv_system_oob_working="`cat conftest.out.2`",
+pike_cv_system_oob_working=UNKNOWN,
+pike_cv_system_oob_working=UNKNOWN)
+  CPPFLAGS="$OCPPFLAGS"
+  
+  rm conftest.out.2 >/dev/null 2>/dev/null || :
+])
+AC_MSG_RESULT($pike_cv_system_oob_working)
+
+case "x$pike_cv_system_oob_working" in
+  xWORKING)        AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,3)  ;;
+  xSEMIWORKING)    AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,2)  ;;
+  xINLINED)        AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,1)  ;;
+  xWORKS_A_LITTLE) AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,1)  ;;
+  xXBYTES)         AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,0)  ;;
+  xTIMEOUT)        AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,0)  ;;
+  *)               AC_DEFINE_UNQUOTED(PIKE_OOB_WORKS,-1) ;; #unknown
+esac
 ##########################################################################
 
 # Set info about shared libraries.

@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.209 2001/01/27 08:08:18 hubbe Exp $");
+RCSID("$Id: file.c,v 1.210 2001/02/03 07:02:07 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2828,6 +2828,11 @@ void pike_module_init(void)
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
 #ifdef WITH_OOB
   add_integer_constant("__HAVE_OOB__",1,0);
+#ifdef PIKE_OOB_WORKS
+  add_integer_constant("__OOB__",PIKE_OOB_WORKS,0);
+#else
+  add_integer_constant("__OOB__",-1,0); /* unknown */
+#endif
 #endif
 
 #ifdef PIKE_DEBUG
