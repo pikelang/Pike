@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.44 2003/03/26 14:15:41 mast Exp $
+|| $Id: fdlib.h,v 1.45 2003/03/26 16:38:39 mast Exp $
 */
 
 #ifndef FDLIB_H
@@ -21,6 +21,10 @@
 
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
 #endif
 
 #ifdef HAVE_SYS_STAT_H
@@ -59,7 +63,7 @@
 #include <winbase.h>
 
 typedef int FD;
-typedef struct stat64 PIKE_STAT_T;
+typedef struct __stat64 PIKE_STAT_T;
 
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
