@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.115 1999/11/18 22:17:46 grubba Exp $");
+RCSID("$Id: las.c,v 1.116 1999/11/19 17:00:13 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2109,7 +2109,7 @@ void fix_type_field(node *n)
     } else if(!match_types(CAR(n)->type,mixed_type_string))
       yyerror("Bad conditional expression.");
 
-    if(!CADR(n) || !CDDR(n))
+    if(!CDR(n) || !CADR(n) || !CDDR(n))
     {
       copy_shared_string(n->type,void_type_string);
       return;
@@ -2497,7 +2497,15 @@ static node *low_localopt(node *n,
       /* Assignment of local variable */
       if (!(usage[CDR(n)->u.integer.a] & 1)) {
 	/* Value isn't used. */
-	return low_localopt(CAR(n), usage, switch_u, cont_u, break_u, catch_u);
+	struct pike_string *ref_type;
+	MAKE_CONSTANT_SHARED_STRING(ref_type, tOr(tComplex, tString));
+	if (!match_types(CDR(n)->type, ref_type)) {
+	  /* The variable doesn't hold a refcounted value. */
+	  free_string(ref_type);
+	  return low_localopt(CAR(n), usage, switch_u, cont_u,
+			      break_u, catch_u);
+	}
+	free_string(ref_type);
       }
       usage[CDR(n)->u.integer.a] = 0;
       cdr = CDR(n);
