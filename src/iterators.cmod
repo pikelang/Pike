@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.30 2002/10/11 01:39:32 nilsson Exp $
+|| $Id: iterators.cmod,v 1.31 2002/12/01 00:16:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.30 2002/10/11 01:39:32 nilsson Exp $");
+RCSID("$Id: iterators.cmod,v 1.31 2002/12/01 00:16:54 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -402,7 +402,7 @@ PIKECLASS multiset_iterator
 	THIS->l->msd->noval_refs--;
 	sub_ref (THIS->l->msd);
 #ifdef PIKE_DEBUG
-	if (!THIS->l->msd->refs) Pike_fatal ("msd ran out of refs unexpectedly.\n");
+	if (THIS->l->msd->refs <= 0) Pike_fatal ("msd ran out of refs unexpectedly.\n");
 #endif
 	THIS->lock_index = 0;
       }
@@ -435,7 +435,7 @@ PIKECLASS multiset_iterator
 	  THIS->l->msd->noval_refs--;
 	  sub_ref (THIS->l->msd);
 #ifdef PIKE_DEBUG
-	  if (!THIS->l->msd->refs) Pike_fatal ("msd ran out of refs unexpectedly.\n");
+	  if (THIS->l->msd->refs <= 0) Pike_fatal ("msd ran out of refs unexpectedly.\n");
 #endif
 	}
 	free_multiset (THIS->l);

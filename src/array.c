@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.132 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: array.c,v 1.133 2002/12/01 00:16:54 mast Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.132 2002/10/11 01:39:28 nilsson Exp $");
+RCSID("$Id: array.c,v 1.133 2002/12/01 00:16:54 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -128,8 +128,12 @@ PMOD_EXPORT void really_free_array(struct array *v)
 #ifdef PIKE_DEBUG
   if(v == & empty_array || v == &weak_empty_array || v == &weak_shrink_empty_array)
     Pike_fatal("Tried to free some *_empty_array.\n");
-  if (v->refs)
+  if (v->refs) {
+#ifdef DEBUG_MALLOC
+    describe_something(v, T_ARRAY, 0,2,0, NULL);
+#endif
     Pike_fatal("Freeing array with %d refs.\n", v->refs);
+  }
 #endif
 
 #ifdef PIKE_DEBUG

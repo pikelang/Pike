@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.149 2002/11/28 19:11:43 mast Exp $
+|| $Id: stralloc.c,v 1.150 2002/12/01 00:16:55 mast Exp $
 */
 
 #include "global.h"
@@ -28,7 +28,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.149 2002/11/28 19:11:43 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.150 2002/12/01 00:16:55 mast Exp $");
 
 /* #define STRALLOC_USE_PRIMES */
 
@@ -934,18 +934,19 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
 {
 #ifdef PIKE_DEBUG
   extern int d_flag;
-  if (d_flag) {
-    if (s->refs) {
-      Pike_fatal("Freeing string with references!\n");
-    }
-    if(d_flag > 2)
-    {
-      if(s->next == (struct pike_string *)(ptrdiff_t)-1)
-	Pike_fatal("Freeing shared string again!\n");
+  if (s->refs) {
+#ifdef DEBUG_MALLOC
+    describe_something(s, T_STRING, 0,2,0, NULL);
+#endif
+    Pike_fatal("Freeing string with %d references.\n", s->refs);
+  }
+  if(d_flag > 2)
+  {
+    if(s->next == (struct pike_string *)(ptrdiff_t)-1)
+      Pike_fatal("Freeing shared string again!\n");
 
-      if(((ptrdiff_t)s->next) & 1)
-	Pike_fatal("Freeing shared string again, memory corrupt or other bug!\n");
-    }
+    if(((ptrdiff_t)s->next) & 1)
+      Pike_fatal("Freeing shared string again, memory corrupt or other bug!\n");
   }
   if ((s->size_shift < 0) || (s->size_shift > 2)) {
     Pike_fatal("Freeing string with bad shift (0x%08x); could it be a type?\n",

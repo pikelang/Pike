@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.463 2002/11/25 03:16:08 mast Exp $
+|| $Id: program.c,v 1.464 2002/12/01 00:16:55 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.463 2002/11/25 03:16:08 mast Exp $");
+RCSID("$Id: program.c,v 1.464 2002/12/01 00:16:55 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1833,6 +1833,15 @@ PMOD_EXPORT void debug_start_new_program(int line, const char *file)
 static void exit_program_struct(struct program *p)
 {
   unsigned INT16 e;
+
+#ifdef PIKE_DEBUG
+  if (p->refs) {
+#ifdef DEBUG_MALLOC
+    describe_something(p, T_PROGRAM, 0,2,0, NULL);
+#endif
+    Pike_fatal("Program to be freed still got %d references.\n", p->refs);
+  }
+#endif
 
   if(p->parent)
   {

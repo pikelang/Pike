@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.156 2002/11/28 02:20:48 mast Exp $
+|| $Id: mapping.c,v 1.157 2002/12/01 00:16:54 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.156 2002/11/28 02:20:48 mast Exp $");
+RCSID("$Id: mapping.c,v 1.157 2002/12/01 00:16:54 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -49,8 +49,10 @@ static struct mapping *gc_mark_mapping_pos = 0;
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(m)	do{						\
 DO_IF_DEBUG(								\
-  if(m->refs)								\
-    Pike_fatal("really free mapping on mapping with nonzero refs.\n");	\
+  if(m->refs) {								\
+    DO_IF_DMALLOC(describe_something(m, T_MAPPING, 0,2,0, NULL));	\
+    Pike_fatal("really free mapping on mapping with %d refs.\n", m->refs); \
+  }									\
 )									\
 									\
   FREE_PROT(m);								\

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.59 2002/11/24 22:47:06 mast Exp $
+|| $Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.59 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -61,7 +61,7 @@ static inline struct msnode_indval *msnode_indval_check (struct msnode_indval *x
   {return x;}
 
 #define sub_extra_ref(X) do {						\
-    if (!sub_ref (X)) Pike_fatal ("Got zero refs to " #X " unexpectedly.\n"); \
+    if (!sub_ref (X)) Pike_fatal ("Got too few refs to " #X ".\n");	\
   } while (0)
 
 PMOD_EXPORT const char msg_no_multiset_flag_marker[] =
@@ -246,12 +246,14 @@ void free_multiset_data (struct multiset_data *msd);
 #define EXIT_BLOCK(L) do {						\
     FREE_PROT (L);							\
     DO_IF_DEBUG (							\
-      if (L->node_refs)							\
-	Pike_fatal ("Freeing multiset with %d node refs.\n", L->node_refs);	\
-      if (L->msd->refs <= 0)						\
-	Pike_fatal ("Too few refs %ld to multiset data.\n", L->msd->refs);	\
-      if (L->msd->noval_refs)						\
-	Pike_fatal ("Freeing multiset data with %d noval_refs.\n", L->msd->noval_refs); \
+      if (L->refs) {							\
+	DO_IF_DMALLOC(describe_something (L, T_MULTISET, 0,2,0, NULL));	\
+	Pike_fatal ("Too few refs %d to multiset.\n", L->refs);		\
+      }									\
+      if (L->node_refs) {						\
+	DO_IF_DMALLOC(describe_something (L, T_MULTISET, 0,2,0, NULL));	\
+	Pike_fatal ("Freeing multiset with %d node refs.\n", L->node_refs); \
+      }									\
     );									\
     if (!sub_ref (L->msd)) free_multiset_data (L->msd);			\
     DOUBLEUNLINK (first_multiset, L);					\
@@ -910,7 +912,7 @@ static void midflight_remove_node (struct multiset *l,
   ONERROR uwp;
   sub_ref (*pmsd);
 #ifdef PIKE_DEBUG
-  if (!(*pmsd)->refs) Pike_fatal ("Expected extra ref to passed msd.\n");
+  if ((*pmsd)->refs <= 0) Pike_fatal ("Expected extra ref to passed msd.\n");
 #endif
   *pmsd = NULL;
   add_msnode_ref (l);
@@ -5250,7 +5252,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.59 2002/11/24 22:47:06 mast Exp $");
+RCSID("$Id: multiset.c,v 1.60 2002/12/01 00:16:55 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -5287,8 +5289,12 @@ PMOD_EXPORT struct multiset *allocate_multiset(struct array *ind)
 PMOD_EXPORT void really_free_multiset(struct multiset *l)
 {
 #ifdef PIKE_DEBUG
-  if(l->refs)
+  if(l->refs) {
+#ifdef DEBUG_MALLOC
+    describe_something(l, T_MULTISET, 0,2,0, NULL);
+#endif
     Pike_fatal("really free multiset on multiset with nonzero refs.\n");
+  }
 #endif
 
   free_array(l->ind);
