@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.44 1999/10/29 03:34:34 mast Exp $");
+RCSID("$Id: mapping.c,v 1.45 1999/10/30 06:13:19 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -77,7 +77,6 @@ static void init_mapping(struct mapping *m, INT32 size)
     e=sizeof(struct keypair)*size+ sizeof(struct keypair *)*hashspace;
     tmp=(char *)xalloc(e);
     
-    m->flags=0;
     m->hash=(struct keypair **) tmp;
     m->hashsize=hashsize;
     
@@ -115,6 +114,7 @@ struct mapping *allocate_mapping(int size)
   m->next = first_mapping;
   m->prev = 0;
   m->refs = 1;
+  m->flags = 0;
 
   if(first_mapping) first_mapping->prev = m;
   first_mapping=m;
@@ -1181,11 +1181,11 @@ void gc_free_all_unreferenced_mappings(void)
 	for(prev= m->hash + e;(k=*prev);)
 	{
 	  if((k->val.type <= MAX_COMPLEX &&
-	      !(k->val.type == T_OBJECT && k->val.u.object->prog &&
+	      !(k->val.type == T_OBJECT &&
 		k->val.u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT) &&
 	      gc_do_free(k->val.u.refs)) ||
 	     (k->ind.type <= MAX_COMPLEX &&
-	      !(k->ind.type == T_OBJECT && k->ind.u.object->prog &&
+	      !(k->ind.type == T_OBJECT &&
 		k->ind.u.object->prog->flags & PROGRAM_NO_WEAK_DESTRUCT) &&
 	      gc_do_free(k->ind.u.refs)))
 	  {
