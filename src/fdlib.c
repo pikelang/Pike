@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.16 1998/03/28 15:37:24 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.17 1998/05/01 15:31:23 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -156,6 +156,9 @@ FD fd_open(char *file, int open_mode, int create_mode)
   da_handle[fd]=(long)x;
 
   mt_unlock(&fd_mutex);
+
+  if(open_mode & fd_APPEND)
+    fd_lseek(fd,0,SEEK_END);
 
   FDDEBUG(fprintf(stderr,"Opened %s file as %d (%d)\n",file,fd,x));
 
