@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# $Id: uname,v 1.9 2002/10/29 22:22:59 grubba Exp $
+
 . $NTTOOLS
 
 S=
@@ -13,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      echo "Fake NT uname version 1.1 by Fredrik Hubinette"
+      echo "Fake NT uname version 1.2 by Fredrik Hubinette and others"
       exit 0
     ;;
 
@@ -73,20 +75,29 @@ fi
 
 OUTPUT=
 
+if [ "$S$R$V" = "" ]; then :; else
+  # Note: The resulting string starts with a line feed,
+  #       and then something like:
+  # Windows NT Version 4.0
+  #       or
+  # Microsoft Windows XP [Version 5.1.2600]
+  RAW_VERSION="`sprsh cmd /c ver`"
+fi
+
 if [ X$S = Xyes ]; then
-  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\[ '{print $1}'`"
+  # System name.
+  # Note that the first '.' either matches ' ' or '['.
+  OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e 's/.Version.*//'`"
 fi
 
 if [ X$N = Xyes ]; then
+  # Node name.
   OUTPUT="$OUTPUT $NTHOST"
 fi
 
-if [ X$R = Xyes ]; then
-  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
-fi
-
-if [ X$V = Xyes ]; then
-  OUTPUT="$OUTPUT `sprsh cmd /c ver | grep \\\[ | awk -F\\[ '{print $2}' | awk '{print $2}' | sed 's/\\]//'`"
+if [ X$R = Xyes -o X$V = Xyes ]; then
+  # Release number or Version number.
+  OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e's/[^0-9.]*//g'`"
 fi
 
 if [ "$M$P" = "" ]; then :; else
@@ -107,6 +118,7 @@ if [ "$M$P" = "" ]; then :; else
   fi
 fi
 
+# Note: No quotes, so that we get rid of extra white space.
 echo $OUTPUT
 
 exit 0
