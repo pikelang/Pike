@@ -1,10 +1,12 @@
-# $Id: configure.in,v 1.26 2003/03/13 00:44:20 nilsson Exp $
+# $Id: configure.in,v 1.27 2003/03/13 12:16:38 grubba Exp $
 AC_INIT(spider.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
+AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
 
 AC_HAVE_HEADERS(arpa/inet.h netinet/in.h sys/mman.h netdb.h \
         sys/socket.h sys/sockio.h sys/conf.h stropts.h \
