@@ -1,4 +1,4 @@
-/*\
+/*\ 
 ||| This file a part of Pike, and is copyright by Fredrik Hubinette
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
@@ -23,7 +23,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.64 1999/02/15 20:53:09 grubba Exp $");
+RCSID("$Id: efuns.c,v 1.65 1999/03/23 10:04:43 js Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -116,6 +116,15 @@ void f_file_stat(INT32 args)
     error("Bad argument 1 to file_stat()\n");
 
   s = sp[-args].u.string->str;
+
+#ifdef __NT__
+  /* Remove trailing / or \ on NT */
+  s = malloc(strlen(s)+1);
+  strcpy(s,sp[-args].u.string->str);
+  if(strlen(s) && (s[strlen(s)-1]=='/' || s[strlen(s)-1]=='\\'))
+    s[strlen(s)-1]=0;
+#endif
+  
   l = (args>1 && !IS_ZERO(sp+1-args))?1:0;
   THREADS_ALLOW_UID();
 #ifdef HAVE_LSTAT
@@ -133,7 +142,11 @@ void f_file_stat(INT32 args)
   }else{
     push_array(encode_stat(&st));
   }
+#ifdef __NT__
+  free(s);
+#endif  
 }
+
 #ifdef __NT__
 
 void f_filesystem_stat( INT32 args )
@@ -455,6 +468,7 @@ void f_mkdir(INT32 args)
 
   /* Most OS's should have MKDIR_ARGS == 2 nowadays fortunately. */
   i = mkdir(s) != -1;
+
   if (i) {
     /* Attempt to set the mode.
      *
@@ -481,9 +495,15 @@ void f_mkdir(INT32 args)
 	errno = EPERM;
       }
     }
+    /* The above code doesn't seem to work on NT, preliminary 'fix' follows. /js */
+#ifndef __NT__
     if (!i) {
       rmdir(s);
     }
+#else
+    i=1;
+#endif
+    
   }  
 #endif
   pop_n_elems(args);
