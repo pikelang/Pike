@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hashtrie.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: hashtrie.c,v 1.7 2004/03/14 16:15:32 mast Exp $
 */
 
 /*
@@ -46,7 +46,7 @@ void *alloca();
 #endif
 
 static const char RCSID[]=
-   "$Id: hashtrie.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: hashtrie.c,v 1.7 2004/03/14 16:15:32 mast Exp $";
 
 #define TOO_DEEP_RECURSION 31 /* we can only shift down that */
 
@@ -440,7 +440,7 @@ MIRD_RES mird_hashtrie_write(struct mird_transaction *mtr,
 
 MIRD_RES mird_ht_scan(struct mird *db, UINT32 orig_root,UINT32 orig_key,
 		      UINT32 node_id,
-		      struct transaction_id *restrict,
+		      struct transaction_id *restrict_,
 		      UINT32 recur_level, UINT32 key_left,
 		      UINT32 read_n,
 		      UINT32 *dest_key, UINT32 *dest_cell, UINT32 *dest_n,
@@ -468,9 +468,9 @@ MIRD_RES mird_ht_scan(struct mird *db, UINT32 orig_root,UINT32 orig_key,
       return res;
 
    /* check if we're on the right track */
-   if (restrict &&
-       (READ_BLOCK_LONG(bdata,1)!=restrict->lsb ||
-	READ_BLOCK_LONG(bdata,0)!=restrict->msb))
+   if (restrict_ &&
+       (READ_BLOCK_LONG(bdata,1)!=restrict_->lsb ||
+	READ_BLOCK_LONG(bdata,0)!=restrict_->msb))
       return MIRD_OK;
 
    if (READ_BLOCK_LONG(data,0)!=CHUNK_HASHTRIE)
@@ -497,7 +497,7 @@ MIRD_RES mird_ht_scan(struct mird *db, UINT32 orig_root,UINT32 orig_key,
 		 CHUNK_ID_2_FRAG(db,id));
 #endif
 
-	 if ( (res = mird_ht_scan(db,orig_root,orig_key,id,restrict,
+	 if ( (res = mird_ht_scan(db,orig_root,orig_key,id,restrict_,
 				  recur_level+db->hashtrie_bits,key_left,
 				  read_n,dest_key,dest_cell,dest_n,first)) )
 	    return res;
@@ -522,9 +522,9 @@ check_big_cell:
 				  BLOCK_BIG,READ_BLOCK_LONG(bdata,2));
 
    /* check if we're on the right track */
-   if (restrict &&
-       (READ_BLOCK_LONG(bdata,1)!=restrict->lsb ||
-	READ_BLOCK_LONG(bdata,0)!=restrict->msb))
+   if (restrict_ &&
+       (READ_BLOCK_LONG(bdata,1)!=restrict_->lsb ||
+	READ_BLOCK_LONG(bdata,0)!=restrict_->msb))
       return MIRD_OK;
    
    data=bdata+20;
