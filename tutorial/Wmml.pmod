@@ -61,7 +61,9 @@ static private int verify_any(SGML data, string in)
 	case "module":
 	case "class":
 	case "method":
+        case "variable":
 	case "function":
+        case "constant":
 	case "man_description":
 	case "man_see":
 	case "man_syntax":
@@ -693,7 +695,9 @@ SGML low_make_concrete_wmml(SGML data)
 	}
 
 	case "method":
+        case "variable":
 	case "function":
+        case "constant":
 	{
 	   array anchors=({}),fullnames=({});
 
@@ -708,9 +712,11 @@ SGML low_make_concrete_wmml(SGML data)
 	      else switch(tag->tag)
 	      {
 		 case "method":
+	         case "variable":
 		    fullname=classbase->query()+"->"+name;
 		    break;
 		 case "function":
+	         case "constant":
 		    fullname=classbase->query()+"."+name;
 		    break;
 	      }
