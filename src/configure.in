@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.105 1997/08/16 18:55:03 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.106 1997/08/28 01:28:33 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -157,6 +157,13 @@ AC_DEFUN(AC_SYS_CPU_COMPILER_FLAG,
  fi
 ])
 
+AC_DEFUN(AC_SYS_OS_COMPILER_FLAG,
+[
+ if test "x$pike_cv_sys_os" = "x$1" ; then
+    AC_SYS_COMPILER_FLAG($2,$3)
+ fi
+])
+
 WARN=""
 OPTIMIZE=""
 
@@ -173,6 +180,7 @@ if test $cflags_is_set = no; then
 
 ### Non-gcc thingies. This should probably be enhanced...
   AC_SYS_COMPILER_FLAG(-fast,fast)
+  AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3)
 
 dnl
 dnl This does not work with Digital UNIX cc/ld (cc thinks it is ok, ld does not)
