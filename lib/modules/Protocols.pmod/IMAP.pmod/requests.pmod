@@ -1,6 +1,6 @@
 /* IMAP.requests
  *
- * $Id: requests.pmod,v 1.27 1999/02/08 18:35:19 grubba Exp $
+ * $Id: requests.pmod,v 1.28 1999/02/08 18:40:00 grubba Exp $
  */
 
 import .types;
@@ -699,14 +699,11 @@ class uid {
 
   constant arg_info = ({ ({ "string" }), ({ "set" }), ({ "any", 3 }) });
 
-  mapping easy_process(mapping cmd, object message_set, mapping request)
+  mapping easy_process(string cmd, object message_set, mapping request)
   {
     werror("uid->easy_process(%O, X, %O)\n", cmd, request);
 
-    if (cmd->type != "atom") {
-      throw(({ "UID: Internal Error\n", backtrace() }));
-    }
-    switch(lower_case(cmd->atom)) {
+    switch(lower_case(cmd)) {
     case "fetch":
       object local_set = server->uid_to_local(session, message_set);
       return(fetch::easy_process(local_set, request));
@@ -715,7 +712,7 @@ class uid {
     case "copy":
     default:
       throw(({ sprintf("UID: Command %O not implemented.\n",
-		       upper_case(cmd->atom)) }));
+		       upper_case(cmd)) }));
       break;
     }
   }
