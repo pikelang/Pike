@@ -66,7 +66,7 @@ array(int(0..100)) rgb_to_cmyk(array(int(0..255))|int(0..255) r,
 //! calling Image.Color.cmyk(c,m,y,k)->rgb()
 //!
 //! @seealso
-//! @[Colors.rgb_ro_cmyk()]
+//! @[Colors.rgb_to_cmyk()]
 //! @[Image.Color.cmyk()]
 //!
 array(int) cmyk_to_rgb(array(int)|int c, int|void m, int|void y, int|void k)
