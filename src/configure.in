@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.727 2003/08/04 16:34:04 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.728 2003/08/06 16:36:46 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5956,6 +5956,9 @@ AC_CACHE_VAL(pike_cv_thread_local_cpu_time, [
   AC_TRY_RUN([
 #include <stdio.h>
 
+/* libc_r:fputs on AIX 4.2 is broken. */
+#define FPUTS(S, F)	fwrite(S, sizeof(S)-sizeof(""), 1, F)
+
 #ifdef PIKE_THREADS
 
 #ifndef TOSTR
@@ -6011,7 +6014,7 @@ int main()
 
   mt_lock (&m);
   if (th_create (&worker, work_thread, NULL)) {
-    fputs ("unknown (failed to create thread)", res);
+    FPUTS("unknown (failed to create thread)", res);
     fclose (res);
     return 3;
   }
@@ -6020,7 +6023,7 @@ int main()
   co_wait (&c, &m);
   wait_time = get_cpu_time() - start;
   if (start == (cpu_time_t) -1 || work_time == (cpu_time_t) -1) {
-    fputs ("unknown (get_cpu_time doesn't work)", res);
+    FPUTS("unknown (get_cpu_time doesn't work)", res);
     fclose (res);
     return 4;
   }
@@ -6032,11 +6035,11 @@ int main()
   }
 
   if (work_time > wait_time)
-    return 0; /* It's thread local. */
+    return 0; /* It is thread local. */
   else {
-    fputs ("no", res);
+    FPUTS("no", res);
     fclose (res);
-    return 1; /* It's not thread local. */
+    return 1; /* It is not thread local. */
   }
 }
 
@@ -6045,7 +6048,7 @@ int main()
 {
   FILE *res = fopen ("confdefs.out.2", "w"); /* weird name to circumvent configure cleanups */
   if (!res) return 6;
-  fputs ("no", res);
+  FPUTS("no", res);
   fclose (res);
   return 1;
 }
