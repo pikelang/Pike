@@ -1,6 +1,6 @@
 /* Auth.pmod
  *
- * $Id: Auth.pmod,v 1.5 1999/08/20 05:06:33 hubbe Exp $
+ * $Id: Auth.pmod,v 1.6 1999/12/11 19:44:02 grubba Exp $
  */
 
 /*
@@ -60,7 +60,7 @@ class auth_file
 
   void lookup_local(string name, int display)
   {
-    return auth[256] && auth[256][make_key(name, display)];
+    auth[256] && auth[256][make_key(name, display)];
   }
 
   string ip2string(string ip)
@@ -72,7 +72,7 @@ class auth_file
   
   void lookup_ip(string ip, int display)
   {
-    return auth[0] && auth[0][make_key(ip2string(ip), display)];
+    auth[0] && auth[0][make_key(ip2string(ip), display)];
   }
 }
 
