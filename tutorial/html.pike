@@ -41,6 +41,7 @@ string mklinkname(string section)
 
 TAG mkimgtag(string file, mapping params)
 {
+  if(!file) return "<!-- error, no file -->";
   mapping p=([]);
   p->src=file;
   if(params->align) p->align=params->align;
@@ -820,11 +821,12 @@ SGML convert(SGML data)
 	    break;
 
 	 case "illustration":
-	    ret+=({ mkimgtag(Wmml.illustration_to_gif(data,75.0),data->params) });
-	    continue;
-
 	 case "image":
-	    ret+=({ mkimgtag(Wmml.image_to_gif(data,75.0),data->params) });
+	    ret+=({ mkimgtag(Gfx.convert(data->params,
+					 "jpg|gif",
+					 75.0,
+					 data->data && Sgml.get_text(data->data)),data->params)
+			     });
 	    continue;
 
 	 case "box":
@@ -1195,4 +1197,14 @@ void output(string base, WMML data)
       out::close();
       werror(" done\n");
     }
+}
+
+Sgml.Tag illustration(object o,void|mapping options)
+{
+  return Sgml.Tag("image",(["src":Gfx.mkgif(o,options)]),0);
+}
+
+Sgml.Tag illustration_jpeg(object o,void|mapping options)
+{
+  return Sgml.Tag("image",(["src":Gfx.mkjpg(o,options)]),0);
 }

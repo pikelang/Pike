@@ -87,8 +87,8 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
 
 clean:
-	-rm -f *.html *.md illustration_cache illustration*.gif $(MADEFILES) 
-	-rm -f tutorial.dvi tutorial.tex tutorial.aux illustration*.eps
+	-rm -f *.html *.md illustration_cache illustration*.* $(MADEFILES) 
+	-rm -f tutorial.dvi tutorial.tex tutorial.aux
 	-rm -f tutorial.log tutorial.toc
 
 rebuild:

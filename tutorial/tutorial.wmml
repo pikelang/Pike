@@ -149,7 +149,7 @@ this comment can be erased.
 <h1>
 Programming, using and understanding
 <p>
-<img src=pike.gif>
+<img src=pike.gif> <!-- FIXME: hi-res version for Latex -->
 <p>
 <font size=+7>Pike</font>
 <p>
@@ -1636,7 +1636,7 @@ which creates a new array. Figure 4.1 shows how the schematics of an array.
 As you can see, it is a very simple memory structure.
 <p>
 <center>
-<image xfig=array><br>
+<image src=array.fig><br>
 fig 4.1
 </center>
 <p>
@@ -1770,7 +1770,7 @@ What makes mappings special is that they can be indexed on other things than
 integers. We can imagine that a mapping looks like this:
 <p>
 <center>
-<image xfig=mapping><br>
+<image src=mapping.fig><br>
 fig 4.2
 </center>
 <p>
@@ -1862,7 +1862,7 @@ A multiset is almost the same thing as a mapping. The difference is that there
 are no values:
 <p>
 <center>
-<image xfig=multiset><br>
+<image src=multiset.fig><br>
 fig 4.3
 </center>
 <p>
@@ -1897,7 +1897,7 @@ space needed to execute the code in the program is stored in an <tt>object</tt>
 which is the next data type we will discuss. 
 <p>
 <center>
-  <image xfig=program><br>
+  <image src=program.fig><br>
 fig 4.4
 </center>
 Writing a <tt>program</tt> is easy, in fact, every example we have tried so
@@ -2038,7 +2038,7 @@ with a reference to the program from which it was cloned. Many objects can
 be made from one program. The <tt>program</tt> outlines where in the object
 different variables are stored.
 <center>
-  <image xfig=object><br>
+  <image src=object.fig><br>
 fig 4.5
 </center>
 Each object has its own set of variables, and when calling a function in that
@@ -2132,7 +2132,7 @@ When indexing an object on a string, and that string is the name of a function
 in the object a <tt>function</tt> is returned. Despite its name, a
 <tt>function</tt> is really a <b>function pointer</b>.
 <center>
-  <image xfig=function><br>
+  <image src=function.fig><br>
 fig 4.6
 </center>
 
@@ -3142,7 +3142,7 @@ in front of the function name. The argument to inherit can be one of the followi
 Let's look at an example. We'll split up an earlier example into three parts
 and let each inherit the previous part. It would look something like this:
 <center>
-<image xfig=inherit><br>
+<image src=inherit.fig><br>
 </center>
 Note that the actual code is not copied, only the list of references.
 Also note that the list of inherits is copied when you inherit a program.

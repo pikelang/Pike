@@ -47,6 +47,8 @@ string quote_label(string s)
 }
 
 
+
+
 float weighted_strlen(string tag)
 {
   return strlen(tag)+
@@ -191,23 +193,18 @@ string convert_table(TAG table)
   return ret;
 }
 
-string convert_image_to_latex(TAG tag)
+string convert_gfx(Sgml.Tag tag)
 {
-  mapping params=tag->params;
-  if(params->xfig)
-    params->src=params->xfig+".fig";
+  string file=Gfx.convert( tag->params,
+			   "tex|eps",
+			   300.0,
+			   tag->data && Sgml.get_text(tag->data));
 
-  if(params->src && (params->src/".")[-1]=="fig")
+  switch( (file/".")[-1]=="." )
   {
-    rm("___tmp.latex");
-    werror("Converting fig->latex");
-    Process.create_process( ({ "fig2dev", "-L","latex",params->src,"___tmp.latex" }) )->wait();
-    string ret=Stdio.read_file("___tmp.latex");
-    rm("___tmp.latex");
-    return ret;
-  }else{
-    string file=Wmml.image_to_eps(tag,600.0);
-    return "\\epsfbox{"+file+"}";
+    case "tex": return "\\input{"+file+"}";
+    case "eps": return "\\epsfbox{"+file+"}";
+    default: return "\\epsfbox{error.eps}";
   }
 }
 
@@ -608,12 +605,10 @@ string convert_to_latex(SGML data, void|int flags)
 	    ret+=convert_to_latex(tag->data);
 	    break;
 
-	  case "image":
-	    ret+="\\epsfbox{"+Wmml.image_to_eps(tag,75.0)+"}";
-	    break;
-
+	  case "img": // FIXME ??
 	  case "illustration":
-	    ret+="\\epsfbox{"+Wmml.illustration_to_eps(tag,75.0)+"}";
+	  case "image":
+	    ret+=convert_gfx(tag);
 	    break;
 
 	  default:
@@ -634,17 +629,9 @@ string convert_to_latex(SGML data, void|int flags)
 }
 
 
-void output(string base, WMML data)
+string package(string x)
 {
-  global_data=data;
-  string x=convert_to_latex(data->data);
-
-  x=replace(x,
-	    "\\verb+  +\\verb+  +",
-	    "\\verb+    +"
-	    );
-
-  x=#"
+  return #"
 \\documentclass[twoside,a4paper]{book}
 \\usepackage{isolatin1}
 \\usepackage{latexsym}  % For $\Box$
@@ -662,11 +649,38 @@ void output(string base, WMML data)
 "+
     x+
     "\\end{document}\n";
-  rm(base+".tex");
-  Stdio.write_file(base+".tex",x);
+}
+
+string extention=".tex";
+
+void output(string base, WMML data)
+{
+  global_data=data;
+  string x=convert_to_latex(data->data);
+
+  x=replace(x,
+	    "\\verb+  +\\verb+  +",
+	    "\\verb+    +"
+	    );
+
+  x=package(x);
+
+  rm(base+extention);
+  Stdio.write_file(base+extention,x);
   array(string) lines=x/"\n";
   array(int) linenum=indices("x"*sizeof(lines));
   array(int) lenghts=sort(Array.map(lines,strlen),linenum,lines);
 
   werror("Longest line is line %d (%d characters).\n",linenum[-1],lenghts[-1]);
+}
+
+
+Sgml.Tag illustration(object o,void|mapping options)
+{
+  return Sgml.Tag("image",(["src":Gfx.mkeps(o,options)]),0);
+}
+
+Sgml.Tag illustration_jpeg(object o,void|mapping options)
+{
+  return Sgml.Tag("image",(["src":Gfx.mkeps(o,options)]),0);
 }

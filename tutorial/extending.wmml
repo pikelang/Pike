@@ -740,7 +740,7 @@ Below is an illustration which shows an example of a small mapping with
 hash table, free list and key-index pairs.
 
 <center>
-<image xfig=mapping-internals>
+<image src=mapping-internals.fig>
 </center>
 
 As you can see, mappings uses a linked list for each bucket in the

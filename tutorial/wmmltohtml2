@@ -8,7 +8,13 @@ import ".";
 #include "types.h"
 
 int main(int argc, string *argv)
-{	
+{
+#if constant(signal)
+  signal(signum("SIGQUIT"),lambda()
+	 {
+	   master()->handle_error( ({"\nSIGQUIT recived, printing backtrace and continuing.\n",backtrace() }) );
+	 });
+#endif
   random_seed(0); // increase cache hit potential
 
   mixed *ER=catch {
@@ -16,6 +22,10 @@ int main(int argc, string *argv)
     if (!output) error("can't cast %O to program\n",argv[2]);
     object out=output();
     if (!out->output) error("%O doesn't have an output method",argv[2]);
+
+    add_constant("illustration",out->illustration);
+    add_constant("illustration_jpeg",out->illustration_jpeg);
+
     werror("Reading ");
     string input=Stdio.read_file(argv[1]);
     werror("Lexing ");
