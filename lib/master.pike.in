@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.4 1998/04/09 21:10:33 hubbe Exp $
+/* $Id: master.pike.in,v 1.5 1998/04/10 12:16:21 grubba Exp $
  *
  * Master-file for Pike.
  *
@@ -407,7 +407,9 @@ class dirnode
   }
 };
 
-static mapping(string:mixed) fc=([]);
+// Variables mustn't be static to allow for replace_master().
+//	/grubba 1998-04-10
+mapping(string:mixed) fc=([]);
 
 object findmodule(string fullname)
 {
