@@ -151,6 +151,53 @@ string parse_class(Node n, void|int noheader) {
   return ret;
 }
 
+// ({  ({ array(string)+, void|string  })* })
+string nicebox(array rows) {
+  string ret = "<table bgcolor='black' border='0' cellpadding='0'><tr><td>\n"
+    "<table cellspacing='1' cellpadding='2' border='0' bgcolor='white'>\n";
+
+  int dim;
+  foreach(rows, array row)
+    dim = max(dim, sizeof(row));
+
+#ifdef DEBUG
+  if(dim!=1 && dim!=2)
+    throw( ({ "Table has got wrong dimensions. ("+dim+")\n", backtrace() }) );
+#endif
+
+  foreach(rows, array row) {
+    if(sizeof(row)==1)
+      foreach(row[0], string elem)
+	ret += "<tr><td><tt>" + elem + "</tt></td>" +
+	  (dim==2?"<td>&nbsp;</td>":"") + "</tr>\n";
+    else if(sizeof(row[0])==1)
+      ret += "<tr valign='top'><td><tt>" + row[0][0] +
+	"</tt></td><td>" + row[1] + "</td></tr>\n";
+    else {
+      ret += "<tr valign='top'><td><tt>" + row[0][0] +
+	"</tt></td><td rowspan='" + sizeof(row[0]) + "'>" + row[1] + "</td></tr>\n";
+      foreach(row[0][1..], string elem)
+	ret += "<tr valign='top'><td><tt>" + elem + "</tt></td></tr>\n";
+    }
+  }
+
+  return ret + "</table></td></tr></table>";
+}
+
+string build_box(Node n, string first, string second, function layout) {
+  array rows = ({});
+  foreach(get_tags(n, first), Node d) {
+    array elems = ({});
+    foreach(get_tags(d, second), Node e)
+      elems += ({ layout(e) });
+    if(get_tag(d, "text"))
+      rows += ({ ({ elems, parse_text(get_tag(d, "text")) }) });
+    else
+      rows += ({ ({ elems }) });
+  }
+  return nicebox(rows);
+}
+
 string parse_text(Node n) {
   string ret = "";
 
@@ -170,6 +217,7 @@ string parse_text(Node n) {
     }
 #endif
 
+    array rows;
     string name = c->get_any_name();
     switch(name) {
     case "text":
@@ -213,86 +261,59 @@ string parse_text(Node n) {
       break;
 
     case "mapping":
-      ret += "<dl>";
-      foreach(get_tags(c, "group"), Node d) {
-	foreach(get_tags(d, "member"), Node e)
-	  ret += "<dt><tt><font color='green'>" + parse_text(get_tag(e, "index")) +
-	    "</font> : " + parse_type(get_first_element(get_tag(e, "type"))) +
-	    "</tt></dt><dd></dd>\n";
-
-      	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>\n";
-      }
-      ret += "</dl>\n";
+      ret += build_box(c, "group", "member",
+		       lambda(Node n) {
+			 return "<font color='green'>" + parse_text(get_tag(n, "index")) +
+			   "</font> : " + parse_type(get_first_element(get_tag(n, "type"))); } );
       break;
 
     case "array":
-      ret += "<dl>";
-      foreach(get_tags(c, "group"), Node d) {
-	foreach(get_tags(d, "elem"), Node e)
-	  ret += "<dt><tt>" + parse_type(get_first_element(get_tag(e, "type"))) +
-	    " <font color='green'>" + parse_text(get_tag(e, "index")) +
-	    "</font></tt></dt><dd></dd>\n";
-
-
-	if(get_tag(d, "text")) // Must there be one?
-	   ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>\n";
-      }
-      ret += "</dl>\n";
+      ret += build_box(c, "group", "elem",
+		       lambda(Node n) {
+			 return parse_type(get_first_element(get_tag(n, "type"))) +
+			   " <font color='green'>" + parse_text(get_tag(n, "index")) +
+			   "</font>"; } );
       break;
 
     case "int":
-      ret += "<dl>";
-      foreach(get_tags(c, "group"), Node d) {
-	foreach(get_tags(d, "value"), Node e) {
-	  ret += "<dt><tt><font color='green'>";
-	  Node min = get_tag(e, "minvalue");
-	  Node max = get_tag(e, "maxvalue");
-	  if(min || max) {
-	    if(min) ret += parse_text(min);
-	    ret += "..";
-	    if(max) ret += parse_text(max);
-	  }
-	  else
-	    ret += parse_text(e);
-	  ret += "</font></tt></dt><dd></dd>\n";
-	}
-       	ret += "<dd>" + parse_text(get_tag(d, "text")) + "</dd>\n";
-      }
-      ret += "</dl>\n";
+      ret += build_box(c, "group", "value",
+		       lambda(Node n) {
+			 string tmp = "<font color='green'>";
+			 Node min = get_tag(n, "minvalue");
+			 Node max = get_tag(n, "maxvalue");
+			 if(min || max) {
+			   if(min) tmp += parse_text(min);
+			   tmp += "..";
+			   if(max) tmp += parse_text(max);
+			 }
+			 else
+			   tmp += parse_text(n);
+			 return tmp + "</font>";
+		       } );
       break;
 
     case "mixed":
-      ret += "<tt>" + c->get_attributes()->name + "</tt> can have any of the following types:<dl>";
+      ret += "<tt>" + c->get_attributes()->name + "</tt> can have any of the following types:<br />";
+      rows = ({});
       foreach(get_tags(c, "group"), Node d)
-	ret += "<dt><tt>" + parse_type(get_first_element(get_tag(d, "type"))) + "</tt></dt>"
-	  "<dd>" + parse_text(get_tag(d, "text")) + "</dd>";
-      ret += "</dl>";
+	rows += ({ ({ ({ parse_type(get_first_element(get_tag(d, "type"))) }),
+		      parse_text(get_tag(d, "text")) }) });
+      ret += nicebox(rows);
       break;
 
     case "string": // Not in XSLT
-      ret += "<dl>";
-      foreach(get_tags(c, "group"), Node d) {
-	ret += "<dt><font color='green'>" + parse_text(get_tag(d, "value")) + "</font>:</dt>";
-	if(d=get_tag(d,"text"))
-	  ret += "<dd>" + parse_text(d) + "</dd>\n";
-	else
-	  werror("Warning: string element group without text element.\n");
-      }
-      ret += "</dl>\n";
+      ret += build_box(c, "group", "value",
+		       lambda(Node n) {
+			 return "<font color='green'>" + parse_text(n) + "</font>";
+		       } );
       break;
 
     case "multiset": // Not in XSLT
-      ret += "<dl>";
-      foreach(get_tags(c, "group"), Node d) {
-	ret += "<dt><font color='green'>" +
-	  parse_text(get_tag(get_tag(d, "index"), "value"))
-	  + "</font>:</dt>";
-	if(d=get_tag(d,"text"))
-	  ret += "<dd>" + parse_text(d) + "</dd>\n";
-	else
-	  werror("Warning: multiset element group without text element.\n");
-      }
-      ret += "</dl>\n";
+      ret += build_box(c, "group", "index",
+		       lambda(Node n) {
+			 return "<font color='green'>" +
+			   parse_text(get_tag(n, "value")) + "</font>";
+		       } );
       break;
 
     case "image": // Not in XSLT
