@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.49 2000/07/17 14:53:08 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.50 2000/07/26 16:56:42 nilsson Exp $ */
 
 import Stdio;
 
@@ -125,7 +125,7 @@ void signal_watchdog()
 int main(int argc, array(string) argv)
 {
   int e, verbose, successes, errors, t, check;
-  int skipped;
+  int skipped, quiet;
   array(string) tests;
   string tmp;
   program testprogram;
@@ -155,6 +155,7 @@ int main(int argc, array(string) argv)
     ({"watchdog",Getopt.HAS_ARG,({"--watchdog"})}),
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"verbose",Getopt.MAY_HAVE_ARG,({"-v","--verbose"})}),
+    ({"quiet",Getopt.NO_ARG,({"-q","--quiet"})}),
     ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
     ({"end",Getopt.HAS_ARG,({"--end-after"})}),
     ({"fail",Getopt.MAY_HAVE_ARG,({"-f","--fail"})}),
@@ -163,7 +164,7 @@ int main(int argc, array(string) argv)
     ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
     ({"mem",Getopt.MAY_HAVE_ARG,({"-m","--mem","--memory"})}),
     ({"auto",Getopt.MAY_HAVE_ARG,({"-a","--auto"})}),
-    ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
+    ({"notty",Getopt.NO_ARG,({"-T","--notty"})}),
 #ifdef HAVE_DEBUG
     ({"debug",Getopt.MAY_HAVE_ARG,({"-d","--debug"})}),
 #endif
@@ -256,6 +257,7 @@ int main(int argc, array(string) argv)
 	  return 0;
 
 	case "verbose": verbose+=foo(opt[1]); break;
+        case "quiet": quiet=1; istty_cache=-1; break;
 	case "start": start=foo(opt[1]); start--; break;
 	case "end": end=foo(opt[1]); break;
 	case "fail": fail+=foo(opt[1]); break;
@@ -406,7 +408,7 @@ int main(int argc, array(string) argv)
 	  {
 	    if(!verbose)
 	      werror("%6d\r",e+1);
-	  }else{
+	  }else if(!quiet) {
 	    /* Use + instead of . so that sendmail and
 	     * cron will not cut us off... :(
 	     */
@@ -665,7 +667,7 @@ int main(int argc, array(string) argv)
 	if(istty())
 	{
 	  werror("             \r");
-	}else{
+	}else if(!quiet) {
 	  werror("\n");
 	}
     }
