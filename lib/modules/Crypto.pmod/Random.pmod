@@ -1,5 +1,5 @@
 #pike __REAL_VERSION__
-// $Id: Random.pmod,v 1.2 2003/08/10 13:44:34 grubba Exp $
+// $Id: Random.pmod,v 1.3 2004/02/02 16:27:05 nilsson Exp $
 
 //! This module contains stuff to that tries to give you the
 //! best possible random generation.
@@ -100,6 +100,13 @@ static function(int:string) rnd_block_func = rnd_block_bootstrap;
 //! random data on operating systems with bad /dev/random.
 string random_string(int len) {
   return rnd_func(len);
+}
+
+//! Returns a @[Gmp.mpz] object with a random value between @expr{0@}
+//! and @[top]. Uses @[random_string].
+Gmp.mpz random(int top) {
+  return Gmp.mpz(rnd_func( (int)ceil( log((float)top)/log(2.0) ) ),
+		 256) % top;
 }
 
 //! Works as @[random_string], but may block in order to gather
