@@ -2,9 +2,10 @@
 
 #set -x
 
+exec 5>&1 1>&2
+
 if [ x"$1" = x--cache ]; then
   CACHE_OUTPUT=yes
-  exec 5>&1 1>&2
   shift 1
 else
   CACHE_OUTPUT=no
