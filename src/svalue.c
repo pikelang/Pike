@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.171 2003/09/04 15:30:56 mast Exp $
+|| $Id: svalue.c,v 1.172 2003/09/08 16:31:29 mast Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.171 2003/09/04 15:30:56 mast Exp $");
+RCSID("$Id: svalue.c,v 1.172 2003/09/08 16:31:29 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1798,7 +1798,7 @@ PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num)
     case T_FUNCTION:							\
       PRE DO_FUNC(U, T, ZAP, GC_DO)					\
     case T_OBJECT:							\
-      PRE DO_OBJ(U, T, ZAP, GC_DO)					\
+      PRE DO_OBJ(U, T, ZAP, GC_DO) break;				\
     case T_STRING:							\
       PRE DO_IF_DEBUG(if (d_flag) gc_check(U.string);) break;		\
     case T_PROGRAM:							\
@@ -1824,16 +1824,14 @@ PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num)
       Pike_fatal("Cannot have a function in a short svalue.\n");
 
 #define DO_CHECK_OBJ(U, T, ZAP, GC_DO)					\
-      GC_DO(U.object);							\
-      break;
+      GC_DO(U.object);
 
 #define DO_CHECK_OBJ_WEAK(U, T, ZAP, GC_DO)				\
       if (U.object->prog &&						\
 	  !(U.object->prog->flags & PROGRAM_NO_WEAK_FREE))		\
 	gc_check_weak(U.object);					\
       else								\
-	gc_check(U.object);						\
-      break;
+	gc_check(U.object);
 
 #define NEVER_ZAP()
 
