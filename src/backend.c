@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.18 1997/11/01 21:56:36 grubba Exp $");
+RCSID("$Id: backend.c,v 1.19 1998/06/13 21:18:19 grubba Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -289,8 +289,9 @@ void backend(void)
     THREADS_DISALLOW();
     may_need_wakeup=0;
 
-    if(i>=0)
-    {
+    if (!i) {
+      /* Timeout */
+    } else if(i>0) {
       for(i=0; i<max_fd+1; i++)
       {
 	if(FD_ISSET(i, &sets.read) && read_callback[i])
