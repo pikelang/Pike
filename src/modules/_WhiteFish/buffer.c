@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.7 2001/05/30 23:52:01 per Exp $");
+RCSID("$Id: buffer.c,v 1.8 2001/05/31 14:39:52 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -42,7 +42,7 @@ static INLINE int range( int n, int m )
   else return n;
 }
 
-static INLINE void wf_buffer_make_space( struct buffer *b, int n )
+static INLINE void wf_buffer_make_space( struct buffer *b, unsigned int n )
 {
 #ifdef PIKE_DEBUG
   if( b->read_only )
@@ -84,7 +84,7 @@ void wf_buffer_rewind_r( struct buffer *b, int n )
 {
   if( n == -1 )
     b->rpos = 0;
-  else if( b->rpos > n )
+  else if( b->rpos > (unsigned int)n )
     b->rpos -= n;
   else
     b->rpos = 0;
@@ -94,20 +94,20 @@ void wf_buffer_rewind_w( struct buffer *b, int n )
 {
   if( n == -1 )
      b->size = 0;
-  else if( b->size > n )
+  else if( b->size > (unsigned int)n )
     b->size -= n;
   else
     b->size = 0;
 }
 
-unsigned int wf_buffer_rbyte( struct buffer *b )
+int wf_buffer_rbyte( struct buffer *b )
 {
   if( b->rpos < b->size )
     return ((unsigned char *)b->data)[ b->rpos++ ];
   return 0;
 }
 
-int wf_buffer_rint( struct buffer *b )
+unsigned int wf_buffer_rint( struct buffer *b )
 {
   return (((((wf_buffer_rbyte( b ) << 8) |
 	     wf_buffer_rbyte( b ))<<8)   |
@@ -141,9 +141,23 @@ int wf_buffer_eof( struct buffer *b )
 }
 
 
-void wf_buffer_seek( struct buffer *b, int pos )
+void wf_buffer_seek( struct buffer *b, unsigned int pos )
 {
   b->rpos = pos;
+}
+
+void wf_buffer_seek_w( struct buffer *b, unsigned int pos )
+{
+#ifdef PIKE_DEBUG
+  if( b->read_only )
+    fatal( "Oops, read_only\n");
+#endif
+  if( pos > b->size )
+  {
+    wf_buffer_make_space( b, (unsigned int)(pos-b->size) );
+    MEMSET( b->data+b->size, 0, (unsigned int)(pos-b->size) );
+  }
+  b->size = pos;
 }
   
 void wf_buffer_clear( struct buffer *b )
