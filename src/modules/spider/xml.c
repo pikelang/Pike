@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.55 2002/10/21 17:06:26 marcus Exp $
+|| $Id: xml.c,v 1.56 2002/11/27 13:32:15 grubba Exp $
 */
 
 #include "global.h"
@@ -1213,6 +1213,7 @@ static int read_smeg_pereference(struct xmldata *data)
 	  data->input.pos=0;
 	  data->input.datap=MKPCHARP_STR(s);
 	  data->input.len=(s)->len;
+	  free_mapping(data->input.callbackinfo);
 	  data->input.callbackinfo=callbackinfo;
 	  copy_shared_string(data->input.to_free,s);
 	  if (external_entity_value || !full_name) {
