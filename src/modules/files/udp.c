@@ -1,12 +1,12 @@
 /*
- * $Id: udp.c,v 1.6 1999/07/26 11:46:28 grubba Exp $
+ * $Id: udp.c,v 1.7 1999/08/17 14:55:02 grubba Exp $
  */
 
 #include "global.h"
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.6 1999/07/26 11:46:28 grubba Exp $");
+RCSID("$Id: udp.c,v 1.7 1999/08/17 14:55:02 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -164,6 +164,9 @@ static void udp_bind(INT32 args)
     THIS->my_errno=errno;
     error("UDP.bind: failed to create socket\n");
   }
+
+  /* Make sure this fd gets closed on exec. */
+  set_close_on_exec(fd, 1);
 
   o=1;
   if(fd_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *)&o, sizeof(int)) < 0)
