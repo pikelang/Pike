@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.247 2003/01/09 14:29:27 grubba Exp $
+// $Id: master.pike.in,v 1.248 2003/01/13 14:42:06 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1874,6 +1874,14 @@ void _main(array(string) orig_argv, array(string) env)
     return v;
   };
 
+#ifdef __AUTO_BIGNUM__
+  // Load bignum support...
+  {
+    mixed v = resolv("Gmp.bignum");
+    if (!v) _error("Failed to load Gmp.bignum.\n");
+  }
+#endif /* __AUTO_BIGNUM__ */
+
   switch (postparseaction)
   {
      case "features":
@@ -2564,11 +2572,12 @@ string describe_program(program p)
   if(s=get_clean_program_path(p, "object_program(", ")", ""))
     return s;
 
-  if(mixed tmp=(function_object(p) || function_program(p)))
+  if(mixed tmp=(function_object(p) || function_program(p))) {
     if(s = function_name(p))
-      {
-	return describe_module(tmp) + s;
-      }
+    {
+      return describe_module(tmp) + s;
+    }
+  }
 
   if(s=_static_modules.Builtin()->program_defined(p))
     return EXPLODE_PATH(s)[-1];

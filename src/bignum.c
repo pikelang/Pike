@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.28 2003/01/11 01:52:55 mast Exp $
+|| $Id: bignum.c,v 1.29 2003/01/13 14:42:06 grubba Exp $
 */
 
 #include "global.h"
@@ -17,33 +17,12 @@
 
 #define sp Pike_sp
 
-struct svalue auto_bignum_program = {
+PMOD_EXPORT struct svalue auto_bignum_program = {
   T_INT, 0,
 #ifdef HAVE_UNION_INIT
   {0}, /* Only to avoid warnings. */
 #endif
 };
-
-PMOD_EXPORT int gmp_library_loaded=0;
-int gmp_library_resolving=0;
-
-void init_auto_bignum(void)
-{
-  if(gmp_library_resolving)
-    Pike_fatal("Recursive GMP resolving!\n");
-
-  gmp_library_resolving=1;
-  push_text("Gmp.bignum");
-  SAFE_APPLY_MASTER("resolv", 1);
-    
-  if(sp[-1].type != T_FUNCTION && sp[-1].type != T_PROGRAM)
-    Pike_error("Failed to resolv Gmp.mpz!\n");
-    
-  auto_bignum_program=sp[-1];
-  sp--;
-  dmalloc_touch_svalue(sp);
-  gmp_library_resolving=0;
-}
 
 PMOD_EXPORT struct program *get_auto_bignum_program(void)
 {
