@@ -912,7 +912,8 @@ would look like this;
 
 <section title="Switch">
 
-A more sofisticated condition control structure is the <b>switch statement</b>.
+A more sophisticated condition control structure is the <b>switch
+statement</b>.
 A switch lets you select one of many choices depending on the value of an
 expression and it can look something like this:
 <pre>
@@ -3257,7 +3258,7 @@ or like this:
 
 <a name=Stdio>
 <chapter title="File I/O" alias=io>
-Programming without reading and writing data from files, sockets, keybaord
+Programming without reading and writing data from files, sockets, keyboard
 etc. would be quite pointless. Luckily enough, Pike provides you with an
 object oriented interface to files, pipes and TCP sockets. All I/O functions
 and classes are collected in the module <tt>Stdio</tt>.
@@ -5063,7 +5064,8 @@ condition variables. Condition variables are used by threaded programs
 to wait for events happening in other threads.
 <p>
 <dt><encaps>NOTA BENE</encaps><dd>
-Mutex locks are only available on systems with POSIX or UNIX threads support.
+Condition variables are only available on systems with POSIX or UNIX threads
+support.
 <p>
 <dt><encaps>EXAMPLE</encaps><dd>
 <tt>// This program implements a fifo that can be used to send<br>
@@ -5135,10 +5137,10 @@ for the condition the mutex referenced by mutex_key will be re-locked.
 
 </a>
 <hr noshade size=1>
-<a name=Thread.Mutex.signal>
+<a name=Thread.Condition.signal>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Mutex-&gt;signal</tt> - signal a condition variable
+<tt>Thread.Condition-&gt;signal</tt> - signal a condition variable
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>void signal();<br>
@@ -5155,10 +5157,10 @@ It sometimes wakes up more than one thread.
 
 </a>
 <hr noshade size=1>
-<a name=Thread.Mutex.broadcast>
+<a name=Thread.Condition.broadcast>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Thread.Mutex-&gt;broadcast</tt> - signal all waiting threads
+<tt>Thread.Condition-&gt;broadcast</tt> - signal all waiting threads
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>void broadcast();<br>
