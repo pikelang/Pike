@@ -203,14 +203,16 @@ private string normalize(string in) {
 
   sscanf(out, "cs%s", out);
 
-  if(sscanf(out, "cp%d", int cp))
-    return (string)cp;
-  if(sscanf(out, "ms%d", int cp))
-    return (string)cp;
-  if(sscanf(out, "ibm%d", int cp))
-    return (string)cp;
-  if(sscanf(out, "ccsid%d", int cp))
-    return (string)cp;
+  int cp;
+  sscanf(out, "cp%d", cp) ||
+    sscanf(out, "ms%d", cp) ||
+    sscanf(out, "ibm%d", cp) ||
+    sscanf(out, "ccsid%d", cp) ||
+    sscanf(out, "%d", cp);
+
+  if(cp==932) return "shiftjis";
+  if(cp) return (string)cp;
+
   return out;
 }
 
