@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.276 2001/11/08 19:01:37 nilsson Exp $
+# $Id: Makefile.in,v 1.277 2001/11/08 23:34:26 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -442,7 +442,7 @@ test_dlopen: dynloadtest.sh
 	sh ./dynloadtest.sh
 
 dynloadtest.sh: $(SRCDIR)/test_dynamic_loading.in
-	m4 "$<" >"$@"
+	m4 "$(SRCDIR)/test_dynamic_loading.in" >"$@"
 
 dynloadtest.c: dynamic_load.c
 
@@ -739,8 +739,8 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 	touch $(SRCDIR)/language.c
 
 
-interpret_functions_fixed.h: interpret_functions.h
-	./precompile.sh make_interpret_functions.pike >"$@" "$<" || { rm "$@"; exit 1; }
+interpret_functions_fixed.h: $(SRCDIR)/interpret_functions.h
+	./precompile.sh make_interpret_functions.pike >"$@" "$(SRCDIR)/interpret_functions.h" || { rm "$@"; exit 1; }
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c
