@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.105 2001/10/15 09:34:59 mast Exp $");
+RCSID("$Id: array.c,v 1.106 2002/03/06 11:01:58 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2323,6 +2323,12 @@ PMOD_EXPORT struct array *implode_array(struct array *a, struct array *b)
 {
   INT32 e,size;
   struct array *ret;
+
+  if (!a->size) {
+    add_ref(a);
+    return a;
+  }
+
   size=0;
   for(e=0;e<a->size;e++)
   {
