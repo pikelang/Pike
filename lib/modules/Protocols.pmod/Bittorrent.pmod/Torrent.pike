@@ -60,7 +60,7 @@
 
 import .Bencoding;
 
-constant cvsid="$Id: Torrent.pike,v 1.32 2004/07/22 03:59:49 nilsson Exp $";
+constant cvsid="$Id: Torrent.pike,v 1.33 2004/09/19 12:13:13 grubba Exp $";
 
 Protocols.HTTP.Session http=Protocols.HTTP.Session();
 
@@ -515,7 +515,13 @@ void update_tracker(void|string event,void|int contact)
 	 if ( (< "gzip", "x-gzip" >)[ r->headers()["content-encoding"] ])
 	 {
 // 	    werror("gruk %O\n",data);
+#if constant(Gz.File)
 	    data=Gz.File(Stdio.FakeFile(data))->read();
+#else /* !constant(Gz.File) */
+	    warning("tracker request failed: encoding %O not supported.\n",
+		    r->headers()["content-encoding"]);
+	    return;
+#endif /* constant(Gz.File) */
 // 	    werror("%O\n",data);
 	 }
 
