@@ -15,7 +15,7 @@ import ".";
 import Standards.ASN1.Types;
 
 /* Create a DER-coded RSAPublicKey structure */
-string rsa_public_key(object rsa)
+string public_key(object rsa)
 {
   return asn1_sequence(Array.map(
     ({ rsa->n, rsa->e }),
@@ -23,7 +23,7 @@ string rsa_public_key(object rsa)
 }
 
 /* Create a DER-coded RSAPrivateKey structure */
-string rsa_private_key(object rsa)
+string private_key(object rsa)
 {
   return asn1_sequence(Array.map(
     ({ 0, rsa->n, rsa->e, rsa->d,
@@ -33,6 +33,10 @@ string rsa_private_key(object rsa)
     }),
     asn1_integer))->get_der();
 }
+
+/* Backwards compatibility */
+string rsa_public_key(object rsa) { return public_key(rsa); }
+string rsa_private_key(object rsa) { return private_key(rsa); }
 
 /* Decode a coded RSAPublicKey structure */
 object parse_public_key(string key)
