@@ -1,4 +1,6 @@
-/* -*- c -*- */
+/* -*- c -*-
+ * $Id: builtin.cmod,v 1.30 2001/06/05 00:03:57 mast Exp $
+ */
 
 #include "global.h"
 #include "interpret.h"
@@ -23,6 +25,7 @@
 #include "bignum.h"
 #include "main.h"
 #include "operators.h"
+#include "builtin_functions.h"
 
 /*! @decl array column(array data, mixed index)
  *!
@@ -394,24 +397,26 @@ PIKEFUN mixed m_delete(object|mapping map, mixed index)
   }
 }
 
-/*! @decl int(0..1) get_weak_flag(array|mapping|multiset m)
+/*! @decl int get_weak_flag(array|mapping|multiset m)
  *!
- *! Returns 1 if the weak flag has been set for @[m].
+ *! Returns the weak flag settings for @[m]. It's a combination of
+ *! @[Pike.WEAK_INDICES] and @[Pike.WEAK_VALUES].
  */
-PIKEFUN int(0 .. 1) get_weak_flag(array|mapping|multiset m)
+PIKEFUN int get_weak_flag(array|mapping|multiset m)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
   int flag = 0;
   switch (m->type) {
     case T_ARRAY:
-      flag = !!(m->u.array->flags & ARRAY_WEAK_FLAG);
+      flag = (m->u.array->flags & ARRAY_WEAK_FLAG) ? PIKE_WEAK_VALUES : 0;
       break;
     case T_MAPPING:
-      flag = !!(mapping_get_flags(m->u.mapping) & MAPPING_FLAG_WEAK);
+      flag = mapping_get_flags(m->u.mapping) & MAPPING_WEAK;
       break;
     case T_MULTISET:
-      flag = !!(m->u.multiset->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK));
+      flag = (m->u.multiset->ind->flags & (ARRAY_WEAK_FLAG|ARRAY_WEAK_SHRINK)) ?
+	PIKE_WEAK_INDICES : 0;
       break;
     default:
       SIMPLE_BAD_ARG_ERROR("get_weak_flag",1,"array|mapping|multiset");
