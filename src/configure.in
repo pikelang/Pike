@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.783 2004/02/27 15:48:47 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.784 2004/02/27 15:50:30 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6955,14 +6955,14 @@ $bundle_info])
     done
     # Clear the caches.
     echo Clearing cached variables related to the bundles.
-    for varname in `cat $bundle_info|sort|uniq` no; do
+    for varname in `cat $bundle_info|sed -e '/^[[ 	]]*//'|sort|uniq` no; do
       if test "$varname" = "no"; then :; else
 	unset $varname
       fi
     done
     if test -r "$cache_file"; then
       ed "$cache_file" >/dev/null 2>&1 <<EOF
-`cat $bundle_info|sort|uniq|sed -e '/^[[ 	]]*$/d' -e 's/[[ 	]]*\(.*\)/\/^\1=\/d/'`
+`cat $bundle_info|sed -e '/^[[ 	]]*//'|sort|uniq|sed -e '/^$/d' -e 's/\(.*\)/\/^\1=\/d/'`
 w
 q
 EOF
