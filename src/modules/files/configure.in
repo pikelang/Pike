@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.69 1999/07/25 18:28:34 grubba Exp $
+# $Id: configure.in,v 1.70 1999/08/20 05:07:44 hubbe Exp $
 AC_INIT(file.c)
 AC_CONFIG_HEADER(file_machine.h)
 
@@ -451,6 +451,8 @@ if test x$ac_cv_func_statvfs = xyes ; then
       AC_DEFINE(HAVE_STATVFS_F_FSTR)
     else :; fi
 
+###############################################################
+
     AC_MSG_CHECKING(if the struct statvfs has the member f_basetype)
     AC_CACHE_VAL(pike_cv_struct_statvfs_f_basetype, [
       AC_TRY_COMPILE([
@@ -497,6 +499,9 @@ if test x$ac_cv_func_statvfs = xyes ; then
     if test x$pike_cv_struct_statvfs_f_basetype = xyes; then
       AC_DEFINE(HAVE_STATVFS_F_BASETYPE)
     else :; fi
+
+###############################################################
+
   else :; fi
 else :; fi
 
