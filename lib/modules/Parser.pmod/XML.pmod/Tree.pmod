@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.9 2002/09/19 16:58:42 jonasw Exp $
+ * $Id: Tree.pmod,v 1.10 2002/10/25 09:27:20 jonasw Exp $
  *
  */
 
@@ -29,17 +29,33 @@ constant XML_NODE     = (XML_ROOT | XML_ELEMENT | XML_TEXT |
 #define  XML_NODE     (XML_ROOT | XML_ELEMENT | XML_TEXT |    \
 					   XML_PI | XML_COMMENT | XML_ATTR)
 
-string text_quote(string data) {
-  data = replace(data, "&", "&amp;");
-  data = replace(data, "<", "&lt;");
-  data = replace(data, ">", "&gt;");
-  return data;
+string text_quote(string data, void|int preserve_roxen_entities)
+{
+  if (preserve_roxen_entities) {
+    string out = "";
+    int pos = 0;
+    while ((pos = search(data, "&")) >= 0) {
+      if ((sscanf(data[pos..], "&%[^ <>;&];", string entity) == 1) &&
+	  search(entity, ".") >= 0) {
+	out += text_quote(data[..pos - 1], 0) + "&" + entity + ";";
+	data = data[pos + strlen(entity) + 2..];
+      } else {
+	out += text_quote(data[..pos], 0);
+	data = data[pos + 1..];
+      }
+    }
+    return out + text_quote(data, 0);
+  } else {
+    data = replace(data, "&", "&amp;");
+    data = replace(data, "<", "&lt;");
+    data = replace(data, ">", "&gt;");
+    return data;
+  }
 }
 
-string attribute_quote(string data) {
-  data = replace(data, "&",  "&amp;");
-  data = replace(data, "<",  "&lt;");
-  data = replace(data, ">",  "&gt;");
+string attribute_quote(string data, void|int preserve_roxen_entities)
+{
+  data = text_quote(data, preserve_roxen_entities);
   data = replace(data, "\"", "&quot;");
   data = replace(data, "'",  "&apos;");
   return data;
@@ -373,7 +389,7 @@ class Node {
     }
   }
 
-  string html_of_node()
+  string html_of_node(void|int preserve_roxen_entities)
   {
     string  data = "";
 	
@@ -382,7 +398,8 @@ class Node {
 		    lambda(Node n) {
 		      switch(n->get_node_type()) {
 		      case XML_TEXT:
-                        data += text_quote(n->get_text());
+                        data += text_quote(n->get_text(),
+					   preserve_roxen_entities);
 			break;
 
 		      case XML_ELEMENT:
@@ -392,7 +409,8 @@ class Node {
 			if (mapping attr = n->get_attributes()) {
                           foreach(indices(attr), string a)
                             data += " " + a + "='"
-                              + attribute_quote(attr[a]) + "'";
+                              + attribute_quote(attr[a],
+						preserve_roxen_entities) + "'";
 			}
 			if (n->count_children())
 			  data += ">";
@@ -405,7 +423,8 @@ class Node {
 			if (mapping attr = n->get_attributes()) {
                           foreach(indices(attr), string a)
                             data += " " + a + "='"
-                              + attribute_quote(attr[a]) + "'";
+                              + attribute_quote(attr[a],
+						preserve_roxen_entities) + "'";
 			}
 			data += "?>\n";
 			break;
