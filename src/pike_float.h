@@ -1,6 +1,6 @@
 /* Misc stuff for dealing with floats.
  *
- * $Id: pike_float.h,v 1.5 2004/03/21 20:14:45 nilsson Exp $
+ * $Id: pike_float.h,v 1.6 2004/05/31 23:47:34 nilsson Exp $
  */
 
 #ifndef PIKE_FLOAT_H
@@ -49,5 +49,18 @@ static inline int pike_isnan(double x)
 #else
 #define PIKE_ISUNORDERED(X,Y) (PIKE_ISNAN(X)||PIKE_ISNAN(Y))
 #endif /* HAVE_ISUNORDERED */
+
+#ifndef FLOAT_IS_IEEE_BIG
+#ifndef FLOAT_IS_IEEE_LITTLE
+#define NEED_CUSTOM_IEEE
+#endif
+#endif
+#ifndef NEED_CUSTOM_IEEE
+#ifndef DOUBLE_IS_IEEE_BIG
+#ifndef DOUBLE_IS_IEEE_LITTLE
+#define NEED_CUSTOM_IEEE
+#endif
+#endif
+#endif
 
 #endif	/* !PIKE_FLOAT_H */
