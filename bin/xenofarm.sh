@@ -26,7 +26,7 @@ xenofarm_build() {
   log_start compile
   $MAKE $MAKE_FLAGS > build/xenofarm/compilelog.txt 2>&1
   log_end $?
-  if [ \! $LAST = 0 ] ; then return 1; fi
+  if [ \! $LASTERR = 0 ] ; then return 1; fi
 
   log_start verify
   $MAKE $MAKE_FLAGS METATARGET=verify TESTARGS="-a -T" > \
