@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.47 1999/11/23 10:38:16 mast Exp $");
+RCSID("$Id: mapping.c,v 1.48 2000/01/14 15:36:04 noring Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -816,7 +816,10 @@ int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
 void describe_mapping(struct mapping *m,struct processing *p,int indent)
 {
   struct processing doing;
-  INT32 e,d,q;
+  struct array *a;
+  JMP_BUF catch;
+  ONERROR err;
+  INT32 e,d;
   struct keypair *k;
   char buf[40];
 
@@ -843,23 +846,29 @@ void describe_mapping(struct mapping *m,struct processing *p,int indent)
 	  (long)m->size);
   my_strcat(buf);
 
-  q=0;
+  a = mapping_indices(m);
+  SET_ONERROR(err, do_free_array, a);
 
-  MAPPING_LOOP(m)
+  if(!SETJMP(catch))
+    sort_array_destructively(a);
+  UNSETJMP(catch);
+  
+  for(e = 0; e < a->size; e++)
   {
-    if(q)
-    {
-      my_putchar(',');
-      my_putchar('\n');
-    } else {
-      q=1;
-    }
-    for(d=0; d<indent; d++) my_putchar(' ');
-    describe_svalue(& k->ind, indent+2, &doing);
+    if(e)
+      my_strcat(",\n");
+    
+    for(d = 0; d < indent; d++)
+      my_putchar(' ');
+    
+    describe_svalue(ITEM(a)+e, indent+2, &doing);
     my_putchar(':');
-    describe_svalue(& k->val, indent+2, &doing);
+    describe_svalue(low_mapping_lookup(m, ITEM(a)+e), indent+2, &doing);
   }
 
+  UNSET_ONERROR(err);
+  free_array(a);
+  
   my_putchar('\n');
   for(e=2; e<indent; e++) my_putchar(' ');
   my_strcat("])");
