@@ -47,7 +47,7 @@ FUNCTION(get, "function(void:mapping)");
   push_text( "mask" );
   if( GTK_PIXMAP( THIS->obj )->mask )
   {
-    gdk_pixmap_ref( GTK_PIXMAP( THIS->obj )->pixmap );
+    gdk_pixmap_ref( GTK_PIXMAP( THIS->obj )->mask );
     push_gdkobject( GTK_PIXMAP( THIS->obj )->mask, Bitmap );
   }
   else
@@ -56,7 +56,7 @@ FUNCTION(get, "function(void:mapping)");
   push_text( "pixmap_insensitive" );
   if( GTK_PIXMAP( THIS->obj )->pixmap_insensitive )
   {
-    gdk_pixmap_ref( GTK_PIXMAP( THIS->obj )->pixmap );
+    gdk_pixmap_ref( GTK_PIXMAP( THIS->obj )->pixmap_insensitive );
     push_gdkobject( GTK_PIXMAP( THIS->obj )->pixmap_insensitive, Pixmap );
   }
   else
