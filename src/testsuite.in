@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.642 2003/05/23 13:21:17 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.643 2003/05/24 11:53:20 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -9637,6 +9637,7 @@ test_any([[
     // OSF/1 issues two SIGTRAPS before the program starts executing.
     werror("Got extra SIGTRAP, OSF/1?\n");
     proc->cont();
+    code = proc->wait();
     if (code != -2) {
       proc->kill(signum("KILL"));
       return sprintf("Bad fallback returncode from wait():%d (expected -2)",
