@@ -608,18 +608,9 @@ int oid_sort_func(string a0,string b0)
     return oid_sort_func(a2,b2);
 }
 
-//! Like @[Array.diff], but tries to generate bigger continuous chunks of the
-//! differences, instead of maximizing the number of difference chunks. More
-//! specifically, @[chunky_diff] optimizes the cases where @[Array.diff] returns
-//! @code{({ ..., A, Z, B, ({}), C, ... })@}
-//! @code{({ ..., A, X, B,  Y+B, C, ... })@}
-//! into the somewhat shorter diff arrays
-//! @code{({ ..., A, Z,     B+C, ... })@}
-//! @code{({ ..., A, X+B+Y, B+C, ... })@}
-array(array) chunky_diff(array from, array to)
+static array(array) low_chunky_diff(array d1, array d2)
 {
-  array d1, d2, r1, r2, x, y, yb, b, c;
-  [d1, d2] = Array.diff(from, to);
+  array r1, r2, x, y, yb, b, c;
   r1 = r2 = ({});
   int at, last, seen;
   while(-1 != (at = search(d1, ({}), last)))
@@ -632,21 +623,39 @@ array(array) chunky_diff(array from, array to)
     {
       x = d2[at-2];
       y = yb[..sizeof(yb)-sizeof(b)-1];
-      if(at+1 <= sizeof(d1))
+      if(at <= sizeof(d1))
       {
 	c = d2[at+1];
-	r1 += d1[seen..at-2] + ({ b+c });
-	r2 += d2[seen..at-3] + ({ x+b+y }) + ({ b+c });
+	array bc = b+c;
+	r1 += d1[seen..at-2] + ({ bc });
+	r2 += d2[seen..at-3] + ({ x+b+y }) + ({ bc });
       }
       else
       {
+	// At last chunk. There is no C.
 	r1 += d1[seen..at-2] + ({ b });
 	r2 += d2[seen..at-3] + ({ x+b+y }) + ({ b });
       }
       seen = at + 5;
     }
   }
-  if(!last)
-    return ({ d1, d2 });
+  if(!seen)
+    return ({ d1, d2 });	// No change.
   return ({ r1 + d1[seen..], r2 + d2[seen..] });
+}
+
+//! Like @[Array.diff], but tries to generate bigger continuous chunks of the
+//! differences, instead of maximizing the number of difference chunks. More
+//! specifically, @[chunky_diff] optimizes the cases where @[Array.diff] returns
+//! @code{({ ..., A, Z, B, ({}), C, ... })@}
+//! @code{({ ..., A, X, B,  Y+B, C, ... })@}
+//! into the somewhat shorter diff arrays
+//! @code{({ ..., A, Z,     B+C, ... })@}
+//! @code{({ ..., A, X+B+Y, B+C, ... })@}
+array(array) chunky_diff(array from, array to)
+{
+  array d1, d2;
+  [d1, d2] = Array.diff(from, to);
+  [d2, d1] = low_chunky_diff(d2, d1);
+  return low_chunky_diff(d1, d2);
 }
