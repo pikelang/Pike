@@ -38,14 +38,11 @@
  *  o Parenthesis must match, even within #if 0
  *  o Not all Pike types are supported yet.
  *  o No support for functions that takes variable number of arguments yet.
- *  o No support for class variables yet.
- *  o No support for set_init/exit/gc_mark/gc_check_callback.
- *  o No support for 'char *', 'double'  etc.
  *  o RETURN; (void) doesn't work yet
  *  o need a RETURN_NULL; or something.. RETURN 0; might work but may
  *    be confusing as RETURN x; will not work if x is zero.
  *  o Comments does not work inside prototypes (?)
- *  o add support for set_init/exit/mark/gc_func()
+ *  o Allow INHERIT
  *    
  */
 
@@ -350,14 +347,16 @@ class PikeType
 	  return ret;
 
 	case "function":
+	  string t=args[..sizeof(args)-3]->output_c_type()*" ";
+	  if(t == "") t="tNone";
 	  if(args[-2]->output_pike_type(0) == "void")
 	  {
 	    return sprintf("tFunc(%s,%s)",
-			   args[..sizeof(args)-3]->output_c_type()*" ",
+			   t,
 			   args[-1]->output_c_type());
 	  }else{
 	    return sprintf("tFunc(%s,%s,%s)",
-			   args[..sizeof(args)-3]->output_c_type(),
+			   t,
 			   args[-2]->output_c_type(),
 			   args[-1]->output_c_type());
 	  }
@@ -1044,6 +1043,13 @@ class ParseBlock
 	p=parse_type(proto,0);
 	PikeType rettype=PikeType(proto[..p-1]);
 
+	if(arrayp(proto[p]))
+	{
+	  werror("%s:%d: Missing type?\n",
+		 proto[p][0]->file||"-",
+		 proto[p][0]->line);
+	  exit(1);
+	}
 	string name=(string)proto[p];
 	array args_tmp=proto[p+1];
 
