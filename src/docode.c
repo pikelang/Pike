@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.165 2003/09/19 13:51:57 grubba Exp $
+|| $Id: docode.c,v 1.166 2003/09/19 14:04:48 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.165 2003/09/19 13:51:57 grubba Exp $");
+RCSID("$Id: docode.c,v 1.166 2003/09/19 14:04:48 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -2225,8 +2225,8 @@ static int do_docode2(node *n, INT16 flags)
   }
 
   case F_VAL_LVAL:
-    return do_docode(CAR(n),flags) +
-      do_docode(CDR(n), (INT16)(flags | DO_LVALUE));
+    ret = do_docode(CAR(n),flags);
+    return ret + do_docode(CDR(n), (INT16)(flags | DO_LVALUE));
 
   case F_AUTO_MAP:
     emit0(F_MARK);
