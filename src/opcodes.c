@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.135 2003/02/08 03:49:22 mast Exp $
+|| $Id: opcodes.c,v 1.136 2003/02/10 13:59:59 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.135 2003/02/08 03:49:22 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.136 2003/02/10 13:59:59 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1269,7 +1269,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  no_assign=1;							 \
 	  cnt++;							 \
 	  if(cnt>=match_len)						 \
-	    Pike_error("Error in sscanf format string.\n");			 \
+	    Pike_error("Error in sscanf format string.\n");		 \
 	  continue;							 \
 									 \
 	case '0': case '1': case '2': case '3': case '4':		 \
@@ -1295,7 +1295,7 @@ static INT32 PIKE_CONCAT4(very_low_sscanf_,INPUT_SHIFT,_,MATCH_SHIFT)(	 \
 	  {								 \
 	    if(e>=match_len)						 \
 	    {								 \
-	      Pike_error("Missing %%} in format string.\n");			 \
+	      Pike_error("Missing %%} in format string.\n");		 \
 	      break;		/* UNREACHED */				 \
 	    }								 \
 	    if(match[e]=='%')						 \
@@ -1704,30 +1704,46 @@ CHAROPT2(								 \
 	  cnt=PIKE_CONCAT(read_set,MATCH_SHIFT)(match,cnt+1,		 \
 						&set,match_len);	 \
 									 \
-  match_set:								 \
-	  for(e=eye;eye<input_len;eye++)				 \
+	match_set:							 \
 	  {								 \
-CHAROPT2(								 \
-	    if(input[eye]<sizeof(set.c))				 \
-	    {								 \
-)									 \
-	      if(set.c[input[eye]] == set.neg)				 \
-		break;							 \
-CHAROPT2(								 \
-	    }else{							 \
-	      if(set.a)							 \
-	      {								 \
-		INT32 x;						 \
-		struct svalue tmp;					 \
-		tmp.type=T_INT;						 \
-		tmp.u.integer=input[eye];				 \
-		x=switch_lookup(set.a, &tmp);				 \
-		if( set.neg != (x<0 && (x&1)) ) break;			 \
-	      }else{							 \
-		if(!set.neg) break;					 \
+	    int len = input_len;					 \
+	    if (field_length != -1) {					 \
+	      len = eye + field_length;					 \
+	      if (len > input_len) {					 \
+	  	/* Mismatch -- too little data */			 \
+	        chars_matched[0]=eye;					 \
+	        return matches;						 \
 	      }								 \
 	    }								 \
+	    for(e=eye;eye<len;eye++)					 \
+	    {								 \
+CHAROPT2(								 \
+	      if(input[eye]<sizeof(set.c))				 \
+	      {								 \
 )									 \
+	        if(set.c[input[eye]] == set.neg)			 \
+		  break;						 \
+CHAROPT2(								 \
+	      }else{							 \
+	        if(set.a)						 \
+	        {							 \
+		  INT32 x;						 \
+		  struct svalue tmp;					 \
+		  tmp.type=T_INT;					 \
+		  tmp.u.integer=input[eye];				 \
+		  x=switch_lookup(set.a, &tmp);				 \
+		  if( set.neg != (x<0 && (x&1)) ) break;		 \
+	        }else{							 \
+		  if(!set.neg) break;					 \
+	        }							 \
+	      }								 \
+)									 \
+	    }								 \
+	    if ((field_length != -1) && (eye != len)) {			 \
+	      /* Couldn't read the entire field. Fail. */		 \
+	      chars_matched[0]=e;					 \
+	      return matches;						 \
+	    }								 \
 	  }								 \
           if(set.a) { free_array(set.a); set.a=0; }			 \
 	  sval.type=T_STRING;						 \
@@ -1743,7 +1759,7 @@ CHAROPT2(								 \
 	  break;							 \
 									 \
 	default:							 \
-	  Pike_error("Unknown sscanf token %%%c(0x%02x)\n",			 \
+	  Pike_error("Unknown sscanf token %%%c(0x%02x)\n",		 \
 		match[cnt], match[cnt]);				 \
       }									 \
       break;								 \
