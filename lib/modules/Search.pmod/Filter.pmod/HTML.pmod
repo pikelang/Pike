@@ -1,14 +1,14 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.16 2001/08/13 20:04:20 nilsson Exp $
+// $Id: HTML.pmod,v 1.17 2001/08/15 14:38:46 anders Exp $
 
 // Filter for text/html
 
 inherit Search.Filter.Base;
 
 constant contenttypes = ({ "text/html" });
-constant fields = ({ "body", "title", "keywords", "description" });
+constant fields = ({ "body", "title", "keywords", "description", "robots" });
 
 string _sprintf()
 {
@@ -54,6 +54,9 @@ Output filter(Standards.URI uri, string|Stdio.File data,
       case "keywords":
 	res->fields->keywords=
 	  Parser.parse_html_entities(m->contents||m->content||m->data||"");
+	break;
+      case "robots":
+	res->fields->robots = m->contents||m->content||m->data||"";
 	break;
     }
     return "";
