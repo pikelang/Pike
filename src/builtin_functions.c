@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.72 1998/02/15 01:22:27 mirar Exp $");
+RCSID("$Id: builtin_functions.c,v 1.73 1998/02/24 14:51:16 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1851,17 +1851,25 @@ static INLINE int diff_ponder_array(int x,
    return a;
 }
 
-static struct array* diff_longest_sequence(struct array *cmptbl)
+static struct array* diff_longest_sequence(struct array *cmptbl, int blen)
 {
    int i,j,top=0,lsize=0;
    struct array *a;
    struct diff_magic_link_pool *pools=NULL;
    struct diff_magic_link *dml;
    struct diff_magic_link **stack;
+   char *marks;
 
    stack=malloc(sizeof(struct diff_magic_link*)*cmptbl->size);
 
    if (!stack) error("out of memory\n");
+
+   marks = calloc(blen,1);
+
+   if (!marks) {
+     free(stack);
+     error("Out of memory\n");
+   }
 
    for (i=0; i<cmptbl->size; i++)
    {
@@ -1870,78 +1878,89 @@ static struct array* diff_longest_sequence(struct array *cmptbl)
       for (j=cmptbl->item[i].u.array->size; j--;)
       {
 	 int x=inner[j].u.integer;
-	 int pos;
 
-	 if (top && x<=stack[top-1]->x)
-	    pos=diff_ponder_stack(x,stack,top);
-	 else
-	    pos=top;
+	 if (!marks[x]) {
+	   int pos;
 
-	 if (pos && j)
-	 {
-	    if (stack[pos-1]->x+1 < inner[j].u.integer)
-	    {
+	   if (top && x<=stack[top-1]->x) {
+	     pos=diff_ponder_stack(x,stack,top);
+	     if (pos != top) {
+	       marks[stack[pos]->x] = 0;
+	     }
+	   } else
+	     pos=top;
+
+	   if (pos && j)
+	   {
+	     if (!marks[inner[j-1].u.integer])
+	     {
 	       j=diff_ponder_array(stack[pos-1]->x+1,inner,j);
 	       x=inner[j].u.integer;
-	    }
-	 }
-	 else
-	 {
-	    j=0;
-	    x=inner->u.integer;
-	 }
-	 if (pos==top)
-	 {
-	    if (! (dml=dml_new(&pools)) )
-	    {
+	     }
+	   }
+	   else
+	   {
+	     j=0;
+	     x=inner->u.integer;
+	   }
+	   marks[x] = 1;
+	   if (pos==top)
+	   {
+	     if (! (dml=dml_new(&pools)) )
+	     {
 	       dml_free_pools(pools);
 	       free(stack);
 	       error("out of memory\n");
-	    }
+	     }
 
-	    dml->x=x;
-	    dml->refs=1;
+	     dml->x=x;
+	     dml->refs=1;
 
-	    if (pos)
+	     if (pos)
 	       (dml->prev=stack[pos-1])->refs++;
-	    else
+	     else
 	       dml->prev=NULL;
 
-	    top++;
+	     top++;
 	    
-	    stack[pos]=dml;
-	 }
-	 else if (stack[pos]->x!=x)
-	    if (pos && 
-		stack[pos]->refs==1 &&
-		stack[pos-1]==stack[pos]->prev)
-	    {
+	     stack[pos]=dml;
+	   }
+	   else if (stack[pos]->x!=x)
+	     if (pos && 
+		 stack[pos]->refs==1 &&
+		 stack[pos-1]==stack[pos]->prev)
+	     {
 	       stack[pos]->x=x;
-	    }
-	    else
-	    {
+	     }
+	     else
+	     {
 	       if (! (dml=dml_new(&pools)) )
 	       {
-		  dml_free_pools(pools);
-		  free(stack);
-		  error("out of memory\n");
+		 dml_free_pools(pools);
+		 free(stack);
+		 error("out of memory\n");
 	       }
 
 	       dml->x=x;
 	       dml->refs=1;
 
 	       if (pos)
-		  (dml->prev=stack[pos-1])->refs++;
+		 (dml->prev=stack[pos-1])->refs++;
 	       else
-		  dml->prev=NULL;
+		 dml->prev=NULL;
 
 	       if (!--stack[pos]->refs)
-		  dml_delete(pools,stack[pos]);
+		 dml_delete(pools,stack[pos]);
 	    
 	       stack[pos]=dml;
-	    }
+	     }
+	 }
       }
    }
+
+   /* No need for marks anymore. */
+
+   free(marks);
 
    /* FIXME(?) memory unfreed upon error here */
    a=low_allocate_array(top,0); 
@@ -2062,7 +2081,7 @@ void f_diff(INT32 args)
 
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
    push_array(cmptbl);
-   seq=diff_longest_sequence(cmptbl);
+   seq=diff_longest_sequence(cmptbl, sp[1-args].u.array->size);
    push_array(seq); 
    
    diff=diff_build(sp[-2-args].u.array,sp[1-2-args].u.array,seq);
@@ -2103,7 +2122,7 @@ void f_diff_longest_sequence(INT32 args)
 
    cmptbl=diff_compare_table(sp[-args].u.array,sp[1-args].u.array);
    push_array(cmptbl);
-   seq=diff_longest_sequence(cmptbl);
+   seq=diff_longest_sequence(cmptbl, sp[1-args].u.array->size);
    pop_n_elems(args+1);
    push_array(seq); 
 }
