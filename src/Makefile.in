@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.225 2000/12/02 16:00:10 mast Exp $
+# $Id: Makefile.in,v 1.226 2000/12/19 20:51:17 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -463,8 +463,8 @@ lib: Makefile
 
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	t="$$PIKE_PATH_TRANSLATE"; if test "x$$t" = "x"; then t=s,x,x,; else :; fi; \
-	sed -e 's!¤lib_prefix¤!'"`echo \"$(TMP_LIBDIR)\" | sed -e \"$$t\"`"'!' <$(LIBDIR_SRC)/master.pike.in \
-	  | sed -e 's!¤share_prefix¤!'"`echo \"$(LIBDIR_SRC)\" | sed -e \"$$t\"`"'!' >master.pike
+	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | sed -e "$$t"`"'!' <$(LIBDIR_SRC)/master.pike.in \
+	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' >master.pike
 
 pike-module: $(SRCDIR)/pike-module.in Makefile ./pike
 	$(RUNPIKE) $(SRCDIR)/pike-module.in --fixate=$(SRCDIR)/pike-module.in \
