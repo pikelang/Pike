@@ -64,11 +64,13 @@ MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFL
 # Add ualarm.o if you don't have ualarm() on your machine.
 #
 OBJ= \
+ language.o \
  constants.o \
  array.o \
  backend.o \
  builtin_functions.o \
  callback.o \
+ encode.o \
  docode.o \
  dynamic_buffer.o \
  dynamic_load.o \
@@ -78,7 +80,6 @@ OBJ= \
  gc.o \
  hashtable.o \
  interpret.o \
- language.o \
  las.o \
  lex.o \
  multiset.o \
