@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.469 2001/01/30 09:48:21 jonasw Exp $")
+AC_REVISION("$Id: configure.in,v 1.470 2001/02/01 08:12:26 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4528,6 +4528,9 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
     mv conftest.$SO myconftest.so
 
     OLD_CFLAGS="$CFLAGS"
+    OLD_CPPFLAGS="$CPPFLAGS"
+    CPPFLAGS="-I$srcdir $OLD_CPPFLAGS"
+
     CFLAGS="$CFLAGS $LINKFORSHARED"
     OLD_CC="$CC"
     case "$LD" in
@@ -4541,6 +4544,7 @@ AC_CACHE_VAL(pike_cv_sys_dynamic_loading,
 void testfunc2(void) { exit(0); }
 ], pike_cv_sys_dynamic_loading=yes, pike_cv_sys_dynamic_loading=no, pike_cv_sys_dynamic_loading=no)
     CFLAGS="$OLD_CFLAGS"
+    CPPFLAGS="${OLD_CPPFLAGS}"
     CC="$OLD_CC"
   else    
     pike_cv_sys_dynamic_loading=no
