@@ -25,7 +25,14 @@ class File
   int open_socket(int|void port, string|void address)
   {
     _fd=Fd();
-    return ::open_socket(port, address);
+    switch(query_num_arg()) {
+    case 0:
+      return ::open_socket();
+    case 1:
+      return ::open_socket(port);
+    default:
+      return ::open_socket(port, address);
+    }
   }
 
   int connect(string host, int port)
