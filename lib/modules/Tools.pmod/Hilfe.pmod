@@ -2,7 +2,7 @@
 
 // Incremental Pike Evaluator
 //
-// $Id: Hilfe.pmod,v 1.52 2002/03/23 03:33:53 nilsson Exp $
+// $Id: Hilfe.pmod,v 1.53 2002/03/23 03:37:30 nilsson Exp $
 
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
@@ -221,7 +221,6 @@ private class CommandHelp {
     line = words[1..]*" ";
     function write = e->write;
 
-    write("%O\n", line);
     if(line == "me more") {
       write( documentation_help_me_more );
       return;
