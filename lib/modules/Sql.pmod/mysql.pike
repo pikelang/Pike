@@ -1,21 +1,11 @@
 /*
- * $Id: mysql.pike,v 1.13 2001/04/07 00:57:09 nilsson Exp $
+ * $Id: mysql.pike,v 1.14 2001/09/06 20:11:00 nilsson Exp $
  *
  * Glue for the Mysql-module
  */
 
-//.
-//. File:	mysql.pike
-//. RCSID:	$Id: mysql.pike,v 1.13 2001/04/07 00:57:09 nilsson Exp $
-//. Author:	Henrik Grubbström (grubba@roxen.com)
-//.
-//. Synopsis:	Implements the glue to the Mysql-module.
-//.
-//. +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//.
-//. Implements the glue needed to access the Mysql-module from the generic
-//. SQL module.
-//.
+//! Implements the glue needed to access the Mysql-module from the generic
+//! SQL module.
 
 #pike __REAL_VERSION__
 
@@ -23,9 +13,10 @@
 
 inherit Mysql.mysql;
 
-//. - quote
-//.   Quote a string so that it can safely be put in a query.
-//. > s - String to quote.
+//! Quote a string so that it can safely be put in a query.
+//!
+//! @param s
+//!   String to quote.
 string quote(string s)
 {
   return(replace(s,
@@ -39,13 +30,16 @@ string quote(string s)
 
 private constant timezone = localtime (0)->timezone;
 
-//. - encode_time
-//.   Converts a system time value to an appropriately formatted time
-//.   spec for the database.
-//. > time - Time to encode.
-//. > date - If nonzero then time is taken as a "full" unix time spec
-//.   (where the date part is ignored), otherwise it's converted as a
-//.   seconds-since-midnight value.
+//! Converts a system time value to an appropriately formatted time
+//! spec for the database.
+//!
+//! @param time
+//!   Time to encode.
+//!
+//! @param date
+//!   If nonzero then time is taken as a "full" unix time spec
+//!   (where the date part is ignored), otherwise it's converted as a
+//!   seconds-since-midnight value.
 string encode_time (int time, void|int date)
 {
   if (date) {
@@ -56,10 +50,11 @@ string encode_time (int time, void|int date)
   else return sprintf ("%02d%02d%02d", time / 3600 % 24, time / 60 % 60, time % 60);
 }
 
-//. - encode_date
-//.   Converts a system time value to an appropriately formatted
-//.   date-only spec for the database.
-//. > time - Time to encode.
+//! Converts a system time value to an appropriately formatted
+//! date-only spec for the database.
+//!
+//! @param time
+//!   Time to encode.
 string encode_date (int time)
 {
   if (!time) return "00000000";
@@ -67,10 +62,11 @@ string encode_date (int time)
   return sprintf ("%04d%02d%02d", ct->year + 1900, ct->mon + 1, ct->mday);
 }
 
-//. - encode_datetime
-//.   Converts a system time value to an appropriately formatted
-//.   date and time spec for the database.
-//. > time - Time to encode.
+//! Converts a system time value to an appropriately formatted
+//! date and time spec for the database.
+//!
+//! @param time
+//!   Time to encode.
 string encode_datetime (int time)
 {
   if (!time) return "00000000000000";
@@ -80,11 +76,14 @@ string encode_datetime (int time)
 		  ct->hour, ct->min, ct->sec);
 }
 
-//. - decode_time
-//.   Converts a database time spec to a system time value.
-//. > timestr - Time spec to decode.
-//. > date - Take the date part from this system time value. If zero, a
-//.   seconds-since-midnight value is returned.
+//! Converts a database time spec to a system time value.
+//!
+//! @param timestr
+//!   Time spec to decode.
+//!
+//! @param date
+//!   Take the date part from this system time value. If zero, a
+//!   seconds-since-midnight value is returned.
 int decode_time (string timestr, void|int date)
 {
   int hour = 0, min = 0, sec = 0;
@@ -97,10 +96,11 @@ int decode_time (string timestr, void|int date)
   else return (hour * 60 + min) * 60 + sec;
 }
 
-//. - decode_date
-//.   Converts a database date-only spec to a system time value.
-//.   Assumes 4-digit years.
-//. > datestr - Date spec to decode.
+//! Converts a database date-only spec to a system time value.
+//! Assumes 4-digit years.
+//!
+//! @param datestr
+//!   Date spec to decode.
 int decode_date (string datestr)
 {
   int year = 0, mon = 0, mday = 0, n;
@@ -112,10 +112,11 @@ int decode_date (string datestr)
   else return 0;
 }
 
-//. - decode_datetime
-//.   Converts a database date and time spec to a system time value.
-//.   Can decode strings missing the time part.
-//. > datestr - Date and time spec to decode.
+//! Converts a database date and time spec to a system time value.
+//! Can decode strings missing the time part.
+//!
+//! @param datestr
+//!   Date and time spec to decode.
 int decode_datetime (string timestr)
 {
   array(string) a = timestr / " ";
@@ -130,6 +131,7 @@ int decode_datetime (string timestr)
   }
 }
 
+//!
 int|object big_query(string q, mapping(string|int:mixed)|void bindings)
 {
   if (!bindings)

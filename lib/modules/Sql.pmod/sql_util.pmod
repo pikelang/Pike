@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.8 2001/04/07 00:57:09 nilsson Exp $
+ * $Id: sql_util.pmod,v 1.9 2001/09/06 20:11:00 nilsson Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -9,45 +9,37 @@
 
 #pike __REAL_VERSION__
 
-//.
-//. File:	sql_util.pmod
-//. RCSID:	$Id: sql_util.pmod,v 1.8 2001/04/07 00:57:09 nilsson Exp $
-//. Author:	Henrik Grubbström (grubba@roxen.com)
-//.
-//. Synopsis:	Some SQL utility functions
-//.
-//. +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//.
-//. These functions are kept here mainly to avoid circular references.
-//.
+//! Some SQL utility functions
 
-//. - quote
-//.   Quote a string so that it can safely be put in a query.
-//. > s - String to quote.
+//! Quote a string so that it can safely be put in a query.
+//!
+//! @param s
+//!   String to quote.
 string quote(string s)
 {
   return(replace(s, "\'", "\'\'"));
 }
 
-//. - fallback
-//.   Throw an error in case an unimplemented function is called.
+//! Throw an error in case an unimplemented function is called.
 void fallback()
 {
   throw(({ "Function not supported in this database.", backtrace() }));
 }
 
-//. - build a raw SQL query, given the cooked query and the variable bindings
-//.   It's meant to be used as an emulation engine for those drivers not
-//.   providing such a behaviour directly (i.e. Oracle).
-//.   The raw query can contain some variables (identified by prefixing
-//.   a colon to a name or a number(i.e. :var, :2). They will be
-//.   replaced by the corresponding value in the mapping.
-//. > query
-//.   The query
-//. > bindings
-//.   Optional mapping containing the variable bindings. Make sure that
-//.   no confusion is possible in the query. If necessary, change the
-//.   variables' names
+//! build a raw SQL query, given the cooked query and the variable bindings
+//! It's meant to be used as an emulation engine for those drivers not
+//! providing such a behaviour directly (i.e. Oracle).
+//! The raw query can contain some variables (identified by prefixing
+//! a colon to a name or a number(i.e. :var, :2). They will be
+//! replaced by the corresponding value in the mapping.
+//!
+//! @param query
+//!   The query
+//!
+//! @param bindings
+//!   Optional mapping containing the variable bindings. Make sure that
+//!   no confusion is possible in the query. If necessary, change the
+//!   variables' names.
 string emulate_bindings(string query, mapping(string|int:mixed)|void bindings,
                         void|object driver)
 {
