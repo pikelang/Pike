@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.35 1997/01/11 22:35:38 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.36 1997/01/11 23:00:29 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -145,7 +145,7 @@ else
   fi
 fi
 
-AC_MSG_CHECKING(ld accepts setting te run-path with -R)
+AC_MSG_CHECKING(ld accepts setting the run-path with -R)
 AC_CACHE_VAL(pike_cv_ld_accepts_r,
 [
   OLD_CFLAGS="$CFLAGS"
