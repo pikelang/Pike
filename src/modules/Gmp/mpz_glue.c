@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.6 1997/03/12 12:18:25 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.7 1997/03/15 07:10:18 nisse Exp $");
 #include "gmp_machine.h"
 #include "types.h"
 
@@ -740,8 +740,8 @@ void pike_module_init(void)
 
   add_program_constant("mpz", mpzmod_program=end_program(), 0);
 
-  add_function("mpz_pow", gmp_pow, "function(int, int:object)", 0);
-  add_function("mpz_fac", gmp_fac, "function(int:object)", 0);
+  add_function("pow", gmp_pow, "function(int, int:object)", 0);
+  add_function("fac", gmp_fac, "function(int:object)", 0);
 
 #endif
 }
