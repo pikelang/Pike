@@ -19,5 +19,7 @@ DESCRIPTION
 	If no second argument is given, the signal handler for that signal
 	is restored to the default handler.
 
+	If the second argument is zero, the signal will be completely ignored.
+
 SEE ALSO
 	kill, signame, signum
