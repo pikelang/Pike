@@ -116,7 +116,8 @@ void set_image( PVImage i )
 {
   if( !i ) return;
   int is_uri;
-  if( stringp( i ) || (is_uri = (_typeof( i ) >= typeof(Standards.URI)) ) )
+  if( stringp( i ) ||
+      (is_uri = (objectp(i) && object_program( i ) >= Standards.URI) ) )
   {
     if( is_uri )
       i = Image.decode_layers( Protocols.HTTP.get_url_data( i ) );
