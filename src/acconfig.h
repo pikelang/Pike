@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.52 1999/12/05 16:34:07 mirar Exp $
+ * $Id: acconfig.h,v 1.53 1999/12/08 15:51:37 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -373,5 +373,8 @@
 #define PIKE_CONCAT4(X,Y,Z,Q)	X/**/Y/**/Z/**/Q
 #endif /* HAVE_KR_CONCAT */
 #endif /* HAVE_ANSI_CONCAT */
+
+#define TOSTR(X)	#X
+#define DEFINETOSTR(X)	TOSTR(X)
 
 #endif /* MACHINE_H */
