@@ -223,7 +223,14 @@ SGML index_to_wmml(INDEX data)
 	});
 }
 
+string name_to_link(string x)
+{
+  return replace(x,"->",".");
+}
+
 int cpos;
+
+string classbase;
 
 SGML wmml_to_html(SGML data);
 
@@ -247,7 +254,117 @@ SGML convert(SGML data)
 	data->params->noshade=1;
 	data->params->size="1";
 	break;
+
+	case "class":
+	{
+	  string tmp=classbase;
+	  if(!classbase || classbase=="")
+	  {
+	    classbase=data->params->name;
+	  }else{
+	    classbase+="."+data->params->name;
+	  }
+	  ret+=convert(data->data);
+	  classbase=tmp;
+	  continue;
+	}
+
+	case "man_title":
+	  ret+=convert(({
+	    Sgml.Tag("p"),
+	    "\n",
+	    Sgml.Tag("dt"),
+	      Sgml.Tag("encaps",([]),data->pos, data->data),
+	      Sgml.Tag("dd"),
+	      "\n"
+	      }));
+	  continue;
+
+	case "method":
+	{
+	  string fullname=classbase+"->"+data->params->name;
+	  ret+=convert(({
+	    Sgml.Tag("anchor",(["name":name_to_link(fullname)]),data->pos,
+		     ({
+		       Sgml.Tag("dl",([]),data->pos,
+				  ({
+				    Sgml.Tag("man_title",([]),data->pos,({"METHOD"})),
+				    Sgml.Tag("tt",([]),data->pos,({fullname})),
+				    " - ",
+				    data->params->title,
+				    "\n",
+				  })
+				  +
+				  data->data
+			 )
+		     })),
+	      "\n",
+	      Sgml.Tag("hr"),
+	  }));
+	  continue;
+	}
+	case "man_syntax":
+	  ret+=convert(
+	    ({
+	    Sgml.Tag("man_title",([]),data->pos,({"SYNTAX"})),
+	      Sgml.Tag("tt",([]),data->pos,data->data)
+		}));
+	  continue;
+
+	case "man_example":
+	  ret+=convert(
+	    ({
+	    Sgml.Tag("man_title",([]),data->pos,({"EXAMPLE"})),
+	      Sgml.Tag("tt",([]),data->pos,data->data)
+		}));
+	  continue;
+		    
+	case "man_nb":
+	  ret+=convert(
+	    ({
+	    Sgml.Tag("man_title",([]),data->pos,({"NOTA BENE"})),
+	      })+data->data);
+	  continue;
+
+	case "man_bugs":
+	  ret+=convert(
+	    ({
+	    Sgml.Tag("man_title",([]),data->pos,({"BUGS"})),
+	      })+data->data);
+	  continue;
 	
+	case "man_description":
+	  ret+=convert(
+	    ({
+	    Sgml.Tag("man_title",([]),data->pos,({"DESCRIPTION"})),
+	      })+data->data);
+	  continue;
+
+	case "man_see":
+	{
+	  ret+=convert( ({
+	    Sgml.Tag("man_title",([]),data->pos,({"SEE ALSO"}))
+	      }));
+	  
+	  SGML tmp=({});
+	  foreach(replace(data->data[0],({" ","\n"}),({"",""}))/",",string name)
+	    {
+	      tmp+=({
+		Sgml.Tag("link",(["to":name_to_link(name)]),data->pos,
+			 ({
+			   Sgml.Tag("tt",([]),data->pos,({name})),
+			     })),
+		  ", "
+		    });
+	    }
+
+	  tmp[-1]="";
+	  if(sizeof(tmp)>3) tmp[-3]=" and ";
+
+	  ret+=convert(tmp);
+	  continue;
+	}
+
 	case "link":
 	{
 	  data->tag="a";

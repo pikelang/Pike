@@ -53,6 +53,15 @@ static private int verify_any(SGML data, string in)
       case "strong":
       case "link":
 
+	case "man_nb":
+	case "class":
+	case "method":
+	case "man_description":
+	case "man_see":
+	case "man_syntax":
+	case "man_bugs":
+	case "man_example":
+
       case "ex_identifier":
       case "ex_keyword":
       case "ex_string":
