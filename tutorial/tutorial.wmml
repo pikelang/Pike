@@ -4984,21 +4984,21 @@ pointer and any arguments it needs and that function will be executed in a
 separate thread. The function <tt>thread_create</tt> will return immediately and both
 the calling function and the called function will execute at the same time. Example:
 <example language=pike>
-	void foo(int x)
-	{
-	  for(int e=0;e&lt;5;e++)
-	  {
-	    sleep(1);
-	    write("Hello from thread "+x+".\n");
-	  }
-	}
+void foo(int x)
+{
+  for(int e=0;e&lt;5;e++)
+  {
+    sleep(1);
+    write("Hello from thread "+x+".\n");
+  }
+}
 
-	int main()
-	{
-	  thread_create(foo, 2);
-	  thread_create(foo, 3);
-	  foo(1);
-	}
+int main()
+{
+  thread_create(foo, 2);
+  thread_create(foo, 3);
+  foo(1);
+}
 </example>
 This may all seem very simple, but there are a few complications to
 watch out for:
@@ -5006,13 +5006,13 @@ watch out for:
 <dt> Accessing unlocked data
 <dd> Look at this code:
 <example language=pike>
-	void mapadd(mapping m, int i, int j)
-	{
-	  if(map[i])
-	     map[i]+=({j});
-	  else
-	     map[i]=({j});
-	}
+void mapadd(mapping m, int i, int j)
+{
+  if(map[i])
+    map[i]+=({j});
+  else
+    map[i]=({j});
+}
 </example>
 This is quite harmless as long as it is only used from one thread at a time,
 but if two threads call it it at the same time, there is a slight chance that
@@ -5027,40 +5027,40 @@ other threads that they don't have to wait any longer. Pike also provides
 two different kinds of pipelines to send data from one thread to another, which
 makes it very simple to write threaded programs. Let's look at an example:
 <example language=pike>
-	#!/usr/local/bin/pike
-	import Thread;			// We need fifos
-	inherit Fifo;			// Fifo used to supply workers
-	inherit Fifo : ended;		// Fifo used to wait for workers
+#!/usr/local/bin/pike
+import Thread;			// We need fifos
+inherit Fifo;			// Fifo used to supply workers
+inherit Fifo : ended;		// Fifo used to wait for workers
 
-	void worker(string lookfor)
-	{
-	  while(string file=Fifo::read())
-	  {
-	    int linenum=1;
-	    object o=Stdio.FILE(file,"r");
-	    while(string line=o-&gt;gets())
-	    {
-	      if(search(line, lookfor) &gt;=0)
-		write(sprintf("%s:%d: %s\n",file, linenum, line));
+void worker(string lookfor)
+{
+  while(string file=Fifo::read())
+  {
+    int linenum=1;
+    object o=Stdio.FILE(file,"r");
+    while(string line=o-&gt;gets())
+    {
+      if(search(line, lookfor) &gt;=0)
+	write(sprintf("%s:%d: %s\n",file, linenum, line));
 
-	      linenum++;
-	    }
-	  }
-	  ended::write(0);
-	}
+      linenum++;
+    }
+  }
+  ended::write(0);
+}
 
-	int main(int argc, array(string) argv)
-	{
-	  for(int e=0;e&lt;4;e++)          // Start workers
-	    thread_create(worker,argv[e]);
-	  for(int e=2;e&lt;argc;e++)       // Feed workers
-	    Fifo::write(argv[1]);
-	  for(int e=0;e&lt;4;e++)          // Tell workers to die
-	    Fifo::write(0);
-	  for(int e=0;e&lt;4;e++)          // Wait for workers to die
-	     ended::read();
-	  exit(0);
-	}
+int main(int argc, array(string) argv)
+{
+  for(int e=0;e&lt;4;e++)          // Start workers
+    thread_create(worker,argv[e]);
+  for(int e=2;e&lt;argc;e++)       // Feed workers
+    Fifo::write(argv[1]);
+  for(int e=0;e&lt;4;e++)          // Tell workers to die
+    Fifo::write(0);
+  for(int e=0;e&lt;4;e++)          // Wait for workers to die
+    ended::read();
+  exit(0);
+}
 </example>
 
 This is an example of a simple grep-like program. It looks for the string
@@ -6143,16 +6143,16 @@ current color you use 'setcolor'.
 
 Let's look at an example of how this can be used:
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 
-	int main()
-	{
-	  write("Content-type: image/gif\n\n");
-	  object font=Image.font();
-	  font-&gt;load("testfont");
-	  object image=font-&gt;write(ctime(time));
-	  write(Image.GIF.encode(image));
-	}
+int main()
+{
+  write("Content-type: image/gif\n\n");
+  object font=Image.font();
+  font-&gt;load("testfont");
+  object image=font-&gt;write(ctime(time));
+  write(Image.GIF.encode(image));
+}
 </example>
 This very simple example can be used as a CGI script to produce a gif image
 which says what time it is in white text on a black background.
@@ -7822,29 +7822,29 @@ their GECOS field from the Yp map "passwd.byname" if your system uses
 Yp.
 
 <example language=pike>
-	import Yp;
+import Yp;
 
-	void print_entry(string key, string val)
-	{
-	  val = (val/":")[4];
-	  if(strlen(val))
-	  {
-	    string q = ".......... ";
-	    werror(key+q[strlen(key)..]+val+"\n");
-	  }
-	}
+void print_entry(string key, string val)
+{
+  val = (val/":")[4];
+  if(strlen(val))
+  {
+    string q = ".......... ";
+    werror(key+q[strlen(key)..]+val+"\n");
+  }
+}
   
-	void main(int argc, array(string) argv)
-	{
-	  object (YpMap) o = YpMap("passwd.byname");
+void main(int argc, array(string) argv)
+{
+  object (YpMap) o = YpMap("passwd.byname");
 
-	  werror("server.... "+ o-&gt;server() + "\n"
-	  	 "age....... "+ (-o-&gt;order()+time()) + "\n"
-	  	 "per....... "+ o["per"] + "\n"
-	  	 "size...... "+ sizeof(o) + "\n");
+  werror("server.... "+ o-&gt;server() + "\n"
+  	 "age....... "+ (-o-&gt;order()+time()) + "\n"
+  	 "per....... "+ o["per"] + "\n"
+  	 "size...... "+ sizeof(o) + "\n");
   
-	  o-&gt;map(print_entry); // Print username/GECOS pairs
-	}
+  o-&gt;map(print_entry); // Print username/GECOS pairs
+}
 </example>
 </section>
 </module>
@@ -8852,7 +8852,7 @@ but the char set element will be set to 0.  Note that this function can only
 be applied to individual encoded words.
 </man_description>
 <man_example>
-<pre>
+<example language=pike>
 &gt; Array.map("=?iso-8859-1?b?S2lscm95?= was =?us-ascii?q?h=65re?="/" ",
             MIME.decode_word);
 Result: ({ /* 3 elements */
@@ -8869,7 +8869,7 @@ Result: ({ /* 3 elements */
         "us-ascii"
     })
 })
-</pre>
+</example>
 </man_example>
 <man_see>
 MIME.encode_word
@@ -9362,20 +9362,20 @@ and no boundary string has been set, one is generated using
 <link to=MIME.generate_boundary>generate_boundary</link>.
 </man_description>
 <man_example>
-<pre>
-> object msg = MIME.Message( "Hello, world!",
+<example language=pike>
+&gt; object msg = MIME.Message( "Hello, world!",
         ([ "MIME-Version" : "1.0",
            "Content-Type":"text/plain",
            "Content-Transfer-Encoding":"base64" ]) );
 Result: object
-> (string )msg;
+&gt; (string )msg;
 Result: Content-Type: text/plain
 Content-Length: 20
 Content-Transfer-Encoding: base64
 MIME-Version: 1.0
  
 SGVsbG8sIHdvcmxkIQ==
-</pre>
+</example>
 </man_example>
 <man_see>
 MIME.Message-&gt;create
@@ -9407,14 +9407,14 @@ the subparts should be given as a third argument.
 </ul>
 </man_description>
 <man_example>
-<pre>
-> object msg = MIME.Message( "Hello, world!",
+<example languag=pike>
+&gt; object msg = MIME.Message( "Hello, world!",
         ([ "MIME-Version" : "1.0",
            "Content-Type" : "text/plain; charset=iso-8859-1" ]) );
 Result: object
-> msg->charset;
+&gt; msg->charset;
 Result: iso-8859-1
-</pre>
+</example>
 </man_example>
 <man_see>
 MIME.Message-&gt;cast
@@ -9604,8 +9604,8 @@ MIME.Message-&gt;setdisp_param
 </section>
 </module>
 
-<module name=Simulate title="Compatibility functions">
 <section title="Simulate">
+<module name=Simulate title="Compatibility functions">
 This module is used to achieve better compatibility with older versions of
 Pike. It can also be used for convenience, but I would advice against it
 since some functions defined here are much slower than using similar
@@ -9910,12 +9910,14 @@ multiset mklist(array <I>a</I>);
 This function creates a multiset from an array.
 </man_description>
 <man_example>
-&gt; mklist( ({1,2,3}) );<br>
-Result: (&lt; /* 3 elements */<br>
-<dl><dt><dd>1,<br>
-2,<br>
-3<br>
-</dl>&gt;)<br>
+<example languag=pike>
+&gt; mklist( ({1,2,3}) );
+Result: (&lt; /* 3 elements */
+  1,
+  2,
+  3
+&gt;)
+</example>
 </man_example>
 <man_see>
 aggregate_multiset
@@ -9949,9 +9951,9 @@ prints.
 </man_description>
 </function>
 
-</section>
 <!-- Simulate.explode saknas -->
 </module>
+</section>
 
 <hr newpage>
 
@@ -11783,14 +11785,14 @@ multiset mkmultiset(array a);
 This function creates a multiset from an array.
 </man_description>
 <man_example>
-<pre>
+<example language=pike>
 &gt; mkmultiset( ({1,2,3}) );
 Result: (&lt; /* 3 elements */
-         1,
-         2,
-         3
-        &gt;)
-</pre>
+  1,
+  2,
+  3
+&gt;)
+</example>
 </man_example>
 <man_see>
 aggregate_multiset
@@ -12883,8 +12885,10 @@ string version();
 This function returns a brief information about the Pike version.
 </man_description>
 <man_example>
-&gt; version();<br>
-Result: Pike v0.3<br>
+<example language=pike>
+&gt; version();
+Result: "Pike v0.7 release 1"
+</example>
 </man_example>
 </function>
 
@@ -12999,7 +13003,7 @@ in the <b>master object</b>:
 <p>
 Aside from the above functions, which are expected from the Pike binary,
 the master object is also expected to provide functions used by Pike
-scripts. The current master add the following global functions:
+scripts. The current master adds the following global functions:
 <dl><dd>
 	add_include_path,
 	remove_include_path,
@@ -13033,37 +13037,37 @@ do this.
 <p>
 Let's look an example:
 <example language=pike>
-	#!/usr/local/bin/pike
+#!/usr/local/bin/pike
 
-	class new_master {
-	  inherit "/master";
+class new_master {
+  inherit "/master";
 
- 	  void create()
- 	  {
- 	    /* You need to copy the values from the old master to the new */
- 	    /* NOTE: At this point we are still using the old master */
- 	    object old_master = master();
- 	    object new_master = this_object();
+  void create()
+  {
+    /* You need to copy the values from the old master to the new */
+    /* NOTE: At this point we are still using the old master */
+    object old_master = master();
+    object new_master = this_object();
  
- 	    foreach(indices(old_master), string varname)
- 	    {
- 	      /* The catch is needed since we can't assign constants */
- 	      catch { new_master[varname] = old_master[varname]; };
- 	    }
- 	  }
+    foreach(indices(old_master), string varname)
+    {
+      /* The catch is needed since we can't assign constants */
+      catch { new_master[varname] = old_master[varname]; };
+    }
+  }
 
-	  void handle_error(array trace)
-	  {
-	    Stdio.write_file("error log",describe_backtrace(trace));
-	  }
-	};
+  void handle_error(array trace)
+  {
+    Stdio.write_file("error log",describe_backtrace(trace));
+  }
+};
 
-	int main(int argc, array(string) argv)
-	{
-	  replace_master(new_master());
-	  /* Run rest of program */
-	  exit(0);
-	}
+int main(int argc, array(string) argv)
+{
+  replace_master(new_master());
+  /* Run rest of program */
+  exit(0);
+}
 </example>
 This example installs a master object which logs run time errors to file
 instead of writing them to stderr.
