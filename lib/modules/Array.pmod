@@ -13,7 +13,7 @@ constant transpose = __builtin.transpose;
 
 mixed map(mixed arr, mixed fun, mixed ... args)
 {
-  int e;
+  int e,s;
   mixed *ret;
 
   if(mappingp(arr))
@@ -28,16 +28,28 @@ mixed map(mixed arr, mixed fun, mixed ... args)
   switch(sprintf("%t",fun))
   {
   case "int":
-    return arr(@args);
+    if(objectp(arr)) {
+      ret=allocate(s=sizeof(arr));
+      for(e=0;e<s;e++)
+	ret[e]=arr[e](@args);
+      return ret;
+    }
+    else return arr(@args);
 
   case "string":
-    return column(arr, fun)(@args);
+    if(objectp(arr)) {
+      ret=allocate(s=sizeof(arr));
+      for(e=0;e<s;e++)
+	ret[e]=arr[e][fun](@args);
+      return ret;
+    }
+    else return column(arr, fun)(@args);
 
   case "function":
   case "program":
   case "object":
-    ret=allocate(sizeof(arr));
-    for(e=0;e<sizeof(arr);e++)
+    ret=allocate(s=sizeof(arr));
+    for(e=0;e<s;e++)
       ret[e]=fun(arr[e],@args);
     return ret;
 
