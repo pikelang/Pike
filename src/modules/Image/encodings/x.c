@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.5 1998/01/25 08:27:15 hubbe Exp $ */
+/* $Id: x.c,v 1.6 1998/01/26 02:01:23 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.5 1998/01/25 08:27:15 hubbe Exp $
+**!	$Id: x.c,v 1.6 1998/01/26 02:01:23 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.5 1998/01/25 08:27:15 hubbe Exp $");
+RCSID("$Id: x.c,v 1.6 1998/01/26 02:01:23 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -207,7 +207,9 @@ THREADS_ALLOW();
 	 while (y--)
 	 {
 	    x=img->xsize;
-	    while (x--) d+=4,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b,d[zpos]=0; 
+	    while (x--) 
+	       d+=4,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b,
+	       d[zpos]=0,s++; 
 	 }
       }
       else if (!linemod && Bpp==3 && rpos!=gpos && gpos!=bpos) 
@@ -215,7 +217,9 @@ THREADS_ALLOW();
 	 while (y--)
 	 {
 	    x=img->xsize;
-	    while (x--) d+=3,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b; 
+	    while (x--) 
+	       d+=3,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b,
+	       s++; 
 	 }
       }
       else
@@ -225,7 +229,9 @@ THREADS_ALLOW();
 	 while (y--)
 	 {
 	    x=img->xsize;
-	    while (x--) d+=Bpp,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b; 
+	    while (x--) 
+	       d+=Bpp,d[rpos]=s->r,d[gpos]=s->g,d[bpos]=s->b,
+	       s++; 
 	    d+=linemod;
 	 }
       }
