@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.465 2002/12/01 18:39:07 mast Exp $
+|| $Id: program.c,v 1.466 2002/12/08 15:57:07 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.465 2002/12/01 18:39:07 mast Exp $");
+RCSID("$Id: program.c,v 1.466 2002/12/08 15:57:07 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -752,6 +752,64 @@ static char *raw_lfun_types[] = {
  *!   @[Iterator], @[foreach()]
  */
 
+/*! @class MasterObject
+ */
+
+/*! @decl void unregister(program p)
+ *!
+ *!   Unregister a program that was only partially compiled.
+ *!
+ *!   Called by @[compile()] to clean up references to partially compiled
+ *!   programs.
+ *!
+ *! @param p
+ *!   Partially compiled program that should no longer be referenced.
+ *!
+ *! @fixme
+ *!   Shouldn't this function be in the compilation handler?
+ */
+
+/*! @endclass
+ */
+
+/*! @class CompilationHandler
+ */
+
+/*! @decl mapping(string:mixed)|object get_default_module()
+ *!
+ *!   Returns the default module from which global symbols will
+ *!   be fetched.
+ *!
+ *! @returns
+ *!   Returns the default module, or @tt{0@} (zero).
+ *!
+ *!   If @tt{0@} (zero) is returned the compiler use the mapping
+ *!   returned by @[all_constants()] as fallback.
+ *!
+ *! @seealso
+ *!   @[get_predefines()]
+ */
+
+/*! @decl void compile_warning(string filename, int line, string msg)
+ *!
+ *!   Called by @[compile()] to report warnings.
+ *!
+ *! @param filename
+ *!   File which triggered the warning.
+ *!
+ *! @param line
+ *!   Line which triggered the warning.
+ *!
+ *! @param msg
+ *!   Warning message.
+ *!
+ *! @seealso
+ *!   @[compile_error()]
+ */
+
+/*! @endclass
+ */
+
 struct program *first_program = 0;
 static int current_program_id = PROG_DYNAMIC_ID_START;
 
@@ -1297,7 +1355,7 @@ void optimize_program(struct program *p)
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
   PIKE_CONCAT(RELOCATE_,NAME)(p, (TYPE *)(data+size)); \
-  dmfree((char *)p->NAME); \
+  dmfree(p->NAME); \
   p->NAME=(TYPE *)(data+size); \
   size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
 #include "program_areas.h"
@@ -1660,6 +1718,7 @@ void low_start_new_program(struct program *p,
 
   Pike_compiler->malloc_size_program = ALLOC_STRUCT(program);
   Pike_compiler->fake_object=alloc_object();
+
 #ifdef PIKE_DEBUG
   Pike_compiler->fake_object->storage=(char *)xalloc(256 * sizeof(struct svalue));
   /* Stipple to find illegal accesses */
@@ -5706,6 +5765,7 @@ static void run_cleanup(struct compilation *c, int delayed)
       CDFPRINTF((stderr, "th(%ld) %p unregistering failed delayed compile.\n",
 		 (long) th_self(), p));
       ref_push_program(p);
+      /* FIXME: Shouldn't the compilation handler be used here? */
       SAFE_APPLY_MASTER("unregister",1);
       pop_stack();
 
