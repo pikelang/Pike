@@ -1,3 +1,10 @@
+/*
+ * $Id: MIME.pmod,v 1.3 1997/03/26 21:11:07 grubba Exp $
+ *
+ * RFC1521 functionality for Pike
+ *
+ * Marcus Comstedt 1996-1997
+ */
 
 class support {
 
