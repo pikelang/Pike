@@ -26,70 +26,66 @@ void mkdirhier(string what)
 
 string make_manpage(string base, SGML data, string ind, string fbase)
 {
-   string res="";
-   int stripws=0;
+  string res="";
+  int stripws=0;
 
-   if (stringp(data))
-   {
-      sscanf(data,"%*[ \t\n\r]%s",data);
-      res+=data;
-   }
-   else if(arrayp(data))
-      foreach (data, TAG tag)
-	 if (objectp(tag))
-	 {
-	    switch (tag->tag)
-	    {
-	       case "method":
-	       case "function":
-	       case "constant":
-	       case "class":
-	       case "module":
-	       case "variable":
-		  make_page(base,tag,ind,fbase);
-		  continue;
+  if (stringp(data)) {
+    sscanf(data,"%*[ \t\n\r]%s",data);
+    res+=data;
+  } else if(arrayp(data)) {
+    foreach (data, TAG tag) {
+      if (objectp(tag)) {
+	switch (tag->tag) {
+	case "method":
+	case "function":
+	case "constant":
+	case "class":
+	case "module":
+	case "variable":
+	  make_page(base,tag,ind,fbase);
+	  continue;
 
-	       case "man_title":
-		  res+="\n.SH "+tag->params->title+"\n";
-		  stripws=1;
-		  break;
+	case "man_title":
+	  res+="\n.SH "+tag->params->title+"\n";
+	  stripws=1;
+	  break;
 
-	       case "p":
-		  res+="\n.PP\n";
-		  stripws=1;
-		  break;
-	       case "br":
-		  res+="\n.br\n";
-		  stripws=1;
-		  break;
+	case "p":
+	  res+="\n.PP\n";
+	  stripws=1;
+	  break;
+	case "br":
+	  res+="\n.br\n";
+	  stripws=1;
+	  break;
 
-	       case "link":
-	       case "i": 
-	       case "emboss":
-		  res+="\\f2"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
-		  continue;
+	case "link":
+	case "i": 
+	case "emboss":
+	  res+="\\f2"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
+	  continue;
 
-	       case "b": 
-	       case "strong":
-		  res+="\\f3"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
-		  continue;
+	case "b": 
+	case "strong":
+	  res+="\\f3"+make_manpage(base,tag->data,ind,fbase)+"\\f1";
+	  continue;
 
-	       case "pre":
-		  res+="\n.nf\n"+make_manpage(base,tag->data,ind,fbase)
-		     +"\n.fi\n";
-		  stripws=0;
-		  continue;
-	    }
-	    res+=make_manpage(base,tag->data,ind,fbase);
-	 }
-	 else if (stringp(tag))
-	 {
-	    if (stripws) sscanf(tag,"%*[ \t\n\r]%s",tag);
-	    res+=tag;
-	    stripws=0;
-	 }
+	case "pre":
+	  res+="\n.nf\n"+make_manpage(base,tag->data,ind,fbase)
+	    +"\n.fi\n";
+	  stripws=0;
+	  continue;
+	}
+      }
+      res+=make_manpage(base,tag->data,ind,fbase);
+    }
+  } else if (stringp(tag)) {
+    if (stripws) sscanf(tag,"%*[ \t\n\r]%s",tag);
+    res+=tag;
+    stripws=0;
+  }
 
-   return res;
+  return res;
 }
 
 string strip_eightbit(string s)
@@ -193,4 +189,16 @@ void output(string base, WMML data)
    whatis=Stdio.File("man/whatis", "wtc");
    make_pages("3p", data->data, "", "");
    werror("\n");
+   // Used by Xman.
+   // NB The Xman(1) man-page describes only the old file-format.
+   // The format is either (old format)
+   //   <section suffix (one char)><section name><lf>
+   // or
+   //   <section suffix><tab><section name>[<tab>suffix|fold|foldsuffix]<lf>
+   // The latter is the only one usable for us.
+   object mandesc = Stdio.File("man/mandesc", "wtc");
+   mandesc->write("3p\t(3P) Pike Library Functions\n"
+		  "3pi\t(3PI) Pike Image Module\n"
+		  "3pii\t(3PII) Pike Image.image Class\n");
+   mandesc->close();
 }
