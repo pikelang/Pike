@@ -173,7 +173,21 @@ PMOD_EXPORT char *my_memmem(char *needle,
   /* No free required - Hubbe */
 }
 
+/*! @class Search
+ */
 
+/*! @decl int(-1..) `()(string key, int|void start)
+ *!
+ *! Search for the string @[key] in the data. Start searching at
+ *! offset @[start].
+ *!
+ *! @returns
+ *!   Returns the offset where a match was found, or @tt{-1@} on
+ *!   failure.
+ *!
+ *! @seealso
+ *!   @[search()]
+ */
 static void f_pike_search(INT32 args)
 {
   PCHARP ret, in;
@@ -208,6 +222,9 @@ static void f_pike_search(INT32 args)
   pop_n_elems(args);
   push_int64( SUBTRACT_PCHARP(in, ret) );  
 }
+
+/*! @endclass
+ */
 
 /* Compatibility: All functions using these two functions
  * should really be updated to use compile_memsearcher instead.
