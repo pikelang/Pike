@@ -251,14 +251,25 @@ static int eval_instruction(unsigned char *pc)
 	    error("Attempting to access variable in destructed object\n");
 
 #ifdef DEBUG_MALLOC
+	  if (o->refs == 0x55555555) {
+	    fprintf(stderr, "The object %p has been zapped!\n", o);
+	    describe(p);
+	    fatal("Object zapping detected.\n");
+	  }
 	  if (p->refs == 0x55555555) {
 	    fprintf(stderr, "The program %p has been zapped!\n", p);
-	    debug_malloc_dump_references(p);
+	    describe(p);
 	    fprintf(stderr, "Which taken from the object %p\n", o);
-	    debug_malloc_dump_references(o);
+	    describe(o);
 	    fatal("Looks like the program %p has been zapped!\n", p);
 	  }
 #endif /* DEBUG_MALLOC */
+
+#ifdef PIKE_DEBUG
+	  if(i < 0 || i > p->num_identifiers)
+	    fatal("Identifier out of range!\n");
+#endif
+
 	  
 	  inherit=INHERIT_FROM_INT(p, i);
 	  
@@ -267,9 +278,9 @@ static int eval_instruction(unsigned char *pc)
 	    fprintf(stderr, "The inherit %p has been zapped!\n", inherit);
 	    debug_malloc_dump_references(inherit);
 	    fprintf(stderr, "It was extracted from the program %p %d\n", p, i);
-	    debug_malloc_dump_references(p);
+	    describe(p);
 	    fprintf(stderr, "Which was in turn taken from the object %p\n", o);
-	    debug_malloc_dump_references(o);
+	    describe(o);
 	    fatal("Looks like the program %p has been zapped!\n", p);
 	  }
 #endif /* DEBUG_MALLOC */
