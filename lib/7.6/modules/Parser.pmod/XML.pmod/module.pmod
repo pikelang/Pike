@@ -6,7 +6,7 @@ class Simple
 
   static void create()
   {
-    compat_allow_errors ("7.2");
+    compat_allow_errors ("7.6");
     // Got no inherited create.
   }
 }
@@ -17,7 +17,7 @@ class Validating
 
   static void create()
   {
-    compat_allow_errors ("7.2");
+    compat_allow_errors ("7.6");
     // Got no inherited create.
   }
 }
