@@ -13,14 +13,31 @@
 #include "object.h"
 #include "macros.h"
 
-#if !defined(HAVE_READLINE_H) || !defined(HAVE_HISTORY_H)
+#if !defined(HAVE_READLINE_H) || !defined(HAVE_READLINE_READLINE_H)
+#undef HAVE_LIBREADLINE
+#endif
+
+#if !defined(HAVE_HISTORY_H) || !defined(HAVE_READLINE_HISTORY_H)
 #undef HAVE_LIBREADLINE
 #endif
 
 #ifdef HAVE_LIBREADLINE
 
+#ifdef HAVE_READLINE_READLINE_H
+#include <readline/readline.h>
+#else
+#ifdef HAVE_READLINE_H
 #include <readline.h>
+#endif
+#endif
+
+#ifdef HAVE_READLINE_HISTORY_H
+#include <readline/history.h>
+#else
+#ifdef HAVE_HISTORY_H
 #include <history.h>
+#endif
+#endif
 
 static void f_readline(INT32 args)
 {
@@ -43,6 +60,12 @@ static void f_readline(INT32 args)
   }
 }
 
+void init_readlinemod_efuns(void)
+{
+  rl_bind_key('\t', rl_insert);
+  add_efun("readline",f_readline,"function(string:string)",OPT_SIDE_EFFECT);
+}
+
 #else
 
 #include <stdio.h>
@@ -59,7 +82,8 @@ static void f_readline(INT32 args)
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to readline()\n");
 
-  puts(sp[-args].u.string->str);
+  fwrite(sp[-args].u.string->str,1,sp[-args].u.string->len,stdout);
+  fflush(stdout);
 
   pop_n_elems(args);
   if(fgets(line,BLOCK,stdin))
@@ -77,13 +101,13 @@ static void f_readline(INT32 args)
   push_int(0);
 }
 
-#endif
-
 void init_readlinemod_efuns(void)
 {
-  rl_bind_key('\t', rl_insert);
   add_efun("readline",f_readline,"function(string:string)",OPT_SIDE_EFFECT);
 }
+
+#endif
+
 void exit_readlinemod(void) {}
 void init_readlinemod_programs(void) { }
 
