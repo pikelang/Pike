@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.577 2004/11/06 08:41:30 nilsson Exp $
+|| $Id: program.c,v 1.578 2004/12/08 15:38:35 grubba Exp $
 */
 
 #include "global.h"
@@ -1637,17 +1637,23 @@ struct program *id_to_program(INT32 id)
   struct program *p;
   INT32 h;
   if(!id) return 0;
+
+  /* fprintf(stderr, "id_to_program(%d)... ", id); */
+
   h=id & (ID_TO_PROGRAM_CACHE_SIZE-1);
 
   if((p=id_to_program_cache[h]))
-    if(p->id==id)
+    if(p->id==id) {
+      /* fprintf(stderr, "cached: %p\n", p); */
       return p;
+    }
 
   for(p=first_program;p;p=p->next)
   {
     if(id==p->id)
     {
       id_to_program_cache[h]=p;
+      /* fprintf(stderr, "found: %p\n", p); */
       return p;
     }
   }
@@ -1657,6 +1663,8 @@ struct program *id_to_program(INT32 id)
      * to resolv the id.
      */
     char *module = NULL;
+
+    /* fprintf(stderr, "reserved "); */
 
     switch(id) {
     case PROG_PARSER_HTML_ID:
@@ -1677,6 +1685,7 @@ struct program *id_to_program(INT32 id)
       break;
     }
     if (module) {
+      /* fprintf(stderr, "%s... ", module); */
       push_text(module);
       SAFE_APPLY_MASTER("resolv", 1);
       pop_stack();
@@ -1687,11 +1696,13 @@ struct program *id_to_program(INT32 id)
 	if(id==p->id)
 	{
 	  id_to_program_cache[h]=p;
+	  /* fprintf(stderr, "found: %p\n", p); */
 	  return p;
 	}
       }
     }
   }
+  /* fprintf(stderr, "not found\n"); */
   return 0;
 }
 
@@ -2087,6 +2098,10 @@ void low_start_new_program(struct program *p,
   low_init_threads_disable();
 
   compilation_depth++;
+
+  if (!Pike_compiler->compiler_frame) {
+    new_node_s_context();
+  }
 
   tmp.type=T_PROGRAM;
   if(!p)
