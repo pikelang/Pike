@@ -18,7 +18,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.32 1998/04/02 22:30:30 grubba Exp $");
+RCSID("$Id: socket.c,v 1.33 1998/04/12 07:06:06 per Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -232,7 +232,7 @@ static void port_bind(INT32 args)
   addr.sin_family = AF_INET;
 
   THREADS_ALLOW_UID();
-  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || fd_listen(fd, 5) < 0;
+  tmp=fd_bind(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0 || fd_listen(fd, 16384) < 0;
   THREADS_DISALLOW_UID();
 
   if(tmp)
