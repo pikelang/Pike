@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.543 2003/12/30 09:56:28 grubba Exp $
+|| $Id: program.c,v 1.544 2003/12/30 10:02:46 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.543 2003/12/30 09:56:28 grubba Exp $");
+RCSID("$Id: program.c,v 1.544 2003/12/30 10:02:46 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5017,10 +5017,9 @@ int low_find_lfun(struct program *p, ptrdiff_t lfun)
 					     SEE_STATIC);
   if (i < 0) return i;
   id = ID_FROM_INT(p, i);
-  if (!IDENTIFIER_IS_FUNCTION(id->identifier_flags) ||
-      (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
-       id->func.offset == -1)) {
-    /* Non function or prototype. */
+  if (IDENTIFIER_IS_PIKE_FUNCTION(id->identifier_flags) &&
+      (id->func.offset == -1)) {
+    /* Function prototype. */
     return -1;
   }
   return i;
