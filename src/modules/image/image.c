@@ -1575,8 +1575,163 @@ void image_distancesq(INT32 args)
    {
 #define DISTANCE(A,B) \
    (sq((long)(A).r-(B).r)+sq((long)(A).g-(B).g)+sq((long)(A).b-(B).b))
-      d->r=d->g=d->b=testrange(DISTANCE(*s,rgb)/255);
+      d->r=d->g=d->b=testrange(DISTANCE(*s,rgb)>>8);
       d++; s++;
+   }
+
+   pop_n_elems(args);
+   push_object(o);
+}
+
+#define ISF_LEFT 4
+#define ISF_RIGHT 8
+
+void isf_seek(int mode,int ydir,INT32 low_limit,INT32 x1,INT32 x2,INT32 y,
+	      rgb_group *src,rgb_group *dest,INT32 xsize,INT32 ysize,
+	      rgb_group rgb,int reclvl)
+{
+   INT32 x,xr;
+   INT32 j;
+
+#ifdef DEBUG_ISF
+   fprintf(stderr,"isf_seek reclvl=%d mode=%d, ydir=%d, low_limit=%d, x1=%d, x2=%d, y=%d, src=%lx, dest=%lx, xsize=%d, ysize=%d, rgb=%d,%d,%d\n",reclvl,
+	   mode,ydir,low_limit,x1,x2,y,src,dest,xsize,ysize,rgb.r,rgb.g,rgb.b);
+#endif
+
+#define MARK_DISTANCE(_dest,_value) ((_dest).r=(_dest).g=(_dest).b=((_value)?(_value):1)),fprintf(stderr,"%d,",_value)
+   if ( mode&ISF_LEFT ) /* scan left from x1 */
+   {
+      x=x1;
+      while (x>0)
+      {
+	 x--;
+#ifdef DEBUG_ISF
+fprintf(stderr,"<-- %d (",DISTANCE(rgb,src[x+y*xsize]));
+fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b);
+#endif
+	 if ( (j=DISTANCE(rgb,src[x+y*xsize])) >low_limit)
+	 {
+	    x++;
+	    break;
+	 }
+	 else
+	 {
+	    if (dest[x+y*xsize].r) { x++; break; } /* been there */
+	    MARK_DISTANCE(dest[x+y*xsize],j);
+	 }
+      }
+      if (x1>x)
+      {
+	 isf_seek(ISF_LEFT,-ydir,low_limit,
+		  x,x1-1,y,src,dest,xsize,ysize,rgb,reclvl+1);
+      }
+      x1=x;
+   }
+   if ( mode&ISF_RIGHT ) /* scan right from x2 */
+   {
+      x=x2;
+      while (x<xsize-1)
+      {
+	 x++;
+#ifdef DEBUG_ISF
+fprintf(stderr,"--> %d (",DISTANCE(rgb,src[x+y*xsize]));
+fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b);
+#endif
+	 if ( (j=DISTANCE(rgb,src[x+y*xsize])) >low_limit)
+	 {
+	    x--;
+	    break;
+	 }
+	 else
+	 {
+	    if (dest[x+y*xsize].r) { x--; break; } /* done that */
+	    MARK_DISTANCE(dest[x+y*xsize],j);
+	 }
+      }
+      if (x2<x)
+      {
+	 isf_seek(ISF_RIGHT,-ydir,low_limit,
+		  x2+1,x,y,src,dest,xsize,ysize,rgb,reclvl+1);
+      }
+      x2=x;
+   }
+   xr=x=x1;
+   y+=ydir;
+   if (y<0 || y>=ysize) return;
+   while (x<=x2)
+   {
+#ifdef DEBUG_ISF
+fprintf(stderr,"==> %d (",DISTANCE(rgb,src[x+y*xsize]));
+fprintf(stderr," %d,%d,%d)\n",src[x+y*xsize].r,src[x+y*xsize].g,src[x+y*xsize].b);
+#endif
+      if ( dest[x+y*xsize].r ||
+	   (j=DISTANCE(rgb,src[x+y*xsize])) >low_limit) /* seen that */
+      {
+	 if (xr<x)
+	    isf_seek(ISF_LEFT*(xr==x1),ydir,low_limit,
+		     xr,x-1,y,src,dest,xsize,ysize,rgb,reclvl+1);
+	 while (++x<=x2)
+	    if ( (j=DISTANCE(rgb,src[x+y*xsize])) <=low_limit) break;
+	 xr=x;
+	 x++;
+	 if (x>x2) return;
+	 continue;
+      }
+      MARK_DISTANCE(dest[x+y*xsize],j);
+      x++;
+   }
+   if (x>xr)
+      isf_seek((ISF_LEFT*(xr==x1))|ISF_RIGHT,ydir,low_limit,
+	       xr,x-1,y,src,dest,xsize,ysize,rgb,reclvl+1);
+}
+
+void image_select_from(INT32 args)
+{
+   INT32 i;
+   rgb_group rgb;
+   struct object *o;
+   struct image *img;
+   INT32 low_limit;
+
+   if (!THIS->img) error("no image\n");
+
+   if (args<2 
+       || sp[-args].type!=T_INT
+       || sp[1-args].type!=T_INT)
+      error("Illegal argument(s) to image->select_from()\n");
+
+   if (args>=3)
+      if (sp[2-args].type!=T_INT)
+	 error("Illegal argument 3 (edge type) to image->select_from()\n");
+      else
+	 low_limit=max(0,sp[2-args].u.integer);
+   else
+      low_limit=30;
+   low_limit=low_limit*low_limit;
+
+   o=clone(image_program,0);
+   img=(struct image*)o->storage;
+   *img=*THIS;
+   if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
+   {
+      free_object(o);
+      error("Out of memory\n");
+   }
+   MEMSET(img->img,sizeof(rgb_group)*img->xsize*img->ysize,0);
+
+   if (sp[-args].u.integer>=0 && sp[-args].u.integer<img->xsize 
+       && sp[1-args].u.integer>=0 && sp[1-args].u.integer<img->ysize)
+   {
+      isf_seek(ISF_LEFT|ISF_RIGHT,1,low_limit,
+	       sp[-args].u.integer,sp[-args].u.integer,
+	       sp[1-args].u.integer,
+	       THIS->img,img->img,img->xsize,img->ysize,
+	       pixel(THIS,sp[-args].u.integer,sp[1-args].u.integer),0);
+      isf_seek(ISF_LEFT|ISF_RIGHT,-1,low_limit,
+	       sp[-args].u.integer,sp[-args].u.integer,
+	       sp[1-args].u.integer,
+	       THIS->img,img->img,img->xsize,img->ysize,
+	       pixel(THIS,sp[-args].u.integer,sp[1-args].u.integer),0);
    }
 
    pop_n_elems(args);
@@ -2083,6 +2238,8 @@ void init_image_programs()
 		"function("RGB_TYPE":object)",0);
    add_function("distancesq",image_distancesq,
 		"function("RGB_TYPE":object)",0);
+   add_function("select_from",image_select_from,
+		"function(int,int:object)",0);
 
    add_function("apply_matrix",image_apply_matrix,
                 "function(array(array(int|array(int))):object)",0);
