@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.86 1999/12/21 23:46:39 per Exp $
+ * $Id: master.pike.in,v 1.87 1999/12/27 20:28:45 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -554,7 +554,7 @@ class dirnode
 	module=tmp;
   }
 
-  object|program ind(string index)
+  static object|program ind(string index)
   {
     if(module) 
     {
@@ -582,7 +582,7 @@ class dirnode
       if(mixed tmp=o->_module_value) o=tmp;
       return o;
     }
-    return cast_to_program( index, 0 );
+    return cast_to_program( index, 0 ) || UNDEFINED;
   }
 
   object|program `[](string index)
@@ -655,7 +655,7 @@ class joinnode
     joined_modules = _joined_modules;
   }
 
-  object|mapping ind(string index)
+  static object|mapping ind(string index)
   {
     array(mixed) res = ({});
     foreach(joined_modules, object|mapping o) 
