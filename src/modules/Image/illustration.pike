@@ -1,4 +1,4 @@
-/* $Id: illustration.pike,v 1.2 1997/10/29 02:57:04 mirar Exp $ */
+/* $Id: illustration.pike,v 1.3 1997/11/03 02:06:18 mirar Exp $ */
 
 import Image;
 import Stdio;
@@ -27,7 +27,7 @@ string doit(string name,mapping has,object f,string src)
 
    if (has[s]) return has[s];
    
-   write_file("doc/"+name,o->togif());
+   write_file("doc/"+name,Image.GIF.encode(o));
 
    f->write(
       "<a name="+name+">"
