@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.60 1999/10/01 20:45:06 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.61 1999/10/08 16:35:18 noring Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -27,6 +27,7 @@ RCSID("$Id: operators.c,v 1.60 1999/10/01 20:45:06 hubbe Exp $");
 #include "pike_types.h"
 #include "module_support.h"
 #include "pike_macros.h"
+#include "bignum.h"
 
 #define OP_DIVISION_BY_ZERO_ERROR(FUNC) \
      math_error(FUNC, sp-2, 2, 0, "Division by zero.\n")
@@ -265,10 +266,42 @@ void f_add(INT32 args)
   }
 
   case BIT_INT:
+#ifdef AUTO_BIGNUM
+    /* FIXME: I believe this routine is somewhat buggy... */
+  {
+    struct object *o = 0;
+    ONERROR onerr;
+    
+    size = 0;
+    for(e = -args; e < 0; e++)
+    {
+      if(o)
+	apply_lfun(o, LFUN_ADD, 1);
+      else if(INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, size))
+      {
+	push_int(size);
+	o = make_bignum_object();
+	SET_ONERROR(onerr, do_free_object, o);
+	apply_lfun(o, LFUN_ADD, 1);
+      }
+      else
+      {
+	size += sp[-1].u.integer;
+	sp--;
+      }
+    }
+
+    if(o)
+      CALL_AND_UNSET_ONERROR(onerr);
+    else
+      push_int(size);
+  }
+#else
     size=0;
     for(e=-args; e<0; e++) size+=sp[e].u.integer;
     sp-=args-1;
     sp[-1].u.integer=size;
+#endif /* AUTO_BIGNUM */
     break;
 
   case BIT_FLOAT:
@@ -1248,6 +1281,28 @@ void o_multiply(void)
     return;
 
   case TWO_TYPES(T_INT,T_INT):
+#ifdef AUTO_BIGNUM
+  {
+    static int ign = 1;   /* FIXME: VERY UGLY PATCH, but since I cannot
+			     get through the master while loading Gmp.mpz,
+			     we have to ignore that the very first mul
+			     will actually overflow. */
+
+    if(!ign && INT_TYPE_MUL_OVERFLOW(sp[-2].u.integer, sp[-1].u.integer))
+    {
+      struct object *o;
+      ONERROR tmp;
+      
+      o = make_bignum_object();
+	
+      SET_ONERROR(tmp, do_free_object, o);
+      apply_lfun(o, LFUN_MULTIPLY, 1);
+      CALL_AND_UNSET_ONERROR(tmp);
+      return;
+    }
+    ign = 0;
+  }
+#endif /* AUTO_BIGNUM */
     sp--;
     sp[-1].u.integer *= sp[0].u.integer;
     return;

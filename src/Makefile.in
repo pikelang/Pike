@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.156 1999/10/05 19:21:32 grubba Exp $
+# $Id: Makefile.in,v 1.157 1999/10/08 16:35:15 noring Exp $
 #
 
 # This line is needed on some machines.
@@ -89,6 +89,7 @@ MAKE_FLAGS = $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(OTHERFLAGS)"
 OBJ= \
  language.o \
  security.o \
+ bignum.o \
  interpret.o \
  constants.o \
  cpp.o \

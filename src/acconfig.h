@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.48 1999/08/30 06:23:46 hubbe Exp $
+ * $Id: acconfig.h,v 1.49 1999/10/08 16:35:16 noring Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -23,6 +23,9 @@
 
 /* Define this to enable the internal Pike security system */
 #undef PIKE_SECURITY
+
+/* Define this to enable the internal bignum conversion */
+#undef AUTO_BIGNUM
 
 /* The following four are used by smartlink */
 /* Define this if your ld sets the run path with -rpath */

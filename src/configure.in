@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.321 1999/10/04 05:33:28 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.322 1999/10/08 16:35:17 noring Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -410,7 +410,7 @@ AC_ARG_WITH(threads,     [  --without-threads      no threads support],[],[with_
 AC_ARG_WITH(zlib,        [  --without-zlib         no gz compression support],[],[with_zlib=yes])
 AC_ARG_WITH(ssleay,      [  --without-ssleay       no support for the secure socket protocol],[],[with_ssleay=yes])
 AC_ARG_WITH(mysql,       [  --without-mysql        no support for the Mysql database],[],[with_mysql=yes])
-AC_ARG_WITH(gif-rle,     [  --with-gif-rle        use kind-of-rle packing instead of lzw],[],[])
+AC_ARG_WITH(gif-rle,     [  --with-gif-rle         use kind-of-rle packing instead of lzw],[],[])
 AC_ARG_WITH(dmalloc,     [  --with-dmalloc         enable memory-leak tests],[AC_DEFINE(DEBUG_MALLOC,10)],[])
 AC_ARG_WITH(checker,	 [  --with-checker         add extra memory checking overhead (Purify)])
 AC_ARG_WITH(profiling,   [  --with-profiling       add code used to profile pike code ],[AC_DEFINE(PROFILING)],[])
@@ -439,7 +439,8 @@ AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors 
 AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
 AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
-AC_ARG_WITH(security,    [  --with-security       enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
+AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
+AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to bignums],[AC_DEFINE(AUTO_BIGNUM)],[])
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)

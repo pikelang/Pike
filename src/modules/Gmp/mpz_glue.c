@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.43 1999/08/06 22:13:46 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.44 1999/10/08 16:35:20 noring Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -30,6 +30,7 @@ RCSID("$Id: mpz_glue.c,v 1.43 1999/08/06 22:13:46 hubbe Exp $");
 #include "builtin_functions.h"
 #include "opcodes.h"
 #include "module_support.h"
+#include "bignum.h"
 
 #include "my_gmp.h"
 
@@ -423,6 +424,22 @@ static void return_temporary(INT32 args)
 }
 #endif
 
+#ifdef AUTO_BIGNUM
+static void reduce(struct object *o)
+{
+  INT_TYPE i;
+  
+  i = mpz_get_si(OBTOMPZ(o));
+  if(mpz_cmp_si(OBTOMPZ(o), i) == 0)
+    push_int(i);
+  else
+    push_object(o);
+}
+#define PUSH_REDUCED(o) reduce(o)
+#else
+#define PUSH_REDUCED(o) push_object(o)
+#endif /* AUTO_BIGNUM */
+
 #define BINFUN(name, fun)				\
 static void name(INT32 args)				\
 {							\
@@ -436,7 +453,7 @@ static void name(INT32 args)				\
     fun(OBTOMPZ(res), OBTOMPZ(res),			\
 	OBTOMPZ(sp[e-args].u.object));			\
   pop_n_elems(args);					\
-  push_object(res);					\
+  PUSH_REDUCED(res);					\
 }
 
 BINFUN(mpzmod_add,mpz_add)
@@ -453,6 +470,7 @@ static void mpzmod_add_eq(INT32 args)
   for(e=0;e<args;e++)
     mpz_add(THIS, THIS, OBTOMPZ(sp[e-args].u.object));
   pop_n_elems(args);
+  /* FIXME: How to reduce this?? */
   ref_push_object(fp->current_object);
 }
 
@@ -476,7 +494,7 @@ static void mpzmod_sub(INT32 args)
     mpz_neg(OBTOMPZ(res), OBTOMPZ(res));
   }
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_rsub(INT32 args)
@@ -494,7 +512,7 @@ static void mpzmod_rsub(INT32 args)
 
   mpz_sub(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_div(INT32 args)
@@ -520,7 +538,7 @@ static void mpzmod_div(INT32 args)
   }
 
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_rdiv(INT32 args)
@@ -538,7 +556,7 @@ static void mpzmod_rdiv(INT32 args)
   res=clone_object(mpzmod_program,0);
   mpz_fdiv_q(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_mod(INT32 args)
@@ -556,7 +574,7 @@ static void mpzmod_mod(INT32 args)
     mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), OBTOMPZ(sp[e-args].u.object));
 
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_rmod(INT32 args)
@@ -574,7 +592,7 @@ static void mpzmod_rmod(INT32 args)
   res=clone_object(mpzmod_program,0);
   mpz_fdiv_r(OBTOMPZ(res), a, THIS);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 
@@ -594,7 +612,7 @@ static void mpzmod_gcdext(INT32 args)
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), OBTOMPZ(t), THIS, a);
   pop_n_elems(args);
-  push_object(g); push_object(s); push_object(t);
+  PUSH_REDUCED(g); PUSH_REDUCED(s); PUSH_REDUCED(t);
   f_aggregate(3);
 }
 
@@ -613,7 +631,7 @@ static void mpzmod_gcdext2(INT32 args)
 
   mpz_gcdext(OBTOMPZ(g), OBTOMPZ(s), NULL, THIS, a);
   pop_n_elems(args);
-  push_object(g); push_object(s); 
+  PUSH_REDUCED(g); PUSH_REDUCED(s); 
   f_aggregate(2);
 }
 
@@ -634,7 +652,7 @@ static void mpzmod_invert(INT32 args)
     error("Gmp.mpz->invert: not invertible");
   }
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 BINFUN(mpzmod_and,mpz_and)
@@ -645,7 +663,7 @@ static void mpzmod_compl(INT32 args)
   struct object *o;
   pop_n_elems(args);
   o=clone_object(mpzmod_program,0);
-  push_object(o);
+  PUSH_REDUCED(o);
   mpz_com(OBTOMPZ(o), THIS);
 }
 
@@ -732,7 +750,7 @@ static void mpzmod_next_prime(INT32 args)
   pop_n_elems(args);
   
   o = clone_object(mpzmod_program, 0);
-  push_object(o);
+  PUSH_REDUCED(o);
   
   mpz_next_prime(OBTOMPZ(o), THIS, count, limit);
 }
@@ -752,7 +770,7 @@ static void mpzmod_sqrt(INT32 args)
     error("mpz->sqrt() on negative number.\n");
 
   o=clone_object(mpzmod_program,0);
-  push_object(o);
+  PUSH_REDUCED(o);
   mpz_sqrt(OBTOMPZ(o), THIS);
 }
 
@@ -767,7 +785,7 @@ static void mpzmod_sqrtrem(INT32 args)
   root = clone_object(mpzmod_program,0);
   rem = clone_object(mpzmod_program,0);
   mpz_sqrtrem(OBTOMPZ(root), OBTOMPZ(rem), THIS);
-  push_object(root); push_object(rem);
+  PUSH_REDUCED(root); PUSH_REDUCED(rem);
   f_aggregate(2);
 }
 
@@ -784,7 +802,7 @@ static void mpzmod_lsh(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_mul_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_rsh(INT32 args)
@@ -800,7 +818,7 @@ static void mpzmod_rsh(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_fdiv_q_2exp(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_rlsh(INT32 args)
@@ -817,7 +835,7 @@ static void mpzmod_rlsh(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_mul_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_rrsh(INT32 args)
@@ -833,7 +851,7 @@ static void mpzmod_rrsh(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_fdiv_q_2exp(OBTOMPZ(res), OBTOMPZ(sp[-1].u.object), i);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_powm(INT32 args)
@@ -850,7 +868,7 @@ static void mpzmod_powm(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_powm(OBTOMPZ(res), THIS, get_mpz(sp - 2, 1), n);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_pow(INT32 args)
@@ -866,7 +884,7 @@ static void mpzmod_pow(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_pow_ui(OBTOMPZ(res), THIS, sp[-1].u.integer);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void mpzmod_not(INT32 args)
@@ -906,7 +924,7 @@ static void gmp_pow(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_ui_pow_ui(OBTOMPZ(res), sp[-2].u.integer, sp[-1].u.integer);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
 
 static void gmp_fac(INT32 args)
@@ -921,7 +939,7 @@ static void gmp_fac(INT32 args)
   res = clone_object(mpzmod_program, 0);
   mpz_fac_ui(OBTOMPZ(res), sp[-1].u.integer);
   pop_n_elems(args);
-  push_object(res);
+  PUSH_REDUCED(res);
 }
   
 static void init_mpz_glue(struct object *o)
