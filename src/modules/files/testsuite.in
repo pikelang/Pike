@@ -235,3 +235,4 @@ test_do(rm("conftest"))
 
 test_false(Process.system(RUNPIKE+" SRCDIR/socktest.pike"))
 
+test_false(Process.system(RUNPIKE+" SRCDIR/sendfiletest.pike"))
