@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.29 2002/01/02 12:48:46 js Exp $");
+RCSID("$Id: blob.c,v 1.30 2002/08/27 07:17:50 mattias Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -361,6 +361,7 @@ static void f_blob_remove_list( INT32 args )
 	h->next = 0;
 	free_hash( h );
 	THIS->size--;
+	break;
       }
       p = h;
       h = h->next;
