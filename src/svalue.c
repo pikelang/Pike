@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.179 2003/11/09 01:10:14 mast Exp $
+|| $Id: svalue.c,v 1.180 2003/11/10 01:06:16 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.179 2003/11/09 01:10:14 mast Exp $");
+RCSID("$Id: svalue.c,v 1.180 2003/11/10 01:06:16 mast Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -485,6 +485,7 @@ PMOD_EXPORT unsigned INT32 hash_svalue(const struct svalue *s)
       pop_stack();
       break;
     }
+    /* FALL THROUGH */
   default:
 #if SIZEOF_CHAR_P > 4
     q=DO_NOT_WARN((unsigned INT32)(PTR_TO_INT(s->u.refs) >> 2));
@@ -775,8 +776,10 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
     }
     return a->u.float_number == b->u.float_number;
 
+#ifdef PIKE_DEBUG
   default:
     Pike_fatal("Unknown type %x\n",a->type);
+#endif
     return 0; /* make gcc happy */
   }
 }
@@ -937,8 +940,11 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     if(a->type == T_OBJECT)
     {
     a_is_object:
+#if 0
+      /* safe_check_destructed should avoid this. */
       if(!a->u.object->prog)
 	Pike_error("Comparison on destructed object.\n");
+#endif
       if(FIND_LFUN(a->u.object->prog,LFUN_LT) != -1)
       {
 	push_svalue(b);
@@ -966,8 +972,11 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 
     if(b->type == T_OBJECT)
     {
+#if 0
+      /* safe_check_destructed should avoid this. */
       if(!b->u.object->prog)
 	Pike_error("Comparison on destructed object.\n");
+#endif
       if(FIND_LFUN(b->u.object->prog,LFUN_GT) == -1) {
 	if (a_is_obj_without_lt)
 	  Pike_error ("Object a lacks `< and object b lacks `> "
@@ -999,13 +1008,15 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
     else
       Pike_error ("Cannot compare different types.\n");
   }
+
   switch(a->type)
   {
     case T_OBJECT:
       goto a_is_object;
       
     default:
-      Pike_error("Bad type to comparison.\n");
+      Pike_error("Cannot compare values of type %s.\n",
+		 get_name_of_type (a->type));
       
     case T_INT:
       return a->u.integer < b->u.integer;
