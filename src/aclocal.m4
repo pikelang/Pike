@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.70 2003/05/04 18:28:53 grubba Exp $
+dnl $Id: aclocal.m4,v 1.71 2003/05/05 16:44:21 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -320,7 +320,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.70 2003/05/04 18:28:53 grubba Exp $
+  # $Id: aclocal.m4,v 1.71 2003/05/05 16:44:21 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -379,14 +379,18 @@ define([AC_MODULE_INIT],
 [
   ifelse([$1], , [
     MODULE_NAME="`pwd|sed -e 's@.*/@@g'`"
+    MODULE_DIR="./"
   ], [
-    MODULE_NAME="$1"
+    MODULE_NAME="`echo '$1'|sed -e 's@.*/@@'`"
+    MODULE_DIR="`echo '$1'|sed -e 's@[^/]*$@@'`"
   ])
   AC_SUBST(MODULE_NAME)
+  AC_SUBST(MODULE_DIR)
 
   echo
   echo '###################################################'
   echo '##' "$MODULE_NAME"
+  echo '##' "$MODULE_DIR"
   echo
 
   AC_LOW_MODULE_INIT()
