@@ -1,5 +1,5 @@
 /*
- * $Id: extract_autodoc.pike,v 1.39 2003/12/03 21:50:56 bill Exp $
+ * $Id: extract_autodoc.pike,v 1.40 2003/12/04 17:07:21 bill Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -65,7 +65,19 @@ int main(int n, array(string) args) {
     recurse(srcdir, builddir, 0, root);
   else if(sizeof(args)) {
     foreach(args, string fn)
-      extract(fn, imgdir, builddir, root);
+    {
+      Stdio.Stat stat = file_stat(fn);
+      Stdio.Stat dstat = file_stat(builddir+fn+".xml");
+
+      // Build the xml file if it doesn't exist, if it is older than the
+      // source file, or if the root has changed since the previous build.
+      if(!dstat || dstat->mtime < stat->mtime) {
+        string res = extract(fn, imgdir, builddir, root);
+
+        if(!res) exit(1);
+        Stdio.write_file(builddir+fn+".xml", res);
+        }
+    }
   }
   else {
     werror("No source directory or input files given.\n");
@@ -112,6 +124,7 @@ void recurse(string srcdir, string builddir, int root_ts, array(string) root)
 
     if(!has_suffix(fn, ".pike") && !has_suffix(fn, ".pike.in") &&
        !has_suffix(fn, ".pmod") && !has_suffix(fn, ".pmod.in") &&
+       !has_suffix(fn, ".cmod") && !has_suffix(fn, ".cmod.in") &&
        !has_suffix(fn, ".c")) continue;
 
     Stdio.Stat dstat = file_stat(builddir+fn+".xml");
