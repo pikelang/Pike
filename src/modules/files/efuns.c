@@ -342,6 +342,25 @@ void f_mv(INT32 args)
   push_int(!i);
 }
 
+#ifdef HAVE_STRERROR
+void f_strerror(INT32 args)
+{
+  char *s;
+
+  if(!args) 
+    error("Too few arguments to strerror()\n");
+  if(sp[-args].type != T_INT)
+    error("Bad argument 1 to strerror()\n");
+
+  s=strerror(sp[-args].u.integer);
+  pop_n_elems(args);
+  if(s)
+    push_text(s);
+  else
+    push_int(0);
+}
+#endif
+
 void init_files_efuns()
 {
   set_close_on_exec(0,1);
@@ -359,4 +378,8 @@ void init_files_efuns()
   add_efun("getcwd",f_getcwd,"function(:string)",OPT_EXTERNAL_DEPEND);
   add_efun("fork",f_fork,"function(:int)",OPT_SIDE_EFFECT);
   add_efun("exece",f_exece,"function(string,mixed*,void|mapping(string:string):int)",OPT_SIDE_EFFECT); 
+
+#ifdef HAVE_STRERROR
+  add_efun("strerror",f_strerror,"function(int:string)",0);
+#endif
 }

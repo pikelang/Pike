@@ -13,7 +13,7 @@ if test "$ac_cv_lib_socket" = yes -o "${ac_cv_lib_ucb}" = yes; then
  AC_CHECK_LIB(nsl, main)
 fi
 
-AC_HAVE_FUNCS(socketpair getwd)
+AC_HAVE_FUNCS(socketpair getwd strerror)
 
 AC_MSG_CHECKING(size of socket buffers)
 AC_CACHE_VAL(lpc_cv_socket_buffer_max,

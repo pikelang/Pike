@@ -20,6 +20,7 @@
 #include "file.h"
 #include "error.h"
 #include "lpc_signal.h"
+#include "lpc_types.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1144,6 +1145,27 @@ static void file_query_address(INT32 args)
   push_string(make_shared_string(buffer));
 }
 
+static void file_lsh(INT32 args)
+{
+  INT32 len;
+  if(args != 1)
+    error("Too few/many args to file->`<<\n");
+
+  if(sp[-1].type != T_STRING)
+  {
+    push_string(string_type_string);
+    string_type_string->refs++;
+    f_cast();
+  }
+
+  len=sp[-1].u.string->len;
+  file_write(1);
+  if(len != sp[-1].u.integer) error("File << failed.\n");
+  pop_stack();
+
+  push_object(this_object());
+}
+
 static void file_create(INT32 args)
 {
   char *s;
@@ -1221,6 +1243,7 @@ void init_files_programs()
   add_function("connect",file_connect,"function(string,int:int)",0);
   add_function("query_address",file_query_address,"function(int|void:int)",0);
   add_function("create",file_create,"function(void|string:void)",0);
+  add_function("`<<",file_lsh,"function(mixed:object)",0);
 
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);
