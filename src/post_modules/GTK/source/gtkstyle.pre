@@ -1,5 +1,4 @@
 class style;
-/* inherit draw; */
 
 style copy();
 //  Copy this style, and return the new style object
@@ -18,4 +17,42 @@ void apply_default_background( GdkWindow window, int set_bgp, int state_type, ?G
 // <p>
 // If set_bgp is true, the background of the widget will be set,
 // otherwise it will only be drawn into the window.
+array GDK.Color &fg[5];
+array GDK.Color &bg[5];
+array GDK.Color &light[5];
+array GDK.Color &dark[5];
+array GDK.Color &mid[5];
+array GDK.Color &text[5];
+array GDK.Color &base[5];
 
+member GDK.Color &black;
+member GDK.Color &white;
+
+member GDK.Font font;
+array GDK.Pixmap bg_pixmap[5];
+
+array GDK.GC fg_gc[5];
+array GDK.GC bg_gc[5];
+array GDK.GC light_gc[5];
+array GDK.GC dark_gc[5];
+array GDK.GC mid_gc[5];
+array GDK.GC text_gc[5];
+array GDK.GC base_gc[5];
+member GDK.GC black_gc;
+member GDK.GC white_gc;
+
+%{
+/* void draw_hline( GDK.Window window, int state_type, int x1, int x2, int y)
+ * void draw_vline( GDK.Window window, int state_type, int y1, int y2, int x)
+ * void draw_shadow( GDK.Window window, int state_type, int y, int y, int w, int h)
+ * void draw_arrow( GDK.Window window, int state_type, int shadow_type, int arrow_type, int fill, int x, int y, int width, int height )
+ * void draw_diamond( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_oval( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_flat_box( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_check( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height )
+ * void draw_option( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ * void draw_cross( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ * void draw_ramp( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ * void draw_tab( GDK.Window window, int state_type, int shadow_type, int x, int y, int width, int height );
+ */
+%}
