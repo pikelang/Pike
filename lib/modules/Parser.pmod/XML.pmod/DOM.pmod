@@ -806,19 +806,19 @@ class DocumentType
   string get_name() { return name; }
   string get_public_id() { return public_id; }
   string get_system_id() { return system_id; }
-  NamedNodeMap get_entities() { return entities; }
-  NamedNodeMap get_notations() { return notations; }
+  NamedNodeMap get_entities() { return entities || create_entities(); }
+  NamedNodeMap get_notations() { return notations || create_notations(); }
 
   protected void _set_owner_document(Document d) { owner_document = d; }
 
-  static void create_entities()
+  static NamedNodeMap create_entities()
   {
-    entities = NamedNodeMap(owner_document);
+    return entities = NamedNodeMap(owner_document);
   }
 
-  static void create_notations()
+  static NamedNodeMap create_notations()
   {
-    notations = NamedNodeMap(owner_document);
+    return notations = NamedNodeMap(owner_document);
   }
 
   static void create(DOMImplementation i, string qn,
@@ -828,8 +828,6 @@ class DocumentType
     name = qn;
     public_id = pubid;
     system_id = sysid;
-    create_entities();
-    create_notations();
   }
 }
 
@@ -839,7 +837,7 @@ class Notation
 
   static string name, public_id, system_id;
 
-  int get_node_type() { return ENTITY_REFERENCE_NODE; }
+  int get_node_type() { return NOTATION_NODE; }
   string get_node_name() { return name; }
   string get_public_id() { return public_id; }
   string get_system_id() { return system_id; }
@@ -1084,9 +1082,9 @@ class AbstractDOMParser
     return get_dom_implementation()->create_document(0, 0, 0);
   }
 
-  static void parse_callback(string ty, string name, mapping attributes,
-			     array|string contents, mapping info,
-			     InputSource input)
+  static object|void parse_callback(string ty, string name, mapping attributes,
+				    array|string contents, mapping info,
+				    InputSource input)
   {
     switch(ty) {
      case "<!--":
@@ -1119,15 +1117,41 @@ class AbstractDOMParser
      case "<?xml":
        break;
      case "<!DOCTYPE":
-       current_node->append_child(document->get_implementation()->
-				  create_document_type(name,
-						       attributes->PUBLIC,
-						       attributes->SYSTEM));
+       {
+         DocumentType doctype = document->get_implementation()->
+	   create_document_type(name, attributes->PUBLIC,
+				attributes->SYSTEM);
+	 
+	 current_node->append_child(doctype);
+
+	 if(contents)
+	   foreach(contents, object elt)
+	     if(elt)
+	       switch(elt->get_node_type()) {
+		case Node.NOTATION_NODE:
+		  doctype->get_notations()->set_named_item(elt);
+		  break;
+		case Node.ENTITY_NODE:
+		  doctype->get_entities()->set_named_item(elt);
+		  break;
+	       }
+	 break;
+       }
+     case "<!NOTATION":
+       return Notation(document, name, attributes->PUBLIC, attributes->SYSTEM);
        break;
      case "<!ENTITY":
+       if(name[0] != '%')
+	 if(contents) {
+	   DocumentFragment frag = document->create_document_fragment();
+	   frag->append_child(document->create_text_node(contents));
+	   return Entity(document, name, 0, 0, 0, frag);
+	 } else
+	   return Entity(document, name, attributes->PUBLIC,
+			 attributes->SYSTEM, attributes->NDATA);
+       break;
      case "<!ELEMENT":
      case "<!ATTLIST":
-     case "<!NOTATION":
        break;
      case "error":
        throw(ParseException(contents, input->get_system_id(),
