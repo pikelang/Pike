@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.22 2002/08/10 19:20:43 grendel Exp $
+# $Id: rules,v 1.23 2002/08/11 23:03:19 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -14,6 +14,12 @@
 
 PIKEV=7.3
 PIKE=pike$(PIKEV)
+
+ifdef CCVER
+CC=gcc-$(CCVER)
+else
+CC=gcc
+endif
 
 VERSION=$(shell dpkg-parsechangelog | grep ^Version | sed -e 's/Version: //;s/-[0-9]*$$//')
 OS=$(shell uname -srm|sed -e 's/ /-/g'|tr '[A-Z]' '[a-z]'|tr '/' '_')
@@ -54,7 +60,7 @@ ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
 	INSTALL_PROGRAM += -s
 endif
 
-export CFLAGS
+export CFLAGS CC
 
 configure: configure-stamp
 configure-stamp:
