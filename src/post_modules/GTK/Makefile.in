@@ -32,7 +32,7 @@ sources1:
 
 sources0:
 	echo Pike-GTK disabled.
-	$(MAKE) $(MAKE_FLAGS) all
+	$(MAKE) $(MAKEFLAGS) all
 
 docs: docs@WITH_GTK@
 	@:
