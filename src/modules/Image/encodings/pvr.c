@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.13 2001/04/13 16:20:13 grubba Exp $");
+RCSID("$Id: pvr.c,v 1.14 2001/06/13 13:05:04 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -466,7 +466,6 @@ static void pvr_decode_alpha_twiddled(INT32 attr, unsigned char *s,
 				      unsigned int sz)
 {
   unsigned int x, y;
-  unsigned char *src;
   switch(attr&0xff) {
    case MODE_ARGB1555:
      for(y=0; y<sz; y++) {

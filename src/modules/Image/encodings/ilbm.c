@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.21 2000/12/01 08:10:04 hubbe Exp $ */
+/* $Id: ilbm.c,v 1.22 2001/06/13 12:57:54 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.21 2000/12/01 08:10:04 hubbe Exp $
+**!	$Id: ilbm.c,v 1.22 2001/06/13 12:57:54 grubba Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.21 2000/12/01 08:10:04 hubbe Exp $");
+RCSID("$Id: ilbm.c,v 1.22 2001/06/13 12:57:54 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -307,7 +307,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, ptrdiff_t blen,
 	break;
       case mskHasMask:
 	{
-	  int p, bit=0x80;
+	  int bit=0x80;
 	  unsigned char *src = line+bmhd->nPlanes*rbyt;
 	  unsigned char ss = *src++;
 	  for(x=0; x<bmhd->w; x++) {
@@ -520,7 +520,7 @@ static void image_ilbm__decode(INT32 args)
       }
       ncol <<= 1;
     }
-    f_aggregate(DO_NOT_WARN(ncol));
+    f_aggregate(DO_NOT_WARN((INT32)ncol));
     push_object(clone_object(image_colortable_program,1));
     ctable=(struct neo_colortable*)get_storage(sp[-1].u.object,
 					       image_colortable_program);

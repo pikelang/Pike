@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: psd.c,v 1.29 2001/03/18 18:33:58 grubba Exp $");
+RCSID("$Id: psd.c,v 1.30 2001/06/13 13:01:57 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -217,10 +217,7 @@ static void decode_layers_and_masks( struct psd_image *dst,
                                      struct buffer *src )
 {
   short count, first_alpha_is_magic;
-  unsigned int normal;
-  unsigned int *q;
   struct layer *layer = NULL;
-  int i;
   ptrdiff_t exp_offset;
   if(!src->len) 
     return;
@@ -305,7 +302,7 @@ packbitsdecode(struct buffer src,
                struct buffer dst, 
                int nbytes)
 {
-  int n, b;
+  int n;
 
   while( nbytes--  )
   {
@@ -402,7 +399,7 @@ static void f_decode_packbits_encoded(INT32 args)
 
 static void f_decode_image_channel( INT32 args )
 {
-  INT_TYPE w, h, d;
+  INT_TYPE w, h;
   int y;
   struct pike_string *s;
   struct object *io;
@@ -581,7 +578,7 @@ void push_layer( struct layer  *l)
     f_aggregate_mapping( 4 );
   }
   f_aggregate( l->num_channels );
-  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 
@@ -608,8 +605,8 @@ void push_psd_image( struct psd_image *i )
     push_layer( l );
     l = l->next;
   }
-  f_aggregate(DO_NOT_WARN(sp - tsp));
-  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
+  f_aggregate(DO_NOT_WARN((INT32)(sp - tsp)));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 static void decode_resources( struct buffer *b )

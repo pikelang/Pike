@@ -1,6 +1,6 @@
 
 /*
- * $Id: tga.c,v 1.26 2000/12/05 21:08:27 per Exp $
+ * $Id: tga.c,v 1.27 2001/06/13 12:56:07 grubba Exp $
  *
  *  Targa codec for pike. Based on the tga plugin for gimp.
  *
@@ -81,7 +81,7 @@
 #include "module_magic.h"
 
 
-RCSID("$Id: tga.c,v 1.26 2000/12/05 21:08:27 per Exp $");
+RCSID("$Id: tga.c,v 1.27 2001/06/13 12:56:07 grubba Exp $");
 
 #ifndef MIN
 # define MIN(X,Y) ((X)<(Y)?(X):(Y))
@@ -176,10 +176,8 @@ static struct image_alpha ReadImage (struct buffer *, struct tga_header *);
 static struct image_alpha load_image(struct pike_string *str)
 {
   struct tga_header hdr;
-  struct tga_footer footer;
+  /* struct tga_footer footer; */
   struct buffer buffer;
-  char *data_pointer;
-  int left_in_buffer;
   INT32 image_ID = -1;
 
   buffer.str = str->str;
@@ -486,12 +484,11 @@ static unsigned char c5to8bit( unsigned char v )
 static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
 {
   int width, height, bpp, abpp, pbpp, bypp;
-  int i, j, k;
-  int pelbytes=0, npels, read_so_far=0, rle=0;
+  int pelbytes=0, rle=0;
   unsigned char *cmap=NULL, *data;
   int itype=0;
   int really_no_alpha = 0;
-  ptrdiff_t pels;
+  ptrdiff_t pels, npels, read_so_far = 0;
   ptrdiff_t (*myfread)(unsigned char *, size_t, size_t, struct buffer *);
 
   /* Find out whether the image is horizontally or vertically reversed.
@@ -577,7 +574,6 @@ static struct image_alpha ReadImage(struct buffer *fp, struct tga_header *hdr)
   {
     /* We need to read in the colormap. */
     int index, length, colors;
-    int tmp;
 
     index = (hdr->colorMapIndexHi << 8) | hdr->colorMapIndexLo;
     length = (hdr->colorMapLengthHi << 8) | hdr->colorMapLengthLo;
@@ -747,14 +743,10 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   struct buffer buf;
   struct buffer obuf;
   struct buffer *fp = &buf;
-  int i, j, k;
-  int pelbytes, bsize;
-  int transparent, status;
   struct tga_header hdr;
   ptrdiff_t (*myfwrite)(unsigned char *, size_t, size_t,
 			struct buffer *);
 
-  unsigned char *data;
 
   if(alpha &&
      (alpha->xsize != img->xsize ||
@@ -797,7 +789,7 @@ static struct buffer save_tga(struct image *img, struct image *alpha,
   hdr.heightHi = (height >> 8);
 
   /* Mark our save ID. */
-  hdr.idLength = DO_NOT_WARN(strlen(SAVE_ID_STRING));
+  hdr.idLength = DO_NOT_WARN((unsigned INT32)strlen(SAVE_ID_STRING));
 
   buf.len = width*height*(alpha?4:3)+strlen(SAVE_ID_STRING)+sizeof(hdr)+65535;
   buf.str = xalloc(buf.len);

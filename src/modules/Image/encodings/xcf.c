@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.37 2001/04/15 13:21:13 mirar Exp $");
+RCSID("$Id: xcf.c,v 1.38 2001/06/13 13:00:21 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -340,7 +340,6 @@ static struct buffer read_string( struct buffer *data )
 
 static struct property read_property( struct buffer * data )
 {
-  int i;
   struct property res;
   res.type = read_uint( data );
   if(res.type == PROP_COLORMAP)
@@ -566,7 +565,6 @@ static struct layer_mask read_layer_mask( struct buffer *buff,
   ONERROR err;
   int offset;
   struct property tmp;
-  struct buffer ob;
 
   MEMSET(&res, 0, sizeof(res));
   res.width = read_uint( buff );
@@ -604,7 +602,6 @@ static struct channel read_channel( struct buffer *buff,
   ONERROR err;
   int offset;
   struct property tmp;
-  struct buffer ob;
 
   MEMSET(&res, 0, sizeof(res));
   res.width = read_uint( buff );
@@ -780,7 +777,7 @@ static void push_properties( struct property *p )
     f_aggregate_mapping( 4 );
     p = p->next;
   }
-  f_aggregate(DO_NOT_WARN(sp - osp));
+  f_aggregate(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 static void push_tile( struct tile *t )
@@ -807,8 +804,8 @@ static void push_hierarchy( struct hierarchy * h )
     push_tile( t );
     t=t->next;
   }
-  f_aggregate(DO_NOT_WARN(sp - tsp));
-  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
+  f_aggregate(DO_NOT_WARN((INT32)(sp - tsp)));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 static void push_layer_mask(struct layer_mask *i)
@@ -821,7 +818,7 @@ static void push_layer_mask(struct layer_mask *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
 }
 
 static void push_channel(struct channel *i)
@@ -834,7 +831,7 @@ static void push_channel(struct channel *i)
   ref_push_string( s_name );  push_buffer( &i->name );
   ref_push_string( s_image_data );
   push_hierarchy( &i->image_data );
-  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
 }
 
 static void push_layer(struct layer *i)
@@ -853,7 +850,7 @@ static void push_layer(struct layer *i)
     ref_push_string( s_mask );
     push_layer_mask( i->mask );
   }
-  f_aggregate_mapping(DO_NOT_WARN(sp - osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp - osp)));
 }
 
 
@@ -888,7 +885,7 @@ static void push_image( struct gimp_image *i )
     c = c->next;
   }
   f_aggregate( nitems );
-  f_aggregate_mapping(DO_NOT_WARN(sp-osp));
+  f_aggregate_mapping(DO_NOT_WARN((INT32)(sp-osp)));
 }
 
 

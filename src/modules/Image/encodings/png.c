@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.41 2000/12/05 21:08:27 per Exp $");
+RCSID("$Id: png.c,v 1.42 2001/06/13 12:50:07 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -72,11 +72,11 @@ static INLINE COLORTYPE _png_c16(unsigned long z,int bpp)
 {
    switch (bpp)
    {
-      case 16: return z>>8;
-      case 4:  return z*17;
-      case 2:  return z*0x55;
-      case 1:  return z*255;
-      default: return z;
+      case 16: return DO_NOT_WARN((COLORTYPE)(z>>8));
+      case 4:  return DO_NOT_WARN((COLORTYPE)(z*17));
+      case 2:  return DO_NOT_WARN((COLORTYPE)(z*0x55));
+      case 1:  return DO_NOT_WARN((COLORTYPE)(z*255));
+      default: return DO_NOT_WARN((COLORTYPE)z);
    }
 
 }

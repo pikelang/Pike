@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: pcx.c,v 1.15 2000/12/05 21:08:27 per Exp $");
+RCSID("$Id: pcx.c,v 1.16 2001/06/13 12:56:42 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -477,7 +477,6 @@ static struct pike_string *encode_pcx_8( struct pcx_header *pcx_header,
                                          struct options *opts )
 {
   struct pike_string *b;
-  int x, y;
   char *buffer;
 
   pcx_header->planes = 1;
@@ -569,7 +568,6 @@ void image_pcx_encode( INT32 args )
   struct pike_string *res;
   struct object *i;
   struct image *img;
-  ONERROR onerr;
 
   get_all_args( "Image.PCX.encode", args, "%o", &i );
 

@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.11 2000/12/01 08:10:06 hubbe Exp $");
+RCSID("$Id: tim.c,v 1.12 2001/06/13 13:05:27 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -106,7 +106,7 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
      break;
    case MODE_CLUT8:
      while(cnt--) {
-       int i, cluti = (src[0])*2;
+       int cluti = (src[0])*2;
        unsigned int p = clut[cluti]|(clut[cluti+1]<<8);
 
        dst->b = ((p&0x7c00)>>7)|((p&0x7000)>>12);
@@ -174,7 +174,7 @@ void img_tim_decode(INT32 args, int header_only)
   int n=0, hasalpha=0, bitpp=0, bsize=0;
   ptrdiff_t len;
   INT32 attr;
-  unsigned int h=0, w=0, i;
+  unsigned int h=0, w=0;
   
   get_all_args("Image.TIM._decode", args, "%S", &str);
   clut=s=(unsigned char *)str->str;

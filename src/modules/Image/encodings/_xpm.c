@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: _xpm.c,v 1.16 2000/12/05 21:08:26 per Exp $");
+RCSID("$Id: _xpm.c,v 1.17 2001/06/13 12:57:12 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -386,7 +386,6 @@ void f__xpm_trim_rows( INT32 args )
   get_all_args("___", args, "%a", &a );
   for(i=0; i<a->size; i++)
   {
-    char *ns;
     int len,start;
     struct pike_string *s = a->item[i].u.string;
     if(a->item[i].type != T_STRING)

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.187 2001/04/03 15:56:03 per Exp $ */
+/* $Id: image.c,v 1.188 2001/06/13 13:17:57 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.187 2001/04/03 15:56:03 per Exp $
+**!	$Id: image.c,v 1.188 2001/06/13 13:17:57 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.187 2001/04/03 15:56:03 per Exp $");
+RCSID("$Id: image.c,v 1.188 2001/06/13 13:17:57 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -342,9 +342,9 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
       for (yp=y-by,j=0; j<height; j++,yp++)
 	 if (xp>=0 && xp<img->xsize && yp>=0 && yp<img->ysize)
 	 {
-	    r+=matrix[i+j*width].r*img->img[xp+yp*img->xsize].r;
-	    g+=matrix[i+j*width].g*img->img[xp+yp*img->xsize].g;
-	    b+=matrix[i+j*width].b*img->img[xp+yp*img->xsize].b;
+	    r += DO_NOT_WARN((int)(matrix[i+j*width].r*img->img[xp+yp*img->xsize].r));
+	    g += DO_NOT_WARN((int)(matrix[i+j*width].g*img->img[xp+yp*img->xsize].g));
+	    b += DO_NOT_WARN((int)(matrix[i+j*width].b*img->img[xp+yp*img->xsize].b);
 #ifdef MATRIX_DEBUG
 	    fprintf(stderr,"%d,%d %d,%d->%d,%d,%d\n",
 		    i,j,xp,yp,
@@ -352,9 +352,9 @@ static INLINE rgb_group _pixel_apply_matrix(struct image *img,
 		    img->img[x+i+(y+j)*img->xsize].g,
 		    img->img[x+i+(y+j)*img->xsize].b);
 #endif
-	    sumr+=matrix[i+j*width].r;
-	    sumg+=matrix[i+j*width].g;
-	    sumb+=matrix[i+j*width].b;
+	    sumr += DO_NOT_WARN((int)matrix[i+j*width].r);
+	    sumg += DO_NOT_WARN((int)matrix[i+j*width].g);
+	    sumb += DO_NOT_WARN((int)matrix[i+j*width].b);
 	 }
    if (sumr) res.r=testrange(default_rgb.r+r/(sumr*div)); 
    else res.r=testrange(r*qdiv+default_rgb.r);
@@ -1282,8 +1282,7 @@ static void image_find_autocrop(INT32 args)
 void image_autocrop(INT32 args)
 {
    INT32 border=0,x1,y1,x2,y2;
-   rgb_group rgb;
-   int rgb_set=0,done;
+   int rgb_set=0;
    struct object *o;
    struct image *img;
    int left=1,right=1,top=1,bottom=1;
@@ -1607,10 +1606,10 @@ static INLINE void
    *	This code MUST be MT-SAFE! (but also fast /per)
    */
 /*   HIDE_GLOBAL_VARIABLES(); */
-   sum->r = DO_NOT_WARN(sum->r + rgba.r*factor);
-   sum->g = DO_NOT_WARN(sum->g + rgba.g*factor);
-   sum->b = DO_NOT_WARN(sum->b + rgba.b*factor);
-   sum->alpha = DO_NOT_WARN(sum->alpha + rgba.alpha*factor);
+   sum->r = DO_NOT_WARN((float)(sum->r + rgba.r*factor));
+   sum->g = DO_NOT_WARN((float)(sum->g + rgba.g*factor));
+   sum->b = DO_NOT_WARN((float)(sum->b + rgba.b*factor));
+   sum->alpha = DO_NOT_WARN((float)(sum->alpha + rgba.alpha*factor));
 /*    REVEAL_GLOBAL_VARIABLES(); */
 }
 
@@ -1623,9 +1622,9 @@ static INLINE void
    *	This code MUST be MT-SAFE! (but also fast /per)
    */
 /*   HIDE_GLOBAL_VARIABLES(); */
-   sum->r = DO_NOT_WARN(sum->r+rgba.r*factor);
-   sum->g = DO_NOT_WARN(sum->g+rgba.g*factor);
-   sum->b = DO_NOT_WARN(sum->b+rgba.b*factor);
+   sum->r = DO_NOT_WARN((float)(sum->r+rgba.r*factor));
+   sum->g = DO_NOT_WARN((float)(sum->g+rgba.g*factor));
+   sum->b = DO_NOT_WARN((float)(sum->b+rgba.b*factor));
 /*    REVEAL_GLOBAL_VARIABLES(); */
 }
 
@@ -1679,9 +1678,9 @@ image_tuned_box_leftright(const rgba_group left, const rgba_group right,
   if(!xsize || !height) return;
   for(x=0; x<maxlength; x++)
   {
-    (dest+x)->r = (((long)left.r)*(length-x)+((long)right.r)*(x))/length;
-    (dest+x)->g = (((long)left.g)*(length-x)+((long)right.g)*(x))/length;
-    (dest+x)->b = (((long)left.b)*(length-x)+((long)right.b)*(x))/length;
+    (dest+x)->r = DO_NOT_WARN((COLORTYPE)((((long)left.r)*(length-x)+((long)right.r)*(x))/length));
+    (dest+x)->g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(length-x)+((long)right.g)*(x))/length));
+    (dest+x)->b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(length-x)+((long)right.b)*(x))/length));
   }
   while(--y)  MEMCPY((dest+=xsize), from, maxlength*sizeof(rgb_group)); 
 }
@@ -1702,9 +1701,9 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   {
     for(y=0; y<maxheight; y++)
     {
-      color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
-      color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
-      color.b = (((long)left.b)*(height-y)+((long)right.b)*(y))/height;
+      color.r = DO_NOT_WARN((COLORTYPE)((((long)left.r)*(height-y)+((long)right.r)*(y))/height));
+      color.g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(height-y)+((long)right.g)*(y))/height));
+      color.b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height));
       if(y && color_equal(old, color))
       {
 	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
@@ -1722,9 +1721,9 @@ image_tuned_box_topbottom(const rgba_group left, const rgba_group right,
   } else {
     for(y=0; y<maxheight; y++)
     {
-      color.r = (((long)left.r)*(height-y)+((long)right.r)*(y))/height;
-      color.g = (((long)left.g)*(height-y)+((long)right.g)*(y))/height;
-      color.b = (((long)left.b)*(height-y)+((long)right.b)*(y))/height;
+      color.r = DO_NOT_WARN((COLORTYPE)((((long)left.r)*(height-y)+((long)right.r)*(y))/height));
+      color.g = DO_NOT_WARN((COLORTYPE)((((long)left.g)*(height-y)+((long)right.g)*(y))/height));
+      color.b = DO_NOT_WARN((COLORTYPE)((((long)left.b)*(height-y)+((long)right.b)*(y))/height));
       if(y && color_equal(old, color))
       {
 	MEMCPY(dest,dest-xsize,length*sizeof(rgb_group));
@@ -1846,9 +1845,9 @@ static void image_tuned_box(INT32 args)
 
 		sum.alpha*=(1.0/255.0);
 
-		rgb.r = DO_NOT_WARN(sum.r*(1.0-sum.alpha)+img->r*sum.alpha);
-		rgb.g = DO_NOT_WARN(sum.g*(1.0-sum.alpha)+img->g*sum.alpha);
-		rgb.b = DO_NOT_WARN(sum.b*(1.0-sum.alpha)+img->b*sum.alpha);
+		rgb.r = DO_NOT_WARN((float)(sum.r*(1.0-sum.alpha)+img->r*sum.alpha));
+		rgb.g = DO_NOT_WARN((float)(sum.g*(1.0-sum.alpha)+img->g*sum.alpha));
+		rgb.b = DO_NOT_WARN((float)(sum.b*(1.0-sum.alpha)+img->b*sum.alpha));
 
 		img->r = testrange(rgb.r+0.5);
 		img->g = testrange(rgb.g+0.5);
@@ -2283,9 +2282,9 @@ void image_color(INT32 args)
 #endif
    while (x--)
    {
-      d->r=( (((long)rgb.r*s->r)/255) );
-      d->g=( (((long)rgb.g*s->g)/255) );
-      d->b=( (((long)rgb.b*s->b)/255) );
+      d->r = DO_NOT_WARN((COLORTYPE)( (((long)rgb.r*s->r)/255) ));
+      d->g = DO_NOT_WARN((COLORTYPE)( (((long)rgb.g*s->g)/255) ));
+      d->b = DO_NOT_WARN((COLORTYPE)( (((long)rgb.b*s->b)/255) ));
       d++;
       s++;
    }
@@ -2955,7 +2954,7 @@ void image_bitscale( INT32 args )
 {
   int newx=1, newy=1;
   int oldx, oldy;
-  int x, y, xx;
+  int x, y;
   struct object *ro;
   rgb_group *s, *d;
   oldx = THIS->xsize;
@@ -3214,23 +3213,23 @@ CHRONO("apply_matrix");
 	 {
 	    struct svalue s3;
 	    s3=s2.u.array->item[0];
-	    if (s3.type==T_INT) matrix[j+i*width].r=s3.u.integer; 
+	    if (s3.type==T_INT) matrix[j+i*width].r = (float)s3.u.integer; 
 	    else matrix[j+i*width].r=0;
 
 	    s3=s2.u.array->item[1];
-	    if (s3.type==T_INT) matrix[j+i*width].g=s3.u.integer;
+	    if (s3.type==T_INT) matrix[j+i*width].g = (float)s3.u.integer;
 	    else matrix[j+i*width].g=0;
 
 	    s3=s2.u.array->item[2];
-	    if (s3.type==T_INT) matrix[j+i*width].b=s3.u.integer; 
+	    if (s3.type==T_INT) matrix[j+i*width].b = (float)s3.u.integer; 
 	    else matrix[j+i*width].b=0;
 	 }
 	 else if (s2.type==T_INT)
 	    matrix[j+i*width].r=matrix[j+i*width].g=
-	       matrix[j+i*width].b=s2.u.integer;
+	       matrix[j+i*width].b = (float)s2.u.integer;
 	 else
 	    matrix[j+i*width].r=matrix[j+i*width].g=
-	       matrix[j+i*width].b=0;
+	       matrix[j+i*width].b = 0.0;
       }
    }
 
@@ -3573,9 +3572,9 @@ void image_modify_by_intensity(INT32 args)
       r=p2-p1;
       for (y=0; y<r; y++)
       {
-	 list[y+p1].r=(((long)s[x].r)*(r-y)+((long)s[x+1].r)*(y))/r;
-	 list[y+p1].g=(((long)s[x].g)*(r-y)+((long)s[x+1].g)*(y))/r;
-	 list[y+p1].b=(((long)s[x].b)*(r-y)+((long)s[x+1].b)*(y))/r;
+	 list[y+p1].r = DO_NOT_WARN((COLORTYPE)((((long)s[x].r)*(r-y)+((long)s[x+1].r)*(y))/r));
+	 list[y+p1].g = DO_NOT_WARN((COLORTYPE)((((long)s[x].g)*(r-y)+((long)s[x+1].g)*(y))/r));
+	 list[y+p1].b = DO_NOT_WARN((COLORTYPE)((((long)s[x].b)*(r-y)+((long)s[x+1].b)*(y))/r));
       }
    }
    list[255]=s[x];
@@ -3638,7 +3637,7 @@ void image_modify_by_intensity(INT32 args)
 
 static void image_apply_curve_3( unsigned char curve[3][256] )
 {
-  int j, i;
+  int i;
   struct object *o;
   rgb_group *s = THIS->img, *d;
   push_int( THIS->xsize );
@@ -3661,7 +3660,7 @@ static void image_apply_curve_3( unsigned char curve[3][256] )
 
 static void image_apply_curve_1( unsigned char curve[256] )
 {
-  int j, i;
+  int i;
   struct object *o;
   rgb_group *s = THIS->img, *d;
   push_int( THIS->xsize );
@@ -3685,7 +3684,7 @@ static void image_apply_curve_2( struct object *o,
                                  int channel, 
                                  unsigned char curve[256] )
 {
-  int j, i;
+  int i;
   rgb_group *d;
   d = ((struct image *)get_storage(o,image_program))->img;
   i = THIS->xsize*THIS->ysize;

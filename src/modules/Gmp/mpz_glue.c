@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.93 2001/04/14 09:44:21 hubbe Exp $");
+RCSID("$Id: mpz_glue.c,v 1.94 2001/06/13 12:46:45 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -171,7 +171,8 @@ static void get_mpz_from_digits(MP_INT *tmp,
     for (i = 0; i < digits->len; i++)
     {
       mpz_set_ui(digit, EXTRACT_UCHAR(digits->str + i));
-      mpz_mul_2exp(digit, digit, DO_NOT_WARN((digits->len - i - 1) * 8));
+      mpz_mul_2exp(digit, digit,
+		   DO_NOT_WARN((unsigned long)(digits->len - i - 1) * 8));
       mpz_ior(tmp, tmp, digit);
     }
     mpz_clear(digit);
@@ -383,7 +384,7 @@ static struct pike_string *low_get_digits(MP_INT *mpz, int base)
 	mp_limb_t x=*(src++);
 	for (i=0; i<sizeof(mp_limb_t); i++)
 	{
-	  *(--dst) = DO_NOT_WARN(x & 0xff);
+	  *(--dst) = DO_NOT_WARN((unsigned char)(x & 0xff));
 	  x >>= 8;
 	  if (!--len)
 	    break;
@@ -559,7 +560,7 @@ static void mpzmod__sprintf(INT32 args)
       if (!flag_left)
 	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
 	 {
-	    *(--dst) = DO_NOT_WARN((neg ? ~x : x) & 0xff);
+	    *(--dst) = DO_NOT_WARN((unsigned char)((neg ? ~x : x) & 0xff));
 	    x >>= 8;
 	    if(!--width)
 	       break;
@@ -567,7 +568,7 @@ static void mpzmod__sprintf(INT32 args)
       else
 	 for(i = 0; i < (INT_TYPE)sizeof(mp_limb_t); i++)
 	 {
-	    *(dst++) = DO_NOT_WARN((neg ? ~x : x) & 0xff);
+	    *(dst++) = DO_NOT_WARN((unsigned char)((neg ? ~x : x) & 0xff));
 	    x >>= 8;
 	    if(!--width)
 	       break;
@@ -623,9 +624,9 @@ static void mpzmod_size(INT32 args)
   pop_n_elems(args);
 
   if (base == 256)
-    push_int(DO_NOT_WARN((mpz_sizeinbase(THIS, 2) + 7) / 8));
+    push_int(DO_NOT_WARN((INT32)((mpz_sizeinbase(THIS, 2) + 7) / 8)));
   else
-    push_int(DO_NOT_WARN(mpz_sizeinbase(THIS, base)));
+    push_int(DO_NOT_WARN((INT32)(mpz_sizeinbase(THIS, base))));
 }
 
 static void mpzmod_cast(INT32 args)
@@ -1461,7 +1462,7 @@ static void mpzmod_random(INT32 args)
 
   res=fast_clone_object(THIS_PROGRAM,0);
   /* We add two to assure reasonably uniform randomness */
-  mpz_random(OBTOMPZ(res), DO_NOT_WARN(mpz_size(THIS) + 2));
+  mpz_random(OBTOMPZ(res), DO_NOT_WARN((int)(mpz_size(THIS) + 2)));
   mpz_fdiv_r(OBTOMPZ(res), OBTOMPZ(res), THIS); /* modulo */
   PUSH_REDUCED(res);
 }
