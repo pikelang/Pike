@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image.c,v 1.211 2004/05/02 23:04:00 nilsson Exp $
+|| $Id: image.c,v 1.212 2004/05/04 00:54:21 nilsson Exp $
 */
 
 /*
@@ -101,7 +101,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.211 2004/05/02 23:04:00 nilsson Exp $");
+RCSID("$Id: image.c,v 1.212 2004/05/04 00:54:21 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "interpret.h"
@@ -405,11 +405,10 @@ THREADS_ALLOW();
    ex=width-bx;
    ey=height-by;
    
-   d=malloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
 THREADS_DISALLOW();
 
-   if(!d) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
-   
+   d=xalloc(sizeof(rgb_group)*img->xsize*img->ysize +1);
+
 THREADS_ALLOW();
 CHRONO("apply_matrix, one");
 
@@ -881,9 +880,7 @@ void image_create(INT32 args)
    else
       getrgb(THIS,2,args,args,"Image.Image->create()"); 
 
-   THIS->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize +1);
-   if (!THIS->img)
-     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   THIS->img=xalloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize +1);
 
    img_clear(THIS->img,THIS->rgb,THIS->xsize*THIS->ysize);
    pop_n_elems(args);
@@ -3258,9 +3255,8 @@ CHRONO("apply_matrix");
    }
    if (width==-1) width=0;
 
-   matrix=malloc(sizeof(rgbd_group)*width*height+1);
-   if (!matrix) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
-   
+   matrix=xalloc(sizeof(rgbd_group)*width*height+1);
+
    for (i=0; i<height; i++)
    {
       struct svalue s=sp[-args].u.array->item[i];
@@ -3395,9 +3391,8 @@ static void _image_outline(INT32 args,int mask)
       }
       if (width==-1) width=0;
 
-      matrix=malloc(sizeof(int)*width*height+1);
-      if (!matrix) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
-   
+      matrix=xalloc(sizeof(int)*width*height+1);
+
       for (i=0; i<height; i++)
       {
 	 struct svalue s=sp[-args].u.array->item[i];
@@ -3420,7 +3415,11 @@ static void _image_outline(INT32 args,int mask)
    img->rgb=THIS->rgb;
 
    tmp=malloc((THIS->xsize+width)*(THIS->ysize+height));
-   if (!tmp) { free_object(o); resource_error(NULL,0,0,"memory",0,"Out of memory.\n"); }
+   if (!tmp) {
+     free_object(o);
+     if (matrix!=defaultmatrix) free(matrix);
+     resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   }
    MEMSET(tmp,0,(THIS->xsize+width)*(THIS->ysize+height));
  
    s=THIS->img;
@@ -3584,16 +3583,16 @@ void image_modify_by_intensity(INT32 args)
    struct image *img;
    long div;
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
    if (args<5) 
-      SIMPLE_TOO_FEW_ARGS_ERROR("Image",1);
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.Image->modify_by_intensity()",5);
    
    getrgbl(&rgb,0,args,"Image.Image->modify_by_intensity()");
    div=rgb.r+rgb.g+rgb.b;
    if (!div) div=1;
 
-   s=malloc(sizeof(rgb_group)*(args-3)+1);
-   if (!s) resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
+   s=xalloc(sizeof(rgb_group)*(args-3)+1);
 
    for (x=0; x<args-3; x++)
    {
@@ -3645,12 +3644,12 @@ void image_modify_by_intensity(INT32 args)
    if (!(img->img=malloc(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)))
    {
       free_object(o);
+      free(list);
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
    }
 
    d=img->img;
    s=THIS->img;
-
 
    x=THIS->xsize*THIS->ysize;
    THREADS_ALLOW();
@@ -3949,28 +3948,29 @@ void image_gamma(INT32 args)
    double gammar=0.0, gammab=0.0, gammag=0.0;
    COLORTYPE newr[256];
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
-   if (args==1) 
+   if (!THIS->img)
+     Pike_error("Called Image.Image object is not initialized\n");
+   if (args==1) {
       if (sp[-args].type==T_INT) 
 	 gammar=gammab=gammag=(double)sp[-args].u.integer;
       else if (sp[-args].type==T_FLOAT) 
 	 gammar=gammab=gammag=sp[-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
+      else
+	SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",1,"int|float");
+   }
    else if (args==3)
    {
       if (sp[-args].type==T_INT) gammar=(double)sp[-args].u.integer;
       else if (sp[-args].type==T_FLOAT) gammar=sp[-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
+      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",1,"int|float");
+
       if (sp[1-args].type==T_INT) gammag=(double)sp[1-args].u.integer;
       else if (sp[1-args].type==T_FLOAT) gammag=sp[1-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
+      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",2,"int|float");
+
       if (sp[2-args].type==T_INT) gammab=(double)sp[2-args].u.integer;
       else if (sp[2-args].type==T_FLOAT) gammab=sp[2-args].u.float_number;
-      else bad_arg_error("Image.Image->gamma",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image.Image->gamma()\n");
+      else SIMPLE_BAD_ARG_ERROR("Image.Image->gamma",3,"int|float");
    }
    else
       Pike_error("Image.Image->gamma(): illegal number of arguments\n");
@@ -4018,82 +4018,6 @@ void image_gamma(INT32 args)
 
    pop_n_elems(args);
    push_object(o);
-}
-
-
-/*
-**! method object map_closest(array(array(int)) colors)
-**! method object map_fast(array(array(int)) colors)
-**! method object map_fs(array(array(int)) colors)
-**! method array select_colors(int num)
-**!	Compatibility functions. Do not use!
-**!
-**!	Replacement examples:
-**!
-**!	Old code:
-**!	<pre>img=map_fs(img->select_colors(200));</pre>
-**!	New code:
-**!	<pre>img=Image.Colortable(img,200)->floyd_steinberg()->map(img);</pre>
-**!
-**!	Old code:
-**!	<pre>img=map_closest(img->select_colors(17)+({({255,255,255}),({0,0,0})}));</pre>
-**!	New code:
-**!	<pre>img=Image.Colortable(img,19,({({255,255,255}),({0,0,0})}))->map(img);</pre>
-*/
-
-void _image_map_compat(INT32 args,int fs) /* compat function */
-{
-  struct neo_colortable *nct;
-  struct object *o,*co;
-  struct image *this = THIS;
-  rgb_group *d;
-
-  co=clone_object(image_colortable_program,args);
-  nct=(struct neo_colortable*)get_storage(co,image_colortable_program);
-
-  if (fs) image_colortable_internal_floyd_steinberg(
-	   (struct neo_colortable *)get_storage(co,image_colortable_program));
-
-  push_int(this->xsize);
-  push_int(this->ysize);
-  o=clone_object(image_program,2);
-      
-  d=((struct image*)(o->storage))->img;
-
-  THREADS_ALLOW();
-
-  image_colortable_map_image(nct,this->img,d,
-			     this->xsize*this->ysize,this->xsize);
-
-  THREADS_DISALLOW();
-
-  free_object(co);
-  push_object(o);
-}
-
-void image_map_compat(INT32 args) { _image_map_compat(args,0); }
-void image_map_fscompat(INT32 args) { _image_map_compat(args,1); }
-
-void image_select_colors(INT32 args)
-{
-   int colors;
-   struct object *o;
-
-   if (args<1
-      || sp[-args].type!=T_INT)
-      bad_arg_error("Image",sp-args,args,0,"",sp-args,
-		"Bad arguments to Image()\n");
-
-   colors=sp[-args].u.integer;
-   pop_n_elems(args);
-
-   ref_push_object(THISOBJ);
-   push_int(colors);
-
-   o=clone_object(image_colortable_program,2);
-   image_colortable_cast_to_array((struct neo_colortable*)
-				  get_storage(o,image_colortable_program));
-   free_object(o);
 }
 
 /*
@@ -4742,15 +4666,6 @@ void init_image_image(void)
 		tFunc(tNone,tInt),0);
    ADD_FUNCTION("ysize",image_ysize,
 		tFunc(tNone,tInt),0);
-
-   ADD_FUNCTION("map_closest",image_map_compat,
-		tFunc(tArr(tArr(tInt)),tObj),0);
-   ADD_FUNCTION("map_fast",image_map_compat,
-		tFunc(tArr(tArr(tInt)),tObj),0);
-   ADD_FUNCTION("map_fs",image_map_fscompat,
-		tFunc(tArr(tArr(tInt)),tObj),0);
-   ADD_FUNCTION("select_colors",image_select_colors,
-		tFunc(tInt,tArr(tArr(tInt))),0);
 
    ADD_FUNCTION("noise",image_noise,
 		tFunc(tArr(tOr3(tInt,tFloat,tColor))
