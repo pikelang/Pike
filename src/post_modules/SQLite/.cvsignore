@@ -1,0 +1,6 @@
+config.h.in
+configure
+dependencies
+sqlite.c
+sqlite.cmod.compiled
+stamp-h.in
