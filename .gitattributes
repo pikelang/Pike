@@ -357,6 +357,7 @@ testfont binary
 /src/modules/files/efuns.c foreign_ident
 /src/modules/files/file.c foreign_ident
 /src/modules/files/file.h foreign_ident
+/src/modules/files/sendfile.c foreign_ident
 /src/modules/files/socket.c foreign_ident
 /src/modules/files/socktest.pike foreign_ident
 /src/modules/files/termios.c foreign_ident
