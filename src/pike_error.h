@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_error.h,v 1.4 2000/12/05 21:08:20 per Exp $
+ * $Id: pike_error.h,v 1.5 2000/12/16 05:03:34 marcus Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -69,7 +69,7 @@ typedef struct JMP_BUF
 #endif
 } JMP_BUF;
 
-extern struct svalue throw_value;
+PMOD_EXPORT extern struct svalue throw_value;
 extern int throw_severity;
 
 #ifdef PIKE_DEBUG
@@ -168,7 +168,7 @@ extern int throw_severity;
 #endif /* PIKE_DEBUG */
 
 /* Prototypes begin here */
-void check_recovery_context(void);
+PMOD_EXPORT void check_recovery_context(void);
 PMOD_EXPORT void pike_gdb_breakpoint(void);
 PMOD_EXPORT JMP_BUF *init_recovery(JMP_BUF *r DEBUG_LINE_ARGS);
 PMOD_EXPORT DECLSPEC(noreturn) void pike_throw(void) ATTRIBUTE((noreturn));
@@ -191,40 +191,40 @@ void DECLSPEC(noreturn) generic_error_va(struct object *o,
 		      char *fmt,
 		      va_list foo)
   ATTRIBUTE((noreturn));
-void DECLSPEC(noreturn) generic_error(
+PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)));
-void DECLSPEC(noreturn) index_error(
+PMOD_EXPORT void DECLSPEC(noreturn) index_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *val,
   struct svalue *ind,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
-void DECLSPEC(noreturn) bad_arg_error(
+PMOD_EXPORT void DECLSPEC(noreturn) bad_arg_error(
   char *func,
   struct svalue *base_sp,  int args,
   int which_arg,
   char *expected_type,
   struct svalue *got,
   char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
-void DECLSPEC(noreturn) math_error(
+PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)));
-void DECLSPEC(noreturn) resource_error(
+PMOD_EXPORT void DECLSPEC(noreturn) resource_error(
   char *func,
   struct svalue *base_sp,  int args,
   char *resource_type,
   size_t howmuch,
   char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
-void DECLSPEC(noreturn) permission_error(
+PMOD_EXPORT void DECLSPEC(noreturn) permission_error(
   char *func,
   struct svalue *base_sp, int args,
   char *permission_type,
   char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)));
-void wrong_number_of_args_error(char *name, int args, int expected);
+PMOD_EXPORT void wrong_number_of_args_error(char *name, int args, int expected);
 void init_error(void);
 void cleanup_error(void);
 /* Prototypes end here */

@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.36 2000/08/18 21:32:21 grubba Exp $
+ * $Id: fdlib.h,v 1.37 2000/12/16 04:58:18 marcus Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -112,8 +112,8 @@ typedef int FD;
 
 
 /* Prototypes begin here */
-char *debug_fd_info(int fd);
-int debug_fd_query_properties(int fd, int guess);
+PMOD_EXPORT char *debug_fd_info(int fd);
+PMOD_EXPORT int debug_fd_query_properties(int fd, int guess);
 void fd_init();
 void fd_exit();
 PMOD_EXPORT int debug_fd_stat(char *file, struct stat *buf);
@@ -268,9 +268,9 @@ typedef struct DIR_s
   HANDLE h;
 } DIR;
 
-DIR *opendir(char *dir);
-int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d);
-void closedir(DIR *dir);
+PMOD_EXPORT DIR *opendir(char *dir);
+PMOD_EXPORT int readdir_r(DIR *dir, struct direct *tmp ,struct direct **d);
+PMOD_EXPORT void closedir(DIR *dir);
 
 #define HAVE_POSIX_READDIR_R
 

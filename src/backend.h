@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: backend.h,v 1.9 2000/07/28 17:16:54 hubbe Exp $
+ * $Id: backend.h,v 1.10 2000/12/16 04:58:17 marcus Exp $
  */
 #ifndef BACKEND_H
 #define BACKEND_H
@@ -14,18 +14,18 @@
 #include "time_stuff.h"
 #include "callback.h"
 
-extern struct timeval current_time;
-extern struct timeval next_timeout;
+PMOD_EXPORT extern struct timeval current_time;
+PMOD_EXPORT extern struct timeval next_timeout;
 typedef void (*file_callback)(int,void *);
 extern struct callback_list do_debug_callbacks;
-extern int fds_size;
+PMOD_EXPORT extern int fds_size;
 
 /* Prototypes begin here */
 struct selectors;
-struct callback *debug_add_backend_callback(callback_func call,
+PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 				      void *arg,
 				      callback_func free_func);
-void wake_up_backend(void);
+PMOD_EXPORT void wake_up_backend(void);
 void init_backend(void);
 void set_read_callback(int fd,file_callback cb,void *data);
 void set_write_callback(int fd,file_callback cb,void *data);
@@ -33,21 +33,21 @@ void set_write_callback(int fd,file_callback cb,void *data);
 void set_read_oob_callback(int fd,file_callback cb,void *data);
 void set_write_oob_callback(int fd,file_callback cb,void *data);
 #endif /* WITH_OOB */
-file_callback query_read_callback(int fd);
-file_callback query_write_callback(int fd);
+PMOD_EXPORT file_callback query_read_callback(int fd);
+PMOD_EXPORT file_callback query_write_callback(int fd);
 #ifdef WITH_OOB
-file_callback query_read_oob_callback(int fd);
-file_callback query_write_oob_callback(int fd);
+PMOD_EXPORT file_callback query_read_oob_callback(int fd);
+PMOD_EXPORT file_callback query_write_oob_callback(int fd);
 #endif /* WITH_OOB */
-void *query_read_callback_data(int fd);
-void *query_write_callback_data(int fd);
+PMOD_EXPORT void *query_read_callback_data(int fd);
+PMOD_EXPORT void *query_write_callback_data(int fd);
 #ifdef WITH_OOB
-void *query_read_oob_callback_data(int fd);
-void *query_write_oob_callback_data(int fd);
+PMOD_EXPORT void *query_read_oob_callback_data(int fd);
+PMOD_EXPORT void *query_write_oob_callback_data(int fd);
 #endif /* WITH_OOB */
 void do_debug(void);
 void backend(void);
-int write_to_stderr(char *a, size_t len);
+PMOD_EXPORT int write_to_stderr(char *a, size_t len);
 /* Prototypes end here */
 
 #define add_backend_callback(X,Y,Z) \

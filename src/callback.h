@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: callback.h,v 1.10 2000/12/13 21:20:35 hubbe Exp $
+ * $Id: callback.h,v 1.11 2000/12/16 04:58:18 marcus Exp $
  */
 #ifndef CALLBACK_H
 #define CALLBACK_H
@@ -29,11 +29,11 @@ typedef void (*callback_func)(struct callback *, void *,void *);
 struct callback;
 BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 PMOD_EXPORT void call_callback(struct callback_list *lst, void *arg);
-struct callback *debug_add_to_callback(struct callback_list *lst,
+PMOD_EXPORT struct callback *debug_add_to_callback(struct callback_list *lst,
 				       callback_func call,
 				       void *arg,
 				       callback_func free_func);
-void *remove_callback(struct callback *l);
+PMOD_EXPORT void *remove_callback(struct callback *l);
 void free_callback_list(struct callback_list *lst);
 void cleanup_callbacks(void);
 /* Prototypes end here */

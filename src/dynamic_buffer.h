@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: dynamic_buffer.h,v 1.10 2000/08/10 13:09:16 grubba Exp $
+ * $Id: dynamic_buffer.h,v 1.11 2000/12/16 04:58:18 marcus Exp $
  */
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H
@@ -29,24 +29,24 @@ struct dynamic_buffer_s
 typedef struct dynamic_buffer_s dynamic_buffer;
 
 /* Prototypes begin here */
-char *low_make_buf_space(size_t space, dynamic_buffer *buf);
-void low_my_putchar(char b,dynamic_buffer *buf);
-void low_my_binary_strcat(const char *b, size_t l, dynamic_buffer *buf);
-void debug_initialize_buf(dynamic_buffer *buf);
-void low_reinit_buf(dynamic_buffer *buf);
-void low_init_buf_with_string(string s, dynamic_buffer *buf);
-string complex_free_buf(void);
-void toss_buffer(dynamic_buffer *buf);
-char *simple_free_buf(void);
-struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
-struct pike_string *debug_free_buf(void);
-char *make_buf_space(INT32 space);
-void my_putchar(char b);
-void my_binary_strcat(const char *b, ptrdiff_t l);
-void my_strcat(const char *b);
-void init_buf(void);
-void init_buf_with_string(string s);
-char *debug_return_buf(void);
+PMOD_EXPORT char *low_make_buf_space(size_t space, dynamic_buffer *buf);
+PMOD_EXPORT void low_my_putchar(char b,dynamic_buffer *buf);
+PMOD_EXPORT void low_my_binary_strcat(const char *b, size_t l, dynamic_buffer *buf);
+PMOD_EXPORT void debug_initialize_buf(dynamic_buffer *buf);
+PMOD_EXPORT void low_reinit_buf(dynamic_buffer *buf);
+PMOD_EXPORT void low_init_buf_with_string(string s, dynamic_buffer *buf);
+PMOD_EXPORT string complex_free_buf(void);
+PMOD_EXPORT void toss_buffer(dynamic_buffer *buf);
+PMOD_EXPORT char *simple_free_buf(void);
+PMOD_EXPORT struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
+PMOD_EXPORT struct pike_string *debug_free_buf(void);
+PMOD_EXPORT char *make_buf_space(INT32 space);
+PMOD_EXPORT void my_putchar(char b);
+PMOD_EXPORT void my_binary_strcat(const char *b, ptrdiff_t l);
+PMOD_EXPORT void my_strcat(const char *b);
+PMOD_EXPORT void init_buf(void);
+PMOD_EXPORT void init_buf_with_string(string s);
+PMOD_EXPORT char *debug_return_buf(void);
 /* Prototypes end here */
 
 #ifdef DEBUG_MALLOC

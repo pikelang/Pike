@@ -10,7 +10,7 @@ ptrdiff_t PIKE_CONCAT(NAME,_error_offset);
 
 #ifdef ERR_EXT_DECLARE
 #define DECLARE_ERROR(NAME, INHERIT, DECL) \
-extern struct program *PIKE_CONCAT(NAME,_error_program); \
+PMOD_EXPORT extern struct program *PIKE_CONCAT(NAME,_error_program); \
 extern ptrdiff_t PIKE_CONCAT(NAME,_error_offset); \
 struct PIKE_CONCAT(NAME,_error_struct) { \
   DECL \

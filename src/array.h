@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: array.h,v 1.29 2000/12/13 21:19:09 hubbe Exp $
+ * $Id: array.h,v 1.30 2000/12/16 04:58:17 marcus Exp $
  */
 #ifndef ARRAY_H
 #define ARRAY_H
@@ -152,7 +152,7 @@ void describe_index(struct array *a,
 		    struct processing *p,
 		    int indent);
 void describe_array(struct array *a,struct processing *p,int indent);
-struct array *aggregate_array(INT32 args);
+PMOD_EXPORT struct array *aggregate_array(INT32 args);
 PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s);
 PMOD_EXPORT struct array *explode(struct pike_string *str,
 		       struct pike_string *del);
