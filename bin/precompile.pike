@@ -505,7 +505,8 @@ class PikeType
    * And this way is for internal use only:
    * PikeType( PC.Token("array"), ({ PikeType("int") }) )
    */
-  void create(string|array(PC.Token)|PC.Token|array(array) tok, void|array(PikeType) a)
+  void create(string|array(PC.Token)|PC.Token|array(array) tok,
+	      void|array(PikeType) a)
     {
       switch(sprintf("%t",tok))
       {
@@ -617,8 +618,9 @@ class PikeType
 		  }else{
 		    repeater=PikeType("void");
 		  }
-		  args=map(argstmp[..end],PikeType)+
+		  args=map(argstmp[..end]*({}),PikeType)+
 		    ({repeater, PikeType(rettmp) });
+		  werror("args: %O\n", args);
 		}else{
 		  args=({PikeType("mixed"),PikeType("any")});
 		}
@@ -1282,7 +1284,7 @@ class ParseBlock
 	    if(arg->may_be_void())
 	    {
 	      ret+=({
-		PC.Token(sprintf("if(args >= %s) { ",argnum)),
+		PC.Token(sprintf("if(args >= %d) { ",argnum)),
 		  });
 	    }
 
