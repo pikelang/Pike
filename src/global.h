@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: global.h,v 1.32 1999/04/25 20:30:56 grubba Exp $
+ * $Id: global.h,v 1.33 1999/04/25 20:32:38 grubba Exp $
  */
 #ifndef GLOBAL_H
 #define GLOBAL_H
@@ -15,11 +15,7 @@
 /* We want to be able to use 64bit arithmetic */
 #pragma TenDRA longlong type allow
 #pragma TenDRA set longlong type : long long
-/* Decrease the ANSI C stringency. */
-#if __STDC__ - 0 != 0
-#undef __STDC__
-#define __STDC__ 0
-#endif /* __STDC__ != 0 */
+
 #ifdef _NO_LONGLONG
 #undef _NO_LONGLONG
 #endif /* _NO_LONGLONG */
