@@ -128,9 +128,11 @@ void f_file_stat(INT32 args)
 #ifdef HAVE_SYS_MOUNT_H
 #include <sys/mount.h>
 #endif /* HAVE_SYS_MOUNT_H */
+#if !defined(HAVE_STATVFS) && !defined(HAVE_STATFS)
 #ifdef HAVE_USTAT_H
 #include <ustat.h>
 #endif /* HAVE_USTAT_H */
+#endif /* !HAVE_STATVFS && !HAVE_STATFS */
 void f_filesystem_stat(INT32 args)
 {
 #ifdef HAVE_STATVFS
