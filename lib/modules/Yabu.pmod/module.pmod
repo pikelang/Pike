@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.4 1999/02/14 16:19:47 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.5 1999/02/14 17:25:56 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define WARN(msg) werror(msg)
@@ -658,6 +658,8 @@ class Table {
 	return 0;
     }
 
+    /* Remove old junk, just in case. */
+    rm(filename+".opt");
     /* Create new database. */
     object opt = Chunk(filename+".opt", mode, this_object(), ([]));
 
