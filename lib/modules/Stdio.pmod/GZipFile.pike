@@ -1,14 +1,16 @@
-// $Id: GZipFile.pike,v 1.2 2002/08/26 09:08:33 grendel Exp $
+// $Id: GZipFile.pike,v 1.3 2002/10/15 12:44:28 jhs Exp $
 #pike __REAL_VERSION__
 
 //! Allows the user to open a Gzip archive and read and write
-//! it's contents in an uncompressed form.
+//! it's contents in an uncompressed form, emulating the @[Stdio.File]
+//! interface.
 //! @note
 //! An important limitation on this class is that it may only be used
 //! for reading @b{or@} writing, not both at the same time.
 //! Please also note that if you want to reopen a file for reading
 //! after a write, you must close the file before calling open or
 //! strange effects might be the result.
+
 inherit Gz._file;
 
 private int is_open;
@@ -18,8 +20,8 @@ private int is_open;
 //! Filename or filedescriptor of the gzip file to open.
 //! @param mode
 //! mode for the file. Defaults to "rb".
-//! @seealso 
-//!  [open]
+//! @seealso
+//!   @[open] @[Stdio.File]
 void create(mixed ... args) {
   ::create();
 
