@@ -152,12 +152,11 @@
 %right F_NOT '~'
 %nonassoc F_INC F_DEC
 
-
 %{
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.38 1997/04/23 01:59:41 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.39 1997/04/23 04:11:26 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -177,6 +176,11 @@ RCSID("$Id: language.yacc,v 1.38 1997/04/23 01:59:41 hubbe Exp $");
 #include "docode.h"
 
 #define YYMAXDEPTH	600
+
+#ifndef DEBUG
+#define DEBUG 1
+#endif
+#define YYERROR_VERBOSE
 
 #ifdef DEBUG
 #define YYDEBUG 1
@@ -206,6 +210,7 @@ void fix_comp_stack(int sp)
 }
 
 %}
+
 %union
 {
   int number;
@@ -217,6 +222,10 @@ void fix_comp_stack(int sp)
   struct node_s *n;
   struct efun *efun;
 }
+
+%{
+int yylex(YYSTYPE *yylval);
+%}
 
 %type <fnum> F_FLOAT
 
@@ -551,7 +560,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
   | import {}
   | constant {}
   | class { free_node($1); }
-  | error ';'
+  | error ';' { yyerrok; }
   {
     reset_type_stack();
     if(num_parse_error>5) YYACCEPT;
@@ -587,7 +596,7 @@ new_arg_name: type optional_dot_dot_dot optional_identifier
   ;
 
 func_args: '(' arguments ')' { $$=$2; }
-         | error ')' { $$=0; }
+         | '(' error ')' { $$=0; yyerrok; }
          ;
 
 arguments: /* empty */ optional_comma { $$=0; }
@@ -823,7 +832,7 @@ statement: unused2 ';' { $$=$1; }
   | foreach
   | break ';'
   | continue ';'
-  | error ';' { reset_type_stack(); $$=0; }
+  | error ';' { reset_type_stack(); $$=0; yyerrok; }
   | ';' { $$=0; } 
   ;
 
@@ -888,16 +897,18 @@ lambda: F_LAMBDA
   ;
 
 failsafe_program: '{' program '}'
-                | error
+                | error { yyerrok; }
                 ;
 
 class: modifiers F_CLASS optional_identifier
   {
     start_new_program();
+    /* write(2, "start\n", 6); */
   }
   failsafe_program
   {
     struct svalue s;
+    /* write(2, "end\n", 4); */
     s.u.program=end_program();
     if(!s.u.program)
     {
@@ -1029,7 +1040,7 @@ expr00: expr0
 expr0: expr01
   | expr4 '=' expr0  { $$=mknode(F_ASSIGN,$3,$1); }
   | expr4 assign expr0  { $$=mknode($2,$1,$3); }
-  | error assign expr01 { $$=0; reset_type_stack(); }
+  | error assign expr01 { $$=0; reset_type_stack(); yyerrok; }
   ;
 
 expr01: expr1 { $$ = $1; }
