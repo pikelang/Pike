@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.259 1999/01/05 22:47:08 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.260 1999/02/01 03:05:52 per Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -780,13 +780,14 @@ fi
 
 AC_HEADER_TIME
 AC_HEADER_STDC
-AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
+AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h \
+sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
-socket.h ieeefp.h fp_class.h floatingpoint.h)
+socket.h ieeefp.h fp_class.h floatingpoint.h sys/priocntl.h sched.h )
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(long,4)
@@ -817,6 +818,7 @@ AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(dld, shl_load)
 AC_CHECK_LIB(dld, dld_link)
 
+AC_CHECK_LIB(posix4, sched_setscheduler)
 
 if test "${pike_cv_sys_os}" = "Linux"; then
   if test "${ac_cv_lib_m_floor}" = "no"; then
@@ -1228,7 +1230,12 @@ AC_CHECK_FUNCS( \
  finite \
  signbit \
  nice \
+ __priocntl \
+ sched_setscheduler \
+ setpriority
 )
+
+
 
 AC_MSG_CHECKING(if the last argument to accept is a size_t *)
 AC_CACHE_VAL(pike_cv_accept_size_t, [
