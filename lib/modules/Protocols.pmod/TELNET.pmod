@@ -1,5 +1,5 @@
 //
-// $Id: TELNET.pmod,v 1.16 2001/04/27 13:38:40 grubba Exp $
+// $Id: TELNET.pmod,v 1.17 2001/04/28 19:00:02 grubba Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
@@ -292,7 +292,9 @@ class protocol
   }
 
   //! Queues data to be sent to the other end of the connection.
-  //! @[s] - string to send.
+  //!
+  //! @param s
+  //!   String to send.
   void write(string s)
   {
     DWRITE(sprintf("TELNET, writing :%O\n",s));
@@ -301,7 +303,9 @@ class protocol
   }
 
   //! Queues raw data to be sent to the other end of the connection.
-  //! @[s] - string with raw telnet data to send.
+  //!
+  //! @param s
+  //!   String with raw telnet data to send.
   void write_raw(string s)
   {
     to_send += s;
@@ -368,13 +372,15 @@ class protocol
   //!
   //! Starts negotiation to enable a TELNET option.
   //!
-  //! @[option] - the option to enable.
+  //! @param option
+  //!   The option to enable.
 
   //! @decl void send_DONT(int option)
   //!
   //! Starts negotiation to disable a TELNET option.
   //!
-  //! @[option] - the option to disable.
+  //! @param option
+  //!   The option to disable.
 
 
 #define CONTROL(OPTIONS,DO,DONT,WILL,WONT,YES,NO)					\
@@ -509,9 +515,11 @@ class protocol
 
   //! Callback called when Out-Of-Band data has been received.
   //!
-  //! @[ignored] - the id from the connection.
+  //! @param ignored
+  //!   The id from the connection.
   //!
-  //! @[s] - the Out-Of-Band data received.
+  //! @param s
+  //!   The Out-Of-Band data received.
   //!
   static void got_oob(mixed ignored, string s)
   {
@@ -544,8 +552,10 @@ class protocol
   //! Callback called when normal data has been received.
   //! This function also does most of the TELNET protocol parsing.
   //!
-  //! @[ignored] - the id from the connection.
-  //! @[s] - the received data.
+  //! @param ignored
+  //!   The id from the connection.
+  //! @param s
+  //!   The received data.
   //!
   static void got_data(mixed ignored, string line)
   {
@@ -750,7 +760,8 @@ class protocol
 
   //! Sets the callback to be called when it is clear to send.
   //!
-  //! @[w_cb] - the new write callback.
+  //! @param w_cb
+  //!   The new write callback.
   void set_write_callback(function(mixed|void:string) w_cb)
   {
     write_cb = w_cb;
@@ -771,12 +782,18 @@ class protocol
 
   //! Creates a TELNET protocol handler, and sets its callbacks.
   //!
-  //! @[f] - file to use for the connection.
-  //! @[r_cb] - function to call when data has arrived.
-  //! @[w_cb] - function to call when data can be sent.
-  //! @[c_cb] - function to call when the connection is closed.
-  //! @[callbacks] - mapping with callbacks for the various TELNET commands.
-  //! @[new_id] - value to send to the various callbacks.
+  //! @param f
+  //!   File to use for the connection.
+  //! @param r_cb
+  //!   Function to call when data has arrived.
+  //! @param w_cb
+  //!   Function to call when data can be sent.
+  //! @param c_cb
+  //!   Function to call when the connection is closed.
+  //! @param callbacks
+  //!   Mapping with callbacks for the various TELNET commands.
+  //! @param new_id
+  //!   Value to send to the various callbacks.
   //!
   void create(object f,
 	      function(mixed,string:void) r_cb,
@@ -853,6 +870,7 @@ class LineMode
   }
 }
 
+//! Line-oriented TELNET protocol handler with @[Stdio.Readline] support.
 class Readline
 {
   inherit LineMode;
