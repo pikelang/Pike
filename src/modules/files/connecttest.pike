@@ -75,8 +75,8 @@ int main()
    
    f->open_socket();
    f->set_nonblocking(0,ok,fail);
-   if (catch { f->connect("localhost",z); } &&
-       catch { f->connect("127.0.0.1",z); })
+   if (catch { f->connect("127.0.0.1",z); } &&
+       catch { f->connect("localhost",z); })
    {
       werror(PRE"failed to connect "
 	     "to \"localhost\" nor \"127.0.0.1\"\n");
