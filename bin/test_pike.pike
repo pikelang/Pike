@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.70 2002/08/06 18:34:41 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.71 2002/08/20 23:07:33 nilsson Exp $ */
 
 import Stdio;
 
@@ -392,11 +392,10 @@ int main(int argc, array(string) argv)
 	signal_watchdog();
 
 	int skip=0, prev_errors = errors;
-	string test,condition;
-	string|int type;
 	object o;
 	mixed a,b;
-	
+
+	// Extra consistency checks?
 	if(check)
         {
 	  if(check>0 || (e % -check)==0 )
@@ -406,8 +405,11 @@ int main(int argc, array(string) argv)
 	  gc();
 	  _verify_internals();
 	}
-	
-	test=tests[e];
+
+	string test = tests[e];
+
+	// Is there a condition for this test?
+	string condition;
 	if( sscanf(test, "COND %s\n%s", condition, test)==2 )
         {
 	  int tmp;
@@ -439,9 +441,12 @@ int main(int argc, array(string) argv)
 	  }
 	}
 
-	int testno, testline;
+	string|int type;
 	sscanf(test, "%s\n%s", type, test);
-	sscanf(type, "%s: test %d, expected result: %s", string testfile, testno, type);
+
+	int testno, testline;
+	string testfile;
+	sscanf(type, "%s: test %d, expected result: %s", testfile, testno, type);
 
 	if (testfile) {
 	  array split = testfile / ":";
@@ -478,20 +483,20 @@ int main(int argc, array(string) argv)
 	  switch( (e-start) % 50)
 	  {
 	  case 0:
-	    werror("%5d: ",e);
-	    break;
+	    werror("%5d: ", e);
+	    // fallthrough
 
+	  default:
+	    werror(skip?"-":"+");
+	    break;
+		
 	  case 9:
 	  case 19:
 	  case 29:
 	  case 39:
 	    werror(skip?"- ":"+ ");
 	    break;
-		
-	  default:
-	    werror(skip?"-":"+");
-	    break;
-		
+
 	  case 49:
 	    werror(skip?"-\n":"+\n");
 	  }
@@ -893,7 +898,7 @@ Usage: test_pike [args] [testfiles]
                        run.
                     3  Every test is printed out.
                     4  Time spent in individual tests are printed out.
-                    10 The actual pike code compiled, including wrappers, is
+                    10 The actual Pike code compiled, including wrappers, is
                        printed.
 -p, --prompt        The user will be asked before every test is run.
 -sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
@@ -903,7 +908,7 @@ Usage: test_pike [args] [testfiles]
 -lX, --loop=X       The number of times the testsuite should be run. Default is
                     1.
 -tX, --trace=X      Run tests with trace level X.
--c[X], --check[=X]  The level of extra pike consistency checks performed.
+-c[X], --check[=X]  The level of extra Pike consistency checks performed.
                     1   _verify_internals is run before every test.
                     2   _verify_internals is run after every compilation.
                     3   _verify_internals is run after every test.
