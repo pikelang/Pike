@@ -1,0 +1,17 @@
+AC_INIT(image_xface.c)
+AC_CONFIG_HEADER(config.h)
+AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
+
+sinclude(../module_configure.in)
+
+if test x$with_gmp = xyes ; then
+  AC_CHECK_HEADERS(gmp.h)
+  if test $ac_cv_header_gmp_h = yes ; then
+    AC_CHECK_LIB(gmp, mpz_init)
+  fi
+fi
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+
+
