@@ -163,7 +163,7 @@ array lookup(int suite)
     res->bulk_cipher_algorithm = des3;
     res->cipher_type = CIPHER_block;
     res->is_exportable = 0;
-    res->key_material = 16;
+    res->key_material = 24;
     res->iv_size = 8;
     break;
   case CIPHER_idea:
