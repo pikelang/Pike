@@ -1,4 +1,5 @@
 Pike-v0.3.tar.gz
+Pike-v0.3.tar.hz
 Pike_v0.1.tar.gz
 Pike_v0.2.tar.gz
 Pike_v0.3.tar.gz
@@ -8,6 +9,8 @@ alpha-no-debug
 alpha_cc
 build
 mud
+mud-0.1.tar.gz
+mud-0.2.tar.gz
 mudlib
 obsolete
 reports
