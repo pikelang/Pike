@@ -230,7 +230,7 @@ string mkdocument(string s,string title)
 	  "<title>"+
 	  html_quote(title)+
 	  "</title>"+
-	  "<body bgcolor=\"#A0E0C0\">"+
+	  "<body bgcolor=\"#A0E0C0\" text=\"#000000\" link=blue vlink=purple>"+
 	  s+
 	  "</body>"+
 	  "</html>");
