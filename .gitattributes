@@ -8,6 +8,14 @@
 *.png binary
 *.pnm binary
 *.rs binary
+/src/modules/_Crypto/rijndael_ecb_tbl.txt eol=crlf
+/src/modules/_Crypto/rijndael_cbc_d_m.txt eol=crlf
+/src/modules/_Crypto/rijndael_cbc_e_m.txt eol=crlf
+/src/modules/_Crypto/rijndael_ecb_d_m.txt eol=crlf
+/src/modules/_Crypto/rijndael_ecb_e_m.txt eol=crlf
+/src/modules/_Crypto/rijndael_ecb_iv.txt eol=crlf
+/src/modules/_Crypto/rijndael_ecb_vk.txt eol=crlf
+/src/modules/_Crypto/rijndael_ecb_vt.txt eol=crlf
 install-welcome binary
 testfont binary
 
@@ -444,6 +452,7 @@ testfont binary
 /src/modules/_Crypto/pipe.c foreign_ident
 /src/modules/_Crypto/rc4.c foreign_ident
 /src/modules/_Crypto/rijndael.c foreign_ident
+/src/modules/_Crypto/rijndaeltest.pike foreign_ident
 /src/modules/_Crypto/rsa.c foreign_ident
 /src/modules/_Crypto/sha.c foreign_ident
 /src/modules/_Crypto/test_crypto.pike foreign_ident
