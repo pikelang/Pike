@@ -17,7 +17,8 @@ linker_options: $(MODULE_OBJS)
 	done ; ) >linker_options
 
 lib_dirs: $(MODULE_OBJS)
-	( ( for a in $(MODULES) ; do \
+	( ( if test -f master_lib_dirs; then cat master_lib_dirs; else :; fi; \
+            for a in $(MODULES) ; do \
 	      if test -f $$a/lib_dirs ; then cat $$a/lib_dirs ; else : ; fi ; \
 	    done ; ) | sort | uniq | tr '\012' ':'; echo "" )| \
 	sed -e 's/:$$//' -e 's/^/-R/' -e 's/^-R$$//' >lib_dirs
