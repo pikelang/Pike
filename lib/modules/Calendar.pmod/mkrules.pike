@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.4 2000/09/28 03:38:37 hubbe Exp $
+// $Id: mkrules.pike,v 1.5 2000/10/21 06:28:15 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -325,8 +325,7 @@ class Rule
 
       if (!r2[NUL_YEAR]) r2[NUL_YEAR]=({last});
 
-      int y=min(@indices(rules));
-      for (;y<=INF_YEAR; y++)
+      for (int y=min(@indices(rules));y<=INF_YEAR; y++)
 	 [r2[y],last]=mkperiods(rules[y],last,first);
 
       res+=("class "+
@@ -341,9 +340,9 @@ class Rule
 
       string s="",t;
 
-      int y,mn=min(@indices(rules-(<NUL_YEAR>)));
+      int mn=min(@indices(rules-(<NUL_YEAR>)));
 
-      for (y=INF_YEAR;sizeof(r2);y--)
+      for (int y=INF_YEAR;sizeof(r2);y--)
 	 if (r2[y])
 	 {
 	    array z=r2[y];
@@ -466,11 +465,11 @@ class Zone
       if (sizeof(a)<4)
 	 complain("parse error\n");
       
-      array a=({parse_offset(a[0]), // offset
-		a[1], // rule or added offset
-		a[2], // string
-		a[3],
-		0, 0, "tz", 0}); // until
+      a=({parse_offset(a[0]), // offset
+	  a[1], // rule or added offset
+	  a[2], // string
+	  a[3],
+	  0, 0, "tz", 0}); // until
       a[5]=rule_shift(a);
       a[4]=clone_rule(a);
 
@@ -607,7 +606,7 @@ class Zone
       }
 
       array last=rules[-1];
-      int n=sizeof(rules);
+      n=sizeof(rules);
       foreach (reverse(rules)[1..],array a)
       {
 	 res+=sprintf("      if (ux>=%s) // %s %s\n"
@@ -745,7 +744,7 @@ int main(int ac,array(string) am)
        "// "+"-"*70+"\n"
        "\n");
 
-   mixed err=catch {
+   err=catch {
       foreach (azones,Zone z)
 	 if (sizeof(z->rules)!=1) 
 	 {
