@@ -142,6 +142,10 @@ class Package
       cd(original_wd);
     }
 
+    // Filter to root/root ownership.
+    ((program)combine_path(__FILE__, "..", "tarfilter"))()->
+      main(3, ({ "tarfilter", package_filename, package_filename }));
+  
     chmod(package_filename, 0755);
 
     rmrf("#!", setup_filename);
