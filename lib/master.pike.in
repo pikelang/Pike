@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.250 2003/01/20 17:38:52 nilsson Exp $
+// $Id: master.pike.in,v 1.251 2003/01/26 18:31:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -813,10 +813,13 @@ constant master_efuns = ({
 
 string include_prefix;
 
+
+//! @decl int strlen(string|multiset|array|mapping|object thing)
 //! @appears strlen
 //! Alias for @[sizeof].
 //! @deprecated sizeof
 
+//! @decl int write(string fmt, mixed ... args)
 //! @appears write
 //! Writes a string on stdout. Works just like @[Stdio.File.write]
 //! on @[Stdio.stdout].
