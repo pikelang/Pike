@@ -175,6 +175,7 @@ int main() {
   write("\nImage\n");
   M(Image.FreeType.Face);
   M(Image.JPEG.decode);
+  f("Image.JPEG.FLIP_H", "JPEG transforms");
   M(Image.PNG.decode);
   M(Image.SVG.decode);
   M(Image.TIFF.decode);
