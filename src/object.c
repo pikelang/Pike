@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.66 1999/03/27 22:04:05 grubba Exp $");
+RCSID("$Id: object.c,v 1.67 1999/04/02 02:09:05 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -25,6 +25,7 @@ RCSID("$Id: object.c,v 1.66 1999/03/27 22:04:05 grubba Exp $");
 #include "cyclic.h"
 #include "security.h"
 #include "module_support.h"
+#include "block_alloc.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -350,6 +351,31 @@ struct object *master(void)
   return o;
 }
 
+struct destroy_called_mark
+{
+  struct destroy_called_mark *next;
+  void *data;
+};
+
+PTR_HASH_ALLOC(destroy_called_mark,128)
+
+static void call_destroy(struct object *o)
+{
+  int e;
+  if(!o || !o->prog) return; /* Object already destructed */
+
+  e=FIND_LFUN(o->prog,LFUN_DESTROY);
+  if(e != -1)
+  {
+    if(check_destroy_called_mark_semafore(o))
+    {
+      /* fprintf(stderr, "destruct(): Calling destroy().\n"); */
+      safe_apply_low(o, e, 0);
+      pop_stack();
+    }
+  }
+}
+
 void destruct(struct object *o)
 {
   int e;
@@ -358,27 +384,14 @@ void destruct(struct object *o)
 #ifdef PIKE_DEBUG
   if(d_flag > 20) do_debug();
 #endif
-  if(!o || !(p=o->prog)) return; /* Object already destructed */
 
   add_ref(o);
 
-  e=FIND_LFUN(o->prog,LFUN_DESTROY);
-  if(e != -1)
-  {
-    /* We do not want to call destroy() if it already being called */
-    DECLARE_CYCLIC();
-    if(!BEGIN_CYCLIC(o,0))
-    {
-      SET_CYCLIC_RET(1);
-      /* fprintf(stderr, "destruct(): Calling destroy().\n"); */
-      safe_apply_low(o, e, 0);
-      pop_stack();
-      END_CYCLIC();
-    }
-  }
+  call_destroy(o);
+  remove_destroy_called_mark(o);
 
   /* destructed in destroy() */
-  if(!o->prog)
+  if(!(p=o->prog))
   {
     free_object(o);
     return;
@@ -959,6 +972,14 @@ void cleanup_objects(void)
   for(o=first_object;o;o=next)
   {
     add_ref(o);
+    call_destroy(o);
+    next=o->next;
+    free_object(o);
+  }
+
+  for(o=first_object;o;o=next)
+  {
+    add_ref(o);
     destruct(o);
     next=o->next;
     free_object(o);
@@ -1155,6 +1176,19 @@ void gc_free_all_unreferenced_objects(void)
     if(gc_do_free(o))
     {
       add_ref(o);
+      call_destroy(o);
+      next=o->next;
+      free_object(o);
+    }else{
+      next=o->next;
+    }
+  }
+
+  for(o=first_object;o;o=next)
+  {
+    if(gc_do_free(o))
+    {
+      add_ref(o);
       destruct(o);
       next=o->next;
       free_object(o);
@@ -1317,6 +1351,7 @@ void init_object(void)
 {
   int offset;
 
+  init_destroy_called_mark_hash();
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
@@ -1345,4 +1380,5 @@ void exit_object(void)
     free_program(magic_set_index_program);
     magic_set_index_program=0;
   }
+  exit_destroy_called_mark_hash();
 }
