@@ -2080,8 +2080,8 @@ struct chr_buf_len2
 };
 
 static int quote_tag_lookup (struct parser_html_storage *this,
-			     struct piece *feed, int c,
-			     struct piece **destp, int *d_p,
+			     struct piece *feed, ptrdiff_t c,
+			     struct piece **destp, ptrdiff_t *d_p,
 			     int finished, struct svalue **mapqentry)
 /* Checks for a quote tag starting at the given position. If one is
  * found, scans to the end of it and sets *mapqentry to the first
@@ -2089,7 +2089,7 @@ static int quote_tag_lookup (struct parser_html_storage *this,
 {
   struct chr_buf_len2 buf;
   struct piece *dst = feed;
-  int cdst = c;
+  ptrdiff_t cdst = c;
   size_t checklen;
   *mapqentry = NULL;
 
