@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.67 2000/10/28 15:51:40 grubba Exp $
+ * $Id: acconfig.h,v 1.68 2000/11/27 12:20:20 mirar Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -183,6 +183,9 @@
 
 /* Define if you have memcpy.  */
 #undef HAVE_MEMCPY
+
+/* Define if you have strcoll */
+#undef HAVE_STRCOLL
 
 /* Define this if you have dlopen */
 #undef HAVE_DLOPEN
