@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.114 1999/12/29 17:59:33 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.115 1999/12/30 21:05:19 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -3194,15 +3194,16 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   case T_ARRAY:
     {
       struct pike_string *arg_type;
-#if 0
       struct array *a;
-      int i;
 
       if (s->type == T_MULTISET) {
 	a = s->u.multiset->ind;
       } else {
 	a = s->u.array;
       }
+#if 0
+      int i;
+
       /* FIXME: Circular structures? */
       copy_shared_string(arg_type, zero_type_string);
       for (i = 0; i < a->size; i++) {
@@ -3213,7 +3214,10 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
 	arg_type = tmp2;
       }
 #else /* !0 */
-      copy_shared_string(arg_type, mixed_type_string);
+      if (a->size)
+	copy_shared_string(arg_type, mixed_type_string);
+      else
+	copy_shared_string(arg_type, zero_type_string);
 #endif /* 0 */
       type_stack_mark();
       push_unfinished_type(arg_type->str);
@@ -3225,8 +3229,14 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
 
   case T_MAPPING:
     type_stack_mark();
-    push_type(T_MIXED);
-    push_type(T_MIXED);
+    if (s->u.mapping->size) {
+      push_type(T_MIXED);
+      push_type(T_MIXED);
+    }
+    else {
+      push_type(T_ZERO);
+      push_type(T_ZERO);
+    }
     push_type(T_MAPPING);
     return pop_unfinished_type();
 
