@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.8 1997/02/13 02:38:58 nisse Exp $");
+RCSID("$Id: operators.c,v 1.9 1997/02/19 05:04:19 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -834,6 +834,15 @@ void o_multiply()
       return;
     }
 
+  case TWO_TYPES(T_ARRAY,T_ARRAY):
+  {
+    struct array *ret;
+    ret=implode_array(sp[-2].u.array, sp[-1].u.array);
+    pop_n_elems(2);
+    push_array(ret);
+    break;
+  }
+
   case TWO_TYPES(T_FLOAT,T_FLOAT):
     sp--;
     sp[-1].u.float_number *= sp[0].u.float_number;
@@ -924,6 +933,14 @@ void o_divide()
     sp[-2].type=T_ARRAY;
     sp[-2].u.array=ret;
     sp--;
+    return;
+  }
+
+  case T_ARRAY:
+  {
+    struct array *ret=explode_array(sp[-2].u.array, sp[-1].u.array);
+    pop_n_elems(2);
+    push_array(ret);
     return;
   }
 
@@ -1252,9 +1269,9 @@ void init_operators()
   add_efun2("`<<",f_lsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_lsh);
   add_efun2("`>>",f_rsh,SHIFT_TYPE,OPT_TRY_OPTIMIZE,0,generate_rsh);
 
-  add_efun2("`*",f_multiply,"function(object,mixed...:mixed)|function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
+  add_efun2("`*",f_multiply,"function(array(array),array:array)|function(object,mixed...:mixed)|function(int...:int)|!function(int...:mixed)&function(float|int...:float)|function(string*,string:string)",OPT_TRY_OPTIMIZE,optimize_binary,generate_multiply);
 
-  add_efun2("`/",f_divide,"function(object,mixed:mixed)|function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",OPT_TRY_OPTIMIZE,0,generate_divide);
+  add_efun2("`/",f_divide,"function(array,array:array(array))|function(object,mixed:mixed)|function(int,int:int)|function(float|int,float:float)|function(float,int:float)|function(string,string:string*)",OPT_TRY_OPTIMIZE,0,generate_divide);
 
   add_efun2("`%",f_mod,"function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
 
