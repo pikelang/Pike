@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.169 1999/11/24 19:01:18 grubba Exp $
+# $Id: Makefile.in,v 1.170 1999/11/26 03:50:11 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -203,10 +203,9 @@ tpike:
 # This way, we make sure that all other objects shared with tpike are
 # up-to-date first. So if the $(POBJ)s, which depend on tpike, trigs
 # the recursive make of tpike-real above, that one will never start to
-# make the $(OBJ)s concurrently with this one.
-# The force is needed, since otherwise pike won't be rebuilt if
-# only $(POBJ) needs to be rebuilt.
-pike: $(OBJ) modules/linker_options force
+# make the $(OBJ)s concurrently with this one. stamp-tpike-predep
+# records the $(POBJ) dependencies without tpike.
+pike: $(OBJ) modules/linker_options stamp-tpike-predep
 	$(MAKE) $(MAKE_FLAGS) $(MAKE_PARALLEL) $(POBJ)
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
@@ -293,7 +292,7 @@ tidy:
 # make clean
 clean: tidy
 	-( cd modules; $(MAKE) $(MAKE_FLAGS) clean )
-	-rm -rf test-install test-pike tpike
+	-rm -rf test-install test-pike
 	-rm -f TAGS tags yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 	-rm -f hilfe master.pike compiler-warnings
 	-find lib/modules/ -type f -name '*.so_pure*' -exec rm -f \{\} \;
@@ -306,6 +305,7 @@ spotless: clean
 	find . -type f '(' -name 'Makefile' -o -name '*~' -o -name '.*~' -o \
 	  -name core -o -name '.nfs*' -name '#*#' -o -name '.pure' -o \
 	  -name 'conftest.*' -o -name 'stamp-h' ')' -exec rm -f \{\} \;
+	-rm -f tpike stamp-tpike-predep
 	-rm -f lexical.c mon.out *.ln config.status
 	-rm -f $(TMP_BINDIR)/*~ $(TMP_BINDIR)/\#*\#
 	-rm -f pike pike.old l.outa*
@@ -462,6 +462,10 @@ $(SRCDIR)/treeopt.h: tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
 las.o: $(SRCDIR)/treeopt.h
 
 las_t.o: las.c
+
+# All the $(POBJ) dependencies, except tpike. See blurb at pike target.
+stamp-tpike-predep: $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike peep.c $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike builtin_functions.c $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike las.c
+	@echo foo > stamp-tpike-predep
 
 # make dependencies
 depend: $(SRCDIR)/language.c
