@@ -668,7 +668,7 @@ static void push_param_r( GtkArg *param, GtkType t )
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
                              int nparams, GtkArg *params)
 {
-  int i, res, return_value = 0;
+  int i, return_value = 0;
   struct svalue *osp = Pike_sp;
 /* #ifdef HAVE_GTK_20 */
 /*   GSignalQuery _opts; */
@@ -751,7 +751,12 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
      *GTK_RETLOC_DOUBLE(params[nparams]) = PGTK_GETFLT( Pike_sp-1 );
      break;
    case GTK_TYPE_STRING:
-     *GTK_RETLOC_STRING(params[nparams]) = g_strdup(PGTK_GETSTR(Pike_sp-1 ));
+     {
+       gchar *s = PGTK_GETSTR(Pike_sp-1 );
+       *GTK_RETLOC_STRING(params[nparams]) = g_strdup(s);
+       PGTK_FREESTR(s);
+     }
+     break;
    default:
      {
        char *rn = gtk_type_name( return_value );
@@ -764,7 +769,7 @@ int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
 /* #ifndef HAVE_GTK_20 */
 /*   g_free( opts ); */
 /* #endif */
-  return res;
+  return return_value;
 }
 
 void pgtk_free_signal_data( struct signal_data *s)
@@ -783,33 +788,16 @@ void pgtk_push_gchar( gchar *s )
 
 gchar *pgtk_get_str( struct svalue *sv )
 {
-  struct pike_string *s;
-  int i;
-  gunichar *tmp;
-  int nofree = 0;
   gchar *res;
-  if( sv->type != PIKE_T_STRING )
-    return 0;
-  s = sv->u.string;
-  switch( s->size_shift )
-  {
-   case 0:
-     tmp = g_malloc( 4*s->len );
-     for( i = 0; i<s->len; i++ )
-       tmp[i] = ((unsigned char *)s->str)[i];
-     break;
-   case 1:
-     tmp = g_malloc( 4*s->len );
-     for( i = 0; i<s->len; i++ )
-       tmp[i] = ((unsigned short *)s->str)[i];
-     break;
-   case 2:
-     tmp = (int *)s->str;
-     nofree = 1;
-     break;
-  }
-  res = g_ucs4_to_utf8( tmp, s->len, 0,0,0 );
-  if(!nofree) g_free( tmp );
+
+  push_svalue(sv);
+  push_int(1);
+  f_string_to_utf8(2);
+
+  res = g_malloc( Pike_sp[-1].u.string->len+1 );
+  memcpy(res, STR0(Pike_sp[-1].u.string), Pike_sp[-1].u.string->len+1);
+  pop_stack();
+
   return res;
 }
 
