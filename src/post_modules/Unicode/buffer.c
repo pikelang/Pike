@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.1 2001/06/21 03:15:34 per Exp $");
+RCSID("$Id: buffer.c,v 1.2 2001/07/05 03:00:17 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -56,7 +56,8 @@ struct buffer *uc_buffer_from_pikestring( struct pike_string *s )
   return res;
 }
 
-void uc_buffer_write_pikestring( struct buffer *d, struct pike_string *s )
+struct buffer *uc_buffer_write_pikestring( struct buffer *d,
+					   struct pike_string *s )
 {
   switch( s->size_shift )
   {
@@ -85,6 +86,7 @@ void uc_buffer_write_pikestring( struct buffer *d, struct pike_string *s )
       }
       break;
   }
+  return d;
 }
 
 void uc_buffer_free( struct buffer *d)
