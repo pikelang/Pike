@@ -27,7 +27,9 @@ programp(Crypto.rijndael)]])
 test_true([[
 #pike 7.4
 programp(Crypto.des)]])
-test_true([[programp(Crypto.idea)]])
+test_true([[
+#pike 7.4
+programp(Crypto.idea)]])
 test_true([[
 #pike 7.4
 programp(Crypto.cast)]])
@@ -151,7 +153,9 @@ test_tests(
 )
 
 // IDEA
-test_true([[objectp(Crypto.idea())]])
+test_true([[
+#pike 7.4
+objectp(Crypto.idea())]])
 test_eq([[
 #pike 7.4
 Crypto.idea()
