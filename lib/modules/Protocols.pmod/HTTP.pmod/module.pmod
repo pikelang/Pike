@@ -325,10 +325,10 @@ string http_encode_query(mapping(string:int|string) variables)
 }
 
 // RFC 1738, 2.2. URL Character Encoding Issues
-static constant url_non_corresponding = enumerate(0x20) + ({ 0x1f }) +
-  enumerate(128,1,0x80);
+static constant url_non_corresponding = enumerate(0x21) +
+  enumerate(0x81,1,0x7f);
 static constant url_unsafe = ({ '<', '>', '"', '#', '%', '{', '}',
-				'|', '\\', '^', '~', '[', ']', '`' });
+				'|', '\\', '^', '~', '[', ']', '`', '\'' });
 static constant url_reserved = ({ ';', '/', '?', ':', '@', '=', '&' });
 
 // Encode these chars
