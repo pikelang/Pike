@@ -1,3 +1,9 @@
+pike7.7 (7.7.3-2) experimental; urgency=low
+
+  * Better dependencies for the GL libraries
+
+ -- Marek Habersack <grendel@debian.org>  Tue, 11 May 2004 16:18:28 +0200
+
 pike7.7 (7.7.3-1) experimental; urgency=low
 
   * The latest cvs snapshot
