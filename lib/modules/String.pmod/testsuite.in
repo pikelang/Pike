@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.7 2003/04/07 15:27:20 mast Exp $
+dnl $Id: testsuite.in,v 1.8 2003/08/26 16:11:19 nilsson Exp $
 
 test_eq([[ String.Buffer()->add("xxx") ]], 3)
 test_any([[
@@ -167,12 +167,12 @@ test_eq(String.int2hex(0x800000000-1), "7ffffffff")
 test_eq(String.string2hex(""), "")
 test_eq(String.string2hex("x"), "78")
 test_eq(String.string2hex("x\xff"), "78ff")
-test_eval_error(String.string2hex("x\xfff"))
+test_eval_error(return String.string2hex("x\xfff"))
 
 test_eq(String.hex2string(""), "")
 test_eq(String.hex2string("ab00"), "\xab\0")
-test_eval_error(String.hex2string("ab0"))
-test_eval_error(String.hex2string("ax"))
+test_eval_error(return String.hex2string("ab0"))
+test_eval_error(return String.hex2string("ax"))
 
 test_eq([[ String.implode_nicely( ({ "1","2","3" }) ) ]],[[ "1, 2 and 3" ]])
 test_eq([[ String.implode_nicely( ({ "1","2","3" }), "och" ) ]],[[ "1, 2 och 3" ]])
