@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.827 2004/04/06 15:37:55 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.828 2004/04/16 12:13:23 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1838,6 +1838,8 @@ if test "$cflags_is_set" = "no"; then
       AC_SYS_COMPILER_FLAG(-ipo,ipo,OPTIMIZE)
       AC_SYS_COMPILER_FLAG(-ipo,ipo,EXTRALDFLAGS)
       AC_SYS_COMPILER_FLAG(-ipo_obj,ipo_obj,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-parallel, parallel,OPTIMIZE)
+      AC_SYS_COMPILER_FLAG(-parallel, parallel,LDFLAGS)
       # arch dependent optimizations while maintaining
       # i386 compatibility
       AC_SYS_COMPILER_FLAG(-axKW,axKW,OPTIMIZE)
@@ -6794,6 +6796,7 @@ OPT_GOT_OFLAG=no
 OPT_GOT_MCPU=no
 OPT_GOT_MARCH=no
 NEW_CFLAGS=
+NEW_OPTIMIZE=
 OPT_NOT_USED=
 for opt in ${CFLAGS-}
 do
@@ -6801,7 +6804,7 @@ do
      *\ $opt\ *) ;;
      *)
        case "$opt" in
-	  -O*)
+	  +O*|-O*)
 	    if test "x$OPT_GOT_OFLAG" = "xno"; then
               # only use the first -O flag (from make.conf etc)
 	      OPT_GOT_OFLAG=yes 
@@ -6825,6 +6828,12 @@ since the use of machine code is broken by -fomit-frame-pointer.])
 	    else
 	      OPT_NOT_USED="${OPT_NOT_USED-} $opt"
 	    fi
+	    ;;
+	  -parallel|-ip*)
+	    # Flags used by icc and ecc.
+	    # They need to be propagated to the linker.
+	    OPTIMIZE="${OPTIMIZE-} $opt"
+	    EXTRALDFLAGS="${EXTRALDFLAGS} $opt"
 	    ;;
           -pipe) 
 	    OPTIMIZE="${OPTIMIZE-} $opt" 
