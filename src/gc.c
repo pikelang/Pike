@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.57 2000/04/13 20:14:35 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.58 2000/04/13 22:19:23 grubba Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -745,7 +745,7 @@ int gc_external_mark3(void *a, void *in, char *where)
 int gc_mark(void *a)
 {
   struct marker *m;
-  m=get_marker(a);
+  m=get_marker(debug_malloc_pass(a));
 
   if(m->flags & GC_REFERENCED)
   {
@@ -760,7 +760,8 @@ int gc_mark(void *a)
 int debug_gc_do_free(void *a)
 {
   struct marker *m;
-  m=get_marker(a);
+
+  m=get_marker(debug_malloc_pass(a));
 
   if( !(m->flags & GC_REFERENCED)  && (m->flags & GC_XREFERENCED))
   {
@@ -769,7 +770,10 @@ int debug_gc_do_free(void *a)
     TYPE_T t=attempt_to_identify(a);
     if(t != T_STRING && t != T_UNKNOWN)
     {
-      fprintf(stderr,"**gc_is_referenced failed, object has %ld references, while gc() found %ld + %ld external. (type=%d)\n",(long)*(INT32 *)a,(long)refs,(long)xrefs,t);
+      fprintf(stderr,
+	      "**gc_is_referenced failed, object has %ld references,\n"
+	      "** while gc() found %ld + %ld external. (type=%d)\n",
+	      (long)*(INT32 *)a,(long)refs,(long)xrefs,t);
       describe_something(a, t, 1);
 
       locate_references(a);
