@@ -1,7 +1,7 @@
 //
 // Struct ADT
 // By Martin Nilsson
-// $Id: Struct.pike,v 1.15 2005/01/04 08:10:58 nilsson Exp $
+// $Id: Struct.pike,v 1.16 2005/04/02 19:26:11 nilsson Exp $
 //
 
 #pike __REAL_VERSION__
@@ -111,7 +111,7 @@ static array _values() {
 //! The size of the struct object is the number of bytes
 //! allocated for the struct.
 static int _sizeof() {
-  return `+( 0, @items->size );
+  return `+( @sizeof(items[*]) );
 }
 
 //! The struct can be casted into a string, which is eqivivalent
@@ -143,6 +143,8 @@ class Item {
 
   void set(mixed in) { value=in; }
   mixed get() { return value; }
+
+  int _sizeof() { return size; }
 
   static string _sprintf(int t) {
     return t=='O' && sprintf("%O(%O)", this_program, value);
