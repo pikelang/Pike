@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stardate.c,v 1.16 2002/10/21 17:06:26 marcus Exp $
+|| $Id: stardate.c,v 1.17 2002/11/28 23:47:29 nilsson Exp $
 */
 
 #include "global.h"
@@ -20,7 +20,7 @@
 #include "builtin_functions.h"
 #include "pike_error.h"
 
-RCSID("$Id: stardate.c,v 1.16 2002/10/21 17:06:26 marcus Exp $");
+RCSID("$Id: stardate.c,v 1.17 2002/11/28 23:47:29 nilsson Exp $");
 
 #ifdef HAVE_SYS_TIME_H 
 #include <sys/time.h>
@@ -111,7 +111,7 @@ double sidereal (double gmt, double jd, int gyear)
 /*! @module spider
  */
 
-/*! @decl string stardate(int time)
+/*! @decl string stardate(int time, int precision)
  */
 void f_stardate (INT32 args)
 {
