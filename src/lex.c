@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.10 1997/01/16 05:00:46 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.11 1997/01/18 04:43:50 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -211,6 +211,9 @@ struct keyword instr_names[]=
 { "foreach",		F_FOREACH },
 { "global",		F_GLOBAL },
 { "index",              F_INDEX },
+{ "->",                 F_ARROW },
+{ "clear string subtype", F_CLEAR_STRING_SUBTYPE },
+{ "arrow string",       F_ARROW_STRING },
 { "indirect",		F_INDIRECT },
 { "jump",               F_BRANCH },
 { "local function call",F_CALL_LFUN },
