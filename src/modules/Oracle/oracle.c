@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.26 2000/05/24 00:20:55 hubbe Exp $
+ * $Id: oracle.c,v 1.27 2000/09/29 19:04:54 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -32,7 +32,12 @@
 #include "builtin_functions.h"
 #include "opcodes.h"
 #include "pike_macros.h"
-#include "gc.h"
+#include "version.h"
+
+#if (PIKE_MAJOR_VERSION - 0 > 7) || (PIKE_MAJOR_VERSION - 0 == 7 && PIKE_MINOR_VERSION - 0 >= 1)
+/* must be included last */
+#include "module_magic.h"
+#endif
 
 #ifdef HAVE_ORACLE
 
@@ -42,7 +47,7 @@
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.26 2000/05/24 00:20:55 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.27 2000/09/29 19:04:54 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -145,15 +150,28 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 
 #endif
 
+#ifndef Pike_thread_id
+#define Pike_thread_id thread_id
+#endif
+
+#ifndef Pike_sp
+#define Pike_sp sp
+#define Pike_fp fp
+#endif
+
+#ifndef CHECK_INTERPRETER_LOCK
+#define CHECK_INTERPRETER_LOCK()
+#endif
+
 
 #ifndef CURRENT_STORAGE
-#define CURRENT_STORAGE (fp->current_storage)
+#define CURRENT_STORAGE (Pike_fp->current_storage)
 #endif
 
 #ifdef DEBUG_MALLOC
-#define THISOBJ dmalloc_touch(struct pike_frame *,fp)->current_object
+#define THISOBJ dmalloc_touch(struct pike_frame *,Pike_fp)->current_object
 #else
-#define THISOBJ (fp->current_object)
+#define THISOBJ (Pike_fp->current_object)
 #endif
 
 
@@ -163,7 +181,7 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 /* This define only exists in Pike 7.1.x, if it isn't defined
  * we have to provide this function ourselves -Hubbe
  */
-#ifndef IDENTIFIER_SCOPE_USED
+#if PIKE_MAJOR_VERSION - 0 < 7
 
 void *parent_storage(int depth)
 {
@@ -172,8 +190,8 @@ void *parent_storage(int depth)
   struct object *o;
   INT32 i;
 
-  inherit=&fp->context;
-  o=fp->current_object;
+  inherit=&Pike_fp->context;
+  o=Pike_fp->current_object;
   
   if(!o)
     error("Current object is destructed\n");
@@ -338,7 +356,7 @@ static void init_dbcon_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(fp->current_storage))[0]=0xdbc04711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbc04711UL;
 #endif
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
@@ -378,7 +396,7 @@ void init_dbquery_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(fp->current_storage))[0]=0xdb994711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdb994711UL;
 #endif
   THIS_QUERY->cols=-2;
   THIS_QUERY->statement=0;
@@ -413,7 +431,7 @@ static void init_dbresult_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(fp->current_storage))[0]=0xdbe04711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbe04711UL;
 #endif
   THIS_RESULT->dbcon_lock=0;
   THIS_RESULT->dbquery_lock=0;
@@ -470,7 +488,7 @@ static void init_dbresultinfo_struct(struct object *o)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(fp->current_storage))[0]=0xdbe14711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbe14711UL;
 #endif
   THIS_RESULTINFO->define_handle=0;
   init_inout(& THIS_RESULTINFO->data);
@@ -510,7 +528,7 @@ struct dbdate
 static void init_dbdate_struct(struct object *o)
 {
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(fp->current_storage))[0]=0xdbda4711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdbda4711UL;
 #endif
 }
 static void exit_dbdate_struct(struct object *o) {}
@@ -528,7 +546,7 @@ struct dbnull
 static void init_dbnull_struct(struct object *o)
 {
 #ifdef PIKE_DEBUG
-  ((unsigned long *)(fp->current_storage))[0]=0xdb004711UL;
+  ((unsigned long *)(Pike_fp->current_storage))[0]=0xdb004711UL;
 #endif
 }
 static void exit_dbnull_struct(struct object *o) {}
@@ -928,7 +946,7 @@ static void f_fetch_fields(INT32 args)
 
     }
     f_aggregate(dbquery->cols);
-    add_ref( dbquery->field_info=sp[-1].u.array );
+    add_ref( dbquery->field_info=Pike_sp[-1].u.array );
   }else{
     ref_push_array( dbquery->field_info);
   }
@@ -958,8 +976,8 @@ static void push_inout_value(struct inout *inout)
       case SQLT_DAT:
 	ref_push_object(nulldate_object);
 	push_object(low_clone(Date_program));
-	call_c_initializers(sp[-1].u.object);
-	((struct dbdate *)STORAGE(sp[-1].u.object))->date = inout->u.date;
+	call_c_initializers(Pike_sp[-1].u.object);
+	((struct dbdate *)STORAGE(Pike_sp[-1].u.object))->date = inout->u.date;
 	break;
 	
       case SQLT_NUM:
@@ -1006,8 +1024,8 @@ static void push_inout_value(struct inout *inout)
     case SQLT_ODT:
     case SQLT_DAT:
       push_object(low_clone(Date_program));
-      call_c_initializers(sp[-1].u.object);
-      ((struct dbdate *)STORAGE(sp[-1].u.object))->date = inout->u.date;
+      call_c_initializers(Pike_sp[-1].u.object);
+      ((struct dbdate *)STORAGE(Pike_sp[-1].u.object))->date = inout->u.date;
       break;
       
     case SQLT_INT:
@@ -1115,11 +1133,11 @@ static void f_oracle_create(INT32 args)
 		 BIT_STRING|BIT_INT, BIT_STRING|BIT_INT, BIT_STRING,
 		 BIT_STRING|BIT_VOID|BIT_INT, 0);
 
-  host = (sp[-args].type == T_STRING? sp[-args].u.string : NULL);
-  database = (sp[1-args].type == T_STRING? sp[1-args].u.string : NULL);
-  uid = (sp[2-args].type == T_STRING? sp[2-args].u.string : NULL);
+  host = (Pike_sp[-args].type == T_STRING? Pike_sp[-args].u.string : NULL);
+  database = (Pike_sp[1-args].type == T_STRING? Pike_sp[1-args].u.string : NULL);
+  uid = (Pike_sp[2-args].type == T_STRING? Pike_sp[2-args].u.string : NULL);
   if(args >= 4)
-    passwd = (sp[3-args].type == T_STRING? sp[3-args].u.string : NULL);
+    passwd = (Pike_sp[3-args].type == T_STRING? Pike_sp[3-args].u.string : NULL);
   else
     passwd = NULL;
 
@@ -1370,22 +1388,22 @@ static void f_big_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
-        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+      if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
+        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
   switch(args)
   {
     default:
-      new_parent=sp[2-args].u.object;
+      new_parent=Pike_sp[2-args].u.object;
 
     case 2:
-      autocommit=sp[1-args].u.integer;
+      autocommit=Pike_sp[1-args].u.integer;
 
     case 1:
-      if(sp[-args].type == T_MAPPING)
-	bnds=sp[-args].u.mapping;
+      if(Pike_sp[-args].type == T_MAPPING)
+	bnds=Pike_sp[-args].u.mapping;
 
     case 0: break;
   }
@@ -1419,8 +1437,8 @@ static void f_big_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
-        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+      if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
+        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
@@ -1607,8 +1625,8 @@ static void f_big_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
-        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+      if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
+        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
@@ -1639,7 +1657,7 @@ static void f_big_query_create(INT32 args)
       if(bind.bind[i].data.has_output)
       {
 	push_inout_value(& bind.bind[i].data);
-	mapping_insert(dbquery->output_variables, & bind.bind[i].ind, sp-1);
+	mapping_insert(dbquery->output_variables, & bind.bind[i].ind, Pike_sp-1);
 	pop_stack();
       }
     }
@@ -1652,8 +1670,8 @@ static void f_big_query_create(INT32 args)
   if(d_flag)
   {
       CHECK_INTERPRETER_LOCK();
-      if(d_flag>1 && thread_for_id(th_self()) != thread_id)
-        fatal("thread_for_id() (or thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),thread_id);
+      if(d_flag>1 && thread_for_id(th_self()) != Pike_thread_id)
+        fatal("thread_for_id() (or Pike_thread_id) failed in interpreter.h! %p != %p\n",thread_for_id(th_self()),Pike_thread_id);
   }
 #endif
 
@@ -1666,12 +1684,12 @@ static void dbdate_create(INT32 args)
   sword rc;
 
   check_all_args("Oracle.Date",args,BIT_INT|BIT_STRING,0);
-  switch(sp[-args].type)
+  switch(Pike_sp[-args].type)
   {
     case T_STRING:
       rc=OCIDateFromText(get_global_error_handle(),
-			 sp[-args].u.string->str,
-			 sp[-args].u.string->len,
+			 Pike_sp[-args].u.string->str,
+			 Pike_sp[-args].u.string->len,
 			 0,
 			 0,
 			 0,
@@ -1682,7 +1700,7 @@ static void dbdate_create(INT32 args)
       break;
 
     case T_INT:
-      t=sp[-1].u.integer;
+      t=Pike_sp[-1].u.integer;
       tm=localtime(&t);
       OCIDateSetDate(&THIS_DBDATE->date, tm->tm_year, tm->tm_mon, tm->tm_mday);
       OCIDateSetTime(&THIS_DBDATE->date, tm->tm_hour, tm->tm_min, tm->tm_sec);
@@ -1747,7 +1765,7 @@ static void dbdate_cast(INT32 args)
 static void dbnull_create(INT32 args)
 {
   if(args<1) error("Too few arguments to Oracle.NULL->create\n");
-  assign_svalue(& THIS_DBNULL->type, sp-args);
+  assign_svalue(& THIS_DBNULL->type, Pike_sp-args);
 }
 
 static void dbnull_sprintf(INT32 args)
@@ -1892,7 +1910,7 @@ void pike_module_init(void)
   add_object_constant("NULLfloat",nullfloat_object=clone_object(NULL_program,1),0);
 
   push_object(low_clone(Date_program));
-  call_c_initializers(sp[-1].u.object);
+  call_c_initializers(Pike_sp[-1].u.object);
   add_object_constant("NULLdate",nulldate_object=clone_object(NULL_program,1),0);
 }
 
