@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.257 2001/07/16 19:48:58 hubbe Exp $");
+RCSID("$Id: las.c,v 1.258 2001/07/19 16:20:26 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4945,6 +4945,9 @@ ptrdiff_t eval_low(node *n)
   INT32 jump;
   struct svalue *save_sp = Pike_sp;
   ptrdiff_t ret;
+#ifdef PIKE_USE_MACHINE_CODE
+  size_t num_relocations;
+#endif /* PIKE_USE_MACHINE_CODE */
 
 #ifdef PIKE_DEBUG
   if(l_flag > 3 && n)
@@ -4959,6 +4962,9 @@ ptrdiff_t eval_low(node *n)
   num_strings=Pike_compiler->new_program->num_strings;
   num_constants=Pike_compiler->new_program->num_constants;
   jump = DO_NOT_WARN((INT32)PC);
+#ifdef PIKE_USE_MACHINE_CODE
+  num_relocations = Pike_compiler->new_program->num_relocations;
+#endif /* PIKE_USE_MACHINE_CODE */
 
   store_linenumbers=0;
   docode(dmalloc_touch(node *, n));
@@ -5047,6 +5053,9 @@ ptrdiff_t eval_low(node *n)
   }
 
   Pike_compiler->new_program->num_program=jump;
+#ifdef PIKE_USE_MACHINE_CODE
+  Pike_compiler->new_program->num_relocations = num_relocations;
+#endif /* PIKE_USE_MACHINE_CODE */
 
   return ret;
 }

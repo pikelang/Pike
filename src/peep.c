@@ -18,7 +18,7 @@
 #include "constants.h"
 #include "interpret.h"
 
-RCSID("$Id: peep.c,v 1.60 2001/07/18 17:42:36 grubba Exp $");
+RCSID("$Id: peep.c,v 1.61 2001/07/19 16:20:26 grubba Exp $");
 
 static void asm_opt(void);
 
@@ -186,9 +186,9 @@ void update_arg(int instr,INT32 arg)
     } else {								\
       /* sethi %hi(val_), reg */					\
       add_to_program(0x01000000|(reg_<<25)|((val_ >> 10)&0x3fffff));	\
-      if (1 || (val_ & 0x3ff)) {					\
+      if (val_ & 0x3ff) {						\
 	/* or reg, %lo(val_), reg */					\
-	add_to_program(0x80102000|(reg_<<25)|(reg_<<14)|(val_ & 0x0fff)); \
+	add_to_program(0x80102000|(reg_<<25)|(reg_<<14)|(val_ & 0x3ff)); \
       }									\
       if (val_ < 0) {							\
 	/* sra reg, %g0, reg */						\
@@ -197,12 +197,17 @@ void update_arg(int instr,INT32 arg)
     }									\
   } while(0)
 
-#define CALL_ABSOLUTE(X) do {					\
-    SET_REG(REG_O2, (INT32)(X));				\
-    /* jmpl %o2, %o7	*/					\
-    add_to_program(0x81c00000|(REG_O7<<25)|(REG_O2<<14));	\
-    /* noop		*/					\
-    add_to_program(0x01000000);					\
+#define CALL_ABSOLUTE(X) do {						\
+    INT32 delta_;							\
+    struct program *p_ = Pike_compiler->new_program;			\
+    INT32 off_ = p_->num_program;					\
+    /* call X	*/							\
+    add_to_program(0); /* Placeholder... */				\
+    delta_ = ((PIKE_OPCODE_T *)(X)) - (p_->program + off_);		\
+    p_->program[off_] = 0x40000000 | (delta_ & 0x3fffffff);		\
+    add_to_relocations(off_);						\
+    /* noop		*/						\
+    add_to_program(0x01000000);						\
   } while(0)
 
 #if 1

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.356 2001/07/18 19:07:25 grubba Exp $");
+RCSID("$Id: program.c,v 1.357 2001/07/19 16:20:27 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -635,19 +635,57 @@ int get_small_number(char **q);
 #define CHECK_FOO(NUMTYPE,TYPE,NAME)
 #endif
 
+#ifdef PIKE_USE_MACHINE_CODE
+#ifdef sparc
+#define RELOCATE_program(P, NEW)	do {			\
+    PIKE_OPCODE_T *op_ = NEW;					\
+    struct program *p_ = P;					\
+    size_t rel_ = p_->num_relocations;				\
+    INT32 delta_ = (((char *)p_->program)-((char *)op_)) >> 2;	\
+    while (rel_--) {						\
+      DO_IF_DEBUG(						\
+        if ((op_[p_->relocations[rel_]] & 0xc0000000) !=	\
+	    0x40000000) {					\
+          fatal("Bad relocation: %d, off:%d, opcode: 0x%08x\n",	\
+		rel_, p_->relocations[rel_],			\
+		op_[p_->relocations[rel_]]);			\
+	}							\
+      );							\
+      op_[p_->relocations[rel_]] = 0x40000000|			\
+	(((op_[p_->relocations[rel_]] & 0x3fffffff) +		\
+	  delta_) & 0x3fffffff);				\
+    }								\
+  } while(0)
+#else /* !sparc */
+#define RELOCATE_program(ORIG,NEW)
+#endif /* sparc */
+#else /* !PIKE_USE_MACHINE_CODE */
+#define RELOCATE_program(ORIG,NEW)
+#endif /* PIKE_USE_MACHINE_CODE */
+#define RELOCATE_linenumbers(ORIG,NEW)
+#define RELOCATE_identifier_index(ORIG,NEW)
+#define RELOCATE_variable_index(ORIG,NEW)
+#define RELOCATE_identifier_references(ORIG,NEW)
+#define RELOCATE_strings(ORIG,NEW)
+#define RELOCATE_inherits(ORIG,NEW)
+#define RELOCATE_identifiers(ORIG,NEW)
+#define RELOCATE_constants(ORIG,NEW)
+#define RELOCATE_relocations(ORIG,NEW)
+
 #define FOO(NUMTYPE,TYPE,NAME)						\
 void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
                                     TYPE ARG) {				\
   if(state->malloc_size_program->PIKE_CONCAT(num_,NAME) ==		\
      state->new_program->PIKE_CONCAT(num_,NAME)) {			\
-    void *tmp;								\
+    TYPE *tmp;								\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME) *= 2;		\
     state->malloc_size_program->PIKE_CONCAT(num_,NAME)++;		\
-    tmp=realloc((char *)state->new_program->NAME,			\
-                sizeof(TYPE) *						\
-		state->malloc_size_program->				\
-                    PIKE_CONCAT(num_,NAME));				\
+    tmp = realloc((void *)state->new_program->NAME,			\
+		  sizeof(TYPE) *					\
+		  state->malloc_size_program->				\
+                  PIKE_CONCAT(num_,NAME));				\
     if(!tmp) fatal("Out of memory.\n");					\
+    PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->new_program->NAME=tmp;					\
   }									\
   state->new_program->							\
@@ -1002,6 +1040,7 @@ void optimize_program(struct program *p)
 #define FOO(NUMTYPE,TYPE,NAME) \
   size=DO_ALIGN(size, ALIGNOF(TYPE)); \
   MEMCPY(data+size,p->NAME,p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0])); \
+  PIKE_CONCAT(RELOCATE_,NAME)(p, (TYPE *)(data+size)); \
   dmfree((char *)p->NAME); \
   p->NAME=(TYPE *)(data+size); \
   size+=p->PIKE_CONCAT(num_,NAME)*sizeof(p->NAME[0]);
