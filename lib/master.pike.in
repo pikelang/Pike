@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.339 2004/03/24 10:10:50 anders Exp $
+// $Id: master.pike.in,v 1.340 2004/04/11 15:56:26 grubba Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -51,6 +51,10 @@ constant bt_max_string_len = BT_MAX_STRING_LEN;
 #endif /* OUT_OF_DATE_WARNING */
 constant out_of_date_warning = OUT_OF_DATE_WARNING;
 
+// FIXME: PATH_SEPARATOR and UPDIR should probably be exported,
+//        or at least some functions that use them should be.
+//        cf Tools.Shoot.runpike.
+//	/grubba 2004-04-11
 #if defined(__NT__) || defined(__amigaos__)
 #define PATH_SEPARATOR ";"
 #else
