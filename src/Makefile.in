@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.189 2000/04/18 19:08:28 grubba Exp $
+# $Id: Makefile.in,v 1.190 2000/04/20 02:41:44 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -456,21 +456,21 @@ new_peep_engine:
 	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
 $(SRCDIR)/peep_engine.c: $(TMP_BUILDDIR)/tpike $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c
+	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( mv $(TMP_BUILDDIR)/tpike  $(TMP_BUILDDIR)/tpike.bug ; exit 1 )
 
 peep.o: $(SRCDIR)/peep_engine.c
 
 peep_t.o: peep.c
 
 $(SRCDIR)/case_info.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
+	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h || ( mv $(TMP_BUILDDIR)/tpike  $(TMP_BUILDDIR)/tpike.bug ; exit 1 )
 
 builtin_functions.o: $(SRCDIR)/case_info.h
 
 builtin_functions_t.o: builtin_functions.c
 
 $(SRCDIR)/treeopt.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
-	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in
+	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( mv $(TMP_BUILDDIR)/tpike  $(TMP_BUILDDIR)/tpike.bug ; exit 1 )
 
 las.o: $(SRCDIR)/treeopt.h
 

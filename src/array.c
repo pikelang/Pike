@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.66 2000/04/20 01:49:42 mast Exp $");
+RCSID("$Id: array.c,v 1.67 2000/04/20 02:41:44 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1966,16 +1966,8 @@ void zap_all_arrays(void)
     
     if(!(next=a->next))
       fatal("Null pointer in array list.\n");
-    
-    while((next=a->next) != &empty_array && a->refs == 1)
-    {
-      add_ref(next);
-      free_program(a);
-      a=next;
-    }
-    
-    free_array(a);
-    a=next;
+
+    SET_NEXT_AND_FREE(a,free_array);
   } while (a != & empty_array);
 }
 

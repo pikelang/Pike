@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.9 2000/04/19 20:20:01 grubba Exp $
+ * $Id: interpret_functions.h,v 1.10 2000/04/20 02:41:44 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -102,7 +102,7 @@ OPCODE1(F_GLOBAL,"global")
 BREAK;
 
 
-OPCODE1ACC(F_EXTERNAL,"external")
+OPCODE2(F_EXTERNAL,"external")
 {
   struct inherit *inherit;
   struct program *p;
@@ -130,7 +130,7 @@ OPCODE1ACC(F_EXTERNAL,"external")
       
       i=o->parent_identifier;
       o=o->parent;
-      acc+=inherit->parent_offset-1;
+      arg2+=inherit->parent_offset-1;
     }else{
 #ifdef PIKE_DEBUG
       if(t_flag>4)
@@ -183,8 +183,8 @@ OPCODE1ACC(F_EXTERNAL,"external")
     }
 #endif /* DEBUG_MALLOC */
     
-    if(!acc) break;
-    --acc;
+    if(!arg2) break;
+    --arg2;
   }
   
   low_object_index_no_free(Pike_sp,
@@ -196,49 +196,51 @@ OPCODE1ACC(F_EXTERNAL,"external")
 }
 BREAK;
 
-      CASE(F_EXTERNAL_LVALUE);
-      {
-	struct inherit *inherit;
-	struct program *p;
-	struct object *o;
-	INT32 i,id=GET_ARG();
+OPCODE2(F_EXTERNAL_LVALUE,"& external")
+{
+  struct inherit *inherit;
+  struct program *p;
+  struct object *o;
+  INT32 i,id=arg1;
+  
+  inherit=&Pike_fp->context;
+  o=Pike_fp->current_object;
+  
+  if(!o)
+    error("Current object is destructed\n");
+  
+  while(1)
+  {
+    if(inherit->parent_offset)
+    {
+      i=o->parent_identifier;
+      o=o->parent;
+      arg2+=inherit->parent_offset-1;
+    }else{
+      i=inherit->parent_identifier;
+      o=inherit->parent;
+    }
+    
+    if(!o)
+      error("Parent no longer exists\n");
+    
+    if(!(p=o->prog))
+      error("Attempting to access variable in destructed object\n");
+    
+    inherit=INHERIT_FROM_INT(p, i);
+    
+    if(!arg2) break;
+    arg2--;
+  }
+  
+  ref_push_object(o);
+  Pike_sp->type=T_LVALUE;
+  Pike_sp->u.integer=id + inherit->identifier_level;
+  Pike_sp++;
+  break;
+}
 
-	inherit=&Pike_fp->context;
-	o=Pike_fp->current_object;
-	
-	if(!o)
-	  error("Current object is destructed\n");
-
-	while(1)
-	{
-	  if(inherit->parent_offset)
-	  {
-	    i=o->parent_identifier;
-	    o=o->parent;
-	    accumulator+=inherit->parent_offset-1;
-	  }else{
-	    i=inherit->parent_identifier;
-	    o=inherit->parent;
-	  }
-
-	  if(!o)
-	    error("Parent no longer exists\n");
-
-	  if(!(p=o->prog))
-	    error("Attempting to access variable in destructed object\n");
-
-	  inherit=INHERIT_FROM_INT(p, i);
-
-	  if(!accumulator) break;
-	  accumulator--;
-	}
-
-	ref_push_object(o);
-	Pike_sp->type=T_LVALUE;
-	Pike_sp->u.integer=id + inherit->identifier_level;
-	Pike_sp++;
-	break;
-      }
+BREAK;
 
 
       CASE(F_MARK_AND_LOCAL); *(Pike_mark_sp++)=Pike_sp;
@@ -254,11 +256,8 @@ OPCODE2(F_2_LOCALS, "2 locals")
   print_return_value();
 BREAK;
 
-OPCODE2(F_LOCAL_2_LOCAL, "local=local;")
-{
-  int tmp=arg1;
-  assign_svalue(Pike_fp->locals + tmp, Pike_fp->locals + arg2);
-}
+OPCODE2(F_LOCAL_2_LOCAL, "local = local")
+  assign_svalue(Pike_fp->locals+arg1, Pike_fp->locals+arg2);
 BREAK;
 
 OPCODE2(F_LOCAL_2_GLOBAL, "global=local;")
@@ -284,12 +283,11 @@ OPCODE2(F_LOCAL_2_GLOBAL, "global=local;")
 }
 BREAK;
 
-OPCODE2(F_GLOBAL_2_LOCAL, "local=global;")
+OPCODE2(F_GLOBAL_2_LOCAL,"global = local")
 {
-  INT32 tmp = arg1 + Pike_fp->context.identifier_level;
-  INT32 tmp2 = arg2;
-  free_svalue(Pike_fp->locals + tmp2);
-  low_object_index_no_free(Pike_fp->locals + tmp2,
+  INT32 tmp=arg1 + Pike_fp->context.identifier_level;
+  free_svalue(Pike_fp->locals + arg2);
+  low_object_index_no_free(Pike_fp->locals + arg2,
 			   Pike_fp->current_object,
 			   tmp);
 }
@@ -302,31 +300,34 @@ OPCODE1(F_LOCAL_LVALUE, "& local")
   Pike_sp += 2;
 BREAK;
 
-OPCODE1ACC(F_LEXICAL_LOCAL, "lexical local")
+OPCODE2(F_LEXICAL_LOCAL,"lexical local")
 {
-  struct pike_frame *f = Pike_fp;
-  while(acc--)
+  struct pike_frame *f=Pike_fp;
+  while(arg2--)
   {
     f=f->scope;
     if(!f) error("Lexical scope error.\n");
   }
   push_svalue(f->locals + arg1);
   print_return_value();
+  break;
 }
 BREAK;
 
-OPCODE1ACC(F_LEXICAL_LOCAL_LVALUE, "& lexical local")
+
+OPCODE2(F_LEXICAL_LOCAL_LVALUE,"&lexical local")
 {
-  struct pike_frame *f = Pike_fp;
-  while(acc--)
+  struct pike_frame *f=Pike_fp;
+  while(arg2--)
   {
-    f = f->scope;
+    f=f->scope;
     if(!f) error("Lexical scope error.\n");
   }
-  Pike_sp[0].type = T_LVALUE;
-  Pike_sp[0].u.lval = f->locals+arg1;
-  Pike_sp[1].type = T_VOID;
-  Pike_sp += 2;
+  Pike_sp[0].type=T_LVALUE;
+  Pike_sp[0].u.lval=f->locals+arg1;
+  Pike_sp[1].type=T_VOID;
+  Pike_sp+=2;
+  break;
 }
 BREAK;
 
@@ -520,10 +521,8 @@ OPCODE1(F_GLOBAL_LVALUE, "& global")
 {
   struct identifier *i;
   INT32 tmp=arg1 + Pike_fp->context.identifier_level;
-
   if(!Pike_fp->current_object->prog)
     error("Cannot access global variables in destructed object.\n");
-
   i=ID_FROM_INT(Pike_fp->current_object->prog, tmp);
 
   if(!IDENTIFIER_IS_VARIABLE(i->identifier_flags))
@@ -542,6 +541,7 @@ OPCODE1(F_GLOBAL_LVALUE, "& global")
   Pike_sp+=2;
 }
 BREAK;
+
       
 OPCODE0(F_INC, "++x")
 {
@@ -655,6 +655,7 @@ OPCODE0(F_POST_INC, "x++")
 }
 BREAK;
 
+
 OPCODE0(F_POST_DEC, "x--")
 {
   union anything *u=get_pointer_if_this_type(Pike_sp-2, PIKE_T_INT);
@@ -679,6 +680,10 @@ OPCODE0(F_POST_DEC, "x--")
 }
 BREAK;
 
+OPCODE1(F_ASSIGN_LOCAL,"assign local")
+  assign_svalue(Pike_fp->locals+arg1,Pike_sp-1);
+BREAK;
+
 OPCODE0(F_ASSIGN, "assign")
   assign_lvalue(Pike_sp-3,Pike_sp-1);
   free_svalue(Pike_sp-3);
@@ -687,22 +692,23 @@ OPCODE0(F_ASSIGN, "assign")
   Pike_sp-=2;
 BREAK;
 
+OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP,"apply, assign local and pop")
+  strict_apply_svalue(Pike_fp->context.prog->constants + arg1, Pike_sp - *--Pike_mark_sp );
+  free_svalue(Pike_fp->locals+arg2);
+  Pike_fp->locals[arg2]=Pike_sp[-1];
+  Pike_sp--;
+BREAK;
+
+OPCODE2(F_APPLY_ASSIGN_LOCAL,"apply, assign local")
+  strict_apply_svalue(Pike_fp->context.prog->constants + arg1, Pike_sp - *--Pike_mark_sp );
+  assign_svalue(Pike_fp->locals+arg2,Pike_sp-1);
+BREAK;
+
 OPCODE0(F_ASSIGN_AND_POP, "assign and pop")
   assign_lvalue(Pike_sp-3, Pike_sp-1);
   pop_n_elems(3);
 BREAK;
 
-    CASE(F_APPLY_ASSIGN_LOCAL);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), Pike_sp - *--Pike_mark_sp );
-      /* Fall through */
-
-      CASE(F_ASSIGN_LOCAL);
-      assign_svalue(Pike_fp->locals+GET_ARG(),Pike_sp-1);
-      break;
-
-    CASE(F_APPLY_ASSIGN_LOCAL_AND_POP);
-      strict_apply_svalue(Pike_fp->context.prog->constants + GET_ARG(), Pike_sp - *--Pike_mark_sp );
-      /* Fall through */
 
       CASE(F_ASSIGN_LOCAL_AND_POP);
       instr=GET_ARG();
@@ -757,6 +763,7 @@ OPCODE1(F_ASSIGN_GLOBAL_AND_POP, "assign global and pop")
   }
 }
 BREAK;
+
 
 /* Stack machine stuff */
 
@@ -1240,12 +1247,12 @@ BREAK;
       print_return_value();
       break;
 
-OPCODE1ACC(F_MAGIC_INDEX, "::`[]")
-  push_magic_index(magic_index_program, acc, arg1);
+OPCODE2(F_MAGIC_INDEX, "::`[]")
+  push_magic_index(magic_index_program, arg2, arg1);
 BREAK;
 
-OPCODE1ACC(F_MAGIC_SET_INDEX, "::`[]=")
-  push_magic_index(magic_set_index_program, acc, arg1);
+OPCODE2(F_MAGIC_SET_INDEX, "::`[]=")
+  push_magic_index(magic_set_index_program, arg2, arg1);
 BREAK;
 
 OPCODE0(F_CAST, "cast")

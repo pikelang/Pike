@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.73 2000/04/01 18:59:51 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.74 2000/04/20 02:41:45 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -166,8 +166,11 @@ void o_cast(struct pike_string *type, INT32 run_time_type)
 	switch(sp[-1].type)
 	{
 	  case T_ARRAY:
+	  {
+	    extern void f_mkmultiset(INT32);
 	    f_mkmultiset(1);
 	    break;
+	  }
 
 	  default:
 	    error("Cannot cast %s to multiset.\n",get_name_of_type(sp[-1].type));

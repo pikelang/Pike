@@ -9,19 +9,22 @@
   instr+=EXTRACT_UCHAR(pc++),\
   (t_flag>3 ? sprintf(trace_buffer,"-    Arg = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
+
 #define GET_ARG2() (\
-  instr=EXTRACT_UCHAR(pc++),\
+  instr=prefix2,\
+  prefix2=0,\
+  instr+=EXTRACT_UCHAR(pc++),\
   (t_flag>3 ? sprintf(trace_buffer,"-    Arg2= %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr)
 
 #else
 #define GET_ARG() (instr=prefix,prefix=0,instr+EXTRACT_UCHAR(pc++))
-#define GET_ARG2() EXTRACT_UCHAR(pc++)
+#define GET_ARG2() (instr=prefix2,prefix2=0,instr+EXTRACT_UCHAR(pc++))
 #endif
 
 static int eval_instruction(unsigned char *pc)
 {
-  unsigned INT32 accumulator=0,instr, prefix=0;
+  unsigned INT32 prefix2=0,instr, prefix=0;
   debug_malloc_touch(Pike_fp);
   while(1)
   {
@@ -48,7 +51,7 @@ static int eval_instruction(unsigned char *pc)
       if(Pike_sp > Pike_evaluator_stack+Pike_stack_size)
 	fatal("Stack error (overflow).\n");
       
-      if(Pike_fp->fun>=0 && Pike_fp->current_object->prog &&
+      if(/* Pike_fp->fun>=0 && */ Pike_fp->current_object->prog &&
 	 Pike_fp->locals+Pike_fp->num_locals > Pike_sp)
 	fatal("Stack error (stupid!).\n");
 
@@ -124,7 +127,18 @@ static int eval_instruction(unsigned char *pc)
       prefix+=EXTRACT_UCHAR(pc++)<<8;
       break;
 
-      CASE(F_LDA); accumulator=GET_ARG(); break;
+      /* Support to allow large arguments */
+      CASE(F_PREFIX2_256); prefix2+=256; break;
+      CASE(F_PREFIX2_512); prefix2+=512; break;
+      CASE(F_PREFIX2_768); prefix2+=768; break;
+      CASE(F_PREFIX2_1024); prefix2+=1024; break;
+      CASE(F_PREFIX2_24BITX256);
+      prefix2+=EXTRACT_UCHAR(pc++)<<24;
+      CASE(F_PREFIX2_WORDX256);
+      prefix2+=EXTRACT_UCHAR(pc++)<<16;
+      CASE(F_PREFIX2_CHARX256);
+      prefix2+=EXTRACT_UCHAR(pc++)<<8;
+      break;
 
 
 #define INTERPRETER
@@ -133,17 +147,12 @@ static int eval_instruction(unsigned char *pc)
 #define OPCODE1(OP,DESC) CASE(OP); { \
   INT32 arg1=GET_ARG();
 
-#define OPCODE1ACC(OP,DESC) CASE(OP); { \
-  INT32 arg1=GET_ARG(); \
-  INT32 acc=accumulator;
-
 #define OPCODE2(OP,DESC) CASE(OP); { \
   INT32 arg1=GET_ARG(); \
   INT32 arg2=GET_ARG2();
 
 #define OPCODE0_TAIL(OP,DESC) CASE(OP);
 #define OPCODE1_TAIL(OP,DESC) CASE(OP);
-#define OPCODE1ACC_TAIL(OP,DESC) CASE(OP);
 #define OPCODE2_TAIL(OP,DESC) CASE(OP);
 
 

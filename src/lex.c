@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.73 2000/04/19 20:20:16 grubba Exp $");
+RCSID("$Id: lex.c,v 1.74 2000/04/20 02:41:45 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -73,13 +73,11 @@ void exit_lex(void)
 
 #define OPCODE0(OP,DESC) { DESC, OP, 0 },
 #define OPCODE1(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE1ACC(OP,DESC) { DESC, OP, I_TWO_ARGS },
-#define OPCODE2(OP,DESC) { DESC, OP, I_HASARG },
+#define OPCODE2(OP,DESC) { DESC, OP, I_TWO_ARGS },
 
 #define OPCODE0_TAIL(OP,DESC) { DESC, OP, 0 },
 #define OPCODE1_TAIL(OP,DESC) { DESC, OP, I_HASARG },
-#define OPCODE1ACC_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS },
-#define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_HASARG },
+#define OPCODE2_TAIL(OP,DESC) { DESC, OP, I_TWO_ARGS },
 
 #define LEXER
 
@@ -115,7 +113,15 @@ struct keyword instr_names[]=
 { "arg+=256*XXX",	F_PREFIX_24BITX256,0 },
 { "arg+=512",		F_PREFIX_512,0 },
 { "arg+=768",		F_PREFIX_768,0 },
-{ "assign local",       F_ASSIGN_LOCAL, I_HASARG },
+
+{ "arg+=1024",		F_PREFIX2_1024,0 },
+{ "arg+=256",		F_PREFIX2_256,0 },
+{ "arg+=256*X",		F_PREFIX2_CHARX256,0 },
+{ "arg+=256*XX",	F_PREFIX2_WORDX256,0 },
+{ "arg+=256*XXX",	F_PREFIX2_24BITX256,0 },
+{ "arg+=512",		F_PREFIX2_512,0 },
+{ "arg+=768",		F_PREFIX2_768,0 },
+
 { "assign local and pop",	F_ASSIGN_LOCAL_AND_POP, I_HASARG },
 { "break",		F_BREAK,0 },	
 { "case",		F_CASE,0 },	
@@ -130,7 +136,7 @@ struct keyword instr_names[]=
 { "branch non zero",	F_BRANCH_WHEN_NON_ZERO, I_ISJUMP },	
 { "branch if local",	F_BRANCH_IF_LOCAL, I_HASARG },	
 { "branch if !local",	F_BRANCH_IF_NOT_LOCAL, I_HASARG },	
-{ "branch if ! local->x",	F_BRANCH_IF_NOT_LOCAL_ARROW, I_HASARG },	
+{ "branch if ! local->x",	F_BRANCH_IF_NOT_LOCAL_ARROW, I_TWO_ARGS },
 { "branch when zero",	F_BRANCH_WHEN_ZERO, I_ISJUMP },	
 { "branch if <",	F_BRANCH_WHEN_LT, I_ISJUMP },
 { "branch if >",	F_BRANCH_WHEN_GT, I_ISJUMP },
@@ -156,8 +162,6 @@ struct keyword instr_names[]=
 { "local function call",F_CALL_LFUN, I_HASARG },
 { "local function call and pop",F_CALL_LFUN_AND_POP, I_HASARG },
 { "local",		F_LOCAL, I_HASARG },	
-{ "& external",		F_EXTERNAL_LVALUE, I_HASARG },
-{ "LDA",			F_LDA, I_HASARG },
 { "mark & local",	F_MARK_AND_LOCAL, I_HASARG },	
 { "lvalue_list",	F_LVALUE_LIST,0 },	
 { "mark",               F_MARK,0 },
@@ -180,15 +184,12 @@ struct keyword instr_names[]=
 { "int index",          F_POS_INT_INDEX, I_HASARG },
 { "-int index",         F_NEG_INT_INDEX, I_HASARG },
 { "apply and pop",      F_APPLY_AND_POP, I_HASARG },
-{ "byte",               F_BYTE, I_HASARG },
 { "nop",                F_NOP,0 },
 { "add integer",        F_ADD_INT, I_HASARG },
 { "add -integer",       F_ADD_NEG_INT, I_HASARG },
 { "mark & call",        F_MARK_APPLY, I_HASARG },
 { "mark, call & pop",   F_MARK_APPLY_POP, I_HASARG },
 { "apply and return",   F_APPLY_AND_RETURN, I_HASARG },
-{ "apply, assign local and pop",   F_APPLY_ASSIGN_LOCAL_AND_POP, I_HASARG },
-{ "apply & assign local",   F_APPLY_ASSIGN_LOCAL, I_HASARG },
 { "call lfun & return", F_CALL_LFUN_AND_RETURN, I_HASARG },
 { "call function",      F_CALL_FUNCTION, 0 },
 { "call function & return", F_CALL_FUNCTION_AND_RETURN, 0 },
@@ -205,17 +206,44 @@ struct reserved
 void init_lex()
 {
   unsigned int i;
+#ifdef PIKE_DEBUG
+  int fatal_later=0;
+#endif
+
   for(i=0; i<NELEM(instr_names);i++)
   {
+#ifdef PIKE_DEBUG
     if(instr_names[i].token >= F_MAX_INSTR)
-      fatal("Error in instr_names[%u]\n\n",i);
+    {
+      fprintf(stderr,"Error in instr_names[%u]\n\n",i);
+      fatal_later++;
+    }
 
     if(instrs[instr_names[i].token - F_OFFSET].name)
-      fatal("Duplicate name for %s\n",instr_names[i].word);
+    {
+      fprintf(stderr,"Duplicate name for %s\n",instr_names[i].word);
+      fatal_later++;
+    }
+#endif
 
     instrs[instr_names[i].token - F_OFFSET].name = instr_names[i].word;
     instrs[instr_names[i].token - F_OFFSET].flags=instr_names[i].flags;
   }
+
+#ifdef PIKE_DEBUG
+  for(i=1; i<F_MAX_OPCODE-F_OFFSET;i++)
+  {
+    if(!instrs[i].name)
+    {
+      fprintf(stderr,"Opcode %d does not have a name.\n",i);
+      fatal_later++;
+    }
+  }
+  if(fatal_later)
+    fatal("Found %d errors in instrs.\n",fatal_later);
+
+#endif
+
 }
 
 char *low_get_f_name(int n,struct program *p)

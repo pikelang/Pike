@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.67 2000/03/30 08:43:07 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.68 2000/04/20 02:41:44 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -55,7 +55,7 @@ int alloc_label(void) { return ++label_no; }
 int do_jump(int token,INT32 lbl)
 {
   if(lbl==-1) lbl=alloc_label();
-  emit(token, lbl);
+  emit1(token, lbl);
   return lbl;
 }
 
@@ -66,8 +66,8 @@ void do_pop(int x)
   switch(x)
   {
   case 0: return;
-  case 1: emit2(F_POP_VALUE); break;
-  default: emit(F_POP_N_ELEMS,x); break;
+  case 1: emit0(F_POP_VALUE); break;
+  default: emit1(F_POP_N_ELEMS,x); break;
   }
 }
 
@@ -130,7 +130,7 @@ void do_cond_jump(node *n, int label, int iftrue, int flags)
       int tmp=alloc_label();
       do_cond_jump(CAR(n), tmp, !iftrue, flags | DO_POP);
       do_cond_jump(CDR(n), label, iftrue, flags);
-      emit(F_LABEL,tmp);
+      emit1(F_LABEL,tmp);
     }else{
       do_cond_jump(CAR(n), label, iftrue, flags);
       do_cond_jump(CDR(n), label, iftrue, flags);
@@ -212,8 +212,8 @@ static int do_docode2(node *n,int flags)
     {
       default:
 	yyerror("Illegal lvalue.");
-	emit(F_NUMBER,0);
-	emit(F_NUMBER,0);
+	emit1(F_NUMBER,0);
+	emit1(F_NUMBER,0);
 	return 2;
 	
       case F_ARRAY_LVALUE:
@@ -246,10 +246,10 @@ static int do_docode2(node *n,int flags)
     {
       yyerror("Too deep recursion in compiler. (please report this)");
 
-      emit(F_NUMBER,0);
+      emit1(F_NUMBER,0);
       if(flags & DO_LVALUE)
       {
-	emit(F_NUMBER,0);
+	emit1(F_NUMBER,0);
 	return 2;
       }
       return 1;
@@ -260,30 +260,30 @@ static int do_docode2(node *n,int flags)
   {
   case F_MAGIC_INDEX:
   case F_MAGIC_SET_INDEX:
-    emit(F_LDA, n->u.node.a->u.sval.u.integer);
-    emit(n->token, n->u.node.b->u.sval.u.integer);
+    emit2(n->token,
+	  n->u.node.b->u.sval.u.integer,
+	  n->u.node.a->u.sval.u.integer);
     return 1;
       
   case F_EXTERNAL:
-    emit(F_LDA, n->u.integer.a);
     if(flags & WANT_LVALUE)
     {
-      emit(F_EXTERNAL_LVALUE, n->u.integer.b);
+      emit2(F_EXTERNAL_LVALUE, n->u.integer.b,n->u.integer.a);
       return 2;
     }else{
-      emit(F_EXTERNAL, n->u.integer.b);
+      emit2(F_EXTERNAL, n->u.integer.b,n->u.integer.a);
       return 1;
     }
     break;
 
   case F_UNDEFINED:
     yyerror("Undefined identifier");
-    emit(F_NUMBER,0);
+    emit1(F_NUMBER,0);
     return 1;
 
   case F_PUSH_ARRAY:
     code_expression(CAR(n), 0, "`@");
-    emit2(F_PUSH_ARRAY);
+    emit0(F_PUSH_ARRAY);
     return -0x7ffffff;
 
   case '?':
@@ -298,7 +298,7 @@ static int do_docode2(node *n,int flags)
       tmp1=alloc_label();
       do_jump_when_zero(CAR(n), tmp1);
       DO_CODE_BLOCK(CADR(n));
-      emit(F_LABEL, tmp1);
+      emit1(F_LABEL, tmp1);
       current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
@@ -308,7 +308,7 @@ static int do_docode2(node *n,int flags)
       tmp1=alloc_label();
       do_jump_when_non_zero(CAR(n), tmp1);
       DO_CODE_BLOCK(CDDR(n));
-      emit(F_LABEL,tmp1);
+      emit1(F_LABEL,tmp1);
       current_switch_jumptable = prev_switch_jumptable;
       return 0;
     }
@@ -317,11 +317,11 @@ static int do_docode2(node *n,int flags)
     do_jump_when_zero(CAR(n),tmp1);
 
     adroppings=do_docode(CADR(n), flags);
-    tmp3=emit(F_POP_N_ELEMS,0);
+    tmp3=emit1(F_POP_N_ELEMS,0);
 
     /* Else */
     tmp2=do_jump(F_BRANCH,-1);
-    emit(F_LABEL, tmp1);
+    emit1(F_LABEL, tmp1);
 
     bdroppings=do_docode(CDDR(n), flags);
     if(adroppings < bdroppings)
@@ -335,7 +335,7 @@ static int do_docode2(node *n,int flags)
       adroppings=bdroppings;
     }
 
-    emit(F_LABEL, tmp2);
+    emit1(F_LABEL, tmp2);
 
     current_switch_jumptable = prev_switch_jumptable;
     return adroppings;
@@ -362,33 +362,33 @@ static int do_docode2(node *n,int flags)
        match_types(CAR(n)->type,object_type_string))
     {
       code_expression(CDR(n), 0, "assignment");
-      emit2(F_LTOSVAL2);
+      emit0(F_LTOSVAL2);
     }else{
-      emit2(F_LTOSVAL);
+      emit0(F_LTOSVAL);
       code_expression(CDR(n), 0, "assignment");
     }
 
 
     switch(n->token)
     {
-    case F_ADD_EQ: emit2(F_ADD); break;
-    case F_AND_EQ: emit2(F_AND); break;
-    case F_OR_EQ:  emit2(F_OR);  break;
-    case F_XOR_EQ: emit2(F_XOR); break;
-    case F_LSH_EQ: emit2(F_LSH); break;
-    case F_RSH_EQ: emit2(F_RSH); break;
-    case F_SUB_EQ: emit2(F_SUBTRACT); break;
-    case F_MULT_EQ:emit2(F_MULTIPLY);break;
-    case F_MOD_EQ: emit2(F_MOD); break;
-    case F_DIV_EQ: emit2(F_DIVIDE); break;
+    case F_ADD_EQ: emit0(F_ADD); break;
+    case F_AND_EQ: emit0(F_AND); break;
+    case F_OR_EQ:  emit0(F_OR);  break;
+    case F_XOR_EQ: emit0(F_XOR); break;
+    case F_LSH_EQ: emit0(F_LSH); break;
+    case F_RSH_EQ: emit0(F_RSH); break;
+    case F_SUB_EQ: emit0(F_SUBTRACT); break;
+    case F_MULT_EQ:emit0(F_MULTIPLY);break;
+    case F_MOD_EQ: emit0(F_MOD); break;
+    case F_DIV_EQ: emit0(F_DIVIDE); break;
     }
 
     if(flags & DO_POP)
     {
-      emit2(F_ASSIGN_AND_POP);
+      emit0(F_ASSIGN_AND_POP);
       return 0;
     }else{
-      emit2(F_ASSIGN);
+      emit0(F_ASSIGN);
       return 1;
     }
 
@@ -412,15 +412,15 @@ static int do_docode2(node *n,int flags)
 	   match_types(CDR(n)->type,string_type_string))
 	{
 	  code_expression(CDAR(n), 0, "binary operand");
-	  emit2(F_LTOSVAL2);
+	  emit0(F_LTOSVAL2);
 	}else{
-	  emit2(F_LTOSVAL);
+	  emit0(F_LTOSVAL);
 	  code_expression(CDAR(n), 0, "binary operand");
 	}
 
-	emit2(CAR(n)->token);
+	emit0(CAR(n)->token);
 
-	emit2(n->token);
+	emit0(n->token);
 	return n->token==F_ASSIGN;
       }
 
@@ -435,7 +435,7 @@ static int do_docode2(node *n,int flags)
 	if(CDR(n)->u.integer.b) goto normal_assign;
 
 	code_expression(CAR(n), 0, "RHS");
-	emit(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
+	emit1(flags & DO_POP ? F_ASSIGN_LOCAL_AND_POP:F_ASSIGN_LOCAL,
 	     CDR(n)->u.integer.a );
 	break;
 
@@ -445,7 +445,7 @@ static int do_docode2(node *n,int flags)
 	  yyerror("Cannot assign functions or constants.\n");
 	}else{
 	  code_expression(CAR(n), 0, "RHS");
-	  emit(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
+	  emit1(flags & DO_POP ? F_ASSIGN_GLOBAL_AND_POP:F_ASSIGN_GLOBAL,
 	       CDR(n)->u.id.number);
 	}
 	break;
@@ -454,7 +454,7 @@ static int do_docode2(node *n,int flags)
       normal_assign:
 	tmp1=do_docode(CDR(n),DO_LVALUE);
 	if(do_docode(CAR(n),0)!=1) yyerror("RHS is void!");
-	emit2(flags & DO_POP ? F_ASSIGN_AND_POP:F_ASSIGN);
+	emit0(flags & DO_POP ? F_ASSIGN_AND_POP:F_ASSIGN);
 	break;
       }
       return flags & DO_POP ? 0 : 1;
@@ -465,7 +465,7 @@ static int do_docode2(node *n,int flags)
     tmp1=alloc_label();
     do_cond_jump(CAR(n), tmp1, n->token == F_LOR, 0);
     code_expression(CDR(n), flags, n->token == F_LOR ? "||" : "&&");
-    emit(F_LABEL,tmp1);
+    emit1(F_LABEL,tmp1);
     return 1;
 
   case F_EQ:
@@ -493,7 +493,7 @@ static int do_docode2(node *n,int flags)
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     if(do_docode(CDR(n),DO_NOT_COPY)!=2)
       fatal("Compiler internal error (at %ld).\n",(long)lex.current_line);
-    emit2(n->token);
+    emit0(n->token);
     return tmp1;
 
   case F_INC:
@@ -506,10 +506,10 @@ static int do_docode2(node *n,int flags)
 
     if(flags & DO_POP)
     {
-      emit2(F_INC_AND_POP);
+      emit0(F_INC_AND_POP);
       return 0;
     }else{
-      emit2(n->token);
+      emit0(n->token);
       return 1;
     }
 
@@ -522,10 +522,10 @@ static int do_docode2(node *n,int flags)
 #endif
     if(flags & DO_POP)
     {
-      emit2(F_DEC_AND_POP);
+      emit0(F_DEC_AND_POP);
       return 0;
     }else{
-      emit2(n->token);
+      emit0(n->token);
       return 1;
     }
 
@@ -589,7 +589,7 @@ static int do_docode2(node *n,int flags)
       }
     }
     tmp2=do_docode(CAR(n),DO_NOT_COPY);
-    emit2(F_CONST0);
+    emit0(F_CONST0);
 
   foreach_arg_pushed:
 #ifdef PIKE_DEBUG
@@ -598,19 +598,19 @@ static int do_docode2(node *n,int flags)
      * think it is worth it.
      */
     if(d_flag)
-      emit2(F_MARK);
+      emit0(F_MARK);
 #endif
     tmp3=do_jump(F_BRANCH,-1);
     tmp1=ins_label(-1);
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_continue);
-    emit(F_LABEL,tmp3);
+    emit1(F_LABEL,tmp3);
     do_jump(n->token,tmp1);
     ins_label(current_break);
 
 #ifdef PIKE_DEBUG
     if(d_flag)
-      emit2(F_POP_MARK);
+      emit0(F_POP_MARK);
 #endif
 
     current_switch_jumptable = prev_switch_jumptable;
@@ -640,19 +640,19 @@ static int do_docode2(node *n,int flags)
      * think it is worth it.
      */
     if(d_flag)
-      emit2(F_MARK);
+      emit0(F_MARK);
 #endif
     tmp3=do_jump(F_BRANCH,-1);
     tmp1=ins_label(-1);
 
     DO_CODE_BLOCK(CDR(n));
     ins_label(current_continue);
-    emit(F_LABEL,tmp3);
+    emit1(F_LABEL,tmp3);
     do_jump(n->token,tmp1);
     ins_label(current_break);
 #ifdef PIKE_DEBUG
     if(d_flag)
-      emit2(F_POP_MARK);
+      emit0(F_POP_MARK);
 #endif
 
     current_switch_jumptable = prev_switch_jumptable;
@@ -697,23 +697,23 @@ static int do_docode2(node *n,int flags)
       return 0;
     }
     tmp1=store_prog_string(n->type);
-    emit(F_STRING,tmp1);
+    emit1(F_STRING,tmp1);
 
     tmp1=do_docode(CAR(n),0);
-    if(!tmp1) { emit2(F_CONST0); tmp1=1; }
+    if(!tmp1) { emit0(F_CONST0); tmp1=1; }
     if(tmp1>1) do_pop(tmp1-1);
 
-    emit2(F_CAST);
+    emit0(F_CAST);
     return 1;
 
   case F_SOFT_CAST:
     if (runtime_options & RUNTIME_CHECK_TYPES) {
       tmp1 = store_prog_string(n->type);
-      emit(F_STRING, tmp1);
+      emit1(F_STRING, tmp1);
       tmp1 = do_docode(CAR(n), 0);
-      if (!tmp1) { emit2(F_CONST0); tmp1 = 1; }
+      if (!tmp1) { emit0(F_CONST0); tmp1 = 1; }
       if (tmp1 > 1) do_pop(tmp1 - 1);
-      emit2(F_SOFT_CAST);
+      emit0(F_SOFT_CAST);
       return 1;
     }
     tmp1 = do_docode(CAR(n), flags);
@@ -730,12 +730,12 @@ static int do_docode2(node *n,int flags)
 	  if(!CAR(n)->u.sval.u.efun->docode || 
 	     !CAR(n)->u.sval.u.efun->docode(n))
 	  {
-	    emit2(F_MARK);
+	    emit0(F_MARK);
 	    do_docode(CDR(n),0);
 	    tmp1=store_constant(& CAR(n)->u.sval,
 				!(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 				CAR(n)->name);
-	    emit(F_APPLY,tmp1);
+	    emit1(F_APPLY,tmp1);
 	  }
 	  if(n->type == void_type_string)
 	    return 0;
@@ -744,29 +744,29 @@ static int do_docode2(node *n,int flags)
 	}else{
 	  if(CAR(n)->u.sval.u.object == fake_object)
 	  {
-	    emit2(F_MARK);
+	    emit0(F_MARK);
 	    do_docode(CDR(n),0);
-	    emit(F_CALL_LFUN, CAR(n)->u.sval.subtype);
+	    emit1(F_CALL_LFUN, CAR(n)->u.sval.subtype);
 	    return 1;
 	  }
        	}
       }
 
-      emit2(F_MARK);
+      emit0(F_MARK);
       do_docode(CDR(n),0);
       tmp1=store_constant(& CAR(n)->u.sval,
 			  !(CAR(n)->tree_info & OPT_EXTERNAL_DEPEND),
 			  CAR(n)->name);
-      emit(F_APPLY,tmp1);
+      emit1(F_APPLY,tmp1);
       
       return 1;
     }
     else if(CAR(n)->token == F_IDENTIFIER &&
 	    IDENTIFIER_IS_FUNCTION(ID_FROM_INT(new_program, CAR(n)->u.id.number)->identifier_flags))
     {
-      emit2(F_MARK);
+      emit0(F_MARK);
       do_docode(CDR(n),0);
-      emit(F_CALL_LFUN, CAR(n)->u.id.number);
+      emit1(F_CALL_LFUN, CAR(n)->u.id.number);
       return 1;
     }
     else
@@ -775,7 +775,7 @@ static int do_docode2(node *n,int flags)
       struct efun *fun;
       node *foo;
 
-      emit2(F_MARK);
+      emit0(F_MARK);
       do_docode(CAR(n),0);
       do_docode(CDR(n),0);
 
@@ -790,11 +790,11 @@ static int do_docode2(node *n,int flags)
 	   foo->u.sval.subtype == FUNCTION_BUILTIN &&
 	   foo->u.sval.u.efun->function == f_call_function)
 	{
-	  emit2(F_CALL_FUNCTION);
+	  emit0(F_CALL_FUNCTION);
 	}else{
 	  /* We might want to put "predef::"+foo->name here /Hubbe */
 	  tmp1=store_constant(& foo->u.sval, 1, foo->name);
-	  emit(F_APPLY, tmp1);
+	  emit1(F_APPLY, tmp1);
 	}
       }
       free_node(foo);
@@ -846,8 +846,8 @@ static int do_docode2(node *n,int flags)
 
     cases=count_cases(CDR(n));
 
-    tmp1=emit(F_SWITCH,0);
-    emit(F_ALIGN,sizeof(INT32));
+    tmp1=emit1(F_SWITCH,0);
+    emit1(F_ALIGN,sizeof(INT32));
 
     current_switch_values_on_stack=0;
     current_switch_case=1;
@@ -857,7 +857,7 @@ static int do_docode2(node *n,int flags)
 
     for(e=1; e<cases*2+2; e++)
     {
-      jumptable[e]=emit(F_POINTER, 0);
+      jumptable[e]=emit1(F_POINTER, 0);
       current_switch_jumptable[e]=-1;
     }
 
@@ -918,7 +918,7 @@ static int do_docode2(node *n,int flags)
     current_switch_values_on_stack = prev_switch_values_on_stack;
     current_switch_type = prev_switch_type;
 
-    emit(F_LABEL, current_break);
+    emit1(F_LABEL, current_break);
 
     current_break=break_save;
 #ifdef PIKE_DEBUG
@@ -1043,13 +1043,13 @@ static int do_docode2(node *n,int flags)
 
   case F_RETURN:
     do_docode(CAR(n),0);
-    emit2(F_RETURN);
+    emit0(F_RETURN);
     return 0;
 
   case F_SSCANF:
     tmp1=do_docode(CAR(n),DO_NOT_COPY);
     tmp2=do_docode(CDR(n),DO_NOT_COPY | DO_LVALUE);
-    emit(F_SSCANF,tmp1+tmp2);
+    emit1(F_SSCANF,tmp1+tmp2);
     return 1;
 
   case F_CATCH:
@@ -1066,7 +1066,7 @@ static int do_docode2(node *n,int flags)
     DO_CODE_BLOCK(CAR(n));
     ins_label(current_continue);
     ins_label(current_break);
-    emit2(F_THROW_ZERO);
+    emit0(F_THROW_ZERO);
     ins_label(tmp1);
 
     current_break=break_save;
@@ -1084,7 +1084,7 @@ static int do_docode2(node *n,int flags)
       if(tmp1 & 1)
 	fatal("Very internal compiler error.\n");
 #endif
-      emit(F_ARRAY_LVALUE, tmp1>>1);
+      emit1(F_ARRAY_LVALUE, tmp1>>1);
       return 2;
 
   case F_ARROW:
@@ -1094,16 +1094,16 @@ static int do_docode2(node *n,int flags)
     {
       /* FIXME!!!! ??? I wonder what needs fixing... /Hubbe */
       tmp1=do_docode(CAR(n), 0);
-      emit(F_ARROW_STRING, store_prog_string(CDR(n)->u.sval.u.string));
+      emit1(F_ARROW_STRING, store_prog_string(CDR(n)->u.sval.u.string));
       return 2;
     }else{
       tmp1=do_docode(CAR(n), DO_NOT_COPY);
-      emit(F_ARROW, store_prog_string(CDR(n)->u.sval.u.string));
+      emit1(F_ARROW, store_prog_string(CDR(n)->u.sval.u.string));
       if(!(flags & DO_NOT_COPY))
       {
 	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
 	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
-	  emit2(F_COPY_VALUE);
+	  emit0(F_COPY_VALUE);
       }
     }
     return tmp1;
@@ -1120,14 +1120,14 @@ static int do_docode2(node *n,int flags)
 	if(!mklval)
 	  fatal("Unwanted lvalue!\n");
 #endif
-	emit2(F_INDIRECT);
+	emit0(F_INDIRECT);
       }
       
       if(do_docode(CDR(n),0) != 1)
 	fatal("Internal compiler error, please report this (1).");
       if(CDR(n)->token != F_CONSTANT &&
 	match_types(CDR(n)->type, string_type_string))
-	emit2(F_CLEAR_STRING_SUBTYPE);
+	emit0(F_CLEAR_STRING_SUBTYPE);
       return 2;
     }else{
       tmp1=do_docode(CAR(n), DO_NOT_COPY);
@@ -1135,15 +1135,15 @@ static int do_docode2(node *n,int flags)
       code_expression(CDR(n), DO_NOT_COPY, "index");
       if(CDR(n)->token != F_CONSTANT &&
 	match_types(CDR(n)->type, string_type_string))
-	emit2(F_CLEAR_STRING_SUBTYPE);
+	emit0(F_CLEAR_STRING_SUBTYPE);
 
-      emit2(F_INDEX);
+      emit0(F_INDEX);
 
       if(!(flags & DO_NOT_COPY))
       {
 	while(n && (n->token==F_INDEX || n->token==F_ARROW)) n=CAR(n);
 	if(n->token==F_CONSTANT && !(n->node_info & OPT_EXTERNAL_DEPEND))
-	  emit2(F_COPY_VALUE);
+	  emit0(F_COPY_VALUE);
       }
     }
     return tmp1;
@@ -1154,15 +1154,15 @@ static int do_docode2(node *n,int flags)
     case T_INT:
       if(!n->u.sval.u.integer && n->u.sval.subtype==NUMBER_UNDEFINED)
       {
-	emit2(F_UNDEFINED);
+	emit0(F_UNDEFINED);
       }else{
-	emit(F_NUMBER,n->u.sval.u.integer);
+	emit1(F_NUMBER,n->u.sval.u.integer);
       }
       return 1;
 
     case T_STRING:
       tmp1=store_prog_string(n->u.sval.u.string);
-      emit(F_STRING,tmp1);
+      emit1(F_STRING,tmp1);
       return 1;
 
     case T_FUNCTION:
@@ -1170,7 +1170,7 @@ static int do_docode2(node *n,int flags)
       {
 	if(n->u.sval.u.object == fake_object)
 	{
-	  emit(F_LFUN,n->u.sval.subtype);
+	  emit1(F_LFUN,n->u.sval.subtype);
 	  return 1;
 	}
 
@@ -1181,8 +1181,7 @@ static int do_docode2(node *n,int flags)
 	  
 	  for(o=fake_object->parent;o!=n->u.sval.u.object;o=o->parent)
 	    x++;
-	  emit(F_LDA, x);
-	  emit(F_EXTERNAL, n->u.sval.subtype);
+	  emit2(F_EXTERNAL, n->u.sval.subtype,x);
 	  new_program->flags |= PROGRAM_USES_PARENT;
 	  return 1;
 	}
@@ -1198,7 +1197,7 @@ static int do_docode2(node *n,int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit(F_CONSTANT,tmp1);
+      emit1(F_CONSTANT,tmp1);
       return 1;
 
     case T_ARRAY:
@@ -1207,11 +1206,11 @@ static int do_docode2(node *n,int flags)
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
-      emit(F_CONSTANT,tmp1);
+      emit1(F_CONSTANT,tmp1);
       
       /* copy now or later ? */
       if(!(flags & DO_NOT_COPY) && !(n->tree_info & OPT_EXTERNAL_DEPEND))
-	emit2(F_COPY_VALUE);
+	emit0(F_COPY_VALUE);
       return 1;
 
     }
@@ -1223,28 +1222,27 @@ static int do_docode2(node *n,int flags)
 
     if(n->u.integer.b)
     {
-      emit(F_LDA,n->u.integer.b);
       if(flags & WANT_LVALUE)
       {
-	emit(F_LEXICAL_LOCAL_LVALUE,n->u.id.number);
+	emit2(F_LEXICAL_LOCAL_LVALUE,n->u.id.number,n->u.integer.b);
 	return 2;
       }else{
-	emit(F_LEXICAL_LOCAL,n->u.id.number);
+	emit2(F_LEXICAL_LOCAL,n->u.id.number,n->u.integer.b);
 	return 1;
       }
     }else{
       if(flags & WANT_LVALUE)
       {
-	emit(F_LOCAL_LVALUE,n->u.id.number);
+	emit1(F_LOCAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
-	emit(F_LOCAL,n->u.id.number);
+	emit1(F_LOCAL,n->u.id.number);
 	return 1;
       }
     }
 
     case F_TRAMPOLINE:
-      emit(F_TRAMPOLINE,n->u.id.number);
+      emit1(F_TRAMPOLINE,n->u.id.number);
       return 1;
 
   case F_IDENTIFIER:
@@ -1254,15 +1252,15 @@ static int do_docode2(node *n,int flags)
       {
 	yyerror("Cannot assign functions.\n");
       }else{
-	emit(F_LFUN,n->u.id.number);
+	emit1(F_LFUN,n->u.id.number);
       }
     }else{
       if(flags & WANT_LVALUE)
       {
-	emit(F_GLOBAL_LVALUE,n->u.id.number);
+	emit1(F_GLOBAL_LVALUE,n->u.id.number);
 	return 2;
       }else{
-	emit(F_GLOBAL,n->u.id.number);
+	emit1(F_GLOBAL,n->u.id.number);
       }
     }
     return 1;

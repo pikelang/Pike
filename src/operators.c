@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.90 2000/04/12 16:55:56 grubba Exp $");
+RCSID("$Id: operators.c,v 1.91 2000/04/20 02:41:45 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -436,7 +436,7 @@ static int generate_sum(node *n)
 
   case 2:
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_ADD);
+    emit0(F_ADD);
     return 1;
 
   default:
@@ -581,17 +581,17 @@ static int generate_comparison(node *n)
       fatal("Count args was wrong in generate_comparison.\n");
 
     if(CAR(n)->u.sval.u.efun->function == f_eq)
-      emit2(F_EQ);
+      emit0(F_EQ);
     else if(CAR(n)->u.sval.u.efun->function == f_ne)
-      emit2(F_NE);
+      emit0(F_NE);
     else if(CAR(n)->u.sval.u.efun->function == f_lt)
-      emit2(F_LT);
+      emit0(F_LT);
     else if(CAR(n)->u.sval.u.efun->function == f_le)
-      emit2(F_LE);
+      emit0(F_LE);
     else if(CAR(n)->u.sval.u.efun->function == f_gt)
-      emit2(F_GT);
+      emit0(F_GT);
     else if(CAR(n)->u.sval.u.efun->function == f_ge)
-      emit2(F_GE);
+      emit0(F_GE);
     else
       fatal("Couldn't generate comparison!\n");
     return 1;
@@ -814,12 +814,12 @@ static int generate_minus(node *n)
   {
   case 1:
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_NEGATE);
+    emit0(F_NEGATE);
     return 1;
 
   case 2:
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_SUBTRACT);
+    emit0(F_SUBTRACT);
     return 1;
   }
   return 0;
@@ -1118,7 +1118,7 @@ static int generate_and(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    emit2(F_AND);
+    emit0(F_AND);
     return 1;
 
   default:
@@ -1292,7 +1292,7 @@ static int generate_or(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    emit2(F_OR);
+    emit0(F_OR);
     return 1;
 
   default:
@@ -1471,7 +1471,7 @@ static int generate_xor(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    emit2(F_XOR);
+    emit0(F_XOR);
     return 1;
 
   default:
@@ -1514,7 +1514,7 @@ static int generate_lsh(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_LSH);
+    emit0(F_LSH);
     return 1;
   }
   return 0;
@@ -1559,7 +1559,7 @@ static int generate_rsh(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_RSH);
+    emit0(F_RSH);
     return 1;
   }
   return 0;
@@ -1695,7 +1695,7 @@ static int generate_multiply(node *n)
 
   case 2:
     do_docode(CDR(n),0);
-    emit2(F_MULTIPLY);
+    emit0(F_MULTIPLY);
     return 1;
 
   default:
@@ -1987,7 +1987,7 @@ static int generate_divide(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_DIVIDE);
+    emit0(F_DIVIDE);
     return 1;
   }
   return 0;
@@ -2110,7 +2110,7 @@ static int generate_mod(node *n)
   if(count_args(CDR(n))==2)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_MOD);
+    emit0(F_MOD);
     return 1;
   }
   return 0;
@@ -2157,7 +2157,7 @@ static int generate_not(node *n)
   if(count_args(CDR(n))==1)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_NOT);
+    emit0(F_NOT);
     return 1;
   }
   return 0;
@@ -2249,7 +2249,7 @@ static int generate_compl(node *n)
   if(count_args(CDR(n))==1)
   {
     do_docode(CDR(n),DO_NOT_COPY);
-    emit2(F_COMPL);
+    emit0(F_COMPL);
     return 1;
   }
   return 0;
@@ -2444,16 +2444,16 @@ static int generate_sizeof(node *n)
   if(count_args(CDR(n)) != 1) return 0;
   if(do_docode(CDR(n),DO_NOT_COPY) != 1)
     fatal("Count args was wrong in sizeof().\n");
-  emit2(F_SIZEOF);
+  emit0(F_SIZEOF);
   return 1;
 }
 
 static int generate_call_function(node *n)
 {
   node **arg;
-  emit2(F_MARK);
+  emit0(F_MARK);
   do_docode(CDR(n),DO_NOT_COPY);
-  emit2(F_CALL_FUNCTION);
+  emit0(F_CALL_FUNCTION);
   return 1;
 }
 

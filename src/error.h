@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.40 2000/02/17 00:31:08 hubbe Exp $
+ * $Id: error.h,v 1.41 2000/04/20 02:41:44 hubbe Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -229,7 +229,7 @@ void cleanup_error(void);
 /* Prototypes end here */
 
 #define fatal \
- fprintf(stderr,"Fatal error at %s:%d\n",__FILE__,__LINE__),debug_fatal
+ fprintf(stderr,"%s:%d: Fatal error:\n",__FILE__,__LINE__),debug_fatal
 
 /* Some useful error macros. */
 

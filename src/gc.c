@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.74 2000/04/20 01:49:42 mast Exp $");
+RCSID("$Id: gc.c,v 1.75 2000/04/20 02:41:44 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -953,10 +953,18 @@ void do_gc(void)
 #endif
   Pike_in_gc=5;
   /* Now we free the unused stuff */
+
+  /* We do the objects first, that way destroy()
+   * won't have to worry about zapped arrays and mappings
+   */
+  gc_free_all_unreferenced_objects();
+
   gc_free_all_unreferenced_arrays();
   gc_free_all_unreferenced_multisets();
   gc_free_all_unreferenced_mappings();
   gc_free_all_unreferenced_programs();
+<<<<<<< gc.c
+=======
   Pike_in_gc=4;
   /* This is intended to happen before the freeing done above. But
    * it's put here for the time being, since the problem of non-object
@@ -965,6 +973,7 @@ void do_gc(void)
   destroyed = gc_destroy_all_unreferenced_objects();
   Pike_in_gc=5;
   destructed = gc_free_all_unreferenced_objects();
+>>>>>>> 1.74
 
 #ifdef PIKE_DEBUG
   if (destroyed != destructed)

@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-/* $Id: mkpeep.pike,v 1.13 2000/01/05 13:57:39 jonasw Exp $ */
+/* $Id: mkpeep.pike,v 1.14 2000/04/20 02:41:27 hubbe Exp $ */
 
 #define JUMPBACK 3
 
@@ -14,6 +14,14 @@ string skipwhite(string s)
 
   sscanf(s,"%*[ \t\n]%s",s);
   return s;
+}
+
+string stripwhite(string s)
+{
+  sscanf(s,"%*[ \t\n]%s",s);
+  s=reverse(s);
+  sscanf(s,"%*[ \t\n]%s",s);
+  return reverse(s);
 }
 
 /* Find the matching parenthesis */
@@ -35,10 +43,52 @@ int find_end(string s)
       parlvl--;
       if(!parlvl) return e;
       break;
+    case '"':
+      while(s[e]!='"') e+=1+(s[e]=='\\');
+      break;
     }
   }
   werror("Syntax error (1).\n");
   exit(1);
+}
+
+array(string) explode_comma_expr(string s)
+{
+#if DEBUG>4
+  werror("Exploding %O\n",s);
+#endif
+  int parlvl;
+  array(string) ret=({});
+  int begin=0;
+
+  for(int e=0;e<strlen(s);e++)
+  {
+    switch(s[e])
+    {
+    case '(': case '{': case '[':
+      parlvl++; break;
+    case ')': case '}': case ']':
+      parlvl--; break;
+    case '"':
+      while(s[e]!='"') e+=1+(s[e]=='\\');
+      break;
+
+    case ',':
+      if(!parlvl)
+      {
+	ret+=({ stripwhite(s[begin..e-1]) });
+	begin=e+1;
+      }
+    }
+  }
+
+  /* Ignore empty last arguments */
+  if(strlen(stripwhite(s[begin..])))
+    ret+=({ stripwhite(s[begin..]) });
+#if DEBUG>4
+  werror("RESULT: %O\n",ret);
+#endif
+  return ret;
 }
 
 
@@ -57,6 +107,8 @@ array(int|string|array(string)) split(string s)
   b=({});
 
   s=skipwhite(s);
+  
+  /* First, we tokenize */
   while(strlen(s))
   {
     switch(s[0])
@@ -99,6 +151,7 @@ array(int|string|array(string)) split(string s)
     s=skipwhite(s);
   }
 
+  /* Find the source/dest separator */
   int i=search(b, ":");
   if(i==-1)
   {
@@ -106,9 +159,11 @@ array(int|string|array(string)) split(string s)
     return 0;
   }
 
+  /* a=source, b=dest */
   a=b[..i-1];
   b=b[i+1..];
 
+  /* Count 'steps' in source */
   for(e=0;e<sizeof(a);e++)
     if(a[e][0]=='F')
       opcodes++;
@@ -138,26 +193,32 @@ array(int|string|array(string)) split(string s)
 #endif
 
   i=0;
+  array newa=({});
   for(e=0;e<sizeof(a);e++)
   {
     switch(a[e][0])
     {
-    case '(':
-      a[e]=a[e]+"==$"+i+"a";
+      case '(':
+	array tmp=explode_comma_expr(a[e][1..strlen(a[e])-2]);
+	for(int x=0;x<sizeof(tmp);x++)
+	  newa+=({ sprintf("(%s)==$%d%c",tmp[x], i, 'a'+x) });
       break;
 
     case '[':
-      a[e]=a[e][1..strlen(a[e])-2];
+      newa+=({ a[e][1..strlen(a[e])-2] });
       break;
 
     case 'F':
       i++;
-      a[e]=a[e]+"==$"+i+"o";
+      newa+=({ a[e]+"==$"+i+"o" });
       break;
+
+      default: newa+=({a[e]});
     }
   }
+  a=newa;
 
-
+  // Magic for the '!' operator
   for(e=0;e<sizeof(a);e++)
   {
     if(a[e]=="!")
@@ -172,7 +233,7 @@ array(int|string|array(string)) split(string s)
   return ({a,b,opcodes, line,a});
 }
 
-/* Replace $[0-9]+(o|a) with something a C compiler can understand */
+/* Replace $[0-9]+(o|a|b) with something a C compiler can understand */
 string treat(string expr)
 {
   int e;
@@ -191,6 +252,7 @@ string treat(string expr)
     switch(type)
     {
     case 'a': tmp[e]="argument("+num+")"+rest; break;
+    case 'b': tmp[e]="argument2("+num+")"+rest; break;
     case 'o': tmp[e]="opcode("+num+")"+rest; break;
     }
   }
@@ -306,14 +368,20 @@ void dump2(array(mixed) data,int ind)
 
       for(i=0;i<sizeof(d[1]);i++)
       {
+	array args=({});
+	string fcode=d[1][i];
 	if(i+1<sizeof(d[1]) && d[1][i+1][0]=='(')
 	{
 	  string tmp=d[1][i+1];
-	  write("%*n                2,%s,%s,\n",ind,d[1][i],treat(tmp[1..strlen(tmp)-2]));
+	  args=explode_comma_expr(tmp[1..strlen(tmp)-2]);
 	  i++;
-	}else{
-	  write("%*n                1,%s,\n",ind,d[1][i]);
 	}
+	write("%*n                %d,%s,%{(%s), %}\n",
+	      ind,
+	      sizeof(args)+1,
+	      fcode,
+	      Array.map(args,treat));
+
       }
       write("%*n                0);\n",ind);
 
@@ -335,6 +403,7 @@ int main(int argc, string *argv)
 
   mapping tests=([]);
 
+  /* Read input file */
   f=cpp(Stdio.read_bytes(argv[1]),argv[1]);
   foreach(f/"\n",f)
   {
@@ -342,6 +411,8 @@ int main(int argc, string *argv)
     mapping tmp;
 
     sscanf(f,"%s#",f);
+
+    /* Parse expressions */
     foreach(f/";",f)
       {
 	f=skipwhite(f);
@@ -361,13 +432,15 @@ int main(int argc, string *argv)
   write("    INT32 current_line;\n");
   write("    struct pike_string *current_file;\n");
   write("\n");
-  write("#ifdef DEBUG\n");
-  write("    if(a_flag>5) {\n");
+  write("#ifdef PIKE_DEBUG\n");
+  write("    if(a_flag>6) {\n");
+  write("      int e;\n");
   write("      fprintf(stderr,\"#%d,%d:\",eye,fifo_len);\n");
-  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(0)),argument(0));\n");
-  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(1)),argument(1));\n");
-  write("      fprintf(stderr,\" %s(%d)\",  get_token_name(opcode(2)),argument(2));\n");
-  write("      fprintf(stderr,\" %s(%d)\\n\",get_token_name(opcode(3)),argument(3));\n");
+  write("      for(e=0;e<4;e++) {\n");
+  write("        fprintf(stderr,\" \");\n");
+  write("        dump_instr(instr(e));\n");
+  write("      }\n");
+  write("      fprintf(stderr,\"\n\");\n");
   write("    }\n");
   write("#endif\n\n");
 

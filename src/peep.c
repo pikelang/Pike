@@ -14,7 +14,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: peep.c,v 1.29 2000/04/18 17:23:35 hubbe Exp $");
+RCSID("$Id: peep.c,v 1.30 2000/04/20 02:41:45 hubbe Exp $");
 
 struct p_instr_s
 {
@@ -22,6 +22,7 @@ struct p_instr_s
   short line;
   struct pike_string *file;
   INT32 arg;
+  INT32 arg2;
 };
 
 typedef struct p_instr_s p_instr;
@@ -33,6 +34,28 @@ static int hasarg(int opcode)
 {
   return instrs[opcode-F_OFFSET].flags & I_HASARG;
 }
+
+static int hasarg2(int opcode)
+{
+  return instrs[opcode-F_OFFSET].flags & I_HASARG2;
+}
+
+#ifdef PIKE_DEBUG
+static void dump_instr(p_instr *p)
+{
+  if(!p) return;
+  fprintf(stderr,"%s",get_token_name(p->opcode));
+  if(hasarg(p->opcode))
+  {
+    fprintf(stderr,"(%d",p->arg);
+    if(hasarg2(p->opcode))
+      fprintf(stderr,",%d",p->arg2);
+    fprintf(stderr,")");
+  }
+}
+#endif
+
+
 
 void init_bytecode(void)
 {
@@ -52,16 +75,17 @@ void exit_bytecode(void)
   toss_buffer(&instrbuf);
 }
 
-int insert_opcode(unsigned int f,
+int insert_opcode2(unsigned int f,
 		  INT32 b,
+		  INT32 c,
 		  INT32 current_line,
 		  struct pike_string *current_file)
 {
   p_instr *p;
 
 #ifdef PIKE_DEBUG
-  if(!hasarg(f) && b)
-    fatal("hasarg(%d) is wrong!\n",f);
+  if(!hasarg2(f) && c)
+    fatal("hasarg2(%d) is wrong!\n",f);
 #endif
 
   p=(p_instr *)low_make_buf_space(sizeof(p_instr), &instrbuf);
@@ -76,17 +100,31 @@ int insert_opcode(unsigned int f,
   p->line=current_line;
   copy_shared_string(p->file, current_file);
   p->arg=b;
+  p->arg2=c;
 
   return p - (p_instr *)instrbuf.s.str;
 }
 
-int insert_opcode2(int f,int current_line, struct pike_string *current_file)
+int insert_opcode1(unsigned int f,
+		  INT32 b,
+		  INT32 current_line,
+		  struct pike_string *current_file)
+{
+#ifdef PIKE_DEBUG
+  if(!hasarg(f) && b)
+    fatal("hasarg(%d) is wrong!\n",f);
+#endif
+
+  return insert_opcode2(f,b,0,current_line,current_file);
+}
+
+int insert_opcode0(int f,int current_line, struct pike_string *current_file)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
     fatal("hasarg(%d) is wrong!\n",f);
 #endif
-  return insert_opcode(f,0,current_line, current_file);
+  return insert_opcode1(f,0,current_line, current_file);
 }
 
 
@@ -145,6 +183,38 @@ static void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
     }
   }
   ins_f_byte(a);
+  add_to_program(b);
+}
+
+static void ins_f_byte_with_2_args(unsigned int a,
+				   unsigned INT32 c,
+				   unsigned INT32 b)
+{
+
+  switch(b >> 8)
+  {
+  case 0 : break;
+  case 1 : ins_f_byte(F_PREFIX2_256); break;
+  case 2 : ins_f_byte(F_PREFIX2_512); break;
+  case 3 : ins_f_byte(F_PREFIX2_768); break;
+  case 4 : ins_f_byte(F_PREFIX2_1024); break;
+  default:
+    if( b < 256*256)
+    {
+      ins_f_byte(F_PREFIX2_CHARX256);
+      add_to_program(b>>8);
+    }else if(b < 256*256*256) {
+      ins_f_byte(F_PREFIX2_WORDX256);
+      add_to_program(b>>16);
+      add_to_program(b>>8);
+    }else{
+      ins_f_byte(F_PREFIX2_24BITX256);
+      add_to_program(b>>24);
+      add_to_program(b>>16);
+      add_to_program(b>>8);
+    }
+  }
+  ins_f_byte_with_arg(a,c);
   add_to_program(b);
 }
 
@@ -239,10 +309,9 @@ void assemble(void)
 #ifdef PIKE_DEBUG
     if((a_flag > 2 && store_linenumbers) || a_flag > 3)
     {
-      if(hasarg(c->opcode))
-	fprintf(stderr,"===%3d %4x %s(%d)\n",c->line,PC,get_token_name(c->opcode),c->arg);
-      else
-	fprintf(stderr,"===%3d %4x %s\n",c->line,PC,get_token_name(c->opcode));
+      fprintf(stderr,"===%3d %4x ",c->line,PC);
+      dump_instr(c);
+      fprintf(stderr,"\n");
     }
 #endif
 
@@ -254,10 +323,6 @@ void assemble(void)
     case F_NOP: break;
     case F_ALIGN:
       while(PC % c->arg) add_to_program(0);
-      break;
-
-    case F_BYTE:
-      add_to_program(c->arg);
       break;
 
     case F_DATA:
@@ -290,7 +355,9 @@ void assemble(void)
 	break;
 
 	case I_TWO_ARGS:
-	  /* */
+	  ins_f_byte_with_2_args(c->opcode, c->arg,c->arg2);
+	  break;
+	  
 	case I_HASARG:
 	  ins_f_byte_with_arg(c->opcode, c->arg);
 	  break;
@@ -317,7 +384,7 @@ void assemble(void)
     {
 #ifdef PIKE_DEBUG
       if(labels[e]==-1)
-	fatal("Hyperspace error: unknown jump point.\n");
+	fatal("Hyperspace error: unknown jump point %d at %d (%d).\n",e,labels[e],jumps[e]);
 #endif
       tmp=read_int(jumps[e]);
       upd_int(jumps[e], tmp2 - jumps[e]);
@@ -339,12 +406,12 @@ int remove_clear_locals=0x7fffffff;
 static int fifo_len, eye,len;
 static p_instr *instructions;
 
-int insopt(int f, INT32 b, int cl, struct pike_string *cf)
+int insopt2(int f, INT32 a, INT32 b, int cl, struct pike_string *cf)
 {
   p_instr *p;
 
 #ifdef PIKE_DEBUG
-  if(!hasarg(f) && b)
+  if(!hasarg2(f) && b)
     fatal("hasarg(%d) is wrong!\n",f);
 #endif
 
@@ -364,18 +431,29 @@ int insopt(int f, INT32 b, int cl, struct pike_string *cf)
   p->opcode=f;
   p->line=cl;
   copy_shared_string(p->file, lex.current_file);
-  p->arg=b;
+  p->arg=a;
+  p->arg2=b;
 
   return p - (p_instr *)instrbuf.s.str;
 }
 
-int insopt2(int f, int cl, struct pike_string *cf)
+int insopt1(int f, INT32 a, int cl, struct pike_string *cf)
+{
+#ifdef PIKE_DEBUG
+  if(!hasarg(f) && a)
+    fatal("hasarg(%d) is wrong!\n",f);
+#endif
+
+  return insopt2(f,a,0,cl, cf);
+}
+
+int insopt0(int f, int cl, struct pike_string *cf)
 {
 #ifdef PIKE_DEBUG
   if(hasarg(f))
     fatal("hasarg(%d) is wrong!\n",f);
 #endif
-  return insopt(f,0,cl, cf);
+  return insopt2(f,0,0,cl, cf);
 }
 
 static void debug(void)
@@ -434,6 +512,14 @@ static INLINE int argument(int offset)
   return -1;
 }
 
+static INLINE int argument2(int offset)
+{
+  p_instr *a;
+  a=instr(offset);
+  if(a) return a->arg2;
+  return -1;
+}
+
 static void advance(void)
 {
   if(fifo_len)
@@ -442,7 +528,7 @@ static void advance(void)
   }else{
     p_instr *p;
     if((p=instr(0)))
-      insert_opcode(p->opcode, p->arg, p->line, p->file);
+      insert_opcode2(p->opcode, p->arg, p->arg2, p->line, p->file);
     eye++;
   }
   debug();
@@ -473,12 +559,28 @@ static void pop_n_opcodes(int n)
   eye+=n;
 }
 
+
 static void do_optimization(int topop, ...)
 {
   va_list arglist;
   struct pike_string *cf;
   int q=-1;
   INT32 cl=instr(0)->line;
+
+#ifdef PIKE_DEBUG
+  if(a_flag>5)
+  {
+    int e;
+    fprintf(stderr,"PEEP at %d:",cl);
+    for(e=0;e<topop;e++)
+    {
+      fprintf(stderr," ");
+      dump_instr(instr(e));
+    }
+    fprintf(stderr," => ");
+  }
+#endif
+  
   copy_shared_string(cf,instr(0)->file);
   pop_n_opcodes(topop);
   va_start(arglist, topop);
@@ -493,14 +595,22 @@ static void do_optimization(int topop, ...)
       case 1:
       {
 	int i=va_arg(arglist, int);
-	insopt2(i,cl,cf);
+	insopt0(i,cl,cf);
 	continue;
       }
       case 2:
       {
 	int i=va_arg(arglist, int);
 	int j=va_arg(arglist, int);
-	insopt(i,j,cl,cf);
+	insopt1(i,j,cl,cf);
+	continue;
+      }
+      case 3:
+      {
+	int i=va_arg(arglist, int);
+	int j=va_arg(arglist, int);
+	int k=va_arg(arglist, int);
+	insopt2(i,j,k,cl,cf);
 	continue;
       }
     }
@@ -511,6 +621,20 @@ static void do_optimization(int topop, ...)
   fifo_len+=q;
   free_string(cf);
   debug();
+
+#ifdef PIKE_DEBUG
+  if(a_flag>5)
+  {
+    int e;
+    for(e=0;e<q;e++)
+    {
+      fprintf(stderr," ");
+      dump_instr(instr(e));
+    }
+    fprintf(stderr,"\n");
+  }
+#endif
+
   fifo_len+=q + 3;
 }
 
@@ -528,10 +652,9 @@ static void asm_opt(void)
     fprintf(stderr,"Optimization begins: \n");
     for(e=0;e<length;e++,c++)
     {
-      if(hasarg(c->opcode))
-	fprintf(stderr,"---%3d: %s(%d)\n",c->line,get_token_name(c->opcode),c->arg);
-      else
-	fprintf(stderr,"---%3d: %s\n",c->line,get_token_name(c->opcode));
+      fprintf(stderr,"---%3d: ",c->line);
+      dump_instr(c);
+      fprintf(stderr,"\n");
     }
   }
 #endif
@@ -551,10 +674,9 @@ static void asm_opt(void)
     fprintf(stderr,"Optimization begins: \n");
     for(e=0;e<length;e++,c++)
     {
-      if(hasarg(c->opcode))
-	fprintf(stderr,">>>%3d: %s(%d)\n",c->line,get_token_name(c->opcode),c->arg);
-      else
-	fprintf(stderr,">>>%3d: %s\n",c->line,get_token_name(c->opcode));
+      fprintf(stderr,">>>%3d: ",c->line);
+      dump_instr(c);
+      fprintf(stderr,"\n");
     }
   }
 #endif

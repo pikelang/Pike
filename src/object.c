@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.116 2000/04/20 01:49:43 mast Exp $");
+RCSID("$Id: object.c,v 1.117 2000/04/20 02:41:45 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1136,9 +1136,9 @@ void gc_mark_object_as_referenced(struct object *o)
 	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
 	  u=(union anything *)(pike_frame->current_storage +
 			       pike_frame->context.prog->identifiers[d].func.offset);
-#ifdef PIKE_DEBUG
+#ifdef DEBUG_MALLOC
 	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
-#endif /* PIKE_DEBUG */
+#endif
 	  gc_mark_short_svalue(u, rtt);
 	}
       }
@@ -1194,9 +1194,9 @@ static inline void gc_check_object(struct object *o)
 	  int rtt = pike_frame->context.prog->identifiers[d].run_time_type;
 	  u=(union anything *)(pike_frame->current_storage +
 			       pike_frame->context.prog->identifiers[d].func.offset);
-#ifdef PIKE_DEBUG
+#ifdef DEBUG_MALLOC
 	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
-#endif /* PIKE_DEBUG */
+#endif
 	  debug_gc_check_short_svalue(u, rtt, T_OBJECT, debug_malloc_pass(o));
 	}
       }

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: docode.h,v 1.8 2000/03/07 21:22:08 hubbe Exp $
+ * $Id: docode.h,v 1.9 2000/04/20 02:41:44 hubbe Exp $
  */
 #ifndef DOCODE_H
 #define DOCODE_H
@@ -21,8 +21,9 @@
 
 extern int store_linenumbers;
 
-#define emit(X,Y) insert_opcode((X),(Y),lex.current_line, lex.current_file)
-#define emit2(X) insert_opcode2((X),lex.current_line, lex.current_file)
+#define emit0(X)     insert_opcode0((X),lex.current_line, lex.current_file)
+#define emit1(X,Y)   insert_opcode1((X),(Y),lex.current_line, lex.current_file)
+#define emit2(X,Y,Z) insert_opcode2((X),(Y),(Z),lex.current_line, lex.current_file)
 
 /* Prototypes begin here */
 void upd_int(int offset, INT32 tmp);

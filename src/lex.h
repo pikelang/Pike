@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: lex.h,v 1.14 2000/04/18 17:23:35 hubbe Exp $
+ * $Id: lex.h,v 1.15 2000/04/20 02:41:45 hubbe Exp $
  */
 #ifndef LEX_H
 #define LEX_H
@@ -25,7 +25,7 @@ struct keyword
 #define I_ISPOINTER 3
 #define I_ISJUMP 7
 #define I_DATA 9
-#define I_ACCUMULATOR 16
+#define I_HASARG2 16
 #define I_TWO_ARGS 17
 
 #ifdef PIKE_DEBUG
