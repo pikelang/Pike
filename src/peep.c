@@ -427,7 +427,7 @@ static void advance()
     fifo_len--;
   }else{
     p_instr *p;
-    if(p=instr(0))
+    if((p=instr(0)))
       insert_opcode(p->opcode, p->arg, p->line, p->file);
     eye++;
   }

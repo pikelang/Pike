@@ -4,6 +4,7 @@
 #include "svalue.h"
 #include "stralloc.h"
 #include "pike_types.h"
+#include "error.h"
 
 enum error_type {
   ERR_NONE,
@@ -222,6 +223,7 @@ int get_args(struct svalue *s,
   va_start(ptr, fmt);
   ret=va_get_args(s, num_args, fmt, ptr);
   va_end(fmt);
+  return ret;
 }
 
 void get_all_args(char *fname, INT32 args, char *format,  ... )

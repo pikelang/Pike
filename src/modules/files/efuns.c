@@ -14,8 +14,12 @@
 #include "fd_control.h"
 #include "threads.h"
 #include "module_support.h"
+#include "constants.h"
+#include "backend.h"
+#include "operators.h"
 
 #include "file_machine.h"
+#include "file.h"
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>

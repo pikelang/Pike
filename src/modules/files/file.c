@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.35 1997/04/08 20:40:18 marcus Exp $");
+RCSID("$Id: file.c,v 1.36 1997/04/16 03:12:41 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -16,6 +16,9 @@ RCSID("$Id: file.c,v 1.35 1997/04/08 20:40:18 marcus Exp $");
 #include "pike_macros.h"
 #include "backend.h"
 #include "fd_control.h"
+#include "module_support.h"
+#include "gc.h"
+#include "opcodes.h"
 
 #include "file_machine.h"
 #include "file.h"
@@ -402,7 +405,7 @@ static void file_read(INT32 args)
 
   pop_n_elems(args);
 
-  if(tmp=do_read(FD, len, all, & ERRNO))
+  if((tmp=do_read(FD, len, all, & ERRNO)))
     push_string(tmp);
   else
     push_int(0);
@@ -1443,6 +1446,7 @@ void init_files_efuns(void);
 
 void pike_module_init()
 {
+  extern void port_setup_program(void);
   int e;
   for(e=0;e<MAX_OPEN_FILEDESCRIPTORS;e++)
   {

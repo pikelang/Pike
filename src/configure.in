@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.83 1997/04/15 11:31:14 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.84 1997/04/16 03:09:10 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -150,7 +150,7 @@ OPTIMIZE=""
 
 if test $cflags_is_set = no; then
  if test "x${GCC-}" = xyes ; then
-  WARN="-W -Wformat"
+  WARN="-W -Wall -Wpointer-arith -Wno-unused"
 ### Optimize for different SUN machines. If there is no working 'uname'
 ### no extra optimization will be done, but nothing should break either.
   AC_SYS_CPU_COMPILER_FLAG(sun4c,-msparclite,sparclite)

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.16 1997/03/17 03:04:42 hubbe Exp $");
+RCSID("$Id: object.c,v 1.17 1997/04/16 03:09:14 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -250,7 +250,7 @@ void destruct_objects_to_destruct()
 {
   struct object *o, *next;
 
-  while(o=objects_to_destruct)
+  while((o=objects_to_destruct))
   {
     /* Link object back to list of objects */
     objects_to_destruct=o->next;

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.12 1997/03/14 04:37:17 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.13 1997/04/16 03:09:15 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -23,6 +23,7 @@ RCSID("$Id: operators.c,v 1.12 1997/03/14 04:37:17 hubbe Exp $");
 #include "lex.h"
 #include "program.h"
 #include "object.h"
+#include "pike_types.h"
 
 #define COMPARISON(ID,NAME,EXPR) \
 void ID(INT32 args) \

@@ -538,7 +538,7 @@ INT32 *get_order(struct array *v, cmpfun fun)
 static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
 {
   INT32 tmp;
-  if(tmp=(a->type - b->type)) return tmp;
+  if((tmp=(a->type - b->type))) return tmp;
   switch(a->type)
   {
   case T_FLOAT:
@@ -1251,7 +1251,7 @@ struct array *explode(struct pike_string *str,
     
     init_memsearch(&searcher, del->str, del->len, str->len);
     
-    while(tmp=memory_search(&searcher, s, end-s))
+    while((tmp=memory_search(&searcher, s, end-s)))
     {
       check_stack(1);
       push_string(make_shared_binary_string(s, tmp-s));

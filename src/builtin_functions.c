@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.34 1997/03/17 03:04:35 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.35 1997/04/16 03:09:09 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -33,6 +33,8 @@ RCSID("$Id: builtin_functions.c,v 1.34 1997/03/17 03:04:35 hubbe Exp $");
 #include <math.h>
 #include <ctype.h>
 #include "module_support.h"
+#include "module.h"
+#include "opcodes.h"
 
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>

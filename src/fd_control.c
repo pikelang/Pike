@@ -10,6 +10,7 @@
 
 #ifndef TESTING
 #include "global.h"
+#include "error.h"
 #else
 #undef DEBUG
 #endif

@@ -34,6 +34,7 @@
 #include "array.h"
 #include "builtin_functions.h"
 #include "threads.h"
+#include "operators.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>

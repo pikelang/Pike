@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.20 1997/03/17 03:04:43 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.21 1997/04/16 03:09:15 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -20,6 +20,7 @@ RCSID("$Id: pike_types.c,v 1.20 1997/03/17 03:04:43 hubbe Exp $");
 #include "error.h"
 #include "las.h"
 #include "language.h"
+#include "memory.h"
 
 int max_correct_args;
 
@@ -711,7 +712,7 @@ static char *low_match_types(char *a,char *b, int flags)
   case TWOT(T_OBJECT, T_FUNCTION):
   {
     struct program *p;
-    if(p=id_to_program(EXTRACT_INT(a+1)))
+    if((p=id_to_program(EXTRACT_INT(a+1))))
     {
       int i=p->lfuns[LFUN_CALL];
       if(i == -1) return 0;
@@ -723,7 +724,7 @@ static char *low_match_types(char *a,char *b, int flags)
   case TWOT(T_FUNCTION, T_OBJECT):
   {
     struct program *p;
-    if(p=id_to_program(EXTRACT_INT(b+1)))
+    if((p=id_to_program(EXTRACT_INT(b+1))))
     {
       int i=p->lfuns[LFUN_CALL];
       if(i == -1) return 0;

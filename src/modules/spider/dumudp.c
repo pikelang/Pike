@@ -1,7 +1,7 @@
 #include <config.h>
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.7 1997/03/17 03:13:16 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.8 1997/04/16 03:13:24 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -11,6 +11,9 @@ RCSID("$Id: dumudp.c,v 1.7 1997/03/17 03:13:16 hubbe Exp $");
 #include "pike_macros.h"
 #include "backend.h"
 #include "fd_control.h"
+#include "error.h"
+#include "builtin_functions.h"
+#include "mapping.h"
 
 #include "error.h"
 #include "signal_handler.h"

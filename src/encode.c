@@ -124,7 +124,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 {
   INT32 i;
   struct svalue *tmp;
-  if(tmp=low_mapping_lookup(data->encoded, val))
+  if((tmp=low_mapping_lookup(data->encoded, val)))
   {
     code_entry(T_AGAIN, tmp->u.integer, data);
     return;
@@ -287,7 +287,7 @@ static void decode_value2(struct decode_data *data)
     tmp.type=T_INT;
     tmp.subtype=0;
     tmp.u.integer=num;
-    if(tmp2=low_mapping_lookup(data->decoded, &tmp))
+    if((tmp2=low_mapping_lookup(data->decoded, &tmp)))
     {
       push_svalue(tmp2);
     }else{

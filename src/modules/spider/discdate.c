@@ -18,6 +18,7 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
+#include "error.h"
 #include "builtin_functions.h"
 #include <time.h>
 #include <string.h>
@@ -42,7 +43,7 @@ void f_discdate(INT32 argc)
   struct disc_time hastur;
   if (argc != 1) 
   {
-    error(stderr,"Error: discdate(time)");
+    error("Error: discdate(time)");
     exit(1);
   } else {
     struct tm *eris;
@@ -124,11 +125,11 @@ static char *seasons[5] =
 
 static char *holidays[5][2] = 
 { 
-  "Mungday", "Chaoflux",
-  "Mojoday", "Discoflux",
-  "Syaday",  "Confuflux",
-  "Zaraday", "Bureflux",
-  "Maladay", "Afflux"
+  { "Mungday", "Chaoflux" },
+  { "Mojoday", "Discoflux" },
+  { "Syaday",  "Confuflux" },
+  { "Zaraday", "Bureflux" } ,
+  { "Maladay", "Afflux" }
   };
 
 static void print(struct disc_time tick)

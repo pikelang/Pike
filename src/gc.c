@@ -16,6 +16,8 @@ struct callback *gc_evaluator_callback=0;
 #include "object.h"
 #include "program.h"
 #include "stralloc.h"
+#include "stuff.h"
+#include "error.h"
 
 #include "gc.h"
 #include "main.h"
@@ -280,7 +282,7 @@ void do_gc()
 
   /* Free hash table */
   free((char *)hash);
-  while(m=chunk)
+  while((m=chunk))
   {
     chunk=m->next;
     free((char *)m);

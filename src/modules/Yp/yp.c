@@ -17,6 +17,7 @@
 #include <rpcsvc/yp_prot.h>
 
 #include "stralloc.h"
+#include "error.h"
 #include "global.h"
 #include "types.h"
 #include "pike_macros.h"
@@ -26,6 +27,7 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "builtin_functions.h"
+#include "module_support.h"
 
 #define YPERROR(fun,err) do{if(err)error("yp->%s(): %s\n", (fun), yperr_string( err ));}while(0)
 

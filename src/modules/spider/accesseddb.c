@@ -11,6 +11,7 @@
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
+#include "error.h"
 #include "builtin_functions.h"
 
 #include <stdio.h>
@@ -127,7 +128,7 @@ int mread(struct file_head *this, char *data, int len, int pos)
   return len;
 }
 
-int mwrite(struct file_head *this, char *data, int len, int pos)
+void mwrite(struct file_head *this, char *data, int len, int pos)
 {
   this->pos = pos;
   lseek(this->fd, this->pos, SEEK_SET);
@@ -281,12 +282,12 @@ static node_t *fast_find_entry(struct string *name, struct file_head *this)
 static node_t *find_entry(struct string *name, struct file_head *this)
 {
   struct node *me;
-  if(me = fast_find_entry( name, this ))
+  if((me = fast_find_entry( name, this )))
   {
     this->fast_hits++;
     return me;
   }
-  if(me=slow_find_entry( name, this ))
+  if((me=slow_find_entry( name, this )))
   {
     this->other_hits++;
     return me;

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.16 1997/03/17 03:04:41 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.17 1997/04/16 03:09:13 hubbe Exp $");
 #include "main.h"
 #include "types.h"
 #include "object.h"
@@ -266,7 +266,7 @@ void mapping_insert(struct mapping *m,
 #endif
     if(m->ind_types & (1 << key->type))
     {
-      for(prev= m->hash + h;k=*prev;prev=&k->next)
+      for(prev= m->hash + h;(k=*prev);prev=&k->next)
       {
 	if(is_eq(& k->ind, key))
 	{
@@ -326,7 +326,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   if(d_flag > 1) check_mapping_type_fields(m);
 #endif
 
-    for(prev= m->hash + h;k=*prev;prev=&k->next)
+    for(prev= m->hash + h;(k=*prev);prev=&k->next)
     {
       if(is_eq(& k->ind, key))
       {
@@ -384,7 +384,7 @@ void map_delete(struct mapping *m,
 
   h=hash_svalue(key) % m->hashsize;
   
-  for(prev= m->hash + h;k=*prev;prev=&k->next)
+  for(prev= m->hash + h;(k=*prev);prev=&k->next)
   {
     if(is_eq(& k->ind, key))
     {
@@ -424,7 +424,7 @@ void check_mapping_for_destruct(struct mapping *m)
     m->val_types |= BIT_INT;
     for(e=0;e<m->hashsize;e++)
     {
-      for(prev= m->hash + e;k=*prev;)
+      for(prev= m->hash + e;(k=*prev);)
       {
 	check_destructed(& k->val);
 	
@@ -470,7 +470,7 @@ struct svalue *low_mapping_lookup(struct mapping *m,
   {
     h=hash_svalue(key) % m->hashsize;
   
-    for(prev= m->hash + h;k=*prev;prev=&k->next)
+    for(prev= m->hash + h;(k=*prev);prev=&k->next)
     {
       if(is_eq(& k->ind, key))
       {
@@ -501,7 +501,7 @@ void mapping_index_no_free(struct svalue *dest,
 {
   struct svalue *p;
 
-  if(p=low_mapping_lookup(m,key))
+  if((p=low_mapping_lookup(m,key)))
   {
     if(p->type==T_INT)
       p->subtype=NUMBER_NUMBER;
@@ -692,7 +692,7 @@ int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
   LOOP(a)
   {
     struct svalue *s;
-    if(s=low_mapping_lookup(b, & k->ind))
+    if((s=low_mapping_lookup(b, & k->ind)))
     {
       if(!low_is_equal(s, &k->val, &curr)) return 0;
     }else{
@@ -1072,7 +1072,7 @@ void zap_all_mappings()
 
     for(e=0;e<m->hashsize;e++)
     {
-      while(k=m->hash[e])
+      while((k=m->hash[e]))
       {
 	m->hash[e]=k->next;
 	k->next=m->free_list;

@@ -164,9 +164,9 @@ static INLINE int EXTRACT_CHAR(char *p) { return *p > 0x7f ? *p - 0x100 : *p; }
 #  define EXTRACT_INT(p) (*(INT32 *)(p))
 #else
 #ifdef DEBUG
-unsigned INT16 EXTRACT_UWORD(unsigned char *p);
-INT16 EXTRACT_WORD(unsigned char *p);
-INT32 EXTRACT_INT(unsigned char *p);
+unsigned INT16 EXTRACT_UWORD_(unsigned char *p);
+INT16 EXTRACT_WORD_(unsigned char *p);
+INT32 EXTRACT_INT_(unsigned char *p);
 #else
 static INLINE unsigned INT16 EXTRACT_UWORD_(unsigned char *p)
 {

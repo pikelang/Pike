@@ -5,6 +5,7 @@
 \*/
 #include "pike_macros.h"
 #include "callback.h"
+#include "error.h"
 
 /*
  * This file is used to simplify the management of callbacks when certain
@@ -152,7 +153,7 @@ void call_callback(struct callback_list *lst, void *arg)
 
   check_callback_chain(lst);
   ptr=&lst->callbacks;
-  while(l=*ptr)
+  while((l=*ptr))
   {
     if(l->call)
     {
@@ -225,7 +226,7 @@ void free_callback(struct callback_list *lst)
   struct callback *l,**ptr;
   check_callback_chain(lst);
   ptr=& lst->callbacks;
-  while(l=*ptr)
+  while((l=*ptr))
   {
     if(l->free_func)
       l->free_func(l, l->arg, 0);

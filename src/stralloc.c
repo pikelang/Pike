@@ -10,6 +10,7 @@
 #include "pike_macros.h"
 #include "memory.h"
 #include "error.h"
+#include "gc.h"
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3

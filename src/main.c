@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.20 1997/03/24 00:44:37 hubbe Exp $");
+RCSID("$Id: main.c,v 1.21 1997/04/16 03:09:13 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -20,6 +20,9 @@ RCSID("$Id: main.c,v 1.20 1997/03/24 00:44:37 hubbe Exp $");
 #include "callback.h"
 #include "signal_handler.h"
 #include "threads.h"
+#include "dynamic_load.h"
+#include "gc.h"
+#include "mapping.h"
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>

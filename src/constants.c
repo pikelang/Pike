@@ -12,6 +12,7 @@
 #include "memory.h"
 #include "interpret.h"
 #include "mapping.h"
+#include "error.h"
 
 static INT32 num_callable=0;
 static struct mapping *builtin_constants = 0;

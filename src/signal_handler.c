@@ -159,7 +159,7 @@ static struct sigdesc signal_desc []={
 
 typedef RETSIGTYPE (*sigfunctype) (int);
 
-static int my_signal(int sig, sigfunctype fun)
+static void my_signal(int sig, sigfunctype fun)
 {
 #ifdef HAVE_SIGACTION
   {

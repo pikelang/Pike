@@ -16,9 +16,9 @@
 #include "error.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
+#include "gc.h"
 
-
-struct svalue dest_ob_zero = { T_INT, 0, 0 };
+struct svalue dest_ob_zero = { T_INT, 0 };
 
 
 /*
@@ -184,7 +184,7 @@ void assign_svalues_no_free(struct svalue *to,
     return;
   }
 
-  if((type_hint & (BIT_INT | BIT_FLOAT)==0))
+  if(((type_hint & (BIT_INT | BIT_FLOAT))==0))
   {
     while(--num > 0)
     {

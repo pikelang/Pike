@@ -9,6 +9,10 @@
 #include "mapping.h"
 #include "array.h"
 #include "builtin_functions.h"
+#include "error.h"
+#include "module_support.h"
+#include "multiset.h"
+#include "operators.h"
 
 #include "streamed_parser.h"
 
@@ -339,7 +343,7 @@ void streamed_parser_parse( INT32 args )
 	  ind2 = c-1;
 	push_string( make_shared_binary_string( str + ind, ind2 - ind ) );
 	f_lower_case( 1 );
-	if (multiset_member( DATA->end_tags, sp-1 ))
+	if (low_mapping_lookup( DATA->end_tags, sp-1 ))
 	{
 	  if (handle_end_tag( data_arg ))
 	  {
@@ -401,14 +405,14 @@ void streamed_parser_parse( INT32 args )
        case WS:
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
 	f_lower_case( 1 );
-	if (multiset_member( DATA->start_tags, sp-1 ))
+	if (low_mapping_lookup( DATA->start_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  state = TAG_WS;
 	  sp_tag_save = sp-1;
 	  content_tag = 0;
 	}
-	else if (multiset_member( DATA->content_tags, sp-1 ))
+	else if (low_mapping_lookup( DATA->content_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  state = TAG_WS;
@@ -424,7 +428,7 @@ void streamed_parser_parse( INT32 args )
        case '>':
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
 	f_lower_case( 1 );
-	if (multiset_member( DATA->start_tags, sp-1 ))
+	if (low_mapping_lookup( DATA->start_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  if (handle_tag( data_arg ))
@@ -441,7 +445,7 @@ void streamed_parser_parse( INT32 args )
 	    ;
 #endif
 	}
-	else if (multiset_member( DATA->content_tags, sp-1 ))
+	else if (low_mapping_lookup( DATA->content_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  ind2 = c+1;

@@ -17,6 +17,7 @@
 #include "object.h"
 #include "pike_macros.h"
 #include "threads.h"
+#include "module_support.h"
 
 #ifdef USE_SYSTEM_REGEXP
 #include <regexp.h>

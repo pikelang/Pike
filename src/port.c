@@ -55,8 +55,8 @@ static unsigned long slow_rand(void)
 
 static void slow_srand(long seed)
 {
-  RandSeed1 = (seed - 1) ^ 0xA5B96384;
-  RandSeed2 = (seed + 1) ^ 0x56F04021;
+  RandSeed1 = (seed - 1) ^ 0xA5B96384UL;
+  RandSeed2 = (seed + 1) ^ 0x56F04021UL;
 }
 
 #define RNDBUF 250

@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.15 1997/04/11 04:11:03 hubbe Exp $
+ * $Id: system.c,v 1.16 1997/04/16 03:14:06 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,13 +14,16 @@
 #include "system.h"
 
 #include <global.h>
-RCSID("$Id: system.c,v 1.15 1997/04/11 04:11:03 hubbe Exp $");
+RCSID("$Id: system.c,v 1.16 1997/04/16 03:14:06 hubbe Exp $");
 #include <module_support.h>
 #include <las.h>
 #include <interpret.h>
 #include <stralloc.h>
 #include <threads.h>
 #include <svalue.h>
+#include <mapping.h>
+#include <builtin_functions.h>
+#include <constants.h>
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
