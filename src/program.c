@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.124 1999/06/23 06:48:20 hubbe Exp $");
+RCSID("$Id: program.c,v 1.125 1999/07/01 18:16:37 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2419,6 +2419,13 @@ struct program *compile(struct pike_string *prog)
   
   if(p && !num_parse_error)
   {
+#ifdef PIKE_DEBUG
+    if (compilation_depth != -1) {
+      fprintf(stderr, "compile(): compilation_depth is %d at end of pass 1.\n",
+	      compilation_depth);
+    }
+#endif /* PIKE_DEBUG */
+
     low_start_new_program(p,0,0);
     free_program(p);
     p=0;
