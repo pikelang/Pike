@@ -141,6 +141,9 @@ signals
 patch byacc
 	done (maybe needs more fixing)
 
+fix efun->foo (always copies value)
+	fixed
+
 dokumentera mera!
 
 ta bort MAX_LOCAL (& MAX_GLOBAL)
@@ -181,4 +184,4 @@ generalisera foreach()
 constant
 'type wish'
 rewrite sort_array
-fix efun->foo (always copies value)
+
