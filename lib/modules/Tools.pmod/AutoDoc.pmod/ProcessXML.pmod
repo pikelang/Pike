@@ -593,9 +593,21 @@ void resolveRefs(Node tree) {
   scopes->leave();
 }
 
+void cleanUndocumented(Node tree) {
+  tree->walk_preorder(
+    lambda(Node n) {
+      if(n->get_tag_name()=="module" &&
+	 !sizeof(n->get_elements())) {
+	n->get_parent()->remove_child(n);
+	werror("Removed empty module %O\n", n->get_attributes()->name);
+      }
+    });
+}
+
 // Call this method after the extraction and merge of the tree.
 void postProcess(Node tree) {
   handleAppears(tree);
+  cleanUndocumented(tree);
   resolveRefs(tree);
 }
 
