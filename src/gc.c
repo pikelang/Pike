@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.227 2003/08/26 18:46:04 mast Exp $
+|| $Id: gc.c,v 1.228 2003/09/08 20:05:20 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.227 2003/08/26 18:46:04 mast Exp $");
+RCSID("$Id: gc.c,v 1.228 2003/09/08 20:05:20 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -104,7 +104,6 @@ int num_allocs =0;
 ptrdiff_t alloc_threshold = GC_MIN_ALLOC_THRESHOLD;
 PMOD_EXPORT int Pike_in_gc = 0;
 int gc_generation = 0;
-struct pike_queue gc_mark_queue;
 time_t last_gc;
 int gc_trace = 0, gc_debug = 0;
 
@@ -220,7 +219,6 @@ struct callback *debug_add_gc_callback(callback_func call,
 static void init_gc(void);
 static void gc_cycle_pop(void *a);
 
-
 #undef BLOCK_ALLOC_NEXT
 #define BLOCK_ALLOC_NEXT next
 
@@ -245,6 +243,12 @@ static void gc_cycle_pop(void *a);
 
 PTR_HASH_ALLOC_FIXED_FILL_PAGES(marker,2)
 
+#if defined (PIKE_DEBUG) || defined (GC_MARK_DEBUG)
+void *gc_found_in = NULL;
+int gc_found_in_type = PIKE_T_UNKNOWN;
+const char *gc_found_place = NULL;
+#endif
+
 #ifdef PIKE_DEBUG
 
 #undef get_marker
@@ -262,7 +266,7 @@ static unsigned tot_cycle_checked = 0, tot_live_rec = 0, tot_frame_rot = 0;
 
 static int gc_is_watching = 0;
 
-TYPE_T attempt_to_identify(void *something, void **inblock)
+int attempt_to_identify(void *something, void **inblock)
 {
   size_t i;
   struct array *a;
@@ -327,9 +331,6 @@ TYPE_T attempt_to_identify(void *something, void **inblock)
 }
 
 void *check_for =0;
-static char *found_where="";
-static void *found_in=0;
-static int found_in_type=0;
 void *gc_svalue_location=0;
 char *fatal_after_gc=0;
 
@@ -693,114 +694,20 @@ void debug_gc_fatal(void *a, int flags, const char *fmt, ...)
 
 static void gdb_gc_stop_here(void *a, int weak)
 {
-#if 0
-  if (!found_where) Pike_fatal("found_where is zero.\n");
-#endif
   fprintf(stderr,"***One %sref found%s. ",
 	  weak ? "weak " : "",
-	  found_where?found_where:"");
-  if (found_in) {
+	  gc_found_place ? gc_found_place : "");
+  if (gc_found_in) {
     if (gc_svalue_location)
-      describe_location(found_in , found_in_type, gc_svalue_location,0,1,0);
+      describe_location(gc_found_in , gc_found_in_type, gc_svalue_location,0,1,0);
     else {
       fputc('\n', stderr);
-      describe_something(found_in, found_in_type, 2, 0, DESCRIBE_MEM, 0);
+      describe_something(gc_found_in, gc_found_in_type, 2, 0, DESCRIBE_MEM, 0);
     }
   }
   else
     fputc('\n', stderr);
   fprintf(stderr,"----------end------------\n");
-}
-
-void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere)
-{
-  char *old_found_where = found_where;
-  if (fromwhere) found_where = fromwhere;
-  found_in=(void *) -1;
-  found_in_type=-1;
-  gc_xmark_svalues(s,num);
-  found_where=old_found_where;
-  found_in_type=PIKE_T_UNKNOWN;
-  found_in=0;
-}
-
-void debug_gc_xmark_svalues2(struct svalue *s, ptrdiff_t num,
-			     int data_type, void *data, char *fromwhere)
-{
-  char *old_found_where = found_where;
-  if (fromwhere) found_where = fromwhere;
-  found_in=data;
-  found_in_type=data_type;
-  gc_xmark_svalues(s,num);
-  found_where=old_found_where;
-  found_in_type=PIKE_T_UNKNOWN;
-  found_in=0;
-}
-
-void debug_gc_check_svalues2(struct svalue *s, ptrdiff_t num,
-			     int data_type, void *data, char *fromwhere)
-{
-  char *old_found_where = found_where;
-  if (fromwhere) found_where = fromwhere;
-  found_in=data;
-  found_in_type=data_type;
-  gc_check_svalues(s,num);
-  found_where=old_found_where;
-  found_in_type=PIKE_T_UNKNOWN;
-  found_in=0;
-}
-
-void debug_gc_check_weak_svalues2(struct svalue *s, ptrdiff_t num,
-				  int data_type, void *data, char *fromwhere)
-{
-  char *old_found_where = found_where;
-  if (fromwhere) found_where = fromwhere;
-  found_in=data;
-  found_in_type=data_type;
-  gc_check_weak_svalues(s,num);
-  found_where=old_found_where;
-  found_in_type=PIKE_T_UNKNOWN;
-  found_in=0;
-}
-
-void debug_gc_check_short_svalue2(union anything *u, int type,
-				  int data_type, void *data, char *fromwhere)
-{
-  char *old_found_where = found_where;
-  if (fromwhere) found_where = fromwhere;
-  found_in=data;
-  found_in_type=data_type;
-  gc_check_short_svalue(u,type);
-  found_where=old_found_where;
-  found_in_type=PIKE_T_UNKNOWN;
-  found_in=0;
-}
-
-void debug_gc_check_weak_short_svalue2(union anything *u, int type,
-				       int data_type, void *data, char *fromwhere)
-{
-  char *old_found_where = found_where;
-  if (fromwhere) found_where = fromwhere;
-  found_in=data;
-  found_in_type=data_type;
-  gc_check_weak_short_svalue(u,type);
-  found_where=old_found_where;
-  found_in_type=PIKE_T_UNKNOWN;
-  found_in=0;
-}
-
-int debug_low_gc_check(void *x, int data_type, void *data, char *fromwhere)
-{
-  int ret;
-  char *old_found_where = found_where;
-  if (fromwhere) found_where = fromwhere;
-  found_in=data;
-  found_in_type=data_type;
-  ret=gc_check(x);
-  found_where=old_found_where;
-  found_in_type=PIKE_T_UNKNOWN;
-  found_in=0;
-  return ret;
 }
 
 void low_describe_something(void *a,
@@ -1152,6 +1059,104 @@ void gc_watch(void *a)
 
 #endif /* PIKE_DEBUG */
 
+#ifndef GC_MARK_DEBUG
+struct pike_queue gc_mark_queue;
+#else  /* !GC_MARK_DEBUG */
+
+/* Cut'n'paste from queue.c. */
+
+struct gc_queue_entry
+{
+  queue_call call;
+  void *data;
+  int in_type;
+  void *in;
+  const char *place;
+};
+
+#define GC_QUEUE_ENTRIES 8191
+
+struct gc_queue_block
+{
+  struct gc_queue_block *next;
+  int used;
+  struct gc_queue_entry entries[GC_QUEUE_ENTRIES];
+};
+
+struct gc_queue_block *gc_mark_first = NULL, *gc_mark_last = NULL;
+
+void gc_mark_run_queue()
+{
+  struct gc_queue_block *b;
+
+  while((b=gc_mark_first))
+  {
+    int e;
+    for(e=0;e<b->used;e++)
+    {
+      debug_malloc_touch(b->entries[e].data);
+      b->entries[e].call(b->entries[e].data);
+    }
+
+    gc_mark_first=b->next;
+    free((char *)b);
+  }
+  gc_mark_last=0;
+}
+
+void gc_mark_discard_queue()
+{
+  struct gc_queue_block *b = gc_mark_first;
+  while (b)
+  {
+    struct gc_queue_block *next = b->next;
+    free((char *) b);
+    b = next;
+  }
+  gc_mark_first = gc_mark_last = 0;
+}
+
+void gc_mark_enqueue (queue_call call, void *data)
+{
+  struct gc_queue_block *b;
+
+#ifdef PIKE_DEBUG
+  if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
+    gc_fatal (data, 0, "gc_mark_enqueue() called outside GC_ENTER.\n");
+  {
+    struct marker *m;
+    if (gc_is_watching && (m = find_marker(data)) && m->flags & GC_WATCHED) {
+      /* This is useful to set breakpoints on. */
+      fprintf(stderr, "## Watched thing %p found in "
+	      "gc_mark_enqueue() in pass %d.\n", data, Pike_in_gc);
+    }
+  }
+#endif
+
+  b=gc_mark_last;
+  if(!b || b->used >= GC_QUEUE_ENTRIES)
+  {
+    b = (struct gc_queue_block *) malloc (sizeof (struct gc_queue_block));
+    if (!b) fatal ("Out of memory in gc.\n");
+    b->used=0;
+    b->next=0;
+    if(gc_mark_first)
+      gc_mark_last->next=b;
+    else
+      gc_mark_first=b;
+    gc_mark_last=b;
+  }
+
+  b->entries[b->used].call=call;
+  b->entries[b->used].data=debug_malloc_pass(data);
+  b->entries[b->used].in_type = gc_found_in_type;
+  b->entries[b->used].in = debug_malloc_pass (gc_found_in);
+  b->entries[b->used].place = gc_found_place;
+  b->used++;
+}
+
+#endif	/* GC_MARK_DEBUG */
+
 void debug_gc_touch(void *a)
 {
   struct marker *m;
@@ -1271,8 +1276,8 @@ static INLINE struct marker *gc_check_debug(void *a, int weak)
 
 #if 0
   fprintf (stderr, "Ref: %s %p -> %p%s\n",
-	   get_name_of_type (found_in_type), found_in, a,
-	   found_where ? found_where : "");
+	   get_name_of_type (gc_found_in_type), gc_found_in, a,
+	   gc_found_place ? gc_found_place : "");
 #endif
 
   if (Pike_in_gc != GC_PASS_CHECK)
@@ -1301,6 +1306,8 @@ PMOD_EXPORT INT32 real_gc_check(void *a)
   INT32 ret;
 
 #ifdef PIKE_DEBUG
+  if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
+    gc_fatal (a, 0, "gc_check() called outside GC_ENTER.\n");
   if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     fprintf(stderr, "## Watched thing %p found in "
@@ -1324,6 +1331,8 @@ INT32 real_gc_check_weak(void *a)
   INT32 ret;
 
 #ifdef PIKE_DEBUG
+  if (gc_found_in_type == PIKE_T_UNKNOWN || !gc_found_in)
+    gc_fatal (a, 0, "gc_check_weak() called outside GC_ENTER.\n");
   if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     fprintf(stderr, "## Watched thing %p found in "
@@ -1409,8 +1418,6 @@ static void exit_gc(void)
 void locate_references(void *a)
 {
   int tmp, orig_in_gc = Pike_in_gc;
-  char *orig_found_where = found_where;
-  void *orig_check_for=check_for;
   int i=0;
   if(!marker_blocks)
   {
@@ -1427,36 +1434,23 @@ void locate_references(void *a)
   
   check_for=a;
 
-  found_where=" in an array";
   gc_check_all_arrays();
-  
-  found_where=" in a multiset";
   gc_check_all_multisets();
-  
-  found_where=" in a mapping";
   gc_check_all_mappings();
-  
-  found_where=" in a program";
   gc_check_all_programs();
-  
-  found_where=" in an object";
   gc_check_all_objects();
 
 #ifdef PIKE_DEBUG
   if(master_object)
-    gc_external_mark2(master_object,0," as master_object");
+    gc_mark_external (master_object, " as master_object");
   {
     extern struct mapping *builtin_constants;
     if(builtin_constants)
-      gc_external_mark2(builtin_constants,0," as builtin_constants");
+      gc_mark_external (builtin_constants, " as builtin_constants");
   }
 #endif
   
-  found_where=0;
   call_callback(& gc_callbacks, NULL);
-  
-  found_where=orig_found_where;
-  check_for=orig_check_for;
 
 #ifdef DEBUG_MALLOC
   {
@@ -1557,43 +1551,36 @@ int debug_gc_is_referenced(void *a)
   return !(m->flags & GC_NOT_REFERENCED);
 }
 
-int gc_external_mark3(void *a, void *in, char *where)
+int gc_mark_external (void *a, const char *place)
 {
   struct marker *m;
 
   if (gc_is_watching && (m = find_marker(a)) && m->flags & GC_WATCHED) {
     /* This is useful to set breakpoints on. */
     fprintf(stderr, "## Watched thing %p found in "
-	    "gc_external_mark3() in pass %d.\n", a, Pike_in_gc);
+	    "gc_mark_external() in pass %d.\n", a, Pike_in_gc);
   }
 
   if (!a) Pike_fatal("Got null pointer.\n");
 
   if(Pike_in_gc == GC_PASS_LOCATE)
   {
-    if(a==check_for)
-    {
-      char *tmp=found_where;
-      void *tmp2=found_in;
-
-      if(where) found_where=where;
-      if(in) found_in=in;
-
+    if(a==check_for) {
+      const char *orig_gc_found_place = gc_found_place;
+      gc_found_place = place;
       gdb_gc_stop_here(a, 0);
-
-      found_where=tmp;
-      found_in=tmp2;
+      gc_found_place = orig_gc_found_place;
     }
     return 0;
   }
 
   if (Pike_in_gc != GC_PASS_CHECK)
-    Pike_fatal("gc_external_mark() called in invalid gc pass.\n");
+    Pike_fatal("gc_mark_external() called in invalid gc pass.\n");
 
 #ifdef DEBUG_MALLOC
   if (gc_external_refs_zapped) {
     fprintf (stderr, "One external ref to %p found%s.\n",
-	     a, where ? where : "");
+	     a, place ? place : "");
     if (in) describe (in);
     return 0;
   }
@@ -1737,19 +1724,6 @@ void gc_delayed_free(void *a, int type)
   gc_add_extra_ref(a);
   m->flags |= GC_GOT_DEAD_REF;
 }
-
-#ifdef PIKE_DEBUG
-void gc_mark_enqueue(queue_call call, void *data)
-{
-  struct marker *m;
-  if (gc_is_watching && (m = find_marker(data)) && m->flags & GC_WATCHED) {
-    /* This is useful to set breakpoints on. */
-    fprintf(stderr, "## Watched thing %p found in "
-	    "gc_mark_enqueue() in pass %d.\n", data, Pike_in_gc);
-  }
-  enqueue(&gc_mark_queue, call, data);
-}
-#endif
 
 int gc_mark(void *a)
 {
@@ -2624,12 +2598,12 @@ size_t do_gc(void *ignored, int explicit_call)
 
 #ifdef PIKE_DEBUG
   if(master_object)
-    gc_external_mark2(master_object,0," as master_object");
+    gc_mark_external (master_object, " as master_object");
 
   {
     extern struct mapping *builtin_constants;
     if(builtin_constants)
-      gc_external_mark2(builtin_constants,0," as builtin_constants");
+      gc_mark_external (builtin_constants, " as builtin_constants");
   }
 #endif
 
@@ -2658,15 +2632,15 @@ size_t do_gc(void *ignored, int explicit_call)
    * data blocks. */
   ACCEPT_UNFINISHED_TYPE_FIELDS {
     gc_mark_all_arrays();
-    run_queue(&gc_mark_queue);
+    gc_mark_run_queue();
     gc_mark_all_multisets();
-    run_queue(&gc_mark_queue);
+    gc_mark_run_queue();
     gc_mark_all_mappings();
-    run_queue(&gc_mark_queue);
+    gc_mark_run_queue();
     gc_mark_all_programs();
-    run_queue(&gc_mark_queue);
+    gc_mark_run_queue();
     gc_mark_all_objects();
-    run_queue(&gc_mark_queue);
+    gc_mark_run_queue();
 #ifdef PIKE_DEBUG
     if(gc_debug) gc_mark_all_strings();
 #endif /* PIKE_DEBUG */

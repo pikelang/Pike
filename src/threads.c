@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.219 2003/06/30 17:06:10 mast Exp $
+|| $Id: threads.c,v 1.220 2003/09/08 20:05:21 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.219 2003/06/30 17:06:10 mast Exp $");
+RCSID("$Id: threads.c,v 1.220 2003/09/08 20:05:21 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1543,7 +1543,7 @@ static void thread_was_checked(struct object *o)
 {
   struct thread_state *tmp=THIS_THREAD;
   if(tmp->thread_local != NULL)
-    debug_gc_check2(tmp->thread_local, T_OBJECT, o,
+    debug_gc_check (tmp->thread_local,
 		    " as mapping for thread local values in thread");
 
 #ifdef PIKE_DEBUG
@@ -1551,17 +1551,17 @@ static void thread_was_checked(struct object *o)
   {
     struct pike_frame *f;
     debug_malloc_touch(o);
-    debug_gc_xmark_svalues(tmp->state.evaluator_stack,
-			   tmp->state.stack_pointer-tmp->state.evaluator_stack-1,
-			   " in idle thread stack");
+    gc_mark_external_svalues(tmp->state.evaluator_stack,
+			     tmp->state.stack_pointer-tmp->state.evaluator_stack,
+			     " in idle thread stack");
     
     for(f=tmp->state.frame_pointer;f;f=f->next)
     {
       debug_malloc_touch(f);
       if(f->context.parent)
-	gc_external_mark2(f->context.parent,0," in Pike_fp->context.parent of idle thread");
-      gc_external_mark2(f->current_object,0," in Pike_fp->current_object of idle thread");
-      gc_external_mark2(f->context.prog,0," in Pike_fp->context.prog of idle thread");
+	gc_mark_external (f->context.parent, " in Pike_fp->context.parent of idle thread");
+      gc_mark_external (f->current_object, " in Pike_fp->current_object of idle thread");
+      gc_mark_external (f->context.prog, " in Pike_fp->context.prog of idle thread");
     }
   }
 #endif
@@ -1682,7 +1682,7 @@ void gc_check_thread_local (struct object *o)
     FOR_EACH_THREAD (s, {
 	if (s->thread_local &&
 	    (val = low_mapping_lookup(s->thread_local, &key)))
-	  debug_gc_check_svalues2(val, 1, T_OBJECT, o,
+	  debug_gc_check_svalues (val, 1,
 				  " as thread local value in Thread.Local object"
 				  " (indirect ref)");
       });

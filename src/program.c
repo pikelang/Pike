@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.523 2003/09/04 15:02:02 grubba Exp $
+|| $Id: program.c,v 1.524 2003/09/08 20:05:21 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.523 2003/09/04 15:02:02 grubba Exp $");
+RCSID("$Id: program.c,v 1.524 2003/09/08 20:05:21 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6571,19 +6571,14 @@ static void gc_check_frame(struct pike_frame *f)
   if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
   {
     if(f->current_object)
-      debug_gc_check2(f->current_object, T_PIKE_FRAME, f,
-		      " as current_object in trampoline frame");
+      debug_gc_check (f->current_object, " as current_object in trampoline frame");
     if(f->context.prog)
-      debug_gc_check2(f->context.prog, T_PIKE_FRAME, f,
-		      " as context.prog in trampoline frame");
+      debug_gc_check (f->context.prog, " as context.prog in trampoline frame");
     if(f->context.parent)
-      debug_gc_check2(f->context.parent, T_PIKE_FRAME, f,
-		      " as context.parent in trampoline frame");
+      debug_gc_check (f->context.parent, " as context.parent in trampoline frame");
     if(f->flags & PIKE_FRAME_MALLOCED_LOCALS)
-      debug_gc_check_svalues2(f->locals, f->num_locals, T_PIKE_FRAME, f,
-			      " in locals of trampoline frame");
-    if(f->scope && !debug_gc_check2(f->scope, T_PIKE_FRAME, f,
-				    " as scope frame of trampoline frame"))
+      debug_gc_check_svalues (f->locals, f->num_locals, " in locals of trampoline frame");
+    if(f->scope && !debug_gc_check (f->scope, " as scope frame of trampoline frame"))
       gc_check_frame(f->scope);
   }
 }
@@ -6591,7 +6586,7 @@ static void gc_check_frame(struct pike_frame *f)
 static void gc_check_trampoline(struct object *o)
 {
   if (THIS->frame &&
-      !debug_gc_check2(THIS->frame, T_OBJECT, o, " as trampoline frame"))
+      !debug_gc_check (THIS->frame, " as trampoline frame"))
     gc_check_frame(THIS->frame);
 }
 
@@ -6641,7 +6636,7 @@ static void placeholder_sprintf (INT32 args)
 
 void init_program(void)
 {
-  int i;
+  size_t i;
   struct svalue key;
   struct svalue val;
   struct svalue id;
@@ -6713,7 +6708,7 @@ void init_program(void)
 
 void cleanup_program(void)
 {
-  int e;
+  size_t e;
 
   free_mapping(lfun_types);
   free_mapping(lfun_ids);
@@ -6764,8 +6759,6 @@ void cleanup_program(void)
 #endif
 }
 
-#ifdef GC2
-
 void gc_mark_program_as_referenced(struct program *p)
 {
   debug_malloc_touch(p);
@@ -6791,39 +6784,39 @@ void gc_mark_program_as_referenced(struct program *p)
   }
   
   if(gc_mark(p))
-  {
-    int e;
+    GC_ENTER (p, T_PROGRAM) {
+      int e;
 
-    if (p == gc_mark_program_pos)
-      gc_mark_program_pos = p->next;
-    if (p == gc_internal_program)
-      gc_internal_program = p->next;
-    else {
-      DOUBLEUNLINK(first_program, p);
-      DOUBLELINK(first_program, p); /* Linked in first. */
-    }
+      if (p == gc_mark_program_pos)
+	gc_mark_program_pos = p->next;
+      if (p == gc_internal_program)
+	gc_internal_program = p->next;
+      else {
+	DOUBLEUNLINK(first_program, p);
+	DOUBLELINK(first_program, p); /* Linked in first. */
+      }
 
-    if(p->parent)
-      gc_mark_program_as_referenced(p->parent);
+      if(p->parent)
+	gc_mark_program_as_referenced(p->parent);
 
-    for(e=0;e<p->num_constants;e++)
-      gc_mark_svalues(& p->constants[e].sval, 1);
+      for(e=0;e<p->num_constants;e++)
+	gc_mark_svalues(& p->constants[e].sval, 1);
 
-    for(e=0;e<p->num_inherits;e++)
-    {
-      if(p->inherits[e].parent)
-	gc_mark_object_as_referenced(p->inherits[e].parent);
+      for(e=0;e<p->num_inherits;e++)
+      {
+	if(p->inherits[e].parent)
+	  gc_mark_object_as_referenced(p->inherits[e].parent);
 
-      if(e && p->inherits[e].prog)
-	gc_mark_program_as_referenced(p->inherits[e].prog);
-    }
+	if(e && p->inherits[e].prog)
+	  gc_mark_program_as_referenced(p->inherits[e].prog);
+      }
 
-  }
+    } GC_LEAVE;
 }
 
 void real_gc_cycle_check_program(struct program *p, int weak)
 {
-  GC_CYCLE_ENTER(p, weak) {
+  GC_CYCLE_ENTER(p, T_PROGRAM, weak) {
     int e;
 
     if (!(p->flags & PROGRAM_AVOID_CHECK))
@@ -6864,45 +6857,46 @@ static void gc_check_program(struct program *p)
     return;
   }
 
-  if(p->parent)
-    debug_gc_check2(p->parent, T_PROGRAM, p, " as parent program of a program");
+  GC_ENTER (p, T_PROGRAM) {
+    if(p->parent)
+      debug_gc_check (p->parent, " as parent program of a program");
   
-  for(e=0;e<p->num_constants;e++) {
-    debug_gc_check_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
-  }
+    for(e=0;e<p->num_constants;e++) {
+      debug_gc_check_svalues (&p->constants[e].sval, 1, " as program constant");
+    }
   
-  for(e=0;e<p->num_inherits;e++)
-  {
-    if(p->inherits[e].parent)
+    for(e=0;e<p->num_inherits;e++)
     {
-      debug_gc_check2(p->inherits[e].parent, T_PROGRAM, p,
-		      " as inherited parent object of a program");
+      if(p->inherits[e].parent)
+      {
+	debug_gc_check (p->inherits[e].parent,
+			" as inherited parent object of a program");
+      }
+
+#ifdef PIKE_DEBUG
+      if(d_flag && p->inherits[e].name && check_for != (void *)(ptrdiff_t)1)
+	debug_gc_check (p->inherits[e].name, " as inherit name");
+#endif
+
+      if(e && p->inherits[e].prog)
+	debug_gc_check (p->inherits[e].prog, " as inherited program of a program");
     }
 
 #ifdef PIKE_DEBUG
-    if(d_flag && p->inherits[e].name && check_for != (void *)(ptrdiff_t)1)
-      debug_gc_check(p->inherits[e].name, T_PROGRAM, p);
-#endif
-
-    if(e && p->inherits[e].prog)
-      debug_gc_check2(p->inherits[e].prog, T_PROGRAM, p,
-		      " as inherited program of a program");
-  }
-
-#ifdef PIKE_DEBUG
-  if(d_flag && check_for != (void *)(ptrdiff_t)1)
-  {
-    int e;
-    for(e=0;e<(int)p->num_strings;e++)
-      debug_gc_check(p->strings[e], T_PROGRAM, p);
-
-    for(e=0;e<(int)p->num_identifiers;e++)
+    if(d_flag && check_for != (void *)(ptrdiff_t)1)
     {
-      debug_gc_check(p->identifiers[e].name, T_PROGRAM, p);
-      debug_gc_check(p->identifiers[e].type, T_PROGRAM, p);
+      int e;
+      for(e=0;e<(int)p->num_strings;e++)
+	debug_gc_check (p->strings[e], " as program string");
+
+      for(e=0;e<(int)p->num_identifiers;e++)
+      {
+	debug_gc_check (p->identifiers[e].name, " as program identifier name");
+	debug_gc_check (p->identifiers[e].type, " as program identifier type");
+      }
     }
-  }
 #endif
+  } GC_LEAVE;
 }
 
 unsigned gc_touch_all_programs(void)
@@ -6956,7 +6950,7 @@ void gc_zap_ext_weak_refs_in_programs(void)
     gc_mark_program_pos = p->next;
     gc_mark_program_as_referenced(p);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 size_t gc_free_all_unreferenced_programs(void)
@@ -7032,8 +7026,6 @@ size_t gc_free_all_unreferenced_programs(void)
 
   return unreferenced;
 }
-
-#endif /* GC2 */
 
 
 void push_compiler_frame(int lexical_scope)

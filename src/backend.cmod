@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.46 2003/08/04 14:56:38 mast Exp $
+|| $Id: backend.cmod,v 1.47 2003/09/08 20:05:20 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.46 2003/08/04 14:56:38 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.47 2003/09/08 20:05:20 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1960,10 +1960,10 @@ PIKECLASS Backend
       PROTECT_CALL_OUTS();
       for (e = 0; e < me->num_pending_calls; e++) {
 	if (CALL(e)->caller)
-	  gc_external_mark2(CALL(e)->caller, Pike_fp->current_object,
+	  gc_mark_external (CALL(e)->caller,
 			    " as caller for call out in backend object");
 	if (CALL(e)->args)
-	  gc_external_mark2(CALL(e)->args, Pike_fp->current_object,
+	  gc_mark_external (CALL(e)->args,
 			    " as call out args in backend object");
       }
       UNPROTECT_CALL_OUTS();

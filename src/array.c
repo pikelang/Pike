@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.148 2003/08/26 18:33:20 mast Exp $
+|| $Id: array.c,v 1.149 2003/09/08 20:05:20 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "cyclic.h"
 #include "multiset.h"
 
-RCSID("$Id: array.c,v 1.148 2003/08/26 18:33:20 mast Exp $");
+RCSID("$Id: array.c,v 1.149 2003/09/08 20:05:20 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -2262,87 +2262,90 @@ void check_all_arrays(void)
 
 static void gc_check_array(struct array *a)
 {
-  if(a->type_field & BIT_COMPLEX)
-  {
-    if (a->flags & ARRAY_WEAK_FLAG) {
-      debug_gc_check_weak_svalues(ITEM(a), a->size, T_ARRAY, a);
-      gc_checked_as_weak(a);
+  GC_ENTER (a, T_ARRAY) {
+    if(a->type_field & BIT_COMPLEX)
+    {
+      if (a->flags & ARRAY_WEAK_FLAG) {
+	gc_check_weak_svalues(ITEM(a), a->size);
+	gc_checked_as_weak(a);
+      }
+      else
+	gc_check_svalues(ITEM(a), a->size);
     }
-    else
-      debug_gc_check_svalues(ITEM(a), a->size, T_ARRAY, a);
-  }
+  } GC_LEAVE;
 }
 
 void gc_mark_array_as_referenced(struct array *a)
 {
-  if(gc_mark(a)) {
+  if(gc_mark(a))
+    GC_ENTER (a, T_ARRAY) {
 #ifdef PIKE_DEBUG
-    if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
-      Pike_fatal("Trying to gc mark some *_empty_array.\n");
+      if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
+	Pike_fatal("Trying to gc mark some *_empty_array.\n");
 #endif
 
-    if (a == gc_mark_array_pos)
-      gc_mark_array_pos = a->next;
-    if (a == gc_internal_array)
-      gc_internal_array = a->next;
-    else {
-      UNLINK_ARRAY(a);
-      LINK_ARRAY(a);		/* Linked in first. */
-    }
-
-    if (a->type_field & BIT_COMPLEX)
-    {
-      if (a->flags & ARRAY_WEAK_FLAG) {
-	int e;
-	TYPE_FIELD t;
-
-	if(a->flags & ARRAY_WEAK_SHRINK) {
-	  int d=0;
-#ifdef PIKE_DEBUG
-	  if (a->refs != 1)
-	    Pike_fatal("Got %d refs to weak shrink array "
-		  "which we'd like to change the size on.\n", a->refs);
-#endif
-	  t = 0;
-	  for(e=0;e<a->size;e++)
-	    if (!gc_mark_weak_svalues(a->item+e, 1)) {
-	      a->item[d++]=a->item[e];
-	      t |= 1 << a->item[e].type;
-	    }
-	  a->size=d;
-	}
-	else
-	  if (!(t = gc_mark_weak_svalues(a->item, a->size)))
-	    t = a->type_field;
-
-	/* Ugly, but we are not allowed to change type_field
-	 * at the same time as the array is being built...
-	 * Actually we just need better primitives for building arrays.
-	 */
-	if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
-	  a->type_field = t;
-	else
-	  a->type_field |= t;	/* There might be an additional BIT_INT. */
-
-	gc_assert_checked_as_weak(a);
-      }
+      if (a == gc_mark_array_pos)
+	gc_mark_array_pos = a->next;
+      if (a == gc_internal_array)
+	gc_internal_array = a->next;
       else {
-	TYPE_FIELD t;
-	if ((t = gc_mark_svalues(ITEM(a), a->size))) {
+	UNLINK_ARRAY(a);
+	LINK_ARRAY(a);		/* Linked in first. */
+      }
+
+      if (a->type_field & BIT_COMPLEX)
+      {
+	if (a->flags & ARRAY_WEAK_FLAG) {
+	  int e;
+	  TYPE_FIELD t;
+
+	  if(a->flags & ARRAY_WEAK_SHRINK) {
+	    int d=0;
+#ifdef PIKE_DEBUG
+	    if (a->refs != 1)
+	      Pike_fatal("Got %d refs to weak shrink array "
+			 "which we'd like to change the size on.\n", a->refs);
+#endif
+	    t = 0;
+	    for(e=0;e<a->size;e++)
+	      if (!gc_mark_weak_svalues(a->item+e, 1)) {
+		a->item[d++]=a->item[e];
+		t |= 1 << a->item[e].type;
+	      }
+	    a->size=d;
+	  }
+	  else
+	    if (!(t = gc_mark_weak_svalues(a->item, a->size)))
+	      t = a->type_field;
+
+	  /* Ugly, but we are not allowed to change type_field
+	   * at the same time as the array is being built...
+	   * Actually we just need better primitives for building arrays.
+	   */
 	  if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
 	    a->type_field = t;
 	  else
-	    a->type_field |= t;
+	    a->type_field |= t;	/* There might be an additional BIT_INT. */
+
+	  gc_assert_checked_as_weak(a);
 	}
-	gc_assert_checked_as_nonweak(a);
+	else {
+	  TYPE_FIELD t;
+	  if ((t = gc_mark_svalues(ITEM(a), a->size))) {
+	    if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	      a->type_field = t;
+	    else
+	      a->type_field |= t;
+	  }
+	  gc_assert_checked_as_nonweak(a);
+	}
       }
-    }
-  }
+    } GC_LEAVE;
 }
 
 void real_gc_cycle_check_array(struct array *a, int weak)
 {
-  GC_CYCLE_ENTER(a, weak) {
+  GC_CYCLE_ENTER(a, T_ARRAY, weak) {
 #ifdef PIKE_DEBUG
     if (a == &empty_array || a == &weak_empty_array || a == &weak_shrink_empty_array)
       Pike_fatal("Trying to gc cycle check some *_empty_array.\n");
@@ -2434,7 +2437,7 @@ void gc_zap_ext_weak_refs_in_arrays(void)
     gc_mark_array_pos = a->next;
     gc_mark_array_as_referenced(a);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 size_t gc_free_all_unreferenced_arrays(void)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.114 2003/08/20 11:53:58 grubba Exp $
+|| $Id: error.c,v 1.115 2003/09/08 20:05:20 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -23,7 +23,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.114 2003/08/20 11:53:58 grubba Exp $");
+RCSID("$Id: error.c,v 1.115 2003/09/08 20:05:20 mast Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -833,7 +833,7 @@ PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expe
 #ifdef PIKE_DEBUG
 static void gc_check_throw_value(struct callback *foo, void *bar, void *gazonk)
 {
-  debug_gc_xmark_svalues(&throw_value,1," in the throw value");
+  gc_mark_external_svalues(&throw_value,1," in the throw value");
 }
 #endif
 

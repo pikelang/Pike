@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.77 2003/08/26 18:46:40 mast Exp $
+|| $Id: multiset.c,v 1.78 2003/09/08 20:05:21 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.77 2003/08/26 18:46:40 mast Exp $");
+RCSID("$Id: multiset.c,v 1.78 2003/09/08 20:05:21 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -3752,67 +3752,70 @@ void gc_check_all_multisets (void)
     if (d_flag > 1) check_multiset (l, 1);
 #endif
 
-    debug_gc_check2 (msd, T_MULTISET, l, " as multiset data block of a multiset");
+    GC_ENTER (l, T_MULTISET) {
+      debug_gc_check (msd, " as multiset data block of a multiset");
+    } GC_LEAVE;
   }
 
   for (l = first_multiset; l; l = l->next) {
     struct multiset_data *msd = l->msd;
     struct marker *m = get_marker (msd);
 
-    if (!(m->flags & GC_MSD_VISITED)) {
-      if (msd->root) {
-	union msnode *node = low_multiset_first (msd);
-	struct svalue ind;
+    if (!(m->flags & GC_MSD_VISITED))
+      GC_ENTER (l, T_MULTISET) {
+	if (msd->root) {
+	  union msnode *node = low_multiset_first (msd);
+	  struct svalue ind;
 
 #define WITH_NODES_BLOCK(TYPE, OTHERTYPE, IND, INDVAL)			\
-	if (!(msd->flags & MULTISET_WEAK) || m->refs < msd->refs)	\
-	  do {								\
-	    low_use_multiset_index (node, ind);				\
-	    debug_gc_check_svalues (&ind, 1, T_MULTISET, l);		\
-	    INDVAL (debug_gc_check_svalues (				\
-		      &node->iv.val, 1, T_MULTISET, l));		\
-	  } while ((node = low_multiset_next (node)));			\
+	  if (!(msd->flags & MULTISET_WEAK) || m->refs < msd->refs)	\
+	    do {							\
+	      low_use_multiset_index (node, ind);			\
+	      debug_gc_check_svalues (&ind, 1, " as multiset index");	\
+	      INDVAL (debug_gc_check_svalues (&node->iv.val, 1,		\
+					      " as multiset value"));	\
+	    } while ((node = low_multiset_next (node)));		\
 									\
-	else {								\
-	  switch (msd->flags & MULTISET_WEAK) {				\
-	    case MULTISET_WEAK_INDICES:					\
-	      do {							\
-		low_use_multiset_index (node, ind);			\
-		debug_gc_check_weak_svalues (&ind, 1, T_MULTISET, l);	\
-		INDVAL (debug_gc_check_svalues (			\
-			  &node->iv.val, 1, T_MULTISET, l));		\
-	      } while ((node = low_multiset_next (node)));		\
-	      break;							\
+	  else {							\
+	    switch (msd->flags & MULTISET_WEAK) {			\
+	      case MULTISET_WEAK_INDICES:				\
+		do {							\
+		  low_use_multiset_index (node, ind);			\
+		  debug_gc_check_weak_svalues (&ind, 1, " as multiset index"); \
+		  INDVAL (debug_gc_check_svalues (&node->iv.val, 1,	\
+						  " as multiset value")); \
+		} while ((node = low_multiset_next (node)));		\
+		break;							\
 									\
-	    case MULTISET_WEAK_VALUES:					\
-	      do {							\
-		low_use_multiset_index (node, ind);			\
-		debug_gc_check_svalues (&ind, 1, T_MULTISET, l);	\
-		INDVAL (debug_gc_check_weak_svalues (			\
-			  &node->iv.val, 1, T_MULTISET, l));		\
-	      } while ((node = low_multiset_next (node)));		\
-	      break;							\
+	      case MULTISET_WEAK_VALUES:				\
+		do {							\
+		  low_use_multiset_index (node, ind);			\
+		  debug_gc_check_svalues (&ind, 1, " as multiset index"); \
+		  INDVAL (debug_gc_check_weak_svalues (&node->iv.val, 1, \
+						       " as multiset value")); \
+		} while ((node = low_multiset_next (node)));		\
+		break;							\
 									\
-	    default:							\
-	      do {							\
-		low_use_multiset_index (node, ind);			\
-		debug_gc_check_weak_svalues (&ind, 1, T_MULTISET, l);	\
-		INDVAL (debug_gc_check_weak_svalues (			\
-			  &node->iv.val, 1, T_MULTISET, l));		\
-	      } while ((node = low_multiset_next (node)));		\
-	      break;							\
-	  }								\
-	  gc_checked_as_weak (msd);					\
-	}
+	      default:							\
+		do {							\
+		  low_use_multiset_index (node, ind);			\
+		  debug_gc_check_weak_svalues (&ind, 1, " as multiset index"); \
+		  INDVAL (debug_gc_check_weak_svalues (&node->iv.val, 1, \
+						       " as multiset value")); \
+		} while ((node = low_multiset_next (node)));		\
+		break;							\
+	    }								\
+	    gc_checked_as_weak (msd);					\
+	  }
 
-	DO_WITH_NODES (msd);
+	  DO_WITH_NODES (msd);
 
 #undef WITH_NODES_BLOCK
-      }
+	}
 
-      if (l->node_refs) m->flags |= GC_MSD_GOT_NODE_REFS | GC_MSD_VISITED;
-      else m->flags |= GC_MSD_VISITED;
-    }
+	if (l->node_refs) m->flags |= GC_MSD_GOT_NODE_REFS | GC_MSD_VISITED;
+	else m->flags |= GC_MSD_VISITED;
+      } GC_LEAVE;
   }
 }
 
@@ -3972,71 +3975,72 @@ static void gc_unlink_msnode_shared (struct multiset_data *msd,
 
 void gc_mark_multiset_as_referenced (struct multiset *l)
 {
-  if (gc_mark (l)) {
-    struct multiset_data *msd = l->msd;
+  if (gc_mark (l))
+    GC_ENTER (l, T_MULTISET) {
+      struct multiset_data *msd = l->msd;
 
-    if (l == gc_mark_multiset_pos)
-      gc_mark_multiset_pos = l->next;
-    if (l == gc_internal_multiset)
-      gc_internal_multiset = l->next;
-    else {
-      DOUBLEUNLINK (first_multiset, l);
-      DOUBLELINK (first_multiset, l); /* Linked in first. */
-    }
-
-    if (gc_mark (msd) && msd->root &&
-	((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
-      struct marker *m = get_marker (msd);
-      TYPE_FIELD ind_types = 0, val_types = 0;
-
-      if (m->refs < msd->refs) {
-	/* Must leave the multiset data untouched if there are direct
-	 * external refs to it. */
-	GC_RECURSE_MSD_IN_USE (msd, gc_mark_svalues, ind_types, val_types);
-	gc_assert_checked_as_nonweak (msd);
-      }
-
+      if (l == gc_mark_multiset_pos)
+	gc_mark_multiset_pos = l->next;
+      if (l == gc_internal_multiset)
+	gc_internal_multiset = l->next;
       else {
-	switch (msd->flags & MULTISET_WEAK) {
-	  case 0:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
-			GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_NONE,
-			gc_mark, ind_types, val_types);
-	    gc_assert_checked_as_nonweak (msd);
-	    break;
-	  case MULTISET_WEAK_INDICES:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
-			GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_IND,
-			gc_mark, ind_types, val_types);
-	    gc_assert_checked_as_weak (msd);
-	    break;
-	  case MULTISET_WEAK_VALUES:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
-			GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_VAL,
-			gc_mark, ind_types, val_types);
-	    gc_assert_checked_as_weak (msd);
-	    break;
-	  default:
-	    GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
-			GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_BOTH,
-			gc_mark, ind_types, val_types);
-	    gc_assert_checked_as_weak (msd);
-	    break;
-	}
-
-	if (msd->refs == 1 && DO_SHRINK (msd, 0)) {
-	  /* Only shrink the multiset if it isn't shared, or else we
-	   * can end up with larger memory consumption since the
-	   * shrunk data blocks won't be shared. */
-	  l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
-	  msd = l->msd;
-	}
+	DOUBLEUNLINK (first_multiset, l);
+	DOUBLELINK (first_multiset, l); /* Linked in first. */
       }
 
-      msd->ind_types = ind_types;
-      if (msd->flags & MULTISET_INDVAL) msd->val_types = val_types;
-    }
-  }
+      if (gc_mark (msd) && msd->root &&
+	  ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
+	struct marker *m = get_marker (msd);
+	TYPE_FIELD ind_types = 0, val_types = 0;
+
+	if (m->refs < msd->refs) {
+	  /* Must leave the multiset data untouched if there are direct
+	   * external refs to it. */
+	  GC_RECURSE_MSD_IN_USE (msd, gc_mark_svalues, ind_types, val_types);
+	  gc_assert_checked_as_nonweak (msd);
+	}
+
+	else {
+	  switch (msd->flags & MULTISET_WEAK) {
+	    case 0:
+	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+			  GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_NONE,
+			  gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_nonweak (msd);
+	      break;
+	    case MULTISET_WEAK_INDICES:
+	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+			  GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_IND,
+			  gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_weak (msd);
+	      break;
+	    case MULTISET_WEAK_VALUES:
+	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+			  GC_REC_I_WEAK_NONE, GC_REC_IV_WEAK_VAL,
+			  gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_weak (msd);
+	      break;
+	    default:
+	      GC_RECURSE (msd, m->flags & GC_MSD_GOT_NODE_REFS,
+			  GC_REC_I_WEAK_IND, GC_REC_IV_WEAK_BOTH,
+			  gc_mark, ind_types, val_types);
+	      gc_assert_checked_as_weak (msd);
+	      break;
+	  }
+
+	  if (msd->refs == 1 && DO_SHRINK (msd, 0)) {
+	    /* Only shrink the multiset if it isn't shared, or else we
+	     * can end up with larger memory consumption since the
+	     * shrunk data blocks won't be shared. */
+	    l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
+	    msd = l->msd;
+	  }
+	}
+
+	msd->ind_types = ind_types;
+	if (msd->flags & MULTISET_INDVAL) msd->val_types = val_types;
+      }
+    } GC_LEAVE;
 }
 
 void gc_mark_all_multisets (void)
@@ -4051,7 +4055,7 @@ void gc_mark_all_multisets (void)
 
 void real_gc_cycle_check_multiset (struct multiset *l, int weak)
 {
-  GC_CYCLE_ENTER (l, weak) {
+  GC_CYCLE_ENTER (l, T_MULTISET, weak) {
     struct multiset_data *msd = l->msd;
 
     if (msd->root && ((msd->ind_types | msd->val_types) & BIT_COMPLEX)) {
@@ -4125,7 +4129,7 @@ void gc_zap_ext_weak_refs_in_multisets (void)
     gc_mark_multiset_pos = l->next;
     gc_mark_multiset_as_referenced (l);
   }
-  discard_queue (&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 size_t gc_free_all_unreferenced_multisets (void)
@@ -5298,7 +5302,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.77 2003/08/26 18:46:40 mast Exp $");
+RCSID("$Id: multiset.c,v 1.78 2003/09/08 20:05:21 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -5665,7 +5669,9 @@ void gc_check_all_multisets(void)
 {
   struct multiset *l;
   for(l=first_multiset;l;l=l->next)
-    debug_gc_check2(l->ind, T_MULTISET, l, " as indices array of a multiset");
+    GC_ENTER (l, T_MULTISET) {
+      debug_gc_check (l->ind, " as indices array of a multiset");
+    } GC_LEAVE;
 }
 
 void gc_mark_all_multisets(void)

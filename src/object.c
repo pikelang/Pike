@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.246 2003/08/20 11:53:07 grubba Exp $
+|| $Id: object.c,v 1.247 2003/09/08 20:05:21 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.246 2003/08/20 11:53:07 grubba Exp $");
+RCSID("$Id: object.c,v 1.247 2003/09/08 20:05:21 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1681,76 +1681,76 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
   debug_malloc_touch(o->storage);
 
   if(gc_mark(o))
-  {
-    int e;
-    struct program *p;
+    GC_ENTER (o, T_OBJECT) {
+      int e;
+      struct program *p;
 
-    if(o->next == o) return; /* Fake object used by compiler */
+      if(o->next == o) return; /* Fake object used by compiler */
 
-    if (o == gc_mark_object_pos)
-      gc_mark_object_pos = o->next;
-    if (o == gc_internal_object)
-      gc_internal_object = o->next;
-    else {
-      DOUBLEUNLINK(first_object, o);
-      DOUBLELINK(first_object, o); /* Linked in first. */
-    }
-
-    if(!o || !(p=o->prog)) return; /* Object already destructed */
-    if(!PIKE_OBJ_INITED(o)) return;
-
-    debug_malloc_touch(p);
-
-    gc_mark_program_as_referenced (p);
-
-    if(o->prog->flags & PROGRAM_USES_PARENT)
-      if(PARENT_INFO(o)->parent)
-	gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
-
-    LOW_PUSH_FRAME(o);
-
-    for(e=p->num_inherits-1; e>=0; e--)
-    {
-      int q;
-      
-      LOW_SET_FRAME_CONTEXT(p->inherits[e]);
-
-      if(pike_frame->context.prog->event_handler)
-	pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
-
-      for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
-      {
-	int d=pike_frame->context.prog->variable_index[q];
-	struct identifier *id = pike_frame->context.prog->identifiers + d;
-	int id_flags = id->identifier_flags;
-	int rtt = id->run_time_type;
-
-	if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
-	
-	if(rtt == T_MIXED)
-	{
-	  struct svalue *s;
-	  s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
-	  dmalloc_touch_svalue(s);
-	  if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
-	      !(id_flags & IDENTIFIER_NO_THIS_REF))
-	    gc_mark_svalues(s, 1);
-	}else{
-	  union anything *u;
-	  u=(union anything *)(pike_frame->current_storage + id->func.offset);
-#ifdef DEBUG_MALLOC
-	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
-#endif
-	  if (rtt != T_OBJECT || u->object != o ||
-	      !(id_flags & IDENTIFIER_NO_THIS_REF))
-	    gc_mark_short_svalue(u, rtt);
-	}
+      if (o == gc_mark_object_pos)
+	gc_mark_object_pos = o->next;
+      if (o == gc_internal_object)
+	gc_internal_object = o->next;
+      else {
+	DOUBLEUNLINK(first_object, o);
+	DOUBLELINK(first_object, o); /* Linked in first. */
       }
-      LOW_UNSET_FRAME_CONTEXT();
-    }
+
+      if(!o || !(p=o->prog)) return; /* Object already destructed */
+      if(!PIKE_OBJ_INITED(o)) return;
+
+      debug_malloc_touch(p);
+
+      gc_mark_program_as_referenced (p);
+
+      if(o->prog->flags & PROGRAM_USES_PARENT)
+	if(PARENT_INFO(o)->parent)
+	  gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
+
+      LOW_PUSH_FRAME(o);
+
+      for(e=p->num_inherits-1; e>=0; e--)
+      {
+	int q;
+      
+	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
+
+	if(pike_frame->context.prog->event_handler)
+	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_RECURSE);
+
+	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+	{
+	  int d=pike_frame->context.prog->variable_index[q];
+	  struct identifier *id = pike_frame->context.prog->identifiers + d;
+	  int id_flags = id->identifier_flags;
+	  int rtt = id->run_time_type;
+
+	  if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
+	
+	  if(rtt == T_MIXED)
+	  {
+	    struct svalue *s;
+	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
+	    dmalloc_touch_svalue(s);
+	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
+		!(id_flags & IDENTIFIER_NO_THIS_REF))
+	      gc_mark_svalues(s, 1);
+	  }else{
+	    union anything *u;
+	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
+#ifdef DEBUG_MALLOC
+	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+#endif
+	    if (rtt != T_OBJECT || u->object != o ||
+		!(id_flags & IDENTIFIER_NO_THIS_REF))
+	      gc_mark_short_svalue(u, rtt);
+	  }
+	}
+	LOW_UNSET_FRAME_CONTEXT();
+      }
     
-    LOW_POP_FRAME();
-  }
+      LOW_POP_FRAME();
+    } GC_LEAVE;
 }
 
 PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
@@ -1831,58 +1831,59 @@ static inline void gc_check_object(struct object *o)
   int e;
   struct program *p;
 
-  if((p=o->prog) && PIKE_OBJ_INITED(o))
-  {
-    debug_malloc_touch(p);
-    debug_gc_check2 (p, T_OBJECT, o, " as the program of an object");
-
-    if(p->flags & PROGRAM_USES_PARENT && PARENT_INFO(o)->parent)
-      debug_gc_check2(PARENT_INFO(o)->parent, T_OBJECT, o,
-		      " as parent of an object");
-
-    LOW_PUSH_FRAME(o);
-    
-    for(e=p->num_inherits-1; e>=0; e--)
+  GC_ENTER (o, T_OBJECT) {
+    if((p=o->prog) && PIKE_OBJ_INITED(o))
     {
-      int q;
-      LOW_SET_FRAME_CONTEXT(p->inherits[e]);
-      
-      if(pike_frame->context.prog->event_handler)
-	pike_frame->context.prog->event_handler(PROG_EVENT_GC_CHECK);
-      
-      for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
-      {
-	int d=pike_frame->context.prog->variable_index[q];
-	struct identifier *id = pike_frame->context.prog->identifiers + d;
-	int id_flags = id->identifier_flags;
-	int rtt = id->run_time_type;
-	
-	if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
-	
-	if(rtt == T_MIXED)
-	{
-	  struct svalue *s;
-	  s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
-	  dmalloc_touch_svalue(s);
-	  if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
-	      !(id_flags & IDENTIFIER_NO_THIS_REF))
-	    debug_gc_check_svalues(s, 1, T_OBJECT, debug_malloc_pass(o));
-	}else{
-	  union anything *u;
-	  u=(union anything *)(pike_frame->current_storage + id->func.offset);
-#ifdef DEBUG_MALLOC
-	  if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
-#endif
-	  if (rtt != T_OBJECT || u->object != o ||
-	      !(id_flags & IDENTIFIER_NO_THIS_REF))
-	    debug_gc_check_short_svalue(u, rtt, T_OBJECT, debug_malloc_pass(o));
-	}
-      }
-      LOW_UNSET_FRAME_CONTEXT();
+      debug_malloc_touch(p);
+      debug_gc_check (p, " as the program of an object");
 
+      if(p->flags & PROGRAM_USES_PARENT && PARENT_INFO(o)->parent)
+	debug_gc_check (PARENT_INFO(o)->parent, " as parent of an object");
+
+      LOW_PUSH_FRAME(o);
+    
+      for(e=p->num_inherits-1; e>=0; e--)
+      {
+	int q;
+	LOW_SET_FRAME_CONTEXT(p->inherits[e]);
+      
+	if(pike_frame->context.prog->event_handler)
+	  pike_frame->context.prog->event_handler(PROG_EVENT_GC_CHECK);
+
+	for(q=0;q<(int)pike_frame->context.prog->num_variable_index;q++)
+	{
+	  int d=pike_frame->context.prog->variable_index[q];
+	  struct identifier *id = pike_frame->context.prog->identifiers + d;
+	  int id_flags = id->identifier_flags;
+	  int rtt = id->run_time_type;
+	
+	  if (IDENTIFIER_IS_ALIAS(id_flags)) continue;
+	
+	  if(rtt == T_MIXED)
+	  {
+	    struct svalue *s;
+	    s=(struct svalue *)(pike_frame->current_storage + id->func.offset);
+	    dmalloc_touch_svalue(s);
+	    if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
+		!(id_flags & IDENTIFIER_NO_THIS_REF))
+	      gc_check_svalues(s, 1);
+	  }else{
+	    union anything *u;
+	    u=(union anything *)(pike_frame->current_storage + id->func.offset);
+#ifdef DEBUG_MALLOC
+	    if (rtt <= MAX_REF_TYPE) debug_malloc_touch(u->refs);
+#endif
+	    if (rtt != T_OBJECT || u->object != o ||
+		!(id_flags & IDENTIFIER_NO_THIS_REF))
+	      gc_check_short_svalue(u, rtt);
+	  }
+	}
+	LOW_UNSET_FRAME_CONTEXT();
+
+      }
+      LOW_POP_FRAME();
     }
-    LOW_POP_FRAME();
-  }
+  } GC_LEAVE;
 }
 
 unsigned gc_touch_all_objects(void)
@@ -1947,7 +1948,7 @@ void gc_zap_ext_weak_refs_in_objects(void)
     if (o->refs)
       gc_mark_object_as_referenced(o);
   }
-  discard_queue(&gc_mark_queue);
+  gc_mark_discard_queue();
 }
 
 size_t gc_free_all_unreferenced_objects(void)

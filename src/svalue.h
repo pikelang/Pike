@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.122 2003/08/20 16:42:50 mast Exp $
+|| $Id: svalue.h,v 1.123 2003/09/08 20:05:21 mast Exp $
 */
 
 #ifndef SVALUE_H
@@ -585,7 +585,8 @@ PMOD_EXPORT void copy_svalues_recursively_no_free(struct svalue *to,
 void check_short_svalue(const union anything *u, TYPE_T type);
 void debug_check_svalue(const struct svalue *s);
 void debug_check_type_hint (const struct svalue *svals, size_t num, TYPE_FIELD type_hint);
-PMOD_EXPORT void real_gc_xmark_svalues(const struct svalue *s, ptrdiff_t num);
+PMOD_EXPORT void real_gc_mark_external_svalues(const struct svalue *s, ptrdiff_t num,
+					       const char *place);
 PMOD_EXPORT void real_gc_check_svalues(const struct svalue *s, size_t num);
 void gc_check_weak_svalues(const struct svalue *s, size_t num);
 PMOD_EXPORT void real_gc_check_short_svalue(const union anything *u, TYPE_T type);
@@ -612,7 +613,8 @@ int svalues_are_constant(struct svalue *s,
 #define gc_cycle_check_without_recurse gc_mark_without_recurse
 #define gc_cycle_check_weak_without_recurse gc_mark_without_recurse
 
-#define gc_xmark_svalues(S,N) real_gc_xmark_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)
+#define gc_mark_external_svalues(S, NUM, PLACE)				\
+  real_gc_mark_external_svalues (dmalloc_check_svalue (S, DMALLOC_LOCATION()), NUM, PLACE)
 #define gc_check_svalues(S,N) real_gc_check_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)
 #define gc_check_short_svalue(U,T) real_gc_check_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),T)
 #define gc_mark_svalues(S,N) real_gc_mark_svalues(dmalloc_check_svalue((S),DMALLOC_LOCATION()),N)
