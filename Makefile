@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.122 2003/09/22 02:15:33 nilsson Exp $
+# $Id: Makefile,v 1.123 2003/11/05 02:06:55 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -321,7 +321,16 @@ docspotless:
 	  cd refdoc; $(DO_MAKE) spotless; \
 	else :; fi
 
-depend: configure
+depend:
+	@if test -d build; then \
+	  $(MAKE) "MAKE=$(MAKE)" "MAKE_PARALLEL=$(MAKE_PARALLEL)" _depend; \
+	else \
+	  echo You never need to do \"make depend\" before the first build, ; \
+	  echo and doing \"make depend\" in a Pike dist will actually break ; \
+	  echo the dist. ;\
+	  exit 1; fi;
+
+_depend: configure
 	-@cd "$(BUILDDIR)" && \
 	$(DO_MAKE) "MAKE_PARALLEL=$(MAKE_PARALLEL)" depend || { \
 	  res=$$?; \
