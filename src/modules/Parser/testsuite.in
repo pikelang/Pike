@@ -1206,4 +1206,7 @@ test_any([[{
    p->finish (s);
    return p->read();
 }]],"  ");
-
+test_parser([[{
+  object p = Parser.HTML();
+  return p->finish (WIDENER "<x y=")->read();
+}]], WIDENER "<x y=")
