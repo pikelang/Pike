@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.25 2000/03/25 22:40:02 hubbe Exp $
+ * $Id: oracle.c,v 1.26 2000/03/29 22:27:10 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -35,10 +35,13 @@
 
 #ifdef HAVE_ORACLE
 
+/* VERY VERY UGLY */
+#define MOTIF
+
 #include <oci.h>
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.25 2000/03/25 22:40:02 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.26 2000/03/29 22:27:10 hubbe Exp $");
 
 
 #define BLOB_FETCH_CHUNK 16384
@@ -1687,13 +1690,13 @@ static void call_atexits(void)
     (*atexit_fnc[--atexit_cnt])();
 }
 
-#else
+#else /* DYNAMIC_MODULE */
 
 static void call_atexits(void)
 {
 }
 
-#endif
+#endif /* DYNAMIC_MODULE */
 
 #else /* HAVE_ORACLE */
 
