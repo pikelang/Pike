@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.175 2001/11/08 14:46:36 grubba Exp $
+ * $Id: master.pike.in,v 1.176 2001/11/09 14:06:49 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -856,7 +856,7 @@ class dirnode
     }
 
     mixed `[](string index)
-      { 
+      {
 #ifdef MODULE_TRACE
 	werror("%*ndirnode(%O)->module_checker()[%O]\n",sizeof(backtrace()),dirname,index);
 #endif
@@ -876,7 +876,7 @@ class dirnode
 #ifdef MODULE_TRACE
       werror("%*nDirnode(%O) module[%O] -> ???\n",sizeof(backtrace()),dirname,index);
 #endif
-      object o;
+      mixed o;
 //      _describe(module);
       if(!zero_type(o=module[index]))
       {
@@ -931,9 +931,7 @@ class dirnode
 #ifdef MODULE_TRACE
       werror("%*nDirnode(%O) cache[%O] -> %O\n",sizeof(backtrace()),dirname,index, ret);
 #endif
-      // The check below is to (hopefully) avoid calling any function
-      // in ret (like `! or `==) in case it's an object.
-      if(!intp (ret) || ret) return ret;
+      if (ret != ZERO_TYPE) return ret;
       return UNDEFINED;
     }
     ret=ind(index);
@@ -941,7 +939,8 @@ class dirnode
     // Kluge!
     if(ret == __placeholder_object) return ret;
 
-    return cache[index]=ret;
+    cache[index] = zero_type(ret) ? ZERO_TYPE : ret;
+    return ret;
   }
 
   static int _cache_full;
@@ -987,13 +986,13 @@ class dirnode
   {
     // werror("indices(%O) called\n", dirname);
     fill_cache();
-    return indices(filter(cache, lambda(mixed x){ return !intp (x) || x; }));
+    return indices(filter(cache, lambda(mixed x) {return cache[x] != ZERO_TYPE;}));
   }
   array(mixed) _values()
   {
     // werror("values(%O) called\n", dirname);
     fill_cache();
-    return values(cache)-({0});
+    return values(cache) - ({ZERO_TYPE});
   }
 
   string _sprintf(int as)
@@ -1088,12 +1087,12 @@ class joinnode
   array(string) _indices()
   {
     fill_cache();
-    return indices(cache);
+    return indices(filter(cache, lambda(mixed x){ return cache[x] != ZERO_TYPE; }));
   }
   array(mixed) _values()
   {
     fill_cache();
-    return values(cache);
+    return values(cache) - ({ZERO_TYPE});
   }
 };
 
