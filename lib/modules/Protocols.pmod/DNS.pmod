@@ -350,7 +350,8 @@ class client {
       if(arrayp(domain))	
 	domains = domain;
       else
-	domains = ({ domains });
+	if(stringp(domain))
+	  domains = ({ domains });
 	
     }
   }
