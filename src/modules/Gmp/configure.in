@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 1999/10/05 05:32:26 hubbe Exp $
+# $Id: configure.in,v 1.7 1999/10/05 06:23:19 hubbe Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 }
 
 ],pike_cv_working_$1=yes,pike_cv_working_$1=no)])
-
+LIBS="$OLDLIBS"
 if test "x$pike_cv_working_$1" = xyes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(translit(HAVE_LIB$1,[a-z],[A-Z]))
