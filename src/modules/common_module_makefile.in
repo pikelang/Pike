@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.27 2004/04/17 15:18:52 marcus Exp $
+# $Id: common_module_makefile.in,v 1.28 2004/04/17 16:00:41 marcus Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -107,16 +107,15 @@ config.status: $(SRCDIR)/configure
 module.pmod: Makefile $(MODULE_PMOD_IN)
 	@if [ "x$(MODULE_PMOD_IN)" != "x" ]; then \
 	  echo "Making module.pmod" ; \
-	  module_program=$(MODULE_PROGRAM) ; \
 	  if [ -f "$(MODULE_PMOD_IN)" ]; then \
-	    sed -e "s/@module@/$${module_program}/" \
+	    sed -e "s/@module@/$(MODULE_PROGRAM)/" \
 	      <"$(MODULE_PMOD_IN)" >module.pmod; \
 	  else \
 	   if [ -d "$(MODULE_PMOD_IN)" ]; then \
 	     find "$(MODULE_PMOD_IN)" -type d -print | sed -e "s/$(MODULE_PMOD_IN)/module.pmod/" | xargs -n 1 mkdir -p ;\
 	     for mi in `find "$(MODULE_PMOD_IN)" -type f -print | sed -e "s/$(MODULE_PMOD_IN)//"` ;\
 	     do \
-	       sed -e "s/@module@/$${module_program}/" \
+	       sed -e "s/@module@/$(MODULE_PROGRAM)/" \
 	         <"$(MODULE_PMOD_IN)/$$mi" > "module.pmod/$$mi" ; \
 	     done; \
 	  else \

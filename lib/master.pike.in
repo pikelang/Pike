@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.341 2004/04/17 15:18:52 marcus Exp $
+// $Id: master.pike.in,v 1.342 2004/04/17 16:00:41 marcus Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -2005,7 +2005,7 @@ class CompatResolver
       if(mixed tmp=val->_module_value) val=tmp;
       mapping(string:mixed) level = res;
       string pfx;
-      while(2 == sscanf(name, "%s/%s", pfx, name))
+      while(2 == sscanf(name, "%s.%s", pfx, name))
 	level = (level[pfx] || (level[pfx] = ([])));
       level[name] = val;
     }
