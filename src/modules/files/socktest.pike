@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.33 2005/02/21 19:37:44 grubba Exp $ */
+/* $Id: socktest.pike,v 1.34 2005/02/22 09:14:44 grubba Exp $ */
 
 // #define OOB_DEBUG
 
@@ -313,8 +313,6 @@ void got_oob0(mixed ignored, string got)
 
 inherit Port : port1;
 inherit Port : port2;
-inherit Port : port1_v6;
-inherit Port : port2_v6;
 void create() {}
 
 int portno1;
