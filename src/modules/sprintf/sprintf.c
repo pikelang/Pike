@@ -102,7 +102,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.51 1999/10/26 02:07:22 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.52 1999/10/26 02:57:57 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1129,7 +1129,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 
 	    /* This is done because octal numbers
 	       don't align very well...   /Noring */
-	    if(base == 8 && tmp < 0 && x[i] == '3')
+	    if(base == 8 && (tmp & m) < 0 && x[i] == '3')
 	      x[i] = '7';
 	  }
 	  else
