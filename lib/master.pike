@@ -6,6 +6,8 @@ string version() { return "Pike 0.4pl2"; }
 string describe_backtrace(mixed *trace);
 
 string pike_library_path;
+string *pike_include_path=({});
+string *pike_module_path=({});
 
 mapping (string:string) environment=([]);
 
@@ -19,6 +21,35 @@ void putenv(string var, string val)
 {
   environment[var]=val;
 }
+
+
+void add_include_path(string tmp)
+{
+  tmp=combine_path(getcwd(),tmp);
+  pike_include_path-=({tmp});
+  pike_include_path=({tmp})+pike_include_path;
+}
+
+void remove_include_path(string tmp)
+{
+  tmp=combine_path(getcwd(),tmp);
+  pike_include_path-=({tmp});
+}
+
+void add_module_path(string tmp)
+{
+  tmp=combine_path(getcwd(),tmp);
+  pike_module_path-=({tmp});
+  pike_module_path=({tmp})+pike_module_path;
+}
+
+
+void remove_module_path(string tmp)
+{
+  tmp=combine_path(getcwd(),tmp);
+  pike_module_path-=({tmp});
+}
+
 
 mapping (string:program) programs=(["/master":object_program(this_object())]);
 
@@ -77,13 +108,9 @@ program cast_to_program(string pname, string current_file)
       cwd=getcwd();
     }
 
-    if(string path=getenv("PIKE_INCLUDE_PATH"))
-    {
-      foreach(path/":", path)
-	if(program ret=findprog(combine_path(cwd,
-					     combine_path(path,pname))))
-	  return ret;
-    }
+    foreach(pike_include_path, string path)
+      if(program ret=findprog(combine_path(path,pname)))
+	return ret;
 
     return findprog(combine_path(cwd,pname));
   }
@@ -112,6 +139,10 @@ object new(mixed prog, mixed ... args)
 void create()
 {
   /* make ourselves known */
+  add_constant("add_include_path",add_include_path);
+  add_constant("remove_include_path",remove_include_path);
+  add_constant("add_module_path",add_module_path);
+  add_constant("remove_module_path",remove_module_path);
   add_constant("master",lambda() { return this_object(); });
   add_constant("describe_backtrace",describe_backtrace);
   add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
@@ -137,7 +168,7 @@ program handle_inherit(string pname, string current_file)
   return cast_to_program(pname, current_file);
 }
 
-mapping (string:object) objects=(["/master":this_object()]);
+mapping (program:object) objects=([object_program(this_object()):this_object()]);
 
 /* This function is called when the drivers wants to cast a string
  * to an object because of an implict or explicit cast. This function
@@ -145,27 +176,13 @@ mapping (string:object) objects=(["/master":this_object()]);
  */
 object cast_to_object(string oname, string current_file)
 {
-  object ret;
+  program p;
+  object o;
 
-  if(oname[0]!='/')
-  {
-    string cwd;
-    if(current_file)
-    {
-      string *tmp=current_file/"/";
-      cwd=tmp[..sizeof(tmp)-2]*"/";
-    }else{
-      cwd=getcwd();
-    }
-    oname=combine_path(cwd,oname);
-  }
-
-  if(oname[sizeof(oname)-3..sizeof(oname)]==".pike")
-    oname=oname[0..sizeof(oname)-4];
-
-  if(ret=objects[oname]) return ret;
-
-  return objects[oname]=cast_to_program(oname,"/")();
+  p=cast_to_program(oname, current_file);
+  if(!p) return 0;
+  if(!(o=objects[p])) o=objects[p]=p();
+  return o;
 }
 
 class dirnode
@@ -248,15 +265,12 @@ varargs mixed resolv(string identifier, string current_file)
     if(ret=findmodule(path)) return ret;
   }
 
-  if(path=getenv("PIKE_MODULE_PATH"))
-  {
-    foreach(path/":", path)
-      {
-	if(!sizeof(path)) continue;
-	path=combine_path(path,identifier);
-	if(ret=findmodule(path)) return ret;
-      }
-  }
+  foreach(pike_module_path, path)
+    {
+      path=combine_path(path,identifier);
+      if(ret=findmodule(path)) return ret;
+    }
+
   string path=combine_path(pike_library_path+"/modules",identifier);
   if(ret=findmodule(path)) return ret;
 
@@ -276,7 +290,7 @@ void _main(string *argv, string *env)
   object script;
   object tmp;
   string a,b;
-  string *q;
+  mixed *q;
 
   foreach(env,a) if(sscanf(a,"%s=%s",a,b)) environment[a]=b;
   add_constant("getenv",getenv);
@@ -290,15 +304,40 @@ void _main(string *argv, string *env)
 
   tmp=resolv("Getopt");
 
-  foreach(tmp->find_all_options(argv,({
+  add_include_path(pike_library_path+"/include");
+  add_module_path(pike_library_path+"/modules");
+
+  q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
+  for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
+
+  q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
+  for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
+
+  q=tmp->find_all_options(argv,({
     ({"version",tmp->NO_ARG,({"-v","--version"})}),
       ({"help",tmp->NO_ARG,({"-h","--help"})}),
 	({"execute",tmp->HAS_ARG,({"-e","--execute"})}),
 	  ({"modpath",tmp->HAS_ARG,({"-M","--module-path"})}),
 	    ({"ipath",tmp->HAS_ARG,({"-I","--include-path"})}),
 	      ({"ignore",tmp->HAS_ARG,"-ms"}),
-		({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1),
-	  mixed *opts)
+		({"ignore",tmp->MAY_HAVE_ARG,"-Ddatpl",0,1})}),1);
+
+  /* Parse -M and -I backwards */
+  for(i=sizeof(q)-1;i>=0;i--)
+  {
+    switch(q[i][0])
+    {
+      case "modpath":
+	add_module_path(q[i][1]);
+	break;
+
+      case "ipath":
+	add_include_path(q[i][1]);
+	break;
+    }
+  }
+
+  foreach(q, mixed *opts)
     {
       switch(opts[0])
       {
@@ -327,25 +366,6 @@ void _main(string *argv, string *env)
       case "execute":
 	compile_string("#include <simulate.h>\nmixed create(){"+opts[1]+";}")();
 	exit(0);
-
-      case "modpath":
-      {
-	string path=getenv("PIKE_MODULE_PATH")||"";
-	path=opts[1]+":"+path;
-	putenv("PIKE_MODULE_PATH",(path/":"-({""}))*":");
-	break;
-      }
-
-      case "ipath":
-      {
-	string path=getenv("PIKE_INCLUDE_PATH")||"";
-	path=opts[1]+":"+path;
-	putenv("PIKE_INCLUDE_PATH",(path/":"-({""}))*":");
-	break;
-      }
-
-      case "ignore":
-	break;
       }
     }
 
@@ -373,7 +393,7 @@ void _main(string *argv, string *env)
     argv=argv[1..];
   }
 
-  script=(object)argv[0];
+  script=cast_to_object(argv[0], getcwd()+"/");
 
   if(!script->main)
   {
@@ -438,18 +458,14 @@ string handle_include(string f,
   }
   else
   {
-    if(path=getenv("PIKE_INCLUDE_PATH"))
-    {
-      foreach(path/":", path)
+    foreach(pike_include_path, path)
       {
-	if(!sizeof(path)) continue;
 	path=combine_path(path,f);
 	if(file_stat(path))
 	  break;
 	else
 	  path=0;
       }
-    }
     
     if(!path)
     {
