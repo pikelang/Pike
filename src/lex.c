@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.38 1998/05/20 16:42:25 grubba Exp $");
+RCSID("$Id: lex.c,v 1.39 1998/05/31 18:39:12 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -2254,6 +2254,7 @@ static void start_new(void)
   free_all_defines();
 
   simple_add_define("__PIKE__", "1",0);
+  simple_add_define("__VERSION__", "0.5", 0);
   
   for (tmpf=pike_predefs; tmpf; tmpf=tmpf->next)
     simple_add_define(tmpf->name, tmpf->value,0);
