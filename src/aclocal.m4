@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.52 2002/09/24 19:49:56 grubba Exp $
+dnl $Id: aclocal.m4,v 1.53 2002/09/26 12:30:50 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -57,35 +57,6 @@ pushdef([AC_PROG_CC],
     AC_MSG_RESULT(no)
     TCC=no
   fi
-])
-
-pushdef([AC_CONFIG_SUBDIRS],
-[
-  popdef([AC_CONFIG_SUBDIRS])
-
-  # Autoconf 2.50 and later stupidity...
-  if test "0`echo 'if(AC_ACVERSION >= 2.50)1'|bc`" = "01"; then
-    AC_MSG_WARN(cleaning the environment from autoconf 2.5x pollution)
-  
-    unset ac_cv_env_build_alias_set
-    unset ac_cv_env_build_alias_value
-    unset ac_cv_env_host_alias_set
-    unset ac_cv_env_host_alias_value
-    unset ac_cv_env_target_alias_set
-    unset ac_cv_env_target_alias_value
-    unset ac_cv_env_CC_set
-    unset ac_cv_env_CC_value
-    unset ac_cv_env_CFLAGS_set
-    unset ac_cv_env_CFLAGS_value
-    unset ac_cv_env_LDFLAGS_set
-    unset ac_cv_env_LDFLAGS_value
-    unset ac_cv_env_CPPFLAGS_set
-    unset ac_cv_env_CPPFLAGS_value
-    unset ac_cv_env_CPP_set
-    unset ac_cv_env_CPP_value
-  fi
-
-  AC_CONFIG_SUBDIRS([$1])
 ])
 
 dnl option, descr, with, without, default
@@ -274,7 +245,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.52 2002/09/24 19:49:56 grubba Exp $
+# $Id: aclocal.m4,v 1.53 2002/09/26 12:30:50 marcus Exp $
 
 MY_AC_PROG_CC
 
@@ -427,8 +398,30 @@ pushdef([AC_OUTPUT],
   AC_SUBST_FILE(make_variables)
   make_variables=make_variables
 
-popdef([AC_OUTPUT])
-AC_OUTPUT(make_variables:$make_variables_in $][1,$][2,$][3)
+  # Autoconf 2.50 and later stupidity...
+  if test "0`echo 'if(AC_ACVERSION >= 2.50)1'|bc`" = "01"; then
+    AC_MSG_WARN(cleaning the environment from autoconf 2.5x pollution)
+  
+    unset ac_cv_env_build_alias_set
+    unset ac_cv_env_build_alias_value
+    unset ac_cv_env_host_alias_set
+    unset ac_cv_env_host_alias_value
+    unset ac_cv_env_target_alias_set
+    unset ac_cv_env_target_alias_value
+    unset ac_cv_env_CC_set
+    unset ac_cv_env_CC_value
+    unset ac_cv_env_CFLAGS_set
+    unset ac_cv_env_CFLAGS_value
+    unset ac_cv_env_LDFLAGS_set
+    unset ac_cv_env_LDFLAGS_value
+    unset ac_cv_env_CPPFLAGS_set
+    unset ac_cv_env_CPPFLAGS_value
+    unset ac_cv_env_CPP_set
+    unset ac_cv_env_CPP_value
+  fi
+
+  popdef([AC_OUTPUT])
+  AC_OUTPUT(make_variables:$make_variables_in $][1,$][2,$][3)
 ])
 dnl
 dnl
