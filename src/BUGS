@@ -298,15 +298,27 @@
 * signal handlers are not called while file->read is blocking
 	fixed
 
+Version: 1.0E-15:
+
+* typechecking could dump core in lambda functions
+	fixed
+
+* I should use a changelog instead of this file
+	fixed
+
+Still to do:
+
 * really large constant arrays crashes uLPC
 
 * need some way of using shared and non-shared module dirs..
 
+* Also modules need to be able to add libraries to linker stage
+
 * setup_fake_program is called too often, I should keep fake_program updated instead
 
-* foreach somtimes says 'bad argument 1 to foreach' after a completed loop
+* foreach somtimes says 'bad argument 1 to foreach' after a completed loop (according to Per)
 
-* there are still memory access bugs (it seems) (maybe)
+* there are still memory access bugs (it seems) (maybe) (or maybe not)
 
 * #define foo bar, and then foo(1) does not work..
 

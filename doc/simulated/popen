@@ -5,6 +5,6 @@ SYNTAX
 	string popen(string cmd);
 
 DESCRIPTION
-	This function runs the command cmd as in a shell and returns the output.
-	See your unix/C manual for details on popen.
+	This function runs the command cmd as in a shell and returns the
+	output. See your unix/C manual for details on popen.
 

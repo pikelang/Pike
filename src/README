@@ -33,7 +33,11 @@ What to do when it doesn't work:
 
 5) Don't use gnu 'ar' on Solaris machines, usr /usr/ccs/bin/ar instead.
 
-6)
+6) On Linux Slackware machines, uLPC sometimes fails to find -lm, this
+   is because of a bug in /usr/lib/libm.sa (or possibly libg.a) in slackware.
+   Compile with 'make EXTRALIBS="-lc -lm"' to get around this bug.
+
+7)
 If you find a bug in the interpreter, the first thing to do is to make sure
 the interpreter is compiled with DEBUG defined. If not recompile with DEBUG
 and see if you get another error. When you've done this, please report the
