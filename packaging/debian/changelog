@@ -1,8 +1,9 @@
 pike7.4 (7.4.117-1) unstable; urgency=low
 
+  * Changed the libxpm build-dep from libxpm4-dev to libxpm-dev
   * The latest cvs snapshot
 
- -- Marek Habersack <grendel@debian.org>  Tue, 20 Jul 2004 21:52:56 +0200
+ -- Marek Habersack <grendel@debian.org>  Sun, 25 Jul 2004 02:20:34 +0200
 
 pike7.4 (7.4.116-1) unstable; urgency=low
 
