@@ -6,7 +6,7 @@
 # architecture-dependant package, as well as an architecture-independent
 # package.
 #
-# $Id: rules,v 1.46 2003/06/09 19:13:28 grendel Exp $
+# $Id: rules,v 1.47 2003/09/27 14:48:34 grendel Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -233,6 +233,9 @@ install: build
 	done
 	dh_link && rm -f $(CURDIR)/debian/links
 
+	# Removing all the dumped pike modules for now. They are broken.
+	rm `find $(CURDIR)/debian/$(PIKE)-core/usr/lib/pike/$(VERSION)/lib/ -name "*.o"`
+	
 	#removed for now
 	#dh_install --sourcedir=$(CURDIR) -p$(PIKE)-dev debian/pike.el usr/share/emacs
 	sed -e "`$(RUNPIKE) -e 'write("s#@CFLAGS@#%s#g;s/@LDFLAGS@//g;s/@MAJOR@/%d/g; s/@MINOR@/%d/g; s/@BUILD@/%d/g","-I/usr/include/pike/$(VERSION)/", __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__);'`" \
