@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.79 2004/10/13 23:53:21 bill Exp $
+/* $Id: sslfile.pike,v 1.80 2004/11/30 14:29:37 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -309,8 +309,8 @@ static THREAD_T op_thread;
 	  break;							\
 	}								\
 									\
-	SSL3_DEBUG_MSG ("Reentering %s backend\n",			\
-			NONBLOCKING_MODE ? "nonblocking" : "blocking");	\
+	SSL3_DEBUG_MORE_MSG ("Reentering %s backend\n",			\
+			     NONBLOCKING_MODE ? "nonblocking" : "blocking"); \
       }									\
 									\
       stream->set_backend (real_backend);				\
@@ -984,6 +984,12 @@ string query_address(int|void arg)
   // Only signal an error after an explicit close() call.
   if (explicitly_closed) error ("Not open.\n");
   return stream->query_address(arg);
+}
+
+int is_open()
+//!
+{
+  return !explicitly_closed && stream && stream->is_open();
 }
 
 Stdio.File query_stream()
