@@ -5285,6 +5285,56 @@ Array.sum_arrays, Array.map
 
 <hr noshade size=1>
 
+<function name=Array.longest_ordered_sequence
+ title="find the longest ordered sequence of elements">
+<man_syntax>
+array(int) longest_ordered_sequence(array a);<br>
+</man_syntax>
+<man_description>
+This function returns an array of the indices in the longest
+ordered sequence of elements in the array.
+</man_description>
+<man_example>
+&gt; array a = ({ 1,2,3,4,2,3,5,6 });
+Result: ({ /* 8 elements */
+    1,
+    2,
+    3,
+    4,
+    2,
+    3,
+    5,
+    6
+})
+&gt; array seq = Array.longest_ordered_sequence(a);
+Result: ({ /* 6 elements */
+    0,
+    1,
+    4,
+    5,
+    6,
+    7
+})
+&gt; rows(a,seq);
+Result: ({ /* 6 elements */
+    1,
+    2,
+    2,
+    3,
+    5,
+    6
+})
+</man_example>
+<man_note>
+This function is only available in Pike 0.6 and later.
+</man_note>
+<man_see>
+Array.diff
+</man_see>
+</function>
+
+<hr noshade size=1>
+
 <function name=Array.map title="map an array or mapping over a function">
 <man_syntax>
 array map(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
