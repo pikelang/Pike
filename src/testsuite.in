@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.341 2000/10/13 23:24:06 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.342 2000/10/21 13:16:06 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1135,8 +1135,8 @@ test_encode(1.0)
 test_encode(-1.0)
 test_encode(12.0)
 test_encode(100000.0)
-test_encode(3.14159265)
-test_encode(0.000001)
+test_encode(3.1415863037109375)
+test_encode(0.0000019073486328125)
 test_encode(({}))
 test_encode(([]))
 test_encode("foobar")
@@ -1152,9 +1152,9 @@ test_encode("\77777777")
 test_encode(({"en","sv","de"}))
 test_encode((<"en","sv","de">))
 test_encode((["en":1,"sv":2,"de":3]))
-test_encode(({"s",1,0,-3.4}))
-test_encode((<"s",1,0,-3.4>))
-test_encode((["s":1,1:2,0:3,-3.4:4]))
+test_encode(({"s",1,0,-3.40625}))
+test_encode((<"s",1,0,-3.40625>))
+test_encode((["s":1,1:2,0:3,-3.40625:4]))
 test_encode((<1, 2, 2, 3, 3, 3>))
 test_eq(decode_value("\210\201"),1)
 test_eq(decode_value("\210\011\001"),-1)
