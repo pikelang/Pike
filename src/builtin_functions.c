@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.359 2002/04/26 11:29:59 anders Exp $");
+RCSID("$Id: builtin_functions.c,v 1.360 2002/05/02 14:48:00 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7724,18 +7724,21 @@ void init_builtin_efuns(void)
 /* function(:string) */
   ADD_EFUN("version", f_version,tFunc(tNone,tStr), OPT_TRY_OPTIMIZE);
 
+  /* Note: The last argument to the encode and decode functions is
+   * intentionally not part of the prototype, to keep it free for
+   * other uses in the future. */
   
 /* function(mixed,void|object,void|int:string) */
   ADD_EFUN("encode_value", f_encode_value,
-	   tFunc(tMix tOr(tVoid,tObj) tOr(tVoid,tInt),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
 
   /* function(mixed,void|object,void|int:string) */
   ADD_EFUN("encode_value_canonic", f_encode_value_canonic,
-	   tFunc(tMix tOr(tVoid,tObj) tOr(tVoid,tInt),tStr), OPT_TRY_OPTIMIZE);
+	   tFunc(tMix tOr(tVoid,tObj),tStr), OPT_TRY_OPTIMIZE);
 
 /* function(string,void|object:mixed) */
   ADD_EFUN("decode_value", f_decode_value,
-	   tFunc(tStr tOr(tVoid,tObj) tOr(tVoid,tInt),tMix), OPT_TRY_OPTIMIZE);
+	   tFunc(tStr tOr(tVoid,tObj),tMix), OPT_TRY_OPTIMIZE);
   
 /* function(object,string:int) */
   ADD_EFUN("object_variablep", f_object_variablep,

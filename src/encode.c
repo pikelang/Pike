@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.96 2002/04/25 13:35:05 grubba Exp $");
+RCSID("$Id: encode.c,v 1.97 2002/05/02 14:48:01 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -1251,7 +1251,14 @@ void f_encode_value(INT32 args)
   data=&d;
 
   check_all_args("encode_value", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
-		 BIT_VOID | BIT_INT, 0);
+#ifdef ENCODE_DEBUG
+		 /* This argument is only an internal debug helper.
+		  * It's intentionally not part of the function
+		  * prototype, to keep the argument position free for
+		  * other uses in the future. */
+		 BIT_VOID | BIT_INT,
+#endif
+		 0);
 
   initialize_buf(&data->buf);
   data->canonic = 0;
@@ -1287,7 +1294,14 @@ void f_encode_value_canonic(INT32 args)
   data=&d;
 
   check_all_args("encode_value_canonic", args, BIT_MIXED, BIT_VOID | BIT_OBJECT,
-		 BIT_VOID | BIT_INT, 0);
+#ifdef ENCODE_DEBUG
+		 /* This argument is only an internal debug helper.
+		  * It's intentionally not part of the function
+		  * prototype, to keep the argument position free for
+		  * other uses in the future. */
+		 BIT_VOID | BIT_INT,
+#endif
+		 0);
 
   initialize_buf(&data->buf);
   data->canonic = 1;
@@ -1799,7 +1813,7 @@ static void decode_value2(struct decode_data *data)
     {
       struct mapping *m;
       if(num<0)
-	Pike_error("Failed to decode string. (mapping size is negative)\n");
+	Pike_error("Failed to decode mapping. (mapping size is negative)\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
@@ -1833,7 +1847,7 @@ static void decode_value2(struct decode_data *data)
       struct multiset *m;
       struct array *a;
       if(num<0)
-	Pike_error("Failed to decode string. (multiset size is negative)\n");
+	Pike_error("Failed to decode multiset. (multiset size is negative)\n");
 
       /* Heruetical */
       if(data->ptr + num > data->len)
@@ -1927,7 +1941,7 @@ static void decode_value2(struct decode_data *data)
 	    ref_push_object(o);
 	    decode_value2(data);
 	    if(!data->codec)
-	      Pike_error("Failed to decode (no codec)\n");
+	      Pike_error("Failed to decode object (no codec)\n");
 	    apply(data->codec,"decode_object",2);
 	    pop_stack();
 	  }
@@ -3243,8 +3257,17 @@ void f_decode_value(INT32 args)
 #ifdef ENCODE_DEBUG
   int debug;
 #endif
+
   check_all_args("decode_value", args,
-		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT, BIT_VOID | BIT_INT, 0);
+		 BIT_STRING, BIT_VOID | BIT_OBJECT | BIT_INT,
+#ifdef ENCODE_DEBUG
+		 /* This argument is only an internal debug helper.
+		  * It's intentionally not part of the function
+		  * prototype, to keep the argument position free for
+		  * other uses in the future. */
+		 BIT_VOID | BIT_INT,
+#endif
+		 0);
 
 #ifdef ENCODE_DEBUG
   debug = args > 2 ? Pike_sp[2-args].u.integer : 0;
