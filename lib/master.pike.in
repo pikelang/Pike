@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.33 1998/10/16 18:38:32 grubba Exp $
+/* $Id: master.pike.in,v 1.34 1998/10/17 02:10:00 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -528,7 +528,17 @@ class joinnode
     foreach(joined_modules, object|mapping o) {
       mixed ret;
       if (!zero_type(ret = o[index])) {
-	res += ({ ret });
+	if (objectp(ret = o[index]) &&
+	    (< joinnode, dirnode >)[object_program(ret)]) {
+	  // Only join directorynodes (or joinnodes).
+	  res += ({ ret });
+	} else if (!sizeof(res)) {
+	  return(ret);
+	} else {
+	  // Ignore
+	  werror(sprintf("Ignoring index %s: %t\n", index, ret));
+	  continue;
+	}
       }
     }
     if (sizeof(res) > 1) {
@@ -632,10 +642,25 @@ mixed resolv(string identifier, string|void current_file)
   {
     string file=combine_path(path,identifier);
     if(mixed ret=findmodule(file)) {
-      if (mixed new_ret = ret->_module_value) {
-	ret = new_ret;
+      if ((objectp(ret)) &&
+	  (< joinnode, dirnode >)[object_program(ret)]) {
+	if (mixed new_ret = ret->_module_value) {
+	  ret = new_ret;
+	}
+	tmp += ({ ret });
+      } else {
+	if (mixed new_ret = ret->_module_value) {
+	  ret = new_ret;
+	}
+	if (!sizeof(tmp)) {
+	  return ret;
+	} else {
+	  // Ignore
+	  werror(sprintf("Ignoring file %O: %t for identifier %O\n",
+			 file, ret, identifier));
+	  continue;
+	}
       }
-      tmp += ({ ret });
     }
   }
   if (sizeof(tmp)) {
