@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.71 2000/10/21 12:10:13 grubba Exp $
+ * $Id: gc.h,v 1.72 2000/12/14 07:25:16 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -178,6 +178,7 @@ int debug_gc_is_referenced(void *a);
 int gc_external_mark3(void *a, void *in, char *where);
 void debug_really_free_gc_frame(struct gc_frame *l);
 int gc_do_weak_free(void *a);
+void gc_delayed_free(void *a);
 int gc_mark(void *a);
 void gc_cycle_enqueue(gc_cycle_check_cb *checkfn, void *data, int weak);
 void gc_cycle_run_queue();
@@ -197,13 +198,13 @@ void cleanup_gc(void);
 #define gc_checked_as_weak(X) (get_marker(X)->flags |= GC_CHECKED_AS_WEAK)
 #define gc_assert_checked_as_weak(X) do {				\
   if (!(find_marker(X)->flags & GC_CHECKED_AS_WEAK))			\
-    fatal("A thing was checked as weak but "				\
-	  "marked or cycle checked as nonweak.\n");			\
+    fatal("A thing was checked as nonweak but "				\
+	  "marked or cycle checked as weak.\n");			\
 } while (0)
 #define gc_assert_checked_as_nonweak(X) do {				\
   if (find_marker(X)->flags & GC_CHECKED_AS_WEAK)			\
-    fatal("A thing was checked as nonweak but "				\
-	  "marked or cycle checked as weak.\n");			\
+    fatal("A thing was checked as weak but "				\
+	  "marked or cycle checked as nonweak.\n");			\
 } while (0)
 #else
 #define gc_checked_as_weak(X) 0
