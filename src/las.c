@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.289 2002/05/15 14:49:33 grubba Exp $");
+RCSID("$Id: las.c,v 1.290 2002/05/23 14:40:24 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3287,18 +3287,64 @@ static void low_build_function_type(node *n)
     low_build_function_type(CAR(n));
     break;
 
-  case F_PUSH_ARRAY: /* We let this ruin type-checking for now.. */
-    reset_type_stack();
+  case F_PUSH_ARRAY:
+    {
+#ifdef USE_PIKE_TYPE
+      struct pike_type *so_far;
+      struct pike_type *arg_type;
+      struct pike_type *tmp;
 
-    push_type(T_MIXED);
-    push_type(T_VOID);
-    push_type(T_OR);  /* return type is void or mixed */
+      so_far = pop_type();
 
-    push_type(T_MIXED);
-    push_type(T_VOID);
-    push_type(T_OR);  /* varargs */
+      copy_pike_type(arg_type, void_type_string);
 
-    push_type(T_MANY);
+      /* Convert fun(a,b,c...:d) to fun(a|b|c|void...:d)
+       */
+
+      while(so_far->type == T_FUNCTION) {
+	tmp = or_pike_types(arg_type, so_far->car, 1);
+	free_type(arg_type);
+	arg_type = tmp;
+	copy_pike_type(tmp, so_far->cdr);
+	free_type(so_far);
+	so_far = tmp;
+      }
+
+      tmp = or_pike_types(arg_type, so_far->car, 1);
+      free_type(arg_type);
+      arg_type = tmp;
+
+      push_finished_type(so_far->cdr);	/* Return type */
+
+      free_type(so_far);
+
+      so_far = index_type(CAR(n)->type, int_type_string, n);
+      tmp = or_pike_types(arg_type, so_far, 1);
+      push_finished_type(tmp);
+      if (tmp == mixed_type_string) {
+	/* Ensure "or void"... */
+	push_type(T_VOID);
+	push_type(T_OR);
+      }
+      free_type(arg_type);
+      free_type(so_far);
+      free_type(tmp);
+      push_type(T_MANY);
+#else /* !USE_PIKE_TYPE */
+      /* We let this ruin type-checking for now.. */
+      reset_type_stack();
+
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_OR);  /* return type is void or mixed */
+
+      push_type(T_MIXED);
+      push_type(T_VOID);
+      push_type(T_OR);  /* varargs */
+
+      push_type(T_MANY);
+#endif /* USE_PIKE_TYPE */
+    }
     return;
 
   default:
@@ -3541,6 +3587,16 @@ void fix_type_field(node *n)
 	  n->type = pop_type();
 	}
 
+	break;
+      }
+
+      if (!pike_types_le(f, function_type_string)) {
+	yytype_error("Calling non function value.", f, s, 0);
+	copy_pike_type(n->type, mixed_type_string);
+
+	/* print_tree(n); */
+
+	free_type(s);	
 	break;
       }
 
