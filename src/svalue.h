@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.93 2001/07/05 00:10:54 mast Exp $
+ * $Id: svalue.h,v 1.94 2001/08/13 22:41:17 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -57,6 +57,7 @@ struct ref_dummy;
 
 union anything
 {
+  INT_TYPE integer;		/* Union initializations assume this first. */
   struct callable *efun;
   struct array *array;
   struct mapping *mapping;
@@ -67,7 +68,6 @@ union anything
   struct pike_type *type;
   INT32 *refs;
   struct ref_dummy *dummy;
-  INT_TYPE integer;
   FLOAT_TYPE float_number;
   struct svalue *lval;   /* only used on stack */
   union anything *short_lval;   /* only used on stack */
