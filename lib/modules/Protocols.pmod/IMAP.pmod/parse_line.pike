@@ -326,6 +326,11 @@ mapping get_atom_options(int max_depth)
   string option_start = buffer;
       
   array options = do_parse_simple_list(max_depth - 1, ']');
+
+  if (strlen(buffer) && buffer[0] == ']') {
+    buffer = buffer[1..];
+  }
+
   if (!options) {
     res->options = ({ ([ "type":"atom", "atom":"" ]) });
     return res;
@@ -333,6 +338,7 @@ mapping get_atom_options(int max_depth)
 
   res->options = options;
   res->raw = option_start[..sizeof(option_start) - sizeof(buffer) - 1];
+
       
   if (!strlen(buffer) || (buffer[0] != '<'))
     return res;
