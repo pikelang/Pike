@@ -1,3 +1,8 @@
+Tue Dec 10 16:43:55 1996  David Hedbor  <neotron@mouser.hedbor.org.>
+
+	* language.yacc (string): Added extern int cumulative_parse_error
+	in yyerror. 
+
 Sun Dec  8 21:54:37 1996  David Hedbor  <neotron@mouser.hedbor.org.>
 
 	* port.h (EXTRACT_UWORD): *_*WORD was defined as *_*WARD_ when
