@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mapping.c,v 1.179 2004/04/06 13:00:43 nilsson Exp $
+|| $Id: mapping.c,v 1.180 2004/04/15 00:12:04 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.179 2004/04/06 13:00:43 nilsson Exp $");
+RCSID("$Id: mapping.c,v 1.180 2004/04/15 00:12:04 nilsson Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -118,11 +118,13 @@ static void check_mapping_type_fields(struct mapping *m)
 {
   INT32 e;
   struct keypair *k=0,**prev;
+  struct mapping_data *md;
   TYPE_FIELD ind_types, val_types;
 
   ind_types=val_types=0;
 
-  MAPPING_LOOP(m) 
+  md = m->data;
+  NEW_MAPPING_LOOP(md)
     {
       val_types |= 1 << k->val.type;
       ind_types |= 1 << k->ind.type;

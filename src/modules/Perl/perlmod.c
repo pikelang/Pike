@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: perlmod.c,v 1.35 2004/04/06 13:00:48 nilsson Exp $
+|| $Id: perlmod.c,v 1.36 2004/04/15 00:11:26 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -449,7 +449,8 @@ static void perlmod_parse(INT32 args)
     int env_block_size=0;
     char *env_blockp;
     struct keypair *k;
-    MAPPING_LOOP(env_mapping)
+    struct mapping_data *md = env_mapping->data;
+    NEW_MAPPING_LOOP(md)
       env_block_size+=k->ind.u.string->len+k->val.u.string->len+2;
 
     ps->env_block=xalloc(env_block_size);
@@ -457,7 +458,7 @@ static void perlmod_parse(INT32 args)
 
     env_blockp = ps->env_block;
     d=0;
-    MAPPING_LOOP(env_mapping)
+    NEW_MAPPING_LOOP(md)
       {
 	ps->env[d++]=env_blockp;
 	MEMCPY(env_blockp,k->ind.u.string->str,k->ind.u.string->len);

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: html.c,v 1.171 2004/03/15 10:38:42 grubba Exp $
+|| $Id: html.c,v 1.172 2004/04/15 00:09:31 nilsson Exp $
 */
 
 #include "global.h"
@@ -1180,14 +1180,14 @@ static void html_add_quote_tag(INT32 args)
 
 static void html_add_tags(INT32 args)
 {
-   int sz;
    INT32 e;
    struct keypair *k;
+   struct mapping_data *md;
    check_all_args("add_tags",args,BIT_MAPPING,0);
 
-   sz=m_sizeof(sp[-1].u.mapping);
+   md = sp[-1].u.mapping->data;
 
-   MAPPING_LOOP(sp[-1].u.mapping)
+   NEW_MAPPING_LOOP(md)
       {
 	 push_svalue(&k->ind);
 	 push_svalue(&k->val);
@@ -1201,14 +1201,14 @@ static void html_add_tags(INT32 args)
 
 static void html_add_containers(INT32 args)
 {
-   int sz;
    INT32 e;
    struct keypair *k;
+   struct mapping_data *md;
    check_all_args("add_containers",args,BIT_MAPPING,0);
 
-   sz=m_sizeof(sp[-1].u.mapping);
+   md = sp[-1].u.mapping->data;
 
-   MAPPING_LOOP(sp[-1].u.mapping)
+   NEW_MAPPING_LOOP(md)
       {
 	 push_svalue(&k->ind);
 	 push_svalue(&k->val);
@@ -1222,14 +1222,14 @@ static void html_add_containers(INT32 args)
 
 static void html_add_entities(INT32 args)
 {
-   int sz;
    INT32 e;
    struct keypair *k;
+   struct mapping_data *md;
    check_all_args("add_entities",args,BIT_MAPPING,0);
 
-   sz=m_sizeof(sp[-1].u.mapping);
+   md = sp[-1].u.mapping->data;
 
-   MAPPING_LOOP(sp[-1].u.mapping)
+   NEW_MAPPING_LOOP(md)
       {
 	 push_svalue(&k->ind);
 	 push_svalue(&k->val);
@@ -1339,8 +1339,9 @@ static void html_quote_tags(INT32 args)
    struct mapping *res = allocate_mapping (32);
    INT32 e;
    struct keypair *k;
+   struct mapping_data *md = THIS->mapqtag->data;
    pop_n_elems(args);
-   MAPPING_LOOP(THIS->mapqtag) {
+   NEW_MAPPING_LOOP(md) {
      int i;
      struct array *arr = k->val.u.array;
      for (i = 0; i < arr->size; i += 3) {
@@ -5020,8 +5021,10 @@ static void html_case_insensitive_tag(INT32 args)
    if (args && (THIS->flags & FLAG_CASE_INSENSITIVE_TAG) && !o) {
      INT32 e;
      struct keypair *k;
+     struct mapping_data *md;
 
-     MAPPING_LOOP(THIS->maptag) {
+     md = THIS->maptag->data;
+     NEW_MAPPING_LOOP(md) {
        push_svalue(&k->ind);
        f_lower_case(1);
        push_svalue(&k->val);
@@ -5030,7 +5033,8 @@ static void html_case_insensitive_tag(INT32 args)
      free_mapping(THIS->maptag);
      THIS->maptag=(--sp)->u.mapping;
 
-     MAPPING_LOOP(THIS->mapcont) {
+     md = THIS->mapcont->data;
+     NEW_MAPPING_LOOP(md) {
        push_svalue(&k->ind);
        f_lower_case(1);
        push_svalue(&k->val);

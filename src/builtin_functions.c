@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.539 2004/04/13 06:43:24 jonasw Exp $
+|| $Id: builtin_functions.c,v 1.540 2004/04/15 00:12:21 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.539 2004/04/13 06:43:24 jonasw Exp $");
+RCSID("$Id: builtin_functions.c,v 1.540 2004/04/15 00:12:21 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4823,8 +4823,8 @@ static void f_interleave_array(INT32 args)
 
   /* Initialize the min array */
   for (i = 0; i < arr->size; i++) {
-    struct mapping *m;
-    /* e and k are used by MAPPING_LOOP() */
+    struct mapping_data *md;
+    /* e and k are used by NEW_MAPPING_LOOP() */
     INT32 e;
     struct keypair *k;
     INT_TYPE low = MAX_INT_TYPE;
@@ -4833,8 +4833,8 @@ static void f_interleave_array(INT32 args)
       Pike_error("interleave_array(): Element %d is not a mapping!\n", i);
     }
 #endif /* PIKE_DEBUG */
-    m = ITEM(arr)[i].u.mapping;
-    MAPPING_LOOP(m) {
+    md = ITEM(arr)[i].u.mapping->data;
+    NEW_MAPPING_LOOP(md) {
       if (k->ind.type != T_INT) {
 	Pike_error("interleave_array(): Index not an integer in mapping %d!\n", i);
       }
@@ -4885,6 +4885,7 @@ static void f_interleave_array(INT32 args)
       int j = ITEM(order)[i].u.integer;
       int offset = 0;
       struct mapping *m;
+      struct mapping_data *md;
       INT32 e;
       struct keypair *k;
 
@@ -4900,10 +4901,11 @@ static void f_interleave_array(INT32 args)
 	minfree = offset;
       }
 
+      md = m->data;
       ok = 0;
       while (!ok) {
 	ok = 1;
-	MAPPING_LOOP(m) {
+	NEW_MAPPING_LOOP(md) {
 	  int ind = k->ind.u.integer;
 	  if (tab[offset + ind]) {
 	    ok = 0;
@@ -4912,7 +4914,7 @@ static void f_interleave_array(INT32 args)
 	  }
 	}
       }
-      MAPPING_LOOP(m) {
+      NEW_MAPPING_LOOP(md) {
 	tab[offset + k->ind.u.integer] = 1;
       }
       while(tab[minfree]) {

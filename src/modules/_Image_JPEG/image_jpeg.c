@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: image_jpeg.c,v 1.64 2003/12/01 20:19:27 nilsson Exp $
+|| $Id: image_jpeg.c,v 1.65 2004/04/15 00:10:17 nilsson Exp $
 */
 
 #include "global.h"
@@ -59,7 +59,7 @@
 #ifdef HAVE_STDLIB_H
 #undef HAVE_STDLIB_H
 #endif
-RCSID("$Id: image_jpeg.c,v 1.64 2003/12/01 20:19:27 nilsson Exp $");
+RCSID("$Id: image_jpeg.c,v 1.65 2004/04/15 00:10:17 nilsson Exp $");
 
 /* jpeglib defines EXTERN for some reason.
  * This is not good, since it confuses compilation.h.
@@ -334,7 +334,7 @@ static int parameter_qt(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    unsigned int table[DCTSIZE2];
-   struct mapping *m;
+   struct mapping_data *md;
    INT32 e;
    struct keypair *k;
 
@@ -344,8 +344,8 @@ static int parameter_qt(struct svalue *map,struct pike_string *what,
    else if (v->type!=T_MAPPING) 
       Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
 
-   m=v->u.mapping;
-   MAPPING_LOOP(m)
+   md=v->u.mapping->data;
+   NEW_MAPPING_LOOP(md)
       {
 	 int z;
 	 if (k->ind.type!=T_INT || k->val.type!=T_ARRAY)
@@ -372,7 +372,7 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
 {
    struct svalue *v;
    unsigned int table[DCTSIZE2];
-   struct mapping *m;
+   struct mapping_data *md;
    INT32 e;
    struct keypair *k;
 
@@ -382,8 +382,8 @@ static int parameter_qt_d(struct svalue *map,struct pike_string *what,
    else if (v->type!=T_MAPPING) 
       Pike_error("Image.JPEG.encode: illegal value of option quant_table; expected mapping\n");
 
-   m=v->u.mapping;
-   MAPPING_LOOP(m)
+   md=v->u.mapping->data;
+   NEW_MAPPING_LOOP(md)
       {
 	 int z;
 	 if (k->ind.type!=T_INT || k->val.type!=T_ARRAY)
@@ -430,7 +430,7 @@ static int parameter_marker(struct svalue *map,struct pike_string *what,
 			    struct jpeg_compress_struct *cinfo)
 {
    struct svalue *v;
-   struct mapping *m;
+   struct mapping_data *md;
    INT32 e;
    struct keypair *k;
 
@@ -440,8 +440,8 @@ static int parameter_marker(struct svalue *map,struct pike_string *what,
    else if (v->type!=T_MAPPING) 
       Pike_error("Image.JPEG.encode: illegal value of option marker;"
 		 " expected mapping\n");
-   m=v->u.mapping;
-   MAPPING_LOOP(m)
+   md=v->u.mapping->data;
+   NEW_MAPPING_LOOP(md)
       {
 	 if (k->ind.type!=T_INT || k->val.type!=T_STRING ||
 	     k->val.u.string->size_shift)
@@ -521,7 +521,7 @@ static int marker_exists_in_args(INT32 args, int which)
 {
    struct svalue *map=sp+1-args;
    struct svalue *v=NULL;
-   struct mapping *m=NULL;
+   struct mapping_data *md;
    INT32 e;
    struct keypair *k;
    v=low_mapping_string_lookup(map->u.mapping, param_comment);
@@ -529,15 +529,15 @@ static int marker_exists_in_args(INT32 args, int which)
      return (v->type==T_STRING && !v->u.string->size_shift);
    } else {
      v=low_mapping_string_lookup(map->u.mapping, param_marker);
-     if (v && v->type==T_MAPPING) m=v->u.mapping;
-     if (m) {
-       MAPPING_LOOP(m)
-	 {
-	   if (k->ind.type==T_INT && k->val.type==T_STRING
-	       && k->ind.u.integer==which && !k->val.u.string->size_shift) {
-	     return 1;
-	   }
+     if (v && v->type==T_MAPPING) {
+       md=v->u.mapping->data;
+       NEW_MAPPING_LOOP(md)
+       {
+	 if (k->ind.type==T_INT && k->val.type==T_STRING
+	     && k->ind.u.integer==which && !k->val.u.string->size_shift) {
+	   return 1;
 	 }
+       }
      }
    }
    return 0;

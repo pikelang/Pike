@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: oracle.c,v 1.81 2004/04/06 15:37:56 nilsson Exp $
+|| $Id: oracle.c,v 1.82 2004/04/15 00:09:47 nilsson Exp $
 */
 
 /*
@@ -53,7 +53,7 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.81 2004/04/06 15:37:56 nilsson Exp $");
+RCSID("$Id: oracle.c,v 1.82 2004/04/15 00:09:47 nilsson Exp $");
 
 
 /* User-changable defines: */
@@ -1796,7 +1796,8 @@ static void f_big_typed_query_create(INT32 args)
   {
     INT32 e;
     struct keypair *k;
-    MAPPING_LOOP(bnds)
+    struct mapping_data *md = bnds->data;
+    NEW_MAPPING_LOOP(md)
       {
 	struct svalue *value=&k->val;
 	sword rc = 0;

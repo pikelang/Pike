@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.188 2004/04/06 15:37:55 nilsson Exp $
+|| $Id: operators.c,v 1.189 2004/04/15 00:11:51 nilsson Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.188 2004/04/06 15:37:55 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.189 2004/04/15 00:11:51 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -826,14 +826,16 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	}else{
 	  INT32 e;
 	  struct keypair *k;
+	  struct mapping_data *md;
 #ifdef PIKE_DEBUG
 	  struct svalue *save_sp=sp+1;
 #endif
 	  push_mapping(m=allocate_mapping(m_sizeof(tmp)));
 	  
 	  SET_CYCLIC_RET(m);
-	  
-	  MAPPING_LOOP(tmp)
+
+	  md = tmp->data;
+	  NEW_MAPPING_LOOP(md)
 	  {
 	    push_svalue(& k->ind);
 	    o_cast(itype, run_time_itype);
