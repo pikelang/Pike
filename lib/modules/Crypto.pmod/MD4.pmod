@@ -12,4 +12,7 @@ inherit .Hash;
 
 .HashState `()() { return Nettle.MD4_State(); }
 
+// urn:oid:1.2.840.113549.2.5
+string asn1_id() { return "*\206H\206\367\r\2\5"; }
+
 #endif
