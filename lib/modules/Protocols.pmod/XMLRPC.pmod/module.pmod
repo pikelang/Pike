@@ -141,7 +141,7 @@ static constant common_dtd_fragment = #"
   <!ELEMENT params  (param*)>
   <!ELEMENT param   (value)>
 
-  <!ELEMENT value   (boolean|i4|int|double|string|base64|
+  <!ELEMENT value   (#PCDATA|boolean|i4|int|double|string|base64|
                      array|struct|dateTime.iso8601)>
 
   <!ELEMENT boolean          (#PCDATA)>
