@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.13 1999/03/09 15:07:41 nisse Exp $
+/* $Id: handshake.pike,v 1.14 1999/03/15 19:48:59 nisse Exp $
  *
  */
 
@@ -113,8 +113,9 @@ object server_key_exchange_packet()
   case KE_dh_anon:
     struct = Struct();
 
+    /* werror("dh_params = %O\n", context->dh_params); */
     dh_state = dh_key_exchange(context->dh_params);
-    dh_state->new_secret();
+    dh_state->new_secret(context->random);
     
     struct->put_bignum(context->dh_params->p);
     struct->put_bignum(context->dh_params->g);
