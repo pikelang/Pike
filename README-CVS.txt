@@ -1,23 +1,31 @@
-Pike by Fredrik Hübinette 1994-2001
+$Id: README-CVS.txt,v 1.13 2002/04/06 20:49:08 mikael%unix.pp.se Exp $
 
-Permission to copy, modify, and distribute this source for any legal
-purpose granted as long as my name is still attached to it.  More
-specifically the GPL license applies to this software.
-
-New releases can be found on ftp://ftp.roxen.com/pub/pike/
-Report bugs at http://community.roxen.com/crunch/
-There is also a mailing list, to subscribe to it mail:
-pike-request@roxen.com
-
-
-HOW TO BUILD PIKE
+HOW TO BUILD PIKE FROM CVS
 
 The top-level makefile (in this directory, not the src directory) has
 all the magic you need to build pike directly from CVS.  Just type
 'make'.
 
-You will need autoconf, automake, gnu m4, bison, a C compiler and the
-GMP library.  You probably also want to use GNU make and libz.
+Building Pike from cvs, in addition to the requirements for a normal
+build, requires a working Pike. You will also need automake, gnu m4
+and bison.
+
+Other interesting make targets are:
+
+install		    compile and install in default location
+install_interactive interactive install
+tinstall	    test install, ie. install in build directory
+verify		    run the testsuite
+run_hilfe	    run hilfe without installing pike
+source		    prepare the source tree for compiliation without
+		    the need for a Pike.
+export		    create a source dist and bump up the build number
+		    (if you have cvs write access). Please DO NOT
+		    check in the generated files.
+cvsclean	    clean the source tree for cvs actions.
+
+You may also like to modify some variables in the beginning of the
+Makefile. 
 
 If that doesn't work, or you like making things difficult for
 yourself, try the Old instructions:
@@ -89,13 +97,10 @@ yourself, try the Old instructions:
    quite large.  If everything works out fine no extra messages are
    written.
 
-8) If you want to install Pike, write 'make install'.
+8) If you want to install Pike, type 'make install'.
 
 After doing this, DO NOT, commit the generated files.  They are placed
-in .cvsignore files so you shouldn't have to bother with them.  Doing
-'make export' will create a tar file with all the needed files, but
-they should NOT be in the CVS archive!
-
+in .cvsignore files so you shouldn't have to bother with them. 
 
 IF IT DOESN'T WORK:
 
@@ -126,28 +131,6 @@ IF IT DOESN'T WORK:
 
  o Try a different compiler, malloc, compiler-compiler and/or make
    (if you have any other).
-
-
-THREADS SUPPORT
-
-Getting threads support might be hairy on some platforms, most
-platforms have threads support but quite a few have problems running
-external processes (through create_process).  By default threads
-support is disabled on platforms where threading is known not to work
-100% properly.
-
-IRIX: Starting many processes causes a resource error which sometimes
-      causes a complete hang and 100% cpu usage.
-
-FreeBSD 3.x: Symptoms are similar to IRIX, but the problem has
-      something to do with signal handling. (And as you may know,
-      process handling uses signals on UNIX...)
-
-Linux: Not all linux variations have 100% working threads, in fact
-      most libc5 systems do not work very well with threads.  Threads
-      support is enabled by default on Linux, but I recommend running
-      'make verify' after compilation.  This will (hopefully) tell you
-      if your threads are not working.
 
 
 BUGS
