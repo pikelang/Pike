@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.140 2000/04/12 18:40:12 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.141 2000/04/17 17:52:13 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -841,8 +841,6 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       check_mark_stack(256);
       check_c_stack(8192);
 
-      new_frame=alloc_pike_frame();
-      debug_malloc_touch(new_frame);
 
 #ifdef PIKE_DEBUG
       if(d_flag>2) do_debug();
@@ -852,6 +850,16 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       if(!p)
 	PIKE_ERROR("destructed object->function",
 	      "Cannot call functions in destructed objects.\n", sp, args);
+
+#ifdef PIKE_SECURITY
+      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL,
+				   ("Function call permission denied.\n"));
+
+      if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_NOT_SETUID))
+	SET_CURRENT_CREDS(o->prot);
+#endif
+
+
 #ifdef PIKE_DEBUG
       if(fun>=(int)p->num_identifier_references)
       {
@@ -872,12 +880,16 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 
       /* init a new evaluation pike_frame */
+      new_frame=alloc_pike_frame();
+      debug_malloc_touch(new_frame);
+
       new_frame->next = fp;
       new_frame->current_object = o;
       new_frame->context = p->inherits[ ref->inherit_offset ];
 
       function = new_frame->context.prog->identifiers + ref->identifier_offset;
 
+      
 #ifdef PIKE_DEBUG
 	if(t_flag > 9)
 	{
@@ -902,19 +914,6 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
 #endif
 
 
-#ifdef PIKE_SECURITY
-      CHECK_DATA_SECURITY_OR_ERROR(o, SECURITY_BIT_CALL,
-				   ("Function call permission denied.\n"));
-
-      if(!CHECK_DATA_SECURITY(o, SECURITY_BIT_NOT_SETUID))
-	SET_CURRENT_CREDS(o->prot);
-#endif
-
-
-#ifdef PROFILING
-      function->num_calls++;
-#endif
-  
       new_frame->locals = sp - args;
       new_frame->expendible = new_frame->locals;
       new_frame->args = args;
@@ -927,7 +926,7 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       add_ref(new_frame->context.prog);
       if(new_frame->context.parent) add_ref(new_frame->context.parent);
       if(new_frame->scope) add_ref(new_frame->scope);
-      
+
       if(t_flag)
       {
 	char buf[50];
@@ -941,6 +940,10 @@ void mega_apply2(enum apply_type type, INT32 args, void *arg1, void *arg2)
       
       fp = new_frame;
       
+#ifdef PROFILING
+      function->num_calls++;
+#endif
+  
       if(function->func.offset == -1)
 	generic_error(NULL, sp, args,
 		      "Calling undefined function.\n");
