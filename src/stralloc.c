@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.76 1999/11/05 01:31:44 hubbe Exp $");
+RCSID("$Id: stralloc.c,v 1.77 1999/11/24 13:53:44 noring Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -2024,11 +2024,6 @@ double STRTOD_PCHARP(PCHARP nptr, PCHARP *endptr)
 
   /* Eat whitespace.  */
   while (EXTRACT_PCHARP(s) <256 && ISSPACE(EXTRACT_PCHARP(s))) INC_PCHARP(s,1);
-
-  /* Get the sign.  */
-  sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
-  if (EXTRACT_PCHARP(s) == '-' || EXTRACT_PCHARP(s) == '+')
-    INC_PCHARP(s,1);
 
   /* Get the sign.  */
   sign = EXTRACT_PCHARP(s) == '-' ? -1 : 1;
