@@ -11,7 +11,7 @@ import Stdio;
 inherit "polyline.pike";
 inherit "create_graph.pike";
 
-constant cvs_version = "$Id: create_bars.pike,v 1.4 2000/10/12 00:42:15 nilsson Exp $";
+constant cvs_version = "$Id: create_bars.pike,v 1.5 2001/04/07 00:55:16 nilsson Exp $";
 
 /*
  * name = "BG: Create bars";
@@ -19,7 +19,7 @@ constant cvs_version = "$Id: create_bars.pike,v 1.4 2000/10/12 00:42:15 nilsson 
  */
 
 /*
-These functions were written by Henrik "Hedda" Wallin (hedda@idonex.se)
+These functions were written by Henrik "Hedda" Wallin (hedda@roxen.com)
 Create_bars can draw normal bars, sumbars and normalized sumbars.
 */ 
 

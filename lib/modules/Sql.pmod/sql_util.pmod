@@ -1,5 +1,5 @@
 /*
- * $Id: sql_util.pmod,v 1.7 2001/01/09 21:18:30 marcus Exp $
+ * $Id: sql_util.pmod,v 1.8 2001/04/07 00:57:09 nilsson Exp $
  *
  * Some SQL utility functions.
  * They are kept here to avoid circular references.
@@ -11,8 +11,8 @@
 
 //.
 //. File:	sql_util.pmod
-//. RCSID:	$Id: sql_util.pmod,v 1.7 2001/01/09 21:18:30 marcus Exp $
-//. Author:	Henrik Grubbström (grubba@idonex.se)
+//. RCSID:	$Id: sql_util.pmod,v 1.8 2001/04/07 00:57:09 nilsson Exp $
+//. Author:	Henrik Grubbström (grubba@roxen.com)
 //.
 //. Synopsis:	Some SQL utility functions
 //.

@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.46 2001/01/09 21:18:29 marcus Exp $
+ * $Id: Sql.pike,v 1.47 2001/04/07 00:57:08 nilsson Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -10,8 +10,8 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: Sql.pike,v 1.46 2001/01/09 21:18:29 marcus Exp $
-//. Author:	Henrik Grubbström (grubba@idonex.se)
+//. RCSID:	$Id: Sql.pike,v 1.47 2001/04/07 00:57:08 nilsson Exp $
+//. Author:	Henrik Grubbström (grubba@roxen.com)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
 //.

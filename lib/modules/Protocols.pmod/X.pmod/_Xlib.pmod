@@ -1,6 +1,6 @@
 /* _Xlib.pmod
  *
- * $Id: _Xlib.pmod,v 1.15 2000/09/28 03:39:06 hubbe Exp $
+ * $Id: _Xlib.pmod,v 1.16 2001/04/07 00:56:32 nilsson Exp $
  *
  * Kluge, should be in Xlib.pmod
  */
@@ -27,7 +27,7 @@
  */
 
 /* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
+ * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
  * email addresses. */
 
 #pike __REAL_VERSION__

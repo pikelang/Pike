@@ -181,7 +181,7 @@ write this book, but since it seems impossible without paying a fortune for
 it I will have to do it myself. 
 A big thanks goes to
 <a href="http://www.emit.com.pl/ian.html">Ian Carr-de Avelon</a> and
-<a href="mailto:hedda@idonex.se">Henrik Wallin</a>
+<a href="mailto:hedda@roxen.com">Henrik Wallin</a>
  for helping
 me iron out some of the rough spots. 
 
@@ -12699,7 +12699,7 @@ init_module_programs are called to initialize it. When Pike exits
 exit_module is called in all dynamically loaded modules. These
 functions _must_ be available in the module.
 <p>Please see the source and any examples available at
-ftp://www.idonex.se/pub/pike for more information on how to
+ftp://www.roxen.com/pub/pike for more information on how to
 write modules for Pike in C.
 </man_description>
 <man_bugs>
@@ -14701,7 +14701,7 @@ This is the BNF for Pike:
 <appendix title="How to install Pike" name=install>
 To install Pike, you need a C compiler, a couple of Mb of disk space,
 the source for Pike, and a bit of patience. The latest version of Pike is
-always available from <a href=http://pike.idonex.se>the Pike home page</a>.
+always available from <a href=http://pike.roxen.com>the Pike home page</a>.
 Lists of mirror sites and binary releases should also be available there.
 Pike should compile and install nicely on almost any UNIX platform. It has
 been tested on the following:

@@ -1,9 +1,9 @@
 //
-// $Id: TELNET.pmod,v 1.14 2000/12/28 15:03:30 grubba Exp $
+// $Id: TELNET.pmod,v 1.15 2001/04/07 00:55:52 nilsson Exp $
 //
 // The TELNET protocol as described by RFC 764 and others.
 //
-// Henrik Grubbström <grubba@idonex.se> 1998-04-04
+// Henrik Grubbström <grubba@roxen.com> 1998-04-04
 //
 
 #pike __REAL_VERSION__

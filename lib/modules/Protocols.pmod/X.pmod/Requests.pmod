@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.28 2000/09/28 03:39:05 hubbe Exp $
+ * $Id: Requests.pmod,v 1.29 2001/04/07 00:56:31 nilsson Exp $
  */
 
 /*
@@ -25,7 +25,7 @@
  */
 
 /* Questions, bug fixes and bug reports can be sent to the pike
- * mailing list, pike@idonex.se, or to the athors (see AUTHORS for
+ * mailing list, pike@roxen.com, or to the athors (see AUTHORS for
  * email addresses. */
 
 #pike __REAL_VERSION__
