@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.56 2000/08/03 12:46:29 grubba Exp $
+ * $Id: interpret.h,v 1.57 2000/08/03 16:21:59 grubba Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -119,7 +119,7 @@ struct pike_frame
 #define push_multiset(L) do{ struct multiset *_=(L); debug_malloc_touch(_); Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
 #define push_string(S) do{ struct pike_string *_=(S); debug_malloc_touch(_); Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
 #define push_object(O) do{ struct object  *_=(O); debug_malloc_touch(_); Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
-#define push_float(F) do{ float _=(F); Pike_sp->u.float_number=_; Pike_sp++->type=PIKE_T_FLOAT; }while(0)
+#define push_float(F) do{ FLOAT_TYPE _=(F); Pike_sp->u.float_number=_; Pike_sp++->type=PIKE_T_FLOAT; }while(0)
 #define push_text(T) push_string(make_shared_string((T)))
 #define push_constant_text(T) do{ Pike_sp->subtype=0; MAKE_CONSTANT_SHARED_STRING(Pike_sp->u.string,T); Pike_sp++->type=PIKE_T_STRING; }while(0)
 
