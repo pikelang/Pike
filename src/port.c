@@ -17,7 +17,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.20 1999/08/14 15:09:18 per Exp $");
+RCSID("$Id: port.c,v 1.21 1999/08/31 23:31:13 hubbe Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -344,7 +344,8 @@ char *STRSTR(char *s1,const char *s2)
   for(;*s1;s1++)
   {
     const char *p1,*p2;
-    for(p1=s1,p2=s2;*p1==*p2;p1++,p2++) if(!*p2) return s1;
+    for(p1=s1,p2=s2;*p2;p1++,p2++) if(*p2!=*p1) break;
+    if(!*p2) return s1;
   }
   return NULL;
 }
