@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.46 2001/09/06 12:20:57 grubba Exp $
+ * $Id: mysql.c,v 1.47 2001/09/23 19:00:34 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -91,7 +91,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.46 2001/09/06 12:20:57 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.47 2001/09/23 19:00:34 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -702,8 +702,8 @@ static void f_create_db(INT32 args)
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
 	    sp[-args].u.string->str);
     } else {
-      Pike_error("Database name (length %d) is too long (max 127 characters)\n",
-	    sp[-args].u.string->len);
+      Pike_error("Database name (length %ld) is too long (max 127 characters)\n",
+		 DO_NOT_WARN((long)sp[-args].u.string->len));
     }
   }
   database = sp[-args].u.string->str;
@@ -762,8 +762,8 @@ static void f_drop_db(INT32 args)
       Pike_error("Database name \"%s\" is too long (max 127 characters)\n",
 	    sp[-args].u.string->str);
     } else {
-      Pike_error("Database name (length %d) is too long (max 127 characters)\n",
-	    sp[-args].u.string->len);
+      Pike_error("Database name (length %ld) is too long (max 127 characters)\n",
+		 DO_NOT_WARN((long)sp[-args].u.string->len));
     }
   }
   database = sp[-args].u.string->str;
@@ -1026,8 +1026,8 @@ static void f_list_dbs(INT32 args)
 	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
 	      sp[-args].u.string->str);
       } else {
-	Pike_error("Wildcard (length %d) is too long (max 80 characters)\n",
-	      sp[-args].u.string->len);
+	Pike_error("Wildcard (length %ld) is too long (max 80 characters)\n",
+		   DO_NOT_WARN((long)sp[-args].u.string->len));
       }
     }
     wild = sp[-args].u.string->str;
@@ -1114,8 +1114,8 @@ static void f_list_tables(INT32 args)
 	Pike_error("Wildcard \"%s\" is too long (max 80 characters)\n",
 	      sp[-args].u.string->str);
       } else {
-	Pike_error("Wildcard (length %d) is too long (max 80 characters)\n",
-	      sp[-args].u.string->len);
+	Pike_error("Wildcard (length %ld) is too long (max 80 characters)\n",
+		   DO_NOT_WARN((long)sp[-args].u.string->len));
       }
     }
     wild = sp[-args].u.string->str;
@@ -1248,8 +1248,8 @@ static void f_list_fields(INT32 args)
       Pike_error("Table name \"%s\" is too long (max 125 characters)\n",
 	    sp[-args].u.string->str);
     } else {
-      Pike_error("Table name (length %d) is too long (max 125 characters)\n",
-	    sp[-args].u.string->len);
+      Pike_error("Table name (length %ld) is too long (max 125 characters)\n",
+		 DO_NOT_WARN((long)sp[-args].u.string->len));
     }
   }
   table = sp[-args].u.string->str;
@@ -1264,9 +1264,10 @@ static void f_list_fields(INT32 args)
 	      "(max 125 characters)\n",
 	      sp[-args+1].u.string->str, sp[-args].u.string->str);
       } else {
-	Pike_error("Wildcard (length %d) + table name \"%s\" is too long "
-	      "(max 125 characters)\n",
-	      sp[-args+1].u.string->len, sp[-args].u.string->str);
+	Pike_error("Wildcard (length %ld) + table name \"%s\" is too long "
+		   "(max 125 characters)\n",
+		   DO_NOT_WARN((long)sp[-args+1].u.string->len),
+		   sp[-args].u.string->str);
       }
     }
     wild = sp[-args+1].u.string->str;

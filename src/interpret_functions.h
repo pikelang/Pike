@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.91 2001/09/05 01:40:10 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.92 2001/09/23 19:03:56 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1802,7 +1802,7 @@ PIKE_CONCAT(OP,_RETURN)(PIKE_CONCAT3(F_MARK_,OPCODE,_AND_RETURN),	   \
 
 MKAPPLY2(OPCODE1,CALL_LFUN,"call lfun",APPLY_LOW,
 	 Pike_fp->current_object,
-	 (void *)(arg1+Pike_fp->context.identifier_level));
+	 (void *)(ptrdiff_t)(arg1+Pike_fp->context.identifier_level));
 
 MKAPPLY2(OPCODE1,APPLY,"apply",APPLY_SVALUE_STRICT,
 	 &((Pike_fp->context.prog->constants + arg1)->sval),0);
@@ -1825,7 +1825,7 @@ OPCODE1(F_CALL_OTHER,"call other", {
 					  p);
 	if(fun >= 0)
 	{
-	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)fun))
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
 	    Pike_fp->next->pc=PROG_COUNTER;
@@ -1878,7 +1878,7 @@ OPCODE1(F_CALL_OTHER_AND_POP,"call other & pop", {
 					  p);
 	if(fun >= 0)
 	{
-	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)fun))
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    Pike_fp->save_sp--;
 	    Pike_fp->next->pc=PROG_COUNTER;
@@ -1933,7 +1933,7 @@ OPCODE1(F_CALL_OTHER_AND_RETURN,"call other & return", {
 					  p);
 	if(fun >= 0)
 	{
-	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)fun))
+	  if(low_mega_apply(APPLY_LOW, args-1, o, (void *)(ptrdiff_t)fun))
 	  {
 	    PIKE_OPCODE_T *addr = Pike_fp->pc;
 	    Pike_fp->save_sp--;
@@ -2111,7 +2111,8 @@ OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", {
     if(low_mega_apply(APPLY_LOW,
 		      args,
 		      Pike_fp->current_object,
-		      (void *)(arg1+Pike_fp->context.identifier_level)))
+		      (void *)(ptrdiff_t)(arg1+
+					  Pike_fp->context.identifier_level)))
     {
       Pike_fp->next->pc=addr;
       Pike_fp->flags |= PIKE_FRAME_RETURN_INTERNAL;
