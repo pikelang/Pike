@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: udp.c,v 1.70 2004/09/18 20:50:57 nilsson Exp $
+|| $Id: udp.c,v 1.71 2004/11/06 21:40:42 peter Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -469,9 +469,12 @@ void udp_wait(INT32 args)
   pollfds->events = POLLIN;
   pollfds->revents = 0;
   ms = timeout * 1000;
-  res = poll(pollfds, 1, ms);
-  e = errno;
 
+  do {
+    res = poll(pollfds, 1, ms);
+    e = errno;
+  } while (res < 0 && e == EINTR)
+    
   THREADS_DISALLOW();
   if (!res) {
     /* Timeout */
