@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.5 1997/06/09 20:26:22 grubba Exp $
+ * $Id: module.pmod.in,v 1.6 1997/06/09 21:00:04 grubba Exp $
  *
  * YP (NIS) Functionality for Pike
  *
@@ -10,13 +10,13 @@ inherit @module@;
 
 // Usual nicknames
 constant nicknames = ([
-  "passwd":"passwd.byname"
-  "group":"group.byname"
-  "networks":"networks.byaddr"
-  "hosts":"hosts.byname"
-  "protocols":"protocols.bynumber"
-  "services":"services.byname"
-  "aliases":"mail.aliases"
+  "passwd":"passwd.byname",
+  "group":"group.byname",
+  "networks":"networks.byaddr",
+  "hosts":"hosts.byname",
+  "protocols":"protocols.bynumber",
+  "services":"services.byname",
+  "aliases":"mail.aliases",
   "ethers":"ethers.byname"
 ]);
 
