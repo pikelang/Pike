@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.57 1999/10/25 10:17:47 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.58 1999/10/26 00:08:15 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1378,11 +1378,14 @@ int match_types(struct pike_string *a,struct pike_string *b)
 /* FIXME, add the index */
 static struct pike_string *debug_low_index_type(char *t, node *n)
 {
+  struct program *p;
   switch(EXTRACT_UCHAR(t++))
   {
   case T_OBJECT:
   {
-    struct program *p=id_to_program(extract_type_int(t+1));
+    p=id_to_program(extract_type_int(t+1));
+
+  comefrom_int_index:
     if(p && n)
     {
       if(n->token == F_ARROW)
@@ -1426,9 +1429,17 @@ static struct pike_string *debug_low_index_type(char *t, node *n)
     reference_shared_string(mixed_type_string);
     return mixed_type_string;
 
+    case T_INT:
+#ifdef AUTO_BIGNUM
+      /* Don't force Gmp.mpz to be loaded here since this function
+       * is called long before the master object is compiled...
+       * /Hubbe
+       */
+      p=get_auto_bignum_program_or_zero();
+      goto comefrom_int_index;
+#endif
     case T_VOID:
     case T_FLOAT:
-    case T_INT:
       return 0;
 
   case T_OR:
@@ -1625,9 +1636,11 @@ static int low_check_indexing(char *type, char *index_type, node *n)
     return 1;
 #endif
 
-  case T_PROGRAM:
-    /* FIXME: Should check that the index is a string. */
-    return 1;
+#ifdef AUTO_BIGNUM
+    case T_INT:
+#endif
+    case T_PROGRAM:
+      return !!low_match_types(string_type_string->str, index_type,0);
 
   case T_MIXED:
     return 1;

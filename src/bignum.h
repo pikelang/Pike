@@ -30,14 +30,17 @@
         (((INT_TYPE)sizeof(INT_TYPE))*CHAR_BIT <= (b))
 
 /* Prototypes begin here */
+struct program *get_auto_bignum_program(void);
+struct program *get_auto_bignum_program_or_zero(void);
+void exit_auto_bignum(void);
 void convert_stack_top_to_bignum(void);
 void convert_stack_top_with_base_to_bignum(void);
+int is_bignum_object(struct object *o);
+int is_bignum_object_in_svalue(struct svalue *sv);
 struct object *make_bignum_object(void);
 struct object *bignum_from_svalue(struct svalue *s);
 struct pike_string *string_from_bignum(struct object *o, int base);
 void convert_svalue_to_bignum(struct svalue *s);
-int is_bignum_object(struct object *o);
-int is_bignum_object_in_svalue(struct svalue *sv);
 /* Prototypes end here */
 
 #else

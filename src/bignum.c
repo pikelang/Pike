@@ -28,6 +28,19 @@ static void resolve_auto_bignum_program(void)
   }
 }
 
+struct program *get_auto_bignum_program(void)
+{
+  resolve_auto_bignum_program();
+  return program_from_function(&auto_bignum_program);
+}
+
+struct program *get_auto_bignum_program_or_zero(void)
+{
+  if(!gmp_library_loaded) return 0;
+  resolve_auto_bignum_program();
+  return program_from_function(&auto_bignum_program);
+}
+
 void exit_auto_bignum(void)
 {
   free_svalue(&auto_bignum_program);
