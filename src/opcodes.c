@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.97 2001/01/15 22:14:19 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.98 2001/01/31 15:11:28 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1737,6 +1737,15 @@ void o_sscanf(INT32 args)
   push_int(i);
 }
 
+/*! @decl array array_sscanf(string data, string format)
+ *!
+ *! This function works just like @[sscanf()], but returns the matched
+ *! results in an array instead of assigning them to lvalues. This is often
+ *! useful for user-defined sscanf strings.
+ *!
+ *! @seealso
+ *!   @[sscanf()], @[`/()]
+ */
 PMOD_EXPORT void f_sscanf(INT32 args)
 {
 #ifdef PIKE_DEBUG
