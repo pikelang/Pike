@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.91 2004/02/09 16:37:00 grubba Exp $
+|| $Id: backend.cmod,v 1.92 2004/03/10 17:17:10 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.91 2004/02/09 16:37:00 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.92 2004/03/10 17:17:10 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -226,7 +226,7 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
 #include <sys/poll.h>
 #endif /* HAVE_SYS_POLL_H */
 
-#ifdef HAVE_SYS_DEVPOLL_H
+#if defined(HAVE_SYS_DEVPOLL_H) && defined(PIKE_POLL_DEVICE)
 #include <sys/devpoll.h>
 
 #define USE_POLL_DEVICE
@@ -397,7 +397,8 @@ static void MY_FD_SET(int *pfd, int fd, int add)
   poll_state.revents = 0;
 #ifdef USE_DEVPOLL
   if (write(*pfd, &poll_state, sizeof(poll_state)) != sizeof(poll_state)) {
-    Pike_fatal("Failed to register fd %d for 0x%04x with /dev/poll (errno:%d).\n",
+    Pike_fatal("Failed to register fd %d for 0x%04x with " PIKE_POLL_DEVICE
+	       " (errno:%d).\n",
 	       fd, add, errno);
   }
 #endif
@@ -427,18 +428,21 @@ static void MY_FD_CLR(int *pfd, int fd, int sub)
   } while ((e < 0) && (errno == EINTR));
 
   if (e < 0) {
-    Pike_fatal("Failed to get state for fd %d from /dev/poll (errno:%d).\n",
+    Pike_fatal("Failed to get state for fd %d from " PIKE_POLL_DEVICE
+	       " (errno:%d).\n",
 	       fd, errno);
   } else if (!e) {
     /* fd is not in /dev/poll. */
-    IF_PD(fprintf(stderr, "BACKEND: Fd %d not in /dev/poll.\n", fd));
+    IF_PD(fprintf(stderr,
+		  "BACKEND: Fd %d not in " PIKE_POLL_DEVICE ".\n", fd));
     return;
   }
 
   if (!(poll_state[1].revents & sub)) {
     /* None of the sub events are registred. */
     IF_PD(fprintf(stderr,
-		  "BACKEND: Fd %d events 0x%04x not in /dev/poll (0x%04x).\n",
+		  "BACKEND: Fd %d events 0x%04x not in " PIKE_POLL_DEVICE
+		  " (0x%04x).\n",
 		  fd, sub, poll_state[1].revents));
     return;
   }
@@ -457,13 +461,15 @@ static void MY_FD_CLR(int *pfd, int fd, int sub)
     ;
 
   if (e < 0) {
-    Pike_fatal("Failed to set state for fd %d in /dev/poll (errno:%d).\n",
+    Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
+	       " (errno:%d).\n",
 	       fd, errno);
   }
 
   /* FIXME: Probably ought to support partial writes. */
   if (e != sz) {
-    Pike_fatal("Failed to set state for fd %d in /dev/poll short write (%d != %d).\n",
+    Pike_fatal("Failed to set state for fd %d in " PIKE_POLL_DEVICE
+	       " short write (%d != %d).\n",
 	       fd, e, sizeof(poll_state));
   }
 #ifdef PIKE_DEBUG
@@ -474,18 +480,21 @@ static void MY_FD_CLR(int *pfd, int fd, int sub)
   } while ((e < 0) && (errno == EINTR));
 
   if (e < 0) {
-    Pike_fatal("Failed to verify state for fd %d from /dev/poll (errno:%d).\n",
+    Pike_fatal("Failed to verify state for fd %d from " PIKE_POLL_DEVICE
+	       " (errno:%d).\n",
 	       fd, errno);
   } else if (!e) {
     /* fd is not in /dev/poll. */
-    IF_PD(fprintf(stderr, "BACKEND: Fd %d no longer in /dev/poll.\n", fd));
+    IF_PD(fprintf(stderr,
+		  "BACKEND: Fd %d no longer in " PIKE_POLL_DEVICE ".\n", fd));
     return;
   }
 
   if (poll_state[1].revents != (poll_state[1].events & ~POLLREMOVE)) {
     /* Expected and actual poll state differ. */
     IF_PD(fprintf(stderr,
-		  "BACKEND: Fd %d unexpected events 0x%04x in /dev/poll (0x%04x).\n",
+		  "BACKEND: Fd %d unexpected events 0x%04x in "
+		  PIKE_POLL_DEVICE " (0x%04x).\n",
 		  fd, poll_state[1].revents,
 		  poll_state[1].events & ~POLLREMOVE));
   }
@@ -2057,7 +2066,7 @@ PIKECLASS Backend
 	i = poll(me->active_set.poll_fds,
 		 me->active_set.num_in_poll,
 		 poll_msec);
-#endif /* USE_DEVPOLL || USE_EPOLL */
+#endif /* USE_DEVPOLL || USE_DEVEPOLL */
 	IF_PD(fprintf(stderr, " => %d\n", i));
 #else  /* !HAVE_POLL */
 	i = MY_SELECT(me->active_set.max_fd+1,
@@ -2676,12 +2685,12 @@ PIKECLASS Backend
 #ifdef USE_POLL_DEVICE
       if ((me->set =
 #ifdef USE_DEVPOLL
-	   open("/dev/poll", O_RDWR)
+	   open(PIKE_POLL_DEVICE, O_RDWR)
 #elif defined(USE_DEVEPOLL)
 	   epoll_create(POLL_SET_SIZE)	/* FIXME: Might want another value. */
-#else /* !USE_DEVPOLL && !USE_EPOLL */
+#else /* !USE_DEVPOLL && !USE_DEVEPOLL */
 	   (errno = ENODEV, -1)		/* Error */
-#endif /* USE_DEVPOLL || USE_EPOLL */
+#endif /* USE_DEVPOLL || USE_DEVEPOLL */
 	   ) < 0) {
 	Pike_error("Failed to open poll device (errno:%d)\n", errno);
       }
