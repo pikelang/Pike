@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.16 2001/08/16 18:49:46 marcus Exp $
+ * $Id: ia32.c,v 1.17 2001/09/01 07:20:56 hubbe Exp $
  *
  * Machine code generator for IA32.
  *
@@ -255,7 +255,7 @@ void ia32_mark(void)
     ia32_reg_eax=REG_IS_SP;
   }
 
-#if 0 
+#if 0
   /* who keeps changing edx?? -Hubbe */
   if(ia32_reg_edx == REG_IS_MARK_SP)
 #endif
@@ -352,10 +352,14 @@ void ins_f_byte(unsigned int b)
       ia32_mark();
       return;
 
+    case F_MARK_AND_CONST0 - F_OFFSET:
+      ia32_mark();
     case F_CONST0 - F_OFFSET:
       ia32_push_int(0);
       return;
 
+    case F_MARK_AND_CONST1 - F_OFFSET:
+      ia32_mark();
     case F_CONST1 - F_OFFSET:
       ia32_push_int(1);
       return;
