@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: image.h,v 1.36 2000/06/02 05:02:29 per Exp $
+**!	$Id: image.h,v 1.37 2000/08/05 11:07:31 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_IMAGE_H
@@ -39,6 +39,21 @@ extern int image_cpuid;
 
 #define RGB_TO_RGBL(RGBL,RGB) (((RGBL).r=COLOR_TO_COLORL((RGB).r)),((RGBL).g=COLOR_TO_COLORL((RGB).g)),((RGBL).b=COLOR_TO_COLORL((RGB).b)))
 #define RGBL_TO_RGB(RGB,RGBL) (((RGB).r=COLORL_TO_COLOR((RGBL).r)),((RGB).g=COLORL_TO_COLOR((RGBL).g)),((RGB).b=COLORL_TO_COLOR((RGBL).b)))
+
+/* Some marcos to avoid loss of precision warnings. */
+#ifdef __ECL
+static inline int DOUBLE_TO_INT(double d)
+{
+  return (int)d;
+}
+static inline char DOUBLE_TO_CHAR(double d)
+{
+  return (char)d;
+}
+#else /* !__ECL */
+#define DOUBLE_TO_INT(D)	((int)(D))
+#define DOUBLE_TO_CHAR(D)	((char)(D))
+#endif /* __ECL */
 
 
 #define FS_SCALE 1024

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.45 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: layers.c,v 1.46 2000/08/05 11:07:31 grubba Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -215,7 +215,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.45 2000/07/28 07:12:44 hubbe Exp $");
+RCSID("$Id: layers.c,v 1.46 2000/08/05 11:07:31 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -536,11 +536,11 @@ struct layer_mode_desc
 
 #endif
 
-#define COMBINE(P,A) CCUT(((int)(P))*(A))
+#define COMBINE(P,A) CCUT((DOUBLE_TO_INT(P))*(A))
 #define COMBINE_A(P,A) ((COLORTYPE)((P)*(A)))
 #define COMBINE_V(P,V,A) CCUT((V)*(P)*(A))
 
-#define F2C(Z) ((COLORTYPE)(COLORMAX*(Z)))
+#define F2C(Z) ((COLORTYPE)DOUBLE_TO_INT(COLORMAX*(Z)))
 
 #define ALPHA_ADD(S,L,D,SA,LA,DA,C)					 \
 	    if (!(LA)->C) (D)->C=(S)->C,(DA)->C=(SA)->C;		 \
@@ -636,7 +636,7 @@ static INLINE void hsv_to_rgb(double h,double s,double v,rgb_group *colorp)
 #define q F2C(v * (1 - (s * f)))
 #define t F2C(v * (1 - (s * (1 -f))))
 #define V F2C(v)
-   switch((int)i)
+   switch(DOUBLE_TO_INT(i))
    {
       case 6:
       case 0: 	colorp->r = V;	colorp->g = t;	colorp->b = p;	 break;
@@ -1381,7 +1381,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_add
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) ((A)+(int)(B))
+#define L_OPER(A,B) ((A)+DOUBLE_TO_INT(B))
 #define L_MMX_OPER(A,MMXR) paddusb_m2r(A,MMXR)
 #include "layer_oper.h"
 #undef L_MMX_OPER
@@ -1391,7 +1391,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_subtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
-#define L_OPER(A,B) ((A)-(int)(B))
+#define L_OPER(A,B) ((A)-DOUBLE_TO_INT(B))
 #define L_MMX_OPER(A,MMXR) psubusb_m2r(A,MMXR)
 #include "layer_oper.h"
 #undef L_MMX_OPER
@@ -1401,7 +1401,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_multiply
 #define L_TRUNC(X) (X)
-#define L_OPER(A,B) CCUT((A)*(int)(B))
+#define L_OPER(A,B) CCUT((A)*DOUBLE_TO_INT(B))
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1409,7 +1409,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_divide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) ((A)/C2F(1+(int)(B)))
+#define L_OPER(A,B) ((A)/C2F(1+DOUBLE_TO_INT(B)))
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1427,7 +1427,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_invsubtract
 #define L_TRUNC(X) MAXIMUM(0,(X))
-#define L_OPER(A,B) ((B)-(int)(A))
+#define L_OPER(A,B) ((B)-DOUBLE_TO_INT(A))
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC
@@ -1435,7 +1435,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 #define LM_FUNC lm_invdivide
 #define L_TRUNC(X) MINIMUM(255,(X))
-#define L_OPER(A,B) ((B)/C2F(1+(int)(A)))
+#define L_OPER(A,B) ((B)/C2F(1+DOUBLE_TO_INT(A)))
 #include "layer_oper.h"
 #undef LM_FUNC
 #undef L_TRUNC

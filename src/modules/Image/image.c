@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.166 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: image.c,v 1.167 2000/08/05 11:07:30 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.166 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: image.c,v 1.167 2000/08/05 11:07:30 grubba Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.166 2000/07/28 07:12:44 hubbe Exp $");
+RCSID("$Id: image.c,v 1.167 2000/08/05 11:07:30 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -133,7 +133,7 @@ extern struct program *image_colortable_program;
 #define THIS ((struct image *)(Pike_fp->current_storage))
 #define THISOBJ (Pike_fp->current_object)
 
-#define testrange(x) ((COLORTYPE)MAXIMUM(MINIMUM(((int)x),255),0))
+#define testrange(x) ((COLORTYPE)MAXIMUM(MINIMUM(DOUBLE_TO_INT(x),255),0))
 
 #define sq(x) ((x)*(x))
 
