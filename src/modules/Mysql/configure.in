@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.22 2001/11/15 13:23:35 grubba Exp $
+# $Id: configure.in,v 1.23 2001/11/29 14:37:12 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -34,8 +34,8 @@ if test x$with_mysql = xno; then
 else
   AC_MSG_CHECKING(for Mysql lib-directory)
 
-  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
-  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/local/mysql/include no"
+  libdirs="$with_root/usr/local/lib/mysql $with_root/usr/local/mysql/lib/mysql $with_root/opt/lib/mysql $with_root/opt/mysql/lib/mysql $with_root/usr/gnu/lib/mysql $with_root/usr/lib/mysql $with_root/lib/mysql $with_root/usr/pkg/lib/mysql $with_root/usr/local/mysql/lib $with_root/usr/local/mysql/mach-lib-thread no"
+  incdirs="$with_root/usr/local/include/mysql $with_root/usr/local/mysql/include/mysql $with_root/opt/include/mysql $with_root/opt/mysql/include/mysql $with_root/usr/gnu/include/mysql $with_root/usr/include/mysql $with_root/include/mysql $with_root/usr/pkg/include/mysql $with_root/usr/local/mysql/include no"
 
   if test x$with_mysql = xyes; then :; else
     # Mysql installation directory specified.
@@ -192,7 +192,6 @@ LIBS="$ac_save_LIBS"
 
 if test "x$ac_cv_pike_lib_$1_mysql_real_connect" = xyes ; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_MYSQL_REAL_CONNECT)
   $2
 else
   AC_MSG_RESULT(no)
