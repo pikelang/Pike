@@ -1,3 +1,13 @@
+Sat Nov  4 04:08:46 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* modules/file/file.c: Reorganized, changed the underlying
+          data structures to work better.
+
+Fri Nov  3 23:26:12 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* language.y: fixed a coredumping bug when the first function
+          was missing type.
+
 Thu Nov  2 00:13:20 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* fixed various #include to compile with A/UX
