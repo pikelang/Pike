@@ -1,5 +1,5 @@
 /*
- * $Id: bytecode.h,v 1.6 2002/05/10 15:41:42 grubba Exp $
+ * $Id: bytecode.h,v 1.7 2002/05/10 22:57:44 mast Exp $
  */
 
 #define UPDATE_PC()
@@ -14,6 +14,8 @@
   } while(0)
 #define ins_byte(VAL)		add_to_program((VAL))
 #define ins_data(VAL)		add_relocated_int_to_program((VAL))
+
+#define PROG_COUNTER pc
 
 #define READ_INCR_BYTE(PC)	EXTRACT_UCHAR((PC)++)
 
