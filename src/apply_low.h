@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.10 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: apply_low.h,v 1.11 2002/11/09 17:03:53 grubba Exp $
 */
 
     {
@@ -213,7 +213,7 @@
 	/* Fall through */
       }
       
-      case 0:
+      case 0:	/* Variable */
       {
 	/* FIXME:
 	 * Use new-style tail-recursion instead
@@ -261,6 +261,11 @@
 
 	debug_malloc_touch(Pike_fp);
 	pc=new_frame->context.prog->program + function->func.offset;
+
+	/*
+	 * FIXME: The following stack stuff could probably
+	 *        be moved to an opcode.
+	 */
 
 	num_locals = READ_INCR_BYTE(pc);
 	num_args = READ_INCR_BYTE(pc);

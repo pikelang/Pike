@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.276 2002/11/04 17:02:44 marcus Exp $
+|| $Id: interpret.c,v 1.277 2002/11/09 17:03:53 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.276 2002/11/04 17:02:44 marcus Exp $");
+RCSID("$Id: interpret.c,v 1.277 2002/11/09 17:03:53 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -148,6 +148,16 @@ static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazon
 }
 #endif
 
+/* Execute Pike code starting at pc.
+ *
+ * Called once with NULL to initialize tables.
+ *
+ * Returns 0 if pc is NULL.
+ *
+ * Returns -1 if the code terminated due to a RETURN.
+ *
+ * Returns -2 if the code terminated due to EXIT_CATCH or ESCAPE_CATCH.
+ */
 static int eval_instruction(PIKE_OPCODE_T *pc);
 
 PMOD_EXPORT void init_interpreter(void)
@@ -1151,6 +1161,29 @@ void really_free_pike_scope(struct pike_frame *scope)
   really_free_pike_frame(scope);
 }
 
+/* Apply a function.
+ *
+ * Application types:
+ *
+ *   APPLY_STACK:         Apply Pike_sp[-args] with args-1 arguments.
+ *
+ *   APPLY_SVALUE:        Apply the svalue at arg1, and adjust the stack
+ *                        to leave a return value.
+ *
+ *   APPLY_SVALUE_STRICT: Apply the svalue at arg1, and don't adjust the
+ *                        stack for functions that return void.
+ *
+ *   APPLY_LOW:		  Apply function #arg2 in object arg1.
+ *
+ * Return values:
+ *
+ *   Returns zero if the function was invalid or has been executed.
+ *
+ *   Returns one if a frame has been set up to start the function
+ *   with eval_instruction(Pike_fp->pc - ENTRY_PROLOGUE_SIZE). After
+ *   eval_instruction() is done the frame needs to be removed by a call
+ *   to low_return() or low_return_pop().
+ */
 int low_mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 {
   struct object *o;
@@ -1496,6 +1529,12 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 /* Put catch outside of eval_instruction, so
  * the setjmp won't affect the optimization of
  * eval_instruction
+ *
+ * Returns 0 on throw.
+ *
+ * Returns 1 if the code performed a RETURN.
+ *
+ * Returns 2 if the code performed EXIT_CATCH or ESCAPE_CATCH.
  */
 static int o_catch(PIKE_OPCODE_T *pc)
 {
