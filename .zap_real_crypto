@@ -3,7 +3,8 @@
 # .zap_real_crypto
 
 echo "Do you really want to delete all cryptography source files?"
-case `read` in
+read answer
+case $answer in
     y*|Y*)
 	rm -rf src/modules/_Crypto
 	rm -f lib/modules/Crypto/rsa.pike
