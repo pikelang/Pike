@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.20 2005/01/06 15:25:50 mirar Exp $
+### $Id: regional,v 1.21 2005/01/06 15:35:41 mirar Exp $
 
 ### =====================================================================
 ###
@@ -3410,10 +3410,14 @@ Region "se"
   Add   "c/easter"                    hf # "Easter"                   Easter +0
   Event "se/midsummer"                hf   "Midsummer's Day"          WDRel Jun 21 Sat +1
   Add   "c/pentecost"                 hf # "Pentecost"                Easter +49
-  Add   "c/pentecost monday"          h  # "Pentecost Monday"         Easter +50
+# second day of pentecost is no longer a holiday starting 2005
+  Add   "c/pentecost monday"          -  # "Pentecost Monday"         Easter +50
   Add   "c/good friday"               h  # "Good Friday"              Easter -2
   Add   "c/palm sunday"               h  # "Palm Sunday"              Easter -7
-  Event "se/flag"                     f    "Sweden's Flag Day"        Fixed Jun  6
+# "svenska flaggans dag + nationaldagen" the same day, two events?
+# national day is holiday starting at 2005
+  Event "se/flag"                     hf   "Sweden's Flag Day"        Fixed Jun  6
+  Event "se/national"                 hf   "National Day"             Fixed Jun  6
   Event "se/kings nameday"            f    "King's Nameday"           Fixed Nov  6
   Add   "c/advent 1"                  h  # "Advent 1"                 WDRel Dec 24 Sun -4 excl
   Event "se/kings nameday 2"          f    "King's Nameday"           Fixed Jan 28
