@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.7 2000/12/27 09:51:29 mirar Exp $
+ * $Id: acconfig.h,v 1.8 2001/01/30 07:54:10 mirar Exp $
  *
  * System dependant definitions for the system module for Pike
  *
@@ -44,5 +44,8 @@
 
 /* Define if you have the <sys/resource.h> header file.  */
 #undef HAVE_SYS_RESOURCE_H
+
+/* Define if ITIMER_REAL, ITIMER_VIRTUAL and ITIMER_PROF is in tInt02 */
+#undef ITIMER_TYPE_IS_02
 
 #endif /* SYSTEM_MACHINE_H */

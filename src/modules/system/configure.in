@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.42 2000/12/27 10:45:17 mirar Exp $
+# $Id: configure.in,v 1.43 2001/01/30 07:54:10 mirar Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -17,7 +17,8 @@ fi
 AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 	sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
 	sys/utsname.h pwd.h passwd.h shadow.h grp.h sys/stat.h winsock.h \
-        sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h)
+        sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h \
+	sys/time.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for sys/resource.h])
@@ -40,7 +41,8 @@ AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	chroot fchroot uname sysinfo gethostname gethostbyname \
         getgrnam_r getgrent_r getgrgid_r \
         getpwnam_r getpwent_r getpwuid_r \
-        getspnam_r innetgr utime sleep getrlimit setrlimit)
+        getspnam_r innetgr utime sleep getrlimit setrlimit  \
+        setitimer getitimer)
 
 
 if test "x$ac_cv_func_setpgrp" = "xyes"; then
@@ -290,6 +292,31 @@ else
 fi
 fi
 
+
+AC_MSG_CHECKING(if get/setitimer 'which' type is tInt02)
+
+AC_CACHE_VAL(pike_cv_itimer_type_is_02,
+[
+AC_TRY_RUN([
+#include <sys/time.h>
+
+int main()
+{
+   if (ITIMER_REAL>=0 && ITIMER_REAL<=2 &&
+       ITIMER_VIRTUAL>=0 && ITIMER_VIRTUAL<=2 &&
+       ITIMER_PROF>=0 && ITIMER_PROF<=2)
+      return 0;
+   return 1;
+}
+],pike_cv_itimer_type_is_02=yes,
+pike_cv_itimer_type_is_02="not certain")
+])
+
+AC_MSG_RESULT($pike_cv_itimer_type_is_02)
+
+if test "$pike_cv_itimer_type_is_02" = yes; then
+  AC_DEFINE(ITIMER_TYPE_IS_02)
+fi
 
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )

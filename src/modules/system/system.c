@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.99 2001/01/17 13:44:37 grubba Exp $
+ * $Id: system.c,v 1.100 2001/01/30 07:54:10 mirar Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.99 2001/01/17 13:44:37 grubba Exp $");
+RCSID("$Id: system.c,v 1.100 2001/01/30 07:54:10 mirar Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -86,6 +86,10 @@ RCSID("$Id: system.c,v 1.99 2001/01/17 13:44:37 grubba Exp $");
 #endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
 #endif
 
 #ifdef HAVE_SYS_ID_H
@@ -1427,6 +1431,7 @@ static void f_system_sleep(INT32 args)
 }
 #endif /* HAVE_SLEEP */
 
+
 /* can't do this if we don't know the syntax */
 #ifdef SETRLIMIT_SYNTAX_UNKNOWN
 #ifdef HAVE_GETRLIMIT
@@ -1787,6 +1792,86 @@ static void f_setrlimit(INT32 args)
 }
 #endif
 
+
+#ifdef HAVE_SETITIMER
+void f_system_setitimer(INT32 args)
+{
+   FLOAT_TYPE interval;
+   INT_TYPE what;
+   int res;
+   struct itimerval itimer,otimer;
+
+   otimer.it_value.tv_usec=0;
+   otimer.it_value.tv_sec=0;
+
+   get_all_args("setitimer",args,"%+%F",&what,&interval);
+
+   if (interval<0.0)
+      SIMPLE_BAD_ARG_ERROR("setitimer",2,"positive or zero int or float");
+   else if (interval==0.0)
+      res=setitimer( (int)what,NULL,&otimer );
+   else
+   {
+      itimer.it_value.tv_usec=(int)((interval-(int)interval)*1000000);
+      itimer.it_value.tv_sec=(int)interval;
+      itimer.it_interval=itimer.it_value;
+
+      res=setitimer((int)what,&itimer,&otimer);
+   }
+
+   if (res==-1)
+   {
+      switch (errno)
+      {
+	 case EINVAL:
+	    Pike_error("setitimer: invalid timer %d\n",what);
+	    break;
+	 default:
+	    Pike_error("setitimer: unknown error (errno=%d)\n",errno);
+	    break;
+      }
+   }
+
+   pop_n_elems(args);
+   push_float(otimer.it_interval.tv_sec+otimer.it_interval.tv_usec*0.000001);
+}
+#endif
+
+#ifdef HAVE_GETITIMER
+void f_system_getitimer(INT32 args)
+{
+   INT_TYPE what;
+   int res;
+   struct itimerval otimer;
+
+   otimer.it_value.tv_usec=0;
+   otimer.it_value.tv_sec=0;
+   otimer.it_interval.tv_usec=0;
+   otimer.it_interval.tv_sec=0;
+
+   get_all_args("setitimer",args,"%+",&what);
+
+   if (getitimer((int)what,&otimer)==-1)
+   {
+      switch (errno)
+      {
+	 case EINVAL:
+	    Pike_error("setitimer: invalid timer %d\n",what);
+	    break;
+	 default:
+	    Pike_error("setitimer: unknown error (errno=%d)\n",errno);
+	    break;
+      }
+   }
+
+   pop_n_elems(args);
+   push_float(otimer.it_interval.tv_sec+otimer.it_interval.tv_usec*0.000001);
+   push_float(otimer.it_value.tv_sec+otimer.it_value.tv_usec*0.000001);
+   f_aggregate(2);
+}
+#endif
+
+
 /*
  * Module linkage
  */
@@ -2045,6 +2130,32 @@ void pike_module_init(void)
 #ifdef HAVE_SLEEP
   ADD_FUNCTION("sleep",f_system_sleep,tFunc(tInt,tInt), 0);
 #endif /* HAVE_SLEEP */
+
+#ifdef ITIMER_TYPE_IS_02
+#define tITimer tInt02
+#else
+#define tITimer tInt
+#endif
+
+#ifdef HAVE_SETITIMER
+  ADD_FUNCTION("setitimer",f_system_setitimer,
+	       tFunc(tITimer tOr(tIntPos,tFloat),tFloat),0);
+#ifdef ITIMER_REAL
+   ADD_INT_CONSTANT("ITIMER_REAL",ITIMER_REAL,0);
+#endif
+#ifdef ITIMER_VIRTUAL
+   ADD_INT_CONSTANT("ITIMER_VIRTUAL",ITIMER_VIRTUAL,0);
+#endif
+#ifdef ITIMER_PROF
+   ADD_INT_CONSTANT("ITIMER_PROF",ITIMER_PROF,0);
+#endif
+
+#ifdef HAVE_GETITIMER
+  ADD_FUNCTION("getitimer",f_system_getitimer,
+	       tFunc(tITimer,tArr(tFloat)),0);
+#endif
+#endif
+
 
   init_passwd();
 
