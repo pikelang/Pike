@@ -1008,6 +1008,8 @@ void make_master(string dest, string master, string lib_prefix)
   status("Finalizing",master);
   string master_data=Stdio.read_file(master);
   master_data=replace(master_data,"¤lib_prefix¤",replace(lib_prefix,"\\","\\\\"));
+  if((vars->PIKE_MODULE_RELOC||"") != "")
+    master_data=replace(master_data,"#undef PIKE_MODULE_RELOC","#define PIKE_MODULE_RELOC 1");
   Stdio.write_file(combine_path(vars->TMP_LIBDIR,"master.pike"),master_data);
   status("Finalizing",master,"done");
 }

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.270 2001/07/20 12:44:50 grubba Exp $
+# $Id: Makefile.in,v 1.271 2001/09/02 01:36:14 marcus Exp $
 #
 
 # This line is needed on some machines.
@@ -99,6 +99,7 @@ RUNPIKE=$(DEFAULT_RUNPIKE)
 USE_TPIKE=$(TMP_BUILDDIR)/precompile.sh
 USE_PIKE=@PIKE@ $(PIKEOPTS)
 RUNTPIKE=$(@RUNTPIKE@)
+PIKE_MODULE_RELOC=@PIKE_MODULE_RELOC@
 
 MAKE_FLAGS=
 
@@ -371,14 +372,14 @@ install: pike hilfe pike-module aclocal
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
 	man_prefix="$(man_prefix)" pike_name=$(pike_name) \
-	fakeroot="$(buildroot)"
+	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 install_interactive: pike hilfe pike-module aclocal
 	@$(RUNPIKE) $(TMP_BINDIR)/install.pike --interactive \
 	exec_prefix="$(exec_prefix)"  prefix=$(prefix) \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" MANDIR_SRC="$(MANDIR_SRC)" \
-	fakeroot="$(buildroot)"
+	fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 # tidy up a bit
 tidy:
@@ -441,10 +442,10 @@ just_verify: module_testsuites testsuite master-stamp
 
 tinstall: aclocal master-stamp aclocal
 	-rm -rf test-install
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 just-tinstall: aclocal master-stamp aclocal
-	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)" PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 
 
 verify: module_testsuites testsuite tinstall
@@ -500,8 +501,10 @@ lib: Makefile
 
 master.pike: $(LIBDIR_SRC)/master.pike.in Makefile
 	t="$$PIKE_PATH_TRANSLATE"; if test "x$$t" = "x"; then t=s,x,x,; else :; fi; \
+	if test "x$(PIKE_MODULE_RELOC)" = "x"; then u=s,x,x,; else u='s/^#undef PIKE_MODULE_RELOC/#define PIKE_MODULE_RELOC 1/'; fi; \
 	sed -e 's!¤lib_prefix¤!'"`echo "$(TMP_LIBDIR)" | sed -e "$$t"`"'!' <$(LIBDIR_SRC)/master.pike.in \
-	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' >master.pike
+	  | sed -e 's!¤share_prefix¤!'"`echo "$(LIBDIR_SRC)" | sed -e "$$t"`"'!' \
+	  | sed -e "$$u" >master.pike
 
 # Want master.pike up-to-date, but yet there's no dependency on the
 # that file. Works like the .h_src.h target.
@@ -551,7 +554,7 @@ bin_export: aclocal
 	exec_prefix="$(exec_prefix)" lib_prefix="$(lib_prefix)" \
 	TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" \
 	SRCDIR="$(SRCDIR)" prefix="$(prefix)" MANDIR_SRC="$(MANDIR_SRC)" \
-	man_prefix="$(man_prefix)" pike_name=$(pike_name)
+	man_prefix="$(man_prefix)" pike_name=$(pike_name) PIKE_MODULE_RELOC="$(PIKE_MODULE_RELOC)"
 	@case " $(CC)" in \
 	  *\ rnt*) \
 	    $(MAKE) $(MAKE_FLAGS) uncompress_header ;\

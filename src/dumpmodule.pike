@@ -18,19 +18,27 @@ Tools.Install.ProgressBar progress_bar;
 
 mapping function_names=([]);
 
-class __Codec
+static string fixup_path(string x)
 {
-  string last_id;
-
-  static string fixup_path(string x)
-  {
+  if(master()->relocate_module) {
     foreach(master()->pike_module_path, string path) {
       path = combine_path(path, "");
       if(x[..sizeof(path)-1] == path)
-	return "mpath:"+x[sizeof(path)..];
+	return "/${PIKE_MODULE_PATH}/"+x[sizeof(path)..];
     }
-    return x;
+    /* This is necessary to find compat modules... */
+    foreach(master()->pike_module_path, string path) {
+      path = combine_path(path, "..", "");
+      if(x[..sizeof(path)-1] == path)
+	return "/${PIKE_MODULE_PATH}/../"+x[sizeof(path)..];
+    }
   }
+  return x;
+}
+
+class __Codec
+{
+  string last_id;
 
   string nameof(mixed x)
   {
@@ -232,6 +240,15 @@ class Handler
       if(!logfile) return;
       logfile->write(sprintf("%s:%d:%s\n",file,line,err));
     }
+}
+
+program compile_file(string file, object|void handler)
+{
+  if(master()->relocate_module) {
+    string s = master()->master_read_file(file);
+    return master()->compile_string(s,fixup_path(file), handler);
+  } else
+    return master()->compile_file(file, handler);
 }
 
 void dumpit(string file)

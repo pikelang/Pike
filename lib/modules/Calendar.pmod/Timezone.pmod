@@ -1041,7 +1041,7 @@ class Runtime_timezone_compiler
 	 map(files,
 	     lambda(string fn)
 	     {
-		return Stdio.read_bytes(base_path+fn) ||
+		return master()->master_read_file(base_path+fn) ||
 		   (error("Failed to open file %O\n",base_path+fn), "");
 	     })*"\n";
    }

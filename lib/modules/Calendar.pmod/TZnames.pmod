@@ -31,7 +31,7 @@ static string raw_zone_tab=0;
 string _zone_tab()
 {
    return raw_zone_tab ||
-      (raw_zone_tab = Stdio.read_bytes(
+      (raw_zone_tab = master()->master_read_file(
 	 combine_path(__FILE__,"..","tzdata/zone.tab")));
 }
 
