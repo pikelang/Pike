@@ -1,4 +1,13 @@
 #! /bin/sh
 
+echo "Removing Pike crypto modules."
+rm -f lib/modules/Crypto/_rsa.pike
+rm -f lib/modules/Crypto/aes.pike
+rm -f lib/modules/Crypto/des3.pike
+rm -f lib/modules/Crypto/des3_cbc.pike
+rm -f lib/modules/Crypto/idea_cbc.pike
+rm -f lib/modules/Crypto/rsa.pike
 (cd src/modules/_Crypto ; ./.build_lobotomized_crypto)
-
+echo
+echo "Removing low Crypto module."
+rm -rf src/modules/_Crypto
