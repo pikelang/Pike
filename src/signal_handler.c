@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.269 2003/05/17 11:43:23 grubba Exp $
+|| $Id: signal_handler.c,v 1.270 2003/05/17 11:53:16 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.269 2003/05/17 11:43:23 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.270 2003/05/17 11:53:16 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1322,15 +1322,18 @@ static TH_RETURN_TYPE wait_thread(void *data)
 	 *
 	 * Ignore them for now.
 	 */
+#ifdef !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED)
 #ifdef PROC_DEBUG
-#ifdef SIGPROF
 	fprintf(stderr, "wait thread: Got SIGPROF from pid %d\n",pid);
-#else /* !SIGPROF */
-	fprintf(stderr, "wait thread: Got L/E/F status (0x%08x) from pid %d\n",
-		status, pid);
-#endif /* SIGPROF */
 #endif /* PROC_DEBUG */
 	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), SIGPROF);
+#else /* defined(_W_SLWTED) || defined(_W_SEWTED) || defined(_W_SFWTED) */
+#ifdef PROC_DEBUG
+	fprintf(stderr, "wait thread: Got L/E/F status (0x%08x) from pid %d\n",
+		status, pid);
+#endif /* PROC_DEBUG */
+	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), 0);
+#endif /* !defined(_W_SLWTED) && !defined(_W_SEWTED) && !defined(_W_SFWTED) */
 	continue;
       }
 #endif /* HAVE_PTRACE && (SIGPROF || _W_SLWTED || _W_SEWTED || _W_SFWTED) */
