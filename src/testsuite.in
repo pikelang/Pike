@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.37 1997/03/17 22:52:02 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.38 1997/04/22 00:10:16 grubba Exp $"]])
 test_any([[class foo { constant x=17; }; class bar { inherit foo; constant x=18; }; return bar()->x;]],18)
 test_program([[inline string foo(string s){ while(s[0] == ' ' || s[0] == '\t') s = s[1..]; return(s); } string a() { return foo("   bar"); }]])
 test_true([[lambda(function f) {return 1;}(object_program(this_object()));]])
@@ -1721,3 +1721,8 @@ test_program(inherit test2; inherit test; mixed a() { setw(20); setb(22); return
 
 test_eval_error(clone(class{int i;void foo(){ destruct(this_object());i=0;}})->foo())
 
+// Pike modules
+// LR
+test_true(LR.parser)
+test_true(LR.Grammar_parser)
+test_program([[ object(LR.parser) p=LR.Grammar_parser.make_parser("foo : bar;foo : foo bar;bar : \"a\";"); int pos; array(string) data="aaaaaaaaa"/""; string scan() { if (pos < sizeof(data)) return(data[pos++]); else return ""; } int a() { return(p->parse(scan) == "a"); }]])
