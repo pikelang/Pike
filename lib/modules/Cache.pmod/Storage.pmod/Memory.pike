@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Memory.pike,v 1.4 2000/09/28 03:38:31 hubbe Exp $
+ * $Id: Memory.pike,v 1.5 2001/01/01 22:49:43 kinkie Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
@@ -20,13 +20,16 @@ class Data {
   
   int _size=0;
   mixed _data=0;
+  multiset(string) _deps;
   
   void create(void|mixed value, void|int abs_expire_time, 
-              void|float preciousness) {
+              void|float preciousness,
+              void|multiset(string) dependants) {
     _data=value;
     atime=ctime=time(1);
     if (abs_expire_time) etime=abs_expire_time;
     if (preciousness) cost=preciousness;
+    if (dependants) _deps=dependants;
   }
   
   int size() {
@@ -75,7 +78,7 @@ int(0..0)|string first() {
 }
 
 int(0..0)|string next() {
-  if (iter && current < sizeof(iter))
+  if (iter && current < sizeof(iter) && data[iter[current]])
     return iter[current++];
   iter=0;
   return 0;
@@ -88,8 +91,9 @@ int(0..0)|string next() {
  */
 void set(string key, mixed value,
          void|int absolute_expire, 
-         void|float preciousness) {
-  data[key]=Data(value,absolute_expire,preciousness);
+         void|float preciousness,
+         void|multiset(string) dependants) {
+  data[key]=Data(value,absolute_expire,preciousness,dependants);
 }
 
 // fetches some data from the cache. If notouch is set, don't touch the
@@ -109,10 +113,22 @@ void aget(string key,
 
 void delete(string key, void|int(0..1) hard) {
   object(Cache.Data) rv=data[key];
+  if (!rv) return;
+  multiset deps=rv->_deps;
+  
+  //need to destruct this first, or we might infinite-loop recursing
+  //through the dependants (think of a bug listing a value depending
+  //on itself, or even worse, circularly.
   if (hard) {
     destruct(rv->value());
   }
   m_delete(data,key);
+
+  if (deps) {
+    foreach((array)(deps), string dep) {
+      delete(dep,hard);
+    }
+  }
   return 0;
 }
 

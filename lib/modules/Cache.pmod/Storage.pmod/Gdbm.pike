@@ -1,25 +1,27 @@
 /*
- * A GDBM-based storage manager.
+ * A GBM-based storage manager.
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Gdbm.pike,v 1.5 2000/12/14 04:17:47 nilsson Exp $
+ * $Id: Gdbm.pike,v 1.6 2001/01/01 22:49:43 kinkie Exp $
  *
  * This storage manager provides the means to save data to memory.
  * In this manager I'll add reference documentation as comments to
  * interfaces. It will be organized later in a more comprehensive format
  *
  * Settings will be added later.
+ * TODO: verify dependants' implementation.
  */
 
 #pike __REAL_VERSION__
 
 //after this many deletion ops, the databases will be compacted.
-#define CLUTTERED 100
+#define CLUTTERED 1000
 
 #if constant(Gdbm.gdbm)
 Gdbm.gdbm db, metadb;
 int deletion_ops=0; //every 1000 deletion ops, we'll reorganize.
+int have_dependants=0;
 
 class Data {
   inherit Cache.Data;
@@ -29,13 +31,11 @@ class Data {
   mixed _data=0;
   
   int size() {
-    if (_size) return _size;
-    _size=recursive_low_size(data());
-    return _size;
+    return _size; //it's guarranteed to be set. See set()
   }
   
   mixed data() {
-    if (!_data) 
+    if (!_data)
       _data=decode_value(db[_key]);
     return _data;
   }
@@ -65,7 +65,7 @@ class Data {
     atime=m->atime;
     ctime=m->ctime;
     etime=m->etime;
-    cost=m->cost;    
+    cost=(float)(m->cost||1);
   }
   
 }
@@ -82,35 +82,28 @@ class Data {
 //Maybe we can put some heuristics: since almost only the policy manager
 //uses first(), next() and delete(), we might count the deletion operations
 //and reorganize when we reach some kind of threshold.
-private ADT.Queue keys;
+private string iter=0;
 int(0..0)|string first() {
-  string tmp;
-  keys=ADT.Queue();
-  tmp=metadb->firstkey();
-  while (tmp) {
-    keys->put(tmp);
-    tmp=metadb->nextkey(tmp);
-  }
-  return keys->get();
+  return (iter=metadb->firstkey());
 }
 
 int(0..0)|string next() {
-  if (!keys) return 0;
-  return keys->get();
+  return (iter=metadb->nextkey(iter));
 }
 
 // we set the data in the database directly here, since we have
 // no need to create a Data object.
 void set(string key, mixed value,
-         void|int expire_time, void|float preciousness) {
-  string tmp;
-  int tm=time(1);
-  mapping meta;
+         void|int expire_time, void|float preciousness,
+         void|multiset(string) dependants) {
   //should I refuse storing objects too?
   if (programp(value)||functionp(value)) {
     werror("can't store value\n"); //TODO: use crumbs
     return 0;
   }
+  string tmp;
+  int tm=time(1);
+  mapping meta;
   tmp=encode_value(value);
   db[key]=tmp;
   meta=(["size":sizeof(tmp),"atime":tm,"ctime":tm]);
@@ -119,6 +112,10 @@ void set(string key, mixed value,
     meta->cost=preciousness;
   else
     meta->cost=1.0;
+  if (dependants) {
+    meta->dependants=dependants;
+    have_dependants=1;
+  }
   
   metadb[key]=encode_value(meta);
 }
@@ -128,11 +125,9 @@ void set(string key, mixed value,
 // the undump operation.
 int(0..0)|Cache.Data get(string key,void|int notouch) {
   string metadata=metadb[key];
-  mixed err;
   Data rv;
   if (!metadata) return 0;      // no such key in cache.
-  err = catch (rv=(Data(key,db,metadb,metadata)));
-  if (err) return 0;            // could not undump the metadata
+  rv=(Data(key,db,metadb,metadata);
   if (!notouch) {
     rv->touch();
   }
@@ -148,11 +143,30 @@ void aget(string key,
 }
 
 void delete(string key, void|int(0..1) hard) {
+  multiset(string) dependants=0;
+
+  if (have_dependants) {
+    string emeta=metadb->fetch(key);
+    if (!emeta) return;         // no such key. Already deleted.
+    dependants=decode_value(emeta)->dependants;
+  }
+
+  //werror("Deleteing %s\n",key);
   db->delete(key);
   metadb->delete(key);
   deletion_ops++;
+
+  if (dependants) {
+    foreach((array)dependants, string chain) {
+      //werror("chain-deleteing %s\n",chain);
+      delete(chain);            // recursively delete
+    }
+    //werror("Done chain-deleteing\n");
+    return;                   // return so that reorg takes place at the end
+  }
+  
   if (deletion_ops > CLUTTERED) {
-    werror("Reorganizing database\n");
+    //werror("Reorganizing database\n");
     db->reorganize();
     metadb->reorganize();
     deletion_ops=0;

@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: cache.pike,v 1.4 2000/09/28 03:38:29 hubbe Exp $
+ * $Id: cache.pike,v 1.5 2001/01/01 22:49:25 kinkie Exp $
  *
  * This module serves as a front-end to different kinds of caching system
  * It uses two helper objects to actually store data, and to determine
@@ -23,18 +23,22 @@
 
 
 private int cleanup_cycle=DEFAULT_CLEANUP_CYCLE;
-private object(Cache.Storage.Base) storage;
-private object(Cache.Policy.Base) policy;
-
+static object(Cache.Storage.Base) storage;
+static object(Cache.Policy.Base) policy;
 
 //. Looks in the cache for an element with the given key and, if available,
 //. returns it. Returns 0 if the element is not available
+// TODO: check that Storage Managers return the appropriate zero_type
 mixed lookup(string key) {
+  if (!stringp(key)) key=(string)key; // paranoia.
   object(Cache.Data) tmp=storage->get(key);
-  return (tmp?tmp->data():0);
+  return (tmp?tmp->data():([])["zero"]);
 }
 
 //structure: "key" -> (< ({function,args,0|timeout_call_out_id}) ...>)
+// this is used in case multiple async-lookups are attempted
+// against a single key, so that they can be collapsed into a
+// single backend-request.
 private mapping (string:multiset(array)) pending_requests=([]);
 
 private void got_results(string key, int|Cache.Data value) {
@@ -68,6 +72,7 @@ void alookup(string key,
               function(string,mixed,mixed...:void) callback,
               int|float timeout,
               mixed ... args) {
+  if (!stringp(key)) key=(string)key; // paranoia
   array req = ({callback,args,0});
   if (!pending_requests[key]) { //FIXME: add double-indirection
     pending_requests[key]=(< req >);
@@ -90,22 +95,53 @@ void alookup(string key,
 //. preciousness . is to be seen as advisory only for the garbage collector
 //. If some data was stored with the same key, it gets returned.
 //. Also notice that max_life is _RELATIVE_ and in seconds.
+//. dependants are not fully implemented yet. They are implemented after
+//. a request by Martin Stjerrholm, and their purpose is to have some
+//. weak form of referential integrity. Simply speaking, they are a list
+//. of keys which (if present) will be deleted when the stored entry is
+//. deleted (either forcibly or not). They must be handled by the storage 
+//. manager.
 void store(string key, mixed value, void|int max_life,
-            void|float preciousness) {
+            void|float preciousness, void|multiset(string) dependants ) {
+  if (!stringp(key)) key=(string)key; // paranoia
+  multiset(string) rd=([])[0];  // real-dependants, after string-check
+  if (dependants) {
+    rd=(<>);
+    foreach((array)dependants,mixed d) {
+      rd[(string)d]=1;
+    }
+  }
   storage->set(key,value,
                (max_life?time(1)+max_life:0),
-               preciousness);
+               preciousness,rd);
 }
 
 //. Forcibly removes some key.
 //. If the 'hard' parameter is supplied and true, deleted objects will also
 //. be destruct()-ed upon removal by some backends (i.e. memory)
 void delete(string key, void|int(0..1)hard) {
+  if (!stringp(key)) key=(string)key; // paranoia
   storage->delete(key,hard);
 }
 
 
-object cleanup_thread=0;
+//notice. policy->expire is not guarranteed to be reentrant.
+// Generally speaking, it will not be, but it would be very stupid to
+// require so. The whole garbage collection architecture is heavily
+// oriented to either single-pass or mark-and-sweep algos, it would be
+// useless to require it be reentrant.
+
+int cleanup_lock=0;
+
+private void do_cleanup(function expiry_function, object storage) {
+  // I know, generally speaking this would be racey. But this function will
+  // be called at most every cleanup_cycle seconds, so no locking done here.
+  if (cleanup_lock)
+    return;
+  cleanup_lock=1;
+  expiry_function(storage);
+  cleanup_lock=0;
+}
 
 void start_cleanup_cycle() {
   if (master()->asyncp()) { //we're asynchronous. Let's use call_outs
@@ -113,7 +149,7 @@ void start_cleanup_cycle() {
     return;
   }
 #if constant(thread_create)
-  cleanup_thread=thread_create(threaded_cleanup_cycle);
+  thread_create(threaded_cleanup_cycle);
 #else
   call_out(async_cleanup_cache,cleanup_cycle); //let's hope we'll get async
                                                //sooner or later.
@@ -121,18 +157,22 @@ void start_cleanup_cycle() {
 }
 
 void async_cleanup_cache() {
+  mixed err=catch {
+    do_possibly_threaded_call(do_cleanup,policy->expire,storage);
+  };
   call_out(async_cleanup_cache,cleanup_cycle);
-  do_possibly_threaded_call(policy->expire,storage);
+  if (err)
+    throw (err);
 }
 
 void threaded_cleanup_cycle() {
   while (1) {
-    if (master()->asyncp()) {
+    if (master()->asyncp()) {   // might as well use call_out if we're async
       call_out(async_cleanup_cache,0);
       return;
     }
     sleep(cleanup_cycle);
-    policy->expire(storage);
+    do_cleanup(policy->expire,storage);
   }
 }
 

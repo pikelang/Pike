@@ -3,7 +3,7 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Base.pike,v 1.4 2000/09/28 03:38:30 hubbe Exp $
+ * $Id: Base.pike,v 1.5 2001/01/01 22:49:43 kinkie Exp $
  *
  * All storage managers must provide these methods.
  */
@@ -30,7 +30,8 @@ int(0..0)|string next() {
 // on the backend. This allows the storage managers to have their own
 // Data class implementation.
 void set(string key, mixed value,
-         void|int max_life, void|float preciousness) {
+         void|int max_life, void|float preciousness, 
+         void|multiset(string) dependants) {
   T();
 }
 
@@ -54,6 +55,7 @@ void aget(string key,
 // deletes some entry from the cache.
 // returns the deleted entry.
 // if hard==1, some backends may force a destruct() on the deleted value
+// dependants (if present) are automatically deleted.
 void delete(string key, void|int(0..1) hard) {
   T();
 }

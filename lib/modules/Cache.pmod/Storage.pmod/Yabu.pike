@@ -3,9 +3,10 @@
  * by Francesco Chemolli <kinkie@roxen.com>
  * (C) 2000 Roxen IS
  *
- * $Id: Yabu.pike,v 1.6 2000/12/14 04:17:11 nilsson Exp $
+ * $Id: Yabu.pike,v 1.7 2001/01/01 22:49:44 kinkie Exp $
  *
  * Settings will be added later.
+ * 
  */
 
 #pike __REAL_VERSION__
@@ -16,6 +17,7 @@ Yabu.Table db, metadb;
 Yabu.db yabudb;
 
 int deletion_ops=0;
+int have_dependants=0;
 
 class Data {
   inherit Cache.Data;
@@ -27,9 +29,7 @@ class Data {
   private Yabu.Table db, metadb;
   
   int size() {
-    if (_size) return _size;
-    _size=sizeof(encode_value(data()));
-    return _size;
+    return _size;               // it's guarranteed to be computed in set()
   }
   
   mixed data() {
@@ -48,32 +48,21 @@ class Data {
     metadb->set(_key,metadata_dump());
   }
 
-  //FIXME
-  //restores a dumped object
-  //basically a kind of second-stage constructor for objects retrieved
-  //from the db.
-  //the dumped value is passed for efficiency reasons, otherwise we
-  //might have to perform two lookups to successfully retrieve an object
-  Data undump(mapping dumped_value) {
-     mapping m=dumped_value;
-     _size=m->size;
-     atime=m->atime;
-     ctime=m->ctime;
-     etime=m->etime;
-     cost=m->cost;
-     return this_object();
-  }
-  
   inline void touch() {
     atime=time(1);
     sync();
   }
-  
-  //FIXME
-  void create(string key, Yabu.Table data_db, Yabu.Table metadata_db) {
+  //m contains the metadata
+  void create(string key, Yabu.Table data_db, Yabu.Table metadata_db, 
+              mapping m) {
     _key=key;
     db=data_db;
     metadb=metadata_db;
+    _size=m->size;
+    atime=m->atime;
+    ctime=m->ctime;
+    etime=m->etime;
+    cost=m->cost||1.0;
   }
   
 }
@@ -90,19 +79,24 @@ class Data {
 //Maybe we can put some heuristics: since almost only the policy manager
 //uses first(), next() and delete(), we might count the deletion operations
 //and reorganize when we reach some kind of threshold.
-private ADT.Queue keys;
+private multiset(string) keys;
 int(0..0)|string first() {
-  keys=ADT.Queue(@indices(metadb));
-  return keys->get();
+  keys=mkmultiset(indices(metadb));
+  string rv=indices(keys)[0];
+  keys[rv]=0;
+  return rv;
 }
 
 int(0..0)|string next() {
-  if (!keys) return 0;
-  return keys->get();
+  if (!keys || !sizeof(keys)) return 0;
+  string rv=indices(keys)[0];
+  keys[rv]=0;
+  return rv;
 }
 
 void set(string key, mixed value,
-          void|int expire_time, void|float preciousness) {
+         void|int expire_time, void|float preciousness,
+         void|multiset(string) dependants) {
   //problem: we can't store objects, functions or programs.
   //we check here for the actual type. BUT if some 'forbidden' type
   //is in a composite type's element, we'll mangle it along the way.
@@ -123,17 +117,19 @@ void set(string key, mixed value,
      meta->cost=preciousness;
    else
      meta->cost=1.0;
+   if (dependants) {
+     meta->dependants=dependants;
+     have_dependants=1;
+   }
    metadb->set(key,meta);
 }
 
-//FIXME
 int(0..0)|Cache.Data get(string key,void|int notouch) {
   mixed tmp=metadb->get(key);
-  if (tmp) {
-    tmp=(Data(key,db,metadb))->undump(tmp);
-    if (!notouch) {
-      tmp->touch();
-    }
+  if (!tmp) return 0;
+  tmp=Data(key, db, metadb, tmp);
+  if (!notouch) {
+    tmp->touch();
   }
   return tmp;
 }
@@ -147,9 +143,31 @@ void aget(string key,
 }
 
 void delete(string key, void|int(0..1) hard) {
-  db->delete(key);
+
+  multiset dependants=0;
+  
+  if (have_dependants) {
+    mapping emeta=metadb->get(key);
+    if (!emeta)
+      return;
+    dependants=emeta->dependants;
+  }
+  
+  if (keys)
+    keys[key]=0;
+  db->delete(key);              // maybe we should be transactional?
   metadb->delete(key);
   deletion_ops++;
+  
+  if (have_dependants && dependants && sizeof(dependants)) {
+    foreach((array)dependants, string chain) {
+      //werror("chain-deleteing %s\n",chain);
+      delete(chain);            // recursively delete.
+    }
+    //werror("done chain-deleting\n");
+    return;
+  }
+  
   if (deletion_ops > CLUTTERED) {
     yabudb->reorganize();
     deletion_ops=0;
