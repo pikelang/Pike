@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.22 1997/05/13 15:49:54 grubba Exp $");
+RCSID("$Id: lex.c,v 1.23 1997/05/19 09:32:39 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -1478,8 +1478,11 @@ static int do_lex2(int literal, YYSTYPE *yylval)
     case '5': case '6': case '7': case '8': case '9':
     {
       char *p, *p2;
+      int isfloat=0;
+      double d;
+
       UNGETC(c);
-      READBUF(isdigit(C) || C=='.' || C=='e' || C=='E');
+      READBUF(isdigit(C) || C=='.');
 
       p=STRCHR(buf,'.');
       
@@ -1495,25 +1498,38 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 	  UNGETSTR(p,strlen(p));
 	  *p=0;
 	}
+
 	if((p=STRCHR(buf,'.')))
 	{
-	  yylval->fnum=STRTOD(buf,NULL);
-	  return F_FLOAT;
+	  isfloat=1;
 	}
       }
-      p = STRCHR(buf, 'e');
-      p2 = STRCHR(buf, 'E');
-      if (p || p2) {
-	if (p) {
-	  if (p2 && (p > p2)) {
-	    p = p2;
-	  }
-	} else {
-	  p = p2;
-	}
-	UNGETSTR(p, strlen(p));
-	*p = 0;
+
+      d=STRTOD(buf, NULL);
+
+      if(GOBBLE('e') || GOBBLE('E'))
+      {
+	int neg;
+	if(GOBBLE('-'))
+	  neg=1;
+	else if(GOBBLE('+'))
+	  neg=0;
+	else
+	  neg=0;
+	
+	READBUF(isdigit(C));
+        if(neg)
+	  d /= pow(10.0,STRTOD(buf,NULL));
+        else
+	  d *= pow(10.0,STRTOD(buf,NULL));
+	isfloat=1;
       }
+      if(isfloat)
+      {
+	yylval->fnum=(float)d;
+	return F_FLOAT;
+      }
+
       if(buf[0]=='0')
 	yylval->number=STRTOL(buf,NULL,8);
       else
