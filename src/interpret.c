@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.320 2003/08/07 11:15:18 grubba Exp $
+|| $Id: interpret.c,v 1.321 2003/08/07 18:38:10 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.320 2003/08/07 11:15:18 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.321 2003/08/07 18:38:10 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1147,6 +1147,10 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 #define OPCODE2_ALIAS(O,N,F,C)
 
 #undef HAVE_COMPUTED_GOTO
+
+#ifdef GLOBAL_DEF_PROG_COUNTER
+GLOBAL_DEF_PROG_COUNTER;
+#endif
 
 #ifdef PIKE_DEBUG
 /* Note: The debug code is extracted, to keep the frame size constant. */

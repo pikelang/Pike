@@ -75,8 +75,13 @@ void EXIT_MACHINE_CODE()
 void SET_PROG_COUNTER(PIKE_OPCODE_T *newpc)
 	Set PROG_COUNTER to a new value.
 
+GLOBAL_DEF_PROG_COUNTER;
+	Declare stuff that is needed for PROG_COUNTER at the global
+	level in the interpreter.
+
 DEF_PROG_COUNTER;
-	Declare stuff needed for PROG_COUNTER.
+	Declare stuff that is needed for PROG_COUNTER in each opcode
+	function.
 
 int PIKE_OPCODE_ALIGN;
 	Alignment restriction for PIKE_OPCODE_T (debug).
