@@ -1,6 +1,7 @@
 void fail()
 { 
 // can't connect to socket - this is what we expect
+   werror("connecttest.pike: everything ok\n");
    exit(0); // ok
 }
 
@@ -25,6 +26,9 @@ int main()
    while (!p->bind(z=(z-1023)%32768+1024));
 //     werror("port: %d\n",z);
    destruct(p); // this port can't be connected to now
+
+   werror("connecttest.pike: using port %d\n",z);
+
    sleep(0.1);
    
    f->open_socket();
