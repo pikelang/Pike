@@ -163,7 +163,9 @@ string parse_appendix(Node n, void|int noheader) {
 string parse_module(Node n, void|int noheader) {
   string ret ="";
 
-  if(!noheader && n->get_attributes()->name != "")
+  mapping m = n->get_attributes();
+  int(0..1) header = !noheader && m->name!="" && !(m->hidden);
+  if(header)
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
       "<td bgcolor='#EEEEEE'><font size='+3'>&nbsp; Module <b>" +
@@ -183,7 +185,7 @@ string parse_module(Node n, void|int noheader) {
   ret += parse_children(n, "class", parse_class, noheader);
   ret += parse_children(n, "module", parse_module, noheader);
 
-  if(!noheader)
+  if(header)
     ret = ret + "</dd></dl>"; 
 
   return ret;
@@ -198,7 +200,6 @@ string parse_class(Node n, void|int noheader) {
       render_class_path(n) + n->get_attributes()->name +
       "</font></b></font></td></tr></table><br />\n"
       "</dt><dd>";
-
   Node c = n->get_first_element("doc");
   if(c)
     ret += "<dl>" + parse_doc(c) + "</dl>";
@@ -809,7 +810,7 @@ string layout_toploop(Node n) {
 
 int main(int num, array args) {
 
-  int t = gethrtime();
+  int t = time();
 
   args = args[1..];
   foreach(args, string arg) {
@@ -840,7 +841,7 @@ int main(int num, array args) {
   mapping m = n->get_attributes();
   manual_title = m->title || (m->version?"Reference Manual for "+m->version:"Pike Reference Manual");
   layout_toploop(n);
-  werror("Took %.1f seconds.\n", (gethrtime()-t)/1000000.0);
+  werror("Took %d seconds.\n\n", time()-t);
 
   return 0;
 }
