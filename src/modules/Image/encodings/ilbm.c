@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.6 1999/04/09 17:09:34 marcus Exp $ */
+/* $Id: ilbm.c,v 1.7 1999/04/09 17:57:04 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.6 1999/04/09 17:09:34 marcus Exp $
+**!	$Id: ilbm.c,v 1.7 1999/04/09 17:57:04 marcus Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.6 1999/04/09 17:09:34 marcus Exp $");
+RCSID("$Id: ilbm.c,v 1.7 1999/04/09 17:57:04 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -614,15 +614,23 @@ static struct pike_string *make_body(struct BMHD *bmhd,
   INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(INT32));
   rgb_group *src = img->img;
   struct string_builder bldr;
+  struct nct_dither dith;
+  void (*ctfunc)(rgb_group *, unsigned INT32 *, int,
+		 struct neo_colortable *, struct nct_dither *, int) = NULL;
+
+  if(ctable != NULL) {
+    image_colortable_initiate_dither(ctable, &dith, bmhd->w);
+    ctfunc = image_colortable_index_32bit_function(ctable);
+  }
 
   memset(line, 0, rbyt*eplanes);
   init_string_builder(&bldr, 0);
   for(y=0; y<bmhd->h; y++) {
-    cptr = cline;
-    if(ctable != NULL)
-    {
-      
+    if(ctfunc != NULL) {
+      ctfunc(src, (unsigned INT32 *)cline, bmhd->w, ctable, &dith, bmhd->w);
+      src += bmhd->w;
     } else {
+      cptr = cline;
       for(x=0; x<bmhd->w; x++) {
 	/* ILBM-24 */
 	*cptr++ = (src->b<<16)|(src->g<<8)|src->r;
@@ -633,6 +641,8 @@ static struct pike_string *make_body(struct BMHD *bmhd,
     /* compress */
     string_builder_binary_strcat(&bldr, line, rbyt*eplanes);
   }
+  if(ctable != NULL)
+    image_colortable_free_dither(&dith);
   return finish_string_builder(&bldr);
 }
 
@@ -672,6 +682,9 @@ static void image_ilbm_encode(INT32 args)
   if (alpha && !alpha->img)
     error("Image.ILBM.encode: no alpha image\n");
 
+  if(ct && ct->type == NCT_NONE)
+    ct = NULL;
+
   if(ct) {
     int sz = image_colortable_size(ct);
     for(bpp=1; (1<<bpp)<sz; bpp++);
@@ -694,6 +707,15 @@ static void image_ilbm_encode(INT32 args)
   push_string(make_bmhd(&bmhd));
   f_aggregate(2);
   n++;
+
+  if(ct) {
+    struct pike_string *str = begin_shared_string(image_colortable_size(ct)*3);
+    push_svalue(&string_[string_CMAP]);
+    image_colortable_write_rgb(ct, STR0(str));
+    push_string(end_shared_string(str));
+    f_aggregate(2);
+    n++;
+  }
 
   push_svalue(&string_[string_BODY]);
   push_string(make_body(&bmhd, img, alpha, ct));
