@@ -1,8 +1,46 @@
-// $Id: module.pmod,v 1.70 1999/11/30 07:40:11 hubbe Exp $
+// $Id: module.pmod,v 1.71 1999/12/13 03:45:13 per Exp $
 
 import String;
 
 inherit files;
+
+class Stream
+{
+  string read(int nbytes);
+  int write(string data);
+  void close();
+}
+
+class NonblockingStream
+{
+  inherit Stream;
+  NonblockingStream set_read_callback( function f, mixed ... rest );
+  NonblockingStream set_write_callback( function f, mixed ... rest );
+  NonblockingStream set_close_callback( function f, mixed ... rest );
+
+#if constant(files.__HAVE_OOB__)
+  NonblockingStream set_read_oob_callback(function f, mixed ... rest)
+  {
+    error("OOB not implemented for this stream type\n");
+  }
+  
+  NonblockingStream set_write_oob_callback(function f, mixed ... rest)
+  {
+    error("OOB not implemented for this stream type\n");
+  }
+#endif
+
+  void set_nonblocking( function a, function b, function c,
+                        function|void d, function|void e);
+  void set_blocking();
+}
+
+class BlockFile
+{
+  inherit Stream;
+  int seek(int to);
+  int tell();
+}
 
 class File
 {
