@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: nt.c,v 1.69 2005/01/16 15:24:39 nilsson Exp $
+|| $Id: nt.c,v 1.70 2005/01/20 00:27:54 nilsson Exp $
 */
 
 /*
@@ -3637,17 +3637,18 @@ void init_nt_system_calls(void)
       set_init_callback(init_sid);
       set_exit_callback(exit_sid);
       ADD_STORAGE(PSID);
-      add_function("`==",f_sid_eq,"function(mixed:int)",0);
-      add_function("account",f_sid_account,"function(:array(string|int))",0);
+      ADD_FUNCTION("`==",f_sid_eq,tFunc(tMix,tInt),0);
+      ADD_FUNCTION("account",f_sid_account,
+		   tFunc(tNone,tArr(tOr(tStr,tInt))),0);
       add_program_constant("SID",sid_program=end_program(),0);
 
-      add_function("LookupAccountName",f_LookupAccountName,
-		   "function(string,string:array)",0);
+      ADD_FUNCTION("LookupAccountName",f_LookupAccountName,
+		   tFunc(tStr tStr,tArray),0);
 
-      add_function("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
-		   "function(string,mapping(string:mixed):array)",0);
-      add_function("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
-		   "function(string,void|int:mapping)",0);
+      ADD_FUNCTION("SetNamedSecurityInfo",f_SetNamedSecurityInfo,
+		   tFunc(tStr tMap(tStr,tMix),tArray),0);
+      ADD_FUNCTION("GetNamedSecurityInfo",f_GetNamedSecurityInfo,
+		   tFunc(tStr tOr(tVoid,tInt),tMapping),0);
 
       /* FIXME: add ACE constants */
     }
@@ -3667,7 +3668,9 @@ void init_nt_system_calls(void)
 	netusergetinfo=(netusergetinfotype)proc;
 	
 	/* function(string,string,int|void:string|array(string|int)) */
-  ADD_FUNCTION("NetUserGetInfo",f_NetUserGetInfo,tFunc(tStr tStr tOr(tInt,tVoid),tOr(tStr,tArr(tOr(tStr,tInt)))),0);
+	ADD_FUNCTION("NetUserGetInfo",f_NetUserGetInfo,
+		     tFunc(tStr tStr tOr(tInt,tVoid),
+			   tOr(tStr,tArr(tOr(tStr,tInt)))),0);
 	
 	SIMPCONST(USER_PRIV_GUEST);
 	SIMPCONST(USER_PRIV_USER);
@@ -3698,7 +3701,8 @@ void init_nt_system_calls(void)
 	netuserenum=(netuserenumtype)proc;
 	
 	/* function(string|int|void,int|void,int|void:array(string|array(string|int))) */
-  ADD_FUNCTION("NetUserEnum",f_NetUserEnum,tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tOr(tStr,tArr(tOr(tStr,tInt))))),0);
+	ADD_FUNCTION("NetUserEnum",f_NetUserEnum,
+		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid) tOr(tInt,tVoid),tArr(tOr(tStr,tArr(tOr(tStr,tInt))))),0);
 	
 	SIMPCONST(FILTER_TEMP_DUPLICATE_ACCOUNT);
 	SIMPCONST(FILTER_NORMAL_ACCOUNT);
@@ -3710,8 +3714,11 @@ void init_nt_system_calls(void)
       if( (proc=GetProcAddress(netapilib, "NetGroupEnum")) )
       {
 	netgroupenum=(netgroupenumtype)proc;
-	
-  	add_function("NetGroupEnum",f_NetGroupEnum,"function(string|int|void,int|void:array(string|array(string|int)))",0); 
+
+	/* function(string|int|void,int|void:array(string|array(string|int))) */
+  	ADD_FUNCTION("NetGroupEnum",f_NetGroupEnum,
+		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tStr,tInt))))), 0);
 
 	SIMPCONST(SE_GROUP_ENABLED_BY_DEFAULT);
 	SIMPCONST(SE_GROUP_MANDATORY);
@@ -3721,22 +3728,31 @@ void init_nt_system_calls(void)
       if( (proc=GetProcAddress(netapilib, "NetLocalGroupEnum")) )
       {
 	netlocalgroupenum=(netgroupenumtype)proc;
-	
-  	add_function("NetLocalGroupEnum",f_NetLocalGroupEnum,"function(string|int|void,int|void:array(array(string|int)))",0); 
+
+	/* function(string|int|void,int|void:array(array(string|int))) */
+  	ADD_FUNCTION("NetLocalGroupEnum",f_NetLocalGroupEnum,
+		     tFunc(tOr3(tStr,tInt,tVoid) tOr(tInt,tVoid),
+			   tArr(tArr(tOr(tStr,tInt)))), 0);
       }
 
       if( (proc=GetProcAddress(netapilib, "NetUserGetGroups")) )
       {
 	netusergetgroups=(netusergetgroupstype)proc;
-	
- 	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+
+	/* function(string|int,string,int|void:array(string|array(int|string))) */
+ 	ADD_FUNCTION("NetUserGetGroups",f_NetUserGetGroups,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
       }
 
       if( (proc=GetProcAddress(netapilib, "NetUserGetLocalGroups")) )
       {
 	netusergetlocalgroups=(netusergetlocalgroupstype)proc;
-	
- 	add_function("NetUserGetLocalGroups",f_NetUserGetLocalGroups,"function(string|int,string,int|void,int|void:array(string))",0); 
+
+	/* function(string|int,string,int|void,int|void:array(string)) */
+ 	ADD_FUNCTION("NetUserGetLocalGroups",f_NetUserGetLocalGroups,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid) tOr(tInt,tVoid),
+			   tArr(tStr)), 0);
 
 	SIMPCONST(LG_INCLUDE_INDIRECT);
       }
@@ -3744,15 +3760,21 @@ void init_nt_system_calls(void)
       if( (proc=GetProcAddress(netapilib, "NetGroupGetUsers")) )
       {
 	netgroupgetusers=(netgroupgetuserstype)proc;
-	
- 	add_function("NetGroupGetUsers",f_NetGroupGetUsers,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+
+	/* function(string|int,string,int|void:array(string|array(int|string))) */
+ 	ADD_FUNCTION("NetGroupGetUsers",f_NetGroupGetUsers,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
       }
 
       if( (proc=GetProcAddress(netapilib, "NetLocalGroupGetMembers")) )
       {
 	netlocalgroupgetmembers=(netgroupgetuserstype)proc;
-	
- 	add_function("NetLocalGroupGetMembers",f_NetLocalGroupGetMembers,"function(string|int,string,int|void:array(string|array(int|string)))",0); 
+
+	/* function(string|int,string,int|void:array(string|array(int|string))) */
+ 	ADD_FUNCTION("NetLocalGroupGetMembers",f_NetLocalGroupGetMembers,
+		     tFunc(tOr(tStr,tInt) tStr tOr(tInt,tVoid),
+			   tArr(tOr(tStr,tArr(tOr(tInt,tStr))))), 0);
 
 	SIMPCONST(SidTypeUser);
 	SIMPCONST(SidTypeGroup);
@@ -3767,23 +3789,29 @@ void init_nt_system_calls(void)
       if( (proc=GetProcAddress(netapilib, "NetGetDCName")) )
       {
 	netgetdcname=(netgetdcnametype)proc;
-	
- 	add_function("NetGetDCName",f_NetGetDCName,"function(string|int,string:string)",0);
+
+	/* function(string|int,string:string) */
+ 	ADD_FUNCTION("NetGetDCName",f_NetGetDCName,
+		     tFunc(tOr(tStr,tInt) tStr,tStr), 0);
       }
 
       if( (proc=GetProcAddress(netapilib, "NetGetAnyDCName")) )
       {
 	netgetanydcname=(netgetdcnametype)proc;
-	
- 	add_function("NetGetAnyDCName",f_NetGetAnyDCName,"function(string|int,string:string)",0);
+
+	/* function(string|int,string:string) */
+ 	ADD_FUNCTION("NetGetAnyDCName",f_NetGetAnyDCName,
+		     tFunc(tOr(tStr,tInt) tStr,tStr), 0);
       }
 
       /* FIXME: On windows 9x, netsessionenum is located in svrapi.lib */
       if( (proc=GetProcAddress(netapilib, "NetSessionEnum")) )
       {
 	netsessionenum=(netsessionenumtype)proc;
-	
- 	add_function("NetSessionEnum",f_NetSessionEnum,"function(string,string,string,int:array(int|string))",0);
+
+	/* function(string,string,string,int:array(int|string)) */
+ 	ADD_FUNCTION("NetSessionEnum",f_NetSessionEnum,
+		     tFunc(tStr tStr tStr tInt,tArr(tOr(tInt,tStr))), 0);
 
         SIMPCONST(SESS_GUEST);
         SIMPCONST(SESS_NOENCRYPTION);
@@ -3792,8 +3820,10 @@ void init_nt_system_calls(void)
       if( (proc=GetProcAddress(netapilib, "NetWkstaUserEnum")) )
       {
 	netwkstauserenum=(netwkstauserenumtype)proc;
-	
- 	add_function("NetWkstaUserEnum",f_NetWkstaUserEnum,"function(string,int:array(mixed))",0);
+
+	/* function(string,int:array(mixed)) */
+ 	ADD_FUNCTION("NetWkstaUserEnum",f_NetWkstaUserEnum,
+		     tFunc(tStr tInt,tArray), 0);
       }
     }
   }
@@ -3830,13 +3860,15 @@ void init_nt_system_calls(void)
       set_init_callback(init_sctx);
       set_exit_callback(exit_sctx);
       ADD_STORAGE(struct sctx_storage);
-      add_function("create",f_sctx_create,"function(string:void)",0);
-      add_function("gen_context",f_sctx_gencontext,"function(string:array(string|int))",0);
-      add_function("get_last_context",f_sctx_getlastcontext,"function(void:array(string|int))",0);
-      add_function("is_done",f_sctx_isdone,"function(void:int)",0);
-      add_function("type",f_sctx_type,"function(void:string)",0);
-      add_function("get_username",f_sctx_getusername,"function(void:string)",0);
-      add_function("get_last_error",f_sctx_getlasterror,"function(void:int)",0);
+      ADD_FUNCTION("create",f_sctx_create,tFunc(tStr,tVoid),0);
+      ADD_FUNCTION("gen_context",f_sctx_gencontext,
+		   tFunc(tStr,tArr(tOr(tStr,tInt))),0);
+      ADD_FUNCTION("get_last_context",f_sctx_getlastcontext,
+		   tFunc(tNone,tArr(tOr(tStr,tInt))),0);
+      ADD_FUNCTION("is_done",f_sctx_isdone,tFunc(tNone,tInt),0);
+      ADD_FUNCTION("type",f_sctx_type,tFunc(tNone,tStr),0);
+      ADD_FUNCTION("get_username",f_sctx_getusername,tFunc(tNone,tStr),0);
+      ADD_FUNCTION("get_last_error",f_sctx_getlasterror,tFunc(tNone,tInt),0);
       add_program_constant("SecurityContext",sctx_program=end_program(),0);
     }
   }

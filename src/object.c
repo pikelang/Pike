@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.262 2005/01/11 19:34:32 nilsson Exp $
+|| $Id: object.c,v 1.263 2005/01/20 00:27:38 nilsson Exp $
 */
 
 #include "global.h"
@@ -2382,28 +2382,29 @@ void init_object(void)
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_index,"function(string,void|int:mixed)",0);
+  ADD_FUNCTION("`()",f_magic_index,tFunc(tStr tOr(tVoid,tInt),tMix),0);
   magic_index_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_set_index,"function(string,mixed,void|int:void)",0);
+  ADD_FUNCTION("`()",f_magic_set_index,
+	       tFunc(tStr tMix tOr(tVoid,tInt),tVoid),0);
   magic_set_index_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_indices,"function(void|int:array(string))",0);
+  ADD_FUNCTION("`()",f_magic_indices,tFunc(tOr(tVoid,tInt),tArr(tStr)),0);
   magic_indices_program=end_program();
 
   start_new_program();
   offset=ADD_STORAGE(struct magic_index_struct);
   map_variable("__obj","object",ID_STATIC,
 	       offset  + OFFSETOF(magic_index_struct, o), T_OBJECT);
-  add_function("`()",f_magic_values,"function(void|int:array)",0);
+  ADD_FUNCTION("`()",f_magic_values,tFunc(tOr(tVoid,tInt),tArray),0);
   magic_values_program=end_program();
 }
 
