@@ -637,10 +637,13 @@ string parse_docgroup(Node n) {
   string ret = "\n\n<hr clear='all' />\n<dl><dt>";
 
   if(m["homogen-type"]) {
-    ret += "<font face='Helvetica'>" + quote(String.capitalize(m["homogen-type"])) + "</font>\n";
+    string type = "<font face='Helvetica'>" + quote(String.capitalize(m["homogen-type"])) + "</font>\n";
     if(m["homogen-name"])
-      ret += "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
+      ret += type + "<font size='+1'><b>" + quote((m->belongs?m->belongs+" ":"") + m["homogen-name"]) +
 	"</b></font>\n";
+    else
+      foreach(Array.uniq(get_tags(n, "method")->get_attributes()->name), string name)
+	ret += type + "<font size='+1'><b>" + name + "</b></font><br />\n";
   }
   else
     ret += "syntax";
