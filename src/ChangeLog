@@ -2,6 +2,11 @@ Fri May  3 13:50:05 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
 
 	* las.c: type-checking improved
 
+Sat May  4 13:40:48 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* uLPC_v1.1E-9 released.
+	* lpc_types.c (internal_parse_typeA): fixed a minor bug
+
 Wed May  1 00:49:36 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* uLPC_v1.0E-9 released.
