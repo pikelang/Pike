@@ -1,4 +1,4 @@
-// $Id: randomness.pmod,v 1.3 2004/02/29 02:50:17 nilsson Exp $
+// $Id: randomness.pmod,v 1.4 2004/03/10 00:39:16 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -36,13 +36,13 @@ static int(0..1) goodseed;
 
 #ifdef __NT__
 static string nt_random_string(int len) {
-  object ctx = Crypto.NT.CryptContext(0, 0, Crypto.NT.PROV_RSA_FULL,
+  object ctx = Nettle.NT.CryptContext(0, 0, Crypto.NT.PROV_RSA_FULL,
 				      Crypto.NT.CRYPT_VERIFYCONTEXT
 				      /*|Crypto.NT.CRYPT_SILENT*/);
   if(!ctx)
     error( "Couldn't create crypto context.\n" );
 
-  string res = ctx->CryptGenRandom(len);
+  string res = ctx->read(len);
 
   if(!res)
     error( "Couldn't generate randomness.\n" );
