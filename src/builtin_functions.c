@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.529 2004/02/03 09:07:40 grubba Exp $
+|| $Id: builtin_functions.c,v 1.530 2004/02/03 22:00:07 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.529 2004/02/03 09:07:40 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.530 2004/02/03 22:00:07 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4372,39 +4372,19 @@ PMOD_EXPORT void f_localtime(INT32 args)
 #ifdef HAVE_GMTIME
 /* Returns the approximate difference in seconds between the
  * two struct tm's.
- *
- * NOTE: No checks for out of range are performed.
  */
 static time_t my_tm_diff(const struct tm *t1, const struct tm *t2)
 {
-  time_t base = (t1->tm_year - t2->tm_year) * 31557600 +
+  time_t base = (t1->tm_year - t2->tm_year) * 32140800 +
+    (t1->tm_mon - t2->tm_mon) * 2678400 +
     (t1->tm_mday - t2->tm_mday) * 86400 +
     (t1->tm_hour - t2->tm_hour) * 3600 +
     (t1->tm_min - t2->tm_min) * 60 +
     (t1->tm_sec - t2->tm_sec);
-  if (t1->tm_mon == t2->tm_mon) return base;
-
-  base += (t1->tm_mon - t2->tm_mon) * 30 * 86400;
-  if (t1->tm_mon < 7) {
-    base += ((t1->tm_mon+1)/2)*86400;
-  } else {
-    base += ((t1->tm_mon+2)/2)*86400;
-  }
-  if (t1->tm_mon > 1) {
-    /* Adjust for February. */
-    base -= 2*86400;
-    base += !(t1->tm_year&3)*86400;	/* Not year 2400 or 1600 safe. */
-  }
-  if (t2->tm_mon < 7) {
-    base -= ((t2->tm_mon+1)/2)*86400;
-  } else {
-    base -= ((t2->tm_mon+2)/2)*86400;
-  }
-  if (t2->tm_mon > 1) {
-    /* Adjust for February. */
-    base += 2*86400;
-    base -= !(t2->tm_year&3)*86400;	/* Not year 2400 or 1600 safe. */
-  }
+  if ((t1->tm_year > t2->tm_year) && (base < 0))
+    return 0x7fffffff;
+  if ((t1->tm_year < t2->tm_year) && (base > 0))
+    return -0x7fffffff;
   return base;
 }
 
