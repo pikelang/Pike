@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.18 1998/07/05 15:22:05 grubba Exp $");
+RCSID("$Id: png.c,v 1.19 1998/07/12 21:14:12 grubba Exp $");
 
 #include "config.h"
 
@@ -369,8 +369,7 @@ static void image_png___decode(INT32 args)
 **!	Please read about the PNG file format.
 **!	This function ignores any checksum errors in the file.
 **!	A PNG of higher color resolution than the Image module
-**!	supports (8 bit) will have a lose that information in 
-**!     the conversion.
+**!	supports (8 bit) will lose that information in the conversion.
 **!	It throws an error if the image data is erroneous.
 */
 
