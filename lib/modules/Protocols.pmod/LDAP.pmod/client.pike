@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.57 2004/05/26 16:18:16 grubba Exp $
+// $Id: client.pike,v 1.58 2004/06/18 13:05:50 grubba Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -370,7 +370,7 @@ import SSL.Constants;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.57 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.58 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -998,18 +998,27 @@ import SSL.Constants;
     do {
       PROFILE("send_search_op", {
 	  IF_ELSE_PAGED_SEARCH(
-	    // LDAP Control Extension for Simple Paged Results Manipulation
-	    // RFC 2696.
 	    object controls =
-	      .ldap_privates.asn1_sequence(({
-		// RFC 2696 2.
-		.ldap_privates.asn1_sequence(({
+	      .ldap_privates.asn1_sequence(0, ({
+		// LDAP_SERVER_DOMAIN_SCOPE_OID
+		// "Tells server not to generate referrals" (NtLdap.h)
+		Standards.ASN1.Types.asn1_sequence(({
+						// controlType
+		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.1339"),
+		  ASN1_BOOLEAN(0),		// criticality (FALSE)
+						// controlValue
+		  Standards.ASN1.Types.asn1_octet_string(""),
+		  })),
+		  
+		// LDAP Control Extension for Simple Paged Results Manipulation
+		// RFC 2696.
+		Standards.ASN1.Types.asn1_sequence(({
 						// controlType
 		  Standards.ASN1.Types.asn1_octet_string("1.2.840.113556.1.4.319"),
-		  //ASN1_BOOLEAN(0),		// criticality (FALSE)
+		  ASN1_BOOLEAN(sizeof(cookie->value)?0:0xff),	// criticality
 						// controlValue
 		  Standards.ASN1.Types.asn1_octet_string(
-		    .ldap_privates.asn1_sequence(({
+		    Standards.ASN1.Types.asn1_sequence(({
 						// size
 		      Standards.ASN1.Types.asn1_integer(0x7fffffff),
 		      cookie,			// cookie
@@ -1040,16 +1049,49 @@ import SSL.Constants;
       cookie = 0;
       IF_ELSE_PAGED_SEARCH({
 	  if ((ASN1_DECODE_RESULTCODE(raw) != 10) &&
-	      (sizeof(.ldap_privates.ldap_der_decode(raw)->elements[1]->elements) > 3)) {
-	    cookie = ASN1_DECODE_RESULTREFS(raw)->elements[2]->elements[1];
-	    if (!sizeof(cookie)) {
-	      // End marker.
-	      cookie = 0;
-	    } else {
+	      (sizeof(.ldap_privates.ldap_der_decode(raw)->elements) > 2)) {
+	    object controls = .ldap_privates.ldap_der_decode(raw)->elements[2];
+	    foreach(controls->elements, object control) {
+	      if (!control->constructed ||
+		  !sizeof(control) ||
+		  control->elements[0]->type_name != "OCTET STRING") {
+		//werror("Protocol error in control %O\n", control);
+		// FIXME: Fail?
+		continue;
+	      }
+	      if (control->elements[0]->value != "1.2.840.113556.1.4.319") {
+		//werror("Unknown control %O\n", control->elements[0]->value);
+		// FIXME: Should look at criticallity flag.
+		continue;
+	      }
+	      if (sizeof(control) == 1) continue;
+	      int pos = 1;
+	      if (control->elements[1]->type_name == "BOOLEAN") {
+		if (sizeof(control) == 2) continue;
+		pos = 2;
+	      }
+	      if (control->elements[pos]->type_name != "OCTET STRING") {
+		// FIXME: Error?
+		continue;
+	      }
+	      object control_info =
+		.ldap_privates.ldap_der_decode(control->elements[pos]->value);
+	      if (!control_info->constructed ||
+		  sizeof(control_info) < 2 ||
+		  control_info->elements[1]->type_name != "OCTET STRING") {
+		// Unexpected control information.
+		continue;
+	      }
+	      if (sizeof(control_info->elements[1]->value)) {
+		cookie = control_info->elements[1];
+	      }
+	    }
+	    if (cookie) {
 	      // Remove the extra end marker.
 	      rawarr = rawarr[..sizeof(rawarr)-2];
 	    }
 	  }
+	    
 	},);
     } while (cookie);
 
