@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.193 2001/10/22 23:52:54 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.194 2001/11/13 15:44:00 tomas Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -2057,6 +2057,12 @@ void f_create_process(INT32 args)
 	    i=mapping_indices(m);
 	    v=mapping_values(m);
 
+            /* make sure the environment block is sorted */
+            ref_push_array(i);
+            ref_push_array(v);
+            f_sort(2);
+            pop_stack();
+
 	    for(e=0;e<i->size;e++)
 	    {
 	      if(ITEM(i)[e].type == T_STRING && ITEM(v)[e].type == T_STRING)
@@ -2071,7 +2077,7 @@ void f_create_process(INT32 args)
 	    }
 	    free_array(i);
 	    free_array(v);
-	    push_string(make_shared_binary_string("\0\0",1));
+	    push_string(make_shared_binary_string("\0",1));
 	    f_aggregate(ptr+1);
 	    push_string(make_shared_binary_string("\0",1));
 	    o_multiply();
