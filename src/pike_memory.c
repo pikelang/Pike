@@ -20,6 +20,23 @@ char *xalloc(SIZE_T size)
   return 0;
 }
 
+/* strdup() is used by several modules, so let's provide it */
+#ifndef HAVE_STRDUP
+char *strdup(const char *str)
+{
+  char *res = NULL;
+  if (str) {
+    int len = strlen(str)+1;
+
+    res = xalloc(len);
+    if (res) {
+      MEMCPY(res, str, len);
+    }
+  }
+  return(res);
+}
+#endif /* !HAVE_STRDUP */
+
 void swap(char *a, char *b, INT32 size)
 {
   int tmp;
