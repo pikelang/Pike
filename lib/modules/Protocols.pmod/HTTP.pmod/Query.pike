@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Query.pike,v 1.68 2004/04/09 15:44:24 grubba Exp $
+// $Id: Query.pike,v 1.69 2004/04/09 15:45:39 grubba Exp $
 
 //! Open and execute an HTTP query.
 //!
@@ -358,8 +358,8 @@ string headers_encode(mapping(string:array(string)|string) h)
 	 buf->add( String.capitalize(replace(name,"_","-")), ": ",
 		   value, "\r\n" );
      } else {
-       werror("Protocols.HTTP.Query()->headers_encode(): Bad header: %O:%O.\n",
-	      name, value);
+       error("Protocols.HTTP.Query()->headers_encode(): Bad header: %O:%O.\n",
+	     name, value);
      }
    return (string)buf;
 }
