@@ -6,7 +6,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dump.pike,v 1.5 2004/09/17 12:05:42 grubba Exp $
+|| $Id: dump.pike,v 1.6 2004/09/17 14:30:11 nilsson Exp $
 */
 
 constant description = "Dumps pike files into object files.";
@@ -38,7 +38,9 @@ class GTKProgress {
   void update(int num) {
     progress += scale*num;
     progress = min(progress, 1.0);
-    if(bar) bar->update(progress);
+#if constant(GTK.Window)
+    bar->update(progress);
+#endif
   }
 
 #if constant(GTK.Window)
