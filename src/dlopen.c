@@ -79,7 +79,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.14 2001/09/11 20:44:39 marcus Exp $");
+RCSID("$Id: dlopen.c,v 1.15 2001/09/12 21:52:16 marcus Exp $");
 
 #endif
 
@@ -197,7 +197,8 @@ static void *htable_get(struct Htable *h, char *name, size_t l)
   return 0;
 }
 
-static void htable_put(struct Htable *h, char *name, size_t l, void *ptr)
+static void htable_put(struct Htable *h, char *name, size_t l, void *ptr,
+		       int replace)
 {
   struct Sym *tmp;
 
@@ -226,7 +227,8 @@ static void htable_put(struct Htable *h, char *name, size_t l, void *ptr)
   /* FIXME: Should be duplicate symbols be overloaded or what? */
   if((tmp=htable_get_low(h, name, l, hval)))
   {
-    tmp->sym=ptr;
+    if(replace)
+      tmp->sym=ptr;
     return;
   }
   tmp=(struct Sym *)malloc(sizeof(struct Sym) + l);
@@ -442,6 +444,7 @@ static int append_dlllist(struct DLLList **l,
 #define COFF_SECT_LNK_INFO 0x200
 
 #define COFF_SYMBOL_EXTERN 2
+#define COFF_SYMBOL_WEAK_EXTERN 105
 
 struct COFF
 {
@@ -754,13 +757,15 @@ static int dl_load_coff_files(struct DLHandle *ret,
     for(s=0;s<data->coff->num_symbols;s++)
     {
       size_t align;
-      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN)
+      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN ||
+	 SYMBOLS(s).class == COFF_SYMBOL_WEAK_EXTERN)
 	num_exports++;
 
       /* Count memory in common symbols,
        * I wonder what the alignment should be?
        */
-      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN &&
+      if((SYMBOLS(s).class == COFF_SYMBOL_EXTERN ||
+	  SYMBOLS(s).class == COFF_SYMBOL_WEAK_EXTERN) &&
 	 !SYMBOLS(s).secnum &&
 	 SYMBOLS(s).value)
       {
@@ -886,7 +891,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
       /* 
        * Setup poiners to common symbols
        */
-      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN &&
+      if((SYMBOLS(s).class == COFF_SYMBOL_EXTERN ||
+	  SYMBOLS(s).class == COFF_SYMBOL_WEAK_EXTERN) &&
 	 !SYMBOLS(s).secnum &&
 	 SYMBOLS(s).value)
       {
@@ -925,7 +931,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      SYMBOLS(s).secnum);
 #endif
 	
-      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN)
+      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN ||
+	 SYMBOLS(s).class == COFF_SYMBOL_WEAK_EXTERN)
       {
 	char *value;
 	char *name;
@@ -972,9 +979,11 @@ static int dl_load_coff_files(struct DLHandle *ret,
 #endif
 	}
 	
-	htable_put(ret->htable, name, len, value);
+	htable_put(ret->htable, name, len, value,
+		   SYMBOLS(s).class != COFF_SYMBOL_WEAK_EXTERN);
 	if(data->flags & RTLD_GLOBAL)
-	  htable_put(global_dlhandle.htable, name, len, value);
+	  htable_put(global_dlhandle.htable, name, len, value,
+		     SYMBOLS(s).class != COFF_SYMBOL_WEAK_EXTERN);
       }
     }
   }
@@ -1438,7 +1447,8 @@ static void init_dlopen(void)
     {
       char *name;
       int len;
-      if(SYMBOLS(s).class != 2) continue;
+      if(SYMBOLS(s).class != COFF_SYMBOL_EXTERN &&
+	 SYMBOLS(s).class != COFF_SYMBOL_WEAK_EXTERN) continue;
       if(SYMBOLS(s).secnum <= 0) continue;
       
       if(!SYMBOLS(s).name.ptr[0])
@@ -1489,7 +1499,8 @@ static void init_dlopen(void)
 		 data->buffer +
 		 data->sections[SYMBOLS(s).secnum-1].virtual_addr -
 		 data->sections[SYMBOLS(s).secnum-1].ptr2_raw_data +
-		 SYMBOLS(s).value);		   
+		 SYMBOLS(s).value,
+		 SYMBOLS(s).class != COFF_SYMBOL_WEAK_EXTERN);		   
       
     }
     free(buf);
@@ -1501,7 +1512,7 @@ static void init_dlopen(void)
     global_dlhandle.htable=alloc_htable(997);
 #define EXPORT(X) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s\n",#X); ) \
-  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X)
+  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X, 1)
     
     
     fprintf(stderr,"Fnord, rand()=%d\n",rand());
@@ -1517,6 +1528,7 @@ static void init_dlopen(void)
     EXPORT(sscanf);
     EXPORT(abs);
     EXPORT(putchar);
+    EXPORT(putenv);
   }
 
 #ifdef DLDEBUG
@@ -1628,7 +1640,8 @@ int main(int argc, char ** argv)
       {
 	char *name;
 	int len;
-	if(SYMBOLS(s).class != 2) continue;
+	if(SYMBOLS(s).class != COFF_SYMBOL_EXTERN &&
+	   SYMBOLS(s).class != COFF_SYMBOL_WEAK_EXTERN) continue;
 	if(SYMBOLS(s).secnum <= 0) continue;
 
 	if(!SYMBOLS(s).name.ptr[0])
@@ -1679,7 +1692,8 @@ int main(int argc, char ** argv)
 		     data->buffer +
 		     data->sections[SYMBOLS(s).secnum-1].virtual_addr -
 		     data->sections[SYMBOLS(s).secnum-1].ptr2_raw_data +
-		     SYMBOLS(s).value);		   
+		     SYMBOLS(s).value,
+		     SYMBOLS(s).class != COFF_SYMBOL_WEAK_EXTERN);	   
 
       }
       free(buf);
@@ -1691,7 +1705,7 @@ int main(int argc, char ** argv)
       global_dlhandle.htable=alloc_htable(997);
 #define EXPORT(X) \
   DO_IF_DLDEBUG( fprintf(stderr,"EXP: %s\n",#X); ) \
-  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X)
+  htable_put(global_dlhandle.htable,"_" #X,sizeof(#X)-sizeof("")+1, &X, 1)
       
       
       fprintf(stderr,"Fnord, rand()=%d\n",rand());
