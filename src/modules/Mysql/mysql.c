@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mysql.c,v 1.68 2003/02/07 13:52:43 nilsson Exp $
+|| $Id: mysql.c,v 1.69 2003/02/07 14:34:07 grubba Exp $
 */
 
 /*
@@ -94,7 +94,7 @@
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.68 2003/02/07 13:52:43 nilsson Exp $");
+RCSID("$Id: mysql.c,v 1.69 2003/02/07 14:34:07 grubba Exp $");
 
 /*! @module Mysql
  *!
@@ -376,6 +376,12 @@ static void pike_mysql_reconnect(void)
   socket = PIKE_MYSQL->socket;
   PIKE_MYSQL->socket = NULL;
 
+  if ((val = simple_mapping_string_lookup(PIKE_MYSQL->options,
+					  "connect_options")) &&
+      (val->type == T_INT) && (val->u.integer)) {
+    options = (unsigned int)val->u.integer;
+  }
+
   MYSQL_ALLOW();
 
 #if defined(HAVE_MYSQL_PORT) || defined(HAVE_MYSQL_UNIX_PORT)
@@ -401,12 +407,6 @@ static void pike_mysql_reconnect(void)
 #endif /* HAVE_MYSQL_UNIX_PORT */
 
 #ifdef HAVE_MYSQL_REAL_CONNECT
-  if ((val = simple_mapping_string_lookup(PIKE_MYSQL->options,
-					  "connect_options")) &&
-      (val->type == T_INT) && (val->u.integer)) {
-    options = (unsigned int)val->u.integer;
-  }
-
   socket = mysql_real_connect(mysql, host, user, password,
                               NULL, port, portptr, options);
 #else
