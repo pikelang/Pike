@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.11 2000/01/03 19:03:01 grubba Exp $
+# $Id: configure.in,v 1.12 2000/03/22 23:22:40 grubba Exp $
 #
 # Configure script for the mysql-module
 #
@@ -219,6 +219,40 @@ fi
 
     # Note: mysql_port and mysql_unix_port aren't functions, but that shouldn't matter
     AC_CHECK_FUNCS(mysql_real_query mysql_fetch_lengths mysql_port mysql_unix_port)
+    if test "$ac_cv_func_mysql_fetch_lengths" = "yes"; then
+      #
+      # In 3.20.6b mysql_fetch_lengths() returns an uint *.
+      # In 3.20.22 it returns an unsigned int *.
+      # In 3.22.23 it returns an unsigned long *.
+      #
+      AC_MSG_CHECKING([if mysql_fetch_lengths() returns an uint or an ulong])
+      AC_CACHE_VAL(pike_cv_mysql_fetch_lengths_ret_type, [
+        for ret_type in "unsigned long" "unsigned int" "long" "int"; do
+	  AC_TRY_COMPILE([
+#ifdef HAVE_MYSQL_H
+#include <mysql.h>
+#else
+#ifdef HAVE_MYSQL_MYSQL_H
+#include <mysql/mysql.h>
+#else
+#error Need mysql.h headerfile!
+#endif
+#endif
+$ret_type *mysql_fetch_lengths(MYSQL_RES *mysql)
+{
+  return 0;
+}
+	  ], [ pike_cv_mysql_fetch_lengths_ret_type="$ret_type"; break; ])
+	done
+      ])
+      if test "X$pike_cv_mysql_fetch_lengths_ret_type" = "X"; then
+        AC_MSG_RESULT(Unknown -- Defaulting to unsigned long)
+	AC_DEFINE(FETCH_LENGTHS_TYPE, unsigned long)
+      else
+        AC_MSG_RESULT($pike_cv_mysql_fetch_lengths_ret_type)
+        AC_DEFINE(FETCH_LENGTHS_TYPE, $pike_cv_mysql_fetch_lengths_ret_type)
+      fi
+    else :; fi
   fi
 fi
 
