@@ -9,7 +9,7 @@ CC=${CC-rntcl}
 
 # Edit
 NTHOST=${NTHOST-10.0.5.13}
-NTDRIVE='k:'
+NTDRIVE=${NTDRIVE-k:}
 
 # Edit
 #NTHOST=10.0.5.10
@@ -104,7 +104,7 @@ export NT_TOOL_PATH NTCOMPILER
 
 case /$SHELL-$TERM in
    */bash-xterm)
-     PROMPT_COMMAND="echo -n ]2\; $REMOTE_METHOD NT compile ]1\; rntcc"
+     PROMPT_COMMAND="echo -n ]2\; $REMOTE_METHOD NT compile ]1\; $CC"
      export PROMPT_COMMAND
    ;;
 esac
