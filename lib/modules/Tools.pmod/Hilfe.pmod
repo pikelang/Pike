@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.95 2003/01/24 02:14:59 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.96 2003/02/21 18:51:21 marcus Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -1759,7 +1759,7 @@ class Evaluator {
       if(file=="HilfeInput")
 	file = "";
       else
-	file += ":";
+	file = master()->trim_file_name(file)+":";
       if(err[-1]!='\n') err += "\n";
       string linestr = line?(string)line:"-";
       return sprintf(": %s%s:%s", file, linestr, err);
