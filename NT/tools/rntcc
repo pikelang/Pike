@@ -56,6 +56,7 @@ int main(int argc, string *argv)
   string *sources=({});
   int debug,optimize;
   string output;
+  int share=0;
 
   mixed *opts=Getopt.find_all_options(argv, ({
     ({"oper_pre",Getopt.NO_ARG, ({"-E"}) }),
@@ -64,17 +65,24 @@ int main(int argc, string *argv)
 	  ({"optimize",Getopt.MAY_HAVE_ARG, ({"-O"}) }),
 	    ({"include",Getopt.HAS_ARG, ({"-I"}) }),
 	      ({"link",Getopt.HAS_ARG, ({"-l"}) }),
-		({"ignore",Getopt.MAY_HAVE_ARG, ({"-t","-s"}) }),
-		  ({"ignore",Getopt.HAS_ARG, ({"-R","-L"}) }),
-		    ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
-		      ({"define",Getopt.HAS_ARG, ({"-D"}) }),
-			({"undefine",Getopt.HAS_ARG, ({"-U"})}),
+		({"share",Getopt.MAY_HAVE_ARG, ({"-s"}) }),
+		  ({"ignore",Getopt.MAY_HAVE_ARG, ({"-t"}) }),
+		    ({"ignore",Getopt.HAS_ARG, ({"-R","-L"}) }),
+		      ({"warn",Getopt.MAY_HAVE_ARG, ({"-W"}) }),
+			({"define",Getopt.HAS_ARG, ({"-D"}) }),
+			  ({"undefine",Getopt.HAS_ARG, ({"-U"})}),
 			    ({"output",Getopt.HAS_ARG, ({"-o"}) })
 			      }));
   foreach(opts, mixed *option)
     {
       switch(option[0])
       {
+	case "share":
+	  share=1;
+	  ldopts+=({"SYS","nt_dll"});
+	  cflags+=({"-bd"});
+	  break;
+
 	case "oper_pre": operation="preprocess"; break;
 	case "oper_comp": operation="compile"; break;
 	case "debug":
@@ -151,7 +159,7 @@ int main(int argc, string *argv)
   string errorfile="TMP"+getpid()+".err";
   rm(errorfile);
 
-  cflags+=({"-bm","-zq","-hw"});
+  cflags+=({"-bm","-zq","-hw","-sg"});
 
   switch(operation)
   {
@@ -184,9 +192,12 @@ int main(int argc, string *argv)
       string ldfile="TMP"+getpid()+".lk";
       if(!output) output="a.out";
       rm(ldfile);
+
+      target=output;
+      if(!share) target+=".exe";
+
       Stdio.write_file(ldfile,
-		 "NAME "+output+".exe "
-		    +ldopts*" "+" "+
+		 "NAME "+target+" " +ldopts*" "+" "+
 		    "FIL "+Array.map(objects,fixpath)*","+" "+
 		    libraries*" "+" ");
 
@@ -195,8 +206,6 @@ int main(int argc, string *argv)
 	if(search(data," W1008:")!=-1)
 	  exit(1);
       });
-
-      target=output+".exe";
 
       if(getenv("CLEANUP")!="no")
 	rm(ldfile);
@@ -213,7 +222,7 @@ int main(int argc, string *argv)
     }
   }
 
-  if(operation == "link")
+  if(operation == "link" && !share)
   {
     rm(output);
     Stdio.write_file(output,
