@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.57 1997/10/03 03:42:15 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.58 1997/10/07 11:45:44 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -11,6 +11,7 @@ test_eq(class { static int foo=17; }()->foo,0)
 test_eval_error(class { static int foo=17; }()->foo=18;)
 test_equal( [[ ({ (["foo":"bar"]), (<"foo">), ([]) })->foo ]], [[ ({"bar",1,0}) ]])
 test_any([[mixed a=({([]),0}); a[1]=a; return a->foo[0];]],0)
+test_eval_error([[return column(({0}),"foo");]])
 
 test_any([[
 class p1 { int foo() { return 1; }};
