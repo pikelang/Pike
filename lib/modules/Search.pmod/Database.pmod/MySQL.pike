@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.40 2001/06/23 00:29:18 js Exp $
+// $Id: MySQL.pike,v 1.41 2001/06/23 02:09:20 js Exp $
 
 inherit .Base;
 
@@ -51,7 +51,7 @@ void recreate_tables()
 
   db->query(
 #"create table field (id    tinyint unsigned primary key
-                            auto_increment not null,
+                            not null,
                       name  varchar(127) not null,
                       INDEX index_name (name))");
 
@@ -68,9 +68,9 @@ static void init_fields()
   if(init_done)
     return;
 
-  foreach(Search.get_filter_fields(), string field)
-    catch(allocate_field_id(field));
   init_done=1;
+  foreach(Search.get_filter_fields(), string field)
+    allocate_field_id(field);
 }
 
 void create(string _host)
@@ -147,21 +147,25 @@ mapping(string:int) list_fields()
   if(list_fields_cache)
     return list_fields_cache;
   init_fields();
-  array a=db->query("select name,id from fields") + ({"body", 0});
+  array a=db->query("select name,id from field") + ({ (["name":"body",
+							"id": "0"]) });
   return list_fields_cache=mkmapping(a->name, (array(int))a->id);
 }
 
 int allocate_field_id(string field)
 {
-  init_fields();
+  if(!init_done)
+    init_fields();
   if(field=="body")
     return 0;
-  db->query("lock tables field read");
-  for(int i=1; i++; i<64)
+  db->query("lock tables field write");
+  for(int i=1; i<64; i++)
   {
+    werror("%d\n",i);
     array a=db->query("select name from field where id=%d",i);
     if(!sizeof(a))
     {
+      werror("Allocated: %s to %d\n", field,i);
       a=db->query("insert into field (id,name) values (%d,%s)",
 		  i, field);
       list_fields_cache=0;
@@ -185,8 +189,8 @@ int get_field_id(string field, void|int do_not_create)
   array a=db->query(s);
   if(sizeof(a))
   {
-    field_cache[field]=(int)a[0]->id+1;
-    return (int)a[0]->id+1;
+    field_cache[field]=(int)a[0]->id;
+    return (int)a[0]->id;
   }
 
   if(do_not_create)
@@ -326,9 +330,9 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
   do
   {
     [int i, _WhiteFish.Blob b] = blobs->read();
-    q++;
     if( !b )
       break;
+    q++;
     string d = b->data();
     int w;
     sscanf( d, "%4c", w );
@@ -341,12 +345,13 @@ static void sync_thread( _WhiteFish.Blobs blobs, int docs )
   if( sync_callback )
     sync_callback();
   werror("----------- sync() done %3ds %5dw -------\n", time()-s,q);
+  werror("db: %O\n", host);
 }
 
 static object old_thread;
 int sync()
 {
-#if constant(thread_create)
+#if THREADS
   if( old_thread )
     old_thread->wait();
   old_thread = thread_create( sync_thread, blobs, docs );
@@ -401,6 +406,13 @@ class Queue
   
   inherit Web.Crawler.Queue;
 
+  static string to_md5(string url)
+  {
+    object md5 = Crypto.md5();
+    md5->update(url);
+    return Crypto.string_to_hex(md5->digest());
+  }
+
   void create( Web.Crawler.Stats _stats,
 	       Web.Crawler.Policy _policy,
 
@@ -424,12 +436,12 @@ class Queue
 #"
     create table "+table+#" (
         uri        blob not null,
-        uri_md5    char(32) not null,
+        uri_md5    char(32) not null default '',
 	template   varchar(255) not null default '',
 	md5        char(32) not null default '',
 	recurse    tinyint not null,
 	stage      tinyint not null,
-	INDEX uri_ind (ur_md5),
+	INDEX uri_ind (uri_md5),
 	INDEX stage   (stage)
 	)
     "
@@ -577,6 +589,12 @@ class Queue
   {
     foreach( stages, int s )
       db->query( "update "+table+" set stage=0 where stage=%d", s );
+  }
+
+  void clear_md5( int ... stages )
+  {
+    foreach( stages, int s )
+      db->query( "update "+table+" set md5='' where stage=%d", s );
   }
 
   int num_with_stage( int stage )
