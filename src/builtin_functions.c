@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.497 2003/06/30 17:06:08 mast Exp $
+|| $Id: builtin_functions.c,v 1.498 2003/08/02 01:08:43 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.497 2003/06/30 17:06:08 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.498 2003/08/02 01:08:43 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -7597,11 +7597,11 @@ PMOD_EXPORT void f_inherit_list(INT32 args)
 	  }
 	  break;
 	  
-	  case -17:
+	  case INHERIT_PARENT:
 	    ref_push_function(in->parent, in->parent_identifier);
 	    break;
 	    
-	  case -18:
+	  case OBJECT_PARENT:
 	    if(par)
 	    {
 	      ref_push_function(par, parid);
