@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.803 2004/03/09 09:20:20 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.804 2004/03/09 09:50:03 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -6938,8 +6938,9 @@ EOF
     # FIXME: Intra-bundle dependencies?
     for bundle in $bundles; do
       AC_MSG_CHECKING(for bundle $bundle)
-      for dist_file in "$pike_bundle_dir/$bundle"*.tar.gz no; do
-        if test -f "$dist_file"; then
+      for dist_file in `cd "$pike_bundle_dir" && echo ${bundle}*.tar.gz` no; do
+        if test -f "$pike_bundle_dir/$dist_file"; then
+	  dist_file="$pike_bundle_dir/$dist_file"
 	  break
 	fi
       done
