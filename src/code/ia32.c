@@ -1,5 +1,5 @@
 /*
- * $Id: ia32.c,v 1.1 2001/07/20 12:44:54 grubba Exp $
+ * $Id: ia32.c,v 1.2 2001/07/20 15:19:46 grubba Exp $
  *
  * Machine code generator for IA32.
  *
@@ -22,7 +22,7 @@ void upd_pointer(INT32 off, INT32 ptr)
 
 void ins_align(INT32 align)
 {
-  while(Pike_compiler->new_program->num_program % c->arg) {
+  while(Pike_compiler->new_program->num_program % align) {
     add_to_program(0);
   }
 }
