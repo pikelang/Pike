@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_types.h,v 1.68 2001/03/29 21:30:32 grubba Exp $
+ * $Id: pike_types.h,v 1.69 2001/03/29 21:47:37 grubba Exp $
  */
 #ifndef PIKE_TYPES_H
 #define PIKE_TYPES_H
@@ -404,6 +404,7 @@ int pike_type_allow_premature_toss(struct pike_type *type);
 #define push_unfinished_type debug_push_unfinished_type
 #define push_assign_type debug_push_assign_type
 #define push_finished_type debug_push_finished_type
+#define push_finished_type_with_markers debug_push_finished_type_with_markers
 #define push_finished_type_backwards debug_push_finished_type_backwards
 #endif /* USE_PIKE_TYPE */
 #else
@@ -420,6 +421,7 @@ int pike_type_allow_premature_toss(struct pike_type *type);
 #define push_unfinished_type debug_push_unfinished_type
 #define push_assign_type debug_push_assign_type
 #define push_finished_type debug_push_finished_type
+#define push_finished_type_with_markers debug_push_finished_type_with_markers
 #define push_finished_type_backwards debug_push_finished_type_backwards
 #endif
 
