@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.596 2002/08/13 11:31:22 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.597 2002/08/14 12:53:31 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -662,10 +662,15 @@ export FALLBACK_CC
 fi #if test "x$enable_binary" != "xno"
 #############################################################################
 
+# Restore the -O2 that the default AC_PROG_CC adds.
+AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE)
+if test "x$pike_cv_option_O2" != "xyes"; then
+  AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
+fi
 
 if test "$GCC" = "yes"; then
   if test "$cflags_is_set" = "no"; then
-    AC_SYS_COMPILER_FLAG(-pipe, pipe, CFLAGS)
+    AC_SYS_COMPILER_FLAG(-pipe, pipe, OPTIMIZE)
   fi
 fi
 
@@ -1610,13 +1615,8 @@ esac
     *)
       case "$pike_cv_sys_os:$GCC" in
         UnixWare*:no|OpenUNIX*:no)
-	  OPTIMIZE=""
 	;;
 	*)
-	  AC_SYS_COMPILER_FLAG(-O2,O2,OPTIMIZE)
-	  if test "x$pike_cv_option_O2" != "xyes"; then
-	    AC_SYS_COMPILER_FLAG(-O,O,OPTIMIZE)
-	  fi
 	;;
       esac
     ;;
@@ -5670,7 +5670,7 @@ do
      *\ $opt\ *) ;;
      *)
        case "$opt" in
-         -O2|-pipe) OPTIMIZE="${OPTIMIZE-} $opt" ;;
+         -O2|-pipe|-O) OPTIMIZE="${OPTIMIZE-} $opt" ;;
           *)  NEW_CFLAGS="$NEW_CFLAGS $opt" ;;
        esac
      ;;

@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.42 2002/04/11 22:08:49 mast Exp $
+dnl $Id: aclocal.m4,v 1.43 2002/08/14 12:53:17 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer autoconf call substr m4_substr
@@ -25,6 +25,17 @@ pushdef([AC_PROG_CC],
   popdef([AC_PROG_CC])
 
   AC_PROG_CC
+
+  if test "$ac_test_CFLAGS" = set; then :; else
+    if test "$GCC" = yes; then
+      # Remove -O2, and use a real test to restore it.
+      if test "$ac_cv_prog_cc_g" = yes; then
+	CFLAGS="-g"
+      else
+	CFLAGS=
+      fi
+    else :; fi
+  fi
 
   AC_MSG_CHECKING([if we are using TCC])
   AC_CACHE_VAL(pike_cv_prog_tcc, [
@@ -234,7 +245,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-# $Id: aclocal.m4,v 1.42 2002/04/11 22:08:49 mast Exp $
+# $Id: aclocal.m4,v 1.43 2002/08/14 12:53:17 grubba Exp $
 
 MY_AC_PROG_CC
 
