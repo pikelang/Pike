@@ -5,9 +5,11 @@
 \*/
 
 /*
- * $Id: stuff.c,v 1.7 1999/02/27 20:35:34 grubba Exp $
+ * $Id: stuff.c,v 1.8 1999/02/27 21:54:39 grubba Exp $
  */
+#include "global.h"
 #include "stuff.h"
+#include "stralloc.h"
 
 /* Not all of these are primes, but they should be adequate */
 INT32 hashprimes[32] =
@@ -136,7 +138,7 @@ double strtod_pcharp(PCHARP ptr, PCHARP *endptr)
   endptr->shift = ptr.shift;
 
   if (!ptr.shift) {
-    return my_strtod(ptr.ptr, &endptr->ptr);
+    return my_strtod(ptr.ptr, (char **)&endptr->ptr);
   }
 
   for (i=0; i < 63; i++) {
@@ -150,6 +152,6 @@ double strtod_pcharp(PCHARP ptr, PCHARP *endptr)
 
   res = my_strtod(buff, &end_);
 
-  endptr->ptr = ptr.ptr + ((end_ - buff)<<SHIFT);
+  endptr->ptr = ptr.ptr + ((end_ - buff)<<ptr.shift);
   return res;
 }
