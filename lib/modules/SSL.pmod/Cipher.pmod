@@ -1,5 +1,5 @@
 //
-//  $Id: Cipher.pmod,v 1.9 2004/01/24 23:30:51 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.10 2004/01/24 23:52:18 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -20,6 +20,8 @@ class CipherAlgorithm {
   optional string crypt(string);
   optional string unpad(string);
   optional string pad();
+
+  optional this_program set_iv(string);
 }
 
 //! Message Authentication Code interface.
