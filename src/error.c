@@ -11,6 +11,7 @@
 #include "builtin_functions.h"
 #include "array.h"
 #include "object.h"
+#include "main.h"
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -34,9 +35,12 @@ void throw(void) ATTRIBUTE((noreturn))
     fatal("No error recovery context.\n");
 
 #ifdef DEBUG
+  if (t_flag) {
+    fprintf(stderr, "throw(X)\n");
+  }
   if(sp - evaluator_stack < recoveries->sp)
     fatal("Stack error in error.\n");
-#endif
+#endif /* DEBUG */
 
   while(fp != recoveries->fp)
   {
