@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.8 2002/05/24 15:35:15 grubba Exp $
+ * $Id: module.pmod,v 1.9 2002/06/12 19:28:58 jhs Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -510,7 +510,7 @@ class Parser
   }
 
   //! This is a queue, which keeps the elements even after they are retrieved.
-  static class State_queue {
+  static class StateQueue {
 
     //! Index of the head of the queue.
     int head;
@@ -870,7 +870,7 @@ class Parser
 
   //! Contains all states used.
   //! In the queue section are the states that remain to be compiled.
-  State_queue s_q;
+  StateQueue s_q;
 
   static ADT.Stack item_stack;
 
@@ -1306,7 +1306,7 @@ class Parser
     Kernel state;
     multiset(int|string) symbols, conflicts;
 
-    s_q = State_queue();
+    s_q = StateQueue();
     s_q->push(first_state());
 
     /* First make LR(0) states */
