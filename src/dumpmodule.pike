@@ -90,11 +90,23 @@ class Codec
   }
 }
 
+int quiet=0;
+
 int main(int argc, string *argv)
 {
+  if(argv[1]=="--quiet")
+  {
+    quiet=1;
+    argv=argv[1..];
+    master()->set_inhibit_compile_errors(1);
+    werror("Dumping modules ");
+  }
+
   foreach(argv[1..],string file)
     {
-      werror(file +": ");
+      if(!quiet)
+	werror(file +": ");
+
       mixed err=catch {
 	rm(file+".o"); // Make sure no old files are left
 	if(mixed s=file_stat(file))
@@ -105,24 +117,32 @@ int main(int argc, string *argv)
 	    break;
 	  }
 	}else{
-	  werror("does not exist.\n");
+	  if(!quiet)
+	    werror("does not exist.\n");
 	  break;
 	}
-//	trace(99);
 	if(programp(p=compile_file(file)))
 	{
-//	  trace(0);
 	  string s=encode_value(p, Codec());
 	  p=decode_value(s,Codec());
 	  if(programp(p))
 	  {
 	    Stdio.File(file + ".o","wct")->write(s);
-	    werror("dumped.\n");
+	    if(quiet)
+	      werror(".");
+	    else
+	      werror("dumped.\n");
 	  }else{
-	    werror("Decode failed.\n");
+	    if(quiet)
+	      werror("i");
+	    else
+	      werror("Decode failed.\n");
 	  }
 	}else{
-	  werror("Compilation failed.\n");
+	  if(quiet)
+	    werror("!");
+	  else
+  	    werror("Compilation failed.\n");
 	}
       };
       if(err)
@@ -131,8 +151,13 @@ int main(int argc, string *argv)
 	err[0]="While dumping "+file+": "+err[0];
 	werror(master()->describe_backtrace(err));
 #else
-	werror(err[0]);
+	if(quiet)
+	  werror("X");
+	else
+	  werror(err[0]);
 #endif
       }
     }
+  if(quiet)
+    werror("\n");
 }
