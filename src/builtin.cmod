@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.78 2002/02/21 05:45:19 per-bash Exp $
+ * $Id: builtin.cmod,v 1.79 2002/02/28 10:58:57 grubba Exp $
  */
 
 #include "global.h"
@@ -656,10 +656,9 @@ PIKEFUN string function_name(program|function func)
   switch(func->type)
   {
     default:
-      if(!func->u.object->prog)
-	bad_arg_error("function_name", Pike_sp-args, args, 1,
-		      "function|program", Pike_sp-args,
-		      "Bad argument.\n");
+      bad_arg_error("function_name", Pike_sp-args, args, 1,
+		    "function|program", Pike_sp-args,
+		    "Bad argument.\n");
       return; /* NOTREACHED */
 	
     case PIKE_T_PROGRAM:
