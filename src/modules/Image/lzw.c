@@ -1,4 +1,4 @@
-/* $Id: lzw.c,v 1.3 1997/10/21 18:39:37 grubba Exp $ */
+/* $Id: lzw.c,v 1.4 1997/10/21 22:07:26 mirar Exp $ */
 
 /*
 
@@ -15,7 +15,7 @@ the existanse of #define GIF_LZW is for that purpose. :-)
 /*
 **! module Image
 **! note
-**!	$Id: lzw.c,v 1.3 1997/10/21 18:39:37 grubba Exp $<br>
+**!	$Id: lzw.c,v 1.4 1997/10/21 22:07:26 mirar Exp $<br>
 */
 
 #include "global.h"
@@ -166,9 +166,9 @@ void lzw_write_last(struct lzw *lzw)
 
 void lzw_add(struct lzw *lzw,int c)
 {
-  HIDE_GLOBAL_VARIABLES();
    lzwcode_t lno,lno2;
    struct lzwc *l;
+   HIDE_GLOBAL_VARIABLES();
 
    if (lzw->current==LZWCNULL) /* no current, load */
    {

@@ -4,14 +4,14 @@ togif
 
 Pontus Hagland, law@infovav.se
 
-$Id: togif.c,v 1.19 1997/10/21 18:39:38 grubba Exp $ 
+$Id: togif.c,v 1.20 1997/10/21 22:07:25 mirar Exp $ 
 
 */
 
 /*
 **! module Image
 **! note
-**!	$Id: togif.c,v 1.19 1997/10/21 18:39:38 grubba Exp $<br>
+**!	$Id: togif.c,v 1.20 1997/10/21 22:07:25 mirar Exp $<br>
 **! class image
 */
 
@@ -163,9 +163,9 @@ void image_floyd_steinberg(rgb_group *rgb,int xsize,
 			   struct colortable *ct,
 			   int closest)
 {
-  HIDE_GLOBAL_VARIABLES();
    rgbl_group err;
    int x;
+  HIDE_GLOBAL_VARIABLES();
 
    if (way)
    {
