@@ -1,9 +1,9 @@
-/* $Id: matrix.c,v 1.30 2000/12/01 08:10:01 hubbe Exp $ */
+/* $Id: matrix.c,v 1.31 2001/01/22 17:32:32 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: matrix.c,v 1.30 2000/12/01 08:10:01 hubbe Exp $
+**!	$Id: matrix.c,v 1.31 2001/01/22 17:32:32 mirar Exp $
 **! class Image
 */
 
@@ -668,9 +668,11 @@ static void img_skewx(struct image *src,
    dest->ysize=src->ysize;
    len=src->xsize;
 
-   d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize);
+   d=dest->img=malloc(sizeof(rgb_group)*dest->xsize*dest->ysize+1);
    if (!d) return;
    s=src->img;
+
+   if (!src->xsize || !src->ysize) return;
 
    THREADS_ALLOW();
    xmod=diff/src->ysize;
@@ -747,13 +749,15 @@ static void img_skewy(struct image *src,
    xsz=dest->xsize=src->xsize;
    len=src->ysize;
 
-   d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize);
+   d=dest->img=malloc(sizeof(rgb_group)*dest->ysize*dest->xsize+1);
    if (!d) return;
    s=src->img;
 
    THREADS_ALLOW();
    ymod=diff/src->xsize;
    rgb=dest->rgb;
+
+   if (!src->xsize || !src->ysize) return;
 
 CHRONO("skewy begin\n");
 
@@ -1010,7 +1014,8 @@ void img_rotate(INT32 args,int xpn)
       bad_arg_error("image->rotate",sp-args,args,0,"",sp-args,
 		"Bad arguments to image->rotate()\n");
 
-   if (!THIS->img) Pike_error("Called Image.Image object is not initialized\n");;
+   if (!THIS->img) 
+      Pike_error("Called Image.Image object is not initialized\n");;
 
    dest2.img=d0.img=NULL;
 
