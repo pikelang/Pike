@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.29 1998/11/02 20:43:49 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.30 1998/11/02 22:04:42 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -614,7 +614,7 @@ INLINE static int do_one(struct string_builder *r,
     }
     if(f->column_entries>0)
     {
-      for(rest=f->b;COMPARE_PCHARP(rest,>=,end) &&
+      for(rest=f->b;COMPARE_PCHARP(rest,<,end) &&
 	    EXTRACT_PCHARP(rest)!='\n';INC_PCHARP(rest,1));
       if(COMPARE_PCHARP(rest,<,end)) INC_PCHARP(rest,1);
     }else{
