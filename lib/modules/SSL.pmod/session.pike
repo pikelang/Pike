@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.26 2003/03/08 22:12:13 nilsson Exp $
+// $Id: session.pike,v 1.27 2003/10/24 18:27:31 mast Exp $
 
 #pike __REAL_VERSION__
 // #pragma strict_types
@@ -24,7 +24,7 @@ string identity;
 //! Always COMPRESSION_null.
 int compression_algorithm;
 
-//! Constant defining a choice of keyexchenge, encryption and mac
+//! Constant defining a choice of keyexchange, encryption and mac
 //! algorithm.
 int cipher_suite;
 
@@ -278,7 +278,7 @@ array(.state) new_server_states(string client_random, string server_random,
   return ({ read_state, write_state });
 }
 
-//! Computes a new set of encryption stetes, derived from the
+//! Computes a new set of encryption states, derived from the
 //! client_random, server_random and master_secret strings.
 //!
 //! @returns
@@ -319,5 +319,3 @@ array(.state) new_client_states(string client_random, string server_random,
   }
   return ({ read_state, write_state });
 }
-    
-
