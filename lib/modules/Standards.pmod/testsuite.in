@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.8 2003/07/03 13:17:04 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.9 2003/08/11 20:38:56 nilsson Exp $"]]);
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
@@ -59,12 +59,66 @@ test_eq([[ sizeof(my_rdf->find_statements(0, my_rdf->
   get_resource("http://purl.org/dc/elements/1.1/creator"),0)) ]], 2)
 test_eq([[ sizeof(my_rdf->find_statements(0,0, my_rdf->
   get_resource("http://www.w3.org/"))) ]], 1)
+test_true([[ my_rdf->has_statement( @my_rdf->find_statements(0,0, my_rdf->
+  get_resource("http://www.w3.org/"))[0] ) ]])
+test_any([[
+  array stmt = my_rdf->find_statements(0,0,
+    my_rdf->get_resource("http://www.w3.org/"))[0];
+  return my_rdf->has_statement( stmt[0], stmt[2], stmt[1] );
+]], 0)
 test_any([[
   Standards.RDF.Resource r;
   r = my_rdf->find_statements(0, my_rdf->
     get_resource("http://purl.org/dc/elements/1.1/publisher"), 0)[0][2];
   return sizeof(my_rdf->find_statements(r,0,0));
 ]], 2)
+test_do( my_rdf->add_statement( my_rdf->make_resource("Q://A"),
+  my_rdf->make_resource("Q://B"), my_rdf->make_resource("Q://C") ) )
+test_true( has_value(my_rdf->get_n_triples(), "<Q://A> <Q://B> <Q://C> .") )
+test_true( objectp( my_rdf->reify( my_rdf->get_resource("Q://A"),
+  my_rdf->get_resource("Q://B"), my_rdf->get_resource("Q://C") ) ) )
+test_any([[
+  Standards.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  return sizeof(my_rdf->find_statements(r,0,0));
+]], 4)
+test_do([[
+  Standards.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  my_rdf->add_statement(my_rdf->make_resource("Q://D"),
+    my_rdf->make_resource("Q://E"), r);
+]])
+test_eq( sizeof(my_rdf), 10 )
+test_equal( sort(my_rdf->get_properties()->get_n_triple_name()),
+({
+    "<Q://E>",
+    "<http://purl.org/dc/elements/1.1/creator>",
+    "<http://purl.org/dc/elements/1.1/publisher>",
+    "<http://purl.org/dc/elements/1.1/source>",
+    "<http://purl.org/dc/elements/1.1/title>",
+    "_:object",
+    "_:predicate",
+    "_:subject",
+    "_:type"
+}) )
+test_any([[
+  Standards.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  return my_rdf->dereify(r);
+]], 0)
+test_eq( sizeof(my_rdf), 10 )
+test_do([[
+  my_rdf->remove_statement(
+    @my_rdf->find_statements(my_rdf->get_resource("Q://D"),0,0)[0] );
+]])
+test_eq( sizeof(my_rdf), 9 )
+test_any([[
+  Standards.RDF.Resource r=my_rdf->find_statements(0,my_rdf->rdf_type,0)[0][0];
+  return my_rdf->dereify(r);
+]], 1)
+test_eq( sizeof(my_rdf), 6 )
+test_do([[
+  my_rdf->remove_statement(
+    @my_rdf->find_statements(my_rdf->get_resource("Q://A"),0,0)[0] );
+]])
+test_eq( sizeof(my_rdf), 5 )
 test_do( add_constant("my_rdf"); )
 
 define(test_lassila,[[test_any([[
