@@ -37,12 +37,14 @@ static string fixup_path(string x)
 }
 
 /* FIXME: this is a bit ad-hoc */
-string mkmodulename(string dirname, mixed x)
+string mkmodulename(mixed x, string dirname)
 {
   if(!sscanf(dirname,"%*slib/modules/%s",dirname))
     return 0;
   dirname-=".pmod";
   dirname=replace(dirname,"/",".");
+  if(has_suffix(dirname, ".module"))
+     sscanf(dirname, "%s.module", dirname);
   if(master()->resolv(dirname) == x)
     return dirname;
   return 0;
