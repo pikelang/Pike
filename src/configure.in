@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.575 2002/04/06 19:40:01 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.576 2002/04/07 15:19:28 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -4302,7 +4302,7 @@ int main()
 
 #ifdef HAVE_SIGACTION
   {
-    struct sigaction action;
+    static struct sigaction action;
     action.sa_handler= func;
     sigfillset(&action.sa_mask);
 #ifdef SA_INTERRUPT
@@ -4313,7 +4313,7 @@ int main()
 #else
 #ifdef HAVE_SIGVEC
   {
-    struct sigvec action;
+    static struct sigvec action;
     action.sv_handler= func;
     action.sv_mask=-1;
 #ifdef SV_INTERRUPT
