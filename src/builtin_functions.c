@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.89 1998/04/01 14:25:51 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.90 1998/04/09 20:47:21 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -491,23 +491,37 @@ static char *combine_path(char *cwd,char *file)
 
 void f_combine_path(INT32 args)
 {
-  char *path;
-  if(args<2)
+  char *path=0;
+  int e,dofree=0;
+  struct pike_string *ret;
+
+  if(args<1)
     error("Too few arguments to combine_path.\n");
 
   if(sp[-args].type != T_STRING)
     error("Bad argument 1 to combine_path.\n");
 
-  if(sp[1-args].type != T_STRING)
-    error("Bad argument 2 to combine_path.\n");
+  path=sp[-args].u.string->str;
 
-  path=combine_path(sp[-args].u.string->str,sp[1-args].u.string->str);
+  for(e=1;e<args;e++)
+  {
+    char *newpath;
+    if(sp[e-args].type != T_STRING)
+    {
+      if(dofree) free(path);
+      error("Bad argument %d to combine_path.\n",e);
+    }
+
+    newpath=combine_path(path,sp[e-args].u.string->str);
+    if(dofree) free(path);
+    path=newpath;
+    dofree=1;
+  }
+    
+  ret=make_shared_string(path);
+  if(dofree) free(path);
   pop_n_elems(args);
-
-  sp->u.string=make_shared_string(path);
-  sp->type=T_STRING;
-  sp++;
-  free(path);
+  push_string(ret);
 }
 
 void f_function_object(INT32 args)
@@ -2524,7 +2538,7 @@ void init_builtin_efuns(void)
   add_efun("backtrace",f_backtrace,"function(:array(array(function|int|string)))",OPT_EXTERNAL_DEPEND);
 
   add_efun("column",f_column,"function(array,mixed:array)",0);
-  add_efun("combine_path",f_combine_path,"function(string,string:string)",0);
+  add_efun("combine_path",f_combine_path,"function(string...:string)",0);
   add_efun("compile",f_compile,"function(string:program)",OPT_EXTERNAL_DEPEND);
   add_efun("copy_value",f_copy_value,"function(1=mixed:1)",0);
   add_efun("crypt",f_crypt,"function(string:string)|function(string,string:int)",OPT_EXTERNAL_DEPEND);
