@@ -2,8 +2,10 @@ Makefile
 backend.c
 builtin.c
 case_info.h
+confdefs.h
 config.cache
 config.h.in
+config.info
 config.log
 config.status
 configure
@@ -16,6 +18,7 @@ hsort_template.h
 interpret_functions_fixed.h
 interpret_protos.h
 interpret_protos.h_src
+interpreter_debug.h
 isort_template.h
 iterators.c
 language.c
@@ -36,12 +39,15 @@ patch_cc1
 patch_cc1.o
 peep_engine.c
 pike
+pike.syms
 pike.tmp
+precompile
 precompile-method
 precompile.sh
 qsort_template.h
 remake
 smartlink
+specs
 stamp-h
 stamp-h.in
 test-install
