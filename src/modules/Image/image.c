@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.179 2000/09/15 13:21:27 mirar Exp $ */
+/* $Id: image.c,v 1.180 2000/09/15 13:25:42 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.179 2000/09/15 13:21:27 mirar Exp $
+**!	$Id: image.c,v 1.180 2000/09/15 13:25:42 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.179 2000/09/15 13:21:27 mirar Exp $");
+RCSID("$Id: image.c,v 1.180 2000/09/15 13:25:42 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4442,8 +4442,8 @@ void init_image_image(void)
 		tOr(tFunc(tOr(tVoid,tArr(tArr(tInt))),tObj),
 		    tFunc(tArr(tArr(tInt)) tInt tInt tInt,tObj)),0);
    ADD_FUNCTION("modify_by_intensity",image_modify_by_intensity,
-		tFuncV(tInt tInt tInt tOr(tInt,tRGB) tOr(tInt,tRGB),
-		       tOr(tInt,tRGB),tObj),0);
+		tFuncV(tInt tInt tInt tOr(tInt,tColor) tOr(tInt,tColor),
+		       tOr(tInt,tColor),tObj),0);
    ADD_FUNCTION("gamma",image_gamma,
 		tOr(tFunc(tOr(tFlt,tInt),tObj),
 		    tFunc(tOr(tFlt,tInt) tOr(tFlt,tInt) tOr(tFlt,tInt),tObj)),0);
