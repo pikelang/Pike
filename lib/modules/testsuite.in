@@ -1,12 +1,20 @@
-test_true([["$Id: testsuite.in,v 1.1 2002/08/02 23:22:36 nilsson Exp $"]]);
+dnl $Id: testsuite.in,v 1.2 2002/10/14 13:48:12 nilsson Exp $
 
-// - Array
+dnl - Array
 
-// Array.diff
-// Array.diff_longest_sequence
-// Array.diff_compare_table
-// Array.longest_ordered_sequence
-// Array.interleave_array
+dnl Array.diff
+dnl Array.diff_longest_sequence
+dnl Array.diff_compare_table
+dnl Array.longest_ordered_sequence
+dnl Array.interleave_array
+dnl Array.sort
+
+test_equal(Array.everynth("0123456789"/""),
+  ({ "0", "2", "4", "6", "8"}))
+test_equal(Array.everynth("0123456789"/"",3),
+  ({ "0", "3", "6", "9"}))
+test_equal(Array.everynth("0123456789"/"",3,4),
+  ({ "4", "7"}))
 
 test_equal(Array.splice(({7,8,99}),({"h","h",99})),
 	({7,"h",8,"h",99,99}))
@@ -21,16 +29,8 @@ test_equal(Array.splice(),
 test_equal(Array.splice(({})),
 	({}))
 
-test_equal(Array.everynth("0123456789"/""),
-  ({ "0", "2", "4", "6", "8"}))
-test_equal(Array.everynth("0123456789"/"",3),
-  ({ "0", "3", "6", "9"}))
-test_equal(Array.everynth("0123456789"/"",3,4),
-  ({ "4", "7"}))
-
 test_equal(Array.transpose( ({ ({ 1,2,3}), ({4,5,6}) }) ),
 	({ ({1,4}), ({2,5}), ({3,6}) }))
-
 test_equal([[Array.transpose(({catch{throw(({""}));},({1,2})[1..]}))]],
 	   [[ ({ ({ "", 2 }) }) ]])
 
@@ -58,6 +58,9 @@ test_equal(Array.enumerate(5,2), ({ 0,2,4,6,8 }))
 test_equal(Array.enumerate(5,2,7), ({ 7,9,11,13,15 }))
 test_equal(Array.enumerate(5,2,7,`-), ({ 7,5,3,1,-1 }))
 
+dnl Array.reduce
+dnl Array.rreduce
+
 test_any([[
   random_seed(4711);
   array b = Array.shuffle(Array.enumerate(1000));
@@ -69,8 +72,37 @@ test_any([[
 ]], 1);
 test_true( equal(Array.enumerate(1000),sort(Array.shuffle(Array.enumerate(1000)))) )
 
+dnl Array.search_array
+dnl Array.sum_arrays
+dnl Array.sort_array
+dnl Array.columns
+dnl Array.transpose_old
+dnl Array.diff3
+dnl Array.diff3_old
+dnl Array.dwim_sort_func
+dnl Array.lyskom_sort_func
+dnl Array.flatten
+dnl Array.sum
+dnl Array.uniq2
 
-// - Colors
+test_equal([[ Array.arrayify( ({1,2,3}) ) ]],[[ ({1,2,3}) ]])
+test_equal([[ Array.arrayify( 1 ) ]],[[ ({1}) ]])
+test_equal([[ Array.arrayify( 0 ) ]],[[ ({0}) ]])
+test_equal([[ Array.arrayify( UNDEFINED ) ]],[[ ({}) ]])
+
+dnl Array.oid_sort_func
+dnl Array.greedy_diff
+dnl Array.count
+
+test_equal(Array.common_prefix(({ "soliloquise"/1 })), "soliloquise"/1)
+test_equal(Array.common_prefix(({ "muzzle"/1, "muzzy"/1 })), "muzz"/1)
+test_equal(Array.common_prefix(({ "labyrinth"/1, "diatom"/1 })), ({}))
+test_equal(Array.common_prefix(({ "abc"/1, "abc"/1, "abc"/1 })), "abc"/1)
+test_equal(Array.common_prefix(({})), ({}))
+
+
+dnl - Colors
+test_equal(Colors.parse_color(""),({0,0,0}))
 test_equal(Colors.parse_color("red"),({255,0,0}))
 test_equal(Colors.parse_color("RED"),({255,0,0}))
 test_equal(Colors.parse_color("lightred"),({255,61,61}))
@@ -83,3 +115,10 @@ test_equal(Colors.rgb_to_hsv(255,0,0),({0,255,255}))
 test_equal(Colors.hsv_to_rgb(0,255,255),({255,0,0}))
 test_equal(Colors.rgb_to_cmyk(255,0,0),({0,100,100,0}))
 test_equal(Colors.cmyk_to_rgb(0,100,100,0),({255,0,0}))
+
+dnl - Mapping
+dnl Mapping.delete
+dnl Mapping.Iterator
+
+dnl - Multiset
+dnl Multiset.Iterator
