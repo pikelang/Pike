@@ -1208,7 +1208,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 	 if (!finished) 
 	 {
 	    DEBUG_MARK_SPOT("scan for end of arg: wait",feed,c);
-	    if (do_push) pop_n_args(n);
+	    if (do_push) pop_n_elems(n);
 	    return 0;
 	 }
 	 else
@@ -1270,7 +1270,7 @@ static int scan_forward_arg(struct parser_html_storage *this,
 	 if (!finished) 
 	 {
 	    DEBUG_MARK_SPOT("scan for end of arg: wait (quote)",feed,c);
-	    if (do_push) pop_n_args(n);
+	    if (do_push) pop_n_elems(n);
 	    return 0;
 	 }
 	 else
