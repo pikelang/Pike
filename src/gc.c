@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.140 2000/10/04 05:12:12 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.141 2000/10/12 01:00:41 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1048,11 +1048,16 @@ void locate_references(void *a)
   gc_check_all_objects();
 
 #ifdef PIKE_DEBUG
-  if(master_object) gc_external_mark2(master_object,0," &master_object");
+  if(master_object) {
+    found_where = " as master_object";
+    gc_external_mark2(master_object,0," &master_object");
+  }
   {
     extern struct mapping *builtin_constants;
-    if(builtin_constants)
+    if(builtin_constants) {
+      found_where = " as builtin_constants";
       gc_external_mark2(builtin_constants,0," &builtin_constants");
+    }
   }
 #endif
   
