@@ -1,5 +1,5 @@
 /*
- * $Id: autodoc.pike,v 1.11 2001/04/25 22:28:03 grubba Exp $
+ * $Id: autodoc.pike,v 1.12 2001/04/26 13:40:57 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
@@ -78,7 +78,7 @@ int main(int argc, array(string) argv)
 	  if (!module_path_fixed && info) {
 	    for(int i = sizeof(segments)-1; i-- > 0;) {
 	      if (name = Stdio.read_bytes(segments[..i]*"/" + "/.autodoc")) {
-		segments = name/"." +
+		segments = replace(name, ({ "\n", "\r" }), ({ "", "" }))/"." +
 		  map(segments[i+1..sizeof(segments)-2],
 		      lambda(string p) {
 			if (has_suffix(p, ".pmod")) {
