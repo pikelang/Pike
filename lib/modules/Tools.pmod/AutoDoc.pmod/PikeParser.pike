@@ -177,19 +177,33 @@ string eatIdentifier(void|int allowScopePrefix) {
   return scope + colons + s;
 }
 
-Type|void parseOrType() {
+Type parseOrType() {
   array(Type) a = ({ parseType() });
   while (peekToken() == "|") {
     readToken();
     a += ({ parseType() });
   }
-  if (sizeof(a) == 1)
-    return a[0];
-  if (sizeof(a) == 0)
-    return 0;
-  OrType or = OrType();
-  or->types = a;
-  return or;
+  Type base;
+  if (sizeof(a) == 1) {
+    base = a[0];
+  } else {
+    base = OrType();
+    base->types = a;
+  }
+  int level = 0;
+  while (peekToken() == "*") {
+    readToken();
+    level++;
+  }
+  if (!level) {
+    return base;
+  }
+  while(level--) {
+    Type a = ArrayType();
+    a->valuetype = base;
+    base = a;
+  }
+  return base;
 }
 
 MappingType parseMapping() {
