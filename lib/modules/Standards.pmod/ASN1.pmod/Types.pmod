@@ -537,7 +537,7 @@ class meta_explicit
 	{
 	  if (i)
 	    error("element_types: Unexpected index!\n");
-	  return valid_types;
+	  return valid_types || types;
 	}
 
       string debug_string()
