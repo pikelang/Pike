@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.86 2000/09/10 17:17:18 grubba Exp $
+// $Id: module.pmod,v 1.87 2000/09/10 17:21:21 grubba Exp $
 
 import String;
 
@@ -109,7 +109,7 @@ class File
   static string debug_mode;
   static int debug_bits;
 
-  void _setup_debug( string f, string m, int|void b )
+  optional void _setup_debug( string f, string m, int|void b )
   {
     debug_file = f;
     debug_mode = m;
