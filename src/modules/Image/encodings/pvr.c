@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.5 2000/02/27 14:48:13 marcus Exp $");
+RCSID("$Id: pvr.c,v 1.6 2000/02/27 16:14:11 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -100,6 +100,21 @@ static void init_twiddletab()
   twiddleinited=1;
 }
 
+static int pvr_check_alpha(struct image *alpha)
+{
+  int r=0;
+  INT32 cnt;
+  rgb_group *p;
+  if(alpha==NULL)
+    return 0;
+  for(cnt=alpha->xsize*alpha->ysize, p=alpha->img; cnt--; p++)
+    if(p->g < 16)
+      r=1;
+    else if(p->g < 240)
+      return 2;
+  return r;
+}
+
 static void pvr_encode_rect(INT32 attr, rgb_group *src, unsigned char *dst,
 			    INT32 stride, unsigned int h, unsigned int w)
 {
@@ -112,6 +127,38 @@ static void pvr_encode_rect(INT32 attr, rgb_group *src, unsigned char *dst,
        *dst++=p&0xff;
        *dst++=(p&0xff00)>>8;
        src++;
+     }
+     break;
+  }
+}
+
+static void pvr_encode_alpha_rect(INT32 attr, rgb_group *src, rgb_group *alpha,
+				  unsigned char *dst, INT32 stride,
+				  unsigned int h, unsigned int w)
+{
+  INT32 cnt = h * w;
+  switch(attr&0xff) {
+   case MODE_ARGB1555:
+     while(cnt--) {
+       unsigned int p =
+	 ((src->r&0xf8)<<7)|((src->g&0xf8)<<2)|((src->b&0xf8)>>3);
+       if(alpha->g&0x80)
+	 p |= 0x8000;
+       *dst++=p&0xff;
+       *dst++=(p&0xff00)>>8;
+       src++;
+       alpha++;
+     }
+     break;
+   case MODE_ARGB4444:
+     while(cnt--) {
+       unsigned int p =
+	 ((alpha->g&0xf0)<<8)|
+	 ((src->r&0xf0)<<4)|(src->g&0xf0)|((src->b&0xf0)>>4);
+       *dst++=p&0xff;
+       *dst++=(p&0xff00)>>8;
+       src++;
+       alpha++;
      }
      break;
   }
@@ -160,7 +207,20 @@ void image_pvr_f_encode(INT32 args)
   res = begin_shared_string(8+(sz=8+2*img->xsize*img->ysize)+(has_gbix? 12:0));
   dst = STR0(res);
 
-  attr = MODE_RECTANGLE|MODE_RGB565;
+  switch(pvr_check_alpha(alpha)) {
+   case 0:
+     alpha = NULL;
+     attr = MODE_RGB565;
+     break;
+   case 1:
+     attr = MODE_ARGB1555;
+     break;
+   case 2:
+     attr = MODE_ARGB4444;
+     break;
+  }
+
+  attr |= MODE_RECTANGLE;
 
   if(has_gbix) {
     *dst++ = 'G';
@@ -194,7 +254,11 @@ void image_pvr_f_encode(INT32 args)
   *dst++ = (img->ysize&0x00ff);
   *dst++ = (img->ysize&0xff00)>>8;
 
-  pvr_encode_rect(attr, img->img, dst, 0, img->ysize, img->xsize);
+  if(alpha != NULL)
+    pvr_encode_alpha_rect(attr, img->img, alpha->img, dst, 0,
+			  img->ysize, img->xsize);
+  else
+    pvr_encode_rect(attr, img->img, dst, 0, img->ysize, img->xsize);
 
   pop_n_elems(args);
   push_string(end_shared_string(res));
@@ -299,7 +363,7 @@ static void pvr_decode_alpha_rect(INT32 attr, unsigned char *src,
   switch(attr&0xff) {
    case MODE_ARGB1555:
      while(cnt--) {
-       if(src[1]&0x8000)
+       if(src[1]&0x80)
 	 dst->r = dst->g = dst->b = ~0;
        else
 	 dst->r = dst->g = dst->b = 0;
