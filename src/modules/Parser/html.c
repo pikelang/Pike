@@ -1400,7 +1400,7 @@ void html_parse_get_tag(INT32 args)
 {
    struct piece feed;
    check_all_args("parse_get_tag",args,BIT_STRING,0);
-   feed.s=sp[-args].u.string->str;
+   feed.s=sp[-args].u.string;
    feed.next=NULL;
    parse_get_tag(feed);
    stack_pop_n_elems_keep_top(args);
