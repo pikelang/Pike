@@ -23,7 +23,7 @@
 #include "module_support.h"
 #include "security.h"
 
-RCSID("$Id: opcodes.c,v 1.38 1999/06/19 09:55:58 mirar Exp $");
+RCSID("$Id: opcodes.c,v 1.39 1999/06/19 20:02:03 hubbe Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -806,7 +806,7 @@ static INT32 really_low_sscanf(char *input,
 			      e-cnt-2,
 			      &tmp,
 			      &yes);
-	    if(yes)
+	    if(yes && tmp)
 	    {
 	      f_aggregate(sp-save_sp);
 	      sval.u.array=append_array(sval.u.array,sp-1);
