@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.2 1998/01/08 16:04:54 mirar Exp $ */
+/* $Id: x.c,v 1.3 1998/01/08 18:05:05 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.2 1998/01/08 16:04:54 mirar Exp $
+**!	$Id: x.c,v 1.3 1998/01/08 18:05:05 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.2 1998/01/08 16:04:54 mirar Exp $");
+RCSID("$Id: x.c,v 1.3 1998/01/08 18:05:05 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -102,7 +102,7 @@ extern struct program *image_program;
 static void x_encode_truecolor(INT32 args)
 {
    struct image *img;
-   struct neo_colortable *nct;
+   struct neo_colortable *nct=NULL;
    int rbits,rshift,gbits,gshift,bbits,bshift;
    int bpp,alignbits;
    unsigned long rfmask,gfmask,bfmask;
@@ -122,8 +122,6 @@ static void x_encode_truecolor(INT32 args)
 	  !(nct=(struct neo_colortable*)
 	    get_storage(sp[9-args].u.object,image_colortable_program)))
 	 error("Image.X.encode_truecolor: illegal argument 10 (expected colortable object)\n");
-      else;
-   else nct=NULL;
 	 
    if (sp[1-args].type!=T_INT)
       error("Image.X.encode_truecolor: illegal argument 2 (expected integer)\n");
@@ -254,7 +252,7 @@ THREADS_ALLOW();
 
       while (y--)
       {
-	 unsigned long bp;
+	 INT32 bp;
 
 	 x=img->xsize;
 	 while (x--) /* write bits from this line */
@@ -315,7 +313,7 @@ static INLINE void x_examine_mask(struct svalue *mask,
 
 static void x_encode_truecolor_masks(INT32 args)
 {
-   struct object *ct;
+   struct object *ct=NULL;
    int rbits,rshift,gbits,gshift,bbits,bshift;
 
    if (args<6) 
@@ -328,9 +326,6 @@ static void x_encode_truecolor_masks(INT32 args)
       if (sp[6-args].type!=T_OBJECT ||
 	  !get_storage(ct=sp[6-args].u.object,image_colortable_program))
 	 error("Image.X.encode_truecolor_masks: illegal argument 7 (expected colortable object)\n");
-      else;
-   else
-      ct=NULL;
  
    if (sp[1-args].type!=T_INT)
       error("Image.X.encode_truecolor_masks: illegal argument 2 (expected integer)\n");
