@@ -1,4 +1,4 @@
-dnl $Id: aclocal.m4,v 1.87 2003/12/17 23:16:19 marcus Exp $
+dnl $Id: aclocal.m4,v 1.88 2004/02/26 15:24:12 grubba Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
@@ -356,7 +356,7 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.87 2003/12/17 23:16:19 marcus Exp $
+  # $Id: aclocal.m4,v 1.88 2004/02/26 15:24:12 grubba Exp $
 
   MY_AC_PROG_CC
 
@@ -742,4 +742,32 @@ $1
 WARNING: $1
 
 EOF
+])
+
+dnl PIKE_ENABLE_BUNDLE(bundle_name, invalidate_set, opt_error_msg)
+dnl Checks if bundle_name is available, and if it is enables it and
+dnl invalidates the cache variable specified in invalidate_set.
+dnl Otherwise if opt_error_msg has been specified performs an error exit.
+define(PIKE_ENABLE_BUNDLE, [
+  if test "$pike_bundle_dir" = ""; then
+    # Bundles not available.
+    ifelse([$3], , :, [ AC_MSG_ERROR([$3]) ])
+  else
+    for f in "$pike_bundle_dir/[$1]"*.tar.gz no; do
+      if test -f "$f"; then
+        # Notify toplevel that we want the bundle.
+	# Note that invalidation of the cache variables can't be done
+	# until the bundle actually has been built.
+	PIKE_MSG_WARN([Enabling bundle $1 from $f.])
+        echo "[$2]" >"[$1].bundle"
+	break
+      fi
+    done
+    ifelse([$3], , , [
+      if test "$f" = "no"; then      
+	# Bundle not available.
+	AC_MSG_ERROR([$3])
+      fi
+    ])
+  fi
 ])
