@@ -201,3 +201,20 @@ test_eq([[Crypto.sha()->update("abc")->digest()]],
 	[[Crypto.hex_to_string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
 
 ]])
+
+// HMAC
+// Test vectors for md5 from RFC-2104
+test_eq([[Crypto.hmac(Crypto.md5)("\013" * 16)("Hi There")]],
+	[[Crypto.hex_to_string("9294727a3638bb1c13f48ef8158bfc9d")]])
+test_eq([[Crypto.hmac(Crypto.md5)("Jefe")("what do ya want for nothing?")]],
+	[[Crypto.hex_to_string("750c783e6ab0b503eaa86e310a5db738")]])
+test_eq([[Crypto.hmac(Crypto.md5)("\252" * 16)("\335" * 50)]],
+	[[Crypto.hex_to_string("56be34521d144c88dbb8c733f0e8b3f6")]])
+
+// Similar test vectors for sha; not verified with other implementations
+test_eq([[Crypto.hmac(Crypto.sha)("\013" * 16)("Hi There")]],
+	[[Crypto.hex_to_string("675b0b3a1b4ddf4e124872da6c2f632bfed957e9")]])
+test_eq([[Crypto.hmac(Crypto.sha)("Jefe")("what do ya want for nothing?")]],
+	[[Crypto.hex_to_string("effcdf6ae5eb2fa2d27416d5f184df9c259a7c79")]])
+test_eq([[Crypto.hmac(Crypto.sha)("\252" * 16)("\335" * 50)]],
+	[[Crypto.hex_to_string("d730594d167e35d5956fd8003d0db3d3f46dc7bb")]])
