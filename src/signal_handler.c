@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.180 2000/09/04 00:11:48 mast Exp $");
+RCSID("$Id: signal_handler.c,v 1.181 2000/09/16 08:48:36 mirar Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1443,6 +1443,7 @@ extern int pike_make_pipe(int *);
 #define PROCE_EXEC		8
 #define PROCE_CLOEXEC		9
 #define PROCE_DUP		10
+#define PROCE_SETSID		11
 
 #define PROCERROR(err, id)	do { int _l, _i; \
     buf[0] = err; buf[1] = errno; buf[2] = id; \
@@ -2035,6 +2036,7 @@ void f_create_process(INT32 args)
     uid_t wanted_uid;
     gid_t wanted_gid;
     int gid_request=0;
+    int setsid_request=0;
     int keep_signals = 0;
     pid_t pid=-2;
     int control_pipe[2];	/* Used for communication with the child. */
@@ -2121,6 +2123,10 @@ void f_create_process(INT32 args)
       if((tmp = simple_mapping_string_lookup( optional, "cwd" )) &&
          tmp->type == T_STRING && !tmp->u.string->size_shift)
         tmp_cwd = tmp->u.string->str;
+
+      if((tmp = simple_mapping_string_lookup( optional, "setsid" )) &&
+         tmp->type == T_INT && tmp->u.integer)
+        setsid_request=1;
 
       if ((tmp = simple_mapping_string_lookup( optional, "fds" )) &&
 	  tmp->type == T_ARRAY) {
@@ -2592,6 +2598,9 @@ void f_create_process(INT32 args)
 	  error("Process.create_process(): setuid(%d) failed. errno:%d\n",
 		buf[2], buf[1]);
 	  break;
+	case PROCE_SETSID:
+          error("Process.create_process(): setsid() failed.\n");
+	  break;
 	case PROCE_EXEC:
 	  if (buf[1] == ENOENT) {
 	    error("Process.create_process(): Executable file not found.\n");
@@ -2748,6 +2757,13 @@ void f_create_process(INT32 args)
       if(priority)
         set_priority( 0, priority );
 
+#ifdef HAVE_SETSID
+      if (setsid_request)
+	 if (setsid()==-1)
+	    PROCERROR(PROCE_SETSID,0);
+/* fixme: else... what? error or ignore? */
+#endif
+
 #ifdef HAVE_SETGID
 #ifdef HAVE_GETGID
       if(wanted_gid != getgid())
@@ -2773,7 +2789,6 @@ void f_create_process(INT32 args)
 	}
       }
 #endif
-
 
 #ifdef HAVE_SETUID
 #ifdef HAVE_GETUID

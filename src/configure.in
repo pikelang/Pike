@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.416 2000/09/15 21:43:32 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.417 2000/09/16 08:48:36 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1969,6 +1969,7 @@ AC_CHECK_FUNCS( \
  setgid getgid setegid getegid \
  getpwent getpwnam getpwuid \
  getgrent getgrnam \
+ setsid setpgrp getpgrp setpgid getpgid \
  initgroups setgroups \
  socketpair \
  fpclass \
