@@ -3,7 +3,6 @@
 ||| uLPC is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <setjmp.h>
 #include "global.h"
 #include "language.h"
 #include "interpret.h"

@@ -158,7 +158,6 @@
 #include <memory.h>
 #endif
 
-#include <setjmp.h>
 #include "interpret.h"
 #include "array.h"
 #include "object.h"
