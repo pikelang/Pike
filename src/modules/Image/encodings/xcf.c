@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.28 2000/10/19 14:56:03 grubba Exp $");
+RCSID("$Id: xcf.c,v 1.29 2000/10/19 15:17:18 per Exp $");
 
 #include "image_machine.h"
 
@@ -1182,6 +1182,9 @@ void image_xcf_f__decode_tiles( INT32 args )
   struct neo_colortable *cmap = NULL;
   int rxs, rys;
   rgb_group *colortable=NULL;
+  rgb_group pix = {0,0,0};
+  rgb_group apix= {255,255,255}; // avoid may use uninitialized warnings
+
   INT_TYPE rle, bpp, span, shrink;
   unsigned int l, x=0, y=0, cx, cy;
   get_all_args( "_decode_tiles", args, "%o%O%a%i%i%O%d%d%d",
@@ -1287,9 +1290,6 @@ void image_xcf_f__decode_tiles( INT32 args )
       tile = od;
     }
 
-/* fprintf(stderr, "%d,%d + %d,%d <%d,%d * %d>\n", x, y,  */
-/*         ewidth, eheight, i->xsize, i->ysize, shrink ); */
-
     if( (size_t)(tile.len) < (size_t)(eheight * ewidth * bpp ))
     {
       if( df ) free( df ); df=0;
@@ -1302,18 +1302,19 @@ void image_xcf_f__decode_tiles( INT32 args )
     int ix, iy=y/shrink;                                        \
     for(cy=0; cy<eheight; cy+=shrink,iy=((cy+y)/shrink))        \
     {                                                           \
-      int ind=cy*ewidth, bi=(i->xsize*iy);                      \
+      rgb_group *ip, *ap;                                       \
+      int ind=cy*ewidth;                                        \
       int ds = 0;                                               \
       if(iy >= i->ysize)  continue;                             \
-      ix= x/shrink;                                             \
+      ix = x/shrink;                                            \
+      ip = i->img + (i->xsize*iy);                              \
+      if( a ) ap = a->img + (i->xsize*iy);                      \
       for(cx=0; cx<ewidth; cx+=shrink,ind+=shrink,ix++)         \
       {                                                         \
-        rgb_group pix;                                          \
         if(ix >= i->xsize)  continue
 
 #define LOOP_EXIT()                                             \
-        i->img[ix+bi] = pix; \
-        if(a) a->img[ix+bi] = apix;                             \
+        ip[ix] = pix;                                           \
       }                                                         \
     }}
 
@@ -1323,57 +1324,63 @@ void image_xcf_f__decode_tiles( INT32 args )
       span = 1;
 
     {
-      rgb_group apix;
-      switch( bpp )
-      {
-      case 1: /* indexed or grey */
-	apix.r = apix.g = apix.b = 255;
-	if(colortable)
-	{
-	  LOOP_INIT();
-	  pix = colortable[s[ind]];
-	  LOOP_EXIT();
-	} 
-	else
-	{
-	  LOOP_INIT();
-	  pix.r = pix.g = pix.b = s[ind];
-	  LOOP_EXIT();
-	}
-	break;
-      case 2: /* indexed or grey with alpha */
-	if(colortable)
-	{
-	  LOOP_INIT();
-	  pix = colortable[s[ind]];
-	  apix.r = apix.g = apix.b = s[ind+span];
-	  LOOP_EXIT();
-	}
-	else
-	{
-	  LOOP_INIT();
-	  pix.r = pix.g = pix.b = s[ind];
-	  apix.r = apix.g = apix.b = s[ind+span];
-	  LOOP_EXIT();
-	}
-	break;
-      case 3: /* rgb */
-	apix.r = apix.g = apix.b = 255;
-	LOOP_INIT();
-	pix.r = s[ind];
-	pix.g = s[ind+span];
-	pix.b = s[ind+span*2];
-	LOOP_EXIT();
-	break;
-      case 4: /* rgba */
-	LOOP_INIT();
-	pix.r = s[ind];
-	pix.g = s[ind+span];
-	pix.b = s[ind+span*2];
-	apix.r = apix.b = apix.g = s[ind+span*3];
-	LOOP_EXIT();
-	break;
-      }
+     case 1: /* indexed or grey */
+       if(colortable)
+       {
+         LOOP_INIT();
+         pix = colortable[s[ind]];
+         LOOP_EXIT();
+       } 
+       else
+       {
+         LOOP_INIT();
+         pix.r = pix.g = pix.b = s[ind];
+         LOOP_EXIT();
+       }
+       break;
+     case 2: /* indexed or grey with alpha */
+       if(colortable)
+       {
+         LOOP_INIT();
+         pix = colortable[ s[ ind ] ];
+	 if( a )
+	 {
+	   apix.r = apix.g = apix.b = s[ind+span];
+	   ap[ix] = apix;
+	 }
+         LOOP_EXIT();
+       }
+       else
+       {
+         LOOP_INIT();
+         pix.r  =  pix.g =  pix.b = s[ind];
+	 if( a )
+	 {
+	   apix.r = apix.g = apix.b = s[ind+span];
+	   ap[ix] = apix;
+	 }
+         LOOP_EXIT();
+       }
+       break;
+     case 3: /* rgb */
+       LOOP_INIT();
+       pix.r = s[ind];
+       pix.g = s[ind+span];
+       pix.b = s[ind+span*2];
+       LOOP_EXIT();
+       break;
+     case 4: /* rgba */
+       LOOP_INIT();
+       pix.r = s[ind];
+       pix.g = s[ind+span];
+       pix.b = s[ind+span*2];
+       if(a)
+       {
+	 apix.r = apix.b = apix.g = s[ind+span*3];
+	 ap[ix] = apix;
+       }
+       LOOP_EXIT();
+       break;
     }
 
     if( df )
@@ -1388,9 +1395,6 @@ void image_xcf_f__decode_tiles( INT32 args )
       x = 0;
       y += TILE_HEIGHT;
     }
-    /* Not exactly likely to happen, and the test consumes some CPU */
-    /*     if(y>=(unsigned)(i->ysize*shrink)) */
-    /*       break; */
   }
   THREADS_DISALLOW();
   if(colortable) 
