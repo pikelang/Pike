@@ -154,6 +154,9 @@ o ::_indices(), ::_values().
    ::`->=() functions that exist in earlier releases.
 
 o UNDEFINED
+   To generate a 0 (zero) with a zero_type(var) == 1, you previously
+   had to use constructs like ([])[0]. This is now available as the
+   globally available symbol UNDEFINED.
 
 o _m_delete
    There is now an LFUN mixed _m_delete(mixed index) to overload in
