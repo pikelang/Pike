@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.32 2003/02/06 12:14:53 jonasw Exp $
+// $Id: HTML.pmod,v 1.33 2003/03/31 11:46:42 grubba Exp $
 
 // Filter for text/html
 
@@ -68,7 +68,12 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   };
 
   _WhiteFish.LinkFarm lf = _WhiteFish.LinkFarm();
-  function ladd = lf->add;
+  function low_ladd = lf->add;
+
+  void ladd(string html_href)
+  {
+    low_ladd(Parser.parse_html_entities(html_href));
+  }
 
   array(string) parse_title(Parser.HTML p, mapping m, string c) {
     res->fields->title=Parser.parse_html_entities(c);
@@ -274,7 +279,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   parser->feed(data);
   parser->finish();
 
-  res->links = Parser.parse_html_entities(lf->read()*"\0")/"\0";
+  res->links = lf->read();
   res->fields->body=Parser.parse_html_entities(databuf->get());
   res->fix_relative_links(uri);
 
