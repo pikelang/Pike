@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.271 2003/04/10 16:05:52 mast Exp $
+// $Id: master.pike.in,v 1.272 2003/04/15 18:47:02 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -2132,7 +2132,10 @@ void _main(array(string) orig_argv, array(string) env)
     handle_error (err);
     ret = 10;
   }
-  if(!intp(ret)) exit(0);
+  if(!intp(ret)) {
+    werror("Error: Non-integer value %O returned from main.\n", ret);
+    exit(10);
+  }
   if(ret >=0) exit([int]ret);
   _async=1;
   
