@@ -144,5 +144,5 @@ program get_filesystem(string what)
 function `()(void|string path)
 {
   return get_filesystem("System")(".")->cd(path||".") ||
-	 error("Can't create filesystem on given path\n");
+	 error("Can't create filesystem on given path\n"),0;
 }
