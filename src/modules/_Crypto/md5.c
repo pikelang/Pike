@@ -1,5 +1,5 @@
 /*
- * $Id: md5.c,v 1.9 1998/07/19 21:58:22 nisse Exp $
+ * $Id: md5.c,v 1.10 1998/07/19 23:04:33 grubba Exp $
  *
  * A pike module for getting access to some common cryptos.
  *
@@ -63,15 +63,20 @@ static void f_update(INT32 args)
   push_object(this_object());
 }
 
+/* From RFC 1321 
+ *  md5 OBJECT IDENTIFIER ::=
+ *    iso(1) member-body(2) US(840) rsadsi(113549) digestAlgorithm(2) 5}
+ *
+ * 0x2a86 4886 f70d 0205
+ */
+static char md5_id[] = {
+  0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x02, 0x05,
+};
+
 static void f_identifier(INT32 args)
 {
-  /* From RFC 1321 
-   md5 OBJECT IDENTIFIER ::=
-     iso(1) member-body(2) US(840) rsadsi(113549) digestAlgorithm(2) 5}
-  */
   pop_n_elems(args);
-  push_string(make_shared_binary_string(
-    "\x2a\x86\x48\x86\xf7\x0d\x02\x05", 8));
+  push_string(make_shared_binary_string(md5_id, 8));
 }
 
 static void f_digest(INT32 args)
