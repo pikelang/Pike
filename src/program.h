@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.184 2003/08/03 01:02:04 mast Exp $
+|| $Id: program.h,v 1.185 2003/08/20 12:08:46 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -517,15 +517,18 @@ static inline int CHECK_IDREF_RANGE (int x, const struct program *p)
   return x;
 }
 #else
-#define CHECK_IDREF_RANGE(X,P) (X)
+#define CHECK_IDREF_RANGE(X, P) (X)
 #endif
+
+#define PTR_FROM_INT(P, X)	((P)->identifier_references + \
+				 CHECK_IDREF_RANGE((X), (P)))
 
 #define INHERIT_FROM_PTR(P,X) (dmalloc_touch(struct program *,(P))->inherits + (X)->inherit_offset)
 #define PROG_FROM_PTR(P,X) (dmalloc_touch(struct program *,INHERIT_FROM_PTR(P,X)->prog))
 #define ID_FROM_PTR(P,X) (PROG_FROM_PTR(P,X)->identifiers+(X)->identifier_offset)
-#define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P,(P)->identifier_references+CHECK_IDREF_RANGE((X), (P)))
-#define PROG_FROM_INT(P,X) PROG_FROM_PTR(P,(P)->identifier_references+CHECK_IDREF_RANGE((X), (P)))
-#define ID_FROM_INT(P,X) ID_FROM_PTR(P,(P)->identifier_references+CHECK_IDREF_RANGE((X), (P)))
+#define INHERIT_FROM_INT(P,X) INHERIT_FROM_PTR(P, PTR_FROM_INT(P, X))
+#define PROG_FROM_INT(P,X) PROG_FROM_PTR(P, PTR_FROM_INT(P, X))
+#define ID_FROM_INT(P,X) ID_FROM_PTR(P, PTR_FROM_INT(P, X))
 
 #define FIND_LFUN(P,N) ( dmalloc_touch(struct program *,(P))->flags & PROGRAM_FIXED?((P)->lfuns[(N)]):low_find_lfun((P), (N)) )
 #define QUICK_FIND_LFUN(P,N) (dmalloc_touch(struct program *,(P))->lfuns[N])
