@@ -142,10 +142,13 @@ object|mapping simple_der_decode(string data)
 		       6 : asn1_identifier,
 		       // 9 : asn1_real,
 		       // 10 : asn1_enumerated,
+#if constant(asn1_utf8_string)
+   		       12 : asn1_utf8_string,
+#endif
 		       16 : asn1_sequence,
 		       17 : asn1_set,
 		       19 : asn1_printable_string,
-		       20 : asn1_T61_string,
+		       20 : asn1_teletex_string,
 		       23 : asn1_utc
 		    ]) );
 }

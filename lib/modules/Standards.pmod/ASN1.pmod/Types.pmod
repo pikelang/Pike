@@ -154,7 +154,7 @@ class asn1_compound
     {
       WERROR(sprintf("asn1_compound[%s]->debug_string(), elements = %O\n",
 		     type_name, elements));
-      return type_name + "[" + elements->debug_string() * ",\n" + "]";
+      return "(" + type_name + " " + elements->debug_string() * ",\n" + ")";
     }
 }
 
@@ -333,6 +333,31 @@ class asn1_octet_string
   constant type_name = "OCTET STRING";
 }
 
+#if constant(string_to_utf8)
+class asn1_utf8_string
+{
+  inherit asn1_string;
+  constant tag = 12;
+  constant type_name = "UTF8String";
+
+  string der_encode()
+    {
+      return build_der(string_to_utf8(value));
+    }
+
+  object decode_primitive(string contents)
+    {
+      record_der(contents);
+      if (catch {
+	value = utf8_to_string(contents);
+      })
+	return 0;
+      
+      return this_object();
+    }
+}  
+#endif /* constant(string_to_utf8) */
+
 class asn1_null
 {
   inherit asn1_object;
@@ -468,11 +493,13 @@ class asn1_printable_string
   constant type_name = "PrintableString";
 }
 
-class asn1_T61_string
+/* Often used for latin1 */
+/* Aka T61String */
+class asn1_teletex_string
 {
   inherit asn1_string;
   constant tag = 20;
-  constant type_name = "T61String";
+  constant type_name = "TeletexString";
 }
 
 class asn1_IA5_string
