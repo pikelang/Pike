@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 //! module Image
-//! $Id: module.pmod,v 1.12 2000/10/08 22:40:34 per Exp $
+//! $Id: module.pmod,v 1.13 2000/11/21 12:58:34 per Exp $
 
 //! method object(Image.Image) load()
 //! method object(Image.Image) load(object file)
@@ -89,16 +89,15 @@ mapping _decode( string data, mixed|void tocolor )
 array(Image.Layer) decode_layers( string data, mixed|void tocolor )
 {
   array i;
-
+  function f;
   if(!data)
     return 0;
 
   foreach( ({ "GIF", "JPEG", "XWD", "PNM",
               "XCF", "PSD", "PNG",  "BMP",  "TGA", "PCX",
               "XBM", "XPM", "TIFF", "ILBM", "PS",
-              "HRZ", "AVS", "WBF",
   }), string fmt )
-    if( !catch(i = Image[fmt]->decode_layers( data )) && i )
+    if( (f=Image[fmt]["decode_layers"]) && !catch(i = f( data,tocolor )) && i )
       break;
 
   if(!i) // No image could be decoded at all.
