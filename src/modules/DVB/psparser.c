@@ -3,7 +3,7 @@
  * 
  *  Creator: Honza Petrous <hop@unibase.cz>
  * 
- *  $Id: psparser.c,v 1.1 2002/09/30 12:08:00 hop Exp $
+ *  $Id: psparser.c,v 1.2 2002/10/08 11:44:59 hop Exp $
  * 
  */
 
@@ -34,14 +34,14 @@ void pes_filt(dvb_p2p *p, dvb_avpacket *pkt)
 	   p->plength, p->hlength, factor);
 #endif
       len = p->plength-p->hlength-3*factor;
-      memcpy(pkt->data, p->buf+p->hlength+6+3*factor, len);
+      memcpy(pkt->data + pkt->size, p->buf+p->hlength+6+3*factor, len);
     } else {
       len = p->plength+6;
-      memcpy(pkt->data, p->buf, len);
+      memcpy(pkt->data + pkt->size, p->buf, len);
     }
-    pkt->size = len;
+    pkt->size += len;
 #ifdef DVB_DEBUG
-    printf("DEB: dvb: pes_filt: len: %d\n", len);
+    printf("DEB: dvb: pes_filt: len: %d (size=%d)\n", len, pkt->size);
 #endif
 
   }
@@ -74,13 +74,12 @@ int get_pes_filt (uint8_t *buf, int count, dvb_p2p *p, dvb_avpacket *pkt)
 
 	int l;
 	unsigned short *pl;
-	int c=0;
+	int c = 0, rv = 0;
 
 	uint8_t headr[3] = { 0x00, 0x00, 0x01} ;
 
 #ifdef DVB_DEBUG
-    printf("DEB: dvb: get_pes_filt: ...\n");
-    pkt->size = 0;
+    printf("DEB: dvb: get_pes_filt(pkt.size=%d): ...\n", pkt->size);
 #endif
 	while (c < count && (p->mpeg == 0 ||
 			     (p->mpeg == 1 && p->found < 7) ||
@@ -350,11 +349,11 @@ int get_pes_filt (uint8_t *buf, int count, dvb_p2p *p, dvb_avpacket *pkt)
 			p->done = 0;
 			p->plength = 0;
 			memset(p->buf, 0, MAX_PLENGTH);
-#if 0
+#if 1
 			if (c < count)
-				get_pes_filt(buf+c, count-c, p, pkt);
+				rv = get_pes_filt(buf+c, count-c, p, pkt);
 #endif
 		}
 	}
-	return c;
+	return c + rv;
 }

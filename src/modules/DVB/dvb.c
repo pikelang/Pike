@@ -3,7 +3,7 @@
  *
  * Creator: Honza Petrous <hop@unibase.cz>
  *
- * $Id: dvb.c,v 1.7 2002/10/01 21:25:42 nilsson Exp $
+ * $Id: dvb.c,v 1.8 2002/10/08 11:44:59 hop Exp $
  *
  * Credits:
  *  + Tuner zapping code based on 'szap' app from linux DVB driver
@@ -85,15 +85,32 @@
 /* WARNING: It is a design limit of DVB-S full cards! */
 #define MAX_PES_FD	8
 
+#define _DMX_PES_RDS 129
+
 #define MAX_DVB_READ_SIZE 4096
 #define MAX_ERR_LEN	160
 
-#undef THREAD_ALLOW
-#define THREAD_ALLOW
-#undef THREAD_DISALLOW
-#define THREAD_DISALLOW
+struct program *dvb_program;
+struct program *dvb_stream_program;
 
-static struct program *dvb_program;
+struct dvb_stream_data_struct;
+
+typedef struct {
+  int			 cardn;
+  int			 fefd;
+  struct dvb_stream_data_struct	*stream;
+  char			 low_errmsg[MAX_ERR_LEN+1];
+} dvb_data;
+
+#define DVB	((dvb_data *)Pike_fp->current_storage)
+#define THISOBJ (Pike_fp->current_object)
+
+typedef struct {
+  int			 fd;
+  char			 low_errmsg[MAX_ERR_LEN+1];
+} dvb_audio_data;
+
+#define DVBAudio	((dvb_audio_data *)Pike_fp->current_storage)
 
 struct ECMINFO {
   struct ECMINFO *next;
@@ -103,40 +120,104 @@ struct ECMINFO {
   int id;
 };
 
-typedef struct {
-  int			 cardn;
-  int			 fefd;
-  unsigned int		 pescnt;
-  int			 pesfd[MAX_PES_FD];
-  unsigned int		 pesid[MAX_PES_FD];
-  unsigned int		 pestype[MAX_PES_FD];
-  dvb_avpacket		 pespkt[MAX_PES_FD];
-  unsigned int		 pesbuflen[MAX_PES_FD];
-  struct svalue		 pesfcb[MAX_PES_FD];
+typedef struct dvb_stream_data_struct {
+  dvb_data		*parent;
+  struct dvb_stream_data_struct	*next;
+  int			 fd;
+  unsigned int		 pid;
+  unsigned int		 stype;
+  dvb_avpacket		 pkt;
+  unsigned int		 buflen;
+  struct svalue		 fcb;
   dvb_p2p		 p;
   struct ECMINFO	*ecminfo;
   char			 low_errmsg[MAX_ERR_LEN+1];
-} dvb_data;
+} dvb_stream_data;
 
-#define DVB	((dvb_data *)Pike_fp->current_storage)
-#define THISOBJ (Pike_fp->current_object)
+#define DVBStream	((dvb_stream_data *)Pike_fp->current_storage)
 
-#define IOCTL(X,Y,Z) 							\
-  if( ioctl( X, #Y, Z ) ) {						\
-    fprintf(stderr, "ioctl " #Y " failed: %s\n", strerror(errno) );	\
-    push_int(0);							\
-  } else 								\
-    push_int(1);
+/* internals */
+
+int sl_count(dvb_data *parent) {
+  dvb_stream_data *st = parent->stream;
+  int cnt = 0;
+
+  while(st != NULL) {
+    st = st->next;
+    cnt++;
+  }
+  return cnt;
+
+}
+
+int sl_add(dvb_data *parent, dvb_stream_data *newstream) {
+  dvb_stream_data *st = parent->stream;
+
+  if(st == NULL) {
+    parent->stream = newstream;
+    return 1;
+  }
+  while(st->next != NULL)
+    st = st->next;
+  st->next = newstream;
+  return 1;
+
+}
+
+int sl_del(dvb_data *parent, dvb_stream_data *oldstream) {
+  dvb_stream_data *st = parent->stream, *st1 = NULL;
+
+  if(st == NULL)
+    return 0;
+  while(st != NULL && st != oldstream) {
+    st1 = st;
+    st = st->next;
+  }
+  if(st != oldstream)
+    return 0;
+  if(st1 == NULL)
+    parent->stream = st->next;
+  else
+    st1->next = st->next;
+  return 1;
+
+}
+
+dvb_stream_data *sl_getstream(dvb_data *parent, int pid) {
+  dvb_stream_data *st = parent->stream;
+
+  if(st == NULL)
+    return 0;
+  while(st != NULL && st->pid != pid)
+    st = st->next;
+  if(st == NULL)
+    return 0;
+  return st;
+
+}
+
+char *mk_devname(int devno, char *basename) {
+
+  char *devname;
+
+  if((devname = malloc(sizeof(basename)+4)) == NULL)
+      return NULL;
+  sprintf(devname, "%s%d", basename, devno); //FIXME: uncorrect for v2.0+ !!
+  return devname;
+}
+
 
 /*! @module DVB
- */
-
-/*! @class dvb
  *!
  *! Implements Digital Video Broadcasting interface
  *!
  *! @note
  *!  Only Linux version is supported.
+ */
+
+/*! @class dvb
+ *!
+ *! Main class.
  */
 
 /*! @decl void create(int card_number)
@@ -147,7 +228,7 @@ typedef struct {
  *!   The number of card equipment.
  *!
  *! @note
- *!   The number spcecifies which device will be opened.
+ *!   The number specifies which device will be opened.
  *!   Ie. /dev/ost/demux0, /dev/ost/demux1 ... for
  *!   DVB v0.9.4  or /dev/dvb/demux0, /dev/dvb/demux1 ...
  *!   for versions 2.0+
@@ -167,17 +248,12 @@ static void f_create(INT32 args) {
     else
       DVB->cardn = (u_short)Pike_sp[-1].u.integer;
 
-  if((devname = malloc(sizeof(FRONTENDDEVICE)+1)) == NULL)
+  if((devname = mk_devname(DVB->cardn, FRONTENDDEVICE)) == NULL)
       Pike_error("Internal error: can't malloc buffer.\n");
-  strcpy(devname, FRONTENDDEVICE);
-  if(DVB->cardn) {
-    devname[strlen(FRONTENDDEVICE)] = DVB->cardn + '0';
-    devname[strlen(FRONTENDDEVICE)+1] = '\0';
-  }
-
   fefd = open (devname, O_RDWR | O_NONBLOCK);
   if (fefd < 0) {
       DVB->cardn = -1;
+      //free(devname);
       Pike_error("Opening frontend '%s' failed.\n", devname);
   }
   DVB->fefd = fefd;
@@ -266,7 +342,7 @@ static void f_fe_status(INT32 args) {
 
 /*! @decl mapping fe_info()
  *!
- *! Return info of a DVB object's frondend device.
+ *! Return info of a frondend device.
  *!
  *! @note
  *!   The information heavily depends on driver. Many fields
@@ -384,8 +460,7 @@ static int do_tune(int fefd, uint ifreq, uint sr)
 
 /*! @decl int tune(int(0..3) lnb, int freq, int(0..1)|string pol, int sr)
  *!
- *!   Tunes to apropriate transponder's parameters and optionally
- *!   sets PID(s).
+ *! Tunes to apropriate transponder's parameters.
  *!
  *! @param lnb
  *!  DiSeQc number of LNB.
@@ -411,6 +486,7 @@ static void f_zap(INT32 args) {
   uint freq;
   int pol;
   uint sr;
+  char *devname;
 
   check_all_args("DVB.dvb->tune", args, BIT_INT, BIT_INT, BIT_INT | BIT_STRING,
 		  			BIT_INT, 0);
@@ -430,9 +506,12 @@ static void f_zap(INT32 args) {
 
   satno = (u_short)Pike_sp[-1].u.integer;
 
-  secfd = open (SECDEVICE, O_RDWR);
+  if((devname = mk_devname(DVB->cardn, SECDEVICE)) == NULL)
+      Pike_error("Internal error: can't malloc buffer.\n");
+  secfd = open (devname, O_RDWR);
+  //free(devname);
   if (secfd == -1) {
-      Pike_error ("opening SEC failed\n");
+      Pike_error ("opening SEC device failed\n");
   }
   THREADS_ALLOW();
   result = ioctl (DVB->fefd, FE_GET_INFO, &fe_info);
@@ -473,15 +552,19 @@ static void f_get_pids(INT32 args) {
 
   dvb_pid_t pids[7];
   int cnt = 0, dmx, ret;
+  char *devname;
 
   pop_n_elems(args);
-  if(!DVB->pescnt) {
-    dmx = open (DEMUXDEVICE, O_RDWR | O_NONBLOCK);
+  if(!sl_count(DVB)) {
+    if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
+        Pike_error("Internal error: can't malloc buffer.\n");
+    dmx = open (devname, O_RDWR | O_NONBLOCK);
+    //free(devname);
     if (dmx < 0)
       Pike_error("Opening demux failed.\n");
   } else
     // FIXME: for which PMT ?
-    dmx = DVB->pesfd[0];
+    dmx = DVB->stream->fd;
   /* get the current PID settings */
   THREADS_ALLOW();
   ret = ioctl(dmx, DMX_GET_PES_PIDS, &pids);
@@ -509,7 +592,7 @@ static void f_get_pids(INT32 args) {
       push_int(0);
   } else
     push_int(0);
-  if(!DVB->pescnt)
+  if(!sl_count(DVB))
     close(dmx);
 }
 
@@ -630,7 +713,9 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
     u[0].fd = fd;
     u[0].events = POLLIN;
 
+    //THREAD_ALLOW();
     n = poll(u,1,20000);
+    //THREAD_DISALLOW();
     if (n < 0)
     {
       perror("poll error");
@@ -644,7 +729,9 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
 
     buffer[0] = 0;
 
+    //THREAD_ALLOW();
     n = read(fd,buffer+1,length-1);
+    //THREAD_DISALLOW();
     if (n < 0)
     {
       perror("read error");
@@ -653,7 +740,7 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
 
     if (cks && crc32(buffer+1,n) != 0)
     {
-      fprintf(stderr,"crc error\n");
+      fprintf(stderr,"crc error\n"); //FIXME: ???
       continue;
     }
 
@@ -667,6 +754,7 @@ static int read_t(int fd,unsigned char *buffer,int length,int cks)
  *!
  *! Return mapping of all PMT.
  *!
+ *! sid:prognum
  */
 static void f_parse_pat(INT32 args) {
 
@@ -678,9 +766,13 @@ static void f_parse_pat(INT32 args) {
   int p, cnt = 0;
   int pid = -1;
   int dmx;
+  char *devname;
 
   pop_n_elems(args);
-  dmx = open (DEMUXDEVICE, O_RDWR | O_NONBLOCK);
+  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
+     Pike_error("Internal error: can't malloc buffer.\n");
+  dmx = open (devname, O_RDWR | O_NONBLOCK);
+  //free(devname);
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
@@ -697,8 +789,10 @@ static void f_parse_pat(INT32 args) {
   StopFilt(dmx);
   close(dmx);
 
-  if (n < 2)
+  if (n < 2) {
     push_int(0);
+    return;
+  }
 
   length = ((buffer[2] & 0x0F) << 8) | buffer[3];
   for (index=9; index<length-4 && index<184; index +=4)
@@ -725,7 +819,8 @@ static void f_parse_pat(INT32 args) {
 /**
  * Parse CA descriptor
 **/
-static void ParseCADescriptor (unsigned char *data,int length)
+static void ParseCADescriptor (dvb_stream_data *st, unsigned char *data,
+			       int length)
 {
   static char *seca_name = "Seca";
   static char *viaccess_name = "Viaccess";
@@ -735,14 +830,13 @@ static void ParseCADescriptor (unsigned char *data,int length)
   int ca_system;
   int j;
 
-  struct ECMINFO *e;
+  struct ECMINFO *e = NULL;
 
-  /*if (debug)
-  {
-    printf("ca_descr");
+#ifdef DVB_DEBUG 
+    printf("DEB: dvb: ca_descr:");
     for (j=0; j<length; j++) printf(" %02x",data[j]);
     printf("\n");
-  }*/
+#endif
 
   /* only test the upper 8 bits of the ca_system */
   ca_system = (data[0] << 8) /* | data[1]*/;
@@ -753,14 +847,14 @@ static void ParseCADescriptor (unsigned char *data,int length)
       for (j=2; j<length; j+=15)
       {
         e = malloc(sizeof(struct ECMINFO));
-        if (e == 0)
+        if (e == NULL)
           return;
         e->system = ca_system;
         e->name = seca_name;
         e->ecm_pid = ((data[j] & 0x1f) << 8) | data[j+1];
         e->id = (data[j+2] << 8) | data[j+3];
-        e->next = DVB->ecminfo;
-        DVB->ecminfo = e;
+        e->next = st->ecminfo;
+        st->ecminfo = e;
       }        
       break;
     case VIACCESS_CA_SYSTEM:
@@ -770,14 +864,14 @@ static void ParseCADescriptor (unsigned char *data,int length)
         if (data[j]==0x14)
         {
           e = malloc(sizeof(struct ECMINFO));
-          if (e == 0)
+          if (e == NULL)
             return;
           e->system = ca_system;
           e->name = viaccess_name;
           e->ecm_pid = ((data[2] & 0x1f) << 8) | data[3];
           e->id = (data[j+2] << 16) | (data[j+3] << 8) | (data[j+4] & 0xf0);
-          e->next = DVB->ecminfo;
-          DVB->ecminfo = e;
+          e->next = st->ecminfo;
+          st->ecminfo = e;
         }
         j += 2+data[j+1];
       }
@@ -785,39 +879,40 @@ static void ParseCADescriptor (unsigned char *data,int length)
     case IRDETO_CA_SYSTEM:
     case BETA_CA_SYSTEM:
       e = malloc(sizeof(struct ECMINFO));
-      if (e == 0)
+      if (e == NULL)
         return;
       e->system = ca_system;
       e->name = irdeto_name;
       e->ecm_pid = ((data[2] & 0x1f) << 8) | data[3];
-      e->next = DVB->ecminfo;
-      DVB->ecminfo = e;
+      e->next = st->ecminfo;
+      st->ecminfo = e;
 //      printf("Found irdeto\n");
       break;
     case NAGRA_CA_SYSTEM:
       e = malloc(sizeof(struct ECMINFO));
-      if (e == 0)
+      if (e == NULL)
         return;
       e->system = ca_system;
       e->name = nagra_name;
       e->ecm_pid = ((data[2] & 0x1f) << 8) | data[3];
-      e->next = DVB->ecminfo;
-      DVB->ecminfo = e;
+      e->next = st->ecminfo;
+      st->ecminfo = e;
 //fprintf(stderr,"Found nagra\n");
       break;
   }
+#ifdef DVB_DEBUG
+  while(e != NULL)
+    printf("DEB: dvb: ecminfo: system=%s, ecm_pid=%d, id=%d\n", e->name,
+		    e->ecm_pid, e->id);
+#endif
 }
 
-/**
- * Parse PMT to get ECM PID
-**/
-/*! @decl void create(int card_number)
+/*! @decl array(mapping)|int analyze_pmt(int sid, int prognum)
  *!
- *! Create a DVB object.
+ *! Parse PMT table.
  *!
- *! @param card_number
- *!   The number of card equipment.
- *!
+ *! @seealso
+ *!   @[analyze_pat()]
  */
 static void f_parse_pmt(INT32 args) 
 {
@@ -827,17 +922,21 @@ static void f_parse_pmt(INT32 args)
   int pid;
   int n,i;
 
-  int vpid = 0;
-  int apid = 0;
   int pnr = -1;
 
   int program_number;
   int pmt_pid;
   int dmx;
+  dvb_stream_data stream;
+  char *devname;
+  int cnt = 0, arr = 0;
 
   check_all_args("DVB.dvb->analyze_pmt", args, BIT_INT, BIT_INT, 0);
 
-  dmx = open (DEMUXDEVICE, O_RDWR | O_NONBLOCK);
+  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
+     Pike_error("Internal error: can't malloc buffer.\n");
+  dmx = open (devname, O_RDWR | O_NONBLOCK);
+  //free(devname);
   if (dmx < 0) {
     snprintf (DVB->low_errmsg, MAX_ERR_LEN, "DMX SET SECTION FILTER.\n");
     push_int(0);
@@ -889,7 +988,7 @@ static void f_parse_pmt(INT32 args)
   while (info_len > 0)
   {
     if (buffer[index] == 0x09)
-      ParseCADescriptor(&buffer[index+2], buffer[index+1]);
+      ParseCADescriptor(&stream, &buffer[index+2], buffer[index+1]);
 
     info_len -= 2+buffer[index+1];
     index += 2+buffer[index+1];
@@ -897,13 +996,32 @@ static void f_parse_pmt(INT32 args)
 
   while (index < length-4)
   {
+    cnt = 0;
     pid = ((buffer[index+1] & 0x1f) << 8) + buffer[index+2];
+    push_text("pid"); push_int(pid); cnt++;
 
-    if (buffer[index]==2 && vpid==0)
-      vpid = pid;    
-    else
-    if ((buffer[index]==3 || buffer[index]==4) && apid==0)
-      apid = pid;    
+    switch(buffer[index]) {
+      case 2:
+        push_text("type"); push_int(DMX_PES_VIDEO); cnt++;
+        push_text("desc"); push_text("video"); cnt++;
+	break;
+      case 3:
+      case 4:
+        push_text("type"); push_int(DMX_PES_AUDIO); cnt++;
+        push_text("desc"); push_text("audio"); cnt++;
+	break;
+      case 6:
+        push_text("type"); push_int(DMX_PES_TELETEXT); cnt++;
+        push_text("desc"); push_text("teletext"); cnt++;
+	break;
+      case 129:
+        push_text("type"); push_int(_DMX_PES_RDS); cnt++;
+        push_text("desc"); push_text("_rds"); cnt++;
+	break;
+      default:
+        push_text("unknown_type"); push_int(buffer[index]); cnt++;
+        push_text("desc"); push_text("unknown"); cnt++;
+    }
 
     data_len = ((buffer[index+3] & 0x0F) << 8) + buffer[index+4];
     if (buffer[index]==0x02 || buffer[index]==0x03 || buffer[index]==0x04)
@@ -915,35 +1033,404 @@ static void f_parse_pmt(INT32 args)
         {
           case 0x0a:
             if (buffer[index]==3 || buffer[index]==4) {
-fprintf(stderr, "Language = %.3s\n",&buffer[i+2]);
+	      push_text("lang");
+	      push_string(make_shared_binary_string(&buffer[i+2], 3)); cnt++;
             }
             break;
           case 0x09:
-            ParseCADescriptor(&buffer[i+2],buffer[i+1]);
+            ParseCADescriptor(&stream, &buffer[i+2],buffer[i+1]);
             break;
         }
         i += 2 + buffer[i+1];
       }
     }
+    f_aggregate_mapping( 2 * cnt );
+    arr++;
     index += 5 + data_len;
   }
 
+  if(arr) {
+    push_array(aggregate_array( arr ));
+  } else
+    push_int(0);
+}
+
+#define PID_NONE	65535
+
+/*! @decl DVB.Stream stream(int pid,int|function rcb,int ptype)
+ *! @decl DVB.Stream stream(int pid,int|function rcb)
+ *! @decl DVB.Stream stream(int pid)
+ *!
+ *! Create a new stream reader object for PID.
+ *!
+ *! @param pid
+ *!   PID of stream.
+ *!
+ *! @param rcb
+ *!   Callback function called whenever there is the data to read
+ *!   from stream. Only for nonblocking mode.
+ *!
+ *! @param ptype
+ *!   Type of payload data to read. By default, audio data is fetched.
+ *!
+ *! @note
+ *!   Setting async callback doesn't set the object to nonblocking state.
+ *!
+ *! @seealso
+ *!   @[DVB.Stream()->read()]
+ */
+static void f_stream_attach(INT32 args) {
+
+  int err, pid, ptype = PID_NONE;
+  struct svalue feeder;
+  unsigned char *pktdata;
+
+  check_all_args("DVB.dvb->stream", args, BIT_INT,
+		 BIT_FUNCTION | BIT_INT | BIT_VOID, BIT_INT | BIT_VOID, 0);
+
+  if(sl_count(DVB) >= MAX_PES_FD)
+      Pike_error("Max opened DEMUX devices reached.\n");
+
+  if(args > 2) {
+    ptype = (u_short)Pike_sp[-1].u.integer;
+    Pike_sp--;
+  }
+  if(args > 1) {
+#if 0
+    feeder = Pike_sp[1-args].u.svalue;
+    apply_svalue(&feeder, 0); /* we want more data */
+#endif
+    Pike_sp--;
+  }
+  pid = (u_short)Pike_sp[-1].u.integer;
+  Pike_sp--;
+
+  if(sl_getstream(DVB, pid) != NULL) {
+    push_int(0); /* PID already attached */
+    return;
+  }
+
+  ref_push_object( Pike_fp->current_object ); /* dvb */
+  push_int( pid );
+  push_int(0); /* func */
+  push_int(ptype);
+  push_object( clone_object(dvb_stream_program, 4 ) );
+
+  if(Pike_sp[-1].type!=PIKE_T_OBJECT)
+    Pike_error("Failed to create Stream object!\n");
+
+}
+
+static void f__sprintf(INT32 args) {
+
+  unsigned int n = 0, x, cnt;
+  dvb_stream_data *st = DVB->stream;
+
+  check_all_args("DVB.dvb->_sprintf", args, BIT_INT, BIT_MAPPING | BIT_VOID, 0);
+
+  x = Pike_sp[-args].u.integer;
+  pop_n_elems(args);
+  switch (x) {
+    case 'O':
+            n++; push_text("DVB.dvb(");
+            n++; push_text(mk_devname(DVB->cardn, DEMUXDEVICE));
+	    n++; push_text(": ");
+	    cnt = 0;
+	    while(st != NULL) {
+	      n++; push_int(st->pid);
+	      n++; push_text("/");
+	      n++; switch(st->stype) {
+		     case DMX_PES_AUDIO: push_text("a"); break;
+		     case DMX_PES_VIDEO: push_text("v"); break;
+		     case DMX_PES_TELETEXT: push_text("t"); break;
+		     case DMX_PES_SUBTITLE: push_text("s"); break;
+		     case DMX_PES_OTHER: push_text("o"); break;
+		     default: push_text("?");
+		   }
+	      cnt++;
+	      if(cnt < sl_count(DVB)) {
+		n++; push_text(",");
+	      }
+	      st = st->next;
+	    }
+            n++; push_text(")");
+            f_add(n);
+            return;
+     default:
+            push_int(0);
+            return;
+    }
+}
+
+/*! @endclass
+ */
+
+/*! @class Stream
+ */
+
+/*  @decl int set_buffer(int len)
+ * 
+ *  Sets stream's internal buffer.
+ * 
+ *  @note
+ *    The size is 4096 by default.
+ * 
+ *  @seealso
+ *    @[read()]
+ */
+static void f_stream_set_buffer(INT32 args) {
+
+  int buflen;
+
+  check_all_args("DVB.Stream->set_buffer", args, BIT_INT, 0);
+  buflen = (u_short)Pike_sp[-1].u.integer;
+  Pike_sp--;
+  DVBStream->buflen = buflen;
   push_int(1);
 }
 
 
-/*! @decl int audio_mute(int mute)
- *! @decl int audio_mute()
+
+static void f_stream_create(INT32 args) {
+
+  struct dmxPesFilterParams pesflt;
+  int err, pid, fd, ix, ptype;
+  struct svalue feeder;
+  unsigned char *pktdata;
+  struct object *dvbprog;
+  dvb_data *dvbstor;
+  char *devname;
+
+  check_all_args("DVB.dvb->stream", args, BIT_OBJECT, BIT_INT,
+		 BIT_FUNCTION | BIT_INT, BIT_INT, 0);
+
+  ptype = (u_short)Pike_sp[-1].u.integer;
+  Pike_sp--;
+  if(ptype == PID_NONE)
+     ptype = DMX_PES_OTHER;
+
+#if 0
+  feeder = Pike_sp[1-args].u.svalue;
+  apply_svalue(&feeder, 0); /* we want more data */
+#endif
+  Pike_sp--;
+
+  pid = (u_short)Pike_sp[-1].u.integer;
+  Pike_sp--;
+
+  dvbprog = Pike_sp[-1].u.object;
+  Pike_sp--;
+  if( !dvbprog || !(dvbstor = (dvb_data *)get_storage( dvbprog, dvb_program )) )
+    Pike_error("This class cannot be instantiated directly\n");
+
+  if((devname = mk_devname(DVB->cardn, DEMUXDEVICE)) == NULL)
+     Pike_error("Internal error: can't malloc buffer.\n");
+  fd = open (devname, O_RDWR /*| O_NONBLOCK*/);
+  //free(devname);
+  if (fd < 0) {
+      Pike_error("Opening DEMUX failed.\n");
+  }
+  pesflt.pid = pid;
+  pesflt.input = DMX_IN_FRONTEND;
+  pesflt.output = DMX_OUT_TAP;
+  pesflt.pesType = ptype;
+  pesflt.flags = DMX_IMMEDIATE_START;
+#ifdef DVB_DEBUG
+  printf("DEB: dvb: set_pes: PID=%d, type=%d\n", pid, ptype);
+#endif
+  THREADS_ALLOW();
+  err = ioctl(fd, DMX_SET_PES_FILTER, &pesflt);
+  THREADS_DISALLOW();
+  if (err < 0)
+    Pike_error("seting PID failed.\n");
+
+  if((pktdata = malloc(DVBStream->buflen)) == NULL)
+    Pike_error("Internal error: can't malloc buffer.\n");
+  if(init_p2p(&DVBStream->p, 2048))
+    Pike_error("Internal error: repack size %d is out of range\n", 2048);
+  DVBStream->parent = dvbstor;
+  DVBStream->p.filter = 0xC0; //FIXME: 0xC0 = audio, ...
+  DVBStream->p.es = 1;
+  DVBStream->fd = fd;
+  DVBStream->pid = pid;
+  DVBStream->stype = ptype;
+  DVBStream->pkt.data = pktdata;
+  DVBStream->pkt.size = 0;
+  /*DVB->pesfcb[ix] = NULL;*/
+  //fcntl(DVBStream->fd, F_SETFL, O_NONBLOCK);
+#if 0
+  push_int(1);
+#else
+  if(sl_add(dvbstor, DVBStream))
+    push_int(1);
+  else
+    push_int(0);
+#endif
+
+}
+
+/*! @decl int destroy()
+ *!
+ *! Purge a stream reader.
+ *!
+ *! @seealso
+ *!   @[DVB.dvb()->stream()], @[read()]
+ */
+static void f_stream_detach(INT32 args) {
+
+  pop_n_elems(args);
+  close(DVBStream->fd);
+#ifdef DVB_DEBUG
+  printf("DEB: dvb: stream_detach: pid=%d detached OK\n", DVBStream->pid);
+#endif
+  DVBStream->pid = 0;
+  DVBStream->fd = -1;
+  if(DVBStream->pkt.data != NULL)
+    free(DVBStream->pkt.data);
+  DVBStream->pkt.data = NULL;
+  push_int(1);
+
+}
+
+/*! @decl string|int read()
+ *!
+ *! Read data from a stream. It reads up to read buffer size data.
+ *!
+ *! @note
+ *!  Read buffer size is 4096 by default.
+ *!
+ *! @seealso
+ *!   @[DVB.dvb()->stream()], @[close()]
+ */
+static void f_stream_read(INT32 args) {
+
+  int all = 1, ret, e;
+  unsigned int cnt, ix = 0;
+  char buf[MAX_DVB_READ_SIZE], *bufptr;
+
+  if(DVBStream->fd < 0)
+    Pike_error("Object destroyed!\n");
+
+  check_all_args("DVB.dvb->stream_read", args, BIT_INT | BIT_VOID, 0);
+  if(args > 1)
+    all = (u_short)Pike_sp[-1].u.integer;
+  pop_n_elems(args);
+
+  DVBStream->pkt.size = 0;
+  for(;;) {
+    e = 0;
+    THREADS_ALLOW();
+    ret = read(DVBStream->fd, buf, DVBStream->buflen);
+    e = errno; /* check_threads_etc may effect errno */
+    THREADS_DISALLOW();
+
+    //check_threads_etc();
+
+    if (ret > 0)
+      break;
+    if (ret == -1 && (e == EAGAIN || e == EINTR)) {
+      push_int(0);
+      return;
+    }
+#if 0
+    if (!(ret == 0) || (ret == -1 && (e  == EAGAIN || e == EINTR))) {
+#ifdef DEBUG
+      printf("DEB: dvb: stream_read: errno=%d [%s]\n", e, strerror(e));
+#endif
+      push_int(-e);
+      return;
+    }
+#endif
+  }
+
+  if(ret > 0) {
+    bufptr = buf;
+    while((cnt = get_pes_filt(bufptr,ret,&DVBStream->p, &DVBStream->pkt)) > 0) {
+#ifdef DVB_DEBUG
+      printf("DEB: dvb: cnt=%d (ix: %d): pkt.size=%d\n", cnt, ix, DVBStream->pkt.size);
+#endif
+      push_string(make_shared_binary_string((char *)DVBStream->pkt.data,
+		    DVBStream->pkt.size));
+      DVBStream->pkt.size = 0; /* clear internall buffer */
+      ix++;
+      bufptr += cnt;
+      ret -= cnt;
+      if(ret < 1)
+	break;
+    }
+    if(ix)
+      f_add(ix);
+    if(ret) {
+       /* some unprocessed data remain in buf */
+       DVBStream->pkt.size = ret;
+    }
+#ifdef DVB_DEBUG
+      printf("DEB: dvb: ret=%d (ix: %d)\n", ret, ix);
+#endif
+    return;
+  }
+  push_int(0);
+
+}
+
+static void f_stream_info(INT32 args) {
+
+  check_all_args("DVB.dvb->stream_info", args, BIT_INT, 0);
+  pop_n_elems(args);
+  push_int(0);
+
+}
+
+/*! @endclass
+ */
+
+/*! @class Audio
+ */
+
+/*! @decl void create(int card_number)
+ *! @decl void create()
+ *!
+ *! Create a Audio object.
+ *!
+ *! @param card_number
+ *!   The number of card equipment.
+ */
+static void f_audio_create(INT32 args) {
+  char *devname;
+  int devno = 0;
+
+  if(DVBAudio->fd != -1)
+    Pike_error("Create already called!\n");
+
+  if(args)
+    if(Pike_sp[-1].type != T_INT)
+      Pike_error("Invalid argument 1, expected int.\n");
+    else
+      devno = (u_short)Pike_sp[-1].u.integer;
+  pop_n_elems(args);
+  if((devname = mk_devname(devno, AUDIODEVICE)) == NULL)
+     Pike_error("Internal error: can't malloc buffer.\n");
+  DVBAudio->fd = open( devname, O_RDWR );
+  //free(devname);
+  if (DVBAudio->fd < 0) {
+      DVB->cardn = -1;
+      Pike_error("Opening audio device failed.\n");
+  }
+}
+
+
+/*! @decl int mute(int mute)
+ *! @decl int mute()
  *!
  *! Mute or unmute audio device.
  *!
  *| @seealso
- *|   @[audio_mixer()]
+ *|   @[mixer()]
  */
 static void f_audio_mute(INT32 args) {
 
   int mute = 1; /* default is mute = on */
-  int afd, ret;
+  int ret;
 
   check_all_args("DVB.dvb->audio_mute", args, BIT_INT | BIT_VOID, 0);
 
@@ -952,37 +1439,28 @@ static void f_audio_mute(INT32 args) {
     Pike_sp--;
   }
 
-  afd = open (AUDIODEVICE, O_RDWR);
-  if (afd < 0) {
-      Pike_error ("opening AUDIO failed\n");
-  }
   THREADS_ALLOW();
-  ret = ioctl(afd, AUDIO_SET_MUTE, mute);
+  ret = ioctl(DVBAudio->fd, AUDIO_SET_MUTE, mute);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
   else
     push_int(1);
-  close(afd);
 
 }
 
-/*! @decl mapping audio_status()
+/*! @decl mapping status()
  *!
  *! Returns mapping of current audio device status.
  */
 static void f_audio_status(INT32 args) {
 
-  int afd, ret;
+  int ret;
   audioStatus_t status;
 
   pop_n_elems(args);
-  afd = open (AUDIODEVICE, O_RDWR);
-  if (afd < 0) {
-      Pike_error ("opening AUDIO failed\n");
-  }
   THREADS_ALLOW();
-  ret = ioctl(afd, AUDIO_GET_STATUS, &status);
+  ret = ioctl(DVBAudio->fd, AUDIO_GET_STATUS, &status);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
@@ -1020,14 +1498,12 @@ static void f_audio_status(INT32 args) {
     push_text("bypass"); push_int(status.bypassMode);
     f_aggregate_mapping( 2 * 6 );
   }
-  
-  close(afd);
 
 }
 
 static void f_audio_ctrl(INT32 args) {
 
-  int afd, ret;
+  int ret;
   int cw = -1;
 
   check_all_args("DVB.dvb->ctrl", args, BIT_INT | BIT_STRING, 0);
@@ -1050,32 +1526,27 @@ static void f_audio_ctrl(INT32 args) {
     return;
   }
 
-  afd = open (AUDIODEVICE, O_RDWR);
-  if (afd < 0) {
-      Pike_error ("opening AUDIO failed\n");
-  }
   THREADS_ALLOW();
-  ret = ioctl(afd, cw);
+  ret = ioctl(DVBAudio->fd, cw);
   THREADS_DISALLOW();
   if(ret < 0)
     push_int(0);
   else
     push_int(1);
-  close(afd);
 
 }
 
-/*! @decl int audio_mixer(int left, int right)
- *! @decl int audio_mixer(int both)
+/*! @decl int mixer(int left, int right)
+ *! @decl int mixer(int both)
  *!
  *! Sets output level on DVB audio device.
  *!
  *| @seealso
- *|   @[audio_mute()]
+ *|   @[mute()]
  */
 static void f_audio_mixer(INT32 args) {
 
-  int afd, ret;
+  int ret;
   audioMixer_t mixer;
 
   check_all_args("DVB.dvb->audio_mixer", args, BIT_INT, BIT_INT | BIT_VOID, 0);
@@ -1088,320 +1559,15 @@ static void f_audio_mixer(INT32 args) {
   } else
     mixer.volume_left = mixer.volume_right;
 
-  afd = open (AUDIODEVICE, O_RDWR);
-  if (afd < 0) {
-      Pike_error ("opening AUDIO failed\n");
-  }
   THREADS_ALLOW();
-  ret = ioctl(afd, AUDIO_SET_MIXER, &mixer);
+  ret = ioctl(DVBAudio->fd, AUDIO_SET_MIXER, &mixer);
   THREADS_DISALLOW();
   if(ret < 0)
     Pike_error("Seting mixer failed.\n");
   else
     push_int(1);
-  close(afd);
 
 }
-
-int find_free_pespos() {
-
-  unsigned int ix;
-
-  for(ix = 0; ix < MAX_PES_FD; ix++)
-    if(!DVB->pesfd[ix])
-      return ix;
-  return -1;
-}
-
-int find_pid_pespos(unsigned int pid) {
-
-  unsigned int ix;
-
-  for(ix = 0; ix < MAX_PES_FD; ix++)
-    if(DVB->pesid[ix] == pid)
-      return ix;
-  return -1;
-}
-
-/*! @decl int stream_set_buffer(int pid, int len)
- *!
- *! Sets stream's internal buffer.
- *!
- *! @note
- *!   The size is 4096 by default.
- *!
- *| @seealso
- *|   @[stream_attach()]
- */
-static void f_stream_set_buffer(INT32 args) {
-
-  int ix, buflen, pid;
-
-  check_all_args("DVB.dvb->stream_set_buffer", args, BIT_INT, BIT_INT, 0);
-  buflen = (u_short)Pike_sp[-1].u.integer;
-  Pike_sp--;
-  pid = (u_short)Pike_sp[-1].u.integer;
-  Pike_sp--;
-  if((ix = find_pid_pespos(pid)) == -1) {
-    push_int(0); /* PID doesn't exist */
-    return;
-  }
-  DVB->pesbuflen[ix] = buflen;
-  push_int(1);
-}
-
-
-/*! @decl int stream_attach(int pid,int|function rcb,int ptype)
- *! @decl int stream_attach(int pid,int|function rcb)
- *! @decl int stream_attach(int pid)
- *!
- *! Enable a new stream reader with appropriate PID number.
- *!
- *! @param pid
- *!   PID of stream.
- *!
- *! @param rcb
- *!   Callback function called whenever there is the data to read
- *!   from stream. Only for nonblocking mode.
- *!
- *! @param ptype
- *!   Type of payload data to read. By default, audio data is fetched.
- *!
- *! @note
- *!   Setting async callback doesn't set the object to nonblocking state.
- *!
- *! @seealso
- *!   @[stream_read()], @[stream_detach()]
- */
-static void f_stream_attach(INT32 args) {
-
-  struct dmxPesFilterParams pesflt;
-  int err, pid, fd, ix, ptype = DMX_PES_OTHER;
-  struct svalue feeder;
-  unsigned char *pktdata;
-
-  check_all_args("DVB.dvb->stream_attach", args, BIT_INT,
-		 BIT_FUNCTION | BIT_INT | BIT_VOID, BIT_INT | BIT_VOID, 0);
-
-  if(DVB->pescnt >= MAX_PES_FD)
-      Pike_error("Max opened DEMUX devices reached.\n");
-
-  if(args > 2) {
-    ptype = (u_short)Pike_sp[-1].u.integer;
-    Pike_sp--;
-  }
-  if(args > 1) {
-#if 0
-    feeder = Pike_sp[1-args].u.svalue;
-    apply_svalue(&feeder, 0); /* we want more data */
-#endif
-    Pike_sp--;
-  }
-  pid = (u_short)Pike_sp[-1].u.integer;
-  Pike_sp--;
-
-  if((ix = find_pid_pespos(pid)) != -1) {
-    push_int(0); /* PID already attached */
-    return;
-  }
-
-  fd = open (DEMUXDEVICE, O_RDWR /*| O_NONBLOCK*/);
-  if (fd < 0) {
-      Pike_error("Opening DEMUX failed.\n");
-  }
-  pesflt.pid = pid;
-  pesflt.input = DMX_IN_FRONTEND;
-  pesflt.output = DMX_OUT_TAP;
-  pesflt.pesType = ptype;
-  pesflt.flags = DMX_IMMEDIATE_START;
-#ifdef DVB_DEBUG
-  printf("DEB: dvb: set_pes: PID=%d, type=%d\n", pid, ptype);
-#endif
-  THREADS_ALLOW();
-  err = ioctl(fd, DMX_SET_PES_FILTER, &pesflt);
-  THREADS_DISALLOW();
-  if (err < 0)
-    Pike_error("seting PID failed.\n");
-
-  if((pktdata = malloc(DVB->pesbuflen[ix])) == NULL)
-    Pike_error("Internal error: can't malloc buffer.\n");
-  if(init_p2p(&DVB->p, 2048))
-    Pike_error("Internal error: repack size %d is out of range\n", 2048);
-  DVB->p.filter = 0xC0; //FIXME: 0xC0 = audio, ...
-  DVB->p.es = 1;
-  if((ix = find_free_pespos()) == -1)
-    Pike_error("Internal error: free position wasn't find.\n");
-  DVB->pesfd[ix] = fd;
-  DVB->pesid[ix] = pid;
-  DVB->pestype[ix] = ptype;
-  DVB->pespkt[ix].data = pktdata;
-  DVB->pespkt[ix].size = 0;
-  /*DVB->pesfcb[ix] = NULL;*/
-  DVB->pescnt++;
-  push_int(1);
-
-}
-
-/*! @decl int stream_detach(int pid)
- *!
- *! Purge a stream reader.
- *!
- *! @param pid
- *!   PID of stream.
- *!
- *! @seealso
- *!   @[stream_read()], @[stream_attach()]
- */
-static void f_stream_detach(INT32 args) {
-
-  unsigned int pid;
-  int i;
-
-  check_all_args("DVB.dvb->stream_detach", args, BIT_INT, 0);
-  pid = (u_short)Pike_sp[-1].u.integer;
-  Pike_sp--;
-
-  if((i = find_pid_pespos(pid)) == -1) {
-    push_int(0);
-    return;
-  }
-  
-  close(DVB->pesfd[i]);
-  DVB->pesid[i] = 0;
-  DVB->pesfd[i] = 0;
-  DVB->pescnt--;
-  free(DVB->pespkt[i].data);
-  push_int(1);
-
-}
-
-/*! @decl string|int stream_read(int pid)
- *!
- *! Read data from a stream.
- *!
- *! @param pid
- *!   PID of stream.
- *!
- *! @seealso
- *!   @[stream_attach()], @[stream_detach()]
- */
-static void f_stream_read(INT32 args) {
-
-  int i, all = 1, ret, e;
-  unsigned int pid, cnt, ix = 0;
-  char buf[MAX_DVB_READ_SIZE], *bufptr;
-
-  check_all_args("DVB.dvb->stream_read", args, BIT_INT, BIT_INT | BIT_VOID, 0);
-  pid = (u_short)Pike_sp[-1].u.integer;
-  Pike_sp--;
-  if(args > 1) {
-    all = (u_short)Pike_sp[-1].u.integer;
-    Pike_sp--;
-  }
-
-  if((i = find_pid_pespos(pid)) == -1) {
-    push_int(0);
-    return;
-  }
-
-  do {
-    e = 0;
-    THREADS_ALLOW();
-    ret = read(DVB->pesfd[i], buf + DVB->pespkt[i].size,
-	       DVB->pesbuflen[ix] - DVB->pespkt[i].size);
-    e=errno; /* check_threads_etc may effect errno */
-    THREADS_DISALLOW();
-
-    check_threads_etc();
-
-    if (ret > 0)
-      break;
-#if 0
-    if (ret == -1 && (errno == EAGAIN || errno == EINTR)) {
-      buf[0] = '\0';
-      ret = 0;
-      break;
-    }
-#endif
-  } while(ret < 1); /*while((ret==-1) && (e==EINTR));*/
-  if(DVB->pespkt[i].size) {
-    memcpy(buf, DVB->pespkt[i].data, DVB->pespkt[i].size);
-    ret += DVB->pespkt[i].size;
-    DVB->pespkt[i].size = 0;
-  }
-
-  if(ret > 0) {
-    bufptr = buf;
-    while((cnt = get_pes_filt(bufptr,ret,&DVB->p, &DVB->pespkt[i])) > 0) {
-      push_string(make_shared_binary_string((char *)DVB->pespkt[i].data,
-		    DVB->pespkt[i].size));
-      ix++;
-      bufptr += cnt;
-      ret -= cnt;
-    }
-    if(ix)
-      f_add(ix);
-    if(ret) {
-       /* some unprocessed data remain in buf */
-       DVB->pespkt[i].size = ret;
-    }
-    return;
-  }
-  push_int(0);
-
-}
-
-static void f_stream_info(INT32 args) {
-
-  check_all_args("DVB.dvb->stream_info", args, BIT_INT, 0);
-  pop_n_elems(args);
-  push_int(0);
-
-}
-
-static void f__sprintf(INT32 args) {
-
-  unsigned int n = 0, x, ix, cnt;
-
-  check_all_args("DVB.dvb->_sprintf", args, BIT_INT, BIT_MAPPING | BIT_VOID, 0);
-
-  x = Pike_sp[-args].u.integer;
-  pop_n_elems(args);
-  switch (x) {
-    case 'O':
-            n++; push_text("DVB.dvb(");
-            n++; push_text(DEMUXDEVICE);
-	    n++; push_text(": ");
-	    cnt = 0;
-	    for(ix=0; ix < MAX_PES_FD; ix++) {
-	      if(!DVB->pesfd[ix])
-		continue;
-	      n++; push_int(DVB->pesid[ix]);
-	      n++; push_text("/");
-	      n++; switch(DVB->pestype[ix]) {
-		     case DMX_PES_AUDIO: push_text("a"); break;
-		     case DMX_PES_VIDEO: push_text("v"); break;
-		     case DMX_PES_TELETEXT: push_text("t"); break;
-		     case DMX_PES_SUBTITLE: push_text("s"); break;
-		     case DMX_PES_OTHER: push_text("o"); break;
-		     default: push_text("?");
-		   }
-	      cnt++;
-	      if(cnt < DVB->pescnt) {
-		n++; push_text(",");
-	      }
-	    }
-            n++; push_text(")");
-            f_add(n);
-            return;
-     default:
-            push_int(0);
-            return;
-    }
-}
-
-
-
 /*! @endclass
  */
 
@@ -1413,37 +1579,66 @@ static void init_dvb_data(struct object *obj) {
   unsigned int i;
 
   DVB->cardn = -1;
-  for(i = 0; i < MAX_PES_FD; i++) {
-    DVB->pesfd[i] = 0;
-    DVB->pesid[i] = 0;
-    DVB->pespkt[i].data = NULL;
-    DVB->pesbuflen[i] = MAX_DVB_READ_SIZE;
-  }
-  DVB->pescnt = 0;
-  DVB->ecminfo = NULL;
+  DVB->stream = NULL;
   memset(&DVB->low_errmsg, '\0', sizeof(DVB->low_errmsg));
 }
 
+static void exit_dvb_stream(struct object *obj);
 static void exit_dvb_data(struct object *obj) {
+
+  dvb_stream_data *s;
+
+  if(DVB->cardn != -1) {
+    close(DVB->fefd);
+    s = DVB->stream;
+    while (s != NULL) {
+      s = s->next;
+      exit_dvb_stream((struct object *)s);
+    }
+  }
+}
+
+static void init_dvb_audio(struct object *obj) {
+  DVBAudio->fd = -1;
+  memset(&DVBAudio->low_errmsg, '\0', sizeof(DVBAudio->low_errmsg));
+}
+
+static void exit_dvb_audio(struct object *obj) {
+  if(DVBAudio->fd != -1)
+    close(DVBAudio->fd);
+}
+
+static void init_dvb_stream(struct object *obj) {
+
+  DVBStream->parent = NULL;
+  DVBStream->next = NULL;
+  DVBStream->fd = -1;
+  DVBStream->pid = 0;
+  DVBStream->pkt.data = NULL;
+  DVBStream->buflen = MAX_DVB_READ_SIZE;
+  DVBStream->ecminfo = NULL;
+  memset(&DVBStream->low_errmsg, '\0', sizeof(DVBStream->low_errmsg));
+}
+
+
+static void exit_dvb_stream(struct object *obj) {
 
   struct ECMINFO *e;
   unsigned int i;
 
-  if(DVB->cardn != -1) {
-    close(DVB->fefd);
-    for(i = 0; i < MAX_PES_FD; i++) {
-      if(DVB->pesfd)
-	close(DVB->pesfd[i]);
-      if(DVB->pespkt[i].data != NULL)
-        free(DVB->pespkt[i].data);
-    }
+  sl_del(DVBStream->parent, DVBStream);
+  if(DVBStream->fd != -1) {
+    close(DVBStream->fd);
+    if(DVBStream->pkt.data != NULL)
+      free(DVBStream->pkt.data);
   }
-  if(DVB->ecminfo != NULL)
+  if(DVBStream->ecminfo != NULL)
     do {
-      e = DVB->ecminfo->next;
-      free(DVB->ecminfo);
-      DVB->ecminfo = e;
+      e = DVBStream->ecminfo->next;
+      free(DVBStream->ecminfo);
+      DVBStream->ecminfo = e;
     } while (e != NULL);
+  
 }
 
 /*
@@ -1464,6 +1659,7 @@ void pike_module_init() {
   add_integer_constant("MUX_SUBTITLE", DMX_PES_SUBTITLE, 0);
   add_integer_constant("MUX_PCR", DMX_PES_PCR, 0);
   add_integer_constant("MUX_OTHER", DMX_PES_OTHER, 0);
+  add_integer_constant("MUX__RDS", _DMX_PES_RDS, 0);
 
   add_integer_constant("CA_SYSTEM_SECA", SECA_CA_SYSTEM, 0);
   add_integer_constant("CA_SYSTEM_VIACCESS", VIACCESS_CA_SYSTEM, 0);
@@ -1471,39 +1667,57 @@ void pike_module_init() {
   add_integer_constant("CA_SYSTEM_BETA", BETA_CA_SYSTEM, 0);
   add_integer_constant("CA_SYSTEM_NAGRA", NAGRA_CA_SYSTEM, 0);
 
+  /* dvb */
   start_new_program();
   ADD_STORAGE(dvb_data);
   set_init_callback(init_dvb_data);
   set_exit_callback(exit_dvb_data);
 
-  /* dvb */
-  add_function("create", f_create, "function(int|void:void)", 0);
-  add_function("_sprintf", f__sprintf, "function(int,mapping|void:mixed)", 0);
-  add_function("tune", f_zap, "function(int,int,int|string,int,mapping|void:int)", 0);
+    add_function("create", f_create, "function(int|void:void)", 0);
+    add_function("_sprintf", f__sprintf, "function(int,mapping|void:mixed)", 0);
+    add_function("tune", f_zap, "function(int,int,int|string,int,mapping|void:int)", 0);
   //add_function("set_pids", f_set_pids, "function(string,mixed:int)", 0);
-  add_function("get_pids", f_get_pids, "function(:mapping|int)", 0);
-  add_function("analyze_pat", f_parse_pat, "function(:mapping|int)", 0);
-  add_function("analyze_pmt", f_parse_pmt, "function(int,int:array|int)", 0);
-  /*end_class("dvb", 0); */
+    add_function("get_pids", f_get_pids, "function(:mapping|int)", 0);
+    add_function("analyze_pat", f_parse_pat, "function(:mapping|int)", 0);
+    add_function("analyze_pmt", f_parse_pmt, "function(int,int:array|int)", 0);
 
   /* Frontend */
-  add_function("fe_status", f_fe_status, "function(:mapping|int)", 0);
-  add_function("fe_info", f_fe_info, "function(:mapping|int)", 0);
+    add_function("fe_status", f_fe_status, "function(:mapping|int)", 0);
+    add_function("fe_info", f_fe_info, "function(:mapping|int)", 0);
 
-  /* Audio */
-  add_function("audio_mute", f_audio_mute, "function(int|void:int)", 0);
-  add_function("audio_status", f_audio_status, "function(:mapping|int)", 0);
-  add_function("audio_ctrl", f_audio_ctrl, "function(int|string:int)", 0);
-  add_function("audio_mixer", f_audio_mixer, "function(int,int|void:int)", 0);
+    add_function("stream", f_stream_attach, "function(int,function|int|void,int|void:object)", 0);
+
+  dvb_program = end_program();
+  add_program_constant("dvb", dvb_program, 0);
 
   /* PES streams */
-  add_function("stream_attach", f_stream_attach, "function(int,function|int|void,int|void:int)", 0);
-  add_function("stream_detach", f_stream_detach, "function(int:int)", 0);
-  add_function("stream_read", f_stream_read, "function(int,int|void:string|int)", 0);
-  add_function("stream_set_buffer", f_stream_set_buffer, "function(int,int:int)", 0);
-  add_function("stream_info", f_stream_info, "function(int:mapping|int)", 0);
+  start_new_program();
+  ADD_STORAGE(dvb_stream_data);
+  set_init_callback(init_dvb_stream);
+  set_exit_callback(exit_dvb_stream);
 
-  end_class("dvb", 0);
+    add_function("create", f_stream_create, "function(object,int,function|int,int:void)", 0);
+    add_function("destroy", f_stream_detach, "function(void:void)", 0);
+    add_function("read", f_stream_read, "function(int|void:string|int)", 0);
+    add_function("set_buffer", f_stream_set_buffer, "function(int:int)", 0);
+    add_function("info", f_stream_info, "function(int:mapping|int)", 0);
+
+  dvb_stream_program = end_program();
+  add_program_constant("Stream", dvb_stream_program, 0);
+
+  /* Audio */
+  start_new_program();
+  ADD_STORAGE(dvb_audio_data);
+  set_init_callback(init_dvb_audio);
+  set_exit_callback(exit_dvb_audio);
+
+    add_function("create", f_audio_create, "function(int|void:void)", 0);
+    add_function("mute", f_audio_mute, "function(int|void:int)", 0);
+    add_function("status", f_audio_status, "function(:mapping|int)", 0);
+    add_function("ctrl", f_audio_ctrl, "function(int|string:int)", 0);
+    add_function("mixer", f_audio_mixer, "function(int,int|void:int)", 0);
+
+  end_class("Audio", 0);
 
 } /* pike_module_init */
 
@@ -1519,7 +1733,7 @@ void pike_module_exit() {
 
 void pike_module_init() {
 
-  add_integer_constant("DVB support IS MISSING", 0, 0);
+  /*add_integer_constant("DVB support IS MISSING", 0, 0);*/
 }
 
 void pike_module_exit() {
