@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.169 2002/11/24 22:47:06 mast Exp $
+|| $Id: program.h,v 1.170 2002/12/01 18:39:07 mast Exp $
 */
 
 #ifndef PROGRAM_H
@@ -579,12 +579,17 @@ struct array *program_values(struct program *p);
 void program_index_no_free(struct svalue *to, struct program *p,
 			   struct svalue *ind);
 int get_small_number(char **q);
+void ext_store_program_line (struct program *prog, INT32 line, struct pike_string *file);
 void start_line_numbering(void);
 void store_linenumber(INT32 current_line, struct pike_string *current_file);
+PMOD_EXPORT struct pike_string *low_get_program_line(struct program *prog,
+						     INT32 *linep);
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 						 INT32 *linep);
 char *debug_get_program_line(struct program *prog,
 		       INT32 *linep);
+PMOD_EXPORT struct pike_string *low_get_line(PIKE_OPCODE_T *pc,
+					     struct program *prog, INT32 *linep);
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep);
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)));

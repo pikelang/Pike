@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.464 2002/12/01 00:16:55 mast Exp $
+|| $Id: program.c,v 1.465 2002/12/01 18:39:07 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.464 2002/12/01 00:16:55 mast Exp $");
+RCSID("$Id: program.c,v 1.465 2002/12/01 18:39:07 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1781,6 +1781,10 @@ void low_start_new_program(struct program *p,
 
 #define START_SIZE 64
 #define FOO(NUMTYPE,TYPE,NAME) \
+    if (Pike_compiler->new_program->NAME) {				\
+      free (Pike_compiler->new_program->NAME);				\
+      Pike_compiler->new_program->PIKE_CONCAT(num_,NAME) = 0;		\
+    }									\
     Pike_compiler->malloc_size_program->PIKE_CONCAT(num_,NAME)=START_SIZE; \
     Pike_compiler->new_program->NAME=(TYPE *)xalloc(sizeof(TYPE) * START_SIZE);
 #include "program_areas.h"
@@ -4748,6 +4752,46 @@ static void insert_small_number(INT32 a)
 #endif /* PIKE_DEBUG */
 }
 
+static void ext_insert_small_number (char **ptr, INT32 a)
+{
+  if(a>-127 && a<127)
+  {
+    *(*ptr)++ = a;
+  }else if(a>=-32768 && a<32768){
+    *(*ptr)++ = -127;
+    *(*ptr)++ = a>>8;
+    *(*ptr)++ = a;
+  }else{
+    *(*ptr)++ = -128;
+    *(*ptr)++ = a>>24;
+    *(*ptr)++ = a>>16;
+    *(*ptr)++ = a>>8;
+    *(*ptr)++ = a;
+  }
+}
+
+void ext_store_program_line (struct program *prog, INT32 line, struct pike_string *file)
+{
+  char *ptr;
+
+#ifdef PIKE_DEBUG
+  if (prog->linenumbers)
+    Pike_fatal ("Program already got linenumber info.\n");
+  if (Pike_compiler->new_program == prog)
+    Pike_fatal ("Use store_linenumber instead when the program is compiled.\n");
+#endif
+
+  ptr = prog->linenumbers = xalloc (1 + 5 + 1 + (file->len << file->size_shift) + 5 + 5);
+  *ptr++ = 127;
+  ext_insert_small_number (&ptr, file->len);
+  *ptr++ = file->size_shift;
+  MEMCPY (ptr, file->str, file->len << file->size_shift);
+  ptr += file->len << file->size_shift;
+  *ptr++ = 0;			/* PC */
+  ext_insert_small_number (&ptr, line);
+  prog->num_linenumbers = ptr - prog->linenumbers;
+}
+
 void store_linenumber(INT32 current_line, struct pike_string *current_file)
 {
 /*  if(!store_linenumbers)  Pike_fatal("Fnord.\n"); */
@@ -4844,47 +4888,52 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
   }
 }
 
+PMOD_EXPORT struct pike_string *low_get_program_line (struct program *prog,
+						      INT32 *linep)
+{
+  if (prog->linenumbers) {
+    char *cnt;
+    size_t len = 0;
+    INT32 shift = 0;
+    char *file = NULL;
+
+    cnt = prog->linenumbers;
+    if (cnt < prog->linenumbers + prog->num_linenumbers) {
+      if (*cnt == 127) {
+	cnt++;
+	len = get_small_number(&cnt);
+	shift = *cnt;
+	file = ++cnt;
+	cnt += len<<shift;
+      }
+      get_small_number(&cnt);	/* Ignore the offset */
+      *linep = get_small_number(&cnt);
+    }
+    else *linep = 0;
+
+    if (file) {
+      struct pike_string *str = begin_wide_shared_string(len, shift);
+      memcpy(str->str, file, len<<shift);
+      return end_shared_string(str);
+    }
+  }
+
+  return NULL;
+}
+
 /* Returns the file where the program is defined. The line of the
  * class start is written to linep, or 0 if the program is the top
  * level of the file. */
 PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
 						 INT32 *linep)
 {
-  char *cnt;
-  size_t len = 0;
-  INT32 shift = 0;
-  char *file = NULL;
-
-  if(prog == Pike_compiler->new_program)
-  {
-    struct pike_string *optimizer;
-    linep[0]=0;
-    MAKE_CONSTANT_SHARED_STRING(optimizer, "Optimizer");
-    return optimizer;
-  }
-
-  cnt = prog->linenumbers;
-  if (cnt < prog->linenumbers + prog->num_linenumbers) {
-    if (*cnt == 127) {
-      cnt++;
-      len = get_small_number(&cnt);
-      shift = *cnt;
-      file = ++cnt;
-      cnt += len<<shift;
-    }
-    get_small_number(&cnt);	/* Ignore the offset */
-    *linep = get_small_number(&cnt);
-  }
-  else *linep = 0;
-  if (file) {
-    struct pike_string *str = begin_wide_shared_string(len, shift);
-    memcpy(str->str, file, len<<shift);
-    return end_shared_string(str);
-  } else {
+  struct pike_string *res = low_get_program_line(prog, linep);
+  if (!res) {
     struct pike_string *dash;
     MAKE_CONSTANT_SHARED_STRING(dash, "-");
     return dash;
   }
+  return res;
 }
 
 #ifdef PIKE_DEBUG
@@ -4894,7 +4943,7 @@ PMOD_EXPORT struct pike_string *get_program_line(struct program *prog,
  * after the shared string table has expired.
  */
 char *debug_get_program_line(struct program *prog,
-		       INT32 *linep)
+			     INT32 *linep)
 {
   char *cnt;
   size_t len = 0;
@@ -4902,11 +4951,8 @@ char *debug_get_program_line(struct program *prog,
   char *file = NULL;
   static char buffer[1025];
 
-  if(prog == Pike_compiler->new_program)
-  {
-    linep[0]=0;
-    return "optimizer";
-  }
+  if (!prog->linenumbers)
+    return "stub";
 
   cnt = prog->linenumbers;
   if (cnt < prog->linenumbers + prog->num_linenumbers) {
@@ -4957,6 +5003,58 @@ void gdb_program_line (struct program *prog)
 }
 #endif
 
+PMOD_EXPORT struct pike_string *low_get_line (PIKE_OPCODE_T *pc,
+					      struct program *prog, INT32 *linep)
+{
+  linep[0] = 0;
+
+  if (prog->program && prog->linenumbers) {
+    ptrdiff_t offset = pc - prog->program;
+    if ((offset < (ptrdiff_t)prog->num_program) && (offset >= 0)) {
+      static char *file = NULL;
+      static char *cnt;
+      static INT32 off,line,pid;
+      static size_t len;
+      static INT32 shift;
+
+      if(prog->id != pid || offset < off)
+      {
+	cnt=prog->linenumbers;
+	off=line=0;
+	pid=prog->id;
+	file = 0;
+      }else{
+	if (cnt < prog->linenumbers + prog->num_linenumbers)
+	  goto fromold;
+      }
+
+      while(cnt < prog->linenumbers + prog->num_linenumbers)
+      {
+	if(*cnt == 127)
+	{
+	  cnt++;
+	  len = get_small_number(&cnt);
+	  shift = *cnt;
+	  file = ++cnt;
+	  cnt += len<<shift;
+	}
+	off+=get_small_number(&cnt);
+      fromold:
+	if(off > offset) break;
+	line+=get_small_number(&cnt);
+      }
+      linep[0]=line;
+      if (file) {
+	struct pike_string *res = begin_wide_shared_string(len, shift);
+	memcpy(res->str, file, len<<shift);
+	return end_shared_string(res);
+      }
+    }
+  }
+
+  return NULL;
+}
+
 /*
  * return the file in which we were executing. pc should be the
  * program counter (i.e. the address in prog->program), prog the
@@ -4966,72 +5064,22 @@ void gdb_program_line (struct program *prog)
 PMOD_EXPORT struct pike_string *get_line(PIKE_OPCODE_T *pc,
 					 struct program *prog, INT32 *linep)
 {
-  static char *file = NULL;
-  static char *cnt;
-  static INT32 off,line,pid;
-  static size_t len;
-  static INT32 shift;
-  ptrdiff_t offset;
-
-  linep[0] = 0;
+  struct pike_string *res;
 
   if (prog == 0) {
     struct pike_string *unknown_program;
     MAKE_CONSTANT_SHARED_STRING(unknown_program, "Unknown program");
+    linep[0] = 0;
     return unknown_program;
   }
 
-  if(prog == Pike_compiler->new_program)
-  {
-    struct pike_string *optimizer;
-    MAKE_CONSTANT_SHARED_STRING(optimizer, "Optimizer");
-    return optimizer;
-  }
-
-  offset = pc - prog->program;
-
-  if ((offset > (ptrdiff_t)prog->num_program) || (offset < 0)) {
+  res = low_get_line(pc, prog, linep);
+  if (!res) {
     struct pike_string *not_found;
     MAKE_CONSTANT_SHARED_STRING(not_found, "Line not found");
     return not_found;
   }
-
-  if(prog->id != pid || offset < off)
-  {
-    cnt=prog->linenumbers;
-    off=line=0;
-    pid=prog->id;
-    file = 0;
-  }else{
-    if (cnt < prog->linenumbers + prog->num_linenumbers)
-      goto fromold;
-  }
-
-  while(cnt < prog->linenumbers + prog->num_linenumbers)
-  {
-    if(*cnt == 127)
-    {
-      cnt++;
-      len = get_small_number(&cnt);
-      shift = *cnt;
-      file = ++cnt;
-      cnt += len<<shift;
-    }
-    off+=get_small_number(&cnt);
-  fromold:
-    if(off > offset) break;
-    line+=get_small_number(&cnt);
-  }
-  linep[0]=line;
-  if (!file) {
-    struct pike_string *not_found;
-    MAKE_CONSTANT_SHARED_STRING(not_found, "Line not found");
-    return not_found;
-  } else {
-    struct pike_string *res = begin_wide_shared_string(len, shift);
-    memcpy(res->str, file, len<<shift);
-    return end_shared_string(res);
-  }
+  return res;
 }
 
 void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
