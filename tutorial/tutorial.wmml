@@ -7712,46 +7712,6 @@ Yabu uses three types of objects, listed below:<p>
     <link  to=Yabu.transaction.rollback><tt>rollback</tt></link>.
 </ul><p>
 
-A Yabu database can operate in two basic modes:<p>
-
-<ul>
-<li> Read mode. In read mode, nothing in the database can be altered,
-     added nor deleted. All Yabu files will be opended in read mode, which
-     means that the database will be in the same state on the disk as it
-     was prior to the opening.
-<li> Write mode. In write mode, records can be altered, added or deleted. In
-     combination with create mode, new tables can also be added. Transactions
-     can optionally be used with write mode. When compressed mode is enabled,
-     all records will be compressed before stored on to disk.
-</ul>
-
-Compressed databases opened without compress mode enabled will be handled
-correctly in both modes, provided that the Gz module is available.
-However, new records will no longer be compressed in write mode.<p>
-
-Transactions make it possible to alter, add or delete several database
-records and guarantee that all changes, or no changes, will be accepted
-by the database. A transaction object is basically a table object with
-a few restrictions and additions, listed below:<p>
-
-<ul>
-<li>Purge is not available in a transaction object.
-<li>Commit. In order to make all changes take affect, commit must be
-    issued at the end of a transaction sequence. Changes done in a
-    transaction object will <i>never</i> take affect before commit,
-    even if the database is shut down, the program crashes etc.
-<li>Rollback. A rollback cancels all changes made by the transaction object.
-</ul><p>
-
-Rollbacks always succeeds. However, with commit that is not always
-the case. A commit will fail if:<p>
-
-<ul>
-<li>A record that is altered by the transaction object is altered
-    again by something else, before commit. This is called a conflict,
-    and will result in an error upon commit.
-</ul><p>
-
 A simple example is illustrated below.<p>
 
 <man_example>
@@ -7806,10 +7766,27 @@ transaction->commit();
 
 <hr noshade size=1>
 
-<section title="The db object">
+<section title="The database">
 
-The db object is used to open a Yabu database. The db object
-creates table objects.<p>
+The db object is the main Yabu database object. It is used to open
+the database and it can create table objects.<p>
+
+A Yabu database can operate in two basic modes:<p>
+
+<ul>
+<li> Read mode. In read mode, nothing in the database can be altered,
+     added nor deleted. All Yabu files will be opended in read mode, which
+     means that the database will be in the same state on the disk as it
+     was prior to the opening.
+<li> Write mode. In write mode, records can be altered, added or deleted. In
+     combination with create mode, new tables can also be added. Transactions
+     can optionally be used with write mode. When compressed mode is enabled,
+     all records will be compressed before stored on to disk.
+</ul>
+
+Compressed databases opened without compress mode enabled will be handled
+correctly in both modes, provided that the Gz module is available.
+However, new records will no longer be compressed in write mode.<p>
 
 <method name=Yabu.db-&gt;create title="Open a Yabu database">
 <man_syntax>
@@ -7948,7 +7925,7 @@ Yabu.db-&gt;sync
 
 <hr noshade size=1>
 
-<section title="The table object">
+<section title="Tables">
 
 The table object is used to store and retrieve information from
 a table. Table objects are created by the db class. A table object
@@ -8077,17 +8054,30 @@ Yabu.transaction-&gt;rollback
 
 <hr noshade size=1>
 
-<section title="The transaction object">
+<section title="Transactions">
 
-The transaction object handles transactions. Transaction objects
-are created by the table object. A transaction object can be used
-in the same way as a table object. The difference is that in order
-to make the  changes take affect, <link to=Yabu.transaction.commit>
-commit</link> must be issued. Before that, all changes will be local to
-the transaction object. Also, if a record in a transaction is altered
-before the transaction is commited, a conflict will arise upon commit.
-A transaction can be cancelled using <link to=Yabu.transaction.rollback>
-rollback</link>.
+Transactions make it possible to alter, add or delete several database
+records and guarantee that all changes, or no changes, will be accepted
+by the database. A transaction object is basically a table object with
+a few restrictions and additions, listed below:<p>
+
+<ul>
+<li>Purge is not available in a transaction object.
+<li>Commit. In order to make all changes take affect, commit must be
+    issued at the end of a transaction sequence. Changes done by a
+    transaction object will never take affect before commit,
+    even if the database is shut down, the program crashes etc.
+<li>Rollback. A rollback cancels all changes made by the transaction object.
+</ul><p>
+
+Rollbacks always succeeds. However, with commit that is not always
+the case. A commit will fail if:<p>
+
+<ul>
+<li>A record that is altered by the transaction object is altered
+    again by something else, before commit. This is called a conflict,
+    and will result in an error upon commit.
+</ul><p>
 
 <method name=Yabu.transaction-&gt;commit title="Commit a transaction">
 <man_syntax>
