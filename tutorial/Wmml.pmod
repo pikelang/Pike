@@ -1,4 +1,5 @@
 #include "types.h"
+impoert Sgml;
 
 static private int verify_any(SGML data, string in)
 {
@@ -239,7 +240,7 @@ multiset reserved_c =
   "void","while"
 >);
 
-object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
+object(Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
 {
   int p,e;
   int tabindented=-1;
@@ -273,9 +274,9 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
       
       string id=x[p..--e];
       if(reserved[id])
-	ret+=({ Sgml.Tag("ex_keyword",([]), pos+e, ({ id }) ) });
+	ret+=({ Tag("ex_keyword",([]), pos+e, ({ id }) ) });
       else
-	ret+=({ Sgml.Tag("ex_identifier",([]), pos+e, ({ id }) ) });
+	ret+=({ Tag("ex_identifier",([]), pos+e, ({ id }) ) });
       break;
     }
     
@@ -285,7 +286,7 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
       while(x[++e]!='\'')
 	if(x[e]=='\\')
 	  e++;
-      ret+=({ Sgml.Tag("ex_string",([]), pos+e, ({ x[p..e]}) ) }); 
+      ret+=({ Tag("ex_string",([]), pos+e, ({ x[p..e]}) ) }); 
       break;
       
     case '"':
@@ -294,12 +295,12 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
 	if(x[e]=='\\')
 	  e++;
       
-      ret+=({ Sgml.Tag("ex_string",([]), pos+e, ({ x[p..e] }) ) });
+      ret+=({ Tag("ex_string",([]), pos+e, ({ x[p..e] }) ) });
       break;
 
     case '\n':
       if(tabindented!=-1)
-	ret+=({ Sgml.Tag("ex_br", ([]), pos+e) });
+	ret+=({ Tag("ex_br", ([]), pos+e) });
 
       if(tabindented)
       {
@@ -320,17 +321,17 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
       while(x[e+1..e+1]=="\t")
       {
 	ret+=({
-	  Sgml.Tag("ex_indent", ([]), pos+e),
-	  Sgml.Tag("ex_indent", ([]), pos+e),
-	  Sgml.Tag("ex_indent", ([]), pos+e),
-	  Sgml.Tag("ex_indent", ([]), pos+e),
+	  Tag("ex_indent", ([]), pos+e),
+	  Tag("ex_indent", ([]), pos+e),
+	  Tag("ex_indent", ([]), pos+e),
+	  Tag("ex_indent", ([]), pos+e),
 	    });
 	e++;
       }
 
       while(x[e+1..e+2]=="  ")
       {
-	ret+=({ Sgml.Tag("ex_indent", ([]), pos+e) });
+	ret+=({ Tag("ex_indent", ([]), pos+e) });
 	e+=2;
       }
       break;
@@ -341,7 +342,7 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
 	p=e++;
 	while(x[e]!='\n') e++;
 	e--;
-	ret+=({ Sgml.Tag("ex_comment",([]), pos+e, ({ x[p..e]}) ) }); 
+	ret+=({ Tag("ex_comment",([]), pos+e, ({ x[p..e]}) ) }); 
 	break;
       }
 	
@@ -350,7 +351,7 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
 	p=e++;
 	while(x[e..e+1]!="*/") e++;
 	e++;
-	ret+=({ Sgml.Tag("ex_comment",([]), pos+e, ({ x[p..e]}) ) }); 
+	ret+=({ Tag("ex_comment",([]), pos+e, ({ x[p..e]}) ) }); 
 	break;
       }
       
@@ -361,17 +362,27 @@ object(Sgml.Tag) parse_pike_code(string x, int pos, multiset(string) reserved)
     ret+=({ "" });
   }
 
-  return Sgml.Tag("example",([]),pos,ret);
+  return Tag("example",([]),pos,ret);
 }
-
-string classbase;
 
 string name_to_link(string x)
 {
   return replace(x,({"->","-&gt;"}),({".","."}));
 }
 
-SGML make_concrete_wmml(SGML data)
+SGML metadata=({});
+
+class Wmml
+{
+  SGML metadata;
+  SGML toc_data;
+  SGML index_data;
+  SGML data;
+};
+
+SGML low_make_concrete_wmml(SGML data,
+			    string classbase,
+			    string *current)
 {
   if(!data) return 0;
   SGML ret=({});
@@ -384,37 +395,52 @@ SGML make_concrete_wmml(SGML data)
     }else{
       switch(tag->tag)
       {
-	case "include":
-	  ret+=make_concrete_wmml(Sgml.group(Sgml.lex(Stdio.read_file(tag->params->file),tag->params->file)));
+	case "head":
+	  metadata+=tag->data;
 	  continue;
 	  
+	case "include":
+	{
+	  string filename=tag->params->file;
+	  SGML tmp=group(lex(Stdio.read_file(filename),filename));
+	  ret+=low_make_concrete_wmml(tmp,classbase);
+	  continue;
+	}
+	  
+	case "section":
 	case "chapter":
 	case "preface":
 	case "introduction":
-	case "section":
-	case "table":
 	case "appendix":
+	  switch(tag->t)
+	  {
+	    tag->params->number=current*".";
+	    current[-1]=(string)(1+(int)current[-1]);
+	  }
+
+	  
+	case "table":
 	case "image":
 	case "illustration":
 	  if(tag->params->name)
 	  {
-	    TAG t=Sgml.Tag(tag->tag,
-			   tag->params,
-			   tag->pos,
-			   tag->data=make_concrete_wmml(tag->data),
-			   tag->file);
+	    TAG t=Tag(tag->tag,
+		      tag->params,
+		      tag->pos,
+		      tag->data=low_make_concrete_wmml(tag->data,
+						       current,
+						       classbase),
+		      tag->file);
 	    ret+=({
-	      Sgml.Tag("anchor",
-		       (["name":tag->params->name,"type":tag->tag]),
-		       tag->pos,
-		       ({
-			 t
-			   }))
+	      Tag("anchor",
+		  (["name":tag->params->name,"type":tag->tag]),
+		  tag->pos,
+		  ({ t }))
 		});
 	    continue;
 	  }
 	  break;
-
+	  
 	case "class":
 	case "module":
 	{
@@ -426,13 +452,13 @@ SGML make_concrete_wmml(SGML data)
 	    classbase+="."+tag->params->name;
 	  }
 	  ret+=({
-	    Sgml.Tag("anchor",(["name":classbase,"type":tag->tag]),tag->pos,
-		make_concrete_wmml(tag->data))
-	  });
+	    Tag("anchor",(["name":classbase,"type":tag->tag]),tag->pos,
+		low_make_concrete_wmml(tag->data))
+	      });
 	  classbase=tmp;
 	  continue;
 	}
-
+	
 	case "man_syntax":
 	case "man_example":
 	case "man_nb":
@@ -448,20 +474,20 @@ SGML make_concrete_wmml(SGML data)
 	    case "nb": title="nota bene"; break;
 	    case "syntax":
 	    case "example":
-	      args=({Sgml.Tag("tt",([]),tag->pos,tag->data)});
+	      args=({Tag("tt",([]),tag->pos,tag->data)});
 	      break;
 
 	    case "see":
 	    {
 	      title="see also";
 	      SGML tmp=({});
-	      foreach(replace(Sgml.get_text(args),({" ","\n"}),({"",""}))/",",string name)
+	      foreach(replace(get_text(args),({" ","\n"}),({"",""}))/",",string name)
 		{
 		  tmp+=({
-		    Sgml.Tag("link",(["to":name_to_link(name)]),tag->pos,
-			     ({
-			       Sgml.Tag("tt",([]),tag->pos,({name})),
-				 })),
+		    Tag("link",(["to":name_to_link(name)]),tag->pos,
+			({
+			  Tag("tt",([]),tag->pos,({name})),
+			    })),
 		      ", "
 			});
 		}
@@ -474,9 +500,9 @@ SGML make_concrete_wmml(SGML data)
 	    }
 	  }
 	  title=upper_case(title);
-	  ret+=make_concrete_wmml(
+	  ret+=low_make_concrete_wmml(
 	    ({
-	    Sgml.Tag("man_title",(["title":title]),tag->pos,args),
+	    Tag("man_title",(["title":title]),tag->pos,args),
 	      }));
 	  continue;
 	}
@@ -494,30 +520,30 @@ SGML make_concrete_wmml(SGML data)
 	      fullname=classbase+"."+tag->params->name;
 	      break;
 	  }
-	  ret+=make_concrete_wmml(({
-	    Sgml.Tag("anchor",(["name":name_to_link(fullname),
+	  ret+=low_make_concrete_wmml(({
+	    Tag("anchor",(["name":name_to_link(fullname),
 	    "type":"method",]),tag->pos,
-		     ({
-		       Sgml.Tag("dl",([]),tag->pos,
-				  ({
-				    Sgml.Tag("man_title",(["title":upper_case(tag->tag)]),tag->pos,
-					     ({
-					       Sgml.Tag("tt",([]),tag->pos,({fullname})),
-						 " - ",
-						   tag->params->title,
-						   })
-					     )
+		({
+		  Tag("dl",([]),tag->pos,
+		      ({
+			Tag("man_title",(["title":upper_case(tag->tag)]),tag->pos,
+			    ({
+			      Tag("tt",([]),tag->pos,({fullname})),
+				" - ",
+				  tag->params->title,
 				  })
-				  +
-				  tag->data
-			 )
-		     })),
+			  )
+			  })
+		      +
+		      tag->data
+		    )
+		    })),
 	      "\n",
-	      Sgml.Tag("hr"),
-	  }));
+		Tag("hr"),
+		}));
 	  continue;
 	}
-	  
+	
 	case "example":
 	  switch(tag->params->language)
 	  {
@@ -534,11 +560,11 @@ SGML make_concrete_wmml(SGML data)
 	      continue;
 	  }
       }
-      ret+=({Sgml.Tag(tag->tag,
-		      tag->params,
-		      tag->pos,
-		      make_concrete_wmml(tag->data),
-		      tag->file)});
+      ret+=({Tag(tag->tag,
+		 tag->params,
+		 tag->pos,
+		 low_make_concrete_wmml(tag->data),
+		 tag->file)});
     }
   }
   return ret;
@@ -708,7 +734,7 @@ static private SGML low_collect_toc(mixed *data,
 	  t->params->number=prefix+(string)current[-1];
 	  
 	  ret+=({
-	    Sgml.Tag("section_toc",
+	    Tag("section_toc",
 		     t->params,
 		     t->pos,
 		     low_collect_toc(t->data,
@@ -724,7 +750,7 @@ static private SGML low_collect_toc(mixed *data,
 	  t->params->number=(string)chapters;
 
 	  ret+=({
-	    Sgml.Tag("chapter_toc",
+	    Tag("chapter_toc",
 		     t->params,
 		     t->pos,
 		     low_collect_toc(t->data,
@@ -741,7 +767,7 @@ static private SGML low_collect_toc(mixed *data,
 	  t->params->number=sprintf("%c",appendices);
 	  
 	  ret+=({
-	    Sgml.Tag("appendix_toc",
+	    Tag("appendix_toc",
 		     t->params,
 		     t->pos,
 		     low_collect_toc(t->data,
@@ -758,7 +784,7 @@ static private SGML low_collect_toc(mixed *data,
 	  t->params->number="preface";
 	  
 	  ret+=({
-	    Sgml.Tag("preface_toc",
+	    Tag("preface_toc",
 		     t->params,
 		     t->pos,
 		     low_collect_toc(t->data,
@@ -774,7 +800,7 @@ static private SGML low_collect_toc(mixed *data,
 	  t->params->number="introduction";
 	  
 	  ret+=({
-	    Sgml.Tag("introduction_toc",
+	    Tag("introduction_toc",
 		     t->params,
 		     t->pos,
 		     low_collect_toc(t->data,
@@ -787,7 +813,7 @@ static private SGML low_collect_toc(mixed *data,
 	case "table-of-contents":
 	  t->params->number=t->tag;
 	  ret+=({
-	    Sgml.Tag(t->tag+"_toc",
+	    Tag(t->tag+"_toc",
 		     t->params,
 		     t->pos)
 	      });
