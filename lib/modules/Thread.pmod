@@ -585,10 +585,7 @@ class Mutex
 	  error ("Deadlock detected.\n");
 	break;
       case 2:
-	if (locks) {
-	  locks++;
-	  return 0;
-	}
+	if (locks) return 0;
     }
     locks++;
     return MutexKey (dec_locks);
