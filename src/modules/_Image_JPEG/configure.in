@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.8 2001/02/13 15:44:17 mirar Exp $
+# $Id: configure.in,v 1.9 2002/10/04 15:07:59 grubba Exp $
 #
 AC_INIT(image_jpeg.c)
 AC_CONFIG_HEADER(config.h)
@@ -17,7 +17,28 @@ if test x$with_jpeglib = xyes ; then
       AC_DEFINE(HAVE_LIBJPEG) 
       LIBS="${LIBS-} -ljpeg"
       PIKE_FEATURE_OK(Image.JPEG)
+
+      AC_MSG_CHECKING(for JERR_BAD_CROP_SPEC)
+      AC_CACHE_VAL(pike_cv_jpeg_jerr_bad_crop_spec, [
+        AC_TRY_COMPILE([
+#include <jerror.h>
+int main(int argc, char **argv)
+{
+  int err = JERR_BAD_CROP_SPEC;
+  exit(0);
+}
+        ], [])
       ])
+      if test "x$pike_cv_jpeg_jerr_bad_crop_spec" = "xyes"; then
+        AC_MSG_RESULT(yes)
+	AC_DEFINE(HAVE_JERR_BAD_CROP_SPEC)
+      else
+        AC_MSG_RESULT(no)
+      fi
+      AC_CHECK_LIB(jpeg, jcopy_sample_rows)
+      AC_CHECK_LIB(jpeg, jcopy_block_row)
+      AC_CHECK_LIB(jpeg, jzero_far)
+    ])
   fi
 fi
 

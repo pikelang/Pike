@@ -1,6 +1,16 @@
 /*
- * $Id: transupp.c,v 1.2 2002/10/04 11:36:10 norrby Exp $
+ * $Id: transupp.c,v 1.3 2002/10/04 15:07:59 grubba Exp $
  */
+
+#include "global.h"
+
+#include "config.h"
+
+#if !defined(HAVE_LIBJPEG)
+#undef HAVE_JPEGLIB_H
+#endif
+
+#ifdef HAVE_JPEGLIB_H
 
 /*
  * transupp.c
@@ -29,6 +39,10 @@
 #include "transupp.h"		/* My own external interface */
 #include <ctype.h>		/* to declare isdigit() */
 
+#ifndef HAVE_JERR_BAD_CROP_SPEC
+#define JERR_BAD_CROP_SPEC	JERR_BAD_LENGTH
+#endif /* !HAVE_JERR_BAD_CROP_SPEC */
+
 #if TRANSFORMS_SUPPORTED
 
 /* implementation ripped from jutils.c */
@@ -43,6 +57,8 @@
 #endif
 #endif
 
+
+#ifndef HAVE_JCOPY_SAMPLE_ROWS
 
 GLOBAL(void)
 jcopy_sample_rows (JSAMPARRAY input_array, int source_row,
@@ -77,6 +93,8 @@ jcopy_sample_rows (JSAMPARRAY input_array, int source_row,
   }
 }
 
+#endif /* !HAVE_JCOPY_SAMPLE_ROWS */
+#ifndef HAVE_JCOPY_BLOCK_ROW
 
 GLOBAL(void)
 jcopy_block_row (JBLOCKROW input_row, JBLOCKROW output_row,
@@ -97,6 +115,8 @@ jcopy_block_row (JBLOCKROW input_row, JBLOCKROW output_row,
 #endif
 }
 
+#endif /* !HAVE_JCOPY_BLOCK_ROW */
+#ifndef HAVE_JZERO_FAR
 
 GLOBAL(void)
 jzero_far (void FAR * target, size_t bytestozero)
@@ -115,6 +135,7 @@ jzero_far (void FAR * target, size_t bytestozero)
 #endif
 }
 
+#endif /* !HAVE_JZERO_FAR */
 
 /*
  * Lossless image transformation routines.  These routines work on DCT
@@ -1569,3 +1590,5 @@ jcopy_markers_execute (j_decompress_ptr srcinfo, j_compress_ptr dstinfo,
 #endif
   }
 }
+
+#endif /* HAVE_JPEGLIB_H */
