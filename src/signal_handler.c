@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.198 2002/02/08 15:40:51 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.199 2002/04/16 09:56:17 mast Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -3213,7 +3213,7 @@ static void f_kill(INT32 args)
 {
   int signum;
   int pid;
-  int res;
+  int res, save_errno;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -3246,18 +3246,20 @@ static void f_kill(INT32 args)
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
+  save_errno = errno;
   THREADS_DISALLOW_UID();
 
   check_signals(0,0,0);
   pop_n_elems(args);
   push_int(res);
+  errno = save_errno;
 }
 
 static void f_pid_status_kill(INT32 args)
 {
   int pid = THIS->pid;
   INT_TYPE signum;
-  int res;
+  int res, save_errno;
 
 #ifdef PIKE_SECURITY
   if(!CHECK_SECURITY(SECURITY_BIT_SECURITY))
@@ -3276,11 +3278,13 @@ static void f_pid_status_kill(INT32 args)
 
   THREADS_ALLOW_UID();
   res = !kill(pid, signum);
+  save_errno = errno;
   THREADS_DISALLOW_UID();
 
   check_signals(0,0,0);
   pop_n_elems(args);
   push_int(args);
+  errno = save_errno;
 }
 
 #else
