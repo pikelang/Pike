@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.23 2003/11/21 16:17:56 grubba Exp $
+dnl $Id: testsuite.in,v 1.24 2004/03/15 22:14:52 nilsson Exp $
 
 dnl - Array
 
@@ -648,6 +648,11 @@ test_eq( Int.parity(3), 0 )
 test_eq( Int.parity(4), 1 )
 test_eq( Int.parity(6), 0 )
 test_eq( Int.parity(7), 1 )
+
+test_eq( Int.swap_word(array_sscanf("\1\2", "%2c")[0]),
+         array_sscanf("\2\1", "%2c")[0])
+test_eq( Int.swap_long(array_sscanf("\1\2\3\4", "%4c")[0]),
+         array_sscanf("\4\3\2\1", "%4c")[0])
 
 dnl - Mapping
 dnl Mapping.delete
