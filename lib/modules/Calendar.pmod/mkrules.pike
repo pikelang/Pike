@@ -10,7 +10,7 @@
 // and zic(8) is the usual compiler.
 
 // pike mkrules.pike ../data/{africa,antarctica,asia,australasia,backward,etcetera,europe,northamerica,pacificnew,southamerica,systemv}
-// $Id: mkrules.pike,v 1.5 2000/10/21 06:28:15 nilsson Exp $
+// $Id: mkrules.pike,v 1.6 2000/11/08 22:38:41 hubbe Exp $
 
 #pike __REAL_VERSION__
 
@@ -202,11 +202,11 @@ class Shift
 
       yjd=y1->julian_day();
       leap=y1->leap_year();
-      int d1=LDAYL(d1,wd);
+      d1=LDAYL(d1,wd);
 
       yjd=y2->julian_day();
       leap=y2->leap_year();
-      int d2=FIX_L(d2);
+      d2=FIX_L(d2);
 
       return d1==d2;
    }
