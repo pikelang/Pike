@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.214 2001/03/10 12:57:25 mirar Exp $");
+RCSID("$Id: file.c,v 1.215 2001/06/25 12:34:58 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1575,6 +1575,39 @@ static void file_open(INT32 args)
   push_int(fd>=0);
 }
 
+#ifdef HAVE_FSYNC
+/*! @decl int(0..1) sync()
+ *!
+ *!   Flush buffers to disk.
+ *!
+ *! @returns
+ *!
+ *!   Returns @tt{0@} (zero) and sets errno on failure.
+ *!
+ *!   Returns @tt{1@} on success.
+ */
+void file_sync(INT32 args)
+{
+  int ret;
+
+  if(FD < 0)
+    Pike_error("File not open.\n");
+
+  pop_n_elems(args);
+
+  do {
+    ret = fsync(FD);
+  } while ((ret < 0) && (errno == EINTR));
+
+  if (ret < 0) {
+    ERRNO = errno;
+    push_int(0);
+  } else {
+    push_int(1);
+  }
+}
+#endif /* HAVE_FSYNC */
+
 /*! @decl int seek(int pos)
  *! @decl int seek(int unit, int mult)
  *! @decl int seek(int unit, int mult, int add)
@@ -2075,7 +2108,11 @@ retry_connect:
 /*    fprintf(stderr,"errno=%d (%d)\n",errno,EWOULDBLOCK); */
     SP_DEBUG((stderr, "my_socketpair:fd_connect() failed, errno:%d (%d)\n",
 	      errno, EWOULDBLOCK));
-    if(errno != EWOULDBLOCK)
+    if((errno != EWOULDBLOCK)
+#ifdef WSAEWOULDBLOCK
+       && (errno != WSAEWOULDBLOCK)
+#endif /* WSAEWOULDBLOCK */
+       )
     {
       int tmp2;
       for(tmp2=0;tmp2<20;tmp2++)
@@ -2527,6 +2564,19 @@ static void file_set_keepalive(INT32 args)
 /*! @decl int(0..1) connect(string dest_addr, int dest_port)
  *! @decl int(0..1) connect(string dest_addr, int dest_port, @
  *!                         string src_addr, int src_port)
+ *!
+ *!   Open a TCP/IP connection to the specified destination.
+ *!
+ *!   In nonblocking mode, success is indicated with the write-callback,
+ *!   and failure with the close-callback or the read_oob-callback.
+ *!
+ *! @returns
+ *!   Returns @tt{1@} on success, and @tt{0@} on failure.
+ *!
+ *! @note
+ *!   In nonblocking mode @tt{0@} (zero) may be returned and @[errno()] set to
+ *!   @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
+ *!   as a connection failure.
  */
 static void file_connect(INT32 args)
 {
