@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.150 2000/10/01 08:51:53 hubbe Exp $");
+RCSID("$Id: object.c,v 1.151 2000/10/25 21:55:32 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -161,17 +161,20 @@ struct object *low_clone(struct program *p)
   LOW_PUSH_FRAME(O); \
   add_ref(pike_frame->current_object)
 
-#define SET_FRAME_CONTEXT(X)						\
-  if(pike_frame->context.prog) free_program(pike_frame->context.prog);		\
-  pike_frame->context=(X);							\
-  add_ref(pike_frame->context.prog);						\
-  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset;	\
+/* Note: there could be a problem with programs without functions */
+#define SET_FRAME_CONTEXT(X)						     \
+  if(pike_frame->context.prog) free_program(pike_frame->context.prog);	     \
+  pike_frame->context=(X);						     \
+  pike_frame->fun=pike_frame->context.identifier_level;                      \
+  add_ref(pike_frame->context.prog);					     \
+  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset; \
   pike_frame->context.parent=0;
   
 
-#define LOW_SET_FRAME_CONTEXT(X)						\
-  pike_frame->context=(X);							\
-  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset;	\
+#define LOW_SET_FRAME_CONTEXT(X)					     \
+  pike_frame->context=(X);						     \
+  pike_frame->fun=pike_frame->context.identifier_level;			     \
+  pike_frame->current_storage=o->storage+pike_frame->context.storage_offset; \
   pike_frame->context.parent=0;
 
 #define LOW_UNSET_FRAME_CONTEXT()		\

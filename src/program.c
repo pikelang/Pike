@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.277 2000/10/20 21:35:50 grubba Exp $");
+RCSID("$Id: program.c,v 1.278 2000/10/25 21:55:33 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -52,9 +52,27 @@ RCSID("$Id: program.c,v 1.277 2000/10/20 21:35:50 grubba Exp $");
 #endif /* COMPILER_DEBUG */
 
 /*
- * Define the size of the cache that is used for method lookup.
+ * These two values should probably be fine-tuned, but doing so
+ * more or less requires running a predictable 'typical' application
+ * and testing different hashsizes and tresholds. I tried to do it
+ * mathematically by measuring the extremes (no cache hits, 100%
+ * cache hits etc.) but it seems that the processor cache becomes
+ * exhausted in some of my measurements, which renders my mathematical
+ * model useless.
+ *
+ * Further measurements seems to indicate that this cache can slow
+ * things down a bit if the hit/miss rate is not fairly high.
+ * For normal applications, the hitrate is most likely well over 90%,
+ * but that should be verified.
+ * - Holistiska Centralbyr}n (Hubbe)
  */
-#define FIND_FUNCTION_HASHSIZE 4711
+
+/* Define the size of the cache that is used for method lookup. */
+/* A value of zero disables this cache */
+#define FIND_FUNCTION_HASHSIZE 15013
+
+/* Programs with less methods will not use the cache for method lookups.. */
+#define FIND_FUNCTION_HASH_TRESHOLD 9
 
 
 #define DECLARE
@@ -2916,13 +2934,15 @@ int find_shared_string_identifier(struct pike_string *name,
   }
 #endif /* PIKE_DEBUG */
 #ifdef FIND_FUNCTION_HASHSIZE
-  if(prog -> flags & PROGRAM_FIXED)
+  if(prog -> flags & PROGRAM_FIXED
+#if FIND_FUNCTION_HASH_TRESHOLD - 0
+     && prog->num_identifier_index >= FIND_FUNCTION_HASH_TRESHOLD
+#endif
+    )
   {
     size_t hashval;
     hashval = my_hash_string(name);
     hashval += prog->id;
-    hashval ^= (size_t)prog;
-    hashval -= name->str[0];
     hashval %= FIND_FUNCTION_HASHSIZE;
     if(is_same_string(cache[hashval].name,name) &&
        cache[hashval].id==prog->id)
@@ -4424,6 +4444,9 @@ PMOD_EXPORT void *parent_storage(int depth)
       error("Cannot access parent of destructed object.\n");
     }
   }
+
+  if(Pike_fp->fun == -1)
+    error("Cannot access parent storage!\n");
 
   loc.parent_identifier=Pike_fp->fun;
   loc.inherit=INHERIT_FROM_INT(p, Pike_fp->fun);
