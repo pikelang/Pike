@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.11 1999/05/03 21:16:08 mirar Exp $ */
+/* $Id: bmp.c,v 1.12 1999/05/06 22:29:20 neotron Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.11 1999/05/03 21:16:08 mirar Exp $
+**!	$Id: bmp.c,v 1.12 1999/05/06 22:29:20 neotron Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.11 1999/05/03 21:16:08 mirar Exp $");
+RCSID("$Id: bmp.c,v 1.12 1999/05/06 22:29:20 neotron Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -799,6 +799,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       s+=2;
 	    }
    done_rle8:
+	    ;
 	 }
 	 else
 	 {
@@ -914,7 +915,8 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	       }
 	       s+=2;
 	    }
-   done_rle4:
+	 done_rle4:
+	    ;
 	 }
 	 else
 	 {
