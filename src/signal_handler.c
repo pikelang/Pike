@@ -448,7 +448,7 @@ void init_signals()
   for(e=0;e<MAX_SIGNALS;e++)
     signal_callbacks[e].type=T_INT;
 
-  firstsig=lastsig=sigbuf[0];
+  firstsig=lastsig=0;
 
   add_efun("signal",f_signal,"function(int,mixed|void:void)",OPT_SIDE_EFFECT);
   add_efun("kill",f_kill,"function(int,int:int)",OPT_SIDE_EFFECT);
