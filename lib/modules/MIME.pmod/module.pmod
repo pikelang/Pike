@@ -3,7 +3,59 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod,v 1.2 2002/11/24 22:07:43 jhs Exp $
+// $Id: module.pmod,v 1.3 2002/11/25 15:35:56 marcus Exp $
+
+
+//! RFC1521, the @b{Multipurpose Internet Mail Extensions@} memo, defines a
+//! structure which is the base for all messages read and written by
+//! modern mail and news programs.  It is also partly the base for the
+//! HTTP protocol.  Just like RFC822, MIME declares that a message should
+//! consist of two entities, the headers and the body.  In addition, the
+//! following properties are given to these two entities:
+//!
+//! @dl
+//!  @item Headers
+//!  @ul
+//!   @item
+//!     A MIME-Version header must be present to signal MIME compatibility
+//!   @item
+//!     A Content-Type header should be present to describe the nature of
+//!     the data in the message body.  Seven major types are defined, and an
+//!     extensive number of subtypes are available.  The header can also
+//!     contain attributes specific to the type and subtype.
+//!   @item
+//!     A Content-Transfer-Encoding may be present to notify that the data
+//!     of the body is encoded in some particular encoding.
+//!  @endul
+//!  @item Body
+//!  @ul
+//!   @item
+//!     Raw data to be interpreted according to the Content-Type header
+//!   @item
+//!     Can be encoded using one of several Content-Transfer-Encodings to
+//!     allow transport over non 8bit clean channels
+//!  @endul
+//! @enddl
+//!
+//! The MIME module can extract and analyze these two entities from a stream
+//! of bytes.  It can also recreate such a stream from these entities.
+//! To encapsulate the headers and body entities, the class @[MIME.Message] is
+//! used.  An object of this class holds all the headers as a mapping from
+//! string to string, and it is possible to obtain the body data in either
+//! raw or encoded form as a string.  Common attributes such as message type
+//! and text char set are also extracted into separate variables for easy
+//! access.
+//!
+//! The Message class does not make any interpretation of the body data,
+//! unless the content type is @tt{multipart@}.  A multipart message
+//! contains several individual messages separated by boundary strings.
+//! The @tt{create@} method of the Message class will divide a multipart
+//! body on these boundaries, and then create individual Message objects
+//! for each part.  These objects will be collected in the array
+//! @tt{body_parts@} within the original Message object.  If any of the new
+//! Message objects have a body of type multipart, the process is of course
+//! repeated recursively.
+
 
 #pike __REAL_VERSION__
 inherit ___MIME;
@@ -182,7 +234,14 @@ static string remap(array(string) item)
     return item[0];
 }
 
-/* Convenience functions for decode/encode_word */
+//! Separates a header value containing @i{text@} into units and calls
+//! @[MIME.decode_word()] on them.  The result is an array where each element
+//! is a result from @tt{decode_word()@}.
+//!
+//! @seealso
+//! @[MIME.decode_words_tokenized]
+//! @[MIME.decode_words_text_remapped]
+//!
 array(array(string)) decode_words_text( string txt )
 {
   object r = Regexp("^((.*)[ \t\n\r]|)(=\\?[^\1- ?]*\\?[^\1- ?]*\\?"
@@ -200,11 +259,31 @@ array(array(string)) decode_words_text( string txt )
   return (sizeof(txt)? ({ ({ txt, 0 }) }) : ({ })) + res;
 }
 
+//! Like @[MIME.decode_words_text()], but the extracted strings are
+//! also remapped from their specified character encoding into UNICODE,
+//! and then pasted together.  The result is thus a string in the original
+//! text format, without RFC1522 escapes, and with all characters in UNICODE
+//! encoding.
+//!
+//! @seealso
+//! @[MIME.decode_words_tokenized_remapped]
+//!
 string decode_words_text_remapped( string txt )
 {
   return Array.map(decode_words_text(txt), remap)*"";
 }
 
+//! Tokenizes a header value just like @[MIME.tokenize()], but also converts
+//! encoded words using @[MIME.decode_word()].  The result is an array where
+//! each element is either an @tt{int@} representing a special character,
+//! or an array as returned by @tt{decode_word()@} representing an atom or
+//! a quoted string.
+//!
+//! @seealso
+//! @[MIME.decode_words_tokenized_labled]
+//! @[MIME.decode_words_tokenized_remapped]
+//! @[MIME.decode_words_text]
+//!
 array(array(string)|int) decode_words_tokenized( string phrase )
 {
   return Array.map(tokenize(phrase),
@@ -213,6 +292,15 @@ array(array(string)|int) decode_words_tokenized( string phrase )
 		   });
 }
 
+//! Like @[MIME.decode_words_tokenized()], but the extracted atoms are
+//! also remapped from their specified character encoding into UNICODE.
+//! The result is thus identical to that of @[MIME.tokenize()], but
+//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//!
+//! @seealso
+//! @[MIME.decode_words_tokenized_labled_remapped]
+//! @[MIME.decode_words_text_remapped]
+//!
 array(string|int) decode_words_tokenized_remapped( string phrase )
 {
   return Array.map(decode_words_tokenized(phrase),
@@ -221,6 +309,29 @@ array(string|int) decode_words_tokenized_remapped( string phrase )
 		   });
 }
 
+//! Tokenizes and labels a header value just like @[MIME.tokenize_labled()],
+//! but also converts encoded words using @[MIME.decode_word()].  The result
+//! is an array where each element is an array of two or more elements, the
+//! first being the label.  The rest of the array depends on the label:
+//!
+//! @string
+//!   @value "special"
+//!     One additional element, containing the character code for the special
+//!     character as an @tt{int@}.
+//!   @value "word"
+//!     Two additional elements, the first being the word, and the second
+//!     being the character set of this word (or 0 if it did not originate
+//!     from an encoded word).
+//!   @value "domain-literal"
+//!     One additional element, containing the domain literal as a string.
+//!   @value "comment"
+//!     One additional element, containing an array as returned by
+//!     @[MIME.decode_words_text()].
+//! @endstring
+//!
+//! @seealso
+//! @[MIME.decode_words_tokenized_labled_remapped]
+//!
 array(array(string|int|array(array(string))))
   decode_words_tokenized_labled( string phrase )
 {
@@ -239,6 +350,11 @@ array(array(string|int|array(array(string))))
 		    });
 }
 
+//! Like @[MIME.decode_words_tokenized_labled()], but the extracted words are
+//! also remapped from their specified character encoding into UNICODE.
+//! The result is identical to that of @[MIME.tokenize_labled()], but
+//! without RFC1522 escapes, and with all characters in UNICODE encoding.
+//!
 array(array(string|int))
   decode_words_tokenized_labled_remapped(string phrase)
 {
@@ -255,11 +371,31 @@ array(array(string|int))
 		   });
 }
 
+//! The inverse of @[decode_words_text()], this function accepts
+//! an array of strings or pairs of strings which will each be encoded
+//! by @[encode_word()], after which they are all pasted together.
+//!
+//! @param encoding
+//!   Either @tt{"base64"@} or @tt{"quoted-printable"@}
+//!  (or either @tt{"b"@} or @tt{"q"@} for short).
+//!
 string encode_words_text(array(string|array(string)) phrase, string encoding)
 {
   return Array.map(phrase, encode_word, encoding)*" ";
 }
 
+//! The inverse of @[decode_words_tokenized()], this functions accepts
+//! an array like the argument to @[quote()], but instead of simple strings
+//! for atoms and quoted-strings, it will also accept pairs of strings to
+//! be passed to @[encode_word()].
+//!
+//! @param encoding
+//!   Either @tt{"base64"@} or @tt{"quoted-printable"@}
+//!  (or either @tt{"b"@} or @tt{"q"@} for short).
+//!
+//! @seealso
+//!   @[MIME.encode_words_quoted_labled()]
+//!
 string encode_words_quoted(array(array(string)|int) phrase, string encoding)
 {
   return quote(Array.map(phrase, lambda(array(string)|int item) {
@@ -268,6 +404,21 @@ string encode_words_quoted(array(array(string)|int) phrase, string encoding)
 				 }));
 }
 
+//! The inverse of @[decode_words_tokenized_labled()], this functions accepts
+//! an array like the argument to @[quote_labled()], but "word" labled
+//! elements can optionally contain an additional string element specifying
+//! a character set, in which case an encoded-word will be used.  Also, the
+//! format for "comment" labled elements is entirely different; instead of
+//! a single string, an array of strings or pairs like the first argument to
+//! @[encode_words_text()] is expected.
+//!
+//! @param encoding
+//!   Either @tt{"base64"@} or @tt{"quoted-printable"@}
+//!  (or either @tt{"b"@} or @tt{"q"@} for short).
+//!
+//! @seealso
+//!   @[MIME.encode_words_quoted()]
+//!
 string encode_words_quoted_labled(array(array(string|int|array(string|array(string)))) phrase, string encoding)
 {
   return
