@@ -2,7 +2,9 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 #include <fcntl.h>
 #include <ctype.h>
 #include <string.h>

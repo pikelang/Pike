@@ -556,7 +556,8 @@ else
 fi
 echo "$ac_t""$CPP" 1>&6
 
-for ac_hdr in syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h netinet/in.h
+for ac_hdr in syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
+	netinet/in.h sys/mman.h
 do
 ac_safe=`echo "$ac_hdr" | tr './\055' '___'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -564,7 +565,7 @@ if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 568 "configure"
+#line 569 "configure"
 #include "confdefs.h"
 #include <$ac_hdr>
 EOF
@@ -600,7 +601,7 @@ if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 604 "configure"
+#line 605 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char $ac_func(); below.  */
@@ -654,7 +655,7 @@ if eval "test \"`echo '$''{'lpc_cv_timezone'+set}'`\" = set"; then
 else
   
 cat > conftest.$ac_ext <<EOF
-#line 658 "configure"
+#line 659 "configure"
 #include "confdefs.h"
 
 #include <time.h>
