@@ -2,13 +2,13 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: unicode_module.cmod,v 1.8 2003/08/08 19:14:36 jhs Exp $
+|| $Id: unicode_module.cmod,v 1.9 2003/08/08 19:56:15 jhs Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: unicode_module.cmod,v 1.8 2003/08/08 19:14:36 jhs Exp $");
+RCSID("$Id: unicode_module.cmod,v 1.9 2003/08/08 19:56:15 jhs Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -146,10 +146,17 @@ PIKEFUN string normalize( string s, string flags )
 }
 
 /*! @decl int is_wordchar(int c)
- *! Returns 2 for CJK single-word characters, 1 for normal characters
- *! that may be part of a word (such as letters and digits) and 0 for
- *! all other characters (control characters, whitespace, punctuation
- *! and so on).
+ *! Returns whether a unicode character @[c] is a word, part of a word or not.
+ *! @returns
+ *!   @int
+ *!     @value 2
+ *!       The character is an ideograph (a CJK single-word character)
+ *!     @value 1
+ *!       The character is a letter, number or non-spacing mark, as defined by
+ *!       its unicode (general category) specification
+ *!     @value 0
+ *!       Any other character (such as symbols, punctuation and separators)
+ *!   @endint
  */
 PIKEFUN int is_wordchar( int c )
 {
