@@ -1619,8 +1619,12 @@ void main(int argc, array argv)
   }
   if( source_dir[0] != '/' )
     source_dir = combine_path( getcwd(), source_dir );
+  if (source_dir[-1] != '/')
+    source_dir += "/";
   if( !strlen(destination_dir) || destination_dir[0] != '/' )
     destination_dir = combine_path( getcwd(), destination_dir );
+  if (destination_dir[-1] != '/')
+    destination_dir += "/";
 
   if(!output)
   {
