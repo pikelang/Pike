@@ -1,12 +1,12 @@
 /*
- * $Id: image_ttf.c,v 1.26 2000/01/17 16:33:41 grubba Exp $
+ * $Id: image_ttf.c,v 1.27 2000/02/05 04:37:53 per Exp $
  */
 
 #include "config.h"
 
 
 #include "global.h"
-RCSID("$Id: image_ttf.c,v 1.26 2000/01/17 16:33:41 grubba Exp $");
+RCSID("$Id: image_ttf.c,v 1.27 2000/02/05 04:37:53 per Exp $");
 
 #ifdef HAVE_LIBTTF
 #if defined(HAVE_FREETYPE_FREETYPE_H) && defined(HAVE_FREETYPE_FTXKERN_H)
@@ -40,7 +40,7 @@ RCSID("$Id: image_ttf.c,v 1.26 2000/01/17 16:33:41 grubba Exp $");
 #ifdef DYNAMIC_MODULE
 static struct program *image_program=NULL;
 #else
-extern struct program *image_program; 
+extern struct program *image_program;
 /* Image module is probably linked static too. */
 #endif
 
@@ -57,8 +57,8 @@ static struct pike_string *param_quality;
 **! module Image
 **! submodule TTF
 **!
-**!	This module adds TTF (Truetype font) capability   
-**!	to the Image module.    
+**!	This module adds TTF (Truetype font) capability
+**!	to the Image module.
 **!
 **! note
 **!	This module needs the <tt>libttf</tt> "Freetype" library
@@ -256,7 +256,7 @@ static void image_ttf_make(INT32 args)
 
 /*
 **! class Face
-**!	
+**!
 **!	This represents instances of TTF Faces.
 */
 
@@ -285,7 +285,7 @@ static void image_ttf_faceinstance_exit()
 **!	The most interesting item to look at may be
 **!	<tt>->num_Faces</tt>, which describes the number of faces
 **!	in a <tt>.TTC</tt> font collection.
-**! 
+**!
 **! returns a mapping of a lot of properties
 */
 
@@ -298,7 +298,7 @@ static void image_ttf_face_properties(INT32 args)
 
    res=TT_Get_Face_Properties(THISf->face,&prop);
    if (res) my_tt_error("Image.TTF.Face->properties()","",res);
-   
+
    push_text("num_Glyphs");   push_int(prop.num_Glyphs);
    push_text("max_Points");   push_int(prop.max_Points);
    push_text("max_Contours");   push_int(prop.max_Contours);
@@ -313,11 +313,11 @@ static void image_ttf_face_properties(INT32 args)
       push_text("Magic_Number"); push_int(prop.header->Magic_Number);
       push_text("Flags"); push_int(prop.header->Flags);
       push_text("Units_Per_EM"); push_int(prop.header->Units_Per_EM);
-      push_text("Created"); 
+      push_text("Created");
       push_int(prop.header->Created[0]);
       push_int(prop.header->Created[1]);
       f_aggregate(2);
-      push_text("Modified"); 
+      push_text("Modified");
       push_int(prop.header->Modified[0]);
       push_int(prop.header->Modified[1]);
       f_aggregate(2);
@@ -328,9 +328,9 @@ static void image_ttf_face_properties(INT32 args)
       push_text("Mac_Style"); push_int(prop.header->Mac_Style);
       push_text("Lowest_Rec_PPEM"); push_int(prop.header->Lowest_Rec_PPEM);
       push_text("Font_Direction"); push_int(prop.header->Font_Direction);
-      push_text("Index_To_Loc_Format"); 
+      push_text("Index_To_Loc_Format");
       push_int(prop.header->Index_To_Loc_Format);
-      push_text("Glyph_Data_Format"); 
+      push_text("Glyph_Data_Format");
       push_int(prop.header->Glyph_Data_Format);
       f_aggregate_mapping(17*2);
    }
@@ -354,7 +354,7 @@ static void image_ttf_face_properties(INT32 args)
       f_aggregate_mapping(13*2);
    }
    else push_int(0);
-   
+
    push_text("os2");
    if (prop.os2)
    {
@@ -375,7 +375,7 @@ static void image_ttf_face_properties(INT32 args)
       push_text("yStrikeoutPosition"); push_int(prop.os2->yStrikeoutPosition);
       push_text("sFamilyClass"); push_int(prop.os2->sFamilyClass);
 
-      push_text("panose"); 
+      push_text("panose");
       push_string(make_shared_binary_string(prop.os2->panose,10));
 
       push_text("ulUnicodeRange1"); push_int(prop.os2->ulUnicodeRange1);
@@ -383,7 +383,7 @@ static void image_ttf_face_properties(INT32 args)
       push_text("ulUnicodeRange3"); push_int(prop.os2->ulUnicodeRange3);
       push_text("ulUnicodeRange4"); push_int(prop.os2->ulUnicodeRange4);
 
-      push_text("achVendID"); 
+      push_text("achVendID");
       push_string(make_shared_binary_string(prop.os2->achVendID,4));
 
       push_text("fsSelection"); push_int(prop.os2->fsSelection);
@@ -394,8 +394,8 @@ static void image_ttf_face_properties(INT32 args)
       push_text("sTypoLineGap"); push_int(prop.os2->sTypoLineGap);
       push_text("usWinAscent"); push_int(prop.os2->usWinAscent);
       push_text("usWinDescent"); push_int(prop.os2->usWinDescent);
-      push_text("ulCodePageRange1"); push_int(prop.os2->ulCodePageRange1); 
-      push_text("ulCodePageRange2"); push_int(prop.os2->ulCodePageRange2); 
+      push_text("ulCodePageRange1"); push_int(prop.os2->ulCodePageRange1);
+      push_text("ulCodePageRange2"); push_int(prop.os2->ulCodePageRange2);
 
       f_aggregate_mapping(32*2);
    }
@@ -416,7 +416,7 @@ static void image_ttf_face_properties(INT32 args)
       f_aggregate_mapping(9*2);
    }
    else push_int(0);
-   
+
    push_text("hdmx");
    if (prop.hdmx)
    {
@@ -448,7 +448,7 @@ static void image_ttf_face_properties(INT32 args)
 **!     This flushes all cached information.
 **!	Might be used to save memory - the face
 **!	information is read back from disk upon need.
-**! 
+**!
 **! returns the called object
 */
 
@@ -467,7 +467,7 @@ static void image_ttf_face_flush(INT32 args)
 **! method mapping names()
 **! method array(array) _names()
 **!     Gives back the names or the complete name-list
-**!	of this face. 
+**!	of this face.
 **!
 **!     The result from <ref>names</ref>() is a mapping,
 **!	which has any or all of these indices:
@@ -486,7 +486,7 @@ static void image_ttf_face_flush(INT32 args)
 **!	and fit into pike-strings using unicode or iso-8859-1,
 **!	if possible.
 **!
-**!     The result from <ref>_names</ref>() is a 
+**!     The result from <ref>_names</ref>() is a
 **!	matrix, on this form: <pre>
 **!	     ({ ({ int platform, encoding, language, id, string name }),
 **!	        ({ int platform, encoding, language, id, string name }),
@@ -510,13 +510,13 @@ static void image_ttf_face__names(INT32 args)
 
    if ((ns=TT_Get_Name_Count(face))==-1)
       error("Image.TTF.Face->names(): Illegal face handler\n");
-   
+
    for (i=0; i<ns; i++)
    {
       short platformID,encodingID,languageID,nameID;
       TT_UShort length;
       char *stringPtr;
-      
+
       if ((res=TT_Get_Name_ID(face,i,
 			      &platformID,&encodingID,&languageID,&nameID)))
 	 my_tt_error("Image.TTF.Face->names()","TT_Get_Name_ID: ",res);
@@ -525,12 +525,12 @@ static void image_ttf_face__names(INT32 args)
       push_int(encodingID);
       push_int(languageID);
       push_int(nameID);
-      
+
       if ((res=TT_Get_Name_String(face,i,&stringPtr,&length)))
 	 my_tt_error("Image.TTF.Face->names()","TT_Get_Name_String: ",res);
 
       push_string(make_shared_binary_string(stringPtr,length));
-      
+
       f_aggregate(5);
    }
    f_aggregate(ns);
@@ -546,9 +546,9 @@ static void image_ttf_face_names(INT32 args)
 
    image_ttf_face__names(args);
 
-   if (sp[-1].type!=T_ARRAY) 
+   if (sp[-1].type!=T_ARRAY)
       error("Image.TTF.Face->names(): internal error, wierd _names()\n");
-   
+
    a=sp[-1].u.array;
 
    n=0;
@@ -573,7 +573,7 @@ static void image_ttf_face_names(INT32 args)
       if (ihas<has[what]) continue; /* worse */
 
       push_text(hasname[what]);
-      
+
       if (ihas==30) /* unicode, M$ but wierd enough correct byteorder */
       {
 	 int n=b->item[4].u.string->len/2;
@@ -585,7 +585,7 @@ static void image_ttf_face_names(INT32 args)
       }
       else
 	 push_svalue(b->item+4);
-      
+
       n++;
    }
    f_aggregate_mapping(n*2);
@@ -597,7 +597,7 @@ static void image_ttf_face_names(INT32 args)
 **! method object `()()
 **!     This instantiates the face for normal usage -
 **!	to convert font data to images.
-**! 
+**!
 **! returns a <ref>Image.TTF.FaceInstance</ref> object.
 */
 
@@ -613,7 +613,7 @@ static void image_ttf_face_make(INT32 args)
 **! class FaceInstance
 **!     This is the instance of a face, with geometrics,
 **!	encodings and stuff.
-**! 
+**!
 **! method void create(object face)
 **!	creates a new Instance from a face.
 */
@@ -647,15 +647,15 @@ static void ttf_instance_setc(struct image_ttf_face_struct *face_s,
 
    if ((res=TT_Set_Instance_CharSize(face_i->instance,towhat)))
       my_tt_error(where,"TT_Set_Instance_CharSize: ",res);
-   
+
    face_i->baseline=
-      (int)(((float)(towhat/64.0)*prop.horizontal->Ascender)/
+      (int)(((float)(towhat/64.0+towhat/640.0)*prop.horizontal->Ascender)/
 	    (prop.horizontal->Ascender-prop.horizontal->Descender));
 
-   face_i->height=towhat/64;
+   face_i->height= (towhat/64 + towhat/640);
 
    face_i->trans=
-      (32+(int)(64*((towhat/64.0)*prop.horizontal->Ascender)/
+      (32+(int)(64*((towhat/64.0+towhat/640.0)*prop.horizontal->Ascender)/
 		(prop.horizontal->Ascender-prop.horizontal->Descender)))&~63;
 }
 
@@ -691,9 +691,9 @@ static void image_ttf_faceinstance_set_height(INT32 args)
    if (!args)
       error("Image.TTF.FaceInstance->set_height(): missing arguments\n");
 
-   if (sp[-args].type==T_INT) 
+   if (sp[-args].type==T_INT)
       h=sp[-args].u.integer*64;
-   else if (sp[-args].type==T_FLOAT) 
+   else if (sp[-args].type==T_FLOAT)
       h=(int)(sp[-args].u.float_number*64);
    else
       error("Image.TTF.FaceInstance->set_height(): illegal argument 1\n");
@@ -747,14 +747,14 @@ static void ttf_get_nice_charmap(TT_Face face,
 				 char *where)
 {
    int n,i,res,got=-1,best=-1;
-   if (-1==(n=TT_Get_CharMap_Count(face))) 
+   if (-1==(n=TT_Get_CharMap_Count(face)))
       error("%s: illegal face handle\n",where);
 
    for (i=0; i<n; i++)
    {
       int ihas=0;
       short platformID,encodingID;
-      
+
       if ((res=TT_Get_CharMap_ID(face,i,&platformID,&encodingID)))
 	 my_tt_error(where,"TT_Get_CharMap_ID: ",res);
 
@@ -771,8 +771,8 @@ static void ttf_get_nice_charmap(TT_Face face,
             ihas = 1;
 	    break;
       }
-      
-      if (ihas>got) 
+
+      if (ihas>got)
       {
 	 best=i;
 	 got=ihas;
@@ -792,7 +792,7 @@ static void ttf_please_translate_8bit(TT_Face face,
 				      char *where)
 {
    TT_CharMap charMap;
-   
+
    ttf_get_nice_charmap(face,&charMap,where);
    (*dlen)=s->len;
    ttf_translate_8bit(charMap,(unsigned char*)(s->str),dest,*dlen,base);
@@ -805,20 +805,20 @@ static void ttf_please_translate_16bit(TT_Face face,
 				      char *where)
 {
    TT_CharMap charMap;
-   
+
    ttf_get_nice_charmap(face,&charMap,where);
    (*dlen)=s->len;
    ttf_translate_16bit(charMap,(unsigned short*)(s->str),dest,*dlen,base);
 }
-				      
-	
+
+
 static void image_ttf_faceinstance_ponder(INT32 args)
 {
    int *sstr;
    int len,i,res,base=0;
    struct image_ttf_face_struct *face_s;
    struct image_ttf_faceinstance_struct *face_i=THISi;
-   
+
    int xmin=1000,xmax=-1000,pos=0;
 
    if (!(face_s=(struct image_ttf_face_struct*)
@@ -832,7 +832,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
       pop_stack();
    }
 
-   if (sp[-args].type!=T_STRING) 
+   if (sp[-args].type!=T_STRING)
       error("Image.TTF.FaceInstance->ponder(): illegal argument 1\n");
 
    if(sp[-args].u.string->size_shift == 0)
@@ -853,13 +853,13 @@ static void image_ttf_faceinstance_ponder(INT32 args)
       TT_Glyph glyph;
       TT_Glyph_Metrics metrics;
       int ind;
-      
+
       ind=sstr[i];
 /*       fprintf(stderr,"glyph: %d\n",ind); */
-      
+
       if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	 my_tt_error("Image.TTF.FaceInstance->ponder()","TT_New_Glyph: ",res);
-      
+
       if ((res=TT_Load_Glyph(face_i->instance,glyph,ind,face_i->load_flags)))
 	 my_tt_error("Image.TTF.FaceInstance->ponder()","TT_Load_Glyph: ",res);
 
@@ -870,7 +870,7 @@ static void image_ttf_faceinstance_ponder(INT32 args)
       if (pos+metrics.bbox.xMin<xmin) xmin=pos+metrics.bbox.xMin;
       if (pos+metrics.bbox.xMax>xmax) xmax=pos+metrics.bbox.xMax;
       pos+=metrics.advance; /* insert kerning stuff here */
-      
+
 /*       fprintf(stderr,"bbox: (%f,%f)-(%f,%f)\n", */
 /* 	      metrics.bbox.xMin/64.0, */
 /* 	      metrics.bbox.yMin/64.0, */
@@ -935,17 +935,17 @@ static int find_kerning( TT_Kerning kerning, int c1, int c2 )
 	       }
 	       else if(table.pairs[i].right < c2)
 		  a=i+1;
-	       else 
+	       else
 		  b=i-1;
-	    } else if(table.pairs[i].left < c1) 
+	    } else if(table.pairs[i].left < c1)
 	       a=i+1;
-	    else  
+	    else
 	       b=i-1;
 	 }
        }
        break;
      default:
-       fprintf(stderr, "Warning: Unknown kerning table format %d\n", 
+       fprintf(stderr, "Warning: Unknown kerning table format %d\n",
 	       kerning.tables[j].format);
     }
   }
@@ -966,7 +966,7 @@ static void image_ttf_faceinstance_write(INT32 args)
    int scalefactor=0;
    int xmin=1000,xmax=-1000,pos=0,ypos;
    int width,height,mod;
-   
+
    unsigned char* pixmap;
    int maxcharwidth = 0;
 
@@ -1011,7 +1011,7 @@ static void image_ttf_faceinstance_write(INT32 args)
      char *errs=NULL;
      TT_Glyph_Metrics metrics;
 
-      if (sp[a-args].type!=T_STRING) 
+      if (sp[a-args].type!=T_STRING)
 	 error("Image.TTF.FaceInstance->write(): illegal argument %d\n",a+1);
 
       switch(sp[a-args].u.string->size_shift)
@@ -1025,7 +1025,10 @@ static void image_ttf_faceinstance_write(INT32 args)
 			     sstr+a,slen[a]=sp[a-args].u.string->len,base);
 	 break;
        case 2:
+         free( sstr );
+         free( slen );
 	 error("Too wide string for truetype\n");
+	 break;
       }
 
       pos=0;
@@ -1033,13 +1036,13 @@ static void image_ttf_faceinstance_write(INT32 args)
       {
 	 TT_Glyph glyph;
 	 int ind;
-      
+
 	 ind=sstr[a][i];
 /* 	 fprintf(stderr,"glyph: %d\n",ind); */
-      
+
 	 if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	    { errs="TT_New_Glyph: "; break; }
-      
+
 	 if ((res=TT_Load_Glyph(face_i->instance,glyph,
 				ind,face_i->load_flags)))
 	    { errs="TT_Load_Glyph: "; break; }
@@ -1047,16 +1050,16 @@ static void image_ttf_faceinstance_write(INT32 args)
 	 if ((res=TT_Get_Glyph_Metrics(glyph,&metrics)))
 	    { errs="TT_Get_Glyph_Metrics: "; break; }
 
-	 if (pos+metrics.bbox.xMin<xmin) 
+	 if (pos+metrics.bbox.xMin<xmin)
 	   xmin=pos+metrics.bbox.xMin;
-	 if (pos+metrics.bbox.xMax>xmax) 
+	 if (pos+metrics.bbox.xMax>xmax)
 	   xmax=pos+metrics.bbox.xMax;
 
 	 if((metrics.bbox.xMax-(metrics.bbox.xMin<0?metrics.bbox.xMin:0))
 	    >maxcharwidth)
 	   maxcharwidth =
 	     (metrics.bbox.xMax-(metrics.bbox.xMin<0?metrics.bbox.xMin:0));
-	 
+
 	 pos+=metrics.advance;
 	 if(has_kerning && i<slen[a]-1)
 	 {
@@ -1068,7 +1071,7 @@ static void image_ttf_faceinstance_write(INT32 args)
       }
       pos -= metrics.advance;
       pos += metrics.bbox.xMax-metrics.bbox.xMin;
-      if (pos>xmax) 
+      if (pos>xmax)
 	xmax=pos;
       if (errs)
       {
@@ -1096,7 +1099,7 @@ static void image_ttf_faceinstance_write(INT32 args)
       struct image *img;
       unsigned char *s;
       rgb_group *d;
-      
+
 
       rastermap.rows=face_i->height;
       rastermap.cols=rastermap.width=maxcharwidth+mod;
@@ -1109,7 +1112,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 /*       fprintf(stderr,"rastermap.rows=%d cols=%d width=%d\n", */
 /* 	      rastermap.rows,rastermap.cols,rastermap.width); */
 
-      
+
       push_int(width);
       push_int(height);
       o=clone_object(image_program,2);
@@ -1125,14 +1128,14 @@ static void image_ttf_faceinstance_write(INT32 args)
 	    TT_Glyph glyph;
 	    TT_Glyph_Metrics metrics;
 	    int ind, x, y;
-      
+
 	    ind=sstr[a][i];
 /* 	    fprintf(stderr,"glyph: %d\n",ind); */
-      
-      
+
+
 	    if ((res=TT_New_Glyph(face_s->face,&glyph)))
 	       { errs="TT_New_Glyph: "; break; }
-      
+
 	    if ((res=TT_Load_Glyph(face_i->instance,glyph,
 				   ind,face_i->load_flags)))
 	       { errs="TT_Load_Glyph: "; break; }
@@ -1158,16 +1161,16 @@ static void image_ttf_faceinstance_write(INT32 args)
 	      unsigned int s;
 	      unsigned char * source = pixmap+rastermap.width*y;
 	      rgb_group *dt=d+(ypos+y)*width+(xp=(metrics.bbox.xMin+pos)/64);
-	      
+
 	      for(x=0; x<sw && xp<width; x++,xp++,source++,dt++)
-		if(xp<0 || !(s = *source)) 
+		if(xp<0 || !(s = *source))
 		  continue;
 		else if((s=dt->r+s) < 256)
 		  dt->r=dt->g=dt->b=s;
 		else
 		  dt->r=dt->g=dt->b=255;
 	    }
-	    
+
 	    pos+=metrics.advance;
 /* 	    if(metrics.bbox.xMin < 0) */
 /* 	      pos += metrics.bbox.xMin; */
@@ -1178,7 +1181,7 @@ static void image_ttf_faceinstance_write(INT32 args)
 /* 	      fprintf(stderr, "Adjusted is %d\n", */
 /* 		      (int)(kern * (scalefactor/65535.0))); */
 	    }
-	    
+
 	    if ((res=TT_Done_Glyph(glyph)))
 	       { errs="TT_Done_Glyph: "; break; }
 	 }
@@ -1194,7 +1197,7 @@ static void image_ttf_faceinstance_write(INT32 args)
       free(pixmap);
       push_object(o);
    }
-   else 
+   else
    {
       error("Image.TTF.FaceInstance->write(): out of memory\n");
    }
@@ -1242,7 +1245,7 @@ void pike_module_init(void)
    push_string(make_shared_string("Image"));
    push_int(0);
    SAFE_APPLY_MASTER("resolv",2);
-   if (sp[-1].type==T_OBJECT) 
+   if (sp[-1].type==T_OBJECT)
    {
       push_string(make_shared_string("image"));
       f_index(2);
@@ -1283,7 +1286,7 @@ void pike_module_init(void)
 
       start_new_program();
       ADD_STORAGE(struct image_ttf_faceinstance_struct);
-      
+
       /* function(object:void) */
   ADD_FUNCTION("create",image_ttf_faceinstance_create,tFunc(tObj,tVoid),0);
       /* function(string:object) */
@@ -1294,7 +1297,7 @@ void pike_module_init(void)
   ADD_FUNCTION("face",image_ttf_faceinstance_face,tFunc(tNone,tObj),0);
       /* function(int:object) */
   ADD_FUNCTION("set_height",image_ttf_faceinstance_set_height,tFunc(tInt,tObj),0);
-      
+
       set_exit_callback(image_ttf_faceinstance_exit);
       image_ttf_faceinstance_program=end_program();
    }
