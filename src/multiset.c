@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.68 2003/02/01 15:43:51 mast Exp $
+|| $Id: multiset.c,v 1.69 2003/03/14 15:50:45 grubba Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.68 2003/02/01 15:43:51 mast Exp $");
+RCSID("$Id: multiset.c,v 1.69 2003/03/14 15:50:45 grubba Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -238,7 +238,8 @@ void free_multiset_data (struct multiset_data *msd);
 #define INIT_MULTISET(L) do {						\
     GC_ALLOC (L);							\
     INITIALIZE_PROT (L);						\
-    L->refs = 1;							\
+    L->refs = 0;							\
+    add_ref(L);	/* For DMALLOC... */					\
     L->node_refs = 0;							\
     DOUBLELINK (first_multiset, L);					\
   } while (0)
@@ -3603,6 +3604,7 @@ PMOD_EXPORT void f_aggregate_multiset (INT32 args)
   push_multiset (mkmultiset_2 (sp[-1].u.array, NULL, NULL));
   free_array (sp[-2].u.array);
   sp[-2] = sp[-1];
+  dmalloc_touch_svalue(Pike_sp-1);
   sp--;
 }
 
@@ -5279,7 +5281,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.68 2003/02/01 15:43:51 mast Exp $");
+RCSID("$Id: multiset.c,v 1.69 2003/03/14 15:50:45 grubba Exp $");
 
 struct multiset *first_multiset;
 

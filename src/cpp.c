@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.114 2003/01/05 00:56:13 nilsson Exp $
+|| $Id: cpp.c,v 1.115 2003/03/14 15:53:09 grubba Exp $
 */
 
 #include "global.h"
@@ -364,6 +364,7 @@ void cpp_change_compat(struct cpp *this, int major, int minor)
   if(sp[-1].type == T_OBJECT)
   {
     this->compat_handler=sp[-1].u.object;
+    dmalloc_touch_svalue(Pike_sp-1);
     sp--;
   }
   this->compat_major=major;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: c_source_stream.c,v 1.6 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: c_source_stream.c,v 1.7 2003/03/14 15:57:49 grubba Exp $
 */
 
 #include "global.h"
@@ -181,7 +181,7 @@ struct source *source_stream_make( struct svalue *s,
   res->s.setup_callbacks = setup_callbacks;
   res->s.remove_callbacks = remove_callbacks;
   res->obj = s->u.object;
-  res->obj->refs++;
+  add_ref(res->obj);
   return (struct source *)res;
 }
 

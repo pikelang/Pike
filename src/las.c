@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.329 2003/03/09 13:10:40 grubba Exp $
+|| $Id: las.c,v 1.330 2003/03/14 15:50:44 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.329 2003/03/09 13:10:40 grubba Exp $");
+RCSID("$Id: las.c,v 1.330 2003/03/14 15:50:44 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -537,7 +537,7 @@ static node *freeze_node(node *orig)
 	orig->current_file = NULL;
       }
       free_node(dmalloc_touch(node *, orig));
-      n->refs++;
+      add_ref(n);
       return check_node_hash(dmalloc_touch(node *, n));
     }
     n = n->next;
@@ -661,7 +661,7 @@ void debug_free_node(node *n)
   if(!n) return;
 
 #ifdef SHARED_NODES
-  if (--n->refs) {
+  if (sub_ref(n)) {
 #ifdef PIKE_DEBUG
     if(l_flag>9)
       print_tree(n);
@@ -730,7 +730,7 @@ void debug_free_node(node *n)
       /* Free CAR */
 
 #ifdef SHARED_NODES
-      if (--_CAR(n)->refs) {
+      if (sub_ref(_CAR(n))) {
 	_CAR(n) = NULL;
       } else {
 #endif /* SHARED_NODES */
@@ -746,7 +746,7 @@ void debug_free_node(node *n)
       /* Free CDR */
 
 #ifdef SHARED_NODES
-      if (--_CDR(n)->refs) {
+      if (sub_ref(_CDR(n))) {
 	_CDR(n) = NULL;
       } else {
 #endif /* SHARED_NODES */
@@ -795,7 +795,7 @@ void debug_free_node(node *n)
       really_free_node_s(dead);
 
 #ifdef SHARED_NODES
-      if (--_CDR(n)->refs) {
+      if (sub_ref(_CDR(n))) {
 	_CDR(n) = NULL;
 	goto backtrack;
       } else {
@@ -852,7 +852,8 @@ static node *debug_mkemptynode(void)
   MEMSET(res, 0, sizeof(node));
 #ifdef SHARED_NODES
   res->hash = 0;  
-  res->refs = 1;
+  res->refs = 0;
+  add_ref(res);	/* For DMALLOC... */
 #endif /* SHARED_NODES */
 #endif /* SHARED_NODES || __CHECKER__ */
 
@@ -1211,7 +1212,8 @@ node *debug_mknewintnode(INT_TYPE nr)
   res->u.sval.u.integer = nr;
   res->type=get_type_of_svalue( & res->u.sval);
 #ifdef SHARED_NODES
-  res->refs = 1;
+  res->refs = 0;
+  add_ref(res);	/* For DMALLOC... */
   /* res->hash = hash_node(res); */
 #endif /* SHARED_NODES */
 
@@ -1933,6 +1935,7 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    
 	    if (thrown.type != PIKE_T_UNKNOWN) {
 	      *(Pike_sp++) = thrown;
+	      dmalloc_touch_svalue(Pike_sp-1);
 	      thrown.type = PIKE_T_INT;
 	      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
 	      if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
@@ -2173,7 +2176,7 @@ node *copy_node(node *n)
 
   default:
 #ifdef SHARED_NODES
-    n->refs++;
+    add_ref(n);
     return n;
 #else /* !SHARED_NODES */
 

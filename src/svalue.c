@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.160 2003/02/24 21:09:46 mast Exp $
+|| $Id: svalue.c,v 1.161 2003/03/14 15:50:47 grubba Exp $
 */
 
 #include "global.h"
@@ -66,7 +66,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.160 2003/02/24 21:09:46 mast Exp $");
+RCSID("$Id: svalue.c,v 1.161 2003/03/14 15:50:47 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -277,7 +277,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 #ifdef DEBUG_MALLOC
       debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
-      if(--s->u.refs[0]<=0)
+      if(!sub_ref(s->u.dummy))
       {
 	really_free_svalue(s);
 	DO_IF_DMALLOC(s->u.refs=0);
@@ -293,7 +293,7 @@ PMOD_EXPORT void debug_free_svalues(struct svalue *s, size_t num, INT32 type_hin
 #ifdef DEBUG_MALLOC
       debug_malloc_update_location(s->u.refs  DMALLOC_PROXY_ARGS);
 #endif
-      if(--s->u.refs[0] <= 0)
+      if(!sub_ref(s->u.dummy))
       {
 	if(s->subtype == FUNCTION_BUILTIN)
 	  really_free_callable(s->u.efun);
@@ -395,12 +395,12 @@ PMOD_EXPORT void assign_to_short_svalue(union anything *u,
       case T_INT: u->integer=s->u.integer; break;
       case T_FLOAT: u->float_number=s->u.float_number; break;
       default:
-	if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
+	if(u->refs && !sub_ref(u->dummy)) really_free_short_svalue(u,type);
 	u->refs = s->u.refs;
 	add_ref(u->dummy);
     }
   }else if(type<=MAX_REF_TYPE && UNSAFE_IS_ZERO(s)){
-    if(u->refs && --*(u->refs) <= 0) really_free_short_svalue(u,type);
+    if(u->refs && !sub_ref(u->dummy)) really_free_short_svalue(u,type);
     u->refs=0;
   }else{
     Pike_error("Wrong type in assignment, expected %s, got %s.\n",
@@ -493,7 +493,7 @@ PMOD_EXPORT void assign_short_svalue(union anything *to,
     case T_INT: to->integer=from->integer; break;
     case T_FLOAT: to->float_number=from->float_number; break;
     default:
-      if(to->refs && --*(to->refs) <= 0) really_free_short_svalue(to,type);
+      if(to->refs && !sub_ref(to->dummy)) really_free_short_svalue(to,type);
       to->refs = tmp = from->refs;
       if(tmp) tmp[0]++;
   }
@@ -729,8 +729,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
       if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       {
       a_is_obj:
-	assign_svalue_no_free(sp, b);
-	sp++;
+	push_svalue(b);
 	apply_lfun(a->u.object, LFUN_EQ, 1);
 	if(UNSAFE_IS_ZERO(sp-1))
 	{
@@ -754,8 +753,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
       if(FIND_LFUN(b->u.object->prog,LFUN_EQ) != -1)
       {
       b_is_obj:
-	assign_svalue_no_free(sp, a);
-	sp++;
+	push_svalue(a);
 	apply_lfun(b->u.object, LFUN_EQ, 1);
 	if(UNSAFE_IS_ZERO(sp-1))
 	{
@@ -983,8 +981,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 	Pike_error("Comparison on destructed object.\n");
       if(FIND_LFUN(a->u.object->prog,LFUN_LT) != -1)
       {
-	assign_svalue_no_free(sp, b);
-	sp++;
+	push_svalue(b);
 	apply_lfun(a->u.object, LFUN_LT, 1);
 	if(UNSAFE_IS_ZERO(sp-1))
 	{
@@ -1008,8 +1005,7 @@ PMOD_EXPORT int is_lt(const struct svalue *a, const struct svalue *b)
 	Pike_error("Comparison on destructed object.\n");
       if(FIND_LFUN(b->u.object->prog,LFUN_GT) == -1)
 	Pike_error("Object lacks `>\n");
-      assign_svalue_no_free(sp, a);
-      sp++;
+      push_svalue(a);
       apply_lfun(b->u.object, LFUN_GT, 1);
       if(UNSAFE_IS_ZERO(sp-1))
       {
@@ -2117,6 +2113,7 @@ PMOD_EXPORT INT32 pike_sizeof(const struct svalue *s)
       apply_lfun(s->u.object, LFUN__SIZEOF, 0);
       if(sp[-1].type != T_INT)
 	Pike_error("Bad return type from o->_sizeof() (not int)\n");
+      dmalloc_touch_svalue(Pike_sp-1);
       sp--;
       return sp->u.integer;
     }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.130 2003/02/24 20:27:11 mast Exp $
+|| $Id: interpret.h,v 1.131 2003/03/14 15:50:44 grubba Exp $
 */
 
 #ifndef INTERPRET_H
@@ -215,14 +215,14 @@ PMOD_EXPORT extern const char msg_pop_neg[];
 #define push_constant_text(T) do{ Pike_sp->subtype=0; REF_MAKE_CONST_STRING(Pike_sp->u.string,T); Pike_sp++->type=PIKE_T_STRING; }while(0)
 #define push_function(OBJ, FUN) do {struct object *_=(OBJ); debug_malloc_touch(_); Pike_sp->u.object=_; Pike_sp->subtype=(FUN); Pike_sp++->type=PIKE_T_FUNCTION;} while (0)
 
-#define ref_push_program(P) do{ struct program *_=(P); debug_malloc_touch(_); _->refs++; Pike_sp->u.program=_; Pike_sp++->type=PIKE_T_PROGRAM; }while(0)
-#define ref_push_mapping(M) do{ struct mapping *_=(M); debug_malloc_touch(_); _->refs++; Pike_sp->u.mapping=_; Pike_sp++->type=PIKE_T_MAPPING; }while(0)
-#define ref_push_array(A) do{ struct array *_=(A); debug_malloc_touch(_); _->refs++; Pike_sp->u.array=_ ;Pike_sp++->type=PIKE_T_ARRAY; }while(0)
-#define ref_push_multiset(L) do{ struct multiset *_=(L); debug_malloc_touch(_); _->refs++; Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
-#define ref_push_string(S) do{ struct pike_string *_=(S); debug_malloc_touch(_); _->refs++; Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
-#define ref_push_type_value(S) do{ struct pike_type *_=(S); debug_malloc_touch(_); _->refs++; Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
-#define ref_push_object(O) do{ struct object  *_=(O); debug_malloc_touch(_); _->refs++; Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
-#define ref_push_function(OBJ, FUN) do {struct object *_=(OBJ); debug_malloc_touch(_); _->refs++; Pike_sp->u.object=_; Pike_sp->subtype=(FUN); Pike_sp++->type=PIKE_T_FUNCTION;} while (0)
+#define ref_push_program(P) do{ struct program *_=(P); add_ref(_); Pike_sp->u.program=_; Pike_sp++->type=PIKE_T_PROGRAM; }while(0)
+#define ref_push_mapping(M) do{ struct mapping *_=(M); add_ref(_); Pike_sp->u.mapping=_; Pike_sp++->type=PIKE_T_MAPPING; }while(0)
+#define ref_push_array(A) do{ struct array *_=(A); add_ref(_); Pike_sp->u.array=_ ;Pike_sp++->type=PIKE_T_ARRAY; }while(0)
+#define ref_push_multiset(L) do{ struct multiset *_=(L); add_ref(_); Pike_sp->u.multiset=_; Pike_sp++->type=PIKE_T_MULTISET; }while(0)
+#define ref_push_string(S) do{ struct pike_string *_=(S); add_ref(_); Pike_sp->subtype=0; Pike_sp->u.string=_; Pike_sp++->type=PIKE_T_STRING; }while(0)
+#define ref_push_type_value(S) do{ struct pike_type *_=(S); add_ref(_); Pike_sp->u.type=_; Pike_sp++->type=PIKE_T_TYPE; }while(0)
+#define ref_push_object(O) do{ struct object  *_=(O); add_ref(_); Pike_sp->u.object=_; Pike_sp++->type=PIKE_T_OBJECT; }while(0)
+#define ref_push_function(OBJ, FUN) do {struct object *_=(OBJ); add_ref(_); Pike_sp->u.object=_; Pike_sp->subtype=(FUN); Pike_sp++->type=PIKE_T_FUNCTION;} while (0)
 
 #define push_svalue(S) do { const struct svalue *_=(S); assign_svalue_no_free(Pike_sp,_); Pike_sp++; }while(0)
 
@@ -262,30 +262,37 @@ PMOD_EXPORT extern const char msg_pop_neg[];
  */
 #define stack_unlink(X) do { if(X) { free_svalue(Pike_sp-(X)-1); Pike_sp[-(X)-1]=Pike_sp[-1]; Pike_sp--; pop_n_elems(X-1); } }while(0)
 
-#define free_pike_frame(F) do{ struct pike_frame *f_=(F); debug_malloc_touch(f_); if(!--f_->refs) really_free_pike_frame(f_); }while(0)
+#define free_pike_frame(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_frame(f_); }while(0)
 
 /* A scope is any frame which may have malloced locals */
-#define free_pike_scope(F) do{ struct pike_frame *f_=(F); debug_malloc_touch(f_); if(!--f_->refs) really_free_pike_scope(f_); }while(0)
+#define free_pike_scope(F) do{ struct pike_frame *f_=(F); if(!sub_ref(f_)) really_free_pike_scope(f_); }while(0)
 
 #define POP_PIKE_FRAME() do {						\
-  struct pike_frame *tmp_=Pike_fp->next;					\
+  struct pike_frame *tmp_=Pike_fp->next;				\
   if(!sub_ref(Pike_fp))							\
   {									\
-    really_free_pike_frame(Pike_fp);						\
+    really_free_pike_frame(Pike_fp);					\
   }else{								\
-    DO_IF_DEBUG(if( Pike_fp->locals + Pike_fp->num_locals > Pike_sp || Pike_sp < Pike_fp->expendible) Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n",Pike_fp->locals,Pike_fp->num_locals,Pike_fp->locals+Pike_fp->num_locals,Pike_sp,Pike_fp->expendible));                      \
-    debug_malloc_touch(Pike_fp); \
-    if(Pike_fp->num_locals)							\
+    DO_IF_DEBUG(							\
+      if( (Pike_fp->locals + Pike_fp->num_locals > Pike_sp) ||		\
+	  (Pike_sp < Pike_fp->expendible))				\
+	Pike_fatal("Stack failure in POP_PIKE_FRAME %p+%d=%p %p %p!\n",	\
+		   Pike_fp->locals, Pike_fp->num_locals,		\
+		   Pike_fp->locals+Pike_fp->num_locals,			\
+		   Pike_sp,Pike_fp->expendible));			\
+    debug_malloc_touch(Pike_fp);					\
+    if(Pike_fp->num_locals)						\
     {									\
       struct svalue *s=(struct svalue *)xalloc(sizeof(struct svalue)*	\
-					       Pike_fp->num_locals);		\
-      assign_svalues_no_free(s,Pike_fp->locals,Pike_fp->num_locals,BIT_MIXED);	\
-      Pike_fp->locals=s;							\
-      Pike_fp->flags|=PIKE_FRAME_MALLOCED_LOCALS;				\
+					       Pike_fp->num_locals);	\
+      assign_svalues_no_free(s, Pike_fp->locals, Pike_fp->num_locals,	\
+			     BIT_MIXED);				\
+      Pike_fp->locals=s;						\
+      Pike_fp->flags|=PIKE_FRAME_MALLOCED_LOCALS;			\
     }else{								\
-      Pike_fp->locals=0;							\
+      Pike_fp->locals=0;						\
     }									\
-    Pike_fp->next=0;								\
+    Pike_fp->next=0;							\
   }									\
   Pike_fp=tmp_;								\
  }while(0)

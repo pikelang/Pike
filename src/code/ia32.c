@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.24 2003/02/16 03:59:58 mast Exp $
+|| $Id: ia32.c,v 1.25 2003/03/14 15:51:14 grubba Exp $
 */
 
 /*
@@ -394,6 +394,7 @@ void ins_f_byte(unsigned int b)
   maybe_update_pc();
   addr=instrs[b].address;
 
+#ifndef DEBUG_MALLOC
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
@@ -435,6 +436,7 @@ void ins_f_byte(unsigned int b)
       }
       break;
   }
+#endif /* !DEBUG_MALLOC */
   ia32_call_c_function(addr);
 }
 
@@ -442,6 +444,7 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
   maybe_update_pc();
 
+#ifndef DEBUG_MALLOC
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
@@ -497,6 +500,7 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
       ia32_call_c_function(Pike_compiler->new_program->constants[b].sval.u.efun->function);
       return;
   }
+#endif /* !DEBUG_MALLOC */
   update_arg1(b);
   ins_f_byte(a);
 }
@@ -507,6 +511,7 @@ void ins_f_byte_with_2_args(unsigned int a,
 {
   maybe_update_pc();
 
+#ifndef DEBUG_MALLOC
 #ifdef PIKE_DEBUG
   if (d_flag < 3)
 #endif
@@ -518,6 +523,7 @@ void ins_f_byte_with_2_args(unsigned int a,
       ia32_push_local(c);
       return;
   }
+#endif /* !DEBUG_MALLOC */
   update_arg1(b);
   update_arg2(c);
   ins_f_byte(a);

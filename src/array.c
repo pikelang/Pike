@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.137 2003/02/01 15:43:50 mast Exp $
+|| $Id: array.c,v 1.138 2003/03/14 15:50:43 grubba Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.137 2003/02/01 15:43:50 mast Exp $");
+RCSID("$Id: array.c,v 1.138 2003/03/14 15:50:43 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -143,7 +143,7 @@ PMOD_EXPORT void really_free_array(struct array *v)
   add_ref(v);
   EXIT_PIKE_MEMOBJ(v);
   free_svalues(ITEM(v), v->size, v->type_field);
-  v->refs--;
+  sub_ref(v);
   array_free_no_free(v);
 }
 
@@ -217,8 +217,8 @@ PMOD_EXPORT void simple_array_index_no_free(struct svalue *s,
       ref_push_array(a);
       assign_svalue_no_free(Pike_sp++,ind);
       f_column(2);
-      s[0]=Pike_sp[-1];
       Pike_sp--;
+      *s = *Pike_sp;
       dmalloc_touch_svalue(Pike_sp);
       break;
     }
@@ -2390,6 +2390,7 @@ PMOD_EXPORT struct array *explode_array(struct array *a, struct array *b)
     } END_AGGREGATE_ARRAY;
   }
   tmp=(--Pike_sp)->u.array;
+  debug_malloc_touch(tmp);
   if(tmp->size) tmp->type_field=BIT_ARRAY;
   return tmp;
 }

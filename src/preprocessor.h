@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.57 2002/12/08 15:26:01 grubba Exp $
+|| $Id: preprocessor.h,v 1.58 2003/03/14 15:50:46 grubba Exp $
 */
 
 /*
@@ -1440,6 +1440,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    /* Why not just use ref_push_string(new_file)? */
 	    assign_svalue_no_free(Pike_sp,Pike_sp-1);
 	    Pike_sp++;
+	    dmalloc_touch_svalue(Pike_sp-1);
 	    
 	    /* FIXME: Ought to use safe_apply_handler()... */
 	    if(this->compat_handler)

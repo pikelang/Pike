@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.142 2003/03/06 15:29:56 grubba Exp $
+|| $Id: opcodes.c,v 1.143 2003/03/14 15:50:45 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.142 2003/03/06 15:29:56 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.143 2003/03/14 15:50:45 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -139,6 +139,7 @@ void o_index(void)
   *sp=s;
   dmalloc_touch_svalue(sp);
   sp++;
+  dmalloc_touch_svalue(Pike_sp-1);
 }
 
 /*! @class MasterObject
@@ -1647,6 +1648,7 @@ CHAROPT2(								 \
 		   pos+=8;						 \
 		   eye++;						 \
 		 }							 \
+                 dmalloc_touch_svalue(Pike_sp-1);			 \
 		 sval=*--sp;						 \
 		 break;							 \
 	       }							 \
@@ -1674,6 +1676,7 @@ CHAROPT2(								 \
 		   o_or();						 \
 		   eye++;						 \
 		 }							 \
+                 dmalloc_touch_svalue(Pike_sp-1);			 \
 		 sval=*--sp;						 \
 		 break;							 \
 	       }							 \
@@ -2048,6 +2051,7 @@ CHAROPT2(								 \
     }else{								 \
       check_stack(1);							 \
       *sp++=sval;							 \
+      dmalloc_touch_svalue(Pike_sp-1);					 \
       DO_IF_DEBUG(sval.type=99);					 \
     }									 \
   }									 \

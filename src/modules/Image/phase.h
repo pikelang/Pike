@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: phase.h,v 1.5 2002/10/11 01:39:43 nilsson Exp $
+|| $Id: phase.h,v 1.6 2003/03/14 15:57:48 grubba Exp $
 */
 
 /* This file is incuded in search.c with the following defines set:
@@ -91,6 +91,5 @@ THREADS_ALLOW();
 
 THREADS_DISALLOW();
 
-  o->refs++;
-  push_object(o);
+  ref_push_object(o);
 }

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.37 2003/02/24 09:29:55 grubba Exp $
+|| $Id: backend.cmod,v 1.38 2003/03/14 15:53:09 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.37 2003/02/24 09:29:55 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.38 2003/03/14 15:53:09 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1592,6 +1592,7 @@ PIKECLASS Backend
      
      new->args=args;
      Pike_sp--;
+     dmalloc_touch_svalue(Pike_sp);
      
      
      me->num_pending_calls++;

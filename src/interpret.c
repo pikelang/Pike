@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.294 2003/02/26 18:19:08 mast Exp $
+|| $Id: interpret.c,v 1.295 2003/03/14 15:50:44 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.294 2003/02/26 18:19:08 mast Exp $");
+RCSID("$Id: interpret.c,v 1.295 2003/03/14 15:50:44 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -316,6 +316,7 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
     }
       
     case T_SVALUE_PTR:
+      dmalloc_touch_svalue(lval->u.lval);
       assign_svalue_no_free(to, lval->u.lval);
       break;
 
@@ -382,6 +383,8 @@ PMOD_EXPORT void assign_lvalue(struct svalue *lval,struct svalue *from)
     break;
 
   case T_SVALUE_PTR:
+    dmalloc_touch_svalue(from);
+    dmalloc_touch_svalue(lval->u.lval);
     assign_svalue(lval->u.lval,from);
     break;
 
@@ -429,6 +432,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
       return 0;
       
     case T_SVALUE_PTR:
+      dmalloc_touch_svalue(lval->u.lval);
       if(lval->u.lval->type == t) return & ( lval->u.lval->u );
       return 0;
 
@@ -1115,7 +1119,8 @@ static void do_trace_call(INT32 args)
 
 #undef INIT_BLOCK
 #define INIT_BLOCK(X) do {			\
-  X->refs=1;					\
+  X->refs=0;					\
+  add_ref(X);	/* For DMALLOC... */		\
   X->flags=0; 					\
   X->scope=0;					\
   DO_IF_SECURITY( if(CURRENT_CREDS) {		\
@@ -1137,7 +1142,7 @@ static void do_trace_call(INT32 args)
   DO_IF_DEBUG(								\
   if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)				\
   Pike_fatal("Pike frame is not supposed to have malloced locals here!\n"));	\
- 									\
+									\
   DO_IF_DMALLOC(							\
     X->context.prog=0;							\
     X->context.parent=0;						\
@@ -1555,6 +1560,7 @@ static int o_catch(PIKE_OPCODE_T *pc)
     *Pike_sp=throw_value;
     throw_value.type=T_INT;
     Pike_sp++;
+    dmalloc_touch_svalue(Pike_sp-1);
     UNSETJMP(tmp);
     Pike_fp->expendible=expendible;
     Pike_fp->flags=flags;
@@ -1618,6 +1624,7 @@ PMOD_EXPORT void call_handle_error(void)
     Pike_interpreter.c_stack_margin = 0;
     SET_ONERROR(tmp,exit_on_error,"Error in handle_error in master object!");
     *(Pike_sp++) = throw_value;
+    dmalloc_touch_svalue(Pike_sp-1);
     throw_value.type=T_INT;
     APPLY_MASTER("handle_error", 1);
     pop_stack();

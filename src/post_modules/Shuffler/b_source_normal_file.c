@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: b_source_normal_file.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: b_source_normal_file.c,v 1.8 2003/03/14 15:57:49 grubba Exp $
 */
 
 #include "global.h"
@@ -113,7 +113,7 @@ struct source *source_normal_file_make( struct svalue *s,
   res->s.get_data = get_data;
   res->s.free_source = free_source;
   res->obj = s->u.object;
-  res->obj->refs++;
+  add_ref(res->obj);
 
   if( fd_fstat( res->fd, &st ) < 0 )
   {

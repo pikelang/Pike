@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.248 2003/03/13 22:12:59 nilsson Exp $
+|| $Id: signal_handler.c,v 1.249 2003/03/14 15:50:47 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.248 2003/03/13 22:12:59 nilsson Exp $");
+RCSID("$Id: signal_handler.c,v 1.249 2003/03/14 15:50:47 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -335,11 +335,6 @@ RCSID("$Id: signal_handler.c,v 1.248 2003/03/13 22:12:59 nilsson Exp $");
 #define SAFE_FIFO_DEBUG_BEGIN() do {
 #define SAFE_FIFO_DEBUG_END()  }while(0)
 #endif
-
-/* Added so we are able to patch older versions of Pike. */
-#ifndef add_ref
-#define add_ref(X)	((X)->refs++)
-#endif /* add_ref */
 
 extern int fd_from_object(struct object *o);
 static int set_priority( int pid, char *to );

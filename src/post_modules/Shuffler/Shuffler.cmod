@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.22 2002/11/26 21:15:21 grubba Exp $
+|| $Id: Shuffler.cmod,v 1.23 2003/03/14 15:57:49 grubba Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.22 2002/11/26 21:15:21 grubba Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.23 2003/03/14 15:57:49 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -526,18 +526,15 @@ PIKECLASS Shuffle
       Pike_error("This class cannot be instantiated directly\n");
 
     THIS->file_obj = fd;
-    THIS->file_obj->refs++;
-    debug_malloc_touch( THIS->file_obj );
+    add_ref(THIS->file_obj);
 
     THIS->shuffler = shuffler;
-    THIS->shuffler->refs++;
-    debug_malloc_touch( THIS->shuffler );
+    add_ref(THIS->shuffler);
 
     if( throttler->type == PIKE_T_OBJECT )
     {
       THIS->throttler = throttler->u.object;
-      THIS->throttler->refs++;
-      debug_malloc_touch( THIS->throttler );
+      add_ref(THIS->throttler);
     }
 
     safe_apply( fd, "query_fd", 0 );

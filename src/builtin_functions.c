@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.478 2003/03/02 14:28:41 grubba Exp $
+|| $Id: builtin_functions.c,v 1.479 2003/03/14 15:50:43 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.478 2003/03/02 14:28:41 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.479 2003/03/14 15:50:43 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5935,7 +5935,7 @@ PMOD_EXPORT void f__leak(INT32 args)
 			 "array|mapping|multiset|object|"
 			 "function|program|string");
 
-  add_ref(Pike_sp[-args].u.array);
+  add_ref(Pike_sp[-args].u.dummy);
   i=Pike_sp[-args].u.refs[0];
   pop_n_elems(args);
   push_int(i);
@@ -6265,6 +6265,7 @@ PMOD_EXPORT void f_uniq_array(INT32 args)
       assign_svalue_no_free(ITEM(b)+ j++, ITEM(a)+i);
     }
   }
+  dmalloc_touch_svalue(Pike_sp-1);
   Pike_sp--; /* keep the ref to 'b' */
   b=resize_array(b,  j);
   pop_n_elems(args-1); /* pop args and the mapping */
@@ -6730,6 +6731,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 push_svalue(mysp-2); /* fun */
 	 *Pike_sp=mysp[-1];        /* extra */
 	 mysp[-1].type=T_INT;
+	 dmalloc_touch_svalue(Pike_sp);
 	 push_array_items(Pike_sp->u.array);
 	 f_map(splice+2);     /* ... arr fun extra -> ... retval */
 	 stack_pop_n_elems_keep_top(2); /* arr fun extra ret -> arr retval */
@@ -6754,6 +6756,7 @@ PMOD_EXPORT void f_map(INT32 args)
 	 /* FIXME: Handle multisets with values like mappings. */
 	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
 	 free_array (Pike_sp[-2].u.array);
+	 dmalloc_touch_svalue(Pike_sp-1);
 	 Pike_sp[-2] = Pike_sp[-1];
 	 Pike_sp--;
 #else
@@ -7146,6 +7149,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 
 	 push_svalue(Pike_sp-args);
 	 f_indices(1);
+	 dmalloc_touch_svalue(Pike_sp-1);
 	 Pike_sp--;
 	 Pike_sp[-args-2]=*Pike_sp;
 	 dmalloc_touch_svalue(Pike_sp);
@@ -7189,6 +7193,7 @@ PMOD_EXPORT void f_filter(INT32 args)
 	 push_multiset (mkmultiset_2 (Pike_sp[-1].u.array, NULL, NULL));
 	 free_array (Pike_sp[-2].u.array);
 	 Pike_sp[-2] = Pike_sp[-1];
+	 dmalloc_touch_svalue(Pike_sp-1);
 	 Pike_sp--;
 #else
 	 Pike_sp--;                      /* allocate_multiset is destructive */

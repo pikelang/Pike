@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.171 2003/01/26 17:04:03 nilsson Exp $
+|| $Id: operators.c,v 1.172 2003/03/14 15:50:46 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.171 2003/01/26 17:04:03 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.172 2003/03/14 15:50:46 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -357,9 +357,11 @@ PMOD_EXPORT void f_add(INT32 args)
 	if (save_sp[e].type == T_STRING)
 	  break;
 	*(sp++) = save_sp[e];
+	dmalloc_touch_svalue(Pike_sp-1);
       }
       /* Perform the addition. */
       f_add(args+e);
+      dmalloc_touch_svalue(Pike_sp-1);
       save_sp[--e] = *(--sp);
 #ifdef PIKE_DEBUG
       if (sp != save_sp) {
@@ -1379,6 +1381,7 @@ static void r_speedup(INT32 args, void (*func)(void))
 
     default:
       r_speedup((args+1)>>1,func);
+      dmalloc_touch_svalue(Pike_sp-1);
       tmp=*--sp;
       SET_ONERROR(err,do_free_svalue,&tmp);
       r_speedup(args>>1,func);
@@ -3114,6 +3117,8 @@ PMOD_EXPORT void o_range(void)
   if(from<0) from = 0;
   to = sp[-1].u.integer;
   if(to<from-1) to = from-1;
+  dmalloc_touch_svalue(Pike_sp-1);
+  dmalloc_touch_svalue(Pike_sp-2);
   sp-=2;
 
   switch(sp[-1].type)
@@ -3558,6 +3563,7 @@ static void f_string_assignment_assign_index(INT32 args)
   }else{
     lvalue_to_svalue_no_free(sp,THIS->lval);
     sp++;
+    dmalloc_touch_svalue(Pike_sp-1);
     if(sp[-1].type != T_STRING) Pike_error("string[]= failed.\n");
     if(i<0) i+=sp[-1].u.string->len;
     if(i<0 || i>=sp[-1].u.string->len)

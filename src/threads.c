@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.210 2003/03/05 16:18:30 mast Exp $
+|| $Id: threads.c,v 1.211 2003/03/14 15:50:47 grubba Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.210 2003/03/05 16:18:30 mast Exp $");
+RCSID("$Id: threads.c,v 1.211 2003/03/14 15:50:47 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1497,6 +1497,7 @@ static void f_thread_id_result(INT32 args)
 
   assign_svalue_no_free(Pike_sp, &th->result);
   Pike_sp++;
+  dmalloc_touch_svalue(Pike_sp-1);
 }
 
 void init_thread_obj(struct object *o)

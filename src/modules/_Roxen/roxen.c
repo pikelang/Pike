@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: roxen.c,v 1.32 2002/10/21 17:06:25 marcus Exp $
+|| $Id: roxen.c,v 1.33 2003/03/14 15:57:49 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -200,13 +200,11 @@ static void f_hp_feed( INT32 args )
 	f_aggregate( 1 );
 	if( tmp->type == PIKE_T_ARRAY )
 	{
-	  tmp->u.array->refs++;
-	  push_array(tmp->u.array);
+	  ref_push_array(tmp->u.array);
 	  map_delete(headers, Pike_sp-3);
 	  f_add(2);
 	} else {
-	  tmp->u.string->refs++;
-	  push_string(tmp->u.string);
+	  ref_push_string(tmp->u.string);
 	  f_aggregate(1);
 	  map_delete(headers, Pike_sp-3);
 	  f_add(2);

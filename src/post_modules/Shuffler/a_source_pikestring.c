@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: a_source_pikestring.c,v 1.7 2002/10/11 01:39:59 nilsson Exp $
+|| $Id: a_source_pikestring.c,v 1.8 2003/03/14 15:57:49 grubba Exp $
 */
 
 #include "global.h"
@@ -69,15 +69,14 @@ struct source *source_pikestring_make( struct svalue *s,
   res->s.free_source = free_source;
   res->s.get_data = get_data;
 
-  res->str = s->u.string;
-  res->str->refs++;
+  copy_shared_string(res->str, s->u.string);
   res->offset = start;
 
   if( len != -1 )
   {
     if( len > res->str->len-start )
     {
-      res->str->refs--;
+      sub_ref(res->str);
       free(res);
       return 0;
     }
@@ -89,7 +88,7 @@ struct source *source_pikestring_make( struct svalue *s,
 
   if( res->len <= 0 )
   {
-    res->str->refs--;
+    sub_ref(res->str);
     free(res);
   }
   return (struct source *)res;

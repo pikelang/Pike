@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: a_source_system_memory.c,v 1.8 2002/10/17 16:59:21 manual Exp $
+|| $Id: a_source_system_memory.c,v 1.9 2003/03/14 15:57:49 grubba Exp $
 */
 
 #include "global.h"
@@ -98,13 +98,13 @@ struct source *source_system_memory_make( struct svalue *s,
   res->s.free_source = free_source;
   res->s.get_data = get_data;
   res->obj = s->u.object;
-  res->obj->refs++;
+  add_ref(res->obj);
   res->offset = start;
 
   if( len != -1 )
     if( len > res->mem->len-start )
     {
-      res->obj->refs--;
+      sub_ref(res->obj);
       free(res);
       return 0;
     }
@@ -115,7 +115,7 @@ struct source *source_system_memory_make( struct svalue *s,
 
   if( res->len <= 0 )
   {
-    res->obj->refs--;
+    sub_ref(res->obj);
     free(res);
     return 0;
   }

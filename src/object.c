@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.227 2003/03/09 13:10:40 grubba Exp $
+|| $Id: object.c,v 1.228 2003/03/14 15:50:45 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.227 2003/03/09 13:10:40 grubba Exp $");
+RCSID("$Id: object.c,v 1.228 2003/03/14 15:50:45 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -242,6 +242,10 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
       for(q=0;q<n;q++)
       {
 	int d=prog->variable_index[q];
+
+	if (IDENTIFIER_IS_ALIAS(prog->identifiers[d].identifier_flags))
+	  continue;
+
 	if(prog->identifiers[d].run_time_type == T_MIXED)
 	{
 	  struct svalue *s;
@@ -259,6 +263,7 @@ PMOD_EXPORT void call_c_initializers(struct object *o)
 	    default: u->refs=0; break;
 	  }
 	}
+	debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" clear_global"));
       }
     }
     if(prog->event_handler)
@@ -761,20 +766,28 @@ void destruct(struct object *o)
     {
       int d=prog->variable_index[q];
       struct identifier *id = prog->identifiers + d;
-      int id_flags = id->identifier_flags;
+      int identifier_flags = id->identifier_flags;
       int rtt = id->run_time_type;
 
-      if (IDENTIFIER_IS_ALIAS(id_flags))
+      if (IDENTIFIER_IS_ALIAS(identifier_flags))
 	continue;
-      
+
       if(rtt == T_MIXED)
       {
 	struct svalue *s;
 	s=(struct svalue *)(storage + id->func.offset);
 	dmalloc_touch_svalue(s);
-	if ((s->type != T_OBJECT && s->type != T_FUNCTION) || s->u.object != o ||
-	    !(id_flags & IDENTIFIER_NO_THIS_REF))
+	if ((s->type != T_OBJECT && s->type != T_FUNCTION) ||
+	    s->u.object != o ||
+	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
+	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
 	  free_svalue(s);
+#ifdef DEBUG_MALLOC
+	} else {
+	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+	  dmalloc_touch_svalue(s);
+#endif /* DEBUG_MALLOC */
+	}
       }else{
 	union anything *u;
 	u=(union anything *)(storage + id->func.offset);
@@ -782,8 +795,14 @@ void destruct(struct object *o)
 	if (rtt <= MAX_REF_TYPE) {debug_malloc_touch(u->refs);}
 #endif
 	if (rtt != T_OBJECT || u->object != o ||
-	    !(id_flags & IDENTIFIER_NO_THIS_REF))
+	    !(identifier_flags & IDENTIFIER_NO_THIS_REF)) {
+	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
 	  free_short_svalue(u, rtt);
+#ifdef DEBUG_MALLOC
+	} else {
+	  debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+#endif /* DEBUG_MALLOC */
+	}
 	DO_IF_DMALLOC(u->refs=(void *)-1);
       }
     }
@@ -898,7 +917,7 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
   {
     add_ref(o);
     destruct(o);
-    if(--o->refs > 0) return;
+    if(sub_ref(o)) return;
   }
 
   debug_malloc_touch(o);
@@ -1199,14 +1218,37 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
   {
     /* Don't count references to ourselves to help the gc. DDTAH. */
     struct svalue *to = (struct svalue *) LOW_GET_GLOBAL(o,f,i);
-    if ((to->type != T_OBJECT && to->type != T_FUNCTION) || to->u.object != o ||
-	!(id_flags & IDENTIFIER_NO_THIS_REF))
+    dmalloc_touch_svalue(to);
+    if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
+	to->u.object != o ||
+	!(id_flags & IDENTIFIER_NO_THIS_REF)) {
+      debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" free_global"));
       free_svalue(to);
+#ifdef DEBUG_MALLOC
+    } else {
+      debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" skip_global"));
+      dmalloc_touch_svalue (to);
+#endif /* DEBUG_MALLOC */
+    }
     *to = *from;
     dmalloc_touch_svalue (to);
-    if ((to->type != T_OBJECT && to->type != T_FUNCTION) || to->u.object != o ||
-	!(id_flags & IDENTIFIER_NO_THIS_REF))
-      if(to->type <= MAX_REF_TYPE) add_ref(to->u.dummy);
+    if ((to->type != T_OBJECT && to->type != T_FUNCTION) ||
+	(to->u.object != o) ||
+	!(id_flags & IDENTIFIER_NO_THIS_REF)) {
+      if(to->type <= MAX_REF_TYPE) {
+	debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
+	add_ref(to->u.dummy);
+#ifdef DEBUG_MALLOC
+      } else {
+	debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" store_global"));
+#endif /* DEBUG_MALLOC */
+      }
+#ifdef DEBUG_MALLOC
+    } else {
+      debug_malloc_update_location(o, DMALLOC_NAMED_LOCATION(" self_global"));
+      dmalloc_touch_svalue (to);
+#endif /* DEBUG_MALLOC */
+    }
   }
   else
   {
@@ -1222,24 +1264,40 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 	  if (id_flags & IDENTIFIER_NO_THIS_REF) {
 	    /* Don't count references to ourselves to help the gc. */
 	    debug_malloc_touch(u->object);
-	    if ((u->object != o) && u->refs && --*(u->refs) <= 0)
+	    if ((u->object != o) && u->refs && !sub_ref(u->dummy)) {
+	      debug_malloc_touch(o);
 	      really_free_short_svalue(u,rtt);
+#ifdef DEBUG_MALLOC
+	    } else {
+	      debug_malloc_touch(o);
+#endif /* DEBUG_MALLOC */
+	    }
 	    u->refs = from->u.refs;
-	    if (u->object != o) add_ref(u->dummy);
+	    debug_malloc_touch(u->refs);
+	    if (u->object != o) {
+	      debug_malloc_touch(o);
+	      add_ref(u->dummy);
+#ifdef DEBUG_MALLOC
+	    } else {
+	      debug_malloc_touch(o);
+#endif /* DEBUG_MALLOC */
+	    }
 	    break;
 	  }
 	  /* FALL THROUGH */
 	default:
 	  debug_malloc_touch(u->refs);
-	  if(u->refs && --*(u->refs) <= 0)
+	  if(u->refs && !sub_ref(u->dummy))
 	    really_free_short_svalue(u,rtt);
 	  u->refs = from->u.refs;
 	  add_ref(u->dummy);
       }
     }else if(rtt<=MAX_REF_TYPE && UNSAFE_IS_ZERO(from)){
       if((rtt != T_OBJECT || u->object != o || !(id_flags & IDENTIFIER_NO_THIS_REF)) &&
-	 u->refs && --*(u->refs) <= 0)
+	 u->refs && !sub_ref(u->dummy)) {
+	debug_malloc_touch(u->ptr);
 	really_free_short_svalue(u,rtt);
+      }
       debug_malloc_touch(u->ptr);
       u->refs=0;
     }else{
@@ -1337,11 +1395,15 @@ static union anything *object_low_get_item_ptr(struct object *o,
   struct identifier *i;
   struct program *p;
 
+  debug_malloc_touch(o);
+
   if(!o || !(p=o->prog))
   {
     Pike_error("Lookup in destructed object.\n");
     return 0; /* make gcc happy */
   }
+
+  debug_malloc_touch(p);
 
   i=ID_FROM_INT(p, f);
 
@@ -1377,6 +1439,9 @@ union anything *object_get_item_ptr(struct object *o,
 
   struct program *p;
   int f;
+
+  debug_malloc_touch(o);
+  dmalloc_touch_svalue(index);
 
   if(!o || !(p=o->prog))
   {
@@ -1991,6 +2056,7 @@ static void f_magic_index(INT32 args)
 			     inherit->identifier_level);
     *sp=sval;
     sp++;
+    dmalloc_touch_svalue(Pike_sp-1);
   }
 }
 

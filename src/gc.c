@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.208 2003/02/15 17:33:33 grubba Exp $
+|| $Id: gc.c,v 1.209 2003/03/14 15:50:44 grubba Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.208 2003/02/15 17:33:33 grubba Exp $");
+RCSID("$Id: gc.c,v 1.209 2003/03/14 15:50:44 grubba Exp $");
 
 int gc_enabled = 1;
 
@@ -2440,6 +2440,7 @@ static void warn_bad_cycles()
     for (p = kill_list; p;) {
       if ((cycle = CYCLE(p))) {
 	push_object((struct object *) p->data);
+	dmalloc_touch_svalue(Pike_sp-1);
 	*obj_arr_ = append_array(*obj_arr_, --Pike_sp);
       }
       p = NEXT(p);

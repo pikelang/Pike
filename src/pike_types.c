@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.210 2003/03/08 20:38:02 grubba Exp $
+|| $Id: pike_types.c,v 1.211 2003/03/14 15:50:46 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.210 2003/03/08 20:38:02 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.211 2003/03/14 15:50:46 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -220,7 +220,7 @@ static size_t pike_type_hash_size = 0;
 void debug_free_type(struct pike_type *t)
 {
  loop:
-  if (!(--(((struct pike_type *)debug_malloc_pass(t))->refs))) {
+  if (!sub_ref(t)) {
     unsigned INT32 hash = t->hash % pike_type_hash_size;
     struct pike_type **t2 = pike_type_hash + hash;
     struct pike_type *car, *cdr;
@@ -391,7 +391,8 @@ static inline struct pike_type *debug_mk_type(unsigned INT32 type,
       
   debug_malloc_pass(t = alloc_pike_type());
 
-  t->refs = 1;
+  t->refs = 0;
+  add_ref(t);	/* For DMALLOC... */
   t->type = type;
   t->flags = 0;
   t->car = car;

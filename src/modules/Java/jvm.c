@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: jvm.c,v 1.59 2003/03/13 22:06:01 marcus Exp $
+|| $Id: jvm.c,v 1.60 2003/03/14 15:57:48 grubba Exp $
 */
 
 /*
@@ -22,7 +22,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.59 2003/03/13 22:06:01 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.60 2003/03/14 15:57:48 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -225,7 +225,7 @@ static void push_java_class(jclass c, struct object *jvm, JNIEnv *env)
   jo = (struct jobj_storage *)(oo->storage);
   jo->jvm = jvm;
   jo->jobj = c2;
-  jvm->refs++;
+  add_ref(jvm);
 }
 
 static void push_java_throwable(jthrowable t, struct object *jvm, JNIEnv *env)
@@ -244,7 +244,7 @@ static void push_java_throwable(jthrowable t, struct object *jvm, JNIEnv *env)
   jo = (struct jobj_storage *)(oo->storage);
   jo->jvm = jvm;
   jo->jobj = t2;
-  jvm->refs++;
+  add_ref(jvm);
 }
 
 static void push_java_array(jarray t, struct object *jvm, JNIEnv *env, int ty)
@@ -266,7 +266,7 @@ static void push_java_array(jarray t, struct object *jvm, JNIEnv *env, int ty)
   jo->jobj = t2;
   a = (struct jarray_storage *)(oo->storage+jarray_stor_offs);
   a->ty = ty;
-  jvm->refs++;
+  add_ref(jvm);
 }
 
 static void push_java_anyobj(jobject o, struct object *jvm, JNIEnv *env)
@@ -303,7 +303,7 @@ static void push_java_anyobj(jobject o, struct object *jvm, JNIEnv *env)
   jo = (struct jobj_storage *)(oo->storage);
   jo->jvm = jvm;
   jo->jobj = o2;
-  jvm->refs++;
+  add_ref(jvm);
 }
 
 static void init_jobj_struct(struct object *o)
@@ -554,11 +554,9 @@ static void f_method_create(INT32 args)
   }
 
   m->class = class;
-  m->name = name;
-  m->sig = sig;
-  class->refs++;
-  name->refs++;
-  sig->refs++;
+  copy_shared_string(m->name, name);
+  copy_shared_string(m->sig, sig);
+  add_ref(class);
   pop_n_elems(args);
   push_int(0);
 
@@ -1167,7 +1165,7 @@ static void f_field_create(INT32 args)
 
   if(name == NULL || sig == NULL) {
     f->class = class;
-    class->refs++;
+    add_ref(class);
     pop_n_elems(args);
     f->type = 0;
     return;
@@ -1189,11 +1187,9 @@ static void f_field_create(INT32 args)
   }
 
   f->class = class;
-  f->name = name;
-  f->sig = sig;
-  class->refs++;
-  name->refs++;
-  sig->refs++;
+  copy_shared_string(f->name, name);
+  copy_shared_string(f->sig, sig);
+  add_ref(class);
   pop_n_elems(args);
   push_int(0);
 
@@ -2132,10 +2128,8 @@ static void build_native_entry(JNIEnv *env, jclass cls,
   int statc, args=0, wargs=0, flt_args=0, dbl_args=0;
   char *p = sig->str;
 
-  con->name = name;
-  con->sig = sig;
-  name->refs++;
-  sig->refs++;
+  copy_shared_string(con->name, name);
+  copy_shared_string(con->sig, sig);
 
   if((*env)->GetMethodID(env, cls, name->str, sig->str))
     statc = 0;
@@ -2296,8 +2290,8 @@ static void f_natives_create(INT32 args)
     
     n->jvm = c->jvm;
     n->cls = cls;
-    n->jvm->refs++;
-    n->cls->refs++;
+    add_ref(n->jvm);
+    add_ref(n->cls);
 
     rc = (*env)->RegisterNatives(env, c->jobj, n->jnms, n->num_methods);
     jvm_vacate_env(c->jvm, env);
@@ -2569,8 +2563,7 @@ static void javaarray_subarray(struct object *jvm, struct object *oo,
     if(e2==size) {
       /* Entire array selected */
       jvm_vacate_env(jvm, env);
-      oo->refs++;
-      push_object(oo);
+      ref_push_object(oo);
       return;
     }
 
@@ -3042,7 +3035,7 @@ static void f_monitor_create(INT32 args)
 #endif /* _REENTRANT */
 
   m->obj = obj;
-  obj->refs++;
+  add_ref(obj);
   pop_n_elems(args);
   return;
 }
@@ -3075,8 +3068,7 @@ static void f_create(INT32 args)
   /* Set classpath */
   if(args>0 && Pike_sp[-args].type == PIKE_T_STRING) {
     classpath = Pike_sp[-args].u.string->str;
-    Pike_sp[-args].u.string->refs++;
-    j->classpath_string = Pike_sp[-args].u.string;
+    copy_shared_string(j->classpath_string, Pike_sp[-args].u.string);
   } else {
     if(getenv("CLASSPATH"))
       classpath = getenv("CLASSPATH");
@@ -3098,8 +3090,7 @@ static void f_create(INT32 args)
     push_string(j->classpath_string);
     j->classpath_string = NULL;
     f_add(2);
-    Pike_sp[-1].u.string->refs++;
-    j->classpath_string = Pike_sp[-1].u.string;
+    copy_shared_string(j->classpath_string, Pike_sp[-1].u.string);
     pop_n_elems(1);
     j->vm_args.options[j->vm_args.nOptions].optionString =
       j->classpath_string->str;
@@ -3162,7 +3153,7 @@ static void f_create(INT32 args)
   f_thread_local(0);
   if(Pike_sp[-1].type == PIKE_T_OBJECT) {
     j->tl_env = Pike_sp[-1].u.object;
-    j->tl_env->refs ++;
+    add_ref(j->tl_env);
   }
   pop_n_elems(args+1);
 #else

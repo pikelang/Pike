@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bignum.c,v 1.33 2003/02/14 19:19:57 mast Exp $
+|| $Id: bignum.c,v 1.34 2003/03/14 15:50:43 grubba Exp $
 */
 
 #include "global.h"
@@ -88,6 +88,7 @@ PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
 PMOD_EXPORT struct object *make_bignum_object(void)
 {
   convert_stack_top_to_bignum();
+  dmalloc_touch_svalue(sp-1);
   return (--sp)->u.object;
 }
 
@@ -95,6 +96,7 @@ PMOD_EXPORT struct object *bignum_from_svalue(struct svalue *s)
 {
   push_svalue(s);
   convert_stack_top_to_bignum();
+  dmalloc_touch_svalue(sp-1);
   return (--sp)->u.object;
 }
 
@@ -106,6 +108,7 @@ PMOD_EXPORT struct pike_string *string_from_bignum(struct object *o, int base)
   if(sp[-1].type != T_STRING)
     Pike_error("Gmp.mpz string conversion failed.\n");
   
+  dmalloc_touch_svalue(sp-1);
   return (--sp)->u.string;
 }
 
@@ -173,6 +176,7 @@ PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
   apply_low(bignum, FIND_LFUN(bignum->prog, LFUN_LT), 1);
   if(sp[-1].type != T_INT)
     Pike_error("Result from Gmp.bignum->`< not an integer.\n");
+  dmalloc_touch_svalue(sp-1);
   neg = (--sp)->u.integer;
 
   if(neg)
@@ -189,6 +193,7 @@ PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
     apply_low(sp[-2].u.object, andfun, 1);
     if(sp[-1].type != T_INT)
       Pike_error("Result from Gmp.bignum->`& not an integer.\n");
+    dmalloc_touch_svalue(sp-1);
     *i |= (INT64)(--sp)->u.integer << (INT64)pos;
     pos += BIGNUM_INT64_SHIFT;
     
@@ -198,6 +203,7 @@ PMOD_EXPORT int int64_from_bignum(INT64 *i, struct object *bignum)
     pop_stack();
   }
   
+  dmalloc_touch_svalue(sp-1);
   *i |= (INT64)(--sp)->u.integer << (INT64)pos;
 
   if(neg)

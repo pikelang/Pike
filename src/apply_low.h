@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: apply_low.h,v 1.15 2003/02/24 21:50:46 mast Exp $
+|| $Id: apply_low.h,v 1.16 2003/03/14 15:50:43 grubba Exp $
 */
 
     {
@@ -227,6 +227,15 @@
 	  /* Create an extra svalue for tail recursion style call */
 	  Pike_sp++;
 	  MEMMOVE(Pike_sp-args,Pike_sp-args-1,sizeof(struct svalue)*args);
+#ifdef DEBUG_MALLOC
+	  {
+	    int i;
+	    /* Note: touch the dead svalue too. */
+	    for (i=args+2; i > 0; i--) {
+	      dmalloc_touch_svalue(Pike_sp-i);
+	    }
+	  }
+#endif /* DEBUG_MALLOC */	      
 	  Pike_sp[-args-1].type=T_INT;
 	}else{
 	  free_svalue(Pike_sp-args-1);

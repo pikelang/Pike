@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: orient.c,v 1.23 2002/10/21 17:06:14 marcus Exp $
+|| $Id: orient.c,v 1.24 2003/03/14 15:57:48 grubba Exp $
 */
 
 /*
@@ -272,7 +272,7 @@ THREADS_DISALLOW();
 
   if (!w)
   {
-    o[4]->refs++;
+    add_ref(o[4]);
     pop_n_elems(5);
     push_object(o[4]);
   }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.168 2003/02/24 19:03:03 mast Exp $
+|| $Id: encode.c,v 1.169 2003/03/14 15:53:09 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.168 2003/02/24 19:03:03 mast Exp $");
+RCSID("$Id: encode.c,v 1.169 2003/03/14 15:53:09 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -683,7 +683,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    /* This doesn't let bignums through. That's necessary as
 	     * long as they aren't handled deterministically by the
 	     * sort function. */
-	    /* They should be hanled deterministically now - Hubbe */
+	    /* They should be handled deterministically now - Hubbe */
 	    Pike_error("Canonical encoding requires basic types in indices.\n");
 	}
 	order = get_switch_order(Pike_sp[-2].u.array);
@@ -1434,6 +1434,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	    } else {
 	      push_int(0);
 	      encode_value2(Pike_sp-1, data);
+	      dmalloc_touch_svalue(Pike_sp-1);
 	      Pike_sp--;
 	    }
 	  }
@@ -1637,6 +1638,7 @@ static void fallback_codec(void)
   push_constant_text(".");
   f_divide(2);
   f_reverse(1);
+  dmalloc_touch_svalue(Pike_sp-1);
   Pike_sp--;
   x=Pike_sp->u.array->size;
   push_array_items(Pike_sp->u.array);
@@ -1993,7 +1995,7 @@ static int init_placeholder(struct object *placeholder);
    * safely decrease this reference here. Thus it will be automatically	\
    * freed if something goes wrong.					\
    */									\
-    VAR->refs--;							\
+    sub_ref(VAR);							\
   }									\
   data->counter.u.integer++;						\
 }while(0)
@@ -2398,6 +2400,7 @@ static void decode_value2(struct decode_data *data)
 #endif
 	      pop_n_elems(2);
 	      *Pike_sp++ = func;
+	      dmalloc_touch_svalue(Pike_sp-1);
 	      break;
 	    }
 	  }
@@ -2503,6 +2506,7 @@ static void decode_value2(struct decode_data *data)
 		placeholder=Pike_sp[-1].u.object;
 		if(placeholder->prog != null_program)
 		  Pike_error("Placeholder object is not a null_program clone!\n");
+		dmalloc_touch_svalue(Pike_sp-1);
 		Pike_sp--;
 	      }else{
 		pop_stack();
@@ -2720,7 +2724,7 @@ static void decode_value2(struct decode_data *data)
 	      if(Pike_sp[-1].type != T_PROGRAM ||
 		 Pike_sp[-1].u.program != p)
 		Pike_error("Program decode failed!\n");
-	      p->refs--;
+	      sub_ref(p);
 	    }
 
 	    if(data->pass > 1)
@@ -2831,6 +2835,7 @@ static void decode_value2(struct decode_data *data)
 	      assign_svalue(& p->constants[d].sval , Pike_sp -1 );
 	      pop_stack();
 	    }else{
+	      dmalloc_touch_svalue(Pike_sp-1);
 	      p->constants[d].sval=*--Pike_sp;
 	    }
 	    dmalloc_touch_svalue(Pike_sp);
@@ -3104,6 +3109,7 @@ static void decode_value2(struct decode_data *data)
 	    Pike_error("Bad type for parent program (%s)\n",
 		       get_name_of_type(Pike_sp[-1].type));
 	  }
+	  dmalloc_touch_svalue(Pike_sp-1);
 	  Pike_sp--;
 
 	  /* Decode lengths. */
@@ -3162,6 +3168,7 @@ static void decode_value2(struct decode_data *data)
 	      Pike_error("Non strings in string table.\n");
 	    }
 	    add_to_strings(Pike_sp[-1].u.string);
+	    dmalloc_touch_svalue(Pike_sp-1);
 	    Pike_sp--;
 	  }
 
@@ -3417,6 +3424,8 @@ static void decode_value2(struct decode_data *data)
 		}
 
 		add_to_identifiers(id);
+		dmalloc_touch_svalue(Pike_sp-1);
+		dmalloc_touch_svalue(Pike_sp-2);
 		Pike_sp -= 2;
 	      }
 	      break;
@@ -3547,6 +3556,8 @@ static void decode_value2(struct decode_data *data)
 	      Pike_error("Name of constant is not a string.\n");
 	    }
 	    constant->sval = Pike_sp[-2];
+	    dmalloc_touch_svalue(Pike_sp-1);
+	    dmalloc_touch_svalue(Pike_sp-2);
 	    Pike_sp -= 2;
 	  }
 
@@ -4012,6 +4023,7 @@ void f_decode_value(INT32 args)
 {
   struct pike_string *s;
   struct object *codec;
+  struct pike_frame *new_frame;
 
 #ifdef ENCODE_DEBUG
   int debug;

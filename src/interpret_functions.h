@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.140 2003/03/06 17:19:43 grubba Exp $
+|| $Id: interpret_functions.h,v 1.141 2003/03/14 15:50:44 grubba Exp $
 */
 
 /*
@@ -185,6 +185,7 @@
   pop_2_elems();				\
   *Pike_sp=s;					\
   Pike_sp++;					\
+  dmalloc_touch_svalue(Pike_sp-1);		\
   print_return_value();				\
 }while(0)
 
@@ -860,6 +861,8 @@ OPCODE0(F_ASSIGN, "assign", 0, {
   free_svalue(Pike_sp-3);
   free_svalue(Pike_sp-2);
   Pike_sp[-3]=Pike_sp[-1];
+  dmalloc_touch_svalue(Pike_sp-1);
+  dmalloc_touch_svalue(Pike_sp-2);
   Pike_sp-=2;
 });
 
@@ -868,6 +871,7 @@ OPCODE2(F_APPLY_ASSIGN_LOCAL_AND_POP, "apply, assign local and pop", 0, {
 	       DO_NOT_WARN((INT32)(Pike_sp - *--Pike_mark_sp)));
   free_svalue(Pike_fp->locals+arg2);
   Pike_fp->locals[arg2]=Pike_sp[-1];
+  dmalloc_touch_svalue(Pike_sp-1);
   Pike_sp--;
 });
 
@@ -885,6 +889,7 @@ OPCODE0(F_ASSIGN_AND_POP, "assign and pop", 0, {
 OPCODE1(F_ASSIGN_LOCAL_AND_POP, "assign local and pop", 0, {
   free_svalue(Pike_fp->locals + arg1);
   Pike_fp->locals[arg1] = Pike_sp[-1];
+  dmalloc_touch_svalue(Pike_sp-1);
   Pike_sp--;
 });
 
@@ -1425,6 +1430,7 @@ OPCODE0(F_ADD_INTS, "int+int", 0, {
     )
   {
     Pike_sp[-2].u.integer+=Pike_sp[-1].u.integer;
+    dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
   }else{
     f_add(2);
@@ -1435,6 +1441,7 @@ OPCODE0(F_ADD_FLOATS, "float+float", 0, {
   if(Pike_sp[-1].type == T_FLOAT && Pike_sp[-2].type == T_FLOAT)
   {
     Pike_sp[-2].u.float_number+=Pike_sp[-1].u.float_number;
+    dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
   }else{
     f_add(2);
@@ -1493,11 +1500,13 @@ OPCODE0(F_PUSH_ARRAY, "@", 0, {
       Pike_error("Bad return type from o->_values() in @\n");
     free_svalue(Pike_sp-2);
     Pike_sp[-2]=Pike_sp[-1];
+    dmalloc_touch_svalue(Pike_sp-1);
     Pike_sp--;
     break;
 
   case PIKE_T_ARRAY: break;
   }
+  dmalloc_touch_svalue(Pike_sp-1);
   Pike_sp--;
   push_array_items(Pike_sp->u.array);
 });
@@ -2052,7 +2061,7 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
 									   \
   new_frame=alloc_pike_frame();						   \
 									   \
-  new_frame->refs=1;							   \
+  new_frame->refs=1;	/* FIXME: Is this needed? */			   \
   new_frame->next=Pike_fp;						   \
 									   \
   Pike_fp->pc = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);		   \

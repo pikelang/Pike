@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.34 2003/02/08 03:49:22 mast Exp $
+|| $Id: iterators.cmod,v 1.35 2003/03/14 15:53:09 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.34 2003/02/08 03:49:22 mast Exp $");
+RCSID("$Id: iterators.cmod,v 1.35 2003/03/14 15:53:09 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -690,6 +690,7 @@ PIKECLASS file_line_iterator
 	stack_swap();
 	f_add( 2 );
 	ssi->buffer = Pike_sp[-1].u.string;
+	dmalloc_touch_svalue(Pike_sp-1);
 	Pike_sp--;
 
 	if( !ssi->buffer->size_shift )
@@ -793,6 +794,7 @@ PIKECLASS file_line_iterator
       if( Pike_sp[-1].type != PIKE_T_STRING )
 	Pike_error("Feed function returned illegal value\n");
       THIS->buffer = Pike_sp[-1].u.string;
+      dmalloc_touch_svalue(Pike_sp-1);
       Pike_sp--;
       THIS->offset = 0;
       THIS->current = NULL;
@@ -990,6 +992,7 @@ PIKECLASS string_split_iterator
 	if ((Pike_sp[-1].type == T_STRING) &&			\
 	    (Pike_sp[-1].u.string->len)) {			\
 	  ssi->buffer = Pike_sp[-1].u.string;			\
+          dmalloc_touch_svalue(Pike_sp-1);			\
 	  Pike_sp--;						\
 	  goto reskip_empty;					\
 	}							\
@@ -1027,6 +1030,7 @@ PIKECLASS string_split_iterator
 	}							\
 	free_string(ssi->buffer);				\
 	ssi->buffer = Pike_sp[-1].u.string;			\
+        dmalloc_touch_svalue(Pike_sp-1);			\
 	Pike_sp--;						\
 	end -= offset;						\
 	offset = 0;						\
@@ -1041,6 +1045,7 @@ PIKECLASS string_split_iterator
     }								\
     ssi->offset = end+1;					\
     ssi->current = Pike_sp[-1].u.string;			\
+    dmalloc_touch_svalue(Pike_sp-1);				\
     Pike_sp--;							\
     if (ssi->offset > ssi->buffer->len) {			\
       free_string(ssi->buffer);					\
@@ -1173,6 +1178,7 @@ PIKECLASS string_split_iterator
       free_string(THIS->buffer);
       THIS->buffer = Pike_sp[-1].u.string;
       THIS->offset = 0;
+      dmalloc_touch_svalue(Pike_sp-1);
       Pike_sp--;
 
       /* Perform the scan. */
@@ -1567,6 +1573,7 @@ int foreach_iterate(struct object *o)
 	{
 	  /* Black Magic... */
 	  push_string(i->current);
+	  dmalloc_touch_svalue(Pike_sp-1);
 	  Pike_sp--;
 	  assign_lvalue(Pike_sp-2, Pike_sp);
 	}
@@ -1593,6 +1600,7 @@ int foreach_iterate(struct object *o)
 	{
 	  /* Black Magic... */
 	  push_string(i->current);
+	  dmalloc_touch_svalue(Pike_sp-1);
 	  Pike_sp--;
 	  assign_lvalue(Pike_sp-2, Pike_sp);
 	}

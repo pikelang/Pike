@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sane.c,v 1.16 2002/12/30 12:30:06 grubba Exp $
+|| $Id: sane.c,v 1.17 2003/03/14 15:57:49 grubba Exp $
 */
 
 #include "config.h"
@@ -39,7 +39,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sane.c,v 1.16 2002/12/30 12:30:06 grubba Exp $");
+RCSID("$Id: sane.c,v 1.17 2003/03/14 15:57:49 grubba Exp $");
 
 /*! @module SANE
  *!
@@ -722,7 +722,7 @@ static void f_scanner_nonblocking_row_scan( INT32 args )
   push_int( 1 );
   rsp->o = clone_object( image_program, 2 );
   rsp->t = Pike_fp->current_object;
-  Pike_fp->current_object->refs++;
+  add_ref(Pike_fp->current_object);
   rsp->r = ((struct image *)rsp->o->storage)->img;
   rsp->h = THIS->h;
   rsp->p = p;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: e_source_block_pikestream.c,v 1.1 2003/01/14 22:40:25 per Exp $
+|| $Id: e_source_block_pikestream.c,v 1.2 2003/03/14 15:57:49 grubba Exp $
 */
 
 #include "global.h"
@@ -119,7 +119,7 @@ struct source *source_block_pikestream_make( struct svalue *s,
   res->s.get_data = get_data;
   res->s.free_source = free_source;
   res->obj = s->u.object;
-  res->obj->refs++;
+  add_ref(res->obj);
   return (struct source *)res;
 }
 
