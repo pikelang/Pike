@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.132 2003/01/14 11:54:06 jhs Exp $
+|| $Id: opcodes.c,v 1.133 2003/01/15 19:07:50 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.132 2003/01/14 11:54:06 jhs Exp $");
+RCSID("$Id: opcodes.c,v 1.133 2003/01/15 19:07:50 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -580,6 +580,11 @@ void o_cast(struct pike_type *type, INT32 run_time_type)
 	  case T_FUNCTION:
 	    if (Pike_sp[-1].subtype == FUNCTION_BUILTIN) {
 	      Pike_error("Cannot cast builtin functions to object.\n");
+	    } else if (Pike_sp[-1].u.object->prog == pike_trampoline_program) {
+	      ref_push_object(((struct pike_trampoline *)
+			       (Pike_sp[-1].u.object->storage))->
+			      frame->current_object);
+	      stack_pop_n_elems_keep_top(1);
 	    } else {
 	      Pike_sp[-1].type = T_OBJECT;
 	    }
