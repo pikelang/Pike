@@ -123,6 +123,7 @@ Filesystem.Stat stat(string file, int|void lstat)
      file = file[..strlen(file)-2];
 #endif
    string full = combine_path(wd, file);
+   if ( full!="" && full[0]=='/') full=full[1..];
 
    if((a = file_stat(combine_path("/",root,full), lstat)))
    {
@@ -195,6 +196,7 @@ Stdio.File open(string filename, string mode)
   filename = replace( filename, "\\", "/" );
 #endif
   filename = combine_path(wd, filename);
+  if ( filename!="" && filename[0]=='/') filename=filename[1..];
   
   Stdio.File f = Stdio.File();
 
