@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: ssleay.c,v 1.3 1996/12/02 07:04:34 hubbe Exp $");
+RCSID("$Id: ssleay.c,v 1.4 1996/12/04 03:35:25 nisse Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -66,7 +66,10 @@ void ssleay_connection_create(INT32 args)
   CON = SSL_new( ( (struct ssleay_context *) sp[-args].u.object->storage)
 		 -> shared);
   if (!CON)
-    error("ssleay_connection->create: Could not allocate new connection\n");
+    {
+      ERR_print_errors_fp(stderr);
+      error("ssleay_connection->create: Could not allocate new connection\n");
+    }
   SSL_clear(CON);
 }
 
@@ -83,7 +86,7 @@ void ssleay_connection_accept(INT32 args)
   if (SSL_accept(CON) <= 0)
     {
       ERR_print_errors_fp(stderr);
-      error("ssleay_connection->accept: failed");
+      error("ssleay_connection->accept: failed\n");
     }
   pop_n_elems(args);
 }
@@ -135,9 +138,9 @@ static void ssleay_use_certificate_file(INT32 args)
 {
   if (sp[-args].type != T_STRING)
     error("ssleay->use_certificate_file: wrong type");
-  if (SSL_CTX_use_certificate_file(CTX, sp[-args].u.string->str, SSL_FILETYPE_PEM))
-{
-ERR_print_errors_fp(stderr);
+  if (SSL_CTX_use_certificate_file(CTX, sp[-args].u.string->str, SSL_FILETYPE_PEM) <= 0)
+    {
+      ERR_print_errors_fp(stderr);
       error("ssleay->use_certificate_file: unable to use certificate");
     }
   pop_n_elems(args);
@@ -147,10 +150,10 @@ static void ssleay_use_private_key_file(INT32 args)
 {
   if (sp[-args].type != T_STRING)
     error("ssleay->use_private_key_file: wrong type");
-  if (SSL_CTX_use_PrivateKey_file(CTX, sp[-args].u.string->str, SSL_FILETYPE_PEM))
+  if (SSL_CTX_use_PrivateKey_file(CTX, sp[-args].u.string->str, SSL_FILETYPE_PEM) <= 0)
     {
       ERR_print_errors_fp(stderr);
-      error("ssleay->use_private_key_file: unable to use private_key");
+      error("ssleay->use_private_key_file: unable to use private_key\n");
     }
   pop_n_elems(args);
 }
@@ -183,14 +186,22 @@ void init_context(struct object *o)
   CTX = NULL;
 }
 
-void exit_context(struct object *o) {}
+void exit_context(struct object *o)
+{
+  if (CTX)
+    SSL_CTX_free(CTX);
+}
 
 void init_connection(struct object *o)
 {
   CON = NULL;
 }
 
-void exit_connection(struct object *o) {}
+void exit_connection(struct object *o)
+{
+  if (CON)
+    SSL_free(CON);
+}
 
 #endif
 
@@ -216,9 +227,13 @@ void exit_ssleay()
 void init_ssleay_programs(void)
 {
 #ifdef HAVE_SSLEAY
+  ERR_load_ERR_strings();
+  ERR_load_SSL_strings();
+  ERR_load_crypto_strings();
   start_new_program();
   add_storage(sizeof(struct ssleay_context));
 
+  add_function("create", ssleay_create, "function(void:void)",0);
   add_function("use_certificate_file", ssleay_use_certificate_file, "function(string:void)", 0);
   add_function("use_private_key_file", ssleay_use_private_key_file, "function(string:void)", 0);
   add_function("new", ssleay_new, "function(void:object)", 0);
