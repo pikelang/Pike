@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.41 1999/04/30 07:22:16 hubbe Exp $
+ * $Id: acconfig.h,v 1.42 1999/05/11 22:41:00 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -33,6 +33,9 @@
 
 /* Define this if your ld uses -rpath, but your cc wants -Wl,-rpath, */
 #undef USE_Wl
+
+/* Define this if your ld uses -R, but your cc wants -Wl,-R */
+#undef USE_Wl_R
 
 /* Define this if your ld doesn't have an option to set the run path */
 #undef USE_LD_LIBRARY_PATH
