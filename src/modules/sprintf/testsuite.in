@@ -96,8 +96,25 @@ test_eq(sprintf("%2c",65535),"\377\377")
 test_eq(sprintf("%3c",0xffffff),"\377\377\377")
 test_true(stringp(sprintf("%f",255.0)))
 test_true(stringp(sprintf("%g",255.0)))
+test_true(stringp(sprintf("%G",255.0)))
 test_true(stringp(sprintf("%e",255.0)))
-test_true(stringp(sprintf("%e",255.0)))
+test_true(stringp(sprintf("%E",255.0)))
+
+dnl test for high exponent problems
+dnl (this might only effect --with-double-precision et al)
+test_true(stringp(sprintf("%f",exp(200))))
+test_true(stringp(sprintf("%g",exp(200))))
+test_true(stringp(sprintf("%G",exp(200))))
+test_true(stringp(sprintf("%e",exp(200))))
+test_true(stringp(sprintf("%E",exp(200))))
+
+dnl test for "inf" problems
+test_true(stringp(sprintf("%f",exp(65536)))) 
+test_true(stringp(sprintf("%g",exp(65536))))
+test_true(stringp(sprintf("%G",exp(65536))))
+test_true(stringp(sprintf("%e",exp(65536))))
+test_true(stringp(sprintf("%E",exp(65536))))
+
 test_eq(sprintf("%s","foobaR"),"foobaR")
 test_eq(sprintf("%s","foo\nbar"),"foo\nbar")
 test_eq(sprintf("%8.3s","foobar"),"     foo")
