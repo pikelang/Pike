@@ -1,9 +1,9 @@
-/* $Id: bmp.c,v 1.28 2000/08/17 19:22:29 grubba Exp $ */
+/* $Id: bmp.c,v 1.29 2000/09/05 12:46:12 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: bmp.c,v 1.28 2000/08/17 19:22:29 grubba Exp $
+**!	$Id: bmp.c,v 1.29 2000/09/05 12:46:12 grubba Exp $
 **! submodule BMP
 **!
 **!	This submodule keeps the BMP (Windows Bitmap)
@@ -22,7 +22,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: bmp.c,v 1.28 2000/08/17 19:22:29 grubba Exp $");
+RCSID("$Id: bmp.c,v 1.29 2000/09/05 12:46:12 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -54,6 +54,37 @@ extern struct program *image_program;
 static struct pike_string *rle_string = NULL;
 static struct pike_string *bpp_string = NULL;
 static struct pike_string *colortable_string = NULL;
+
+/*
+ * File format description.
+ *
+ * offset
+ * 0000 - 0001	Magic cookie "BM"
+ * 0002 - 0005	File size
+ * 0006 - 0007	Reserved
+ * 0008 - 0009	Reserved
+ * 000a - 000d	Offset to bitmap (offs)
+ * 000e - 0011	Size of info struct (0x28)
+ * 0012 - 0015	Width
+ * 0016 - 0019	Height
+ * 001a - 001b	Number of planes for the target device
+ * 001c - 001d	Bits per pixel
+ * 001e - 0021	Compression method (none=0, 8bit rle=1, 4bit rle=2)
+ * 0022 - 0025	Size of image
+ * 0026 - 0029	Horizontal resolution (pixels/meter).
+ * 002a - 002d	Vertical resolution (pixels/meter).
+ * 002e - 0031	Size of colortable.
+ * 0032 - 0035	Number of important colors or zero.
+ *
+ * 0036 -	Colortable in BGRZ format.
+ *
+ * offs -	Image data
+ */ 
+
+
+/*
+ * Functions to read/write the file data.
+ */
 
 static INLINE void push_ubo_32bit(size_t x)
 {
@@ -143,10 +174,10 @@ static int parameter(struct svalue *map,struct pike_string *what,struct svalue *
 
 void img_bmp_encode(INT32 args)
 {
-   struct object *o=NULL,*oc=NULL;
+   struct object *o=NULL, *oc=NULL;
    struct image *img=NULL;
    struct neo_colortable *nct=NULL;
-   int n=0,bpp=0;
+   int n=0, bpp=0;
    ptrdiff_t size, offs;
    struct pike_string *ps; 
 
@@ -159,14 +190,13 @@ void img_bmp_encode(INT32 args)
        !(img=(struct image*)get_storage(o=sp[-args].u.object,image_program)))
       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",1,"image object");
 
-   if (args==1)
-      nct=NULL,oc=NULL;
-   else
+   if (args>1) {
       if (sp[1-args].type==T_OBJECT)
       {
 	 if (!(nct=(struct neo_colortable*)
 	       get_storage(oc=sp[1-args].u.object,image_colortable_program)))
 	    SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object");
+	 add_ref(oc);
       }
       else if (sp[1-args].type==T_MAPPING)
       {
@@ -183,6 +213,7 @@ void img_bmp_encode(INT32 args)
 		!(nct=(struct neo_colortable*)
 		  get_storage(oc=v->u.object,image_colortable_program)))
 	       SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"colortable object at index \"colortable\"\n");
+	    add_ref(oc);
 	 }
       } 
       else if (sp[1-args].type==T_INT)
@@ -191,6 +222,7 @@ void img_bmp_encode(INT32 args)
       }
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.BMP.encode",2,"mapping|object|int\n");
+   }
 
    if (bpp==0) {
       if (!nct) 
@@ -207,7 +239,10 @@ void img_bmp_encode(INT32 args)
    {
       case 1:
 	 if (rle) 
-	    bad_arg_error("Image.BMP.encode",sp-args,args,2,"mapping",sp+2-1-args,"run-length encoding can only be done on a palette-based image with 4 or 8 bits per pixel");
+	    bad_arg_error("Image.BMP.encode", sp-args, args, 2, "mapping",
+			  sp+2-1-args,
+			  "run-length encoding can only be done on a "
+			  "palette-based image with 4 or 8 bits per pixel");
       case 4:
       case 8:
 	 if (!nct)
@@ -215,9 +250,12 @@ void img_bmp_encode(INT32 args)
 	    /* make one */
 	    ref_push_object(o);
 	    push_int(1<<bpp);
-	    oc=clone_object(image_colortable_program,2);
-	    nct=(struct neo_colortable*)
-	       get_storage(oc,image_colortable_program);
+	    oc = clone_object(image_colortable_program, 2);
+	    if (!(nct=(struct neo_colortable*)
+		  get_storage(oc, image_colortable_program))) {
+	      free_object(oc);
+	      error("Unexpected result from clone_object().\n");
+	    }
 	 }
 	 else if (image_colortable_size(nct)>(1<<bpp))
 	    bad_arg_error("Image.BMP.encode", sp-args, args, 2, "mapping",
@@ -229,12 +267,13 @@ void img_bmp_encode(INT32 args)
       case 24:
 	 break;
       default:
-	 bad_arg_error("Image.BMP.encode",sp-args,args,2,"mapping",sp+2-1-args,"illegal bits per pixel: %d (1, 4, 8 and 24 are valid)\n",bpp);
+	 bad_arg_error("Image.BMP.encode", sp-args, args, 2, "mapping",
+		       sp+2-1-args,
+		       "illegal bits per pixel: %d "
+		       "(1, 4, 8 and 24 are valid)\n",
+		       bpp);
    }
 
-   /* FIXME: According to DMALLOC, oc leaks 1 ref in the testsuite */
-
-   if (oc) add_ref(oc);
    add_ref(o);
    pop_n_elems(args);
 
@@ -268,6 +307,7 @@ void img_bmp_encode(INT32 args)
 
    if (bpp<24)
    {
+      /* FIXME: What if we don't have a nct? */
       ps=begin_shared_string((1<<bpp)*4);
       MEMSET(ps->str,0,(1<<bpp)*4);
       image_colortable_write_bgrz(nct,(unsigned char *)ps->str);
@@ -305,7 +345,7 @@ void img_bmp_encode(INT32 args)
 	 case 1: /* basic RLE */
 	    /* source image */
 	    ps=begin_shared_string(img->xsize*img->ysize);
-	    image_colortable_index_8bit_image(nct,img->img,
+	    image_colortable_index_8bit_image(nct, img->img,
 					      (unsigned char *)ps->str,
 					      m=img->xsize*img->ysize,
 					      img->xsize);
@@ -358,8 +398,18 @@ void img_bmp_encode(INT32 args)
 	       while (m)
 	       {
 		  a=s[0];
-		  for (i=1; i<m && i<255; i++)
-		     if (s[i]!=a) break;
+		  if (m < 255) {
+		    for (i=1; i<m; i++) {
+		      if (s[i]!=a) break;
+		    }
+		  } else {
+		    for (i=1; i<255; i++) {
+		      if (s[i]!=a) break;
+		    }
+		  }
+
+		  /* FIXME: Support for literal run data.
+		   * (00 n x x x 00), n >= 3. */
 
 		  if (i>l) i=l;
 	       
@@ -377,13 +427,15 @@ void img_bmp_encode(INT32 args)
 		  {
 		     *(d++)=0; /* EOL */
 		     *(d++)=0;
-		     l=img->xsize;
+		     l = img->xsize;
 		  }
 	       }
 	    }
 	    *(d++)=0; /* EOD */
 	    *(d++)=1;
-	    ps->len=d-(unsigned char*)ps->str;
+	    *d = 0;	/* End of string marker. (low level magic) */
+	    /* FIXME: Is the following construct really supported? */
+	    ps->len = d-(unsigned char*)ps->str;
 	    push_string(ps=end_shared_string(ps));
 
 	    stack_swap();
@@ -784,7 +836,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	 if (comp==1)
 	 {
 	    int i;
-	    rgb_group *maxd=img->img+img->xsize*img->ysize;
+	    rgb_group *maxd = img->img + img->xsize*img->ysize;
 
 
 	    /* 00 00        -	end of line
@@ -794,10 +846,10 @@ void i_img_bmp__decode(INT32 args,int header_only)
 	        x  a        -   x bytes of rle data (a a ...)
 	    */
 
-	    y=img->ysize-1;
-	    d=img->img+img->xsize*y;
+	    y = img->ysize-1;
+	    d = img->img + img->xsize*y;
 
-	    j=len;
+	    j = len;
 	    
 	    while (j--)
 	    {
@@ -813,7 +865,7 @@ void i_img_bmp__decode(INT32 args,int header_only)
 				   j,s[0],s[1]);
 #endif
 			   if (y!=0) y--;
-			   d=img->img+img->xsize*y;
+			   d = img->img + img->xsize*y;
 			   break;
 			case 1: /* EOD */
 			   goto done_rle8;
@@ -834,13 +886,13 @@ void i_img_bmp__decode(INT32 args,int header_only)
 		     fprintf(stderr,"rle data     %02x %02x\n",s[0],s[1]);		     
 #endif
 		     for (i=0; i<s[0] && d<maxd; i++)
-			if (s[1]>nct->u.flat.numentries) 
+			if (s[1] > nct->u.flat.numentries) 
 			   d++;
 			else 
-			   *(d++)=nct->u.flat.entries[s[1]].color;
+			   *(d++) = nct->u.flat.entries[s[1]].color;
 		     break;
 	       }
-	       s+=2;
+	       s += 2;
 	    }
    done_rle8: ;
 	 }
