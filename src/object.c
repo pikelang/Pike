@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.43 1998/04/06 04:28:31 hubbe Exp $");
+RCSID("$Id: object.c,v 1.44 1998/04/09 02:42:31 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -99,7 +99,12 @@ static void call_c_initializers(struct object *o)
 	union anything *u;
 	u=(union anything *)(frame.current_storage +
 			     frame.context.prog->identifiers[d].func.offset);
-	MEMSET((char *)u,0,sizeof(*u));
+	switch(frame.context.prog->identifiers[d].run_time_type)
+	{
+	  case T_INT: u->integer=0; break;
+	  case T_FLOAT: u->float_number=0.0; break;
+	  default: u->refs=0; break;
+	}
       }
     }
 
