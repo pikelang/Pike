@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.83 1998/03/17 23:03:34 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.84 1998/03/18 20:22:30 per Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2396,18 +2396,24 @@ void f_gethrtime(INT32 args)
 #ifdef PROFILING
 static void f_get_prof_info(INT32 args)
 {
-  struct program *prog;
+  struct program *prog = 0;
   int num_functions;
   int i;
 
   if (!args) {
     error("get_profiling_info(): Too few arguments\n");
   }
-  if (sp[-args].type != T_PROGRAM) {
-    error("get_profiling_info(): Bad argument 1\n");
+  if (sp[-args].type == T_FUNCTION 
+      && s->subtype != FUNCTION_BUILTIN) {
+    prog = sp[-args].u.object->prog;
+  } else if (sp[-args].type == T_OBJECT) {
+    prog = sp[-args].u.object->prog;
+  } else if (sp[-args].type == T_PROGRAM) {
+    prog = sp[-args].u.program;
   }
 
-  prog = sp[-args].u.program;
+  if(!prog) error("get_profiling_info(): Bad argument 1\n");
+
   prog->refs++;
 
   pop_n_elems(args);
@@ -2417,13 +2423,15 @@ static void f_get_prof_info(INT32 args)
   push_int(prog->num_clones);
 
   for(num_functions=i=0; i<(int)prog->num_identifiers; i++) {
-    if (IDENTIFIER_IS_FUNCTION(prog->identifiers[i].identifier_flags)) {
+    if (prog->identifiers[i].num_calls)
+    {
       num_functions++;
       prog->identifiers[i].name->refs++;
       push_string(prog->identifiers[i].name);
 
       push_int(prog->identifiers[i].num_calls);
-      f_aggregate(1);
+      push_int(prog->identifiers[i].total_time);
+      f_aggregate(2);
     }
   }
   f_aggregate_mapping(num_functions * 2);

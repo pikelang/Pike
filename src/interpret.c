@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.69 1998/02/27 08:39:17 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.70 1998/03/18 20:22:30 per Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1531,6 +1531,11 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   struct object *o;
   int fun, tailrecurse=-1;
   struct svalue *save_sp=sp-args;
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+  long long start_time = gethrtime();
+#endif
+#endif
 
   switch(type)
   {
@@ -1682,6 +1687,10 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       new_frame.context = p->inherits[ ref->inherit_offset ];
 
       function = new_frame.context.prog->identifiers + ref->identifier_offset;
+
+#ifdef PROFILING
+      function->num_calls++;
+#endif
   
       new_frame.locals = sp - args;
       new_frame.args = args;
@@ -1794,6 +1803,11 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       }
       
       }
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+      function->total_time+=(INT32)((gethrtime()-start_time)/1000);
+#endif
+#endif
 
 #if 0
       if(sp - new_frame.locals > 1)

@@ -117,6 +117,7 @@ struct identifier
   unsigned INT16 run_time_type;
 #ifdef PROFILING
   unsigned INT32 num_calls;
+  unsigned INT32 total_time;
 #endif /* PROFILING */
   union idptr func;
 };

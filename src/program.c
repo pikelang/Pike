@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.65 1998/03/01 11:40:47 hubbe Exp $");
+RCSID("$Id: program.c,v 1.66 1998/03/18 20:22:31 per Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1242,6 +1242,7 @@ int low_define_variable(struct pike_string *name,
   dummy.func.offset=offset;
 #ifdef PROFILING
   dummy.num_calls=0;
+  dummy.total_time=0;
 #endif
 
   ref.id_flags=flags;
@@ -1418,8 +1419,9 @@ int add_constant(struct pike_string *name,
   ref.identifier_offset=new_program->num_identifiers;
   ref.inherit_offset=0;
 
-#ifdef PROFILEING
+#ifdef PROFILING
   dummy.num_calls=0;
+  dummy.total_time=0;
 #endif
 
   add_to_identifiers(dummy);
@@ -1550,6 +1552,11 @@ INT32 define_function(struct pike_string *name,
   struct reference ref;
   INT32 i;
 
+#ifdef PROFILING
+  fun.num_calls=0;
+  fun.total_time=0;
+#endif
+
   i=isidentifier(name);
 
   if(i >= 0)
@@ -1635,9 +1642,6 @@ INT32 define_function(struct pike_string *name,
     fun.func.offset = -1;
   
   i=new_program->num_identifiers;
-#ifdef PROFILING
-  fun.num_calls = 0;
-#endif /* PROFILING */
   
   add_to_identifiers(fun);
   

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.59 1998/03/10 03:14:55 per Exp $");
+RCSID("$Id: threads.c,v 1.60 1998/03/18 20:22:32 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -892,6 +892,7 @@ static struct farmer *new_farmer(void (*fun)(void *), void *args)
 #else
   th_create_small(&me->me, farm, me);
 #endif
+  return me;
 }
 
 void th_farm(void (*fun)(void *), void *here)
