@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.114 2001/03/09 02:54:32 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.115 2001/04/06 14:16:40 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -2139,12 +2140,12 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 		(long)(time_base/100000),
 		(long)(start_time/100000)
 		);
-#endif
+#endif /* PIKE_DEBUG */
 	function->total_time=self_time_base + (INT32)(time_passed /1000);
 	function->self_time+=(INT32)( self_time /1000);
       }
-#endif
-#endif
+#endif /* HAVE_GETHRTIME */
+#endif /* PROFILING */
 
 #if 0
       if(sp - new_frame.locals > 1)

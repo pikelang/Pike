@@ -22,7 +22,8 @@ int main(int argc, string *argv)
     werror("Concretizing\n");
     WMML wmml=Wmml.make_concrete_wmml(data);
 #ifdef WALL
-    werror("Undocumented functions: \n%-#75s\n",(indices(all_constants()) - indices(wmml->index_data))*"\n");
+    werror("Undocumented functions: \n%-#75s\n",
+	   (indices(all_constants()) - indices(wmml->index_data))*"\n");
 #endif
     werror("\nWriting output\n");
     output()->output(argv[3],wmml);

@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "svalue.h"
 #include "array.h"
@@ -19,7 +20,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.42 1998/11/22 11:02:31 hubbe Exp $");
+RCSID("$Id: array.c,v 1.43 2001/04/06 14:15:29 grubba Exp $");
 
 struct array empty_array=
 {

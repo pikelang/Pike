@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
 #include "array.h"
 #include "multiset.h"
@@ -15,7 +16,7 @@
 #include "builtin_functions.h"
 #include "gc.h"
 
-RCSID("$Id: multiset.c,v 1.12 1998/11/22 11:03:03 hubbe Exp $");
+RCSID("$Id: multiset.c,v 1.13 2001/04/06 14:18:11 grubba Exp $");
 
 struct multiset *first_multiset;
 
@@ -83,7 +84,7 @@ struct multiset *mkmultiset(struct array *ind)
 }
 
 void multiset_insert(struct multiset *l,
-		 struct svalue *ind)
+		     struct svalue *ind)
 {
   INT32 i;
   i=set_lookup(l->ind, ind);
