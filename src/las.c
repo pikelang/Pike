@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.85 1999/09/06 11:13:17 hubbe Exp $");
+RCSID("$Id: las.c,v 1.86 1999/09/11 08:15:55 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -695,6 +695,11 @@ void resolv_constant(node *n)
 
     i=ID_FROM_INT(p, numid);
     
+    /* Warning:
+     * This code doesn't produce function pointers for class constants,
+     * which can be harmful...
+     * /Hubbe
+     */
     if(IDENTIFIER_IS_CONSTANT(i->identifier_flags))
     {
       push_svalue(PROG_FROM_INT(p, numid)->constants +
@@ -706,7 +711,8 @@ void resolv_constant(node *n)
   }
 }
 
-void resolv_program(node *n)
+/* Leaves a function or object on the stack */
+void resolv_class(node *n)
 {
   check_tree(n,0);
 
@@ -723,6 +729,25 @@ void resolv_program(node *n)
       }
       break;
       
+    default:
+      yyerror("Illegal program identifier");
+      pop_stack();
+      push_int(0);
+      
+    case T_FUNCTION:
+    case T_PROGRAM:
+      break;
+  }
+}
+
+/* This one always leaves a program if possible */
+void resolv_program(node *n)
+{
+  check_tree(n,0);
+
+  resolv_class(n);
+  switch(sp[-1].type)
+  {
     case T_FUNCTION:
       if(program_from_function(sp-1))
 	break;
@@ -1557,9 +1582,19 @@ static int cntargs(node *n)
   }
 }
 
+static int function_type_max=0;
+
 static void low_build_function_type(node *n)
 {
   if(!n) return;
+  if(function_type_max++ > 999)
+  {
+    reset_type_stack();
+    push_type(T_MIXED);
+    push_type(T_MIXED); /* is varargs */
+    push_type(T_MANY);
+    return;
+  }
   switch(n->token)
   {
   case F_ARG_LIST:
@@ -1637,6 +1672,7 @@ void fix_type_field(node *n)
     push_type(T_MIXED); /* match any return type, even void */
     push_type(T_VOID); /* not varargs */
     push_type(T_MANY);
+    function_type_max=0;
     low_build_function_type(CDR(n));
     push_type(T_FUNCTION);
     s=pop_type();

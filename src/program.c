@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.137 1999/09/10 00:10:00 hubbe Exp $");
+RCSID("$Id: program.c,v 1.138 1999/09/11 08:15:57 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1406,6 +1406,10 @@ void compiler_do_inherit(node *n,
 			 INT32 flags,
 			 struct pike_string *name)
 {
+  struct program *p;
+  struct identifier *i;
+  INT32 numid, offset;
+  
   if(!n)
   {
     yyerror("Unable to inherit");
@@ -1413,17 +1417,24 @@ void compiler_do_inherit(node *n,
   }
   switch(n->token)
   {
+    case F_IDENTIFIER:
+      p=new_program;
+      offset=0;
+      numid=n->u.number;
+      goto continue_inherit;
+      
     case F_EXTERNAL:
-    {
-      struct identifier *i;
-      struct program *p=parent_compilation(n->u.integer.a);
-      INT32 numid=n->u.integer.b;
+      p=parent_compilation(n->u.integer.a);
+      offset=n->u.integer.a;
+      numid=n->u.integer.b;
       
       if(!p)
       {
 	yyerror("Failed to resolv external constant.\n");
 	return;
       }
+
+  continue_inherit:
 
       i=ID_FROM_INT(p, numid);
     
@@ -1445,14 +1456,13 @@ void compiler_do_inherit(node *n,
       low_inherit(p,
 		  0,
 		  numid,
-		  n->u.integer.a+1,
+		  offset+1,
 		  flags,
 		  name);
       break;
-    }
 
     default:
-      resolv_program(n);
+      resolv_class(n);
       do_inherit(sp-1, flags, name);
       pop_stack();
   }
