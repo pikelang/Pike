@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.25 1997/01/14 17:12:45 law Exp $ */
+/* $Id: quant.c,v 1.26 1997/01/14 17:20:28 law Exp $ */
 
 /*
 
@@ -614,7 +614,6 @@ rerun:
 		  if ((len<<2) > QUANT_MAXIMUM_NUMBER_OF_COLORS)
 		  {
 		     strip++;
-		     fprintf(stderr,"strip: %d\n",strip);
 		     free(tbl);
 		     goto rerun;
 		  }
