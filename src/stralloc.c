@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "memory.h"
 #include "error.h"
 
-static struct lpc_string *base_table[HTABLE_SIZE];
+static struct pike_string *base_table[HTABLE_SIZE];
 static unsigned INT32 full_hash_value;
 
 /*
@@ -23,35 +23,29 @@ static unsigned int StrHash(const char *s,int len)
 }
 
 #ifdef DEBUG
-void check_string(struct lpc_string *s)
+void check_string(struct pike_string *s)
 {
+  StrHash(s->str, s->len);
+  if(full_hash_value != s->hval)
+    fatal("Hash value changed?\n");
+
   if(debug_findstring(s) !=s)
     fatal("Shared string not shared.\n");
 
   if(s->str[s->len])
     fatal("Shared string is not zero terminated properly.\n");
-
-  checked((void *)s,1);
 }
 
-void verify_shared_strings_tables(int pass)
+void verify_shared_strings_tables()
 {
   unsigned int e, h;
-  struct lpc_string *s;
+  struct pike_string *s;
 
   for(e=0;e<HTABLE_SIZE;e++)
   {
     h=0;
     for(s=base_table[e];s;s=s->next)
     {
-      if(pass)
-      {
-	if(checked((void *)s,0)!=s->refs)
-	{
-	  fatal("Shared string has wrong number of refs '%s'.\n",s->str);
-	}
-	continue;
-      }
       h++;
       if(s->len < 0)
 	fatal("Shared string shorter than zero bytes.\n");
@@ -70,7 +64,7 @@ void verify_shared_strings_tables(int pass)
 	
       if(h>10000)
       {
-	struct lpc_string *s2;
+	struct pike_string *s2;
 	for(s2=s;s2;s2=s2->next)
 	  if(s2 == s)
 	    fatal("Shared string table is cyclic.\n");
@@ -84,9 +78,9 @@ void verify_shared_strings_tables(int pass)
 /*
  * find a string in the shared string table.
  */
-static struct lpc_string *internal_findstring(const char *s,int len,int h)
+static struct pike_string *internal_findstring(const char *s,int len,int h)
 {
-  struct lpc_string *curr,**prev, **base;
+  struct pike_string *curr,**prev, **base;
 
   for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
   {
@@ -108,7 +102,7 @@ static struct lpc_string *internal_findstring(const char *s,int len,int h)
   return 0; /* not found */
 }
 
-struct lpc_string *findstring(const char *foo)
+struct pike_string *findstring(const char *foo)
 {
   int l;
   l=strlen(foo);
@@ -119,9 +113,9 @@ struct lpc_string *findstring(const char *foo)
  * find a string that is already shared and move it to the head
  * of that list in the hastable
  */
-static struct lpc_string *propagate_shared_string(const struct lpc_string *s,int h)
+static struct pike_string *propagate_shared_string(const struct pike_string *s,int h)
 {
-  struct lpc_string *curr, **prev, **base;
+  struct pike_string *curr, **prev, **base;
 
   for(base = prev = base_table + h;( curr=*prev ); prev=&curr->next)
   {
@@ -141,27 +135,27 @@ static struct lpc_string *propagate_shared_string(const struct lpc_string *s,int
 }
 
 #ifdef DEBUG
-struct lpc_string *debug_findstring(const struct lpc_string *foo)
+struct pike_string *debug_findstring(const struct pike_string *foo)
 {
-  return propagate_shared_string(foo, StrHash(foo->str, foo->len));
+  return propagate_shared_string(foo, foo->hval % HTABLE_SIZE);
 }
 #endif
 
 /* note that begin_shared_string expects the _exact_ size of the string,
  * not the maximum size
  */
-struct lpc_string *begin_shared_string(int len)
+struct pike_string *begin_shared_string(int len)
 {
-  struct lpc_string *t;
-  t=(struct lpc_string *)xalloc(len + sizeof(struct lpc_string));
+  struct pike_string *t;
+  t=(struct pike_string *)xalloc(len + sizeof(struct pike_string));
   t->len=len;
   return t;
 }
 
-struct lpc_string *end_shared_string(struct lpc_string *s)
+struct pike_string *end_shared_string(struct pike_string *s)
 {
   int len,h;
-  struct lpc_string *s2;
+  struct pike_string *s2;
 
   len=s->len;
   h=StrHash(s->str,len);
@@ -183,9 +177,9 @@ struct lpc_string *end_shared_string(struct lpc_string *s)
   return s;
 }
 
-struct lpc_string * make_shared_binary_string(const char *str,int len)
+struct pike_string * make_shared_binary_string(const char *str,int len)
 {
-  struct lpc_string *s;
+  struct pike_string *s;
   int h=StrHash(str,len);
 
   s = internal_findstring(str,len,h);
@@ -205,7 +199,7 @@ struct lpc_string * make_shared_binary_string(const char *str,int len)
   return s;
 }
 
-struct lpc_string *make_shared_string(const char *str)
+struct pike_string *make_shared_string(const char *str)
 {
   return make_shared_binary_string(str, strlen(str));
 }
@@ -260,7 +254,7 @@ static int low_binary_strcmp(char *a,INT32 alen,
 #endif
 
 /* Does not take locale into account */
-int my_quick_strcmp(struct lpc_string *a,struct lpc_string *b)
+int my_quick_strcmp(struct pike_string *a,struct pike_string *b)
 {
   if(a==b) return 0;
 
@@ -268,14 +262,14 @@ int my_quick_strcmp(struct lpc_string *a,struct lpc_string *b)
 }
 
 /* Does take locale into account */
-int my_strcmp(struct lpc_string *a,struct lpc_string *b)
+int my_strcmp(struct pike_string *a,struct pike_string *b)
 {
   if(a==b) return 0;
 
   return low_binary_strcmp(a->str,a->len,b->str,b->len);
 }
 
-void really_free_string(struct lpc_string *s)
+void really_free_string(struct pike_string *s)
 {
   int h;
 
@@ -288,7 +282,7 @@ void really_free_string(struct lpc_string *s)
 /*
  *
  */
-struct lpc_string *add_string_status(int verbose)
+struct pike_string *add_string_status(int verbose)
 {
   char b[200];
 
@@ -302,7 +296,7 @@ struct lpc_string *add_string_status(int verbose)
     int bytes_distinct_strings=0;
     int overhead_bytes=0;
     int e;
-    struct lpc_string *p;
+    struct pike_string *p;
     for(e=0;e<HTABLE_SIZE;e++)
     {
       for(p=base_table[e];p;p=p->next)
@@ -314,7 +308,7 @@ struct lpc_string *add_string_status(int verbose)
       }
 
     }
-    overhead_bytes=(sizeof(struct lpc_string)-1)*num_distinct_strings;
+    overhead_bytes=(sizeof(struct pike_string)-1)*num_distinct_strings;
     my_strcat("\nShared string hash table:\n");
     my_strcat("-------------------------\t Strings    Bytes\n");
 
@@ -341,17 +335,17 @@ struct lpc_string *add_string_status(int verbose)
 void dump_stralloc_strings()
 {
   int e;
-  struct lpc_string *p;
+  struct pike_string *p;
   for(e=0;e<HTABLE_SIZE;e++)
     for(p=base_table[e];p;p=p->next)
       printf("%ld refs \"%s\"\n",(long)p->refs,p->str);
 }
 
-struct lpc_string *add_shared_strings(struct lpc_string *a,
-					 struct lpc_string *b)
+struct pike_string *add_shared_strings(struct pike_string *a,
+					 struct pike_string *b)
 {
   INT32 size;
-  struct lpc_string *ret;
+  struct pike_string *ret;
   char *buf;
 
   size = a->len + b->len;
@@ -365,19 +359,22 @@ struct lpc_string *add_shared_strings(struct lpc_string *a,
   return ret;
 }
 
-struct lpc_string *string_replace(struct lpc_string *str,
-				     struct lpc_string *del,
-				     struct lpc_string *to)
+struct pike_string *string_replace(struct pike_string *str,
+				     struct pike_string *del,
+				     struct pike_string *to)
 {
-  struct lpc_string *ret;
+  struct pike_string *ret;
   INT32 delimeters;
   char *s,*tmp,*r,*end;
+  struct mem_searcher searcher;
 
   s=str->str;
   end=s+str->len;
   delimeters=0;
 
-  while((s=MEMMEM(del->str,del->len,s,end-s)))
+  init_memsearch(&searcher, del->str, del->len, str->len * 2);
+
+  while((s=memory_search(&searcher,s,end-s)))
   {
     delimeters++;
     s+=del->len;
@@ -393,7 +390,7 @@ struct lpc_string *string_replace(struct lpc_string *str,
   s=str->str;
   r=ret->str;
 
-  while((tmp=MEMMEM(del->str,del->len,s,end-s)))
+  while((tmp=memory_search(&searcher,s,end-s)))
   {
     MEMCPY(r,s,tmp-s);
     r+=tmp-s;
@@ -409,7 +406,7 @@ struct lpc_string *string_replace(struct lpc_string *str,
 void cleanup_shared_string_table()
 {
   int e;
-  struct lpc_string *s,*next;
+  struct pike_string *s,*next;
   for(e=0;e<HTABLE_SIZE;e++)
   {
     for(s=base_table[e];s;s=next)

@@ -1,25 +1,20 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+#include "backend.h"
 #include <errno.h>
 #include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 #include <sys/param.h>
 #include <string.h>
 #include "interpret.h"
 #include "object.h"
 #include "types.h"
 #include "error.h"
-#include "call_out.h"
-#include "backend.h"
 #include "fd_control.h"
 #include "main.h"
-#include "debug.h"
 #include "callback.h"
 
 #ifdef HAVE_SYS_SELECT_H
@@ -37,19 +32,22 @@ struct selectors
 
 static struct selectors selectors;
 
-callback read_callback[MAX_OPEN_FILEDESCRIPTORS];
+file_callback read_callback[MAX_OPEN_FILEDESCRIPTORS];
 void *read_callback_data[MAX_OPEN_FILEDESCRIPTORS];
-callback write_callback[MAX_OPEN_FILEDESCRIPTORS];
+file_callback write_callback[MAX_OPEN_FILEDESCRIPTORS];
 void *write_callback_data[MAX_OPEN_FILEDESCRIPTORS];
 
 static int max_fd;
-time_t current_time;
+struct timeval current_time;
+struct timeval next_timeout;
 
-static struct callback_list *backend_callbacks;
+static struct callback *backend_callbacks = 0;
 
-struct callback_list *add_backend_callback(struct array *a)
+struct callback *add_backend_callback(callback_func call,
+				      void *arg,
+				      callback_func free_func)
 {
-  return add_to_callback_list(&backend_callbacks, a);
+  return add_to_callback(&backend_callbacks, call, arg, free_func);
 }
 
 void init_backend()
@@ -58,7 +56,7 @@ void init_backend()
   FD_ZERO(&selectors.write);
 }
 
-void set_read_callback(int fd,callback cb,void *data)
+void set_read_callback(int fd,file_callback cb,void *data)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -87,7 +85,7 @@ void set_read_callback(int fd,callback cb,void *data)
   }
 }
 
-void set_write_callback(int fd,callback cb,void *data)
+void set_write_callback(int fd,file_callback cb,void *data)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -116,7 +114,7 @@ void set_write_callback(int fd,callback cb,void *data)
   }
 }
 
-callback query_read_callback(int fd)
+file_callback query_read_callback(int fd)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -126,7 +124,7 @@ callback query_read_callback(int fd)
   return read_callback[fd];
 }
 
-callback query_write_callback(int fd)
+file_callback query_write_callback(int fd)
 {
 #ifdef DEBUG
   if(fd<0 || fd>=MAX_OPEN_FILEDESCRIPTORS)
@@ -157,40 +155,21 @@ void *query_write_callback_data(int fd)
 }
 
 #ifdef DEBUG
-void do_debug(int check_refs)
+void do_debug()
 {
-  extern void check_all_arrays(int);
-  extern void check_all_mappings(int);
-  extern void check_all_programs(int);
-  extern void check_all_objects(int);
-  extern void verify_shared_strings_tables(int);
-  extern void slow_check_stack(int);
+  extern void check_all_arrays();
+  extern void check_all_mappings();
+  extern void check_all_programs();
+  extern void check_all_objects();
+  extern void verify_shared_strings_tables();
+  extern void slow_check_stack();
 
-#if 0
-  if(d_flag>1)
-    init_checked();
-#endif
-
-  slow_check_stack(0);
-  check_all_arrays(0);
-  check_all_mappings(0);
-  check_all_programs(0);
-  verify_all_objects(0);
-  verify_shared_strings_tables(0);
-  verify_all_call_outs();
-
-#if 0
-  if(d_flag>1)
-  {
-    check_all_arrays(1);
-    check_all_mappings(1);
-    check_all_programs(1);
-    verify_all_objects(1);
-    verify_shared_strings_tables(1);
-    exit_checked();
-  }
-#endif
-
+  slow_check_stack();
+  check_all_arrays();
+  check_all_mappings();
+  check_all_programs();
+  verify_all_objects();
+  verify_shared_strings_tables();
 }
 #endif
 
@@ -198,12 +177,11 @@ void backend()
 {
   JMP_BUF back;
   int i, delay;
-  struct timeval timeout;
   struct selectors sets;
 
   if(SETJMP(back))
   {
-    automatic_fatal="Error in handle_error in master object!\nPrevious error:";
+    exit_on_error="Error in handle_error in master object!\nPrevious error:";
     assign_svalue_no_free(sp++, & throw_value);
     APPLY_MASTER("handle_error", 1);
     pop_stack();
@@ -212,24 +190,34 @@ void backend()
 
   while(first_object)
   {
-    delay = get_next_call_out();
-    if(delay)
-    {
-      delay -= get_current_time();
-      if(delay < 0) delay = 0;
-    } else {
-      delay = 7 * 24 * 60 * 60; /* See you in a week */
-    }
-    timeout.tv_usec = 0;
-    timeout.tv_sec = delay;
+    next_timeout.tv_usec = 0;
+    next_timeout.tv_sec = 7 * 24 * 60 * 60;  /* See you in a week */
+    my_add_timeval(&next_timeout, &current_time);
 
+    call_callback(& backend_callbacks, (void *)0);
     sets=selectors;
 
-    i=select(max_fd+1, &sets.read, &sets.write, 0, &timeout);
+    alloca(0);			/* Do garbage collect */
+#ifdef DEBUG
+    if(d_flag > 1) do_debug();
+#endif
 
-    current_time = get_current_time();
-    check_signals();
+    GETTIMEOFDAY(&current_time);
 
+    if(my_timercmp(&next_timeout, > , &current_time))
+    {
+      my_subtract_timeval(&next_timeout, &current_time);
+    }else{
+      next_timeout.tv_usec = 0;
+      next_timeout.tv_sec = 0;
+    }
+
+    i=select(max_fd+1, &sets.read, &sets.write, 0, &next_timeout);
+
+    GETTIMEOFDAY(&current_time);
+
+    check_threads_etc();
+    
     if(i>=0)
     {
       for(i=0; i<max_fd+1; i++)
@@ -256,15 +244,7 @@ void backend()
 
       }
     }
-
-    do_call_outs();
-    call_callback_list(& backend_callbacks);
-
-    alloca(0);			/* Do garbage collect */
-#ifdef DEBUG
-    if(d_flag > 1)
-      do_debug(1);
-#endif
+    call_callback(& backend_callbacks, (void *)1);
   }
 
   UNSETJMP(back);

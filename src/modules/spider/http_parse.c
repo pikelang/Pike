@@ -1,16 +1,14 @@
-#include "spider.h"
-
 #include "stralloc.h"
 #include "global.h"
 #include "types.h"
 #include "macros.h"
 #include "object.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "builtin_efuns.h"
+#include "builtin_functions.h"
 
 #include <errno.h>
 
@@ -23,7 +21,7 @@
 struct program *feed_program;
 struct parsebuffer {
   struct mapping *so_far;
-  struct lpc_string *left_in_buffer;
+  struct pike_string *left_in_buffer;
   int bpos; /* Temporary */
   int data_left; /* Only used when the state is 'DATA' */
   enum { INITIAL, HEADERS, DATA } state;
@@ -127,6 +125,7 @@ static int to_eol()
 
 static void f_feed(INT32 args)
 {
+  struct svalue *data;
   int p=0, t=0;
 
   if(args!=1) error("Feed me correctly!\n");
@@ -227,17 +226,17 @@ static void f_feed(INT32 args)
     {
       f_aggregate_mapping(p*2);
       push_text("headers");
-      if((t=set_lookup(this->so_far->ind, sp-1)) > -1)
+      if(data=low_mapping_lookup(this->so_far, sp-1))
       {
 	pop_stack();
-	push_mapping(this->so_far->val->item[t].u.mapping);
-	sp[-1].u.mapping->refs++;
+	push_svalue(data);
 	f_add(2);
 	push_text("headers");
       }
       /* MAPPING "headers" */
       mapping_insert(this->so_far, sp-1, sp-2);
-      pop_stack(); sp--;
+      pop_stack();
+      sp--;
     }
     push_string(make_shared_binary_string(this->left_in_buffer->str+this->bpos,
 					  this->left_in_buffer->len-this->bpos));
@@ -255,15 +254,15 @@ static void f_feed(INT32 args)
     }
     
     push_text("headers");
-    if((t=set_lookup(this->so_far->ind, sp-1)) > -1)
+    if(data=low_mapping_lookup(this->so_far, sp-1))
     {
       struct mapping *m;
       pop_stack();
       push_text("content-length");
-      m = this->so_far->val->item[t].u.mapping;
-      if((t=set_lookup(m->ind, sp-1))>-1)
+      m = data->u.mapping;
+      if(data=low_mapping_lookup(m, sp-1))
       {
-	this->data_left=  atoi((char *)m->val->item[t].u.string->str);
+	this->data_left = atoi((char *)data->u.string->str);
 	fprintf(stderr, "Found len: %d bytes.\n", this->data_left);
       }
     }
@@ -288,16 +287,15 @@ static void f_feed(INT32 args)
   }
 }
 
-static void init_feeder(char *foo, struct object *o)
+static void init_feeder(struct object *o)
 {
   struct parsebuffer *p;
   if(!o->prog) error("Destructed object?\n");
-  p = (struct parsebuffer *)foo;
-  MEMSET(p, 0, sizeof(struct parsebuffer));
+
+  MEMSET(this, 0, sizeof(struct parsebuffer));
 #if 0
-  p->so_far = 0;
-  p->left_in_buffer = 0;
-  p
+  this->so_far = 0;
+  this->left_in_buffer = 0;
 #endif
 }
 

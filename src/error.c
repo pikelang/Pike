@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -8,23 +8,23 @@
 #include "error.h"
 #include "interpret.h"
 #include "stralloc.h"
-#include "builtin_efuns.h"
+#include "builtin_functions.h"
 #include "array.h"
 #include "object.h"
 
-char *automatic_fatal;
+char *automatic_fatal, *exit_on_error;
 JMP_BUF *recoveries=0;
 ONERROR *onerror_stack=0;
 
-jmp_buf *init_recovery(JMP_BUF *r)
+my_jmp_buf *init_recovery(JMP_BUF *r)
 {
   r->fp=fp;
-  r->sp=sp;
-  r->mark_sp=mark_sp;
+  r->sp=sp-evaluator_stack;
+  r->mark_sp=mark_sp - mark_stack;
   r->previous=recoveries;
   r->onerror=onerror_stack;
   recoveries=r;
-  return & r->recovery;
+  return & ( r->recovery );
 }
 
 void throw()
@@ -33,7 +33,7 @@ void throw()
     fatal("No error recovery context.\n");
 
 #ifdef DEBUG
-  if(sp < recoveries->sp)
+  if(sp - evaluator_stack < recoveries->sp)
     fatal("Error in error.\n");
 #endif
 
@@ -49,8 +49,8 @@ void throw()
     fp = fp->parent_frame;
   }
 
-  pop_n_elems(sp - recoveries->sp);
-  mark_sp = recoveries->mark_sp;
+  pop_n_elems(sp - evaluator_stack - recoveries->sp);
+  mark_sp = mark_stack + recoveries->mark_sp;
 
   while(recoveries->onerror != onerror_stack)
   {
@@ -82,16 +82,26 @@ void va_error(char *fmt, va_list args)
 
   VSPRINTF(buf, fmt, args);
 
-  if(!recoveries || automatic_fatal)
+  if(automatic_fatal)
   {
-    if(!automatic_fatal)
-      automatic_fatal="No error recovery context: ";
-
     fprintf(stderr,"%s %s",automatic_fatal,buf);
     abort();
   }
 
-  if(strlen(buf) >= sizeof(buf))
+  if(exit_on_error && !recoveries)
+  {
+    if(!exit_on_error)
+      exit_on_error="No error recovery context: ";
+
+#ifdef DEBUG
+    dump_backlog();
+#endif
+
+    fprintf(stderr,"%s %s",exit_on_error,buf);
+    exit(99);
+  }
+
+  if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in error()\n");
   
   push_string(make_shared_string(buf));

@@ -1,0 +1,18 @@
+NAME
+	perror - print error
+
+SYNTAX
+	#include <stdio.h>
+
+	void perror(string s);
+
+DESCRIPTION
+	This function prints a message to stderr along with a description
+	of what went wrong if available. It uses the system errno to find
+	out what went wrong, so it is only applicable to IO errors.
+
+KEYWORDS
+	file
+
+SEE ALSO
+	werror

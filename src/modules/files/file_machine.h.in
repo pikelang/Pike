@@ -16,6 +16,9 @@
 /* Define if you have the <sys/protosw.h> header file.  */
 #undef HAVE_SYS_PROTOSW_H
 
+/* Define if you have the <netdb.h> header file.  */
+#undef HAVE_NETDB_H
+
 /* Define if you have dirent.h.  */
 #undef HAVE_DIRENT_H
 
@@ -33,6 +36,15 @@
 
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
+
+/* Define if you have getwd.  */
+#undef HAVE_GETWD
+
+/* Define if you have strerror.  */
+#undef HAVE_STRERROR
+
+/* Define if you have a working getcwd */
+#undef HAVE_WORKING_GETCWD
 
 #endif
 

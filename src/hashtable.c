@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -10,7 +10,7 @@
 #include "stuff.h"
 #include "error.h"
 
-static unsigned INT32 gobble(struct lpc_string *s)
+static unsigned INT32 gobble(struct pike_string *s)
 {
   unsigned INT32 i;
   i=my_hash_string(s);
@@ -23,7 +23,7 @@ static unsigned INT32 gobble(struct lpc_string *s)
 /*
  * Search hash for a specific string.
  */
-struct hash_entry *hash_lookup(struct hash_table *h, struct lpc_string *s)
+struct hash_entry *hash_lookup(struct hash_table *h, struct pike_string *s)
 {
   struct hash_entry *e, **prev, **base;
 

@@ -8,7 +8,7 @@ DESCRIPTION
 	This function sets the initial value for the random generator.
 
 EXAMPLE
-	uLPC v1.0E-13 Running Hilfe v1.2 (Hubbe's Incremental LPC FrontEnd)
+	Pike v1.0E-13 Running Hilfe v1.2 (Hubbe's Incremental Pike FrontEnd)
 	> random_seed(17);
 	Result: 0
 	> random(1000);

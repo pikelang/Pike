@@ -1,0 +1,14 @@
+NAME
+	return - return from a function
+
+SYNTAX
+	return
+	or
+	return <expression>
+
+DESCRIPTION
+	Return jumps directly out of a function returning the given value to
+	the calling function. If no expression is given, 0 is returned.
+
+KEYWORDS
+	control

@@ -1,0 +1,14 @@
+NAME
+	call_out - make a delayed call to a function
+
+SYNTAX
+	mixed call_out(function f, int delay, mixed ... args);
+
+DESCRIPTION
+	Call_out places a call to the function f with the argument args
+	in a queue to be called in about delay seconds. The return value
+	identifies this call out. The return value can be sent to
+	find_call_out or remove_call_out to remove the call out again.
+
+SEE ALSO
+	remove_call_out, find_call_out, call_out_info

@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -13,29 +13,97 @@
 #include "error.h"
 #include "language.h"
 #include "stralloc.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "macros.h"
-#include "list.h"
+#include "multiset.h"
 #include "backend.h"
 #include "operators.h"
 #include "opcodes.h"
 #include "main.h"
 #include "lex.h"
-#include "builtin_efuns.h"
-#include "lpc_signal.h"
+#include "builtin_functions.h"
+#include "signal_handler.h"
+#include "gc.h"
 
-#define TRACE_LEN 256
-struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
-struct svalue *mark_stack[EVALUATOR_STACK_SIZE];
-struct frame *fp; /* frame pointer */
+#ifdef HAVE_MMAP
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+
+#ifdef MAP_NORESERVE
+#define USE_MMAP_FOR_STACK
+#endif
+#endif
+
+#define TRACE_LEN (100 + t_flag * 10)
+
 
 /* sp points to first unused value on stack
  * (much simpler than letting it point at the last used value.)
  */
-struct svalue *sp=evaluator_stack;
+struct svalue *sp;     /* Current position */
+struct svalue *evaluator_stack; /* Start of stack */
+int stack_size = EVALUATOR_STACK_SIZE;
 
 /* mark stack, used to store markers into the normal stack */
-struct svalue **mark_sp=mark_stack;
+struct svalue **mark_sp; /* Current position */
+struct svalue **mark_stack; /* Start of stack */
+
+struct frame *fp; /* frame pointer */
+
+void init_interpreter()
+{
+#ifdef USE_MMAP_FOR_STACK
+  int fd;
+
+#ifndef MAP_VARIABLE
+#define MAP_VARIABLE 0
+#endif
+
+#ifndef MAP_PRIVATE
+#define MAP_PRIVATE 0
+#endif
+
+#ifdef MAP_ANONYMOUS
+  fd=-1;
+#else
+#define MAP_ANONYMOUS 0
+  fd=open("/dev/zero");
+  if(fd < 0) fatal("Failed to open /dev/zero.\n");
+#endif
+
+#define MMALLOC(X,Y) (Y *)mmap(0,X*sizeof(Y),PROT_READ|PROT_WRITE, MAP_NORESERVE | MAP_PRIVATE | MAP_ANONYMOUS, fd, 0)
+
+  evaluator_stack=MMALLOC(stack_size,struct svalue);
+  mark_stack=MMALLOC(stack_size, struct svalue *);
+
+  if(fd != -1) close(fd);
+
+  if(!evaluator_stack || !mark_stack) fatal("Failed to mmap() stack space.\n");
+#else
+  evaluator_stack=(struct svalue *)malloc(stack_size*sizeof(struct svalue));
+  mark_stack=(struct svalue **)malloc(stack_size*sizeof(struct svalue *));
+#endif
+  sp=evaluator_stack;
+  mark_sp=mark_stack;
+}
+
+void check_stack(INT32 size)
+{
+  if(sp - evaluator_stack + size >= stack_size)
+    error("Stack overflow.\n");
+}
+
+void check_mark_stack(INT32 size)
+{
+  if(mark_sp - mark_stack + size >= stack_size)
+    error("Stack overflow.\n");
+}
+
 
 static void eval_instruction(unsigned char *pc);
 
@@ -44,7 +112,8 @@ static void eval_instruction(unsigned char *pc);
  * lvalues are stored in two svalues in one of these formats:
  * array[index]   : { array, index } 
  * mapping[index] : { mapping, index } 
- * list[index] : { list, index } 
+ * multiset[index] : { multiset, index } 
+ * object[index] : { object, index }
  * local variable : { svalue_pointer, nothing } 
  * global variable : { svalue_pointer/short_svalue_pointer, nothing } 
  */
@@ -73,9 +142,9 @@ void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval)
     mapping_index_no_free(to, lval->u.mapping, lval+1);
     break;
 
-  case T_LIST:
+  case T_MULTISET:
     to->type=T_INT;
-    if(list_member(lval->u.list,lval+1))
+    if(multiset_member(lval->u.multiset,lval+1))
     {
       to->u.integer=0;
       to->subtype=NUMBER_UNDEFINED;
@@ -114,11 +183,11 @@ void assign_lvalue(struct svalue *lval,struct svalue *from)
     mapping_insert(lval->u.mapping, lval+1, from);
     break;
 
-  case T_LIST:
+  case T_MULTISET:
     if(IS_ZERO(from))
-      list_delete(lval->u.list, lval+1);
+      multiset_delete(lval->u.multiset, lval+1);
     else
-      list_insert(lval->u.list, lval+1);
+      multiset_insert(lval->u.multiset, lval+1);
     break;
     
   default:
@@ -147,7 +216,7 @@ union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t)
   case T_MAPPING:
     return mapping_get_item_ptr(lval->u.mapping,lval+1,t);
 
-  case T_LIST: return 0;
+  case T_MULTISET: return 0;
 
   default:
     error("Indexing a basic type.\n");
@@ -184,20 +253,30 @@ void print_return_value()
   }
 }
 #else
-#define print_return_type()
+#define print_return_value()
 #endif
 
 
 void pop_n_elems(INT32 x)
 {
 #ifdef DEBUG
-  if(sp - &(evaluator_stack[0]) < x)
+  if(sp - evaluator_stack < x)
     fatal("Popping out of stack.\n");
 
   if(x < 0) fatal("Popping negative number of args....\n");
 #endif
-  free_svalues(sp-x,x);
   sp-=x;
+  free_svalues(sp,x,BIT_MIXED);
+}
+
+/* This function is called 'every now and then'. (1-10000 / sec or so)
+ * It should do anything that needs to be done fairly often.
+ */
+void check_threads_etc()
+{
+  check_signals();
+  if(objects_to_destruct) destruct_objects_to_destruct();
+  CHECK_FOR_GC();
 }
 
 #ifdef DEBUG
@@ -214,6 +293,9 @@ static char trace_buffer[100];
 #endif
 
 #define CASE(X) case (X)-F_OFFSET:
+
+#define DOJUMP() \
+ do { int tmp; tmp=EXTRACT_INT(pc); pc+=tmp; if(tmp < 0) check_threads_etc(); }while(0)
 
 #define COMPARISMENT(ID,EXPR) \
 CASE(ID); \
@@ -256,13 +338,24 @@ CASE(ID) \
   if( i->integer OP2 sp[-3].u.integer) \
   { \
     pc+=EXTRACT_INT(pc); \
-    check_signals(); \
+    check_threads_etc(); \
   }else{ \
     pc+=sizeof(INT32); \
     pop_n_elems(3); \
   } \
   break; \
 }
+
+#define CJUMP(X,Y) \
+CASE(X); \
+if(Y(sp-2,sp-1)) { \
+  DOJUMP(); \
+}else{ \
+  pc+=sizeof(INT32); \
+} \
+pop_n_elems(2); \
+break
+
 
 /*
  * reset the stack machine.
@@ -271,25 +364,6 @@ void reset_evaluator()
 {
   fp=0;
   pop_n_elems(sp - evaluator_stack);
-}
-
-/* Put catch outside of eval_instruction, so
- * the setjmp won't affect the optimization of
- * eval_instruction
- */
-void f_catch(unsigned char *pc)
-{
-  JMP_BUF tmp;
-  if(SETJMP(tmp))
-  {
-    *sp=throw_value;
-    throw_value.type=T_INT;
-    sp++;
-  }else{
-    eval_instruction(pc);
-    push_int(0);
-  }
-  UNSETJMP(tmp);
 }
 
 #ifdef DEBUG
@@ -334,6 +408,8 @@ void dump_backlog(void)
 
 #endif
 
+static int o_catch(unsigned char *pc);
+
 static void eval_instruction(unsigned char *pc)
 {
   unsigned INT32 instr, prefix=0;
@@ -350,15 +426,18 @@ static void eval_instruction(unsigned char *pc)
     sp[3].type=99;
 
     if(sp<evaluator_stack || mark_sp < mark_stack || fp->locals>sp)
-      fatal("Stack error.\n");
+      fatal("Stack error (generic).\n");
+
+    if(sp > evaluator_stack+stack_size)
+      fatal("Stack error (overflow).\n");
 
     if(fp->fun>=0 && fp->current_object->prog &&
 	fp->locals+fp->num_locals > sp)
-      fatal("Stack error.\n");
+      fatal("Stack error (stupid!).\n");
 
     if(d_flag)
     {
-      if(d_flag > 9) check_signals();
+      if(d_flag > 9) check_threads_etc();
 
       backlogp++;
       if(backlogp >= BACKLOG) backlogp=0;
@@ -381,7 +460,7 @@ static void eval_instruction(unsigned char *pc)
 	set_nonblocking(2,0);
 
       file=get_line(pc-1,fp->context.prog,&linep);
-      while((f=strchr(file,'/'))) file=f+1;
+      while((f=STRCHR(file,'/'))) file=f+1;
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
 	      file,(long)linep,
 	      (long)(pc-fp->context.prog->program-1),
@@ -392,7 +471,10 @@ static void eval_instruction(unsigned char *pc)
 	set_nonblocking(2,1);
     }
 
+    if(instr + F_OFFSET < F_MAX_OPCODE) 
+      ADD_RUNNED(instr + F_OFFSET);
 #endif
+
     switch(instr)
     {
       /* Support for large instructions */
@@ -418,6 +500,7 @@ static void eval_instruction(unsigned char *pc)
       CASE(F_CONST0); sp->type=T_INT; sp->u.integer=0;  sp++; break;
       CASE(F_CONST1); sp->type=T_INT; sp->u.integer=1;  sp++; break;
       CASE(F_CONST_1);sp->type=T_INT; sp->u.integer=-1; sp++; break;
+      CASE(F_BIGNUM); sp->type=T_INT; sp->u.integer=0x7fffffff; sp++; break;
       CASE(F_NUMBER); sp->type=T_INT; sp->u.integer=GET_ARG(); sp++; break;
       CASE(F_NEG_NUMBER);
       sp->type=T_INT;
@@ -493,6 +576,56 @@ static void eval_instruction(unsigned char *pc)
       sp+=2;
       break;
 
+      CASE(F_CLEAR_LOCAL);
+      instr=GET_ARG();
+      free_svalue(fp->locals + instr);
+      fp->locals[instr].type=T_INT;
+      fp->locals[instr].subtype=0;
+      fp->locals[instr].u.integer=0;
+      break;
+
+
+      CASE(F_INC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
+      fp->locals[instr].u.integer++;
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      break;
+
+      CASE(F_POST_INC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      fp->locals[instr].u.integer++;
+      break;
+
+      CASE(F_INC_LOCAL_AND_POP);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
+      fp->locals[instr].u.integer++;
+      break;
+
+      CASE(F_DEC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
+      fp->locals[instr].u.integer--;
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      break;
+
+      CASE(F_POST_DEC_LOCAL);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
+      assign_svalue_no_free(sp++,fp->locals+instr);
+      fp->locals[instr].u.integer--;
+      break;
+
+      CASE(F_DEC_LOCAL_AND_POP);
+      instr=GET_ARG();
+      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
+      fp->locals[instr].u.integer--;
+      break;
+
+
       CASE(F_LTOSVAL);
       lvalue_to_svalue_no_free(sp,sp-2);
       sp++;
@@ -505,10 +638,10 @@ static void eval_instruction(unsigned char *pc)
       /* this is so that foo+=bar (and similar things) will be faster, this
        * is done by freeing the old reference to foo after it has been pushed
        * on the stack. That way foo can have only 1 reference if we are lucky,
-       * and then the low array/list/mapping manipulation routines can be
+       * and then the low array/multiset/mapping manipulation routines can be
        * destructive if they like
        */
-      if( (1 << sp[-1].type) & ( BIT_ARRAY | BIT_LIST | BIT_MAPPING ))
+      if( (1 << sp[-1].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING ))
       {
 	struct svalue s;
 	s.type=T_INT;
@@ -618,84 +751,88 @@ static void eval_instruction(unsigned char *pc)
       /* Stack machine stuff */
       CASE(F_POP_VALUE); pop_stack(); break;
       CASE(F_POP_N_ELEMS); pop_n_elems(GET_ARG()); break;
+      CASE(F_MARK2); *(mark_sp++)=sp;
       CASE(F_MARK); *(mark_sp++)=sp; break;
 
       /* Jumps */
       CASE(F_BRANCH);
-      check_signals();
-      pc+=EXTRACT_INT(pc);
+      DOJUMP();
       break;
 
       CASE(F_BRANCH_WHEN_ZERO);
-      check_destructed(sp-1);
       if(!IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
       }else{
-	check_signals();
-	pc+=EXTRACT_INT(pc);
+	DOJUMP();
       }
       pop_stack();
       break;
       
       CASE(F_BRANCH_WHEN_NON_ZERO);
-      check_destructed(sp-1);
       if(IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
       }else{
-	check_signals();
-	pc+=EXTRACT_INT(pc);
+	DOJUMP();
       }
       pop_stack();
       break;
 
+      CJUMP(F_BRANCH_WHEN_EQ, is_eq);
+      CJUMP(F_BRANCH_WHEN_NE,!is_eq);
+      CJUMP(F_BRANCH_WHEN_LT, is_lt);
+      CJUMP(F_BRANCH_WHEN_LE,!is_gt);
+      CJUMP(F_BRANCH_WHEN_GT, is_gt);
+      CJUMP(F_BRANCH_WHEN_GE,!is_lt);
+
       CASE(F_LAND);
-      check_destructed(sp-1);
       if(!IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
 	pop_stack();
       }else{
-	check_signals();
-	pc+=EXTRACT_INT(pc);
+	DOJUMP();
       }
       break;
 
       CASE(F_LOR);
-      check_destructed(sp-1);
       if(IS_ZERO(sp-1))
       {
 	pc+=sizeof(INT32);
 	pop_stack();
       }else{
-	check_signals();
-	pc+=EXTRACT_INT(pc);
+	DOJUMP();
       }
       break;
 
       CASE(F_CATCH);
-      f_catch(pc+sizeof(INT32));
-      pc+=EXTRACT_INT(pc);
+      if(o_catch(pc+sizeof(INT32)))
+	return; /* There was a return inside the evaluated code */
+      else
+	pc+=EXTRACT_INT(pc);
+      break;
+
+      CASE(F_THROW_ZERO);
+      push_int(0);
+      f_throw(1);
       break;
 
       CASE(F_SWITCH)
       {
 	INT32 tmp;
 	tmp=switch_lookup(fp->context.prog->
-			  constants[EXTRACT_UWORD(pc)].u.array,sp-1);
-	pc+=sizeof(INT16);
-	pc=(unsigned char *)MY_ALIGN(pc);
-	if(tmp >= 0)
-	  pc+=((INT32 *)pc)[1+tmp*2];
-	else
-	  pc+=((INT32 *)pc)[2*~tmp];
+			  constants[GET_ARG()].u.array,sp-1);
+	pc=(unsigned char *)DO_ALIGN(pc,sizeof(INT32));
+	pc+=(tmp>=0 ? 1+tmp*2 : 2*~tmp) * sizeof(INT32);
+	if(*(INT32*)pc < 0) check_threads_etc();
+	pc+=*(INT32*)pc;
 	pop_stack();
 	break;
       }
       
       LOOP(F_INC_LOOP, ++, <);
-      LOOP(F_DEC_LOOP, --, <);
+      LOOP(F_DEC_LOOP, --, >);
       LOOP(F_INC_NEQ_LOOP, ++, !=);
       LOOP(F_DEC_NEQ_LOOP, --, !=);
 
@@ -704,7 +841,7 @@ static void eval_instruction(unsigned char *pc)
 	if(sp[-4].type != T_ARRAY) error("Bad argument 1 to foreach()\n");
 	if(sp[-1].u.integer < sp[-4].u.array->size)
 	{
-	  check_signals();
+	  check_threads_etc();
 	  index_no_free(sp,sp-4,sp-1);
 	  sp++;
 	  assign_lvalue(sp-4, sp-1);
@@ -721,7 +858,7 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_RETURN_0);
       pop_n_elems(sp-fp->locals);
-      check_signals();
+      check_threads_etc();
       return;
 
       CASE(F_RETURN);
@@ -733,7 +870,7 @@ static void eval_instruction(unsigned char *pc)
       /* fall through */
 
       CASE(F_DUMB_RETURN);
-      check_signals();
+      check_threads_etc();
       return;
 
       CASE(F_NEGATE); 
@@ -744,14 +881,11 @@ static void eval_instruction(unsigned char *pc)
       {
 	sp[-1].u.float_number =- sp[-1].u.float_number;
       }else{
-	error("Bad argument to unary minus.\n");
+	o_negate();
       }
       break;
 
-      CASE(F_COMPL);
-      if(sp[-1].type != T_INT) error("Bad argument to ~.\n");
-      sp[-1].u.integer = ~ sp[-1].u.integer;
-      break;
+      CASE(F_COMPL); o_compl(); break;
 
       CASE(F_NOT);
       switch(sp[-1].type)
@@ -762,12 +896,15 @@ static void eval_instruction(unsigned char *pc)
 
       case T_FUNCTION:
       case T_OBJECT:
-	check_destructed(sp-1);
-	if(sp[-1].type == T_INT)
+	if(IS_ZERO(sp-1))
 	{
-	  sp[-1].u.integer=1;
-	  break;
+	  pop_stack();
+	  push_int(1);
+	}else{
+	  pop_stack();
+	  push_int(0);
 	}
+	break;
 
       default:
 	free_svalue(sp-1);
@@ -777,17 +914,25 @@ static void eval_instruction(unsigned char *pc)
       break;
 
       CASE(F_LSH);
-      if(sp[-2].type != T_INT) error("Bad argument 1 to <<\n");
-      if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
-      sp--;
-      sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
+      if(sp[-2].type != T_INT)
+      {
+	o_lsh();
+      }else{
+	if(sp[-1].type != T_INT) error("Bad argument 2 to <<\n");
+	sp--;
+	sp[-1].u.integer = sp[-1].u.integer << sp->u.integer;
+      }
       break;
 
       CASE(F_RSH);
-      if(sp[-2].type != T_INT) error("Bad argument 1 to >>\n");
-      if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
-      sp--;
-      sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
+      if(sp[-2].type != T_INT)
+      {
+	o_rsh();
+      }else{
+	if(sp[-1].type != T_INT) error("Bad argument 2 to >>\n");
+	sp--;
+	sp[-1].u.integer = sp[-1].u.integer >> sp->u.integer;
+      }
       break;
 
       COMPARISMENT(F_EQ, is_eq(sp-2,sp-1));
@@ -797,14 +942,14 @@ static void eval_instruction(unsigned char *pc)
       COMPARISMENT(F_LT, is_lt(sp-2,sp-1));
       COMPARISMENT(F_LE,!is_gt(sp-2,sp-1));
 
-      CASE(F_ADD);      f_sum(2);     break;
-      CASE(F_SUBTRACT); f_subtract(); break;
-      CASE(F_AND);      f_and();      break;
-      CASE(F_OR);       f_or();       break;
-      CASE(F_XOR);      f_xor();      break;
-      CASE(F_MULTIPLY); f_multiply(); break;
-      CASE(F_DIVIDE);   f_divide();   break;
-      CASE(F_MOD);      f_mod();      break;
+      CASE(F_ADD);      f_add(2);     break;
+      CASE(F_SUBTRACT); o_subtract(); break;
+      CASE(F_AND);      o_and();      break;
+      CASE(F_OR);       o_or();       break;
+      CASE(F_XOR);      o_xor();      break;
+      CASE(F_MULTIPLY); o_multiply(); break;
+      CASE(F_DIVIDE);   o_divide();   break;
+      CASE(F_MOD);      o_mod();      break;
 
       CASE(F_PUSH_ARRAY);
       if(sp[-1].type!=T_ARRAY) error("Bad argument to @\n");
@@ -812,20 +957,54 @@ static void eval_instruction(unsigned char *pc)
       push_array_items(sp->u.array);
       break;
 
+      CASE(F_LOCAL_INDEX);
+      assign_svalue_no_free(sp++,fp->locals+GET_ARG());
+      print_return_value();
+      goto do_index;
+
+      CASE(F_POS_INT_INDEX);
+      push_int(GET_ARG());
+      print_return_value();
+      goto do_index;
+
+      CASE(F_NEG_INT_INDEX);
+      push_int(-GET_ARG());
+      print_return_value();
+      goto do_index;
+
+      CASE(F_STRING_INDEX);
+      copy_shared_string(sp->u.string,fp->context.prog->strings[GET_ARG()]);
+      sp->type=T_STRING;
+      sp++;
+      print_return_value();
+      /* Fall through */
+
       CASE(F_INDEX);
+    do_index:
       f_index();
       print_return_value();
       break;
 
       CASE(F_CAST); f_cast(); break;
 
-      CASE(F_RANGE); f_range(); break;
+      CASE(F_RANGE); o_range(); break;
       CASE(F_COPY_VALUE);
-      copy_svalues_recursively_no_free(sp,sp-1,1,0);
-      sp++;
-      free_svalue(sp-2);
-      sp[-2]=sp[-1];
-      sp--;
+      {
+	struct svalue tmp;
+	copy_svalues_recursively_no_free(&tmp,sp-1,1,0);
+	free_svalue(sp-1);
+	sp[-1]=tmp;
+      }
+      break;
+
+      CASE(F_SIZEOF);
+      instr=pike_sizeof(sp-1);
+      pop_stack();
+      push_int(instr);
+      break;
+
+      CASE(F_SIZEOF_LOCAL);
+      push_int(pike_sizeof(fp->locals+GET_ARG()));
       break;
 
       CASE(F_SSCANF); f_sscanf(GET_ARG()); break;
@@ -836,12 +1015,19 @@ static void eval_instruction(unsigned char *pc)
 		sp - *--mark_sp);
       break;
 
+      CASE(F_CALL_LFUN_AND_POP);
+      apply_low(fp->current_object,
+		GET_ARG()+fp->context.identifier_level,
+		sp - *--mark_sp);
+      pop_stack();
+      break;
+
     default:
       instr -= F_MAX_OPCODE - F_OFFSET;
 #ifdef DEBUG
       if(instr >= fp->context.prog->num_constants)
       {
-	instr += F_MAX_OPCODE;
+	instr += F_MAX_OPCODE - F_OFFSET;
 	fatal("Strange instruction %ld\n",(long)instr);
       }
 #endif      
@@ -849,6 +1035,28 @@ static void eval_instruction(unsigned char *pc)
     }
   }
 }
+
+/* Put catch outside of eval_instruction, so
+ * the setjmp won't affect the optimization of
+ * eval_instruction
+ */
+static int o_catch(unsigned char *pc)
+{
+  JMP_BUF tmp;
+  if(SETJMP(tmp))
+  {
+    *sp=throw_value;
+    throw_value.type=T_INT;
+    sp++;
+    UNSETJMP(tmp);
+    return 0;
+  }else{
+    eval_instruction(pc);
+    UNSETJMP(tmp);
+    return 1;
+  }
+}
+
 
 int apply_low_safe_and_stupid(struct object *o, INT32 offset)
 {
@@ -876,7 +1084,7 @@ int apply_low_safe_and_stupid(struct object *o, INT32 offset)
     eval_instruction(o->prog->program + offset);
 #ifdef DEBUG
     if(sp<evaluator_stack)
-      fatal("Stack error.\n");
+      fatal("Stack error (simple).\n");
 #endif
     ret=0;
   }
@@ -896,7 +1104,6 @@ void apply_low(struct object *o, int fun, int args)
   struct frame new_frame;
   struct identifier *function;
 
-  check_signals();
   if(fun<0)
   {
     pop_n_elems(args);
@@ -904,8 +1111,9 @@ void apply_low(struct object *o, int fun, int args)
     return;
   }
 
-  if(evaluator_stack+EVALUATOR_STACK_SIZE-sp < 256)
-    error("Stack overflow.\n");
+  check_threads_etc();
+  check_stack(256);
+  check_mark_stack(256);
 
   p=o->prog;
   if(!p)
@@ -949,7 +1157,7 @@ void apply_low(struct object *o, int fun, int args)
     if(fp && fp->pc)
     {
       file=get_line(fp->pc,fp->context.prog,&linep);
-      while((f=strchr(file,'/'))) file=f+1;
+      while((f=STRCHR(file,'/'))) file=f+1;
     }else{
       linep=0;
       file="-";
@@ -989,11 +1197,10 @@ void apply_low(struct object *o, int fun, int args)
 
   if(function->flags & IDENTIFIER_C_FUNCTION)
   {
-#if 0
-    function->func.c_fun(args);
-#else
-    (*function->func.c_fun)(args);
+#ifdef DEBUG
+    if(d_flag) check_threads_etc();
 #endif
+    (*function->func.c_fun)(args);
   }else{
     int num_args;
     int num_locals;
@@ -1035,7 +1242,7 @@ void apply_low(struct object *o, int fun, int args)
     eval_instruction(pc);
 #ifdef DEBUG
     if(sp<evaluator_stack)
-      fatal("Stack error.\n");
+      fatal("Stack error (also simple).\n");
 #endif
   }
 
@@ -1104,13 +1311,12 @@ void safe_apply_low(struct object *o,int fun,int args)
     sp->type = T_INT;
     sp++;
   }else{
-    struct svalue *expected_sp;
-    expected_sp=sp+1;
+    INT32 expected_stack = sp - evaluator_stack + 1;
     sp+=args;
     apply_low(o,fun,args);
-    if(sp > expected_sp)
-      pop_n_elems(sp-expected_sp);
-    if(sp < expected_sp)
+    if(sp - evaluator_stack > expected_stack)
+      pop_n_elems(sp - evaluator_stack - expected_stack);
+    if(sp - evaluator_stack < expected_stack)
     {
       sp->u.integer = 0;
       sp->subtype=NUMBER_NUMBER;
@@ -1130,37 +1336,28 @@ void safe_apply(struct object *o, char *fun ,INT32 args)
   safe_apply_low(o, find_identifier(fun, o->prog), args);
 }
 
+void apply_lfun(struct object *o, int fun, int args)
+{
+#ifdef DEBUG
+  if(fun < 0 || fun >= NUM_LFUNS)
+    fatal("Apply lfun on illegal value!\n");
+#endif
+  if(!o->prog)
+    error("Apply on destructed object.\n");
+
+  apply_low(o, o->prog->lfuns[fun], args);
+}
+
 void apply_shared(struct object *o,
-		  struct lpc_string *fun,
+		  struct pike_string *fun,
 		  int args)
 {
-  int fun_number;
-  fun_number = find_shared_string_identifier(fun, o->prog);
-  if(fun_number < 0)
-  {
-    pop_n_elems(args);
-    sp++;
-    sp->u.integer=0;
-    sp->type=T_INT;
-  }else{
-    apply_low(o, fun_number, args);
-  }
+  apply_low(o, find_shared_string_identifier(fun, o->prog), args);
 }
 
 void apply(struct object *o, char *fun, int args)
 {
-  int fun_number;
-
-  fun_number = find_identifier(fun, o->prog);
-  if(fun_number < 0)
-  {
-    pop_n_elems(args);
-    sp->u.integer=0;
-    sp->type=T_INT;
-    sp++;
-  }else{
-    apply_low(o, fun_number, args);
-  }
+  apply_low(o, find_identifier(fun, o->prog), args);
 }
 
 void strict_apply_svalue(struct svalue *s, INT32 args)
@@ -1180,7 +1377,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     if(fp && fp->pc)
     {
       file=get_line(fp->pc,fp->context.prog,&linep);
-      while((f=strchr(file,'/'))) file=f+1;
+      while((f=STRCHR(file,'/'))) file=f+1;
     }else{
       linep=0;
       file="-";
@@ -1265,18 +1462,20 @@ void apply_svalue(struct svalue *s, INT32 args)
     pop_n_elems(args);
     push_int(0);
   }else{
-    struct svalue *expected_sp=sp-args+1;
+    INT32 expected_stack=sp-args+1 - evaluator_stack;
+
     strict_apply_svalue(s,args);
-    if(sp > expected_sp)
+    if(sp > (expected_stack + evaluator_stack))
     {
-      pop_n_elems(sp-expected_sp);
+      pop_n_elems(sp-(expected_stack + evaluator_stack));
     }
-    else if(sp < expected_sp)
+    else if(sp < (expected_stack + evaluator_stack))
     {
       push_int(0);
     }
 #ifdef DEBUG
-    if(sp < expected_sp) fatal("Stack underflow!\n");
+    if(sp < (expected_stack + evaluator_stack))
+      fatal("Stack underflow!\n");
 #endif
   }
 }
@@ -1287,15 +1486,15 @@ void slow_check_stack()
   struct svalue *s,**m;
   struct frame *f;
 
-  check_stack();
+  debug_check_stack();
 
-  if(sp > &(evaluator_stack[EVALUATOR_STACK_SIZE]))
+  if(sp > &(evaluator_stack[stack_size]))
     fatal("Stack overflow\n");
 
-  if(mark_sp < mark_stack)
-    fatal("Mark stack underflow.\n");
+  if(mark_sp > &(mark_stack[stack_size]))
+    fatal("Mark stack overflow.\n");
 
-  if(mark_sp > &(mark_stack[EVALUATOR_STACK_SIZE]))
+  if(mark_sp < mark_stack)
     fatal("Mark stack underflow.\n");
 
   for(s=evaluator_stack;s<sp;s++) check_svalue(s);
@@ -1309,17 +1508,20 @@ void slow_check_stack()
     s=*m;
   }
 
-  if(s > &(evaluator_stack[EVALUATOR_STACK_SIZE]))
+  if(s > &(evaluator_stack[stack_size]))
     fatal("Mark stack exceeds svalue stack\n");
 
   for(f=fp;f;f=f->parent_frame)
   {
-    if(f->locals < evaluator_stack ||
-       f->locals > &(evaluator_stack[EVALUATOR_STACK_SIZE]))
+    if(f->locals)
+    {
+      if(f->locals < evaluator_stack ||
+	f->locals > &(evaluator_stack[stack_size]))
       fatal("Local variable pointer points to Finspång.\n");
 
-    if(f->args < 0 || f->args > EVALUATOR_STACK_SIZE)
-      fatal("FEL FEL FEL! HELP!! (corrupted frame)\n");
+      if(f->args < 0 || f->args > stack_size)
+	fatal("FEL FEL FEL! HELP!! (corrupted frame)\n");
+    }
   }
 }
 #endif
@@ -1349,4 +1551,13 @@ void cleanup_interpret()
   }
 #endif
   reset_evaluator();
+
+#ifdef USE_MMAP_FOR_STACK
+  munmap((char *)evaluator_stack, stack_size*sizeof(struct svalue));
+  munmap((char *)mark_stack, stack_size*sizeof(struct svalue *));
+#else
+  free((char *)evaluator_stack);
+  free((char *)mark_stack);
+#endif
+
 }

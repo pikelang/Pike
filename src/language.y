@@ -1,24 +1,29 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 %pure_parser
 
 /*
  * These values are used by the stack machine, and can not be directly
- * called from LPC.
+ * called from Pike.
  */
 %token F_ADD_256 F_ADD_512 F_ADD_768 F_ADD_1024 F_ADD_256X
 %token F_PREFIX_256 F_PREFIX_512 F_PREFIX_768 F_PREFIX_1024
 %token F_PREFIX_CHARX256 F_PREFIX_WORDX256 F_PREFIX_24BITX256
-%token F_POP_VALUE F_POP_N_ELEMS F_MARK F_CALL_LFUN
+%token F_POP_VALUE F_POP_N_ELEMS F_MARK F_MARK2
+%token F_CALL_LFUN F_CALL_LFUN_AND_POP
 
 %token F_BRANCH F_BRANCH_WHEN_ZERO F_BRANCH_WHEN_NON_ZERO
+%token F_BRANCH_WHEN_LT F_BRANCH_WHEN_GT
+%token F_BRANCH_WHEN_LE F_BRANCH_WHEN_GE
+%token F_BRANCH_WHEN_EQ F_BRANCH_WHEN_NE
 %token F_INC_LOOP F_DEC_LOOP
 %token F_INC_NEQ_LOOP F_DEC_NEQ_LOOP
 
-%token F_INDEX F_INDIRECT
+%token F_INDEX F_INDIRECT F_STRING_INDEX F_LOCAL_INDEX
+%token F_POS_INT_INDEX F_NEG_INT_INDEX
 %token F_LTOSVAL F_LTOSVAL2
 %token F_PUSH_ARRAY 
 %token F_RANGE F_COPY_VALUE
@@ -28,15 +33,17 @@
  */
 %token F_LFUN F_GLOBAL F_LOCAL
 %token F_GLOBAL_LVALUE F_LOCAL_LVALUE
+%token F_CLEAR_LOCAL
 %token F_CONSTANT F_FLOAT F_STRING
-%token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 
-
+%token F_NUMBER F_NEG_NUMBER F_CONST_1 F_CONST0 F_CONST1 F_BIGNUM
 /*
- * These are the predefined functions that can be accessed from LPC.
+ * These are the predefined functions that can be accessed from Pike.
  */
 
 %token F_INC F_DEC F_POST_INC F_POST_DEC F_INC_AND_POP F_DEC_AND_POP
-%token F_RETURN F_DUMB_RETURN F_RETURN_0
+%token F_INC_LOCAL F_INC_LOCAL_AND_POP F_POST_INC_LOCAL
+%token F_DEC_LOCAL F_DEC_LOCAL_AND_POP F_POST_DEC_LOCAL
+%token F_RETURN F_DUMB_RETURN F_RETURN_0 F_THROW_ZERO
 
 %token F_ASSIGN F_ASSIGN_AND_POP
 %token F_ASSIGN_LOCAL F_ASSIGN_LOCAL_AND_POP
@@ -53,6 +60,8 @@
 %token F_SWITCH F_SSCANF F_CATCH
 %token F_CAST
 %token F_FOREACH
+
+%token F_SIZEOF F_SIZEOF_LOCAL
 
 /*
  * These are token values that needn't have an associated code for the
@@ -77,7 +86,7 @@
 %token F_DO
 %token F_DOT_DOT
 %token F_DOT_DOT_DOT
-%token F_EFUN
+%token F_PREDEF
 %token F_EFUN_CALL
 %token F_ELSE
 %token F_FLOAT_ID
@@ -90,9 +99,9 @@
 %token F_INLINE
 %token F_INT_ID
 %token F_LAMBDA
-%token F_LIST_ID
-%token F_LIST_END
-%token F_LIST_START
+%token F_MULTISET_ID
+%token F_MULTISET_END
+%token F_MULTISET_START
 %token F_LOCAL
 %token F_LSH_EQ
 %token F_LVALUE_LIST
@@ -113,11 +122,16 @@
 %token F_STRING_ID
 %token F_SUBSCRIPT
 %token F_SUB_EQ
+%token F_TYPEOF
 %token F_VAL_LVAL
 %token F_VARARGS 
 %token F_VOID_ID
 %token F_WHILE
 %token F_XOR_EQ
+
+%token F_ALIGN
+%token F_POINTER
+%token F_LABEL
 
 %token F_MAX_INSTR
 
@@ -138,14 +152,13 @@
 
 
 %{
-/* This is the grammar definition of LPC. */
+/* This is the grammar definition of Pike. */
 
 #include "global.h"
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
 
-#include <setjmp.h>
 #include "interpret.h"
 #include "array.h"
 #include "object.h"
@@ -154,8 +167,8 @@
 #include "interpret.h"
 #include "lex.h"
 #include "program.h"
-#include "lpc_types.h"
-#include "add_efun.h"
+#include "pike_types.h"
+#include "constants.h"
 #include "macros.h"
 #include "error.h"
 #include "docode.h"
@@ -165,7 +178,7 @@
 static void push_locals();
 static void pop_locals();
 void free_all_local_names();
-void add_local_name(struct lpc_string *,struct lpc_string *);
+void add_local_name(struct pike_string *,struct pike_string *);
 
 /*
  * The names and types of arguments and auto variables.
@@ -192,7 +205,7 @@ void fix_comp_stack(int sp)
   int number;
   FLOAT_TYPE fnum;
   unsigned int address;		/* Address of an instruction */
-  struct lpc_string *string;
+  struct pike_string *string;
   char *str;
   unsigned short type;
   struct node_s *n;
@@ -208,22 +221,22 @@ void fix_comp_stack(int sp)
 %type <string> optional_rename_inherit
 
 %type <number> F_ARRAY_ID F_BREAK F_CASE F_CATCH F_CONTINUE F_DEFAULT F_DO
-%type <number> F_EFUN F_ELSE F_FLOAT_ID F_FOR F_FOREACH F_FUNCTION_ID F_GAUGE
-%type <number> F_IF F_INHERIT F_INLINE F_INT_ID F_LAMBDA F_LIST_ID F_MAPPING_ID
+%type <number> F_PREDEF F_ELSE F_FLOAT_ID F_FOR F_FOREACH F_FUNCTION_ID F_GAUGE
+%type <number> F_IF F_INHERIT F_INLINE F_INT_ID F_LAMBDA F_MULTISET_ID F_MAPPING_ID
 %type <number> F_MIXED_ID F_NO_MASK F_OBJECT_ID F_PRIVATE F_PROGRAM_ID
 %type <number> F_PROTECTED F_PUBLIC F_RETURN F_SSCANF F_STATIC
 %type <number> F_STRING_ID F_SWITCH F_VARARGS F_VOID_ID F_WHILE
 
 /* The following symbos return type information */
 
-%type <n> string expr01 expr00 comma_expr
+%type <n> string expr01 expr00 comma_expr comma_expr_or_zero
 %type <n> expr2 expr1 expr3 expr0 expr4 catch lvalue_list
 %type <n> lambda for_expr block  assoc_pair new_local_name
 %type <n> expr_list2 m_expr_list m_expr_list2 statement gauge sscanf
 %type <n> for do cond optional_else_part while statements
-%type <n> local_name_list class catch_arg
+%type <n> local_name_list class catch_arg comma_expr_or_maxint
 %type <n> unused2 foreach unused switch case return expr_list default
-%type <n> continue break block_or_semi
+%type <n> continue break block_or_semi typeof
 %%
 
 all: program;
@@ -243,7 +256,7 @@ string_constant: low_string
            }
            ;
 
-optional_rename_inherit: ':' F_IDENTIFIER { $$=$2 }
+optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
                        | { $$=0; }
                        ;
           
@@ -309,7 +322,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
      define_function($4,
 		     $<string>$,
 		     $1,
-		     IDENTIFIER_LPC_FUNCTION,
+		     IDENTIFIER_PIKE_FUNCTION,
 		     0);
    }
    block_or_semi
@@ -344,7 +357,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
        define_function($4,
 		       $<string>8,
 		       $1,
-		       IDENTIFIER_LPC_FUNCTION | vargs,
+		       IDENTIFIER_PIKE_FUNCTION | vargs,
 		       &tmp);
      }
      if(local_variables->current_return_type)
@@ -404,7 +417,7 @@ modifier: F_NO_MASK    { $$ = ID_NOMASK; }
 	| F_PUBLIC     { $$ = ID_PUBLIC; }
 	| F_VARARGS    { $$ = ID_VARARGS; }
 	| F_PROTECTED  { $$ = ID_PROTECTED; }
-	| F_INLINE     { $$ = ID_INLINE; }
+	| F_INLINE     { $$ = ID_INLINE | ID_NOMASK; }
         ;
 
 modifiers: modifier_list { $$=current_modifiers=$1; }
@@ -441,7 +454,7 @@ type3: F_INT_ID      { push_type(T_INT); }
      | F_MIXED_ID    { push_type(T_MIXED); }
      | F_MAPPING_ID opt_mapping_type { push_type(T_MAPPING); }
      | F_ARRAY_ID opt_array_type { push_type(T_ARRAY); }
-     | F_LIST_ID opt_array_type { push_type(T_LIST); }
+     | F_MULTISET_ID opt_array_type { push_type(T_MULTISET); }
      | F_FUNCTION_ID opt_function_type { push_type(T_FUNCTION); }
      ;
 
@@ -522,7 +535,7 @@ name_list: new_name
 
 new_name: optional_stars F_IDENTIFIER
 	{
-	  struct lpc_string *type;
+	  struct pike_string *type;
 	  push_finished_type(local_variables->current_type);
 	  while($1--) push_type(T_ARRAY);
 	  type=pop_type();
@@ -532,7 +545,7 @@ new_name: optional_stars F_IDENTIFIER
 	}
         | optional_stars F_IDENTIFIER '='
         {
-	  struct lpc_string *type;
+	  struct pike_string *type;
 	  push_finished_type(local_variables->current_type);
 	  while($1--) push_type(T_ARRAY);
 	  type=pop_type();
@@ -615,8 +628,8 @@ statement: unused2 ';' { $$=$1; }
          | return ';'
 	 | block {}
          | foreach
-         | break
-         | continue
+         | break ';'
+         | continue ';'
          | error ';' { $$=0; }
   	 | ';' { $$=0; } 
          ;
@@ -637,11 +650,11 @@ lambda: F_LAMBDA
 	}
        '(' arguments ')' block
         {
-          struct lpc_string *type;
+          struct pike_string *type;
 	  char buf[40];
 	  int f,e,args,vargs;
 	  union idptr func;
-	  struct lpc_string *name;
+	  struct pike_string *name;
 
 	  setup_fake_program();
 	  fix_comp_stack($<number>2);
@@ -685,7 +698,7 @@ lambda: F_LAMBDA
 	  f=define_function(name,
 			    type,
 			    0,
-			    IDENTIFIER_LPC_FUNCTION | vargs,
+			    IDENTIFIER_PIKE_FUNCTION | vargs,
 			    &func);
 	  free_string(name);
 	  free_string(type);
@@ -879,22 +892,22 @@ assoc_pair:  expr0 ':' expr1
 expr1: expr2
      | expr1 F_LOR expr1  { $$=mknode(F_LOR,$1,$3); }
      | expr1 F_LAND expr1 { $$=mknode(F_LAND,$1,$3); }
-     | expr1 '|' expr1    { $$=mknode(F_OR,$1,$3); }
-     | expr1 '^' expr1    { $$=mknode(F_XOR,$1,$3); }
-     | expr1 '&' expr1    { $$=mknode(F_AND,$1,$3); }
-     | expr1 F_EQ expr1   { $$=mknode(F_EQ,$1,$3); }
-     | expr1 F_NE expr1   { $$=mknode(F_NE,$1,$3); }
-     | expr1 '>' expr1    { $$=mknode(F_GT,$1,$3); }
-     | expr1 F_GE expr1   { $$=mknode(F_GE,$1,$3); }
-     | expr1 '<' expr1    { $$=mknode(F_LT,$1,$3); }
-     | expr1 F_LE expr1   { $$=mknode(F_LE,$1,$3); }
-     | expr1 F_LSH expr1  { $$=mknode(F_LSH,$1,$3); }
-     | expr1 F_RSH expr1  { $$=mknode(F_RSH,$1,$3); }
-     | expr1 '+' expr1    { $$=mknode(F_ADD,$1,$3); }
-     | expr1 '-' expr1    { $$=mknode(F_SUBTRACT,$1,$3); }
-     | expr1 '*' expr1    { $$=mknode(F_MULTIPLY,$1,$3); }
-     | expr1 '%' expr1    { $$=mknode(F_MOD,$1,$3); }
-     | expr1 '/' expr1    { $$=mknode(F_DIVIDE,$1,$3); }
+     | expr1 '|' expr1    { $$=mkopernode("`|",$1,$3); }
+     | expr1 '^' expr1    { $$=mkopernode("`^",$1,$3); }
+     | expr1 '&' expr1    { $$=mkopernode("`&",$1,$3); }
+     | expr1 F_EQ expr1   { $$=mkopernode("`==",$1,$3); }
+     | expr1 F_NE expr1   { $$=mkopernode("`!=",$1,$3); }
+     | expr1 '>' expr1    { $$=mkopernode("`>",$1,$3); }
+     | expr1 F_GE expr1   { $$=mkopernode("`>=",$1,$3); }
+     | expr1 '<' expr1    { $$=mkopernode("`<",$1,$3); }
+     | expr1 F_LE expr1   { $$=mkopernode("`<=",$1,$3); }
+     | expr1 F_LSH expr1  { $$=mkopernode("`<<",$1,$3); }
+     | expr1 F_RSH expr1  { $$=mkopernode("`>>",$1,$3); }
+     | expr1 '+' expr1    { $$=mkopernode("`+",$1,$3); }
+     | expr1 '-' expr1    { $$=mkopernode("`-",$1,$3); }
+     | expr1 '*' expr1    { $$=mkopernode("`*",$1,$3); }
+     | expr1 '%' expr1    { $$=mkopernode("`%",$1,$3); }
+     | expr1 '/' expr1    { $$=mkopernode("`/",$1,$3); }
      ;
 
 expr2: expr3
@@ -905,9 +918,9 @@ expr2: expr3
      }
      | F_INC expr4       { $$=mknode(F_INC,$2,0); }
      | F_DEC expr4       { $$=mknode(F_DEC,$2,0); }
-     | F_NOT expr2        { $$=mknode(F_NOT,$2,0); }
-     | '~' expr2          { $$=mknode(F_COMPL,$2,0); }
-     | '-' expr2          { $$=mknode(F_NEGATE,$2,0); }
+     | F_NOT expr2        { $$=mkopernode("`!",$2,0); }
+     | '~' expr2          { $$=mkopernode("`~",$2,0); }
+     | '-' expr2          { $$=mkopernode("`-",$2,0); }
      ;
 
 expr3: expr4
@@ -920,6 +933,7 @@ expr4: string
      | F_FLOAT { $$=mkfloatnode($1); }
      | catch
      | gauge
+     | typeof
      | sscanf
      | lambda
      | class
@@ -940,7 +954,7 @@ expr4: string
        }
        free_string($1);
      }
-     | F_EFUN F_COLON_COLON F_IDENTIFIER
+     | F_PREDEF F_COLON_COLON F_IDENTIFIER
      {
        struct efun *f;
        f=lookup_efun($3);
@@ -955,7 +969,7 @@ expr4: string
      }
      | expr4 '(' expr_list ')' { $$=mkapplynode($1,$3); }
      | expr4 '[' expr0 ']' { $$=mknode(F_INDEX,$1,$3); }
-     | expr4 '['  comma_expr F_DOT_DOT comma_expr ']'
+     | expr4 '['  comma_expr_or_zero F_DOT_DOT comma_expr_or_maxint ']'
      {
        $$=mknode(F_RANGE,$1,mknode(F_ARG_LIST,$3,$5));
      }
@@ -964,8 +978,8 @@ expr4: string
        { $$=mkefuncallnode("aggregate",$3); }
      | '(' '[' m_expr_list ']' ')'
        { $$=mkefuncallnode("aggregate_mapping",$3); };
-     | F_LIST_START expr_list F_LIST_END
-       { $$=mkefuncallnode("aggregate_list",$2); }
+     | F_MULTISET_START expr_list F_MULTISET_END
+       { $$=mkefuncallnode("aggregate_multiset",$2); }
      | expr4 F_ARROW F_IDENTIFIER
      {
        $$=mknode(F_INDEX,$1,mkstrnode($3));
@@ -1017,20 +1031,35 @@ expr4: string
        free_string($2);
      }
      ;
-  
-gauge: F_GAUGE '(' unused ')'
+
+comma_expr_or_zero: /* empty */ { $$=mkintnode(0); }
+                  | comma_expr
+                  ;
+
+comma_expr_or_maxint: /* empty */ { $$=mkintnode(0x7fffffff); }
+                    | comma_expr
+                    ;
+
+gauge: F_GAUGE catch_arg
   {
-    $$=mknode(F_NEGATE,
-	      mknode(F_SUBTRACT,
-		     mknode(F_INDEX,mkefuncallnode("rusage",0),
-			    mkintnode(GAUGE_RUSAGE_INDEX)),
-		     mknode(F_ARG_LIST,$3,
-			    mknode(F_INDEX,mkefuncallnode("rusage",0),
-				   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
+    $$=mkopernode("`-",
+		  mkopernode("`-",
+			     mknode(F_INDEX,mkefuncallnode("rusage",0),
+				    mkintnode(GAUGE_RUSAGE_INDEX)),
+			     mknode(F_ARG_LIST,$2,
+				    mknode(F_INDEX,mkefuncallnode("rusage",0),
+					   mkintnode(GAUGE_RUSAGE_INDEX)))),0);
   } ;
 
+typeof: F_TYPEOF '(' expr0 ')'
+      {
+	node *tmp;
+	tmp=mknode(F_ARG_LIST,$3,0);
+        $$=mkstrnode(describe_type($3->type));
+        free_node(tmp);
+      } ;
 
-catch_arg: '(' unused ')'  { $$=$2; }
+catch_arg: '(' comma_expr ')'  { $$=$2; }
          | block
          ; 
 
@@ -1099,8 +1128,8 @@ void yyerror(char *str)
 }
 
 /* argument must be a shared string (no need to free it) */
-void add_local_name(struct lpc_string *str,
-		    struct lpc_string *type)
+void add_local_name(struct pike_string *str,
+		    struct pike_string *type)
 {
   if (local_variables->current_number_of_locals == MAX_LOCAL)
   {
@@ -1119,7 +1148,7 @@ void add_local_name(struct lpc_string *str,
 }
 
 /* argument must be a shared string */
-int islocal(struct lpc_string *str)
+int islocal(struct pike_string *str)
 {
   int e;
   for(e=local_variables->current_number_of_locals-1;e>=0;e--)

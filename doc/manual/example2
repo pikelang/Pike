@@ -1,0 +1,152 @@
+2. Now we will look at a slightly more useful example:
+
+	#!/usr/local/bin/pike
+
+	#include <simulate.h>
+
+	int main(int argc,string *argv)
+	{
+	  int i;
+	  string file_contents;
+	
+	  if(argc<4)
+	  {
+	    perror("Usage: rsif <from> <to> <files>\n");
+	    return 1;
+	  }
+	
+	  for(i=3; i<argc; i++)
+	  {
+	    if(file_contents=read_bytes(argv[i]))
+	    {
+	      if(-1!=strstr(file_contents,argv[1]))
+	      {
+		write("Processing "+argv[i]+".\n");
+		file_contents=replace(file_contents,argv[1],argv[2]);
+	
+		if( mv(argv[i],argv[i]+"~") )
+		{
+		  write_file(argv[i],file_contents);
+		}else{
+		  write("Failed to create backup file.\n");
+		}
+	      }
+	    }
+	  }
+
+	  return 0;
+	}
+	
+  This program is called 'rsif' and comes with the Pike distribution.
+  What it does is that it takes two strings and a bunch of files and
+  replaces every occurance of the first string with the second one in
+  each of these files. As you might have guessed 'rsif' is short for
+  Replace String In File. Line by line, this is how the program works:
+
+	#!/usr/local/bin/pike
+
+  Make UNIX run pike to interpret this program. Interpret in this case
+  means to read the program, convert it to an internal representation and
+  then run the instructions in this internal representation. Note that Pike
+  does not use the same low-level representation as for example C does,
+  instead it uses a simple and compact representation which are parsed by
+  a C program which actually implements the instructions in that
+  representation.
+
+	#include <simulate.h>
+
+  This includes a lot of useful functions such as read_bytes.
+
+	int main(int argc,string *argv)
+	{
+
+  Start the function main, it will return an int, and take the command line
+  arguments into the parameters argc and argv.
+
+	  int i;
+	  string file_contents;
+
+  Declare two temporary variables to use later. The first one 'i' is an
+  integer, and the second one 'file_contents' is a string.
+	
+	  if(argc<4)
+	  {
+	    perror("Usage: rsif <from> <to> <files>\n");
+	    return 1;
+	  }
+
+  If argc is lesser than four it means that the program received less than
+  three arguments. Since rsif needs at least three arguments we write how
+  to use rsif to stderr (Standard error channel) using the function perror
+  and then exit this function with the return value 1. Nothing after the
+  return will be executed if argc is lesser than 4.
+  
+	
+	  for(i=3; i<argc; i++)
+	  {
+
+  This statement starts a loop. (Loop means code repetition) It will first
+  set i to three, then execute everything within the brackets for as long as
+  i is lesser than argc. After each time the block between the brackets the
+  final statement, i++, will be executed. ++ is the increment operator, it
+  will increase i by one.
+
+	    if(file_contents=read_bytes(argv[i]))
+	    {
+
+  Look closely, the experssion in this if-statement is not a comparison, it
+  is in fact an assignment. Thus file will be assigned the value returned by
+  read_bytes. When an assignment is used as an expression it has the same
+  value as the left hand side of the assignment. (in this case the return
+  value from read_bytes) So what this does is: it reads the contents of the
+  file with the filename taken from argv[i] and assigns the contents to the
+  variable file. If there is no file with that name, zero will be returned
+  and then the block within the brackets will not be executed.
+
+	      if(-1!=strstr(file_contents,argv[1]))
+	      {
+
+  The function strstr searches for a string in in a string and returns the
+  first position where it is found and -1 if not. This if statement simply
+  checks if argv[1] (the 'from' string) is present in the file. If it is
+  not we won't need to do anything more about this file. The != operator
+  means 'not equal to'.
+
+		write("Processing "+argv[i]+".\n");
+
+  Write that we are processing this file to stdout. Stdout means
+  "Standard output channel" and is normally your screen unless you 'redirect'
+  it to somewhere else.
+
+		file_contents=replace(file_contents,argv[1],argv[2]);
+
+  Call the builtin function replace and replace all occurances of the 'from'
+  string with the 'to' string and assign the new result to the variable
+  'file_contents'.
+
+		if( mv(argv[i],argv[i]+"~") )
+		{
+  Try moving the file argv[i] to a backup file by adding a tilde to the end
+  of the name. Then choose action depending on weather it worked or not.
+
+		  write_file(argv[i],file_contents);
+
+  If it worked we re-create the file argv[i] by writing the string
+  'file_contents' to it.
+
+		}else{
+		  write("Failed to create backup file.\n");
+
+  If the mv didn't work we write a message stating so to stdout.
+
+		}
+	      }
+	    }
+	  }
+
+	  return 0;
+	}
+
+
+  Then we end all the blocks and return zero. A return value of zero from main
+  indicates success, 1 or more means failiure.

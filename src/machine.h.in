@@ -22,6 +22,9 @@
 /* Define if you have the <memory.h> header file.  */
 #undef HAVE_MEMORY_H
 
+/* Define if you have the <sys/mman.h> header file.  */
+#undef HAVE_SYS_MMAN_H
+
 /* Define if you have the <crypt.h> header file.  */
 #undef HAVE_CRYPT_H
 
@@ -40,6 +43,9 @@
 /* Define if you have the <time.h> header file.  */
 #undef HAVE_TIME_H
 
+/* Define if we may include both time.h and sys/time.h */
+#undef TIME_WITH_SYS_TIME
+
 /* Define if you have the <sys/select.h> header file. */
 #undef HAVE_SYS_SELECT_H
 
@@ -49,8 +55,8 @@
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H
 
-/* Define if you have the <netdb.h> header file.  */
-#undef HAVE_NETDB_H
+/* Define if you have the <setjmp.h> header file.  */
+#undef HAVE_SETJMP_H
 
 /* more header files */
 #undef HAVE_FCNTL_H
@@ -114,7 +120,7 @@
 #undef USE_IOCTL_FIONBIO
 #undef USE_FCNTL_O_NDELAY
 #undef USE_FCNTL_FNDELAY
-#undef USE_FCNTL_NONBLOCK
+#undef USE_FCNTL_O_NONBLOCK
 
 /* Define if you have index */
 #undef HAVE_STRTOL
@@ -152,17 +158,20 @@
 /* Define if you have ualarm (else put ualarm.o in the makefile).  */
 #undef HAVE_UALARM
 
+/* Define if your ualarm takes two args.. */
+#undef UALARM_TAKES_TWO_ARGS
+
 /* Define if you have fchmod.  */
 #undef HAVE_FCHMOD
 
-/* Define if you have getwd.  */
-#undef HAVE_GETWD
-
-/* Define if you have getcwd.  */
-#undef HAVE_GETCWD
-
 /* Define if you have getenv.  */
 #undef HAVE_GETENV
+
+/* Define if you have gettimeofday.  */
+#undef HAVE_GETTIMEOFDAY
+
+/* Define if gettimeofday takes to arguments */
+#undef GETTIMEOFDAY_TAKES_TWO_ARGS
 
 /* Does your unix have a putenv function? */
 #undef HAVE_PUTENV
@@ -186,6 +195,12 @@
 
 /* Define if you have memset.  */
 #undef HAVE_MEMSET
+
+/* Define if you have mmap() */
+#undef HAVE_MMAP
+
+/* Define if you have munmap() */
+#undef HAVE_MUNMAP
 
 /* Define if you have strcspn.  */
 #undef HAVE_STRCSPN
@@ -216,6 +231,9 @@
 
 /* Define if you have getrlimit */
 #undef HAVE_GETRLIMIT
+
+/* define if you have localtime */
+#undef HAVE_LOCALTIME
 
 /* Define if you have waitpid */
 #undef HAVE_WAITPID
@@ -285,5 +303,17 @@
 
 /* Value of first constant defined by byacc/bison/yacc or whatever you use. */
 #define F_OFFSET 257
+
+/* Define this if struct tm is included in <sys/time.h> as opposed to <time.h> */
+#define TM_IN_SYS_TIME
+
+/* define this if #include <time.h> provides an external int timezone */
+#undef HAVE_EXTERNAL_TIMEZONE
+
+/* define this if your struct tm has a tm_gmtoff */
+#undef STRUCT_TM_HAS_GMTOFF
+
+/* Define if you have struct timeval */
+#define HAVE_STRUCT_TIMEVAL
 
 #endif /* MACHINE_H */

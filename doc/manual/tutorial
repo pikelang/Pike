@@ -1,0 +1,149 @@
+Contents
+
+BEGIN(What is Pike)
+{
+  BEGIN(Introduction)
+  {
+    Pike (Micro L.P.C., sometimes written pike or Pike) is an interpreted,
+    object-oriented programming language for flexible and yet efficient
+    application development and prototyping. It features multiple
+    inheritance, data abstraction, advanced built-in datatypes, such as
+    associative arrays, dynamic arrays and multi-sets, and high-level
+    character string and array operations.
+  }
+
+  BEGIN(Pike vs. C and C++)
+  {
+    Pike syntax is very similar to C. Some things has also been borrowed
+    from C++. The certainly biggest differance is that Pike is interpreted.
+    This gives Pike some advantages, but also some disadvantages compared
+    to C:
+
+    LIST(Advantages:)
+    {
+      No compilation times
+      Powerful data types
+    }
+  }
+
+  BEGIN(Data types)
+  BEGIN(Object orientation)
+}
+
+BEGIN(Getting started)
+{
+  BEGIN(A short example)
+  {
+    Pike
+    {
+      #!/usr/local/bin/pike
+
+      int main()
+      {
+        write("hello world\n");
+      }
+    }
+
+
+    Assume this file is called 'hello_world.pike', then this might be seen
+    at your unix prompt:
+
+    PRE
+    {
+      $ ./hello_world.pike
+      hello world
+      $ 
+    }
+  }
+
+  BEGIN(Line by line)
+  {
+    The first line is a unix-trick which causes /usr/local/bin/pike to run
+    the hello world program for you when you type it's name at the unix
+    prompt.
+
+    
+  }
+
+  BEGIN(variables)
+  BEGIN(loops)
+}
+
+BEGIN(Program structure)
+{
+  BEGIN(functions)
+  BEGIN(Loops)
+  {
+    BEGIN(while)
+    BEGIN(for)
+    BEGIN(do-while)
+    BEGIN(foreach)
+  }
+  BEGIN(Skips and Jumps)
+  {
+    BEGIN(if)
+    BEGIN(switch)
+    BEGIN(continue)
+    BEGIN(break)
+  }
+}
+
+BEGIN(objects and programs)
+{
+  BEGIN(variable spaces)
+
+  BEGIN(inheritance)
+  {
+    BEGIN(multiple inheritance)
+  }
+}
+
+
+BEGIN(data types)
+{
+  BEGIN(int)
+  {
+    Ints, or <integers> are simple whole numbers 0, 1, 2 ... They are fast
+    and used for all arethmics where fractions of numbers aren't needed.
+  }
+  BEGIN(float)
+  {
+    Floats can be used to represent any number, not just whole numbers.
+    Floats are slower than integers and can not be used where a whole
+    number is expected. (When indexing an array for instance.) Floats
+    are commonly used for mathematical calulations such as averages and
+    trigonometrics.
+  }
+  BEGIN(string)
+  {
+    Strings hold text, or more precicely; sequences of 8-bit characters.
+    Strings can be manipulated in many ways, the simples of which is
+    <indexing>; picking out the ascii value of one of the characters in
+    the string.
+  }
+  BEGIN(array)
+  {
+    Arrays simply hold values.
+  }
+  BEGIN(mapping)
+  {
+    Mappings, or associative arrays, work similar to arrays, but can be
+    indexed on any type of value, not just integers.
+  }
+  BEGIN(multiset)
+  {
+    A multiset is essentially what mathematicians call a 'set'. It is a bunch
+    of values without any particular order. Arrays could replace multisets
+    in all respects but one: multisets are much faster.
+  }
+  BEGIN(object)
+  {
+    Objects hold data.
+  }
+  BEGIN(program)
+  {
+    Programs are the templates for objects.
+  }
+}
+
+

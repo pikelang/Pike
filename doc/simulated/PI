@@ -2,7 +2,12 @@ NAME
 	PI - pi
 
 SYNTAX
+	#include <simulate.h>
+
 	PI
 
 DESCRIPTION
-	This is not a function, it is a constant added by simulate.lpc.
+	This is not a function, it is a constant added by simulate.pike.
+
+KEYWORDS
+	float

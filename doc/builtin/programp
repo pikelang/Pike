@@ -11,5 +11,5 @@ KEYWORDS
 	program
 
 SEE ALSO
-	intp, listp, arrayp, stringp, objectp, regexpp,
+	intp, multisetp, arrayp, stringp, objectp,
 	mappingp, floatp, functionp

@@ -1,0 +1,13 @@
+NAME
+	listp - is the argument a list? (multiset)
+
+SYNTAX
+	#include <simulate.h>
+
+	int listp(mixed l)
+
+DESCRIPTION
+	This function is the same as multisetp.
+
+SEE ALSO
+	builtin/multisetp

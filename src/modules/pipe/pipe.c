@@ -6,6 +6,15 @@
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#else
+#ifdef HAVE_LINUX_MMAN_H
+#include <linux/mman.h>
+#else
+#ifdef HAVE_MMAP
+/* sys/mman.h is _probably_ there anyway. */
+#include <sys/mman.h>
+#endif
+#endif
 #endif
 
 #include <fcntl.h>
@@ -15,7 +24,7 @@
 #include "types.h"
 #include "macros.h"
 #include "object.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "error.h"
@@ -86,7 +95,7 @@ struct input
   union
   {
     struct object *obj; 
-    struct lpc_string *str;
+    struct pike_string *str;
     unsigned char *mmap;
   } u;
   unsigned long len;		/* current input: string or mmap len */
@@ -113,7 +122,7 @@ struct output
 
 struct buffer
 {
-  struct lpc_string *s;
+  struct pike_string *s;
   struct buffer *next;
 };
 
@@ -233,8 +242,9 @@ static INLINE void pipe_done(void)
     apply_svalue(&(THIS->done_callback),1);
     pop_stack();
 
-    if(!THISOBJ->prog)
-      error("Pipe done callback destructed pipe.\n");
+    if(!THISOBJ->prog) /* We will not free anything in this case. */
+      return;
+    /*  error("Pipe done callback destructed pipe.\n");  */
   }
   close_and_free_everything(THISOBJ,THIS);
 }
@@ -258,7 +268,7 @@ static void finished_p(void)
  * scheduled for output. Return 1 if we have more bytes in buffers
  * than allowed afterwards.
  */
-static INLINE int append_buffer(struct lpc_string *s)
+static INLINE int append_buffer(struct pike_string *s)
    /* 1=buffer full */
 {
    struct buffer *b;
@@ -294,13 +304,14 @@ static INLINE int append_buffer(struct lpc_string *s)
 /* Wake up the sleepers */
 static void low_start()
 {
-  struct object *obj;
+  struct object *obj, *next;
   struct output *o;
 
 
   THISOBJ->refs++;		/* dont kill yourself now */
-  for(obj=THIS->firstoutput;obj;obj=o->next)
+  for(obj=THIS->firstoutput;obj;obj=next)
   {
+    obj->refs++; /* Hang on PLEASE!! /hubbe */
     o=(struct output *)&(obj->storage);
     if (o->obj && o->mode==O_SLEEP)
     {
@@ -320,6 +331,8 @@ static void low_start()
 	o->mode=O_RUN;		/* Hubbe */
       }
     }
+    next=o->next;
+    free_object(obj);
   }
 
   free_object(THISOBJ);
@@ -368,7 +381,7 @@ static INLINE void input_finish(void)
 /* This function reads some data from the file cache..
  * Called when we want some data to send.
  */
-static INLINE struct lpc_string* gimme_some_data(unsigned long pos)
+static INLINE struct pike_string* gimme_some_data(unsigned long pos)
 {
    struct buffer *b;
    unsigned long len;
@@ -506,7 +519,7 @@ static INLINE void output_finish(struct object *obj)
 static INLINE void output_try_write_some(struct object *obj)
 {
   struct output *out;
-  struct lpc_string *s;
+  struct pike_string *s;
   unsigned long len;
   INT32 ret;
   
@@ -869,7 +882,7 @@ static void pipe_close_output_callback(INT32 args)
 static void pipe_read_input_callback(INT32 args)
 {
   struct input *i;
-  struct lpc_string *s;
+  struct pike_string *s;
 
   if (args<2 || sp[1-args].type!=T_STRING)
     error("Illegal argument to pipe->read_input_callback\n");
@@ -928,8 +941,7 @@ static void pipe_close_input_callback(INT32 args)
 static void pipe_version(INT32 args)
 {
    pop_n_elems(args);
-   push_int(0);
-   push_string(make_shared_string("PIPE ver 2.0 compiled "__DATE__));
+   push_string(make_shared_string("PIPE ver 2.0"));
 }
 
 /********** init/exit *******************************************************/
@@ -997,39 +1009,33 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    p->done=0;
 }
 
-static void init_pipe_struct(char *foo, struct object *o)
+static void init_pipe_struct(struct object *o)
 {
-   struct pipe *p;
-   p=(struct pipe *) foo;
-
-   p->firstbuffer=p->lastbuffer=NULL;
-   p->firstinput=p->lastinput=NULL;
-   p->firstoutput=NULL;
-   p->bytes_in_buffer=0;
-   p->pos=0;
-   p->sleeping=0;
-   p->done=0;
-   p->fd=-1;
-   p->done_callback.type=T_INT;
-   p->output_closed_callback.type=T_INT;
-   p->id.type=T_INT;
-   p->id.u.integer=0;
-   p->living_outputs=0;
+   THIS->firstbuffer=THIS->lastbuffer=NULL;
+   THIS->firstinput=THIS->lastinput=NULL;
+   THIS->firstoutput=NULL;
+   THIS->bytes_in_buffer=0;
+   THIS->pos=0;
+   THIS->sleeping=0;
+   THIS->done=0;
+   THIS->fd=-1;
+   THIS->done_callback.type=T_INT;
+   THIS->output_closed_callback.type=T_INT;
+   THIS->id.type=T_INT;
+   THIS->id.u.integer=0;
+   THIS->living_outputs=0;
 }
 
-static void exit_pipe_struct(char *foo, struct object *o)
+static void exit_pipe_struct(struct object *o)
 {
-  struct pipe *p;
-
-  p=(struct pipe *) foo;
-  close_and_free_everything(NULL,p);
+  close_and_free_everything(NULL,THIS);
 }
 
-static void exit_output_struct(char *foo, struct object *obj)
+static void exit_output_struct(struct object *obj)
 {
   struct output *o;
   
-  o=(struct output *)foo;
+  o=(struct output *)(fp->current_storage);
   if (o->obj)
   {
     if(o->obj->prog)
@@ -1054,16 +1060,15 @@ static void exit_output_struct(char *foo, struct object *obj)
   }
 }
 
-static void init_output_struct(char *foo, struct object *ob)
+static void init_output_struct(struct object *ob)
 {
   struct output *o;
-  
-  o=(struct output *)foo;
+  o=(struct output *)(fp->current_storage);
   o->obj=0;
 }
 
 
-/********** ulpc init *******************************************************/
+/********** Pike init *******************************************************/
 
 void port_setup_program(void);
 

@@ -2,11 +2,16 @@ NAME
 	this_function - return a functionpointer to the current function
 
 SYNTAX
+	#include <simulate.h>
+
 	function this_function();
 
 DESCRIPTION
 	Returns a functionpointer to the current function, useful for
 	making recursive lambda-functions.
+
+KEYWORDS
+	function
 
 SEE ALSO
 	builtin/get_function, builtin/function_name, builtin/function_object,

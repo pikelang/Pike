@@ -1,3 +1,0 @@
-#undef HAVE_SYS_MMAN_H
-#undef HAVE_MMAP
-#undef HAVE_MUNMAP

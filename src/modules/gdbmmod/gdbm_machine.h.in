@@ -1,0 +1,10 @@
+#ifndef GDBM_MACHINE_H
+#define GDBM_MACHINE_H
+
+/* Define this if you have <gdbm.h> */
+#undef HAVE_GDBM_H
+
+/* Define this if you have libgdbm */
+#undef HAVE_LIBGDBM
+
+#endif

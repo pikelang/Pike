@@ -2,6 +2,8 @@ NAME
 	sort_array - sort an array
 
 SYNTAX
+	#include <array.h>
+
 	mixed *sort_array(mixed *arr,function fun,mixed ... args);
 
 DESCRIPTION
@@ -10,6 +12,9 @@ DESCRIPTION
 	is larger then the second. The rest of the arguments 'args' will be
 	sent as 3rd, 4th etc. argument to fun. If fun is omitted, < is unsed
 	instead.
+
+KEYWORDS
+	array
 
 SEE ALSO
 	map_array, filter_array

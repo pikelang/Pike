@@ -9,4 +9,4 @@ DESCRIPTION
 	/precompiled/file
 
 SEE ALSO
-	builtin/perror
+	builtin/werror

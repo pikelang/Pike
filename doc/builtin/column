@@ -1,0 +1,20 @@
+NAME
+	column - extract a column
+
+SYNTAX
+	array column(mixed *data,mixed index)
+
+DESCRIPTION
+	This function is exactly equivialent to:
+
+	map_array(index,lambda(mixed x,mixed y) { return x[y]; },data)
+
+	Except of course it is a lot shorter and faster.
+	That is, it indexes every index in the array data on the value of
+	the argument index and returns an array with the results.
+
+KEYWORDS
+	array
+
+SEE ALSO
+	rows

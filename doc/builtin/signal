@@ -9,8 +9,8 @@ SYNTAX
 DESCRIPTION
 	This function allows you to trap a signal and have a function called
 	when the process receives a signal. Although it IS possible to trap
-	SIGBUS, SIGSEGV etc. I advice you not to. uLPC should not receive any
-	such signals and if it does it is because of bugs in the uLPC
+	SIGBUS, SIGSEGV etc. I advice you not to. Pike should not receive any
+	such signals and if it does it is because of bugs in the Pike
 	interperter. And all bugs should be reported, no matter how trifle.
 
 	The callback will receive the signal number as the only argument.
@@ -18,6 +18,8 @@ DESCRIPTION
 
 	If no second argument is given, the signal handler for that signal
 	is restored to the default handler.
+
+	If the second argument is zero, the signal will be completely ignored.
 
 SEE ALSO
 	kill, signame, signum

@@ -3,16 +3,20 @@
 #include "types.h"
 #include "macros.h"
 #include "object.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "list.h"
-#include "builtin_efuns.h"
+#include "multiset.h"
+#include "builtin_functions.h"
 #include "dynamic_buffer.h"
 
-#include "spider.h"
+#ifdef _AIX
+#include <net/nh.h>
+#endif
+
+
 
 #define strcat(buff, s, l) low_my_binary_strcat((s), (l), (buff))
 #define addchar(buff, t)   low_my_putchar((t),(buff))
@@ -91,8 +95,8 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff,
   {
    case T_ARRAY:
      add_int_to_buffer(buff, val->u.array->size);
-    for(i=0; i<val->u.array->size; i++)
-      rec_save_value(ITEM(val->u.array)+i, buff, p);
+     for(i=0; i<val->u.array->size; i++)
+       rec_save_value(ITEM(val->u.array)+i, buff, p);
     break;
 
    case T_MAPPING:
@@ -111,10 +115,10 @@ static void rec_save_value(struct svalue *val, dynamic_buffer *buff,
     pop_n_elems(2);
     break;
 
-   case T_LIST:
-    add_int_to_buffer(buff, val->u.list->ind->size);
-    for(i=0; i<val->u.list->ind->size; i++)
-      rec_save_value(ITEM(val->u.list->ind)+i, buff, p);
+   case T_MULTISET:
+    add_int_to_buffer(buff, val->u.multiset->ind->size);
+    for(i=0; i<val->u.multiset->ind->size; i++)
+      rec_save_value(ITEM(val->u.multiset->ind)+i, buff, p);
     break;
 
    case T_OBJECT:
@@ -281,11 +285,11 @@ static void rec_restore_value(char **v, INT32 *l)
     f_aggregate(t);
     return;
 
-   case T_LIST:
+   case T_MULTISET:
     t = extract_int(v,l);
     for(i=0;i<t;i++)
       rec_restore_value(v,l);
-    f_aggregate_list(t);
+    f_aggregate_multiset(t);
     return;
     
    case T_MAPPING:
@@ -326,7 +330,7 @@ static void rec_restore_value(char **v, INT32 *l)
 
 void f_decode_value(INT32 args)
 {
-  struct lpc_string *s;
+  struct pike_string *s;
   char *v;
   INT32 l;
 

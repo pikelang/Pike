@@ -1,0 +1,17 @@
+NAME
+	gc - do garbage collection
+
+SYNTAX
+	int gc();
+
+DESCRIPTION
+	This function checks all the memory for cyclic structures such
+	as arrays containing themselves and frees them if approperiate.
+	It also frees up destructed objects. It then returns how many
+	arrays/objects/programs/etc. it managed	to free by doing this.
+	
+	Normally there is no need to call this function since Pike will
+	call it by itself every now and then. (Pike will try to predict
+	when 20% of all arrays/object/programs in memory is 'garbage'
+	and call this routine then.)
+

@@ -1,0 +1,13 @@
+NAME
+	all_efuns - return all 'efuns'
+
+SYNTAX
+	#include <simulate.h>
+
+	mapping all_efuns();
+
+DESCRIPTION
+	This function is the same as all_constants.
+
+SEE ALSO
+	all_constants

@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef EFUN_H
@@ -14,7 +14,7 @@ typdef void (*efun_t) (INT32);
  * a) one type that can point to a callable function.
  *    (C function, or object->fun)
  * b) one type that once the object/program is known can point
- *    to the C/LPC function body.
+ *    to the C/Pike function body.
  * c) A number of flags to send to 'add_simul_efun' to specify side effects
  *    and such.
  * d) A type struct

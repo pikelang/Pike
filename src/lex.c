@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -9,7 +9,7 @@
 #include "lex.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "hashtable.h"
 #include "stuff.h"
 #include "memory.h"
@@ -19,7 +19,8 @@
 #include "las.h"
 #include "operators.h"
 #include "opcodes.h"
-#include "builtin_efuns.h"
+#include "builtin_functions.h"
+#include "main.h"
 
 #include "macros.h"
 #include <sys/param.h>
@@ -27,14 +28,12 @@
 #include <math.h>
 #include <fcntl.h>
 #include <errno.h>
-#ifdef HAVE_TIME_H
-#include <time.h>
-#endif
+#include "time_stuff.h"
 
 #define LEXDEBUG 0
-#define EXPANDMAX 50000
+#define EXPANDMAX 500000
 
-struct lpc_string *current_file;
+struct pike_string *current_file;
 
 INT32 current_line;
 INT32 old_line;
@@ -42,20 +41,36 @@ INT32 total_lines;
 INT32 nexpands;
 int pragma_all_inline;          /* inline all possible inlines */
 
-struct lpc_predef_s
+struct pike_predef_s
 {
   char *name;
   char *value;
-  struct lpc_predef_s *next;
+  struct pike_predef_s *next;
 };
 
-struct lpc_predef_s *lpc_predefs=0;
+struct pike_predef_s *pike_predefs=0;
 
 static int calc();
 static void calc1();
 
 void exit_lex()
 {
+#ifdef DEBUG
+  if(p_flag > 2)
+  {
+    int e;
+    fprintf(stderr,"Opcode usage: (opcode, runned, compiled)\n");
+    for(e=0;e<F_MAX_OPCODE-F_OFFSET;e++)
+    {
+      fprintf(stderr,":: %-20s %8ld %8ld\n",
+	      low_get_f_name(e+F_OFFSET,0),
+	      (long)instrs[e].runs,
+	      (long)instrs[e].compiles);
+    }
+  }
+#endif
+
+
   while(local_variables)
   {
     int e;
@@ -88,7 +103,7 @@ struct keyword reserved_words[] =
 { "continue",	F_CONTINUE, },
 { "default",	F_DEFAULT, },
 { "do",		F_DO, },
-{ "efun",	F_EFUN, },
+{ "predef",	F_PREDEF, },
 { "else",	F_ELSE, },
 { "float",	F_FLOAT_ID, },
 { "for",	F_FOR, },
@@ -100,7 +115,7 @@ struct keyword reserved_words[] =
 { "inline",	F_INLINE, },
 { "int",	F_INT_ID, },
 { "lambda",	F_LAMBDA, },
-{ "list",	F_LIST_ID, },
+{ "multiset",	F_MULTISET_ID, },
 { "mapping",	F_MAPPING_ID, },
 { "mixed",	F_MIXED_ID, },
 { "nomask",	F_NO_MASK, },
@@ -114,6 +129,7 @@ struct keyword reserved_words[] =
 { "static",	F_STATIC, },
 { "string",	F_STRING_ID, },
 { "switch",	F_SWITCH, },
+{ "typeof",	F_TYPEOF, },
 { "varargs",	F_VARARGS, },
 { "void",	F_VOID_ID, },
 { "while",	F_WHILE, },
@@ -196,18 +212,21 @@ struct keyword instr_names[]=
 { "indirect",		F_INDIRECT },
 { "jump",               F_BRANCH },
 { "local function call",F_CALL_LFUN },
+{ "local function call and pop",F_CALL_LFUN_AND_POP },
 { "local function",	F_LFUN },	
 { "local",		F_LOCAL },	
 { "ltosval2",		F_LTOSVAL2 },
 { "lvalue to svalue",	F_LTOSVAL },	
 { "lvalue_list",	F_LVALUE_LIST },	
 { "mark",               F_MARK },
+{ "mark mark",          F_MARK2 },
 { "negative number",	F_NEG_NUMBER },
 { "number",             F_NUMBER },
 { "pop",		F_POP_VALUE },	
 { "pop_n_elems",        F_POP_N_ELEMS },
 { "push 0",             F_CONST0 },
 { "push 1",             F_CONST1 },
+{ "push 0x7fffffff",    F_BIGNUM },
 { "range",              F_RANGE },
 { "return",		F_RETURN },
 { "return 0",		F_RETURN_0 },
@@ -224,6 +243,30 @@ struct keyword instr_names[]=
 { "|=",			F_OR_EQ },	
 { "||",			F_LOR },	
 { "~",			F_COMPL },
+{ "label",		F_LABEL },
+{ "data",		F_POINTER },
+{ "align",		F_ALIGN },
+{ "call",		F_APPLY },
+{ "clear local",	F_CLEAR_LOCAL },
+{ "++local",		F_INC_LOCAL },
+{ "++local and pop",	F_INC_LOCAL_AND_POP },
+{ "local++",		F_POST_INC_LOCAL },
+{ "--local",		F_DEC_LOCAL },
+{ "--local and pop",	F_DEC_LOCAL_AND_POP },
+{ "local--",		F_POST_DEC_LOCAL },
+{ "branch if <",	F_BRANCH_WHEN_LT },
+{ "branch if >",	F_BRANCH_WHEN_GT },
+{ "branch if <=",	F_BRANCH_WHEN_LE },
+{ "branch if >=",	F_BRANCH_WHEN_GE },
+{ "branch if ==",	F_BRANCH_WHEN_EQ },
+{ "branch if !=",	F_BRANCH_WHEN_NE },
+{ "sizeof",		F_SIZEOF },
+{ "sizeof local",	F_SIZEOF_LOCAL },
+{ "throw(0)",		F_THROW_ZERO },
+{ "string index",       F_STRING_INDEX },
+{ "local index",        F_LOCAL_INDEX },
+{ "int index",          F_POS_INT_INDEX },
+{ "-int index",         F_NEG_INT_INDEX },
 };
 
 struct instr instrs[F_MAX_INSTR - F_OFFSET];
@@ -327,7 +370,7 @@ char *get_token_name(int n)
 }
 
 /* foo must be a shared string */
-static int lookup_resword(struct lpc_string *s)
+static int lookup_resword(struct pike_string *s)
 {
   struct hash_entry *h;
   h=hash_lookup(reswords, s);
@@ -666,7 +709,7 @@ struct hash_table *defines = 0;
 #define find_define(N) (defines?BASEOF(hash_lookup(defines, N), define, link):0)
 
 /* argument must be shared string */
-static void undefine(struct lpc_string *name)
+static void undefine(struct pike_string *name)
 {
   struct define *d;
 
@@ -681,7 +724,7 @@ static void undefine(struct lpc_string *name)
 }
 
 /* name and as are supposed to be SHARED strings */
-static void add_define(struct lpc_string *name,
+static void add_define(struct pike_string *name,
 		       int args,
 		       int parts_on_stack,
 		       void (*magic)())
@@ -723,10 +766,10 @@ static void simple_add_define(char *name,char *as,void (*magic)())
 {
   if(magic)
   {
-    add_define(make_shared_string(name),0,0,magic);
+    add_define(make_shared_string(name),-1,0,magic);
   }else{
     push_string(make_shared_string(as));
-    add_define(make_shared_string(name),0,1,magic);
+    add_define(make_shared_string(name),-1,1,magic);
   }
 }
 
@@ -749,7 +792,8 @@ static void do_define()
 {
   int c,e,t,argc;
   struct svalue *save_sp=sp;
-  struct lpc_string *s, *s2;
+  struct svalue *args_sp;
+  struct pike_string *s, *s2;
 
   SKIPWHITE();
   READBUF(isidchar(C));
@@ -780,8 +824,10 @@ static void do_define()
     if(!GOBBLE(')'))
       yyerror("Missing ')'");
   }else{
-    argc=0;
+    argc=-1;
   }
+
+  args_sp=sp;
 
   init_buf();
   t=0;
@@ -791,29 +837,33 @@ static void do_define()
 
   while(1)
   {
+    int tmp;
+
     c=GETC();
     if(c=='\\') if(GOBBLE('\n')) continue;
     if( (t!=!!isidchar(c) && argc>0) || c=='\n' || c==MY_EOF)
     {
       s2=free_buf();
+      tmp=0;
       for(e=0;e<argc;e++)
       {
 	if(save_sp[e].u.string==s2)
 	{
 	  free_string(s2);
 	  push_int(e);
+	  tmp=1;
 	  break;
 	}
       }
-      if(e==argc)
+      if(!tmp)
       {
 	push_string(s2);
-	if(sp[-2].type==T_STRING) f_add();
+	if(sp[-2].type==T_STRING) f_add(2);
       }
       if(c=='\n' || c==MY_EOF)
       {
 	push_string(make_shared_string(" "));
-	if(sp[-2].type==T_STRING) f_add();
+	if(sp[-2].type==T_STRING) f_add(2);
 	break;
       }
       t=!!isidchar(c);
@@ -822,12 +872,12 @@ static void do_define()
     my_putchar(c);
   }
   UNGETC(c);
-  add_define(s,argc,sp-save_sp-argc,0);
+  add_define(s,argc,sp-args_sp,0);
   while(sp>save_sp) pop_stack();
 }
 
 /* s is a shared string */
-static int expand_define(struct lpc_string *s, int save_newline)
+static int expand_define(struct pike_string *s, int save_newline)
 {
   struct svalue *save_sp=sp;
   struct define *d;
@@ -847,57 +897,62 @@ static int expand_define(struct lpc_string *s, int save_newline)
     return 1;
   }
 
-  if(!save_newline)
+  if(d->args >= 0)
   {
-    SKIPWHITE();
-  }else{
-    do { e=GETC(); }while(isspace(e) && e!='\n');
-    UNGETC(e);
-  }
-
-  if(GOBBLE('('))
-  {
-    int parlvl,quote;
-    int c;
-    args=0;
-
-    SKIPWHITE();
-    init_buf();
-    parlvl=1;
-    quote=0;
-    while(parlvl)
+    if(!save_newline)
     {
-      switch(c=GETC())
-      {
-      case MY_EOF:
-	yyerror("Unexpected end of file.");
-	while(sp>save_sp) pop_stack();
-	return 0;
-      case '"': if(!(quote&2)) quote^=1; break;
-      case '\'': if(!(quote&1)) quote^=2; break;
-      case '(': if(!quote) parlvl++; break;
-      case ')': if(!quote) parlvl--; break;
-      case '\\': my_putchar(c); c=GETC(); break;
-      case ',':
-	if(!quote && parlvl==1)
-	{
-	  push_string(free_buf());
-	  init_buf();
-	  args++;
-	  continue;
-	}
-      }
-      if(parlvl) my_putchar(c);
-    }
-    push_string(free_buf());
-    if(args==0 && !d->args && !sp[-1].u.string->len)
-    {
-      pop_stack();
+      SKIPWHITE();
     }else{
-      args++;
+      do { e=GETC(); }while(isspace(e) && e!='\n');
+      UNGETC(e);
     }
-  }else{
-    args=0;
+
+    if(GOBBLE('('))
+    {
+      int parlvl,quote;
+      int c;
+      args=0;
+
+      SKIPWHITE();
+      init_buf();
+      parlvl=1;
+      quote=0;
+      while(parlvl)
+      {
+	switch(c=GETC())
+	{
+	case MY_EOF:
+	  yyerror("Unexpected end of file.");
+	  while(sp>save_sp) pop_stack();
+	  return 0;
+	case '"': if(!(quote&2)) quote^=1; break;
+	case '\'': if(!(quote&1)) quote^=2; break;
+	case '(': if(!quote) parlvl++; break;
+	case ')': if(!quote) parlvl--; break;
+	case '\\': my_putchar(c); c=GETC(); break;
+	case ',':
+	  if(!quote && parlvl==1)
+	  {
+	    push_string(free_buf());
+	    init_buf();
+	    args++;
+	    continue;
+	  }
+	}
+	if(parlvl) my_putchar(c);
+      }
+      push_string(free_buf());
+      if(args==0 && !d->args && !sp[-1].u.string->len)
+      {
+	pop_stack();
+      }else{
+	args++;
+      }
+    }else{
+      args=0;
+    }
+  } else {
+    args=-1;
   }
   
   if(args>d->args)
@@ -939,22 +994,27 @@ static int expand_define(struct lpc_string *s, int save_newline)
 
 /*** Handle include ****/
 
-static void handle_include(char *name)
+static void handle_include(char *name, int local_include)
 {
   int fd;
   char buf[400];
+  struct pike_string *s;
 
-  push_string(make_shared_string(name));
+  s=make_shared_string(name);
+  push_string(s);
+  reference_shared_string(s);
   push_string(current_file);
   reference_shared_string(current_file);
-
-  SAFE_APPLY_MASTER("handle_include",2);
-
+  push_int(local_include);
+  
+  SAFE_APPLY_MASTER("handle_include",3);
+  
   if(sp[-1].type != T_STRING)
   {
-    my_yyerror("Couldn't include file '%s'.",name);
+    my_yyerror("Couldn't include file '%s'.",s->str);
     return;
   }
+  free_string(s);
   
  retry:
   fd=open(sp[-1].u.string->str,O_RDONLY);
@@ -1214,7 +1274,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 		continue;
 	      }
 	    }
-	    handle_include(buf);
+	    handle_include(buf, c==F_STRING);
 	    break;
 	  }
 
@@ -1226,7 +1286,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 
 	  if(!strcmp("ifdef",buf))
 	  {
-	    struct lpc_string *s;
+	    struct pike_string *s;
 	    SKIPWHITE();
 	    READBUF(isidchar(C));
 	    s=findstring(buf);
@@ -1236,7 +1296,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 
 	  if(!strcmp("ifndef",buf))
 	  {
-	    struct lpc_string *s;
+	    struct pike_string *s;
 	    SKIPWHITE();
 	    READBUF(isidchar(C));
 	    s=findstring(buf);
@@ -1271,7 +1331,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
 	case 'u':
 	  if(!strcmp("undef",buf))
 	  {
-	    struct lpc_string *s;
+	    struct pike_string *s;
 	    SKIPWHITE();
 	    READBUF(isidchar(C));
 	    if((s=findstring(buf))) undefine(s);
@@ -1480,7 +1540,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       return '<';
   
     case '>':
-      if(GOBBLE(')')) return F_LIST_END;
+      if(GOBBLE(')')) return F_MULTISET_END;
       if(GOBBLE('=')) return F_GE;
       if(GOBBLE('>'))
       {
@@ -1494,7 +1554,7 @@ static int do_lex2(int literal, YYSTYPE *yylval)
       return F_NOT;
 
     case '(':
-      if(GOBBLE('<')) return F_LIST_START;
+      if(GOBBLE('<')) return F_MULTISET_START;
       return '(';
 
     case '?':
@@ -1507,11 +1567,71 @@ static int do_lex2(int literal, YYSTYPE *yylval)
     case '{':
     case ';':
     case '}': return c;
+
+    case '`':
+    {
+      char *tmp;
+      switch(GETC())
+      {
+      case '+': tmp="`+"; break;
+      case '-': tmp="`-"; break;
+      case '/': tmp="`/"; break;
+      case '%': tmp="`%"; break;
+      case '*': tmp="`*"; break;
+      case '&': tmp="`&"; break;
+      case '|': tmp="`|"; break;
+      case '^': tmp="`^"; break;
+      case '~': tmp="`~"; break;
+      case '[':
+	if(GOBBLE(']'))
+	{
+	  tmp="`[]";
+	  if(GOBBLE('=')) tmp="`[]=";
+	  break;
+	}
+
+      default:
+	yyerror("Illegal ` identifier.");
+	tmp="";
+	break;
+
+      case '<':
+	if(GOBBLE('<')) { tmp="`<<"; break; }
+	if(GOBBLE('=')) { tmp="`<="; break; }
+	tmp="`<";
+	break;
+
+      case '>':
+	if(GOBBLE('>')) { tmp="`>>"; break; }
+	if(GOBBLE('=')) { tmp="`>="; break; }
+	tmp="`>";
+	break;
+
+      case '!':
+	if(GOBBLE('=')) { tmp="`!="; break; }
+	tmp="`!";
+	break;
+
+      case '=':
+	if(GOBBLE('=')) { tmp="`=="; break; }
+	tmp="`=";
+	break;
+      }
+
+      if(literal)
+      {
+	yylval->str=buf;
+      }else{
+	yylval->string=make_shared_string(tmp);
+      }
+      return F_IDENTIFIER;
+    }
+
   
     default:
       if(isidchar(c))
       {
-	struct lpc_string *s;
+	struct pike_string *s;
 	UNGETC(c);
 	READBUF(isidchar(C));
 
@@ -1570,7 +1690,7 @@ static void low_lex()
 {
   while(1)
   {
-    struct lpc_string *s;
+    struct pike_string *s;
 
     lookahead=do_lex(1, &my_yylval);
     if(lookahead == F_IDENTIFIER)
@@ -1599,18 +1719,18 @@ static void low_lex()
 	continue;
       }
 
-      if(!strcmp("efun",my_yylval.str))
+      if(!strcmp("efun",my_yylval.str) || !strcmp("constant",my_yylval.str))
       {
 	SKIPWHITE();
 	if(!GOBBLE('('))
 	{
-	  yyerror("Missing '(' in #if efun().\n");
+	  yyerror("Missing '(' in #if constant().\n");
 	  return;
 	}
 	READBUF(isidchar(C));
 	if(!GOBBLE(')'))
 	{
-	  yyerror("Missing ')' in #if efun().\n");
+	  yyerror("Missing ')' in #if constant().\n");
 	  return;
 	}
 	s=findstring(buf);
@@ -1679,9 +1799,9 @@ static void calcB()
 {
   switch(lookahead)
   {
-    case '-': low_lex(); calcB(); f_negate(); break;
-    case F_NOT: low_lex(); calcB(); f_not(); break;
-    case '~': low_lex(); calcB(); f_compl(); break;
+    case '-': low_lex(); calcB(); o_negate(); break;
+    case F_NOT: low_lex(); calcB(); o_not(); break;
+    case '~': low_lex(); calcB(); o_compl(); break;
     default: calcC();
   }
 }
@@ -1693,9 +1813,9 @@ static void calcA()
   {
     switch(lookahead)
     {
-      case '/': low_lex(); calcB(); f_divide(); continue;
-      case '*': low_lex(); calcB(); f_multiply(); continue;
-      case '%': low_lex(); calcB(); f_mod(); continue;
+      case '/': low_lex(); calcB(); o_divide(); continue;
+      case '*': low_lex(); calcB(); o_multiply(); continue;
+      case '%': low_lex(); calcB(); o_mod(); continue;
     }
     break;
   }
@@ -1709,8 +1829,8 @@ static void calc9()
   {
     switch(lookahead)
     {
-      case '+': low_lex(); calcA(); f_add(); continue;
-      case '-': low_lex(); calcA(); f_subtract(); continue;
+      case '+': low_lex(); calcA(); f_add(2); continue;
+      case '-': low_lex(); calcA(); o_subtract(); continue;
     }
     break;
   }
@@ -1724,8 +1844,8 @@ static void calc8()
   {
     switch(lookahead)
     {
-      case F_LSH: low_lex(); calc9(); f_lsh(); continue;
-      case F_RSH: low_lex(); calc9(); f_rsh(); continue;
+      case F_LSH: low_lex(); calc9(); o_lsh(); continue;
+      case F_RSH: low_lex(); calc9(); o_rsh(); continue;
     }
     break;
   }
@@ -1739,10 +1859,10 @@ static void calc7b()
   {
     switch(lookahead)
     {
-      case '<': low_lex(); calc8(); f_lt(); continue;
-      case '>': low_lex(); calc8(); f_gt(); continue;
-      case F_GE: low_lex(); calc8(); f_ge(); continue;
-      case F_LE: low_lex(); calc8(); f_le(); continue;
+      case '<': low_lex(); calc8(); f_lt(2); continue;
+      case '>': low_lex(); calc8(); f_gt(2); continue;
+      case F_GE: low_lex(); calc8(); f_ge(2); continue;
+      case F_LE: low_lex(); calc8(); f_le(2); continue;
     }
     break;
   }
@@ -1756,8 +1876,8 @@ static void calc7()
   {
     switch(lookahead)
     {
-      case F_EQ: low_lex(); calc7b(); f_eq(); continue;
-      case F_NE: low_lex(); calc7b(); f_ne(); continue;
+      case F_EQ: low_lex(); calc7b(); f_eq(2); continue;
+      case F_NE: low_lex(); calc7b(); f_ne(2); continue;
     }
     break;
   }
@@ -1771,7 +1891,7 @@ static void calc6()
   {
     low_lex();
     calc7();
-    f_and();
+    o_and();
   }
 }
 
@@ -1783,7 +1903,7 @@ static void calc5()
   {
     low_lex();
     calc6();
-    f_xor();
+    o_xor();
   }
 }
 
@@ -1795,7 +1915,7 @@ static void calc4()
   {
     low_lex();
     calc5();
-    f_or();
+    o_or();
   }
 }
 
@@ -1942,13 +2062,13 @@ void insert_current_date_as_string()
 
 static void start_new()
 {
-  struct lpc_predef_s *tmpf;
+  struct pike_predef_s *tmpf;
 
   free_all_defines();
 
-  simple_add_define("__uLPC__", "1",0);
+  simple_add_define("__PIKE__", "1",0);
   
-  for (tmpf=lpc_predefs; tmpf; tmpf=tmpf->next)
+  for (tmpf=pike_predefs; tmpf; tmpf=tmpf->next)
     simple_add_define(tmpf->name, tmpf->value,0);
 
   simple_add_define("__LINE__",0,insert_current_line);
@@ -1966,7 +2086,7 @@ static void start_new()
   current_file=0;
 }
 
-void start_new_file(int fd,struct lpc_string *filename)
+void start_new_file(int fd,struct pike_string *filename)
 {
   start_new();
   copy_shared_string(current_file,filename);
@@ -1975,7 +2095,7 @@ void start_new_file(int fd,struct lpc_string *filename)
   UNGETSTR("\n",1);
 }
 
-void start_new_string(char *s,INT32 len,struct lpc_string *name)
+void start_new_string(char *s,INT32 len,struct pike_string *name)
 {
   start_new();
   copy_shared_string(current_file,name);
@@ -2001,7 +2121,7 @@ void end_new_file()
 void add_predefine(char *s)
 {
   char buffer1[100],buffer2[10000];
-  struct lpc_predef_s *tmp;
+  struct pike_predef_s *tmp;
 
   if(sscanf(s,"%[^=]=%[ -~=]",buffer1,buffer2) ==2)
   {
@@ -2010,11 +2130,11 @@ void add_predefine(char *s)
     buffer2[0]='1';
     buffer2[1]=0;
   }
-  tmp=ALLOC_STRUCT(lpc_predef_s);
+  tmp=ALLOC_STRUCT(pike_predef_s);
   tmp->name=(char *)xalloc(strlen(s)+1);
   strcpy(tmp->name,s);
   tmp->value=(char *)xalloc(strlen(buffer2)+1);
   strcpy(tmp->value,buffer2);
-  tmp->next=lpc_predefs;
-  lpc_predefs=tmp;
+  tmp->next=pike_predefs;
+  pike_predefs=tmp;
 }

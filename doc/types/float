@@ -13,22 +13,25 @@ DESCRIPTION
 	A list of operators that applies to floats follows:
 	In this list a and b is used to represent a float expression:
 
-	a + b  : summation
-	a - b  : subtraction
-	a * b  : multiplication
-	a / b  : integer division
-	a % b  : modulo ( same thing as  a - floor( a / b ) * b )
-	- a    : negation
-	a == b : return 1 if a is equal to b, 0 otherwise
-	a != b : return 0 if a is equal to b, 1 otherwise
-	a < b  : returns 1 if a is lesser than b, 0 otherwise
-	a <= b : returns 1 if a is lesser or equal to b, 0 otherwise
-	a > b  : returns 1 if a is greater than b, 0 otherwise
-	a >= b : returns 1 if a is greater or equal to b, 0 otherwise
+	a + b	summation
+	a - b	subtraction
+	a * b	multiplication
+	a / b	division
+	a % b	modulo ( same thing as  a - floor( a / b ) * b )
+	- a	negation
+	a == b	return 1 if a is equal to b, 0 otherwise
+	a != b	return 0 if a is equal to b, 1 otherwise
+	a < b	returns 1 if a is lesser than b, 0 otherwise
+	a <= b	returns 1 if a is lesser or equal to b, 0 otherwise
+	a > b	returns 1 if a is greater than b, 0 otherwise
+	a >= b	returns 1 if a is greater or equal to b, 0 otherwise
 
 NOTA BENE
 	floats and ints cannot be used together, they have to be cast
 	to the same type first.
 
+KEYWORDS
+	types
+
 SEE ALSO
-	float, modules/math
+	math/sin, math/cos, math/tan, math/sqrt

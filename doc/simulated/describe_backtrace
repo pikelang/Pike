@@ -2,6 +2,8 @@ NAME
 	describe_backtrace - make a backtrace readable
 
 SYNTAX
+	#include <simulate.h>
+
 	string describe_backtrace(mixed **backtrace);
 
 DESCRIPTION

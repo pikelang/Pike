@@ -17,7 +17,8 @@ EXAMPLES
 	> combine_path("/foo/bar","./sune.c");
 	Result: /foo/bar/sune.c
 
+KEYWORDS
+	file
+
 SEE ALSO
 	getcwd
-
-	

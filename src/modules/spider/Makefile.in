@@ -1,61 +1,182 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../..:../..
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
-CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
 
-FILES=spider.o discdate.o stardate.o sdebug.o tree.o lock.o streamed_parser.o\
-	http_parse.o encode_decode.o sharedmem.o
+FILES=spider.o discdate.o stardate.o sdebug.o tree.o lock.o sharedmem.o streamed_parser.o encode_decode.o http_parse.o
 
 spider.a: $(FILES)
 	-rm -f spider.a
 	ar cq spider.a $(FILES)
 	-@RANLIB@ spider.a
-	echo >linker_options @LIBS@
 
 clean:
-	-rm -f *.o *.a spider.h Makefile
+	-rm -f *.o *.a
 
 depend:
-	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | sed 's;"$(SRCDIR)/";;g' | sed 's;\.\./;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
-	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
-	config.status
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
 
-discdate.o: discdate.c stralloc.h types.h \
- machine.h global.h config.h port.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h program.h \
- interpret.h mapping.h array.h builtin_efuns.h \
- spider.h
-lock.o: lock.c stralloc.h types.h machine.h \
- global.h config.h port.h macros.h \
- object.h svalue.h add_efun.h hashtable.h \
- las.h dynamic_buffer.h program.h interpret.h \
- mapping.h array.h builtin_efuns.h
-sdebug.o: sdebug.c stralloc.h types.h machine.h \
- global.h config.h port.h macros.h \
- object.h svalue.h add_efun.h hashtable.h \
- las.h dynamic_buffer.h program.h interpret.h \
- mapping.h array.h builtin_efuns.h spider.h
-spider.o: spider.c machine.h stralloc.h types.h \
- global.h config.h port.h macros.h \
- object.h svalue.h add_efun.h hashtable.h \
- las.h dynamic_buffer.h program.h interpret.h \
- mapping.h array.h builtin_efuns.h spider.h conf.h \
+# Depencies begin here
+discdate.o: discdate.c \
+ stralloc.h \
+ types.h machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+encode_decode.o: encode_decode.c \
+ stralloc.h \
+ types.h machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ multiset.h \
+ builtin_functions.h \
+ callback.h
+http_parse.o: http_parse.c \
+ stralloc.h \
+ types.h machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+lock.o: lock.c
+sdebug.o: sdebug.c \
+ stralloc.h \
+ types.h machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+shared_mem_mapping.o: \
+ shared_mem_mapping.c
+sharedmem.o: sharedmem.c \
+ sharedmem.h
+spider.o: spider.c machine.h \
+ stralloc.h \
+ types.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h \
+ lock.h \
+ defs.h \
  streamed_parser.h
-stardate.o: stardate.c stralloc.h types.h \
- machine.h global.h config.h port.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h program.h \
- interpret.h mapping.h array.h builtin_efuns.h \
- spider.h
-streamed_parser.o: streamed_parser.c stralloc.h types.h \
- machine.h global.h config.h port.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h program.h \
- interpret.h mapping.h array.h builtin_efuns.h \
+stardate.o: stardate.c \
+ stralloc.h \
+ types.h machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+streamed_parser.o: \
+ streamed_parser.c \
+ stralloc.h \
+ types.h machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h \
  streamed_parser.h
-tree.o: tree.c machine.h stralloc.h types.h \
- global.h config.h port.h macros.h \
- object.h svalue.h add_efun.h hashtable.h \
- las.h dynamic_buffer.h program.h interpret.h \
- mapping.h array.h builtin_efuns.h spider.h
+tree.o: tree.c machine.h \
+ stralloc.h \
+ types.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h

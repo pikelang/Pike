@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef FILE_H
@@ -28,7 +28,6 @@ struct my_file
   INT32 refs;
   int fd;
   short open_mode;
-  int errno;
   struct svalue id;
   struct svalue read_callback;
   struct svalue write_callback;
@@ -37,6 +36,7 @@ struct my_file
 
 /* Prototypes begin here */
 struct object *file_make_object_from_fd(int fd, int mode);
+int socketpair(int family, int type, int protocol, int sv[2]);
 void get_inet_addr(struct sockaddr_in *addr,char *name);
 void exit_files();
 void init_files_programs();

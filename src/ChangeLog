@@ -1,3 +1,283 @@
+Thu Sep 19 14:25:07 1996  Fredrik Hubinette  <hubbe@jolt.infovav.se.>
+
+	* all_efuns renamed to all_constants
+	* new efun: errno
+	* flat and old mappings removed
+	* -p for opcode profiling added
+	* gc <-> mapping interaction bug fixed
+	* memory leak in for() fixed
+	* new opcodes: F_LOCAL_INDEX F_POS_INT_INDEX F_NEG_INT_INDEX
+	*              F_STRING_INDEX
+	* F_ASSIGN_GLOBAL now works
+	* stack allocation through mmap now works
+	* gc() and destruct() delayed to be called inside evaluator.
+	* put #include <simulate.h> in your files to get old behaviour
+	* simulate.lpc removed.
+	* perror renamed to werror
+	* list renamed to multiset
+	* add_efun renamed to add_constant
+	* uLPC renamed to Pike
+
+Tue Aug 20 01:16:48 1996  Fredrik Hubinette  <hubbe@signum.se>
+
+	* version 0.000002 released
+
+Tue Aug 13 12:16:06 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* gpmmod should now work with older versions of GMP.
+
+Mon Aug 12 18:08:12 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* array.c: some bugs in type_field fixed
+	* array.c: more debug added
+	* main.c: -s <stacksize> added
+	* svalue.c: made is_eq 'safe' (it does not change the svalue argument)
+	* svalue.c: type_field bug fixed in garbage collect
+	* file.c: a memory trashing bug fixed when opening files...
+
+Tue Aug  6 13:33:51 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* call_out.c: call outs now have unique ids, so you can remove
+	  them individually.
+	* opcodes.c: sscanf now accepts field sizes for %c and %s
+	* signal_handler.c: signal(signum,0) now means SIG_IGN
+
+Tue Aug  6 00:02:14 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+        * memory.c: fixed a bug in memory searcher (8 bit chars)
+        * las.c: fixed so that the --loop and ++loop works again
+	* docode.c: if(foo && bar) opimized (one jump less)
+	* simulate.c (regexp): now frees regexp correctly
+
+Thu Aug  1 15:26:12 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.src: a few bugs fixed
+	* backend.c: now handles unsigned tv_sec better
+	* callback.c: bugs fixed, comments added
+	* configure.in: now checks for mmap
+	* docode.c: if() no longer uses count_args
+	* docode.c: one jump eliminated from for() loops
+	* interpret.c: stack now allocated with mmap when possible
+	* interpret.c: catch() inline warning removed...
+	* interpret.c: F_DEC_LOCAL_AND_POP now works...
+	* interpret.c: new opcodes: F_MARK2, F_SIZEOF, F_SIZEOF_LOCAL
+	*             F_CALL_LFUN_AND_POP
+	* language.y: gauge can now take a block of code as argument
+	* lex.c: added `[] and `[]=
+	* rusage.c: bug fixed when no rusage() was found
+	* mpz module now checks that libgmp is new enough
+	* readline module now checks for both <readline.h> and
+	  <readline/readline.h>
+
+Mon Jul 22 12:04:34 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* interpret.c (catch): return should now work from inside catch
+	  all catch statements are now exited through return or throw
+	* readlinemod: now checks for <readline/readline.h> too
+
+Mon Jul  8 23:52:48 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* Pike v1.0E-6 released
+	* hilfe.lpc now uses readline (line editing! history!)
+	* bug in true/false values fixed
+	* readline module added
+
+Tue Jul  2 13:44:02 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* Pike v1.2E-7 released
+	* added check to see if gettimeofday takes one or two args,
+	  Pike should now compile on HP and Linux again.
+
+Mon Jul  1 17:55:26 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Pike v1.1E-7 released
+	* call_out and sleep now works again.
+
+Sat Jun 22 02:46:22 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* Pike v1.0E-7 released
+
+Fri Jun 21 20:32:00 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* simulate.lpc optimized
+	* reorganize optimized (used by lists and sort and other stuff)
+	* type checks now optimize int|int to just int
+	* #include now honours "" and <>
+	* stack size increased
+	* callback.c is actually useful now..
+	* sleep now handles floats for delays smaller than seconds.
+	* backend now handles delays shorter than seconds.
+	* backend has callbacks to allow call_out for module(s)
+	* explode and string replace optimized (memory searcher)
+	* better stack checks added
+	* `<< method added to /precompiled/file
+	* call_out moved to a module, call_out now handles floating point
+	  delays.
+	* Makefile and configure script added to the module directory.
+	* 'private inherit' now works as you might expect
+
+Wed Jun 19 01:22:53 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* Operator overloading added.
+	* new simulated function: putenv
+	* gmp module added, implements LARGE numbers. (/precompiled/mpz)
+	* C++ style output is now possible with <<
+
+Sun Jun  9 16:33:16 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* second argument to file->read() added
+	* 2 new mapping implementations, the default one is an open
+	  hashtable implementation.
+	* new efuns: sort, rows, column, _verify_internals
+	* signal_handler.c: signal calling is now blocked when inside
+	  a signal call.
+	* soon available: glob, localtime, strerror
+
+Thu May 30 03:12:15 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* file->read() now takes a second argument which can tell it
+	  that it sould only make one read()
+	* new efun: sort()
+	* new mapping implementation (hashed mappings)
+
+Mon May 27 03:39:20 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* Pike v1.0E-8 released
+
+Thu May 16 00:53:16 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* fixed some major bugs in gc()
+	* undefing GC2 now works
+	* create_testsuite: tests for gdbmmod added
+	* test_lpc.lpc: added conditional tests
+	* module doc dirs moved to the module dirs.
+
+Mon May 13 22:20:24 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* -Wunused removed
+	* new module: gdbmmod
+	* svalue.c: bug in garbage collect fixed
+
+Fri May  3 13:50:05 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
+
+	* las.c: type-checking improved
+
+Sat May  4 13:40:48 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* Pike_v1.1E-9 released.
+	* pike_types.c (internal_parse_typeA): fixed a minor bug
+
+Wed May  1 00:49:36 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Pike_v1.0E-9 released.
+
+Mon Apr 29 20:47:31 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.in: All makefiles are now generated from Makefile.src ->
+	  Makefile.in -> Makefile. This is so I don't have to save
+	  dependencies in my CVS repository :)
+
+Tue Apr 23 22:32:04 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* Makefile.in: Now language.c and language.h is a part of the
+	  distribution so you won't need bison to compile.
+
+Sat Apr 13 04:00:45 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* simulate.lpc: replaced sort_array with a faster one
+	* operators.c: optimization fixed for operators
+	* crypt() should now work with BSD crypt() I hope
+	* lots of files: added a peephole optimizer
+
+Thu Apr 11 23:13:24 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* apply on void functions fixed
+	* case -1 fixed
+
+Tue Apr  2 17:01:10 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* signal.c: alarm() added
+	* language.y: gauge() fixed
+
+Sun Mar 31 22:12:43 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* Pike v1.0E-10 released.
+
+Sun Mar 31 00:29:22 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* make html_docs: new command to create a directory with
+	  html documentation for Pike. This documentation can then
+	  be copied to a WWW directory.
+
+Sat Mar 23 19:02:40 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* array.c: arrays are always initalized to zero to avoid
+	  gc() blowups
+
+Fri Mar 22 21:57:43 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* regexp.c: added + operator, and added support for 8-bit
+	  characters.
+
+Mon Mar  4 00:00:19 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* hilfe.lpc: fixed a bug when doing 'mapping m=([]);'
+
+Fri Mar  1 00:35:40 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* language.y: Added support for a[..n] and a[n..]
+	* configure.in: added test for %pure_parser
+
+Sun Feb 25 22:42:48 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* operator functions implemented
+	* typeof() added
+
+Sat Feb 24 04:12:52 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* program.c, array.c, object.c, gc.c: 
+	  Added routines to remove cyclic structures.
+	* sprintf: added support for %2c
+	* removed compact arrays
+
+Fri Feb 23 02:39:11 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+        * version 1.7E-12 released
+	* file->close() fixed to handle unknown errors
+
+Sun Feb 11 01:04:38 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* export.lpc: now updates configure files if needed
+	* create_testsuite: added tests for sscanfs %d %o and %x
+	* opcodes.c: changed sscanf to use strtol
+	* machine.h.in: changed USE_FCNTL_NONBLOCK to what it should be:
+	  USE_FCNTL_O_NONBLOCK
+	* simulate.lpc: fixed an add_efun for exec
+	* Updated a LOT of docfiles.
+
+Sat Feb 10 02:26:25 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* array.c: fixed a coredump when doing & on one compact and
+	  one noncompact array.
+	* language.y: fixed so that continue now always need a semicolon
+          after it.
+        * builtin_efuns.c: replace_many fixed.
+	* array.c: fix_type_field fixed.
+	* las.c: fixed node_is_equal, it can now see the differance between
+          different global variables :P
+
+Mon Nov 20 16:52:32 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* builtin_efuns.c (replace_many): Fixed an array bound read.
+	* compilation.h: No more macros with empty arguments.
+	* configure.in: changed the mystic 'oneshot signals' message
+	* interpret.c: print_treturn_type -> print_return_value
+	* language.y: inline now implies no_mask
+	* machine.h.in: moved HAVE_GETWD & HAVE_GETCWD to files module
+	* opcodes.c: changed strtod to STRTOD
+	* sprintf.c: fixed some typos, optimized and a bugfix in truncating
+	* create_testsuite: added test for get_dir()
+
 Wed Nov 15 10:56:45 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
         * version 1.6E-12 released
@@ -19,7 +299,7 @@ Tue Nov 14 04:57:29 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 	* configure.in: Added a kluge for the linux -g -lm bug
 
 	* language.y: major bug: free on totally wrong value fixed
-	* lpc_signals.c: forgot to initialize an element in the struct
+	* signal_handler.c: forgot to initialize an element in the struct
           sigvec or sigaction: fixed
 	* array.c (compact_array): Used wrong type, screwed up
           a lot of things. Now fixed
@@ -58,7 +338,7 @@ Mon Nov  6 00:26:48 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 	* moved the testsuite to src/tests/
 	* created a testsuite that verifies the doc/ directory
           (test/verifymanual.lpc)
-        * lpc_signals.c: fixed to use sigvec/sigaction if possible
+        * signal_handler.c: fixed to use sigvec/sigaction if possible
           also added checks for EINTR all over the place.
 
 Sat Nov  4 04:08:46 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
@@ -79,7 +359,7 @@ Thu Nov  2 00:13:20 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 Tue Oct 31 18:57:49 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* Makefile.in, config.h: moved DEBUG to Makefile
-	* lpc_signals.c: fixed a warning
+	* signal_handler.c: fixed a warning
 
 Sun Oct 29 04:02:03 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
@@ -158,7 +438,7 @@ Tue Oct 17 21:45:31 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 
 	* language.y: fixed so you can declare variables as:
 	  function(int,int:int) foo;
-	* lpc_types.c: fixed a nasty bug in typechecker, also made
+	* pike_types.c: fixed a nasty bug in typechecker, also made
 	  'mixed' match 'void' (simpler that way)
 	* program.c: Fixed a nasty bug that made ::identifier dump
           core if identifier was inherited indirectly.
@@ -180,7 +460,7 @@ Thu Oct 12 22:33:26 1995  Fredrik Hubinette  <hubbe@sparky.signum.se>
 	* v1.0E-15 Released
 
 	* Makefile.in: targets 'export' added, and 'depend' fixed
-	  make depend now uses a uLPC script to get rid of include
+	  make depend now uses a Pike script to get rid of include
 	  and pathnames
 	* simulate.lpc: added system()
 	* file.c: added file->set_close_on_exec()

@@ -1,67 +1,89 @@
 AC_INIT(interpret.c)
 AC_PROG_CC
+AC_C_CROSS
+
+#############################################################################
 
 # We need some special hacks when running slowaris
 AC_PATH_PROG(uname_prog,uname,no)
 AC_MSG_CHECKING(operating system)
-AC_CACHE_VAL(lpc_cv_sys_os,
+AC_CACHE_VAL(pike_cv_sys_os,
 [
 if test "$uname_prog" != "no"; then
-  lpc_cv_sys_os="`uname`"
+  pike_cv_sys_os="`uname`"
 
-  if test "$lpc_cv_sys_os" = "SunOS"; then
+  if test "$pike_cv_sys_os" = "SunOS"; then
     case "`uname -r`" in
-      5.*) lpc_cv_sys_os="Solaris";
+      5.*) pike_cv_sys_os="Solaris";
     esac
   fi
 else
-  lpc_cv_sys_os="Not Solaris"
+  pike_cv_sys_os="Not Solaris"
 fi
 ])
-AC_MSG_RESULT($lpc_cv_sys_os)
+AC_MSG_RESULT($pike_cv_sys_os)
 
 dnl
 dnl This enables a mutex lock around accept() unfortunately
 dnl accept bangs out every 20000th time or so when linked
 dnl with libthreads.  Solaris...
 dnl
-dnl if test "$lpc_cv_sys_os" = "Solaris"; then
+dnl if test "$pike_cv_sys_os" = "Solaris"; then
 dnl   AC_DEFINE(SOLARIS)
 dnl  LIBS="$LIBS -lthread"
 dnl fi
 dnl
 
+#############################################################################
+
 OLD_CFLAGS="$CFLAGS"
 OPTIMIZE="";
 
-AC_MSG_CHECKING(-O)
-AC_CACHE_VAL(lpc_cv_option_opt,
+AC_MSG_CHECKING(-fast)
+AC_CACHE_VAL(pike_cv_option_fast,
 [
-  CFLAGS="$OLD_CFLAGS -O"
-  AC_TRY_LINK([],[ exit(0); ],lpc_cv_option_opt=yes,lpc_cv_option_opt=no)
+  CFLAGS="$OLD_CFLAGS -fast"
+  AC_TRY_LINK([],[ exit(0); ],pike_cv_option_fast=yes,pike_cv_option_fast=no)
 ])
-
-if test "$lpc_cv_option_opt" = "yes" ; then
-  CFLAGS="$OLD_CFLAGS -O"
-  OPTIMIZE="$OPTIMIZE -O"
-  AC_MSG_RESULT(-O found)
-else
-  AC_MSG_RESULT(-O not found)
-fi
 
 CFLAGS="$OLD_CFLAGS"
 
-if test "$GCC" = "yes"; then
-  WARN="-g -W -Wunused -Wformat"
+if test "$pike_cv_option_fast" = "yes" ; then
+  OPTIMIZE="$OPTIMIZE -fast"
+  AC_MSG_RESULT(-fast found)
+else
+  AC_MSG_RESULT(-fast not found)
 
-  AC_MSG_CHECKING(-pipe)
-  AC_CACHE_VAL(lpc_cv_option_pipe,
+  AC_MSG_CHECKING(-O)
+  AC_CACHE_VAL(pike_cv_option_opt,
   [
-    CFLAGS="$OLD_CFLAGS -pipe"
-    AC_TRY_LINK([],[ exit(0); ],lpc_cv_option_pipe=yes,lpc_cv_option_pipe=no)
+    CFLAGS="$OLD_CFLAGS -O"
+    AC_TRY_LINK([],[ exit(0); ],pike_cv_option_opt=yes,pike_cv_option_opt=no)
   ])
 
-  if test "$lpc_cv_option_pipe" = "yes" ; then
+  if test "$pike_cv_option_opt" = "yes" ; then
+    CFLAGS="$OLD_CFLAGS -O"
+    OPTIMIZE="$OPTIMIZE -O"
+    AC_MSG_RESULT(-O found)
+  else
+    AC_MSG_RESULT(-O not found)
+  fi
+
+  CFLAGS="$OLD_CFLAGS"
+fi
+
+
+if test "$GCC" = "yes"; then
+  WARN="-g -W -Wformat"
+
+  AC_MSG_CHECKING(-pipe)
+  AC_CACHE_VAL(pike_cv_option_pipe,
+  [
+    CFLAGS="$OLD_CFLAGS -pipe"
+    AC_TRY_LINK([],[ exit(0); ],pike_cv_option_pipe=yes,pike_cv_option_pipe=no)
+  ])
+
+  if test "$pike_cv_option_pipe" = "yes" ; then
     CFLAGS="$OLD_CFLAGS -pipe"
     OPTIMIZE="$OPTIMIZE -pipe"
     AC_MSG_RESULT(-pipe found)
@@ -76,37 +98,122 @@ else
 #
 # Special hack for HP-UX stupid cc
 #
-  if test "$lpc_cv_sys_os" = "HP-UX"; then
+  if test "$pike_cv_sys_os" = "HP-UX"; then
     OLD_CC="${CC-cc}"
     CC="$CC -Aa -D_HPUX_SOURCE +Olibcalls"
     AC_TRY_LINK([int foo(int bar);],[ exit(0); ],[],[CC="$OLD_CC"])
   fi
 fi
 
+#############################################################################
+
 AC_MSG_CHECKING(ansi prototype capability)
-AC_CACHE_VAL(lpc_cv_sys_ansi_prototypes,
+AC_CACHE_VAL(pike_cv_sys_ansi_prototypes,
 [
   AC_TRY_LINK([int foo(int bar);],[ exit(0); ],
-  [lpc_cv_sys_ansi_prototypes=yes],
-  [lpc_cv_sys_ansi_prototypes=no])
+  [pike_cv_sys_ansi_prototypes=yes],
+  [pike_cv_sys_ansi_prototypes=no])
 ])
 
-if test "$lpc_cv_sys_ansi_prototypes" = "yes"; then
+if test "$pike_cv_sys_ansi_prototypes" = "yes"; then
   AC_MSG_RESULT(yes)
 else
   AC_MSG_RESULT(no, giving up...)
   exit 1
 fi
 
+#############################################################################
+
 AC_CONFIG_HEADER(machine.h)
 AC_PROG_INSTALL
-AC_PROG_YACC
 AC_PROG_CPP
 AC_PROG_RANLIB
 AC_SET_MAKE
 
+#############################################################################
+
+AC_MSG_CHECKING(for yacc clone that handles %pure_parser)
+AC_CACHE_VAL(pike_cv_prog_working_yacc,
+[
+for YACC in byacc "bison -y" yacc "echo Get bison if you want to make export" ; do
+  set dummy $YACC; ac_word=$2
+  has_it=no
+  IFS="${IFS= 	}"; ac_save_ifs="$IFS"; IFS="${IFS}:"
+  for ac_dir in $PATH; do
+    test -z "$ac_dir" && ac_dir=.
+    if test -f $ac_dir/$ac_word; then
+      has_it="yes"
+      break
+    fi
+  done
+  IFS="$ac_save_ifs"
+  
+  if test "$has_it" = "yes"; then
+cat >conftest.y<<\EOF
+%pure_parser
+%{
+void parse();
+void yyerror(char *);
+%}
+%%
+all: foo bar
+foo: 'f' 'o' 'o' { parse(); } ;
+bar: 'b' 'a' 'r' ;
+%%
+int context;
+
+int yylex(YYSTYPE *yylval)
+{
+  switch(context++)
+  {
+    case 0: return 'f';
+    case 1: return 'o';
+    case 2: return 'o';
+    case 3: return 'b';
+    case 4: return 'a';
+    case 5: return 'r';
+    default: return 0;
+  }
+}
+
+int depth=0;
+void parse()
+{
+  int tmp;
+  if(depth++>5) return;
+  tmp=context;
+  context=0;
+  yyparse();
+  context=tmp;
+}
+int errors=0;
+void yyerror(char *fel) { errors++; }
+int main()
+{
+  parse();
+  exit(errors);
+}
+EOF
+    if $YACC -d conftest.y 1>&5 2>&5; then
+      AC_TRY_RUN([
+#include "y.tab.c"
+],pure_parser_works=yes,pure_parser_works=no)
+      if test "$pure_parser_works" = "yes"; then
+        break
+      fi
+    fi
+  fi
+done
+pike_cv_prog_working_yacc="$YACC"
+])
+
+YACC="$pike_cv_prog_working_yacc"
+AC_MSG_RESULT($YACC)
+
+#############################################################################
+
 AC_MSG_CHECKING(first yacc define)
-AC_CACHE_VAL(lpc_cv_yacc_first,
+AC_CACHE_VAL(pike_cv_yacc_first,
 [
 cat >conftest.y <<\EOF
 %token GURKA
@@ -114,28 +221,31 @@ cat >conftest.y <<\EOF
 all: GURKA
 %%
 EOF
-lpc_cv_yacc_first=257;
-if $YACC -d conftest.y ; then
+pike_cv_yacc_first=257;
+if $YACC -d conftest.y 1>&5 2>&5; then
   if test -f y.tab.h; then
-    lpc_cv_yacc_first=`egrep GURKA y.tab.h | sed 's/^#[^0-9]*\([0-9]*\)[^0-9]*$/\1/'`
-    echo $lpc_cv_yacc_first >conftest.out
+    pike_cv_yacc_first=`egrep GURKA y.tab.h | sed 's/^#[^0-9]*\([0-9]*\)[^0-9]*$/\1/'`
+    echo $pike_cv_yacc_first >conftest.out
     if egrep '^(0|1|2|3|4|5|6|7|8|9)+$' conftest.out >/dev/null 2>&1; then
       echo >/dev/null
     else
-      lpc_cv_yacc_first=257
+      pike_cv_yacc_first=257
     fi
   fi
 fi
 ])
-AC_MSG_RESULT($lpc_cv_yacc_first)
-AC_DEFINE_UNQUOTED(F_OFFSET,$lpc_cv_yacc_first)
+AC_MSG_RESULT($pike_cv_yacc_first)
+AC_DEFINE_UNQUOTED(F_OFFSET,$pike_cv_yacc_first)
 
 rm -rf conftest.y y.tab.c y.tab.h conftest.out
 
-AC_HAVE_HEADERS(sys/rusage.h time.h sys/time.h unistd.h stdlib.h memory.h values.h \
- string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h sys/resource.h \
- sys/select.h netdb.h)
-AC_STDC_HEADERS
+#############################################################################
+
+AC_HEADER_TIME
+AC_HEADER_STDC
+AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h unistd.h stdlib.h memory.h \
+values.h string.h fcntl.h sys/filio.h sys/sockio.h crypt.h locale.h \
+sys/resource.h sys/select.h sys/mman.h setjmp.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -144,24 +254,23 @@ AC_SIZEOF_TYPE(short)
 AC_SIZEOF_TYPE(float)
 AC_SIZEOF_TYPE(double)
 
-AC_SIZE_T
-AC_PID_T
-AC_UID_T
-AC_RETSIGTYPE
+AC_TYPE_SIZE_T
+AC_TYPE_PID_T
+AC_TYPE_UID_T
+AC_TYPE_SIGNAL
 AC_CHECK_TYPE(time_t,INT32)
 
-AC_CHECK_LIB(PW, alloca)
+dnl AC_CHECK_LIB(PW, alloca)
+
+dnl AC_CHECK_LIB(crypt, crypt)
+
 AC_CHECK_LIB(m, floor)
-if test "${ac_cv_lib_m}" = "no" -a "${lpc_cv_sys_os}" = "Linux"; then
+if test "${ac_cv_lib_m}" = "no" -a "${pike_cv_sys_os}" = "Linux"; then
   AC_MSG_WARN(I will compensate for this by adding -lc -lm)
   LIBS="${LIBS} -lc -lm"
 fi
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(crypt, crypt)
-if test "$ac_cv_lib_socket" = yes -o "$ac_cv_lib_ucb"; then
- AC_CHECK_LIB(nsl, main)
-fi
 
+AC_CHECK_LIB(crypt, crypt)
 
 OLD_LIBOBJS="${LIBOBJS}"
 
@@ -173,19 +282,22 @@ fi
 
 LIBOBJS="${OLD_LIBOBJS}"
 
-AC_HAVE_FUNCS(
+AC_FUNC_STRCOLL
+AC_FUNC_MMAP
+
+AC_CHECK_FUNCS(
  _crypt \
  bcopy \
  bzero \
  clock \
  crypt \
  fchmod \
- getcwd \
  getenv \
  getrlimit \
  getrusage \
- getwd \
+ gettimeofday \
  index \
+ localtime \
  memchr \
  memcpy \
  memset \
@@ -204,23 +316,116 @@ AC_HAVE_FUNCS(
  times \
  vfprintf \
  vsprintf \
+ wait3 \
  wait4 \
  waitpid \
+ munmap \
 )
+
+AC_STRUCT_TM
+
+#############################################################################
+
+AC_MSG_CHECKING(extern int timezone)
+
+AC_CACHE_VAL(pike_cv_has_external_timezone,[
+AC_TRY_LINK([
+#include <time.h>
+],[
+  int _tz;
+  _tz=timezone;
+],pike_cv_has_external_timezone=yes,pike_cv_has_external_timezone=no)
+])
+
+if test "$pike_cv_has_external_timezone" = "yes"; then
+  AC_DEFINE(HAVE_EXTERNAL_TIMEZONE)
+fi
+
+AC_MSG_RESULT($pike_cv_has_external_timezone)
+
+#############################################################################
+
+# No test for this yet...
+AC_DEFINE(HAVE_STRUCT_TIMEVAL)
+
+#############################################################################
+
+AC_MSG_CHECKING(if gettimeofday takes two arguments)
+AC_CACHE_VAL(pike_cv_func_gettimeofday_has_two_args,
+[
+AC_TRY_RUN([
+#if TIME_WITH_SYS_TIME
+# include <sys/time.h>
+# include <time.h>
+#else
+# if HAVE_SYS_TIME_H
+#  include <sys/time.h>
+# else
+#  if HAVE_TIME_H
+#   include <time.h>
+#  endif
+# endif
+#endif
+
+#ifndef HAVE_STRUCT_TIMEVAL
+struct timeval
+{
+  long tv_sec;
+  long tv_usec;
+};
+#endif
+
+int main() {
+  struct timeval tv;
+  gettimeofday(&tv,(void *)0);
+  exit(0);
+}
+],
+pike_cv_func_gettimeofday_has_two_args=yes,
+pike_cv_func_gettimeofday_has_two_args=no)])
+
+if test $pike_cv_func_gettimeofday_has_two_args = yes; then
+  AC_DEFINE(GETTIMEOFDAY_TAKES_TWO_ARGS)
+fi
+
+AC_MSG_RESULT($pike_cv_func_gettimeofday_has_two_args)
+
+AC_MSG_CHECKING(if struct tm has tm_gmtoff)
+
+AC_CACHE_VAL(pike_cv_struct_tm_has_gmtoff,[
+AC_TRY_LINK([
+#ifdef TM_IN_SYS_TIME
+#include <sys/time.h>
+#endif
+#include <time.h>
+#else
+],[
+  int _tz;
+  struct tm foo;
+  _tz=foo->tm_gmtoff;
+],pike_cv_struct_tm_has_gmtoff=yes,pike_cv_struct_tm_has_gmtoff=no)
+])
+
+if test "$pike_cv_struct_tm_has_gmtoff" = "yes"; then
+  AC_DEFINE(STRUCT_TM_HAS_GMTOFF)
+fi
+
+AC_MSG_RESULT($pike_cv_struct_tm_has_gmtoff)
+
 
 define(MY_CHECK_HEADERS,
 [
  AC_MSG_CHECKING(for $1 declaration)
- AC_CACHE_VAL(lpc_cv_decl_$1,
+ AC_CACHE_VAL(pike_cv_decl_$1,
  [
-   lpc_cv_decl_$1=nonexistant
+   pike_cv_decl_$1=nonexistant
    for a in $2
    do
-     AC_HEADER_EGREP($1,$a,lpc_cv_decl_$1=existant; break)
+     AC_EGREP_HEADER($1,$a,pike_cv_decl_$1=existant; break)
    done
  ])
- AC_MSG_RESULT($lpc_cv_decl_$1)
- if test "$lpc_cv_decl_$1" = nonexistant; then
+ AC_MSG_RESULT($pike_cv_decl_$1)
+ if test "$pike_cv_decl_$1" = nonexistant; then
    AC_DEFINE(translit($1,[a-z],[A-Z])[]_DECL_MISSING)
  fi
 ])
@@ -232,8 +437,9 @@ MY_CHECK_HEADERS(popen,stdio.h unistd.h)
 MY_CHECK_HEADERS(getenv,unistd.h stdlib.h)
 MY_CHECK_HEADERS(gethostname,unistd.h)
 
+
 AC_MSG_CHECKING(return type of free)
-AC_CACHE_VAL(lpc_cv_sys_free_return,
+AC_CACHE_VAL(pike_cv_sys_free_return,
 [AC_TRY_LINK([
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
@@ -251,12 +457,12 @@ void free();
 
 ],
 [],
-  lpc_cv_sys_free_return='char *'
+  pike_cv_sys_free_return='char *'
 ,
-  lpc_cv_sys_free_return='void'
+  pike_cv_sys_free_return='void'
 )])
 
-if test "$lpc_cv_sys_free_return" = void; then
+if test "$pike_cv_sys_free_return" = void; then
   AC_DEFINE(FREE_RETURNS_VOID)
   AC_MSG_RESULT([void]);
 else
@@ -264,7 +470,7 @@ else
 fi
 
 AC_MSG_CHECKING([void* or char* from malloc])
-AC_CACHE_VAL(lpc_cv_sys_malloc_return,
+AC_CACHE_VAL(pike_cv_sys_malloc_return,
 [
 AC_TRY_LINK([
 #include <sys/types.h>
@@ -292,19 +498,19 @@ int free(POINTER);
 
 ],
 [],
-  lpc_cv_sys_malloc_return="void *"
+  pike_cv_sys_malloc_return="void *"
 ,
-  lpc_cv_sys_malloc_return="char *"
+  pike_cv_sys_malloc_return="char *"
 )])
 
-AC_MSG_RESULT($lpc_cv_sys_malloc_return)
-AC_DEFINE_UNQUOTED(POINTER,$lpc_cv_sys_malloc_return)
+AC_MSG_RESULT($pike_cv_sys_malloc_return)
+AC_DEFINE_UNQUOTED(POINTER,$pike_cv_sys_malloc_return)
 
 
 AC_ALLOCA
 
-AC_CONST
-AC_INLINE
+AC_C_CONST
+AC_C_INLINE
 
 AC_REPLACE_FUNCS(ualarm)
 
@@ -312,11 +518,28 @@ case "$LIBOBJS" in
    *ualarm.o*) ;;
   *)
     AC_DEFINE(HAVE_UALARM)
+    AC_MSG_CHECKING(no of arguments to ualarm)
+    AC_CACHE_VAL(pike_cv_ualarm_takes_two_args,
+    [
+      AC_TRY_LINK([
+      #include <unistd.h>
+      ],[
+      int main() { ualarm(0,0); }
+      ],pike_cv_ualarm_takes_two_args=yes,pike_cv_ualarm_takes_two_args=no)
+
+      if test "$pike_cv_ualarm_takes_two_args" = yes; then
+         AC_MSG_RESULT(2)
+         AC_DEFINE(UALARM_TAKES_TWO_ARGS)
+      else
+         AC_MSG_RESULT(1)
+      fi
+      
+    ])
   ;;
 esac
 
 AC_MSG_CHECKING(byteorder)
-AC_CACHE_VAL(lpc_cv_hardware_byteorder,
+AC_CACHE_VAL(pike_cv_hardware_byteorder,
 [
 AC_TRY_RUN([
 #include <stdio.h>
@@ -345,16 +568,16 @@ int main()
   
   return 0;
 }],
-lpc_cv_hardware_byteorder=`cat conftest.out.2`
+pike_cv_hardware_byteorder=`cat conftest.out.2`
 ,
-lpc_cv_hardware_byteorder=0
+pike_cv_hardware_byteorder=0
 )])
 
-AC_MSG_RESULT($lpc_cv_hardware_byteorder)
-AC_DEFINE_UNQUOTED(BYTEORDER,$lpc_cv_hardware_byteorder)
+AC_MSG_RESULT($pike_cv_hardware_byteorder)
+AC_DEFINE_UNQUOTED(BYTEORDER,$pike_cv_hardware_byteorder)
 
 AC_MSG_CHECKING(for working memmem)
-AC_CACHE_VAL(lpc_cv_func_memmem,
+AC_CACHE_VAL(pike_cv_func_memmem,
 [
 AC_TRY_RUN([
 #include <string.h>
@@ -372,39 +595,17 @@ int main()
     exit(1);
   exit(0);
 }
-],lpc_cv_func_memmem=yes,lpc_cv_func_memmem=no)])
+],pike_cv_func_memmem=yes,pike_cv_func_memmem=no)])
 
-if test "$lpc_cv_func_memmem" = yes; then
+if test "$pike_cv_func_memmem" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_MEMMEM)
 else
   AC_MSG_RESULT(no)
 fi
 
-AC_MSG_CHECKING(for working strcoll)
-AC_CACHE_VAL(lpc_cv_func_strcoll,
-[
-AC_TRY_RUN([
-#include <string.h>
-int main()
-{
-  if(strcoll("a","b")< 0 &&
-     strcoll("a","a")==0 &&
-     strcoll("b","a")> 0)
-    exit(0);
-  exit(1);
-}
-],lpc_cv_func_strcoll=yes,lpc_cv_func_strcoll=no)])
-
-if test "$lpc_cv_func_strcoll" = yes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_STRCOLL)
-else
-  AC_MSG_RESULT(no)
-fi
-
 AC_MSG_CHECKING(for working memmove)
-AC_CACHE_VAL(lpc_cv_func_memmove,
+AC_CACHE_VAL(pike_cv_func_memmove,
 [
 AC_TRY_RUN([
 #include <string.h>
@@ -421,9 +622,9 @@ int main()
   if(strcmp(buf,"ooo bar  gaznk elefantsnabel.")) exit(1);
   exit(0);
 }
-],lpc_cv_func_memmove=yes,lpc_cv_func_memmove=no)])
+],pike_cv_func_memmove=yes,pike_cv_func_memmove=no)])
 
-if test "$lpc_cv_func_memmove" = yes; then
+if test "$pike_cv_func_memmove" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(HAVE_MEMMOVE)
 else
@@ -431,7 +632,7 @@ else
 fi
 
 AC_MSG_CHECKING(how to extract an unsigned char)
-AC_CACHE_VAL(lpc_cv_method_extract_uchar,
+AC_CACHE_VAL(pike_cv_method_extract_uchar,
 [
 AC_TRY_RUN([
 int main()
@@ -442,10 +643,10 @@ int main()
   if(*(unsigned char *)(p)!= 0x100 - 10) exit(1);
   exit(0);
 }
-],lpc_cv_method_extract_uchar=by_cast,
-lpc_cv_method_extract_uchar=not_by_cast)])
+],pike_cv_method_extract_uchar=by_cast,
+pike_cv_method_extract_uchar=not_by_cast)])
 
-if test "$lpc_cv_method_extract_uchar" = by_cast; then
+if test "$pike_cv_method_extract_uchar" = by_cast; then
   AC_MSG_RESULT(by cast)
   AC_DEFINE(EXTRACT_UCHAR_BY_CAST)
 else
@@ -453,7 +654,7 @@ else
 fi
 
 AC_MSG_CHECKING(how to extract a signed char)
-AC_CACHE_VAL(lpc_cv_method_extract_char,
+AC_CACHE_VAL(pike_cv_method_extract_char,
 [
 AC_TRY_RUN([
 int main()
@@ -464,10 +665,10 @@ int main()
   if(*(signed char *)(p)!= -10) exit(1);
   exit(0);
 }
-],lpc_cv_method_extract_char=by_cast,
-lpc_cv_method_extract_char=not_by_cast)])
+],pike_cv_method_extract_char=by_cast,
+pike_cv_method_extract_char=not_by_cast)])
 
-if test "$lpc_cv_method_extract_char" = by_cast; then
+if test "$pike_cv_method_extract_char" = by_cast; then
   AC_MSG_RESULT(by cast)
   AC_DEFINE(EXTRACT_CHAR_BY_CAST)
 else
@@ -475,8 +676,8 @@ else
 fi
 
 
-AC_MSG_CHECKING(if signals are oneshot or not)
-AC_CACHE_VAL(lpc_cv_sys_signal_oneshot,
+AC_MSG_CHECKING(if signal handlers reset automatically)
+AC_CACHE_VAL(pike_cv_sys_signal_oneshot,
 [
 AC_TRY_RUN([
 #include <signal.h>
@@ -521,9 +722,9 @@ int main()
   sigrun=0;
   exit(0);
 }
-],lpc_cv_sys_signal_oneshot=no,lpc_cv_sys_signal_oneshot=yes)])
+],pike_cv_sys_signal_oneshot=no,pike_cv_sys_signal_oneshot=yes)])
 
-if test "$lpc_cv_sys_signal_oneshot" = yes; then
+if test "$pike_cv_sys_signal_oneshot" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(SIGNAL_ONESHOT)
 else
@@ -533,7 +734,7 @@ fi
 
 
 AC_MSG_CHECKING(available file descriptors)
-AC_CACHE_VAL(lpc_cv_max_open_fd,
+AC_CACHE_VAL(pike_cv_max_open_fd,
 [
 AC_TRY_RUN([
 #include <stdio.h>
@@ -583,16 +784,15 @@ int main()
   return 0;
 }
 ],
-lpc_cv_max_open_fd=`cat conftest.out.2`
+pike_cv_max_open_fd=`cat conftest.out.2`
 ,
-lpc_cv_max_open_fd=256
+pike_cv_max_open_fd=256
 )])
-AC_MSG_RESULT($lpc_cv_max_open_fd)
-AC_DEFINE_UNQUOTED(MAX_OPEN_FILEDESCRIPTORS,$lpc_cv_max_open_fd)
+AC_MSG_RESULT($pike_cv_max_open_fd)
+AC_DEFINE_UNQUOTED(MAX_OPEN_FILEDESCRIPTORS,$pike_cv_max_open_fd)
 
-if test "$ac_cv_func_getrusage" = "yes"; then
 AC_MSG_CHECKING(full availability of struct rusage members)
-AC_CACHE_VAL(lpc_cv_func_getrusage_full,
+AC_CACHE_VAL(pike_cv_func_getrusage_full,
 [
 AC_TRY_LINK([
 #include <sys/time.h>
@@ -622,22 +822,20 @@ AC_TRY_LINK([
     *v++ = rus.ru_nvcsw;
     *v++ = rus.ru_nivcsw;
 ],
-  lpc_cv_func_getrusage_full=yes
+  pike_cv_func_getrusage_full=yes
 ,
-  lpc_cv_func_getrusage_full=no
+  pike_cv_func_getrusage_full=no
 )])
 
-if test "$lpc_cv_func_getrusage_full" = yes; then
+if test "$pike_cv_func_getrusage_full" = yes; then
   AC_MSG_RESULT(all there)
 else
   AC_MSG_RESULT(getrusage is restricted)
   AC_DEFINE(GETRUSAGE_RESTRICTED)
 fi
 
-else
-
 AC_MSG_CHECKING(getrusage() through procfs)
-AC_CACHE_VAL(lpc_cv_getrusage_procfs,
+AC_CACHE_VAL(pike_cv_getrusage_procfs,
 [
 AC_TRY_LINK([
 #include <sys/procfs.h>
@@ -647,27 +845,28 @@ char proc_name[20];
 ],[
   sprintf(proc_name, "/proc/%05d", getpid());
   proc_fd = open(proc_name, O_RDONLY);
+  ioctl(proc_fd, PIOCUSAGE, &pru);
+  ioctl(proc_fd, PIOCSTATUS, &prs);
 ],
-  lpc_cv_getrusage_procfs=yes
+  pike_cv_getrusage_procfs=yes
 ,
-  lpc_cv_getrusage_procfs=no
+  pike_cv_getrusage_procfs=no
 )])
 
-if test "$lpc_cv_getrusage_procfs" = yes; then
+if test "$pike_cv_getrusage_procfs" = yes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(GETRUSAGE_THROUGH_PROCFS)
 else
   AC_MSG_RESULT(no)
 fi
-fi
 
 AC_MSG_CHECKING(checking for volatile)
-AC_CACHE_VAL(lpc_cv_volatile,
+AC_CACHE_VAL(pike_cv_volatile,
 [
- AC_TRY_LINK([],[ volatile int foo=1;], lpc_cv_volatile=yes,lpc_cv_volatile=no)
+ AC_TRY_LINK([],[ volatile int foo=1;], pike_cv_volatile=yes,pike_cv_volatile=no)
 ])
 
-if test "$lpc_cv_volatile" = yes; then
+if test "$pike_cv_volatile" = yes; then
  AC_MSG_RESULT(yes)
  AC_DEFINE(VOLATILE,volatile)
 else
@@ -676,7 +875,7 @@ else
 fi
 
 AC_MSG_CHECKING(for gcc function attributes)
-AC_CACHE_VAL(lpc_cv_gcc_attributes,
+AC_CACHE_VAL(pike_cv_gcc_attributes,
 [
 AC_TRY_RUN([
 #include <stdarg.h>
@@ -695,71 +894,56 @@ void fatal(char *foo,...)
 }
 main() {  exit(0); }
 
-], lpc_cv_gcc_attributes=yes, lpc_cv_gcc_attributes=no)])
+], pike_cv_gcc_attributes=yes, pike_cv_gcc_attributes=no)])
 
-AC_MSG_RESULT($lpc_cv_gcc_attributes)
-if test "$lpc_cv_gcc_attributes" = yes; then
+AC_MSG_RESULT($pike_cv_gcc_attributes)
+if test "$pike_cv_gcc_attributes" = yes; then
  AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
 fi
 
 AC_MSG_CHECKING(how to set things nonblocking)
-AC_CACHE_VAL(lpc_cv_sys_nonblock,
+AC_CACHE_VAL(pike_cv_sys_nonblock,
 [
 AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_FNDELAY
 #include "$srcdir/fd_control.c"
-],lpc_cv_sys_nonblock=USE_FCNTL_FNDELAY,
+],pike_cv_sys_nonblock=USE_FCNTL_FNDELAY,
 AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_O_NDELAY
 #include "$srcdir/fd_control.c"
-],lpc_cv_sys_nonblock=USE_FCNTL_O_NDELAY,
+],pike_cv_sys_nonblock=USE_FCNTL_O_NDELAY,
 AC_TRY_RUN([
 #define TESTING
 #define USE_FCNTL_O_NONBLOCK
 #include "$srcdir/fd_control.c"
-],lpc_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK,
+],pike_cv_sys_nonblock=USE_FCNTL_O_NONBLOCK,
 AC_TRY_RUN([
 #define TESTING
 #define USE_IOCTL_FIONBIO
 #include "$srcdir/fd_control.c"
-],lpc_cv_sys_nonblock=USE_IOCTL_FIONBIO,
-unset lpc_cv_sys_nonblock
+],pike_cv_sys_nonblock=USE_IOCTL_FIONBIO,
+unset pike_cv_sys_nonblock
 ))))])
 
-if test "${lpc_cv_sys_nonblock}" = ""; then
+if test "${pike_cv_sys_nonblock}" = ""; then
   AC_MSG_RESULT(none found)
 else
- AC_MSG_RESULT($lpc_cv_sys_nonblock)
- AC_DEFINE_UNQUOTED($lpc_cv_sys_nonblock)
+ AC_MSG_RESULT($pike_cv_sys_nonblock)
+ AC_DEFINE_UNQUOTED($pike_cv_sys_nonblock)
 fi
 
 rm -f core
-
-
-dirs=
-MODULE_OBJS=
-module_names=
-for a in `(cd $srcdir/modules ; echo *)`
-do
-  if test "$a" != "CVS" -a "$a" != "RCS" ; then
-    if test -d "$srcdir/modules/$a" ; then
-      dirs="$dirs modules/$a"
-      MODULE_OBJS="$MODULE_OBJS modules/$a/$a.a"
-      module_names="$module_names $a"
-    fi
-  fi
-done
 
 LIBDIR=`(cd $srcdir/../lib ; pwd)`
 BINDIR=`(cd $srcdir/../bin ; pwd)`
 DOCDIR=`(cd $srcdir/../doc ; pwd)`
 BUILDDIR=`pwd`
 
-AC_CONFIG_SUBDIRS($dirs)
+AC_CONFIG_SUBDIRS(modules)
 
-AC_SUBST(MODULE_OBJS)
+AC_SUBST(YACC)
 AC_SUBST(INSTALL)
 AC_SUBST(WARN)
 AC_SUBST(OPTIMIZE)
@@ -770,36 +954,6 @@ AC_SUBST(BINDIR)
 AC_SUBST(BUILDDIR)
 AC_SUBST(DOCDIR)
 
-AC_OUTPUT(Makefile,
-[
-echo "FOO" >stamp-h
-if test ! -d ./modules ; then
-  mkdir modules
-fi
-
-AC_MSG_RESULT(creating modlist.h)
-echo "void init_main_efuns(void);" >modlist.h
-echo "void init_main_programs(void);" >>modlist.h
-echo "void exit_main(void);" >>modlist.h
-
-for a in $dirs
-do
-  echo "void init_"$a"_efuns(void);" >>modlist.h
-  echo "void init_"$a"_programs(void);" >>modlist.h
-  echo "void exit_"$a"(void);" >>modlist.h
-done
-echo "" >>modlist.h
-echo "struct module module_list UGLY_WORKAROUND={" >>modlist.h
-
-echo "  { \"main\", init_main_efuns, init_main_programs, exit_main, 0 }" >>modlist.h
-for a in $dirs
-do
-  echo " ,{ \"$a\", init_"$a"_efuns, init_"$a"_programs, exit_$a, 0 }" >>modlist.h
-done
-echo "};" >>modlist.h
-]
-,
-dirs="$module_names"
-)
+AC_OUTPUT(Makefile,[echo foo >stamp-h])
 
 

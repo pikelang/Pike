@@ -1,0 +1,53 @@
+NAME
+	index - get/set an element in an array/string/mapping/object
+
+SYNTAX
+	a [ b ]
+	or
+	a [ b ] = c
+	or
+	a -> b
+
+DESCRIPTION
+	This operator does a lookup in 'a' to find the element named 'b' in
+	'a'. The last syntax (a->b) is equal to a [ "b" ]. Different usage
+	applies	to different types.
+
+	Strings	With strings, the index operator can only be used to get values
+		not change them. The index must be an integer, and the return
+		value will be the ascii value of the corresponding character
+		in the string. The first character is numbered 0.
+	Arrays	As with strings, arrays can only be indexed on integers.
+		However, values can also be changed by using indexing on the
+		left side of an assignment. The values in the array can have
+		any type. As with strings, the first index is 0.
+	Mappings	Mappings can be indexed on any type of value, quite
+		often they are indexed on strings. Values can be changed
+		as with arrays. Mappings do not have a fixed size, nor do they
+		have a specific order in which the values are stored. If you
+		attempt to set a value in a mapping that does not already
+		exists, the mapping will grow to include the new value.
+		There is no 'first' index for mappings.
+	Multisets	Multisets can be also be indexed on any value, but the return
+		value only reflects a true/false status depending on weather
+		that index was present in the multiset. As with mappings, multisets
+		will grow when you try to set a value in it that is does not
+		already exists. However multisets will only grow if the inserted
+		'c' is nonzero.
+	Object	Objects can only be indexed on strings. It then gets/sets the
+		value of the variable with that name. If the 'variable' isn't
+		a variable at all, but a function it will return a pointer to
+		that function but you can't change it.
+
+EXAMPLES
+	"foobar"[2]	returns 111  /* ascii for 'o' */
+	"foobar"[0]	returns 102  /* ascii for 'f' */
+	({1,2,3})[1]	returns 2
+	([1:2})[1]	returns 2
+	(<1,2,3>)[2]	returns 1
+
+KEYWORDS
+	operators
+
+SEE ALSO
+	index

@@ -1,11 +1,11 @@
 NAME
-	exit - exit LPC interpreter
+	exit - exit Pike interpreter
 
 SYNTAX
 	void exit(int returncode);
 
 DESCRIPTION
-	This function exits the whole 'ulpc' program with the return code
+	This function exits the whole 'pike' program with the return code
 	given. Using exit() with any other value than 0 indicates that
 	something went wrong during execution. See your system manuals for
 	more information about return codes.

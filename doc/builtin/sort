@@ -1,0 +1,24 @@
+NAME
+	sort - sort an array destructively
+
+SYNTAX
+	mixed *sort(array(mixed) index, array(mixed) ... data);
+
+DESCRIPTION
+	This function sorts the array 'index' destructively. That means
+	that the array itself is changed and returned, no copy is created.
+	If extra arguments are given, they are supposed to be arrays of the
+	same size. Each of these arrays will be modified in the same way as
+	'index'. Ie. if index 3 is moved to position 0 in 'index' index 3
+	will be moved to position 0 in all the other arrays as well.
+
+	Sort can sort strings, integers and floats in ascending order.
+	Arrays will be sorted first on the first element of each array.
+
+	Sort returns it's first argument.
+
+KEYWORDS
+	array
+
+SEE ALSO
+	reverse

@@ -10,9 +10,9 @@ DESCRIPTION
 	in the stack. Each entry has this format:
 
 	({
-	   file, /* a string with the filename if known, else zero */
-	   function, /* The function-pointer to the called function */
-	   line, /* an integer containing the line if known, else zero */
+	   file,	/* a string with the filename if known, else zero */
+	   function,	/* The function-pointer to the called function */
+	   line,	/* an integer containing the line if known, else zero */
 	})
 
 	The current call frame will be last in the array, and the one above

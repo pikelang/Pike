@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #define READ_BUFFER 16384
@@ -19,7 +19,8 @@
 #include "file_machine.h"
 #include "file.h"
 #include "error.h"
-#include "lpc_signal.h"
+#include "signal_handler.h"
+#include "pike_types.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -45,7 +46,22 @@
 #include <netdb.h>
 #endif
 
-#define FD (*(int*)(fp->current_storage))
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#endif
+
+#ifndef SEEK_END
+#define SEEK_END 2
+#endif
+
+struct file_struct
+{
+  short fd;
+  short errno;
+};
+
+#define FD (((struct file_struct *)(fp->current_storage))->fd)
+#define ERRNO (((struct file_struct *)(fp->current_storage))->errno)
 #define THIS (files + FD)
 
 static struct my_file files[MAX_OPEN_FILEDESCRIPTORS];
@@ -67,7 +83,6 @@ static void init_fd(int fd, int open_mode)
   files[fd].write_callback.u.integer=0;
   files[fd].close_callback.type=T_INT;
   files[fd].close_callback.u.integer=0;
-  files[fd].errno=0;
 }
 
 static int close_fd(int fd)
@@ -85,17 +100,30 @@ static int close_fd(int fd)
   {
     while(1)
     {
-      if(close(fd) >= 0) break;
-      switch(errno)
+      if(close(fd) < 0)
       {
-      default:
-	fatal("Unknown error in close().\n");
-	
-      case EBADF:
-	fatal("Closing a non-active file descriptor.\n");
-       
-      case EINTR:
+	switch(errno)
+	{
+	default:
+	  /* What happened? */
+	  /* files[fd].errno=errno; */
+
+	  /* Try waiting it out in blocking mode */
+	  set_nonblocking(fd,0);
+	  if(close(fd) >= 0 || errno==EBADF)
+	    break; /* It was actually closed, good! */
+
+	  /* Failed, give up, crash, burn, die */
+	  error("Failed to close file.\n");
+
+	case EBADF:
+	  error("Internal error: Closing a non-active file descriptor %d.\n",fd);
+	  
+	case EINTR:
+	  continue;
+	}
       }
+      break;
     }
 
     set_read_callback(fd,0,0);
@@ -109,6 +137,7 @@ static int close_fd(int fd)
     files[fd].read_callback.type=T_INT;
     files[fd].write_callback.type=T_INT;
     files[fd].close_callback.type=T_INT;
+    files[fd].open_mode = 0;
   }
   return 0;
 }
@@ -181,7 +210,7 @@ static void free_dynamic_buffer(dynamic_buffer *b) { free(b->s.str); }
 
 static void file_read(INT32 args)
 {
-  INT32 i, r, bytes_read;
+  INT32 i, r, bytes_read, all;
   ONERROR ebuf;
 
   if(args<1 || sp[-args].type != T_INT)
@@ -190,15 +219,22 @@ static void file_read(INT32 args)
   if(FD < 0)
     error("File not open.\n");
 
+  if(args > 1 && !IS_ZERO(sp+1-args))
+  {
+    all=0;
+  }else{
+    all=1;
+  }
+
   r=sp[-args].u.integer;
 
   pop_n_elems(args);
   bytes_read=0;
-  THIS->errno=0;
+  ERRNO=0;
 
   if(r < 65536)
   {
-    struct lpc_string *str;
+    struct pike_string *str;
 
     str=begin_shared_string(r);
 
@@ -213,6 +249,7 @@ static void file_read(INT32 args)
       {
 	r-=i;
 	bytes_read+=i;
+	if(!all) break;
       }
       else if(i==0)
       {
@@ -220,10 +257,11 @@ static void file_read(INT32 args)
       }
       else if(errno != EINTR)
       {
-	THIS->errno=errno;
+	ERRNO=errno;
 	if(!bytes_read)
 	{
 	  free((char *)str);
+	  UNSET_ONERROR(ebuf);
 	  push_int(0);
 	  return;
 	}
@@ -260,12 +298,14 @@ static void file_read(INT32 args)
       {
 	r-=i;
 	bytes_read+=i;
+	if(!all) break;
       }
       else if(i>0)
       {
 	bytes_read+=i;
 	r-=i;
 	low_make_buf_space(i - try_read, &b);
+	if(!all) break;
       }
       else if(i==0)
       {
@@ -277,10 +317,11 @@ static void file_read(INT32 args)
 	low_make_buf_space(-try_read, &b);
 	if(errno != EINTR)
 	{
-	  THIS->errno=errno;
+	  ERRNO=errno;
 	  if(!bytes_read)
 	  {
 	    free(b.s.str);
+	    UNSET_ONERROR(ebuf);
 	    push_int(0);
 	    return;
 	  }
@@ -304,44 +345,50 @@ static void file_write_callback(int fd, void *data)
 
 static void file_write(INT32 args)
 {
-  INT32 i;
+  INT32 written,i;
+
   if(args<1 || sp[-args].type != T_STRING)
     error("Bad argument 1 to file->write().\n");
 
   if(FD < 0)
     error("File not open for write.\n");
-
-  i=write(FD, sp[-args].u.string->str, sp[-args].u.string->len);
-
-  if(i<0)
+  
+  written=0;
+  while(written < sp[-args].u.string->len)
   {
-    switch(errno)
-    {
-    default:
-      THIS->errno=errno;
-      pop_n_elems(args);
-      push_int(-1);
-      return;
+    i=write(FD, sp[-args].u.string->str + written, sp[-args].u.string->len - written);
 
-    case EINTR:
-    case EWOULDBLOCK:
-      i=0;
+    if(i<0)
+    {
+      switch(errno)
+      {
+      default:
+	ERRNO=errno;
+	pop_n_elems(args);
+	push_int(-1);
+	return;
+
+      case EINTR: continue;
+      case EWOULDBLOCK: break;
+      }
+      break;
     }
+    written+=i;
   }
 
   if(!IS_ZERO(& THIS->write_callback))
     set_write_callback(FD, file_write_callback, 0);
-  THIS->errno=0;
+  ERRNO=0;
 
   pop_n_elems(args);
-  push_int(i);
+  push_int(written);
 }
 
 static void do_close(int fd, int flags)
 {
   if(fd == -1) return; /* already closed */
 
-  files[fd].errno=0;
+  /* files[fd].errno=0; */
   flags &= files[fd].open_mode;
 
   switch(flags & (FILE_READ | FILE_WRITE))
@@ -350,29 +397,28 @@ static void do_close(int fd, int flags)
     return;
 
   case FILE_READ:
-    files[fd].open_mode &=~ FILE_READ;
     if(files[fd].open_mode & FILE_WRITE)
     {
       set_read_callback(fd,0,0);
       shutdown(fd, 0);
+      files[fd].open_mode &=~ FILE_READ;
     }else{
       close_fd(fd);
     }
     break;
 
   case FILE_WRITE:
-    files[fd].open_mode &=~ FILE_WRITE;
     if(files[fd].open_mode & FILE_READ)
     {
       set_write_callback(fd,0,0);
       shutdown(fd, 1);
+      files[fd].open_mode &=~ FILE_WRITE;
     }else{
       close_fd(fd);
     }
     break;
 
   case FILE_READ | FILE_WRITE:
-    files[fd].open_mode &=~ (FILE_WRITE | FILE_WRITE);
     close_fd(fd);
     break;
   }
@@ -416,14 +462,12 @@ static void file_open(INT32 args)
   if(!( flags &  (FILE_READ | FILE_WRITE)))
     error("Must open file for at least one of read and write.\n");
 
-  THIS->errno = 0;
-
  retry:
   fd=open(sp[-args].u.string->str,map(flags), 00666);
 
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno=EBADF;
+    ERRNO=EBADF;
     close(fd);
     fd=-1;
   }
@@ -432,13 +476,14 @@ static void file_open(INT32 args)
     if(errno == EINTR)
       goto retry;
 
-    THIS->errno=errno;
+    ERRNO=EBADF;
   }
   else
   {
-    set_close_on_exec(fd,1);
     init_fd(fd,flags);
     FD=fd;
+    ERRNO = 0;
+    set_close_on_exec(fd,1);
   }
 
   pop_n_elems(args);
@@ -458,11 +503,11 @@ static void file_seek(INT32 args)
   
   to=sp[-args].u.integer;
 
-  THIS->errno=0;
+  ERRNO=0;
 
   to=lseek(FD,to,to<0 ? SEEK_END : SEEK_SET);
 
-  if(to<0) THIS->errno=errno;
+  if(to<0) ERRNO=errno;
 
   pop_n_elems(args);
   push_int(to);
@@ -475,10 +520,10 @@ static void file_tell(INT32 args)
   if(FD < 0)
     error("File not open.\n");
   
-  THIS->errno=0;
+  ERRNO=0;
   to=lseek(FD, 0L, SEEK_CUR);
 
-  if(to<0) THIS->errno=errno;
+  if(to<0) ERRNO=errno;
 
   pop_n_elems(args);
   push_int(to);
@@ -499,10 +544,10 @@ static void file_stat(INT32 args)
   if(fstat(FD, &s) < 0)
   {
     if(errno == EINTR) goto retry;
-    THIS->errno=errno;
+    ERRNO=errno;
     push_int(0);
   }else{
-    THIS->errno=0;
+    ERRNO=0;
     push_array(encode_stat(&s));
   }
 }
@@ -513,13 +558,13 @@ static void file_errno(INT32 args)
     error("File not open.\n");
 
   pop_n_elems(args);
-  push_int(THIS->errno);
+  push_int(ERRNO);
 }
 
 /* Trick compiler to keep 'buffer' in memory for
  * as short a time as possible.
  */
-static struct lpc_string *do_read(INT32 *amount,int fd)
+static struct pike_string *do_read(INT32 *amount,int fd)
 {
   char buffer[READ_BUFFER];
   
@@ -531,7 +576,7 @@ static struct lpc_string *do_read(INT32 *amount,int fd)
 
 static void file_read_callback(int fd, void *data)
 {
-  struct lpc_string *s;
+  struct pike_string *s;
   INT32 i;
 
 #ifdef DEBUG
@@ -539,7 +584,7 @@ static void file_read_callback(int fd, void *data)
     fatal("Error in file::read_callback()\n");
 #endif
 
-  files[fd].errno=0;
+  /* files[fd].errno=0; */
 
   s=do_read(&i, fd);
 
@@ -554,7 +599,7 @@ static void file_read_callback(int fd, void *data)
   
   if(i < 0)
   {
-    files[fd].errno=errno;
+    /* files[fd].errno=errno; */
     switch(errno)
     {
     case EINTR:
@@ -701,7 +746,8 @@ struct object *file_make_object_from_fd(int fd, int mode)
 
   init_fd(fd, mode);
   o=clone(file_program,0);
-  *(int *)(o->storage)=fd;
+  ((struct file_struct *)(o->storage))->fd=fd;
+  ((struct file_struct *)(o->storage))->errno=0;
   return o;
 }
 
@@ -818,7 +864,7 @@ int socketpair(int family, int type, int protocol, int sv[2])
    * Make sure this connection was our OWN connection,
    * otherwise some wizeguy could interfere with our
    * pipe by guessing our socket and connecting at
-   * just the right time... uLPC is supposed to be
+   * just the right time... Pike is supposed to be
    * pretty safe...
    */
   do
@@ -843,17 +889,17 @@ static void file_pipe(INT32 args)
   do_close(FD,FILE_READ | FILE_WRITE);
   FD=-1;
   pop_n_elems(args);
-  THIS->errno=0;
+  ERRNO=0;
 
   i=socketpair(AF_UNIX, SOCK_STREAM, 0, &inout[0]);
   if(i<0)
   {
-    THIS->errno=errno;
+    ERRNO=errno;
     push_int(0);
   }
   else if(i >= MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno=EBADF;
+    ERRNO=EBADF;
     close(i);
     push_int(0);
   }
@@ -865,20 +911,22 @@ static void file_pipe(INT32 args)
     set_close_on_exec(inout[1],1);
     FD=inout[0];
 
+    ERRNO=0;
     push_object(file_make_object_from_fd(inout[1],FILE_READ | FILE_WRITE));
   }
 }
 
 
-static void init_file_struct(char *foo, struct object *o)
+static void init_file_struct(struct object *o)
 {
-  *(int *)foo = -1;
+  FD=-1;
+  ERRNO=-1;
 }
 
-static void exit_file_struct(char *foo, struct object *o)
+static void exit_file_struct(struct object *o)
 {
-  do_close(*(int *) foo,FILE_READ | FILE_WRITE);
-  *(int *)foo=-1;
+  do_close(FD,FILE_READ | FILE_WRITE);
+  ERRNO=-1;
 }
 
 static void file_dup(INT32 args)
@@ -891,7 +939,9 @@ static void file_dup(INT32 args)
   pop_n_elems(args);
 
   o=clone(file_program,0);
-  (*(int *)o->storage)=FD;
+  ((struct file_struct *)o->storage)->fd=FD;
+  ((struct file_struct *)o->storage)->errno=0;
+  ERRNO=0;
   files[FD].refs++;
   push_object(o);
 }
@@ -915,7 +965,8 @@ static void file_assign(INT32 args)
     error("Argument 1 to file->assign() must be a clone of /precompiled/file\n");
   do_close(FD, FILE_READ | FILE_WRITE);
 
-  FD=*(int *)o->storage;
+  FD=((struct file_struct *)(o->storage))->fd;
+  ERRNO=0;
   if(FD >=0) files[FD].refs++;
 
   pop_n_elems(args);
@@ -944,20 +995,19 @@ static void file_dup2(INT32 args)
   if(!o->prog || o->prog->inherits[0].prog != file_program)
     error("Argument 1 to file->assign() must be a clone of /precompiled/file\n");
 
-  fd=*(int *)(o->storage);
+  fd=((struct file_struct *)(o->storage))->fd;
 
   if(fd < 0)
     error("File given to dup2 not open.\n");
 
   if(dup2(FD,fd) < 0)
   {
-    THIS->errno=errno;
-    *(int *)o->storage=-1;
+    ERRNO=errno;
     pop_n_elems(args);
     push_int(0);
     return;
   }
-  THIS->errno=0;
+  ERRNO=0;
   set_close_on_exec(fd, fd > 2);
   files[fd].open_mode=files[FD].open_mode;
 
@@ -993,14 +1043,14 @@ static void file_open_socket(INT32 args)
   fd=socket(AF_INET, SOCK_STREAM, 0);
   if(fd >= MAX_OPEN_FILEDESCRIPTORS)
   {
-    THIS->errno = EBADF;
+    ERRNO=EBADF;
     pop_n_elems(args);
     push_int(0);
     return;
   }
   if(fd < 0)
   {
-    THIS->errno=errno;
+    ERRNO=errno;
     pop_n_elems(args);
     push_int(0);
     return;
@@ -1011,7 +1061,7 @@ static void file_open_socket(INT32 args)
   init_fd(fd, FILE_READ | FILE_WRITE);
   set_close_on_exec(fd,1);
   FD = fd;
-  THIS->errno=0;
+  ERRNO=0;
 
   pop_n_elems(args);
   push_int(1);
@@ -1039,12 +1089,12 @@ static void file_connect(INT32 args)
   if(connect(FD, (struct sockaddr *)&addr, sizeof(addr)) < 0)
   {
     /* something went wrong */
-    THIS->errno=errno;
+    ERRNO=errno;
     pop_n_elems(args);
     push_int(0);
   }else{
 
-    THIS->errno=0;
+    ERRNO=0;
     pop_n_elems(args);
     push_int(1);
   }
@@ -1098,7 +1148,7 @@ static void file_query_address(INT32 args)
   pop_n_elems(args);
   if(i < 0 || len < (int)sizeof(addr))
   {
-    THIS->errno=errno;
+    ERRNO=errno;
     push_int(0);
   }
 
@@ -1108,6 +1158,27 @@ static void file_query_address(INT32 args)
   sprintf(buffer+strlen(buffer)," %d",(int)(ntohs(addr.sin_port)));
 
   push_string(make_shared_string(buffer));
+}
+
+static void file_lsh(INT32 args)
+{
+  INT32 len;
+  if(args != 1)
+    error("Too few/many args to file->`<<\n");
+
+  if(sp[-1].type != T_STRING)
+  {
+    push_string(string_type_string);
+    string_type_string->refs++;
+    f_cast();
+  }
+
+  len=sp[-1].u.string->len;
+  file_write(1);
+  if(len != sp[-1].u.integer) error("File << failed.\n");
+  pop_stack();
+
+  push_object(this_object());
 }
 
 static void file_create(INT32 args)
@@ -1154,11 +1225,11 @@ void init_files_programs()
   init_fd(2, FILE_WRITE);
 
   start_new_program();
-  add_storage(sizeof(int));
+  add_storage(sizeof(struct file_struct));
 
   add_function("open",file_open,"function(string,string:int)",0);
   add_function("close",file_close,"function(string|void:void)",0);
-  add_function("read",file_read,"function(int:string|int)",0);
+  add_function("read",file_read,"function(int,int|void:int|string)",0);
   add_function("write",file_write,"function(string:int)",0);
 
   add_function("seek",file_seek,"function(int:int)",0);
@@ -1187,6 +1258,7 @@ void init_files_programs()
   add_function("connect",file_connect,"function(string,int:int)",0);
   add_function("query_address",file_query_address,"function(int|void:int)",0);
   add_function("create",file_create,"function(void|string:void)",0);
+  add_function("`<<",file_lsh,"function(mixed:object)",0);
 
   set_init_callback(init_file_struct);
   set_exit_callback(exit_file_struct);

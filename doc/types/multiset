@@ -1,0 +1,38 @@
+NAME
+	multiset - a set of values
+
+SYNTAX EXAMPLE
+	(< 1, 7, 8, 9 >)
+
+DESCRIPTION
+	A multiset is basically a mapping without data values, when indexing a
+	multiset 1 willl be returned if the index is present, zero otherwise.
+
+	Here follows a list of operators that applies to multisets:
+	In this list a and b is used to represent a multiset expression:
+
+	a + b	summation ( (<1>) + (<2>) returns (<1,2>) )
+	a - b	subtraction, returns a copy of a with all values that are
+		present in b removed.
+	a & b	intersection, return a multiset with all values that are
+		present in both a & b.
+	a | b	union, return a multiset with all values that are present in
+		a or b, differs from summation in that values that are
+		present in both a and b are only returned once.
+	a ^ b	xor, return a multiset with all indices that are present in
+		a or b but not in both.
+	a == b	returns 1 if a is the same multiset as b, same size and values
+		is not enough.
+	a != b	returns 1 if a is the same multiset as b, same size and values
+		is not enough.
+	! a	boolean not, returns 0
+	a[c]	indexing, returns 1 c is present in the multiset a.
+	a[c]=d	setting, if d is true, c is added to the multiset if it is not
+		present already. If d is false, it is removed if it is
+		present.
+
+KEYWORDS
+	types
+
+SEE ALSO
+	mapping, array, builtin/indices, builtin/sizeof

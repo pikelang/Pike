@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef HASHTABLE_H
@@ -14,7 +14,7 @@
 struct hash_entry
 {
   struct hash_entry *next;
-  struct lpc_string *s;
+  struct pike_string *s;
 };
 
 struct hash_table
@@ -25,7 +25,7 @@ struct hash_table
 };
 
 /* Prototypes begin here */
-struct hash_entry *hash_lookup(struct hash_table *h, struct lpc_string *s);
+struct hash_entry *hash_lookup(struct hash_table *h, struct pike_string *s);
 struct hash_table *create_hash_table();
 struct hash_table *hash_rehash(struct hash_table *h,int size);
 struct hash_table *hash_insert(struct hash_table *h, struct hash_entry *s);

@@ -1,5 +1,16 @@
-pipe.o: pipe.c config.h machine.h global.h \
- config.h debug.h port.h stralloc.h \
- macros.h object.h svalue.h add_efun.h \
- hashtable.h las.h dynamic_buffer.h \
- program.h interpret.h error.h
+pipe.o: /home/hubbe/pike/src/modules/pipe/pipe.c \
+ /home/hubbe/pike/src/modules/pipe/config.h machine.h \
+ /home/hubbe/pike/src/modules/pipe/global.h \
+ /home/hubbe/pike/src/modules/pipe/config.h \
+ /home/hubbe/pike/src/modules/pipe/port.h \
+ /home/hubbe/pike/src/modules/pipe/stralloc.h \
+ /home/hubbe/pike/src/modules/pipe/macros.h \
+ /home/hubbe/pike/src/modules/pipe/object.h \
+ /home/hubbe/pike/src/modules/pipe/svalue.h \
+ /home/hubbe/pike/src/modules/pipe/constants.h \
+ /home/hubbe/pike/src/modules/pipe/hashtable.h \
+ /home/hubbe/pike/src/modules/pipe/las.h \
+ /home/hubbe/pike/src/modules/pipe/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/pipe/program.h \
+ /home/hubbe/pike/src/modules/pipe/interpret.h \
+ /home/hubbe/pike/src/modules/pipe/error.h

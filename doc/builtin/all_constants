@@ -1,0 +1,12 @@
+NAME
+	all_constants - return all predefined constants
+
+SYNTAX
+	mapping (string:mixed) all_constant();
+
+DESCRIPTION
+	Return a mapping containing all constants, indexed on the names of the
+	constant, and with the value of the efun as argument.
+
+SEE ALSO
+	add_constant

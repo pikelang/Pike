@@ -25,11 +25,18 @@
 #undef HAVE_SYSLOG_H
 #undef HAVE_ARPA_INET_H
 #undef HAVE_NETINET_IN_H
+#undef HAVE_SYS_UIO_H
 #undef HAVE_SYS_MMAN_H
 #undef HAVE_SYS_SOCKETVAR_H
 #undef HAVE_SYS_SOCKET_H
 #undef HAVE_NETDB_H
 #undef HAVE_SYS_UTSNAME_H
+
+
+/* Why do it like everyone else when it can be done in a more
+   interresting way? *sigh* */
+#undef HAVE_LINUX_MMAN_H
+
 
 /* Passwd functions */
 #undef HAVE_SETPWENT

@@ -1,11 +1,12 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
 #include "memory.h"
 #include "error.h"
+#include "macros.h"
 
 char *xalloc(SIZE_T size)
 {
@@ -75,7 +76,9 @@ void reorder(char *memory,INT32 nitems,INT32 size,INT32 *order)
   }
 }
 
-#else
+#endif
+
+#if 0
 /*
  * This function may NOT change 'order'
  * This function is probably too slow, but it does not use
@@ -259,7 +262,45 @@ void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
     }
   }
 }
+#endif
 
+#if 1
+/*
+ * This function may NOT change 'order'
+ * This function is hopefully fast enough...
+ */
+void reorder(char *memory, INT32 nitems, INT32 size,INT32 *order)
+{
+  INT32 e;
+  char *tmp;
+  tmp=xalloc(size * nitems);
+
+#define DOSIZE(X,Y)				\
+ case X:					\
+ {						\
+  struct Y { char tt[X]; };			\
+  struct Y *from=(struct Y *) memory;		\
+  struct Y *to=(struct Y *) tmp;		\
+  for(e=0;e<nitems;e++) to[e]=from[order[e]];	\
+  break;					\
+ }
+  
+
+  switch(size)
+  {
+    DOSIZE(1,TMP1)
+    DOSIZE(2,TMP2)
+    DOSIZE(4,TMP4)
+    DOSIZE(8,TMP8)
+    DOSIZE(16,TMP16)
+
+  default:
+    for(e=0;e<nitems;e++) MEMCPY(tmp+e*size, memory+order[e]*size, size);
+  }
+
+  MEMCPY(memory, tmp, size * nitems);
+  free(tmp);
+}
 #endif
 
 unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
@@ -314,4 +355,173 @@ unsigned INT32 hashstr(const unsigned char *str,INT32 maxn)
   }
 
   return ret;
+}
+
+
+/*
+ * a quick memory search function.
+ * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
+ */
+void init_memsearch(struct mem_searcher *s,
+		    char *needle,
+		    SIZE_T needlelen,
+		    SIZE_T max_haystacklen)
+{
+  s->needle=needle;
+  s->needlelen=needlelen;
+
+  switch(needlelen)
+  {
+  case 0: s->method=no_search; break;
+  case 1: s->method=use_memchr; break;
+  case 2:
+  case 3:
+  case 4:
+  case 5:
+  case 6: s->method=memchr_and_memcmp; break;
+  default:
+    if(max_haystacklen <= needlelen + 64)
+    {
+      s->method=memchr_and_memcmp;
+    }else{
+      INT32 tmp, h;
+      unsigned INT32 hsize, e, max;
+      unsigned char *q;
+      struct link *ptr;
+
+      hsize=52+(max_haystacklen >> 7)  - (needlelen >> 8);
+      max  =13+(max_haystacklen >> 4)  - (needlelen >> 5);
+
+      if(hsize > NELEM(s->set))
+      {
+	hsize=NELEM(s->set);
+      }else{
+	for(e=8;e<hsize;e+=e);
+	hsize=e;
+      }
+    
+      for(e=0;e<hsize;e++) s->set[e]=0;
+      hsize--;
+
+      if(max > needlelen) max=needlelen;
+      max=(max-sizeof(INT32)+1) & -sizeof(INT32);
+      if(max > MEMSEARCH_LINKS) max=MEMSEARCH_LINKS;
+
+      ptr=& s->links[0];
+
+      q=(unsigned char *)needle;
+
+#if BYTEORDER == 4321
+      for(tmp=e=0;e<sizeof(INT32)-1;e++)
+      {
+	tmp<<=8;
+	tmp|=*(q++);
+      }
+#endif
+
+      for(e=0;e<max;e++)
+      {
+#if BYTEORDER == 4321
+	tmp<<=8;
+	tmp|=*(q++);
+#else
+	tmp=EXTRACT_INT(q);
+	q++;
+#endif
+	h=tmp;
+	h+=h>>7;
+	h+=h>>17;
+	h&=hsize;
+
+	ptr->offset=e;
+	ptr->key=tmp;
+	ptr->next=s->set[h];
+	s->set[h]=ptr;
+	ptr++;
+      }
+      s->hsize=hsize;
+      s->max=max;
+      s->method=hubbe_search;
+    }
+  }
+}
+		    
+
+char *memory_search(struct mem_searcher *s,
+		    char *haystack,
+		    SIZE_T haystacklen)
+{
+  if(s->needlelen > haystacklen) return 0;
+
+  switch(s->method)
+  {
+  case no_search:
+    return haystack;
+
+  case use_memchr:
+    return MEMCHR(haystack,s->needle[0],haystacklen);
+
+  case memchr_and_memcmp:
+    {
+      char *end,c,*needle;
+      SIZE_T needlelen;
+      
+      needle=s->needle;
+      needlelen=s->needlelen;
+      
+      end=haystack + haystacklen - needlelen+1;
+      c=needle[0];
+      needle++;
+      needlelen--;
+      while((haystack=MEMCHR(haystack,c,end-haystack)))
+	if(!MEMCMP(++haystack,needle,needlelen))
+	  return haystack-1;
+
+      return 0;
+    }
+
+  case hubbe_search:
+    {
+      INT32 tmp, h;
+      char *q, *end;
+      register struct link *ptr;
+      
+      end=haystack+haystacklen+1;
+      q=haystack + s->max - sizeof(INT32);
+      q=(char *)( ((long)q) & -sizeof(INT32));
+      for(;q<end-sizeof(INT32)+1;q+=s->max)
+      {
+	h=tmp=*(INT32 *)q;
+	
+	h+=h>>7;
+	h+=h>>17;
+	h&=s->hsize;
+	
+	for(ptr=s->set[h];ptr;ptr=ptr->next)
+	{
+	  char *where;
+	  
+	  if(ptr->key != tmp) continue;
+	  
+	  where=q-ptr->offset;
+	  if(where<haystack) continue;
+	  if(where+s->needlelen>end) return 0;
+	  
+	  if(!MEMCMP(where,s->needle,s->needlelen))
+	    return where;
+	}
+      }
+    }
+  }
+  return 0;
+}
+
+char *my_memmem(char *needle,
+		SIZE_T needlelen,
+		char *haystack,
+		SIZE_T haystacklen)
+{
+  struct mem_searcher tmp;
+  init_memsearch(&tmp, needle, needlelen, haystacklen);
+  return memory_search(&tmp, haystack, haystacklen);
 }

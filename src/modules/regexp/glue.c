@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -58,7 +58,7 @@ static void regexp_match(INT32 args)
 
 static void regexp_split(INT32 args)
 {
-  struct lpc_string *s;
+  struct pike_string *s;
   struct regexp *r;
   if(!args)
     error("Too few arguments to regexp->split()\n");
@@ -84,7 +84,7 @@ static void regexp_split(INT32 args)
       }
     }
     if(j<i-1) pop_n_elems(i-j-1);
-    push_array(aggregate_array(j,T_STRING));
+    push_array(aggregate_array(j));
     free_string(s);
   }else{
     pop_n_elems(args);
@@ -92,12 +92,12 @@ static void regexp_split(INT32 args)
   }
 }
 
-static void init_regexp_glue(char *foo, struct object *o)
+static void init_regexp_glue(struct object *o)
 {
   THIS->regexp=0;
 }
 
-static void exit_regexp_glue(char *foo, struct object *o)
+static void exit_regexp_glue(struct object *o)
 {
   do_free();
 }

@@ -1,5 +1,3 @@
-#include "spider.h"
-
 #if defined(HAVE_PTHREAD_MUTEX_UNLOCK) || defined(HAVE_MUTEX_UNLOCK)
 
 #include <sys/types.h>
@@ -21,12 +19,12 @@
 #include "types.h"
 #include "macros.h"
 #include "object.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "builtin_efuns.h"
+#include "builtin_functions.h"
 
 #include <fcntl.h>
 #include <sys/stat.h>

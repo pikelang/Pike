@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# Bootstrap script
+
+fix()
+{
+  if [ -d $1 ]; then
+    ( cd $1 ; autoconf )
+  fi
+
+  if [ ! -f $1/Makefile.in ]; then
+    cp $1/Makefile.src $1/Makefile.in
+  fi
+}
+
+
+fix .
+fix modules
+for a in modules/*
+do
+  if test -d $a ; then
+    case $a in
+      */CVS) ;;
+      */RCS) ;;
+      *) fix $a ;;
+    esac
+  fi
+done

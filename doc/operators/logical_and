@@ -1,0 +1,17 @@
+NAME
+	&& - logical and
+
+SYNTAX
+	a && b
+
+
+DESCRIPTION
+	This operator does logical 'and' between expressions. It first
+	evaluates a and returns zero if a is zero. Otherwise it returns
+	b. Note that b is not evaluated at all if a returns zero.
+
+KEYWORDS
+	operators
+
+SEE ALSO
+	`&, ||

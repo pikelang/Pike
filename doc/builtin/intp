@@ -11,5 +11,5 @@ KEYWORDS
 	int
 
 SEE ALSO
-	arrayp, programp, floatp, stringp, objectp, regexpp,
-	mappingp, listp, functionp
+	arrayp, programp, floatp, stringp, objectp,
+	mappingp, multisetp, functionp

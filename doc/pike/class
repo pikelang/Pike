@@ -1,0 +1,21 @@
+NAME
+	class - define a inlined program
+
+SYNTAX
+	class { program definition }
+
+DESCRIPTION
+	Class is a way of writing serveral programs in one file.
+	The program written between the brackets will be returned by
+	class.
+
+EXAMPLE
+	complex=clone(class { float r, i; });
+	complex->r=1.0;
+	complex->i=1.0;
+
+KEYWORDS
+	pike
+
+SEE ALSO
+	inherit, lambda

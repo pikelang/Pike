@@ -1,0 +1,19 @@
+NAME
+	foreach - loop over an array
+
+SYNTAX
+	foreach ( array, variable ) statement
+
+DESCRIPTION
+	For each element in array, set variable to that value and execute
+	'statement'.
+
+EXAMPLE
+	string word;
+	foreach( explode(sentence," "), word) foo(word);
+
+KEYWORDS
+	control
+
+SEE ALSO
+	for, while

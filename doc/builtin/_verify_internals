@@ -1,0 +1,13 @@
+NAME
+	_verify_internals - check Pike internals
+
+SYNTAX
+	void _verify_internals();
+
+DESCRIPTION
+	This function goes through most of the internal Pike structures and
+	generates a fatal error if one of them is found to be out of order.
+	It is only used for debugging.
+
+KEYWORDS
+	debugging

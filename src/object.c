@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -15,6 +15,8 @@
 #include "error.h"
 #include "main.h"
 #include "array.h"
+#include "gc.h"
+#include "backend.h"
 
 struct object *master_object = 0;
 struct object *first_object;
@@ -33,6 +35,8 @@ struct object *clone(struct program *p, int args)
   int e;
   struct object *o;
   struct frame frame;
+
+  GC_ALLOC();
 
   o=(struct object *)xalloc(sizeof(struct object)-1+p->storage_needed);
 
@@ -85,7 +89,7 @@ struct object *clone(struct program *p, int args)
     }
 
     if(frame.context.prog->init)
-      frame.context.prog->init(frame.current_storage,o);
+      frame.context.prog->init(o);
 
     free_program(frame.context.prog);
   }
@@ -99,9 +103,9 @@ struct object *clone(struct program *p, int args)
     o->refs++;
   }
 
-  apply(o,"__INIT",0);
+  apply_lfun(o,LFUN___INIT,0);
   pop_stack();
-  apply(o,"create",args);
+  apply_lfun(o,LFUN_CREATE,args);
   pop_stack();
 
   return o;
@@ -112,7 +116,7 @@ struct object *get_master()
 {
   extern char *master_file;
   struct program *master_prog;
-  struct lpc_string *master_name;
+  struct pike_string *master_name;
   static int inside=0;
 
   if(master_object && master_object->prog)
@@ -151,12 +155,19 @@ void destruct(struct object *o)
   struct frame frame;
   struct program *p;
 
+#ifdef DEBUG
+  if(d_flag > 20) do_debug();
+#endif
+
   if(!o || !(p=o->prog)) return; /* Object already destructed */
 
   o->refs++;
 
-  safe_apply(o, "destroy", 0);
-  pop_stack();
+  if(o->prog->lfuns[LFUN_DESTROY] != -1)
+  {
+    safe_apply_low(o, o->prog->lfuns[LFUN_DESTROY], 0);
+    pop_stack();
+  }
 
   /* destructed in destroy() */
   if(!o->prog)
@@ -184,7 +195,7 @@ void destruct(struct object *o)
     frame.current_storage=o->storage+frame.context.storage_offset;
 
     if(frame.context.prog->exit)
-      frame.context.prog->exit(frame.current_storage,o);
+      frame.context.prog->exit(o);
 
     for(d=0;d<(int)frame.context.prog->num_identifiers;d++)
     {
@@ -213,24 +224,95 @@ void destruct(struct object *o)
   free_program(p);
 }
 
+
+struct object *objects_to_destruct = 0;
+
+
+/* really_free_objects:
+ * This function is called when an object runs out of references.
+ * It frees the object if it is destructed, otherwise it moves it to
+ * a separate list of objects which will be destructed later.
+ */
+
 void really_free_object(struct object *o)
 {
-  if(o->prog)
-  {
-    /* prevent recursive calls to really_free_object */
-    o->refs++;
-    destruct(o);
-    o->refs--;
-  }
-
   if(o->prev)
     o->prev->next=o->next;
   else
     first_object=o->next;
 
   if(o->next) o->next->prev=o->prev;
-  
-  free((char *)o);
+
+  if(o->prog)
+  {
+    o->next=objects_to_destruct;
+    o->prev=0;
+    objects_to_destruct=o;
+  } else {
+    free((char *)o);
+    GC_FREE();
+  }
+}
+
+/* This function destructs the objects that are scheduled to be
+ * destructed by really_free_object. It links the object back into the
+ * list of objects first. Adds a reference, destructs it and then frees it.
+ */
+void destruct_objects_to_destruct()
+{
+  struct object *o, *next;
+  while(o=objects_to_destruct)
+  {
+    /* Link object back to list of objects */
+    objects_to_destruct=o->next;
+    
+    if(first_object)
+      first_object->prev=o;
+
+    o->next=first_object;
+    first_object=o;
+    o->prev=0;
+
+    o->refs++; /* Don't free me now! */
+
+    destruct(o);
+
+    free_object(o);
+  }
+  objects_to_destruct=0;
+}
+
+
+static void low_object_index_no_free(struct svalue *to,
+				     struct object *o,
+				     INT32 f)
+{
+  struct identifier *i;
+  struct program *p=o->prog;
+
+  i=ID_FROM_INT(p, f);
+
+  if(i->flags & IDENTIFIER_FUNCTION)
+  {
+    to->type=T_FUNCTION;
+    to->subtype=f;
+    to->u.object=o;
+    o->refs++;
+  }
+  else if(i->run_time_type == T_MIXED)
+  {
+    struct svalue *s;
+    s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
+    check_destructed(s);
+    assign_svalue_no_free(to, s);
+  }
+  else
+  {
+    union anything *u;
+    u=(union anything *)LOW_GET_GLOBAL(o,f,i);
+    check_short_destructed(u,i->run_time_type);
+    assign_from_short_svalue_no_free(to, u, i->run_time_type);
+  }
 }
 
 void object_index_no_free(struct svalue *to,
@@ -256,77 +338,16 @@ void object_index_no_free(struct svalue *to,
     to->subtype=NUMBER_UNDEFINED;
     to->u.integer=0;
   }else{
-    struct identifier *i;
-    i=ID_FROM_INT(p, f);
-
-    if(i->flags & IDENTIFIER_FUNCTION)
-    {
-      to->type=T_FUNCTION;
-      to->subtype=f;
-      to->u.object=o;
-      o->refs++;
-    }
-    else if(i->run_time_type == T_MIXED)
-    {
-      struct svalue *s;
-      s=(struct svalue *)(o->storage+
-			  INHERIT_FROM_INT(p, f)->storage_offset +
-			  i->func.offset);
-      check_destructed(s);
-      assign_svalue_no_free(to,s);
-    }
-    else
-    {
-      union anything *u;
-      u=(union anything *)(o->storage+
-			   INHERIT_FROM_INT(p, f)->storage_offset +
-			   i->func.offset);
-      check_short_destructed(u,i->run_time_type);
-      assign_from_short_svalue_no_free(to,u,i->run_time_type);
-    }
+    low_object_index_no_free(to, o, f);
   }
 }
 
-static void low_object_index(struct svalue *to,struct object *o, INT32 f)
-{
-  struct identifier *i;
-  struct program *p=o->prog;
 
-  i=ID_FROM_INT(p, f);
-
-  if(i->flags & IDENTIFIER_FUNCTION)
-  {
-    to->type=T_FUNCTION;
-    to->subtype=f;
-    to->u.object=o;
-    o->refs++;
-  }
-  else if(i->run_time_type == T_MIXED)
-  {
-    struct svalue *s;
-    s=(struct svalue *)(o->storage+
-			INHERIT_FROM_INT(p, f)->storage_offset +
-			i->func.offset);
-    check_destructed(s);
-    assign_svalue_no_free(to, s);
-  }
-  else
-  {
-    union anything *u;
-    u=(union anything *)(o->storage+
-			 INHERIT_FROM_INT(p, f)->storage_offset +
-			 i->func.offset);
-    check_short_destructed(u,i->run_time_type);
-    assign_from_short_svalue_no_free(to, u, i->run_time_type);
-  }
-}
-
-void object_index(struct svalue *to,
-		  struct object *o,
-		  struct svalue *index)
+void object_index_no_free2(struct svalue *to,
+			   struct object *o,
+			   struct svalue *index)
 {
   struct program *p;
-  int f;
 
   if(!o || !(p=o->prog))
   {
@@ -334,25 +355,21 @@ void object_index(struct svalue *to,
     return; /* make gcc happy */
   }
 
-  if(index->type != T_STRING)
-    error("Lookup on non-string value.\n");
-
-  f=find_shared_string_identifier(index->u.string, p);
-  if(f < 0)
+  if(p->lfuns[LFUN_INDEX] != -1)
   {
-    free_svalue(to);
-    to->type=T_INT;
-    to->subtype=NUMBER_UNDEFINED;
-    to->u.integer=0;
-  }else{
-    free_svalue(to);
-    low_object_index(to, o, f);
+    push_svalue(index);
+    apply_lfun(o,LFUN_INDEX,1);
+    to=sp;
+    sp--;
+  } else {
+    object_index_no_free(to,o,index);
   }
 }
 
-void object_low_set_index(struct object *o,
-			  int f,
-			  struct svalue *from)
+
+static void object_low_set_index(struct object *o,
+				 int f,
+				 struct svalue *from)
 {
   struct identifier *i;
   struct program *p;
@@ -373,18 +390,12 @@ void object_low_set_index(struct object *o,
   }
   else if(i->run_time_type == T_MIXED)
   {
-    assign_svalue((struct svalue *) 
-		  (o->storage+
-		   INHERIT_FROM_INT(p, f)->storage_offset+
-		   i->func.offset),
-		  from);
+    assign_svalue((struct svalue *)LOW_GET_GLOBAL(o,f,i),from);
   }
   else
   {
     assign_to_short_svalue((union anything *) 
-			   (o->storage+
-			    INHERIT_FROM_INT(p, f)->storage_offset+
-			    i->func.offset),
+			   LOW_GET_GLOBAL(o,f,i),
 			   i->run_time_type,
 			   from);
   }
@@ -415,10 +426,32 @@ void object_set_index(struct object *o,
   }
 }
 
+void object_set_index2(struct object *o,
+		       struct svalue *index,
+		       struct svalue *from)
+{
+  struct program *p;
 
-union anything *object_low_get_item_ptr(struct object *o,
-					int f,
-					TYPE_T type)
+  if(!o || !(p=o->prog))
+  {
+    error("Lookup in destructed object.\n");
+    return; /* make gcc happy */
+  }
+
+  if(p->lfuns[LFUN_ASSIGN_INDEX] != -1)
+  {
+    push_svalue(index);
+    push_svalue(from);
+    apply_lfun(o,LFUN_ASSIGN_INDEX,2);
+    pop_stack();
+  } else {
+    object_set_index(o,index,from);
+  }
+}
+
+static union anything *object_low_get_item_ptr(struct object *o,
+					       int f,
+					       TYPE_T type)
 {
   struct identifier *i;
   struct program *p;
@@ -438,16 +471,12 @@ union anything *object_low_get_item_ptr(struct object *o,
   else if(i->run_time_type == T_MIXED)
   {
     struct svalue *s;
-    s=(struct svalue *)(o->storage+
-			INHERIT_FROM_INT(p, f)->storage_offset +
-			i->func.offset);
+    s=(struct svalue *)LOW_GET_GLOBAL(o,f,i);
     if(s->type == type) return & s->u;
   }
   else if(i->run_time_type == type)
   {
-    return (union anything *) (o->storage+
-			       INHERIT_FROM_INT(p, f)->storage_offset +
-			       i->func.offset);
+    return (union anything *) LOW_GET_GLOBAL(o,f,i);
   }
   return 0;
 }
@@ -470,6 +499,9 @@ union anything *object_get_item_ptr(struct object *o,
   if(index->type != T_STRING)
     error("Lookup on non-string value.\n");
 
+  if(p->lfuns[LFUN_ASSIGN_INDEX] != -1)
+    error("Cannot do incremental operations on overloaded index (yet).\n");
+
   f=find_shared_string_identifier(index->u.string, p);
   if(f < 0)
   {
@@ -481,22 +513,13 @@ union anything *object_get_item_ptr(struct object *o,
 }
 
 #ifdef DEBUG
-void verify_all_objects(int pass)
+void verify_all_objects()
 {
   struct object *o;
   struct frame frame;
 
   for(o=first_object;o;o=o->next)
   {
-    if(pass)
-    {
-      if(checked((void *)o, 0) != o->refs)
-      {
-	fatal("Object has wrong number of refs.\n");
-      }
-      continue;
-    }
-
     if(o->next && o->next->prev !=o)
       fatal("Object check: o->next->prev != o\n");
 
@@ -512,7 +535,7 @@ void verify_all_objects(int pass)
 	fatal("Object check: o->prev ==0 && first_object != o\n");
     }
 
-    if(o->refs <=0)
+    if(o->refs <= 0)
       fatal("Object refs <= zero.\n");
 
     if(o->prog)
@@ -534,15 +557,9 @@ void verify_all_objects(int pass)
 
 	if(i->run_time_type == T_MIXED)
 	{
-	  check_svalue((struct svalue *)
-		       (o->storage+
-			INHERIT_FROM_INT(o->prog, e)->storage_offset+
-			i->func.offset));
+	  check_svalue((struct svalue *)LOW_GET_GLOBAL(o,e,i));
 	}else{
-	  check_short_svalue((union anything *)
-			     (o->storage+
-			      INHERIT_FROM_INT(o->prog, e)->storage_offset+
-			      i->func.offset),
+	  check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
 			     i->run_time_type);
 	}
       }
@@ -561,9 +578,6 @@ void verify_all_objects(int pass)
 	frame.context=o->prog->inherits[e];
 	frame.context.prog->refs++;
 	frame.current_storage=o->storage+frame.context.storage_offset;
-
-	if(frame.context.prog->checkrefs)
-	  frame.context.prog->checkrefs(frame.current_storage,o,pass);
       }
 
       free_object(frame.current_object);
@@ -601,25 +615,13 @@ int object_equal_p(struct object *a, struct object *b, struct processing *p)
 
       if(i->run_time_type == T_MIXED)
       {
-	if(!low_is_equal((struct svalue *)
-			(a->storage+
-			 INHERIT_FROM_INT(a->prog, e)->storage_offset+
-			 i->func.offset),
-			(struct svalue *)
-			(b->storage+
-			 INHERIT_FROM_INT(a->prog, e)->storage_offset+
-			 i->func.offset),
-			&curr))
+	if(!low_is_equal((struct svalue *)LOW_GET_GLOBAL(a,e,i),
+			 (struct svalue *)LOW_GET_GLOBAL(b,e,i),
+			 &curr))
 	  return 0;
       }else{
-	if(!low_short_is_equal((union anything *)
-			       (a->storage+
-				INHERIT_FROM_INT(a->prog, e)->storage_offset+
-				i->func.offset),
-			       (union anything *)
-			       (b->storage+
-				INHERIT_FROM_INT(a->prog, e)->storage_offset+
-				i->func.offset),
+	if(!low_short_is_equal((union anything *)LOW_GET_GLOBAL(a,e,i),
+			       (union anything *)LOW_GET_GLOBAL(b,e,i),
 			       i->run_time_type,
 			       &curr))
 	  return 0;
@@ -640,6 +642,7 @@ void cleanup_objects()
     next=o->next;
     free_object(o);
   }
+  destruct_objects_to_destruct();
 
   free_object(master_object);
   master_object=0;
@@ -655,11 +658,12 @@ struct array *object_indices(struct object *o)
   if(!p)
     error("indices() on destructed object.\n");
 
-  a=allocate_array_no_init(p->num_identifier_indexes,0, T_STRING);
+  a=allocate_array_no_init(p->num_identifier_indexes,0);
   for(e=0;e<(int)p->num_identifier_indexes;e++)
   {
-    copy_shared_string(SHORT_ITEM(a)[e].string,
+    copy_shared_string(ITEM(a)[e].u.string,
 		       ID_FROM_INT(p,p->identifier_index[e])->name);
+    ITEM(a)[e].type=T_STRING;
   }
   return a;
 }
@@ -674,10 +678,99 @@ struct array *object_values(struct object *o)
   if(!p)
     error("values() on destructed object.\n");
 
-  a=allocate_array_no_init(p->num_identifier_indexes,0, T_MIXED);
+  a=allocate_array_no_init(p->num_identifier_indexes,0);
   for(e=0;e<(int)p->num_identifier_indexes;e++)
   {
-    low_object_index(ITEM(a)+e, o, p->identifier_index[e]);
+    low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
   }
   return a;
 }
+
+#ifdef GC2
+
+
+void gc_mark_object_as_referenced(struct object *o)
+{
+  if(gc_mark(o))
+  {
+    if(o->prog)
+    {
+      INT32 e;
+      
+      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      {
+	struct identifier *i;
+	
+	i=ID_FROM_INT(o->prog, e);
+	
+	if(i->flags & IDENTIFIER_FUNCTION) continue;
+	
+	if(i->run_time_type == T_MIXED)
+	{
+	  gc_mark_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
+	}else{
+	  gc_mark_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
+			       i->run_time_type);
+	}
+      }
+    }
+  }
+}
+
+void gc_check_all_objects()
+{
+  struct object *o;
+  for(o=first_object;o;o=o->next)
+  {
+    if(o->prog)
+    {
+      INT32 e;
+
+      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      {
+	struct identifier *i;
+	
+	i=ID_FROM_INT(o->prog, e);
+	
+	if(i->flags & IDENTIFIER_FUNCTION) continue;
+	
+	if(i->run_time_type == T_MIXED)
+	{
+	  gc_check_svalues((struct svalue *)LOW_GET_GLOBAL(o,e,i),1);
+	}else{
+	  gc_check_short_svalue((union anything *)LOW_GET_GLOBAL(o,e,i),
+				i->run_time_type);
+	}
+      }
+    }
+  }
+}
+
+void gc_mark_all_objects()
+{
+  struct object *o;
+  for(o=first_object;o;o=o->next)
+    if(gc_is_referenced(o))
+      gc_mark_object_as_referenced(o);
+}
+
+void gc_free_all_unreferenced_objects()
+{
+  struct object *o,*next;
+
+  for(o=first_object;o;o=next)
+  {
+    if(gc_do_free(o))
+    {
+      o->refs++;
+      destruct(o);
+      next=o->next;
+      free_object(o);
+    }else{
+      next=o->next;
+    }
+  }
+}
+
+#endif /* GC2 */
+

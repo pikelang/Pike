@@ -2,6 +2,8 @@ NAME
 	previous_object - return the calling object
 
 SYNTAX
+	#include <simulate.h>
+
 	object previous_object();
 
 DESCRIPTION

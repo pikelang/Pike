@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -190,6 +190,8 @@ static void port_bind(INT32 args)
 
   set_close_on_exec(fd,1);
 
+  MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
+
   if(args > 2 && sp[2-args].type==T_STRING)
   {
     get_inet_addr(&addr, sp[2-args].u.string->str);
@@ -302,30 +304,26 @@ static void port_accept(INT32 args)
   push_object(o);
 }
 
-static void init_port_struct(char *foo, struct object *o)
+static void init_port_struct(struct object *o)
 {
-  struct port *p;
-  p=(struct port *) foo;
-  p->fd=-1;
-  p->id.type=T_OBJECT;
+  THIS->fd=-1;
+  THIS->id.type=T_OBJECT;
 #ifdef __CHECKER__
-  p->id.subtype=0;
+  THIS->id.subtype=0;
 #endif
-  p->id.u.object=o;
+  THIS->id.u.object=o;
   o->refs++;
-  p->accept_callback.type=T_INT;
-  p->errno=0;
+  THIS->accept_callback.type=T_INT;
+  THIS->errno=0;
 }
 
-static void exit_port_struct(char *foo, struct object *o)
+static void exit_port_struct(struct object *o)
 {
-  struct port *p;
-  p=(struct port *) foo;
-  do_close(p);
-  free_svalue(& p->id);
-  free_svalue(& p->accept_callback);
-  p->id.type=T_INT;
-  p->accept_callback.type=T_INT;
+  do_close(THIS);
+  free_svalue(& THIS->id);
+  free_svalue(& THIS->accept_callback);
+  THIS->id.type=T_INT;
+  THIS->accept_callback.type=T_INT;
 }
 
 void port_setup_program()

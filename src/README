@@ -1,8 +1,13 @@
-This is what you need to do to install uLPC:
+This is what you need to do to install Pike:
 
 1) Run ./configure, this is a sh script that will generate machine.h and
    Makefile from machine.h.in and Makefile.in, use --prefix=/foo/bar
-   if you want to install ulpc in /foo/bar, default is /usr/local.
+   if you want to install Pike in /foo/bar, default is /usr/local.
+
+   You might have to set the environment variables C_INCLUDE_PATH and
+   LD_LIBRARY_PATH to enable the configure script to find gdbm, readline
+   and gmp. If the configure script does not find those libraries those
+   modules will not be available.
 
 2) edit config.h and Makefile to suit your purposes.
    I've tried to make it so that you don't have to change config.h or
@@ -17,7 +22,11 @@ This is what you need to do to install uLPC:
    quite a lot of memory, because the testprogram is quite large. If everything
    works out fine no extra messages are written.
 
-5) If you want to install ulpc, write 'make install'
+5) If you want to install Pike, write 'make install'
+
+6) Optionally do 'make html_docs' to create a directory called docs which
+   will contain the Pike documentation in html. This directory can then
+   be copied to anywhere you want.
 
 What to do when it doesn't work:
 1) Try again.
@@ -38,7 +47,7 @@ What to do when it doesn't work:
 5) Try a different compiler, malloc, compiler-compiler and/or make.
    (if you have any other)
 
-6) On Linux Slackware machines (older than slackware 3.0), uLPC sometimes
+6) On Linux Slackware machines (older than slackware 3.0), Pike sometimes
    fails to find -lm, this is because of a bug in /usr/lib/libm.sa
    (or possibly libg.a) in slackware.
    Compile with 'make EXTRALIBS="-lc -lm"' to get around this bug.
@@ -50,10 +59,10 @@ and see if you get another error. When you've done this, please report the
 bug to hubbe@lysator.liu.se and include as much as you can muster of the
 following:
 
-  o The version of the driver. (can be found in lib/simulate.lpc)
+  o The version of the driver. (can be found in lib/simulate.pike)
   o What kind of system hardware/software you use (OS, compiler, etc.)
   o the piece of code that crashes or bugs.
-    (preferably in a very small lpc-script with the bug isolated)
+    (preferably in a very small pike-script with the bug isolated)
     Please send a complete running example of something that makes the
     interpreter bug.
   o a description of what it is that bugs and when.

@@ -1,10 +1,11 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
 #include "macros.h"
+#include "time_stuff.h"
 #include <ctype.h>
 #include <math.h>
 #include <sys/types.h>
@@ -14,6 +15,24 @@
 
 #ifdef sun
 time_t time PROT((time_t *));
+#endif
+
+#ifndef HAVE_GETTIMEOFDAY
+void GETTIMEOFDAY(struct timeval *t)
+{
+  t->tv_sec=(long)time(0);
+  t->tv_usec=0;
+}
+#endif
+
+#ifndef HAVE_TIME
+time_t TIME(time_t *t)
+{
+  struct timeval tv;
+  GETTIMEOFDAY(&tv);
+  if(t) *t=tv.tv_sec;
+  return tv.tv_sec;
+}
 #endif
 
 /*
@@ -40,8 +59,6 @@ void my_srand(int seed)
   my_rand();
   my_rand();
 }
-
-long get_current_time(void) { return (long)time(0L); }
 
 
 #ifndef HAVE_STRTOL
@@ -166,145 +183,6 @@ char *MEMCHR(char *p,char c,int e)
 }
 #endif
 
-#ifndef HAVE_MEMMEM
-
-/*
- * a quick memmem
- * Written by Fredrik Hubinette (hubbe@lysator.liu.se)
- */
-
-#define LINKS 1024
-
-typedef struct link2_s
-{
-  struct link2_s *next;
-  INT32 key, offset;
-} link2;
-
-char *MEMMEM(char *needle, SIZE_T needlelen, char *haystack, SIZE_T haystacklen)
-{
-  if(needlelen > haystacklen) return 0;
-
-  switch(needlelen)
-  {
-  case 0: return haystack;
-  case 1: return MEMCHR(haystack,needle[0],haystacklen);
-
-  default:
-  {
-    if(haystacklen > needlelen + 64)
-    {
-      static link2 links[LINKS], *set[LINKS];
-
-      INT32 tmp, h;
-      unsigned INT32 hsize, e, max;
-      char *q, *end;
-      link2 *ptr;
-
-      hsize=52+(haystacklen >> 7)  - (needlelen >> 8);
-      max  =13+(haystacklen >> 4)  - (needlelen >> 5);
-
-      if(hsize > NELEM(set))
-      {
-	hsize=NELEM(set);
-      }else{
-	for(e=8;e<hsize;e+=e);
-	hsize=e;
-      }
-    
-      for(e=0;e<hsize;e++) set[e]=0;
-      hsize--;
-
-      if(max > needlelen) max=needlelen;
-      max=(max-sizeof(INT32)+1) & -sizeof(INT32);
-      if(max > LINKS) max=LINKS;
-
-      ptr=&links[0];
-
-      q=needle;
-
-#if BYTEORDER == 4321
-      for(tmp=e=0;e<sizeof(INT32)-1;e++)
-      {
-	tmp<<=8;
-	tmp|=*(q++);
-      }
-#endif
-
-      for(e=0;e<max;e++)
-      {
-#if BYTEORDER == 4321
-	tmp<<=8;
-	tmp|=*(q++);
-#else
-	tmp=EXTRACT_INT((unsigned char *)q);
-	q++;
-#endif
-	h=tmp;
-	h+=h>>7;
-	h+=h>>17;
-	h&=hsize;
-
-	ptr->offset=e;
-	ptr->key=tmp;
-	ptr->next=set[h];
-	set[h]=ptr;
-	ptr++;
-      }
-
-      end=haystack+haystacklen+1;
-    
-      q=haystack+max-sizeof(INT32);
-      q=(char *)( ((long)q) & -sizeof(INT32));
-      for(;q<end-sizeof(INT32)+1;q+=max)
-      {
-	h=tmp=*(INT32 *)q;
-
-	h+=h>>7;
-	h+=h>>17;
-	h&=hsize;
-      
-	for(ptr=set[h];ptr;ptr=ptr->next)
-	{
-	  char *where;
-
-	  if(ptr->key != tmp) continue;
-
-	  where=q-ptr->offset;
-	  if(where<haystack) continue;
-	  if(where+needlelen>end) return 0;
-
-	  if(!MEMCMP(where,needle,needlelen))
-	    return where;
-	}
-      }
-      return 0;
-    }
-  }
-
-  case 2:
-  case 3:
-  case 4:
-  case 5:
-  case 6: 
-  {
-    char *end,c;
-  
-    end=haystack+haystacklen-needlelen+1;
-    c=needle[0];
-    needle++;
-    needlelen--;
-    while((haystack=MEMCHR(haystack,c,end-haystack)))
-      if(!MEMCMP(++haystack,needle,needlelen))
-	return haystack-1;
-
-    return 0;
-  }
-    
-  }
-}
-
-#endif
 
 #if !defined(HAVE_INDEX) && !defined(HAVE_STRCHR)
 char *STRCHR(char *s,char c)

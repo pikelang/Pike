@@ -1,21 +1,20 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /*
-  LPC Sprintf v2.0 By Fredrik Hubinette (Profezzorn@nannymud)
+  Pike Sprintf v2.0 By Fredrik Hubinette (Profezzorn@nannymud)
   Should be reasonably compatible and somewhat faster than v1.05+ of Lynscar's
   sprintf. It requires the buffering function provided in dynamic_buffer.c
-  It was originally written for lpc4, but should be pretty simple to adapt to
-  most lpc-drivers. Fail-safe memory-leak-protection is implemented through a
-  stack that can be deallocated at any time. If something fails horribly this
-  stack will be deallocated at next call of sprintf. Most operators doesn't
-  need this feature though as they allocate their buffers with alloca() or
-  simply use pointers into other strings.
+   Fail-safe memory-leak-protection is implemented through a stack that can
+   be deallocated at any time. If something fails horribly this stack will be
+  deallocated at next call of sprintf. Most operators doesn't need this
+  feature though as they allocate their buffers with alloca() or simply use
+  pointers into other strings.
   It also has a lot more features:
 
-  Modifyers:
+  Modifiers:
     0  Zero pad numbers (implies right justification)
     !  Toggle truncation
        pad positive integers with a space
@@ -53,7 +52,7 @@
    %O any type (prettyprint)
    %n nop
    %t type of argument
-   %<modifyers>{format%}  do a format for every index in an array.
+   %<modifiers>{format%}  do a format for every index in an array.
 
    Most flags and operators are combinable in any fashion, but _really_
    strange results can arise from things like:
@@ -101,8 +100,8 @@
 #include "svalue.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
-#include "lpc_types.h"
-#include "add_efun.h"
+#include "pike_types.h"
+#include "constants.h"
 #include "interpret.h"
 #include "memory.h"
 
@@ -189,7 +188,7 @@ INLINE static void fix_field(char *b,
       }
     }
     for(;width>len;width--) my_putchar('0');
-    while(len--) my_putchar(*(b++));
+    my_binary_strcat(b,len);
     return;
   }
 
@@ -210,8 +209,13 @@ INLINE static void fix_field(char *b,
   {
     if(pos_pad && b[0]!='-') { my_putchar(pos_pad); width--; d++; }
     d+=MINIMUM(width,len);
-    while(len-- && width--) my_putchar(*(b++));
-    for(d%=pad_length;width--;d++)
+    while(len && width)
+    {
+      my_putchar(*(b++));
+      len--;
+      width--;
+    }
+    for(d%=pad_length;width;d++,width--)
     {
       if(d>=pad_length) d=0;
       my_putchar(pad_string[d]);
@@ -235,7 +239,7 @@ INLINE static void fix_field(char *b,
     width--;
   }
   b+=len-width;
-  while(width--) my_putchar(*(b++));
+  my_binary_strcat(b,width);
 }
 
 static struct svalue temp_svalue = { T_INT };
@@ -391,11 +395,11 @@ INLINE static int do_one(struct format_info *f)
     VAR=lastarg=argp++; \
   }
 
-#define GET(VAR,LPC_TYPE,TYPE_NAME,EXTENSION) \
+#define GET(VAR,PIKE_TYPE,TYPE_NAME,EXTENSION) \
   { \
     struct svalue *tmp_; \
     GET_SVALUE(tmp_); \
-    if(tmp_->type!=LPC_TYPE) \
+    if(tmp_->type!=PIKE_TYPE) \
     { \
       sprintf_error("Expected %s, got %s.\n",TYPE_NAME, \
 	get_name_of_type(tmp_->type)); \
@@ -424,16 +428,16 @@ INLINE static int do_one(struct format_info *f)
    }
 
 
-/* This is the main lpc_sprintf function, note that it calls itself
+/* This is the main pike_sprintf function, note that it calls itself
  * recursively during the '%{ %}' parsing. The string is stored in
  * the buffer in save_objectII.c
  */
 
-static string low_lpc_sprintf(char *format,
-			      int format_len,
-			      struct svalue *argp,
-			      int num_arg,
-			      string prefix)
+static string low_pike_sprintf(char *format,
+			       int format_len,
+			       struct svalue *argp,
+			       int num_arg,
+			       string prefix)
 {
   int tmp,setwhat,pos,d,e;
   char *a;
@@ -477,7 +481,7 @@ static string low_lpc_sprintf(char *format,
 	sprintf_error("Error in format string.\n");
 	fatal("Foo, you shouldn't be here!\n");
 
-        /* First the modifyers */
+        /* First the modifiers */
 
       case '0': fsp->flags|=ZERO_PAD; continue;
       case '1': case '2': case '3':
@@ -492,7 +496,7 @@ static string low_lpc_sprintf(char *format,
 
       got_arg:
 	if(tmp<1)
-	  sprintf_error("Illigal width.\n");
+	  sprintf_error("Illegal width.\n");
 	switch(setwhat)
 	{
 	case 0: fsp->width=tmp; break;
@@ -588,7 +592,7 @@ static string low_lpc_sprintf(char *format,
 	      array_index_no_free(sp,w,tmp);
 	      sp++;
 	    }
-	    b=low_lpc_sprintf(a+1,e-2,s,sp-s,b);
+	    b=low_pike_sprintf(a+1,e-2,s,sp-s,b);
 	    pop_n_elems(sp-s);
 	  }
 	  fsp->b=b.str;
@@ -621,11 +625,21 @@ static string low_lpc_sprintf(char *format,
       }
 
       case 'c':
-	DO_OP();
-	fsp->b=(char *)alloca(1);
-	GET_INT(fsp->b[0]);
-	fsp->len=1;
+      {
+        INT32 l,tmp;
+        DO_OP();
+        l=1;
+        if(fsp->width > 0) l=fsp->width;
+	fsp->b=(char *)alloca(l);
+	fsp->len=l;
+	GET_INT(tmp);
+        while(--l>=0)
+        {
+          fsp->b[l]=tmp & 0xff;
+          tmp>>=8;
+        }
 	break;
+      }
 
       case 'o':
       case 'd':
@@ -678,7 +692,7 @@ static string low_lpc_sprintf(char *format,
 
       case 's':
       {
-	struct lpc_string *s;
+	struct pike_string *s;
 	DO_OP();
 	GET_STRING(s);
 	fsp->b=s->str;
@@ -760,8 +774,8 @@ static string low_lpc_sprintf(char *format,
   return complex_free_buf();
 }
 
-/* An C-callable lpc_sprintf */
-string lpc_sprintf(char *format,struct svalue *argp,int num_arg)
+/* An C-callable pike_sprintf */
+string pike_sprintf(char *format,struct svalue *argp,int num_arg)
 {
   string prefix;
   prefix.str=0;
@@ -769,7 +783,7 @@ string lpc_sprintf(char *format,struct svalue *argp,int num_arg)
 
   free_sprintf_strings();
   fsp=format_info_stack-1;
-  return low_lpc_sprintf(format,strlen(format),argp,num_arg,prefix);
+  return low_pike_sprintf(format,strlen(format),argp,num_arg,prefix);
 }
 
 /* The efun */
@@ -787,7 +801,7 @@ static void f_sprintf(INT32 num_arg)
   if(argp[0].type != T_STRING)
     error("Bad argument 1 to sprintf.\n");
 
-  s=low_lpc_sprintf(argp->u.string->str,
+  s=low_pike_sprintf(argp->u.string->str,
 		    argp->u.string->len,
 		    argp+1,
 		    num_arg-1,

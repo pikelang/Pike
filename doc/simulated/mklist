@@ -1,11 +1,13 @@
 NAME
-	mklist - make a list
+	mklist - make a multiset
 
 SYNTAX
-	list mklist(mixed *a)
+	#include <simulate.h>
+
+	multiset mklist(mixed *a)
 
 DESCRIPTION
-	This function creates a list from an array.
+	This function creates a multiset from an array.
 
 EXAMPLE
 	> mklist( ({1,2,3}) );
@@ -15,5 +17,8 @@ EXAMPLE
 	    3
 	>)
 
+KEYWORDS
+	multiset
+
 SEE ALSO
-	builtin/aggregate_list
+	builtin/aggregate_multiset

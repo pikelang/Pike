@@ -2,6 +2,8 @@ NAME
 	search_array - search for something in an array
 
 SYNTAX
+	#include <array.h>
+
 	int search_array(mixed *arr,function fun,mixed arg, ...);
 	or
 	int search_array(object *arr,string fun,mixed arg, ...);
@@ -12,6 +14,9 @@ DESCRIPTION
 	search_array works like map_array, only it returns the index of the
 	first call that returned true instead or returning an array of the
 	returned values. If no call returns true, -1 is returned.
+
+KEYWORDS
+	array
 
 SEE ALSO
 	sum_arrays, filter_array, member_array

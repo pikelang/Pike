@@ -1,0 +1,30 @@
+NAME
+	`* - multiplication
+
+SYNTAX
+	a * b
+	or
+	int `*(int ... args)
+	or
+	float `*(int|float ... args)
+	or
+	string `*(string *strings, string delimeter)
+
+DESCRIPTION
+	For ints and floats, this operator simply multiplies its arguments.
+	If the first argument is an array, and the second a string, all
+	strings in the arrays will be concatenated, with the delimiter in
+	between each string and the result will be returned.
+
+EXAMPLES
+	2*2     	returns 4
+	2.0*2.0   	returns 4.0
+	2.0*2    	returns 4.0
+	({"f","",""})*"o")	Returns "foo"
+	`*(2,2,2)	returns 8
+
+KEYWORDS
+	operators
+
+SEE ALSO
+	`/

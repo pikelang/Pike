@@ -1,0 +1,19 @@
+NAME
+	if-else - run on condition
+
+SYNTAX
+	if( expression ) <statement>
+	or
+	if( expression ) <statement> else <statement>
+
+DESCRIPTION
+	If is the simplest of all control structures, in the first form
+	it runs the statement if the expression is true and in the second
+	form it runs the first statement if the expression is true and the
+	second if it is false.
+
+KEYWORDS
+	control
+
+SEE ALSO
+	switch

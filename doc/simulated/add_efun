@@ -1,0 +1,15 @@
+NAME
+	add_efun - add an efun or constant
+
+SYNTAX
+	#include <simulate.h>
+
+	void add_efun(string func_name, mixed function)
+	or
+	void add_efun(string func_name)
+
+DESCRIPTION
+	This function is the same as add_constant.
+
+SEE ALSO
+	builtin/add_constant

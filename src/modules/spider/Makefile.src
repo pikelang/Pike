@@ -1,0 +1,18 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
+
+FILES=spider.o discdate.o stardate.o sdebug.o tree.o lock.o sharedmem.o streamed_parser.o encode_decode.o http_parse.o
+
+spider.a: $(FILES)
+	-rm -f spider.a
+	ar cq spider.a $(FILES)
+	-@RANLIB@ spider.a
+
+clean:
+	-rm -f *.o *.a
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
+

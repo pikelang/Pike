@@ -11,6 +11,10 @@
 #include <time.h>
 #include <limits.h>
 
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif
+
 #if HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -20,18 +24,17 @@
 #include "types.h"
 #include "macros.h"
 #include "object.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "builtin_efuns.h"
+#include "builtin_functions.h"
 #include "lock.h"
 
 #include <pwd.h>
 
-#include "spider.h"
-#include "conf.h"
+#include "defs.h"
 
 #ifdef HAVE_SYS_CONF_H
 #include <sys/conf.h>
@@ -60,12 +63,13 @@
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+
 #include <errno.h>
 
 
 #define MAX_PARSE_RECURSE 1024
 
-void do_html_parse(struct lpc_string *ss,
+void do_html_parse(struct pike_string *ss,
 		   struct mapping *cont,struct mapping *single,
 		   int *strings,int recurse_left,
 		   struct array *extra_args);
@@ -76,7 +80,7 @@ void f_http_decode_string(INT32 args)
 {
    int proc;
    char *foo,*bar,*end;
-   struct lpc_string *newstr;
+   struct pike_string *newstr;
 
    if (!args || sp[-args].type != T_STRING)
      error("Invalid argument to http_decode_string(STRING);\n");
@@ -146,6 +150,7 @@ void f_parse_accessed_database(INT32 args)
 }
 
 
+
 #ifdef I_SENDFD
 #define HAVE_SEND_FD
 void f_send_fd(INT32 args)
@@ -179,7 +184,9 @@ void f_send_fd(INT32 args)
      case EWOULDBLOCK:
      case EINTR:
      case ENOMEM:
+#ifdef ENOSR
      case ENOSR:
+#endif
       continue;
 
      default:
@@ -193,6 +200,12 @@ void f_send_fd(INT32 args)
 }
 
 #else
+#if 0
+   /*
+  / Shuffle is only compiled on Solaris anyway. It is _not_ easy to fix
+ / this for _all_ systems (SYSV, BSDI, BSD, Linux all use different
+/ styles)
+*/
 #if HAVE_SENDMSG
 #define HAVE_SEND_FD
 void f_send_fd(INT32 args)
@@ -249,10 +262,11 @@ void f_send_fd(INT32 args)
 }
 #endif
 #endif
+#endif
 
 void f_parse_html(INT32 args)
 {
-  struct lpc_string *ss;
+  struct pike_string *ss;
   struct mapping *cont,*single;
   int strings;
   struct array *extra_args;
@@ -471,7 +485,7 @@ INLINE int tagsequal(char *s, char *t, int len, char *end)
   return 1;
 }
 
-int find_endtag(struct lpc_string *tag, char *s, int len, int *aftertag)
+int find_endtag(struct pike_string *tag, char *s, int len, int *aftertag)
 {
   int num=1;
 
@@ -503,7 +517,7 @@ int find_endtag(struct lpc_string *tag, char *s, int len, int *aftertag)
   return j;
 }
 
-void do_html_parse(struct lpc_string *ss,
+void do_html_parse(struct pike_string *ss,
 		   struct mapping *cont,struct mapping *single,
 		   int *strings,int recurse_left,
 		   struct array *extra_args)
@@ -511,7 +525,7 @@ void do_html_parse(struct lpc_string *ss,
   int i,j,k,l,m,len,last;
   unsigned char *s;
   struct svalue sval1,sval2;
-  struct lpc_string *ss2;
+  struct pike_string *ss2;
   if (!ss->len)
   {
     free_string(ss);
@@ -727,64 +741,6 @@ static int does_match(char *s,int len,char *m,int mlen)
   return 0;
 }
 
-void f_do_match(INT32 args)
-{
-  struct lpc_string *match,*str;
-  struct array *a;
-  int i;
-  struct svalue *sval;
-
-  if (args<2||
-      sp[1-args].type!=T_STRING||
-      (sp[-args].type!=T_STRING &&
-       sp[-args].type!=T_ARRAY))
-    error("Illegal arguments to do_match\n");
-
-  copy_shared_string(match,sp[1-args].u.string);
-  pop_n_elems(args-1);
-
-  if (sp[-1].type==T_ARRAY)
-  {
-    a=sp[-1].u.array;
-    a->refs++;
-    pop_stack();
-    i=a->size;
-    if (!i) { push_int(0); return; }
-    push_array_items(a);
-    while (i--)
-    {
-      match->refs++;
-      push_string(match);
-      f_do_match(2);
-      if (sp[-1].type!=T_INT)
-      {
-	sval=sp-1;
-	sp--;
-	pop_n_elems(i);
-	sp[0]=*sval;
-	sp++;
-	free_string(match);
-	return;
-      }
-      pop_stack();
-    }
-    push_int(0);
-    free_string(match);
-    return;
-  }
-  copy_shared_string(str,sp[-1].u.string);
-  pop_stack();
-   
-  if (does_match(str->str,str->len,match->str,match->len)) 
-  {
-    push_string(str); 
-    free_string(match); 
-    return; 
-  }
-  push_int(0);
-  free_string(str);
-  free_string(match);
-}
 
 #if !HAVE_INT_TIMEZONE
 int _tz;
@@ -793,38 +749,6 @@ extern long int timezone;
 #endif
 
 
-
-void f_localtime(INT32 args)
-{
-  struct tm *tm;
-  time_t t;
-  if (args<1||
-      sp[-1].type!=T_INT)
-    error("Illegal argument to localtime");
-  t=sp[-1].u.integer;
-  tm=localtime(&t);
-  pop_stack();
-
-  push_string(make_shared_string("sec"));   push_int(tm->tm_sec);
-  push_string(make_shared_string("min"));   push_int(tm->tm_min);
-  push_string(make_shared_string("hour"));  push_int(tm->tm_hour);
-
-  push_string(make_shared_string("mday"));  push_int(tm->tm_mday);
-  push_string(make_shared_string("mon"));   push_int(tm->tm_mon);
-  push_string(make_shared_string("year"));  push_int(tm->tm_year);
-
-  push_string(make_shared_string("wday"));  push_int(tm->tm_wday);
-  push_string(make_shared_string("yday"));  push_int(tm->tm_yday);
-  push_string(make_shared_string("isdst")); push_int(tm->tm_isdst);
-
-  push_string(make_shared_string("timezone"));
-#if !HAVE_INT_TIMEZONE
-  push_int(_tz);
-#else
-  push_int(timezone);
-#endif
-  f_aggregate_mapping(20);
-}
 
 #ifdef HAVE_INITGROUPS
 void f_initgroups(INT32 args)
@@ -907,9 +831,7 @@ void f_do_seteuid(INT32 args)
 #endif
   pop_n_elems(args-1);
 }
-#endif
 
-#if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
 void f_do_setegid(INT32 args)
 {
   struct passwd *pw;
@@ -926,7 +848,7 @@ void f_do_setegid(INT32 args)
   } else
     id = sp[-1].u.integer;
 
-#ifdef HAVE_SETEGID
+#ifdef HAVE_SETEUID
   setegid(id);
 #else
   setresgid(-1, id, -1);
@@ -1108,23 +1030,6 @@ void f_closelog(INT32 args)
 }
 #endif
 
-
-#ifdef HAVE_STRERROR
-void f_strerror(INT32 args)
-{
-  char *s;
-  if(!args) 
-    s=strerror(errno);
-  else
-    s=strerror(sp[-args].u.integer);
-  pop_n_elems(args);
-  if(s)
-    push_text(s);
-  else
-    push_int(0);
-}
-#endif
-
 #ifdef HAVE_PERROR
 void f_real_perror(INT32 args)
 {
@@ -1172,12 +1077,12 @@ void f_fd_info(INT32 args)
   push_string(make_shared_string(buf));
 }
 
-struct lpc_string *fd_marks[MAX_OPEN_FILEDESCRIPTORS];
+struct pike_string *fd_marks[MAX_OPEN_FILEDESCRIPTORS];
 
 void f_mark_fd(INT32 args)
 {
   int fd;
-  struct lpc_string *s;
+  struct pike_string *s;
   if (args<1 
       || sp[-args].type!=T_INT 
       || (args>2 && sp[-args+1].type!=T_STRING))
@@ -1250,16 +1155,11 @@ void f_mark_fd(INT32 args)
 
 #define get(X) void f_##X(INT32 args){ pop_n_elems(args); push_int((INT32)X()); }
 
-#ifdef HAVE_GETUID
 get(getuid)
-#endif
+get(getgid)
+
 #ifdef HAVE_GETEUID
 get(geteuid)
-#endif
-#ifdef HAVE_GETGID
-get(getgid)
-#endif
-#ifdef HAVE_GETEGID
 get(getegid)
 #endif
 get(getpid)
@@ -1358,7 +1258,7 @@ void f_gethostname(INT32 args)
 #endif
 #endif
 
-#ifdef HAVE_GETHOSTBYADDR
+#ifdef HAVE_GETHOSTBYNAME
 void f_gethostbyaddr(INT32 args)
 {
   u_long addr;
@@ -1399,9 +1299,6 @@ void f_gethostbyaddr(INT32 args)
   f_aggregate(sp-old_sp);
 }  
 
-#endif
-
-#ifdef HAVE_GETHOSTBYNAME
 void f_gethostbyname(INT32 args)
 {
   struct hostent *hp;
@@ -1467,16 +1364,12 @@ static void push_pwent(struct passwd *ent)
   {
     struct spwd *foo;
     if((foo = getspnam(ent->pw_name)))
-    {
       push_text(foo->sp_pwdp);
-    } else {
+    else
       push_text("x");
-    }
   } else 
-#endif
-  {
+#endif /* Shadow password support */
     push_text(ent->pw_passwd);
-  }
   push_int(ent->pw_uid);
   push_int(ent->pw_gid);
   push_text(ent->pw_gecos);
@@ -1496,9 +1389,7 @@ void f_getpwnam(INT32 args)
   pop_stack();
   push_pwent(foo);
 }
-#endif
 
-#ifdef HAVE_GETPWUID
 void f_getpwuid(INT32 args)
 {
   struct passwd *foo;
@@ -1509,25 +1400,21 @@ void f_getpwuid(INT32 args)
 }
 #endif
 
-#ifdef HAVE_SETPWENT
+#ifdef HAVE_GETPWENT
 void f_setpwent(INT32 args)
 {
   setpwent();
   pop_n_elems(args);
   push_int(0);
 }
-#endif
 
-#ifdef HAVE_ENDPWENT
 void f_endpwent(INT32 args)
 {
   setpwent();
   pop_n_elems(args);
   push_int(0);
 }
-#endif
 
-#ifdef HAVE_GETPWENT
 void f_getpwent(INT32 args)
 {
   struct passwd *foo;
@@ -1539,17 +1426,6 @@ void f_getpwent(INT32 args)
     return;
   }
   push_pwent(foo);
-}
-#endif
-
-#ifdef HAVE_ALARM
-void f_alarm(INT32 args)
-{
-  int i;
-  if(!args || sp[-1].type != T_INT || sp[-1].u.integer < 0)
-    error("Invalid argument to alarm(INT);\n");
-  i=sp[-1].u.integer;
-  push_int(alarm(i));
 }
 #endif
 
@@ -1614,26 +1490,16 @@ void init_spider_efuns(void)
   add_efun("http_decode_string",f_http_decode_string,"function(string:string)",
 	   OPT_TRY_OPTIMIZE);
 
-#ifdef HAVE_ALARM
-  add_efun("alarm", f_alarm, "function(int:int)", OPT_SIDE_EFFECT);
-#endif
-
 #ifdef HAVE_GETPWNAM
   add_efun("getpwnam", f_getpwnam, "function(string:array)", 
 	   OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_GETPWUID
   add_efun("getpwuid", f_getpwuid, "function(int:array)", OPT_EXTERNAL_DEPEND);
 #endif
-#ifdef HAVE_GETPWENT
+#ifdef HAVE_SETPWENT
   add_efun("getpwent", f_getpwent, "function(void:array)",
 	   OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_ENDPWENT
-  add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
-#endif
-#ifdef HAVE_SETPWENT
   add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+  add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
 #endif
 
 
@@ -1646,9 +1512,6 @@ void init_spider_efuns(void)
 #ifdef HAVE_GETHOSTBYNAME
   add_efun("gethostbyname", f_gethostbyname, "function(string:array)",
 	   OPT_TRY_OPTIMIZE);
-#endif
-
-#ifdef HAVE_GETHOSTBYADDR
   add_efun("gethostbyaddr", f_gethostbyaddr, "function(string:array)",
 	   OPT_TRY_OPTIMIZE);
 #endif
@@ -1667,19 +1530,11 @@ void init_spider_efuns(void)
   add_efun("send_fd", f_send_fd, "function(int,int:int)", OPT_EXTERNAL_DEPEND);
 #endif
 
-#ifdef HAVE_GETUID
   add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
-#endif
+  add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
 
 #ifdef HAVE_GETEUID
   add_efun("geteuid", f_geteuid, "function(:int)", OPT_EXTERNAL_DEPEND);
-#endif
-
-#ifdef HAVE_GETGID
-  add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
-#endif
-
-#ifdef HAVE_GETEGID
   add_efun("getegid", f_getegid, "function(:int)", OPT_EXTERNAL_DEPEND);
 #endif
 
@@ -1726,16 +1581,6 @@ void init_spider_efuns(void)
 	   "function(string,mapping(string:function(string,mapping(string:string),mixed ...:string)),mapping(string:function(string,mapping(string:string),string,mixed ...:string)),mixed ...:string)",
 	   0);
 
-  add_efun("do_match",f_do_match,
-	   "function(string|array(string),string:string)",OPT_TRY_OPTIMIZE);
-
-  add_efun("localtime",f_localtime,
-	   "function(int:mapping(string:int))",OPT_EXTERNAL_DEPEND);
-
-#ifdef HAVE_STRERROR
-  add_efun("strerror",f_strerror,"function(int|void:string)",0);
-#endif
-
 #ifdef HAVE_PERROR
   add_efun("real_perror",f_real_perror, "function(:void)",OPT_EXTERNAL_DEPEND);
 #endif
@@ -1760,9 +1605,6 @@ void init_spider_efuns(void)
 
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
   add_efun("seteuid", f_do_seteuid, "function(int:void)", 0);
-#endif
-
-#if defined(HAVE_SETEGID) || defined(HAVE_SETRESGID)
   add_efun("setegid", f_do_setegid, "function(int:void)", 0);
 #endif
 

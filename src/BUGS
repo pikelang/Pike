@@ -308,7 +308,7 @@ Version: 1.0E-15:
 
 Still to do:
 
-* really large constant arrays crashes uLPC
+* really large constant arrays crashes Pike
 
 * need some way of using shared and non-shared module dirs..
 
@@ -327,3 +327,5 @@ Still to do:
 * 'array' does not match 'string *' ? (in function calls)
 
 * compile errors generate memory leaks
+
+* file->write bugs when given a zero as argument?

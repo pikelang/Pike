@@ -1,5 +1,4 @@
 AC_INIT(spider.c)
-AC_CONFIG_HEADER(spider.h)
 
 AC_PROG_CC
 AC_PROG_RANLIB
@@ -14,14 +13,13 @@ fi
 
 AC_HAVE_HEADERS(syslog.h sys/syslog.h arpa/inet.h sys/socketvar.h \
 	netinet/in.h sys/mman.h sys/utsname.h netdb.h sys/socket.h pwd.h\
-        shadow.h thread.h sync.h sys/sockio.h sys/conf.h stropts.h)
+        shadow.h thread.h sync.h sys/sockio.h sys/conf.h stropts.h\
+	sys/uio.h linux/mman.h)
 
-AC_HAVE_FUNCS(syslog perror strerror getppid getpgrp getuid getgid \
-	gethostname geteuid getegid fchroot strdup seteuid setegid setresuid \
-        setresgid uname gethostbyname gethostbyaddr alarm\
-        getpwent setpwent endpwent getpwuid getpwnam \
-        getspent setspent endspent getspnam \
-	initgroups mutex_unlock mmap sendmsg)
+AC_HAVE_FUNCS(syslog perror strerror getppid getpgrp strdup\
+	gethostname geteuid fchroot seteuid setresuid \
+        uname gethostbyname getpwnam getspnam initgroups \
+	mutex_unlock mmap sendmsg)
 
 if test x$ac_cv_lib_thread_mutex_inlock = xno ;  then
  AC_HAVE_HEADERS( pthread.h )
@@ -32,7 +30,7 @@ AC_SUBST(RANLIB)
 
 AC_MSG_CHECKING(how to find timezone)
 
-AC_CACHE_VAL(lpc_cv_timezone,
+AC_CACHE_VAL(pike_cv_timezone,
 [
 AC_TRY_LINK([
 #include <time.h>
@@ -44,12 +42,12 @@ AC_TRY_LINK([
 
  _tz = g->tm_gmtoff;	
 ],
-  lpc_cv_timezone='localtime'
+  pike_cv_timezone='localtime'
 ,
-  lpc_cv_timezone='int'
+  pike_cv_timezone='int'
 )])
 
-if test "$lpc_cv_timezone" = int; then
+if test "$pike_cv_timezone" = int; then
   AC_DEFINE(HAVE_INT_TIMEZONE)
   AC_MSG_RESULT([int]);
 else

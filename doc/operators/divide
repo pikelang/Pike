@@ -1,0 +1,31 @@
+NAME
+	`/ - division
+
+SYNTAX
+	a / b
+	or
+	int `/(int a, int b)
+	or
+	float `/(int|float a,int|float b)
+	or
+	string* `/(string a,string b)
+
+DESCRIPTION
+	For ints and floats, this operator simply divide its arguments.
+	If the arguments are strings, the first string will be divided
+	at every occurance of the second string. The resulting pieces
+	are then returned in the form of an array.
+
+EXAMPLES
+	2/2     	returns 1
+	3/2     	returns 1
+	2.0/2.0   	returns 1.0
+	2.0/2    	returns 1.0
+	"foo"/"o"	returns ({"f","",""})
+	`/(2,2) 	returns 1
+
+KEYWORDS
+	operators
+
+SEE ALSO
+	`*, `%

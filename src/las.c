@@ -1,9 +1,8 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
-#include <setjmp.h>
 #include "global.h"
 #include "language.h"
 #include "interpret.h"
@@ -13,14 +12,15 @@
 #include "stralloc.h"
 #include "dynamic_buffer.h"
 #include "lex.h"
-#include "lpc_types.h"
-#include "add_efun.h"
+#include "pike_types.h"
+#include "constants.h"
 #include "mapping.h"
-#include "list.h"
+#include "multiset.h"
 #include "error.h"
 #include "docode.h"
 #include "main.h"
 #include "memory.h"
+#include "operators.h"
 
 #define LASDEBUG
 
@@ -67,12 +67,17 @@ int cdr_is_node(node *n)
 
 INT32 count_args(node *n)
 {
+  int a,b;
   if(!n) return 0;
   switch(n->token)
   {
   case F_VAL_LVAL:
   case F_ARG_LIST:
-    return count_args(CAR(n)) + count_args(CDR(n));
+    a=count_args(CAR(n));
+    if(a==-1) return -1;
+    b=count_args(CDR(n));
+    if(b==-1) return -1;
+    return a+b;
 
   case F_CAST:
     if(n->type == void_type_string)
@@ -96,11 +101,15 @@ INT32 count_args(node *n)
   case '?':
   {
     int tmp1,tmp2;
-    tmp1=count_args(CDAR(n));
-    tmp2=count_args(CDAR(n));
+    tmp1=count_args(CADR(n));
+    tmp2=count_args(CDDR(n));
+    if(tmp1==-1 || tmp2==-2) return -1;
     if(tmp1 < tmp2) return tmp1;
     return tmp2;
   }
+
+  case F_PUSH_ARRAY:
+    return -1;
 
   default:
     if(n->type == void_type_string) return 0;
@@ -155,7 +164,14 @@ node *mknode(short token,node *a,node *b)
     break;
 
   case F_APPLY:
-    res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
+    if(a && a->token == F_CONSTANT &&
+       a->u.sval.type == T_FUNCTION &&
+       a->u.sval.subtype == -1)
+    {
+      res->node_info |= a->u.sval.u.efun->flags;
+    }else{
+      res->node_info |= OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND; /* for now */
+    }
     break;
 
   case F_RETURN:
@@ -200,7 +216,7 @@ node *mknode(short token,node *a,node *b)
   return res;
 }
 
-node *mkstrnode(struct lpc_string *str)
+node *mkstrnode(struct pike_string *str)
 {
   node *res = mkemptynode();
   res->token = F_CONSTANT;
@@ -250,7 +266,7 @@ node *mkapplynode(node *func,node *args)
 node *mkefuncallnode(char *function, node *args)
 {
   struct efun *fun;
-  struct lpc_string *name;
+  struct pike_string *name;
   name = findstring(function);
   if(!name)
   {
@@ -265,6 +281,14 @@ node *mkefuncallnode(char *function, node *args)
     return mkintnode(0);
   }
   return mkapplynode(mksvaluenode(&fun->function), args);
+}
+
+node *mkopernode(char *oper_id, node *arg1, node *arg2)
+{
+  if(arg1 && arg2)
+    arg1=mknode(F_ARG_LIST,arg1,arg2);
+
+  return mkefuncallnode(oper_id, arg1);
 }
 
 node *mklocalnode(int var)
@@ -297,7 +321,7 @@ node *mkidentifiernode(int i)
   return res;
 }
 
-node *mkcastnode(struct lpc_string *type,node *n)
+node *mkcastnode(struct pike_string *type,node *n)
 {
   node *res;
   if(!n) return 0;
@@ -327,6 +351,7 @@ int node_is_eq(node *a,node *b)
   switch(a->token)
   {
   case F_LOCAL:
+  case F_IDENTIFIER:
     return a->u.number == b->u.number;
 
   case F_CAST:
@@ -371,8 +396,8 @@ node *mksvaluenode(struct svalue *s)
   case T_ARRAY:
     return make_node_from_array(s->u.array);
     
-  case T_LIST:
-    return make_node_from_list(s->u.list);
+  case T_MULTISET:
+    return make_node_from_multiset(s->u.multiset);
 
   case T_MAPPING:
     return make_node_from_mapping(s->u.mapping);
@@ -414,7 +439,7 @@ node *copy_node(node *n)
   switch(n->token)
   {
   case F_LOCAL:
-  case F_EFUN:
+  case F_IDENTIFIER:
     b=mkintnode(0);
     *b=*n;
     copy_shared_string(b->type, n->type);
@@ -504,7 +529,7 @@ int node_is_false(node *n)
   }
 }
 
-static node **last_cmd(node **a)
+node **last_cmd(node **a)
 {
   node **n;
   if(!a || !*a) return (node **)NULL;
@@ -548,7 +573,7 @@ static node **low_get_arg(node **a,int *nr)
   return 0;
 }
 
-/* static node **my_get_arg(node **a,int n) { return low_get_arg(a,&n); } */
+node **my_get_arg(node **a,int n) { return low_get_arg(a,&n); }
 /* static node **first_arg(node **a) { return my_get_arg(a,0); } */
 
 static void low_print_tree(node *foo,int needlval)
@@ -914,7 +939,7 @@ static void low_build_function_type(node *n)
 
 void fix_type_field(node *n)
 {
-  struct lpc_string *type_a,*type_b;
+  struct pike_string *type_a,*type_b;
 
   if(n->type) return; /* assume it is correct */
 
@@ -936,6 +961,13 @@ void fix_type_field(node *n)
     }
     break;
 
+  case F_ASSIGN:
+    if(CAR(n) && CDR(n) && 
+       !match_types(CDR(n)->type,CAR(n)->type))
+      my_yyerror("Bad type in assignment.\n");
+    copy_shared_string(n->type, CDR(n)->type);
+    break;
+
   case F_INDEX:
     type_a=CAR(n)->type;
     type_b=CDR(n)->type;
@@ -946,7 +978,7 @@ void fix_type_field(node *n)
 
   case F_APPLY:
   {
-    struct lpc_string *s;
+    struct pike_string *s;
     push_type(T_MIXED); /* match any return type, even void */
     push_type(T_VOID); /* not varargs */
     push_type(T_MANY);
@@ -1030,22 +1062,6 @@ void fix_type_field(node *n)
 
   case F_CONSTANT:
     n->type = get_type_of_svalue(& n->u.sval);
-    break;
-
-    /* Not yet checked, but we know what they should return */
-  case F_NOT:
-  case F_LT:
-  case F_LE:
-  case F_EQ:
-  case F_NE:
-  case F_GT:
-  case F_GE:
-  case F_MOD:
-  case F_XOR:
-  case F_LSH:
-  case F_RSH:
-  case F_COMPL:
-    copy_shared_string(n->type,int_type_string);
     break;
 
   case F_ARG_LIST:
@@ -1148,6 +1164,17 @@ static void optimize(node *n)
 
     switch(n->token)
     {
+    case F_APPLY:
+      if(CAR(n)->token == F_CONSTANT &&
+	 CAR(n)->u.sval.type == T_FUNCTION &&
+	 CAR(n)->u.sval.subtype == -1 && /* driver fun? */
+	 CAR(n)->u.sval.u.efun->optimize)
+      {
+	if(tmp1=CAR(n)->u.sval.u.efun->optimize(n))
+	  goto use_tmp1;
+      }
+      break;
+
     case F_ARG_LIST:
     case F_LVALUE_LIST:
       if(!CAR(n)) goto use_cdr;
@@ -1269,7 +1296,8 @@ static void optimize(node *n)
       }
 
       /*
-       * if X and Y are free from 'continue' || X is null
+       * if X and Y are free from 'continue' or X is null,
+       * then the following optimizations can be done:
        * for(;++e; X) Y; -> ++ne_loop(e, -1) { Y ; X }
        * for(;e++; X) Y; -> ++ne_loop(e, 0) { Y; X }
        * for(;--e; X) Y; -> --ne_loop(e, 1) { Y; X }
@@ -1283,6 +1311,7 @@ static void optimize(node *n)
 	 (!CDDR(n) || !(CDDR(n)->tree_info & OPT_CONTINUE)) &&
 	 (!CADR(n) || !(CADR(n)->tree_info & OPT_CONTINUE)) )
       {
+	/* Check which of the above cases.. */
 	switch(CAR(n)->token)
 	{
 	case F_POST_DEC: token=F_DEC_NEQ_LOOP; inc=-1; break;
@@ -1291,7 +1320,8 @@ static void optimize(node *n)
 	case F_INC:      token=F_INC_NEQ_LOOP; inc=0; break;
 	default: fatal("Impossible error\n"); return;
 	}
-	
+
+	/* Build new tree */
 	tmp1=mknode(token,
 		    mknode(F_VAL_LVAL,
 			   mkintnode(inc),
@@ -1303,76 +1333,118 @@ static void optimize(node *n)
 	goto use_tmp1;
       }
 
+      /* Last is a pointer to the place where the incrementor is in the
+       * tree. This is needed so we can nullify this pointer later and
+       * free the rest of the tree
+       */
       last=&(CDDR(n));
-      tmp1=last?*last:(node *)NULL;
+      tmp1=*last;
+
+      /* We're not interested in casts to void */
+      while(tmp1 && 
+	    tmp1->token == F_CAST &&
+	    tmp1->type == void_type_string)
+      {
+	last=&CAR(tmp1);
+	tmp1=*last;
+      }
+
+      /* If there is an incrementor, and it is one of x++, ++x, x-- or ++x */
       if(tmp1 && (tmp1->token==F_INC ||
 		  tmp1->token==F_POST_INC ||
 		  tmp1->token==F_DEC ||
 		  tmp1->token==F_POST_DEC))
       {
+	node *opnode, **arg1, **arg2;
+	int oper;
+
 	/* does it increment or decrement ? */
 	if(tmp1->token==F_INC || tmp1->token==F_POST_INC)
 	  inc=1;
 	else
 	  inc=0;
 
-	/* for(; x op y; z ++) p; */
+	/* for(; arg1 oper arg2; z ++) p; */
 
-	if(CAR(n)->token!=F_GT &&
-	   CAR(n)->token!=F_GE &&
-	   CAR(n)->token!=F_LE &&
-	   CAR(n)->token!=F_LT &&
-	   CAR(n)->token!=F_NE)
+	opnode=CAR(n);
+
+	if(opnode->token == F_APPLY &&
+	   CAR(opnode) &&
+	   CAR(opnode)->token == F_CONSTANT &&
+	   CAR(opnode)->u.sval.type == T_FUNCTION &&
+	   CAR(opnode)->u.sval.subtype == -1)
+	{
+	  if(CAR(opnode)->u.sval.u.efun->function == f_gt)
+	    oper=F_GT;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_ge)
+	    oper=F_GE;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_lt)
+	    oper=F_LT;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_le)
+	    oper=F_LE;
+	  else if(CAR(opnode)->u.sval.u.efun->function == f_ne)
+	    oper=F_NE;
+	  else
+	    break;
+	}else{
 	  break;
+	}
 
-	if(!node_is_eq(CAAR(n),CAR(tmp1)) || /* x == z */
-	   depend_p(CDAR(n),CDAR(n)) ||	/* does y depend on y? */
-	   depend_p(CDAR(n),CAAR(n)) ||	/* does y depend on x? */
-	   depend_p(CDAR(n),CADR(n))) /* does y depend on p? */
+	if(count_args(CDR(opnode)) != 2) break;
+	arg1=my_get_arg(&CDR(opnode), 0);
+	arg2=my_get_arg(&CDR(opnode), 1);
+
+	/* it was not on the form for(; x op y; z++) p; */
+	if(!node_is_eq(*arg1,CAR(tmp1)) || /* x == z */
+	   depend_p(*arg2,*arg2) ||	/* does y depend on y? */
+	   depend_p(*arg2,*arg1) ||	/* does y depend on x? */
+	   depend_p(*arg2,CADR(n))) /* does y depend on p? */
 	{
 	  /* it was not on the form for(; x op y; x++) p; */
-	  if(!node_is_eq(CADR(n),CAR(tmp1)) || /* y == z */
-	     depend_p(CAAR(n),CDAR(n)) || /* does x depend on y? */
-	     depend_p(CAAR(n),CAAR(n)) || /* does x depend on x? */
-	     depend_p(CAAR(n),CADR(n)) /* does x depend on p? */
+	  if(!node_is_eq(*arg2,CAR(tmp1)) || /* y == z */
+	     depend_p(*arg1,*arg2) || /* does x depend on y? */
+	     depend_p(*arg1,*arg1) || /* does x depend on x? */
+	     depend_p(*arg1,CADR(n)) /* does x depend on p? */
 	     )
 	  {
 	    /* it was not on the form for(; x op y; y++) p; */
 	    break;
 	  }else{
+	    node **tmparg;
 	    /* for(; x op y; y++) p; -> for(; y op^-1 x; y++) p; */
 
-	    switch(CAR(n)->token)
+	    switch(oper)
 	    {
-	    case F_LT: CAR(n)->token=F_GT; break;
-	    case F_LE: CAR(n)->token=F_GE; break;
-	    case F_GT: CAR(n)->token=F_LT; break;
-	    case F_GE: CAR(n)->token=F_LE; break;
+	    case F_LT: oper=F_GT; break;
+	    case F_LE: oper=F_GE; break;
+	    case F_GT: oper=F_LT; break;
+	    case F_GE: oper=F_LE; break;
 	    }
-	    tmp2=CAAR(n);
-	    CAAR(n)=CDAR(n);
-	    CDAR(n)=tmp2;
+	    
+	    tmparg=arg1;
+	    arg1=arg2;
+	    arg2=tmparg;
 	  }
 	}
 	if(inc)
 	{
-	  if(CAR(n)->token==F_LE)
-	    tmp3=mknode(F_ADD,CDAR(n),mkintnode(1));
-	  else if(CAR(n)->token==F_LT)
-	    tmp3=CDAR(n);
+	  if(oper==F_LE)
+	    tmp3=mkopernode("`+",*arg2,mkintnode(1));
+	  else if(oper==F_LT)
+	    tmp3=*arg2;
 	  else
 	    break;
 	}else{
-	  if(CAR(n)->token==F_GE)
-	    tmp3=mknode(F_SUBTRACT,CDAR(n),mkintnode(1));
-	  else if(CAR(n)->token==F_GT)
-	    tmp3=CDAR(n);
+	  if(oper==F_GE)
+	    tmp3=mkopernode("`-",*arg2,mkintnode(1));
+	  else if(oper==F_GT)
+	    tmp3=*arg2;
 	  else
 	    break;
 	}
 
 	*last=0;
-	if(CAR(n)->token==F_NE)
+	if(oper==F_NE)
 	{
 	  if(inc)
 	    token=F_INC_NEQ_LOOP;
@@ -1384,8 +1456,8 @@ static void optimize(node *n)
 	  else
 	    token=F_DEC_LOOP;
 	}
-	tmp2=mknode(token,mknode(F_VAL_LVAL,tmp3,CAAR(n)),CADR(n));
-	CAAR(n) = CADR(n) = CDAR(n) = CDDR(n)=0;
+	tmp2=mknode(token,mknode(F_VAL_LVAL,tmp3,*arg1),CADR(n));
+	*arg1 = *arg2 = CADR(n) =0;
 
 	if(inc)
 	{
@@ -1393,6 +1465,7 @@ static void optimize(node *n)
 	}else{
 	  tmp1->token=F_INC;
 	}
+
 	tmp1=mknode(F_ARG_LIST,mkcastnode(void_type_string,tmp1),tmp2);
 	goto use_tmp1;
       }
@@ -1483,7 +1556,7 @@ int eval_low(node *n)
   {
     fake_program.num_strings--;
     free_string(fake_program.strings[fake_program.num_strings]);
-    areas[A_STRINGS].s.len-=sizeof(struct lpc_string *);
+    areas[A_STRINGS].s.len-=sizeof(struct pike_string *);
   }
 
   while(fake_program.num_constants > num_constants)
@@ -1537,11 +1610,11 @@ static node *eval(node *n)
 
 INT32 last_function_opt_info;
 
-void dooptcode(struct lpc_string *name,node *n, int args)
+void dooptcode(struct pike_string *name,node *n, int args)
 {
 #ifdef DEBUG
   if(a_flag > 1)
-    fprintf(stderr,"Doing function: %s\n",name->str);
+    fprintf(stderr,"Doing function '%s' at %x\n",name->str,PC);
 #endif
   last_function_opt_info=OPT_SIDE_EFFECT;
   n=mknode(F_ARG_LIST,n,0);

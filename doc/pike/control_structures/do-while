@@ -1,0 +1,24 @@
+NAME
+	do-while - execute a statement while an expression is true
+
+SYNTAX
+	do <statement> while ( expression );
+
+DESCRIPTION
+	do - while only differs from the ordinary while-loop in that it does
+	_not_ evaluate the expression until after the statement has been
+	executed once. Thus it always runs the statement once.
+
+EXAMPLE
+	int i=circular_buffer_pos;
+	do
+	{
+	  write(circular_buffer[i]);
+	  i=(i+1) % sizeof(circular_buffer);
+	}while(i != circular_buffer_pos);
+
+KEYWORDS
+	control
+
+SEE ALSO
+	do - while

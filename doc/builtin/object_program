@@ -7,7 +7,7 @@ SYNTAX
 DESCRIPTION
 	This function returns the program from which o was cloned.
 
-KEYWORD
+KEYWORDS
 	object
 
 SEE ALSO

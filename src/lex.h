@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef LEX_H
@@ -16,15 +16,28 @@ struct keyword
 
 struct instr
 {
+#ifdef DEBUG
+  long runs;
+  long compiles;
+#endif
   char *name;
 };
+
+#ifdef DEBUG
+#define ADD_COMPILED(X) instrs[(X)-F_OFFSET].compiles++
+#define ADD_RUNNED(X) instrs[(X)-F_OFFSET].runs++
+#else
+#define ADD_COMPILED(X)
+#define ADD_RUNNED(X)
+#endif
 
 struct hash_entry;
 struct inputstate;
 struct hash_table;
 
+extern struct instr instrs[];
 extern struct hash_table *defines;
-extern struct lpc_string *current_file;
+extern struct pike_string *current_file;
 extern INT32 current_line;
 extern INT32 old_line;
 extern INT32 total_lines;
@@ -32,10 +45,10 @@ extern INT32 nexpands;
 extern int pragma_all_inline;          /* inline all possible inlines */
 extern struct inputstate *istate;
 
-extern struct lpc_predef_s * lpc_predefs;
+extern struct pike_predef_s * pike_predefs;
 
 /* Prototypes begin here */
-struct lpc_predef_s;
+struct pike_predef_s;
 void exit_lex();
 struct reserved;
 void init_lex();
@@ -50,8 +63,8 @@ void insert_current_line();
 void insert_current_file_as_string();
 void insert_current_time_as_string();
 void insert_current_date_as_string();
-void start_new_file(int fd,struct lpc_string *filename);
-void start_new_string(char *s,INT32 len,struct lpc_string *name);
+void start_new_file(int fd,struct pike_string *filename);
+void start_new_string(char *s,INT32 len,struct pike_string *name);
 void end_new_file();
 void add_predefine(char *s);
 /* Prototypes end here */

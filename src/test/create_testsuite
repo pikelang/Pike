@@ -1,6 +1,6 @@
 divert(-1)
 
-dnl generates a script that is supposed to test uLPC
+dnl generates a script that is supposed to test Pike
 dnl note that not everything is tested yet, you are welcome to
 dnl submit more tests.
 
@@ -8,11 +8,12 @@ changequote([[,]])
 changecom
 
 define(SEPARATOR,[[....]])
+define(CONDITION,[[]])
 
 define(DOTEST,[[dnl
 divert(0)dnl
 define([[TESTNO]],incr(TESTNO))dnl
-test TESTNO, expected result: [[$1]]
+CONDITION()test TESTNO, expected result: [[$1]]
 [[$2]]
 SEPARATOR
 divert(-1)dnl]])
@@ -55,9 +56,348 @@ void a() { master()->add_precompiled_program("[[$1]]",class {
 define(test_program, [[DOTEST(TRUE,dnl
 [[$1]])]])
 
+define(cond,[[
+define([[CONDITION]],[[COND $1
+]])
+$2
+define([[CONDITION]],[[]])
+]])
+define(ifefun,[[cond([[all_efuns()->$1]],[[$2]])]])
+
 define(TESTNO,0)
 
+// testing < > <= >=
+define([[test_cmp]],[[
+test_true($1<$2)
+test_false($1>$2)
+test_true($2>$1)
+test_false($2<$1)
+test_true($1<=$2)
+test_false($1>=$2)
+test_true($2>=$1)
+test_false($2<=$1)
+test_true($2<=$2)
+test_true($1>=$1) ]])
+
+// mpz
+cond( [[ master()->programs["/precompiled/mpz"] ]],
+[[
+  define([[MPZ]],[[(program)"/precompiled/mpz"]])
+  test_true(programp(MPZ))
+  test_false(clone(MPZ))
+  test_do(destruct(clone(MPZ)))
+  test_eq(clone(MPZ,99)+1,100)
+  test_eq(clone(MPZ,100)*10,1000)
+  test_eq(clone(MPZ,"100")*10.0,1000)
+  test_eq(clone(MPZ,100.0)*clone(MPZ,3),300)
+  test_eq(clone(MPZ,100.0)/4,25)
+  test_eq(clone(MPZ,42)%10,2)
+  test_eq(clone(MPZ,10)<<1,20)
+  test_eq(clone(MPZ,10)>>1,5)
+  test_eq(clone(MPZ,66)+11,77)
+  test_eq(clone(MPZ,66)-11,55)
+  test_eq(clone(MPZ,17)&18,16)
+  test_eq(clone(MPZ,17)|7,31)
+  test_eq(-clone(MPZ,17),17)
+  test_eq((~clone(MPZ,17)) & 255,0xf0)
+  test_true(stringp((string)clone(MPZ,17)))
+  test_eq((string)clone(MPZ,17),"17")
+  test_true(intp((int)clone(MPZ,17)))
+  test_eq((int)clone(MPZ,17),17)
+  test_false(clone(MPZ,0))
+  test_true(clone(MPZ,1))
+
+  define([[mpz_test_cmp]],[[
+    test_cmp(clone(MPZ,$1), $2)
+    test_cmp($1, clone(MPZ,$2))
+    test_cmp(clone(MPZ, $1), clone(MPZ, $2))
+  ]])
+
+  define([[mpz_test_type1]],[[
+    mpz_test_cmp($1,$2)
+    mpz_test_cmp($1.0,$2)
+    mpz_test_cmp("$1",$2)
+  ]])
+
+  define([[mpz_test_type2]],[[
+    mpz_test_type1($1,$2)
+    mpz_test_type1($1,$2.0)
+    mpz_test_type1($1,"$2")
+  ]])
+
+  mpz_test_type2(1,2)
+  mpz_test_type2(-2,1)
+
+]]);
+
+// ++
+test_any([[int e; e++; return e;]],1)
+test_any([[int e; ++e; return e;]],1)
+test_any([[int e; return e++;]],0)
+test_any([[int e; return ++e;]],1)
+test_any([[int e; if(e++) return 0; return e;]],1)
+
+// --
+test_any([[int e; e--; return e;]],-1)
+test_any([[int e; --e; return e;]],-1)
+test_any([[int e; return e--;]],0)
+test_any([[int e; return --e;]],-1)
+test_any([[int e; if(e--) return 0; return e;]],-1)
+
 test_compile_error_low(master()->add_precompiled_program(\"/test\",compile_string(\"int foo() { return 17; }\",\"62\")))
+
+test_any([[function f=random_seed; int t; foreach(allocate(1),t) f(t); return 1;]],1)
+test_compile([[while(0)if(0)continue;else;]])
+test_program([[int b=1,c; int a() { c=b+2; return c==3; }]])
+test_true([[ ("foobar"/"o") & ({ "foo" }) ]])
+test_any([[ array a="foo bar"/" "; return sizeof(a & ({"foo"}))]],1)
+
+// glob
+test_false(glob("foo","bar"))
+test_true(glob("foo","foo"))
+test_true(glob("f?o","foo"))
+test_true(glob("f??","foo"))
+test_true(glob("?o?","foo"))
+test_true(glob("f*","foo"))
+test_true(glob("*o","foo"))
+test_false(glob("*f","foo"))
+test_false(glob("o*","foo"))
+test_false(glob("?f?","foo"))
+test_equal([[glob("?f?",({"ff","ffff","off","fff",""}))]],[[({"off","fff"})]])
+test_equal([[glob("foo*bar",({"foobar","foobargazonk","","foofoobar","fobar","fooar"}))]],[[({"foobar","foofoobar"})]])
+
+// localtime
+cond([[all_efuns()->localtime]],
+[[
+test_true(mappingp(localtime(0)))
+]])
+
+// strerror
+cond([[all_efuns()->strerror]],
+[[
+test_do(strerror(1))
+test_true(stringp(strerror(-2)||""))
+]])
+
+
+// sort
+test_equal(sort(({1,3,2,4})),({1,2,3,4}))
+test_equal(sort(({4,3,2,1})),({1,2,3,4}))
+test_equal([[lambda() {string *a=({1,2,3,4}); sort(({4,3,2,1}),a); return a; }()]],[[({4,3,2,1})]] )
+test_equal([[lambda() {string *a=({1,2,3,4}),*b=a+({}); sort(({4,3,2,1}),a,b); return b; }()]],[[({4,3,2,1})]] )
+
+
+// m_delete
+test_equal(([1:1]),m_delete(a(),0))
+test_equal(([1:1]),m_delete(([1:1,0:3]),0))
+test_any(mapping a=([1:1]); return a==m_delete(a,1),1)
+test_any([[mapping m=([]); m[1]++; return m[1];]],1)
+test_any([[mapping m=([1:1]); m[1]++; return m[1];]],2)
+test_any([[mapping m=([]); m[1]++; m[1]++; return m[1];]],2)
+
+// mapping tests
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[e]=e;
+  for(e=0;e<1000;e++) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[e]=e;
+  for(e=999;e>=0;e--) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=999;e>=0;e--) m[e]=e;
+  for(e=0;e<1000;e++) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  for(e=999;e>=0;e--) m[e]=e;
+  for(e=999;e>=0;e--) if(m[e]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) if(m[reverse(e)]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=999;e>=0;e--) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) if(m[reverse(e)]!=e) return 0;
+  return 1;
+]],1)
+
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) m_delete(m,reverse(e));
+  return sizeof(m);
+]],0)
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e+=2) m_delete(m,reverse(e));
+  for(e=0;e<1000;e+=2) if(m[reverse(e)]) return 0;
+  for(e=1;e<1000;e+=2) if(m[reverse(e)]!=e) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  for(e=0;e<1000;e++) m[reverse(e)]=e;
+  for(e=0;e<1000;e++) m[reverse(e)]++;
+  for(e=0;e<1000;e++) if(m[reverse(e)]!=e+1) return 0;
+  return 1;
+]],1)
+
+test_any([[mapping m=([]);int e;
+  mixed a,b;
+  a=allocate(1000);
+  b=allocate(1000);
+  for(e=0;e<1000;e++)
+  {
+    m[reverse(e)]=e;
+    a[e]=reverse(e);
+    b[e]=e;
+  }
+  add_efun("mtest_m",m);
+  add_efun("mtest_i",a);
+  add_efun("mtest_v",b);
+  return 1;
+]],1)
+
+
+test_eq([[sizeof(mtest_m)]],sizeof(mtest_i))
+test_equal(sort_array(indices(mtest_m)),sort_array(mtest_i))
+test_equal(sort_array(values(mtest_m)),sort_array(mtest_v))
+test_equal(mtest_m,copy_value(mtest_m))
+test_any([[int e; for(e=0;e<1000;e++) if(!equal(mtest_m[mtest_i[e] ],mtest_v[e])) return 0; return 1;]],1)
+
+
+test_any([[mapping m=([]);int e;
+  mixed a,b;
+  a=allocate(100);
+  b=allocate(100);
+  for(e=0;e<100;e++)
+  {
+    m[reverse(e-50)]=e-50;
+    a[e]=reverse(e-50);
+    b[e]=reverse(e-50);
+  }
+  add_efun("mtest_m2",m);
+  add_efun("mtest_i2",a);
+  add_efun("mtest_v2",b);
+  return 1;
+]],1)
+
+test_any([[int e;mapping q=([]),p=([]); for(e=0;e<1000;e++) { p[reverse(e)]=e; q+=([reverse(e):e]); if(!equal(sort(indices(p)),sort(indices(q)))) return 0; } return 1;]],1)
+test_any([[mapping m=([]); m+=(["foo":"bar"]); m+=(["bar":"foo"]); m+=(["foo":"foo"]); if(sizeof(m)==3) return 1; return m["foo"]=="foo" && m["bar"]=="foo"]],1)
+
+test_equal(sort(indices(mtest_m|mtest_m2)),sort(mtest_i|mtest_i2))
+test_equal(sort(indices(mtest_m&mtest_m2)),sort(mtest_i&mtest_i2))
+test_equal(sort(indices(mtest_m-mtest_m2)),sort(mtest_i-mtest_i2))
+test_equal(sort(indices(mtest_m^mtest_m2)),sort(mtest_i^mtest_i2))
+test_equal(sort(indices(mtest_m2|mtest_m)),sort(mtest_i2|mtest_i))
+test_equal(sort(indices(mtest_m2&mtest_m)),sort(mtest_i2&mtest_i))
+test_equal(sort(indices(mtest_m2-mtest_m)),sort(mtest_i2-mtest_i))
+test_equal(sort(indices(mtest_m2^mtest_m)),sort(mtest_i2^mtest_i))
+
+define(MTEST,[[test_equal([[mkmapping(indices(allocate($1)),reverse(indices(allocate($1))))]],[[mkmapping(reverse(indices(allocate($1))),indices(allocate($1)))]])]])
+
+MTEST(0)
+MTEST(1)
+MTEST(2)
+MTEST(3)
+MTEST(5)
+MTEST(8)
+MTEST(13)
+MTEST(21)
+MTEST(34)
+MTEST(55)
+
+define([[MTEST]])
+
+test_do(add_efun("mtest_m"); add_efun("mtest_i"); add_efun("mtest_v");)
+test_do(add_efun("mtest_m2"); add_efun("mtest_i2"); add_efun("mtest_v2");)
+
+// rows
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({6,7,2}))]],[[({7,8,3})]])
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({0,4,1}))]],[[({1,5,2})]])
+test_equal([[rows(({1,2,3,4,5,6,7,8,9}),({8,3,5}))]],[[({9,4,6})]])
+
+// column
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),0)]],[[({1,5,8})]])
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),1)]],[[({2,6,9})]])
+test_equal([[column(({({1,2,3}),({5,6,7}),({8,9,0})}),2)]],[[({3,7,0})]])
+
+
+// gc
+ifefun(gc,
+[[
+  test_true(intp(gc()));
+  test_any([[ gc(); array a=({0}); a[0]=a; a=0; return gc() > 0; ]],1);
+]])
+
+// gdbm
+cond( [[ master()->programs["/precompiled/gdbm"] ]],
+[[
+  define([[GDBM]],[[ (program)"/precompiled/gdbm" ]])
+  test_true(programp(GDBM))
+  test_do(destruct(clone(GDBM)))
+
+  define([[GDBMTESTS]],
+  [[
+    test_do(rm("test.gdbm"))
+    test_do(add_efun("GDBMBASE",clone(GDBM,"test.gdbm")))
+    test_true(file_stat("test.gdbm"))
+
+    GDBMNULLTEST
+    test_true(GDBMBASE->store("foo","bar"))
+    GDBMNULLTEST
+    test_equal(GDBMBASE->fetch("foo"),"bar")
+    test_do([[int e; for(e=0;e<1000;e++) GDBMBASE->store("x"+e,"y"+e)]])
+    GDBMNULLTEST
+    test_any(int e; for(e=0;e<1000;e++) if(GDBMBASE->fetch("x"+e)!="y"+e) return e; return -1,-1)
+    GDBMNULLTEST
+    test_true(GDBMBASE->store(sprintf("%'23'100000s",""),sprintf("%'32'100000s","")))
+    test_true(GDBMBASE->fetch(sprintf("%'23'100000s",""))==sprintf("%'32'100000s",""))
+    GDBMNULLTEST
+    test_equal(GDBMBASE->fetch("foo"),"bar")
+    test_any(int e; for(e=0;e<1000;e++) if(GDBMBASE->fetch("x"+e)!="y"+e) return e; return -1,-1)
+    test_true(GDBMBASE->fetch(sprintf("%'23'100000s",""))==sprintf("%'32'100000s",""))
+    test_any(int e; string k; for(k=GDBMBASE->firstkey();k;k=GDBMBASE->nextkey(k)) e++; return e,1002)
+
+    test_do(GDBMBASE->sync())
+    test_do(GDBMBASE->reorganize())
+    test_do(GDBMBASE->close())
+  ]])
+
+  define([[GDBMNULLTEST]],[[
+    test_false(GDBMBASE->fetch("slakjdfasdf"))
+  ]])
+
+  GDBMTESTS
+
+  define([[GDBMNULLTEST]],[[
+    test_false(GDBMBASE->fetch("slakjdfasdf"))
+    test_do(GDBMBASE->reorganize())
+    test_do(GDBMBASE->sync())
+    test_do(GDBMBASE->close())
+    test_do(GDBMBASE->create("test.gdbm"))
+  ]])
+
+  GDBMTESTS
+
+  test_do(rm("test.gdbm"))
+]])
 
 test_eq("\377"[0],255)
 test_do(add_efun("foo",clone(class {int i;})))
@@ -83,7 +423,15 @@ test_do(signal(signum("SIGUSR1"),lambda() { add_efun("AFJLLAF",17); }))
 test_do(kill(getpid(),signum("SIGUSR1")))
 test_eq(AFJLLAF,17)
 test_do(add_efun("AFJLLAF"))
+test_do(signal(signum("SIGUSR1",0)))
 test_do(signal(signum("SIGUSR1")))
+
+// typeof
+test_eq(typeof(1),"int")
+test_eq(typeof(""),"string")
+test_eq(typeof(""[0]),"int")
+test_eq(typeof(0.0),"float")
+test_eq(typeof(all_efuns()["all_efuns"]),"mixed")
 
 // class
 test_true(programp(class {}))
@@ -112,7 +460,7 @@ test_equal(mkmapping( ({3,6,2}), ({"3","6","2"})), ([3:"3", 6:"6", 2:"2"]))
 test_equal(sum(([3:"3", 6:"6", 2:"2"])), ([3:"3", 6:"6", 2:"2"]))
 test_true(sum(([3:"3", 6:"6", 2:"2"])) != ([3:"3", 6:"6", 2:"2"]))
 
-test_true(efun::stringp(""))
+test_true(predef::stringp(""))
 test_equal([["a,b,4,7,8s,asfd,a,d,f" / ","]],[["a,b,4,7,8s,asfd,a,d,f" / ","]])
 test_any([[string *a="a,b"/","; a[0]="c"; return equal(a,({"c","b"}))]],1)
 test_true(0||1)
@@ -137,6 +485,11 @@ test_any(function bar=clone((program)"/test")->foo; return bar(),17)
 // sscanf
 test_any([[mixed a; return sscanf("11","%d",a)]],1)
 test_any([[mixed a; sscanf("11","%d",a); return a]],11)
+test_any([[mixed a; sscanf("11","%o",a); return a]],011)
+test_any([[mixed a; sscanf("11","%x",a); return a]],0x11)
+test_any([[mixed a; sscanf("11","%D",a); return a]],11)
+test_any([[mixed a; sscanf("0x11","%D",a); return a]],0x11)
+test_any([[mixed a; sscanf("011","%D",a); return a]],011)
 test_any([[mixed a,b; return sscanf("11foo","%dfoo",a)]],1)
 test_any([[mixed a,b; sscanf("11foo","%dfoo",a); return a]],11)
 test_any([[mixed a,b; return sscanf("11foo","%d%s",a,b)]],2)
@@ -152,6 +505,14 @@ test_any([[mixed a,b; sscanf("abcdeFGji","%[a-z]%s",a,b); return b]],"FGji")
 test_any([[mixed a,b; return sscanf("foo-%-bar","%s-%%-%s",a,b);]],2)
 test_any([[mixed a,b; sscanf("foo-%-bar","%s-%%-%s",a,b); return a]],"foo")
 test_any([[mixed a,b; sscanf("foo-%-bar","%s-%%-%s",a,b); return b]],"bar")
+test_any([[mixed a; sscanf("ab","%2c",a); return a]],'a'*256+'b')
+test_any([[mixed a; sscanf("abc","%3c",a); return a]],'a'*256*256+'b'*256+'c')
+test_any([[mixed a; sscanf("abc","%2c",a); return a]],'a'*256+'b')
+test_any([[mixed a; sscanf("ac","%3c",a); return a]],0)
+test_any([[mixed a; sscanf("ab","%2s",a); return a]],"ab")
+test_any([[mixed a; sscanf("abc","%3s",a); return a]],"abc")
+test_any([[mixed a; sscanf("abc","%2s",a); return a]],"ab")
+test_any([[mixed a; sscanf("ac","%3s",a); return a]],0)
 
 // Basics
 test_true(1)
@@ -188,22 +549,10 @@ test_true(!(1==2))
 test_true(!(""!=""))
 test_true(""!="foo")
 
-// testing < > <= >=
-define(test_cmp,[[
-test_true($1<$2)
-test_true(!($1>$2))
-test_true($2>$1)
-test_true(!($2<$1))
-test_true($1<=$2)
-test_true(!($1>=$2))
-test_true($2>=$1)
-test_true(!($2<=$1))
-test_true($2<=$2)
-test_true($1>=$1) ]])
-
-
 test_cmp(1,2)
 test_cmp(1.0,2.0)
+test_cmp(1,2.0)
+test_cmp(1.0,2)
 test_cmp("a","b")
 test_cmp("","b")
 
@@ -246,6 +595,12 @@ test_eq("a"+"b"+"c"+"d"+"e"+"f"+"g"+"h"+"i"+"j"+"k"+"l"+"m"+"n"+"o"+"p"+"q"+"r"+
 test_eq(1.0+1.0,2.0)
 test_eq(1.0+(-1.0),0.0)
 test_eq((-1.0)+(-1.0),-2.0)
+test_eq(1.0+1,2.0)
+test_eq(1+1.0,2.0)
+test_eq(1+(-1.0),0.0)
+test_eq(1.0+(-1),0.0)
+test_eq((-1)+(-1.0),-2.0)
+test_eq((-1.0)+(-1),-2.0)
 test_equal(({1,2,3})+({4,5,6}),({1,2,3,4,5,6}))
 test_equal((<1,2,3,4>)+(<4,5,6>),(<1,2,3,4,4,5,6>))
 test_equal(([0:1,3:6])+([5:2,3:6]),([0:1,3:6,3:6,5:2]))
@@ -256,6 +611,10 @@ test_eq(10-3,7)
 test_eq(3-10,-7)
 test_eq(10.0-3.0,7.0)
 test_eq(3.0-10.0,-7.0)
+test_eq(10-3.0,7.0)
+test_eq(3-10.0,-7.0)
+test_eq(10.0-3,7.0)
+test_eq(3.0-10,-7.0)
 test_eq("foobargazonk"-"o","fbargaznk")
 test_equal(({"foo","bar","gazonk"})-({"foo","gazonk"}),({"bar"}))
 test_equal(({"c","foo","bar","gazonk","a","b",})-({"foo","gazonk"}),({"c","bar","a","b"}))
@@ -273,6 +632,12 @@ test_eq(2*2*2*2*2,32)
 test_eq(3.0*4.0,12.0)
 test_eq(4.0*3.0,12.0)
 test_eq(2.0*2.0*2.0*2.0*2.0,32.0)
+test_eq(3*4.0,12.0)
+test_eq(4*3.0,12.0)
+test_eq(2*2.0*2.0*2.0*2.0,32.0)
+test_eq(3.0*4,12.0)
+test_eq(4.0*3,12.0)
+test_eq(2.0*2*2.0*2*2.0,32.0)
 test_eq(({"foo","bar","gazonk"})*"-","foo-bar-gazonk")
 
 // testing /
@@ -284,6 +649,12 @@ test_eval_error(return 15/0)
 test_eq(12.0/3.0,4.0)
 test_eq(14.0/4.0,3.5)
 test_eq(15.0/3.0,5.0)
+test_eq(12/3.0,4.0)
+test_eq(14/4.0,3.5)
+test_eq(15/3.0,5.0)
+test_eq(12.0/3,4.0)
+test_eq(14.0/4,3.5)
+test_eq(15.0/3,5.0)
 test_eval_error(return 15.0/0.0)
 test_equal("foo-bar-gazonk"/"-",({"foo","bar","gazonk"}))
 test_equal("foobargazonk"/"",({"f","o","o","b","a","r","g","a","z","o","n","k"}))
@@ -299,6 +670,11 @@ test_eq(13.0 % 3.0,1.0)
 test_eq(14.0 % 3.0,2.0)
 test_eq(14.5 % 3.0,2.5)
 test_eq(15.0 % 3.0,0.0)
+test_eq(13 % 3.0,1.0)
+test_eq(14 % 3.0,2.0)
+test_eq(13.0 % 3,1.0)
+test_eq(14.0 % 3,2.0)
+test_eq(14.5 % 3,2.5)
 test_eval_error(return 15.0 % 0.0)
 
 // testing &&
@@ -428,6 +804,11 @@ test_eq("foo"[-100..0],"f")
 test_eq("foo"[-100..100],"foo")
 test_eq("foo"[1..0],"")
 test_eq("foo"[0..-100],"")
+test_eq("foobargazonk"[0..],"foobargazonk")
+test_eq("foobargazonk"[1..],"oobargazonk")
+test_eq("foobargazonk"[5..],"rgazonk")
+test_eq("foobargazonk"[..2],"foo")
+test_eq("foobargazonk"[..5],"foobar")
 test_equal(({1,2,3})[0..0],({1}))
 test_equal(({1,2,3})[1..2],({2,3}))
 test_equal(({1,2,3})[2..10],({3}))
@@ -487,6 +868,11 @@ test_any(while(1) if(1) break; return 1,1)
 test_any(int e; for(e=0;e<10;e++) break; return e,0)
 test_any(int e; for(e=0;e<10;e++) continue; return e,10)
 test_any(int e;string t=""; for(e=0;e<10;e++) t+=e; return t,"0123456789")
+test_any(int e;string t=""; for(e=0;e<=10;e++) t+=e; return t,"012345678910")
+test_any(int e;string t=""; for(e=9;e>0;e--) t+=e; return t,"987654321")
+test_any(int e;string t=""; for(e=9;e>=0;e--) t+=e; return t,"9876543210")
+test_any(int e;string t=""; for(e=9;e!=0;e--) t+=e;  return t,"987654321")
+test_any(int e;string t=""; for(e=2;e!=10;e++) t+=e; return t,"23456789")
 test_any(int e;string t=""; for(e=0;e>-10;e--) t+=e; return t,"0-1-2-3-4-5-6-7-8-9")
 
 // foreach
@@ -503,6 +889,8 @@ test_any(int e;string t=""; e=0; while(++e<6) t+=e; return t,"12345";)
 test_any(int e=1;string t=""; while(e<20){t+=e;e*=2;} return t,"124816";)
 
 // Switch
+test_any(switch("") { case -1: case "gazonk": return 0; } return 1,1)
+test_any(switch("") { case -2: case "gazonk": return 0; } return 1,1)
 test_any(switch("") { case 0: case "gazonk": return 0; } return 1,1)
 test_any(switch("") { case "gazonk": case 0: return 0; } return 1,1)
 test_any(switch(0) { case 0: case "gazonk": return 0; } return 1,0)
@@ -534,30 +922,30 @@ test_any(switch('9') { case "a": return 1; case "b": return 2; case "c": return 
 
 
 define(test_switch0,[[
-test_any(switch($1) { case $2: return $6; case $3: return $7; case $4: return $8; case $5: return $9; } return 0,$10)
-test_any(switch($1) { default: return 0; case $2: return $6; case $3: return $7; case $4: return $8; case $5: return $9; } return -1,$10)
-test_any(switch($1) { case $2: return $6; default: return 0; case $3: return $7; case $4: return $8; case $5: return $9; } return -1,$10)
-test_any(switch($1) { case $2: return $6; case $3: return $7; default: return 0; case $4: return $8; case $5: return $9; } return -1,$10)
-test_any(switch($1) { case $2: return $6; case $3: return $7; case $4: return $8; default: return 0; case $5: return $9; } return -1,$10)
-test_any(switch($1) { case $2: return $6; case $3: return $7; case $4: return $8; case $5: return $9; default: return 0; } return -1,$10)
+test_any(switch($1) { $2; $3; $4; $5; } return 0,$6)
+test_any(switch($1) { default: return 0; $2; $3; $4; $5; } return -1,$6)
+test_any(switch($1) { $2; default: return 0; $3; $4; $5; } return -1,$6)
+test_any(switch($1) { $2; $3; default: return 0; $4; $5; } return -1,$6)
+test_any(switch($1) { $2; $3; $4; default: return 0; $5; } return -1,$6)
+test_any(switch($1) { $2; $3; $4; $5; default: return 0; } return -1,$6)
 ]])
 
 define(test_switch1,[[
-test_switch0($1, $2,$3,$4,$5, $6,$7,$8,$9, $10)
-test_switch0($1, $2,$3,$5,$4, $6,$7,$9,$8, $10)
+test_switch0($1, $2,$3,$4,$5, $6)
+test_switch0($1, $2,$3,$5,$4, $6)
 ]])
 
 define(test_switch2,[[
-test_switch1($1, $2,$3,$4,$5, $6,$7,$8,$9, $10)
-test_switch1($1, $2,$4,$3,$5, $6,$8,$7,$9, $10)
-test_switch1($1, $2,$5,$4,$3, $6,$9,$8,$7, $10)
+test_switch1($1, $2,$3,$4,$5, $6)
+test_switch1($1, $2,$4,$3,$5, $6)
+test_switch1($1, $2,$5,$4,$3, $6)
 ]])
 
 define(test_switch3,[[
-test_switch2($1, $2,$3,$4,$5, 2,3,4,5, $6)
-test_switch2($1, $3,$2,$4,$5, 3,2,4,5, $6)
-test_switch2($1, $4,$3,$2,$5, 4,3,2,5, $6)
-test_switch2($1, $5,$3,$4,$2, 5,3,4,2, $6)
+test_switch2($1,case $2:return 2,case $3:return 3,case $4:return 4,case $5:return 5,$6)
+test_switch2($1,case $3:return 3,case $2:return 2,case $4:return 4,case $5:return 5,$6)
+test_switch2($1,case $4:return 4,case $3:return 3,case $2:return 2,case $5:return 5,$6)
+test_switch2($1,case $5:return 5,case $3:return 3,case $4:return 4,case $2:return 2,$6)
 ]])
 
 define(test_switch4,[[
@@ -582,9 +970,9 @@ test_any(int e; object o=clone((program)"/precompiled/file"); if(!o->open("conft
 test_any([[
 #include "conftest.h"
 ]],17)
-test_any([[
-#include <conftest.h>
-]],17)
+dnltest_any([[
+dnl#include <conftest.h>
+dnl]],17)
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
 test_true(stringp(__DATE__))
@@ -594,6 +982,12 @@ test_true(stringp(__TIME__))
 test_any([[
 #define FOOa 1
 return FOOa;
+]],1)
+
+test_any([[
+#define FOOa array
+FOOa(int) b;
+return 1;
 ]],1)
 
 test_any([[
@@ -1104,6 +1498,8 @@ test_eq(file_stat("conftest"),0)
 // - rm
 // - mkdir
 // - get_dir
+test_true(arrayp(get_dir(".")))
+
 // - cd
 // - getcwd
 test_true(stringp(getcwd()))
@@ -1120,6 +1516,8 @@ test_eq(sprintf("%o",255),"377")
 test_eq(sprintf("%x",255),"ff")
 test_eq(sprintf("%X",255),"FF")
 test_eq(sprintf("%c",255),"\377")
+test_eq(sprintf("%2c",65535),"\377\377")
+test_eq(sprintf("%3c",0xffffff),"\377\377\377")
 test_true(stringp(sprintf("%f",255.0)))
 test_true(stringp(sprintf("%g",255.0)))
 test_true(stringp(sprintf("%e",255.0)))
@@ -1180,6 +1578,12 @@ test_eq(clone((program)"/precompiled/regexp","^[^abc]$")->match("-"),1)
 test_eq(clone((program)"/precompiled/regexp","^[^abc]$")->match("a"),0)
 test_eq(clone((program)"/precompiled/regexp","^[^abc]$")->match("c"),0)
 test_eq(clone((program)"/precompiled/regexp","^a*$")->match("aaaa"),1)
+test_eq(clone((program)"/precompiled/regexp","^(a|bb)*$")->match("aabbabb"),1)
+test_eq(clone((program)"/precompiled/regexp","^(a|bb)*$")->match(""),1)
+test_eq(clone((program)"/precompiled/regexp","^(a|bb)+$")->match(""),0)
+test_eq(clone((program)"/precompiled/regexp","^(a|bb)+$")->match("aaa"),1)
+test_eq(clone((program)"/precompiled/regexp","^(a|bb)+$")->match("bbb"),0)
+test_eq(clone((program)"/precompiled/regexp","^(a|bb)+$")->match("bbaabba"),1)
 test_eq(clone((program)"/precompiled/regexp","^a|b$")->match("a"),1)
 test_eq(clone((program)"/precompiled/regexp","^a|b$")->match("b"),1)
 
@@ -1253,7 +1657,7 @@ do_test_foop(objectp,3)
 do_test_foop(functionp,4)
 do_test_foop(arrayp,5)
 do_test_foop(mappingp,6)
-do_test_foop(listp,7)
+do_test_foop(multisetp,7)
 do_test_foop(programp,8)
 
 // add_efun
@@ -1280,11 +1684,11 @@ test_true(arrayp(aggregate()))
 test_eq(sizeof(aggregate()),0)
 test_equal(aggregate(1,2,3,4),({1,2,3,4}))
 
-// - aggregate_list
-test_true(listp(aggregate_list()))
+// - aggregate_multiset
+test_true(multisetp(aggregate_multiset()))
 
 // - aggregate_mapping
-test_true(listp(aggregate_list()))
+test_true(multisetp(aggregate_multiset()))
 
 // - all_efuns
 test_true(mappingp(all_efuns()))
@@ -1357,6 +1761,13 @@ test_true(stringp(ctime(0)))
 
 // - destruct
 // FIXME put tests for destruct here.
+test_do(add_efun("PROG",compile_string("int foo() { return 1; }")));
+test_any([[object o=clone(PROG); destruct(o); return o]],0);
+test_any([[object o=clone(PROG); destruct(o); return objectp(o)]],0);
+test_any([[object *o=({clone(PROG)}); destruct(o[0]); return o-({0}) ]],({}));
+test_any([[mapping o=(["foo":clone(PROG)]); destruct(o["foo"]); return o["foo"]; ]],0);
+dnl test_any([[object t; mapping o=([t=clone(PROG):"foo"]); destruct(t); return sizeof(o)]],0);
+test_do([[object t,*o=({}); o+=({t=clone(PROG)}); destruct(t); o=({});]]);
 
 // - equal
 // equl is already tested by this script
@@ -1380,7 +1791,7 @@ test_eq(function_name(function_name),0)
 test_eq(function_object(a),this_object())
 test_eq(function_name(function_object),0)
 
-// - get_function (actually in simulate.lpc)
+// - get_function (actually in simulate.pike)
 test_eq(a,get_function(this_object(),"a"))
 test_eq(a,this_object()->a)
 
@@ -1398,14 +1809,14 @@ test_eq([[implode(explode("foo","o"),"o")]],"foo")
 test_eq([[implode(({"foo","bar"}),"-")]],"foo-bar")
 test_eq([[implode(({"foo",0,"bar"}),"-")]],"foo-bar")
 test_eq([[implode(({1.0,"foo",0,"bar",this_object(),([])}),"-")]],"foo-bar")
-test_eq([[implode(({"f","o","o"}))]],"foo")
+test_eq([[implode(({"f","o","o"}),"")]],"foo")
 
 // - indices
 test_equal(indices("foo"),({0,1,2}))
 test_equal(indices(({'f','o','o'})),({0,1,2}))
 test_equal(sort_array(indices(([7:3,8:9,99:12]))),({7,8,99}))
 test_equal(sort_array(indices((<7,8,99>))),({7,8,99}))
-test_equal(mklist(indices(this_object())),(<"a","b">))
+test_equal(mkmultiset(indices(this_object())),(<"a","b">))
 
 // - lower_case
 test_equal(lower_case("foo"),"foo")
@@ -1508,7 +1919,7 @@ test_search3($1,($1[1..0x7fffffff]))
 
 test_search4("SUNE")
 test_search4("-------------------+")
-test_search4("+-------------------")
+test_search4("å-------------------")
 test_search4(sprintf("%'argel-bargel glop-glyf?'2000n"))
 
 // - sizeof
@@ -1519,6 +1930,7 @@ test_eq(sizeof((<8,7,6,5,4,7>)),6)
 
 // - sleep
 test_do(sleep(1))
+test_do(sleep(0.5))
 
 // - sum
 test_eq(sum(1,1),2)
@@ -1561,7 +1973,7 @@ test_equal(values("foo"),({'f','o','o'}))
 test_equal(values(({'f','o','o'})),({'f','o','o'}))
 test_equal(sort_array(values(([7:3,8:9,99:12]))),({3,9,12}))
 test_equal(values((<7,8,99>)),({1,1,1}))
-test_equal(mklist(values(this_object())),(<a,b>))
+test_equal(mkmultiset(values(this_object())),(<a,b>))
 
 // - zero_type
 test_eq(zero_type(0),0)
@@ -1569,6 +1981,10 @@ test_eq(zero_type(([])[7]),1)
 
 // - call_out, call_out_info, remove_call_out, find_call_out
 test_do(call_out(a,100000))
+test_true(call_out(lambda() {},1000.0))
+test_true(remove_call_out(call_out(lambda() {},1000.0)) != -1)
+test_true(find_call_out(call_out(lambda() {},1000.0)) > 990)
+test_false(zero_type(remove_call_out(call_out(lambda() {},1000.0))))
 test_true(arrayp(call_out_info()))
 test_true(sizeof(call_out_info()) > 0)
 test_true(call_out_info()[-1][0] > 1)
@@ -1577,11 +1993,6 @@ test_eq(find_call_out(a),-1)
 test_true(zero_type(find_call_out(a)))
 test_do(remove_call_out(call_out_info()[-1][2]))
 test_true(!sizeof(call_out_info()) || function_name(call_out_info()[-1][2])!="a")
-
-// m_delete
-test_equal(([1:1]),m_delete(a(),0))
-test_equal(([1:1]),m_delete(([1:1,0:3]),0))
-test_any(mapping a=([1:1]); return a==m_delete(a,1),1)
 
 test_program(int b=10; mixed a() { return 1; })
 test_program(mixed b=10; mixed a() { return 1;})

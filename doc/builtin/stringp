@@ -11,5 +11,5 @@ KEYWORDS
 	string
 
 SEE ALSO
-	intp, listp, arrayp, programp, objectp, regexpp,
+	intp, multisetp, arrayp, programp, objectp,
 	mappingp, floatp, functionp

@@ -5,7 +5,7 @@ SYNTAX
 	program compile_file(string filename);
 
 DESCRIPTION
-	This function will compile the filename to an LPC program that can
+	This function will compile the filename to an Pike program that can
 	later be used for cloning.
 
 KEYWORDS

@@ -1,0 +1,163 @@
+discdate.o: /home/hubbe/pike/src/modules/spider/discdate.c \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h machine.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h
+encode_decode.o: /home/hubbe/pike/src/modules/spider/encode_decode.c \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h machine.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/multiset.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h
+http_parse.o: /home/hubbe/pike/src/modules/spider/http_parse.c \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h machine.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h
+lock.o: /home/hubbe/pike/src/modules/spider/lock.c
+sdebug.o: /home/hubbe/pike/src/modules/spider/sdebug.c \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h machine.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h
+shared_mem_mapping.o: \
+ /home/hubbe/pike/src/modules/spider/shared_mem_mapping.c
+sharedmem.o: /home/hubbe/pike/src/modules/spider/sharedmem.c \
+ /home/hubbe/pike/src/modules/spider/sharedmem.h
+spider.o: /home/hubbe/pike/src/modules/spider/spider.c machine.h \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h \
+ /home/hubbe/pike/src/modules/spider/lock.h \
+ /home/hubbe/pike/src/modules/spider/defs.h \
+ /home/hubbe/pike/src/modules/spider/streamed_parser.h
+stardate.o: /home/hubbe/pike/src/modules/spider/stardate.c \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h machine.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h
+streamed_parser.o: \
+ /home/hubbe/pike/src/modules/spider/streamed_parser.c \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h machine.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h \
+ /home/hubbe/pike/src/modules/spider/streamed_parser.h
+tree.o: /home/hubbe/pike/src/modules/spider/tree.c machine.h \
+ /home/hubbe/pike/src/modules/spider/stralloc.h \
+ /home/hubbe/pike/src/modules/spider/types.h \
+ /home/hubbe/pike/src/modules/spider/global.h \
+ /home/hubbe/pike/src/modules/spider/config.h \
+ /home/hubbe/pike/src/modules/spider/port.h \
+ /home/hubbe/pike/src/modules/spider/macros.h \
+ /home/hubbe/pike/src/modules/spider/object.h \
+ /home/hubbe/pike/src/modules/spider/svalue.h \
+ /home/hubbe/pike/src/modules/spider/constants.h \
+ /home/hubbe/pike/src/modules/spider/hashtable.h \
+ /home/hubbe/pike/src/modules/spider/las.h \
+ /home/hubbe/pike/src/modules/spider/dynamic_buffer.h \
+ /home/hubbe/pike/src/modules/spider/program.h \
+ /home/hubbe/pike/src/modules/spider/interpret.h \
+ /home/hubbe/pike/src/modules/spider/mapping.h \
+ /home/hubbe/pike/src/modules/spider/array.h \
+ /home/hubbe/pike/src/modules/spider/builtin_functions.h \
+ /home/hubbe/pike/src/modules/spider/callback.h

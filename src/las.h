@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef LAS_H
@@ -16,23 +16,23 @@
 
 struct local_variable
 {
-  struct lpc_string *name;
-  struct lpc_string *type;
+  struct pike_string *name;
+  struct pike_string *type;
 };
 
 struct locals
 {
   struct locals *next;
-  struct lpc_string *current_type;
-  struct lpc_string *current_return_type;
+  struct pike_string *current_type;
+  struct pike_string *current_return_type;
   int current_number_of_locals;
   int max_number_of_locals;
   struct local_variable variable[MAX_LOCAL];
 };
 
 void yyerror(char *s);
-int islocal(struct lpc_string *str);
-int verify_declared(struct lpc_string *str);
+int islocal(struct pike_string *str);
+int verify_declared(struct pike_string *str);
 
 struct node_s
 {
@@ -40,7 +40,7 @@ struct node_s
   INT16 line_number;
   INT16 node_info;
   INT16 tree_info;
-  struct lpc_string *type;
+  struct pike_string *type;
   struct node_s *parent;
   union 
   {
@@ -80,14 +80,15 @@ int cdr_is_node(node *n);
 INT32 count_args(node *n);
 void free_node(node *n);
 node *mknode(short token,node *a,node *b);
-node *mkstrnode(struct lpc_string *str);
+node *mkstrnode(struct pike_string *str);
 node *mkintnode(int nr);
 node *mkfloatnode(FLOAT_TYPE foo);
 node *mkapplynode(node *func,node *args);
 node *mkefuncallnode(char *function, node *args);
+node *mkopernode(char *oper_id, node *arg1, node *arg2);
 node *mklocalnode(int var);
 node *mkidentifiernode(int i);
-node *mkcastnode(struct lpc_string *type,node *n);
+node *mkcastnode(struct pike_string *type,node *n);
 int node_is_eq(node *a,node *b);
 node *mkconstantsvaluenode(struct svalue *s);
 node *mkliteralsvaluenode(struct svalue *s);
@@ -97,11 +98,13 @@ int is_const(node *n);
 int node_is_tossable(node *n);
 int node_is_true(node *n);
 int node_is_false(node *n);
+node **last_cmd(node **a);
+node **my_get_arg(node **a,int n);
 void print_tree(node *n);
 struct used_vars;
 void fix_type_field(node *n);
 int eval_low(node *n);
-void dooptcode(struct lpc_string *name,node *n, int args);
+void dooptcode(struct pike_string *name,node *n, int args);
 INT32 get_opt_info();
 /* Prototypes end here */
 

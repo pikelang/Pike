@@ -2,10 +2,15 @@ NAME
 	m_sizeof - Return the size of a mapping
 
 SYNTAX
+	#include <simulate.h>
+
 	int m_sizeof(mapping m);
 
 DESCRIPTION
-	This function is equal to builtin/sizeof.
+	This function is equal to sizeof.
+
+KEYWORDS
+	mapping
 
 SEE ALSO
 	builtin/sizeof

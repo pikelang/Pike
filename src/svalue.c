@@ -1,19 +1,25 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+#include "main.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
 #include "mapping.h"
-#include "list.h"
+#include "multiset.h"
 #include "object.h"
 #include "program.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "error.h"
 #include "dynamic_buffer.h"
+#include "interpret.h"
+
+
+struct svalue dest_ob_zero = { T_INT, 0, 0 };
+
 
 /*
  * This routine frees a short svalue given a pointer to it and
@@ -40,8 +46,8 @@ void free_short_svalue(union anything *s,TYPE_T type)
 	really_free_mapping(tmp.mapping);
 	break;
 
-      case T_LIST:
-	really_free_list(tmp.list);
+      case T_MULTISET:
+	really_free_multiset(tmp.multiset);
 	break;
 
       case T_OBJECT:
@@ -93,8 +99,8 @@ void free_svalue(struct svalue *s)
 #endif
 	break;
 
-      case T_LIST:
-	really_free_list(s->u.list);
+      case T_MULTISET:
+	really_free_multiset(s->u.multiset);
 #ifdef DEBUG
 	s->type = 99;
 #endif
@@ -139,47 +145,41 @@ void free_svalue(struct svalue *s)
  * We put this routine here so the compiler can optimize the call
  * inside the loop if it wants to
  */
-void free_svalues(struct svalue *s,INT32 num)
+void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
 {
-  while(--num >= 0) free_svalue(s++);
-}
-
-void free_short_svalues(union anything *s,INT32 num,TYPE_T type)
-{
-  union anything tmp;
-#ifdef DEBUG
-  int e;
-  for(e=0;e<num;e++)
-    check_refs2(s+e,type);
-#endif
-
-#define PRE \
-  for(;--num >= 0;s++) { \
-    if(s->refs && --*(s->refs) <= 0) { \
-      tmp=*s; \
-      s->refs=0
-
-#define POST }}break
-
-
-
-  switch(type)
+  switch(type_hint)
   {
-    case T_ARRAY: PRE; really_free_array(tmp.array); POST;
-    case T_MAPPING: PRE; really_free_mapping(tmp.mapping); POST;
-    case T_LIST: PRE; really_free_list(tmp.list); POST;
-    case T_OBJECT: PRE; really_free_object(tmp.object); POST;
-    case T_PROGRAM: PRE; really_free_program(tmp.program); POST;
-    case T_STRING: PRE; really_free_string(tmp.string); POST;
+  case 0:
+  case BIT_INT:
+  case BIT_FLOAT:
+  case BIT_FLOAT | BIT_INT:
+    return;
 
-    case T_INT:
-    case T_FLOAT:
-      break;
+#define DOTYPE(X,Y,Z) case X:while(--num>=0) { Y(s->u.Z); s++; }return
+    DOTYPE(BIT_STRING, free_string, string);
+    DOTYPE(BIT_ARRAY, free_array, array);
+    DOTYPE(BIT_MAPPING, free_mapping, mapping);
+    DOTYPE(BIT_MULTISET, free_multiset, multiset);
+    DOTYPE(BIT_OBJECT, free_object, object);
+    DOTYPE(BIT_PROGRAM, free_program, program);
 
-#ifdef DEBUG
-    default:
-      fatal("Bad type in free_short_svalues.\n");
-#endif
+  case BIT_FUNCTION:
+    while(--num>=0)
+    {
+      if(s->u.refs[0]--==0)
+      {
+	if(s->subtype == -1)
+	  really_free_callable(s->u.efun);
+	else
+	  really_free_object(s->u.object);
+      }
+      s++;
+    }
+    return;
+
+#undef DOTYPE
+  default:
+    while(--num >= 0) free_svalue(s++);
   }
 }
 
@@ -196,11 +196,29 @@ void assign_svalue_no_free(struct svalue *to,
 
 void assign_svalues_no_free(struct svalue *to,
 			    struct svalue *from,
-			    INT32 num)
+			    INT32 num,
+			    INT32 type_hint)
 {
+  if((type_hint & ~(BIT_INT | BIT_FLOAT))==0)
+  {
+    MEMCPY((char *)to, (char *)from, sizeof(struct svalue) * num);
+    return;
+  }
+
+  if((type_hint & (BIT_INT | BIT_FLOAT)==0))
+  {
+    while(--num > 0)
+    {
+      struct svalue tmp;
+      tmp=*(from++);
+      *(to++)=tmp;
+      tmp.u.refs++;
+    }
+    return;
+  }
+
   while(--num >= 0) assign_svalue_no_free(to++,from++);
 }
-
 
 void assign_svalue(struct svalue *to, struct svalue *from)
 {
@@ -208,10 +226,13 @@ void assign_svalue(struct svalue *to, struct svalue *from)
   assign_svalue_no_free(to,from);
 }
 
-void assign_svalues(struct svalue *to, struct svalue *from, INT32 num)
+void assign_svalues(struct svalue *to,
+		    struct svalue *from,
+		    INT32 num,
+		    TYPE_FIELD types)
 {
-  free_svalues(to,num);
-  assign_svalues_no_free(to,from,num);
+  free_svalues(to,num,BIT_MIXED);
+  assign_svalues_no_free(to,from,num,types);
 }
 
 void assign_to_short_svalue(union anything *u,
@@ -259,14 +280,6 @@ void assign_to_short_svalue_no_free(union anything *u,
   }
 }
 
-void assign_to_short_svalues_no_free(union anything *u,
-				     TYPE_T type,
-				     struct svalue *s,
-				     INT32 num)
-{
-  while(--num >= 0) assign_to_short_svalue_no_free(u++,type,s++);
-}
-
 
 void assign_from_short_svalue_no_free(struct svalue *s,
 					     union anything *u,
@@ -289,44 +302,6 @@ void assign_from_short_svalue_no_free(struct svalue *s,
   }else{
     s->type=type;
     s->u=*u;
-  }
-}
-
-void assign_from_short_svalues_no_free(struct svalue *s,
-				       union anything *u,
-				       TYPE_T type,
-				       INT32 num)
-{
-  check_type(type);
-    
-  if(type <= MAX_REF_TYPE)
-  {
-    while(--num >= 0)
-    {
-      check_refs2(u,type);
-
-      s->u=*u;
-      if(u->refs)
-      {
-	s->type=type;
-	u->refs[0]++;
-      }else{
-	s->type=T_INT;
-	s->subtype=NUMBER_NUMBER;
-      }
-      s++;
-      u++;
-    }
-  }
-  else
-  {
-    while(--num >= 0)
-    {
-      s->type=type;
-      s->u=*u;
-      s++;
-      u++;
-    }
   }
 }
 
@@ -360,26 +335,80 @@ void assign_short_svalue(union anything *to,
   }
 }
 
-void assign_short_svalues_no_free(union anything *to,
-				 union anything *from,
-				 TYPE_T type,
-				 INT32 num)
+unsigned INT32 hash_svalue(struct svalue *s)
 {
-  union anything tmp;
-  check_type(type);
+  unsigned INT32 q;
 
-  if(type <= MAX_REF_TYPE)
+  check_type(s->type);
+  check_refs(s);
+
+  switch(s->type)
   {
-    while(--num >= 0)
+  case T_OBJECT:
+    if(!s->u.object->prog)
     {
-      check_refs2(from,type);
-
-      *(to++) = tmp = *(from++);
-      if(tmp.refs) tmp.refs[0]++;
+      q=0;
+      break;
     }
-  }else{
-    MEMCPY((char *)to, (char *)from, num*sizeof(union anything *));
+
+    if(s->u.object->prog->lfuns[LFUN___HASH] != -1)
+    {
+      safe_apply_low(s->u.object, s->u.object->prog->lfuns[LFUN___HASH], 0);
+      if(sp[-1].type == T_INT)
+      {
+	q=sp[-1].u.integer;
+      }else{
+	q=0;
+      }
+      pop_stack();
+      break;
+    }
+
+  default:      q=(unsigned INT32)((long)s->u.refs >> 2);
+  case T_INT:   q=s->u.integer; break;
+  case T_FLOAT: q=(unsigned INT32)(s->u.float_number * 16843009.731757771173); break;
   }
+  q+=q % 997;
+  q+=((q + s->type) * 9248339);
+  
+  return q;
+}
+
+int svalue_is_true(struct svalue *s)
+{
+  unsigned INT32 q;
+  check_type(s->type);
+  check_refs(s);
+
+  switch(s->type)
+  {
+  case T_INT:
+    if(s->u.integer) return 1;
+    return 0;
+
+  case T_FUNCTION:
+    if(!s->u.object->prog) return 0;
+    return 1;
+
+  case T_OBJECT:
+    if(!s->u.object->prog) return 0;
+
+    if(s->u.object->prog->lfuns[LFUN_NOT]!=-1)
+    {
+      safe_apply_low(s->u.object,s->u.object->prog->lfuns[LFUN_NOT],0);
+      if(sp[-1].type == T_INT && sp[-1].u.integer == 0)
+      {
+	pop_stack();
+	return 1;
+      } else {
+	return 0;
+      }
+    }
+
+  default:
+    return 1;
+  }
+    
 }
 
 int is_eq(struct svalue *a, struct svalue *b)
@@ -389,14 +418,61 @@ int is_eq(struct svalue *a, struct svalue *b)
   check_refs(a);
   check_refs(b);
 
-  check_destructed(a);
-  check_destructed(b);
+  safe_check_destructed(a);
+  safe_check_destructed(b);
 
-  if (a->type != b->type) return 0;
+  if (a->type != b->type)
+  {
+    if(a->type == T_OBJECT)
+    {
+      if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
+      {
+      a_is_obj:
+	assign_svalue_no_free(sp, b);
+	sp++;
+	apply_lfun(a->u.object, LFUN_EQ, 1);
+	if(IS_ZERO(sp-1))
+	{
+	  pop_stack();
+	  return 0;
+	}else{
+	  pop_stack();
+	  return 1;
+	}
+      }
+    }
+
+    if(b->type == T_OBJECT)
+    {
+      if(b->u.object->prog->lfuns[LFUN_EQ] != -1)
+      {
+      b_is_obj:
+	assign_svalue_no_free(sp, a);
+	sp++;
+	apply_lfun(b->u.object, LFUN_EQ, 1);
+	if(IS_ZERO(sp-1))
+	{
+	  pop_stack();
+	  return 0;
+	}else{
+	  pop_stack();
+	  return 1;
+	}
+      }
+    }
+
+    return 0;
+  }
   switch(a->type)
   {
-  case T_LIST:
   case T_OBJECT:
+    if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
+      goto a_is_obj;
+
+    if(b->u.object->prog->lfuns[LFUN_EQ] != -1)
+      goto b_is_obj;
+
+  case T_MULTISET:
   case T_PROGRAM:
   case T_ARRAY:
   case T_MAPPING:
@@ -419,7 +495,6 @@ int is_eq(struct svalue *a, struct svalue *b)
     return 0; /* make gcc happy */
   }
 }
-
 
 int low_is_equal(struct svalue *a,
 		 struct svalue *b,
@@ -454,8 +529,8 @@ int low_is_equal(struct svalue *a,
     case T_MAPPING:
       return mapping_equal_p(a->u.mapping, b->u.mapping, p);
 
-    case T_LIST:
-      return list_equal_p(a->u.list, b->u.list, p);
+    case T_MULTISET:
+      return multiset_equal_p(a->u.multiset, b->u.multiset, p);
       
     default:
       fatal("Unknown type in is_equal.\n");
@@ -497,49 +572,72 @@ int is_equal(struct svalue *a,struct svalue *b)
   return low_is_equal(a,b,0);
 }
 
-
-int is_gt(const struct svalue *a,const struct svalue *b)
+int is_lt(struct svalue *a,struct svalue *b)
 {
   check_type(a->type);
   check_type(b->type);
   check_refs(a);
   check_refs(b);
 
+  safe_check_destructed(a);
+  safe_check_destructed(b);
+
   if (a->type != b->type)
   {
+    if(a->type == T_FLOAT && b->type==T_INT)
+      return a->u.float_number < (FLOAT_TYPE)b->u.integer;
+
+    if(a->type == T_INT && b->type==T_FLOAT)
+      return (FLOAT_TYPE)a->u.integer < b->u.float_number;
+
+    if(a->type == T_OBJECT)
+    {
+    a_is_object:
+      if(!a->u.object->prog)
+	error("Comparison on destructed object.\n");
+      if(a->u.object->prog->lfuns[LFUN_LT] == -1)
+	error("Object lacks '<\n");
+      assign_svalue_no_free(sp, b);
+      sp++;
+      apply_lfun(a->u.object, LFUN_LT, 1);
+      if(IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return 0;
+      }else{
+	pop_stack();
+	return 1;
+      }
+    }
+
+    if(b->type == T_OBJECT)
+    {
+      if(!b->u.object->prog)
+	error("Comparison on destructed object.\n");
+      if(b->u.object->prog->lfuns[LFUN_GT] == -1)
+	error("Object lacks '>\n");
+      assign_svalue_no_free(sp, a);
+      sp++;
+      apply_lfun(b->u.object, LFUN_GT, 1);
+      if(IS_ZERO(sp-1))
+      {
+	pop_stack();
+	return 0;
+      }else{
+	pop_stack();
+	return 1;
+      }
+    }
+    
     error("Cannot compare different types.\n");
   }
   switch(a->type)
   {
+  case T_OBJECT:
+    goto a_is_object;
+
   default:
-    error("Bad argument 1 to '>'.\n");
-
-  case T_INT:
-    return a->u.integer > b->u.integer;
-
-  case T_STRING:
-    return my_strcmp(a->u.string, b->u.string) > 0;
-
-  case T_FLOAT:
-    return a->u.float_number > b->u.float_number;
-  }
-}
-
-int is_lt(const struct svalue *a,const struct svalue *b)
-{
-  check_type(a->type);
-  check_type(b->type);
-  check_refs(a);
-  check_refs(b);
-
-  if (a->type != b->type)
-  {
-    error("Cannot compare different types.\n");
-  }
-  switch(a->type)
-  {
-  default:
-    error("Bad arg 1 to '<'.\n");
+    error("Bad type to comparison.\n");
 
   case T_INT:
     return a->u.integer < b->u.integer;
@@ -599,7 +697,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
       }else{
 	if(s->u.object->prog)
 	{
-	  struct lpc_string *name;
+	  struct pike_string *name;
 	  name=ID_FROM_INT(s->u.object->prog,s->subtype)->name;
 	  my_binary_strcat(name->str,name->len);
 	}else{
@@ -625,8 +723,8 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
       describe_array(s->u.array, p, indent);
       break;
 
-    case T_LIST:
-      describe_list(s->u.list, p, indent);
+    case T_MULTISET:
+      describe_multiset(s->u.multiset, p, indent);
       break;
 
     case T_MAPPING:
@@ -676,9 +774,9 @@ void copy_svalues_recursively_no_free(struct svalue *to,
       to->type=T_MAPPING;
       break;
 
-    case T_LIST:
-      to->u.list=copy_list_recursively(from->u.list,p);
-      to->type=T_LIST;
+    case T_MULTISET:
+      to->u.multiset=copy_multiset_recursively(from->u.multiset,p);
+      to->type=T_MULTISET;
       break;
     }
     to++;
@@ -686,62 +784,14 @@ void copy_svalues_recursively_no_free(struct svalue *to,
   }
 }
 
-
-void copy_short_svalues_recursively_no_free(union anything *to,
-					    union anything *from,
-					    TYPE_T type,
-					    INT32 num,
-					    struct processing *p)
-{
-  check_type(type);
-  check_refs2(from,type);
-
-  switch(type)
-  {
-  default:
-    assign_short_svalues_no_free(to,from,type,num);
-    break;
-
-  case T_ARRAY:
-    while(--num >= 0)
-    {
-      to->array=from->array?copy_array_recursively(from->array,p):0;
-      from++;
-      to++;
-    }
-    break;
-
-  case T_MAPPING:
-    while(--num >= 0)
-    {
-      to->mapping=from->mapping?copy_mapping_recursively(from->mapping,p):0;
-      from++;
-      to++;
-    }
-    break;
-
-  case T_LIST:
-    while(--num >= 0)
-    {
-      to->list=from->list?copy_list_recursively(from->list,p):0;
-      from++;
-      to++;
-    }
-    break;
-  }
-}
-
 #ifdef DEBUG
 void check_short_svalue(union anything *u,TYPE_T type)
 {
+  static inside=0;
+
   check_type(type);
   check_refs2(u,type);
   if(!u->refs) return;
-
-  if(type <= MAX_REF_TYPE)
-  {
-    checked((void *) u->refs,1);
-  }
 
   switch(type)
   {
@@ -749,6 +799,23 @@ void check_short_svalue(union anything *u,TYPE_T type)
     if(!debug_findstring(u->string))
       fatal("Shared string not shared!\n");
     break;
+
+  default:
+    if(d_flag > 50)
+    {
+      if(inside) return;
+      inside=1;
+
+      switch(type)
+      {
+      case T_MAPPING: check_mapping(u->mapping); break;
+      case T_ARRAY: check_array(u->array); break;
+      case T_PROGRAM: check_program(u->program); break;
+/*      case T_OBJECT: check_object(u->object); break; */
+/*      case T_MULTISET: check_multiset(u->multiset); break; */
+      }
+      inside=0;
+    }
   }
 }
 
@@ -759,3 +826,134 @@ void check_svalue(struct svalue *s)
 }
 
 #endif
+
+#ifdef GC2
+TYPE_FIELD gc_check_svalues(struct svalue *s, int num)
+{
+  INT32 e;
+  TYPE_FIELD f;
+  f=0;
+  for(e=0;e<num;e++,s++)
+  {
+    switch(s->type)
+    {
+    case T_FUNCTION:
+      if(s->subtype == -1) break;
+
+    case T_OBJECT:
+      if(s->u.object->prog)
+      {
+	gc_check(s->u.object);
+      }else{
+	free_svalue(s);
+	s->type=T_INT;
+	s->u.integer=0;
+      }
+      break;
+
+    case T_PROGRAM:
+    case T_ARRAY:
+    case T_MULTISET:
+    case T_MAPPING:
+      gc_check(s->u.refs);
+      break;
+    }
+    f|= 1 << s->type;
+  }
+
+  return f;
+}
+
+void gc_check_short_svalue(union anything *u, TYPE_T type)
+{
+  if(!u->refs) return;
+  switch(type)
+  {
+  case T_OBJECT:
+    if(u->object->prog)
+    {
+      gc_check(u->object);
+    }else{
+      free_short_svalue(u,T_OBJECT);
+      u->object=0;
+    }
+    break;
+
+  case T_ARRAY:
+  case T_MULTISET:
+  case T_MAPPING:
+  case T_PROGRAM:
+    gc_check(u->refs);
+    break;
+  }
+}
+
+void gc_mark_svalues(struct svalue *s, int num)
+{
+  INT32 e;
+  for(e=0;e<num;e++,s++)
+  {
+    switch(s->type)
+    {
+    case T_ARRAY:   gc_mark_array_as_referenced(s->u.array);     break;
+    case T_MULTISET:    gc_mark_multiset_as_referenced(s->u.multiset);       break;
+    case T_MAPPING: gc_mark_mapping_as_referenced(s->u.mapping); break;
+    case T_PROGRAM: gc_mark_program_as_referenced(s->u.program); break;
+
+    case T_FUNCTION:
+      if(s->subtype == -1) break;
+
+    case T_OBJECT:
+      if(s->u.object->prog)
+      {
+	gc_mark_object_as_referenced(s->u.object);
+      }else{
+	free_svalue(s);
+	s->type=T_INT;
+	s->u.integer=0;
+      }
+      break;
+    }
+  }
+}
+
+void gc_mark_short_svalue(union anything *u, TYPE_T type)
+{
+  if(!u->refs) return;
+  switch(type)
+  {
+  case T_ARRAY:   gc_mark_array_as_referenced(u->array);     break;
+  case T_MULTISET:    gc_mark_multiset_as_referenced(u->multiset);       break;
+  case T_MAPPING: gc_mark_mapping_as_referenced(u->mapping); break;
+  case T_PROGRAM: gc_mark_program_as_referenced(u->program); break;
+
+  case T_OBJECT:
+    if(u->object->prog)
+    {
+      gc_mark_object_as_referenced(u->object);
+    }else{
+      free_short_svalue(u,T_OBJECT);
+      u->object=0;
+    }
+    break;
+  }
+}
+#endif /* GC2 */
+
+INT32 pike_sizeof(struct svalue *s)
+{
+  switch(s->type)
+  {
+  case T_STRING: return s->u.string->len;
+  case T_ARRAY: return s->u.array->size;
+  case T_MAPPING: return m_sizeof(s->u.mapping);
+  case T_MULTISET: return l_sizeof(s->u.multiset);
+  case T_OBJECT:
+    if(!s->u.object->prog)
+      error("sizeof() on destructed object.\n");
+    return s->u.object->prog->num_identifier_indexes;
+  default:
+    error("Bad argument 1 to sizeof().\n");
+    return 0; /* make apcc happy */
+  }
+}

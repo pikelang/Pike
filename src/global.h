@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef GLOBAL_H
@@ -52,22 +52,22 @@ char *alloca ();
 
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+#undef HAVE_STDLIB_H
 #endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#undef HAVE_UNISTD_H
 #endif
 
 #ifdef HAVE_STRING_H
 #include <string.h>
+#undef HAVE_STRING_H
 #endif
 
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
-#endif
-
-#ifdef DEBUG
-#include "debug.h"
+#undef HAVE_MEMORY_H
 #endif
 
 #if defined(__GNUC__) && !defined(DEBUG) && !defined(lint)

@@ -3,12 +3,12 @@
 #include "types.h"
 #include "macros.h"
 #include "object.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "builtin_efuns.h"
+#include "builtin_functions.h"
 
 #include "streamed_parser.h"
 
@@ -177,16 +177,18 @@ void streamed_parser_set_data( INT32 args )
 
 static int handle_tag( struct svalue *data_arg )
 {
-  int lookup;
+  struct svalue *fun;
 
-  assign_svalue_no_free( sp, data_arg );
-  sp++;
-  lookup = set_lookup( DATA->start_tags->ind, sp-3 );
-  apply_svalue( ITEM( DATA->start_tags->val ) + lookup, 3 );
+  push_svalue(data_arg);
+  if(!(fun = low_mapping_lookup( DATA->start_tags, sp-3 )))
+    error("Error in streamed parser.\n");
+
+  apply_svalue(fun, 3);
+
   if (sp[-1].type == T_STRING)
-    return 1;
-  else
   {
+    return 1;
+  } else {
     pop_stack();
     return 0;
   }
@@ -194,12 +196,13 @@ static int handle_tag( struct svalue *data_arg )
 
 static int handle_content_tag( struct svalue *data_arg )
 {
-  int lookup;
+  struct svalue *fun;
 
-  assign_svalue_no_free( sp, data_arg );
-  sp++;
-  lookup = set_lookup( DATA->content_tags->ind, sp-4 );
-  apply_svalue( ITEM( DATA->content_tags->val ) + lookup, 4 );
+  push_svalue(data_arg);
+  if(!(fun = low_mapping_lookup( DATA->content_tags, sp-3 )))
+    error("Error in streamed parser.\n");
+
+  apply_svalue(fun, 3);
   if (sp[-1].type == T_STRING)
     return 1;
   else
@@ -211,15 +214,18 @@ static int handle_content_tag( struct svalue *data_arg )
 
 static int handle_end_tag( struct svalue *data_arg )
 {
-  int lookup;
+  struct svalue *fun;
 
-  lookup = set_lookup( DATA->start_tags->ind, sp-1 );
+  fun = low_mapping_lookup( DATA->start_tags, sp-1);
+
+  /* NB: fun would not be valid if the value popped here is an object,
+   * fortunately it is not. */
   pop_stack();
-  assign_svalue_no_free( sp, data_arg );
-  sp++;
-  if (lookup != -1)
+
+  push_svalue(data_arg);
+  if(fun)
   {
-    apply_svalue( ITEM( DATA->start_tags->val ) + lookup, 1 );
+    apply_svalue(fun, 1);
     if (sp[-1].type == T_STRING)
       return 1;
     else
@@ -335,7 +341,7 @@ void streamed_parser_parse( INT32 args )
 	  ind2 = c-1;
 	push_string( make_shared_binary_string( str + ind, ind2 - ind ) );
 	f_lower_case( 1 );
-	if (list_member( DATA->end_tags, sp-1 ))
+	if (multiset_member( DATA->end_tags, sp-1 ))
 	{
 	  if (handle_end_tag( data_arg ))
 	  {
@@ -397,14 +403,14 @@ void streamed_parser_parse( INT32 args )
        case WS:
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
 	f_lower_case( 1 );
-	if (list_member( DATA->start_tags, sp-1 ))
+	if (multiset_member( DATA->start_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  state = TAG_WS;
 	  sp_tag_save = sp-1;
 	  content_tag = 0;
 	}
-	else if (list_member( DATA->content_tags, sp-1 ))
+	else if (multiset_member( DATA->content_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  state = TAG_WS;
@@ -420,7 +426,7 @@ void streamed_parser_parse( INT32 args )
        case '>':
 	push_string( make_shared_binary_string( str + ind, c - ind ) );
 	f_lower_case( 1 );
-	if (list_member( DATA->start_tags, sp-1 ))
+	if (multiset_member( DATA->start_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  if (handle_tag( data_arg ))
@@ -437,7 +443,7 @@ void streamed_parser_parse( INT32 args )
 	    ;
 #endif
 	}
-	else if (list_member( DATA->content_tags, sp-1 ))
+	else if (multiset_member( DATA->content_tags, sp-1 ))
 	{
 	  f_aggregate_mapping( 0 );
 	  ind2 = c+1;

@@ -1,0 +1,15 @@
+NAME
+	continue - continue a loop
+
+SYNTAX
+	continue
+
+DESCRIPTION
+	Continue work similarly to break only it does't finish the loop,
+	it just aborts the rest of this turn in the loop. 
+
+KEYWORDS
+	control
+
+SEE ALSO
+	do-while, while, for

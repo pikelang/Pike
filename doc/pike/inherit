@@ -1,0 +1,52 @@
+NAME
+	inherit - use definitions from another program
+
+SYNTAX
+	inherit "<program name>";
+	or
+	inherit "<program name>" : local_name;
+
+DESCRIPTION
+	Inherit copies the global identifiers (functions and global variables)
+	from the named program. These functions and variables can then be 
+	used as	if they were defined in this program. All the inherited
+	identifiers that was no declared as no_mask in the inherited program
+	can be also be redefined. The redefinition will not only
+	affect functions following the redefinition, but all functions in
+	this program, including the inherited ones.
+
+	Even if an identifier is redefined you can still access the original
+	though. Prepending the identifier name with :: will return the original
+	identifier, OR an array of all inherited identifiers with that name.
+
+	You can also use the local_name to access a specific identifier, just
+	prepend it like 'local_name::identifier'. This will return the named
+	identifer in the program inherited with the given local_name. If no
+	local_name was given to inherit , the last part of the path in the
+	program name will be used as local_name.
+
+	Inherit calls master()->cast_to_program(<program name>) to get the
+	program to inherit. For this reason there can be no inherits in the
+	master object.
+
+	Inherit is not an expression or statement, it is a toplevel construct
+	and must not be written inside a function body.
+
+EXAMPLES
+	/* This is file hworld.pike */
+	int hello_world() { write("Hello world.\n"); }
+
+	/* This is the file hello_world.pike */
+	inherit "hworld.pike";
+	
+	int main()
+	{
+	  hello_world();
+	  exit(0);
+	}
+
+KEYWORDS
+	pike
+
+SEE ALSO
+	class

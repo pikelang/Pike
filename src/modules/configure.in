@@ -1,0 +1,50 @@
+AC_INIT(module_dir_marker)
+
+AC_SET_MAKE
+
+dirs=
+MODULE_OBJS=
+module_names=
+for a in `(cd $srcdir ; echo *)`
+do
+  if test "$a" != "CVS" -a "$a" != "RCS" ; then
+    if test -d "$srcdir/$a" ; then
+      dirs="$dirs $a"
+      MODULE_OBJS="$MODULE_OBJS $a/$a.a"
+      module_names="$module_names $a"
+    fi
+  fi
+done
+
+AC_SUBST(MODULE_OBJS)
+AC_CONFIG_SUBDIRS($dirs)
+
+AC_OUTPUT(Makefile,
+[
+echo creating modlist.h
+(
+echo "void init_main_efuns(void);"
+echo "void init_main_programs(void);"
+echo "void exit_main(void);"
+
+for a in $dirs
+do
+  echo "void init_"$a"_efuns(void);"
+  echo "void init_"$a"_programs(void);"
+  echo "void exit_"$a"(void);"
+done
+echo ""
+echo "struct module module_list UGLY_WORKAROUND={"
+
+echo "  { \"main\", init_main_efuns, init_main_programs, exit_main, 0 }"
+for a in $dirs
+do
+  echo " ,{ \"$a\", init_"$a"_efuns, init_"$a"_programs, exit_"$a", 0 }"
+done
+echo "};" 
+) > ../modlist.h
+]
+,
+dirs="$module_names"
+)
+

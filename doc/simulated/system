@@ -2,6 +2,8 @@ NAME
 	system - run an external program
 
 SYNTAX
+	#include <process.h>
+
 	void system(string cmd);
 
 DESCRIPTION

@@ -8,6 +8,14 @@ DESCRIPTION
 	arguments to clone() and the only operators that applies to programs
 	are == and !=.
 
+NOTA BENE
+	In Pike the term 'program' is somewhat confusing, becuase it is used
+	both to reference a complete runnable software package, and to a
+	structure in Pike containing code.
+
+KEYWORDS
+	types
+
 SEE ALSO
 	object, function, builtin/compile_file, builtin/compile_string,
 	builtin/clone

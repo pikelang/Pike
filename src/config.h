@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef CONFIG_H
@@ -9,7 +9,7 @@
 /*
  * Define the evaluator stack size, used for just about everything.
  */
-#define EVALUATOR_STACK_SIZE	50000
+#define EVALUATOR_STACK_SIZE	100000
 
 /*
  * The compiler stack is used when compiling to keep track of data.
@@ -32,6 +32,13 @@
  * Define the size of the cache that is used for method lookup.
  */
 #define FIND_FUNCTION_HASHSIZE 4711
+
+/*
+ * Undefine this to disable garabge collection
+ */
+#ifndef NO_GC
+#define GC2
+#endif
    
 
 /*

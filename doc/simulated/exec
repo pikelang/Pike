@@ -2,10 +2,12 @@ NAME
 	exec - simple way to use exece()
 
 SYNTAX
+	#include <process.h>
+
 	int exec(string file, string ... args);
 
 DESCRIPTION
-	This function destroys the uLPC parser and runs the program
+	This function destroys the Pike parser and runs the program
 	'file' instead with the arguments. If no there are no '/' in
 	the filename, the variable PATH will be consulted when looking
 	for the program. This function does not return except when

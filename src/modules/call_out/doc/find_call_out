@@ -1,0 +1,19 @@
+NAME
+	find_call_out - find a call out in the queue
+
+SYNTAX
+	int find_call_out(function f);
+	or
+	int find_call_out(mixed id);
+
+DESCRIPTION
+	This function searches the call out queue. If given a function as
+	argument, it looks for the first call out scheduled to that function.
+	The argument can also be a call out id as returned by call_out, in
+	which case that call_out will be found. (Unless it has already been
+	called.) find_call_out will then return how many seconds remains
+	before that call will be executed. If no call is found,
+	zero_type(find_call_out(f)) will return 1.
+
+SEE ALSO
+	call_out, remove_call_out, call_out_info

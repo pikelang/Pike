@@ -16,8 +16,10 @@ DESCRIPTION
 
 EXAMPLES
 	To crypt a password use:
-		crypted_password = crypt(typed_password);
+	  crypted_password = crypt(typed_password);
 	To see if the same password was used again use:
-		matched = crypt(typed_password, crypted_password);
+	  matched = crypt(typed_password, crypted_password);
 
-		
+
+KEYWORDS
+	string

@@ -1,0 +1,24 @@
+@SET_MAKE@
+
+MODULES=@subdirs@
+MODULE_OBJS=@MODULE_OBJS@
+
+MAKE_FLAGS = "prefix=$(prefix)" "exex_prefix=$(exex_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "FIXDEP=$(FIXDEP)" "DEBUGDEF=$(DEBUGDEF)"
+
+all: modules
+
+modules:
+	for a in $(MODULES) ; do ( cd $$a ; $(MAKE) $(MAKE_FLAGS) ) ; done
+	$(MAKE) linker_options
+
+linker_options: $(MODULE_OBJS)
+	( for a in $(MODULES) ; do echo modules/$$a/$$a.a ; \
+	if test -f $$a/linker_options ; then cat $$a/linker_options ; fi ; \
+	done ; ) >linker_options
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(FIXDEP) $(SRCDIR)
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done
+
+clean:
+	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done

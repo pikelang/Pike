@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef DYNAMIC_BUFFER_H
@@ -35,8 +35,8 @@ void low_init_buf_with_string(string s,dynamic_buffer *buf);
 string complex_free_buf(void);
 void toss_buffer(dynamic_buffer *buf);
 char *simple_free_buf(void);
-struct lpc_string *low_free_buf(dynamic_buffer *buf);
-struct lpc_string *free_buf(void);
+struct pike_string *low_free_buf(dynamic_buffer *buf);
+struct pike_string *free_buf(void);
 char *make_buf_space(INT32 space);
 void my_putchar(char b);
 void my_binary_strcat(const char *b,INT32 l);

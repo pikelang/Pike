@@ -1,0 +1,9 @@
+AC_INIT(call_out.c)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_SUBST(RANLIB)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
+

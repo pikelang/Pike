@@ -22,7 +22,7 @@ DESCRIPTION
 	and zero_type() will return 1 for this zero.
 
 NOTA BENE
-	This function replaces strstr and member_array from LPC4.
+	This function replaces strstr and member_array from Pike4.
 
 KEYWORDS
 	string, array, mapping

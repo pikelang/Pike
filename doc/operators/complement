@@ -1,0 +1,17 @@
+NAME
+	`~ - bitwise complement
+
+SYNTAX
+	~ a
+	or
+	int `~(int a)
+
+DESCRIPTION
+	This operator inverses all bits in an integer and returns the
+	new integer.
+
+KEYWORDS
+	operators
+
+SEE ALSO
+	`&, `|, `^

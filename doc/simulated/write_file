@@ -2,10 +2,15 @@ NAME
 	write_file - append a string to a file
 
 SYNTAX
+	#include <simulate.h>
+
 	int write_file(string file, string str)
 
 DESCRIPTION
 	Append the string str onto the file file. Returns number of bytes written.
 
+KEYWORDS
+	file
+
 SEE ALSO
-	read_file
+	read_bytes

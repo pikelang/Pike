@@ -1,12 +1,30 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef PORT_H
 #define PORT_H
 
 #include "types.h"
+
+struct timeval;
+
+#ifndef HAVE_GETTIMEOFDAY
+void GETTIMEOFDAY(struct timeval *t);
+#else
+#  ifdef GETTIMEOFDAY_TAKES_TWO_ARGS
+#    define GETTIMEOFDAY(X) gettimeofday((X),(void *)0)
+#  else
+#    define GETTIMEOFDAY gettimeofday
+#  endif
+#endif
+
+#ifndef HAVE_TIME
+time_t TIME(time_t *);
+#else
+#  define TIME time
+#endif
 
 #ifndef HAVE_STRTOL
 long STRTOL(char *str,char **ptr,int base);
@@ -66,15 +84,6 @@ int MEMCMP(const char *b,const char *a,int s);
 char *MEMCHR(char *p,char c,int e);
 #else
 #  define MEMCHR(X,Y,Z) ((char *)memchr(X,Y,Z))
-#endif
-
-#ifndef HAVE_MEMMEM
-char *MEMMEM(char *needle,
-	     SIZE_T needlelen,
-	     char *haystack,
-	     SIZE_T haystacklen);
-#else
-#  define MEMMEM memmem
 #endif
 
 #ifndef HAVE_STRCHR
@@ -174,7 +183,6 @@ static INLINE INT32 EXTRACT_INT(unsigned char *p)
 #endif
 #endif
 
-long get_current_time(void);
 unsigned long my_rand(void);
 void my_srand(int seed);
 

@@ -8,7 +8,7 @@ SYNTAX
 
 DESCRIPTION
 	Construct an array with the arguments as indices. This function
-	could be written in LPC as:
+	could be written in Pike as:
 
 	mixed *aggregate(mixed ... elems) { return elems; }
 

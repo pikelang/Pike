@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -14,8 +14,14 @@ static dynamic_buffer buff;
 char *low_make_buf_space(INT32 space,dynamic_buffer *buf)
 {
   char *ret;
+#ifdef DEBUG
+  if(!buf->s.str) fatal("ARRRRGH! Deadly Trap!\n");
+#endif
+
   if(buf->s.len+space>=buf->bufsize)
   {
+    if(!buf->bufsize) buf->bufsize=1;
+
     do{
       buf->bufsize*=2;
     }while(buf->s.len+space>=buf->bufsize);
@@ -92,9 +98,9 @@ char *simple_free_buf(void)
   return complex_free_buf().str;
 }
 
-struct lpc_string *low_free_buf(dynamic_buffer *buf)
+struct pike_string *low_free_buf(dynamic_buffer *buf)
 {
-  struct lpc_string *q;
+  struct pike_string *q;
   if(!buf->s.str) return 0;
   q=make_shared_binary_string(buf->s.str,buf->s.len);
   free(buf->s.str);
@@ -103,7 +109,7 @@ struct lpc_string *low_free_buf(dynamic_buffer *buf)
   return q;
 }
 
-struct lpc_string *free_buf(void) { return low_free_buf(&buff); }
+struct pike_string *free_buf(void) { return low_free_buf(&buff); }
 char *make_buf_space(INT32 space) { return low_make_buf_space(space,&buff); }
 void my_putchar(char b) { low_my_putchar(b,&buff); }
 void my_binary_strcat(const char *b,INT32 l) { low_my_binary_strcat(b,l,&buff); }

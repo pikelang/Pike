@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef INTERPRET_H
@@ -26,20 +26,22 @@ struct frame
 };
 
 #ifdef DEBUG
-#define check_stack() do{if(sp<evaluator_stack)fatal("Stack error.\n");}while(0)
+#define debug_check_stack() do{if(sp<evaluator_stack)fatal("Stack error.\n");}while(0)
 #else
-#define check_stack() 
+#define debug_check_stack() 
 #endif
-#define pop_stack() do{ free_svalue(--sp); check_stack(); }while(0)
+
+#define pop_stack() do{ free_svalue(--sp); debug_check_stack(); }while(0)
 #define push_program(P) sp->u.program=(P),sp++->type=T_PROGRAM
 #define push_int(I) sp->u.integer=(I),sp->type=T_INT,sp++->subtype=NUMBER_NUMBER
 #define push_mapping(M) sp->u.mapping=(M),sp++->type=T_MAPPING
 #define push_array(A) sp->u.array=(A),sp++->type=T_ARRAY
-#define push_list(L) sp->u.list=(L),sp++->type=T_LIST
+#define push_multiset(L) sp->u.multiset=(L),sp++->type=T_MULTISET
 #define push_string(S) sp->u.string=(S),sp++->type=T_STRING
 #define push_object(O) sp->u.object=(O),sp++->type=T_OBJECT
 #define push_float(F) sp->u.float_number=(F),sp++->type=T_FLOAT
 #define push_text(T) sp->u.string=make_shared_string(T),sp++->type=T_STRING
+#define push_svalue(S) (assign_svalue_no_free(sp,(S)),sp++)
 
 #define APPLY_MASTER(FUN,ARGS) \
 do{ \
@@ -66,20 +68,25 @@ do{ \
 }while(0)
 
 /* Prototypes begin here */
+void init_interpreter();
+void check_stack(INT32 size);
+void check_mark_stack(INT32 size);
 void lvalue_to_svalue_no_free(struct svalue *to,struct svalue *lval);
 void assign_lvalue(struct svalue *lval,struct svalue *from);
 union anything *get_pointer_if_this_type(struct svalue *lval, TYPE_T t);
+void print_return_value();
 void pop_n_elems(INT32 x);
+void check_threads_etc();
 void reset_evaluator();
-void f_catch(unsigned char *pc);
 struct backlog;
 void dump_backlog(void);
 int apply_low_safe_and_stupid(struct object *o, INT32 offset);
 void apply_low(struct object *o, int fun, int args);
 void safe_apply_low(struct object *o,int fun,int args);
 void safe_apply(struct object *o, char *fun ,INT32 args);
+void apply_lfun(struct object *o, int fun, int args);
 void apply_shared(struct object *o,
-		  struct lpc_string *fun,
+		  struct pike_string *fun,
 		  int args);
 void apply(struct object *o, char *fun, int args);
 void strict_apply_svalue(struct svalue *s, INT32 args);
@@ -90,7 +97,9 @@ void cleanup_interpret();
 
 extern struct svalue *sp;
 extern struct svalue **mark_sp;
-extern struct svalue evaluator_stack[EVALUATOR_STACK_SIZE];
+extern struct svalue *evaluator_stack;
+extern struct svalue **mark_stack;
 extern struct frame *fp; /* frame pointer */
+extern int stack_size;
 #endif
 

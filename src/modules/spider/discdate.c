@@ -13,13 +13,12 @@
 #include "types.h"
 #include "macros.h"
 #include "object.h"
-#include "add_efun.h"
+#include "constants.h"
 #include "interpret.h"
 #include "svalue.h"
 #include "mapping.h"
 #include "array.h"
-#include "builtin_efuns.h"
-#include "spider.h"
+#include "builtin_functions.h"
 #include <time.h>
 #include <string.h>
 #include <stdio.h>

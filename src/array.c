@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -12,10 +12,12 @@
 #include "interpret.h"
 #include "language.h"
 #include "error.h"
-#include "lpc_types.h"
+#include "pike_types.h"
 #include "fsort.h"
-#include "builtin_efuns.h"
+#include "builtin_functions.h"
 #include "memory.h"
+#include "gc.h"
+#include "main.h"
 
 struct array empty_array=
 {
@@ -25,8 +27,6 @@ struct array empty_array=
   0,                     /* Size = 0 */
   0,                     /* malloced Size = 0 */
   0,                     /* no types */
-  T_MIXED,                 /* mixed array */
-  0,                     /* no flags */
 };
 
 
@@ -36,63 +36,44 @@ struct array empty_array=
  * NOTE: the new array have zero references
  */
 
-struct array *allocate_array_no_init(INT32 size,INT32 extra_space,TYPE_T type)
+struct array *low_allocate_array(INT32 size,INT32 extra_space)
 {
   struct array *v;
+  INT32 e;
 
-  if(size == 0 && type == T_MIXED)
+  if(size == 0)
   {
     empty_array.refs++;
     return &empty_array;
   }
 
-  if(type == T_FUNCTION || type == T_MIXED)
-  {
-    v=(struct array *)malloc(sizeof(struct array_of_svalues)+
-                             (size+extra_space-1)*sizeof(struct svalue));
-    if(!v)
-      error("Couldn't allocate array, out of memory.\n");
-    v->array_type=T_MIXED;
-    /* for now, we don't know what will go in here */
-    v->type_field=BIT_MIXED;
-  }else{
-    v=(struct array *)malloc(sizeof(struct array_of_short_svalues)+
-                             (size+extra_space-1)*sizeof(union anything));
-    if(!v)
-      error("Couldn't allocate array, out of memory.\n");
-    v->array_type=type;
-    /* This array can only contain zeros and 'type' */
-    v->type_field=BIT_INT | (1 << type);
-  }
+  GC_ALLOC();
+
+  v=(struct array *)malloc(sizeof(struct array)+
+			   (size+extra_space-1)*sizeof(struct svalue));
+  if(!v)
+    error("Couldn't allocate array, out of memory.\n");
+  
+
+  /* for now, we don't know what will go in here */
+  v->type_field=BIT_MIXED | BIT_UNFINISHED;
+
   v->malloced_size=size+extra_space;
   v->size=size;
-  v->flags=0;
   v->refs=1;
   v->prev=&empty_array;
   v->next=empty_array.next;
   empty_array.next=v;
   v->next->prev=v;
 
-  return v;
-}
-
-struct array *allocate_array(INT32 size,TYPE_T type)
-{
-  INT32 e;
-  struct array *a;
-  a=allocate_array_no_init(size,0,type);
-  if(a->array_type==T_MIXED)
+  for(e=0;e<v->size;e++)
   {
-    for(e=0;e<a->size;e++)
-    {
-      ITEM(a)[e].type=T_INT;
-      ITEM(a)[e].subtype=NUMBER_NUMBER;
-      ITEM(a)[e].u.integer=0;
-    }
-  }else{
-    MEMSET((char *)SHORT_ITEM(a),0,sizeof(union anything)*a->size);
+    ITEM(v)[e].type=T_INT;
+    ITEM(v)[e].subtype=NUMBER_NUMBER;
+    ITEM(v)[e].u.integer=0;
   }
-  return a;
+
+  return v;
 }
 
 /*
@@ -109,6 +90,8 @@ static void array_free_no_free(struct array *v)
   v->next->prev=prev;
 
   free((char *)v);
+
+  GC_FREE();
 }
 
 /*
@@ -122,13 +105,13 @@ void really_free_array(struct array *v)
     fatal("Tried to free the empty_array.\n");
 #endif
 
-  if(v->array_type == T_MIXED)
-  {
-    free_svalues(ITEM(v), v->size);
-  }else{
-    free_short_svalues(SHORT_ITEM(v), v->size, v->array_type);
-  }
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(v);
+#endif
 
+  v->refs++;
+  free_svalues(ITEM(v), v->size, v->type_field);
+  v->refs--;
   array_free_no_free(v);
 }
 
@@ -142,12 +125,7 @@ void array_index_no_free(struct svalue *s,struct array *v,INT32 index)
     fatal("Illegal index in low level index routine.\n");
 #endif
 
-  if(v->array_type == T_MIXED)
-  {
-    assign_svalue_no_free(s, ITEM(v) + index);
-  }else{
-    assign_from_short_svalue_no_free(s, SHORT_ITEM(v) + index, v->array_type);
-  }
+  assign_svalue_no_free(s, ITEM(v) + index);
 }
 
 /*
@@ -161,13 +139,7 @@ void array_index(struct svalue *s,struct array *v,INT32 index)
 #endif
 
   v->refs++;
-  if(v->array_type == T_MIXED)
-  {
-    assign_svalue(s, ITEM(v) + index);
-  }else{
-    free_svalue(s);
-    assign_from_short_svalue_no_free(s, SHORT_ITEM(v) + index, v->array_type);
-  }
+  assign_svalue(s, ITEM(v) + index);
   free_array(v);
 }
 
@@ -203,12 +175,7 @@ void array_free_index(struct array *v,INT32 index)
     fatal("Illegal index in low level free index routine.\n");
 #endif
 
-  if(v->array_type == T_MIXED)
-  {
-    free_svalue(ITEM(v) + index);
-  }else{
-    free_short_svalue(SHORT_ITEM(v) + index, v->array_type);
-  }
+  free_svalue(ITEM(v) + index);
 }
 
 /*
@@ -223,22 +190,9 @@ void array_set_index(struct array *v,INT32 index, struct svalue *s)
 
   v->refs++;
   check_destructed(s);
-  if(v->array_type == T_MIXED)
-  {
-    v->type_field |= 1 << s->type;
-    assign_svalue( ITEM(v) + index, s);
-  }else if(IS_ZERO(s)){
-    v->type_field |= BIT_INT;
-    SHORT_ITEM(v)[index].refs=0;
-  }else if(v->array_type == s->type){
-    v->type_field |= 1 << s->type;
-    assign_to_short_svalue( SHORT_ITEM(v)+index, v->array_type, s);
-  }else{
-    free_array(v);
-    error("Wrong type in array assignment (%s != %s)\n",
-	  get_name_of_type(v->array_type),
-	  get_name_of_type(s->type));
-  }
+
+  v->type_field = (v->type_field & ~BIT_UNFINISHED) | 1 << s->type;
+  assign_svalue( ITEM(v) + index, s);
   free_array(v);
 }
 
@@ -267,46 +221,28 @@ struct array *array_insert(struct array *v,struct svalue *s,INT32 index)
   /* Can we fit it into the existing block? */
   if(v->refs<=1 && v->malloced_size > v->size)
   {
-    if(v->array_type == T_MIXED)
-    {
-      MEMMOVE((char *)(ITEM(v)+index+1),
-              (char *)(ITEM(v)+index),
-              (v->size-index) * sizeof(struct svalue));
-      ITEM(v)[index].type=T_INT;
+    MEMMOVE((char *)(ITEM(v)+index+1),
+	    (char *)(ITEM(v)+index),
+	    (v->size-index) * sizeof(struct svalue));
+    ITEM(v)[index].type=T_INT;
 #ifdef __CHECKER__
-      ITEM(v)[index].subtype=0;
-      ITEM(v)[index].u.refs=0;
+    ITEM(v)[index].subtype=0;
+    ITEM(v)[index].u.refs=0;
 #endif
-    }else{
-      MEMMOVE((char *)(SHORT_ITEM(v)+index+1),
-              (char *)(SHORT_ITEM(v)+index),
-              (v->size-index) * sizeof(union anything));
-      SHORT_ITEM(v)[index].refs=0;
-    }
     v->size++;
   }else{
     struct array *ret;
 
-    ret=allocate_array_no_init(v->size+1, (v->size >> 3) + 1, v->array_type);
+    ret=allocate_array_no_init(v->size+1, (v->size >> 3) + 1);
     ret->type_field = v->type_field;
 
-    if(v->array_type == T_MIXED)
-    {
-      MEMCPY(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
-      MEMCPY(ITEM(ret)+index+1, ITEM(v)+index, sizeof(struct svalue) * (v->size-index));
-      ITEM(ret)[index].type=T_INT;
+    MEMCPY(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
+    MEMCPY(ITEM(ret)+index+1, ITEM(v)+index, sizeof(struct svalue) * (v->size-index));
+    ITEM(ret)[index].type=T_INT;
 #ifdef __CHECKER__
-      ITEM(ret)[index].subtype=0;
-      ITEM(ret)[index].u.refs=0;
+    ITEM(ret)[index].subtype=0;
+    ITEM(ret)[index].u.refs=0;
 #endif
-    }else{
-      MEMCPY(SHORT_ITEM(ret), SHORT_ITEM(v), sizeof(union anything) * index);
-
-      MEMCPY(SHORT_ITEM(ret)+index+1,
-             SHORT_ITEM(v)+index,
-             sizeof(union anything) * (v->size-index));
-      SHORT_ITEM(ret)[index].refs=0;
-    }
     v->size=0;
     free_array(v);
     v=ret;
@@ -328,42 +264,26 @@ static struct array *resize_array(struct array *a, INT32 size)
     /* We should grow the array */
     if(a->malloced_size >= size)
     {
-      if(a->array_type == T_MIXED)
+      for(;a->size < size; a->size++)
       {
-	for(;a->size < size; a->size++)
-	{
-	  ITEM(a)[a->size].type=T_INT;
-	  ITEM(a)[a->size].subtype=NUMBER_NUMBER;
-	  ITEM(a)[a->size].u.integer=0;
-	}
-      }else{
-	MEMSET(SHORT_ITEM(a)+a->size,
-	       0,
-	       sizeof(union anything)*(size-a->size));
-	a->size=size;
+	ITEM(a)[a->size].type=T_INT;
+	ITEM(a)[a->size].subtype=NUMBER_NUMBER;
+	ITEM(a)[a->size].u.integer=0;
       }
+      a->type_field |= BIT_INT;
       return a;
     }else{
       struct array *ret;
-      ret=allocate_array_no_init(size, (size>>3)+1, a->array_type);
-      if(a->array_type == T_MIXED)
-      {
-	MEMCPY(ITEM(ret),ITEM(a),sizeof(struct svalue)*a->size);
-      }else{
-	MEMCPY(SHORT_ITEM(ret),SHORT_ITEM(a),sizeof(union anything)*a->size);
-      }
+      ret=allocate_array_no_init(size, (size>>3)+1);
+      MEMCPY(ITEM(ret),ITEM(a),sizeof(struct svalue)*a->size);
+      ret->type_field = a->type_field | BIT_INT;
       a->size=0;
       free_array(a);
       return ret;
     }
   }else{
     /* We should shrink the array */
-    if(a->array_type == T_MIXED)
-    {
-      free_svalues(ITEM(a)+size, a->size - size);
-    }else{
-      free_short_svalues(SHORT_ITEM(a)+size, a->size - size, a->array_type);
-    }
+    free_svalues(ITEM(a)+size, a->size - size, a->type_field);
     a->size = size;
     return a;
   }
@@ -386,27 +306,16 @@ struct array *array_shrink(struct array *v,INT32 size)
 
   if(size*2 < v->malloced_size + 4) /* Should we realloc it? */
   {
-    a=allocate_array_no_init(size,0,v->array_type);
+    a=allocate_array_no_init(size,0);
     a->type_field = v->type_field;
 
-    if(v->array_type == T_MIXED)
-    {
-      free_svalues(ITEM(v) + size, v->size - size);
-      MEMCPY(ITEM(a), ITEM(v), size*sizeof(struct svalue));
-    }else{
-      free_short_svalues(SHORT_ITEM(v) + size, v->size - size, v->array_type);
-      MEMCPY(ITEM(a), ITEM(v), size*sizeof(union anything));
-    }
+    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
+    MEMCPY(ITEM(a), ITEM(v), size*sizeof(struct svalue));
     v->size=0;
     free_array(v);
     return a;
   }else{
-    if(v->array_type == T_MIXED)
-    {
-      free_svalues(ITEM(v) + size, v->size - size);
-    }else{
-      free_short_svalues(SHORT_ITEM(v) + size, v->size - size, v->array_type);
-    }
+    free_svalues(ITEM(v) + size, v->size - size, v->type_field);
     v->size=size;
     return v;
   }
@@ -431,41 +340,24 @@ struct array *array_remove(struct array *v,INT32 index)
   if(v->size!=1 &&
      v->size*2 + 4 < v->malloced_size ) /* Should we realloc it? */
   {
-    a=allocate_array_no_init(v->size-1, 0, v->array_type);
+    a=allocate_array_no_init(v->size-1, 0);
     a->type_field = v->type_field;
 
-    if(v->array_type == T_MIXED)
-    {
-      if(index>0)
-	MEMCPY(ITEM(a), ITEM(v), index*sizeof(struct svalue));
-      if(v->size-index>1)
-	MEMCPY(ITEM(a)+index,
-	       ITEM(v)+index+1,
-	       (v->size-index-1)*sizeof(struct svalue));
-    }else{
-      if(index>0)
-	MEMCPY(SHORT_ITEM(a), SHORT_ITEM(v), index*sizeof(struct svalue));
-      if(v->size-index>1)
-	MEMCPY(SHORT_ITEM(a)+index,
-	       SHORT_ITEM(v)+index+1,
-	       (v->size-index-1)*sizeof(union anything));
-    }
+    if(index>0)
+      MEMCPY(ITEM(a), ITEM(v), index*sizeof(struct svalue));
+    if(v->size-index>1)
+      MEMCPY(ITEM(a)+index,
+	     ITEM(v)+index+1,
+	     (v->size-index-1)*sizeof(struct svalue));
     v->size=0;
     free_array(v);
     return a;
   }else{
     if(v->size-index>1)
     {
-      if(v->array_type == T_MIXED)
-      {
-	MEMMOVE((char *)(ITEM(v)+index),
-		(char *)(ITEM(v)+index+1),
-	        (v->size-index-1)*sizeof(struct svalue));
-      }else{
-	MEMMOVE((char *)(SHORT_ITEM(v)+index),
-		(char *)(SHORT_ITEM(v)+index+1),
-		(v->size-index-1)*sizeof(union anything));
-      }
+      MEMMOVE((char *)(ITEM(v)+index),
+	      (char *)(ITEM(v)+index+1),
+	      (v->size-index-1)*sizeof(struct svalue));
     }
     v->size--;
     return v;
@@ -486,42 +378,21 @@ INT32 array_search(struct array *v, struct svalue *s,INT32 start)
 
   check_destructed(s);
 
-  if(v->type_field & (1 << s->type)) /* Why search for something that is not there? */
+  /* Why search for something that is not there? */
+#ifdef DEBUG
+    if(d_flag > 1)  array_check_type_field(v);
+#endif
+
+  if(v->type_field & (1 << s->type))
   {
-    if(v->array_type == T_MIXED)
+    TYPE_FIELD t=0;
+    for(e=start;e<v->size;e++)
     {
-      TYPE_FIELD t=0;
-      for(e=start;e<v->size;e++)
-      {
-	if(is_eq(ITEM(v)+e,s)) return e;
-	t |= 1<<ITEM(v)[e].type;
-      }
-      v->type_field=t;
-      return -1;
-    }else{
-      if(v->array_type == T_FLOAT)
-      {
-	if(s->type == T_FLOAT)
-	  for(e=start;e<v->size;e++)
-	    if(SHORT_ITEM(v)[e].float_number == s->u.float_number)
-	      return e;
-	return -1;
-      }
-      if(v->array_type == s->type)
-      {
-	for(e=start;e<v->size;e++)
-	  if(SHORT_ITEM(v)[e].refs == s->u.refs)
-	    return e;
-	return -1;
-      }
-
-      if(IS_ZERO(s))
-	for(e=start;e<v->size;e++)
-	  if(!SHORT_ITEM(v)[e].refs)
-	    return e;
-
-      return -1;
+      if(is_eq(ITEM(v)+e,s)) return e;
+      t |= 1<<ITEM(v)[e].type;
     }
+    v->type_field=t;
+    return -1;
   }
 
   return -1;
@@ -546,18 +417,10 @@ struct array *slice_array(struct array *v,INT32 start,INT32 end)
     return array_shrink(v,end);
   }
 
-  a=allocate_array_no_init(end-start,0,v->array_type);
+  a=allocate_array_no_init(end-start,0);
   a->type_field = v->type_field;
 
-  if(v->array_type == T_MIXED)
-  {
-    assign_svalues_no_free(ITEM(a), ITEM(v)+start, end-start);
-  }else{
-    assign_short_svalues_no_free(SHORT_ITEM(a),
-				 SHORT_ITEM(v)+start,
-				 v->array_type,
-				 end-start);
-  }
+  assign_svalues_no_free(ITEM(a), ITEM(v)+start, end-start, v->type_field);
 
   return a;
 }
@@ -569,18 +432,10 @@ struct array *copy_array(struct array *v)
 {
   struct array *a;
 
-  a=allocate_array_no_init(v->size, 0, v->array_type);
+  a=allocate_array_no_init(v->size, 0);
   a->type_field = v->type_field;
 
-  if(v->array_type == T_MIXED)
-  {
-    assign_svalues_no_free(ITEM(a), ITEM(v), v->size);
-  }else{
-    assign_short_svalues_no_free(SHORT_ITEM(a),
-				 SHORT_ITEM(v),
-				 v->array_type,
-				 v->size);
-  }
+  assign_svalues_no_free(ITEM(a), ITEM(v), v->size, v->type_field);
 
   return a;
 }
@@ -594,39 +449,25 @@ void check_array_for_destruct(struct array *v)
   INT16 types;
 
   types = 0;
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(v);
+#endif
   if(v->type_field & (BIT_OBJECT | BIT_FUNCTION))
   {
-    if(v->array_type == T_MIXED)
+    for(e=0; e<v->size; e++)
     {
-      for(e=0; e<v->size; e++)
+      if((ITEM(v)[e].type == T_OBJECT ||
+	  (ITEM(v)[e].type == T_FUNCTION && ITEM(v)[e].subtype!=-1)) &&
+	 (!ITEM(v)[e].u.object->prog))
       {
-        if((ITEM(v)[e].type == T_OBJECT ||
-	    (ITEM(v)[e].type == T_FUNCTION && ITEM(v)[e].subtype!=-1)) &&
-	   (!ITEM(v)[e].u.object->prog))
-        {
-          free_svalue(ITEM(v)+e);
-	  ITEM(v)[e].type=T_INT;
-	  ITEM(v)[e].subtype=NUMBER_DESTRUCTED;
-	  ITEM(v)[e].u.integer=0;
+	free_svalue(ITEM(v)+e);
+	ITEM(v)[e].type=T_INT;
+	ITEM(v)[e].subtype=NUMBER_DESTRUCTED;
+	ITEM(v)[e].u.integer=0;
 
-          types |= BIT_INT;
-        }else{
-          types |= 1<<ITEM(v)[e].type;
-        }
-      }
-    }else{
-      for(e=0; e<v->size; e++)
-      {
-	if(!SHORT_ITEM(v)[e].object)
-	{
-	  types |= BIT_INT;
-	}
-	else if(!SHORT_ITEM(v)[e].object->prog)
-	{
-	  free_short_svalue(SHORT_ITEM(v)+e,v->array_type);
-	  SHORT_ITEM(v)[e].refs=0;
-	  types |= BIT_INT;
-	}
+	types |= BIT_INT;
+      }else{
+	types |= 1<<ITEM(v)[e].type;
       }
     }
     v->type_field = types;
@@ -642,45 +483,26 @@ INT32 array_find_destructed_object(struct array *v)
 {
   INT32 e;
   TYPE_FIELD types;
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(v);
+#endif
   if(v->type_field & (BIT_OBJECT | BIT_FUNCTION))
   {
-    if(v->array_type == T_MIXED)
+    types=0;
+    for(e=0; e<v->size; e++)
     {
-      types=0;
-      for(e=0; e<v->size; e++)
-      {
-        if((ITEM(v)[e].type == T_OBJECT ||
-	    (ITEM(v)[e].type == T_FUNCTION && ITEM(v)[e].subtype!=-1)) &&
-	   (!ITEM(v)[e].u.object->prog))
-	  return e;
-	types |= 1<<ITEM(v)[e].type;
-      }
-    }else{
-      types=1<<(v->array_type);
-      for(e=0; e<v->size; e++)
-      {
-	if(SHORT_ITEM(v)[e].object)
-	{
-	  if(!SHORT_ITEM(v)[e].object->prog)
-	    return e;
-	}else{
-	  types |= BIT_INT;
-	}
-      }
+      if((ITEM(v)[e].type == T_OBJECT ||
+	  (ITEM(v)[e].type == T_FUNCTION && ITEM(v)[e].subtype!=-1)) &&
+	 (!ITEM(v)[e].u.object->prog))
+	return e;
+      types |= 1<<ITEM(v)[e].type;
     }
     v->type_field = types;
   }
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(v);
+#endif
   return -1;
-}
-
-
-static short_cmpfun current_short_cmpfun;
-static union anything *current_short_array_p;
-
-static int internal_short_cmpfun(INT32 *a,INT32 *b)
-{
-  return current_short_cmpfun(current_short_array_p + *a,
-			      current_short_array_p + *b);
 }
 
 static struct svalue *current_array_p;
@@ -691,7 +513,7 @@ static int internal_cmpfun(INT32 *a,INT32 *b)
   return current_cmpfun(current_array_p + *a, current_array_p + *b);
 }
 
-INT32 *get_order(struct array *v, cmpfun fun,cmpfun_getter backfun)
+INT32 *get_order(struct array *v, cmpfun fun)
 {
   INT32 e, *current_order;
 
@@ -701,26 +523,15 @@ INT32 *get_order(struct array *v, cmpfun fun,cmpfun_getter backfun)
   current_order=(INT32 *)xalloc(v->size * sizeof(INT32));
   for(e=0; e<v->size; e++) current_order[e]=e;
 
-  if(v->array_type == T_MIXED)
-  {
-    current_array_p = ITEM(v);
-    current_cmpfun = fun;
-    fsort((char *)current_order,
-	  v->size,
-	  sizeof(INT32),
-	  (fsortfun)internal_cmpfun);
-  }else{
-    current_short_array_p = SHORT_ITEM(v);
-    current_short_cmpfun = backfun(v->array_type);
-    fsort((char *)current_order,
-	  v->size,
-	  sizeof(INT32),
-	  (fsortfun)internal_short_cmpfun);
-  }
+  current_array_p = ITEM(v);
+  current_cmpfun = fun;
+  fsort((char *)current_order,
+	v->size,
+	sizeof(INT32),
+	(fsortfun)internal_cmpfun);
 
   return current_order;
 }
-
 
 static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
 {
@@ -739,62 +550,14 @@ static int set_svalue_cmpfun(struct svalue *a, struct svalue *b)
     return a->subtype - b->subtype;
 
   case T_INT:
-    return a->u.integer - b->u.integer;
+    if(a->u.integer < b->u.integer) return -1;
+    if(a->u.integer > b->u.integer) return 1;
+    return 0;
 
   default:
     if(a->u.refs < b->u.refs) return -1;
     if(a->u.refs > b->u.refs) return 1;
     return 0;
-  }
-}
-
-static int set_anything_cmpfun_int(union anything *a, union anything *b)
-{
-  return a->integer - b->integer;
-}
-
-static int set_anything_cmpfun_ptr(union anything *a, union anything *b)
-{
-  if(a->refs < b->refs) return -1;
-  if(a->refs > b->refs) return 1;
-  return 0;
-}
-
-static int set_anything_cmpfun_float(union anything *a, union anything *b)
-{
-  if(a->float_number < b->float_number) return -1;
-  if(a->float_number > b->float_number) return 1;
-  return 0;
-}
-
-static short_cmpfun get_set_cmpfun(TYPE_T t)
-{
-  switch(t)
-  {
-  case T_FLOAT: return set_anything_cmpfun_float;
-  case T_INT: return set_anything_cmpfun_int;
-  default: return set_anything_cmpfun_ptr;
-  }
-}
-
-static int switch_anything_cmpfun_string(union anything *a, union anything *b)
-{
-  if(!a->string || !b->string)
-    return set_anything_cmpfun_ptr(a,b);
-  return my_strcmp(a->string, b->string);
-}
-
-
-static short_cmpfun get_switch_cmpfun(TYPE_T t)
-{
-  switch(t)
-  {
-  case T_INT: return set_anything_cmpfun_int;
-  case T_FLOAT: return set_anything_cmpfun_float;
-  case T_STRING: return switch_anything_cmpfun_string;
-  default:
-    error("Illegal type in switch.\n");
-    return 0; /* Make apcc happy */
   }
 }
 
@@ -804,7 +567,9 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
   switch(a->type)
   {
   case T_INT:
-    return a->u.integer - b->u.integer;
+    if(a->u.integer < b->u.integer) return -1;
+    if(a->u.integer > b->u.integer) return 1;
+    return 0;
 
   case T_FLOAT:
     if(a->u.float_number < b->u.float_number) return -1;
@@ -819,12 +584,52 @@ static int switch_svalue_cmpfun(struct svalue *a, struct svalue *b)
   }
 }
 
+static int alpha_svalue_cmpfun(struct svalue *a, struct svalue *b)
+{
+  if(a->type != b->type) return a->type - b->type;
+  switch(a->type)
+  {
+  case T_INT:
+    if(a->u.integer < b->u.integer) return -1;
+    if(a->u.integer > b->u.integer) return  1;
+    return 0;
+
+  case T_FLOAT:
+    if(a->u.float_number < b->u.float_number) return -1;
+    if(a->u.float_number > b->u.float_number) return  1;
+    return 0;
+
+  case T_STRING:
+    return my_strcmp(a->u.string, b->u.string);
+
+  case T_ARRAY:
+    if(a==b) return 0;
+    if(!a->u.array->size) return -1;
+    if(!b->u.array->size) return  1;
+    return alpha_svalue_cmpfun(ITEM(a->u.array), ITEM(b->u.array));
+    
+  default:
+    return set_svalue_cmpfun(a,b);
+  }
+}
+
+void sort_array_destructively(struct array *v)
+{
+  if(!v->size) return;
+  fsort((char *)ITEM(v),
+	v->size,
+	sizeof(struct svalue),
+	(fsortfun)alpha_svalue_cmpfun);
+}
+
+
+
 /*
- * return an 'order' suitable for making mappings, lists other sets
+ * return an 'order' suitable for making mappings and multisets
  */
 INT32 *get_set_order(struct array *a)
 {
-  return get_order(a, set_svalue_cmpfun, get_set_cmpfun);
+  return get_order(a, set_svalue_cmpfun);
 }
 
 /*
@@ -832,76 +637,74 @@ INT32 *get_set_order(struct array *a)
  */
 INT32 *get_switch_order(struct array *a)
 {
-  return get_order(a, switch_svalue_cmpfun, get_switch_cmpfun);
+  return get_order(a, switch_svalue_cmpfun);
+}
+
+
+/*
+ * return an 'order' suitable for sorting.
+ */
+INT32 *get_alpha_order(struct array *a)
+{
+  return get_order(a, alpha_svalue_cmpfun);
 }
 
 
 static INT32 low_lookup(struct array *v,
 			struct svalue *s,
-			cmpfun fun,
-			cmpfun_getter backfun)
+			cmpfun fun)
 {
   INT32 a,b,c;
   int q;
-  if(v->array_type == T_MIXED)
+
+  a=0;
+  b=v->size;
+  while(b > a)
   {
-    a=0;
-    b=v->size;
-    while(b > a)
-    {
-      c=(a+b)/2;
-      q=fun(ITEM(v)+c,s);
-
-      if(q < 0)
-	a=c+1;
-      else if(q > 0)
-	b=c;
-      else
-	return c;
-    }
-    if(a<v->size && fun(ITEM(v)+a,s)<0) a++;
-    return ~a;
-
-  }else if(s->type == v->array_type ||
-	   (IS_ZERO(s) && v->array_type != T_FLOAT)){
-    short_cmpfun fun;
-    if(IS_ZERO(s))
-      MEMSET((char *)&s->u, 0, sizeof(union anything));
-
-    fun=backfun(v->array_type);
-
-    a=0;
-    b=v->size;
-    while(b > a)
-    {
-      c=(a+b)/2;
-      q=fun(SHORT_ITEM(v)+c,&s->u);
-
-      if(q < 0)
-	a=c+1;
-      else if(q > 0)
-	b=c;
-      else
-	return c;
-    }
-    if(a<v->size && fun(SHORT_ITEM(v)+a,&s->u)<0) a++;
-    return ~a;
-
-  }else{
-    /* face it, it's not there */
-    if((long)s->type < (long)v->array_type) return -1;
-    return ~v->size;
+    c=(a+b)/2;
+    q=fun(ITEM(v)+c,s);
+    
+    if(q < 0)
+      a=c+1;
+    else if(q > 0)
+      b=c;
+    else
+      return c;
   }
+  if(a<v->size && fun(ITEM(v)+a,s)<0) a++;
+  return ~a;
 }
 
 INT32 set_lookup(struct array *a, struct svalue *s)
 {
-  return low_lookup(a,s,set_svalue_cmpfun,get_set_cmpfun);
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(a);
+#endif
+  /* face it, it's not there */
+  if( (((2 << s->type) -1) & a->type_field) == 0)
+    return -1;
+
+  /* face it, it's not there */
+  if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+    return ~a->size;
+
+  return low_lookup(a,s,set_svalue_cmpfun);
 }
 
 INT32 switch_lookup(struct array *a, struct svalue *s)
 {
-  return low_lookup(a,s,switch_svalue_cmpfun,get_switch_cmpfun);
+  /* face it, it's not there */
+#ifdef DEBUG
+  if(d_flag > 1)  array_check_type_field(a);
+#endif
+  if( (((2 << s->type) -1) & a->type_field) == 0)
+    return -1;
+
+  /* face it, it's not there */
+  if( ((BIT_MIXED << s->type) & BIT_MIXED & a->type_field) == 0)
+    return ~a->size;
+
+  return low_lookup(a,s,switch_svalue_cmpfun);
 }
 
 
@@ -910,11 +713,7 @@ INT32 switch_lookup(struct array *a, struct svalue *s)
  */
 struct array *order_array(struct array *v, INT32 *order)
 {
-  if(v->array_type == T_MIXED)
-    reorder((char *)ITEM(v),v->size,sizeof(struct svalue),order);
-  else
-    reorder((char *)SHORT_ITEM(v),v->size,sizeof(union anything),order);
-
+  reorder((char *)ITEM(v),v->size,sizeof(struct svalue),order);
   return v;
 }
 
@@ -926,19 +725,11 @@ struct array *reorder_and_copy_array(struct array *v, INT32 *order)
 {
   INT32 e;
   struct array *ret;
-  ret=allocate_array_no_init(v->size, 0, v->array_type);
+  ret=allocate_array_no_init(v->size, 0);
   ret->type_field = v->type_field;
 
-  if(v->array_type == T_MIXED)
-  {
-    for(e=0;e<v->size;e++)
-      assign_svalue_no_free(ITEM(ret)+e, ITEM(v)+order[e]);
-  }else{
-    for(e=0;e<v->size;e++)
-      assign_short_svalue_no_free(SHORT_ITEM(ret)+e,
-				  SHORT_ITEM(v)+order[e],
-				  v->array_type);
-  }
+  for(e=0;e<v->size;e++)
+    assign_svalue_no_free(ITEM(ret)+e, ITEM(v)+order[e]);
 
   return ret;
 }
@@ -950,86 +741,33 @@ void array_fix_type_field(struct array *v)
   TYPE_FIELD t;
 
   t=0;
-  switch(v->array_type)
-  {
-  case T_MIXED:
-    for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
-    break;
 
-  case T_INT:
-  case T_FLOAT:
-    t=1 << v->array_type; 
-   break;
+  for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
 
-  default:
-    v->type_field=1 << v->array_type;
-    for(e=0; e<v->size; e++)
-    {
-      if(! SHORT_ITEM(v)[e].refs)
-      {
-	t |= 1 << T_INT;
-	break;
-      }
-    }
-
-  }
+#ifdef DEBUG
+  if(t & ~(v->type_field))
+    fatal("Type field out of order!\n");
+#endif
   v->type_field = t;
 }
 
-/*
- * Replace a large array with a small one if possible
- */
-struct array *compact_array(struct array *v)
+#ifdef DEBUG
+/* Maybe I should have a 'clean' flag for this computation */
+void array_check_type_field(struct array *v)
 {
-  INT32 e;
-  int type;
-  struct array *ret;
-  if(v->array_type != T_MIXED) return v;
+  int e;
+  TYPE_FIELD t;
 
-  if(!v->size) return v; /* won't become smaller */
+  t=0;
 
-  array_fix_type_field(v);
+  for(e=0; e<v->size; e++) t |= 1 << ITEM(v)[e].type;
 
-  type=-1;
-  switch(v->type_field)
-  {
-  case BIT_INT | BIT_STRING:  type=T_STRING; goto check_possible;
-  case BIT_INT | BIT_ARRAY:   type=T_ARRAY; goto check_possible;
-  case BIT_INT | BIT_MAPPING: type=T_MAPPING; goto check_possible;
-  case BIT_INT | BIT_LIST:    type=T_LIST; goto check_possible;
-  case BIT_INT | BIT_OBJECT:  type=T_OBJECT; goto check_possible;
-  case BIT_INT | BIT_PROGRAM: type=T_PROGRAM;
-
-  check_possible:
-    for(e=0; e<v->size; e++)
-      if(ITEM(v)[e].type == T_INT)
-	if(ITEM(v)[e].u.integer != 0)
-	  return v;
-
-    goto do_compact;
-
-  case BIT_INT:     type=T_INT; goto do_compact;
-  case BIT_FLOAT:   type=T_FLOAT; goto do_compact;
-  case BIT_STRING:  type=T_STRING; goto do_compact;
-  case BIT_ARRAY:   type=T_ARRAY; goto do_compact;
-  case BIT_MAPPING: type=T_MAPPING; goto do_compact;
-  case BIT_LIST:    type=T_LIST; goto do_compact;
-  case BIT_OBJECT:  type=T_OBJECT; goto do_compact;
-  case BIT_PROGRAM: type=T_PROGRAM; goto do_compact;
-
-  do_compact:
-    ret=allocate_array_no_init(v->size, 0, type);
-    for(e=0; e<v->size; e++)
-      assign_to_short_svalue_no_free(SHORT_ITEM(ret)+e,
-				     type,
-				     ITEM(v)+e);
-    free_array(v);
-    return ret;
-
-  default:
-    return v;
-  }
+  if(t & ~(v->type_field))
+    fatal("Type field out of order!\n");
 }
+#endif
+
+struct array *compact_array(struct array *v) { return v; }
 
 /*
  * Get a pointer to the 'union anything' specified IF it is of the specified
@@ -1039,13 +777,7 @@ union anything *low_array_get_item_ptr(struct array *a,
 				       INT32 ind,
 				       TYPE_T t)
 {
-  if(a->array_type == T_MIXED)
-  {
-    if(ITEM(a)[ind].type == t)
-      return & (ITEM(a)[ind].u);
-  }else if(a->array_type == t){
-    return SHORT_ITEM(a)+ind;
-  }
+  if(ITEM(a)[ind].type == t) return & (ITEM(a)[ind].u);
   return 0;
 }
 
@@ -1080,6 +812,13 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
   INT32 ap,bp,i,*ret,*ptr;
   
   ap=bp=0;
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
   if(!(a->type_field & b->type_field))
   {
     /* do smart optimizations */
@@ -1100,85 +839,21 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
 
   ptr=ret=(INT32 *)xalloc(sizeof(INT32)*(a->size + b->size + 1));
   ptr++;
-  if(a->array_type == T_MIXED && b->array_type == T_MIXED)
+
+  while(ap < a->size && bp < b->size)
   {
-    while(ap < a->size && bp < b->size)
-    {
-      i=set_svalue_cmpfun(ITEM(a)+ap,ITEM(b)+bp);
-      if(i < 0)
-	i=opcode >> 8;
-      else if(i > 0)
-	i=opcode;
-      else
-	i=opcode >> 4;
-
-      if(i & OP_A) *(ptr++)=ap;
-      if(i & OP_B) *(ptr++)=~bp;
-      if(i & OP_SKIP_A) ap++;
-      if(i & OP_SKIP_B) bp++;
-    }
-  }else if(a->array_type == b->array_type)
-  {
-    short_cmpfun short_alist_cmp;
-    short_alist_cmp=get_set_cmpfun(a->array_type);
-    while(ap < a->size && bp < b->size)
-    {
-      i=short_alist_cmp(SHORT_ITEM(a)+ap,SHORT_ITEM(b)+bp);
-      if(i < 0)
-	i=opcode >> 8;
-      else if(i > 0)
-	i=opcode;
-      else
-	i=opcode >> 4;
-
-      if(i & OP_A) *(ptr++)=ap;
-      if(i & OP_B) *(ptr++)=~bp;
-      if(i & OP_SKIP_A) ap++;
-      if(i & OP_SKIP_B) bp++;
-    }
-  }else{
-    struct svalue sa,sb;
-    while(ap < a->size && bp < b->size)
-    {
-      if(a->array_type == T_MIXED)
-      {
-	sa=ITEM(a)[ap];
-      }else{
-	sa.u = SHORT_ITEM(a)[ap];
-	if(!sa.u.refs )
-	{
-	  if( (sa.type=a->array_type) != T_FLOAT)  sa.type=T_INT;
-	}else{
-	  sa.type=a->array_type;
-	}
-      }
-
-      if(b->array_type == T_MIXED)
-      {
-	sb=ITEM(b)[bp];
-      }else{
-	sb.u=SHORT_ITEM(b)[bp];
-	if(!sb.u.refs)
-	{
-	  if( (sb.type=b->array_type) != T_FLOAT)  sb.type=T_INT;
-	}else{
-	  sb.type=b->array_type;
-	}
-      }
-
-      i=set_svalue_cmpfun(&sa, &sb);
-      if(i < 0)
-	i=opcode >> 8;
-      else if(i > 0)
-	i=opcode;
-      else
-	i=opcode >> 4;
-
-      if(i & OP_A) *(ptr++)=ap;
-      if(i & OP_B) *(ptr++)=~bp;
-      if(i & OP_SKIP_A) ap++;
-      if(i & OP_SKIP_B) bp++;
-    }
+    i=set_svalue_cmpfun(ITEM(a)+ap,ITEM(b)+bp);
+    if(i < 0)
+      i=opcode >> 8;
+    else if(i > 0)
+      i=opcode;
+    else
+      i=opcode >> 4;
+    
+    if(i & OP_A) *(ptr++)=ap;
+    if(i & OP_B) *(ptr++)=~bp;
+    if(i & OP_SKIP_A) ap++;
+    if(i & OP_SKIP_B) bp++;
   }
 
   if((opcode >> 8) & OP_A) while(ap<a->size) *(ptr++)=ap++;
@@ -1200,60 +875,14 @@ struct array *array_zip(struct array *a, struct array *b,INT32 *zipper)
   size=zipper[0];
   zipper++;
 
-  if(a->array_type == T_MIXED && b->array_type == T_MIXED)
+  ret=allocate_array_no_init(size,0);
+  for(e=0; e<size; e++)
   {
-    ret=allocate_array_no_init(size,0, T_MIXED);
-    for(e=0; e<size; e++)
-    {
-      if(*zipper >= 0)
-	assign_svalue_no_free(ITEM(ret)+e, ITEM(a)+*zipper);
-      else
-	assign_svalue_no_free(ITEM(ret)+e, ITEM(b)+~*zipper);
-      zipper++;
-    }
-  }else if(a->array_type == b->array_type)
-  {
-    ret=allocate_array_no_init(size, 0, a->array_type);
-    for(e=0; e<size; e++)
-    {
-      if(*zipper >= 0)
-      {
-	assign_short_svalue_no_free(SHORT_ITEM(ret)+e,
-			    SHORT_ITEM(a)+*zipper,
-			    a->array_type);
-      }else{
-	assign_short_svalue_no_free(SHORT_ITEM(ret)+e,
-			    SHORT_ITEM(b)+~*zipper,
-			    b->array_type);
-      }
-      zipper++;
-    }
-  }else{
-    ret=allocate_array_no_init(size, 0, T_MIXED);
-    for(e=0; e<size; e++)
-    {
-      if(*zipper >= 0)
-      {
-	if(a->array_type == T_MIXED)
-	{
-	  assign_svalue_no_free(ITEM(ret)+e, ITEM(a)+*zipper);
-	}else{
-	  assign_from_short_svalue_no_free(ITEM(ret)+e,
-				   SHORT_ITEM(a)+*zipper,
-				   a->array_type);
-	}
-      }else{
-	if(b->array_type == T_MIXED)
-	{
-	  assign_svalue(ITEM(ret)+e, ITEM(a)+*zipper);
-	}else{
-	  assign_from_short_svalue_no_free(ITEM(ret)+e,
-				   SHORT_ITEM(b)+~*zipper,
-				   b->array_type);
-	}
-      }
-      zipper++;
-    }
+    if(*zipper >= 0)
+      assign_svalue_no_free(ITEM(ret)+e, ITEM(a)+*zipper);
+    else
+      assign_svalue_no_free(ITEM(ret)+e, ITEM(b)+~*zipper);
+    zipper++;
   }
   ret->type_field = a->type_field | b->type_field;
   return ret;
@@ -1263,20 +892,11 @@ struct array *add_arrays(struct svalue *argp, INT32 args)
 {
   INT32 e, size;
   struct array *v;
-  TYPE_T array_type;
 
-  array_type=args ? argp[0].u.array->array_type : T_MIXED;
-  for(size=e=0; e<args; e++)
-  {
-    check_array_for_destruct(argp[e].u.array);
+  for(size=e=0;e<args;e++)
     size+=argp[e].u.array->size;
-    if(array_type != argp[e].u.array->array_type)
-      array_type=T_MIXED;
-  }
 
-  if(args &&
-     argp[0].u.array->refs==1 &&
-     argp[0].u.array->array_type == array_type)
+  if(args && argp[0].u.array->refs==1)
   {
     e=argp[0].u.array->size;
     v=resize_array(argp[0].u.array, size);
@@ -1284,38 +904,19 @@ struct array *add_arrays(struct svalue *argp, INT32 args)
     size=e;
     e=1;
   }else{
-    v=allocate_array_no_init(size, 0, array_type);
+    v=allocate_array_no_init(size, 0);
     v->type_field=0;
     e=size=0;
   }
-  if(array_type == T_MIXED)
+
+  for(; e<args; e++)
   {
-    for(; e<args; e++)
-    {
-      v->type_field|=argp[e].u.array->type_field;
-      if(argp[e].u.array->array_type == T_MIXED)
-      {
-	assign_svalues_no_free(ITEM(v)+size,
-			     ITEM(argp[e].u.array),
-			     argp[e].u.array->size);
-      }else{
-	assign_from_short_svalues_no_free(ITEM(v)+size,
-					  SHORT_ITEM(argp[e].u.array),
-					  argp[e].u.array->array_type,
-					  argp[e].u.array->size);
-      }
-      size+=argp[e].u.array->size;
-    }
-  }else{
-    for(;e<args;e++)
-    {
-      v->type_field |= argp[e].u.array->type_field;
-      assign_short_svalues_no_free(SHORT_ITEM(v)+size,
-				   SHORT_ITEM(argp[e].u.array),
-				   argp[e].u.array->array_type,
-				   argp[e].u.array->size);
-      size+=argp[e].u.array->size;
-    }
+    v->type_field|=argp[e].u.array->type_field;
+    assign_svalues_no_free(ITEM(v)+size,
+			   ITEM(argp[e].u.array),
+			   argp[e].u.array->size,
+			   argp[e].u.array->type_field);
+    size+=argp[e].u.array->size;
   }
 
   return v;
@@ -1328,6 +929,21 @@ int array_equal_p(struct array *a, struct array *b, struct processing *p)
 
   if(a == b) return 1;
   if(a->size != b->size) return 0;
+  if(!a->size) return 1;
+
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
+
+  /* This could be done much better if I KNEW that
+   * the type fields didn't contain types that
+   * really aren't in the array
+   */
+  if(!(a->type_field & b->type_field)) return 0;
 
   curr.pointer_a = a;
   curr.pointer_b = b;
@@ -1337,46 +953,10 @@ int array_equal_p(struct array *a, struct array *b, struct processing *p)
     if(p->pointer_a == (void *)a && p->pointer_b == (void *)b)
       return 1;
 
-  if(a->array_type == T_MIXED && b->array_type==T_MIXED)
-  {
-    for(e=0; e<a->size; e++)
-      if(!low_is_equal(ITEM(a)+e, ITEM(b)+e, &curr))
-	return 0;
-  }else{
-    for(e=0; e<a->size; e++)
-    {
-      struct svalue sa,sb;
+  for(e=0; e<a->size; e++)
+    if(!low_is_equal(ITEM(a)+e, ITEM(b)+e, &curr))
+      return 0;
 
-      if(a->array_type == T_MIXED)
-      {
-	sa=ITEM(a)[e];
-      }else{
-	sa.u=SHORT_ITEM(a)[e];
-	if(!sa.u.refs)
-	{
-	  if( (sa.type=a->array_type) != T_FLOAT)  sa.type=T_INT;
-	}else{
-	  sa.type=a->array_type;
-	}
-      }
-
-      if(b->array_type == T_MIXED)
-      {
-	sb=ITEM(b)[e];
-      }else{
-	sb.u=SHORT_ITEM(b)[e];
-	if(!sb.u.refs)
-	{
-	  if( (sb.type=b->array_type) != T_FLOAT)  sb.type=T_INT;
-	}else{
-	  sb.type=b->array_type;
-	}
-      }
-      
-      if(!low_is_equal(&sa, &sb, &curr))
-	return 0;
-    }
-  }
   return 1;
 }
 
@@ -1472,6 +1052,14 @@ struct array *merge_array_without_order(struct array *a,
 /* subtract an array from another */
 struct array *subtract_arrays(struct array *a, struct array *b)
 {
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
+
   if(a->type_field & b->type_field)
   {
     return merge_array_with_order(a, b, OP_SUB);
@@ -1488,18 +1076,26 @@ struct array *subtract_arrays(struct array *a, struct array *b)
 /* and two arrays */
 struct array *and_arrays(struct array *a, struct array *b)
 {
+#ifdef DEBUG
+  if(d_flag > 1)
+  {
+    array_check_type_field(a);
+    array_check_type_field(b);
+  }
+#endif
+
   if(a->type_field & b->type_field)
   {
     return merge_array_without_order(a, b, OP_AND);
   }else{
-    return allocate_array_no_init(0,0,T_MIXED);
+    return allocate_array_no_init(0,0);
   }
 }
 
 int check_that_array_is_constant(struct array *a)
 {
   array_fix_type_field(a);
-  if(a->type_field & ((1 << T_FUNCTION) | (1 << T_OBJECT)))
+  if(a->type_field & (BIT_FUNCTION | BIT_OBJECT))
     return 0;
   return 1;
 }
@@ -1507,53 +1103,21 @@ int check_that_array_is_constant(struct array *a)
 node *make_node_from_array(struct array *a)
 {
   struct svalue s;
-  char *str;
   INT32 e;
 
   array_fix_type_field(a);
-  if(a->type_field == (1 << T_INT))
+  if(a->type_field == BIT_INT)
   {
-    if(a->array_type == T_MIXED)
-    {
-      for(e=0; e<a->size; e++)
-	if(ITEM(a)[e].u.integer != 0)
-	  break;
-      if(e == a->size)
-      {
-	return mkefuncallnode("allocate",
-			      mknode(F_ARG_LIST,
-				     mkintnode(a->size),
-				     mkstrnode(make_shared_string("mixed"))
-				     ));
-      }
-    }else{
-      e=a->size;
-      switch(a->array_type)
-      {
-      case T_INT:
-	str="int";
-	for(e=0; e<a->size; e++)
-	  if(SHORT_ITEM(a)[e].integer != 0)
-	    break;
+    for(e=0; e<a->size; e++)
+      if(ITEM(a)[e].u.integer != 0)
 	break;
-      case T_FLOAT:    str="float"; break;
-      case T_STRING:   str="string"; break;
-      case T_ARRAY:    str="array"; break;
-      case T_LIST:     str="list"; break;
-      case T_MAPPING:  str="mapping"; break;
-      case T_OBJECT:   str="object"; break;
-      case T_FUNCTION: str="function"; break;
-      case T_PROGRAM:  str="program"; break;
-      default:         str="mixed";
-      }
-      if(e==a->size)
-      {
-	return mkefuncallnode("allocate",
-			      mknode(F_ARG_LIST,
-				     mkintnode(a->size),
-				     mkstrnode(make_shared_string(str))
-				     ));
-      }
+    if(e == a->size)
+    {
+      return mkefuncallnode("allocate",
+			    mknode(F_ARG_LIST,
+				   mkintnode(a->size),
+				   mkstrnode(make_shared_string("mixed"))
+				   ));
     }
   }
   if(check_that_array_is_constant(a))
@@ -1564,81 +1128,39 @@ node *make_node_from_array(struct array *a)
     return mkconstantsvaluenode(&s);
   }else{
     node *ret=0;
-    if(a->array_type == T_MIXED)
-    {
-      for(e=0; e<a->size; e++)
-	ret=mknode(F_ARG_LIST,ret,mksvaluenode(ITEM(a)+e));
-    }else{
-      s.type=a->array_type;
-      s.subtype=0;
-      for(e=0; e<a->size; e++)
-      {
-	s.u=SHORT_ITEM(a)[e];
-	if(s.u.refs)
-	{
-	  ret=mknode(F_ARG_LIST,ret,mksvaluenode(&s));
-	}else{
-	  ret=mknode(F_ARG_LIST,ret,mkintnode(0));
-	}
-      }
-    }
+    for(e=0; e<a->size; e++)
+      ret=mknode(F_ARG_LIST,ret,mksvaluenode(ITEM(a)+e));
     return mkefuncallnode("aggregate",ret);
   }
 }
 
 void push_array_items(struct array *a)
 {
-  if(sp + a->size >= &evaluator_stack[EVALUATOR_STACK_SIZE])
-    error("Array does not fit on stack.\n");
+  check_stack(a->size);
   check_array_for_destruct(a);
-  if(a->array_type == T_MIXED)
+  if(a->refs == 1)
   {
-    if(a->refs == 1)
-    {
-      MEMCPY(sp,ITEM(a),sizeof(struct svalue)*a->size);
-      sp += a->size;
-      a->size=0;
-      free_array(a);
-      return;
-    }else{
-      assign_svalues_no_free(sp, ITEM(a), a->size);
-    }
+    MEMCPY(sp,ITEM(a),sizeof(struct svalue)*a->size);
+    sp += a->size;
+    a->size=0;
+    free_array(a);
   }else{
-    assign_from_short_svalues_no_free(sp, SHORT_ITEM(a), a->array_type, a->size);
+    assign_svalues_no_free(sp, ITEM(a), a->size, a->type_field);
+    sp += a->size;
+    free_array(a);
   }
-  sp += a->size;
-  free_array(a);
 }
 
 void describe_array_low(struct array *a, struct processing *p, int indent)
 {
   INT32 e,d;
   indent += 2;
-  if(a->array_type == T_MIXED)
+
+  for(e=0; e<a->size; e++)
   {
-    for(e=0; e<a->size; e++)
-    {
-      if(e) my_strcat(",\n");
-      for(d=0; d<indent; d++) my_putchar(' ');
-      describe_svalue(ITEM(a)+e,indent,p);
-    }
-  }else{
-    struct svalue s;
-    for(e=0; e<a->size; e++)
-    {
-      if(e) my_strcat(",\n");
-      for(d=0; d<indent; d++) my_putchar(' ');
-      if(SHORT_ITEM(a)[e].refs)
-      {
-	s.type=a->array_type;
-	s.u=SHORT_ITEM(a)[e];
-      }else{
-	s.type=T_INT;
-	s.subtype=NUMBER_NUMBER;
-	s.u.integer=0;
-      }
-      describe_svalue(&s, indent, p);
-    }
+    if(e) my_strcat(",\n");
+    for(d=0; d<indent; d++) my_putchar(' ');
+    describe_svalue(ITEM(a)+e,indent,p);
   }
 }
 
@@ -1657,22 +1179,7 @@ void describe_index(struct array *a,
 		    struct processing *p,
 		    int indent)
 {
-  if(a->array_type == T_MIXED)
-  {
-    describe_svalue(ITEM(a)+e, indent, p);
-  }else{
-    struct svalue s;
-    if(SHORT_ITEM(a)[e].refs)
-    {
-      s.type=a->array_type;
-      s.u=SHORT_ITEM(a)[e];
-    }else{
-      s.type=T_INT;
-      s.subtype=NUMBER_NUMBER;
-      s.u.integer=0;
-    }
-    describe_svalue(&s, indent, p);
-  }
+  describe_svalue(ITEM(a)+e, indent, p);
 }
 
 
@@ -1680,7 +1187,7 @@ void describe_array(struct array *a,struct processing *p,int indent)
 {
   struct processing doing;
   INT32 e;
-  char buf[40];
+  char buf[60];
   if(! a->size)
   {
     my_strcat("({ })");
@@ -1707,143 +1214,90 @@ void describe_array(struct array *a,struct processing *p,int indent)
   my_strcat("})");
 }
 
-struct array *aggregate_array(INT32 args, TYPE_T type)
+struct array *aggregate_array(INT32 args)
 {
   struct array *a;
 
-  a=allocate_array_no_init(args,0,type);
-  if(type == T_MIXED)
-  {
-    MEMCPY((char *)ITEM(a),(char *)(sp-args),args*sizeof(struct svalue));
-    a->type_field=BIT_MIXED;
-    sp-=args;
-  }else{
-    struct svalue *save_sp;
-    save_sp=sp;
-    while(--args >= 0)
-    {
-      sp--;
-      if(sp->type == type)
-      {
-	SHORT_ITEM(a)[args].refs = sp->u.refs;
-      }else if(IS_ZERO(sp)){
-	SHORT_ITEM(a)[args].refs = 0;
-      }else{
-	sp=save_sp;
-	array_free_no_free(a);
-	error("Bad type when constructing array.\n");
-      }
-    }
-  }
+  a=allocate_array_no_init(args,0);
+  MEMCPY((char *)ITEM(a),(char *)(sp-args),args*sizeof(struct svalue));
+  a->type_field=BIT_MIXED;
+  sp-=args;
   return a;
 }
 
-struct array *explode(struct lpc_string *str,
-		       struct lpc_string *del)
+struct array *explode(struct pike_string *str,
+		       struct pike_string *del)
 {
-  INT32 e,d;
+  INT32 e;
   struct array *ret;
   char *s, *end, *tmp;
 
   if(!del->len)
   {
-    ret=allocate_array_no_init(str->len,0,T_STRING);
-    ret->type_field |= 1<<T_STRING;
+    ret=allocate_array_no_init(str->len,0);
     for(e=0;e<str->len;e++)
-      SHORT_ITEM(ret)[e].string=make_shared_binary_string(str->str+e,1);
+    {
+      ITEM(ret)[e].type=T_STRING;
+      ITEM(ret)[e].u.string=make_shared_binary_string(str->str+e,1);
+    }
   }else{
-
+    struct mem_searcher searcher;
+    
     s=str->str;
     end=s+str->len;
     e=0;
-
-    while((s=MEMMEM(del->str, del->len, s, end-s)))
+    
+    init_memsearch(&searcher, del->str, del->len, str->len);
+    
+    while(tmp=memory_search(&searcher, s, end-s))
     {
-      s+=del->len;
+      check_stack(1);
+      push_string(make_shared_binary_string(s, tmp-s));
+      s=tmp+del->len;
       e++;
     }
-
-    ret=allocate_array_no_init(e+1,0,T_STRING);
-    ret->type_field |= 1<<T_STRING;
-
-    s=str->str;
-    for(d=0;d<e;d++)
-    {
-      tmp=MEMMEM((char *)(del->str), del->len, (char *)s, end-s);
-      SHORT_ITEM(ret)[d].string=make_shared_binary_string(s,tmp-s);
-      s=tmp+del->len;
-    }
-    SHORT_ITEM(ret)[d].string=make_shared_binary_string(s,end-s);
+    check_stack(1);
+    push_string(make_shared_binary_string(s, end-s));
+    e++;
+    ret=aggregate_array(e);
   }
+  ret->type_field=BIT_STRING;
   return ret;
 }
 
-struct lpc_string *implode(struct array *a,struct lpc_string *del)
+struct pike_string *implode(struct array *a,struct pike_string *del)
 {
   INT32 len,e, inited;
   char *r;
-  struct lpc_string *ret,*tmp;
+  struct pike_string *ret,*tmp;
 
   len=0;
-  if(a->array_type==T_STRING)
+
+  for(e=0;e<a->size;e++)
+    if(ITEM(a)[e].type==T_STRING)
+      len+=ITEM(a)[e].u.string->len + del->len;
+  if(len) len-=del->len;
+  
+  ret=begin_shared_string(len);
+  r=ret->str;
+  inited=0;
+  for(e=0;e<a->size;e++)
   {
-    for(e=0;e<a->size;e++)
-      if(SHORT_ITEM(a)[e].string)
-	len+=SHORT_ITEM(a)[e].string->len + del->len;
-    if(len) len-=del->len;
-
-    ret=begin_shared_string(len);
-    r=ret->str;
-    inited=0;
-    for(e=0;e<a->size;e++)
+    if(ITEM(a)[e].type==T_STRING)
     {
-      if(SHORT_ITEM(a)[e].string)
+      if(inited)
       {
-	if(inited)
-	{
-	  MEMCPY(r,del->str,del->len);
-	  r+=del->len;
-	}
-	inited=1;
-	tmp=SHORT_ITEM(a)[e].string;
-	MEMCPY(r,tmp->str,tmp->len);
-	r+=tmp->len;
-	len++;
+	MEMCPY(r,del->str,del->len);
+	r+=del->len;
       }
+      inited=1;
+      tmp=ITEM(a)[e].u.string;
+      MEMCPY(r,tmp->str,tmp->len);
+      r+=tmp->len;
+      len++;
     }
-    return end_shared_string(ret);
   }
-
-  if(a->array_type==T_MIXED)
-  {
-    for(e=0;e<a->size;e++)
-      if(ITEM(a)[e].type==T_STRING)
-	len+=ITEM(a)[e].u.string->len + del->len;
-    if(len) len-=del->len;
-
-    ret=begin_shared_string(len);
-    r=ret->str;
-    inited=0;
-    for(e=0;e<a->size;e++)
-    {
-      if(ITEM(a)[e].type==T_STRING)
-      {
-	if(inited)
-	{
-	  MEMCPY(r,del->str,del->len);
-	  r+=del->len;
-	}
-	inited=1;
-	tmp=ITEM(a)[e].u.string;
-	MEMCPY(r,tmp->str,tmp->len);
-	r+=tmp->len;
-	len++;
-      }
-    }
-    return end_shared_string(ret);
-  }
-
-  return make_shared_string("");
+  return end_shared_string(ret);
 }
 
 struct array *copy_array_recursively(struct array *a,struct processing *p)
@@ -1863,44 +1317,30 @@ struct array *copy_array_recursively(struct array *a,struct processing *p)
     }
   }
 
-  ret=allocate_array_no_init(a->size,0,a->array_type);
+  ret=allocate_array_no_init(a->size,0);
   doing.pointer_b=(void *)ret;
-  if(a->array_type == T_MIXED)
-  {
-    copy_svalues_recursively_no_free(ITEM(ret),ITEM(a),a->size,&doing);
-  }else{
-    copy_short_svalues_recursively_no_free(SHORT_ITEM(ret),
-					   SHORT_ITEM(a),
-					   a->array_type,
-					   a->size,&doing);
-  }
+
+  copy_svalues_recursively_no_free(ITEM(ret),ITEM(a),a->size,&doing);
   return ret;
 }
 
 void apply_array(struct array *a, INT32 args)
 {
-  struct svalue *argp;
   INT32 e;
   struct array *ret;
-  argp=sp-args;
-  if(a->array_type == T_MIXED)
+  INT32 argp;
+
+  argp=sp-args - evaluator_stack;
+
+  check_stack(a->size + args + 1);
+
+  for(e=0;e<a->size;e++)
   {
-    for(e=0;e<a->size;e++)
-    {
-      assign_svalues_no_free(sp,argp,args);
-      sp+=args;
-      apply_svalue(ITEM(a)+e,args);
-    }
-  }else{
-    for(e=0;e<a->size;e++)
-    {
-      array_index_no_free(sp++,a,e);
-      assign_svalues_no_free(sp,argp,args);
-      sp+=args;
-      f_call_function(args+1);
-    }
+    assign_svalues_no_free(sp,evaluator_stack+argp,args,BIT_MIXED);
+    sp+=args;
+    apply_svalue(ITEM(a)+e,args);
   }
-  ret=aggregate_array(a->size,T_MIXED);
+  ret=aggregate_array(a->size);
   pop_n_elems(args);
   push_array(ret);
 }
@@ -1909,17 +1349,11 @@ struct array *reverse_array(struct array *a)
 {
   INT32 e;
   struct array *ret;
-  ret=allocate_array_no_init(a->size,0,a->array_type);
-  if(a->array_type == T_MIXED)
-  {
-    for(e=0;e<a->size;e++)
-      assign_svalue_no_free(ITEM(ret)+e,ITEM(a)+a->size+~e);
-  }else{
-    for(e=0;e<a->size;e++)
-      assign_short_svalue_no_free(SHORT_ITEM(ret)+e,
-				  SHORT_ITEM(a)+a->size+~e,
-				  a->array_type);
-  }
+
+  /* FIXME: Check refs so we might optimize */
+  ret=allocate_array_no_init(a->size,0);
+  for(e=0;e<a->size;e++)
+    assign_svalue_no_free(ITEM(ret)+e,ITEM(a)+a->size+~e);
   return ret;
 }
 
@@ -1933,20 +1367,9 @@ void array_replace(struct array *a,
 }
 
 #ifdef DEBUG
-void check_array(struct array *a, int pass)
+void check_array(struct array *a)
 {
   INT32 e;
-  if(pass)
-  {
-    e=checked((void *)a,0);
-    if(e!=a->refs)
-    {
-      simple_describe_array(a);
-      fatal("Above array has wrong number of references. (%ld != %ld)\n",
-	    (long)e,(long)a->refs);
-    }
-    return;
-  }
 
   if(a->next->prev != a)
     fatal("Array check: a->next->prev != a\n");
@@ -1957,48 +1380,155 @@ void check_array(struct array *a, int pass)
   if(a->refs <=0 )
     fatal("Array has zero refs.\n");
 
-  if(a->array_type == T_MIXED)
+  for(e=0;e<a->size;e++)
   {
-    for(e=0;e<a->size;e++)
-    {
-      if(! ( (1 << ITEM(a)[e].type) & (a->type_field) ))
-	fatal("Type field lies.\n");
-
-      check_svalue(ITEM(a)+e);
-    }
-  }
-  else if(a->array_type <= MAX_TYPE)
-  {
-    if(a->type_field & ~(BIT_INT | (1<<a->array_type)))
-      fatal("Type field in short array lies!\n");
-
-    for(e=0;e<a->size;e++)
-      check_short_svalue(SHORT_ITEM(a)+e,a->array_type);
-  }
-  else
-  {
-    fatal("Array type out of range.\n");
+    if(! ( (1 << ITEM(a)[e].type) & (a->type_field) ))
+      fatal("Type field lies.\n");
+    
+    check_svalue(ITEM(a)+e);
   }
 }
 
-void check_all_arrays(int pass)
+void check_all_arrays()
 {
   struct array *a;
 
   a=&empty_array;
   do
   {
-    check_array(a, pass);
+    check_array(a);
 
     a=a->next;
     if(!a)
       fatal("Null pointer in array list.\n");
   } while (a != & empty_array);
+}
+#endif /* DEBUG */
 
-  if(!pass)
+#ifdef GC2
+
+void gc_mark_array_as_referenced(struct array *a)
+{
+  if(gc_mark(a))
+    if(a->type_field & BIT_COMPLEX)
+      gc_mark_svalues(ITEM(a), a->size);
+}
+
+void gc_check_all_arrays()
+{
+  struct array *a;
+  a=&empty_array;
+  do
   {
-    checked((void *)&empty_array,1);
-  }
+#ifdef DEBUG
+    if(d_flag > 1)  array_check_type_field(a);
+#endif
+    if(a->type_field & BIT_COMPLEX)
+    {
+      TYPE_FIELD t;
+      t=gc_check_svalues(ITEM(a), a->size);
+
+      /* Ugly, but we are not allowed to change type_field
+       * at the same time as the array is being built...
+       * Actually we just need beter primitives for building arrays.
+       */
+      if(!(a->type_field & BIT_UNFINISHED) || a->refs!=1)
+	a->type_field = t;
+      else
+	a->type_field |= t;
+    }
+
+    a=a->next;
+  } while (a != & empty_array);
+}
+
+
+void gc_mark_all_arrays()
+{
+  struct array *a;
+
+  a=&empty_array;
+  do
+  {
+    if(gc_is_referenced(a))
+      gc_mark_array_as_referenced(a);
+            
+    a=a->next;
+  } while (a != & empty_array);
+}
+
+void gc_free_all_unreferenced_arrays()
+{
+  struct array *a,*next;
+
+  a=&empty_array;
+  do
+  {
+    if(gc_do_free(a))
+    {
+      a->refs++;
+      free_svalues(ITEM(a), a->size, a->type_field);
+      a->size=0;
+
+      if(!(next=a->next))
+	fatal("Null pointer in array list.\n");
+
+      free_array(a);
+      a=next;
+    }else{
+      a=a->next;
+    }
+  } while (a != & empty_array);
+}
+
+
+#endif /* GC2 */
+
+#ifdef DEBUG
+
+void debug_dump_type_field(TYPE_FIELD t)
+{
+  int e;
+  for(e=0;e<MAX_TYPE;e++)
+    if(t & (1<<e))
+      fprintf(stderr," %s",get_name_of_type(e));
+
+  for(;e<16;e++)
+    if(t & (1<<e))
+      fprintf(stderr," <%d>",e);
+}
+
+void debug_dump_array(struct array *a)
+{
+  fprintf(stderr,"Refs=%d, next=%p, prev=%p, size=%d, malloced_size=%d\n",
+	  a->refs,
+	  a->next,
+	  a->prev,
+	  a->size,
+	  a->malloced_size);
+  fprintf(stderr,"Type field = ");
+  debug_dump_type_field(a->type_field);
+  fprintf(stderr,"\n");
+  simple_describe_array(a);
 }
 #endif
 
+
+void zap_all_arrays()
+{
+  struct array *a,*next;
+
+  a=&empty_array;
+  do
+  {
+    a->refs++;
+    free_svalues(ITEM(a), a->size, a->type_field);
+    a->size=0;
+    
+    if(!(next=a->next))
+      fatal("Null pointer in array list.\n");
+    
+    free_array(a);
+    a=next;
+  } while (a != & empty_array);
+}

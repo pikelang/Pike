@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef MACROS_H
@@ -21,6 +21,7 @@
 #define isidchar(X) (isalnum(X) || (X)=='_')
 
 #define ALIGN_BOUND sizeof(char *)
-#define MY_ALIGN(X) (((long)(X)+(ALIGN_BOUND-1)) & ~(ALIGN_BOUND-1))
+#define DO_ALIGN(X,Y) (((long)(X)+(Y-1)) & -(Y))
+#define MY_ALIGN(X) DO_ALIGN(X,ALIGN_BOUND)
 
 #endif

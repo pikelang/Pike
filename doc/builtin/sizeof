@@ -1,8 +1,8 @@
 NAME
-	sizeof - return the size of an array, string, list or mapping
+	sizeof - return the size of an array, string, multiset or mapping
 
 SYNTAX
-	int sizeof(string|list|mapping|array a);
+	int sizeof(string|multiset|mapping|array|object a);
 
 DESCRIPTION
 	This function returns the number of indexes available in the argument
@@ -10,4 +10,4 @@ DESCRIPTION
 	size.
 
 KEYWORDS
-	string, list, mapping, array
+	string, multiset, mapping, array

@@ -2,23 +2,28 @@ NAME
 	sum_arrays - map any number of arrays over a function.
 
 SYNTAX
+	#include <array.h>
+
 	mixed *sum_arrays(function fun,mixed *arr1,...);
 
 DESCRIPTION
 	Works like this:
 
-        mixed *sum_arrays(function fun,mixed *arr1,...)
-        {
-          int e;
+	mixed *sum_arrays(function fun,mixed *arr1,...)
+	{
+	  int e;
 	  mixed *res=allocate(sizeof(arr1));
-          for(e=0;e<sizeof(arr1);e++)
-          {
+	  for(e=0;e<sizeof(arr1);e++)
+	  {
 	    res[e]=fun(arr1[e],arr2[e],...);
-          }
+	  }
 	  return res;
-        }
+	}
 
 	Simple ehh?
+
+KEYWORDS
+	array
 
 SEE ALSO
 	map_array, filter_array, search_array

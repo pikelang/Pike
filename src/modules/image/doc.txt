@@ -1,0 +1,368 @@
+                                Pike module:
+
+                                    image
+
+                       Pontus Hagland law@infovav.se
+                         Per Hedbor per@infovav.se
+                        David Kågedal kg@infovav.se
+----------------------------------------------------------------------------
+This package adds two Pike progams:
+
+   * "precompiled/image" and
+   * "precompiled/font".
+
+----------------------------------------------------------------------------
+
+methods in precompiled/image:
+
+Methods resulting in a new object:
+object new( [int xsize,int ysize [,int r,int g,int b] ] );
+
+object copy( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
+object crop( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
+object autocrop( [int border_width [,int left,int right,int top,int bottom]
+[,int r,int g,int b] ] );
+
+object gray();
+object color(int r,int g,int b);
+object invert();
+object threshold([int r,int g,int b]);
+object apply_matrix(array(array(int)) matrix,[int r,int g,int b[,int div]]);
+
+object scale(float factor);
+object scale(float factorx,float factory);
+object scale(int newx|0,int newy|0);
+
+Methods operating on current object:
+string toppm(void);
+void fromppm(string s);
+string togif( [int r,inr g,int b] );
+
+void paste(object img [,int x,int y])
+void paste_alpha(object img, int alpha [,int x, int y]);
+void paste_mask(object img, object alpha_mask [,int x,int y]);
+
+void setcolor(int r,int g,int b);
+void setpixel(int x,int y [,int r,int g,int b] );
+void line(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+void box(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+void circle(int x,int y,int radx,int rady [,int r,int b,int g] );
+void tuned_box(int x1,int y1,int x2,int y2,array(array(int)) corner_rgb);
+----------------------------------------------------------------------------
+
+METHOD
+     object apply_matrix(array(array(int)) matrix,[int r,int g,int b[,int
+     div]]);
+DESCRIPTION
+     This method applies a matrix on the image. Each surrounding pixel is
+     multiplied with the value of the matrix element in that point, these
+     values are added and divided by the total sum of the matrix values (and
+     the div argument) and stored on the pixel (eventually added to the
+     r,g,b argument given as 'mean' value).
+
+     It is possible to use a matrix of RGB groups (ie an array of three
+     integers) instead of the simple values, this making it possible to
+     apply different matrices on red, green and blue channel.
+RETURN VALUE
+     the new object
+EXAMPLE
+     A 'blur' operation (3x3, gaussian):
+
+     blurred=image->apply_matrix( ({ ({1,2,1}), ({2,3,2}), ({1,2,1}) }) );
+
+     A 'Emboss' operation (3x3):
+
+     emossed=image->apply_matrix(({ ({0,1,8}), ({-1,0,1}), ({-8,-1,0}) }), 128,128,128, 15 );
+
+     Here i'm using 128,128,128 (gray) as a mean, because i get negative
+     values.
+     A division by 15 is good to give 'normal' edges.
+BUGS
+     not known
+
+----------------------------------------------------------------------------
+
+METHOD
+     object autocrop( [int border_width [,int left,int right,int top,int
+     bottom] [,int r,int g,int b] ] );
+DESCRIPTION
+     Crops away unneccesary borders from the image. The border argument is
+     to define the new thickness of the surrounding border and the r,g,b is
+     the newly created border color.
+
+     The left, right, ... arguments is used to tell which edges should be
+     autocropped.
+RETURN VALUE
+     the new object
+EXAMPLE
+
+     cropped=image->autocrop();
+
+BUGS
+     now known
+
+----------------------------------------------------------------------------
+
+METHOD
+     void box(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+DESCRIPTION
+     Draw a box of the default or specified color.
+RETURN VALUE
+     none
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     void circle(int x,int y,int radx,int rady [,int r,int b,int g] );
+DESCRIPTION
+     Draw a circle. The coordinates given are the center of the image and
+     the radius in x (horisontal) and y (vertical), this making it possible
+     to draw an ellipse too. :-)
+RETURN VALUE
+     none
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object color(int r,int g,int b);
+DESCRIPTION
+     Apply a color filter on the image.
+RETURN VALUE
+     the new object
+EXAMPLE
+
+     cyan=image->color(64,255,192);
+
+     This function is most usable on a image that has been grayed first.
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object copy( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
+     object crop( [int x1,int y1,int x2,int y2 [,int r,int g,int b] ] );
+DESCRIPTION
+     Copy a part (or more) of the image.
+RETURN VALUE
+     the new object
+EXAMPLE
+
+     copy=image->copy();
+
+     copy=image->copy(-10,-10,image->xsize()+9,image->ysize()+9);
+
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     void fromppm(string s);
+DESCRIPTION
+     Import a ppm image.
+RETURN VALUE
+     none
+EXAMPLE
+
+     image=clone( (program)"precompiled/image" );
+     image->fromppm(read_bytes("my_image.ppm",0,10000000));
+
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object gray([int r,int g,int b]);
+DESCRIPTION
+     Make this image gray (each r,g,b gets the same value).
+     If a color is given, that specifies the amount of r, g, and b that is
+     used to compute the gray level. Default is 87,127,41.
+RETURN VALUE
+     the new object
+EXAMPLE
+
+     gray=image->gray()
+
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object invert();
+DESCRIPTION
+     Invert the image.
+RETURN VALUE
+     the new object
+EXAMPLE
+
+     inverted=image->invert()
+
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     void line(int x1,int y1,int x2,int y2 [,int r,int g,int b] );
+DESCRIPTION
+     Draw a line from x1,y1 to x2,y2.
+RETURN VALUE
+     none
+EXAMPLE
+
+     image->line(17,100,42,1000);
+
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object new( [int xsize,int ysize [,int r,int g,int b] ] );
+DESCRIPTION
+     make a new object and return it
+RETURN VALUE
+     the new object
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     void paste(object img [,int x,int y])
+     void paste_alpha(object img, int alpha [,int x, int y]);
+     void paste_mask(object img, object alpha_mask [,int x,int y]);
+DESCRIPTION
+     Paste an image on this image. Use the specified alpha channel value or
+     the second specified image as an alpha channel.
+RETURN VALUE
+     none this function doesn't return anything
+EXAMPLE
+
+     image->paste(other_smaller_image,17,42);
+
+     image->paste_mask(other_image,alpha_channel_image);
+
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object scale(float factor); (1
+     object scale(float factorx,float factory); (2
+     object scale(int newx|0,int newy|0); (3
+DESCRIPTION
+     Scale this image.
+       1. scale the image with a (line scale) factor
+       2. scale the image with different factors on x and y
+       3. scale the image to a new size
+          with newx or newy set to zero, just scale the image to fit the x
+          or y size and keep proportions.
+RETURN VALUE
+     the new object this function doesn't return anything
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+METHOD
+     void setcolor(int r,int g,int b);
+DESCRIPTION
+     set the default color used for drawing lines, etc
+RETURN VALUE
+     none
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+METHOD
+     void setpixel(int x,int y [,int r,int g,int b] );
+DESCRIPTION
+     set the color of the specified pixel
+RETURN VALUE
+     none
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object threshold([int r,int g,int b]);
+DESCRIPTION
+     make image black-and-white using the given value as the threshold
+RETURN VALUE
+     the new object
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     string togif( [int r,inr g,int b] );
+DESCRIPTION
+     export gif
+     if the color are given, this is the transparent color
+RETURN VALUE
+     the gifimage as a string
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     string toppm(void);
+DESCRIPTION
+     export ppm
+RETURN VALUE
+     the ppm image as a string
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     void tuned_box(int x1,int y1,int x2,int y2,array(array(int))
+     corner_rgb);
+DESCRIPTION
+     draw a box with the specified corner colours, and shade the colors
+     between
+RETURN VALUE
+     none
+EXAMPLE
+
+     image->tuned_box(0,0,img->xsize()-1,img->ysize()-1,
+                     ({({0,0,64}),({16,16,128}),
+                       ({16,16,128}),({192,160,128})}));
+
+BUGS
+
+----------------------------------------------------------------------------
+
+methods in precompiled/font:
+
+int load(string file_name);
+object write(string line, ...);
+----------------------------------------------------------------------------
+
+METHOD
+     int load(string file_name);
+DESCRIPTION
+     load this font object with the font from the specified file
+RETURN VALUE
+     true on success
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------
+
+METHOD
+     object write(string line, ...);
+DESCRIPTION
+     make a new image object from the specified text, each argument
+     representing a line
+RETURN VALUE
+     the new image object
+EXAMPLE
+BUGS
+
+----------------------------------------------------------------------------

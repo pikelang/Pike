@@ -11,5 +11,5 @@ KEYWORDS
 	float
 
 SEE ALSO
-	intp, programp, arrayp, stringp, objectp, regexpp,
-	mappingp, listp, functionp
+	intp, programp, arrayp, stringp, objectp,
+	mappingp, multisetp, functionp

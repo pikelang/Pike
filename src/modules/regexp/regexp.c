@@ -40,6 +40,10 @@
  * maximum number of bytes that can be written to the memory region
  * pointed to by dest
  *
+ * Also altered by Fredrik Hubinette to handle the + operator and
+ * eight-bit chars. Mars 22 1996
+ * 
+ *
  * 	Beware that some of this code is subtly aware of the way operator
  * 	precedence is structured in regular expressions.  Serious changes in
  * 	regular-expression syntax might require a total rethink.
@@ -164,11 +168,12 @@
  * Utility definitions.
  */
 
-#define regerror(X) error(X);
+#define regerror(X) error("Regexp: %s\n",X);
 #define SPECIAL 0x100
 #define LBRAC	('('|SPECIAL)
 #define RBRAC	(')'|SPECIAL)
 #define ASTERIX	('*'|SPECIAL)
+#define PLUS	('+'|SPECIAL)
 #define OR_OP	('|'|SPECIAL)
 #define DOLLAR	('$'|SPECIAL)
 #define DOT	('.'|SPECIAL)
@@ -178,8 +183,8 @@
 #define LSHBRAC ('<'|SPECIAL)
 #define RSHBRAC ('>'|SPECIAL)
 #define	FAIL(m)	{ regerror(m); return(NULL); }
-#define	ISMULT(c)	((c) == ASTERIX)
-#define	META	"^$.[()|*\\"
+#define	ISMULT(c)	((c) == ASTERIX || (c)==PLUS)
+#define	META	"^$.[()|*+\\"
 #ifndef CHARBITS
 #define CHARBITS	0xff
 #define	UCHARAT(p)	((int)*(unsigned char *)(p))
@@ -238,17 +243,17 @@ STATIC void     regoptail();
  * of the structure of the compiled regexp.
  */
 regexp *regcomp(exp,excompat)
-char           *exp;
+unsigned char   *exp;
 int		excompat;	/* \( \) operators like in unix ex */
 {
     register regexp *r;
-    register char  *scan;
+    register unsigned char  *scan;
     register char  *longest;
     register int    len;
     int             flags;
     short	   *exp2,*dest,c;
 
-    if (exp == (char *)NULL)
+    if (exp == (unsigned char *)NULL)
 	FAIL("NULL argument");
 
     exp2=(short*)xalloc( (strlen(exp)+1) * (sizeof(short[8])/sizeof(char[8])) );
@@ -260,6 +265,7 @@ int		excompat;	/* \( \) operators like in unix ex */
 		break;
 	    case '.':
 	    case '*':
+	    case '+':
 	    case '|':
 	    case '$':
 	    case '^':
@@ -477,40 +483,59 @@ int            *flagp;
 static char *regpiece(flagp)
 int            *flagp;
 {
-    register char  *ret;
-    register short  op;
-    /* register char  *nxt; */
-    int             flags;
+  register char  *ret;
+  register short  op;
+  /* register char  *nxt; */
+  int             flags;
 
-    ret = regatom(&flags);
-    if (ret == (char *)NULL)
-	return ((char *)NULL);
+  ret = regatom(&flags);
+  if (ret == (char *)NULL)
+    return ((char *)NULL);
 
-    op = *regparse;
-    if (!ISMULT(op)) {
-	*flagp = flags;
-	return (ret);
-    }
-    if (!(flags & HASWIDTH))
-	FAIL("* operand could be empty");
-    *flagp = (WORST | SPSTART);
-
-    if (op == ASTERIX && (flags & SIMPLE))
-	reginsert(STAR, ret);
-    else if (op == ASTERIX) {
-	/* Emit x* as (x&|), where & means "self". */
-	reginsert(BRANCH, ret);	/* Either x */
-	regoptail(ret, regnode(BACK));	/* and loop */
-	regoptail(ret, ret);	/* back */
-	regtail(ret, regnode(BRANCH));	/* or */
-	regtail(ret, regnode(NOTHING));	/* null. */
-    } 
-    regparse++;
-    if (ISMULT(*regparse))
-	FAIL("nested *");
-
+  op = *regparse;
+  if (!ISMULT(op)) {
+    *flagp = flags;
     return (ret);
+  }
+  if (!(flags & HASWIDTH))
+    FAIL("* or + operand could be empty");
+  *flagp = (WORST | SPSTART);
+
+  if(op == ASTERIX)
+  {
+    if (flags & SIMPLE)
+    {
+      reginsert(STAR, ret);
+    }
+    else
+    {
+      /* Emit x* as (x&|), where & means "self". */
+      reginsert(BRANCH, ret);	/* Either x */
+      regoptail(ret, regnode(BACK)); /* and loop */
+      regoptail(ret, ret);	/* back */
+      regtail(ret, regnode(BRANCH)); /* or */
+      regtail(ret, regnode(NOTHING)); /* null. */
+    } 
+  }
+  else if(op == PLUS)
+  {
+    /*  Emit a+ as (a&) where & means "self" /Fredrik Hubinette */
+    char *tmp;
+    tmp=regnode(BACK);
+    reginsert(BRANCH, tmp);
+    regtail(ret, tmp);
+    regoptail(tmp, ret);
+    regtail(ret, regnode(BRANCH));
+    regtail(ret, regnode(NOTHING));
+  }
+    
+  regparse++;
+  if (ISMULT(*regparse))
+    FAIL("nested * or +");
+    
+  return (ret);
 }
+
 
 /*
  - regatom - the lowest level
@@ -601,9 +626,9 @@ int            *flagp;
 	    for (len=0; regparse[len] &&
 	        !(regparse[len]&SPECIAL) && regparse[len] != RSQBRAC; len++) ;
 	    if (len <= 0)
-		{
-		FAIL("internal disaster");
-		}
+	    {
+	      FAIL("internal disaster");
+	    }
 	    ender = *(regparse + len);
 	    if (len > 1 && ISMULT(ender))
 		len--;		/* Back off clear of * operand. */

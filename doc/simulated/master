@@ -6,3 +6,6 @@ SYNTAX
 
 DESCRIPTION
 	Master is added by the master object to make it easier to access it.
+
+KEYWORDS
+	object

@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #ifndef CALLBACK_H
@@ -8,20 +8,21 @@
 
 #include "array.h"
 
+struct callback;
+
+typedef void (*callback_func)(struct callback *, void *,void *);
+
 /* Prototypes begin here */
-struct callback
-{
-  struct callback *next, *prev;
-  struct array *args;
-};
-struct callback_list;
-void unlink_callback(struct callback *c);
-void link_callback(struct callback *c);
-void do_callback(struct callback *c);
-void unlink_and_call_callback(struct callback *c);
-void call_callback_list(struct callback_list **ptr);
-struct callback_list *add_to_callback_list(struct callback_list **ptr, struct array *a);
-void remove_from_callback_list(struct callback_list *l);
+struct callback;
+struct callback_block;
+void call_callback(struct callback **ptr, void *arg);
+struct callback *add_to_callback(struct callback **ptr,
+				 callback_func call,
+				 void *arg,
+				 callback_func free_func);
+void *remove_callback(struct callback *l);
+void free_callback(struct callback **ptr);
+void cleanup_callbacks();
 /* Prototypes end here */
 
 #endif

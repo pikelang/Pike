@@ -1,0 +1,28 @@
+NAME
+	map - map an array or mapping over a function
+
+SYNTAX
+	mixed *map(mixed arr,function fun,mixed ... args);
+	or
+	mixed *map(object *arr,string fun,mixed ... args);
+	or
+	mixed *map(function *arr,-1,mixed ... arg);
+
+DESCRIPTION
+	First syntax:
+	Map array returns an array holding the items of arr mapped thrugh
+	the function fun. ie. arr[x]=fun(arr[x], @args) for all x.
+
+	Second syntax:
+	Map array calls function fun in all objects in the array arr.
+	ie. arr[x]=arr[x]->fun(@ args);
+
+	Third syntax:
+	Map array calls the functions in the array arr:
+	arr[x]=arr[x]->fun(@ args);
+
+KEYWORDS
+	array
+
+SEE ALSO
+	sum_arrays, filter

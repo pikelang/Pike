@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -41,20 +41,20 @@
 struct array *encode_stat(struct stat *s)
 {
   struct array *a;
-  a=allocate_array_no_init(7,0,T_INT);
-  SHORT_ITEM(a)[0].integer=s->st_mode;
+  a=allocate_array(7);
+  ITEM(a)[0].u.integer=s->st_mode;
   switch(S_IFMT & s->st_mode)
   {
-  case S_IFREG: SHORT_ITEM(a)[1].integer=s->st_size; break;
-  case S_IFDIR: SHORT_ITEM(a)[1].integer=-2; break;
-  case S_IFLNK: SHORT_ITEM(a)[1].integer=-3; break;
-  default: SHORT_ITEM(a)[1].integer=-4; break;
+  case S_IFREG: ITEM(a)[1].u.integer=s->st_size; break;
+  case S_IFDIR: ITEM(a)[1].u.integer=-2; break;
+  case S_IFLNK: ITEM(a)[1].u.integer=-3; break;
+  default: ITEM(a)[1].u.integer=-4; break;
   }
-  SHORT_ITEM(a)[2].integer=s->st_atime;
-  SHORT_ITEM(a)[3].integer=s->st_mtime;
-  SHORT_ITEM(a)[4].integer=s->st_ctime;
-  SHORT_ITEM(a)[5].integer=s->st_uid;
-  SHORT_ITEM(a)[6].integer=s->st_gid;
+  ITEM(a)[2].u.integer=s->st_atime;
+  ITEM(a)[3].u.integer=s->st_mtime;
+  ITEM(a)[4].u.integer=s->st_ctime;
+  ITEM(a)[5].u.integer=s->st_uid;
+  ITEM(a)[6].u.integer=s->st_gid;
   return a;
 }
 
@@ -83,7 +83,7 @@ void f_file_stat(INT32 args)
   }
 }
 
-void f_perror(INT32 args)
+void f_werror(INT32 args)
 {
   if(!args)
     error("Too few arguments to perror.\n");
@@ -170,7 +170,7 @@ void f_get_dir(INT32 args)
       push_string(make_shared_binary_string(d->d_name,NAMLEN(d)));
     }
     closedir(dir);
-    a=aggregate_array(sp-save_sp, T_STRING);
+    a=aggregate_array(sp-save_sp);
   }
 
   pop_n_elems(args);
@@ -197,20 +197,29 @@ void f_cd(INT32 args)
 void f_getcwd(INT32 args)
 {
   char *e;
-  pop_n_elems(args);
+#if defined(HAVE_WORKING_GETCWD) || !defined(HAVE_GETWD)
+  char *tmp;
+  INT32 size;
 
-#ifdef HAVE_GETCWD
-  e=(char *)getcwd(0,1000); 
+  size=1000;
+  do {
+    tmp=(char *)xalloc(size);
+    e=(char *)getcwd(tmp,1000); 
+    if (e || errno!=ERANGE) break;
+    free((char *)tmp);
+    size*=2;
+  } while (size < 10000);
 #else
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 32768
 #endif
-
   e=(char *)getwd((char *)malloc(MAXPATHLEN+1));
-  if(!e)
-    fatal("Couldn't fetch current path.\n");
 #endif
+  if(!e)
+    error("Failed to fetch current path.\n");
+
+  pop_n_elems(args);
   push_string(make_shared_string(e));
   free(e);
 }
@@ -243,12 +252,11 @@ void f_exece(INT32 args)
     if(sp[2-args].type != T_MAPPING)
       error("Bad argument 3 to exece().\n");
     en=sp[2-args].u.mapping;
-    array_fix_type_field(en->ind);
-    array_fix_type_field(en->val);
+    mapping_fix_type_field(en);
 
-    if(en->ind->type_field & ~BIT_STRING)
+    if(m_ind_types(en) & ~BIT_STRING)
       error("Bad argument 3 to exece().\n");
-    if(en->val->type_field & ~BIT_STRING)
+    if(m_val_types(en) & ~BIT_STRING)
       error("Bad argument 3 to exece().\n");
 
   case 2:
@@ -278,24 +286,26 @@ void f_exece(INT32 args)
 
   if(en)
   {
-    env=(char **)xalloc((1+en->ind->size) * sizeof(char *));
+    INT32 e;
+    struct array *i,*v;
 
-    for(e=0;e<en->ind->size;e++)
+    env=(char **)xalloc((1+m_sizeof(en)) * sizeof(char *));
+
+    i=mapping_indices(en);
+    v=mapping_values(en);
+    
+    for(e=0;e<i->size;e++)
     {
-      union anything *a;
-      a=low_array_get_item_ptr(en->ind,e,T_STRING);
-      push_string(a->string);
-      a->string->refs++;
-
+      push_string(ITEM(i)[e].u.string);
       push_string(make_shared_string("="));
-      a=low_array_get_item_ptr(en->val,e,T_STRING);
-      push_string(a->string);
-      a->string->refs++;
-
-      f_sum(3);
-
+      push_string(ITEM(v)[e].u.string);
+      f_add(3);
       env[e]=sp[-1].u.string->str;
+      sp--;
     }
+      
+    free_array(i);
+    free_array(v);
     env[e]=0;
   }else{
     env=environ;
@@ -332,6 +342,31 @@ void f_mv(INT32 args)
   push_int(!i);
 }
 
+#ifdef HAVE_STRERROR
+void f_strerror(INT32 args)
+{
+  char *s;
+
+  if(!args) 
+    error("Too few arguments to strerror()\n");
+  if(sp[-args].type != T_INT)
+    error("Bad argument 1 to strerror()\n");
+
+  s=strerror(sp[-args].u.integer);
+  pop_n_elems(args);
+  if(s)
+    push_text(s);
+  else
+    push_int(0);
+}
+#endif
+
+void f_errno(INT32 args)
+{
+  pop_n_elems(args);
+  push_int(errno);
+}
+
 void init_files_efuns()
 {
   set_close_on_exec(0,1);
@@ -340,7 +375,8 @@ void init_files_efuns()
 
   add_efun("file_stat",f_file_stat,
 	   "function(string,int|void:int *)",OPT_EXTERNAL_DEPEND);
-  add_efun("perror",f_perror,"function(string:void)",OPT_SIDE_EFFECT);
+  add_efun("errno",f_errno,"function(:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("werror",f_werror,"function(string:void)",OPT_SIDE_EFFECT);
   add_efun("rm",f_rm,"function(string:int)",OPT_SIDE_EFFECT);
   add_efun("mkdir",f_mkdir,"function(string,void|int:int)",OPT_SIDE_EFFECT);
   add_efun("mv", f_mv, "function(string,string:int)", OPT_SIDE_EFFECT);
@@ -349,4 +385,8 @@ void init_files_efuns()
   add_efun("getcwd",f_getcwd,"function(:string)",OPT_EXTERNAL_DEPEND);
   add_efun("fork",f_fork,"function(:int)",OPT_SIDE_EFFECT);
   add_efun("exece",f_exece,"function(string,mixed*,void|mapping(string:string):int)",OPT_SIDE_EFFECT); 
+
+#ifdef HAVE_STRERROR
+  add_efun("strerror",f_strerror,"function(int:string)",0);
+#endif
 }

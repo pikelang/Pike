@@ -1,13 +1,13 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
-#include "lpc_types.h"
+#include "pike_types.h"
 #include "stralloc.h"
 #include "las.h"
 #include "language.h"
@@ -19,6 +19,7 @@
 #include "interpret.h"
 #include "hashtable.h"
 #include "main.h"
+#include "gc.h"
 #include <stdio.h>
 #include <fcntl.h>
 
@@ -36,6 +37,32 @@
 #undef FILE_STATE
 #undef PROGRAM_STATE
 
+
+char *lfun_names[] = {
+  "__INIT",
+  "create",
+  "destroy",
+  "`+",
+  "`-",
+  "`&",
+  "`|",
+  "`^",
+  "`<<",
+  "`>>",
+  "`*",
+  "`/",
+  "`%",
+  "`~",
+  "`==",
+  "`<",
+  "`>",
+  "__hash",
+  "cast",
+  "`!",
+  "`[]",
+  "`[]=",
+};
+
 struct program *first_program = 0;
 
 struct program fake_program;
@@ -43,7 +70,7 @@ struct program fake_program;
 static int current_program_id=0;
 static INT32 last_line = 0;
 static INT32 last_pc = 0;
-static struct lpc_string *last_file = 0;
+static struct pike_string *last_file = 0;
 dynamic_buffer inherit_names;
 
 #define HASH_ID_IS_LOCAL 1
@@ -69,7 +96,7 @@ void setup_fake_program()
 {
   fake_program.refs=0xffffff;
   SETUP(program, program_size, unsigned char, A_PROGRAM);
-  SETUP(strings, num_strings, struct lpc_string *, A_STRINGS);
+  SETUP(strings, num_strings, struct pike_string *, A_STRINGS);
   SETUP(inherits, num_inherits, struct inherit, A_INHERITS);
   SETUP(identifiers, num_identifiers, struct identifier, A_IDENTIFIERS);
   SETUP(identifier_references, num_identifier_references, struct reference, A_IDENTIFIER_REFERENCES);
@@ -95,7 +122,7 @@ void start_new_program()
 {
   int e;
   struct inherit inherit;
-  struct lpc_string *name;
+  struct pike_string *name;
 
 #define PROGRAM_STATE
 #define PUSH
@@ -156,6 +183,8 @@ void really_free_program(struct program *p)
     p->next->prev=p->prev;
 
   free((char *)p);
+
+  GC_FREE();
 }
 
 #ifdef DEBUG
@@ -198,7 +227,7 @@ void dump_program_desc(struct program *p)
  */
 void toss_current_program()
 {
-  struct lpc_string **names;
+  struct pike_string **names;
   int e;
   setup_fake_program();
 
@@ -207,25 +236,17 @@ void toss_current_program()
   for (e=0; e<NUM_AREAS; e++)
     toss_buffer(areas+e);
 
-  names=(struct lpc_string **)inherit_names.s.str;
-  e=inherit_names.s.len / sizeof(struct lpc_string *);
+  names=(struct pike_string **)inherit_names.s.str;
+  e=inherit_names.s.len / sizeof(struct pike_string *);
   for(e--;e>=0;e--) if(names[e]) free_string(names[e]);
   toss_buffer(& inherit_names);
 }
 
 #ifdef DEBUG
-void check_program(struct program *p, int pass)
+void check_program(struct program *p)
 {
   INT32 size,e;
   unsigned INT32 checksum;
-
-  if(pass)
-  {
-    if(checked((void *)p,0) != p->refs)
-      fatal("Program has wrong number of references.\n");
-
-    return;
-  }
 
   if(p->refs <=0)
     fatal("Program has zero refs.\n");
@@ -252,7 +273,7 @@ void check_program(struct program *p, int pass)
   size+=MY_ALIGN(p->num_linenumbers);
   size+=MY_ALIGN(p->program_size);
   size+=MY_ALIGN(p->num_constants * sizeof(struct svalue));
-  size+=MY_ALIGN(p->num_strings * sizeof(struct lpc_string *));
+  size+=MY_ALIGN(p->num_strings * sizeof(struct pike_string *));
   size+=MY_ALIGN(p->num_identifiers * sizeof(struct identifier));
   size+=MY_ALIGN(p->num_identifier_references * sizeof(struct reference));
   size+=MY_ALIGN(p->num_inherits * sizeof(struct inherit));
@@ -333,10 +354,7 @@ void check_program(struct program *p, int pass)
   {
     if(p->inherits[e].storage_offset < 0)
       fatal("Inherit->storage_offset is wrong.\n");
-
-    checked((void *)p->inherits[e].prog,1);
   }
-  checked((void *)p,-1); /* One too many were added above */
 }
 #endif
 
@@ -362,7 +380,7 @@ if((prog->PTRS = areas[AREA].s.len/sizeof(TYPE))) \
 
 struct program *end_program()
 {
-  struct lpc_string **names;
+  struct pike_string **names;
   int size, i,e,t;
   char *p;
   struct program *prog;
@@ -374,7 +392,7 @@ struct program *end_program()
   if (init_node)
   {
     union idptr tmp;
-    struct lpc_string *s;
+    struct pike_string *s;
     s=make_shared_string("__INIT");
     tmp.offset=PC;
     ins_byte(0, A_PROGRAM); /* num args */
@@ -383,7 +401,7 @@ struct program *end_program()
     define_function(s,
 		    function_type_string,
 		    0,  /* ID_STATIC, */
-		    IDENTIFIER_LPC_FUNCTION,
+		    IDENTIFIER_PIKE_FUNCTION,
 		    & tmp);
     free_string(s);
   }
@@ -409,7 +427,7 @@ struct program *end_program()
     INS_BLOCK(linenumbers,num_linenumbers,char,A_LINENUMBERS);
     INS_BLOCK(identifiers,num_identifiers,struct identifier,A_IDENTIFIERS);
     INS_BLOCK(identifier_references,num_identifier_references,struct reference,A_IDENTIFIER_REFERENCES);
-    INS_BLOCK(strings,num_strings,struct lpc_string *,A_STRINGS);
+    INS_BLOCK(strings,num_strings,struct pike_string *,A_STRINGS);
     INS_BLOCK(inherits,num_inherits,struct inherit,A_INHERITS);
     INS_BLOCK(constants,num_constants,struct svalue,A_CONSTANTS);
 
@@ -455,8 +473,8 @@ struct program *end_program()
 
     prog->inherits[0].prog=prog;
 
-    names=(struct lpc_string **)inherit_names.s.str;
-    e=inherit_names.s.len / sizeof(struct lpc_string *);
+    names=(struct pike_string **)inherit_names.s.str;
+    e=inherit_names.s.len / sizeof(struct pike_string *);
     for(e--;e>=0;e--) if(names[e]) free_string(names[e]);
     toss_buffer(& inherit_names);
 
@@ -465,11 +483,16 @@ struct program *end_program()
       first_program->prev=prog;
     first_program=prog;
 
+    for(i=0;i<NUM_LFUNS;i++)
+      prog->lfuns[i]=find_identifier(lfun_names[i],prog);
+
 #ifdef DEBUG
-    check_program(prog,0);
+    check_program(prog);
     if(l_flag)
       dump_program_desc(prog);
 #endif
+
+    GC_ALLOC();
   }
 
   /* Clean up */
@@ -526,7 +549,7 @@ SIZE_T add_storage(SIZE_T size)
  * set a callback used to initialize clones of this program
  * the init function is called at clone time
  */
-void set_init_callback(void (*init)(char *,struct object *))
+void set_init_callback(void (*init)(struct object *))
 {
   fake_program.init=init;
 }
@@ -535,13 +558,13 @@ void set_init_callback(void (*init)(char *,struct object *))
  * set a callback used to de-initialize clones of this program
  * the exit function is called at destruct
  */
-void set_exit_callback(void (*exit)(char *,struct object *))
+void set_exit_callback(void (*exit)(struct object *))
 {
   fake_program.exit=exit;
 }
 
 
-int low_reference_inherited_identifier(int e,struct lpc_string *name)
+int low_reference_inherited_identifier(int e,struct pike_string *name)
 {
   struct reference funp;
   struct program *p;
@@ -575,10 +598,10 @@ int low_reference_inherited_identifier(int e,struct lpc_string *name)
 
 
 
-int reference_inherited_identifier(struct lpc_string *super_name,
-				   struct lpc_string *function_name)
+int reference_inherited_identifier(struct pike_string *super_name,
+				   struct pike_string *function_name)
 {
-  struct lpc_string **names;
+  struct pike_string **names;
   int e,i;
 
 #ifdef DEBUG
@@ -586,7 +609,7 @@ int reference_inherited_identifier(struct lpc_string *super_name,
     fatal("reference_inherited_function on nonshared string.\n");
 #endif
 
-  names=(struct lpc_string **)inherit_names.s.str;
+  names=(struct pike_string **)inherit_names.s.str;
   setup_fake_program();
 
   for(e=fake_program.num_inherits-1;e>0;e--)
@@ -612,12 +635,12 @@ int reference_inherited_identifier(struct lpc_string *super_name,
   return -1;
 }
 
-void rename_last_inherit(struct lpc_string *n)
+void rename_last_inherit(struct pike_string *n)
 {
-  struct lpc_string **names;
+  struct pike_string **names;
   int e;
-  names=(struct lpc_string **)inherit_names.s.str;
-  e=inherit_names.s.len / sizeof(struct lpc_string *);
+  names=(struct pike_string **)inherit_names.s.str;
+  e=inherit_names.s.len / sizeof(struct pike_string *);
   free_string(names[e-1]);
   copy_shared_string(names[e-1],n);
 }
@@ -625,11 +648,11 @@ void rename_last_inherit(struct lpc_string *n)
 /*
  * make this program inherit another program
  */
-void do_inherit(struct program *p,INT32 flags, struct lpc_string *name)
+void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
 {
   int e, inherit_offset, storage_offset;
   struct inherit inherit;
-  struct lpc_string *s;
+  struct pike_string *s;
 
   setup_fake_program();
 
@@ -654,7 +677,7 @@ void do_inherit(struct program *p,INT32 flags, struct lpc_string *name)
   for (e=0; e < (int)p->num_identifier_references; e++)
   {
     struct reference fun;
-    struct lpc_string *name;
+    struct pike_string *name;
 
     fun = p->identifier_references[e]; /* Make a copy */
 
@@ -669,12 +692,13 @@ void do_inherit(struct program *p,INT32 flags, struct lpc_string *name)
 	my_yyerror("Illegal to redefine 'nomask' function/variable \"%s\"",name->str);
     }
 
+    if(fun.flags & ID_PRIVATE) fun.flags|=ID_HIDDEN;
+
     if (fun.flags & ID_PUBLIC)
       fun.flags |= flags & ~ID_PRIVATE;
     else
       fun.flags |= flags;
 
-    if(fun.flags & ID_PRIVATE) fun.flags|=ID_HIDDEN;
     fun.flags |= ID_INHERITED;
     add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&fun, sizeof fun);
   }
@@ -694,7 +718,7 @@ void do_inherit(struct program *p,INT32 flags, struct lpc_string *name)
   }
 }
 
-void simple_do_inherit(struct lpc_string *s, INT32 flags,struct lpc_string *name)
+void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *name)
 {
   reference_shared_string(s);
   push_string(s);
@@ -721,7 +745,7 @@ void simple_do_inherit(struct lpc_string *s, INT32 flags,struct lpc_string *name
 /*
  * Return the index of the identifier found, otherwise -1.
  */
-int isidentifier(struct lpc_string *s)
+int isidentifier(struct pike_string *s)
 {
   INT32 e;
   setup_fake_program();
@@ -736,8 +760,8 @@ int isidentifier(struct lpc_string *s)
 }
 
 /* argument must be a shared string */
-int define_variable(struct lpc_string *name,
-		    struct lpc_string *type,
+int define_variable(struct pike_string *name,
+		    struct pike_string *type,
 		    INT32 flags)
 {
   int n;
@@ -805,8 +829,8 @@ int define_variable(struct lpc_string *name,
  * define a new function
  * if func isn't given, it is supposed to be a prototype.
  */
-INT32 define_function(struct lpc_string *name,
-		      struct lpc_string *type,
+INT32 define_function(struct pike_string *name,
+		      struct pike_string *type,
 		      INT16 flags,
 		      INT8 function_flags,
 		      union idptr *func)
@@ -914,7 +938,7 @@ INT32 define_function(struct lpc_string *name,
  * lookup the number of a function in a program given the name in
  * a shared_string
  */
-static int low_find_shared_string_identifier(struct lpc_string *name,
+static int low_find_shared_string_identifier(struct pike_string *name,
 					     struct program *prog)
 {
   int max,min,tst;
@@ -973,7 +997,7 @@ static int low_find_shared_string_identifier(struct lpc_string *name,
 #ifdef FIND_FUNCTION_HASHSIZE
 struct ff_hash
 {
-  struct lpc_string *name;
+  struct pike_string *name;
   int id;
   int fun;
 };
@@ -981,7 +1005,7 @@ struct ff_hash
 static struct ff_hash cache[FIND_FUNCTION_HASHSIZE];
 #endif
 
-int find_shared_string_identifier(struct lpc_string *name,
+int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog)
 {
 #ifdef FIND_FUNCTION_HASHSIZE
@@ -1009,7 +1033,7 @@ int find_shared_string_identifier(struct lpc_string *name,
 
 int find_identifier(char *name,struct program *prog)
 {
-  struct lpc_string *n;
+  struct pike_string *n;
   if(!prog)
     error("Identifier lookup in destructed object.\n");
   n=findstring(name);
@@ -1017,12 +1041,12 @@ int find_identifier(char *name,struct program *prog)
   return find_shared_string_identifier(n,prog);
 }
 
-int store_prog_string(struct lpc_string *str)
+int store_prog_string(struct pike_string *str)
 {
   unsigned int i;
-  struct lpc_string **p;
+  struct pike_string **p;
 
-  p = (struct lpc_string **)areas[A_STRINGS].s.str;
+  p = (struct pike_string **)areas[A_STRINGS].s.str;
 
   for (i=0;i<areas[A_STRINGS].s.len / sizeof str;i++)
     if (p[i] == str)
@@ -1087,11 +1111,11 @@ static void insert_small_number(int a,int area)
     ins_short(a,area);
   }else{
     ins_signed_byte(-128,area);
-    ins_long(a,area);
+    ins_int(a,area);
   }	
 }
 
-void store_linenumber(void)
+void store_linenumber(INT32 current_line, struct pike_string *current_file)
 {
   if(last_line!=current_line || last_file != current_file)
   {
@@ -1162,7 +1186,7 @@ void my_yyerror(char *fmt,...)
   va_start(args,fmt);
   VSPRINTF(buf,fmt,args);
 
-  if(strlen(buf) >= sizeof(buf))
+  if((long)strlen(buf) >= (long)sizeof(buf))
     fatal("Buffer overflow in my_yyerror.");
 
   yyerror(buf);
@@ -1170,7 +1194,7 @@ void my_yyerror(char *fmt,...)
 }
 
 /*
- * Compile an LPC file. Input is supposed to be initalized already.
+ * Compile an PIKE file. Input is supposed to be initalized already.
  */
 void compile()
 {
@@ -1186,14 +1210,15 @@ void compile()
   free_all_local_names();
 }
 
-struct program *compile_file(struct lpc_string *file_name)
+struct program *compile_file(struct pike_string *file_name)
 {
   int fd;
   struct program *p;
-  
+
   fd=open(file_name->str,O_RDONLY);
   if(fd < 0)
     error("Couldn't open file '%s'.\n",file_name->str);
+
 
 
 #define FILE_STATE
@@ -1216,8 +1241,8 @@ struct program *compile_file(struct lpc_string *file_name)
   return p;
 }
 
-struct program *compile_string(struct lpc_string *prog,
-			       struct lpc_string *name)
+struct program *compile_string(struct pike_string *prog,
+			       struct pike_string *name)
 {
   struct program *p;
 
@@ -1255,7 +1280,7 @@ struct program *end_c_program(char *name)
 
 void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 {
-  struct lpc_string *name_tmp,*type_tmp;
+  struct pike_string *name_tmp,*type_tmp;
   union idptr tmp;
   
   name_tmp=make_shared_string(name);
@@ -1281,23 +1306,11 @@ void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 }
 
 #ifdef DEBUG
-void check_all_programs(int pass)
+void check_all_programs()
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
-    check_program(p,pass);
-
-#ifdef FIND_FUNCTION_HASHSIZE
-  if(!pass)
-  {
-    int e;
-    for(e=0;e<FIND_FUNCTION_HASHSIZE;e++)
-    {
-      if(cache[e].name)
-	checked((void *)cache[e].name,1);
-    }
-  }
-#endif
+    check_program(p);
 }
 #endif
 
@@ -1315,3 +1328,46 @@ void cleanup_program()
   }
 #endif
 }
+
+#ifdef GC2
+
+void gc_mark_program_as_referenced(struct program *p)
+{
+  if(gc_mark(p))
+    gc_mark_svalues(p->constants, p->num_constants);
+}
+
+void gc_check_all_programs()
+{
+  struct program *p;
+  for(p=first_program;p;p=p->next)
+    gc_check_svalues(p->constants, p->num_constants);
+}
+
+void gc_mark_all_programs()
+{
+  struct program *p;
+  for(p=first_program;p;p=p->next)
+    if(gc_is_referenced(p))
+      gc_mark_program_as_referenced(p);
+}
+
+void gc_free_all_unreferenced_programs()
+{
+  struct program *p,*next;
+
+  for(p=first_program;p;p=next)
+  {
+    if(gc_do_free(p))
+    {
+      p->refs++;
+      free_svalues(p->constants, p->num_constants, -1);
+      next=p->next;
+      free_program(p);
+    }else{
+      next=p->next;
+    }
+  }
+}
+
+#endif /* GC2 */

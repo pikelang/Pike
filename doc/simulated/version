@@ -5,8 +5,8 @@ SYNTAX
 	string version();
 
 DESCRIPTION
-	This function returns a brief information about the uLPC version.
+	This function returns a brief information about the Pike version.
 
 EXAMPLE
 	> version();
-	Result: uLPC v1.0E-13
+	Result: Pike v1.0E-13

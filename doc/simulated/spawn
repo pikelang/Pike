@@ -2,6 +2,8 @@ NAME
 	spawn - spawn a process
 
 SYNTAX
+	#include <process.h>
+
 	int spawn(string cmd);
 	or
 	int spawn(string cmd, object stdin);
@@ -17,6 +19,6 @@ DESCRIPTION
 	should go.
 
 SEE ALSO
-	popen, files/fork, files/exec, files/files->pipe,
-	files/files->dup2
+	popen, files/fork, files/exec, files/file->pipe,
+	files/file->dup2
 

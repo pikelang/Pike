@@ -1,6 +1,6 @@
 /*\
-||| This file a part of uLPC, and is copyright by Fredrik Hubinette
-||| uLPC is distributed as GPL (General Public License)
+||| This file a part of Pike, and is copyright by Fredrik Hubinette
+||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
@@ -9,22 +9,22 @@
 #include "module.h"
 #include "object.h"
 #include "lex.h"
-#include "lpc_types.h"
-#include "builtin_efuns.h"
+#include "pike_types.h"
+#include "builtin_functions.h"
 #include "array.h"
 #include "stralloc.h"
 #include "interpret.h"
 #include "error.h"
 #include "macros.h"
 #include "callback.h"
-#include "lpc_signal.h"
+#include "signal_handler.h"
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
+
+#include "time_stuff.h"
+
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
@@ -36,12 +36,15 @@ int c_flag=0;
 int t_flag=0;
 int a_flag=0;
 int l_flag=0;
+int p_flag=0;
 
-static struct callback_list *post_master_callbacks =0;
+static struct callback *post_master_callbacks =0;
 
-struct callback_list *add_post_master_callback(struct array *a)
+struct callback *add_post_master_callback(callback_func call,
+					  void *arg,
+					  callback_func free_func)
 {
-  return add_to_callback_list(&post_master_callbacks, a);
+  return add_to_callback(&post_master_callbacks, call, arg, free_func);
 }
 
 
@@ -53,12 +56,16 @@ void main(int argc, char **argv, char **env)
   struct array *a;
 
 #ifdef HAVE_SETLOCALE
-  setlocale(LC_ALL, "");
+  setlocale(LC_NUMERIC, "C");
+  setlocale(LC_CTYPE, "");
+  setlocale(LC_TIME, "C");
+  setlocale(LC_COLLATE, "");
+  setlocale(LC_MESSAGES, "");
 #endif  
   init_backend();
   master_file = 0;
 #ifdef HAVE_GETENV
-  master_file = getenv("LPC_MASTER");
+  master_file = getenv("PIKE_MASTER");
 #endif
   if(!master_file) master_file = DEFAULT_MASTER;
 
@@ -92,6 +99,27 @@ void main(int argc, char **argv, char **env)
 	  }
 	  break;
 
+	case 's':
+	  if(!p[1])
+	  {
+	    e++;
+	    if(e >= argc)
+	    {
+	      fprintf(stderr,"Missing argument to -s\n");
+	      exit(1);
+	    }
+	    p=argv[e];
+	  }
+	  stack_size=STRTOL(p+1,&p,0);
+	  p+=strlen(p);
+
+	  if(stack_size < 256)
+	  {
+	    fprintf(stderr,"Stack size must at least be 256.\n");
+	    exit(1);
+	  }
+	  break;
+
 	case 'd':
 	  if(p[1]>='0' && p[1]<='9')
 	    d_flag+=STRTOL(p+1,&p,10);
@@ -111,6 +139,13 @@ void main(int argc, char **argv, char **env)
 	    t_flag+=STRTOL(p+1,&p,10);
 	  else
 	    t_flag++,p++;
+	  break;
+
+	case 'p':
+	  if(p[1]>='0' && p[1]<='9')
+	    p_flag+=STRTOL(p+1,&p,10);
+	  else
+	    p_flag++,p++;
 	  break;
 
 	case 'l':
@@ -151,28 +186,37 @@ void main(int argc, char **argv, char **env)
   }
 #endif
 
-  current_time = get_current_time();
+  GETTIMEOFDAY(&current_time);
 
   init_modules_efuns();
   master();
-  call_and_free_callback_list(& post_master_callbacks);
+  call_callback(& post_master_callbacks, 0);
+  free_callback(& post_master_callbacks);
   init_modules_programs();
 
-  a=allocate_array_no_init(argc-e,0,T_STRING);
+  a=allocate_array_no_init(argc-e,0);
   for(num=0;e<argc;e++)
-    SHORT_ITEM(a)[num++].string=make_shared_string(argv[e]);
+  {
+    ITEM(a)[num].u.string=make_shared_string(argv[e]);
+    ITEM(a)[num].type=T_STRING;
+    num++;
+  }
   push_array(a);
 
   for(num=0;env[num];num++);
-  a=allocate_array_no_init(num,0,T_STRING);
+  a=allocate_array_no_init(num,0);
   for(num=0;env[num];num++)
-    SHORT_ITEM(a)[num].string=make_shared_string(env[num]);
+  {
+    ITEM(a)[num].u.string=make_shared_string(env[num]);
+    ITEM(a)[num].type=T_STRING;
+  }
   push_array(a);
 
   if(SETJMP(back))
   {
-    automatic_fatal="Error in handle_error, previous error (in _main): ";
-    assign_svalue_no_free(sp++, & throw_value);
+    exit_on_error="Error in handle_error, previous error (in _main): ";
+    assign_svalue_no_free(sp, & throw_value);
+    sp++;
     APPLY_MASTER("handle_error", 1);
     pop_stack();
     exit(10);
@@ -192,6 +236,7 @@ void main(int argc, char **argv, char **env)
 
 void init_main_efuns()
 {
+  init_interpreter();
   init_lex();
   init_types();
   init_builtin_efuns();
@@ -206,19 +251,25 @@ void init_main_programs()
 void exit_main()
 {
   void cleanup_added_efuns();
-  void free_all_call_outs();
-  void cleanup_lpc_types();
+  void cleanup_pike_types();
   void cleanup_program();
 
-  automatic_fatal="uLPC is exiting: ";
+  exit_on_error="Pike is exiting: ";
+  cleanup_objects();
   exit_signals();
   exit_lex();
-  cleanup_objects();
   cleanup_interpret();
   cleanup_added_efuns();
-  free_all_call_outs();
-  cleanup_lpc_types();
-  cleanup_shared_string_table();
+  cleanup_pike_types();
   cleanup_program();
+  cleanup_callbacks();
+
+#ifdef GC2
+  do_gc();
+#endif
+
+  zap_all_arrays();
+
+  cleanup_shared_string_table();
 }
 
