@@ -201,9 +201,16 @@ static INT32 hashprimes[] =
 
 void do_gc()
 {
+  static int in_gc = 0;
   double tmp;
   INT32 tmp2;
   struct marker_chunk *m;
+
+  if(in_gc) return;
+  in_gc=1;
+
+  remove_callback(gc_evaluator_callback);
+  gc_evaluator_callback=0;
 
   tmp2=num_objects;
 
@@ -286,12 +293,11 @@ void do_gc()
 #endif
 
 #ifndef ALWAYS_GC
-  if(d_flag < 3 && gc_evaluator_callback)
-  {
-    remove_callback(gc_evaluator_callback);
-    gc_evaluator_callback=0;
-  }
+  ADD_GC_CALLBACK();
+#else
+  if(d_flag > 3) ADD_GC_CALLBCK();
 #endif
+  in_gc=0;
 }
 
 #endif
