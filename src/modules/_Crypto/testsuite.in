@@ -75,6 +75,18 @@ test_eq([[Crypto.des()->set_decrypt_key(xCrypto.hex_to_string("0123456789abcdef"
 
 ]])
 
+
+cond( [[ master()->resolv("Gmp")->mpz ]],
+[[
+
+// RIJNDAEL
+
+test_true([[objectp(Crypto.rijndael()) && objectp(Crypto.aes())]])
+test_false(Process.system(RUNPIKE+" SRCDIR/rijndaeltest.pike --quick"))
+
+]])
+
+
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
 
