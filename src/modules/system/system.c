@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.58 1998/08/04 23:20:46 grubba Exp $
+ * $Id: system.c,v 1.59 1998/08/04 23:56:14 grubba Exp $
  *
  * System-call module for Pike
  *
@@ -15,7 +15,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.58 1998/08/04 23:20:46 grubba Exp $");
+RCSID("$Id: system.c,v 1.59 1998/08/04 23:56:14 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -173,7 +173,7 @@ static void report_error(const char *function_name)
     error_msg = "No such process";
     break;
   }
-  error("%s(): Failed:%s\n", function_name, error_msg);
+  error("%s(): Failed: %s\n", function_name, error_msg);
 }
 
 
