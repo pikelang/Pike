@@ -343,14 +343,14 @@ static void f_http_decode_string(INT32 args)
 	 if (foo < end) {
 	   adjust_len += 5;
 	 } else {
-	   adjust_len = end - (foo - 4);
+	   adjust_len += end - (foo - 4);
 	 }
        } else {
 	 foo += 2;
 	 if (foo < end) {
 	   adjust_len += 2;
 	 } else {
-	   adjust_len = end - (foo - 1);
+	   adjust_len += end - (foo - 1);
 	 }
        }
      }
