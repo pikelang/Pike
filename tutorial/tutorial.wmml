@@ -1470,6 +1470,10 @@ Also, these functions operates on floats:
 <dt><tt>float ceil(float <i>x</i>)</tt>, 
 <dd>This function computes the smallest integer value greater than or equal to <i>x</i> and returns it as a <tt>float</tt>.
 </dl>
+<dt><tt>float round(float <i>x</i>)</tt>, 
+<dd>This function computes the closest integer value to <i>x</i> 
+and returns it as a <tt>float</tt>.
+</dl>
 </section>
 
 <section title="string">
@@ -11147,11 +11151,9 @@ Return the closest integer value higher or equal to <i>f</i>.
 <tt>ceil()</tt> does <b>not</b> return an int, merely an integer value stored in a float.
 </man_note>
 <man_see>
-floor
+floor, round
 </man_see>
 </function>
-
-
 
 <function name=chmod title="change mode of a file in the filesystem">
 <man_syntax>
@@ -11750,7 +11752,7 @@ Return the closest integer value lower or equal to <i>f</i>.
 floor() does <b>not</b> return an int, merely an integer value stored in a float.
 </man_note>
 <man_see>
-ceil
+ceil, round
 </man_see>
 </function>
 
@@ -12710,6 +12712,21 @@ mkdir
 </man_see>
 </function>
 
+
+<function name=round title="round a number">
+<man_syntax>
+float round(float <I>f</I>);
+</man_syntax>
+<man_description>
+Return the closest integer value to <i>f</i>.
+</man_description>
+<man_note>
+<tt>round()</tt> does <b>not</b> return an int, merely an integer value stored in a float.
+</man_note>
+<man_see>
+floor, ceil
+</man_see>
+</function>
 
 
 <function name=rows title="select a set of rows from an array">
