@@ -117,7 +117,7 @@ void f_cast()
 	break;
 
       case T_STRING:
-	f=strtod(sp[-1].u.string->str,0);
+	f=STRTOD(sp[-1].u.string->str,0);
 	free_string(sp[-1].u.string);
 	break;
       
