@@ -13,20 +13,12 @@
 #define WERROR(x)
 #endif
 
-#if constant(Gmp.mpz)
-#define BIGNUM object
-#define NUMBER(X) Gmp.mpz(X)
-#else
-#define BIGNUM int
-#define NUMBER(X) ( (int) (X) )
-#endif
-
 /* Data shared between all Lisp objects */
 mapping symbol_table = ([ ]);
 
-object Lempty = Nil();
-object Lfalse = Boolean("#f");
-object Ltrue = Boolean("#t");
+Nil     Lempty = Nil();
+Boolean Lfalse = Boolean("#f");
+Boolean Ltrue = Boolean("#t");
 
 object readline;
 
@@ -36,19 +28,16 @@ class LObject
 {
 }
 
-class SelfEvaluating 
+class SelfEvaluating (string name)
 {
   inherit LObject;
-  string name;
-  
-  object eval(object env, object globals)
+
+  SelfEvaluating eval(Environment env, Environment globals)
     {
       return this_object();
     }
 
   string print(int display) { return name; }
-
-  void create(string n) { name = n; }
 }
 
 class Boolean
@@ -59,7 +48,7 @@ class Boolean
 class Cons 
 {
   inherit LObject;
-  
+
   object car;
   object cdr;
 
@@ -74,14 +63,13 @@ class Cons
 
   object mapcar(string|function fun, mixed ...extra)
     {
-      object new_car, new_cdr;
-      new_car = stringp(fun)? car[fun](@extra) : fun(car, @extra);
+      object new_car = stringp(fun)? car[fun](@extra) : fun(car, @extra);
       if (!new_car)
       {
 	werror("No car\n");
 	return 0;
       }
-    
+
       object new_cdr = (cdr != Lempty) ? cdr->mapcar(fun, @extra)
 	: cdr;
       if (new_cdr) 
@@ -92,7 +80,7 @@ class Cons
 	return 0;
       }
     }
-  
+
   object map(string|function fun, mixed ...extra)
     {
       /* Do this as a special case to allow tail recursion */
@@ -112,7 +100,7 @@ class Cons
 	return 0;
       }
     }
-  
+
   string print(int display)
     {
       string s = "(";
@@ -130,8 +118,8 @@ class Cons
       s += " )";
       return s;
     }
-  
-  object eval(object env, object globals)
+
+  object eval(Environment env, Environment globals)
     {
       WERROR(sprintf("eval list: %s\n", print(1)));
       //if (car->name == "read-line")
@@ -166,7 +154,7 @@ class Symbol
 
   string name;
 
-  object eval(object env, object globals)
+  object eval(Environment env, Environment globals)
     {
       WERROR(sprintf("eval symbol '%s'\n", name));
 #if 0
@@ -196,7 +184,7 @@ class Symbol
     {
       return name;
     }
-  
+
   void create(string n, mapping|void table)
     {
       //     werror(sprintf("Creating symbol '%s'\n", n));
@@ -206,7 +194,7 @@ class Symbol
     }
 
   string to_string() { return name; }
-    
+
 }
 
 class ConstantSymbol 
@@ -221,7 +209,7 @@ class Nil
   inherit SelfEvaluating;
 
   // constant is_nil = 1;
-  
+
   void create()
     {
       Cons :: create(this_object(), this_object());
@@ -232,60 +220,48 @@ class Nil
   object map(mixed ...ignored) { return this_object(); }
 }
 
-class String 
+class String (string value)
 {
   inherit SelfEvaluating;
-  string value;
 
   constant is_string = 1;
-  
-  void create(string s)
-    {
-      value = s;
-    }
-  
+
   string print(int display)
     {
       return display ? ("\"" + replace(value, ({ "\\", "\"", "\n",}),
 				       ({ "\\\\", "\\\"", "\\n"}) ) + "\"")
 	: value;
     }
-  
+
   string to_string() { return value; }
 }
 
-class Number 
+class Number (int|float|object value)
 {
   inherit SelfEvaluating;
-  int|float|object value;
 
   constant is_number = 1;
-  
-  void create(int|float|object x) { value = x; }
 
   string print(int display) { return (string) value; }
 }
   
-class Binding 
+class Binding (object value)
 {
-  object value;
   object query() { return value; }
   void set(object v) { value = v; }
-  void create(object v) { value = v; }
 }
   
 class Environment 
 {
   inherit LObject;
   // int eval_limit; // ugly hack..
-      
+
   /* Mapping of symbols and their values.
    * As a binding may exist in several environments, they
    * are accessed indirectly. */
-  mapping env = ([ ]);
-  // object id; // roxen typ ID.
+  mapping(Symbol:object) env = ([ ]);
 
-  object query_binding(object symbol)
+  object query_binding(Symbol symbol)
     {
       return env[symbol];
     }
@@ -297,7 +273,7 @@ class Environment
 
   object copy() { return object_program(this_object())(copy_value(env)); };
 
-  object extend(object symbol, object value)
+  void extend(Symbol symbol, object value)
     {
       //     werror(sprintf("Binding '%s'\n", symbol->print(1)));
       env[symbol] = Binding(value);
@@ -323,22 +299,15 @@ class Environment
     }
 }
   
-class Lambda
+class Lambda (object formals, // May be a dotted list
+	      object list     // expressions
+	      )
 {
   inherit LObject;
 
-  object formals; /* May be a dotted list */
-  object list; /* expressions */
-
-  void create(object formals_list, object expressions)
-    {
-      formals = formals_list;
-      list = expressions;
-    }
-
   string print(int display) { return "lambda "+list->print(display); }
 
-  int build_env1(object env, object symbols, object arglist)
+  int build_env1(Environment env, object symbols, object arglist)
     {
       if (symbols == Lempty)
 	return arglist == Lempty;
@@ -353,15 +322,15 @@ class Lambda
       }
     }
 
-  object build_env(object env, object arglist)
+  Environment build_env(Environment env, object arglist)
     {
-      object res = env->copy();
+      Environment res = env->copy();
       return build_env1(res, formals, arglist) ? res : 0;
     }
 
-  object new_env(object env, object arglist);
-  
-  object apply(object arglist, object env, object globals)
+  object new_env(Environment env, object arglist);
+
+  object apply(object arglist, Environment env, Environment globals)
     {
       if (globals->limit_apply && (globals->limit_apply()))
 	return 0;
@@ -385,7 +354,7 @@ class Lexical
       //		   env->print(1)));
       l :: create(formals_list, expressions);
     }
-  
+
   object new_env(object ignored, object arglist)
     {
       return build_env(env, arglist);
@@ -396,7 +365,7 @@ class Macro
 {
   inherit Lexical;
   constant is_special = 1;
-  object apply(object arglist, object env, object globals)
+  object apply(object arglist, Environment env, Environment globals)
     {
       object expansion = ::apply(arglist, env, globals);
       return expansion && expansion->eval(env, globals);
@@ -406,22 +375,15 @@ class Macro
 class Dynamic 
 {
   inherit Lambda;
-  object new_env(object env, object arglist)
+  object new_env(Environment env, object arglist)
     {
       return build_env(env, arglist);
     }
 }
 
-class Builtin 
+class Builtin (function apply)
 {
   inherit LObject;
-  
-  function apply;
-
-  void create(function f)
-    {
-      apply = f;
-    }
 
   string print(int display)
     {
@@ -441,14 +403,14 @@ class Special
 
 
 /* Misc functions */
-object make_symbol(string name)
+Symbol make_symbol(string name)
 {
   return symbol_table[name] || Symbol(name, symbol_table);
 }
 
-object make_list(object ...args)
+Cons make_list(object ...args)
 {
-  object res = Lempty;
+  Cons res = Lempty;
   for (int i = sizeof(args) - 1; i >= 0; i--)
     res = Cons(args[i], res);
   return res;
@@ -457,23 +419,16 @@ object make_list(object ...args)
 
 /* Parser */
 
-class Parser 
+class Parser (string buffer)
 {
   object number_re = Regexp("^(-|)([0-9]+)");
   object symbol_re = Regexp("^([^0-9 \t\n(.)\"#]+)");
   object space_re = Regexp("^([ \t\n]+)");
   object comment_re = Regexp("^(;[^\n]*\n)");
   object string_re = Regexp("^(\"([^\\\\\"]|\\\\.)*\")");
-  
-  string buffer;
-  
-  void create(string s)
-    {
-      buffer = s;
-     }
 
   object read_list();
-  
+
   mixed _read()
     {
       if (!strlen(buffer))
@@ -492,7 +447,7 @@ class Parser
 	//	werror("Scanning number\n");
 	string s = `+(@ a);
 	buffer = buffer[ strlen(s) ..];
-	return Number( NUMBER(s) );
+	return Number( (int)s );
       }
       if (a = symbol_re->split(buffer))
       {
@@ -508,7 +463,7 @@ class Parser
 			      ({ "\\\\", "\\\"", "\\n" }),
 			      ({ "\\", "\"", "\n"}) ) );
       }
-      
+
       switch(int c = buffer[0])
       {
       case '(':
@@ -549,7 +504,7 @@ class Parser
       }
       return res;
     }
-  
+
   object read_list()
     {
       mixed item = _read();
@@ -562,7 +517,7 @@ class Parser
 	{
 	case ')': return Lempty;
 	case '.':
-	  object fin = _read();
+	  object|int fin = _read();
 	  if (intp(fin) || (_read() != ')'))
 	  {
 	    return 0;
@@ -580,12 +535,12 @@ class Parser
 
 /* Lisp special forms */
 
-object s_quote(object arglist, object env, object globals)
+object s_quote(object arglist, Environment env, Environment globals)
 {
   return arglist->car;
 }
 
-object s_setq(object arglist, object env, object globals)
+object s_setq(object arglist, Environment env, Environment globals)
 {
 //  werror(sprintf("set!, arglist: %s\n", arglist->print(1) + "\n"));
   object value = arglist->cdr->car->eval(env, globals);
@@ -600,7 +555,7 @@ object s_setq(object arglist, object env, object globals)
     return 0;
 }
 
-object s_define(object arglist, object env, object globals)
+object s_define(object arglist, Environment env, Environment globals)
 {
   object symbol, value;
   if (arglist->car->car)
@@ -618,7 +573,7 @@ object s_define(object arglist, object env, object globals)
   return symbol;
 }    
 
-object s_defmacro(object arglist, object env, object globals)
+object s_defmacro(object arglist, Environment env, Environment globals)
 {
   // werror(sprintf("defmacro '%s'\n", arglist->car->car->print(0)));
   object symbol = arglist->car->car;
@@ -628,8 +583,8 @@ object s_defmacro(object arglist, object env, object globals)
   env->extend(symbol, value);
   return symbol;
 }
-  
-object s_if(object arglist, object env, object globals)
+
+object s_if(object arglist, Environment env, Environment globals)
 {
   if (arglist->car->eval(env, globals) != Lfalse)
     return arglist->cdr->car->eval(env, globals);
@@ -637,7 +592,7 @@ object s_if(object arglist, object env, object globals)
   return (arglist != Lempty) ? arglist->car->eval(env, globals) : Lfalse;
 }
 
-object s_and(object arglist, object env, object globals)
+object s_and(object arglist, Environment env, Environment globals)
 {
   if (arglist == Lempty)
     return Ltrue;
@@ -652,11 +607,11 @@ object s_and(object arglist, object env, object globals)
   return arglist->car->eval(env, globals);
 }
 
-object s_or(object arglist, object env, object globals)
+object s_or(object arglist, Environment env, Environment globals)
 {
   if (arglist == Lempty)
     return Lfalse;
-  
+
   while(arglist->cdr != Lempty)
   {
     object res = arglist->car->eval(env, globals);
@@ -667,12 +622,12 @@ object s_or(object arglist, object env, object globals)
   return arglist->car->eval(env, globals);
 }
 
-object s_begin(object arglist, object env, object globals)
+object s_begin(object arglist, Environment env, Environment globals)
 {
   return arglist->map("eval", env, globals);
 }
 
-object s_lambda(object arglist, object env, object globals)
+object s_lambda(object arglist, Environment env, Environment globals)
 {
   return Lexical(env, arglist->car, arglist->cdr);
 }
@@ -682,12 +637,12 @@ object s_lambda(object arglist, object env, object globals)
  *
  * The catch special form catches errors, returning Lfalse
  * if an error occured. */
-object s_catch(object arglist, object env, object globals)
+object s_catch(object arglist, Environment env, Environment globals)
 {
   return s_begin(arglist, env, globals) || Lfalse;
 }
 
-object s_while(object arglist, object env, object globals)
+object s_while(object arglist, Environment env, Environment globals)
 {
   object expr = arglist->car, res;
   object to_eval = arglist->cdr;
@@ -701,46 +656,46 @@ object s_while(object arglist, object env, object globals)
 
 /* Functions */
 
-object f_car(object arglist, object env, object globals)
+object f_car(object arglist, Environment env, Environment globals)
 {
   return arglist->car->car;
 }
 
-object f_cdr(object arglist, object env, object globals)
+object f_cdr(object arglist, Environment env, Environment globals)
 {
   return arglist->car->cdr;
 }
 
-object f_null(object arglist, object env, object globals)
+object f_null(object arglist, Environment env, Environment globals)
 {
   return (arglist->car == Lempty) ? Ltrue : Lfalse;
 }
 
-object f_cons(object arglist, object env, object globals)
+object f_cons(object arglist, Environment env, Environment globals)
 {
   return MutableCons(arglist->car, arglist->cdr->car);
 }
 
-object f_list(object arglist, object env, object globals)
+object f_list(object arglist, Environment env, Environment globals)
 {
   return arglist;
 }
 
-object f_setcar(object arglist, object env, object globals)
+object f_setcar(object arglist, Environment env, Environment globals)
 {
   if (arglist->car->is_mutable_cons)
     return arglist->car->car = arglist->cdr->car;
   return 0;
 }
 
-object f_setcdr(object arglist, object env, object globals)
+object f_setcdr(object arglist, Environment env, Environment globals)
 {
   if (arglist->car->is_mutable_cons)
     return arglist->car->cdr = arglist->cdr->car;
   return 0;
 }
 
-object f_eval(object arglist, object env, object globals)
+object f_eval(object arglist, Environment env, Environment globals)
 {
   if (arglist->cdr != Lempty)
   {
@@ -754,14 +709,14 @@ object f_eval(object arglist, object env, object globals)
   return arglist->car->eval(env, globals);
 }
 
-object f_apply(object arglist, object env, object globals)
+object f_apply(object arglist, Environment env, Environment globals)
 {
   return arglist->car->apply(arglist->cdr->car, env, globals);
 }
 
-object f_add(object arglist, object env, object globals)
+object f_add(object arglist, Environment env, Environment globals)
 {
-  BIGNUM sum = NUMBER(0);
+  int sum = 0;
 
   while(arglist != Lempty)
   {
@@ -773,9 +728,9 @@ object f_add(object arglist, object env, object globals)
   return Number(sum);
 }
 
-object f_mult(object arglist, object env, object globals)
+object f_mult(object arglist, Environment env, Environment globals)
 {
-  BIGNUM product = NUMBER(1);
+  int product = 1;
 
   while(arglist != Lempty)
   {
@@ -787,10 +742,10 @@ object f_mult(object arglist, object env, object globals)
   return Number(product);
 }
 
-object f_subtract(object arglist, object env, object globals)
+object f_subtract(object arglist, Environment env, Environment globals)
 {
   if (arglist == Lempty)
-    return Number( NUMBER(0) );
+    return Number( 0 );
 
   if (!arglist->car->is_number)
     return 0;
@@ -810,26 +765,26 @@ object f_subtract(object arglist, object env, object globals)
   return Number(diff);
 }
 
-object f_equal(object arglist, object env, object globals)
+object f_equal(object arglist, Environment env, Environment globals)
 {
   return ( (arglist->car == arglist->cdr->car)
 	   || (arglist->car->value == arglist->cdr->car->value))
     ? Ltrue : Lfalse;
 }
 
-object f_lt(object arglist, object env, object globals)
+object f_lt(object arglist, Environment env, Environment globals)
 {
   return (arglist->car->value < arglist->cdr->car->value)
     ? Ltrue : Lfalse;
 }
 
-object f_gt(object arglist, object env, object globals)
+object f_gt(object arglist, Environment env, Environment globals)
 {
   return (arglist->car->value > arglist->cdr->car->value)
     ? Ltrue : Lfalse;
 }
 
-object f_concat(object arglist, object env, object globals)
+object f_concat(object arglist, Environment env, Environment globals)
 {
   string res="";
   do {
@@ -840,13 +795,13 @@ object f_concat(object arglist, object env, object globals)
   return String( res );
 }
 
-object f_read_string(object arglist, object env, object globals)
+object f_read_string(object arglist, Environment env, Environment globals)
 {
   if (arglist->car->is_string)
     return Parser(arglist->car->to_string())->read();
 }
 
-object f_readline(object arglist, object env, object globals)
+object f_readline(object arglist, Environment env, Environment globals)
 {
   if (!arglist->car->is_string)
     return 0;
@@ -855,7 +810,7 @@ object f_readline(object arglist, object env, object globals)
   return s ? String(s) : Lfalse;
 }
 
-object f_display(object arglist, object env, object globals)
+object f_display(object arglist, Environment env, Environment globals)
 {
   while(arglist != Lempty)
   {
@@ -866,12 +821,12 @@ object f_display(object arglist, object env, object globals)
   return Lfalse;
 }
 
-object f_global_environment(object arglist, object env, object globals)
+object f_global_environment(object arglist, Environment env, Environment globals)
 {
   return globals;
 }
 
-void init_specials(object environment)
+void init_specials(Environment environment)
 {
   environment->extend(make_symbol("quote"), Special(s_quote));
   environment->extend(make_symbol("set!"), Special(s_setq));
@@ -887,7 +842,7 @@ void init_specials(object environment)
   environment->extend(make_symbol("catch"), Special(s_catch));
 }
 
-void init_functions(object environment)
+void init_functions(Environment environment)
 {
   environment->extend(make_symbol("+"), Builtin(f_add));
   environment->extend(make_symbol("*"), Builtin(f_mult));
@@ -943,9 +898,9 @@ Parser(
   "		(cons (map car decl) body))\n"
   "	  (map cadr decl))))")->read();
 
-object default_environment()
+Environment default_environment()
 {
-  object env = Environment();
+  Environment env = Environment();
   init_specials(env);
   init_functions(env);
   default_boot_code->eval(env, env);
@@ -954,7 +909,7 @@ object default_environment()
 
 void main()
 {
-  object e = default_environment();
+  Environment e = default_environment();
   // e->extend(make_symbol("global-environment"), e);
   readline = Stdio.Readline();
   readline->enable_history(512);
