@@ -4,6 +4,50 @@
 //!   This module implements calendar calculations, and base classes
 //!   for time units. 
 //!
+//!   example program:
+//!   <pre>
+//!	void write_month(object m)
+//!	{
+//!	   object w;
+//!	   object today;
+//!	
+//!	   today=function_object(object_program(m))->Day();
+//!	
+//!	   write(sprintf("    %|28s\n",
+//!			 Simulate.capitalize(m->name()+" ")
+//!                      +m->year()->name()));
+//!	   
+//!	   w=m->day(1)->week();
+//!	
+//!	   write("    ");
+//!	   foreach (Array.map(w->days(),w->day)->week_day_name(),string n)
+//!	      write(sprintf("%3s ",n[0..2]));
+//!	   write("\n");
+//!	
+//!	   do
+//!	   {
+//!	      array a;
+//!	      object d;
+//!	      a=Array.map(Array.map(w->days(),w->day),
+//!			  lambda(object d,object m) 
+//!			  { if (d->month()!=m) return 0; else return d; },m);
+//!	
+//!	      write(sprintf("%3s ",w->name()));
+//!	      foreach (a,d)
+//!		 if (d)
+//!		    if (d!=today) write(sprintf(" %2d ",d->month_day()));
+//!		    else write(sprintf(">%2d<",d->month_day()));
+//!		 else write("    ");
+//!	
+//!	      write("\n");
+//!	      w++;
+//!	   }
+//!	   while (w->day(0)->month()==m);
+//!	}
+//!    </pre>
+//!	call with, for example, 
+//!	<tt>write_month(Calendar.Swedish.Month());</tt>.
+//!
 //! class time_unit
 //!
 //! method array(string) lesser()
