@@ -348,6 +348,7 @@ int main(int argc, string *argv)
     symlink(pike,lnk);
   }
 #endif
+  write("\nDone\n");
 
   return 0;
 }
