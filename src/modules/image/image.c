@@ -1,4 +1,4 @@
-/* $Id: image.c,v 1.32 1996/12/05 22:53:25 law Exp $ */
+/* $Id: image.c,v 1.33 1996/12/05 23:50:51 law Exp $ */
 
 #include "global.h"
 
@@ -7,7 +7,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.32 1996/12/05 22:53:25 law Exp $");
+RCSID("$Id: image.c,v 1.33 1996/12/05 23:50:51 law Exp $");
 #include "types.h"
 #include "macros.h"
 #include "object.h"
@@ -1416,6 +1416,38 @@ static void image_map_closest(INT32 args)
    d=((struct image*)(o->storage))->img;
    while (i--)
    {
+      *d=ct->clut[colortable_rgb_nearest(ct,*s)];
+      d++; *s++;
+   }
+
+   colortable_free(ct);
+   push_object(o);
+}
+
+static void image_map_fast(INT32 args)
+{
+   struct colortable *ct;
+   long i;
+   rgb_group *d,*s;
+   struct object *o;
+
+   if (!THIS->img) error("no image\n");
+   if (args<1
+       || sp[-args].type!=T_ARRAY)
+      error("illegal argument to image->map_closest()\n");
+
+   push_int(THIS->xsize);
+   push_int(THIS->ysize);
+   o=clone(image_program,2);
+      
+   ct=colortable_from_array(sp[-args].u.array,"image->map_closest()\n");
+   pop_n_elems(args);
+
+   i=THIS->xsize*THIS->ysize;
+   s=THIS->img;
+   d=((struct image*)(o->storage))->img;
+   while (i--)
+   {
       *d=ct->clut[colortable_rgb(ct,*s)];
       d++; *s++;
    }
@@ -1630,6 +1662,8 @@ void init_image_programs()
 		"function(:int)",0);
 
    add_function("map_closest",image_map_closest,
+                "function(:object)",0);
+   add_function("map_fast",image_map_fast,
                 "function(:object)",0);
    add_function("map_fs",image_map_fs,
                 "function(:object)",0);

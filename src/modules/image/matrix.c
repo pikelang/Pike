@@ -1,4 +1,4 @@
-/* $Id: matrix.c,v 1.7 1996/12/03 22:40:46 law Exp $ */
+/* $Id: matrix.c,v 1.8 1996/12/05 23:50:53 law Exp $ */
 
 #include "global.h"
 
@@ -133,7 +133,10 @@ static INLINE void scale_add_line(rgbd_group *new,INT32 yn,INT32 newx,
 	    scale_add_pixel(new,(INT32)xn,img,x,xndxd);
 	 if (dx>=1.0 && (xd=(INT32)(xn+dx)-(INT32)(xn))>1) 
             while (--xd)
+	    {
+	       new++;
                scale_add_pixel(new,(INT32)(xn+xd),img,x,py);
+	    }
 	 xndxd=py*decimals(xn+dx);
 	 new++;
 	 if (xndxd)

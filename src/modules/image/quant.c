@@ -1,4 +1,4 @@
-/* $Id: quant.c,v 1.16 1996/12/05 22:53:27 law Exp $ */
+/* $Id: quant.c,v 1.17 1996/12/05 23:50:54 law Exp $ */
 
 /*
 
@@ -660,7 +660,7 @@ struct colortable *colortable_from_array(struct array *arr,char *from)
 
 int colortable_rgb(struct colortable *ct,rgb_group rgb)
 {
-   int i,best,di;
+   int i,best;
 
    if (ct->cache->index.r==rgb.r &&
        ct->cache->index.g==rgb.g &&
@@ -745,15 +745,67 @@ fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,c
 
 #endif
 
-#if 0
-   di=1000000L;
-   for (i=0; i<ct->numcol; i++)
-      if (DISTANCE(ct->clut[i],rgb)<di) 
-      { 
-	 best=i; 
-	 di=DISTANCE(ct->clut[i],rgb);
+   /* place in cache */
+#if QUANT_SELECT_CACHE>1
+   MEMMOVE(ct->cache+1,ct->cache,
+	   (QUANT_SELECT_CACHE-1)*sizeof(struct rgb_cache));
+#endif
+   ct->cache[0].index=rgb;
+   ct->cache[0].value=best;
+
+#ifdef QUANT_DEBUG_RGB
+fprintf(stderr," -> %lu: %d,%d,%d\n",best,
+	ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+#endif
+   return best;
+}
+
+int colortable_rgb_nearest(struct colortable *ct,rgb_group rgb)
+{
+   int i,best=0,di,di2;
+   rgb_group *prgb;
+
+   if (ct->cache->index.r==rgb.r &&
+       ct->cache->index.g==rgb.g &&
+       ct->cache->index.b==rgb.b) 
+      return ct->cache->value;
+
+#ifdef QUANT_DEBUG_RGB
+fprintf(stderr,"rgb: %d,%d,%d\n",rgb.r,rgb.g,rgb.b);
+#endif
+
+#if QUANT_SELECT_CACHE>1
+   for (i=1; i<QUANT_SELECT_CACHE; i++)
+      if (ct->cache[i].index.r==rgb.r &&
+	  ct->cache[i].index.g==rgb.g &&
+	  ct->cache[i].index.b==rgb.b) 
+      {
+	 best=ct->cache[i].value;
+
+	 MEMMOVE(ct->cache+1,ct->cache,
+		 i*sizeof(struct rgb_cache));
+	 ct->cache[0].index=rgb;
+	 ct->cache[0].value=best;
+
+#ifdef QUANT_DEBUG_RGB
+fprintf(stderr,"cache: %lu: %d,%d,%d\n",best,ct->clut[best].r,ct->clut[best].g,ct->clut[best].b);
+#endif
+	 return best;
       }
 #endif
+
+   /* find node */
+
+   di=1000000L;
+   for (i=0; i<ct->numcol; i++)
+   {
+      prgb=ct->clut+i;
+      if ((di2=DISTANCE(*prgb,rgb))<di) 
+      { 
+	 best=i; 
+	 di=di2;
+      }
+   }
 
    /* place in cache */
 #if QUANT_SELECT_CACHE>1

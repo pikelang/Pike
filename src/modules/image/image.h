@@ -1,4 +1,4 @@
-/* $Id: image.h,v 1.15 1996/12/05 22:53:26 law Exp $ */
+/* $Id: image.h,v 1.16 1996/12/05 23:50:52 law Exp $ */
 
 #define MAX_NUMCOL 32768
 
@@ -61,6 +61,7 @@ struct colortable
 
 struct colortable *colortable_quant(struct image *img,int numcol);
 int colortable_rgb(struct colortable *ct,rgb_group rgb);
+int colortable_rgb_nearest(struct colortable *ct,rgb_group rgb);
 void colortable_free(struct colortable *ct);
 struct colortable *colortable_from_array(struct array *arr,char *from);
 
