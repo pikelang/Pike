@@ -1,6 +1,6 @@
 // -*- c-mode -*-
 //
-// $Id: treeopt.in,v 1.6 1999/11/09 16:53:28 grubba Exp $
+// $Id: treeopt.in,v 1.7 1999/11/09 16:57:36 grubba Exp $
 //
 // The tree optimizer
 //
@@ -125,7 +125,7 @@ F_ARG_LIST(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
 F_ARG_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!($$->tree_info & OPT_CASE)]):
+F_ARG_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_ARG_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
@@ -151,7 +151,7 @@ F_LVALUE_LIST(0 = F_BREAK, *[!($$->tree_info & OPT_CASE)]):
 F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_RETURN), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
-F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_CONSTANT), *[!($$->tree_info & OPT_CASE)]):
+F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_CONTINUE), *[!($$->tree_info & OPT_CASE)]):
   $0;
 
 F_LVALUE_LIST(0 = F_COMMA_EXPR(*, F_BREAK), *[!($$->tree_info & OPT_CASE)]):
