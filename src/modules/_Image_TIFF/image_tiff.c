@@ -7,7 +7,7 @@
 */
 
 #ifdef HAVE_LIBTIFF
-RCSID("$Id: image_tiff.c,v 1.23 2000/12/05 21:08:34 per Exp $");
+RCSID("$Id: image_tiff.c,v 1.24 2000/12/20 13:45:08 grubba Exp $");
 
 #include "global.h"
 #include "machine.h"
@@ -68,7 +68,7 @@ struct imagealpha
 
 #define INITIAL_WRITE_BUFFER_SIZE 8192
 
-#if 0
+#if 1
 # define TRACE(X,Y,Z,Q) fprintf(stderr, X,Y,Z,Q)
 #else
 # define TRACE(X,Y,Z,Q)
@@ -122,11 +122,12 @@ static tsize_t write_buffer(thandle_t bh, tdata_t d, tsize_t len)
   struct buffer *buffer_handle = (struct buffer *)bh;
   char *data = (char *)d;
 
-  TRACE("write_buffer(%p,%p,%d)\n", buffer_handle, data,len);
+  TRACE("write_buffer(%p,%p,%d)", buffer_handle, data, len);
+  TRACE(" offset:%d(%d)\n", buffer_handle->offset, buffer_handle->len, 0);
   while((buffer_handle->len-buffer_handle->offset) < len)
   {
     TRACE("Too small buffer: %d/%d vs %d\n",
-          buffer_handle->len,buffer_handle->offset,
+          buffer_handle->len, buffer_handle->offset,
           len);
     increase_buffer_size( buffer_handle );
   }
@@ -162,9 +163,18 @@ static toff_t seek_buffer(thandle_t bh, toff_t seek, int seek_type )
        buffer_handle->real_len = buffer_handle->offset;
      break;
    case SEEK_END:
-     buffer_handle->offset = buffer_handle->real_len-seek;
+     if (seek > 0) {
+       while (buffer_handle->real_len + seek >= buffer_handle->len) {
+	 increase_buffer_size(buffer_handle);
+       }
+     }
+     buffer_handle->offset = buffer_handle->real_len + seek;
+     if (buffer_handle->offset < 0) {
+       buffer_handle->offset = 0;
+     }
      break;
   }
+  TRACE("Current offset: %ld\n", (long)buffer_handle->offset, 0, 0);
   return buffer_handle->offset;
 }
 
@@ -373,7 +383,7 @@ void low_image_tiff_decode( struct buffer *buf,
     }
     s++;
   }
-  free(raster);
+  _TIFFfree(raster);
   if(!image_only)
   {
     apply( res->alpha, "mirrory", 0);
