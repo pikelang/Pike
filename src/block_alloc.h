@@ -56,5 +56,6 @@ void PIKE_CONCAT3(free_all_,DATA,_blocks)(void)							\
     free((char *)tmp);										\
   }												\
   PIKE_CONCAT(DATA,_blocks)=0;									\
+  PIKE_CONCAT3(free_,DATA,s)=0;									\
 }												\
 
