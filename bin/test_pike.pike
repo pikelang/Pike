@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.36 2000/03/01 20:30:10 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.37 2000/03/07 08:14:57 hubbe Exp $ */
 
 import Stdio;
 
@@ -73,16 +73,24 @@ array find_testsuites(string dir)
   return ret;
 }
 
-
 #if constant(thread_create)
 #define WATCHDOG
+
+object watchdog;
+
 #define WATCHDOG_PIPE
+object watchdog_pipe;
 #else
 #if constant(signal) && constant(signum)
 #define WATCHDOG
 #define WATCHDOG_SIGNAL
 #endif
 #endif	  
+
+
+#ifdef WATCHDOG
+int use_watchdog=1;
+#endif
 
 int main(int argc, string *argv)
 {
@@ -112,6 +120,7 @@ int main(int argc, string *argv)
   add_constant("RUNPIKE",Array.map(args,Process.sh_quote)*" ");
 
   foreach(Getopt.find_all_options(argv,aggregate(
+    ({"no-watchdog",Getopt.NO_ARG,({"--no-watchdog"})}),
     ({"watchdog",Getopt.HAS_ARG,({"--watchdog"})}),
     ({"help",Getopt.NO_ARG,({"-h","--help"})}),
     ({"verbose",Getopt.NO_ARG,({"-v","--verbose"})}),
@@ -131,6 +140,10 @@ int main(int argc, string *argv)
     {
       switch(opt[0])
       {
+	case "no-watchdog":
+	  use_watchdog=0;
+	  break;
+
 	case "watchdog":
 #ifdef WATCHDOG
 	  int cnt=0;
@@ -252,20 +265,22 @@ int main(int argc, string *argv)
 #ifdef WATCHDOG
   int watchdog_time=time();
 
+  if(use_watchdog)
+  {
 #ifdef WATCHDOG_PIPE
-  object watchdog_tmp=Stdio.File();
-  object watchdog_pipe=watchdog_tmp->pipe(Stdio.PROP_IPC);
-  object watchdog=Process.create_process(
-    backtrace()[0][3] + ({  "--watchdog="+getpid() }),
-    (["stdin":watchdog_tmp ]));
-  destruct(watchdog_tmp);
+    object watchdog_tmp=Stdio.File();
+    watchdog_pipe=watchdog_tmp->pipe(Stdio.PROP_IPC);
+    watchdog=Process.create_process(
+      backtrace()[0][3] + ({  "--watchdog="+getpid() }),
+      (["stdin":watchdog_tmp ]));
+    destruct(watchdog_tmp);
 #endif
-
+    
 #ifdef WATCHDOG_SIGNAL
-  object watchdog=Process.create_process(
-    backtrace()[0][3] + ({  "--watchdog="+getpid() }) );
+    watchdog=Process.create_process(
+      backtrace()[0][3] + ({  "--watchdog="+getpid() }) );
 #endif
-
+  }
 #endif
 
   argv=Getopt.get_args(argv,1)+testsuites;
@@ -299,7 +314,7 @@ int main(int argc, string *argv)
 	for(e=start;e<sizeof(tests);e++)
 	{
 #ifdef WATCHDOG
-	  if(time() - watchdog_time > 30)
+	  if(use_watchdog && time() - watchdog_time > 30)
 	  {
 	    watchdog_time=time();
 //	    werror("{WATCHDOG} Ping!\n");
@@ -625,7 +640,8 @@ int main(int argc, string *argv)
   werror("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
 
 #ifdef WATCHDOG_SIGNAL
-  watchdog->kill(signum("SIGKILL"));
+  if(use_watchdog)
+    watchdog->kill(signum("SIGKILL"));
 #endif
 
   return errors;
