@@ -73,10 +73,18 @@ array(string) split_quoted_string(string s)
       case ' ':
       case '\t':
       case '\n':
-	while(strlen(x[e])==1 && e+1 < sizeof(x) &&
-	      (<' ','\t','\n'>) [x[e+1][0]])
-	  if(++e >= sizeof(x))
+	while(strlen(x[e])==1)
+	{
+	  if(e+1 < sizeof(x))
+	  {
+	    if((<' ','\t','\n'>) [x[e+1][0]])
+	      e++;
+	    else
+	      break;
+	  }else{
 	    return ret;
+	  }
+	}
 	ret+=({x[e][1..]});
       break;
 
