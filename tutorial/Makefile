@@ -102,7 +102,8 @@ the_image_module.html: Image.wmml the_image_module.wmml
 	$(pike) ./wmmltohtml2 the_image_module.wmml mirar_html the_image_module
 
 clean:
-	-rm -f *.html *.md $(MADEFILES) 
+	-rm -f *.html *.md $(MADEFILES)
+	-rm -f illustration*.*
 	-rm -f tutorial.dvi tutorial.tex tutorial.aux
 	-rm -f tutorial.log tutorial.toc
 	-rm -f latex.wcache pdflatex.wcache illustration_cache image_cache gfx/* execute_cache
