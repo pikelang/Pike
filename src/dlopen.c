@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dlopen.c,v 1.56 2002/10/27 18:26:33 grubba Exp $
+|| $Id: dlopen.c,v 1.57 2002/10/27 18:39:19 grubba Exp $
 */
 
 #include <global.h>
@@ -199,7 +199,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.56 2002/10/27 18:26:33 grubba Exp $");
+RCSID("$Id: dlopen.c,v 1.57 2002/10/27 18:39:19 grubba Exp $");
 
 #endif
 
@@ -1465,7 +1465,7 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      name=SYMBOLS(sym).name.text;
 	      len=STRNLEN(name,8);
 	    }
-	    if(name[len])
+	    if(!name[len])
 	    {
 	      fprintf(stderr,"DL: reloc name=%s\n",name);
 	    }else{
