@@ -149,3 +149,6 @@ OPCODE_INLINE_BRANCH
 	is to be taken will be generated for I_BRANCH instructions.
 	This is to facilitate easier inlining of branches in the
 	machine code.
+
+void DISASSEMBLE_CODE(void *adrr, size_t bytes)
+	Debug function that dumps the generated code on stderr.
