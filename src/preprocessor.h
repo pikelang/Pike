@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.66 2004/06/23 12:30:27 grubba Exp $
+|| $Id: preprocessor.h,v 1.67 2004/06/29 11:19:19 nilsson Exp $
 */
 
 /*
@@ -961,14 +961,9 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 		    arguments[arg].len=0;
 		    continue;
 		  }else{
-		    if (!d->link.s->size_shift)
-		      cpp_error_sprintf(this,
-					"Too few arguments to macro %s, expected %d.",
-					d->link.s->str, d->args);
-		    else
-		      cpp_error_sprintf(this,
-					"Too few arguments to macro, expected %d.",
-					d->args);
+		    cpp_error_sprintf(this,
+				      "Too few arguments to macro %S, expected %d.",
+				      d->link.s, d->args);
 		    break;
 		  }
 		}
@@ -1033,11 +1028,8 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    SKIPWHITE();
 	    if(!GOBBLE(')')) {
 	      this->current_line = start_line;
-	      if (!d->link.s->size_shift)
-		cpp_error_sprintf(this, "Missing ) in the macro %s.",
-				  d->link.s->str);
-	      else
-		cpp_error(this, "Missing ) in macro.");
+	      cpp_error_sprintf(this, "Missing ) in the macro %S.",
+				d->link.s);
 	    }
 	  }
 	  
@@ -1739,7 +1731,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    push_string(make_shared_binary_string2(data+foo, pos-foo));
 #endif /* SHIFT == 1 */
 #endif /* SHIFT == 0 */
-	    cpp_error(this, Pike_sp[-1].u.string->str);
+	    cpp_error_sprintf(this, "%O", Pike_sp[-1]);
 	  }
 	  break;
 	}
@@ -2181,7 +2173,7 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	    push_string(make_shared_binary_string2(data+foo, pos-foo));
 #endif /* SHIFT == 1 */
 #endif /* SHIFT == 0 */
-	    cpp_warning(this, Pike_sp[-1].u.string->str);
+	    cpp_warning(this, "%O", Pike_sp[-1]);
 	  }
 	  break;
 	}

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.137 2004/06/27 14:11:15 nilsson Exp $
+|| $Id: cpp.c,v 1.138 2004/06/29 11:19:19 nilsson Exp $
 */
 
 #include "global.h"
@@ -117,7 +117,7 @@ struct cpp
 struct define *defined_macro =0;
 struct define *constant_macro =0;
 
-void cpp_error(struct cpp *this, const char *err)
+static void cpp_error(struct cpp *this, const char *err)
 {
   this->compile_errors++;
   if(this->compile_errors > 10) return;
@@ -138,14 +138,15 @@ void cpp_error(struct cpp *this, const char *err)
   }
 }
 
-void cpp_error_vsprintf (struct cpp *this, const char *fmt, va_list args)
+static void cpp_error_vsprintf (struct cpp *this, const char *fmt,
+				va_list args)
 {
   char buf[8192];
-  VSNPRINTF (buf, sizeof (buf), fmt, args);
+  Pike_vsnprintf (buf, sizeof (buf), fmt, args);
   cpp_error(this, buf);
 }
 
-void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
+static void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
   ATTRIBUTE((format(printf,2,3)))
 {
   va_list args;
@@ -154,7 +155,8 @@ void cpp_error_sprintf(struct cpp *this, const char *fmt, ...)
   va_end(args);
 }
 
-void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
+static void cpp_handle_exception(struct cpp *this,
+				 const char *cpp_error_fmt, ...)
   ATTRIBUTE((format(printf,2,3)))
 {
   struct svalue thrown;
@@ -172,10 +174,9 @@ void cpp_handle_exception(struct cpp *this, const char *cpp_error_fmt, ...)
   low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
 
   if (SAFE_IS_ZERO(sp-1)) {
-    /* FIXME: Doesn't handle wide string error messages. */
     struct pike_string *s = format_exception_for_error_msg (&thrown);
     if (s) {
-      if (!s->size_shift) cpp_error (this, s->str);
+      cpp_error_sprintf(this, "%S", s);
       free_string (s);
     }
   }
@@ -191,7 +192,7 @@ static void cpp_warning(struct cpp *this, const char *cpp_warn_fmt, ...)
   va_list args;
 
   va_start(args, cpp_warn_fmt);
-  VSNPRINTF(msg, sizeof(msg), cpp_warn_fmt, args);
+  Pike_vsnprintf(msg, sizeof(msg), cpp_warn_fmt, args);
   va_end(args);
 
   if((this->handler && this->handler->prog) || get_master())
@@ -1086,7 +1087,7 @@ static struct pike_string *recode_string(struct cpp *this, struct pike_string *d
 
     if (!safe_apply_handler ("decode_charset", this->handler, this->compat_handler,
 			     2, BIT_STRING)) {
-      cpp_handle_exception (this, "Error decoding with charset '%s'", new_str->str);
+      cpp_handle_exception (this, "Error decoding with charset %S", new_str);
       free_string (new_str);
       return data;
     }
@@ -1397,8 +1398,8 @@ static void check_constant(struct cpp *this,
 	  res = !(SAFE_IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED);
       }
       else {
-	if (throw_value.type == T_STRING && !throw_value.u.string->size_shift) {
-	  cpp_error(this, throw_value.u.string->str);
+	if (throw_value.type == T_STRING) {
+	  cpp_error_sprintf(this, "%S", throw_value.u.string);
 	  free_svalue(&throw_value);
 	  throw_value.type = T_INT;
 	  res = 0;
@@ -1549,10 +1550,7 @@ static int do_safe_index_call(struct cpp *this, struct pike_string *s)
       throw_value.type = T_INT;
     }
     else if(this->warn_if_constant_throws) {
-      if (!s->size_shift)
-	cpp_warning (this, "Error indexing module with \"%s\".", s->str);
-      else
-	cpp_warning (this, "Error indexing module in \".\" operator.");
+	cpp_warning (this, "Error indexing module with %S.", s);
     }
     res = 0;
     push_undefined();
@@ -1792,8 +1790,8 @@ void f_cpp(INT32 args)
       ref_push_string(charset);
       if (!safe_apply_handler ("decode_charset", this.handler,
 			       this.compat_handler, 2, BIT_STRING)) {
-	cpp_handle_exception (&this, "Error decoding with charset '%s'",
-			      charset->str);
+	cpp_handle_exception (&this, "Error decoding with charset %S",
+			      charset);
 	Pike_error("Unknown charset.\n");
       }
       free(data);
