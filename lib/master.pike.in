@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.2 1998/04/06 04:34:59 hubbe Exp $
+/* $Id: master.pike.in,v 1.3 1998/04/08 22:08:55 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -717,7 +717,6 @@ string handle_include(string f,
     tmp=explode_path(current_file);
     tmp[-1]=f;
     path=combine_path_with_cwd(tmp*"/");
-    if(!master_file_stat(path)) return 0;
   }
   else
   {
@@ -753,7 +752,9 @@ string handle_include(string f,
 
 string read_include(string f)
 {
-  return _static_modules.files()->Fd(f,"r")->read();
+  object o=_static_modules.files()->Fd();
+  if(o->open(f,"r"))
+    return o->read();
 }
 
 // FIXME
