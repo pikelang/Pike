@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.181 2003/08/22 14:23:47 nilsson Exp $
+// $Id: module.pmod,v 1.182 2003/10/05 19:34:20 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -464,19 +464,49 @@ class File
     return 1;	// OK so far. (Or rather the callback will be used).
   }
 
-  //! This function creates a bi-directional pipe between the object it
-  //! was called in and an object that is returned. The two ends of the
-  //! pipe are indistinguishable. If the File object this function is
-  //! called in was open to begin with, it will be closed before the pipe
-  //! is created.
+  //! This function creates a pipe between the object it was called in
+  //! and an object that is returned.
   //!
-  //! @fixme
-  //!   Document the @expr{PROP_@} properties.
+  //! @param void|int required_properties
+  //!   Binary or (@[predef::`|()]) of required @expr{PROP_@} properties.
+  //!   @int
+  //!     @value PROP_IPC
+  //!       The resulting pipe may be used for inter process communication.
+  //!     @value PROP_NONBLOCK
+  //!       The resulting pipe supports nonblocking I/O.
+  //!     @value PROP_SHUTDOWN
+  //!       The resulting pipe supports shutting down transmission in either
+  //!       direction (see @[close()]).
+  //!     @value PROP_BUFFERED
+  //!       The resulting pipe is buffered (usually 4KB).
+  //!     @value PROP_BIDIRECTIONAL
+  //!       The resulting pipe is bi-directional.
+  //!     @value PROP_REVERSE
+  //!       The resulting pipe supports communication "backwards" (but
+  //!       not necessarily "forwards", see @[PROP_BIDIRECTIONAL]).
+  //!   @endint
+  //!   The default is @expr{PROP_NONBLOCK|PROP_BIDIRECTIONAL@}.
+  //!
+  //! If @[PROP_BIDIRECTIONAL] isn't specified, the read-end is this
+  //! object, and the write-end is the returned object (unless
+  //! @[PROP_REVERSE] has been specified, in which case it is the other
+  //! way around).
+  //!
+  //! The two ends of a bi-directional pipe are indistinguishable.
+  //!
+  //! If the File object this function is called in was open to begin with,
+  //! it will be closed before the pipe is created.
+  //!
+  //! @note
+  //!   Calling this function with an argument of @tt{0@} is not the
+  //!   same as calling it with no arguments.
   //!
   //! @seealso
-  //!   @[Process.create_process()]
+  //!   @[Process.create_process()], @[PROP_IPC], @[PROP_NONBLOCK],
+  //!   @[PROP_SHUTDOWN], @[PROP_BUFFERED], @[PROP_REVERSE],
+  //!   @[PROP_BIDIRECTIONAL]
   //!
-  File pipe(void|int how)
+  File pipe(void|int required_properties)
   {
     _fd=Fd();
 #ifdef __STDIO_DEBUG
@@ -484,8 +514,8 @@ class File
 #endif
     is_file = 0;
     if(query_num_arg()==0)
-      how=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
-    if(Fd fd=[object(Fd)]::pipe(how))
+      required_properties=PROP_NONBLOCK | PROP_BIDIRECTIONAL;
+    if(Fd fd=[object(Fd)]::pipe(required_properties))
     {
       File o=File();
       o->_fd=fd;
