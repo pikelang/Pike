@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.103 2004/04/03 16:37:58 grubba Exp $
+|| $Id: backend.cmod,v 1.104 2004/04/03 16:53:18 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.103 2004/04/03 16:37:58 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.104 2004/04/03 16:53:18 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -57,9 +57,6 @@ RCSID("$Id: backend.cmod,v 1.103 2004/04/03 16:37:58 grubba Exp $");
 #endif
 #endif
 #include <sys/stat.h>
-
-#define SELECT_READ 1
-#define SELECT_WRITE 2
 
 /* #define POLL_DEBUG */
 
@@ -281,8 +278,6 @@ struct Backend_struct *really_get_backend_for_fd(int fd)
  *   Solaris 7 + patches and above.
  *   OSF/1 + patches and above.
  *   IRIX 5.6.15m and above.
- * Broken on:
- *   Solaris 7/x86 + patches (process hangs in device wait).
  */
 #include <sys/devpoll.h>
 
