@@ -35,7 +35,8 @@ object do_method(string method,
   mapping default_headers = ([
     "user-agent" : "Mozilla/5.0 (compatible; MSIE 6.0; Pike HTTP client)"
     " Pike/" + __REAL_MAJOR__ + "." + __REAL_MINOR__ + "." + __REAL_BUILD__,
-    "host" : url->host ]);
+    "host" : url->host + 
+    (url->port!=(url->scheme=="https"?443:80)?":"+url->port:"")]);
 
   if(url->user || url->passwd)
     default_headers->authorization = "Basic "
