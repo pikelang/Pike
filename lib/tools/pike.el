@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.35 2001/07/16 15:17:29 mast Exp $
+;;; $Id: pike.el,v 1.36 2001/10/31 23:51:43 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -624,7 +624,7 @@ reposition the cursor to fontify more identifiers."
 	      (1 ,font-lock-preprocessor-face)
 	      (2 font-lock-variable-name-face nil t)))
 
-	    (,(concat "^[ \t]*#[ \t]*ifdef[ \t]+"
+	    (,(concat "^[ \t]*#[ \t]*ifn?def[ \t]+"
 		      pike-font-lock-identifier-regexp)
 	     (1 font-lock-variable-name-face))
 
