@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.24 1998/03/25 22:39:38 grubba Exp $");
+RCSID("$Id: backend.c,v 1.25 1998/03/25 23:15:35 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -59,9 +59,12 @@ static struct selectors selectors;
 
 #else
 #include <poll.h>
-struct pollfd *poll_fds, *active_poll_fds;
-int num_in_poll=0;
-int active_num_in_poll=0;
+struct pollfd *poll_fds = NULL;
+int poll_fd_size = 0;
+int num_in_poll = 0;
+struct pollfd *active_poll_fds = NULL;
+int active_poll_fd_size = 0;
+int active_num_in_poll = 0;
 
 /*
  * This code probably uses realloc a bit too much...
@@ -76,7 +79,13 @@ void POLL_FD_SET(int fd, short add)
       return;
     }
   num_in_poll++;
-  poll_fds = realloc(poll_fds, sizeof(struct pollfd)*num_in_poll);
+  if (num_in_poll >= poll_fd_size) {
+    poll_fd_size += num_in_poll;	/* Usually a doubling */
+    if (!(poll_fds = realloc(poll_fds, sizeof(struct pollfd)*poll_fd_size))) {
+      fatal("Out of memory in backend::POLL_FD_SET()\n"
+	    "Tried to allocate %d pollfds\n", poll_fd_size);
+    }
+  }
   poll_fds[num_in_poll-1].fd = fd;
   poll_fds[num_in_poll-1].events = add;
 }
@@ -97,18 +106,9 @@ void POLL_FD_CLR(int fd, short sub)
 	 */
 	num_in_poll--;
 	if(i != num_in_poll) {
-#if 0
-	  /* Not very efficient...
-	   * /grubba
-	   */
-	  MEMCPY(poll_fds+i, poll_fds+i+1,
-		 (num_in_poll-i)*sizeof(struct pollfd));
-#else /* !0 */
-	  /* This should speed things up a bit...
-	   */
 	  *(poll_fds+i) = *(poll_fds+num_in_poll);
-#endif /* 0 */
 	}
+	/* Might want to shrink poll_fds here, but probably not. */
       }
       break;
     }
@@ -118,14 +118,25 @@ void POLL_FD_CLR(int fd, short sub)
 void switch_poll_set()
 {
   struct pollfd *tmp = active_poll_fds;
+  int sz = active_poll_fd_size;
 
   active_num_in_poll = num_in_poll;
 
   if(!num_in_poll) return;
 
   active_poll_fds = poll_fds;
+  active_poll_fd_size = poll_fd_size;
 
-  poll_fds = realloc(tmp, sizeof(struct pollfd)*num_in_poll);
+  poll_fds = tmp;
+  poll_fd_size = sz;
+
+  if (num_in_poll >= poll_fd_size) {
+    poll_fd_size += num_in_poll;	/* Usually a doubling */
+    if (!(poll_fds = realloc(poll_fds, sizeof(struct pollfd)*poll_fd_size))) {
+      fatal("Out of memory in backend::switch_poll_set()\n"
+	    "Tried to allocate %d pollfds\n", poll_fd_size);
+    }
+  }
 
   MEMCPY(poll_fds, active_poll_fds, sizeof(struct pollfd)*num_in_poll);
 }
