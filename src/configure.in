@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.314 1999/08/27 21:41:41 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.315 1999/08/28 02:47:01 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -540,6 +540,7 @@ if test $cflags_is_set = no; then
   [
     # Tell the linker to generate a large toc if needed
     AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
+    AC_SYS_COMPILER_FLAG([-Wl,-bbigtoc],Wlbbigtoc,LDFLAGS)
   ])
 
  else if test "x${TCC-}" = xyes ; then
