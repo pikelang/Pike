@@ -1,5 +1,64 @@
 #pike __REAL_VERSION__
 
+// Informational
+constant HTTP_CONTINUE		= 100; // RFC 2616 10.1.1: Continue
+constant HTTP_SWITCH_PROT	= 101; // RFC 2616 10.1.2: Switching protocols
+constant DAV_PROCESSING		= 102; // RFC 2518 10.1: Processing
+
+// Successful
+constant HTTP_OK		= 200; // RFC 2616 10.2.1: OK
+constant HTTP_CREATED		= 201; // RFC 2616 10.2.2: Created
+constant HTTP_ACCEPTED		= 202; // RFC 2616 10.2.3: Accepted
+constant HTTP_NONAUTHORATIVE	= 203; // RFC 2616 10.2.4: Non-Authorative Information
+constant HTTP_NO_CONTENT	= 204; // RFC 2616 10.2.5: No Content
+constant HTTP_RESET_CONTENT	= 205; // RFC 2616 10.2.6: Reset Content
+constant HTTP_PARTIAL_CONTENT	= 206; // RFC 2616 10.2.7: Partial Content
+constant DAV_MULTISTATUS	= 207; // RFC 2518 10.2: Multi-Status
+constant DELTA_HTTP_IM_USED	= 226; // RFC 3229 10.4.1: IM Used
+
+// Redirection
+constant HTTP_MULTIPLE		= 300; // RFC 2616 10.3.1: Multiple Choices
+constant HTTP_MOVED_PERM	= 301; // RFC 2616 10.3.2: Moved Permanently
+constant HTTP_FOUND		= 302; // RFC 2616 10.3.3: Found
+constant HTTP_SEE_OTHER		= 303; // RFC 2616 10.3.4: See Other
+constant HTTP_NOT_MODIFIED	= 304; // RFC 2616 10.3.5: Not Modified
+constant HTTP_USE_PROXY		= 305; // RFC 2616 10.3.6: Use Proxy
+// RFC 2616 10.3.7: 306 not used but reserved.
+constant HTTP_TEMP_REDIRECT	= 307; // RFC 2616 10.3.8: Temporary Redirect
+
+// Client errors
+constant HTTP_BAD		= 400; // RFC 2616 10.4.1: Bad Request
+constant HTTP_UNAUTH		= 401; // RFC 2616 10.4.2: Unauthorized
+constant HTTP_PAY		= 402; // RFC 2616 10.4.3: Payment Required
+constant HTTP_FORBIDDEN		= 403; // RFC 2616 10.4.4: Forbidden
+constant HTTP_NOT_FOUND		= 404; // RFC 2616 10.4.5: Not Found
+constant HTTP_METHOD_INVALID	= 405; // RFC 2616 10.4.6: Method Not Allowed
+constant HTTP_NOT_ACCEPTABLE	= 406; // RFC 2616 10.4.7: Not Acceptable
+constant HTTP_PROXY_AUTH_REQ	= 407; // RFC 2616 10.4.8: Proxy Authentication Required
+constant HTTP_TIMEOUT		= 408; // RFC 2616 10.4.9: Request Timeout
+constant HTTP_CONFLICT		= 409; // RFC 2616 10.4.10: Conflict
+constant HTTP_GONE		= 410; // RFC 2616 10.4.11: Gone
+constant HTTP_LENGTH_REQ	= 411; // RFC 2616 10.4.12: Length Required
+constant HTTP_PRECOND_FAILED	= 412; // RFC 2616 10.4.13: Precondition Failed
+constant HTTP_REQ_TOO_LARGE	= 413; // RFC 2616 10.4.14: Request Entity Too Large
+constant HTTP_URI_TOO_LONG	= 414; // RFC 2616 10.4.15: Request-URI Too Long
+constant HTTP_UNSUPP_MEDIA	= 415; // RFC 2616 10.4.16: Unsupported Media Type
+constant HTTP_BAD_RANGE		= 416; // RFC 2616 10.4.17: Requested Range Not Satisfiable
+constant HTTP_EXPECT_FAILED	= 417; // RFC 2616 10.4.18: Expectation Failed
+constant HTCPCP_TEAPOT		= 418; // RFC 2324 2.3.2: I'm a teapot
+constant DAV_UNPROCESSABLE	= 422; // RFC 2518 10.3: Unprocessable Entry
+constant DAV_LOCKED		= 423; // RFC 2518 10.4: Locked
+constant DAV_FAILED_DEP		= 424; // RFC 2518 10.5: Failed Dependency
+
+// Server errors
+constant HTTP_INTERNAL_ERR	= 500; // RFC 2616 10.5.1: Internal Server Error
+constant HTTP_NOT_IMPL		= 501; // RFC 2616 10.5.2: Not Implemented
+constant HTTP_BAD_GW		= 502; // RFC 2616 10.5.3: Bad Gateway
+constant HTTP_UNAVAIL		= 503; // RFC 2616 10.5.4: Service Unavailable
+constant HTTP_GW_TIMEOUT	= 504; // RFC 2616 10.5.5: Gateway Timeout
+constant HTTP_UNSUPP_VERSION	= 505; // RFC 2616 10.5.6: HTTP Version Not Supported
+constant DAV_STORAGE_FULL	= 507; // RFC 2518 10.6: Insufficient Storage
+
 object do_method(string method,
 		 string|Standards.URI url,
 		 void|mapping query_variables,
