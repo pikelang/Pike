@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.20 2002/12/12 19:58:46 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.21 2002/12/12 20:43:16 grubba Exp $
 
 // AutoDoc mk II assembler
 
@@ -327,7 +327,8 @@ void move_appendices(Node n) {
     }
   }
   if(sizeof(appendix_queue))
-    werror("Failed to find appendi%s %s.\n", (sizeof(appendix_queue)==1?"x":"ces"),
+    werror("Failed to find appendi%s %s.\n",
+	   (sizeof(appendix_queue)==1?"x":"ces"),
 	   String.implode_nicely(map(indices(appendix_queue),
 				     lambda(string in) {
 				       return "\""+in+"\"";
