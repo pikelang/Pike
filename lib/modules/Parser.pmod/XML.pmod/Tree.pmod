@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.45 2004/05/06 19:21:16 grubba Exp $
+ * $Id: Tree.pmod,v 1.46 2004/05/06 20:02:59 mast Exp $
  *
  */
 
@@ -203,12 +203,12 @@ class XMLNSParser {
 }
 
 //! Base class for nodes.
-static class AbstractSimpleNode {
+class AbstractSimpleNode {
   //  Private member variables
-  /* static */ array(AbstractNode)    mChildren = ({ });
+  /* static */ array(AbstractSimpleNode) mChildren = ({ });
   
   //! Returns all the nodes children.
-  array(AbstractNode) get_children() { return (mChildren); }
+  array(AbstractSimpleNode) get_children() { return (mChildren); }
 
   //! Returns the number of children of the node.
   int count_children()           { return (sizeof(mChildren)); }
@@ -223,7 +223,7 @@ static class AbstractSimpleNode {
   //! Returns a clone of the sub-tree rooted in the node.
   AbstractSimpleNode clone() {
     AbstractSimpleNode n = low_clone();
-    foreach(mChildren, AbstractNode child)
+    foreach(mChildren, AbstractSimpleNode child)
       n->add_child( child->clone() );
     return n;
   }
@@ -242,16 +242,12 @@ static class AbstractSimpleNode {
   //! @note
   //!   The [] operator will select a node from all the nodes children,
   //!   not just its element children.
-  AbstractSimpleNode `[](mixed pos)
+  static AbstractSimpleNode `[](int pos)
   {
-    if (intp(pos)) {
-      //  Treat pos as index into array
-      if ((pos < 0) || (pos > sizeof(mChildren) - 1))
-	return 0;
-      return (mChildren[pos]);
-    } else
-      //  Unknown indexing
+    //  Treat pos as index into array
+    if ((pos < 0) || (pos > sizeof(mChildren) - 1))
       return 0;
+    return (mChildren[pos]);
   }
 
   //! Adds a child node to this node. The child node is
@@ -269,32 +265,6 @@ static class AbstractSimpleNode {
 	
     //  Let caller get the node back for easy chaining of calls
     return this;
-  }
-
-  //! Variant of @[add_child] that doesn't set the parent pointer in
-  //! the child.
-  //!
-  //! This is useful while building a node tree, to get efficient
-  //! refcount garbage collection if the build stops abruptly.
-  //! @[fix_tree] has to be called on the root node when the building
-  //! is done.
-  AbstractNode tmp_add_child(AbstractNode c)
-  // Doesn't fix the parent pointers to allow efficient refcount
-  // garbing when b. Use fix_tree afterwards.
-  {
-    mChildren += ({c});
-    return c;
-  }
-
-  //! Fix all parent pointers recursively in a tree that has been
-  //! built with @[tmp_add_child].
-  void fix_tree()
-  {
-    foreach (mChildren, AbstractNode c)
-      if (c->mParent != this_object()) {
-	c->mParent = this_object();
-	c->fix_tree();
-      }
   }
 
   //! Removes all occurrences of the provided node from the called nodes
@@ -316,7 +286,7 @@ static class AbstractSimpleNode {
   //!   The return value differs from the one returned
   //!   by @[Node()->replace_child()].
   //! @returns
-  //!   Returns the current node on success, and @expr{0@0 (zero)
+  //!   Returns the current node on success, and @expr{0@} (zero)
   //!   if the node @[old] wasn't found.
   AbstractSimpleNode replace_child(AbstractSimpleNode old,
 				   AbstractSimpleNode new)
@@ -328,9 +298,10 @@ static class AbstractSimpleNode {
     return this;
   }
 
-  //! Destruct the tree recursively. To avoid frequent garbage
-  //! collector runs, this should be used on every tree when it's no
-  //! longer used.
+  //! Destruct the tree recursively. When the inheriting
+  //! @[AbstractNode] or @[Node] is used, which have parent pointers,
+  //! this function should be called for every tree that no longer is
+  //! in use to avoid frequent garbage collector runs.
   void zap_tree()
   {
     if (mChildren)
@@ -491,6 +462,32 @@ class AbstractNode {
 	
     //  Let caller get the new node back for easy chaining of calls
     return (c);
+  }
+
+  //! Variant of @[add_child] that doesn't set the parent pointer in
+  //! the child.
+  //!
+  //! This is useful while building a node tree, to get efficient
+  //! refcount garbage collection if the build stops abruptly.
+  //! @[fix_tree] has to be called on the root node when the building
+  //! is done.
+  AbstractNode tmp_add_child(AbstractNode c)
+  // Doesn't fix the parent pointers to allow efficient refcount
+  // garbing when b. Use fix_tree afterwards.
+  {
+    mChildren += ({c});
+    return c;
+  }
+
+  //! Fix all parent pointers recursively in a tree that has been
+  //! built with @[tmp_add_child].
+  void fix_tree()
+  {
+    foreach (mChildren, AbstractNode c)
+      if (c->mParent != this_object()) {
+	c->mParent = this_object();
+	c->fix_tree();
+      }
   }
 
   //! Removes all occurrences of the provided node from the called nodes
@@ -1076,7 +1073,7 @@ static class VirtualNode {
   }
 }
 
-//! XML node without parent pointers.
+//! XML node without parent pointers and attribute nodes.
 class SimpleNode
 {
   inherit AbstractSimpleNode;
@@ -1144,7 +1141,7 @@ class Node
   }  
 
   //  Override AbstractNode::`[]
-  Node `[](mixed pos)
+  static Node `[](string|int pos)
   {
     //  If string indexing we find attributes which match the string
     if (stringp(pos)) {
