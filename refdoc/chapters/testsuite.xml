@@ -7,7 +7,7 @@
   <p>The most common way of running tests from the test suite is to
   use the top level make target <tt>verify</tt> which installs a test
   Pike in the build directory and use it while running the entire test
-  suit. The following test-related make targets are defined in the top
+  suite. The following test-related make targets are defined in the top
   level make file.</p>
 
   <dl>
@@ -64,6 +64,19 @@ make verify TESTARGS="-a -v4 -l2 -t1 -c1 -m"
 <example>
 /home/visbur/Pike/7.2/bin/pike bin/test_pike.pike testsuite1 testsuite2
 </example>
+
+  <p>The individual testsuite files are generated from testsuite.in files
+  scattered about the lib/ and src/ trees. When you run the make targets
+  described above, those are made for you automagically, but to do it by hand
+  (i e if you added a test to one of them), cd to the top directory and run</p>
+
+<example>
+make METATARGET=module_testsuites
+</example>
+
+  <p>The testsuite files have now appeared in build/<i>arch</i> in locations
+  corresponding to where they lived in the pike tree, except those from the lib/
+  hierarchy; those end up in build/<i>arch</i>/tlib.</p>
 
   <p>The test_pike.pike program takes the following attributes.</p>
 
