@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.460 2002/11/23 20:05:14 mast Exp $
+|| $Id: program.c,v 1.461 2002/11/24 21:47:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.460 2002/11/23 20:05:14 mast Exp $");
+RCSID("$Id: program.c,v 1.461 2002/11/24 21:47:05 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -7017,9 +7017,5 @@ void make_program_executable(struct program *p)
   FLUSH_INSTRUCTION_CACHE(p->program,
 			  p->num_program*sizeof(p->program[0]));
 #endif /* FLUSH_INSTRUCTION_CACHE */
-#ifdef VALGRIND_DISCARD_TRANSLATIONS
-  VALGRIND_DISCARD_TRANSLATIONS(p->program,
-				p->num_program*sizeof(p->program[0]));
-#endif /* VALGRIND_DISCARD_TRANSLATIONS */
 }
 #endif
