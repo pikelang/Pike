@@ -1177,8 +1177,9 @@ void do_install()
       install_file(combine_path(vars->TMP_BUILDDIR, dll_name),
 		   combine_path(exec_prefix, dll_name));
     // Copy the Program Database (debuginfo)
-    install_file(combine_path(vars->TMP_BUILDDIR, "pike.pdb"),
-                 combine_path(exec_prefix, "pike.pdb"));
+    if(file_stat(combine_path(vars->TMP_BUILDDIR, "pike.pdb")))
+      install_file(combine_path(vars->TMP_BUILDDIR, "pike.pdb"),
+		   combine_path(exec_prefix, "pike.pdb"));
 #endif
     install_file(combine_path(vars->TMP_BUILDDIR,"hilfe"),combine_path(exec_prefix,"hilfe"));
     install_file(combine_path(vars->TMP_BUILDDIR,"pike.syms"),
