@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.41 2001/09/17 13:14:28 grubba Exp $
+ * $Id: nt.c,v 1.42 2001/09/18 13:13:30 grubba Exp $
  *
  * NT system calls for Pike
  *
@@ -1101,6 +1101,10 @@ HINSTANCE netapilib;
  *!
  *! @seealso
  *!   @[system.NetUserEnum()], @[system.NetGroupEnum()]
+ *!   @[system.NetLocalGroupEnum()], @[system.NetUserGetGroups()],
+ *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
+ *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
  */
 void f_NetUserGetInfo(INT32 args)
 {
@@ -1158,6 +1162,45 @@ void f_NetUserGetInfo(INT32 args)
     throw_nt_error("NetGetUserInfo", ret);
 }
 
+/*! @decl array(string|array(string|int)) @
+ *!     NetUserEnum(string|int(0..0)|void server, @
+ *!                 int|void level, int|void filter)
+ *!
+ *!   Get information about network users.
+ *!
+ *! @param server
+ *!   Server the users exist on.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!     @value 2
+ *!     @value 3
+ *!     @value 10
+ *!     @value 11
+ *!     @value 20
+ *!   @endint
+ *!
+ *! @param filter
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetGroupEnum()]
+ *!   @[system.NetLocalGroupEnum()], @[system.NetUserGetGroups()],
+ *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
+ *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetUserEnum(INT32 args)
 {
   char *to_free1=NULL;
@@ -1242,6 +1285,38 @@ void f_NetUserEnum(INT32 args)
 }
 
 
+/*! @decl array(string|array(string|int)) @
+ *!     NetGroupEnum(string|int(0..0)|void server, int|void level)
+ *!
+ *!   Get information about network groups.
+ *!
+ *! @param server
+ *!   Server the groups exist on.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!     @value 2
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetLocalGroupEnum()], @[system.NetUserGetGroups()],
+ *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
+ *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetGroupEnum(INT32 args)
 {
   char *to_free1=NULL, *tmp_server=NULL;
@@ -1313,6 +1388,37 @@ void f_NetGroupEnum(INT32 args)
   if(to_free1) free(to_free1);
 }
 
+/*! @decl array(array(string|int)) @
+ *!     NetLocalGroupEnum(string|int(0..0)|void server, int|void level)
+ *!
+ *!   Get information about local network groups.
+ *!
+ *! @param server
+ *!   Server the groups exist on.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetGroupEnum()], @[system.NetUserGetGroups()],
+ *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
+ *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetLocalGroupEnum(INT32 args)
 {
   char *to_free1=NULL, *tmp_server=NULL;
@@ -1383,6 +1489,40 @@ void f_NetLocalGroupEnum(INT32 args)
   if(to_free1) free(to_free1);
 }
 
+/*! @decl array(array(string|int)) @
+ *!     NetUserGetGroups(string|int(0..0) server, string user, int|void level)
+ *!
+ *!   Get information about group membership for a network user.
+ *!
+ *! @param server
+ *!   Server the groups exist on.
+ *!
+ *! @param user
+ *!   User to retrieve groups for.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
+ *!   @[system.NetUserGetLocalGroups()], @[system.NetGroupGetUsers()],
+ *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetUserGetGroups(INT32 args)
 {
   char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL, *tmp_user;
@@ -1454,6 +1594,46 @@ void f_NetUserGetGroups(INT32 args)
   }
 }
 
+/*! @decl array(string) @
+ *!     NetUserGetLocalGroups(string|int(0..0) server, @
+ *!                           string user, int|void level, int|void flags)
+ *!
+ *!   Get information about group membership for a local network user.
+ *!
+ *! @param server
+ *!   Server the groups exist on.
+ *!
+ *! @param user
+ *!   User to retrieve groups for.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!   @endint
+ *!
+ *! @param flags
+ *!   Zero, of one of the following:
+ *!   @int
+ *!     @value LG_INCLUDE_INDIRECT
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
+ *!   @[system.NetUserGetGroups()], @[system.NetGroupGetUsers()],
+ *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetUserGetLocalGroups(INT32 args)
 {
   char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL, *tmp_user;
@@ -1531,6 +1711,41 @@ void f_NetUserGetLocalGroups(INT32 args)
   if(to_free2) free(to_free2);
 }
 
+/*! @decl array(string|array(int|string)) @
+ *!     NetGroupGetUsers(string|int(0..0) server, @
+ *!                      string group, int|void level)
+ *!
+ *!   Get information about group membership for a network group.
+ *!
+ *! @param server
+ *!   Server the groups exist on.
+ *!
+ *! @param group
+ *!   Group to retrieve members for.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
+ *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
+ *!   @[system.NetLocalGroupGetMembers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetGroupGetUsers(INT32 args)
 {
   char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL;
@@ -1611,6 +1826,43 @@ void f_NetGroupGetUsers(INT32 args)
   if(to_free2) free(to_free2);
 }
 
+/*! @decl array(string|array(int|string)) @
+ *!     NetLocalGroupGetMembers(string|int(0..0) server, @
+ *!                             string group, int|void level)
+ *!
+ *!   Get information about group membership for a network group.
+ *!
+ *! @param server
+ *!   Server the groups exist on.
+ *!
+ *! @param group
+ *!   Group to retrieve members for.
+ *!
+ *! @param level
+ *!   Information level. One of:
+ *!   @int
+ *!     @value 0
+ *!     @value 1
+ *!     @value 2
+ *!     @value 3
+ *!   @endint
+ *!
+ *! @returns
+ *!   Returns an array on success. Throws errors on failure.
+ *!
+ *! @fixme
+ *!   Document the return value.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
+ *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
+ *!   @[system.NetGroupGetUsers()], @[system.NetGetDCName()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetLocalGroupGetMembers(INT32 args)
 {
   char *to_free1=NULL, *to_free2=NULL, *tmp_server=NULL;
@@ -1698,6 +1950,30 @@ void f_NetLocalGroupGetMembers(INT32 args)
   if(to_free2) free(to_free2);
 }
 
+/*! @decl string NetGetDCName(string|int(0..0) server, string domain)
+ *!
+ *!   Get name of the domain controller from a server.
+ *!
+ *! @param server
+ *!   Server the domain exists on.
+ *!
+ *! @param domain
+ *!   Domain to get the domain controller for.
+ *!
+ *! @returns
+ *!   Returns the name of the domain controller on success.
+ *!   Throws errors on failure.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
+ *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
+ *!   @[system.NetGroupGetUsers()], @[system.NetLocalGroupGetMembers()],
+ *!   @[system.NetGetAnyDCName()]
+ */
 void f_NetGetDCName(INT32 args)
 {
   char *to_free1=NULL,*to_free2=NULL;
@@ -1744,6 +2020,30 @@ void f_NetGetDCName(INT32 args)
   }
 }
 
+/*! @decl string NetGetAnyDCName(string|int(0..0) server, string domain)
+ *!
+ *!   Get name of a domain controller from a server.
+ *!
+ *! @param server
+ *!   Server the domain exists on.
+ *!
+ *! @param domain
+ *!   Domain to get a domain controller for.
+ *!
+ *! @returns
+ *!   Returns the name of a domain controller on success.
+ *!   Throws errors on failure.
+ *!
+ *! @note
+ *!   This function is only available on some Win32 systems.
+ *!
+ *! @seealso
+ *!   @[system.NetUserGetInfo()], @[system.NetUserEnum()],
+ *!   @[system.NetGroupEnum()], @[system.NetLocalGroupEnum()],
+ *!   @[system.NetUserGetGroups()], @[system.NetUserGetLocalGroups()],
+ *!   @[system.NetGroupGetUsers()], @[system.NetLocalGroupGetMembers()],
+ *!   @[system.NetGetDCName()]
+ */
 void f_NetGetAnyDCName(INT32 args)
 {
   char *to_free1=NULL,*to_free2=NULL;
