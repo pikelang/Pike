@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.142 2002/05/31 22:41:23 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.143 2002/07/02 18:12:16 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -476,7 +476,7 @@ static void emit_apply_builtin(char *func)
   {
     case F_CONSTANT:
       tmp1=store_constant(&n->u.sval,
-			  n->tree_info & OPT_EXTERNAL_DEPEND,
+			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
       if(n->u.sval.type == T_FUNCTION &&
 	 n->u.sval.subtype == FUNCTION_BUILTIN)
@@ -539,7 +539,8 @@ static void emit_builtin_svalue(char *func)
   {
     case F_CONSTANT:
       tmp1=store_constant(&n->u.sval,
-			  n->tree_info & OPT_EXTERNAL_DEPEND,
+			  (!(n->tree_info & OPT_EXTERNAL_DEPEND)) &&
+			  (n->u.sval.type != T_TYPE),
 			  n->name);
       emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
       break;
@@ -1369,7 +1370,7 @@ static int do_docode2(node *n, INT16 flags)
       sv.type = T_TYPE;
       sv.subtype = 0;
       sv.u.type = n->type;
-      tmp1 = store_constant(&sv, 1, n->name);
+      tmp1 = store_constant(&sv, 0, n->name);
       emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
     }
 
@@ -1387,7 +1388,7 @@ static int do_docode2(node *n, INT16 flags)
 	sv.type = T_TYPE;
 	sv.subtype = 0;
 	sv.u.type = n->type;
-	tmp1 = store_constant(&sv, 1, n->name);
+	tmp1 = store_constant(&sv, 0, n->name);
 	emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
       }
       tmp1 = do_docode(CAR(n), 0);
@@ -2029,17 +2030,22 @@ static int do_docode2(node *n, INT16 flags)
 	  return 1;
 	}
       }
-      
+      /* FALL_THROUGH */
 #ifdef PIKE_DEBUG
-      case T_OBJECT:
-	if(n->u.sval.u.object->next == n->u.sval.u.object)
-	  fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
+    case T_OBJECT:
+      if(n->u.sval.u.object->next == n->u.sval.u.object)
+	fatal("Internal error: Pointer to parent cannot be a compile time constant!\n");
 #endif
-
+      /* FALL_THROUGH */
     default:
       tmp1=store_constant(&(n->u.sval),
 			  !(n->tree_info & OPT_EXTERNAL_DEPEND),
 			  n->name);
+      emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
+      return 1;
+
+    case T_TYPE:
+      tmp1 = store_constant(&(n->u.sval), 0, n->name);
       emit1(F_CONSTANT, DO_NOT_WARN((INT32)tmp1));
       return 1;
 
