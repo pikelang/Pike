@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.5 2001/07/11 21:13:56 js Exp $
+// $Id: Crawler.pmod,v 1.6 2001/07/12 16:40:17 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -633,7 +633,7 @@ class RobotExcluder
 class Crawler
 {
   Queue queue;
-  function page_cb, done_cb;
+  function page_cb, done_cb, error_cb;
   function prepare_cb;
   
   array(mixed) args;
@@ -649,14 +649,18 @@ class Crawler
     {
       int called;
       queue->stats->close_callback(real_uri);
-      if(status==200)
+      if(status>=200 && status<=206)
       {
 	add_links(page_cb(real_uri, data(), headers, @args));
 	called=1;
       }
-      if(headers->location)
-	add_links(({ Standards.URI(headers->location) }));
-
+      else
+      {
+	error_cb(real_uri, status, headers, @args);
+	if(status>=300 && status <=307)
+	  if(headers->location && sizeof(headers->location))
+	    add_links(({ Standards.URI(headers->location) }));
+      }
       queue->done(real_uri,called);
     }
     
@@ -724,8 +728,6 @@ class Crawler
     if( prepare_cb )
       [uri, headers] = prepare_cb( uri );
 
-    werror("After prepare_cb: %O\n", uri);
-    
     if(objectp(uri))
     {
       switch(uri->scheme)
@@ -740,8 +742,8 @@ class Crawler
   }
   
   void create(Queue _queue,
-	      function _page_cb, function _done_cb, function _prepare_cb, 
-
+	      function _page_cb, function _error_cb,
+	      function _done_cb, function _prepare_cb, 
 	      string|array(string)|Standards.URI|
 	      array(Standards.URI) start_uri,
 	      mixed ... _args)
@@ -749,6 +751,7 @@ class Crawler
     queue=_queue;
     args=_args;
     page_cb=_page_cb;
+    error_cb=_error_cb;
     done_cb=_done_cb;
     prepare_cb=_prepare_cb;
     
