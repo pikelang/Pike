@@ -1,0 +1,21 @@
+# $Id: Makefile.in,v 1.1 2002/05/29 05:41:02 per Exp $
+@make_variables@
+VPATH=@srcdir@:@srcdir@/../..:../..
+OBJS=Shuffler.o $(SOURCE_OBJS)
+MODULE_LDFLAGS=@LDFLAGS@ @LIBS@
+CONFIG_HEADERS=@CONFIG_HEADERS@
+
+override:
+	$(RUNPIKE) $(SRCDIR)/make_sources.pike $(SRCDIR) sources.h sources_to_compile
+	@$(MAKE) SOURCE_OBJS="`cat sources_to_compile`" all
+
+$(SRCDIR)/dependencies:
+	@touch $(SRCDIR)/dependencies
+
+@dynamic_module_makefile@
+
+# UnixWare make needs help to find the source file...
+Shuffler.o: $(SRCDIR)/Shuffler.c $(SRCDIR)/shuffler.h
+
+depend: 
+	@:

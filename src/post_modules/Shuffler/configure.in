@@ -1,0 +1,6 @@
+# $Id: configure.in,v 1.1 2002/05/29 05:41:02 per Exp $
+AC_INIT(Shuffler.cmod)
+
+AC_MODULE_INIT()
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
