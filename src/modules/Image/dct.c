@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: dct.c,v 1.16 2000/08/10 16:48:59 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.15 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: dct.c,v 1.16 2000/08/10 16:48:59 grubba Exp $
 **! class Image
 */
 
@@ -84,8 +84,8 @@ void image_dct(INT32 args)
    if (!THIS->img) error("Called Image.Image object is not initialized\n");;
 
    fprintf(stderr,"%lu bytes, %lu bytes\n",
-	   (unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize),
-	   (unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1));
+	   DO_NOT_WARN((unsigned long)(sizeof(rgbd_group)*THIS->xsize*THIS->ysize)),
+	   DO_NOT_WARN((unsigned long)(sizeof(rgb_group)*THIS->xsize*THIS->ysize+1)));
     
    if (!(area=malloc(sizeof(rgbd_group)*THIS->xsize*THIS->ysize+1)))
       resource_error(NULL,0,0,"memory",0,"Out of memory.\n");
@@ -193,9 +193,9 @@ void image_dct(INT32 args)
 	 sum.r*=enh;
 	 sum.g*=enh;
 	 sum.b*=enh;
-	 pix->r=testrange(((int)(sum.r+0.5)));
-	 pix->g=testrange(((int)(sum.g+0.5)));
-	 pix->b=testrange(((int)(sum.b+0.5)));
+	 pix->r=testrange((DOUBLE_TO_INT(sum.r+0.5)));
+	 pix->g=testrange((DOUBLE_TO_INT(sum.g+0.5)));
+	 pix->b=testrange((DOUBLE_TO_INT(sum.b+0.5)));
 	 pix++;
       }
       fprintf(stderr,"."); fflush(stderr);

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colortable.h,v 1.19 2000/08/09 17:13:15 grubba Exp $
+**!	$Id: colortable.h,v 1.20 2000/08/10 16:56:10 grubba Exp $
 */
 
 #ifdef PIKE_IMAGE_COLORTABLE_H
@@ -25,7 +25,7 @@ struct nct_flat_entry /* flat colorentry */
 {
    rgb_group color;
    nct_weight_t weight;
-   signed long no;
+   ptrdiff_t no;
 };
 
 struct nct_scale

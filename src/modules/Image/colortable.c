@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.86 2000/08/10 09:51:53 per Exp $ */
+/* $Id: colortable.c,v 1.87 2000/08/10 16:56:20 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.86 2000/08/10 09:51:53 per Exp $
+**!	$Id: colortable.c,v 1.87 2000/08/10 16:56:20 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.86 2000/08/10 09:51:53 per Exp $");
+RCSID("$Id: colortable.c,v 1.87 2000/08/10 16:56:20 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -302,12 +302,12 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 				rgbd_group position,rgbd_group space,
 				enum nct_reduce_method type)
 {
-   ptrdiff_t n,i,m;
+   ptrdiff_t n, i, m, g;
    rgbl_group sum={0,0,0},diff={0,0,0};
    rgbl_group min={256,256,256},max={0,0,0};
    size_t mmul,tot=0;
-   INT32 gdiff=0,g;
-   int left,right;
+   INT32 gdiff=0;
+   ptrdiff_t left, right;
    enum { SORT_R,SORT_G,SORT_B,SORT_GREY } st;
    rgbd_group newpos1,newpos2;
 
@@ -357,11 +357,11 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	       tot+=mul;
 	    }
 	    
-	    dest->color.r=sum.r/tot;
-	    dest->color.g=sum.g/tot;
-	    dest->color.b=sum.b/tot;
-	    dest->weight=tot;
-	    dest->no=-1;
+	    dest->color.r = DO_NOT_WARN(sum.r/tot);
+	    dest->color.g = DO_NOT_WARN(sum.g/tot);
+	    dest->color.b = DO_NOT_WARN(sum.b/tot);
+	    dest->weight = tot;
+	    dest->no = -1;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
 	    fprintf(stderr,"COLORTABLE%*s sum=%d,%d,%d tot=%d\n",level,"",sum.r,sum.g,sum.b,tot);
@@ -601,7 +601,7 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 						    unsigned long maxcols,
 						    rgbl_group sf)
 {
-   int i,j;
+   ptrdiff_t i,j;
    struct nct_flat_entry *newe;
    rgbd_group pos={0.5,0.5,0.5},space={0.5,0.5,0.5};
 
@@ -615,7 +615,10 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
 
    flat.entries=realloc(newe,i*sizeof(struct nct_flat_entry));
    flat.numentries=i;
-   if (!flat.entries) { free(newe); resource_error(NULL,0,0,"memory",0,"Out of memory.\n"); }
+   if (!flat.entries) {
+     free(newe);
+     resource_error(NULL, 0, 0, "memory", 0, "Out of memory.\n");
+   }
 
    for (j=0; j<i; j++)
       flat.entries[j].no=j;
@@ -637,9 +640,9 @@ struct color_hash_entry
 
 static INLINE struct color_hash_entry *insert_in_hash(rgb_group rgb,
 						struct color_hash_entry *hash,
-						unsigned long hashsize)
+						size_t hashsize)
 {
-   unsigned long j,k;
+   size_t j, k;
    j=(rgb.r*127+rgb.b*997+rgb.g*2111)%hashsize;
    k=100;
    if (j+100>=hashsize)
@@ -662,9 +665,9 @@ static INLINE struct color_hash_entry *insert_in_hash(rgb_group rgb,
 
 static INLINE struct color_hash_entry *insert_in_hash_nd(rgb_group rgb,
 						struct color_hash_entry *hash,
-						unsigned long hashsize)
+						size_t hashsize)
 {
-   unsigned long j,k;
+   size_t j, k;
    j=(rgb.r*127+rgb.b*997+rgb.g*2111)%hashsize;
    k=100;
    if (j+100>=hashsize)
@@ -1029,10 +1032,10 @@ static INLINE void _find_cube_dist(struct nct_cube cube,rgb_group rgb,
       b.g=((INT32)rgb.g)-s->low.g;
       b.b=((INT32)rgb.b)-s->low.b;
 
-      n=(int)((s->steps*(b.r*s->vector.r+
-			 b.g*s->vector.g+
-			 b.b*s->vector.b))*s->invsqvector);
-
+      n = DOUBLE_TO_INT((s->steps*(b.r*s->vector.r+
+				   b.g*s->vector.g+
+				   b.b*s->vector.b))*s->invsqvector);
+      
       if (n<0) n=0; else if (n>=s->steps) n=s->steps-1;
 
       if (s->no[n]>=nc) 
@@ -1261,7 +1264,7 @@ static void _img_add_colortable(struct neo_colortable *rdest,
    struct nct_flat_entry *en;
    struct nct_flat flat;
    struct neo_colortable *dest=rdest;
-   int no;
+   ptrdiff_t no;
 
    colortable_init_stuff(&tmp1);
    colortable_init_stuff(&tmp2);
@@ -1439,7 +1442,7 @@ static void _img_sub_colortable(struct neo_colortable *rdest,
 {
    struct neo_colortable tmp1,tmp2;
    struct color_hash_entry *hash,*mark;
-   unsigned long i,j,hashsize,k;
+   size_t i,j,hashsize,k;
    struct nct_flat_entry *en;
    struct nct_flat flat;
    struct neo_colortable *dest=rdest;
@@ -2521,7 +2524,7 @@ void image_colortable_cast_to_mapping(struct neo_colortable *nct)
       free(flat.entries);
 }
 
-int image_colortable_size(struct neo_colortable *nct)
+ptrdiff_t image_colortable_size(struct neo_colortable *nct)
 {
    if (nct->type==NCT_FLAT)
       return nct->u.flat.numentries;
@@ -3134,7 +3137,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    int bmin,bmax;
 
    struct nct_flat_entry *fe=nct->u.flat.entries;
-   int n=nct->u.flat.numentries;
+   ptrdiff_t n=nct->u.flat.numentries;
 
    int i=0;
    int *p=malloc(n*sizeof(struct nctlu_cubicle));

@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.20 2000/07/28 07:12:44 hubbe Exp $ */
+/* $Id: pattern.c,v 1.21 2000/08/10 16:47:00 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.20 2000/07/28 07:12:44 hubbe Exp $
+**!	$Id: pattern.c,v 1.21 2000/08/10 16:47:00 grubba Exp $
 **! class Image
 */
 
@@ -193,8 +193,8 @@ static double noise(double Vx,double Vy,double *noise_p)
    
    for (n=0; n<3; n++) 
    {
-      Ax[n]=(int)floor(NOISE_PX*FRAC( (fx+n)*NOISE_PHI ));
-      Ay[n]=(int)floor(NOISE_PY*FRAC( (fy+n)*NOISE_PHI ));
+      Ax[n] = DOUBLE_TO_INT(floor(NOISE_PX*FRAC( (fx+n)*NOISE_PHI )));
+      Ay[n] = DOUBLE_TO_INT(floor(NOISE_PY*FRAC( (fy+n)*NOISE_PHI )));
    }
    
    f=FRAC(Vx);
@@ -242,10 +242,10 @@ static INLINE double turbulence(double x,double y,int octaves)
 
 static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 {
-   float *v,*vp;
+   double *v,*vp;
    int i,n,k;
    rgbd_group lrgb,*rgbp,*rgb;
-   float fr,fg,fb,q;
+   double fr,fg,fb,q;
    int b;
 
    if (s->type!=T_ARRAY)
@@ -253,7 +253,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
    else if (s->u.array->size<2)
       error("Colorrange array too small (meaningless) (to %s)\n",where);
 
-   vp=v=(void*)xalloc(sizeof(float)*(s->u.array->size/2+1));
+   vp=v=(void*)xalloc(sizeof(double)*(s->u.array->size/2+1));
    rgbp=rgb=(void*)xalloc(sizeof(rgbd_group)*(s->u.array->size/2+1));
 
    for (i=0; i<s->u.array->size-1; i+=2)
@@ -261,9 +261,9 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
       rgb_group rgbt;
 
       if (s->u.array->item[i].type==T_INT) 
-	 *vp=s->u.array->item[i].u.integer;
+	 *vp = (double)s->u.array->item[i].u.integer;
       else if (s->u.array->item[i].type==T_FLOAT) 
-	 *vp=s->u.array->item[i].u.float_number;
+	 *vp = s->u.array->item[i].u.float_number;
       else 
 	 bad_arg_error(where,
 		       0,0, 1, "array of int|float,color", 0,
@@ -295,7 +295,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 
       if (n>i)
       {
-	 q=1/((float)(n-i));
+	 q = 1.0/((double)(n-i));
    
 	 fr=(rgb[k].r-lrgb.r)*q;
 	 fg=(rgb[k].g-lrgb.g)*q;
@@ -330,7 +330,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 #define GET_INT_ARG(sp,args,n,def,where) \
    ( (args>n) \
       ? ( (sp[n-args].type==T_INT) ? sp[n-args].u.integer \
-	  : ( (sp[n-args].type==T_FLOAT) ? (int)(sp[n-args].u.float_number) \
+	  : ( (sp[n-args].type==T_FLOAT) ? DOUBLE_TO_INT(sp[n-args].u.float_number) \
 	      : ( error("illegal argument(s) to %s\n", where), 0.0 ) ) ) \
       : def )
 
@@ -392,12 +392,12 @@ void image_noise(INT32 args)
       for (x=THIS->xsize,yp=ydiff; x--; yp+=1.0)
       {
 	 *(d++)=
-	    cr[(int)((noise((double)x*scale,(double)y*scale,noise_p1)
+	    cr[DOUBLE_TO_INT((noise((double)x*scale,(double)y*scale,noise_p1)
 /* 		      +noise((double)(x*0.5+y*0.8660254037844386)*scale, */
 /* 			     (double)(-y*0.5+x*0.8660254037844386)*scale, */
 /* 			     noise_p2) */
-		      )
-		     *cscale)&(COLORRANGE_LEVELS-1)];
+			      )
+			     *cscale)&(COLORRANGE_LEVELS-1)];
       }
 
    pop_n_elems(args);
@@ -448,11 +448,11 @@ void image_turbulence(INT32 args)
 
    if (args<1) error("too few arguments to image->turbulence()\n");
 
-   octaves=GET_INT_ARG(sp,args,1,3,"image->turbulence");
-   scale=GET_FLOAT_ARG(sp,args,2,0.1,"image->turbulence");
-   xdiff=GET_FLOAT_ARG(sp,args,3,0,"image->turbulence");
-   ydiff=GET_FLOAT_ARG(sp,args,4,0,"image->turbulence");
-   cscale=GET_FLOAT_ARG(sp,args,5,2,"image->turbulence");
+   octaves = GET_INT_ARG(sp,args,1,3,"image->turbulence");
+   scale = GET_FLOAT_ARG(sp,args,2,0.1,"image->turbulence");
+   xdiff = GET_FLOAT_ARG(sp,args,3,0,"image->turbulence");
+   ydiff = GET_FLOAT_ARG(sp,args,4,0,"image->turbulence");
+   cscale = GET_FLOAT_ARG(sp,args,5,2,"image->turbulence");
 
    init_colorrange(cr,sp-args,"image->turbulence()");
 
@@ -482,7 +482,7 @@ void image_turbulence(INT32 args)
 	 }
 #endif
 	 *(d++)=
-	    cr[(INT32)(turbulence(xp*scale,yp*scale,octaves)*cscale)
+	    cr[DOUBLE_TO_INT(turbulence(xp*scale,yp*scale,octaves)*cscale)
 	       & (COLORRANGE_LEVELS-1)];
       }
 
