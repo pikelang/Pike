@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.341 2003/11/09 01:10:13 mast Exp $
+|| $Id: las.c,v 1.342 2003/11/14 00:13:36 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.341 2003/11/09 01:10:13 mast Exp $");
+RCSID("$Id: las.c,v 1.342 2003/11/14 00:13:36 mast Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1832,20 +1832,11 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 
   if(SETJMP(tmp))
   {
-    struct svalue thrown = throw_value;
-    throw_value.type = T_INT;
-
     if (node_name) {
-      my_yyerror("Couldn't index module '%s'.", node_name);
+      handle_compile_exception ("Couldn't index module '%s'.", node_name);
     } else {
-      yyerror("Couldn't index module.");
+      handle_compile_exception ("Couldn't index module.");
     }
-
-    push_svalue(&thrown);
-    low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
-    pop_stack();
-    free_svalue(&thrown);
   }else{
     resolv_constant(n);
     switch(Pike_sp[-1].type)
@@ -1914,22 +1905,21 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	pop_stack();
 	push_int(0);
       }else{
-	struct svalue thrown = {PIKE_T_UNKNOWN, 0,
-#ifdef HAVE_UNION_INIT
-				{0} /* Only to avoid warnings. */
-#endif
-			       };
-
+	int exception = 0;
 	SET_CYCLIC_RET(c+1);
 	ref_push_string(id);
 	{
 	  JMP_BUF recovery;
 	  STACK_LEVEL_START(2);
 	  if (SETJMP_SP(recovery, 2)) {
-	    /* f_index() threw an error! */
+	    if (node_name) {
+	      handle_compile_exception ("Error looking up '%s' in module '%s'.",
+					id->str, node_name);
+	    } else {
+	      handle_compile_exception ("Error looking up '%s' in module.", id->str);
+	    }
 	    push_undefined();
-	    thrown = throw_value;
-	    throw_value.type = T_INT;
+	    exception = 1;
 	  } else {
 	    f_index(2);
 	  }
@@ -1943,20 +1933,13 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	{
 	  if(Pike_compiler->new_program->flags & PROGRAM_PASS_1_DONE)
 	  {
-	    if (node_name) {
-	      my_yyerror("Index '%s' not present in module '%s'.",
-			 id->str, node_name);
-	    } else {
-	      my_yyerror("Index '%s' not present in module.", id->str);
-	    }
-	    
-	    if (thrown.type != PIKE_T_UNKNOWN) {
-	      *(Pike_sp++) = thrown;
-	      dmalloc_touch_svalue(Pike_sp-1);
-	      thrown.type = PIKE_T_INT;
-	      low_safe_apply_handler("compile_exception", error_handler, compat_handler, 1);
-	      if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
-	      pop_stack();
+	    if (!exception) {
+	      if (node_name) {
+		my_yyerror("Index '%s' not present in module '%s'.",
+			   id->str, node_name);
+	      } else {
+		my_yyerror("Index '%s' not present in module.", id->str);
+	      }
 	    }
 	  }else if (!force_resolve) {
 	    /* Hope it's there in pass 2 */
@@ -1967,8 +1950,6 @@ node *index_node(node *n, char *node_name, struct pike_string *id)
 	    fprintf(stderr, "with %s\n", id->str);
 #endif
 	    ref_push_object(placeholder_object);
-	    if (thrown.type != PIKE_T_UNKNOWN)
-	      free_svalue(&thrown);
 	  }
 	}
 
@@ -5454,17 +5435,7 @@ ptrdiff_t eval_low(node *n,int print_error)
       if(print_error)
 	/* Generate error message */
 	if(!Pike_compiler->catch_level)
-	  {
-	    struct svalue thrown = throw_value;
-	    throw_value.type = T_INT;
-	    yyerror("Error evaluating constant.\n");
-	    push_svalue(&thrown);
-	    low_safe_apply_handler("compile_exception",
-				   error_handler, compat_handler, 1);
-	    if (SAFE_IS_ZERO(Pike_sp-1)) yy_describe_exception(&thrown);
-	    pop_stack();
-	    free_svalue(&thrown);
-	  }
+	  handle_compile_exception ("Error evaluating constant.\n");
 	else {
 	  free_svalue(&throw_value);
 	  throw_value.type = T_INT;
