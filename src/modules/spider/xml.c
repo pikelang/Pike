@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.71 2004/11/16 21:55:20 mast Exp $
+|| $Id: xml.c,v 1.72 2004/11/18 01:47:23 mast Exp $
 */
 
 #include "global.h"
@@ -3283,7 +3283,7 @@ void init_xml(void)
   ADD_FUNCTION("define_entity",define_entity,tFuncV(tStr tStr tMix,tMix,tVoid),0);
   ADD_FUNCTION("allow_rxml_entities", allow_rxml_entities,
 	       tFunc(tInt, tVoid), 0);
-  ADD_FUNCTION("compat_allow_errors", compat_allow_errors, tFunc(tInt, tVoid), 0);
+  ADD_FUNCTION("compat_allow_errors", compat_allow_errors, tFunc(tStr, tVoid), 0);
   end_class("XML",0);
 
   ADD_FUNCTION("isbasechar",f_isBaseChar,tFunc(tInt,tInt),0);
