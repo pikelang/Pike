@@ -1,4 +1,15 @@
-// $Id: testsuite.in,v 1.3 1998/07/18 16:35:08 grubba Exp $
+// $Id: testsuite.in,v 1.4 1998/07/18 17:10:22 grubba Exp $
+
+// Test if a constant is defined.
+define(const_cond, [[
+  cond([[
+#if constant($1)
+  1
+#else
+  0
+#endif /* constant($1) */
+  ]], [[ $2 ]])
+]])
 
 
 // system.c:
@@ -10,16 +21,25 @@
 // chroot		HAVE_CHROOT
 // cleargroups		HAVE_SETGROUPS
 // getegid		HAVE_GETEUID
+const_cond(getegid, [[ test_true(intp(getegid())) ]])
 // geteuid		HAVE_GETEUID
+const_cond(geteuid, [[ test_true(intp(geteuid())) ]])
 // getgid		HAVE_GETGID
+const_cond(getgid, [[ test_true(intp(getgid())) ]])
 // getgroups		HAVE_GETGROUPS
+const_cond(getgroups, [[ test_true(arrayp(getgroups())) ]])
 // gethostbyaddr	GETHOST_DECLARE
 // gethostbyname	GETHOST_DECLARE
 // gethostname		HAVE_GETHOSTNAME || HAVE_UNAME
+const_cond(gethostname, [[ test_true(stringp(gethostname())) ]])
 // getpgrp		HAVE_GETPGRP
+const_cond(getpgrp, [[ test_true(intp(getpgrp())) ]])
 // getpid
+test_true(intp(getpid()))
 // getppid		HAVE_GETPPID
+const_cond(getppid, [[ test_true(intp(getppid())) ]])
 // getuid		HAVE_GETUID
+const_cond(getuid, [[ test_true(intp(getuid())) ]])
 // hardlink		HAVE_LINK
 // initgroups		HAVE_INITGROUPS
 // readlink		HAVE_READLINK
@@ -38,13 +58,7 @@
 // endpwent		HAVE_ENDPWENT
 // get_all_groups	HAVE_GETGRENT
 // get_all_users	HAVE_GETPWENT
-cond([[
-#if constant(get_all_users)
-  1
-#else
-  0
-#endif /* constant(get_all_users) */
-]], [[
+const_cond(get_all_users, [[
   test_any([[
     array a = get_all_users();
     if (!arrayp(a)) {
@@ -72,13 +86,7 @@ cond([[
 // getpwent		HAVE_GETPWENT
 // getpwnam		HAVE_GETPWNAM
 // getpwuid		HAVE_GETPWUID
-cond([[
-#if constant(getpwuid)
-  1
-#else
-  0
-#endif /* constant(getpwuid) */
-]], [[
+const_cond(getpwuid, [[
   test_any([[
     array b = getpwuid(0);
     if (b) {
@@ -92,14 +100,10 @@ cond([[
     }
     return 0;
   ]], 0)
-  cond([[
-#if constant(getpwnam)
-    getpwuid(0)
-#else
-    0
-#endif /* constant(getpwnam) */
-  ]], [[
-    test_equal([[ getpwnam(getpwuid(0)[0]) ]], [[ getpwuid(0) ]])
+  const_cond(getpwnam, [[
+    const([[ getpwuid(0) ]], [[
+      test_equal([[ getpwnam(getpwuid(0)[0]) ]], [[ getpwuid(0) ]])
+    ]])
   ]])
 ]])
 // setgrent		HAVE_SETGRENT
