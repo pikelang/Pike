@@ -33,8 +33,9 @@
 
 	write("hello world\n");
 
-  The first statement is a call to the builtin function write. To this
-  function the constant string "hello world\n" is sent. write then of
+  The first statement is a call to the builtin function write. This will
+  execute the code in the function write with the arguments as input data.
+  In this case, the constant string "hello world\n" is sent. write() then of
   course writes this string to stdout when executed.
 
 	return 0;
@@ -59,8 +60,7 @@
 
 	$ chmod +x hello_world.lpc
 
-  Now we can run hello_world.lpc without having to bother about running
-  ulpc:
+  Now we can run hello_world.lpc without having to bother with running ulpc:
 
 	$ ./hello_wold.lpc
 	hello world
@@ -73,9 +73,10 @@
 
 1.3 A better hello_world.lpc
   Now, wouldn't it be nice if it said "Hello world!" instead of "hello world" ?
-  But of course we don't want to make our program incompatible, so we'll add
-  a command line option that will make it type the old "hello world".
-  This is what it could look like:
+  But of course we don't want to make our program incompatible with the old
+  version. Someone might NEED the program to work the same as before. 
+  Therefore we'll add a command line option that will make it type the old
+  "hello world". This is what it could look like:
 
 	#!/usr/local/bin/ulpc
 
@@ -135,3 +136,6 @@
 	    write("hello world\n"); // old stype
 
   The // begins a comment which continues to the end of the line.
+  Comments lets you type in text in the program which will be ignored by the
+  computer. This is to inform whoever might read your code (like yourself) of
+  what the program does to make it easier to understand.

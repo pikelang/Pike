@@ -23,9 +23,11 @@ $version manual
 
  Types
 
-  uLPC types are part of what makes uLPC a powerful language. They make
-  it easy to handle data without worrying about memory management and
-  other programming obstacles.
+  Data is stored in different ways, integers (eg. 1, 2, 3, 4 etc.) are
+  are stored in one way, real numbers (1.0, 1.1, etc.) in another. Each
+  different way get its own name. uLPC types are part of what makes uLPC
+  a powerful language. They make it easy to handle data without worrying
+  about memory management and other programming obstacles.
 
 	KEYWORD_LIST types
 
@@ -41,7 +43,7 @@ $version manual
   uLPC has a wide range of builtin functions. Most of these are implemented
   in C, but some are implemented in uLPC using the add_efun function.
 
-	LINK lpc_efuns Here's a list of all built-in functions.
+	LINK lpc/efuns Here's a list of all built-in functions.
 
  Operators
 
@@ -62,4 +64,4 @@ $version manual
 
 	KEYWORD_INDEX other
 
-	LINK lpc_all Here's a list of all pages.
+	LINK lpc/all Here's a list of all pages.

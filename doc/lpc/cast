@@ -1,0 +1,30 @@
+NAME
+	cast - convert one type to another
+
+SYNTAX
+	( <type> ) <expression>
+
+DESCRIPTION
+	Casts convert types, in most cases it just tells the compiler what
+	type the expression has, but it can also be used to actually convert
+	the value of the expression into something else.
+
+	Casting from float or int to string will convert the given number
+	into a decimal ascii string representation.
+
+	Casting from string to float or int will do the opposite. IE.
+	Read a decimal number from the string and return that.
+
+	Casting from string to program will call cast_to_program in the
+	master object and request a program to return. The standard master
+	object will consider the string a file name and compile the program
+	given by that string. It will then put the program in a chache in
+	case you cast the same string to a program again later.
+
+	In all other cases, casts are just compiler hints.
+
+KEYWORDS
+	lpc
+
+SEE ALSO
+	compile_file, sscanf

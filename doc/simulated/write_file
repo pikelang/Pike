@@ -11,4 +11,4 @@ KEYWORDS
 	file
 
 SEE ALSO
-	read_file
+	read_bytes
