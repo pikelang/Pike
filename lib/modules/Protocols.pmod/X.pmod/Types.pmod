@@ -1,6 +1,6 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.29 1998/04/06 15:47:59 nisse Exp $
+ * $Id: Types.pmod,v 1.30 1998/04/18 01:08:13 cardeci Exp $
  */
 
 /*
@@ -44,14 +44,16 @@ class XResource
     display->remember_id(id, this_object());
   }
 
+  object FreeRequest() {}
+
   void Free()
   {
-    object req = this_object()->FreeRequest();
+    object req = FreeRequest();
     if (req)
-      {
-	req->id = id;
-	display->send_request( req );
-      }
+    {
+      req->id = id;
+      display->send_request( req );
+    }
   }
 
   void destroy()
@@ -472,15 +474,13 @@ class Window
   inherit Drawable;
   int currentInputMask;
 
-  function FreeRequest = lambda(){ return 0; }; // FIXME!!
-
   /* Keys are event names, values are arrays of ({ priority, function }) */
   mapping(string:array(array)) event_callbacks = ([ ]);
 
   int alt_gr, num_lock, shift, control, caps_lock;
   int meta, alt, super, hyper;
 
-  mapping attributes;
+  mapping attributes = ([]);
 
 #include "keysyms.h"
 
@@ -673,7 +673,7 @@ class Window
     {
       req->attributes = attributes;
       if(attributes->Colormap) c= attributes->Colormap;
-    }    
+    }
 
     // object w = Window(display, req->wid);
     // werror(sprintf("CreateWindowRequest: %s\n",
