@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.73 2000/12/13 21:33:30 hubbe Exp $
+ * $Id: svalue.h,v 1.74 2000/12/14 07:27:16 mast Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -398,6 +398,8 @@ TYPE_FIELD real_gc_cycle_check_svalues(struct svalue *s, size_t num);
 TYPE_FIELD gc_cycle_check_weak_svalues(struct svalue *s, size_t num);
 int real_gc_cycle_check_short_svalue(union anything *u, TYPE_T type);
 int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
+void real_gc_free_svalue(struct svalue *s);
+void real_gc_free_short_svalue(union anything *u, TYPE_T type);
 PMOD_EXPORT INT32 pike_sizeof(struct svalue *s);
 /* Prototypes end here */
 
@@ -408,6 +410,8 @@ PMOD_EXPORT INT32 pike_sizeof(struct svalue *s);
 #define gc_mark_short_svalue(U,T) real_gc_mark_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),T)
 #define gc_cycle_check_svalues(S,N) real_gc_cycle_check_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION()),N)
 #define gc_cycle_check_short_svalue(U,T) real_gc_cycle_check_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),(T))
+#define gc_free_svalue(S) real_gc_free_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION()))
+#define gc_free_short_svalue(U,T) real_gc_free_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION()),(T))
 
 #ifndef NO_PIKE_SHORTHAND
 
