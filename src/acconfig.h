@@ -29,6 +29,9 @@
 /* Define to 'int' if <sys/time.h> doesn't */
 #undef time_t
 
+/* Define to 'int' if <signal.h> doesn't */
+#undef sig_atomic_t
+
 /* Define as the return type of signal handlers (int or void).  */
 #undef RETSIGTYPE
 
