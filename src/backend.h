@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.h,v 1.16 2002/10/11 01:39:28 nilsson Exp $
+|| $Id: backend.h,v 1.17 2003/10/23 12:34:02 grubba Exp $
 */
 
 #ifndef BACKEND_H
@@ -27,22 +27,16 @@ PMOD_EXPORT void wake_up_backend(void);
 void init_backend(void);
 void set_read_callback(int fd,file_callback cb,void *data);
 void set_write_callback(int fd,file_callback cb,void *data);
-#ifdef WITH_OOB
 PMOD_EXPORT void set_read_oob_callback(int fd,file_callback cb,void *data);
 PMOD_EXPORT void set_write_oob_callback(int fd,file_callback cb,void *data);
-#endif /* WITH_OOB */
 PMOD_EXPORT file_callback query_read_callback(int fd);
 PMOD_EXPORT file_callback query_write_callback(int fd);
-#ifdef WITH_OOB
 PMOD_EXPORT file_callback query_read_oob_callback(int fd);
 PMOD_EXPORT file_callback query_write_oob_callback(int fd);
-#endif /* WITH_OOB */
 PMOD_EXPORT void *query_read_callback_data(int fd);
 PMOD_EXPORT void *query_write_callback_data(int fd);
-#ifdef WITH_OOB
 PMOD_EXPORT void *query_read_oob_callback_data(int fd);
 PMOD_EXPORT void *query_write_oob_callback_data(int fd);
-#endif /* WITH_OOB */
 void do_debug(void);
 void backend(void);
 void exit_backend(void);

@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.184 2003/10/22 20:28:05 mast Exp $
+// $Id: module.pmod,v 1.185 2003/10/23 12:34:01 grubba Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -33,11 +33,8 @@ class Stream
   string read(int nbytes);
   int write(string data);
   void close();
-
-#if constant(files.__HAVE_OOB__)
   optional string read_oob(int nbytes);
   optional int write_oob(string data);
-#endif
 }
 
 //! The Stdio.NonblockingStream API.
@@ -57,17 +54,14 @@ class NonblockingStream
   NonblockingStream set_write_callback( function f, mixed ... rest );
   NonblockingStream set_close_callback( function f, mixed ... rest );
 
-#if constant(files.__HAVE_OOB__)
   NonblockingStream set_read_oob_callback(function f, mixed ... rest)
   {
     error("OOB not implemented for this stream type\n");
   }
-  
   NonblockingStream set_write_oob_callback(function f, mixed ... rest)
   {
     error("OOB not implemented for this stream type\n");
   }
-#endif
 
   void set_nonblocking( function a, function b, function c,
                         function|void d, function|void e);
@@ -107,10 +101,8 @@ class File
   mixed ___read_callback;
   mixed ___write_callback;
   mixed ___close_callback;
-#if constant(files.__HAVE_OOB__)
   mixed ___read_oob_callback;
   mixed ___write_oob_callback;
-#endif
   mixed ___id;
 
 #ifdef __STDIO_DEBUG
@@ -637,13 +629,11 @@ class File
       if ((___close_callback = _o->___close_callback) && (!___read_callback)) {
 	_fd->_read_callback = __stdio_close_callback;
       }
-#if constant(files.__HAVE_OOB__)
       if(___read_oob_callback = _o->___read_oob_callback)
 	_fd->_read_oob_callback = __stdio_read_oob_callback;
 
       if(___write_oob_callback = _o->___write_oob_callback)
 	_fd->_write_oob_callback = __stdio_write_oob_callback;
-#endif
       ___id = _o->___id;
       
     }
@@ -674,13 +664,11 @@ class File
     if ((to->___close_callback = ___close_callback) && (!___read_callback)) {
       _fd->_read_callback = to->__stdio_close_callback;
     }
-#if constant(files.__HAVE_OOB__)
     if(to->___read_oob_callback = ___read_oob_callback)
       _fd->_read_oob_callback=to->__stdio_read_oob_callback;
 
     if(to->___write_oob_callback = ___write_oob_callback)
       _fd->_write_oob_callback=to->__stdio_write_oob_callback;
-#endif
     to->_setup_debug( debug_file, debug_mode, debug_bits );
     to->___id = ___id;
     return to;
@@ -713,10 +701,8 @@ class File
 #define FREE_CB(X) if(___##X && query_##X == __stdio_##X) ::set_##X(0)
       FREE_CB(read_callback);
       FREE_CB(write_callback);
-#if constant(files.__HAVE_OOB__)
       FREE_CB(read_oob_callback);
       FREE_CB(write_oob_callback);
-#endif
       _fd=0;
       register_close_file (open_file_id);
 #ifdef __STDIO_DEBUG
@@ -846,7 +832,6 @@ class File
 
   static void __stdio_write_callback() { ___write_callback(___id); }
 
-#if constant(files.__HAVE_OOB__)
   static void __stdio_read_oob_callback()
   {
     string s=::read_oob(8192,1);
@@ -862,7 +847,6 @@ class File
   }
 
   static void __stdio_write_oob_callback() { ___write_oob_callback(___id); }
-#endif
 
 #define SET(X,Y) ::set_##X ((___##X = (Y)) && __stdio_##X)
 #define _SET(X,Y) _fd->_##X=(___##X = (Y)) && __stdio_##X
@@ -977,12 +961,10 @@ class File
   //! @fixme
   //!   Document this function.
 
-#if constant(files.__HAVE_OOB__)
   //! @ignore
   CBFUNC(read_oob_callback)
   CBFUNC(write_oob_callback)
   //! @endignore
-#endif
 
   //! @decl void set_close_callback(function(mixed:void) close_cb)
   //!
@@ -1073,7 +1055,8 @@ class File
   //!   If no arguments are given, the callbacks will be cleared.
   //!
   //! @note
-  //!   Out-of-band data will not be supported if Pike was compiled with the
+  //!   Out-of-band data was not be supported on Pike 0.5 and earlier,
+  //!   and not on Pike 0.6 through 7.4 if they were compiled with the
   //!   option @tt{'--without-oob'@}.
   //!
   //! @seealso
@@ -1084,11 +1067,8 @@ class File
   void set_nonblocking(mixed|void rcb,
 		       mixed|void wcb,
 		       mixed|void ccb,
-#if constant(files.__HAVE_OOB__)
 		       mixed|void roobcb,
-		       mixed|void woobcb
-#endif
-    )
+		       mixed|void woobcb)
   {
     CHECK_OPEN();
     ::_disable_callbacks(); // Thread safing
@@ -1099,10 +1079,8 @@ class File
       ::set_read_callback(__stdio_close_callback);
     }
 
-#if constant(files.__HAVE_OOB__)
     _SET(read_oob_callback,roobcb);
     _SET(write_oob_callback,woobcb);
-#endif
 #ifdef __STDIO_DEBUG
     if(mixed x=catch { ::set_nonblocking(); })
     {
@@ -1135,10 +1113,8 @@ class File
     SET(read_callback,0);
     SET(write_callback,0);
     ___close_callback=0;
-#if constant(files.__HAVE_OOB__)
     SET(read_oob_callback,0);
     SET(write_oob_callback,0);
-#endif
     ::set_blocking();
     ::_enable_callbacks();
   }
@@ -1173,10 +1149,8 @@ class File
     { 
       FREE_CB(read_callback);
       FREE_CB(write_callback);
-#if constant(files.__HAVE_OOB__)
       FREE_CB(read_oob_callback);
       FREE_CB(write_oob_callback);
-#endif
     }
     register_close_file (open_file_id);
   }

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.127 2003/10/03 22:34:47 nilsson Exp $
+|| $Id: acconfig.h,v 1.128 2003/10/23 12:34:02 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -479,9 +479,6 @@
  * less annoying ways than Solaris.
  */
 #undef USE_SIGCHILD
-
-/* Enable code to handle Out-Of-Band data */
-#undef WITH_OOB
 
 /* Enable tracing of the compiler */
 #undef YYDEBUG

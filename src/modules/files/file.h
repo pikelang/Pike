@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.30 2003/07/03 14:09:03 grubba Exp $
+|| $Id: file.h,v 1.31 2003/10/23 12:34:02 grubba Exp $
 */
 
 #ifndef FILE_H
@@ -35,10 +35,8 @@ struct my_file
   int my_errno;
   struct svalue read_callback;
   struct svalue write_callback;
-#ifdef WITH_OOB
   struct svalue read_oob_callback;
   struct svalue write_oob_callback;
-#endif /* WITH_OOB */
 
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF) 
   struct object *key;

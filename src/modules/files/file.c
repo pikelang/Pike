@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.299 2003/10/19 15:08:09 mast Exp $
+|| $Id: file.c,v 1.300 2003/10/23 12:34:02 grubba Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.299 2003/10/19 15:08:09 mast Exp $");
+RCSID("$Id: file.c,v 1.300 2003/10/23 12:34:02 grubba Exp $");
 #include "fdlib.h"
 #include "pike_netlib.h"
 #include "interpret.h"
@@ -180,19 +180,14 @@ static struct my_file *get_file_storage(struct object *o)
 }
 
 #ifdef PIKE_DEBUG
-#ifdef WITH_OOB
-#define OOBOP(X) X
-#else
-#define OOBOP(X)
-#endif
 #define CHECK_FILEP(o) \
 do { if(o->prog && !get_storage(o,file_program)) Pike_fatal("%p is not a file object.\n",o); } while (0)
 #define DEBUG_CHECK_INTERNAL_REFERENCE(X) do {				\
   if( ((X)->fd!=-1 && (							\
      (query_read_callback((X)->fd)==file_read_callback) ||		\
-     (query_write_callback((X)->fd)==file_write_callback)		\
-OOBOP( || (query_read_oob_callback((X)->fd)==file_read_oob_callback) ||	\
-     (query_write_oob_callback((X)->fd)==file_write_oob_callback) ))) != \
+     (query_write_callback((X)->fd)==file_write_callback) ||		\
+     (query_read_oob_callback((X)->fd)==file_read_oob_callback) ||	\
+     (query_write_oob_callback((X)->fd)==file_write_oob_callback))) !=  \
   !!( (X)->flags & FILE_HAS_INTERNAL_REF ))				\
          Pike_fatal("Internal reference is wrong. %d\n",(X)->flags & FILE_HAS_INTERNAL_REF);		\
    } while (0)
@@ -212,10 +207,8 @@ static void check_internal_reference(struct my_file *f)
   {
     if(query_read_callback(f->fd) == file_read_callback ||
        query_write_callback(f->fd) == file_write_callback
-#ifdef WITH_OOB
        || query_read_oob_callback(f->fd) == file_read_oob_callback ||
        query_write_oob_callback(f->fd) == file_write_oob_callback
-#endif
        )
        {
 	 SET_INTERNAL_REFERENCE(f);
@@ -237,12 +230,10 @@ static void init_fd(int fd, int open_mode)
   THIS->read_callback.u.integer=0;
   THIS->write_callback.type=PIKE_T_INT;
   THIS->write_callback.u.integer=0;
-#ifdef WITH_OOB
   THIS->read_oob_callback.type=PIKE_T_INT;
   THIS->read_oob_callback.u.integer=0;
   THIS->write_oob_callback.type=PIKE_T_INT;
   THIS->write_oob_callback.u.integer=0;
-#endif /* WITH_OOB */
 #if defined(HAVE_FD_FLOCK) || defined(HAVE_FD_LOCKF)
   THIS->key=0;
 #endif
@@ -255,12 +246,10 @@ void reset_variables(void)
   THIS->read_callback.type=PIKE_T_INT;
   free_svalue(& THIS->write_callback);
   THIS->write_callback.type=PIKE_T_INT;
-#ifdef WITH_OOB
   free_svalue(& THIS->read_oob_callback);
   THIS->read_oob_callback.type=PIKE_T_INT;
   free_svalue(& THIS->write_oob_callback);
   THIS->write_oob_callback.type=PIKE_T_INT;
-#endif /* WITH_OOB */
 }
 
 static void free_fd_stuff(void)
@@ -282,10 +271,8 @@ static void close_fd_quietly(void)
 
   set_read_callback(fd,0,0);
   set_write_callback(fd,0,0);
-#ifdef WITH_OOB
   set_read_oob_callback(fd,0,0);
   set_write_oob_callback(fd,0,0);
-#endif /* WITH_OOB */
   set_backend_for_fd(fd, NULL);
 
   check_internal_reference(THIS);
@@ -336,10 +323,8 @@ static void just_close_fd(void)
 
   set_read_callback(fd,0,0);
   set_write_callback(fd,0,0);
-#ifdef WITH_OOB
   set_read_oob_callback(fd,0,0);
   set_write_oob_callback(fd,0,0);
-#endif /* WITH_OOB */
   set_backend_for_fd(fd, NULL);
 
   check_internal_reference(THIS);
@@ -611,7 +596,6 @@ static struct pike_string *do_read(int fd,
   }
 }
 
-#ifdef WITH_OOB
 static struct pike_string *do_read_oob(int fd,
 				       INT32 r,
 				       int all,
@@ -676,7 +660,6 @@ static struct pike_string *do_read_oob(int fd,
       return end_and_resize_shared_string(str, bytes_read);
     }
 }
-#endif /* WITH_OOB */
 
 /*! @decl string read()
  *! @decl string read(int len)
@@ -871,7 +854,6 @@ static void file_peek(INT32 args)
 
 #endif
 
-#ifdef WITH_OOB
 /*! @decl string read_oob()
  *! @decl string read_oob(int len)
  *! @decl string read_oob(int len, int(0..1) not_all)
@@ -904,8 +886,9 @@ static void file_peek(INT32 args)
  *! the stream.
  *!
  *! @note
- *!   This function is only available if the option @tt{'--without-oob'@}
- *!   was not specified when the Pike runtime was compiled.
+ *!   Out-of-band data was not be supported on Pike 0.5 and earlier,
+ *!   and not on Pike 0.6 through 7.4 if they were compiled with the
+ *!   option @tt{'--without-oob'@}.
  *!
  *! @note
  *!   It is not guaranteed that all out-of-band data sent from the other end
@@ -962,7 +945,6 @@ static void file_read_oob(INT32 args)
     push_int(0);
   }
 }
-#endif /* WITH_OOB */
 
 #undef CBFUNCS
 #define CBFUNCS(X)						\
@@ -1003,10 +985,8 @@ static void PIKE_CONCAT(file_query_,X) (INT32 args)		\
 
 CBFUNCS(read_callback)
 CBFUNCS(write_callback)
-#ifdef WITH_OOB
 CBFUNCS(read_oob_callback)
 CBFUNCS(write_oob_callback)
-#endif
 
 static void file__enable_callbacks(INT32 args)
 {
@@ -1023,10 +1003,8 @@ static void file__enable_callbacks(INT32 args)
 
 DO_TRIGGER(read_callback)
 DO_TRIGGER(write_callback)
-#ifdef WITH_OOB
 DO_TRIGGER(read_oob_callback)
 DO_TRIGGER(write_oob_callback)
-#endif
 
   check_internal_reference(THIS);
   pop_n_elems(args);
@@ -1043,10 +1021,8 @@ static void file__disable_callbacks(INT32 args)
 
 DO_DISABLE(read_callback)
 DO_DISABLE(write_callback)
-#ifdef WITH_OOB
 DO_DISABLE(read_oob_callback)
 DO_DISABLE(write_oob_callback)
-#endif
 
   check_internal_reference(THIS);
 
@@ -1301,7 +1277,6 @@ static void file_write(INT32 args)
   push_int64(written);
 }
 
-#ifdef WITH_OOB
 /*! @decl int write_oob(string data)
  *! @decl int write_oob(string format, mixed ... extras)
  *!
@@ -1316,8 +1291,9 @@ static void file_write(INT32 args)
  *! -1 is returned if something went wrong and no bytes were written.
  *!
  *! @note
- *!   This function is only available if the option @tt{'--without-oob'@}
- *!   was not specified when the Pike runtime was compiled.
+ *!   Out-of-band data was not be supported on Pike 0.5 and earlier,
+ *!   and not on Pike 0.6 through 7.4 if they were compiled with the
+ *!   option @tt{'--without-oob'@}.
  *!
  *! @note
  *!   It is not guaranteed that all out-of-band data sent from the other end
@@ -1403,7 +1379,6 @@ static void file_write_oob(INT32 args)
   pop_n_elems(args);
   push_int64(written);
 }
-#endif /* WITH_OOB */
 
 static int do_close(int flags)
 {
@@ -1421,9 +1396,7 @@ static int do_close(int flags)
     if(THIS->open_mode & FILE_WRITE)
     {
       set_read_callback(FD,0,0);
-#ifdef WITH_OOB
       set_read_oob_callback(FD,0,0);
-#endif /* WITH_OOB */
       fd_shutdown(FD, 0);
       THIS->open_mode &=~ FILE_READ;
       check_internal_reference(THIS);
@@ -1438,9 +1411,7 @@ static int do_close(int flags)
     if(THIS->open_mode & FILE_READ)
     {
       set_write_callback(FD,0,0);
-#ifdef WITH_OOB
       set_write_oob_callback(FD,0,0);
-#endif /* WITH_OOB */
       fd_shutdown(FD, 1);
       THIS->open_mode &=~ FILE_WRITE;
       check_internal_reference(THIS);
@@ -2703,12 +2674,10 @@ static void low_dup(struct object *toob,
 
   assign_svalue(& to->read_callback, & from->read_callback);
   assign_svalue(& to->write_callback, & from->write_callback);
-#ifdef WITH_OOB
   assign_svalue(& to->read_oob_callback,
 		& from->read_oob_callback);
   assign_svalue(& to->write_oob_callback,
 		& from->write_oob_callback);
-#endif /* WITH_OOB */
 
   if(UNSAFE_IS_ZERO(& from->read_callback))
   {
@@ -2724,7 +2693,6 @@ static void low_dup(struct object *toob,
     set_write_callback(to->fd, file_write_callback, to);
   }
 
-#ifdef WITH_OOB
   if(UNSAFE_IS_ZERO(& from->read_oob_callback))
   {
     set_read_oob_callback(to->fd, 0,0);
@@ -2738,7 +2706,6 @@ static void low_dup(struct object *toob,
   }else{
     set_write_oob_callback(to->fd, file_write_oob_callback, to);
   }
-#endif /* WITH_OOB */
   check_internal_reference(to);
 }
 
@@ -3694,8 +3661,10 @@ void file_set_notify(INT32 args) {
  */
 
 /*! @decl constant __HAVE_OOB__
- *! Exists and has the value 1 if OOB operations are
- *! available.
+ *!   Exists and has the value 1 if OOB operations are available.
+ *!
+ *! @note
+ *!   In Pike 7.5 and later OOB operations are always present.
  */
 
 void exit_files_stat(void);
@@ -3843,10 +3812,8 @@ PIKE_MODULE_INIT
 #include "file_functions.h"
   map_variable("_read_callback","mixed",0,OFFSETOF(my_file, read_callback),PIKE_T_MIXED);
   map_variable("_write_callback","mixed",0,OFFSETOF(my_file, write_callback),PIKE_T_MIXED);
-#ifdef WITH_OOB
   map_variable("_read_oob_callback","mixed",0,OFFSETOF(my_file, read_oob_callback),PIKE_T_MIXED);
   map_variable("_write_oob_callback","mixed",0,OFFSETOF(my_file, write_oob_callback),PIKE_T_MIXED);
-#endif
 
   /* function(int, void|mapping:string) */
   ADD_FUNCTION("_sprintf",fd__sprintf,
@@ -3954,14 +3921,13 @@ PIKE_MODULE_INIT
   add_integer_constant("DN_MULTISHOT", DN_MULTISHOT, 0);
 #endif
 
-#ifdef WITH_OOB
   add_integer_constant("__HAVE_OOB__",1,0);
 #ifdef PIKE_OOB_WORKS
   add_integer_constant("__OOB__",PIKE_OOB_WORKS,0);
 #else
   add_integer_constant("__OOB__",-1,0); /* unknown */
 #endif
-#endif
+
 #ifdef HAVE_SYS_UN_H
   add_integer_constant("__HAVE_CONNECT_UNIX__",1,0);
 #endif

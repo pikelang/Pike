@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file_functions.h,v 1.28 2003/09/30 02:06:17 nilsson Exp $
+|| $Id: file_functions.h,v 1.29 2003/10/23 12:34:02 grubba Exp $
 */
 
 FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
@@ -12,10 +12,8 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
   FILE_FUNC("peek",file_peek,"function(float|int|void:int)")
 #endif
   FILE_FUNC("write",file_write,"function(string|array(string),void|mixed...:int)")
-#ifdef WITH_OOB
   FILE_FUNC("read_oob",file_read_oob,"function(int|void,int|void:string)")
   FILE_FUNC("write_oob",file_write_oob,"function(string,void|mixed...:int)")
-#endif /* WITH_OOB */
 
 #ifdef HAVE_FSYNC
   FILE_FUNC("sync", file_sync, "function(:int)")
@@ -35,12 +33,9 @@ FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
 
   FILE_FUNC("set_write_callback",file_set_write_callback,"function(mixed:void)")
 
-#ifdef WITH_OOB
   FILE_FUNC("set_read_oob_callback",file_set_read_oob_callback,"function(mixed:void)")
-
   FILE_FUNC("set_write_oob_callback",file_set_write_oob_callback,"function(mixed:void)")
 
-#endif /* WITH_OOB */
   FILE_FUNC("_enable_callbacks",file__enable_callbacks,"function(:void)")
   FILE_FUNC("_disable_callbacks",file__disable_callbacks,"function(:void)")
 

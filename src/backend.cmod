@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.50 2003/10/19 14:58:14 mast Exp $
+|| $Id: backend.cmod,v 1.51 2003/10/23 12:34:02 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.50 2003/10/19 14:58:14 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.51 2003/10/23 12:34:02 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -69,9 +69,7 @@ struct cb_data
 struct fd_datum
 {
   struct cb_data read, write;
-#ifdef WITH_OOB
   struct cb_data read_oob, write_oob;
-#endif
 };
 
 
@@ -371,20 +369,16 @@ struct selectors
   int max_fd;
   my_fd_set read;
   my_fd_set write;
-#ifdef WITH_OOB
   /* except == incoming OOB data
    * outgoing OOB data is multiplexed on write
    */
   my_fd_set except;
-#endif /* WITH_OOB */
 };
 
 struct active_selectors
 {
   fd_set rset, wset;
-#ifdef WITH_OOB
   fd_set eset;
-#endif
   int max_fd;
 };
 
@@ -398,11 +392,7 @@ struct active_selectors
 
 #define RDBAND_IS_SPECIAL
 
-#ifdef WITH_OOB
 #define MY_SELECT(fds,R,W,E,T) fd_select((fds),(R),(W),(E),(T))
-#else
-#define MY_SELECT(fds,R,W,E,T) fd_select((fds),(R),(W),0,(T))
-#endif
 
 void MY_FD_CLR(struct selectors *me, int fd, my_fd_set *s)
 {
@@ -413,9 +403,7 @@ void MY_FD_CLR(struct selectors *me, int fd, my_fd_set *s)
     while(me->max_fd >=0 &&
 	  !my_FD_ISSET(me->max_fd, &me->read) &&
 	  !my_FD_ISSET(me->max_fd, &me->write)
-#ifdef WITH_OOB
 	  && !my_FD_ISSET(me->max_fd, &me->except)
-#endif /* WITH_OOB */
       )
       me->max_fd--;
   }
@@ -432,11 +420,8 @@ static void copy_selectors(struct active_selectors *to,
 {
   fd_copy_my_fd_set_to_fd_set(&to->rset, &from->read, from->max_fd+1);
   fd_copy_my_fd_set_to_fd_set(&to->wset, &from->write, from->max_fd+1);
-#ifdef WITH_OOB
   fd_copy_my_fd_set_to_fd_set(&to->eset, &from->except, from->max_fd+1);
-#endif /* WITH_OOB */
   to->max_fd=from->max_fd;
-  
 }
 
 #endif
@@ -611,7 +596,7 @@ PIKECLASS Backend
       }else{
 	if (was_set) {
 	  MY_FD_CLR(&me->set, fd, MY_POLLIN);
-#if defined(WITH_OOB) && defined(HAVE_POLL)
+#if defined(HAVE_POLL)
 	  if (me->fds[fd].read_oob.callback)
           {
             MY_FD_SET(&me->set, fd, MY_POLLEXCEPT);
@@ -653,16 +638,13 @@ PIKECLASS Backend
 	}
       } else {
 	if (was_set
-#ifdef WITH_OOB
 	    && !me->fds[fd].write_oob.callback
-#endif
 	  )
 	  MY_FD_CLR(&me->set, fd, MY_POLLOUT);
       }
     }
 
 
-#ifdef WITH_OOB
   void backend_set_read_oob_callback(struct Backend_struct *me,
 				     int fd,
 				     file_callback cb,
@@ -742,7 +724,6 @@ PIKECLASS Backend
 	}
       }
     }
-#endif /* WITH_OOB */
   
   file_callback backend_query_read_callback(struct Backend_struct *me,int fd)
     {
@@ -770,7 +751,6 @@ PIKECLASS Backend
       return me->fds[fd].write.callback;
     }
 
-#ifdef WITH_OOB
   file_callback backend_query_read_oob_callback(struct Backend_struct *me,int fd)
     {
 #ifdef PIKE_DEBUG
@@ -796,7 +776,6 @@ PIKECLASS Backend
       debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.callback;
     }
-#endif /* WITH_OOB */
   
   void *backend_query_read_callback_data(struct Backend_struct *me,int fd)
     {
@@ -825,7 +804,6 @@ PIKECLASS Backend
       return me->fds[fd].write.data;
     }
 
-#ifdef WITH_OOB
   /* FIXME */
   void *backend_query_read_oob_callback_data(struct Backend_struct *me,int fd)
     {
@@ -853,7 +831,6 @@ PIKECLASS Backend
       debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.data;
     }
-#endif /* WITH_OOB */
   
 #ifdef PIKE_DEBUG
 
@@ -870,9 +847,7 @@ PIKECLASS Backend
       {
 	if(my_FD_ISSET(e, &me->set.read)
 	   || my_FD_ISSET(e, &me->set.write)
-#ifdef WITH_OOB
 	   || my_FD_ISSET(e, &me->set.except)
-#endif /* WITH_OOB */
 	  )
 	{
 	  int ret;
@@ -1020,21 +995,17 @@ PIKECLASS Backend
 	debug_malloc_touch(me->fds);
 	for(i=0; i <= me->active_set.max_fd; i++)
 	{
-#ifdef WITH_OOB
 	  if(fd_FD_ISSET(i, &me->active_set.eset) &&
 	     me->fds[i].read_oob.callback)
 	    (*(me->fds[i].read_oob.callback))(i, me->fds[i].read_oob.data);
-#endif /* WITH_OOB */
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.rset) && me->fds[i].read.callback)
 	    (*(me->fds[i].read.callback))(i, me->fds[i].read.data);
 	  
 	  if(fd_FD_ISSET(i, &me->active_set.wset)) {
-#ifdef WITH_OOB
 	    if (me->fds[i].write_oob.callback) {
 	      (*(me->fds[i].write_oob.callback))(i, me->fds[i].write_oob.data);
 	    } else
-#endif /* WITH_OOB */
 	      if (me->fds[i].write.callback) {
 		(*(me->fds[i].write.callback))(i, me->fds[i].write.data);
 	      }
@@ -1070,7 +1041,6 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 	  
-#ifdef WITH_OOB
 	  if ((me->active_set.poll_fds[i].revents & POLLRDBAND) &&
 	      me->fds[fd].read_oob.callback)
 	  {
@@ -1082,7 +1052,6 @@ PIKECLASS Backend
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
-#endif /* WITH_OOB */
 	  
 	  if((me->active_set.poll_fds[i].revents & POLLHUP) ||
 	     (me->active_set.poll_fds[i].revents & POLLERR))
@@ -1125,7 +1094,6 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 	  }
 	  
-#ifdef WITH_OOB
 	  if ((me->active_set.poll_fds[i].revents & POLLWRBAND) &&
 	      me->fds[fd].write_oob.callback) {
 	    IF_PD(fprintf(stderr, "BACKEND: POLLWRBAND\n"));
@@ -1136,7 +1104,6 @@ PIKECLASS Backend
 	    handled = 1;
 #endif /* PIKE_DEBUG */
 	  }
-#endif /* WITH_OOB */
 	  
 	  if(me->active_set.poll_fds[i].revents & POLLOUT) {
 	    IF_PD(fprintf(stderr, "BACKEND: POLLOUT\n"));
@@ -1227,26 +1194,20 @@ PIKECLASS Backend
 		  {
 		    if(!my_FD_ISSET(i, &me->set.read) &&
 		       !my_FD_ISSET(i, &me->set.write)
-#ifdef WITH_OOB
 		       && !my_FD_ISSET(i, &me->set.except)
-#endif /* WITH_OOB */
 		      )
 		      continue;
 		    
 		    fd_FD_ZERO(& me->active_set.rset);
 		    fd_FD_ZERO(& me->active_set.wset);
-#ifdef WITH_OOB
 		    fd_FD_ZERO(& me->active_set.eset);
-#endif /* WITH_OOB */
 		    
 		    if(my_FD_ISSET(i, &me->set.read))
 		      fd_FD_SET(i, & me->active_set.rset);
 		    if(my_FD_ISSET(i, &me->set.write))
 		      fd_FD_SET(i, & me->active_set.wset);
-#ifdef WITH_OOB
 		    if(my_FD_ISSET(i, &me->set.except))
 		      fd_FD_SET(i, & me->active_set.eset);
-#endif /* WITH_OOB */
 		    
 		    timeout.tv_usec=0;
 		    timeout.tv_sec=0;
@@ -1327,15 +1288,12 @@ PIKECLASS Backend
 	backend_set_write_callback(THIS, fd,
 			  backend_query_write_callback(old, fd),
 			  backend_query_write_callback_data(old, fd));
-#ifdef WITH_OOB
 	backend_set_read_oob_callback(THIS, fd,
 			  backend_query_read_oob_callback(old, fd),
 			  backend_query_read_oob_callback_data(old, fd));
 	backend_set_write_oob_callback(THIS, fd,
 			  backend_query_write_oob_callback(old, fd),
 			  backend_query_write_oob_callback_data(old, fd));
-#endif
-			  
       }
       set_backend_for_fd(fd, THIS);
     }
@@ -1997,9 +1955,7 @@ PIKECLASS Backend
       THIS->set.max_fd=0;
       my_FD_ZERO(&THIS->set.read);
       my_FD_ZERO(&THIS->set.write);
-#ifdef WITH_OOB
       my_FD_ZERO(&THIS->set.except);
-#endif /* WITH_OOB */
       /* FIXME: Should there be something else here? */
       /* THIS->set.num_fds=0; */
 #else /* HAVE_POLL */
@@ -2180,11 +2136,8 @@ void * PIKE_CONCAT3(query_,CB,_data)(int fd)				    \
 
 WRAP(read_callback);
 WRAP(write_callback);
-
-#ifdef WITH_OOB
 WRAP(read_oob_callback);
 WRAP(write_oob_callback);
-#endif
 
 PMOD_EXPORT struct callback *debug_add_backend_callback(callback_func call,
 							void *arg,

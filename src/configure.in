@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.737 2003/10/10 13:00:04 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.738 2003/10/23 12:34:02 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1367,11 +1367,10 @@ AC_ARG_WITH(max-fd,
 		     [set how many filedescriptors can be used at once]),
 	    [pike_cv_max_open_fd=$withval])
 MY_AC_ARG_WITH(oob, MY_DESCR([--without-oob],
-			     [disable out-of-band data handling]),[],[
-  if test "$pike_cv_sys_os" = "Windows_NT"; then
-    AC_MSG_ERROR([Support for out of band data is mandatory on NT.])
-  else :; fi
-],[with_oob=yes])
+			     [disable out-of-band data handling (INVALID)]),
+[],[
+  AC_MSG_ERROR([Support for out of band data is mandatory in Pike 7.5 and later.])
+])
 MY_AC_ARG_WITH(compiler-trace, MY_DESCR([--with-compiler-trace],
 					[enable tracing of the compiler]),
 	       [AC_DEFINE(YYDEBUG)])
@@ -1421,10 +1420,6 @@ AC_ARG_WITH(pike-type, MY_DESCR([--without-pike-type],
 
 if test "x$with_pike_type" = "xno"; then
   PIKE_MSG_WARN([Disabling of USE_PIKE_TYPE is no longer supported.])
-fi
-
-if test "x$with_oob" = "xno"; then :; else
-  AC_DEFINE(WITH_OOB)
 fi
 
 if test "x$with_bignums" = xyes; then
