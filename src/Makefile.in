@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.242 2001/01/26 02:04:47 mast Exp $
+# $Id: Makefile.in,v 1.243 2001/01/27 18:19:29 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -535,21 +535,21 @@ bin_export: aclocal
 #	$(RUNPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h
 
 $(SRCDIR)/peep_engine.c: $(TMP_BUILDDIR)/tpike $(SRCDIR)/peep.in $(TMP_BINDIR)/mkpeep.pike
-	$(RUNTPIKE) mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( rm $(SRCDIR)/peep_engine.c ; exit 1 )
+	$(RUNTPIKE) $(TMP_BINDIR)/mkpeep.pike $(SRCDIR)/peep.in >$(SRCDIR)/peep_engine.c || ( rm $(SRCDIR)/peep_engine.c ; exit 1 )
 
 peep.o: $(SRCDIR)/peep_engine.c
 
 peep_t.o: peep.c
 
 $(SRCDIR)/case_info.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/UnicodeData.txt $(TMP_BINDIR)/make_ci.pike
-	$(RUNTPIKE) make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h || ( rm $(SRCDIR)/case_info.h ; exit 1 )
+	$(RUNTPIKE) $(TMP_BINDIR)/make_ci.pike <$(SRCDIR)/UnicodeData.txt >$(SRCDIR)/case_info.h || ( rm $(SRCDIR)/case_info.h ; exit 1 )
 
 builtin_functions.o: $(SRCDIR)/case_info.h
 
 builtin_functions_t.o: builtin_functions.c
 
 $(SRCDIR)/treeopt.h: $(TMP_BUILDDIR)/tpike $(SRCDIR)/treeopt.in $(TMP_BINDIR)/mktreeopt.pike
-	$(RUNTPIKE) mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
+	$(RUNTPIKE) $(TMP_BINDIR)/mktreeopt.pike $(SRCDIR)/treeopt.in || ( rm $(SRCDIR)/treeopt.h ; exit 1 )
 
 las.o: $(SRCDIR)/treeopt.h
 
