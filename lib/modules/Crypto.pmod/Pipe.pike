@@ -1,4 +1,6 @@
 
+#pike __REAL_VERSION__
+
 static array ciphers = ({});
 static int _block_size = 1;
 static int(0..1) reversed;
