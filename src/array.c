@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.93 2000/11/08 20:03:45 hubbe Exp $");
+RCSID("$Id: array.c,v 1.94 2000/11/17 10:14:03 per Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1212,12 +1212,27 @@ PMOD_EXPORT int array_equal_p(struct array *a, struct array *b, struct processin
   return 1;
 }
 
-static INT32 *ordera=0, *orderb=0;
+typedef int(*mycmpfun)(INT32*,INT32*,INT32*,INT32*);
+#define ID fsort_with_order
+#define CMP(X,Y) ((*cmpfun)((X),(Y),oa,ob))
+#define EXTRA_ARGS ,mycmpfun cmpfun,INT32 *oa,INT32 *ob
+#define XARGS ,cmpfun,oa,ob
+#define TYPE INT32
+#include "fsort_template.h"
+#undef ID
+#undef TYPE
+#undef XARGS
+#undef EXTRA_ARGS
+#undef CMP
+
+
+
 /*
  * this is used to rearrange the zipper so that the order is retained
  * as it was before (check merge_array_with_order below)
  */
-static int array_merge_fun(INT32 *a, INT32 *b)
+static int array_merge_fun(INT32 *a, INT32 *b,
+			   INT32 *ordera, INT32 *orderb)
 {
   if(*a<0)
   {
@@ -1237,8 +1252,6 @@ static int array_merge_fun(INT32 *a, INT32 *b)
   }
 }
 
-
-
 /*
  * merge two arrays and retain their order, this is done by arranging them
  * into ordered sets, merging them as sets and then rearranging the zipper
@@ -1246,16 +1259,16 @@ static int array_merge_fun(INT32 *a, INT32 *b)
  */
 PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *b,INT32 op)
 {
-  ONERROR r1,r2,r3;
+  ONERROR r1,r2,r3,r4,r5;
   INT32 *zipper;
   struct array *tmpa,*tmpb,*ret;
-
-  if(ordera) { free((char *)ordera); ordera=0; }
-  if(orderb) { free((char *)orderb); orderb=0; }
+  INT32 *ordera, *orderb;
 
   ordera=get_set_order(a);
   orderb=get_set_order(b);
 
+  SET_ONERROR(r5,free,orderb);
+  SET_ONERROR(r4,free,ordera);
   tmpa=reorder_and_copy_array(a,ordera);
   SET_ONERROR(r1,do_free_array,tmpa);
 
@@ -1265,16 +1278,16 @@ PMOD_EXPORT struct array *merge_array_with_order(struct array *a, struct array *
   zipper=merge(tmpa,tmpb,op);
   SET_ONERROR(r3,free,zipper);
 
-  fsort((char *)(zipper+1),*zipper,sizeof(INT32),(fsortfun)array_merge_fun);
 
-  free((char *)orderb);
-  free((char *)ordera);
-  orderb=ordera=0;
+  fsort_with_order( (zipper+1), zipper+*zipper, array_merge_fun,
+		    ordera, orderb );
 
   ret=array_zip(tmpa,tmpb,zipper);
   UNSET_ONERROR(r3);  free((char *)zipper);
   UNSET_ONERROR(r2);  free_array(tmpb);
   UNSET_ONERROR(r1);  free_array(tmpa);
+  UNSET_ONERROR(r4);  free((char *)ordera);
+  UNSET_ONERROR(r5);  free((char *)orderb);
   return ret;
 }
 
