@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.488 2001/10/05 18:45:51 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.489 2001/11/02 14:02:00 jonasw Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1061,6 +1061,18 @@ if test "$cflags_is_set" = "no"; then
     AC_SYS_COMPILER_FLAG(-bbigtoc,bbigtoc,LDFLAGS)
     AC_SYS_COMPILER_FLAG([-Wl,-bbigtoc],Wlbbigtoc,LDFLAGS)
   ])
+
+  DO_IF_OS(Darwin,
+  [
+    # aka MacOS X.
+    # Foundation framework needed by JavaVM.framework. The OS X 10.1 linker
+    # no longer includes indirect dependencies so we need to add them here.
+    AC_SYS_COMPILER_FLAG(-framework Foundation, framework_Foundation, LDFLAGS)
+
+    # -flat_namespace only needed for linking with libMallocDebug
+    # AC_SYS_COMPILER_FLAG(-flat_namespace, flat_namespace, LDFLAGS)
+  ])
+
 
  else if test "x${TCC-}" = xyes ; then
 
