@@ -1,3 +1,8 @@
+Sat Jan 30 02:37:16 1999  Henrik Grubbström  <grubba@idonex.se>
+
+	* Stdio.pmod: Added Stdio.File->async_connect().
+	* Protocols/Ident.pmod: Now uses Stdio.File->async_connect().
+
 Tue Nov 10 00:10:15 1998  Peter Bortas  <peter@idonex.se>
 
 	* modules/Remote.pmod/*: Added Remote to the standard dist.
