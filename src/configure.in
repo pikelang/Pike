@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.379 2000/06/17 13:43:57 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.380 2000/06/29 00:09:44 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -544,7 +544,7 @@ AC_ARG_WITH(poll,        [  --with-poll            use poll instead of select],[
   esac
 ])
 AC_ARG_WITH(max-fd,      [  --with-max-fd=X        set how many filedescriptors can be used at once],[pike_cv_max_open_fd=$withval],[])
-AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[AC_DEFINE(WITH_OOB)],[])
+AC_ARG_WITH(oob,	 [  --without-oob          disable out-of-band data handling],[],[with_oob=yes])
 AC_ARG_WITH(thread-trace,[  --without-thread-trace disable individual tracing of threads],[],[with_thread_trace=yes])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
@@ -558,6 +558,10 @@ AC_ARG_WITH(perl,        [  --with-perl            enable the embedded Perl modu
  with_perl="no"
 ]
 )
+
+if test "x$with_oob" = xyes; then
+  AC_DEFINE(WITH_OOB)
+fi
 
 if test "x$with_bignums" = xyes; then
   AC_DEFINE(AUTO_BIGNUM)
