@@ -5,7 +5,7 @@
 <!-- The description in this file will compile a reference manual -->
 <!-- similar to the old "Pike Tutorial". -->
 
-<!-- $Id: traditional.xml,v 1.19 2003/02/04 23:56:50 nilsson Exp $ -->
+<!-- $Id: traditional.xml,v 1.20 2003/04/08 21:47:33 nilsson Exp $ -->
 
 <manual>
   <dir name="traditional_manual">
@@ -83,7 +83,6 @@
       <insert-move entity="Image.Colortable"/>
 <!--      <insert-move entity="Image.colortable"/> -->
       <insert-move entity="Image.Color"/>
-      <insert-move entity="Image.Poly"/>
       <insert-move entity="Image.ANY"/>
       <insert-move entity="Image"/>
     </chapter>
