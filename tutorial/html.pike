@@ -358,6 +358,14 @@ SGML preify(SGML in,int id)
 SGML data_description(mapping arg,int pos,array(object) data,
 		      object orig)
 {
+   if (!data)
+   {
+      werror("Warning: empty data_description"
+	     " (near "+Sgml.Tag("data_description",([]),pos)->location()+
+	     ")\n");
+      return ({});
+   }
+
    array d=({}); 
    //    ({ type, name, value, pos, desc })
    // or ({ ?,    0,    0,     pos, group description })
@@ -1059,7 +1067,7 @@ void output(string base, WMML data)
   html_index=index_to_wmml(index);
   index=0;
 
-  foreach(indices(sections),string file)
+  foreach(sort(indices(sections)),string file)
     {
       string filename=mkfilename(file);
       werror("Anchoring ");
