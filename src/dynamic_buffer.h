@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: dynamic_buffer.h,v 1.9 2000/08/04 10:59:22 grubba Exp $
+ * $Id: dynamic_buffer.h,v 1.10 2000/08/10 13:09:16 grubba Exp $
  */
 #ifndef DYNAMIC_BUFFER_H
 #define DYNAMIC_BUFFER_H
@@ -42,7 +42,7 @@ struct pike_string *debug_low_free_buf(dynamic_buffer *buf);
 struct pike_string *debug_free_buf(void);
 char *make_buf_space(INT32 space);
 void my_putchar(char b);
-void my_binary_strcat(const char *b,INT32 l);
+void my_binary_strcat(const char *b, ptrdiff_t l);
 void my_strcat(const char *b);
 void init_buf(void);
 void init_buf_with_string(string s);
