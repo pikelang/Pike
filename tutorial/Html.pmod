@@ -34,7 +34,6 @@ void create()
     case '.':
     case ';':
     case ':':
-    case '`':
       break;
 
     default:
@@ -61,6 +60,7 @@ string mktag(string tag, mapping params)
       switch(i)
       {
 	case "href":
+	case "name":
 	  ret+="='"+quote_param(params[i])+"'";
 	  break;
 
