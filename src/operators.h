@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: operators.h,v 1.5 1998/05/25 10:38:46 hubbe Exp $
+ * $Id: operators.h,v 1.6 1998/06/06 13:04:40 grubba Exp $
  */
 #ifndef OPERATORS_H
 #define OPERATORS_H
@@ -56,7 +56,7 @@ void f_index(INT32 args);
 void f_arrow(INT32 args);
 void f_sizeof(INT32 args);
 void init_operators(void);
-void exit_operators();
+void exit_operators(void);
 /* Prototypes end here */
 
 #undef COMPARISON

@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.35 1998/06/06 03:22:15 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.36 1998/06/06 13:05:03 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1958,7 +1958,7 @@ void init_operators(void)
 }
 
 
-void exit_operators()
+void exit_operators(void)
 {
   if(string_assignment_program)
   {
