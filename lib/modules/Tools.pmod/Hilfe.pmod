@@ -612,6 +612,9 @@ class StdinHilfe
 	}
 	rm(home+"/.hilfe_history");
 	mv(home+"/.hilfe_history~",home+"/.hilfe_history");
+#if constant(chmod)	
+	chmod(home+"/.hilfe_history", 0600);
+#endif	
       }
     };
   }
