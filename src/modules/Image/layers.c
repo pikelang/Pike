@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.21 1999/06/22 19:26:00 mirar Exp $
+**!	$Id: layers.c,v 1.22 1999/06/28 00:43:06 per Exp $
 **! class Layer
 **! see also: layers
 **!
@@ -152,7 +152,7 @@
 
 #include <math.h> /* floor */
 
-RCSID("$Id: layers.c,v 1.21 1999/06/22 19:26:00 mirar Exp $");
+RCSID("$Id: layers.c,v 1.22 1999/06/28 00:43:06 per Exp $");
 
 #include "image_machine.h"
 
@@ -277,6 +277,9 @@ LMFUNC(lm_dissolve);
 LMFUNC(lm_behind);
 LMFUNC(lm_erase);
 
+LMFUNC(lm_screen);
+LMFUNC(lm_overlay);
+
 struct layer_mode_desc
 {
    char *name;
@@ -331,8 +334,8 @@ struct layer_mode_desc
    {"behind",        lm_behind,        1, NULL            }, 
    {"erase",         lm_erase,         1, NULL            }, 
 
-/* {"screen",        lm_screen,        1, NULL            }, */
-/* {"overlay",       lm_overlay,       1, NULL            }, */
+   {"screen",        lm_screen,        1, NULL            }, 
+   {"overlay",       lm_overlay,       1, NULL            }, 
 } ;
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
@@ -727,7 +730,7 @@ static void image_layer_set_alpha_value(INT32 args)
 {
    float f;
    get_all_args("Image.Layer->set_alpha_value",args,"%F",&f);
-   if (f<0.0 || f>=1.0)
+   if (f<0.0 || f>1.0)
       SIMPLE_BAD_ARG_ERROR("Image.Layer->set_alpha_value",1,"float(0..1)");
    THIS->alpha_value=f;
 }
@@ -1606,6 +1609,27 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 #undef L_CHANNEL_DO_V
 #undef LM_FUNC
 
+/* screen: 255 - ((255-A)*(255-B)/255) */
+
+#define LM_FUNC lm_screen
+#define L_TRUNC(X) (X<0?0:(X>255?255:X))
+#define L_OPER(A,B) 255 - CCUT((255-A)*(int)(255-B))
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
+#define LM_FUNC lm_overlay
+#define L_TRUNC(X) (X)
+#define INT_MULT(a,b)  (((a) * (b) + 0x80)>>8)
+#define INT_BLEND(a,b,alpha)  (INT_MULT((a)-(b), alpha) + (b))
+#define L_OPER(A,B) INT_BLEND((255-INT_MULT((255-A),(255-B))),INT_MULT(A,B),A)
+/*                     screen                             mult        source */
+#include "layer_oper.h"
+#undef LM_FUNC
+#undef L_TRUNC
+#undef L_OPER
+
 /* darken: min v */
 
 #define LM_FUNC lm_darken
@@ -2475,7 +2499,8 @@ void init_image_layers(void)
    ADD_FUNCTION("set_fill",image_layer_set_fill,
 		tFunc(tOr(tObj,tVoid) tOr(tObj,tVoid),tObj),0);
    ADD_FUNCTION("set_mode",image_layer_set_mode,tFunc(tStr,tObj),0);
-   ADD_FUNCTION("set_alpha_value",image_layer_set_mode,tFunc(tFloat,tObj),0);
+   ADD_FUNCTION("set_alpha_value",image_layer_set_alpha_value,
+                tFunc(tFloat,tObj),0);
    ADD_FUNCTION("set_tiled",image_layer_set_tiled,tFunc(tInt,tObj),0);
 
    /* query */
