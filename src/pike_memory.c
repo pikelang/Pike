@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.140 2003/03/15 18:19:20 grubba Exp $
+|| $Id: pike_memory.c,v 1.141 2003/03/16 19:18:05 grubba Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.140 2003/03/15 18:19:20 grubba Exp $");
+RCSID("$Id: pike_memory.c,v 1.141 2003/03/16 19:18:05 grubba Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -1055,6 +1055,7 @@ struct memloc
 #define MEM_FREE			16
 #define MEM_LOCS_ADDED_TO_NO_LEAKS	32
 #define MEM_TRACE			64
+#define MEM_SCANNED			128
 
 BLOCK_ALLOC_FILL_PAGES(memloc, 64)
 
@@ -2076,6 +2077,13 @@ static void find_references_to(void *block, int indent, int depth, int flags)
     /* Avoid infinite recursion */
     ptrdiff_t num_to_check=0;
     void *to_check[1000];
+
+    /* FIXME: Why store m->data in to_check, and not m itself?
+     *		/grubba 2003-03-16
+     *
+     * This entire loop seems strange. Why is it split into
+     * two parts?
+     */
     for(m=memhdr_hash_table[h];m;m=m->next)
     {
       if(num_to_check >= (ptrdiff_t) NELEM(to_check))
@@ -2222,12 +2230,13 @@ static void low_search_all_memheaders_for_references(void)
 {
   unsigned long h;
   struct memhdr *m;
+  size_t counter = 0;
 
   if (PIKE_MEM_CHECKER()) return;
 
   for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
     for(m=memhdr_hash_table[h];m;m=m->next)
-      m->flags &=~ MEM_REFERENCED;
+      m->flags &= ~(MEM_REFERENCED|MEM_SCANNED);
 
   for(h=0;h<(unsigned long)memhdr_hash_table_size;h++)
   {
@@ -2237,6 +2246,18 @@ static void low_search_all_memheaders_for_references(void)
       struct memhdr *tmp;
       void **p=m->data;
 
+      if (m->flags & MEM_SCANNED) {
+	fprintf(stderr, "Found memhdr %p: (%p) several times in hash-table!\n",
+		m, m->data);
+	dump_memhdr_locations(m, 0, 0);
+	continue;
+      }
+      m->flags |= MEM_SCANNED;
+
+      counter++;
+      if (counter > num_memhdr) {
+	Pike_fatal("Found too many memhdrs!\n");
+      }
       if( ! ((sizeof(void *)-1) & (size_t)p ))
       {
 	if(m->size > 0)
@@ -2255,7 +2276,16 @@ static void low_search_all_memheaders_for_references(void)
 		 */
 		continue;
 	      }
-	      if((tmp=find_memhdr(addr)))
+	      /* NOTE: We must not use find_memhdr() here,
+	       *       since it might alter the data-structure
+	       *       we're looping over...
+	       *
+	       *       A specific case is a bucket containing two
+	       *       self-referring memhdrs, using find_memhdr()
+	       *       will then cause an infinite loop.
+	       *	/grubba 2003-03-16
+	       */
+	      if((tmp=just_find_memhdr(addr)))
 		tmp->flags |= MEM_REFERENCED;
 	    }
 #ifdef __NT__
