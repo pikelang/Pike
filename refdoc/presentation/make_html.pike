@@ -7,6 +7,7 @@
 function resolve_reference; 
 string image_path = "images/";
 string dest_path;
+string default_ns;
 
 mapping lay = ([
  "docgroup" : "\n\n<hr clear='all' size='1' noshadow='noshadow' />\n<dl>",
@@ -216,7 +217,7 @@ string parse_autodoc(Node n)
 #endif
 
   ret += parse_children(n, "docgroup", parse_docgroup);
-  ret += parse_children(n, "namespace", parse_module);
+  ret += parse_children(n, "namespace", parse_namespace);
 
   return ret;
 }
@@ -226,7 +227,7 @@ string parse_namespace(Node n, void|int noheader)
   string ret = "";
 
   mapping m = n->get_attributes();
-  int(0..1) header = !noheader && !(m->hidden);
+  int(0..1) header = !noheader && !(m->hidden) && m->name!=default_ns;
   if(header)
     ret += "<dl><dt>"
       "<table width='100%' cellpadding='3' cellspacing='0' border='0'><tr>"
@@ -1128,38 +1129,51 @@ string layout_toploop(Node n) {
 int main(int num, array args) {
 
   int t = time();
+  string title;
 
-  args = args[1..];
-  foreach(args, string arg) {
-    string tmp;
-    if(sscanf(arg, "--img=%s", tmp)) {
-      image_path = tmp;
-      args -= ({ arg });
-    }
-    if(sscanf(arg, "--dest=%s", tmp) && tmp!="") {
-      dest_path = tmp;
-      args -= ({ arg });
-    }
-    if(arg=="--help") {
-      write(#"make_html.pike [args] <input file>
+  foreach(Getopt.find_all_options(args, ({
+    ({ "img",   Getopt.HAS_ARG, "--img"   }),
+    ({ "dest",  Getopt.HAS_ARG, "--dest"  }),
+    ({ "title", Getopt.HAS_ARG, "--title" }),
+    ({ "defns", Getopt.HAS_ARG, "--default-ns" }),
+    ({ "help",  Getopt.NO_ARG,  "--help"  }),
+  })), array opt)
+    switch(opt[0]) {
+    case "img":
+      image_path = opt[1];
+      break;
+    case "dest":
+      dest_path = opt[1];
+      break;
+    case "title":
+      title = opt[1];
+      break;
+    case "defns":
+      default_ns = opt[1];
+      break;
+    case "help":
+      write(#"make_html.pike [args] <input file> [<output file>]
 --img=<image path>
+--dest=<destination path>
+
+--title=<document title>
 ");
-      return 0;
+      break;
     }
-  }
+  args = Getopt.get_args(args)[1..];
 
   if(!sizeof(args))
     error( "No input file given.\n" );
 
-  string file = Stdio.read_file(args[-1]);
+  string file = Stdio.read_file(args[0]);
   if(!file)
-    error( "Could not read %s.\n", args[-1] );
+    error( "Could not read %s.\n", args[0] );
   if(!sizeof(file))
-    error( "%s is empty.\n", args[-1] );
+    error( "%s is empty.\n", args[0] );
 
   // We are only interested in what's in the
   // module container.
-  werror("Parsing %O...\n", args[-1]);
+  werror("Parsing %O...\n", args[0]);
   Node n = Parser.XML.Tree.parse_input(file);
 
   Node n2 = n->get_first_element("manual");
@@ -1170,10 +1184,14 @@ int main(int num, array args) {
       return 0;
     }
 
-    Node chap = Node(XML_ELEMENT, "chapter", (["title":"Documentation"]), 0);
+    Node chap = Node(XML_ELEMENT, "chapter",
+		     (["title":title||"Documentation"]), 0);
     chap->add_child( n2 );
-    Node file = Node(XML_ELEMENT, "file", (["name":"index.html"]), 0);
+
+    string fn = sizeof(args)>1 ? args[1] : "index.html";
+    Node file = Node(XML_ELEMENT, "file", (["name":fn]), 0);
     file->add_child( chap );
+
     Node top = Node(XML_ELEMENT, "manual", (["manual":"something"]), 0);
     top->add_child( file );
     n = top;
