@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.139 1999/03/10 03:45:35 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.140 1999/05/08 01:00:35 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -2764,7 +2764,7 @@ test_any([[string s="foo"; s[2]='t'; s[0]--; return s;]],"eot")
 test_any([[string s="foo"; s[2]=0777; s[1]--; return s;]],"fn\777")
 test_any([[string s="foo"; s[2]=07777777; s[1]--; return s;]],"fn\7777777")
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") ]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && (cpp("__NT__")/"\n")[1]=="__NT__"  ]],
 [[
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
   test_false(Process.create_process(({"/bin/cat","/dev/null"}))->wait());
@@ -2772,7 +2772,7 @@ cond([[ file_stat("/bin/cat") && file_stat("/dev/null") ]],
   test_any([[ int e; for(e=0;e<1000;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;]],-1)
 ]])
 
-cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create]],
+cond([[ file_stat("/bin/cat") && file_stat("/dev/null") && all_constants()->thread_create  && (cpp("__NT__")/"\n")[1]=="__NT__" ]],
 [[
   test_any([[return allocate(10,thread_create)(lambda() { int e; for(e=0;e<500;e++) if(Process.create_process(({"/bin/cat","/dev/null"}))->wait()) return e; return -1;})->wait() - ({-1})]],({}))
 ]])
