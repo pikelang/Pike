@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.18 2000/08/03 11:33:31 grubba Exp $
+ * $Id: lexer.h,v 1.19 2000/08/06 21:42:18 grubba Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -93,6 +93,7 @@
 
 #endif /* SHIFT == 1 */
 
+
 #define lex_isidchar(X) ((((unsigned) X)>=256) || isidchar(X))
 
 static int low_isword(char *buf, char *X, size_t len)
@@ -139,6 +140,7 @@ static double lex_strtod(char *buf, char **end)
 
 #endif /* SHIFT == 0 */
 
+
 /*** Lexical analyzing ***/
 
 static int char_const(void)
@@ -173,21 +175,21 @@ static int char_const(void)
       {
 	switch(LOOK())
 	{
-	  default: return c;
 	  case '0': case '1': case '2': case '3':
 	  case '4': case '5': case '6': case '7':
 	  case '8': case '9':
 	    c=c*16+GETC()-'0';
-	    break;
+	    continue;
 	    
 	  case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
 	    c=c*16+GETC()-'a'+10;
-	    break;
+	    continue;
 	    
 	  case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
 	    c=c*16+GETC()-'A'+10;
-	    break;
+	    continue;
 	}
+	break;
       }
 
     case 'd':
@@ -196,13 +198,13 @@ static int char_const(void)
       {
 	switch(LOOK())
 	{
-	  default: return c;
 	  case '0': case '1': case '2': case '3':
 	  case '4': case '5': case '6': case '7':
 	  case '8': case '9':
 	    c=c*10+GETC()-'0';
-	    break;
+	    continue;
 	}
+	break;
       }
   }
   return c;
@@ -243,6 +245,8 @@ static struct pike_string *readstring(void)
   }
   return finish_string_builder(&tmp);
 }
+
+
 
 int yylex(YYSTYPE *yylval)
 #if LEXDEBUG>4
