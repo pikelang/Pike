@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.6 2002/05/24 12:53:15 grubba Exp $
+ * $Id: module.pmod,v 1.7 2002/05/24 14:36:28 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -242,15 +242,16 @@ class Parser
   mapping(string:Kernel) known_states = ([]);
 
   //! Compile error and warning handler.
-  ErrorHandler error_handler = ErrorHandler();
+  function(SeverityLevel, string, string, mixed ...:void) error_handler =
+    ErrorHandler()->report;
 
   void report(SeverityLevel level, string subsystem, string msg,
 	      mixed ... args)
   {
     if (!error_handler) {
-      error_handler = ErrorHandler();
+      error_handler = ErrorHandler()->report;
     }
-    error_handler->report(level, subsystem, msg, @args);
+    error_handler(level, subsystem, msg, @args);
   }
 
   /*
@@ -672,11 +673,17 @@ class Parser
   //! If zero or not specified, use the built-in function.
   void set_symbol_to_string(void|function(int|string:string) s_to_s)
   {
-    if (s_to_s) {
-      symbol_to_string = s_to_s;
-    } else {
-      symbol_to_string = builtin_symbol_to_string;
-    }
+    symbol_to_string = s_to_s || builtin_symbol_to_string;
+  }
+
+  //! Sets the error report function.
+  //!
+  //! @param handler
+  //!   Function to call to report errors and warnings.
+  //!   If zero or not specifier, use the built-in function.
+  void set_error_handler(void|function(SeverityLevel, string, string, mixed ...: void) handler)
+  {
+    error_handler = handler || ErrorHandler()->report;
   }
 
   //! Add a rule to the grammar.
