@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.271 2003/05/17 12:01:36 grubba Exp $
+|| $Id: signal_handler.c,v 1.272 2003/05/22 12:05:05 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.271 2003/05/17 12:01:36 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.272 2003/05/22 12:05:05 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1310,7 +1310,13 @@ static TH_RETURN_TYPE wait_thread(void *data)
 	  /* FreeBSD sends spurious SIGPROF signals to the child process
 	   * which interferes with the process trace startup code.
 	   */
-	  (WSTOPSIG(status) == SIGPROF)
+	  (WSTOPSIG(status) == SIGPROF) ||
+	  /* FreeBSD is further broken in that it catches SIGKILL, and
+	   * it even does it twice, so that two PTRACE_CONT(9) are
+	   * required before the traced process dies. This makes it a
+	   * bit hard to kill traced processes...
+	   */
+	  (WSTOPSIG(status) == SIGKILL)
 #else
 	  /* AIX has these...
 	   *   _W_SLWTED	Stopped after Load Wait TracED.
@@ -1326,7 +1332,7 @@ static TH_RETURN_TYPE wait_thread(void *data)
 #ifdef PROC_DEBUG
 	fprintf(stderr, "wait thread: Got SIGPROF from pid %d\n",pid);
 #endif /* PROC_DEBUG */
-	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), SIGPROF);
+	ptrace(PTRACE_CONT, pid, CAST_TO_PTRACE_ADDR(1), WSTOPSIG(status));
 #else /* defined(_W_SLWTED) || defined(_W_SEWTED) || defined(_W_SFWTED) */
 #ifdef PROC_DEBUG
 	fprintf(stderr, "wait thread: Got L/E/F status (0x%08x) from pid %d\n",
@@ -1763,6 +1769,18 @@ static void f_trace_process_cont(INT32 args)
     /* FIXME: Better diagnostics. */
     Pike_error("Failed to release process. errno:%d\n", err);
   }
+
+#ifdef __FreeBSD__
+  /* Traced processes on FreeBSD have a tendency not to die
+   * of cont(SIGKILL) unless they get some help...
+   */
+  if (cont_signal == SIGKILL) {
+    if (kill(THIS->pid, SIGKILL) == -1) {
+      int err = errno;
+      Pike_error("Failed to kill process. errno:%d\n", err);
+    }
+  }
+#endif /* __FreeBSD__ */
   pop_n_elems(args);
   push_int(0);
 }
