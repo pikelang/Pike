@@ -1,7 +1,10 @@
-test_true([["$Id: testsuite.in,v 1.630 2003/04/02 12:02:08 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.631 2003/04/02 19:42:57 nilsson Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
+test_compile_any([[#pike 7.4]])
+test_compile_any([[#pike 7.0]])
+test_compile_any([[#pike 0.6]])
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6672,6 +6675,8 @@ cond([[all_constants()->_verify_internals]],
   test_do(_verify_internals())
 ]])
 
+test_compile_any([[import Stdio.Readline; mapping x=([]);]]);
+
 // testing preprocessor
 test_eq([[cpp("#define FOO(X,Y) (X) (Y)\nFOO( (A),(B) )")]],"# 1 \"-\"\n\n( (A) ) ( (B) )")
 test_eq([[cpp("#define F 'F'\nF")]],"# 1 \"-\"\n\n'F'")
@@ -6734,9 +6739,7 @@ test_eval_error([[
   cpp ("x y z", "-", 0, handler());
 ]]);
 
-test_any(int e; object o=Stdio.File(); if(!o->open("conftest.h","wct")) return -1; e=o->write("return 17;\n"); if(!o->close()) return -1; return e,11)
-
-test_compile_any([[import Stdio.Readline; mapping x=([]);]]);
+test_true( Stdio.write_file("conftest.h", "return 17;\n") )
 
 test_any([[
 #include "conftest.h"
@@ -6744,6 +6747,9 @@ test_any([[
 dnltest_any([[
 dnl#include <conftest.h>
 dnl]],17)
+
+test_true( rm("conftest.h") )
+
 test_true(intp(__LINE__))
 test_true(stringp(__FILE__))
 test_true(stringp(__DATE__))
@@ -6757,9 +6763,14 @@ test_true([[ sscanf(__TIME__, "%d:%d:%d", int h, int m, int s) == 3 &&
 	     h>=0 && m>=0 && s>=0 &&
 	     h<24 && m<60 && s<61 ]])
 test_true(floatp(__VERSION__))
+test_true(floatp(__REAL_VERSION__))
 test_true(intp(__MAJOR__))
+test_true(intp(__REAL_MAJOR__))
 test_true(intp(__MINOR__))
+test_true(intp(__REAL_MINOR__))
 test_true(intp(__BUILD__))
+test_true(intp(__REAL_BUILD__))
+test_eq(__PIKE__,1)
 
 // #define
 test_any([[
