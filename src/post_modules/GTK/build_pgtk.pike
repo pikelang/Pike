@@ -1333,9 +1333,9 @@ int main(int argc, array argv)
     }
   }
 
-  werror(sizeof(struct)+" classes\n");
-  werror(sizeof(constants/"\n")+" constants\n");
-  werror(sizeof(signals)+" signal constants (strings)\n");
+//   werror(sizeof(struct)+" classes\n");
+//   werror(sizeof(constants/"\n")+" constants\n");
+//   werror(sizeof(signals)+" signal constants (strings)\n");
 
   string to_free="";
   foreach(sort_dependencies(indices(struct),struct), string w)
@@ -1363,7 +1363,7 @@ int main(int argc, array argv)
 	    "\n");
     pre += "/*ext*/ struct program *pgtk_"+w+"_program;\n";
   }
-  werror(_num_functions+" functions\n");
+//   werror(_num_functions+" functions\n");
   emit_nl("}\n\n");
   emit_nl("\nvoid pike_module_exit()\n{\n"+to_free+"}\n\n");
   files += "pgtk.c ";
