@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.13 1997/11/07 06:06:20 mirar Exp $ */
+/* $Id: gif.c,v 1.14 1997/11/07 16:37:55 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.13 1997/11/07 06:06:20 mirar Exp $
+**!	$Id: gif.c,v 1.14 1997/11/07 16:37:55 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.13 1997/11/07 06:06:20 mirar Exp $");
+RCSID("$Id: gif.c,v 1.14 1997/11/07 16:37:55 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -674,7 +674,7 @@ CHRONO("gif render_block begin");
    if (numcolors==0)
       error("Image.GIF.render_block(): no colors in colortable\n");
    else if (numcolors>256)
-      error("Image.GIF.render_block(): too many colors in colortable (256 is max)\n");
+      error("Image.GIF.render_block(): too many colors in given colortable: %d (256 is max)\n",numcolors);
 
    if (args>=5)
    {
@@ -915,7 +915,7 @@ CHRONO("gif render_block end");
 **!	and is actually implemented that way.
 */
 
-static void _image_gif_encode(INT32 args,int fs)
+void _image_gif_encode(INT32 args,int fs)
 {
    struct image *img=NULL;
    struct object *imgobj=NULL;

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.52 1997/11/07 06:06:10 mirar Exp $ */
+/* $Id: image.c,v 1.53 1997/11/07 16:37:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.52 1997/11/07 06:06:10 mirar Exp $
+**!	$Id: image.c,v 1.53 1997/11/07 16:37:50 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -84,7 +84,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.52 1997/11/07 06:06:10 mirar Exp $");
+RCSID("$Id: image.c,v 1.53 1997/11/07 16:37:50 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2454,8 +2454,8 @@ void image_map_compat(INT32 args) /* compat function */
 
   THREADS_DISALLOW();
 
-  free_object(o);
-  push_object(co);
+  free_object(co);
+  push_object(o);
 }
 
 void image_select_colors(INT32 args)

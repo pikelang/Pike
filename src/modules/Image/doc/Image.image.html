@@ -1035,105 +1035,10 @@ color of the requested pixel -- ({int red,int green,int blue})
 
 <hr>
 <a name=gif_add> </a>
+<a name=gif_add*> </a>
 <a name=gif_add_fs> </a>
 <a name=gif_add_fs_nomap> </a>
 <a name=gif_add_nomap> </a>
-<h4>SYNOPSIS</h4>
-<blockquote>
-<tt>string <b>gif_add</b>()<br>
-string <b>gif_add</b>(int&nbsp;x, int&nbsp;y)<br>
-string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
-string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
-string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
-string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
-string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
-string <b>gif_add</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
-string <b>gif_add_fs</b>()<br>
-string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y)<br>
-string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
-string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
-string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
-string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
-string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
-string <b>gif_add_fs</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
-string <b>gif_add_nomap</b>()<br>
-string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y)<br>
-string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
-string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
-string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
-string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
-string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
-string <b>gif_add_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s)<br>
-string <b>gif_add_fs_nomap</b>()<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y)<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, float&nbsp;delay_s)<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, float&nbsp;delay_s)<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)<br>
-string <b>gif_add_fs_nomap</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, float&nbsp;delay_s, rgb_group&nbsp;*transparent)</tt>
-</blockquote>
-
-<h4>DESCRIPTION</h4>
-
-
-<blockquote>
-Makes a GIF (sub)image data chunk, to be placed 
-     at the given position. 
-
-<p>     The "fs" versions uses floyd-steinberg dithering, and the "nomap"
-     versions have no local colormap.
-
-<p>     Example: 
-     <pre>
-     object img1 = Image(200,200); 
-     object img2 = Image(200,200); 
-     // load img1 and img2 with stuff
-     write(img1->gif_begin()+
-           img1->gif_netscape_loop()+
-           img1->gif_add(0,0,100)+
-           img2->gif_add(0,0,100)+
-           img1->gif_end());
-     // voila, a gif animation...
-     </pre>
-</blockquote>
-<h4>ARGUMENTS</h4>
-<blockquote><dl>
-<dt><tt>int x</tt>
-<dt><tt>int y</tt>
-  <dd>the location of this subimage
-<dt><tt>int delay_cs</tt>
-  <dd>frame delay in centiseconds
-<dt><tt>float delay_s</tt>
-  <dd>frame delay in seconds
-<dt><tt>int num_colors</tt>
-  <dd>number of colors to quantize to (default is 256)
-<dt><tt>array array(array(int)) colors</tt>
-  <dd>colors to map to, format is ({({r,g,b}),({r,g,b}),...}).
-</dl></blockquote>
-<h4>RETURNS</h4>
-
-
-<blockquote>
-the GIF data chunk as a string
-</blockquote>
-
-
-<h4>NOTE</h4>
-<blockquote>
-I (Mirar) recommend reading about the GIF file format before 
-     experementing with these.
-</blockquote>
-
-
-<h4>SEE ALSO</h4>
-<blockquote>     <tt><a href=Image.image.html#gif_add>gif_add</a></tt>,
-     <tt><a href=Image.image.html#gif_end>gif_end</a></tt>,
-     <tt><a href=Image.image.html#gif_netscape_loop>gif_netscape_loop</a></tt>,
-     <tt><a href=Image.image.html#togif */>togif */</a></tt>
-</blockquote>
-
-<hr>
 <a name=gif_begin> </a>
 <a name=gif_end> </a>
 <a name=gif_netscape_loop> </a>
@@ -1153,7 +1058,15 @@ string <b>togif</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;tr
 string <b>togif_fs</b>()<br>
 string <b>togif_fs</b>(int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
 string <b>togif_fs</b>(int&nbsp;num_colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
-string <b>togif_fs</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)</tt>
+string <b>togif_fs</b>(array(array(int))&nbsp;colors, int&nbsp;trans_r, int&nbsp;trans_g, int&nbsp;trans_b)<br>
+string <b>gif_add</b>()<br>
+string <b>gif_add_fs</b>()<br>
+string <b>gif_add_nomap</b>()<br>
+string <b>gif_add_fs_nomap</b>()<br>
+string <b>gif_add*</b>(int&nbsp;x, int&nbsp;y)<br>
+string <b>gif_add*</b>(int&nbsp;x, int&nbsp;y, int&nbsp;delay_cs)<br>
+string <b>gif_add*</b>(int&nbsp;x, int&nbsp;y, int&nbsp;num_colors, int&nbsp;delay_cs)<br>
+string <b>gif_add*</b>(int&nbsp;x, int&nbsp;y, array(array(int))&nbsp;colors, int&nbsp;delay_cs)</tt>
 </blockquote>
 
 <h4>DESCRIPTION</h4>
@@ -1170,10 +1083,16 @@ old GIF API compatibility function. Don't use
      <tr><td>gif_netscape_loop</td><td><tt><a href=Image.GIF.netscape_loop_block.html>Image.GIF.netscape_loop_block</a></tt></td></tr>
      <tr><td>togif</td><td><tt><a href=Image.GIF.encode.html>Image.GIF.encode</a></tt></td></tr>
      <tr><td>togif_fs</td><td><tt><a href=Image.GIF.encode.html>Image.GIF.encode</a></tt>¹</td></tr>
+     <tr><td>gif_add</td><td><tt><a href=Image.GIF.render_block.html>Image.GIF.render_block</a></tt>¹²</td></tr>
+     <tr><td>gif_add_fs</td><td><tt><a href=Image.GIF.render_block.html>Image.GIF.render_block</a></tt>¹</td></tr>
+     <tr><td>gif_add_nomap</td><td><tt><a href=Image.GIF.render_block.html>Image.GIF.render_block</a></tt>²</td></tr>
+     <tr><td>gif_add_fs_nomap</td><td><tt><a href=Image.GIF.render_block.html>Image.GIF.render_block</a></tt>¹²</td></tr>
      </table>
 
 <p>     ¹ Use <tt><a href=Image.colortable.html>Image.colortable</a></tt> to get whatever dithering
      you want.
+
+<p>     ² local map toggle is sent as an argument
 </blockquote>
 <h4>RETURNS</h4>
 
