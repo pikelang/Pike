@@ -93,3 +93,7 @@ void system(string s)
   }
 }
  
+constant fork = predef::fork;
+constant exece = predef::exece;
+
+
