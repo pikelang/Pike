@@ -65,7 +65,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.140 2002/05/31 22:41:26 nilsson Exp $");
+RCSID("$Id: svalue.c,v 1.141 2002/06/11 13:47:23 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -790,7 +790,25 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
       pike_types_le(b->u.type, a->u.type);
 
   case T_FUNCTION:
-    return (a->subtype == b->subtype && a->u.object == b->u.object);
+    if (a->subtype != b->subtype) return 0;
+    if (a->u.object == b->u.object) return 1;
+    if ((a->subtype != FUNCTION_BUILTIN) &&
+	(a->u.object->prog == pike_trampoline_program) &&
+	(b->u.object->prog == pike_trampoline_program)) {
+      /* Trampoline. */
+      struct pike_trampoline *a_tramp = (struct pike_trampoline *)
+	get_storage(a->u.object, pike_trampoline_program);
+      struct pike_trampoline *b_tramp = (struct pike_trampoline *)
+	get_storage(b->u.object, pike_trampoline_program);
+      if (a_tramp == b_tramp) return 1;
+      if (!a_tramp || !b_tramp) return 0;
+      /* Trampolines are equal if they are the same function,
+       * and have been spawned from the same frame.
+       */
+      return ((a_tramp->func == b_tramp->func) &&
+	      (a_tramp->frame == b_tramp->frame));
+    }
+    return 0;
       
   case T_FLOAT:
     if (PIKE_ISNAN(a->u.float_number) != PIKE_ISNAN(b->u.float_number)) {
