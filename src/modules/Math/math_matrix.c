@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.26 2001/04/25 11:07:35 mirar Exp $ */
+/* $Id: math_matrix.c,v 1.27 2001/05/01 22:01:06 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -6,7 +6,7 @@
 #include <math.h>
 
 #include "pike_macros.h"
-#include "../../pike_error.h"
+#include "pike_error.h"
 #include "object.h"
 #include "constants.h"
 #include "interpret.h"
@@ -676,7 +676,8 @@ static void matrix_max(INT32 args)
 
    n=THIS->xsize*THIS->ysize;
    s=THIS->m;
-   if (!n) error("Cannot do max() from a zero-sized matrix\n");
+   if (!n) math_error("Matrix->max", sp-args, args, 0,
+		      "Cannot do max() from a zero-sized matrix");
    max=*(s++);
    while (--n) { if (*s>max) max=*s; s++; }
    
@@ -693,7 +694,8 @@ static void matrix_min(INT32 args)
 
    n=THIS->xsize*THIS->ysize;
    s=THIS->m;
-   if (!n) error("Cannot do min() from a zero-sized matrix\n");
+   if (!n) math_error("Matrix->min", sp-args, args, 0,
+		      "Cannot do min() from a zero-sized matrix");
    min=*(s++);
    while (--n) { if (*s<min) min=*s; s++; }
    
