@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.675 2004/05/11 15:48:57 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.676 2004/05/14 08:57:34 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1102,7 +1102,13 @@ AC_ARG_WITH(include-path,
 AC_ARG_WITH(lib-path,
 	    MY_DESCR([--with-lib-path],
 		     [a list of paths to search for libraries.]))
-
+AC_ARG_WITH(system-locale,
+	    MY_DESCR([--without-system-locale],
+		     [disable use of setlocale(3).]), [
+  if test "x$with_system_locale" = "xno"; then
+    AC_DEFINE(DONT_USE_SYSTEM_LOCALE)
+  fi
+])
 AC_ARG_WITH(long-double-precision, MY_DESCR([--with-long-double-precision],
 					    [use long double precision floats]))
 AC_ARG_WITH(double-precision, MY_DESCR([--with-double-precision],
