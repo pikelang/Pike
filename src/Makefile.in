@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.124 1999/01/21 09:13:20 hubbe Exp $
+# $Id: Makefile.in,v 1.125 1999/01/24 12:02:20 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -414,7 +414,7 @@ gdb_verify: module_testsuites testsuite master.pike
 	@echo >.gdbinit handle SIGFPE nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit handle SIGUSR2 nostop noprint pass
-	@echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike testsuite -v -v -f modules/*/module_testsuite
+	@echo >>.gdbinit run -m$(TMP_BUILDDIR)/master.pike $(PIKEOPTS) $(TMP_BINDIR)/test_pike.pike -v -v -f modules/*/module_testsuite testsuite
 	gdb ./pike
 	@rm .gdbinit
 
