@@ -153,23 +153,33 @@ class XImage
 
   void redraw(int x, int y, int width, int height)
   {
-    int lheight = height;
+    werror(sprintf("XImage->redraw: %d, %d, %d, %d, %d, %d\n",
+		   x, y, offset_x, offset_y, width, height));
+
     int slice = (window->display->maxRequestSize/depth)*32 / width;
     if(x+width > image->xsize())
       width = image->xsize()-x;
+    if (x<0)
+    {
+      width += x;
+      x = 0;
+    }
     if(width<=0) return;
 
-    if(y+lheight > image->ysize())
-    {
+    if(y+height > image->ysize())
       height = image->ysize()-y;
-      lheight = image->ysize()-y;
-    }
-    if(lheight<=0) return;
-
-    while(lheight>0)
+    if (y<0)
     {
-      lheight -= slice;
-      if(lheight < 0) slice += lheight;
+      height += y;
+      y = 0;
+    }
+
+    if(height<=0) return;
+
+    while(height>0)
+    {
+      height -= slice;
+      if(height < 0) slice += height;
       object mimg = image->copy(x,y,x+width-1,y+slice-1);
 
       if(rmask)
@@ -181,7 +191,8 @@ class XImage
       {
 	if(!ccol) ccol = allocate_colortable();
 	string data = converter( mimg, bpp, linepad, depth, ccol );
-	window->PutImage( dgc, bpp, x, y, width, slice, data );
+	window->PutImage( dgc, bpp, x + offset_x, y + offset_y,
+			  width, slice, data );
       }
       y += slice;
     }
