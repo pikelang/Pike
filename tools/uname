@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.10 2002/10/29 22:26:22 grubba Exp $
+# $Id: uname,v 1.11 2003/03/26 01:24:53 peter Exp $
 
 . $NTTOOLS
 
@@ -100,6 +100,11 @@ fi
 if [ X$R = Xyes -o X$V = Xyes ]; then
   # Release number or Version number.
   OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e's/[^0-9.]*//g'`"
+  # If there are more than one processor, apply "-smp"
+  NUMPROCS="`getntenv NUMBER_OF_PROCESSORS`"
+  if [ X"$NUMPROCS" != X -a $NUMPROCS -gt 1 ]; then
+    OUTPUT="$OUTPUT-smp"
+  fi
 fi
 
 if [ "$M$P" = "" ]; then :; else
