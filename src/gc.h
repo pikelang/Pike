@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.53 2000/07/04 00:43:57 mast Exp $
+ * $Id: gc.h,v 1.54 2000/07/11 03:45:10 mast Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -93,6 +93,7 @@ struct marker
 #define GC_WEAK_REF		0x0400
 #define GC_STRONG_REF		0x0800
 #define GC_GOT_DEAD_REF		0x1000
+#define GC_FREE_VISITED		0x2000
 
 /* Debug mode flags. */
 #define GC_TOUCHED		0x010000
@@ -106,6 +107,7 @@ struct marker
 PTR_HASH_ALLOC(marker,MARKER_CHUNK_SIZE)
 
 extern struct marker *gc_rec_last;
+extern size_t gc_ext_weak_refs;
 
 /* Prototypes begin here */
 struct callback *debug_add_gc_callback(callback_func call,
@@ -187,11 +189,10 @@ void f__gc_status(INT32 args);
 #define gc_is_referenced(X) debug_gc_is_referenced(debug_malloc_pass(X))
 #else
 #define gc_is_referenced(X) !(get_marker(X)->flags & GC_NOT_REFERENCED)
-#define gc_do_weak_free(X) (get_marker(X)->weak_refs == -1)
+#define gc_do_weak_free(X) (Pike_in_gc != GC_PASS_FREE ?		\
+			    get_marker(X)->weak_refs == -1 :		\
+			    !(get_marker(X)->flags & GC_MARKED))
 #endif
-
-#define gc_do_weak_free_svalue(S) \
-  ((S)->type <= MAX_COMPLEX && gc_do_weak_free((S)->u.refs))
 
 #define gc_external_mark2(X,Y,Z) gc_external_mark3( debug_malloc_pass(X),(Y),(Z))
 #define gc_external_mark(X) gc_external_mark2( (X),"externally", 0)

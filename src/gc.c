@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.104 2000/07/07 15:33:29 mast Exp $");
+RCSID("$Id: gc.c,v 1.105 2000/07/11 03:45:09 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -102,6 +102,7 @@ static struct marker rec_list = {0, 0, 0};
 struct marker *gc_rec_last = &rec_list;
 static struct marker *kill_list = 0;
 static unsigned last_cycle;
+size_t gc_ext_weak_refs;
 
 /* rec_list is a linked list of the markers currently being recursed
  * through in the cycle check pass. gc_rec_last points at the
@@ -770,8 +771,13 @@ void debug_gc_touch(void *a)
       else if (m->weak_refs == -1)
 	gc_fatal(a, 3, "A thing which had only weak references is "
 		 "still around after gc.\n");
-      else if (!(m->flags & GC_LIVE))
-	gc_fatal(a, 3, "A thing to garb is still around.\n");
+      else if (!(m->flags & GC_LIVE)) {
+	if (m->weak_refs > 0)
+	  gc_fatal(a, 3, "A thing to garb is still around. "
+		   "It's probably one with only external weak refs.\n");
+	else
+	  gc_fatal(a, 3, "A thing to garb is still around.\n");
+      }
     }
   }
   else
@@ -847,6 +853,7 @@ INT32 real_gc_check_weak(void *a)
 #endif
 
   m->weak_refs++;
+  gc_ext_weak_refs++;
   if (m->weak_refs >= *(INT32 *) a)
     m->weak_refs = -1;
 
@@ -1022,7 +1029,8 @@ int gc_do_weak_free(void *a)
   struct marker *m;
 
   if (!a) fatal("Got null pointer.\n");
-  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE)
+  if (Pike_in_gc != GC_PASS_MARK && Pike_in_gc != GC_PASS_CYCLE &&
+      !(Pike_in_gc == GC_PASS_FREE && gc_ext_weak_refs))
     fatal("gc_do_weak_free() called in invalid gc pass.\n");
   if (gc_debug) {
     if (!(m = find_marker(a)))
@@ -1034,7 +1042,22 @@ int gc_do_weak_free(void *a)
   if (m->weak_refs > m->refs)
     gc_fatal(a, 0, "More weak references than internal references.\n");
 
-  return m->weak_refs == -1;
+  if (Pike_in_gc != GC_PASS_FREE) {
+    if (m->weak_refs == -1) {
+      gc_ext_weak_refs--;
+      return 1;
+    }
+  }
+  else
+    if (!(m->flags & GC_MARKED)) {
+      if (m->weak_refs <= 0)
+	gc_fatal(a, 0, "Too many weak refs cleared to thing with external "
+		 "weak refs.\n");
+      m->weak_refs--;
+      gc_ext_weak_refs--;
+      return 1;
+    }
+  return 0;
 }
 
 #endif /* PIKE_DEBUG */
@@ -1045,16 +1068,42 @@ int gc_mark(void *a)
 
 #ifdef PIKE_DEBUG
   if (!a) fatal("Got null pointer.\n");
-  if (Pike_in_gc != GC_PASS_MARK)
+  if (Pike_in_gc != GC_PASS_MARK &&
+      !(Pike_in_gc == GC_PASS_FREE && gc_ext_weak_refs))
     fatal("gc mark attempted in invalid pass.\n");
   if (!*(INT32 *) a)
     gc_fatal(a, 0, "Marked a thing without refs.\n");
+  if (m->weak_refs == -1)
+    gc_fatal(a, 0, "Marking thing scheduled for weak free.\n");
+  if (Pike_in_gc == GC_PASS_FREE && !(m->flags & GC_MARKED))
+    gc_fatal(a, 0, "gc_mark() called for thing in free pass "
+	     "that wasn't marked before.\n");
 #endif
 
-  if(m->flags & GC_MARKED)
-  {
+  if (Pike_in_gc == GC_PASS_FREE)
+    /* Things are visited in the free pass through the mark functions
+     * to free refs to internal things that only got weak external
+     * references. That happens only when a thing also have internal
+     * cyclic non-weak refs. */
+    if (m->flags & GC_FREE_VISITED)
+      return 0;
+    else {
+      m->flags |= GC_FREE_VISITED;
+      return 1;
+    }
+
+  else if (m->flags & GC_MARKED) {
+#ifdef PIKE_DEBUG
+    if (m->weak_refs != 0)
+      gc_fatal(a, 0, "weak_refs changed in marker already visited by gc_mark().\n");
+#endif
     return 0;
-  }else{
+  }
+  else {
+    if (m->weak_refs) {
+      gc_ext_weak_refs -= m->weak_refs;
+      m->weak_refs = 0;
+    }
     m->flags = (m->flags & ~GC_NOT_REFERENCED) | GC_MARKED;
     DO_IF_DEBUG(marked++);
     return 1;
@@ -1211,6 +1260,15 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
     gc_fatal(x, 0, "Followed strong link too early.\n");
   if (weak < 0) gc_rec_last->flags |= GC_FOLLOWED_STRONG;
 #endif
+
+  if (weak > 0) {
+#ifdef PIKE_DEBUG
+    if (m->weak_refs <= 0)
+      gc_fatal(x, 0, "Followed weak ref to thing that should have none left.\n");
+    m->weak_refs--;
+#endif
+    gc_ext_weak_refs--;
+  }
 
   if (m->flags & GC_IN_REC_LIST) { /* A cyclic reference is found. */
 #ifdef PIKE_DEBUG
@@ -1670,6 +1728,7 @@ int do_gc(void)
 #endif
 
   Pike_in_gc=GC_PASS_CHECK;
+  gc_ext_weak_refs = 0;
   /* First we count internal references */
   gc_check_all_arrays();
   gc_check_all_multisets();
@@ -1835,6 +1894,9 @@ int do_gc(void)
   }
   if (gc_extra_refs)
     fatal("Lost track of %d extra refs to things in gc.\n", gc_extra_refs);
+  if (gc_ext_weak_refs)
+    fatal("Still got %u external weak references to internal things in gc.\n",
+	  gc_ext_weak_refs);
 #endif
 
   Pike_in_gc=0;

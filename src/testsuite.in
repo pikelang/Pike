@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.311 2000/07/10 17:28:28 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.312 2000/07/11 03:45:10 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1885,6 +1885,52 @@ ifefun(gc,
     destruct (o);
     gc();
   }]]);
+
+  test_any([[{
+    array a = ({0}), b = ({a, set_weak_flag (({a}), 1)});
+    array x = set_weak_flag (({a}), 1);
+    a[0] = b;
+    a = b = 0;
+    gc();
+    return !x[0];
+  }]], 1);
+  test_any([[{
+    mapping a = ([]), b = ([a:set_weak_flag (([a:a]), 1)]);
+    mapping x = set_weak_flag (([a:2]), 1);
+    a[b] = b;
+    a = b = 0;
+    gc();
+    return !sizeof (x);
+  }]], 1);
+  test_any([[{
+    multiset a = (<>), b = (<a, set_weak_flag ((<a>), 1)>);
+    multiset x = set_weak_flag ((<a>), 1);
+    a[b] = 1;
+    a = b = 0;
+    gc();
+    return !sizeof (x);
+  }]], 1);
+  test_any([[{
+    class Foo {
+      Foo f = this_object();
+      multiset(Foo) g = set_weak_flag((<this_object()>), 1);
+    };
+    multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
+    gc();
+    return !sizeof (x);
+  }]], 1);
+  test_any([[{
+    class Foo {
+      Foo f = this_object();
+      multiset(Foo) g = set_weak_flag((<this_object()>), 1);
+      void destroy() {add_constant("beltbent_oblivion", 1);}
+    };
+    multiset(Foo) x = set_weak_flag ((<Foo()>), 1);
+    gc();
+    int res = all_constants()->beltbent_oblivion;
+    add_constant("beltbent_oblivion");
+    return res;
+  }]], 1);
 
   test_do([[{
     int got_error = 0;

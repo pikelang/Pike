@@ -16,7 +16,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.23 2000/07/06 23:25:26 mast Exp $");
+RCSID("$Id: multiset.c,v 1.24 2000/07/11 03:45:10 mast Exp $");
 
 struct multiset *first_multiset;
 
@@ -368,6 +368,9 @@ void gc_cycle_check_all_multisets(void)
 void gc_free_all_unreferenced_multisets(void)
 {
   struct multiset *l,*next;
+
+  /* No gc_ext_weak_refs stuff here; it's been taken care of by
+   * gc_free_all_unreferenced_arrays(). */
 
   for(l=gc_internal_multiset;l;l=next)
   {

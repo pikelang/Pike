@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.134 2000/07/10 21:05:25 mast Exp $");
+RCSID("$Id: object.c,v 1.135 2000/07/11 03:45:10 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1476,6 +1476,20 @@ void gc_cycle_check_all_objects(void)
 void gc_free_all_unreferenced_objects(void)
 {
   struct object *o,*next;
+
+  if (gc_ext_weak_refs) {
+    /* Have to go through all marked things if we got external weak
+     * references to otherwise unreferenced things, so the mark
+     * functions can free those references. */
+    gc_mark_object_pos = first_object;
+    while (gc_mark_object_pos != gc_internal_object && gc_ext_weak_refs) {
+      struct object *o = gc_mark_object_pos;
+      gc_mark_object_pos = o->next;
+      if (o->refs)
+	gc_mark_object_as_referenced(o);
+    }
+    discard_queue(&gc_mark_queue);
+  }
 
   for(o=gc_internal_object; o; o=next)
   {

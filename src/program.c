@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.248 2000/07/10 18:21:32 grubba Exp $");
+RCSID("$Id: program.c,v 1.249 2000/07/11 03:45:10 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3728,6 +3728,19 @@ void gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
 
+  if (gc_ext_weak_refs) {
+    /* Have to go through all marked things if we got external weak
+     * references to otherwise unreferenced things, so the mark
+     * functions can free those references. */
+    gc_mark_program_pos = first_program;
+    while (gc_mark_program_pos != gc_internal_program && gc_ext_weak_refs) {
+      struct program *p = gc_mark_program_pos;
+      gc_mark_program_pos = p->next;
+      gc_mark_program_as_referenced(p);
+    }
+    discard_queue(&gc_mark_queue);
+  }
+
   for(p=gc_internal_program;p;p=next)
   {
     debug_malloc_touch(p);
@@ -3765,7 +3778,7 @@ void gc_free_all_unreferenced_programs(void)
     for (p = first_program; p != gc_internal_program; p = p->next) {
       int e,tmp=0;
       if (!p)
-	fatal("gc_internal_program is bogus.\n");
+	fatal("gc_internal_program was bogus.\n");
       for(e=0;e<p->num_constants;e++)
       {
 	if(p->constants[e].sval.type == T_PROGRAM && p->constants[e].sval.u.program == p)

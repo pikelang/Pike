@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.91 2000/07/06 23:25:26 mast Exp $");
+RCSID("$Id: mapping.c,v 1.92 2000/07/11 03:45:10 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -846,7 +846,8 @@ void check_mapping_for_destruct(struct mapping *m)
     fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
   debug_malloc_touch(m);
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc != GC_PASS_MARK)
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE &&
+      Pike_in_gc != GC_PASS_MARK)
     fatal("check_mapping_for_destruct called in wrong pass inside gc.\n");
 #endif
 
@@ -2059,6 +2060,19 @@ void gc_free_all_unreferenced_mappings(void)
   struct keypair *k,**prev;
   struct mapping *m,*next;
   struct mapping_data *md;
+
+  if (gc_ext_weak_refs) {
+    /* Have to go through all marked things if we got external weak
+     * references to otherwise unreferenced things, so the mark
+     * functions can free those references. */
+    gc_mark_mapping_pos = first_mapping;
+    while (gc_mark_mapping_pos != gc_internal_mapping && gc_ext_weak_refs) {
+      struct mapping *m = gc_mark_mapping_pos;
+      gc_mark_mapping_pos = m->next;
+      gc_mark_mapping_as_referenced(m);
+    }
+    discard_queue(&gc_mark_queue);
+  }
 
   for(m=gc_internal_mapping;m;m=next)
   {
