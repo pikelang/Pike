@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.19 2001/08/07 14:33:33 norlin Exp $
+// $Id: Query.pmod,v 1.20 2001/08/08 14:42:02 norlin Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db, array words)
 {
@@ -95,7 +95,9 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
   
   if (!q)                                  // The query was a null query
     return ({ Search.ResultSet(), ({}) }); // so return an empty resultset
-  
+
+  werror("Query.execute:\n%s\n", q->print());
+
   string error = Search.Grammar.validate(q);
   if (error)
     throw (error);
@@ -189,7 +191,7 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
               push(Search.ResultSet());
               break;
             }
-            ranking->field_ranking = allocate(66);
+            ranking->field_ranking = allocate(65);
 
             ranking->field_ranking[fieldID] = defaultRanking->field_ranking[fieldID];
             // ranking->field_ranking[fieldID] = 1;
