@@ -1,7 +1,7 @@
 class protocol
 {
   // Maybe this should be the other way around?
-  inherit NNTP.protocol;
+  inherit .NNTP.protocol;
 }
 
 class client
