@@ -203,8 +203,12 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 
       while(1)
       {
-	string s;
-	sscanf(f->read(4),"%4c",int len);
+	string s = f->read(4);
+	if (!s) {
+	  werror("Connection closed!\n");
+	  exit(1);
+	}
+	sscanf(s,"%4c",int len);
 	if(!len) break;
 	s=f->read(len);
 	s=replace(s,"\r\n","\n");
