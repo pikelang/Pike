@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.305 2004/09/22 13:40:27 mast Exp $
+|| $Id: signal_handler.c,v 1.306 2004/09/26 15:16:34 marcus Exp $
 */
 
 #include "global.h"
@@ -125,11 +125,11 @@
 #include <dos/dos.h>
 #include <dos/dostags.h>
 #include <dos/exall.h>
-#include <clib/dos_protos.h>
 #ifdef __amigaos4__
 #include <interfaces/dos.h>
 #include <inline4/dos.h>
 #else
+#include <clib/dos_protos.h>
 #include <inline/dos.h>
 #endif
 #undef timeval
