@@ -24,7 +24,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.68 1999/04/05 22:07:38 hubbe Exp $");
+RCSID("$Id: efuns.c,v 1.69 1999/05/19 14:23:26 mirar Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -138,6 +138,35 @@ void f_file_stat(INT32 args)
     push_array(encode_stat(&st));
   }
 }
+
+void f_file_truncate(INT32 args)
+{
+#ifdef HAVE_LSEEK64
+  long long len;
+#else
+  INT32 len;
+#endif
+  char *s;
+  int res;
+
+  if(args<1 || sp[-args].type != T_STRING)
+    error("Bad argument 1 to file_truncate(string filename,int length).\n");
+  if(args<2 || sp[1-args].type != T_INT)
+    error("Bad argument 2 to file_truncate(string filename,int length).\n");
+
+  s = sp[-args].u.string->str;
+  len = sp[1-args].u.integer;
+
+  VALID_FILE_IO("file_truncate","write");
+
+  res=truncate(s,len);
+  // NT: fixme?  /Mirar
+
+  pop_n_elems(args);
+
+  push_int(!res);
+}
+
 #ifdef __NT__
 
 void f_filesystem_stat( INT32 args )
@@ -916,6 +945,10 @@ void init_files_efuns(void)
   
 /* function(string,int|void:int *) */
   ADD_EFUN("file_stat",f_file_stat,tFunc(tStr tOr(tInt,tVoid),tArr(tInt)), OPT_EXTERNAL_DEPEND);
+
+  ADD_EFUN("file_truncate",f_file_truncate,tFunc(tStr tInt,tInt),0);
+
+
 #if defined(HAVE_STATVFS) || defined(HAVE_STATFS) || defined(HAVE_USTAT) || defined(__NT__)
   
 /* function(string:mapping(string:string|int)) */

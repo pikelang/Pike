@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.24 1999/05/13 07:25:41 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.25 1999/05/19 14:24:19 mirar Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -509,6 +509,30 @@ long debug_fd_lseek(FD fd, long pos, int where)
   mt_unlock(&fd_mutex);
 
   ret=SetFilePointer((HANDLE)ret, pos, 0, where);
+  if(ret == 0xffffffff)
+  {
+    errno=GetLastError();
+    return -1;
+  }
+  return ret;
+}
+
+long debug_fd_ftruncate(FD fd, long len)
+{
+  long ret;
+  mt_lock(&fd_mutex);
+  if(fd_type[fd]!=FD_FILE)
+  {
+    mt_unlock(&fd_mutex);
+    errno=ENOTSUPP;
+    return -1;
+  }
+  ret=da_handle[fd];
+  mt_unlock(&fd_mutex);
+
+  would you mind filling this one out? /Mirar
+
+  ret=i dont know((HANDLE)ret, len);
   if(ret == 0xffffffff)
   {
     errno=GetLastError();

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.155 1999/05/17 20:29:40 hubbe Exp $");
+RCSID("$Id: file.c,v 1.156 1999/05/19 14:23:28 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1405,6 +1405,34 @@ static void file_tell(INT32 args)
 
   pop_n_elems(args);
   push_int(to);
+}
+
+static void file_truncate(INT32 args)
+{
+#ifdef HAVE_LSEEK64
+  long long len;
+#else
+  INT32 len;
+#endif
+  int res;
+
+  if(args<1 || sp[-args].type != T_INT)
+    error("Bad argument 1 to file->truncate(int length).\n");
+
+  if(FD < 0)
+    error("File not open.\n");
+
+  len = sp[-args].u.integer;
+  
+  ERRNO=0;
+  res=fd_ftruncate(FD, len);
+
+  pop_n_elems(args);
+
+  if(res<0) 
+     ERRNO=errno;
+
+  push_int(!res);
 }
 
 struct array *encode_stat(struct stat *);

@@ -3705,6 +3705,18 @@ Returns the current position in the file.
 </method>
 
 
+<method name=truncate title="truncate a file">
+<man_syntax>
+int truncate(int length);<br>
+</man_syntax>
+<man_description>
+Truncates a file to that length.
+Returns 1 if ok, 0 if failed.
+</man_description>
+<man_see>Stdio.File-&gt;open</man_see>
+</method>
+
+
 <method name=stat title="do file_stat on an open file">
 <man_syntax>
 array(int) stat();<br>
@@ -11136,6 +11148,19 @@ You can never get -3 as size if you don't give a second argument.<br>
 </man_description>
 <man_see>get_dir</man_see>
 </function>
+
+<HR NEWPAGE>
+
+<function name=file_truncate title="truncate a file" fullpath>
+<man_syntax>
+int file_truncate(string <I>file</I>,int <I>length</I>);<br>
+</man_syntax>
+<man_description>
+Truncates a file to that length.
+Returns 1 if ok, 0 if failed.
+</man_description>
+</function>
+
 
 <HR NEWPAGE>
 

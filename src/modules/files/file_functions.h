@@ -12,6 +12,7 @@
 
   FILE_FUNC("seek",file_seek,"function(int,int|void,int|void:int)")
   FILE_FUNC("tell",file_tell,"function(:int)")
+  FILE_FUNC("truncate",file_truncate,"function(int:int)");
   FILE_FUNC("stat",file_stat,"function(:int *)")
   FILE_FUNC("errno",file_errno,"function(:int)")
   FILE_FUNC("mode",file_mode,"function(:int)")

@@ -1,5 +1,5 @@
 /*
- * $Id: fdlib.h,v 1.23 1999/05/13 17:48:26 grubba Exp $
+ * $Id: fdlib.h,v 1.24 1999/05/19 14:24:20 mirar Exp $
  */
 #ifndef FDLIB_H
 #define FDLIB_H
@@ -87,6 +87,7 @@ typedef int FD;
 #define fd_write(fd,X,Y) debug_fd_write(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) debug_fd_read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) debug_fd_lseek(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_ftruncate(fd,X,Y) debug_fd_ftruncate(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_flock(fd,X) debug_fd_flock(dmalloc_touch_fd(fd),(X))
 #define fd_fstat(fd,X) debug_fd_fstat(dmalloc_touch_fd(fd),(X))
 #define fd_select debug_fd_select /* fixme */
@@ -119,6 +120,7 @@ int debug_fd_close(FD fd);
 long debug_fd_write(FD fd, void *buf, long len);
 long debug_fd_read(FD fd, void *to, long len);
 long debug_fd_lseek(FD fd, long pos, int where);
+long debug_fd_ftruncate(FD fd, long len);
 int debug_fd_flock(FD fd, int oper);
 int debug_fd_fstat(FD fd, struct stat *s);
 int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
@@ -269,6 +271,7 @@ typedef int FD;
 #define fd_write(fd,X,Y) write(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_read(fd,X,Y) read(dmalloc_touch_fd(fd),(X),(Y))
 #define fd_lseek(fd,X,Y) lseek(dmalloc_touch_fd(fd),(X),(Y))
+#define fd_ftruncate(fd,X) ftruncate(dmalloc_touch_fd(fd),(X))
 #define fd_fstat(fd,X) fstat(dmalloc_touch_fd(fd),(X))
 #define fd_select select /* fixme */
 #define fd_ioctl(fd,X,Y) ioctl(dmalloc_touch_fd(fd),(X),(Y))
