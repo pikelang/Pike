@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.114 1998/05/25 10:38:47 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.115 1998/05/25 20:48:03 marcus Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -910,6 +910,12 @@ test_any([[mixed a; sscanf("a93","%*s%o",a); return a]],3)
 test_any([[mixed a; sscanf("a93","%s%*x",a); return a]],"")
 test_any([[mixed a; sscanf("a93","%*s%x",a); return a]],0xa93)
 test_any([[mixed a; sscanf("f","f%n",a); return a]],1)
+
+test_any([[mixed a; sscanf("\102\052\100\000","%F",a); return a]],42.5625)
+test_any([[mixed a; sscanf("\102\052\100\000","%4F",a); return a]],42.5625)
+test_any([[mixed a; sscanf("\100\105\110\000\0\0\0\0","%8F",a); return a]],42.5625)
+test_any([[mixed a; sscanf("\275\007\053\002","%4F",a); return a]],-0.032999999821186065673828125)
+test_any([[mixed a; sscanf("\277\240\345\140\100\0\0\0","%8F",a); return a]],-0.032999999821186065673828125)
 
 test_equal([[array_sscanf("10 20 30","%d %d %d")]],[[({10,20,30})]])
 test_equal([[array_sscanf("1 2 3 4 5 6 7 8 9","%d %d %d %d %d %d %d %d %s")]],[[({1,2,3,4,5,6,7,8,"9"})]])
