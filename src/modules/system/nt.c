@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.29 2000/12/05 21:08:39 per Exp $
+ * $Id: nt.c,v 1.30 2001/01/16 09:22:57 hubbe Exp $
  *
  * NT system calls for Pike
  *
@@ -2559,6 +2559,11 @@ void exit_nt_system_calls(void)
   {
     free_program(token_program);
     token_program=0;
+  }
+  if(sid_program)
+  {
+    free_program(sid_program);
+    sid_program=0;
   }
   if(advapilib)
   {
