@@ -49,6 +49,8 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 {
 //  werror("%O\n",cmd);
 
+  if(!sizeof(cmd)) cmd=({"cmd.exe"});
+
   string ret="";
   object(Stdio.File) f=Stdio.File();
 
@@ -170,6 +172,17 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
       if(string tmp=getenv("REMOTE_VARIABLES"))
       {
 	array vars=({"__handles_stderr=1"});
+
+	/* This is somewhat experimental - Hubbe */
+	if(!silent &&
+	   !!Stdio.stdin->tcgetattr() &&
+	   !!Stdio.stdout->tcgetattr())
+	{
+	  vars+=({ "TERM=sprsh" });
+	}else{
+	  vars+=({ "TERM=dumb" });
+	}
+
 	foreach(tmp/"\n",string var)
 	  if(search(var,"=")!=-1)
 	    vars+=({var});
