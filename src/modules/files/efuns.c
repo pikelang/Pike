@@ -25,7 +25,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.77 1999/12/27 20:57:18 hubbe Exp $");
+RCSID("$Id: efuns.c,v 1.78 2000/03/13 16:45:41 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -865,6 +865,7 @@ void f_exece(INT32 args)
       f_add(3);
       env[e]=sp[-1].u.string->str;
       sp--;
+      dmalloc_touch_svalue(sp);
     }
       
     free_array(i);
