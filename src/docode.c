@@ -119,9 +119,9 @@ INT32 pop_address()
 
 static int label_no=0;
 
-static int alloc_label() { return ++label_no; }
+int alloc_label() { return ++label_no; }
 
-static int do_jump(int token,INT32 lbl)
+int do_jump(int token,INT32 lbl)
 {
   if(lbl==-1) lbl=alloc_label();
   emit(token, lbl);
@@ -132,7 +132,7 @@ static int do_docode2(node *n,int flags);
 
 #define ins_label(L) do_jump(F_LABEL, L)
 
-static void do_pop(int x)
+void do_pop(int x)
 {
   switch(x)
   {
@@ -156,44 +156,66 @@ int do_docode(node *n,INT16 flags)
 }
 
 
-static INT32 do_jump_when_zero(node *n,int j);
+void do_jump_when_zero(node *n,int j);
 
-static int do_jump_when_non_zero(node *n,int j)
+void do_jump_when_non_zero(node *n,int j)
 {
   if(!node_is_tossable(n))
   {
     if(node_is_true(n))
-      return do_jump(F_BRANCH,j);
+    {
+      do_jump(F_BRANCH,j);
+      return;
+    }
 
     if(node_is_false(n))
-      return -1;
+      return;
   }
 
-  if(n->token == F_NOT)
-    return do_jump_when_zero(CAR(n), j);
+  switch(n->token)
+  {
+  case F_NOT:
+    do_jump_when_zero(CAR(n), j);
+    return;
+  case F_OR:
+    do_jump_when_non_zero(CAR(n), j);
+    do_jump_when_non_zero(CDR(n), j);
+    return;
+  }
 
   if(do_docode(n, DO_NOT_COPY)!=1)
     fatal("Infernal compiler skiterror.\n");
-  return do_jump(F_BRANCH_WHEN_NON_ZERO,j);
+  do_jump(F_BRANCH_WHEN_NON_ZERO,j);
 }
 
-static INT32 do_jump_when_zero(node *n,int j)
+void do_jump_when_zero(node *n,int j)
 {
   if(!node_is_tossable(n))
   {
     if(node_is_true(n))
-      return -1;
+      return;
 
     if(node_is_false(n))
-      return do_jump(F_BRANCH,j);
+    {
+      do_jump(F_BRANCH,j);
+      return;
+    }
   }
 
-  if(n->token == F_NOT)
-    return do_jump_when_non_zero(CAR(n), j);
+  switch(n->token)
+  {
+  case F_NOT:
+    do_jump_when_non_zero(CAR(n), j);
+    return;
+  case F_AND:
+    do_jump_when_zero(CAR(n), j);
+    do_jump_when_zero(CDR(n), j);
+    return;
+  }
 
   if(do_docode(n, DO_NOT_COPY)!=1)
     fatal("Infernal compiler skiterror.\n");
-  return do_jump(F_BRANCH_WHEN_ZERO,j);
+  do_jump(F_BRANCH_WHEN_ZERO,j);
 }
 
 static INT32 count_cases(node *n)
@@ -266,7 +288,8 @@ static int do_docode2(node *n,int flags)
 
     if(!CDDR(n))
     {
-      tmp1=do_jump_when_zero(CAR(n), -1);
+      tmp1=alloc_label();
+      do_jump_when_zero(CAR(n), tmp1);
       DO_CODE_BLOCK(CADR(n));
       emit(F_LABEL, tmp1);
       return 0;
@@ -274,13 +297,15 @@ static int do_docode2(node *n,int flags)
 
     if(!CADR(n))
     {
-      tmp1=do_jump_when_non_zero(CAR(n), -1);
+      tmp1=alloc_label();
+      do_jump_when_non_zero(CAR(n), tmp1);
       DO_CODE_BLOCK(CDDR(n));
       emit(F_LABEL,tmp1);
       return 0;
     }
 
-    tmp1=do_jump_when_zero(CAR(n),-1);
+    tmp1=alloc_label();
+    do_jump_when_zero(CAR(n),tmp1);
 
     adroppings=do_docode(CADR(n), flags);
     tmp3=emit(F_POP_N_ELEMS,0);
