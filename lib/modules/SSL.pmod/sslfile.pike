@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.53 2003/11/04 18:07:36 mast Exp $
+/* $Id: sslfile.pike,v 1.54 2003/12/01 20:12:45 mast Exp $
  *
  */
 
@@ -48,7 +48,7 @@ static class MyLock
 	     describe_backtrace (old_cur_thread->backtrace()));		\
     lock = MyLock (old_cur_thread);					\
   }
-#define THREAD_UNLOCK lock = 0
+#define THREAD_UNLOCK destruct (lock)
 
 #else  // !THREAD_DEBUG
 
