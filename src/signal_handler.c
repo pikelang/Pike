@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: signal_handler.c,v 1.254 2003/03/18 14:42:09 grubba Exp $
+|| $Id: signal_handler.c,v 1.255 2003/03/18 17:34:03 grubba Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.254 2003/03/18 14:42:09 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.255 2003/03/18 17:34:03 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -999,24 +999,24 @@ static void f_signame(int args)
 }
 
 
-#ifdef HAVE_WAITPID
-#define WAITPID(PID,STATUS,OPT) waitpid(PID,STATUS,OPT)
-#else
 #ifdef HAVE_WAIT4
 #define WAITPID(PID,STATUS,OPT) wait4( (PID),(STATUS),(OPT),0 )
+#else
+#ifdef HAVE_WAITPID
+#define WAITPID(PID,STATUS,OPT) waitpid(PID,STATUS,OPT)
 #else
 #define WAITPID(PID,STATUS,OPT) -1
 #endif
 #endif
 
+#ifdef HAVE_WAIT4
+#define MY_WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
+#else
 #ifdef HAVE_WAITPID
 #define MY_WAIT_ANY(STATUS,OPT) waitpid(-1,STATUS,OPT)
 #else
 #ifdef HAVE_WAIT3
 #define MY_WAIT_ANY(STATUS,OPT) wait3((STATUS),(OPT),0 )
-#else
-#ifdef HAVE_WAIT4
-#define MY_WAIT_ANY(STATUS,OPT) wait4(-1,(STATUS),(OPT),0 )
 #else
 #define MY_WAIT_ANY(STATUS,OPT) ((errno=ENOTSUP),-1)
 #endif
