@@ -1,5 +1,4 @@
-/* $Id: randomness.pmod,v 1.21 2002/03/09 18:13:09 nilsson Exp $
- */
+// $Id: randomness.pmod,v 1.22 2003/01/04 00:36:06 nilsson Exp $
 
 //! Assorted stronger or weaker randomnumber generators.
 //! These devices try to collect entropy from the environment.
@@ -19,56 +18,55 @@ static constant PATH = "/usr/sbin:/usr/etc:/usr/bin/:/sbin/:/etc:/bin";
 
 #ifndef __NT__
 static constant SYSTEM_COMMANDS = ({
-  "last -256", "arp -a", 
-  "netstat -anv","netstat -mv","netstat -sv", 
-  "uptime","ps -fel","ps aux", 
-  "vmstat -s","vmstat -M", 
+  "last -256", "arp -a",
+  "netstat -anv","netstat -mv","netstat -sv",
+  "uptime","ps -fel","ps aux",
+  "vmstat -s","vmstat -M",
   "iostat","iostat -cdDItx"
-});
-#else
-static constant SYSTEM_COMMANDS = ({
-  "mem /c", "arp -a", "vol", "dir", "net view",
-  "net statistics workstation","net statistics server",
-  "net user"
 });
 #endif
 
-// *****************************			
-#define private
-			
-private object global_arcfour;
+static RandomSource global_arcfour;
+static int(0..1) goodseed;
 
-//	Executes several programs to generate some entropy from their output.
-private string some_entropy()
-{
 #ifdef __NT__
+static nt_random_string(int len) {
   object ctx = Crypto.nt.CryptAcquireContext(0, 0, Crypto.nt.PROV_RSA_FULL,
 					     Crypto.nt.CRYPT_VERIFYCONTEXT
 					     /*|Crypto.nt.CRYPT_SILENT*/);
   if(!ctx)
-    error( "Crypto.random: couldn't create crypto context.\n" );
+    error( "Couldn't create crypto context.\n" );
 
-  string res = ctx->CryptGenRandom(8192);
+  string res = ctx->CryptGenRandom(len);
 
   if(!res)
-    error( "Crypto.random: couldn't generate randomness.\n" );
+    error( "Couldn't generate randomness.\n" );
 
   destruct(ctx);
-
   return res;
+}
+#endif
+
+//! Executes several programs (last -256, arp -a, netstat -anv, netstat -mv,
+//! netstat -sv, uptime, ps -fel, ps aux, vmstat -s, vmstat -M, iostat,
+//! iostat -cdDItx) to generate some entropy from their output. On Microsoft
+//! Windows the Windows cryptographic routines are called to generate random
+//! data.
+string some_entropy()
+{
+#ifdef __NT__
+  return nt_random_string(8192);
 #else /* !__NT__ */
-  string res;
-  object parent_pipe, child_pipe;
-  mapping env=getenv()+([]);
+  mapping env = getenv();
+  env->PATH = PATH;
 
-  parent_pipe = Stdio.File();
-  child_pipe = parent_pipe->pipe();
+  Stdio.File parent_pipe = Stdio.File();
+  Stdio.File child_pipe = parent_pipe->pipe();
   if (!child_pipe)
-    error( "Crypto.random->popen: couldn't create pipe.\n" );
+    error( "Couldn't create pipe.\n" );
 
-  object null=Stdio.File("/dev/null","rw");
-  env["PATH"]=PATH;
-  
+  Stdio.File null = Stdio.File("/dev/null","rw");
+
   foreach(SYSTEM_COMMANDS, string cmd)
     {
       catch {
@@ -81,37 +79,28 @@ private string some_entropy()
     }
 
   destruct(child_pipe);
-  
+
   return parent_pipe->read();
 #endif
 }
 
+//! Virtual class for randomness source object.
+class RandomSource {
 
-//! A pseudo random generator based on the ordinary random() function.
-class pike_random {
-
-  //! Returns a string of length len with pseudo random values.
-  string read(int len)
-  {
-#if 1 // major optimization /Hubbe
-      return random_string(len);
-#else
-#if 1 // 30% optimization /Hubbe
-    string ret="";
-    if(len>=16384)
-    {
-      array x=allocate(16384,random);
-      for(int e=0;e<(len/16384);e++) ret+=(string)x(256);
-    }
-    ret+=(string)allocate(len % 16384, random)(256);
-    return ret;
-#else
-    if (len > 16384) return read(len/2)+read(len-len/2);
-    return (string)allocate(len, random)(256);
-#endif
-#endif
-  }
+  //! Returns a string of length len with (pseudo) random values.
+  string read(int(0..) len) { return random_string(len); }
 }
+
+// Compatibility
+class pike_random {
+  inherit RandomSource;
+}
+
+#ifdef __NT__
+static class NTSource {
+  string read(int(0..) len) { return nt_random_string(len); }
+}
+#endif
 
 #if constant(Crypto.arcfour)
 //! A pseudo random generator based on the arcfour crypto.
@@ -124,7 +113,7 @@ class arcfour_random {
   {
     object hash = Crypto.sha();
     hash->update(secret);
-    
+
     arcfour::set_encrypt_key(hash->digest());
   }
 
@@ -139,9 +128,13 @@ class arcfour_random {
 
 #endif /* constant(Crypto.arcfour) */
 
-//!
-object reasonably_random()
+//! Returns a reasonably random random-source.
+RandomSource reasonably_random()
 {
+#ifdef __NT__
+  return NTSource();
+#endif
+
   if (file_stat(PRANDOM_DEVICE))
   {
     object res = Stdio.File();
@@ -152,21 +145,30 @@ object reasonably_random()
   if (global_arcfour)
     return global_arcfour;
 
-#if constant(Crypto.arcfour)  
   string seed = some_entropy();
-  if (strlen(seed) > 2000)
-    return (global_arcfour = arcfour_random(sprintf("%4c%O%s", time(), _memory_usage(), seed)));
+#if constant(Crypto.arcfour)
+  if (strlen(seed) < 2001)
+    seed = random_string(2001); // Well, we're only at reasonably random...
+  return (global_arcfour = arcfour_random(sprintf("%4c%O%s", time(),
+						  _memory_usage(), seed)));
 #else /* !constant(Crypto.arcfour) */
-  /* Not very random, but at least a fallback... */
+
+  // Not very random, but at least a fallback...
+  if(!goodseed) {
+    random_seed( time() + Array.sum( (array)seed ) );
+    goodseed = 1;
+  }
   return global_arcfour = pike_random();
 #endif /* constant(Crypto.arcfour) */
-  error( "Crypto.randomness.reasonably_random: No source found.\n" );
 }
 
-//!
-object really_random(int|void may_block)
+//! Returns a really random random-source.
+RandomSource really_random(int|void may_block)
 {
-  object res = Stdio.File();
+#ifdef __NT__
+  return NTSource();
+#endif
+  Stdio.File res = Stdio.File();
   if (may_block && file_stat(RANDOM_DEVICE))
   {
     if (res->open(RANDOM_DEVICE, "r"))
@@ -178,7 +180,6 @@ object really_random(int|void may_block)
     if (res->open(PRANDOM_DEVICE, "r"))
       return res;
   }
-    
-  error( "Crypto.randomness.really_random: No source found.\n" );
-}
 
+  error( "No source found.\n" );
+}
