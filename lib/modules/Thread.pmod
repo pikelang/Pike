@@ -451,4 +451,75 @@ optional class Farm
     thread_create( dispatcher );
   }
 }
-#endif /* constant(thread_create) */
+
+#else /* !constant(thread_create) */
+
+// Simulations of some of the classes for nonthreaded use.
+
+class Local
+{
+  static mixed data;
+  mixed get() {return data;}
+  mixed set (mixed val) {return data = val;}
+}
+
+class MutexKey (static function(:void) dec_locks)
+{
+  int `!()
+  {
+    // Should be destructed when the mutex is, but we can't pull that
+    // off. Try to simulate it as well as possible.
+    if (dec_locks) return 0;
+    destruct (this_object());
+    return 1;
+  }
+
+  static void destroy()
+  {
+    if (dec_locks) dec_locks();
+  }
+}
+
+class Mutex
+{
+  static int locks = 0;
+  static void dec_locks() {locks--;}
+
+  MutexKey lock (int type)
+  {
+    switch (type) {
+      default:
+	error ("Unknown mutex locking style: %d\n", type);
+      case 0:
+	if (locks) error ("Recursive mutex locks.\n");
+	break;
+      case 1:
+	break;
+      case 2:
+	if (locks)
+	  // To be really accurate we should hang now, but somehow
+	  // that doesn't seem too useful.
+	  error ("Deadlock detected.\n");
+    }
+    locks++;
+    return MutexKey (dec_locks);
+  }
+
+  MutexKey trylock (int type)
+  {
+    switch (type) {
+      default:
+	error ("Unknown mutex locking style: %d\n", type);
+      case 0:
+	if (locks) error ("Recursive mutex locks.\n");
+	break;
+      case 1:
+      case 2:
+    }
+    if (locks) return 0;
+    locks++;
+    return MutexKey (dec_locks);
+  }
+}
+
+#endif /* !constant(thread_create) */
