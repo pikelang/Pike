@@ -1,12 +1,7 @@
-/* $Id: mkxml.pike,v 1.24 2001/07/17 03:50:43 nilsson Exp $ */
-
-import Stdio;
-import Array;
+/* $Id: mkxml.pike,v 1.25 2001/07/17 08:38:24 nilsson Exp $ */
 
 mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
-
-function verbose=werror;
 
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 
@@ -43,7 +38,7 @@ mapping moduleM, classM, methodM, argM, nowM, descM, appendixM;
 mapping focM(mapping dest,string name,string line)
 {
    if (!dest->_order) dest->_order=({});
-   if (-1==search(dest->_order,name)) dest->_order+=({name});
+   if (!has_value(dest->_order,name)) dest->_order+=({name});
    return dest[name] || (dest[name]=(["_line":line]));
 }
 
@@ -82,7 +77,7 @@ mapping lower_nowM()
 
 void report(string s)
 {
-   verbose("mkxml:   "+s+"\n");
+   werror("mkxml:   "+s+"\n");
 }
 
 #define complain(X) (X)
@@ -93,7 +88,6 @@ mapping keywords=
 (["$Id":lambda(string arg, string line)
 	{
 	  file_version = " version='Id: "+arg[..search(arg, "$")-1]+"'";
-	  werror("mkxml: Version: "+file_version+"\n");
 	},
   "appendix":lambda(string arg,string line) {
 	       descM=nowM=appendixM=focM(parse[" appendix"],stripws(arg),line);
@@ -235,6 +229,11 @@ string make_nice_reference(string what,string prefix,string stuff)
    return "<ref to="+linkify(q)+">"+htmlify(stuff)+"</ref>";
 }
 
+array(string) tag_preserve_ws(Parser.HTML p, mapping args, string c) {
+  return ({ sprintf("<%s%{ %s='%s'%}>%s</%s>", p->tag_name(),
+		    (array)args, safe_newlines(c), p->tag_name()) });
+}
+
 string fixdesc(string s,string prefix,string where)
 {
    s=htmlify(stripws(replace(s, "<p>", "\n")));
@@ -247,13 +246,10 @@ string fixdesc(string s,string prefix,string where)
 			 where, (array)args, replace(c, "lena()", "src")) });
      });
 
-   foreach( ({ "pre", "table", "execute", "ul" }), string tag)
-     p->add_container(tag,
-       lambda(Parser.HTML p, mapping args, string c)
-       {
-	 return ({ sprintf("<%s%{ %s='%s'%}>%s</%s>", tag,
-			   (array)args, safe_newlines(c), tag) });
-       });
+   p->add_containers( ([ "pre":tag_preserve_ws,
+			 "table":tag_preserve_ws,
+			 "execute":tag_preserve_ws,
+			 "ul":tag_preserve_ws ]) );
 
    p->add_container("data_description",
       lambda(Parser.HTML p, mapping args, string c)
@@ -524,7 +520,7 @@ void document(string enttype,
    else
       names=({name});
 
-   verbose("mkxml: "+name+" : "+names*","+"\n");
+   report(name+" : "+names*",");
 
    array v=name/".";
    string canname=v[-1];
@@ -723,7 +719,7 @@ void document(string enttype,
 		  method_names-=method->names;
 	       }
 	    if (method_names[method_name])
-	       stderr->write("failed to find "+method_name+" again, wierd...\n");
+	       Stdio.stderr->write("failed to find "+method_name+" again, wierd...\n");
 	 }
    }
 
@@ -781,52 +777,11 @@ void make_doc_files()
 			  "a":tag_quote_args,
 			  "ref":tag_quote_args ]) );
 
-   /*
-   html2xml->add_tag("dl",
-      lambda(Parser.HTML p, mapping args)
-      {
-	return ({ sprintf("<dl%{ %s='%s'%}>", (array)args) });
-      });
-   html2xml->add_tag("dt",
-      lambda(Parser.HTML p, mapping args)
-      {
-	return ({ sprintf("<dt%{ %s='%s'%}>", (array)args) });
-      });
-   html2xml->add_tag("table",
-      lambda(Parser.HTML p, mapping args)
-      {
-	return ({ sprintf("<table%{ %s='%s'%}>", (array)args) });
-      });
-   html2xml->add_tag("tr",
-      lambda(Parser.HTML p, mapping args)
-      {
-	return ({ sprintf("<tr%{ %s='%s'%}>", (array)args) });
-      });
-   html2xml->add_tag("td",
-      lambda(Parser.HTML p, mapping args)
-      {
-	return ({ sprintf("<td%{ %s='%s'%}>", (array)args) });
-      });
-   html2xml->add_tag("th",
-      lambda(Parser.HTML p, mapping args)
-      {
-	return ({ sprintf("<th%{ %s='%s'%}>", (array)args) });
-      });
-   html2xml->add_tag("ref",
-      lambda(Parser.HTML p, mapping args)
-      {
-	return ({ sprintf("<ref%{ %s='%s'%}>", (array)args) });
-      });
-   */
-
    html2xml->add_container(
       "text",
       lambda(Parser.HTML p,mapping args,string cont)
       {
-//  	 werror("%O\n",cont);
 	 cont=p->clone()->finish(cont)->read();
-//  	 werror("---\n");
-//  	 werror("%O\n",cont);
 	 string res="<text><p>"+cont+"</p></text>";
 	 string t;
 	 do
@@ -838,29 +793,31 @@ void make_doc_files()
 	 while (t!=res);
 	 return ({res});
       });
+
    html2xml->add_container("link",
       lambda(Parser.HTML p, mapping args, string c)
       {
 	return ({ sprintf("<ref%{ %s=\"%s\"%}>%s</ref>", (array)args, c) });
       });
+
    html2xml->add_container("execute",
       lambda(Parser.HTML p, mapping args, string c)
       {
 	return ({ c });
       });
 
-   stderr->write("modules: "+sort(indices(parse)-({" appendix"}))*", "+"\n");
+   Stdio.stderr->write("modules: "+sort(indices(parse)-({" appendix"}))*", "+"\n");
 
-   stdout->write("<module name=''>\n");
+   Stdio.stdout->write("<module name=''>\n");
    
    foreach (sort(indices(parse)-({"_order", " appendix"})),string module)
-      document("module",parse[module],module,module+".",stdout);
+      document("module",parse[module],module,module+".", Stdio.stdout);
 
    if(appendixM)
      foreach(parse[" appendix"]->_order, string title)
-       document("appendix",parse[" appendix"][title],title,"",stdout);
+       document("appendix",parse[" appendix"][title],title,"", Stdio.stdout);
 
-   stdout->write("</module>\n");
+   Stdio.stdout->write("</module>\n");
 }
 
 void process_line(string s,string currentfile,int line)
@@ -878,9 +835,8 @@ void process_line(string s,string currentfile,int line)
 	 string err;
 	 if ( (err=keywords[kw](arg,"file='"+currentfile+"' line='"+line+"'")) )
 	 {
-	    stderr->write("mkxml: "+
-			  currentfile+"file='"+currentfile+"' line="+line);
-	    exit(1);
+	   report(currentfile+"file='"+currentfile+"' line="+line);
+	   exit(1);
 	 }
       }
       else if (s[i+3..]!="")
@@ -891,9 +847,7 @@ void process_line(string s,string currentfile,int line)
 	 if (!descM) descM=methodM;
 	 if (!descM)
 	 {
-	    stderr->write("mkxml: "+
-			  currentfile+" line "+line+
-			  ": illegal description position\n");
+	    report(currentfile+" line "+line+": illegal description position");
 	    exit(1);
 	 }
 	 if (!descM->desc) descM->desc="";
@@ -920,23 +874,16 @@ string safe_newlines(string in) {
 
 int main(int ac,string *files)
 {
-   string s,t;
+   string s,t,currentfile;
    int line;
    array(string) ss=({""});
    object f;
 
-   string currentfile;
-
    nowM=parse;
-
-   stderr->write("reading and parsing data...\n");
 
    files=files[1..];
 
-   if (sizeof(files) && files[0]=="--nonverbose") 
-      files=files[1..],verbose=lambda(){};
-
-   stderr->write("mkxml: reading files...\n");
+   report("reading files...");
 
    for (;;)
    {
@@ -945,9 +892,8 @@ int main(int ac,string *files)
       if (!f) 
       {
 	 if (!sizeof(files)) break;
-	 verbose("mkxml: reading "+files[0]+"...\n");
 	 file_version = "";
-	 f=File();
+	 f=Stdio.File();
 	 currentfile=files[0];
 	 files=files[1..];
 	 if (!f->open(currentfile,"r")) { f=0; continue; }
@@ -962,7 +908,7 @@ int main(int ac,string *files)
 	 t=f->read(8192);
 	 if (!t) 
 	 {
-	    werror("mkxml: failed to read %O\n",currentfile);
+	    report(sprintf("failed to read %O",currentfile));
 	    f=0;
 	    continue;
 	 }
@@ -976,9 +922,7 @@ int main(int ac,string *files)
       process_line(s,currentfile,line);
    }
 
-//   stderr->write(sprintf("%O",parse));
-
-   stderr->write("mkxml: making docs...\n\n");
+   report("making docs...\n");
 
    make_doc_files();
 
