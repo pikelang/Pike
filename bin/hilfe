@@ -4,7 +4,7 @@
 
 #include <simulate.h>
 #include <stdio.h>
-#include <array.h>
+import Array;
 #include <string.h>
 #include <getopt.h>
 
