@@ -6,6 +6,7 @@
    F=float
    E=enum
    B=bitfield
+   O=bool
    R=double/float
    Q=int/float
    Z=(byte/)double/float/int/short
@@ -43,6 +44,7 @@ array(string|array(string)) special_234(int mi, int mx, string ty)
   case 'E':
   case 'B':
   case 'I':
+  case 'O':
     baset="int";
     tm="BIT_INT";
     rt="i";
@@ -90,6 +92,7 @@ array(string) gen_func(string name, string ty)
     prot=":void";
     break;
   case 'I':
+  case 'O':
     prot=":int";
     vdec="INT32";
     vret="push_int";
@@ -105,6 +108,7 @@ array(string) gen_func(string name, string ty)
     switch(ty[i]) {
     case 'B':
     case 'E':
+    case 'O':
     case 'I':
       argt += ({"int"});
       args += ({ "arg"+i });

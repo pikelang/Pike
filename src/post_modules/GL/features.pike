@@ -23,12 +23,17 @@ array func_misc = ({
   ({"glRotate", "V!RRRR"}),
   ({"glLight","VEE@Q"}),
   ({"glMaterial","VEE@Q"}),
+  ({"glFog","VE@Q"}),
+  ({"glLightModel","VE@Q"}),
   ({"glGenLists","II"}),
   ({"glNewList","VIE"}),
   ({"glCallList","VI"}),
   ({"glNormal","V#ZZZ"}),
   ({"glVertex","V+ZZZ"}),
+  ({"glColor","V+ZZZZ"}),
   ({"glClear","VB"}),
+  ({"glIsEnabled","OE"}),
+  ({"glBlendFunc","VEE"}),
 });
 mapping func_cat = ([
   "VE":funcEV,
