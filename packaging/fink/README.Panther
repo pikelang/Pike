@@ -1,0 +1,10 @@
+Important note for Panther Users
+--------------------------------
+
+fink on Panther has changed and seems to be more tricky about 
+packaging.
+
+Only pike7.4.info is for Panther with a recent fink installation (version >=
+0.17).
+
+$Id: README.Panther,v 1.1 2003/12/15 14:22:01 kiwi Exp $
