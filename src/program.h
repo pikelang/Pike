@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.44 1998/06/24 04:56:46 hubbe Exp $
+ * $Id: program.h,v 1.45 1998/11/13 01:28:45 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -124,6 +124,7 @@ struct identifier
 #ifdef PROFILING
   unsigned INT32 num_calls;
   unsigned INT32 total_time;
+  unsigned INT32 self_time;
 #endif /* PROFILING */
   union idptr func;
 };

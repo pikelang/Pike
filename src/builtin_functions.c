@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.137 1998/10/31 21:31:52 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.138 1998/11/13 01:28:41 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3237,7 +3237,8 @@ static void f_get_prof_info(INT32 args)
 
       push_int(prog->identifiers[i].num_calls);
       push_int(prog->identifiers[i].total_time);
-      f_aggregate(2);
+      push_int(prog->identifiers[i].self_time);
+      f_aggregate(3);
     }
   }
   f_aggregate_mapping(num_functions * 2);

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.97 1998/11/09 07:23:15 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.98 1998/11/13 01:28:43 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1788,7 +1788,10 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
   struct svalue *save_sp=sp-args;
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
+  static long long accounted_time =0;
+  long long children_base = accounted_time;
   long long start_time = gethrtime();
+  unsigned INT32 self_time_base;
 #endif
 #endif
 
@@ -1983,6 +1986,13 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
 	PIKE_ERROR(function->name->str, "Calling undefined function.\n", sp, args);
       
       tailrecurse=-1;
+
+#ifdef PROFILING
+#ifdef HAVE_GETHRTIME
+      self_time_base=function->total_time;
+#endif
+#endif
+
       switch(function->identifier_flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
       {
       case IDENTIFIER_C_FUNCTION:
@@ -2084,7 +2094,25 @@ void mega_apply(enum apply_type type, INT32 args, void *arg1, void *arg2)
       }
 #ifdef PROFILING
 #ifdef HAVE_GETHRTIME
-      function->total_time+=(INT32)((gethrtime()-start_time)/1000);
+      {
+	long long time_passed, time_in_children, self_time;
+	time_in_children=  accounted_time - children_base;
+	time_passed = gethrtime() - start_time;
+	self_time=time_passed - time_in_children;
+	accounted_time+=self_time;
+#ifdef DEBUG
+	if(self_time < 0)
+	  fatal("Self time is negative\n  self_time=%ld\n  time_passed=%ld\n  time_in_children=%ld\n  children_base=%ld\n  accounted_time=%ld!\n",
+		(long)(self_time/1000),
+		(long)(time_passed/1000),
+		(long)(time_in_children/1000),
+		(long)(children_base/1000),
+		(long)(accounted_time/1000)
+		);
+#endif
+	function->total_time=self_time_base + (INT32)(time_passed /1000);
+	function->self_time+=(INT32)( self_time /1000);
+      }
 #endif
 #endif
 
