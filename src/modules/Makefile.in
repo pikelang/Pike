@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.22 1998/08/02 16:14:39 grubba Exp $
+# $Id: Makefile.in,v 1.23 1998/08/08 12:15:24 grubba Exp $
 
 @SET_MAKE@
 
@@ -13,10 +13,11 @@ MODULE_LINKOPTS=@MODULE_LINKOPTS@
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS)" "TMP_BINDIR=$(TMP_BINDIR)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "DEFINES=$(DEFINES)" "INSTALL=$(INSTALL)" "AR=$(AR)"
 
-all: modules
+all: linker_options modlist.h modlist_headers.h
 
 modules: $(MODULES)
-	$(MAKE) linker_options modlist.h modlist_headers.h
+
+$(MODULE_SEGMENTS) $(MODULE_LINKOPTS): modules
 
 force:
 
