@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.h,v 1.6 1998/05/02 01:24:25 mirar Exp $
+**!	$Id: gif_lzw.h,v 1.7 1999/05/30 20:11:15 mirar Exp $
 */
 
 typedef unsigned short lzwcode_t; /* no more than 12 bits used */
@@ -23,6 +23,10 @@ struct gif_lzw
 
    int earlychange;
    int reversebits;
+
+#ifdef GIF_LZW_LZ
+   int skipone; /* lz marker for skip next code */
+#endif
    
    unsigned long codes;
    unsigned long bits; /* initial encoding bits */

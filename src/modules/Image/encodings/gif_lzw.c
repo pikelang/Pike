@@ -1,10 +1,11 @@
 /*
 **! module Image
 **! note
-**!	$Id: gif_lzw.c,v 1.5 1998/04/29 01:27:22 mirar Exp $
+**!	$Id: gif_lzw.c,v 1.6 1999/05/30 20:11:14 mirar Exp $
 */
 
 #include "global.h"
+#include "image_machine.h"
 #include "gif_lzw.h"
 
 #define DEFAULT_OUTBYTES 16384
@@ -84,19 +85,37 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
    if (lzw->current==LZWCNULL) /* no current, load */
    {
       lzw->current=c;
+#ifdef GIF_LZW_LZ
+      lzw->skipone=0;
+#endif
       return;
    }
 
-   lno=lzw->code[lzw->current].firstchild; /* check if we have this sequence */
-   while (lno!=LZWCNULL)
+#ifdef GIF_LZW_RLE
+   if (c==lzw->code[lzw->current].c)
    {
-      if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
+#endif
+#ifdef GIF_LZW_LZ
+      if (!lzw->skipone)
       {
-	 lzw->current=lno;
-	 return;
+#endif
+	 /* check if we have this sequence */
+	 lno=lzw->code[lzw->current].firstchild; 
+	 while (lno!=LZWCNULL)
+	 {
+	    if (lzw->code[lno].c==c && lno!=lzw->codes-1 )
+	    {
+	       lzw->current=lno;
+	       return;
+	    }
+	    lno=lzw->code[lno].next;
+	 }
+#ifdef GIF_LZW_RLE
       }
-      lno=lzw->code[lno].next;
+#endif
+#ifdef GIF_LZW_LZ
    }
+#endif
 
    if (lzw->codes==4096)  /* needs more than 12 bits */
    {
@@ -113,6 +132,9 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
 
       lzw->codebits=lzw->bits+1;
       lzw->current=c;
+#ifdef GIF_LZW_LZ
+      lzw->skipone=0;
+#endif
       return;
    }
 
@@ -133,6 +155,9 @@ static INLINE void lzw_add(struct gif_lzw *lzw,int c)
       lzw->codebits++;
 
    lzw->current=c;
+#ifdef GIF_LZW_LZ
+   lzw->skipone=!lzw->skipone;
+#endif
 }
 
 void image_gif_lzw_init(struct gif_lzw *lzw,int bits)
