@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.129 2004/02/28 16:09:35 grubba Exp $
+# $Id: Makefile,v 1.130 2004/03/07 14:20:07 grubba Exp $
 #
 # Meta Makefile
 #
@@ -88,7 +88,10 @@ configure: src/configure builddir
 		  "x$$oldconfigureargs" = "x$$configureargs"; then :; \
 	  else \
 	    echo Running $$srcdir/configure $$configureargs in $$builddir; \
-	    if [ -f /bin/bash  ] ; then CONFIG_SHELL=/bin/bash ;  fi ;\
+	    if test "x$${CONFIG_SHELL}" = "x" && \
+	      /bin/bash -norc -c : 2>/dev/null; then \
+	      CONFIG_SHELL="/bin/bash -norc" ; \
+	    fi ;\
 	    runconfigure () { \
 	      CONFIG_SITE=x $${CONFIG_SHELL-/bin/sh} \
 		"$$srcdir"/configure "$$@" || exit $$?; \
