@@ -5,24 +5,28 @@ mixed map(mixed arr, mixed fun, mixed ... args)
   int e;
   mixed *ret;
 
-  if(mappingp(arr))
+  switch(sprintf("%t",fun))
+  {
+  case "mapping":
     return mkmapping(indices(arr),map(values(arr),fun,@args));
 
-  if(intp(fun))
+  case "int":
     return arr(@args);
-  
-  if(stringp(fun))
+
+  case "string":
     return column(arr, fun)(@args);
 
-  if(functionp(fun))
-  {
+  case "function":
+  case "program":
+  case "object":
     ret=allocate(sizeof(arr));
     for(e=0;e<sizeof(arr);e++)
       ret[e]=fun(arr[e],@args);
     return ret;
-  }
 
-  error("Bad argument 2 to map_array().\n");
+  default:
+    error("Bad argument 2 to map_array().\n");
+  }
 }
 
 mixed filter(mixed arr, mixed fun, mixed ... args)
