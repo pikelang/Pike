@@ -1,0 +1,6 @@
+# $Id: configure.in,v 1.1 2001/05/22 06:41:57 per Exp $
+AC_INIT(whitefish.c)
+AC_CONFIG_HEADER(config.h)
+AC_MODULE_INIT()
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
