@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.15 1997/01/16 05:03:21 hubbe Exp $");
+RCSID("$Id: main.c,v 1.16 1997/01/18 17:47:54 grubba Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -30,6 +30,8 @@ RCSID("$Id: main.c,v 1.15 1997/01/16 05:03:21 hubbe Exp $");
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+
+#define VERSION		"Pike v0.4pl2"
 
 char *master_file;
 
@@ -246,6 +248,12 @@ void main(int argc, char **argv, char **env)
   f_exit(1);
 }
 
+/* string __version() */
+static void f___version(INT32 args)
+{
+  pop_n_elems(args);
+  push_text(VERSION);
+}
 
 void init_main_efuns()
 {
@@ -257,6 +265,7 @@ void init_main_efuns()
   init_signals();
   th_init();
   init_dynamic_load();
+  add_efun("__version", f___version, "function(:string)", 0);
 }
 
 void init_main_programs()
