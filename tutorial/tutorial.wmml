@@ -14000,20 +14000,20 @@ been tested on the following:
 
 After obtaining the Pike source you need to unpack it. To unpack Pike you
 need gzip, which is available from any GNU mirror site. You also need tar,
-which is a part of UNIX. If you got Pike-v0.6.105.tar.gz, simply unpack it by
+which is a part of UNIX. If you got Pike-v0.7.1.tar.gz, simply unpack it by
 typing:
 <pre>
-	$ gunzip -d Pike-v0.6.105.tar.gz
-	$ tar xvf Pike-v0.5.105.tar
+	$ gunzip -d Pike-v0.7.1.tar.gz
+	$ tar xvf Pike-v0.7.1.tar
 </pre>
 
-Now you have a directory called Pike-v0.6.53. Please read the README file
+Now you have a directory called Pike-v0.7.1. Please read the README file
 in the new directory since newer versions can contain information not
 available at the time this book was written.
 <p>
 Now, to compile Pike, the following three commands should be enough.
 <pre>
-	$ cd Pike-v0.6.105/src
+	$ cd Pike-v0.7.1/src
 	$ ./configure --prefix=/dir/to/install/pike
 	$ make
 </pre>
