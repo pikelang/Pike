@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.164 2004/09/18 20:50:52 nilsson Exp $
+|| $Id: opcodes.c,v 1.165 2004/09/30 14:09:07 mast Exp $
 */
 
 #include "global.h"
@@ -237,8 +237,6 @@ void present_runned(struct instr_counter *d, int depth, int maxdepth)
 #define OPCODE0_TAILBRANCH(OP,DESC,FLAGS) OPCODE0_BRANCH(OP,DESC,FLAGS)
 #define OPCODE1_TAILBRANCH(OP,DESC,FLAGS) OPCODE1_BRANCH(OP,DESC,FLAGS)
 #define OPCODE2_TAILBRANCH(OP,DESC,FLAGS) OPCODE2_BRANCH(OP,DESC,FLAGS)
-
-#define LEXER
 
 const struct keyword instr_names[]=
 {
