@@ -1019,6 +1019,20 @@ class dumpfile
     }
 }
 
+string getfile_caseindependent(string path, string soughtfile)
+{
+  array files;
+  files = get_dir(path);
+  if(!files)
+    return 0;
+
+  foreach(files, string file)
+    if(lower_case(file) == lower_case(soughtfile))
+      return combine_path(path, file);
+
+  return 0;
+}
+
 int main(int argc, array(string) argv)
 {
   int export_all;
@@ -1026,7 +1040,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.13 2001/09/20 19:20:26 marcus Exp $\n"
+	 "$Id: pntld,v 1.14 2002/09/12 17:11:40 peter Exp $\n"
 	 "Written by Fredrik Hubinette 2000 - 2001\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -1073,6 +1087,10 @@ int main(int argc, array(string) argv)
   if(getenv("NTLD_LIBRARY_PATH"))
     libpath|=getenv("NTLD_LIBRARY_PATH")/":";
 
+#ifdef DEBUG
+  werror("libpath: %O\n", libpath);
+#endif
+
   if(getenv("NTLD_RUN_PATH"))
     foreach(getenv("NTLD_RUN_PATH")/":",string p)
       global_directives|=({"-?rpath:"+p});
@@ -1080,38 +1098,29 @@ int main(int argc, array(string) argv)
   libpath|=({"."});
 
   foreach(libraries, string lib)
+  {
+    int found;
+    foreach(libpath, string path)
     {
-      int found;
-      foreach(libpath, string path)
-	{
-	  string filename=combine_path(path,lib+".lib");
-#ifdef DEBUG
-	  werror("Looking for %s\n",filename);
-#endif
-	  if(string file=Stdio.read_file(filename))
-	  {
-	    dumpfile(file, 0, 0, filename);
-	    found=1;
-	    break;
-	  }
-
-	  filename=combine_path(path,upper_case(lib+".lib"));
-#ifdef DEBUG
-	  werror("Looking for %s\n",filename);
-#endif
-	  if(string file=Stdio.read_file(filename))
-	  {
-	    dumpfile(file, 0, 0, filename);
-	    found=1;
-	    break;
-	  }
-	}
-      if(!found)
+      string filename=getfile_caseindependent(path,lib+".lib");
+      
+      if(!filename)
+        continue;
+      
+      if(string file=Stdio.read_file(filename))
       {
-	werror("Failed to find library: %s\n",lib);
-	err++;
+        dumpfile(file, 0, 0, filename);
+        found=1;
+        break;
       }
+      
     }
+    if(!found)
+    {
+      werror("Failed to find library: %s\n",lib);
+      err++;
+    }
+  }
 
   argv=Getopt.get_args(argv);
 
