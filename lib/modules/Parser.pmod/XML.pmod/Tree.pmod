@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 
 /*
- * $Id: Tree.pmod,v 1.27 2003/03/12 09:35:17 agehall Exp $
+ * $Id: Tree.pmod,v 1.28 2003/03/12 13:47:05 grubba Exp $
  *
  */
 
@@ -738,8 +738,11 @@ class Node {
       data->add("<?xml");
       if (mapping attr = n->get_attributes() + ([])) {
 	// version and encoding must come in the correct order.
+	// version must always be present.
 	if (attr->version)
 	  data->add(" version='", attrq(attr->version), "'");
+	else
+	  data->add(" version='1.0'");
 	m_delete(attr, "version");
 	if (attr->encoding)
 	  data->add(" encoding='", attrq(attr->encoding), "'");
@@ -780,26 +783,18 @@ class Node {
   // Create a new XML-header if there's none.
   //
   // Add an encoding attribute if there is none.
-  static string get_encoding(string|void default_encoding)
+  static string get_encoding()
   {
     Node xml_header;
-    default_encoding = default_encoding || "utf-8";
     if (sizeof(get_children()) &&
 	(xml_header = get_children()[0])->get_node_type()==XML_HEADER) {
       string encoding;
       if (encoding = xml_header->get_attributes()->encoding) {
 	return encoding;
       }
-      xml_header->get_attributes()->encoding = default_encoding;
-    } else {
-      // Create a new <?xml?>-header.
-      xml_header = Node(XML_HEADER, "",
-			([ "version":"1.0",
-			   "encoding":default_encoding ]), "");
-      mChildren = ({ xml_header }) + mChildren;
-      xml_header->mParent = this_object();
+      xml_header->get_attributes()->encoding = "utf-8";
     }
-    return default_encoding;
+    return "utf-8";
   }
 
   //! Creates an XML representation of the node sub tree. If the
@@ -808,7 +803,7 @@ class Node {
   string render_xml(void|int(0..1) preserve_roxen_entities)
   {
     String.Buffer data = String.Buffer();
-    string encoding = get_encoding("utf-8");
+    string encoding = get_encoding();
     if(preserve_roxen_entities)
       low_render_xml(data, this_object(), roxen_text_quote,
 		     roxen_attribute_quote);
@@ -827,7 +822,7 @@ class Node {
 	encoder->feed(args[*]);
 	f->write(encoder->drain());
       }
-    } (f, Locale.Charset.encoder(get_encoding("utf-8")));
+    } (f, Locale.Charset.encoder(get_encoding()));
     if(preserve_roxen_entities)
       low_render_xml(data, this_object(), roxen_text_quote,
 		     roxen_attribute_quote);
