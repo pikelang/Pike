@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.134 2002/02/06 15:25:24 per-bash Exp $
+// $Id: module.pmod,v 1.135 2002/02/14 17:24:57 nilsson Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -369,6 +369,7 @@ class File
       // Out of sockets?
       return 0;
     }
+
     _async_cb = callback;
     _async_args = args;
     set_nonblocking(0, _async_check_cb, _async_check_cb, _async_check_cb, 0);
@@ -1095,10 +1096,15 @@ class Port
   }
 }
 
+//! An instance of FILE("stderr").
+//! @fixme
+//!   Document this object.
 File stderr=FILE("stderr");
-File stdout=FILE("stdout");
 
-#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
+//! An instance of FILE("stdout").
+//! @fixme
+//!   Document this object.
+File stdout=FILE("stdout");
 
 //! Buffered I/O
 class FILE
@@ -1722,7 +1728,7 @@ mixed `[](string index)
   switch(index)
   {
   case "readline": return (master()->resolv("Stdio")["Readline"])->readline;
-  default: return ([])[0];
+  default: return UNDEFINED;
   }
 }
 
