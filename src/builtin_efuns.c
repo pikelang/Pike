@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -20,6 +25,10 @@
 #include <sys/time.h>
 #ifdef HAVE_CRYPT_H
 #include <crypt.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 void f_equal(INT32 args)
@@ -163,10 +172,21 @@ void f_random(INT32 args)
   pop_n_elems(args-1);
 }
 
+void f_random_seed(INT32 args)
+{
+  if(!args)
+    error("Too few arguments to random_seed()\n");
+  if(sp[-args].type != T_INT) 
+    error("Bad argument 1 to random_seed()\n");
+
+  my_srand(sp[-args].u.integer);
+  pop_n_elems(args-1);
+}
+
 void f_query_num_arg(INT32 args)
 {
   pop_n_elems(args);
-  push_int(fp->args);
+  push_int(fp ? fp->args : 0);
 }
 
 void f_search(INT32 args)
@@ -648,10 +668,15 @@ void f_rusage(INT32 args)
 void f_this_object(INT32 args)
 {
   pop_n_elems(args);
-  sp->u.object=fp->current_object;
-  sp->type=T_OBJECT;
-  fp->current_object->refs++;
-  sp++;
+  if(fp)
+  {
+    sp->u.object=fp->current_object;
+    sp->type=T_OBJECT;
+    fp->current_object->refs++;
+    sp++;
+  }else{
+    push_int(0);
+  }
 }
 
 void f_throw(INT32 args)
@@ -674,6 +699,7 @@ struct callback_list *add_exit_callback(struct array *a)
 
 void f_exit(INT32 args)
 {
+  int i;
   if(args < 1)
     error("Too few arguments to exit.\n");
 
@@ -681,11 +707,14 @@ void f_exit(INT32 args)
     error("Bad argument 1 to exit.\n");
 
   call_and_free_callback_list(& exit_callbacks);
+
+  i=sp[-args].u.integer;
 #define DEALLOCATE_MEMORY
 #ifdef DEALLOCATE_MEMORY
   exit_modules();
 #endif
-  exit(sp[-args].u.integer);
+
+  exit(i);
 }
 
 void f_query_host_name(INT32 args)
@@ -756,15 +785,21 @@ void f_crypt(INT32 args)
 void f_destruct(INT32 args)
 {
   struct object *o;
-  o=fp->current_object;
   if(args)
   {
     if(sp[-args].type != T_OBJECT)
       error("Bad arguments 1 to destruct()\n");
-
+    
     o=sp[-args].u.object;
+  }else{
+    if(!fp)
+      error("Destruct called without argument from callback function.\n");
+	   
+    o=fp->current_object;
   }
   destruct(o);
+  pop_n_elems(args);
+  push_int(0);
 }
 
 void f_indices(INT32 args)
@@ -1187,6 +1222,29 @@ void f_functionp(INT32 args)
   }
 }
 
+void f_sleep(INT32 args)
+{
+  struct timeval timeout;
+  INT32 a,b;
+
+  if(!args) error("Too few arguments to sleep.\n");
+  if(sp[-args].type!=T_INT)
+    error("Bad argument 1 to sleep.\n");
+  a=get_current_time()+sp[-args].u.integer;
+  
+  pop_n_elems(args);
+  while(1)
+  {
+    timeout.tv_usec=0;
+    b=a-get_current_time();
+    if(b<0) break;
+
+    timeout.tv_sec=b;
+    select(0,0,0,0,&timeout);
+    check_signals();
+  }
+}
+
 #ifdef TYPEP
 #undef TYPEP
 #endif
@@ -1254,12 +1312,14 @@ void init_builtin_efuns()
   add_efun("query_host_name",f_query_host_name,"function(:string)",0);
   add_efun("query_num_arg",f_query_num_arg,"function(:int)",OPT_EXTERNAL_DEPEND);
   add_efun("random",f_random,"function(int:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("random_seed",f_random_seed,"function(int:void)",OPT_SIDE_EFFECT);
   add_efun("remove_call_out",f_remove_call_out,"function(function:int)",OPT_SIDE_EFFECT);
   add_efun("replace",f_replace,"function(string,string,string:string)|function(string,string*,string*:string)|function(array,mixed,mixed:array)|function(mapping,mixed,mixed:array)",0);
   add_efun("reverse",f_reverse,"function(int:int)|function(string:string)|function(array:array)",0);
   add_efun("rusage", f_rusage, "function(:int *)",OPT_EXTERNAL_DEPEND);
   add_efun("search",f_search,"function(string,string,void|int:int)|function(array,mixed,void|int:int)|function(mapping,mixed:mixed)",0);
   add_efun("sizeof", f_sizeof, "function(string|list|array|mapping:int)",0);
+  add_efun("sleep", f_sleep, "function(int:void)",OPT_SIDE_EFFECT);
   add_efun("stringp", f_stringp, "function(mixed:int)",0);
   add_efun("sum",f_sum,"function(int ...:int)|function(float ...:float)|function(string,string|int|float ...:string)|function(string,string|int|float ...:string)|function(int|float,string,string|int|float:string)|function(array ...:array)|function(mapping ...:mapping)|function(list...:list)",0);
   add_efun("this_object", f_this_object, "function(:object)",OPT_EXTERNAL_DEPEND);

@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include "macros.h"
 #include <ctype.h>
@@ -37,7 +42,6 @@ void my_srand(int seed)
 }
 
 long get_current_time(void) { return (long)time(0L); }
-
 
 
 #ifndef HAVE_STRTOL
@@ -87,6 +91,24 @@ long STRTOL(char *str,char **ptr,int base)
   if (ptr != (char **)0)
     *ptr = str;
   return (neg ? val : -val);
+}
+#endif
+
+#ifndef HAVE_STRCASECMP
+int STRCASECMP(const char *a,const char *b)
+{
+  int ac, bc;
+
+  while(1)
+  {
+    ac=*(a++);
+    bc=*(b++);
+
+    if(ac && isupper(ac)) ac=tolower(ac);
+    if(bc && isupper(bc)) bc=tolower(bc);
+    if(ac != bc) return 1;
+    if(!ac) return 0;
+  }
 }
 #endif
 

@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef FILE_H
 #define FILE_H
 
@@ -9,6 +14,12 @@
 #ifndef ARPA_INET_H
 #include <arpa/inet.h>
 #define ARPA_INET_H
+
+/* Stupid patch to avoid trouble with Linux includes... */
+#ifdef LITTLE_ENDIAN
+#undef LITTLE_ENDIAN
+#endif
+
 #endif
 #endif
 

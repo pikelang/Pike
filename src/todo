@@ -116,6 +116,7 @@ a+=b -> a=a+b {r ju inte helt r{tt alltid...
    OM det fanns pekare....
 	done (utan pekare)
 
+
 reverse() ... done
 next_object() ... done
 indices() ... done
@@ -127,21 +128,26 @@ call_out() ... done
 find_call_out() ... done
 call_out_info() ... done
 remove_call_out() ... done
+file->rename() done (mv)
+mkmapping()	done
+mklist()	done
 
 file->write ska st{nga filen om saker g}r snett... (tror jag)
 	nej, det {r upp till anv{ndaren
 
-patch byacc
+signals
+	done
 
-dokumentera
+patch byacc
+	done (maybe needs more fixing)
+
+dokumentera mera!
 
 ta bort MAX_LOCAL (& MAX_GLOBAL)
 
 ta bort EXPANDMAX
 
 kommentera mera
-
-"make: Fatal error: Don't know how to make target `builtin_efuns.o'" (p} metoo)
 
 typkollen m}ste generera b{ttre felmeddelanden..
 
@@ -152,14 +158,10 @@ inherit_list()
 function_args()
 get_function_list()
 fuzzymatch()
-file->rename()
 sort()
-mkmapping()
-mklist()
 this_function()
 kolla upp |vriga efunnar som skall portas 
 
-signals
 
 ++++ -> sum()
 

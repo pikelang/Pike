@@ -1,10 +1,17 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <stdio.h>
 #include <stdlib.h>
 #include "global.h"
 #include "types.h"
+
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
+
 #include "backend.h"
 #include "module.h"
 #include "object.h"
@@ -17,6 +24,7 @@
 #include "error.h"
 #include "macros.h"
 #include "callback.h"
+#include "lpc_signal.h"
 
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
@@ -191,6 +199,7 @@ void init_main_efuns()
   init_lex();
   init_types();
   init_builtin_efuns();
+  init_signals();
 }
 
 void init_main_programs()
@@ -206,6 +215,7 @@ void exit_main()
   void cleanup_program();
 
   automatic_fatal="uLPC is exiting: ";
+  exit_signals();
   exit_lex();
   cleanup_objects();
   cleanup_interpret();

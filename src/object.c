@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <stdlib.h>
 #include "global.h"
 #include "object.h"
@@ -30,9 +35,6 @@ struct object *clone(struct program *p, int args)
   struct frame frame;
 
   o=(struct object *)xalloc(sizeof(struct object)-1+p->storage_needed);
-#ifdef DEBUG
-  if(d_flag > 14) check_signals();
-#endif
 
   o->prog=p;
   p->refs++;
@@ -97,18 +99,10 @@ struct object *clone(struct program *p, int args)
     o->refs++;
   }
 
-#ifdef DEBUG
-    if(d_flag > 14) check_signals();
-#endif
-
   apply(o,"__INIT",0);
   pop_stack();
   apply(o,"create",args);
   pop_stack();
-
-#ifdef DEBUG
-    if(d_flag > 14) check_signals();
-#endif
 
   return o;
 }

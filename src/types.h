@@ -1,7 +1,12 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef TYPES_H
 #define TYPES_H
-#include "machine.h"
 
+#include "machine.h"
 /* we here define a few types with more defined values */
 
 #define INT64 long long

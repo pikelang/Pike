@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <stdlib.h>
 #include "global.h"
 #include "memory.h"
@@ -276,10 +281,15 @@ unsigned INT32 hashmem(const unsigned char *a,INT32 len,INT32 mlen)
   }
 
 #ifdef HANDLES_UNALIGNED_MEMORY_ACCESS
-  for(mlen>>=3;--mlen>=0;)
   {
-    ret^=(ret<<7)+*(((unsigned int *)a)++);
-    ret^=(ret>>6)+*(((unsigned int *)a)++);
+    unsigned int *b;
+    b=(unsigned int *)a;
+
+    for(mlen>>=3;--mlen>=0;)
+    {
+      ret^=(ret<<7)+*(b++);
+      ret^=(ret>>6)+*(b++);
+    }
   }
 #else
   for(mlen>>=3;--mlen>=0;)

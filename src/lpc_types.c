@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include <ctype.h>
 #include "svalue.h"
@@ -552,7 +557,7 @@ int match_types(struct lpc_string *a,struct lpc_string *b)
 }
 
 
-#define STACK_SIZE 10000
+#define STACK_SIZE 100000
 static unsigned char type_stack[STACK_SIZE];
 static unsigned char *type_stackp=type_stack;
 static unsigned char *mark_stack[STACK_SIZE/4];

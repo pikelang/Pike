@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include "language.h"
 #include "array.h"
@@ -60,6 +65,8 @@ void exit_lex()
     }
     if(local_variables->current_type)
       free_string(local_variables->current_type);
+    if(local_variables->current_return_type)
+      free_string(local_variables->current_return_type);
     l=local_variables->next;
     free((char *)local_variables);
     local_variables=l;
@@ -206,7 +213,6 @@ struct keyword instr_names[]=
 { "switch",		F_SWITCH },
 { "unary minus",	F_NEGATE },
 { "while",		F_WHILE },	
-{ "write opcode",	F_WRITE_OPCODE },
 { "x++ and pop",	F_INC_AND_POP },	
 { "x++",		F_POST_INC },	
 { "x-- and pop",	F_DEC_AND_POP },	
@@ -1919,6 +1925,7 @@ static void start_new()
   local_variables->next=0;
   local_variables->current_number_of_locals=0;
   local_variables->current_type=0;
+  local_variables->current_return_type=0;
   simple_add_define("__uLPC__", "1",0);
   
   for (tmpf=lpc_predefs; tmpf; tmpf=tmpf->next)
@@ -1970,6 +1977,9 @@ void end_new_file()
   
     if(local_variables->current_type)
       free_string(local_variables->current_type);
+
+    if(local_variables->current_return_type)
+      free_string(local_variables->current_return_type);
 
     l=local_variables->next;
     free((char *)local_variables);

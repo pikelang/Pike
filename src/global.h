@@ -1,5 +1,13 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef GLOBAL_H
 #define GLOBAL_H
+
+#define POSIX_SOURCE
+
 /*
  * Some structure forward declarations are needed.
  */
@@ -17,7 +25,28 @@ struct object;
 struct array;
 struct svalue;
 
+#include "machine.h"
 #include "config.h"
+
+/* AIX requires this to be the first thing in the file.  */
+#ifdef __GNUC__
+# ifdef alloca
+#  undef alloca
+# endif
+# define alloca __builtin_alloca
+#else
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+#pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
 
 #include <stdio.h>
 

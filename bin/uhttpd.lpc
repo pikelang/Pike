@@ -16,62 +16,58 @@ inherit "/precompiled/port";
 /* Port to open */
 #define PORT 1905
 
+/* Definitions for contents of 'id' */
 #define OUTPUT 0
-#define FILE 1
+#define FILE   1
 #define OFFSET 2
-#define INPUT 3
+#define INPUT  3
 
-void write_callback(mapping id)
+void write_callback(array id)
 {
-  object o;
-  int i;
-  string s;
+  object output_object;
+  int written;
+  string data;
 
-//  perror(".");
-  if(o=id[OUTPUT])
+  if(output_object=id[OUTPUT])
   {
-    o->seek(id[OFFSET]);
-    s=o->read(BLOCK);
-    if(strlen(s))
+    output_object->seek(id[OFFSET]);
+    data=output_object->read(BLOCK);
+    if(strlen(data))
     {
-      i=id[FILE]->write(s);
-      if(i >= 0)
+      written=id[FILE]->write(data);
+      if(written >= 0)
       {
-//	write(i+"\n");
-	id[OFFSET]+=i;
+	id[OFFSET]+=written;
 	return;
       }
       perror("Error: "+id[FILE]->errno()+".\n");
     }
-//    perror("!");
-    destruct(o);
+    destruct(output_object);
     destruct(id[FILE]);
   }
 }
 
-void close_callback(mapping id)
+void close_callback(array id)
 {
-//  perror("#");
   if(id[FILE]) destruct(id[FILE]);
   if(id[OUTPUT]) destruct(id[OUTPUT]);
 }
 
-void read_callback(mapping id, string s)
+void read_callback(array id, string request)
 {
-  object out;
-  id[INPUT]+=s;
-  s=id[INPUT];
+  object output_object;
+  id[INPUT]+=request;
+  request=id[INPUT];
 
-//  perror("-");
-  if(sscanf(s,"GET %s%*[\012\015]",s))
+  if(sscanf(request,"GET %s%*[\012\015]",request))
   {
-    sscanf(s,"%s ",s);
-    sscanf(s,"%*[/]%s",s);
-    s=combine_path(BASE,s);
-    out=clone( (program) "/precompiled/file");
-    if(!out->open(s,"r"))
+    sscanf(request,"%s ",request);
+    sscanf(request,"%*[/]%s",request);
+    request=combine_path(BASE,request);
+    output_object=clone( (program) "/precompiled/file");
+    if(!output_object->open(request,"r"))
     {
-      if(!out->open(NOFILE,"r"))
+      if(!output_object->open(NOFILE,"r"))
       {
 	perror("Couldn't find default file.\n");
 	destruct(id[FILE]);
@@ -79,21 +75,19 @@ void read_callback(mapping id, string s)
       }
     }
 
-    id[OUTPUT]=out;
+    id[OUTPUT]=output_object;
     id[OFFSET]=0;
     id[FILE]->set_buffer(65536,"w");
-//    id[FILE]->set_nonblocking(read_callback,write_callback,close_callback);
     write_callback(id);
   }
 }
 
-
 void accept_callback()
 {
-  object file=accept();
-  if(!file) return;
-  file->set_id( ({0, file, 0, "" }) );
-  file->set_nonblocking(read_callback,write_callback,close_callback);
+  object output_object=accept();
+  if(!output_object) return;
+  output_object->set_id( ({0, output_object, 0, "" }) );
+  output_object->set_nonblocking(read_callback,write_callback,close_callback);
 }
 
 void main(int argc, string *argv)
@@ -106,5 +100,5 @@ void main(int argc, string *argv)
     return 17;
   }
 
-  return - 17;
+  return - 17; /* Keep going */
 }

@@ -1,4 +1,4 @@
-#!/usr/local/bin/lpc -Cstay
+#!/usr/local/bin/ulpc
 
 /* Hübbes incremental LPC frontend - HiLfe */
 
@@ -494,9 +494,17 @@ void read_input()
   write("Terminal closed.\n");
 }
 
+void signal_trap(int s)
+{
+  clean_buffer();
+  throw("**Break\n");
+}
+
 void main(int argc,string *argv)
 {
   add_efun("write",my_write);
+  signal(signum("SIGINT"),signal_trap);
+
   write(version()+
 	" Running Hilfe v1.2 (Hubbe's Incremental LPC FrontEnd)\n");
   write("> ");
@@ -505,15 +513,3 @@ void main(int argc,string *argv)
   return 0;
 }
 
-int signal(int s)
-{
-  if(s==4)
-  {
-    clean_buffer();
-    if(sizeof(backtrace())>1)
-      throw("**Break");
-    else
-      write("**Break\n");
-  }
-  return 1;
-}

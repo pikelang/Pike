@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef LEX_H
 #define LEX_H
 
@@ -24,7 +29,7 @@ extern INT32 current_line;
 extern INT32 old_line;
 extern INT32 total_lines;
 extern INT32 nexpands;
-int pragma_all_inline;          /* inline all possible inlines */
+extern int pragma_all_inline;          /* inline all possible inlines */
 extern struct inputstate *istate;
 
 extern struct lpc_predef_s * lpc_predefs;

@@ -66,7 +66,7 @@ OBJ=language.o add_efun.o array.o builtin_efuns.o backend.o \
     fsort.o hashtable.o interpret.o lex.o las.o list.o \
     lpc_types.o main.o mapping.o memory.o module.o object.o \
     opcodes.o operators.o port.o program.o rusage.o stralloc.o \
-    stuff.o svalue.o debug.o callback.o
+    stuff.o svalue.o debug.o callback.o lpc_signal.o
 
 #
 MODULES=@subdirs@
@@ -129,8 +129,7 @@ tidy:
 clean: tidy
 	-for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) clean ) ; done
 	-for a in $(MODULES) ; do rm -f $$a/*.o ; done
-	-rm -f language.h language.c efun_protos.h opc_cost.h
-	-rm -f TAGS tags
+	-rm -f language.h language.c TAGS tags
 	-rm -f yacc.acts yacc.debug yacc.tmp *.debug.log a.out
 
 spotless: clean
@@ -166,8 +165,17 @@ verify: $(TMP_LIBDIR)/testsuite.lpc
 verbose_verify: $(TMP_LIBDIR)/testsuite.lpc
 	./ulpc -m $(TMP_LIBDIR)/master.lpc $(TMP_LIBDIR)/testsuite.lpc --verbose
 
+gdb_verify: $(TMP_LIBDIR)/testsuite.lpc
+	echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	echo >>.gdbinit run -m $(TMP_LIBDIR)/master.lpc $(TMP_LIBDIR)/testsuite.lpc -v -v -f
+	gdb ./ulpc
+ 
+run_hilfe:
+	./ulpc -m $(TMP_LIBDIR)/master.lpc $(TMP_BINDIR)/hilfe
+ 
+
 depend: language.c
-	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c >$(SRCDIR)/dependencies
+	gcc -MM $(PREFLAGS) *.c $(SRCDIR)/*.c | sed 's;$(SRCDIR)/;;g' | sed 's;\./;;g' >$(SRCDIR)/dependencies
 	cat $(SRCDIR)/Makefile.in.src $(SRCDIR)/dependencies > $(SRCDIR)/Makefile.in
 	config.status
 	for a in $(MODULES) ; do ( cd $$a ; ${MAKE} $(MAKE_FLAGS) depend ) ; done

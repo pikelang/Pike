@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef EXEC_H
 #define EXEC_H
 
@@ -72,8 +77,8 @@ struct identifier
 
 struct reference
 {
-  INT16 inherit_offset;
-  INT16 identifier_offset;
+  unsigned INT16 inherit_offset;
+  unsigned INT16 identifier_offset;
   INT16 flags; /* static, private etc.. */
 };
 

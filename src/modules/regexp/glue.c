@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include "global.h"
 #include "types.h"
 #include "interpret.h"
@@ -64,17 +69,21 @@ static void regexp_split(INT32 args)
   s=sp[-args].u.string;
   if(regexec(r=THIS->regexp, s->str))
   {
-    int i, j;
+    int i,j;
     s->refs++;
     pop_n_elems(args);
-    j=0;
-    for(i=1;i<NSUBEXP;i++)
+    for(j=i=1;i<NSUBEXP;i++)
     {
-      if(!r->startp[i] || !r->endp[i]) break;
-      push_string(make_shared_binary_string(r->startp[i],
-					    r->endp[i]-r->startp[i]));
-      j++;
+      if(!r->startp[i] || !r->endp[i])
+      {
+	push_int(0);
+      }else{
+	push_string(make_shared_binary_string(r->startp[i],
+					      r->endp[i]-r->startp[i]));
+	j=i;
+      }
     }
+    if(j<i-1) pop_n_elems(i-j-1);
     push_array(aggregate_array(j,T_STRING));
     free_string(s);
   }else{

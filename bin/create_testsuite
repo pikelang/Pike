@@ -103,7 +103,25 @@ int main(int argc, string *argv)
 
    tests = ({
 
+
+// signum, signame
+test_eq(signum("SIGKILL"),9)
+test_eq(signum("SIGINT"),2)
+test_eq(signame(9),"SIGKILL")
+test_eq(signame(2),"SIGINT")
+
+// kill, signal, getpid
+test_true(intp(getpid()))
+test_do(signal(signum("SIGUSR1"),lambda() { add_efun("AFJLLAF",17); }))
+test_do(kill(getpid(),signum("SIGUSR1")))
+test_eq(AFJLLAF,17)
+test_do(add_efun("AFJLLAF"))
+test_do(signal(signum("SIGUSR1")))
+
 // Not yet cataloged
+test_do(sleep(1))
+test_compile_error([[} int foo() { return]]);
+test_compile_error([[} void foo() { return 1]]);
 test_equal( ({ lambda() { return 3; } , lambda() { return 7; }, lambda() { return 9; } })(), ({ 3,7,9 }))
 test_true(stringp(sprintf("%O",({1,2,"foo"}))))
 test_true(stringp(sprintf("%O",([1:2,"foo":"bar"]))))
@@ -142,7 +160,7 @@ test_equal(mkmapping("abcd"/"","jklm"/"") | mkmapping("jclm"/"","alcd"/""),
 test_program(int foo() { return 17;} mixed a() { return foo() == 17; })
 test_any([[mixed a; a=2; a=a*3; return a]],6)
 test_any([[mixed a = ({1}); a=a+({2}); return equal(a,({1,2}))]],1)
-test_define_program(/test,[[void foo() { return 17; }]])
+test_define_program(/test,[[int foo() { return 17; }]])
 test_any(function bar=clone((program)"/test")->foo; return bar(),17)
 test_eq(popen("echo foo"),"foo\n")
 
@@ -512,7 +530,7 @@ test_any(switch(2) { default: return 1; case 1: return 0; } return 0,1)
 test_any(switch(0) { case "apa": case 1.0: return 0; }  return 1,1)
 test_any(switch("apa") { case "apa": return 1; case 1.0: }  return 0,1)
 test_any(switch(1.0) { case "apa": return 0; case 1.0: return 1; } return 0,1)
-test_any(switch("sune") { case "gunnel": return 0; case "gunnar": return 1; case "sune": case "gusten": return 0; } return 0; )
+test_any(switch("sune") { case "gunnel": return 0; case "gunnar": return 1; case "sune": case "gusten": return 0; } return 0,0)
 test_any(switch("a") { case "a": return 1; case "b": case "c": case "d": case 'a': case '1': case '0': default: } return 0,1)
 test_any(switch("b") { case "a": return 0; case "b": return 1; case "c": case "d": case 'a': case '1': case '0': default: } return 0,1)
 test_any(switch("c") { case "a": case "b": return 0; case "c": return 1; case "d": case 'a': case '1': case '0': default: } return 0,1)
@@ -1125,8 +1143,8 @@ test_true(floatp(asin(0.7)))
 test_eq(asin(0.0),0.0)
 // - atan
 test_true(floatp(atan(0.7)))
-test_eq(3.1415 > 4.0*atan(1.0))
-test_eq(3.1416 < 4.0*atan(1.0))
+test_true(3.1415 < 4.0*atan(1.0))
+test_true(3.1416 > 4.0*atan(1.0))
 // - sin
 test_true(floatp(sin(1.2)))
 test_true(sin(atan(1.0))>0.707)
@@ -1220,7 +1238,8 @@ test_eq(all_efuns()["all_efuns"],all_efuns)
 
 // - allocate
 test_true(arrayp(allocate(0)))
-test_equal(allocate(2)==({0,0}))
+test_equal(allocate(2),({0,0}))
+test_false(allocate(2)==({0,0}))
 
 // - backtrace
 test_true(arrayp(backtrace()))

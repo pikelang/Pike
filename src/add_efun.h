@@ -1,8 +1,14 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
 
 #include "svalue.h"
 #include "hashtable.h"
+#include "las.h" /* For OPT_SIDE_EFFECT etc. */
 
 struct efun
 {

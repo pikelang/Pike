@@ -273,6 +273,35 @@
   some systems
 	fixed
 
+* destruct and this_object() dumped core if called directly from driver
+	fixed
+
+* test for working memmove in configure.in was broken
+	fixed
+
+* there was some casts used as lvalues in memory.c
+	fixed
+
+* modules/files/efun.c didn't compile on some systems that doesn't have
+  MAXPATHLEN defined, in this case we just define it to 32768
+	fixed
+
+* signals only worked once
+	fixed
+
+* configure didn't find alloca if it was hideing in libPW
+	hopefully fixed
+
+* calling void functions directly from driver callbacks causes coredumps
+	fixed
+
+* signal handlers are not called while file->read is blocking
+	fixed
+
+* really large constant arrays crashes uLPC
+
+* need some way of using shared and non-shared module dirs..
+
 * setup_fake_program is called too often, I should keep fake_program updated instead
 
 * foreach somtimes says 'bad argument 1 to foreach' after a completed loop

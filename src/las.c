@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <setjmp.h>
 #include "global.h"
 #include "language.h"
@@ -905,8 +910,21 @@ void fix_type_field(node *n)
 
   switch(n->token)
   {
-  case F_LOCAL:
-  case F_GLOBAL:
+  case F_LAND:
+  case F_LOR:
+    if(!match_types(CAR(n)->type,mixed_type_string))
+      yyerror("Bad conditional expression.\n");
+
+    if(!match_types(CDR(n)->type,mixed_type_string))
+      yyerror("Bad conditional expression.\n");
+
+    if(CAR(n)->type == CDR(n)->type)
+    {
+      copy_shared_string(n->type,CAR(n)->type);
+    }else{
+      copy_shared_string(n->type,mixed_type_string);
+    }
+    break;
 
   case F_INDEX:
     type_a=CAR(n)->type;
@@ -934,10 +952,13 @@ void fix_type_field(node *n)
       copy_shared_string(n->type, mixed_type_string);
     }
     free_string(s);
-    return;
+    break;
   }
 
   case '?':
+    if(!match_types(CAR(n)->type,mixed_type_string))
+      yyerror("Bad conditional expression.\n");
+
     if(!CADR(n) || !CDDR(n))
     {
       copy_shared_string(n->type,void_type_string);
@@ -951,24 +972,71 @@ void fix_type_field(node *n)
     }
 
     copy_shared_string(n->type,mixed_type_string);
-    return;
+    break;
+
+  case F_RETURN:
+    if(local_variables &&
+       local_variables->current_return_type &&
+       !match_types(local_variables->current_return_type,CAR(n)->type) &&
+       !(
+	 local_variables->current_return_type==void_type_string &&
+	 CAR(n)->token == F_CONSTANT &&
+	 IS_ZERO(& CAR(n)->u.sval)
+	 )
+       )
+    {
+      yyerror("Wrong return type.");
+    }
+
+    /* Fall through */
 
   case F_INC_LOOP:
   case F_DEC_LOOP:
   case F_DEC_NEQ_LOOP:
   case F_INC_NEQ_LOOP:
   case F_CASE:
-  case F_DO:
-  case F_FOR:
-  case F_RETURN:
   case F_CONTINUE:
   case F_BREAK:
     copy_shared_string(n->type,void_type_string);
-    return;
+    break;
+
+  case F_DO:
+    if(!match_types(CDR(n)->type,mixed_type_string))
+      yyerror("Bad conditional expression do - while().\n");
+    copy_shared_string(n->type,void_type_string);
+    break;
+    
+  case F_FOR:
+    if(!match_types(CAR(n)->type,mixed_type_string))
+      yyerror("Bad conditional expression for().\n");
+    copy_shared_string(n->type,void_type_string);
+    break;
+
+  case F_SWITCH:
+    if(!match_types(CAR(n)->type,mixed_type_string))
+      yyerror("Bad switch expression.\n");
+    copy_shared_string(n->type,void_type_string);
+    break;
 
   case F_CONSTANT:
     n->type = get_type_of_svalue(& n->u.sval);
-    return;
+    break;
+
+    /* Not yet checked, but we know what they should return */
+  case F_NOT:
+  case F_LT:
+  case F_LE:
+  case F_EQ:
+  case F_NE:
+  case F_GT:
+  case F_GE:
+  case F_MOD:
+  case F_XOR:
+  case F_LSH:
+  case F_RSH:
+  case F_COMPL:
+    copy_shared_string(n->type,int_type_string);
+    break;
 
   case F_ARG_LIST:
     if(!CAR(n) || CAR(n)->type==void_type_string)

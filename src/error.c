@@ -1,3 +1,8 @@
+/*\
+||| This file a part of uLPC, and is copyright by Fredrik Hubinette
+||| uLPC is distributed as GPL (General Public License)
+||| See the files COPYING and DISCLAIMER for more information.
+\*/
 #include <stdio.h>
 #include "global.h"
 #include "macros.h"
@@ -9,7 +14,8 @@
 #include "object.h"
 
 char *automatic_fatal;
-JMP_BUF *recoveries;
+JMP_BUF *recoveries=0;
+ONERROR *onerror_stack=0;
 
 jmp_buf *init_recovery(JMP_BUF *r)
 {
@@ -17,6 +23,7 @@ jmp_buf *init_recovery(JMP_BUF *r)
   r->sp=sp;
   r->mark_sp=mark_sp;
   r->previous=recoveries;
+  r->onerror=onerror_stack;
   recoveries=r;
   return & r->recovery;
 }
@@ -45,6 +52,16 @@ void throw()
 
   pop_n_elems(sp - recoveries->sp);
   mark_sp = recoveries->mark_sp;
+
+  while(recoveries->onerror != onerror_stack)
+  {
+#ifdef DEBUG
+    if(!onerror_stack)
+      fatal("Popped out of onerror stack!\n");
+#endif    
+    (*onerror_stack->func)(onerror_stack->arg);
+    onerror_stack=onerror_stack->previous;
+  }
 
   longjmp(recoveries->recovery,1);
 }
