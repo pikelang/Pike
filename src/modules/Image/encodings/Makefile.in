@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.28 1999/10/21 22:39:01 marcus Exp $
+# $Id: Makefile.in,v 1.29 1999/10/22 00:24:37 hubbe Exp $
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
 OBJS = gif.o gif_lzw.o pnm.o x.o xwd.o png.o any.o bmp.o tga.o pcx.o xbm.o _xpm.o ilbm.o iff.o xcf.o hrz.o avs.o psd.o gd.o wbf.o ras.o
@@ -14,6 +14,20 @@ PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../../.. -I$(SRCDIR)/.. -I../../.. -I.. -I.
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) $(MODULE_CFLAGS) @CCSHARED@ 
 
 all: encodings.a
+
+.SUFFIXES: .c .o
+
+# GCC dumps core on some files @ OSF1
+# This kluge should work around that...
+# FIXME: Make this a configure option
+.c.o:
+	@echo "Compiling $<" ;\
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
+	else \
+	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
+	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2;\
+	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	fi
 
 encodings.a : $(OBJS)
 	rm -f encodings.a
