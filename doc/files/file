@@ -398,3 +398,18 @@ SEE ALSO
 	builtin/fork
 
 ============================================================================
+NAME
+	set_close_on_exec - set / clear the close on exec flag
+
+SYNTAX
+	void file->set_close_on_exec(int onoff);
+
+DESCRIPTION
+	This function determines weather this file will be closed when
+	calling exece. Default is that the file WILL be closed on exec
+	except for stdin, stdout and stderr.
+
+SEE ALSO
+	builtin/exece
+
+============================================================================

@@ -119,6 +119,16 @@ test_do(add_efun("AFJLLAF"))
 test_do(signal(signum("SIGUSR1")))
 
 // Not yet cataloged
+test_program(void foo(int a ,int b); function(int,int:void) a() { return foo; })
+test_program(void foo(int a, int ... b); function(int,int ...:void) a() { return foo; })
+test_program(void foo(); function(:void) a() { return foo; })
+test_compile_error(void foo(); function(:string) a() { return foo; })
+
+test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
+test_eq([[random_seed(17),random(20000)]],[[random_seed(17),random(20000)]])
+test_eq([[random_seed(18),random(20000)]],[[random_seed(18),random(20000)]])
+test_eq([[random_seed(19),random(20000)]],[[random_seed(19),random(20000)]])
+test_do(lambda(){return;}())
 test_do(sleep(1))
 test_compile_error([[} int foo() { return]]);
 test_compile_error([[} void foo() { return 1]]);

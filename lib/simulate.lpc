@@ -156,41 +156,12 @@ varargs int exec(string file,string ... foo)
   return 69;
 }
 
-string popen(string s)
-{
-  object p;
-  current_file=current_mode=0;
-
-  p=file::pipe();
-  if(!p) error("Popen failed. (couldn't create pipe)\n");
-  if(!fork())
-  {
-    p->dup2(clone((program)"/precompiled/file","stdout"));
-    exec("/bin/sh","-c",s);
-    exit(69);
-  }else{
-    string t;
-    destruct(p);
-    t=read(0x7fffffff);
-    if(!t)
-    {
-      int e;
-      e=errno();
-      close();
-      error("Popen failed with error "+e+".\n");
-    }else{
-      close();
-    }
-    return t;
-  }
-}
 
 varargs int spawn(string s,object stdin,object stdout,object stderr)
 {
   object p;
   int pid;
   string t;
-  current_file=current_mode=0;
 
   if(pid=fork())
   {
@@ -206,6 +177,55 @@ varargs int spawn(string s,object stdin,object stdout,object stderr)
     if(stderr)
       stderr->dup2(clone(f,"stderr"));
 
+    exec("/bin/sh","-c",s);
+    exit(69);
+  }
+}
+
+string popen(string s)
+{
+  object p;
+  string t;
+
+  current_file=current_mode=0;
+
+  p=file::pipe();
+  if(!p) error("Popen failed. (couldn't create pipe)\n");
+  spawn(s,0,p,0);
+  destruct(p);
+
+  t=read(0x7fffffff);
+  if(!t)
+  {
+    int e;
+    e=errno();
+    close();
+    error("Popen failed with error "+e+".\n");
+  }else{
+    close();
+  }
+  return t;
+}
+
+void system(string s)
+{
+  object p;
+  int pid;
+  string t;
+
+  current_file=current_mode=0;
+
+  p=file::pipe();
+  p->set_close_on_exec(0);
+  if(!p) error("System failed.\n");
+  if(pid=fork())
+  {
+    destruct(p);
+    /* Nothing will ever be written here, we are just waiting for it
+     * to close
+     */
+    file::read(1);
+  }else{
     exec("/bin/sh","-c",s);
     exit(69);
   }
@@ -340,6 +360,7 @@ void create()
   add_efun("mklist",mklist);
   add_efun("popen",popen);
   add_efun("spawn",spawn);
+  add_efun("system",system);
   add_efun("previous_object",previous_object);
   add_efun("read_bytes",read_bytes);
   add_efun("search_array",search_array);
@@ -348,7 +369,7 @@ void create()
   add_efun("strstr",search);
   add_efun("sum_arrays",sum_arrays);
   add_efun("this_function",this_function);
-  add_efun("version",lambda() { return "uLPC v1.1E-16"; });
+  add_efun("version",lambda() { return "uLPC v1.0E-14"; });
   add_efun("write_file",write_file);
   add_efun("get_function",get_function);
   add_efun("regexp",regexp);
