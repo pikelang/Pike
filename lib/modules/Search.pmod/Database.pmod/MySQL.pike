@@ -6,6 +6,18 @@ inherit Search.Database.Base;
 // Creates the SQL tables we need.
 // FIXME: last_changed and last_indexed should be in the same format. (fix here or in query?)
 // FIXME: last changed and last_indexed should be named modified and indexed.
+
+mapping table_defs =
+([
+  "fulltext":
+#"(word_id int unsigned not null,
+   document_id int unsigned not null,
+   word_position mediumint unsigned not null,
+   ranking tinyint not null,
+   INDEX index_word_id (word_id),
+   INDEX index_document_id (document_id))",
+
+]);
 void create_tables()
 {
   catch(db->query("drop table document"));
@@ -42,19 +54,6 @@ void create_tables()
                           name varchar(127))"
                           );
                           
-  db->query(
-#"create table word (word varchar(255),
-                     id int unsigned primary key)"
-		     );
-
-  db->query(
-#"create table occurance (word_id int unsigned not null,
-                          document_id int unsigned not null,
-                          word_position mediumint unsigned not null,
-                          ranking tinyint not null,
-                          INDEX index_word_id (word_id),
-                          INDEX index_document_id (document_id))"
-			  );
 }
 
 // This is the database object that all queries will be made to.
@@ -219,56 +218,51 @@ class GroupNode
 {
   inherit Node;
 
+  static privage string build_sql_part(string what, array params, string delimit)
+  {
+    return sprintf("%-7s %s\n",what,Array.uniq(params)*delimit);
+  }
+
   string build_sql(void|int limit, void|mapping(string:array(string)) extra_select_items)
   {
     mapping ref=(["ref":0]);
+    if(!extra_select_items) extra_select_items=([]);
     mapping sub_res=build_sql_components(ref);
-    if(!sizeof(sub_res->ranking))
-      sub_res->ranking=({"0.0"});
+    
+    array tmp=({});
+    foreach(indices(extra_select_items), string tablename)
+      tmp+=map(extra_select_items[tablename],
+	       lambda(string field){return tablename+"."+field;});
+    if(sizeof(sub_res->ranking)
+       tmp+=({sub_res->ranking*" +\n       "+"as ranking"});
+    
     string res="";
-    res+="select distinct t0.doc_id as doc_id,\n       "+
-      sub_res->ranking*" +\n       "+" as ranking\n";
+    res+=build_sql_part("SELECT",
+			({ "distinct document.id as doc_id",
+			   "concat(uri.uri_first,uri.uri_rest) as doc_uri"})+tmp,
+			",\n       ");
 
-    int has_extra_comma=0;
-    if(extra_select_items)
-    {
-      foreach(indices(extra_select_items), string tablename)
-      {
-	if(sizeof(extra_select_items[tablename]))
-	{
-	  res+=
-	    "       "+
-	    map(extra_select_items[tablename],
-		lambda(string field){return tablename+"."+field;})*", "+
-	    ",\n";
-	  has_extra_comma=1;
-	}
-      }
-      if(has_extra_comma)
-	res=res[..sizeof(res)-3]+"\n";
-    }
-    res+="from   ";
+    res+=build_sql_part("FROM",
+			sub_res->from+indices(extra_select_items)+({"document", "uri"}),
+			",\n       ");
 
-    if(extra_select_items)
-      res+=indices(extra_select_items)*", ";
-
-    res+=sub_res->from*", " + "\n";
-
-    res+="where  "+sub_res->where;
-    if(ref->ref>1)
-      res+=" and";
-    res+="\n";
-
+    tmp=({});
     if(ref->ref>1)
     {
-      array tmp=allocate(ref->ref-1);
+      tmp=allocate(ref->ref-1);
       for(int i=1;i<ref->ref; i++)
 	tmp[i-1]=sprintf("t0.doc_id=t%d.doc_id",i);
-      res+="       "+tmp*" and ";
-      res+="\n";
+      tmp+=({"t0.doc_id=document.id"})
     }
+    
+    res+=build_sql_part("WHERE",
+			({"document.uri_id=uri.id",sub_res->where})+tmp,
+			" and\n       ");
 
-    res+="group by t0.doc_id order by ranking desc";
+    res+="group by document.id";
+
+    if(sizeof(sub_res->ranking)
+       res+=" order by ranking desc";
 
     if(limit)
       res+=sprintf(" limit %d",limit);
@@ -340,7 +334,7 @@ class Contains(string field, string word)
     return (["from": ({sprintf("occurance_%s t%d",field,ref->ref)}),
 	     "ranking": ({/*sprintf("sum((t%d.tf * t%d.idf * t%d.idf)/document.length)",
 			    ref->ref,ref->ref,ref->ref)*/}),
-	     "where":  sprintf("t%d.word='%s'",ref->ref++,word /*FIXME: quote*/) ]);
+	     "where":  sprintf("t%d.word='%s'",ref->ref++,hash_word(word)) ]);
   }
 }
 
@@ -369,7 +363,7 @@ class Phrase
 //       ranking+=({sprintf("sum((document.tf * t%d.idf * t%d.idf)/document.length)",
 // 			 ref->ref,ref->ref)});
       from+=({ sprintf("occurance_%s t%d",field,ref->ref) });
-      where+= ({ sprintf("t%d.word='%s'",ref->ref,word) });  /*FIXME: quote*/
+      where+= ({ sprintf("t%d.word='%s'",ref->ref,hash_word(word)) });
       if(i++<sizeof(words)-1)
 	where+=({ sprintf("t%d.offset-t%d.offset = "+real_window_size,
 			  ref->ref+1, ref->ref) });
@@ -401,6 +395,30 @@ class Near
   }
 }
 
+class URIPrefix(string prefix)
+{
+  inherit LeafNode;
+
+  mapping build_sql_components(mapping(string:int) ref)
+  {
+    return ([ "where": "uri.uri_first like '"+db->quote(prefix)+"'", 
+	      "ranking": ({ }),
+	      "from": ({ }) ]);
+  }
+}
+
+class Language(/*Linguistics.Language*/string language)
+{
+  inherit LeafNode;
+
+  mapping build_sql_components(mapping(string:int) ref)
+  {
+    return ([ "where": "document.language ='"+(string)language+"'",
+	      "ranking": ({ }),
+	      "from": ({ }) ]);
+  }
+}
+		 
 class FloatOP(string field, string op, float value)
 {
   inherit LeafNode;
