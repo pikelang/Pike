@@ -17,7 +17,7 @@
 #  include "language.h"
 #  include "lex.h"
 
-RCSID("$Id: dynamic_load.c,v 1.59 2002/01/31 17:52:14 marcus Exp $");
+RCSID("$Id: dynamic_load.c,v 1.60 2002/03/10 03:14:46 mast Exp $");
 
 #else /* TESTING */
 
@@ -312,6 +312,7 @@ struct module_list
 {
   struct module_list * next;
   void *module;
+  struct program *module_prog;
   modfun init, exit;
 };
 
@@ -348,7 +349,7 @@ static void cleanup_compilation(struct compilation_save *save)
   lex = save->lex;
 }
 
-/*! @decl int load_module(string module_name)
+/*! @decl program load_module(string module_name)
  *!
  *! Load a binary module.
  *!
@@ -403,6 +404,15 @@ void f_load_module(INT32 args)
     }
   }
 
+  {
+    struct module_list *mp;
+    for (mp = dynamic_module_list; mp; mp = mp->next)
+      if (mp->module == module && mp->module_prog) {
+	ref_push_program(mp->module_prog);
+	return;
+      }
+  }
+
   init = CAST_TO_FUN(dlsym(module, "pike_module_init"));
   if (!init) {
     init = CAST_TO_FUN(dlsym(module, "_pike_module_init"));
@@ -427,6 +437,7 @@ void f_load_module(INT32 args)
   new_module->next=dynamic_module_list;
   dynamic_module_list=new_module;
   new_module->module=module;
+  new_module->module_prog = NULL;
   new_module->init=init;
   new_module->exit=exit;
 
@@ -458,6 +469,7 @@ void f_load_module(INT32 args)
   free_string(lex.current_file);
   compilation_depth = save.compilation_depth;
   lex = save.lex;
+  add_ref(new_module->module_prog = sp[-1].u.program);
 }
 
 #endif /* USE_DYNAMIC_MODULES */
@@ -488,7 +500,9 @@ void exit_dynamic_load(void)
       call_handle_error();
     else
       (*tmp->exit)();
-    UNSETJMP(recovery); 
+    UNSETJMP(recovery);
+    free_program(tmp->module_prog);
+    tmp->module_prog = NULL;
   }
 #endif
 }
@@ -504,6 +518,7 @@ void free_dynamic_load(void)
 #ifndef DEBUG_MALLOC
     dlclose(tmp->module);
 #endif
+    if (tmp->module_prog) free_program(tmp->module_prog);
     free((char *)tmp);
   }
 #endif
