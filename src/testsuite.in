@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.623 2003/03/21 13:02:59 jhs Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.624 2003/03/27 02:23:19 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -1725,6 +1725,39 @@ test_do([[
 
   Stdio.recursive_rm ("testsuite_test_dir.pmod");
 ]])
+
+test_do([[
+  Stdio.recursive_rm ("testsuite_test_dir.pmod");
+  mkdir ("testsuite_test_dir.pmod");
+
+  Stdio.write_file ("testsuite_test_dir.pmod/module.pmod", #"\
+    .Foo.C x;");
+  Stdio.write_file ("testsuite_test_dir.pmod/Foo.pmod", #"\
+    import \".\";
+    class C
+    {
+      int f (array x)
+      {
+	return lambda() {
+		 // 'sizeof' below will be a placeholder object in
+		 // pass 1. That shouldn't cause a type error.
+		 int i = sizeof (x);
+		 return i;
+	       }();
+      }
+    }");
+
+  object orig_master = master();
+  replace_master (object_program (orig_master)());
+  mixed err = catch {
+      compile_string (#"\
+	mixed foo() {return .testsuite_test_dir.x;}",
+        "test");
+    };
+  replace_master (orig_master);
+  if (err) throw (err);
+  Stdio.recursive_rm("testsuite_test_dir.pmod");
+]]);
 
 cond(0,[[
 test_do([[
