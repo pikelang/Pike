@@ -1,4 +1,4 @@
-/* $Id: html.c,v 1.143 2001/06/25 19:48:07 mast Exp $ */
+/* $Id: html.c,v 1.144 2001/07/12 14:04:22 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -627,7 +627,7 @@ found_start:
 #endif
 
    n = check_fin ? 4 : 3;
-   n_ws_or_endarg = N_WS (this) + n;
+   n_ws_or_endarg = DO_NOT_WARN((int)(N_WS (this) + n));
    ws_or_endarg=alloca(sizeof(p_wchar2)*n_ws_or_endarg);
    if (!ws_or_endarg) Pike_error ("Out of stack.\n");
    MEMCPY(ws_or_endarg+n, WS (this), N_WS (this) * sizeof(p_wchar2));
@@ -1028,10 +1028,9 @@ static void html_add_entity(INT32 args)
 static void html_add_quote_tag(INT32 args)
 {
   int remove;
-  struct pike_string *name, *end;
+  struct pike_string *name;
   struct pike_string *prefix;
   struct svalue *val;
-  struct svalue cb;
   ONERROR uwp;
 
   check_all_args("add_quote_tag",args,BIT_STRING,

@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.50 2001/07/01 21:53:37 mast Exp $
+**!	$Id: colors.c,v 1.51 2001/07/12 13:52:47 grubba Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.50 2001/07/01 21:53:37 mast Exp $");
+RCSID("$Id: colors.c,v 1.51 2001/07/12 13:52:47 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -768,7 +768,7 @@ static void image_color_cast(INT32 args)
 
 static void image_color__sprintf(INT32 args)
 {
-   int prec,n,x;
+   int prec,x;
 
    if (args<2)
       SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
@@ -1356,7 +1356,7 @@ static void image_get_color(INT32 args)
 	 if (sp[-1].u.string->len>(ptrdiff_t)strlen(callables[n]) &&
 	     memcmp(sp[-1].u.string->str,callables[n],strlen(callables[n]))==0)
 	 {
-	    push_int(DO_NOT_WARN(strlen(callables[n])));
+	    push_int(DO_NOT_WARN((INT32)strlen(callables[n])));
 	    push_int(1000000);
 	    f_index(3);
 	    image_get_color(1);
@@ -1402,8 +1402,6 @@ static void image_get_color(INT32 args)
 
 static void image_guess_color(INT32 args)
 {
-   struct svalue s;
-
    if (args!=1 && sp[-args].type!=T_STRING) 
       bad_arg_error("Image.Color->guess",sp-args,args,0,"",sp-args,
 		"Bad arguments to Image.Color->guess()\n");
@@ -1443,8 +1441,6 @@ static void image_colors_index(INT32 args)
 
 static void image_make_color(INT32 args)
 {
-   struct svalue s;
-
    if (args==1 && sp[-args].type==T_STRING) 
    {
       image_get_color(args);
@@ -1683,9 +1679,6 @@ static void image_colors_values(INT32 args)
 
 void init_image_colors(void)
 {
-   struct program *prg;
-   struct pike_string *str;
-
    str_array=make_shared_string("array");
    str_string=make_shared_string("string");
    str_r=make_shared_string("r");

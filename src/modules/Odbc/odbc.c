@@ -1,5 +1,5 @@
 /*
- * $Id: odbc.c,v 1.24 2000/12/05 21:08:30 per Exp $
+ * $Id: odbc.c,v 1.25 2001/07/12 13:59:49 grubba Exp $
  *
  * Pike interface to ODBC compliant databases.
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc.c,v 1.24 2000/12/05 21:08:30 per Exp $");
+RCSID("$Id: odbc.c,v 1.25 2001/07/12 13:59:49 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -137,8 +137,6 @@ static void clean_last_error(void)
 
 static void init_odbc_struct(struct object *o)
 {
-  RETCODE code;
-
   PIKE_ODBC->hdbc = SQL_NULL_HDBC;
   PIKE_ODBC->affected_rows = 0;
   PIKE_ODBC->flags = 0;

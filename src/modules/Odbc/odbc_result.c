@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.24 2000/12/01 08:10:15 hubbe Exp $
+ * $Id: odbc_result.c,v 1.25 2001/07/12 14:00:51 grubba Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.24 2000/12/01 08:10:15 hubbe Exp $");
+RCSID("$Id: odbc_result.c,v 1.25 2001/07/12 14:00:51 grubba Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -307,7 +307,7 @@ static void f_execute(INT32 args)
 
   odbc_check_error("odbc_result->execute", "Query failed",
 		   SQLExecDirect(hstmt, (unsigned char *)q->str,
-				 DO_NOT_WARN(q->len)),
+				 DO_NOT_WARN((SQLINTEGER)(q->len))),
 		   NULL);
 
   odbc_check_error("odbc_result->execute", "Couldn't get the number of fields",

@@ -254,13 +254,11 @@ static INLINE int my_abs(int a) { return (a<0)?-a:a; }
 
 void image_make_ascii(INT32 args)
 {
-  struct object *o[4];
   struct image *img[4],*this;
   INT32 xchar_size=0; 
   INT32 ychar_size=0;
   INT32 tlevel=0;
-  rgb_group *s1,*s2,*s3,*s0;
-  int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max,sum0,sum1,sum2,sum3;
+  int i, x, y,xy=0,y2=0, xmax=0,ymax=0,max;
   struct pike_string *s;
 
   if (!THIS->img) { Pike_error("Called Image.Image object is not initialized\n");;  return; }
@@ -472,9 +470,12 @@ static INLINE rgb_group _pixel_apply_max(struct image *img,
       for (yp=y-by,j=0; j<height; j++,yp++)
 	 if (xp>=0 && xp<img->xsize && yp>=0 && yp<img->ysize)
 	 {
-	    r=MAXIMUM(r, matrix[i+j*width].r*img->img[xp+yp*img->xsize].r);
-	    g=MAXIMUM(g, matrix[i+j*width].g*img->img[xp+yp*img->xsize].g);
-	    b=MAXIMUM(b, matrix[i+j*width].b*img->img[xp+yp*img->xsize].b);
+	    r = DOUBLE_TO_INT(MAXIMUM(r, matrix[i+j*width].r *
+				      img->img[xp+yp*img->xsize].r));
+	    g = DOUBLE_TO_INT(MAXIMUM(g, matrix[i+j*width].g *
+				      img->img[xp+yp*img->xsize].g));
+	    b = DOUBLE_TO_INT(MAXIMUM(b, matrix[i+j*width].b *
+				      img->img[xp+yp*img->xsize].b));
 #ifdef MATRIX_DEBUG
 	    fprintf(stderr,"%d,%d %d,%d->%d,%d,%d\n",
 		    i,j,xp,yp,
@@ -482,9 +483,9 @@ static INLINE rgb_group _pixel_apply_max(struct image *img,
 		    img->img[x+i+(y+j)*img->xsize].g,
 		    img->img[x+i+(y+j)*img->xsize].b);
 #endif
-	    sumr=MAXIMUM(sumr, matrix[i+j*width].r);
-	    sumg=MAXIMUM(sumg, matrix[i+j*width].g);
-	    sumb=MAXIMUM(sumb, matrix[i+j*width].b);
+	    sumr = DOUBLE_TO_INT(MAXIMUM(sumr, matrix[i+j*width].r));
+	    sumg = DOUBLE_TO_INT(MAXIMUM(sumg, matrix[i+j*width].g));
+	    sumb = DOUBLE_TO_INT(MAXIMUM(sumb, matrix[i+j*width].b));
 	 }
    if (sumr)
      res.r = DOUBLE_TO_COLORTYPE(testrange(default_rgb.r + r/(sumr * div)));
@@ -699,20 +700,20 @@ void image_apply_max(INT32 args)
 	 {
 	    struct svalue s3;
 	    s3=s2.u.array->item[0];
-	    if (s3.type==T_INT) matrix[j+i*width].r=s3.u.integer; 
+	    if (s3.type==T_INT) matrix[j+i*width].r = (float)s3.u.integer; 
 	    else matrix[j+i*width].r=0;
 
 	    s3=s2.u.array->item[1];
-	    if (s3.type==T_INT) matrix[j+i*width].g=s3.u.integer;
+	    if (s3.type==T_INT) matrix[j+i*width].g = (float)s3.u.integer;
 	    else matrix[j+i*width].g=0;
 
 	    s3=s2.u.array->item[2];
-	    if (s3.type==T_INT) matrix[j+i*width].b=s3.u.integer; 
+	    if (s3.type==T_INT) matrix[j+i*width].b = (float)s3.u.integer; 
 	    else matrix[j+i*width].b=0;
 	 }
 	 else if (s2.type==T_INT)
 	    matrix[j+i*width].r=matrix[j+i*width].g=
-	       matrix[j+i*width].b=s2.u.integer;
+	       matrix[j+i*width].b = (float)s2.u.integer;
 	 else
 	    matrix[j+i*width].r=matrix[j+i*width].g=
 	       matrix[j+i*width].b=0;

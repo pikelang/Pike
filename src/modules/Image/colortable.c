@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.102 2000/12/05 21:08:24 per Exp $ */
+/* $Id: colortable.c,v 1.103 2001/07/12 13:48:11 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.102 2000/12/05 21:08:24 per Exp $
+**!	$Id: colortable.c,v 1.103 2001/07/12 13:48:11 grubba Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -17,10 +17,11 @@
 **! see also: Image, Image.Image, Image.Font, Image.GIF
 */
 
-#undef COLORTABLE_DEBUG
-#undef COLORTABLE_REDUCE_DEBUG
+/* #define COLORTABLE_DEBUG */
+/* #define COLORTABLE_REDUCE_DEBUG */
+/* #define CUBICLE_DEBUG */
 
-RCSID("$Id: colortable.c,v 1.102 2000/12/05 21:08:24 per Exp $");
+RCSID("$Id: colortable.c,v 1.103 2001/07/12 13:48:11 grubba Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -36,7 +37,7 @@ RCSID("$Id: colortable.c,v 1.102 2000/12/05 21:08:24 per Exp $");
 #include "mapping.h"
 #include "threads.h"
 #include "builtin_functions.h"
-#include "../../pike_error.h"
+#include "pike_error.h"
 #include "module_support.h"
 #include "operators.h"
 #include "dmalloc.h"
@@ -313,7 +314,9 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    rgbd_group newpos1,newpos2;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s reduce_recurse %lx,%lx, %d,%d\n",level,"",(unsigned long)src,(unsigned long)dest,src_size,target_size);
+   fprintf(stderr, "COLORTABLE%*s reduce_recurse %lx,%lx, %ld,%ld\n",
+	   level, "", (unsigned long)src, (unsigned long)dest,
+	   (long)src_size, (long)target_size);
 #if 0
    stderr_print_entries(src,src_size);
 #endif
@@ -350,23 +353,26 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	    
 	    for (i=0; i<src_size; i++)
 	    {
-	       size_t mul=src[i].weight;
+	       nct_weight_t mul=src[i].weight;
 	       
-	       sum.r+=src[i].color.r*mul;
-	       sum.g+=src[i].color.g*mul;
-	       sum.b+=src[i].color.b*mul;
-	       tot+=mul;
+	       sum.r += DO_NOT_WARN((INT32)(src[i].color.r*mul));
+	       sum.g += DO_NOT_WARN((INT32)(src[i].color.g*mul));
+	       sum.b += DO_NOT_WARN((INT32)(src[i].color.b*mul));
+	       tot += mul;
 	    }
 	    
-	    dest->color.r = DO_NOT_WARN(sum.r/tot);
-	    dest->color.g = DO_NOT_WARN(sum.g/tot);
-	    dest->color.b = DO_NOT_WARN(sum.b/tot);
+	    dest->color.r = DO_NOT_WARN((INT32)(sum.r/tot));
+	    dest->color.g = DO_NOT_WARN((INT32)(sum.g/tot));
+	    dest->color.b = DO_NOT_WARN((INT32)(sum.b/tot));
 	    dest->weight = tot;
 	    dest->no = -1;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-	    fprintf(stderr,"COLORTABLE%*s sum=%d,%d,%d tot=%d\n",level,"",sum.r,sum.g,sum.b,tot);
-	    fprintf(stderr,"COLORTABLE%*s dest=%d,%d,%d weight=%d no=%d\n",level,"",dest->color.r,dest->color.g,dest->color.b,dest->weight,dest->no);
+	    fprintf(stderr, "COLORTABLE%*s sum=%d,%d,%d tot=%ld\n",
+		    level, "", sum.r, sum.g, sum.b, (unsigned long)tot);
+	    fprintf(stderr, "COLORTABLE%*s dest=%d,%d,%d weight=%d no=%d\n",
+		    level, "", dest->color.r, dest->color.g, dest->color.b,
+		    dest->weight, dest->no);
 #endif
 	    break;
          case NCT_REDUCE_WEIGHT:
@@ -382,14 +388,21 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 	       tot+=src[i].weight;
 	    }
     
-	    dest->color.r=max.r*position.r+min.r*(1-position.r);
-	    dest->color.g=max.g*position.g+min.g*(1-position.g);
-	    dest->color.b=max.b*position.b+min.b*(1-position.b);
+	    dest->color.r =
+	      DO_NOT_WARN((COLORTYPE)(max.r*position.r+min.r*(1-position.r)));
+	    dest->color.g =
+	      DO_NOT_WARN((COLORTYPE)(max.g*position.g+min.g*(1-position.g)));
+	    dest->color.b =
+	      DO_NOT_WARN((COLORTYPE)(max.b*position.b+min.b*(1-position.b)));
 	    dest->weight=tot;
 	    dest->no=-1;
 #ifdef COLORTABLE_REDUCE_DEBUG
-	    fprintf(stderr,"COLORTABLE%*s min=%d,%d,%d max=%d,%d,%d position=%g,%g,%g\n",level,"",min.r,min.g,min.b,max.r,max.g,max.b,position.r,position.g,position.b);
-	    fprintf(stderr,"COLORTABLE%*s dest=%d,%d,%d weight=%d no=%d\n",level,"",dest->color.r,dest->color.g,dest->color.b,dest->weight,dest->no);
+	    fprintf(stderr, "COLORTABLE%*s min=%d,%d,%d max=%d,%d,%d position=%g,%g,%g\n",
+		    level, "", min.r, min.g, min.b, max.r, max.g, max.b,
+		    position.r, position.g, position.b);
+	    fprintf(stderr, "COLORTABLE%*s dest=%d,%d,%d weight=%d no=%d\n",
+		    level, "", dest->color.r, dest->color.g, dest->color.b,
+		    dest->weight, dest->no);
 #endif
 	    break;
       }
@@ -420,23 +433,25 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       size_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
-      sum.r+=src[i].color.r*mul;
-      sum.g+=src[i].color.g*mul;
-      sum.b+=src[i].color.b*mul;
-      tot+=mul;
+      sum.r += DO_NOT_WARN((INT32)(src[i].color.r*mul));
+      sum.g += DO_NOT_WARN((INT32)(src[i].color.g*mul));
+      sum.b += DO_NOT_WARN((INT32)(src[i].color.b*mul));
+      tot += mul;
    }
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s sum=%d,%d,%d\n",level,"",sum.r,sum.g,sum.b);
+   fprintf(stderr, "COLORTABLE%*s sum=%d,%d,%d\n",
+	   level, "", sum.r, sum.g, sum.b);
 #endif
 
    g=(sum.r*sf.r+sum.g*sf.g+sum.b*sf.b)/tot;
-   sum.r/=tot;
-   sum.g/=tot;
-   sum.b/=tot;
+   sum.r = DO_NOT_WARN((INT32)(sum.r/tot));
+   sum.g = DO_NOT_WARN((INT32)(sum.g/tot));
+   sum.b = DO_NOT_WARN((INT32)(sum.b/tot));
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s mean=%d,%d,%d,%ld tot=%ld\n",level,"",sum.r,sum.g,sum.b,g,tot);
+   fprintf(stderr, "COLORTABLE%*s mean=%d,%d,%d,%ld tot=%ld\n",
+	   level, "", sum.r, sum.g, sum.b, g, tot);
 #endif
 
    for (i=0; i<src_size; i++)
@@ -444,16 +459,17 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       size_t mul;
       if ((mul=src[i].weight)==WEIGHT_NEEDED)
 	 mul=mmul;
-      diff.r+=(sq(src[i].color.r-(INT32)sum.r)/8)*mul;
-      diff.g+=(sq(src[i].color.g-(INT32)sum.g)/8)*mul;
-      diff.b+=(sq(src[i].color.b-(INT32)sum.b)/8)*mul;
+      diff.r += DO_NOT_WARN((INT32)((sq(src[i].color.r-(INT32)sum.r)/8)*mul));
+      diff.g += DO_NOT_WARN((INT32)((sq(src[i].color.g-(INT32)sum.g)/8)*mul));
+      diff.b += DO_NOT_WARN((INT32)((sq(src[i].color.b-(INT32)sum.b)/8)*mul));
       gdiff+=(sq(src[i].color.r*sf.r+src[i].color.g*sf.g+
 		 src[i].color.b*sf.b-g)/8)*mul;
       tot+=mul;
    }
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s pure diff=%d,%d,%d,%ld sort=?\n",level,"",diff.r,diff.g,diff.b,gdiff);
+   fprintf(stderr, "COLORTABLE%*s pure diff=%d,%d,%d,%ld sort=?\n",
+	   level, "", diff.r, diff.g, diff.b, gdiff);
 #endif
 
    diff.r*=DIFF_R_MULT;
@@ -472,7 +488,8 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       else 
 	 if (diff.b > gdiff) st=SORT_B; else st=SORT_GREY;
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s diff=%d,%d,%d,%ld sort=%d\n",level,"",diff.r,diff.g,diff.b,gdiff,st);
+   fprintf(stderr, "COLORTABLE%*s diff=%d,%d,%d,%ld sort=%d\n",
+	   level, "", diff.r, diff.g, diff.b, gdiff, st);
 #endif
 
    /* half-sort */
@@ -521,7 +538,7 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s left=%d right=%d\n",level,"",left,right);
+   fprintf(stderr, "COLORTABLE%*s left=%d right=%d\n", level, "", left, right);
 #endif
 
    if (left==0) left++;
@@ -558,7 +575,9 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
    else if (i>left) i=left;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s try i=%d/%d - %d+%d=%d from %d+%d=%d\n",level+1,"",i,target_size,i,target_size-i,target_size,left,src_size-left,src_size);
+   fprintf(stderr, "COLORTABLE%*s try i=%d/%d - %d+%d=%d from %d+%d=%d\n",
+	   level+1, "", i, target_size, i, target_size-i, target_size, left,
+	   src_size-left, src_size);
 #endif
 
    n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type); 
@@ -566,7 +585,8 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 		    target_size-n,level+2,sf,newpos2,space,type);
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-   fprintf(stderr,"COLORTABLE%*s ->%d+%d=%d (tried for %d+%d=%d)\n",level,"",n,m,n+m,i,target_size-i,target_size);
+   fprintf(stderr, "COLORTABLE%*s ->%d+%d=%d (tried for %d+%d=%d)\n",
+	   level, "", n, m, n+m, i, target_size-i, target_size);
 #endif
 
    if (m>target_size-n && n<=i) /* right is too big, try again */
@@ -578,7 +598,9 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
       else if (i>left) i=left;
 
 #ifdef COLORTABLE_REDUCE_DEBUG
-      fprintf(stderr,"COLORTABLE%*s try i=%d/%d - %d+%d=%d from %d+%d=%d\n",level+1,"",i,target_size,i,target_size-i,target_size,left,src_size-left,src_size);
+      fprintf(stderr, "COLORTABLE%*s try i=%d/%d - %d+%d=%d from %d+%d=%d\n",
+	      level+1, "", i, target_size, i, target_size-i, target_size,
+	      left, src_size-left, src_size);
 #endif
 
       n=reduce_recurse(src,dest,left,i,level+2,sf,newpos1,space,type);
@@ -591,7 +613,8 @@ static ptrdiff_t reduce_recurse(struct nct_flat_entry *src,
 			     target_size-n,level+2,sf,newpos2,space,type);
       }
 #ifdef COLORTABLE_REDUCE_DEBUG
-      fprintf(stderr,"COLORTABLE%*s ->%d+%d=%d (retried for %d+%d=%d)\n",level,"",n,m,n+m,i,target_size-i,target_size);
+      fprintf(stderr, "COLORTABLE%*s ->%d+%d=%d (retried for %d+%d=%d)\n",
+	      level, "", n, m, n+m, i, target_size-i, target_size);
 #endif
    }
 
@@ -605,6 +628,8 @@ static struct nct_flat _img_reduce_number_of_colors(struct nct_flat flat,
    ptrdiff_t i,j;
    struct nct_flat_entry *newe;
    rgbd_group pos={0.5,0.5,0.5},space={0.5,0.5,0.5};
+
+   if ((size_t)flat.numentries <= (size_t)maxcols) return flat;
 
    newe=malloc(sizeof(struct nct_flat_entry)*flat.numentries);
    if (!newe) { return flat; }
@@ -1346,7 +1371,7 @@ rerun_rehash_add_1:
       }
 
       mark->no=en->no;
-      mark->pixels+=en->weight;
+      mark->pixels += DO_NOT_WARN((unsigned long)en->weight);
 
       i--;
       en++;
@@ -1397,7 +1422,7 @@ rerun_rehash_add_2:
       else
       {
 	 if (!mark->pixels) mark->no=no++;
-	 mark->pixels+=en->weight;
+	 mark->pixels += DO_NOT_WARN((unsigned long)en->weight);
       }
 
       i--;
@@ -1528,7 +1553,7 @@ rerun_rehash_add_1:
       }
 
       mark->no=en->no;
-      mark->pixels+=en->weight;
+      mark->pixels += DO_NOT_WARN((unsigned long)en->weight);
 
       i--;
       en++;
@@ -1648,9 +1673,12 @@ static void dither_floyd_steinberg_got(struct nct_dither *dith,
    rgbd_group *er=dith->u.floyd_steinberg.errors;
    rgbd_group err;
 
-   err.r = DO_NOT_WARN((float)(DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r))+er[rowpos].r+0.5);
-   err.g = DO_NOT_WARN((float)(DOUBLE_TO_INT(d.g)-DOUBLE_TO_INT(s.g))+er[rowpos].g+0.5);
-   err.b = DO_NOT_WARN((float)(DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b))+er[rowpos].b+0.5);
+   err.r = DO_NOT_WARN((float)((DOUBLE_TO_INT(d.r)-DOUBLE_TO_INT(s.r)) +
+			       er[rowpos].r+0.5));
+   err.g = DO_NOT_WARN((float)((DOUBLE_TO_INT(d.g)-DOUBLE_TO_INT(s.g)) +
+			       er[rowpos].g+0.5));
+   err.b = DO_NOT_WARN((float)((DOUBLE_TO_INT(d.b)-DOUBLE_TO_INT(s.b)) +
+			       er[rowpos].b+0.5));
  
    ner[rowpos].r+=err.r*dith->u.floyd_steinberg.down;
    ner[rowpos].g+=err.g*dith->u.floyd_steinberg.down;
@@ -1745,14 +1773,14 @@ static void dither_floyd_steinberg_firstline(struct nct_dither *dith,
 					     int *cd)
 {
    rgbd_group *er;
-   int i,j;
+   int i;
 
    er=dith->u.floyd_steinberg.errors;
    for (i=0; i<dith->rowlen; i++)
    {
-      er[i].r = DO_NOT_WARN((my_rand()&65535)*(1.0/65536)-0.49999);
-      er[i].g = DO_NOT_WARN((my_rand()&65535)*(1.0/65536)-0.49999);
-      er[i].b = DO_NOT_WARN((my_rand()&65535)*(1.0/65536)-0.49999);
+      er[i].r = DO_NOT_WARN((float)((my_rand()&65535)*(1.0/65536)-0.49999));
+      er[i].g = DO_NOT_WARN((float)((my_rand()&65535)*(1.0/65536)-0.49999));
+      er[i].b = DO_NOT_WARN((float)((my_rand()&65535)*(1.0/65536)-0.49999));
    }
 
    er=dith->u.floyd_steinberg.nexterrors;
@@ -1796,7 +1824,8 @@ static rgbl_group dither_randomgrey_encode(struct nct_dither *dith,
 {
    rgbl_group rgb;
    int i;
-   int err=-(my_rand()%(dith->u.randomcube.r*2-1))+dith->u.randomcube.r+1;
+   int err = -(int)((my_rand()%(dith->u.randomcube.r*2-1))+
+		    dith->u.randomcube.r+1);
    i=(int)(s.r+err); 
    rgb.r=i<0?0:(i>255?255:i); 			       
    i=(int)(s.g+err); 
@@ -1882,9 +1911,17 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
    switch (dith->type=nct->dither_type)
    {
       case NCTD_NONE:
+#ifdef COLORTABLE_DEBUG
+	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
+		 "NONE\n");
+#endif /* COLORTABLE_DEBUG */
 	 return 1;
 
       case NCTD_FLOYD_STEINBERG:
+#ifdef COLORTABLE_DEBUG
+	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
+		 "FLOYD_STEINBERG\n");
+#endif /* COLORTABLE_DEBUG */
 	 dith->u.floyd_steinberg.errors=malloc(rowlen*sizeof(rgbd_group));
 	 if (!dith->u.floyd_steinberg.errors) return 0;
 	 dith->u.floyd_steinberg.nexterrors=malloc(rowlen*sizeof(rgbd_group));
@@ -1906,6 +1943,10 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 return 1;
 
       case NCTD_RANDOMCUBE:
+#ifdef COLORTABLE_DEBUG
+	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
+		 "RANDOMCUBE\n");
+#endif /* COLORTABLE_DEBUG */
 	 dith->u.randomcube=THIS->du.randomcube;
 
 	 dith->encode=dither_randomcube_encode;
@@ -1913,6 +1954,10 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 return 1;
 
       case NCTD_RANDOMGREY:
+#ifdef COLORTABLE_DEBUG
+	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
+		 "RANDOMGREY\n");
+#endif /* COLORTABLE_DEBUG */
 	 dith->u.randomcube=THIS->du.randomcube;
 
 	 dith->encode=dither_randomgrey_encode;
@@ -1920,6 +1965,10 @@ int image_colortable_initiate_dither(struct neo_colortable *nct,
 	 return 1;
 
       case NCTD_ORDERED:
+#ifdef COLORTABLE_DEBUG
+	 fprintf(stderr, "COLORTABLE image_colortable_initiate_dither: "
+		 "ORDERED\n");
+#endif /* COLORTABLE_DEBUG */
 	 /* copy it all */
 	 dith->u.ordered=nct->du.ordered;
 
@@ -3049,9 +3098,9 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
    int rm1,gm1,bm1;
    int rm2,gm2,bm2;
 
-#if 0
-   fprintf(stderr,"%*s_cub_add_cs_full_recur #%02x%02x%02x, %d,%d,%d, %d,%d,%d %d,%d,%d,%d->",
-	   rlvl,"",
+#ifdef CUBICLE_DEBUG
+   fprintf(stderr," _cub_add_cs_full_recur #%02x%02x%02x, %d,%d,%d, %d,%d,%d %d,%d,%d,%d->",
+	   /* rlvl,"", */
 	   rp,gp,bp,rd1,gd1,bd1,rd2,gd2,bd2,*a,*b,*c,*d);
 #endif
 
@@ -3060,7 +3109,7 @@ static void _cub_add_cs_full_recur(int **pp,int *i,int *p,
    if (*c==-1) *c=_cub_find_full_add(pp,i,p,n,fe,rp+rd1,gp+gd1,bp+bd1,sf); /* 1,0 */
    if (*d==-1) *d=_cub_find_full_add(pp,i,p,n,fe,rp+rd2+rd1, gp+gd2+gd1,bp+bd2+bd1,sf); /* 1,1 */
 
-#if 0
+#ifdef CUBICLE_DEBUG
    fprintf(stderr,"%d,%d,%d,%d\n",*a,*b,*c,*d);
 #endif
 
@@ -3100,7 +3149,7 @@ static INLINE void _cub_add_cs(struct neo_colortable *nct,
 			       int rd2,int gd2,int bd2)
 {
    ptrdiff_t a=-1,b=-1,c=-1,d=-1;
-#if 0
+#ifdef CUBICLE_DEBUG
    fprintf(stderr,
 	   " _cub_add_cs %d,%d,%d %d,%d,%d, %d,%d,%d, %d,%d,%d, %d,%d,%d\n",
 	   ri,gi,bi,red,green,blue,rp,gp,bp,rd1,gd1,bd1,rd2,gd2,bd2);
@@ -3109,7 +3158,7 @@ static INLINE void _cub_add_cs(struct neo_colortable *nct,
    if (ri<0||gi<0||bi<0||ri>=red||gi>=green||bi>=blue) 
       return; /* no, colorspace ends here */
 
-#if 0
+#ifdef CUBICLE_DEBUG
    if (nct->lu.cubicles.cubicles[ri+gi*red+bi*red*green].index) 
       /* use the fact that the cube besides is known */
       _cub_add_cs_2cub_recur(i,p,
@@ -3153,7 +3202,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    gmin=(g*256)/green; gmax=((g+1)*256)/green-1;
    bmin=(b*256)/blue;  bmax=((b+1)*256)/blue-1;
 
-#if 0
+#ifdef CUBICLE_DEBUG
    fprintf(stderr,"build cubicle %d,%d,%d #%02x%02x%02x-#%02x%02x%02x...",
 	   r,g,b,rmin,gmin,bmin,rmax-1,gmax-1,bmax-1);
 #endif
@@ -3183,7 +3232,7 @@ static INLINE void _build_cubicle(struct neo_colortable *nct,
    _cub_add_cs(nct,cub,&pp,&i,p,r,g+1,b,red,green,blue,rmin,gmax,bmin,rmax-rmin,0,0,0,0,bmax-bmin);
    _cub_add_cs(nct,cub,&pp,&i,p,r,g,b+1,red,green,blue,rmin,gmin,bmax,rmax-rmin,0,0,0,gmax-gmin,0);
 
-#if 0
+#ifdef CUBICLE_DEBUG
    fprintf(stderr," size=%d\n",i);
 
    do

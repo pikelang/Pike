@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: parser.c,v 1.11 2000/12/01 08:10:18 hubbe Exp $");
+RCSID("$Id: parser.c,v 1.12 2001/07/12 14:02:16 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -95,7 +95,6 @@ static struct
 
 static void parser_magic_index(INT32 args)
 {
-   struct svalue tmp;
    int i;
 
    if (args!=1) 

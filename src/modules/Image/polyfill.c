@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.37 2001/03/26 20:54:53 grubba Exp $");
+RCSID("$Id: polyfill.c,v 1.38 2001/07/12 13:51:15 grubba Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -40,7 +40,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.37 2001/03/26 20:54:53 grubba Exp $
+**!	$Id: polyfill.c,v 1.38 2001/07/12 13:51:15 grubba Exp $
 **! class Image
 */
 
@@ -579,7 +579,6 @@ static void polyfill_some(struct image *img,
 	       VY(c,c->xmin)>VY(c->next,c->xmin)))
 	 {
 	    struct line_list *l1;
-	    struct line_list *pll;
 	    /* resort */
 #ifdef POLYDEBUG
 	    fprintf(stderr,"  !!! resort !!!\n");

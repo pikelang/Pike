@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pdf_module.c,v 1.8 2001/03/28 15:07:40 grubba Exp $");
+RCSID("$Id: pdf_module.c,v 1.9 2001/07/12 14:01:45 grubba Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -106,7 +106,6 @@ static inline long TO_LONG(ptrdiff_t x)
 
 static void pdf_magic_index(INT32 args)
 {
-   struct svalue tmp;
    int i;
 
    if (args!=1) 

@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.27 2001/05/01 22:01:06 grubba Exp $ */
+/* $Id: math_matrix.c,v 1.28 2001/07/12 13:59:15 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -492,7 +492,6 @@ static void matrix_transpose(INT32 args)
 
 static void matrix_norm(INT32 args)
 {
-   struct matrix_storage *mx;
    FTYPE z,*s;
    int n=THIS->xsize*THIS->ysize;
 
@@ -512,7 +511,6 @@ static void matrix_norm(INT32 args)
 
 static void matrix_norm2(INT32 args)
 {
-   struct matrix_storage *mx;
    FTYPE z,*s;
    int n=THIS->xsize*THIS->ysize;
 
@@ -788,9 +786,7 @@ static void matrix_cross(INT32 args)
 {
    struct matrix_storage *mx=NULL;
    struct matrix_storage *dmx;
-   int n,i,j,k,m,p;
-   FTYPE *a,*b,*d,*st;
-   FTYPE z;
+   FTYPE *a,*b,*d;
 
    if (args<1)
       SIMPLE_TOO_FEW_ARGS_ERROR("matrix->`×",1);
