@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.69 2000/04/25 09:32:45 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.70 2000/04/30 23:15:16 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -383,6 +383,7 @@ static int do_docode2(node *n,int flags)
 
     if(match_types(CAR(n)->type,array_type_string) ||
        match_types(CAR(n)->type,string_type_string) ||
+       match_types(CAR(n)->type,mapping_type_string) ||
        match_types(CAR(n)->type,object_type_string))
     {
       code_expression(CDR(n), 0, "assignment");

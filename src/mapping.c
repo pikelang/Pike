@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.80 2000/04/27 02:13:28 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.81 2000/04/30 23:15:16 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1363,8 +1363,15 @@ struct mapping *add_mappings(struct svalue *argp, INT32 args)
 #endif
 
   /* FIXME: need locking! */
-  ret=allocate_mapping(MAP_SLOTS(e));
-  for(d=0;d<args;d++)
+  if(argp[0].u.mapping->refs == 1)
+  {
+    ret=argp[0].u.mapping;
+    d=1;
+  }else{
+    ret=allocate_mapping(MAP_SLOTS(e));
+    d=0;
+  }
+  for(;d<args;d++)
     MAPPING_LOOP(argp[d].u.mapping)
       mapping_insert(ret, &k->ind, &k->val);
   return ret;
