@@ -8,6 +8,8 @@
 //!       If not supplied, it should default to
 //!       @tt{ Search.Grammar.getDefaultFields() @}
 //!   @endmapping
+import "../../";
+
 static void create(void|mapping(string:mixed) options) {}
 
 Search.Grammar.ParseNode parse(string query) {}

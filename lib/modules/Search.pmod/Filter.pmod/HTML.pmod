@@ -1,5 +1,6 @@
 // Filter for text/html
 // Copyright © 2000,2001 Roxen IS.
+import "../../";
 
 inherit Search.Filter.Base;
 

@@ -1,3 +1,5 @@
+import "..";
+
 static array(int) field_ranking;
 static array(int) proximity_ranking;
 static int cutoff;

@@ -1,3 +1,5 @@
+import "../../";
+
 class ParseNode {
   string op = "<node>";
   array(ParseNode) children = ({});

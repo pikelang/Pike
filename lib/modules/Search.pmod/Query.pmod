@@ -1,4 +1,4 @@
-static mapping blob_done=([]);
+import "..";
 
 static function(int:string) blobfeeder(Search.Database.Base db, array word_ids)
 {

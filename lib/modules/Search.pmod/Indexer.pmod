@@ -1,3 +1,5 @@
+import "../";
+
 void index_document(Search.Database.Base db,
 		    string|Standards.URI uri,
 		    void|string language,

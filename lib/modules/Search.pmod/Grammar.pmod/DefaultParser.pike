@@ -1,3 +1,5 @@
+import "../../";
+
 static inherit Search.Grammar.AbstractParser;
 static inherit Search.Grammar.Lexer;
 static private inherit "./module.pmod";
