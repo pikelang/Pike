@@ -1,0 +1,108 @@
+Perl 
+      
+Perl 5 is a remarkably efficient, compact, and terse interpreted
+scripting language optimized for processing text files. Perl was
+written by the amazing Larry Wall (who, it sometimes seems, also wrote
+everything else). Aficionados of Sed and Awk and other UNIX tools
+often find Perl elegant, easy to read, and easy to modify, but many
+others don't. Below is a ``matrix multiplication'' function in Perl
+posted to a number of Internet newsgroups by Tom Christiansen:
+
+     sub mmult { my ($m1,$m2) = @_;
+         my ($m1rows,$m1cols) = (scalar @$m1, scalar @{$m1->[0]});
+         my ($m2rows,$m2cols) = (scalar @$m2, scalar @{$m2->[0]});
+         unless ($m1cols == $m2rows) {  # raise exception, actually
+             die "IndexError: matrices don't match: $m1cols != $m2rows";
+         }
+         my $result = [];
+         my ($i, $j, $k);
+         for $i (0 .. ($m1rows - 1 )) {
+             for $j (0 .. ($m2cols - 1 )) {
+                 for $k ( 0 .. ($m1cols - 1)) {
+                     $result->[$i]->[$j] += $m1->[$i]->[$k] * $m2->[$k]->[$j];
+                 }
+             }
+         }
+         return $result;
+     }
+
+(By the way, I believe this is an excellent example of good Perl style.)
+
+For comparison Roland Giersig translates the matrix multiplication
+function into Tcl as follows:
+
+ proc mmult {m1 m2} {
+     set m2rows [llength $m2];
+     set m2cols [llength [lindex $m2 0]];
+     set m1rows [llength $m1];
+     set m1cols [llength [lindex $m1 0]];
+     if { $m1cols != $m2rows || $m1rows != $m2cols } {
+         error "Matrix dimensions do not match!";
+     }
+     foreach row1 $m1 {
+        set row {};
+         for { set i 0 } { $i < $m2cols } { incr i } {
+             set j 0;
+             set element 0;
+             foreach row2 $m2 {
+                 incr element [expr [lindex $row1 $j] * [lindex $row2 $i]];
+                 incr j;
+             }
+             lappend row $element;
+         }
+         lappend result $row;
+     }
+     return $result;
+ }
+
+
+And here is a roughly analogous function in Python:
+
+(I didn't write this and think there's a missing "matrices don't
+match"-check)
+
+
+ def mmult(m1,m2):
+     m2rows,m2cols = len(m2),len(m2[0])
+     m1rows,m1cols = len(m1),len(m1[0])
+     if m1cols != m2rows: raise IndexError, "matrices don't match"
+     result = [ None ] * m1rows
+     for i in range( m1rows ):
+         result[i] = [0] * m2cols
+         for j in range( m2cols ):
+            for k in range( m1cols ):
+               result[i][j] = result[i][j] + m1[i][k] * m2[k][j]
+     return result
+
+
+And here is the Pike-function:
+
+(Note: This is best done in Pike using matrix objects with a
+`*-method. This is just for comparison.)
+
+
+#define matrix array(array(int|float|object))
+matrix mmult(matrix m1, matrix m2)
+{
+  int m2rows=sizeof(m2), m2cols=sizeof(m2[0]);
+  int m1rows=sizeof(m1), m1cols=sizeof(m1[0]);
+  if ((m1cols!=m2rows)||(m2cols!=m1rows))
+    return 0;
+  matrix res=allocate(m1rows);
+  for(int i; i<m1rows; i++)
+    res[i]=allocate(m2cols);
+
+  for(int i; i<m1rows; i++)
+    for(int j; j<m2cols; j++)
+      res[i][j]=`+(@ Array.sum_arrays(`*, m1[i], column(m2, j))); 
+  return res;
+}
+
+
+
+
+//
+The first part of this text is taken from:
+http://www.unixworld.com/unixworld/archives/95/tutorial/005.html#Others
+och the Pike-part is written by Henrik "Hedda" Wallin, Idonex.
+ 

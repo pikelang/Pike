@@ -1,0 +1,24 @@
+Versions
+
+Pike X.Y[{a|b}Z][plW]
+
+X=Major number
+Y=Minor number
+Z=alpha/beta number
+W=patch level
+
+Examples:
+The first 0.5 beta:
+  Pike 0.5b1
+
+A bug is found and corrected:
+  Pike 0.5b1pl1
+
+Pike 0.5 is here! It's a very stable version without bugs...
+  Pike 0.5
+
+An other bug is corrected (shit happens):
+  Pike 0.5pl1
+
+The next version of Pike is released as an alpha:
+  Pike 0.6a1

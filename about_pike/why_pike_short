@@ -1,0 +1,59 @@
+Pike - why it's here and why it's gonna save the world
+
+The philosophy behind Pike is to create an environment for programming
+that makes it easy and fast to create powerful applications.  To
+accomplish this the language is made to be easy extendible with
+modules. This has resulted in many powerful modules included in this
+package and many more that are made but not yet have reached the
+stability that is necessary.
+
+This is the main arguments for Pike:
+ 
+1) It's free! (GPL-license)
+
+You and the ones that use your software never have to bother with
+paying for using Pike. The greatest think about this is that many
+hackers around the world will have access to Pike and therefore the
+language will never stop to evolve.
+
+2) C-like syntax. 
+
+If you already know C, it will not take long to learn Pike. The only
+thing that you have to learn is that everything is easier in Pike :-)
+
+3) Powerful data-types and object oriented
+
+When creating database or parsing applications powerful data-types like
+mappings, objects and even run-able Pike-programs will make you
+addicted to Pike. These data types are embedded in an environment with
+functions often found in various C-libs, but in Pike there are no
+pointers to obscure structs or 10 Mbyte core-dumps on your disc.
+
+4) Extendible
+
+It's fairly easy to extend Pike and write your own module. These
+modules are can be written i C to make them as fast as possible. This
+often has the effect that when a Pike-programmer has a wonderful
+module she/he shares it with the rest of the Pike-programmers and
+therefore the next-coming Pike applications will be smaller and more
+powerful.
+
+5) Gives you short and readable code
+
+Thanks to the magic functions, the data-types and all the modules a
+Pike program becomes shorter and therefore quicker to write, easier to
+debug and maintain.
+
+
+The drawbacks of Pike
+
+-1) No official GUI-module so far.
+
+-2) Not very fast for programs that can't take advantage of powerful
+Pike functions. However, most Pike-programs spend most of their time
+in these very optimized functions and are therefore often faster or
+just as fast as pure C-programs.
+
+-3) No Pike debugger.
+
+In this directory there are also some example Pike-programs.

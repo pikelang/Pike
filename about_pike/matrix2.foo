@@ -1,0 +1,43 @@
+import Array;
+#define matrix array(array(int|float|object))
+
+matrix mmult(matrix m1, matrix m2)
+{
+  int m2rows=sizeof(m2), m2cols=sizeof(m2[0]);
+  int m1rows=sizeof(m1), m1cols=sizeof(m1[0]);
+
+  if((m1cols!=m2rows)||(m2cols!=m1rows)) return 0;
+
+  matrix res=map(allocate(m1rows),
+		 lambda(int c, int r) {  return allocate(r);  }, m2cols);
+
+  for(int i; i<m1rows; i++)
+    for(int j; j<m2cols; j++)
+      res[i][j]=`+(@ Array.sum_arrays(`*, m1[i], column(m2, j))); 
+  return res;
+}
+
+// Using map cols indices etc. more extensively
+
+matrix mmult(matrix m1, matrix m2)
+{
+  int m2rows=sizeof(m2), m2cols=sizeof(m2[0]);
+  int m1rows=sizeof(m1), m1cols=sizeof(m1[0]);
+
+  if((m1cols!=m2rows)||(m2cols!=m1rows)) return 0;
+
+  return map(indices(allocate(m1rows)),
+	     lambda(int r, int c, array m1, array m2) { 
+	       return map(indices(allocate(c)), 
+			  lambda(int i, int j, array m1, array m2) {
+			    return `+(@Array.sum_arrays(`*,m1[i],column(m2,j)));
+			  }, r, m1, m2);
+	     },m2cols,m1,m2);
+}
+
+
+// With matrix objects
+
+#define matrix object(Matrix)|array(array(int|float|object))
+
+matrix mmult(matrix m1, matrix m2) { return m1 * m2; }

@@ -1,0 +1,17 @@
+This directory contains some information about Pike and stuff to show
+how great Pike is.
+
+why_pike_short is a short list of Pike-arguments
+why_pike_long is a long list of Pike-arguments
+
+The foo.pike (where foo is something else) programs are examples of
+Pike-code. Some of them can be used as programs (Maybe you have to
+change the first line to the correct path) but some of them are just
+code.
+
+foo.ppm is a picture used by the program draw_stuff.pike.
+
+perl_tcl_python_pike contains some code in Perl, Tcl, Python and Pike
+to show the general syntax differences.
+
+matrix2.foo is some more examples of matrixes in Pike.
