@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.590 2003/01/16 16:38:37 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.591 2003/01/20 14:14:33 marcus Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7881,9 +7881,12 @@ test_true(mappingp(all_constants()))
 test_eq(all_constants()["all_constants"],all_constants)
 
 // - all_threads
-test_true(arrayp(all_threads()))
-test_true(sizeof(all_threads()))
-test_true(objectp(all_threads()[0]))
+cond([[all_constants()->thread_create]],
+[[
+  test_true(arrayp(all_threads()))
+  test_true(sizeof(all_threads()))
+  test_true(objectp(all_threads()[0]))
+]])
 
 // - allocate
 test_equal(allocate(0),({}))
