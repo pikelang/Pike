@@ -1,5 +1,5 @@
 /*
- * $Id: udp.c,v 1.23 2001/06/06 13:40:52 grubba Exp $
+ * $Id: udp.c,v 1.24 2001/06/06 22:50:53 grubba Exp $
  */
 
 #define NO_PIKE_SHORTHAND
@@ -7,7 +7,7 @@
 
 #include "file_machine.h"
 
-RCSID("$Id: udp.c,v 1.23 2001/06/06 13:40:52 grubba Exp $");
+RCSID("$Id: udp.c,v 1.24 2001/06/06 22:50:53 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -152,6 +152,9 @@ static void udp_bind(INT32 args)
   struct sockaddr_in addr;
   int o;
   int fd,tmp;
+#if !defined(SOL_IP) && defined(HAVE_GETPROTOBYNAME)
+  static int ip_proto_num = -1;
+#endif /* !SOL_IP && HAVE_GETPROTOBYNAME */
 
   
   if(args < 1) Pike_error("Too few arguments to dumudp->bind()\n");
@@ -185,14 +188,32 @@ static void udp_bind(INT32 args)
     Pike_error("UDP.bind: setsockopt SO_REUSEADDR failed\n");
   }
 
-#if defined(IP_HDRINCL) && defined(SOL_IP)
+#ifndef SOL_IP
+#ifdef HAVE_GETPROTOBYNAME
+  if (ip_proto_num == -1) {
+    /* NOTE: getprotobyname(3N) is not MT-safe. */
+    struct protoent *proto = getprotobyname("ip");
+    if (!proto) {
+      /* No entry for IP, assume zero. */
+      ip_proto_num = 0;
+    } else {
+      ip_proto_num = proto->p_proto;
+    }
+  }
+#define SOL_IP ip_proto_num
+#else /* !HAVE_GETPROTOBYNAME */
+#define SOL_IP 0
+#endif /* HAVE_GETPROTOBYNAME */
+#endif /* SOL_IP */
+
+#ifdef IP_HDRINCL
   /*  From mtr-0.28:net.c: FreeBSD wants this to avoid sending
       out packets with protocol type RAW to the network. */
 
   if (THIS->type==SOCK_RAW && THIS->protocol==255 /* raw */)
      if(fd_setsockopt(fd, SOL_IP, IP_HDRINCL, (char *)&o, sizeof(int)))
 	Pike_error("UDP.bind: setsockopt IP_HDRINCL failed\n");
-#endif /* IP_HDRINCL && SOL_IP */
+#endif /* IP_HDRINCL */
 
   MEMSET((char *)&addr,0,sizeof(struct sockaddr_in));
 
@@ -752,12 +773,14 @@ void init_udp(void)
    add_integer_constant("HOPOPTS",0,0);  /* IPv6 Hop-by-Hop options.  */
    add_integer_constant("ICMP",1,0);     /* Internet Control Message Protocol.  */
    add_integer_constant("IGMP",2,0);     /* Internet Group Management Protocol. */
+   add_integer_constant("GGP", 3, 0);	 /* Gateway-Gateway Protocol.  */
    add_integer_constant("IPIP",4,0);     /* IPIP tunnels (older KA9Q tunnels use 94).  */
    add_integer_constant("TCP",6,0);      /* Transmission Control Protocol.  */
    add_integer_constant("EGP",8,0);      /* Exterior Gateway Protocol.  */
    add_integer_constant("PUP",12,0);     /* PUP protocol.  */
    add_integer_constant("UDP",17,0);     /* User Datagram Protocol.  */
    add_integer_constant("IDP",22,0);     /* XNS IDP protocol.  */
+   add_integer_constant("RDP", 27, 0);	 /* "Reliable Datagram" Protocol.  */
    add_integer_constant("TP",29,0);      /* SO Transport Protocol Class 4.  */
    add_integer_constant("IPV6",41,0);    /* IPv6 header.  */
    add_integer_constant("ROUTING",43,0); /* IPv6 routing header.  */
