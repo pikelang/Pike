@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.141 2001/01/19 14:06:07 mirar Exp $
+ * $Id: master.pike.in,v 1.142 2001/01/23 07:08:28 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -59,7 +59,7 @@ int is_absolute_path(string p)
 {
 #ifdef __NT__
   p=replace(p,"\\","/");
-  if(sscanf(p,"%[a-zA-Z]:",string s) && sizeof(s)==1)
+  if(sscanf(p,"%[a-zA-Z]:%*c",string s)==2 && sizeof(s)==1)
     return 1;
 #define IS_ABSOLUTE_PATH is_absolute_path
 #else
