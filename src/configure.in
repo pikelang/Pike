@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.650 2002/11/28 17:47:02 kiwi Exp $")
+AC_REVISION("$Id: configure.in,v 1.651 2002/12/05 20:09:46 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1311,9 +1311,10 @@ MY_AC_ARG_WITH(lock,
 		[],[AC_DEFINE(PIKE_RUN_UNLOCKED)])
 
 MY_AC_ARG_WITH(new-multisets,
-	       MY_DESCR([--with-new-multisets],
-			[enable new multiset implementation (EXPERIMENTAL).]),
-	       [AC_DEFINE(PIKE_NEW_MULTISETS)],[])
+	       MY_DESCR([--without-new-multisets],
+			[disable the new multiset implementation.]),
+	       [AC_DEFINE(PIKE_NEW_MULTISETS)],[],
+	       [AC_DEFINE(PIKE_NEW_MULTISETS)])
 
 AC_ARG_WITH(pike-type, MY_DESCR([--without-pike-type],
 				[disable struct pike_type (IGNORED).]))
