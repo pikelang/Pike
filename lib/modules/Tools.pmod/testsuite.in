@@ -1,5 +1,6 @@
-// $Id: testsuite.in,v 1.2 2002/09/10 00:31:56 nilsson Exp $
+// $Id: testsuite.in,v 1.3 2002/10/10 02:18:51 nilsson Exp $
 
+// Tools.Hilfe
 test_tests([[
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -164,3 +165,24 @@ array(int) a() {
   return ({ tests-fails, fails });
 }
 ]])
+test_true([[ Tools.Hilfe.StdinHilfe ]])
+test_true([[ Tools.Hilfe.GenericHilfe ]])
+test_true([[ Tools.Hilfe.GenericAsyncHilfe ]])
+test_true([[ Tools.Hilfe.main ]])
+
+
+// Tools.Legal
+test_true([[ has_prefix(Tools.Legal.Copyright.get_latest_pike(), "Copyright © ") ]])
+test_true([[ mappingp( Tools.Legal.Copyright.get_all() ) ]])
+test_true([[ arrayp( Tools.Legal.Copyright.get_all()->Pike ) ]])
+test_any([[
+  int x=sizeof( Tools.Legal.Copyright.get_all() );
+  int y=sizeof( Tools.Legal.Copyright.get_text() );
+  Tools.Legal.Copyright.add( "Basun", ({ "Dunald Dock" }) );
+  return ( (x+1) == sizeof( Tools.Legal.Copyright.get_all() ) ) &&
+	 ( y < sizeof(Tools.Legal.Copyright.get_text()) );
+]], 1)
+test_eval_error([[ Tools.Legal.Copyright.add( "Basun", ({ "Muckey Mice" }) ); ]])
+test_equal([[ Tools.Legal.Copyright.get_all()->Basun ]], [[ ({ "Dunald Dock" }) ]])
+
+test_true([[ stringp( Tools.Legal.License.get_text() ) ]])
