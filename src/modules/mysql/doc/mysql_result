@@ -80,7 +80,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-	field_seek - skip to specified field
+	field_seek - skip to specified field (OPTIONAL)
 
 SYNTAX
 	#include <mysql.h>
@@ -92,6 +92,10 @@ DESCRIPTION
 	which field mysql_result->fetch_field() will return next.
 
 	Fields are numbered starting with 0.
+
+NOTA BENE
+	This function exists only if SUPPORT_FIELD_SEEK was defined when
+	compiling the mysql-module.
 
 SEE ALSO
 	mysql_result->fetch_field, mysql_result->fetch_fields
@@ -115,7 +119,7 @@ SEE ALSO
 
 ============================================================================
 NAME
-	fetch_field - return specification of current field
+	fetch_field - return specification of current field (OPTIONAL)
 
 SYNTAX
 	#include <mysql.h>
@@ -143,6 +147,10 @@ DESCRIPTION
 	"time", "longlong", "int24", "tiny blob", "medium blob",
 	"long blob", "var string", "string" or "unknown".
 
+NOTA BENE
+	This function exists only if SUPPORT_FIELD_SEEK was defined when
+	compiling the mysql-module.
+
 BUGS
 	The "flags" entry should be parsed.
 
@@ -169,6 +177,9 @@ DESCRIPTION
 
 NOTA BENE
 	Resets the field cursor to 0.
+
+	This function exists even if SUPPORT_FIELD_SEEK wasn't defined when
+	the Mysql-module was compiled.
 
 BUGS
 	See mysql_result->fetch_field.
