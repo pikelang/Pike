@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.376 2001/01/19 15:19:51 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.377 2001/01/20 13:46:42 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -5658,7 +5658,7 @@ test_equal(lower_case((string) ({
 
 // - next_object
 test_true(objectp(next_object()))
-test_any(int e;object o=next_object(); for(e=0;e<10000 && o;e++) o=next_object(o); return o,0)
+test_any(int e;object o=next_object(); for(e=0;e<10000 && (o || objectp(o));e++) o=next_object(o); return o,0)
 
 // - object_program
 test_true(programp(object_program(this_object())))

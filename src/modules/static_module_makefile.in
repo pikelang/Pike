@@ -1,5 +1,5 @@
 #
-# $Id: static_module_makefile.in,v 1.58 2000/08/14 16:02:24 grubba Exp $
+# $Id: static_module_makefile.in,v 1.59 2001/01/20 13:46:43 hubbe Exp $
 #
 
 
@@ -92,12 +92,13 @@ config.status: $(SRCDIR)/configure
 
 module.pmod: Makefile
 	@echo "Making module.pmod" ; if [ -f $(SRCDIR)/module.pmod.in ]; then \
-	   sed -e "s/@module@/_static_modules.$(MODNAME)/" <$(SRCDIR)/module.pmod.in >module.pmod ;\
+	   sed -e "s/@module@/__builtin_dirnode.$(MODNAME)/" <$(SRCDIR)/module.pmod.in >module.pmod ;\
 	else \
 	  if [ -f ./module.pmod.in ]; then \
-	   sed -e "s/@module@/_static_modules.$(MODNAME)/" <./module.pmod.in >module.pmod ;\
+	   sed -e "s/@module@/__builtin_dirnode.$(MODNAME)/" <./module.pmod.in >module.pmod ;\
 	  else \
-	    echo >module.pmod "#if constant(_static_modules.$(MODNAME));" ;\
+	    echo >>module.pmod "#pike __REAL_VERSION__" ;\
+	    echo >>module.pmod "#if constant(_static_modules.$(MODNAME));" ;\
 	    echo >>module.pmod "inherit _static_modules.$(MODNAME);" ;\
 	    echo >>module.pmod "#endif" ;\
 	  fi ;\
