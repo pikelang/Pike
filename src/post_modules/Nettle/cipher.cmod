@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.17 2003/10/08 18:33:10 nilsson Exp $");
+RCSID("$Id: cipher.cmod,v 1.18 2003/10/10 15:36:56 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -564,7 +564,7 @@ DES3_check_key(ptrdiff_t len, const char *key)
 static void
 glue_des3_set_key(struct des3_ctx *ctx, unsigned length, const uint8_t *key)
 {
-  des_set_key(ctx, key);
+  des3_set_key(ctx, key);
 }
 
 const struct nettle_cipher nettle_des3 = {
