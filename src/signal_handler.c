@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.100 1999/02/16 01:10:56 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.101 1999/02/18 16:31:22 hubbe Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1132,27 +1132,30 @@ static void internal_add_limit( struct perishables *storage,
     struct svalue *tmp3;
     l = malloc(sizeof( struct plimit ));
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "soft")))
+    {
       if(tmp3->type == T_INT)
-        l->rlp.rlim_cur=
-          tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_cur;
+        l->rlp.rlim_cur= tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_cur;
       else
         l->rlp.rlim_cur = RLIM_INFINITY;
-    else
+    } else {
       l->rlp.rlim_cur = ol.rlim_cur;
+    }
     if((tmp3=simple_mapping_string_lookup(limit_value->u.mapping, "hard")))
+    {
       if(tmp3->type == T_INT)
-        l->rlp.rlim_max =
-          tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_max;
+        l->rlp.rlim_max = tmp3->u.integer>=0?tmp3->u.integer:ol.rlim_max;
       else
         l->rlp.rlim_max = RLIM_INFINITY;
-    else
+    } else  {
       l->rlp.rlim_max = ol.rlim_max;
+    }
   } else if(limit_value->type == T_ARRAY && limit_value->u.array->size == 2) {
     l = malloc(sizeof( struct plimit ));
     if(limit_value->u.array->item[0].type == T_INT)
       l->rlp.rlim_max = limit_value->u.array->item[0].u.integer;
     else
       l->rlp.rlim_max = ol.rlim_max;
+
     if(limit_value->u.array->item[1].type == T_INT)
       l->rlp.rlim_cur = limit_value->u.array->item[1].u.integer;
     else
@@ -2120,7 +2123,8 @@ void f_fork(INT32 args)
 						check_signals,
 						0,0);
     }
-    o=clone_object(pid_status_program,0);
+    o=low_clone(pid_status_program);
+    call_c_initializers(o);
     p=(struct pid_status *)get_storage(o,pid_status_program);
     p->pid=pid;
     p->state=PROCESS_RUNNING;
