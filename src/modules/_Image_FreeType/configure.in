@@ -23,7 +23,7 @@ if test "x$with_freetype" = "xyes" ; then
 ], 
 [ft_ok=yes], 
 [ft_ok=no])
-    if test "$ft_ok"=yes ; then
+    if test yes = "$ft_ok" ; then
       AC_MSG_RESULT(yes)
       AC_DEFINE(HAVE_LIBFT2)
     else
