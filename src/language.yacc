@@ -109,7 +109,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.187 2000/06/09 19:00:47 mast Exp $");
+RCSID("$Id: language.yacc,v 1.188 2000/06/21 00:56:02 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1624,8 +1624,14 @@ local_function: TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       $$=copy_node(compiler_frame->variable[localid].def);
     }else{
-      $$ = mknode(F_ASSIGN, mktrampolinenode($<number>3),
-		mklocalnode(localid,0));
+      if(compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+      {
+	$$ = mknode(F_ASSIGN, mktrampolinenode($<number>3),
+		    mklocalnode(localid,0));
+      }else{
+	$$ = mknode(F_ASSIGN, mkidentifiernode($<number>3),
+		    mklocalnode(localid,0));
+      }
     }
   }
   | TOK_IDENTIFIER push_compiler_frame1 error
@@ -1737,8 +1743,14 @@ local_function2: optional_stars TOK_IDENTIFIER push_compiler_frame1 func_args
     {
       $$=copy_node(compiler_frame->variable[localid].def);
     }else{
-      $$ = mknode(F_ASSIGN, mktrampolinenode($<number>5),
-		mklocalnode(localid,0));
+      if(compiler_frame->lexical_scope & SCOPE_SCOPE_USED)
+      {
+        $$ = mknode(F_ASSIGN, mktrampolinenode($<number>5),
+	  mklocalnode(localid,0));
+      }else{
+        $$ = mknode(F_ASSIGN, mkidentifiernode($<number>5),
+	  mklocalnode(localid,0));
+      }
     }
   }
   | optional_stars TOK_IDENTIFIER push_compiler_frame1 error
