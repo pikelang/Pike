@@ -1,5 +1,5 @@
 /*
- * $Id: odbc_result.c,v 1.29 2001/10/16 09:17:50 tomas Exp $
+ * $Id: odbc_result.c,v 1.30 2002/11/06 17:56:33 wellhard Exp $
  *
  * Pike  interface to ODBC compliant databases
  *
@@ -16,7 +16,7 @@
 #include "config.h"
 #endif /* HAVE_CONFIG_H */
 
-RCSID("$Id: odbc_result.c,v 1.29 2001/10/16 09:17:50 tomas Exp $");
+RCSID("$Id: odbc_result.c,v 1.30 2002/11/06 17:56:33 wellhard Exp $");
 
 #include "interpret.h"
 #include "object.h"
@@ -453,7 +453,12 @@ static void f_fetch_row(INT32 args)
 	      push_string(make_shared_binary_string(blob_buf, len));
 	      break;
 	    } else {
-	      push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
+	      if (PIKE_ODBC_RES->field_info[i].type == SQL_C_BINARY) {
+		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ));
+	      } else {
+		/* SQL_C_CHAR's are NUL-terminated... */
+		push_string(make_shared_binary_string(blob_buf, BLOB_BUFSIZ - 1));
+	      }
 	    }
 	  }
 	}
