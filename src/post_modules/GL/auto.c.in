@@ -1,21 +1,16 @@
-/*\
+/*\ -*- c -*-
 ||| This file is part of Pike. For copyright information see COPYRIGHT.
 ||| Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 ||| for more information.
-||| $Id: auto.c.in,v 1.21 2002/10/08 20:22:43 nilsson Exp $
+||| $Id: auto.c.in,v 1.22 2002/10/09 22:23:39 nilsson Exp $
 \*/
-
-/* -*- C -*-
- *
- * $Id: auto.c.in,v 1.21 2002/10/08 20:22:43 nilsson Exp $
- *
- */
+/**/
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.21 2002/10/08 20:22:43 nilsson Exp $");
+RCSID("$Id: auto.c.in,v 1.22 2002/10/09 22:23:39 nilsson Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
