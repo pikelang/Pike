@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Query.pmod,v 1.21 2001/08/09 14:49:01 norlin Exp $
+// $Id: Query.pmod,v 1.22 2001/09/01 22:13:08 js Exp $
 
 static function(string,int:string) blobfeeder(Search.Database.Base db, array words)
 {
@@ -30,7 +30,6 @@ Search.ResultSet do_query_or(Search.Database.Base db,
                            ranking->proximity_ranking,
                            ranking->cutoff,
                            blobfeeder(db, words));
-  werror("do_query_or(%{ %O %})     => %d hits\n", words, result->size());
   return result;
 }
 
@@ -44,7 +43,6 @@ Search.ResultSet do_query_and(Search.Database.Base db,
                             ranking->proximity_ranking,
                             ranking->cutoff,
                             blobfeeder(db, words));
-  werror("do_query_and(%{ %O %})    => %d hits\n", words, result->size());
   return result;
 }
 
@@ -57,7 +55,6 @@ Search.ResultSet do_query_phrase(Search.Database.Base db,
                                ranking->field_ranking,
                                //    ranking->cutoff,
                                blobfeeder(db, words));
-  werror("do_query_phrase(%{ %O %}) => %d hits\n", words, result->size());
   return result;
 }
 
@@ -86,17 +83,13 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
 {
   Search.Grammar.ParseNode q = parser->parse(query);
   if (stop_words && sizeof(stop_words)) {
-    werror ("Query BEFORE stop word removal:\n%O\n", q->print());
     q = Search.Grammar.remove_stop_words(q, stop_words);
-    werror ("Query AFTER stop word removal:\n%O\n", q->print());
   }
   
   q = Search.Grammar.optimize(q);
   
   if (!q)                                  // The query was a null query
     return ({ Search.ResultSet(), ({}) }); // so return an empty resultset
-
-  werror("Query.execute:\n%s\n", q->print());
 
   string error = Search.Grammar.validate(q);
   if (error)
@@ -120,11 +113,9 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     static array(array(string)|string) words = ({ });
     static array(Search.ResultSet) stack = ({ });
     static void push(Search.ResultSet r) {
-      //      werror("---PUSH\n");
       stack = ({ r }) + stack;
     }
     static Search.ResultSet pop() {
-      //      werror("---POP\n");
       if (!sizeof(stack))
         error("Very bad!");
       Search.ResultSet r = stack[0];
@@ -140,7 +131,6 @@ array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
     }
 
     void exec(ParseNode q) {
-      //      werror("EXEC %s\n", q->op);
       switch (q->op) {
         case "and":
           {
