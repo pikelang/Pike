@@ -40,6 +40,7 @@
     @  do this format for each entry in argument array
     > Put the string at the bottom end of column instead of top
     _ Set width to size of length of data
+   [n] Select argument n. Use * to use the next arg as selector. 
 
  Operators:
    %% percent
@@ -93,7 +94,7 @@
    debug-dump
    sprintf("%78*O",width,foo);
 
-   A newspape
+   A newspaper
    sprintf("%-=*s %-=*s\n",width/2,article1,width/2,article2);
 
    A 'dotted-line' pricelist row 
@@ -102,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.62 2000/03/29 22:15:46 hubbe Exp $");
+RCSID("$Id: sprintf.c,v 1.63 2000/06/09 12:17:23 lange Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -954,6 +955,20 @@ static void low_pike_sprintf(struct format_stack *fs,
 	arg=lastarg;
 	continue;
 
+      case '[':
+	INC_PCHARP(a,1);
+	if(EXTRACT_PCHARP(a)=='*') {
+	  GET_INT(tmp);
+	  INC_PCHARP(a,1);
+	} else
+	  tmp=STRTOL_PCHARP(a,&a,10);
+	if(EXTRACT_PCHARP(a)!=']') 
+	  sprintf_error(fs, "Expected ] in format string, not %c.\n",EXTRACT_PCHARP(a));
+	if(tmp >= num_arg)
+	  sprintf_error(fs, "Not enough arguments to [%d].\n",tmp);
+	arg = argp+tmp;
+	continue;
+	
         /* now the real operators */
 
       case '{':

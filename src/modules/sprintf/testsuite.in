@@ -195,6 +195,9 @@ test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
 	"4711[acb][asb][atb][aob][adb][aub][axb][aXb]"
         "[aeb][afb][agb][aEb][aGb][aOb]42")
 
+test_eq(sprintf("%[*]s %s",2,"a","b"),"b a")
+test_eq(sprintf("%[1]s %s %[2]s %s","b","a","r"),"a b r a")
+
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
 test_eval_error(return sprintf("%d");)
