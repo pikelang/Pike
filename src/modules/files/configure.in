@@ -270,7 +270,7 @@ int main()
 #include <sys/mount.h>
 #endif
       ], [
-        struct statfs st;
+        struct fs_data st;
       ], [ pike_cv_struct_fs_data=yes
       ], [ pike_cv_struct_fs_data=no
       ])
