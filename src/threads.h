@@ -230,22 +230,25 @@ struct thread_state {
    int low_make_buf_space = 0, pop_n_elems = 0; \
    int push_sp_mark = 0, pop_sp_mark = 0
 
-#define REVEAL_GLOBAL_VARIABLES() } while(0)
+/* Note that the semi-colon below is needed to add an empty statement
+ * in case there is a label before the macro.
+ */
+#define REVEAL_GLOBAL_VARIABLES() ; } while(0)
 #else /* DEBUG */
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
 #endif /* DEBUG */
 			   
 
-#define THREADS_ALLOW() \
-  do {\
+#define THREADS_ALLOW() do { \
      struct thread_state *_tmp=(struct thread_state *)thread_id->storage; \
      if(num_threads > 1 && !threads_disabled) { \
        SWAP_OUT_THREAD(_tmp); \
        THREADS_FPRINTF((stderr, "THREADS_ALLOW() %s:%d t:%08x\n", \
 			__FILE__, __LINE__, (unsigned int)_tmp->thread_id)); \
        mt_unlock(& interpreter_lock); \
-     } else {} HIDE_GLOBAL_VARIABLES()
+     } else {} \
+     HIDE_GLOBAL_VARIABLES()
 
 #define THREADS_DISALLOW() \
      REVEAL_GLOBAL_VARIABLES(); \
