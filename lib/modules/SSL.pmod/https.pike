@@ -158,8 +158,8 @@ int main()
 {
   werror(sprintf("Cert: '%s'\n", Crypto.string_to_hex(my_certificate)));
   werror(sprintf("Key:  '%s'\n", Crypto.string_to_hex(my_key)));
-//  werror(sprintf("Decoded cert: %O\n", ber_decode(my_certificate)->get_asn1()));
-  array key = asn1.ber_decode(my_key)->get_asn1()[1];
+//  werror(sprintf("Decoded cert: %O\n", SSL.asn1.ber_decode(my_certificate)->get_asn1()));
+  array key = SSL.asn1.ber_decode(my_key)->get_asn1()[1];
   werror(sprintf("Decoded key: %O\n", key));
   object n = key[1][1];
   object e = key[2][1];
@@ -182,4 +182,10 @@ int main()
   }
   else
     return -17;
+}
+
+void create()
+{
+  werror("https->create\n");
+  sslport::create();
 }
