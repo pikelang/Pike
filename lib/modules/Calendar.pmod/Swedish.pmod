@@ -3,12 +3,12 @@ inherit Calendar.Gregorian : christ;
 void create()
 {
    month_names=
-      ({"Januari","Februari","Mars","April","Maj","Juni","Juli","Augusti",
-	"September","Oktober","November","December"});
+      ({"januari","februari","mars","april","maj","juni","juli","augusti",
+	"september","oktober","november","december"});
 
    week_day_names=
-      ({"Måndag","Tisdag","Onsdag","Torsdag",
-	"Fredag","Lördag","Söndag"});
+      ({"måndag","tisdag","onsdag","torsdag",
+	"fredag","lördag","söndag"});
 }
 
 class Week
