@@ -52,7 +52,7 @@ int main()
 
   edit = GTK.Entry();
   edit2 = GTK.Entry();
-  cs = GTK.Color_selection();
+  cs = GTK.ColorSelection();
 
   cs->signal_connect("color_changed",cs_changed,0);
   ({edit,edit2})->signal_connect("changed",edit_changed,0);
