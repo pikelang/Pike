@@ -437,6 +437,10 @@ void tarfilter(string filename)
     main(3, ({ "tarfilter", filename, filename }));
 }
 
+#ifdef __NT__
+  constant tmpdir="~piketmp";
+#endif
+
 void do_export()
 {
 #ifdef __NT__
@@ -446,8 +450,6 @@ void do_export()
   p->write("w%4c%s",sizeof(msg),msg);
 
 #define TRANSLATE(X,Y) combine_path(".",X) : Y
-  string tmpdir="~piketmp";
-
   mapping translator = ([
     TRANSLATE(vars->BASEDIR,tmpdir),
     TRANSLATE(vars->LIBDIR_SRC,tmpdir+"/lib"),
@@ -455,7 +457,7 @@ void do_export()
     TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
     TRANSLATE(vars->MANDIR_SRC,tmpdir+"/man"),
     TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
-    "unpack_master.pike" : tmpdir+"/master.pike",
+    "unpack_master.pike" : tmpdir+"/build/master.pike",
     "":tmpdir+"/build",
   ]);
 
@@ -504,7 +506,7 @@ void do_export()
 
   string cmd=
     replace(translate("pike.exe", translator),"/","\\")+
-    " -m"+translate("master.pike", translator)+
+    " -m"+translate("unpack_master.pike", translator)+
     " -DNOT_INSTALLED" +
     " "+translate( combine_path(vars->TMP_BINDIR,"install.pike"), translator)+
     RELAY(TMP_LIBDIR)
@@ -1255,14 +1257,16 @@ void do_install()
 
     if(export)
     {
-      string unpack_master =
+      string unpack_master = "master.pike";
 #ifdef __NT__
-	// We don't want to overwrite the main master...
-	// This prefix is undone by the translator.
-	"unpack_"
-#endif
-	"master.pike";
+      // We don't want to overwrite the main master...
+      // This is undone by the translator.
+      unpack_master = "unpack_master.pike";
+      make_master(unpack_master, master_src,
+		  tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib");
+#else
       make_master(unpack_master, master_src, "build/lib", "build", "lib");
+#endif
       to_export+=({
 	unpack_master, master_src,
 	combine_path(vars->TMP_BUILDDIR,"specs"),
