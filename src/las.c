@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.249 2001/04/01 15:40:23 grubba Exp $");
+RCSID("$Id: las.c,v 1.250 2001/04/08 10:11:39 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -938,8 +938,18 @@ node *debug_mknode(short token, node *a, node *b)
     res->node_info |= OPT_ASSIGNMENT;
     /* FALL_THROUGH */
   case F_MAGIC_INDEX:
-    res->node_info |= OPT_EXTERNAL_DEPEND;    
+  {
+    int e;
+    struct program_state *state = Pike_compiler;
+    res->node_info |= OPT_EXTERNAL_DEPEND;
+    for(e=0;e<b->u.sval.u.integer;e++)
+    {
+      state->new_program->flags |= PROGRAM_USES_PARENT;
+      state=state->previous;
+    }
+      
     break;
+  }
 
   case F_UNDEFINED:
     res->node_info |= OPT_EXTERNAL_DEPEND | OPT_SIDE_EFFECT;
@@ -1256,6 +1266,7 @@ node *debug_mktrampolinenode(int i)
 
 node *debug_mkexternalnode(struct program *parent_prog, int i)
 {
+  struct program_state *state;
   node *res = mkemptynode();
   struct identifier *id;
   res->token = F_EXTERNAL;
@@ -1287,8 +1298,12 @@ node *debug_mkexternalnode(struct program *parent_prog, int i)
   res->u.integer.b = i;
 
   /* Bzot-i-zot */
-  if(parent_prog != Pike_compiler->new_program)
-    Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
+  state = Pike_compiler;
+  while(parent_prog != state->new_program)
+  {
+    state->new_program->flags |= PROGRAM_USES_PARENT;
+    state=state->previous;
+  }
 
   res=freeze_node(res);
 

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.123 2001/04/07 07:38:25 hubbe Exp $
+ * $Id: program.h,v 1.124 2001/04/08 10:11:40 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -284,6 +284,7 @@ struct program
 
   struct program *next;
   struct program *prev;
+  struct program *parent; /* FIXME: Use this -Hubbe */
 
   void (*event_handler)(enum pike_program_event);
 #ifdef PIKE_DEBUG

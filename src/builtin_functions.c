@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.357 2001/04/01 15:40:23 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.358 2001/04/08 10:11:39 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1346,69 +1346,6 @@ PMOD_EXPORT void f_combine_path(INT32 args)
   push_string(ret);
 }
 
-/*! @decl object function_object(function f)
- *!
- *! Return the object the function @[f] is in.
- *!
- *! If @[f] is a global function defined in the runtime @tt{0@} (zero)
- *! will be returned.
- *!
- *! @seealso
- *! @[function_name()]
- */
-PMOD_EXPORT void f_function_object(INT32 args)
-{
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("function_object",1);
-  if(Pike_sp[-args].type != T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("function_object",1,"function");
-
-  if(Pike_sp[-args].subtype == FUNCTION_BUILTIN)
-  {
-    pop_n_elems(args);
-    push_int(0);
-  }else{
-    pop_n_elems(args-1);
-    Pike_sp[-1].type=T_OBJECT;
-  }
-}
-
-/*! @decl string function_name(function f)
- *!
- *! Return the name of the function @[f].
- *!
- *! If @[f] is a global function defined in the runtime @tt{0@} (zero)
- *! will be returned.
- *!
- *! @seealso
- *! @[function_object()]
- */
-PMOD_EXPORT void f_function_name(INT32 args)
-{
-  struct pike_string *s;
-  if(args < 1)
-    SIMPLE_TOO_FEW_ARGS_ERROR("function_name", 1);
-  if(Pike_sp[-args].type != T_FUNCTION)
-    SIMPLE_BAD_ARG_ERROR("function_name", 1, "function");
-
-  if(Pike_sp[-args].subtype == FUNCTION_BUILTIN)
-  {
-    pop_n_elems(args);
-    push_int(0);
-  }else{
-    if(!Pike_sp[-args].u.object->prog)
-      bad_arg_error("function_name", Pike_sp-args, args, 1, "function", Pike_sp-args,
-		    "Destructed object.\n");
-
-    copy_shared_string(s,ID_FROM_INT(Pike_sp[-args].u.object->prog,
-				     Pike_sp[-args].subtype)->name);
-    pop_n_elems(args);
-  
-    Pike_sp->type=T_STRING;
-    Pike_sp->u.string=s;
-    Pike_sp++;
-  }
-}
 
 /*! @decl int zero_type(mixed a)
  *!
@@ -7607,14 +7544,6 @@ void init_builtin_efuns(void)
   
 /* function(mixed:int) */
   ADD_EFUN("floatp",  f_floatp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);
-  
-/* function(function:string) */
-  ADD_EFUN("function_name",f_function_name,
-	   tFunc(tFunction,tStr),OPT_TRY_OPTIMIZE);
-  
-/* function(function:object) */
-  ADD_EFUN("function_object",f_function_object,
-	   tFunc(tFunction,tObj),OPT_TRY_OPTIMIZE);
   
 /* function(mixed:int) */
   ADD_EFUN("functionp",  f_functionp,tFunc(tMix,tInt),OPT_TRY_OPTIMIZE);

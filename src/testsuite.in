@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.400 2001/04/07 09:21:23 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.401 2001/04/08 10:11:40 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1887,6 +1887,17 @@ test_program(inherit test;)
 test_program(inherit test; int a() { return foo; } )
 test_define_program(test,[[class TEST { int a() { return 1; } }]])
 test_program(inherit test; inherit TEST; )
+
+
+test_any([[
+  class Foo {  };
+  return  function_object(object_program(Foo())) == this_program;
+]], 1)
+
+test_any([[
+  class Foo {  };
+  return  function_name(object_program(Foo()));
+]], "Foo")
 
 test_compile_error(class c { object(Stdio.File) foo=class {} ();})
 test_compile_error(class c { object(Stdio.File) foo=class {} ();})

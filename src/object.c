@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.167 2001/04/07 07:38:24 hubbe Exp $");
+RCSID("$Id: object.c,v 1.168 2001/04/08 10:11:39 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -302,8 +302,10 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   struct object *o=low_clone(p);
   SET_ONERROR(tmp, do_free_object, o);
   debug_malloc_touch(o);
-  o->parent=parent;
-  add_ref(parent);
+
+  if(p->flags & PROGRAM_USES_PARENT)
+    add_ref( o->parent=parent );
+
   o->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
   call_c_initializers(o);
   call_pike_initializers(o,args);
@@ -816,7 +818,8 @@ PMOD_EXPORT void low_object_index_no_free(struct svalue *to,
     {
       struct svalue *s;
       s=& PROG_FROM_INT(p,f)->constants[i->func.offset].sval;
-      if(s->type==T_PROGRAM)
+      if(s->type==T_PROGRAM &&
+	 (s->u.program->flags & PROGRAM_USES_PARENT))
       {
 	to->type=T_FUNCTION;
 	to->subtype = DO_NOT_WARN(f);

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.309 2001/04/07 07:38:25 hubbe Exp $");
+RCSID("$Id: program.c,v 1.310 2001/04/08 10:11:40 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -33,6 +33,7 @@ RCSID("$Id: program.c,v 1.309 2001/04/07 07:38:25 hubbe Exp $");
 #include "pike_types.h"
 #include "opcodes.h"
 #include "version.h"
+#include "block_alloc.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -40,6 +41,23 @@ RCSID("$Id: program.c,v 1.309 2001/04/07 07:38:25 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
+
+static void exit_program_struct(struct program *);
+
+#undef EXIT_BLOCK
+#define EXIT_BLOCK(P) exit_program_struct( (P) )
+
+#undef COUNT_OTHER
+#define COUNT_OTHER() do{			\
+  struct program *p;				\
+  for(p=first_program;p;p=p->next)		\
+  {						\
+    num++;					\
+    size+=p->total_size;			\
+  }						\
+}while(0)
+
+BLOCK_ALLOC(program, 104); 
 
 
 /* #define COMPILER_DEBUG */
@@ -1101,8 +1119,7 @@ void fixate_program(void)
 
 struct program *low_allocate_program(void)
 {
-  struct program *p;
-  p=ALLOC_STRUCT(program);
+  struct program *p=alloc_program();
   MEMSET(p, 0, sizeof(struct program));
   p->flags|=PROGRAM_VIRGIN;
   p->alignment_needed=1;
@@ -1158,6 +1175,8 @@ void low_start_new_program(struct program *p,
     {
       tmp.u.program=p;
       id=add_constant(name, &tmp, flags & ~ID_EXTERN);
+      add_ref(p->parent = Pike_compiler->new_program);
+
     }
     e=1;
   }else{
@@ -1334,9 +1353,16 @@ PMOD_EXPORT void debug_start_new_program(PROGRAM_LINE_ARGS)
 }
 
 
-PMOD_EXPORT void really_free_program(struct program *p)
+static void exit_program_struct(struct program *p)
 {
   unsigned INT16 e;
+
+  if(p->parent)
+  {
+    free_program(p->parent);
+    p->parent=0;
+  }
+
 
   if(id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]==p)
     id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]=0;
@@ -1395,7 +1421,6 @@ PMOD_EXPORT void really_free_program(struct program *p)
   }
 
   EXIT_PIKE_MEMOBJ(p);
-  dmfree((char *)p);
 
   GC_FREE(p);
 }
@@ -4151,6 +4176,7 @@ void init_program(void)
   struct svalue key;
   struct svalue val;
   struct svalue id;
+  init_program_blocks();
 
 
   MAKE_CONSTANT_SHARED_STRING(this_program_string,"this_program");
@@ -4277,6 +4303,9 @@ void gc_mark_program_as_referenced(struct program *p)
       DOUBLELINK(first_program, p); /* Linked in first. */
     }
 
+    if(p->parent)
+      gc_mark_program_as_referenced(p->parent);
+
     for(e=0;e<p->num_constants;e++)
       gc_mark_svalues(& p->constants[e].sval, 1);
 
@@ -4303,6 +4332,9 @@ void real_gc_cycle_check_program(struct program *p, int weak)
        */
       return;
 
+    if(p->parent)
+      gc_cycle_check_program(p->parent, 0);
+      
     for(e=0;e<p->num_constants;e++)
       gc_cycle_check_svalues(& p->constants[e].sval, 1);
 
@@ -4333,6 +4365,9 @@ static void gc_check_program(struct program *p)
     debug_malloc_touch(p);
     return;
   }
+
+  if(p->parent)
+    debug_gc_check(p->parent, T_PROGRAM, p);
   
   for(e=0;e<p->num_constants;e++) {
     debug_gc_check_svalues(& p->constants[e].sval, 1, T_PROGRAM, p);
@@ -4448,6 +4483,11 @@ void gc_free_all_unreferenced_programs(void)
     {
       /* Got an extra ref from gc_cycle_pop_object(). */
       int e;
+      if(p->parent)
+      {
+	free_program(p->parent);
+	p->parent=0;
+      }
       for(e=0;e<p->num_constants;e++)
       {
 	free_svalue(& p->constants[e].sval);
@@ -4497,19 +4537,6 @@ void gc_free_all_unreferenced_programs(void)
 
 #endif /* GC2 */
 
-
-void count_memory_in_programs(INT32 *num_, INT32 *size_)
-{
-  INT32 size=0, num=0;
-  struct program *p;
-  for(p=first_program;p;p=p->next)
-  {
-    num++;
-    size+=p->total_size;
-  }
-  *num_=num;
-  *size_=size;
-}
 
 void push_compiler_frame(int lexical_scope)
 {

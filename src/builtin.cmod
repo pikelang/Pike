@@ -364,6 +364,112 @@ PIKEFUN program __empty_program()
   RETURN low_allocate_program();
 }
 
+/*! @decl string function_name(function f)
+ *!
+ *! Return the name of the function @[f].
+ *!
+ *! If @[f] is a global function defined in the runtime @tt{0@} (zero)
+ *! will be returned.
+ *!
+ *! @seealso
+ *! @[function_object()]
+ */
+PIKEFUN string function_name(program|function func)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+{
+  struct pike_string *s;
+  switch(func->type)
+  {
+    default:
+      if(!func->u.object->prog)
+	bad_arg_error("function_name", Pike_sp-args, args, 1,
+		      "function|program", Pike_sp-args,
+		      "Bad argument.\n");
+      return; /* NOTREACHED */
+	
+    case PIKE_T_PROGRAM:
+    {
+      struct program *p=func->u.program;
+
+      if(p->parent)
+      {
+	int e;
+	p=p->parent;
+	/* search constants in parent for this
+	 * program...
+	 */
+	
+	for(e = p->num_identifier_references; e--; )
+	{
+	  struct identifier *id;
+	  if (p->identifier_references[e].id_flags & ID_HIDDEN)
+	    continue;
+
+	  id = ID_FROM_INT(p, e);
+	  if (IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
+	      is_eq( & PROG_FROM_INT(p, e)->constants[id->func.offset].sval,
+		     func))
+	    REF_RETURN id->name;
+	}
+      }
+      break;
+    }
+
+    case PIKE_T_FUNCTION:
+      if(func->subtype == FUNCTION_BUILTIN) break;
+      if(!func->u.object->prog)
+	bad_arg_error("function_name", Pike_sp-args, args, 1,
+		      "function", Pike_sp-args,
+		      "Destructed object.\n");
+      
+      REF_RETURN ID_FROM_INT(func->u.object->prog, func->subtype)->name;
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+
+/*! @decl object function_object(function|program f)
+ *!
+ *! Return the object the function @[f] is in.
+ *!
+ *! If @[f] is a global function defined in the runtime @tt{0@} (zero)
+ *! will be returned.
+ *!
+ *! @seealso
+ *! @[function_name()]
+ */
+PIKEFUN object|program function_object(program|function func)
+  efun;
+  optflags OPT_TRY_OPTIMIZE;
+  type function(object:object)|function(program:program);
+{
+  switch(func->type)
+  {
+    default:
+      SIMPLE_BAD_ARG_ERROR("function_object",1,"function");
+
+    case PIKE_T_PROGRAM:
+    {
+      struct program *p;
+      if(!(p=func->u.program->parent)) break;
+      add_ref(p);
+      free_program(func->u.program);
+      func->u.program=p;
+      return;
+    }
+      
+    case PIKE_T_FUNCTION:
+      if(func->subtype == FUNCTION_BUILTIN) break;
+      func->type=T_OBJECT;
+      return;
+  }
+  pop_n_elems(args);
+  push_int(0);
+}
+
+
+
 void init_builtin(void)
 {
 INIT

@@ -24,7 +24,7 @@ static void resolve_auto_bignum_program(void)
     push_text("Gmp.bignum");
     SAFE_APPLY_MASTER("resolv", 1);
     
-    if(sp[-1].type != T_FUNCTION)
+    if(sp[-1].type != T_FUNCTION && sp[-1].type != T_PROGRAM)
       Pike_error("Failed to resolv Gmp.mpz!\n");
     
     auto_bignum_program=sp[-1];
@@ -87,7 +87,7 @@ int is_bignum_object(struct object *o)
     return 0; /* not possible */
  
   resolve_auto_bignum_program();
-  return o->prog == program_from_function(&auto_bignum_program);
+  return o->prog == program_from_svalue(&auto_bignum_program);
 }
 
 PMOD_EXPORT int is_bignum_object_in_svalue(struct svalue *sv)
