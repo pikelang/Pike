@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.550 2004/05/09 19:44:59 nilsson Exp $
+|| $Id: builtin_functions.c,v 1.551 2004/05/12 23:16:16 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.550 2004/05/09 19:44:59 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.551 2004/05/12 23:16:16 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -259,11 +259,8 @@ PMOD_EXPORT void f_hash(INT32 args)
     if(Pike_sp[1-args].type != T_INT)
       SIMPLE_BAD_ARG_ERROR("hash",2,"int");
     
-    if(!Pike_sp[1-args].u.integer)
-      PIKE_ERROR("hash", "Modulo by zero.\n", Pike_sp, args);
-
-    if(Pike_sp[1-args].u.integer < 0)
-      PIKE_ERROR("hash", "Negative modulo.\n", Pike_sp, args);
+    if(Pike_sp[1-args].u.integer <= 0)
+      PIKE_ERROR("hash", "Modulo < 1.\n", Pike_sp, args);
 
     i%=(unsigned INT32)Pike_sp[1-args].u.integer;
   }
@@ -500,8 +497,7 @@ PMOD_EXPORT void f_lower_case(INT32 args)
     return;
   }
   
-  get_all_args("lower_case", args, "%W", &orig);
-
+  orig = Pike_sp[-args].u.string;
   ret = begin_wide_shared_string(orig->len, orig->size_shift);
 
   MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
@@ -560,7 +556,6 @@ PMOD_EXPORT void f_upper_case(INT32 args)
   ptrdiff_t i;
   struct pike_string *orig;
   struct pike_string *ret;
-  int widen = 0;
   check_all_args("upper_case", args, BIT_STRING|BIT_INT, 0);
 
   if (Pike_sp[-args].type == T_INT) {
@@ -570,8 +565,7 @@ PMOD_EXPORT void f_upper_case(INT32 args)
     return;
   }
   
-  get_all_args("upper_case",args,"%W",&orig);
-
+  orig = Pike_sp[-args].u.string;
   ret=begin_wide_shared_string(orig->len,orig->size_shift);
   MEMCPY(ret->str, orig->str, orig->len << orig->size_shift);
 
@@ -584,7 +578,33 @@ PMOD_EXPORT void f_upper_case(INT32 args)
       if(str[i]!=0xff && str[i]!=0xb5) {
 	DO_UPPER_CASE_SHIFT0(str[i]);
       } else {
-	widen = 1;
+
+	/* Ok, so our shiftsize 0 string contains 0xff or 0xb5 which
+	   prompts for a shiftsize 1 string. */
+	int j = orig->len;
+	struct pike_string *wret = begin_wide_shared_string(j, 1);
+	p_wchar1 *wstr = STR1(wret);
+
+	/* Copy what we have done */
+	while(--j>i)
+	  wstr[j] = str[j];
+
+	/* upper case the rest */
+	i++;
+	while(i--)
+	  switch( str[i] ) {
+	  case 0xff: wstr[i] = 0x178; break;
+	  case 0xb5: wstr[i] = 0x39c; break;
+	  default:
+	    DO_UPPER_CASE_SHIFT0(str[i]);
+	    wstr[i] = str[i];
+	    break;
+	  }
+
+	/* Discard the too narrow string and use the new one instead. */
+	do_really_free_pike_string(ret);
+	ret = wret;
+	break;
       }
     }
   } else if (orig->size_shift == 1) {
@@ -605,23 +625,6 @@ PMOD_EXPORT void f_upper_case(INT32 args)
 
   pop_n_elems(args);
   push_string(end_shared_string(ret));
-
-  if (widen) {
-    /* Widen the string, and replace any 0xb5's or 0xff's. */
-    orig = Pike_sp[-1].u.string;
-    ret = begin_wide_shared_string(orig->len, 1);
-
-    i = orig->len;
-
-    while(i--) {
-      switch(STR1(ret)[i] = STR0(orig)[i]) {
-      case 0xff: STR1(ret)[i] = 0x178; break;
-      case 0xb5: STR1(ret)[i] = 0x39c; break;
-      }
-    }
-    free_string(Pike_sp[-1].u.string);
-    Pike_sp[-1].u.string = end_shared_string(ret);
-  }
 }
 
 /*! @decl string random_string(int len)
