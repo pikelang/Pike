@@ -14,7 +14,7 @@ OUTPUT=$1
 shift
 
 case "$CC" in
-  *rntcl)
+  *rntcl|*rntecl)
     case "E$OPTIONS" in
       *x*)
         ofixed="`fixpath $OUTPUT`"
