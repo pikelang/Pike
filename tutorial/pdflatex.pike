@@ -21,6 +21,7 @@ string packages=
 \\usepackage[pdftex]{color}
 \\usepackage{colortbl}
 \\usepackage{parskip}
+\\usepackage[pdftex,breaklinks,colorlinks,linkcolor=black]{hyperref}
 ";
 
 string latex="pdflatex";
@@ -74,9 +75,9 @@ string package(string x)
 \\pdfoutput=1
 \\relax
 \\documentclass[twoside,a4paper]{book}
+\\input{idonex-fonts.tex}
 "+packages+
 #"\\begin{document}
-\\input{idonex-fonts.tex}
 \\author{wmml2pdflatex}
 \\setlength{\\unitlength}{1mm}
 

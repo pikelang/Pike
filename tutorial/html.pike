@@ -958,7 +958,12 @@ SGML convert(SGML data)
 	 case "class":
 	 case "module":
 	    // strip this metainformation
-	    ret+=convert(data->data);
+	    ret+=
+	      ({Sgml.Tag("dl",([]),data->pos,
+		    convert(data->data),
+		    ) 
+	      });
+		      
 	    continue;
       }
       data->data=convert(data->data);

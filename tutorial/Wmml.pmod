@@ -872,19 +872,18 @@ SGML low_make_concrete_wmml(SGML data)
 	      last=reverse(array_sscanf(reverse(fullname),"%*[^.>]%s")[0]);
 	   }
 	   array res=
-		    ({Tag("dl",([]),tag->pos,
-			  ({Tag("man_title",(["title":upper_case(tag->tag)]),
-				tag->pos,
-				Array.map(
-				   fullnames,
-				  lambda(string name,int pos)
-				  { return ({Tag("tt",([]),pos,({name}))}); },
-				   tag->pos)
-				*({ ",", Tag("br") })
-				+({ (tag->params->title
-				     ?" - "+tag->params->title
-				     :"")}))
-			  }) + tag->data ) });
+	     ({Tag("man_title",(["title":upper_case(tag->tag)]),
+		   tag->pos,
+		   Array.map(
+		     fullnames,
+		     lambda(string name,int pos)
+		     { return ({Tag("tt",([]),pos,({name}))}); },
+		     tag->pos)
+		   *({ ",", Tag("br") })
+		   +({ (tag->params->title
+			?" - "+tag->params->title
+			:"")}))
+	     }) + tag->data;
 		   
 	   res=
 	      ({Tag(tag->tag,(["name":fullnames*", ",

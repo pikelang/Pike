@@ -6383,17 +6383,18 @@ array sum_arrays(function <I>fun</I>,array <I>arr1</I>,...);
 </man_syntax>
 <man_description>
 Works like this:
-<p><tt>array sum_arrays(function fun,array arr1,...)<br>
-{<br>
-<dl><dt><dd>int e;<br>
-array res=allocate(sizeof(arr1));<br>
-for(e=0;e&lt;sizeof(arr1);e++)<br>
-{<br>
-<dl><dt><dd>res[e]=fun(arr1[e],arr2[e],...);<br>
-</dl>}<br>
-return res;<br>
-</dl>}<br>
-</tt>
+<example language=pike>
+array sum_arrays(function fun,array arr1,...)
+{
+  int e;
+  array res=allocate(sizeof(arr1));
+  for(e=0;e&lt;sizeof(arr1);e++)<br>
+  {
+    res[e]=fun(arr1[e],arr2[e],...);
+  }
+  return res;
+}
+</example>
 <p>Simple ehh?
 </man_description>
 <man_see>
@@ -10891,11 +10892,12 @@ If <i>seconds</i> is zero, no new alarm is scheduled.
 <p>
 In any event any previously set alarm is canceled.
 <p>
-<dt><encaps>RETURN VALUE</encaps><dd>
+</man_description>
+<man_returns>
 <tt>alarm</tt> returns the number of seconds remaining until any
 previously  scheduled  alarm  was  due to be delivered, or
 zero if there was no previously scheduled alarm.
-</man_description>
+</man_returns>
 <man_see>
 signal
 </man_see>
@@ -11007,14 +11009,15 @@ array(array) backtrace();
 This function returns a description of the call stack at this moment.
 The description is returned in an array with one entry for each call
 in the stack. Each entry has this format:
-<p>({<br>
-<dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
-<tr valign=top><td> file, </td><td> /* a string with the filename if known, else zero */ </td></tr>
-<tr valign=top><td> line, </td><td> /* an integer containing the line if known, else zero */ </td></tr>
-<tr valign=top><td> function, </td><td> /* The function pointer to the called function */ </td></tr>
-<tr valign=top><td> mixed|void ..., </td><td> /* The arguments the function was called with */ </td></tr>
+<p>
+({
+<table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td><ex_indent> file, </td><td> /* a string with the filename if known, else zero */ </td></tr>
+<tr valign=top><td><ex_indent> line, </td><td> /* an integer containing the line if known, else zero */ </td></tr>
+<tr valign=top><td><ex_indent> function, </td><td> /* The function pointer to the called function */ </td></tr>
+<tr valign=top><td><ex_indent> mixed|void ..., </td><td> /* The arguments the function was called with */ </td></tr>
 </table>
-</dl>})<br>
+})
 
 <p>The current call frame will be last in the array, and the one above
 that the last but one and so on.
@@ -11700,9 +11703,7 @@ elements in <i>arr</i> that resulted in a non-zero value from the function.
 function that gives a mapping back</man_returns>
 
 <man_see>map, foreach</man_see>
-
 </function>
-
 
 <function name=find_call_out title="find a call out in the queue">
 <man_syntax>

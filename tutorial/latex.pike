@@ -32,7 +32,8 @@ string packages =
 
 string latex = "latex";
 
-
+// #define BORDERCOLOR "{0,0.2,0}"
+#define BORDERCOLOR "{0.153,0.13,0.357}"
 
 object wcache=.Cache("latex_wcache");
 
@@ -758,7 +759,7 @@ string convert_table(TAG table)
       {
 	if(head)
 	{
-	  color="\\rowcolor[rgb]{0.153,0.13,0.357}%%\n";
+	  color="\\rowcolor[rgb]" BORDERCOLOR "%%\n";
 	  for(int e=0;e<sizeof(ltxrow);e++)
 	    ltxrow[e]="\\color[rgb]{1,1,1}%\n"+ltxrow[e];
 	  ltxrow[-1]+="\\normalcolor ";
@@ -874,7 +875,7 @@ string low_index_to_latex(INDEX data, string prefix, int indent)
 string index_to_latex(INDEX foo)
 {
   string ret="";
-  ret+="\n\\twocolumn[\\begin{Huge}Index\\end{Huge}]\n\\begin{small}\n";
+  ret+="\n\\twocolumn\n\\chapter*{Index}\n\\begin{small}\n";
   
 //  ret+="\\begin{Huge}Index\\end{Huge}\n\n";
 
@@ -907,6 +908,7 @@ int in_table;
 
 constant FLAG_TABLE=1;
 constant FLAG_LIST=2;
+constant FLAG_MAN_HEAD=4;
 
 
 string convert_to_latex(SGML data, void|int flags)
@@ -926,7 +928,15 @@ string convert_to_latex(SGML data, void|int flags)
 	  case "smallcaps":
 	    ret+="{\\sc "+convert_to_latex(tag->data)+"}";
 	    break;
-	  case "tt": ret+="{\\tt "+convert_to_latex(tag->data)+"}"; break;
+	  case "tt":
+	    if(flags & FLAG_MAN_HEAD)
+	    {
+	      ret+="\\begin{Large}\\PikeHeaderFont "+convert_to_latex(tag->data)+"\\end{Large}\\normalfont\\normalcolor ";
+	    }else{
+	      ret+="{\\tt "+convert_to_latex(tag->data)+"}";
+	    }
+	    break;
+	    
 	  case "ex_keyword":
 	  case "b": ret+="\\textbf{"+convert_to_latex(tag->data)+"}"; break;
 	  case "ex_meta":
@@ -962,12 +972,33 @@ string convert_to_latex(SGML data, void|int flags)
 	    break;
 
 	  case "man_title":
-	    // FIXME encaps?
-	    // FIXME indentation
-	    ret+="\n\n"+
-	      latex_quote(tag->params->title)+"\\\\\n "+
-	      convert_to_latex(tag->data)+
-	      "\n";
+	    switch(lower_case(tag->params->title))
+	    {
+	      case "function":
+	      case "method":
+	      case "constant":
+	      case "variable":
+	      case "module":
+	      case "class":
+	      case "name":
+		ret+="\n\n\\pagebreak[0]\n\\begin{tabular}{p{\\linewidth}}\n"
+		  ""+convert_to_latex(tag->data,FLAG_MAN_HEAD)+"\\\\\n"
+		  "\\hline\n"
+		  "\\end{tabular}\\nopagebreak\n\n\\nopagebreak ";
+		break;
+
+	      case "syntax":
+		ret+="\\nopagebreak\n\n\\nopagebreak \\parbox{\\linewidth}{%\n"+
+		  convert_to_latex(tag->data)+
+		  "}\n\\nopagebreak\n";
+		break;
+
+	      default:
+		ret+="\n\n"+
+		  "\\PikeHeaderFont "+latex_quote(tag->params->title)+":\\normalfont\\normalcolor\\\\\n "+
+		convert_to_latex(tag->data)+
+		  "\n";
+	    }
 	    break;
 
 	  case "chapter":
@@ -1080,9 +1111,9 @@ string convert_to_latex(SGML data, void|int flags)
 	    }else{	
 	      pre=1;
 	      // FIXME: we will have to remove all tags inside <pre>
-	      ret+="{\\startcode\n\n"+
+	      ret+="\\begin{small}{\\startcode\n\n"+
 		convert_to_latex(tag->data)+
-		"\n}\n";
+		"\n}\\end{small}\n";
 	      pre=0;
 	    }
 	    break;
