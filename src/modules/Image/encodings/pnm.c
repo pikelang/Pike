@@ -1,9 +1,9 @@
-/* $Id: pnm.c,v 1.16 1998/04/20 18:53:36 grubba Exp $ */
+/* $Id: pnm.c,v 1.17 1999/03/11 08:29:37 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.16 1998/04/20 18:53:36 grubba Exp $
+**!	$Id: pnm.c,v 1.17 1999/03/11 08:29:37 mirar Exp $
 **! submodule PNM
 **!
 **!	This submodule keeps the PNM encode/decode capabilities
@@ -49,7 +49,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pnm.c,v 1.16 1998/04/20 18:53:36 grubba Exp $");
+RCSID("$Id: pnm.c,v 1.17 1999/03/11 08:29:37 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -393,7 +393,7 @@ void img_pnm_encode_P4(INT32 args) /* binary PBM */
 {
    char buf[80];
    struct pike_string *a,*b;
-   struct image *img;
+   struct image *img=NULL;
    unsigned char *c;
    int y,x,bit;
    rgb_group *s;
@@ -439,7 +439,7 @@ void img_pnm_encode_P5(INT32 args) /* binary PGM */
 {
    char buf[80];
    struct pike_string *a,*b;
-   struct image *img;
+   struct image *img=NULL;
    unsigned char *c;
    int n;
    rgb_group *s;
@@ -474,7 +474,7 @@ void img_pnm_encode_P6(INT32 args)
 {
    char buf[80];
    struct pike_string *a,*b;
-   struct image *img;
+   struct image *img=NULL;
 
    if (args<1 ||
        sp[-args].type!=T_OBJECT ||
@@ -512,7 +512,7 @@ void img_pnm_encode_P6(INT32 args)
 
 void img_pnm_encode_ascii(INT32 args)
 {
-   struct image *img;
+   struct image *img=NULL;
    rgb_group *s;
    int n;
    void (*func)(INT32);
@@ -546,7 +546,7 @@ void img_pnm_encode_ascii(INT32 args)
 
 void img_pnm_encode_binary(INT32 args)
 {
-   struct image *img;
+   struct image *img=NULL;
    rgb_group *s;
    int n;
    void (*func)(INT32);

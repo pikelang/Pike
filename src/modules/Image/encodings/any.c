@@ -1,9 +1,9 @@
-/* $Id: any.c,v 1.3 1999/03/04 03:00:40 grubba Exp $ */
+/* $Id: any.c,v 1.4 1999/03/11 08:29:32 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: any.c,v 1.3 1999/03/04 03:00:40 grubba Exp $
+**!	$Id: any.c,v 1.4 1999/03/11 08:29:32 mirar Exp $
 **! submodule ANY
 **!
 **!	This method calls the other decoding methods
@@ -23,7 +23,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: any.c,v 1.3 1999/03/04 03:00:40 grubba Exp $");
+RCSID("$Id: any.c,v 1.4 1999/03/11 08:29:32 mirar Exp $");
 #include "pike_macros.h"
 #include "operators.h"
 #include "builtin_functions.h"
@@ -35,6 +35,10 @@ RCSID("$Id: any.c,v 1.3 1999/03/04 03:00:40 grubba Exp $");
 #include "array.h"
 #include "error.h"
 #include "threads.h"
+
+void image_gif__decode(INT32 args);
+void image_pnm_decode(INT32 args);
+void image_xwd__decode(INT32 args);
 
 void image_any__decode(INT32 args)
 {

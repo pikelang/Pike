@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.45 1998/05/02 01:24:23 mirar Exp $ */
+/* $Id: gif.c,v 1.46 1999/03/11 08:29:33 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.45 1998/05/02 01:24:23 mirar Exp $
+**!	$Id: gif.c,v 1.46 1999/03/11 08:29:33 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.45 1998/05/02 01:24:23 mirar Exp $");
+RCSID("$Id: gif.c,v 1.46 1999/03/11 08:29:33 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -144,8 +144,8 @@ void image_gif_header_block(INT32 args)
 {
    int xs,ys,bkgi=0,aspect=0,gif87a=0;
    struct neo_colortable *nct=NULL;
-   int globalpalette;
-   int numcolors;
+   int globalpalette=0;
+   int numcolors=0;
    int bpp=1;
    char buf[20];
    struct pike_string *ps;
@@ -663,15 +663,15 @@ CHRONO("gif _render_block end");
 
 void image_gif_render_block(INT32 args)
 {
-   struct image *img,*alpha=NULL;
-   struct neo_colortable *nct;
+   struct image *img=NULL,*alpha=NULL;
+   struct neo_colortable *nct=NULL;
    int numcolors;
    int localpalette,xpos,ypos;
    int alphaidx=-1;
    rgb_group alphacolor;
    int alphaentry=0;
    int transparency;
-   int n;
+   int n=0;
    int delay=0;
    int user_input=0;
    int disposal=0;
@@ -1777,9 +1777,9 @@ static void gif_deinterlace(rgb_group *s,
    free(tmp);
 }
 	
-static void image_gif__decode(INT32 args)
+void image_gif__decode(INT32 args)
 {
-   struct array *a,*b;
+   struct array *a,*b=NULL;
    int n,i;
    struct object *o,*o2,*cto,*lcto;
    int transparency_index=0,transparency=0,
