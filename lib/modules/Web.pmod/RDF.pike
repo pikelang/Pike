@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.27 2003/12/16 16:34:41 nilsson Exp $
+// $Id: RDF.pike,v 1.28 2003/12/17 21:07:02 stensson Exp $
 
 #pike __REAL_VERSION__
 
@@ -103,6 +103,9 @@ RDFResource rdf_predicate = RDFResource("predicate");
 RDFResource rdf_subject   = RDFResource("subject");
 RDFResource rdf_object    = RDFResource("object");
 RDFResource rdf_type      = RDFResource("type");
+RDFResource rdf_first     = RDFResource("first");
+RDFResource rdf_rest      = RDFResource("rest");
+RDFResource rdf_nil       = RDFResource("nil");
 
 
 //! Resource identified by literal.
