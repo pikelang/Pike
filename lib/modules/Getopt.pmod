@@ -25,44 +25,64 @@
 //			           "../configurations");
 
 
-//! This is a generic function to parse command line options of the
-//! type @tt{-f@}, @tt{--foo@} or @tt{--foo=bar@}.
+//!   This is a generic function to parse command line options of the
+//!   type @tt{-f@}, @tt{--foo@} or @tt{--foo=bar@}.
 //!
-//! The first argument should be the array of strings that was sent as
-//! the second argument to your @tt{main()@} function.
+//! @param argv
+//!   The first argument should be the array of strings that was sent as
+//!   the second argument to your @tt{main()@} function.
 //!
-//! The second is a string with the short form of your option.
-//! The short form must be only one character long.
+//! @param shortform
+//!   The second is a string with the short form of your option.
+//!   The short form must be only one character long.
 //!
-//! The @[longform] is an alternative and maybe more readable way to
-//! give the same option. If you give @tt{"foo"@} as @[longform] your program
-//! will accept @tt{--foo@} as argument.
+//! @param longform
+//!   This is an alternative and maybe more readable way to
+//!   give the same option. If you give @tt{"foo"@} as @[longform] your program
+//!   will accept @tt{--foo@} as argument.
 //!
-//! The @[envvars] argument specifies the environment variables that can be
-//! used to specify the same option. This option exists to make it easier
-//! to customize program usage.
+//! @param envvars
+//!   This argument specifies the environment variables that can be
+//!   used to specify the same option. This option exists to make it easier
+//!   to customize program usage.
 //!
-//! The @[def] has two functions: It specifies if the option takes an
-//! argument or not, and it tells @[find_option()] what to return if the
-//! option is not present. If @[def] is given and the option does not have an
-//! argument @[find_option()] will fail.
+//! @param def
+//!   This argument has two functions: It specifies if the option takes an
+//!   argument or not, and it informs @[find_option()] what to return if the
+//!   option is not present. If @[def] is given and the option does not have an
+//!   argument @[find_option()] will fail.
 //!
-//! If @[throw_errors] has been specified @[find_option] will throw errors
-//! on failure. If it has been left out, or is @tt{0@} (zero), it will
-//! instead print an error message and exit the program on failure.
+//! @param throw_errors
+//!   If @[throw_errors] has been specified @[find_option] will throw errors
+//!   on failure. If it has been left out, or is @tt{0@} (zero), it will
+//!   instead print an error message and exit the program on failure.
 //!
-//! Also, as an extra bonus: @[shortform], @[longform] and @[envvars] can
-//! all be arrays, in which case any of the options in the array will be
-//! accepted.
+//!   Also, as an extra bonus: @[shortform], @[longform] and @[envvars] can
+//!   all be arrays, in which case any of the options in the array will be
+//!   accepted.
+//!
+//! @returns
+//!   Returns the value the option has been set to if any.
+//!
+//!   If the option is present, but has not been set to anything @tt{1@}
+//!   will be returned.
+//!
+//!   Otherwise if any of the environment variables specified in @[env] has
+//!   been set, that value will be return.
+//!
+//!   If all else fails, @[def] will be returned.
 //!
 //! @note
-//! find_option modifies argv.
+//!   @[find_option()] modifies argv.
 //!
-//! This function reads options even if they are written after the first
-//! non-option on the line.
+//!   This function reads options even if they are written after the first
+//!   non-option on the line.
+//!
+//!   Index @tt{0@} (zero) of @[argv] is not scanned for options, since it
+//!   is reserved for the program name.
 //!
 //! @seealso
-//! @[Getopt.get_args()]
+//!   @[Getopt.get_args()]
 //!
 string|int find_option(array(string) argv,
 		       array(string)|string shortform,
@@ -187,63 +207,79 @@ constant MAY_HAVE_ARG=3;
 #define ENV 3
 #define DEF 4
 
-//! This function does the job of several calls to @[find_option()].
-//! The main advantage of this is that it allows it to handle the
-//! @tt{@b{POSIX_ME_HARDER@}@} environment variable better. When the either
-//! the argument @[posix_me_harder] or the environment variable
-//! @tt{@b{POSIX_ME_HARDER@}@} is true, no arguments will be parsed after
-//! the first non-option on the command line.
+//!   This function does the job of several calls to @[find_option()].
+//!   The main advantage of this is that it allows it to handle the
+//!   @tt{@b{POSIX_ME_HARDER@}@} environment variable better. When the either
+//!   the argument @[posix_me_harder] or the environment variable
+//!   @tt{@b{POSIX_ME_HARDER@}@} is true, no arguments will be parsed after
+//!   the first non-option on the command line.
 //!
-//! Each element in the array @[options] should be an array on the
-//! following form:
-//! @array
-//!   @elem string name
-//!     Name is a tag used to identify the option in the output.
-//!   @elem int type
-//!     Type is one of @[Getopt.HAS_ARG], @[Getopt.NO_ARG] and
-//!     @[Getopt.MAY_HAVE_ARG] and it affects how the error handling
-//!     and parsing works.
-//!     You should use @[HAS_ARG] for options that require a path, a number or
-//!     similar. @[NO_ARG] should be used for options that do not need an
-//!     argument, such as @tt{--version@}. @[MAY_HAVE_ARG] should be used
-//!     for options that may or may not need an argument.
-//!   @elem string|array(string) aliases
-//!     This is a string or an array of string of options that will be
-//!     looked for. Short and long options can be mixed, and short options
-//!     can be combined into one string. Note that you must include the dashes
-//!     so that @[find_all_options()] can distinguish between
-//!     long and short options. Example: @tt{({"-tT","--test"})@}
-//!     This would make @[find_all_options] look for @tt{-t@},
-//!     @tt{-T@} and @tt{--test@}.
-//!   @elem void|string|array(string) env_var
-//!     This is a string or an array of strings containing names of
-//!     environment variables that can be used instead of the
-//!     command line option.
-//!   @elem void|mixed default
-//!     This is the default value the option will have in the output
-//!     from this function. Options without defaults will be omitted
-//!     from the output if they are not found in argv.
-//! @endarray
+//! @param argv
+//!   The should be the array of strings that was sent as
+//!   the second argument to your @tt{main()@} function.
 //!
-//! Only the first three elements need to be included.
+//! @param options
+//!   Each element in the array @[options] should be an array on the
+//!   following form:
+//!   @array
+//!   	@elem string name
+//!   	  Name is a tag used to identify the option in the output.
+//!   	@elem int type
+//!   	  Type is one of @[Getopt.HAS_ARG], @[Getopt.NO_ARG] and
+//!   	  @[Getopt.MAY_HAVE_ARG] and it affects how the error handling
+//!   	  and parsing works.
+//!   	  You should use @[HAS_ARG] for options that require a path, a number
+//!       or similar. @[NO_ARG] should be used for options that do not need an
+//!   	  argument, such as @tt{--version@}. @[MAY_HAVE_ARG] should be used
+//!   	  for options that may or may not need an argument.
+//!   	@elem string|array(string) aliases
+//!   	  This is a string or an array of string of options that will be
+//!   	  looked for. Short and long options can be mixed, and short options
+//!   	  can be combined into one string. Note that you must include the
+//!       dashes so that @[find_all_options()] can distinguish between
+//!   	  long and short options. Example: @tt{({"-tT","--test"})@}
+//!   	  This would make @[find_all_options] look for @tt{-t@},
+//!   	  @tt{-T@} and @tt{--test@}.
+//!   	@elem void|string|array(string) env_var
+//!   	  This is a string or an array of strings containing names of
+//!   	  environment variables that can be used instead of the
+//!   	  command line option.
+//!   	@elem void|mixed default
+//!   	  This is the default value the option will have in the output
+//!   	  from this function. Options without defaults will be omitted
+//!   	  from the output if they are not found in argv.
+//!   @endarray
+//!
+//!   Only the first three elements need to be included.
+//!
+//! @param posix_me_harder
+//!   Don't scan for arguments after the first non-option.
+//!
+//! @param throw_errors
+//!   If @[throw_errors] has been specified @[find_all_options()] will throw
+//!   errors on failure. If it has been left out, or is @tt{0@} (zero), it will
+//!   instead print an error message and exit the program on failure.
 //!
 //! @returns
-//! The good news is that the output from this function is a lot simpler.
-//! @[find_all_options()] returns an array where each element is an array on
-//! this form:
-//! @array
-//!   @elem string name
-//!     Option identifier name from the input.
-//!   @elem mixed value
-//!     Value given. If no value was specified, and no default has been
-//!     specified, the value will be 1.
-//! @endarray
+//!   The good news is that the output from this function is a lot simpler.
+//!   @[find_all_options()] returns an array where each element is an array on
+//!   this form:
+//!   @array
+//!   	@elem string name
+//!   	  Option identifier name from the input.
+//!   	@elem mixed value
+//!   	  Value given. If no value was specified, and no default has been
+//!   	  specified, the value will be 1.
+//!   @endarray
 //!
 //! @note
-//! @[find_all_options()] modifies @[argv].
+//!   @[find_all_options()] modifies @[argv].
+//!
+//!   Index @tt{0@} (zero) of @[argv] is not scanned for options, since it
+//!   is reserved for the program name.
 //!
 //! @seealso
-//! @[Getopt.get_args()], @[Getopt.find_option()]
+//!   @[Getopt.get_args()], @[Getopt.find_option()]
 //!
 array find_all_options(array(string) argv,
 		       array(array(array(string)|string)) options,
