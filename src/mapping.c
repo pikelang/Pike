@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.65 2000/02/09 23:49:17 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.66 2000/02/15 02:41:18 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -226,7 +226,7 @@ static void mapping_rehash_backwards_evil(struct mapping_data *md,
   /* unlink */
   k=md->free_list;
 #ifdef PIKE_DEBUG
-  if(!k) fatal("Error in rehash: not enough kehypairs.\n");
+  if(!k) fatal("Error in rehash: not enough keypairs.\n");
 #endif
   md->free_list=k->next;
 
@@ -258,7 +258,7 @@ static void mapping_rehash_backwards_good(struct mapping_data *md,
   /* unlink */
   k=md->free_list;
 #ifdef PIKE_DEBUG
-  if(!k) fatal("Error in rehash: not enough kehypairs.\n");
+  if(!k) fatal("Error in rehash: not enough keypairs.\n");
 #endif
   md->free_list=k->next;
 
@@ -292,6 +292,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   INT32 e;
 
   md=m->data;
+  debug_malloc_touch(md);
 #ifdef PIKE_DEBUG
   if(md->refs <=0)
     fatal("Zero refs in mapping->data\n");
@@ -1295,7 +1296,7 @@ struct mapping *merge_mapping_array_ordered(struct mapping *a,
 	cv=array_zip(av,b,zipper); /* b must not be used */
 	break;
      default:
-	fatal("merge_mapping_array on other then AND or SUB\n");
+	fatal("merge_mapping_array on other than AND or SUB\n");
   }
 
   free_array(ai);
@@ -1878,9 +1879,12 @@ void gc_free_all_unreferenced_mappings(void)
     if(gc_do_free(m))
     {
       add_ref(m);
-      unlink_mapping_data(m->data);
+      md = m->data;
+      /* Protect against unlink_mapping_data() recursing too far. */
       m->data=&empty_data;
       m->data->refs++;
+
+      unlink_mapping_data(md);
       next=m->next;
 #ifdef PIKE_DEBUG
       m->debug_size=0;
