@@ -116,9 +116,7 @@ string common_prefix(array(string) strs)
   return strs0[0..n-1];
 }
 
-//! A helper class to optimize iterative string build-up for speed. Can help up
-//! performance noticably when dealing with buildup of huge strings by reducing
-//! the time needed for rehashing the string every time it grows.
+// Deprecated. Use String.Buffer instead.
 class String_buffer
 {
   array(string) buffer=allocate(BEGIN);
@@ -132,28 +130,24 @@ class String_buffer
       ptr=1;
     }
 
-  //! Get the contents of the buffer.
   string get_buffer()
     {
       if(ptr != 1) fix();
       return buffer[0];
     }
 
-  //! Append the string @[s] to the buffer.
   void append(string s)
     {
       if(ptr==sizeof(buffer)) fix();
       buffer[ptr++]=s;
     }
 
-  //!
   mixed cast(string to)
     {
       if(to=="string") return get_buffer();
       return 0;
     }
 
-  //! Clear the buffer.
   void flush()
     {
       buffer=allocate(BEGIN);
