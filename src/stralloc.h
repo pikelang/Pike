@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: stralloc.h,v 1.53 2000/08/10 18:00:42 grubba Exp $
+ * $Id: stralloc.h,v 1.54 2000/08/10 18:23:30 grubba Exp $
  */
 #ifndef STRALLOC_H
 #define STRALLOC_H
@@ -192,19 +192,22 @@ PMOD_EXPORT int safe_debug_findstring(struct pike_string *foo);
 PMOD_EXPORT struct pike_string *debug_findstring(const struct pike_string *foo);
 PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max);
 void dump_stralloc_strings(void);
-PMOD_EXPORT int low_quick_binary_strcmp(char *a,INT32 alen,
-			    char *b,INT32 blen);
-PMOD_EXPORT int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
-				const char *b,INT32 blen, int bsize);
+PMOD_EXPORT int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
+					char *b, ptrdiff_t blen);
+PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
+						  ptrdiff_t alen, int asize,
+						  const char *b,
+						  ptrdiff_t blen, int bsize);
 PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len);
-PMOD_EXPORT static int low_binary_strcmp(char *a,INT32 alen,
-		      char *b,INT32 blen);
-PMOD_EXPORT static int low_binary_strcmp(char *a,INT32 alen,
-			     char *b,INT32 blen);
-PMOD_EXPORT int my_quick_strcmp(struct pike_string *a,struct pike_string *b);
-PMOD_EXPORT int my_strcmp(struct pike_string *a,struct pike_string *b);
-PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size);
-PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size);
+PMOD_EXPORT static int low_binary_strcmp(char *a, ptrdiff_t alen,
+					 char *b, ptrdiff_t blen);
+PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
+				      struct pike_string *b);
+PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b);
+PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
+							ptrdiff_t size);
+PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a,
+						      ptrdiff_t size);
 PMOD_EXPORT struct pike_string *new_realloc_shared_string(struct pike_string *a, INT32 size, int shift);
 PMOD_EXPORT struct pike_string *modify_shared_string(struct pike_string *a,
 					 INT32 index,
@@ -213,9 +216,9 @@ PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);
 PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
 						struct pike_string *b);
-PMOD_EXPORT int string_search(struct pike_string *haystack,
-		  struct pike_string *needle,
-		  int start);
+PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
+				    struct pike_string *needle,
+				    ptrdiff_t start);
 PMOD_EXPORT struct pike_string *string_slice(struct pike_string *s,
 					     ptrdiff_t start,
 					     ptrdiff_t len);

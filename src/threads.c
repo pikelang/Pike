@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.134 2000/08/10 09:51:52 per Exp $");
+RCSID("$Id: threads.c,v 1.135 2000/08/10 18:25:17 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -213,7 +213,7 @@ struct program *thread_local_prog = 0;
 pthread_attr_t pattr;
 pthread_attr_t small_pattr;
 #endif
-PMOD_EXPORT int thread_storage_offset;
+PMOD_EXPORT ptrdiff_t thread_storage_offset;
 
 struct thread_starter
 {
@@ -528,7 +528,7 @@ PMOD_EXPORT void f_all_threads(INT32 args)
       ref_push_object(o);
     }
   mt_unlock( & thread_table_lock );
-  f_aggregate(Pike_sp-oldsp);
+  f_aggregate(DO_NOT_WARN(Pike_sp - oldsp));
 }
 
 
@@ -678,7 +678,7 @@ TH_RETURN_TYPE new_thread_func(void * data)
   mt_unlock_interpreter();
   th_exit(0);
   /* NOT_REACHED, but removes a warning */
-  return(NULL);
+  return(0);
 }
 
 #ifdef UNIX_THREADS
@@ -1221,7 +1221,7 @@ void low_th_init(void)
 void th_init(void)
 {
   struct program *tmp;
-  INT32 mutex_key_offset;
+  ptrdiff_t mutex_key_offset;
 
 #ifdef UNIX_THREADS
   
@@ -1429,7 +1429,7 @@ static TH_RETURN_TYPE farm(void *_a)
       --_num_farmers;
       mt_unlock( &rosie );
       free( me );
-      return NULL;
+      return 0;
     }
     me->neighbour = farmers;
     farmers = me;
@@ -1440,7 +1440,7 @@ static TH_RETURN_TYPE farm(void *_a)
 /*     fprintf(stderr, "farm_endwait %p\n", me); */
   } while(1);
   /* NOT_REACHED */
-  return NULL;/* Keep the compiler happy. */
+  return 0;/* Keep the compiler happy. */
 }
 
 int th_num_idle_farmers(void)

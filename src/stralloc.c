@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.94 2000/08/10 18:00:09 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.95 2000/08/10 18:23:17 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -39,7 +39,7 @@ static unsigned int need_more_hash_prefix=0;
 unsigned INT32 htable_size=0;
 static unsigned int hashprimes_entry=0;
 static struct pike_string **base_table=0;
-static unsigned INT32 full_hash_value;
+static size_t full_hash_value;
 unsigned INT32 num_strings=0;
 
 /*** Main string hash function ***/
@@ -47,13 +47,13 @@ unsigned INT32 num_strings=0;
 
 #define StrHash(s,len) low_do_hash(s,len,0)
 
-static unsigned int low_do_hash(const void *s, ptrdiff_t len, int size_shift)
+static size_t low_do_hash(const void *s, ptrdiff_t len, int size_shift)
 {
   full_hash_value=hashmem(s,len<<size_shift,HASH_PREFIX<<size_shift);
   return full_hash_value % htable_size;
 }
 
-static INLINE unsigned int do_hash(struct pike_string *s)
+static INLINE size_t do_hash(struct pike_string *s)
 {
   return low_do_hash(s->str, s->len, s->size_shift);
 }
@@ -287,7 +287,7 @@ static int improper_zero_termination(struct pike_string *s)
 static struct pike_string *internal_findstring(const char *s,
 					       ptrdiff_t len,
 					       int size_shift,
-					       int h)
+					       ptrdiff_t h)
 {
   struct pike_string *curr,**prev, **base;
 #ifndef HASH_PREFIX
@@ -323,7 +323,7 @@ static struct pike_string *internal_findstring(const char *s,
   }
 #ifndef HASH_PREFIX
   /* These heuruistics might require tuning! /Hubbe */
-  if((depth > HASH_PREFIX) && (HASH_PREFIX < (unsigned int)len))
+  if((depth > HASH_PREFIX) && (HASH_PREFIX < (size_t)len))
   {
     need_more_hash_prefix++;
 /*    fprintf(stderr,"depth=%d  num_strings=%d need_more_hash_prefix=%d  HASH_PREFIX=%d\n",depth,num_strings,need_more_hash_prefix,HASH_PREFIX); */
@@ -350,7 +350,7 @@ PMOD_EXPORT struct pike_string *findstring(const char *foo)
  * of that list in the hastable
  */
 static struct pike_string *propagate_shared_string(const struct pike_string *s,
-						   int h)
+						   ptrdiff_t h)
 {
   struct pike_string *curr, **prev, **base;
 
@@ -379,10 +379,10 @@ static struct pike_string *propagate_shared_string(const struct pike_string *s,
 
 static void rehash_string_backwards(struct pike_string *s)
 {
-  int h;
+  ptrdiff_t h;
   if(!s) return;
   rehash_string_backwards(s->next);
-  h=s->hval % htable_size;
+  h = s->hval % htable_size;
   s->next=base_table[h];
   base_table[h]=s;
 }
@@ -427,7 +427,7 @@ PMOD_EXPORT struct pike_string *debug_begin_shared_string(size_t len)
   return t;
 }
 
-static void link_pike_string(struct pike_string *s, unsigned int h)
+static void link_pike_string(struct pike_string *s, size_t h)
 {
   s->refs = 0;
   s->next = base_table[h];
@@ -467,7 +467,7 @@ static void link_pike_string(struct pike_string *s, unsigned int h)
 	base_table[h2]=tmp2;
       }
     }
-    full_hash_value=save_full_hash_value;
+    full_hash_value = save_full_hash_value;
   }
 #endif
 }
@@ -569,7 +569,7 @@ PMOD_EXPORT struct pike_string *end_shared_string(struct pike_string *s)
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string(const char *str,size_t len)
 {
   struct pike_string *s;
-  int h=StrHash(str,len);
+  ptrdiff_t h = StrHash(str, len);
 
   s = internal_findstring(str,len,0,h);
   if (!s) 
@@ -614,7 +614,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string0(const p_wchar0
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,size_t len)
 {
   struct pike_string *s;
-  int h;
+  ptrdiff_t h;
 
   if(!find_magnitude1(str,len))
   {
@@ -642,7 +642,7 @@ PMOD_EXPORT struct pike_string * debug_make_shared_binary_string1(const p_wchar1
 PMOD_EXPORT struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,size_t len)
 {
   struct pike_string *s;
-  int h;
+  ptrdiff_t h;
 
   switch(find_magnitude2(str,len))
   {
@@ -702,11 +702,11 @@ PMOD_EXPORT struct pike_string *debug_make_shared_string2(const p_wchar2 *str)
 
 PMOD_EXPORT void unlink_pike_string(struct pike_string *s)
 {
-  unsigned int h=s->hval % htable_size;
+  size_t h = s->hval % htable_size;
   propagate_shared_string(s,h);
   base_table[h]=s->next;
 #ifdef PIKE_DEBUG
-  s->next=(struct pike_string *)-1;
+  s->next=(struct pike_string *)(ptrdiff_t)-1;
 #endif
   num_strings--;
 }
@@ -727,10 +727,10 @@ PMOD_EXPORT void really_free_string(struct pike_string *s)
     }
     if(d_flag > 2)
     {
-      if(s->next == (struct pike_string *)-1)
+      if(s->next == (struct pike_string *)(ptrdiff_t)-1)
 	fatal("Freeing shared string again!\n");
 
-      if(((long)s->next) & 1)
+      if(((ptrdiff_t)s->next) & 1)
 	fatal("Freeing shared string again, memory corrupt or other bug!\n");
     }
   }
@@ -761,7 +761,7 @@ struct pike_string *add_string_status(int verbose)
     int allocd_bytes=0;
     int num_distinct_strings=0;
     int bytes_distinct_strings=0;
-    int overhead_bytes=0;
+    ptrdiff_t overhead_bytes = 0;
     unsigned INT32 e;
     struct pike_string *p;
     for(e=0;e<htable_size;e++)
@@ -785,10 +785,11 @@ struct pike_string *add_string_status(int verbose)
     sprintf(b,"Strings malloced\t\t%8ld %8ld + %ld overhead\n",
 	    (long)num_distinct_strings,
 	    (long)bytes_distinct_strings,
-	    (long)overhead_bytes);
+	    DO_NOT_WARN((long)overhead_bytes));
     my_strcat(b);
-    sprintf(b,"Space actually required/total string bytes %d%%\n",
-	    (bytes_distinct_strings + overhead_bytes)*100 / allocd_bytes);
+    sprintf(b, "Space actually required/total string bytes %ld%%\n",
+	    DO_NOT_WARN((long)((bytes_distinct_strings + overhead_bytes)*100 /
+			       allocd_bytes)));
     my_strcat(b);
   }
 /*
@@ -824,7 +825,7 @@ PMOD_EXPORT void check_string(struct pike_string *s)
 PMOD_EXPORT void verify_shared_strings_tables(void)
 {
   unsigned INT32 e, h, num=0;
-  unsigned INT32 orig_full_hash = full_hash_value;
+  size_t orig_full_hash = full_hash_value;
   struct pike_string *s;
 
   for(e=0;e<htable_size;e++)
@@ -935,10 +936,10 @@ PMOD_EXPORT void debug_dump_pike_string(struct pike_string *s, INT32 max)
   fprintf(stderr,"0x%p: %ld refs, len=%ld, size_shift=%d, hval=%lux (%lx)\n",
 	  s,
 	  (long)s->refs,
-	  (long)s->len,
+	  DO_NOT_WARN((long)s->len),
 	  s->size_shift,
-	  (unsigned long)s->hval,
-	  (unsigned long)StrHash(s->str, s->len));
+	  DO_NOT_WARN((unsigned long)s->hval),
+	  DO_NOT_WARN((unsigned long)StrHash(s->str, s->len)));
   fprintf(stderr," \"");
   for(e=0;e<s->len && max>0;e++)
   {
@@ -982,8 +983,8 @@ void dump_stralloc_strings(void)
 /*** String compare functions ***/
 
 /* does not take locale into account */
-PMOD_EXPORT int low_quick_binary_strcmp(char *a,INT32 alen,
-			    char *b,INT32 blen)
+PMOD_EXPORT int low_quick_binary_strcmp(char *a, ptrdiff_t alen,
+					char *b, ptrdiff_t blen)
 {
   int tmp;
   if(alen > blen)
@@ -1002,8 +1003,10 @@ PMOD_EXPORT int low_quick_binary_strcmp(char *a,INT32 alen,
 
 
 /* does not take locale into account */
-PMOD_EXPORT int generic_quick_binary_strcmp(const char *a,INT32 alen, int asize,
-				const char *b,INT32 blen, int bsize)
+PMOD_EXPORT ptrdiff_t generic_quick_binary_strcmp(const char *a,
+						  ptrdiff_t alen, int asize,
+						  const char *b,
+						  ptrdiff_t blen, int bsize)
 {
   if(!asize && !bsize)
   {
@@ -1039,8 +1042,8 @@ PMOD_EXPORT int c_compare_string(struct pike_string *s, char *foo, int len)
 
 #ifndef HAVE_STRCOLL
 /* No locale function available */
-int low_binary_strcmp(char *a,INT32 alen,
-		      char *b,INT32 blen)
+int low_binary_strcmp(char *a, ptrdiff_t alen,
+		      char *b, ptrdiff_t blen)
 {
   low_quick_binary_strcmp(a,alen,b,blen);
 }
@@ -1069,7 +1072,8 @@ static int low_binary_strcmp(char *a,INT32 alen,
 
 /* Does not take locale into account */
 
-PMOD_EXPORT int my_quick_strcmp(struct pike_string *a,struct pike_string *b)
+PMOD_EXPORT ptrdiff_t my_quick_strcmp(struct pike_string *a,
+				      struct pike_string *b)
 {
   if(a==b) return 0;
 
@@ -1078,7 +1082,7 @@ PMOD_EXPORT int my_quick_strcmp(struct pike_string *a,struct pike_string *b)
 }
 
 /* Does take locale into account */
-PMOD_EXPORT int my_strcmp(struct pike_string *a,struct pike_string *b)
+PMOD_EXPORT ptrdiff_t my_strcmp(struct pike_string *a,struct pike_string *b)
 {
   if(a==b) return 0;
 
@@ -1089,7 +1093,7 @@ PMOD_EXPORT int my_strcmp(struct pike_string *a,struct pike_string *b)
 
     default:
     {
-      INT32 e,l=MINIMUM(a->len,b->len);
+      ptrdiff_t e, l = MINIMUM(a->len, b->len);
       for(e=0;e<l;e++)
       {
 	INT32 ac=index_shared_string(a,e);
@@ -1115,7 +1119,8 @@ PMOD_EXPORT int my_strcmp(struct pike_string *a,struct pike_string *b)
   }
 }
 
-PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size)
+PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a,
+							ptrdiff_t size)
 {
   struct pike_string *r;
   r=(struct pike_string *)realloc((char *)a,
@@ -1135,7 +1140,8 @@ PMOD_EXPORT struct pike_string *realloc_unlinked_string(struct pike_string *a, I
 }
 
 /* Returns an unlinked string ready for end_shared_string */
-PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size)
+PMOD_EXPORT struct pike_string *realloc_shared_string(struct pike_string *a,
+						      ptrdiff_t size)
 {
   struct pike_string *r;
   if(a->refs==1)
@@ -1323,10 +1329,10 @@ PMOD_EXPORT struct pike_string *add_shared_strings(struct pike_string *a,
 PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *a,
 						struct pike_string *b)
 {
-  INT32 alen=a->len;
+  ptrdiff_t alen = a->len;
   if(a->size_shift == b->size_shift)
   {
-    a=realloc_shared_string(a,alen + b->len);
+    a = realloc_shared_string(a,alen + b->len);
     MEMCPY(a->str+(alen<<a->size_shift),b->str,b->len<<b->size_shift);
     free_string(b);
     return end_shared_string(a);
@@ -1339,9 +1345,9 @@ PMOD_EXPORT struct pike_string *add_and_free_shared_strings(struct pike_string *
 }
 
 
-PMOD_EXPORT int string_search(struct pike_string *haystack,
-		  struct pike_string *needle,
-		  int start)
+PMOD_EXPORT ptrdiff_t string_search(struct pike_string *haystack,
+				    struct pike_string *needle,
+				    ptrdiff_t start)
 {
   struct generic_mem_searcher s;
   char *r;
@@ -1633,10 +1639,10 @@ PMOD_EXPORT void *string_builder_allocate(struct string_builder *s, ptrdiff_t ch
 
 PMOD_EXPORT void string_builder_putchar(struct string_builder *s, int ch)
 {
-  INT32 i;
+  ptrdiff_t i;
   string_build_mkspace(s,1,min_magnitude(ch));
   s->known_shift=MAXIMUM(min_magnitude(ch),s->known_shift);
-  i=s->s->len++;
+  i = s->s->len++;
   low_set_index(s->s,i,ch);
 }
 

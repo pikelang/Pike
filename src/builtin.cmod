@@ -102,12 +102,12 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) a, array(2=mixed) b)
   RETURN mkmapping(a,b);
 }
 
-PIKEFUN int string_count(string haystack, string needle)
+PIKEFUN ptrdiff_t string_count(string haystack, string needle)
   errname String.count;
   optflags OPT_TRY_OPTIMIZE;
 {
-   int c=0;
-   int i,j;
+   ptrdiff_t c = 0;
+   ptrdiff_t i, j;
 
    switch (needle->len)
    {
