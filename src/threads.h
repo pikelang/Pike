@@ -435,6 +435,8 @@ void f_all_threads(INT32 args);
 #define mt_destroy(X)
 #define THREADS_ALLOW()
 #define THREADS_DISALLOW()
+#define THREADS_ALLOW_UID()
+#define THREADS_DISALLOW_UID()
 #define HIDE_GLOBAL_VARIABLES()
 #define REVEAL_GLOBAL_VARIABLES()
 #define th_init()
