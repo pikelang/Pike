@@ -75,6 +75,10 @@ Search.ResultSet execute(Search.Database.Base db,
 
   Search.Grammar.ParseNode q = parser->parse(query);
   q = Search.Grammar.optimize(q);
+
+  if (!q)                      // The query was a null query
+    return Search.ResultSet(); // so return an empty resultset
+
   string error = Search.Grammar.validate(q);
   if (error)
     throw (error);

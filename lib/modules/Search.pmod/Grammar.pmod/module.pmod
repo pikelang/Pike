@@ -200,6 +200,8 @@ static private void v(ParseNode node, ParseNode parent) {
 
 // Returns 0 if OK, a string with error message if error
 string validate(ParseNode node) {
+  if (!node)  // A null query is also valid.
+    return 0;
   mixed err = catch (v(node, 0));
   if (err)
     if (stringp(err))
