@@ -25,6 +25,8 @@ string packages =
 \\usepackage{amsmath}
 \\usepackage{longtable}
 \\usepackage{graphicx}
+\\usepackage{color}  % colors becomes wrong in xdvi, but right in postscript
+\\usepackage{colortbl}
 ";
 
 
@@ -322,6 +324,7 @@ string low_latex_quote(string text)
 
 string latex_quote(string text)
 {
+  if(!strlen(text)) return text;
   if(!pre)
   {
     if(text[-1]=='\n') text[-1]=' ';
@@ -397,14 +400,27 @@ string mkref(string label)
 string convert_table(TAG table)
 {
   SGML data=table->data;
-  int rows,columns;
+  int rows,columns,nicer,framed;
 
   // FIXME, nicer tables not supported (yet)
+
+  // border: lines around each cell
+  int border=(int)table->params->border;
+
+  // framed: line around table
+  int framed=(int)table->params->framed;
+
+  // extra space between columns
+  int spaced;
+
   if(table->params->nicer)
   {
-    table->params->border="1";
+    nicer=1;
+    framed=1;
+    border=0;
+    spaced=1;
   }
-  int border=(int)table->params->border;
+  framed|=border;
   array(float) column_data=allocate(100,1.0);
 
 
@@ -682,18 +698,21 @@ string convert_table(TAG table)
   
   float total_data=`+(@column_data);
 
-  string fmt=(border ? "|" : "") + ("l"+(border ? "|" : ""))*columns;
+  
+  string fmt=(({"l"}) * columns) * (border?"|": (spaced?"l":"") );
+  if(framed) fmt="|"+fmt+"|";
 
-  string ret="\n\n\\begin{longtable}{"+ fmt +"}\n";
-
-  if(border) ret+="\\hline\n";
+  array(string) ret_rows=({});
 
   in_table++;
+
+  int rownum;
 
   // FIXME: handle <th>
   foreach(table, array(Cell) row)
     {
       array(string) ltxrow=({});
+      int head;
 
       for(int col=0;col<columns;col+=row[col]->cols)
       {
@@ -701,6 +720,10 @@ string convert_table(TAG table)
 	int cols=row[col]->cols;
 	if(cols > 1) r+="\\multicolumn{"+cols+"}{l}{";
 	r+="\\begin{minipage}{"+actual_widths[col]+"pt}\n";
+
+	if(row[col]->tag->tag == "th")
+	  head=1;
+
 	switch(row[col]->tag->params->align)
 	{
 	  // FIXME: might need to add \\ to end of each line
@@ -726,11 +749,37 @@ string convert_table(TAG table)
 	if(cols > 1) r+="}";
 	ltxrow+=({r});
       }
-      ret+=ltxrow*" & "+"\\\\\n";
-      if(border) ret+="\\hline\n";
+
+      string color="";
+      string colorend="";
+      if(nicer)
+      {
+	if(head)
+	{
+	  color="\\rowcolor[rgb]{0.153,0.13,0.357}%%\n";
+	  for(int e=0;e<sizeof(ltxrow);e++)
+	    ltxrow[e]="\\color[rgb]{1,1,1}%\n"+ltxrow[e];
+	  ltxrow[-1]+="\\normalcolor ";
+	}else{
+	  color=sprintf("\\rowcolor[rgb]{%s}%%\n",(rownum++&1)?"1,1,1":"0.867,0.933,1");
+	}
+      }
+
+
+
+      ret_rows+=({
+	color+
+	ltxrow* (spaced?" & $\\;$ & ":" & ")+
+	(head ? "\\endhead\n" :  "\\\\\n" )
+      });
     }
   in_table--;
 
+  string ret="\n\n\\begin{longtable}{"+ fmt +"}\n";
+  if(framed && !border) ret+="\\hline\\endfoot\n";
+  if(framed) ret+="\\hline\n";
+  ret+=ret_rows * ( border ? "\\hline\n" : "" );
+  if(framed) ret+="\\hline\n";
   ret+="\\end{longtable}\n";
 
   return ret;
