@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: pvr.c,v 1.17 2002/05/11 00:12:39 nilsson Exp $");
+RCSID("$Id: pvr.c,v 1.18 2002/06/18 10:08:29 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -382,11 +382,102 @@ static void pvr_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
   }
 }
 
+static void pvr_decode_vq(INT32 attr, unsigned char *src, rgb_group *dst,
+			  INT32 stride, unsigned int sz, unsigned char *cb)
+{
+  unsigned int x, y;
+  stride+=sz;
+  sz>>=1;
+  switch(attr&0xff) {
+   case MODE_ARGB1555:
+   case MODE_RGB555:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *cbsrc = cb+(src[(twiddletab[x]<<1)|twiddletab[y]]<<3);
+	 unsigned int p = cbsrc[0]|(cbsrc[1]<<8);
+	 dst[0].r = ((p&0x7c00)>>7)|((p&0x7000)>>12);
+	 dst[0].g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
+	 dst[0].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 p = cbsrc[4]|(cbsrc[5]<<8);
+	 dst[1].r = ((p&0x7c00)>>7)|((p&0x7000)>>12);
+	 dst[1].g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
+	 dst[1].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 p = cbsrc[2]|(cbsrc[3]<<8);
+	 dst[stride].r = ((p&0x7c00)>>7)|((p&0x7000)>>12);
+	 dst[stride].g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
+	 dst[stride].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 p = cbsrc[6]|(cbsrc[7]<<8);
+	 dst[stride+1].r = ((p&0x7c00)>>7)|((p&0x7000)>>12);
+	 dst[stride+1].g = ((p&0x03e0)>>2)|((p&0x0380)>>7);
+	 dst[stride+1].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 dst+=2;
+       }
+       dst+=(stride-sz)*2;
+     }
+     break;
+   case MODE_RGB565:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *cbsrc = cb+(src[(twiddletab[x]<<1)|twiddletab[y]]<<3);
+	 unsigned int p = cbsrc[0]|(cbsrc[1]<<8);
+	 dst[0].r = ((p&0xf800)>>8)|((p&0xe000)>>13);
+	 dst[0].g = ((p&0x07e0)>>3)|((p&0x0600)>>9);
+	 dst[0].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 p = cbsrc[4]|(cbsrc[5]<<8);
+	 dst[1].r = ((p&0xf800)>>8)|((p&0xe000)>>13);
+	 dst[1].g = ((p&0x07e0)>>3)|((p&0x0600)>>9);
+	 dst[1].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 p = cbsrc[2]|(cbsrc[3]<<8);
+	 dst[stride].r = ((p&0xf800)>>8)|((p&0xe000)>>13);
+	 dst[stride].g = ((p&0x07e0)>>3)|((p&0x0600)>>9);
+	 dst[stride].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 p = cbsrc[6]|(cbsrc[7]<<8);
+	 dst[stride+1].r = ((p&0xf800)>>8)|((p&0xe000)>>13);
+	 dst[stride+1].g = ((p&0x07e0)>>3)|((p&0x0600)>>9);
+	 dst[stride+1].b = ((p&0x001f)<<3)|((p&0x001c)>>2);
+	 dst+=2;
+       }
+       dst+=(stride-sz)*2;
+     }
+     break;
+   case MODE_ARGB4444:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *cbsrc = cb+(src[(twiddletab[x]<<1)|twiddletab[y]]<<3);
+	 unsigned int p = cbsrc[0]|(cbsrc[1]<<8);
+	 dst[0].r = ((p&0x0f00)>>4)|((p&0x0f00)>>8);
+	 dst[0].g = (p&0x00f0)|((p&0x00f0)>>4);
+	 dst[0].b = ((p&0x000f)<<4)|(p&0x000f);
+	 p = cbsrc[4]|(cbsrc[5]<<8);
+	 dst[1].r = ((p&0x0f00)>>4)|((p&0x0f00)>>8);
+	 dst[1].g = (p&0x00f0)|((p&0x00f0)>>4);
+	 dst[1].b = ((p&0x000f)<<4)|(p&0x000f);
+	 p = cbsrc[2]|(cbsrc[3]<<8);
+	 dst[stride].r = ((p&0x0f00)>>4)|((p&0x0f00)>>8);
+	 dst[stride].g = (p&0x00f0)|((p&0x00f0)>>4);
+	 dst[stride].b = ((p&0x000f)<<4)|(p&0x000f);
+	 p = cbsrc[6]|(cbsrc[7]<<8);
+	 dst[stride+1].r = ((p&0x0f00)>>4)|((p&0x0f00)>>8);
+	 dst[stride+1].g = (p&0x00f0)|((p&0x00f0)>>4);
+	 dst[stride+1].b = ((p&0x000f)<<4)|(p&0x000f);
+	 dst+=2;
+       }
+       dst+=(stride-sz)*2;
+     }
+     break;
+  }
+}
+
 static void pvr_decode_twiddled(INT32 attr, unsigned char *s, rgb_group *dst,
-				INT32 stride, unsigned int sz)
+				INT32 stride, unsigned int sz,
+				unsigned char *codebook)
 {
   unsigned int x, y;
   unsigned char *src;
+  if(codebook) {
+    pvr_decode_vq(attr, s, dst, stride, sz, codebook);
+    return;
+  }
   switch(attr&0xff) {
    case MODE_ARGB1555:
    case MODE_RGB555:
@@ -462,11 +553,71 @@ static void pvr_decode_alpha_rect(INT32 attr, unsigned char *src,
   }
 }
 
-static void pvr_decode_alpha_twiddled(INT32 attr, unsigned char *s,
-				      rgb_group *dst, INT32 stride,
-				      unsigned int sz)
+static void pvr_decode_alpha_vq(INT32 attr, unsigned char *src, rgb_group *dst,
+				INT32 stride, unsigned int sz, unsigned char *cb)
 {
   unsigned int x, y;
+  stride+=sz;
+  sz>>=1;
+  switch(attr&0xff) {
+   case MODE_ARGB1555:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *cbsrc = cb+(src[(twiddletab[x]<<1)|twiddletab[y]]<<3);
+	 if(cbsrc[1] & 0x80)
+	   dst[0].r = dst[0].g = dst[0].b = 0xff;
+	 else
+	   dst[0].r = dst[0].g = dst[0].b = 0;
+	 if(cbsrc[5] & 0x80)
+	   dst[1].r = dst[1].g = dst[1].b = 0xff;
+	 else
+	   dst[1].r = dst[1].g = dst[1].b = 0;
+	 if(cbsrc[3] & 0x80)
+	   dst[stride].r = dst[stride].g = dst[stride].b = 0xff;
+	 else
+	   dst[stride].r = dst[stride].g = dst[stride].b = 0;
+	 if(cbsrc[7] & 0x80)
+	   dst[stride+1].r = dst[stride+1].g = dst[stride+1].b = 0xff;
+	 else
+	   dst[stride+1].r = dst[stride+1].g = dst[stride+1].b = 0;
+	 dst+=2;
+       }
+       dst+=(stride-sz)*2;
+     }
+     break;
+   case MODE_ARGB4444:
+     for(y=0; y<sz; y++) {
+       for(x=0; x<sz; x++) {
+	 unsigned char *cbsrc = cb+(src[(twiddletab[x]<<1)|twiddletab[y]]<<3);
+	 int a = cbsrc[1]&0xf0;
+	 a |= a>>4;
+	 dst[0].r = dst[0].g = dst[0].b = a;
+	 a = cbsrc[5]&0xf0;
+	 a |= a>>4;
+	 dst[1].r = dst[1].g = dst[1].b = a;
+	 a = cbsrc[3]&0xf0;
+	 a |= a>>4;
+	 dst[stride].r = dst[stride].g = dst[stride].b = a;
+	 a = cbsrc[7]&0xf0;
+	 a |= a>>4;
+	 dst[stride+1].r = dst[stride+1].g = dst[stride+1].b = a;
+	 dst+=2;
+       }
+       dst+=(stride-sz)*2;
+     }
+     break;
+  }
+}
+
+static void pvr_decode_alpha_twiddled(INT32 attr, unsigned char *s,
+				      rgb_group *dst, INT32 stride,
+				      unsigned int sz, unsigned char *cb)
+{
+  unsigned int x, y;
+  if(cb) {
+    pvr_decode_alpha_vq(attr, s, dst, stride, sz, cb);
+    return;
+  }
   switch(attr&0xff) {
    case MODE_ARGB1555:
      for(y=0; y<sz; y++) {
@@ -552,10 +703,11 @@ void img_pvr_decode(INT32 args,int header_only)
    n++;   
 
    if(!header_only) {
-     int twiddle=0, hasalpha=0, bpp=0;
+     int twiddle=0, hasalpha=0, bpp=0, compress=0;
      struct object *o;
      struct image *img;
      INT32 mipmap=0;
+     void *codebook = NULL;
 
      switch(attr&0xff00) {
       case MODE_TWIDDLE_MIPMAP:
@@ -573,9 +725,15 @@ void img_pvr_decode(INT32 args,int header_only)
 	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
 	  Pike_error("invalid size for twiddle rectangle texture\n");
 	break;
-      case MODE_COMPRESSED:
       case MODE_COMPRESSED_MIPMAP:
-	Pike_error("compressed PVRs not supported\n");
+	mipmap = 1;
+      case MODE_COMPRESSED:
+	compress = 1;
+	twiddle = 1;
+	if((w<h && (w<8 || w>1024 || (w&(w-1)) || h%w)) ||
+	   (h>=w && (h<8 || h>1024 || (h&(h-1)) || w%h)))
+	  Pike_error("invalid size for vq texture\n");	  
+	break;
       case MODE_CLUT4:
       case MODE_CLUT4_MIPMAP:
       case MODE_CLUT8:
@@ -602,14 +760,24 @@ void img_pvr_decode(INT32 args,int header_only)
 	Pike_error("unknown PVR color mode\n");
      }
 
+     if(compress) {
+       if(len < (INT32)(bpp<<10))
+	 Pike_error("short PVRT chunk\n");
+       codebook = s;
+       s += bpp<<10;
+       len -= bpp<<10;
+       bpp = 1;
+       compress = 2;
+     }
+
      if(mipmap) /* Just skip everything except the largest version */
        for(x=w; x>>=1;)
 	 mipmap += x*x;
 
-     if(len < (INT32)(bpp*(h*w+mipmap)))
+     if(len < (INT32)((bpp*(h*w+mipmap))>>compress))
        Pike_error("short PVRT chunk\n");
 
-     s += bpp*mipmap;
+     s += (bpp*mipmap)>>compress;
 
      push_text("image");
      push_int(w);
@@ -625,10 +793,10 @@ void img_pvr_decode(INT32 args,int header_only)
      if(twiddle)
        if(h<w)
 	 for(x=0; x<w; x+=h)
-	   pvr_decode_twiddled(attr, s+bpp*h*x, img->img+x, w-h, h);
+	   pvr_decode_twiddled(attr, s+bpp*h*x, img->img+x, w-h, h, codebook);
        else
 	 for(x=0; x<h; x+=w)
-	   pvr_decode_twiddled(attr, s+bpp*w*x, img->img+w*x, 0, w);
+	   pvr_decode_twiddled(attr, s+bpp*w*x, img->img+w*x, 0, w, codebook);
      else
        pvr_decode_rect(attr, s, img->img, 0, h, w);
 
@@ -645,10 +813,12 @@ void img_pvr_decode(INT32 args,int header_only)
        if(twiddle)
 	 if(h<w)
 	   for(x=0; x<w; x+=h)
-	     pvr_decode_alpha_twiddled(attr, s+bpp*h*x, img->img+x, w-h, h);
+	     pvr_decode_alpha_twiddled(attr, s+bpp*h*x, img->img+x, w-h, h,
+				       codebook);
 	 else
 	   for(x=0; x<h; x+=w)
-	     pvr_decode_alpha_twiddled(attr, s+bpp*w*x, img->img+w*x, 0, w);
+	     pvr_decode_alpha_twiddled(attr, s+bpp*w*x, img->img+w*x, 0, w,
+				       codebook);
        else
 	 pvr_decode_alpha_rect(attr, s, img->img, 0, h, w);
      }
