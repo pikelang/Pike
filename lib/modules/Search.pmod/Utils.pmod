@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.21 2001/08/06 17:55:33 nilsson Exp $
+// $Id: Utils.pmod,v 1.22 2001/08/08 10:59:50 per Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -514,6 +514,11 @@ class Logger {
     52 : "Filter did not get any connection from the process.",
     53 : "Filter-to-indexer buffer did not get any connection from the process.",
     54 : "Indexer did not get any connection from the process.",
+
+    60 : "Starting database compactor with %s",
+    61 : "Failed to find any data in the database.",
+    62 : "Exiting compacter due to signal.",
+    63 : "Done with database compacting and maintenance.",
 
     300: "300 Redirection: Multiple Choices (%s)",
     301: "301 Redirection: Moved Permanently (%s)",
