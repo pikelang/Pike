@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.8.2.1 1998/06/19 08:43:33 nisse Exp $
+/* $Id: handshake.pike,v 1.8.2.2 1998/06/26 21:51:17 nisse Exp $
  *
  */
 
@@ -31,6 +31,8 @@ constant CERT_no_certificate = 3;
 int certificate_state;
 
 int expect_change_cipher; /* Reset to 0 if a change_cipher message is received */
+
+int rsa_message_was_bad;
 
 int reuse;
 
@@ -194,9 +196,27 @@ string server_derive_master_secret(string data)
      werror(sprintf("premaster_secret: '%O'\n", s));
 #endif
      if (!s || (strlen(s) != 48) || (s[0] != 3))
-       return 0;
-     if (s[1] > 0)
-       werror("SSL.handshake: Newer version detected in key exchange message.\n");
+     {
+
+       /* To avoid the chosen ciphertext attack discovered by Daniel
+	* Bleichenbacher, it is essential not to send any error *
+	* messages back to the client until after the client's *
+	* Finished-message (or some other invalid message) has been *
+	* recieved. */
+
+       werror("SSL.handshake: Invalid premaster_secret! "
+	      "A chosen ciphertext attack?\n");
+
+       s = "Bogus value¡Bogus value¡Bogus value¡Bogus value¡";
+       rsa_message_was_bad = 1;
+
+     } else {
+       /* FIXME: When versions beyond 3.0 is supported,
+	* the version number here must be checked more carefully
+	* for a version rollback attack. */
+       if (s[1] > 0)
+	 werror("SSL.handshake: Newer version detected in key exchange message.\n");
+     }
      object sha = mac_sha();
      object md5 = mac_md5();
      foreach( ({ "A", "BB", "CCC" }), string cookie)
@@ -231,7 +251,8 @@ int handle_handshake(int type, string data, string raw)
 
      /* Reset all extra state variables */
      expect_change_cipher = certificate_state = 0;
-    
+     rsa_message_was_bad = 0;
+     
      handshake_messages = raw;
      my_random = sprintf("%4c%s", time(), context->random(28));
 
@@ -379,7 +400,8 @@ int handle_handshake(int type, string data, string raw)
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
 	 return -1;
        }
-       if (my_digest != digest)
+       if (rsa_message_was_bad       /* Error delayed until now */
+	   || (my_digest != digest))
        {
 	 send_packet(Alert(ALERT_fatal, ALERT_unexpected_message));
 	 return -1;
@@ -421,24 +443,21 @@ int handle_handshake(int type, string data, string raw)
 			  backtrace()));
 	return -1;
       }
+
       if (!(session->master_secret = server_derive_master_secret(data)))
       {
+	throw( ({ "SSL.handshake: internal error\n", backtrace() }) );
+      } else {
+	
+	// trace(1);
+	array res = session->new_server_states(other_random, my_random);
+	pending_read_state = res[0];
+	pending_write_state = res[1];
+	
 #ifdef SSL3_DEBUG
-	werror("server_derive_master_secret failed!\n");
+	werror(sprintf("certificate_state: %d\n", certificate_state));
 #endif
-	send_packet(Alert(ALERT_fatal, ALERT_unexpected_message,
-			  "SSL.session->handle_handshake: unexpected message\n",
-			  backtrace()));
-	return -1;
       }
-      // trace(1);
-      array res = session->new_server_states(other_random, my_random);
-      pending_read_state = res[0];
-      pending_write_state = res[1];
-
-#ifdef SSL3_DEBUG
-      werror(sprintf("certificate_state: %d\n", certificate_state));
-#endif
       if (certificate_state != CERT_received)
       {
 	handshake_state = STATE_server_wait_for_finish;
@@ -481,10 +500,13 @@ int handle_handshake(int type, string data, string raw)
 			backtrace()));
       return -1;
     case HANDSHAKE_certificate_verify:
-      session->client_challenge =
-	mac_md5(session->master_secret)->hash_master(handshake_messages) +
-	mac_sha(session->master_secret)->hash_master(handshake_messages);
-      session->client_signature = data;
+      if (!rsa_message_was_bad)
+      {
+	session->client_challenge =
+	  mac_md5(session->master_secret)->hash_master(handshake_messages) +
+	  mac_sha(session->master_secret)->hash_master(handshake_messages);
+	session->client_signature = data;
+      }
       handshake_messages += raw;
       handshake_state = STATE_server_wait_for_finish;
       expect_change_cipher = 1;
