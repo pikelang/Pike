@@ -219,7 +219,7 @@ static HINSTANCE jvmdll = NULL;
 #ifdef __NT__
 	  {
             char *libname="jvm";
-            LPCSTR keyname=(LPCSTR)"SOFTWARE\\JavaSoft\\Java Runtime Environment\\1.2";
+            LPCSTR keyname=(LPCSTR)"SOFTWARE\\\\JavaSoft\\\\Java Runtime Environment\\\\1.2";
             HKEY key;
             char buffer[2*MAX_PATH+32];
             DWORD type, len = sizeof(buffer)-1;
@@ -245,7 +245,7 @@ static HINSTANCE jvmdll = NULL;
               RegCloseKey(key);
             }
             if((jvmdll=LoadLibrary(libname))==NULL) {
-              fprintf(stderr, "Can't load library %s\n", libname);
+              fprintf(stderr, "Can't load library %s\\n", libname);
               exit(1);
             } else {
               FARPROC proc;
@@ -254,7 +254,7 @@ static HINSTANCE jvmdll = NULL;
               else {
                 if(FreeLibrary(jvmdll))
                   jvmdll = NULL;
-	        fprintf(stderr, "Can't GetProcAddress %s\n", "JNI_CreateJavaVM");
+	        fprintf(stderr, "Can't GetProcAddress %s\\n", "JNI_CreateJavaVM");
                 exit(1);
               }
             }
@@ -270,7 +270,7 @@ static HINSTANCE jvmdll = NULL;
 	  vm_args.nOptions++;
 #endif
           if((res=JNI_CreateJavaVM(&jvm, (void**)&env, &vm_args))) {
-	    fprintf(stderr, "JNI_CreateJavaVM failed code %d\n", (int)res);
+	    fprintf(stderr, "JNI_CreateJavaVM failed code %d\\n", (int)res);
             exit(1);
 	  }
 	  return 0;
