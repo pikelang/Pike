@@ -137,31 +137,36 @@ these before you write Pike extentions.
 <section title="Basic data types">
 First, we must come to know the basic data types pike uses.
 <dl>
+<dt>
 <anchor name=INT8>
 <anchor name=INT16>
 <anchor name=INT32>
 <anchor name=INT64>
-<dt><tt>INT8, INT16, INT32, INT64</tt>
+<tt>INT8, INT16, INT32, INT64</tt>
+</anchor>
+</anchor>
+</anchor>
+</anchor>
 <dd>These are defines which are at least as many bits
     as the number suggests. If there is an integer which is
     32 bits on a certain platform, INT32 is guaranteed to be 32 bits.
-</anchor>
-</anchor>
-</anchor>
-</anchor>
 
+<dt>
 <anchor name=INT_TYPE>
-<dt><tt>INT_TYPE</tt>
+<tt>INT_TYPE</tt>
+</anchor>
 <dd>This is the type Pike uses for integers. Usually 32 bits.
-</anchor>
 
+<dt>
 <anchor name=FLOAT_TYPE>
-<dt><tt>FLOAT_TYPE</tt>
-<dd>This is the type Pike uses for floats. Usually defined as 'float'.
+<tt>FLOAT_TYPE</tt>
 </anchor>
+<dd>This is the type Pike uses for floats. Usually defined as 'float'.
 
+<dt>
 <anchor name=TYPE_FIELD>
-<dt><tt>TYPE_FIELD</tt>
+<tt>TYPE_FIELD</tt>
+</anchor>
 <dd>This is a bit field which can be any combination of the flags:
     <tt>BIT_INT</tt>, 
     <tt>BIT_FLOAT</tt>, 
@@ -193,7 +198,6 @@ First, we must come to know the basic data types pike uses.
     <dt><tt>BIT_CALLABLE</tt>
     <dd>Types that can be used as arguments for apply_svalue.
     </dl>
-</anchor>
 </dl>
 
 </section>
