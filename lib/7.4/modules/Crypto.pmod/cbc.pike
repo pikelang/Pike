@@ -6,8 +6,8 @@ inherit Nettle.CBC;
 static class Wrapper(object a) {
   int block_size() { return a->query_block_size(); }
   int key_size() { return a->query_key_length(); }
-  constant set_encrypt_key = a->set_encrypt_key;
-  constant set_decrypt_key = a->set_decrypt_key;
+  function(string:void) set_encrypt_key = a->set_encrypt_key;
+  function(string:void) set_decrypt_key = a->set_decrypt_key;
   string crypt(string data) { return a->crypt_block(data); }
 }
 
