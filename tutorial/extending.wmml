@@ -127,12 +127,76 @@ Let's look an example:
 This example installs a master object which logs run time errors to file
 instead of writing them to stderr.
 <p>
-</section>
+</section> <!-- the master object -->
 
 <section title="Data types from the inside">
 This section describes the different data types used inside the Pike
 interpreter. It is nessesary to have at least a basic understanding of
 these before you write Pike extentions.
+
+<section title="Basic data types">
+First, we must come to know the basic data types pike uses.
+<dl>
+<anchor name=INT8>
+<anchor name=INT16>
+<anchor name=INT32>
+<anchor name=INT64>
+<dt><tt>INT8, INT16, INT32, INT64</tt>
+<dd>These are defines which are at least as many bits
+    as the number suggests. If there is an integer which is
+    32 bits on a certain platform, INT32 is guaranteed to be 32 bits.
+</anchor>
+</anchor>
+</anchor>
+</anchor>
+
+<anchor name=INT_TYPE>
+<dt><tt>INT_TYPE</tt>
+<dd>This is the type Pike uses for integers. Usually 32 bits.
+</anchor>
+
+<anchor name=FLOAT_TYPE>
+<dt><tt>FLOAT_TYPE</tt>
+<dd>This is the type Pike uses for floats. Usually defined as 'float'.
+</anchor>
+
+<anchor name=TYPE_FIELD>
+<dt><tt>TYPE_FIELD</tt>
+<dd>This is a bit field which can be any combination of the flags:
+    <tt>BIT_INT</tt>, 
+    <tt>BIT_FLOAT</tt>, 
+    <tt>BIT_STRING</tt>, 
+    <tt>BIT_ARRAY</tt>, 
+    <tt>BIT_MAPPING</tt>, 
+    <tt>BIT_MULTISET</tt>, 
+    <tt>BIT_OBJECT</tt>, 
+    <tt>BIT_PROGRAM</tt>, 
+    <tt>BIT_FUNCTION</tt>. Please note that <tt>BIT_INT</tt> is defined
+    as <tt>1&lt;&lt;T_INT</tt>, <tt>BIT_MAPPING</tt> defined as
+    <tt>1&lt;&lt;T_MAPPING</tt> etc. Also, there are some special values
+    defined for your convenience:
+    <dl>
+    <dt><tt>BIT_VOID</tt>
+    <dd>This means that the value can be omitted.
+        See <link to=check_all_args>check_all_args</link> for more information.
+    <dt><tt>BIT_MANY</tt>
+    <dd>This means that the rest of the values should be of this type.
+        See <link to=check_all_args>check_all_args</link> for more information.
+    <dt><tt>BIT_NOTHING</tt>
+    <dd>No types, defined as zero.
+    <dt><tt>BIT_MIXED</tt>
+    <dd>All types.
+    <dt><tt>BIT_BASIC</tt>
+    <dd>The basic types: <tt>BIT_INT | BIT_FLOAT | BIT_STRING</tt>
+    <dt><tt>BIT_COMPLEX</tt>
+    <dd>The non-basic types.
+    <dt><tt>BIT_CALLABLE</tt>
+    <dd>Types that can be used as arguments for apply_svalue.
+    </dl>
+</anchor>
+</dl>
+
+</section>
 
 <section title="struct svalue">
 An svalue is the most central data structure in the Pike interpreter. It
@@ -578,7 +642,7 @@ A <tt>struct array</tt> has these members:
 <dt><tt>TYPE_FIELD type_field;</tt>
 <dd>This bit field contains one bit for each type present in the array.
     Note that bits may be set that are not present in the array, but not
-    vice versa. See <ref to=TYPE_FIELD> for more information. 
+    vice versa. See <link to=TYPE_FIELD><tt>TYPE_FIELD</tt></link> for more information. 
 <dt><tt>INT16 flags;</tt>
 <dd>ARRAY_* flags, you may set one or more of:
 	<dl>
@@ -606,6 +670,8 @@ void prtypes(struct array *a)
 
 <HR NEWPAGE>
 
+<!-- FIXME: lots more array functions should be documented -->
+
 <function name=allocate_array></function>
 <function name=free_array></function>
 <function name=array_index></function>
@@ -619,24 +685,108 @@ void prtypes(struct array *a)
 <function name=explode></function>
 <function name=slice_array></function>
 <function name=add_arrays></function>
+<function name=copy_array></function>
 
 </section> <!-- array -->
 
 <section title="struct mapping">
+<tt>struct mapping</tt> is used to represent a mapping, for the most part
+you should be able to write modules and understand Pike internals without
+actually touching the internals of a mapping. It also helps that mappings
+are very well abstracted, so you can almost always use the supporting
+functions instead of fiddling around with the contents of a
+<tt>struct mapping</tt> directly.
+<p>
+This is the contents of a <tt>struct mapping</tt>:
+<dl>
+<dt><tt>INT32 refs;</tt>
+<dd>The references, as in all data types except <tt>int</tt> and <tt>float</tt>.
+<dt><tt>INT32 size;</tt>
+<dd>The number of key-index pairs in the mapping.
+<dt><tt>INT32 hashsize;</tt>
+<dd>The size of the mapping hash table. Normally between 1/2 and 1/4 of the
+    size of the mapping.
+<dt><tt>INT16 flags;</tt>
+<dd>May contain the flag MAPPING_FLAG_WEAK to have data being
+    garbage collected even when it is still in the mapping.
+<dt><tt>TYPE_FIELD ind_types, val_types;</tt>
+<dd>These type fields tells what types may be present among the indices
+    and values of the mapping. See <link to=TYPE_FIELD><tt>TYPE_FIELD</tt></link> for more information
+    about type fields.
+<dt><tt>struct keypair **hash;</tt>
+<dd>This is the hash table.
+<dt><tt>struct keypair *free_list;</tt>
+<dd>This is a linked list of free keypairs.
+</dl>
 
-</section> <!-- array -->
+Mappings are allocated as two separate blocks of memory. One is the
+<tt>struct mapping</tt> which holds pointers into the second memory block.
+The second memory block contains the hash table and all key-value pairs.
+A key-value pair is represented as a <tt>struct keypair</tt> which has
+the following members:
+<dl>
+<dt><tt>struct keypair *next;</tt>
+<dd>Pointer to the next key-value pair in this bucket.
+    Also used to link free key-value pairs together.
+<dt><tt>struct svalue ind, val;</tt>
+<dt>The key and value respectively.
+</dl>
+
+Please note that the free list is separate for each mapping. Also,
+when there are no more free key-value pairs the whole memory block
+is re-allocated and the mapping is re-hashed with a larger hash table.
+<p>
+Below is an illustration which shows an example of a small mapping with
+hash table, free list and key-index pairs.
+
+<center>
+<image xfig=mapping-internals>
+</center>
+
+As you can see, mappings uses a linked list for each bucket in the
+hash table. Also, the current implementation moves key-value pairs to
+the top of the hash chain everytime a match is found, this can greately
+increase performance in some situations. However, because of this the
+order of elements in a mapping can change every time you access it.
+Also, since mappings can be re-allocated any time you add an element to
+it you can never trust a pointer to a pointer to a <tt>struct keypair</tt>
+if any Pike cod has a chance to execute.
+
+<hr newpage>
+<function name=m_sizeof></function>
+<function name=m_ind_types></function>
+<function name=m_val_types></function>
+<function name=MAPPING_LOOP></function>
+<function name=free_mapping></function>
+<function name=allocate_mapping></function>
+<function name=mapping_insert></function>
+<function name=mapping_get_item_ptr></function>
+<function name=map_delete></function>
+<function name=low_mapping_lookup></function>
+<function name=low_mapping_string_lookup></function>
+<function name=simple_mapping_string_lookup></function>
+<function name=mapping_string_insert></function>
+<function name=mapping_indices></function>
+<function name=mapping_values></function>
+<function name=mapping_to_array></function>
+<function name=mapping_replace></function>
+<function name=mkmapping></function>
+<function name=copy_mapping></function>
+
+</section> <!-- mapping -->
 
 <section title="struct object">
-</section> <!-- array -->
+</section> <!-- object -->
 
 <section title="struct program">
-</section> <!-- array -->
+</section> <!-- program -->
 
 </section>
 
 <section title="The interpreter">
 <ul>
 <li> The stack
+<li> The frame pointer
 <li> {ref_}push_*
 </ul>
 </section>
@@ -652,8 +802,21 @@ void prtypes(struct array *a)
   </dl>
 
 <dt> compiler
+<dd> language.yacc, las.c, program.c, docode.c peep.c peep.in
+
 <dt> backend
-<dt> callback
+<dd> backend.c
+
+<dt> interpreter
+<dd> interpret.c interpreter.h opcodes.c operators.c
+
+<dt> supporting files
+<dd>
+<dl>
+  <dt> callback
+  <dt> dynamic_buffer
+  <dt> module_support
+</dl>
 <dt> constants
 <dt> docode
 <dt> 
