@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.147 2002/04/07 12:29:41 grubba Exp $
+// $Id: module.pmod,v 1.148 2002/05/19 15:14:13 per Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -294,7 +294,7 @@ class File
   //! or close callback before you know if the connection failed or not.
   //!
   //! @seealso
-  //! @[query_address()], @[async_connect()]
+  //! @[query_address()], @[async_connect()], @[connect_unix()]
   //!
   int connect(string host, int port, void|string client, void|int client_port)
   {
@@ -308,6 +308,26 @@ class File
     debug_bits = 0;
     if(!client) return ::connect(host, port);
     return ::connect(host, port, client, client_port);
+  }
+
+  int connect_unix(string path)
+  //! Open a UNIX domain socket connection to the specified destination.
+  //! 
+  //! @returns
+  //!  Returns @tt{1@} on success, and @tt{0@} on failure.
+  //!
+  //! @note
+  //!  Nonblocking mode is not supported while connecting
+  {
+    if(!_fd) _fd=Fd();
+#ifdef __STDIO_DEBUG
+    __closed_backtrace=0;
+#endif
+    is_file = 0;
+    debug_file = "unix_socket";
+    debug_mode = path;
+    debug_bits = 0;
+    return ::connect_unix( path );
   }
 
   static private function(int, mixed ...:void) _async_cb;

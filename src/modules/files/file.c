@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.233 2002/04/06 21:18:16 mast Exp $");
+RCSID("$Id: file.c,v 1.234 2002/05/19 15:13:33 per Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2644,6 +2644,62 @@ static void file_set_keepalive(INT32 args)
   pop_n_elems(args);
   push_int(!i);
 }
+
+#ifdef AF_UNIX
+#include <sys/un.h>
+
+/*! @decl int(0..1) connect_unix( string filename )
+ *!
+ *!   Open a UNIX domain socket connection to the specified destination.
+ *!
+ *!   In nonblocking mode, success is indicated with the write-callback,
+ *!   and failure with the close-callback or the read_oob-callback.
+ *!
+ *! @returns
+ *!   Returns @tt{1@} on success, and @tt{0@} on failure.
+ *!
+ *! @note
+ *!   In nonblocking mode @tt{0@} (zero) may be returned and @[errno()] set to
+ *!   @tt{EWOULDBLOCK@} or @tt{WSAEWOULDBLOCK@}. This should not be regarded
+ *!   as a connection failure.
+ */
+static void file_connect_unix( INT32 args )
+{
+  struct sockaddr_un name;
+  char *path;
+  int tmp;
+
+  if( args != 1 )
+    Pike_error("Wrong number of arguments\n");
+  if( (Pike_sp[-1].type != PIKE_T_STRING) ||
+      (Pike_sp[-1].u.string->size_shift) ||
+      (Pike_sp[-1].u.string->len >= PATH_MAX) )
+    Pike_error("Illegal argument. Expected string(8bit)\n");
+
+  if(FD >= 0)
+    file_close(0);
+
+  FD = socket(AF_UNIX,SOCK_STREAM,0);
+
+  if( FD < 0 )
+  {
+    pop_n_elems(1);
+    push_int(0);
+    return;
+  }
+
+  init_fd(FD, FILE_READ | FILE_WRITE
+	  | fd_query_properties(FD, SOCKET_CAPABILITIES));
+
+  name.sun_family=AF_UNIX;
+  strcpy( name.sun_path, Pike_sp[-1].u.string->str );
+  pop_n_elems(1);
+
+  tmp=connect(FD,(void *)&name,sizeof(struct sockaddr_un));
+  ERRNO=errno;
+  push_int(tmp!=-1);
+}
+#endif
 
 /*! @decl int(0..1) connect(string dest_addr, int dest_port)
  *! @decl int(0..1) connect(string dest_addr, int dest_port, @
