@@ -9,7 +9,6 @@ testfont binary
 # Files containing CVS ids follow.
 # Remove the corresponding line before committing
 # changes to these files.
-/lib/include/sql.pre.pike foreign_ident
 /lib/modules/LR.pmod/Grammar_parser.pmod foreign_ident
 /lib/modules/LR.pmod/item.pike foreign_ident
 /lib/modules/LR.pmod/kernel.pike foreign_ident
