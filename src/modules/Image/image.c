@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.196 2002/05/11 00:27:03 nilsson Exp $ */
+/* $Id: image.c,v 1.197 2002/05/11 02:36:13 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.196 2002/05/11 00:27:03 nilsson Exp $
+**!	$Id: image.c,v 1.197 2002/05/11 02:36:13 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.196 2002/05/11 00:27:03 nilsson Exp $");
+RCSID("$Id: image.c,v 1.197 2002/05/11 02:36:13 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4769,11 +4769,11 @@ void init_image_image(void)
 
 #ifndef FAKE_DYNAMIC_LOAD
    /* Added by per: Export all functions needed by _Image_GIF */
-   PIKE_MODULE_EXPORT("Image", image_lay );
-   PIKE_MODULE_EXPORT("Image", image_colortable_write_rgb );
-   PIKE_MODULE_EXPORT("Image", image_colortable_size );
-   PIKE_MODULE_EXPORT("Image", image_colortable_index_8bit_image );
-   PIKE_MODULE_EXPORT("Image", image_colortable_internal_floyd_steinberg );
+   PIKE_MODULE_EXPORT(Image, image_lay );
+   PIKE_MODULE_EXPORT(Image, image_colortable_write_rgb );
+   PIKE_MODULE_EXPORT(Image, image_colortable_size );
+   PIKE_MODULE_EXPORT(Image, image_colortable_index_8bit_image );
+   PIKE_MODULE_EXPORT(Image, image_colortable_internal_floyd_steinberg );
 #endif
 
 }
