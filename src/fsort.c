@@ -11,7 +11,7 @@
 #include "fsort.h"
 #include "main.h"
 
-RCSID("$Id: fsort.c,v 1.17 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: fsort.c,v 1.18 2002/09/03 17:02:56 grubba Exp $");
 
 #define CMP(X,Y) ( (*cmpfun)((void *)(X),(void *)(Y)) )
 #define EXTRA_ARGS ,fsortfun cmpfun
@@ -108,7 +108,15 @@ void fsort(void *base,
   case 16: fsort_16((B16_T *)base,(elms-1)+(B16_T *)base, cmpfunc); break;
 #endif
   default:
-    fsort_n((char *)base,((char *)base) + elmSize * (elms - 1), cmpfunc, elmSize, (char *)alloca(elmSize));
+    {
+      /* NOTE: We need to put the alloca'd value in a variable,
+       *       otherwise cc/HPUX will generate broken code.
+       */
+      char *buf = alloca(elmSize);
+
+      fsort_n((char *)base,((char *)base) + elmSize * (elms - 1),
+	      cmpfunc, elmSize, buf);
+    }
   }
 
 }
