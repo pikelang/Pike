@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: xcf.c,v 1.29 2000/10/19 15:17:18 per Exp $");
+RCSID("$Id: xcf.c,v 1.30 2000/10/19 20:34:33 grubba Exp $");
 
 #include "image_machine.h"
 
@@ -1323,6 +1323,7 @@ void image_xcf_f__decode_tiles( INT32 args )
     else
       span = 1;
 
+    switch(bpp)
     {
      case 1: /* indexed or grey */
        if(colortable)
