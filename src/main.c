@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.108 2000/12/01 08:09:49 hubbe Exp $");
+RCSID("$Id: main.c,v 1.109 2000/12/01 20:21:25 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -158,12 +158,12 @@ int dbm_main(int argc, char **argv)
   fd_init();
 
 #ifdef SHARED_NODES
-  node_hash.table = malloc(sizeof(node *)*16411);
+  node_hash.table = malloc(sizeof(node *)*32831);
   if (!node_hash.table) {
     fatal("Out of memory!\n");
   }
-  MEMSET(node_hash.table, 0, sizeof(node *)*16411);
-  node_hash.size = 16411;
+  MEMSET(node_hash.table, 0, sizeof(node *)*32831);
+  node_hash.size = 32831;
 #endif /* SHARED_NODES */
 
 #ifdef HAVE_SETLOCALE
