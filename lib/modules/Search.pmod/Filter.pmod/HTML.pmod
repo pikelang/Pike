@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: HTML.pmod,v 1.27 2002/09/30 12:52:52 jonasw Exp $
+// $Id: HTML.pmod,v 1.28 2002/10/05 09:06:24 jonasw Exp $
 
 // Filter for text/html
 
@@ -85,7 +85,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     // FIXME: Push the value of m->title to the title field of
     // the referenced document instead.
     if(m->title)
-      dadd(m->title);
+      dadd(" " + m->title + " ");
     return ({ "" });
   };
 
@@ -101,7 +101,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
   // of the image file, if it is indexed.
   array(string) parse_img(Parser.HTML p, mapping m)  {
 //      if( m->alt )
-//        dadd(m->alt);
+//        dadd(" " + m->alt + " ");
     return ({ " " });
   };
 
@@ -150,7 +150,7 @@ Output filter(Standards.URI uri, string|Stdio.File data,
     if( m->codebase ) ladd( m->codebase );
     if( m->data ) ladd( m->data );
     if( m->standby )
-      dadd(m->standby);
+      dadd(" " + m->standby + " ");
     return ({ " " });
   };
 
