@@ -3,13 +3,66 @@
 #define RSQL_PORT 3994
 #define RSQL_VERSION 1
 
+
+#if constant(thread_create)
+#define LOCK object key=mutex->lock()
+#define UNLOCK destruct(key)
+static private object(Thread.Mutex) mutex = Thread.Mutex();
+#else
+#define LOCK
+#define UNLOCK
+#endif
+
+
 static object(Stdio.File) sock;
 static int seqno = 0;
 
-static mixed do_request(int cmd, mixed|void arg)
+static private string host, user, pw;
+static private int port;
+
+static void low_reconnect()
 {
+  object losock = Stdio.File();
+  if(sock)
+    destruct(sock);
+  if(!losock->connect(host, port|RSQL_PORT))
+    throw(({"Can't connect to "+host+(port? ":"+port:"")+": "+
+	    strerror(losock->errno())+"\n", backtrace()}));
+  if(8!=losock->write(sprintf("RSQL%4c", RSQL_VERSION)) ||
+     losock->read(4) != "SQL!") {
+    destruct(losock);
+    throw(({"Initial handshake error on "+host+(port? ":"+port:"")+"\n",
+	    backtrace()}));    
+  }
+  sock = losock;
+  if(!do_request('L', ({user,pw}), 1)) {
+    sock = 0;
+    if(losock)
+      destruct(losock);
+    throw(({"Login refused on "+host+(port? ":"+port:"")+"\n",
+	    backtrace()}));        
+  }
+}
+
+static void low_connect(string the_host, int the_port, string the_user,
+			string the_pw)
+{
+  host = the_host;
+  port = the_port;
+  user = the_user;
+  pw = the_pw;
+  low_reconnect();
+}
+
+static mixed do_request(int cmd, mixed|void arg, int|void noreconnect)
+{
+  LOCK;
   if(!sock)
-    throw(({"Not connected.\n", backtrace()}));
+    if(noreconnect) {
+      UNLOCK;
+      throw(({"No connection\n", backtrace()}));
+    } else
+      low_reconnect();
   arg = (arg? encode_value(arg) : "");
   sock->write(sprintf("?<%c>%4c%4c%s", cmd, ++seqno, sizeof(arg), arg));
   string res;
@@ -20,8 +73,12 @@ static mixed do_request(int cmd, mixed|void arg)
     mixed rdat = (rlen? sock->read(rlen) : "");
     if((!rdat) || sizeof(rdat)!=rlen) {
       destruct(sock);
-      throw(({"RSQL Phase error, disconnected\n", backtrace()}));
+      UNLOCK;
+      if(noreconnect)
+	throw(({"RSQL Phase error, disconnected\n", backtrace()}));
+      else return do_request(cmd, arg, 1);
     }
+    UNLOCK;
     rdat = (sizeof(rdat)? decode_value(rdat):0);
     switch(res[0]) {
     case '.': return rdat;
@@ -30,7 +87,10 @@ static mixed do_request(int cmd, mixed|void arg)
     throw(({"Internal error\n", backtrace()}));    
   } else {
     destruct(sock);
-    throw(({"RSQL Phase error, disconnected\n", backtrace()}));
+    UNLOCK;
+    if(noreconnect)
+      throw(({"RSQL Phase error, disconnected\n", backtrace()}));
+    else return do_request(cmd, arg, 1);
   }
 }
 
@@ -54,9 +114,44 @@ void drop_db(string db)
   do_request('X', db);
 }
 
-void server_info()
+string server_info()
 {
-  do_request('I');
+  return do_request('I');
+}
+
+string host_info()
+{
+  return do_request('i');
+}
+
+void shutdown()
+{
+  do_request('s');
+}
+
+void reload()
+{
+  do_request('r');
+}
+
+array(string) list_dbs(string|void wild)
+{
+  return do_request('l', wild);
+}
+
+array(string) list_tables(string|void wild)
+{
+  return do_request('t', wild);
+}
+
+array(mapping(string:mixed)) list_fields(string ... args)
+{
+  return do_request('f', args);
+}
+
+string quote(string s)
+{
+  return do_request('q');
 }
 
 object big_query(string q)
@@ -82,6 +177,26 @@ object big_query(string q)
       return do_request('F', qid);
     }
 
+    int num_rows()
+    {
+      return do_request('N', qid);
+    }
+
+    int num_fields()
+    {
+      return do_request('n', qid);
+    }
+
+    int eof()
+    {
+      return do_request('e', qid);
+    }
+
+    void seek(int skip)
+    {
+      return do_request('S', ({qid,skip}));
+    }
+
     void create(function(int,mixed:mixed) d_r, mixed i)
     {
       do_request = d_r;
@@ -91,25 +206,9 @@ object big_query(string q)
   }(do_request, qid);
 }
 
-static void low_connect(string host, int port, string user, string pw)
+array(mapping(string:mixed)) query(mixed ... args)
 {
-  object losock = Stdio.File();
-  if(!losock->connect(host, port|RSQL_PORT))
-    throw(({"Can't connect to "+host+(port? ":"+port:"")+": "+
-	    strerror(losock->errno())+"\n", backtrace()}));
-  if(8!=losock->write(sprintf("RSQL%4c", RSQL_VERSION)) ||
-     losock->read(4) != "SQL!") {
-    destruct(losock);
-    throw(({"Initial handshake error on "+host+(port? ":"+port:"")+"\n",
-	    backtrace()}));    
-  }
-  sock = losock;
-  if(!do_request('L', ({user,pw}))) {
-    sock = 0;
-    destruct(losock);
-    throw(({"Login refused on "+host+(port? ":"+port:"")+"\n",
-	    backtrace()}));        
-  }
+  return do_request('@', args);
 }
 
 void create(string|void host, string|void db, string|void user, string|void pw)
