@@ -2,7 +2,7 @@
 //#pragma strict_types
 
 /* 
- * $Id: X509.pmod,v 1.34 2004/03/22 22:22:18 bill Exp $
+ * $Id: X509.pmod,v 1.35 2004/03/25 21:07:06 bill Exp $
  *
  * Some random functions for creating RFC-2459 style X.509 certificates.
  *
@@ -609,7 +609,9 @@ mapping verify_certificate_chain(array(string) cert_chain,
   foreach(chain_obj; int idx; TBSCertificate tbs)
   {
     object v;
-
+/*
+    // NOTE: disabled due to unreliable presence of cA constraint.
+    //
     // if we are a CA certificate (we don't care about the end cert)
     // make sure the CA constraint is set.
     // 
@@ -620,10 +622,13 @@ mapping verify_certificate_chain(array(string) cert_chain,
 
         if(tbs->extensions && sizeof(tbs->extensions))
         {
+            werror("have extensions.\n");
             foreach(tbs->extensions->elements[0]->elements, Sequence c)        
             {
+               werror("checking each element...\n");
                if(c->elements[0] == Identifiers.ce_id->append(19))
                {
+                 werror("have a basic constraints element.\n");
                  foreach(c->elements[1..], Sequence v)
                  {
                    werror("checking for boolean: " + v->type_name + " " + v->value + "\n");
@@ -642,7 +647,7 @@ mapping verify_certificate_chain(array(string) cert_chain,
           return m;
         }
     }
-    
+*/    
     if(idx == 0) // The root cert
     {
       v = authorities[tbs->issuer->get_der()];
