@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.110 1998/07/12 21:18:35 grubba Exp $");
+RCSID("$Id: file.c,v 1.111 1998/07/15 14:44:19 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1502,8 +1502,16 @@ static void file_pipe(INT32 args)
     error("Cannot create a pipe matching those parameters.\n");
   }while(0);
     
-  if(i<0)
+  if ((i<0) || (inout[0] < 0) || (inout[1] < 0))
   {
+    if (i >= 0) {
+      if (inout[0] >= 0) {
+	close(inout[0]);
+      }
+      if (inout[1] >= 0) {
+	close(inout[1]);
+      }
+    }
     ERRNO=errno;
     push_int(0);
   }
