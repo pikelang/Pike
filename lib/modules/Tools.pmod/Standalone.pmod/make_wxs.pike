@@ -1,5 +1,5 @@
 /*
- * $Id: make_wxs.pike,v 1.1 2004/11/02 15:01:18 grubba Exp $
+ * $Id: make_wxs.pike,v 1.2 2004/11/02 15:10:40 grubba Exp $
  *
  * Make a Wix modules source XML file from an existing directory.
  *
@@ -24,7 +24,7 @@ int main(int argc, array(string) argv)
     ({"--description", Getopt.HAS_ARG, ({"-d", "--descr", "--description"})}),
     ({"--manufacturer", Getopt.HAS_ARG, ({"-m", "--manufacturer"})}),
     ({"--comments", Getopt.HAS_ARG, ({"-c", "--comment", "--comments"})}),
-				  })), array(string) opt) {
+  })), array(string) opt) {
     switch(opt[0]) {
     case "--guid":
       base_guid = Standards.UUID.UUID(opt[1])->str();
@@ -33,7 +33,7 @@ int main(int argc, array(string) argv)
       if (stringp(opt[1])) {
 	version_str = opt[1];
       } else {
-	write("$Revision: 1.1 $\n");
+	write("$Revision: 1.2 $\n");
 	exit(0);
       }
       break;
