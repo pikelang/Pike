@@ -1,6 +1,6 @@
 //! module Calendar
 
-// $Id: TimeRanges.pmod,v 1.23 2003/03/13 02:18:43 nilsson Exp $
+// $Id: TimeRanges.pmod,v 1.24 2003/06/27 13:35:20 jhs Exp $
 
 #pike __REAL_VERSION__
 
@@ -18,10 +18,10 @@ string _sprintf(int t) { return (t=='O')?calendar_name():0; }
 
 //------------------------------------------------------------------------
 //! class TimeRange
-//! 	This is the base class for any time measurement
-//!	and calendrar information. It defines all the
-//!	things you can do with a time range, any time
-//!	period.
+//! 	This is the base class (usually implemented by e.g. Calendar
+//! 	subclasses like Calendar.Second) for any time measurement and
+//! 	calendrar information. It defines all the things you can do
+//! 	with a time range or any time period.
 //!
 //!	A TimeRange doubles as both a fixed period in
 //!	time, and an amount of time. For instance,
