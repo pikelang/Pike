@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.398 2001/07/27 14:49:55 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.399 2001/07/27 20:39:56 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3154,16 +3154,16 @@ PMOD_EXPORT void f_compile(INT32 args)
  *!   indices and/or values (whatever is applicable). @[state] is a
  *!   bitfield built by using @tt{|@} between the following flags:
  *!   
- *!   @dl
- *!   	@item @[Pike.WEAK_INDICES]
+ *!   @int
+ *!   	@value Pike.WEAK_INDICES
  *!   	  Use weak references for indices. Only applicable for
  *!   	  multisets and mappings.
- *!   	@item @[Pike.WEAK_VALUES]
+ *!   	@value Pike.WEAK_VALUES
  *!   	  Use weak references for values. Only applicable for arrays
  *!   	  and mappings.
- *!   	@item @[Pike.WEAK]
+ *!   	@value Pike.WEAK
  *!   	  Shorthand for @tt{Pike.WEAK_INDICES|Pike.WEAK_VALUES@}.
- *!   @enddl
+ *!   @endint
  *!   
  *!   If a flag is absent, the corresponding field will use normal
  *!   references. @[state] can also be @tt{1@} as a compatibility
@@ -6264,9 +6264,9 @@ PMOD_EXPORT void f_map_array(INT32 args)
  *!   @section Advanced use
  *!   	There are a wide number of valid combinations of types for the
  *!     arguments @[arr] and @[fun].
- *!   	@mixed @[arr]
+ *!   	@mixed arr
  *!   	  @type array
- *!   	  @mixed @[fun]
+ *!   	  @mixed fun
  *!   	    @type function|program|object|array
  *!   	      @code{array ret; ret[i]=fun(arr[i],@@extra);@}
  *!   	    @type multiset|mapping
@@ -6616,7 +6616,7 @@ PMOD_EXPORT void f_map(INT32 args)
  *!   Calls the given function @[fun] for all elements in @[arr], and keeps the
  *!   elements in @[arr] that resulted in a non-zero value from the function. 
  *!
- *!   @mixed @[arr]
+ *!   @mixed arr
  *!   	@type array
  *!   	  If @[fun] is an array:
  *!   	    @code{for (i=0; i<sizeof(@[arr]); i++) {

@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.138 2001/06/11 21:18:20 grubba Exp $");
+RCSID("$Id: operators.c,v 1.139 2001/07/27 20:40:15 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -187,13 +187,13 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   with the result and the rest of the srguments.
  *!
  *!   If there are two arguments the result will be:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type string
  *!   	  @[arg2] will be converted to a string, and the result the
  *!   	  strings concatenated.
  *!   	@type int
  *!   	@type float
- *!   	  @mixed @[arg2]
+ *!   	  @mixed arg2
  *!   	    @type string
  *!   	      @[arg1] will be converted to string, and the result the
  *!   	      strings concatenated.
@@ -1056,9 +1056,9 @@ PMOD_EXPORT void o_subtract(void)
  *!   be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type mapping
- *!   	  @mixed @[arg2]
+ *!   	  @mixed arg2
  *!   	    @type array
  *!   	      The result will be @[arg1] with all occurrances of
  *!   	      @[arg2] removed.
@@ -1416,7 +1416,7 @@ static void speedup(INT32 args, void (*func)(void))
  *!   will be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type int
  *!   	  The result will be the bitwise and of @[arg1] and @[arg2].
  *!   	@type array
@@ -1625,7 +1625,7 @@ PMOD_EXPORT void o_or(void)
  *!   will be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type int
  *!   	  The result will be the binary or of @[arg1] and @[arg2].
  *!   	@type mapping
@@ -1836,7 +1836,7 @@ PMOD_EXPORT void o_xor(void)
  *!   will be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type int
  *!   	  The result will be the bitwise xor of @[arg1] and @[arg2].
  *!   	@type mapping
@@ -2242,9 +2242,9 @@ PMOD_EXPORT void o_multiply(void)
  *!   function will be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type array
- *!   	  @mixed @[arg2]
+ *!   	  @mixed arg2
  *!   	    @type int
  *!   	    @type float
  *!   	      The result will be @[arg1] concatenated @[arg2] times.
@@ -2596,9 +2596,9 @@ PMOD_EXPORT void o_divide(void)
  *!   function will be called with @[arg1] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type string
- *!   	  @mixed @[arg2]
+ *!   	  @mixed arg2
  *!   	    @type int
  *!   	    @type float
  *!   	      The result will be and array of @[arg1] split in segments
@@ -2610,7 +2610,7 @@ PMOD_EXPORT void o_divide(void)
  *!   	      matched against @[arg2] will not be in the result.
  *!   	  @endmixed
  *!   	@type array
- *!   	  @mixed @[arg2]
+ *!   	  @mixed arg2
  *!   	    @type int
  *!   	    @type float
  *!   	      The result will be and array of @[arg1] split in segments
@@ -2784,7 +2784,7 @@ PMOD_EXPORT void o_mod(void)
  *!   that function will be called with @[arg2] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg1]
+ *!   @mixed arg1
  *!   	@type string
  *!   	@type array
  *!   	  If @[arg2] is positive, the result will be the last
@@ -2971,7 +2971,7 @@ PMOD_EXPORT void o_compl(void)
  *!
  *! @returns
  *!   The result will be as follows:
- *!   @mixed @[arg]
+ *!   @mixed arg
  *!   	@type object
  *!   	  If @[arg] implements @[lfun::`~()], that function will be called.
  *!   	@type int
@@ -3125,7 +3125,7 @@ PMOD_EXPORT void o_range(void)
  *!   will be called with the rest of the arguments.
  *!
  *!   If there are 2 arguments the result will be as follows:
- *!   @mixed @[arg]
+ *!   @mixed arg
  *!   	@type object
  *!   	  The non-static (ie public) symbol named @[index] will be looked up
  *!   	  in @[arg].
@@ -3149,7 +3149,7 @@ PMOD_EXPORT void o_range(void)
  *!   @endmixed
  *!
  *!   Otherwise if there are 3 arguments the result will be as follows:
- *!   @mixed @[arg]
+ *!   @mixed arg
  *!   	@type string
  *!   	  A string with the characters between @[start] and @[end] (inclusive)
  *!   	  in @[arg] will be returned.
@@ -3198,7 +3198,7 @@ PMOD_EXPORT void f_index(INT32 args)
  *!   will be called with @[index] as the single argument.
  *!
  *!   Otherwise the result will be as follows:
- *!   @mixed @[arg]
+ *!   @mixed arg
  *!   	@type object
  *!   	  The non-static (ie public) symbol named @[index] will be looked up
  *!   	  in @[arg].
@@ -3250,7 +3250,7 @@ PMOD_EXPORT void f_arrow(INT32 args)
  *!   If @[arg] is an object that implements @[lfun::`[]=()], that function
  *!   will be called with @[index] and @[val] as the arguments.
  *!
- *!   @mixed @[arg]
+ *!   @mixed arg
  *!   	@type object
  *!   	  The non-static (ie public) variable named @[index] will be looked up
  *!   	  in @[arg], and assigned @[val].
@@ -3300,7 +3300,7 @@ PMOD_EXPORT void f_index_assign(INT32 args)
  *!   If @[arg] is an object that implements @[lfun::`->=()], that function
  *!   will be called with @[index] and @[val] as the arguments.
  *!
- *!   @mixed @[arg]
+ *!   @mixed arg
  *!   	@type object
  *!   	  The non-static (ie public) variable named @[index] will be looked up
  *!   	  in @[arg], and assigned @[val].
@@ -3348,7 +3348,7 @@ PMOD_EXPORT void f_arrow_assign(INT32 args)
  *!
  *! @returns
  *!   The result will be as follows:
- *!   @mixed @[arg]
+ *!   @mixed arg
  *!   	@type string
  *!   	  The number of characters in @[arg] will be returned.
  *!   	@type array
