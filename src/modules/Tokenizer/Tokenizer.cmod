@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.10 2003/11/29 13:23:23 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.11 2003/12/01 14:33:03 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -16,6 +16,7 @@
 #include "operators.h"
 #include "builtin_functions.h"
 #include "pike_types.h"
+#include "module.h"
 
 /*! @module Tokenizer
  */
@@ -136,7 +137,7 @@ PIKECLASS compiler
     PIKEVAR string current_symbol;
 
     // Current scanner.
-    CVAR void (*scanner)(struct basic_tokenizer_struct *);
+    CVAR void (*scanner)(struct compiler_basic_tokenizer_struct *);
 
     /*! @decl void report(SeverityLevel severity, mixed pos, @
      *!                   string subsystem, string msg, mixed ... extra_args)
@@ -161,7 +162,7 @@ PIKECLASS compiler
       push_int(THIS->line_no);
       push_constant_text("scanner");
       push_text(msg);
-      apply_current(f_basic_tokenizer_report_fun_num, 4);
+      apply_current(f_compiler_basic_tokenizer_report_fun_num, 4);
       pop_stack();
     }
 
@@ -170,7 +171,7 @@ PIKECLASS compiler
 
 #define MAKE_SCANNER(SHIFT)						\
     static void PIKE_CONCAT(scan, SHIFT)				\
-			   (struct basic_tokenizer_struct *this)	\
+		     (struct compiler_basic_tokenizer_struct *this)	\
     {									\
       PIKE_CONCAT(p_wchar, SHIFT) *str = 				\
 	PIKE_CONCAT(STR, SHIFT)(this->data);				\
@@ -431,7 +432,7 @@ PIKECLASS compiler
 	  push_constant_text("Illegal character (hex %02x) '%c'");	\
 	  push_int(c);							\
 	  push_int(c);							\
-	  apply_current(f_basic_tokenizer_report_fun_num, 6);		\
+	  apply_current(f_compiler_basic_tokenizer_report_fun_num, 6);	\
 	  pop_stack();							\
 	  continue;							\
 	}								\
@@ -507,7 +508,7 @@ PIKECLASS compiler
 
       THIS->scanner = NULL;
 
-      apply_current(f_basic_tokenizer_scan_fun_num, 0);
+      apply_current(f_compiler_basic_tokenizer_scan_fun_num, 0);
       pop_stack();
     }
 
@@ -528,7 +529,7 @@ PIKECLASS compiler
       flags ID_STATIC;
     {
       while (n-- > 0) {
-	apply_current(f_basic_tokenizer_scan_fun_num, 0);
+	apply_current(f_compiler_basic_tokenizer_scan_fun_num, 0);
 	pop_stack();
       }
       pop_n_elems(args);
@@ -824,6 +825,66 @@ PIKECLASS FloatToken
   }
 }
 /*! @endclass
+ */
+
+/*! @class TokenizingCompiler
+ */
+PIKECLASS TokenizingCompiler
+{
+  INHERIT compiler;
+
+  /*! @class pike_tokenizer
+   *!
+   *!   Pike tokenizer.
+   */
+  PIKECLASS pike_tokenizer
+  {
+    static int tokenizing_compiler_pike_tokenizer_inherited_report = -1;
+
+    EXTRA
+    {
+      /* Perform an inherit of the "basic_tokenizer" that our parent
+       * contains through its inherit of "compiler".
+       */
+      /* FIXME: We may want to extend precompile.pike to handle
+       *        this automatically.
+       */
+      low_inherit(compiler_basic_tokenizer_program,
+		  0,
+		  compiler_basic_tokenizer_program_fun_num +
+		  TokenizingCompiler_program->inherits[1].identifier_level,
+		  1 + 42,
+		  0,
+		  NULL);
+      tokenizing_compiler_pike_tokenizer_inherited_report =
+	really_low_reference_inherited_identifier(NULL, 1,
+						  f_compiler_basic_tokenizer_report_fun_num);
+    }
+
+    /* PIKEVAR object(Token) current_token; */
+    PIKEVAR string current_file;
+    /* PIKEVAR object(Position) pos
+       flags ID_STATIC; */
+
+    PIKEFUN void report(int(0..3) severity, object/*(Position)*/|int|string pos,
+			string subsystem, string msg, mixed ... extras)
+    {
+#if 0
+      if ((pos->type == T_INT) && (THIS->pos)) {
+	add_ref(pos->u.object = THIS->pos);
+	pos->type = T_OBJECT;
+	pos->subtype = 0;
+      }
+#endif
+      apply_low(Pike_fp->current_object,
+		tokenizing_compiler_pike_tokenizer_inherited_report,
+		args);
+    }
+  }
+  /*! @endclass
+   */
+}
+/* @endclass
  */
 
 #if 0

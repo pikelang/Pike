@@ -1,5 +1,5 @@
 //
-// $Id: module.pmod.in,v 1.25 2003/11/28 16:49:38 grubba Exp $
+// $Id: module.pmod.in,v 1.26 2003/12/01 14:33:03 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
@@ -36,13 +36,14 @@ class TokenizingCompiler
   {
     inherit basic_tokenizer;
 
+#if 0
     Token current_token;
     string current_file = "-";
-
+#endif
     CompilerContext context;
 
     mapping(string:program(IdentifierToken)) token_lookup;
-
+#if 0
     static Position pos;
 
     void report(SeverityLevel severity, Position|int|string pos,
@@ -51,7 +52,7 @@ class TokenizingCompiler
       if (intp(pos)) pos = pike_tokenizer::pos;
       ::report(severity, pos, subsystem, msg, extra_args);
     }
-
+#endif
     static {
       void yyerror(mixed ... args)
       {
