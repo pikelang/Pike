@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.40 1999/03/26 19:59:44 hubbe Exp $
+// $Id: module.pmod,v 1.41 1999/04/01 15:45:02 grubba Exp $
 
 import String;
 
@@ -109,12 +109,15 @@ class File
     _async_args = args;
     set_nonblocking(0, _async_connected, _async_failed);
     mixed err;
-    if (err = catch(connect(host, port))) {
+    int res;
+    if (err = catch(res = connect(host, port))) {
       // Illegal format. -- Bad hostname?
-      set_nonblocking(0,0,0);
-      throw(err);
+      call_out(_async_failed(), 0);
+    } else if (!res) {
+      // Connect failed.
+      call_out(_async_failed(), 0);
     }
-    return(1);	// OK so far.
+    return(1);	// OK so far. (Or rather the callback will be used).
   }
 
   object(File) pipe(void|int how)
