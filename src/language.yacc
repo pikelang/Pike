@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.263 2001/10/05 22:55:33 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.264 2001/11/29 17:02:34 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -1871,6 +1871,12 @@ lambda: TOK_LAMBDA push_compiler_frame1
 		$6,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d:   lexical_scope: 0x%08x\n",
+	    Pike_compiler->compiler_pass,
+	    Pike_compiler->compiler_frame->lexical_scope);
+#endif /* LAMBDA_DEBUG */
 
     if(Pike_compiler->compiler_frame->lexical_scope & SCOPE_SCOPED) {
       $$ = mktrampolinenode(f, Pike_compiler->compiler_frame->previous);
@@ -3842,8 +3848,11 @@ static node *lexical_islocal(struct pike_string *str)
       if(f->variable[e].name==str)
       {
 	struct compiler_frame *q=Pike_compiler->compiler_frame;
-	if(f->variable[e].def)
+	if(f == q && f->variable[e].def) {
+	  /*fprintf(stderr, "Found prior definition of \"%s\"\n", str->str); */
 	  return copy_node(f->variable[e].def);
+	}
+
 	while(q!=f) 
 	{
 	  q->lexical_scope|=SCOPE_SCOPED;
