@@ -1,5 +1,5 @@
 /* -*- c -*-
- * $Id: builtin.cmod,v 1.53 2001/07/02 04:09:46 hubbe Exp $
+ * $Id: builtin.cmod,v 1.54 2001/07/02 10:43:39 grubba Exp $
  */
 
 #include "global.h"
@@ -55,7 +55,7 @@ PIKEFUN string basetype(mixed x)
 	pop_stack();
 	return;
       }
-      error("Non-string returned from _sprintf()\n");
+      Pike_error("Non-string returned from _sprintf()\n");
     }
   }
   pop_stack();
@@ -106,11 +106,11 @@ PIKEFUN string int2char(int|object x)
 	pop_stack();
 	return;
       }
-      error("Non-string returned from _sprintf()\n");
+      Pike_error("Non-string returned from _sprintf()\n");
     }
   }
   if(x->type != T_INT)
-    error("Bad argument 1 to int2char.\n");
+    Pike_error("Bad argument 1 to int2char.\n");
 
   c=x->u.integer;
 
