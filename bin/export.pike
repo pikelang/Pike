@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: export.pike,v 1.13 1997/12/28 09:27:41 hubbe Exp $ */
+/* $Id: export.pike,v 1.14 1998/02/24 22:48:11 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -106,7 +106,7 @@ int main(int argc, string *argv)
 		      x->hour,
 		      x->min);
 #else
-    string tag+="-rel"+rel;
+    tag+="-rel"+rel;
 #endif
 
     werror("Creating tag "+tag+" in the background.\n");

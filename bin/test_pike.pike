@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.5 1998/01/03 07:11:24 hubbe Exp $ */
+/* $Id: test_pike.pike,v 1.6 1998/02/24 22:48:13 hubbe Exp $ */
 
 #include <simulate.h>
 
@@ -8,7 +8,11 @@
 #define _verify_internals()
 #endif
 
-
+int foo(string opt)
+{
+  if(opt=="" || !opt) return 1;
+  return (int)opt;
+}
 int main(int argc, string *argv)
 {
   int e, verbose, successes, errors, t, check;
@@ -17,265 +21,229 @@ int main(int argc, string *argv)
   int start, fail, mem;
   int loop=1;
 
-  for(e=1;e<argc;e++)
-  {
-    string opt;
-    int arg;
-    arg=1;
-    if(sscanf(argv[e],"--%s=%d",opt,arg)==2)
-      opt="--"+opt;
-    else if(sscanf(argv[e],"-%s%d",opt,arg)==2)
-      opt="-"+opt;
-    else
-      opt=argv[e];
-    
-    switch(opt)
+  foreach(Getopt.find_all_options(argv,aggregate(
+    ({"help",Getopt.NO_ARG,({"-h","--help"})}),
+    ({"verbose",Getopt.NO_ARG,({"-v","--verbose"})}),
+    ({"start",Getopt.HAS_ARG,({"-s","--start-test"})}),
+    ({"fail",Getopt.MAY_HAVE_ARG,({"-f","--fail"})}),
+    ({"loop",Getopt.MAY_HAVE_ARG,({"-l","--loop"})}),
+    ({"trace",Getopt.MAY_HAVE_ARG,({"-t","--trace"})}),
+    ({"check",Getopt.MAY_HAVE_ARG,({"-c","--check"})}),
+    ({"mem",Getopt.MAY_HAVE_ARG,({"-m","--mem","--memory"})}),
+    )),array opt)
     {
-      case "-h":
-      case "--help":
-        perror("Usage: "+argv[e]+" [-v | --verbose] [-h | --help] [-t <testno>] <testfile>\n");
-        return 0;
+      switch(opt[0])
+      {
+	case "help":
+	  werror("Usage: "+argv[e]+" [-v | --verbose] [-h | --help] [-t <testno>] <testfile>\n");
+	  return 0;
 
-      case "-v":
-      case "--verbose":
-        verbose+=arg;
-        break;
-
-      case "-s":
-      case "--start-test":
-	start=arg;
-	start--;
-	break;
-
-      case "-f":
-      case "--fail":
-	fail+=arg;
-	break;
-
-
-      case "-l":
-      case "--loop":
-	loop+=arg;
-	break;
-
-      case "-t":
-      case "--trace":
-	t+=arg;
-	break;
-
-      case "-c":
-      case "--check":
-	check++;
-	break;
-
-
-      case "-m":
-      case "--mem":
-      case "--memory":
-	mem++;
-	break;
-
-      default:
-	if(tests)
-	{
-	  perror("Unknown argument: "+opt+".\n");
-	  exit(1);
-	}
-	tmp=read_bytes(argv[e]);
-	if(!tmp)
-	{
-	  perror("Failed to read test file, errno="+errno()+".\n");
-	  exit(1);
-	}
+	case "verbose": verbose+=foo(opt[1]); break;
+	case "start": start=foo(opt[1]); start--; break;
+	case "fail": fail+=foo(opt[1]); break;
+	case "loop": loop+=foo(opt[1]); break;
+	case "trace": t+=foo(opt[1]); break;
+	case "check": check+=foo(opt[1]); break;
+	case "mem": mem+=foo(opt[1]); break;
+      }
     }
-  }
 
-  if(!tmp)
+  argv=Getopt.get_args(argv,1);
+  if(sizeof(argv)<1)
   {
-    tmp=Stdio.stdin->read(0x7fffffff);
     if(!tmp)
     {
-      perror("Failed to read test file, errno="+errno()+".\n");
+      werror("No tests?\n");
       exit(1);
     }
   }
 
-
-  tests=tmp/"\n....\n";
-  tests=tests[0..sizeof(tests)-2];
-
   while(loop--)
   {
     successes=errors=0;
-
-    for(e=start;e<sizeof(tests);e++)
+    for(int f=1;f<sizeof(argv);f++)
     {
-      string test,condition;
-      int type;
-      object o;
-      mixed a,b;
-      
-      if(check) _verify_internals();
-      
-      test=tests[e];	
-      if(sscanf(test,"COND %s\n%s",condition,test)==2)
+      tmp=read_bytes(argv[f]);
+      if(!tmp)
       {
-	if(!clone(compile_string("mixed c() { return "+condition+"; }","Cond "+(e+1)))->c())
-	{
-	  if(verbose)
-	    perror("Not doing test "+(e+1)+"\n");
-	  successes++;
-	  continue;
-	}
+	werror("Failed to read test file, errno="+errno()+".\n");
+	exit(1);
       }
       
-      sscanf(test,"%s\n%s",type,test);
-      sscanf(type,"%*s expected result: %s",type);
+      tests=tmp/"\n....\n";
+      tmp=0;
+      tests=tests[0..sizeof(tests)-2];
       
-      if(verbose)
+      werror("Doing tests in %s (%d tests)\n",argv[f],sizeof(tests));
+      
+      
+      for(e=start;e<sizeof(tests);e++)
       {
-	perror("Doing test "+(e+1)+"\n");
-	if(verbose>1)
-	  perror(test+"\n");
-      }
-      
-      if(check > 1) _verify_internals();
-      
-      switch(type)
-      {
-      case "COMPILE_ERROR":
-	master()->set_inhibit_compile_errors(1);
-	if(catch(compile_string(test,"Test "+(e+1))))
+	string test,condition;
+	int type;
+	object o;
+	mixed a,b;
+	
+	if(check) _verify_internals();
+	
+	test=tests[e];	
+	if(sscanf(test,"COND %s\n%s",condition,test)==2)
 	{
-	  successes++;
-	}else{
-	  perror("Test "+(e+1)+" failed.\n");
-	  perror(test+"\n");
-	  errors++;
+	  if(!clone(compile_string("mixed c() { return "+condition+"; }","Cond "+(e+1)))->c())
+	  {
+	    if(verbose)
+	      werror("Not doing test "+(e+1)+"\n");
+	    successes++;
+	    continue;
+	  }
 	}
-	master()->set_inhibit_compile_errors(0);
-	break;
 	
-      case "EVAL_ERROR":
-	master()->set_inhibit_compile_errors(1);
-	if(catch(clone(compile_string(test,"Test "+(e+1)))->a()))
+	sscanf(test,"%s\n%s",type,test);
+	sscanf(type,"%*s expected result: %s",type);
+	
+	if(verbose)
 	{
-	  successes++;
-	}else{
-	  perror("Test "+(e+1)+" failed.\n");
-	  perror(test+"\n");
-	  errors++;
+	  werror("Doing test "+(e+1)+"\n");
+	  if(verbose>1)
+	    werror(test+"\n");
 	}
-	master()->set_inhibit_compile_errors(0);
-	break;
-	
-      default:
-	o=clone(compile_string(test,"Test "+(e+1)));
-	
-	if(check > 1) _verify_internals();
-	
-	a=b=0;
-	if(t) trace(t);
-	if(functionp(o->a)) a=o->a();
-	if(functionp(o->b)) b=o->b();
-	if(t) trace(0);
 	
 	if(check > 1) _verify_internals();
 	
 	switch(type)
 	{
-	case "FALSE":
-	  a=!a;
-	  
-	case "TRUE":
-	  if(!a)
-	  {
-	    perror("Test "+(e+1)+" failed.\n");
-	    perror(test+"\n");
-	    errors++;
-	  }else{
-	    successes++;
-	  }
-	  break;
-	  
-	case "RUN":
-	  successes++;
-	  break;
-	  
-	case "EQ":
-	  if(a!=b)
-	  {
-	    perror("Test "+(e+1)+" failed.\n");
-	    perror(test+"\n");
-	    perror(sprintf("o->a(): %O\n",a));
-	    perror(sprintf("o->b(): %O\n",b));
-	    errors++;
-	  }else{
-	    successes++;
-	  }
-	  break;
-	  
-	case "EQUAL":
-	  if(!equal(a,b))
-	  {
-	    perror("Test "+(e+1)+" failed.\n");
-	    perror(test+"\n");
-	    perror(sprintf("o->a(): %O\n",a));
-	    perror(sprintf("o->b(): %O\n",b));
-	    errors++;
-	  }else{
-	    successes++;
-	  }
-	  break;
-	  
-	default:
-	  perror(sprintf("Unknown test type (%O).\n",type));
-	  errors++;
+	  case "COMPILE_ERROR":
+	    master()->set_inhibit_compile_errors(1);
+	    if(catch(compile_string(test,"Test "+(e+1))))
+	    {
+	      successes++;
+	    }else{
+	      werror("Test "+(e+1)+" failed.\n");
+	      werror(test+"\n");
+	      errors++;
+	    }
+	    master()->set_inhibit_compile_errors(0);
+	    break;
+	    
+	  case "EVAL_ERROR":
+	    master()->set_inhibit_compile_errors(1);
+	    if(catch(clone(compile_string(test,"Test "+(e+1)))->a()))
+	    {
+	      successes++;
+	    }else{
+	      werror("Test "+(e+1)+" failed.\n");
+	      werror(test+"\n");
+	      errors++;
+	    }
+	    master()->set_inhibit_compile_errors(0);
+	    break;
+	    
+	  default:
+	    o=clone(compile_string(test,"Test "+(e+1)));
+	    
+	    if(check > 1) _verify_internals();
+	    
+	    a=b=0;
+	    if(t) trace(t);
+	    if(functionp(o->a)) a=o->a();
+	    if(functionp(o->b)) b=o->b();
+	    if(t) trace(0);
+	    
+	    if(check > 1) _verify_internals();
+	    
+	    switch(type)
+	    {
+	      case "FALSE":
+		a=!a;
+		
+	      case "TRUE":
+		if(!a)
+		{
+		  werror("Test "+(e+1)+" failed.\n");
+		  werror(test+"\n");
+		  errors++;
+		}else{
+		  successes++;
+		}
+		break;
+		
+	      case "RUN":
+		successes++;
+		break;
+		
+	      case "EQ":
+		if(a!=b)
+		{
+		  werror("Test "+(e+1)+" failed.\n");
+		  werror(test+"\n");
+		  werror(sprintf("o->a(): %O\n",a));
+		  werror(sprintf("o->b(): %O\n",b));
+		  errors++;
+		}else{
+		  successes++;
+		}
+		break;
+		
+	      case "EQUAL":
+		if(!equal(a,b))
+		{
+		  werror("Test "+(e+1)+" failed.\n");
+		  werror(test+"\n");
+		  werror(sprintf("o->a(): %O\n",a));
+		  werror(sprintf("o->b(): %O\n",b));
+		  errors++;
+		}else{
+		  successes++;
+		}
+		break;
+		
+	      default:
+		werror(sprintf("Unknown test type (%O).\n",type));
+		errors++;
+	    }
 	}
+	
+	if(check > 2) _verify_internals();
+	
+	if(fail && errors)
+	  exit(1);
+	
+	a=b=0;
       }
       
-      if(check > 2) _verify_internals();
-      
-      if(fail && errors)
-	exit(1);
-      
-      a=b=0;
-    }
-    
-    if(errors + successes != sizeof(tests))
-    {
-      perror("Errors + Successes != number of tests!\n");
-      errors++;
-    }
-    
-    if(errors || verbose)
-    {
-      perror("Failed tests: "+errors+".\n");
-    }
-    
-  }
-  if(mem)
-  {
-    int total;
-    tests=0;
-    gc();
-    mapping tmp=_memory_usage();
-    write(sprintf("%-10s: %6s %10s\n","Category","num","bytes"));
-    foreach(sort(indices(tmp)),string foo)
-    {
-      if(sscanf(foo,"%s_bytes",foo))
+      if(errors || verbose)
       {
-	write(sprintf("%-10s: %6d %10d\n",
-		      foo+"s",
-		      tmp["num_"+foo+"s"],
-		      tmp[foo+"_bytes"]));
-	total+=tmp[foo+"_bytes"];
+	werror("Failed tests: "+errors+".\n");
       }
+      
     }
-    write(sprintf("%-10s: %6s %10d\n",
-		  "Total",
-		  "",
-		  total));
+    if(mem)
+    {
+      int total;
+      tests=0;
+      gc();
+      mapping tmp=_memory_usage();
+      write(sprintf("%-10s: %6s %10s\n","Category","num","bytes"));
+      foreach(sort(indices(tmp)),string foo)
+	{
+	  if(sscanf(foo,"%s_bytes",foo))
+	  {
+	    write(sprintf("%-10s: %6d %10d\n",
+			  foo+"s",
+			  tmp["num_"+foo+"s"],
+			  tmp[foo+"_bytes"]));
+	    total+=tmp[foo+"_bytes"];
+	  }
+	}
+      write(sprintf("%-10s: %6s %10d\n",
+		    "Total",
+		    "",
+		    total));
+    }
+  }
+  if(verbose)
+  {
+    werror("Total tests: %d\n",successes+errors);
   }
 
   return errors;
