@@ -208,7 +208,7 @@ o Crypto/Nettle
     Compatibility outside compatibility mode will be removed in the
     future.
 
-    The interfaces for the hash and cipher algorithms has been
+    The interfaces for the hash and cipher algorithms have been
     improved and they no longer only conform to predefined interfaces,
     but actually inherits Hash/HashState and Cipher/CipherState. Every
     algorithm is in itself a module in the Crypto module, and inherits
@@ -239,9 +239,10 @@ o Crypto.PGP
 
 o ADT.Struct
     This module makes it possible to work with binary formats of the
-    packed-struct-type. Simply create a class and specify the members
-    in order, create an object with a file object as argument and then
-    read the decoded values from the object as ordinary variables.
+    packed-struct-type. Simply create a class inheriting ADT.Struct,
+    specify the members with type and size, in order, instantiate an
+    object with a file object as argument and then read the decoded
+    values from the object as ordinary variables.
 
       class ID3 {
         inherit ADT.Struct;
@@ -306,7 +307,7 @@ o GLUE
     The GL Universal Environment is a GL toolkit that makes
     implementing GL applications in Pike really simple. GLUE has
     several orthogonal components like object orientation
-    encapsulation of Gl, drawing primitives, texture handling and text
+    encapsulation of GL, drawing primitives, texture handling and text
     generation. The most fundamental part is however an abstract
     interface to a GL area driver, like GTK or SDL.
 
@@ -323,17 +324,21 @@ o GLUE
       }
 
 o ADT.CircularList
-    This is an circular list implemented as a C wrapper around an
+    This is a circular list implemented as a C wrapper around an
     array. It has a constant time complexity for pop and push. It has
-    a limited max size but it can be increased manually by calling the
+    a limited max size but it can be increased manually by calling
     allocate. It supports pushing, popping and peeking at both ends of
-    the list, as well as removing and insering elemtns at any
-    positioin in the list.
+    the list, as well as removing and insering elements at any
+    position in the list.
 
 o ADT.Sequence
-    The sequence work similar to an array but has the possibilities to
-    insert and remove elements at any position. It also has functions
+    The sequence works similar to an array but has the possibilities
+    to insert and remove elements at any position. It also has methods
     to retrieve iterators that work from either side of the sequence.
+    Both of the above ADT:s share a common set of interface primitives
+    described in a thesis work available for download and review at
+
+      http://pike.ida.liu.se/projects/docs/cmods/ADTs%20in%20Pike.pdf
 
 
 o Geography
@@ -341,31 +346,31 @@ o Geography
     Swedish RT38 (Rikets Triangulering 1938) position format.
 
 o Int
-    The Int module contains a few functions and constants that deals
+    The Int module contains a few functions and constants that deal
     specifically with the integer data type. Currently it contains
     parity and byte swapping functions and constants for the system
     maxint and minint.
 
 o Pike.Security
-    Functions and classes that deals with the Pike security system
+    Functions and classes that deal with the Pike security system
     (requires Pike to be compiled with --with-security to be present)
     are stored in this module. Beware that the Pike security system is
     still very experimental.
 
 o Protocols.HTTP.Session
     Handles an HTTP connection as a session, with cookies, redirects,
-    HTTP keep-alive etc.
+    HTTP keep-alive et cetera.
 
 o Bz2
     Support for the compression format used by the bzip2 program. The
     module interface is almost identical with the Gz module, so
-    changing between Bz2 and Gz is just a matter of a few characters
+    changing between Bz2 and Gz is just a matter of a few characters'
     difference.
 
 o Process.Process
     The Process.Process class is extended to handle a time out
     callback and a read callback, to better manage processes in an
-    asunchronous way.
+    asynchronous way.
 
 o Error
     The beginning of the Pike exception hiearchy. Even though it is
@@ -379,20 +384,21 @@ o Error
 
 
 o Float
-    Here constants and functions that deals specifically with the
-    float data type is stored. Currently contains only various
+    Here, constants and functions that deals specifically with the
+    float data type are stored. Currently contains only various
     constants that describe the precision and limitations of the float
     type Pike is compiled with.
 
 o Protocols.Bittorrent
     This is a Pike implementation of the client side of the popular
-    Bittorrent protocol. Both creating torrent files and seeding as
-    well as downloading and verifying files are supported. There are
+    Bittorrent protocol. Both creating torrent files and seeding, as
+    well as downloading and verifying files is supported. There are
     also several functions to retreive auxillary information such as
-    identifying the other peer clients.
+    identifying the other peer clients. Contains all the primitives
+    you would expect, except for the tracker.
 
 o Protocols.LMTP/Protocols.SMTP
-    Protocols.LMTP Implements a server for the Local Mail Transfer
+    Protocols.LMTP implements a server for the Local Mail Transfer
     Protocol, LMTP, as specified in RFC2033. This module has been well
     tested against Postfix clients. Protocols.LMTP is based on a new
     server implementation in Protocols.SMTP.
@@ -422,17 +428,15 @@ o Web.RDF/RDFS/OWL/RSS
 
         foreach(owlset->find_statements(0,
                                         owlset->rdf_type,
-                                        owlset->owl_Class);
-                               array statement)
+                                        owlset->owl_Class),
+                array statement)
           write("- %O\n", statement[0]);
-
-       return 0;
-     }  
+     }
 
 
 o Array
     The Array module has been extended with Array.all and Array.any
-    which determines if all or any of the elements in an array meets a
+    which determines if all or any of the elements in an array meet a
     given condition. Also the function Array.partition has been added,
     which divides the elements of an array into two arrays, selected
     by a given condition.
@@ -440,13 +444,13 @@ o Array
 o Function
     The Function module has been extended with the fixpoint combinator
     "Y", useful when writing recursive lambdas, a curry function, to
-    partially evaluate a function call, and a callback caller function
+    partially evaluate a function call and a callback caller function
     that protects the caller from exceptions in the callback function.
 
 o Thread
-    Thread.Fifo and Thread.Queue has been extended with try_*
+    Thread.Fifo and Thread.Queue have been extended with try_*
     varieties of all functions that can block and with functions that
-    makes them both implement the same interface. Both also have
+    make them both implement the same interface. Both also have
     fallbacks for running in nonthreaded mode.
 
 o Filesystem.Traversion
@@ -469,9 +473,9 @@ o Calendar module
     pre-1901 namedays and Finnish namedays.
 
 o SSL
-    Large parts of the SSL module has been rewritten, either as part
+    Large parts of the SSL module have been rewritten, either as part
     of the rewrite of the Crypto module or in an attempt to fix many
-    issues regarding blocking/nonblocking files, threads etc.
+    issues regarding blocking/nonblocking files, threads et cetera.
 
 o EXIF
     The EXIF module is now much more robust than before and can handle
