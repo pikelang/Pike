@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.107 2000/03/25 21:28:37 hubbe Exp $
+ * $Id: master.pike.in,v 1.108 2000/03/26 15:11:34 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -1331,9 +1331,14 @@ string stupid_describe(mixed m, int maxlen)
       if(string tmp=describe_program(m)) return tmp;
       if(object o=function_object(m))
 	return (describe_object(o)||"")+"->"+function_name(m);
-      else
-	return function_name(m) || "function";
-      
+      else {
+	string tmp;
+	if (catch (tmp = function_name(m)))
+	  // The function object has probably been destructed.
+	  return "function";
+	return tmp || "function";
+      }
+
     case "program":
       if(string tmp=describe_program(m)) return tmp;
       return typ;
@@ -1585,7 +1590,7 @@ string describe_backtrace(mixed trace, void|int linewidth)
 	  }
 	}
       }) {
-	row += sprintf("Error indexing backtrace line %d (%O)!", e, err[1]);
+	row += sprintf("Error indexing backtrace line %d: %s (%O)!", e, err[0], err[1]);
       }
       ret += row + "\n";
     }
