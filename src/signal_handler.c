@@ -23,7 +23,7 @@
 #include "builtin_functions.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.108 1999/02/16 01:12:12 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.109 1999/02/17 00:07:52 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -938,13 +938,13 @@ static int set_priority( int pid, char *to )
     MEMSET(&foo, sizeof(foo), 0);
 
     strcpy(foo.pc_clname, "RT");
-    if( priocntl(NULL, NULL, PC_GETCID, (void *)(&foo)) == -1)
+    if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;
     params.rt_pri = prilevel == 3 ? foo.rt_maxpri : 0;
     params.rt_tqsecs = 1;
     params.rt_tqnsecs = 0;
-    return priocntl(P_PID, pid, PC_SETPARMS, (void *)(&params)) != -1;
+    return priocntl(P_PID, (id_t)pid, PC_SETPARMS, (void *)(&params)) != -1;
   } else {
     struct {
       id_t pc_cid;
@@ -963,12 +963,12 @@ static int set_priority( int pid, char *to )
     MEMSET(&params, sizeof(params), 0);
     MEMSET(&foo, sizeof(foo), 0);
     strcpy(foo.pc_clname, "TS");
-    if( priocntl(NULL, NULL, PC_GETCID, (void *)(&foo)) == -1)
+    if( priocntl((idtype_t)0, (id_t)0, PC_GETCID, (void *)(&foo)) == -1)
       return 0;
     params.pc_cid = foo.pc_cid;
     params.ts_upri = TS_NOCHANGE;
     params.ts_uprilim = prilevel*foo.ts_maxupri/2;
-    return priocntl(P_PID, pid, PC_SETPARMS, (void *)(&params)) != -1;
+    return priocntl(P_PID, (id_t)pid, PC_SETPARMS, (void *)(&params)) != -1;
   }
 #else
 #ifdef HAVE_SCHED_SETSCHEDULER
