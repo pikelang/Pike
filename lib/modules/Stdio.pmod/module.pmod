@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.135 2002/02/14 17:24:57 nilsson Exp $
+// $Id: module.pmod,v 1.136 2002/03/02 22:04:29 agehall%shadowbyte.com Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -755,6 +755,9 @@ class File
   //! @tt{read_callback@} is called whenever there is data to read from
   //! the file.
   //!
+  //! The callback is called with the @tt{id@} of the file as first argument and
+  //! some or all of its data as second.
+  //!
   //! @note
   //! This function does not set the file nonblocking.
   //!
@@ -762,7 +765,7 @@ class File
   //! @[set_nonblocking()], @[read()],
   //! @[query_read_callback()], @[set_write_callback()],
   //! @[set_close_callback()], @[set_read_oob_callback]
-  //! @[set_write_oob_callback()]
+  //! @[set_write_oob_callback()], @[set_id()]
 
   //! @decl function(mixed, string:void) query_read_callback()
   //!
@@ -793,6 +796,8 @@ class File
   //! @tt{write_callback@} is called whenever there is buffer space
   //! available to write to for the file.
   //!
+  //! The callback is called with the @tt{id@} of the file as argument.
+  //!
   //! @note
   //! This function does not set the file nonblocking.
   //!
@@ -800,7 +805,7 @@ class File
   //! @[set_nonblocking()], @[write()],
   //! @[query_write_callback()], @[set_read_callback()],
   //! @[set_close_callback()], @[set_read_oob_callback]
-  //! @[set_write_oob_callback()]
+  //! @[set_write_oob_callback()], @[set_id()]
 
   //! @decl function(mixed:void) query_write_callback()
   //!
@@ -847,13 +852,15 @@ class File
   //! @tt{close callback@} is called when the remote end of a socket or
   //! pipe is closed.
   //!
+  //! The callback is called with the @tt{id@} of the file as argument.
+  //!
   //! @note
   //! This function does not set the file nonblocking.
   //!
   //! @seealso
   //! @[set_nonblocking()], @[close]
   //! @[query_close_callback()], @[set_read_callback()],
-  //! @[set_write_callback()]
+  //! @[set_write_callback()], @[set_id()]
   //!
   void set_close_callback(mixed c)  {
     CHECK_OPEN();
@@ -917,7 +924,7 @@ class File
   //! out-of-band data to be sent, @[write_oob_callback] will be called so that
   //! you can write out-of-band data to it.
   //!
-  //! All callbacks will have the id of file as first argument when called
+  //! All callbacks will have the @tt{id@} of file as first argument when called
   //! (see @[set_id()]).
   //!
   //! If no arguments are given, the callbacks will not be changed. The
@@ -928,7 +935,8 @@ class File
   //! option @tt{'--without-oob'@}.
   //!
   //! @seealso
-  //! @[set_blocking()], @[set_id()]
+  //! @[set_blocking()], @[set_id()], @[set_read_callback()],
+  //! @[set_write_callback()], @[set_close_callback()]
   //!
   void set_nonblocking(mixed|void rcb,
 		       mixed|void wcb,
