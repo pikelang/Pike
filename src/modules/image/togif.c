@@ -247,3 +247,133 @@ struct pike_string *
    return low_free_buf(&buf);
 }
 
+#define STD_ARENA_SIZE 16384
+
+int image_decode_gif(struct image *dest,struct image *dest_alpha,
+		     unsigned char *src,unsigned long len)
+{
+   unsigned char *arena,*tmpstore,*q;
+   rgb_group *global_palette,*palette;
+   rgb_group *rgb;
+   int bpp;
+   unsigned long i,j;
+   INT32 mod;
+   INT32 leftofs,topofs,width,height;
+   int interlaced,transparent;
+   unsigned long arenalen,pos;
+
+   if (src[0]!='G'
+       ||src[1]!='I'
+       ||src[2]!='F'
+       ||len<12) 
+      return 0; /* not a gif, you fool */
+
+   dest->xsize=src[6]+(src[7]<<8);
+   dest->ysize=src[8]+(src[9]<<8);
+
+   if (! (arena=malloc(arenalen=STD_ARENA_SIZE)) ) return 0;
+
+   dest->img=malloc(dest->xsize*dest->ysize*sizeof(rgb_group));
+   if (!dest->img) { free(arena); return 0; }
+      /* out of memory (probably illegal size) */
+
+   bpp=(src[10]&7)+1;
+
+   if (src[10]&128)
+   {
+      global_palette=(rgb_group*)(src+13);
+      src+=3*(1<<bpp);
+      len-=3*(1<<bpp);
+      rgb=dest->img;
+      i=dest->xsize*dest->ysize;
+/*
+      while (i--)
+	 *rgb=global_palette[src[11]]; * paint with background color */
+
+   }
+   else 
+      global_palette=NULL;
+   MEMSET(dest->img,0,sizeof(rgb_group)*dest->xsize*dest->ysize);
+   src+=13; len-=13;
+   
+   do
+   {
+      switch (*src)
+      {
+	 case '!': /* function block */
+	    if (len<7) break; /* no len left */
+	    if (src[1]==0xf9) 
+	       transparent=src[6];
+	    len-=src[3]+1;
+	    src+=src[3]+1;
+	    continue;
+ 	 case ',': /* image block(s) */
+	    if (len<10) len-=10; /* no len left */
+	    leftofs=src[1]+(src[2]<<8);
+	    topofs=src[3]+(src[4]<<8);
+	    width=src[5]+(src[6]<<8);
+	    height=src[7]+(src[8]<<8);
+	    interlaced=src[9]&64;
+	    
+	    if (src[9]&128)
+	    {
+	       palette=(rgb_group*)(src+10);
+	       src+=((src[9]&7)+1)*3;
+	    }
+	    else
+	       palette=global_palette;
+
+	    src+=11;
+	    len-=11;
+	    pos=0;
+	    if (len<3) break; /* no len left */
+	    bpp=src[-1];
+
+	    while (len>1)
+	    {
+	       if (!(i=*src)) break; /* length of block */
+	       if (pos+i>arenalen)
+	       {
+		  arena=realloc(arena,arenalen*=2);
+		  if (!arena) return 1;
+	       }
+	       MEMCPY(arena+pos,src+1,min(i,len-1));
+	       pos+=min(i,len-1);
+	       len-=i+1;
+	       src+=i+1;
+	    }
+
+	    if (leftofs+width<=dest->xsize && topofs+height<=dest->ysize)
+	    {
+	       tmpstore=malloc(width*height);
+	       if (!tmpstore) break;
+	       i=lzw_unpack(tmpstore,width*height,arena,pos,bpp);
+	       if (i!=(unsigned long)(width*height))
+		  MEMSET(arena+i,0,width*height-i);
+	       rgb=dest->img+leftofs+topofs*dest->ysize;
+	       mod=width-dest->xsize;
+	       j=height;
+	       q=tmpstore;
+	       if (palette)
+		  while (j--)
+		  {
+		     i=width;
+		     while (i--) *(rgb++)=palette[*(q++)];
+		     rgb+=mod;
+		  }
+	       free(tmpstore);
+	    }
+	    
+	    continue;
+	 case ';':
+	    
+	    break; /* file done */
+	 default:
+	    break; /* unknown, file is ok? */
+      }
+   }
+   while (0);
+
+   if (arena) free(arena);
+   return 1; /* ok */
+}

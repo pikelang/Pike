@@ -730,6 +730,21 @@ void image_toppm(INT32 args)
    free_string(b);
 }
 
+void image_fromgif(INT32 args)
+{
+   if (sp[-args].type!=T_STRING)
+      error("Illegal argument to image->fromgif()\n");
+
+   if (THIS->img) free(THIS->img);
+   THIS->img=NULL;
+
+   image_decode_gif(THIS,NULL,sp[-args].u.string->str,sp[-args].u.string->len);
+
+   pop_n_elems(args);
+   THISOBJ->refs++;
+   push_object(THISOBJ);
+}
+
 void image_togif(INT32 args)
 {
    char buf[80];
@@ -2198,6 +2213,8 @@ void init_image_programs()
 		"function(string:object|string)",0);
    add_function("fromppm",image_frompnm,
 		"function(string:object|string)",0);
+   add_function("fromgif",image_fromgif,
+		"function(string:object)",0);
    add_function("togif",image_togif,
 		"function(:string)",0);
    add_function("togif_fs",image_togif_fs,
