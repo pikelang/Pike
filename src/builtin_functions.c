@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.359 2001/04/08 22:57:39 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.360 2001/04/09 08:53:19 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3305,7 +3305,7 @@ PMOD_EXPORT void f_functionp(INT32 args)
   if(args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("functionp", 1);
   if( Pike_sp[-args].type == T_FUNCTION &&
-      !Pike_sp[-args].u.object->prog )
+      (Pike_sp[-args].subtype == FUNCTION_BUILTIN || Pike_sp[-args].u.object->prog))
     res=1;
   pop_n_elems(args);
   push_int(res);
