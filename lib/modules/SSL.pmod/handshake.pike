@@ -1,4 +1,4 @@
-/* $Id: handshake.pike,v 1.8.2.2 1998/06/26 21:51:17 nisse Exp $
+/* $Id: handshake.pike,v 1.8.2.3 1998/06/26 22:16:16 nisse Exp $
  *
  */
 
@@ -207,11 +207,11 @@ string server_derive_master_secret(string data)
        werror("SSL.handshake: Invalid premaster_secret! "
 	      "A chosen ciphertext attack?\n");
 
-       s = "Bogus value¡Bogus value¡Bogus value¡Bogus value¡";
+       s = context->random(48);
        rsa_message_was_bad = 1;
 
      } else {
-       /* FIXME: When versions beyond 3.0 is supported,
+       /* FIXME: When versions beyond 3.0 are supported,
 	* the version number here must be checked more carefully
 	* for a version rollback attack. */
        if (s[1] > 0)
