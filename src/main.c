@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.10 1996/11/14 01:24:12 hubbe Exp $");
+RCSID("$Id: main.c,v 1.11 1996/11/22 20:58:23 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -281,12 +281,12 @@ void exit_main()
   cleanup_added_efuns();
   cleanup_pike_types();
   cleanup_program();
-  cleanup_callbacks();
 
 #ifdef GC2
   do_gc();
 #endif
 
+  cleanup_callbacks();
   zap_all_arrays();
 
   cleanup_shared_string_table();

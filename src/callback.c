@@ -124,4 +124,5 @@ void cleanup_callbacks()
     callback_chunks=tmp->next;
     free((char *)tmp);
   }
+  free_callbacks=0;
 }
