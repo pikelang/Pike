@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.155 2002/11/14 12:45:44 grubba Exp $
+|| $Id: docode.c,v 1.156 2002/11/15 13:26:43 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.155 2002/11/14 12:45:44 grubba Exp $");
+RCSID("$Id: docode.c,v 1.156 2002/11/15 13:26:43 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -441,12 +441,13 @@ int do_lfun_call(int id, node *args)
     Pike_compiler->new_program->identifier_references + id;
 
   /* NB: The second part handles use of local::fun(). */
-  if((id == Pike_compiler->compiler_frame->current_function_number) ||
-     ((!ref->inherit_offset) &&
-      (ref->identifier_offset ==
-       Pike_compiler->new_program->
-       identifier_references[Pike_compiler->compiler_frame->
-			     current_function_number].identifier_offset)))
+  if((Pike_compiler->compiler_frame->current_function_number >= 0) &&
+     ((id == Pike_compiler->compiler_frame->current_function_number) ||
+      ((!ref->inherit_offset) &&
+       (ref->identifier_offset ==
+	Pike_compiler->new_program->
+	identifier_references[Pike_compiler->compiler_frame->
+			      current_function_number].identifier_offset))))
   {
     int n=count_args(args);
     if(n == Pike_compiler->compiler_frame->num_args)
@@ -464,7 +465,8 @@ int do_lfun_call(int id, node *args)
 	   *
 	   * RECUR directly to label 0.
 	   *
-	   * (We don't want to trigger the second pass if it's not needed.)
+	   * Note that we in this case don't know if we are overloaded or
+	   * not, and thus can't RECUR to the recur_label.
 	   */
 	  do_jump(F_RECUR, 0);
 	} else {
