@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.397 2001/07/24 01:15:24 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.398 2001/07/27 14:49:55 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -966,122 +966,6 @@ PMOD_EXPORT void f_has_value(INT32 args)
 	PIKE_ERROR("has_value", "Search gave incorrect result.\n", Pike_sp, args);
   }
 }
-
-/* Old backtrace */
-#if 0
-/*! @decl array(array) backtrace()
- *!
- *!   Get a description of the current call stack.
- *!
- *!   The description is returned as an array with one entry for each call
- *!   frame on the stack.
- *!
- *!   Each entry has this format:
- *!   @array
- *!     @elem string file
- *!       A string with the filename if known, else zero.
- *!     @elem int line
- *!       An integer containing the linenumber if known, else zero.
- *!     @elem function fun
- *!       The function that was called at this level.
- *!     @elem mixed|void ... args
- *!       The arguments that the function was called with.
- *!   @endarray
- *!
- *!   The current call frame will be last in the array.
- *!
- *! @note
- *!   Please note that the frame order may be reversed in a later version
- *!   (than 7.1) of Pike to accomodate for deferred backtraces.
- *!
- *!   Note that the arguments reported in the backtrace are the current
- *!   values of the variables, and not the ones that were at call-time.
- *!   This can be used to hide sensitive information from backtraces
- *!   (eg passwords).
- *!
- *! @seealso
- *!   @[catch()], @[throw()]
- */
-PMOD_EXPORT void f_backtrace(INT32 args)
-{
-  INT32 frames;
-  struct pike_frame *f,*of;
-  struct array *a,*i;
-
-  frames=0;
-  if(args) pop_n_elems(args);
-  for(f=Pike_fp;f;f=f->next) frames++;
-
-  Pike_sp->type=T_ARRAY;
-  Pike_sp->u.array=a=allocate_array_no_init(frames,0);
-  Pike_sp++;
-
-  /* NOTE: The first pike_frame is ignored, since it is the call to backtrace(). */
-  of=0;
-  for(f=Pike_fp;f;f=(of=f)->next)
-  {
-    debug_malloc_touch(f);
-    frames--;
-
-    if(f->current_object && f->context.prog)
-    {
-      INT32 args;
-      if(!f->locals)
-      {
-	args=0;
-      }else{
-	args=f->num_args;
-	args = DO_NOT_WARN((INT32) MINIMUM(f->num_args, Pike_sp - f->locals));
-	if(of)
-	  args = DO_NOT_WARN((INT32)MINIMUM(f->num_args,of->locals - f->locals));
-	args=MAXIMUM(args,0);
-      }
-
-      ITEM(a)[frames].u.array=i=allocate_array_no_init(3+args,0);
-      ITEM(a)[frames].type=T_ARRAY;
-      if(f->locals)
-	assign_svalues_no_free(ITEM(i)+3, f->locals, args, BIT_MIXED);
-      if(f->current_object->prog)
-      {
-	ITEM(i)[2].type=T_FUNCTION;
-	ITEM(i)[2].subtype=f->fun;
-	ITEM(i)[2].u.object=f->current_object;
-	add_ref(f->current_object);
-      }else{
-	ITEM(i)[2].type=T_INT;
-	ITEM(i)[2].subtype=NUMBER_DESTRUCTED;
-	ITEM(i)[2].u.integer=0;
-      }
-
-      if(f->pc)
-      {
-	struct pike_string *program_name =
-	  get_line(f->pc, f->context.prog, & ITEM(i)[1].u.integer);
-	ITEM(i)[1].subtype=NUMBER_NUMBER;
-	ITEM(i)[1].type=T_INT;
-
-	ITEM(i)[0].u.string = program_name;
-#ifdef __CHECKER__
-	ITEM(i)[0].subtype=0;
-#endif
-	ITEM(i)[0].type=T_STRING;
-      }else{
-	ITEM(i)[1].u.integer=0;
-	ITEM(i)[1].subtype=NUMBER_NUMBER;
-	ITEM(i)[1].type=T_INT;
-
-	ITEM(i)[0].u.integer=0;
-	ITEM(i)[0].subtype=NUMBER_NUMBER;
-	ITEM(i)[0].type=T_INT;
-      }
-    }else{
-      ITEM(a)[frames].type=T_INT;
-      ITEM(a)[frames].u.integer=0;
-    }
-  }
-  a->type_field = BIT_ARRAY | BIT_INT;
-}
-#endif /* 0 */
 
 /*! @decl void add_constant(string name, mixed value)
  *! @decl void add_constant(string name)
@@ -7382,12 +7266,6 @@ void init_builtin_efuns(void)
 /* function(mixed:int) */
   ADD_EFUN("arrayp", f_arrayp,tFunc(tMix,tInt),0);
 
-#if 0  
-/* function(:array(array)) */
-  ADD_EFUN("backtrace",f_backtrace,
-	   tFunc(tNone,tArr(tArray)),OPT_EXTERNAL_DEPEND);
-#endif /* 0 */
-  
 /* function(string...:string) */
   ADD_EFUN("combine_path_nt",f_combine_path_nt,tFuncV(tNone,tStr,tStr),0);
   ADD_EFUN("combine_path_unix",f_combine_path_unix,tFuncV(tNone,tStr,tStr),0);
