@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: Shuffler.cmod,v 1.18 2002/11/04 02:55:31 agehall Exp $
+|| $Id: Shuffler.cmod,v 1.19 2002/11/04 03:08:49 nilsson Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: Shuffler.cmod,v 1.18 2002/11/04 02:55:31 agehall Exp $");
+RCSID("$Id: Shuffler.cmod,v 1.19 2002/11/04 03:08:49 nilsson Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "threads.h"
@@ -603,7 +603,22 @@ PIKECLASS Shuffle
     *! If start and length are not specified, the whole source will be
     *! sent, if start but not length is specified, the whole source,
     *! excluding the first @[start] bytes will be sent.
-    *! 
+    *!
+    *! Currently supported sources
+    *! @dl
+    *!   @item String
+    *!     An ordinary 8-bit wide pike string.
+    *!   @item Memory
+    *!     An initialized instance of the System.Memory class.
+    *!   @item Normal file
+    *!     Stdio.File instance pointing to a normal file.
+    *!   @item Stream
+    *!     Stdio.File instance pointing to a stream of some kind
+    *!     (network socket, named pipe, stdin etc).
+    *!   @item Pike-stream
+    *!     Stdio.File lookalike with read callback support
+    *!     (set_read_callback and set_close_callback).
+    *! @enddl
     */
   {
     INT64 rstart=0, rlength=-1;
