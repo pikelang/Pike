@@ -27,7 +27,7 @@ static void low_reconnect()
   object losock = Stdio.File();
   if(sock)
     destruct(sock);
-  if(!losock->connect(host, port|RSQL_PORT))
+  if(!losock->connect(host, port||RSQL_PORT))
     ERROR("Can't connect to "+host+(port? ":"+port:"")+": "+
 	  strerror(losock->errno())+"\n");
   if(8!=losock->write("RSQL%4c", RSQL_VERSION) ||
