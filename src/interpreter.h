@@ -103,11 +103,11 @@
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
 {
-  unsigned INT32 prefix2=0,prefix=0;
 #ifdef HAVE_COMPUTED_GOTO
   static void *strap = &&init_strap;
   void *instr = NULL;
 #else /* !HAVE_COMPUTED_GOTO */
+  unsigned INT32 prefix2=0,prefix=0;
   unsigned INT32 instr;
 #endif /* HAVE_COMPUTED_GOTO */
 
