@@ -2,6 +2,7 @@
 *.md
 .nfs*
 Image.wmml
+Mysql.wmml
 ___tmp.*
 extra_textflows.mif
 illustration*.gif
