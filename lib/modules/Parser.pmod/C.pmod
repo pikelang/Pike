@@ -4,7 +4,7 @@
 //
 // #pike __REAL_VERSION__
 //
-// $Id: C.pmod,v 1.33 2002/12/29 22:37:19 nilsson Exp $
+// $Id: C.pmod,v 1.34 2004/04/04 17:32:26 mast Exp $
 
 mapping(string:string) global_groupings=(["{":"}","(":")","[":"]"]);
 
@@ -316,12 +316,9 @@ array(Token) group(array(string|Token) tokens, void|mapping groupings)
 	if (!sizeof(ret) || !stack->ptr ||
 	    (groupings[(string)ret[0]] != (string)token)) {
 	  // Mismatch
-	  werror("**** Grouping mismatch token=%O\n"
-		 "**** tokens: ({ %{%O, %}})\n"
-		 "**** ret: ({ %{%O, %}})\n"
-		 "**** stackdepth: %d\n",
-		 token->text, tokens->text,
-		 ret->text, stack->ptr);
+	  werror ("%s:%d: Expected %O, got %O\n",
+		  token->file, token->line,
+		  groupings[(string)ret[0]], (string) token);
 	  return ret;
 	}
 	ret=stack->pop()+({ ret + ({token}) });
