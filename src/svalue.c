@@ -17,8 +17,10 @@
 #include "dynamic_buffer.h"
 #include "interpret.h"
 #include "gc.h"
+#include "pike_macros.h"
+#include <ctype.h>
 
-RCSID("$Id: svalue.c,v 1.21 1998/03/28 14:58:51 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.22 1998/04/06 04:10:53 hubbe Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -758,26 +760,28 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 	    my_putchar('\\');
 	    my_putchar('r');
 	    break;
-	    
-	  case 0:
-	  case 1:
-	  case 2:
-	  case 3:
-	  case 4:
-	  case 5:
-	  case 6:
-	  case 7:
-	    my_putchar('\\');
-	    my_putchar('0');
-	    my_putchar('0');
-	    my_putchar('0' + s->u.string->str[i]);
-	    break;
+
 
             case '"':
             case '\\':
               my_putchar('\\');
-            default:
               my_putchar(s->u.string->str[i]);
+	      break;
+
+            default:
+	      if(is8bitalnum(s->u.string->str[i]) || isprint(s->u.string->str[i]))
+	      {
+		my_putchar(s->u.string->str[i]);
+		break;
+	      }
+
+	    case 0: case 1: case 2: case 3: case 4:
+	    case 5: case 6: case 7:
+	      my_putchar('\\');
+	      my_putchar('0');
+	      my_putchar('0');
+	      my_putchar('0' + s->u.string->str[i]);
+	      break;
           } 
         }
         my_putchar('"');
