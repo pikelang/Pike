@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.5 1998/04/10 12:16:21 grubba Exp $
+/* $Id: master.pike.in,v 1.6 1998/04/10 15:23:38 grubba Exp $
  *
  * Master-file for Pike.
  *
@@ -823,7 +823,9 @@ string describe_backtrace(mixed *trace)
 	{
 	  if(functionp(tmp[2]))
 	    row=function_name(tmp[2]);
-	  else
+	  else if (stringp(tmp[2])) {
+	    row = tmp[2];
+	  } else
 	    row="unknown function";
 	    
 	  row+="(";
