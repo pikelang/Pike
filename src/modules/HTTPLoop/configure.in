@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.3 1999/12/11 20:37:28 per Exp $
+# $Id: configure.in,v 1.4 2000/03/26 14:46:30 grubba Exp $
 AC_INIT(accept_and_parse.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -9,26 +9,45 @@ AC_MODULE_INIT()
 AC_CHECK_FUNCS(poll gmtime_r gmtime sendfile signal)
 
 AC_CHECK_HEADERS(poll.h sys/poll.h sys/socket.h netinet/in.h arpa/inet.h \
-                 asm/unistd.h sys/uio.h)
+                 asm/unistd.h sys/uio.h sys/types.h)
 
 AC_SUBST(RANLIB)
 
+#
+# NOTE: The test for sendfile is a duplicate of the test in the files module.
+# It should probably be moved to the main configure-script.
+# Note also that the test in the files module is more complete than this one.
+# Note also that the Linux sendfile syscall test is not present there.
+#	/grubba 2000-03-26
+#
 if test "$ac_cv_func_sendfile" = "yes"; then
   AC_MSG_CHECKING(if sendfile takes 4(Linux) or 7(FreeBSD) arguments)
   AC_CACHE_VAL(pike_cv_freebsd_sendfile, [
     AC_TRY_COMPILE([
-#include <sys/types.h>                                 
-#include <sys/socket.h>                                
-#include <sys/uio.h>                                   
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
     ], [
       return sendfile(0,0,0,0,(void *)0,(void *)0,0);
     ], [
       # Probably FreeBSD-style, but we need to check that
       # we indeed have a prototype...
       AC_TRY_COMPILE([
-#include <sys/types.h>                                 
-#include <sys/socket.h>                                
-#include <sys/uio.h>                                   
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
+#ifdef HAVE_SYS_UIO_H
+#include <sys/uio.h>
+#endif /* HAVE_SYS_UIO_H */
       ], [
         /* This should fail on FreeBSD
          * If it succeeds, we don't have a prototype,
@@ -41,6 +60,30 @@ if test "$ac_cv_func_sendfile" = "yes"; then
   if test "$pike_cv_freebsd_sendfile" = "yes"; then
     AC_MSG_RESULT([7 - FreeBSD style])
     AC_DEFINE(HAVE_FREEBSD_SENDFILE)
+
+    AC_MSG_CHECKING([if sendfile looks thread-safe])
+    AC_CACHE_VAL(pike_cv_freebsd_sendfile_threadsafe, [
+      # We're optimistic -- default to assuming it works.
+      pike_cv_freebsd_sendfile_threadsafe="yes"
+      if test -f /usr/lib/libc_r.so; then
+        if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys >/dev/null 2>&1; then
+	  # Ok, looks like we can perform the test.
+	  # Assume we have a broken sendfile(2).
+          pike_cv_freebsd_sendfile_threadsafe="no"
+	  if /usr/bin/nm -D /usr/lib/libc_r.so 2>&1 | grep _thread_sys_sendfile >/dev/null 2>&1; then
+	    # Wee! They have actually added a wrapper for sendfile(2)!
+	    pike_cv_freebsd_sendfile_threadsafe="yes"
+	  else :; fi
+	else :; fi
+      else :; fi
+    ])
+
+    if test "$pike_cv_freebsd_sendfile_threadsafe" = "yes"; then
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no - disabling use of sendfile)
+      AC_DEFINE(HAVE_BROKEN_SENDFILE)
+    fi
   else
     AC_MSG_RESULT([4 - Linux style])
   fi
