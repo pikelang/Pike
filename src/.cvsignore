@@ -7,6 +7,7 @@ dependencies
 language.c
 language.h
 machine.h
+machine.h.in
 modlist.h
 peep_engine.c
 pike
