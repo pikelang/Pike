@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.38 2002/02/06 23:09:46 grubba Exp $
+;;; $Id: pike.el,v 1.39 2002/05/11 21:42:25 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -87,8 +87,8 @@ It's overlaid over the `font-lock-builtin-face'."
   (concat "\\<\\("
 	  "predef\\|import\\|default\\|case\\|class\\|break\\|continue\\|"
 	  "do\\|else\\|for\\|if\\|return\\|switch\\|while\\|lambda\\|"
-	  "catch\\|throw\\|foreach\\|inherit\\|typedef\\|constant"
-	  "\\)\\>")
+	  "catch\\|throw\\|foreach\\|inherit\\|typedef\\|constant\\|global\\|"
+	  "this_program\\|this\\)\\>")
   "Regexp for keywords. Must have exactly one submatch.")
 
 (defconst pike-font-lock-modifier-regexp
@@ -840,11 +840,12 @@ provides almost entirely correct highlighting of e.g. types.")
 
 ;; XEmacs way.
 (put 'pike-mode 'font-lock-defaults 
-      '((pike-font-lock-keywords
-     pike-font-lock-keywords-1 pike-font-lock-keywords-2
-     pike-font-lock-keywords-3)
-        nil nil ((?_ . "w")) beginning-of-defun
-        (font-lock-mark-block-function . mark-defun)))
+     '((pike-font-lock-keywords
+	pike-font-lock-keywords-1
+	pike-font-lock-keywords-2
+	pike-font-lock-keywords-3)
+       nil nil ((?_ . "w")) beginning-of-defun
+       (font-lock-mark-block-function . mark-defun)))
 
 ;; GNU Emacs way.
 (if (and (boundp 'font-lock-defaults-alist)
@@ -852,8 +853,10 @@ provides almost entirely correct highlighting of e.g. types.")
     (setq font-lock-defaults-alist
 	  (cons
 	   (cons 'pike-mode
-		 '((pike-font-lock-keywords pike-font-lock-keywords-1
-		    pike-font-lock-keywords-2 pike-font-lock-keywords-3)
+		 '((pike-font-lock-keywords
+		    pike-font-lock-keywords-1
+		    pike-font-lock-keywords-2
+		    pike-font-lock-keywords-3)
 		   nil nil ((?_ . "w")) beginning-of-defun
 		   (font-lock-mark-block-function . mark-defun)))
 	   font-lock-defaults-alist)))
