@@ -1,4 +1,4 @@
-/* $Id: session.pike,v 1.7 1997/05/31 22:04:00 grubba Exp $
+/* $Id: session.pike,v 1.8 1998/02/11 05:19:06 nisse Exp $
  *
  */
 
@@ -52,7 +52,7 @@ string generate_key_block(string client_random, string server_random)
     i++;
     string cookie = replace(allocate(i), 0, sprintf("%c", 64+i)) * "";
 #ifdef SSL3_DEBUG
-//    werror(sprintf("cookie '%s'\n", cookie));
+    werror(sprintf("cookie '%s'\n", cookie));
 #endif
     key += md5->hash_raw(master_secret +
 			 sha->hash_raw(cookie + master_secret +
