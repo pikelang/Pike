@@ -1,0 +1,176 @@
+// $Id: testsuite.in,v 1.1 2002/08/02 20:59:08 nilsson Exp $
+
+// DOM
+
+// Tree
+
+// NSTree
+
+// XML NS section 2
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<x>
+  <!-- No namespace here. -->
+</x>");
+x=x[0];
+array r = ({});
+r += ({ x->get_any_name() });
+r += ({ x->get_default_ns() });
+r += ({ x->get_ns() });
+r += ({ x->get_defined_nss()->edi });
+return r;
+]], ({ "x", 0, 0, 0 }) )
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<x xmlns:edi='http://ecommerce.org/schema'>
+  <!-- the 'edi' prefix is bound to http://ecommerce.org/schema
+       for the 'x' element and contents -->
+</x>");
+x=x[0];
+array r = ({});
+r += ({ x->get_any_name() });
+r += ({ x->get_default_ns() });
+r += ({ x->get_ns() });
+r += ({ x->get_defined_nss()->edi });
+
+r += ({ x[0]->get_default_ns() });
+r += ({ x[0]->get_ns() });
+r += ({ x[0]->get_defined_nss()->edi });
+return r;
+]], ({ "x", 0, 0, "http://ecommerce.org/schema",
+    0, 0, "http://ecommerce.org/schema" }) )
+
+// XML NS section 4
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<x xmlns:edi='http://ecommerce.org/schema'>
+  <!-- the 'price' element's namespace is http://ecommerce.org/schema -->
+  <edi:price units='Euro'>32.18</edi:price>
+</x>");
+x=x[0];
+array r = ({});
+r += ({ x[3]->get_any_name() });
+r += ({ x[3]->get_ns() });
+r += ({ x[3]->get_attributes()->units });
+r += ({ x[3][0]->get_ns() });
+return r;
+]], ({ "price", "http://ecommerce.org/schema", "Euro", 0 }) );
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<x xmlns:edi='http://ecommerce.org/schema'>
+  <!-- the 'taxClass' attribute's namespace is http://ecommerce.org/schema -->
+  <lineItem edi:taxClass=\"exempt\">Baby food</lineItem>
+</x>");
+x=x[0];
+array r = ({});
+r += ({ x[3]->get_ns() });
+r += ({ x[3]->get_attributes() });
+r += ({ x[3]->get_ns_attributes() });
+return r;
+]], ({ 0, ([]), ([ "http://ecommerce.org/schema":
+	 ([ "taxClass":"exempt" ]) ]) }) )
+
+// XML NS section 5.1
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<?xml version=\"1.0\"?>
+<!-- all elements here are explicitly in the HTML namespace -->
+<html:html xmlns:html='http://www.w3.org/TR/REC-html40'>
+  <html:head><html:title>Frobnostication</html:title></html:head>
+  <html:body><html:p>Moved to 
+    <html:a href='http://frob.com'>here.</html:a></html:p></html:body>
+</html:html>");
+x=x[2];
+array r = ({});
+r += ({ x->get_ns() });
+r += ({ x->get_default_ns() });
+r += ({ x[0]->get_ns() });
+r += ({ x[0]->get_default_ns() });
+r += ({ x[3][0][1]->get_attributes()->href });
+return r;
+]], ({ "http://www.w3.org/TR/REC-html40", 0, 0, 0,
+       "http://frob.com" }) )
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<?xml version=\"1.0\"?>
+<!-- both namespace prefixes are available throughout -->
+<bk:book xmlns:bk='urn:loc.gov:books'
+         xmlns:isbn='urn:ISBN:0-395-36341-6'>
+    <bk:title>Cheaper by the Dozen</bk:title>
+    <isbn:number>1568491379</isbn:number>
+</bk:book>");
+x=x[2];
+array r = ({});
+r += ({ x->get_ns() });
+r += ({ x->get_defined_nss() });
+r += ({ x[1]->get_ns() });
+r += ({ x[3]->get_ns() });
+return r;
+]], ({ "urn:loc.gov:books", ([ "bk":"urn:loc.gov:books",
+                               "isbn":"urn:ISBN:0-395-36341-6" ]),
+       "urn:loc.gov:books", "urn:ISBN:0-395-36341-6" }) )
+
+// XML NS section 5.2
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<?xml version=\"1.0\"?>
+<!-- initially, the default namespace is \"books\" -->
+<book xmlns='urn:loc.gov:books'
+      xmlns:isbn='urn:ISBN:0-395-36341-6'>
+    <title>Cheaper by the Dozen</title>
+    <isbn:number>1568491379</isbn:number>
+    <notes>
+      <!-- make HTML the default namespace for some commentary -->
+      <p xmlns='urn:w3-org-ns:HTML'>
+          This is a <i>funny</i> book!
+      </p>
+    </notes>
+</book>");
+x=x[2];
+array r = ({});
+r += ({ x->get_ns() });
+r += ({ x->get_default_ns() });
+r += ({ x->get_defined_nss() });
+r += ({ x[1]->get_ns() });
+r += ({ x[3]->get_ns() });
+x=x[5];
+r += ({ x[3]->get_ns() });
+r += ({ x[3][1]->get_ns() });
+r += ({ x[3][1]->get_default_ns() });
+return r;
+]], ({ "urn:loc.gov:books", "urn:loc.gov:books",
+       ([ "isbn":"urn:ISBN:0-395-36341-6" ]),
+       "urn:loc.gov:books", "urn:ISBN:0-395-36341-6",
+       "urn:w3-org-ns:HTML", "urn:w3-org-ns:HTML",
+       "urn:w3-org-ns:HTML" }) )
+
+// We don't test the case with empty namespace, since it
+// it is unclear how we should behave.
+
+// XML Section 5.3
+
+test_any_equal([[
+object x=Parser.XML.NSTree.parse_input(#"
+<!-- http://www.w3.org is bound to n1 and is the default -->
+<x xmlns:n1=\"http://www.w3.org\" 
+   xmlns=\"http://www.w3.org\" >
+    <good a=\"1\"     n1:a=\"2\" />
+</x>");
+x=x[1][1];
+array r = ({});
+r += ({ x->get_ns() });
+r += ({ x->get_ns_attributes()[x->get_ns()] });
+r += ({ x->get_attributes() });
+return r;
+]], ({ "http://www.w3.org", (["a":"2"]), (["a":"1"]) }) )
+
+// Simple
+
+// Validating
