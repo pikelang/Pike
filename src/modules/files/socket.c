@@ -3,6 +3,7 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #define NO_PIKE_SHORTHAND
 
 #include "global.h"
@@ -21,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.52 2000/12/01 08:10:36 hubbe Exp $");
+RCSID("$Id: socket.c,v 1.53 2001/03/15 21:40:52 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -378,7 +379,7 @@ static void exit_port_struct(struct object *o)
   THIS->accept_callback.type=PIKE_T_INT;
 }
 
-struct program *port_program;
+struct program *port_program = NULL;
 
 void port_exit_program(void)
 {
