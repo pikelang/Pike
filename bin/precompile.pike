@@ -386,7 +386,7 @@ class PikeType
 	case "float":   return "tFloat";
 	case "string":  return "tString";
 	case "object":  return "tObj";
-	case "program": return "tProgram";
+	case "program": return "tPrg(tObj)";
 	case "any":     return "tAny";
 	case "mixed":   return "tMix";
 	case "int":
