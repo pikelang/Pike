@@ -26,12 +26,9 @@ function(mixed...:TimeRange) Day;
 
 // sanity check
 
-static private int __sanity_check=lambda()
-{
-   if (5000000000!=5*inano)
-      error("Calendar.Time needs bignums (Gmp.mpz)\n");
-   return 1;
-}();
+#ifndef __AUTO_BIGNUM__
+#error Calendar.Time needs bignums (Gmp.mpz)
+#endif
 
 .Rule.Timezone Timezone_UTC=.Rule.Timezone(0,"UTC"); // needed for dumping
 
