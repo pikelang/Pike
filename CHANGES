@@ -1,3 +1,8 @@
 Changes since Pike 7.6:
 ----------------------------------------------------------------------
 
+o Process.popen
+   Process.popen is now able to run in nonblocking mode. If a second
+   argument is provided a file object will be opened witht that mode
+   and return, enabling for two way communication with the new
+   process.
