@@ -482,8 +482,16 @@ void set_font_dirs( array(string) directories )
 void create()
 {
 #ifdef __NT__
-  set_font_dirs( ({combine_path(replace(getenv("SystemRoot"),
-					"\\","/"),"fonts/")}) );
+  string root = getenv("SystemRoot");
+  if(root)
+    root = replace(root, "\\", "/");
+  else if(file_stat("C:/WINDOWS/"))
+    root = "C:/WINDOWS/";
+  else if(file_stat("C:/WINNT/"))
+    root = "C:/WINNT/";
+
+  if(root)
+    set_font_dirs( ({ combine_path(root, "fonts/")}) );
 #else
   array dirs = ({});
   foreach( ({"/usr/openwin/lib/X11/fonts/TrueType/",
