@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.104 2002/10/31 16:15:21 nilsson Exp $
+# $Id: Makefile,v 1.105 2002/11/19 22:09:55 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -262,51 +262,10 @@ xenofarm:
 	-rm -rf build/xenofarm
 	mkdir build/xenofarm
 	-CCACHE_LOGFILE="`pwd`/build/xenofarm/ccache.log.txt" \
-	  $(MAKE) $(MAKE_FLAGS) xenofarm_low
-	echo Begin response assembly | tee -a build/xenofarm/xenofarmlog.txt
-	date >> build/xenofarm/xenofarmlog.txt
-	-cp "$(BUILDDIR)/config.info" build/xenofarm/configinfo.txt
-	-if test ! -f "build/xenofarm/verifylog.txt"; then \
-	  cp "$(BUILDDIR)/config.cache" build/xenofarm/configcache.txt; \
-	  builddir="$(BUILDDIR)"; \
-	  for f in `cd "$$builddir" && find . -name config.log -print`; do \
-	    cp $$builddir/$$f build/xenofarm/configlog`echo $$f|tr '[/]' '[_]'`.txt; \
-	  done; \
-	else :; fi
-	-if test ! -f "build/xenofarm/exportlog.txt"; then \
-#	  if test -f "$(BUILDDIR)/Pike-v"*; then \
-#	    cp "$(BUILDDIR)/Pike-v"* build/xenofarm/; \
-#	  else :; fi; \
-#	else \
-	  cp "$(BUILDDIR)/testsuite" build/xenofarm/testsuite.txt; \
-	fi
-	-find . -name "core" -exec \
-	  gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$(BUILDDIR)/pike" {} >> \
-	  build/xenofarm/_core.txt ";"
-	-find . -name "*.core" -exec \
-	  gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$(BUILDDIR)/pike" {} >> \
-	  build/xenofarm/_core.txt ";"
-	-find . -name "core.*" -exec \
-	  gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$(BUILDDIR)/pike" {} >> \
-	  build/xenofarm/_core.txt ";"
-	-cp "$(BUILDDIR)/dumpmodule.log" build/xenofarm/dumplog.txt
-	-cp buildid.txt build/xenofarm/
+	  MAKE="$(MAKE)" CONFIGUREARGS="$(CONFIGUREARGS)" \
+	  BUILDDIR="$(BUILDDIR)" /bin/sh bin/xenofarm.sh
 	cd build/xenofarm && tar cf - . > ../../xenofarm_result.tar
 	gzip -f9 xenofarm_result.tar
-
-xenofarm_low:
-	echo "Begin build" | tee -a build/xenofarm/xenofarmlog.txt
-	date >> build/xenofarm/xenofarmlog.txt
-	$(MAKE) $(MAKE_FLAGS) > build/xenofarm/makelog.txt 2>&1
-	echo "Begin verify" | tee -a build/xenofarm/xenofarmlog.txt
-	date >> build/xenofarm/xenofarmlog.txt
-	$(MAKE) $(MAKE_FLAGS) METATARGET=verify TESTARGS="-a -T" > \
-	  build/xenofarm/verifylog.txt 2>&1
-	echo "Begin export" | tee -a build/xenofarm/xenofarmlog.txt
-	date >> build/xenofarm/xenofarmlog.txt
-	$(MAKE) $(MAKE_FLAGS) bin_export > build/xenofarm/exportlog.txt 2>&1
-	echo "Xenofarm OK" | tee -a build/xenofarm/xenofarmlog.txt
-	date >> build/xenofarm/xenofarmlog.txt
 
 clean:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" clean || { \
