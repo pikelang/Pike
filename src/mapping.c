@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.100 2000/09/07 11:31:05 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.101 2000/09/08 04:40:31 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -312,6 +312,7 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   init_mapping(m, new_size);
   debug_malloc_touch(m);
   new_md=m->data;
+  new_md->flags = md->flags;
 
   /* This operation is now 100% atomic - no locking required */
   if(md->refs>1)
@@ -1444,27 +1445,43 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
     e+=argp[d].u.mapping->data->size;
   }
 
-#if 1
-  /* Major optimization */
-  for(d=0;d<args;d++)
-    if(e==argp[d].u.mapping->data->size)
-      return copy_mapping(argp[d].u.mapping);
-#endif
+  if(!e) return allocate_mapping(0);
 
-  /* FIXME: need locking! */
-  if(argp[0].u.mapping->refs == 1 &&
-     !argp[0].u.mapping->data->hardlinks)
-  {
-    add_ref( ret=argp[0].u.mapping );
-    d=1;
-  }else{
-    ret=allocate_mapping(MAP_SLOTS(e));
-    d=0;
-  }
+  d=0;
+
   for(;d<args;d++)
-    MAPPING_LOOP(argp[d].u.mapping)
-      mapping_insert(ret, &k->ind, &k->val);
-  return ret;
+  {
+    struct mapping *m=argp[d].u.mapping;
+    struct mapping_data *md=m->data;
+
+    if(md->size == 0) continue;
+
+#if 1 /* major optimization */
+    if(e==md->size && !(md->flags && MAPPING_FLAG_WEAK))
+      return copy_mapping(m);
+#endif
+    
+    if(m->refs == 1 && !md->hardlinks)
+    {
+      add_ref( ret=m );
+      d++;
+    }else{
+      ret=allocate_mapping(MAP_SLOTS(e));
+    }
+
+    for(;d<args;d++)
+    {
+      m=argp[d].u.mapping;
+      md=m->data;
+
+      add_ref(md);
+      NEW_MAPPING_LOOP(md)
+	mapping_insert(ret, &k->ind, &k->val);
+      free_mapping_data(md);
+    }
+    return ret;
+  }
+  fatal("add_mappings is confused!\n");
 }
 
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
@@ -1691,7 +1708,7 @@ PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
   md=m->data;
   md->valrefs++;
   add_ref(md);
-  MAPPING_LOOP(m)	/* FIXME: Shouldn't NEW_MAPPING_LOOP() be used? */
+  NEW_MAPPING_LOOP(md)
   {
     copy_svalues_recursively_no_free(sp,&k->ind, 1, p);
     sp++;
