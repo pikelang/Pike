@@ -90,6 +90,7 @@ ifdef([[__gnu__]],
 
 define(SEPARATOR,[[....]])
 define(CONDITION,[[]])
+define(M4_TESTDIR,combine_path("$1",".."))
 
 define(DOTEST,dnl
 checkarg([[DOTEST]],1)dnl
