@@ -42,6 +42,7 @@ testfont binary
 /src/modules/image/lzw.c foreign_ident
 /src/modules/image/lzw.h foreign_ident
 /src/modules/image/matrix.c foreign_ident
+/src/modules/image/operator.c foreign_ident
 /src/modules/image/pattern.c foreign_ident
 /src/modules/image/pnm.c foreign_ident
 /src/modules/image/quant.c foreign_ident
