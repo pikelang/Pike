@@ -83,4 +83,4 @@ mirar_www: Image.wmml the_image_module.html
 	ln -f illustration*.gif illustration*.jpeg the_image_module*.html /home/mirar/www/image
 
 mirar_www_tutorial: tutorial.html
-	ln -f illustration*.gif tutorial*html /home/mirar/www/pike_tutorial
+	ln -f illustration*.gif illustration*.jpeg tutorial*html /home/mirar/www/pike_tutorial
