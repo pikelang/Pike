@@ -184,7 +184,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.146 1999/12/14 14:56:13 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.147 1999/12/16 21:02:30 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -618,9 +618,14 @@ close_bracket_or_missing: ']'
   }
   ;
 
-def: modifiers type_or_error optional_stars F_IDENTIFIER 
+push_compiler_frame0: /* empty */
   {
     push_compiler_frame(0);
+  }
+  ;
+
+def: modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
+  {
     if(!compiler_frame->previous ||
        !compiler_frame->previous->current_type)
     {
@@ -645,7 +650,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
     
     push_finished_type(compiler_frame->current_return_type);
     
-    e=$7-1;
+    e=$8-1;
     if(varargs)
     {
       push_finished_type(compiler_frame->variable[e].type);
@@ -670,7 +675,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 
     if(compiler_pass==1)
     {
-      $<number>5=define_function(check_node_hash($4)->u.sval.u.string,
+      $<number>6=define_function(check_node_hash($4)->u.sval.u.string,
 				 check_node_hash($<n>$)->u.sval.u.string,
 				 $1,
 				 IDENTIFIER_PIKE_FUNCTION,
@@ -680,12 +685,12 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
   block_or_semi
   {
     int e;
-    if($10)
+    if($11)
     {
       int f;
       node *check_args = NULL;
 
-      for(e=0; e<$7; e++)
+      for(e=0; e<$8; e++)
       {
 	if(!compiler_frame->variable[e].name ||
 	   !compiler_frame->variable[e].name->len)
@@ -718,22 +723,28 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
 
       if (check_args) {
 	/* Prepend the arg checking code. */
-	$10 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $10);
+	$11 = mknode(F_COMMA_EXPR, mknode(F_POP_VALUE, check_args, NULL), $11);
       }
 
-      f=dooptcode(check_node_hash($4)->u.sval.u.string, check_node_hash($10),
-		  check_node_hash($<n>9)->u.sval.u.string, $1);
+      f=dooptcode(check_node_hash($4)->u.sval.u.string, check_node_hash($11),
+		  check_node_hash($<n>10)->u.sval.u.string, $1);
 #ifdef PIKE_DEBUG
       if(recoveries && sp-evaluator_stack < recoveries->sp)
 	fatal("Stack error (underflow)\n");
 
-      if(compiler_pass == 1 && f!=$<number>5)
-	fatal("define_function screwed up! %d != %d\n",f,$<number>5);
+      if(compiler_pass == 1 && f!=$<number>6)
+	fatal("define_function screwed up! %d != %d\n",f,$<number>6);
 #endif
     }
     pop_compiler_frame();
     free_node($4);
-    free_node($<n>9);
+    free_node($<n>10);
+  }
+  | modifiers type_or_error optional_stars F_IDENTIFIER push_compiler_frame0
+    error
+  {
+    pop_compiler_frame();
+    free_node($4);
   }
   | modifiers type_or_error optional_stars bad_identifier
     '(' arguments ')' block_or_semi
@@ -803,7 +814,6 @@ new_arg_name: type7 optional_dot_dot_dot optional_identifier
   ;
 
 func_args: '(' arguments close_paren_or_missing { $$=$2; }
-         | error { $$=0; yyerrok; }
          ;
 
 arguments: /* empty */ optional_comma { $$=0; }
@@ -1287,10 +1297,15 @@ default: F_DEFAULT ':'  { $$=mknode(F_DEFAULT,0,0); }
 
 continue: F_CONTINUE { $$=mknode(F_CONTINUE,0,0); } ;
 
-lambda: F_LAMBDA
+push_compiler_frame1: /* empty */
   {
     push_compiler_frame(1);
-    
+  }
+  ;
+
+lambda: F_LAMBDA push_compiler_frame1
+  {
+    debug_malloc_touch(compiler_frame->current_return_type);
     if(compiler_frame->current_return_type)
       free_string(compiler_frame->current_return_type);
     copy_shared_string(compiler_frame->current_return_type,any_type_string);
@@ -1302,9 +1317,9 @@ lambda: F_LAMBDA
     int f,e;
     struct pike_string *name;
     
-    debug_malloc_touch($4);
-    $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
-    type=find_return_type($4);
+    debug_malloc_touch($5);
+    $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
+    type=find_return_type($5);
 
     if(type) {
       push_finished_type(type);
@@ -1312,7 +1327,7 @@ lambda: F_LAMBDA
     } else
       push_type(T_MIXED);
     
-    e=$3-1;
+    e=$4-1;
     if(varargs)
     {
       push_finished_type(compiler_frame->variable[e].type);
@@ -1341,7 +1356,7 @@ lambda: F_LAMBDA
 #endif /* LAMBDA_DEBUG */
     
     f=dooptcode(name,
-		$4,
+		$5,
 		type,
 		ID_STATIC | ID_PRIVATE | ID_INLINE);
 
@@ -1354,85 +1369,19 @@ lambda: F_LAMBDA
     free_string(type);
     pop_compiler_frame();
   }
-  ;
-
-local_function: F_IDENTIFIER
+  | F_LAMBDA push_compiler_frame1 error
   {
-    push_compiler_frame(1);
-
-    debug_malloc_touch(compiler_frame->current_return_type);
-    if(compiler_frame->current_return_type)
-      free_string(compiler_frame->current_return_type);
-    copy_shared_string(compiler_frame->current_return_type,$<n>0->u.sval.u.string);
-  }
-  func_args failsafe_block
-  {
-    struct pike_string *type;
-    char buf[40];
-    int f,e;
-    struct pike_string *name;
-    
-    $4=mknode(F_COMMA_EXPR,$4,mknode(F_RETURN,mkintnode(0),0));
-
-    push_finished_type(compiler_frame->current_return_type);
-    
-    e=$3-1;
-    if(varargs)
-    {
-      push_finished_type(compiler_frame->variable[e].type);
-      e--;
-      varargs=0;
-      pop_type_stack();
-    }else{
-      push_type(T_VOID);
-    }
-    push_type(T_MANY);
-    for(; e>=0; e--)
-      push_finished_type(compiler_frame->variable[e].type);
-    
-    push_type(T_FUNCTION);
-    
-    type=compiler_pop_type();
-
-    sprintf(buf,"__lambda_%ld_%ld",
-	    (long)new_program->id,
-	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
-    name=make_shared_string(buf);
-
-#ifdef LAMBDA_DEBUG
-    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
-	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
-#endif /* LAMBDA_DEBUG */
-    debug_malloc_touch($4);
-    f=dooptcode(name,
-		$4,
-		type,
-		ID_STATIC | ID_PRIVATE | ID_INLINE);
-
-    if(compiler_frame->lexical_scope == 2) {
-      $$ = mktrampolinenode(f);
-    } else {
-      $$ = mkidentifiernode(f);
-    }
-    debug_malloc_touch($$);
     pop_compiler_frame();
-    add_local_name($1->u.sval.u.string, type, copy_node( $$ ));
-    free_node($1);
-    free_string(name);
   }
   ;
 
-local_function2: optional_stars F_IDENTIFIER
+local_function: F_IDENTIFIER push_compiler_frame1
   {
-    push_compiler_frame(1);
     debug_malloc_touch(compiler_frame->current_return_type);
-    
-    push_finished_type($<n>0->u.sval.u.string);
-    while($1--) push_type(T_ARRAY);
-
     if(compiler_frame->current_return_type)
       free_string(compiler_frame->current_return_type);
-    compiler_frame->current_return_type=compiler_pop_type();
+    copy_shared_string(compiler_frame->current_return_type,
+		       $<n>0->u.sval.u.string);
   }
   func_args failsafe_block
   {
@@ -1440,8 +1389,7 @@ local_function2: optional_stars F_IDENTIFIER
     char buf[40];
     int f,e;
     struct pike_string *name;
-
-    debug_malloc_touch($5);
+    
     $5=mknode(F_COMMA_EXPR,$5,mknode(F_RETURN,mkintnode(0),0));
 
     push_finished_type(compiler_frame->current_return_type);
@@ -1473,7 +1421,6 @@ local_function2: optional_stars F_IDENTIFIER
     fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
 	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
 #endif /* LAMBDA_DEBUG */
-    
     debug_malloc_touch($5);
     f=dooptcode(name,
 		$5,
@@ -1487,9 +1434,88 @@ local_function2: optional_stars F_IDENTIFIER
     }
     debug_malloc_touch($$);
     pop_compiler_frame();
+    add_local_name($1->u.sval.u.string, type, copy_node( $$ ));
+    free_node($1);
+    free_string(name);
+  }
+  | F_IDENTIFIER push_compiler_frame1 error
+  {
+    pop_compiler_frame();
+  }
+  ;
+
+local_function2: optional_stars F_IDENTIFIER push_compiler_frame1
+  {
+    debug_malloc_touch(compiler_frame->current_return_type);
+    
+    push_finished_type($<n>0->u.sval.u.string);
+    while($1--) push_type(T_ARRAY);
+
+    if(compiler_frame->current_return_type)
+      free_string(compiler_frame->current_return_type);
+    compiler_frame->current_return_type=compiler_pop_type();
+  }
+  func_args failsafe_block
+  {
+    struct pike_string *type;
+    char buf[40];
+    int f,e;
+    struct pike_string *name;
+
+    debug_malloc_touch($6);
+    $6=mknode(F_COMMA_EXPR,$6,mknode(F_RETURN,mkintnode(0),0));
+
+    push_finished_type(compiler_frame->current_return_type);
+    
+    e=$5-1;
+    if(varargs)
+    {
+      push_finished_type(compiler_frame->variable[e].type);
+      e--;
+      varargs=0;
+      pop_type_stack();
+    }else{
+      push_type(T_VOID);
+    }
+    push_type(T_MANY);
+    for(; e>=0; e--)
+      push_finished_type(compiler_frame->variable[e].type);
+    
+    push_type(T_FUNCTION);
+    
+    type=compiler_pop_type();
+
+    sprintf(buf,"__lambda_%ld_%ld",
+	    (long)new_program->id,
+	    (long)(local_class_counter++ & 0xffffffff)); /* OSF/1 cc bug. */
+    name=make_shared_string(buf);
+
+#ifdef LAMBDA_DEBUG
+    fprintf(stderr, "%d: LAMBDA: %s 0x%08lx 0x%08lx\n",
+	    compiler_pass, buf, (long)new_program->id, local_class_counter-1);
+#endif /* LAMBDA_DEBUG */
+    
+    debug_malloc_touch($6);
+    f=dooptcode(name,
+		$6,
+		type,
+		ID_STATIC | ID_PRIVATE | ID_INLINE);
+
+    if(compiler_frame->lexical_scope == 2) {
+      $$ = mktrampolinenode(f);
+    } else {
+      $$ = mkidentifiernode(f);
+    }
+    debug_malloc_touch($$);
+    pop_compiler_frame();
     add_local_name($2->u.sval.u.string, type, copy_node( $$ ));
     free_node($2);
     free_string(name);
+  }
+  | optional_stars F_IDENTIFIER push_compiler_frame1 error
+  {
+    pop_compiler_frame();
+    free_node($2);
   }
   ;
 
