@@ -31,7 +31,7 @@ mapping(int:function(string:void)) async=([]);
 int ref=1;
 
 /* asynchronous messages callback list */
-mapping(int:function(string:void)) async_callbacks=([]);
+mapping(int:array(function(string:void))) async_callbacks=([]);
 
 /* max number of outstanding requests */
 int max_out_req=4;
@@ -347,11 +347,6 @@ void create(string server,void|int port,void|string whoami)
    return;
 }
 
-void set_async_callbacks(mapping(int:function(string:void)) m)
-{
-   async_callbacks=m;
-}
-
 array(array(mixed)|int) try_parse(string what)
 {
    array res=({});
@@ -473,10 +468,6 @@ array(array(mixed)|int) try_parse(string what)
    return ({0,0}); // incomplete
 }
 
-void got_async_message(array what)
-{
-   // werror("got async: %O\n",what);
-}
 
 void got_reply(int ref,object|array what)
 {
@@ -498,4 +489,42 @@ void got_reply(int ref,object|array what)
 void delete_async(int ref)
 {
    m_delete(async,ref);
+}
+
+void add_async_callback(string which, function what, int dont_update)
+{
+   int no=.ASync.name2no[which];
+   
+   if (!no && zero_type(.ASync.name2no[which]))
+      throw(LysKOMError( -1,"LysKOM: unsupported async",
+			 sprintf("There is no supported async call named %O",
+				 which) ));
+
+   if (!async_callbacks[no]) async_callbacks[no]=({what});
+   else async_callbacks[no]+=({what});
+}
+
+void remove_async_callback(string which, function what, void|int dont_update)
+{
+   int no=.ASync.name2no[which];
+   
+   if (!no && zero_type(.ASync.name2no[which]))
+      throw(LysKOMError( -1,"LysKOM: unsupported async",
+			 sprintf("There is no supported async call named %O",
+				 which) ));
+
+   async_callbacks[no]-=({what});
+}
+
+array active_asyncs()
+{
+   foreach (indices(async_callbacks),int z)
+      if (async_callbacks[z]==({})) m_delete(async_callbacks,z);
+   return indices(async_callbacks);
+}
+
+void got_async_message(array what)
+{
+   if (async_callbacks[(int)what[1]])
+      async_callbacks[(int)what[1]](@.ASync["decode_"+what[1]](what[2..]));
 }

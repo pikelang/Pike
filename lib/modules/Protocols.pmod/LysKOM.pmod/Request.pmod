@@ -1,4 +1,4 @@
-//  $Id: Request.pmod,v 1.3 1999/07/19 13:46:45 mirar Exp $
+//  $Id: Request.pmod,v 1.4 1999/07/19 16:03:51 mirar Exp $
 //! module Protocols
 //! submodule LysKOM
 //! submodule Request
@@ -261,9 +261,9 @@ class Create_person_old
                H(passwd)});
    }
 
-   string reply(array what)
+   int reply(array what)
    {
-      return what[0]; /* HOLLERITH */
+      return (int)what[0]; /* Pers-no */
    }
 
    void failure(object error)

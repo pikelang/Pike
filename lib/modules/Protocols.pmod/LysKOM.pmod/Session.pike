@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.5 1999/07/04 08:18:39 hubbe Exp $
+//  $Id: Session.pike,v 1.6 1999/07/19 16:03:54 mirar Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -16,7 +16,7 @@ object user; // logged in as this Person
 
 string server;
 
-int protlevel; // level <10 protocol
+int protlevel; // protocol level
 
 mapping(int:object) _text=([]);
 mapping(int:object) _person=([]);
@@ -30,6 +30,7 @@ mapping(int:object) _conference=([]);
 //!	options is a mapping of options,
 //!	<data_description type=mapping>
 //!	<elem name=login type="int|string">login as this person number<br>(get number from name)</elem>
+//!	<elem name=create type="string"><br>create a new person and login with it</elem>
 //!	<elem name=password type=string>send this login password</elem>
 //!	<elem name=invisible type="int(0..1)">if set, login invisible</elem>
 //!	<elem>advanced</elem>
@@ -56,9 +57,72 @@ void create(object|string _server,void|mapping options)
    con=Connection(_server,options);
    user=(options && options->login)?person(options->login):0;
    protlevel=con->protocol_level;
-   werror("protocol_level is %d\n",protlevel);
+
+   /* setup async stuff */
+   con->con->add_async_callback("async-new-name",async_new_name);
+   con->con->add_async_callback("async-leave-conf",async_leave_conf);
+
+   if (protlevel>=10)
+   {
+      con->con->add_async_callback("async-deleted-text",async_deleted_text);
+      con->con->add_async_callback("async-new-text",async_new_text);
+      con->con->add_async_callback("async-new-recipient",async_new_recipient);
+      con->con->add_async_callback("async-sub-recipient",async_sub_recipient);
+      con->con->add_async_callback("async-new-membership",
+				   async_new_membership);
+   }
+   else
+   {
+      con->con->add_async_callback("async-new-text-old",async_new_text_old);
+   }
+
+   con->accept_async(con->con->active_asyncs());
+
+   /* create person if wanted */
+
+   if (options->create)
+      create_person(options->create,options->password);
 }
 
+/** async callbacks from raw session **/
+
+void async_new_name()
+{
+}
+
+void async_leave_conf()
+{
+}
+
+void async_deleted_text()
+{
+}
+
+void async_new_text()
+{
+}
+
+void async_new_recipient(int textno,int confno,array misc)
+{
+   if (_text[textno]) _text[textno]->update_misc(MiscInfo(misc));
+   // if (_conference[confno]) _conference[confno]->new_texts();
+}
+
+void async_sub_recipient(int textno,int confno,array misc)
+{
+   if (_text[textno]) _text[textno]->update_misc(MiscInfo(misc));
+   // if (_conference[confno]) _conference[confno]->sub_text(textno);
+}
+
+void async_new_membership()
+{
+}
+
+void async_new_text_old()
+{
+}
+
+/** classes *********************/
 
 class MiscInfo
 {
@@ -315,6 +379,11 @@ class Text
 	    array_sscanf(res,"%s\n%s"))
    FETCHERC2b(stat,object,_stat,get_text_stat,@({no}),
 	      (_misc=MiscInfo(res->misc_info),res))
+
+   void update_misc(MiscInfo m)
+   {
+      _misc=m;
+   }
 
    mixed `[](string what)
    {
@@ -578,26 +647,39 @@ array(ProtocolTypes.ConfZInfo) try_complete_person(string orig)
    return con->lookup_z_name(orig,1,0);
 }
 
-//! method login(int user_no,string password)
-//! method login(int user_no,string password,int invisible)
+//! method object login(int user_no,string password)
+//! method object login(int user_no,string password,int invisible)
 //!	Performs a login. Returns 1 on success or throws a lyskom error.
+//! returns the called object
 
-int(1..1) login(int user_no,string password,
-		void|int invisible)
+object login(int user_no,string password,
+	     void|int invisible)
 {
    con->login(user_no,password,invisible);
    user=person(user_no);
-   return 1;
+   return this_object();
 }
 
-//! method logout()
-//!	Logouts from the server.
+//! method object create_person(string name,string password)
+//!	Create a person, which will be logged in.
+//! returns the new person object
 
-int(1..1) logout()
+object create_person(string name,string password)
+{
+   if (!stringp(name)||!stringp(password))
+      error("bad types to create_person call\n");
+   return user=person(con->create_person_old(name,password));
+}
+
+//! method object logout()
+//!	Logouts from the server.
+//! returns the called object
+
+object logout()
 {
    if (con) 
       con->logout();
-   return 1;
+   return this_object();
 }
 
 //! method object create_text(string subject,string body,mapping options)

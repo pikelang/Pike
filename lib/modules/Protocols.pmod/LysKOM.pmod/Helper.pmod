@@ -56,6 +56,7 @@ class LysKOMError
 	 case 0: return "Protocols.LysKOM: ["+no+"] "+name+"\n";
 	 case 1: return __backtrace;
       }
+      return ::`[](z);
    }
 }
 
