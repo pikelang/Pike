@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.476 2003/08/20 16:55:15 mast Exp $
+|| $Id: program.c,v 1.477 2003/08/20 19:39:25 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.476 2003/08/20 16:55:15 mast Exp $");
+RCSID("$Id: program.c,v 1.477 2003/08/20 19:39:25 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -1278,7 +1278,7 @@ struct program *id_to_program(INT32 id)
 /* Here starts routines which are used to build new programs */
 
 /* Re-allocate all the memory in the program in one chunk. because:
- * 1) The individual blocks are munch bigger than they need to be
+ * 1) The individual blocks are much bigger than they need to be
  * 2) cuts down on malloc overhead (maybe)
  * 3) localizes memory access (decreases paging)
  */
@@ -2180,9 +2180,9 @@ void dump_program_tables (struct program *p, int indent)
 	  indent, "", indent, "");
   for (d = 0; d < p->num_constants; d++) {
     struct program_constant *c = p->constants + d;
-    fprintf(stderr, "%*s  %4d: %4d %s%s%s\n",
+    fprintf(stderr, "%*s  %4d: %-15s %s%s%s\n",
 	    indent, "",
-	    d, c->sval.type,
+	    d, get_name_of_type (c->sval.type),
 	    c->name?"\"":"",c->name?c->name->str:"NULL",c->name?"\"":"");
   }
 
@@ -3757,11 +3757,17 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
        c->subtype != FUNCTION_BUILTIN &&
        c->u.object->prog)
     {
-      struct identifier *id=ID_FROM_INT(c->u.object->prog, c->subtype);
-      if(c->u.object->prog == Pike_compiler->new_program &&
-	 !c->u.object->prog->identifier_references[c->subtype].inherit_offset)
-      {
-	if(id->identifier_flags & IDENTIFIER_FUNCTION)
+      struct reference *idref = c->u.object->prog->identifier_references + c->subtype;
+      struct program *p = PROG_FROM_PTR(c->u.object->prog, idref);
+      struct identifier *id = p->identifiers + idref->identifier_offset;
+      if(c->u.object->prog == Pike_compiler->new_program) {
+	if(IDENTIFIER_IS_CONSTANT(id->identifier_flags) &&
+	   id->func.offset != -1)
+	{
+	  c=& p->constants[id->func.offset].sval;
+	}
+	else if (IDENTIFIER_IS_FUNCTION(id->identifier_flags) &&
+		 !idref->inherit_offset)
 	{
 	  return define_function(name,
 				 id->type,
@@ -3770,24 +3776,6 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
 				 & id->func,
 				 id->opt_flags);
 	  
-	}
-	else if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
-		id->func.offset != -1)
-	{
-	  c=& Pike_compiler->new_program->constants[id->func.offset].sval;
-	}
-      }
-      else
-      {
-	if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
-	   id->func.offset != -1 &&
-	   INHERIT_FROM_INT(c->u.object->prog, c->subtype)->prog->
-	   constants[id->func.offset].sval.type == T_PROGRAM)
-	{
-	  /* In this one case we allow fake objects to enter the
-	   * mainstream...
-	   */
-	  break;
 	}
       }
     }
