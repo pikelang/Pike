@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.64 2003/07/17 17:06:54 mirar Exp $
+|| $Id: math.c,v 1.65 2003/07/17 17:11:04 mirar Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.64 2003/07/17 17:06:54 mirar Exp $");
+RCSID("$Id: math.c,v 1.65 2003/07/17 17:11:04 mirar Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -266,15 +266,8 @@ void f_acosh(INT32 args)
  */
 void f_tanh(INT32 args)
 {
-  double f;
   ARG_CHECK("tanh");
 
-  f = (sp[-1].u.float_number-M_PI/2) / M_PI;
-  if (f==floor(f+0.5))
-  {
-    Pike_error("Impossible tangent.\n");
-    return;
-  }
   sp[-1].u.float_number =
     DO_NOT_WARN((FLOAT_TYPE)tanh(sp[-1].u.float_number));
 }
