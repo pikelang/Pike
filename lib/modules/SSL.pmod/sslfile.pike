@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.55 2004/03/15 15:29:09 mast Exp $
+/* $Id: sslfile.pike,v 1.56 2004/09/06 11:42:18 grubba Exp $
  *
  */
 
@@ -175,6 +175,7 @@ void close()
   read_callback = 0;
   write_callback = 0;
   close_callback = 0;
+  accept_callback = 0;
 
   if (socket) {
     if (sizeof (write_buffer) && !blocking) {
