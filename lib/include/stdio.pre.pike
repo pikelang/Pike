@@ -199,9 +199,9 @@ int file_size(string s)
 void perror(string s)
 {
 #if efun(strerror)
-  stderr->write(s+": "+strerror(errno())+"\n");
+  stderr->write(s+": "+strerror(predef::errno())+"\n");
 #else
-  stderr->write(s+": errno: "+errno()+"\n");
+  stderr->write(s+": errno: "+predef::errno()+"\n");
 #endif
 }
 
