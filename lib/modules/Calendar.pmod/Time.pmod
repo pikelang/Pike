@@ -155,8 +155,8 @@ class TimeofDay
 // 1970-01-01 is julian day 2440588
       jd-=2440588;
       float fjd=(jd-(int)jd)-0.5;
-      ux=((int)jd)*86400+(int)(fjd*86400);
       ls=CALUNKNOWN;
+      create_unixtime_default(((int)jd)*86400+(int)(fjd*86400));
    }
 
 // make base
@@ -403,6 +403,7 @@ class TimeofDay
 // minutes are on the day, adjust for timezone (non-full-minute timezones!)
       if (ls==CALUNKNOWN) make_local();
       int zx=ux-ls%60;
+      werror("ux %O %O zx %O\n",ux,ls%60,zx);
 
       if (!n || (n==-1 && !len)) 
 	 return Minute("timeofday",rules,zx,60);
@@ -1179,6 +1180,13 @@ class cHour
       create_unixtime(time(),3600);
    }
 
+   static void create_unixtime(int _ux,int _len)
+   {
+      ::create_unixtime(_ux,_len);
+      if (ls==CALUNKNOWN) make_local();
+      if (ls%3600) ux-=ls%3600,ls=CALUNKNOWN;
+   }
+
    static void create_julian_day(int|float jd)
    {
       ::create_julian_day(jd);
@@ -1246,6 +1254,14 @@ class cMinute
 //! inherits TimeofDay
 
    inherit TimeofDay;
+
+   static void create_unixtime(int _ux,int _len)
+   {
+      werror("%O\n",_ux);
+      ::create_unixtime(_ux,_len);
+      if (ls==CALUNKNOWN) make_local();
+      ux-=ls%60;
+   }
 
    void create_unixtime_default(int unixtime)
    {
