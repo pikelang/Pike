@@ -2,10 +2,15 @@
 #pragma strict_types
 
 #if constant(__builtin.security)
-// This only exists if the run-time has been compiled with
-// --with-security.
+// Pike internal security support.
+//
+// @note
+//   This only exists if the run-time has been compiled with
+//   @tt{--with-security@}.
 
+//! @ignore
 inherit __builtin.security;
+//! @endignore
 
 //! Virtual class for User objects, used in @[Creds] objects.
 class User {
