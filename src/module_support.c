@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: module_support.c,v 1.60 2004/02/28 20:21:31 mast Exp $
+|| $Id: module_support.c,v 1.61 2004/02/29 03:32:50 mast Exp $
 */
 
 #include "global.h"
@@ -18,7 +18,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: module_support.c,v 1.60 2004/02/28 20:21:31 mast Exp $");
+RCSID("$Id: module_support.c,v 1.61 2004/02/29 03:32:50 mast Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -130,60 +130,98 @@ PMOD_EXPORT void check_all_args(const char *fnname, int args, ... )
   }
 }
 
-/* This function does NOT generate errors, it simply returns how
- * many arguments were actually matched.
- * usage: get_args(sp-args, args, "%i",&an_int)
- * format specifiers:
+/* get_args and get_all_args type specifiers:
+ *
  *   %i: INT_TYPE
  *   %I: int or float -> INT_TYPE 
  *   %d: int (the c type "int" which may vary from INT_TYPE)
  *   %D: int of float -> int
  *   %+: positive int -> INT_TYPE
  *   %l: int or bignum -> LONGEST
- *   %s: char *				Only 8bit strings
- *   %S: struct pike_string *		Only 8bit strings
- *   %W: struct pike_string *		Allow wide strings
+ *   %s: char *				Only narrow (8 bit) strings.
+ *   %n: struct pike_string *           Only narrow (8 bit) strings.
+ *   %N: struct pike_string * or NULL   Only narrow (8 bit) strings.
+ *   %t: struct pike_string *           Any string width. (*)
+ *   %T: struct pike_string * or NULL   Any string width. (*)
  *   %a: struct array *
  *   %A: struct array * or NULL
  *   %f: float -> FLOAT_TYPE
  *   %F: float or int -> FLOAT_TYPE
  *   %m: struct mapping *
- *   %M: struct multiset *
+ *   %G: struct mapping * or NULL       (*)
+ *   %u: struct multiset *
+ *   %U: struct multiset * or NULL
  *   %o: struct object *
  *   %O: struct object * or NULL
  *   %p: struct program *
+ *   %P: struct program * or NULL
  *   %*: struct svalue *
+ *
+ * For compatibility:
+ *
+ *   %S: struct pike_string *		Only 8bit strings
+ *   %W: struct pike_string *		Allow wide strings
+ *   %M: struct multiset *
+ *
+ * A period can be specified between type specifiers to mark the start
+ * of optional arguments.
+ *
+ * *)  Contrived letter since the logical one is taken for historical
+ *     reasons. :\
  */
 
-int va_get_args(struct svalue *s,
-		INT32 num_args,
-		const char *fmt,
-		va_list ap)
+/* Values for the info flag: */
+#define ARGS_OK		0  /* At end of args and fmt. */
+#define ARGS_OPT	-1 /* At end of args but not fmt and has passed a period. */
+#define ARGS_SHORT	-2 /* At end of args but not fmt and has not passed a period. */
+#define ARGS_LONG	-3 /* At end of fmt but not args. */
+/* Positive values: Stopped at arg with invalid type. The value is the
+ * format letter for the expected type. */
+
+static int va_get_args_2(struct svalue *s,
+			 INT32 num_args,
+			 const char *fmt,
+			 va_list ap,
+			 int *info)
 {
   int ret=0;
+  int optional = 0;
 
   while(*fmt)
   {
-    if(*fmt != '%')
-      Pike_fatal("Error in format for get_args.\n");
+    if (*fmt == '.' && !optional) {
+      fmt++;
+      optional = 1;
+      continue;
+    }
 
-    if(ret == num_args) return ret;
+    if(*fmt != '%')
+      Pike_fatal("Error in format for get_args or get_all_args.\n");
+
+    if(ret == num_args) {
+      if (optional)
+	*info = ARGS_OPT;
+      else
+	*info = ARGS_SHORT;
+      return ret;
+    }
 
     switch(*++fmt)
     {
     case 'd':
-      if(s->type != T_INT) return ret;
+      if(s->type != T_INT) goto type_err;
       *va_arg(ap, int *)=s->u.integer;
       break;
     case 'i':
-      if(s->type != T_INT) return ret;
+      if(s->type != T_INT) goto type_err;
       *va_arg(ap, INT_TYPE *)=s->u.integer;
       break;
     case '+':
-      if(s->type != T_INT) return ret;
-      if(s->u.integer<0) return ret;
+      if(s->type != T_INT) goto type_err;
+      if(s->u.integer<0) goto type_err;
       *va_arg(ap, INT_TYPE *)=s->u.integer;
       break;
+
     case 'D':
       if(s->type == T_INT)
 	 *va_arg(ap, int *)=s->u.integer;
@@ -205,6 +243,7 @@ int va_get_args(struct svalue *s,
         pop_stack();
       }
       break;
+
     case 'I':
       if(s->type == T_INT)
 	 *va_arg(ap, INT_TYPE *)=s->u.integer;
@@ -225,6 +264,7 @@ int va_get_args(struct svalue *s,
         pop_stack();
       }
       break;
+
     case 'l':
       if (s->type == T_INT) {
 	*va_arg(ap, LONGEST *)=s->u.integer;
@@ -235,35 +275,53 @@ int va_get_args(struct svalue *s,
         break;
 #endif
       }
-      return ret;
+      goto type_err;
+
     case 's':
-      if(s->type != T_STRING) return ret;
-      if(s->u.string->size_shift) return ret;
+      if(s->type != T_STRING) goto type_err;
+      if(s->u.string->size_shift) goto type_err;
+      /* Ought to check for embedded NUL here? */
       *va_arg(ap, char **)=s->u.string->str;
       break;
+
+    case 'N':
+      if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
+	*va_arg (ap, struct pike_string **) = NULL;
+	break;
+      }
+      /* FALL THROUGH */
+    case 'n':
     case 'S':
-      if(s->type != T_STRING) return ret;
-      if(s->u.string->size_shift) return ret;
+      if(s->type != T_STRING) goto type_err;
+      if(s->u.string->size_shift) goto type_err;
       *va_arg(ap, struct pike_string **)=s->u.string;
       break;
+
+    case 'T':
+      if(s->type != T_STRING && UNSAFE_IS_ZERO (s)) {
+	*va_arg (ap, struct pike_string **) = NULL;
+	break;
+      }
+      /* FALL THROUGH */
+    case 't':
     case 'W':
-      if(s->type != T_STRING) return ret;
+      if(s->type != T_STRING) goto type_err;
       *va_arg(ap, struct pike_string **)=s->u.string;
       break;
+
+    case 'A':
+      if(s->type != T_ARRAY && UNSAFE_IS_ZERO (s)) {
+	*va_arg (ap, struct array **) = NULL;
+	break;
+      }
+      /* FALL THROUGH */
     case 'a':
-      if(s->type != T_ARRAY) return ret;
+      if(s->type != T_ARRAY) goto type_err;
       *va_arg(ap, struct array **)=s->u.array;
       break;
-    case 'A':
-      if(s->type == T_ARRAY)
-	*va_arg(ap, struct array **)=s->u.array;
-      else if (UNSAFE_IS_ZERO(s))
-	*va_arg(ap, struct array **)=NULL;
-      else
-	return ret;
-      break;
+
     case 'f':
-      if(s->type != T_FLOAT) return ret;
+      if(s->type != T_FLOAT) goto type_err;
       *va_arg(ap, FLOAT_TYPE *)=s->u.float_number;
       break;
     case 'F':
@@ -281,26 +339,41 @@ int va_get_args(struct svalue *s,
       }
       break;
 
+    case 'G':
+      if(s->type != T_MAPPING && UNSAFE_IS_ZERO (s)) {
+	*va_arg (ap, struct mapping **) = NULL;
+	break;
+      }
+      /* FALL THROUGH */
     case 'm':
-      if(s->type != T_MAPPING) return ret;
+      if(s->type != T_MAPPING) goto type_err;
       *va_arg(ap, struct mapping **)=s->u.mapping;
       break;
+
+    case 'U':
+      if(s->type != T_MULTISET && UNSAFE_IS_ZERO (s)) {
+	*va_arg (ap, struct multiset **) = NULL;
+	break;
+      }
+      /* FALL THROUGH */
+    case 'u':
     case 'M':
-      if(s->type != T_MULTISET) return ret;
+      if(s->type != T_MULTISET) goto type_err;
       *va_arg(ap, struct multiset **)=s->u.multiset;
       break;
+
+    case 'O':
+      if(s->type != T_OBJECT && UNSAFE_IS_ZERO (s)) {
+	*va_arg (ap, struct object **) = NULL;
+	break;
+      }
+      /* FALL THROUGH */
     case 'o':
-      if(s->type != T_OBJECT) return ret;
+      if(s->type != T_OBJECT) goto type_err;
       *va_arg(ap, struct object **)=s->u.object;
       break;
-    case 'O':
-      if(s->type == T_OBJECT) 
-        *va_arg(ap, struct object **)=s->u.object;
-      else if(UNSAFE_IS_ZERO(s))
-        *va_arg(ap, struct object **)=NULL;
-      else
-        return ret;
-      break;
+
+    case 'P':
     case 'p':
       switch(s->type)
       {
@@ -313,7 +386,9 @@ int va_get_args(struct svalue *s,
 	    break;
 
 	default:
-	  return ret;
+	  if (*fmt == 'P' && UNSAFE_IS_ZERO(s))
+	    *va_arg (ap, struct program **) = NULL;
+	  goto type_err;
       }
       break;
 
@@ -322,23 +397,46 @@ int va_get_args(struct svalue *s,
       break;
       
     default:
-      Pike_fatal("Unknown format character in get_args.\n");
+      Pike_fatal("Unknown format character %d.\n", *fmt);
     }
     ret++;
     s++;
     fmt++;
   }
+
+  if (ret == num_args)
+    *info = ARGS_OK;
+  else
+    *info = ARGS_LONG;
+  return ret;
+
+type_err:
+  *info = *fmt;
   return ret;
 }
 
+/* Compat wrapper, just in case. */
+int va_get_args(struct svalue *s,
+		INT32 num_args,
+		const char *fmt,
+		va_list ap)
+{
+  int info;
+  return va_get_args_2 (s, num_args, fmt, ap, &info);
+}
+
+/* get_args does NOT generate errors, it simply returns how
+ * many arguments were actually matched.
+ * usage: get_args(sp-args, args, "%i",&an_int)
+ */
 PMOD_EXPORT int get_args(struct svalue *s,
 			 INT32 num_args,
 			 const char *fmt, ...)
 {
   va_list ptr;
-  int ret;
+  int ret, info;
   va_start(ptr, fmt);
-  ret=va_get_args(s, num_args, fmt, ptr);
+  ret=va_get_args_2(s, num_args, fmt, ptr, &info);
   va_end(ptr);
   return ret;
 }
@@ -347,46 +445,80 @@ PMOD_EXPORT void get_all_args(const char *fname, INT32 args,
 			      const char *format,  ... )
 {
   va_list ptr;
-  int ret;
+  int ret, info;
   va_start(ptr, format);
-  ret=va_get_args(sp-args, args, format, ptr);
+  ret=va_get_args_2(sp-args, args, format, ptr, &info);
   va_end(ptr);
-  if((ptrdiff_t)ret*2 < (ptrdiff_t)strlen(format)) {
-    char *expected_type;
-    switch(format[ret*2+1]) {
-    case 'd': case 'i': case 'l': expected_type = "int"; break;
-    case 'D': case 'I': expected_type = "int|float"; break;
-    case 's': case 'S': expected_type = "string (8bit)"; break;
-    case 'W': expected_type = "string"; break;
-    case 'a': expected_type = "array"; break;
-    case 'f': expected_type = "float"; break;
-    case 'F': expected_type = "float|int"; break;
-    case 'm': expected_type = "mapping"; break;
-    case 'M': expected_type = "multiset"; break;
-    case 'o': expected_type = "object"; break;
-    case 'O': expected_type = "object or zero"; break;
-    case 'p': expected_type = "program"; break;
-    case '+': expected_type = "int(0..)"; break;
-    case '*': expected_type = "mixed"; break;
-    default: expected_type = "Unknown"; break;
-    }
-    if (ret < args) {
-      bad_arg_error(
-	fname, sp-args, args,
-	ret+1,
-	expected_type,
-	sp+ret-args,
-	"Bad argument %d to %s(). Expected %s.\n",
-	ret+1, fname, expected_type);
-    } else {
-      bad_arg_error(
-	fname, sp-args, args,
-	ret+1,
-	expected_type,
-	0,
-	"Too few arguments to %s(). Expected %ld arguments, got %d.\n"
-	"The type of the next argument is expected to be %s.\n",
-	fname, PTRDIFF_T_TO_LONG(strlen(format)/2), args, expected_type);
+
+  switch (info) {
+    case ARGS_OK:
+    case ARGS_OPT:
+      break;
+
+    case ARGS_LONG:
+#if 0
+      /* Is this a good idea? */
+      if (!TEST_COMPAT (7, 4))
+	wrong_number_of_args_error (fname, args, ret);
+#endif
+      break;
+
+    case ARGS_SHORT:
+    default: {
+      char *expected_type;
+
+      /* NB: For ARGS_SHORT we know there's no period in format that
+       * might offset the format specs. */
+      switch(info == ARGS_SHORT ? format[ret*2+1] : info) {
+	case 'd': case 'i': case 'l': expected_type = "int"; break;
+	case 'D': case 'I': expected_type = "int|float"; break;
+	case '+': expected_type = "int(0..)"; break;
+	case 's': case 'n': case 'S': expected_type = "string (8bit)"; break;
+	case 'N': expected_type = "string (8bit) or zero"; break;
+	case 't': case 'W': expected_type = "string"; break;
+	case 'T': expected_type = "string or zero"; break;
+	case 'a': expected_type = "array"; break;
+	case 'A': expected_type = "array or zero"; break;
+	case 'f': expected_type = "float"; break;
+	case 'F': expected_type = "float|int"; break;
+	case 'm': expected_type = "mapping"; break;
+	case 'G': expected_type = "mapping or zero"; break;
+	case 'M': case 'u': expected_type = "multiset"; break;
+	case 'U': expected_type = "multiset or zero"; break;
+	case 'o': expected_type = "object"; break;
+	case 'O': expected_type = "object or zero"; break;
+	case 'p': expected_type = "program"; break;
+	case 'P': expected_type = "program or zero"; break;
+	case '*': expected_type = "mixed"; break;
+	default:
+#ifdef PIKE_DEBUG
+	  Pike_fatal ("get_all_args not in sync with low_va_get_args.\n");
+#else
+	  expected_type = NULL;	/* To avoid warnings. */
+#endif
+      }
+
+      if (info != ARGS_SHORT) {
+	bad_arg_error(
+	  fname, sp-args, args,
+	  ret+1,
+	  expected_type,
+	  sp+ret-args,
+	  "Bad argument %d to %s(). Expected %s.\n",
+	  ret+1, fname, expected_type);
+      } else {
+	const char *req_args_end = strchr (format, '.');
+	if (!req_args_end) req_args_end = strchr (format, 0);
+	bad_arg_error(
+	  fname, sp-args, args,
+	  ret+1,
+	  expected_type,
+	  0,
+	  "Too few arguments to %s(). Expected %"PRINTPTRDIFFT"d arguments, got %d.\n"
+	  "The type of the next argument is expected to be %s.\n",
+	  fname, (req_args_end - format) / 2, args, expected_type);
+      }
+      /* NOT REACHED */
     }
   }
 }
