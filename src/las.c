@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.362 2005/04/06 17:52:46 grubba Exp $
+|| $Id: las.c,v 1.363 2005/04/06 17:54:43 grubba Exp $
 */
 
 #include "global.h"
@@ -3906,7 +3906,6 @@ void fix_type_field(node *n)
       if (!(op_node = find_module_identifier(op_string, 0))) {
 	my_yyerror("Internally used efun undefined for token %d: %S",
 		   n->token, op_string);
-	free_string(op_string);
 	copy_pike_type(n->type, mixed_type_string);
 	break;
       }
@@ -3936,7 +3935,6 @@ void fix_type_field(node *n)
 	break;
       }
       my_yyerror("Bad arguments to %S.", op_string);
-      free_string(op_string);
       yytype_error(NULL, op_node->type ? op_node->type : mixed_type_string,
 		   call_type, 0);
       free_node(op_node);
