@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.21 1998/01/11 21:52:48 mirar Exp $ */
+/* $Id: gif.c,v 1.22 1998/01/11 21:55:47 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.21 1998/01/11 21:52:48 mirar Exp $
+**!	$Id: gif.c,v 1.22 1998/01/11 21:55:47 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.21 1998/01/11 21:52:48 mirar Exp $");
+RCSID("$Id: gif.c,v 1.22 1998/01/11 21:55:47 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1270,7 +1270,10 @@ void image_gif_netscape_loop_block(INT32 args)
 **! returns the above array
 **!
 **! note
-**!	may throw errors if the GIF header is incomplete or illegal
+**!	May throw errors if the GIF header is incomplete or illegal.
+**!
+**!	This is in the very advanced sector of the GIF support;
+**!	please read about how GIFs file works.
 */
 
 static void _decode_get_extension(unsigned char **s,
@@ -1583,7 +1586,10 @@ static void image_gif___decode(INT32 args)
 **! returns the above array
 **!
 **! note
-**!	may throw errors if the GIF header is incomplete or illegal
+**!	May throw errors if the GIF header is incomplete or illegal.
+**!
+**!	This is in the very advanced sector of the GIF support;
+**!	please read about how GIFs file works.
 */
 
 static void _gif_decode_lzw(unsigned char *s,
@@ -1926,6 +1932,23 @@ static void image_gif__decode(INT32 args)
 
    f_aggregate(n);
 }
+
+/*
+**! method object decode(string data)
+**! method object decode(array _decoded)
+**! method object decode(array __decoded)
+**!	Decodes GIF data and creates an image object.
+**! 	
+**! see also: encode
+**!
+**! note
+**!	This function may throw errors upon illegal GIF data.
+**!	This function uses <ref>__decode</ref>, <ref>_decode</ref>,
+**!	<ref>Image.image->paste</ref> and 
+**!	<ref>Image.image->paste_alpha</ref> internally.
+**!
+**! returns the decoded image as an image object
+*/
 
 void image_gif_decode(INT32 args)
 {
