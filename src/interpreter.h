@@ -493,7 +493,9 @@ static int eval_instruction(unsigned char *pc)
 
       CASE(F_LTOSVAL2);
       sp[0]=sp[-1];
-      lvalue_to_svalue_no_free(sp-1,sp-3);
+      sp[-1].type=T_INT;
+      sp++;
+      lvalue_to_svalue_no_free(sp-2,sp-4);
 
       /* this is so that foo+=bar (and similar things) will be faster, this
        * is done by freeing the old reference to foo after it has been pushed
@@ -501,21 +503,22 @@ static int eval_instruction(unsigned char *pc)
        * and then the low array/multiset/mapping manipulation routines can be
        * destructive if they like
        */
-      if( (1 << sp[-1].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
+      if( (1 << sp[-2].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
       {
 	struct svalue s;
 	s.type=T_INT;
 	s.subtype=0;
 	s.u.integer=0;
-	assign_lvalue(sp-3,&s);
+	assign_lvalue(sp-4,&s);
       }
-      sp++;
       break;
 
 
       CASE(F_ADD_TO_AND_POP);
       sp[0]=sp[-1];
-      lvalue_to_svalue_no_free(sp-1,sp-3);
+      sp[-1].type=T_INT;
+      sp++;
+      lvalue_to_svalue_no_free(sp-2,sp-4);
 
       /* this is so that foo+=bar (and similar things) will be faster, this
        * is done by freeing the old reference to foo after it has been pushed
@@ -523,15 +526,14 @@ static int eval_instruction(unsigned char *pc)
        * and then the low array/multiset/mapping manipulation routines can be
        * destructive if they like
        */
-      if( (1 << sp[-1].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
+      if( (1 << sp[-2].type) & ( BIT_ARRAY | BIT_MULTISET | BIT_MAPPING | BIT_STRING ))
       {
 	struct svalue s;
 	s.type=T_INT;
 	s.subtype=0;
 	s.u.integer=0;
-	assign_lvalue(sp-3,&s);
+	assign_lvalue(sp-4,&s);
       }
-      sp++;
       f_add(2);
       assign_lvalue(sp-3,sp-1);
       pop_n_elems(3);
