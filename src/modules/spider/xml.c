@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xml.c,v 1.59 2004/11/16 20:56:39 mast Exp $
+|| $Id: xml.c,v 1.60 2004/11/16 21:58:26 mast Exp $
 */
 
 #include "global.h"
@@ -71,6 +71,7 @@ struct xmlobj
 /* Flag bits. */
 #define ALLOW_RXML_ENTITIES 0x01
 #define COMPAT_ALLOW_7_2_ERRORS 0x02
+#define COMPAT_ALLOW_7_6_ERRORS 0x04
 
 
 static struct svalue location_string_svalue;
@@ -727,7 +728,7 @@ static void simple_read_system_literal(struct xmldata *);
 static void simple_read_pubid_literal(struct xmldata *);
 static int low_parse_xml(struct xmldata *data,
 			 struct pike_string *end,
-			 int toplevel);
+			 int *doc_seq_pos);
 static void xmlerror(char *desc, struct xmldata *data);
 
 #define XMLERROR(desc) do {xmlerror(desc,data); READ (1);} while (0)
@@ -1495,16 +1496,27 @@ static void parse_optional_xmldecl(struct xmldata *data)
 {
   if(GOBBLE("<?xml"))
   {
+    struct mapping *m;
+
     push_constant_text("<?xml");
     push_int(0);
-    push_mapping(allocate_mapping(10)); /* Attributes */
+    push_mapping(m = allocate_mapping(10)); /* Attributes */
     
     SIMPLE_READ_ATTRIBUTES(0);
     
     if(PEEK(0) != '?' && PEEK(1)!='>')
-      XMLERROR("Missing ?> at end of <?xml.");
-    READ(2);
-	      
+      XMLERROR("Missing '?>' at end of XML header.");
+    else
+      READ(2);
+
+    if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
+      struct pike_string *str_version;
+      MAKE_CONSTANT_SHARED_STRING (str_version, "version");
+      if (!low_mapping_string_lookup (m, str_version))
+	XMLERROR ("Required version attribute missing in XML header.");
+      free_string (str_version);
+    }
+
     push_int(0); /* No data */
     SYS();
   }
@@ -2308,18 +2320,23 @@ static int low_parse_dtd(struct xmldata *data)
   return done;
 }  
 
+#define DOC_BEGINNING 0
+#define DOC_GOT_DOCTYPE 1
+#define DOC_IN_ROOT_ELEM 2
+#define DOC_AFTER_ROOT_ELEM 3
+
 static struct pike_string *very_low_parse_xml(struct xmldata *data,
 					      struct pike_string *end,
-					      int toplevel,
 					      struct string_builder *text,
-					      int keepspaces)
+					      int keepspaces,
+					      int *doc_seq_pos)
 {
-  int done=0, got_element = 0;
+  int done=0, toplevel = *doc_seq_pos != DOC_IN_ROOT_ELEM;
 
-#define CHECK_TOPLEVEL_EPILOG do {					\
-    if (toplevel && got_element &&					\
+#define CHECK_TOPLEVEL_EPILOG(ERRMSG) do {				\
+    if (*doc_seq_pos == DOC_AFTER_ROOT_ELEM &&				\
 	!(THIS->flags & COMPAT_ALLOW_7_2_ERRORS)) {			\
-      XMLERROR_STAY ("All data must be in one top-level tag.\n");	\
+      XMLERROR_STAY (ERRMSG);						\
     }									\
   } while (0)
 
@@ -2331,10 +2348,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	if(toplevel)
 	{
 	  if(!isSpace(PEEK(0)))
-	  {
 	    XMLERROR("All data must be inside tags");
-	    READ(1);
-	  }
 	  SKIPSPACE();
 	  break;
 	}
@@ -2363,7 +2377,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	continue;
 
       case '&':
-	READ_REFERENCE(0,*text,very_low_parse_xml(&my_tmp, end, toplevel, text, 1));
+	READ_REFERENCE(0,*text,very_low_parse_xml(&my_tmp, NULL, text, 1, doc_seq_pos));
 	continue;
 
       case '<':
@@ -2372,11 +2386,14 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 	switch(PEEK(1))
 	{
 	  case '?': /* Ends with ?> */
-	    if(PEEK(2)=='x' &&
-	       PEEK(3)=='m' &&
-	       PEEK(4)=='l' &&
-	       isSpace(PEEK(5)))
-	    {
+	    if ((THIS->flags & COMPAT_ALLOW_7_6_ERRORS) &&
+		PEEK(2)=='x' &&
+		PEEK(3)=='m' &&
+		PEEK(4)=='l' &&
+		isSpace(PEEK(5))) {
+	      /* Since parse_optional_xmldecl is used to parse the
+	       * initial xml header, I can't see why this case
+	       * exists. /mast */
 	      push_constant_text("<?xml");
 	      READ(6);
 	      push_int(0);
@@ -2449,10 +2466,12 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		{
 		  READ(9);
 
-		  /* Shouldn't be allowed before the element either,
-		   * but we don't complain about that for
-		   * compatibility. */
-		  CHECK_TOPLEVEL_EPILOG;
+		  if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
+		    if (toplevel)
+		      XMLERROR_STAY ("All data must be inside tags");
+		  }
+		  else
+		    CHECK_TOPLEVEL_EPILOG ("All data must be inside tags");
 
 		  push_constant_text("<![CDATA[");
 		  push_int(0);
@@ -2497,7 +2516,24 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  XMLERROR("Expected 'DOCTYPE', got something else.");
 		}else{
 		  READ(9);
-		  CHECK_TOPLEVEL_EPILOG;
+
+		  if (!(THIS->flags & COMPAT_ALLOW_7_6_ERRORS)) {
+		    switch (*doc_seq_pos) {
+		      case DOC_GOT_DOCTYPE:
+			XMLERROR_STAY (
+			  "Multiple DOCTYPE declarations are not allowed.");
+			break;
+		      case DOC_IN_ROOT_ELEM:
+		      case DOC_AFTER_ROOT_ELEM:
+			XMLERROR_STAY (
+			  "DOCTYPE must occur before the root element.");
+			break;
+		    }
+		  }
+		  else
+		    CHECK_TOPLEVEL_EPILOG (
+		      "DOCTYPE must occur before the root element.");
+
 		  SKIPSPACE();
 		  push_constant_text("<!DOCTYPE");
 		  SIMPLE_READNAME(); /* NAME */
@@ -2562,7 +2598,10 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  if(PEEK(0)!='>')
 		    XMLERROR("Missing '>' in DOCTYPE tag.");
 		  READ(1);
+
 		  SYS();
+		  if (*doc_seq_pos < DOC_GOT_DOCTYPE)
+		    *doc_seq_pos = DOC_GOT_DOCTYPE;
 		}
 		break;
 	    }
@@ -2588,7 +2627,8 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 
 	  default:
 	    /* 'Normal' tag (we hope) */
-	    CHECK_TOPLEVEL_EPILOG;
+	    CHECK_TOPLEVEL_EPILOG (
+	      "There can not be more than one element on the top level.");
 
 	    push_constant_text(">"); 
 
@@ -2644,10 +2684,11 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		  pop_n_elems(sp-save_sp);
 		}
 
-		if(low_parse_xml(data, sp[-2].u.string,0))
+		if (toplevel) *doc_seq_pos = DOC_IN_ROOT_ELEM;
+		if(low_parse_xml(data, sp[-2].u.string, doc_seq_pos))
 		  XMLERROR("Unmatched tag.");
 		SYS();
-		got_element = 1;
+		if (toplevel) *doc_seq_pos = DOC_AFTER_ROOT_ELEM;
 		break;
 
 	      case '/':
@@ -2660,7 +2701,7 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 		sp[-3].u.string=make_shared_string("<>");
 		push_int(0); /* No data */
 		SYS();
-		got_element = 1;
+		if (toplevel) *doc_seq_pos = DOC_AFTER_ROOT_ELEM;
 		break;
 		
 	    }
@@ -2672,12 +2713,11 @@ static struct pike_string *very_low_parse_xml(struct xmldata *data,
 
 static int low_parse_xml(struct xmldata *data,
 			 struct pike_string *end,
-			 int toplevel)
+			 int *doc_seq_pos)
 {
   struct svalue *save_sp=sp;
   BEGIN_STRING(text);
-  parse_optional_xmldecl(data);
-  end=very_low_parse_xml(data,end,toplevel,&text,0);
+  end=very_low_parse_xml(data,end,&text, 0, doc_seq_pos);
   INTERMISSION(text);
   END_STRING(text);
   pop_stack();
@@ -2706,6 +2746,7 @@ static void parse_xml(INT32 args)
   struct pike_string *s;
   struct xmldata data;
   ONERROR e;
+  int doc_seq_pos = DOC_BEGINNING;
 
   if(args<2)
     Pike_error("Too few arguments to XML->parse()\n");
@@ -2743,7 +2784,11 @@ static void parse_xml(INT32 args)
   data.allow_pesmeg_everywhere=0;
 
   SET_ONERROR(e,free_xmldata, &data);
-  low_parse_xml(&data,0,1);
+  parse_optional_xmldecl(&data);
+  low_parse_xml(&data,0, &doc_seq_pos);
+  if (doc_seq_pos != DOC_AFTER_ROOT_ELEM &&
+      !(THIS->flags & COMPAT_ALLOW_7_6_ERRORS))
+    xmlerror ("Root element missing.", &data);
   CALL_AND_UNSET_ONERROR(e);
   tmp=*--sp;
   pop_n_elems(args);
@@ -2840,7 +2885,13 @@ static void allow_rxml_entities(INT32 args)
  *!
  *! @string
  *!   @value "7.2"
- *!     Allow more data after the toplevel element.
+ *!     Allow more data after the root element.
+ *!   @value "7.6"
+ *!     Allow multiple and invalidly placed "<?xml ... ?>" and
+ *!     "<!DOCTYPE ... >" declarations (invalid "<?xml ... ?>"
+ *!     declarations are otherwise treated as normal PI:s). Allow
+ *!     "<![CDATA[ ... ]]>" outside the root element. Allow the root
+ *!     element to be absent. This is the default in 7.4.
  *! @endstring
  *!
  *! @[version] can also be zero to enable all error checks.
@@ -2851,18 +2902,24 @@ static void compat_allow_errors(INT32 args)
     SIMPLE_TOO_FEW_ARGS_ERROR ("XML->compat_allow_errors", 1);
 
   if (UNSAFE_IS_ZERO (sp - args))
-    THIS->flags &= ~COMPAT_ALLOW_7_2_ERRORS;
+    THIS->flags &= ~(COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS);
 
   else {
-    struct pike_string *str_7_2;
+    struct pike_string *str_7_2, *str_7_6;
     MAKE_CONSTANT_SHARED_STRING (str_7_2, "7.2");
+    MAKE_CONSTANT_SHARED_STRING (str_7_6, "7.6");
     if (sp[-args].type != T_STRING)
       SIMPLE_BAD_ARG_ERROR ("XML->compat_allow_errors", 1, "string");
     if (sp[-args].u.string == str_7_2)
-      THIS->flags |= COMPAT_ALLOW_7_2_ERRORS;
+      THIS->flags |= COMPAT_ALLOW_7_2_ERRORS|COMPAT_ALLOW_7_6_ERRORS;
+    else if (sp[-args].u.string == str_7_6) {
+      THIS->flags &= ~COMPAT_ALLOW_7_2_ERRORS;
+      THIS->flags |= COMPAT_ALLOW_7_6_ERRORS;
+    }
     else
       Pike_error ("Got unknown version string.\n");
     free_string (str_7_2);
+    free_string (str_7_6);
   }
 
   pop_n_elems(args);
@@ -3111,7 +3168,7 @@ static void init_xml_struct(struct object *o)
   sp--;
   dmalloc_touch_svalue(sp);
 
-  THIS->flags = 0;
+  THIS->flags = COMPAT_ALLOW_7_6_ERRORS;
 }
 
 /*! @endclass
