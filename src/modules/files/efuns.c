@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.58 1998/07/15 23:26:56 hubbe Exp $");
+RCSID("$Id: efuns.c,v 1.59 1998/08/06 17:17:01 grubba Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -495,6 +495,7 @@ void f_get_dir(INT32 args)
 		  (unsigned int)d);
 #endif /* READDIR_DEBUG */
 	  if (err == -1) {
+	    /* Solaris readdir_r returns -1, and sets errno. */
 	    err = errno;
 	  }
 #ifdef READDIR_DEBUG
@@ -502,8 +503,10 @@ void f_get_dir(INT32 args)
 		  path, err);
 #endif /* READDIR_DEBUG */
 	  /* Solaris readdir_r seems to set errno to ENOENT sometimes.
+	   *
+	   * AIX readdir_r seems to set errno to EBADF at end of dir.
 	   */
-	  if (err == ENOENT) {
+	  if ((err == ENOENT) || (err == EBADF)) {
 	    err = 0;
 	  }
 	  break;
