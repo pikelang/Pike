@@ -10,7 +10,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.53 2000/03/07 21:23:42 hubbe Exp $");
+RCSID("$Id: pike_memory.c,v 1.54 2000/03/07 23:52:03 hubbe Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -827,29 +827,37 @@ void check_pad(struct memhdr *mh, int freeok)
       size = ~size;
     }
   }
-  q= (((long)mem) ^ 0x555555) + (size * 9248339);
-
 /*  fprintf(stderr,"Checking %p(%d) %ld\n",mem, size, q);  */
 #if 1
-  q%=RNDSIZE;
-  if(MEMCMP(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
+  /* optimization? */
+  if(MEMCMP(mem - DEBUG_MALLOC_PAD, mem+size, DEBUG_MALLOC_PAD))
   {
-    out_biking=1;
-    fprintf(stderr,"Pre-padding overwritten for "
-	    "block at %p (size %ld)!\n", mem, size);
-    describe(mem);
-    abort();
-  }
-
-  if(MEMCMP(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
-  {
-    out_biking=1;
-    fprintf(stderr,"Pre-padding overwritten for "
-	    "block at %p (size %ld)!\n", mem, size);
-    describe(mem);
+    q= (((long)mem) ^ 0x555555) + (size * 9248339);
+    
+    q%=RNDSIZE;
+    if(MEMCMP(mem - DEBUG_MALLOC_PAD, rndbuf+q, DEBUG_MALLOC_PAD))
+    {
+      out_biking=1;
+      fprintf(stderr,"Pre-padding overwritten for "
+	      "block at %p (size %ld)!\n", mem, size);
+      describe(mem);
+      abort();
+    }
+    
+    if(MEMCMP(mem + size, rndbuf+q, DEBUG_MALLOC_PAD))
+    {
+      out_biking=1;
+      fprintf(stderr,"Pre-padding overwritten for "
+	      "block at %p (size %ld)!\n", mem, size);
+      describe(mem);
+      abort();
+    }
+    fprintf(stderr,"Padding completely screwed up!");
     abort();
   }
 #else
+  q= (((long)mem) ^ 0x555555) + (size * 9248339);
+
   for(e=0;e< DEBUG_MALLOC_PAD; e+=4)
   {
     char tmp;
