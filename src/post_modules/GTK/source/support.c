@@ -582,15 +582,12 @@ static void build_push_callbacks( )
   CB( gtk_widget_get_type(),     pgtk_push_object_param );
   CB( GTK_TYPE_OBJECT,           pgtk_push_object_param );
 
-
   CB( GTK_TYPE_SELECTION_DATA,   pgtk_push_selection_data_param );
   CB( GTK_TYPE_ACCEL_GROUP,      pgtk_push_accel_group_param );
-#ifdef GTK_TYPE_CTREE_NODE
+  /*#ifndef HAS_GTK_20*/
   CB( GTK_TYPE_CTREE_NODE,       pgtk_push_ctree_node_param );
-#endif
-#ifdef GTK_TYPE_GDK_DRAG_CONTEXT
   CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
-#endif
+  /*#endif*/
   CB( GTK_TYPE_GDK_EVENT,        pgtk_push_gdk_event_param );
 
   CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
