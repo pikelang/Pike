@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.189 1999/08/20 05:08:28 hubbe Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.190 1999/08/20 05:44:20 mast Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -3819,6 +3819,31 @@ test_any(class A {int f(){return 1;} int t(){return f();}}; class B {private inh
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {local inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {inline inherit A; int f(){return 2;} int t(){return A::t();}}; return B()->t(), 1)
 
+test_any([[
+  class A {int v=0x100; int a(){return v;}}; class B {inherit A; int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
+  object c=C(); return c->a()+c->b()+c->c();
+]], 0x003)
+test_any([[
+  class A {int v=0x100; int a(){return v;}}; class B {inherit A; public int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
+  object c=C(); return c->a()+c->b()+c->c();
+]], 0x003)
+test_any([[
+  class A {int v=0x100; int a(){return v;}}; class B {inherit A; private int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
+  object c=C(); return c->a()+c->b()+c->c();
+]], 0x021)
+test_any([[
+  class A {int v=0x100; int a(){return v;}}; class B {inherit A; static int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
+  object c=C(); return c->a()+c->b()+c->c();
+]], 0x003)
+test_any([[
+  class A {int v=0x100; int a(){return v;}}; class B {inherit A; local int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
+  object c=C(); return c->a()+c->b()+c->c();
+]], 0x021)
+test_any([[
+  class A {int v=0x100; int a(){return v;}}; class B {inherit A; inline int v=0x010; int b(){return v;}}; class C {inherit B; int v=0x001; int c(){return v;}};
+  object c=C(); return c->a()+c->b()+c->c();
+]], 0x021)
+
 // - modifiers, binding and redefinition properties with run time access
 
 test_any(class A {int v=1;}; class B {inherit A; int v=2;}; return B()->v, 2)
@@ -3859,34 +3884,3 @@ test_any(class A {int f(){return 1;}}; class B {inherit A; final int f(){return 
 test_any(class A {int f(){return 1;}}; class B {inherit A; nomask int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; local int f(){return 2;}}; return B()->f(), 2)
 test_any(class A {int f(){return 1;}}; class B {inherit A; inline int f(){return 2;}}; return B()->f(), 2)
-
-// - modifiers, misc tricky situations
-
-test_any([[
-  class A {int v=0; int a(){return v;}};
-  class B {inherit A; local int v=1; int b(){return v;}};
-  return B()->a();
-]], 1)
-test_any([[
-  class A {int v=0; int a(){return v;}};
-  class B {inherit A; local int v=1; int b(){return v;}};
-  return B()->b();
-]], 1)
-test_any([[
-  class A {int v=0; int a(){return v;}};
-  class B {inherit A; local int v; int b(){return v;}};
-  class C {inherit B; int v=2; int c(){return v;}};
-  return C()->a();
-]], 2)
-test_any([[
-  class A {int v=0; int a(){return v;}};
-  class B {inherit A; local int v; int b(){return v;}};
-  class C {inherit B; int v=2; int c(){return v;}};
-  return C()->b();
-]], 0)
-test_any([[
-  class A {int v=0; int a(){return v;}};
-  class B {inherit A; local int v=1; int b(){return v;}};
-  class C {inherit B; int v; int c(){return v;}};
-  return C()->c();
-]], 1)
