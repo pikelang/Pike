@@ -201,8 +201,11 @@ class Year
 	 if (!month_mapping)
 	 {
 	    month_mapping=
-	       mkmapping(Array.map(month_names,lower_case),
-			 indices(allocate(13))[1..]);
+	      mkmapping(Array.map(month_names, lower_case)+
+			Array.map(month_names,
+				  lambda(string s)
+				  { return lower_case(s[0..2]); } ),
+			(indices(allocate(13))[1..]) * 2);
 	 }
 	 n=month_mapping[lower_case(n)];
 	 if (!n) return 0;
@@ -1457,7 +1460,11 @@ object parse(string fmt,string arg)
    object low=m->year;
 
    if (m->M)
+   {
       m->month=low=m->year->month(m->M);
+      if(!m->month)
+         return 0; // Unknown month
+   }
    if (m->W) 
       m->week=low=m->year->week(m->W);
 
