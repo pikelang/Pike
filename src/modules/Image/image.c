@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.177 2000/08/28 08:48:12 per Exp $ */
+/* $Id: image.c,v 1.178 2000/09/10 01:23:58 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.177 2000/08/28 08:48:12 per Exp $
+**!	$Id: image.c,v 1.178 2000/09/10 01:23:58 per Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.177 2000/08/28 08:48:12 per Exp $");
+RCSID("$Id: image.c,v 1.178 2000/09/10 01:23:58 per Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -4249,6 +4249,38 @@ void image_cast(INT32 args)
    SIMPLE_BAD_ARG_ERROR("Image.Image->cast",1,"string(\"array\"|\"string\")");
 }
 
+static void image__sprintf( INT32 args )
+{
+  extern void f_sprintf( INT32 args );
+  int x;
+  if (args != 2 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+  if (sp[-args].type!=T_INT)
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+  if (sp[1-args].type!=T_MAPPING)
+    SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
+
+  x = sp[-2].u.integer;
+
+  pop_n_elems( 2 );
+  switch( x )
+  {
+   case 't':
+     push_constant_text("Image.Image");
+     return;
+   case 'O':
+     push_constant_text( "Image.Image( %d x %d /* %.1fKb */)" );
+     push_int( THIS->xsize );
+     push_int( THIS->ysize );
+     push_float( (THIS->xsize * THIS->ysize) / 1024.0 * 3.0 ); 
+     f_sprintf( 4 );
+     return;
+   default:
+     push_int(0);
+     return;
+  }
+}
+
 void image_tobitmap(INT32 args)
 {
    int xs;
@@ -4303,6 +4335,8 @@ void init_image_image(void)
 						 (double)CIRCLE_STEPS));
 
    ADD_STORAGE(struct image);
+   
+   ADD_FUNCTION("_sprintf", image__sprintf, tFunc(tInt , tString), 0 );
 
    ADD_FUNCTION("create",image_create,
 		tOr(tFunc(tOr(tInt,tVoid) tOr(tInt,tVoid) tRGB,tVoid),

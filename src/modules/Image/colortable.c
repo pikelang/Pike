@@ -1,11 +1,11 @@
 #include "global.h"
 
-/* $Id: colortable.c,v 1.97 2000/08/20 14:46:58 grubba Exp $ */
+/* $Id: colortable.c,v 1.98 2000/09/10 01:23:58 per Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.97 2000/08/20 14:46:58 grubba Exp $
+**!	$Id: colortable.c,v 1.98 2000/09/10 01:23:58 per Exp $
 **! class Colortable
 **!
 **!	This object keeps colortable information,
@@ -20,7 +20,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.97 2000/08/20 14:46:58 grubba Exp $");
+RCSID("$Id: colortable.c,v 1.98 2000/09/10 01:23:58 per Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -4421,6 +4421,50 @@ void image_colortable_corners(INT32 args)
       free(flat.entries);
 }
 
+static void image_colortable__sprintf( INT32 args )
+{
+  extern void f_sprintf( INT32 args );
+  int x;
+  if (args != 2 )
+    SIMPLE_TOO_FEW_ARGS_ERROR("_sprintf",2);
+  if (sp[-args].type!=T_INT)
+    SIMPLE_BAD_ARG_ERROR("_sprintf",0,"integer");
+  if (sp[1-args].type!=T_MAPPING)
+    SIMPLE_BAD_ARG_ERROR("_sprintf",1,"mapping");
+
+  x = sp[-2].u.integer;
+
+  pop_n_elems( 2 );
+  switch( x )
+  {
+   case 't':
+     push_constant_text("Image.Colortable");
+     return;
+   case 'O':
+     push_constant_text( "Image.Colortable( %d, m=%s, d=%s )" );
+     push_int64( image_colortable_size( THIS ) );
+     switch( THIS->type )
+     {
+      case NCT_NONE: push_constant_text( "none" );   break;
+      case NCT_FLAT: push_constant_text( "flat" );   break;
+      case NCT_CUBE: push_constant_text( "cube" );   break;
+     }
+     switch( THIS->dither_type )
+     {
+      case NCTD_NONE: push_constant_text( "none" );   break;
+      case NCTD_FLOYD_STEINBERG:push_constant_text( "floyd-steinberg" );break;
+      case NCTD_RANDOMCUBE: push_constant_text( "randomcube" );   break;
+      case NCTD_RANDOMGREY: push_constant_text( "randomgrey" );   break;
+      case NCTD_ORDERED: push_constant_text( "ordered" );   break;
+     }
+     f_sprintf( 4 );
+     return;
+   default:
+     push_int(0);
+     return;
+  }
+}
+
 /***************** global init etc *****************************/
 
 void init_image_colortable(void)
@@ -4440,6 +4484,8 @@ void init_image_colortable(void)
 		"function(int,int,int,void|int ...:void) */
    ADD_FUNCTION("create",image_colortable_create,tOr4(tFunc(tVoid,tVoid),tFunc(tArr(tColor),tVoid),tFuncV(tObj tOr(tVoid,tInt),tMix,tVoid),tFuncV(tInt tInt tInt,tOr(tVoid,tInt),tVoid)),0);
 
+   ADD_FUNCTION("_sprintf", image_colortable__sprintf, 
+                tFunc(tInt tMapping, tString ), 0 );
    /* function(void:void)|"
 		"function(array(array(int)|string|object):void)|"
 		"function(object,void|int,mixed ...:void)|"
