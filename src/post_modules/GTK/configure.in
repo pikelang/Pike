@@ -116,13 +116,30 @@ dnl
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
+
 int
 main ()
 {
   int major, minor, micro;
   char *tmp_version;
+  int fd;
 
-  system ("touch conf.gtktest");
+  /* Don't use system(3C) since it isn't thread-safe.
+   *
+   * system ("touch conf.gtktest");
+   */
+  if ((fd = open("conf.gtktest", O_RDWR|O_APPEND|O_CREAT, 0600)) >= 0) {
+    close(fd);
+  }
 
   /* HP/UX 9 (%@#!) writes to sscanf strings */
   tmp_version = g_strdup("$min_gtk_version");
@@ -259,7 +276,8 @@ dnl Force prototypes from X's headerfiles.
 AC_DEFINE(FUNCPROTO)
 
 AC_HEADER_STDC
-AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h )
+AC_CHECK_HEADERS( signal.h netinet/in.h arpa/inet.h sys/types.h sys/stat.h \
+	fcntl.h)
 
 
 if test "x$with_GTK" = "xyes" ; then
