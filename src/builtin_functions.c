@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.345 2001/06/21 12:48:04 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.346 2001/06/27 17:40:47 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2901,7 +2901,7 @@ static int find_longest_prefix(char *str,
 }
 			       
 
-static struct pike_string * replace_many(struct pike_string *str,
+static struct pike_string *replace_many(struct pike_string *str,
 					struct array *from,
 					struct array *to)
 {
@@ -2957,9 +2957,11 @@ static struct pike_string * replace_many(struct pike_string *str,
   {
     INT32 x;
     x=index_shared_string(v[num-1-e].ind,0);
-    if(x<(INT32)NELEM(set_start)) set_start[x]=num-e-1;
+    if((x >= 0) && (x<(INT32)NELEM(set_start)))
+      set_start[x]=num-e-1;
     x=index_shared_string(v[e].ind,0);
-    if(x<(INT32)NELEM(set_end)) set_end[x]=e+1;
+    if((x >= 0) && (x<(INT32)NELEM(set_end)))
+      set_end[x]=e+1;
   }
 
   init_string_builder(&ret,str->size_shift);
@@ -2972,11 +2974,17 @@ static struct pike_string * replace_many(struct pike_string *str,
     ptrdiff_t ch;
 
     ch=index_shared_string(str,s);
-    if(ch<(ptrdiff_t)NELEM(set_end)) b=set_end[ch]; else b=num;
+    if((ch >= 0) && (ch<(ptrdiff_t)NELEM(set_end)))
+      b=set_end[ch];
+    else
+      b=num;
 
     if(b)
     {
-      if(ch<(ptrdiff_t)NELEM(set_start)) a=set_start[ch]; else a=0;
+      if((ch >= 0) && (ch<(ptrdiff_t)NELEM(set_start)))
+	a=set_start[ch];
+      else
+	a=0;
 
       a=find_longest_prefix(str->str+(s << str->size_shift),
 			    length,
