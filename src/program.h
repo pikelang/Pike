@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.112 2000/12/16 05:45:45 marcus Exp $
+ * $Id: program.h,v 1.113 2001/01/10 04:32:50 mast Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -579,7 +579,7 @@ PMOD_EXPORT void change_compiler_compatibility(int major, int minor);
 #define Pike_new_program Pike_compiler->new_program
 
 
-/* Return true if compat version is equal or greater to MAJOR.MINOR */
+/* Return true if compat version is equal or less than MAJOR.MINOR */
 #define TEST_COMPAT(MAJOR,MINOR) \
   (Pike_compiler->compat_major < (MAJOR) ||  \
     (Pike_compiler->compat_major == (MAJOR) && \
