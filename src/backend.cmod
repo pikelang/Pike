@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.59 2003/10/24 19:04:52 mast Exp $
+|| $Id: backend.cmod,v 1.60 2003/10/27 12:51:35 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.59 2003/10/24 19:04:52 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.60 2003/10/27 12:51:35 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -2361,9 +2361,8 @@ PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new)
 
   if (!old)
     low_set_backend_for_fd (fd, new);
-
-  else {
-    if (new && old != new) {
+  else if (old != new) {
+    if (new) {
       file_callback read_cb = backend_query_read_callback (old, fd);
       void *read_cb_data = backend_query_read_callback_data (old, fd);
       file_callback write_cb = backend_query_write_callback (old, fd);
@@ -2379,8 +2378,9 @@ PMOD_EXPORT void set_backend_for_fd (int fd, struct Backend_struct *new)
       backend_set_write_callback (new, fd, write_cb, write_cb_data);
       backend_set_read_oob_callback (new, fd, read_oob_cb, read_oob_cb_data);
       backend_set_write_oob_callback (new, fd, write_oob_cb, write_oob_cb_data);
+    } else {
+      low_set_backend_for_fd (fd, NULL);
     }
-
     backend_set_read_callback (old, fd, NULL, NULL);
     backend_set_write_callback (old, fd, NULL, NULL);
     backend_set_read_oob_callback (old, fd, NULL, NULL);
