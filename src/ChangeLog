@@ -1,3 +1,8 @@
+Tue Jan 28 19:35:31 1997  Henrik Grubbström  <grubba@infovav.se>
+
+	* modules/system/syslog.c (f_syslog): Moved from spider-module.
+	Fixed a couple of bugs during the move.
+
 Mon Jan 27 18:44:25 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* simulate.pre.pike: query_host_name is now same as gethostname
