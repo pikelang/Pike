@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.44 2002/04/28 18:41:13 nilsson Exp $
+/* $Id: sslfile.pike,v 1.45 2002/06/03 20:42:36 mast Exp $
  *
  */
 
@@ -524,6 +524,12 @@ string query_address(int|void arg)
   return socket->query_address(arg);
 }
 
+int errno()
+{
+  // FIXME: The errno returned here might not be among the expected
+  // types if we emulate blocking.
+  return socket ? socket->errno() : system.EBADF;
+}
 
 void create(object f, object c, int|void is_client, int|void is_blocking)
 {
