@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.863 2004/12/29 11:52:56 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.864 2004/12/30 13:43:45 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1691,6 +1691,7 @@ fi
 #############################################################################
 
 
+DLOPEN_O=""
 WARN=""
 OPTIMIZE="${OPTFLAGS-}"
 
@@ -2105,7 +2106,7 @@ if test "$cflags_is_set" = "no"; then
     if test x$with_dynamic_modules = xno ; then :; else
       PIKE_MSG_WARN([Enabling dynamic modules for Win32.])
 #      EXTRA_MODULE_REQUIREMENTS="${EXTRA_MODULE_REQUIREMENTS} import_functions.h"
-      EXTRA_OBJS="${EXTRA_OBJS} dlopen.o"
+      DLOPEN_O="dlopen.o"
       pike_cv_sys_dynamic_loading=yes
       with_dynamic_modules=yes
       AC_DEFINE(USE_MY_WIN32_DLOPEN)
@@ -2188,6 +2189,8 @@ else
     AC_SYS_COMPILER_FLAG(-qhalt=e,qhalt_e,CFLAGS)
   ])
 fi
+
+AC_SUBST(DLOPEN_O)
 
 #############################################################################
 

@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.396 2004/12/29 12:00:33 grubba Exp $
+# $Id: Makefile.in,v 1.397 2004/12/30 13:43:45 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -179,7 +179,7 @@ OBJ= \
  las.o \
  builtin_functions.o \
  peep.o \
- module.o @EXTRA_OBJS@
+ module.o @DLOPEN_O@ @EXTRA_OBJS@
 
 MODULE_REQUIREMENTS= \
   machine.h \
@@ -285,12 +285,12 @@ pike.a: $(OBJ) modules/linker_options post_modules/linker_options
 	$(AR) cq pike.a $(OBJ)
 	-@RANLIB@ pike.a
 
-#pike: main.o $(PIKE_LIB) master-stamp pike.syms
+#pike: main.o @DLOPEN_O@ $(PIKE_LIB) master-stamp pike.syms
 pike: main.o $(OBJ) master-stamp pike.syms modules/linker_options post_modules/linker_options
 	-@if [ -f pike.old ] ; then rm -f pike.old || : ; else : ; fi
 	-@if [ -f pike.old.exe ] ; then rm -f pike.old.exe || : ; else : ; fi
 	-@if [ -f pike ] ; then mv pike pike.old || : ; else : ; fi
-#	$(LD) $(LDFLAGS) main.o -R. -R$(prefix)/lib $(PIKE_LIB) -o pike
+#	$(LD) $(LDFLAGS) main.o @DLOPEN_O@ -o pike
 	$(LD) $(LDFLAGS) main.o $(OBJ) \
 	  `cat modules/linker_options post_modules/linker_options` \
 	  $(LIBS) -o pike
