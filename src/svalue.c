@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.50 1999/10/24 05:56:37 hubbe Exp $");
+RCSID("$Id: svalue.c,v 1.51 1999/10/24 14:35:50 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -860,6 +860,9 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
 
 
     case T_FUNCTION:
+      /* FIXME: What if the functionname is a wide-string?
+       * /grubba 1999-10-21
+       */
       if(s->subtype == FUNCTION_BUILTIN)
       {
 	my_binary_strcat(s->u.efun->name->str,s->u.efun->name->len);
