@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.256 2004/03/24 10:10:50 anders Exp $
+// $Id: master.pike.in,v 1.257 2004/04/29 12:30:30 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -1486,11 +1486,10 @@ program|object findmodule(string fullname, object|void handler)
   }
     
 #if constant(load_module)
-  if(master_file_stat(fakeroot(fullname+".so"))) {
-    o = fc[fullname] = low_cast_to_object(fullname, "/.", handler);
+  if(objectp (o = low_cast_to_object(fullname+".so", "/.", handler))) {
     DEC_RESOLV_MSG_DEPTH();
     resolv_debug ("findmodule(%O) => got .so object %O\n", fullname, o);
-    return o;
+    return fc[fullname] = o;
   }
 #endif
 
