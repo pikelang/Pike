@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.522 2003/09/03 17:55:59 mast Exp $
+|| $Id: program.c,v 1.523 2003/09/04 15:02:02 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.522 2003/09/03 17:55:59 mast Exp $");
+RCSID("$Id: program.c,v 1.523 2003/09/04 15:02:02 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -150,6 +150,8 @@ char *lfun_names[] = {
   "_equal",
   "_m_delete",
   "_get_iterator",
+  /* NOTE: After this point there are only fake lfuns. */
+  "_search",
 };
 
 struct pike_string *lfun_strings[NELEM(lfun_names)];
@@ -204,6 +206,8 @@ static char *raw_lfun_types[] = {
   tFuncV(tMix,tVoid,tInt),	/* "_equal", */
   tFuncV(tZero,tVoid,tMix),	/* "_m_delete", */
   tFuncV(tNone,tVoid,tObj),	/* "_get_iterator", */
+  /* NOTE: After this point there are only fake lfuns. */
+  tFuncV(tZero tOr(tZero, tVoid), tVoid, tMix), /* "_search", */
 };
 
 /*! @namespace lfun::
@@ -258,7 +262,7 @@ static char *raw_lfun_types[] = {
  *!     Overloading of other builtin functions.
  *!     
  *!     @[_is_type()], @[_sprintf()], @[_m_delete()],
- *!     @[_get_iterator()]
+ *!     @[_get_iterator()], @[_search()]
  *! @endul
  *!
  *! @note
@@ -839,6 +843,14 @@ static char *raw_lfun_types[] = {
  *!
  *! @seealso
  *!   @[Iterator], @[get_iterator], @[predef::foreach()]
+ */
+
+/*! @decl mixed lfun::_search(mixed needle, mixed|void start)
+ *!
+ *!   Search callback.
+ *!
+ *! @seealso
+ *!   @[predef::search()]
  */
 
 /*! @endnamespace
@@ -6641,7 +6653,7 @@ void init_program(void)
 
   lfun_ids = allocate_mapping(NUM_LFUNS);
   lfun_types = allocate_mapping(NUM_LFUNS);
-  for (i=0; i < NUM_LFUNS; i++) {
+  for (i=0; i < NELEM(lfun_names); i++) {
     lfun_strings[i] = make_shared_string(lfun_names[i]);
 
     id.type = T_INT;
@@ -6655,6 +6667,7 @@ void init_program(void)
     mapping_insert(lfun_types, &key, &val);
     free_type(val.u.type);
   }
+
   start_new_program();
   debug_malloc_touch(Pike_compiler->fake_object);
   debug_malloc_touch(Pike_compiler->fake_object->storage);
@@ -6704,7 +6717,7 @@ void cleanup_program(void)
 
   free_mapping(lfun_types);
   free_mapping(lfun_ids);
-  for (e=0; e < NUM_LFUNS; e++) {
+  for (e=0; e < NELEM(lfun_names); e++) {
     free_string(lfun_strings[e]);
   }
 #ifdef FIND_FUNCTION_HASHSIZE

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.h,v 1.185 2003/08/20 12:08:46 grubba Exp $
+|| $Id: program.h,v 1.186 2003/09/04 15:02:02 grubba Exp $
 */
 
 #ifndef PROGRAM_H
@@ -75,6 +75,11 @@ extern struct pike_string *this_program_string;
 #define LFUN__GET_ITERATOR 43
 
 #define NUM_LFUNS 44
+
+/* NOTE: After this point there are only fake lfuns.
+ *       ie use low_find_lfun(), and NOT FIND_LFUN()!
+ */
+#define LFUN__SEARCH 44
 
 extern char *lfun_names[];
 
