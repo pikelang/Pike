@@ -80,10 +80,12 @@ testfont binary
 /src/modules/_Crypto/lib/descore.README foreign_ident
 /src/modules/_Crypto/lib/desdata.c foreign_ident
 /src/modules/_Crypto/lib/desinfo.h foreign_ident
+/src/modules/_Crypto/lib/rc4.c foreign_ident
 /src/modules/_Crypto/md2.c foreign_ident
 /src/modules/_Crypto/md5.c foreign_ident
 /src/modules/_Crypto/md5.pike foreign_ident
 /src/modules/_Crypto/pipe.c foreign_ident
+/src/modules/_Crypto/rc4.c foreign_ident
 /src/modules/call_out/call_out.c foreign_ident
 /src/modules/files/file.c foreign_ident
 /src/modules/spider/dumudp.c foreign_ident
