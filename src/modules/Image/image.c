@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.142 1999/06/03 17:47:22 mirar Exp $ */
+/* $Id: image.c,v 1.143 1999/06/07 19:58:08 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.142 1999/06/03 17:47:22 mirar Exp $
+**!	$Id: image.c,v 1.143 1999/06/07 19:58:08 mirar Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.142 1999/06/03 17:47:22 mirar Exp $");
+RCSID("$Id: image.c,v 1.143 1999/06/07 19:58:08 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3564,22 +3564,6 @@ void init_image_image(void)
 
    ADD_FUNCTION("cast",image_cast,
 		tFunc(tStr,tStr),0);
-   ADD_FUNCTION("to8bit",image_to8bit,
-		tFunc(tArr(tArr(tInt)),tStr),0);
-   ADD_FUNCTION("to8bit_closest",image_to8bit,
-		tFunc(tArr(tArr(tInt)),tStr),0);
-   ADD_FUNCTION("to8bit_fs",image_to8bit,
-		tFunc(,tStr),0);
-   ADD_FUNCTION("torgb",image_torgb,
-		tFunc(,tStr),0);
-   ADD_FUNCTION("tozbgr",image_tozbgr,
-		tFunc(tArr(tArr(tInt)),tStr),0);
-   ADD_FUNCTION("to8bit_rgbcube",image_to8bit_rgbcube,
-		tFunc(tInt tInt tInt tOr(tVoid,tStr),tStr),0);
-   ADD_FUNCTION("tobitmap",image_tobitmap,
-		tFunc(,tStr),0);
-   ADD_FUNCTION("to8bit_rgbcube_rdither",image_to8bit_rgbcube_rdither,
-		tFunc(tInt tInt tInt tOr(tVoid,tStr),tStr),0);
 
 
    ADD_FUNCTION("copy",image_copy,
