@@ -1,5 +1,5 @@
 /*
- * $Id: toktest.pike,v 1.1 2002/10/17 10:43:18 grubba Exp $
+ * $Id: toktest.pike,v 1.2 2003/01/17 16:46:28 grubba Exp $
  *
  * Tokenizer testing program.
  *
@@ -11,7 +11,12 @@ import Tokenizer;
 int main(int argc, array(string) argv)
 {
   //array res = group(Tokenizer.pike_tokenizer(cpp(#string "toktest.pike")));
-  Group res = group(pike_tokenizer(cpp(#string "toktest.pike", "toktest.pike")));
+  Compiler c = Compiler();
+
+  Group res = c->group(c->pike_tokenizer(cpp(#string "toktest.pike" +
+					     "mixed `(;\n"
+					     ,
+					     __FILE__)));
 
   werror("Res:%O\n", res);
 

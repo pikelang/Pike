@@ -1,19 +1,380 @@
 //
-// $Id: module.pmod.in,v 1.2 2002/10/17 13:32:35 grubba Exp $
+// $Id: module.pmod.in,v 1.3 2003/01/17 16:46:28 grubba Exp $
 //
 // Interface to pike code tokenizer.
 //
 // Henrik Grubbström 2002-07-17
 //
 
-
 //! @ignore
 inherit @module@;
 //! @endignore
 
+typedef function(string, Position, CompilerContext: Token) TokenHandler;
+
+class Compiler
+{
+  //! @ignore
+  inherit compiler;
+  //! @endignore
+
+  void report(SeverityLevel severity, string subsystem, string msg,
+	      mixed ... extra_args)
+  {
+    if (sizeof(extra_args))
+      msg = sprintf(msg, @extra_args);
+    werror("%O:%O:%O\n", severity, subsystem, msg);
+  }
+
 // NOTE: Assumes the variables symbol and pos contain the current
 //       symbol and position.
 #define MKTOKEN(TOKEN, VALUE)	Token(symbol, TOKEN, VALUE, pos)
+
+  //! Pike tokenizer.
+  class pike_tokenizer
+  {
+    inherit basic_tokenizer;
+
+    Token current_token;
+    string current_file = "-";
+
+    CompilerContext context;
+
+    TokenHandler token_handler = Pike73TokenParser->handle;
+
+    static Position pos;
+
+    static {
+      void yyerror(mixed ... args)
+      {
+	report(ERROR, "scanner", @args);
+      }
+
+      void handle_pragma(string pragma, string args)
+      {
+	switch(pragma) {
+	case "all_inline":
+	case "all_nomask":
+	case "strict_types":
+	case "save_parent":
+	case "dont_save_parent":
+	  if (sizeof(args)) {
+	    yyerror("#pragma %s does not support options.", pragma);
+	  }
+	  context->pragmas[pragma] = 1;
+	  break;
+
+	default:
+	  // Unknown pragmas are silently ignored.
+	  break;
+	}
+      }
+
+      string parse_string(string raw)
+      {
+	int pos=1, i;
+	string s = "";
+	if (raw[-1] != raw[0]) {
+	  yyerror("Unterminated string or character constant.");
+	  // Attempt to terminate the constant.
+	  raw += raw[0..0];
+	}
+	for (pos = 1; ((i = search(raw, "\\", pos)) != -1); pos = i+2) {
+	  int num;
+	  string rest = "";
+	  s += raw[pos..i-1];
+	  switch(raw[i+1]) {
+	  case 'a': s += "\a"; break;	// Alert (BEL), 7
+	  case 'b': s += "\b"; break;	// Backspace (BS), 8
+	  case 't': s += "\t"; break;	// Tab (HT), 9
+	  case 'n': s += "\n"; break;	// Newline (LF), 10
+	  case 'v': s += "\v"; break;	// Vertical tab (VT), 11
+	  case 'f': s += "\f"; break;	// Form-feed (FF), 12
+	  case 'r': s += "\r"; break;	// Return (CR), 13
+	  case 'e': s += "\e"; break;	// Escape (ESC), 27
+
+	  case 'd':			// Decimal escape.
+	    if (!sscanf(rest = raw[i+2..], "%d%s", num, rest)) {
+	      yyerror("Bad decimal escape in string.");
+	    }
+	    s += sprintf("%c", num);
+	    i = sizeof(raw)-(2+sizeof(rest));
+	    break;
+
+	  case 'x':			// Hexadecimal escape.
+	    if (!sscanf(rest = raw[i+2..], "%x%s", num, rest)) {
+	      yyerror("Bad hexadecimal escape in string.");
+	    }
+	    s += sprintf("%c", num);
+	    i = sizeof(raw)-(2+sizeof(rest));
+	    break;
+
+	  case 'u':			// Length 4 unicode escape.
+	    sscanf(raw[i+2..i+5], "%4x%s", num, rest);
+	    if (sizeof(rest)) {
+	      yyerror("Bad unicode escape in string.");
+	      i += 4-sizeof(rest);
+	    } else if (sizeof(raw) < i+5) {
+	      yyerror("Bad unicode escape in string.");
+	      i = sizeof(raw)-2;
+	    } else {
+	      i+= 4;
+	    }
+	    s += sprintf("%c", num);
+	    break;
+
+	  case 'U':			// Length 8 unicode escape.
+	    sscanf(raw[i+2..i+9], "%4x%s", num, rest);
+	    if (sizeof(rest)) {
+	      yyerror("Bad unicode escape in string.");
+	      i += 8-sizeof(rest);
+	    } else if (sizeof(raw) < i+9) {
+	      yyerror("Bad unicode escape in string.");
+	      i = sizeof(raw)-2;
+	    } else {
+	      i+= 8;
+	    }
+	    s += sprintf("%c", num);
+	    break;
+
+	  case '0'..'7':			// Octal escape.
+	    if (!sscanf(rest = raw[i+2..], "%o%s", num, rest)) {
+	      yyerror("Bad octal escape in string.");
+	    }
+	    s += sprintf("%c", num);
+	    i = sizeof(raw)-(2+sizeof(rest));
+	    break;
+
+	  default:
+	    // FIXME: Warn?
+	  case '\\':
+	  case '\"':
+	  case '\'':
+	    i--;
+	    break;
+	  }
+	}
+	s += raw[pos..sizeof(raw)-2];
+	return s;
+      }
+
+      void preprocess(string cmd, string args)
+      {
+	string rest = "";
+	switch(cmd) {
+	case "pragma":
+	  string pragma = "";
+	  sscanf(args, "%[^ \t]%*[ \t]%s", pragma, rest);
+	  handle_pragma(pragma, rest);
+	  return;
+
+	case "error":
+	  report(ERROR, "#error: %s", args);
+	  return;
+
+	case "warning":
+	  report(WARNING, "#warning: %s", args);
+	  return;
+
+	case "line":
+	  sscanf(args, "%[^ \t]%*[ \t]%s", cmd, rest);
+	  args = rest;
+	  rest="";
+	  break;
+
+	case "pike":
+	  // FIXME: Change compat.
+	  string version="";
+	  sscanf(args, "%[^ \t]%*[ \t]%s", version, rest);	
+	  int major;
+	  int minor;
+	  string rest2="";
+	  sscanf(version, "%d.%d%s", major, minor, rest2);
+	  if (sizeof(rest2) || !sizeof(version)) {
+	    yyerror("Bad #pike version specification.");
+	    return;
+	  }
+	  // FIXME: Do something here.
+	  return;
+	}
+	int no;
+	if (!sscanf(cmd, "%d%s", no, rest) || sizeof(rest)) {
+	  yyerror("Unknown preprocessor directive #%s", cmd);
+	  return;
+	}
+	if (sizeof(args)) {
+	  current_file = parse_string(args);
+	}
+	line_no = no-1;
+      }
+
+      Token handle(string symbol)
+      {
+	pos = Position(current_file, line_no);
+
+	Token res = token_handler && token_handler(symbol, pos, context);
+	if (res) return res;
+
+	string rest="";
+
+	switch (symbol[0]) {
+	case '\"':
+	  return MKTOKEN("string_constant", parse_string(symbol));
+
+	case '\'':
+	  string s = parse_string(symbol);
+	  if (!sizeof(s)) {
+	    yyerror("Zero-length character constant.");
+	    return MKTOKEN("int_constant", 0);
+	  }
+	  if (sizeof(s) > 1) {
+	    yyerror("Unterminated character constant.");
+	  }
+	  return MKTOKEN("int_constant", s[0]);
+
+	case '0':
+	  if (symbol == "0") {
+	    return MKTOKEN("int_constant", 0);
+	  }
+	  if ((symbol[1] == 'x') || (symbol[1] == 'X')) {
+	    // Hexadecimal constant.
+	    int val;
+	    sscanf(symbol[2..], "%x%s", val, rest);
+	    if (sizeof(rest)) {
+	      yyerror("Strange hexadecimal constant: %s", symbol);
+	    }
+	    return MKTOKEN("int_constant", val);
+	  }
+	  if ((symbol[1] == 'b') || (symbol[1] == 'B')) {
+	    // Binary constant.
+	    int val;
+	    sscanf(symbol[2..], "%b%s", val, rest);
+	    if (sizeof(rest)) {
+	      yyerror("Strange binary constant: %s", symbol);
+	    }
+	    return MKTOKEN("int_constant", val);
+	  }
+	  // FALL_THROUGH
+	case '1'..'9':
+	  int int_val;
+	  if (symbol[0] == '0') {
+	    // Octal constant or float.
+	    sscanf(symbol, "%o%s", int_val, rest);
+	    if (sizeof(rest) &&
+		((rest[0] == '8') || (rest[0] == '9'))) {
+	      string rest2="";
+	      sscanf(symbol, "%*d%s", rest2);
+	      if (!sizeof(rest2)) {
+		yyerror("Bad octal number: %s", symbol);
+		return MKTOKEN("int_constant", int_val);
+	      }
+	    }
+	  } else {
+	    // Decimal constant or float.
+	    sscanf(symbol, "%d%s", int_val, rest);
+	  }
+	  if (!sizeof(rest)) {
+	    return MKTOKEN("int_constant", int_val);
+	  }
+	  float float_val;
+	  string rest2="";
+	  sscanf(symbol, "%f%s", float_val, rest2);
+	  if (sizeof(rest2)) {
+	    yyerror("Strange numeric constant: %s", symbol);
+	    if (rest == rest2) {
+	      return MKTOKEN("int_constant", int_val);
+	    }
+	  }
+	  return MKTOKEN("float_constant", float_val);
+
+	case '/':
+	  if ((sizeof(symbol) > 1) &&
+	      ((symbol[1] == '/') || (symbol[1] == '*'))) {
+	    // Comment.
+	    return 0;
+	  }
+	  break;
+
+	case '#':
+	  string cmd="";
+	  sscanf(symbol, "#%*[ \t]%[^ \t]%*[ \t]%s", cmd, rest);
+	  preprocess(cmd, rest);
+	  return 0;
+	}
+	return MKTOKEN("identifier", symbol);
+      }
+
+      void scan()
+      {
+	current_token = 0;
+
+	do {
+	  ::scan();
+	} while (current_symbol && !(current_token = handle(current_symbol)));
+      }
+
+      void create(string data, CompilerContext|void context)
+      {
+	this_program::context = context || CompilerContext();
+	::create(data);
+      }
+    }
+
+    //! Return the current token.
+    Token value()
+    {
+      return current_token;
+    }
+  }
+
+  Group group(pike_tokenizer tokenizer)
+  {
+    ADT.Stack group_stack = ADT.Stack();
+
+    array(Token|array(mixed)) tokens = ({});
+
+    Group g = Group();
+
+    foreach(tokenizer; ; Token token) {
+      string sym = token->symbol;
+      if (sym == g->group_terminator) {
+	// Note that the pop is safe, since we don't have a group_terminator
+	// on the top level.
+	g->group_end = token;
+	Group old_g = g;
+	g = group_stack->pop();
+	g->tokens += ({ old_g });
+      } else if ((< "(", "{" , "[" >)[sym]) {
+	group_stack->push(g);
+	g = Group(token);
+      } else if ((< "]", "}", ")" >)[sym]) {
+	if (g->group_terminator) {
+	  report(ERROR, "grouping",
+		 sprintf("%O: Unexpected %O (expected %O).\n",
+			 token->pos, sym, g->group_terminator));
+	} else {
+	  report(ERROR, "grouping",
+		 sprintf("%O: Unexpected %O.\n",
+			 token->pos, sym));
+	}
+	return 0;
+      } else {
+	g->tokens += ({ token });
+      }
+    }
+    if (g->terminator) {
+      while (g->group_terminator) {
+	report(ERROR, "grouping",
+	       sprintf("Missing %O at end of file.\n",
+		       g->group_terminator));
+	g = group_stack->pop();
+      }
+      return 0;
+    }
+    return g;
+  }
+}
+
 
 //  //! Token-value pair.
 //  class TokenPair(string token, mixed value)
@@ -40,8 +401,6 @@ class TokenParser
 {
   Token handle(string symbol, Position pos, CompilerContext context);
 }
-
-typedef function(string, Position, CompilerContext: Token) TokenHandler;
 
 class MetaProgram
 {
@@ -186,307 +545,6 @@ class Pike75TokenParser_
 
 TokenParser Pike75TokenParser = Pike75TokenParser_();
 
-//! Pike tokenizer.
-class pike_tokenizer
-{
-  inherit basic_tokenizer;
-
-  Token current_token;
-  string current_file = "-";
-
-  CompilerContext context;
-
-  TokenHandler token_handler = Pike73TokenParser->handle;
-
-  static Position pos;
-
-  static {
-    void yyerror(mixed ... args)
-    {
-    }
-
-    void report(mixed ... args)
-    {
-    }
-
-    void handle_pragma(string pragma, string args)
-    {
-      switch(pragma) {
-      case "all_inline":
-      case "all_nomask":
-      case "strict_types":
-      case "save_parent":
-      case "dont_save_parent":
-	if (sizeof(args)) {
-	  yyerror("#pragma %s does not support options.", pragma);
-	}
-	context->pragmas[pragma] = 1;
-	break;
-
-      default:
-	// Unknown pragmas are silently ignored.
-	break;
-      }
-    }
-
-    string parse_string(string raw)
-    {
-      int pos=1, i;
-      string s = "";
-      if (raw[-1] != raw[0]) {
-	yyerror("Unterminated string or character constant.");
-	// Attempt to terminate the constant.
-	raw += raw[0..0];
-      }
-      for (pos = 1; ((i = search(raw, "\\", pos)) != -1); pos = i+2) {
-	int num;
-	string rest = "";
-	s += raw[pos..i-1];
-	switch(raw[i+1]) {
-	case 'a': s += "\a"; break;	// Alert (BEL), 7
-	case 'b': s += "\b"; break;	// Backspace (BS), 8
-	case 't': s += "\t"; break;	// Tab (HT), 9
-	case 'n': s += "\n"; break;	// Newline (LF), 10
-	case 'v': s += "\v"; break;	// Vertical tab (VT), 11
-	case 'f': s += "\f"; break;	// Form-feed (FF), 12
-	case 'r': s += "\r"; break;	// Return (CR), 13
-	case 'e': s += "\e"; break;	// Escape (ESC), 27
-
-	case 'd':			// Decimal escape.
-	  if (!sscanf(rest = raw[i+2..], "%d%s", num, rest)) {
-	    yyerror("Bad decimal escape in string.");
-	  }
-	  s += sprintf("%c", num);
-	  i = sizeof(raw)-(2+sizeof(rest));
-	  break;
-
-	case 'x':			// Hexadecimal escape.
-	  if (!sscanf(rest = raw[i+2..], "%x%s", num, rest)) {
-	    yyerror("Bad hexadecimal escape in string.");
-	  }
-	  s += sprintf("%c", num);
-	  i = sizeof(raw)-(2+sizeof(rest));
-	  break;
-
-	case 'u':			// Length 4 unicode escape.
-	  sscanf(raw[i+2..i+5], "%4x%s", num, rest);
-	  if (sizeof(rest)) {
-	    yyerror("Bad unicode escape in string.");
-	    i += 4-sizeof(rest);
-	  } else if (sizeof(raw) < i+5) {
-	    yyerror("Bad unicode escape in string.");
-	    i = sizeof(raw)-2;
-	  } else {
-	    i+= 4;
-	  }
-	  s += sprintf("%c", num);
-	  break;
-
-	case 'U':			// Length 8 unicode escape.
-	  sscanf(raw[i+2..i+9], "%4x%s", num, rest);
-	  if (sizeof(rest)) {
-	    yyerror("Bad unicode escape in string.");
-	    i += 8-sizeof(rest);
-	  } else if (sizeof(raw) < i+9) {
-	    yyerror("Bad unicode escape in string.");
-	    i = sizeof(raw)-2;
-	  } else {
-	    i+= 8;
-	  }
-	  s += sprintf("%c", num);
-	  break;
-
-	case '0'..'7':			// Octal escape.
-	  if (!sscanf(rest = raw[i+2..], "%o%s", num, rest)) {
-	    yyerror("Bad octal escape in string.");
-	  }
-	  s += sprintf("%c", num);
-	  i = sizeof(raw)-(2+sizeof(rest));
-	  break;
-
-	default:
-	  // FIXME: Warn?
-	case '\\':
-	case '\"':
-	case '\'':
-	  i--;
-	  break;
-	}
-      }
-      s += raw[pos..sizeof(raw)-2];
-      return s;
-    }
-
-    void preprocess(string cmd, string args)
-    {
-      string rest = "";
-      switch(cmd) {
-      case "pragma":
-	string pragma = "";
-	sscanf(args, "%[^ \t]%*[ \t]%s", pragma, rest);
-	handle_pragma(pragma, rest);
-	return;
-
-      case "error":
-	report(ERROR, "#error: %s", args);
-	return;
-
-      case "warning":
-	report(WARNING, "#warning: %s", args);
-	return;
-
-      case "line":
-	sscanf(args, "%[^ \t]%*[ \t]%s", cmd, rest);
-	args = rest;
-	rest="";
-	break;
-
-      case "pike":
-	// FIXME: Change compat.
-	string version="";
-	sscanf(args, "%[^ \t]%*[ \t]%s", version, rest);	
-	int major;
-	int minor;
-	string rest2="";
-	sscanf(version, "%d.%d%s", major, minor, rest2);
-	if (sizeof(rest2) || !sizeof(version)) {
-	  yyerror("Bad #pike version specification.");
-	  return;
-	}
-	// FIXME: Do something here.
-	return;
-      }
-      int no;
-      if (!sscanf(cmd, "%d%s", no, rest) || sizeof(rest)) {
-	yyerror("Unknown preprocessor directive #%s", cmd);
-	return;
-      }
-      if (sizeof(args)) {
-	current_file = parse_string(args);
-      }
-      line_no = no-1;
-    }
-
-    Token handle(string symbol)
-    {
-      pos = Position(current_file, line_no);
-
-      Token res = token_handler && token_handler(symbol, pos, context);
-      if (res) return res;
-
-      string rest="";
-
-      switch (symbol[0]) {
-      case '\"':
-	return MKTOKEN("string_constant", parse_string(symbol));
-
-      case '\'':
-	string s = parse_string(symbol);
-	if (!sizeof(s)) {
-	  yyerror("Zero-length character constant.");
-	  return MKTOKEN("int_constant", 0);
-	}
-	if (sizeof(s) > 1) {
-	  yyerror("Unterminated character constant.");
-	}
-	return MKTOKEN("int_constant", s[0]);
-
-      case '0':
-	if (symbol == "0") {
-	  return MKTOKEN("int_constant", 0);
-	}
-	if ((symbol[1] == 'x') || (symbol[1] == 'X')) {
-	  // Hexadecimal constant.
-	  int val;
-	  sscanf(symbol[2..], "%x%s", val, rest);
-	  if (sizeof(rest)) {
-	    yyerror("Strange hexadecimal constant: %s", symbol);
-	  }
-	  return MKTOKEN("int_constant", val);
-	}
-	if ((symbol[1] == 'b') || (symbol[1] == 'B')) {
-	  // Binary constant.
-	  int val;
-	  sscanf(symbol[2..], "%b%s", val, rest);
-	  if (sizeof(rest)) {
-	    yyerror("Strange binary constant: %s", symbol);
-	  }
-	  return MKTOKEN("int_constant", val);
-	}
-	// FALL_THROUGH
-      case '1'..'9':
-	int int_val;
-	if (symbol[0] == '0') {
-	  // Octal constant or float.
-	  sscanf(symbol, "%o%s", int_val, rest);
-	  if (sizeof(rest) &&
-	      ((rest[0] == '8') || (rest[0] == '9'))) {
-	    string rest2="";
-	    sscanf(symbol, "%*d%s", rest2);
-	    if (!sizeof(rest2)) {
-	      yyerror("Bad octal number: %s", symbol);
-	      return MKTOKEN("int_constant", int_val);
-	    }
-	  }
-	} else {
-	  // Decimal constant or float.
-	  sscanf(symbol, "%d%s", int_val, rest);
-	}
-	if (!sizeof(rest)) {
-	  return MKTOKEN("int_constant", int_val);
-	}
-	float float_val;
-	string rest2="";
-	sscanf(symbol, "%f%s", float_val, rest2);
-	if (sizeof(rest2)) {
-	  yyerror("Strange numeric constant: %s", symbol);
-	  if (rest == rest2) {
-	    return MKTOKEN("int_constant", int_val);
-	  }
-	}
-	return MKTOKEN("float_constant", float_val);
-
-      case '/':
-	if ((sizeof(symbol) > 1) &&
-	    ((symbol[1] == '/') || (symbol[1] == '*'))) {
-	  // Comment.
-	  return 0;
-	}
-	break;
-
-      case '#':
-	string cmd="";
-	sscanf(symbol, "#%*[ \t]%[^ \t]%*[ \t]%s", cmd, rest);
-	preprocess(cmd, rest);
-	return 0;
-      }
-      return MKTOKEN("identifier", symbol);
-    }
-
-    void scan()
-    {
-      current_token = 0;
-
-      do {
-	::scan();
-      } while (current_symbol && !(current_token = handle(current_symbol)));
-    }
-
-    void create(string data, CompilerContext|void context,
-		ReportCB|void report_cb)
-    {
-      this_program::context = context || CompilerContext();
-      ::create(data, report_cb);
-    }
-  }
-
-  //! Return the current token.
-  Token value()
-  {
-    return current_token;
-  }
-}
-
 class Group
 {
   array(Token|Group) tokens = ({});
@@ -520,53 +578,7 @@ class Group
       return sprintf("%O%{ %O%} %O\n", group_start, tokens, group_end);
     }
   }
-}
 
-Group group(pike_tokenizer tokenizer)
-{
-  ADT.Stack group_stack = ADT.Stack();
-
-  array(Token|array(mixed)) tokens = ({});
-
-  Group g = Group();
-
-  foreach(tokenizer; ; Token token) {
-    string sym = token->symbol;
-    if (sym == g->group_terminator) {
-      // Note that the pop is safe, since we don't have a group_terminator
-      // on the top level.
-      g->group_end = token;
-      Group old_g = g;
-      g = group_stack->pop();
-      g->tokens += ({ old_g });
-    } else if ((< "(", "{" , "[" >)[sym]) {
-      group_stack->push(g);
-      g = Group(token);
-    } else if ((< "]", "}", ")" >)[sym]) {
-      if (g->group_terminator) {
-	tokenizer->report_cb(ERROR, "grouping",
-			     sprintf("%O: Unexpected %O (expected %O).\n",
-				     token->pos, sym, g->group_terminator));
-      } else {
-	tokenizer->report_cb(ERROR, "grouping",
-			     sprintf("%O: Unexpected %O.\n",
-				     token->pos, sym));
-      }
-      return 0;
-    } else {
-      g->tokens += ({ token });
-    }
-  }
-  if (g->terminator) {
-    while (g->group_terminator) {
-      tokenizer->report_cb(ERROR, "grouping",
-			   sprintf("Missing %O at end of file.\n",
-				   g->group_terminator));
-      g = group_stack->pop();
-    }
-    return 0;
-  }
-  return g;
 }
 
 class Identifier(array(Token) tokens)
@@ -674,6 +686,8 @@ class Parser
     "!":27, "~":27,
     "++":29, "--":29,
   ]);
+
+  constant un_op = ([]);
 
   Group|Token parse_expression(ADT.Stack input)
   {

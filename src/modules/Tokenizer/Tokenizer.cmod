@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.1 2002/10/17 10:43:18 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.2 2003/01/17 16:46:28 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -19,15 +19,43 @@
 /*! @module Tokenizer
  */
 
-/*! @decl typedef function(SeverityLevel, string, string:void) ReportCB
- *!   Message report callback type.
+/*! @decl enum SeverityLevel { NOTICE, WARNING, ERROR, FATAL }
+ *!   Message severity level.
+ *!
  *! @seealso
- *!   @[SeverityLevel]
+ *!   @[compiler()->report()]
  */
+
+/*! @class Compiler
+ */
+PIKECLASS compiler
+  flags ID_STATIC;
+{
+  /* Identifier number for the report() function.
+   * Note that this is a global variable, and not
+   * part of the struct.
+   */
+  static ptrdiff_t report_fun_num = 0;
+
+  /*! @decl void report(SeverityLevel severity, string subsystem, string msg)
+   *!   Function called to report messages.
+   *!
+   *!   The default implementation reports to stderr.
+   *!
+   *!   Overload this function to change the report behaviour.
+   *!
+   *! @seealso
+   *!   @[SeverityLevel]
+   */
+  PIKEFUN void report(int(0..3) severity, string subsystem, string msg)
+    prototype;
+  /* NB: Just a prototype. Actual implementation is in module.pmod.in. */
+  {}
 
 /*! @class basic_tokenizer
  */
 PIKECLASS basic_tokenizer
+  program_flags PROGRAM_USES_PARENT;
 {
   // String being converted.
   CVAR struct pike_string *data;
@@ -37,9 +65,6 @@ PIKECLASS basic_tokenizer
 
   // Token number in stream.
   PIKEVAR int(0..) token_num;
-
-  // Message report callback.
-  PIKEVAR function(int(0..3),string,string:void) report_cb;
 
   // Current line.
   PIKEVAR int(1..) line_no;
@@ -60,6 +85,11 @@ PIKECLASS basic_tokenizer
 
   static void report_error(char *msg, ...)
   {
+    push_int(2);
+    push_constant_text("scanner");
+    push_text(msg);
+    apply_external(1, report_fun_num, 3);
+    pop_stack();
   }
 
 #define gobble(C)	(((this->pos < this->data->len) && \
@@ -379,33 +409,19 @@ PIKECLASS basic_tokenizer
   }
 
   /*! @decl void create(string data)
-   *! @decl void create(string data, ReportCB report_cb)
    *!
    *! Initialize the basic tokenizer.
    *!
    *! @param data
    *!   String to tokenize.
-   *!
-   *! @param report_cb
-   *!   Optional message report callback.
    */
-  PIKEFUN void create(string data,
-		      function(int(0..3),string,string:void)|void report_cb)
+  PIKEFUN void create(string data)
     flags ID_STATIC;
   {
     if (THIS->data) {
       free_string(THIS->data);
     }
     copy_shared_string(THIS->data, data);
-
-    if (report_cb) {
-      assign_svalue(&THIS->report_cb, report_cb);
-    } else {
-      free_svalue(&THIS->report_cb);
-      THIS->report_cb.type = T_INT;
-      THIS->report_cb.subtype = NUMBER_UNDEFINED;
-      THIS->report_cb.u.integer = 0;
-    }
 
     THIS->pos = 0;
     THIS->token_num = 0;
@@ -465,9 +481,6 @@ PIKECLASS basic_tokenizer
     THIS->pos = 0;
     THIS->token_num = 0;
     THIS->line_no = 1;
-    THIS->report_cb.type = T_INT;
-    THIS->report_cb.subtype = NUMBER_UNDEFINED;
-    THIS->report_cb.u.integer = 0;
     THIS->current_symbol = NULL;
   }
 
@@ -477,16 +490,17 @@ PIKECLASS basic_tokenizer
       free_string(THIS->data);
       THIS->data = NULL;
     }
-    free_svalue(&THIS->report_cb);
-    THIS->report_cb.type = T_INT;
-    THIS->report_cb.subtype = NUMBER_UNDEFINED;
-    THIS->report_cb.u.integer = 0;
     if (THIS->current_symbol) {
       free_string(THIS->current_symbol);
       THIS->current_symbol = NULL;
     }
     THIS->scanner = NULL;
   }
+}
+
+/*! @endclass
+ */
+
 }
 
 /*! @endclass
@@ -649,7 +663,6 @@ PIKEFUN object Compile(object tokenizer, object|void handler)
 }
 #endif /* 0 */
 
-
 /*! @endmodule
  */
 
@@ -666,43 +679,32 @@ void pike_module_init(void)
     type_value.u.type = CONSTTYPE(tInt03);
     add_constant(type_name, &type_value, 0);
     free_svalue(&type_value);
+    free_string(type_name);
+
     add_integer_constant("NOTICE",  0, 0);
     add_integer_constant("WARNING", 1, 0);
     add_integer_constant("ERROR",   2, 0);
     add_integer_constant("FATAL",   3, 0);
-
-    /* typedef function(SeverityLevel, string, string:void) ReportCB */
-    type_stack_mark();
-    push_type(T_VOID);	/* Return type */
-    push_type(T_VOID);	/* Many type */
-    push_type(T_MANY);
-    push_type(PIKE_T_STRING);
-    push_type(PIKE_T_FUNCTION);
-    push_type(PIKE_T_STRING);
-    push_type(PIKE_T_FUNCTION);
-    push_int_type(0, 3);
-    push_type_name(type_name);
-    push_type(PIKE_T_FUNCTION);
-    type_value.type = PIKE_T_TYPE;
-    type_value.subtype = 0;
-    type_value.u.type = pop_unfinished_type();
-    simple_add_constant("ReportCB", &type_value, 0);
-    free_svalue(&type_value);
-
-    free_string(type_name);
   }
 
   INIT
 
   {
-    struct pike_string *scan_string;
-    MAKE_CONSTANT_SHARED_STRING(scan_string, "scan");
+    struct pike_string *fun_name;
 
+    MAKE_CONSTANT_SHARED_STRING(fun_name, "scan");
     scan_fun_num =
-      really_low_find_shared_string_identifier(scan_string,
+      really_low_find_shared_string_identifier(fun_name,
 					       basic_tokenizer_program,
 					       SEE_STATIC|SEE_PRIVATE);
-    free_string(scan_string);
+    free_string(fun_name);
+
+    MAKE_CONSTANT_SHARED_STRING(fun_name, "report");
+    report_fun_num =
+      really_low_find_shared_string_identifier(fun_name,
+					       compiler_program,
+					       SEE_STATIC|SEE_PRIVATE);
+    free_string(fun_name);
   }
 
 #if 0
