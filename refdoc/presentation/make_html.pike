@@ -759,6 +759,12 @@ string parse_type(Node n, void|string debug) {
   case "local": // Not in XSLT
     ret += "local ";
     break;
+  case "private": // Not in XSLT
+    ret += "private ";
+    break;
+  case "protected": // Not in XSLT
+    ret += "protected ";
+    break;
 
   default:
     error( "Illegal element " + n->get_any_name() + " in mode type.\n" );
