@@ -46,7 +46,9 @@ class Symbol
   string demangle()
     {
       string ret=name;
-      sscanf(ret,"%s@",ret);
+      if(sscanf(ret,"%s@%s",ret,string tmp))
+	if(search(tmp,"@")!=-1)
+	  return name;
       if( (type >> 4) == 2) ret+="()";
       return ret;
     }
@@ -705,66 +707,70 @@ class dumpfile
 #endif
 	switch(i1(pos+16))
 	{
-	  case 103: continue; /* file */
-	}		
-	string name=getCOFFstring(pos);
-	int cls=i1(pos+16);
-	int sect=i2(pos+12);
-	int value=i4(pos+8);
-	int type=i2(pos+14);
-	if(sect > 32768) sect=65536-sect;
+	  case 103: /* file */
+	    break;
 
-	Symbol s=Symbol();
-	s->name=name;
-	s->value=value;
+	  default:
+
+	    string name=getCOFFstring(pos);
+	    int cls=i1(pos+16);
+	    int sect=i2(pos+12);
+	    int value=i4(pos+8);
+	    int type=i2(pos+14);
+	    if(sect > 32768) sect=65536-sect;
+	    
+	    Symbol s=Symbol();
+	    s->name=name;
+	    s->value=value;
 //	werror("SECT: %O %O\n",sect,file_sections);
-	if(sect > 0)
-	  s->section=file_sections[sect-1];
-	s->type=type;
-	s->cls=cls;
-	s->aux=0;
-
-#define COFFSYM_external 2
-	
-	switch(cls)
-	{
-	  case COFFSYM_external:
-	    string tmpname=s->demangle();
-
-	    if(global_symbols[tmpname])
-	    {
-	      Symbol newsym=global_symbols[tmpname];
-	      if(newsym->section && sect > 0)
-	      {
-		werror("%s: Warning: Symbol %s redefined.\n",
-		       filename,
-		       name);
-		newsym=s;
-	      }
-
-	      if(sect > 0)
-	      {
-		if( (newsym->type >> 4) != (type>>4) )
-		{
-		  werror("Warning: same symbol, different levels of indirection!!!!!!\n");
-		  err++;
-		}
-	      }
-	      s=newsym;
-	    }
-
 	    if(sect > 0)
-	    {
 	      s->section=file_sections[sect-1];
-	      s->value = value;
-	      s->type = type;
+	    s->type=type;
+	    s->cls=cls;
+	    s->aux=0;
+	    
+#define COFFSYM_external 2
+	    
+	    switch(cls)
+	    {
+	      case COFFSYM_external:
+		string tmpname=s->demangle();
+		
+		if(global_symbols[tmpname])
+		{
+		  Symbol newsym=global_symbols[tmpname];
+		  if(newsym->section && sect > 0)
+		  {
+		    werror("%s: Warning: Symbol %s redefined.\n",
+			   filename,
+			   name);
+		    newsym=s;
+		  }
+		  
+		  if(sect > 0)
+		  {
+		    if( (newsym->type >> 4) != (type>>4) )
+		    {
+		      werror("Warning: same symbol, different levels of indirection!!!!!!\n");
+		      err++;
+		    }
+		  }
+		  s=newsym;
+		}
+		
+		if(sect > 0)
+		{
+		  s->section=file_sections[sect-1];
+		  s->value = value;
+		  s->type = type;
+		}
+		global_symbols[tmpname]=s;
 	    }
-	    global_symbols[tmpname]=s;
+	    file_symbols[e]=s;
+	    
 	}
-	file_symbols[e]=s;
-
 	aux=i1(pos+17);
-
+	
 	pos+=18;
 	for(int a=0;a<aux;a++)
 	{
@@ -976,7 +982,7 @@ int main(int argc, array(string) argv)
   string output="a.out";
 //  werror("%O\n",argv);
   werror("Pike Win32 partial linker.\n"
-	 "$Id: pntld,v 1.7 2001/01/16 12:00:00 hubbe fake $\n"
+	 "$Id: pntld,v 1.8 2001/01/24 17:46:09 hubbe Exp $\n"
 	 "Written by Fredrik Hubinette 2000\n");
 
   foreach(Getopt.find_all_options(argv,aggregate(
@@ -1127,11 +1133,23 @@ int main(int argc, array(string) argv)
       {
 	if(sscanf(dir,"-export:%s",string sym))
 	{
+	  int exported;
 //	  werror("Exporting symbol: %O\n",sym);
 	  if(global_symbols[sym])
+	  {
 	    l->add_symbol(global_symbols[sym]);
+	    exported++;
+	  }
 	  if(global_symbols[sym+"()"])
+	  {
 	    l->add_symbol(global_symbols[sym+"()"]);
+	    exported++;
+	  }
+
+	  if(!exported)
+	  {
+	    werror("Warning: Failed to find export symbol %s\n",sym);
+	  }
 	}
       }
   }
