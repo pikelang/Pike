@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.484 2001/08/23 16:49:46 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.485 2001/09/01 21:25:11 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -778,6 +778,7 @@ AC_ARG_WITH(root,              [  --with-root=path                 specify a cro
     ;;
   esac
 ],[with_root=""])
+AC_ARG_WITH(relocatable_dumped_modules, [  --with-relocatable-dumped-modules     make dumped modules relocatable],[with_relocatable_dumped_modules=yes],[])
 AC_ARG_WITH(dynamic_modules,   [  --without-dynamic-modules        link modules statically],[],[])
 AC_ARG_WITH(static_linking,    [  --with-static-linking            link statically, if possible],[with_static_linking=yes],[])
 AC_ARG_WITH(include-path,[  --with-include-path    A list of paths to search for include files.])
@@ -911,6 +912,13 @@ else :; fi
 if test "x$with_thread_trace" = "xyes"; then
   AC_DEFINE(THREAD_TRACE)
 else :; fi
+
+if test "x$with_relocatable_dumped_modules" = xyes; then
+  PIKE_MODULE_RELOC=1
+else
+  PIKE_MODULE_RELOC=""
+fi
+AC_SUBST(PIKE_MODULE_RELOC)
 
 
 #

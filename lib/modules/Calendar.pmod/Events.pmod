@@ -12,7 +12,7 @@ constant wd2n=(["Mon":1,"Tue":2,"Wed":3,"Thu":4,"Fri":5,"Sat":6,"Sun":7]);
 
 void read_all_data()
 {
-   all_data=Stdio.read_bytes(
+   all_data=master()->master_read_file(
       combine_path(__FILE__,"../events/regional"));
 }
 
@@ -171,7 +171,7 @@ mapping made_namedays=([]);
 
 string read_all_namedays()
 {
-   return Stdio.read_bytes(
+   return master()->master_read_file(
       combine_path(__FILE__,"../events/namedays"));
 }
 

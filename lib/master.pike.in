@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.150 2001/08/29 21:16:44 marcus Exp $
+ * $Id: master.pike.in,v 1.151 2001/09/01 21:25:10 marcus Exp $
  * 
  * Master-file for Pike.
  *
@@ -29,6 +29,8 @@ constant out_of_date_warning = OUT_OF_DATE_WARNING;
 #define PIKE_WARNINGS 0
 #endif /* PIKE_WARNINGS */
 
+#undef PIKE_MODULE_RELOC
+
 /*
  * Functions begin here.
  */
@@ -49,6 +51,40 @@ string fakeroot(string s)
 #define fakeroot(X) X
 #endif
 
+#ifdef PIKE_MODULE_RELOC
+string relocate_module(string s)
+{
+  if(s[..1]=="/$" && (s+"/")[..20] == "/${PIKE_MODULE_PATH}/") {
+    string tmp = s[21..];
+    foreach(pike_module_path, string path) {
+      string s2 = fakeroot(sizeof(tmp)? combine_path(path, tmp) : path);
+      if(master_file_stat(s2))
+	return s2;
+    }
+  }
+  return fakeroot(s);
+}
+
+string unrelocate_module(string s)
+{
+  if(s[..1]=="/$" && (s+"/")[..20] == "/${PIKE_MODULE_PATH}/")
+    return s;
+
+  foreach(pike_module_path, string path)
+    if(s == path)
+      return "/${PIKE_MODULE_PATH}";
+    else {
+      string s2 = combine_path(path, "");
+      if(s[..sizeof(s2)-1] == s2)
+	return "/${PIKE_MODULE_PATH}/"+s[sizeof(s2)..];
+    }
+  return s;
+}
+#ifdef fakeroot
+#undef fakeroot
+#endif
+#define fakeroot relocate_module
+#endif
 
 //! @global
 //! Check if a path @[p] is fully qualified (ie not relative).
@@ -357,6 +393,10 @@ static program low_findprog(string pname, string ext, object|void handler)
     werror(sprintf("low_findprog: Caught spurious error:\n"
 		   "%s\n", describe_backtrace(err)));
   }
+#endif
+
+#ifdef PIKE_MODULE_RELOC
+  fname = unrelocate_module(fname);
 #endif
 
 #ifdef PIKE_AUTORELOAD
@@ -1570,6 +1610,9 @@ mixed get_inhibit_compile_errors()
 
 string trim_file_name(string s)
 {
+#ifdef PIKE_MODULE_RELOC
+  s = relocate_module(s);
+#endif
   if(getenv("LONG_PIKE_ERRORS")) return s;
   if(getenv("SHORT_PIKE_ERRORS")) return BASENAME(s);
   /* getcwd() can fail, but since this is called from handle_error(),
