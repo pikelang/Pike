@@ -96,16 +96,16 @@ array ok = ({
   "O",  "P",  "Q",  "R",  "S",  "T",  "U",  "V",  "W",  "X",  "Y",  "Z",  " ",
 });
 
-array cmap_f, cmap_t;
+array cmap_t;
 
 string encode( object what, mapping|void options )
 {
   int x,y, q;
+  array lcmapt;
   TI("Encode init");
   if(!options) options = ([]);
-  if(!cmap_f)
+  if(!cmap_t)
   {
-    cmap_f = allocate( 8100 );
     cmap_t = allocate( 8100 );
     for(x=0; x<90; x++)
       for(y=0; y<90; y++)
@@ -176,8 +176,6 @@ string encode( object what, mapping|void options )
   }
 
   TD(sprintf("Encoded %d rows", sizeof(rows)));
-//   foreach(rows, string row)
-//     res += "\""+replace( row, cmap_f, cmap_t )+"\",\n";
   res = res+"};\n";
   TE("Done");
   return res;
