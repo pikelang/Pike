@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.9 2003/03/20 20:05:54 mirar Exp $
+// $Id: Session.pike,v 1.10 2003/03/20 20:09:42 nilsson Exp $
 
 import Protocols.HTTP;
 
@@ -591,7 +591,7 @@ int maximum_connections_per_server=10;
 int maximum_total_connections=50;
 
 //!	Maximum times a connection is reused. 
-//!	Defaults to 1000000. &lt;2 means no reuse at all.
+//!	Defaults to 1000000. <2 means no reuse at all.
 int maximum_connection_reuse=1000000;
 
 // internal (but readable for debug purposes)
