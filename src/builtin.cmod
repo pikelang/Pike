@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.155 2004/04/25 19:47:36 nilsson Exp $
+|| $Id: builtin.cmod,v 1.156 2004/04/25 19:50:18 nilsson Exp $
 */
 
 #include "global.h"
@@ -184,8 +184,8 @@ PIKEFUN string int2char(int|object x)
 /*! @decl string int2hex(int x)
  *! @appears String.int2hex
  *!
- *! Same as @expr{sprintf("%x",x);@}, i.e. writes out the integer @[x]
- *! in hexadecimal base using lower case.
+ *! Same as @expr{sprintf("%x",x);@}, i.e. returns the integer @[x] in
+ *! hexadecimal base using lower cased symbols.
  *!
  *! @seealso
  *! @[sprintf()]
