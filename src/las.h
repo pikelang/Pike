@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.27 1999/11/12 18:33:13 grubba Exp $
+ * $Id: las.h,v 1.28 1999/11/14 16:00:38 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -196,6 +196,22 @@ void resolv_program(node *n);
 #define CDADR(n) CDR(CAR(CDR(n)))
 #define CDDAR(n) CDR(CDR(CAR(n)))
 #define CDDDR(n) CDR(CDR(CDR(n)))
+#define CAAAAR(n) CAR(CAR(CAR(CAR(n))))
+#define CAAADR(n) CAR(CAR(CAR(CDR(n))))
+#define CAADAR(n) CAR(CAR(CDR(CAR(n))))
+#define CAADDR(n) CAR(CAR(CDR(CDR(n))))
+#define CADAAR(n) CAR(CDR(CAR(CAR(n))))
+#define CADADR(n) CAR(CDR(CAR(CDR(n))))
+#define CADDAR(n) CAR(CDR(CDR(CAR(n))))
+#define CADDDR(n) CAR(CDR(CDR(CDR(n))))
+#define CDAAAR(n) CDR(CAR(CAR(CAR(n))))
+#define CDAADR(n) CDR(CAR(CAR(CDR(n))))
+#define CDADAR(n) CDR(CAR(CDR(CAR(n))))
+#define CDADDR(n) CDR(CAR(CDR(CDR(n))))
+#define CDDAAR(n) CDR(CDR(CAR(CAR(n))))
+#define CDDADR(n) CDR(CDR(CAR(CDR(n))))
+#define CDDDAR(n) CDR(CDR(CDR(CAR(n))))
+#define CDDDDR(n) CDR(CDR(CDR(CDR(n))))
 
 #define GAUGE_RUSAGE_INDEX 0
 
