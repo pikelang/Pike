@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.184 1999/10/09 23:28:57 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.185 1999/10/17 17:11:56 mirar Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1950,6 +1950,9 @@ void f_sleep(INT32 args)
 {
   struct timeval t1,t2,t3;
   INT32 a,b;
+#ifdef HAVE_NANOSLEEP
+  struct timespec ts;
+#endif
 
   if(!args)
     SIMPLE_TOO_FEW_ARGS_ERROR("sleep", 1);
@@ -1967,6 +1970,9 @@ void f_sleep(INT32 args)
     f=sp[-args].u.float_number;
     t2.tv_sec=floor(f);
     t2.tv_usec=(long)(1000000.0*(f-floor(f)));
+#ifdef HAVE_NANOSLEEP
+    ts.tv_nsec=(long)(1e9*(f-floor(f)));
+#endif
     break;
   }
 
@@ -1974,6 +1980,24 @@ void f_sleep(INT32 args)
     SIMPLE_BAD_ARG_ERROR("sleep", 1, "int|float");
   }
   pop_n_elems(args);
+
+  if (t2.tv_sec==0)
+     if (t2.tv_usec<1000) /* very short sleep */
+     {
+#ifdef HAVE_NANOSLEEP
+	ts.tv_sec=0;
+	nanosleep(&ts,NULL);
+#endif
+	return;
+	/* or if we can't sleep that short */
+     } 
+#ifdef HAVE_USLEEP
+     else if (t2.tv_usec<100000) /* short sleep */
+     {
+	usleep(t2.tv_usec);
+	return; /* don't care about signals... */
+     }
+#endif
 
 
   if( args >1 && !IS_ZERO(sp-args+1))

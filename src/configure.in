@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.322 1999/10/08 16:35:17 noring Exp $")
+AC_REVISION("$Id: configure.in,v 1.323 1999/10/17 17:11:57 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1136,6 +1136,7 @@ if test x$pike_cv_sys_os = xWindows_NT ; then
 fi
 
 AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(rt, nanosleep)
 
 AC_CHECK_LIB(dl, dlopen)
 AC_CHECK_LIB(dld, shl_load)
@@ -1610,6 +1611,8 @@ AC_CHECK_FUNCS( \
  __priocntl \
  sched_setscheduler \
  setpriority \
+ usleep \
+ nanosleep \
 )
 
 AC_MSG_CHECKING(if the last argument to accept is a size_t *)
