@@ -1,7 +1,7 @@
 /* cipher.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: cipher.cmod,v 1.19 2003/11/08 23:43:57 nisse Exp $");
+RCSID("$Id: cipher.cmod,v 1.20 2003/11/27 02:21:24 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -22,6 +22,7 @@ RCSID("$Id: cipher.cmod,v 1.19 2003/11/08 23:43:57 nisse Exp $");
 #include <nettle/cast128.h>
 #include <nettle/serpent.h>
 #include <nettle/twofish.h>
+#include "idea.h"
 #include <nettle/nettle-meta.h>
 
 #include <assert.h>
@@ -56,7 +57,7 @@ struct pike_cipher
   const char *name;
   
   unsigned context_size;
-  
+
   /* Zero for stream ciphers */
   unsigned block_size;
 
@@ -537,6 +538,12 @@ PIKECLASS DES_Info
 	CipherInfo->meta = &pike_des;
     }
 
+  /*! @decl string fix_parity(string key)
+   *! Sets the last bit in every byte in @[key] to reflect the parity.
+   *! If a seven byte key is used, it will be expanded into eight
+   *! bytes. If a key longer than eight characters is used, it will
+   *! be truncated to eight characters.
+   */
   PIKEFUN string fix_parity(string key)
   {
     uint8_t buf[8];
@@ -771,6 +778,74 @@ PIKECLASS Twofish_State
     }
 }
 /*! @endclass Twofish_State */
+
+static void
+pike_idea_set_encrypt_key(struct idea_ctx *ctx,
+			 ptrdiff_t length, const char *key,
+			 int force)
+{
+  if (length == IDEA_KEY_SIZE)
+    idea_expand(ctx->ctx, (unsigned INT8 *)key);
+  else
+    Pike_error("IDEA_Info: Bad keysize for IDEA.\n");
+}
+
+static void
+pike_idea_set_decrypt_key(struct idea_ctx *ctx,
+			 ptrdiff_t length, const char *key,
+			 int force)
+{
+  if (length == IDEA_KEY_SIZE) {
+    idea_expand(ctx->ctx, (unsigned INT8 *)key);
+    idea_invert(ctx->ctx, ctx->ctx);
+  }
+  else
+    Pike_error("IDEA_Info: Bad keysize for IDEA.\n");
+}
+
+#define idea_encrypt idea_crypt_blocks
+#define idea_decrypt idea_crypt_blocks
+
+/*! @class IDEA_Info
+ *!
+ *! Internal mixin class, intended to be multiply inherited
+ *! together with CipherInfo.
+ */
+PIKECLASS IDEA_Info
+{
+  INIT
+    {
+      static const struct pike_cipher pike_idea = _PIKE_CIPHER(idea, IDEA);
+      struct CipherInfo_struct *CipherInfo = GET_INFO(Pike_fp->current_object);
+
+      if (CipherInfo && !CipherInfo->meta)
+	CipherInfo->meta = &pike_idea;
+    }
+}
+
+/*! @endclass IDEA_Info */
+
+/*! @class IDEA_State
+ *!
+ *! State for IDEA encyption
+ */
+PIKECLASS IDEA_State
+{
+  INHERIT IDEA_Info;
+  INHERIT CipherState;
+  CVAR struct idea_ctx idea;
+
+  INIT
+    {
+      struct CipherState_struct *state
+	= (struct CipherState_struct *) get_storage(Pike_fp->current_object,
+						    CipherState_program);
+
+      assert(state);
+      state->ctx = &THIS->idea;
+    }
+}
+/*! @endclass IDEA_State */
 
 /*! @endmodule Nettle */
 
