@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.47 1999/04/30 07:24:06 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.48 1999/06/19 19:57:31 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -563,7 +563,7 @@ static int do_docode2(node *n,int flags)
 	a1[0]->type == int_type_string)
       {
 	tmp2=do_docode(CAR(arr),DO_NOT_COPY);
-	do_docode(&a1,DO_NOT_COPY);
+	do_docode(*a1,DO_NOT_COPY);
 	goto foreach_arg_pushed;
       }
     }

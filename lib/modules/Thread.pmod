@@ -47,7 +47,7 @@ class Fifo {
       ptr=num=0;
       buffer=allocate(sizeof(buffer)); // Throw away any references.
     }
-    w_cond::signal();
+    w_cond::broadcast();
     return ret;
   }
   
