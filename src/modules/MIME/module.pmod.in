@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod.in,v 1.3 1997/05/19 15:04:42 marcus Exp $
+ * $Id: module.pmod.in,v 1.4 1997/05/24 01:03:53 marcus Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -136,6 +136,12 @@ class Message {
     return disp_params["filename"] || params["name"];
   }
   
+  array(string|int) is_partial( )
+  {
+    return (type == "message" && subtype == "partial") &&
+      ({ params["id"], (int)params["number"], (int)(params["total"]||"0") });
+  }
+
   void setdata( string data )
   {
     if (data != decoded_data) {
@@ -354,7 +360,7 @@ class Message {
     if (boundary && type=="multipart" && !body_parts &&
        (encoded_data || decoded_data)) {
       array(string) parts = ("\n"+getdata())/("\n--"+boundary);
-      if (parts[-1][0..3]!="--\n" && parts[-1][0..3]!="--\r\n")
+      if (parts[-1][0..2]!="--\n" && parts[-1][0..3]!="--\r\n")
 	throw(({ "multipart message improperly terminated\n", backtrace() }));
       encoded_data = 0;
       decoded_data = parts[0][1..];
@@ -364,4 +370,55 @@ class Message {
     }
   }
   
+}
+
+int|object reconstruct_partial(array(object) collection)
+{
+  int got = 0, maxgot = 0, top = sizeof(collection), total = 0;
+  mapping(int:object) parts = ([ ]);
+  string id;
+
+  if(!top)
+    return 0;
+
+  if(!(id = (collection[0]->is_partial()||({0}))[0]))
+    return 0;
+
+  foreach(collection, object m) {
+    array(int|string) p = m->is_partial();
+    if(!(p && p[0] == id))
+      return 0;
+    if((!total || p[1]==p[2]) && p[2])
+      total = p[2];
+    if(p[1]>maxgot)
+      maxgot = p[1];
+    if(p[1]>0 && !parts[p[1]]) {
+      parts[p[1]] = m;
+      got++;
+    }
+  }
+
+  if(!total)
+    return -1;
+
+  if(got == total && maxgot == total) {
+    mapping(string:string) enclosing_headers = parts[1]->headers;
+
+    object reconstructed =
+      Message(`+(@Array.map(sort(indices(parts)),
+			    lambda(int i, mapping(int:object) parts){
+	return parts[i]->getencoded();
+      }, parts)));
+    foreach(indices(reconstructed->headers), string h) {
+      if(h != "message-id" && h != "encrypted" && h != "mime-version" &&
+	 (strlen(h)<8 || h[0..7] != "content-"))
+	m_delete(reconstructed->headers, h);
+    }
+    foreach(indices(enclosing_headers), string h) {
+      if(h != "message-id" && h != "encrypted" && h != "mime-version" &&
+	 (strlen(h)<8 || h[0..7] != "content-"))
+	reconstructed->headers[h] = enclosing_headers[h];
+    }
+    return reconstructed;
+  } else return (maxgot>total? -1 : total-got);
 }
