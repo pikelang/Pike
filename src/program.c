@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.489 2003/03/19 19:52:28 nilsson Exp $
+|| $Id: program.c,v 1.490 2003/03/27 02:20:24 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.489 2003/03/19 19:52:28 nilsson Exp $");
+RCSID("$Id: program.c,v 1.490 2003/03/27 02:20:24 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -6352,6 +6352,21 @@ void placeholder_index(INT32 args)
   ref_push_object(Pike_fp->current_object);
 }
 
+static void placeholder_sprintf (INT32 args)
+{
+  struct pike_string *s;
+
+  if (!args || sp[-args].type != T_INT || sp[-args].u.integer != 'O') {
+    pop_n_elems (args);
+    push_int (0);
+    return;
+  }
+
+  pop_n_elems (args);
+  MAKE_CONST_STRING (s, "__placeholder_object");
+  ref_push_string (s);
+}
+
 void init_program(void)
 {
   int i;
@@ -6409,8 +6424,10 @@ void init_program(void)
   {
     struct svalue s;
     start_new_program();
-    add_function("`()",placeholder_index,"function(mixed...:object)",0);
-    add_function("`[]",placeholder_index,"function(mixed:object)",0);
+    ADD_FUNCTION("`()", placeholder_index, tFuncV(tNone,tMix,tObj), 0);
+    ADD_FUNCTION("`[]", placeholder_index, tFunc(tMix,tObj), 0);
+    ADD_FUNCTION("_sprintf", placeholder_sprintf,
+		 tFunc(tInt tOr(tMapping,tVoid),tStr), 0);
     placeholder_program=end_program();
     placeholder_object=fast_clone_object(placeholder_program);
 
