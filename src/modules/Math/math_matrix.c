@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.29 2001/07/15 20:20:44 per Exp $ */
+/* $Id: math_matrix.c,v 1.30 2001/07/16 13:20:32 grubba Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -53,7 +53,9 @@ extern struct program *math_matrix_program;
 extern struct program *math_smatrix_program;
 extern struct program *math_imatrix_program;
 extern struct program *math_fmatrix_program;
+#ifdef INT64
 extern struct program *math_lmatrix_program;
+#endif /* INT64 */
 
 #define FTYPE double
 #define matrixX(X) PIKE_CONCAT(matrix,X)
@@ -79,7 +81,8 @@ extern struct program *math_lmatrix_program;
 #undef XmatrixY
 #undef FTYPE
 
-#define FTYPE long long
+#ifdef INT64
+#define FTYPE INT64
 #define matrixX(X) PIKE_CONCAT(lmatrix,X)
 #define Xmatrix(X) PIKE_CONCAT(X,lmatrix)
 #define XmatrixY(X,Y) PIKE_CONCAT3(X,lmatrix,Y)
@@ -90,6 +93,7 @@ extern struct program *math_lmatrix_program;
 #undef matrixX
 #undef XmatrixY
 #undef FTYPE
+#endif /* INT64 */
 
 #define FTYPE float
 #define matrixX(X) PIKE_CONCAT(fmatrix,X)

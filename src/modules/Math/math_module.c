@@ -1,5 +1,5 @@
 /*
- * $Id: math_module.c,v 1.6 2001/07/15 20:20:44 per Exp $
+ * $Id: math_module.c,v 1.7 2001/07/16 13:20:32 grubba Exp $
  */
 
 #include "global.h"
@@ -19,7 +19,9 @@ struct program *math_matrix_program;
 struct program *math_imatrix_program;
 struct program *math_fmatrix_program;
 struct program *math_smatrix_program;
+#ifdef INT64
 struct program *math_lmatrix_program;
+#endif /* INT64 */
 
 static struct math_class
 {
@@ -29,7 +31,9 @@ static struct math_class
 } sub[] = {
    {"Matrix",init_math_matrix,&math_matrix_program},
    {"IMatrix",init_math_imatrix,&math_imatrix_program},
+#ifdef INT64
    {"LMatrix",init_math_lmatrix,&math_lmatrix_program},
+#endif /* INT64 */
    {"FMatrix",init_math_fmatrix,&math_fmatrix_program},
    {"SMatrix",init_math_smatrix,&math_smatrix_program},
 };
