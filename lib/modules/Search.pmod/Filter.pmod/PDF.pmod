@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.14 2003/03/19 10:53:26 jonasw Exp $
+// $Id: PDF.pmod,v 1.15 2003/04/09 11:24:08 jonasw Exp $
 
 // Filter for application/pdf
 
@@ -40,7 +40,7 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 
   res = ::filter(uri, text, "text/html", ([]));
 
-  if (res->fields->title == fn)
+  if (res->fields->title == combine_path(getcwd(), fn))
     res->fields->title = "";
 
   return res;
