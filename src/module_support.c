@@ -117,7 +117,7 @@ int va_get_args(struct svalue *s,
       *va_arg(ap, struct array **)=s->u.array;
       break;
     case 'f':
-      if(s->type != T_ARRAY) return ret;
+      if(s->type != T_FLOAT) return ret;
       *va_arg(ap, float *)=s->u.float_number;
       break;
     case 'm':
@@ -168,6 +168,21 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
   va_start(ptr, format);
   ret=va_get_args(sp-args, args, format, ptr);
   va_end(ptr);
-  if((long)ret != (long)strlen(format) / 2)
-    error("Bad argument %d to %s()\n", ret+1, fname);
+  if((long)ret*2 != (long)strlen(format)) {
+    char *expected_type;
+    switch(format[ret*2+1]) {
+    case 'd': case 'i': expected_type = "int"; break;
+    case 's': case 'S': expected_type = "string"; break;
+    case 'a': expected_type = "array"; break;
+    case 'f': expected_type = "float"; break;
+    case 'm': expected_type = "mapping"; break;
+    case 'M': expected_type = "multiset"; break;
+    case 'o': expected_type = "object"; break;
+    case 'p': expected_type = "program"; break;
+    case '*': expected_type = "mixed"; break;
+    default: expected_type = "Unknown"; break;
+    }
+    error("Bad argument %d to %s(). Expected %s\n", ret+1, fname,
+	  expected_type);
+  }
 }
