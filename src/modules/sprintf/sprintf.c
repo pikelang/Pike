@@ -96,7 +96,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.21 1998/05/25 20:47:17 marcus Exp $");
+RCSID("$Id: sprintf.c,v 1.22 1998/07/17 22:31:10 hubbe Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -679,6 +679,10 @@ static string low_pike_sprintf(char *format,
     int num_snurkel;
 
     fsp++;
+#ifdef DEBUG
+    if(fsp < format_info_stack)
+      fatal("sprintf: fsp out of bounds.\n");
+#endif
     if(fsp-format_info_stack==FORMAT_INFO_STACK_SIZE)
       sprintf_error("Sprintf stack overflow.\n");
     fsp->pad_string=" ";
@@ -790,6 +794,9 @@ static string low_pike_sprintf(char *format,
       {
 	struct array *w;
 	string b;
+#ifdef DEBUG
+	struct format_info *fsp_save=fsp;
+#endif
 	DO_OP();
 	for(e=1,tmp=1;tmp;e++)
 	{
@@ -822,7 +829,7 @@ static string low_pike_sprintf(char *format,
 	    struct svalue *s;
 	    union anything *q;
 
-	    check_threads_etc();
+/*	    check_threads_etc(); */
 	    q=low_array_get_item_ptr(w,tmp,T_ARRAY);
 	    s=sp;
 	    if(q)
@@ -836,6 +843,12 @@ static string low_pike_sprintf(char *format,
 	    b=low_pike_sprintf(a+1,e-2,s,sp-s,b,0);
 	    pop_n_elems(sp-s);
 	  }
+#ifdef DEBUG
+	  if(fsp < format_info_stack)
+	    fatal("sprintf: fsp out of bounds.\n");
+	  if(fsp!=fsp_save)
+	    fatal("sprintf: fsp incorrect after recursive sprintf.\n");
+#endif
 	  fsp->b=b.str;
 	  fsp->len=b.len;
 	  fsp->fi_free_string=fsp->b;
@@ -1049,6 +1062,10 @@ static string low_pike_sprintf(char *format,
 
   while(fsp>start)
   {
+#ifdef DEBUG
+    if(fsp < format_info_stack)
+      fatal("sprintf: fsp out of bounds.\n");
+#endif
     if(fsp->fi_free_string) free(fsp->fi_free_string);
     fsp->fi_free_string=0;
     fsp--;
