@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.202 2004/05/29 18:21:05 grubba Exp $
+|| $Id: main.c,v 1.203 2004/07/04 20:10:06 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.202 2004/05/29 18:21:05 grubba Exp $");
+RCSID("$Id: main.c,v 1.203 2004/07/04 20:10:06 nilsson Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -770,14 +770,26 @@ int dbm_main(int argc, char **argv)
 	/* Report this specific error in a nice way. Since there's no
 	 * master it'd be reported with a raw error dump otherwise. */
 	struct generic_error_struct *err;
+
+	dynamic_buffer buf;
+	dynbuf_string s;
+	struct svalue t;
+
 	*(Pike_sp++) = throw_value;
 	dmalloc_touch_svalue(Pike_sp-1);
 	throw_value.type=T_INT;
 	err = (struct generic_error_struct *)
 	  get_storage (Pike_sp[-1].u.object, generic_error_program);
-	ref_push_string (err->error_message);
-	f_werror (1);
-	pop_stack();
+
+	t.type = PIKE_T_STRING;
+	t.u.string = err->error_message;
+
+	init_buf(&buf);
+	describe_svalue(&t,0,0);
+	s=complex_free_buf(&buf);
+
+	fprintf(stderr, s.str);
+	free(s.str);
       }
       else
 	call_handle_error();
