@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.32 1998/03/02 15:21:58 grubba Exp $
+ * $Id: system.c,v 1.33 1998/03/03 07:56:47 mast Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.32 1998/03/02 15:21:58 grubba Exp $");
+RCSID("$Id: system.c,v 1.33 1998/03/03 07:56:47 mast Exp $");
 #include "module_support.h"
 #include "las.h"
 #include "interpret.h"
@@ -859,19 +859,36 @@ void pike_module_init(void)
 #ifdef HAVE_GETPWNAM
   add_efun("getpwnam", f_getpwnam, "function(string:array)", 
 	   OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETPWUID
   add_efun("getpwuid", f_getpwuid, "function(int:array)", OPT_EXTERNAL_DEPEND);
-
+#endif
+#ifdef HAVE_GETGRNAM
   add_efun("getgrnam", f_getgrnam, "function(string:array)",
 	   OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETGRGID
   add_efun("getgrgid", f_getgrgid, "function(int:array)", OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_GETPWENT
   add_efun("getpwent", f_getpwent, "function(void:int|array)",
            OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_ENDPWENT
   add_efun("endpwent", f_endpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
 #endif
 #ifdef HAVE_SETPWENT
   add_efun("setpwent", f_setpwent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_GETGRENT
+  add_efun("getgrent", f_getgrent, "function(void:int|array)",
+           OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_ENDGRENT
+  add_efun("endgrent", f_endgrent, "function(void:int)", OPT_EXTERNAL_DEPEND);
+#endif
+#ifdef HAVE_SETGRENT
+  add_efun("setgrent", f_setgrent, "function(void:int)", OPT_EXTERNAL_DEPEND);
 #endif
 
 #ifdef GETHOSTBYNAME_MUTEX_EXISTS

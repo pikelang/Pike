@@ -14,7 +14,8 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 AC_HAVE_FUNCS(syslog link symlink readlink \
 	initgroups setgroups seteuid setresuid setegid setresgid \
         geteuid getpgrp getpgid getppid \
-	getpwnam getspnam getpwent setpwent endpwent \
+	getpwnam getspnam getgrnam getpwuid getgrgid \
+	getgrent setgrent endgrent getpwent setpwent endpwent \
 	chroot fchroot uname gethostname gethostbyname)
 
 AC_CHECK_LIB(nsl, gethostbyname)

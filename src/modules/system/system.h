@@ -1,5 +1,5 @@
 /*
- * $Id: system.h,v 1.2 1997/09/07 11:37:01 per Exp $
+ * $Id: system.h,v 1.3 1998/03/03 07:56:47 mast Exp $
  *
  * Prototypes for the Pike system-module
  *
@@ -30,6 +30,9 @@ void f_getpwuid(INT32 args);
 void f_setpwent(INT32 args);
 void f_endpwent(INT32 args);
 void f_getpwent(INT32 args);
+void f_setgrent(INT32 args);
+void f_endgrent(INT32 args);
+void f_getgrent(INT32 args);
 
 /*
  * syslog.c
