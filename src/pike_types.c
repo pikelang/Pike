@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_types.c,v 1.205 2003/03/29 13:47:40 marcus Exp $
+|| $Id: pike_types.c,v 1.206 2003/09/09 14:31:00 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.205 2003/03/29 13:47:40 marcus Exp $");
+RCSID("$Id: pike_types.c,v 1.206 2003/09/09 14:31:00 mast Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -153,6 +153,7 @@ char *get_name_of_type(int t)
     case T_TYPE: return "type";
     case T_ZERO: return "zero";
     case T_VOID: return "void";
+    case T_MIXED: return "mixed";
     case T_STORAGE: return "object storage";
     case T_MAPPING_DATA: return "mapping_data";
     case T_PIKE_FRAME: return "pike_frame";
