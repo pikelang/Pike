@@ -123,9 +123,8 @@ class Indexer(Variable wa_var, void|function get_sb_workarea_view_url, Configura
       ({
 	pike_binary,
 	"-M",
-	combine_path(__FILE__,"../../../pike-modules/"),
-	combine_path(__FILE__,
-		     "../../../programs/multiprocess_crawler.pike" ),
+	"modules/search/pike-modules/",
+	"modules/search/programs/multiprocess_crawler.pike",
 	"single_process",
       }),
       ([  "env":env,"priority":"low"  ]) );
@@ -189,9 +188,8 @@ class Compactor {
       ({
 	pike_binary,
 	"-M",
-	combine_path(__FILE__,"../../../pike-modules/"),
-	combine_path(__FILE__,
-		     "../../../programs/compact.pike" ),
+	"modules/search/pike-modules/",
+	"modules/search/programs/compact.pike",
       }),
       ([  "env":env,"priority":"low"  ]) );
     is_perchance_done();
