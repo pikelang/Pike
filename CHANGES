@@ -686,6 +686,9 @@ Pike.BacktraceFrame
 Pike.WEAK_INDICES, WEAK_VALUES, WEAK
 
 Image.DWG
+Image.DIMS
+Image.Fonts
+Image.filled_circle
 
 String.Elite
 String.SingleReplace
@@ -693,6 +696,12 @@ String.Replace
 String.SplitIterator
 String.soundex
 String.Buffer
+String.HTML
+String.int2char
+String.int2hex
+String.expand_tabs
+String.int2roman
+String.int2size
 
 ADT.History
 ADT.Relation.Binary
@@ -715,5 +724,26 @@ Parser.LR
 Parser.XML.NSTree
 
 Protocols.HTTP.Query supports https
-
 Protocols.LDP supports ldaps
+Protocols.SNMP now works
+Protocols.XMLRPC
+
+SSL support TLS 1.0
+
+Standards.EXIF
+Standards.FIPS10_4
+Standards.ID3
+Standards.ISO639_2.map_to_639_1, convert_b_to_t, convert_t_to_b
+Standards.RDF
+Standards.CIFF
+
+Stdio.FakeFile
+Stdio.connect_unix
+Stdio.simplify_path
+Stdio.expand_symlinks
+Stdio.file_equal
+Stdio.FILE.set_charset
+
+DVB
+
+Web.Crawler
