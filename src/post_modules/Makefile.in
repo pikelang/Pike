@@ -1,4 +1,4 @@
-# $Id: Makefile.in,v 1.4 2001/02/03 01:10:12 mast Exp $
+# $Id: Makefile.in,v 1.5 2001/09/01 15:20:08 mast Exp $
 
 @make_variables@
 
@@ -66,14 +66,14 @@ depend:
 	done
 
 install:
-	for a in $(MODULES) no ; do \
+	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a install ) ; \
 	  fi; \
 	done
 
 clean:
-	for a in $(MODULES) no ; do \
+	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; ${MAKE} $(MAKE_FLAGS) MODNAME=$$a clean ) ; \
 	  fi; \
@@ -81,7 +81,7 @@ clean:
 	-rm -f linker_options modlist.h modlist_headers.h
 
 verify:
-	for a in $(MODULES) no ; do \
+	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; \
 	      echo verifying $$a ; \
@@ -91,7 +91,7 @@ verify:
 	done
 
 verbose_verify:
-	for a in $(MODULES) no ; do \
+	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; \
 	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a verbose_verify \
@@ -100,7 +100,7 @@ verbose_verify:
 	done
 
 fdtestsuites:
-	for a in $(MODULES) no ; do \
+	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    echo $$a ; \
 	    $(TMP_BINDIR)/mktestsuite $(SRCDIR)/$$a/testsuite.in >$$a/module_testsuite -DSRCDIR=$(SRCDIR)/$$a || exit $$? ; \
@@ -108,14 +108,14 @@ fdtestsuites:
 	done	
 
 testsuites:
-	for a in $(MODULES) no ; do \
+	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    (cd $$a; make module_testsuite) ; \
 	  fi; \
 	done
 
 extra_tests:
-	for a in $(MODULES) no ; do \
+	@for a in $(MODULES) no ; do \
 	  if [ "$$a" = "no" ]; then :; else \
 	    ( cd $$a ; \
 	      ${MAKE} $(MAKE_FLAGS) MODNAME=$$a extra_tests \
