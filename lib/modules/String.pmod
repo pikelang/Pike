@@ -1,6 +1,7 @@
 #define BEGIN 32
 
 constant count=__builtin.string_count;
+constant width=__builtin.string_width;
 
 /*
  * Implode an array of strings to an english 'list'
