@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pike,v 1.27 1998/07/17 20:47:40 mast Exp $
+ * $Id: sql.pike,v 1.28 1998/11/04 12:35:15 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -8,7 +8,7 @@
 
 //.
 //. File:	sql.pike
-//. RCSID:	$Id: sql.pike,v 1.27 1998/07/17 20:47:40 mast Exp $
+//. RCSID:	$Id: sql.pike,v 1.28 1998/11/04 12:35:15 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@idonex.se)
 //.
 //. Synopsis:	Implements the generic parts of the SQL-interface.
@@ -122,6 +122,7 @@ void create(void|string|object host, void|string db,
     }
 
     array(string) program_names;
+    int throw_errors = 1;
 
     if (host && (host != replace(host, ({ ":", "/", "@" }), ({ "", "", "" })))) {
 
@@ -132,9 +133,9 @@ void create(void|string|object host, void|string db,
       array(string) arr = host/"://";
       if ((sizeof(arr) > 1) && (arr[0] != "")) {
 	if (sizeof(arr[0]/".pike") > 1) {
-	  program_names = ({ arr[0] });
+	  program_names = ({ (arr[0]/".pike")[0] });
 	} else {
-	  program_names = ({ arr[0] + ".pike" });
+	  program_names = ({ arr[0] });
 	}
 	host = arr[1..] * "://";
       }
@@ -166,33 +167,40 @@ void create(void|string|object host, void|string db,
       host = 0;
     }
 
-    foreach(program_names || get_dir(Sql->dirname), string program_name) {
+    if (!program_names) {
+#ifdef PIKE_SQL_DEBUG
+      program_names = indices(Sql);
+#else /* !PIKE_SQL_DEBUG */
+      // Ignore compiler errors for the various sql-modules,
+      // since we might not have some.
+      // This is NOT a nice way to do it, but...
+      mixed old_inhib = master()->inhibit_compile_errors;
+      master()->inhibit_compile_errors = lambda(){};
+      program_names = indices(Sql);
+      // Restore compiler errors mode to whatever it was before.
+      master()->inhibit_compile_errors = old_inhib;
+
+      throw_errors = 0;
+#endif /* PIKE_SQL_DEBUG */
+    }
+
+    foreach(program_names, string program_name) {
       if ((sizeof(program_name / "_result") == 1) &&
-	  (sizeof(program_name / ".pike") > 1) &&
-	  (program_name[..7] != "sql.pike")) {
+	  (program_name[..2] != "sql")) {
 	/* Don't call ourselves... */
 	array(mixed) err;
       
 	err = catch {
 	  program p;
-#ifdef PIKE_SQL_DEBUG
+
 	  err = catch {p = Sql[program_name];};
-#else /* !PIKE_SQL_DEBUG */
-	  // Ignore compiler errors for the various sql-modules,
-	  // since we might not have some.
-	  // This is NOT a nice way to do it, but...
-	  mixed old_inhib = master()->inhibit_compile_errors;
-	  master()->inhibit_compile_errors = lambda(){};
-	  err = catch {p = Sql[program_name];};
-	  // Restore compiler errors mode to whatever it was before.
-	  master()->inhibit_compile_errors = old_inhib;
-#endif /* PIKE_SQL_DEBUG */
+
 	  if (err) {
 #ifdef PIKE_SQL_DEBUG
 	    Stdio.stderr->write(sprintf("Sql.sql(): Failed to compile module Sql.%s (%s)\n",
 					program_name, err[0]));
 #endif /* PIKE_SQL_DEBUG */
-	    if (program_names) {
+	    if (throw_errors) {
 	      throw(err);
 	    } else {
 	      throw(0);
@@ -215,7 +223,7 @@ void create(void|string|object host, void|string db,
 	      break;
 	    };
 	    if (err) {
-	      if (program_names) {
+	      if (throw_errors) {
 		throw(err);
 	      }
 #ifdef PIKE_SQL_DEBUG
@@ -224,7 +232,7 @@ void create(void|string|object host, void|string db,
 #endif /* PIKE_SQL_DEBUG */
 	    }
 	  } else {
-	    if (program_names) {
+	    if (throw_errors) {
 	      throw(({ sprintf("Sql.sql(): Failed to index module Sql.%s\n",
 			       program_name), backtrace() }));
 	    }
@@ -234,14 +242,14 @@ void create(void|string|object host, void|string db,
 #endif /* PIKE_SQL_DEBUG */
 	  }
 	};
-	if (err && program_names) {
+	if (err && throw_errors) {
 	  throw(err);
 	}
       }
     }
 
     if (!master_sql)
-      if (!program_names) {
+      if (!throw_errors) {
 	throw_error("Sql.sql(): Couldn't connect using any of the databases\n");
       } else {
 	throw_error("Sql.sql(): Couldn't connect using the " +
