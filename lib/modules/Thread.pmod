@@ -9,6 +9,10 @@ constant Condition=__builtin.condition;
 constant _Disabled=__builtin.threads_disabled;
 constant Local=__builtin.thread_local;
 
+constant thread_create = predef::thread_create;
+constant this_thread = predef::this_thread;
+constant all_threads = predef::all_threads;
+
 class Fifo {
   inherit Condition : r_cond;
   inherit Condition : w_cond;
