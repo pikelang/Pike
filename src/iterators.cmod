@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.44 2003/08/20 12:01:05 grubba Exp $
+|| $Id: iterators.cmod,v 1.45 2003/09/04 16:45:14 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.44 2003/08/20 12:01:05 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.45 2003/09/04 16:45:14 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -223,13 +223,33 @@ PIKECLASS Iterator
     prototype;
   {}
 
-  /* The following is left undocumented since it seems to be
-   * superfluous. /mast */
-  /* @decl optional int next()
-   *
-   * If this function is defined it should advance the iterator one
-   * step, just like @expr{@[`+=](1)@} would do.
+  /*! @decl optional int next()
+   *!
+   *! If this function is defined it should advance the iterator one
+   *! step, just like @expr{@[`+=](1)@} would do.
+   *!
+   *! @returns
+   *!   Returns @tt{1@} if it succeeded in advancing, and
+   *!   @tt{0@} (zero) at end of iterator.
    */
+  PIKEFUN int(0..1) next()
+    flags ID_OPTIONAL;
+    prototype;
+  {}
+
+  /*! @decl optional void set_index(zero index)
+   *!
+   *! If this function is defined it should set the iterator at
+   *! the specified index.
+   *!
+   *! @note
+   *!   It should be possible to set the index at the end of
+   *!   the iterator.
+   */
+  PIKEFUN void set_index(zero index)
+    flags ID_OPTIONAL;
+    prototype;
+  {}
 }
 
 /*! @endclass
@@ -444,6 +464,16 @@ PIKECLASS array_iterator
     {
       THIS->pos=0;
       RETURN THIS->a && THIS->pos < THIS->a->size;
+    }
+
+  PIKEFUN void set_index(int pos)
+    {
+      if(!THIS->a || pos < 0 || pos > THIS->a->size)
+      {
+	Pike_error("Bad position.\n");
+      }else{
+	THIS->pos = pos;
+      }      
     }
 
   /* Hubbe: Should this really be destructive ?? */
@@ -841,6 +871,14 @@ PIKECLASS string_iterator
     {
       THIS->pos=0;
       RETURN THIS->s && THIS->pos < THIS->s->len;
+    }
+
+  PIKEFUN void set_index(int pos)
+    {
+      if (!THIS->s || pos < 0 || pos > THIS->s->len) {
+	Pike_error("Bad position.\n");
+      }
+      THIS->pos = pos;
     }
 
   /* Hubbe: Should this really be destructive ?? */
