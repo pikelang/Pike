@@ -318,34 +318,91 @@ static void f_http_decode_string(INT32 args)
  */
 {
    int proc;
-   char *foo,*bar,*end;
+   int size_shift = 0;
+   int adjust_len = 0;
+   p_wchar0 *foo, *bar, *end;
    struct pike_string *newstr;
 
-   if (!args || Pike_sp[-args].type != PIKE_T_STRING)
-     Pike_error("Invalid argument to http_decode_string(STRING);\n");
+   if (!args || Pike_sp[-args].type != PIKE_T_STRING ||
+       Pike_sp[-args].u.string->size_shift)
+     Pike_error("Invalid argument to http_decode_string(string(8bit));\n");
 
-   foo=bar=Pike_sp[-args].u.string->str;
-   end=foo+Pike_sp[-args].u.string->len;
+   foo = bar = STR0(Pike_sp[-args].u.string);
+   end = foo + Pike_sp[-args].u.string->len;
 
-   /* count '%' characters */
-   for (proc=0; foo<end; ) if (*foo=='%') { proc++; foo+=3; } else foo++;
+   /* count '%' and wide characters */
+   for (proc=0; foo<end; foo++) {
+     if (*foo=='%') {
+       proc++;
+       if (foo[1] == 'u' || foo[1] == 'U') {
+	 /* %uXXXX */
+	 if (foo[2] != '0' || foo[3] != '0') {
+	   size_shift = 1;
+	 }
+	 foo += 5;
+	 if (foo < end) {
+	   adjust_len += 5;
+	 } else {
+	   adjust_len = end - (foo - 4);
+	 }
+       } else {
+	 foo += 2;
+	 if (foo < end) {
+	   adjust_len += 2;
+	 } else {
+	   adjust_len = end - (foo - 1);
+	 }
+       }
+     }
+   }
 
    if (!proc) { pop_n_elems(args-1); return; }
 
-   /* new string len is (foo-bar)-proc*2 */
-   newstr=begin_shared_string((foo-bar)-proc*2);
-   foo=newstr->str;
-   for (proc=0; bar<end; foo++)
-      if (*bar=='%')
-      {
-        if (bar<end-2)
-          *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
-            ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
-        else
-          *foo=0;
-        bar+=3;
-      }
-      else { *foo=*(bar++); }
+   newstr = begin_wide_shared_string(Pike_sp[-args].u.string->len - adjust_len,
+				     size_shift);
+   if (size_shift) {
+     p_wchar1 *dest = STR1(newstr);
+
+     for (proc=0; bar<end; dest++)
+       if (*bar=='%') {
+	 if (bar[1] == 'u' || bar[1] == 'U') {
+	   if (bar<end-5)
+	     *dest = (((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15))<<12)|
+	       (((bar[3]<'A')?(bar[3]&15):((bar[3]+9)&15))<<8)|
+	       (((bar[4]<'A')?(bar[4]&15):((bar[4]+9)&15))<<4)|
+	       ((bar[5]<'A')?(bar[5]&15):((bar[5]+9)&15));
+	   else
+	     *dest=0;
+	   bar+=6;
+	 } else {
+	   if (bar<end-2)
+	     *dest=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
+	       ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
+	   else
+	     *dest=0;
+	   bar+=3;
+	 }
+       } else {
+	 *dest=*(bar++);
+       }
+   } else {
+     foo = newstr->str;
+     for (proc=0; bar<end; foo++)
+       if (*bar=='%') {
+	 if (bar[1] == 'u' || bar[1] == 'U') {
+	   /* We know that the following two characters are zeros. */
+	   bar+=3;
+	 }
+	 if (bar<end-2)
+	   *foo=(((bar[1]<'A')?(bar[1]&15):((bar[1]+9)&15))<<4)|
+	     ((bar[2]<'A')?(bar[2]&15):((bar[2]+9)&15));
+	 else
+	   *foo=0;
+	 bar+=3;
+       } else {
+	 *foo=*(bar++);
+       }
+   }
    pop_n_elems(args);
    push_string(end_shared_string(newstr));
 }
