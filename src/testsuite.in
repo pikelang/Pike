@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.408 2001/05/15 04:47:32 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.409 2001/05/15 20:49:09 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2049,6 +2049,9 @@ for(int e=0;e<3;e++) { data[3]++; thread_create(lambda(mixed *data) {
 
   test_any([[object o=Thread.Queue(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
   test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
+
+dnl this will crash pike on out-of-address-space-related errors
+dnl  test_any([[ catch { allocate(10000,thread_create)(lambda() { sleep(1); })->wait(); } ]])
 ]])
 
 cond([[0]],
