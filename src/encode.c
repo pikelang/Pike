@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.119 2001/08/01 14:34:09 marcus Exp $");
+RCSID("$Id: encode.c,v 1.120 2001/08/09 06:42:38 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -604,6 +604,110 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
     case T_FLOAT:
     {
+
+#define Pike_FP_SNAN -4 /* Signal Not A Number */
+#define Pike_FP_QNAN -3 /* Quiet Not A Number */
+#define Pike_FP_NINF -2 /* Negative infinity */
+#define Pike_FP_PINF -1 /* Positive infinity */
+#define Pike_FP_ZERO  0 /* Backwards compatible zero */
+#define Pike_FP_NZERO 1 /* Negative Zero */
+#define Pike_FP_PZERO 2 /* Positive zero */
+
+
+#ifdef HAVE_FPCLASS
+      switch(fpclass(d)) {
+	case FP_SNAN:
+	  code_entry(TAG_FLOAT,0,data);
+	  code_entry(TAG_FLOAT,Pike_FP_SNAN,data);
+	  break;
+
+	case FP_QNAN:
+	  code_entry(TAG_FLOAT,0,data);
+	  code_entry(TAG_FLOAT,Pike_FP_QNAN,data);
+	  break;
+
+	case FP_NINF:
+	  code_entry(TAG_FLOAT,0,data);
+	  code_entry(TAG_FLOAT,Pike_FP_NINF,data);
+	  break;
+
+	case FP_PINF:
+	  code_entry(TAG_FLOAT,0,data);
+	  code_entry(TAG_FLOAT,Pike_FP_PINF,data);
+	  break;
+
+	case FP_NZERO:
+	  code_entry(TAG_FLOAT,0,data);
+	  code_entry(TAG_FLOAT,Pike_FP_NZERO,data);
+	  break;
+
+	case FP_PZERO:
+	  code_entry(TAG_FLOAT,0,data);
+	  code_entry(TAG_FLOAT,0,data); /* normal zero */
+	  break;
+
+	  /* Ugly, but switch gobbles breaks -Hubbe */
+	default:
+	  goto encode_normal_float;
+      }
+      break;
+    encode_normal_float:
+
+#else
+      {
+	int pike_ftype=0;
+#ifdef HAVE_ISINF
+	if(isinf(val->u.float_number))
+	  pike_ftype=Pike_FP_PINF;
+	else
+#endif
+#ifdef HAVE_ISNAN
+	  if(isnan(val->u.float_number)) {
+	    pike_ftype=Pike_FP_SNAN;
+	  } else
+#endif
+#ifdef HAVE_ISZERO
+	    if(iszero(val->u.float_number))
+	      pike_ftype=Pike_FP_PZERO;
+	    else
+#endif
+#ifdef HAVE_FINITE
+	      if(!finite(val->u.float_number))
+		pike_ftype=Pike_FP_SNAN;
+#endif
+	; /* Terminate any remaining else */
+	
+	if(
+#ifdef HAVE_SIGNBIT
+	  signbit(val->u.float_number)
+#else
+	  val->u.float_number<0.0
+#endif
+	  ) {
+	  switch(pike_ftype)
+	  {
+	    case Pike_FP_PINF:
+	      pike_ftype=Pike_FP_NINF;
+	      break;
+	      
+	    case Pike_FP_PZERO:
+	      pike_ftype=Pike_FP_NZERO;
+	      break;
+	  }
+	}
+	
+	if(pike_ftype)
+	{
+	  if(pike_ftype == Pike_FP_PZERO)
+	    pike_ftype=0;
+
+	  code_entry(TAG_FLOAT,0,data);
+	  code_entry(TAG_FLOAT,pike_ftype,data);
+	  break;
+	}
+      }
+#endif
+
       if(val->u.float_number==0.0)
       {
 	code_entry(TAG_FLOAT,0,data);
@@ -1663,6 +1767,40 @@ static void decode_value2(struct decode_data *data)
       DECODE("float");
 
       EDB(2,fprintf(stderr, "Exponent: %d\n", num));
+
+      if(!res)
+      {
+	DECLARE_INF
+	DECLARE_NAN
+
+	switch(num)
+	{
+	  case Pike_FP_SNAN: /* Signal Not A Number */
+	    push_float(MAKE_NAN());
+	    break;
+	    
+	  case Pike_FP_QNAN: /* Quiet Not A Number */
+	    push_float(0.0); /* how do you push a qnan? */
+	    break;
+		       
+	  case Pike_FP_NINF: /* Negative infinity */
+	    push_float(MAKE_INF(-1));
+	    break;
+
+	  case Pike_FP_PINF: /* Positive infinity */
+	    push_float(MAKE_INF(1));
+	    break;
+
+	  case Pike_FP_NZERO: /* Negative Zero */
+	    push_float(-0.0); /* Does this do what we want? */
+	    break;
+
+	  default:
+	    push_float(LDEXP(res, num));
+	    break;
+	}
+	break;
+      }
 
       push_float(LDEXP(res, num));
       break;
