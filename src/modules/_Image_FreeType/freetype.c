@@ -1,6 +1,6 @@
 #include "config.h"
 #include "global.h"
-RCSID("$Id: freetype.c,v 1.4 2002/01/02 09:37:42 grubba Exp $");
+RCSID("$Id: freetype.c,v 1.5 2002/10/29 09:43:03 grubba Exp $");
 
 #ifdef HAVE_LIBFT2
 #include <freetype/freetype.h>
@@ -18,6 +18,12 @@ RCSID("$Id: freetype.c,v 1.4 2002/01/02 09:37:42 grubba Exp $");
 #include "module_support.h"
 #include "operators.h"
 #include "../Image/image.h"
+
+#endif /* HAVE_LIBFT2 */
+
+#include "module_magic.h"
+
+#ifdef HAVE_LIBFT2
 
 static FT_Library library;
 static struct program *face_program;
