@@ -14,7 +14,11 @@
 
 import Standards.ASN1.Types;
 
-/* Create a DER-coded RSAPublicKey structure */
+//! Create a DER-coded RSAPublicKey structure
+//! @param rsa
+//!   <ref to="Crypto.RSA">Crypto.RSA</ref> object
+//! @returns
+//!   ASN1 coded RSAPublicKey structure
 string public_key(object rsa)
 {
   return asn1_sequence(Array.map(
@@ -22,7 +26,11 @@ string public_key(object rsa)
     asn1_integer))->get_der();
 }
 
-/* Create a DER-coded RSAPrivateKey structure */
+//! Create a DER-coded RSAPrivateKey structure
+//! @param rsa
+//!   <ref to="Crypto.RSA">Crypto.RSA</ref> object
+//! @returns
+//!   ASN1 coded RSAPrivateKey structure
 string private_key(object rsa)
 {
   object n = rsa->get_n();
@@ -41,10 +49,17 @@ string private_key(object rsa)
 }
 
 /* Backwards compatibility */
+//! @deprecated public_key
 string rsa_public_key(object rsa) { return public_key(rsa); }
+
+//! @deprecated private_key
 string rsa_private_key(object rsa) { return private_key(rsa); }
 
-/* Decode a coded RSAPublicKey structure */
+//! Decode a DER-coded RSAPublicKey structure
+//! @param key
+//!   RSAPublicKey provided in ASN1 encoded format
+//! @returns
+//!   <ref to="Crypto.RSA">Crypto.RSA</ref> object
 object parse_public_key(string key)
 {
   // WERROR(sprintf("rsa->parse_public_key: '%s'\n", key));
@@ -64,7 +79,11 @@ object parse_public_key(string key)
   return rsa;
 }
 
-/* Decode a coded RSAPrivateKey structure */
+//! Decode a DER-coded RSAPrivateKey structure
+//! @param key
+//!   RSAPrivateKey provided in ASN1 encoded format
+//! @returns
+//!   <ref to="Crypto.RSA">Crypto.RSA</ref> object
 object parse_private_key(string key)
 {
   WERROR(sprintf("rsa->parse_private_key: '%s'\n", key));
