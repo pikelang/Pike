@@ -5,7 +5,7 @@
 \*/
 #include <math.h>
 #include "global.h"
-RCSID("$Id: operators.c,v 1.7 1997/02/11 07:11:51 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.8 1997/02/13 02:38:58 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -459,7 +459,7 @@ void o_and()
   case T_OBJECT:
     CALL_OPERATOR(LFUN_AND,2);
     break;
-
+    
   case T_INT:
     sp--;
     sp[-1].u.integer &= sp[0].u.integer;
@@ -489,6 +489,21 @@ void o_and()
     a=and_arrays(sp[-2].u.array, sp[-1].u.array);
     pop_n_elems(2);
     push_array(a);
+    return;
+  }
+  case T_STRING:
+  {
+    struct pike_string *s;
+    INT32 len, i;
+
+    len = sp[-2].u.string->len;
+    if (len != sp[-1].u.string->len)
+      error("Bitwise AND on strings of different lengths.\n");
+    s = begin_shared_string(len);
+    for (i=0; i<len; i++)
+      s->str[i] = sp[-2].u.string->str[i] & sp[-1].u.string->str[i];
+    pop_n_elems(2);
+    push_string(end_shared_string(s));
     return;
   }
   default:
@@ -572,6 +587,22 @@ void o_or()
     a=merge_array_without_order(sp[-2].u.array, sp[-1].u.array, OP_OR);
     pop_n_elems(2);
     push_array(a);
+    return;
+  }
+
+  case T_STRING:
+  {
+    struct pike_string *s;
+    INT32 len, i;
+
+    len = sp[-2].u.string->len;
+    if (len != sp[-1].u.string->len)
+      error("Bitwise OR on strings of different lengths.\n");
+    s = begin_shared_string(len);
+    for (i=0; i<len; i++)
+      s->str[i] = sp[-2].u.string->str[i] | sp[-1].u.string->str[i];
+    pop_n_elems(2);
+    push_string(end_shared_string(s));
     return;
   }
 
@@ -659,6 +690,23 @@ void o_xor()
     push_array(a);
     return;
   }
+
+  case T_STRING:
+  {
+    struct pike_string *s;
+    INT32 len, i;
+
+    len = sp[-2].u.string->len;
+    if (len != sp[-1].u.string->len)
+      error("Bitwise XOR on strings of different lengths.\n");
+    s = begin_shared_string(len);
+    for (i=0; i<len; i++)
+      s->str[i] = sp[-2].u.string->str[i] ^ sp[-1].u.string->str[i];
+    pop_n_elems(2);
+    push_string(end_shared_string(s));
+    return;
+  }
+
   default:
     error("Bitwise xor on illegal type.\n");
   }
@@ -1029,6 +1077,20 @@ void o_compl()
     sp[-1].u.float_number = -1.0 - sp[-1].u.float_number;
     break;
 
+  case T_STRING:
+  {
+    struct pike_string *s;
+    INT32 len, i;
+
+    len = sp[-1].u.string->len;
+    s = begin_shared_string(len);
+    for (i=0; i<len; i++)
+      s->str[i] = ~ sp[-1].u.string->str[i];
+    pop_n_elems(1);
+    push_string(end_shared_string(s));
+    break;
+  }
+
   default:
     error("Bad argument to ~\n");
   }
@@ -1176,7 +1238,7 @@ void init_operators()
 
   add_efun2("`-",f_minus,"function(object,mixed...:mixed)|function(int:int)|function(float:float)|function(array,array:array)|function(mapping,mapping:mapping)|function(multiset,multiset:multiset)|function(float|int,float:float)|function(float,int:float)|function(int,int:int)|function(string,string:string)",OPT_TRY_OPTIMIZE,0,generate_minus);
 
-#define LOG_TYPE "function(object,mixed...:mixed)|function(int...:int)|function(mapping...:mapping)|function(multiset...:multiset)|function(array...:array)"
+#define LOG_TYPE "function(object,mixed...:mixed)|function(int...:int)|function(mapping...:mapping)|function(multiset...:multiset)|function(array...:array)|function(string...:string)"
 
   add_efun2("`&",f_and,LOG_TYPE,OPT_TRY_OPTIMIZE,optimize_binary,generate_and);
 
@@ -1196,6 +1258,6 @@ void init_operators()
 
   add_efun2("`%",f_mod,"function(object,mixed:mixed)|function(int,int:int)|!function(int,int:mixed)&function(int|float,int|float:float)",OPT_TRY_OPTIMIZE,0,generate_mod);
 
-  add_efun2("`~",f_compl,"function(object:mixed)|function(int:int)|function(float:float)",OPT_TRY_OPTIMIZE,0,generate_compl);
+  add_efun2("`~",f_compl,"function(object:mixed)|function(int:int)|function(float:float)|function(string:string)",OPT_TRY_OPTIMIZE,0,generate_compl);
   add_efun2("sizeof", f_sizeof, "function(string|multiset|array|mapping|object:int)",0,0,generate_sizeof);
 }
