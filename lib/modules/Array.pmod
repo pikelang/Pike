@@ -222,7 +222,7 @@ array sort_array(array foo, function|void cmp, mixed ... args)
 //!   @[column()]
 array(array) columns(array x, array ind)
 {
-  array ret=allocate(sizeof(ind));
+  array(array) ret=allocate(sizeof(ind));
   for(int e=0;e<sizeof(ind);e++) ret[e]=column(x,ind[e]);
   return ret;
 }
