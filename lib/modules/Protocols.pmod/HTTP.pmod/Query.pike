@@ -410,7 +410,7 @@ object set_callbacks(function(object,mixed...:mixed) _ok,
 //!	Create a new query object and begin the query.
 //!
 //!	The query is executed in a background thread;
-//!	call @['()] in the object to wait for the request
+//!	call @[`()] in the object to wait for the request
 //!	to complete.
 //!
 //!	@[query] is the first line sent to the HTTP server;
