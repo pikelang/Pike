@@ -13,6 +13,8 @@ $version manual
 
 	KEYWORD_LIST examples
 
+	TAG control
+
  Control structures
 
   Control structures groups code into blocks and they control the order in
@@ -20,6 +22,8 @@ $version manual
   the same as those in C, with a few exceptions.
 
 	KEYWORD_LIST control
+
+	TAG types
 
  Types
 
@@ -30,6 +34,8 @@ $version manual
   about memory management and other programming obstacles.
 
 	KEYWORD_LIST types
+
+	TAG lpc
 
  uLPC and object orientation
 
@@ -45,6 +51,8 @@ $version manual
 
 	LINK lpc/efuns Here's a list of all built-in functions.
 
+	TAG operators
+
  Operators
 
   uLPC operators behave much like the onces in C, but have many many additional
@@ -57,6 +65,8 @@ $version manual
   The rest of the written documentation is gathered here, without much
   thought about order. Hopefully you should be able to use this section
   anyway once you've looked at the sections above.
+
+	TAG file
 
 	KEYWORD_INDEX file
 

@@ -433,9 +433,13 @@ string convert_page(string path, string fname)
 	  b=({});
 	  foreach(a,a)
 	  {
-	    // fixme!!
 	    keywords[a] = ( keywords[a] || ({}) ) | ({ name });
-	    b+=({ "<a href=index.html#"+a+">"+a+"</a>" });
+	    if(pages[a])
+	    {
+	      b+=({ "<a href="+pages[a]+">"+a+"</a>" });
+	    }else{
+	      b+=({ a });
+	    }
 	  }
 	  rest=implode_nicely(b);
 	  break;
@@ -558,7 +562,13 @@ string convert_page(string path, string fname)
 	case "LINK":
 	  sscanf(a,"%s %s",a,b);
 	  pages_done[(a/"/")[-1]]=1;
-	  tmp="<a href="+fippel_path(a)+".html>"+b+"</a>";
+	  tmp="<a href="+fippel_path(a)+">"+b+"</a>";
+	  break;
+
+	case "TAG":
+	  pages[a]=fippel_path(path)+"#"+a;
+	  pages_done[a]=1;
+	  tmp="<a name="+a+">";
 	  break;
 
 	default:
