@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: polyfill.c,v 1.23 1998/04/09 02:01:18 mirar Exp $");
+RCSID("$Id: polyfill.c,v 1.24 1998/04/19 19:14:23 mirar Exp $");
 
 /* Prototypes are needed for these */
 extern double floor(double);
@@ -32,7 +32,7 @@ extern double floor(double);
 /*
 **! module Image
 **! note
-**!	$Id: polyfill.c,v 1.23 1998/04/09 02:01:18 mirar Exp $
+**!	$Id: polyfill.c,v 1.24 1998/04/19 19:14:23 mirar Exp $
 **! class image
 */
 
@@ -184,11 +184,11 @@ static void add_vertices(struct line_list **first,
       ins=first;
 
 #ifdef POLYDEBUG
-   fprintf(stderr,"  insert %g,%g - %g,%g  %g,%g - %g,%g\n",
-	  what->above->x,what->above->y,
-	  what->below->x,what->below->y,
+   fprintf(stderr,"  insert %g,%g - %g,%g [%g,%g - %g,%g]\n",
 	  what->xmin,what->yxmin,
-	  what->xmax,what->yxmax);
+	  what->xmax,what->yxmax,
+	  what->above->x,what->above->y,
+	  what->below->x,what->below->y);
 #endif
 
       /* fast jump vectorgroups on the left */
@@ -206,6 +206,28 @@ static void add_vertices(struct line_list **first,
 	 BECAUSE("what is left of ins");
 	 if ((*ins)->xmin>=what->xmax)  
 	    break; /* place left of */
+
+	 /* case: -what-    */
+	 /*       <-ins-    */
+
+	 if ((*ins)->xmin==what->xmin &&
+	     (*ins)->yxmin==what->yxmin)
+	 {
+	    BECAUSE("ins is above (left exact) what");
+	    if (VY((*ins),what->xmax)>what->yxmax) break;
+	    else { ins=&((*ins)->next); continue; }
+	 }
+
+	 /* case: -what-    */
+	 /*       -ins->    */
+
+	 if ((*ins)->xmax==what->xmax &&
+	     (*ins)->yxmax==what->yxmax)
+	 {
+	    BECAUSE("ins is above (right exact) what");
+	    if (VY((*ins),what->xmin)>what->yxmin) break;
+	    else { ins=&((*ins)->next); continue; }
+	 }
 
 	 /* case: -what-    */
 	 /*          <-ins- */
@@ -243,11 +265,11 @@ static void add_vertices(struct line_list **first,
 
 #ifdef POLYDEBUG
       if (*ins)
-	 fprintf(stderr,"     before %g,%g - %g,%g  %g,%g - %g,%g because %s\n",
-		 (*ins)->above->x,(*ins)->above->y,
-		 (*ins)->below->x,(*ins)->below->y,
+	 fprintf(stderr,"     before %g,%g - %g,%g [%g,%g - %g,%g] because %s\n",
 		 (*ins)->xmin,(*ins)->yxmin,
 		 (*ins)->xmax,(*ins)->yxmax,
+		 (*ins)->above->x,(*ins)->above->y,
+		 (*ins)->below->x,(*ins)->below->y,
 		 why);
 #endif
 
@@ -362,7 +384,7 @@ static int polyfill_event(float xmin,
    int mtog;
 
 #ifdef POLYDEBUG
-   fprintf(stderr,"  event %g,%g - %g,%g tog=%d\n",xmin,yp,xmax,yp+1.0,tog);
+   fprintf(stderr," event %g,%g - %g,%g tog=%d\n",xmin,yp,xmax,yp+1.0,tog);
 #endif
 
    /* toggle for lines ended at xmin,yp */
@@ -383,6 +405,7 @@ static int polyfill_event(float xmin,
       c=c->next;
    }
 
+#if 0
    /* sanity check */
    c=ll;
    while (c && c->next)
@@ -400,7 +423,13 @@ static int polyfill_event(float xmin,
 	 struct line_list *l1;
 	 /* resort */
 #ifdef POLYDEBUG
-	 fprintf(stderr,"  !!! resort !!!\n");
+	 fprintf(stderr,"  !!! internal resort !!!\n");
+	 fprintf(stderr,"  on pair: %g,%g - %g,%g [%g,%g - %g,%g]\n           %g,%g - %g,%g [%g,%g - %g,%g]\n",
+		 c->xmin,c->yxmin,c->xmax,c->yxmax,
+		 c->above->x,c->above->y,c->below->x,c->below->y,
+		 c->next->xmin,c->next->yxmin,c->next->xmax,c->next->yxmax,
+		 c->next->above->x,c->next->above->y,
+		 c->next->below->x,c->next->below->y);
 #endif
 	 l1=NULL;
 	 add_vertices(&l1,ll,yp);
@@ -417,6 +446,7 @@ static int polyfill_event(float xmin,
       }
       c=c->next;
    }
+#endif
 
    /* paint if needed */
    if (tog)
@@ -477,7 +507,7 @@ static void polyfill_some(struct image *img,
       rgb_group *d;
 
 #ifdef POLYDEBUG      
-      fprintf(stderr,"line %d..%d\n",y,y+1);
+      fprintf(stderr,"\nline %d..%d\n",y,y+1);
 #endif
 
       /* update values for current lines */
@@ -518,8 +548,50 @@ static void polyfill_some(struct image *img,
       /* begin with zeros */
       for (i=0; i<img->xsize; i++) buf[i]=0.0;
 
+      /* sanity check */
+      c=ll;
+      while (c && c->next)
+      {
+	 if (c->xmin > c->next->xmax ||
+	     c->xmax > c->next->xmin ||
+	     ( c->xmin!=c->xmax &&
+	       c->next->xmin!=c->next->xmax &&
+	       c->next->xmax>=c->xmin &&
+	       c->next->xmin<=c->xmin &&
+	       VY(c,c->xmin)>VY(c->next,c->xmin)))
+	 {
+	    struct line_list *l1;
+	    struct line_list *pll;
+	    /* resort */
+#ifdef POLYDEBUG
+	    fprintf(stderr,"  !!! resort !!!\n");
+#endif
+	    l1=NULL;
+	    add_vertices(&l1,ll,yp);
+
+	    while ((c=ll))
+	    {
+	       ll=c->next;
+	       free(c);
+	    }
+
+	    ll=l1;
+
+	    break;
+	 }
+	 c=c->next;
+      }
+
+      /* find first horisintal event */
+      xmin=ll->xmin;
+      c=ll;
+      while (c)
+      {
+	 if (c->xmin<xmin) xmin=c->xmin;
+	 c=c->next;
+      }
+
       /* loop through all horisontal events */
-      xmin=ll->xmin-1.0;
       while (xmin<ixmax)
       {
 	 xmax=1e10;
