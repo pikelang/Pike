@@ -1960,6 +1960,11 @@ class cFraction
 			len_s,len_ns/1000);
       return sprintf("0.%09d",len_ns);
    }
+
+   float fraction_no()
+   {
+      return ns / 1e9;
+   }
 }
 
 //------------------------------------------------------------------------
