@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: global.h,v 1.93 2003/11/07 17:53:15 mast Exp $
+|| $Id: global.h,v 1.94 2003/11/07 18:28:05 mast Exp $
 */
 
 #ifndef GLOBAL_H
@@ -241,6 +241,7 @@ struct b16_t_s { B8_T x,y; };
 #  define MAX_INT_TYPE	SHRT_MAX
 #  define MIN_INT_TYPE	SHRT_MIN
 #  define PRINTPIKEINT	"h"
+#  define INT_ARG_TYPE	int
 
 # elif defined (WITH_INT_INT)
 
@@ -266,6 +267,12 @@ struct b16_t_s { B8_T x,y; };
 #  define PRINTPIKEINT	"ll"
 
 # endif
+#endif
+
+/* INT_ARG_TYPE is a type suitable for argument passing that at least
+ * can hold an INT_TYPE value. */
+#ifndef INT_ARG_TYPE
+#define INT_ARG_TYPE INT_TYPE
 #endif
 
 #if SIZEOF_INT_TYPE - 0 == 0
@@ -315,7 +322,14 @@ struct b16_t_s { B8_T x,y; };
 #  define PIKEFLOAT_MIN		FLT_MIN
 #  define PIKEFLOAT_EPSILON	FLT_EPSILON
 #  define PRINTPIKEFLOAT	""
+#  define FLOAT_ARG_TYPE	double
 
+#endif
+
+/* FLOAT_ARG_TYPE is a type suitable for argument passing that at
+ * least can hold a FLOAT_TYPE value. */
+#ifndef FLOAT_ARG_TYPE
+#define FLOAT_ARG_TYPE FLOAT_TYPE
 #endif
 
 #if SIZEOF_FLOAT_TYPE - 0 == 0
