@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.252 2000/04/08 15:00:00 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.253 2000/04/08 15:02:19 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5249,6 +5249,7 @@ static node *fix_map_node_info(node *n)
       }
       node_info = cb->u.sval.u.efun->flags & OPT_SIDE_EFFECT;
     }
+    /* FIXME: Type-checking? */
     break;
   }
 
