@@ -1,5 +1,5 @@
 #
-# $Id: configure.in,v 1.28 2003/12/23 17:30:17 grubba Exp $
+# $Id: configure.in,v 1.29 2005/01/13 12:57:14 grubba Exp $
 #
 # Configure script for the odbc-module
 #
@@ -142,6 +142,8 @@ EOF
     pike_cv_odbc=no;
   
     if test "$ac_cv_header_isql_h$ac_cv_header_isqlext_h" = "yesyes"; then
+  
+      AC_CHECK_LIB(iodbcinst, SQLGetConfigMode)
   
       AC_CHECK_LIB(iodbc, SQLConnect, [
   	LIBS="-liodbc $LIBS"
