@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.247 2001/02/22 19:18:08 hubbe Exp $
+# $Id: Makefile.in,v 1.248 2001/02/23 14:34:34 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -431,6 +431,9 @@ just_verify: module_testsuites testsuite master.pike
 
 tinstall: aclocal master.pike aclocal
 	-rm -rf test-install
+	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
+
+just-tinstall: aclocal master.pike aclocal
 	$(RUNPIKE) $(TMP_BINDIR)/install.pike $(INSTALLARGS) pike_name="test-pike" lib_prefix="$(lib_prefix)" TMP_LIBDIR="$(TMP_LIBDIR)" LIBDIR_SRC="$(LIBDIR_SRC)" SRCDIR="$(SRCDIR)" prefix="./test-install" MANDIR_SRC="$(MANDIR_SRC)" man_prefix="$(man_prefix)" fakeroot="$(buildroot)"
 
 
