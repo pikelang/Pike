@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.341 2005/01/22 02:43:45 nilsson Exp $
+|| $Id: file.c,v 1.342 2005/01/23 01:50:41 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -3637,11 +3637,11 @@ static void init_file_locking(void)
   START_NEW_PROGRAM_ID (STDIO_FILE_LOCK_KEY);
   off = ADD_STORAGE(struct file_lock_key_storage);
 #ifdef _REENTRANT
-  map_variable("_owner","object",0,
+  MAP_VARIABLE("_owner",tObj,0,
 	       off + OFFSETOF(file_lock_key_storage, owner_obj),
 	       PIKE_T_OBJECT);
 #endif
-  map_variable("_file","object",0,
+  MAP_VARIABLE("_file",tObj,0,
 	       off + OFFSETOF(file_lock_key_storage, file),
 	       PIKE_T_OBJECT);
   set_init_callback(init_file_lock_key);
@@ -4047,13 +4047,13 @@ PIKE_MODULE_INIT
 #define FILE_FUNC(X,Y,Z) PIKE_CONCAT(Y,_function_number)=ADD_FUNCTION(X,Y,Z,0)
 #define FILE_OBJ tObjImpl_STDIO_FD
 #include "file_functions.h"
-  map_variable("_read_callback","mixed",0,
+  MAP_VARIABLE("_read_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ]),PIKE_T_MIXED);
-  map_variable("_write_callback","mixed",0,
+  MAP_VARIABLE("_write_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE]),PIKE_T_MIXED);
-  map_variable("_read_oob_callback","mixed",0,
+  MAP_VARIABLE("_read_oob_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_READ_OOB]),PIKE_T_MIXED);
-  map_variable("_write_oob_callback","mixed",0,
+  MAP_VARIABLE("_write_oob_callback",tMix,0,
 	       OFFSETOF(my_file, event_cbs[PIKE_FD_WRITE_OOB]),PIKE_T_MIXED);
 
   /* function(int, void|mapping:string) */
@@ -4089,7 +4089,7 @@ PIKE_MODULE_INIT
 
   START_NEW_PROGRAM_ID (STDIO_FD_REF);
   ADD_STORAGE(struct object *);
-  map_variable("_fd","object",0,0,PIKE_T_OBJECT);
+  MAP_VARIABLE("_fd", tObj, 0, 0, PIKE_T_OBJECT);
   set_init_callback(file___init_ref);
 
 #define FILE_FUNC(X,Y,Z) ADD_FUNCTION(X,PIKE_CONCAT(Y,_ref),Z,0)

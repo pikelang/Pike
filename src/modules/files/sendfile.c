@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sendfile.c,v 1.70 2004/05/02 00:35:40 nilsson Exp $
+|| $Id: sendfile.c,v 1.71 2005/01/23 01:50:41 nilsson Exp $
 */
 
 /*
@@ -1091,9 +1091,9 @@ void init_sendfile(void)
 #ifdef _REENTRANT
   START_NEW_PROGRAM_ID (STDIO_SENDFILE);
   ADD_STORAGE(struct pike_sendfile);
-  map_variable("_args", "array(mixed)", 0, OFFSETOF(pike_sendfile, args),
+  MAP_VARIABLE("_args", tArray, 0, OFFSETOF(pike_sendfile, args),
 	       T_ARRAY);
-  map_variable("_callback", "function(int,mixed...:void)", 0,
+  MAP_VARIABLE("_callback", tFuncV(tInt,tMix,tVoid), 0,
 	       OFFSETOF(pike_sendfile, callback), T_MIXED);
 
   /* function(array(string),object,int,int,array(string),object,function(int,mixed...:void),mixed...:void) */
