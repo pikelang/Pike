@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.56 2002/12/07 23:01:29 grubba Exp $
+|| $Id: preprocessor.h,v 1.57 2002/12/08 15:26:01 grubba Exp $
 */
 
 /*
@@ -15,55 +15,6 @@
 #ifndef SHIFT
 #error Internal error: SHIFT not defined
 #endif
-
-/*! @class CompileHandler
- */
-
-/*! @decl string handle_include(string header_file, string current_file, @
- *!                             int(0..1) is_local_ref)
- *!
- *!   Called by @[cpp()] to resolv @tt{#include@} and @tt{#string@} directives.
- *!
- *! @param header_file
- *!   File that was requested for inclusion.
- *!
- *! @param current_file
- *!   File where the dicerctiva was found.
- *!
- *! @param is_local_ref
- *!   Specifies reference method.
- *!   @int
- *!     @value 0
- *!       Directive was @tt{#include <@}@[header_file]@tt{>@}.
- *!     @value 1
- *!       Directive was @tt{#include "@}@[header_file]@tt{"@}.
- *!   @endint
- *!
- *! @returns
- *!   Returns the filename to pass to @[read_include()] if found,
- *!   and @tt{0@} (zero) on failure.
- *!
- *! @seealso
- *!   @[read_include()]
- */
-
-/*! @decl string read_include(string filename)
- *!
- *!   Called by @[cpp()] to read included files.
- *!
- *! @param filename
- *!   Filename as returned by @[handle_include()].
- *!
- *! @returns
- *!   Returns a string with the content of the header file on success,
- *!   and @tt{0@} (zero) on failure.
- *!
- *! @seealso
- *!   @[handle_include()]
- */
-
-/*! @endclass
- */
 
 /*
  * Definitions
