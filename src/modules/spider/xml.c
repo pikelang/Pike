@@ -53,6 +53,7 @@ struct xmlobj
   struct mapping *entities;
   struct mapping *attributes;
   struct mapping *is_cdata;
+  int rxml_mode;
 };
 
 #undef THIS
@@ -714,11 +715,13 @@ static inline int xmlread(int z,struct xmldata *data, int line)
 #define SIMPLE_READ_SYSTEMLITERAL() simple_read_system_literal(data)
 #define SIMPLE_READ_PUBIDLITERAL() simple_read_pubid_literal(data)
 #define SIMPLE_READNAME() simple_readname(data)
+#define SIMPLE_READNAME_PERIOD() simple_readname_period(data)
 #define SIMPLE_READNMTOKEN() simple_readnmtoken(data)
 
 static int low_parse_dtd(struct xmldata *data);
 static void free_xmldata(struct xmldata *data);
 static void simple_readname(struct xmldata *);
+static int simple_readname_period(struct xmldata *);
 static void simple_read_system_literal(struct xmldata *);
 static void simple_read_pubid_literal(struct xmldata *);
 static int low_parse_xml(struct xmldata *data,
@@ -768,6 +771,25 @@ static int gobble(struct xmldata *data, char *s)
 	}						\
 	while(!XMLEOF() && isNameChar(PEEK(0)))		\
 	{						\
+	  POKE(X, PEEK(0));				\
+	  if(READ(1)) break; 				\
+	}						\
+      }while(0)
+
+/* Almost identical to READNAME but returns whether any periods were found.
+   Used to detect RXML variable entities. */
+#define READNAME_PERIOD(X, FOUND_PERIOD) do {		\
+        FOUND_PERIOD = 0;                               \
+	if(isFirstNameChar(PEEK(0)))                    \
+	{						\
+	  POKE(X, PEEK(0));				\
+	  READ(1);					\
+	}else{						\
+	  XMLERROR("Name expected");		\
+	}						\
+	while(!XMLEOF() && isNameChar(PEEK(0)))		\
+	{						\
+          if (PEEK(0) == '.') FOUND_PERIOD = 1;         \
 	  POKE(X, PEEK(0));				\
 	  if(READ(1)) break; 				\
 	}						\
@@ -906,12 +928,25 @@ static int gobble(struct xmldata *data, char *s)
   {									    \
     READ_CHAR_REF(X);							    \
   }else{                                                                    \
-    SIMPLE_READNAME();							    \
+    int found_period = 0;                                                   \
+    if (THIS->rxml_mode) {                                                  \
+      found_period = SIMPLE_READNAME_PERIOD();                              \
+    } else {                                                                \
+      SIMPLE_READNAME();                                                    \
+    }                                                                       \
     IF_XMLDEBUG(fprintf(stderr,"Found entity: %s\n",sp[-1].u.string->str)); \
     if(PEEK(0)!=';')							    \
       XMLERROR("Missing ';' after entity reference.");			    \
     READ(1);								    \
-    PARSE_REF(PARSE_RECURSIVELY);                                            \
+    if(found_period) {                                                      \
+      /* RXML variable reference; output untouched */                       \
+      IF_XMLDEBUG(fprintf(stderr,"RXML entity: %s\n",sp[-1].u.string->str));\
+      POKE(X, '&');                                                         \
+      string_builder_shared_strcat(&X, sp[-1].u.string);                    \
+      POKE(X, ';');                                                         \
+      pop_stack();                                                          \
+    } else                                                                  \
+      PARSE_REF(PARSE_RECURSIVELY);                                         \
   }									    \
   IF_XMLDEBUG(fprintf(stderr,"Read reference at %d done.\n",__LINE__));	    \
 }while(0)
@@ -1274,6 +1309,18 @@ static void simple_readname(struct xmldata *data)
   SMEG();
   READNAME(name);
   END_STRING(name);
+}
+
+static int simple_readname_period(struct xmldata *data)
+{
+  /* Returns whether '.' is included somewhere in the name. */
+  int  found_period = 0;
+  check_stack(1);
+  BEGIN_STRING(name);
+  SMEG();
+  READNAME_PERIOD(name, found_period);
+  END_STRING(name);
+  return found_period;
 }
 
 static void simple_readnmtoken(struct xmldata *data)
@@ -2573,6 +2620,14 @@ static void define_entity(INT32 args)
   define_entity_raw(2);
 }
 
+static void allow_rxml_entities(INT32 args)
+{
+  check_all_args("XML->allow_rxml_entities", args, BIT_INT, 0);
+  THIS->rxml_mode = !!sp[-args].u.integer;
+  pop_n_elems(args);
+  push_int(0);
+}
+
 static void parse_dtd(INT32 args)
 {
   struct svalue tmp;
@@ -2753,6 +2808,8 @@ void init_xml(void)
 	       off + OFFSETOF(xmlobj, attributes),T_MAPPING);
   map_variable("__is_cdata","mapping",0,
 	       off + OFFSETOF(xmlobj, is_cdata),T_MAPPING);
+  map_variable("__allow_rxml_entities", "int", 0,
+	       off + OFFSETOF(xmlobj, rxml_mode), T_INT);
 
   /* callback:
    *   string type
@@ -2772,8 +2829,10 @@ void init_xml(void)
   ADD_FUNCTION("autoconvert",autoconvert,tFunc(tStr,tStr),0);
   add_function("parse",parse_xml,PARSETYPE,0);
   add_function("parse_dtd",parse_dtd,PARSETYPE,0);
-  ADD_FUNCTION("define_entity_raw",define_entity,tFunc(tStr tStr,tVoid),0);
+  ADD_FUNCTION("define_entity_raw",define_entity_raw,tFunc(tStr tStr,tVoid),0);
   ADD_FUNCTION("define_entity",define_entity,tFuncV(tStr tStr tMix,tMix,tVoid),0);
+  ADD_FUNCTION("allow_rxml_entities", allow_rxml_entities,
+	       tFunc(tInt, tVoid), 0);
   /* function(:void) */
   ADD_FUNCTION("create",create,tFunc(tNone,tVoid),0);
   end_class("XML",0);
