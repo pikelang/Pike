@@ -1188,9 +1188,7 @@ a gif chunk that defines that the GIF animation should loop
 <hr>
 <h4>SYNOPSIS</h4>
 <blockquote>
-<tt>int <b>xsize</b>()<br>
-int <b>ysize</b>()<br>
-object <b>grey</b>()<br>
+<tt>object <b>grey</b>()<br>
 object <b>grey</b>(int&nbspr, int&nbspg, int&nbspb)</tt>
 </blockquote>
 
@@ -2226,18 +2224,44 @@ Draws a filled rectangle with colors (and alpha values) tuned
   <dd>rectangle corners
 <dt><tt>array(array(int)) corner_color</tt>
   <dd>colors of the corners:
-
-<p>     ({x1y1,x2y1,x1y2,x2y2})
-
-<p>     each of these is an array of integeres:
-
-<p>     ({r,g,b}) or ({r,g,b,alpha})
-
-<p>     Default alpha channel value is 0 (opaque).
+     <pre>
+     ({x1y1,x2y1,x1y2,x2y2})
+     </pre>
+     each of these is an array of integeres:
+     <pre>
+     ({r,g,b}) or ({r,g,b,alpha})
+     </pre>
+     Default alpha channel value is 0 (opaque).
 </dl></blockquote>
 <h4>RETURNS</h4>
 
 
 <blockquote>
 the object called
+</blockquote>
+
+<hr>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>int <b>xsize</b>()</tt>
+</blockquote>
+
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the width of the image
+</blockquote>
+
+<hr>
+<h4>SYNOPSIS</h4>
+<blockquote>
+<tt>int <b>ysize</b>()</tt>
+</blockquote>
+
+<h4>RETURNS</h4>
+
+
+<blockquote>
+the height of the image
 </blockquote>

@@ -94,6 +94,7 @@ mapping keywords=
 	  {
 	     if (!methodM) 
 	        return complain("returns w/o method");
+	     nowM=0;
 	     methodM->returns=stripws(arg);
 	  }
 ]);
@@ -314,6 +315,8 @@ void document_class(string title,
 	       document_method(f,method,prefix);
 	       method_names-=method->names;
 	    }
+	 if (method_names[method_name])
+	    stderr->write("failed to find "+method_name+" again, wierd...\n");
       }
 
    f->close();
