@@ -268,7 +268,7 @@ int main(int argc, string *argv)
   werror("main returning...\n");
   return -1;
 #else
-  handle_connection(hosts);
+  handle_connections(hosts);
   return 0;
 #endif
 }
