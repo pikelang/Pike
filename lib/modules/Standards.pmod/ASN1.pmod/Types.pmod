@@ -390,6 +390,9 @@ class asn1_identifier
       return this_object();
     }
 
+  mixed _encode() { return id; }
+  void _decode(mixed data) { id=data; }
+
   object append(int ...args)
     {
       return object_program(this_object())(@id, @args);

@@ -1141,6 +1141,7 @@ void do_install()
     
     if(sizeof(to_dump))
     {
+      rm("dumpmodule.log");
       status("Dumping modules, please wait...");
       foreach(to_dump, string mod) rm(mod+".o");
       /* Dump 50 modules at a time */

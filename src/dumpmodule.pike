@@ -13,15 +13,21 @@ class FakeMaster
     }
 }
 
-#define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
+#define error(X) throw( ({ (X), backtrace() }) )
+
+mapping function_names=([]);
+
 class Codec
 {
+  string last_id;
+
   string nameof(mixed x)
   {
+//    if(logfile) logfile->write("%O\n",x);
 //    werror("%O\n",x);
     if(p!=x)
-      if(mixed tmp=search(all_constants(),x))
-	return "efun:"+tmp;
+      if(mixed tmp=function_names[x])
+	return tmp;
 
     switch(sprintf("%t",x))
     {
@@ -40,12 +46,27 @@ class Codec
 	break;
 
       case "object":
-	if(mixed tmp=search(master()->objects,x))
+	if(program p=search(master()->objects,x))
 	{
-	  if(tmp=search(master()->programs,tmp))
+	  if(string tmp=search(master()->programs,p))
 	  {
 	    return tmp;
+	  }else{
+#if 0
+	    werror("Completely failed to find this program:\n");
+	    _describe(p);
+#endif
 	  }
+	}
+	if(object_program(x) == master()->dirnode)
+	{
+	  /* FIXME: this is a bit ad-hoc */
+	  string dirname=x->dirname;
+	  dirname-=".pmod";
+	  sscanf(dirname,"%*slib/modules/%s",dirname);
+	  dirname=replace(dirname,"/",".");
+	  if(master()->resolv(dirname) == x)
+	    return "resolv:"+dirname;
 	}
 	break;
     }
@@ -57,6 +78,9 @@ class Codec
     if(sscanf(x,"efun:%s",x))
       return all_constants()[x];
 
+    if(sscanf(x,"resolv:%s",x))
+      return master()->resolv(x);
+
     werror("Failed to decode %s\n",x);
     return 0;
   }
@@ -66,6 +90,9 @@ class Codec
   {
     if(sscanf(x,"efun:%s",x))
       return all_constants()[x];
+
+    if(sscanf(x,"resolv:%s",x))
+      return master()->resolv(x);
 
     if(object tmp=(object)x) return tmp;
     werror("Failed to decode %s\n",x);
@@ -77,6 +104,9 @@ class Codec
   {
     if(sscanf(x,"efun:%s",x))
       return all_constants()[x];
+
+    if(sscanf(x,"resolv:%s",x))
+      return master()->resolv(x);
 
     if(sscanf(x,"_static_modules.%s",x))
     {
@@ -90,13 +120,22 @@ class Codec
 
   mixed encode_object(object x)
   {
-//    _describe(x);
+    if(x->_encode) return x->_encode();
+//    if(logfile)
+//      logfile->write("Cannot encode objects yet: %s\n",master()->stupid_describe(x,100000));
+#if 0
+    werror("\n>>>>>>encode object was called for:<<<<<<\n");
+    _describe(x);
+    werror("\n");
+#endif
     error("Cannot encode objects yet.\n");
 //    error(sprintf("Cannot encode objects yet. %O\n",indices(x)));
   }
 
-  mixed decode_object(object x)
+  mixed decode_object(program p, mixed data)
   {
+    object ret=p(@data[0]);
+    if(sizeof(data)>1) ret->_decode(data[1]);
     error("Cannot encode objects yet.\n");
   }
 }
@@ -104,15 +143,29 @@ class Codec
 int quiet=0;
 
 Stdio.File logfile;
-void log(string file, int line, string err)
+
+class Handler
 {
-  if(!logfile) return;
-  logfile->write("================================================\n");
-  logfile->write(sprintf("%s:%d:%s\n",file,line,err));
+  void compile_error(string file,int line,string err)
+    {
+      if(!logfile) return;
+      logfile->write(sprintf("%s:%d:%s\n",file,line,err));
+    }
+
+  void compile_warning(string file,int line,string err)
+    {
+      if(!logfile) return;
+      logfile->write(sprintf("%s:%d:%s\n",file,line,err));
+    }
 }
+
+
 
 void dumpit(string file)
 {
+  if(logfile)
+    logfile->write("##%s##\n",file);
+
   if(!quiet)
     werror(file +": ");
   
@@ -130,10 +183,10 @@ void dumpit(string file)
       werror("does not exist.\n");
       break;
     }
-    if(programp(p=compile_file(file)))
+    if(programp(p=compile_file(file, Handler())))
     {
       string s=encode_value(p, Codec());
-      p=decode_value(s,Codec());
+      p=decode_value(s,master()->Codec());
       if(programp(p))
       {
 	Stdio.File(file + ".o","wct")->write(s);
@@ -169,8 +222,8 @@ void dumpit(string file)
 	werror("X");
       if(logfile)
       {
-	err[0]="While dumping "+file+": "+err[0];
-	logfile->write("================================================\n");
+//	err[0]="While dumping "+file+": "+err[0];
+//	logfile->write("================================================\n");
 	logfile->write(master()->describe_backtrace(err));
       }
     }else{
@@ -182,16 +235,23 @@ void dumpit(string file)
 
 int main(int argc, string *argv)
 {
+  foreach( (array)all_constants(), [string name, mixed func])
+    function_names[func]="efun:"+name;
+
+  function_names[Stdio.stdin]="resolv:Stdio.stdin";
+  function_names[Stdio.stdout]="resolv:Stdio.stdout";
+  function_names[Stdio.stderr]="resolv:Stdio.stderr";
+  function_names[_static_modules.Builtin]="resolv:_";
+
   if(argv[1]=="--quiet")
   {
     quiet=1;
     argv=argv[1..];
-    master()->set_inhibit_compile_errors(log);
 
     // FIXME: Make this a command line option..
     // It should not be done when running a binary dist
     // installation...
-    logfile=Stdio.File("dumpmodule.log","cwt");
+    logfile=Stdio.File("dumpmodule.log","caw");
 //    werror("Dumping modules ");
   }
 
@@ -199,7 +259,6 @@ int main(int argc, string *argv)
   {
     quiet=2;
     argv=argv[1..];
-    master()->set_inhibit_compile_errors(log);
     logfile=0;
   }
 

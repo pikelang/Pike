@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.111 2000/03/30 21:06:53 grubba Exp $
+ * $Id: master.pike.in,v 1.112 2000/04/08 01:30:19 hubbe Exp $
  * 
  * Master-file for Pike.
  *
@@ -574,7 +574,7 @@ object cast_to_object(string oname, string current_file)
   if(object o=low_cast_to_object(oname, current_file))
     return o;
   error("Cast '"+oname+"' to object failed"+
-	(current_file?sprintf("for '%s'",current_file):"")+".\n");
+	((current_file && current_file!="-")?sprintf(" for '%s'",current_file):"")+".\n");
   return 0;
 }
 
@@ -1646,30 +1646,33 @@ class Codec
   function functionof(string x)
     {
       if(sscanf(x,"efun:%s",x)) return f[x];
+      if(sscanf(x,"resolv:%s",x)) return resolv(x);
       return 0;
     }
   
   object objectof(string x)
     {
       if(sscanf(x,"efun:%s",x)) return f[x];
+      if(sscanf(x,"resolv:%s",x)) return resolv(x);
       return cast_to_object(x,0);
     }
   
   program programof(string x)
     {
       if(sscanf(x,"efun:%s",x)) return f[x];
-
+      if(sscanf(x,"resolv:%s",x)) return resolv(x);
       return cast_to_program(x,0);
     }
   
   mixed encode_object(object x)
     {
+      if(x->_encode) return x->_encode();
       error("Cannot encode objects yet.\n");
     }
   
   
-  mixed decode_object(object x)
+  mixed decode_object(object o, mixed data)
   {
-    error("Cannot encode objects yet.\n");
+    o->_decode(data);
   }
 }

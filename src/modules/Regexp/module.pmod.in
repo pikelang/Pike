@@ -49,9 +49,15 @@ class Regexp
     {
       case 'O':
 	return sprintf("Regexp(%O)", regexp_string);
+
+      case 's':
+	return regexp_string;
     }
     return 0;
   }
+
+  mixed _encode() { return regexp_string; }
+  mixed _decode(string s) { create(s); }
 }
 
 program _module_value=Regexp;
