@@ -1,8 +1,8 @@
-# $Id: configure.in,v 1.61 2003/04/23 17:14:32 marcus Exp $
+# $Id: configure.in,v 1.62 2003/05/06 11:14:16 grubba Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
-AC_MODULE_INIT()
+AC_MODULE_INIT(_system)
 
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)

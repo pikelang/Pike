@@ -1,8 +1,8 @@
-# $Id: configure.in,v 1.6 2001/02/19 09:11:06 mirar Exp $
+# $Id: configure.in,v 1.7 2003/05/06 11:14:16 grubba Exp $
 AC_INIT(mime.c)
 AC_CONFIG_HEADER(config.h)
 
-AC_MODULE_INIT()
+AC_MODULE_INIT(___MIME)
 
 PIKE_FEATURE_OK(MIME)
 

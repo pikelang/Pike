@@ -1,8 +1,8 @@
-# $Id: configure.in,v 1.1 1999/02/19 04:58:39 mirar Exp $
+# $Id: configure.in,v 1.2 2003/05/06 11:14:16 grubba Exp $
 AC_INIT(parser.c)
 AC_CONFIG_HEADER(config.h)
 
-AC_MODULE_INIT()
+AC_MODULE_INIT(Parser._parser)
 
 AC_C_CHAR_UNSIGNED
 
