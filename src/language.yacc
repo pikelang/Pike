@@ -112,7 +112,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.273 2002/03/21 17:39:52 grubba Exp $");
+RCSID("$Id: language.yacc,v 1.274 2002/05/02 12:41:29 grubba Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -606,6 +606,13 @@ close_brace_or_missing: '}'
   }
   ;
 
+close_brace_or_eof: '}'
+  | TOK_LEX_EOF
+  {
+    yyerror("Missing '}'.");
+  }
+  ;
+
 close_bracket_or_missing: ']'
   | /* empty */
   {
@@ -881,9 +888,13 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
 	fatal("Stack error (underflow)\n");
 
       if((Pike_compiler->compiler_pass == 1) &&
-	 (f != Pike_compiler->compiler_frame->current_function_number))
+	 (f != Pike_compiler->compiler_frame->current_function_number)) {
+	fprintf(stderr, "define_function()/do_opt_code() failed for symbol %s\n",
+		$4->u.sval.u.string->str);
+	dump_program_desc(Pike_compiler->new_program);
 	fatal("define_function screwed up! %d != %d\n",
 	      f, Pike_compiler->compiler_frame->current_function_number);
+      }
 #endif
 
       lex.current_line = save_line;
@@ -942,7 +953,7 @@ def: modifiers type_or_error optional_stars TOK_IDENTIFIER push_compiler_frame0
       lex.pragmas|=$1;
     }
       program
-   '}'
+   close_brace_or_eof
     {
       lex.pragmas=$<number>3;
     }
