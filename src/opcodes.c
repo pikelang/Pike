@@ -26,7 +26,7 @@
 #include "bignum.h"
 #include "operators.h"
 
-RCSID("$Id: opcodes.c,v 1.83 2000/08/10 17:39:22 grubba Exp $");
+RCSID("$Id: opcodes.c,v 1.84 2000/08/13 19:34:34 grubba Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1465,13 +1465,13 @@ CHAROPT2(								 \
   match_set:								 \
 	  for(e=eye;eye<input_len;eye++)				 \
 	  {								 \
-CHAROPT(								 \
+CHAROPT2(								 \
 	    if(input[eye]<sizeof(set.c))				 \
 	    {								 \
 )									 \
 	      if(set.c[input[eye]] == set.neg)				 \
 		break;							 \
-CHAROPT(								 \
+CHAROPT2(								 \
 	    }else{							 \
 	      if(set.a)							 \
 	      {								 \
@@ -1525,8 +1525,11 @@ CHAROPT(								 \
 
 /* Confusing? Yes - Hubbe */
 
+/* CHAROPT(X) is X if the match set is wide.
+ * CHAROPT2(X) is X if the input is wide.
+ */
 #define CHAROPT(X)
-#define CHAROPT2(X) X
+#define CHAROPT2(X)
 
 MKREADSET(0)
 MK_VERY_LOW_SSCANF(0,0)
