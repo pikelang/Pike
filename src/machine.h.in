@@ -55,6 +55,9 @@
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H
 
+/* Define if you have the <setjmp.h> header file.  */
+#undef HAVE_SETJMP_H
+
 /* more header files */
 #undef HAVE_FCNTL_H
 #undef HAVE_SYS_FILIO_H
