@@ -1,9 +1,9 @@
 //
-// $Id: PGP.pmod,v 1.3 2003/12/03 08:30:43 nilsson Exp $
+// $Id: PGP.pmod,v 1.4 2003/12/05 06:58:56 nilsson Exp $
 
 #pike __REAL_VERSION__
 
-#if constant(Crypto.SHA)
+#if constant(Crypto.HashState)
 
 //! Decodes a PGP public key.
 //! @returns
