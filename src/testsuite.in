@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.640 2003/05/15 15:31:35 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.641 2003/05/17 13:34:25 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -4053,15 +4053,14 @@ void test()
   object locker = thread_create (mutex_locker);
   while (started < 2) sleep (0.1);
 
-  Process.Process writer = Process.create_process (
-    ({master()->_pike_file_name,
-      @(master()->_master_file_name ?
-	({"-m" + master()->_master_file_name}) : ({})),
+  Process.Process writer = Process.create_process(
+    RUNPIKE_ARRAY + ({
       "-e",
-      sprintf ("sleep (0.5); "
-	       "Stdio.File f = Stdio.File (%O, \"w\"); "
-	       "sleep (0.5); "
-	       "f->close();", fifo)}));
+      sprintf ("sleep(0.5); "
+	       "Stdio.File f = Stdio.File(%O, \"w\"); "
+	       "sleep(0.5); "
+	       "f->close();", fifo)
+    }));
 
   log (test, "opening pipe\n");
   start_key = 0;
@@ -9609,8 +9608,10 @@ cond([[ file_stat("/bin/sleep")  && __builtin->TraceProcess && (cpp("__NT__")/"\
 [[
 test_any([[
   // Check that tracing works...
+  // Use a spawned pike to make sure the process doesn't exit
+  // prematurely due to EINTR.
   Process.TraceProcess proc =
-    Process.TraceProcess(({ "/bin/sleep", "99999" }));
+    Process.TraceProcess(RUNPIKE_ARRAY + ({ "-e", "sleep(99999)" }));
 
   int code = proc->wait();
   if (code != -2) {
