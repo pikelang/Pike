@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.25 2004/08/19 08:58:50 grubba Exp $");
+RCSID("$Id: resultset.c,v 1.26 2004/08/19 12:52:53 noring Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -933,7 +933,7 @@ static void f_dateset_between( INT32 args )
   ResultSet *source = THIS->d;
   ResultSet *res;
 
-  get_all_args( "before", args, "%d%d", &after, &before );
+  get_all_args( "between", args, "%d%d", &after, &before );
   DUP_DATESET();
 
   if (source) {
@@ -943,6 +943,27 @@ static void f_dateset_between( INT32 args )
     for( i = 0; i<source->num_docs; i++ )
       if( (source->hits[i].ranking > after) &&
 	  (source->hits[i].ranking < before) )
+	res->hits[res->num_docs++] = source->hits[i];
+  }
+}
+
+static void f_dateset_not_between( INT32 args )
+{
+  int before, after, i;
+  struct object *o;
+  ResultSet *source = THIS->d;
+  ResultSet *res;
+
+  get_all_args( "not_between", args, "%d%d", &after, &before );
+  DUP_DATESET();
+
+  if (source) {
+    if( before <= after )
+      return;
+
+    for( i = 0; i<source->num_docs; i++ )
+      if( (source->hits[i].ranking < after) ||
+	  (source->hits[i].ranking > before) )
 	res->hits[res->num_docs++] = source->hits[i];
   }
 }
@@ -1047,6 +1068,7 @@ void init_resultset_program(void)
     add_function( "before", f_dateset_before,    "function(int:object)", 0 );
     add_function( "after", f_dateset_after,     "function(int:object)", 0 );
     add_function( "between", f_dateset_between, "function(int,int:object)", 0 );
+    add_function( "not_between", f_dateset_not_between, "function(int,int:object)", 0 );
     do_inherit( &x, 0, NULL );
   }
   dateset_program = end_program( );
