@@ -79,7 +79,6 @@
 %token F_CLASS
 %token F_COLON_COLON
 %token F_COMMA
-%token F_CONSTANT
 %token F_CONTINUE 
 %token F_DEFAULT
 %token F_DIV_EQ
@@ -158,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.35 1997/04/07 22:56:48 marcus Exp $");
+RCSID("$Id: language.yacc,v 1.36 1997/04/08 21:14:38 kg Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
