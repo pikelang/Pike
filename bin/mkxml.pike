@@ -1,4 +1,4 @@
-/* $Id: mkxml.pike,v 1.11 2001/05/06 15:45:20 grubba Exp $ */
+/* $Id: mkxml.pike,v 1.12 2001/05/06 16:07:55 grubba Exp $ */
 
 import Stdio;
 import Array;
@@ -811,9 +811,11 @@ void document(string enttype,
 void make_doc_files()
 {
    stderr->write("modules: "+sort(indices(parse))*", "+"\n");
-   
+
+   stdout->write("<module name=''>\n");
    foreach (sort(indices(parse)-({"_order"})),string module)
       document("module",parse[module],module,module+".",stdout);
+   stdout->write("</module>\n");
 }
 
 void process_line(string s, string currentfile, int line)
