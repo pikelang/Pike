@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: math.c,v 1.60 2003/04/07 17:21:57 nilsson Exp $
+|| $Id: math.c,v 1.61 2003/05/13 15:54:16 nilsson Exp $
 */
 
 #include "global.h"
@@ -38,7 +38,7 @@
   if(sp[-1].type!=T_FLOAT) SIMPLE_BAD_ARG_ERROR(X, 1, "float")
 
 
-RCSID("$Id: math.c,v 1.60 2003/04/07 17:21:57 nilsson Exp $");
+RCSID("$Id: math.c,v 1.61 2003/05/13 15:54:16 nilsson Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -201,12 +201,22 @@ void f_atan2(INT32 args)
 
 /*! @decl float sqrt(float f)
  *! @decl int sqrt(int i)
+ *! @decl mixed sqrt(object o)
  *!
  *! Returns the square root of @[f], or in the integer case, the square root
- *! truncated to the closest lower integer.
+ *! truncated to the closest lower integer. If the argument is an object,
+ *! the lfun _sqrt in the object will be called.
  *!
  *! @seealso
- *!   @[pow()], @[log()], @[exp()], @[floor()]
+ *!   @[pow()], @[log()], @[exp()], @[floor()], @[lfun::_sqrt]
+ */
+
+/*! @decl mixed lfun::_sqrt()
+ *!   Called by sqrt when the square root of an object is requested.
+ *! @note
+ *!   _sqrt is not a real lfun, so it must not be defined as static.
+ *! @seealso
+ *!   @[predef::sqrt()]
  */
 void f_sqrt(INT32 args)
 {
