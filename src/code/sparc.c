@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sparc.c,v 1.25 2002/11/08 12:22:52 grubba Exp $
+|| $Id: sparc.c,v 1.26 2002/11/08 17:29:59 grubba Exp $
 */
 
 /*
@@ -11,7 +11,10 @@
  * Henrik Grubbström 20010720
  */
 
+#include "global.h"
+#include "svalue.h"
 #include "operators.h"
+#include "object.h"
 
 /*
  * Register definitions
@@ -185,6 +188,7 @@
 #define SPARC_REG_PIKE_FP	SPARC_REG_L1
 #define SPARC_REG_PIKE_SP	SPARC_REG_L2
 #define SPARC_REG_PIKE_MARK_SP	SPARC_REG_L3
+#define SPARC_REG_PIKE_OBJ	SPARC_REG_L4
 #define SPARC_REG_SP		SPARC_REG_O6
 #define SPARC_REG_PC		SPARC_REG_O7
 
@@ -333,11 +337,11 @@ static void sparc_push_int(INT32 x, int sub_type)
     SPARC_STW(SPARC_REG_G0, SPARC_REG_PIKE_SP, OFFSETOF(svalue, u.integer), 1);
   }
   if (x != type_word) {
-    SET_REG(SPARC_REG_I0, type_word);
+    SET_REG(SPARC_REG_I1, type_word);
   }
   /* This is safe since type_word is never zero. */
-  /* stw %i0, [ %pike_sp ] */
-  SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_SP, 0, 1);
+  /* stw %i1, [ %pike_sp ] */
+  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, 0, 1);
   /* add %pike_sp, %pike_sp, sizeof(struct svalue) */
   SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP, sizeof(struct svalue), 1);
   sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
@@ -356,9 +360,96 @@ static void sparc_clear_string_subtype(void)
   SPARC_STH(SPARC_REG_G0, SPARC_REG_PIKE_SP, OFFSETOF(svalue, subtype), 1);
 }
 
+static void sparc_push_lfun(unsigned int no)
+{
+  LOAD_PIKE_FP();
+  LOAD_PIKE_SP();
+  /* lduw [ %pike_fp, %offset(pike_frame, current_object) ], %pike_obj */
+  SPARC_LDUW(SPARC_REG_PIKE_OBJ, SPARC_REG_PIKE_FP,
+	     OFFSETOF(pike_frame, current_object), 1);
+  /* stw %pike_obj, [ %pike_sp, %offset(svalue, u.object) ] */
+  SPARC_STW(SPARC_REG_PIKE_OBJ, SPARC_REG_PIKE_SP,
+	    OFFSETOF(svalue, u.object), 1);
+  /* lduw [ %pike_obj, %offset(object, refs) ], %i0 */
+  SPARC_LDUW(SPARC_REG_I0, SPARC_REG_PIKE_OBJ,
+	     OFFSETOF(object, refs), 1);
+  /* add %i0, 1, %i0 */
+  SPARC_ADD(SPARC_REG_I0, SPARC_REG_I0, 1, 1);
+  /* stw %i0, [ %pike_obj, %offset(object, refs) ] */
+  SPARC_STW(SPARC_REG_I0, SPARC_REG_PIKE_OBJ,
+	    OFFSETOF(object, refs), 1);
+  /* lduh [ %pike_fp, %offset(pike_frame, context.identifier_level ], %i1 */
+  SPARC_LDUH(SPARC_REG_I1, SPARC_REG_PIKE_FP,
+	     OFFSETOF(pike_frame, context.identifier_level), 1);
+  SET_REG(SPARC_REG_I2, (no & 0xffff) | (PIKE_T_FUNCTION << 16));
+  /* add %i1, %i2, %i1 */
+  SPARC_ADD(SPARC_REG_I1, SPARC_REG_I1, SPARC_REG_I2, 0);
+  /* stw %i1, [ %pike_sp, %g0 ] */
+  SPARC_STW(SPARC_REG_I1, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+  /* add %pike_sp, sizeof(struct svalue), %pike_sp */
+  SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP, sizeof(struct svalue), 1);
+  sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
+}
+
+void sparc_local_lvalue(unsigned int no)
+{
+  LOAD_PIKE_SP();
+  LOAD_PIKE_FP();
+  SET_REG(SPARC_REG_I0, T_LVALUE);
+  /* sth %i0, [ %pike_sp, %g0 ] */
+  SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, SPARC_REG_G0, 0);
+  SET_REG(SPARC_REG_I1, no * sizeof(struct svalue));
+  /* lduw [ %pike_fp, %offset(pike_frame, locals) ], %i2 */
+  SPARC_LDUW(SPARC_REG_I2, SPARC_REG_PIKE_FP,
+	     OFFSETOF(pike_frame, locals), 1);
+  SET_REG(SPARC_REG_I0, T_VOID);
+  /* stw %i2, [ %pike_sp, %offset(svalue, u.lval) ] */
+  SPARC_STW(SPARC_REG_I2, SPARC_REG_PIKE_SP,
+	    OFFSETOF(svalue, u.lval), 1);
+  /* add %pike_sp, sizeof(struct svalue) * 2, %pike_sp */
+  SPARC_ADD(SPARC_REG_PIKE_SP, SPARC_REG_PIKE_SP, sizeof(struct svalue)*2, 1);
+  /* sth %i0, [ %pike_sp , -sizeof(struct svalue) ] */
+  SPARC_STH(SPARC_REG_I0, SPARC_REG_PIKE_SP, -sizeof(struct svalue), 1);
+  sparc_codegen_state |= SPARC_CODEGEN_SP_NEEDS_STORE;
+}
+
 /*
  *
  */
+
+static void low_ins_call(void *addr, int delay_ok)
+{
+  SPARC_FLUSH_UNSTORED();
+
+  {
+    static int last_prog_id=-1;
+    static size_t last_num_linenumbers=(size_t)~0;
+    if(last_prog_id != Pike_compiler->new_program->id ||
+       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
+    {
+      last_prog_id=Pike_compiler->new_program->id;
+      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
+
+      LOAD_PIKE_FP();
+
+      /* Note: We fill the delay slot with the following opcode.
+       *       This works since the new %o7 is available immediately.
+       *       (Sparc Architecture Manual V9 p149.)
+       */
+
+      /* stw %o7, [ %pike_fp, %offsetof(pike_frame, pc) ] */
+      add_to_program(0xc0202000|(SPARC_REG_O7<<25)|(SPARC_REG_PIKE_FP<<14)|
+		     OFFSETOF(pike_frame, pc));
+      
+      delay_ok = 1;
+    }
+  }
+
+  ADD_CALL(addr, delay_ok);
+
+  /* This is probably only needed for some instructions, but... */
+  SPARC_UNLOAD_CACHED();
+}
 
 static void low_ins_f_byte(unsigned int b, int delay_ok)
 {
@@ -383,6 +474,7 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   /* This is not very pretty */
   switch(b)
   {
+#if 0
   case F_MARK2 - F_OFFSET:
     sparc_mark(0);
     /* FALL_THROUGH */
@@ -416,6 +508,13 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
   case F_BIGNUM - F_OFFSET:
     sparc_push_int(0x7fffffff, 0);
     return;
+#endif /* 0 */
+
+#define F_ALIAS(F_FUN, O_FUN)	\
+  case F_FUN - F_OFFSET:	\
+    addr = (void *)O_FUN;	\
+    break
+
   case F_MAKE_ITERATOR - F_OFFSET:
     {
       extern void f_Iterator(INT32);
@@ -424,11 +523,6 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
       addr = (void *)f_Iterator;
     }
     break;
-
-#define F_ALIAS(F_FUN, O_FUN)	\
-  case F_FUN - F_OFFSET:	\
-    addr = (void *)O_FUN;	\
-    break
 
     F_ALIAS(F_COMPL, o_compl);
     F_ALIAS(F_LSH, o_lsh);
@@ -449,39 +543,13 @@ static void low_ins_f_byte(unsigned int b, int delay_ok)
     F_ALIAS(F_CAST_TO_INT, o_cast_to_int);
     F_ALIAS(F_CAST_TO_STRING, o_cast_to_string);
     F_ALIAS(F_RANGE, o_range);
+
+    F_ALIAS(F_SSCANF, o_sscanf);
+
     /* F_ZERO_TYPE? */
   }
 
-  SPARC_FLUSH_UNSTORED();
-
-  {
-    static int last_prog_id=-1;
-    static size_t last_num_linenumbers=(size_t)~0;
-    if(last_prog_id != Pike_compiler->new_program->id ||
-       last_num_linenumbers != Pike_compiler->new_program->num_linenumbers)
-    {
-      last_prog_id=Pike_compiler->new_program->id;
-      last_num_linenumbers = Pike_compiler->new_program->num_linenumbers;
-
-      LOAD_PIKE_FP();
-
-      /* Note: We fill the delay slot with the following opcode.
-       *       This works since the new %o7 is available immediately.
-       *       (Sparc Architecture Manual V9 p149.)
-       */
-
-      /* stw %o7, [ %pike_fp, %offsetof(pike_frame, pc) ] */
-      add_to_program(0xc0202000|(SPARC_REG_O7<<25)|(SPARC_REG_PIKE_FP<<14)|
-		     OFFSETOF(pike_frame, pc));
-      
-      delay_ok = 1;
-    }
-  }
-
-  ADD_CALL(addr, delay_ok);
-
-  /* This is probably only needed for some instructions, but... */
-  SPARC_UNLOAD_CACHED();
+  low_ins_call(addr, delay_ok);
 }
 
 void ins_f_byte(unsigned int opcode)
@@ -491,6 +559,22 @@ void ins_f_byte(unsigned int opcode)
 
 void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
 {
+#if 0
+  switch(a) {
+  case F_NUMBER:
+    sparc_push_int(b, 0);
+    return;
+  case F_NEG_NUMBER:
+    sparc_push_int(-b, 0);
+    return;
+  case F_LFUN:
+    sparc_push_lfun(b);
+    return;
+  case F_MARK_X:
+    sparc_mark(-b);
+    return;
+  }
+#endif /* 0 */
   SET_REG(SPARC_REG_O0, b);
   low_ins_f_byte(a, 1);
   return;
