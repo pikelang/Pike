@@ -727,6 +727,13 @@ class cROMAN
    {
       return sprintf("%s ab urbe condita",roman_number(y+752));
    }
+
+   int year_number_from_name(string name)
+   {
+      int y;
+      sscanf(name,"%d",y);
+      return y-752;
+   }
    
    string month_day_name_from_number(int d,int mnd)
    {
