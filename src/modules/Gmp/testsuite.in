@@ -1,4 +1,4 @@
-dnl $Id: testsuite.in,v 1.27 2003/03/30 01:01:27 mast Exp $
+dnl $Id: testsuite.in,v 1.28 2003/12/20 14:02:11 marcus Exp $
 
 cond( [[ master()->resolv("Gmp")->mpz ]],
 [[
@@ -239,8 +239,8 @@ cond( [[ master()->resolv("Gmp")->mpz ]],
   test_true(Gmp.mpz(2)->probably_prime_p(), 0)
   test_true(Gmp.mpz(3)->probably_prime_p(), 0)
   test_false(Gmp.mpz(4)->probably_prime_p(), 0)
-  test_false(Gmp.mpz(100000000000000000)->probably_prime_p(), 0)
-  test_eq(Gmp.mpz(100000000000000000)->next_prime(), 100000000000000003);
+  test_false(Gmp.mpz("100000000000000000")->probably_prime_p(), 0)
+  test_eq((string)Gmp.mpz("100000000000000000")->next_prime(), "100000000000000003");
   test_eq(Gmp.mpz(0)->small_factor(),0)
   test_eq(Gmp.mpz(1)->small_factor(),0)
   test_eq(Gmp.mpz(2)->small_factor(),0)
