@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.118 2002/11/13 12:38:29 grubba Exp $
+|| $Id: interpret_functions.h,v 1.119 2002/11/14 18:09:12 grubba Exp $
 */
 
 /*
@@ -2133,18 +2133,23 @@ OPCODE1(F_CALL_BUILTIN1_AND_POP, "call builtin1 & pop", 0, {
   DONE;									   \
 }while(0)
 
-
 /* Assume that the number of arguments is correct */
 OPCODE1_JUMP(F_COND_RECUR, "recur if not overloaded", I_PC_AT_NEXT, {
+  struct program *p = Pike_fp->current_object->prog;
   PIKE_OPCODE_T *addr = (PIKE_OPCODE_T *)(((INT32 *)PROG_COUNTER) + 1);
   Pike_fp->pc=addr;
 
-  /* FIXME:
-   * this test should actually test if this function is
-   * overloaded or not. Currently it only tests if
-   * this context is inherited or not.
+  /* Test if the function is overloaded.
+   *
+   * Note: The second part of the test is sufficient, but
+   *       the since first case is much simpler to test and
+   *       is common, it should offer a speed improvement.
+   *	/grubba 2002-11-14
    */
-  if(Pike_fp->current_object->prog != Pike_fp->context.prog)
+  if((p != Pike_fp->context.prog) &&
+     (p->inherits[p->identifier_references[Pike_fp->context.identifier_level +
+					   arg1].inherit_offset].prog !=
+      Pike_fp->context.prog))
   {
     PIKE_OPCODE_T *faddr = PROG_COUNTER+GET_JUMP();
     ptrdiff_t num_locals = READ_INCR_BYTE(faddr);	/* ignored */

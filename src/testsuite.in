@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.561 2002/11/13 13:20:33 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.562 2002/11/14 18:09:20 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -80,9 +80,7 @@ test_any([[
 
 test_any([[
   // Test that F_COND_RECUR works properly.
-  // NB: The class Y may in the future need to overload
-  //     the function Ack() to ensure that the RECUR fail
-  //     branch is taken in F_COND_RECUR.
+  // This test forces F_COND_RECUR to fail.
   class X
   {
     int Ack(int M, int N) {
@@ -92,7 +90,9 @@ test_any([[
     }
   };
 
-  class Y { inherit X; };
+  class Y { inherit X;
+    int Ack(int M, int N) { return ::Ack(M, N); }
+  };
 
   return Y()->Ack(2,2);
 ]],7)
