@@ -20,7 +20,7 @@ void create()
   /* make ourselves known */
   add_constant("master",lambda() { return this_object(); });
   add_constant("describe_backtrace",describe_backtrace);
-  add_constant("version",lambda() { return "Pike v0.1"; });
+  add_constant("version",lambda() { return "Pike v0.2"; });
   add_constant("mkmultiset",lambda(mixed *a) { return aggregate_multiset(@a); });
   add_constant("strlen",sizeof);
 
