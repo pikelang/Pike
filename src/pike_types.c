@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.163 2001/03/18 00:59:34 grubba Exp $");
+RCSID("$Id: pike_types.c,v 1.164 2001/03/18 14:32:16 grubba Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -4082,6 +4082,16 @@ static void low_type_to_string(struct pike_type *t)
     t = t->cdr;
     goto recurse;
 
+  case '0':
+  case '1':
+  case '2':
+  case '3':
+  case '4':
+  case '5':
+  case '6':
+  case '7':
+  case '8':
+  case '9':
   case T_PROGRAM:
   case T_STRING:
   case T_FLOAT:
@@ -4134,6 +4144,10 @@ static void low_type_to_string(struct pike_type *t)
     my_putchar('0' + (ptrdiff_t)t->car);
     t = t->cdr;
     goto recurse;
+
+  default:
+    Pike_error("low_type_to_string(): Unsupported node: %d\n", t->type);
+    break;
   }
 }
 
