@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.69 1999/10/23 00:43:44 noring Exp $");
+RCSID("$Id: stralloc.c,v 1.70 1999/10/23 06:51:32 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -580,6 +580,26 @@ struct pike_string * debug_make_shared_binary_string(const char *str,int len)
   add_ref(s);
 
   return s;
+}
+
+struct pike_string * debug_make_shared_binary_pcharp(const PCHARP str,int len)
+{
+  switch(str.shift)
+  {
+    case 0:
+      return make_shared_binary_string((p_wchar0 *)(str.ptr),  len);
+    case 1:
+      return make_shared_binary_string1((p_wchar1 *)(str.ptr),  len);
+    case 2:
+      return make_shared_binary_string2((p_wchar2 *)(str.ptr),  len);
+    default:
+      fatal("Unknown string width!\n");
+  }
+}
+
+struct pike_string * debug_make_shared_pcharp(const PCHARP str)
+{
+  return debug_make_shared_binary_pcharp(str, pcharp_strlen(str));
 }
 
 struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len)
@@ -1783,10 +1803,46 @@ long STRTOL_PCHARP(PCHARP str, PCHARP *ptr, int base)
   return (neg ? val : -val);
 }
 
-int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
+int string_to_svalue_inumber(struct svalue *r,
+			     char * str,
+			     char **ptr,
+			     int base,
 			     int maxlength)
 {
-  char *str_start;
+  PCHARP tmp;
+  int ret=pcharp_to_svalue_inumber(r,
+				   MKPCHARP(str,0),
+				   &tmp,
+				   base,
+				   maxlength);
+  if(ptr) *ptr=(char *)tmp.ptr;
+  return ret;
+}
+
+int wide_string_to_svalue_inumber(struct svalue *r,
+				  void * str,
+				  void **ptr,
+				  int base,
+				  int maxlength,
+				  int shift)
+{
+  PCHARP tmp;
+  int ret=pcharp_to_svalue_inumber(r,
+				   MKPCHARP(str,shift),
+				   &tmp,
+				   base,
+				   maxlength);
+  if(ptr) *ptr=(char *)tmp.ptr;
+  return ret;
+}
+
+int pcharp_to_svalue_inumber(struct svalue *r,
+			     PCHARP str,
+			     PCHARP *ptr,
+			     int base,
+			     int maxlength)
+{
+  PCHARP str_start;
   
   INT_TYPE xx, neg = 0, is_bignum = 0;
   INT_TYPE val;
@@ -1805,10 +1861,13 @@ int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
   if(base < 0 || MBASE < base)
     return 0;
   
-  if(!isalnum(c = *str))
+  if(!isalnum(c = EXTRACT_PCHARP(str)))
   {
     while(ISSPACE(c))
-      c = *++str;
+    {
+      INC_PCHARP(str,1);
+      c = EXTRACT_PCHARP(str);
+    }
     
     switch (c)
     {
@@ -1816,7 +1875,8 @@ int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
       neg++;
       /* Fall-through. */
     case '+':
-      c = *++str;
+      INC_PCHARP(str,1);
+      c = EXTRACT_PCHARP(str);
     }
   }
   
@@ -1824,7 +1884,7 @@ int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
   {
     if(c != '0')
       base = 10;
-    else if(str[1] == 'x' || str[1] == 'X')
+    else if(INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X')
       base = 16;
     else
       base = 8;
@@ -1837,13 +1897,20 @@ int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
   if(!isalnum(c) || (xx = DIGIT(c)) >= base)
     return 0;   /* No number formed. */
   
-  if(base == 16 && c == '0' && isxdigit(((unsigned char *)str)[2]) &&
-      (str[1] == 'x' || str[1] == 'X'))
-    c = *(str += 2);   /* Skip over leading "0x" or "0X". */
+  if(base == 16 && c == '0' &&
+     INDEX_PCHARP(str,2) < 256 && /* Don't trust isxdigit... */
+     isxdigit(INDEX_PCHARP(str,2)) &&
+      (INDEX_PCHARP(str,1) == 'x' || INDEX_PCHARP(str,1) == 'X'))
+  {
+    /* Skip over leading "0x" or "0X". */
+    INC_PCHARP(str,2);
+    c=EXTRACT_PCHARP(str);
+  }
   
-  for(val = -DIGIT(c); isalnum(c = *++str) &&
-                       (xx = DIGIT(c)) < base &&
-	               0 != maxlength--; )
+  for(val = -DIGIT(c);
+      isalnum(c = ( INC_PCHARP(str,1),EXTRACT_PCHARP(str) )) &&
+	(xx = DIGIT(c)) < base &&
+	0 != maxlength--; )
   {
 #ifdef AUTO_BIGNUM
     if(INT_TYPE_MUL_OVERFLOW(val, base))
@@ -1861,14 +1928,15 @@ int string_to_svalue_inumber(struct svalue *r, char *str, char **ptr, int base,
 #ifdef AUTO_BIGNUM
   if(is_bignum || (!neg && r->u.integer < 0))
   {
-    struct pike_string *s;
-
-    s = begin_shared_string(str - str_start);
-    MEMCPY(s->str, str_start, str - str_start);
-    s = end_shared_string(s);
-
-    push_string(s);
+    push_string(make_shared_binary_pcharp(str_start,
+					  SUBTRACT_PCHARP(str,str_start)));
     push_int(base);
+
+    /* Note that this can concievably throw errors()
+     * in some situations that might not be desirable...
+     * take care.
+     * /Hubbe
+     */
     convert_stack_top_with_base_to_bignum();
     
     *r = *--sp;
@@ -1886,7 +1954,7 @@ int convert_stack_top_string_to_inumber(int base)
   if(sp[-1].type != T_STRING)
     error("Cannot convert stack top to integer number.\n");
   
-  i = string_to_svalue_inumber(&r, sp[-1].u.string->str, 0, base, 0);
+  i=pcharp_to_svalue_inumber(&r, MKPCHARP_STR(sp[-1].u.string), 0, base, 0);
   
   free_string(sp[-1].u.string);
   sp[-1] = r;

@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.21 1999/09/25 20:11:49 grubba Exp $
+ * $Id: las.h,v 1.22 1999/10/23 06:51:27 hubbe Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -115,8 +115,8 @@ int dooptcode(struct pike_string *name,
 void resolv_program(node *n);
 /* Prototypes end here */
 
-#define CAR(n) ((n)->u.node.a)
-#define CDR(n) ((n)->u.node.b)
+#define CAR(n) (dmalloc_touch(node *,(n))->u.node.a)
+#define CDR(n) (dmalloc_touch(node *,(n))->u.node.b)
 #define CAAR(n) CAR(CAR(n))
 #define CADR(n) CAR(CDR(n))
 #define CDAR(n) CDR(CAR(n))

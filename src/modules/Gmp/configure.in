@@ -1,7 +1,8 @@
-# $Id: configure.in,v 1.7 1999/10/05 06:23:19 hubbe Exp $
+# $Id: configure.in,v 1.8 1999/10/23 06:52:07 hubbe Exp $
 AC_INIT(mpz_glue.c)
 AC_CONFIG_HEADER(gmp_machine.h)
 AC_ARG_WITH(gmp,     [  --with(out)-gmp        Support bignums],[],[with_gmp=yes])
+AC_ARG_WITH(gmp,     [  --with(out)-bignums    Support automatic bignum conversion],[],[with_bignums=yes])
 
 AC_MODULE_INIT()
 
@@ -53,7 +54,14 @@ fi
 
 if test x$with_gmp = xyes ; then
   AC_CHECK_GMP(gmp2,gmp2/gmp.h,[
-    AC_CHECK_GMP(gmp,gmp.h)
+    AC_CHECK_GMP(gmp,gmp.h,[
+      if test "x$with_bignums" = xyes ; then
+        AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
+Either install GMP on your system or run configure with
+the option --without-bignums.
+])
+      fi
+    ])
   ])
 fi
 

@@ -182,7 +182,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.127 1999/10/19 15:31:20 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.128 1999/10/23 06:51:25 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -278,7 +278,6 @@ int yylex(YYSTYPE *yylval);
 %type <number> F_MIXED_ID
 %type <number> F_MULTISET_ID
 %type <number> F_NO_MASK
-%type <number> F_NUMBER
 %type <number> F_OBJECT_ID
 %type <number> F_PREDEF
 %type <number> F_PRIVATE
@@ -299,13 +298,13 @@ int yylex(YYSTYPE *yylval);
 %type <number> modifier
 %type <number> modifier_list
 %type <number> modifiers
-%type <number> number_or_maxint
-%type <number> number_or_minint
 %type <number> optional_dot_dot_dot
 %type <number> optional_stars
 
 /* The following symbols return type information */
 
+%type <n> number_or_minint
+%type <n> number_or_maxint
 %type <n> cast
 %type <n> simple_type
 %type <n> simple_type2
@@ -313,6 +312,7 @@ int yylex(YYSTYPE *yylval);
 %type <n> string_constant
 %type <n> string
 %type <n> F_STRING
+%type <n> F_NUMBER
 %type <n> optional_rename_inherit
 %type <n> optional_identifier
 %type <n> F_IDENTIFIER
@@ -849,14 +849,14 @@ type3: F_INT_ID  opt_int_range    { push_type(T_INT); }
 
 number_or_maxint: /* Empty */
   {
-    $$ = MAX_INT32;
+    $$ = mkintnode(MAX_INT32);
   }
   | F_NUMBER
   ;
 
 number_or_minint: /* Empty */
   {
-    $$ = MIN_INT32;
+    $$ = mkintnode(MIN_INT32);
   }
   | F_NUMBER
   ;
@@ -869,8 +869,22 @@ opt_int_range: /* Empty */
   | '(' number_or_minint F_DOT_DOT number_or_maxint ')'
   {
     /* FIXME: Check that $4 is >= $2. */
-    push_type_int($4);
-    push_type_int($2);
+    if($2->token == F_CONSTANT && $2->u.sval.type == T_INT)
+    {
+      push_type_int($4->u.sval.u.integer);
+    }else{
+      push_type_int(MAX_INT32);
+    }
+
+    if($4->token == F_CONSTANT && $4->u.sval.type == T_INT)
+    {
+      push_type_int($4->u.sval.u.integer);
+    }else{
+      push_type_int(MIN_INT32);
+    }
+
+    free_node($2);
+    free_node($4);
   }
   ;
 
@@ -1621,7 +1635,7 @@ expr3: expr4
   ;
 
 expr4: string
-  | F_NUMBER { $$=mkintnode($1); }
+  | F_NUMBER 
   | F_FLOAT { $$=mkfloatnode((FLOAT_TYPE)$1); }
   | catch
   | gauge

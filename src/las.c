@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.92 1999/09/22 18:39:10 grubba Exp $");
+RCSID("$Id: las.c,v 1.93 1999/10/23 06:51:26 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -29,6 +29,7 @@ RCSID("$Id: las.c,v 1.92 1999/09/22 18:39:10 grubba Exp $");
 #include "peep.h"
 #include "builtin_functions.h"
 #include "cyclic.h"
+#include "block_alloc.h"
 
 #define LASDEBUG
 
@@ -196,21 +197,20 @@ struct pike_string *find_return_type(node *n)
 
 #define NODES 256
 
-struct node_chunk 
-{
-  struct node_chunk *next;
-  node nodes[NODES];
-};
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT u.node.a
 
-static struct node_chunk *node_chunks=0;
-static node *free_nodes=0;
+BLOCK_ALLOC(node_s, NODES);
+
+#undef BLOCK_ALLOC_NEXT
+#define BLOCK_ALLOC_NEXT next
 
 void free_all_nodes(void)
 {
   if(!compiler_frame)
   {
     node *tmp;
-    struct node_chunk *tmp2;
+    struct node_s_block *tmp2;
     int e=0;
 
 #ifndef PIKE_DEBUG
@@ -218,26 +218,29 @@ void free_all_nodes(void)
     {
 #endif
       
-      for(tmp2=node_chunks;tmp2;tmp2=tmp2->next) e+=NODES;
-      for(tmp=free_nodes;tmp;tmp=CAR(tmp)) e--;
+      for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next) e+=NODES;
+      for(tmp=free_node_ss;tmp;tmp=CAR(tmp)) e--;
       if(e)
       {
 	int e2=e;
-	for(tmp2=node_chunks;tmp2;tmp2=tmp2->next)
+	for(tmp2=node_s_blocks;tmp2;tmp2=tmp2->next)
 	{
 	  for(e=0;e<NODES;e++)
 	  {
-	    for(tmp=free_nodes;tmp;tmp=CAR(tmp))
-	      if(tmp==tmp2->nodes+e)
+	    for(tmp=free_node_ss;tmp;tmp=CAR(tmp))
+	      if(tmp==tmp2->x+e)
 		break;
 	    
 	    if(!tmp)
 	    {
-	      tmp=tmp2->nodes+e;
+	      tmp=tmp2->x+e;
 #ifdef PIKE_DEBUG
 	      if(!cumulative_parse_error)
 	      {
 		fprintf(stderr,"Free node at %p, (%s:%d) (token=%d).\n",tmp, tmp->current_file->str, tmp->line_number, tmp->token);
+
+		debug_malloc_dump_references(tmp);
+
 		if(tmp->token==F_CONSTANT)
 		  print_tree(tmp);
 	      }
@@ -262,13 +265,7 @@ void free_all_nodes(void)
 #ifndef PIKE_DEBUG
     }
 #endif
-    while(node_chunks)
-    {
-      tmp2=node_chunks;
-      node_chunks=tmp2->next;
-      free((char *)tmp2);
-    }
-    free_nodes=0;
+    free_all_node_s_blocks();
     cumulative_parse_error=0;
   }
 }
@@ -301,29 +298,14 @@ void free_node(node *n)
 #ifdef PIKE_DEBUG
   if(n->current_file) free_string(n->current_file);
 #endif
-  CAR(n)=free_nodes;
-  free_nodes=n;
+  really_free_node_s(n);
 }
 
 
 /* here starts routines to make nodes */
 static node *mkemptynode(void)
 {
-  node *res;
-  if(!free_nodes)
-  {
-    int e;
-    struct node_chunk *tmp=ALLOC_STRUCT(node_chunk);
-    tmp->next=node_chunks;
-    node_chunks=tmp;
-
-    for(e=0;e<NODES-1;e++)
-      CAR(tmp->nodes+e)=tmp->nodes+e+1;
-    CAR(tmp->nodes+e)=0;
-    free_nodes=tmp->nodes;
-  }
-  res=free_nodes;
-  free_nodes=CAR(res);
+  node *res=alloc_node_s();
   res->token=0;
   res->line_number=lex.current_line;
 #ifdef PIKE_DEBUG

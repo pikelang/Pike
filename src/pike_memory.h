@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: pike_memory.h,v 1.11 1999/03/11 13:44:36 hubbe Exp $
+ * $Id: pike_memory.h,v 1.12 1999/10/23 06:51:31 hubbe Exp $
  */
 #ifndef MEMORY_H
 #define MEMORY_H
@@ -59,8 +59,9 @@ struct generic_mem_searcher
 #include "block_alloc_h.h"
 #define MEMCHR0 MEMCHR
 
-/* Prototypes begin here */
+/* Note to self: Protoptypes must be updated manually /Hubbe */
 int pcharp_memcmp(PCHARP a, PCHARP b, int sz);
+long pcharp_strlen(PCHARP a);
 INLINE p_wchar1 *MEMCHR1(p_wchar1 *p,p_wchar1 c,INT32 e);
 INLINE p_wchar2 *MEMCHR2(p_wchar2 *p,p_wchar2 c,INT32 e);
 void swap(char *a, char *b, INT32 size);
@@ -95,8 +96,7 @@ void memfill(char *to,
 	     char *from,
 	     INT32 fromlen,
 	     INT32 offset);
-
-/* Prototypes end here */
+char *debug_xalloc(long size);
 
 #undef BLOCK_ALLOC
 

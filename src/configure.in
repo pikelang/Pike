@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.324 1999/10/19 01:11:30 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.325 1999/10/23 06:51:23 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -440,7 +440,17 @@ AC_ARG_WITH(oob,	 [  --with-oob             enable out-of-band data handling],[A
 AC_ARG_WITH(thread-trace,[  --with-trace-threads   enable individual tracing of threads],[AC_DEFINE(TRACE_THREADS)],[])
 AC_ARG_WITH(compiler-trace,[  --with-compiler-trace  enable tracing of the compiler],[AC_DEFINE(YYDEBUG)],[])
 AC_ARG_WITH(security,    [  --with-security        enable internal pike security system],[AC_DEFINE(PIKE_SECURITY)],[])
-AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to bignums],[AC_DEFINE(AUTO_BIGNUM)],[])
+AC_ARG_WITH(bignums,     [  --with-bignums         enable internal conversion to bignums],[],[])
+
+if test "x$with_bignums" = xyes; then
+  AC_DEFINE(AUTO_BIGNUM)
+  if test "x$with_gmp" == xno; then
+     AC_MSG_ERROR([Cannot compile --with-bignums without the GMP library
+Either install GMP on your system or run configure with
+the option --without-bignums.
+])
+  else :; fi
+else :; fi
 
 if test "x$with_poll" = "xyes"; then
   AC_DEFINE(HAVE_AND_USE_POLL)

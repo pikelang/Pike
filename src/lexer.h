@@ -1,5 +1,5 @@
 /*
- * $Id: lexer.h,v 1.7 1999/09/19 20:36:47 grubba Exp $
+ * $Id: lexer.h,v 1.8 1999/10/23 06:51:28 hubbe Exp $
  *
  * Lexical analyzer template.
  * Based on lex.c 1.62
@@ -389,7 +389,7 @@ static int low_yylex(YYSTYPE *yylval)
       }
       if(!GOBBLE('\''))
 	yyerror("Unterminated character constant.");
-      yylval->number=c;
+      debug_malloc_pass( yylval->n=mkintnode(c) );
       return F_NUMBER;
 	
     case '"':
@@ -415,7 +415,15 @@ static int low_yylex(YYSTYPE *yylval)
     case '0':
       if(GOBBLE('x') || GOBBLE('X'))
       {
-	yylval->number=lex_strtol(lex.pos, &lex.pos, 16);
+	debug_malloc_pass( yylval->n=mkintnode(0) );
+	wide_string_to_svalue_inumber(&yylval->n->u.sval,
+				      lex.pos,
+				      (void **)&lex.pos,
+				      16,
+				      0,
+				      SHIFT);
+	free_string(yylval->n->type);
+	yylval->n->type=get_type_of_svalue(&yylval->n->u.sval);
 	return F_NUMBER;
       }
   
@@ -433,16 +441,28 @@ static int low_yylex(YYSTYPE *yylval)
 	    yyerror("Illegal octal number.");
 
       f=lex_strtod(lex.pos, &p1);
-      l=lex_strtol(lex.pos, &p2, 0);
+
+      debug_malloc_pass( yylval->n=mkintnode(0) );
+      wide_string_to_svalue_inumber(&yylval->n->u.sval,
+				    lex.pos,
+				    (void **)&p2,
+				    0,
+				    0,
+				    SHIFT);
+
+      free_string(yylval->n->type);
+      yylval->n->type=get_type_of_svalue(&yylval->n->u.sval);
 
       if(p1>p2)
       {
+	debug_malloc_touch(yylval->n);
+	free_node(yylval->n);
 	lex.pos=p1;
 	yylval->fnum=(FLOAT_TYPE)f;
 	return F_FLOAT;
       }else{
+	debug_malloc_touch(yylval->n);
 	lex.pos=p2;
-	yylval->number=l;
 	return F_NUMBER;
       }
   
