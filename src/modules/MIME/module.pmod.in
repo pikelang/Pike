@@ -3,7 +3,7 @@
 // RFC1521 functionality for Pike
 //
 // Marcus Comstedt 1996-1999
-// $Id: module.pmod.in,v 1.28 2002/06/19 21:17:30 jhs Exp $
+// $Id: module.pmod.in,v 1.29 2002/07/03 09:54:18 grubba Exp $
 
 #pike __REAL_VERSION__
 inherit @module@;
@@ -348,21 +348,26 @@ string guess_subtype( string type )
 array(mapping(string:string|array(string))|string) 
   parse_headers(string message, void|int(1..1) use_multiple)
 {
-  mapping(string:string|array) headers = ([ ]);
   string head, body, header, hname, hcontents;
-  int mesgsep;
-  int mesgsep1 = search(message, "\r\n\r\n");
-  int mesgsep2 = search(message, "\n\n");
-  mesgsep = (mesgsep1<0? mesgsep2 :
-	     (mesgsep2<0? mesgsep1 :
-	      (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
-  if (mesgsep<0) {
-    head = message;
-    body = "";
+  if (has_prefix(message, "\r\n") || has_prefix(message, "\n")) {
+    // No headers.
+    return ({ ([]), message[1 + (message[0] == '\r')..] });
   } else {
-    head = (mesgsep>0? message[..mesgsep-1]:"");
-    body = message[mesgsep+(message[mesgsep]=='\r'? 4:2)..];
+    int mesgsep1 = search(message, "\r\n\r\n");
+    int mesgsep2 = search(message, "\n\n");
+    int mesgsep = (mesgsep1<0? mesgsep2 :
+		   (mesgsep2<0? mesgsep1 :
+		    (mesgsep1<mesgsep2? mesgsep1 : mesgsep2)));
+    if (mesgsep<0) {
+      // No body.
+      head = message;
+      body = "";
+    } else if (mesgsep) {
+      head = (mesgsep>0? message[..mesgsep-1]:"");
+      body = message[mesgsep+(message[mesgsep]=='\r'? 4:2)..];
+    }
   }
+  mapping(string:string|array) headers = ([ ]);
   foreach( replace(head, ({"\r", "\n ", "\n\t"}),
 		   ({"", " ", " "}))/"\n", header ) 
   {
