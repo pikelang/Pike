@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.31 2002/11/26 16:42:59 grubba Exp $
+ * $Id: tree-split-autodoc.pike,v 1.32 2002/11/26 16:56:08 grubba Exp $
  *
  */
 
@@ -286,8 +286,8 @@ class Node
 	  }
 	  // FIXME: Assert that the reference is correct?
 	  return create_reference(make_filename(),
-				  replace(res_obj->make_class_path(),
-					  "()->", "."),
+				  replace(replace(res_obj->make_class_path(),
+					  "()->", "."), "()", ""),
 				  _reference);
 	}
 
