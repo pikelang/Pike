@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.132 1999/01/01 00:58:27 hubbe Exp $");
+RCSID("$Id: file.c,v 1.133 1999/04/14 00:12:42 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -231,6 +231,7 @@ static void just_close_fd(void)
 #endif /* WITH_OOB */
   check_internal_reference(THIS);
 
+  FD=-1;
   while(1)
   {
     int i;
@@ -244,6 +245,7 @@ static void just_close_fd(void)
       {
 	default:
 	  ERRNO=errno;
+	  FD=fd;
 	  error("Failed to close file.\n");
 	  
 	case EBADF:
@@ -255,7 +257,6 @@ static void just_close_fd(void)
     }
     break;
   }
-  FD=-1;
 }
 
 static void close_fd(void)
