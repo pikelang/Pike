@@ -189,12 +189,13 @@ class Token
 {
   int line;
   string text;
-  /* string file; */
+  string file;
 
-  void create(string t, int l)
+  void create(string t, int l, void|string f)
     {
       text=t;
       line=l;
+      file=f;
     }
 
   string _sprintf(int how)
@@ -204,7 +205,7 @@ class Token
 	case 's':
 	  return text;
 	case 'O':
-	  return sprintf("Token(%O,%d)",text,line);
+	  return sprintf("Token(%O,%O,%d)",text,file,line);
       }
     }
 
@@ -222,15 +223,20 @@ class Token
     {
       return predef::`+(@s,text);
     }
+
+  mixed _cast(string to)
+    {
+      if(to=="string") return text;
+    }
 }
 
-array(Token) tokenize(array(string) s)
+array(Token) tokenize(array(string) s, void|string file)
 {
   array(Token) ret=allocate(sizeof(s));
   int line=1;
   for(int e=0;e<sizeof(s);e++)
   {
-    ret[e]=Token(s[e],line);
+    ret[e]=Token(s[e],line,file);
     line+=sizeof(s[e]/"\n")-1;
   }
   return ret;
@@ -275,4 +281,30 @@ array flatten(array a)
 string simple_reconstitute(array(Token) tokens)
 {
   return FLATTEN(tokens->text) * "";
+}
+
+string reconstitute_with_line_numbers(array(string|object(Token)|array) tokens)
+{
+  int line=1;
+  string file;
+  string ret="";
+  foreach(FLATTEN(tokens), mixed tok)
+    {
+      if(objectp(tok))
+      {
+	if((tok->line && tok->line != line) ||
+	   (tok->file && tok->file != file))
+	{
+	  if(strlen(ret) && ret[-1]!='\n') ret+="\n";
+	  ret+=sprintf("#line %d %O\n",tok->line,tok->file);
+	  line=tok->line;
+	  file=tok->file;
+	}
+	tok=tok->text;
+      }
+      ret+=tok;
+      line+=sizeof(tok/"\n")-1;
+    }
+
+  return ret;
 }

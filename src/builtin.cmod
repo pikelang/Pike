@@ -101,5 +101,5 @@ PIKEFUN mapping(1:2) mkmapping(array(1=mixed) a, array(2=mixed) b)
 
 void init_builtin(void)
 {
-  INIT;
+INIT
 }

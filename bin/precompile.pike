@@ -6,17 +6,22 @@
  *
  * The input can look something like this:
  *
- * PIKEFUNC int function_name (int x)
- *  attribute;
- *  attribute value;
+ * PIKECLASS fnord 
+ *  attributes;
  * {
- *   C code using 'x'.
  *
- *   RETURN x;
+ *   PIKEFUNC int function_name (int x)
+ *    attribute;
+ *    attribute value;
+ *   {
+ *     C code using 'x'.
+ *
+ *     RETURN x;
+ *   }
  * }
  *
- * All the ADD_EFUN/ADD_FUNCTION calls will be inserted instead of the
- * word INIT in your code.
+ * All the begin_class/ADD_EFUN/ADD_FUNCTION calls will be inserted
+ * instead of the word INIT in your code.
  *
  * Currently, the following attributes are understood:
  *   efun;     makes this function a global constant (no value)
@@ -29,7 +34,7 @@
  * BUGS/LIMITATIONS
  *  o Parenthesis must match, even within #if 0
  *  o Not all Pike types are supported yet
- *  o Line numbers are wrong after INIT
+ *  o No support for class variables yet
  */
 
 #define PC Parser.C
@@ -151,6 +156,7 @@ mapping(string:string) parse_arg(array x)
   if(sizeof(ret->type/({"|"}))>1)
     ret->basetype="mixed";
   ret->ctype=cname(ret->basetype);
+  ret->typename=merge(recursive(strip_type_assignments,ret->type));
   return ret;
 }
 
@@ -201,6 +207,7 @@ string convert_type(array s)
   }
 }
 
+
 string make_pop(mixed howmany)
 {
   switch(howmany)
@@ -241,7 +248,7 @@ array strip_type_assignments(array data)
   int pos;
 
   while( (pos=search(data,PC.Token("=",0))) != -1)
-    data=data[pos-2]+data[pos+1];
+    data=data[..pos-2]+data[pos+1..];
   return data;
 }
 
@@ -352,7 +359,6 @@ array convert(array x)
 //    werror("  args=%O\n",args);
 
     ret+=({
-      sprintf("\n#line %d %O\n",rettype[0]->line,file),
       sprintf("void f_%s(INT32 args) {\n",name),
     });
 
@@ -360,13 +366,11 @@ array convert(array x)
 
     foreach(args, mapping arg)
       ret+=({
-//	sprintf("\n#line %d %O\n",rettype[0]->line,file),
 	sprintf("%s %s;\n",arg->ctype, arg->name)
       });
 
 
     addfuncs+=({
-      sprintf("\n#line %d %O\n",rettype[0]->line,file),
       sprintf("  %s(%O,f_%s,tFunc(%s,%s),%s);\n",
 	      attributes->efun ? "ADD_EFUN" : "ADD_FUNCTION",
 	      name,
@@ -383,7 +387,6 @@ array convert(array x)
 
     argnum=0;
     ret+=({
-//      sprintf("\n#line %d %O\n",rettype[0]->line,file),
       sprintf("if(args != %d) wrong_number_of_args_error(%O,args,%d);\n",
 	      sizeof(args),
 	      name,
@@ -393,7 +396,6 @@ array convert(array x)
     int sp=-sizeof(args);
     foreach(args, mapping arg)
       {
-//	ret+=({ sprintf("\n#line %d %O\n",rettype[0]->line,file), });
 	if(arg->basetype != "mixed")
 	{
 	  ret+=({
@@ -402,7 +404,7 @@ array convert(array x)
 	    sprintf("  SIMPLE_BAD_ARG_ERROR(%O,%d,%O);\n",
 		    name,
 		    argnum+1,
-		    merge(arg->type)),
+		    arg->typename),
 	  });
 	}
 
@@ -448,7 +450,6 @@ array convert(array x)
     if(sizeof(body))
     {
       ret+=({
-	sprintf("#line %d %O\n",body[0]->line,file),
 	body,
       });
     }
@@ -458,10 +459,7 @@ array convert(array x)
 
     if(sizeof(rest))
     {
-      ret+=({
-	sprintf("#line %d %O\n",rest[0]->line,file),
-      })+
-	recursive(replace,rest,PC.Token("INIT",0),addfuncs);
+      ret+=recursive(replace,rest,PC.Token("INIT",0),addfuncs);
     }
       
   }
@@ -476,10 +474,10 @@ int main(int argc, array(string) argv)
   file=argv[1];
   x=Stdio.read_file(file);
   x=PC.split(x);
-  x=PC.tokenize(x);
+  x=PC.tokenize(x,file);
   x=PC.group(x);
 
   x=convert(x);
 
-  write(merge(x[0]));
+  write(PC.reconstitute_with_line_numbers(x[0]));
 }
