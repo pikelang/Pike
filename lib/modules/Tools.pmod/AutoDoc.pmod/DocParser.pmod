@@ -111,7 +111,7 @@ mapping(string : multiset(string)) allowedChildren =
   "_method" : (< "param", "returns", "throws" >) + standard,
   "_variable": standard,
   "_inherit" : standard,
-  "_class" : standard,
+  "_class" : (< "param" >) + standard,
   "_namespace" : standard,
   "_module" : standard,
   "_constant" : standard,
