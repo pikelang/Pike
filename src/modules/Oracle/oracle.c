@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.19 2000/02/10 19:12:36 hubbe Exp $
+ * $Id: oracle.c,v 1.20 2000/02/28 23:33:57 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -34,19 +34,14 @@
 #include <ocidfn.h>
 #include <ociapr.h>
 
-#endif
 
-RCSID("$Id: oracle.c,v 1.19 2000/02/10 19:12:36 hubbe Exp $");
+RCSID("$Id: oracle.c,v 1.20 2000/02/28 23:33:57 hubbe Exp $");
 
-#ifdef HAVE_ORACLE
 
 #define BLOB_FETCH_CHUNK 16384
 
 #define ORACLE_USE_THREADS
 #define SERIALIZE_CONNECT
-
-/* #define SERIALIZE_ALL */
-
 
 #ifndef ORACLE_USE_THREADS
 
@@ -57,7 +52,7 @@ RCSID("$Id: oracle.c,v 1.19 2000/02/10 19:12:36 hubbe Exp $");
 
 #endif
 
-#if defined(SERIALIZE_ALL) || defined(SERIALIZE_CONNECT)
+#if defined(SERIALIZE_CONNECT)
 DEFINE_MUTEX(oracle_serialization_mutex);
 #endif
 
@@ -72,6 +67,7 @@ struct dbcon {
   Lda_Def lda;
   ub4 hda[128];
   struct dbcurs *cdas, *share_cda;
+  DEFINE_MUTEX(lock);
 };
 
 struct dbresult {
@@ -80,6 +76,7 @@ struct dbresult {
   struct dbcurs *curs;
   Cda_Def *cda;
   INT32 cols;
+  DEFINE_MUTEX(lock);
 };
 
 
@@ -107,6 +104,8 @@ static void exit_dbresult_struct(struct object *o)
     r->curs->next = r->dbcon->cdas;
     r->dbcon->cdas = r->curs;
   }
+
+  mt_unlock(& r->dbcon->lock);
 
   if(r->parent)
     free_object(r->parent);
@@ -161,9 +160,7 @@ static void f_num_fields(INT32 args)
 
     THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-    mt_lock( & oracle_serialization_mutex );
-#endif
+    mt_lock(& r->lock);
 
     for(i=11; ; i+=10)
       if((rc = odescr(r->cda, i, &siz, NULL, NULL, NULL, NULL,
@@ -176,11 +173,9 @@ static void f_num_fields(INT32 args)
 			NULL, NULL, NULL)))
 	  break;
 
-#ifdef SERIALIZE_ALL
-    mt_unlock( & oracle_serialization_mutex );
-#endif
-
     THREADS_DISALLOW();    
+
+    mt_unlock(& r->lock);
 
     if(r->cda->rc != 1007)
       ora_error_handler(r->dbcon, r->cda->rc);
@@ -205,31 +200,27 @@ static void f_fetch_fields(INT32 args)
     sb4 siz, cbufl, dispsz;
     sb2 typ, scale;
 
+    THREADS_ALLOW();
+      
+    mt_lock( & r->lock );
+
     for(;;) {
 
       cbufl = nambufsz;
-      
-      THREADS_ALLOW();
-      
-#ifdef SERIALIZE_ALL
-      mt_lock( & oracle_serialization_mutex );
-#endif
 
       rc = odescr(r->cda, i+1, &siz, &typ, nambuf, &cbufl, &dispsz,
 		  NULL, &scale, NULL);
       
-#ifdef SERIALIZE_ALL
-     mt_unlock( & oracle_serialization_mutex );
-#endif
-
-      THREADS_DISALLOW();
 
       if(rc || cbufl < nambufsz) break;
 
       free(nambuf);
       nambuf = xalloc((nambufsz <<= 1)+1);
-
     }
+
+    THREADS_DISALLOW();
+
+    mt_unlock(& r->lock);
 
     if(rc) {
       if(r->cda->rc == 1007)
@@ -304,22 +295,20 @@ static void f_fetch_row(INT32 args)
 
   pop_n_elems(args);
 
+  THREADS_ALLOW();
+
+  mt_lock( & r->lock );
+
+  THREADS_DISALLOW();
+
   for(i=0; i<r->cols || r->cols == 0; i++) {
     sb4 siz, dsiz;
     sb2 typ;
 
     THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-    mt_lock( & oracle_serialization_mutex );
-#endif
-
     rc = odescr(r->cda, i+1, &siz, &typ, NULL, NULL, &dsiz,
 		NULL, NULL, NULL);
-
-#ifdef SERIALIZE_ALL
-    mt_unlock( & oracle_serialization_mutex );
-#endif
 
     THREADS_DISALLOW();    
 
@@ -330,8 +319,11 @@ static void f_fetch_row(INT32 args)
 	slots=s->next;
 	free(s);
       }
+
+      mt_unlock(& r->lock);
       ora_error_handler(r->dbcon, r->cda->rc);
     }
+
     
     s = (struct fetchslot *)xalloc(sizeof(struct fetchslot)+dsiz+4);
 
@@ -341,10 +333,6 @@ static void f_fetch_row(INT32 args)
 
     THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-    mt_lock( & oracle_serialization_mutex );
-#endif
-
     s->rcode = 0;
     s->indp = -1;
 
@@ -353,10 +341,6 @@ static void f_fetch_row(INT32 args)
 			typ : SQLT_STR),
 		-1, &s->indp, NULL, -1, -1, &s->rsiz, &s->rcode);
 
-#ifdef SERIALIZE_ALL
-    mt_unlock( & oracle_serialization_mutex );
-#endif
-
     THREADS_DISALLOW();
 
     if(rc) {
@@ -364,6 +348,8 @@ static void f_fetch_row(INT32 args)
 	slots=s->next;
 	free(s);
       }
+
+      mt_unlock(& r->lock);
       ora_error_handler(r->dbcon, r->cda->rc);
     }
   }
@@ -381,23 +367,19 @@ static void f_fetch_row(INT32 args)
 
   THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-  mt_lock( & oracle_serialization_mutex );
-#endif
-
   rc = ofetch(r->cda);
 
-#ifdef SERIALIZE_ALL
-  mt_unlock( & oracle_serialization_mutex );
-#endif
-
   THREADS_DISALLOW();
+
+  /* no more threaded operations... */
+  mt_unlock( & r->lock );
 
   if(rc) {
     while((s=slots)) {
       slots=s->next;
       free(s);
     }
+
     if(r->cda->rc == 1403) {
       push_int(0);
       return;
@@ -444,6 +426,7 @@ static void f_fetch_row(INT32 args)
 static void init_dbcon_struct(struct object *o)
 {
   memset(THIS, 0, sizeof(*THIS));
+  mt_init( & THIS->lock );
 }
 
 static void exit_dbcon_struct(struct object *o)
@@ -455,6 +438,7 @@ static void exit_dbcon_struct(struct object *o)
     dbcon->cdas = curs->next;
     free(curs);
   }
+  mt_destroy( & THIS->lock );
 }
 
 static struct dbcurs *make_cda(struct dbcon *dbcon)
@@ -466,17 +450,13 @@ static struct dbcurs *make_cda(struct dbcon *dbcon)
 
   THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-  mt_lock( & oracle_serialization_mutex );
-#endif
+  mt_lock( & dbcon->lock );
 
   rc=oopen(&curs->cda, &dbcon->lda, NULL, -1, -1, NULL, -1);
 
-#ifdef SERIALIZE_ALL
-  mt_unlock( & oracle_serialization_mutex );
-#endif
-
   THREADS_DISALLOW();
+
+  mt_unlock( & dbcon->lock );
 
   if(rc) {
     rc = curs->cda.rc;
@@ -509,20 +489,19 @@ static void f_create(INT32 args)
 
   THREADS_ALLOW();
 
-#if defined(SERIALIZE_ALL) || defined(SERIALIZE_CONNECT)
+  mt_lock( & dbcon->lock );
   mt_lock( & oracle_serialization_mutex );
-#endif
 
   rc = olog(&dbcon->lda, (ub1*)dbcon->hda, uid->str, uid->len,
 	    (passwd? passwd->str:NULL), (passwd? passwd->len:-1),
 	    (host? host->str:NULL), (host? host->len:-1),
 	    OCI_LM_DEF);
 
-#if defined(SERIALIZE_ALL) || defined(SERIALIZE_CONNECT)
   mt_unlock( & oracle_serialization_mutex );
-#endif
+  mt_unlock( & dbcon->lock );
 
   THREADS_DISALLOW();
+
 
   if(rc)
     ora_error_handler(dbcon, dbcon->lda.rc);
@@ -539,6 +518,7 @@ static void f_big_query(INT32 args)
   struct dbcurs *curs;
   sword rc;
   struct mapping *bnds;
+  struct dbcon *dbcon=THIS;
   /*  INT32 cols=0; */
 
   if(args>1)
@@ -555,23 +535,19 @@ static void f_big_query(INT32 args)
 
   THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-  mt_lock( & oracle_serialization_mutex );
-#endif
+  mt_lock( & dbcon->lock );
 
   ocan(&curs->cda);
 
   rc = oparse(&curs->cda, query->str, query->len, 1, 2);
 
-#ifdef SERIALIZE_ALL
-  mt_unlock( & oracle_serialization_mutex );
-#endif
- 
   THREADS_DISALLOW();
    
   if(rc) {
     curs->next = THIS->cdas;
     THIS->cdas = curs;
+
+    mt_unlock( & dbcon->lock );
     ora_error_handler(THIS, curs->cda.rc);
   } else if(bnds != NULL) {
     INT32 e;
@@ -608,6 +584,8 @@ static void f_big_query(INT32 args)
 	  ocan(&curs->cda);
 	  curs->next = THIS->cdas;
 	  THIS->cdas = curs;
+
+	  mt_unlock( & dbcon->lock );
 	  error("Bad value type in argument 2 to "
 		"Oracle.oracle->big_query()\n");
 	}
@@ -621,6 +599,8 @@ static void f_big_query(INT32 args)
 	  ocan(&curs->cda);
 	  curs->next = THIS->cdas;
 	  THIS->cdas = curs;
+
+	  mt_unlock( & dbcon->lock );
 	  error("Bad index type in argument 2 to "
 		"Oracle.oracle->big_query()\n");
 	}
@@ -629,6 +609,8 @@ static void f_big_query(INT32 args)
 	  ocan(&curs->cda);
 	  curs->next = THIS->cdas;
 	  THIS->cdas = curs;
+
+	  mt_unlock( & dbcon->lock );
 	  ora_error_handler(THIS, rc);
 	}
       }
@@ -636,23 +618,18 @@ static void f_big_query(INT32 args)
 
   THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-  mt_lock( & oracle_serialization_mutex );
-#endif
-
   rc = oexec(&curs->cda);
 
-#ifdef SERIALIZE_ALL
-  mt_unlock( & oracle_serialization_mutex );
-#endif
-
   THREADS_DISALLOW();
+
 
   if(rc) {
     rc = curs->cda.rc;
     ocan(&curs->cda);
     curs->next = THIS->cdas;
     THIS->cdas = curs;
+
+    mt_unlock(&dbcon->lock);
     ora_error_handler(THIS, rc);
   }
 
@@ -668,56 +645,10 @@ static void f_big_query(INT32 args)
 
   push_object(this_object());
 
-  /*
-
-  for(;;) {
-    text cbuf[32];
-    sb4 siz, cbufl=sizeof(cbuf), dispsz;
-    sb2 typ, prec, scale, nullok;
-
-    THREADS_ALLOW();
-
-#ifdef SERIALIZE_ALL
-     mt_lock( & oracle_serialization_mutex );
-#endif
-
-    rc = odescr(&curs->cda, cols+1, &siz, &typ, cbuf, &cbufl, &dispsz,
-		&prec, &scale, &nullok);
-
-#ifdef SERIALIZE_ALL
-    mt_unlock( & oracle_serialization_mutex );
-#endif
-
-    THREADS_DISALLOW();
-
-    if(rc) {
-      if((rc = curs->cda.rc) == 1007)
-	break;
-      ocan(&curs->cda);
-      curs->next = THIS->cdas;
-      THIS->cdas = curs;
-      ora_error_handler(THIS, rc);
-    }
-    push_string(make_shared_binary_string(cbuf, cbufl));
-    push_int(typ);
-    cols++;
-  }
-
-  */
 
   curs->next = THIS->cdas;
   THIS->cdas = curs;
 
-  /*
-  if(!cols) {
-    ocan(&curs->cda);
-    pop_n_elems(1);
-    push_int(0);
-    return;
-  }
-
-  f_aggregate(cols*2);
-  */
 
   THIS->share_cda = curs;
 
@@ -732,6 +663,7 @@ static void f_list_tables(INT32 args)
   struct pike_string *wild;
   struct dbcurs *curs;
   sword rc;
+  struct dbcon *dbcon=THIS;
 
   if(args)
     get_all_args("Oracle.oracle->list_tables", args, "%S", &wild);
@@ -745,9 +677,7 @@ static void f_list_tables(INT32 args)
 
   THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-  mt_lock( & oracle_serialization_mutex );
-#endif
+  mt_lock( & dbcon->lock );
 
   ocan(&curs->cda);
 
@@ -760,29 +690,19 @@ static void f_list_tables(INT32 args)
   } else
     rc = oparse(&curs->cda, "select tname from tab", -1, 1, 2);
 
-#ifdef SERIALIZE_ALL
-  mt_unlock( & oracle_serialization_mutex );
-#endif
- 
   THREADS_DISALLOW();
    
   if(rc) {
     curs->next = THIS->cdas;
     THIS->cdas = curs;
+
+    mt_unlock( & dbcon->lock );
     ora_error_handler(THIS, curs->cda.rc);
   }
 
   THREADS_ALLOW();
 
-#ifdef SERIALIZE_ALL
-  mt_lock( & oracle_serialization_mutex );
-#endif
-
   rc = oexec(&curs->cda);
-
-#ifdef SERIALIZE_ALL
-  mt_unlock( & oracle_serialization_mutex );
-#endif
 
   THREADS_DISALLOW();
 
@@ -791,6 +711,8 @@ static void f_list_tables(INT32 args)
     ocan(&curs->cda);
     curs->next = THIS->cdas;
     THIS->cdas = curs;
+
+    mt_unlock( & dbcon->lock );
     ora_error_handler(THIS, rc);
   }
 
@@ -805,7 +727,6 @@ static void f_list_tables(INT32 args)
   push_object(clone_object(oracle_result_program, 1));
 
   THIS->cdas = curs->next;
-
 }
 
 #endif
