@@ -401,11 +401,13 @@ static void f_html_encode_string( INT32 args )
        */
       MAKE_CONSTANT_SHARED_STRING( s, tString );
       o_cast(s, PIKE_T_STRING);
+      free_string (s);
       return;
 
     default:
       MAKE_CONSTANT_SHARED_STRING( s, tString );
       o_cast(s, PIKE_T_STRING);
+      free_string (s);
     case PIKE_T_STRING:
       break;
   }
