@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: system.c,v 1.135 2002/12/07 14:01:01 grubba Exp $
+|| $Id: system.c,v 1.136 2003/01/01 20:41:51 grubba Exp $
 */
 
 /*
@@ -20,7 +20,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: system.c,v 1.135 2002/12/07 14:01:01 grubba Exp $");
+RCSID("$Id: system.c,v 1.136 2003/01/01 20:41:51 grubba Exp $");
 #ifdef HAVE_WINSOCK_H
 #include <winsock.h>
 #endif
@@ -2869,7 +2869,7 @@ PIKE_MODULE_INIT
 
 /* there is always a pike_get_rusage */
   ADD_FUNCTION("getrusage", f_getrusage,
-	       tFunc(, tMap(tStr,tInt)), 0);
+	       tFunc(tNone, tMap(tStr,tInt)), 0);
 
 #ifdef ITIMER_TYPE_IS_02
 #define tITimer tInt02
