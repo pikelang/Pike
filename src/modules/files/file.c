@@ -27,7 +27,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
-#include <sys/wait.h>
 #include <sys/socket.h>
 
 #ifdef HAVE_SYS_STREAM_H

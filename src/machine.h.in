@@ -217,6 +217,12 @@
 /* Define if you have getrlimit */
 #undef HAVE_GETRLIMIT
 
+/* Define if you have waitpid */
+#undef HAVE_WAITPID
+
+/* Define if you have wait4 */
+#undef HAVE_WAIT4
+
 /* Define if you have the m library (-lm).  */
 #undef HAVE_LIBM
 

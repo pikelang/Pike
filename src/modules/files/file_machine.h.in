@@ -34,11 +34,5 @@
 /* Do we have socketpair() ? */
 #undef HAVE_SOCKETPAIR
 
-/* Define if you have waitpid */
-#undef HAVE_WAITPID
-
-/* Define if you have wait4 */
-#undef HAVE_WAIT4
-
 #endif
 
