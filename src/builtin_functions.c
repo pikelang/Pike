@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.108 1998/05/19 18:30:56 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.109 1998/05/19 18:46:06 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -53,7 +53,7 @@ RCSID("$Id: builtin_functions.c,v 1.108 1998/05/19 18:30:56 grubba Exp $");
 #endif
 
 /* #define DIFF_DEBUG */
-
+/* #define ENABLE_DYN_DIFF */
 
 void f_equal(INT32 args)
 {
@@ -2179,6 +2179,8 @@ static struct array *diff_dyn_longest_sequence(struct array *cmptbl, int blen)
   unsigned int i;
   unsigned int off1 = 0;
   unsigned int off2 = blen + 1;
+  unsigned int l1 = 0;
+  unsigned int l2 = 0;
 
   table = calloc(sizeof(struct diff_magic_link_head)*2, off2);
   if (!table) {
