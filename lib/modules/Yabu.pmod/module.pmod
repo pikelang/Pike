@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.16 1999/10/19 22:43:15 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.17 1999/10/19 22:45:33 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -131,7 +131,7 @@ static private class FileIO {
 
   static private int mask = 0;
 
-  array(int) fractionalise(int i)
+  static private array(int) fractionalise(int i)
   {
     if(!mask)
     {
