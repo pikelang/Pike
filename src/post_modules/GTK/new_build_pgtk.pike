@@ -1524,9 +1524,14 @@ void main(int argc, array argv)
   object output_plugin = ((program)output)( source_dir, destination_dir,
                                             this_object() );
 
-  if( output_plugin->up_to_date() )
-  {
-    exit(0);
+  if (string files = Stdio.read_file (destination_dir + "/files_to_compile")) {
+    int ok = 1;
+    foreach (files / " ", string file)
+      if (!Stdio.exist (destination_dir + "/" + file)) {ok = 0; break;}
+    if( ok && output_plugin->up_to_date() )
+    {
+      exit(0);
+    }
   }
   werror("Parsing input files...     ");
   int t1 = gauge {
