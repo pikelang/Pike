@@ -1,4 +1,4 @@
-stest_true([["$Id: testsuite.in,v 1.136 1998/12/02 12:56:47 mast Exp $"]])
+stest_true([["$Id: testsuite.in,v 1.137 1998/12/21 09:38:32 hubbe Exp $"]])
 cond([[all_constants()->_verify_internals]],
 [[
   test_do(_verify_internals())
@@ -896,6 +896,14 @@ test_eq(typeof(""),"string")
 test_eq(typeof(""[0]),"int")
 test_eq(typeof(0.0),"float")
 test_eq(typeof(all_constants()["all_constants"]),"mixed")
+
+// _typeof
+test_eq(_typeof(1),"int")
+test_eq(_typeof(""),"string")
+test_eq(_typeof("x"[0]),"int")
+test_eq(_typeof(0.0),"float")
+test_eq(_typeof(this_object)-" ","function(:object)")
+
 
 // class
 test_true(programp(class c {}))

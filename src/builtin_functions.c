@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.141 1998/12/16 07:49:32 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.142 1998/12/21 09:38:31 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -3321,6 +3321,22 @@ void f__refs(INT32 args)
   push_int(i);
 }
 
+void f__typeof(INT32 args)
+{
+  INT32 i;
+  struct pike_string *s,*t;
+  if(!args) PIKE_ERROR("_typeof", "Too few arguments.\n", sp, args);
+
+  low_init_threads_disable();
+  s=get_type_of_svalue(sp-args);
+  t=describe_type(s);
+  exit_threads_disable(NULL);
+
+  free_string(s);
+  pop_n_elems(args);
+  push_string(t);
+}
+
 void f_replace_master(INT32 args)
 {
   if(!args)
@@ -3647,6 +3663,7 @@ void init_builtin_efuns(void)
 #endif /* PROFILING */
 
   add_efun("_refs",f__refs,"function(function|string|array|mapping|multiset|object|program:int)",OPT_EXTERNAL_DEPEND);
+  add_efun("_typeof",f__typeof,"function(mixed:string)",0);
   add_efun("replace_master",f_replace_master,"function(object:void)",OPT_SIDE_EFFECT);
   add_efun("master",f_master,"function(:object)",OPT_EXTERNAL_DEPEND);
   add_efun("add_constant",f_add_constant,"function(string,void|mixed:void)",OPT_SIDE_EFFECT);
