@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.4 2001/07/10 07:17:47 mast Exp $
+# $Id: configure.in,v 1.5 2001/07/16 16:21:17 mast Exp $
 AC_INIT(gdbmmod.c)
 AC_CONFIG_HEADER(gdbm_machine.h)
 
@@ -15,7 +15,7 @@ if test x$with_gdbm = xyes; then
   AC_CHECK_LIB(gdbm, gdbm_open)
 
   if test x$ac_cv_header_gdbm_h = xyes -a x$ac_cv_lib_gdbm_gdbm_open = xyes; then
-    PIKE_FEATURE(Gdbm)
+    PIKE_FEATURE_OK(Gdbm)
   fi
 fi
 
