@@ -798,12 +798,18 @@ fi
 # libraries. Use this to be able to detect a faulty installation
 # of GTK, ie try a real link. If it fails, warn and don't try
 # to use GTK or the detected libs.
-AC_MSG_CHECKING([If GTK really links])
+AC_MSG_CHECKING([if GTK really links])
 AC_CACHE_VAL(pgtk_cv_gtk_really_links,[
+   saved_CFLAGS="$CFLAGS"
+   saved_LIBS="$LIBS"
+   CFLAGS="$CFLAGS $GTK_CFLAGS"
+   LIBS="$LIBS $GTK_LIBS"
    AC_TRY_LINK([int gtk_init();],
                [gtk_init();],
                pgtk_cv_gtk_really_links=yes,
                pgtk_cv_gtk_really_links=no)
+   CFLAGS="$saved_CFLAGS"
+   LIBS="$saved_LIBS"
 ])
 AC_MSG_RESULT($pgtk_cv_gtk_really_links)
 if test "x$pgtk_cv_gtk_really_links" = "xno" ; then
@@ -813,7 +819,7 @@ if test "x$pgtk_cv_gtk_really_links" = "xno" ; then
   LIBGLADE_LIBS=""
   LIBS=""
 
-  PIKE_FEATURE(GTK,[no (linking failed, erranous installation?)])
+  PIKE_FEATURE(GTK,[no (linking failed, erroneous installation?)])
   AC_MSG_WARN([GTK found, but linking failed. Your installation seems to
 be missing pieces. See .../post_modules/GTK/config.log.])
 fi
