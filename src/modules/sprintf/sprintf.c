@@ -99,7 +99,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.35 1999/06/17 18:26:54 noring Exp $");
+RCSID("$Id: sprintf.c,v 1.36 1999/06/17 18:49:36 noring Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1023,7 +1023,7 @@ static void low_pike_sprintf(struct string_builder *r,
 	
 	/* Pad with ending zeroes, if necessary. */
 	if(fsp->precision<0 &&
-	   fsp->len>0 && '0'<=x[0] && x[0]<='9' && fabs(tf)!=0.0)
+	   (('0'<x[0] && x[0]<='9') || ('0'<x[1] && x[1]<='9')))
 	{
 	  INT32 i;
 	  for(i = 0; i<-fsp->precision; i++)
