@@ -368,7 +368,34 @@ An argument to a method can be of the varargs type:
   </function>
 
 ======================================================================
-f) XML generated from the doc markup
+f) Other XML tags
+----------------------------------------------------------------------
+
+p
+   Paragraph.
+
+i
+   Italic.
+
+b
+   Bold.
+
+tt
+   Terminal Type.
+
+pre
+   Preformatted text.
+
+code
+   Program code.
+
+image
+   An image object. Contains the original file path to the image. Has the
+   optional attributes width, height and file, where file is the path to
+   the normalized-filename file.
+
+======================================================================
+g) XML generated from the doc markup
 ----------------------------------------------------------------------
 
 The documentation for an entity is put in a <doc> element. The <doc> element 
@@ -483,7 +510,7 @@ some more intricate parsing must be done, and the arguments may be complex
 (like Pike types) and are represented as child elements of the element. 
 
 ======================================================================
-g) Top level sections of different Pike entities.
+h) Top level sections of different Pike entities.
 ----------------------------------------------------------------------
 
 In every doc comment there is an implicit "top container", and subsections can
