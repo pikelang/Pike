@@ -1,4 +1,4 @@
-/* $Id: sha.c,v 1.18 2000/12/01 08:10:31 hubbe Exp $
+/* $Id: sha.c,v 1.19 2001/02/13 16:14:13 grubba Exp $
  *
  * Written by Niels Möller
  */
@@ -16,7 +16,7 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.18 2000/12/01 08:10:31 hubbe Exp $");
+RCSID("$Id: sha.c,v 1.19 2001/02/13 16:14:13 grubba Exp $");
 
 #include <sha.h>
 
@@ -29,7 +29,16 @@ RCSID("$Id: sha.c,v 1.18 2000/12/01 08:10:31 hubbe Exp $");
 
 static struct program *shamod_program;
 
-/* string name(void) */
+/*! @module Crypto
+ */
+
+/*! @class sha
+ */
+
+/*! @decl string name()
+ *!
+ *! Returns the string @tt{"SHA"@}.
+ */
 static void f_name(INT32 args)
 {
   if (args) 
@@ -38,6 +47,13 @@ static void f_name(INT32 args)
   push_string(make_shared_string("SHA"));
 }
 
+/*! @decl void create(Crypto.sha|void init)
+ *!
+ *! Initialize an SHA digest.
+ *!
+ *! If the argument @[init] is specified, the state from it
+ *! will be copied.
+ */
 static void f_create(INT32 args)
 {
   if (args)
@@ -51,7 +67,11 @@ static void f_create(INT32 args)
     sha_init(THIS);
   pop_n_elems(args);
 }
-	  
+
+/*! @decl Crypto.sha update(string data)
+ *!
+ *! Feed some data to the digest algorithm.
+ */	  
 static void f_update(INT32 args)
 {
   struct pike_string *s;
@@ -75,12 +95,23 @@ static char sha_id[] = {
   0x2b, 0x0e, 0x03, 0x02, 0x1a,
 };
 
+/*! @decl string identifier()
+ *!
+ *! Returns the ASN1 identifier for an SHA digest.
+ */
 static void f_identifier(INT32 args)
 {
   pop_n_elems(args);
   push_string(make_shared_binary_string(sha_id, 5));
 }
 
+/*! @decl string digest()
+ *!
+ *! Return the digest.
+ *!
+ *! @note
+ *!   As a side effect the object will be reinitialized.
+ */
 static void f_digest(INT32 args)
 {
   struct pike_string *s;
@@ -94,6 +125,12 @@ static void f_digest(INT32 args)
   pop_n_elems(args);
   push_string(end_shared_string(s));
 }
+
+/*! @endclass
+ */
+
+/*! @endmodule
+ */
 
 void pike_sha_exit(void)
 {
