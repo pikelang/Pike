@@ -771,7 +771,7 @@ string parse_type(Node n, void|string debug) {
 
   case "type":
     ret += "<font color='#202020'>type</font>";
-    if (n->count_children() && (c = get_first_element(n)))
+    if (n->count_children() && (c = get_first_element(n))) {
       ret += "(" + parse_type(c) + ")";
     }
     break;
