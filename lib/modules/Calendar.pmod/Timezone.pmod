@@ -40,13 +40,13 @@
 //!	preferable with a <tt>cc</tt> to 
 //!	<a href=mailto:mirar@mirar.org>mirar@mirar.org</a>. /Mirar
 //!
-//! see also: TZnames, Ruleset.Timezone
+//! see also: TZnames
 
-//! constant Ruleset.Timezone locale
+//! constant Rule.Timezone locale
 //!	This contains the local timezone, found from
 //!	various parts of the system, if possible.
 
-//! constant Ruleset.Timezone localtime
+//! constant Rule.Timezone localtime
 //!	This is a special timezone, that uses <ref>localtime</ref>()
 //!	and <ref>tzname</ref>
 //!	to find out what current offset and timezone string to use.
@@ -61,21 +61,19 @@
 
 #pike __REAL_VERSION__
 
-import ".";
-
 // ----------------------------------------------------------------
 // static
 
-Ruleset.Timezone UTC=Ruleset()->Timezone(0,"UTC");
+.Rule.Timezone UTC=.Rule.Timezone(0,"UTC");
 
 // ----------------------------------------------------------------
 // from the system
 
-Ruleset.Timezone locale=0;
+.Rule.Timezone locale=0;
 
-static function(:Ruleset.Timezone) _locale()
+static function(:.Rule.Timezone) _locale()
 {
-   Ruleset.Timezone tz;
+   .Rule.Timezone tz;
 
 // try to get the real local time settings
 
@@ -114,9 +112,9 @@ static function(:Ruleset.Timezone) _locale()
 // ----------------------------------------------------------------
 // expert system to pick out the correct timezone
 
-static Ruleset.Timezone timezone_expert_rec(Ruleset.Timezone try,
-					    mapping|array|string tree,
-					    object cal)
+static .Rule.Timezone timezone_expert_rec(.Rule.Timezone try,
+					 mapping|array|string tree,
+					 object cal)
 {
    int t=tree->test,uo;
    if (t<0)
@@ -141,7 +139,7 @@ static Ruleset.Timezone timezone_expert_rec(Ruleset.Timezone try,
    return `[](tree);
 }
 
-static Ruleset.Timezone timezone_select(Ruleset.Timezone try,
+static .Rule.Timezone timezone_select(.Rule.Timezone try,
 					array tree,
 					object cal)
 {
@@ -165,10 +163,16 @@ static array timezone_collect(string|mapping|array tree)
    else return `+(@map(values(tree-({"test"})),timezone_collect));
 }
 
-Ruleset.Timezone expert(Ruleset.Timezone try)
+static object expert_cal, expert_tzn;
+
+.Rule.Timezone expert(.Rule.Timezone try)
 {
-   object cal=master()->resolv("Calendar")["ISO_UTC"];
-   return timezone_expert_rec(try,TZnames.timezone_expert_tree,cal);
+   if(!expert_cal)
+     expert_cal=master()->resolv("Calendar")["ISO_UTC"];
+   if(!expert_tzn)
+     expert_tzn=master()->resolv("Calendar")["TZnames"];
+   return timezone_expert_rec(try, expert_tzn->timezone_expert_tree,
+			      expert_cal);
 }
 
 // ----------------------------------------------------------------
@@ -219,7 +223,7 @@ class localtime
 
 class Timezone_Encapsule
 {
-   Ruleset.Timezone what;
+   .Rule.Timezone what;
  
    constant is_timezone=1;
    constant is_dst_timezone=1; // ask me
@@ -228,7 +232,7 @@ class Timezone_Encapsule
    static int extra_offset;
    string name;
 
-   static void create(Ruleset.Timezone enc,string name,int off)
+   static void create(.Rule.Timezone enc,string name,int off)
    {
       what=enc;
       extra_name=name;
@@ -256,15 +260,15 @@ class Timezone_Encapsule
    int raw_utc_offset() { return what->raw_utc_offset()+extra_offset; }
 }
 
-static private Ruleset.Timezone _make_new_timezone_i(string tz,int plusminus)
+static private .Rule.Timezone _make_new_timezone_i(string tz,int plusminus)
 {
-   object(Ruleset.Timezone) z=`[](tz);
+   .Rule.Timezone z=`[](tz);
    if (!z) return UNDEFINED;
    return make_new_timezone(z,plusminus);
 }
 
 // internal, don't use this outside calendar module
-Ruleset.Timezone make_new_timezone(Ruleset.Timezone z,int plusminus)
+.Rule.Timezone make_new_timezone(.Rule.Timezone z,int plusminus)
 {
    if (plusminus>14*3600 || plusminus<-14*3600)
       error("difference out of range -14..14 h\n");
@@ -310,7 +314,7 @@ int decode_timeskew(string w)
    return neg*a*3600; // ignore litter
 }
 
-static private Ruleset.Timezone _magic_timezone(string tz)
+static private .Rule.Timezone _magic_timezone(string tz)
 {
    string z,w;
 
@@ -347,16 +351,16 @@ static private Ruleset.Timezone _magic_timezone(string tz)
    return ::`[](replace(tz,"-/+"/1,"__p"/1));
 }
 
-Ruleset.Timezone `[](string tz)
+.Rule.Timezone `[](string tz)
 {
-   mixed p=::`[](tz);
-   if (!p && tz=="locale") return locale=_locale();
+  mixed p=::`[](tz);
+  if (!p && tz=="locale") return locale=_locale();
 
-   if ((<"make_new_timezone","decode_timeskew">)[tz]) return p;
+  if ((<"make_new_timezone","decode_timeskew">)[tz]) return p;
 
-   if (!p) p=_magic_timezone(tz);
-   if (programp(p) || functionp(p)) return p();
-   return p;
+  if (!p) p=_magic_timezone(tz);
+  if (programp(p) || functionp(p)) return p();
+  return p;
 }
 
 // ================================================================
@@ -867,7 +871,7 @@ class Runtime_timezone_compiler
 	       FIXID(a[1]),-a[0],a[2]);
 	 else // simple timezone
 	    return sprintf(
-	       "Ruleset.Timezone(%d,%O)",
+	       "Rules.Timezone(%d,%O)",
 	       -(roff+a[0]),a[2]);
       }
 
@@ -955,9 +959,9 @@ class Runtime_timezone_compiler
 	    else a[6]=rname[a[4]]="tz"+n++;
       
 	 res+=({ "inherit TZHistory;\n"
-		 "Ruleset.Timezone ",
+		 "Rules.Timezone ",
 		 sort(values(rname))*",",";\n"
-		 "Ruleset.Timezone whatrule(int ux)\n"
+		 "Rules.Timezone whatrule(int ux)\n"
 		 "{\n" });
 
 	 foreach (rules,array a)
@@ -1006,7 +1010,7 @@ class Runtime_timezone_compiler
 		sprintf(
 		   "string _sprintf(int t) { return (t=='O')?"
 		   "%O:0; }\n"
-		   "string zoneid=%O;\n","Timezone("+id+")",id)});
+		   "string zoneid=%O;\n","Rule.Timezone("+id+")",id)});
 
 	 return res*"";
       }
@@ -1057,7 +1061,7 @@ class Runtime_timezone_compiler
     (["TZrules":Dummymodule(find_rule),
       "TZRules":TZRules,
       "TZHistory":TZHistory,
-      "Ruleset":Ruleset,
+      "Rules":.Rule,
       "ZEROSHIFT":({0,0,0,""})
     ]);
 
@@ -1141,7 +1145,7 @@ class Runtime_timezone_compiler
       {
 	 int i=0; 
 	 foreach (c/"\n",string line) write("%2d: %s\n",++i,line);
-	 throw(err);
+	 error(err);
       }
       object zo=p();
       if (zo->thezone) zo=zo->thezone;
@@ -1336,7 +1340,7 @@ class Runtime_timezone_compiler
 	 return ({offset_to_utc-a[i][2],tzformat(a[i][3])});
       }
 
-      string _sprintf(int t) { return (t=='O')?"Timezone("+name+")":0; }
+      string _sprintf(int t) { return (t=='O')?"Rule.Timezone("+name+")":0; }
 
       int raw_utc_offset() { return offset_to_utc; }
    }
@@ -1347,7 +1351,7 @@ class Runtime_timezone_compiler
       constant is_dst_timezone=1;
 
 // figure out what timezone to use
-      Ruleset.Timezone whatrule(int ux);
+      .Rule.Timezone whatrule(int ux);
 
       string name=sprintf("%O",object_program(this_object()));
 
