@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.163 2004/09/16 11:51:28 grubba Exp $
+|| $Id: array.c,v 1.164 2004/09/16 17:32:09 grubba Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "multiset.h"
 #include "mapping.h"
 
-RCSID("$Id: array.c,v 1.163 2004/09/16 11:51:28 grubba Exp $");
+RCSID("$Id: array.c,v 1.164 2004/09/16 17:32:09 grubba Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -382,7 +382,8 @@ PMOD_EXPORT struct array *array_insert(struct array *v,struct svalue *s,INT32 in
   }else{
     struct array *ret;
 
-    ret=allocate_array_no_init(v->size+1, (v->size >> 3) + 1);
+    ret = array_set_flag(allocate_array_no_init(v->size+1, (v->size >> 3) + 1),
+			 v->flags);
     ret->type_field = v->type_field;
 
     MEMCPY(ITEM(ret), ITEM(v), sizeof(struct svalue) * index);
@@ -1339,6 +1340,9 @@ INT32 * merge(struct array *a,struct array *b,INT32 opcode)
     }
   }
 
+  /* Note: The following is integer overflow safe as long as
+   *       sizeof(struct svalue) >= 2*sizeof(INT32).
+   */
   ptr=ret=(INT32 *)xalloc(sizeof(INT32)*(a->size + b->size + 1));
   SET_ONERROR(r, free,ret);
   ptr++;
@@ -2117,6 +2121,11 @@ PMOD_EXPORT struct array *copy_array_recursively(struct array *a,
   if(d_flag > 1)  array_check_type_field(a);
 #endif
 
+  if (!a->size) {
+    add_ref(&empty_array);
+    return array_set_flag(&empty_array, a->flags & ~ARRAY_LVALUE);
+  }
+
   ret=allocate_array_no_init(a->size,0);
 
   aa.type = T_ARRAY;
@@ -2189,6 +2198,8 @@ PMOD_EXPORT struct array *reverse_array(struct array *a)
       *(tmp0++) = *(--tmp1);
       *tmp1 = swap;
     }
+
+    /* FIXME: What about the flags field? */
     
     add_ref(a);
     return a;
