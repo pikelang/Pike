@@ -2,7 +2,7 @@
 
 #pragma strict_types
 
-// $Id: mkpeep.pike,v 1.34 2003/06/01 21:30:06 nilsson Exp $
+// $Id: mkpeep.pike,v 1.35 2003/10/17 03:06:54 nilsson Exp $
 
 #define SKIPWHITE(X) sscanf(X, "%*[ \t\n]%s", X)
 
@@ -27,17 +27,19 @@ array(string) linebreak(array(string) tokens, int width) {
   return out;
 }
 
-void make_multiline(string prefix, array(string)|string tokens,
-		    string suffix) {
+string make_multiline(string prefix, array(string)|string tokens,
+		      string suffix) {
   if(stringp(tokens))
     tokens = ((tokens/" ")/1)*({" "});
   tokens += ({ suffix });
   tokens = linebreak([array(string)]tokens, 80-sizeof(prefix));
+  string ret = "";
   foreach(tokens; int r; string line)
     if(!r)
-      write("%s%s\n", prefix, line);
+      ret += prefix + line + "\n";
     else
-      write("%*n%s\n", sizeof(prefix), line);
+      ret += sprintf("%*n%s\n", sizeof(prefix), line);
+  return ret;
 }
 
 // Find the matching parenthesis
@@ -252,11 +254,64 @@ string treat(string expr)
   return tmp*"";
 }
 
-void dump(array(Rule) data, int ind)
+class Switch(string test) {
+  constant is_switch = 1;
+  mapping(string:array(Switch|Breakable)) cases = ([]);
+
+  void add_case(string c, array(Switch|Breakable) b) {
+    cases[c] = b;
+  }
+
+  string get_string(int ind) {
+    string ret = "";
+    ret += sprintf("%*nswitch(%s)\n", ind, test);
+    ret += sprintf("%*n{\n", ind);
+
+    foreach(sort(indices(cases)), string c) {
+      ret += sprintf("%*ncase %s:\n", ind, c);
+      foreach(cases[c], object(Switch)|object(Breakable) b)
+	  ret += b->get_string(ind+2);
+      ret += sprintf("%*n  break;\n", ind);
+      ret += sprintf("\n");
+    }
+
+    ret += sprintf("%*n}\n", ind);
+    return ret;
+  }
+}
+
+class Breakable {
+  array(string|array(string)) lines = ({});
+
+  void add_line(string a, void|array(string)|string b, void|string c) {
+    if(c)
+      lines += ({ ({ a,b,c }) });
+    else
+      lines += ({ a });
+  }
+
+  string get_string(int ind) {
+    string ret = "";
+    foreach(lines, string|array(string) line)
+      if(stringp(line)) {
+	if(String.trim_all_whites([string]line)=="")
+	  ret += line;
+	else
+	  ret += sprintf("%*n%s\n", ind, line);
+      }
+      else {
+	array(string) line = [array(string)]line;
+	ret += make_multiline(" "*ind+line[0], line[1], line[2]);
+      }
+    return ret;
+  }
+}
+
+array(Switch|Breakable) make_switches(array(Rule) data)
 {
   int i,maxv;
-  string test;
-  mixed cons, var;
+  string test,cons,var;
+  array(Switch|Breakable) ret = ({});
 
   while(1)
   {
@@ -288,8 +343,7 @@ void dump(array(Rule) data, int ind)
     // If zero, done
     if(maxv <= 1) break;
 
-    write("%*nswitch(%s)\n", ind, treat(test));
-    write("%*n{\n", ind);
+    Switch s = Switch(treat(test));
 
     // condition : array(Rule)
     mapping(string:array(Rule)) d = foo[test];
@@ -312,30 +366,27 @@ void dump(array(Rule) data, int ind)
       if(sscanf(a[i],"(%s)==%s",cons,var)!=2)
 	sscanf(a[i],"%s==%s",cons,var);
 
-      write("%*ncase %s:\n", ind, cons);
-
       foreach(b[i], Rule d)
 	d->from -= ({ a[i] });
 
-      dump(b[i], ind+2);
-      write("%*n  break;\n", ind);
-      write("\n");
+      s->add_case(cons, make_switches(b[i]));
     }
-
-    write("%*n}\n", ind);
+    ret += ({ s });
   }
 
   // Take care of whatever is left
   if(sizeof(data))
   {
+    Breakable buf = Breakable();
+    int ind;
     foreach(data, Rule d)
     {
-      make_multiline(" "*ind+"/* ", d->line, " */");
+      buf->add_line(" "*ind+"/* ", d->line, " */");
 
       if(sizeof(d->from))
-	make_multiline(" "*ind+"if(", treat(d->from*" && "), ")");
+	buf->add_line(" "*ind+"if(", treat(d->from*" && "), ")");
 
-      write("%*n{\n", ind);
+      buf->add_line( sprintf("%*n{", ind) );
       ind += 2;
       array(string) opargs = ({ d->opcodes+", " });
 
@@ -352,13 +403,15 @@ void dump(array(Rule) data, int ind)
 	opargs += ({ sizeof(args)+1+", ", fcode+", " });
 	opargs += map(args,treat)[*]+", ";
       }
-      make_multiline(" "*ind+"do_optimization(", opargs, "0);");
+      buf->add_line(" "*ind+"do_optimization(", opargs, "0);");
 
-      write("%*ncontinue;\n", ind);
+      buf->add_line( sprintf("%*ncontinue;", ind) );
       ind -= 2;
-      write("%*n}\n", ind, test);
+      buf->add_line( sprintf("%*n}", ind, test) );
     }
+    ret += ({ buf });
   }
+  return ret;
 }
 
 
@@ -381,27 +434,29 @@ int main(int argc, array(string) argv)
   }
 
   write("  len=instrbuf.s.len/sizeof(p_instr);\n"
-	"  instructions=(p_instr *)instrbuf.s.str;\n"
-	"  instrbuf.s.str=0;\n"
-	"  fifo_len=0;\n"
-	"  init_bytecode();\n\n"
-	"  for(eye=0;eye<len || fifo_len;)\n  {\n"
-	"\n"
-	"#ifdef PIKE_DEBUG\n"
-	"    if(a_flag>6) {\n"
-	"      int e;\n"
-	"      fprintf(stderr, \"#%ld,%d:\",\n"
-	"              DO_NOT_WARN((long)eye),\n"
-	"              fifo_len);\n"
-	"      for(e=0;e<4;e++) {\n"
-	"        fprintf(stderr,\" \");\n"
-	"        dump_instr(instr(e));\n"
-	"      }\n"
-	"      fprintf(stderr,\"\\n\");\n"
-	"    }\n"
-	"#endif\n\n");
+      "  instructions=(p_instr *)instrbuf.s.str;\n"
+      "  instrbuf.s.str=0;\n"
+      "  fifo_len=0;\n"
+      "  init_bytecode();\n\n"
+      "  for(eye=0;eye<len || fifo_len;)\n  {\n"
+      "\n"
+      "#ifdef PIKE_DEBUG\n"
+      "    if(a_flag>6) {\n"
+      "      int e;\n"
+      "      fprintf(stderr, \"#%ld,%d:\",\n"
+      "              DO_NOT_WARN((long)eye),\n"
+      "              fifo_len);\n"
+      "      for(e=0;e<4;e++) {\n"
+      "        fprintf(stderr,\" \");\n"
+      "        dump_instr(instr(e));\n"
+      "      }\n"
+      "      fprintf(stderr,\"\\n\");\n"
+      "    }\n"
+      "#endif\n\n");
 
-  dump(data, 4);
+  array(Switch) a = [array(Switch)]make_switches(data);
+  if(sizeof(a)!=1) error("Expected one top switch.\n");
+  write( a[0]->get_string(4) );
 
   write("    advance();\n");
   write("  }\n");
