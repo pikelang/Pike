@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.476 2001/04/27 12:09:25 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.477 2001/05/28 18:11:50 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2375,6 +2375,7 @@ AC_CHECK_FUNCS( \
  iszero \
  finite \
  signbit \
+ nan \
  nice \
  __priocntl \
  sched_setscheduler \
@@ -2520,6 +2521,17 @@ if test $ac_cv_func_crypt$ac_cv_func__crypt = nono ; then
 fi
 
 
+#############################################################################
+MY_CHECK_FUNCTION(infnan,
+[
+#include <errno.h>
+#include <math.h>
+], [
+  double pinf = infnan(ERANGE);
+  double ninf = infnan(-ERANGE);
+  double nan = infnan(EDOM);
+  exit(!(isinf(pinf)>0 && isinf(ninf)<0 && isnan(nan)));
+])
 #############################################################################
 
 # FreeBSD 3.0 has broken F_SETFD when running with threads.
