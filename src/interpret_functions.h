@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.161 2003/11/09 01:10:13 mast Exp $
+|| $Id: interpret_functions.h,v 1.162 2003/11/10 01:06:56 mast Exp $
 */
 
 /*
@@ -742,10 +742,11 @@ OPCODE0(F_ADD_TO, "+=", I_UPDATE_SP, {
     assign_lvalue(Pike_sp-4,&s);
   } else if (Pike_sp[-2].type == T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
+    int i;
     if(Pike_sp[-2].u.object->refs <= 2 &&
-       FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ) != -1)
+       (i = FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ)) != -1)
     {
-      apply_lfun(Pike_sp[-2].u.object, LFUN_ADD_EQ, 1);
+      apply_low(Pike_sp[-2].u.object, i, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
@@ -798,10 +799,11 @@ OPCODE0(F_ADD_TO_AND_POP, "+= and pop", I_UPDATE_SP, {
     assign_lvalue(Pike_sp-4,&s);
   } else if (Pike_sp[-2].type == PIKE_T_OBJECT) {
     /* One ref in the lvalue, and one on the stack. */
+    int i;
     if(Pike_sp[-2].u.object->refs <= 2 &&
-       FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ) != -1)
+       (i = FIND_LFUN(Pike_sp[-2].u.object->prog, LFUN_ADD_EQ)) != -1)
     {
-      apply_lfun(Pike_sp[-2].u.object, LFUN_ADD_EQ, 1);
+      apply_low(Pike_sp[-2].u.object, i, 1);
       /* NB: The lvalue already contains the object, so
        *     no need to reassign it.
        */
