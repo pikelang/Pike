@@ -6,7 +6,7 @@ array(string) split(string data)
   int line=1;
   array(string) ret=({});
   int pos;
-  data+="\0";
+  data += "\n\0";	/* End sentinel. */
 
   while(1)
   {
