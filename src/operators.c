@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.108 2000/10/03 13:42:44 grubba Exp $");
+RCSID("$Id: operators.c,v 1.109 2000/10/14 22:17:58 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -1648,35 +1648,40 @@ PMOD_EXPORT void o_multiply(void)
 
     case TWO_TYPES(T_ARRAY, T_FLOAT):
       {
+	struct array *src;
 	struct array *ret;
 	struct svalue *pos;
-	INT_TYPE e, asize, extra;
+	ptrdiff_t asize, delta;
 	if(sp[-1].u.float_number < 0)
 	  SIMPLE_BAD_ARG_ERROR("`*", 2, "float(0..)");
-	/* Think of that big floats are not always the same as a 
-	   converted big int! That's why we have to make this in
-	   two steps. */
-	extra=(int)(((double)sp[-2].u.array->size * 
-		     (sp[-1].u.float_number 
-		      - (double)(int)sp[-1].u.float_number))+
-		    0.5);
-        asize=((int)(double)(sp[-2].u.array->size * (int)sp[-1].u.float_number))+
-	  extra;
-	ret=allocate_array(asize);
-	pos=ret->item;
-	for(e=0;e<((int)sp[-1].u.float_number);e++,pos+=sp[-2].u.array->size)
-	  assign_svalues_no_free(pos,
-				 sp[-2].u.array->item,
-				 sp[-2].u.array->size,
-				 sp[-2].u.array->type_field);
-	/* copy the last part of the array */
-	if (extra)
-	  assign_svalues_no_free(pos,
-				 sp[-2].u.array->item,
-				 extra,
-				 sp[-2].u.array->type_field);
 
-	ret->type_field=sp[-2].u.array->type_field;
+	src = sp[-2].u.array;
+	delta = src->size;
+	asize = (ptrdiff_t)floor(delta * sp[-1].u.float_number + 0.5);
+	ret = allocate_array(asize);
+	pos = ret->item;
+	if (asize >= delta) {
+	  assign_svalues_no_free(pos,
+				 src->item,
+				 delta,
+				 src->type_field);
+	  pos += delta;
+	  asize -= delta;
+	  while (asize >= delta) {
+	    assign_svalues_no_free(pos, ret->item, delta, ret->type_field);
+	    pos += delta;
+	    asize -= delta;
+	    delta <<= 1;
+	  }
+	  if (asize) {
+	    assign_svalues_no_free(pos, ret->item, asize, ret->type_field);
+	  }
+	} else if (asize) {
+	  assign_svalues_no_free(pos,
+				 src->item,
+				 asize,
+				 src->type_field);
+	}
 	pop_n_elems(2);
 	push_array(ret);
 	return;
@@ -1684,32 +1689,35 @@ PMOD_EXPORT void o_multiply(void)
 
     case TWO_TYPES(T_STRING, T_FLOAT):
       {
+	struct pike_string *src;
 	struct pike_string *ret;
 	char *pos;
-	INT_TYPE e, asize, extra;
-	ptrdiff_t len;
+	ptrdiff_t len, delta;
+
 	if(sp[-1].u.float_number < 0)
 	  SIMPLE_BAD_ARG_ERROR("`*", 2, "float(0..)");
-	/* Think of that big floats are not always the same as a 
-	   converted big int! That's why we have to make this in
-	   two steps. */
-	extra=(int)(((double)sp[-2].u.string->len * 
-		     (sp[-1].u.float_number 
-		      - (double)(int)sp[-1].u.float_number))+
-		    0.5);
-        asize=((int)(double)(sp[-2].u.string->len * (int)sp[-1].u.float_number))+
-	  extra;
-	ret=begin_wide_shared_string(asize,
-				     sp[-2].u.string->size_shift);
-	pos=ret->str;
-	len=sp[-2].u.string->len << sp[-2].u.string->size_shift;
-	for(e=0;e<((int)sp[-1].u.float_number);e++,pos+=len)
-	  MEMCPY(pos,sp[-2].u.string->str,len);
-	/* copy the last part of the string */
-	if (extra)
-	{
-	  extra=extra << sp[-2].u.string->size_shift;
-	  MEMCPY(pos,sp[-2].u.string->str,extra);
+	src = sp[-2].u.string;
+	len = (ptrdiff_t)floor(src->len * sp[-1].u.float_number + 0.5);
+	ret = begin_wide_shared_string(len, src->size_shift);
+	len <<= src->size_shift;
+	delta = src->len << src->size_shift;
+	pos = ret->str;
+
+	if (len >= delta) {
+	  MEMCPY(pos, src->str, delta);
+	  pos += delta;
+	  len -= delta;
+	  while (len >= delta) {
+	    MEMCPY(pos, ret->str, delta);
+	    pos += delta;
+	    len -= delta;
+	    delta <<= 1;
+	  }
+	  if (len) {
+	    MEMCPY(pos, ret->str, len);
+	  }
+	} else if (len) {
+	  MEMCPY(pos, src->str, len);
 	}
 	pop_n_elems(2);
 	push_string(low_end_shared_string(ret));
