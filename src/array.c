@@ -23,7 +23,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.89 2000/09/30 15:58:30 mast Exp $");
+RCSID("$Id: array.c,v 1.90 2000/10/10 01:20:37 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1555,6 +1555,8 @@ PMOD_EXPORT struct array *append_array(struct array *a, struct svalue *s)
   return a;
 }
 
+typedef char *(* explode_searchfunc)(void *,void *,size_t);
+
 PMOD_EXPORT struct array *explode(struct pike_string *str,
 		       struct pike_string *del)
 {
@@ -1577,25 +1579,31 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
       ITEM(ret)[e].u.string=string_slice(str,e,1);
     }
   }else{
-    struct generic_mem_searcher searcher;
+    SearchMojt mojt;
+    explode_searchfunc f;
     
     s=str->str;
     end=s+(str->len << str->size_shift);
 
     ret=allocate_array(10);
     ret->size=0;
-    
-    init_generic_memsearcher(&searcher,
-			     del->str,
+
+    mojt=compile_memsearcher(MKPCHARP_STR(del),
 			     del->len,
-			     (char)del->size_shift,
 			     str->len,
-			     (char)str->size_shift);
-    
-    while((tmp=(char *)generic_memory_search(&searcher,
-					     s,
-					     (end-s)>>str->size_shift,
-					     (char)str->size_shift)))
+			     del);
+
+    switch(str->size_shift)
+    {
+      case 0: f=(explode_searchfunc)mojt.vtab->func0; break;
+      case 1: f=(explode_searchfunc)mojt.vtab->func1; break;
+      case 2: f=(explode_searchfunc)mojt.vtab->func2; break;
+#ifdef PIKE_DEBUG
+      default: fatal("Illegal shift.\n");
+#endif
+    }
+
+    while((tmp = f(mojt.data, s, (end-s)>> str->size_shift)))
     {
       if(ret->size == ret->malloced_size)
       {
@@ -1626,6 +1634,7 @@ PMOD_EXPORT struct array *explode(struct pike_string *str,
 
     ITEM(ret)[ret->size].type=T_STRING;
     ret->size++;
+    mojt.vtab->freeme(mojt.data);
   }
   ret->type_field=BIT_STRING;
   return ret;
