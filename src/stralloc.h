@@ -33,6 +33,12 @@ struct pike_string *debug_findstring(const struct pike_string *foo);
 
 #define reference_shared_string(s) (s)->refs++
 #define copy_shared_string(to,s) ((to)=(s))->refs++
+#define MAKE_CONSTANT_SHARED_STRING(var, text)	\
+ do { static struct pike_string *str_;		\
+    if(!str_) str_=make_shared_string((text));	\
+    copy_shared_string((var), str_);		\
+ }while(0)
+   
 
 /* Prototypes begin here */
 struct pike_string *binary_findstring(const char *foo, INT32 l);
@@ -56,6 +62,8 @@ struct pike_string *realloc_unlinked_string(struct pike_string *a, INT32 size);
 struct pike_string *realloc_shared_string(struct pike_string *a, INT32 size);
 struct pike_string *add_shared_strings(struct pike_string *a,
 					 struct pike_string *b);
+struct pike_string *add_and_free_shared_strings(struct pike_string *a,
+						struct pike_string *b);
 struct pike_string *string_replace(struct pike_string *str,
 				     struct pike_string *del,
 				     struct pike_string *to);

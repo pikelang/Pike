@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.33.2.1 1997/05/10 12:56:56 hubbe Exp $");
+RCSID("$Id: program.c,v 1.33.2.2 1997/06/25 22:46:43 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -39,19 +39,11 @@ RCSID("$Id: program.c,v 1.33.2.1 1997/05/10 12:56:56 hubbe Exp $");
 #define FIND_FUNCTION_HASHSIZE 4711
 
 
-#define FILE_STATE
-#define PROGRAM_STATE
-
 #define STRUCT
 #include "compilation.h"
-#undef STRUCT
 
 #define DECLARE
 #include "compilation.h"
-#undef DECLARE
-
-#undef FILE_STATE
-#undef PROGRAM_STATE
 
 
 char *lfun_names[] = {
@@ -86,17 +78,61 @@ char *lfun_names[] = {
 };
 
 struct program *first_program = 0;
-
-struct program fake_program;
-
 static int current_program_id=0;
+
+struct program *new_program=0;
+struct program *malloc_size_program=0;
+
+int compiler_pass;
+int compilation_depth;
+struct compiler_frame *compiler_frame=0;
 static INT32 last_line = 0;
 static INT32 last_pc = 0;
 static struct pike_string *last_file = 0;
-dynamic_buffer inherit_names;
 dynamic_buffer used_modules;
 
-void free_all_local_names(void);
+/* So what if we don't have templates? / Hubbe */
+
+#ifdef DEBUG
+#define CHECK_FOO(NUMTYPE,TYPE,NAME)				\
+  if(malloc_size_program->num_##NAME < new_program->num_##NAME)	\
+    fatal("new_program->num_" #NAME " is out of order\n");	\
+  if(new_program->flags & PROGRAM_OPTIMIZED)			\
+    fatal("Tried to reallocate fixed program.\n")
+
+#else
+#define CHECK_FOO(NUMTYPE,TYPE,NAME)
+#endif
+
+#define FOO(NUMTYPE,TYPE,NAME)						\
+void add_to_##NAME(TYPE ARG) {						\
+  CHECK_FOO(NUMTYPE,TYPE,NAME);						\
+  if(malloc_size_program->num_##NAME == new_program->num_##NAME) {	\
+    void *tmp;								\
+    malloc_size_program->num_##NAME *= 2;				\
+    malloc_size_program->num_##NAME++;					\
+    tmp=realloc((char *)new_program->NAME,				\
+                sizeof(TYPE) *						\
+		malloc_size_program->num_##NAME);			\
+    if(!tmp) fatal("Out of memory.\n");					\
+    new_program->NAME=tmp;						\
+  }									\
+  new_program->NAME[new_program->num_##NAME++]=(ARG);                   \
+}
+
+#include "program_areas.h"
+
+void ins_int(INT32 i, void (*func)(char tmp))
+{
+  int e;
+  for(e=0;e<(long)sizeof(i);e++) func(EXTRACT_UCHAR(((char *)&i)+e));
+}
+
+void ins_short(INT16 i, void (*func)(char tmp))
+{
+  int e;
+  for(e=0;e<(long)sizeof(i);e++) func(EXTRACT_UCHAR(((char *)&i)+e));
+}
 
 void use_module(struct svalue *s)
 {
@@ -150,22 +186,18 @@ int find_module_identifier(struct pike_string *ident)
   UNSETJMP(tmp);
 
   {
-    struct program_state *p;
-    for(p=previous_program_state;p;p=p->previous)
+    struct program_state *p=previous_program_state;
+    int n;
+    for(n=0;n<compilation_depth;n++,p=p->previous)
     {
-      INT32 i;
-      if(previous_file_state &&
-	 previous_file_state->previous_program_state==p->previous)
-	break;
-
-      i=low_find_shared_string_identifier(ident, &p->fake_program);
+      int i=low_find_shared_string_identifier(ident, p->new_program);
       if(i!=-1)
       {
 	struct identifier *id;
-	id=ID_FROM_INT(&p->fake_program, i);
+	id=ID_FROM_INT(p->new_program, i);
 	if(IDENTIFIER_IS_CONSTANT(id->flags))
 	{
-	  push_svalue(PROG_FROM_INT(&p->fake_program, i)->constants+
+	  push_svalue(PROG_FROM_INT(p->new_program, i)->constants+
 		      id->func.offset);
 	  return 1;
 	}else{
@@ -179,89 +211,204 @@ int find_module_identifier(struct pike_string *ident)
   return 0;
 }
 
-/* This should be optimized */
+#define ID_TO_PROGRAM_CACHE_SIZE 512
+struct program *id_to_program_cache[ID_TO_PROGRAM_CACHE_SIZE];
+
 struct program *id_to_program(INT32 id)
 {
   struct program *p;
+  INT32 h;
+  if(!id) return 0;
+  h=id & (ID_TO_PROGRAM_CACHE_SIZE-1);
+
+  if((p=id_to_program_cache[h]))
+    if(p->id==id) return p;
+  
   if(id) 
-    for(p=first_program;p;p=p->next)
-      if(id==p->id)
-	return p;
+    {
+      for(p=first_program;p;p=p->next)
+	{
+	  if(id==p->id)
+	    {
+	      if(id_to_program_cache[h])
+		free_program(id_to_program_cache[h]);
+	      
+	      id_to_program_cache[h]=p;
+	      p->refs++;
+	      return p;
+	    }
+	}
+    }
   return 0;
-}
-
-#define SETUP(X,Y,TYPE,AREA) \
-   fake_program.X=(TYPE *)areas[AREA].s.str; \
-   fake_program.Y=areas[AREA].s.len/sizeof(TYPE)
-
-/*
- * This routine sets up the struct fake_program to work almost like a
- * normal program, but all pointers points to the program we are currently
- * compiling
- */
-void setup_fake_program()
-{
-  fake_program.refs=0xffffff;
-  SETUP(program, program_size, unsigned char, A_PROGRAM);
-  SETUP(strings, num_strings, struct pike_string *, A_STRINGS);
-  SETUP(inherits, num_inherits, struct inherit, A_INHERITS);
-  SETUP(identifiers, num_identifiers, struct identifier, A_IDENTIFIERS);
-  SETUP(identifier_references, num_identifier_references, struct reference, A_IDENTIFIER_REFERENCES);
-  SETUP(constants, num_constants, struct svalue, A_CONSTANTS);
-  SETUP(linenumbers, num_linenumbers, char, A_LINENUMBERS);
-
-  fake_program.inherits[0].prog=&fake_program;
-  fake_program.next=0;
-  fake_program.prev=0;
-/*
-  fake_program.lfuns=0;
-  fake_prog.num_lfuns=0;
-*/
-  fake_object.prog=&fake_program;
 }
 
 /* Here starts routines which are used to build new programs */
 
+/* Re-allocate all the memory in the program in one chunk. because:
+ * 1) The individual blocks are munch bigger than they need to be
+ * 2) cuts down on malloc overhead (maybe)
+ * 3) localizes memory access (decreases paging)
+ */
+void optimize_program(struct program *p)
+{
+  SIZE_T size=0;
+  char *data;
+
+  /* Already done (shouldn't happen, but who knows?) */
+  if(p->flags & PROGRAM_OPTIMIZED) return;
+
+#define FOO(NUMTYPE,TYPE,NAME) \
+  size+=MY_ALIGN(p->num_##NAME*sizeof(p->NAME[0]));
+#include "program_areas.h"
+
+  data=malloc(size);
+  if(!data) return; /* We are out of memory, but we don't care! */
+
+  size=0;
+
+#define FOO(NUMTYPE,TYPE,NAME) \
+  MEMCPY(data+size,p->NAME,p->num_##NAME*sizeof(p->NAME[0])); \
+  free((char *)p->NAME); \
+  p->NAME=(TYPE *)(data+size); \
+  size+=MY_ALIGN(p->num_##NAME*sizeof(p->NAME[0]));
+#include "program_areas.h"
+
+  p->total_size=size + sizeof(struct program);
+
+  p->flags |= PROGRAM_OPTIMIZED;
+}
+
+/* internal function to make the index-table */
+static int funcmp(const void *a,const void *b)
+{
+  return
+    my_order_strcmp(ID_FROM_INT(new_program, *(unsigned short *)a)->name,
+		    ID_FROM_INT(new_program, *(unsigned short *)b)->name);
+}
+
+void fixate_program(void)
+{
+  INT32 i,e,t;
+  if(new_program->flags & PROGRAM_FIXED) return;
+#ifdef DEBUG
+  if(new_program->flags & PROGRAM_OPTIMIZED)
+    fatal("Cannot fixate optimized program\n");
+#endif
+
+  /* Ok, sort for binsearch */
+  for(e=i=0;i<(int)new_program->num_identifier_references;i++)
+  {
+    struct reference *funp;
+    struct identifier *fun;
+    funp=new_program->identifier_references+i;
+    if(funp->flags & (ID_HIDDEN|ID_STATIC)) continue;
+    if(funp->flags & ID_INHERITED)
+    {
+      if(funp->flags & ID_PRIVATE) continue;
+      fun=ID_FROM_PTR(new_program, funp);
+/*	  if(fun->func.offset == -1) continue; * prototype */
+      
+      /* check for multiple definitions */
+      for(t=0;t>=0 && t<(int)new_program->num_identifier_references;t++)
+      {
+	struct reference *funpb;
+	struct identifier *funb;
+	
+	if(t==i) continue;
+	funpb=new_program->identifier_references+t;
+	if(funpb->flags & (ID_HIDDEN|ID_STATIC)) continue;
+	if((funpb->flags & ID_INHERITED) && t<i) continue;
+	funb=ID_FROM_PTR(new_program,funpb);
+	/* if(funb->func.offset == -1) continue; * prototype */
+	if(fun->name==funb->name) t=-10;
+      }
+      if(t<0) continue;
+    }
+    add_to_identifier_index(i);
+  }
+  fsort((void *)new_program->identifier_index,
+	new_program->num_identifier_index,
+	sizeof(unsigned short),(fsortfun)funcmp);
+  
+  
+  for(i=0;i<NUM_LFUNS;i++)
+    new_program->lfuns[i]=find_identifier(lfun_names[i],new_program);
+  
+  new_program->flags |= PROGRAM_FIXED;
+}
+
 /*
  * Start building a new program
  */
-void start_new_program()
+void low_start_new_program(struct program *p,
+			   struct pike_string *name,
+			   int flags)
 {
   int e;
 
   threads_disabled++;
-  if(local_variables)
-    setup_fake_program();
-#define PROGRAM_STATE
+  compilation_depth++;
+
+  if(!p)
+  {
+    p=ALLOC_STRUCT(program);
+    MEMSET(p, 0, sizeof(struct program));
+    
+    p->refs=1;
+    p->id=++current_program_id;
+    
+    if((p->next=first_program)) first_program->prev=p;
+    first_program=p;
+  }else{
+    p->refs++;
+  }
+
+  if(name)
+  {
+    struct svalue s;
+    s.type=T_PROGRAM;
+    s.u.program=p;
+    add_constant(name, &s, flags);
+  }
+
 #define PUSH
 #include "compilation.h"
-#undef PUSH
-#undef PROGRAM_STATE
-
-  if(previous_program_state->fake_program.num_inherits)
-    previous_program_state->fake_program.inherits[0].prog=
-      &previous_program_state->fake_program;
 
   init_type_stack();
 
-  for(e=0; e<NUM_AREAS; e++) low_reinit_buf(areas + e);
-  low_reinit_buf(& inherit_names);
   low_reinit_buf(& used_modules);
-  fake_program.id = ++current_program_id;
 
+  if(p && (p->flags & PROGRAM_FINISHED))
   {
-    struct inherit inherit;
-    struct pike_string *name;
-    
-    inherit.prog=&fake_program;
-    inherit.inherit_level=0;
-    inherit.identifier_level=0;
-    inherit.storage_offset=0;
-    add_to_mem_block(A_INHERITS,(char *)&inherit,sizeof inherit);
-    name=make_shared_string("this");
-    low_my_binary_strcat((char *)&name,sizeof(name), &inherit_names);
+    yyerror("Pass2: Program already done");
+    p=0;
   }
- 
+
+  malloc_size_program = ALLOC_STRUCT(program);
+  new_program=p;
+
+  if(new_program->program)
+  {
+#define FOO(NUMTYPE,TYPE,NAME) \
+    malloc_size_program->num_##NAME=new_program->num_##NAME;
+#include "program_areas.h"
+  }else{
+    static struct pike_string *s;
+    struct inherit i;
+
+#define START_SIZE 64
+#define FOO(NUMTYPE,TYPE,NAME) \
+    malloc_size_program->num_##NAME=START_SIZE; \
+    new_program->NAME=(TYPE *)xalloc(sizeof(TYPE) * START_SIZE);
+#include "program_areas.h"
+
+    i.prog=new_program;
+    i.identifier_level=0;
+    i.storage_offset=0;
+    i.inherit_level=0;
+    i.name=0;
+    add_to_inherits(i);
+  }
 
   {
     struct svalue tmp;
@@ -273,18 +420,25 @@ void start_new_program()
     use_module(& tmp);
   }
 
+  init_node=0;
   num_parse_error=0;
-  local_variables=ALLOC_STRUCT(locals);
-  local_variables->next=0;
-  local_variables->current_number_of_locals=0;
-  local_variables->max_number_of_locals=0;
-  local_variables->current_type=0;
-  local_variables->current_return_type=0;
+
+  push_compiler_frame();
 }
 
-static void low_free_program(struct program *p)
+void start_new_program(void)
+{
+  low_start_new_program(0,0,0);
+}
+
+
+void really_free_program(struct program *p)
 {
   unsigned INT16 e;
+
+  if(id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]==p)
+    id_to_program_cache[p->id & (ID_TO_PROGRAM_CACHE_SIZE-1)]=0;
+
   for(e=0; e<p->num_strings; e++)
     free_string(p->strings[e]);
 
@@ -299,11 +453,6 @@ static void low_free_program(struct program *p)
 
   for(e=1; e<p->num_inherits; e++)
     free_program(p->inherits[e].prog);
-}
-
-void really_free_program(struct program *p)
-{
-  low_free_program(p);
 
   if(p->prev)
     p->prev->next=p->next;
@@ -312,6 +461,18 @@ void really_free_program(struct program *p)
 
   if(p->next)
     p->next->prev=p->prev;
+
+  if(p->flags & PROGRAM_OPTIMIZED)
+    {
+      if(p->program)
+	  free(p->program);
+#define FOO(NUMTYPE,TYPE,NAME) p->NAME=0;
+#include "program_areas.h"
+    }else{
+#define FOO(NUMTYPE,TYPE,NAME) \
+  if(p->NAME) { free((char *)p->NAME); p->NAME=0; }
+#include "program_areas.h"
+    }
 
   free((char *)p);
 
@@ -342,7 +503,7 @@ void dump_program_desc(struct program *p)
     fprintf(stderr,"%s;\n",ID_FROM_INT(p,e)->name->str);
   }
   fprintf(stderr,"All sorted identifiers:\n");
-  for(q=0;q<(int)p->num_identifier_indexes;q++)
+  for(q=0;q<(int)p->num_identifier_index;q++)
   {
     e=p->identifier_index[q];
     fprintf(stderr,"%3d (%3d):",e,q);
@@ -352,61 +513,36 @@ void dump_program_desc(struct program *p)
 }
 #endif
 
-static void toss_compilation_resources()
+static void toss_compilation_resources(void)
 {
-  struct pike_string **names;
-  struct svalue *modules;
-  int e;
+  free_program(new_program);
+  new_program=0;
 
-  for (e=0; e<NUM_AREAS; e++) toss_buffer(areas+e);
-
-  names=(struct pike_string **)inherit_names.s.str;
-  e=inherit_names.s.len / sizeof(struct pike_string *);
-  while(--e>=0) if(names[e]) free_string(names[e]);
-  toss_buffer(& inherit_names);
-
-  modules=(struct svalue *)used_modules.s.str;
-  e=used_modules.s.len / sizeof(struct svalue);
-  while(--e>=0) free_svalue(modules+e);
-  toss_buffer(& used_modules);
-
-  /* Clean up */
-  while(local_variables)
-  {
-    struct locals *l;
-    for(e=0;e<local_variables->current_number_of_locals;e++)
+  if(malloc_size_program)
     {
-      free_string(local_variables->variable[e].name);
-      free_string(local_variables->variable[e].type);
+      free((char *)malloc_size_program);
+      malloc_size_program=0;
     }
   
-    if(local_variables->current_type)
-      free_string(local_variables->current_type);
-
-    if(local_variables->current_return_type)
-      free_string(local_variables->current_return_type);
-
-    l=local_variables->next;
-    free((char *)local_variables);
-    local_variables=l;
-  }
+  while(compiler_frame)
+    pop_compiler_frame();
 
   if(last_file)
   {
     free_string(last_file);
     last_file=0;
   }
-}
+  
+  {
+    struct svalue *modules=(struct svalue *)used_modules.s.str;
+    INT32 e;
 
-/*
- * Something went wrong.
- * toss resources of program we were building
- */
-void toss_current_program()
-{
-  setup_fake_program();
-  low_free_program(&fake_program);
-  toss_compilation_resources();
+    for(e=0;e<(long)(used_modules.s.len / sizeof(struct svalue));e++)
+      free_svalue(modules+e);
+
+    toss_buffer(&used_modules);
+  }
+  
 }
 
 #ifdef DEBUG
@@ -436,6 +572,10 @@ void check_program(struct program *p)
   if(p->storage_needed < 0)
     fatal("Program->storage_needed < 0.\n");
 
+  if(p->num_identifier_index > p->num_identifier_references)
+    fatal("Too many identifier index entries in program!\n");
+
+#if 0
   size=MY_ALIGN(sizeof(struct program));
   size+=MY_ALIGN(p->num_linenumbers);
   size+=MY_ALIGN(p->program_size);
@@ -456,8 +596,8 @@ void check_program(struct program *p)
   if(size < (INT32)p->total_size)
     fatal("Program size is in error.\n");
 
-
-#define CHECKRANGE(X,Y) if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Program->%s is wrong.\n",Y)
+#define CHECKRANGE(X,Y) \
+if((char *)(p->X) < (char *)p || (char *)(p->X)> ((char *)p)+size) fatal("Program->%s is wrong.\n",Y)
 
   CHECKRANGE(program,"program");
   CHECKRANGE(strings,"strings");
@@ -480,11 +620,10 @@ void check_program(struct program *p)
     if(p->checksum != checksum)
       fatal("Someone changed a program!!!\n");
   }
+#endif
 
   for(e=0;e<(int)p->num_constants;e++)
-  {
     check_svalue(p->constants + e);
-  }
 
   for(e=0;e<(int)p->num_strings;e++)
     check_string(p->strings[e]);
@@ -511,7 +650,7 @@ void check_program(struct program *p)
       fatal("Identifier offset is wrong!\n");
   }
 
-  for(e=0;e<(int)p->num_identifier_indexes;e++)
+  for(e=0;e<(int)p->num_identifier_index;e++)
   {
     if(p->identifier_index[e] > p->num_identifier_references)
       fatal("Program->identifier_indexes[%ld] is wrong\n",(long)e);
@@ -525,128 +664,38 @@ void check_program(struct program *p)
 }
 #endif
 
-/* internal function to make the index-table */
-static int funcmp(const void *a,const void *b)
+struct program *end_first_pass(int finish)
 {
-  return
-    my_order_strcmp(ID_FROM_INT(&fake_program, *(unsigned short *)a)->name,
-		    ID_FROM_INT(&fake_program, *(unsigned short *)b)->name);
-}
-
-/*
- * Finish this program, returning the newly built program
- */
-
-#define INS_BLOCK(PTR,PTRS,TYPE,AREA) \
-prog->PTR=(TYPE *)p; \
-if((prog->PTRS = areas[AREA].s.len/sizeof(TYPE))) \
-{ \
-  MEMCPY(p,areas[AREA].s.str, areas[AREA].s.len); \
-  p+=MY_ALIGN(areas[AREA].s.len); \
-}
-
-struct program *end_program()
-{
-  struct pike_string **names;
-  int size, i,e,t;
-  char *p;
   struct program *prog;
 
   /*
    * Define the __INIT function, but only if there was any code
    * to initialize.
    */
-  if (init_node)
+  if(init_node)
   {
     union idptr tmp;
     struct pike_string *s;
-    push_locals();
     s=make_shared_string("__INIT");
     dooptcode(s,
 	      mknode(F_ARG_LIST,
 		     init_node,mknode(F_RETURN,mkintnode(0),0)),
 	      function_type_string,
 	      0);
-    pop_locals();
     free_string(s);
     init_node=0;
   }
 
+  pop_compiler_frame(); /* Pop __INIT local variables */
+
   exit_type_stack();
 
-  if (num_parse_error > 0)
+  if(num_parse_error > 0)
   {
-    toss_current_program();
     prog=0;
   }else{
-    setup_fake_program();
-    size = MY_ALIGN(sizeof (struct program));
-    for (i=0; i<NUM_AREAS; i++) size += MY_ALIGN(areas[i].s.len);
-    size+=MY_ALIGN(fake_program.num_identifier_references * sizeof(unsigned short));
-
-    p = (char *)xalloc(size);
-    prog = (struct program *)p;
-    *prog = fake_program;
-    prog->total_size = size;
-    prog->refs = 1;
-    p += MY_ALIGN(sizeof (struct program));
-
-    INS_BLOCK(program,program_size,unsigned char,A_PROGRAM);
-    INS_BLOCK(linenumbers,num_linenumbers,char,A_LINENUMBERS);
-    INS_BLOCK(identifiers,num_identifiers,struct identifier,A_IDENTIFIERS);
-    INS_BLOCK(identifier_references,num_identifier_references,struct reference,A_IDENTIFIER_REFERENCES);
-    INS_BLOCK(strings,num_strings,struct pike_string *,A_STRINGS);
-    INS_BLOCK(inherits,num_inherits,struct inherit,A_INHERITS);
-    INS_BLOCK(constants,num_constants,struct svalue,A_CONSTANTS);
-
-    /* Ok, sort for binsearch */
-    prog->identifier_index=(unsigned short *)p;
-    for(e=i=0;i<(int)prog->num_identifier_references;i++)
-    {
-      struct reference *funp;
-      struct identifier *fun;
-      funp=prog->identifier_references+i;
-      if(funp->flags & (ID_HIDDEN|ID_STATIC)) continue;
-      if(funp->flags & ID_INHERITED)
-      {
-	if(funp->flags & ID_PRIVATE) continue;
-	fun=ID_FROM_PTR(prog, funp);
-	if(fun->func.offset == -1) continue; /* prototype */
-
-	/* check for multiple definitions */
-	for(t=0;t>=0 && t<(int)prog->num_identifier_references;t++)
-	{
-	  struct reference *funpb;
-	  struct identifier *funb;
-
-	  if(t==i) continue;
-	  funpb=prog->identifier_references+t;
-	  if(funpb->flags & (ID_HIDDEN|ID_STATIC)) continue;
-	  if((funpb->flags & ID_INHERITED) && t<i) continue;
-	  funb=ID_FROM_PTR(prog,funpb);
-	  if(funb->func.offset == -1) continue; /* prototype */
-	  if(fun->name==funb->name) t=-10;
-	}
-	if(t<0) continue;
-      }
-      prog->identifier_index[e]=i;
-      e++;
-    }
-    prog->num_identifier_indexes=e;
-    fsort((void *)prog->identifier_index, e,sizeof(unsigned short),(fsortfun)funcmp);
-
-    p+=MY_ALIGN(prog->num_identifier_indexes*sizeof(unsigned short));
-
-    toss_compilation_resources();
-
-    prog->inherits[0].prog=prog;
-    prog->prev=0;
-    if((prog->next=first_program))
-      first_program->prev=prog;
-    first_program=prog;
-
-    for(i=0;i<NUM_LFUNS;i++)
-      prog->lfuns[i]=find_identifier(lfun_names[i],prog);
+    prog=new_program;
+    prog->refs++;
 
 #ifdef DEBUG
     check_program(prog);
@@ -654,20 +703,36 @@ struct program *end_program()
       dump_program_desc(prog);
 #endif
 
+    new_program->flags |= PROGRAM_PASS_1_DONE;
+
+    if(finish)
+    {
+      fixate_program();
+      optimize_program(new_program);
+      new_program->flags |= PROGRAM_FINISHED;
+    }
+
     GC_ALLOC();
   }
+  toss_compilation_resources();
 
-#define PROGRAM_STATE
 #define POP
 #include "compilation.h"
-#undef POP
-#undef PROGRAM_STATE
-  if(fake_program.num_inherits)
-    fake_program.inherits[0].prog=&fake_program;
+
+  compilation_depth--;
   threads_disabled--;
   free_all_nodes();
   return prog;
 }
+
+/*
+ * Finish this program, returning the newly built program
+ */
+struct program *end_program(void)
+{
+  return end_first_pass(1);
+}
+
 
 /*
  * Allocate needed for this program in the object structure.
@@ -676,9 +741,9 @@ struct program *end_program()
 SIZE_T add_storage(SIZE_T size)
 {
   SIZE_T offset;
-  offset=fake_program.storage_needed;
+  offset=new_program->storage_needed;
   size=MY_ALIGN(size);
-  fake_program.storage_needed += size;
+  new_program->storage_needed += size;
   return offset;
 }
 
@@ -688,7 +753,7 @@ SIZE_T add_storage(SIZE_T size)
  */
 void set_init_callback(void (*init)(struct object *))
 {
-  fake_program.init=init;
+  new_program->init=init;
 }
 
 /*
@@ -697,17 +762,18 @@ void set_init_callback(void (*init)(struct object *))
  */
 void set_exit_callback(void (*exit)(struct object *))
 {
-  fake_program.exit=exit;
+  new_program->exit=exit;
 }
 
 
-int low_reference_inherited_identifier(int e,struct pike_string *name)
+int low_reference_inherited_identifier(int e,
+				       struct pike_string *name)
 {
   struct reference funp;
   struct program *p;
   int i,d;
 
-  p=fake_program.inherits[e].prog;
+  p=new_program->inherits[e].prog;
   i=find_shared_string_identifier(name,p);
   if(i==-1) return i;
 
@@ -721,24 +787,21 @@ int low_reference_inherited_identifier(int e,struct pike_string *name)
   funp.inherit_offset+=e;
   funp.flags|=ID_HIDDEN;
 
-  for(d=0;d<(int)fake_program.num_identifier_references;d++)
+  for(d=0;d<(int)new_program->num_identifier_references;d++)
   {
     struct reference *fp;
-    fp=fake_program.identifier_references+d;
+    fp=new_program->identifier_references+d;
 
     if(!MEMCMP((char *)fp,(char *)&funp,sizeof funp)) return d;
   }
 
-  add_to_mem_block(A_IDENTIFIER_REFERENCES,(char *)&funp,sizeof funp);
-  return fake_program.num_identifier_references;
+  add_to_identifier_references(funp);
+  return new_program->num_identifier_references -1;
 }
-
-
 
 int reference_inherited_identifier(struct pike_string *super_name,
 				   struct pike_string *function_name)
 {
-  struct pike_string **names;
   int e,i;
 
 #ifdef DEBUG
@@ -746,21 +809,18 @@ int reference_inherited_identifier(struct pike_string *super_name,
     fatal("reference_inherited_function on nonshared string.\n");
 #endif
 
-  names=(struct pike_string **)inherit_names.s.str;
-  setup_fake_program();
-
-  for(e=fake_program.num_inherits-1;e>0;e--)
+  for(e=new_program->num_inherits-1;e>0;e--)
   {
-    if(fake_program.inherits[e].inherit_level!=1) continue;
-    if(!names[e]) continue;
+    if(new_program->inherits[e].inherit_level!=1) continue;
+    if(!new_program->inherits[e].name) continue;
 
     if(super_name)
     {
       int l;
-      l=names[e]->len;
+      l=new_program->inherits[e].name->len;
       if(l<super_name->len) continue;
       if(strncmp(super_name->str,
-		 names[e]->str+l-super_name->len,
+		 new_program->inherits[e].name->str+l-super_name->len,
 		 super_name->len))
 	continue;
     }
@@ -774,12 +834,10 @@ int reference_inherited_identifier(struct pike_string *super_name,
 
 void rename_last_inherit(struct pike_string *n)
 {
-  struct pike_string **names;
-  int e;
-  names=(struct pike_string **)inherit_names.s.str;
-  e=inherit_names.s.len / sizeof(struct pike_string *);
-  free_string(names[e-1]);
-  copy_shared_string(names[e-1],n);
+  if(new_program->inherits[new_program->num_inherits].name)
+    free_string(new_program->inherits[new_program->num_inherits].name);
+  copy_shared_string(new_program->inherits[new_program->num_inherits].name,
+		     n);
 }
 
 /*
@@ -791,28 +849,44 @@ void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
   struct inherit inherit;
   struct pike_string *s;
 
-  setup_fake_program();
+  inherit_offset = new_program->num_inherits;
 
-  inherit_offset = fake_program.num_inherits;
-
-  storage_offset=fake_program.storage_needed;
+  storage_offset=new_program->storage_needed;
   add_storage(p->storage_needed);
 
   for(e=0; e<(int)p->num_inherits; e++)
   {
     inherit=p->inherits[e];
     inherit.prog->refs++;
-    inherit.identifier_level += fake_program.num_identifier_references;
+    inherit.identifier_level += new_program->num_identifier_references;
     inherit.storage_offset += storage_offset;
     inherit.inherit_level ++;
-    add_to_mem_block(A_INHERITS,(char *)&inherit,sizeof inherit);
-    
-    low_my_binary_strcat((char *)&name,sizeof(name),&inherit_names);
+
+
     if(name)
     {
-      reference_shared_string(name);
-      name=0;
+      if(e==0)
+      {
+	inherit.name=name;
+	reference_shared_string(name);
+      }
+      else if(inherit.name)
+      {
+	struct pike_string *s;
+	s=begin_shared_string(inherit.name->len + name->len + 2);
+	MEMCPY(s->str,name->str,name->len);
+	MEMCPY(s->str+name->len,"::",2);
+	MEMCPY(s->str+name->len+2,inherit.name->str,inherit.name->len);
+	inherit.name=end_shared_string(s);
+      }
+      else
+      {
+	inherit.name=0;
+      }
+    }else{
+      inherit.name=0;
     }
+    add_to_inherits(inherit);
   }
 
   for (e=0; e < (int)p->num_identifier_references; e++)
@@ -829,7 +903,7 @@ void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
     {
       int n;
       n = isidentifier(name);
-      if (n != -1 && ID_FROM_INT(&fake_program,n)->func.offset != -1)
+      if (n != -1 && ID_FROM_INT(new_program,n)->func.offset != -1)
 	my_yyerror("Illegal to redefine 'nomask' function/variable \"%s\"",name->str);
     }
 
@@ -841,7 +915,7 @@ void do_inherit(struct program *p,INT32 flags, struct pike_string *name)
       fun.flags |= flags;
 
     fun.flags |= ID_INHERITED;
-    add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&fun, sizeof fun);
+    add_to_identifier_references(fun);
   }
 
   /* Ska det h{r vara s} h{r? */
@@ -863,8 +937,7 @@ void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *na
 {
   reference_shared_string(s);
   push_string(s);
-  reference_shared_string(current_file);
-  push_string(current_file);
+  ref_push_string(lex.current_file);
   SAFE_APPLY_MASTER("handle_inherit", 2);
 
   if(sp[-1].type != T_PROGRAM)
@@ -890,12 +963,11 @@ void simple_do_inherit(struct pike_string *s, INT32 flags,struct pike_string *na
 int isidentifier(struct pike_string *s)
 {
   INT32 e;
-  setup_fake_program();
-  for(e=0;e<(int)fake_program.num_identifier_references;e++)
+  for(e=0;e<(int)new_program->num_identifier_references;e++)
   {
-    if(fake_program.identifier_references[e].flags & ID_HIDDEN) continue;
+    if(new_program->identifier_references[e].flags & ID_HIDDEN) continue;
     
-    if(ID_FROM_INT(& fake_program, e)->name == s)
+    if(ID_FROM_INT(new_program, e)->name == s)
       return e;
   }
   return -1;
@@ -916,23 +988,34 @@ int define_variable(struct pike_string *name,
   if(type == void_type_string)
     yyerror("Variables can't be of type void");
   
-  setup_fake_program();
   n = isidentifier(name);
+
+  if(new_program->flags & PROGRAM_PASS_1_DONE)
+  {
+    if(n==-1)
+      yyerror("Pass2: Variable disappeared!");
+    else
+      return n;
+  }
+
+#ifdef DEBUG
+  if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
+    fatal("Attempting to add variable to fixed program\n");
+#endif
 
   if(n != -1)
   {
-    setup_fake_program();
 
     if (IDENTIFIERP(n)->flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask' variable/functions \"%s\"", name->str);
 
-    if(PROG_FROM_INT(& fake_program, n) == &fake_program)
+    if(PROG_FROM_INT(new_program, n) == new_program)
       my_yyerror("Variable '%s' defined twice.",name->str);
 
-    if(ID_FROM_INT(& fake_program, n)->type != type)
+    if(ID_FROM_INT(new_program, n)->type != type)
       my_yyerror("Illegal to redefine inherited variable with different type.");
 
-    if(ID_FROM_INT(& fake_program, n)->flags != flags)
+    if(ID_FROM_INT(new_program, n)->flags != flags)
       my_yyerror("Illegal to redefine inherited variable with different type.");
 
   } else {
@@ -952,16 +1035,13 @@ int define_variable(struct pike_string *name,
 				  sizeof(union anything));
 
     ref.flags=flags;
-    ref.identifier_offset=areas[A_IDENTIFIERS].s.len / sizeof dummy;
+    ref.identifier_offset=new_program->num_identifiers;
     ref.inherit_offset=0;
 
-    add_to_mem_block(A_IDENTIFIERS, (char *)&dummy, sizeof dummy);
-    fake_program.num_identifiers ++;
+    add_to_identifiers(dummy);
 
-    n=areas[A_IDENTIFIER_REFERENCES].s.len / sizeof ref;
-    add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&ref, sizeof ref);
-    fake_program.num_identifier_references ++;
-
+    n=new_program->num_identifier_references;
+    add_to_identifier_references(ref);
   }
 
   return n;
@@ -982,6 +1062,7 @@ int simple_add_variable(char *name,
   return ret;
 }
 
+/* FIXME: add_constant with c==0 means declaration */
 int add_constant(struct pike_string *name,
 		 struct svalue *c,
 		 INT32 flags)
@@ -995,8 +1076,36 @@ int add_constant(struct pike_string *name,
     fatal("define_constant on nonshared string.\n");
 #endif
 
-  setup_fake_program();
   n = isidentifier(name);
+
+
+  if(new_program->flags & PROGRAM_PASS_1_DONE)
+  {
+    if(n==-1)
+    {
+      yyerror("Pass2: Constant disappeared!");
+    }else{
+#if 1
+      struct identifier *id;
+      id=ID_FROM_INT(new_program,n);
+      if(id->func.offset>=0)
+      {
+	struct pike_string *s;
+	struct svalue *c=PROG_FROM_INT(new_program,n)->constants+
+	  id->func.offset;
+	s=get_type_of_svalue(c);
+	free_string(id->type);
+	id->type=s;
+      }
+#endif
+      return n;
+    }
+  }
+
+#ifdef DEBUG
+  if(new_program->flags & (PROGRAM_FIXED | PROGRAM_OPTIMIZED))
+    fatal("Attempting to add constant to fixed program\n");
+#endif
 
   copy_shared_string(dummy.name, name);
   dummy.type = get_type_of_svalue(c);
@@ -1007,25 +1116,23 @@ int add_constant(struct pike_string *name,
   dummy.func.offset=store_constant(c, 0);
 
   ref.flags=flags;
-  ref.identifier_offset=fake_program.num_identifiers;
+  ref.identifier_offset=new_program->num_identifiers;
   ref.inherit_offset=0;
 
-  add_to_mem_block(A_IDENTIFIERS, (char *)&dummy, sizeof dummy);
-  fake_program.num_identifiers ++;
+  add_to_identifiers(dummy);
 
   if(n != -1)
   {
-    if (IDENTIFIERP(n)->flags & ID_NOMASK)
+    if(IDENTIFIERP(n)->flags & ID_NOMASK)
       my_yyerror("Illegal to redefine 'nomask' identifier \"%s\"", name->str);
 
-    if(PROG_FROM_INT(& fake_program, n) == &fake_program)
+    if(PROG_FROM_INT(new_program, n) == new_program)
       my_yyerror("Identifier '%s' defined twice.",name->str);
 
-    fake_program.identifier_references[n]=ref;
+    new_program->identifier_references[n]=ref;
   } else {
-    n=areas[A_IDENTIFIER_REFERENCES].s.len / sizeof ref;
-    add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&ref, sizeof ref);
-    fake_program.num_identifier_references ++;
+    n=new_program->num_identifier_references;
+    add_to_identifier_references(ref);
   }
 
   return n;
@@ -1137,14 +1244,13 @@ INT32 define_function(struct pike_string *name,
 
   i=isidentifier(name);
 
-  setup_fake_program();
 
   if(i >= 0)
   {
     /* already defined */
 
-    funp=ID_FROM_INT(&fake_program, i);
-    ref=fake_program.identifier_references[i];
+    funp=ID_FROM_INT(new_program, i);
+    ref=new_program->identifier_references[i];
 
     if(ref.inherit_offset == 0) /* not inherited */
     {
@@ -1161,11 +1267,7 @@ INT32 define_function(struct pike_string *name,
       }
     }
 
-    /* it's just another prototype, don't define anything */
-    if(!func || func->offset == -1) return i;
-
-    if((ref.flags & ID_NOMASK) &&
-       !(funp->func.offset == -1))
+    if((ref.flags & ID_NOMASK) && !(funp->func.offset == -1))
     {
       my_yyerror("Illegal to redefine 'nomask' function %s.",name->str);
     }
@@ -1193,13 +1295,13 @@ INT32 define_function(struct pike_string *name,
       else
 	fun.func.offset = -1;
 
-      ref.identifier_offset=fake_program.num_identifiers;
-      add_to_mem_block(A_IDENTIFIERS, (char *)&fun, sizeof(fun));
+      ref.identifier_offset=new_program->num_identifiers;
+      add_to_identifiers(fun);
     }
 
     ref.inherit_offset = 0;
     ref.flags = flags;
-    fake_program.identifier_references[i]=ref;
+    new_program->identifier_references[i]=ref;
   }else{
     /* define it */
 
@@ -1215,16 +1317,15 @@ INT32 define_function(struct pike_string *name,
     else
       fun.func.offset = -1;
 
-    i=fake_program.num_identifiers;
-    add_to_mem_block(A_IDENTIFIERS, (char *)&fun, sizeof(fun));
+    i=new_program->num_identifiers;
+    add_to_identifiers(fun);
 
     ref.flags = flags;
     ref.identifier_offset = i;
     ref.inherit_offset = 0;
 
-    i=fake_program.num_identifier_references;
-    add_to_mem_block(A_IDENTIFIER_REFERENCES, (char *)&ref, sizeof ref);
-
+    i=new_program->num_identifier_references;
+    add_to_identifier_references(ref);
   }
   return i;
 }
@@ -1240,12 +1341,17 @@ static int low_find_shared_string_identifier(struct pike_string *name,
   int max,min,tst;
   struct reference *funp;
   struct identifier *fun;
-  unsigned short *funindex;
 
-  funindex = prog->identifier_index;
-  if(funindex)
+  if(prog->flags & PROGRAM_FIXED)
   {
-    max = prog->num_identifier_indexes;
+    unsigned short *funindex = prog->identifier_index;
+
+#ifdef DEBUG
+    if(!funindex)
+      fatal("No funindex in fixed program\n");
+#endif
+  
+    max = prog->num_identifier_index;
     min = 0;
     while(max != min)
     {
@@ -1264,17 +1370,23 @@ static int low_find_shared_string_identifier(struct pike_string *name,
       funp = prog->identifier_references + i;
       if(funp->flags & ID_HIDDEN) continue;
       fun = ID_FROM_PTR(prog, funp);
-      if(fun->func.offset == -1) continue; /* Prototype */
+      /* if(fun->func.offset == -1) continue; * Prototype */
       if(!is_same_string(fun->name,name)) continue;
       if(funp->flags & ID_INHERITED)
       {
         if(funp->flags & ID_PRIVATE) continue;
 	for(t=0; t>=0 && t<(int)prog->num_identifier_references; t++)
 	{
-	  if(t == i) continue;
-
-	  if(is_same_string(fun->name, ID_FROM_INT(prog, i)->name))
-	    t=-10;
+	  struct reference *funpb;
+	  struct identifier *funb;
+	  
+	  if(t==i) continue;
+	  funpb=prog->identifier_references+t;
+	  if(funpb->flags & (ID_HIDDEN|ID_STATIC)) continue;
+	  if((funpb->flags & ID_INHERITED) && t<i) continue;
+	  funb=ID_FROM_PTR(prog,funpb);
+	  /* if(funb->func.offset == -1) continue; * prototype */
+	  if(fun->name==funb->name) t=-10;
 	}
 	if(t < 0) continue;
       }
@@ -1305,7 +1417,7 @@ int find_shared_string_identifier(struct pike_string *name,
 				  struct program *prog)
 {
 #ifdef FIND_FUNCTION_HASHSIZE
-  if(prog!=&fake_program)
+  if(prog -> flags & PROGRAM_FIXED)
   {
     unsigned int hashval;
     hashval=my_hash_string(name);
@@ -1340,31 +1452,30 @@ int find_identifier(char *name,struct program *prog)
 int store_prog_string(struct pike_string *str)
 {
   unsigned int i;
-  struct pike_string **p;
 
-  p = (struct pike_string **)areas[A_STRINGS].s.str;
-
-  for (i=0;i<areas[A_STRINGS].s.len / sizeof str;i++)
-    if (p[i] == str)
+  for (i=0;i<new_program->num_strings;i++)
+    if (new_program->strings[i] == str)
       return i;
 
   reference_shared_string(str);
-  add_to_mem_block(A_STRINGS, (char *)&str, sizeof str);
+  add_to_strings(str);
   return i;
 }
 
 int store_constant(struct svalue *foo, int equal)
 {
-  struct svalue *s,tmp;
+  struct svalue tmp;
   unsigned int e;
-  s=(struct svalue *)areas[A_CONSTANTS].s.str;
 
-  for(e=0;e<areas[A_CONSTANTS].s.len / sizeof(struct svalue);e++)
-    if(equal ? is_equal(s+e,foo) : is_eq(s+e,foo))
+  for(e=0;e<new_program->num_constants;e++)
+  {
+    struct svalue *s=new_program->constants + e;
+    if(equal ? is_equal(s,foo) : is_eq(s,foo))
       return e;
+  }
 
   assign_svalue_no_free(&tmp,foo);
-  add_to_mem_block(A_CONSTANTS,(char *)&tmp,sizeof(struct svalue));
+  add_to_constants(tmp);
   return e;
 }
 
@@ -1393,21 +1504,25 @@ static int get_small_number(char **q)
 
 void start_line_numbering(void)
 {
-  if(last_file) { free_string(last_file); last_file=0; }
+  if(last_file)
+    {
+      free_string(last_file);
+      last_file=0;
+    }
   last_pc=last_line=0;
 }
 
-static void insert_small_number(int a,int area)
+static void insert_small_number(INT32 a)
 {
   if(a>-127 && a<127)
   {
-    ins_byte(a,area);
+    add_to_linenumbers(a);
   }else if(a>=-32768 && a<32768){
-    ins_signed_byte(-127,area);
-    ins_short(a,area);
+    add_to_linenumbers(a);
+    ins_short(a, add_to_linenumbers);
   }else{
-    ins_signed_byte(-128,area);
-    ins_int(a,area);
+    add_to_linenumbers(-128);
+    ins_int(a, add_to_linenumbers);
   }	
 }
 
@@ -1419,13 +1534,14 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
     {
       char *tmp;
       if(last_file) free_string(last_file);
-      ins_byte(127,A_LINENUMBERS);
-      for(tmp=current_file->str; *tmp; tmp++) ins_byte(*tmp,A_LINENUMBERS);
-      ins_byte(0,A_LINENUMBERS);
+      add_to_linenumbers(127);
+      for(tmp=current_file->str; *tmp; tmp++)
+	add_to_linenumbers(*tmp);
+      add_to_linenumbers(0);
       copy_shared_string(last_file, current_file);
     }
-    insert_small_number(PC-last_pc,A_LINENUMBERS);
-    insert_small_number(current_line-last_line,A_LINENUMBERS);
+    insert_small_number(PC-last_pc);
+    insert_small_number(current_line-last_line);
     last_line=current_line;
     last_pc=PC;
   }
@@ -1446,20 +1562,18 @@ char *get_line(unsigned char *pc,struct program *prog,INT32 *linep)
   if (prog == 0) return "Unkown program";
   offset = pc - prog->program;
 
-  if(prog == & fake_program)
+  if(prog == new_program)
   {
     linep[0]=0;
     return "Optimizer";
   }
 
-#ifdef DEBUG
-  if (offset > (INT32)prog->program_size || offset<0)
-    fatal("Illegal offset %ld in program.\n", (long)offset);
-#endif
-
   cnt=prog->linenumbers;
   off=line=0;
   file="Line not found";
+  if (offset > (INT32)prog->num_program || offset<0)
+    return file;
+
   while(cnt < prog->linenumbers + prog->num_linenumbers)
   {
     if(*cnt == 127)
@@ -1489,81 +1603,45 @@ void my_yyerror(char *fmt,...)  ATTRIBUTE((format(printf,1,2)))
   va_end(args);
 }
 
-/*
- * Compile an PIKE file. Input is supposed to be initalized already.
- */
-void compile()
+struct program *compile(struct pike_string *prog)
 {
-  int yyparse();
+  struct program *p;
+  struct lex save_lex;
+  int save_depth=compilation_depth;
+  void yyparse(void);
+
+  save_lex=lex;
+
+  lex.end=prog->str+prog->len;
+  lex.current_line=1;
+  lex.current_file=make_shared_string("-");
+  lex.pragmas=0;
+
+  start_new_program();
+  compilation_depth=0;
 
   start_line_numbering();
 
-  num_parse_error = 0;
-  init_node=0;
-
+  compiler_pass=1;
+  lex.pos=prog->str;
   yyparse();  /* Parse da program */
-  free_all_local_names();
-}
 
-struct program *compile_file(struct pike_string *file_name)
-{
-  int fd;
-  struct program *p;
-
-  while(1)
+  p=end_first_pass(0);
+  
+  if(p && !num_parse_error)
   {
-    fd=open(file_name->str,O_RDONLY);
-    if(fd >= 0) break;
-    if(errno != EINTR)
-    {
-#ifdef HAVE_STRERROR
-      error("Couldn't open file '%s'. (%s)\n",file_name->str,strerror(errno));
-#else
-      error("Couldn't open file '%s'. (ERRNO=%d)\n",file_name->str,errno);
-#endif
-    }
+    low_start_new_program(p,0,0);
+    compiler_pass=2;
+    lex.pos=prog->str;
+    yyparse();  /* Parse da program again */
+    p=end_program();
   }
 
-#define FILE_STATE
-#define PUSH
-#include "compilation.h"
-#undef PUSH
 
-  start_new_file(fd,file_name);
-  start_new_program();
-  compile();
-  p=end_program();
-  end_new_file();
+  free_string(lex.current_file);
+  lex=save_lex;
 
-#define POP
-#include "compilation.h"
-#undef POP
-#undef FILE_STATE
-
-  if(!p) error("Failed to compile %s.\n",file_name->str);
-  return p;
-}
-
-struct program *compile_string(struct pike_string *prog,
-			       struct pike_string *name)
-{
-  struct program *p;
-
-#define FILE_STATE
-#define PUSH
-#include "compilation.h"
-#undef PUSH
-
-  start_new_string(prog->str,prog->len,name);
-  start_new_program();
-  compile();
-  p=end_program();
-  end_new_file();
-
-#define POP
-#include "compilation.h"
-#undef POP
-#undef FILE_STATE
+  compilation_depth=save_depth;
 
   if(!p) error("Compilation failed.\n");
   return p;
@@ -1597,7 +1675,7 @@ void add_function(char *name,void (*cfun)(INT32),char *type,INT16 flags)
 }
 
 #ifdef DEBUG
-void check_all_programs()
+void check_all_programs(void)
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
@@ -1624,7 +1702,7 @@ void check_all_programs()
 }
 #endif
 
-void cleanup_program()
+void cleanup_program(void)
 {
 #ifdef FIND_FUNCTION_HASHSIZE
   int e;
@@ -1647,7 +1725,7 @@ void gc_mark_program_as_referenced(struct program *p)
     gc_mark_svalues(p->constants, p->num_constants);
 }
 
-void gc_check_all_programs()
+void gc_check_all_programs(void)
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
@@ -1669,7 +1747,7 @@ void gc_check_all_programs()
   }
 }
 
-void gc_mark_all_programs()
+void gc_mark_all_programs(void)
 {
   struct program *p;
   for(p=first_program;p;p=p->next)
@@ -1677,7 +1755,7 @@ void gc_mark_all_programs()
       gc_mark_program_as_referenced(p);
 }
 
-void gc_free_all_unreferenced_programs()
+void gc_free_all_unreferenced_programs(void)
 {
   struct program *p,*next;
 
@@ -1710,31 +1788,50 @@ void count_memory_in_programs(INT32 *num_, INT32 *size_)
   *num_=num;
   *size_=size;
 }
-void push_locals()
+
+void push_compiler_frame(void)
 {
-  struct locals *l;
-  l=ALLOC_STRUCT(locals);
-  l->current_type=0;
-  l->current_return_type=0;
-  l->next=local_variables;
-  l->current_number_of_locals=0;
-  l->max_number_of_locals=0;
-  local_variables=l;
+  struct compiler_frame *f;
+  f=ALLOC_STRUCT(compiler_frame);
+  f->current_type=0;
+  f->current_return_type=0;
+  f->current_number_of_locals=0;
+  f->max_number_of_locals=0;
+  f->previous=compiler_frame;
+  compiler_frame=f;
 }
 
-void pop_locals()
+void pop_local_variables(int level)
 {
-  struct locals *l;
-  free_all_local_names();
-  l=local_variables->next;
-  if(local_variables->current_type)
-    free_string(local_variables->current_type);
-  if(local_variables->current_return_type)
-    free_string(local_variables->current_return_type);
-  free((char *)local_variables);
+  while(compiler_frame->current_number_of_locals > level)
+  {
+    int e;
+    e=--(compiler_frame->current_number_of_locals);
+    free_string(compiler_frame->variable[e].name);
+    free_string(compiler_frame->variable[e].type);
+  }
+}
 
-  local_variables=l;
-  /* insert check if ( local->next == parent locals ) here */
+
+void pop_compiler_frame(void)
+{
+  struct compiler_frame *f;
+  int e;
+  f=compiler_frame;
+#ifdef DEBUG
+  if(!f)
+    fatal("Popping out of compiler frames\n");
+#endif
+
+  pop_local_variables(0);
+  if(f->current_type)
+    free_string(f->current_type);
+  
+  if(f->current_return_type)
+    free_string(f->current_return_type);
+
+  compiler_frame=f->previous;
+  free((char *)f);
 }
 
 
@@ -1777,6 +1874,58 @@ char *get_storage(struct object *o, struct program *p)
   return o->storage + offset;
 }
 
+struct program *low_program_from_function(struct program *p,
+					  INT32 i)
+{
+  struct svalue *f;
+  struct identifier *id=ID_FROM_INT(p, i);
+  if(!IDENTIFIER_IS_CONSTANT(id->flags)) return 0;
+  if(id->func.offset==-1) return 0;
+  f=PROG_FROM_INT(p,i)->constants + id->func.offset;
+  if(f->type!=T_PROGRAM) return 0;
+  return f->u.program;
+}
+
+struct program *program_from_function(struct svalue *f)
+{
+  struct identifier *id;
+  if(f->type != T_FUNCTION) return 0;
+  if(f->subtype == FUNCTION_BUILTIN) return 0;
+  if(!f->u.object->prog) return 0;
+  return low_program_from_function(f->u.object->prog, f->subtype);
+}
+
+#define FIND_CHILD_HASHSIZE 5003
+struct find_child_cache_s
+{
+  INT32 pid,cid,id;
+};
+
+static struct find_child_cache_s find_child_cache[FIND_CHILD_HASHSIZE];
+
+int find_child(struct program *parent, struct program *child)
+{
+  INT32 h=(parent->id  * 9248339 + child->id) % FIND_CHILD_HASHSIZE;
+  if(find_child_cache[h].pid == parent->id &&
+     find_child_cache[h].cid == child->id)
+  {
+    return find_child_cache[h].id;
+  }else{
+    INT32 i;
+    for(i=0;i<parent->num_identifier_references;i++)
+    {
+      if(low_program_from_function(parent, i)==child)
+      {
+	find_child_cache[h].pid=parent->id;
+	find_child_cache[h].cid=child->id;
+	find_child_cache[h].id=i;
+	return i;
+      }
+    }
+  }
+  return -1;
+}
+
 void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
 {
   char buf[4711];
@@ -1790,8 +1939,8 @@ void yywarning(char *fmt, ...) ATTRIBUTE((format(printf,1,2)))
 
   if(get_master())
   {
-    ref_push_string(current_file);
-    push_int(current_line);
+    ref_push_string(lex.current_file);
+    push_int(lex.current_line);
     push_text(buf);
     SAFE_APPLY_MASTER("compile_warning",3);
     pop_stack();

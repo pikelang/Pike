@@ -129,6 +129,7 @@
 %token F_WHILE
 %token F_XOR_EQ
 %token F_NOP
+%token F_UNDEFINED
 
 %token F_ALIGN
 %token F_POINTER
@@ -156,7 +157,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.42.2.1 1997/05/10 12:56:55 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.42.2.2 1997/06/25 22:46:38 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -176,19 +177,14 @@ RCSID("$Id: language.yacc,v 1.42.2.1 1997/05/10 12:56:55 hubbe Exp $");
 #include "docode.h"
 #include "machine.h"
 
-#define YYMAXDEPTH	600
+#define YYMAXDEPTH	1000
 
 #ifdef DEBUG
 #define YYDEBUG 1
 #endif
 
-void free_all_local_names();
-void add_local_name(struct pike_string *,struct pike_string *);
 
-/*
- * The names and types of arguments and auto variables.
- */
-struct locals *local_variables = 0;
+void add_local_name(struct pike_string *,struct pike_string *);
 
 static int varargs;
 static INT32  current_modifiers;
@@ -205,16 +201,6 @@ void fix_comp_stack(int sp)
   }
 }
 
-void pop_local_variables(int level)
-{
-  while(local_variables->current_number_of_locals > level)
-  {
-    int e;
-    e=--(local_variables->current_number_of_locals);
-    free_string(local_variables->variable[e].name);
-    free_string(local_variables->variable[e].type);
-  }
-}
 
 %}
 
@@ -359,9 +345,7 @@ optional_semi_colon: /* empty */
 string_constant: low_string
   | string_constant '+' low_string
   {
-    $$=add_shared_strings($1,$3);
-    free_string($1);
-    free_string($3);
+    $$=add_and_free_shared_strings($1,$3);
   }
   ;
 
@@ -371,11 +355,9 @@ optional_rename_inherit: ':' F_IDENTIFIER { $$=$2; }
 
 program_ref: string_constant
   {
-    reference_shared_string($1);
+    ref_push_string($1);
     push_string($1);
-    push_string($1);
-    reference_shared_string(current_file);
-    push_string(current_file);
+    ref_push_string(lex.current_file);
     SAFE_APPLY_MASTER("handle_inherit", 2);
 
     if(sp[-1].type != T_PROGRAM)
@@ -388,43 +370,60 @@ program_ref: string_constant
       push_string(last_identifier);
       last_identifier->refs++;
     }else{
-      push_text("");
+      push_constant_text("");
     }
     
     resolv_constant($1);
-    if(sp[-1].type == T_OBJECT)
+    switch(sp[-1].type)
     {
-      struct program *p=sp[-1].u.object->prog;
-      if(!p)
+    case T_OBJECT:
+      if(!sp[-1].u.object->prog)
       {
 	pop_stack();
 	push_int(0);
       }else{
+	struct program *p=sp[-1].u.object->prog;
 	p->refs++;
 	pop_stack();
 	push_program(p);
       }
-    }
-    if(sp[-1].type != T_PROGRAM)
+      break;
+
+    case T_FUNCTION:
     {
+      struct program *p=program_from_function(sp-1);
+      if(p)
+      {
+	p->refs++;
+	pop_stack();
+	push_program(p);
+	break;
+      }
+    }
+
+    default:
       yyerror("Illegal program identifier");
       pop_stack();
       push_int(0);
+      
+    case T_PROGRAM:
+      break;
     }
+
     free_node($1);
   }
   ;
           
 inheritance: modifiers F_INHERIT program_ref optional_rename_inherit ';'
   {
-    struct pike_string *s;
-    if(sp[-1].type == T_PROGRAM)
+    if(sp[-1].type == T_PROGRAM &&
+       !(new_program->flags & PROGRAM_PASS_1_DONE))
     {
-      s=sp[-2].u.string;
+      struct pike_string *s=sp[-2].u.string;
       if($4) s=$4;
       do_inherit(sp[-1].u.program,$1,s);
-      if($4) free_string($4);
     }
+    if($4) free_string($4);
     pop_n_elems(2);
   }
   ;
@@ -441,19 +440,20 @@ import: modifiers F_IMPORT idents ';'
 constant_name: F_IDENTIFIER '=' expr0
   {
     int tmp;
-    node *n;
     /* This can be made more lenient in the future */
-    n=mknode(F_ARG_LIST,$3,0); /* Make sure it is optimized */
-    if(!is_const(n))
+
+    /* Ugly hack to make sure that $3 is optimized */
+    tmp=compiler_pass;
+    $3=mknode(F_ARG_LIST,$3,0);
+    compiler_pass=tmp;
+
+    if(!is_const($3))
     {
-      struct svalue tmp;
-      yyerror("Constant definition is not constant.");
-      tmp.type=T_INT;
-      tmp.u.integer=0;
-      add_constant($1,&tmp, current_modifiers);
+      if(compiler_pass==2)
+	yyerror("Constant definition is not constant.");
+      add_constant($1,0, current_modifiers); /* Prototype */
     } else {
-      tmp=eval_low(n);
-      free_node(n);
+      tmp=eval_low($3);
       if(tmp < 1)
       {
 	yyerror("Error in constant definition.");
@@ -462,8 +462,9 @@ constant_name: F_IDENTIFIER '=' expr0
 	add_constant($1,sp-1,current_modifiers);
 	pop_stack();
       }
-      free_string($1);
     }
+    if($3) free_node($3);
+    free_string($1);
   }
   ;
 
@@ -484,35 +485,49 @@ block_or_semi: block
 
 type_or_error: simple_type
   {
-    if(local_variables->current_type)
-      free_string(local_variables->current_type); 
-    local_variables->current_type=$1;
+    if(compiler_frame->current_type)
+      free_string(compiler_frame->current_type); 
+    compiler_frame->current_type=$1;
   }
   | /* empty */
   {
     yyerror("Missing type.");
-    copy_shared_string(local_variables->current_type,
+    copy_shared_string(compiler_frame->current_type,
 		       mixed_type_string);
   }
   
 
-def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
+def: modifiers type_or_error optional_stars F_IDENTIFIER 
+  {
+    push_compiler_frame();
+    if(!compiler_frame->previous ||
+       !compiler_frame->previous->current_type)
+    {
+      yyerror("Internal compiler fault");
+      copy_shared_string(compiler_frame->current_type,
+			 mixed_type_string);
+    }else{
+      copy_shared_string(compiler_frame->current_type,
+			 compiler_frame->previous->current_type);
+    }
+  }
+  '(' arguments ')'
   {
     int e;
     /* construct the function type */
-    push_finished_type(local_variables->current_type);
+    push_finished_type(compiler_frame->current_type);
     while(--$3>=0) push_type(T_ARRAY);
     
-    if(local_variables->current_return_type)
-      free_string(local_variables->current_return_type);
-    local_variables->current_return_type=pop_type();
+    if(compiler_frame->current_return_type)
+      free_string(compiler_frame->current_return_type);
+    compiler_frame->current_return_type=pop_type();
     
-    push_finished_type(local_variables->current_return_type);
+    push_finished_type(compiler_frame->current_return_type);
     
-    e=$6-1;
+    e=$7-1;
     if(varargs)
     {
-      push_finished_type(local_variables->variable[e].type);
+      push_finished_type(compiler_frame->variable[e].type);
       e--;
       varargs=0;
       pop_type_stack();
@@ -522,7 +537,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
     push_type(T_MANY);
     for(; e>=0; e--)
     {
-      push_finished_type(local_variables->variable[e].type);
+      push_finished_type(compiler_frame->variable[e].type);
       if($1 & ID_VARARGS)
       {
 	push_type(T_VOID);
@@ -532,36 +547,35 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
     push_type(T_FUNCTION);
     
     $<string>$=pop_type();
-    define_function($4,
-		    $<string>$,
-		    $1,
-		    IDENTIFIER_PIKE_FUNCTION,
-		    0);
+
+    if(compiler_pass==1)
+    {
+      define_function($4,
+		      $<string>$,
+		      $1,
+		      IDENTIFIER_PIKE_FUNCTION,
+		      0);
+    }
   }
   block_or_semi
   {
     int e;
-    if($9)
+    if($10)
     {
-      for(e=0; e<$6; e++)
+      for(e=0; e<$7; e++)
       {
-	if(!local_variables->variable[e].name ||
-	   !local_variables->variable[e].name->len)
-	{
-	  my_yyerror("Missing name for argument %d",e);
-	}
+	if(!compiler_frame->variable[e].name ||
+	   !compiler_frame->variable[e].name->len)
+	  {
+	    my_yyerror("Missing name for argument %d",e);
+	  }
       }
 
-      dooptcode($4, $9, $<string>8, $1);
+      dooptcode($4, $10, $<string>9, $1);
     }
-    if(local_variables->current_return_type)
-    {
-      free_string(local_variables->current_return_type);
-      local_variables->current_return_type=0;
-    }
-    free_all_local_names();
+    pop_compiler_frame();
     free_string($4);
-    free_string($<string>8);
+    free_string($<string>9);
   }
   | modifiers type_or_error name_list ';' {}
   | inheritance {}
@@ -575,7 +589,6 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER '(' arguments ')'
   }
   ;
 
-
 optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
   | /* empty */ { $$=0; }
   ;
@@ -583,7 +596,6 @@ optional_dot_dot_dot: F_DOT_DOT_DOT { $$=1; }
 optional_identifier: F_IDENTIFIER
   | /* empty */ { $$=0; }
   ;
-
 
 new_arg_name: type optional_dot_dot_dot optional_identifier
   {
@@ -594,7 +606,9 @@ new_arg_name: type optional_dot_dot_dot optional_identifier
       push_type(T_ARRAY);
       varargs=1;
     }
-    if(!$3) $3=make_shared_string("");
+    if(!$3)
+      MAKE_CONSTANT_SHARED_STRING($3,"");
+
     if(islocal($3) >= 0)
       my_yyerror("Variable '%s' appears twice in argument list.",
 		 $3->str);
@@ -756,7 +770,7 @@ name_list: new_name
 new_name: optional_stars F_IDENTIFIER
   {
     struct pike_string *type;
-    push_finished_type(local_variables->current_type);
+    push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
     type=pop_type();
     define_variable($2, type, current_modifiers);
@@ -766,7 +780,7 @@ new_name: optional_stars F_IDENTIFIER
   | optional_stars F_IDENTIFIER '='
   {
     struct pike_string *type;
-    push_finished_type(local_variables->current_type);
+    push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
     type=pop_type();
     $<number>$=define_variable($2, type, current_modifiers);
@@ -785,14 +799,14 @@ new_name: optional_stars F_IDENTIFIER
 
 new_local_name: optional_stars F_IDENTIFIER
   {
-    push_finished_type(local_variables->current_type);
+    push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
     add_local_name($2, pop_type());
     $$=mknode(F_ASSIGN,mkintnode(0), mklocalnode(islocal($2)));
   }
   | optional_stars F_IDENTIFIER '=' expr0
   {
-    push_finished_type(local_variables->current_type);
+    push_finished_type(compiler_frame->current_type);
     while($1--) push_type(T_ARRAY);
     add_local_name($2, pop_type());
     $$=mknode(F_ASSIGN,$4,mklocalnode(islocal($2)));
@@ -802,7 +816,7 @@ new_local_name: optional_stars F_IDENTIFIER
 
 block:'{'
   {
-    $<number>$=local_variables->current_number_of_locals;
+    $<number>$=compiler_frame->current_number_of_locals;
   } 
   statements '}'
   {
@@ -851,12 +865,12 @@ continue: F_CONTINUE { $$=mknode(F_CONTINUE,0,0); } ;
 
 lambda: F_LAMBDA
   {
-    push_locals();
+    push_compiler_frame();
     $<number>$=comp_stackp;
     
-    if(local_variables->current_return_type)
-      free_string(local_variables->current_return_type);
-    copy_shared_string(local_variables->current_return_type,any_type_string);
+    if(compiler_frame->current_return_type)
+      free_string(compiler_frame->current_return_type);
+    copy_shared_string(compiler_frame->current_return_type,any_type_string);
   }
   func_args failsafe_block
   {
@@ -865,7 +879,6 @@ lambda: F_LAMBDA
     int f,e;
     struct pike_string *name;
     
-    setup_fake_program();
     fix_comp_stack($<number>2);
     
     push_type(T_MIXED);
@@ -873,7 +886,7 @@ lambda: F_LAMBDA
     e=$3-1;
     if(varargs)
     {
-      push_finished_type(local_variables->variable[e].type);
+      push_finished_type(compiler_frame->variable[e].type);
       e--;
       varargs=0;
       pop_type_stack();
@@ -882,24 +895,27 @@ lambda: F_LAMBDA
     }
     push_type(T_MANY);
     for(; e>=0; e--)
-      push_finished_type(local_variables->variable[e].type);
+      push_finished_type(compiler_frame->variable[e].type);
     
     push_type(T_FUNCTION);
     
     type=pop_type();
-    
-    sprintf(buf,"__lambda_%ld",
-	    (long)fake_program.num_identifier_references);
-    name=make_shared_string(buf);
 
-    f=dooptcode(name,
-	      mknode(F_ARG_LIST,$4,mknode(F_RETURN,mkintnode(0),0)),
-	      type,
-	      0);
+    if(new_program->flags | PROGRAM_PASS_1_DONE)
+    {
+      sprintf(buf,"__lambda_%ld",
+	      (long)new_program->num_identifier_references);
+      name=make_shared_string(buf);
+      
+      f=dooptcode(name,
+		  mknode(F_ARG_LIST,$4,mknode(F_RETURN,mkintnode(0),0)),
+		  type,
+		  0);
+    }
     free_string(name);
     free_string(type);
     comp_stackp=$<number>2;
-    pop_locals();
+    pop_compiler_frame();
     $$=mkidentifiernode(f);
   }
   ;
@@ -908,16 +924,48 @@ failsafe_program: '{' program '}'
                 | error { yyerrok; }
                 ;
 
-class: modifiers F_CLASS optional_identifier
+class: modifiers F_CLASS F_IDENTIFIER
   {
-    start_new_program();
-    /* write(2, "start\n", 6); */
+    if(compiler_pass==1)
+    {
+      low_start_new_program(0, $3, $1);
+    }else{
+      int i;
+      struct program *p;
+      struct identifier *id;
+      i=isidentifier($3);
+      if(i<0)
+      {
+	low_start_new_program(new_program,0,0);
+	yyerror("Pass 2: program not defined!");
+      }else{
+	id=ID_FROM_INT(new_program, i);
+	if(IDENTIFIER_IS_CONSTANT(id->flags))
+	{
+	  struct svalue *s;
+	  s=PROG_FROM_INT(new_program,i)->constants+id->func.offset;
+	  if(s->type==T_PROGRAM)
+	  {
+	    low_start_new_program(s->u.program, $3, $1);
+	  }else{
+	    yyerror("Pass 2: constant redefined!");
+	    low_start_new_program(new_program, 0,0);
+	  }
+	}else{
+	  yyerror("Pass 2: class constant no longer constant!");
+	  low_start_new_program(new_program, 0,0);
+	}
+      }
+    }
   }
   failsafe_program
   {
     struct svalue s;
-    /* write(2, "end\n", 4); */
-    s.u.program=end_program();
+    if(compiler_pass == 1)
+      s.u.program=end_first_pass(0);
+    else
+      s.u.program=end_program();
+
     if(!s.u.program)
     {
       yyerror("Class definition failed.");
@@ -927,11 +975,8 @@ class: modifiers F_CLASS optional_identifier
       s.type=T_PROGRAM;
       s.subtype=0;
     }
-    if($3)
-    { 
-      add_constant($3, &s, $1);
-      free_string($3);
-    }
+
+    free_string($3);
     $$=mksvaluenode(&s);
     free_svalue(&s);
   }
@@ -939,7 +984,7 @@ class: modifiers F_CLASS optional_identifier
 
 cond: F_IF
   {
-    $<number>$=local_variables->current_number_of_locals;
+    $<number>$=compiler_frame->current_number_of_locals;
   }
   '(' comma_expr ')' statement optional_else_part
   {
@@ -957,7 +1002,7 @@ optional_else_part: { $$=0; }
 
 foreach: F_FOREACH
   {
-    $<number>$=local_variables->current_number_of_locals;
+    $<number>$=compiler_frame->current_number_of_locals;
   }
   '(' expr0 ',' lvalue ')' statement
   {
@@ -976,14 +1021,14 @@ do: F_DO statement F_WHILE '(' comma_expr ')' ';'
 
 for: F_FOR
   {
-    $<number>$=local_variables->current_number_of_locals;
+    $<number>$=compiler_frame->current_number_of_locals;
   }
   '(' unused  ';' for_expr ';' unused ')' statement
   {
-    int i=current_line;
-    current_line=$1;
+    int i=lex.current_line;
+    lex.current_line=$1;
     $$=mknode(F_ARG_LIST,mkcastnode(void_type_string,$4),mknode(F_FOR,$6,mknode(':',$10,$8)));
-    current_line=i;
+    lex.current_line=i;
     pop_local_variables($<number>2);
   }
   ;
@@ -991,14 +1036,14 @@ for: F_FOR
 
 while:  F_WHILE
   {
-    $<number>$=local_variables->current_number_of_locals;
+    $<number>$=compiler_frame->current_number_of_locals;
   }
   '(' comma_expr ')' statement
   {
-    int i=current_line;
-    current_line=$1;
+    int i=lex.current_line;
+    lex.current_line=$1;
     $$=mknode(F_FOR,$4,mknode(':',$6,NULL));
-    current_line=i;
+    lex.current_line=i;
     pop_local_variables($<number>2);
   }
   ;
@@ -1009,7 +1054,7 @@ for_expr: /* EMPTY */ { $$=mkintnode(1); }
 
 switch:	F_SWITCH
   {
-    $<number>$=local_variables->current_number_of_locals;
+    $<number>$=compiler_frame->current_number_of_locals;
   }
   '(' comma_expr ')' statement
   {
@@ -1031,7 +1076,7 @@ case: F_CASE comma_expr ':'
 
 return: F_RETURN
   {
-    if(!match_types(local_variables->current_return_type,
+    if(!match_types(compiler_frame->current_return_type,
 		    void_type_string))
     {
       yyerror("Must return a value for a non-void function.");
@@ -1053,9 +1098,9 @@ unused2: comma_expr { $$=mkcastnode(void_type_string,$1);  } ;
 comma_expr: comma_expr2
   | type2
   {
-    if(local_variables->current_type)
-      free_string(local_variables->current_type);
-    local_variables->current_type=pop_type();
+    if(compiler_frame->current_type)
+      free_string(compiler_frame->current_type);
+    compiler_frame->current_type=pop_type();
   } local_name_list { $$=$3; }
   ;
           
@@ -1213,8 +1258,7 @@ low_idents: F_IDENTIFIER
       {
 	reference_shared_string($1);
 	push_string($1);
-	reference_shared_string(current_file);
-	push_string(current_file);
+	ref_push_string(lex.current_file);
 	SAFE_APPLY_MASTER("resolv", 2);
 	
 	if(throw_value.type == T_STRING)
@@ -1229,7 +1273,12 @@ low_idents: F_IDENTIFIER
 	}
 	pop_stack();
       }else{
-	my_yyerror("'%s' undefined.", $1->str);
+	if(compiler_pass==2)
+	{
+	  my_yyerror("'%s' undefined.", $1->str);
+	}else{
+	  $$=mknode(F_UNDEFINED,0,0);
+	}
       }
     }
     free_string($1);
@@ -1253,10 +1302,9 @@ low_idents: F_IDENTIFIER
     int f;
     struct reference *idp;
 
-    setup_fake_program();
     f=reference_inherited_identifier($1,$3);
-    idp=fake_program.identifier_references+f;
-    if (f<0 || ID_FROM_PTR(&fake_program,idp)->func.offset == -1)
+    idp=new_program->identifier_references+f;
+    if (f<0 || ID_FROM_PTR(new_program,idp)->func.offset == -1)
     {
       my_yyerror("Undefined identifier %s::%s", $1->str,$3->str);
       $$=mkintnode(0);
@@ -1272,10 +1320,9 @@ low_idents: F_IDENTIFIER
     int e,i;
 
     $$=0;
-    setup_fake_program();
-    for(e=1;e<(int)fake_program.num_inherits;e++)
+    for(e=1;e<(int)new_program->num_inherits;e++)
     {
-      if(fake_program.inherits[e].inherit_level!=1) continue;
+      if(new_program->inherits[e].inherit_level!=1) continue;
       i=low_reference_inherited_identifier(e,$2);
       if(i==-1) continue;
       if($$)
@@ -1357,9 +1404,7 @@ lvalue_list: /* empty */ { $$ = 0; }
 low_string: F_STRING 
   | low_string F_STRING
   {
-    $$=add_shared_strings($1,$2);
-    free_string($1);
-    free_string($2);
+    $$=add_and_free_shared_strings($1,$2);
   }
   ;
 
@@ -1380,10 +1425,10 @@ void yyerror(char *str)
   if ( get_master() )
   {
     sp->type = T_STRING;
-    copy_shared_string(sp->u.string, current_file);
+    copy_shared_string(sp->u.string, lex.current_file);
     sp++;
     sp->type = T_INT;
-    sp->u.integer = current_line;
+    sp->u.integer = lex.current_line;
     sp++;
     sp->type = T_STRING;
     sp->u.string = make_shared_string(str);
@@ -1392,8 +1437,8 @@ void yyerror(char *str)
     pop_stack();
   }else{
     (void)fprintf(stderr, "%s:%ld: %s\n",
-		  current_file->str,
-		  (long)current_line,
+		  lex.current_file->str,
+		  (long)lex.current_line,
 		  str);
     fflush(stderr);
   }
@@ -1403,18 +1448,18 @@ void yyerror(char *str)
 void add_local_name(struct pike_string *str,
 		    struct pike_string *type)
 {
-  if (local_variables->current_number_of_locals == MAX_LOCAL)
+  if (compiler_frame->current_number_of_locals == MAX_LOCAL)
   {
     yyerror("Too many local variables");
   }else {
-    local_variables->variable[local_variables->current_number_of_locals].type = type;
-    local_variables->variable[local_variables->current_number_of_locals].name = str;
-    local_variables->current_number_of_locals++;
-    if(local_variables->current_number_of_locals > 
-       local_variables->max_number_of_locals)
+    compiler_frame->variable[compiler_frame->current_number_of_locals].type = type;
+    compiler_frame->variable[compiler_frame->current_number_of_locals].name = str;
+    compiler_frame->current_number_of_locals++;
+    if(compiler_frame->current_number_of_locals > 
+       compiler_frame->max_number_of_locals)
     {
-      local_variables->max_number_of_locals=
-	local_variables->current_number_of_locals;
+      compiler_frame->max_number_of_locals=
+	compiler_frame->current_number_of_locals;
     }
   }
 }
@@ -1423,27 +1468,8 @@ void add_local_name(struct pike_string *str,
 int islocal(struct pike_string *str)
 {
   int e;
-  for(e=local_variables->current_number_of_locals-1;e>=0;e--)
-    if(local_variables->variable[e].name==str)
+  for(e=compiler_frame->current_number_of_locals-1;e>=0;e--)
+    if(compiler_frame->variable[e].name==str)
       return e;
   return -1;
 }
-
-void free_all_local_names()
-{
-  int e;
-
-  for (e=0; e<local_variables->current_number_of_locals; e++)
-  {
-    if(local_variables->variable[e].name)
-    {
-      free_string(local_variables->variable[e].name);
-      free_string(local_variables->variable[e].type);
-    }
-    local_variables->variable[e].name=0;
-    local_variables->variable[e].type=0;
-  }
-  local_variables->current_number_of_locals = 0;
-  local_variables->max_number_of_locals = 0;
-}
-

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.21 1997/04/16 03:09:13 hubbe Exp $");
+RCSID("$Id: main.c,v 1.21.2.1 1997/06/25 22:46:40 hubbe Exp $");
 #include "types.h"
 #include "backend.h"
 #include "module.h"
@@ -259,7 +259,10 @@ void main(int argc, char **argv, char **env)
 
 void init_main(void)
 {
+  void init_cpp(void);
+
   th_init();
+  init_cpp();
   init_builtin_efuns();
   init_signals();
   init_dynamic_load();

@@ -18,6 +18,7 @@ struct object
 {
   INT32 refs;                    /* Reference count, must be first. */
   struct program *prog;
+  struct object *parent;
   struct object *next;
   struct object *prev;
   char storage[1];
@@ -38,8 +39,12 @@ extern struct program *master_program;
 
 /* Prototypes begin here */
 void setup_fake_object();
-struct object *low_clone(struct program *p);
+struct object *low_clone(struct program *p,
+			 struct object *parent);
 struct object *clone_object(struct program *p, int args);
+struct object *parent_clone_object(struct program *p,
+				   struct object *parent,
+				   int args);
 struct object *get_master();
 struct object *master();
 void destruct(struct object *o);

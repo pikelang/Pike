@@ -57,7 +57,6 @@ void f_objectp(INT32 args);
 void f_functionp(INT32 args);
 void f_sleep(INT32 args);
 void f_gc(INT32 args);
-TYPEP(f_programp, "programp", T_PROGRAM)
 TYPEP(f_intp, "intpp", T_INT)
 TYPEP(f_mappingp, "mappingp", T_MAPPING)
 TYPEP(f_arrayp, "arrayp", T_ARRAY)

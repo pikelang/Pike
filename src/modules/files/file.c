@@ -6,7 +6,7 @@
 #define READ_BUFFER 8192
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.37.2.2 1997/05/19 09:07:32 hubbe Exp $");
+RCSID("$Id: file.c,v 1.37.2.3 1997/06/25 22:47:56 hubbe Exp $");
 #include "types.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -785,6 +785,7 @@ static void file_set_nonblocking(INT32 args)
   case 3: file_set_close_callback(1);
   case 2: file_set_write_callback(1);
   case 1: file_set_read_callback(1);
+  case 0: break;
   }
   set_nonblocking(FD,1);
   THIS->open_mode |= FILE_NONBLOCKING;
@@ -1497,7 +1498,7 @@ void pike_module_init()
   add_function("open_socket",file_open_socket,"function(int|void,string|void:int)",0);
   add_function("connect",file_connect,"function(string,int:int)",0);
   add_function("query_address",file_query_address,"function(int|void:string)",0);
-  add_function("create",file_create,"function(void|string:void)",0);
+  add_function("create",file_create,"function(void|string,void|string:void)",0);
   add_function("`<<",file_lsh,"function(mixed:object)",0);
 
   set_init_callback(init_file_struct);

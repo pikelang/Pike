@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.10.2.2 1997/05/19 09:04:55 hubbe Exp $");
+RCSID("$Id: backend.c,v 1.10.2.3 1997/06/25 22:46:34 hubbe Exp $");
 #include "backend.h"
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
@@ -119,6 +119,7 @@ void set_read_callback(int fd,file_callback cb,void *data)
 
   if(cb)
   {
+    wake_up_backend();
     FD_SET(fd, &selectors.read);
     if(max_fd < fd) max_fd = fd;
   }else{
@@ -148,6 +149,7 @@ void set_write_callback(int fd,file_callback cb,void *data)
 
   if(cb)
   {
+    wake_up_backend();
     FD_SET(fd, &selectors.write);
     if(max_fd < fd) max_fd = fd;
   }else{

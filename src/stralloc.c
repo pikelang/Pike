@@ -496,9 +496,17 @@ struct pike_string *add_shared_strings(struct pike_string *a,
   buf=ret->str;
   MEMCPY(buf,a->str,a->len);
   MEMCPY(buf+a->len,b->str,b->len);
-  ret=end_shared_string(ret);
+  return end_shared_string(ret);
+}
 
-  return ret;
+struct pike_string *add_and_free_shared_strings(struct pike_string *a,
+						struct pike_string *b)
+{
+  INT32 alen=a->len;
+  a=realloc_shared_string(a,alen + b->len);
+  MEMCPY(a->str+alen,b->str,b->len);
+  free_string(b);
+  return end_shared_string(a);
 }
 
 /*** replace function ***/

@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.42 1997/04/16 03:09:11 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.42.2.1 1997/06/25 22:46:37 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -613,6 +613,7 @@ static void eval_instruction(unsigned char *pc)
       sp++;
       print_return_value();
       break;
+
 
       CASE(F_MARK_AND_LOCAL); *(mark_sp++)=sp;
       CASE(F_LOCAL);
@@ -1340,12 +1341,29 @@ void apply_low(struct object *o, int fun, int args)
   if(function->func.offset == -1)
     error("Calling undefined function '%s'.\n",function->name->str);
 
-  if(function->flags & IDENTIFIER_C_FUNCTION)
+  switch(function->flags & (IDENTIFIER_FUNCTION | IDENTIFIER_CONSTANT))
   {
+  case IDENTIFIER_C_FUNCTION:
     fp->num_args=args;
     new_frame.num_locals=args;
     (*function->func.c_fun)(args);
-  }else{
+    break;
+
+  case IDENTIFIER_CONSTANT:
+  {
+    struct svalue *s=fp->context.prog->constants+function->func.offset;
+    if(s->type == T_PROGRAM)
+    {
+      struct object *tmp=parent_clone_object(s->u.program,o,args);
+      push_object(tmp);
+    }else{
+      error("Calling strange value!\n");
+    }
+    break;
+  }
+
+  case IDENTIFIER_PIKE_FUNCTION:
+  {
     int num_args;
     int num_locals;
     unsigned char *pc;
@@ -1388,6 +1406,9 @@ void apply_low(struct object *o, int fun, int args)
     if(sp<evaluator_stack)
       fatal("Stack error (also simple).\n");
 #endif
+    break;
+  }
+
   }
 
   if(sp - new_frame.locals > 1)
@@ -1495,7 +1516,7 @@ void apply_lfun(struct object *o, int fun, int args)
   if(!o->prog)
     error("Apply on destructed object.\n");
 
-  apply_low(o, o->prog->lfuns[fun], args);
+  apply_low(o, FIND_LFUN(o->prog,fun), args);
 }
 
 void apply_shared(struct object *o,

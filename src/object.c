@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: object.c,v 1.17.2.1 1997/05/10 12:56:56 hubbe Exp $");
+RCSID("$Id: object.c,v 1.17.2.2 1997/06/25 22:46:41 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -28,22 +28,27 @@ struct object fake_object = { 1 }; /* start with one reference */
 
 void setup_fake_object()
 {
-  fake_object.prog=&fake_program;
+  fake_object.prog=new_program;
   fake_object.next=0;
   fake_object.refs=0xffffff;
 }
 
-struct object *low_clone(struct program *p)
+struct object *low_clone(struct program *p,
+			 struct object *parent)
 {
   int e;
   struct object *o;
   struct frame frame;
+
+  if(!(p->flags & PROGRAM_FINISHED))
+    error("Attempting to clone an unfinished program\n");
 
   GC_ALLOC();
 
   o=(struct object *)xalloc(sizeof(struct object)-1+p->storage_needed);
 
   o->prog=p;
+  if((o->parent=parent)) parent->refs++;
   p->refs++;
   o->next=first_object;
   o->prev=0;
@@ -113,7 +118,16 @@ static void init_object(struct object *o, int args)
 
 struct object *clone_object(struct program *p, int args)
 {
-  struct object *o=low_clone(p);
+  struct object *o=low_clone(p,0);
+  init_object(o,args);
+  return o;
+}
+
+struct object *parent_clone_object(struct program *p,
+				   struct object *parent,
+				   int args)
+{
+  struct object *o=low_clone(p,parent);
   init_object(o,args);
   return o;
 }
@@ -139,17 +153,33 @@ struct object *get_master()
 
   if(!master_program)
   {
-    master_name=make_shared_string(master_file);
-    master_program=compile_file(master_name);
-    free_string(master_name);
-    if(!master_program) return 0;
-  }
-  master_object=clone_object(master_program,0);
+    INT32 len;
+    struct pike_string *s;
 
-  apply_lfun(master_object,LFUN___INIT,0);
-  pop_stack();
-  apply_lfun(master_object,LFUN_CREATE,0);
-  pop_stack();
+
+    FILE *f=fopen(master_file,"r");
+    fseek(f,0,SEEK_END);
+    len=ftell(f);
+    fseek(f,0,SEEK_SET);
+    s=begin_shared_string(len);
+    fread(s->str,1,len,f);
+    fclose(f);
+    push_string(end_shared_string(s));
+    push_text(master_file);
+    f_cpp(2);
+    f_compile(1);
+
+    if(sp[-1].type != T_PROGRAM)
+    {
+      pop_stack();
+      return 0;
+    }
+    master_program=sp[-1].u.program;
+    sp--;
+  }
+  master_object=low_clone(master_program,0);
+
+  init_object(master_object,0);
   
   inside = 0;
   return master_object;
@@ -176,6 +206,12 @@ void destruct(struct object *o)
   if(!o || !(p=o->prog)) return; /* Object already destructed */
 
   o->refs++;
+
+  if(o->parent)
+  {
+    free_object(o->parent);
+    o->parent=0;
+  }
 
   if(o->prog->lfuns[LFUN_DESTROY] != -1)
   {
@@ -338,8 +374,16 @@ void low_object_index_no_free(struct svalue *to,
     {
       struct svalue *s;
       s=PROG_FROM_INT(p,f)->constants + i->func.offset;
-      check_destructed(s);
-      assign_svalue_no_free(to, s);
+      if(s->type==T_PROGRAM)
+      {
+	to->type=T_FUNCTION;
+	to->subtype=f;
+	to->u.object=o;
+	o->refs++;
+      }else{
+	check_destructed(s);
+	assign_svalue_no_free(to, s);
+      }
       break;
     }
 
@@ -715,8 +759,8 @@ struct array *object_indices(struct object *o)
 
   if(p->lfuns[LFUN__INDICES]==-1)
   {
-    a=allocate_array_no_init(p->num_identifier_indexes,0);
-    for(e=0;e<(int)p->num_identifier_indexes;e++)
+    a=allocate_array_no_init(p->num_identifier_index,0);
+    for(e=0;e<(int)p->num_identifier_index;e++)
     {
       copy_shared_string(ITEM(a)[e].u.string,
 			 ID_FROM_INT(p,p->identifier_index[e])->name);
@@ -744,8 +788,8 @@ struct array *object_values(struct object *o)
 
   if(p->lfuns[LFUN__INDICES]==-1)
   {
-    a=allocate_array_no_init(p->num_identifier_indexes,0);
-    for(e=0;e<(int)p->num_identifier_indexes;e++)
+    a=allocate_array_no_init(p->num_identifier_index,0);
+    for(e=0;e<(int)p->num_identifier_index;e++)
     {
       low_object_index_no_free(ITEM(a)+e, o, p->identifier_index[e]);
     }
@@ -770,7 +814,7 @@ void gc_mark_object_as_referenced(struct object *o)
     {
       INT32 e;
       
-      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      for(e=0;e<(int)o->prog->num_identifier_index;e++)
       {
 	struct identifier *i;
 	
@@ -799,7 +843,7 @@ void gc_check_all_objects()
     {
       INT32 e;
 
-      for(e=0;e<(int)o->prog->num_identifier_indexes;e++)
+      for(e=0;e<(int)o->prog->num_identifier_index;e++)
       {
 	struct identifier *i;
 	

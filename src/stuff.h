@@ -12,6 +12,7 @@
 int my_log2(unsigned INT32 x);
 int count_bits(unsigned INT32 x);
 int is_more_than_one_bit(unsigned INT32 x);
+double my_strtod(char *nptr, char **endptr);
 /* Prototypes end here */
 
 #endif

@@ -14,21 +14,6 @@
 
 #define MAX_GLOBAL_VARIABLES 1000
 
-struct local_variable
-{
-  struct pike_string *name;
-  struct pike_string *type;
-};
-
-struct locals
-{
-  struct locals *next;
-  struct pike_string *current_type;
-  struct pike_string *current_return_type;
-  int current_number_of_locals;
-  int max_number_of_locals;
-  struct local_variable variable[MAX_LOCAL];
-};
 
 void yyerror(char *s);
 int islocal(struct pike_string *str);
@@ -55,10 +40,27 @@ struct node_s
 
 typedef struct node_s node;
 
-extern struct locals *local_variables;
 extern node *init_node;
 extern int num_parse_error;
 extern int cumulative_parse_error;
+extern struct compiler_frame *compiler_frame;
+
+struct local_variable
+{
+  struct pike_string *name;
+  struct pike_string *type;
+};
+
+struct compiler_frame
+{
+  struct compiler_frame *previous;
+
+  struct pike_string *current_type;
+  struct pike_string *current_return_type;
+  int current_number_of_locals;
+  int max_number_of_locals;
+  struct local_variable variable[MAX_LOCAL];
+};
 
 #define OPT_OPTIMIZED       0x1    /* has been processed by optimize(),
 				    * only used in node_info
@@ -126,20 +128,9 @@ INT32 get_opt_info();
 
 #define GAUGE_RUSAGE_INDEX 0
 
-#define A_PROGRAM 0
-#define A_STRINGS 1
-#define A_INHERITS 2
-#define A_IDENTIFIERS 3
-#define A_IDENTIFIER_REFERENCES 4
-#define A_CONSTANTS 5
-#define A_LINENUMBERS 6
-#define NUM_AREAS 7
-
 #define add_to_mem_block(N,Data,Size) low_my_binary_strcat(Data,Size,areas+N)
-#define IDENTIFIERP(i) (((struct reference *)areas[A_IDENTIFIER_REFERENCES].s.str)+i)
-#define INHERIT(i) (((struct inherit *)areas[A_INHERITS].s.str)+i)
-#define PC (areas[A_PROGRAM].s.len)
-
-extern dynamic_buffer areas[NUM_AREAS];
+#define IDENTIFIERP(i) (new_program->identifier_references+(i))
+#define INHERIT(i) (new_program->inherits+(i))
+#define PC (new_program->num_program)
 
 #endif

@@ -43,6 +43,7 @@ struct frame
 #define push_object(O) do{ struct object  *_=(O); sp->u.object=_; sp++->type=T_OBJECT; }while(0)
 #define push_float(F) do{ float _=(F); sp->u.float_number=_; sp++->type=T_FLOAT; }while(0)
 #define push_text(T) push_string(make_shared_string((T)))
+#define push_constant_text(T) do{ sp->subtype=0; MAKE_CONSTANT_SHARED_STRING(sp->u.string,T); sp++->type=T_STRING; }while(0)
 
 #define ref_push_program(P) do{ struct program *_=(P); _->refs++; sp->u.program=_; sp++->type=T_PROGRAM; }while(0)
 #define ref_push_mapping(M) do{ struct mapping *_=(M); _->refs++; sp->u.mapping=_; sp++->type=T_MAPPING; }while(0)

@@ -3,7 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+#include "global.h"
 #include "stuff.h"
+#include <stdlib.h>
 
 /* same thing as (int)floor(log((double)x) / log(2.0)) */
 /* Except a bit quicker :) (hopefully) */
@@ -70,4 +72,15 @@ int is_more_than_one_bit(unsigned INT32 x)
          ((x & 0xff00ff00UL) && (x & 0x00ff00ffUL)) ||
          ((x & 0xff00ff00UL) && (x & 0x00ff00ffUL)) ||
          ((x & 0xffff0000UL) && (x & 0x0000ffffUL));
+}
+
+double my_strtod(char *nptr, char **endptr)
+{
+  double tmp=STRTOD(nptr,endptr);
+  if(*endptr>nptr)
+  {
+    if(endptr[0][-1]=='.')
+      endptr[0]--;
+  }
+  return tmp;
 }

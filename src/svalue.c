@@ -394,6 +394,8 @@ int svalue_is_true(struct svalue *s)
     
 }
 
+#define TWO_TYPES(X,Y) (((X)<<8)|(Y))
+
 int is_eq(struct svalue *a, struct svalue *b)
 {
   check_type(a->type);
@@ -406,8 +408,23 @@ int is_eq(struct svalue *a, struct svalue *b)
 
   if (a->type != b->type)
   {
-    if(a->type == T_OBJECT)
+    switch(TWO_TYPES((1<<a->type),(1<<b->type)))
     {
+    case TWO_TYPES(BIT_FUNCTION,BIT_PROGRAM):
+      return program_from_function(a) == b->u.program;
+    
+    case TWO_TYPES(BIT_PROGRAM,BIT_FUNCTION):
+      return program_from_function(b) == a->u.program;
+
+    case TWO_TYPES(BIT_OBJECT, BIT_ARRAY):
+    case TWO_TYPES(BIT_OBJECT, BIT_MAPPING):
+    case TWO_TYPES(BIT_OBJECT, BIT_MULTISET):
+    case TWO_TYPES(BIT_OBJECT, BIT_OBJECT):
+    case TWO_TYPES(BIT_OBJECT, BIT_FUNCTION):
+    case TWO_TYPES(BIT_OBJECT, BIT_PROGRAM):
+    case TWO_TYPES(BIT_OBJECT, BIT_STRING):
+    case TWO_TYPES(BIT_OBJECT, BIT_INT):
+    case TWO_TYPES(BIT_OBJECT, BIT_FLOAT):
       if(a->u.object->prog->lfuns[LFUN_EQ] != -1)
       {
       a_is_obj:
@@ -423,10 +440,16 @@ int is_eq(struct svalue *a, struct svalue *b)
 	  return 1;
 	}
       }
-    }
+    if(b->type != T_OBJECT) return 0;
 
-    if(b->type == T_OBJECT)
-    {
+    case TWO_TYPES(BIT_ARRAY,BIT_OBJECT):
+    case TWO_TYPES(BIT_MAPPING,BIT_OBJECT):
+    case TWO_TYPES(BIT_MULTISET,BIT_OBJECT):
+    case TWO_TYPES(BIT_FUNCTION,BIT_OBJECT):
+    case TWO_TYPES(BIT_PROGRAM,BIT_OBJECT):
+    case TWO_TYPES(BIT_STRING,BIT_OBJECT):
+    case TWO_TYPES(BIT_INT,BIT_OBJECT):
+    case TWO_TYPES(BIT_FLOAT,BIT_OBJECT):
       if(b->u.object->prog->lfuns[LFUN_EQ] != -1)
       {
       b_is_obj:
@@ -443,7 +466,6 @@ int is_eq(struct svalue *a, struct svalue *b)
 	}
       }
     }
-
     return 0;
   }
   switch(a->type)
@@ -993,7 +1015,7 @@ INT32 pike_sizeof(struct svalue *s)
       error("sizeof() on destructed object.\n");
     if(s->u.object->prog->lfuns[LFUN__SIZEOF] == -1)
     {
-      return s->u.object->prog->num_identifier_indexes;
+      return s->u.object->prog->num_identifier_index;
     }else{
       apply_lfun(s->u.object, LFUN__SIZEOF, 0);
       if(sp[-1].type != T_INT)

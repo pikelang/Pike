@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: pike_types.c,v 1.21 1997/04/16 03:09:15 hubbe Exp $");
+RCSID("$Id: pike_types.c,v 1.21.2.1 1997/06/25 22:46:42 hubbe Exp $");
 #include <ctype.h>
 #include "svalue.h"
 #include "pike_types.h"
@@ -1164,7 +1164,7 @@ struct pike_string *get_type_of_svalue(struct svalue *s)
   case T_PROGRAM:
   {
     char *a;
-    int id=s->u.program->lfuns[LFUN_CREATE];
+    int id=FIND_LFUN(s->u.program,LFUN_CREATE);
     if(id>=0)
     {
       a=ID_FROM_INT(s->u.program, id)->type->str;

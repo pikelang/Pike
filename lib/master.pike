@@ -11,6 +11,16 @@ string *pike_program_path=({});
 
 int want_warnings;
 
+program compile_string(string data, void|string name)
+{
+  return compile(cpp(data,name||"-"));
+}
+
+program compile_file(string file)
+{
+  return compile(cpp(_static_modules.files()->file(file,"r")->read(),file));
+}
+
 mapping (string:string) environment=([]);
 
 varargs mixed getenv(string s)
@@ -185,6 +195,8 @@ object new(mixed prog, mixed ... args)
 void create()
 {
   /* make ourselves known */
+  add_constant("compile_string",compile_string);
+  add_constant("compile_file",compile_file);
   add_constant("add_include_path",add_include_path);
   add_constant("remove_include_path",remove_include_path);
   add_constant("add_module_path",add_module_path);
@@ -515,6 +527,11 @@ void compile_warning(string file,int line,string err)
   {
     inhibit_compile_errors(file,line,err);
   }
+}
+
+string read_include(string f)
+{
+  return _static_modules->files()->file(f,"r")->read();
 }
 
 /* This function is called whenever an #include directive is encountered

@@ -1,3 +1,10 @@
+Wed Jun 25 15:33:23 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
+
+	* Compiler is now two-pass -> no more prototypes
+	* New efun: cpp()
+	* you can now access a class name from inside itself
+	* objects now have parents
+
 Sat May 10 06:20:51 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* fork() now returns an object

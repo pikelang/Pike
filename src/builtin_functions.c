@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.36 1997/05/07 06:27:32 per Exp $");
+RCSID("$Id: builtin_functions.c,v 1.36.2.1 1997/06/25 22:46:35 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -281,6 +281,28 @@ void f_call_function(INT32 args)
   }
 }
 
+void f_parent(INT32 args)
+{
+  struct object *o;
+  if(!args)
+  {
+    o=fp->current_object;
+  }else{
+    if(sp[-args].type!=T_OBJECT)
+      error("Bad argument 1 to parent()\n");
+    o=sp[-args].u.object;
+  }
+  o->refs++;
+  pop_n_elems(args);
+  if(o->parent)
+  {
+    ref_push_object(o->parent);
+  }else{
+    push_int(0);
+  }
+  free_object(o);
+}
+
 void f_backtrace(INT32 args)
 {
   INT32 frames;
@@ -362,20 +384,6 @@ void f_add_constant(INT32 args)
     low_add_efun(sp[-args].u.string, 0);
   }
   pop_n_elems(args);
-}
-
-void f_compile_file(INT32 args)
-{
-  struct program *p;
-  if(args<1)
-    error("Too few arguments to compile_file.\n");
-
-  if(sp[-args].type!=T_STRING)
-    error("Bad argument 1 to compile_file.\n");
-
-  p=compile_file(sp[-args].u.string);
-  pop_n_elems(args);
-  push_program(p);
 }
 
 static char *combine_path(char *cwd,char *file)
@@ -839,24 +847,38 @@ void f_next_object(INT32 args)
 
 void f_object_program(INT32 args)
 {
-  struct program *p;
   if(args < 1)
     error("Too few argumenets to object_program()\n");
 
   if(sp[-args].type == T_OBJECT)
-    p=sp[-args].u.object->prog;
-  else
-    p=0;
+  {
+    struct object *o=sp[-args].u.object;
+    struct program *p;
+    if((p=o->prog))
+    {
+      if(o->parent && o->parent->prog)
+      {
+	INT32 i=find_child(o->parent->prog, p);
+	if(i!=-1)
+	{
+	  o->refs++;
+	  pop_n_elems(args);
+	  push_object(o->parent);
+	  sp[-1].subtype=i;
+	  sp[-1].type=T_FUNCTION;
+	  return;
+	}
+      }else{
+	p->refs++;
+	pop_n_elems(args);
+	push_program(p);
+	return;
+      }
+    }
+  }
 
   pop_n_elems(args);
-
-  if(!p)
-  {
-    push_int(0);
-  }else{
-    p->refs++;
-    push_program(p);
-  }
+  push_int(0);
 }
 
 void f_reverse(INT32 args)
@@ -1068,26 +1090,17 @@ void f_replace(INT32 args)
   }
 }
 
-void f_compile_string(INT32 args)
+void f_compile(INT32 args)
 {
   
   struct program *p;
   if(args < 1)
-    error("Too few arguments to compile_string()\n");
+    error("Too few arguments to compile()\n");
 
   if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to compile_string()\n");
+    error("Bad argument 1 to compile()\n");
 
-  if(args < 2)
-  {
-    push_string(make_shared_string("-"));
-    args++;
-  }
-
-  if(sp[1-args].type != T_STRING)
-    error("Bad argument 2 to compile_string()\n");
-
-  p=compile_string(sp[-args].u.string,sp[1-args].u.string);
+  p=compile(sp[-args].u.string);
   pop_n_elems(args);
   push_program(p);
 }
@@ -1206,13 +1219,37 @@ void ID(INT32 args) \
   push_int(t); \
 }
 
-TYPEP(f_programp, "programp", T_PROGRAM)
 TYPEP(f_intp, "intpp", T_INT)
 TYPEP(f_mappingp, "mappingp", T_MAPPING)
 TYPEP(f_arrayp, "arrayp", T_ARRAY)
 TYPEP(f_multisetp, "multisetp", T_MULTISET)
 TYPEP(f_stringp, "stringp", T_STRING)
 TYPEP(f_floatp, "floatp", T_FLOAT)
+
+void f_programp(INT32 args)
+{
+  if(args<1)
+    error("Too few arguments to programp()\n");
+  switch(sp[-args].type)
+  {
+  case T_PROGRAM:
+    pop_n_elems(args);
+    push_int(1);
+    return;
+
+  case T_FUNCTION:
+    if(program_from_function(sp-args))
+    {
+      pop_n_elems(args);
+      push_int(1);
+      return;
+    }
+
+  default:
+    pop_n_elems(args);
+    push_int(0);
+  }
+}
 
 void f_sort(INT32 args)
 {
@@ -1702,8 +1739,7 @@ void init_builtin_efuns()
 
   add_efun("column",f_column,"function(array,mixed:array)",0);
   add_efun("combine_path",f_combine_path,"function(string,string:string)",0);
-  add_efun("compile_file",f_compile_file,"function(string:program)",OPT_EXTERNAL_DEPEND);
-  add_efun("compile_string",f_compile_string,"function(string,string|void:program)",OPT_EXTERNAL_DEPEND);
+  add_efun("compile",f_compile,"function(string:program)",OPT_EXTERNAL_DEPEND);
   add_efun("copy_value",f_copy_value,"function(mixed:mixed)",0);
   add_efun("crypt",f_crypt,"function(string:string)|function(string,string:int)",OPT_EXTERNAL_DEPEND);
   add_efun("ctime",f_ctime,"function(int:string)",OPT_TRY_OPTIMIZE);
@@ -1768,5 +1804,6 @@ void init_builtin_efuns()
 
   add_efun("encode_value", f_encode_value, "function(mixed:string)", OPT_TRY_OPTIMIZE);
   add_efun("decode_value", f_decode_value, "function(string:mixed)", OPT_TRY_OPTIMIZE);
+  add_efun("parent", f_parent, "function(object|void:object)", OPT_EXTERNAL_DEPEND);
 }
 
