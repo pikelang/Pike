@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.38 1999/04/24 00:17:20 mirar Exp $
+ * $Id: Xlib.pmod,v 1.39 2000/05/07 18:36:59 nilsson Exp $
  */
 
 /*
@@ -796,7 +796,7 @@ class Display
     buffer = "";
     received = rec_buffer();
     pending_requests = ([]);
-    pending_actions = ADT.queue();
+    pending_actions = ADT.Queue();
     sequence_number = 1;
     
     /* Always uses network byteorder (big endian) */
