@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Lexer.pmod,v 1.5 2001/06/22 01:28:36 nilsson Exp $
+// $Id: Lexer.pmod,v 1.6 2001/08/08 14:43:40 norlin Exp $
 
 // Lexer for search queries
 
@@ -36,8 +36,10 @@ static mapping(string : Token) keywords = ([
   "or" : TOKEN_OR,
 ]);
 
+// These characters cannot be part of a word, even if they are preceded by
+// word characters.
 static multiset(int) specialChars = (<
-  ':', '(', ')', ','
+  ':', '(', ')',
 >);
 
 int isWhiteSpace(int ch) { return ch == '\t' || ch == ' '; }
@@ -123,7 +125,7 @@ public string|array(array(Token|string)) tokenize(string query) {
       default:
         {
         int i = pos + 1;
-        while (query[i] && !isWhiteSpace(query[i]))
+        while (query[i] && !isWhiteSpace(query[i]) && !specialChars[query[i]])
           ++i;
         string word = query[pos .. i - 1];
         string lword = Unicode.normalize(lower_case(word), "KD");
