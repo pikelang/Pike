@@ -1,6 +1,8 @@
 
 #undef GET_ARG
 #undef GET_ARG2
+#undef GET_JUMP
+#undef SKIPJUMP
 
 #ifdef PIKE_DEBUG
 
@@ -15,13 +17,24 @@
   instr=prefix2,\
   prefix2=0,\
   instr+=EXTRACT_UCHAR(pc++),\
-  (t_flag>3 ? sprintf(trace_buffer,"-    Arg2= %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
+  (t_flag>3 ? sprintf(trace_buffer,"-    Arg2 = %ld\n",(long)instr),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
   instr))
+
+#define GET_JUMP() (backlog[backlogp].arg=(\
+  (t_flag>3 ? sprintf(trace_buffer,"-    Target = %+ld\n",(long)EXTRACT_INT(pc)),write_to_stderr(trace_buffer,strlen(trace_buffer)) : 0),\
+  EXTRACT_INT(pc)))
+
+#define SKIPJUMP() (GET_JUMP(), pc+=sizeof(INT32))
 
 #else
 #define GET_ARG() (instr=prefix,prefix=0,instr+EXTRACT_UCHAR(pc++))
 #define GET_ARG2() (instr=prefix2,prefix2=0,instr+EXTRACT_UCHAR(pc++))
+#define GET_JUMP() EXTRACT_INT(pc)
+#define SKIPJUMP() pc+=sizeof(INT32)
 #endif
+
+#define DOJUMP() \
+ do { int tmp; tmp=GET_JUMP(); pc+=tmp; if(tmp < 0) fast_check_threads_etc(6); }while(0)
 
 static int eval_instruction(unsigned char *pc)
 {
@@ -33,8 +46,42 @@ static int eval_instruction(unsigned char *pc)
     instr=EXTRACT_UCHAR(pc++);
 
 #ifdef PIKE_DEBUG
+    if(t_flag > 2)
+    {
+      char *file, *f;
+      INT32 linep;
+
+      file=get_line(pc-1,Pike_fp->context.prog,&linep);
+      while((f=STRCHR(file,'/'))) file=f+1;
+      fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
+	      file,(long)linep,
+	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
+	      get_f_name(instr + F_OFFSET),
+	      DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),
+	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
+    }
+
+    if(instr + F_OFFSET < F_MAX_OPCODE) 
+      ADD_RUNNED(instr + F_OFFSET);
+
     if(d_flag)
     {
+      backlogp++;
+      if(backlogp >= BACKLOG) backlogp=0;
+
+      if(backlog[backlogp].program)
+	free_program(backlog[backlogp].program);
+
+      backlog[backlogp].program=Pike_fp->context.prog;
+      add_ref(Pike_fp->context.prog);
+      backlog[backlogp].instruction=instr;
+      backlog[backlogp].pc=pc;
+      backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
+      backlog[backlogp].mark_stack = Pike_mark_sp - Pike_interpreter.mark_stack;
+#ifdef _REENTRANT
+      backlog[backlogp].thread_id=Pike_interpreter.thread_id;
+#endif
+
 #ifdef _REENTRANT
       CHECK_INTERPRETER_LOCK();
       if(OBJ2THREAD(Pike_interpreter.thread_id)->state.thread_id != Pike_interpreter.thread_id)
@@ -79,22 +126,6 @@ static int eval_instruction(unsigned char *pc)
       
       if(d_flag > 9) do_debug();
 
-      backlogp++;
-      if(backlogp >= BACKLOG) backlogp=0;
-
-      if(backlog[backlogp].program)
-	free_program(backlog[backlogp].program);
-
-      backlog[backlogp].program=Pike_fp->context.prog;
-      add_ref(Pike_fp->context.prog);
-      backlog[backlogp].instruction=instr;
-      backlog[backlogp].pc=pc;
-      backlog[backlogp].stack = Pike_sp - Pike_interpreter.evaluator_stack;
-      backlog[backlogp].mark_stack = Pike_mark_sp - Pike_interpreter.mark_stack;
-#ifdef _REENTRANT
-      backlog[backlogp].thread_id=Pike_interpreter.thread_id;
-#endif
-
       debug_malloc_touch(Pike_fp->current_object);
       switch(d_flag)
       {
@@ -112,24 +143,6 @@ static int eval_instruction(unsigned char *pc)
 	  break;
       }
     }
-
-    if(t_flag > 2)
-    {
-      char *file, *f;
-      INT32 linep;
-
-      file=get_line(pc-1,Pike_fp->context.prog,&linep);
-      while((f=STRCHR(file,'/'))) file=f+1;
-      fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
-	      file,(long)linep,
-	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
-	      get_f_name(instr + F_OFFSET),
-	      DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),
-	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
-    }
-
-    if(instr + F_OFFSET < F_MAX_OPCODE) 
-      ADD_RUNNED(instr + F_OFFSET);
 #endif
 
     switch(instr)
