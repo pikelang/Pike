@@ -25,7 +25,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.73 1999/10/30 16:55:37 noring Exp $");
+RCSID("$Id: stralloc.c,v 1.74 1999/10/31 21:58:02 grubba Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -602,6 +602,11 @@ struct pike_string * debug_make_shared_pcharp(const PCHARP str)
   return debug_make_shared_binary_pcharp(str, pcharp_strlen(str));
 }
 
+struct pike_string * debug_make_shared_binary_string0(const p_wchar0 *str,int len)
+{
+  return debug_make_shared_binary_string((char *)str, len);
+}
+
 struct pike_string * debug_make_shared_binary_string1(const p_wchar1 *str,int len)
 {
   struct pike_string *s;
@@ -668,6 +673,11 @@ struct pike_string * debug_make_shared_binary_string2(const p_wchar2 *str,int le
 struct pike_string *debug_make_shared_string(const char *str)
 {
   return make_shared_binary_string(str, strlen(str));
+}
+
+struct pike_string *debug_make_shared_string0(const p_wchar0 *str)
+{
+  return debug_make_shared_string((char *)str);
 }
 
 struct pike_string *debug_make_shared_string1(const p_wchar1 *str)
