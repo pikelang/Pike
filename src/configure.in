@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.585 2002/05/04 18:12:54 nilsson Exp $")
+AC_REVISION("$Id: configure.in,v 1.586 2002/05/05 13:22:39 nilsson Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2788,105 +2788,7 @@ AC_CHECK_FUNCS( \
  usleep \
  nanosleep \
  thr_yield \
- getaddrinfo \
- inet_aton \
- inet_ntoa \
- inet_pton \
- inet_ntop 
 )
-
-AC_MSG_CHECKING(if struct sockaddr_storage is defined)
-AC_CACHE_VAL(pike_cv_struct_sockaddr_storage, [
-  AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#include <unistd.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-  ],[
-    struct sockaddr_storage  sas;
-
-    sas.ss_family = 0;
-  ], [ pike_cv_struct_sockaddr_storage=yes ], [ pike_cv_struct_sockaddr_storage=no ])
-])
-if test "$pike_cv_struct_sockaddr_storage" = "yes"; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_STRUCT_SOCKADDR_STORAGE)
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_MSG_CHECKING(for AF_INET6)
-AC_CACHE_VAL(pike_cv_have_af_inet6, [
-  AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#include <unistd.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif /* HAVE_NETINET_IN_H */
-  ],[
-    int   tst = AF_INET6;
-  ], [ pike_cv_have_af_inet6=yes ], [ pike_cv_have_af_inet6=no ])
-])
-if test "$pike_cv_have_af_inet6" = "yes"; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_AF_INET6)
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_MSG_CHECKING(for struct sockaddr_in6)
-AC_CACHE_VAL(pike_cv_struct_sockaddr_in6, [
-  AC_TRY_COMPILE([
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif /* HAVE_SYS_TYPES_H */
-#include <unistd.h>
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif /* HAVE_SYS_SOCKET_H */
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif /* HAVE_NETINET_IN_H */
-  ],[
-    struct sockaddr_in6 sin6;
-    
-    sin6.sin6_family = 0;
-    sin6.sin6_port = 0;
-    sin6.sin6_flowinfo = 0;
-    sin6.sin6_scope_id = 0;
-  ], [ pike_cv_struct_sockaddr_in6=yes ], [ pike_cv_struct_sockaddr_in6=no ])
-])
-if test "$pike_cv_struct_sockaddr_in6" = "yes"; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(HAVE_STRUCT_SOCKADDR_IN6)
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_MSG_CHECKING(whether IPv6 is supported by the system libraries)
-if test "$pike_cv_have_af_inet6" = "yes" -a "$pike_cv_struct_sockaddr_in6" = "yes"; then
-  case "$pike_cv_sys_os" in
-    Linux*) AC_DEFINE(HAVE_IPV6_LINUX)
-           IPV6_FLAVOR=Linux ;;
-    FreeBSD*|OpenBSD*|NetBSD*) AC_DEFINE(HAVE_IPV6_KAME)
-           IPV6_FLAVOR=KAME ;;
-    *) AC_DEFINE(HAVE_IPV6_UNKNOWN)
-       IPV6_FLAVOR=Unknown
-  esac
-  
-  AC_MSG_RESULT([yes ($IPV6_FLAVOR)])
-  AC_DEFINE(HAVE_IPV6)
-else
-  AC_MSG_RESULT(no)
-fi
 
 AC_MSG_CHECKING(for the type of the last argument to accept)
 AC_CACHE_VAL(pike_cv_accept_size_t, [

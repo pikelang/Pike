@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.54 2002/05/04 18:54:34 nilsson Exp $
+# $Id: configure.in,v 1.55 2002/05/05 13:19:15 nilsson Exp $
 AC_INIT(system.c)
 AC_CONFIG_HEADER(system_machine.h)
 
@@ -7,7 +7,6 @@ AC_MODULE_INIT()
 AC_CHECK_LIB(bind, __inet_ntoa)
 AC_CHECK_LIB(socket, socket)
 AC_CHECK_LIB(nsl, gethostbyname)
-AC_CHECK_LIB(nsl, gethostbyname2)
 
 if test x"$pike_cv_sys_os" = xWindows_NT ; then
   # FIXME: These look suspiciouly much like 32bit versions.
@@ -19,7 +18,7 @@ AC_HAVE_HEADERS(syslog.h sys/syslog.h sys/types.h errno.h unistd.h pwd.h \
 	sys/conf.h sys/socket.h netinet/in.h arpa/inet.h netdb.h stdarg.h \
 	sys/utsname.h pwd.h passwd.h shadow.h grp.h sys/stat.h winsock.h \
         sys/systeminfo.h windows.h sys/param.h utime.h sys/utime.h sys/id.h \
-	sys/time.h sys/shm.h sys/mman.h fcntl.h sys/fcntl.h netinfo/ni.h net/if.h)
+	sys/time.h sys/shm.h sys/mman.h fcntl.h sys/fcntl.h netinfo/ni.h)
 
 # some Linux systems have a broken resource.h that compiles anyway /Mirar
 AC_MSG_CHECKING([for working sys/resource.h])
@@ -54,18 +53,16 @@ fi
 
 AC_HAVE_FUNCS(syslog link symlink readlink resolvepath chown \
 	initgroups setgroups getgroups seteuid setresuid setegid setresgid \
-  geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
-  setpgid getsid setsid \
+        geteuid getpgrp getpgid getppid getuid getgid setuid setgid setpgrp \
+        setpgid getsid setsid \
 	getpwnam getspnam getgrnam getpwuid getgrgid \
 	getgrent setgrent endgrent getpwent setpwent endpwent \
-	chroot fchroot uname sysinfo gethostname gethostbyname gethostbyname2 \
-	getaddrinfo freeaddrinfo gai_strerror \
-  if_nametoindex if_indextoname if_nameindex if_freenameindex \
-  getgrnam_r getgrent_r getgrgid_r \
-  getpwnam_r getpwent_r getpwuid_r \
-  getspnam_r innetgr utime sleep usleep nanosleep \
-  getrlimit setrlimit  \
-  setitimer getitimer mmap munmap \
+	chroot fchroot uname sysinfo gethostname gethostbyname \
+        getgrnam_r getgrent_r getgrgid_r \
+        getpwnam_r getpwent_r getpwuid_r \
+        getspnam_r innetgr utime sleep usleep nanosleep \
+        getrlimit setrlimit  \
+        setitimer getitimer mmap munmap \
 	gettimeofday settimeofday)
 
 
