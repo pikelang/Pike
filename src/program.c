@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.308 2001/12/14 10:04:10 grubba Exp $");
+RCSID("$Id: program.c,v 1.309 2002/02/06 17:26:15 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2663,7 +2663,7 @@ PMOD_EXPORT int debug_end_class(char *name, ptrdiff_t namelen, INT32 flags)
  */
 INT32 define_function(struct pike_string *name,
 		      struct pike_string *type,
-		      unsigned INT8 flags,
+		      unsigned INT16 flags,
 		      unsigned INT8 function_flags,
 		      union idptr *func,
 		      unsigned INT16 opt_flags)

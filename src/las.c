@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.238 2001/08/15 15:29:22 mast Exp $");
+RCSID("$Id: las.c,v 1.239 2002/02/06 17:26:15 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -4832,7 +4832,7 @@ int dooptcode(struct pike_string *name,
 #endif
 	  ret=define_function(name,
 			      type,
-			      (unsigned INT8)modifiers,
+			      (unsigned INT16)modifiers,
 			      (unsigned INT8)(IDENTIFIER_C_FUNCTION | vargs),
 			      &tmp,
 			      foo->u.efun->flags);
@@ -4864,7 +4864,7 @@ int dooptcode(struct pike_string *name,
   
   ret=define_function(name,
 		      type,
-		      (unsigned INT8)modifiers,
+		      (unsigned INT16)modifiers,
 		      (unsigned INT8)(IDENTIFIER_PIKE_FUNCTION | vargs),
 		      Pike_compiler->num_parse_error?NULL:&tmp,
 		      (unsigned INT16)
