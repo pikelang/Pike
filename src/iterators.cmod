@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: iterators.cmod,v 1.43 2003/07/24 15:56:48 grubba Exp $
+|| $Id: iterators.cmod,v 1.44 2003/08/20 12:01:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.43 2003/07/24 15:56:48 grubba Exp $");
+RCSID("$Id: iterators.cmod,v 1.44 2003/08/20 12:01:05 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -419,7 +419,8 @@ PIKECLASS array_iterator
     {
       struct object *o=low_clone(array_iterator_program);
       OBJ2_ARRAY_ITERATOR(o)[0]=*THIS;
-      add_ref(THIS->a);
+      if (THIS->a)
+	add_ref(THIS->a);
       OBJ2_ARRAY_ITERATOR(o)->pos+=steps;
       RETURN o;
     }
@@ -448,7 +449,7 @@ PIKECLASS array_iterator
   /* Hubbe: Should this really be destructive ?? */
   PIKEFUN object _random()
     {
-      if(THIS->a->size)
+      if(THIS->a && THIS->a->size)
 	THIS->pos=my_rand() % THIS->a->size;
       else
 	THIS->pos=0;
@@ -482,7 +483,8 @@ PIKECLASS array_iterator
 
   EXIT
     {
-      free_array(THIS->a);
+      if (THIS->a)
+	free_array(THIS->a);
     }
     
 };
@@ -523,7 +525,8 @@ PIKECLASS multiset_iterator
     {
       struct object *o = low_clone (multiset_iterator_program);
       struct multiset_iterator_struct *copy = OBJ2_MULTISET_ITERATOR (o);
-      add_ref (copy->l = li->l);
+      if ((copy->l = li->l))
+	add_ref(li->l);
       if ((copy->nodepos = li->nodepos) >= 0) add_msnode_ref (copy->l);
       if ((copy->lock_index = li->lock_index)) {
 	add_ref (copy->l->msd);
