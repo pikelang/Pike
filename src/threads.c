@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.173 2004/03/03 13:59:10 grubba Exp $");
+RCSID("$Id: threads.c,v 1.174 2004/03/08 15:02:43 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -35,7 +35,9 @@ PMOD_EXPORT size_t thread_stack_size=1024 * 1204;
  
 PMOD_EXPORT void thread_low_error (int errcode)
 {
-  fatal ("Unexpected error from thread function: %d\n", errcode);
+  fatal ("%s:%d: %s\n"
+	 "Unexpected error from thread function: %d\n",
+	 fname, lineno, cmd, errcode);
 }
 
 #ifdef USE_CLOCK_FOR_SLICES
