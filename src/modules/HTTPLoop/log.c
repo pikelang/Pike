@@ -1,20 +1,21 @@
 #include "config.h"
-#include <global.h>
+#include "global.h"
 	  
-#include <array.h>
-#include <backend.h>
-#include <machine.h>
-#include <mapping.h>
-#include <module_support.h>
-#include <multiset.h>
-#include <object.h>
-#include <operators.h>
-#include <pike_memory.h>
-#include <program.h>
-#include <stralloc.h>
-#include <svalue.h>
-#include <threads.h>
-#include <fdlib.h>
+#include "array.h"
+#include "backend.h"
+#include "machine.h"
+#include "mapping.h"
+#include "module_support.h"
+#include "multiset.h"
+#include "object.h"
+#include "operators.h"
+#include "pike_memory.h"
+#include "program.h"
+#include "stralloc.h"
+#include "svalue.h"
+#include "threads.h"
+#include "fdlib.h"
+#include "builtin_functions.h"
 
 #ifdef _REENTRANT
 #include <stdlib.h>
@@ -80,7 +81,6 @@ void f_aap_log_as_array(INT32 args)
     le = l;
   }
   {
-    extern void f_aggregate(INT32 args);
     f_aggregate(n);
   }
 }
