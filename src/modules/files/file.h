@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.35 2004/04/05 01:36:05 mast Exp $
+|| $Id: file.h,v 1.36 2004/04/05 21:51:02 mast Exp $
 */
 
 #ifndef FILE_H
@@ -33,7 +33,7 @@ struct my_file
   struct fd_callback_box box;	/* Must be first. */
   /* The box is hooked in whenever box.backend is set. */
 
-  struct svalue event_cbs[PIKE_FD_NUM_EVENTS];
+  struct svalue event_cbs[4];
   /* Callbacks can be set without having the corresponding bits in
    * box.events, but not the other way around. */
 
