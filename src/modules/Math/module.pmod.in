@@ -364,13 +364,16 @@ float log10(float x) { return log(x)/log(10.0); }
 
 
 
-// only available when there are bignums
-#ifdef __AUTO_BIGNUM__
+// Only available when there is Gmp.mpz
+#if constant(Gmp.mpz)
 
 //! Factorize the integer @[x]. The returned list of factors will
 //! be sorted biggest to smallest factor.
+//! @note
+//!   This function is only available when Pike has been compiled with
+//!   bignums.
 array(int) factor(int x) {
-  int f = x->small_factor();
+  int f = Gmp.mpz(x)->small_factor();
   if(f==0)
     return ({ x });
   else
