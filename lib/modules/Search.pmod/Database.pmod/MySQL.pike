@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2000,2001 Roxen IS. All rights reserved.
 //
-// $Id: MySQL.pike,v 1.56 2001/08/08 11:00:08 per Exp $
+// $Id: MySQL.pike,v 1.57 2001/08/09 11:39:10 js Exp $
 
 inherit .Base;
 
@@ -142,6 +142,9 @@ int allocate_field_id(string field)
     init_fields();
   if(field=="body")
     return 0;
+  array a =db->query("select id from field where name=%s", field);
+  if(sizeof(a))
+    return (int)a[0]->id;
   db->query("lock tables field write");
   for(int i=1; i<64; i++)
   {
