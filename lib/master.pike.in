@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.332 2004/01/12 23:47:52 nilsson Exp $
+// $Id: master.pike.in,v 1.333 2004/02/08 16:03:13 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -2575,7 +2575,8 @@ void _main(array(string) orig_argv, array(string) env)
 	_error("Error: %s has no main().\n", argv[0]);
       ret=script->main(sizeof(argv),argv,env);
     };
-  predef::trace(trace);
+  // Disable traceing.
+  trace = predef::trace(trace);
   if (err) {
     handle_error (err);
     ret = 10;
@@ -2587,6 +2588,8 @@ void _main(array(string) orig_argv, array(string) env)
   if(ret >=0) exit([int]ret);
   _async=1;
 
+  // Reenable tracing.
+  trace = predef::trace(trace);
   while(1)
   {
     mixed err=catch 
