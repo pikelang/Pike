@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.66 2002/05/27 11:57:04 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.67 2002/05/27 12:04:54 jhs Exp $ */
 
 import Stdio;
 
@@ -893,9 +893,9 @@ Usage: test_pike [args] [testfiles]
                        printed.
 -p, --prompt        The user will be asked before every test is run.
 -q, --quiet         Less outputs than normal.
--sX, --start=X      Where in the testsuite testing should start, e.g. ignores X
+-sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
                     tests in every testsuite.
--eX, --end=X        How many tests should be run.
+-eX, --end-after=X  How many tests should be run.
 -f, --fail          If set, the testsuite always fails.
 -lX, --loop=X       The number of times the testsuite should be run. Default is
                     1.
