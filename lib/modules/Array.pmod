@@ -755,7 +755,7 @@ array common_prefix(array(array) arrs)
 //!   Array.all( ({ 2, 4, 6, 8 }), `<, 17 )
 //! @seealso
 //!   @[any], @[has_value]
-int(0..1) all( array a, function(mixed,mixed ...:int(0..1)) predicate,
+int(0..1) all( array a, function(mixed, mixed ...:mixed) predicate,
 	       mixed ... extra_args )
 {
   foreach( a, mixed elem )
@@ -772,7 +772,7 @@ int(0..1) all( array a, function(mixed,mixed ...:int(0..1)) predicate,
 //!   Array.any( ({ 2, 4, 6, 8 }), `>, 5 )
 //! @seealso
 //!   @[all], @[has_value]
-int(0..1) any( array a, function(mixed,mixed ...:int(0..1)) predicate,
+int(0..1) any( array a, function(mixed, mixed ...:mixed) predicate,
 	       mixed ... extra_args )
 {
   foreach( a, mixed elem )
@@ -791,7 +791,7 @@ int(0..1) any( array a, function(mixed,mixed ...:int(0..1)) predicate,
 //!   > ({ ({ 4, 5, 6 }), ({ 0, 1, 2, 3, 7, 8 }) })
 //! @seealso
 //!   @[filter], @[`/], @[`%]
-array(array) partition( array a, function(mixed,mixed...:int(0..1)) arbiter,
+array(array) partition( array a, function(mixed, mixed ...:mixed) arbiter,
 			mixed ... extra_args )
 {
   array first = ({}), second = ({});

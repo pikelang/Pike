@@ -98,10 +98,9 @@ static private inherit @module@;
 
 //! Virtual base class for charset decoders.
 //! @example
-//!   string utf8_to_string( string data )
+//!   string win1252_to_string( string data )
 //!   {
-//!     object deutf8 = Locale.Charset.decoder("utf-8");
-//!     return deutf8->clear()->feed( data )->drain();
+//!     return Locale.Charset.decoder("windows-1252")->feed( data )->drain();
 //!   }
 class Decoder
 {
