@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.61 2004/09/15 20:10:11 grubba Exp $
+//! $Id: DNS.pmod,v 1.62 2005/01/03 11:07:35 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -266,6 +266,9 @@ class protocol
 	m->retry=decode_int(s,next);
 	m->expire=decode_int(s,next);
 	m->minimum=decode_int(s,next);
+	break;
+      case T_TXT:
+	m->txt = decode_string(s, next);
 	break;
     }
     
