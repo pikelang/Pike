@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.291 2000/07/19 16:48:51 lange Exp $");
+RCSID("$Id: builtin_functions.c,v 1.292 2000/07/27 17:47:29 lange Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -169,11 +169,39 @@ static struct case_info *find_ci(int c)
     return NULL;
 
   if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
-    return ci;
+    return ci; 
   }
 
   while (lo != hi-1) {
     int mid = (lo + hi)/2;
+    if (case_info[mid].low < c) {
+      lo = mid;
+    } else if (case_info[mid].low == c) {
+      lo = mid;
+      break;
+    } else {
+      hi = mid;
+    }
+  }
+  return(cache = (struct case_info *)case_info + lo);
+}
+
+static struct case_info *find_ci_shift0(int c)
+{
+  static struct case_info *cache = NULL;
+  struct case_info *ci = cache;
+  int lo = 0;
+  int hi = CASE_INFO_SHIFT0_HIGH;
+
+  if ((c < 0) || (c > 0xffff))
+    return NULL;
+
+  if ((ci) && (ci[0].low <= c) && (ci[1].low > c)) {
+    return ci; 
+  }
+
+  while (lo != hi-1) {
+    int mid = (lo + hi)>>1;
     if (case_info[mid].low < c) {
       lo = mid;
     } else if (case_info[mid].low == c) {
@@ -200,9 +228,37 @@ static struct case_info *find_ci(int c)
    } \
   } while(0)
 
+#define DO_LOWER_CASE_SHIFT0(C) do {\
+    int c = C; \
+    struct case_info *ci = find_ci_shift0(c); \
+    if (ci) { \
+      switch(ci->mode) { \
+      case CIM_NONE: case CIM_LOWERDELTA: break; \
+      case CIM_UPPERDELTA: C = c + ci->data; break; \
+      case CIM_CASEBIT: C = c | ci->data; break; \
+      case CIM_CASEBITOFF: C = ((c - ci->data) | ci->data) + ci->data; break; \
+      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+    } \
+   } \
+  } while(0)
+
 #define DO_UPPER_CASE(C) do {\
     int c = C; \
     struct case_info *ci = find_ci(c); \
+    if (ci) { \
+      switch(ci->mode) { \
+      case CIM_NONE: case CIM_UPPERDELTA: break; \
+      case CIM_LOWERDELTA: C = c - ci->data; break; \
+      case CIM_CASEBIT: C = c & ~ci->data; break; \
+      case CIM_CASEBITOFF: C = ((c - ci->data)& ~ci->data) + ci->data; break; \
+      default: fatal("lower_case(): Unknown case_info mode: %d\n", ci->mode); \
+    } \
+   } \
+  } while(0)
+
+#define DO_UPPER_CASE_SHIFT0(C) do {\
+    int c = C; \
+    struct case_info *ci = find_ci_shift0(c); \
     if (ci) { \
       switch(ci->mode) { \
       case CIM_NONE: case CIM_UPPERDELTA: break; \
@@ -231,7 +287,7 @@ void f_lower_case(INT32 args)
     p_wchar0 *str = STR0(ret);
 
     while(i--) {
-      DO_LOWER_CASE(str[i]);
+      DO_LOWER_CASE_SHIFT0(str[i]);
     }
   } else if (orig->size_shift == 1) {
     p_wchar1 *str = STR1(ret);
@@ -271,7 +327,7 @@ void f_upper_case(INT32 args)
 
     while(i--) {
       if(str[i]!=0xff && str[i]!=0xb5) {
-	DO_UPPER_CASE(str[i]);
+	DO_UPPER_CASE_SHIFT0(str[i]);
       } else {
 	widen = 1;
       }

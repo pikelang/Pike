@@ -1,5 +1,5 @@
 /*
- * $Id: make_ci.pike,v 1.4 1999/03/20 16:30:55 grubba Exp $
+ * $Id: make_ci.pike,v 1.5 2000/07/27 17:46:47 lange Exp $
  *
  * Creates the file case_info.h
  *
@@ -73,7 +73,7 @@ int main(int argc, array(string) argv)
 
   write(sprintf("/*\n"
 		" * Created by\n"
-		" * $Id: make_ci.pike,v 1.4 1999/03/20 16:30:55 grubba Exp $\n"
+		" * $Id: make_ci.pike,v 1.5 2000/07/27 17:46:47 lange Exp $\n"
 		" * on %s"
 		" *\n"
 		" * Table used for looking up the case of\n"
@@ -90,6 +90,11 @@ int main(int argc, array(string) argv)
 		  (info[2]<0)?"-":"",
 		  (info[2]<0)?-info[2]:info[2]));
   }
+  
+  for (lineno=0; lineno<sizeof(ci); lineno++)
+    if (ci[lineno][0] > 0xff)
+      break;
+  write(sprintf("#define CASE_INFO_SHIFT0_HIGH 0x%04x\n", lineno));
 
   exit(0);
 }
