@@ -1,3 +1,8 @@
+Mon Jun  8 17:03:59 1998  Henrik Grubbström  <grubba@idonex.se>
+
+	* fd_control.c (set_close_on_exec, do_close_on_exec): Added fallback
+	for OS's where F_SETFD doesn't exist/work.
+
 Mon May 25 22:12:40 1998  Henrik Grubbström  <grubba@idonex.se>
 
 	* program.c (program_indices, program_values, program_index_no_free):
