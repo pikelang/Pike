@@ -1,4 +1,4 @@
-// $Id: RDF.pike,v 1.12 2003/07/03 13:16:46 nilsson Exp $
+// $Id: RDF.pike,v 1.13 2003/08/08 16:54:08 nilsson Exp $
 
 //! Represents an RDF domain which can contain any number of complete
 //! statements.
@@ -148,27 +148,93 @@ void add_statement(Resource subj, Resource pred, Resource obj) {
   rel->add(subj, obj);
 }
 
+//! Returns 1 if the RDF domain contains the relation {subj, pred, obj},
+//! otherwise 0.
+int(0..1) has_statement(Resource subj, Resource pred, Resource obj) {
+  ADT.Relation.Binary rel = statements[pred];
+  if(!rel) return 0;
+  return rel->contains(subj,obj);
+}
+
 //! Removes the relation from the RDF set. Returns 1 if the relation
 //! did exist in the RDF set.
 int(0..1) remove_statement(Resource subj, Resource pred, Resource obj) {
+  if(!has_statement(subj, pred, obj)) return 0;
   ADT.Relation.Binary rel = statements[pred];
-  if(!rel) return 0;
-  int(0..1) ret = rel->contains(subj,obj);
+  rel->contains(subj,obj);
   rel->remove(subj,obj);
-  return ret;
+  if(!sizeof(statements[pred])) m_delete(statements, pred);
+  return 1;
 }
 
 //! Reifies the statement @tt{{ pred, subj, obj }@} and returns
 //! the resource that denotes the reified statement. There will
 //! not be any check to see if the unreified statement is already
 //! in the domain, making it possible to define the relation twice.
-Resource reify(Resource subj, Resource pred, Resource obj) {
+//! The original statement will not be removed.
+//! @returns
+//!   The subject of the reified statement.
+Resource reify_low(Resource subj, Resource pred, Resource obj) {
   Resource r = Resource();
   add_statement(r, rdf_predicate, pred);
   add_statement(r, rdf_subject, subj);
   add_statement(r, rdf_object, obj);
   add_statement(r, rdf_type, rdf_Statement);
   return r;
+}
+
+//! Returns a resource that is the subject of the reified statement
+//! {subj, pred, obj}, if such a resource exists in the RDF domain.
+Resource get_reify(Resource subj, Resource pred, Resource obj) {
+  array rs = find_statements(0, rdf_predicate, pred)[*][0] &
+    find_statements(0, rdf_subject, subj)[*][0] &
+    find_statements(0, rdf_object, obj)[*][0];
+  // Any one of rs is a reified statment of ({ subj, pred, obj }).
+  if(sizeof(rs)) return rs[0];
+  return 0;
+}
+
+//! Returns the result of @[get_reify], if any. Otherwise calls
+//! @[reify_low] followed by @[remove_statement] of the provided
+//! statement {subj, pred, obj}.
+//! @returns
+//!   The subject of the reified statement.
+Resource reify(Resource subj, Resource pred, Resource obj) {
+  Resource r = get_reify(subj, pred, obj);
+  if(r) return r;
+  r = reify_low(subj, pred, obj);
+  remove_statement(subj, pred, obj);
+  return r;
+}
+
+//! Turns the reified statement @[r] into a normal statement, if possible.
+//! @returns
+//!   1 for success, 0 for failure.
+int(0..1) dereify(Resource r) {
+  if(sizeof(find_statements(0,0,r))) return 0;
+  if(sizeof(find_statements(0,r,0))) return 0;
+  array statements = find_statements(r,0,0);
+  mapping statement = mkmapping( column(statements,1), column(statements,2) );
+  if(sizeof(statement)!=4) return 0;
+  add_statement( statement[rdf_subject], statement[rdf_predicate],
+		 statement[rdf_object] );
+  foreach( statements, array statement )
+    remove_statement(@statement);
+  return 1;
+}
+
+//! Dereifies as many statements as possible. Returns the number of
+//! dereified statements.
+int(0..) dereify_all() {
+  int total, dereified=1;
+  while(dereified) {
+    dereified=0;
+    array rs = find_statements(0, rdf_type, rdf_Statement)[*][0];
+    foreach(rs, Resource r)
+      dereified = dereify(r);
+    total += dereified;
+  }
+  return total;
 }
 
 //! Returns all properties in the domain, e.g. all resources that
