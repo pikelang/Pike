@@ -19,10 +19,12 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
-RCSID("$Id: arcfour.c,v 1.16 2002/03/03 20:03:33 nilsson Exp $");
+#define sp Pike_sp
+
+RCSID("$Id: arcfour.c,v 1.17 2002/05/11 00:09:48 nilsson Exp $");
 
 #undef THIS
-#define THIS ((struct arcfour_ctx *)(fp->current_storage))
+#define THIS ((struct arcfour_ctx *)(Pike_fp->current_storage))
 
 struct program *pike_arcfour_program;
 

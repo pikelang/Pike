@@ -1,5 +1,5 @@
 /*
- * $Id: cast.c,v 1.10 2001/02/10 20:54:27 grubba Exp $
+ * $Id: cast.c,v 1.11 2002/05/11 00:09:48 nilsson Exp $
  *
  * CAST crypto module for Pike
  *
@@ -25,6 +25,7 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
 
 struct pike_crypto_cast {
   struct cast_key key;
@@ -33,7 +34,7 @@ struct pike_crypto_cast {
 };
 
 #undef THIS
-#define THIS ((struct pike_crypto_cast *)(fp->current_storage))
+#define THIS ((struct pike_crypto_cast *)(Pike_fp->current_storage))
 #define OBTOCTX(o) ((struct pike_crypto_cast *)(o->storage))
 
 /*

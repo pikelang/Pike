@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.48 2002/01/16 01:46:48 nilsson Exp $
+ * $Id: nt.c,v 1.49 2002/05/11 00:15:50 nilsson Exp $
  *
  * NT system calls for Pike
  *
@@ -38,6 +38,8 @@
 #include "interpret.h"
 #include "operators.h"
 #include "stuff.h"
+
+#define sp Pike_sp
 
 /*! @module System
  */
@@ -464,7 +466,7 @@ void f_RegGetValues(INT32 args)
 
 static struct program *token_program;
 
-#define THIS_TOKEN (*(HANDLE *)(fp->current_storage))
+#define THIS_TOKEN (*(HANDLE *)(Pike_fp->current_storage))
 
 typedef BOOL (WINAPI *logonusertype)(LPSTR,LPSTR,LPSTR,DWORD,DWORD,PHANDLE);
 typedef DWORD (WINAPI *getlengthsidtype)(PSID);
@@ -493,7 +495,7 @@ LINKFUNC(BOOL,addauditaccessace, (PACL,DWORD,DWORD,PSID,BOOL,BOOL) );
 
 HINSTANCE advapilib;
 
-#define THIS_PSID (*(PSID *)fp->current_storage)
+#define THIS_PSID (*(PSID *)Pike_fp->current_storage)
 static struct program *sid_program;
 static void init_sid(struct object *o)
 {

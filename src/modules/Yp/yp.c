@@ -31,7 +31,9 @@
 /* must be included last */
 #include "module_magic.h"
 
-RCSID("$Id: yp.c,v 1.24 2002/02/14 01:43:26 nilsson Exp $");
+#define sp Pike_sp
+
+RCSID("$Id: yp.c,v 1.25 2002/05/11 00:21:24 nilsson Exp $");
 
 #ifdef HAVE_YPERR_STRING
 #define YPERROR(fun,err) do{ if(err) Pike_error("yp->%s(): %s\n", (fun), \
@@ -47,7 +49,7 @@ struct my_yp_domain
   int last_size; /* Optimize some allocations */
 };
 
-#define this ((struct my_yp_domain *)fp->current_storage)
+#define this ((struct my_yp_domain *)Pike_fp->current_storage)
 
 /*! @module Yp
  *!

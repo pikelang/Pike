@@ -1,4 +1,4 @@
-/* $Id: sha.c,v 1.20 2001/02/13 16:20:08 grubba Exp $
+/* $Id: sha.c,v 1.21 2002/05/11 00:09:48 nilsson Exp $
  *
  * Written by Niels Möller
  */
@@ -16,15 +16,17 @@
 #include "module_support.h"
 #include "las.h"
 
-RCSID("$Id: sha.c,v 1.20 2001/02/13 16:20:08 grubba Exp $");
+RCSID("$Id: sha.c,v 1.21 2002/05/11 00:09:48 nilsson Exp $");
 
 #include <sha.h>
 
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 #undef THIS
-#define THIS ((struct sha_ctx *)(fp->current_storage))
+#define THIS ((struct sha_ctx *)(Pike_fp->current_storage))
 #define OBTOCTX(o) ((struct sha_ctx *)(o->storage))
 
 static struct program *shamod_program;

@@ -1,9 +1,9 @@
 /*
- * $Id: stat.c,v 1.20 2002/03/05 20:00:23 mast Exp $
+ * $Id: stat.c,v 1.21 2002/05/11 00:18:06 nilsson Exp $
  */
 
 #include "global.h"
-RCSID("$Id: stat.c,v 1.20 2002/03/05 20:00:23 mast Exp $");
+RCSID("$Id: stat.c,v 1.21 2002/05/11 00:18:06 nilsson Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -19,6 +19,9 @@ RCSID("$Id: stat.c,v 1.20 2002/03/05 20:00:23 mast Exp $");
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif /* HAVE_SYS_PARAM_H */
+
+#define sp Pike_sp
+#define fp Pike_fp
 
 /*! @module Stdio
  */
@@ -217,7 +220,7 @@ static struct pike_string *stat_index_strs[STAT_ENUM_END];
 static struct pike_string *str_type_reg, *str_type_dir, *str_type_lnk,
   *str_type_chr, *str_type_blk, *str_type_fifo, *str_type_sock, *str_type_unknown;
 
-#define THIS_STAT ((struct stat_storage*)(fp->current_storage))
+#define THIS_STAT ((struct stat_storage*)(Pike_fp->current_storage))
 
 static void stat_index_set (INT32 args);
 

@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: termios.c,v 1.13 2002/03/20 14:49:13 nilsson Exp $");
+RCSID("$Id: termios.c,v 1.14 2002/05/11 00:18:06 nilsson Exp $");
 #include "file_machine.h"
 
 #if defined(HAVE_TERMIOS_H)
@@ -19,6 +19,8 @@ RCSID("$Id: termios.c,v 1.13 2002/03/20 14:49:13 nilsson Exp $");
 #include "module_support.h"
 
 #include "file.h"
+
+#define sp Pike_sp
 
 /* Friendly BeOS fix */
 #if defined(CS5) && defined(CS6) && CS6 == CS5
@@ -73,7 +75,7 @@ RCSID("$Id: termios.c,v 1.13 2002/03/20 14:49:13 nilsson Exp $");
 */
 
 #undef THIS
-#define THIS ((struct my_file *)(fp->current_storage))
+#define THIS ((struct my_file *)(Pike_fp->current_storage))
 #define FD (THIS->fd)
 #define ERRNO (THIS->my_errno)
 

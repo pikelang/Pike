@@ -1,5 +1,5 @@
 /*
- * $Id: md2.c,v 1.12 2001/09/24 12:02:51 grubba Exp $
+ * $Id: md2.c,v 1.13 2002/05/11 00:09:48 nilsson Exp $
  *
  * A pike module for MD2 hashing.
  *
@@ -27,8 +27,10 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 #undef THIS
-#define THIS ((struct md2_ctx *)(fp->current_storage))
+#define THIS ((struct md2_ctx *)(Pike_fp->current_storage))
 #define OBTOCTX(o) ((struct md2_ctx *)(o->storage))
 
 static struct program *md2mod_program;

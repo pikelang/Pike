@@ -1,9 +1,9 @@
-/* $Id: dct.c,v 1.19 2001/09/24 11:15:45 grubba Exp $ */
+/* $Id: dct.c,v 1.20 2002/05/11 00:19:12 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: dct.c,v 1.19 2001/09/24 11:15:45 grubba Exp $
+**!	$Id: dct.c,v 1.20 2002/05/11 00:19:12 nilsson Exp $
 **! class Image
 */
 
@@ -27,12 +27,14 @@
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 extern struct program *image_program;
 #ifdef THIS
 #undef THIS /* Needed for NT */
 #endif
-#define THIS ((struct image *)(fp->current_storage))
-#define THISOBJ (fp->current_object)
+#define THIS ((struct image *)(Pike_fp->current_storage))
+#define THISOBJ (Pike_fp->current_object)
 
 #define testrange(x) MAXIMUM(MINIMUM((x),255),0)
 

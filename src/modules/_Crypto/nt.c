@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.8 2001/02/13 14:22:34 grubba Exp $
+ * $Id: nt.c,v 1.9 2002/05/11 00:09:48 nilsson Exp $
  *
  * NT crypto stuff for Pike
  */
@@ -27,13 +27,15 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 static struct program *cryptcontext_program = NULL;
 
 struct cryptcontext_storage {
   HCRYPTPROV handle;
 };
 
-#define THIS_CRYPTCONTEXT ((struct cryptcontext_storage *)(fp->current_storage))
+#define THIS_CRYPTCONTEXT ((struct cryptcontext_storage *)(Pike_fp->current_storage))
 
 /*! @module Crypto
  */

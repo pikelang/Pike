@@ -1,5 +1,5 @@
 /*
- * $Id: md4.c,v 1.1 2002/02/26 16:54:16 marcus Exp $
+ * $Id: md4.c,v 1.2 2002/05/11 00:09:48 nilsson Exp $
  *
  * Marcus Comstedt 2002-02-26
  */
@@ -21,8 +21,10 @@
 /* THIS MUST BE INCLUDED LAST */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 #undef THIS
-#define THIS ((struct md4_ctx *)(fp->current_storage))
+#define THIS ((struct md4_ctx *)(Pike_fp->current_storage))
 #define OBTOCTX(o) ((struct md4_ctx *)(o->storage))
 
 static struct program *md4mod_program;

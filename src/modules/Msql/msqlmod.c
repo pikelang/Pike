@@ -1,7 +1,7 @@
 /*
  * You may use, modify and redistribute it freely under the terms
  * of the GNU General Public License, version 2.
- * $Id: msqlmod.c,v 1.19 2002/01/16 03:10:18 nilsson Exp $
+ * $Id: msqlmod.c,v 1.20 2002/05/11 00:25:56 nilsson Exp $
  *
  */
 
@@ -32,7 +32,7 @@
 #include "operators.h"
 #include "multiset.h"
 
-RCSID("$Id: msqlmod.c,v 1.19 2002/01/16 03:10:18 nilsson Exp $");
+RCSID("$Id: msqlmod.c,v 1.20 2002/05/11 00:25:56 nilsson Exp $");
 #include "version.h"
 
 #ifdef _REENTRANT
@@ -50,6 +50,8 @@ MUTEX_T pike_msql_mutex STATIC_MUTEX_INIT;
 #endif /* INT_TYPE */
 
 #include <msql.h>
+
+#define sp Pike_sp
 
 /*! @module Msql
  *! This is an interface to the mSQL database server.
@@ -125,7 +127,7 @@ struct msql_my_data
 #endif
 };
 
-#define THIS ((struct msql_my_data *) fp->current_storage)
+#define THIS ((struct msql_my_data *) Pike_fp->current_storage)
 
 static void msql_object_created (struct object *o)
 {

@@ -22,6 +22,8 @@
 /* This must be included last! */
 #include "module_magic.h"
 
+#define sp Pike_sp
+
 /* FIXME:
  * recursive parsing will lock make the parser lock or
  * use up all memory and then crash...
@@ -65,7 +67,7 @@ struct xmlobj
 static struct svalue location_string_svalue;
 
 #undef THIS
-#define THIS ((struct xmlobj *)(fp->current_storage))
+#define THIS ((struct xmlobj *)(Pike_fp->current_storage))
 
 /* FIXME: Make all these functions available inside pike
  */
