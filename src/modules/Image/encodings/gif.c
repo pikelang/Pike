@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.18 1997/11/11 22:17:53 mirar Exp $ */
+/* $Id: gif.c,v 1.19 1997/11/20 22:26:57 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.18 1997/11/11 22:17:53 mirar Exp $
+**!	$Id: gif.c,v 1.19 1997/11/20 22:26:57 mirar Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.18 1997/11/11 22:17:53 mirar Exp $");
+RCSID("$Id: gif.c,v 1.19 1997/11/20 22:26:57 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -821,7 +821,7 @@ CHRONO("gif render_block begin");
       /* write gce control block */
    {
       push_int(transparency);
-      push_int(alphaidx);
+      if (alphaidx!=-1) push_int(alphaidx); else push_int(0);
       push_int(delay);
       push_int(user_input);
       push_int(disposal);
