@@ -1256,3 +1256,10 @@ test_program([[{
     return !!X()->clone();
   }
 }]]);
+test_any(
+[[
+  object p = Parser.HTML();
+  p->add_container ("foo", lambda () {return "";});
+  p->_set_data_callback (lambda () {});
+  return p->finish ("<foo>")->read();
+]], "");
