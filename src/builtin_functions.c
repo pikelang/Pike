@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.101 1998/04/24 00:32:08 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.102 1998/04/27 10:01:56 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2675,6 +2675,15 @@ void f__reset_dmalloc(INT32 args)
 }
 #endif
 
+#ifdef DEBUG
+void f__locate_references(INT32 args)
+{
+  if(args)
+    locate_references(sp[-args].u.refs);
+  pop_n_elems(args-1);
+}
+#endif
+
 void init_builtin_efuns(void)
 {
   init_operators();
@@ -2785,6 +2794,9 @@ void init_builtin_efuns(void)
   add_function("sort",f_sort,"function(array(mixed),array(mixed)...:array(mixed))",OPT_SIDE_EFFECT);
 #ifdef DEBUG_MALLOC
   add_efun("_reset_dmalloc",f__reset_dmalloc,"function(void:void)",OPT_SIDE_EFFECT);
+#endif
+#ifdef DEBUG
+  add_efun("_locate_references",f__locate_references,"function(1=mixed:1)",OPT_SIDE_EFFECT);
 #endif
 }
 
