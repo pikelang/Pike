@@ -1,4 +1,4 @@
-// $Id: FakeFile.pike,v 1.11 2004/07/17 23:02:02 srb Exp $
+// $Id: FakeFile.pike,v 1.12 2004/07/17 23:03:39 srb Exp $
 #pike __REAL_VERSION__
 
 //! A string wrapper that pretends to be a @[Stdio.File] object.
@@ -82,7 +82,8 @@ int errno() { return 0; }
 Stdio.Stat stat() {
   Stdio.Stat st = Stdio.Stat();
   st->size = sizeof(data);
-  st->mtime=st->atime=st->ctime=mtime;
+  st->mtime=st->ctime=mtime;
+  st->atime=time();
   return st;
 }
 
