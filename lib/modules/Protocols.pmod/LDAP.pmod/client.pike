@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.40 2002/07/13 16:45:24 hop Exp $
+// $Id: client.pike,v 1.41 2002/07/22 16:15:40 bill Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -358,7 +358,7 @@ int _prof_gtim;
   void create(string|void url, object|void context)
   {
 
-    info = ([ "code_revision" : ("$Revision: 1.40 $"/" ")[1] ]);
+    info = ([ "code_revision" : ("$Revision: 1.41 $"/" ")[1] ]);
 
     if(!url || !sizeof(url))
       url = LDAP_DEFAULT_URL;
@@ -1277,8 +1277,8 @@ int _prof_gtim;
   //! Gets referrals.
   //!
   //! @returns
-  //!   Returns mapping of referrals or @tt{0@}.
-  mapping|int get_referrals() {
+  //!   Returns array of referrals or @tt{0@}.
+  array|int get_referrals() {
     if(last_rv->referrals)
       return last_rv->referrals;
     return 0;

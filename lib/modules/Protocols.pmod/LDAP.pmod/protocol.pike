@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.7 2001/09/14 08:38:02 hop Exp $
+// $Id: protocol.pike,v 1.8 2002/07/22 16:15:40 bill Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -55,8 +55,18 @@
     return(errno);
   }
 
+  //!
+  //! Returns error number of last transaction.
+  //!
+  //! @seealso
+  //!  @[LDAP.protocol.error_string]
   int error_number() { return(ldap_errno); }
 
+  //!
+  //! Returns error description of search result.
+  //!
+  //! @seealso
+  //!  @[LDAP.protocol.error_number]
   string error_string() { return(ldap_errlist[ldap_errno]); }
 
   array error() { return(({error_number(), error_string()})); }
