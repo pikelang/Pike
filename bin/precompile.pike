@@ -1414,6 +1414,47 @@ class ParseBlock
     {
       array(array|PC.Token) ret=x;
 
+      // NOTE:
+      //   Inherits must come before sub classes, since
+      //   otherwise the subclasses can't look in
+      //   Pike_compiler->previous->new_program->inherits[]
+      //   for them.
+      //	/grubba 2004-12-10
+      x=ret/({"INHERIT"});
+      ret = x[0];
+      for (int f = 1; f < sizeof(x); f++)
+      {
+	array inh=x[f];
+	int pos=search(inh,PC.Token(";",0),);
+	mixed name=inh[0];
+	array rest=inh[pos+1..];
+	string define=make_unique_name("inherit",name,base,"defined");
+	mapping attributes = parse_attributes(inh[1..pos]);
+	addfuncs +=
+	  IFDEF(define,
+		({
+		  PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
+				   mkname((string)name, "program"),
+				   attributes->flags || "0"),
+			   inh[0]->line),
+		}));
+	ret+=DEFINE(define);
+	ret+=rest;
+      }
+
+      // The EXTRA section may contain inherits too.
+      x=ret/({"EXTRA"});
+      ret = x[0];
+      for (int f = 1; f < sizeof(x); f++)
+      {
+	array extra=x[f];
+	array rest = extra[1..];
+	string define=make_unique_name("extra",base,"defined");
+	addfuncs += IFDEF(define, extra[0]);
+	ret+=DEFINE(define);
+	ret+=rest;
+      }
+
       x=ret/({"PIKECLASS"});
       ret=x[0];
 
@@ -1496,28 +1537,6 @@ class ParseBlock
 	ret+=rest;
       }
 
-      x=ret/({"INHERIT"});
-      ret = x[0];
-      for (int f = 1; f < sizeof(x); f++)
-      {
-	array inh=x[f];
-	int pos=search(inh,PC.Token(";",0),);
-	mixed name=inh[0];
-	array rest=inh[pos+1..];
-	string define=make_unique_name("inherit",name,base,"defined");
-	mapping attributes = parse_attributes(inh[1..pos]);
-	addfuncs +=
-	  IFDEF(define,
-		({
-		  PC.Token(sprintf("  low_inherit(%s, NULL, -1, 0, %s, NULL);",
-				   mkname((string)name, "program"),
-				   attributes->flags || "0"),
-			   inh[0]->line),
-		}));
-	ret+=DEFINE(define);
-	ret+=rest;
-      }
-
       array thestruct=({});
       x=ret/({"PIKEVAR"});
       ret=x[0];
@@ -1567,18 +1586,6 @@ class ParseBlock
 	ret+=DEFINE(define);
 	ret+=({ PC.Token("DECLARE_STORAGE") });
 	ret+=var[pos+1..];
-      }
-
-      x=ret/({"EXTRA"});
-      ret = x[0];
-      for (int f = 1; f < sizeof(x); f++)
-      {
-	array extra=x[f];
-	array rest = extra[1..];
-	string define=make_unique_name("extra",base,"defined");
-	addfuncs += IFDEF(define, extra[0]);
-	ret+=DEFINE(define);
-	ret+=rest;
       }
 
 
