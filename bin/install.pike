@@ -297,6 +297,16 @@ void install_header_files(string from, string to)
 
 mapping vars=([]);
 
+string fakeroot(string s)
+{
+  if(vars->fakeroot)
+  {
+    return vars->fakeroot+combine_path(getcwd(),s);
+  }else{
+    return s;
+  }
+}
+
 string export_base_name;
 
 int mklink(string from, string to)
@@ -1064,22 +1074,22 @@ void do_install()
 		  lib_prefix);
     }
     
-    install_dir(vars->TMP_LIBDIR,lib_prefix,1);
-    install_dir(vars->LIBDIR_SRC,lib_prefix,1);
+    install_dir(fakeroot(vars->TMP_LIBDIR),lib_prefix,1);
+    install_dir(fakeroot(vars->LIBDIR_SRC),lib_prefix,1);
     
-    install_header_files(vars->SRCDIR,include_prefix);
-    install_header_files(vars->TMP_BUILDDIR,include_prefix);
+    install_header_files(fakeroot(vars->SRCDIR),include_prefix);
+    install_header_files(fakeroot(vars->TMP_BUILDDIR),include_prefix);
     
-    install_file(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile"),
+    install_file(fakeroot(combine_path(vars->TMP_BUILDDIR,"modules/dynamic_module_makefile")),
 		 combine_path(include_prefix,"dynamic_module_makefile"));
-    install_file(combine_path(vars->TMP_BUILDDIR,"aclocal"),
+    install_file(fakeroot(combine_path(vars->TMP_BUILDDIR,"aclocal")),
 		 combine_path(include_prefix,"aclocal.m4"));
     
     if(file_stat(vars->MANDIR_SRC))
     {
 //      trace(9);
 //      _debug(5);
-      install_dir(vars->MANDIR_SRC,combine_path(man_prefix,"man1"),0);
+      install_dir(fakeroot(vars->MANDIR_SRC),combine_path(man_prefix,"man1"),0);
     }
   };
 
@@ -1098,20 +1108,30 @@ void do_install()
     mixed s2=file_stat(master+".o");
     if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
     {
-      Process.create_process( ({pike,"-m",combine_path(vars->SRCDIR,"dumpmaster.pike"),master}))->wait();
+      Process.create_process( ({pike,"-m",
+				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
+				  @(vars->fakeroot? ({"--fakeroot="+vars->fakeroot}):({})),
+				  master}))->wait();
     }
     
     if(sizeof(to_dump))
     {
-      status("Dumping modules, please wait... ");
+      status("Dumping modules, please wait...");
       foreach(to_dump, string mod) rm(mod+".o");
-      Process.create_process( ({pike,
-				  combine_path(vars->SRCDIR,"dumpmodule.pike"),
+      /* Dump 50 modules at a time */
+      write("\n");
+      foreach(to_dump/50,to_dump)
+	{
+	  write("    ");
+	  Process.create_process( ({pike,
+				      combine_path(vars->SRCDIR,"dumpmodule.pike"),
 #if defined(USE_GTK) && constant(GTK.parse_rc)
-				  label1?"--distquiet":
+				      label1?"--distquiet":
 #endif
-				  "--quiet"
-				  }) + to_dump)->wait();
+	    "--quiet",
+				      @(vars->fakeroot? ({"--fakeroot="+vars->fakeroot}):({})),
+				      }) + to_dump)->wait();
+	}
     }
 
     // Delete any .pmod files that would shadow the .so

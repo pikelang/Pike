@@ -2,6 +2,17 @@
 
 program p;
 
+string fakeroot;
+
+class FakeMaster
+{
+  inherit "/master";
+  string master_read_file(string s)
+    {
+      return ::master_read_file(fakeroot+combine_path_with_cwd(s));
+    }
+}
+
 #define error(X) throw( ({ (X), backtrace()[0..sizeof(backtrace())-2] }) )
 class Codec
 {
@@ -100,6 +111,75 @@ void log(string file, int line, string err)
   logfile->write(sprintf("%s:%d:%s\n",file,line,err));
 }
 
+void dumpit(string file)
+{
+  if(!quiet)
+    werror(file +": ");
+  
+  mixed err=catch {
+    rm(file+".o"); // Make sure no old files are left
+    if(mixed s=file_stat(file))
+    {
+      if(s[1]<=0)
+      {
+	werror("is a directory or special file.\n");
+	break;
+      }
+    }else{
+      if(!quiet)
+      werror("does not exist.\n");
+      break;
+    }
+    if(programp(p=compile_file(file)))
+    {
+      string s=encode_value(p, Codec());
+      p=decode_value(s,Codec());
+      if(programp(p))
+      {
+	Stdio.File(file + ".o","wct")->write(s);
+	switch(quiet)
+	{
+	  case 1: werror("."); break;
+	  case 0: werror("dumped.\n");
+	}
+      }else{
+	switch(quiet)
+	{
+	  case 1: werror("i"); break;
+	  case 0: werror("Decode of %O failed.\n", file);
+	}
+      }
+    }else{
+      switch(quiet)
+      {
+	case 1: werror("!"); break;
+	case 0: werror("Compilation of %O failed.\n", file);
+      }
+    }
+  };
+  if(err)
+  {
+#ifdef ERRORS
+    err[0]="While dumping "+file+": "+err[0];
+    werror(master()->describe_backtrace(err));
+#else
+    if(quiet)
+    {
+      if(quiet<2)
+	werror("X");
+      if(logfile)
+      {
+	err[0]="While dumping "+file+": "+err[0];
+	logfile->write("================================================\n");
+	logfile->write(master()->describe_backtrace(err));
+      }
+    }else{
+      werror(err[0]);
+    }
+#endif
+  }
+}
+
 int main(int argc, string *argv)
 {
   if(argv[1]=="--quiet")
@@ -123,74 +203,15 @@ int main(int argc, string *argv)
     logfile=0;
   }
 
-  foreach(argv[1..],string file)
-    {
-      if(!quiet)
-	werror(file +": ");
+  if(sscanf(argv[1],"--fakeroot=%s",fakeroot))
+  {
+    argv=argv[1..];
+    replace_master(FakeMaster());
+  }
 
-      mixed err=catch {
-	rm(file+".o"); // Make sure no old files are left
-	if(mixed s=file_stat(file))
-	{
-	  if(s[1]<=0)
-	  {
-	    werror("is a directory or special file.\n");
-	    break;
-	  }
-	}else{
-	  if(!quiet)
-	    werror("does not exist.\n");
-	  break;
-	}
-	if(programp(p=compile_file(file)))
-	{
-	  string s=encode_value(p, Codec());
-	  p=decode_value(s,Codec());
-	  if(programp(p))
-	  {
-	    Stdio.File(file + ".o","wct")->write(s);
-	    switch(quiet)
-	    {
-	      case 1: werror("."); break;
-	      case 0: werror("dumped.\n");
-	    }
-	  }else{
-	    switch(quiet)
-	    {
-	      case 1: werror("i"); break;
-	      case 0: werror("Decode of %O failed.\n", file);
-	    }
-	  }
-	}else{
-	  switch(quiet)
-	  {
-	    case 1: werror("!"); break;
-	    case 0: werror("Compilation of %O failed.\n", file);
-	  }
-	}
-      };
-      if(err)
-      {
-#ifdef ERRORS
-	err[0]="While dumping "+file+": "+err[0];
-	werror(master()->describe_backtrace(err));
-#else
-	if(quiet)
-	{
-	  if(quiet<2)
-	    werror("X");
-	  if(logfile)
-	  {
-	    err[0]="While dumping "+file+": "+err[0];
-	    logfile->write("================================================\n");
-	    logfile->write(master()->describe_backtrace(err));
-	  }
-	}else{
-	  werror(err[0]);
-	}
-#endif
-      }
-    }
+  foreach(argv[1..],string file)
+    dumpit(file);
+
   if(quiet==1)
     werror("\n");
 }
