@@ -502,3 +502,18 @@ array flatten(array a)
   foreach(a, mixed b) ret+=arrayp(b)?flatten([array]b):({b});
   return ret;
 }
+
+// sort with care of numerical sort for OID values:
+//  "1.2.1" before "1.11.1"
+
+int oid_sort_func(string a0,string b0)
+{
+    string a2="",b2="";
+    int a1, b1;
+    sscanf(a0,"%d.%s",a1,a2);
+    sscanf(b0,"%d.%s",b1,b2);
+    if (a1>b1) return 1;
+    if (a1<b1) return 0;
+    if (a2==b2) return 0;
+    return oid_sort_func(a2,b2);
+}
