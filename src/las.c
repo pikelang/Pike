@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.59 1998/04/19 03:16:11 per Exp $");
+RCSID("$Id: las.c,v 1.60 1998/04/20 02:36:13 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -335,6 +335,13 @@ node *mknode(short token,node *a,node *b)
   CDR(res) = b;
   res->node_info = 0;
   res->tree_info = 0;
+  if(a) a->parent = res;
+  if(b) b->parent = res;
+
+  /* We try to optimize most things, but argument lists are hard... */
+  if(token != F_ARG_LIST && (a || b))
+    res->node_info |= OPT_TRY_OPTIMIZE;
+
   switch(token)
   {
   case F_CATCH:
@@ -383,16 +390,16 @@ node *mknode(short token,node *a,node *b)
   case F_POST_INC:
   case F_POST_DEC:
     res->node_info |= OPT_ASSIGNMENT;
+    break;
+    
+    default:
+      res->tree_info = res->node_info;
+      if(a) res->tree_info |= a->tree_info;
+      if(b) res->tree_info |= b->tree_info;
   }
   res->token = token;
   res->type = 0;
 
-  /* We try to optimize most things, but argument lists are hard... */
-  if(token != F_ARG_LIST && (a || b))
-    res->node_info |= OPT_TRY_OPTIMIZE;
-
-  if(a) a->parent = res;
-  if(b) b->parent = res;
 
 #ifdef DEBUG
   if(d_flag > 3)
