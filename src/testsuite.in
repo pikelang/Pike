@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.593 2003/10/10 01:20:14 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.594 2003/11/10 01:22:40 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -6036,7 +6036,7 @@ test_eq(0 | 0,0)
 test_eq(1 | 1,1)
 test_eq(4 | 1,5)
 test_eq(1 | 9,9)
-test_equal( ({1,2,3,4,4}) | ({3,5,6}), ({1,2,4,4,3,5,6}))
+test_equal( ({1,2,3,4,4}) | ({3,5,6}), ({1,2,3,4,4,5,6}))
 test_equal( (<4,5,6>) | (<5,5,5>), (<4,5,5,5,6>) )
 test_equal( ([-4:8,8:7]) | ([3:3,8:3]), ([-4:8,8:3,3:3]) )
 test_any([[
