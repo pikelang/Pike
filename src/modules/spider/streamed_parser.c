@@ -831,7 +831,7 @@ void streamed_parser_parse( INT32 args )
 void streamed_parser_finish( INT32 args )
 {
   if(args) error("FOO!\n"); /* Per ... */
-  push_string( make_shared_binary_string( DATA->last_buffer, DATA->last_buffer_size ) );
+  push_string( make_shared_binary_string( (char *)(DATA->last_buffer), DATA->last_buffer_size ) );
   if (DATA->last_buffer)
     free( DATA->last_buffer );
   DATA->last_buffer = 0;

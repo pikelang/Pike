@@ -200,7 +200,7 @@ void f_encode_value(INT32 args)
   push_string(low_free_buf(&buff));
 }
 
-static unsigned char extract_char(char **v, unsigned INT32 *l)
+static unsigned char extract_char(char **v, INT32 *l)
 {
   if(!*l) error("Format error, not enough place for char.\n");
   else (*l)--;
@@ -209,7 +209,7 @@ static unsigned char extract_char(char **v, unsigned INT32 *l)
 }
 
 
-static INT32 extract_int(char **v, unsigned INT32 *l)
+static INT32 extract_int(char **v, INT32 *l)
 {
   unsigned INT32 j;
   INT32 t=0;

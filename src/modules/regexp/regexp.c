@@ -243,21 +243,21 @@ STATIC void     regoptail();
  * of the structure of the compiled regexp.
  */
 regexp *regcomp(exp,excompat)
-unsigned char   *exp;
+char   *exp;
 int		excompat;	/* \( \) operators like in unix ex */
 {
     register regexp *r;
-    register unsigned char  *scan;
+    register char  *scan;
     register char  *longest;
     register int    len;
     int             flags;
     short	   *exp2,*dest,c;
 
-    if (exp == (unsigned char *)NULL)
+    if (exp == (char *)NULL)
 	FAIL("NULL argument");
 
     exp2=(short*)xalloc( (strlen(exp)+1) * (sizeof(short[8])/sizeof(char[8])) );
-    for ( scan=exp,dest=exp2;( c= *scan++); ) {
+    for ( scan=exp,dest=exp2;( c= UCHARAT(scan++)); ) {
 	switch (c) {
 	    case '(':
 	    case ')':

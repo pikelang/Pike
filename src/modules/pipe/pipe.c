@@ -76,7 +76,7 @@ struct input
   {
     struct object *obj; 
     struct pike_string *str;
-    unsigned char *mmap;
+    char *mmap;
   } u;
   unsigned long len;		/* current input: string or mmap len */
   int set_blocking_offset, set_nonblocking_offset;
@@ -139,7 +139,7 @@ static int offset_output_write_callback;
 static int offset_output_close_callback;
 static int mmapped, nobjects, nstrings, noutputs, ninputs, nbuffers, sbuffers;
 
-static unsigned char static_buffer[READ_BUFFER_SIZE];
+static char static_buffer[READ_BUFFER_SIZE];
 
 void close_and_free_everything(struct object *o,struct pipe *);
 static INLINE void output_finish(struct object *obj);
@@ -292,7 +292,7 @@ static void low_start()
   for(obj=THIS->firstoutput;obj;obj=next)
   {
     obj->refs++; /* Hang on PLEASE!! /hubbe */
-    o=(struct output *)&(obj->storage);
+    o=(struct output *)(obj->storage);
     if (o->obj && o->mode==O_SLEEP)
     {
       if (!o->obj->prog)
@@ -461,7 +461,7 @@ static INLINE void output_finish(struct object *obj)
 {
   struct output *o;
 
-  o=(struct output *)&(obj->storage);
+  o=(struct output *)(obj->storage);
 
   if (o->obj)
   {
@@ -503,7 +503,7 @@ static INLINE void output_try_write_some(struct object *obj)
   unsigned long len;
   INT32 ret;
   
-  out=(struct output*)&(obj->storage);
+  out=(struct output*)(obj->storage);
 
 #ifdef INSISTANT_WRITE   
   do
@@ -556,7 +556,7 @@ static void pipe_input(INT32 args)
 {
    struct input *i;
    int fd=-1;			/* Per, one less warning to worry about... */
-   unsigned char *m;
+   char *m;
    struct stat s;
    struct object *obj;
 
@@ -585,7 +585,8 @@ static void pipe_input(INT32 args)
      if (fd != -1 && fstat(fd,&s)==0)
      {
        if(S_ISREG(s.st_mode)	/* regular file */
-	  && ((int)(m=mmap(0,s.st_size,PROT_READ,MAP_FILE|MAP_SHARED,fd,0))!=-1))
+	  && ((long)(m=(char *)mmap(0,s.st_size,PROT_READ,
+				    MAP_FILE|MAP_SHARED,fd,0))!=-1))
        {
 	 mmapped += s.st_size;
 
@@ -727,7 +728,7 @@ static void pipe_output(INT32 args)
 
   /* Allocate a new struct output */
   obj=clone(output_program,0);
-  o=(struct output *)&(obj->storage);
+  o=(struct output *)(obj->storage);
   o->next=THIS->firstoutput;
   THIS->firstoutput=obj;
   noutputs++;
@@ -850,7 +851,7 @@ static void pipe_close_output_callback(INT32 args)
    if(sp[-args].u.object->prog != output_program)
      error("Illegal argument to pipe->close_output_callback\n");
 
-  o=(struct output *)&(sp[-args].u.object->storage);
+  o=(struct output *)(sp[-args].u.object->storage);
 
   if (THIS->output_closed_callback.type!=T_INT)
   {
@@ -967,7 +968,7 @@ void close_and_free_everything(struct object *thisobj,struct pipe *p)
    while (p->firstoutput)
    {
      obj=p->firstoutput;
-     o=(struct output *)&(obj->storage);
+     o=(struct output *)(obj->storage);
      p->firstoutput=o->next;
      output_finish(obj);
      free_object(obj);

@@ -85,7 +85,7 @@ struct pike_string *
       if (i+254>(int)lzw.outpos) wr=lzw.outpos-i;
       else wr=254;
       low_my_putchar( (unsigned char)wr, &buf ); /* bytes in chunk */
-      low_my_binary_strcat( lzw.out+i, wr, &buf );
+      low_my_binary_strcat( (char *) lzw.out+i, wr, &buf );
    }
    low_my_putchar( 0, &buf ); /* terminate stream */
 

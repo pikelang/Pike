@@ -74,7 +74,7 @@ static void new_shared_chunk(int len)
 
   pointer = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 
-  if(pointer==MAP_FAILED)
+  if((long)pointer==(long)MAP_FAILED)
   {
     perror("shared_malloc::mmap");
     error("shared_malloc(): Can't mmap() /tmp/.spinnerlock.\n");
@@ -141,7 +141,7 @@ void *shared_malloc(size_t size)
   return shmem_head->p + shmem_head->len - shmem_head->left - size;
 }
 
-void shared_free(void *pointer)
+void shared_free(char *pointer)
 {
   struct shared_memory_chunk *which = shmem_head;
 
@@ -175,7 +175,7 @@ void *shared_malloc(size_t size)
 			        * shared _at_all_ */
 }
 
-void shared_free(void *pointer)
+void shared_free(char *pointer)
 {
 #ifdef SHARED_MALLOC_DEBUG
   fprintf(stderr, "fake_shared_free(%p)\n", pointer);

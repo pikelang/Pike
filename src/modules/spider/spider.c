@@ -580,7 +580,7 @@ void do_html_parse(struct pike_string *ss,
 		   struct array *extra_args)
 {
   int i,j,k,l,m,len,last;
-  unsigned char *s;
+  char *s;
   struct svalue sval1,sval2;
   struct pike_string *ss2;
   if (!ss->len)
@@ -596,7 +596,7 @@ void do_html_parse(struct pike_string *ss,
     return;
   }
 
-  s=(unsigned char *)ss->str;
+  s=ss->str;
   len=ss->len;
 
   last=0;
@@ -782,7 +782,7 @@ void do_html_parse_lines(struct pike_string *ss,
 			 int line)
 {
   int i,j,k,l,m,len,last;
-  unsigned char *s;
+  char *s;
   struct svalue sval1,sval2;
   struct pike_string *ss2;
   if (!ss->len)
@@ -798,7 +798,7 @@ void do_html_parse_lines(struct pike_string *ss,
     return;
   }
 
-  s=(unsigned char *)ss->str;
+  s=ss->str;
   len=ss->len;
 
   last=0;
