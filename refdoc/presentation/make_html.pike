@@ -79,7 +79,7 @@ Node get_first_element(Node n) {
       else
 	position->update(c);
     }
-  throw( ({ "Node had no element child.\n", backtrace() }) );
+  error( "Node had no element child.\n" );
 }
 
 string low_parse_chapter(Node n, int chapter, void|int section, void|int subsection) {
@@ -228,7 +228,7 @@ string parse_module(Node n, void|int noheader) {
 
 #ifdef DEBUG
   if(sizeof(n->get_elements("doc"))>1)
-    throw( ({ "More than one doc element in module node.\n", backtrace() }) );
+    error( "More than one doc element in module node.\n" );
 #endif
 
   ret += parse_children(n, "docgroup", parse_docgroup, noheader);
@@ -256,7 +256,7 @@ string parse_class(Node n, void|int noheader) {
 
 #ifdef DEBUG
   if(sizeof(n->get_elements("doc"))>1)
-    throw( ({ "More than one doc element in class node.\n", backtrace() }) );
+    error( "More than one doc element in class node.\n" );
 #endif
 
   if(n->get_first_element("inherit")) {
@@ -368,7 +368,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 
 #ifdef DEBUG
     if(c->get_node_type()!=XML_ELEMENT) {
-      throw( ({ "Forbidden node type " + c->get_node_type() + " in doc node.\n", backtrace() }) );
+      error( "Forbidden node type " + c->get_node_type() + " in doc node.\n" );
     }
 #endif
 
@@ -426,7 +426,7 @@ string parse_text(Node n, void|String.Buffer ret) {
 	ret->add("<dt>", c->get_attributes()->name, "</dt>\n");
 #ifdef DEBUG
       if(c->count_children())
-	throw( ({ "dl item has a child.\n", backtrace() }) );
+	error( "dl item has a child.\n" );
 #endif
       break;
 
@@ -507,8 +507,7 @@ string parse_text(Node n, void|String.Buffer ret) {
     case "url": // Not in XSLT
 #ifdef DEBUG
       if(c->count_children()!=1 && c->get_node_type()!=XML_ELEMENT)
-	throw( ({ sprintf("url node has not one child. %O\n", c->html_of_node()),
-		  backtrace() }) );
+	error( "url node has not one child. %O\n", c->html_of_node() );
 #endif
       m = c->get_attributes();
       if(!m->href)
@@ -524,7 +523,15 @@ string parse_text(Node n, void|String.Buffer ret) {
       ret->add( "<ul>\n" );
       foreach(c->get_elements("group"), Node c) {
 	ret->add("<li>");
-	parse_text(c->get_first_element("text"), ret);
+	array(Node) d = c->get_elements("item");
+	if(sizeof(d)) {
+	  ret->add("<b>");
+	  ret->add( String.implode_nicely(d->get_attributes()->name) );
+	  ret->add("</b>");
+	}
+	Node e = c->get_first_element("text");
+	if(e)
+	  parse_text(e, ret);
 	ret->add("</li>");
       }
       ret->add("</ul>");
@@ -571,7 +578,7 @@ string parse_text(Node n, void|String.Buffer ret) {
     default:
 #ifdef DEBUG
       werror("\n%s\n", (string)c);
-      throw( ({ "Illegal element \"" + name + "\" in mode text.\n", backtrace() }) );
+      error( "Illegal element \"" + name + "\" in mode text.\n" );
 #endif
       break;
     }
@@ -623,7 +630,7 @@ string parse_doc(Node n, void|int no_text) {
       break;
 
     default:
-      throw( ({ "Unknown group type \"" + name + "\".\n", backtrace() }) );
+      error( "Unknown group type \"" + name + "\".\n" );
     }
   }
 
@@ -666,8 +673,7 @@ string parse_type(Node n, void|string debug) {
 	parse_type( get_first_element(d) ) + ")";
 #ifdef DEBUG
     if( !c != !d )
-      throw( ({ "Indextype/valuetype defined while the other is not in mapping.\n",
-		backtrace() }) );
+      error( "Indextype/valuetype defined while the other is not in mapping.\n" );
 #endif
     break;
 
@@ -689,7 +695,7 @@ string parse_type(Node n, void|string debug) {
   case "varargs":
 #ifdef DEBUG
     if(!n->count_children())
-      throw( ({ "varargs node must have child node.\n", backtrace() }) );
+      error( "varargs node must have child node.\n" );
 #endif
     ret += parse_type(get_first_element(n)) + " ... ";
     break;
@@ -717,7 +723,7 @@ string parse_type(Node n, void|string debug) {
       ret += "(" + c->get_text() + "..)";
 #ifdef DEBUG
     else if(d)
-      throw( ({ "max element without min element in int node.\n", backtrace() }) );
+      error( "max element without min element in int node.\n" );
 #endif
     break;
 
@@ -732,7 +738,7 @@ string parse_type(Node n, void|string debug) {
     break;
 
   default:
-    throw( ({ "Illegal element " + n->get_any_name() + " in mode type.\n", backtrace() }) );
+    error( "Illegal element " + n->get_any_name() + " in mode type.\n" );
     break;
   }
   return ret;
@@ -760,8 +766,7 @@ string render_class_path(Node n) {
 
   return " (could not resolve) ";
 #ifdef DEBUG
-  throw( ({ "Parent module is " + n->get_parent()->get_any_name() + ".\n",
-	   backtrace() }) );
+  error( "Parent module is " + n->get_parent()->get_any_name() + ".\n" );
 #else
     return "";
 #endif
@@ -791,7 +796,7 @@ string parse_not_doc(Node n) {
 #ifdef DEBUG
       if(!c->get_first_element("returntype"))
 	continue;
-	//	throw( ({ "No returntype element in method element.\n", backtrace() }) );
+	// error( "No returntype element in method element.\n" );
 #endif
       ret += "<tt>" + parse_type(get_first_element(c->get_first_element("returntype"))); // Check for more children
       ret += " ";
@@ -811,7 +816,7 @@ string parse_not_doc(Node n) {
 	  c->get_attributes()->name + "</font>";
       }
       else
-	throw( ({ "Malformed argument element.\n" + c->html_of_node() + "\n", backtrace() }) );
+	error( "Malformed argument element.\n" + c->html_of_node() + "\n" );
       break;
 
     case "variable":
@@ -841,7 +846,7 @@ string parse_not_doc(Node n) {
       break;
 
     default:
-      throw( ({ "Illegal element " + c->get_any_name() + " in !doc.\n", backtrace() }) );
+      error( "Illegal element " + c->get_any_name() + " in !doc.\n" );
       break;
     }
   }
@@ -948,9 +953,11 @@ int main(int num, array args) {
   }
 
   if(!sizeof(args))
-    throw( ({ "No input file given.\n", backtrace() }) );
+    error( "No input file given.\n" );
 
   string file = Stdio.read_file(args[-1]);
+  if(!file || !sizeof(file))
+    error( "Could not read %s.\n", args[-1] );
 
   // We are only interested in what's in the
   // module container.
