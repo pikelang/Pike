@@ -492,6 +492,20 @@ XML:          `@member float "foo"' =>
               </member>
 _______________________________________________________________________________
 
+Keyword:      @mixed - @endmixed
+Description:  Documentation of a mixed variable
+Arguments:    [name]
+Children:     @type
+Examples:     @mixed
+                @type int
+                  Integers will be treated as the Unicode character number.
+                @type string
+                  Strings are the name of the Unicdoe character.
+              @endmixed
+
+XML:          <mixed name="..."/>
+_______________________________________________________________________________
+
 Keyword:      @multiset - @endmultiset
 Description:  Documentation of the layout of a multiset.
 Arguments:    [name]
@@ -597,12 +611,43 @@ Examples:     @string
 XML:          <string name=" ... "/>
 _______________________________________________________________________________
 
+Keyword:      @sub{ ... @}
+Description:  Subscript
+Children:     Text that will be rendered in subscript.
+Examples:     The variable n@sub{0@} looks mathematical and serious.
+
+XML:          <sub> ... </sub>
+_______________________________________________________________________________
+
+Keyword:      @sup{ ... @}
+Description:  Superscript
+Children:     Text that will be rendered in superscript.
+Examples:     This is an O(n@sup{2@}) operation.
+
+XML:          <sup> ... </sup>
+_______________________________________________________________________________
+
 Keyword:      @tt{ ... @}
 Description:  Teletype.
 Children:     Text that will be rendered in teletype.
 Examples:     Type @tt{rm -rf *@} to erase several days of work.
 
 XML:          <tt> ... </tt>
+_______________________________________________________________________________
+
+Keyword:      @type
+Description:  Documentation for a type alternative to mixed.
+              Only inside @mixed - @endmixed.
+Arguments:    <type>
+Children:     -
+Groups with:  -
+Examples:     @type int
+              @type float
+                If the argument is int or float the function will wait
+                that many seconds.
+
+XML:          `@type int' =>
+                <type><int/></type>
 _______________________________________________________________________________
 
 Keyword:      @ul - @endul
