@@ -1,5 +1,5 @@
 /*
- * $Id: sql.pre.pike,v 1.1 1997/01/09 23:38:58 grubba Exp $
+ * $Id: sql.pre.pike,v 1.2 1997/01/11 20:54:12 grubba Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -19,6 +19,7 @@ class sql_result {
     }
     index = 0;
   }
+
   int num_rows()
   {
     if (arrayp(master_res)) {
@@ -26,6 +27,7 @@ class sql_result {
     }
     return(master_res->num_rows());
   }
+
   int num_fields()
   {
     if (arrayp(master_res)) {
@@ -33,6 +35,7 @@ class sql_result {
     }
     return(master_res->num_fields());
   }
+
   int eof()
   {
     if (arrayp(master_res)) {
@@ -40,19 +43,22 @@ class sql_result {
     }
     return(master_res->eof());
   }
+
   array(mapping(string:mixed)) fetch_fields()
   {
     if (arrayp(master_res)) {
-      /* This isn't very efficient */
       /* Only supports the name field */
-      array(mapping(string:mixed)) res = ({});
+      array(mapping(string:mixed)) res = allocate(sizeof(master_res));
+      int index = 0;
+
       foreach(sort(indices(master_res)), string name) {
-	res += ({ "name", name });
+	res[index++] = ([ "name": name ]);
       }
       return(res);
     }
     return(master_res->fetch_fields);
   }
+
   void seek(int skip)
   {
     if (skip < 0) {
@@ -68,6 +74,7 @@ class sql_result {
       }
     }
   }
+
   int|array(string|int) fetch_row()
   {
     if (arrayp(master_res)) {
@@ -86,17 +93,12 @@ class sql_result {
 class sql {
   object master_sql;
 
-  void create(void|string|program|object kind,
-	      void|string|object host, void|string db,
+  void create(void|string|object host, void|string db,
 	      void|string user, void|string password)
   {
-    if (kind == "") {
-      kind = 0;
-    }
-    if (objectp(kind)) {
-      master_sql = kind;
-      if ((host && host != "") || (user && user != "") ||
-	  (password && password != "")) {
+    if (objectp(host)) {
+      master_sql = host;
+      if ((user && user != "") || (password && password != "")) {
 	throw_error("Sql(): Only the database argument is supported when "
 		    "first argument is an object\n");
       }
@@ -104,20 +106,7 @@ class sql {
 	master_sql->select_db(db);
       }
       return;
-    } else if (stringp(kind)) {
-      program p;
-
-      foreach (({ "", "/precompiled/sql/", "/precompiled/" }), string prefix) {
-	if (p = (program)(prefix + kind)) {
-	  break;
-	}
-      }
-      if (p) {
-	kind = p;
-      } else {
-	throw_error("Sql(): Unsupported sql-type " + kind + "\n");
-      }
-    } else if (!kind) {
+    } else {
       foreach(regexp(indices(master()->programs), "/precompiled/sql/.*"),
 	      string program_name) {
 	if (sizeof(program_name / "_result") == 1) {
@@ -135,11 +124,6 @@ class sql {
 	    return;
 	  } 
 	}
-      }
-    }
-    if (programp(kind)) {
-      if (master_sql = kind(host, db, user, password)) {
-	return;
       }
     }
 
@@ -168,16 +152,15 @@ class sql {
     }
   }
   
-  string error()
+  int|string error()
   {
-    if (functionp(master_sql->error)) {
-      return(master_sql->error());
-    }
-    return("");
+    return(master_sql->error());
   }
+
   void select_db(string db) {
     master_sql->select_db(db);
   }
+
   array(mapping(string:mixed)) query(string s)
   {
     object res_obj;
@@ -187,6 +170,7 @@ class sql {
     }
     return(res_obj_to_array(master_sql->big_query(s)));
   }
+
   object big_query(string q)
   {
     if (functionp(master_sql->big_query)) {
@@ -194,14 +178,17 @@ class sql {
     }
     return(((program)"/precompiled/sql_result")(master_sql->query(q)));
   }
+
   void create_db(string db)
   {
     master_sql->create_db(db);
   }
+
   void drop_db(string db)
   {
     master_sql->drop_db(db);
   }
+
   void shutdown()
   {
     if (functionp(master_sql->shutdown)) {
@@ -210,6 +197,7 @@ class sql {
       throw_error("sql->shutdown(): Not supported by this database\n");
     }
   }
+
   void reload()
   {
     if (functionp(master_sql->reload)) {
@@ -218,6 +206,7 @@ class sql {
       /* Probably safe to make this a NOOP */
     }
   }
+
   string server_info()
   {
     if (functionp(master_sql->server_info)) {
@@ -225,6 +214,7 @@ class sql {
     }
     return("Unknown SQL-server");
   }
+
   string host_info()
   {
     if (functionp(master_sql->host_info)) {
@@ -232,47 +222,92 @@ class sql {
     } 
     return("Unknown connection to host");
   }
-  array(mapping(string:mixed)) list_dbs(string|void wild)
+
+  array(string) list_dbs(string|void wild)
   {
+    array(string)|array(mapping(string:mixed))|object res;
+
     if (functionp(master_sql->list_dbs)) {
-      array(mapping(string:mixed))|object res;
-      if (objectp(res = master_sql->list_dbs(wild||""))) {
-	return(res_obj_to_array(res));
+      if (objectp(res = master_sql->list_dbs())) {
+	res = res_obj_to_array(res);
       }
-      return(res);
+    } else {
+      res = query("show databases");
+    }
+    if (sizeof(res) && mappingp(res[0])) {
+      res = map(res, lambda (mapping m) {
+	return(values(m)[0]);	/* Hope that there's only one field */
+      } );
     }
     if (wild) {
-      return(query("show databases like \'" + wild +"\'"));
+      res = regexp(res, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
     }
-    return(query("show databases"));
+    return(res);
   }
-  array(mapping(string:mixed)) list_tables(string|void wild)
+
+  array(string) list_tables(string|void wild)
   {
+    array(string)|array(mapping(string:mixed))|object res;
+
     if (functionp(master_sql->list_tables)) {
-      array(mapping(string:mixed))|object res;
-      if (objectp(res = master_sql->list_tables(wild||""))) {
-	return(res_obj_to_array(res));
+      if (objectp(res = master_sql->list_tables())) {
+	res = res_obj_to_array(res);
       }
-      return(res);
+    } else {
+      res = query("show tables");
+    }
+    if (sizeof(res) && mappingp(res[0])) {
+      res = map(res, lambda (mapping m) {
+	return(values(m)[0]);	/* Hope that there's only one field */
+      } );
     }
     if (wild) {
-      return(query("show tables like \'" + wild + "\'"));
+      res = regexp(res, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ));
     }
-    return(query("show tables"));
+    return(res);
   }
+
   array(mapping(string:mixed)) list_fields(string table, string|void wild)
   {
+    array(mapping(string:mixed))|object res;
+
     if (functionp(master_sql->list_fields)) {
-      array(mapping(string:mixed))|object res;
-      if (objectp(res = master_sql->list_fields(wild||""))) {
-	return(res_obj_to_array(res));
+      if (objectp(res = master_sql->list_fields(table))) {
+	res = res_obj_to_array(res);
+      }
+      if (wild) {
+	/* Not very efficient, but... */
+	res = filter(res, lambda (mapping m, string re) {
+	  return(sizeof(regexp( ({ m->name }), re)));
+	}, replace(wild, ({ "%", "_" }), ({ ".*", "." }) ) );
       }
       return(res);
     }
     if (wild) {
-      return(query("show fields in \'" + table + "\' like \'" + wild + "\'"));
+      res = query("show fields from \'" + table +
+		  "\' like \'" + wild + "\'");
+    } else {
+      res = query("show fields from \'" + table + "\'");
     }
-    return(query("show fields in \'" + table + "\'"));
+    res = map(res, lambda (mapping m) {
+      foreach(indices(m), string str) {
+	/* Add the lower case variants */
+	string low_str = lower_case(str);
+	if (low_str != str && !m[low_str]) {
+	  m[low_str] = m[str];
+	  m_delete(m, str);	/* Remove duplicate */
+	}
+      }
+      if ((!m->name) && m->field) {
+	m["name"] = m->field;
+	m_delete(m, "field");	/* Remove duplicate */
+      }
+      if (!m->table) {
+	m["table"] = table;
+      }
+      return(m);
+    } );
+    return(res);
   }
 }
 
