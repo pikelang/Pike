@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.229 2001/07/20 15:48:59 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.230 2001/07/21 09:29:29 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -808,7 +808,7 @@ C }
 #elif defined(sparc)
 register unsigned INT32 *reg_pc __asm__ ("%i7");
 #define PROG_COUNTER		(reg_pc + 2)
-#define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)X)-2)
+#define SET_PROG_COUNTER(X)	(reg_pc = ((unsigned INT32 *)(X))-2)
 #endif /* __i386__ || sparc */
 
 static int eval_instruction(PIKE_OPCODE_T *pc)
