@@ -2366,7 +2366,8 @@ PIKECLASS Backend
 	    ACCEPT_SIZE_T len = sizeof (err);
 	    IF_PD(fprintf(stderr, "[%d]BACKEND[%d]: exception on %d\n",
 			  getpid(), me->id, i));
-	    if (!getsockopt (i, SOL_SOCKET, SO_ERROR, &err, &len) && err) {
+	    if (!getsockopt (i, SOL_SOCKET, SO_ERROR, (void *)&err, &len) &&
+		err) {
 	      IF_PD (fprintf (stderr, "[%d]BACKEND[%d]: error on %d, error=%d\n",
 			      getpid(), me->id, i, err));
 	    }
