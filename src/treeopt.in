@@ -1,6 +1,6 @@
 // -*- c -*-
 //
-// $Id: treeopt.in,v 1.58 2001/03/17 00:03:08 grubba Exp $
+// $Id: treeopt.in,v 1.59 2001/03/20 00:33:47 grubba Exp $
 //
 // The tree optimizer
 //
@@ -261,6 +261,9 @@ F_POP_VALUE(0 = F_INC_NEQ_LOOP, *):
 F_POP_VALUE(0 = F_DEC_NEQ_LOOP, *):
   $0;
 
+F_POP_VALUE(0 = F_LOOP, *):
+  $0;
+
 F_POP_VALUE(0 = F_SWITCH, *):
   $0;
 
@@ -431,6 +434,105 @@ F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_CONTINUE), +[!($$->tree_info & OPT_CASE)]):
 F_COMMA_EXPR(0 = F_COMMA_EXPR(*, F_BREAK), +[!($$->tree_info & OPT_CASE)]):
   $0;
 
+// x = expr; --x;  ==>  x = expr-1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = +[!depend_p($$, $$)]), F_DEC($1, -)):
+  {
+    $$ = mknode(F_ASSIGN,
+		mkefuncallnode("`-",
+			       mknode(F_ARG_LIST, $0, mkintnode(1))), $1);
+  }
+  ;
+
+// x = expr; ++x;  ==>  x = expr+1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = +[!depend_p($$, $$)]), F_INC($1, -)):
+  {
+    $$ = mknode(F_ASSIGN,
+		mkefuncallnode("`+",
+			       mknode(F_ARG_LIST, $0, mkintnode(1))), $1);
+  }
+  ;
+
+// x = expr; --x;  ==>  x = expr-1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = +[!depend_p($$, $$)]),
+	     F_COMMA_EXPR(F_DEC($1, -), 2)):
+  {
+    $$ = mknode(F_COMMA_EXPR,
+		mknode(F_ASSIGN,
+		       mkefuncallnode("`-",
+				      mknode(F_ARG_LIST, $0, mkintnode(1))),
+		       $1),
+		$2);
+  }
+  ;
+
+// x = expr; ++x;  ==>  x = expr+1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = +[!depend_p($$, $$)]),
+	     F_COMMA_EXPR(F_INC($1, -), 2)):
+  {
+    $$ = mknode(F_COMMA_EXPR,
+		mknode(F_ASSIGN,
+		       mkefuncallnode("`+",
+				      mknode(F_ARG_LIST, $0, mkintnode(1))),
+		       $1),
+		$2);
+  }
+  ;
+
+// Same but for F_LOCAL, since F_LOCAL nodes aren't shared.
+
+// x = expr; --x;  ==>  x = expr-1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = F_LOCAL),
+	     F_DEC(F_LOCAL
+		   [ $1->u.integer.a == $$->u.integer.a ]
+		   [ $1->u.integer.b == $$->u.integer.b ], -)):
+  {
+    $$ = mknode(F_ASSIGN,
+		mkefuncallnode("`-",
+			       mknode(F_ARG_LIST, $0, mkintnode(1))), $1);
+  }
+  ;
+
+// x = expr; ++x;  ==>  x = expr+1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = F_LOCAL),
+	     F_INC(F_LOCAL
+		   [ $1->u.integer.a == $$->u.integer.a ]
+		   [ $1->u.integer.b == $$->u.integer.b ], -)):
+  {
+    $$ = mknode(F_ASSIGN,
+		mkefuncallnode("`+",
+			       mknode(F_ARG_LIST, $0, mkintnode(1))), $1);
+  }
+  ;
+
+// x = expr; --x;  ==>  x = expr-1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = F_LOCAL),
+	     F_COMMA_EXPR(F_DEC(F_LOCAL
+				[$1->u.integer.a == $$->u.integer.a]
+				[$1->u.integer.b == $$->u.integer.b], -), 2)):
+  {
+    $$ = mknode(F_COMMA_EXPR,
+		mknode(F_ASSIGN,
+		       mkefuncallnode("`-",
+				      mknode(F_ARG_LIST, $0, mkintnode(1))),
+		       $1),
+		$2);
+  }
+  ;
+
+// x = expr; ++x;  ==>  x = expr+1;
+F_COMMA_EXPR(F_ASSIGN(0, 1 = F_LOCAL),
+	     F_COMMA_EXPR(F_INC(F_LOCAL
+				[$1->u.integer.a == $$->u.integer.a]
+				[$1->u.integer.b == $$->u.integer.b], -), 2)):
+  {
+    $$ = mknode(F_COMMA_EXPR,
+		mknode(F_ASSIGN,
+		       mkefuncallnode("`+",
+				      mknode(F_ARG_LIST, $0, mkintnode(1))),
+		       $1),
+		$2);
+  }
+  ;
 
 F_ARG_LIST(-, 0):
   $0;
@@ -981,6 +1083,42 @@ F_FOR(0 = F_APPLY(1 = F_CONSTANT
 }
 ;
 
+// If the loop variable is unused, we can throw it away.
+F_INC_LOOP(F_VAL_LVAL(0,
+		      1 = +[ !($$->tree_info & (OPT_SIDE_EFFECT|OPT_ASSIGNMENT|
+						OPT_CASE|OPT_CONTINUE|
+						OPT_BREAK|OPT_RETURN)) ]),
+	   2 = +[ !($$->tree_info & (OPT_BREAK|OPT_CONTINUE)) ]
+	        [ !depend2_p($$, $1) ]):
+  F_LOOP(F_ASSIGN($0, $1), $2);
+
+// No need for the pop_value.
+F_LOOP(0, F_POP_VALUE(1, -)):
+  F_LOOP($0, $1);
+
+// loop(n) ++x;  ==>  x+=n;
+F_LOOP(0 = +[ !depend_p($$, $$) ],
+       F_INC [ pike_types_le($$->type, int_type_string) ]
+       (1 = +[ !depend_p($$, $$) ], -)):
+  F_POP_VALUE(F_ADD_EQ($1, $0), -);
+
+// loop(n) x++;  ==>  x+=n;
+F_LOOP(0 = +[ !depend_p($$, $$) ],
+       F_POST_INC [ pike_types_le($$->type, int_type_string) ]
+       (1 = +[ !depend_p($$, $$) ], -)):
+  F_POP_VALUE(F_ADD_EQ($1, $0), -);
+
+// loop(n) --x;  ==>  x-=n;
+F_LOOP(0 = +[ !depend_p($$, $$) ],
+       F_DEC [ pike_types_le($$->type, int_type_string) ]
+       (1 = +[ !depend_p($$, $$) ], -)):
+  F_POP_VALUE(F_SUB_EQ($1, $0), -);
+
+// loop(n) x--;  ==>  x-=n;
+F_LOOP(0 = +[ !depend_p($$, $$) ],
+       F_POST_DEC [ pike_types_le($$->type, int_type_string) ]
+       (1 = +[ !depend_p($$, $$) ], -)):
+  F_POP_VALUE(F_SUB_EQ($1, $0), -);
 
 // Prepare for the return if true optimization.
 '?'(0 = +[ node_is_tossable($$) ], ':'( F_RETURN($0, *), 1)) :
