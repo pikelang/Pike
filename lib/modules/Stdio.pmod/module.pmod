@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.92 2000/12/01 12:42:07 mast Exp $
+// $Id: module.pmod,v 1.93 2000/12/03 17:01:04 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -628,6 +628,33 @@ class FILE {
 	}
       }
       return extract(p-bpos, 1);
+    }
+
+    array(string) ngets(void|int(1..) n)
+    {
+       if (!n) return read()/"\n";
+
+       array res=b[bpos..]/"\n";
+       bpos=strlen(b)-strlen(res[-1]);
+       res=res[..sizeof(res)-2];
+
+       while (sizeof(res)<n)
+       {
+	  if (!get_data()) 
+	     if (string s=gets()) return res+({s});
+	     else if (!sizeof(res)) return 0;
+	     else return res;
+
+	  array a=b[bpos..]/"\n";
+	  bpos=strlen(b)-strlen(a[-1]);
+	  res+=a[..sizeof(a)-2];
+       }
+       if (sizeof(res)>n)
+       {
+	  bpos-=`+(@map(res[n..],strlen))+(sizeof(res)-n);
+	  return res[..n-1];
+       }
+       return res;
     }
 
     int seek(int pos)
