@@ -171,7 +171,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.85 1998/04/19 03:17:37 per Exp $");
+RCSID("$Id: language.yacc,v 1.86 1998/04/20 02:35:28 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
@@ -452,6 +452,15 @@ import: modifiers F_IMPORT idents ';'
     use_module(sp-1);
     pop_stack();
   }
+  | modifiers F_IMPORT string ';'
+  {
+    ref_push_string($3->u.sval.u.string);
+    free_node($3);
+    ref_push_string(lex.current_file);
+    SAFE_APPLY_MASTER("handle_import",2);
+    use_module(sp-1);
+    pop_stack();
+  }
   | modifiers F_IMPORT error ';' { yyerrok; }
   ;
 
@@ -469,7 +478,7 @@ constant_name: F_IDENTIFIER '=' safe_expr0
     {
       if(compiler_pass==2)
 	yyerror("Constant definition is not constant.");
-      add_constant($1->u.sval.u.string,0, current_modifiers); /* Prototype */
+/*      add_constant($1->u.sval.u.string,0, current_modifiers); * Prototype */
     } else {
       if(!num_parse_error)
       {
@@ -620,7 +629,7 @@ def: modifiers type_or_error optional_stars F_IDENTIFIER
   | error '}'
   {
     reset_type_stack();
-    yychar = '}';	/* Put the '}' back on the input stream */
+   /* yychar = '}';	*/ /* Put the '}' back on the input stream */
   }
   ;
 
@@ -1007,7 +1016,8 @@ statement: unused2 ';' { $$=$1; }
   {
     reset_type_stack();
     yyerror("Missing ';'.");
-    yychar = '}';	/* Put the '}' back on the input stream. */
+/*    yychar = '}'; */	/* Put the '}' back on the input stream. */
+    $$=0;
   }
   | ';' { $$=0; } 
   ;
@@ -1472,6 +1482,20 @@ idents: low_idents
     if(last_identifier) free_string(last_identifier);
     copy_shared_string(last_identifier, $3->u.sval.u.string);
     free_node($3);
+  }
+  | '.' F_IDENTIFIER
+  {
+    node *tmp;
+    push_text(".");
+    ref_push_string(lex.current_line);
+    SAFE_APPLY_MASTER("handle_import",2);
+    tmp=mkconstantsvaluenode(sp-1);
+    pop_stack();
+    $$=index_node(tmp, $2->u.sval.u.string);
+    free_node(tmp);
+    if(last_identifier) free_string(last_identifier);
+    copy_shared_string(last_identifier, $2->u.sval.u.string);
+    free_node($2);
   }
   | idents '.' bad_identifier {}
   | idents '.' error {}
