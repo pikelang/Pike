@@ -4,6 +4,11 @@ This is what you need to do to install uLPC:
    Makefile from machine.h.in and Makefile.in, use --prefix=/foo/bar
    if you want to install ulpc in /foo/bar, default is /usr/local.
 
+   You might have to set the environment variables C_INCLUDE_PATH and
+   LD_LIBRARY_PATH to enable the configure script to find gdbm and gmp.
+   If the configure script does not find those libraries those modules
+   will not be available.
+
 2) edit config.h and Makefile to suit your purposes.
    I've tried to make it so that you don't have to change config.h or
    Makefile very much. If you need to do what you consider 'unnessecary
