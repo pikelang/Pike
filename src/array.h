@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.h,v 1.64 2004/09/27 21:37:22 mast Exp $
+|| $Id: array.h,v 1.65 2004/09/28 23:58:26 mast Exp $
 */
 
 #ifndef ARRAY_H
@@ -72,9 +72,9 @@ extern struct array *gc_internal_array;
     struct array *v_=(V);						\
     debug_malloc_touch(v_);						\
     DO_IF_DEBUG (							\
-      if (gc_external_refs_zapped)					\
-	gc_check_zapped (v_, PIKE_T_ARRAY, __FILE__, __LINE__);		\
-    );									\
+      DO_IF_PIKE_CLEANUP (						\
+	if (gc_external_refs_zapped)					\
+	  gc_check_zapped (v_, PIKE_T_ARRAY, __FILE__, __LINE__)));	\
     if(!sub_ref(v_))							\
       really_free_array(v_);						\
   }while(0)
