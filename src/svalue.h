@@ -40,7 +40,7 @@ union anything
 
 struct svalue
 {
-  INT16 type;
+  unsigned INT16 type;
   INT16 subtype;
   union anything u;
 };
@@ -55,6 +55,7 @@ struct svalue
 #define T_FLOAT 7
 #define T_INT 8
 
+#define T_DELETED 246
 #define T_NOT 247
 #define T_AND 248
 #define T_UNKNOWN 249
@@ -118,7 +119,7 @@ do{ \
 }while(0)
 
 #ifdef DEBUG
-#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID) fatal("Type error\n")
+#define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED) fatal("Type error\n")
 #define check_refs(S) if((S)->type < MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) fatal("Svalue to object without references.\n")
 #define check_refs2(S,T) if((T) < MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) fatal("Svalue to object without references.\n")
 

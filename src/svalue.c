@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
+#include "main.h"
 #include "svalue.h"
 #include "stralloc.h"
 #include "array.h"
@@ -613,6 +614,8 @@ void copy_svalues_recursively_no_free(struct svalue *to,
 #ifdef DEBUG
 void check_short_svalue(union anything *u,TYPE_T type)
 {
+  static inside=0;
+
   check_type(type);
   check_refs2(u,type);
   if(!u->refs) return;
@@ -623,6 +626,23 @@ void check_short_svalue(union anything *u,TYPE_T type)
     if(!debug_findstring(u->string))
       fatal("Shared string not shared!\n");
     break;
+
+  default:
+    if(d_flag > 50)
+    {
+      if(inside) return;
+      inside=1;
+
+      switch(type)
+      {
+      case T_MAPPING: check_mapping(u->mapping); break;
+      case T_ARRAY: check_array(u->array); break;
+      case T_PROGRAM: check_program(u->program); break;
+/*      case T_OBJECT: check_object(u->object); break; */
+/*      case T_LIST: check_list(u->list); break; */
+      }
+      inside=0;
+    }
   }
 }
 
