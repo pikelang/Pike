@@ -288,6 +288,8 @@ void th_cleanup(void);
 #define mt_destroy(X)
 #define THREADS_ALLOW()
 #define THREADS_DISALLOW()
+#define HIDE_GLOBAL_VARIABLES()
+#define REVEAL_GLOBAL_VARIABLES()
 #define th_init()
 #define th_cleanup()
 #define th_init_programs()
