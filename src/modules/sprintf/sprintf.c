@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.88 2002/01/16 03:02:35 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.89 2002/03/07 10:57:53 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -298,6 +298,7 @@ RCSID("$Id: sprintf.c,v 1.88 2002/01/16 03:02:35 nilsson Exp $");
 #include "builtin_functions.h"
 #include "operators.h"
 #include "opcodes.h"
+#include "cyclic.h"
 #include <ctype.h>
 
 #include "config.h"
@@ -941,50 +942,58 @@ INLINE static int do_one(struct format_stack *fs,
 	  if(sv->type == T_OBJECT && sv->u.object->prog)		      \
 	  {                                                                   \
             ptrdiff_t fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	      \
-	    if (fun != -1)                                                    \
-            {                                                                 \
-              int n=0;							      \
-	      push_int(EXTRACT_PCHARP(a));				      \
-	      if (fs->fsp->precision!=SPRINTF_UNDECIDED)		      \
-	      {								      \
-		 push_constant_text("precision");			      \
-		 push_int(fs->fsp->precision);				      \
-                 n+=2;							      \
-	      }								      \
-	      if (fs->fsp->width!=SPRINTF_UNDECIDED)			      \
-	      {								      \
-		 push_constant_text("width");	           		      \
-		 push_int64(fs->fsp->width);				      \
-                 n+=2;							      \
-	      }								      \
-	      if ((fs->fsp->flags&FIELD_LEFT))				      \
-	      {								      \
-		 push_constant_text("flag_left");	       		      \
-		 push_int(1);						      \
-                 n+=2;							      \
-	      }								      \
-	      f_aggregate_mapping(n);					      \
+	    if (fun != -1) {						      \
+              DECLARE_CYCLIC();						      \
+              if (!BEGIN_CYCLIC(sv->u.object, fun))			      \
+              {                                                               \
+              	int n=0;						      \
+	      	push_int(EXTRACT_PCHARP(a));				      \
+	      	if (fs->fsp->precision!=SPRINTF_UNDECIDED)		      \
+	      	{							      \
+	      	   push_constant_text("precision");			      \
+	      	   push_int(fs->fsp->precision);			      \
+              	   n+=2;						      \
+	      	}							      \
+	      	if (fs->fsp->width!=SPRINTF_UNDECIDED)			      \
+	      	{							      \
+	      	   push_constant_text("width");	           		      \
+	      	   push_int64(fs->fsp->width);				      \
+              	   n+=2;						      \
+	      	}							      \
+	      	if ((fs->fsp->flags&FIELD_LEFT))			      \
+	      	{							      \
+	      	   push_constant_text("flag_left");	       		      \
+	      	   push_int(1);						      \
+              	   n+=2;						      \
+	      	}							      \
+	      	f_aggregate_mapping(n);					      \
+	      								      \
+	      	SET_CYCLIC_RET(1);					      \
+	      	apply_low(sv->u.object, fun, 2);                              \
 									      \
-	      apply_low(sv->u.object, fun, 2);                                \
-	      if(sp[-1].type == T_STRING)				      \
-	      {	                                                              \
-                DO_IF_DEBUG( if(fs->fsp->to_free_string)                      \
-                             fatal("OOps in sprintf\n"); )                    \
-                fs->fsp->to_free_string = (--sp)->u.string;	              \
-									      \
-		fs->fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);           \
-		fs->fsp->len = fs->fsp->to_free_string->len;		      \
-	       								      \
-                /* We have to lift one argument from the format stack. */     \
-                GET_SVALUE(sv);                                               \
-		break;							      \
-	      }								      \
-	      if(!SAFE_IS_ZERO(sp-1))					      \
-	      {								      \
-		 sprintf_error(fs,"argument %d (object) returned "	      \
-			       "illegal value from _sprintf()\n",argument+1); \
-	      }								      \
-	      pop_stack();						      \
+	      	if(sp[-1].type == T_STRING)				      \
+	      	{	                                                      \
+              	  DO_IF_DEBUG( if(fs->fsp->to_free_string)                    \
+              		       fatal("OOps in sprintf\n"); )                  \
+              	  fs->fsp->to_free_string = (--sp)->u.string;	              \
+	      								      \
+	      	  fs->fsp->b = MKPCHARP_STR(fs->fsp->to_free_string);	      \
+	      	  fs->fsp->len = fs->fsp->to_free_string->len;		      \
+	      								      \
+              	  /* We have to lift one argument from the format stack. */   \
+              	  GET_SVALUE(sv);                                             \
+                  END_CYCLIC();						      \
+	      	  break;						      \
+	      	}							      \
+	      	if(!SAFE_IS_ZERO(sp-1))					      \
+	      	{							      \
+	      	   sprintf_error(fs,"argument %d (object) returned "	      \
+	      			 "illegal value from _sprintf()\n",	      \
+				 argument+1);				      \
+	      	}							      \
+	      	pop_stack();						      \
+              }								      \
+              END_CYCLIC();						      \
 	    }								      \
 	  }								      \
 	}

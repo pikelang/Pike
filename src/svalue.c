@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include "queue.h"
 #include "bignum.h"
+#include "cyclic.h"
 #include <math.h>
 #ifdef HAVE_FLOATINGPOINT_H
 #include <floatingpoint.h>
@@ -62,7 +63,7 @@ static int pike_isnan(double x)
 #endif /* HAVE__ISNAN */
 #endif /* HAVE_ISNAN */
 
-RCSID("$Id: svalue.c,v 1.133 2002/01/16 02:54:20 nilsson Exp $");
+RCSID("$Id: svalue.c,v 1.134 2002/03/07 10:57:52 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -1211,88 +1212,96 @@ PMOD_EXPORT void describe_svalue(const struct svalue *s,int indent,struct proces
 	debug_malloc_touch(s->u.object->prog);
 	if(fun != -1 && Pike_interpreter.evaluator_stack && !Pike_in_gc)
 	{
-	  /* We require some tricky coding to make this work
-	   * with tracing...
-	   */
-	  int save_t_flag=t_flag;
-	  string save_buffer=complex_free_buf();
+	  DECLARE_CYCLIC();
+	  if (!BEGIN_CYCLIC(s->u.object, fun)) {
+	    /* We require some tricky coding to make this work
+	     * with tracing...
+	     */
+	    int save_t_flag=t_flag;
+	    string save_buffer=complex_free_buf();
 
-	  t_flag=0;
+	    t_flag=0;
+	    SET_CYCLIC_RET(1);
 
-	  debug_malloc_touch(s->u.object);
+	    debug_malloc_touch(s->u.object);
 
-	  push_int('O');
-	  push_constant_text("indent");
-	  push_int(indent);
-	  f_aggregate_mapping(2);					      
-	  safe_apply_low2(s->u.object, fun ,2,1);
+	    push_int('O');
+	    push_constant_text("indent");
+	    push_int(indent);
+	    f_aggregate_mapping(2);					      
+	    safe_apply_low2(s->u.object, fun ,2,1);
 
-	  debug_malloc_touch(s->u.object);
+	    debug_malloc_touch(s->u.object);
 
-	  if(!SAFE_IS_ZERO(sp-1))
-	  {
-	    struct pike_string *str;
-	    int i;
-	    if(sp[-1].type != T_STRING)
+	    if(!SAFE_IS_ZERO(sp-1))
 	    {
-	      pop_stack();
-	      push_text("(object returned illegal value from _sprintf)");
-	    }
+	      struct pike_string *str;
+	      int i;
+	      if(sp[-1].type != T_STRING)
+	      {
+		pop_stack();
+		push_text("(object returned illegal value from _sprintf)");
+	      }
 
-	    init_buf_with_string(save_buffer);
-	    t_flag=save_t_flag;
+	      init_buf_with_string(save_buffer);
+	      t_flag=save_t_flag;
 
-	    str=sp[-1].u.string;
+	      str=sp[-1].u.string;
 	    
-	    switch(str->size_shift)
-	    {
+	      switch(str->size_shift)
+	      {
 	      case 0:
 		my_binary_strcat((char *)STR0(str), str->len);
 		break;
 
 	      case 1:
-	      {
-		p_wchar1 *cp=STR1(str);
-		for(i=0;i<str->len;i++)
 		{
-		  int c=cp[i];
-		  if(c<256) 
-		    my_putchar(c);
-		  else
+		  p_wchar1 *cp=STR1(str);
+		  for(i=0;i<str->len;i++)
 		  {
-		    sprintf(buf,"<%d>",c);
-		    my_strcat(buf);
+		    int c=cp[i];
+		    if(c<256) 
+		      my_putchar(c);
+		    else
+		    {
+		      sprintf(buf,"<%d>",c);
+		      my_strcat(buf);
+		    }
 		  }
-		}
 		  break;
-	      }
+		}
 
 	      case 2:
-	      {
-		p_wchar2 *cp=STR2(str);
-		for(i=0;i<str->len;i++)
 		{
-		  int c=cp[i];
-		  if(c<256) 
-		    my_putchar(c);
-		  else
+		  p_wchar2 *cp=STR2(str);
+		  for(i=0;i<str->len;i++)
 		  {
-		    sprintf(buf,"<%d>",c);
-		    my_strcat(buf);
+		    int c=cp[i];
+		    if(c<256) 
+		      my_putchar(c);
+		    else
+		    {
+		      sprintf(buf,"<%d>",c);
+		      my_strcat(buf);
+		    }
 		  }
+		  break;
 		}
-		break;
 	      }
+	      pop_stack();
+	      END_CYCLIC();
+	      break;
 	    }
+
+	    debug_malloc_touch(save_buffer.str);
+
+	    init_buf_with_string(save_buffer);
+	    t_flag=save_t_flag;
 	    pop_stack();
-	    break;
+	  } else {
+	    my_strcat("object");
 	  }
-
-	  debug_malloc_touch(save_buffer.str);
-
-	  init_buf_with_string(save_buffer);
-	  t_flag=save_t_flag;
-	  pop_stack();
+	  END_CYCLIC();
 	}
 	else {
 #if 0
