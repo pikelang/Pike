@@ -1,3 +1,4 @@
+#define PRE_INIT_BLOCK(X)
 #define INIT_BLOCK(X)
 #define EXIT_BLOCK(X)
 #define BLOCK_ALLOC(DATA,BSIZE)									\
@@ -30,6 +31,7 @@ struct DATA *PIKE_CONCAT(alloc_,DATA)(void)							\
     for(e=0;e<BSIZE;e++)									\
     {												\
       n->x[e].next=PIKE_CONCAT3(free_,DATA,s);							\
+      PRE_INIT_BLOCK( (n->x+e) );								\
       PIKE_CONCAT3(free_,DATA,s)=n->x+e;							\
     }												\
   }												\
@@ -44,6 +46,7 @@ inline void PIKE_CONCAT(free_,DATA)(struct DATA *d)						\
 {												\
   EXIT_BLOCK(d);										\
   d->next=PIKE_CONCAT3(free_,DATA,s);								\
+  PRE_INIT_BLOCK(d);										\
   PIKE_CONCAT3(free_,DATA,s)=d;									\
 }												\
 												\

@@ -28,6 +28,10 @@ struct callback
 };
 
 #define CALLBACK_CHUNK 128
+#ifdef DEBUG
+#undef PRE_INIT_BLOCK
+#define PRE_INIT_BLOCK(X) X->free_func=(callback_func)remove_callback;
+#endif
 BLOCK_ALLOC(callback, CALLBACK_CHUNK)
 
 
@@ -207,9 +211,6 @@ void free_callback_list(struct callback_list *lst)
       l->free_func(l, l->arg, 0);
     *ptr=l->next;
     free_callback(l);
-#ifdef DEBUG
-    l->free_func=(callback_func)remove_callback;
-#endif
   }
 }
 

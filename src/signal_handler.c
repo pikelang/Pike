@@ -1116,7 +1116,7 @@ void f_create_process(INT32 args)
 	    /* Kluge for HP-(S)UX */
 	    if(initgroupgid>60000 &&
 	       initgroups(wanted_uid,-2) &&
-	       initgroups(wanted_uid,65534)
+	       initgroups(wanted_uid,65534) &&
 	       initgroups(wanted_uid,60001))
 #endif /* _HPUX_SOURCE */
 	    {
