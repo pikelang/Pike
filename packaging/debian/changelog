@@ -1,3 +1,36 @@
+pike7.4 (7.4.25-1) unstable; urgency=low
+
+  * Latest upstream version. The most important changes:
+        * src/opcodes.c: Fixed bug in o_cast().
+        * src/program.c: Fixed constant references to programs in 
+	  inherited programs.
+        * src/program.c, svalue.h: Added NUMBER_LOCKED kludge for
+          preallocation of constants.
+        * src/object.c: Safeguard against a master that breaks on init.
+        * src/opcodes.c: Fixed bug in index_no_free where it returned a
+          nonzero integer with zero type 1 when an element is found in a
+          multiset. Caused e.g.  has_index((<1>),1) to return 0.
+        * src/backend.cmod: Clear the fd flags before calling the 
+          callbacks on POLLERR and POLLHUP, not afterwards. This could 
+          cause nonblocking I/O to hang on fd's where errors have 
+          occurred earlier. It's known to affect 
+          Protocols.DNS.async_client.
+        * src/las.c: Removed an overoptimization that could cause some
+          casts to disappear even when they might have effect.
+        * lib/modules/Protocols.pmod/HTTP.pmod/Query.pike: Forwardported
+          changes in 7.2 \"Use the global functions in Protocols.DNS\".
+          This means an incompatible change where the possibility to set 
+          the array async_dns to an array of Protocols.DNS.async_client 
+          is removed (The change was incompatible in the same way in 7.2 
+	  when it was made there.)
+        * src/builtin.cmod: Fixed handling of wide strings in
+          String.Buffer.get_copy (and hence in _sprintf and cast).
+        * src/program.c: Fixed out of range bug when comparing 
+          identifiers. This could in rare cases cause identifiers to 
+          "disappear" from programs.
+
+ -- Marek Habersack <grendel@debian.org>  Fri, 29 Aug 2003 21:43:38 +0200
+
 pike7.4 (7.4.21-5) unstable; urgency=medium
 
   * Rebuilt with the new GDBM.
