@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.41 1998/04/16 23:36:08 mirar Exp $ */
+/* $Id: gif.c,v 1.42 1998/04/16 23:47:54 hubbe Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.41 1998/04/16 23:36:08 mirar Exp $
+**!	$Id: gif.c,v 1.42 1998/04/16 23:47:54 hubbe Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: gif.c,v 1.41 1998/04/16 23:36:08 mirar Exp $");
+RCSID("$Id: gif.c,v 1.42 1998/04/16 23:47:54 hubbe Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -250,7 +250,7 @@ void image_gif_header_block(INT32 args)
       f_add(2);
    }
 
-   (ps=sp[-1].u.string)->refs++;
+   add_ref(ps=sp[-1].u.string);
 
    pop_n_elems(args+1);
    push_string(ps);
@@ -451,9 +451,8 @@ CHRONO("gif _render_block begun");
    
    if (localpalette)
    {
-      cps->refs++;
-      push_string(cps);
-      numstrings++;
+     ref_push_string(cps);
+     numstrings++;
    }
 /*** write the image */
 
@@ -534,7 +533,7 @@ CHRONO("gif _render_block push of packed data end");
 
    f_add(numstrings);
 
-   (ps=sp[-1].u.string)->refs++;
+   add_ref(ps=sp[-1].u.string);
 
    pop_n_elems(args+1);
    push_string(ps);
@@ -887,7 +886,7 @@ CHRONO("gif render_block _render_block end");
 
    f_add(numstrings);
 
-   (ps=sp[-1].u.string)->refs++;
+   add_ref(ps=sp[-1].u.string);
 
    pop_n_elems(args+1);
    push_string(ps);
@@ -985,7 +984,7 @@ void _image_gif_encode(INT32 args,int fs)
        !(img=(struct image*)get_storage(imgobj=sp[-args].u.object,
 					image_program)))
       error("Image.GIF.encode(): Illegal argument 1 (expected image object)\n");
-   imgobj->refs++;
+   add_ref(imgobj);
 
    
    if (args>=2) {
@@ -996,8 +995,7 @@ void _image_gif_encode(INT32 args,int fs)
 	    n=sp[1-args].u.integer;
 	    if (n>256) n=256; if (n<2) n=2;
 
-	    imgobj->refs++;
-	    push_object(imgobj);
+	    ref_push_object(imgobj);
 	    push_int(n);
 	    nctobj=clone_object(image_colortable_program,2);
 	    nct=(struct neo_colortable*)
@@ -1013,7 +1011,7 @@ void _image_gif_encode(INT32 args,int fs)
       else if ((nct=(struct neo_colortable*)
 		get_storage(nctobj=sp[1-args].u.object,image_colortable_program)))
       {
-	 nctobj->refs++;
+	add_ref(nctobj);
       }
       else
       {
@@ -1027,7 +1025,7 @@ void _image_gif_encode(INT32 args,int fs)
 	  (alpha=(struct image*)
 	   get_storage(alphaobj=sp[arg-args].u.object,image_program)))
       {
-	 alphaobj->refs++;
+	add_ref(alphaobj);
 	 if (args-arg>1) {
 	    if (args-arg<4 ||
 		sp[1+arg-args].type!=T_INT ||
@@ -1067,7 +1065,7 @@ void _image_gif_encode(INT32 args,int fs)
 	 /* make a colortable if we don't have one */
 	 if (!nct)
 	 {
-	    imgobj->refs++;
+	   add_ref(imgobj);
 	    push_object(imgobj);
 	    push_int(256);
 	    nctobj=clone_object(image_colortable_program,2);
@@ -1090,8 +1088,7 @@ void _image_gif_encode(INT32 args,int fs)
    /* make a colortable if we don't have one */
    if (!nct)
    {
-      imgobj->refs++;
-      push_object(imgobj);
+     ref_push_object(imgobj);
       if (alpha) push_int(255); else push_int(256);
       nctobj=clone_object(image_colortable_program,2);
       nct=(struct neo_colortable*)
@@ -1108,8 +1105,7 @@ void _image_gif_encode(INT32 args,int fs)
 
    push_int(img->xsize);
    push_int(img->ysize);
-   nctobj->refs++;
-   push_object(nctobj);
+   ref_push_object(nctobj);
    if (!trans)
       image_gif_header_block(3);
    else if (trans==1)
@@ -1386,7 +1382,7 @@ static void image_gif___decode(INT32 args)
        || sp[-args].type!=T_STRING) 
       error("Image.GIF.__decode: illegal or illegal number of arguments\n");
 
-   (str=sp[-args].u.string)->refs++;
+   add_ref(str=sp[-args].u.string);
    s=(unsigned char *)str->str;
    len=str->len;
    pop_n_elems(args);
@@ -1874,7 +1870,7 @@ static void image_gif__decode(INT32 args)
 	       else
 	       {
 		  lcto=cto;
-		  if (lcto) lcto->refs++;
+		  if (lcto) add_ref(lcto);
 	       }
 
 	       push_int(b->item[3].u.integer);
@@ -2054,7 +2050,7 @@ void image_gif_decode(INT32 args)
 	    push_svalue(b->item+1);
 	    push_svalue(b->item+2);
 	    apply(o,"paste_mask",4);
-	    pop_n_elems(1);
+	    pop_stack();
 	 }
 	 else
 	 {
@@ -2062,7 +2058,7 @@ void image_gif_decode(INT32 args)
 	    push_svalue(b->item+1);
 	    push_svalue(b->item+2);
 	    apply(o,"paste",3);
-	    pop_n_elems(1);
+	    pop_stack();
 	 }
       }
 
@@ -2094,7 +2090,7 @@ void image_gif__encode_render(INT32 args)
       error("Image.GIF._encode_render: Illegal argument(s) (expected array, int)\n");
 
    localp=sp[1-args].u.integer;
-   (a=sp[-args].u.array)->refs++;
+   add_ref(a=sp[-args].u.array);
 
    if (a->size<11)
       error("Image.GIF._encode_render: Illegal size of array\n");
@@ -2168,7 +2164,7 @@ void image_gif__encode_extension(INT32 args)
        sp[-args].type!=T_ARRAY)
       error("Image.GIF._encode_extension: Illegal argument(s) (expected array)\n");
 
-   (a=sp[-args].u.array)->refs++;
+   add_ref(a=sp[-args].u.array);
    pop_n_elems(args);
 
    if (a->size<3)
@@ -2228,7 +2224,7 @@ void image_gif__encode(INT32 args)
        sp[-args].type!=T_ARRAY)
       error("Image.GIF._encode: Illegal argument (expected array)");
 
-   (a=sp[-args].u.array)->refs++;
+   add_ref(a=sp[-args].u.array);
    pos=0;
    n=0;
    pop_n_elems(args);
