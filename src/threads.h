@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.121 2004/03/08 15:02:43 grubba Exp $
+ * $Id: threads.h,v 1.122 2004/03/09 10:07:12 grubba Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -290,7 +290,8 @@ extern pthread_attr_t small_pattr;
 #include <windows.h>
  
 #define LOW_THREAD_CHECK_ZERO_ERROR(CALL) do {				\
-    if (!(CALL)) thread_low_error (GetLastError());			\
+    if (!(CALL)) thread_low_error (GetLastError(), TOSTR(CALL),		\
+				   __FILE__, __LINE__);			\
   } while (0)
 
 #define THREAD_T unsigned
