@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <assert.h>
 #include <math.h>
+#include <tchar.h>
 
 /* In case we're compiling with NDEBUG */
 _CRTIMP void __cdecl _assert(void*, void*, unsigned);
@@ -90,7 +91,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.24 2001/09/21 21:20:49 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.25 2001/09/23 00:37:01 marcus Exp $");
 
 #endif
 
@@ -371,6 +372,16 @@ static struct DLHandle *first;
 static struct DLHandle global_dlhandle;
 static INT32 global_imagebase = 0x00400000;
 
+static HMODULE low_LoadLibrary(LPCTSTR lpFileName)
+{
+  if(_tcschr(lpFileName, '/')) {
+    _TCHAR *p, *tmp = alloca((_tcslen(lpFileName)+1)*sizeof(_TCHAR));
+    _tcscpy(tmp, lpFileName);
+    for(p=tmp; (p=_tcschr(p, '/')); p++)
+      *p = '\\';
+    return LoadLibrary(tmp);
+  } else return LoadLibrary(lpFileName);
+}
 
 static void *lookup_dlls(struct DLLList *l, char *name)
 {
@@ -427,7 +438,7 @@ static int append_dlllist(struct DLLList **l,
   fprintf(stderr,"append_dlllist(%s)\n",name);
   FLUSH();
 #endif
-  tmp=LoadLibrary(name);
+  tmp=low_LoadLibrary(name);
   if(!tmp) return 0;
   n=(struct DLLList *)malloc(sizeof(struct DLLList));
   if(!n)
@@ -1505,7 +1516,6 @@ static void init_dlopen(void)
   INT32 offset;
   struct DLObjectTempData objtmp;
   HINSTANCE h;
-
 #ifdef DLDEBUG
   fprintf(stderr,"dlopen_init(%s)\n",ARGV[0]);
 #endif
@@ -1515,7 +1525,7 @@ static void init_dlopen(void)
   global_dlhandle.next=0;
   first=&global_dlhandle;
   
-  h=LoadLibrary(ARGV[0]);
+  h=low_LoadLibrary(ARGV[0]);
 
 #undef data
 #define data (&objtmp)
@@ -1586,7 +1596,6 @@ static void init_dlopen(void)
     
     fprintf(stderr,"data->coff->num_symbols=%d\n",data->coff->num_symbols);
 #endif
-    
     
     for(s=0;s<data->coff->num_symbols;s++)
     {
@@ -1727,14 +1736,14 @@ int main(int argc, char ** argv)
   void *addr;
 
   fprintf(stderr,"....\n");
-  l=LoadLibrary(argv[0]);
+  l=low_LoadLibrary(argv[0]);
   fprintf(stderr,"LoadLibrary(%s) => %p\n",argv[0],(long)l);
   addr = GetProcAddress(l, "func1");
   fprintf(stderr,"GetProcAddress(\"func1\") => %p (&func1 = %p)\n",addr, func1);
 #else
 
   {
-    HINSTANCE h=LoadLibrary(argv[0]);
+    HINSTANCE h=low_LoadLibrary(argv[0]);
     INT32 offset;
     struct DLObjectTempData objtmp;
 #undef data
