@@ -1,5 +1,5 @@
 
-#pike __REAL_VERSION__
+#pike 7.5
 
 //! @deprecated Crypto.DSA
 
@@ -65,7 +65,7 @@ bignum hash2number(string digest)
 
 bignum dsa_hash(string msg)
 {
-  return hash2number(Crypto.SHA1.hash(msg));
+  return hash2number(Crypto.SHA1->hash(msg));
 }
   
 // Generate a random number k, 0<=k<n
@@ -168,7 +168,7 @@ string nist_hash(bignum x)
 {
   string s = x->digits(256);
 
-  return Crypto.SHA1.hash(s[sizeof(s) - SEED_LENGTH..]);
+  return Crypto.SHA1->hash(s[sizeof(s) - SEED_LENGTH..]);
 }
 
 array(bignum) nist_primes(int l)
