@@ -448,7 +448,10 @@ Standards.ISO639_2.map_to_639_1, convert_b_to_t, convert_t_to_b
 o Standards.CIFF
 
 o Standards.FIPS10_4
-    FIXME: remove?
+    The Federal Information Processing Standard for Countries,
+    Dependencies, Areas of Special Sovereignty, and their Principal
+    Administrative Divisions = american standard for countries and
+    country division codes.
 
 o Standards.ID3
     ID3 tags decoder/encoder. Supports versions: 1.0, 1.1,
