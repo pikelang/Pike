@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.194 2000/08/27 14:29:09 grubba Exp $");
+RCSID("$Id: las.c,v 1.195 2000/08/27 17:27:46 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1899,32 +1899,162 @@ void print_tree(node *n)
 
 
 /* The following routines needs much better commenting */
+/* They also need to support lexical scoping and external variables.
+ * /grubba 2000-08-27
+ */
+
+#if MAX_LOCAL > MAX_GLOBAL
+#define MAX_VAR	MAX_LOCAL
+#else /* MAX_LOCAL <= MAX_GLOBAL */
+#define MAX_VAR MAX_GLOBAL
+#endif /* MAX_LOCAL > MAX_GLOBAL */
+
+struct scope_info
+{
+  struct scope_info *next;
+  int scope_id;
+  char vars[MAX_VAR];
+};
+
 struct used_vars
 {
   int err;
-  char locals[MAX_LOCAL];
-  char globals[MAX_GLOBAL];
+  int ext_flags;
+  struct scope_info *locals;
+  struct scope_info *externals;
 };
 
 #define VAR_BLOCKED   0
 #define VAR_UNUSED    1
 #define VAR_USED      3
 
+/* FIXME: Shouldn't these two be named "or_vars"? */
+static void low_and_vars(struct scope_info **a, struct scope_info *b)
+{
+  while (*a && b) {
+    if ((*a)->scope_id < b->scope_id) {
+      a = &((*a)->next);
+    } else if ((*a)->scope_id > b->scope_id) {
+      struct scope_info *tmp = *a;
+      *a = b;
+      b = b->next;
+      (*a)->next = tmp;
+    } else {
+      struct scope_info *tmp = b;
+      int e;
+      for (e = 0; e < MAX_VAR; e++) {
+	(*a)->vars[e] |= b->vars[e];
+      }
+      a = &((*a)->next);
+      b = b->next;
+      free(tmp);
+    }
+  }
+  if (!*a) {
+    *a = b;
+  }
+}
+
+/* NOTE: The second argument will be freed. */
 static void do_and_vars(struct used_vars *a,struct used_vars *b)
 {
-  int e;
-  for(e=0;e<MAX_LOCAL;e++) a->locals[e]|=b->locals[e];
-  for(e=0;e<MAX_GLOBAL;e++) a->globals[e]|=b->globals[e];
-  a->err|=b->err;
-  free((char *)b);
+  low_and_vars(&(a->locals), b->locals);
+  low_and_vars(&(a->externals), b->externals);
+
+  a->err |= b->err;
+  a->ext_flags |= b->ext_flags;
+  free(b);
 }
 
 static struct used_vars *copy_vars(struct used_vars *a)
 {
   struct used_vars *ret;
+  struct scope_info *src;
+  struct scope_info **dst;
   ret=(struct used_vars *)xalloc(sizeof(struct used_vars));
-  MEMCPY((char *)ret,(char *)a,sizeof(struct used_vars));
+  src = a->locals;
+  dst = &(ret->locals);
+  *dst = NULL;
+  while (src) {
+    *dst = malloc(sizeof(struct scope_info));
+    if (!*dst) {
+      src = ret->locals;
+      while(src) {
+	struct scope_info *tmp = src->next;
+	free(src);
+	src = tmp;
+      }
+      free(ret);
+      error("Out of memory in copy_vars.\n");
+      return NULL;	/* Make sure that the optimizer knows we exit here. */
+    }
+    MEMCPY(*dst, src, sizeof(struct scope_info));
+    dst = &((*dst)->next);
+    *dst = NULL;
+  }
+  src = a->externals;
+  dst = &(ret->externals);
+  *dst = NULL;
+  while (src) {
+    *dst = malloc(sizeof(struct scope_info));
+    if (!*dst) {
+      src = ret->locals;
+      while(src) {
+	struct scope_info *tmp = src->next;
+	free(src);
+	src = tmp;
+      }
+      src = ret->externals;
+      while(src) {
+	struct scope_info *tmp = src->next;
+	free(src);
+	src = tmp;
+      }
+      free(ret);
+      error("Out of memory in copy_vars.\n");
+      return NULL;	/* Make sure that the optimizer knows we exit here. */
+    }
+    MEMCPY(*dst, src, sizeof(struct scope_info));
+    dst = &((*dst)->next);
+    *dst = NULL;
+  }
+  
+  ret->err = a->err;
+  ret->ext_flags = a->ext_flags;
   return ret;
+}
+
+char *find_q(struct scope_info **a, int num, int scope_id)
+{
+  struct scope_info *new;
+
+#ifdef PIKE_DEBUG
+  if (l_flag > 3) {
+    fprintf(stderr, "find_q %d:%d\n", scope_id, num);
+  }
+#endif /* PIKE_DEBUG */
+  while (*a && ((*a)->scope_id < scope_id)) {
+    a = &((*a)->next);
+  }
+  if ((*a) && ((*a)->scope_id == scope_id)) {
+#ifdef PIKE_DEBUG
+    if (l_flag > 4) {
+      fprintf(stderr, "scope found.\n");
+    }
+#endif /* PIKE_DEBUG */
+    return (*a)->vars + num;
+  }
+#ifdef PIKE_DEBUG
+  if (l_flag > 4) {
+    fprintf(stderr, "Creating new scope.\n");
+  }
+#endif /* PIKE_DEBUG */
+  new = (struct scope_info *)xalloc(sizeof(struct scope_info));
+  MEMSET(new, VAR_UNUSED, sizeof(struct scope_info));
+  new->next = *a;
+  new->scope_id = scope_id;
+  *a = new;
+  return new->vars + num;
 }
 
 static int find_used_variables(node *n,
@@ -1939,26 +2069,70 @@ static int find_used_variables(node *n,
   switch(n->token)
   {
   case F_LOCAL:
-    /* FIXME: handle local variable depth */
-    q=p->locals+n->u.integer.a;
+    q = find_q(&(p->locals), n->u.integer.a, n->u.integer.b);
+#ifdef PIKE_DEBUG
+    if (l_flag > 2) {
+      fprintf(stderr, "local %d:%d is ",
+	      n->u.integer.b, n->u.integer.a);
+    }
+#endif /* PIKE_DEBUG */
+    goto set_pointer;
+
+  case F_EXTERNAL:
+    q = find_q(&(p->externals), n->u.integer.b, n->u.integer.a);
+#ifdef PIKE_DEBUG
+    if (l_flag > 2) {
+      fprintf(stderr, "external %d:%d is ",
+	      n->u.integer.a, n->u.integer.b);
+    }
+#endif /* PIKE_DEBUG */
     goto set_pointer;
 
   case F_IDENTIFIER:
-    q=p->globals+n->u.id.number;
+    q = find_q(&(p->externals), n->u.id.number,
+	       Pike_compiler->new_program->id);
     if(n->u.id.number > MAX_GLOBAL)
     {
       p->err=1;
       return 0;
     }
+#ifdef PIKE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "external %d:%d is ",
+		Pike_compiler->new_program->id, n->u.id.number);
+      }
+#endif /* PIKE_DEBUG */
 
   set_pointer:
     if(overwrite)
     {
-      if(*q == VAR_UNUSED && !noblock) *q = VAR_BLOCKED;
+      if(*q == VAR_UNUSED && !noblock) {
+	*q = VAR_BLOCKED;
+#ifdef PIKE_DEBUG
+	if (l_flag > 2) {
+	  fprintf(stderr, "blocked\n");
+	}
+      } else {
+	if (l_flag > 2) {
+	  fprintf(stderr, "overwritten\n");
+	}
+#endif /* PIKE_DEBUG */
+      }
     }
     else
     {
-      if(*q == VAR_UNUSED) *q = VAR_USED;
+      if(*q == VAR_UNUSED) {
+	*q = VAR_USED;
+#ifdef PIKE_DEBUG
+	if (l_flag > 2) {
+	  fprintf(stderr, "used\n");
+	}
+      } else {
+	if (l_flag > 2) {
+	  fprintf(stderr, "kept\n");
+	}
+#endif /* PIKE_DEBUG */
+      }
     }
     break;
 
@@ -1972,7 +2146,7 @@ static int find_used_variables(node *n,
     a=copy_vars(p);
     find_used_variables(CADR(n),a,noblock,0);
     find_used_variables(CDDR(n),p,noblock,0);
-    do_and_vars(p,a);
+    do_and_vars(p, a);
     break;
 
   case F_INC_NEQ_LOOP:
@@ -1984,20 +2158,20 @@ static int find_used_variables(node *n,
     find_used_variables(CAR(n),p,noblock,0);
     a=copy_vars(p);
     find_used_variables(CDR(n),a,noblock,0);
-    do_and_vars(p,a);
+    do_and_vars(p, a);
     break;
 
   case F_SWITCH:
     find_used_variables(CAR(n),p,noblock,0);
     a=copy_vars(p);
     find_used_variables(CDR(n),a,1,0);
-    do_and_vars(p,a);
+    do_and_vars(p, a);
     break;
 
    case F_DO:
     a=copy_vars(p);
     find_used_variables(CAR(n),a,noblock,0);
-    do_and_vars(p,a);
+    do_and_vars(p, a);
     find_used_variables(CDR(n),p,noblock,0);
     break;
 
@@ -2018,24 +2192,52 @@ static void find_written_vars(node *n,
   switch(n->token)
   {
   case F_LOCAL:
-    if(lvalue) p->locals[n->u.integer.a]=VAR_USED;
+    if(lvalue) {
+#ifdef PIKE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "local %d:%d is written\n",
+		n->u.integer.b, n->u.integer.a);
+      }
+#endif /* PIKE_DEBUG */
+      *find_q(&(p->locals), n->u.integer.a, n->u.integer.b) = VAR_USED;
+    }
+    break;
+
+  case F_EXTERNAL:
+    if(lvalue) {
+#ifdef PIKE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "external %d:%d is written\n",
+		n->u.integer.a, n->u.integer.b);
+      }
+#endif /* PIKE_DEBUG */
+      *find_q(&(p->externals), n->u.integer.b, n->u.integer.a) = VAR_USED;
+    }
     break;
 
   case F_IDENTIFIER:
-     if(lvalue)
-     {
-       if(n->u.id.number>=MAX_GLOBAL)
-       {
-	 p->err=1;
-	 return;
-       }
-       p->globals[n->u.id.number]=VAR_USED;
-     }
+    if(lvalue)
+    {
+      if(n->u.id.number >= MAX_VAR)
+      {
+	p->err=1;
+	return;
+      }
+#ifdef PIKE_DEBUG
+      if (l_flag > 2) {
+	fprintf(stderr, "external %d:%d is written\n",
+		Pike_compiler->new_program->id, n->u.id.number);
+      }
+#endif /* PIKE_DEBUG */
+      *find_q(&(p->externals), n->u.id.number,
+	      Pike_compiler->new_program->id) = VAR_USED;
+    }
     break;
 
   case F_APPLY:
-    if(n->tree_info & OPT_SIDE_EFFECT)
-      MEMSET(p->globals, VAR_USED, MAX_GLOBAL);
+    if(n->tree_info & OPT_SIDE_EFFECT) {
+      p->ext_flags = VAR_USED;
+    }
     break;
 
   case F_INDEX:
@@ -2095,32 +2297,120 @@ static void find_written_vars(node *n,
   }
 }
 
-/* return 1 if A depends on B */
-static int depend_p2(node *a,node *b)
+void free_vars(struct used_vars *a)
 {
-  struct used_vars aa,bb;
+  struct scope_info *tmp;
+
+  tmp = a->locals;
+  while(tmp) {
+    struct scope_info *next = tmp->next;
+    free(tmp);
+    tmp = next;
+  }
+  tmp = a->externals;
+  while(tmp) {
+    struct scope_info *next = tmp->next;
+    free(tmp);
+    tmp = next;
+  }
+}
+
+/* return 1 if A depends on B */
+static int depend_p2(node *a, node *b)
+{
+  struct used_vars aa, bb;
   int e;
+  ONERROR free_aa;
+  ONERROR free_bb;
 
   if(!a || !b || is_const(a)) return 0;
-  aa.err=0;
-  bb.err=0;
-  MEMSET((char *)aa.locals, VAR_UNUSED, MAX_LOCAL);
-  MEMSET((char *)bb.locals, VAR_UNUSED,  MAX_LOCAL);
-  MEMSET((char *)aa.globals, VAR_UNUSED, MAX_GLOBAL);
-  MEMSET((char *)bb.globals, VAR_UNUSED, MAX_GLOBAL);
+  aa.err = 0;
+  bb.err = 0;
+  aa.ext_flags = 0;
+  bb.ext_flags = 0;
+  aa.locals = NULL;
+  bb.locals = NULL;
+  aa.externals = NULL;
+  bb.externals = NULL;
 
-  find_used_variables(a,&aa,0,0);
-  find_written_vars(b,&bb,0);
+  SET_ONERROR(free_aa, free_vars, &aa);
+  SET_ONERROR(free_bb, free_vars, &bb);
 
-  if(aa.err || bb.err) return 1;
+  find_used_variables(a, &aa, 0, 0);
+  find_written_vars(b, &bb, 0);
 
-  for(e=0;e<MAX_LOCAL;e++)
-    if(aa.locals[e]==VAR_USED && bb.locals[e]!=VAR_UNUSED)
-      return 1;
+  UNSET_ONERROR(free_bb);
+  UNSET_ONERROR(free_aa);
 
-  for(e=0;e<MAX_GLOBAL;e++)
-    if(aa.globals[e]==VAR_USED && bb.globals[e]!=VAR_UNUSED)
-      return 1;
+  if(aa.err || bb.err) {
+    free_vars(&aa);
+    free_vars(&bb);
+    return 1;
+  }
+
+  {
+    struct scope_info *aaa = aa.locals;
+    struct scope_info *bbb = bb.locals;
+
+    while (aaa) {
+      while (bbb && (bbb->scope_id < aaa->scope_id)) {
+	bbb = bbb->next;
+      }
+      if (!bbb) break;
+      if (bbb->scope_id == aaa->scope_id) {
+	for (e = 0; e < MAX_VAR; e++) {
+	  if ((aaa->vars[e] == VAR_USED) &&
+	      (bbb->vars[e] != VAR_UNUSED)) {
+	    free_vars(&aa);
+	    free_vars(&bb);
+	    return 1;
+	  }	  
+	}
+      }
+      aaa = aaa->next;
+    }
+  }
+
+  if (bb.ext_flags == VAR_USED) {
+    /* No need to look closer at b */
+    struct scope_info *aaa = aa.externals;
+
+    /* FIXME: Probably only needed to check if aaa is NULL or not. */
+
+    while (aaa) {
+      for (e = 0; e < MAX_VAR; e++) {
+	if (aaa->vars[e] == VAR_USED) {
+	  free_vars(&aa);
+	  free_vars(&bb);
+	  return 1;
+	}
+      }
+      aaa = aaa->next;
+    }    
+  } else {
+    struct scope_info *aaa = aa.externals;
+    struct scope_info *bbb = bb.externals;
+
+    while (aaa) {
+      while (bbb && (bbb->scope_id < aaa->scope_id)) {
+	bbb = bbb->next;
+      }
+      if (!bbb) break;
+      if (bbb->scope_id == aaa->scope_id) {
+	for (e = 0; e < MAX_VAR; e++) {
+	  if ((aaa->vars[e] == VAR_USED) &&
+	      (bbb->vars[e] != VAR_UNUSED)) {
+	    free_vars(&aa);
+	    free_vars(&bb);
+	    return 1;
+	  }	  
+	}
+      }
+      aaa = aaa->next;
+    }
+  }
+  free_vars(&aa);
+  free_vars(&bb);
   return 0;
 }
 
