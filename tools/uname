@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# $Id: uname,v 1.14 2004/03/01 20:22:44 grubba Exp $
+# $Id: uname,v 1.15 2004/03/27 14:01:45 peter Exp $
 
 . $NTTOOLS
 
@@ -15,7 +15,7 @@ for a in "$@"
 do
   case "$a" in
     --version)
-      ver=`echo "$Revision: 1.14 $" |sed -e 's/.* \(.*\) .*/\1/'`
+      ver=`echo "$Revision: 1.15 $" |sed -e 's/.* \(.*\) .*/\1/'`
       echo "Fake NT uname version $ver by Fredrik Hubinette and others"
       exit 0
     ;;
@@ -103,7 +103,7 @@ if [ X$R = Xyes -o X$V = Xyes ]; then
   OUTPUT="$OUTPUT `echo $RAW_VERSION|sed -e's/[^0-9.]*//g'`"
   # If there are more than one processor, apply "-smp"
   NUMPROCS="`getntenv NUMBER_OF_PROCESSORS`"
-  if [ X"$NUMPROCS" != X -a $NUMPROCS -gt 1 ]; then
+  if [ ! -z "$NUMPROCS" ] && [ $NUMPROCS -gt 1 ]; then
     OUTPUT="$OUTPUT-smp"
   fi
 fi
