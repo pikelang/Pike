@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: stralloc.c,v 1.187 2004/11/08 10:30:50 grubba Exp $
+|| $Id: stralloc.c,v 1.188 2004/11/09 12:27:53 grubba Exp $
 */
 
 #include "global.h"
@@ -2306,26 +2306,37 @@ PMOD_EXPORT void string_builder_append_integer(struct string_builder *s,
 #define STATE_MIN_WIDTH	1
 #define STATE_PRECISION 2
 
-static LONGEST pike_va_int(va_list *args, int flags)
+/* Kludge around brokeness of gcc/x86_64 */
+#ifdef VA_LIST_IS_STATE_PTR
+#define VA_LIST_PTR		va_list
+#define VA_LIST_ADDR(X)		(X)
+#define VA_LIST_DEREF(X)	(X)
+#else
+#define VA_LIST_PTR		va_list *
+#define VA_LIST_ADDR(X)		(&(X))
+#define VA_LIST_DEREF(X)	(*(X))
+#endif
+
+static LONGEST pike_va_int(VA_LIST_PTR args, int flags)
 {
   switch (flags & (APPEND_WIDTH_MASK|APPEND_SIGNED)) {
   case APPEND_WIDTH_HALF:
-    return va_arg(*args, unsigned int) & 0xffff;
+    return va_arg(VA_LIST_DEREF(args), unsigned int) & 0xffff;
   case APPEND_WIDTH_HALF|APPEND_SIGNED:
-    return (short)va_arg(*args, int);
+    return (short)va_arg(VA_LIST_DEREF(args), int);
   case 0:
-    return va_arg(*args, unsigned int);
+    return va_arg(VA_LIST_DEREF(args), unsigned int);
   case APPEND_SIGNED:
-    return va_arg(*args, int);
+    return va_arg(VA_LIST_DEREF(args), int);
   case APPEND_WIDTH_LONG:
-    return va_arg(*args, unsigned long);
+    return va_arg(VA_LIST_DEREF(args), unsigned long);
   case APPEND_WIDTH_LONG|APPEND_SIGNED:
-    return va_arg(*args, long);
+    return va_arg(VA_LIST_DEREF(args), long);
 #ifdef INT64
   case APPEND_WIDTH_LONG_LONG:
-    return va_arg(*args, unsigned INT64);
+    return va_arg(VA_LIST_DEREF(args), unsigned INT64);
   case APPEND_WIDTH_LONG_LONG|APPEND_SIGNED:
-    return va_arg(*args, INT64);
+    return va_arg(VA_LIST_DEREF(args), INT64);
 #endif /* INT64 */
   }
   Pike_fatal("string_builder_append_integerv(): Unsupported flags: 0x%04x\n",
@@ -2476,28 +2487,28 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
 	  string_builder_putchar(s, va_arg(args, int));
 	  break;
 	case 'b':
-	  string_builder_append_integer(s, pike_va_int(&args, flags), 2,
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 2,
 					flags, min_width, precision);
 	  break;
 	case 'o':
-	  string_builder_append_integer(s, pike_va_int(&args, flags), 8,
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 8,
 					flags, min_width, precision);
 	  break;
 	case 'x':
-	  string_builder_append_integer(s, pike_va_int(&args, flags), 16,
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 16,
 					flags, min_width, precision);
 	  break;
 	case 'X':
-	  string_builder_append_integer(s, pike_va_int(&args, flags), 16,
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 16,
 					flags | APPEND_UPPER_CASE,
 					min_width, precision);
 	  break;
 	case 'u':
-	  string_builder_append_integer(s, pike_va_int(&args, flags), 10,
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 10,
 					flags, min_width, precision);
 	  break;
 	case 'd':
-	  string_builder_append_integer(s, pike_va_int(&args, flags), 10,
+	  string_builder_append_integer(s, pike_va_int(VA_LIST_ADDR(args), flags), 10,
 					flags | APPEND_SIGNED,
 					min_width, precision);
 	  break;
@@ -2518,6 +2529,7 @@ PMOD_EXPORT void string_builder_vsprintf(struct string_builder *s,
     }
   }
 }
+
 
 PMOD_EXPORT void string_builder_sprintf(struct string_builder *s,
 					const char *fmt, ...)

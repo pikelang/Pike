@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.848 2004/11/01 14:16:10 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.849 2004/11/09 12:27:53 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5854,6 +5854,51 @@ void fatal(char *foo,...)
   if test "$pike_cv_gcc_attributes" = yes; then
     AC_DEFINE(HAVE_FUNCTION_ATTRIBUTES)
   fi
+fi
+
+AC_MSG_CHECKING(if va_list is a state pointer)
+AC_CACHE_VAL(pike_cv_va_list_is_state_ptr, [
+  AC_TRY_RUN([
+#include <stdarg.h>
+
+void bar(va_list args)
+{
+  va_arg(args, int);
+}
+
+int foo(int a, ...)
+{
+  va_list args;
+
+  va_start(args, a);
+
+  bar(args);
+
+  a = va_arg(args, int);
+
+  va_end(args);
+
+  return a;
+}
+
+int main()
+{
+  return foo(2, 1, 0);
+}
+  ], pike_cv_va_list_is_state_ptr=yes,
+    pike_cv_va_list_is_state_ptr=no,
+    # FIXME:
+    pike_cv_va_list_is_state_ptr=unknown
+)
+])
+if test "$pike_cv_va_list_is_state_ptr" = "yes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(VA_LIST_IS_STATE_PTR)
+elif test "$pike_cv_va_list_is_state_ptr" = "unknown"; then
+  # FIXME: "no" works on most stuff except gcc/x86_64.
+  AC_MSG_RESULT(unknown -- assume no)
+else
+  AC_MSG_RESULT(no)
 fi
 
 #############################################################################

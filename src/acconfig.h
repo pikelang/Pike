@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.143 2004/10/22 15:50:22 grubba Exp $
+|| $Id: acconfig.h,v 1.144 2004/11/09 12:27:53 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -332,6 +332,9 @@
 
 /* You have cl-type __declspec? */
 #undef HAVE_DECLSPEC
+
+/* Your va_list is a state pointer? */
+#undef VA_LIST_IS_STATE_PTR
 
 /* Does your compiler grock 'volatile' */
 #define VOLATILE volatile
