@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: iterators.cmod,v 1.20 2002/05/31 22:41:24 nilsson Exp $");
+RCSID("$Id: iterators.cmod,v 1.21 2002/06/06 14:25:48 grubba Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1681,6 +1681,8 @@ int foreach_iterate(struct object *o)
   apply_lfun(o,LFUN_NOT,0);
   if(UNSAFE_IS_ZERO(Pike_sp-1))
   {
+    pop_stack();
+
     if(Pike_sp[-4].type != T_INT)
     {
       apply(o,"index",0);
@@ -1697,8 +1699,10 @@ int foreach_iterate(struct object *o)
 
     push_int(1);
     apply_lfun(o,LFUN_ADD_EQ,1);
+    pop_stack();
     return 1;
   }else{
+    pop_stack();
     return 0;
   }
 }
