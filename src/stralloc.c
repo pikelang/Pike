@@ -27,7 +27,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.128 2001/07/01 22:29:40 mast Exp $");
+RCSID("$Id: stralloc.c,v 1.129 2001/07/03 23:55:06 hubbe Exp $");
 
 #if PIKE_RUN_UNLOCKED
 /* Make this bigger when we get lightweight threads */
@@ -484,32 +484,26 @@ static void stralloc_rehash(void)
 /* Use the BLOCK_ALLOC() stuff for short strings */
 
 #define SHORT_STRING_BLOCK	256
-#define SHORT_STRING_THRESHOLD	16
+#define SHORT_STRING_THRESHOLD	15 /* % 4 === 1 */
 
 struct short_pike_string0 {
-  struct pike_string str;
-  p_wchar0 data[SHORT_STRING_THRESHOLD];
+  PIKE_STRING_CONTENTS;
+  p_wchar0 str[SHORT_STRING_THRESHOLD];
 };
 
 struct short_pike_string1 {
-  struct pike_string str;
-  p_wchar1 data[SHORT_STRING_THRESHOLD];
+  PIKE_STRING_CONTENTS;
+  p_wchar1 str[SHORT_STRING_THRESHOLD];
 };
 
 struct short_pike_string2 {
-  struct pike_string str;
-  p_wchar2 data[SHORT_STRING_THRESHOLD];
+  PIKE_STRING_CONTENTS;
+  p_wchar2 str[SHORT_STRING_THRESHOLD];
 };
-
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT	str.next
 
 BLOCK_ALLOC(short_pike_string0, SHORT_STRING_BLOCK)
 BLOCK_ALLOC(short_pike_string1, SHORT_STRING_BLOCK)
 BLOCK_ALLOC(short_pike_string2, SHORT_STRING_BLOCK)
-
-#undef BLOCK_ALLOC_NEXT
-#define BLOCK_ALLOC_NEXT	next
 
 #define really_free_short_pike_string(s) do { \
      if (!s->size_shift) { \
