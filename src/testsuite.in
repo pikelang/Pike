@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.490 2002/03/13 15:05:44 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.491 2002/03/21 14:48:47 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -445,6 +445,12 @@ test_any([[
   }
   return 1;
 ]], 1);
+
+test_any( [[
+// bug [2861] ------------------------------------------------------------
+// http://community/crunch/show_bug.cgi?id=2861
+return mktime(0,0,0,1,0,70,0,0);
+]], 0)
 
 test_any( [[
 // bug [2845] ------------------------------------------------------------
