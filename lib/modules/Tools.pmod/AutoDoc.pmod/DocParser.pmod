@@ -368,7 +368,7 @@ static string xmlNode(string s) {  /* now, @xml works like @i & @tt */
         while (s[i] == '\n')
           ++i;
         if (s[i])                        // no </p><p> if it was trailing stuff
-          res += "</p><p>";
+          res += "</p>\n<p>";
       }
       else
         res += "\n";
@@ -384,7 +384,7 @@ static string xmlNode(string s) {  /* now, @xml works like @i & @tt */
   }
   if (sizeof(tagstack))
     parseError("@" + tagstack[0] + "{ without matching @}");
-  return "<p>" + res + "</p>";
+  return "<p>" + res + "</p>\n";
 }
 
 static class DocParserClass {

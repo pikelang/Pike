@@ -217,10 +217,10 @@ class DocGroup {
     if (global)  m->global = "predef";
     string res = opentag("docgroup", m);
     foreach(objects, PikeObject obj)
-      res += obj->xml();
+      res += obj->xml() + "\n";
     if (documentation)
-      res += xmltag("doc", documentation->xml);
-    return res + closetag("docgroup");
+      res += xmltag("doc", documentation->xml) + "\n";
+    return res + closetag("docgroup") + "\n";
   }
 }
 
@@ -376,7 +376,7 @@ class Method {
   Type returntype;
   static void create() { ::create("method"); }
   string xml() {
-    string s = standardTags();
+    string s = standardTags() + "\n";
     string args = "";
     for(int i = 0; i < sizeof(argnames); ++i) {
       if (argtypes[i])
@@ -387,8 +387,8 @@ class Method {
         args += xmltag("argument",
                        xmltag("value", argnames[i]));
     }
-    s += xmltag("arguments", args);
-    s += xmltag("returntype", returntype->xml());
+    s += xmltag("arguments", args) + "\n" +
+      xmltag("returntype", returntype->xml()) + "\n";
     return standardStart() + s + standardEnd();
   }
   string print() {
