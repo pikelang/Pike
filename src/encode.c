@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.97 2001/04/10 09:51:42 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.98 2001/04/14 09:44:19 hubbe Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -797,9 +797,19 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	pop_stack();
 	code_number(p->flags,data);
 	code_number(p->storage_needed,data);
+	code_number(p->xstorage,data);
+	code_number(p->parent_info_storage,data);
+
 	code_number(p->alignment_needed,data);
 	code_number(p->timestamp.tv_sec,data);
 	code_number(p->timestamp.tv_usec,data);
+
+	if(p->parent)
+	  ref_push_program(p->parent);
+	else
+	  push_int(0);
+	encode_value2(Pike_sp-1,data);
+	pop_stack();
 
 #define FOO(X,Y,Z) \
 	code_number( p->num_##Z, data);
@@ -807,7 +817,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 
 	adddata2(p->program, p->num_program);
 	adddata2(p->linenumbers, p->num_linenumbers);
-
+	
 	for(d=0;d<p->num_identifier_index;d++)
 	  code_number(p->identifier_index[d],data);
 
@@ -1435,8 +1445,6 @@ static void decode_value2(struct decode_data *data)
     {
       struct pike_type *t;
 
-      /* FIXME: Should check that num is 0 here. */
-
       decode_type(t, data);
       check_type_string(t);
       push_type_value(t);
@@ -1708,9 +1716,29 @@ static void decode_value2(struct decode_data *data)
 	  p->flags &= ~(PROGRAM_FINISHED | PROGRAM_OPTIMIZED);
 	  p->flags |= PROGRAM_AVOID_CHECK;
 	  decode_number(p->storage_needed,data);
+	  decode_number(p->xstorage,data);
+	  decode_number(p->parent_info_storage,data);
 	  decode_number(p->alignment_needed,data);
 	  decode_number(p->timestamp.tv_sec,data);
 	  decode_number(p->timestamp.tv_usec,data);
+
+	  decode_value2(data);
+	  switch(Pike_sp[-1].type)
+	  {
+	    case T_INT:
+	      p->parent=0;
+	      break;
+	    case T_PROGRAM:
+	      p->parent=Pike_sp[-1].u.program;
+	      break;
+	    case T_FUNCTION:
+	      p->parent=program_from_svalue(Pike_sp-1);
+	      break;
+	    default:
+	      Pike_error("Program decode failed!\n");
+	  }
+	  if(p->parent) add_ref(p->parent);
+	  pop_stack();
 
 #define FOO(X,Y,Z) \
 	  decode_number( p->num_##Z, data);

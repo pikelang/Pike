@@ -1,5 +1,5 @@
 /*
- * $Id: threads.h,v 1.113 2001/04/07 07:38:26 hubbe Exp $
+ * $Id: threads.h,v 1.114 2001/04/14 09:44:21 hubbe Exp $
  */
 #ifndef THREADS_H
 #define THREADS_H
@@ -10,6 +10,7 @@
 #include "interpret.h"
 #include "pike_threadlib.h"
 
+#ifdef PIKE_THREADS
 
 PMOD_EXPORT extern COND_T live_threads_change;		/* Used by _disable_threads */
 PMOD_EXPORT extern COND_T threads_disabled_change;		/* Used by _disable_threads */
@@ -65,7 +66,6 @@ struct thread_state {
 #endif /* PROFILING */
 };
 
-#ifdef PIKE_THREADS
 
 /* Prototypes begin here */
 int low_nt_create_thread(unsigned Pike_stack_size,

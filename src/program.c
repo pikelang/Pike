@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.313 2001/04/13 20:48:34 grubba Exp $");
+RCSID("$Id: program.c,v 1.314 2001/04/14 09:44:21 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -43,6 +43,9 @@ RCSID("$Id: program.c,v 1.313 2001/04/13 20:48:34 grubba Exp $");
 #define ATTRIBUTE(X)
 
 static void exit_program_struct(struct program *);
+static size_t add_xstorage(size_t size,
+			   size_t alignment,
+			   ptrdiff_t modulo_orig);
 
 #undef EXIT_BLOCK
 #define EXIT_BLOCK(P) exit_program_struct( (P) )
@@ -1231,7 +1234,7 @@ void low_start_new_program(struct program *p,
   MEMSET(Pike_compiler->fake_object->storage,0x55,256*sizeof(struct svalue));
 #else
   Pike_compiler->fake_object=ALLOC_STRUCT(object);
-  Pike_compiler->fake_object->storage=0;
+  Pike_compiler->fake_object->storage=(char *)malloc(sizeof(struct parent_info));
 #endif
   /* Can't use GC_ALLOC on fake objects, but still it's good to know
    * that they never take over a stale gc marker. */
@@ -1240,8 +1243,6 @@ void low_start_new_program(struct program *p,
   Pike_compiler->fake_object->next=Pike_compiler->fake_object;
   Pike_compiler->fake_object->prev=Pike_compiler->fake_object;
   Pike_compiler->fake_object->refs=1;
-  Pike_compiler->fake_object->parent=0;
-  Pike_compiler->fake_object->parent_identifier=-1;
   Pike_compiler->fake_object->prog=p;
   add_ref(p);
 
@@ -1258,9 +1259,13 @@ void low_start_new_program(struct program *p,
 
   if(name)
   {
-    if((Pike_compiler->fake_object->parent=Pike_compiler->previous->fake_object))
-      add_ref(Pike_compiler->fake_object->parent);
-    Pike_compiler->fake_object->parent_identifier=id;
+    /* Fake objects have parents regardless of PROGRAM_USE_PARENT  */
+    if((((struct parent_info *)Pike_compiler->fake_object->storage)->parent=Pike_compiler->previous->fake_object))
+      add_ref(Pike_compiler->previous->fake_object);
+      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=id;
+  }else{
+    ((struct parent_info *)Pike_compiler->fake_object->storage)->parent=0;
+    ((struct parent_info *)Pike_compiler->fake_object->storage)->parent_identifier=0;
   }
 
   Pike_compiler->new_program=p;
@@ -1508,6 +1513,13 @@ static void toss_compilation_resources(void)
 {
   if(Pike_compiler->fake_object)
   {
+    if( ((struct parent_info *)Pike_compiler->fake_object->storage)->parent )
+    {
+      free_object(((struct parent_info *)Pike_compiler->fake_object->storage)->parent);
+
+      ((struct parent_info *)Pike_compiler->fake_object->storage)->parent=0;
+    }
+
     free_program(Pike_compiler->fake_object->prog);
     Pike_compiler->fake_object->prog=0;
     free_object(Pike_compiler->fake_object);
@@ -1799,8 +1811,20 @@ struct program *end_first_pass(int finish)
 
     Pike_compiler->new_program->flags |= PROGRAM_PASS_1_DONE;
 
+
     if(finish)
     {
+      if(Pike_compiler->new_program->flags & PROGRAM_USES_PARENT)
+      {
+	Pike_compiler->new_program->parent_info_storage =
+	  add_xstorage(sizeof(struct parent_info),
+		       ALIGNOF(struct parent_info),
+		       0);
+      }else{
+	/* Cause errors if used hopefully */
+	Pike_compiler->new_program->parent_info_storage=-1;
+      }
+
       fixate_program();
       optimize_program(Pike_compiler->new_program);
       Pike_compiler->new_program->flags |= PROGRAM_FINISHED;
@@ -1914,6 +1938,42 @@ PMOD_EXPORT size_t low_add_storage(size_t size, size_t alignment,
 
   Pike_compiler->new_program->storage_needed = offset + size;
 
+  return (size_t) offset;
+}
+
+/*
+ * Internal function.
+ * Adds object storage that will *not* be inherited.
+ */
+static size_t add_xstorage(size_t size,
+			   size_t alignment,
+			   ptrdiff_t modulo_orig)
+{
+  ptrdiff_t offset, modulo, available;
+  int e;
+
+  if(!size) return Pike_compiler->new_program->xstorage;
+
+  modulo=( modulo_orig /* +OFFSETOF(object,storage) */ ) % alignment;
+
+  offset=DO_ALIGN(Pike_compiler->new_program->xstorage-modulo,alignment)+modulo;
+
+  Pike_compiler->new_program->xstorage = offset + size;
+
+  /* Move all inherits to make room */
+  available = Pike_compiler->new_program->inherits[0].storage_offset;
+  if(available < offset+size)
+  {
+    available=
+      DO_ALIGN( ((offset + size) - available), 
+		Pike_compiler->new_program->alignment_needed);
+    
+    for(e=0;e<Pike_compiler->new_program->num_inherits;e++)
+      Pike_compiler->new_program->inherits[e].storage_offset+=available;
+
+    Pike_compiler->new_program->storage_needed+=available;
+  }
+  
   return (size_t) offset;
 }
 
@@ -2322,6 +2382,7 @@ void low_inherit(struct program *p,
       {
 	if(parent->next == parent)
 	{
+#if 0
 	  struct object *o;
 	  inherit.parent_offset=0;
 	  for(o=Pike_compiler->fake_object;o!=parent;o=o->parent)
@@ -2331,6 +2392,18 @@ void low_inherit(struct program *p,
 #endif
 	    inherit.parent_offset++;
 	  }
+#else
+          struct program_state *state=Pike_compiler;
+	  inherit.parent_offset=0;
+	  for(;state->fake_object!=parent;state=state->previous)
+	  {
+#ifdef PIKE_DEBUG
+	    if(!state->fake_object)
+	      fatal("low_inherit with odd Pike_compiler->fake_object as parent!\n");
+#endif
+	    inherit.parent_offset++;
+	  }
+#endif
 	}else{
 	  inherit.parent=parent;
 	  inherit.parent_identifier=parent_identifier;
@@ -2382,8 +2455,14 @@ void low_inherit(struct program *p,
 		break;
 
 	      case -18:
-		pid = par->parent_identifier;
-		par = par->parent;
+		if(par->prog->flags & PROGRAM_USES_PARENT)
+		{
+		  pid = PARENT_INFO(par)->parent_identifier;
+		  par = PARENT_INFO(par)->parent;
+		}else{
+		  pid=-1;
+		  par=0;
+		}
 	    }
 	  }
 
@@ -2903,11 +2982,15 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
     dummy.type = get_type_of_svalue(c);
     dummy.run_time_type=c->type;
     dummy.func.offset=store_constant(c, 0, 0);
+    dummy.opt_flags=OPT_SIDE_EFFECT | OPT_EXTERNAL_DEPEND;
+    if(c->type == PIKE_T_PROGRAM && (c->u.program->flags & PROGRAM_CONSTANT))
+       dummy.opt_flags=0;
   }
   else {
     copy_pike_type(dummy.type, mixed_type_string);
     dummy.run_time_type=T_MIXED;
     dummy.func.offset=-1;
+    dummy.opt_flags=0;
   }
 
   ref.id_flags=flags;
@@ -4622,7 +4705,7 @@ ptrdiff_t low_get_storage(struct program *o, struct program *p)
   ptrdiff_t offset;
   unsigned INT32 hval;
 
-  if(!o) return 0;
+  if(!o) return -1;
   oid=o->id;
   pid=p->id;
   hval=oid*9248339 + pid;

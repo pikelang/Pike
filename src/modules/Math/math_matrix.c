@@ -1,4 +1,4 @@
-/* $Id: math_matrix.c,v 1.21 2000/12/13 21:14:19 hubbe Exp $ */
+/* $Id: math_matrix.c,v 1.22 2001/04/14 09:44:22 hubbe Exp $ */
 
 #include "global.h"
 #include "config.h"
@@ -813,6 +813,9 @@ void init_math_matrix(void)
 		"function(object:object)",0);
    add_function("``×",matrix_cross,
 		"function(object:object)",0);
+   Pike_compiler->new_program->flags |= 
+     PROGRAM_CONSTANT |
+     PROGRAM_NO_EXPLICIT_DESTRUCT ;
 }
 
 void exit_math_matrix(void)

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.110 2001/03/17 20:55:55 grubba Exp $");
+RCSID("$Id: docode.c,v 1.111 2001/04/14 09:44:19 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -1661,10 +1661,16 @@ static int do_docode2(node *n, INT16 flags)
 	if(n->u.sval.u.object->next == n->u.sval.u.object)
 	{
 	  int x=0;
+#if 0
 	  struct object *o;
 
 	  for(o=Pike_compiler->fake_object;o!=n->u.sval.u.object;o=o->parent)
 	    x++;
+#else
+	  struct program_state *state=Pike_compiler;
+	  for(;state->fake_object!=n->u.sval.u.object;state=state->previous)
+	    x++;
+#endif
 	  emit2(F_EXTERNAL, n->u.sval.subtype, x);
 	  Pike_compiler->new_program->flags |= PROGRAM_USES_PARENT;
 	  return 1;

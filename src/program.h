@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: program.h,v 1.124 2001/04/08 10:11:40 hubbe Exp $
+ * $Id: program.h,v 1.125 2001/04/14 09:44:21 hubbe Exp $
  */
 #ifndef PROGRAM_H
 #define PROGRAM_H
@@ -234,29 +234,29 @@ struct pike_trampoline
 /* Program will be destructed as soon at it runs out of references.
  * Normally only used for mutex lock keys and similar
  */
-#define PROGRAM_DESTRUCT_IMMEDIATE 16
+#define PROGRAM_DESTRUCT_IMMEDIATE 0x10
 
 /* Self explanatory, automatically detected */
-#define PROGRAM_HAS_C_METHODS 32
+#define PROGRAM_HAS_C_METHODS 0x20
 
-/* All non-static functions are inlinable */
-#define PROGRAM_CONSTANT 64
+/* Objects created from this program are constant and shareable */
+#define PROGRAM_CONSTANT 0x40
 
 /* */
-#define PROGRAM_USES_PARENT 128
+#define PROGRAM_USES_PARENT 0x80
 
 /* Objects should not be destructed even when they only has weak
  * references left. */
-#define PROGRAM_NO_WEAK_FREE 256
+#define PROGRAM_NO_WEAK_FREE 0x100
 
 /* Objects should not be destructed by f_destruct(). */
-#define PROGRAM_NO_EXPLICIT_DESTRUCT 512
+#define PROGRAM_NO_EXPLICIT_DESTRUCT 0x200
 
 /* Program is in an inconsistant state */
-#define PROGRAM_AVOID_CHECK 512
+#define PROGRAM_AVOID_CHECK 0x400
 
 /* Program has not yet been used for compilation */
-#define PROGRAM_VIRGIN 1024
+#define PROGRAM_VIRGIN 0x800
 
 enum pike_program_event
 {
@@ -265,6 +265,18 @@ enum pike_program_event
   PROG_EVENT_GC_RECURSE,
   PROG_EVENT_GC_CHECK,
   NUM_PROG_EVENTS,
+};
+
+/* These macros should only be used if (p->flags & PROGRAM_USES_PARENT)
+ * is true
+ */
+#define LOW_PARENT_INFO(O,P) ((struct parent_info *)(PIKE_OBJ_STORAGE((O)) + (P)->parent_info_storage))
+#define PARENT_INFO(O) LOW_PARENT_INFO( (O), (O)->prog)
+
+struct parent_info
+{
+  struct object *parent;
+  INT16 parent_identifier;
 };
 
 struct program
@@ -278,13 +290,17 @@ struct program
    * subtracted when inheriting.
    */
   ptrdiff_t storage_needed; /* storage needed in the object struct */
+  ptrdiff_t xstorage; /* Non-inherited storage */
+  ptrdiff_t parent_info_storage;
+
   INT16 flags;          /* PROGRAM_* */
   unsigned INT8 alignment_needed;
   struct timeval timestamp;
 
   struct program *next;
   struct program *prev;
-  struct program *parent; /* FIXME: Use this -Hubbe */
+  struct program *parent;
+  
 
   void (*event_handler)(enum pike_program_event);
 #ifdef PIKE_DEBUG

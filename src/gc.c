@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.148 2001/03/28 10:02:41 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.149 2001/04/14 09:44:19 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -375,6 +375,9 @@ void describe_location(void *real_memblock,
       if(location == (void *)&p->next)
 	fprintf(stderr,"%*s  **In p->next\n",indent,"");
 
+      if(location == (void *)&p->parent)
+	fprintf(stderr,"%*s  **In p->parent\n",indent,"");
+
       if(p->inherits &&
 	 ptr >= (char *)p->inherits  &&
 	 ptr < (char*)(p->inherits+p->num_inherits)) 
@@ -429,7 +432,11 @@ void describe_location(void *real_memblock,
       struct object *o=(struct object *)memblock;
       struct program *p;
 
-      if(location == (void *)&o->parent) fprintf(stderr,"%*s  **In o->parent\n",indent,"");
+      if(o->prog && o->prog->flags & PROGRAM_USES_PARENT)
+      {
+	if(location == (void *)&PARENT_INFO(o)->parent)
+	  fprintf(stderr,"%*s  **In o->parent\n",indent,"");
+      }
       if(location == (void *)&o->prog)  fprintf(stderr,"%*s  **In o->prog\n",indent,"");
       if(location == (void *)&o->next)  fprintf(stderr,"%*s  **In o->next\n",indent,"");
       if(location == (void *)&o->prev)  fprintf(stderr,"%*s  **In o->prev\n",indent,"");
@@ -643,7 +650,10 @@ void low_describe_something(void *a,
 
     case T_OBJECT:
       p=((struct object *)a)->prog;
-      fprintf(stderr,"%*s**Parent identifier: %d\n",indent,"",((struct object *)a)->parent_identifier);
+      if(p && (p->flags & PROGRAM_USES_PARENT))
+      {
+	fprintf(stderr,"%*s**Parent identifier: %d\n",indent,"",PARENT_INFO( ((struct object *)a) )->parent_identifier);
+      }
       fprintf(stderr,"%*s**Program id: %ld\n",indent,"",((struct object *)a)->program_id);
 
       if (((struct object *)a)->next == ((struct object *)a))
@@ -674,10 +684,11 @@ void low_describe_something(void *a,
 	  low_describe_something(p, T_PROGRAM, indent, depth, flags);
       }
 
-      if( ((struct object *)a)->parent)
+      if(p && (p->flags & PROGRAM_USES_PARENT) && 
+	 PARENT_INFO(((struct object *)a))->parent)
       {
 	fprintf(stderr,"%*s**Describing object's parent:\n",indent,"");
-	describe_something( ((struct object *)a)->parent, t, indent+2,depth-1,
+	describe_something( PARENT_INFO((struct object *)a)->parent, t, indent+2,depth-1,
 			    (flags | DESCRIBE_SHORT | DESCRIBE_NO_REFS )
 			    & ~ (DESCRIBE_MEM));
       }else{
@@ -691,7 +702,9 @@ void low_describe_something(void *a,
       INT32 line,pos;
       int foo=0;
 
-      fprintf(stderr,"%*s**Program id: %ld\n",indent,"",(long)(p->id));
+      fprintf(stderr,"%*s**Program id: %ld, flags: %x\n",indent,"",
+	      (long)(p->id),
+	      p->flags);
 
       if(p->flags & PROGRAM_HAS_C_METHODS)
       {
@@ -2259,8 +2272,10 @@ int do_gc(void)
     if ((get_marker(kill_list->data)->flags & (GC_LIVE|GC_LIVE_OBJ)) !=
 	(GC_LIVE|GC_LIVE_OBJ))
       gc_fatal(o, 0, "Invalid thing in kill list.\n");
-    if (o->parent && !o->parent->prog &&
-	get_marker(o->parent)->flags & GC_LIVE_OBJ)
+    if (o->prog && (o->prog->flags & PROGRAM_USES_PARENT) &&
+	PARENT_INFO(o)->parent &&
+	!PARENT_INFO(o)->parent->prog &&
+	get_marker(PARENT_INFO(o)->parent)->flags & GC_LIVE_OBJ)
       gc_fatal(o, 0, "GC destructed parent prematurely.\n");
 #endif
     GC_VERBOSE_DO(fprintf(stderr, "|   Killing %p with %d refs\n",

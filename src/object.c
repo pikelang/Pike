@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.168 2001/04/08 10:11:39 hubbe Exp $");
+RCSID("$Id: object.c,v 1.169 2001/04/14 09:44:20 hubbe Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -129,10 +129,13 @@ PMOD_EXPORT struct object *low_clone(struct program *p)
   dmalloc_set_mmap_from_template(o,p);
 #endif
 
-  o->prog=p;
-  add_ref(p);
-  o->parent=0;
-  o->parent_identifier=0;
+  add_ref( o->prog=p );
+
+  if(p->flags & PROGRAM_USES_PARENT)
+  {
+    LOW_PARENT_INFO(o,p)->parent=0;
+    LOW_PARENT_INFO(o,p)->parent_identifier=0;
+  }
 
   DOUBLELINK(first_object,o);
   INIT_PIKE_MEMOBJ(o);
@@ -304,9 +307,10 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
   debug_malloc_touch(o);
 
   if(p->flags & PROGRAM_USES_PARENT)
-    add_ref( o->parent=parent );
-
-  o->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
+  {
+    add_ref( PARENT_INFO(o)->parent=parent );
+    PARENT_INFO(o)->parent_identifier = DO_NOT_WARN((INT32)parent_identifier);
+  }
   call_c_initializers(o);
   call_pike_initializers(o,args);
   UNSET_ONERROR(tmp);
@@ -621,11 +625,15 @@ void destruct(struct object *o)
 
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
-  if(o->parent)
+
+  if(p->flags & PROGRAM_USES_PARENT)
   {
-    /* fprintf(stderr, "destruct(): Zapping parent.\n"); */
-    free_object(o->parent);
-    o->parent=0;
+    if(LOW_PARENT_INFO(o,p)->parent)
+    {
+      /* fprintf(stderr, "destruct(): Zapping parent.\n"); */
+      free_object(LOW_PARENT_INFO(o,p)->parent);
+      LOW_PARENT_INFO(o,p)->parent=0;
+    }
   }
 
   POP_FRAME();
@@ -753,13 +761,18 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 			0,0);
     }
   } else {
-    if(o->parent)
+#if 0    /* Did I just cause a leak? -Hubbe */
+    if(o->prog && o->prog->flags & PROGRAM_USES_PARENT)
     {
-      /* fprintf(stderr, "schedule_really_free_object(): Zapping parent.\n"); */
+      if(PARENT_INFO(o)->parent)
+      {
+	/* fprintf(stderr, "schedule_really_free_object(): Zapping parent.\n"); */
 
-      free_object(o->parent);
-      o->parent=0;
+	free_object(PARENT_INFO(o)->parent);
+	PARENT_INFO(o)->parent=0;
+      }
     }
+#endif
 
 #ifdef GC_VERBOSE
     if (Pike_in_gc > GC_PASS_PREPARE)
@@ -1266,9 +1279,9 @@ PMOD_EXPORT void gc_mark_object_as_referenced(struct object *o)
 
     debug_malloc_touch(p);
 
-    if(o->parent)
-      gc_mark_object_as_referenced(o->parent);
-
+    if(o->prog->flags & PROGRAM_USES_PARENT)
+      if(PARENT_INFO(o)->parent)
+	gc_mark_object_as_referenced(PARENT_INFO(o)->parent);
 
     LOW_PUSH_FRAME(o);
 
@@ -1365,8 +1378,9 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
       LOW_POP_FRAME();
 
       /* This must be last. */
-      if(o->parent)
-	gc_cycle_check_object(o->parent, -1);
+      if(o->prog->flags & PROGRAM_USES_PARENT)
+	if(PARENT_INFO(o)->parent)
+	  gc_cycle_check_object(PARENT_INFO(o)->parent, -1);
     }
   } GC_CYCLE_LEAVE;
 }
@@ -1376,15 +1390,18 @@ static inline void gc_check_object(struct object *o)
   int e;
   struct program *p;
 
-  if(o->parent) {
+  if(o->prog && o->prog->flags & PROGRAM_USES_PARENT)
+  {
+    if(PARENT_INFO(o)->parent) {
 #ifdef PIKE_DEBUG
-    if(debug_gc_check(debug_malloc_pass(o->parent),T_OBJECT,
-		      debug_malloc_pass(o))==-2)
-      fprintf(stderr,"(in object at %lx -> parent)\n",
-	      DO_NOT_WARN((long)o));
+      if(debug_gc_check(debug_malloc_pass(PARENT_INFO(o)->parent),T_OBJECT,
+			debug_malloc_pass(o))==-2)
+	fprintf(stderr,"(in object at %lx -> parent)\n",
+		DO_NOT_WARN((long)o));
 #else
-    gc_check(o->parent);
+      gc_check(PARENT_INFO(o)->parent);
 #endif
+    }
   }
 
   if((p=o->prog) && PIKE_OBJ_INITED(o))

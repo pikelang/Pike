@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.250 2001/04/08 10:11:39 hubbe Exp $");
+RCSID("$Id: las.c,v 1.251 2001/04/14 09:44:20 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -885,14 +885,23 @@ node *debug_mknode(short token, node *a, node *b)
       if (a) {
 	switch(a->token) {
 	case F_CONSTANT:
-	  if (a->u.sval.type == T_FUNCTION) {
-	    if (a->u.sval.subtype == FUNCTION_BUILTIN) {
-	      opt_flags = a->u.sval.u.efun->flags;
-	    } else if (a->u.sval.u.object->prog) {
-	      i = ID_FROM_INT(a->u.sval.u.object->prog, a->u.sval.subtype);
-	    } else {
-	      yyerror("Calling function in destructed module.");
-	    }
+	  switch(a->u.sval.type)
+	  {
+	    case T_FUNCTION:
+	      if (a->u.sval.subtype == FUNCTION_BUILTIN)
+	      {
+		opt_flags = a->u.sval.u.efun->flags;
+	      } else if (a->u.sval.u.object->prog) {
+		i = ID_FROM_INT(a->u.sval.u.object->prog, a->u.sval.subtype);
+	      } else {
+		yyerror("Calling function in destructed module.");
+	      }
+	      break;
+
+	    case T_PROGRAM:
+	      if(a->u.sval.u.program->flags & PROGRAM_CONSTANT)
+		opt_flags=0;
+	      break;
 	  }
 	  break;
 	case F_EXTERNAL:
@@ -1835,7 +1844,8 @@ node *low_mkconstantsvaluenode(struct svalue *s)
   if(s->type == T_OBJECT ||
      (s->type==T_FUNCTION && s->subtype!=FUNCTION_BUILTIN))
   {
-    res->node_info|=OPT_EXTERNAL_DEPEND;
+    if(!(s->u.object->prog && (s->u.object->prog->flags & PROGRAM_CONSTANT)))
+      res->node_info|=OPT_EXTERNAL_DEPEND;
   }
   res->type = get_type_of_svalue(s);
   return res;
@@ -1877,13 +1887,23 @@ node *debug_mksvaluenode(struct svalue *s)
     if(s->u.object->next == s->u.object)
     {
       int x=0;
-      struct object *o;
       node *n=mkefuncallnode("this_object", 0);
+#ifndef PARENT_INFO
+      struct object *o;
       for(o=Pike_compiler->fake_object;o!=s->u.object;o=o->parent)
       {
 	n=mkefuncallnode("function_object",
 			 mkefuncallnode("object_program",n));
       }
+#else
+      struct program_state *state=Pike_compiler;;
+      for(;state->fake_object!=s->u.object;state=state->previous)
+      {
+	state->new_program->flags |= PROGRAM_USES_PARENT;
+	n=mkefuncallnode("function_object",
+			 mkefuncallnode("object_program",n));
+      }
+#endif
       return n;
     }
     break;

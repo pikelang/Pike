@@ -212,11 +212,11 @@ PIKEFUN int program_implements(program prog, program api)
  *!
  *! Returns 1 if @[child] has inherited @[parent].
  */
-PIKEFUN int program_inherits(program child, program parent)
+PIKEFUN int program_inherits(program parent, program child)
   errname Program.inherits;
   optflags OPT_TRY_OPTIMIZE;
 {
-  RETURN !!low_get_storage(parent, child);
+  RETURN low_get_storage(parent, child) != -1;
 }
 
 /*! @decl string program_defined(program p)

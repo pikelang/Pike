@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.13 2001/03/28 10:02:40 hubbe Exp $");
+RCSID("$Id: backend.cmod,v 1.14 2001/04/14 09:44:18 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -490,12 +490,14 @@ PIKECLASS Backend
   /* 
    * FDS handling
    */
+#define FDS_ISSET(fd,X) (me->fds_size>(fd) &&  me->fds[(fd)].X!=0)
 #define ASSURE_FDS_SIZE(ME,X) grow_fds(ME,X)
   
   void grow_fds(struct Backend_struct *me,
 		int wanted_size)
     {
       int old_size=me->fds_size;
+      debug_malloc_touch(me->fds);
       if(!me->fds_size) me->fds_size = 16;
       while(wanted_size >= me->fds_size) me->fds_size*=2;
       me->fds = realloc( me->fds, sizeof(struct fd_datum) * me->fds_size );
@@ -505,6 +507,7 @@ PIKECLASS Backend
       MEMSET(me->fds+old_size,
 	     0,
 	     (me->fds_size-old_size)*sizeof(struct fd_datum));
+      debug_malloc_touch(me->fds);
     }
 
 
@@ -541,9 +544,13 @@ PIKECLASS Backend
       int was_set;
       IF_PD(fprintf(stderr, "BACKEND: set_read_callback(%d, %p, %p)\n",
 		    fd, cb, data));
-      
+
+      if(!cb && me->fds_size <= fd) return;
+
+      debug_malloc_touch(me->fds);
       ASSURE_FDS_SIZE(me, fd);
-      was_set = (me->fds[fd].read.callback!=0);
+      debug_malloc_touch(me->fds);
+      was_set = FDS_ISSET(fd, read.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
 	fatal("File descriptor out of range.\n %d",fd);
@@ -578,8 +585,11 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_write_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
+      if(!cb && me->fds_size <= fd) return;
+
       ASSURE_FDS_SIZE(me, fd);
-      was_set = (me->fds[fd].write.callback!=0);
+      debug_malloc_touch(me->fds);
+      was_set = FDS_ISSET(fd, write.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
 	fatal("File descriptor out of range.\n %d",fd);
@@ -617,8 +627,11 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_read_oob_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
+      if(!cb && me->fds_size <= fd) return;
+
       ASSURE_FDS_SIZE(me, fd);
-      was_set = (me->fds[fd].read_oob.callback!=0);
+      debug_malloc_touch(me->fds);
+      was_set = FDS_ISSET(fd, read_oob.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
 	fatal("File descriptor out of range.\n %d",fd);
@@ -654,8 +667,11 @@ PIKECLASS Backend
       IF_PD(fprintf(stderr, "BACKEND: set_write_oob_callback(%d, %p, %p)\n",
 		    fd, cb, data));
       
+      if(!cb && me->fds_size <= fd) return;
+
       ASSURE_FDS_SIZE(me, fd);
-      was_set = (me->fds[fd].write_oob.callback!=0);
+      debug_malloc_touch(me->fds);
+      was_set = FDS_ISSET(fd, write_oob.callback);
 #ifdef PIKE_DEBUG
       if(fd<0)
 	fatal("File descriptor out of range.\n %d",fd);
@@ -690,7 +706,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd);
+      debug_malloc_touch(me->fds);
       return me->fds[fd].read.callback;
     }
   
@@ -701,7 +719,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd);
+      debug_malloc_touch(me->fds);
       return me->fds[fd].write.callback;
     }
 
@@ -713,7 +733,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd);
+      debug_malloc_touch(me->fds);
       return me->fds[fd].read_oob.callback;
     }
   
@@ -724,7 +746,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd);
+      debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.callback;
     }
 #endif /* WITH_OOB */
@@ -736,7 +760,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_callback_data(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd);
+      debug_malloc_touch(me->fds);
       return me->fds[fd].read.data;
     }
 
@@ -748,7 +774,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_callback_data(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd);
+      debug_malloc_touch(me->fds);
       return me->fds[fd].write.data;
     }
 
@@ -761,7 +789,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_read_oob_callback_data(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd );
+      debug_malloc_touch(me->fds);
       return me->fds[fd].read_oob.data;
     }
 
@@ -773,7 +803,9 @@ PIKECLASS Backend
 	fatal("File descriptor out of range.\n %d",fd);
 #endif
       IF_PD(fprintf(stderr, "BACKEND: query_write_oob_callback_data(%d)\n", fd));
+      if(me->fds_size <= fd) return 0;
       ASSURE_FDS_SIZE(me, fd);
+      debug_malloc_touch(me->fds);
       return me->fds[fd].write_oob.data;
     }
 #endif /* WITH_OOB */
@@ -947,6 +979,7 @@ PIKECLASS Backend
 #endif /* PIKE_DEBUG */
 #ifndef HAVE_POLL
 	/* FIXME: OOB? */
+	debug_malloc_touch(me->fds);
 	for(i=0; i <= me->active_set.max_fd; i++)
 	{
 #ifdef WITH_OOB
@@ -1964,8 +1997,6 @@ PIKECLASS Backend
       me->call_buffer=NULL;
 
     }
-
-
 }
 
 /* This doesn't need to be here */

@@ -22,7 +22,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: socket.c,v 1.53 2001/03/15 21:40:52 grubba Exp $");
+RCSID("$Id: socket.c,v 1.54 2001/04/14 09:44:22 hubbe Exp $");
 
 #ifdef HAVE_SYS_TYPE_H
 #include <sys/types.h>
@@ -68,6 +68,7 @@ RCSID("$Id: socket.c,v 1.53 2001/03/15 21:40:52 grubba Exp $");
 struct port
 {
   int fd;
+  int xref;
   int my_errno;
   struct svalue accept_callback;
   struct svalue id;
@@ -79,6 +80,7 @@ static void port_accept_callback(int fd,void *data);
 
 static void do_close(struct port *p, struct object *o)
 {
+  int do_free=0;
  retry:
   if(p->fd >= 0)
   {
@@ -86,12 +88,15 @@ static void do_close(struct port *p, struct object *o)
       if(errno == EINTR)
 	goto retry;
 
-    if(query_read_callback(p->fd)==port_accept_callback)
-      o->refs--;
     set_read_callback(p->fd,0,0);
   }
 
   p->fd=-1;
+  while(p->xref) 
+  {
+    p->xref--;
+    free_object(o);
+  }
 }
 
 static void port_set_id(INT32 args)
@@ -168,6 +173,7 @@ static void port_listen_fd(INT32 args)
     if(!IS_ZERO(& THIS->accept_callback))
     {
       add_ref(Pike_fp->current_object);
+      THIS->xref++;
       set_read_callback(fd, port_accept_callback, (void *)THIS);
     }
   }
@@ -247,6 +253,7 @@ static void port_bind(INT32 args)
     if(!IS_ZERO(& THIS->accept_callback))
     {
       add_ref(Pike_fp->current_object);
+      THIS->xref++;
       set_read_callback(fd, port_accept_callback, (void *)THIS);
       set_nonblocking(fd,1);
     }
@@ -286,6 +293,7 @@ static void port_create(INT32 args)
 	  if(!IS_ZERO(& THIS->accept_callback))
 	  {
 	    add_ref(Pike_fp->current_object);
+	    THIS->xref++;
 	    set_read_callback(THIS->fd, port_accept_callback, (void *)THIS);
 	    set_nonblocking(THIS->fd,1);
 	  }
@@ -361,6 +369,7 @@ static void socket_query_address(INT32 args)
 static void init_port_struct(struct object *o)
 {
   THIS->fd=-1;
+  THIS->xref=0;
   THIS->id.type=PIKE_T_INT;
 #ifdef __CHECKER__
   THIS->id.subtype=0;
@@ -373,10 +382,12 @@ static void init_port_struct(struct object *o)
 static void exit_port_struct(struct object *o)
 {
   do_close(THIS,o);
+#if 0
   free_svalue(& THIS->id);
   free_svalue(& THIS->accept_callback);
   THIS->id.type=PIKE_T_INT;
   THIS->accept_callback.type=PIKE_T_INT;
+#endif
 }
 
 struct program *port_program = NULL;

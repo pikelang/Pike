@@ -1,5 +1,5 @@
 /*
- * $Id: oracle.c,v 1.55 2001/04/04 17:30:48 leif Exp $
+ * $Id: oracle.c,v 1.56 2001/04/14 09:44:22 hubbe Exp $
  *
  * Pike interface to Oracle databases.
  *
@@ -53,14 +53,34 @@
 
 #include <math.h>
 
-RCSID("$Id: oracle.c,v 1.55 2001/04/04 17:30:48 leif Exp $");
+RCSID("$Id: oracle.c,v 1.56 2001/04/14 09:44:22 hubbe Exp $");
 
+
+/* User-changable defines: */
 
 #define BLOB_FETCH_CHUNK 16384
 
 /* #define ORACLE_DEBUG */
+
+/* Undefining this if you don't want pike
+ * muexes protecting everything
+ */
 #define ORACLE_USE_THREADS
+
+/* Define this to zero if you don't want
+ * oracle internal mutexes
+ */
+#define ORACLE_INIT_FLAGS OCI_THREADED
+
+/* This define puts a mutex around the connect calls */
 #define SERIALIZE_CONNECT
+
+/* Define This if you want one environment for each
+ * database connection. (This crashes for me - Hubbe)
+ */
+/* #define LOCAL_ENV */
+
+/* #define REUSE_DEFINES */
 
 /*
  * This define crippes the Pike module to use static define buffers.
@@ -74,6 +94,9 @@ RCSID("$Id: oracle.c,v 1.55 2001/04/04 17:30:48 leif Exp $");
  */
 
 /* #define STATIC_BUFFERS 8000 */
+
+/* End user-changable defines */
+
 
 #ifndef ORACLE_USE_THREADS
 
@@ -182,8 +205,11 @@ DEFINE_MUTEX(oracle_serialization_mutex);
 #endif
 
 
+#ifdef PARENT_INFO
+#define PARENTOF(X) PARENT_INFO(X)->parent
+#else
 #define PARENTOF(X) (X)->parent
-
+#endif
 
 /* This define only exists in Pike 7.1.x, if it isn't defined
  * we have to provide this function ourselves -Hubbe
@@ -262,8 +288,15 @@ void *parent_storage(int depth)
 }
 #endif
 
+
+
+#define ocimalloc NULL
+#define ocirealloc NULL
+#define ocifree NULL
+
+
 #ifdef PIKE_DEBUG
-void *check_storage(void *storage, unsigned long magic, char *prog)
+void *low_check_storage(void *storage, unsigned long magic, char *prog)
 {
   if( storage && magic != *((unsigned long *)storage))
   {
@@ -273,6 +306,11 @@ void *check_storage(void *storage, unsigned long magic, char *prog)
   }
   return storage;
 }
+#ifdef DEBUG_MALLOC 
+#define check_storage(X,Y,Z) (debug_malloc_touch(THISOBJ),low_check_storage((X),(Y),(Z)))
+#else
+#define check_storage(X,Y,Z) (X)
+#endif
 #else
 #define check_storage(X,Y,Z) (X)
 #endif
@@ -307,18 +345,24 @@ static struct object *nullint_object;
 static struct object *nulldate_object;
 
 static OCIEnv *oracle_environment=0;
-
-static OCIEnv *get_oracle_environment(void)
+static OCIEnv *low_get_oracle_environment(void)
 {
   sword rc;
   if(!oracle_environment)
   {
     rc=OCIEnvInit(&oracle_environment, OCI_DEFAULT, 0, 0);
     if(rc != OCI_SUCCESS)
-      Pike_error("Failed to initialize oracle environment.\n");
+      Pike_error("Failed to initialize oracle environment, err=%d.\n",rc);
   }
   return oracle_environment;
 }
+
+
+#ifdef DEBUG_MALLOC
+#define get_oracle_environment() dmalloc_touch(OCIEnv*,low_get_oracle_environment())
+#else
+#define get_oracle_environment() low_get_oracle_environment()
+#endif
 
 struct inout
 {
@@ -358,6 +402,7 @@ struct dbcon
 #ifdef PIKE_DEBUG
   unsigned long magic;
 #endif
+  OCIEnv *env;
   OCIError *error_handle;
   OCISvcCtx *context;
 
@@ -374,6 +419,9 @@ static void init_dbcon_struct(struct object *o)
 #endif
   THIS_DBCON->error_handle=0;
   THIS_DBCON->context=0;
+#ifdef LOCAL_ENV
+  THIS_DBCON->env=0;
+#endif
   mt_init( & THIS_DBCON->lock );
 }
 
@@ -382,10 +430,25 @@ static void exit_dbcon_struct(struct object *o)
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
+  debug_malloc_touch(THIS_DBCON->context);
   OCILogoff(THIS_DBCON->context, THIS_DBCON->error_handle);
+
+  debug_malloc_touch(THIS_DBCON->error_handle);
   OCIHandleFree(THIS_DBCON->error_handle, OCI_HTYPE_ERROR);
+
+#ifdef LOCAL_ENV
+  debug_malloc_touch(THIS_DBCON->env);
+  OCIHandleFree(THIS_DBCON->env, OCI_HTYPE_ENV);
+#endif
+
   mt_destroy( & THIS_DBCON->lock );
 }
+
+#ifdef LOCAL_ENV
+#define ENVOF(X) (X)->env
+#else
+#define ENVOF(X) get_oracle_environment()
+#endif
 
 /****** query ******/
 
@@ -422,6 +485,7 @@ void exit_dbquery_struct(struct object *o)
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
+  debug_malloc_touch(THIS_QUERY->statement);
   OCIHandleFree(THIS_QUERY->statement, OCI_HTYPE_STMT);
   mt_destroy(& THIS_QUERY->lock);
 }
@@ -513,6 +577,7 @@ static void exit_dbresultinfo_struct(struct object *o)
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
+  debug_malloc_touch(THIS_RESULTINFO->define_handle);
   OCIHandleFree(THIS_RESULTINFO->define_handle, OCI_HTYPE_DEFINE);
   free_inout( & THIS_RESULTINFO->data);
 }
@@ -585,7 +650,7 @@ static void ora_error_handler(OCIError *err, sword rc, char *func)
 }
 
 
-static OCIError *global_error_handle=0;;
+static OCIError *global_error_handle=0;
 
 OCIError *get_global_error_handle(void)
 {
@@ -654,6 +719,15 @@ static sb4 output_callback(struct inout *inout,
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"%s(%d)\n",__FUNCTION__,inout->ftype);
 #endif
+  debug_malloc_touch(bufpp);
+  debug_malloc_touch(*bufpp);
+  debug_malloc_touch(alenpp);
+  debug_malloc_touch(*alenpp);
+  debug_malloc_touch(indpp);
+  debug_malloc_touch(*indpp);
+  debug_malloc_touch(rcodepp);
+  debug_malloc_touch(*rcodepp);
+
   inout->has_output=1;
   *indpp = (dvoid *) &inout->indicator;
   *rcodepp=&inout->rcode;
@@ -981,7 +1055,9 @@ static void f_fetch_fields(INT32 args)
       if(rc != OCI_SUCCESS)
 	ora_error_handler(dbcon->error_handle, rc, "OCIDefineDynamic");
 #endif
-
+      debug_malloc_touch(dbcon->error_handle);
+      debug_malloc_touch(dbquery->statement);
+      debug_malloc_touch(info->define_handle);
     }
     f_aggregate(dbquery->cols);
     add_ref( dbquery->field_info=Pike_sp[-1].u.array );
@@ -1169,7 +1245,7 @@ static void f_fetch_row(INT32 args)
 
   pop_n_elems(args);
 
-  if(dbquery->cols==-2)
+  if(!dbquery->field_info)
   {
     f_fetch_fields(0);
     pop_stack();
@@ -1234,13 +1310,36 @@ static void f_oracle_create(INT32 args)
   else
     passwd = NULL;
 
+
+#ifdef LOCAL_ENV
+  if(!dbcon->env)
+  {
+#ifdef ORACLE_DEBUG
+    fprintf(stderr,"%s: creating new environment\n",__FUNCTION__);
+#endif
+    LOCK(dbcon->lock);
+    rc=OCIEnvInit(&dbcon->env, OCI_DEFAULT,0,0);
+    UNLOCK(dbcon->lock);
+    if(rc != OCI_SUCCESS) 
+      Pike_error("Failed to initialize oracle environment, err=%d.\n",rc);
+#ifdef ORACLE_DEBUG
+  } else {
+    fprintf(stderr,"%s: environment exists\n",__FUNCTION__);
+#endif
+  }
+#endif
+
+  debug_malloc_touch(ENVOF(dbcon));
+
   THREADS_ALLOW();
 
   LOCK(dbcon->lock);
+#ifdef SERIALIZE_CONNECT
   LOCK(oracle_serialization_mutex);
+#endif
 
   do  {
-    rc=OCIHandleAlloc(get_oracle_environment(),
+    rc=OCIHandleAlloc(ENVOF(dbcon),
 		      (void **)& dbcon->error_handle,
 		      OCI_HTYPE_ERROR,
 		      0,
@@ -1252,17 +1351,18 @@ static void f_oracle_create(INT32 args)
 #endif
 
 #if 0
-    if(OCIHandleAlloc(get_oracle_environment(),&THIS_DBCON->srvhp,
+    if(OCIHandleAlloc(ENVOF(dbcon),
+		      &THIS_DBCON->srvhp,
 		      OCI_HTYPE_SERVER, 0,0)!=OCI_SUCCESS)
       Pike_error("Failed to allocate server handle.\n");
     
-    if(OCIHandleAlloc(get_oracle_environment(),&THIS_DBCON->srchp,
+    if(OCIHandleAlloc(ENVOF(dbcon),
+		      &THIS_DBCON->srchp,
 		      OCI_HTYPE_SVCCTX, 0,0)!=OCI_SUCCESS)
       Pike_error("Failed to allocate service context.\n");
 #endif
 
-
-    rc=OCILogon(get_oracle_environment(),
+    rc=OCILogon(ENVOF(dbcon),
 		dbcon->error_handle,
 		&dbcon->context,
 		uid->str, uid->len, 
@@ -1271,7 +1371,9 @@ static void f_oracle_create(INT32 args)
   
   }while(0);
 
+#ifdef SERIALIZE_CONNECT
   UNLOCK(oracle_serialization_mutex);
+#endif
   UNLOCK(dbcon->lock);
 
   THREADS_DISALLOW();
@@ -1279,6 +1381,9 @@ static void f_oracle_create(INT32 args)
 
   if(rc != OCI_SUCCESS)
     ora_error_handler(dbcon->error_handle, rc, 0);
+
+  debug_malloc_touch(dbcon->error_handle);
+  debug_malloc_touch(dbcon->context);
 
   pop_n_elems(args);
 
@@ -1311,7 +1416,7 @@ static void f_compile_query_create(INT32 args)
   THREADS_ALLOW();
   LOCK(dbcon->lock);
   
-  rc=OCIHandleAlloc(get_oracle_environment(),
+  rc=OCIHandleAlloc(ENVOF(dbcon),
 		    (void **)&dbquery->statement,
 		    OCI_HTYPE_STMT,
 		    0,0);
@@ -1516,7 +1621,7 @@ static void f_big_query_create(INT32 args)
   if(new_parent &&
      PARENTOF(PARENTOF(THISOBJ)) != new_parent)
   {
-    if(new_parent->prog != PARENTOF(PARENTOF(THISOBJ))->parent->prog)
+    if(new_parent->prog != PARENTOF(PARENTOF(PARENTOF(THISOBJ)))->prog)
       Pike_error("Bad argument 3 to big_query.\n");
 
     /* We might need to check that there are no locks held here
@@ -1549,7 +1654,7 @@ static void f_big_query_create(INT32 args)
 	void *addr;
 	sword len, fty;
 	int mode=OCI_DATA_AT_EXEC;
-	long rlen=0x7fffffff;
+	long rlen=4000;
 	bind.bindnum++;
 	
 	assign_svalue_no_free(& bind.bind[bind.bindnum].ind, & k->ind);
@@ -1694,9 +1799,18 @@ static void f_big_query_create(INT32 args)
 	}
       }
   }
+  debug_malloc_touch(dbcon->context);
+#ifndef REUSE_DEFINES
+  if(dbquery->field_info)
+  {
+    free_array(dbquery->field_info);
+    dbquery->field_info=0;
+  }
+#endif
   THREADS_ALLOW();
   LOCK(dbcon->lock);
   dbresult->dbcon_lock=1;
+
 
 #ifdef ORACLE_DEBUG
   fprintf(stderr,"OCIExec query_type=%d\n",dbquery->query_type);
@@ -1896,14 +2010,10 @@ void pike_module_init(void)
   fprintf(stderr,"%s\n",__FUNCTION__);
 #endif
 
+  
   if(OCIInitialize(
-    OCI_OBJECT | 
-#ifdef ORACLE_USE_THREADS
-    OCI_DEFAULT,
-#else
-    OCI_THREADED,
-#endif
-    0, 0, 0, 0) != OCI_SUCCESS)
+    OCI_OBJECT | ORACLE_INIT_FLAGS,
+    0, ocimalloc, ocirealloc, ocifree) != OCI_SUCCESS)
   {
 #ifdef ORACLE_DEBUG
     fprintf(stderr,"OCIInitizlie failed\n");
@@ -2019,6 +2129,12 @@ void pike_module_exit(void)
   {
     OCIHandleFree(global_error_handle, OCI_HTYPE_ERROR);
     global_error_handle=0;
+  }
+
+  if(oracle_environment)
+  {
+    OCIHandleFree(oracle_environment, OCI_HTYPE_ENV);
+    oracle_environment=0;
   }
 
 #define FREE_PROG(X) if(X) { free_program(X) ; X=NULL; }

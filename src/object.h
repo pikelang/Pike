@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: object.h,v 1.61 2001/04/07 07:38:24 hubbe Exp $
+ * $Id: object.h,v 1.62 2001/04/14 09:44:21 hubbe Exp $
  */
 #ifndef OBJECT_H
 #define OBJECT_H
@@ -22,8 +22,6 @@ struct object
 {
   PIKE_MEMORY_OBJECT_MEMBERS; /* Must be first */
   struct program *prog;
-  struct object *parent;
-  INT16 parent_identifier;
   struct object *next;
   struct object *prev;
 #if PIKE_DEBUG
@@ -42,7 +40,13 @@ extern struct program *magic_set_index_program;
 
 #define free_object(O) do{ struct object *o_=(O); debug_malloc_touch(o_); debug_malloc_touch(o_->storage); if(!sub_ref(o_)) schedule_really_free_object(o_); }while(0)
 
-#define LOW_GET_GLOBAL(O,I,ID) ((O)->storage+INHERIT_FROM_INT((O)->prog, (I))->storage_offset+(ID)->func.offset)
+#ifdef DEBUG_MALLOC
+#define PIKE_OBJ_STORAGE(O) ((char *)debug_malloc_pass( (O)->storage ))
+#else
+#define PIKE_OBJ_STORAGE(O) ((O)->storage)
+#endif
+
+#define LOW_GET_GLOBAL(O,I,ID) (PIKE_OBJ_STORAGE((O))+INHERIT_FROM_INT((O)->prog, (I))->storage_offset+(ID)->func.offset)
 #define GET_GLOBAL(O,I) LOW_GET_GLOBAL(O,I,ID_FROM_INT((O)->prog,I))
 #define GLOBAL_FROM_INT(I) GET_GLOBAL(Pike_fp->current_object, I)
 

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.190 2001/03/17 16:32:14 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.191 2001/04/14 09:44:20 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -474,8 +474,10 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
     TRACE((4,"-   i->parent_offset=%d i->parent_identifier=%d\n",
 	   loc->inherit->parent_offset,
 	   loc->inherit->parent_identifier));
-    TRACE((4,"-   o->parent_identifier=%d inherit->identifier_level=%d\n",
-	   loc->o->parent_identifier,
+
+      TRACE((4,"-   o->parent_identifier=%d inherit->identifier_level=%d\n",
+	     loc->o->prog->flags & PROGRAM_USES_PARENT ?
+	     PARENT_INFO(loc->o)->parent_identifier : -1,
 	   loc->inherit->identifier_level));
 
     switch(loc->inherit->parent_offset)
@@ -511,8 +513,14 @@ PMOD_EXPORT void find_external_context(struct external_variable_context *loc,
 
       case -18:
 	TRACE((5,"-   Following o->parent\n"));
-	loc->parent_identifier=loc->o->parent_identifier;
-	loc->o=loc->o->parent;
+	if(loc->o->prog && (loc->o->prog->flags & PROGRAM_USES_PARENT))
+	{
+	  loc->parent_identifier=PARENT_INFO(loc->o)->parent_identifier;
+	  loc->o=PARENT_INFO(loc->o)->parent;
+	}else{
+	  loc->o=0;
+	  loc->parent_identifier=-1;
+	}
 	break;
     }
     

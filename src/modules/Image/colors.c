@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.48 2001/03/29 02:54:11 per Exp $
+**!	$Id: colors.c,v 1.49 2001/04/14 09:44:22 hubbe Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.48 2001/03/29 02:54:11 per Exp $");
+RCSID("$Id: colors.c,v 1.49 2001/04/14 09:44:22 hubbe Exp $");
 
 #include "image_machine.h"
 
@@ -1737,6 +1737,9 @@ void init_image_colors(void)
    ADD_FUNCTION("`+",image_color_add,tFunc(tObj,tObj),0);
 
    image_color_program=end_program();
+   image_color_program->flags |= 
+     PROGRAM_CONSTANT |
+     PROGRAM_NO_EXPLICIT_DESTRUCT ;
 
    /* this is the Image.Color stuff */
    

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.122 2001/04/11 11:52:12 grubba Exp $");
+RCSID("$Id: main.c,v 1.123 2001/04/14 09:44:20 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -669,6 +669,7 @@ void low_exit_main(void)
   void cleanup_compiler(void);
   void free_all_mapping_blocks(void);
   void free_all_object_blocks(void);
+  void free_all_program_blocks(void);
 
 #ifdef AUTO_BIGNUM
   void exit_auto_bignum(void);
@@ -807,6 +808,7 @@ void low_exit_main(void)
   free_all_mapping_blocks();
   first_object=0;
   free_all_object_blocks();
+  free_all_program_blocks();
 #endif
 }
 
