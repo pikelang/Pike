@@ -23,13 +23,16 @@ module_testsuite: $(SRCDIR)/testsuite.in
 
 verify: module_testsuite
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
+	$(RUNPIKE) @srcdir@/socktest.pike
 
 verbose_verify: module_testsuite
 	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
+	$(RUNPIKE) @srcdir@/socktest.pike
 
 gdb_verify: module_testsuite
 	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
 	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
+	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/socktest.pike
 	gdb ../../pike
 	@rm .gdbinit
 
