@@ -1,9 +1,9 @@
-/* $Id: x.c,v 1.20 1999/05/03 21:17:32 mirar Exp $ */
+/* $Id: x.c,v 1.21 1999/05/20 14:08:56 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: x.c,v 1.20 1999/05/03 21:17:32 mirar Exp $
+**!	$Id: x.c,v 1.21 1999/05/20 14:08:56 mirar Exp $
 **! submodule X
 **!
 **!	This submodule handles encoding and decoding of
@@ -29,7 +29,7 @@
 #include <winsock.h>
 #endif
 
-RCSID("$Id: x.c,v 1.20 1999/05/03 21:17:32 mirar Exp $");
+RCSID("$Id: x.c,v 1.21 1999/05/20 14:08:56 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -780,6 +780,7 @@ static void image_x_decode_truecolor(INT32 args)
    int i;
    INT32 n;
    rgb_group *d;
+   struct neo_colortable *nct=NULL;
 
    if (args<12) 
       error("Image.X.decode_truecolor: too few arguments\n");
@@ -788,7 +789,7 @@ static void image_x_decode_truecolor(INT32 args)
       if (sp[i-args].type!=T_INT) 
 	 error("Image.X.decode_truecolor: illegal argument %d\n",i+1);
 
-   add_ref(ps=sp[-args].u.string);
+   ps=sp[-args].u.string;
    s=(unsigned char*)ps->str;
    len=ps->len;
    width=sp[1-args].u.integer;
@@ -802,8 +803,26 @@ static void image_x_decode_truecolor(INT32 args)
    gshift=sp[9-args].u.integer;
    bbits=sp[10-args].u.integer;
    bshift=sp[11-args].u.integer;
+   
+   if (rshift>=bpp || rshift<0 ||
+       gshift>=bpp || gshift<0 ||
+       bshift>=bpp || bshift<0)
+	 error("Image.X.decode_truecolor: illegal colorshifts\n");
 
-   pop_n_elems(args);
+   if (args>12)
+   {
+      if (sp[12-args].type!=T_OBJECT ||
+	  !(nct=(struct neo_colortable*)
+	    get_storage(sp[12-args].u.object,image_colortable_program)))
+	 error("Image.X.decode_truecolor: illegal argument 13, expected colortable\n");
+      if (nct->type!=NCT_FLAT)
+	 error("Image.X.decode_truecolor: illegal argument 13, expected colortable in flat mode\n");
+
+      if (nct->u.flat.numentries<(1<<rbits) ||
+	  nct->u.flat.numentries<(1<<gbits) ||
+	  nct->u.flat.numentries<(1<<bbits))
+	 error("Image.X.decode_truecolor: colortable too small\n");
+   }
 
    if (bbits==8 && rbits==8 && gbits==8  &&
        !((rshift|gshift|bshift|alignbits|bpp)&7))
@@ -815,11 +834,6 @@ static void image_x_decode_truecolor(INT32 args)
       struct object *o;
       struct image *img;
 
-      if (rpos>=Bpp || rpos<0 ||
-	  gpos>=Bpp || gpos<0 ||
-	  bpos>=Bpp || bpos<0)
-	 error("Image.X.decode_truecolor: illegal colorshifts\n");
-      
       if (swapbytes)
 	 rpos=Bpp-1-rpos,
 	    gpos=Bpp-1-gpos,
@@ -832,25 +846,112 @@ static void image_x_decode_truecolor(INT32 args)
 
       d=img->img;
       n=width*height;
-      while (n--)
-      {
-	 d->r=s[rpos];
-	 d->g=s[gpos];
-	 d->b=s[bpos];
-	 d++;
 
-	 if (n && (unsigned long)Bpp>=len) 
-	    break;
-	 len-=Bpp;
-	 s+=Bpp;
-      }
+      if (nct)
+	 while (n--)
+	 {
+	    d->r=nct->u.flat.entries[s[rpos]].color.r;
+	    d->g=nct->u.flat.entries[s[gpos]].color.g;
+	    d->b=nct->u.flat.entries[s[bpos]].color.b;
+	    d++;
+
+	    if (n && (unsigned long)Bpp>=len) 
+	       break;
+	    len-=Bpp;
+	    s+=Bpp;
+	 }
+      else
+	 while (n--)
+	 {
+	    d->r=s[rpos];
+	    d->g=s[gpos];
+	    d->b=s[bpos];
+	    d++;
+
+	    if (n && (unsigned long)Bpp>=len) 
+	       break;
+	    len-=Bpp;
+	    s+=Bpp;
+	 }
       
-      free_string(ps);
+      pop_n_elems(args);
+      push_object(o);
+   }
+   else if (bpp==16 && !(alignbits&15))
+   {
+      struct object *o;
+      struct image *img;
+      int rmask=(1<<rbits)-1;
+      int gmask=(1<<rbits)-1;
+      int bmask=(1<<rbits)-1;
+
+      push_int(width);
+      push_int(height);
+      o=clone_object(image_program,2);
+      img=(struct image*)get_storage(o,image_program);
+
+      if (nct)
+      {
+	 d=img->img;
+	 n=width*height;
+	 while (n-- && len>=2)
+	 {
+	    int x;
+	    if (swapbytes)
+	       x=s[1]+(((int)s[0])<<8);
+	    else
+	       x=s[0]+(((int)s[1])<<8);
+
+	    d->r=nct->u.flat.entries[(x>>rshift)&rmask].color.r;
+	    d->g=nct->u.flat.entries[(x>>gshift)&gmask].color.g;
+	    d->b=nct->u.flat.entries[(x>>bshift)&bmask].color.b;
+	    d++;
+
+	    len-=2;
+	    s+=2;
+	 }
+      }
+      else
+      {
+	 int i,j;
+	 COLORTYPE *rtbl=alloca(1<<rbits);
+	 COLORTYPE *gtbl=alloca(1<<gbits);
+	 COLORTYPE *btbl=alloca(1<<bbits);
+	 if (!rtbl || !gtbl || !btbl)
+	    resource_error(NULL,0,0,"memory",(1<<rbits)+(1<<rbits)+(1<<rbits),
+			   "Out of memory.\n");
+
+	 for (j=0,i=24-rbits; i>0; i-=rbits) j+=1<<i;
+	 for (i=0; i<(1<<rbits); i++) rtbl[i]=(j*i)>>16;
+	 for (j=0,i=24-gbits; i>0; i-=gbits) j+=1<<i;
+	 for (i=0; i<(1<<gbits); i++) gtbl[i]=(j*i)>>16;
+	 for (j=0,i=24-bbits; i>0; i-=bbits) j+=1<<i;
+	 for (i=0; i<(1<<bbits); i++) btbl[i]=(j*i)>>16;
+
+	 d=img->img;
+	 n=width*height;
+	 while (n-- && len>=2)
+	 {
+	    int x;
+	    if (swapbytes)
+	       x=s[1]+(((int)s[0])<<8);
+	    else
+	       x=s[0]+(((int)s[1])<<8);
+
+	    d->r=rtbl[(x>>rshift)&rmask];
+	    d->g=gtbl[(x>>gshift)&gmask];
+	    d->b=btbl[(x>>bshift)&bmask];
+	    d++;
+
+	    len-=2;
+	    s+=2;
+	 }
+      }
+      pop_n_elems(args);
       push_object(o);
    }
    else
    {
-      free_string(ps);
       error("Image.X.decode_truecolor: currently not supported non-byte ranges\n");
    }
 }
