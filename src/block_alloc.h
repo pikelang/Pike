@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.45 2002/10/11 01:39:29 nilsson Exp $
+|| $Id: block_alloc.h,v 1.46 2002/10/11 13:18:26 grubba Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -94,7 +94,7 @@ BA_STATIC BA_INLINE struct DATA *BA_UL(PIKE_CONCAT(alloc_,DATA))(void)	\
   }									\
   DO_IF_DEBUG(								\
     else if (PIKE_CONCAT(DATA,_free_blocks) == (void *)-1)		\
-      Pike_fatal("Block alloc not initialized.\n");			\
+      Pike_fatal("Block alloc " #DATA " not initialized.\n");		\
   )									\
   else if(!blk->used++)							\
     --PIKE_CONCAT3(num_empty_,DATA,_blocks);				\
