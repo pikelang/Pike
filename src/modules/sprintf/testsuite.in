@@ -240,6 +240,8 @@ test_eq(sprintf("%d%c%s%t%o%d%u%x%X%e%f%g%E%G%O%d", 4711,
 test_eq(sprintf("%[*]s %s",2,"a","b"),"b a")
 test_eq(sprintf("%[1]s %s %[2]s %s","b","a","r"),"a b r a")
 
+test_do(catch(sprintf("%d-" *101, @allocate(101))))
+
 dnl . : and ; hasn't been tested
 dnl ^, @ and _ hasn't been tested yet
 test_eval_error(return sprintf("%d");)
