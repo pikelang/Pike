@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.87 2000/06/10 19:20:40 mast Exp $");
+RCSID("$Id: gc.c,v 1.88 2000/06/10 23:20:47 mast Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1177,16 +1177,13 @@ int gc_cycle_push(void *x, struct marker *m, int weak)
 #ifdef PIKE_DEBUG
 	if (!gc_rec_last)
 	  fatal("Expected a gc_set_rec_last entry in gc_mark_queue.\n");
-	gc_rec_last->link = (struct marker *) -1;
 #endif
       } while (gc_rec_last->flags & GC_LIVE_RECURSE);
-      if (!dequeue_lifo(&gc_mark_queue,
-			(queue_call) gc_cycle_pop_object)) {
+      if (!dequeue_lifo(&gc_mark_queue, (queue_call) gc_cycle_pop_object)) {
 #ifdef PIKE_DEBUG
 	fatal("Expected a gc_cycle_pop_object entry in gc_mark_queue.\n");
 #endif
       }
-      gc_rec_last->link = 0;
     }
 
     return 0;
