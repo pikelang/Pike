@@ -1,5 +1,5 @@
 /*
- * $Id: module.pmod,v 1.4 2002/05/22 16:45:36 grubba Exp $
+ * $Id: module.pmod,v 1.5 2002/05/23 15:14:48 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -12,7 +12,7 @@
 /*! LALR(1) parser generator
  */
 
-// #pragma strict_types
+#pragma strict_types
 
 /*
  * Defines
@@ -397,8 +397,8 @@ class Parser
 
       items = symbol_items[symbol];
       if (items) {
-	array(int) item_ids = map(sort(indices(items)->item_id),
-				  `+, 1);
+	array(int) item_ids = [array(int)]map(sort(indices(items)->item_id),
+					      `+, 1);
 	string kernel_hash = sprintf("%@4c", item_ids);
 
 	Kernel new_state = known_states[kernel_hash];
@@ -1332,7 +1332,7 @@ class Parser
 	foreach (s_q->arr[index]->items, Item i) {
 	  if ((!i->master_item) && (i->offset != sizeof(i->r->symbols)) &&
 	      (intp(i->r->symbols[i->offset]))) {
-	  /* This is a non-terminal master item */
+	    /* This is a non-terminal master item */
 	    foreach (i->next_state->items, Item i2) {
 	      int|string symbol;
 
@@ -1601,7 +1601,7 @@ class Parser
 
 	      if (stringp(func = r->action)) {
 		if (action_object) {
-		  func = action_object[r->action];
+		  func = [string|function]action_object[r->action];
 		  if (!functionp(func)) {
 		    if (!func) {
 		      werror("Missing action \"%s\" in object\n",
@@ -1623,7 +1623,9 @@ class Parser
 	      }
 	      if (func) {
 		if (sizeof(r->symbols)) {
-		  value_stack->push(([function]func)(@value_stack->pop(sizeof(r->symbols))));
+		  value_stack->push(([function(mixed ...:mixed)]func)
+				    (@[array(mixed)]value_stack->
+				     pop(sizeof(r->symbols))));
 		  state = ([array(Kernel)]state_stack->pop(sizeof(r->symbols)))[0];
 		} else {
 		  value_stack->push(r->action());
@@ -1683,7 +1685,7 @@ class Parser
 	  } else {
 	    lr_error |= ERROR_SYNTAX;
 
-	    werror("Error: Bad input: \""+input+"\"(\""+value+"\")\n");
+	    werror("Error: Bad input: %O(%O)\n", input, value);
 	  }
 	}
 	break;	/* Break out of the inner while(1) to read more input. */
