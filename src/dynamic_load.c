@@ -8,6 +8,8 @@
 #define USE_DLD
 #endif
 
+#if 0
+
 #if defined(HAVE_DLOPEN) || defined(USE_DLD)
 #include "interpret.h"
 #include "constants.h"
@@ -27,11 +29,148 @@
 struct module_list
 {
   struct module_list * next;
+  void *module;
+  struct module mod;
+};
+
+struct module_list *dynamic_module_list = 0;
+
+void f_load_module(INT32 args)
+{
 #ifdef HAVE_DLOPEN
   void *module;
-#elif defined(USE_DLD)
-  char *module_path;
 #endif
+  struct module_list *new_module;
+  const char *module_name;
+
+  if(sp[-args].type != T_STRING)
+    error("Bad argument 1 to load_module()\n");
+
+  module_name = sp[-args].u.string->str;
+
+#ifdef HAVE_DLOPEN
+
+#ifndef RTLD_NOW
+#define RTLD_NOW 0
+#endif
+  module=dlopen(module_name, RTLD_NOW);
+  if(!module)
+  {
+    error("load_module(\"%s\") failed: %s\n",
+	  sp[-args].u.string->str, dlerror());
+  }
+#elif defined(USE_DLD)
+  dld_create_reference("pike_module_init");
+  if (dld_link(module_name)) {
+      error("load_module(\"%s\") failed: %s\n",
+	    module_name, dld_strerror(dld_errno));
+  }
+  module=strdup(module_name);
+#endif /* HAVE_DLOPEN */
+
+  struct module *tmp;
+  fun init, init2, exit;
+  
+#ifdef HAVE_DLOPEN
+  init=(fun)dlsym(module, "pike_module_init");
+  exit=(fun)dlsym(module, "pike_module_exit");
+
+#elif defined(USE_DLD)
+  init = (fun)dld_get_func("pike_module_init");
+  exit = (fun)dld_get_func("pike_module_exit");
+#endif /* HAVE_DLOPEN */
+  
+  if(!init || !exit)
+  {
+#ifdef HAVE_DLOPEN
+    dlclose(module);
+#elif defined(USE_DLD)
+    dld_unlink_by_file((char *)module);
+    free(module);
+#endif
+    
+    error("Failed to initialize module.\n");
+  }
+
+  new_module=ALLOC_STRUCT(module_list);
+  new_module->next=dynamic_module_list;
+  dynamic_module_list=new_module;
+  new_module->module=module;
+  new_module->mod.init_efuns=init;
+  new_module->mod.init_programs=init2;
+  new_module->mod.exit=exit;
+  new_module->mod.refs=0;
+  
+  tmp=current_module;
+  current_module = & new_module->mod;
+
+  current_module=tmp;
+
+  pop_n_elems(args);
+  start_new_program();
+  (*(fun)init)();
+  push_program(end_c_program());
+}
+
+
+#endif /* HAVE_DLOPEN || USE_DLD */
+
+void init_dynamic_load()
+{
+#ifdef USE_DLD
+  if (dld_init(dld_find_executable("pike"))) /* should be argv[0] */
+    return;
+#endif
+
+#if defined(HAVE_DLOPEN) || defined(USE_DLD)
+  add_efun("load_module",f_load_module,"function(string:program)",OPT_EXTERNAL_DEPEND);
+#endif
+}
+
+void exit_dynamic_load()
+{
+#if defined(HAVE_DLOPEN) || defined(USE_DLD)
+  while(dynamic_module_list)
+  {
+    struct module_list *tmp=dynamic_module_list;
+    dynamic_module_list=tmp->next;
+    (*tmp->mod.exit)();
+#ifdef HAVE_DLOPEN
+    dlclose(tmp->module);
+#elif defined(USE_DLD)
+    if (tmp->module) {
+      dld_unlink_by_file((char *)tmp->module, 1);
+      free(tmp->module);
+    }
+#endif
+    free((char *)tmp);
+  }
+#endif
+}
+
+
+#else
+
+#if defined(HAVE_DLOPEN) || defined(USE_DLD)
+#include "interpret.h"
+#include "constants.h"
+#include "error.h"
+#include "module.h"
+#include "stralloc.h"
+#include "macros.h"
+
+#ifdef HAVE_DLFCN_H
+#include <dlfcn.h>
+#endif
+
+#ifdef HAVE_DLD_H
+#include <dld.h>
+#endif
+
+struct module_list
+{
+  struct module_list * next;
+  void *module;
   struct module mod;
 };
 
@@ -186,8 +325,8 @@ void exit_dynamic_load()
     dlclose(tmp->module);
 #elif defined(USE_DLD)
     if (tmp->module_path) {
-      dld_unlink_by_file(tmp->module_path, 1);
-      free(tmp->module_path);
+      dld_unlink_by_file((char *)tmp->module, 1);
+      free(tmp->module);
     }
 #endif
     free((char *)tmp);
@@ -196,3 +335,4 @@ void exit_dynamic_load()
 }
 
 
+#endif
