@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.25 2001/08/14 19:46:19 nilsson Exp $
+// $Id: Utils.pmod,v 1.26 2001/08/16 21:22:32 nilsson Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -298,7 +298,8 @@ class ProfileCache (string db_name) {
     db_profile_names = mkmapping(
       res->name,
       map(res->id, lambda(string s) { return (int) s; } ));
-    last_db_prof_stat = time(1) - 2;
+    if(sizeof(res))
+      last_db_prof_stat = time(1);
     return res->name;
   }
 
@@ -310,7 +311,8 @@ class ProfileCache (string db_name) {
     if (time(1) - last_srh_prof_stat >= 5*60) {
       array res = get_db()->query("SELECT name, id FROM wf_profile WHERE type=1");
       srh_profile_names = mkmapping( res->name, (array(int)) res->id );
-      last_srh_prof_stat = time(1) - 2;
+      if(sizeof(srh_profile_names))
+	last_srh_prof_stat = time(1);
     }
     return indices(srh_profile_names);
   }
