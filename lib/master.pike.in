@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.88 1999/12/28 02:34:19 mast Exp $
+ * $Id: master.pike.in,v 1.89 1999/12/28 03:40:19 mast Exp $
  * 
  * Master-file for Pike.
  *
@@ -581,7 +581,8 @@ class dirnode
       if(mixed tmp=o->_module_value) o=tmp;
       return o;
     }
-    return cast_to_program( index, 0 ) || UNDEFINED;
+    if (program p=cast_to_program( index, 0 )) return p;
+    return UNDEFINED;
   }
 
   object|program `[](string index)
