@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.53 1999/08/25 05:05:55 hubbe Exp $
+ * $Id: cpp.c,v 1.54 1999/10/15 23:53:44 noring Exp $
  */
 #include "global.h"
 #include "language.h"
@@ -1138,6 +1138,9 @@ void f_cpp(INT32 args)
     simple_add_define(&this, "__MINOR__", buffer);
     sprintf(buffer, " %d ", PIKE_BUILD_VERSION);
     simple_add_define(&this, "__BUILD__", buffer);
+#ifdef AUTO_BIGNUM
+    simple_add_define(&this, "__AUTO_BIGNUM__", " 1 ");
+#endif
 #ifdef __NT__
     simple_add_define(&this, "__NT__", " 1 ");
 #endif
