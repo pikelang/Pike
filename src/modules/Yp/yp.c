@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: yp.c,v 1.30 2004/02/03 10:13:27 nilsson Exp $
+|| $Id: yp.c,v 1.31 2004/07/01 11:35:02 nilsson Exp $
 */
 
 #include "global.h"
@@ -37,7 +37,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: yp.c,v 1.30 2004/02/03 10:13:27 nilsson Exp $");
+RCSID("$Id: yp.c,v 1.31 2004/07/01 11:35:02 nilsson Exp $");
 
 #ifdef HAVE_YPERR_STRING
 #define YPERROR(e) do{ if(err) Pike_error("%s\n", yperr_string(e)); }while(0)
@@ -89,9 +89,10 @@ static void f_default_domain(INT32 args)
 static void f_server(INT32 args)
 {
   int err;
-  char *ret;
+  char *ret, *map;
 
-  err = yp_master(this->domain, sp[-1].u.string->str, &ret);
+  get_all_args("server", args, "%s", &map);
+  err = yp_master(this->domain, map, &ret);
 
   YPERROR( err );
 
