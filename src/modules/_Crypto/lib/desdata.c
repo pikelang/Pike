@@ -6,12 +6,14 @@
  *	Generate tables used by desUtil.c and desCode.h.
  */
 
+#include <stdio.h>
+
 #include	"desinfo.h"
 
 #include	"desCode.h"
 
 #include "RCSID.h"
-RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.4 1997/03/22 20:40:16 grubba Exp $");
+RCSID2(desdata_cRcs, "$Id: desdata.c,v 1.5 2001/07/10 13:39:11 grubba Exp $");
 
 /* list of weak and semi-weak keys
 
@@ -54,8 +56,6 @@ int korder[] = {
 int sorder[] = {
 	7, 5, 3, 1, 6, 4, 2, 0,
 };
-
-int printf(const char *, ...);
 
 int
 main(int argc, char **argv)
