@@ -1,10 +1,10 @@
-/* $Id: colortable_lookup.h,v 1.13 2000/08/23 18:59:28 grubba Exp $ */
+/* $Id: colortable_lookup.h,v 1.14 2000/09/08 15:55:01 grubba Exp $ */
 /* included w/ defines in colortable.c */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable_lookup.h,v 1.13 2000/08/23 18:59:28 grubba Exp $
+**!	$Id: colortable_lookup.h,v 1.14 2000/09/08 15:55:01 grubba Exp $
 **! class colortable
 */
 
@@ -530,15 +530,39 @@ void (*NCTLU_SELECT_FUNCTION(struct neo_colortable *nct))
    switch (nct->type)
    {
       case NCT_CUBE: 
+#ifdef COLORTABLE_DEBUG
+	 fprintf(stderr,
+		 "COLORTABLE " DEFINETOSTR(NCTLU_SELECT_FUNCTION) ":"
+		 DEFINETOSTR(NCTLU_DESTINATION) " => "
+		 DEFINETOSTR(NCTLU_CUBE_NAME) "\n");
+#endif /* COLORTABLE_DEBUG */
 	 return NCTLU_CUBE_NAME;
       case NCT_FLAT:
          switch (nct->lookup_mode)
 	 {
 	    case NCT_FULL:
+#ifdef COLORTABLE_DEBUG
+	      fprintf(stderr,
+		      "COLORTABLE " DEFINETOSTR(NCTLU_SELECT_FUNCTION) ":"
+		      DEFINETOSTR(NCTLU_DESTINATION) " => "
+		      DEFINETOSTR(NCTLU_FLAT_FULL_NAME) "\n");
+#endif /* COLORTABLE_DEBUG */
 	       return NCTLU_FLAT_FULL_NAME;
 	    case NCT_RIGID:
+#ifdef COLORTABLE_DEBUG
+	      fprintf(stderr,
+		      "COLORTABLE " DEFINETOSTR(NCTLU_SELECT_FUNCTION) ":"
+		      DEFINETOSTR(NCTLU_DESTINATION) " => "
+		      DEFINETOSTR(NCTLU_FLAT_RIGID_NAME) "\n");
+#endif /* COLORTABLE_DEBUG */
 	       return NCTLU_FLAT_RIGID_NAME;
 	    case NCT_CUBICLES:
+#ifdef COLORTABLE_DEBUG
+	      fprintf(stderr,
+		      "COLORTABLE " DEFINETOSTR(NCTLU_SELECT_FUNCTION) ":"
+		      DEFINETOSTR(NCTLU_DESTINATION) " => "
+		      DEFINETOSTR(NCTLU_FLAT_CUBICLES_NAME) "\n");
+#endif /* COLORTABLE_DEBUG */
 	       return NCTLU_FLAT_CUBICLES_NAME;
 	 }
       default:
