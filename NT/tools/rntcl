@@ -40,7 +40,7 @@ string remove_ext(string file)
 
 int main(int argc, string *argv)
 {
-  string *ldopts=({});
+  string *ldopts=({"-INCREMENTAL:no"});
   string *cflags=({
     "-Zm300",
     "-F8388608",
@@ -87,8 +87,17 @@ int main(int argc, string *argv)
 	  break;
 
 	case "share": // fixme
-	  share=1;
-	  target="dll";
+	  switch(option[1])
+	  {
+	    case "hare":
+	      share=1;
+	      target="dll";
+	      break;
+
+	    case "tatic":
+	      /* Not yet implemented */
+	      break;
+	  }
 	  break;
 	  
 	case "oper_pre":
@@ -286,7 +295,7 @@ int main(int argc, string *argv)
   {
     if(!file_stat(wantfile))
     {
-      werror("RNTCL: output file not generated.\n");
+      werror("RNTCL: output file not generated (%s).\n",wantfile);
       exit(1);
     }
   }
