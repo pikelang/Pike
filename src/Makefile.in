@@ -290,7 +290,7 @@ feature_list:
 lib: $(LIBDIR_SRC) $(LIBDIR_SRC)/master.pike $(LIBDIR_SRC)/modules $(LIBDIR_SRC)/include
 	cp -r $(LIBDIR_SRC) .
 	-cvs_dirs="`find lib -type d -name CVS`"; if test "x$$cvs_dirs" = "x" ; then : ; else rm -r $$cvs_dirs; fi
-	-files="`find lib -type f -name '*~'` `find lib -type f -name '.#*'` `find lib -type f -name '#*#'`"; if test "x$$files" = "x" ; then : ; else rm $$files; fi
+	-for f in `find lib -type f -name '*~'` `find lib -type f -name '.#*'` `find lib -type f -name '#*#'`; do rm $$f; done
 	-touch ./lib 2>/dev/null || (touch lib/.broken_gnu_touch && rm lib/.broken_gnu_touch)
 
 # make export archive (requires compiled Pike)
