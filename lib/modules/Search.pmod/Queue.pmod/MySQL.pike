@@ -81,8 +81,13 @@ void add_uri( Standards.URI uri, int recurse, string template, void|int force )
   {
     if(has_uri(r))
     {
-      int stage = get_stage(r);
-      if(stage!=1 && stage!=2 && stage!=3 && stage!=4)
+      // FIXME:
+      // Race condition:
+      // If a url is forced to be indexed *while* it's being indexed,
+      // and it's changed since the indexnig started, setting the stage
+      // to 0 here might be worthless, since it could be overwritten before
+      // it's fetched again.
+      if(force)
 	set_stage(r, 0);
     }
     else
