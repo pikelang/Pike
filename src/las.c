@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.71 1998/11/22 11:02:56 hubbe Exp $");
+RCSID("$Id: las.c,v 1.72 1999/02/04 20:33:56 hubbe Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -1867,21 +1867,21 @@ static void optimize(node *n)
 	if(CDR(n)->token == F_CONSTANT && CDR(n)->u.sval.type == T_INT)
 	{
 	  /* a+=0 -> a */
-	  if(n->u.sval.u.integer == 0) goto use_car;
+	  if(CDR(n)->u.sval.u.integer == 0) goto use_car;
 
 	  /* a+=1 -> ++a */
-	  if(n->u.sval.u.integer == 1)
+	  if(CDR(n)->u.sval.u.integer == 1)
 	  {
-	    tmp1=mknode(F_INC,CDR(n),0);
-	    CDR(n)=0;
+	    tmp1=mknode(F_INC,CAR(n),0);
+	    CAR(n)=0;
 	    goto use_tmp1;
 	  }
 
 	  /* a+=-1 -> --a */
-	  if(n->u.sval.u.integer == -1)
+	  if(CDR(n)->u.sval.u.integer == -1)
 	  {
-	    tmp1=mknode(F_DEC, CDR(n), 0);
-	    CDR(n)=0;
+	    tmp1=mknode(F_DEC, CAR(n), 0);
+	    CAR(n)=0;
 	    goto use_tmp1;
 	  }
 	}
@@ -1894,21 +1894,21 @@ static void optimize(node *n)
 	if(CDR(n)->token == F_CONSTANT && CDR(n)->u.sval.type == T_INT)
 	{
 	  /* a-=0 -> a */
-	  if(n->u.sval.u.integer == 0) goto use_car;
+	  if(CDR(n)->u.sval.u.integer == 0) goto use_car;
 
 	  /* a-=-1 -> ++a */
-	  if(n->u.sval.u.integer == -1)
+	  if(CDR(n)->u.sval.u.integer == -1)
 	  {
-	    tmp1=mknode(F_INC, CDR(n), 0);
-	    CDR(n)=0;
+	    tmp1=mknode(F_INC, CAR(n), 0);
+	    CAR(n)=0;
 	    goto use_tmp1;
 	  }
 
 	  /* a-=-1 -> --a */
-	  if(n->u.sval.u.integer == 1)
+	  if(CDR(n)->u.sval.u.integer == 1)
 	  {
-	    tmp1=mknode(F_DEC, CDR(n), 0);
-	    CDR(n)=0;
+	    tmp1=mknode(F_DEC, CAR(n), 0);
+	    CAR(n)=0;
 	    goto use_tmp1;
 	  }
 	}
@@ -2066,14 +2066,15 @@ static void optimize(node *n)
 	if(!node_is_eq(*arg1,CAR(tmp1)) || /* x == z */
 	   depend_p(*arg2,*arg2) ||	/* does y depend on y? */
 	   depend_p(*arg2,*arg1) ||	/* does y depend on x? */
-	   depend_p(*arg2,CADR(n))) /* does y depend on p? */
+	   depend_p(*arg2,CADR(n)) ||   /* does y depend on p? */
+	   depend_p(*arg2,tmp1))        /* does y depend on z? */
 	{
 	  /* it was not on the form for(; x op y; x++) p; */
 	  if(!node_is_eq(*arg2,CAR(tmp1)) || /* y == z */
 	     depend_p(*arg1,*arg2) || /* does x depend on y? */
 	     depend_p(*arg1,*arg1) || /* does x depend on x? */
-	     depend_p(*arg1,CADR(n)) /* does x depend on p? */
-	     )
+	     depend_p(*arg1,CADR(n)) || /* does x depend on p? */
+	     depend_p(*arg1,tmp1))      /* does x depend on z? */
 	  {
 	    /* it was not on the form for(; x op y; y++) p; */
 	    break;
