@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: PDF.pmod,v 1.10 2001/11/21 14:53:21 js Exp $
+// $Id: PDF.pmod,v 1.11 2001/11/22 14:20:54 js Exp $
 
 // Filter for application/pdf
 
@@ -35,6 +35,8 @@ Output filter(Standards.URI uri, string|Stdio.File data, string content_type)
 
   string md="", body="";
   array a=text/"----------\n";
+  if(sizeof(a)<2)
+    a=text/"----------\r\n";
 
   if(sizeof(a)>1)
   {
