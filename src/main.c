@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: main.c,v 1.33 1998/01/15 05:59:42 hubbe Exp $");
+RCSID("$Id: main.c,v 1.34 1998/01/16 22:33:06 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -58,7 +58,7 @@ struct callback *add_post_master_callback(callback_func call,
 }
 
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
   JMP_BUF back;
   int e, num;
@@ -287,6 +287,9 @@ void main(int argc, char **argv)
 
   push_int(0);
   f_exit(1);
+
+  /* NOT REACHED */
+  return(-1);	/* To avoid warnings. */
 }
 
 

@@ -915,14 +915,16 @@ char           *prog;
 	    if (reginput == regbol)
 		break;
 	    if (*reginput == '\0' ||
-	       ISWORDPART( *(reginput-1) ) || !ISWORDPART( *reginput ) )
+		ISWORDPART( *((unsigned char *)reginput-1) ) ||
+		!ISWORDPART( *((unsigned char *)reginput) ) )
 		return (0);
 	    break;
 	case WORDEND:
 	    if (*reginput == '\0')
 		break;
 	    if ( reginput == regbol ||
-	       !ISWORDPART( *(reginput-1) ) || ISWORDPART( *reginput ) )
+		 !ISWORDPART( *((unsigned char *)reginput-1) ) ||
+		 ISWORDPART( *((unsigned char *)reginput) ) )
 		return (0);
 	    break;
 	case EXACTLY:{

@@ -259,7 +259,7 @@ static RETSIGTYPE receive_signal(int signum)
 #endif
 #endif
 #endif
-    fprintf(stderr,"pid %d died with code %d\n",pid,status);
+    fprintf(stderr,"pid %d died with code %d\n",(int)pid,status);
 
     if(pid>0)
     {

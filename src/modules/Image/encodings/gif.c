@@ -1,9 +1,9 @@
-/* $Id: gif.c,v 1.25 1998/01/16 22:09:16 grubba Exp $ */
+/* $Id: gif.c,v 1.26 1998/01/16 22:33:12 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: gif.c,v 1.25 1998/01/16 22:09:16 grubba Exp $
+**!	$Id: gif.c,v 1.26 1998/01/16 22:33:12 grubba Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -31,7 +31,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: gif.c,v 1.25 1998/01/16 22:09:16 grubba Exp $");
+RCSID("$Id: gif.c,v 1.26 1998/01/16 22:33:12 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -1059,7 +1059,7 @@ void _image_gif_encode(INT32 args,int fs)
 	   get_storage(alphaobj=sp[arg-args].u.object,image_program)))
       {
 	 alphaobj->refs++;
-	 if (args-arg>1)
+	 if (args-arg>1) {
 	    if (args-arg<4 ||
 		sp[1+arg-args].type!=T_INT ||
 		sp[2+arg-args].type!=T_INT ||
@@ -1072,6 +1072,7 @@ void _image_gif_encode(INT32 args,int fs)
 	       ac.b=sp[3+arg-args].u.integer;
 	       alphaentry=1;
 	    }
+	 }
 	 trans=1;
 	 if (!nct) tridx=255;
 	 else tridx=image_colortable_size(nct);

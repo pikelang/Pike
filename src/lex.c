@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.37 1998/01/13 22:56:45 hubbe Exp $");
+RCSID("$Id: lex.c,v 1.38 1998/01/16 22:33:04 grubba Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -296,7 +296,7 @@ char *get_token_name(int n)
 
 struct lex lex;
 
-#define LOOK() (*(lex.pos))
+#define LOOK() (*((unsigned char *)lex.pos))
 #define GETC() (*(lex.pos++))
 #define GOBBLE(c) (LOOK()==c?(lex.pos++,1):0)
 #define SKIPSPACE() do { while(ISSPACE(LOOK()) && LOOK()!='\n') lex.pos++; }while(0)
