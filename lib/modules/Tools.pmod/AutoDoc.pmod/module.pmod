@@ -31,6 +31,13 @@ static int isIdent(string s) {
   return 1;
 }
 
+static int(0..1) isFloat(string s)
+{
+  int n;
+  sscanf(s, "%*[0-9].%*[0-9]%n", n);
+  return sizeof(s) && n == sizeof(s);
+}
+
 static string xmlquote(string s) {
   return replace(s, ({ "<", ">", "&" }), ({ "&lt;", "&gt;", "&amp;" }));
 }

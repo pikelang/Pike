@@ -61,11 +61,11 @@ static object makeWrapper(array(string) modules, object|void child)
 //!   Non-zero if it is a Pike file. If the file contains
 //!   style doc comments, C-mode is used despite pikeMode != 0.
 //! @param type
-//!   "class" or "module".
+//!   @tt{"class"@}, @tt{"module"@} or @tt{"namespace"@}.
 //! @param name
-//!   The name of the class/module.
+//!   The name of the class/module/namespace.
 //! @param parentModules
-//!   The ancestors of the class/module.
+//!   The ancestors of the class/module/namespace.
 //!
 //! @example
 //!   // To extract doc for Foo.Bar.Ippa:
@@ -106,10 +106,21 @@ string extractXML(string filename, int|void pikeMode, string|void type,
   }
   else if(stylePike && has_value(contents, "//!")) {
     if(has_suffix(filename, ".pmod.in"))
-      contents = replace(contents, "@module@", "\"___"+parentModules*"."+"\"");
-    object m = (type == "module")
-      ? .PikeExtractor.extractModule(contents, filename, name)
-      : .PikeExtractor.extractClass(contents, filename, name);
+      contents = replace(contents, "@module@",
+			 "\"___" + parentModules[1..]*"." + "\"");
+    object m;
+    switch(type) {
+    case "module":
+      m = .PikeExtractor.extractModule(contents, filename, name);
+      break;
+    default:
+    case "class":
+      m = .PikeExtractor.extractClass(contents, filename, name);
+      break;
+    case "namespace":
+      m = .PikeExtractor.extractNamespace(contents, filename, name);
+      break;
+    }
     if (m)
       return makeWrapper(parentModules, m)->xml();
   }
@@ -554,6 +565,7 @@ static class Scope(string|void type, string|void name) {
 
 static class ScopeStack {
   mapping(string:array(Scope)) scopes = ([]);
+  mapping(string:multiset(string)) namespace_extends = ([]);
   string namespace = "predef";
 
   array(array(string|array(Scope))) namespaceStack = ({});
@@ -588,6 +600,15 @@ static class ScopeStack {
       } else {
 	scopes[namespace] = scopes[namespace][..sizeof(scopes[namespace])-2];
       }
+    }
+  }
+
+  void extend_namespace(string parent, string child)
+  {
+    if (!namespace_extends[child]) {
+      namespace_extends[child] = (<parent>);
+    } else {
+      namespace_extends[child][parent] = 1;
     }
   }
 
@@ -650,6 +671,15 @@ static class ScopeStack {
 	    }
 	    matches += ({ res + ref });
 	  }
+      }
+      string ns = namespace;
+      for (multiset(string) extends = namespace_extends[ns];
+	   (ns && extends); extends = namespace_extends[ns]) {
+	ns = 0;
+	foreach(extends; string ns2;) {
+	  if (namespace_extends[ns2]) ns = ns2;
+	  matches += ({ ns2 + "::" + ref });
+	}
       }
       if (sizeof(matches)) {
 	return ([ "resolved" : matches*"\0" ]);
@@ -716,8 +746,14 @@ static void resolveFun(ScopeStack scopes, Node node) {
           if (name)
             scopes->addName(name);
           break;
+        case "extends":
+	  if (node->get_any_name() == "namespace") {
+	    scopes->extend_namespace(child->get_attributes()->name,
+				     node->get_attributes()->name);
+	  }
+	  break;
         default:
-          ; // do nothing (?)
+          break; // do nothing (?)
       }
     }
   }

@@ -112,6 +112,7 @@ mapping(string : multiset(string)) allowedChildren =
   "_variable": standard,
   "_inherit" : standard,
   "_class" : standard,
+  "_namespace" : standard,
   "_module" : standard,
   "_constant" : standard,
   "_enum" : (< "constant" >) + standard,
@@ -751,12 +752,18 @@ static class DocParserClass {
           .PikeParser nameparser = .PikeParser(arg, currentPosition);
           string s = nameparser->readToken();
           if (!isIdent(s)) {
-	    if ((keyword == "namespace") && (s == "::")) {
-	      s = "";
+	    if (keyword == "namespace") {
+	      if (s == "::") {
+		s = "";
+	      } else if (!isFloat(s)) {
+		parseError("@%s: expected %s name, got %O",
+			   keyword, keyword, s);
+	      }
 	    } else {
 	      parseError("@%s: expected %s name, got %O", keyword, keyword, s);
 	    }
-	  } else if (nameparser->peekToken() == "::") {
+	  }
+	  if (nameparser->peekToken() == "::") {
 	    nameparser->readToken();
             if (keyword != "namespace")
               parseError("@%s: '%s::' only allowed as @namespace name",
