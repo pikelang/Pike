@@ -1,5 +1,6 @@
 #! /bin/sh
 
+# $Id: xenofarm.sh,v 1.13 2002/12/14 03:36:55 nilsson Exp $
 # This file scripts the xenofarm actions and creates a result package
 # to send back.
 
@@ -53,20 +54,24 @@ log_start build
 xenofarm_build
 log_end $?
 
-log_start post_build
-xenofarm_post_build
-log_end $?
+if [ $LASTERR = 0 ]; then
+  log_start post_build
+  xenofarm_post_build
+  log_end $?
+  else :
+fi
 
 log_start response_assembly
-  cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt
+  cp buildid.txt build/xenofarm/
+  cp "$BUILDDIR/config.info" build/xenofarm/configinfo.txt || /bin/true
   if test ! -f "build/xenofarm/verifylog.txt"; then
-    cp "$BUILDDIR/config.cache" build/xenofarm/configcache.txt; \
+    cp "$BUILDDIR/config.cache" build/xenofarm/configcache.txt || /bin/true; \
     for f in `find $BUILDDIR -name config.log -print`; do
-      cp $f build/xenofarm/configlog`echo $f|tr '[/]' '[_]'`.txt;\
+      cp $f build/xenofarm/configlog`echo $f|tr '[/]' '[_]'`.txt || /bin/true;\
     done;
   fi
   if test ! -f "build/xenofarm/exportlog.txt"; then
-    cp "$BUILDDIR/testsuite" build/xenofarm/testsuite.txt;
+    cp "$BUILDDIR/testsuite" build/xenofarm/testsuite.txt || /bin/true;
   fi
   find . -name "core" -exec \
     gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
@@ -77,8 +82,7 @@ log_start response_assembly
   find . -name "core.*" -exec \
     gdb --batch --nx --command=bin/xenofarm_gdb_cmd "$BUILDDIR/pike" {} >> \
       build/xenofarm/_core.txt ";"
-  cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt
-  cp buildid.txt build/xenofarm/
+  cp "$BUILDDIR/dumpmodule.log" build/xenofarm/dumplog.txt || /bin/true
 log_end $?
 
 log "END"
