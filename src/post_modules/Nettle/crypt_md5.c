@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: crypt_md5.c,v 1.1 2003/08/24 18:27:44 nilsson Exp $
+|| $Id: crypt_md5.c,v 1.2 2003/08/24 18:35:02 nilsson Exp $
 */
 
 /*
@@ -19,7 +19,6 @@
  *
  */
 
-#include <stdio.h>
 #include <string.h>
 #include <nettle/md5.h>
 
@@ -43,7 +42,6 @@ char *crypt_md5(int pl, const char *pw, int sl, const char *salt)
 			       * better later on
 			       */
   static char passwd[22], *p;
-  static const char *ep;
   unsigned char final[MD5_DIGEST_SIZE];
   int i;
   struct md5_ctx ctx;
