@@ -1,5 +1,5 @@
 #
-# $Id: common_module_makefile.in,v 1.23 2003/12/03 21:49:28 bill Exp $
+# $Id: common_module_makefile.in,v 1.24 2004/01/22 09:41:46 grubba Exp $
 #
 # Contains stuff common to both dynamic_module_makefile and
 # static_module_makefile.
@@ -58,7 +58,7 @@ $(MODULE_ARCHIVES) ThisIsAPhonyTargetBlaBlaBla: force
 .c.o:
 	@echo "Compiling $<" ;\
 	rm -f $@.fail >/dev/null 2>&1; \
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
+	if $(CC) $(PREFLAGS) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  status=$$?; \
 	  if test x"@noopt_retry@" = xyes ; then \
 	    echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
@@ -108,7 +108,7 @@ module.pmod: Makefile $(MODULE_PMOD_IN)
 	@echo "Making module.pmod" ; \
 	if [ "x$(MODULE_PMOD_IN)" = "x" ]; then \
 	  echo >module.pmod  '// Generated automatically by'; \
-	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.23 2003/12/03 21:49:28 bill Exp $$'; \
+	  echo >>module.pmod '// $$Id: common_module_makefile.in,v 1.24 2004/01/22 09:41:46 grubba Exp $$'; \
 	  echo >>module.pmod '#pike __REAL_VERSION__'; \
 	  echo >>module.pmod 'inherit $(MODULE_PROGRAM);'; \
 	else \
