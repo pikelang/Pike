@@ -348,7 +348,7 @@ class Node
   static string _sprintf(int mode, mapping options)
   {
     return mode == 'O' &&
-      function_name(object_program(this_object())) + "("+get_node_name()+")";
+      sprintf("%O(%s)", object_program(this_object()), get_node_name());
   }
 }
 
