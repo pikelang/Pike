@@ -28,7 +28,7 @@ int get_arrow_type( );
 //!
 
 int get_shadow_type( );
-//! Return the arrow type. One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT].
+//! Return the shadow type. One of @[SHADOW_ETCHED_IN], @[SHADOW_ETCHED_OUT], @[SHADOW_IN], @[SHADOW_NONE] and @[SHADOW_OUT].
 //!
 //!
 
