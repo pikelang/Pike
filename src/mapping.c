@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.121 2001/09/05 03:56:43 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.122 2001/09/28 23:18:53 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1637,7 +1637,7 @@ node *make_node_from_mapping(struct mapping *m)
 
   mapping_fix_type_field(m);
 
-  if((m->data->ind_types | m->data->val_types) & (BIT_FUNCTION | BIT_OBJECT))
+  if(!mapping_is_constant(m,0))
   {
     struct array *ind, *val;
     node *n;
@@ -2330,4 +2330,27 @@ void zap_all_mappings(void)
     
     /* free_mapping(m); */
   }
+}
+
+
+int mapping_is_constant(struct mapping *m,
+			struct processing *p)
+{
+  INT32 e;
+  struct keypair *k;
+  struct mapping_data *md=m->data;
+
+  if( (md->ind_types | md->val_types) & ~(BIT_INT|BIT_FLOAT|BIT_STRING))
+  {
+    md->valrefs++;
+    add_ref(md);
+    NEW_MAPPING_LOOP(md)
+      {
+	if(!svalues_are_constant(&k->ind, 1, md->ind_types, p)) return 0;
+	if(!svalues_are_constant(&k->val, 1, md->val_types, p)) return 0;
+      }
+    md->valrefs--;
+    free_mapping_data(md);
+  }
+  return 1;
 }

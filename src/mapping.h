@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.35 2001/06/08 14:26:41 mast Exp $
+ * $Id: mapping.h,v 1.36 2001/09/28 23:18:53 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
@@ -88,6 +88,7 @@ PMOD_PROTO void really_free_mapping(struct mapping *md);
 /* Prototypes begin here */
 BLOCK_ALLOC(mapping, 511)
 
+static void check_mapping_type_fields(struct mapping *m);
 PMOD_EXPORT struct mapping *debug_allocate_mapping(int size);
 PMOD_EXPORT void really_free_mapping_data(struct mapping_data *md);
 PMOD_EXPORT void do_free_mapping(struct mapping *m);
@@ -147,10 +148,9 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args);
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
 void describe_mapping(struct mapping *m,struct processing *p,int indent);
 node *make_node_from_mapping(struct mapping *m);
-PMOD_EXPORT void f_m_delete(INT32 args);
 PMOD_EXPORT void f_aggregate_mapping(INT32 args);
 PMOD_EXPORT struct mapping *copy_mapping_recursively(struct mapping *m,
-					 struct processing *p);
+						     struct processing *p);
 PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    struct svalue *look_for,
@@ -158,16 +158,18 @@ PMOD_EXPORT void mapping_search_no_free(struct svalue *to,
 void check_mapping(struct mapping *m);
 void check_all_mappings(void);
 void gc_mark_mapping_as_referenced(struct mapping *m);
+void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 unsigned gc_touch_all_mappings(void);
 void gc_check_all_mappings(void);
 void gc_mark_all_mappings(void);
-void real_gc_cycle_check_mapping(struct mapping *m, int weak);
 void gc_cycle_check_all_mappings(void);
 void gc_zap_ext_weak_refs_in_mappings(void);
 void gc_free_all_unreferenced_mappings(void);
 void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
 void zap_all_mappings(void);
+int mapping_is_constant(struct mapping *m,
+			struct processing *p);
 /* Prototypes end here */
 
 #define allocate_mapping(X) dmalloc_touch(struct mapping *,debug_allocate_mapping(X))

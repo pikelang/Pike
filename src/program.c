@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.303 2001/09/02 14:45:43 grubba Exp $");
+RCSID("$Id: program.c,v 1.304 2001/09/28 23:18:55 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -627,6 +627,28 @@ void fixate_program(void)
   }
 
   Pike_compiler->new_program->flags |= PROGRAM_FIXED;
+
+  if(Pike_compiler->check_final)
+  {
+    struct program *p=Pike_compiler->new_program;
+    for(i=0;i<(int)p->num_identifier_references;i++)
+    {
+      struct identifier *id;
+      if(p->identifier_references[i].id_flags & ID_NOMASK)
+      {
+	struct pike_string *name=ID_FROM_INT(p, i)->name;
+
+	e=find_shared_string_identifier(name,p);
+	if(e != i)
+	{
+	  if(name->len < 1024 && !name->size_shift)
+	    my_yyerror("Illegal to redefine final identifier %s\n",name->str);
+	  else
+	    my_yyerror("Illegal to redefine final identifier (unable to output name of identifier).\n");
+	}
+      }
+    }
+  }
 
 #ifdef DEBUG_MALLOC
   {
@@ -1942,10 +1964,7 @@ void low_inherit(struct program *p,
 
     if (fun.id_flags & ID_NOMASK)
     {
-      int n;
-      n = isidentifier(name);
-      if (n != -1 && ID_FROM_INT(Pike_compiler->new_program,n)->func.offset != -1)
-	my_yyerror("Illegal to redefine 'nomask' function/variable \"%s\"",name->str);
+      Pike_compiler->check_final++;
     }
 
     if(fun.id_flags & ID_PRIVATE) fun.id_flags|=ID_HIDDEN;
@@ -2347,6 +2366,54 @@ PMOD_EXPORT int add_constant(struct pike_string *name,
   if(name!=debug_findstring(name))
     fatal("define_constant on nonshared string.\n");
 #endif
+
+  do {
+    struct identifier *id;
+    if(c &&
+       c->type == T_FUNCTION &&
+       c->subtype != FUNCTION_BUILTIN &&
+       c->u.object->prog)
+    {
+      id=ID_FROM_INT(c->u.object->prog, c->subtype);
+      if(c->u.object->prog == Pike_compiler->new_program &&
+	 !c->u.object->prog->identifier_references[c->subtype].inherit_offset)
+      {
+	if(id->identifier_flags & IDENTIFIER_FUNCTION)
+	{
+	  return define_function(name,
+				 id->type,
+				 flags,
+				 id->identifier_flags,
+				 & id->func,
+				 id->opt_flags);
+	  
+	}
+	else if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
+		id->func.offset != -1)
+	{
+	  c=& Pike_compiler->new_program->constants[id->func.offset].sval;
+	  break;
+	}
+      }
+      else
+      {
+	if((id->identifier_flags & IDENTIFIER_CONSTANT) &&
+	   id->func.offset != -1 &&
+	   INHERIT_FROM_INT(c->u.object->prog, c->subtype)->prog->
+	   constants[id->func.offset].sval.type == T_PROGRAM)
+	{
+	  /* In this one case we allow fake objects to enter the
+	   * mainstream...
+	   */
+	  break;
+	} 
+     }
+    }
+    
+    if(c && !svalues_are_constant(c,1,BIT_MIXED,0))
+      yyerror("Constant values may not references this_object()");
+    
+  }while(0);
 
   n = isidentifier(name);
 

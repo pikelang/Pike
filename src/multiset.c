@@ -17,7 +17,7 @@
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.32 2001/06/20 15:23:32 grubba Exp $");
+RCSID("$Id: multiset.c,v 1.33 2001/09/28 23:18:54 hubbe Exp $");
 
 struct multiset *first_multiset;
 
@@ -284,7 +284,7 @@ void describe_multiset(struct multiset *l,struct processing *p,int indent)
 
 node * make_node_from_multiset(struct multiset *l)
 {
-  if(check_that_array_is_constant(l->ind))
+  if(multiset_is_constant(l,0))
   {
     struct svalue s;
     s.type=T_MULTISET;
@@ -435,3 +435,9 @@ void count_memory_in_multisets(INT32 *num_, INT32 *size_)
   *size_=size;
 }
 
+
+int multiset_is_constant(struct multiset *m,
+			 struct processing *p)
+{
+  return array_is_constant(m->ind, p);
+}

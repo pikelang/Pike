@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "bignum.h"
 
-RCSID("$Id: array.c,v 1.103 2001/06/26 12:42:02 grubba Exp $");
+RCSID("$Id: array.c,v 1.104 2001/09/28 23:18:51 hubbe Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -1550,32 +1550,16 @@ PMOD_EXPORT struct array *and_arrays(struct array *a, struct array *b)
   }
 }
 
-int check_that_array_is_constant(struct array *a)
+int array_is_constant(struct array *a,
+		      struct processing *p)
 {
   array_fix_type_field(a);
-  if(a->type_field & (BIT_FUNCTION | BIT_OBJECT))
-  {
-    int e;
-    for(e=0;e<a->size;e++)
-    {
-      switch(ITEM(a)[e].type)
-      {
-	case T_FUNCTION:
-	  if(ITEM(a)[e].subtype == FUNCTION_BUILTIN) continue;
-	  /* Fall through */
-	case T_OBJECT:
-	  if(ITEM(a)[e].u.object -> next == ITEM(a)[e].u.object)
-	  {
-	    /* This is a fake object used during the
-	     * compilation!
-	     */
-	    return 0;
-	  }
-      }
-    }
-  }
-  return 1;
+  return svalues_are_constant(ITEM(a),
+			      a->size,
+			      a->type_field,
+			      p);
 }
+
 
 node *make_node_from_array(struct array *a)
 {
@@ -1630,7 +1614,7 @@ node *make_node_from_array(struct array *a)
 					      mksvaluenode(ITEM(a))));
   }
   
-  if(check_that_array_is_constant(a))
+  if(array_is_constant(a,0))
   {
     s.type=T_ARRAY;
     s.subtype=0;

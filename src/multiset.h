@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: multiset.h,v 1.16 2000/12/16 05:24:41 marcus Exp $
+ * $Id: multiset.h,v 1.17 2001/09/28 23:18:54 hubbe Exp $
  */
 #ifndef MULTISET_H
 #define MULTISET_H
@@ -37,9 +37,9 @@ PMOD_EXPORT void do_free_multiset(struct multiset *l);
 PMOD_EXPORT void order_multiset(struct multiset *l);
 PMOD_EXPORT struct multiset *mkmultiset(struct array *ind);
 PMOD_EXPORT void multiset_insert(struct multiset *l,
-		 struct svalue *ind);
+		 struct svalue *v);
 struct array *multiset_indices(struct multiset *l);
-PMOD_EXPORT void multiset_delete(struct multiset *l,struct svalue *ind);
+PMOD_EXPORT void multiset_delete(struct multiset *l,struct svalue *v);
 PMOD_EXPORT void check_multiset_for_destruct(struct multiset *l);
 PMOD_EXPORT struct multiset *copy_multiset(struct multiset *tmp);
 PMOD_EXPORT struct multiset *merge_multisets(struct multiset *a,
@@ -53,13 +53,15 @@ PMOD_EXPORT void f_aggregate_multiset(INT32 args);
 struct multiset *copy_multiset_recursively(struct multiset *l,
 				   struct processing *p);
 void gc_mark_multiset_as_referenced(struct multiset *l);
+void real_gc_cycle_check_multiset(struct multiset *l, int weak);
 unsigned gc_touch_all_multisets(void);
 void gc_check_all_multisets(void);
 void gc_mark_all_multisets(void);
-void real_gc_cycle_check_multiset(struct multiset *l, int weak);
 void gc_cycle_check_all_multisets(void);
 void gc_free_all_unreferenced_multisets(void);
 void count_memory_in_multisets(INT32 *num_, INT32 *size_);
+int multiset_is_constant(struct multiset *m,
+			 struct processing *p);
 /* Prototypes end here */
 
 #define gc_cycle_check_multiset(X, WEAK) \
