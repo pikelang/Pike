@@ -1,5 +1,5 @@
 // Compatibility namespace
-// $Id: __default.pmod,v 1.12 2003/09/07 10:54:27 grubba Exp $
+// $Id: __default.pmod,v 1.13 2004/01/12 21:45:39 marcus Exp $
 
 #pike 7.5
 
@@ -140,6 +140,11 @@ mapping(string:mixed) all_constants()
 #endif
 #if constant(System.getgrent)
   ret->setgrent = System.getgrent;
+#endif
+#ifdef __NT__
+  ret->explode_path=lambda(string x) { return replace(x,"\\","/")/"/"; };
+#else
+  ret->explode_path=lambda(string x) { return x/"/"; };
 #endif
   return ret;
 }

@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.327 2004/01/12 20:50:46 marcus Exp $
+// $Id: master.pike.in,v 1.328 2004/01/12 21:45:38 marcus Exp $
 
 #pike __REAL_VERSION__
 
@@ -225,11 +225,23 @@ int is_absolute_path(string p)
 //!
 //! This function divides a path into its components. This might seem like
 //! it could be done by dividing the string on <tt>"/"</tt>, but that will
-//! not work on some operating systems.
+//! not work on some operating systems.  To turn the components back into
+//! a path again, use @[combine_path()].
 //!
 array(string) explode_path(string p)
 {
-  return EXPLODE_PATH(p);
+#ifdef __amigaos__
+  int colon = search(reverse(p), ":");
+  if(colon >= 0)
+    return ({ p[..sizeof(p)-colon-1] }) + explode_path(p[sizeof(p)-colon..]);
+  array(string) r = p/"/";
+  return replace(r[..sizeof(r)-2], "", "/")+r[sizeof(r)-1..];
+#else
+  array(string) r = EXPLODE_PATH(p);
+  if(r[0] == "" && sizeof(p))
+    r[0] = "/";
+  return r;
+#endif
 }
 
 //! @appears dirname
