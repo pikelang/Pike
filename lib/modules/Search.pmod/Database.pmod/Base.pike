@@ -1,11 +1,21 @@
 //! @class Base class for Search Database implementations
 
-//! Inserts a document in the database.
-void insert_document(string uri, string title, string description, int last_changed,
-		     int size, int mime_type, array words);
+//! Inserts the words of a resource into the database
+void insert_words(Standards.URI, array words,
+		  void|Linguistics.Language language);
+
+//! Inserts the metadata corresponding to a resource into the database
+void insert_metadata(Standards.URI uri, mapping(string:Search.MetadataType),
+		     void|Linguistics.Language language);
 
 //! Removes a document from the database.
-void remove_document(string uri);
+void remove_words(Standards.URI uri, void|Linguistics.Language language);
+
+//! Removes a document from the database.
+void remove_metadata(Standards.URI uri, void|Linguistics.Language language);
+
+//! Look up the language forks present within @variable uri
+multiset(Linguistics.Language) lookup_languages(Standards.URI uri);
 
 //! Return a mapping with all the documents containing @variable word.
 //! The index part of the mapping contains document URIs.
