@@ -261,7 +261,7 @@ string describe_backtrace(mixed *trace)
   {
     ret+="No backtrace.\n";
   }else{
-    for(e=0;e<sizeof(trace);e++)
+    for(e=sizeof(trace)-1;e>=0;e--)
     {
       mixed tmp;
       string row;
