@@ -6,7 +6,7 @@ int cutoff;
 
 
 void create(void|int _cutoff, void|array(int) _proximity_ranking,
-	    void|Search.Database.Base db, void|mapping(string:int) _field_ranking)
+            void|Search.Database.Base db, void|array(int)|mapping(string:int) _field_ranking)
 {
   field_ranking=allocate(66);
 
@@ -20,12 +20,16 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
     for(int i=0; i<8; i++)
       proximity_ranking[i]=8-i;
 
-  if(_field_ranking)
-  {
-    int field_id;
-    foreach(indices(_field_ranking), string field)
-      if(field_id=db->get_field_id(field, 1))
-	field_ranking[field_id]=_field_ranking[field];
+  if(_field_ranking) {
+    if (mappingp(_field_ranking))
+    {
+      int field_id;
+      foreach(indices(_field_ranking), string field)
+        if(field_id=db->get_field_id(field, 1))
+          field_ranking[field_id]=_field_ranking[field];
+    }
+    else if (arrayp(_field_ranking))
+      field_ranking = _field_ranking;
   }
   else {
     field_ranking[0]=17;
@@ -33,11 +37,6 @@ void create(void|int _cutoff, void|array(int) _proximity_ranking,
   }
 }
 
-this_program copy()
-{
-  this_program c = this_program();
-  c->field_ranking = field_ranking;
-  c->proximity_ranking = proximity_ranking;
-  c->cutoff = cutoff;
-  return c;
+this_program copy() {
+  return this_program(cutoff, proximity_ranking, 0, field_ranking);
 }

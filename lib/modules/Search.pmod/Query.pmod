@@ -48,8 +48,8 @@ Search.ResultSet do_query_and(Search.Database.Base db,
 }
 
 Search.ResultSet do_query_phrase(Search.Database.Base db,
-				 array(string) words,
-				 Search.RankingProfile ranking)
+                                 array(string) words,
+                                 Search.RankingProfile ranking)
 {
   array(int) word_ids=map(words, db->hash_word);
   Search.ResultSet result =
@@ -67,17 +67,27 @@ Search.ResultSet do_query_phrase(Search.Database.Base db,
 //!   The search database.
 //! @param defaultRanking
 //!   Used when searching in the field "any:".
-Search.ResultSet execute(Search.Database.Base db,
-                         Search.Grammar.AbstractParser parser,
-                         string query,
-                         Search.RankingProfile defaultRanking)
+//!
+//! @returns
+//!   An array with two elements:
+//!   @array
+//!     @elem Search.ResultSet 0
+//!       The ResultSet containing the hits.
+//!     @elem array(string) 1
+//!       All wanted words in the query. (I.e. not the words that were
+//!       preceded by minus.)
+//!   @endarray
+//!
+array(Search.ResultSet|array(string)) execute(Search.Database.Base db,
+                                              Search.Grammar.AbstractParser parser,
+                                              string query,
+                                              Search.RankingProfile defaultRanking)
 {
-
   Search.Grammar.ParseNode q = parser->parse(query);
   q = Search.Grammar.optimize(q);
 
-  if (!q)                      // The query was a null query
-    return Search.ResultSet(); // so return an empty resultset
+  if (!q)                                  // The query was a null query
+    return ({ Search.ResultSet(), ({}) }); // so return an empty resultset
 
   string error = Search.Grammar.validate(q);
   if (error)
@@ -100,6 +110,7 @@ Search.ResultSet execute(Search.Database.Base db,
 
     static constant ParseNode = Search.Grammar.ParseNode;
 
+    static array(array(string)|string) words = ({ });
     static array(Search.ResultSet) stack = ({ });
     static void push(Search.ResultSet r) {
       werror("---PUSH\n");
@@ -114,11 +125,11 @@ Search.ResultSet execute(Search.Database.Base db,
       return r;
     }
 
-    Search.ResultSet execute(ParseNode q) {
+    array(Search.ResultSet|array(string)) execute(ParseNode q) {
       exec(q);
       if (sizeof(stack) != 1)
         throw ("Stack should have exactly one item!");
-      return pop();
+      return ({ pop(), words });
     }
 
     void exec(ParseNode q) {
@@ -185,10 +196,12 @@ Search.ResultSet execute(Search.Database.Base db,
           if (hasPlus) {
             int first = 1;
             if (sizeof(q->plusWords)) {
+              words += q->plusWords;
               push(do_query_and(db, q->plusWords, ranking));
               first = 0;
             }
             foreach (q->plusPhrases, array(string) ph) {
+              words += ph;
               push(do_query_phrase(db, ph, ranking));
               if (!first) {
                 Search.ResultSet r2 = pop();
@@ -201,10 +214,12 @@ Search.ResultSet execute(Search.Database.Base db,
           if (hasOrdinary) {
             int first = 1;
             if (sizeof(q->words)) {
+              words += q->words;
               push(do_query_or(db, q->words, ranking));
               first = 0;
             }
             foreach (q->phrases, array(string) ph) {
+              words += ph;
               push(do_query_phrase(db, ph, ranking));
               if (!first) {
                 Search.ResultSet r2 = pop();
