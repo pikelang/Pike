@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.h,v 1.47 2003/03/27 14:17:30 mast Exp $
+|| $Id: fdlib.h,v 1.48 2003/03/30 01:27:10 mast Exp $
 */
 
 #ifndef FDLIB_H
@@ -63,7 +63,14 @@
 #include <winbase.h>
 
 typedef int FD;
+
+#if _INTEGRAL_MAX_BITS >= 64
 typedef struct _stati64 PIKE_STAT_T;
+typedef __int64 PIKE_OFF_T;
+#else
+typedef struct stat PIKE_STAT_T;
+typedef off_t PIKE_OFF_T;
+#endif
 
 #define SOCKFUN1(NAME,T1) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1);
 #define SOCKFUN2(NAME,T1,T2) PMOD_EXPORT int PIKE_CONCAT(debug_fd_,NAME) (FD,T1,T2);
@@ -132,8 +139,8 @@ SOCKFUN1(listen, int)
 PMOD_EXPORT int debug_fd_close(FD fd);
 PMOD_EXPORT ptrdiff_t debug_fd_write(FD fd, void *buf, ptrdiff_t len);
 PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len);
-PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where);
-PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len);
+PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where);
+PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len);
 PMOD_EXPORT int debug_fd_flock(FD fd, int oper);
 PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s);
 PMOD_EXPORT int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t);
@@ -286,6 +293,7 @@ PMOD_EXPORT void closedir(DIR *dir);
 
 typedef int FD;
 typedef struct stat PIKE_STAT_T;
+typedef off_t PIKE_OFF_T;
 
 #define fd_info(X) ""
 #define fd_init()

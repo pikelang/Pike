@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: fdlib.c,v 1.57 2003/03/26 14:15:40 mast Exp $
+|| $Id: fdlib.c,v 1.58 2003/03/30 01:27:10 mast Exp $
 */
 
 #include "global.h"
@@ -10,9 +10,14 @@
 #include "pike_error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.57 2003/03/26 14:15:40 mast Exp $");
+RCSID("$Id: fdlib.c,v 1.58 2003/03/30 01:27:10 mast Exp $");
 
 #ifdef HAVE_WINSOCK_H
+
+/* Old versions of the headerfiles don't have this constant... */
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
 
 #include "threads.h"
 
@@ -177,7 +182,7 @@ static int IsUncRoot(char *path)
   return 0 ;
 }
 
-static int low_stat (char *file, PIKE_STAT_T *buf)
+static int low_stat (const char *file, PIKE_STAT_T *buf)
 {
   char            *path;
   int              drive;       /* A: = 1, B: = 2, ... */
@@ -305,7 +310,14 @@ static int low_stat (char *file, PIKE_STAT_T *buf)
   
   buf->st_mode = __dtoxmode(findbuf.dwFileAttributes, file);
   buf->st_nlink = 1;
-  buf->st_size = (findbuf.nFileSizeHigh * ((INT64) MAXDWORD + 1)) + findbuf.nFileSizeLow;
+#ifdef INT64
+  buf->st_size = ((INT64) findbuf.nFileSizeHigh << 32) + findbuf.nFileSizeLow;
+#else
+  if (findbuf.nFileSizeHigh)
+    buf->st_size = MAXDWORD;
+  else
+    buf->st_size = findbuf.nFileSizeLow;
+#endif
   
   buf->st_uid = buf->st_gid = buf->st_ino = 0; /* unused entries */
   buf->st_rdev = buf->st_dev = (_dev_t)(drive - 1); /* A=0, B=1, ... */
@@ -792,9 +804,9 @@ PMOD_EXPORT ptrdiff_t debug_fd_read(FD fd, void *to, ptrdiff_t len)
   }
 }
 
-PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where)
+PMOD_EXPORT PIKE_OFF_T debug_fd_lseek(FD fd, PIKE_OFF_T pos, int where)
 {
-  ptrdiff_t ret;
+  PIKE_OFF_T ret;
   HANDLE h;
 
   mt_lock(&fd_mutex);
@@ -815,21 +827,38 @@ PMOD_EXPORT ptrdiff_t debug_fd_lseek(FD fd, ptrdiff_t pos, int where)
   h = da_handle[fd];
   mt_unlock(&fd_mutex);
 
-  ret = SetFilePointer(h,
-		       DO_NOT_WARN((LONG)pos),
-		       0, where);
-  if(!~ret)
-  {
-    errno=GetLastError();
-    return -1;
+#ifdef INT64
+  if (pos >= ((INT64) 1 << 32)) {
+    LONG high = DO_NOT_WARN ((LONG) (pos >> 32));
+    DWORD err;
+    pos &= (1 << 32) - 1;
+    ret = SetFilePointer (h, DO_NOT_WARN ((LONG) pos), &high, where);
+    if (ret == INVALID_SET_FILE_POINTER &&
+	(err = GetLastError()) != NO_ERROR) {
+      errno = err;
+      return -1;
+    }
+    ret += (INT64) high << 32;
   }
+  else
+#endif
+  {
+    ret = SetFilePointer (h, DO_NOT_WARN ((LONG) pos), NULL, where);
+    if(ret == INVALID_SET_FILE_POINTER)
+    {
+      errno=GetLastError();
+      return -1;
+    }
+  }
+
   return ret;
 }
 
-PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len)
+PMOD_EXPORT int debug_fd_ftruncate(FD fd, PIKE_OFF_T len)
 {
   HANDLE h;
-  LONG oldfp_lo, oldfp_hi;
+  LONG oldfp_lo, oldfp_hi, len_hi;
+  DWORD err;
 
   mt_lock(&fd_mutex);
   if(fd_type[fd]!=FD_FILE)
@@ -844,23 +873,43 @@ PMOD_EXPORT int debug_fd_ftruncate(FD fd, ptrdiff_t len)
   oldfp_hi = 0;
   oldfp_lo = SetFilePointer(h, 0, &oldfp_hi, FILE_CURRENT);
   if(!~oldfp_lo) {
-    errno=GetLastError();
-    if(errno != NO_ERROR)
+    err = GetLastError();
+    if(err != NO_ERROR) {
+      errno = err;
       return -1;
+    }
   }
-  if(!~SetFilePointer(h,
-		      DO_NOT_WARN((LONG)len),
-		      NULL, FILE_BEGIN) ||
-     !SetEndOfFile(h)) {
+
+#ifdef INT64
+  len_hi = DO_NOT_WARN ((LONG) (len >> 32));
+  len &= (1 << 32) - 1;
+#else
+  len_hi = 0;
+#endif
+
+  if (SetFilePointer (h, DO_NOT_WARN ((LONG) len), &len_hi, FILE_BEGIN) ==
+      INVALID_SET_FILE_POINTER &&
+      (err = GetLastError()) != NO_ERROR) {
+    SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
+    errno = err;
+    return -1;
+  }
+
+  if(!SetEndOfFile(h)) {
     errno=GetLastError();
     SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN);
     return -1;
   }
-  if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
-    errno=GetLastError();
-    if(errno != NO_ERROR)
-      return -1;
-  }
+
+  if (oldfp_hi < len_hi || oldfp_hi == len_hi && oldfp_lo < len)
+    if(!~SetFilePointer(h, oldfp_lo, &oldfp_hi, FILE_BEGIN)) {
+      err = GetLastError();
+      if(err != NO_ERROR) {
+	errno = err;
+	return -1;
+      }
+    }
+
   return 0;
 }
 
@@ -960,7 +1009,11 @@ PMOD_EXPORT int debug_fd_fstat(FD fd, PIKE_STAT_T *s)
 	      errno = err;
 	      return -1;
 	    }
-	    s->st_size += high * ((INT64) MAXDWORD + 1);
+#ifdef INT64
+	    s->st_size += (INT64) high << 32;
+#else
+	    if (high) s->st_size = MAXDWORD
+#endif
 	  }
 	  if(!GetFileTime(da_handle[fd], &c, &a, &m))
 	  {

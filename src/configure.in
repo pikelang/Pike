@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.660 2003/03/29 01:45:22 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.661 2003/03/30 01:27:10 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -2351,6 +2351,8 @@ AC_MY_CHECK_TYPE(uid_t,int)
 AC_MY_CHECK_TYPE(gid_t,int)
 AC_MY_CHECK_TYPE(time_t,INT32)
 AC_MY_CHECK_TYPE(pri_t, short)
+
+AC_CHECK_SIZEOF(off_t, 4)
 
 if test "x$with_long_double_precision" = x -a \
 	"x$with_double_precision" = x ; then

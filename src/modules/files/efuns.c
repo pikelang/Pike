@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: efuns.c,v 1.118 2003/03/26 14:15:41 mast Exp $
+|| $Id: efuns.c,v 1.119 2003/03/30 01:27:10 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "file_machine.h"
 #include "file.h"
 
-RCSID("$Id: efuns.c,v 1.118 2003/03/26 14:15:41 mast Exp $");
+RCSID("$Id: efuns.c,v 1.119 2003/03/30 01:27:10 mast Exp $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -82,6 +82,13 @@ RCSID("$Id: efuns.c,v 1.118 2003/03/26 14:15:41 mast Exp $");
 /* #define READDIR_DEBUG */
 
 #ifdef __NT__
+
+#include <winbase.h>
+
+/* Old versions of the headerfiles don't have this constant... */
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER ((DWORD)-1)
+#endif
 
 /* Dynamic load of functions that doesn't exist in all Windows versions. */
 
@@ -207,21 +214,34 @@ void f_file_stat(INT32 args)
  */
 void f_file_truncate(INT32 args)
 {
-#ifdef HAVE_LSEEK64
-  long long len;
+#if defined (INT64) || defined (HAVE_TRUNCATE64)
+  INT64 len;
 #else
-  INT32 len;
+  off_t len;
 #endif
   struct pike_string *str;
   int res;
 
-  if(args<1 || sp[-args].type != T_STRING)
-    Pike_error("Bad argument 1 to file_truncate(string filename,int length).\n");
-  if(args<2 || sp[1-args].type != T_INT)
-    Pike_error("Bad argument 2 to file_truncate(string filename,int length).\n");
+  if(args < 2)
+    SIMPLE_TOO_FEW_ARGS_ERROR("file_truncate", 2);
+  if(sp[-args].type != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("file_truncate", 1, "string");
+
+#if defined (INT64) && defined (AUTO_BIGNUM)
+#if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
+  if(is_bignum_object_in_svalue(&Pike_sp[1-args])) {
+    if (!int64_from_bignum(&len, Pike_sp[1-args].u.object))
+      Pike_error ("Bad argument 2 to file_truncate(). Length too large.\n");
+  }
+  else
+#endif
+#endif
+    if(sp[1-args].type != T_INT)
+      SIMPLE_BAD_ARG_ERROR("file_truncate", 2, "int");
+    else
+      len = sp[1-args].u.integer;
 
   str = sp[-args].u.string;
-  len = sp[1-args].u.integer;
 
   if (strlen(str->str) != (size_t)str->len) {
     /* Filenames with NUL are not supported. */
@@ -242,18 +262,35 @@ void f_file_truncate(INT32 args)
       errno = GetLastError();
       res=-1;
     } else {
-      if(SetFilePointer(h, len, NULL, FILE_BEGIN) != 0xffffffff &&
-	 SetEndOfFile(h))
-	res=0;
-      else {
+      LONG high;
+      DWORD err;
+#ifdef INT64
+      high = len >> 32;
+      len &= (1 << 32) - 1;
+#else
+      high = 0;
+#endif
+      if (SetFilePointer(h, DO_NOT_WARN ((LONG) len), &high, FILE_BEGIN) ==
+	  INVALID_SET_FILE_POINTER &&
+	  (err = GetLastError()) != NO_ERROR) {
+	errno = err;
+	res = -1;
+      }
+      else if (!SetEndOfFile(h)) {
 	errno = GetLastError();
 	res=-1;
       }
+      else
+	res = 0;
       CloseHandle(h);
     }
   }
 #else  /* !__NT__ */
+#ifdef HAVE_TRUNCATE64
+  res = truncate64 (str->str, len);
+#else
   res=truncate(str->str, len);
+#endif
 #endif /* __NT__ */
 
   pop_n_elems(args);

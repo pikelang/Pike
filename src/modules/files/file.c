@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.254 2003/03/28 14:33:24 grubba Exp $
+|| $Id: file.c,v 1.255 2003/03/30 01:27:10 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.254 2003/03/28 14:33:24 grubba Exp $");
+RCSID("$Id: file.c,v 1.255 2003/03/30 01:27:10 mast Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -1748,23 +1748,25 @@ void file_sync(INT32 args)
  */
 static void file_seek(INT32 args)
 {
-#ifdef HAVE_LSEEK64
+#if defined (INT64) || defined (HAVE_LSEEK64)
   INT64 to = 0;
 #else
-  ptrdiff_t to = 0;
+  off_t to = 0;
 #endif
 
-#ifdef HAVE_LSEEK64
-#ifdef AUTO_BIGNUM
-  if(1 <= args && is_bignum_object_in_svalue(&Pike_sp[-args]))
-    int64_from_bignum(&to, Pike_sp[-args].u.object);
+#if defined (INT64) && defined (AUTO_BIGNUM)
+#if defined (HAVE_LSEEK64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
+  if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
+    if (!int64_from_bignum(&to, Pike_sp[-args].u.object))
+      Pike_error ("Bad argument 1 to Stdio.File->seek(). Offset too large.\n");
+  }
   else
-#endif /* AUTO_BIGNUM */
 #endif
-  if(args<1 || Pike_sp[-args].type != PIKE_T_INT)
-    Pike_error("Bad argument 1 to file->seek(int to).\n");
-  else
-    to=Pike_sp[-args].u.integer;
+#endif
+    if(Pike_sp[-args].type != PIKE_T_INT)
+      SIMPLE_BAD_ARG_ERROR("Stdio.File->seek", 1, "int");
+    else
+      to=Pike_sp[-args].u.integer;
 
   if(FD < 0)
     Pike_error("File not open.\n");
@@ -1804,10 +1806,10 @@ static void file_seek(INT32 args)
  */
 static void file_tell(INT32 args)
 {
-#ifdef HAVE_LSEEK64
+#if defined (INT64) || defined (HAVE_LSEEK64)
   INT64 to;
 #else
-  ptrdiff_t to;
+  off_t to;
 #endif
 
   if(FD < 0)
@@ -1840,15 +1842,29 @@ static void file_tell(INT32 args)
  */
 static void file_truncate(INT32 args)
 {
-#ifdef HAVE_LSEEK64
+#if defined (INT64) || defined (HAVE_FTRUNCATE64)
   INT64 len;
 #else
-  INT32 len;
+  off_t len;
 #endif
   int res;
 
-  if(args<1 || Pike_sp[-args].type != PIKE_T_INT)
-    Pike_error("Bad argument 1 to file->truncate(int length).\n");
+  if(args<1)
+    SIMPLE_TOO_FEW_ARGS_ERROR("Stdio.File->truncate", 1);
+
+#if defined (INT64) && defined (AUTO_BIGNUM)
+#if defined (HAVE_FTRUNCATE64) || SIZEOF_OFF_T > SIZEOF_INT_TYPE
+  if(is_bignum_object_in_svalue(&Pike_sp[-args])) {
+    if (!int64_from_bignum(&len, Pike_sp[-args].u.object))
+      Pike_error ("Bad argument 1 to Stdio.File->truncate(). Length too large.\n");
+  }
+  else
+#endif
+#endif
+    if(Pike_sp[-args].type != PIKE_T_INT)
+      SIMPLE_BAD_ARG_ERROR("Stdio.File->truncate", 1, "int");
+    else
+      len = Pike_sp[-args].u.integer;
 
   if(FD < 0)
     Pike_error("File not open.\n");
@@ -1856,7 +1872,11 @@ static void file_truncate(INT32 args)
   len = Pike_sp[-args].u.integer;
 
   ERRNO=0;
+#ifdef HAVE_FTRUNCATE64
+  res = ftruncate64 (FD, len);
+#else
   res=fd_ftruncate(FD, len);
+#endif
 
   pop_n_elems(args);
 
