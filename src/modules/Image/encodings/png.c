@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.55 2003/11/07 17:44:30 nilsson Exp $
+|| $Id: png.c,v 1.56 2003/12/01 19:37:40 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.55 2003/11/07 17:44:30 nilsson Exp $");
+RCSID("$Id: png.c,v 1.56 2003/12/01 19:37:40 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1766,8 +1766,7 @@ void exit_image_png(void)
 void init_image_png(void)
 {
    push_constant_text("Gz");
-   push_int(0);
-   SAFE_APPLY_MASTER("resolv",2);
+   SAFE_APPLY_MASTER("resolv",1);
    if (sp[-1].type==T_OBJECT) 
    {
      stack_dup();
