@@ -241,51 +241,39 @@ void async_got_host(string server,int port)
    }
 
    con = Stdio.File();
-   if (!con->async_connect(server, port,
-			   lambda(int success)
-			   {
-			     if (status) {
-			       // Connect ok.
+   con->async_connect(server, port,
+		      lambda(int success)
+		      {
+			if (status) {
+			  // Connect ok.
 #if constant(SSL.sslfile) 
-			       if(https) {
-				 //Create a context
-				 SSL.context context = SSL.context();
-				 // Allow only strong crypto
-				 context->preferred_suites = ({
-				   SSL_rsa_with_idea_cbc_sha,
-				   SSL_rsa_with_rc4_128_sha,
-				   SSL_rsa_with_rc4_128_md5,
-				   SSL_rsa_with_3des_ede_cbc_sha,
-				 });
-				 string ref;
-				 context->random =
-				   Crypto.randomness.reasonably_random()->read;
+			  if(https) {
+			    //Create a context
+			    SSL.context context = SSL.context();
+			    // Allow only strong crypto
+			    context->preferred_suites = ({
+			      SSL_rsa_with_idea_cbc_sha,
+			      SSL_rsa_with_rc4_128_sha,
+			      SSL_rsa_with_rc4_128_md5,
+			      SSL_rsa_with_3des_ede_cbc_sha,
+			    });
+			    string ref;
+			    context->random =
+			      Crypto.randomness.reasonably_random()->read;
 		 
-				 ssl = SSL.sslfile(con, context, 1,0);
-				 ssl->set_nonblocking(0,async_connected,async_failed);
-				 con=ssl;
-			       }
-			       else
+			    ssl = SSL.sslfile(con, context, 1,0);
+			    ssl->set_nonblocking(0,async_connected,async_failed);
+			    con=ssl;
+			  }
+			  else
 #endif
-				 async_connected();
-			     } else {
-			       // Connect failed.
-			       async_failed();
-			     }
-			   })) {
-     return; // got timeout already, we're destructed
-   }
-
-   int success;
-   if (catch { success = con->connect(server,port);
-   } || !success)
-   {
-      if (!(errno=con->errno())) errno=22; /* EINVAL */
-      destruct(con);
-      con=0;
-      ok=0;
-      async_failed();
-   }
+			    async_connected();
+			} else {
+			  // Connect failed.
+			  async_failed();
+			}
+		      });
+   // NOTE: In case of failure the timeout is already in place.
 }
 
 void async_fetch_read(mixed dummy,string data)
