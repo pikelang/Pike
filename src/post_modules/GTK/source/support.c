@@ -648,8 +648,6 @@ static void insert_push_callback( GtkType i, int (*cb)(GtkArg *) )
   new->callback = cb;
   if( old )  new->next = old;
   push_cbtable[ i%63 ] = new;
-  if( GTK_TYPE_SEQNO( i ) != i )
-    insert_push_callback( GTK_TYPE_SEQNO( i ), cb );
 }
 
 static void build_push_callbacks( )
@@ -662,6 +660,7 @@ static void build_push_callbacks( )
   CB( GTK_TYPE_BOOL,             pgtk_push_int_param );
   CB( GTK_TYPE_UINT,             pgtk_push_int_param );
   CB( GTK_TYPE_LONG,             pgtk_push_int_param );
+  CB( GTK_TYPE_ULONG,            pgtk_push_int_param );
   CB( GTK_TYPE_CHAR,             pgtk_push_int_param );
   CB( GTK_TYPE_ACCEL_FLAGS,      pgtk_push_int_param );
   CB( GTK_TYPE_GDK_MODIFIER_TYPE,pgtk_push_int_param );
@@ -674,16 +673,26 @@ static void build_push_callbacks( )
   CB( GTK_TYPE_CTREE_NODE,       pgtk_push_ctree_node_param );
   CB( GTK_TYPE_GDK_DRAG_CONTEXT, pgtk_push_gdk_drag_context_param );
   CB( GTK_TYPE_GDK_EVENT,        pgtk_push_gdk_event_param );
+
   CB( GTK_TYPE_POINTER,  NULL );
+  CB( GTK_TYPE_NONE,    NULL );
+  CB( GTK_TYPE_SIGNAL,   NULL );
   CB( GTK_TYPE_INVALID,  NULL ); /* This might not be exactly what we want */
 }
 
-static int push_param( GtkArg *param )
+static int push_param_r( GtkArg *param, GtkType t )
 {
-  GtkType t = GTK_TYPE_SEQNO( param->type );
-  struct push_callback *cb = push_cbtable[ t%63 ];
+  GtkType fundamental_type = GTK_FUNDAMENTAL_TYPE( t );
 
-  while( cb && (cb->id != t) ) cb = cb->next;
+  struct push_callback *cb = push_cbtable[ t%63 ];
+  while( cb && (cb->id != t) )
+    cb = cb->next;
+  if(!cb)
+  {
+    cb = push_cbtable[ fundamental_type % 63 ];
+    while( cb && (cb->id != fundamental_type) )
+      cb = cb->next;
+  }
   if( cb )
   {
     if( cb->callback )
@@ -692,8 +701,9 @@ static int push_param( GtkArg *param )
   }
   else
   {
-    GtkType p = gtk_type_parent( t );
-    if( !p || (p == t) )
+    if( gtk_type_parent( t ) != t )
+      return push_param_r( param, gtk_type_parent( t ) );
+    else
     {
       char *s = gtk_type_name( t );
       char *a = "";
@@ -701,19 +711,21 @@ static int push_param( GtkArg *param )
       {
         a = "Unknown child of ";
         s = gtk_type_name( gtk_type_parent( t ) );
-        if(!s) s = "unknown type";
+        if(!s)
+          s = gtk_type_name( fundamental_type );
+        if(!s)
+          s = "unknown type";
       }
-      fprintf( stderr, "** Warning: No push callback for type %d (%s%s)\n",
-               t, a, s);
-    }
-    else 
-    {
-      GtkArg np  = *param;
-      np.type = p;
-      return push_param( &np );
+      fprintf( stderr, "** Warning: No push callback for type %d/%d (%s%s)\n",
+               t, fundamental_type,a, s);
     }
   }
   return 0;
+}
+
+static int push_param( GtkArg *param )
+{
+  return push_param_r( param, param->type );
 }
 
 int pgtk_signal_func_wrapper(GtkObject *obj,struct signal_data *d,
