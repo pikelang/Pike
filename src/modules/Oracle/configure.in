@@ -1,0 +1,95 @@
+#
+# $Id: configure.in,v 1.1 1997/05/17 01:56:32 marcus Exp $
+#
+# Configure script for the oracle module
+#
+
+AC_INIT(oracle.c)
+AC_CONFIG_HEADER(config.h)
+
+sinclude(../module_configure.in)
+
+ORACLE_LIBS=""
+
+AC_ARG_WITH(oracle,  [  --without-oracle       no support for the Oracle databases],[],[with_oracle=yes])
+
+if test x$with_oracle = xyes; then
+
+  AC_MSG_CHECKING(for Oracle oratab)
+
+  oratab_locations="/var/opt/oracle/oratab /hemligt/ställe/där/filerna/ligger/under/AIX"
+
+  AC_CACHE_VAL(pike_cv_oracle_oratab_file, [
+
+    for pike_cv_oracle_oratab_file in $oratab_locations no; do
+      if test -f $pike_cv_oracle_oratab_file; then
+        break
+      else
+        :
+      fi
+    done
+
+  ])
+
+  AC_MSG_RESULT($pike_cv_oracle_oratab_file)
+
+  if test x$pike_cv_oracle_oratab_file = xno; then :; else
+
+    AC_MSG_CHECKING(for Oracle libraries)
+
+    echo no > conftest
+      
+    sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
+      if test -d "$dir/." -a -f "$dir/lib/libclient.a"; then
+        AC_DEFINE_UNQUOTED(ORACLE_HOME, "${dir}")
+        AC_DEFINE_UNQUOTED(ORACLE_SID, "${sid}")
+	echo "$dir/lib" > conftest
+	break
+      else
+	:
+      fi
+    done
+
+    IFS="" read oracle_lib_dir < conftest
+
+    AC_MSG_RESULT($oracle_lib_dir)
+
+    AC_MSG_CHECKING(for Oracle includes)
+
+    echo no > conftest
+      
+    sed -e '/^#/d' < $pike_cv_oracle_oratab_file | while IFS=":" read sid dir bootstart; do
+      if test -d "$dir/." -a -f "$dir/rdbms/demo/ocidfn.h"; then
+	echo "$dir/rdbms/demo" > conftest
+	break
+      else
+	:
+      fi
+    done
+
+    IFS="" read oracle_include_dir < conftest
+
+    AC_MSG_RESULT($oracle_include_dir)
+
+    if test "x$oracle_lib_dir" = xno -o "x$oracle_include_dir" = xno; then :; else
+
+      CPPFLAGS="-I\"$oracle_include_dir\" ${CPPFLAGS}"
+
+      dnl ORACLE_LIBS="-L\"$oracle_lib_dir\" -lclient -lnlsrtl3 -lcommon -lsqlnet -lnlsrtl3 -lcore3 -lcommon -lnlsrtl3 -lgeneric -lcv6 -lnlsrtl3 -lncr -lcore3 -lsqlnet -lepc"
+
+      ORACLE_LIBS="-L\"$oracle_lib_dir\" -lclient -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lsqlnet -lncr -lsqlnet -lclient -lcommon -lgeneric -lepc -lnlsrtl3 -lc3v6 -lcore3 -lnlsrtl3 -lcore3 -lnlsrtl3 -lsocket -lnsl -lm -ldl -laio -lm -lcore3"
+
+      AC_DEFINE(HAVE_ORACLE)
+
+    fi
+
+  fi
+
+else
+  :
+fi
+
+AC_SUBST(ORACLE_LIBS)
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h )
+
