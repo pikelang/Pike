@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.159 2004/05/13 23:29:27 nilsson Exp $
+|| $Id: builtin.cmod,v 1.160 2004/06/02 00:08:34 nilsson Exp $
 */
 
 #include "global.h"
@@ -253,7 +253,7 @@ PIKEFUN string int2hex(int|object x)
 }
 
 
-static inline int hexchar( int v )
+static INLINE int hexchar( int v )
 {
   return v<10 ? v+'0' : (v-10)+'a';
 }

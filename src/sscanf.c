@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: sscanf.c,v 1.161 2004/05/31 23:48:03 nilsson Exp $
+|| $Id: sscanf.c,v 1.162 2004/06/02 00:11:26 nilsson Exp $
 */
 
 #include "global.h"
@@ -19,7 +19,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: sscanf.c,v 1.161 2004/05/31 23:48:03 nilsson Exp $");
+RCSID("$Id: sscanf.c,v 1.162 2004/06/02 00:11:26 nilsson Exp $");
 
 /* 
  * helper functions for sscanf %O
@@ -562,7 +562,7 @@ static INLINE FLOAT_TYPE low_parse_IEEE_float(char *b, int sz)
 
 /* Avoid some warnings about loss of precision */
 #ifdef __ECL
-static inline INT32 TO_INT32(ptrdiff_t x)
+static INLINE INT32 TO_INT32(ptrdiff_t x)
 {
   return DO_NOT_WARN((INT32)x);
 }

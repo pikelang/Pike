@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.h,v 1.114 2004/05/23 01:49:24 nilsson Exp $
+|| $Id: gc.h,v 1.115 2004/06/02 00:07:35 nilsson Exp $
 */
 
 #ifndef GC_H
@@ -361,7 +361,7 @@ extern const char *gc_found_place;
     gc_found_in_type = orig_gc_found_in_type;				\
   } while (0)
 
-static inline int debug_gc_check (void *a, const char *place)
+static INLINE int debug_gc_check (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;
@@ -371,7 +371,7 @@ static inline int debug_gc_check (void *a, const char *place)
   return res;
 }
 
-static inline int debug_gc_check_weak (void *a, const char *place)
+static INLINE int debug_gc_check_weak (void *a, const char *place)
 {
   int res;
   const char *orig_gc_found_place = gc_found_place;

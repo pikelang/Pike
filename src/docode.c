@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.176 2004/05/29 18:21:05 grubba Exp $
+|| $Id: docode.c,v 1.177 2004/06/02 00:09:48 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.176 2004/05/29 18:21:05 grubba Exp $");
+RCSID("$Id: docode.c,v 1.177 2004/06/02 00:09:48 nilsson Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -422,7 +422,7 @@ int generate_call_function(node *n)
   return 1;
 }
 
-static inline struct compiler_frame *find_local_frame(INT32 depth)
+static INLINE struct compiler_frame *find_local_frame(INT32 depth)
 {
   struct compiler_frame *f=Pike_compiler->compiler_frame;
   while(--depth>=0) f=f->previous;

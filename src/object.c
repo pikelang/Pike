@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: object.c,v 1.255 2004/04/06 13:00:44 nilsson Exp $
+|| $Id: object.c,v 1.256 2004/06/02 00:10:41 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: object.c,v 1.255 2004/04/06 13:00:44 nilsson Exp $");
+RCSID("$Id: object.c,v 1.256 2004/06/02 00:10:41 nilsson Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -1854,7 +1854,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
   } GC_CYCLE_LEAVE;
 }
 
-static inline void gc_check_object(struct object *o)
+static INLINE void gc_check_object(struct object *o)
 {
   int e;
   struct program *p;

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_memory.c,v 1.151 2004/04/03 15:55:15 mast Exp $
+|| $Id: pike_memory.c,v 1.152 2004/06/02 00:10:42 nilsson Exp $
 */
 
 #include "global.h"
@@ -11,7 +11,7 @@
 #include "pike_macros.h"
 #include "gc.h"
 
-RCSID("$Id: pike_memory.c,v 1.151 2004/04/03 15:55:15 mast Exp $");
+RCSID("$Id: pike_memory.c,v 1.152 2004/06/02 00:10:42 nilsson Exp $");
 
 /* strdup() is used by several modules, so let's provide it */
 #ifndef HAVE_STRDUP
@@ -928,7 +928,7 @@ void check_pad(struct memhdr *mh, int freeok)
 #endif
 
 
-static inline unsigned long lhash(struct memhdr *m, LOCATION location)
+static INLINE unsigned long lhash(struct memhdr *m, LOCATION location)
 {
   unsigned long l;
   l=(long)m;

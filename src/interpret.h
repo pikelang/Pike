@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.152 2004/05/20 20:13:38 grubba Exp $
+|| $Id: interpret.h,v 1.153 2004/06/02 00:09:48 nilsson Exp $
 */
 
 #ifndef INTERPRET_H
@@ -703,12 +703,12 @@ void really_clean_up_interpret(void);
  * to avoid implicit declaration of mega_apply().
  */
 #ifdef __ECL
-static inline void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
+static INLINE void apply_low(struct object *o, ptrdiff_t fun, INT32 args)
 {
   mega_apply(APPLY_LOW, args, (void*)o, (void*)fun);
 }
 
-static inline void strict_apply_svalue(struct svalue *sval, INT32 args)
+static INLINE void strict_apply_svalue(struct svalue *sval, INT32 args)
 {
   mega_apply(APPLY_SVALUE_STRICT, args, (void*)sval, 0);
 }

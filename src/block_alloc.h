@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: block_alloc.h,v 1.72 2004/05/31 23:51:28 nilsson Exp $
+|| $Id: block_alloc.h,v 1.73 2004/06/02 00:07:20 nilsson Exp $
 */
 
 #undef PRE_INIT_BLOCK
@@ -53,7 +53,7 @@
 /* Block Alloc UnLocked */
 #define BA_UL(X) PIKE_CONCAT(X,_unlocked)
 #define BA_STATIC static
-#define BA_INLINE inline
+#define BA_INLINE INLINE
 #else
 #define BA_UL(X) X
 #define BA_STATIC
@@ -367,7 +367,7 @@ size_t PIKE_CONCAT(DATA,_hash_table_size)=0;				     \
 size_t PIKE_CONCAT(DATA,_hash_table_magnitude)=0;			     \
 static size_t PIKE_CONCAT(num_,DATA)=0;					     \
 									     \
-static inline struct DATA *						     \
+static INLINE struct DATA *						     \
  PIKE_CONCAT3(really_low_find_,DATA,_unlocked)(void *ptr,		     \
 					       PIKE_HASH_T hval)	     \
 {									     \
@@ -405,7 +405,7 @@ struct DATA *PIKE_CONCAT(find_,DATA)(void *ptr)				     \
   return p;								     \
 }									     \
 									     \
-static inline struct DATA *						     \
+static INLINE struct DATA *						     \
  PIKE_CONCAT3(just_find_,DATA,_unlocked)(void *ptr,			     \
 					 PIKE_HASH_T hval)		     \
 {									     \

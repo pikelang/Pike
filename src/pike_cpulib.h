@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_cpulib.h,v 1.11 2002/10/11 01:39:35 nilsson Exp $
+|| $Id: pike_cpulib.h,v 1.12 2004/06/02 00:08:12 nilsson Exp $
 */
 
 #ifndef PIKE_CPULIB_H
@@ -58,7 +58,7 @@
 
 
 #define PIKE_HAS_INC32
-static inline void pike_atomic_inc32(volatile INT32 *v)
+static INLINE void pike_atomic_inc32(volatile INT32 *v)
 {
   __asm__ __volatile__("lock ; incl %0"
 		       :"=m" (pike_atomic_fool_gcc(v))
@@ -68,7 +68,7 @@ static inline void pike_atomic_inc32(volatile INT32 *v)
 
 
 #define PIKE_HAS_DEC_AND_TEST32
-static inline int pike_atomic_dec_and_test32(INT32 *v)
+static INLINE int pike_atomic_dec_and_test32(INT32 *v)
 {
   unsigned char c;
 
@@ -80,7 +80,7 @@ static inline int pike_atomic_dec_and_test32(INT32 *v)
 }
 
 #define PIKE_HAS_COMPARE_AND_SWAP32
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 {
   char ret;
@@ -96,7 +96,7 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 
 /* NOT USED */
 #define PIKE_HAS_COMPARE_AND_SWAP64
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap64 (INT64 *p, INT64 oldval, INT64 newval)
 {
   char ret;
@@ -151,7 +151,7 @@ pike_atomic_compare_and_swap64 (INT64 *p, INT64 oldval, INT64 newval)
 
 #define PIKE_HAS_COMPARE_AND_SWAP32
 
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 {
   INT32 ret;
@@ -171,7 +171,7 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 
 #define PIKE_HAS_COMPARE_AND_SWAP32
 
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 {
   return _InterlockedCompareExchange(p, newval, oldval) == oldval;
@@ -183,7 +183,7 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 
 #define PIKE_HAS_COMPARE_AND_SWAP32
 
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 {
   __asm__ __volatile__ ("membar #LoadStore\n"
@@ -201,7 +201,7 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 
 #define PIKE_HAS_COMPARE_AND_SWAP32
 
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 {
   INT32 cmpval = oldval;
@@ -235,7 +235,7 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 
 #include "threads.h"
 
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 {
   int ret;
@@ -248,7 +248,7 @@ pike_atomic_compare_and_swap32 (INT32 *p, INT32 oldval, INT32 newval)
 
 #ifndef PIKE_HAS_INC32
 #define PIKE_HAS_INC32
-static inline void pike_atomic_inc32(INT32 *ref)
+static INLINE void pike_atomic_inc32(INT32 *ref)
 {
   BEGIN_MEMORY_LOCK(p);
   ref++;
@@ -258,7 +258,7 @@ static inline void pike_atomic_inc32(INT32 *ref)
 
 #ifndef PIKE_HAS_DEC_AND_TEST32
 #define PIKE_HAS_DEC_AND_TEST32
-static inline int pike_atomic_dec_and_test32(INT32 *ref)
+static INLINE int pike_atomic_dec_and_test32(INT32 *ref)
 {
   INT32 ret;
   BEGIN_MEMORY_LOCK(p);
@@ -272,7 +272,7 @@ static inline int pike_atomic_dec_and_test32(INT32 *ref)
 
 #ifndef PIKE_HAS_SWAP32
 #define PIKE_HAS_SWAP32
-static inline INT32 pike_atomic_swap32(INT32 *addr, INT32 newval)
+static INLINE INT32 pike_atomic_swap32(INT32 *addr, INT32 newval)
 {
   INT32 ret;
   BEGIN_MEMORY_LOCK(p);
@@ -293,7 +293,7 @@ static inline INT32 pike_atomic_swap32(INT32 *addr, INT32 newval)
 
 #include "threads.h"
 
-static inline int
+static INLINE int
 pike_atomic_compare_and_swap64 (INT64 *p, INT64 oldval, INT64 newval)
 {
   int ret;
@@ -306,7 +306,7 @@ pike_atomic_compare_and_swap64 (INT64 *p, INT64 oldval, INT64 newval)
 
 #ifndef PIKE_HAS_SWAP64
 #define PIKE_HAS_SWAP64
-static inline INT64 pike_atomic_swap64(INT64 *addr, INT64 newval)
+static INLINE INT64 pike_atomic_swap64(INT64 *addr, INT64 newval)
 {
   INT64 ret;
   BEGIN_MEMORY_LOCK(p);
@@ -320,7 +320,7 @@ static inline INT64 pike_atomic_swap64(INT64 *addr, INT64 newval)
 
 #ifndef PIKE_HAS_SET64
 #define PIKE_HAS_SET64
-static inline void pike_atomic_set64(INT64 *addr, INT64 newval)
+static INLINE void pike_atomic_set64(INT64 *addr, INT64 newval)
 {
   BEGIN_MEMORY_LOCK(p);
   *addr=newval;
@@ -330,7 +330,7 @@ static inline void pike_atomic_set64(INT64 *addr, INT64 newval)
 
 #ifndef PIKE_HAS_GET64
 #define PIKE_HAS_GET64
-static inline INT64 pike_atomic_get64(INT64 *addr)
+static INLINE INT64 pike_atomic_get64(INT64 *addr)
 {
   INT64 ret;
   BEGIN_MEMORY_LOCK(p);
@@ -352,7 +352,7 @@ static inline INT64 pike_atomic_get64(INT64 *addr)
 
 #if defined(PIKE_HAS_COMPARE_AND_SWAP32) && !defined(PIKE_HAS_INC32)
 #define PIKE_HAS_INC32
-static inline void pike_atomic_inc32(INT32 *ref)
+static INLINE void pike_atomic_inc32(INT32 *ref)
 {
   INT32 oldrefs;
   do 
@@ -364,7 +364,7 @@ static inline void pike_atomic_inc32(INT32 *ref)
 
 #if defined(PIKE_HAS_COMPARE_AND_SWAP32) && !defined(PIKE_HAS_DEC_AND_TEST32)
 #define PIKE_HAS_DEC_AND_TEST32
-static inline int pike_atomic_dec_and_test32(INT32 *ref)
+static INLINE int pike_atomic_dec_and_test32(INT32 *ref)
 {
   INT32 oldrefs;
   do 
@@ -377,7 +377,7 @@ static inline int pike_atomic_dec_and_test32(INT32 *ref)
 
 #if defined(PIKE_HAS_COMPARE_AND_SWAP32) && !defined(PIKE_HAS_SWAP32)
 #define PIKE_HAS_SWAP32
-static inline INT32 pike_atomic_swap32(INT32 *addr, INT32 newval)
+static INLINE INT32 pike_atomic_swap32(INT32 *addr, INT32 newval)
 {
   INT32 ret;
   do
@@ -391,7 +391,7 @@ static inline INT32 pike_atomic_swap32(INT32 *addr, INT32 newval)
 
 #if defined(PIKE_HAS_COMPARE_AND_SWAP64) && !defined(PIKE_HAS_SWAP64)
 #define PIKE_HAS_SWAP64
-static inline INT64 pike_atomic_swap64(INT64 *addr, INT64 newval)
+static INLINE INT64 pike_atomic_swap64(INT64 *addr, INT64 newval)
 {
   INT64 ret;
   do
@@ -406,7 +406,7 @@ static inline INT64 pike_atomic_swap64(INT64 *addr, INT64 newval)
 
 #if defined(PIKE_HAS_SWAP64) && !defined(PIKE_HAS_SET64)
 #define PIKE_HAS_SET64
-static inline void pike_atomic_set64(INT64 *addr, INT64 newval)
+static INLINE void pike_atomic_set64(INT64 *addr, INT64 newval)
 {
   pike_atomic_swap64(addr, newval);
 }
@@ -414,7 +414,7 @@ static inline void pike_atomic_set64(INT64 *addr, INT64 newval)
 
 #if defined(PIKE_HAS_COMPARE_AND_SWAP64) && !defined(PIKE_HAS_GET64)
 #define PIKE_HAS_GET64
-static inline INT64 pike_atomic_get64(INT64 *addr)
+static INLINE INT64 pike_atomic_get64(INT64 *addr)
 {
   INT64 ret;
   do

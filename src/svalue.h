@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.h,v 1.129 2004/05/28 16:08:24 grubba Exp $
+|| $Id: svalue.h,v 1.130 2004/06/02 00:11:26 nilsson Exp $
 */
 
 #ifndef SVALUE_H
@@ -378,7 +378,7 @@ if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
   debug_check_type_hint ((SVALS), (NUM), (TYPE_HINT))
 
 #ifdef DEBUG_MALLOC
-static inline struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
+static INLINE struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
 {
   debug_malloc_update_location(s,l);
 #if 1
@@ -388,7 +388,7 @@ static inline struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
   return s;
 }
 
-static inline union anything *dmalloc_check_union(union anything *u,int type, char * l)
+static INLINE union anything *dmalloc_check_union(union anything *u,int type, char * l)
 {
   debug_malloc_update_location(u,l);
 #if 1
@@ -682,7 +682,7 @@ int svalues_are_constant(struct svalue *s,
 #endif
 
 #ifndef free_svalue
-static inline void free_svalue(struct svalue *s)
+static INLINE void free_svalue(struct svalue *s)
 {
   INT64 tmp;
   struct svalue zero;
@@ -693,7 +693,7 @@ static inline void free_svalue(struct svalue *s)
 #endif
 
 #ifndef free_short_svalue
-static inline void free_short_svalue(union anything *s, int t)
+static INLINE void free_short_svalue(union anything *s, int t)
 {
   if(t <= MAX_REF_TYPE)
   {
@@ -705,7 +705,7 @@ static inline void free_short_svalue(union anything *s, int t)
 #endif
 
 #ifndef add_ref_svalue
-static inline void add_ref_svalue(struct svalue *s)
+static INLINE void add_ref_svalue(struct svalue *s)
 {
   INT64 sv;
   sv=pike_atomic_get64((INT64 *)s);
@@ -741,7 +741,7 @@ void assign_svalue_no_free(struct svalue *to, const struct svalue *from)
 #endif
 
 #ifndef assign_svalue
-static inline void assign_svalue(struct svalue *to, const struct svalue *from)
+static INLINE void assign_svalue(struct svalue *to, const struct svalue *from)
 {
   INT64 tmp, sv;
   if(to != from)
