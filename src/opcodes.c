@@ -173,6 +173,7 @@ void cast(struct pike_string *s)
     }
 
     case T_OBJECT:
+    {
       switch(sp[-1].type)
       {
       case T_STRING:
@@ -184,10 +185,32 @@ void cast(struct pike_string *s)
 	break;
       }
       break;
+    }
 
     case T_PROGRAM:
-      APPLY_MASTER("cast_to_program",1);
-      break;
+    {
+      switch(sp[-1].type)
+      {
+	case T_STRING:
+	  APPLY_MASTER("cast_to_program",1);
+	  break;
+	  
+	case T_FUNCTION:
+	{
+	  struct program *p=program_from_function(sp-1);
+	  if(p)
+	  {
+	    p->refs++;
+	    pop_stack();
+	    push_program(p);
+	  }else{
+	    pop_stack();
+	    push_int(0);
+	  }
+	}
+      }
+      return;
+    }
 
     case T_FUNCTION:
     {
