@@ -38,6 +38,7 @@ testfont binary
 /lib/modules/ADT.pmod/Table.pmod foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Base.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Multiple.pike foreign_ident
+/lib/modules/Cache.pmod/Policy.pmod/Null.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Sized.pike foreign_ident
 /lib/modules/Cache.pmod/Policy.pmod/Timed.pike foreign_ident
 /lib/modules/Cache.pmod/Storage.pmod/Base.pike foreign_ident
