@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: program.c,v 1.39 1997/09/09 03:36:12 hubbe Exp $");
+RCSID("$Id: program.c,v 1.40 1997/09/10 04:08:28 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -631,7 +631,7 @@ struct program *end_program(void)
       struct reference *funp;
       struct identifier *fun;
       funp=prog->identifier_references+i;
-      if(funp->id_flags & (ID_HIDDEN|ID_STATIC|ID_PRIVATE)) continue;
+      if(funp->id_flags & (ID_HIDDEN|ID_STATIC)) continue;
 
       if(funp->id_flags & ID_INHERITED)
       {
