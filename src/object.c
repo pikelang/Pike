@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.143 2000/08/15 15:50:24 grubba Exp $");
+RCSID("$Id: object.c,v 1.144 2000/08/20 17:07:19 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -313,20 +313,21 @@ PMOD_EXPORT struct object *parent_clone_object(struct program *p,
 static struct pike_string *low_read_file(char *file)
 {
   struct pike_string *s;
-  INT32 len;
+  ptrdiff_t len;
   FD f;
-  while((f=fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR);
-  if(f>=0)
-  {
-    int tmp,pos=0;
 
-    len=fd_lseek(f,0,SEEK_END);
-    fd_lseek(f,0,SEEK_SET);
-    s=begin_shared_string(len);
+  while((f = fd_open(file,fd_RDONLY,0666)) <0 && errno==EINTR);
+  if(f >= 0)
+  {
+    ptrdiff_t tmp, pos = 0;
+
+    len = fd_lseek(f, 0, SEEK_END);
+    fd_lseek(f, 0, SEEK_SET);
+    s = begin_shared_string(len);
 
     while(pos<len)
     {
-      tmp=fd_read(f,s->str+pos,len-pos);
+      tmp = fd_read(f,s->str+pos,len-pos);
       if(tmp<0)
       {
 	if(errno==EINTR) continue;
