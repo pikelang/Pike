@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.h,v 1.148 2003/12/23 15:17:33 grubba Exp $
+|| $Id: interpret.h,v 1.149 2004/03/05 23:37:14 nilsson Exp $
 */
 
 #ifndef INTERPRET_H
@@ -11,7 +11,7 @@
 #include "global.h"
 #include "program.h"
 #include "pike_error.h"
-#include "bignum.h"
+#include "object.h"
 
 struct Pike_interpreter {
   /* Swapped variables */
