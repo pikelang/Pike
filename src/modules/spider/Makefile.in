@@ -1,0 +1,207 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @DEFS@
+
+FILES=spider.o discdate.o stardate.o sdebug.o tree.o lock.o sharedmem.o streamed_parser.o encode_decode.o http_parse.o
+
+spider.a: $(FILES)
+	-rm -f spider.a
+	ar cq spider.a $(FILES)
+	-@RANLIB@ spider.a
+
+clean:
+	-rm -f *.o *.a
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+
+#verify / debug
+module_testsuite: $(SRCDIR)/testsuite.in
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite
+
+verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
+
+verbose_verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
+
+
+gdb_verify: module_testsuite
+	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
+	gdb ../../pike
+	@rm .gdbinit
+# Depencies begin here
+discdate.o: discdate.c \
+ stralloc.h \
+ types.h \
+ machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+encode_decode.o: \
+ encode_decode.c \
+ stralloc.h \
+ types.h \
+ machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ multiset.h \
+ builtin_functions.h \
+ callback.h
+http_parse.o: http_parse.c \
+ stralloc.h \
+ types.h \
+ machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+lock.o: lock.c
+sdebug.o: sdebug.c \
+ stralloc.h \
+ types.h \
+ machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+shared_mem_mapping.o: \
+ shared_mem_mapping.c
+sharedmem.o: sharedmem.c \
+ sharedmem.h
+spider.o: spider.c \
+ machine.h \
+ stralloc.h \
+ types.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h \
+ lock.h \
+ defs.h \
+ streamed_parser.h
+stardate.o: stardate.c \
+ stralloc.h \
+ types.h \
+ machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h
+streamed_parser.o: \
+ streamed_parser.c \
+ stralloc.h \
+ types.h \
+ machine.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h \
+ streamed_parser.h
+tree.o: tree.c \
+ machine.h \
+ stralloc.h \
+ types.h \
+ global.h \
+ config.h \
+ port.h \
+ macros.h \
+ object.h \
+ svalue.h \
+ constants.h \
+ hashtable.h \
+ las.h \
+ dynamic_buffer.h \
+ program.h \
+ interpret.h \
+ mapping.h \
+ array.h \
+ builtin_functions.h \
+ callback.h

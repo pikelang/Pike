@@ -1,0 +1,93 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
+
+FILES=file.o efuns.o socket.o
+
+files.a: $(FILES)
+	-rm -f files.a
+	ar cq files.a $(FILES)
+	-@RANLIB@ files.a
+	echo >linker_options @LIBS@
+
+clean:
+	-rm -f *.o *.a
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+
+#verify / debug
+module_testsuite: $(SRCDIR)/testsuite.in
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite
+
+verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
+
+verbose_verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
+
+gdb_verify: module_testsuite
+	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
+	gdb ../../pike
+	@rm .gdbinit
+# Depencies begin here
+datagram.o: datagram.c
+efuns.o: efuns.c \
+ global.h \
+ machine.h \
+ config.h \
+ port.h \
+ interpret.h \
+ program.h \
+ svalue.h \
+ stralloc.h \
+ array.h \
+ las.h \
+ dynamic_buffer.h \
+ mapping.h \
+ macros.h \
+ fd_control.h \
+ file_machine.h
+file.o: file.c \
+ global.h \
+ machine.h \
+ config.h \
+ port.h \
+ interpret.h \
+ program.h \
+ svalue.h \
+ stralloc.h \
+ array.h \
+ las.h \
+ dynamic_buffer.h \
+ object.h \
+ macros.h \
+ backend.h \
+ time_stuff.h \
+ callback.h \
+ fd_control.h \
+ file_machine.h file.h \
+ error.h \
+ signal_handler.h \
+ pike_types.h
+socket.o: socket.c \
+ global.h \
+ machine.h \
+ config.h \
+ port.h \
+ interpret.h \
+ program.h \
+ svalue.h \
+ stralloc.h \
+ array.h \
+ las.h \
+ dynamic_buffer.h \
+ object.h \
+ macros.h \
+ backend.h \
+ time_stuff.h \
+ callback.h \
+ fd_control.h \
+ file_machine.h file.h

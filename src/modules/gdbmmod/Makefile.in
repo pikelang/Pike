@@ -1,0 +1,51 @@
+SRCDIR=@srcdir@
+VPATH=@srcdir@:@srcdir@/../..:../..
+PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../..
+CFLAGS=$(PREFLAGS) $(OTHERFLAGS)
+
+FILES=gdbmmod.o
+LIB=gdbmmod.a
+
+$(LIB): $(FILES)
+	-rm -f $(LIB)
+	ar cq $(LIB) $(FILES)
+	-@RANLIB@ $(LIB)
+	echo >linker_options @LIBS@
+
+clean:
+	-rm -f *.o *.a
+
+depend:
+	gcc -MM $(PREFLAGS) $(SRCDIR)/*.c | $(TMP_BINDIR)/fixdepends.sh $(SRCDIR)
+
+#verify / debug
+module_testsuite: $(SRCDIR)/testsuite.in
+	$(TMP_BINDIR)/mktestsuite $(SRCDIR)/testsuite.in >module_testsuite
+
+verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite
+
+verbose_verify: module_testsuite
+	$(RUNPIKE) $(TMP_BINDIR)/test_pike.pike module_testsuite --verbose
+
+gdb_verify: module_testsuite
+	@echo >.gdbinit handle SIGUSR1 nostop noprint pass
+	@echo >>.gdbinit run -m @srcdir@/../../../lib/master.pike $(PIKEOPTS) @srcdir@/../../../bin/test_pike.pike module_testsuite -v -v -f
+	gdb ../../pike
+	@rm .gdbinit
+# Depencies begin here
+gdbmmod.o: gdbmmod.c \
+ global.h \
+ machine.h \
+ config.h \
+ port.h \
+ gdbm_machine.h \
+ interpret.h \
+ program.h \
+ svalue.h \
+ stralloc.h \
+ array.h \
+ las.h \
+ dynamic_buffer.h \
+ object.h \
+ macros.h
