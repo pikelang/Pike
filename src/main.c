@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.115 2001/03/12 10:51:29 hubbe Exp $");
+RCSID("$Id: main.c,v 1.116 2001/03/22 02:21:15 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -621,7 +621,6 @@ void low_exit_main(void)
   void cleanup_pike_types(void);
   void cleanup_program(void);
   void cleanup_compiler(void);
-  void cleanup_backend(void);
   void free_all_mapping_blocks(void);
   void free_all_object_blocks(void);
 
@@ -644,7 +643,7 @@ void low_exit_main(void)
   cleanup_compiler();
   exit_iterators();
   cleanup_error();
-  cleanup_backend();
+  exit_backend();
 
 #ifdef SHARED_NODES
   free(node_hash.table);
@@ -740,7 +739,6 @@ void low_exit_main(void)
   zap_all_arrays();
   zap_all_mappings();
 
-  exit_backend();
   cleanup_shared_string_table();
 #endif
 

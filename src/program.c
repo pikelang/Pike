@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.304 2001/03/20 02:45:51 hubbe Exp $");
+RCSID("$Id: program.c,v 1.305 2001/03/22 02:21:16 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3898,6 +3898,7 @@ struct program *compile(struct pike_string *prog,
       placeholder->storage=p->storage_needed ?
 	(char *)xalloc(p->storage_needed) :
 	(char *)0;
+      call_c_initializers(placeholder);
     }
   }
 
@@ -3977,7 +3978,6 @@ struct program *compile(struct pike_string *prog,
   pop_stack(); /* pop the 'default' module */
   if(placeholder)
   {
-    call_c_initializers(placeholder);
     call_pike_initializers(placeholder,0);
   }
 
@@ -4192,6 +4192,7 @@ void init_program(void)
     s.type=T_PROGRAM;
     s.u.program=null_program;
     low_add_constant("__null_program",&s);
+    debug_malloc_touch(null_program);
   }
 }
 

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.74 2001/01/18 09:11:28 mast Exp $
+ * $Id: gc.h,v 1.75 2001/03/22 02:21:15 hubbe Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -172,8 +172,8 @@ void debug_gc_touch(void *a);
 PMOD_EXPORT INT32 real_gc_check(void *a);
 INT32 real_gc_check_weak(void *a);
 void locate_references(void *a);
-void gc_add_extra_ref(void *a);
-void gc_free_extra_ref(void *a);
+void debug_gc_add_extra_ref(void *a);
+void debug_gc_free_extra_ref(void *a);
 int debug_gc_is_referenced(void *a);
 int gc_external_mark3(void *a, void *in, char *where);
 void debug_really_free_gc_frame(struct gc_frame *l);
@@ -277,6 +277,9 @@ void cleanup_gc(void);
 #ifndef PIKE_DEBUG
 #define gc_add_extra_ref(X) (++*(INT32 *)(X))
 #define gc_free_extra_ref(X)
+#else
+#define gc_add_extra_ref(X) debug_gc_add_extra_ref(debug_malloc_pass(X))
+#define gc_free_extra_ref(X) debug_gc_free_extra_ref(debug_malloc_pass(X))
 #endif
 
 #define GC_PASS_PREPARE		 50
