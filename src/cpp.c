@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.115 2003/03/14 15:53:09 grubba Exp $
+|| $Id: cpp.c,v 1.116 2003/04/01 16:30:49 nilsson Exp $
 */
 
 #include "global.h"
@@ -1479,6 +1479,8 @@ static int do_safe_index_call(struct pike_string *s)
   return res;
 }
 
+/*! @namespace cpp:: */
+
 /*! @decl constant __VERSION__
  *!
  *! This define contains the current Pike version as a float. If
@@ -1600,6 +1602,8 @@ static int do_safe_index_call(struct pike_string *s)
  *!
  *! This define is defined when the Pike is running on Amiga OS.
  */
+
+/*! @endnamespace */
 
 /*! @decl string cpp(string data, string|void current_file, @
  *!                  int|string|void charset, object|void handler, @
