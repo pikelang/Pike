@@ -230,14 +230,16 @@ static RETSIGTYPE receive_signal(int signum)
 
 void check_signals()
 {
+  static int signalling=0;
 #ifdef DEBUG
   extern int d_flag;
   if(d_flag>5) do_debug(0);
 #endif
 
-  if(firstsig != lastsig)
+  if(firstsig != lastsig && !signalling)
   {
     int tmp=firstsig;
+    signalling=1;
 
     while(lastsig != tmp)
     {
@@ -247,6 +249,8 @@ void check_signals()
       apply_svalue(signal_callbacks + sigbuf[lastsig], 1);
       pop_stack();
     }
+
+    signalling=0;
   }
 }
 
@@ -389,6 +393,24 @@ static void f_alarm(INT32 args)
   push_int(alarm(seconds));
 }
 
+#ifdef HAVE_UALARM
+static void f_ualarm(INT32 args)
+{
+  long seconds;
+
+  if(args < 1)
+    error("Too few arguments to signame()\n");
+
+  if(sp[-args].type != T_INT)
+    error("Bad argument 1 to signame()\n");
+
+  seconds=sp[-args].u.integer;
+
+  pop_n_elems(args);
+  push_int(ualarm(seconds));
+}
+#endif
+
 void init_signals()
 {
   int e;
@@ -407,6 +429,9 @@ void init_signals()
   add_efun("signum",f_signum,"function(string:int)",0);
   add_efun("getpid",f_getpid,"function(:int)",0);
   add_efun("alarm",f_alarm,"function(int:int)",OPT_SIDE_EFFECT);
+#ifdef HAVE_UALARM
+  add_efun("ualarm",f_ualarm,"function(int:int)",OPT_SIDE_EFFECT);
+#endif
 }
 
 void exit_signals()
