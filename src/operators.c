@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.151 2002/05/30 15:36:49 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.152 2002/05/31 13:44:31 nilsson Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -211,7 +211,7 @@ COMPARISON(f_ge,"`>=",!is_lt)
  *!   @endmixed
  *!
  *!   Otherwise if there are more than 2 arguments the result will be:
- *!     @expr{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
+ *!     @code{`+(`+(@[arg1], @[arg2]), @@@[extras])@}
  *!
  *! @note
  *!   In Pike 7.0 and earlier the addition order was unspecified.
@@ -1057,7 +1057,7 @@ PMOD_EXPORT void o_subtract(void)
  *!
  *! @returns
  *!   If there's only a single argument, that argument will be returned
- *!   negated. If @[arg1] was an object, @code{@[arg1]::`-()@} will be called
+ *!   negated. If @[arg1] was an object, @expr{@[arg1]::`-()@} will be called
  *!   without arguments.
  *!
  *!   If there are more than two arguments the result will be:
@@ -1078,12 +1078,12 @@ PMOD_EXPORT void o_subtract(void)
  *!   	      @[arg2] removed.
  *!   	    @type multiset|mapping
  *!   	      The result will be @[arg1] with all occurrences of
- *!   	      @code{@[indices](@[arg2])@} removed.
+ *!   	      @expr{@[indices](@[arg2])@} removed.
  *!   	  @endmixed
  *!   	@type array|multiset
  *!   	  The result will be the elements of @[arg1] that are not in @[arg2].
  *!   	@type float|int
- *!   	  The result will be @code{@[arg1] - @[arg2]@}, and will be a float
+ *!   	  The result will be @expr{@[arg1] - @[arg2]@}, and will be a float
  *!   	  if either @[arg1] or @[arg2] is a float.
  *!   	@type string
  *!   	  Result will be the string @[arg1] with all occurrances of the
@@ -1867,7 +1867,7 @@ PMOD_EXPORT void o_xor(void)
  *!   	  The result will be the pairwise bitwise xor of @[arg1] and @[arg2].
  *!   	@type type|program
  *!   	  The result will be the result of
- *!   	  @code{(@[arg1]&~@[arg2])|(~@[arg1]&@[arg2])@}.
+ *!   	  @expr{(@[arg1]&~@[arg2])|(~@[arg1]&@[arg2])@}.
  *!   @endmixed
  *!
  *! @seealso
@@ -2314,7 +2314,7 @@ PMOD_EXPORT void o_multiply(void)
  *!   that function will be called with the rest of the arguments.
  *!
  *!   If there are more than two arguments, the result will be
- *!   @code{`*(`*(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   @expr{`*(`*(@[arg1], @[arg2]), @@@[extras])@}.
  *!
  *!   If @[arg2] is an object that implements @[lfun::``*()], that
  *!   function will be called with @[arg1] as the single argument.
@@ -2332,7 +2332,7 @@ PMOD_EXPORT void o_multiply(void)
  *!   	@type string
  *!   	  The result will be @[arg1] concatenated @[arg2] times.
  *!   	@type int|float
- *!   	  The result will be @code{@[arg1] * @[arg2]@}, and will be a
+ *!   	  The result will be @expr{@[arg1] * @[arg2]@}, and will be a
  *!   	  float if either @[arg1] or @[arg2] is a float.
  *!   @endmixed
  *!
@@ -2662,7 +2662,7 @@ PMOD_EXPORT void o_divide(void)
  *!
  *! @returns
  *!   If there are more than two arguments, the result will be
- *!   @code{`/(`/(@[arg1], @[arg2]), @@@[extras])@}.
+ *!   @expr{`/(`/(@[arg1], @[arg2]), @@@[extras])@}.
  *!
  *!   If @[arg1] is an object that implements @[lfun::`/()], that
  *!   function will be called with @[arg2] as the single argument.
@@ -2695,7 +2695,7 @@ PMOD_EXPORT void o_divide(void)
  *!   	      matched against @[arg2] will not be in the result.
  *!   	  @endmixed
  *!   	@type float|int
- *!   	  The result will be @code{@[arg1] / @[arg2]@}. If both arguments
+ *!   	  The result will be @expr{@[arg1] / @[arg2]@}. If both arguments
  *!   	  are int, the result will be truncated to an int. Otherwise the
  *!   	  result will be a float.
  *!   @endmixed
@@ -2861,12 +2861,12 @@ PMOD_EXPORT void o_mod(void)
  *!   @mixed arg1
  *!   	@type string|array
  *!   	  If @[arg2] is positive, the result will be the last
- *!   	  @code{`%(@[sizeof](@[arg1]), @[arg2])@} elements of @[arg1].
+ *!   	  @expr{`%(@[sizeof](@[arg1]), @[arg2])@} elements of @[arg1].
  *!   	  If @[arg2] is negative, the result will be the first
- *!   	  @code{`%(@[sizeof](@[arg1]), -@[arg2])@} elements of @[arg1].
+ *!   	  @expr{`%(@[sizeof](@[arg1]), -@[arg2])@} elements of @[arg1].
  *!   	@type int|float
  *!   	  The result will be
- *!   	  @code{@[arg1] - @[arg2]*@[floor](@[arg1]/@[arg2])@}.
+ *!   	  @expr{@[arg1] - @[arg2]*@[floor](@[arg1]/@[arg2])@}.
  *!   	  The result will be a float if either @[arg1] or @[arg2] is
  *!   	  a float, and an int otherwise.
  *!   @endmixed
@@ -3049,7 +3049,7 @@ PMOD_EXPORT void o_compl(void)
  *!   	@type int
  *!   	  The bitwise inverse of @[arg] will be returned.
  *!   	@type float
- *!   	  The result will be @code{-1.0 - @[arg]@}.
+ *!   	  The result will be @expr{-1.0 - @[arg]@}.
  *!   	@type type|program
  *!   	  The type inverse of @[arg] will be returned.
  *!   	@type string
