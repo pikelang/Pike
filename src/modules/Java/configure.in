@@ -375,6 +375,7 @@ static HINSTANCE jvmdll = NULL;
     case $pike_cv_java_arch  in
       sparc) pike_cv_java_cpu=sparc;;
       i386|x86) pike_cv_java_cpu=x86;;
+      powerpc) pike_cv_java_cpu=ppc;;
       *) pike_cv_java_cpu=no;;
     esac
   ])
@@ -383,6 +384,7 @@ static HINSTANCE jvmdll = NULL;
   case $pike_cv_java_cpu in
     sparc) AC_DEFINE(HAVE_SPARC_CPU);;
     x86) AC_DEFINE(HAVE_X86_CPU);;
+    ppc) AC_DEFINE(HAVE_PPC_CPU);;
   esac
 
   if test "x$JAVA_LIBPATH" = x; then :; else

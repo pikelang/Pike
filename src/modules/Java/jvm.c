@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.27 2000/09/05 16:32:33 grubba Exp $
+ * $Id: jvm.c,v 1.28 2000/10/20 00:14:12 marcus Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -17,7 +17,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.27 2000/09/05 16:32:33 grubba Exp $");
+RCSID("$Id: jvm.c,v 1.28 2000/10/20 00:14:12 marcus Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -42,7 +42,7 @@ RCSID("$Id: jvm.c,v 1.27 2000/09/05 16:32:33 grubba Exp $");
 #endif /* HAVE_WINBASE_H */
 
 #ifdef _REENTRANT
-#if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU)
+#if defined(HAVE_SPARC_CPU) || defined(HAVE_X86_CPU) || defined(HAVE_PPC_CPU)
 #define SUPPORT_NATIVE_METHODS
 #endif /* HAVE_SPARC_CPU || HAVE_X86_CPU */
 #endif /* _REENTRANT */
@@ -1522,7 +1522,63 @@ static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
 }
 
 #else
+#ifdef HAVE_PPC_CPU
+
+struct cpu_context {
+  unsigned INT32 code[23];
+};
+
+static void *low_make_stub(struct cpu_context *ctx, void *data, int statc,
+			   void (*dispatch)(), int args)
+{
+  unsigned INT32 *p = ctx->code;
+
+  *p++ = 0x7c0802a6;  /* mflr r0         */
+  *p++ = 0x90010008;  /* stw r0,8(r1)    */
+  *p++ = 0x9421ffc8;  /* stwu r1,-56(r1) */
+  if(!statc)
+    *p++ = 0x90810054;  /* stw r4,84(r1)   */
+  *p++ = 0x90a10058;  /* stw r5,88(r1)   */
+  *p++ = 0x90c1005c;  /* stw r6,92(r1)   */
+  *p++ = 0x90e10060;  /* stw r7,96(r1)   */
+  *p++ = 0x91010064;  /* stw r8,100(r1)  */
+  *p++ = 0x91210068;  /* stw r9,104(r1)  */
+  *p++ = 0x9141006c;  /* stw r10,108(r1) */
+
+  if(statc) {
+    *p++ = 0x7c852378;  /* mr r5,r4        */
+    *p++ = 0x38c10058;  /* addi r6,r1,88   */
+  } else {
+    *p++ = 0x38a00000;  /* li r5,0         */
+    *p++ = 0x38c10054;  /* addi r6,r1,84   */
+  }
+  
+  *p++ = 0x7c641b78;  /* mr r4,r3        */
+
+  *p++ = 0x3c600000|(((unsigned INT32)(void *)data)>>16);
+                      /* lis r3,hi16(data)          */
+  *p++ = 0x60630000|(((unsigned INT32)(void *)data)&0xffff);
+                      /* ori r3,r3,lo16(data)       */
+ 
+  *p++ = 0x3d800000|(((unsigned INT32)(void *)dispatch)>>16);
+                      /* lis r12,hi16(dispatch)     */
+  *p++ = 0x618c0000|(((unsigned INT32)(void *)dispatch)&0xffff);
+                      /* ori r12,r12,lo16(dispatch) */
+
+  *p++ = 0x7d8803a6;  /* mtlr r12        */
+  *p++ = 0x4e800021;  /* blrl            */
+
+  *p++ = 0x80210000;  /* lwz r1,0(r1)    */
+  *p++ = 0x80010008;  /* lwz r0,8(r1)    */
+  *p++ = 0x7c0803a6;  /* mtlr r0         */
+  *p++ = 0x4e800020;  /* blr             */
+
+  return ctx->code;
+}
+
+#else
 #error How did you get here?  It should never happen.
+#endif /* HAVE_PPC_CPU */
 #endif /* HAVE_X86_CPU */
 #endif /* HAVE_SPARC_CPU */
 
