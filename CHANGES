@@ -416,6 +416,10 @@ o Math.Transforms
 o Math
     Added the IEEE float constants inf and nan.
 
+o MIME
+    Added method ext_to_media_type, which returns the MIME media type for
+    a given extension
+
 o MIME.Message
     Guess mode added. *FIXME: expand on this jhs*
 
@@ -431,8 +435,6 @@ o Parser.RCS
 o Parser.XML.NSTree
     This is an extended version of Parser.XML.Tree that can handle
     namespaces according to the W3C namespace specification.
-
-o Protocols.X.KeySyms
 
 o SDL
     Wrapper for a subset of Simple DirectMedia Layer
@@ -502,6 +504,28 @@ o String.SplitIterator
 o String.Replace, String.SingleReplace
     FIXME
 
+o String
+    Added a few new methods: int2char, int2hex, int2roman, int2size, which
+    convert integers into different string representation, and expand_tabs,
+    which converts tabs to spaces.
+
+    Examples:
+      String.int2char(42)   => "*"
+      String.int2hex(42)    => "2a"
+      String.int2roman(42)  => "XLII"
+      String.int2size(4200) => "4.1 kb"
+
+o String.Elite
+    Contains methods that transfer ordinary readable text into
+    leet-speak. A fairly good argument could be laid out for putting this
+    in Crypto as a one way cipher...
+
+o String.Buffer
+    A buffer used for building strings very fast.
+
+o String.HTML
+    Contains methods that help in generating HTML.
+
 o System.Time
     Used to get the current time with sub second precision.
 
@@ -510,12 +534,6 @@ o System.Timer
 
 o System.Memory 
    Handles read/write from mmap'ed or allocated memory.
-
-System.normalize_path
-System.gettimeofday
-System.get_netinfo_property (Max OS X)
-System.usleep/nanosleep
-   FIXME: per?
 
 o Tools.PV
     Convenience tool that sets up a canvas with GTK, presents a
@@ -643,6 +661,12 @@ o Thread.Condition()->wait()
     contain a race; it doesn't work to e.g. rely on the internal
     interpreter lock in this case.
 
+o Protocols.SNMP
+    FIXME
+
+o Protocols.X.KeySyms
+    FIXME
+
 o Protocols.HTTP
     All methods in Protocols.HTTP that take a header mapping can now
     handle array values (signifying multiple headers of that type).
@@ -767,14 +791,17 @@ o Added low lowel glue for the Ffmpeg library.
 
 o Calendar.verify  *FIXME: remove?*
 
+System.normalize_path
+System.gettimeofday
+System.get_netinfo_property (Max OS X)
+System.usleep/nanosleep
+   FIXME: per?
+
 Nilsson does lib:
 
 master.pike
 - add_predefine/remove_predefine
 - Improved handling of module cross dependencies.
-
-
-Local
 
 Multiset
 
@@ -783,31 +810,19 @@ Pike.Security
 Pike.BacktraceFrame
 Pike.WEAK_INDICES, WEAK_VALUES, WEAK
 
-String.Elite
-String.SingleReplace
-String.Replace
-String.SplitIterator
-String.soundex
-String.Buffer
-String.HTML
-String.int2char
-String.int2hex
-String.expand_tabs
-String.int2roman
-String.int2size
+o String.SingleReplace
+o String.Replace
+o String.SplitIterator
+o String.soundex
 
 Audio
 
-Locale.Language
-
-MIME.ext_to_media_type
 
 Parser.decode_numeric_xml_entity
 Parser.get_xml_parser
 Parser.parse_html_entities
 Parser.XML.NSTree
 
-Protocols.SNMP now works
 Protocols.XMLRPC
 
 Web.Crawler
