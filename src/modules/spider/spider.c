@@ -42,7 +42,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.53 1998/03/05 13:05:00 grubba Exp $");
+RCSID("$Id: spider.c,v 1.54 1998/03/06 12:13:21 grubba Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -849,6 +849,7 @@ void do_html_parse(struct pike_string *ss,
   pop_stack();					\
 } while(0)
 
+struct svalue empty_string;
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
@@ -907,7 +908,7 @@ void do_html_parse_lines(struct pike_string *ss,
 	sval1.type=99;
 #endif
 	(*strings)++;
-	find_endtag(sval2.u.string ,s+j, len-j, &l); /* bug /law 960805 */
+	/* find_endtag(sval2.u.string ,s+j, len-j, &l);  bug /law 960805 */
 	free_svalue(&sval2);
 	j+=l;
 	i=last=j;
@@ -934,6 +935,9 @@ void do_html_parse_lines(struct pike_string *ss,
 
       /* Is it a container then? */
       mapping_index_no_free(&sval1,cont,&sval2);
+      if (sval1.type == T_INT) {
+	mapping_index_no_free(&sval1,cont,&empty_string);
+      }
       if (sval1.type==T_STRING)
       {
 	*(sp++)=sval1;
@@ -1238,6 +1242,8 @@ extern void init_udp(void);
 /* Hohum. Here we go. This is try number three for a more optimized Roxen. */
 
 #if 0 && defined(_REENTRANT)
+#define BUFFER (8192)
+
 struct thread_args
 {
   struct thread_args *next;
@@ -1248,6 +1254,7 @@ struct thread_args
   struct svalue args;
   int len;
   int sent;
+  char buffer[BUFFER];
   THREAD_T tid;
 };
 
@@ -1258,28 +1265,37 @@ struct thread_args *done;
 void *do_shuffle(void *_a)
 {
   struct thread_args *a = (struct thread_args *)_a;
-  char buffer[8192];
 
 #ifdef DIRECTIO_ON
-  if(a->len >= 65536)
+  if(a->len >= 65536*2)
     directio(a->from_fd, DIRECTIO_ON);
 #endif
 
   while(a->len)
   {
     int nread;
-    nread = read(a->from_fd, buffer, 8192);
-    if(nread <= 0)
-      break;
+    int start = 0;
+
+    nread = read(a->from_fd, a->buffer, BUFFER);
+    if(nread <= 0) {
+      if (errno != EINTR)
+	break;
+      else
+	continue;
+    }
 
     while(nread)
     {
-      int nsent = write(a->to_fd, buffer, nread);
-      if(nsent < 0)
-	goto end;
-      a->sent += nsent;
-      nread -= nsent;
-      a->len -= nsent;
+      int nsent = write(a->to_fd, a->buffer+start, nread);
+      if(nsent < 0) {
+	if (errno != EINTR)
+	  goto end;
+      } else {
+	start += nsent;
+	a->sent += nsent;
+	nread -= nsent;
+	a->len -= nsent;
+      }
     }
   }
 
@@ -1358,6 +1374,11 @@ void f_shuffle(INT32 args)
 
 void pike_module_init(void) 
 {
+  push_text("");
+  empty_string = sp[-1];
+  empty_string.u.string->refs++;
+  pop_stack();
+
 #if 0 && defined(_REENTRANT)
   add_function("shuffle", f_shuffle, 
 	       "function(object,object,function,mixed,int:void)", 0);
@@ -1447,6 +1468,8 @@ void pike_module_init(void)
 void pike_module_exit(void)
 {
   int i;
+
+  free_string(empty_string.u.string);
 
 #ifdef ENABLE_STREAMED_PARSER
   if(streamed_parser)
