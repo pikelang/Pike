@@ -4,7 +4,7 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.12 1999/08/06 23:08:14 hubbe Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.13 1999/08/25 14:24:29 noring Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
 #define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
@@ -127,6 +127,7 @@ class YabuLog {
 static private class FileIO {
   INHERIT_MUTEX
   static private inherit Stdio.File:file;
+  static private string filemode;
 
   static private void seek(int offset)
   {
@@ -165,11 +166,23 @@ static private class FileIO {
     UNLOCK();
   }
 
-  void create(string filename, string mode)
+  void file_close()
+  {
+    file::close();
+  }
+
+  void file_open(string filename)
+  {
+    if(!file::open(filename, filemode))
+      ERR(strerror(file::errno()));
+  }
+  
+  void create(string filename, string _filemode)
   {
     file::create();
-    if(!file::open(filename, mode))
-      ERR(strerror(file::errno()));
+    
+    filemode = _filemode;
+    file_open(filename);
   }
 }
 
@@ -454,9 +467,11 @@ class Chunk {
     LOCK();
     if(!write)
       ERR("Cannot move in read mode");
+    file_close();
     if(!mv(filename, new_filename))
       IO_ERR("Move failed");
     filename = new_filename;
+    file_open(filename);
     UNLOCK();
   }
   
