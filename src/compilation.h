@@ -1,5 +1,5 @@
 /*
- * $Id: compilation.h,v 1.11 1998/11/06 03:08:00 hubbe Exp $
+ * $Id: compilation.h,v 1.12 1998/11/09 07:21:30 hubbe Exp $
  *
  * Compilator state push / pop operator construction file
  *
@@ -130,6 +130,7 @@
 #undef ZMEMBER2
 #undef SNAME
 #undef SEND
+#undef STACKMEMBER
 
 #undef STRUCT
 #undef PUSH
