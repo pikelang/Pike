@@ -169,7 +169,7 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
     case "SPRSH":
       if(string tmp=getenv("REMOTE_VARIABLES"))
       {
-	array vars=({});
+	array vars=({"__handles_stderr=1"});
 	foreach(tmp/"\n",string var)
 	  if(search(var,"=")!=-1)
 	    vars+=({var});
@@ -214,6 +214,11 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	int write(string s)
 	  {
 	    return Stdio.stdout->write(s);
+	  }
+
+	int werr(string s)
+	  {
+	    return Stdio.stderr->write(s);
 	  }
       };
 
@@ -264,6 +269,8 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	    rl->set_prompt(prompt);
 	    return strlen(s);
 	  }
+
+	int werr(string s) { return write(s); }
 
 	void create()
 	  {
@@ -336,11 +343,19 @@ int silent_do_cmd(string *cmd, mixed|void filter, int|void silent)
 	  werror("Connection closed!\n");
 	  exit(1);
 	}
-	sscanf(s,"%4c",int len);
+	sscanf(s,"%c%3c",int channel, int len);
 	if(!len) break;
 	s=f->read(len);
 	s=replace(s,"\r\n","\n");
-	if(!silent) inout->write(s);
+	if(!silent)
+	{
+	  switch(channel)
+	  {
+	    case 0: /* Backwards compatibility */
+	    case 1:  inout->write(s); break; // stdout
+	    case 2:  inout->werr(s);  break; // stderr
+	  }
+	}
 	if(filter) ret+=s;
       }
       if(filter) filter(ret);

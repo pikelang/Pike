@@ -79,6 +79,17 @@ string opt_path(string p1, string p2)
   return  ( ( ((p1||"") + ";" + (p2||"")) / ";" ) - ({""}) ) * ";";
 }
 
+
+void myproxy(object pi, object io, int channel)
+{
+  while(1)
+  {
+    string s=pi->read(1000,1);
+    if(!s || !strlen(s)) break;
+    io->write(sprintf("%c%3c%s",channel,strlen(s),channel,s));
+  }
+}
+
 void handle_incoming_connection(object(Stdio.File) io)
 {
   object p;
@@ -92,10 +103,12 @@ void handle_incoming_connection(object(Stdio.File) io)
   }
 
   object pi=Stdio.File();
+  object pe=Stdio.File();
 #ifdef NO_IPC
   object p2=pi->pipe();
+  object p23=pi->pipe();
 #else
-  object p2=pi->pipe(Stdio.PROP_IPC);
+  object pe2=pe->pipe(Stdio.PROP_IPC);
 #endif
   string dir=cmd[0];
   cmd=cmd[1..];
@@ -254,23 +267,27 @@ void handle_incoming_connection(object(Stdio.File) io)
 #ifndef WINE
 				   "stdin":io,
 				   "stdout":p2,
-				   "stderr":p2,
+				   "stderr":pe2,
 #endif
 				   "cwd":dir,
 				   "env":env,
 				   ]));
       };
       destruct(p2);
+      destruct(pe2);
       if(!err)
       {
 #ifdef NO_IPC
 	thread_create(monitor,p2,p);
 #endif
-	while(1)
+	
+	if(env->__handles_stderr)
 	{
-	  string s=pi->read(1000,1);
-	  if(!s || !strlen(s)) break;
-	  io->write(sprintf("%4c%s",strlen(s),s));
+	  thread_create(myproxy,pe,io,2);
+	  myproxy(pi,io,1);
+	}else{
+	  thread_create(myproxy,pe,io,0);
+	  myproxy(pi,io,0);
 	}
 	
 	io->write(sprintf("%4c",0));
