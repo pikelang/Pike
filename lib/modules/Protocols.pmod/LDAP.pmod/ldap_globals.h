@@ -19,6 +19,7 @@
 
 
 #define LDAP_DEFAULT_PORT       389
+#define LDAPS_DEFAULT_PORT      636
 #define LDAP_DEFAULT_HOST       "127.0.0.1"
 #define LDAP_DEFAULT_URL       "ldap://"+LDAP_DEFAULT_HOST+":"+LDAP_DEFAULT_PORT+"/"
 #define LDAP_DEFAULT_VERSION    3
@@ -26,12 +27,13 @@
 
 #define QUOTED_COMMA		"%2c"
 
-// --- Debug low level operations ---
+#ifdef DEBUG_PIKE_PROTOCOL_LDAP
+#define DWRITE(X)		werror("Protocols.LDAP: "+X)
+#define DWRITE_HI(X)		werror("Protocols.LDAP: "+X)
+#else
 #define DWRITE(X)
-//#define DWRITE(X)       werror("Protocols.LDAP: "+X)
-// --- Debug high level operations ---
 #define DWRITE_HI(X)
-//#define DWRITE_HI(X)       werror("Protocols.LDAP: "+X)
+#endif
 // --- Enable run-time error ---
 //#define THROW(X)
 #define THROW(X)        throw(X)

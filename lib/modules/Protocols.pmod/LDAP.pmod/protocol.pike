@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: protocol.pike,v 1.6 2000/09/28 03:39:03 hubbe Exp $
+// $Id: protocol.pike,v 1.7 2001/09/17 02:45:43 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -45,6 +45,7 @@
   array extra_args;				// not used, yet
 //  /*private*/ int errno;
   int connected = 0;
+  object ldapfd;			// helper fd
 
   int seterr(int errno) {
   // Sets ldap_err* variables and returns errno
@@ -69,7 +70,7 @@
     string s, shlp;
 
     if(strlen(readbuf) < 2)
-      readbuf = ldap::read(2); 	// 1. byte = 0x0C, 2. byte = msglen
+      readbuf = ldapfd->read(2); 	// 1. byte = 0x0C, 2. byte = msglen
     if (intp(readbuf) || (strlen(readbuf) < 2)) {
       seterr (LDAP_TIMEOUT);
       DWRITE_HI("protocol.read_anwer: ERROR: connection timeout.\n");
@@ -98,7 +99,7 @@
       ofs = (msglen & 0x7f) + 2;
       ix = ofs - strlen(readbuf);
       if(ix > 0)
-	s = ldap::read(ix);
+	s = ldapfd->read(ix);
       if (!s || (strlen(s) < ix)) {
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
@@ -114,7 +115,7 @@
     }
     ix = (ofs + msglen) - strlen(readbuf);
     if(ix > 0)
-      s = ldap::read(ix);
+      s = ldapfd->read(ix);
     if (!s || (strlen(s) < ix)) {
       seterr (LDAP_SERVER_DOWN);
       THROW(({"LDAP: connection closed by server.\n",backtrace()}));
@@ -126,35 +127,8 @@
     DWRITE("protocol.read_anwer: ok=1.\n");
     ok = 1;
 
-    remove_call_out(async_timeout);
-
     if(con_ok)
       con_ok(this_object(), @extra_args);
-  }
-
-  static void connect(string server, int port) {
-  // -----------------------------------------
-
-//DWRITE("DEB: connect ...\n");
-    if(catch { ldap::connect(server, port); }) {
-      //if(!(errno = ldap::errno())) {
-      if(!ldap::errno()) {
-	seterr (LDAP_PARAM_ERROR); // or _CONNECT_ERROR ?
-	THROW(({"LDAP: connection parameter error.\n",backtrace()}));
-      }
-      //::destroy();
-      //ldap=0;
-      ok = 0;
-      return;
-    }
-  }
-
-  static void async_close() {
-  // ----------------------
-
-DWRITE("DEB: async_close ...\n");
-    ldap::set_blocking();
-    read_answer();
   }
 
   static int is_whole_pdu() {
@@ -191,154 +165,9 @@ DWRITE("DEB: async_close ...\n");
     return(1);
   }
 
-  static void async_read(mixed id, string data) {
-  // ------------------------------------------
-
-DWRITE("DEB: async_read ...\n");
-    readbuf += data;
-    if(is_whole_pdu()) {
-      ldap::set_blocking();
-      read_answer();
-    }
-  }
-
-  static void async_write() {
-  // ----------------------
-
-DWRITE("DEB: async_write ...\n");
-    ldap::set_blocking();
-    ldap::write(writebuf); // ??? NEmusi se testovat uspesnost ??
-    ldap::set_nonblocking(async_read, 0, async_close);
-  }
-
-  static void async_connected() {
-  // --------------------------
-
-DWRITE("DEB: async_connected ...\n");
-    ldap::set_nonblocking(async_read, async_write, async_close);
-    //ldap::write(""); // ??? What is it? Initiator !??
-  }
-
-  static void async_failed() {
-  // -----------------------
-
-DWRITE("DEB: async_failed ...\n");
-    seterr(LDAP_SERVER_DOWN);
-    ok = 0;
-
-    if(con_fail)
-      con_fail(this_object(), @extra_args);
-    remove_call_out(async_timeout);
-  }
-
-  static void async_timeout() {
-  // ------------------------
-
-    seterr (LDAP_TIMEOUT);
-DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
-    //THROW(({"LDAP: connection timeout.\n",backtrace()}));
-    catch {
-      ldap::close(); 
-      //ldap::destroy();
-    };
-    async_failed();
-  }
-
-  void async_got_host(string server, int port) {
-  // -----------------------------------------
-
-    if(!server) {
-      async_failed();
-      //ldap::destroy()
-      return;
-    }
-    if(!ldap::open_socket()) {
-      seterr (LDAP_SERVER_DOWN);
-      DWRITE("protocol.async_got_host: ERROR: can't open socket.\n");
-      THROW(({"LDAP: can't open socket.\n",backtrace()}));
-      return;
-    }
-
-    ldap::set_nonblocking(0, async_connected, async_failed);
-    DWRITE("protocol.async_got_host: connected!\n");
-
-    if(catch { ldap::connect(server, port); }) {
-      //errno = ldap::errno();
-      seterr (LDAP_SERVER_DOWN);
-      DWRITE("protocol.async_got_host: ERROR: can't open socket.\n");
-      //ldap::destroy();
-      //ldap=0;
-      ok = 0;
-      async_failed();
-    }
-  }
-
-  void async_fetch_read(mixed id, string data) {
-  // -----------------------------------------
-
-    readbuf += data;
-  }
-
-  void async_fetch_close() {
-  // ---------------------
-
-    ldap::set_blocking();
-    //ldap::destroy();
-    //ldap=0;
-    if(con_ok)
-      con_ok(@extra_args);
-  }
-
-
-
-
-/*********** API methods **************/
-
-  object set_callbacks(function _ok,
-			function _fail,
-			 mixed ...extra) {
-  // -----------------------------------
-
-    extra_args = extra;
-    con_ok = _ok;
-    con_fail = _fail;
-    return(this_object());
-  }
-
-  object thread_create(string server, int port) {
-  // ------------------------------------------
-
-    return (0); // unimplemented !!!
-  }
-
-  object async_create(string server, int port) {
-  // -----------------------------------------
-
-    return (0); // unimplemented !!!
-#if 0
-    call_out(async_timeout);
-    dns_lookup_async(server, async_got_host, port);
-    return(this_object());
-#endif
-  }
-
-  void create(string server, int port) {
-  // ---------------------------------
-
-    if(!ldap::connect(server, port)) {
-      //errno = ldap::errno();
-      seterr (LDAP_SERVER_DOWN);
-      DWRITE("protocol.create: ERROR: can't open socket.\n");
-      //ldap::destroy();
-      //ldap=0;
-      ok = 0;
-      if(con_fail)
-	con_fail(this_object(), @extra_args);
-    }
-
-    connected = 1;
-    DWRITE("protocol.create: connected!\n");
-
+  void create(object fd) {
+  // -------------------
+    ldapfd = fd;
   }
 
 
@@ -364,7 +193,7 @@ DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
 
     // call_out
     writebuf = msgval->get_der();
-    rv = ldap::write(writebuf); // !!!!! - jak rozlisit async a sync ????
+    rv = ldapfd->write(writebuf); // !!!!! - jak rozlisit async a sync ????
     // call_out
     if (rv < 2) {
       seterr (LDAP_SERVER_DOWN);
@@ -394,7 +223,7 @@ DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
     string|int retv;
     string s, shlp;
 
-    retv = ldap::read(2); 	// 1. byte = 0x0C, 2. byte = msglen
+    retv = ldapfd->read(2); 	// 1. byte = 0x0C, 2. byte = msglen
     if (intp(retv) && (retv == -1)) {
       seterr (LDAP_TIMEOUT);
       DWRITE_HI("protocol.readmsg: ERROR: connection timeout.\n");
@@ -416,7 +245,7 @@ DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
 	return(-ldap_errno);
       }
-      s = ldap::read(msglen & 0x7f);
+      s = ldapfd->read(msglen & 0x7f);
       if (!s) {
 	seterr (LDAP_PROTOCOL_ERROR);
 	THROW(({"LDAP: Protocol mismatch.\n",backtrace()}));
@@ -429,7 +258,7 @@ DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
         msglen += shlp[ix]*(1<<(ix*8));
       }
     }
-    s = ldap::read(msglen);
+    s = ldapfd->read(msglen);
     if (!s | (sizeof(s) < msglen)) {
       seterr (LDAP_SERVER_DOWN);
       THROW(({"LDAP: connection closed by server.\n",backtrace()}));
@@ -460,7 +289,7 @@ DWRITE("protocol.async_timeout: ERROR: connection timeout.\n");
       DWRITE("protocol.writemsg: msg is null!\n");
 
     // call_out
-    rv = ldap::write(msgval->get_der());
+    rv = ldapfd->write(msgval->get_der());
     // call_out
     if (rv < 2) {
       seterr (LDAP_SERVER_DOWN);

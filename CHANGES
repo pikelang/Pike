@@ -5,6 +5,8 @@ visit http://community.roxen.com/crunch/ - or append the ticket id to
 Changes since 2001-09-12 / Pike 7.2.197
 ----------------------------------------------------------------------
 
+  o Protocols.LDAP.client now handles LDAP over TLS (ldaps://...)
+
 
 Changes since 2001-04-06 / Pike 7.2.30
 ----------------------------------------------------------------------
