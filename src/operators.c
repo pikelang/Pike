@@ -6,7 +6,7 @@
 /**/
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.56 1999/08/14 09:00:14 hubbe Exp $");
+RCSID("$Id: operators.c,v 1.57 1999/08/16 18:35:22 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -950,7 +950,7 @@ void o_or(void)
   {
     struct array *a;
     a=merge_array_with_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_OR);
-    sp-=2; /* Refs are eaten by function above */
+    pop_n_elems(2);
     push_array(a);
     return;
   }
@@ -1043,7 +1043,7 @@ void o_xor(void)
   {
     struct array *a;
     a=merge_array_with_order(sp[-2].u.array, sp[-1].u.array, PIKE_ARRAY_OP_XOR);
-    sp-=2; /* Refs are eaten by function above */
+    pop_n_elems(2);
     push_array(a);
     return;
   }
