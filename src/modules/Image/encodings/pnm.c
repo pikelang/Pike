@@ -1,12 +1,12 @@
-/* $Id: pnm.c,v 1.4 1997/11/20 22:26:58 mirar Exp $ */
+/* $Id: pnm.c,v 1.5 1997/11/29 21:33:36 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pnm.c,v 1.4 1997/11/20 22:26:58 mirar Exp $
+**!	$Id: pnm.c,v 1.5 1997/11/29 21:33:36 grubba Exp $
 **! submodule PNM
 **!
-**!	This submodule keep the PNM encode/decode capabilities
+**!	This submodule keeps the PNM encode/decode capabilities
 **!	of the <ref>Image</ref> module.
 **!
 **!	PNM is a common image storage format on unix systems,
@@ -49,7 +49,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: pnm.c,v 1.4 1997/11/20 22:26:58 mirar Exp $");
+RCSID("$Id: pnm.c,v 1.5 1997/11/29 21:33:36 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
