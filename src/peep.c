@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.86 2003/06/11 23:02:31 nilsson Exp $
+|| $Id: peep.c,v 1.87 2003/08/06 18:05:27 mast Exp $
 */
 
 #include "global.h"
@@ -26,7 +26,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.86 2003/06/11 23:02:31 nilsson Exp $");
+RCSID("$Id: peep.c,v 1.87 2003/08/06 18:05:27 mast Exp $");
 
 static void asm_opt(void);
 
@@ -369,7 +369,7 @@ void assemble(void)
     default:
       switch(instrs[c->opcode - F_OFFSET].flags & I_IS_MASK)
       {
-      case I_ISJUMP:
+      case I_ISPTRJUMP:
 #ifdef INS_F_JUMP
 	tmp=INS_F_JUMP(c->opcode);
 	if(tmp != -1)
@@ -391,7 +391,7 @@ void assemble(void)
 	jumps[c->arg]=tmp;
 	break;
 
-      case I_ISJUMPARGS:
+      case I_ISPTRJUMPARGS:
 #ifdef INS_F_JUMP_WITH_TWO_ARGS
 	tmp = INS_F_JUMP_WITH_TWO_ARGS(c->opcode, c->arg, c->arg2);
 	if(tmp != -1)
@@ -423,10 +423,11 @@ void assemble(void)
 	 */
 
       case I_TWO_ARGS:
+      case I_ISJUMPARGS:
 	ins_f_byte_with_2_args(c->opcode, c->arg, c->arg2);
 	break;
 
-      case I_ISJUMPARG:
+      case I_ISPTRJUMPARG:
 #ifdef INS_F_JUMP_WITH_ARG
 	tmp = INS_F_JUMP_WITH_ARG(c->opcode, c->arg);
 	if(tmp != -1)
@@ -458,10 +459,12 @@ void assemble(void)
 	 */
 
       case I_HASARG:
+      case I_ISJUMPARG:
 	ins_f_byte_with_arg(c->opcode, c->arg);
 	break;
 
       case 0:
+      case I_ISJUMP:
 	ins_f_byte(c->opcode);
 	break;
 
@@ -493,7 +496,7 @@ void assemble(void)
     if(e+1 < length)
     {
       /* FIXME: Note that this code won't work for opcodes of type
-       *        I_ISJUMPARG or I_ISJUMPARGS, since c may already
+       *        I_ISPTRJUMPARG or I_ISPTRJUMPARGS, since c may already
        *        have been advanced to the corresponding F_POINTER.
        *        With the current opcode set this is a non-issue, but...
        * /grubba 2002-11-02

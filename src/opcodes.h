@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.32 2002/11/10 20:19:18 grubba Exp $
+|| $Id: opcodes.h,v 1.33 2003/08/06 18:05:27 mast Exp $
 */
 
 #ifndef OPCODES_H
@@ -22,6 +22,12 @@
 #define OPCODE0_TAILJUMP(X,Y,F) X,
 #define OPCODE1_TAILJUMP(X,Y,F) X,
 #define OPCODE2_TAILJUMP(X,Y,F) X,
+#define OPCODE0_PTRJUMP(X,Y,F) X,
+#define OPCODE1_PTRJUMP(X,Y,F) X,
+#define OPCODE2_PTRJUMP(X,Y,F) X,
+#define OPCODE0_TAILPTRJUMP(X,Y,F) X,
+#define OPCODE1_TAILPTRJUMP(X,Y,F) X,
+#define OPCODE2_TAILPTRJUMP(X,Y,F) X,
 #define OPCODE0_RETURN(X,Y,F) X,
 #define OPCODE1_RETURN(X,Y,F) X,
 #define OPCODE2_RETURN(X,Y,F) X,
@@ -124,12 +130,12 @@ enum Pike_opcodes
 #undef OPCODE0_TAIL
 #undef OPCODE1_TAIL
 #undef OPCODE2_TAIL
-#undef OPCODE0_JUMP
-#undef OPCODE1_JUMP
-#undef OPCODE2_JUMP
-#undef OPCODE0_TAILJUMP
-#undef OPCODE1_TAILJUMP
-#undef OPCODE2_TAILJUMP
+#undef OPCODE0_PTRJUMP
+#undef OPCODE1_PTRJUMP
+#undef OPCODE2_PTRJUMP
+#undef OPCODE0_TAILPTRJUMP
+#undef OPCODE1_TAILPTRJUMP
+#undef OPCODE2_TAILPTRJUMP
 #undef OPCODE0_RETURN
 #undef OPCODE1_RETURN
 #undef OPCODE2_RETURN
@@ -142,6 +148,12 @@ enum Pike_opcodes
 #undef OPCODE0_TAILBRANCH
 #undef OPCODE1_TAILBRANCH
 #undef OPCODE2_TAILBRANCH
+#undef OPCODE0_JUMP
+#undef OPCODE1_JUMP
+#undef OPCODE2_JUMP
+#undef OPCODE0_TAILJUMP
+#undef OPCODE1_TAILJUMP
+#undef OPCODE2_TAILJUMP
 #undef OPCODE0_ALIAS
 #undef OPCODE1_ALIAS
 #undef OPCODE2_ALIAS

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.317 2003/08/04 16:35:05 mast Exp $
+|| $Id: interpret.c,v 1.318 2003/08/06 18:05:26 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.317 2003/08/04 16:35:05 mast Exp $");
+RCSID("$Id: interpret.c,v 1.318 2003/08/06 18:05:26 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -905,7 +905,7 @@ void dump_backlog(void)
 		(long)backlog[e].arg,
 		(long)backlog[e].arg2);
       }
-      else if(instrs[backlog[e].instruction].flags & I_JUMP)
+      else if(instrs[backlog[e].instruction].flags & I_POINTER)
       {
 	fprintf(stderr,"(%+ld)", (long)backlog[e].arg);
       }
@@ -1023,12 +1023,59 @@ void PIKE_CONCAT(opcode_,O)(INT32 arg1) {\
   DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1));				\
 C }
 
-
 #define OPCODE2(O,N,F,C) \
 void PIKE_CONCAT(opcode_,O)(INT32 arg1,INT32 arg2) { \
   DEF_PROG_COUNTER; \
   DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1); DEBUG_LOG_ARG2 (arg2));	\
 C }
+
+#ifdef OPCODE_RETURN_JUMPADDR
+
+#define OPCODE0_JUMP(O,N,F,C)						\
+  void *PIKE_CONCAT(jump_opcode_,O)(void) {				\
+    void *jumpaddr DO_IF_DEBUG(= NULL);					\
+    DEF_PROG_COUNTER;							\
+    DEBUG_PROLOGUE (O, ;);						\
+    C;									\
+    JUMP_DONE;								\
+  }
+
+#define OPCODE1_JUMP(O,N,F,C)						\
+  void *PIKE_CONCAT(jump_opcode_,O)(INT32 arg1) {			\
+    void *jumpaddr DO_IF_DEBUG(= NULL);					\
+    DEF_PROG_COUNTER;							\
+    DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1));				\
+    C;									\
+    JUMP_DONE;								\
+  }
+
+#define OPCODE2_JUMP(O,N,F,C)						\
+  void *PIKE_CONCAT(jump_opcode_,O)(INT32 arg1, INT32 arg2) {		\
+    void *jumpaddr DO_IF_DEBUG(= NULL);					\
+    DEF_PROG_COUNTER;							\
+    DEBUG_PROLOGUE (O, DEBUG_LOG_ARG (arg1); DEBUG_LOG_ARG2 (arg2));	\
+    C;									\
+    JUMP_DONE;								\
+  }
+
+#define SET_PROG_COUNTER(X) (jumpaddr = (X))
+
+#ifdef PIKE_DEBUG
+#define JUMP_DONE do {							\
+    if (!jumpaddr)							\
+      Pike_fatal ("Instruction didn't set jump address.\n");		\
+    return jumpaddr;							\
+  } while (0)
+#else
+#define JUMP_DONE return jumpaddr
+#endif
+
+#else  /* !OPCODE_RETURN_JUMPADDR */
+#define OPCODE0_JUMP OPCODE0
+#define OPCODE1_JUMP OPCODE1
+#define OPCODE2_JUMP OPCODE2
+#define JUMP_DONE DONE
+#endif	/* !OPCODE_RETURN_JUMPADDR */
 
 #ifdef OPCODE_INLINE_BRANCH
 #define TEST_OPCODE0(O,N,F,C) \
@@ -1062,30 +1109,28 @@ int PIKE_CONCAT(test_opcode_,O)(INT32 arg1, INT32 arg2) { \
 #define DO_BRANCH()	(branch_taken = -1)
 #define DONT_BRANCH()	(branch_taken = 0)
 #else /* !OPCODE_INLINE_BRANCH */
-#define TEST_OPCODE0	OPCODE0
-#define TEST_OPCODE1	OPCODE1
-#define TEST_OPCODE2	OPCODE2
+#define TEST_OPCODE0(O,N,F,C) OPCODE0_PTRJUMP(O,N,F,C)
+#define TEST_OPCODE1(O,N,F,C) OPCODE1_PTRJUMP(O,N,F,C)
+#define TEST_OPCODE2(O,N,F,C) OPCODE2_PTRJUMP(O,N,F,C)
 #endif /* OPCODE_INLINE_BRANCH */
-
-#define OPCODE0_JUMP(O,N,F,C) OPCODE0(O,N,F,C)
-#define OPCODE1_JUMP(O,N,F,C) OPCODE1(O,N,F,C)
-#define OPCODE2_JUMP(O,N,F,C) OPCODE2(O,N,F,C)
 
 #define OPCODE0_TAIL(O,N,F,C) OPCODE0(O,N,F,C)
 #define OPCODE1_TAIL(O,N,F,C) OPCODE1(O,N,F,C)
 #define OPCODE2_TAIL(O,N,F,C) OPCODE2(O,N,F,C)
 
-#define OPCODE0_TAILJUMP(O,N,F,C) OPCODE0(O,N,F,C)
-#define OPCODE1_TAILJUMP(O,N,F,C) OPCODE1(O,N,F,C)
-#define OPCODE2_TAILJUMP(O,N,F,C) OPCODE2(O,N,F,C)
+#define OPCODE0_PTRJUMP(O,N,F,C) OPCODE0_JUMP(O,N,F,C)
+#define OPCODE1_PTRJUMP(O,N,F,C) OPCODE1_JUMP(O,N,F,C)
+#define OPCODE2_PTRJUMP(O,N,F,C) OPCODE2_JUMP(O,N,F,C)
+#define OPCODE0_TAILPTRJUMP(O,N,F,C) OPCODE0_PTRJUMP(O,N,F,C)
+#define OPCODE1_TAILPTRJUMP(O,N,F,C) OPCODE1_PTRJUMP(O,N,F,C)
+#define OPCODE2_TAILPTRJUMP(O,N,F,C) OPCODE2_PTRJUMP(O,N,F,C)
 
-#define OPCODE0_RETURN(O,N,F,C) OPCODE0(O,N,F,C)
-#define OPCODE1_RETURN(O,N,F,C) OPCODE1(O,N,F,C)
-#define OPCODE2_RETURN(O,N,F,C) OPCODE2(O,N,F,C)
-
-#define OPCODE0_RETURNJUMP(O,N,F,C) OPCODE0(O,N,F,C)
-#define OPCODE1_RETURNJUMP(O,N,F,C) OPCODE1(O,N,F,C)
-#define OPCODE2_RETURNJUMP(O,N,F,C) OPCODE2(O,N,F,C)
+#define OPCODE0_RETURN(O,N,F,C) OPCODE0_JUMP(O,N,F,C)
+#define OPCODE1_RETURN(O,N,F,C) OPCODE1_JUMP(O,N,F,C)
+#define OPCODE2_RETURN(O,N,F,C) OPCODE2_JUMP(O,N,F,C)
+#define OPCODE0_TAILRETURN(O,N,F,C) OPCODE0_RETURN(O,N,F,C)
+#define OPCODE1_TAILRETURN(O,N,F,C) OPCODE1_RETURN(O,N,F,C)
+#define OPCODE2_TAILRETURN(O,N,F,C) OPCODE2_RETURN(O,N,F,C)
 
 /* BRANCH opcodes only generate code for the test,
  * so that the branch instruction can be inlined.
@@ -1260,8 +1305,8 @@ static int eval_instruction_low(PIKE_OPCODE_T *pc)
 
 #define DONE return
 #define FETCH
-#define INTER_RETURN {SET_PROG_COUNTER(do_inter_return_label);DONE;}
-#define INTER_ESCAPE_CATCH {SET_PROG_COUNTER(do_escape_catch_label);DONE;}
+#define INTER_RETURN {SET_PROG_COUNTER(do_inter_return_label);JUMP_DONE;}
+#define INTER_ESCAPE_CATCH {SET_PROG_COUNTER(do_escape_catch_label);JUMP_DONE;}
 
 #ifdef _M_IX86
 // Disable frame pointer optimization
@@ -1334,7 +1379,7 @@ static inline int eval_instruction(unsigned char *pc)
 static void trace_return_value(void)
 {
   char *s;
-  
+
   init_buf();
   my_strcat("Return: ");
   describe_svalue(Pike_sp-1,0,0);

@@ -122,7 +122,7 @@ int main(int argc, array(string) argv)
 
   for(int e=0;e<=2;e++) {
     foreach( ({"","TAIL"}), string tail) {
-      foreach( ({"", "JUMP", "RETURN", "BRANCH"}), string kind) {
+      foreach( ({"", "JUMP", "PTRJUMP", "RETURN", "BRANCH"}), string kind) {
 	string postfix = tail+kind;
 	if (sizeof(postfix)) postfix = "_" + postfix;
 	ops[sprintf("OPCODE%d%s",e,postfix)]=1;

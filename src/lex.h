@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lex.h,v 1.27 2003/03/20 17:44:54 mast Exp $
+|| $Id: lex.h,v 1.28 2003/08/06 18:05:27 mast Exp $
 */
 
 #ifndef LEX_H
@@ -33,19 +33,24 @@ struct keyword
  */
 #define I_HASARG	1	/* Instruction has a parameter. */
 #define I_POINTER	2	/* arg is a label number. */
-#define I_JUMP		4	/* Instruction performs a jump to its pointer. */
+#define I_JUMP		4	/* Instruction performs a jump. */
 #define I__DATA		8	/* Instruction is raw data (data, byte)*/
 #define I_HASARG2	16	/* Instruction has a second parameter. */
 #define I_HASPOINTER	32	/* Instruction is followed by a F_POINTER. */
-#define I_PC_AT_NEXT	64	/* Opcode needs PC to be updated. */
-#define I_BRANCH	128	/* Opcode is a clean branch instruction. */
+#define I_PC_AT_NEXT	64	/* Opcode has updated Pike_fp->pc. */
+#define I_BRANCH	128	/* Opcode either jumps to the address
+				 * given by I_POINTER/I_HASPOINTER or
+				 * continues. */
 
 #define I_TWO_ARGS	(I_HASARG | I_HASARG2)
 #define I_DATA		(I_HASARG | I__DATA)
 #define I_ISPOINTER	(I_HASARG | I_POINTER)	/* Only F_POINTER */
-#define I_ISJUMP	(I_HASARG | I_POINTER | I_JUMP)
-#define I_ISJUMPARG	(I_HASARG | I_HASPOINTER | I_JUMP)
-#define I_ISJUMPARGS	(I_TWO_ARGS | I_HASPOINTER | I_JUMP)
+#define I_ISJUMP	(I_JUMP)
+#define I_ISJUMPARG	(I_HASARG | I_JUMP)
+#define I_ISJUMPARGS	(I_TWO_ARGS | I_JUMP)
+#define I_ISPTRJUMP	(I_HASARG | I_POINTER | I_JUMP)
+#define I_ISPTRJUMPARG	(I_HASARG | I_HASPOINTER | I_JUMP)
+#define I_ISPTRJUMPARGS	(I_TWO_ARGS | I_HASPOINTER | I_JUMP)
 #define I_ISBRANCH	(I_HASARG | I_POINTER | I_JUMP | I_BRANCH)
 #define I_ISBRANCHARG	(I_HASARG | I_HASPOINTER | I_JUMP | I_BRANCH)
 #define I_ISBRANCHARGS	(I_TWO_ARGS | I_HASPOINTER | I_JUMP | I_BRANCH)
@@ -53,14 +58,17 @@ struct keyword
 
 /* Valid masked flags:
  *
- * 0		Generic instruction without immediate arguments.
- * I_HAS_ARG	Generic instruction with one argument.
- * I_TWO_ARGS	Generic instruction with two arguments.
- * I_DATA	Raw data (F_BYTE or F_DATA).
- * I_ISPOINTER	Raw jump address (F_POINTER).
- * I_ISJUMP	Branch instruction or F_CATCH.
- * I_ISJUMPARG	Branch instruction with one argument.
- * I_ISJUMPARGS	Branch instruction with two arguments.
+ * 0			Generic instruction without immediate arguments.
+ * I_HAS_ARG		Generic instruction with one argument.
+ * I_TWO_ARGS		Generic instruction with two arguments.
+ * I_DATA		Raw data (F_BYTE or F_DATA).
+ * I_ISPOINTER		Raw jump address (F_POINTER).
+ * I_ISJUMP		Jump instruction without immediate arguments.
+ * I_ISJUMPARG		Jump instruction with one argument.
+ * I_ISJUMPARGS		Jump instruction with two arguments.
+ * I_ISPTRJUMP		Jump instruction with pointer.
+ * I_ISPTRJUMPARG	Jump instruction with pointer and one argument.
+ * I_ISPTRJUMPARGS	Jump instruction with pointer and two arguments.
  */
 
 #ifdef PIKE_DEBUG
