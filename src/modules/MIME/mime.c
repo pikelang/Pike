@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.27 2000/12/01 08:10:10 hubbe Exp $
+ * $Id: mime.c,v 1.28 2001/01/06 19:58:33 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.27 2000/12/01 08:10:10 hubbe Exp $");
+RCSID("$Id: mime.c,v 1.28 2001/01/06 19:58:33 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -64,6 +64,9 @@ unsigned char rfc822ctype[1<<CHAR_BIT];
 
 
 /** Externally available functions **/
+
+/*! @module MIME
+ */
 
 /* Initialize and start module */
 
@@ -138,8 +141,14 @@ void pike_module_exit( void )
 
 /** Functions implementing Pike functions **/
 
-/* MIME.decode_base64() */
-
+/*! @decl string decode_base64(string encoded_data)
+ *!
+ *! This function decodes data encoded using the @tt{base64@}
+ *! transfer encoding.
+ *!
+ *! @seealso
+ *! @[MIME.encode_base64()], @[MIME.decode()]
+ */
 static void f_decode_base64( INT32 args )
 {
   if(args != 1)
@@ -229,8 +238,16 @@ static int do_b64_encode( ptrdiff_t groups, unsigned char **srcp, char **destp,
   return g;
 }
 
-/* MIME.encode_base64() */
-
+/*! @decl string encode_base64(string data, void|int no_linebreaks)
+ *!
+ *! This function encodes data using the @tt{base64@} transfer encoding.
+ *!
+ *! If a nonzero value is passed as @[no_linebreaks], the result string
+ *! will not contain any linebreaks.
+ *!
+ *! @seealso
+ *! @[MIME.decode_base64()], @[MIME.encode()]
+ */
 static void f_encode_base64( INT32 args )
 {
   if(args != 1 && args != 2)
@@ -289,8 +306,14 @@ static void f_encode_base64( INT32 args )
   }
 }
 
-/* MIME.decode_qp() */
-
+/*! @decl string decode_qp(string encoded_data)
+ *!
+ *! This function decodes data encoded using the @tt{quoted-printable@}
+ *! (a.k.a. quoted-unreadable) transfer encoding.
+ *!
+ *! @seealso
+ *! @[MIME.encode_qp()], @[MIME.decode()]
+ */
 static void f_decode_qp( INT32 args )
 {
   if(args != 1)
@@ -342,8 +365,21 @@ static void f_decode_qp( INT32 args )
   }
 }
 
-/* MIME.encode_qp() */
-
+/*! @decl string encode_qp(string data, void|int no_linebreaks)
+ *!
+ *! This function encodes data using the @tt{quoted-printable@}
+ *! (a.k.a. quoted-unreadable) transfer encoding.
+ *!
+ *! If a nonzero value is passed as @[no_linebreaks], the result
+ *! string will not contain any linebreaks.
+ *!
+ *! @note
+ *! Please do not use this function.  QP is evil, and there's no
+ *! excuse for using it.
+ *!
+ *! @seealso
+ *! @[MIME.decode_qp()], @[MIME.encode()]
+ */
 static void f_encode_qp( INT32 args )
 {
   if (args != 1 && args != 2)
@@ -396,6 +432,14 @@ static void f_encode_qp( INT32 args )
 
 /* MIME.decode_uue() */
 
+/*! @decl string decode_uue(string encoded_data)
+ *!
+ *! This function decodes data encoded using the @tt{x-uue@} transfer encoding.
+ *! It can also be used to decode generic UUEncoded files.
+ *!
+ *! @seealso
+ *! @[MIME.encode_uue()], @[MIME.decode()]
+ */
 static void f_decode_uue( INT32 args )
 {
   if (args != 1)
@@ -532,6 +576,18 @@ static void do_uue_encode(ptrdiff_t groups, unsigned char **srcp, char **destp,
 
 /* MIME.encode_uue() */
 
+/*! @decl string encode_uue(string encoded_data,  void|string filename)
+ *!
+ *! This function encodes data using the @tt{x-uue@} transfer encoding.
+ *!
+ *! The optional argument @[filename] specifies an advisory filename to include
+ *! in the encoded data, for extraction purposes.
+ *!
+ *! This function can also be used to produce generic UUEncoded files.
+ *!
+ *! @seealso
+ *! @[MIME.decode_uue()], @[MIME.encode()]
+ */
 static void f_encode_uue( INT32 args )
 {
   if (args != 1 && args != 2)
@@ -618,8 +674,45 @@ static void f_encode_uue( INT32 args )
   }
 }
 
-/* MIME.tokenize() */
 
+/*! @decl array(string|int) tokenize(string header)
+ *!
+ *! A structured header field, as specified by RFC822, is constructed from
+ *! a sequence of lexical elements.
+ *!
+ *! These are:
+ *! @list
+ *!   @element individual special characters
+ *!   @element quoted-strings
+ *!   @element domain-literals
+ *!   @element comments
+ *!   @element atoms
+ *! @endlist
+ *!
+ *! This function will analyze a string containing the header value,
+ *! and produce an array containing the lexical elements.
+ *!
+ *! Individual special characters will be returned as characters (i.e.
+ *! @tt{int@}s).
+ *!
+ *! Quoted-strings, domain-literals and atoms will be decoded and returned
+ *! as strings.
+ *!
+ *! Comments are not returned in the array at all.
+ *!
+ *! @note
+ *! As domain-literals are returned as strings, there is no way to tell the
+ *! domain-literal @tt{[127.0.0.1]@} from the quoted-string
+ *! @tt{"[127.0.0.1]"@}. Hopefully this won't cause any problems.
+ *! Domain-literals are used seldom, if at all, anyway...
+ *! 
+ *! The set of special-characters is the one specified in RFC1521
+ *! (i.e. @tt{"<", ">", "@", ",", ";", ":", "\", "/", "?", "="@}),
+ *! and not the set specified in RFC822.
+ *!
+ *! @seealso
+ *! @[MIME.quote()]
+ */
 static void low_tokenize( INT32 args, int mode )
 {
 
@@ -900,6 +993,22 @@ static int check_encword( unsigned char *str, ptrdiff_t len )
 
 /* MIME.quote() */
 
+/*! @decl string quote(array(string|int) lexical_elements);
+ *!
+ *! This function is the inverse of the @[MIME.tokenize] function.
+ *!
+ *! A header field value is constructed from a sequence of lexical elements.
+ *! Characters (@tt{int@}s) are taken to be special-characters, whereas
+ *! strings are encoded as atoms or quoted-strings, depending on whether
+ *! they contain any special characters.
+ *!
+ *! @note
+ *! There is no way to construct a domain-literal using this function.
+ *! Neither can it be used to produce comments.
+ *!
+ *! @seealso
+ *! @[MIME.tokenize()]
+ */
 static void f_quote( INT32 args )
 {
   struct svalue *item;
@@ -1134,3 +1243,6 @@ static void f_quote_labled( INT32 args )
   pop_n_elems( 1 );
   push_string( finish_string_builder( &buf ) );
 }
+
+/*! @endmodule
+ */
