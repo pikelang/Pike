@@ -1,9 +1,9 @@
-/* $Id: orient.c,v 1.6 1998/03/20 03:47:31 hubbe Exp $ */
+/* $Id: orient.c,v 1.7 1998/03/23 19:12:43 hedda Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: orient.c,v 1.6 1998/03/20 03:47:31 hubbe Exp $
+**!	$Id: orient.c,v 1.7 1998/03/23 19:12:43 hedda Exp $
 **! class image
 */
 
@@ -64,28 +64,31 @@ static void chrono(char *x)
 #endif
 
 /*
-**! method object orient()
+**! method object orient(void|array(object))
 **! method array(object) orient4()
 **!	Draws images describing the orientation
 **!     of the current image.
 **!
-**!	<tt>orient</tt> gives a HSV image
+**!	<tt>orient</tt> gives an HSV image
 **!	(run a <ref>hsv_to_rgb</ref> pass on it
 **!	to get a viewable image).
 **!     corresponding to the angle of the
 **!	orientation:
 **!     <pre>      |      /    -    \
-**!          hue=  0     64   128  192  (=red in a hsv image)
+**!          hue=  0     64   128  192  (=red in an hsv image)
 **!              purple cyan green red
 **!     </pre>
 **!	Red, green and blue channels are added
 **!	and not compared separately.
+**!     
+**!     If you first use orient4 you can give its
+**!     output as input to this function.
 **!
 **!     The <tt>orient4</tt> function gives back
 **!	4 image objects, corresponding to the
 **!	amount of different directions, see above.
 **!
-**! returns an array of the five new image objects
+**! returns an image or an array of the four new image objects
 **!
 **! note
 **!	experimental status; may not be exact the same
@@ -150,29 +153,68 @@ THREADS_DISALLOW();
 void image_orient(INT32 args)
 {
   struct object *o[5];
-  struct image *img[5],*this;
+  struct image *img[5],*this,*img1;
   int n;
   rgb_group *d,*s1,*s2,*s3,*s0;
   float mag;
-  
+  int i, w, h;
+
   if (!THIS->img) { error("no image\n");  return; }
 
   this=THIS;
 
-   if (args)
-   {
-      if (sp[-args].type==T_INT) 
-	 mag=sp[-args].u.integer;
-      else if (sp[-args].type==T_FLOAT)
-	 mag=sp[-args].u.float_number;
-      else
-	 error("Illegal argument 1 to image->orient\n");
-      pop_n_elems(args);
-   }
-   else mag=1.0;
-  
-  _image_orient(this,o,img);
+  if (args)
+  {
+    if (sp[-args].type==T_INT) 
+      mag=sp[-args].u.integer;
+    else if (sp[-args].type==T_FLOAT)
+      mag=sp[-args].u.float_number;
+    else
+      error("Illegal argument 1 to image->orient\n");
+  }
+  else mag=1.0;
 
+  if (args==1)
+    pop_n_elems(args);
+
+  if (args>1)
+  {
+    if (sp[1-args].type!=T_ARRAY) 
+      error("Illegal argument 2 to image->orient\n");
+    if (sp[1-args].u.array->size!=4)
+      error("The array given as argument 2 to image->orient do not have size 4\n");
+    for(i=0; i<4; i++)
+      if ((sp[1-args].u.array->item[i].type!=T_OBJECT) ||
+	  (!(sp[1-args].u.array->item[i].u.object)) ||
+	  (sp[1-args].u.array->item[i].u.object->prog!=image_program))
+	error("The array given as argument 2 to image->orient do not contain images\n");
+    img1=(struct image*)sp[1-args].u.array->item[0].u.object->storage;
+
+    w=this->xsize;
+    h=this->ysize;
+
+    for(i=0; i<4; i++)
+    {
+      img1=(struct image*)sp[1-args].u.array->item[i].u.object->storage;
+      if ((img1->xsize!=w)||
+	  (img1->ysize!=h))
+	error("The images in the array given as argument 2 to image->orient have different sizes\n");
+    }
+    for(i=0; i<4; i++) 
+      img[i]=(struct image*)sp[1-args].u.array->item[i].u.object->storage;
+    pop_n_elems(args);
+    push_int(this->xsize);
+    push_int(this->ysize);
+    o[4]=clone_object(image_program,2);
+    img[4]=(struct image*)get_storage(o[4],image_program);
+    push_object(o[4]);
+    w=1;
+  }
+  else
+  {
+    _image_orient(this,o,img);
+    w=0;
+  }
   s0=img[0]->img;
   s1=img[1]->img;
   s2=img[2]->img;
@@ -213,8 +255,12 @@ CHRONO("end hsv...");
 THREADS_DISALLOW();
 
   o[4]->refs++;
-  pop_n_elems(5);
-  push_object(o[4]);
+
+  if (!w)
+  {
+    pop_n_elems(5);
+    push_object(o[4]);
+  }
 }
 
 
