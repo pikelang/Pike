@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.294 2001/05/31 00:14:22 grubba Exp $");
+RCSID("$Id: program.c,v 1.295 2001/06/11 16:43:55 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -429,20 +429,7 @@ struct node_s *find_module_identifier(struct pike_string *ident,
 	push_int(0);
       }
 
-      if(error_handler &&
-	 (i = find_identifier("resolv", error_handler->prog))!=-1)
-      {
-	safe_apply_low(error_handler, i, 3);
-      }
-      else if(compat_handler &&
-	      (i = find_identifier("resolv", compat_handler->prog))!=-1)
-      {
-	safe_apply_low(compat_handler, i, 3);
-      }
-      else
-      {
-	SAFE_APPLY_MASTER("resolv", 3);
-      }
+      safe_apply_handler("resolv", error_handler, compat_handler, 3);
 
       if(throw_value.type == T_STRING)
       {

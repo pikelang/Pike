@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.185 2001/06/08 14:28:22 mast Exp $");
+RCSID("$Id: interpret.c,v 1.186 2001/06/11 16:43:54 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1582,6 +1582,25 @@ PMOD_EXPORT void safe_apply(struct object *o, char *fun ,INT32 args)
   if(!o->prog) fatal("Apply safe on destructed object.\n");
 #endif
   safe_apply_low(o, find_identifier(fun, o->prog), args);
+}
+
+PMOD_EXPORT void safe_apply_handler(const char *fun,
+				    struct object *handler,
+				    struct object *compat,
+				    INT32 args)
+{
+  int i;
+  if (handler && handler->prog &&
+      (i = find_identifier(fun, handler->prog)) != -1) {
+    safe_apply_low(handler, i, args);
+  } else if (compat && compat->prog &&
+	     (i = find_identifier(fun, compat->prog)) != -1) {
+    safe_apply_low(compat, i, args);
+  } else {
+    struct object *master_obj = master();
+    i = find_identifier(fun, master_obj->prog);
+    safe_apply_low(master_obj, i, args);
+  }
 }
 
 PMOD_EXPORT void apply_lfun(struct object *o, int fun, int args)

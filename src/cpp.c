@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: cpp.c,v 1.84 2001/06/05 19:52:18 grubba Exp $
+ * $Id: cpp.c,v 1.85 2001/06/11 16:43:56 grubba Exp $
  */
 #include "global.h"
 #include "stralloc.h"
@@ -1097,20 +1097,8 @@ static void check_constant(struct cpp *this,
 	push_int(0);
       }
 
-      if(this->handler &&
-	 (i=find_identifier("resolv",this->handler->prog))!=-1)
-      {
-	safe_apply_low(this->handler, i, 3);
-      } else if(this->compat_handler &&
-	 (i=find_identifier("resolv",this->compat_handler->prog))!=-1)
-      {
-	safe_apply_low(this->compat_handler, i, 3);
-      }
-      else
-      {
-	SAFE_APPLY_MASTER("resolv", 3);
-      }
-      
+      safe_apply_handler("resolv", this->handler, this->compat_handler, 3);
+
       res=(throw_value.type!=T_STRING) &&
 	(!(IS_ZERO(sp-1) && sp[-1].subtype == NUMBER_UNDEFINED));
     }else{
