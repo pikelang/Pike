@@ -23,6 +23,7 @@ import Array;
 
 
 mapping variables=([]);
+mapping constants=([]);
 string *functions=({});
 string *function_names=({});
 mapping query_variables() { return variables; }
@@ -41,13 +42,17 @@ object eval(string f)
   mixed err;
   prog=("#pragma unpragma_strict_types\n#pragma all_inline\n"+
 	"static mapping ___variables=___hilfe->query_variables();\n"+
+	map(indices(constants),lambda(string f)
+	    { return constants[f]&&sprintf("constant %s=%s;",f,constants[f]); })*"\n"+
 	map(indices(variables),lambda(string f)
 	    { return sprintf("mixed %s=___variables[\"%s\"];",f,f); })*"\n"+
 	"\nmapping query_variables() { return ([\n"+
         map(indices(variables),lambda(string f)
             { return sprintf("    \"%s\":%s,",f,f); })*"\n"+
 	    "\n  ]);\n}\n"+
-        functions*"\n"+"\n"+ f+"\n");
+        functions*"\n"+
+	"\n# 1\n"+
+	 f+"\n");
 
 #ifdef DEBUG
   write("program:"+prog);
@@ -216,7 +221,7 @@ void cut_buffer(int where)
 void print_version()
 {
   write(version()+
-	" running Hilfe v1.6 (Incremental Pike Frontend)\n");
+	" running Hilfe v1.7 (Incremental Pike Frontend)\n");
 }
 
 
@@ -431,70 +436,82 @@ mixed parse_statement(string ex)
 #endif
   switch(first_word)
   {
-  case "if":
-  case "for":
-  case "do":
-  case "while":
-  case "foreach":
-    /* parse loop */
-    do_evaluate("mixed ___Foo4711() { "+ex+" ; }\n",0);
-    return 1;
-
-  case "int":
-  case "void":
-  case "object":
-  case "array":
-  case "mapping":
-  case "string":
-  case "multiset":
-  case "float":
-  case "mixed":
-  case "program":
-  case "function":
-    /* parse variable def. */
-    sscanf(ex,first_word+"%s",b);
-    b=skipwhite(b);
-    c=get_name(b);
-    name=c[0];
-    c=c[1];
-
-#ifdef DEBUG
-    write("Variable def.\n");
-#endif
-    if(name=="") 
-    {
+    case "if":
+    case "for":
+    case "do":
+    case "while":
+    case "foreach":
+      /* parse loop */
+      do_evaluate("mixed ___Foo4711() { "+ex+" ; }\n",0);
       return 1;
-    }else{
-      string f;
-      variables[name]=0;
-
-      if(sscanf(c,"=%s",c))
+      
+    case "constant":
+      /* parse variable def. */
+      sscanf(ex,first_word+"%s",b);
+      b=skipwhite(b);
+      c=get_name(b);
+      name=c[0];
+      sscanf(c[1],"=%s",c[1]);
+      a=constants[name];
+      constants[name]=c[1];
+      if(!eval("")) constants[name]=a;
+      return 1;
+      
+    case "int":
+    case "void":
+    case "object":
+    case "array":
+    case "mapping":
+    case "string":
+    case "multiset":
+    case "float":
+    case "mixed":
+    case "program":
+    case "function":
+      /* parse variable def. */
+      sscanf(ex,first_word+"%s",b);
+      b=skipwhite(b);
+      c=get_name(b);
+      name=c[0];
+      c=c[1];
+      
+#ifdef DEBUG
+      write("Variable def.\n");
+#endif
+      if(name=="") 
       {
-#ifdef DEBUG
-	write("Variable def. with assign. ("+name+")\n");
-#endif
-	if(e=find_next_comma(c))
-	{
-	  return name+"="+c[0..e-1]+";\n"+
-	    first_word+" "+c[e+1..strlen(c)-1];
-	}else{
-	  return name+"="+c;
-	}
-#ifdef DEBUG
-	write("Input buffer = '"+input+"'\n");
-#endif
-
+	return 1;
       }else{
-	sscanf(c,",%s",c);
-	return first_word+" "+c;
+	string f;
+	variables[name]=0;
+	
+	if(sscanf(c,"=%s",c))
+	{
+#ifdef DEBUG
+	  write("Variable def. with assign. ("+name+")\n");
+#endif
+	  if(e=find_next_comma(c))
+	  {
+	    return name+"="+c[0..e-1]+";\n"+
+	      first_word+" "+c[e+1..strlen(c)-1];
+	  }else{
+	    return name+"="+c;
+	  }
+#ifdef DEBUG
+	  write("Input buffer = '"+input+"'\n");
+#endif
+	  
+	}else{
+	  sscanf(c,",%s",c);
+	  return first_word+" "+c;
+	}
       }
-    }
-    
-    return 1;
-
-  default:
-    if(ex==";") return 1;
-    /* parse expressions */
+      
+      return 1;
+      
+    default:
+      if(ex==";") return 1;
+      /* parse expressions */
     do_evaluate("mixed ___Foo4711() { return (mixed)("+ex[0..strlen(ex)-2]+"); }\n",1);
     return 1;
   }
