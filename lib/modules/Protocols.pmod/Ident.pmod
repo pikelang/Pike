@@ -1,9 +1,9 @@
 // An implementation of the IDENT protocol, specified in RFC 931.
 //
-// $Id: Ident.pmod,v 1.5 1998/05/28 00:13:41 grubba Exp $
+// $Id: Ident.pmod,v 1.6 1998/05/28 19:50:03 grubba Exp $
 
 
-#define IDENT_DEBUG
+// #define IDENT_DEBUG
 
 class lookup_async
 {
