@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.20 1998/05/07 18:40:58 grubba Exp $
+ * $Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -73,7 +73,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.20 1998/05/07 18:40:58 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $");
 
 /*
 **! module Mysql
@@ -85,7 +85,7 @@ RCSID("$Id: mysql.c,v 1.20 1998/05/07 18:40:58 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.20 1998/05/07 18:40:58 grubba Exp $
+**!	$Id: mysql.c,v 1.21 1998/05/15 19:19:44 grubba Exp $
 **! class mysql
 **!
 **!	Mysql.mysql is a pre-compiled Pike program. It enables
@@ -275,7 +275,11 @@ static void pike_mysql_reconnect(void)
       mysql_close(socket);
 
       MYSQL_DISALLOW();
-      error("Mysql.mysql(): Couldn't select database \"%s\"\n", database);
+      if (strlen(database) < 1024) {
+	error("Mysql.mysql(): Couldn't select database \"%s\"\n", database);
+      } else {
+	error("Mysql.mysql(): Couldn't select database\n");
+      }
     }
   }
 }
@@ -626,8 +630,13 @@ static void f_create_db(INT32 args)
     error("Bad argument 1 to mysql->create_db()\n");
   }
   if (sp[-args].u.string->len > 127) {
-    error("Database name \"%s\" is too long (max 127 characters)\n",
-	  sp[-args].u.string->str);
+    if (sp[-args].u.string->len < 1024) {
+      error("Database name \"%s\" is too long (max 127 characters)\n",
+	    sp[-args].u.string->str);
+    } else {
+      error("Database name (length %d) is too long (max 127 characters)\n",
+	    sp[-args].u.string->len);
+    }
   }
   database = sp[-args].u.string->str;
 
@@ -684,8 +693,13 @@ static void f_drop_db(INT32 args)
     error("Bad argument 1 to mysql->drop_db()\n");
   }
   if (sp[-args].u.string->len > 127) {
-    error("Database name \"%s\" is too long (max 127 characters)\n",
-	  sp[-args].u.string->str);
+    if (sp[-args].u.string->len < 1024) {
+      error("Database name \"%s\" is too long (max 127 characters)\n",
+	    sp[-args].u.string->str);
+    } else {
+      error("Database name (length %d) is too long (max 127 characters)\n",
+	    sp[-args].u.string->len);
+    }
   }
   database = sp[-args].u.string->str;
 
@@ -963,8 +977,13 @@ static void f_list_dbs(INT32 args)
       error("Bad argument 1 to mysql->list_dbs()\n");
     }
     if (sp[-args].u.string->len > 80) {
-      error("Wildcard \"%s\" is too long (max 80 characters)\n",
-	    sp[-args].u.string->str);
+      if (sp[-args].u.string->len < 1024) {
+	error("Wildcard \"%s\" is too long (max 80 characters)\n",
+	      sp[-args].u.string->str);
+      } else {
+	error("Wildcard (length %d) is too long (max 80 characters)\n",
+	      sp[-args].u.string->len);
+      }
     }
     wild = sp[-args].u.string->str;
   }
@@ -1034,8 +1053,13 @@ static void f_list_tables(INT32 args)
       error("Bad argument 1 to mysql->list_tables()\n");
     }
     if (sp[-args].u.string->len > 80) {
-      error("Wildcard \"%s\" is too long (max 80 characters)\n",
-	    sp[-args].u.string->str);
+      if (sp[-args].u.string->len < 1024) {
+	error("Wildcard \"%s\" is too long (max 80 characters)\n",
+	      sp[-args].u.string->str);
+      } else {
+	error("Wildcard (length %d) is too long (max 80 characters)\n",
+	      sp[-args].u.string->len);
+      }
     }
     wild = sp[-args].u.string->str;
   }
@@ -1138,8 +1162,13 @@ static void f_list_fields(INT32 args)
     error("Bad argument 1 to mysql->list_fields()\n");
   }
   if (sp[-args].u.string->len > 125) {
-    error("Table name \"%s\" is too long (max 125 characters)\n",
-	  sp[-args].u.string->str);
+    if (sp[-args].u.string->len < 1024) {
+      error("Table name \"%s\" is too long (max 125 characters)\n",
+	    sp[-args].u.string->str);
+    } else {
+      error("Table name (length %d) is too long (max 125 characters)\n",
+	    sp[-args].u.string->len);
+    }
   }
   table = sp[-args].u.string->str;
   if (args > 1) {
@@ -1147,9 +1176,16 @@ static void f_list_fields(INT32 args)
       error("Bad argument 2 to mysql->list_fields()\n");
     }
     if (sp[-args+1].u.string->len + sp[-args].u.string->len > 125) {
-      error("Wildcard \"%s\" + table name \"%s\" is too long "
-	    "(max 125 characters)\n",
-	    sp[-args+1].u.string->str, sp[-args].u.string->str);
+      /* The length of the table name has already been checked. */
+      if (sp[-args+1].u.string->len < 1024) {
+	error("Wildcard \"%s\" + table name \"%s\" is too long "
+	      "(max 125 characters)\n",
+	      sp[-args+1].u.string->str, sp[-args].u.string->str);
+      } else {
+	error("Wildcard (length %d) + table name \"%s\" is too long "
+	      "(max 125 characters)\n",
+	      sp[-args+1].u.string->len, sp[-args].u.string->str);
+      }
     }
     wild = sp[-args+1].u.string->str;
   }
