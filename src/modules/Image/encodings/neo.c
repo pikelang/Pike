@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: neo.c,v 1.2 2003/09/14 19:39:36 nilsson Exp $
+|| $Id: neo.c,v 1.3 2003/09/14 19:58:46 sigge Exp $
 */
 
 #include "global.h"
 #include "image_machine.h"
 
 #include "stralloc.h"
-RCSID("$Id: neo.c,v 1.2 2003/09/14 19:39:36 nilsson Exp $");
+RCSID("$Id: neo.c,v 1.3 2003/09/14 19:58:46 sigge Exp $");
 #include "atari.h"
 
 /* MUST BE INCLUDED LAST */
@@ -81,21 +81,21 @@ void image_neo_f__decode(INT32 args)
   push_object(img);
   size += 2;
 
-  fn = make_shared_binary_string(q+20, 12);
+  fn = make_shared_binary_string(q+36, 12);
 
   push_constant_text("filename");
   push_string(fn);
   size += 2;
 
-  if(q[33]&128) {
+  if(q[48]&128) {
     push_constant_text("right_limit");
-    push_int( q[32]&0xf );
+    push_int( q[49]&0xf );
     push_constant_text("left_limit");
-    push_int( q[32]&0xf0 );
+    push_int( (q[49]&0xf0)>>4 );
     push_constant_text("speed");
-    push_int( q[34] );
+    push_int( q[51] );
     push_constant_text("direction");
-    if( q[35]&128 )
+    if( q[50]&128 )
       push_constant_text("right");
     else
       push_constant_text("left");
