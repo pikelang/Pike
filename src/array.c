@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: array.c,v 1.136 2003/11/09 02:40:42 mast Exp $
+|| $Id: array.c,v 1.137 2004/04/14 22:04:37 mast Exp $
 */
 
 #include "global.h"
@@ -25,7 +25,7 @@
 #include "bignum.h"
 #include "cyclic.h"
 
-RCSID("$Id: array.c,v 1.136 2003/11/09 02:40:42 mast Exp $");
+RCSID("$Id: array.c,v 1.137 2004/04/14 22:04:37 mast Exp $");
 
 PMOD_EXPORT struct array empty_array=
 {
@@ -654,7 +654,10 @@ static int internal_cmpfun(INT32 *a,
 			   cmpfun current_cmpfun,
 			   struct svalue *current_array_p)
 {
-  return current_cmpfun(current_array_p + *a, current_array_p + *b);
+  int res = current_cmpfun(current_array_p + *a, current_array_p + *b);
+  /* If the comparison considers the elements equal we compare their
+   * positions. Thus we get a stable sort function. */
+  return res ? res : *a - *b;
 }
 
 #define CMP(X,Y) internal_cmpfun((X),(Y),current_cmpfun, current_array_p)
@@ -669,6 +672,7 @@ static int internal_cmpfun(INT32 *a,
 #undef EXTRA_ARGS
 #undef XARGS
 
+/* The sort is stable. */
 INT32 *get_order(struct array *v, cmpfun fun)
 {
   INT32 e, *current_order;
