@@ -105,6 +105,7 @@ int main()
     AC_DEFINE(HAVE_SOLARIS_READDIR_R)
   else
     AC_MSG_RESULT(HPUX style)
+    AC_DEFINE(HAVE_HPUX_READDIR_R)
   fi
 fi
 
