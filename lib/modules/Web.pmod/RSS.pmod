@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.1 2003/11/07 15:45:36 nilsson Exp $
+// $Id: RSS.pmod,v 1.2 2003/11/10 19:06:05 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -31,8 +31,15 @@ static class Thing {
   function `-> = `[];
   function `->= = `[]=;
 
-  void create(.RDF _rdf, string about, mapping _attr) {
+  void create(.RDF _rdf, string|.RDF.Resource a, void|mapping b) {
     rdf = _rdf;
+    if(b)
+      create1(a,b);
+    else
+      create2(a);
+  }
+
+  static void create1(string about, mapping _attr) {
     me = rdf->make_resource(about);
     foreach(indices(attributes), string i) {
       string v = _attr[i];
@@ -41,6 +48,17 @@ static class Thing {
       attributes[i] = v;
       rdf->add_statement(me, rdf->make_resource(ns+thing),
 			 rdf->LiteralResource(v));
+    }
+  }
+
+  static void create2(.RDF.Resource _me) {
+    me = _me;
+    foreach(rdf->find_statements(me,0,0), array r) {
+      .RDF.Resource pred = r[1];
+      if(pred==rdf->rdf_type) continue;
+      if(pred->is_uri_resource && has_prefix(pred->get_uri(), ns)) {
+      }
+      error("Unknown stuff.\n");
     }
   }
 
@@ -116,15 +134,35 @@ class Channel {
   }
 
   void add_item(Item i) {
+    if(!attributes->items)
+      attributes->items = ({ i });
+    else
+      attributes->items += ({ i });
   }
 
   void remove_item(Item i) {
+    attributes->items -= ({ i });
+    if(!sizeof(attributes->items)) attributes->items = 0;
   }
 }
 
 class Index {
+  static .RDF rdf;
+
+  array(Channel) channels = ({});
+
+  void create(.RDF _rdf) {
+    rdf = _rdf;
+    foreach(rdf->find_statements(0, rdf->rdf_type,
+				 rdf->make_resource(ns+"channel")),
+	    array r)
+      channels += ({ Channel(rdf, r[0]) });
+
+  }
 }
 
 Index parse_xml(string|Parser.XML.Tree.Node n, void|string base) {
+  .RDF rdf=.RDF()->parse_xml(n, base);
+  return Index(rdf);
 }
 
