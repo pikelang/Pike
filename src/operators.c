@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: operators.c,v 1.189 2004/04/15 00:11:51 nilsson Exp $
+|| $Id: operators.c,v 1.190 2004/05/29 18:21:05 grubba Exp $
 */
 
 #include "global.h"
 #include <math.h>
-RCSID("$Id: operators.c,v 1.189 2004/04/15 00:11:51 nilsson Exp $");
+RCSID("$Id: operators.c,v 1.190 2004/05/29 18:21:05 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "multiset.h"
@@ -16,7 +16,6 @@ RCSID("$Id: operators.c,v 1.189 2004/04/15 00:11:51 nilsson Exp $");
 #include "stralloc.h"
 #include "opcodes.h"
 #include "operators.h"
-#include "language.h"
 #include "pike_memory.h"
 #include "pike_error.h"
 #include "docode.h"

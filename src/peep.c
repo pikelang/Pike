@@ -2,11 +2,10 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: peep.c,v 1.98 2004/03/12 21:56:52 mast Exp $
+|| $Id: peep.c,v 1.99 2004/05/29 18:21:05 grubba Exp $
 */
 
 #include "global.h"
-#include "language.h"
 #include "stralloc.h"
 #include "dynamic_buffer.h"
 #include "program.h"
@@ -26,7 +25,7 @@
 #include "interpret.h"
 #include "pikecode.h"
 
-RCSID("$Id: peep.c,v 1.98 2004/03/12 21:56:52 mast Exp $");
+RCSID("$Id: peep.c,v 1.99 2004/05/29 18:21:05 grubba Exp $");
 
 static void asm_opt(void);
 

@@ -2,16 +2,15 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.201 2004/05/10 21:45:13 agehall Exp $
+|| $Id: main.c,v 1.202 2004/05/29 18:21:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.201 2004/05/10 21:45:13 agehall Exp $");
+RCSID("$Id: main.c,v 1.202 2004/05/29 18:21:05 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
 #include "object.h"
-#include "language.h"
 #include "lex.h"
 #include "pike_types.h"
 #include "builtin_functions.h"

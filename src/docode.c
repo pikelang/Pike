@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: docode.c,v 1.175 2004/05/13 23:29:49 nilsson Exp $
+|| $Id: docode.c,v 1.176 2004/05/29 18:21:05 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: docode.c,v 1.175 2004/05/13 23:29:49 nilsson Exp $");
+RCSID("$Id: docode.c,v 1.176 2004/05/29 18:21:05 grubba Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -25,7 +25,6 @@ RCSID("$Id: docode.c,v 1.175 2004/05/13 23:29:49 nilsson Exp $");
 #include "operators.h"
 #include "object.h"
 #include "opcodes.h"
-#include "language.h"
 #include "lex.h"
 #include "mapping.h"
 #include "multiset.h"

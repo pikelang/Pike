@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pikecode.c,v 1.7 2002/10/11 01:39:36 nilsson Exp $
+|| $Id: pikecode.c,v 1.8 2004/05/29 18:21:05 grubba Exp $
 */
 
 /*
@@ -16,7 +16,6 @@
 #include "opcodes.h"
 #include "docode.h"
 #include "interpret.h"
-#include "language.h"
 #include "lex.h"
 #include "main.h"
 
