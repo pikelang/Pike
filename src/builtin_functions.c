@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.207 1999/11/14 20:14:46 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.208 1999/11/22 21:01:43 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5132,7 +5132,7 @@ void f_string_width(INT32 args)
 {
   struct pike_string *s;
   int ret;
-  get_all_args("String.width",args,"%S",&s);
+  get_all_args("String.width",args,"%W",&s);
   ret=s->size_shift;
   pop_n_elems(args);
   push_int(8 * (1<<ret));
