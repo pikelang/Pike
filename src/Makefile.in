@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.284 2002/02/03 22:37:47 nilsson Exp $
+# $Id: Makefile.in,v 1.285 2002/03/03 20:09:01 nilsson Exp $
 #
 
 # This line is needed on some machines.
@@ -20,7 +20,6 @@ LIBDIR_SRC = @LIBDIR@
 MANDIR_SRC = $(SRCDIR)/../man
 TMP_BINDIR = @BINDIR@
 TMP_BUILDDIR = @BUILDDIR@
-TMP_DOCDIR = @DOCDIR@
 TMP_LIBDIR = $(TMP_BUILDDIR)/lib
 
 #
