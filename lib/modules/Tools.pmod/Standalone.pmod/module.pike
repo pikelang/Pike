@@ -1,12 +1,12 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.9 2003/02/21 23:08:30 marcus Exp $
+// $Id: module.pike,v 1.10 2003/03/20 11:31:35 grubba Exp $
 
 constant description = "Pike module installer.";
 
 // Source directory
 string srcdir;
-string make="make";
+string make=getenv("MAKE")||"make";
 string make_flags="";
 string include_path=master()->include_prefix;
 string configure_command="configure";
