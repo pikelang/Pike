@@ -2,7 +2,7 @@
 
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.26 2001/09/14 08:38:01 hop Exp $
+// $Id: client.pike,v 1.27 2001/09/14 12:37:21 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -117,7 +117,7 @@ int _prof_gtim;
   //! Contains the result of a LDAP search.
   //!
   //! @seealso
-  //! @[LDAP.client.search, LDAP.client.result.fetch]
+  //!  @[LDAP.client.search], @[LDAP.client.result.fetch]
   //!
   class result // ------------------
   {
@@ -218,14 +218,14 @@ int _prof_gtim;
     //! Returns error number of search result.
     //!
     //! @seealso
-    //! @[LDAP.client.result.error_string]
+    //!  @[LDAP.client.result.error_string]
     int error_number() { return(resultcode); }
 
     //!
     //! Returns error description of search result.
     //!
     //! @seealso
-    //! @[LDAP.client.result.error_number]
+    //!  @[LDAP.client.result.error_number]
     string error_string() {
       return((stringp(resultstring) && sizeof(resultstring)) ? 
 		resultstring : ldap_errlist[resultcode]);
@@ -235,7 +235,7 @@ int _prof_gtim;
     //! Returns the number of entries.
     //!
     //! @seealso
-    //! @[LDAP.client.result.count_entries]
+    //!  @[LDAP.client.result.count_entries]
     int num_entries() { return(entrycnt); }
 
     //!
@@ -243,7 +243,7 @@ int _prof_gtim;
     //! possition till end of the list.
     //!
     //! @seealso
-    //! @[LDAP.client.result.first, LDAP.client.result.next]
+    //!  @[LDAP.client.result.first], @[LDAP.client.result.next]
     int count_entries() { return(entrycnt - actnum); }
 
     //! @decl mapping(string:array(string)) fetch()
@@ -277,7 +277,7 @@ int _prof_gtim;
     //! in the result list.
     //!
     //! @seealso
-    //! @[LDAP.client.result.next]
+    //!  @[LDAP.client.result.next]
     void first() { actnum = 0; }
 
     //!
@@ -286,7 +286,7 @@ int _prof_gtim;
     //! in the result list. Returns 0 at the end.
     //!
     //! @seealso
-    //! @[LDAP.client.result.next]
+    //!  @[LDAP.client.result.next]
     int next() {
       if (actnum < (num_entries()-1)) {
 	actnum++;
@@ -350,7 +350,7 @@ int _prof_gtim;
   //!  TLS context of connection
   //!
   //! @seealso
-  //! @[LDAP.client.bind, LDAP.client.search]
+  //!  @[LDAP.client.bind], @[LDAP.client.search]
   void create(string|void url, object|void context)
   {
 
@@ -401,7 +401,6 @@ int _prof_gtim;
     } else
       ::create(::_fd);
  
-    connected = 1;
     DWRITE("client.create: connected!\n");
 
     DWRITE(sprintf("client.create: remote = %s\n", query_address()));
@@ -504,7 +503,6 @@ int _prof_gtim;
     destruct(this_object());
   }
 
-  //! @decl int unbind()
   //!
   //! Unbinds from the directory and close the connection.
   int unbind () {
@@ -525,7 +523,6 @@ int _prof_gtim;
 
   }
 
-  //! @decl int delete(string)
   //!
   //! Deletes entry from the LDAP server.
   //!
@@ -575,16 +572,14 @@ int _prof_gtim;
   }
 
 
-  // API function (ldap_compare)
-  //
-  // compare(string dn, array(string) aval)
-  //
-  //	dn:		DN of compared object
-  //	aval:		attribute value
-
-  //! @decl int compare(string, array)
   //!
   //! Compares given attribute value with one in the directory.
+  //!
+  //! @param dn
+  //!  The distinguished name of compared entry.
+  //!
+  //! @param aval
+  //!  The mapping of compared attributes and theirs values.
   int compare (string dn, array(string) aval) {
 
     int id;
