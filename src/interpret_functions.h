@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.19 2000/05/01 02:11:25 hubbe Exp $
+ * $Id: interpret_functions.h,v 1.20 2000/05/01 03:33:45 hubbe Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1128,6 +1128,30 @@ BREAK;
 
 OPCODE0(F_ADD, "+")
   f_add(2);
+BREAK;
+
+OPCODE0(F_ADD_INTS, "int+int")
+  if(sp[-1].type == T_INT && sp[-2].type == T_INT 
+#ifdef AUTO_BIGNUM
+      && (!INT_TYPE_ADD_OVERFLOW(sp[-1].u.integer, sp[-2].u.integer))
+#endif
+    )
+  {
+    sp[-2].u.integer+=sp[-1].u.integer;
+    sp--;
+  }else{
+    f_add(2);
+  }
+BREAK;
+
+OPCODE0(F_ADD_FLOATS, "float+float")
+  if(sp[-1].type == T_FLOAT && sp[-2].type == T_FLOAT)
+  {
+    sp[-2].u.float_number+=sp[-1].u.float_number;
+    sp--;
+  }else{
+    f_add(2);
+  }
 BREAK;
 
 OPCODE0(F_SUBTRACT, "-")

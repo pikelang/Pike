@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.71 2000/05/01 02:11:25 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.72 2000/05/01 03:33:45 hubbe Exp $");
 #include "las.h"
 #include "program.h"
 #include "language.h"
@@ -389,6 +389,13 @@ static int do_docode2(node *n,int flags)
       fatal("HELP! FATAL INTERNAL COMPILER ERROR (7)\n");
 #endif
 
+    if(n->token == F_ADD_EQ && (flags & DO_POP))
+    {
+      code_expression(CDR(n), 0, "assignment");
+      emit0(F_ADD_TO_AND_POP);
+      return 0;
+    }
+
     if(match_types(CAR(n)->type,array_type_string) ||
        match_types(CAR(n)->type,string_type_string) ||
        match_types(CAR(n)->type,mapping_type_string) ||
@@ -404,16 +411,29 @@ static int do_docode2(node *n,int flags)
 
     switch(n->token)
     {
-    case F_ADD_EQ: emit0(F_ADD); break;
-    case F_AND_EQ: emit0(F_AND); break;
-    case F_OR_EQ:  emit0(F_OR);  break;
-    case F_XOR_EQ: emit0(F_XOR); break;
-    case F_LSH_EQ: emit0(F_LSH); break;
-    case F_RSH_EQ: emit0(F_RSH); break;
-    case F_SUB_EQ: emit0(F_SUBTRACT); break;
-    case F_MULT_EQ:emit0(F_MULTIPLY);break;
-    case F_MOD_EQ: emit0(F_MOD); break;
-    case F_DIV_EQ: emit0(F_DIVIDE); break;
+      case F_ADD_EQ:
+	if(CAR(n)->type == int_type_string &&
+	   CDR(n)->type == int_type_string)
+	{
+	  emit0(F_ADD_INTS);
+	}
+	else if(CAR(n)->type == float_type_string &&
+		CDR(n)->type == float_type_string)
+	{
+	  emit0(F_ADD_FLOATS);
+	}else{
+	 emit0(F_ADD);
+	}
+	break;
+      case F_AND_EQ: emit0(F_AND); break;
+      case F_OR_EQ:  emit0(F_OR);  break;
+      case F_XOR_EQ: emit0(F_XOR); break;
+      case F_LSH_EQ: emit0(F_LSH); break;
+      case F_RSH_EQ: emit0(F_RSH); break;
+      case F_SUB_EQ: emit0(F_SUBTRACT); break;
+      case F_MULT_EQ:emit0(F_MULTIPLY);break;
+      case F_MOD_EQ: emit0(F_MOD); break;
+      case F_DIV_EQ: emit0(F_DIVIDE); break;
     }
 
     if(flags & DO_POP)

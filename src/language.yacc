@@ -71,7 +71,7 @@
 %token F_ASSIGN_GLOBAL F_ASSIGN_GLOBAL_AND_POP
 %token F_LOCAL_2_LOCAL F_LOCAL_2_GLOBAL F_GLOBAL_2_LOCAL
 %token F_ADD F_SUBTRACT F_ADD_INT F_ADD_NEG_INT
-%token F_ADD_TO_AND_POP
+%token F_ADD_TO_AND_POP F_ADD_FLOATS F_ADD_INTS
 %token F_MULTIPLY F_DIVIDE F_MOD
 
 %token F_LT F_GT F_EQ F_GE F_LE F_NE
@@ -195,7 +195,7 @@
 /* This is the grammar definition of Pike. */
 
 #include "global.h"
-RCSID("$Id: language.yacc,v 1.182 2000/05/01 02:11:25 hubbe Exp $");
+RCSID("$Id: language.yacc,v 1.183 2000/05/01 03:33:46 hubbe Exp $");
 #ifdef HAVE_MEMORY_H
 #include <memory.h>
 #endif
