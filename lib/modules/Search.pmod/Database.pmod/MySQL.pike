@@ -1,7 +1,7 @@
 // SQL blob based database
 // Copyright © 2000,2001 Roxen IS.
 //
-// $Id: MySQL.pike,v 1.26 2001/06/10 11:29:39 per Exp $
+// $Id: MySQL.pike,v 1.27 2001/06/11 09:56:14 per Exp $
 
 inherit .Base;
 
@@ -402,8 +402,11 @@ class Queue
 	       " set md5=%s WHERE uri=%s", md5, (string)uri );
   }
 
+  mapping(string:mapping(string:string)) extra_data = ([]);
   mapping get_extra( Standards.URI uri )
   {
+    if( extra_data[(string)uri] )
+      return extra_data[(string)uri];
     array r = db->query( "SELECT md5,recurse,stage,template "
 			 "FROM "+table+" WHERE uri=%s", (string)uri );
     if( sizeof( r ) )
@@ -411,11 +414,12 @@ class Queue
   }
 
   static int empty_count;
-
+  static int retry_count;
+  
   // cache, for performance reasons.
   static array possible=({});
   static int p_c;
-
+  
   int|Standards.URI get()
   {
     if(stats->concurrent_fetchers() > policy->max_concurrent_fetchers)
@@ -426,22 +430,34 @@ class Queue
     if( sizeof( possible ) <= p_c )
     {
       p_c = 0;
-      possible = db->query( "select uri from "+table+" where stage=0" )->uri;
+      possible = db->query( "select * from "+table+" where stage=0 limit 20" );
+      extra_data = mkmapping( possible->uri, possible );
+      possible = possible->uri;
     }
 
     while( sizeof( possible ) > p_c )
     {
       empty_count=0;
 
-      Standards.URI ur = Standards.URI( possible[p_c++] );
-
-      if( stats->concurrent_fetchers( ur->host ) >
-	  policy->max_concurrent_fetchers_per_host )
+      if( possible[ p_c ] )
       {
-	continue; // not this host..
-      }
+	Standards.URI ur = Standards.URI( possible[p_c++] );
 
-      set_stage( ur, 1 );
+	if( stats->concurrent_fetchers( ur->host ) >
+	    policy->max_concurrent_fetchers_per_host )
+	{
+	  retry_count++;
+	  continue; // not this host..
+	}
+	possible[p_c] = 0;
+	retry_count=0;
+	set_stage( ur, 1 );
+      }
+      else
+      {
+	p_c++;
+	continue;
+      }
       return ur;
     }
 
@@ -450,7 +466,7 @@ class Queue
       return -1;
     }
     // delay for (quite) a while.
-    if( empty_count++ > 10 )
+    if( empty_count++ > 40 )
     {
       if( num_with_stage( 2 ) || num_with_stage( 3 ) )
       {
