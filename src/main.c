@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: main.c,v 1.162 2004/05/11 15:33:07 grubba Exp $
+|| $Id: main.c,v 1.163 2004/05/14 08:49:40 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: main.c,v 1.162 2004/05/11 15:33:07 grubba Exp $");
+RCSID("$Id: main.c,v 1.163 2004/05/14 08:49:40 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -267,6 +267,7 @@ int dbm_main(int argc, char **argv)
   tzset();
 #endif /* HAVE_TZSET */
 
+#ifndef DONT_USE_SYSTEM_LOCALE
 #ifdef HAVE_SETLOCALE
 #ifdef LC_NUMERIC
   setlocale(LC_NUMERIC, "C");
@@ -284,6 +285,7 @@ int dbm_main(int argc, char **argv)
   setlocale(LC_MESSAGES, "");
 #endif
 #endif  
+#endif /* !DONT_USE_SYSTEM_LOCALE */
 
   TRACE((stderr, "Init master...\n"));
   
