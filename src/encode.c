@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.36 1999/09/18 09:20:44 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.37 1999/09/19 22:58:20 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -1118,6 +1118,8 @@ static void decode_value2(struct decode_data *data)
 	  debug_malloc_touch(dat);
 
 	  data->pickyness++;
+
+	     
 /*	  p->inherits[0].prog=p;
 	  p->inherits[0].parent_offset=1;
 */
@@ -1130,6 +1132,14 @@ static void decode_value2(struct decode_data *data)
 	    decode_number(p->inherits[d].storage_offset,data);
 	    
 	    decode_value2(data);
+	    if(d==0)
+	    {
+	      if(sp[-1].type != T_PROGRAM ||
+		 sp[-1].u.program != p)
+		error("Program decode failed!\n");
+	      p->refs--;
+	    }
+	      
 	    switch(sp[-1].type)
 	    {
 	      case T_FUNCTION:
