@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.217 1998/07/16 19:24:35 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.218 1998/07/17 11:40:37 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -250,7 +250,9 @@ if test $cflags_is_set = no; then
 ### no extra optimization will be done, but nothing should break either.
   case "`uname -m 2>/dev/null`" in
    sun4c)
-    AC_SYS_COMPILER_FLAG(-msparclite,sparclite,OPTIMIZE) 
+    # The -sparclite option seems to generate assembler that /bin/as doesn't
+    # understand.	/grubba 1998-07-17
+    # AC_SYS_COMPILER_FLAG(-msparclite,sparclite,OPTIMIZE) 
    ;;
    sun4m)
     AC_SYS_COMPILER_FLAG(-mv8,microsparc,OPTIMIZE)
@@ -259,6 +261,7 @@ if test $cflags_is_set = no; then
     AC_SYS_COMPILER_FLAG(-msupersparc,supersparc,OPTIMIZE)
    ;;
    sun4u)
+    # FIXME: Optimize for V9
     AC_SYS_COMPILER_FLAG(-msupersparc,ultrasparc,OPTIMIZE)
    ;;
    i586)
