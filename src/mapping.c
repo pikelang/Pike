@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.73 2000/04/22 18:48:58 mast Exp $");
+RCSID("$Id: mapping.c,v 1.74 2000/09/03 21:48:03 mast Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -863,7 +863,7 @@ void check_mapping_for_destruct(struct mapping *m)
 	  md->free_list=k;
 	  md->size--;
 #ifdef PIKE_DEBUG
-	  m->debug_size++;
+	  m->debug_size--;
 #endif
 	}else{
 	  val_types |= 1 << k->val.type;
@@ -1375,6 +1375,10 @@ int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
 #endif
 
   if(a==b) return 1;
+
+  check_mapping_for_destruct(a);
+  check_mapping_for_destruct(b);
+
   if(m_sizeof(a) != m_sizeof(b)) return 0;
 
   curr.pointer_a = a;
@@ -1384,9 +1388,6 @@ int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
   for( ;p ;p=p->next)
     if(p->pointer_a == (void *)a && p->pointer_b == (void *)b)
       return 1;
-
-  check_mapping_for_destruct(a);
-  check_mapping_for_destruct(b);
 
   md=a->data;
   md->valrefs++;
