@@ -4,7 +4,7 @@
 //! module Protocols
 //! submodule DNS
 
-//! $Id: DNS.pmod,v 1.51 2000/09/28 03:38:49 hubbe Exp $
+//! $Id: DNS.pmod,v 1.52 2000/10/17 17:18:50 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -499,7 +499,8 @@ class client
       domains += (get_tcpip_param("SearchList", "") / " ") - ({ "" });
 #else
       string resolv_conf;
-      foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}), string resolv_loc)
+      foreach(({"/etc/resolv.conf", "/amitcp/db/resolv.conf"}),
+	      string resolv_loc)
         if ((resolv_conf = Stdio.read_file(resolv_loc)))
 	  break;
 
@@ -507,9 +508,15 @@ class client
 	/* FIXME: Is this a good idea?
 	 * Why not just try the fallback?
 	 * /grubba 1999-04-14
+	 *
+	 * Now uses 127.0.0.1 as fallback.
+	 * /grubba 2000-10-17
 	 */
+	resolv_conf = "nameserver 127.0.0.1";
+#if 0
 	throw(({ "Protocols.DNS.client(): No /etc/resolv.conf!\n",
 		 backtrace() }));
+#endif /* 0 */
       }
 
       foreach(resolv_conf/"\n", string line)
