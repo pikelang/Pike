@@ -1,5 +1,5 @@
 /*
- * $Id: pikecode.c,v 1.4 2002/04/07 22:24:34 mast Exp $
+ * $Id: pikecode.c,v 1.5 2002/05/10 22:40:37 mast Exp $
  *
  * Generic strap for the code-generator.
  *
@@ -13,6 +13,7 @@
 #include "interpret.h"
 #include "language.h"
 #include "lex.h"
+#include "main.h"
 
 #include "pikecode.h"
 
