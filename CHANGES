@@ -1,3 +1,69 @@
+Changes since Pike 7.6.6
+----------------------------------------------------------------------
+
+Changes in Pike code:
+
+o Fixed a cyclic resolver problem when running Pike with -V7.4
+o Fixed #if constant so it doesn't rethrow a compilation error when
+  #if constant failes to to compilation error.
+o Better sslfile backward compatibility.
+o Fix to prevent Regexp from throwing an error when PCRE isn't
+  installed.
+o Fixed pop() in ADT.Priority_queue.
+o Fixes in Calendar.dwim_day for better accuracy.
+o Major fixes and extensions of Parser.XML.Tree.
+o Protocols.LMTP now displays correct error information.
+o Content-type can now be set manually in Protocols.HTTP.Session.
+o Protocols.LDAP now support paged searches. Fixed bugs related to
+  dequoting and escaping values in filters.
+o Fixed memory leak in Protocols.LysKOM.
+o Fixed argument order in Remote.Client->provide.
+o Fixed setting DES and DES3 keys.
+o SSL now falls back to TLS 1.0 when accessed with SSL 3.2 (TLS 1.1).
+o Fixed bug in decoding SSL2 hello messaged that caused incorrect
+  padding of client challenges longer than 16 bytes. This caused some
+  clients, typically based on OpenSSL, to fail to connect.
+o Fixed an SSL bug that caused the session cache from working.
+o Fixed an SSL bug where calls to the read callback could get lost
+  when frequent switches between callback and non-callback mode
+  occurs.
+o Added EXIF kludge to handle broken FUJIFILM MakerNote.
+o Fixed close in Stdio.FakeFile.
+o Fixed Stdio.exist.
+o Ensure that errno() is relevant if recurse_rm returns with an error.
+o Fixed a type parser bug in Hilfe.
+o rdf:ID and rdf:about now takes xml:base into account in Web.RDF.
+
+Changes in C code:
+
+o Fixed bug in profiling support.
+o Backend and UDP fixes for poll and AIX.
+o Fixed bug in f_exit when called with multiple arguments.
+o Fix for segmentation fault in random_string with negative argument.
+o Added mprotect workaround.
+o Avoid default usage of machine code on OpenBSD.
+o Improved handling out-of-stack errors.
+o find_external_context() now supports objects being destructed.
+o Fixed copy_mapping_recursively().
+o Fixed indices() and values() on objects to hide hidden items.
+o rusage fix for system without 64 bit integer support.
+o Fixes in create_process().
+o Fixed memory leak when createing tuned boxed images.
+o MMX no longer used for `* and `+ image object operators because of
+  precision problems.
+o New module: Kerberos
+o Mysql module support Mysql 4.1.3.
+o Bugfix in dbdate_cast() in the Oracle module.
+o Several bugfixes in Shuffler.
+o Added Stdio.Port()->bind_unix().
+
+Other chages:
+
+o Several fixes in the Pike package generation to make them work with
+  GNU tar 1.14.
+o Preliminary support for local variable extraction in unbug.
+
+
 Changes since Pike 7.4:
 ----------------------------------------------------------------------
 
