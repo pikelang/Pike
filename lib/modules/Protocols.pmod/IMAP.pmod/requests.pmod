@@ -1,5 +1,6 @@
 /* IMAP.requests
  *
+ * $Id: requests.pmod,v 1.17 1999/01/28 22:02:23 grubba Exp $
  */
 
 import .types;
@@ -86,7 +87,9 @@ class request
       case "any":
 	/* A single atom or string or a list of atoms (with
 	 * options), lists. Used for fetch. */
-	return parser->get_any(arg_info[argc][1], 0, append_arg);
+	// FIXME: Are the arguments correct?
+	//	/grubba 1999-01-28
+	return parser->get_any(arg_info[argc][1], 0, 0, append_arg);
 
       case "varargs":
 	/* Like any, but with an implicit list at top-level */
@@ -176,23 +179,23 @@ class list
 			 ({ "astring" }) });
 
   mapping easy_process(string reference, string glob)
-    {
-      /* Each element of the array should be an array with three elements,
-       * attributes, hierarchy delimiter, and the name. */
+  {
+    /* Each element of the array should be an array with three elements,
+     * attributes, hierarchy delimiter, and the name. */
 
-      if ( (reference == "")
-	   && (lower_case(glob) == "inbox") )
-	glob = "INBOX";
+    if ( (reference == "")
+	 && (lower_case(glob) == "inbox") )
+      glob = "INBOX";
       
-      array mailboxes = server->list(session, reference, glob);
+    array mailboxes = server->list(session, reference, glob);
       
-      if (mailboxes)
-	foreach(mailboxes, array a)
-	  send("*", @a);
+    if (mailboxes)
+      foreach(mailboxes, array a)
+	send("*", @a);
       
-      send(tag, "OK");
-      return ([ "action" : "finished" ]);
-    }
+    send(tag, "OK");
+    return ([ "action" : "finished" ]);
+  }
 }
 
 class lsub
@@ -227,23 +230,23 @@ class select
   constant arg_info = ({ ({ "astring" }) });
 
   mapping easy_process(string mailbox)
+  {
+    if (lower_case(mailbox) == "inbox")
+      mailbox = "INBOX";
+
+    array info = server->select(session, mailbox);
+
+    if (info)
     {
-      if (lower_case(mailbox) == "inbox")
-	mailbox = "INBOX";
-
-      array info = server->select(session, mailbox);
-
-      if (info)
-      {
-	foreach(info, array a)
-	  send("*", @a);
-	send(tag, "OK", imap_prefix( ({ "READ-WRITE" }) ) );
+      foreach(info, array a)
+	send("*", @a);
+      send(tag, "OK", imap_prefix( ({ "READ-WRITE" }) ) );
 	return ([ "action" : "selected_state" ]);
-      } else {
-	send(tag, "NO");
+    } else {
+      send(tag, "NO");
 	return ([ "action" : "logged_in_state" ]);
-      }
     }
+  }
 }
 
 class fetch

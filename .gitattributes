@@ -8,3 +8,4 @@
 # Remove the corresponding line before committing
 # changes to these files.
 /lib/modules/Protocols.pmod/IMAP.pmod/imap_server.pike foreign_ident
+/lib/modules/Protocols.pmod/IMAP.pmod/requests.pmod foreign_ident
