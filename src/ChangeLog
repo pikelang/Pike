@@ -1,3 +1,7 @@
+Sat Jan 11 23:37:22 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
+
+	* configure.in: Now checks if ld supports -R.
+
 Fri Jan 10 00:37:16 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
 
 	* sql.pre.pike: Added generic SQL-module.
