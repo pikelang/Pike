@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret.c,v 1.352 2004/08/19 15:00:37 grubba Exp $
+|| $Id: interpret.c,v 1.353 2004/09/30 15:28:08 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.352 2004/08/19 15:00:37 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.353 2004/09/30 15:28:08 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -167,7 +167,8 @@ void gc_mark_stack_external (struct pike_frame *f,
 
 static void gc_check_stack_callback(struct callback *foo, void *bar, void *gazonk)
 {
-  gc_mark_stack_external (Pike_fp, Pike_sp, Pike_interpreter.evaluator_stack);
+  if (Pike_interpreter.evaluator_stack)
+    gc_mark_stack_external (Pike_fp, Pike_sp, Pike_interpreter.evaluator_stack);
 }
 #endif
 
