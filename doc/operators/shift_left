@@ -1,0 +1,17 @@
+NAME
+	`<< - shift left
+
+SYNTAX
+	a << b
+	or
+	int `<<(int a, int b)
+
+DESCRIPTION
+	This operator shift the integer a b steps left. This is equal to
+	multiplying a by 2 b times.
+
+KEYWORDS
+	operator
+
+SEE ALSO
+	`>>

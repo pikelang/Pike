@@ -1,0 +1,19 @@
+NAME
+	`== - compare values
+
+SYNTAX
+	a == b
+	or
+	int `==(mixed a, mixed b)
+
+DESCRIPTION
+	This operator compares two values and returns 1 if they are the same,
+	0 otherwise. Note that pointer equivialenec is required for arrays,
+	objects, programs, mappings and lists. (Thus it is not enough that
+	two arrays LOOK alike, it must be the same array.)
+
+KEYWORDS
+	operator
+
+SEE ALSO
+	`!=, `<, `>, `<=, `>=, efuns/equal

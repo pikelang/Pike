@@ -1,0 +1,13 @@
+NAME
+	`! - is not true
+
+SYNTAX
+	! a
+	or
+	int `!(mixed a)
+
+DESCRIPTION
+	Returns 1 if a is zero, 0 otherwise.
+
+KEYWORDS
+	operator

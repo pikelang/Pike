@@ -1,0 +1,17 @@
+NAME
+	`> - is lesser than?
+
+SYNTAX
+	a > b
+	or
+	int `>(int|float|string a,int|float|string b)
+
+DESCRIPTION
+	This operator compares two values and returns 1 if the first one
+	is greater than the second one.
+
+KEYWORDS
+	operator
+
+SEE ALSO
+	`!=, `==, `<, `<=, `>=
