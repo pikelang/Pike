@@ -1,4 +1,4 @@
-/* $Id: cipher.pike,v 1.15 2000/08/04 19:08:07 sigge Exp $
+/* $Id: cipher.pike,v 1.16 2000/08/08 18:23:15 sigge Exp $
  *
  */
 
@@ -14,7 +14,6 @@ class CipherSpec {
   int iv_size;
   int key_bits;
   function sign;
-  function verify;
 }
 
 #if 0
@@ -38,14 +37,14 @@ class mac_sha
 
   string hash_raw(string data)
   {
-#ifdef SSL3_DEBUG_CRYPT
-    werror(sprintf("SSL.cipher: hash_raw(%O)\n", data));
+#ifdef SSL3_DEBUG
+    werror(sprintf("SSL.cipher: hash_raw('%s')\n", data));
 #endif
     
     object h = algorithm();
     string res = h->update(data)->digest();
-#ifdef SSL3_DEBUG_CRYPT
-    werror(sprintf("SSL.cipher: hash_raw->%O\n",res));
+#ifdef SSL3_DEBUG
+    werror(sprintf("SSL.cipher: hash_raw->'%s'\n",res));
 #endif
     
     return res;
@@ -57,8 +56,8 @@ class mac_sha
 		       "\0\0\0\0\0\0\0\0", seq_num->digits(256),
 		       packet->content_type, strlen(packet->fragment),
 		       packet->fragment);
-#ifdef SSL3_DEBUG_CRYPT
-//    werror(sprintf("SSL.cipher: hashing %O\n", s));
+#ifdef SSL3_DEBUG
+//    werror(sprintf("SSL.cipher: hashing '%s'\n", s));
 #endif
     return hash_raw(secret + pad_2 +
 		    hash_raw(secret + pad_1 + s));
@@ -140,7 +139,7 @@ object rsa_sign(object context, string cookie, object struct)
     + Crypto.sha()->update(params)->digest();    
       
   object s = context->rsa->raw_sign(digest);
-#ifdef SSL3_DEBUG_CRYPT
+#ifdef SSL3_DEBUG
   werror(sprintf("  Digest: '%O'\n"
 		 "  Signature: '%O'\n",
 		 digest, s->digits(256)));
@@ -148,18 +147,6 @@ object rsa_sign(object context, string cookie, object struct)
   
   struct->put_bignum(s);
   return struct;
-}
-
-int rsa_verify(object context, string cookie, object struct,
-	       object(Gmp.mpz) signature)
-{
-  /* Exactly how is the signature process defined? */
-
-  string params = cookie + struct->contents();
-  string digest = Crypto.md5()->update(params)->digest()
-    + Crypto.sha()->update(params)->digest();
-
-  return context->rsa->raw_verify(digest, signature);
 }
 
 object dsa_sign(object context, string cookie, object struct)
@@ -280,7 +267,6 @@ array lookup(int suite)
   case KE_rsa:
   case KE_dhe_rsa:
     res->sign = rsa_sign;
-    res->verify = rsa_verify;
     break;
   case KE_dhe_dss:
     res->sign = dsa_sign;
@@ -291,7 +277,7 @@ array lookup(int suite)
   default:
     throw( ({ "SSL.cipher.pike: Internal error.\n", backtrace() }) );
   }
-
+  
   switch(algorithms[1])
   {
   case CIPHER_rc4_40:
