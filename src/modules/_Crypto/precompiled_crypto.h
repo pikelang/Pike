@@ -107,4 +107,9 @@ void init_des_efuns(void);
 void init_des_programs(void);
 void exit_des(void);
 
+/* /precompiled/crypto/invert */
+void init_invert_efuns(void);
+void init_invert_programs(void);
+void exit_invert(void);
+
 #endif /* PRECOMPILED_X_H */
