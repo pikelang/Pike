@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.96 1998/05/12 16:26:40 grubba Exp $");
+RCSID("$Id: file.c,v 1.97 1998/05/19 20:35:39 hubbe Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2055,8 +2055,6 @@ static void init_file_locking(void)
   set_exit_callback(exit_file_lock_key);
   file_lock_key_program=end_program();
   file_lock_key_program->flags |= PROGRAM_DESTRUCT_IMMEDIATE;
-  add_function("lock",file_lock,"function(void|int:object)",0);
-  add_function("trylock",file_trylock,"function(void|int:object)",0);
 }
 static void exit_file_locking(void)
 {
@@ -2107,6 +2105,20 @@ void PIKE_CONCAT(Y,_ref) (INT32 args) {\
 }
 
 #include "file_functions.h"
+
+#ifdef DEBUG
+void check_static_file_data(struct callback *a, void *b, void *c)
+{
+  if(file_program)
+  {
+#define FILE_FUNC(X,Y,Z) \
+    if(PIKE_CONCAT(Y,_function_number)<0 || PIKE_CONCAT(Y,_function_number)>file_program->num_identifier_references) \
+      fatal(#Y "_function_number is incorrect: %d\n",PIKE_CONCAT(Y,_function_number));
+#include "file_functions.h"
+  }
+}
+#endif
+
 
 void pike_module_init(void)
 {
@@ -2173,6 +2185,12 @@ void pike_module_init(void)
   add_integer_constant("PROP_BIDIRECTIONAL",fd_BIDIRECTIONAL,0);
 #ifdef HAVE_OOB
   add_integer_constant("__HAVE_OOB__",1,0);
+#endif
+#ifdef DEBUG
+  add_to_callback(&do_debug_callbacks,
+		  check_static_file_data,
+		  0,
+		  0);
 #endif
 }
 
