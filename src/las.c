@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.224 2000/11/26 14:20:24 grubba Exp $");
+RCSID("$Id: las.c,v 1.225 2000/11/27 00:02:08 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -434,7 +434,7 @@ static node *freeze_node(node *orig)
   if (orig->tree_info & OPT_NOT_SHARED) {
     /* No need to have this node in the hash-table. */
     /* add_node(orig); */
-    return check_node_hash(dmalloc_touch(node *, orig));
+    return orig;
   }
 
   /* free_node() wants a correct hash */
@@ -4269,9 +4269,28 @@ static void optimize(node *n)
     lex.current_file = n->current_file;
 #endif /* PIKE_DEBUG */
 
-    n->tree_info = n->node_info;
-    if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
-    if(cdr_is_node(n)) n->tree_info |= CDR(n)->tree_info;
+#ifdef SHARED_NODES
+    if (n->tree_info & OPT_NOT_SHARED) {
+      n->tree_info = n->node_info;
+      if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
+      if(cdr_is_node(n)) n->tree_info |= CDR(n)->tree_info;
+      if(!(n->tree_info & OPT_NOT_SHARED)) {
+	/* We need to fix the hash for this node. */
+	n->hash = hash_node(n);
+	/* FIXME: Should probably add the node to the hashtable here. */
+      }
+    } else {
+#endif /* SHARED_NODES */
+      n->tree_info = n->node_info;
+      if(car_is_node(n)) n->tree_info |= CAR(n)->tree_info;
+      if(cdr_is_node(n)) n->tree_info |= CDR(n)->tree_info;
+#ifdef SHARED_NODES
+      if (n->tree_info & OPT_NOT_SHARED) {
+	/* No need to have it in the hashtable anymore. */
+	sub_node(n);
+      }
+    }
+#endif /* SHARED_NODES */
 
     if(!n->parent) break;
     
