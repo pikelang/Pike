@@ -621,7 +621,7 @@ o .build_lobotomize_crypto removed
 Compatibility changes without backward compatibility:
 -----------------------------------------------------
 
-The following changes were considered bugs and have no backwards
+The following changes were considered bugfixes and have no backwards
 compatibility layer.
 
 o enum and typedef have implicit local binding
