@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.17 1998/07/10 15:52:10 grubba Exp $
+ * $Id: passwords.c,v 1.18 1998/07/13 22:13:20 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.17 1998/07/10 15:52:10 grubba Exp $");
+RCSID("$Id: passwords.c,v 1.18 1998/07/13 22:13:20 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -294,7 +294,8 @@ void f_getpwent(INT32 args)
   THREADS_DISALLOW_UID();
   if(!foo)
   {
-    mt_unlock(&password_protection_mutex);
+    UNLOCK_IMUTEX(&password_protection_mutex);
+
     push_int(0);
     return;
   }
@@ -465,7 +466,8 @@ void f_get_groups_for_user(INT32 arg)
 
   if(!pw)
   {
-    mt_unlock(&password_protection_mutex);
+    UNLOCK_IMUTEX(&password_protection_mutex);
+
     pop_stack();
     push_int(0);
     return;
