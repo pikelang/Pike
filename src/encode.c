@@ -25,7 +25,7 @@
 #include "version.h"
 #include "bignum.h"
 
-RCSID("$Id: encode.c,v 1.94 2002/04/17 16:27:30 grubba Exp $");
+RCSID("$Id: encode.c,v 1.95 2002/04/18 09:37:32 grubba Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -266,6 +266,8 @@ static void code_entry(int tag, INT64 num, struct encode_data *data)
 
 static void code_number(ptrdiff_t num, struct encode_data *data)
 {
+  EDB(5, fprintf(stderr, "%*scode_number(%d)\n",
+		 data->depth, "", num));
   code_entry(DO_NOT_WARN(num & 15),
 	     num >> 4, data);
 }
@@ -888,6 +890,10 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	EDB(5,
 	{
 	  fprintf(stderr,
+		  "%*sencode: Program flags: 0x%04x\n\n",
+		  data->depth, "", p->flags);
+
+	  fprintf(stderr,
 		  "%*sencode: Reference table:\n"
 		  "%*s  ####: Flags Inherit Identifier\n",
 		  data->depth, "", data->depth, "");
@@ -1485,6 +1491,8 @@ static int my_extract_char(struct decode_data *data)
    INT32 what, e, num, numh;		\
    DECODE("decode_number");			\
    X=(what & TAG_MASK) | (num<<4);		\
+   EDB(5, fprintf(stderr, "%*s  ==>%d\n",	\
+                  data->depth, "", X));		\
   }while(0)					\
 
 
@@ -2859,9 +2867,15 @@ static void decode_value2(struct decode_data *data)
 	  /* De-kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error--;
 
+	  p->flags |= PROGRAM_PASS_1_DONE;
+
 	  EDB(5,
 	  {
 	    int d;
+
+	    fprintf(stderr,
+		    "%*sdecode: Program flags: 0x%04x\n\n",
+		    data->depth, "", p->flags);
 
 	    fprintf(stderr,
 		    "%*sdecode: Reference table:\n"
@@ -2961,6 +2975,12 @@ static void decode_value2(struct decode_data *data)
 	    constant->sval = Pike_sp[-2];
 	    Pike_sp -= 2;
 	  }
+
+	  /* The program should be consistent now. */
+	  p->flags &= ~PROGRAM_AVOID_CHECK;
+
+	  EDB(5, fprintf(stderr, "%*sProgram flags: 0x%04x\n",
+			 data->depth, "", p->flags));
 
 #ifdef ENCODE_DEBUG
 	  data->depth -= 2;
