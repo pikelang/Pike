@@ -1,4 +1,4 @@
-/* $Id: blit.c,v 1.2 1997/03/17 03:07:59 hubbe Exp $ */
+/* $Id: blit.c,v 1.3 1997/03/20 07:56:02 mirar Exp $ */
 #include "global.h"
 
 #include <math.h>
@@ -22,6 +22,7 @@ extern struct program *image_program;
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
 
+#define absdiff(a,b) ((a)<(b)?((b)-(a)):((a)-(b)))
 #define min(a,b) ((a)<(b)?(a):(b))
 #define max(a,b) ((a)<(b)?(b):(a))
 
@@ -463,3 +464,230 @@ void img_box(INT32 x1,INT32 y1,INT32 x2,INT32 y2)
 
 
 
+void image_add_layers(INT32 args)
+/*
+
+[x1,y1,x2,y2],
+({object image,object mask|0|1,[int alpha_value,[int method]]}),
+({object image,object mask|0|1,[int alpha_value,[int method]]}),
+...
+:object
+
+ */
+{
+   struct img_layer
+   {
+      rgb_group *s;
+      rgb_group *m;
+      int alpha;
+      enum layer_method method;
+   } *layer;
+   float q2=1/(255.0*255.0);
+   float q=1/(255.0);
+   rgb_group *s;
+   rgb_group *d;
+   struct object *o;
+
+   int allalpha255=1,allmask=1,allnop=1;
+
+   int i,j,l,mod,layers;
+   int x1,y1,x2,y2;
+   
+   if (!THIS->img) error("No image.");
+   s=THIS->img;
+
+   if (args>=4
+       && sp[-args].type==T_INT
+       && sp[1-args].type==T_INT
+       && sp[2-args].type==T_INT
+       && sp[3-args].type==T_INT)
+   {
+      x1=sp[-args].u.integer;
+      y1=sp[1-args].u.integer;
+      x2=sp[2-args].u.integer;
+      y2=sp[3-args].u.integer;
+
+      if (x2>x1) x2^=x1,x1^=x2,x2^=x1;
+      if (y2>y1) y2^=y1,y1^=y2,y2^=y1;
+
+      if (x2>THIS->xsize-1 ||
+          y2>THIS->ysize-1 ||
+	  x1<0 || y1<0)
+	 error("Illegal coordinates to image->add_layers()\n");
+      layers=args-4;
+   }
+   else
+   {
+      x1=0;
+      y1=0;
+      x2=THIS->xsize-1;
+      y2=THIS->ysize-1;
+      layers=args;
+   }
+
+   layer=(struct img_layer*)xalloc(sizeof(struct img_layer)*layers);
+
+   for (j=0,i=layers; i>0; i--,j++)
+   {
+      struct array *a;
+      struct image *img;
+      if (sp[-i].type!=T_ARRAY)
+      {
+	 free(layer);
+	 error("Illegal argument(s) to image->add_layers()\n");
+      }
+      a=sp[-i].u.array;
+      if (a->size<2)
+      {
+	 free(layer);
+	 error("Illegal size of array argument to image->add_layers()\n");
+      }
+
+      if (a->item[0].type!=T_OBJECT 
+	  || !a->item[0].u.object
+	  || a->item[0].u.object->prog!=image_program)
+      {
+	 free(layer);
+	 error("Illegal array contents (wrong or no image) to image->add_layers()\n");
+      }
+      img=(struct image*)a->item[0].u.object->storage;
+      if (!img->img 
+	  || img->xsize != THIS->xsize 
+	  || img->ysize != THIS->ysize)
+      {
+	 free(layer);
+	 error("Illegal array contents (no image or wrong image size) to image->add_layers()\n");
+      }
+      layer[j].s=img->img;
+
+      if (a->item[1].type==T_INT
+	  && a->item[1].u.integer==0)
+      {
+	 layer[j].m=NULL;
+      }
+      else
+      {
+	 if (a->item[1].type!=T_OBJECT 
+	     || !a->item[1].u.object
+	     || a->item[1].u.object->prog!=image_program)
+	 {
+	    free(layer);
+	    error("Illegal array contents (wrong or no image for mask) to image->add_layers()\n");
+	 }
+	 img=(struct image*)a->item[1].u.object->storage;
+	 if (!img->img 
+	     || img->xsize != THIS->xsize 
+	     || img->ysize != THIS->ysize)
+	 {
+	    free(layer);
+	    error("Illegal array contents (no mask or wrong mask size) to image->add_layers()\n");
+	 }
+	 layer[j].m=img->img;
+      }
+
+      if (a->size>=3)
+      {
+	 if (a->item[2].type!=T_INT)
+	 {
+	    free(layer);
+	    error("Illegal array contents (illegal alpha) to image->add_layers()\n");
+	 }
+	 layer[j].alpha=a->item[2].u.integer;
+      }
+      else
+	 layer[j].alpha=255;
+
+      if (a->size>=4)
+      {
+	 if (a->item[3].type!=T_INT)
+	 {
+	    free(layer);
+	    error("Illegal array contents (illegal method) to image->add_layers()\n");
+	 }
+	 layer[j].method=a->item[3].u.integer;
+      }
+      else
+	 layer[j].method=LAYER_NOP;
+   }
+
+   pop_n_elems(args);
+
+   push_int(1+x2-x1);
+   push_int(1+y2-y1);
+   o=clone_object(image_program,2);
+   d=((struct image*)(o->storage))->img;
+
+
+   mod=THIS->xsize-(x2-x1+1);
+   s+=x1+THIS->xsize*y1;
+   for (i=0; i<layers; i++)
+   {
+      layer[i].s+=x1+THIS->xsize*y1;
+      if (layer[i].m) layer[i].m+=x1+THIS->xsize*y1;
+      else allmask=0;
+      if (layer[i].alpha!=255) allalpha255=0;
+      if (layer[i].method!=LAYER_NOP) allnop=0;
+   }
+
+   if (allmask && allalpha255 && allnop)
+   {
+#define ALL_IS_NOP
+#define ALL_HAVE_MASK
+#define ALL_HAVE_ALPHA
+#include "blit_layer_include.h"
+#undef ALL_IS_NOP
+#undef ALL_HAVE_MASK
+#undef ALL_HAVE_ALPHA
+   }
+   else if (allalpha255 && allnop)
+   {
+#define ALL_IS_NOP
+#define ALL_HAVE_ALPHA
+#include "blit_layer_include.h"
+#undef ALL_IS_NOP
+#undef ALL_HAVE_ALPHA
+   }
+   else if (allmask && allnop)
+   {
+#define ALL_HAVE_MASK
+#define ALL_HAVE_ALPHA
+#include "blit_layer_include.h"
+#undef ALL_HAVE_MASK
+#undef ALL_HAVE_ALPHA
+   }
+   else if (allnop)
+   {
+#define ALL_IS_NOP
+#include "blit_layer_include.h"
+#undef ALL_IS_NOP
+   }
+   else if (allmask && allalpha255)
+   {
+#define ALL_HAVE_MASK
+#define ALL_HAVE_ALPHA
+#include "blit_layer_include.h"
+#undef ALL_HAVE_MASK
+#undef ALL_HAVE_ALPHA
+   }
+   else if (allalpha255)
+   {
+#define ALL_HAVE_ALPHA
+#include "blit_layer_include.h"
+#undef ALL_HAVE_ALPHA
+   }
+   else if (allmask)
+   {
+#define ALL_HAVE_MASK
+#include "blit_layer_include.h"
+#undef ALL_HAVE_MASK
+   }
+   else
+   {
+#include "blit_layer_include.h"
+   }
+
+
+   free(layer);
+
+   push_object(o);
+}
