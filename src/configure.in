@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.702 2003/02/27 07:29:57 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.703 2003/02/27 17:22:55 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1371,7 +1371,7 @@ AC_ARG_WITH(machine-code,
 	  # Currently only supported with gcc.
 	  #
 	  # Further tests later on.
-	  with_machine_code="yes"
+	  with_machine_code="$GCC"
 	])
 
 MY_AC_ARG_WITH(keypair-loop,
