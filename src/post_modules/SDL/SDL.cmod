@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: SDL.cmod,v 1.23 2004/04/17 19:30:51 marcus Exp $
+|| $Id: SDL.cmod,v 1.24 2004/04/17 19:39:25 marcus Exp $
 */
 
 #include "global.h"
 #include "stralloc.h"
-RCSID("$Id: SDL.cmod,v 1.23 2004/04/17 19:30:51 marcus Exp $");
+RCSID("$Id: SDL.cmod,v 1.24 2004/04/17 19:39:25 marcus Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -2800,12 +2800,14 @@ PIKE_MODULE_INIT
 PIKE_MODULE_EXIT
 {
   EXIT;
+#ifdef DYNAMIC_MODULE
   free_svalue(&_image_color_program);
   _image_color_program.type = PIKE_T_INT;
   image_color_program = NULL;
   free_svalue(&_image_program);
   _image_program.type = PIKE_T_INT;
   image_program = NULL;
+#endif
   SDL_Quit();
 }
 
