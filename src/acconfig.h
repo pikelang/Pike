@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.70 2000/12/23 07:33:48 hubbe Exp $
+ * $Id: acconfig.h,v 1.71 2000/12/27 10:38:16 mirar Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -372,6 +372,9 @@
 
 /* Can we compile in MMX support? */
 #undef TRY_USE_MMX
+
+/* Define if you have the <sys/resource.h> header file.  */
+#undef HAVE_SYS_RESOURCE_H
 
 @BOTTOM@
 

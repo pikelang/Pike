@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.447 2000/12/23 07:33:49 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.448 2000/12/27 10:38:16 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1487,13 +1487,17 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
-locale.h sys/resource.h sys/select.h net/socket.h sys/mman.h setjmp.h \
+locale.h sys/select.h net/socket.h sys/mman.h setjmp.h \
 limits.h pthread.h crt/signal.h sys/id.h \
 thread.h dlfcn.h dld.h dl.h sys/times.h sched.h sys/procfs.h sys/param.h \
 winsock.h sys/ioct.h sys/socket.h malloc.h netinet/in.h sys/wait.h winbase.h \
 grp.h pwd.h passwd.h group.h winsock2.h signal.h sys/file.h poll.h sys/poll.h \
 socket.h ieeefp.h fp_class.h floatingpoint.h  sys/priocntl.h sys/sched.h \
 windows.h errno.h stddef.h mmx.h)
+
+# some Linux systems have a broken resource.h that compiles anyway /Mirar
+AC_TRY_COMPILE([#include <sys/resource.h>],[],
+	AC_DEFINE(HAVE_SYS_RESOURCE_H),[])
 
 AC_CHECK_SIZEOF(char *,4)
 AC_CHECK_SIZEOF(int, 4)
