@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.165 2000/01/30 20:58:17 per Exp $");
+RCSID("$Id: file.c,v 1.166 2000/03/13 16:46:50 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -920,6 +920,7 @@ static void file_write(INT32 args)
       push_constant_text("");
       o_multiply();
       sp--;
+      dmalloc_touch_svalue(sp);
       assign_svalue(sp-args, sp);
 
 #ifdef PIKE_DEBUG
@@ -2185,27 +2186,36 @@ static void file_set_keepalive(INT32 args)
 static void file_connect(INT32 args)
 {
   struct sockaddr_in addr;
+  struct pike_string *dest_addr = NULL;
+  struct pike_string *src_addr = NULL;
+  INT_TYPE dest_port = 0;
+  INT_TYPE src_port = 0;
+
   int tmp;
-  if(args < 2)
-    error("Too few arguments to file->connect()\n");
 
-  if(sp[-args].type != T_STRING)
-    error("Bad argument 1 to file->connect()\n");
-
-  if(sp[1-args].type != T_INT)
-    error("Bad argument 2 to file->connect()\n");
+  if (args < 4) {
+    get_all_args("file->connect", args, "%S%i", &dest_addr, &dest_port);
+  } else {
+    get_all_args("file->connect", args, "%S%i%S%i",
+		 &dest_addr, &dest_port, &src_addr, &src_port);
+  }
 
   if(FD < 0)
   {
-    file_open_socket(0);
+    if (args < 4) {
+      file_open_socket(0);
+    } else {
+      push_int(src_port);
+      ref_push_string(src_addr);
+      file_open_socket(2);
+    }
     if(IS_ZERO(sp-1) || FD < 0)
       error("file->connect(): Failed to open socket.\n");
     pop_stack();
   }
 
-
-  get_inet_addr(&addr, sp[-args].u.string->str);
-  addr.sin_port = htons(((u_short)sp[1-args].u.integer));
+  get_inet_addr(&addr, dest_addr->str);
+  addr.sin_port = htons(((u_short)dest_port));
 
   tmp=FD;
   THREADS_ALLOW();
