@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.51 2000/12/02 14:18:07 grubba Exp $
+ * $Id: sendfile.c,v 1.52 2000/12/02 22:59:07 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -68,7 +68,7 @@
 #endif /* HAVE_SYS_MMAN_H */
 #endif
 
-#define SF_DEBUG
+/* #define SF_DEBUG */
 
 #ifdef SF_DEBUG
 #define SF_DFPRINTF(X)	fprintf X
