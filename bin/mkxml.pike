@@ -1,8 +1,9 @@
-/* $Id: mkxml.pike,v 1.31 2001/07/25 21:20:08 nilsson Exp $ */
+/* $Id: mkxml.pike,v 1.32 2001/07/27 00:48:38 nilsson Exp $ */
 
-string LENA_PATH = "../autodoc/image_ill.pnm";
+string IMAGE_DIR = "../autodoc/src_images/";
 string makepic1;
 string makepic2;
+string execute;
 
 mapping parse=([ " appendix":([]) ]);
 int illustration_counter;
@@ -199,7 +200,7 @@ string getridoftabs(string s)
 string htmlify(string s)
 {
 #define HTMLIFY(S) \
-   (replace((S),({"&lt;","&gt;",">","&","\240"}),({"&lt;","&gt;","&gt;","&amp;","&nbsp;"})))
+   (replace((S),({"&lt;","&gt;",">","&","\240"}),({"&lt;","&gt;","&gt;","&amp;"," "})))
 
    string t="",u,v;
    while (sscanf(s,"%s<%s>%s",u,v,s)==3)
@@ -246,7 +247,7 @@ string fixdesc(string s,string prefix,void|string where)
    s = htmlify(s);
 
    if (where)
-      return "<source-position " + where + file_version + "/>\n"+s;
+      return "<source-position " + where + "/>\n"+s;
 
    return s;
 }
@@ -577,7 +578,7 @@ void document(string enttype,
 	    }
 	 break;
    }
-   f->write("<source-position " + huh->_line + file_version + "/>\n");
+   f->write("<source-position " + huh->_line + "/>\n");
 
 // [DESCRIPTION]
 
@@ -804,7 +805,7 @@ void process_line(string s,string currentfile,int line)
       if (keywords[kw])
       {
 	 string err;
-	 if ( (err=keywords[kw](arg,"file='"+currentfile+"' line='"+line+"'")) )
+	 if ( (err=keywords[kw](arg,"file='"+currentfile+"' first-line='"+line+"'")) )
 	 {
 	   report(currentfile+"file='"+currentfile+"' line="+line);
 	   exit(1);
@@ -861,13 +862,12 @@ void create() {
 
   parser->add_containers( ([ "pre":tag_preserve_ws,
 			     "table":tag_preserve_ws,
-			     "execute":tag_preserve_ws,
 			     "ul":tag_preserve_ws ]) );
 
   parser->add_container("illustration",
     lambda(Parser.HTML p, mapping args, string c, string where)
     {
-      c = replace(c, ([ "&gt;":">" ]));
+      c = replace(c, ([ "&gt;":">", "&lt;":"<" ]));
       string name;
       sscanf(where, "file='%s'", name);
       name = (name/"/")[-1];
@@ -888,6 +888,36 @@ void create() {
       }
 
       return ({ g->make() });
+    });
+
+  parser->add_container("execute",
+    lambda(Parser.HTML p, mapping args, string c, string where)
+    {
+      c = replace(c, ([ "&gt;":">", "&lt;":"<", "&amp;":"&" ]));
+      string name;
+      sscanf(where, "file='%s'", name);
+      name = (name/"/")[-1];
+      array err;
+      object g;
+
+      err = catch {
+	g = compile_string(execute + c)
+	  (illustration_counter, name);
+	g->main();
+      };
+
+      if(err) {
+	werror("%O\n", where);
+	array rows = (execute+c)/"\n";
+	werror("******\n");
+	for(int i; i<sizeof(rows); i++)
+	  werror("%04d: %s\n", i, rows[i]);
+	werror("******\n");
+	throw(err);
+      }
+
+      illustration_counter = g->img_counter;
+      return g->write->get();
     });
 
   parser->add_container("data_description",
@@ -956,15 +986,9 @@ void create() {
       return ({ sprintf("<url%{ %s=\"%s\"%}>%s</url>", (array)args, c) });
     });
 
-  parser->add_container("execute",
-    lambda(Parser.HTML p, mapping args, string c)
-    {
-      return ({ c });
-    });
-
   array tmp = __FILE__/"/";
   string file = tmp[..sizeof(tmp)-2]*"/";
-  LENA_PATH = combine_path(file, LENA_PATH);
+  IMAGE_DIR = combine_path(file, IMAGE_DIR);
 
   makepic1 = #"
   string fn;
@@ -977,7 +1001,7 @@ void create() {
   }
 
   object lena() {
-    object i = Image.load(\"" + LENA_PATH + #"\");
+    object i = Image.load(\"" + IMAGE_DIR + #"image_ill.pnm\");
     return i;
   }
 
@@ -996,6 +1020,68 @@ void create() {
     werror(\"Wrote %s.\\n\", fn);
     return \"<image>\"+fn+\"</image>\";
   }
+";
+
+  execute = #"
+  class Interceptor {
+    string buffer = \"\";
+
+    void `()(string in) {
+      buffer += in;
+    }
+
+    string get() {
+      return buffer;
+    }
+  }
+
+  Interceptor write = Interceptor();
+
+  int img_counter;
+  string prefix;
+  void create(int _img_counter, string _prefix) {
+    img_counter = _img_counter;
+    prefix = _prefix;
+  }
+
+  string illustration(string|Image.Image img, mapping extra) {
+    string fn = prefix + \".\" + (img_counter++) + \".png\";
+    if(!stringp(img)) img = Image.PNG.encode(img);
+    Stdio.write_file(fn, img);
+    werror(\"Wrote %s from execute.\\n\", fn);
+    return \"<image>\"+fn+\"</image>\";
+  }
+
+  string illustration_jpeg(Image.Image img, mapping extra) {
+    return illustration(Image.JPEG.encode(img, extra), extra);
+  }
+
+  string mktag(string name, void|mapping args, void|string c) {
+    if(!args) args = ([]);
+    if(!c)
+      return sprintf(\"<%s%{ %s='%s'%} />\", name, (array)args);
+    return sprintf(\"<%s%{ %s='%s'%}>%s</%s>\", name, (array)args, c, name);
+  }
+
+  array(string) tag_stack = ({});
+
+  string begin_tag(string name, void|mapping args) {
+    if(!args) args = ([]);
+    tag_stack += ({ name });
+    return sprintf(\"<%s%{ %s='%s'%}>\", name, (array)args);
+  }
+
+  string end_tag() {
+    if(!sizeof(tag_stack)) throw( ({ \"Tag stack underflow.\\n\", backtrace() }) );
+    string name = tag_stack[-1];
+    tag_stack = tag_stack[..sizeof(tag_stack)-2];
+    return \"</\" + name + \">\";
+  }
+
+  string fix_image_path(string name) {
+    return \"" + IMAGE_DIR + #"\" + name;
+  }
+
 ";
 
   nowM = parse;
