@@ -1,16 +1,15 @@
-// $Id: testsuite.in,v 1.5 2002/10/28 13:36:24 nilsson Exp $
+// $Id: testsuite.in,v 1.6 2002/11/26 18:45:07 nilsson Exp $
 
 // gdbm
 cond( [[ master()->resolv("Gdbm")->gdbm ]],
 [[
-  define([[GDBM]],[[ Gdbm.gdbm ]])
-  test_true(programp(GDBM))
-  test_do(destruct(clone(GDBM)))
+  test_true(programp(Gdbm.gdbm))
+  test_do(destruct(Gdbm.gdbm()))
 
   define([[GDBMTESTS]],
   [[
     test_do(rm("test.gdbm"))
-    test_do(add_constant("GDBMBASE",clone(GDBM,"test.gdbm")))
+    test_do(add_constant("GDBMBASE",Gdbm.gdbm("test.gdbm")))
     test_true(file_stat("test.gdbm"))
 
     GDBMNULLTEST

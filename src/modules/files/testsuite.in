@@ -1,34 +1,35 @@
-// tests for file module
+dnl tests for file module
+
 test_true(programp(Stdio.File))
 test_true(programp(Stdio.File))
 test_true(objectp(Stdio.File()))
 test_true(programp(Stdio.Port))
 test_true(objectp(Stdio.Port()))
-test_any(object o; o=clone(Stdio.File); destruct(o); return 1,1)
+test_any(object o; o=Stdio.File(); destruct(o); return 1,1)
 
-// - file->open
-// - file->close
-test_any(object o=clone(Stdio.File); return o->open("conftest","wct") && o->close(),1)
+dnl - file->open
+dnl - file->close
+test_any(object o=Stdio.File(); return o->open("conftest","wct") && o->close(),1)
 
-// - file_stat
+dnl - file_stat
 test_eq(file_stat("conftest")[1],0)
 
-// - filesystem_stat
-// - rm
+dnl - filesystem_stat
+dnl - rm
 test_true(rm("conftest"))
 test_eq(file_stat("conftest"),0)
 
-// - file->write
-test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return "open"+o->errno(); e=o->write("sune"); if(!o->close()) return "close"+o->errno(); return e,4)
+dnl - file->write
+test_any(int e; object o=Stdio.File(); if(!o->open("conftest","wct")) return "open"+o->errno(); e=o->write("sune"); if(!o->close()) return "close"+o->errno(); return e,4)
 
-// - file->read
-test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(4); if(!o->close()) return "close"+o->errno(); return s,"sune")
+dnl - file->read
+test_any(string s; object o=Stdio.File(); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(4); if(!o->close()) return "close"+o->errno(); return s,"sune")
 
-test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(999999); if(!o->close()) return "close"+o->errno(); return s,"sune")
+test_any(string s; object o=Stdio.File(); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(999999); if(!o->close()) return "close"+o->errno(); return s,"sune")
 
-test_any(int e; object o=clone(Stdio.File); if(!o->open("conftest","wct")) return "open"+o->errno(); e=o->write(sprintf("%'+-*'100000s","")); if(!o->close()) return "close"+o->errno(); return e,100000)
+test_any(int e; object o=Stdio.File(); if(!o->open("conftest","wct")) return "open"+o->errno(); e=o->write(sprintf("%'+-*'100000s","")); if(!o->close()) return "close"+o->errno(); return e,100000)
 
-test_any(string s; object o=clone(Stdio.File); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(9999999); if(!o->close()) return "close"+o->errno(); return s,sprintf("%'+-*'100000s",""))
+test_any(string s; object o=Stdio.File(); if(!o->open("conftest","r")) return "open"+o->errno(); s=o->read(9999999); if(!o->close()) return "close"+o->errno(); return s,sprintf("%'+-*'100000s",""))
 
 cond([[ Stdio.File()->proxy ]],
 [[
@@ -111,93 +112,93 @@ test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); destruct(o); re
 test_any([[object o,o2=Stdio.File(); o=o2->pipe(Stdio.PROP_IPC); o=0; return o2->read() || ("error:"+o2->errno())]],"")
 
 
-// - file->seek
-// - file->tell
-test_any(object o=clone(Stdio.File); return o->open("conftest","r") && o->read(4711) && o->tell() == 4711 && o->close(),1)
+dnl - file->seek
+dnl - file->tell
+test_any(object o=Stdio.File(); return o->open("conftest","r") && o->read(4711) && o->tell() == 4711 && o->close(),1)
 
-// - file->stat
+dnl - file->stat
 test_equal([[Stdio.File("conftest","r")->stat()[..1]]],[[file_stat("conftest")[..1]]])
 
-// - file->errno
-test_do(clone(Stdio.File,"stdin")->errno())
+dnl - file->errno
+test_do(Stdio.File("stdin")->errno())
 
-// - file->set_nonblocking
-// - file->set_blocking
-// - file->set_id
-// - file->query_id
-test_false(clone(Stdio.File,"stdin")->query_id())
+dnl - file->set_nonblocking
+dnl - file->set_blocking
+dnl - file->set_id
+dnl - file->query_id
+test_false(Stdio.File("stdin")->query_id())
 
-// - File->query_read_callback
-test_do(clone(Stdio.File,"stdin")->query_read_callback())
+dnl - File->query_read_callback
+test_do(Stdio.File("stdin")->query_read_callback())
 
-// - file->query_write_callback
-test_do(clone(Stdio.File,"stdin")->query_write_callback())
+dnl - file->query_write_callback
+test_do(Stdio.File("stdin")->query_write_callback())
 
-// - file->query_close_callback
-test_do(clone(Stdio.File,"stdin")->query_close_callback())
+dnl - file->query_close_callback
+test_do(Stdio.File("stdin")->query_close_callback())
 
-// - file->open_socket
-// - file->connect
-// - file->query_address
-// - file->pipe
-test_any([[object o=clone(Stdio.File),o2=o->pipe();o->write("1"); return o2->read(1)]],"1")
-test_any([[object o=clone(Stdio.File),o2=o->pipe();o2->write("1"); return o->read(1)]],"1")
+dnl - file->open_socket
+dnl - file->connect
+dnl - file->query_address
+dnl - file->pipe
+test_any([[object o=Stdio.File(),o2=o->pipe();o->write("1"); return o2->read(1)]],"1")
+test_any([[object o=Stdio.File(),o2=o->pipe();o2->write("1"); return o->read(1)]],"1")
 
-// - file->dup
-test_any([[object o=clone(Stdio.File); o->open("conftest","r"); o=o->dup(); return o->read(100)]] ,sprintf("%'+-*'100s",""))
+dnl - file->dup
+test_any([[object o=Stdio.File(); o->open("conftest","r"); o=o->dup(); return o->read(100)]] ,sprintf("%'+-*'100s",""))
 
-// - file->assign
-test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o->open("conftest","r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+dnl - file->assign
+test_any([[object o=Stdio.File(),o2=Stdio.File(); o->open("conftest","r"); o2->assign(o); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
-// - file->dup2
-test_any([[object o=clone(Stdio.File),o2=clone(Stdio.File); o2->pipe(); o->open("conftest","r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
+dnl - file->dup2
+test_any([[object o=Stdio.File(),o2=Stdio.File(); o2->pipe(); o->open("conftest","r"); o->dup2(o2); return o2->read(100)]] ,sprintf("%'+-*'100s",""))
 
 dnl test_eq(Process.popen("echo foo"),"foo\n")
 
-// - socket->bind
-// - socket->set_id
-// - socket->query_id
-// - socket->errno
-// - socket->accept
+dnl - socket->bind
+dnl - socket->set_id
+dnl - socket->query_id
+dnl - socket->errno
+dnl - socket->accept
 
 test_true(rm("conftest"))
 test_eq(file_stat("conftest"),0)
 
-test_any(object o=clone(Stdio.File); return o->open("conftest","wac") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wac") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],1)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wa") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wa") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],2)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wac") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wac") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],3)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wa") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wa") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],4)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wa") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wa") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],5)
-test_any(object o=clone(Stdio.File); return o->open("conftest","war") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","war") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],6)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wrac") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wrac") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],7)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wac") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wac") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],8)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wrac") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wrac") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],9)
-test_any(object o=clone(Stdio.File); return o->open("conftest","wrac") && o->write("x") && o->close(),1)
+test_any(object o=Stdio.File(); return o->open("conftest","wrac") && o->write("x") && o->close(),1)
 test_eq(file_stat("conftest")[1],10)
 test_true(rm("conftest"))
 test_eq(file_stat("conftest"),0)
 
-// - file_stat
-// - perror
-// - rm
-// - mkdir
-// - get_dir
+dnl - file_stat
+dnl - perror
+dnl - rm
+dnl - mkdir
+dnl - get_dir
 test_true(arrayp(get_dir(".")))
 
-// - cd
-// - getcwd
+dnl - cd
+dnl - getcwd
 test_true(stringp(getcwd()))
 
-// strerror
+dnl strerror
 cond([[all_constants()->strerror]],
 [[
 test_do(return strerror(1))
@@ -205,12 +206,12 @@ test_true(stringp(strerror(2)||""))
 ]])
 
 
-test_do(object o=clone(Stdio.File); if(!o->open("conftest","wct")) return -1; o->write("foo\n" * 100); o->close();)
+test_do(object o=Stdio.File(); if(!o->open("conftest","wct")) return -1; o->write("foo\n" * 100); o->close();)
 
-// /precompiled/FILE
-test_any([[object o=clone(Stdio.FILE); o->open("conftest","r"); return o->gets()]],"foo")
-test_any(object o=clone(Stdio.FILE); o->open("conftest","r"); return o->gets()+o->gets()+o->gets(),"foofoofoo")
-test_any(int e; object o=clone(Stdio.FILE); o->open("conftest","r"); for(e=0;e<100;e++) if(o->gets() != "foo") return e; return -1,-1)
+dnl Stdio.FILE
+test_any([[object o=Stdio.FILE(); o->open("conftest","r"); return o->gets()]],"foo")
+test_any(object o=Stdio.FILE(); o->open("conftest","r"); return o->gets()+o->gets()+o->gets(),"foofoofoo")
+test_any(int e; object o=Stdio.FILE(); o->open("conftest","r"); for(e=0;e<100;e++) if(o->gets() != "foo") return e; return -1,-1)
 
 test_true(Stdio.stdin)
 test_true(Stdio.stdout)
@@ -220,7 +221,7 @@ test_eq(Stdio.read_file("conftest",0,5), "foo\n"*5)
 test_eq(Stdio.read_file("conftest",1,5), "foo\n"*5))
 test_eq(Stdio.read_file("conftest",100,5),"")
 
-// locking
+dnl locking
 cond([[Stdio.File()->lock]],
 [[
   test_true(Stdio.File("conftest","wr")->lock()&&1)
