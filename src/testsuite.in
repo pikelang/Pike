@@ -1,5 +1,5 @@
 START_MARKER
-test_true([["$Id: testsuite.in,v 1.728 2004/05/27 19:01:20 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.729 2004/05/27 19:03:21 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -7583,7 +7583,7 @@ mixed a() {return functionp(X(Y));}
 ")()->a()]])
 
 test_do([[
-  Stdio.write_file("testsuite_test.pmod", "#error foo");
+  Stdio.write_file("testsuite_test.pmod", "syntax error");
   object orig_master = master();
   replace_master(object_program(orig_master)());
   mixed err = catch {
@@ -7600,7 +7600,7 @@ test_do([[
 ]]);
 
 test_do([[
-  Stdio.write_file("testsuite_test.pmod", "#error foo");
+  Stdio.write_file("testsuite_test.pmod", "syntax error");
   object orig_master = master();
   replace_master(object_program(orig_master)());
   mixed err = catch {
