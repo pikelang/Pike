@@ -4,6 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 /**/
+#define NO_PIKE_SHORTCUTS
 #include "global.h"
 #include "pike_macros.h"
 #include "error.h"
@@ -20,7 +21,7 @@
 #include "threads.h"
 #include "gc.h"
 
-RCSID("$Id: error.c,v 1.52 2000/07/07 01:24:14 hubbe Exp $");
+RCSID("$Id: error.c,v 1.53 2000/07/07 01:37:47 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
