@@ -1,4 +1,4 @@
-/* $Id: sslfile.pike,v 1.36 2001/09/11 18:11:20 mast Exp $
+/* $Id: sslfile.pike,v 1.37 2001/09/12 08:49:16 anders Exp $
  *
  */
 
@@ -219,7 +219,7 @@ int write(string|array(string) s)
   werror("SSL.sslfile->write\n");
 #endif
 
-  if (is_closed || !socket) return -1;
+  if (is_closed || !socket) return -1;
 
   if (arrayp(s)) {
     s = s*"";
