@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: test_pike.pike,v 1.78 2002/12/29 22:32:00 nilsson Exp $ */
+/* $Id: test_pike.pike,v 1.79 2002/12/30 01:29:53 nilsson Exp $ */
 
 import Stdio;
 
@@ -934,7 +934,7 @@ Usage: test_pike [args] [testfiles]
 -sX, --start-test=X Where in the testsuite testing should start, e.g. ignores X
                     tests in every testsuite.
 -eX, --end-after=X  How many tests should be run.
--f, --fail          If set, the testsuite always fails.
+-f, --fail          If set, the test program exits on first failure.
 -lX, --loop=X       The number of times the testsuite should be run. Default is
                     1.
 -tX, --trace=X      Run tests with trace level X.
