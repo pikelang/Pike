@@ -1,5 +1,5 @@
 // Yabu by Fredrik Noring
-// $Id: module.pmod,v 1.1 1998/05/23 19:51:26 noring Exp $
+// $Id: module.pmod,v 1.2 1998/06/10 19:20:59 hubbe Exp $
 
 #if constant(thread_create)
 #define THREAD_SAFE
@@ -22,7 +22,7 @@ static private class FileIO {
   static private void seek(int offset)
   {
     if(file::seek(offset) == -1)
-      ERR("seek failed");
+      ERR(sprintf("seek failed with errno %d\n",file::errno()));
   }
 
   string read_at(int offset, int|void size)
