@@ -1,4 +1,4 @@
-// $Id: RSS.pmod,v 1.3 2003/11/25 15:34:05 nilsson Exp $
+// $Id: RSS.pmod,v 1.4 2003/11/25 16:30:34 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -8,7 +8,7 @@ static constant ns = "http://purl.org/rss/1.0/";
 
 static class Thing {
   static .RDF rdf;
-  static mapping attributes = ([]);
+  static mapping(string:string|Standards.URI) attributes = ([]);
   .RDF.Resource me;
   constant thing = "";
 
@@ -17,8 +17,11 @@ static class Thing {
     return ::`[](i);
   }
 
-  void `[]=(string i, string v) {
+  void `[]=(string i, mixed v) {
     if(!zero_type(attributes[i])) {
+      if(!stringp(v) && !objectp(v))
+	error("%s is string|Standards.URI.\n");
+
       attributes[i] = v;
       .RDF.Resource attr = rdf->make_resource(ns+thing);
       foreach(rdf->find_statements(me, attr, 0), array s)
@@ -42,12 +45,16 @@ static class Thing {
   static void create1(string about, mapping _attr) {
     me = rdf->make_resource(about);
     foreach(indices(attributes), string i) {
-      string v = _attr[i];
+      string|Standards.URI v = _attr[i];
       if(!v) continue;
 
       attributes[i] = v;
-      rdf->add_statement(me, rdf->make_resource(ns+thing),
-			 rdf->LiteralResource(v));
+      if(stringp(v))
+	rdf->add_statement(me, rdf->make_resource(ns+thing),
+			   rdf->LiteralResource(v));
+      else
+	rdf->add_statement(me, rdf->make_resource(ns+thing),
+			   rdf->make_resource(v->raw_uri));
     }
   }
 
@@ -58,10 +65,13 @@ static class Thing {
       if(pred==rdf->rdf_type) continue;
       if(pred->is_uri_resource && has_prefix(pred->get_uri(), ns)) {
 	string attr = pred->get_uri()[sizeof(ns)..];
-	if(r[2]->is_literal_resource)
-	  attributes[attr] = r[2]->get_literal();
-	//	else
-	//	  error("Nonliteral %O\n", r);
+	.RDF.Resource obj = r[2];
+	if(obj->is_literal_resource)
+	  attributes[attr] = obj->get_literal();
+	else if(obj->is_uri_resource)
+	  attributes[attr] = Standards.URI( obj->get_uri() );
+	else
+	  error("Wrong object in statement.\n");
       }
       else
 	error("Unknown stuff %O.\n", r);
@@ -71,30 +81,33 @@ static class Thing {
   .RDF.Resource get_id() { return me; }
 }
 
+//!
 class Image {
   inherit Thing;
   constant thing = "image";
-  static mapping attributes = ([
+  static mapping(string:string|Standards.URI) attributes = ([
     "title" : 0,
     "url" : 0,
     "link" : 0
   ]);
 }
 
+//!
 class Item {
   inherit Thing;
   constant thing = "item";
-  static mapping attributes = ([
+  static mapping(string:string|Standards.URI) attributes = ([
     "title" : 0,
     "link" : 0,
     "description" : 0
   ]);
 }
 
+//!
 class Textinput {
   inherit Thing;
   constant thing = "textinput";
-  static mapping attributes = ([
+  static mapping(string:string|Standards.URI) attributes = ([
     "title" : 0,
     "description" : 0,
     "name" : 0,
@@ -102,10 +115,11 @@ class Textinput {
   ]);
 }
 
+//!
 class Channel {
   inherit Thing;
   static constant thing = "channel";
-  static mapping attributes = ([
+  static mapping(string:string|Standards.URI|array) attributes = ([
     "title" : 0,
     "link" : 0,
     "description" : 0,
@@ -116,11 +130,18 @@ class Channel {
 
   void `[]=(string i, mixed v) {
     if( i=="image" || i=="textinput" ) {
-      if(objectp(v))
-	attributes[i] = v->me->get_uri();
+      if(objectp(v)) {
+	if(v->me)
+	  attributes[i] = Standards.URI(v->me->get_uri());
+	else if(v->raw_uri)
+	  attributes[i] = v;
+	else
+	  error("Wrong value type.\n");
+	v = rdf->make_resource( attributes[i]->raw_uri );
+      }
       else if(stringp(v)) {
 	attributes[i] = v;
-	v = rdf->make_resource(v);
+	v = rdf->LiteralResource(v);
       }
       else
 	error("Wrong type. Expected string or Image/Textinput.\n");
@@ -139,6 +160,7 @@ class Channel {
     ::`[]=(i, v);
   }
 
+  //!
   void add_item(Item i) {
     if(!attributes->items)
       attributes->items = ({ i });
@@ -146,41 +168,50 @@ class Channel {
       attributes->items += ({ i });
   }
 
+  //!
   void remove_item(Item i) {
     attributes->items -= ({ i });
     if(!sizeof(attributes->items)) attributes->items = 0;
   }
 }
 
+//!
 class Index {
   static .RDF rdf;
 
-  array(Channel)   channels = ({});
-  array(Image)     images = ({});
-  array(Item)      items = ({});
-  array(Textinput) textinputs = ({});
+  array(Channel)   channels = ({});   //!
+  array(Image)     images = ({});     //!
+  array(Item)      items = ({});      //!
+  array(Textinput) textinputs = ({}); //!
 
-  void create(.RDF _rdf) {
-    rdf = _rdf;
-    foreach(rdf->find_statements(0, rdf->rdf_type,
-				 rdf->make_resource(ns+"channel")),
-	    array r)
-      channels += ({ Channel(rdf, r[0]) });
-    foreach(rdf->find_statements(0, rdf->rdf_type,
-				 rdf->make_resource(ns+"image")),
-	    array r)
-      images += ({ Image(rdf, r[0]) });
-    foreach(rdf->find_statements(0, rdf->rdf_type,
-				 rdf->make_resource(ns+"item")),
-	    array r)
-      items += ({ Item(rdf, r[0]) });
-    foreach(rdf->find_statements(0, rdf->rdf_type,
-				 rdf->make_resource(ns+"textinput")),
-	    array r)
-      textinputs += ({ Textinput(rdf, r[0]) });
+  //!
+  void create(.RDF|void _rdf) {
+    if(_rdf) {
+      rdf = _rdf;
+      foreach(rdf->find_statements(0, rdf->rdf_type,
+				   rdf->make_resource(ns+"channel")),
+	      array r)
+	channels += ({ Channel(rdf, r[0]) });
+      foreach(rdf->find_statements(0, rdf->rdf_type,
+				   rdf->make_resource(ns+"image")),
+	      array r)
+	images += ({ Image(rdf, r[0]) });
+      foreach(rdf->find_statements(0, rdf->rdf_type,
+				   rdf->make_resource(ns+"item")),
+	      array r)
+	items += ({ Item(rdf, r[0]) });
+      foreach(rdf->find_statements(0, rdf->rdf_type,
+				   rdf->make_resource(ns+"textinput")),
+	      array r)
+	textinputs += ({ Textinput(rdf, r[0]) });
+    }
+    else
+      rdf = .RDF();
   }
 }
 
+//! Returns an @[Index] object, populated with the rss information
+//! given in the rss file @[n].
 Index parse_xml(string|Parser.XML.Tree.Node n, void|string base) {
   .RDF rdf=.RDF()->parse_xml(n, base);
   return Index(rdf);
