@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.81 2003/10/21 03:10:39 nilsson Exp $
+// $Id: DNS.pmod,v 1.82 2004/04/13 13:14:19 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -87,6 +87,9 @@ enum EntryType
 
   //! Type - IPv6 address record (RFC 1886, deprecated) 
   T_AAAA=28,
+
+  //! Type - Location Record (RFC 1876)
+  T_LOC=29,
 
   //! Type - Service location record (RFC 2782)
   T_SRV=33,
@@ -184,6 +187,8 @@ class protocol
 			lambda(string t) {
 			  return sprintf("%1c%s", sizeof(t), t);
 			})*"";
+     case T_LOC:
+       // FIXME: Not implemented yet.
      default:
        return "";
     }
@@ -302,6 +307,11 @@ class protocol
     return s[next[0]-len..next[0]-1];
   }
 
+  int decode_byte(string s, array(int) next)
+  {
+    return s[next[0]++];
+  }
+
   int decode_short(string s, array(int) next)
   {
     sscanf(s[next[0]..next[0]+1],"%2c",int ret);
@@ -383,6 +393,22 @@ class protocol
       case T_AAAA:
 	m->aaaa=sprintf("%{:%02X%02X%}",
 		     values(s[next[0]..next[0]+m->len-1])/2)[1..];
+	break;
+      case T_LOC:
+	m->version = decode_byte(s,next);
+	if (m->version == 0)
+	{
+	  int aByte;
+	  aByte  = decode_byte(s,next);
+	  m->size = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  aByte = decode_byte(s,next);
+	  m->h_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  aByte = decode_byte(s,next);
+	  m->v_perc = pow((aByte>>4)&0xf , aByte&0xf)/100.0;
+	  m->lat = ((decode_int(s,next)-(2<<30))/3600000.0);
+	  m->long = ((decode_int(s,next)-(2<<30))/3600000.0);
+	  m->alt = ((decode_int(s,next)/100.0)-100000.0);
+	}
 	break;
       case T_SOA:
 	m->mname=decode_domain(s,next);
