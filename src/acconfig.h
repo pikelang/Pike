@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.145 2004/12/29 09:11:45 agehall Exp $
+|| $Id: acconfig.h,v 1.146 2005/02/04 10:47:18 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -31,6 +31,9 @@
 
 /* Define this if you want run time self tests */
 #undef PIKE_DEBUG
+
+/* Define this if you want some extra (possibly verbose) run time self tests */
+#undef PIKE_EXTRA_DEBUG
 
 /* Define to make Pike do a full cleanup at exit to detect leaks. */
 #undef DO_PIKE_CLEANUP
