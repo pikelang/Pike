@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.310 2000/07/02 16:55:11 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.311 2000/07/10 17:28:28 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -2832,6 +2832,11 @@ test_true(clone(class c { int i=1; })->i)
 test_false(clone(class c { int foo() { return 1; }})->bar)
 test_eq(clone(clone(class c { program foo=class c { int i=20; }; })->foo)->i,20)
 
+// class()
+test_true(programp(class c(){}))
+test_equal(indices(class c(string a,static int b){}("foo",0)), ({"a"}))
+test_equal(values(class c(string a,static int b){}("foo",0)), ({"foo"}))
+
 // type checks
 test_compile_error([[} int foo() { return]]);
 test_compile_error([[} void foo() { return 1]]);
@@ -4672,7 +4677,7 @@ test_equal(lower_case((string) ({
 
 // - next_object
 test_true(objectp(next_object()))
-test_any(int e;object o=next_object(); for(e=0;e<1000 && o;e++) o=next_object(o); return o,0)
+test_any(int e;object o=next_object(); for(e=0;e<10000 && o;e++) o=next_object(o); return o,0)
 
 // - object_program
 test_true(programp(object_program(this_object())))
@@ -5680,7 +5685,6 @@ test_any(class A {public int v=1; int t(){return v;}}; class B {inherit A; int v
 test_any(class A {static int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 2)
 test_any(class A {private int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 1)
 test_any(class A {local int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 1)
-test_any(class A {int v=1; int t(){return local::v;}}; class B {inherit A; int v=2;}; return B()->t(), 1)
 test_any(class A {inline int v=1; int t(){return v;}}; class B {inherit A; int v=2;}; return B()->t(), 1)
 test_any(class A {int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 2)
 test_any(class A {public int f(){return 1;} int t(){return f();}}; class B {inherit A; int f(){return 2;}}; return B()->t(), 2)
