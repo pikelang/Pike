@@ -304,6 +304,8 @@ define(run_sub_test, [[
 
 run_sub_test(({"SRCDIR/socktest.pike"}))
 
+run_sub_test(({"-DIPV6", "SRCDIR/socktest.pike"}))
+
 run_sub_test(({"SRCDIR/sendfiletest.pike"}))
 
 run_sub_test(({"-DTEST_NORMAL", "SRCDIR/connecttest.pike"}))
