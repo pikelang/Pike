@@ -1,6 +1,6 @@
 #!/usr/local/bin/pike
 
-/* $Id: socktest.pike,v 1.14 2000/10/13 17:15:58 nilsson Exp $ */
+/* $Id: socktest.pike,v 1.15 2001/01/15 15:19:47 nilsson Exp $ */
 
 
 import Stdio;
@@ -226,7 +226,7 @@ array(object(Socket)) stdtest()
   return ({sock,sock2});
 }
 
-object *spair(int type)
+array(object) spair(int type)
 {
   object sock1,sock2;
   sock1=File();
@@ -262,7 +262,8 @@ void finish()
   {
     werror("\n");
 
-    object sock1, sock2, *socks;
+    object sock1, sock2;
+    array(object) socks;
     int tests;
 
     _tests++;
