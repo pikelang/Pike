@@ -23,7 +23,7 @@
 #define HUGE HUGE_VAL
 #endif /*!HUGE*/
 
-RCSID("$Id: stralloc.c,v 1.57 1999/03/23 03:04:00 marcus Exp $");
+RCSID("$Id: stralloc.c,v 1.58 1999/04/01 17:20:17 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -175,6 +175,11 @@ void generic_memcpy(PCHARP to,
 		    PCHARP from,
 		    int len)
 {
+#ifdef PIKE_DEBUG
+  if(len<0)
+    fatal("Cannot copy %d bytes!\n",len);
+#endif
+
   switch(TWO_SIZES(from.shift,to.shift))
   {
     case TWO_SIZES(0,0):
@@ -1374,6 +1379,10 @@ struct pike_string *string_replace(struct pike_string *str,
 					   (end-s)>>str->size_shift,
 					   str->size_shift)))
   {
+#ifdef PIKE_DEBUG
+    if(tmp + (del->len << str->size_shift) > end)
+      fatal("generic_memory_search found a match beyond end of string!!!\n");
+#endif
     generic_memcpy(r,MKPCHARP(s,str->size_shift),(tmp-s)>>str->size_shift);
     INC_PCHARP(r,(tmp-s)>>str->size_shift);
     pike_string_cpy(r,to);
