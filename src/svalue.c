@@ -200,7 +200,7 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
   COMBINE(BIT_STRING, BIT_ARRAY, BIT_MAPPING, BIT_MULTISET, BIT_OBJECT, BIT_PROGRAM, BIT_FUNCTION);
     while(--num>=0)
     {
-      if(s->u.refs[0]--<=0)
+      if(--s->u.refs[0]<=0)
 	really_free_svalue(s);
       s++;
     }
@@ -209,7 +209,7 @@ void free_svalues(struct svalue *s,INT32 num, INT32 type_hint)
   case BIT_FUNCTION:
     while(--num>=0)
     {
-      if(s->u.refs[0]-- <= 0)
+      if(--s->u.refs[0] <= 0)
       {
 	if(s->subtype == FUNCTION_BUILTIN)
 	  really_free_callable(s->u.efun);
