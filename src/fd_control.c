@@ -10,7 +10,7 @@
 #include "pike_error.h"
 #include "fdlib.h"
 
-RCSID("$Id: fd_control.c,v 1.35 2000/12/05 21:08:17 per Exp $");
+RCSID("$Id: fd_control.c,v 1.36 2001/01/21 20:40:38 grubba Exp $");
 
 #else /* TESTING */
 
@@ -137,6 +137,12 @@ PMOD_EXPORT int query_nonblocking(int fd)
   return ret;
 }
 
+/* The following code doesn't link without help, and
+ * since it isn't needed by the nonblocking test, we
+ * can safely disable it.
+ */
+#ifndef TESTING
+
 #ifndef FD_CLOEXEC
 #define FD_CLOEXEC 1
 #endif /* FD_CLOEXEC */
@@ -212,6 +218,8 @@ PMOD_EXPORT int set_close_on_exec(int fd, int which)
   return 0;
 #endif /* !HAVE_BROKEN_F_SETFD */
 }
+
+#endif /* !TESTING */
 
 #ifdef TESTING
 
