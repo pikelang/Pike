@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: docode.c,v 1.111 2001/04/14 09:44:19 hubbe Exp $");
+RCSID("$Id: docode.c,v 1.112 2001/04/15 15:37:19 mast Exp $");
 #include "las.h"
 #include "program.h"
 #include "pike_types.h"
@@ -254,7 +254,7 @@ void do_pop(int x)
   current_stack_depth -= x;
 }
 
-void do_pop_mark(void)
+void do_pop_mark(void *ignored)
 {
   emit0(F_POP_MARK);
 }
