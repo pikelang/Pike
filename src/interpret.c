@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.31 1997/03/11 03:36:39 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.32 1997/03/11 03:47:33 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1318,6 +1318,8 @@ void apply_low(struct object *o, int fun, int args)
 #ifdef DEBUG
     if(d_flag) check_threads_etc();
 #endif
+    new_frame.num_args=args;
+    new_frame.num_locals=0;
     (*function->func.c_fun)(args);
   }else{
     int num_args;
@@ -1355,8 +1357,8 @@ void apply_low(struct object *o, int fun, int args)
     if(num_locals < num_args)
       fatal("Wrong number of arguments or locals in function def.\n");
 #endif
-    fp->num_locals=num_locals;
-    fp->num_args=num_args;
+    new_frame.num_locals=num_locals;
+    new_frame.num_args=num_args;
     eval_instruction(pc);
 #ifdef DEBUG
     if(sp<evaluator_stack)
