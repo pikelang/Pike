@@ -16,14 +16,16 @@ NTPORT=4711
 
 # Don't edit
 
-NP=`pwd`/tools
+base=`pwd`
+
+NP=$base/tools
 
 case :$PATH: in
    *:$NP:*) ;;
    *) PATH=$NP:$PATH ;;
 esac
 CC=rntcc
-NTTOOLS=`pwd`/tools/lib
+NTTOOLS=$NP/lib
 if [ "x$NTMOUNT" = x ]; then
   MNTREPLACE=""
 else
