@@ -1,0 +1,14 @@
+# extension to type mapping
+
+txt	text/plain
+html	text/html
+htm	text/html
+jpeg	image/jpeg
+jpg	image/jpg
+
+pike	text/plain
+c	text/plain
+h	text/plain
+info	text/plain
+
+default	application/octet-stream
