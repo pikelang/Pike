@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.6 2003/12/20 15:55:07 grubba Exp $
+|| $Id: acconfig.h,v 1.7 2003/12/21 17:29:40 grubba Exp $
 */
 
 #undef STDC_HEADERS
@@ -30,6 +30,9 @@
      defined(HAVE_PG72)) && \
     defined(HAVE_LIBPQ_FE_H)
 #define HAVE_POSTGRES
+
+/* This is needed to avoid broken <openssl/kssl.h> headerfiles. */
+#define OPENSSL_NO_KRB5
 
 /* Time to include stuff. */
 
