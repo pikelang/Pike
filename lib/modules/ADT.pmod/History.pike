@@ -1,4 +1,4 @@
-// $Id: History.pike,v 1.1 2002/02/21 19:46:57 nilsson Exp $
+// $Id: History.pike,v 1.2 2002/03/02 16:03:08 nilsson Exp $
 
 //! A history is a stack where you can only push entries. When the stack has
 //! reached a certain size the oldest entries are removed on every push.
@@ -22,6 +22,7 @@ private int maxsize;
 // the history stack.
 private int latest_entry_num;
 
+//! @decl void create(int max_size)
 //! @[max_size] is the maximum number of entries that can reside in the
 //! history at the same time.
 void create(int _maxsize) {
@@ -45,7 +46,8 @@ void push(mixed value) {
 }
 
 //! A @[sizeof] operation on this object returns the number
-//! of elements currently in the history, e.g. <= @[maxsize].
+//! of elements currently in the history, e.g. <= the current
+//! max size.
 int _sizeof() { return size; }
 
 //! Returns the maximum number of values in the history

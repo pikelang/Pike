@@ -422,9 +422,9 @@ array find_all_options(array(string) argv,
 }
 
 //! This function returns the remaining command line arguments after
-//! you have run @[find_options()] or @[find_all_options()] to find
+//! you have run @[find_option()] or @[find_all_options()] to find
 //! all the options in the argument list. If there are any options
-//! left not handled by @[find_options()] or @[find_all_options()]
+//! left not handled by @[find_option()] or @[find_all_options()]
 //! this function will fail.
 //!
 //! If @[throw_errors] has been specified @[get_args()] will throw errors
