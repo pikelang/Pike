@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.81 2000/08/10 09:51:52 per Exp $");
+RCSID("$Id: mpz_glue.c,v 1.82 2000/08/24 17:05:38 grubba Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -902,7 +902,7 @@ static void mpzmod_sub(INT32 args)
 
 static void mpzmod_rsub(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   MP_INT *a;
   
   if(args!=1)
@@ -946,7 +946,7 @@ static void mpzmod_div(INT32 args)
 static void mpzmod_rdiv(INT32 args)
 {
   MP_INT *a;
-  struct object *res;
+  struct object *res = NULL;
   if(!mpz_sgn(THIS))
     error("Division by zero.\n");
 
@@ -982,7 +982,7 @@ static void mpzmod_mod(INT32 args)
 static void mpzmod_rmod(INT32 args)
 {
   MP_INT *a;
-  struct object *res;
+  struct object *res = NULL;
   if(!mpz_sgn(THIS))
     error("Modulo by zero.\n");
 
@@ -1210,7 +1210,7 @@ static void mpzmod_sqrtrem(INT32 args)
 
 static void mpzmod_lsh(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   if (args != 1)
     error("Wrong number of arguments to Gmp.mpz->`<<.\n");
   ref_push_string(int_type_string);
@@ -1226,7 +1226,7 @@ static void mpzmod_lsh(INT32 args)
 
 static void mpzmod_rsh(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   if (args != 1)
     error("Wrong number of arguments to Gmp.mpz->`>>.\n");
   ref_push_string(int_type_string);
@@ -1242,7 +1242,7 @@ static void mpzmod_rsh(INT32 args)
 
 static void mpzmod_rlsh(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   INT32 i;
   if (args != 1)
     error("Wrong number of arguments to Gmp.mpz->``<<.\n");
@@ -1259,7 +1259,7 @@ static void mpzmod_rlsh(INT32 args)
 
 static void mpzmod_rrsh(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   INT32 i;
   if (args != 1)
     error("Wrong number of arguments to Gmp.mpz->``>>.\n");
@@ -1275,7 +1275,7 @@ static void mpzmod_rrsh(INT32 args)
 
 static void mpzmod_powm(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   MP_INT *n;
   
   if(args != 2)
@@ -1292,7 +1292,7 @@ static void mpzmod_powm(INT32 args)
 
 static void mpzmod_pow(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   
   if (args != 1)
     error("Gmp.mpz->pow: Wrong number of arguments.\n");
@@ -1337,7 +1337,7 @@ static void mpzmod_popcount(INT32 args)
 
 static void gmp_pow(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   if (args != 2)
     error("Gmp.pow: Wrong number of arguments");
   if ( (sp[-2].type != T_INT) || (sp[-2].u.integer < 0)
@@ -1351,7 +1351,7 @@ static void gmp_pow(INT32 args)
 
 static void gmp_fac(INT32 args)
 {
-  struct object *res;
+  struct object *res = NULL;
   if (args != 1)
     error("Gmp.fac: Wrong number of arguments.\n");
   if (sp[-1].type != T_INT)

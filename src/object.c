@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.145 2000/08/24 04:04:41 hubbe Exp $");
+RCSID("$Id: object.c,v 1.146 2000/08/24 17:09:41 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -867,7 +867,7 @@ PMOD_EXPORT void object_index_no_free(struct svalue *to,
 			   struct object *o,
 			   struct svalue *index)
 {
-  struct program *p;
+  struct program *p = NULL;
   int lfun;
 
   if(!o || !(p=o->prog))
@@ -895,7 +895,7 @@ PMOD_EXPORT void object_low_set_index(struct object *o,
 			  struct svalue *from)
 {
   struct identifier *i;
-  struct program *p;
+  struct program *p = NULL;
 
   if(!o || !(p=o->prog))
   {
@@ -976,7 +976,7 @@ PMOD_EXPORT void object_set_index(struct object *o,
 		       struct svalue *index,
 		       struct svalue *from)
 {
-  struct program *p;
+  struct program *p = NULL;
   int lfun;
 
   if(!o || !(p=o->prog))
