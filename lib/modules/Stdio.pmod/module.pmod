@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.210 2005/01/26 21:48:48 mast Exp $
+// $Id: module.pmod,v 1.211 2005/01/27 13:59:23 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -778,26 +778,25 @@ class File
 	  BE_WERR(sprintf("  calling read callback with %O", s));
 	  return ___read_callback(___id, s);
 	}
-
-	// If the backend doesn't support separate read oob events
-	// then we'll get here if there's oob data to read.
-	if (___read_oob_callback && (s = ::read_oob (8192, 1)) && sizeof (s)) {
-	  BE_WERR (sprintf ("  calling read oob callback with %O", s));
-	  return ___read_oob_callback (___id, s);
-	}
+	BE_WERR ("  got eof");
       }
 
+      else {
 #if constant(System.EWOULDBLOCK)
-      if (!s && errno() == System.EWOULDBLOCK) {
-	// Necessary to reregister since the callback is disabled
-	// until a successful read() has been done.
-	::set_read_callback(__stdio_read_callback);
-	return 0;
-      }
+	if (errno() == System.EWOULDBLOCK) {
+	  // Necessary to reregister since the callback is disabled
+	  // until a successful read() has been done.
+	  ::set_read_callback(__stdio_read_callback);
+	  return 0;
+	}
 #endif
+	BE_WERR ("  got error " + strerror (errno()) + " from read()");
+      }
     }
+    else
+      BE_WERR ("  got error " + strerror (errno()) + " from backend");
 
-    BE_WERR (sprintf ("  got errno %O", errno()));
+
     ::set_read_callback(0);
     if (___close_callback) {
       BE_WERR ("  calling close callback");
@@ -814,11 +813,8 @@ class File
     if (!(::mode() & PROP_IS_NONBLOCKING)) ::set_nonblocking();
 #endif /* 0 */
 
-    if (!errno() && (read (0, 1) || read_oob (0, 1))) {
+    if (!errno() && peek (0)) {
       // There's data to read...
-      //
-      // read_oob is called in case the backend doesn't support
-      // separate read oob events.
       //
       // FIXME: This doesn't work well since the close callback might
       // very well be called sometime later, due to an error if
@@ -830,12 +826,15 @@ class File
     }
 
     else {
-      BE_WERR (sprintf ("  got errno %O", errno()));
+#ifdef BACKEND_DEBUG
+      if (errno())
+	BE_WERR ("  got error " + strerror (errno()) + " from backend");
+      else
+	BE_WERR ("  got eof");
+#endif
       ::set_read_callback(0);
-      if (___close_callback) {
-	BE_WERR ("  calling close callback");
-	return ___close_callback(___id);
-      }
+      BE_WERR ("  calling close callback");
+      return ___close_callback(___id);
     }
 
     return 0;
@@ -849,7 +848,7 @@ class File
       return ___write_callback(___id);
     }
 
-    BE_WERR (sprintf ("  got errno %O", errno()));
+    BE_WERR ("  got error " + strerror (errno()) + " from backend");
     // Don't need to report the error to ___close_callback here - we
     // know it isn't installed. If it were, either
     // __stdio_read_callback or __stdio_close_callback would be
@@ -860,6 +859,7 @@ class File
   static int __stdio_read_oob_callback()
   {
     BE_WERR ("__stdio_read_oob_callback()");
+
     string s=::read_oob(8192,1);
     if(s)
     {
@@ -867,7 +867,28 @@ class File
 	BE_WERR (sprintf ("  calling read oob callback with %O", s));
 	return ___read_oob_callback(___id, s);
       }
-    }else{
+
+      // If the backend doesn't support separate read oob events then
+      // we'll get here if there's normal data to read or a read eof,
+      // and due to the way file_read_oob in file.c currently clears
+      // both read events, it won't call __stdio_read_callback or
+      // __stdio_close_callback afterwards. Therefore we need to try a
+      // normal read here.
+      if (___read_callback) {
+	BE_WERR ("  no oob data - trying __stdio_read_callback");
+	return __stdio_read_callback();
+      }
+      else if (___close_callback) {
+	BE_WERR ("  no oob data - trying __stdio_close_callback");
+	return __stdio_close_callback();
+      }
+
+      BE_WERR ("  WARNING: got no oob data to read");
+    }
+
+    else {
+      BE_WERR ("  got error " + strerror (errno()) + " from read_oob()");
+
 #if constant(System.EWOULDBLOCK)
       if (errno() == System.EWOULDBLOCK) {
 	// Necessary to reregister since the callback is disabled
@@ -878,7 +899,6 @@ class File
 #endif
 
       // In case the read fails (it shouldn't, but anyway..).
-      BE_WERR (sprintf ("  got errno %O", errno()));
       ::set_read_oob_callback(0);
       if (___close_callback) {
 	BE_WERR ("  calling close callback");
