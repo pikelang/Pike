@@ -4,7 +4,6 @@ CPP=@CPP@
 
 PREFLAGS=-I. -I$(SRCDIR) -I$(SRCDIR)/../.. -I../.. -I. $(MODULE_CPPFLAGS) $(DEFINES) 
 CFLAGS=$(PREFLAGS) $(OTHERFLAGS) @CCSHARED@ $(MODULE_CFLAGS)
-LDFLAGS=@LDFLAGS@
 
 MAKE_FLAGS = "prefix=$(prefix)" "exec_prefix=$(exec_prefix)" "CC=$(CC)" "OTHERFLAGS=$(OTHERFLAGS) @CCSHARED@" "TMP_BINDIR=$(TMP_BINDIR)" "DEFINES=$(DEFINES)" "TMP_LIBDIR=$(TMP_LIBDIR)" "RUNPIKE=$(RUNPIKE)" "INSTALL=$(INSTALL)" $(MODULE_MAKE_FLAGS)
 
@@ -34,7 +33,7 @@ Makefile: $(SRCDIR)/Makefile.in $(SRCDIR)/dependencies
 	@exit 1
 
 module.so: $(OBJS)  $(MODULE_ARCHIVES)
-	$(TMP_BINDIR)/smartlink "@LDSHARED@" $(LDFLAGS) -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS)
+	$(TMP_BINDIR)/smartlink "@LDSHARED@" -o module.@SO@ $(OBJS) $(MODULE_ARCHIVES) $(MODULE_LDFLAGS)
 	if test @SO@ != so ; then mv module.@SO@ module.so ; fi
 
 clean:
