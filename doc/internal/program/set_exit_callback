@@ -1,0 +1,20 @@
+NAME
+	set_exit_callback - set function to call att destruct()
+
+SYNTAX
+	#include "program.h"
+
+	void set_exit_callback(void (*exit)(struct object *) fun);
+
+DESCRIPTION
+	This function sets what function will be called when an object
+	cloned from your program is destructed. This function is
+	mainly for de-initializing the fp->current_storage region.
+	The function will be called with the object about to be destructed
+	as argument.
+
+KEYWORDS
+	program
+
+SEE ALSO
+	start_new_program, set_init_callback

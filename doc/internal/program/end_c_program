@@ -1,0 +1,22 @@
+NAME
+	end_c_program - finish building a 'struct program'
+
+SYNTAX
+	#include "program.h"
+
+	struct program *end_c_program(char *name);
+
+DESCRIPTION
+	This function finishes up the process of building a 'struct program'.
+	It initializes the struct program and calls
+	master()->add_precompiled_program with the program and the suggested
+	name. (As sent to end_c_program). It then returns the newly built
+	program. Note that the new program does NOT have an extra reference,
+	if you want to keep it around and use it you have to add that reference
+	yourself.
+
+KEYWORDS
+	program
+
+SEE ALSO
+	start_new_program, add_function

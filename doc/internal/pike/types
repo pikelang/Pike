@@ -1,0 +1,33 @@
+NAME
+	types - how to describe types internally
+
+DESCRIPTION
+	When describing types to add_function or add_efun you always write
+	it in a string. You write the type just as you would in Pike. The
+	internal types have a few extra features though. Here is a brief
+	explanation of the syntax:
+
+	type             	you write:
+	int                 	"int"
+	float               	"float"
+	string              	"string"
+	mapping         	"mapping(mixed:mixed)" or "mapping"
+	array of int		"array(int)" or "int *"
+	function(int:int)	"function(int:int)"
+	varargs function	"function(int ...:int)"
+	int or string		"int|string"
+
+	Then there are a few tricks you can use, say you have a function which
+	returns an int except if you call it with a string in which case it
+	return a string:
+
+	"!function(string:mixed)&function(mixed:int)|function(string:string)"
+
+	The & and ! operators work as you might expect but are only useful
+	together.
+
+KEYWORDS
+	internals
+
+SEE ALSO
+	add_function, add_efun

@@ -1,0 +1,17 @@
+NAME
+	start_new_program - start building a new 'struct program'
+
+SYNTAX
+	#include "program.h"
+
+	void start_new_program(void);
+
+DESCRIPTION
+	This function initalizes a new 'struct program' to be be fitted
+	with functions, variables, inherits etc. etc.
+
+KEYWORDS
+	program
+
+SEE ALSO
+	end_c_program, add_function, add_storage

@@ -1,17 +1,19 @@
 NAME
-	array_index - get an index from an array
+	array_set_index - get an index from an array
 
 SYNTAX
 	#include "array.h"
 
-	void array_index(struct svalue *to, struct array *a, INT32 n);
+	void array_set_index(struct array *a,
+	                     INT32 ind,
+	                     struct svalue *from);
 
 DESCRIPTION
-	This function frees the contents of the svalue 'to' and replaces
-	it with a copy of the contents from index 'n' in the array 'a'.
+	This function frees the contents of the index 'ind' in the array
+	'a' and replaces it with a copy of the contents from 'from'.
 	Basically, what it does is:
 
-		assign_svalue(to, a->item + n);
+		assign_svalue(a->item + n, from);
 
 	The only differance is that it adds some debug and safety
 	measures. Usually you don't really need to use this function.

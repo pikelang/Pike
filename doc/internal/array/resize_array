@@ -1,0 +1,22 @@
+NAME
+	resize_array - change the size of an array destructively
+
+SYNTAX
+	#include "array.h"
+
+	struct array *resize_array(struct array *a, INT32 new_size);
+
+DESCRIPTION
+	This function makes an array from 'a' with the size 'new_size'.
+	Note that the returned might or might not be the same as 'a'.
+	If 'a' is too small or too big for 'new_size', a copy of 'a' will
+	be made with enough room and then 'a' will be freed. This means
+	that you can only use this function on arrays which has not been
+	passed to any lpc functions yet.
+
+KEYWORDS
+	array
+
+SEE ALSO
+	array_insert, array_remove
+

@@ -1,0 +1,14 @@
+NAME
+	slice_array - slice a pice of an array
+
+SYNTAX
+	#include "array.h"
+
+	struct array *slice_array(struct array *a, INT32 start, INT32 end);
+
+DESCRIPTION
+	This is the equivialent of the pike operation a[start..end]. A new
+	array will be returned with one reference.
+
+KEYWORDS
+	array

@@ -1,0 +1,14 @@
+NAME
+	copy_array - copy an array
+
+SYNTAX
+	#include "array.h"
+
+	struct array *copy_array(struct svalue *a);
+
+DESCRIPTION
+	This function returns a copy of the array 'a'. It is not recursive,
+	arrays within 'a' will only get extra references.
+
+KEYWORDS
+	array

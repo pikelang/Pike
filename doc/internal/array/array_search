@@ -1,0 +1,26 @@
+NAME
+	array_search - search an array
+
+SYNTAX
+	#include "array.h"
+
+	INT32 array_search(struct array *a,
+	                   struct svalue *val,
+	                   INT32 start);
+
+DESCRIPTION
+	This function loops over the array 'a' starting at 'start' until
+	it finds an index that is_eq to 'val'. When it finds such a value
+	the number for that index will be returned. If no such value is
+	found -1 is returned.
+
+NOTA BENE
+	This function checks the type_field in the array, and also re-builds
+	the type-field if the value is not found.
+
+KEYWORDS
+	array
+
+SEE ALSO
+	is_eq
+	
