@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.223 2002/11/15 03:34:19 nilsson Exp $
+// $Id: master.pike.in,v 1.224 2002/11/23 13:22:38 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -2340,14 +2340,154 @@ class Describer
   }
 }
 
+
+//! Describe the path to the module @[mod].
 //!
-string describe_object(object o)
+//! @param mod
+//!   If @[mod] is a program, attempt to describe the path
+//!   to a clone of @[mod].
+//!
+//! @param ret_obj
+//!   If an instance of @[mod] is found, it will be returned
+//!   by changing element @tt{0@} of @[ret_obj].
+//!
+//! @returns
+//!   The a description of the path.
+//!
+//! @note
+//!   The returned description will end with a proper indexing method
+//!   currently either @tt{"."@} or @tt{"->"@}.
+string describe_module(object|program mod, array(object)|void ret_obj)
+{
+  if (!mod) return "";
+  program parent_fun;
+  if (objectp(mod)) {
+    parent_fun = object_program(mod);
+    if (ret_obj) ret_obj[0] = mod;
+  } else {
+    parent_fun = mod;
+    if ((mod = objects[parent_fun]) && ret_obj) ret_obj[0] = mod;
+  }
+  if (mod) {
+    catch {
+      string res = sprintf("%O", mod);
+      if (res != "object" && res != "") return res+"->";
+    };
+  }
+  if (!object_program(parent_fun)) {
+    // We might be a top-level entity.
+    string path = search(programs, parent_fun);
+    if (path) {
+      if (path == "/master") return "master()->";
+      foreach(map(pike_module_path - ({""}),
+		  lambda(string s) {
+		    if (s[-1] == '/') return s;
+		    return s+"/";
+		  }),
+	      string prefix) {
+	if (has_prefix(path, prefix)) {
+	  path = path[sizeof(prefix)..];
+	  break;
+	}
+      }
+      if (has_suffix(path, ".pmod/module.pmod")) {
+	return path[..sizeof(path)-18]+".";
+      }
+      if (has_suffix(path, ".pmod")) {
+	return path[..sizeof(path)-6]+".";
+      }
+      if (has_suffix(path, ".so")) {
+	return path[..sizeof(path)-4]+".";
+      }
+      if (has_suffix(path, ".pike")) {
+	return path[..sizeof(path)-6]+"()->";
+      }
+      return path + "()->";
+    }
+  }
+  // Begin by describing our parent.
+  array(object) parent_obj = ({ 0 });
+  string res = describe_module(function_object(parent_fun)||
+			       object_program(parent_fun),
+			       parent_obj);
+  // werror("So far: %O parent_obj:%O\n", res, parent_obj);
+  object|program parent = parent_obj[0] || object_program(parent_fun);
+  if (mod && parent) {
+    // Object identified.
+    catch {
+      // Check if we're an object in parent.
+      int i = search(values(parent), mod);
+      if (i >= 0) {
+	return res + indices(parent)[i] + ".";
+      }
+    };
+  }
+
+  // We're cloned from something in parent.
+  if (string fun_name = function_name(parent_fun)) {
+    return res + fun_name + "()->";
+  }
+
+  // No such luck.
+  // Try identifying a clone of ourselves.
+  if (!mod && parent) {
+    catch {
+      // Check if there's a clone of parent_fun in parent_obj.
+      int i;
+      array(mixed) val = values(parent);
+      array(string) ind = indices(parent);
+      for (i=0; i < sizeof(val); i++) {
+	if (objectp(val[i]) && object_program(val[i]) == parent_fun) {
+	  return res + ind[i] + ".";
+	}
+      }
+    };
+  }
+
+  // We're really out of luck here...
+  return res + "unknown_program()->";
+}
+
+//!
+string describe_object(object|program o)
 {
   string s;
   if(!o) return 0;
+
   if (!catch (s = sprintf("%O",o)) && s != "object") return s;
-  if(( s=describe_program(object_program(o)) ))
+
+  function parent_fun = object_program(o);
+
+  /* Constant object? */
+  catch {
+    object|program parent_obj = function_object(parent_fun);
+
+    if (parent_obj) {
+      /* Check if we have a constant object. */
+      object tmp = objects[parent_obj];
+      if (tmp) parent_obj = tmp;
+
+      /* Try finding ourselves in parent_obj. */
+      int i;
+      if (objectp(o)) {
+	i = search(values(parent_obj), o);
+      } else {
+	i = search(map(values(parent_obj),
+		       lambda(mixed x) {
+			 if (objectp(x)) return object_program(x);
+			 return 0;
+		       }), o);
+      }
+      if (i >= 0) {
+	s = indices(parent_obj)[i];
+	return describe_module(parent_obj) + "." + s;
+      }
+    }
+  };
+  /* Try identifying the program. */
+  if(( s=describe_program(parent_fun) ))
     return s+"()";
+
   return 0;
 }
 
@@ -2365,16 +2505,7 @@ string describe_program(program p)
 
   if(mixed tmp=function_object(p))
   {
-    if(objectp(tmp))
-    {
-      if(s=describe_program(object_program(tmp)))
-	return s+"."+function_name(p);
-    }
-    if(programp(tmp))
-    {
-      if(s=describe_program(tmp))
-	return s+"."+function_name(p);
-    }
+    return describe_module(tmp) + function_name(p);
   }
 
   if(s=_static_modules.Builtin()->program_defined(p))
