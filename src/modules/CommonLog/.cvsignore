@@ -1,4 +1,13 @@
-configure
+Makefile
+clf_machine.h
 clf_machine.h.in
+config.log
+config.status
+configure
 dependencies
+linker_options
+modlist_headers
+modlist_segment
+module_testsuite
+stamp-h
 stamp-h.in

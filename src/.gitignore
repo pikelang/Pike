@@ -8,6 +8,7 @@
 /conftest.c
 /conftest.h
 /dependencies
+/dumpmodule.log
 /hilfe
 /hsort_template.h
 /isort_template.h
@@ -23,7 +24,9 @@
 /smartlink
 /stamp-h
 /stamp-h.in
+/test-install
 /testsuite
+/tpike
 /treeopt.h
 /y.output
 /y.tab.c

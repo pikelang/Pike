@@ -17,6 +17,7 @@ illustration*.*
 illustration_cache
 image_cache
 image_cache.log
+latex.wcache
 latex_wcache
 latex_wcache.log
 man
@@ -25,6 +26,7 @@ pike.pdf
 test.aux
 test.dvi
 test.log
+test.pdf
 test.tex
 texput.log
 tut*.html
