@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.85 1998/04/29 02:45:21 hubbe Exp $
+# $Id: Makefile.in,v 1.86 1998/05/01 15:30:28 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -132,24 +132,24 @@ OBJ= \
 all: module_objects hilfe
 	$(MAKE) $(MAKE_FLAGS) pike
 
-pike: $(OBJ) compile_interpret modules/linker_options
+pike: $(OBJ) modules/linker_options
 	-@mv pike pike.old 2>/dev/null || true
-	$(LD) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(LD) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purify
-pure: $(OBJ) compile_interpret module_objects
+pure: $(OBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # purecov
-cover: $(OBJ) compile_interpret module_objects
+cover: $(OBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) purecov purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) purecov purify -thread_stack_change=8192 -free-queue-length=500 -inuse-at-exit=yes -chain-length=12 $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 # quantify
-quant: $(OBJ) compile_interpret module_objects
+quant: $(OBJ) module_objects
 	-@mv pike pike.old 2>/dev/null || true
-	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) interpret.o `cat modules/linker_options` $(LIBS) -o pike
+	$(SMARTLINK) quantify $(REALCC) $(LDFLAGS) $(OBJ) `cat modules/linker_options` $(LIBS) -o pike
 
 atom: pike
 	atom pike -tool atom -env threads -g -v `find lib/modues -type f -name '*.so' -print | sed -e 's/^/-incobj /g'`
@@ -177,8 +177,8 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 
 # Several optimizers have problems with interpret.c
 # First try compiling with optimization and if that doesn't work, without.
-compile_interpret : force
-	$(MAKE) $(MAKE_FLAGS) interpret.o || NO_ULIMIT=yes $(MAKE) $(MOST_MAKE_FLAGS) "OTHERFLAGS=$(NOOPTFLAGS)" interpret.o
+interpret.o:
+	$(CC) $(CFLAGS) -c interpet.c -o interpret.o || NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c interpet.c -o interpret.o 
 
 force :
 
