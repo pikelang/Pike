@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.110 2000/07/28 17:16:55 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.111 2000/08/03 18:37:57 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -1113,7 +1113,7 @@ void debug_really_free_gc_frame(struct gc_frame *l)
   if (l->frameflags & GC_LINK_FREED)
     gc_fatal(l->data, 0, "Freeing freed gc_frame.\n");
   l->frameflags |= GC_LINK_FREED;
-  l->back = PREV(l) = NEXT(l) = (struct gc_frame *) -1;
+  l->back = PREV(l) = NEXT(l) = (struct gc_frame *)(ptrdiff_t) -1;
   really_free_gc_frame(l);
 #ifdef GC_VERBOSE
   num_gc_frames--;
@@ -1688,7 +1688,7 @@ static void gc_cycle_pop(void *a)
   CHECK_POP_FRAME(gc_rec_last);
   if (here->frameflags & GC_OFF_STACK)
     gc_fatal(a, 0, "Marker being popped isn't on stack.\n");
-  here->back = (struct gc_frame *) -1;
+  here->back = (struct gc_frame *)(ptrdiff_t) -1;
 #endif
   here->frameflags |= GC_OFF_STACK;
 
@@ -1696,7 +1696,7 @@ static void gc_cycle_pop(void *a)
     if (base == here) {
       /* Part of a cycle; wait until the cycle is complete before
        * unlinking it from rec_list. */
-      DO_IF_DEBUG(m->frame->back = (struct gc_frame *) -1);
+      DO_IF_DEBUG(m->frame->back = (struct gc_frame *)(ptrdiff_t) -1);
       CYCLE_DEBUG_MSG(m, "gc_cycle_pop, keep cycle");
       return;
     }
@@ -1719,7 +1719,7 @@ static void gc_cycle_pop(void *a)
       /* This extra ref is taken away in the kill pass. */
       gc_add_extra_ref(p->data);
       base = p;
-      DO_IF_DEBUG(PREV(p) = (struct gc_frame *) -1);
+      DO_IF_DEBUG(PREV(p) = (struct gc_frame *)(ptrdiff_t) -1);
       CYCLE_DEBUG_MSG(pm, "gc_cycle_pop, put on kill list");
     }
     else {
