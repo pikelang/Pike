@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.436 2002/08/20 18:19:52 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.437 2002/09/07 18:35:07 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4189,27 +4189,43 @@ PMOD_EXPORT void f_mktime (INT32 args)
 #ifdef STRUCT_TM_HAS___TM_GMTOFF
   /* Linux-style */
   date.__tm_gmtoff = 0;
+#else
+  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+  {
+    /* Pre-adjust for the timezone.
+     *
+     * Note that pre-adjustment must be done on AIX for dates
+     * near Jan 1, 1970, sine AIX mktime(3) doesn't support
+     * negative time.
+     */
+    date.tm_sec += Pike_sp[7-args].u.integer
+#ifdef HAVE_EXTERNAL_TIMEZONE
+      - timezone
+#endif /* HAVE_EXTERNAL_TIMEZONE */
+      ;
+  }
 #endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
 
   raw = retval = mktime(&date);
   
+#if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
   if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
-    /* Adjust for the timezone. */
-    /* Note that tm_gmtoff has the opposite sign of timezone. */
+    /* Post-adjust for the timezone.
+     *
+     * Note that tm_gmtoff has the opposite sign of timezone.
+     *
+     * Note also that it must be post-adjusted, since the gmtoff
+     * field is set by mktime(3).
+     */
 #ifdef STRUCT_TM_HAS_GMTOFF
     retval += Pike_sp[7-args].u.integer + date.tm_gmtoff;
 #else
-#ifdef STRUCT_TM_HAS___TM_GMTOFF
     retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
-#else
-#ifdef HAVE_EXTERNAL_TIMEZONE
-    retval += Pike_sp[7-args].u.integer - timezone;
-#endif /* HAVE_EXTERNAL_TIMEZONE */
-#endif /* STRUCT_TM_HAS___TM_GMTOFF */
 #endif /* STRUCT_TM_HAS_GMTOFF */
   }
+#endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 
   if (raw == -1)
     PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
