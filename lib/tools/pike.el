@@ -1,5 +1,5 @@
 ;;; pike.el -- Font lock definitions for Pike and other LPC files.
-;;; $Id: pike.el,v 1.17 2000/12/30 18:02:34 mast Exp $
+;;; $Id: pike.el,v 1.18 2000/12/30 23:30:40 mast Exp $
 ;;; Copyright (C) 1995, 1996, 1997, 1998, 1999 Per Hedbor.
 ;;; This file is distributed as GPL
 
@@ -302,7 +302,7 @@ The name is assumed to begin with a capital letter.")
 	  '("\\<nomask\\>"    0 font-lock-preprocessor-face)
 
 	  `(,(concat "^\\([^/]\\|/[^/]\\)*"
-		     "\\(//[^.!|][^\n\r]*\\|\\(//\\)\\([.!|]\\)\\([^\n\r]*\\)\\)")
+		     "\\(//[^.!|\n\r]\\|\\(//\\)\\([.!|]\\)\\([^\n\r]*\\)\\)")
 	    (3 pike-font-lock-refdoc-init2-face prepend t)
 	    (4 pike-font-lock-refdoc-init-face prepend t)
 	    (5 pike-font-lock-refdoc-face prepend t)
