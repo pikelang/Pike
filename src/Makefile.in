@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.246 2001/02/01 15:18:14 grubba Exp $
+# $Id: Makefile.in,v 1.247 2001/02/22 19:18:08 hubbe Exp $
 #
 
 # This line is needed on some machines.
@@ -146,6 +146,7 @@ OBJ= \
  version.o \
  queue.o \
  builtin.o \
+ mapping_stuff.o \
  svalue.o @EXTRA_OBJS@
 
 MODULE_REQUIREMENTS= \
@@ -692,6 +693,8 @@ $(SRCDIR)/language.c: $(SRCDIR)/language.h_src
 # This rule makes sure that builtin.c is created in the source dir.
 #
 $(SRCDIR)/builtin.c: $(SRCDIR)/builtin.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
+
+$(SRCDIR)/mapping_stuff.c: $(SRCDIR)/mapping_stuff.cmod precompile.sh-stamp $(TMP_BINDIR)/precompile.pike
 
 # UnixWare make needs help to find the source file...
 builtin.o: $(SRCDIR)/builtin.c

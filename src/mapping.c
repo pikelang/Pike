@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.117 2001/02/08 00:53:05 mast Exp $");
+RCSID("$Id: mapping.c,v 1.118 2001/02/22 19:18:08 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -2293,3 +2293,4 @@ void zap_all_mappings(void)
     /* free_mapping(m); */
   }
 }
+

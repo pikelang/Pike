@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.110 2001/01/24 08:17:28 hubbe Exp $");
+RCSID("$Id: main.c,v 1.111 2001/02/22 19:18:08 hubbe Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -520,7 +520,6 @@ int dbm_main(int argc, char **argv)
   init_lex();
   init_program();
   init_object();
-
   low_th_init();
 
   init_modules();
@@ -592,6 +591,7 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 
 void low_init_main(void)
 {
+  init_mapping_stuff();
   init_pike_searching();
   init_error();
   init_pike_security();
