@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: png.c,v 1.50 2003/01/09 22:59:39 nilsson Exp $
+|| $Id: png.c,v 1.51 2003/01/09 23:55:09 nilsson Exp $
 */
 
 #include "global.h"
-RCSID("$Id: png.c,v 1.50 2003/01/09 22:59:39 nilsson Exp $");
+RCSID("$Id: png.c,v 1.51 2003/01/09 23:55:09 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -48,7 +48,7 @@ static struct pike_string *param_background;
 /*! @module Image
  */
 
-/*! @class PNG
+/*! @module PNG
  *!   Support for encoding and decoding the Portable Network Graphics
  *!   format, PNG.
  *!
@@ -1695,7 +1695,7 @@ static void image_png_decode_alpha(INT32 args)
    free_svalue(&s);
 }
 
-/*! @endclass
+/*! @endmodule
  */
 
 /*! @endmodule
