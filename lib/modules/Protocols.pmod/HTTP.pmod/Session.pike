@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Session.pike,v 1.11 2003/04/07 17:12:02 nilsson Exp $
+// $Id: Session.pike,v 1.12 2003/06/08 21:56:02 mirar Exp $
 
 import Protocols.HTTP;
 
@@ -301,8 +301,11 @@ class Request
       // clear callbacks for possible garbation of this Request object
       con->set_callbacks(0,0);
 
-      if (fail_callback) fail_callback(@extra_callback_arguments);
-      extra_callback_arguments=0; // clear references there too
+      array eca=extra_callback_arguments;
+      function fc=fail_callback;
+      set_callbacks(0,0,0); // drop all references
+
+      if (fc) fc(@eca); // note that we may be destructed here
    }
 
    static void async_data()
@@ -717,7 +720,7 @@ void return_connection(Standards.URI url,Query query)
 {
    connections_inuse_n--;
    string lookup=connection_lookup(url);
-   if (query->con && query->is_sessionquery) 
+   if (query && query->con && query->is_sessionquery && query->headers) 
    {
       if (query->headers->connection &&
 	  lower_case(query->headers->connection)=="keep-alive" &&
@@ -756,7 +759,7 @@ Request do_method_url(string method,
    Request p=Request();
    p->do_sync(p->prepare_method(method,url,query_variables,
 				extra_headers,data));
-   return p;
+   return p->ok() && p;
 }
 
 //! @decl Request get_url(URL url, @
