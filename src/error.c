@@ -18,7 +18,7 @@
 #include "operators.h"
 #include "module_support.h"
 
-RCSID("$Id: error.c,v 1.31 1999/03/23 16:26:17 hubbe Exp $");
+RCSID("$Id: error.c,v 1.32 1999/04/02 15:18:05 hubbe Exp $");
 
 #undef ATTRIBUTE
 #define ATTRIBUTE(X)
@@ -374,7 +374,7 @@ void generic_error_va(struct object *o,
     push_int(0);
     push_text(func);
 
-    for (i=-args; i; i++)
+    for (i=0;i<args;i++)
       push_svalue(base_sp + i);
     f_aggregate(args + 3);
     f_aggregate(1);
