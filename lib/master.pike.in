@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.15 1998/04/19 00:08:53 hubbe Exp $
+/* $Id: master.pike.in,v 1.16 1998/04/20 02:34:03 hubbe Exp $
  *
  * Master-file for Pike.
  *
@@ -45,7 +45,6 @@ string basename(string x)
 string describe_backtrace(mixed *trace);
 object low_cast_to_object(string oname, string current_file);
 
-string pike_library_path;
 string *pike_include_path=({});
 string *pike_module_path=({});
 string *pike_program_path=({});
@@ -378,16 +377,14 @@ object cast_to_object(string oname, string current_file)
 class dirnode
 {
   string dirname;
-  object tm;
   mixed module;
   mapping cache=([]);
 
-  void create(string name, object the_master)
+  void create(string name)
   {
     dirname=name;
-    tm=the_master;
 
-    if(module=tm->findmodule(dirname+"/module"))
+    if(module=findmodule(dirname+"/module"))
       if(mixed tmp=module->_module_value)
 	module=tmp;
   }
@@ -397,7 +394,7 @@ class dirnode
     if(module) if(object o=module[index]) return o;
 
     index = dirname+"/"+index;
-    if(object o=tm->findmodule(index))
+    if(object o=findmodule(index))
     {
       if(mixed tmp=o->_module_value) o=tmp;
       return o;
@@ -433,7 +430,7 @@ object findmodule(string fullname)
   if(mixed *stat=master_file_stat(fullname+".pmod"))
   {
     if(stat[1]==-2)
-      return fc[fullname]=dirnode(fullname+".pmod",this_object());
+      return fc[fullname]=dirnode(fullname+".pmod");
   }
 
   if(o=low_cast_to_object(fullname+".pmod","/."))
@@ -447,18 +444,22 @@ object findmodule(string fullname)
   return fc[fullname]=UNDEFINED;
 }
 
+mixed handle_import(string what, string|void current_file)
+{
+  string *tmp,path;
+  if(current_file)
+  {
+    tmp=explode_path(current_file);
+    tmp[-1]=what;
+    path=combine_path_with_cwd( tmp*"/");
+  }
+  return fc[path]=dirnode(path);
+}
+
 mixed resolv(string identifier, string|void current_file)
 {
   mixed ret;
   string *tmp,path;
-
-  if(current_file)
-  {
-    tmp=explode_path(current_file);
-    tmp[-1]=identifier;
-    path=combine_path_with_cwd( tmp*"/");
-    ret=findmodule(path);
-  }
 
   if(!ret)
   {
@@ -467,14 +468,7 @@ mixed resolv(string identifier, string|void current_file)
 	string file=combine_path(path,identifier);
 	if(ret=findmodule(file)) break;
       }
-    
-    if(!ret)
-    {
-      string path=combine_path(pike_library_path+"/modules",identifier);
-      ret=findmodule(path);
-    }
   }
-
 
   if(ret)
   {
@@ -512,9 +506,6 @@ void _main(string *orig_argv, string *env)
   // add path for architecture-dependant files
   add_include_path("¤lib_prefix¤/include");
   add_module_path("¤lib_prefix¤/modules");
-
-  add_program_path(getcwd());
-  add_module_path(getcwd());
 
   q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
   for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
@@ -730,22 +721,6 @@ string handle_include(string f,
 	  path=0;
       }
     
-    if(!path)
-    {
-      path=combine_path(pike_library_path+"/include",f);
-      if(!master_file_stat(path)) path=0;
-    }
-  }
-
-  if(path)
-  {
-    /* Handle preload */
-
-    if(path[-1]=='h' && path[-2]=='.' &&
-       master_file_stat(path[0..sizeof(path)-2]+"pre.pike"))
-    {
-      cast_to_object(path[0..sizeof(path)-2]+"pre.pike","/");
-    }
   }
 
   return path;
