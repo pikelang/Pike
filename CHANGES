@@ -184,9 +184,19 @@ o Image.DWG
 o Gmp.mpq and Gmp.mpf
     Multi precision fractions.    
 
+o String.SplitIterator
+
+o Stdio.File.line_iterator
+
+o String.Replace, String.SingleReplace
+
 
 Optimizations:
 --------------
+
+o Machine code used on some architectures.
+
+o Overall speed improvements.
 
 o Improvement and bug tickets closed: 1499
 
