@@ -2,21 +2,13 @@ NAME
 	allocate - allocate an array
 
 SYNTAX
-	mixed *allocate(int size, [ string type ]);
+	mixed *allocate(int size);
 
 DESCRIPTION
-	Allocate an array of size elements. Optionally, write what type you
-	want to store in the array in the second argument as a string.
-	Note that the type given in this string should be simple, instead
-	of writing "int ***" just write "array".
+	Allocate an array of size elements and initialize them to zero.
 
 EXAMPLES
 	mixed *a=allocate(17);
-	int *b=allocate(17, "int");
-	int **c=allocate(17, "array");
-	mapping *c=allocate(17, "mapping");
-	array (list (int)) c=allocate(17, "list");
-	array (string) c=allocate(17, "string");
 
 NOTA BENE
 	Arrays are dynamically allocated there is no need to declare them
