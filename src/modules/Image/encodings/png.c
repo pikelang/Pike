@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: png.c,v 1.6 1998/04/03 03:49:50 mirar Exp $");
+RCSID("$Id: png.c,v 1.7 1998/04/05 21:10:43 mirar Exp $");
 
 #include "config.h"
 
@@ -343,9 +343,11 @@ static void image_png___decode(INT32 args)
 */
 
 static struct pike_string *_png_unfilter(unsigned char *data,
-					 INT32 len,int xsize,
+					 INT32 len,
+					 int xsize,int ysize,
 					 int filter,int type,
-					 int bpp,int interlace)
+					 int bpp,
+					 unsigned char **pos)
 {
    struct pike_string *ps;
    unsigned char *d;
@@ -372,8 +374,22 @@ static struct pike_string *_png_unfilter(unsigned char *data,
 
    for (;;)
    {
-      if (!len) return end_shared_string(ps);
+      if (!len || !ysize--) 
+      {
+	 if (pos) *pos=s;
+	 return end_shared_string(ps);
+      }
       x=xsize;
+
+      fprintf(stderr,
+	      "%05d 0x%08lx %02x %02x %02x > %02x < %02x %02x %02x "
+	      "len=%d xsize=%d sbb=%d next=0x%08lx d=0x%lx nd=0x%lx\n",
+	      ysize+1,(unsigned long)s,
+	      s[-3],s[-2],s[-1],s[0],s[1],s[2],s[3],
+	      len,xsize,sbb,
+	      (unsigned long)s+xsize+1,
+	      (unsigned long)d,
+	      (unsigned long)d+xsize);
 
       switch (*(s++))
       {
@@ -457,6 +473,319 @@ static struct pike_string *_png_unfilter(unsigned char *data,
    }
 }
 
+static int _png_write_rgb(rgb_group *w1,
+			  rgb_group *wa1,
+			  int type,int bpp,
+			  unsigned char *s,
+			  unsigned long len,
+			  unsigned long width,
+			  int n,
+			  struct neo_colortable *ct)
+{
+   /* returns 1 if interlace, 0 if not */
+   /* w1, wa1 will be freed upon error */
+
+   static rgb_group white={255,255,255};
+   static rgb_group grey4[4]={{0,0,0},{85,85,85},{170,170,170},{255,255,255}};
+   static rgb_group black={0,0,0};
+
+   rgb_group *d1=w1;
+   rgb_group *da1=wa1;
+
+   unsigned long x,mz;
+
+   /* write stuff to d1 */
+
+   switch (type)
+   {
+      case 0: /* 1,2,4,8 or 16 bit greyscale */
+	 switch (bpp)
+	 {
+	    case 1:
+	       if (n>len*8) n=len*8;
+	       x=width;
+	       while (n)
+	       {
+		  if (x) x--,*(d1++)=((*s)&128)?white:black;
+		  if (x) x--,*(d1++)=((*s)&64)?white:black;
+		  if (x) x--,*(d1++)=((*s)&32)?white:black;
+		  if (x) x--,*(d1++)=((*s)&16)?white:black;
+		  if (x) x--,*(d1++)=((*s)&8)?white:black;
+		  if (x) x--,*(d1++)=((*s)&4)?white:black;
+		  if (x) x--,*(d1++)=((*s)&2)?white:black;
+		  if (x) x--,*(d1++)=((*s)&1)?white:black;
+		  if (n<8) break;
+		  n-=8;
+		  s++;
+		  if (!x) x=width;
+	       }
+	       break;
+	    case 2:
+	       if (n>len*4) n=len*4;
+	       x=width;
+	       while (n)
+	       {
+		  if (x) x--,*(d1++)=grey4[((*s)>>6)&3];
+		  if (x) x--,*(d1++)=grey4[((*s)>>4)&3];
+		  if (x) x--,*(d1++)=grey4[((*s)>>2)&3];
+		  if (x) x--,*(d1++)=grey4[(*s)&3];
+		  if (n<4) break;
+		  n-=4;
+		  s++;
+		  if (!x) x=width;
+	       }
+	       break;
+	    case 4:
+	       if (n>len*2) n=len*2;
+	       x=width;
+	       while (n)
+	       {
+		  int q;
+		  if (x) 
+		  {
+		     x--,q=(((*s)>>4)&15)|((*s)&240);
+		  d1->r=d1->g=d1->b=q; d1++;
+		  }
+		  if (x) 
+		  {
+		     x--,q=((*s)&15)|((*s)<<4);
+		     d1->r=d1->g=d1->b=q; d1++;
+		  }
+		  if (n<2) break;
+		  n-=2;
+		  s++;
+		  if (!x) x=width;
+	       }
+	       break;
+	    case 8:
+	       if (n>len) n=len;
+	       while (n)
+	       {
+		  d1->r=d1->g=d1->b=*(s++); d1++;
+		  n--;
+	       }
+	       break;
+	    case 16:
+	       if (n>len/2) n=len/2;
+	       while (n)
+	       {
+		  d1->r=d1->g=d1->b=*(s++); d1++; s++;
+		  n--;
+	       }
+	       break;
+	    default:
+	       free(wa1); free(w1);
+	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
+		     type,bpp);
+	 }
+	 return 0; /* no alpha channel */
+
+      case 2: /* 8 or 16 bit r,g,b */
+	 switch (bpp)
+	 {
+	    case 8:
+	       if (n>len/3) n=len/3;
+	       while (n)
+	       {
+		  d1->r=*(s++);
+		  d1->g=*(s++);
+		  d1->b=*(s++);
+		  d1++;
+		  n--;
+	       }
+	       break;
+	    case 16:
+	       if (n>len/6) n=len/6;
+	       while (n)
+	       {
+		  d1->r=*(s++);
+		  d1->g=*(s++);
+		  d1->b=*(s++);
+		  d1++;
+		  s++;
+		  n--;
+	       }
+	       break;
+	    default:
+	       free(wa1); free(w1);
+	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
+		     type,bpp);
+	 }
+	 return 0; /* no alpha channel */
+
+      case 3: /* 1,2,4,8 bit palette index */
+	 if (!ct)
+	 {
+	    free(w1);
+	    free(wa1);
+	    error("Image.PNG->decode: No palette (PLTE entry), but color type (3) needs one\n");
+	 }
+	 if (ct->type!=NCT_FLAT)
+	 {
+	    free(w1);
+	    free(wa1);
+	    error("Image.PNG->decode: Internal error (created palette isn't flat)\n");
+	 }
+	 mz=ct->u.flat.numentries;
+
+#define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
+	 switch (bpp)
+	 {
+	    case 1:
+	       if (n>len*8) n=len*8;
+	       x=width;
+	       while (n)
+	       {
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
+		  s++;
+		  if (n<8) break;
+		  n-=8;
+		  if (!x) x=width;
+	       }
+	       break;
+	    case 2:
+	       if (n>len*4) n=len*4;
+	       x=width;
+	       while (n)
+	       {
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
+		  s++;
+		  if (n<4) break;
+		  n-=4;
+		  if (!x) x=width;
+	       }
+	       break;
+	    case 4:
+	       if (n>len*2) n=len*2;
+	       x=width;
+	       while (n)
+	       {
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
+		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
+		  s++;
+		  if (n<2) break;
+		  n--;
+		  if (!x) x=width;
+	       }
+	       break;
+	    case 8:
+	       if (n>len) n=len;
+	       while (n)
+	       {
+		  *(d1++)=ct->u.flat.entries[CUTPLTE(*s,mz)].color;
+		  s++;
+		  n--;
+	       }
+	       break;
+	       
+	    default:
+	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
+		     type,bpp);
+	 }
+	 return 0; /* no alpha channel */
+
+      case 4: /* 8 or 16 bit grey,a */
+	 switch (bpp)
+	 {
+	    case 8:
+	       if (n>len/3) n=len/3;
+	       while (n)
+	       {
+		  d1->r=d1->g=d1->b=*(s++);
+		  da1->r=da1->g=da1->b=*(s++);
+		  d1++;
+		  da1++;
+		  n--;
+	       }
+	       break;
+	    case 16:
+	       if (n>len/6) n=len/6;
+	       while (n)
+	       {
+		  d1->r=d1->g=d1->b=*(s++);
+		  d1++;
+		  s++;
+		  da1->r=da1->g=da1->b=*(s++);
+		  s++;
+		  da1++;
+		  n--;
+	       }
+	       break;
+	    default:
+	       free(wa1); free(w1);
+	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
+		     type,bpp);
+	 }
+	 return 1; /* alpha channel */
+
+      case 6: /* 8 or 16 bit r,g,b,a */
+	 switch (bpp)
+	 {
+	    case 8:
+	       if (n>len/3) n=len/3;
+	       while (n)
+	       {
+		  d1->r=*(s++);
+		  d1->g=*(s++);
+		  d1->b=*(s++);
+		  da1->r=da1->g=da1->b=*(s++);
+		  d1++;
+		  da1++;
+		  n--;
+	       }
+	       break;
+	    case 16:
+	       if (n>len/6) n=len/6;
+	       while (n)
+	       {
+		  d1->r=*(s++);
+		  d1->g=*(s++);
+		  d1->b=*(s++);
+		  d1++;
+		  s++;
+		  da1->r=da1->g=da1->b=*(s++);
+		  s++;
+		  da1++;
+		  n--;
+	       }
+	       break;
+	    default:
+	       free(wa1); free(w1);
+	       error("Image.PNG->_decode: Unsupported color type/bit depth %d(rgba)/%d bit.\n",
+		     type,bpp);
+	 }
+	 return 1; /* alpha channel */
+      default:
+	 free(wa1); free(w1);
+	 error("Image.PNG->_decode: Unknown color type %d (bit depth %d).\n",
+	       type,bpp);
+   }
+}
+
+struct png_interlace
+{
+   int y0,yd,x0,xd;
+};
+
+static struct png_interlace adam7[8]=
+{ {0,8,0,8},
+  {0,8,4,8},
+  {4,8,0,4},
+  {0,4,2,4},
+  {2,4,0,2},
+  {0,2,1,2},
+  {1,2,0,1} };
+
 static void image_png__decode(INT32 args)
 {
    struct array *a;
@@ -464,14 +793,10 @@ static void image_png__decode(INT32 args)
    struct neo_colortable *ct=NULL;
    rgb_group *d1,*da1,*w1,*wa1,*t1;
    struct pike_string *fs;
-   unsigned char *s;
+   unsigned char *s,*s0;
    struct image *img;
 
-   static rgb_group white={255,255,255};
-   static rgb_group grey4[4]={{0,0,0},{85,85,85},{170,170,170},{255,255,255}};
-   static rgb_group black={0,0,0};
-
-   int n=0,i,mz,x,y;
+   int n=0,i,x,y;
    struct ihdr
    {
       INT32 width,height;
@@ -638,14 +963,7 @@ static void image_png__decode(INT32 args)
    push_int(-1);
    mapping_insert(m,sp-2,sp-1);
 
-   /* not thread-safe */
-   fs=_png_unfilter((unsigned char*)fs->str,fs->len,
-		    ihdr.width,ihdr.filter,ihdr.type,ihdr.bpp,
-		    ihdr.interlace);
-   push_string(fs);
-   push_int(-1);
-   mapping_insert(m,sp-2,sp-1);
-   pop_n_elems(4);
+   pop_n_elems(2);
 
    s=(unsigned char*)fs->str;
 
@@ -660,312 +978,78 @@ static void image_png__decode(INT32 args)
       error("Image.PNG._decode: Out of memory\n");
    }
 
-   /* write stuff to d1 */
-   n=ihdr.width*ihdr.height;
-   switch (ihdr.type)
-   {
-      case 0: /* 1,2,4,8 or 16 bit greyscale */
-	 switch (ihdr.bpp)
-	 {
-	    case 1:
-	       if (n>fs->len*8) n=fs->len*8;
-	       x=ihdr.width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=((*s)&128)?white:black;
-		  if (x) x--,*(d1++)=((*s)&64)?white:black;
-		  if (x) x--,*(d1++)=((*s)&32)?white:black;
-		  if (x) x--,*(d1++)=((*s)&16)?white:black;
-		  if (x) x--,*(d1++)=((*s)&8)?white:black;
-		  if (x) x--,*(d1++)=((*s)&4)?white:black;
-		  if (x) x--,*(d1++)=((*s)&2)?white:black;
-		  if (x) x--,*(d1++)=((*s)&1)?white:black;
-		  if (n<8) break;
-		  n-=8;
-		  s++;
-		  if (!x) x=ihdr.width;
-	       }
-	       break;
-	    case 2:
-	       if (n>fs->len*4) n=fs->len*4;
-	       x=ihdr.width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=grey4[((*s)>>6)&3];
-		  if (x) x--,*(d1++)=grey4[((*s)>>4)&3];
-		  if (x) x--,*(d1++)=grey4[((*s)>>2)&3];
-		  if (x) x--,*(d1++)=grey4[(*s)&3];
-		  if (n<4) break;
-		  n-=4;
-		  s++;
-		  if (!x) x=ihdr.width;
-	       }
-	       break;
-	    case 4:
-	       if (n>fs->len*2) n=fs->len*2;
-	       x=ihdr.width;
-	       while (n)
-	       {
-		  int q;
-		  if (x) 
-		  {
-		     x--,q=(((*s)>>4)&15)|((*s)&240);
-		  d1->r=d1->g=d1->b=q; d1++;
-		  }
-		  if (x) 
-		  {
-		     x--,q=((*s)&15)|((*s)<<4);
-		     d1->r=d1->g=d1->b=q; d1++;
-		  }
-		  if (n<2) break;
-		  n-=2;
-		  s++;
-		  if (!x) x=ihdr.width;
-	       }
-	       break;
-	    case 8:
-	       if (n>fs->len) n=fs->len;
-	       while (n)
-	       {
-		  d1->r=d1->g=d1->b=*(s++); d1++;
-		  n--;
-	       }
-	       break;
-	    case 16:
-	       if (n>fs->len/2) n=fs->len/2;
-	       while (n)
-	       {
-		  d1->r=d1->g=d1->b=*(s++); d1++; s++;
-		  n--;
-	       }
-	       break;
-	    default:
-	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey)/%d bit.\n",
-		     ihdr.type,ihdr.bpp);
-	 }
-	 free(wa1); /* no alpha channel */
-	 wa1=NULL; 
-	 break;
-
-      case 2: /* 8 or 16 bit r,g,b */
-	 switch (ihdr.bpp)
-	 {
-	    case 8:
-	       if (n>fs->len/3) n=fs->len/3;
-	       while (n)
-	       {
-		  d1->r=*(s++);
-		  d1->g=*(s++);
-		  d1->b=*(s++);
-		  d1++;
-		  n--;
-	       }
-	       break;
-	    case 16:
-	       if (n>fs->len/6) n=fs->len/6;
-	       while (n)
-	       {
-		  d1->r=*(s++);
-		  d1->g=*(s++);
-		  d1->b=*(s++);
-		  d1++;
-		  s++;
-		  n--;
-	       }
-	       break;
-	    default:
-	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (rgb)/%d bit.\n",
-		     ihdr.type,ihdr.bpp);
-	 }
-	 free(wa1); /* no alpha channel */
-	 wa1=NULL;
-	 break;
-
-      case 3: /* 1,2,4,8 bit palette index */
-	 if (!ct)
-	    error("Image.PNG->decode: No palette (PLTE entry), but color type (3) needs one\n");
-	 if (ct->type!=NCT_FLAT)
-	    error("Image.PNG->decode: Internal error (created palette isn't flat)\n");
-	 mz=ct->u.flat.numentries;
-
-#define CUTPLTE(X,Z) (((X)>=(Z))?0:(X))
-	 switch (ihdr.bpp)
-	 {
-	    case 1:
-	       if (n>fs->len*8) n=fs->len*8;
-	       x=ihdr.width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>7)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>5)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>3)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>1)&1,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&1,mz)].color;
-		  s++;
-		  if (n<8) break;
-		  n-=8;
-		  if (!x) x=ihdr.width;
-	       }
-	       break;
-	    case 2:
-	       if (n>fs->len*4) n=fs->len*4;
-	       x=ihdr.width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>6)&3,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&3,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>2)&3,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&3,mz)].color;
-		  s++;
-		  if (n<4) break;
-		  n-=4;
-		  if (!x) x=ihdr.width;
-	       }
-	       break;
-	    case 4:
-	       if (n>fs->len*2) n=fs->len*2;
-	       x=ihdr.width;
-	       while (n)
-	       {
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE(((*s)>>4)&15,mz)].color;
-		  if (x) x--,*(d1++)=ct->u.flat.entries[CUTPLTE((*s)&15,mz)].color;
-		  s++;
-		  if (n<2) break;
-		  n--;
-		  if (!x) x=ihdr.width;
-	       }
-	       break;
-	    case 8:
-	       if (n>fs->len) n=fs->len;
-	       while (n)
-	       {
-		  *(d1++)=ct->u.flat.entries[CUTPLTE(*s,mz)].color;
-		  s++;
-		  n--;
-	       }
-	       break;
-	       
-	    default:
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (palette)/%d bit.\n",
-		     ihdr.type,ihdr.bpp);
-	 }
-	 free(wa1); /* no alpha channel */
-	 wa1=NULL; 
-	 break;
-
-      case 4: /* 8 or 16 bit grey,a */
-	 switch (ihdr.bpp)
-	 {
-	    case 8:
-	       if (n>fs->len/3) n=fs->len/3;
-	       while (n)
-	       {
-		  d1->r=d1->g=d1->b=*(s++);
-		  da1->r=da1->g=da1->b=*(s++);
-		  d1++;
-		  da1++;
-		  n--;
-	       }
-	       break;
-	    case 16:
-	       if (n>fs->len/6) n=fs->len/6;
-	       while (n)
-	       {
-		  d1->r=d1->g=d1->b=*(s++);
-		  d1++;
-		  s++;
-		  da1->r=da1->g=da1->b=*(s++);
-		  s++;
-		  da1++;
-		  n--;
-	       }
-	       break;
-	    default:
-	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d (grey+a)/%d bit.\n",
-		     ihdr.type,ihdr.bpp);
-	 }
-	 break;
-
-      case 6: /* 8 or 16 bit r,g,b,a */
-	 switch (ihdr.bpp)
-	 {
-	    case 8:
-	       if (n>fs->len/3) n=fs->len/3;
-	       while (n)
-	       {
-		  d1->r=*(s++);
-		  d1->g=*(s++);
-		  d1->b=*(s++);
-		  da1->r=da1->g=da1->b=*(s++);
-		  d1++;
-		  da1++;
-		  n--;
-	       }
-	       break;
-	    case 16:
-	       if (n>fs->len/6) n=fs->len/6;
-	       while (n)
-	       {
-		  d1->r=*(s++);
-		  d1->g=*(s++);
-		  d1->b=*(s++);
-		  d1++;
-		  s++;
-		  da1->r=da1->g=da1->b=*(s++);
-		  s++;
-		  da1++;
-		  n--;
-	       }
-	       break;
-	    default:
-	       free(wa1); free(w1);
-	       error("Image.PNG->_decode: Unsupported color type/bit depth %d(rgba)/%d bit.\n",
-		     ihdr.type,ihdr.bpp);
-	 }
-	 break;
-      default:
-	 free(wa1); free(w1);
-	 error("Image.PNG->_decode: Unknown color type %d (bit depth %d).\n",
-	       ihdr.type,ihdr.bpp);
-   }
-
    /* --- interlace decoding --- */
 
    switch (ihdr.interlace)
    {
       case 0: /* none */
+	 fs=_png_unfilter((unsigned char*)fs->str,fs->len,
+			  ihdr.width,ihdr.height,
+			  ihdr.filter,ihdr.type,ihdr.bpp,
+			  NULL);
+	 push_string(fs);
+	 if (!_png_write_rgb(w1,wa1,
+			     ihdr.type,ihdr.bpp,fs->str,
+			     fs->len,
+			     ihdr.width,
+			     ihdr.width*ihdr.height,
+			     ct))
+	 {
+	    free(wa1);
+	    wa1=NULL;
+	 }
+	 pop_stack();
 	 break;
 
       case 1: /* adam7 */
+
+	 /* need arena */
 	 t1=malloc(sizeof(rgb_group)*ihdr.width*ihdr.height);
 	 if (!t1)
 	 {
 	    if (wa1) free(wa1); free(w1); 
 	    error("Image.PNG->_decode: out of memory (close one)\n");
 	 }
-	 d1=w1;
-	 for (y=0;y<ihdr.height;y+=8) for (x=0;x<ihdr.width;x+=8)
-	       t1[x+y*ihdr.width]=*(d1++);
-	 for (y=0;y<ihdr.height;y+=8) for (x=4;x<ihdr.width;x+=8)
-	       t1[x+y*ihdr.width]=*(d1++);
-	 for (y=4;y<ihdr.height;y+=8) for (x=0;x<ihdr.width;x+=4)
-	       t1[x+y*ihdr.width]=*(d1++);
-	 for (y=0;y<ihdr.height;y+=8) for (x=2;x<ihdr.width;x+=4)
-	       t1[x+y*ihdr.width]=*(d1++);
-	 for (y=2;y<ihdr.height;y+=4) for (x=0;x<ihdr.width;x+=2)
-	       t1[x+y*ihdr.width]=*(d1++);
-	 for (y=0;y<ihdr.height;y+=2) for (x=1;x<ihdr.width;x+=2)
-	       t1[x+y*ihdr.width]=*(d1++);
-	 for (y=1;y<ihdr.height;y+=2) for (x=0;x<ihdr.width;x++)
-	       t1[x+y*ihdr.width]=*(d1++);
+
+	 /* loop over adam7 interlace's 
+	    and write them to the arena */
+
+	 s0=(unsigned char*)fs->str;
+	 for (i=0; i<7; i++)
+	 {
+	    struct pike_string *ds;
+
+	    ds=_png_unfilter(s0,fs->len-(s0-(unsigned char*)fs->str),
+			     (ihdr.width+adam7[i].xd-1-adam7[i].x0)/
+			     adam7[i].xd,			     
+			     (ihdr.height+adam7[i].yd-1-adam7[i].y0)/
+			     adam7[i].yd,
+			     ihdr.filter,ihdr.type,ihdr.bpp,
+			     &s0);
+
+	    push_string(ds);
+	    if (!_png_write_rgb(w1,wa1,ihdr.type,ihdr.bpp,ds->str,ds->len,
+				(ihdr.width+adam7[i].xd-1-adam7[i].x0)/
+				adam7[i].xd,
+				(ihdr.width+adam7[i].xd-1-adam7[i].x0)/
+				adam7[i].xd*
+				(ihdr.height+adam7[i].yd-1-adam7[i].y0)/
+				adam7[i].yd,
+				ct))
+	    {
+	       if (wa1) free(wa1);
+	       wa1=NULL;
+	    }
+	    d1=w1;
+	    for (y=adam7[i].y0;y<ihdr.height;y+=adam7[i].yd)
+	       for (x=adam7[i].x0;x<ihdr.width;x+=adam7[i].xd)
+		  t1[x+y*ihdr.width]=*(d1++);
+
+	    pop_stack();
+	 }
 	 
 	 free(w1);
+	 if (wa1) free(wa1);
 	 w1=t1;
 
 	 break;
@@ -973,6 +1057,8 @@ static void image_png__decode(INT32 args)
 	 free(w1); if (wa1) free(wa1);
 	 error("Image.PNG._decode: Unknown interlace type\n");
    }
+
+
    
    
    /* --- done, store in mapping --- */
