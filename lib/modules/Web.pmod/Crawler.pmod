@@ -33,7 +33,7 @@
 //! @enddl
 
 // Author:  Johan Schön.
-// $Id: Crawler.pmod,v 1.16 2003/09/11 18:44:35 nilsson Exp $
+// $Id: Crawler.pmod,v 1.17 2003/12/03 13:43:52 anders Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -846,29 +846,28 @@ class Crawler
 
     if(objectp(uri))
     {
-
-      string site = uri->host+":"+uri->port;
-      if(!_robot_excluders[site])
-      {
-	_robot_excluders[site] = RobotExcluder(uri, got_robot_excluder,
-					       headers["user-agent"],
-					       real_uri, headers);
-	return;
-      }
-
-      if (!_robot_excluders[site]->check((string)uri))
-      {
-	queue->stats->close_callback(real_uri);
-	error_cb(real_uri, 1000, headers, @args); // robots.txt said no!
-	queue->set_stage(real_uri, 6);
-	call_out(get_next_uri,0);
-	return;
-      }
-
       switch(uri->scheme)
       {
         case "http":
         case "https":
+	  string site = uri->host+":"+uri->port;
+	  if(!_robot_excluders[site])
+	  {
+	    _robot_excluders[site] = RobotExcluder(uri, got_robot_excluder,
+						   headers["user-agent"],
+						   real_uri, headers);
+	    return;
+	  }
+
+	  if (!_robot_excluders[site]->check((string)uri))
+	  {
+	    queue->stats->close_callback(real_uri);
+	    error_cb(real_uri, 1000, headers, @args); // robots.txt said no!
+	    queue->set_stage(real_uri, 6);
+	    call_out(get_next_uri,0);
+	    return;
+	  }
+
 	  HTTPFetcher(uri, real_uri, headers);
 	  break;
         default:
