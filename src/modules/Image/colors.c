@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.10 1999/04/10 02:02:01 mirar Exp $
+**!	$Id: colors.c,v 1.11 1999/04/12 14:55:48 mirar Exp $
 **! submodule color
 **!
 **!	This module keeps names and easy handling 
@@ -97,7 +97,7 @@
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: colors.c,v 1.10 1999/04/10 02:02:01 mirar Exp $");
+RCSID("$Id: colors.c,v 1.11 1999/04/12 14:55:48 mirar Exp $");
 
 #include "config.h"
 
@@ -258,13 +258,10 @@ void _img_nct_map_to_flat_cubicles(rgb_group *s,
 static void try_find_name(struct color_struct *this)
 {
    rgb_group d;
-   static struct nct_dither dith = { NCTD_NONE,NULL,NULL,NULL,NULL };
+   static struct nct_dither dith = { NCTD_NONE,NULL,NULL,NULL,NULL,-1 };
 
    if (!colors)
-   {
-      fprintf(stderr,"make colors\n");
       make_colors();
-   }
 
    if (this->name) 
       fatal("try_find_name called twice\n");
@@ -750,6 +747,13 @@ static void image_color_equal(INT32 args)
    }
    pop_stack();
    push_int(0);
+}
+
+static void image_color___hash(INT32 args)
+{
+   pop_n_elems(args);
+   push_int(((THIS->rgb.r<<16)+(THIS->rgb.g<<8)+THIS->rgb.b)
+	    +(THIS->rgbl.r+THIS->rgbl.g+THIS->rgbl.b));
 }
 
 
@@ -1422,76 +1426,55 @@ void init_image_colors(void)
 
    /* color info methods */
 
-   /* function(string:array|string) */
-  ADD_FUNCTION("cast",image_color_cast,tFunc(tStr,tOr(tArray,tStr)),/* opt */0);
-   /* function(string|int:int|function) */
-  ADD_FUNCTION("`[]",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),/* opt */0);
-   /* function(string|int:int|function) */
-  ADD_FUNCTION("`->",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),/* opt */0);
-   /* function(object|int:int) */
-  ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObj,tInt),tInt),/* opt */0);
+   ADD_FUNCTION("cast",image_color_cast,tFunc(tStr,tOr(tArray,tStr)),0);
+   ADD_FUNCTION("`[]",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
+   ADD_FUNCTION("`->",image_color_index,tFunc(tOr(tStr,tInt),tOr(tInt,tFunction)),0);
+   ADD_FUNCTION("`==",image_color_equal,tFunc(tOr(tObj,tInt),tInt),0);
+   ADD_FUNCTION("__hash",image_color___hash,tFunc(,tInt),0);
 
-   /* function(:string) */
-  ADD_FUNCTION("name",image_color_name,tFunc(,tStr),/* opt */0);
-   /* function(:string) */
-  ADD_FUNCTION("hex",image_color_hex,tFunc(,tStr),/* opt */0);
-   /* function(:string) */
-  ADD_FUNCTION("html",image_color_html,tFunc(,tStr),/* opt */0);
+   ADD_FUNCTION("name",image_color_name,tFunc(,tStr),0);
+   ADD_FUNCTION("hex",image_color_hex,tFunc(,tStr),0);
+   ADD_FUNCTION("html",image_color_html,tFunc(,tStr),0);
 
-  ADD_FUNCTION("rgb",image_color_rgb,tFunc(,tArr(tInt)),/* opt */0);
-  ADD_FUNCTION("rgbf",image_color_rgbf,tFunc(,tArr(tFlt)),/* opt */0);
-  ADD_FUNCTION("hsv",image_color_hsv,tFunc(,tArr(tInt)),/* opt */0);
-  ADD_FUNCTION("hsvf",image_color_hsvf,tFunc(,tArr(tFlt)),/* opt */0);
-  ADD_FUNCTION("cmyk",image_color_cmyk,tFunc(,tArr(tFlt)),/* opt */0);
-  ADD_FUNCTION("greylevel",image_color_greylevel,tOr(tFunc(,tInt),tFunc(tInt tInt tInt,tInt)),/* opt */0);
+   ADD_FUNCTION("rgb",image_color_rgb,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("rgbf",image_color_rgbf,tFunc(,tArr(tFlt)),0);
+   ADD_FUNCTION("hsv",image_color_hsv,tFunc(,tArr(tInt)),0);
+   ADD_FUNCTION("hsvf",image_color_hsvf,tFunc(,tArr(tFlt)),0);
+   ADD_FUNCTION("cmyk",image_color_cmyk,tFunc(,tArr(tFlt)),0);
+   ADD_FUNCTION("greylevel",image_color_greylevel,tOr(tFunc(,tInt),tFunc(tInt tInt tInt,tInt)),0);
 
    /* color conversion methods */
 
-   /* function(:object)|function(int,int,int:object) */
-  ADD_FUNCTION("grey",image_color_grey,tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),
-		/* opt */0);
+   ADD_FUNCTION("grey",image_color_grey,
+		tOr(tFunc(,tObj),tFunc(tInt tInt tInt,tObj)),0);
 
-   /* function(:object) */
-  ADD_FUNCTION("light",image_color_light,tFunc(,tObj),/* opt */0);
-   /* function(:object) */
-  ADD_FUNCTION("dark",image_color_dark,tFunc(,tObj),/* opt */0);
-   /* function(:object) */
-  ADD_FUNCTION("neon",image_color_neon,tFunc(,tObj),/* opt */0);
-   /* function(:object) */
-  ADD_FUNCTION("bright",image_color_bright,tFunc(,tObj),/* opt */0);
-   /* function(:object) */
-  ADD_FUNCTION("dull",image_color_dull,tFunc(,tObj),/* opt */0);
+   ADD_FUNCTION("light",image_color_light,tFunc(,tObj),0);
+   ADD_FUNCTION("dark",image_color_dark,tFunc(,tObj),0);
+   ADD_FUNCTION("neon",image_color_neon,tFunc(,tObj),0);
+   ADD_FUNCTION("bright",image_color_bright,tFunc(,tObj),0);
+   ADD_FUNCTION("dull",image_color_dull,tFunc(,tObj),0);
 
-   /* function(float:object) */
-  ADD_FUNCTION("`*",image_color_mult,tFunc(tFlt,tObj),/* opt */0);
-   /* function(object:object) */
-  ADD_FUNCTION("`+",image_color_add,tFunc(tObj,tObj),/* opt */0);
+   ADD_FUNCTION("`*",image_color_mult,tFunc(tFlt,tObj),0);
+   ADD_FUNCTION("`+",image_color_add,tFunc(tObj,tObj),0);
 
    image_color_program=end_program();
    
    start_new_program();
-   /* function(string:object) */
-  ADD_FUNCTION("`[]",image_get_color,tFunc(tStr,tObj),/* opt */0);
-   /* function(string|int...:object) */
-  ADD_FUNCTION("`()",image_make_color,tFuncV(,tOr(tStr,tInt),tObj),/* opt */0);
-   /* function(int,int,int:object) */
-  ADD_FUNCTION("rgb",image_make_rgb_color,tFunc(tInt tInt tInt,tObj),/* opt */0);
-   /* function(int,int,int:object)|"
-		"function(float,float,float:object) */
-  ADD_FUNCTION("hsv",image_make_hsv_color,tOr(tFunc(tInt tInt tInt,tObj),tFunc(tFlt tFlt tFlt,tObj)),/* opt */0);
-   /* function(int|float,int|float,int|float,int|float:object) */
-  ADD_FUNCTION("cmyk",image_make_cmyk_color,tFunc(tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt) tOr(tInt,tFlt),tObj),
-		/* opt */0);
-   /* function(string:object) */
-  ADD_FUNCTION("html",image_make_html_color,tFunc(tStr,tObj),/* opt */0);
-   /* function(string:object) */
-  ADD_FUNCTION("guess",image_guess_color,tFunc(tStr,tObj),/* opt */0);
-   /* function(int:object) */
-  ADD_FUNCTION("greylevel",image_make_greylevel_color,tFunc(tInt,tObj),/* opt */0);
-   /* function(:array(string)) */
-  ADD_FUNCTION("_indices",image_colors_indices,tFunc(,tArr(tStr)),/* opt */0);
-   /* function(:array(object)) */
-  ADD_FUNCTION("_values",image_colors_values,tFunc(,tArr(tObj)),/* opt */0);
+   ADD_FUNCTION("`[]",image_get_color,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("`()",image_make_color,tFuncV(,tOr(tStr,tInt),tObj),0);
+   ADD_FUNCTION("rgb",image_make_rgb_color,tFunc(tInt tInt tInt,tObj),0);
+   ADD_FUNCTION("hsv",image_make_hsv_color,
+		tOr(tFunc(tInt tInt tInt,tObj),
+		    tFunc(tFlt tFlt tFlt,tObj)) ,0);
+   ADD_FUNCTION("cmyk",image_make_cmyk_color,tFunc(tOr(tInt,tFlt) 
+						   tOr(tInt,tFlt) 
+						   tOr(tInt,tFlt) 
+						   tOr(tInt,tFlt),tObj), 0);
+   ADD_FUNCTION("html",image_make_html_color,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("guess",image_guess_color,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("greylevel",image_make_greylevel_color,tFunc(tInt,tObj),0);
+   ADD_FUNCTION("_indices",image_colors_indices,tFunc(,tArr(tStr)),0);
+   ADD_FUNCTION("_values",image_colors_values,tFunc(,tArr(tObj)),0);
 
    add_program_constant("color",image_color_program,0);
 

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.124 1999/04/12 10:30:14 per Exp $ */
+/* $Id: image.c,v 1.125 1999/04/12 14:55:52 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.124 1999/04/12 10:30:14 per Exp $
+**!	$Id: image.c,v 1.125 1999/04/12 14:55:52 mirar Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -97,7 +97,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.124 1999/04/12 10:30:14 per Exp $");
+RCSID("$Id: image.c,v 1.125 1999/04/12 14:55:52 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -3452,6 +3452,56 @@ void image_read_lsb_grey(INT32 args)
    push_string(end_shared_string(ps));
 }
 
+/*
+**! method string cast(string type)
+**!	Cast the image to another datatype. Currently supported
+**!	are string ("rgbrgbrgb...") and array (double array 
+**!	of <ref>Image.color</ref> objects).
+**! see also: Image.color,Image.X
+*/
+
+void image_cast(INT32 args)
+{
+   if (!args)
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.image->cast",1);
+   if (sp[-args].type==T_STRING||sp[-args].u.string->size_shift)
+   {
+      if (strncmp(sp[-args].u.string->str,"array",5)==0)
+      {
+	 int i,j;
+	 rgb_group *s=THIS->img;
+
+	 if (!THIS->img) error("no image\n");
+	 
+	 pop_n_elems(args);
+
+	 for (i=0; i<THIS->ysize; i++)
+	 {
+	    for (j=0; j<THIS->xsize; j++)
+	    {
+	       _image_make_rgb_color(s->r,s->g,s->b);
+	       s++;
+	    }
+	    f_aggregate(THIS->xsize);
+	 }
+	 f_aggregate(THIS->ysize);
+
+	 return;
+      }
+      if (strncmp(sp[-args].u.string->str,"string",6)==0)
+      {
+	 if (!THIS->img) error("no image\n");
+
+	 pop_n_elems(args);
+	 push_string(make_shared_binary_string((char *)THIS->img,
+					       THIS->xsize*THIS->ysize
+					       *sizeof(rgb_group)));
+	 return;
+      }
+      
+   }
+   SIMPLE_BAD_ARG_ERROR("Image.image->cast",1,"string(\"array\"|\"string\")");
+}
 
 /***************** global init etc *****************************/
 

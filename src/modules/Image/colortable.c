@@ -1,12 +1,12 @@
 #include "global.h"
 #include <config.h>
 
-/* $Id: colortable.c,v 1.62 1999/04/12 13:43:40 mirar Exp $ */
+/* $Id: colortable.c,v 1.63 1999/04/12 14:55:50 mirar Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: colortable.c,v 1.62 1999/04/12 13:43:40 mirar Exp $
+**!	$Id: colortable.c,v 1.63 1999/04/12 14:55:50 mirar Exp $
 **! class colortable
 **!
 **!	This object keeps colortable information,
@@ -21,7 +21,7 @@
 #undef COLORTABLE_DEBUG
 #undef COLORTABLE_REDUCE_DEBUG
 
-RCSID("$Id: colortable.c,v 1.62 1999/04/12 13:43:40 mirar Exp $");
+RCSID("$Id: colortable.c,v 1.63 1999/04/12 14:55:50 mirar Exp $");
 
 #include <math.h> /* fabs() */
 
@@ -2633,30 +2633,31 @@ void image_colortable_cast_to_string(struct neo_colortable *nct)
 
 void image_colortable_cast(INT32 args)
 {
-   if (!args ||
-       sp[-args].type!=T_STRING) 
-      error("Illegal argument 1 to Image.colortable->cast\n");
-
-   if (sp[-args].u.string==s_array)
+   if (!args)
+      SIMPLE_TOO_FEW_ARGS_ERROR("Image.colortable->cast",1);
+   if (sp[-args].type==T_STRING||sp[-args].u.string->size_shift)
    {
-      pop_n_elems(args);
-      image_colortable_cast_to_array(THIS);
+      if (strncmp(sp[-args].u.string->str,"array",5)==0)
+      {
+	 pop_n_elems(args);
+	 image_colortable_cast_to_array(THIS);
+	 return;
+      }
+      if (strncmp(sp[-args].u.string->str,"string",6)==0)
+      {
+	 pop_n_elems(args);
+	 image_colortable_cast_to_string(THIS);
+	 return;
+      }
+      if (strncmp(sp[-args].u.string->str,"mapping",7)==0)
+      {
+	 pop_n_elems(args);
+	 image_colortable_cast_to_mapping(THIS);
+	 return;
+      }
    }
-   else if (sp[-args].u.string==s_string)
-   {
-      pop_n_elems(args);
-      image_colortable_cast_to_string(THIS);
-   }
-   else if (sp[-args].u.string==s_mapping)
-   {
-      pop_n_elems(args);
-      image_colortable_cast_to_mapping(THIS);
-   }
-   else
-   {
-      error("Image.colortable->cast: can't cast to %s\n",
-	    sp[-args].u.string->str);
-   }
+   SIMPLE_BAD_ARG_ERROR("Image.colortable->cast",1,
+			"string(\"mapping\"|\"array\"|\"string\")");
 }
 
 /*

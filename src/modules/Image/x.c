@@ -1,4 +1,4 @@
-/* $Id: x.c,v 1.19 1998/04/24 13:50:18 mirar Exp $ */
+/* $Id: x.c,v 1.20 1999/04/12 14:55:57 mirar Exp $ */
 
 /*
 **! module Image
@@ -12,7 +12,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: x.c,v 1.19 1998/04/24 13:50:18 mirar Exp $");
+RCSID("$Id: x.c,v 1.20 1999/04/12 14:55:57 mirar Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -34,23 +34,6 @@ extern struct program *image_colortable_program;
 #endif
 #define THIS ((struct image *)(fp->current_storage))
 #define THISOBJ (fp->current_object)
-
-/*
-**! method string cast(string type)
-**! returns the image data as a string ("rgbrgbrgb...")
-**! see also: Image.colortable
-**! bugs
-**!	always casts to string...
-*/
-
-void image_cast(INT32 args)
-{
-  /* CHECK TYPE TO CAST TO HERE! FIXME FIXME FIXME! */
-  pop_n_elems(args);
-  push_string(make_shared_binary_string((char *)THIS->img,
-					THIS->xsize*THIS->ysize
-					*sizeof(rgb_group)));
-}
 
 void image_to8bit(INT32 args) /* compat function */
 {
