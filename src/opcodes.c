@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.147 2003/05/15 15:33:30 mast Exp $
+|| $Id: opcodes.c,v 1.148 2003/07/30 20:30:33 mast Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.147 2003/05/15 15:33:30 mast Exp $");
+RCSID("$Id: opcodes.c,v 1.148 2003/07/30 20:30:33 mast Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -1733,7 +1733,7 @@ CHAROPT2(								 \
 	  case 'x': base = 16; break;					 \
 	  }								 \
 									 \
-	  wide_string_to_svalue_inumber(&sval, input+eye, (void **)&t,	 \
+	  wide_string_to_svalue_inumber(&sval, input+eye, &t,		 \
 					base, field_length,		 \
 					INPUT_SHIFT);			 \
 									 \

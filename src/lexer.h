@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.45 2003/03/27 02:10:44 mast Exp $
+|| $Id: lexer.h,v 1.46 2003/07/30 20:30:33 mast Exp $
 */
 
 /*
@@ -741,7 +741,7 @@ static int low_yylex(YYSTYPE *yylval)
 
       wide_string_to_svalue_inumber(&sval,
 				    lex.pos,
-				    (void **)&p2,
+				    &p2,
 				    0,
 				    0,
 				    SHIFT);
