@@ -1,8 +1,8 @@
-/*
+n/*
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.c,v 1.333 2004/11/15 22:53:35 mast Exp $
+|| $Id: file.c,v 1.334 2004/11/30 15:29:15 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -668,25 +668,25 @@ static struct pike_string *do_read_oob(int fd,
  *!     @[not_all] isn't set and an error occurred (see below).
  *! @endul
  *!
- *! If @[not_all] is nonzero, @[read()] will not try its best to read
- *! as many bytes as you have asked for, but will merely return as
- *! much as the system read function will return. This mainly useful
- *! with stream devices which can return exactly one row or packet at
- *! a time. If @[not_all] is used in blocking mode, @[read()] will
- *! only block if there's no data at all available.
+ *! If @[not_all] is nonzero, @[read()] does not try its best to read
+ *! as many bytes as you have asked for, but merely returns as much as
+ *! the system read function returns. This mainly useful with stream
+ *! devices which can return exactly one row or packet at a time. If
+ *! @[not_all] is used in blocking mode, @[read()] only blocks if
+ *! there's no data at all available.
  *!
- *! If something goes wrong and @[not_all] is set, zero will be
- *! returned. If something goes wrong and @[not_all] is zero or left
- *! out, then either zero or a string shorter than @[len] is returned.
- *! If the problem persists then a later call to @[read()] will fail
- *! and return zero, however.
+ *! If something goes wrong and @[not_all] is set, zero is returned.
+ *! If something goes wrong and @[not_all] is zero or left out, then
+ *! either zero or a string shorter than @[len] is returned. If the
+ *! problem persists then a later call to @[read()] fails and returns
+ *! zero, however.
  *!
  *! If everything went fine, a call to @[errno()] directly afterwards
- *! will return zero. That includes an end due to end-of-file or
- *! remote close.
+ *! returns zero. That includes an end due to end-of-file or remote
+ *! close.
  *!
- *! If no arguments are given, @[read()] will read to the
- *! end of the file or stream.
+ *! If no arguments are given, @[read()] reads to the end of the file
+ *! or stream.
  *!
  *! @note
  *! It's not necessary to set @[not_all] to avoid blocking reading
@@ -694,9 +694,9 @@ static struct pike_string *do_read_oob(int fd,
  *!
  *! @note
  *! When at the end of a file or stream, repeated calls to @[read()]
- *! will return the empty string since it's not considered an error.
- *! The empty string is never returned in other cases, unless
- *! nonblocking mode is used or @[len] is zero.
+ *! returns the empty string since it's not considered an error. The
+ *! empty string is never returned in other cases, unless nonblocking
+ *! mode is used or @[len] is zero.
  *!
  *! @seealso
  *!   @[read_oob()], @[write()]
@@ -868,20 +868,20 @@ static void file_peek(INT32 args)
  *!     @[not_all] isn't set and an error occurred (see below).
  *! @endul
  *!
- *! If @[not_all] is nonzero, @[read_oob()] will only return as many
- *! bytes of out-of-band data as are currently available.
+ *! If @[not_all] is nonzero, @[read_oob()] only returns as many bytes
+ *! of out-of-band data as are currently available.
  *!
- *! If something goes wrong and @[not_all] is set, zero will be
- *! returned. If something goes wrong and @[not_all] is zero or left
- *! out, then either zero or a string shorter than @[len] is returned.
- *! If the problem persists then a later call to @[read_oob()] will
- *! fail and return zero, however.
+ *! If something goes wrong and @[not_all] is set, zero is returned.
+ *! If something goes wrong and @[not_all] is zero or left out, then
+ *! either zero or a string shorter than @[len] is returned. If the
+ *! problem persists then a later call to @[read_oob()] fails and
+ *! returns zero, however.
  *!
  *! If everything went fine, a call to @[errno()] directly afterwards
- *! will return zero. That includes an end due to remote close.
+ *! returns zero. That includes an end due to remote close.
  *!
- *! If no arguments are given, @[read_oob()] will read to the end of
- *! the stream.
+ *! If no arguments are given, @[read_oob()] reads to the end of the
+ *! stream.
  *!
  *! @note
  *!   Out-of-band data was not be supported on Pike 0.5 and earlier,
@@ -889,9 +889,9 @@ static void file_peek(INT32 args)
  *!   option @tt{'--without-oob'@}.
  *!
  *! @note
- *!   It is not guaranteed that all out-of-band data sent from the other end
- *!   will be received. Most streams only allow for a single byte of
- *!   out-of-band data at a time.
+ *!   It is not guaranteed that all out-of-band data sent from the
+ *!   other end is received. Most streams only allow for a single byte
+ *!   of out-of-band data at a time.
  *!
  *! @note
  *! It's not necessary to set @[not_all] to avoid blocking reading
@@ -899,9 +899,9 @@ static void file_peek(INT32 args)
  *!
  *! @note
  *! When at the end of a file or stream, repeated calls to @[read()]
- *! will return the empty string since it's not considered an error.
- *! The empty string is never returned in other cases, unless
- *! nonblocking mode is used or @[len] is zero.
+ *! returns the empty string since it's not considered an error. The
+ *! empty string is never returned in other cases, unless nonblocking
+ *! mode is used or @[len] is zero.
  *!
  *! @seealso
  *!   @[read()], @[write_oob()]
@@ -1035,16 +1035,16 @@ static void file__disable_callbacks(INT32 args)
  *!
  *! -1 is returned if something went wrong and no bytes were written.
  *! If only some data was written due to an error and that error
- *! persists, then a later call to @[write()] will fail and return -1.
+ *! persists, then a later call to @[write()] fails and returns -1.
  *!
  *! If everything went fine, a call to @[errno()] directly afterwards
- *! will return zero.
+ *! returns zero.
  *!
- *! If @[data] is an array of strings, they will be written sequence.
+ *! If @[data] is an array of strings, they are written in sequence.
  *!
- *! If more than one argument is given, @[sprintf()] will be used to
- *! format them using @[format]. If @[format] is an array, the strings
- *! in it are concatenated and the result is used as format string.
+ *! If more than one argument is given, @[sprintf()] is used to format
+ *! them using @[format]. If @[format] is an array, the strings in it
+ *! are concatenated and the result is used as format string.
  *!
  *! @note
  *!   Writing of wide strings is not supported. You have to encode the
@@ -1277,13 +1277,14 @@ static void file_write(INT32 args)
  *!
  *! -1 is returned if something went wrong and no bytes were written.
  *! If only some data was written due to an error and that error
- *! persists, then a later call to @[write_oob()] will fail and return -1.
+ *! persists, then a later call to @[write_oob()] fails and returns
+ *! -1.
  *!
  *! If everything went fine, a call to @[errno()] directly afterwards
- *! will return zero.
+ *! returns zero.
  *!
- *! If more than one argument is given, @[sprintf()] will be
- *! used to format them.
+ *! If more than one argument is given, @[sprintf()] is used to format
+ *! them.
  *!
  *! @note
  *!   Out-of-band data was not be supported on Pike 0.5 and earlier,
@@ -1291,10 +1292,10 @@ static void file_write(INT32 args)
  *!   option @tt{'--without-oob'@}.
  *!
  *! @note
- *!   It is not guaranteed that all out-of-band data sent from the other end
- *!   will be received. Most streams only allow for a single byte of
- *!   out-of-band data at a time. Some streams will send the rest of the data
- *!   as ordinary data.
+ *!   It is not guaranteed that all out-of-band data sent from the
+ *!   other end is received. Most streams only allow for a single byte
+ *!   of out-of-band data at a time. Some streams sends the rest of
+ *!   the data as ordinary data.
  *!
  *! @seealso
  *!   @[read_oob()], @[write()]
@@ -1490,8 +1491,9 @@ static void file_grantpt( INT32 args )
  *!
  *! Close a file or stream.
  *!
- *! If direction is not specified, both the read and the write direction
- *! will be closed. Otherwise only the directions specified will be closed.
+ *! If direction is not specified, both the read and the write
+ *! direction is closed. Otherwise only the directions specified is
+ *! closed.
  *!
  *! @returns
  *! Nonzero is returned if the file or stream wasn't open in the
@@ -1547,9 +1549,8 @@ static void file_close(INT32 args)
  *! is given instead, it should be the file descriptor for an already
  *! opened file, which will then be used by this object.
  *!
- *! @[mode] describes how the file will be opened. It's a
- *! case-insensitive string consisting of one or more of the following
- *! letters:
+ *! @[mode] describes how the file is opened. It's a case-insensitive
+ *! string consisting of one or more of the following letters:
  *!
  *! @dl
  *!   @item "r"
@@ -1564,9 +1565,9 @@ static void file_close(INT32 args)
  *!     Truncate the file to zero length if it already contains data.
  *!     Use only together with @expr{"w"@}.
  *!   @item "x"
- *!     Open exclusively - the open will fail if the file already
- *!     exists. Use only together with @expr{"c"@}. Note that it's not
- *!     safe to assume that this is atomic on some systems.
+ *!     Open exclusively - the open fails if the file already exists.
+ *!     Use only together with @expr{"c"@}. Note that it's not safe to
+ *!     assume that this is atomic on some systems.
  *! @enddl
  *!
  *! @[access] specifies the permissions to use if a new file is
@@ -1594,7 +1595,7 @@ static void file_close(INT32 args)
  *! @enddl
  *!
  *! It's system dependent on which of these bits that are actually
- *! heeded. If @[access] is not specified, it will default to
+ *! heeded. If @[access] is not specified, it defaults to
  *! @expr{00666@}, but note that on UNIX systems it's masked with the
  *! process umask before use.
  *!
@@ -1866,11 +1867,11 @@ void file_sync(INT32 args)
  *!
  *! Seek to a specified offset in a file.
  *!
- *! If @[mult] or @[add] are specified, @[pos] will be calculated as
+ *! If @[mult] or @[add] are specified, @[pos] is calculated as
  *! @expr{@[pos] = @[unit]*@[mult] + @[add]@}.
  *!
- *! If @[pos] is negative it will be relative to the start of the file,
- *! otherwise it will be an absolute offset from the start of the file.
+ *! If @[pos] is negative then it is relative to the end of the file,
+ *! otherwise it's an absolute offset from the start of the file.
  *!
  *! @returns
  *!   Returns the new offset, or @expr{-1@} on failure.
@@ -2027,10 +2028,10 @@ static void file_truncate(INT32 args)
  *!
  *! Get status for an open file.
  *!
- *! This function returns the same information as the function @[file_stat()],
- *! but for the file it is called in. If file is not an open file, @expr{0@}
- *! (zero) will be returned. Zero is also returned if file is a pipe or
- *! socket.
+ *! This function returns the same information as the function
+ *! @[file_stat()], but for the file it is called in. If file is not
+ *! an open file, @expr{0@} (zero) is returned. Zero is also returned
+ *! if file is a pipe or socket.
  *!
  *! @returns
  *!   See @[file_stat()] for a description of the return value.
@@ -2821,7 +2822,7 @@ static void low_dup(struct object *toob,
  *!
  *! @note
  *!   In Pike 7.7 and later @[to] need not be open, in which
- *!   case a new fd will be allocated.
+ *!   case a new fd is allocated.
  *!
  *! @seealso
  *!   @[assign()], @[dup()]
@@ -3201,9 +3202,9 @@ static void file_connect(INT32 args)
  *! Get address and port of a socket end-point.
  *!
  *! @param local
- *!   If the argument @[local] is not specified, or is @expr{0@} (zero),
- *!   the remote end-point will be returned. Otherwise, if @[local] is
- *!   @expr{1@}, the local end-point will be returned.
+ *!   If the argument @[local] is not specified, or is @expr{0@}
+ *!   (zero), the remote end-point is returned. Otherwise, if @[local]
+ *!   is @expr{1@}, the local end-point is returned.
  *!
  *! @returns
  *!   This function returns the address and port of a socket end-point
@@ -3211,7 +3212,7 @@ static void file_connect(INT32 args)
  *!   @expr{"x:x:x:x:x:x:x:x port"@} (IPv6).
  *!
  *!   If this file is not a socket, is not connected, or some other
- *!   error occurrs, @expr{0@} (zero) will be returned.
+ *!   error occurrs, @expr{0@} (zero) is returned.
  *!
  *! @seealso
  *!   @[connect()]
@@ -3261,7 +3262,7 @@ static void file_query_address(INT32 args)
  *!
  *! Write some data to a file.
  *!
- *! If @[data] is not a string, it will be casted to string, and then
+ *! If @[data] is not a string, it is casted to string, and then
  *! written to the file.
  *!
  *! @note
