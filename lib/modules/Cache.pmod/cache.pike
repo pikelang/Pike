@@ -2,7 +2,7 @@
  * A generic cache front-end
  * by Francesco Chemolli <kinkie@roxen.com>
  *
- * $Id: cache.pike,v 1.6 2002/01/15 22:31:23 nilsson Exp $
+ * $Id: cache.pike,v 1.7 2002/02/14 17:23:12 nilsson Exp $
  *
  * This module serves as a front-end to different kinds of caching system
  * It uses two helper objects to actually store data, and to determine
@@ -31,7 +31,7 @@ static object(Cache.Policy.Base) policy;
 mixed lookup(string key) {
   if (!stringp(key)) key=(string)key; // paranoia.
   object(Cache.Data) tmp=storage->get(key);
-  return (tmp?tmp->data():([])["zero"]);
+  return (tmp?tmp->data():UNDEFINED);
 }
 
 //structure: "key" -> (< ({function,args,0|timeout_call_out_id}) ...>)
@@ -41,7 +41,7 @@ mixed lookup(string key) {
 private mapping (string:multiset(array)) pending_requests=([]);
 
 private void got_results(string key, int|Cache.Data value) {
-  mixed data=([])[0]; //undef
+  mixed data=UNDEFINED;
   if (pending_requests[key]) {
     if (value) {
       data=value->data();
@@ -103,7 +103,7 @@ void alookup(string key,
 void store(string key, mixed value, void|int max_life,
             void|float preciousness, void|multiset(string) dependants ) {
   if (!stringp(key)) key=(string)key; // paranoia
-  multiset(string) rd=([])[0];  // real-dependants, after string-check
+  multiset(string) rd=UNDEFINED;  // real-dependants, after string-check
   if (dependants) {
     rd=(<>);
     foreach((array)dependants,mixed d) {
