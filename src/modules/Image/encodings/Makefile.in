@@ -1,6 +1,8 @@
 SRCDIR=@srcdir@
 VPATH=@srcdir@:@srcdir@/../../..:../../..
-GIF_OBJS = gif.o gif_lzw.o
+GIF_OBJS = gif.o gif_lzw.o png.o
+JPEG_OBJS = jpeg.o
+PNG_OBJS = png.o
 PNM_OBJS = pnm.o 
 OBJS=gif.a pnm.a
 
@@ -18,6 +20,14 @@ all: $(OBJS)
 gif.a : $(GIF_OBJS)
 	rm -f gif.a
 	$(AR) cq gif.a $(GIF_OBJS)
+
+png.a : $(PNG_OBJS)
+	rm -f png.a
+	$(AR) cq png.a $(PNG_OBJS)
+
+jpeg.a : $(JPEG_OBJS)
+	rm -f jpeg.a
+	$(AR) cq jpeg.a $(JPEG_OBJS)
 
 pnm.a : $(PNM_OBJS)
 	rm -f pnm.a
