@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.277 1999/04/25 18:58:54 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.278 1999/04/25 21:06:39 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -917,6 +917,21 @@ const int foo(int bar) { return bar; }
   else
     :
   fi
+fi
+
+AC_MSG_CHECKING(if we can cast void * to a function pointer)
+AC_CACHE_VAL(pike_cv_function_cast, [
+  AC_TRY_COMPILE([
+    void *foo = 0;
+  ],[
+    void (*bar)(void) = (void (*)(void)) foo;
+  ],[ pike_cv_function_cast="yes" ], [ pike_cv_function_cast="no" ])
+])
+if test "$pike_cv_function_cast" = "yes"; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+  AC_DEFINE(NO_CAST_TO_FUN)
 fi
 
 #############################################################################
