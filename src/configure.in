@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.812 2004/03/10 17:11:18 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.813 2004/03/10 22:29:13 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -121,11 +121,11 @@ SHELL=/bin/sh -n
 false:
 	/bin/false
 true:
-	/bin/true
+	:
 complex_false:
 	test "foo" = "foo" && /bin/false
 complex_true:
-	test "foo" = "bar" || /bin/true
+	test "foo" = "bar" || :
 EOF
     if ${MAKE-make} -f conftestmake false >&AC_FD_CC 2>&AC_FD_CC; then
       # /bin/sh was found, and /bin/false was not executed.
