@@ -4,7 +4,7 @@
 //! handle that the user can drag to change the ratio. This widgets
 //! makes a vertical division
 //!
-//!@code{ GTK.Vpaned()->add1(GTK.Label("Top Side Of Pane"))->add2(GTK.Label("Bottom"))->set_usize(100,100)@}
+//!@expr{ GTK.Vpaned()->add1(GTK.Label("Top Side Of Pane"))->add2(GTK.Label("Bottom"))->set_usize(100,100)@}
 //!@xml{<image>../images/gtk_vpaned.png</image>@}
 //!
 //!

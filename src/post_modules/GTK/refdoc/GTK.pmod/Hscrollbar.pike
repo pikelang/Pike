@@ -1,6 +1,6 @@
 //! A horizontal scrollbar.
 //! General documentation: See W(Scrollbar)
-//!@code{ GTK.Hscrollbar(GTK.Adjustment())->set_usize(300,15)@}
+//!@expr{ GTK.Hscrollbar(GTK.Adjustment())->set_usize(300,15)@}
 //!@xml{<image>../images/gtk_hscrollbar.png</image>@}
 //!
 //!

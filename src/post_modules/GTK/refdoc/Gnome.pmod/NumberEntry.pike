@@ -2,7 +2,7 @@
 //!  to do any validation on the valid number ranges, but provides a
 //!  button that will let the user bring up a calculator to fill in the
 //!  value of the entry widget.
-//!@code{ Gnome.NumberEntry("", "Select a number...");@}
+//!@expr{ Gnome.NumberEntry("", "Select a number...");@}
 //!@xml{<image>../images/gnome_numberentry.png</image>@}
 //!
 //!

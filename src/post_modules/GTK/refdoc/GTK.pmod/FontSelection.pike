@@ -1,4 +1,4 @@
-//!@code{ GTK.FontSelection()@}
+//!@expr{ GTK.FontSelection()@}
 //!@xml{<image>../images/gtk_fontselection.png</image>@}
 //!
 //!

@@ -18,7 +18,7 @@
 //! can be hidden using hide_fileop_buttons() and shown again using
 //! show_fileop_buttons().
 //! 
-//!@code{ GTK.FileSelection("File selector")@}
+//!@expr{ GTK.FileSelection("File selector")@}
 //!@xml{<image>../images/gtk_fileselection.png</image>@}
 //!
 //! 

@@ -1,5 +1,5 @@
 //! General documentation: See W(Scrollbar)
-//!@code{ GTK.Vscrollbar(GTK.Adjustment())->set_usize(15,60)@}
+//!@expr{ GTK.Vscrollbar(GTK.Adjustment())->set_usize(15,60)@}
 //!@xml{<image>../images/gtk_vscrollbar.png</image>@}
 //!
 //!

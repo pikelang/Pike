@@ -1,6 +1,6 @@
 //! The contents of a handle box can be 'dragged' out of the box by the user.
 //! The contents will then be placed in a separate window.
-//!@code{ GTK.HandleBox()->add(GTK.Label("The contents"))@}
+//!@expr{ GTK.HandleBox()->add(GTK.Label("The contents"))@}
 //!@xml{<image>../images/gtk_handlebox.png</image>@}
 //!
 //!

@@ -4,10 +4,10 @@
 //! again, they will pop back up. Click again, and they will pop back
 //! down.
 //! 
-//!@code{ GTK.ToggleButton("Toggle button")@}
+//!@expr{ GTK.ToggleButton("Toggle button")@}
 //!@xml{<image>../images/gtk_togglebutton.png</image>@}
 //!
-//!@code{ GTK.ToggleButton("Toggle button")->set_active( 1 )@}
+//!@expr{ GTK.ToggleButton("Toggle button")->set_active( 1 )@}
 //!@xml{<image>../images/gtk_togglebutton_2.png</image>@}
 //!
 //! 

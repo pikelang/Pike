@@ -3,16 +3,16 @@
 //! window, and it will be accessible regardless of the size by using
 //! the scrollbars.
 //! 
-//!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(100,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
+//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(100,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
 //!@xml{<image>../images/gtk_scrolledwindow.png</image>@}
 //!
-//!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(70,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
+//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(70,80)->set_policy(GTK.POLICY_AUTOMATIC,GTK.POLICY_AUTOMATIC)@}
 //!@xml{<image>../images/gtk_scrolledwindow_2.png</image>@}
 //!
-//!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(80,80)@}
+//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A small label"))->set_usize(80,80)@}
 //!@xml{<image>../images/gtk_scrolledwindow_3.png</image>@}
 //!
-//!@code{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A very huge label")->set_usize(700,700))->set_usize(80,80)@}
+//!@expr{ GTK.ScrolledWindow(GTK.Adjustment(),GTK.Adjustment())->add(GTK.Label("A very huge label")->set_usize(700,700))->set_usize(80,80)@}
 //!@xml{<image>../images/gtk_scrolledwindow_4.png</image>@}
 //!
 //! 

@@ -4,13 +4,13 @@
 //! providing a filename) or by loading it from an open file data
 //! stream or from the output of a Unix command.
 //!
-//!@code{ Gnome.Less()->show_string("Example string\nshown in this\nwidget")@}
+//!@expr{ Gnome.Less()->show_string("Example string\nshown in this\nwidget")@}
 //!@xml{<image>../images/gnome_less.png</image>@}
 //!
-//!@code{ Gnome.Less()->show_file("/usr/dict/words" );@}
+//!@expr{ Gnome.Less()->show_file("/usr/dict/words" );@}
 //!@xml{<image>../images/gnome_less_2.png</image>@}
 //!
-//!@code{ Gnome.Less()->show_command( "psrinfo -v" )@}
+//!@expr{ Gnome.Less()->show_command( "psrinfo -v" )@}
 //!@xml{<image>../images/gnome_less_3.png</image>@}
 //!
 //! 

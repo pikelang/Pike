@@ -64,6 +64,28 @@ GTK.GladeXML signal_autoconnect( mapping callbacks, mixed data );
 //! Try to connect functions to all signals in the interface. The
 //! mapping should consist of handler name : function pairs. The
 //! data argument will be saved and sent as the first argument to all
-//! callback functions.
+//! callback functions. 
+//!
+//!
+
+GTK.GladeXML signal_autoconnect_new( mapping callbacks, mixed data );
+//! Try to connect functions to all signals in the interface. The
+//! mapping should consist of handler name : function pairs. 
+//! This function differs from the signal_connect function in how it
+//! calls the callback function.
+//!
+//! 
+//!
+//! 
+//! The old interface:
+//! @pre{
+//!   void signal_handler( mixed data, GTK.Object object,
+//!                        mixed ... signal_arguments )
+//! @}
+//! The new interface:
+//! @pre{
+//!   void signal_handler( mixed ... signal_arguments,
+//!                        mixed data, GTK.Object object )
+//! @}
 //!
 //!

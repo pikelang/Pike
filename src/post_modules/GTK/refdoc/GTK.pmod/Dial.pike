@@ -1,10 +1,10 @@
 //! This widget provides an analog dial widget, similar to, for
 //! example, a physical volume control on a stereo. Dial values can be
 //! changable or read-only for value reporting.
-//!@code{ GTK.Dial( GTK.Adjustment() );@}
+//!@expr{ GTK.Dial( GTK.Adjustment() );@}
 //!@xml{<image>../images/gtk_dial.png</image>@}
 //!
-//!@code{ GTK.Dial( GTK.Adjustment(10.0) )->set_percentage(0.4);@}
+//!@expr{ GTK.Dial( GTK.Adjustment(10.0) )->set_percentage(0.4);@}
 //!@xml{<image>../images/gtk_dial_2.png</image>@}
 //!
 //!

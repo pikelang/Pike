@@ -3,7 +3,7 @@
 //! being buttons with text inside them, they are small squares with
 //! the text to the right of them. These are often used for toggling
 //! options on and off in applications.
-//!@code{ GTK.Check_button( "title" )@}
+//!@expr{ GTK.Check_button( "title" )@}
 //!@xml{<image>../images/gtk_checkbutton.png</image>@}
 //!
 //!

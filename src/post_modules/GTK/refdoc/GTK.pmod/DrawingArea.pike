@@ -2,7 +2,7 @@
 //! Please note that you @b{must@} handle refresh and resize events
 //! on your own. Use W(pDrawingArea) for a drawingarea with automatic
 //! refresh/resize handling.
-//!@code{ GTK.DrawingArea()->set_usize(100,100)@}
+//!@expr{ GTK.DrawingArea()->set_usize(100,100)@}
 //!@xml{<image>../images/gtk_drawingarea.png</image>@}
 //!
 //!

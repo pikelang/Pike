@@ -1,12 +1,12 @@
 //! A container that can only contain one child, and accepts events.
 //! draws a bevelbox around itself.
-//!@code{ GTK.Button("A button")@}
+//!@expr{ GTK.Button("A button")@}
 //!@xml{<image>../images/gtk_button.png</image>@}
 //!
-//!@code{ GTK.Button("A button\nwith multiple lines\nof text")@}
+//!@expr{ GTK.Button("A button\nwith multiple lines\nof text")@}
 //!@xml{<image>../images/gtk_button_2.png</image>@}
 //!
-//!@code{ GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.image(100,40)->test())))@}
+//!@expr{ GTK.Button()->add(GTK.Image(GDK.Image(0)->set(Image.image(100,40)->test())))@}
 //!@xml{<image>../images/gtk_button_3.png</image>@}
 //!
 //!

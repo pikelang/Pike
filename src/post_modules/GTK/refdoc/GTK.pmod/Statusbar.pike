@@ -9,10 +9,10 @@
 //! context it is in. Messages are stacked in last-in-first-out order,
 //! not context identifier order.
 //!  
-//!@code{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");return sb;}()@}
+//!@expr{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");return sb;}()@}
 //!@xml{<image>../images/gtk_statusbar.png</image>@}
 //!
-//!@code{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");sb->pop(id);return sb;}()@}
+//!@expr{ lambda() {object sb = GTK.Statusbar();int id = sb->get_context_id("test");sb->push(id,"A message");sb->push(id,"Another message");sb->pop(id);return sb;}()@}
 //!@xml{<image>../images/gtk_statusbar_2.png</image>@}
 //!
 //! 

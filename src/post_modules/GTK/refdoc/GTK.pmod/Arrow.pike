@@ -1,15 +1,15 @@
 //! An arrow pointing in one of four directions. The 'etched' shadow
 //! types does not work.
-//!@code{ GTK.Arrow(GTK.ARROW_UP, GTK.SHADOW_OUT)@}
+//!@expr{ GTK.Arrow(GTK.ARROW_UP, GTK.SHADOW_OUT)@}
 //!@xml{<image>../images/gtk_arrow.png</image>@}
 //!
-//!@code{ GTK.Arrow(GTK.ARROW_LEFT, GTK.SHADOW_IN)@}
+//!@expr{ GTK.Arrow(GTK.ARROW_LEFT, GTK.SHADOW_IN)@}
 //!@xml{<image>../images/gtk_arrow_2.png</image>@}
 //!
-//!@code{ GTK.Arrow(GTK.ARROW_RIGHT, GTK.SHADOW_IN)@}
+//!@expr{ GTK.Arrow(GTK.ARROW_RIGHT, GTK.SHADOW_IN)@}
 //!@xml{<image>../images/gtk_arrow_3.png</image>@}
 //!
-//!@code{ GTK.Arrow(GTK.ARROW_DOWN, GTK.SHADOW_OUT)@}
+//!@expr{ GTK.Arrow(GTK.ARROW_DOWN, GTK.SHADOW_OUT)@}
 //!@xml{<image>../images/gtk_arrow_4.png</image>@}
 //!
 //!

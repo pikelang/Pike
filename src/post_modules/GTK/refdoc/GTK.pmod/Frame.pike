@@ -5,13 +5,13 @@
 //! 
 //! Used to visually group objects.
 //! 
-//!@code{ GTK.Frame("Title")->add(GTK.Label("Contents"))@}
+//!@expr{ GTK.Frame("Title")->add(GTK.Label("Contents"))@}
 //!@xml{<image>../images/gtk_frame.png</image>@}
 //!
-//!@code{ GTK.Frame()->add(GTK.Label("Contents"))@}
+//!@expr{ GTK.Frame()->add(GTK.Label("Contents"))@}
 //!@xml{<image>../images/gtk_frame_2.png</image>@}
 //!
-//!@code{ GTK.Frame()->add(GTK.Label("Contents"))->set_shadow_type(GTK.SHADOW_IN)@}
+//!@expr{ GTK.Frame()->add(GTK.Label("Contents"))->set_shadow_type(GTK.SHADOW_IN)@}
 //!@xml{<image>../images/gtk_frame_3.png</image>@}
 //!
 //! 

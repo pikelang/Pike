@@ -9,7 +9,7 @@
 //! places shown can be set using the parent W(Scale) class's
 //! functions.
 //! 
-//!@code{ GTK.Hscale(GTK.Adjustment())->set_usize(300,30)@}
+//!@expr{ GTK.Hscale(GTK.Adjustment())->set_usize(300,30)@}
 //!@xml{<image>../images/gtk_hscale.png</image>@}
 //!
 //!

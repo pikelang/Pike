@@ -18,7 +18,7 @@
 //! user, by using the 'Reset Filter' button or changing the options on
 //! the 'Filter' page of the dialog.
 //! @}
-//!@code{ GTK.FontSelectionDialog("Select a font")@}
+//!@expr{ GTK.FontSelectionDialog("Select a font")@}
 //!@xml{<image>../images/gtk_fontselectiondialog.png</image>@}
 //!
 //!

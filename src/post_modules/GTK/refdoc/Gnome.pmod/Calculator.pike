@@ -4,7 +4,7 @@
 //! The widget consists of a fully functional calculator including
 //! standard arithmetic functions as well as trigonometric
 //! capabilities, exponents, factorials, nested equations, and others.
-//!@code{ Gnome.Calculator()@}
+//!@expr{ Gnome.Calculator()@}
 //!@xml{<image>../images/gnome_calculator.png</image>@}
 //!
 //! 

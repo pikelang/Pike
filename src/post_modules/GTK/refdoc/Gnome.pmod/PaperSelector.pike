@@ -1,4 +1,4 @@
-//!@code{ Gnome.PaperSelector()@}
+//!@expr{ Gnome.PaperSelector()@}
 //!@xml{<image>../images/gnome_paperselector.png</image>@}
 //!
 //!

@@ -2,7 +2,7 @@
 //! The menu image cannot be
 //! grabbed automatically, but this is how you would create a menu all
 //! in one line. This is not the recommended coding style.
-//!@code{ GTK.MenuBar()->add(GTK.Menu_item("Menu")->set_submenu(GTK.Menu()->add(GTK.Menu_item("Sub")))->select()->activate())->add(GTK.Menu_item("Bar"))@}
+//!@expr{ GTK.MenuBar()->add(GTK.Menu_item("Menu")->set_submenu(GTK.Menu()->add(GTK.Menu_item("Sub")))->select()->activate())->add(GTK.Menu_item("Bar"))@}
 //!@xml{<image>../images/gtk_menubar.png</image>@}
 //!
 //! 

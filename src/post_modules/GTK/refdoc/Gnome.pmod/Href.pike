@@ -1,10 +1,10 @@
 //! This widget is a GtkButton button that contains a URL. When clicked
 //! it invokes the configured browser for the URL you provided.
 //! 
-//!@code{ Gnome.Href( "http://www.gnome.org", "GNOME Web Site" )@}
+//!@expr{ Gnome.Href( "http://www.gnome.org", "GNOME Web Site" )@}
 //!@xml{<image>../images/gnome_href.png</image>@}
 //!
-//!@code{ Gnome.Href( "http://www.gnome.org" )@}
+//!@expr{ Gnome.Href( "http://www.gnome.org" )@}
 //!@xml{<image>../images/gnome_href_2.png</image>@}
 //!
 //! 

@@ -6,7 +6,7 @@
 //! The widget may be used as display for oscilloscopes or other
 //! applications that need to display fast changes in their data.
 //! 
-//!@code{   GTK.Databox x=GTK.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK.Color(Image.Color.red), GTK.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;@}
+//!@expr{   GTK.Databox x=GTK.Databox(); x->data_add_x_y(3, ({ 1.0, 0.5, 0.0 }), ({1.0, -1.0, 0.0}),GDK.Color(Image.Color.red), GTK.DataboxLines,2); x->rescale(); x->set_usize(300,300); return x;@}
 //!@xml{<image>../images/gtk_databox.png</image>@}
 //!
 //!

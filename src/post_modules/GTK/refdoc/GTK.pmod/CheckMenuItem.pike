@@ -1,9 +1,9 @@
 //! A check menu item is more or less identical to a check button, but it
 //! should be used in menus.
-//!@code{ GTK.CheckMenuItem("Hi there")@}
+//!@expr{ GTK.CheckMenuItem("Hi there")@}
 //!@xml{<image>../images/gtk_checkmenuitem.png</image>@}
 //!
-//!@code{ GTK.CheckMenuItem("Hi there")->set_active(1)@}
+//!@expr{ GTK.CheckMenuItem("Hi there")->set_active(1)@}
 //!@xml{<image>../images/gtk_checkmenuitem_2.png</image>@}
 //!
 //!

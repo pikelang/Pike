@@ -20,7 +20,7 @@
 //!     inputd-&gt;show();
 //! }
 //! @}
-//!@code{ GTK.InputDialog()@}
+//!@expr{ GTK.InputDialog()@}
 //!@xml{<image>../images/gtk_inputdialog.png</image>@}
 //!
 //!

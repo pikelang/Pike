@@ -2,7 +2,7 @@
 //! and a button which can pop up a file selector dialog box
 //! W(GtkFileSelection). It also accepts DND drops from the filemanager
 //! and other sources.
-//!@code{ Gnome.FileEntry("","")@}
+//!@expr{ Gnome.FileEntry("","")@}
 //!@xml{<image>../images/gnome_fileentry.png</image>@}
 //!
 //!

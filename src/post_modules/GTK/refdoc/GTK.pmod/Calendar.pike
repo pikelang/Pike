@@ -1,8 +1,8 @@
 //! A calendar widget.
-//!@code{ GTK.Calendar();@}
+//!@expr{ GTK.Calendar();@}
 //!@xml{<image>../images/gtk_calendar.png</image>@}
 //!
-//!@code{ GTK.Calendar()->select_day( 16 );@}
+//!@expr{ GTK.Calendar()->select_day( 16 );@}
 //!@xml{<image>../images/gtk_calendar_2.png</image>@}
 //!
 //!

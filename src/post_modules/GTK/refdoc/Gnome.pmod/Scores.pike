@@ -1,7 +1,7 @@
 //! This is a high-scores dialog box. The GNOME libraries also handle
 //! loading/saving systemwide high scores in a secure way.
 //! 
-//!@code{ Gnome.Scores( 17, ({ "per" })*17, map((array(float))indices(allocate(17)),`*,42), map(indices(allocate(17)), `*, 10 ), 1 )@}
+//!@expr{ Gnome.Scores( 17, ({ "per" })*17, map((array(float))indices(allocate(17)),`*,42), map(indices(allocate(17)), `*, 10 ), 1 )@}
 //!@xml{<image>../images/gnome_scores.png</image>@}
 //!
 //! 

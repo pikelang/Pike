@@ -8,7 +8,7 @@
 //! The combo box has two principal parts that you as the programmer
 //! really care about: The W(entry) and the W(list).
 //! 
-//!@code{ GTK.Combo()@}
+//!@expr{ GTK.Combo()@}
 //!@xml{<image>../images/gtk_combo.png</image>@}
 //!
 //!

@@ -722,6 +722,11 @@ GTK.Widget set_state( int state );
 //!
 //!
 
+GTK.Widget set_style( GTK.Style cf );
+//! Set the style to be associated with this widget
+//!
+//!
+
 GTK.Widget set_uposition( int xpos, int ypos );
 //! Set the absolute coordinates of the widget relative to it's parent.
 //!
@@ -740,7 +745,7 @@ GTK.Widget shape_combine_mask( GDK.Bitmap shape, int xoffset, int yoffset );
 //! Set the shape of the widget, or, rather, it's window, to that of
 //! the supplied bitmap. Notice how the window behind the example
 //! window can be seen because of the rather odd shape the example window has.
-//!@code{ GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)@}
+//!@expr{ GTK.Window( GTK.WINDOW_TOPLEVEL )->add(GTK.Label("A rather Oddly shaped\n" "Window\n" "Indeed\n" "Or what do you\nthink?\n" "This text\n" "should\n" "be long enough"))->shape_combine_mask( GDK.Bitmap(Image.image(100,100,255,255,255)->rotate(10,0,0,0) ), 20,20)@}
 //!@xml{<image>../images/gtk_widget_shape_combine_mask.png</image>@}
 //!
 //! NOTE: The widget must be realized before this function can be used

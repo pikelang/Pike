@@ -3,7 +3,7 @@
 //! choice. When activated the OptionMenu displays a popup W(Menu)
 //! which allows the user to make a new choice.
 //! 
-//!@code{ GTK.OptionMenu()->set_menu(GTK.Menu()->add( GTK.Menu_item("Option 1") ));@}
+//!@expr{ GTK.OptionMenu()->set_menu(GTK.Menu()->add( GTK.Menu_item("Option 1") ));@}
 //!@xml{<image>../images/gtk_optionmenu.png</image>@}
 //!
 //! 

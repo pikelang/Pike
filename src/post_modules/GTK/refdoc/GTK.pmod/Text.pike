@@ -13,13 +13,13 @@
 //!      <li> You cannot add text to the widget before it is realized.</li>
 //!     </ul>
 //! 
-//!@code{ GTK.Text(GTK.Adjustment(),GTK.Adjustment())@}
+//!@expr{ GTK.Text(GTK.Adjustment(),GTK.Adjustment())@}
 //!@xml{<image>../images/gtk_text.png</image>@}
 //!
-//!@code{ function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->set_text, 0, "Some text")[0])@}
+//!@expr{ function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->set_text, 0, "Some text")[0])@}
 //!@xml{<image>../images/gtk_text_2.png</image>@}
 //!
-//!@code{ function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->insert, 0, "Some text", 0, GDK.Color(255,255,0), GDK.Color(0,0,0))[0])@}
+//!@expr{ function_object(call_out(GTK.Text(GTK.Adjustment(),GTK.Adjustment())->insert, 0, "Some text", 0, GDK.Color(255,255,0), GDK.Color(0,0,0))[0])@}
 //!@xml{<image>../images/gtk_text_3.png</image>@}
 //!
 //!

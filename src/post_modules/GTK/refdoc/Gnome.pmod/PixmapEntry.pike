@@ -3,7 +3,7 @@
 //! 1:1. This is perfect for selection of backgrounds and such. It also
 //! allows DND to be performed on the preview box. It also provides all
 //! the GnomeEntry functionality as well.
-//!@code{ Gnome.PixmapEntry("","browse...",1);@}
+//!@expr{ Gnome.PixmapEntry("","browse...",1);@}
 //!@xml{<image>../images/gnome_pixmapentry.png</image>@}
 //!
 //!

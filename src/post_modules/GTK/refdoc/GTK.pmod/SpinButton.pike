@@ -27,7 +27,7 @@
 //! The argument order for the W(Adjustment) constructor is:
 //! value, lower, upper, step_increment, page_increment, page_size
 //!
-//!@code{ GTK.SpinButton( GTK.Adjustment(),0.1, 1 )->set_usize(60,20)@}
+//!@expr{ GTK.SpinButton( GTK.Adjustment(),0.1, 1 )->set_usize(60,20)@}
 //!@xml{<image>../images/gtk_spinbutton.png</image>@}
 //!
 //! 

@@ -3,19 +3,19 @@
 //! is made to pack buttons in, and has a few convenience function for
 //! normal button layouts.
 //!
-//!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_usize(100,300)@}
+//!@expr{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_usize(100,300)@}
 //!@xml{<image>../images/gtk_vbuttonbox.png</image>@}
 //!
-//!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_SPREAD)->set_usize(100,300)@}
+//!@expr{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_SPREAD)->set_usize(100,300)@}
 //!@xml{<image>../images/gtk_vbuttonbox_2.png</image>@}
 //!
-//!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_EDGE)->set_usize(100,300)@}
+//!@expr{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_EDGE)->set_usize(100,300)@}
 //!@xml{<image>../images/gtk_vbuttonbox_3.png</image>@}
 //!
-//!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_START)->set_usize(100,300)@}
+//!@expr{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_START)->set_usize(100,300)@}
 //!@xml{<image>../images/gtk_vbuttonbox_4.png</image>@}
 //!
-//!@code{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_END)->set_usize(100,300)@}
+//!@expr{ GTK.VbuttonBox()->add(GTK.Button("Hello"))->add(GTK.Button("World"))->set_layout(GTK.BUTTONBOX_END)->set_usize(100,300)@}
 //!@xml{<image>../images/gtk_vbuttonbox_5.png</image>@}
 //!
 //!

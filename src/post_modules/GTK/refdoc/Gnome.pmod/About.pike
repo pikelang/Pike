@@ -4,7 +4,7 @@
 //! application. It also allows the programmer to provide a logo to be
 //! displayed.
 //! 
-//!@code{ Gnome.About( "Example", "1.0", "(c) Roxen IS 2000", ({"Per Hedbor"}), "Some nice documentation\nabout this example" );@}
+//!@expr{ Gnome.About( "Example", "1.0", "(c) Roxen IS 2000\n(c) IDA, LiU 2002", ({"Per Hedbor"}), "Some nice documentation\nabout this example" );@}
 //!@xml{<image>../images/gnome_about.png</image>@}
 //!
 //! 

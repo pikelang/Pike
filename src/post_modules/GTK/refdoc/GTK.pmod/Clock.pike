@@ -11,10 +11,10 @@
 //! 
 //! Note, however, that the accuracy of the gtkclock widget is limited
 //! to 1 second.
-//!@code{ GTK.Clock( GTK.ClockRealtime );@}
+//!@expr{ GTK.Clock( GTK.ClockRealtime );@}
 //!@xml{<image>../images/gtk_clock.png</image>@}
 //!
-//!@code{ GTK.Clock( GTK.ClockDecreasing )->set_seconds(10000)->start();@}
+//!@expr{ GTK.Clock( GTK.ClockDecreasing )->set_seconds(10000)->start();@}
 //!@xml{<image>../images/gtk_clock_2.png</image>@}
 //!
 //!

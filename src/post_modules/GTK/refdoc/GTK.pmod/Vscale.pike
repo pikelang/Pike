@@ -7,7 +7,7 @@
 //! places shown can be set using the parent W(Scale) class's
 //! functions.
 //! 
-//!@code{ GTK.Vscale(GTK.Adjustment())->set_usize(30,100)@}
+//!@expr{ GTK.Vscale(GTK.Adjustment())->set_usize(30,100)@}
 //!@xml{<image>../images/gtk_vscale.png</image>@}
 //!
 //! 

@@ -11,7 +11,7 @@
 //! widget changes, either when the user changes it or if it's set
 //! explicitly through set_color().
 //! 
-//!@code{ GTK.ColorSelection()@}
+//!@expr{ GTK.ColorSelection()@}
 //!@xml{<image>../images/gtk_colorselection.png</image>@}
 //!
 //!

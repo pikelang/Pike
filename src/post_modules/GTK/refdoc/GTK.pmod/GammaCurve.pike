@@ -7,7 +7,7 @@
 //! are guaranteed that every input value will have a (not necessarily
 //! unique) output value specified.
 //! 
-//!@code{ GTK.GammaCurve()->set_usize(210,130)@}
+//!@expr{ GTK.GammaCurve()->set_usize(210,130)@}
 //!@xml{<image>../images/gtk_gammacurve.png</image>@}
 //!
 //!

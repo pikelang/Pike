@@ -2,7 +2,7 @@
 //! of handling literally thousands of rows of information. Each column
 //! can optionally have a title, which itself is optionally active,
 //! allowing us to bind a function to it's selection.
-//!@code{ GTK.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)@}
+//!@expr{ GTK.Clist(2)->set_column_title(0,"Col 1")->set_column_title(1,"Col 2")->column_titles_show()->set_column_width(0,50)->set_usize(150,70)@}
 //!@xml{<image>../images/gtk_clist.png</image>@}
 //!
 //!
@@ -63,11 +63,6 @@ GTK.Clist clear( );
 //!
 //!
 
-int columns_autosize( );
-//! Resize all columns according to their contents
-//!
-//!
-
 GTK.Clist column_title_active( int column );
 //! Make a specific column title active
 //!
@@ -95,6 +90,11 @@ GTK.Clist column_titles_passive( );
 
 GTK.Clist column_titles_show( );
 //! Show the column titles.
+//!
+//!
+
+int columns_autosize( );
+//! Resize all columns according to their contents
 //!
 //!
 
@@ -135,11 +135,6 @@ int get_cell_type( int row, int column );
 //!
 //!
 
-int get_columns( );
-//! Return the number of columns in this clist
-//!
-//!
-
 string get_column_title( int column );
 //! Returns the title of a specified column.
 //!
@@ -147,6 +142,11 @@ string get_column_title( int column );
 
 GTK.Widget get_column_widget( int column );
 //! Return the widget for the specified column title
+//!
+//!
+
+int get_columns( );
+//! Return the number of columns in this clist
 //!
 //!
 
@@ -196,13 +196,13 @@ int get_row_height( );
 //!
 //!
 
-int get_rows( );
-//! Return the number of rows
+GTK.Style get_row_style( int row );
+//! Return the W(style) object associated with the specified row
 //!
 //!
 
-GTK.Style get_row_style( int row );
-//! Return the W(style) object associated with the specified row
+int get_rows( );
+//! Return the number of rows
 //!
 //!
 

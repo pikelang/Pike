@@ -1,5 +1,5 @@
 //! Exactly like W(RadioButton), but it is an menu item.
-//!@code{ GTK.RadioMenuItem("Menu item")@}
+//!@expr{ GTK.RadioMenuItem("Menu item")@}
 //!@xml{<image>../images/gtk_radiomenuitem.png</image>@}
 //!
 //!

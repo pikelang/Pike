@@ -1,5 +1,5 @@
 //! Use this widget when you want the user to input a single line of text.
-//!@code{ GTK.Entry()->set_text("Hello world")->set_editable(1)@}
+//!@expr{ GTK.Entry()->set_text("Hello world")->set_editable(1)@}
 //!@xml{<image>../images/gtk_entry.png</image>@}
 //!
 //!

@@ -1,4 +1,4 @@
-//!@code{ GTK.Curve()@}
+//!@expr{ GTK.Curve()@}
 //!@xml{<image>../images/gtk_curve.png</image>@}
 //!
 //!

@@ -4,7 +4,7 @@
 //! when creating the GnomeEntry widget, and this identifier is used to
 //! load and save the history of the text.
 //!
-//!@code{ Gnome.Entry( "history" )@}
+//!@expr{ Gnome.Entry( "history" )@}
 //!@xml{<image>../images/gnome_entry.png</image>@}
 //!
 //!

@@ -2,10 +2,10 @@
 //! columns, making it easy to align many widgets next to each other,
 //! horizontally and vertically.
 //! 
-//!@code{ GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0"), 0, 1, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,0"), 1, 2, 0, 1)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)@}
+//!@expr{ GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0"), 0, 1, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,0"), 1, 2, 0, 1)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)@}
 //!@xml{<image>../images/gtk_table.png</image>@}
 //!
-//!@code{ GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0-1,0"), 0, 2, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)@}
+//!@expr{ GTK.Table(2,2,0)->attach_defaults( GTK.Label("0,0-1,0"), 0, 2, 0, 1)->attach_defaults( GTK.Label("0,1"), 0, 1, 1, 2)->attach_defaults( GTK.Label("1,1"), 1, 2, 1, 2)->set_col_spacings(10)->set_row_spacings(10)@}
 //!@xml{<image>../images/gtk_table_2.png</image>@}
 //!
 //! 

@@ -2,7 +2,7 @@
 //! widget in a dialog window. Use the subwidget functions below to access the
 //! different subwidgets directly.
 //! 
-//!@code{ GTK.ColorSelectionDialog("Select color")@}
+//!@expr{ GTK.ColorSelectionDialog("Select color")@}
 //!@xml{<image>../images/gtk_colorselectiondialog.png</image>@}
 //!
 //! 

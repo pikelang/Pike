@@ -19,7 +19,7 @@
 //! for a widget without a window. Examples of such widgets are labels
 //! and images.
 //! 
-//!@code{ GTK.EventBox()->set_usize(100,100)@}
+//!@expr{ GTK.EventBox()->set_usize(100,100)@}
 //!@xml{<image>../images/gtk_eventbox.png</image>@}
 //!
 //!

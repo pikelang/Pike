@@ -5,7 +5,7 @@
 //!  To connect the buttons, use another button in the desired group
 //! as the second argument to GTK.RadioButton().
 //! 
-//!@code{ GTK.Radio_button("Button");@}
+//!@expr{ GTK.Radio_button("Button");@}
 //!@xml{<image>../images/gtk_radiobutton.png</image>@}
 //!
 //!

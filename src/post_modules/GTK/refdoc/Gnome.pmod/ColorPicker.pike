@@ -8,7 +8,7 @@
 //! floating point values for the red, green and blue channels,
 //! integers in the range 0 to 65,535, or integers in the range 0 to
 //! 255, depending on your needs.
-//!@code{ Gnome.ColorPicker();@}
+//!@expr{ Gnome.ColorPicker();@}
 //!@xml{<image>../images/gnome_colorpicker.png</image>@}
 //!
 //! 

@@ -6,7 +6,7 @@
 //! 
 //! See W(Paned) for details.
 //! 
-//!@code{ GTK.Hpaned()->add1(GTK.Label("Left\nSide\nOf\nPane"))->add2(GTK.Label("Right\nSide\nOf\nPane"))->set_usize(100,100)@}
+//!@expr{ GTK.Hpaned()->add1(GTK.Label("Left\nSide\nOf\nPane"))->add2(GTK.Label("Right\nSide\nOf\nPane"))->set_usize(100,100)@}
 //!@xml{<image>../images/gtk_hpaned.png</image>@}
 //!
 //!

@@ -2,7 +2,7 @@
 //! A pixmap, on the other hand, is a image object stored in the X-server.
 //! See GDK.Image and GDK.Pixmap.
 //!
-//!@code{ GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );@}
+//!@expr{ GTK.Image( GDK.Image(0)->set(Image.image(200,200)->test() ) );@}
 //!@xml{<image>../images/gtk_image.png</image>@}
 //!
 //!

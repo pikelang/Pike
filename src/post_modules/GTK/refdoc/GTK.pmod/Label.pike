@@ -1,14 +1,14 @@
 //! A simple text label.
-//!@code{ GTK.Label("A simple text label")@}
+//!@expr{ GTK.Label("A simple text label")@}
 //!@xml{<image>../images/gtk_label.png</image>@}
 //!
-//!@code{ GTK.Label("Multi\nline text\nlabel here")@}
+//!@expr{ GTK.Label("Multi\nline text\nlabel here")@}
 //!@xml{<image>../images/gtk_label_2.png</image>@}
 //!
-//!@code{ GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_LEFT)@}
+//!@expr{ GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_LEFT)@}
 //!@xml{<image>../images/gtk_label_3.png</image>@}
 //!
-//!@code{ GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_RIGHT)@}
+//!@expr{ GTK.Label("Multi\nline text\nlabel here")->set_justify(GTK.JUSTIFY_RIGHT)@}
 //!@xml{<image>../images/gtk_label_4.png</image>@}
 //!
 //!

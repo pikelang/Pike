@@ -1,8 +1,8 @@
 //!  GnomeFontPicker - Button that displays current font; click to select new font.
-//!@code{ Gnome.FontPicker();@}
+//!@expr{ Gnome.FontPicker();@}
 //!@xml{<image>../images/gnome_fontpicker.png</image>@}
 //!
-//!@code{ Gnome.FontPicker()->set_mode( Gnome.FontPickerModeFontInfo );@}
+//!@expr{ Gnome.FontPicker()->set_mode( Gnome.FontPickerModeFontInfo );@}
 //!@xml{<image>../images/gnome_fontpicker_2.png</image>@}
 //!
 //!

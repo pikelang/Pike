@@ -11,10 +11,10 @@
 //! application. If you want to create graphical images which can be
 //! manipulated by the application, look at W(Image).
 //! 
-//!@code{ GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()) )@}
+//!@expr{ GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()) )@}
 //!@xml{<image>../images/gtk_pixmap.png</image>@}
 //!
-//!@code{ GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()), GDK.Bitmap(Image.image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))@}
+//!@expr{ GTK.Pixmap( GDK.Pixmap( Image.image(100,100)->test()), GDK.Bitmap(Image.image(100,100,255,255,255)->box(10,10,80,80, 0,0,0) ))@}
 //!@xml{<image>../images/gtk_pixmap_2.png</image>@}
 //!
 //! 

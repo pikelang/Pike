@@ -10,7 +10,7 @@
 //! is drawn as a dotted line which has a left pointing arrow graphic
 //! indicating that the tearoff menu can be reattached. Activating it
 //! will erase the tearoff menu window.
-//!@code{ GTK.TearoffMenuItem()->set_usize( 100,0 )@}
+//!@expr{ GTK.TearoffMenuItem()->set_usize( 100,0 )@}
 //!@xml{<image>../images/gtk_tearoffmenuitem.png</image>@}
 //!
 //! 
