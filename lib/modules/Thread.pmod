@@ -21,12 +21,61 @@ optional constant Condition=__builtin.condition;
 optional constant _Disabled=__builtin.threads_disabled;
 optional constant Local=__builtin.thread_local;
 
+//! @decl Thread.Thread Thread.Thread(function(mixed...:void) f,
+//!                                   mixed ... args)
+//!
+//! This function creates a new thread which will run simultaneously
+//! to the rest of the program. The new thread will call the function
+//! @[f] with the arguments @[args]. When @[f] returns the thread will cease
+//! to exist.
+//!
+//! All Pike functions are 'thread safe' meaning that running
+//! a function at the same time from different threads will not corrupt
+//! any internal data in the Pike process.
+//!
+//! @returns
+//! The returned value will be the same as the return value of
+//! @[Thread.this_thread()] for the new thread.
+//!
+//! @note
+//! This function is only available on systems with POSIX or UNIX or WIN32
+//! threads support.
+//!
+//! @seealso
+//! @[Mutex], @[Condition], @[this_thread()]
+//!
 optional constant thread_create = predef::thread_create;
+
+//! @decl Thread.Thread this_thread()
+//!
+//! This function returns the object that identifies this thread.
+//!
+//! @seealso
+//! @[Thread.Thread()]
+//!
 optional constant this_thread = predef::this_thread;
+
+//! @decl array(Thread.Thread) all_threads()
+//!
+//! This function returns an array with the thread ids of all threads.
+//!
+//! @seealso
+//! @[Thread.Thread()]
+//!
 optional constant all_threads = predef::all_threads;
 
 
 
+//! @[Thread.Fifo] implements a fixed length first-in, first-out queue.
+//! A fifo is a queue of values and is often used as a stream of data
+//! between two threads.
+//!
+//! @note
+//! Fifos are only available on systems with threads support.
+//!
+//! @seealso
+//! @[Thread.Queue]
+//!
 optional class Fifo {
   inherit Condition : r_cond;
   inherit Condition : w_cond;
@@ -35,9 +84,22 @@ optional class Fifo {
   array buffer;
   int ptr, num;
   int read_tres, write_tres;
-  
+
+  //! This function returns the number of elements currently in the fifo.
+  //!
+  //! @seealso
+  //! @[read()], @[write()]
+  //!
   int size() {  return num; }
-  
+
+  //! This function retrieves a value from the fifo. Values will be
+  //! returned in the order they were written. If there are no values
+  //! present in the fifo the current thread will sleep until some other
+  //! thread writes a value to the fifo.
+  //!
+  //! @seealso
+  //! @[write()], @[read_array()]
+  //!
   mixed read()
   {
     mixed tmp;
@@ -78,12 +140,19 @@ optional class Fifo {
     w_cond::broadcast();
     return ret;
   }
-  
-  void write(mixed v)
+
+  //! Append a @[value] to the end of the fifo. If there is no more
+  //! room in the fifo the current thread will sleep until space is
+  //! available.
+  //!
+  //! @seealso
+  //! @[read()]
+  //!
+  void write(mixed value)
   {
     object key=lock::lock(2);
     while(num == sizeof(buffer)) w_cond::wait(key);
-    buffer[(ptr + num) % sizeof(buffer)]=v;
+    buffer[(ptr + num) % sizeof(buffer)] = value;
     if(write_tres)
     {
       if(num++ == write_tres)
@@ -95,6 +164,13 @@ optional class Fifo {
     key = 0;
   }
 
+  //! @decl void create()
+  //! @decl void create(int size)
+  //!
+  //! Create a fifo. If the optional @[size] argument is present it
+  //! sets how many values can be written to the fifo without blocking.
+  //! The default @[size] is 128.
+  //!
   static void create(int|void size)
   {
     write_tres=0;
@@ -113,6 +189,17 @@ optional class Fifo {
   }
 };
 
+//! @[Thread.Queue] implements a queue, or a pipeline. The main difference
+//! between @[Thread.Queue] and @[Thread.Fifo] is that @[Thread.Queue]
+//! will never block in write(), only allocate more memory.
+//!
+//! @note
+//! Queues are only available on systems with POSIX or UNIX or WIN32
+//! thread support.
+//!
+//! @seealso
+//! @[Thread.Fifo]
+//!
 optional class Queue {
   inherit Condition : r_cond;
   inherit Mutex : lock;
@@ -120,22 +207,42 @@ optional class Queue {
   array buffer=allocate(16);
   int r_ptr, w_ptr;
   
+  //! This function returns the number of elements currently in the queue.
+  //!
+  //! @seealso
+  //! @[read()], @[write()]
+  //!
   int size() {  return w_ptr - r_ptr;  }
-  
+
+  //! This function retrieves a value from the queue. Values will be
+  //! returned in the order they were written. If there are no values
+  //! present in the queue the current thread will sleep until some other
+  //! thread writes a value to the queue.
+  //!
+  //! @seealso
+  //! @[write()]
+  //!
   mixed read()
   {
     mixed tmp;
-    object key=lock::lock(2);
+    object key=lock::lock();
     while(!size()) r_cond::wait(key);
     tmp=buffer[r_ptr];
     buffer[r_ptr++] = 0;	// Throw away any references.
     key=0;
     return tmp;
   }
-  
-  void write(mixed v)
+
+  //! This function puts a @[value] last in the queue. If the queue is
+  //! too small to hold the @[value] the queue will be expanded to make
+  //! room for it.
+  //!
+  //! @seealso
+  //! @[read()]
+  //!
+  void write(mixed value)
   {
-    object key=lock::lock(2);
+    object key=lock::lock();
     if(w_ptr >= sizeof(buffer))
     {
       buffer=buffer[r_ptr..];
@@ -143,7 +250,7 @@ optional class Queue {
       w_ptr-=r_ptr;
       r_ptr=0;
     }
-    buffer[w_ptr]=v;
+    buffer[w_ptr] = value;
     w_ptr++;
     key=0; // Must free this one _before_ the signal...
     r_cond::signal();
@@ -480,12 +587,52 @@ class MutexKey (static function(:void) dec_locks)
   }
 }
 
+//! @[Thread.Mutex] is a class that implements mutual exclusion locks.
+//! Mutex locks are used to prevent multiple threads from simultaneously
+//! execute sections of code which access or change shared data. The basic
+//! operations for a mutex is locking and unlocking. If a thread attempts
+//! to lock an already locked mutex the thread will sleep until the mutex
+//! is unlocked.
+//!
+//! @note
+//! This class is simulated when Pike is compiled without thread support,
+//! so it's always available.
+//!
+//! In POSIX threads, mutex locks can only be unlocked by the same thread
+//! that locked them. In Pike any thread can unlock a locked mutex.
+//!
 class Mutex
 {
   static int locks = 0;
   static void dec_locks() {locks--;}
 
-  MutexKey lock (int type)
+  //! @decl MutexKey lock()
+  //! @decl MutexKey lock(int type)
+  //!
+  //! This function attempts to lock the mutex. If the mutex is already
+  //! locked by a different thread the current thread will sleep until the
+  //! mutex is unlocked. The value returned is the 'key' to the lock. When
+  //! the key is destructed or has no more references the lock will
+  //! automatically be unlocked. The key will also be destructed if the lock
+  //! is destructed.
+  //!
+  //! The @[type] argument specifies what @[lock()] should do if the
+  //! mutex is already locked by this thread:
+  //! @integer
+  //!   @value 0 (default)
+  //!     Throw an error.
+  //!   @value 1
+  //!     Sleep until the mutex is unlocked. Useful if some
+  //!     other thread will unlock it.
+  //!   @value 2
+  //!     Return zero. This allows recursion within a locked region of
+  //!     code, but in conjunction with other locks it easily leads
+  //!     to unspecified locking order and therefore a risk for deadlocks.
+  //!
+  //! @seealso
+  //! @[trylock()]
+  //!
+  MutexKey lock (int|void type)
   {
     switch (type) {
       default:
@@ -505,7 +652,17 @@ class Mutex
     return MutexKey (dec_locks);
   }
 
-  MutexKey trylock (int type)
+  //! @decl MutexKey trylock()
+  //! @decl MutexKey trylock(int type)
+  //!
+  //! This function performs the same operation as @[lock()], but if the mutex
+  //! is already locked, it will return zero instead of sleeping until it's
+  //! unlocked.
+  //!
+  //! @seealso
+  //! @[lock()]
+  //!
+  MutexKey trylock (int|void type)
   {
     switch (type) {
       default:
