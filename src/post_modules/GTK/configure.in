@@ -131,14 +131,14 @@ main ()
 {
   int major, minor, micro;
   char *tmp_version;
-  int fd;
+  FILE *fp;
 
   /* Don't use system(3C) since it isn't thread-safe.
    *
    * system ("touch conf.gtktest");
    */
-  if ((fd = open("conf.gtktest", O_RDWR|O_APPEND|O_CREAT, 0600)) >= 0) {
-    close(fd);
+  if ((fp = fopen("conf.gtktest", "a+")) != 0) {
+    fclose(fp);
   }
 
   /* HP/UX 9 (%@#!) writes to sscanf strings */
