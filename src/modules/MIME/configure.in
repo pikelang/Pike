@@ -1,9 +1,13 @@
-# $Id: configure.in,v 1.4 1998/09/20 08:31:29 hubbe Exp $
+# $Id: configure.in,v 1.5 2001/01/19 18:08:10 grubba Exp $
 AC_INIT(mime.c)
 AC_CONFIG_HEADER(config.h)
 
 AC_MODULE_INIT()
 
+if test "x$ac_cv_prog_cc_cross" = "xyes"; then
+  AC_MSG_WARN([Cross-compiling, assuming char is unsigned.])
+  ac_cv_c_char_unsigned=yes
+fi
 AC_C_CHAR_UNSIGNED
 
 AC_OUTPUT(Makefile,echo FOO >stamp-h )
