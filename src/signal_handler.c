@@ -25,7 +25,7 @@
 #include "main.h"
 #include <signal.h>
 
-RCSID("$Id: signal_handler.c,v 1.160 1999/11/16 21:28:53 grubba Exp $");
+RCSID("$Id: signal_handler.c,v 1.161 2000/01/14 02:44:14 grubba Exp $");
 
 #ifdef HAVE_PASSWD_H
 # include <passwd.h>
@@ -1376,6 +1376,8 @@ struct perishables
   char **env;
   char **argv;
 
+  int *fds;
+
   int disabled;
 #ifdef HAVE_SETRLIMIT
   struct plimit *limits;
@@ -1393,6 +1395,8 @@ static void free_perishables(struct perishables *storage)
   if (storage->disabled) {
     exit_threads_disable(NULL);
   }
+
+  if (storage->fds) free(storage->fds);
 
   if(storage->env) free( storage->env );
   if(storage->argv) free( storage->argv );
@@ -1432,6 +1436,7 @@ extern int pike_make_pipe(int *);
 #define PROCE_SETUID		7
 #define PROCE_EXEC		8
 #define PROCE_CLOEXEC		9
+#define PROCE_DUP		10
 
 #define PROCERROR(err, id)	do { int _l, _i; \
     buf[0] = err; buf[1] = errno; buf[2] = id; \
@@ -1629,6 +1634,7 @@ void f_set_priority( INT32 args )
  *
  * only on UNIX:
  *
+ *   fds		array(object(files.file))	fds 3-.
  *   uid		int|string
  *   gid		int|string
  *   nice		int
@@ -2020,14 +2026,19 @@ void f_create_process(INT32 args)
     int stds[3]; /* stdin, out and err */
     char *tmp_cwd; /* to CD to */
     char *priority = NULL;
+    int *fds;
+    int num_fds = 3;
 
-    stds[0] = stds[1] = stds[2] = 0;
+    stds[0] = stds[1] = stds[2] = -1;
+    fds = stds;
     nice_val = 0;
     tmp_cwd = NULL;
 
     storage.env=0;
     storage.argv=0;
     storage.disabled=0;
+
+    storage.fds = NULL;
 
 #ifdef HAVE_SETRLIMIT
     storage.limits = 0;
@@ -2093,27 +2104,47 @@ void f_create_process(INT32 args)
          tmp->type == T_STRING && !tmp->u.string->size_shift)
         tmp_cwd = tmp->u.string->str;
 
+      if ((tmp = simple_mapping_string_lookup( optional, "fds" )) &&
+	  tmp->type == T_ARRAY) {
+	struct array *a = tmp->u.array;
+	int i = a->size;
+	if (i) {
+	  /* Don't forget stdin, stdout, and stderr */
+	  num_fds = i+3;
+	  storage.fds = fds = (int *)xalloc(sizeof(int)*(num_fds));
+	  fds[0] = fds[1] = fds[2] = -1;
+	  while (i--) {
+	    if (a->item[i].type == T_OBJECT) {
+	      fds[i+3] = fd_from_object(a->item[i].u.object);
+	      /* FIXME: Error if -1? */
+	    } else {
+	      fds[i+3] = -1;
+	    }
+	  }
+	}
+      }
+
       if((tmp = simple_mapping_string_lookup( optional, "stdin" )) &&
          tmp->type == T_OBJECT)
       {
-        stds[0] = fd_from_object( tmp->u.object );
-        if(stds[0] == -1)
+        fds[0] = fd_from_object( tmp->u.object );
+        if(fds[0] == -1)
           error("Invalid stdin file\n");
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "stdout" )) &&
 	 tmp->type == T_OBJECT)
       {
-        stds[1] = fd_from_object( tmp->u.object );
-        if(stds[1] == -1)
+        fds[1] = fd_from_object( tmp->u.object );
+        if(fds[1] == -1)
           error("Invalid stdout file\n");
       }
 
       if((tmp = simple_mapping_string_lookup( optional, "stderr" )) &&
 	 tmp->type == T_OBJECT)
       {
-        stds[2] = fd_from_object( tmp->u.object );
-        if(stds[2] == -1)
+        fds[2] = fd_from_object( tmp->u.object );
+        if(fds[2] == -1)
           error("Invalid stderr file\n");
       }
 
@@ -2489,6 +2520,10 @@ void f_create_process(INT32 args)
 	  error("Process.create_process(): chdir() failed. errno:%d\n",
 		buf[1]);
 	  break;
+	case PROCE_DUP:
+	  error("Process.create_process(): dup() failed. errno:%d\n",
+		buf[1]);
+	  break;
 	case PROCE_DUP2:
 	  error("Process.create_process(): dup2() failed. errno:%d\n",
 		buf[1]);
@@ -2624,18 +2659,40 @@ void f_create_process(INT32 args)
       }
 #endif
 
+      /* Perform fd remapping */
       {
         int fd;
-        for(fd=0; fd<3; fd++)
-        {
-          if(stds[fd])
-            if(dup2(stds[fd], fd) < 0)
-              PROCERROR(PROCE_DUP2, fd);
-        }
-/* Why? (Per) Because people might want to be able to close them! /Hubbe */
-	for(fd=0; fd<3; fd++)
-	  if(stds[fd] && stds[fd]>2)
-	    close( stds[fd] );
+	/* Note: This is O(n²), but that ought to be ok. */
+	for (fd=0; fd<num_fds; fd++) {
+	  int fd2;
+	  int remapped = -1;
+	  if ((fds[fd] == -1) ||
+	      (fds[fd] == fd)) continue;
+	  for (fd2 = fd+1; fd2 < num_fds; fd2++) {
+	    if (fds[fd2] == fd) {
+	      /* We need to temorarily remap this fd, since it's in the way */
+	      if (remapped == -1) {
+		if ((remapped = dup(fd)) < 0)
+		  PROCERROR(PROCE_DUP, fd);
+	      }
+	      fds[fd2] = remapped;
+	    }
+	  }
+	  if (dup2(fds[fd], fd) < 0)
+	    PROCERROR(PROCE_DUP2, fd);
+	}
+	/* Close the source fds. */
+	for (fd=0; fd<num_fds; fd++) {
+	  /* FIXME: Should it be a comparison against -1 instead? */
+	  /* Always keep stdin, stdout & stderr. */
+	  if (fds[fd] > 2) {
+	    if ((fds[fd] >= num_fds) ||
+		(fds[fds[fd]] == -1)) {
+	      close(fds[fd]);
+	    }
+	  }
+	}
+	/* FIXME: Map the fds as not close on exec? */
       }
 
       if(priority)
