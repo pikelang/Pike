@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
-// #pragma strict_types
+#pragma strict_types
 
-/* $Id: handshake.pike,v 1.40 2004/01/23 22:29:44 nilsson Exp $
+/* $Id: handshake.pike,v 1.41 2004/01/24 23:31:18 nilsson Exp $
  *
  */
 
@@ -99,12 +99,12 @@ Packet handshake_packet(int type, string data)
   return packet;
 }
 
-object hello_request()
+Packet hello_request()
 {
   return handshake_packet(HANDSHAKE_hello_request, "");
 }
 
-object server_hello_packet()
+Packet server_hello_packet()
 {
   ADT.struct struct = ADT.struct();
   /* Build server_hello message */
@@ -203,7 +203,7 @@ Packet server_key_exchange_packet()
 			  struct->pop_data());
 }
 
-object client_key_exchange_packet()
+Packet client_key_exchange_packet()
 {
   ADT.struct struct = ADT.struct();
   string data;
@@ -295,7 +295,7 @@ int(-1..0) reply_new_session(array(int) cipher_suites,
     send_packet(handshake_packet(HANDSHAKE_certificate, struct->pop_data()));
   }
 
-  object key_exchange = server_key_exchange_packet();
+  Packet key_exchange = server_key_exchange_packet();
 
   if (key_exchange) {
     send_packet(key_exchange);
@@ -343,7 +343,7 @@ string hash_messages(string sender)
   }
 }
 
-object finished_packet(string sender)
+Packet finished_packet(string sender)
 {
 #ifdef SSL3_DEBUG
            werror("Sending finished_packet, with sender=\""+sender+"\"\n" );
@@ -667,13 +667,16 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 	  }
 	  send_packet(server_hello_packet());
 
-	  array res = session->new_server_states(client_random, server_random,
-						 version);
+	  array(.state) res = session->new_server_states(client_random,
+							 server_random,
+							 version);
 	  pending_read_state = res[0];
 	  pending_write_state = res[1];
 	  send_packet(change_cipher_packet());
-	  if(version[1] == 0) send_packet(finished_packet("SRVR"));
-	  else if(version[1] == 1) send_packet(finished_packet("server finished"));
+	  if(version[1] == 0)
+	    send_packet(finished_packet("SRVR"));
+	  else if(version[1] == 1)
+	    send_packet(finished_packet("server finished"));
 
 	  expect_change_cipher = 1;
 	 
@@ -845,7 +848,8 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       } else {
 
 	// trace(1);
-	array res = session->new_server_states(client_random, server_random,version);
+	array(.state) res = session->new_server_states(client_random,
+						       server_random,version);
 	pending_read_state = res[0];
 	pending_write_state = res[1];
 	
@@ -917,10 +921,10 @@ int(-1..1) handle_handshake(int type, string data, string raw)
     case HANDSHAKE_certificate_verify:
       if (!rsa_message_was_bad)
       {
-	int verification_ok;
+	int(0..1) verification_ok;
 	if( catch
 	{
-	  object(Gmp.mpz) signature = input->get_bignum();
+	  Gmp.mpz signature = input->get_bignum();
 	  ADT.struct handshake_messages_struct = ADT.struct();
 	  handshake_messages_struct->put_fix_string(handshake_messages);
 	  verification_ok = session->cipher_spec->verify(
@@ -1005,7 +1009,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       // FIXME: If anonymous connection, we don't need a cert.
       SSL3_DEBUG_MSG("Handshake: Certificate message received\n");
       int certs_len = input->get_uint(3);
-      array certs = ({ });
+      array(string) certs = ({ });
       while(!input->is_empty())
 	certs += ({ input->get_var_string(3) });
 
@@ -1013,13 +1017,14 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       
       mixed error=catch
       {
-	object public_key = Tools.X509.decode_certificate(
+	Tools.X509.Verifier public_key = Tools.X509.decode_certificate(
                 session->server_certificate_chain[0])->public_key;
 
 	if(public_key->type == "rsa")
 	  {
 	    Crypto.rsa rsa = Crypto.rsa();
-	    rsa->set_public_key(public_key->rsa->get_n(), public_key->rsa->get_e());
+	    rsa->set_public_key(public_key->rsa->get_n(),
+				public_key->rsa->get_e());
 	    context->rsa = rsa;
 	  }
 	else
@@ -1047,10 +1052,9 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 
     case HANDSHAKE_server_key_exchange:
       {
-	object(Gmp.mpz) n, e, signature;
-	n = input->get_bignum();
-	e = input->get_bignum();
-	signature = input->get_bignum();
+	Gmp.mpz n = input->get_bignum();
+	Gmp.mpz e = input->get_bignum();
+	Gmp.mpz signature = input->get_bignum();
 	ADT.struct temp_struct = ADT.struct();
 	temp_struct->put_bignum(n);
 	temp_struct->put_bignum(e);
@@ -1065,7 +1069,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
 			    backtrace()));
 	  return -1;
 	}
-	object rsa = Crypto.rsa();
+	Crypto.rsa rsa = Crypto.rsa();
 	rsa->set_public_key(n, e);
 	context->rsa = rsa;
 	break;
@@ -1103,7 +1107,7 @@ int(-1..1) handle_handshake(int type, string data, string raw)
       }
 
 
-      object key_exchange = client_key_exchange_packet();
+      Packet key_exchange = client_key_exchange_packet();
 
       if (key_exchange)
 	send_packet(key_exchange);
