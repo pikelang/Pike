@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.55 1998/02/17 20:33:29 hubbe Exp $");
+RCSID("$Id: spider.c,v 1.56 1998/02/19 05:13:22 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1353,6 +1353,7 @@ void finished_p(struct callback *foo, void *b, void *c)
     push_object( d->from );
     push_object( d->to );
     apply_svalue( &d->cb, 4 );
+    free_svalue( &d->cb );
     pop_stack();
     free(d);
   }
