@@ -1321,6 +1321,8 @@ void do_install()
 		 combine_path(include_prefix,"make_variables.in"));
     install_file(combine_path(vars->SRCDIR,"aclocal.m4"),
 		 combine_path(include_prefix,"aclocal.m4"));
+    install_file(combine_path(vars->SRCDIR,"run_autoconfig"),
+		 combine_path(include_prefix,"run_autoconfig"));
     install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
 		 combine_path(include_prefix,"precompile.sh"));
 
