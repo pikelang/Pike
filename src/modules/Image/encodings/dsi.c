@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dsi.c,v 1.9 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: dsi.c,v 1.10 2005/01/23 13:30:04 nilsson Exp $
 */
 
 /* Dream SNES Image file */
@@ -101,8 +101,8 @@ void f_decode( INT32 args )
 
 void init_image_dsi()
 {
-  add_function("_decode", f__decode, "function(string:mapping)", 0);
-  add_function("decode", f_decode, "function(string:object)", 0);
+  ADD_FUNCTION("_decode", f__decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION("decode", f_decode, tFunc(tStr,tObj), 0);
 }
 
 

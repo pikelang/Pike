@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xcf.c,v 1.52 2004/11/14 13:02:37 nilsson Exp $
+|| $Id: xcf.c,v 1.53 2005/01/23 13:30:05 nilsson Exp $
 */
 
 #include "global.h"
@@ -1418,10 +1418,9 @@ void image_xcf_f__decode_tiles( INT32 args )
 static struct program *image_encoding_xcf_program=NULL;
 void init_image_xcf()
 {
-  add_function( "___decode", image_xcf____decode,
-                "function(string:mapping)", 0);
+  ADD_FUNCTION( "___decode", image_xcf____decode, tFunc(tStr,tMapping), 0);
 
-  add_function( "_decode_tiles", image_xcf_f__decode_tiles, "mixed", 0);
+  ADD_FUNCTION( "_decode_tiles", image_xcf_f__decode_tiles, tFunction, 0);
 
   add_integer_constant( "PROP_END", PROP_END,0 );
   add_integer_constant( "PROP_COLORMAP", PROP_COLORMAP, 0 );
@@ -1500,14 +1499,14 @@ void init_image_xcf()
 
   start_new_program();
   ADD_STORAGE( struct substring );
-  add_function("cast", f_substring_cast, "function(string:mixed)",0);
-  add_function("`[]", f_substring_index, "function(int:int)",0);
-  add_function("get_short", f_substring_get_short, "function(int:int)", 0 );
-  add_function("get_ushort", f_substring_get_ushort, "function(int:int)", 0 );
-  add_function("get_int", f_substring_get_int, "function(int:int)", 0 );
-  add_function("get_uint", f_substring_get_uint, "function(int:int)", 0 );
-  add_function("_sprintf",f_substring__sprintf,
-               "function(int,mapping:mixed)", 0);
+  ADD_FUNCTION("cast", f_substring_cast, tFunc(tStr,tMix), 0);
+  ADD_FUNCTION("`[]", f_substring_index, tFunc(tInt,tInt), 0);
+  ADD_FUNCTION("get_short", f_substring_get_short, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("get_ushort", f_substring_get_ushort, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("get_int", f_substring_get_int, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("get_uint", f_substring_get_uint, tFunc(tInt,tInt), 0 );
+  ADD_FUNCTION("_sprintf",f_substring__sprintf, tFunc(tInt tMapping,tMix), 0);
+
 /*   set_init_callback(init_substring); */
   set_exit_callback(free_substring);
   substring_program = end_program();  

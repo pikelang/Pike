@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: psd.c,v 1.42 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: psd.c,v 1.43 2005/01/23 13:30:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -803,13 +803,10 @@ static void f_apply_cmap( INT32 args )
 static struct program *image_encoding_psd_program=NULL;
 void init_image_psd()
 {
-  add_function( "___decode", image_f_psd___decode, 
-                "function(string:mapping)", 0);
-  add_function( "___decode_image_channel", f_decode_image_channel, 
-                "mixed", 0);
-  add_function( "___decode_image_data", f_decode_image_data, 
-                "mixed", 0);
-  add_function( "__apply_cmap", f_apply_cmap, "mixed", 0);
+  ADD_FUNCTION( "___decode", image_f_psd___decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION( "___decode_image_channel", f_decode_image_channel,tFunction,0);
+  ADD_FUNCTION( "___decode_image_data", f_decode_image_data,tFunction,0);
+  ADD_FUNCTION( "__apply_cmap", f_apply_cmap, tFunc(tObj tStr,tVoid), 0);
 
   add_integer_constant("Bitmap" , Bitmap, 0 );
   add_integer_constant("Greyscale" , Greyscale, 0 );
@@ -819,8 +816,6 @@ void init_image_psd()
   add_integer_constant("Multichannel" , Multichannel, 0 );
   add_integer_constant("Duotone" , Duotone, 0 );
   add_integer_constant("Lab" , Lab, 0 );
-
-
 
   add_integer_constant("LAYER_FLAG_PRESERVE_TRANSPARENCY", 0x01, 0 );
   add_integer_constant("LAYER_FLAG_INVISIBLE", 0x02, 0 );

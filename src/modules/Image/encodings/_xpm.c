@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: _xpm.c,v 1.34 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: _xpm.c,v 1.35 2005/01/23 13:30:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -470,8 +470,10 @@ void f__xpm_trim_rows( INT32 args )
 
 void init_image__xpm( )
 {
-   add_function( "_xpm_write_rows", f__xpm_write_rows, "mixed", 0); 
-   add_function( "_xpm_trim_rows", f__xpm_trim_rows, "mixed", 0);
+   ADD_FUNCTION( "_xpm_write_rows", f__xpm_write_rows,
+		 tFunc(tObj tObj tInt tArr(tStr) tArr(tStr), tInt), 0);
+   ADD_FUNCTION( "_xpm_trim_rows", f__xpm_trim_rows,
+		 tFunc(tArr(tStr),tArr(tStr)), 0);
 }
 
 void exit_image__xpm(void)

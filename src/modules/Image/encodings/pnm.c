@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pnm.c,v 1.33 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: pnm.c,v 1.34 2005/01/23 13:30:04 nilsson Exp $
 */
 
 /*
@@ -590,29 +590,19 @@ struct program *image_pnm_module_program=NULL;
 
 void init_image_pnm(void)
 {
-   add_function("encode",img_pnm_encode_binary,
-		"function(object:string)",0);
-   add_function("encode_binary",img_pnm_encode_binary,
-		"function(object:string)",0);
-   add_function("encode_ascii",img_pnm_encode_ascii,
-		"function(object:string)",0);
+   ADD_FUNCTION("encode",img_pnm_encode_binary,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_binary",img_pnm_encode_binary,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_ascii",img_pnm_encode_ascii,tFunc(tObj,tStr),0);
 
-   add_function("encode_P1",img_pnm_encode_P1,
-		"function(object:string)",0);
-   add_function("encode_P2",img_pnm_encode_P2,
-		"function(object:string)",0);
-   add_function("encode_P3",img_pnm_encode_P3,
-		"function(object:string)",0);
+   ADD_FUNCTION("encode_P1",img_pnm_encode_P1,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P2",img_pnm_encode_P2,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P3",img_pnm_encode_P3,tFunc(tObj,tStr),0);
 
-   add_function("encode_P4",img_pnm_encode_P4,
-		"function(object:string)",0);
-   add_function("encode_P5",img_pnm_encode_P5,
-		"function(object:string)",0);
-   add_function("encode_P6",img_pnm_encode_P6,
-		"function(object:string)",0);
+   ADD_FUNCTION("encode_P4",img_pnm_encode_P4,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P5",img_pnm_encode_P5,tFunc(tObj,tStr),0);
+   ADD_FUNCTION("encode_P6",img_pnm_encode_P6,tFunc(tObj,tStr),0);
 
-   add_function("decode",img_pnm_decode,
-		"function(string:object)",0);
+   ADD_FUNCTION("decode",img_pnm_decode,tFunc(tStr,tObj),0);
 }
 
 void exit_image_pnm(void)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ras.c,v 1.23 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: ras.c,v 1.24 2005/01/23 13:30:04 nilsson Exp $
 */
 
 /*
@@ -596,12 +596,10 @@ static void img_ras_encode(INT32 args)
 
 void init_image_ras(void)
 {
-   add_function("decode",img_ras_decode,
-		"function(string:object)",0);
-   add_function("_decode",img_ras__decode,
-		"function(string:mapping)",0);
-   add_function("encode",img_ras_encode,
-		"function(object,void|mapping(string:mixed):string)",0);
+  ADD_FUNCTION("decode",img_ras_decode, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION("_decode",img_ras__decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION("encode",img_ras_encode,
+	       tFunc(tObj tOr(tVoid,tMap(tStr,tMix)),tStr), 0);
 }
 
 void exit_image_ras(void)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: avs.c,v 1.18 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: avs.c,v 1.19 2005/01/23 13:30:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -142,9 +142,9 @@ void image_avs_f_encode(INT32 args )
 
 void init_image_avs()
 {
-  add_function( "decode",  image_avs_f_decode,  "function(string:object)", 0);
-  add_function( "_decode", image_avs_f__decode, "function(string:mapping)", 0);
-  add_function( "encode",  image_avs_f_encode,  "function(object:string)", 0);
+  ADD_FUNCTION( "decode",  image_avs_f_decode,  tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "_decode", image_avs_f__decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION( "encode",  image_avs_f_encode,  tFunc(tObj,tStr), 0);
 }
 
 void exit_image_avs()

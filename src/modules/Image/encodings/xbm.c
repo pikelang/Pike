@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: xbm.c,v 1.24 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: xbm.c,v 1.25 2005/01/23 13:30:05 nilsson Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -411,12 +411,11 @@ void image_xbm_encode( INT32 args )
 static struct program *image_encoding_xbm_program=NULL;
 void init_image_xbm(void)
 {
-  pike_add_function( "_decode", image_xbm__decode, 
-                "function(string,mapping|void:mapping(string:object))", 0);
-  pike_add_function( "decode", image_xbm_decode, 
-                "function(string:object)", 0);
-  pike_add_function( "encode", image_xbm_encode,  
-                "function(object,mapping|void:string)", 0); 
+  ADD_FUNCTION( "_decode", image_xbm__decode,
+		tFunc(tStr tOr(tVoid,tMapping),tMap(tStr,tObj)), 0);
+  ADD_FUNCTION( "decode", image_xbm_decode, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "encode", image_xbm_encode,
+		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
   param_name=make_shared_string("name");
   param_fg=make_shared_string("fg");
   param_bg=make_shared_string("bg");

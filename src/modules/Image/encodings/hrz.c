@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hrz.c,v 1.11 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: hrz.c,v 1.12 2005/01/23 13:30:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -106,9 +106,9 @@ void image_hrz_f_encode(INT32 args )
 
 void init_image_hrz()
 {
-  add_function( "decode", image_hrz_f_decode, "function(string:object)", 0);
-  add_function( "_decode", image_hrz_f__decode, "function(string:mapping)", 0);
-  add_function( "encode", image_hrz_f_encode, "function(object:string)", 0);
+  ADD_FUNCTION( "decode", image_hrz_f_decode, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "_decode", image_hrz_f__decode, tFunc(tStr,tMapping), 0);
+  ADD_FUNCTION( "encode", image_hrz_f_encode, tFunc(tObj,tStr), 0);
 }
 
 void exit_image_hrz()

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: x.c,v 1.48 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: x.c,v 1.49 2005/01/23 13:30:04 nilsson Exp $
 */
 
 /*
@@ -1199,27 +1199,32 @@ struct program *image_x_module_program=NULL;
 
 void init_image_x(void)
 {
-   add_function("encode_truecolor",image_x_encode_truecolor,
-		"function(object,int,int,int,int,int,int,int,int,int,void|object:string)",0);
-   add_function("encode_truecolor_masks",image_x_encode_truecolor_masks,
-		"function(object,int,int,int,int,int,int,void|object:string)",0);
-   add_function("encode_pseudocolor",image_x_encode_pseudocolor,
-		"function(object,int,int,int,object,void|string:string)",0);
+   ADD_FUNCTION("encode_truecolor",image_x_encode_truecolor,
+		tFunc(tObj tInt tInt tInt
+		      tInt tInt tInt tInt tInt tInt tOr(tObj,tVoid), tStr), 0);
 
-   add_function("encode_bitmap",image_x_encode_bitmap,
-		"function(object:object)",0);
+   ADD_FUNCTION("encode_truecolor_masks",image_x_encode_truecolor_masks,
+		tFunc(tObj tInt tInt tInt
+		      tInt tInt tInt tOr(tObj,tVoid), tStr), 0);
 
-   add_function("examine_mask",image_x_call_examine_mask,
-		"function(int:array(int))",0);
+   ADD_FUNCTION("encode_pseudocolor",image_x_encode_pseudocolor,
+		tFunc(tObj tInt tInt tInt tObj tOr(tStr,tVoid), tStr), 0);
 
-   add_function("decode_truecolor",image_x_decode_truecolor,
-		"function(string,int,int,int,int,int,int,int,int,int,int,int:object)",0);
+   ADD_FUNCTION("encode_bitmap",image_x_encode_bitmap, tFunc(tObj,tObj), 0);
 
-   add_function("decode_truecolor_masks",image_x_decode_truecolor_masks,
-		"function(string,int,int,int,int,int,int,int,int:object)",0);
+   ADD_FUNCTION("examine_mask",image_x_call_examine_mask,
+		tFunc(tInt,tArr(tInt)), 0);
 
-   add_function("decode_pseudocolor",image_x_decode_pseudocolor,
-		"function(string,int,int,int,int,int,object:object)",0);
+   ADD_FUNCTION("decode_truecolor",image_x_decode_truecolor,
+		tFunc(tStr tInt tInt tInt tInt tInt tInt
+		      tInt tInt tInt tInt tInt, tObj), 0);
+
+   ADD_FUNCTION("decode_truecolor_masks",image_x_decode_truecolor_masks,
+		tFunc(tStr tInt tInt tInt tInt
+		      tInt tInt tInt tInt, tObj), 0);
+
+   ADD_FUNCTION("decode_pseudocolor",image_x_decode_pseudocolor,
+		tFunc(tStr tInt tInt tInt tInt tInt tObj,tObj), 0);
 }
 
 void exit_image_x(void)

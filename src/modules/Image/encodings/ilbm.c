@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ilbm.c,v 1.30 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: ilbm.c,v 1.31 2005/01/23 13:30:04 nilsson Exp $
 */
 
 /*
@@ -834,15 +834,12 @@ void init_image_ilbm(void)
      pop_stack();
    }
 
-   
-   add_function("__decode",image_ilbm___decode,
-		"function(string:array)",0);
-   add_function("_decode",image_ilbm__decode,
-		"function(string|array:mapping)",0);
-   add_function("decode",img_ilbm_decode,
-		"function(string|array:object)",0);
-   add_function("encode",image_ilbm_encode,
-		"function(object,void|mapping(string:mixed):string)",0);
+   ADD_FUNCTION("__decode",image_ilbm___decode,tFunc(tStr,tArray),0);
+   ADD_FUNCTION("_decode",image_ilbm__decode,
+		tFunc(tOr(tStr,tArray),tMapping),0);
+   ADD_FUNCTION("decode",img_ilbm_decode,tFunc(tOr(tStr,tArray),tObj),0);
+   ADD_FUNCTION("encode",image_ilbm_encode,
+		tFunc(tObj tOr(tVoid,tMap(tStr,tMix)),tStr),0);
 }
 
 void exit_image_ilbm(void)

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: bmp.c,v 1.45 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: bmp.c,v 1.46 2005/01/23 13:30:04 nilsson Exp $
 */
 
 /*
@@ -1087,14 +1087,14 @@ void init_image_bmp(void)
    bpp_string = make_shared_string("bpp");
    colortable_string = make_shared_string("colortable");
 
-   add_function("encode",img_bmp_encode,
-		"function(object,void|object|int|mapping:string)",0);
-   add_function("_decode",img_bmp__decode,
-		"function(string,void|mapping:mapping)",0);
-   add_function("decode",img_bmp_decode,
-		"function(string,void|mapping:object)",0);
-   add_function("decode_header",img_bmp_decode_header,
-		"function(string,void|mapping:mapping)",0);
+   ADD_FUNCTION("encode",img_bmp_encode,
+		tFunc(tObj tOr4(tVoid,tObj,tInt,tMapping),tStr), 0);
+   ADD_FUNCTION("_decode",img_bmp__decode,
+		tFunc(tStr tOr(tVoid,tMapping),tMapping),0);
+   ADD_FUNCTION("decode",img_bmp_decode,
+		tFunc(tStr tOr(tVoid,tMapping),tObj),0);
+   ADD_FUNCTION("decode_header",img_bmp_decode_header,
+		tFunc(tStr tOr(tVoid,tMapping),tMapping),0);
 }
 
 void exit_image_bmp(void)

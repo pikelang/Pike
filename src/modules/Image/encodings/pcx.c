@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pcx.c,v 1.23 2004/10/07 22:49:57 nilsson Exp $
+|| $Id: pcx.c,v 1.24 2005/01/23 13:30:04 nilsson Exp $
 */
 
 #include "global.h"
@@ -604,14 +604,12 @@ void image_pcx_encode( INT32 args )
 static struct program *image_encoding_pcx_program=NULL;
 void init_image_pcx( )
 {
-  add_function( "_decode", image_pcx__decode, 
-                "function(string:mapping(string:object))", 0);
-  add_function( "decode", image_pcx_decode, 
-                "function(string:object)", 0);
-  add_function( "encode", image_pcx_encode, 
-                "function(object,mapping|void:string)", 0);
-  add_function( "_encode", image_pcx_encode, 
-                "function(object,mapping|void:string)", 0);
+  ADD_FUNCTION( "_decode", image_pcx__decode, tFunc(tStr,tMap(tStr,tObj)), 0);
+  ADD_FUNCTION( "decode", image_pcx_decode, tFunc(tStr,tObj), 0);
+  ADD_FUNCTION( "encode", image_pcx_encode,
+		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
+  ADD_FUNCTION( "_encode", image_pcx_encode,
+		tFunc(tObj tOr(tVoid,tMapping),tStr), 0);
 
   opt_raw=make_shared_string("raw");
   opt_dpy=make_shared_string("dpy");
