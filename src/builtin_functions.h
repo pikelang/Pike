@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.22 2002/10/11 01:39:29 nilsson Exp $
+|| $Id: builtin_functions.h,v 1.23 2003/07/21 23:34:01 mast Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -118,6 +118,7 @@ PMOD_EXPORT void f_map_array(INT32 args);
 void init_builtin_efuns(void);
 void init_builtin(void);
 void exit_builtin(void);
+void f_werror (INT32 args);
 /* Prototypes end here */
 
 #endif
