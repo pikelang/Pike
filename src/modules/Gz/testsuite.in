@@ -1,4 +1,4 @@
-// $Id: testsuite.in,v 1.5 1999/06/08 13:14:03 mirar Exp $
+// $Id: testsuite.in,v 1.6 1999/06/15 06:21:22 hubbe Exp $
 
 cond([[ master()->resolv("Gz")->deflate ]],
 [[
@@ -8,10 +8,10 @@ cond([[ master()->resolv("Gz")->deflate ]],
   test_true(Gz.inflate()->inflate)
 
 define(dotest,[[
-  test_true(Gz.deflate(1)->deflate($1))
-  test_true(string s=($1); Gz.inflate()->inflate(Gz.deflate(1)->deflate(s))==s)
-  test_true(string s=($1); Gz.inflate()->inflate(Gz.deflate(9)->deflate(s))==s)
-  test_true(string s=($1); object o=Gz.deflate(); Gz.inflate()->inflate(o->deflate(s,o->PARTIAL_FLUSH) + o->deflate(s,o->FINISH)) == (s)+(s)]])
+  test_true([[Gz.deflate(1)->deflate($1)]])
+  test_true([[string s=($1); Gz.inflate()->inflate(Gz.deflate(1)->deflate(s))==s]])
+  test_true([[string s=($1); Gz.inflate()->inflate(Gz.deflate(9)->deflate(s))==s]])
+  test_true([[string s=($1); object o=Gz.deflate(); Gz.inflate()->inflate(o->deflate(s,o->PARTIAL_FLUSH) + o->deflate(s,o->FINISH)) == (s)+(s)]])
 ]])
 
   dotest("")
