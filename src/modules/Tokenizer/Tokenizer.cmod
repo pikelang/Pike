@@ -1,5 +1,5 @@
 /*
- * $Id: Tokenizer.cmod,v 1.2 2003/01/17 16:46:28 grubba Exp $
+ * $Id: Tokenizer.cmod,v 1.3 2003/01/17 17:36:09 grubba Exp $
  *
  * Interface to pike code tokenizer.
  *
@@ -52,45 +52,45 @@ PIKECLASS compiler
   /* NB: Just a prototype. Actual implementation is in module.pmod.in. */
   {}
 
-/*! @class basic_tokenizer
- */
-PIKECLASS basic_tokenizer
-  program_flags PROGRAM_USES_PARENT;
-{
-  // String being converted.
-  CVAR struct pike_string *data;
-
-  // Position in string.
-  CVAR int pos;
-
-  // Token number in stream.
-  PIKEVAR int(0..) token_num;
-
-  // Current line.
-  PIKEVAR int(1..) line_no;
-
-  /*! @decl string current_symbol
-   *!
-   *!   Current symbol.
-   *!
-   *!   Set by @[scan()]. Is set to @tt{0@} (zero) at end of stream.
-   *!
-   *! @seealso
-   *!   @[scan()]
+  /*! @class basic_tokenizer
    */
-  PIKEVAR string current_symbol;
-
-  // Current scanner.
-  CVAR void (*scanner)(struct basic_tokenizer_struct *);
-
-  static void report_error(char *msg, ...)
+  PIKECLASS basic_tokenizer
+    program_flags PROGRAM_USES_PARENT;
   {
-    push_int(2);
-    push_constant_text("scanner");
-    push_text(msg);
-    apply_external(1, report_fun_num, 3);
-    pop_stack();
-  }
+    // String being converted.
+    CVAR struct pike_string *data;
+
+    // Position in string.
+    CVAR int pos;
+
+    // Token number in stream.
+    PIKEVAR int(0..) token_num;
+
+    // Current line.
+    PIKEVAR int(1..) line_no;
+
+    /*! @decl string current_symbol
+    *!
+    *!   Current symbol.
+    *!
+    *!   Set by @[scan()]. Is set to @tt{0@} (zero) at end of stream.
+    *!
+    *! @seealso
+    *!   @[scan()]
+    */
+    PIKEVAR string current_symbol;
+
+    // Current scanner.
+    CVAR void (*scanner)(struct basic_tokenizer_struct *);
+
+    static void report_error(char *msg, ...)
+    {
+      push_int(2);
+      push_constant_text("scanner");
+      push_text(msg);
+      apply_external(1, report_fun_num, 3);
+      pop_stack();
+    }
 
 #define gobble(C)	(((this->pos < this->data->len) && \
 			  (str[this->pos] == (C)))?(this->pos++,1):0)
@@ -361,146 +361,145 @@ PIKECLASS basic_tokenizer
       }									\
     }
 
-  MAKE_SCANNER(0)
-  MAKE_SCANNER(1)
-  MAKE_SCANNER(2)
+    MAKE_SCANNER(0)
+    MAKE_SCANNER(1)
+    MAKE_SCANNER(2)
 
-  /* Identifier number for the scan() function.
-   * Note that this is a global variable, and not
-   * part of the struct.
-   */
-  static ptrdiff_t scan_fun_num = 0;
+    /* Identifier number for the scan() function.
+     * Note that this is a global variable, and not
+     * part of the struct.
+     */
+    static ptrdiff_t scan_fun_num = 0;
 
-  /*! @decl void scan()
-   *!
-   *!   Called to advance one token in the stream.
-   *!
-   *!   The new token is stored in @[current_symbol].
-   *!
-   *! @note
-   *!   This function is not callable directly, but may be overloaded.
-   */
-  PIKEFUN void scan()
-    flags ID_STATIC;
-  {
-    if (THIS->current_symbol) {
-      free_string(THIS->current_symbol);
-      THIS->current_symbol = NULL;
-    }
+    /*! @decl void scan()
+     *!
+     *!   Called to advance one token in the stream.
+     *!
+     *!   The new token is stored in @[current_symbol].
+     *!
+     *! @note
+     *!   This function is not callable directly, but may be overloaded.
+     */
+    PIKEFUN void scan()
+      flags ID_STATIC;
+    {
+      if (THIS->current_symbol) {
+	free_string(THIS->current_symbol);
+	THIS->current_symbol = NULL;
+      }
 
-    if (!THIS->scanner) {
-      if (THIS->data) {
-	if (!THIS->data->size_shift) {
-	  THIS->scanner = scan0;
-	} else if (THIS->data->size_shift == 1) {
-	  THIS->scanner = scan1;
+      if (!THIS->scanner) {
+	if (THIS->data) {
+	  if (!THIS->data->size_shift) {
+	    THIS->scanner = scan0;
+	  } else if (THIS->data->size_shift == 1) {
+	    THIS->scanner = scan1;
+	  } else {
+	    THIS->scanner = scan2;
+	  }
 	} else {
-	  THIS->scanner = scan2;
+	  /* No data. */
+	  return;
 	}
-      } else {
-	/* No data. */
-	return;
+      }
+      THIS->scanner(THIS);
+      if (THIS->current_symbol) {
+	THIS->token_num++;
       }
     }
-    THIS->scanner(THIS);
-    if (THIS->current_symbol) {
-      THIS->token_num++;
-    }
-  }
 
-  /*! @decl void create(string data)
-   *!
-   *! Initialize the basic tokenizer.
-   *!
-   *! @param data
-   *!   String to tokenize.
-   */
-  PIKEFUN void create(string data)
-    flags ID_STATIC;
-  {
-    if (THIS->data) {
-      free_string(THIS->data);
-    }
-    copy_shared_string(THIS->data, data);
+    /*! @decl void create(string data)
+     *!
+     *! Initialize the basic tokenizer.
+     *!
+     *! @param data
+     *!   String to tokenize.
+     */
+    PIKEFUN void create(string data)
+      flags ID_STATIC;
+    {
+      if (THIS->data) {
+	free_string(THIS->data);
+      }
+      copy_shared_string(THIS->data, data);
 
-    THIS->pos = 0;
-    THIS->token_num = 0;
-    THIS->line_no = 1;
-    if (THIS->current_symbol) {
-      free_string(THIS->current_symbol);
-      THIS->current_symbol = NULL;
-    }
+      THIS->pos = 0;
+      THIS->token_num = 0;
+      THIS->line_no = 1;
+      if (THIS->current_symbol) {
+	free_string(THIS->current_symbol);
+	THIS->current_symbol = NULL;
+      }
 
-    THIS->scanner = NULL;
+      THIS->scanner = NULL;
 
-    mega_apply(APPLY_LOW, 0, Pike_fp->current_object,
-	       (void *)(scan_fun_num + Pike_fp->context.identifier_level));
-    pop_stack();
-  }
-
-  /*! @decl int(0..1) `!()
-   *!
-   *! Check for end of stream.
-   *!
-   *! @returns
-   *!   Returns 1 at end of stream.
-   */
-  PIKEFUN int(0..1) `!()
-    flags ID_STATIC;
-  {
-    RETURN !THIS->current_symbol;
-  }
-
-  PIKEFUN object `+=(int n)
-    flags ID_STATIC;
-  {
-    while (n-- > 0) {
       mega_apply(APPLY_LOW, 0, Pike_fp->current_object,
 		 (void *)(scan_fun_num + Pike_fp->context.identifier_level));
       pop_stack();
     }
-    pop_n_elems(args);
-    f_this_object(0);
-  }
 
-  PIKEFUN int index()
-  {
-    RETURN THIS->token_num;
-  }
-
-  PIKEFUN string value()
-  {
-    add_ref(THIS->current_symbol);
-    RETURN THIS->current_symbol;
-  }
-
-  INIT
-  {
-    THIS->data = NULL;
-    THIS->scanner = NULL;
-    THIS->pos = 0;
-    THIS->token_num = 0;
-    THIS->line_no = 1;
-    THIS->current_symbol = NULL;
-  }
-
-  EXIT
-  {
-    if (THIS->data) {
-      free_string(THIS->data);
-      THIS->data = NULL;
+    /*! @decl int(0..1) `!()
+     *!
+     *! Check for end of stream.
+     *!
+     *! @returns
+     *!   Returns 1 at end of stream.
+     */
+    PIKEFUN int(0..1) `!()
+      flags ID_STATIC;
+    {
+      RETURN !THIS->current_symbol;
     }
-    if (THIS->current_symbol) {
-      free_string(THIS->current_symbol);
+
+    PIKEFUN object `+=(int n)
+      flags ID_STATIC;
+    {
+      while (n-- > 0) {
+	mega_apply(APPLY_LOW, 0, Pike_fp->current_object,
+		   (void *)(scan_fun_num + Pike_fp->context.identifier_level));
+	pop_stack();
+      }
+      pop_n_elems(args);
+      f_this_object(0);
+    }
+
+    PIKEFUN int index()
+    {
+      RETURN THIS->token_num;
+    }
+
+    PIKEFUN string value()
+    {
+      add_ref(THIS->current_symbol);
+      RETURN THIS->current_symbol;
+    }
+
+    INIT
+    {
+      THIS->data = NULL;
+      THIS->scanner = NULL;
+      THIS->pos = 0;
+      THIS->token_num = 0;
+      THIS->line_no = 1;
       THIS->current_symbol = NULL;
     }
-    THIS->scanner = NULL;
+
+    EXIT
+    {
+      if (THIS->data) {
+	free_string(THIS->data);
+	THIS->data = NULL;
+      }
+      if (THIS->current_symbol) {
+	free_string(THIS->current_symbol);
+	THIS->current_symbol = NULL;
+      }
+      THIS->scanner = NULL;
+    }
   }
-}
 
-/*! @endclass
- */
-
+  /*! @endclass
+   */
 }
 
 /*! @endclass
