@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: svalue.h,v 1.54 2000/06/09 22:46:21 mast Exp $
+ * $Id: svalue.h,v 1.55 2000/06/16 22:06:46 hubbe Exp $
  */
 #ifndef SVALUE_H
 #define SVALUE_H
@@ -256,7 +256,7 @@ do{ \
 extern void describe(void *); /* defined in gc.c */
 #define check_type(T) if(T > MAX_TYPE && T!=T_LVALUE && T!=T_SHORT_LVALUE && T!=T_VOID && T!=T_DELETED && T!=T_ARRAY_LVALUE) fatal("Type error: %d\n",T)
 
-#define check_svalue(S) debug_check_svalue(debug_malloc_pass(&(struct svalue) *(S)))
+#define check_svalue(S) debug_check_svalue(dmalloc_check_svalue(S,DMALLOC_LOCATION))
 
 #define check_refs(S) do {\
  if((S)->type <= MAX_REF_TYPE && (!(S)->u.refs || (S)->u.refs[0] < 0)) { \
@@ -271,8 +271,26 @@ if((T) <= MAX_REF_TYPE && (S)->refs && (S)->refs[0] <= 0) {\
 } }while(0)
 
 #ifdef DEBUG_MALLOC
+static inline struct svalue *dmalloc_check_svalue(struct svalue *s, char *l)
+{
+  debug_malloc_update_location(s,l);
+  if(s->type <= MAX_REF_TYPE)
+    debug_malloc_update_location(s->u.refs,l);
+  return s;
+}
+
+static inline union anything *dmalloc_check_union(union anything *u, char * l)
+{
+  debug_malloc_update_location(u,l);
+  if(type <= MAX_REF_TYPE)
+    debug_malloc_update_location(u->refs,l);
+  return u;
+}
+
 #define add_ref(X) ((INT32 *)debug_malloc_pass( &((X)->refs)))[0]++
 #else
+#define dmalloc_check_svalue(S,L) (S)
+#define dmalloc_check_union(U,T,L) (U)
 #define add_ref(X) (X)->refs++
 #endif
 
@@ -368,13 +386,13 @@ int gc_cycle_check_weak_short_svalue(union anything *u, TYPE_T type);
 INT32 pike_sizeof(struct svalue *s);
 /* Prototypes end here */
 
-#define gc_xmark_svalues(S,N) real_gc_xmark_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
-#define gc_check_svalues(S,N) real_gc_check_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
-#define gc_check_short_svalue(U,T) real_gc_check_short_svalue(debug_malloc_pass(&(union anything) *(U)),T)
-#define gc_mark_svalues(S,N) real_gc_mark_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
-#define gc_mark_short_svalue(U,T) real_gc_mark_short_svalue(debug_malloc_pass(&(union anything) *(U)),T)
-#define gc_cycle_check_svalues(S,N) real_gc_cycle_check_svalues(debug_malloc_pass(&(struct svalue) *(S)),N)
-#define gc_cycle_check_short_svalue(U,T) real_gc_cycle_check_short_svalue(debug_malloc_pass(&(union anything) *(U)),T)
+#define gc_xmark_svalues(S,N) real_gc_xmark_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION),N)
+#define gc_check_svalues(S,N) real_gc_check_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION),N)
+#define gc_check_short_svalue(U,T) real_gc_check_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION),T)
+#define gc_mark_svalues(S,N) real_gc_mark_svalues(dmalloc_check_svalue((S),DMALLOC_LOCATION),N)
+#define gc_mark_short_svalue(U,T) real_gc_mark_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION),T)
+#define gc_cycle_check_svalues(S,N) real_gc_cycle_check_svalues(dmalloc_check_svalue(S,DMALLOC_LOCATION),N)
+#define gc_cycle_check_short_svalue(U,T) real_gc_cycle_check_short_svalue(dmalloc_check_union((U),(T),DMALLOC_LOCATION),(T))
 
 #ifndef NO_PIKE_SHORTHAND
 
