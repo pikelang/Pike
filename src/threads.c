@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.176 2004/03/09 14:12:58 grubba Exp $");
+RCSID("$Id: threads.c,v 1.177 2004/03/09 18:49:43 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1036,7 +1036,7 @@ void exit_mutex_key_obj(struct object *o)
     co_signal(& mut->condition);
 
     if (owner) {
-      free_object(mut->owner);
+      free_object(owner);
     }
   }
   if (THIS_KEY->mutex_obj) {
