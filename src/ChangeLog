@@ -1,3 +1,8 @@
+Tue Jun 24 21:23:36 1997  Niels Möller  <nisse@infovav.se>
+
+	* modules/files/file.c (file_write): Fixed non-terminated string
+	constant. 
+
 Tue Jun 17 04:20:20 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* SIGUSR1 and SIGUSR2 are now masked out on linux systems
