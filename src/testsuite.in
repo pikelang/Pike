@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.386 2001/02/21 16:28:27 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.387 2001/02/21 16:29:23 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -212,6 +212,10 @@ test_compile_error([[ int b=17; float c=42.0; b=b/c; ]])
 test_compile_error([[ int b=17; float c=42.0; b/=c; ]])
 test_compile_error([[ int b=17; float c=42.0; b=b*c; ]])
 test_compile_error([[ int b=17; float c=42.0; b*=c; ]])
+test_compile_error([[ int b=17; float c=42.0; b=b+c; ]])
+test_compile_error([[ int b=17; float c=42.0; b+=c; ]])
+test_compile_error([[ int b=17; float c=42.0; b=b-c; ]])
+test_compile_error([[ int b=17; float c=42.0; b-=c; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42; ]])
 test_compile_error([[ float b=17.0; string a; a=b*42.0; ]])
 
