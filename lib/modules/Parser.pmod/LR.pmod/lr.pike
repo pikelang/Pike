@@ -1,7 +1,7 @@
 #!/usr/local/bin/pike
 
 /*
- * $Id: lr.pike,v 1.3 2002/05/11 02:58:32 nilsson Exp $
+ * $Id: lr.pike,v 1.4 2002/05/24 15:36:53 grubba Exp $
  *
  * An LR(1) Parser in Pike
  *
@@ -195,7 +195,7 @@ int main(int argc, array(string) argv)
 
   werror("Compiling...\n");
 
-  g->verbose = 0;
+  g->set_error_handler(ErrorHandler(0)->report);
 
   g->compile();
 
