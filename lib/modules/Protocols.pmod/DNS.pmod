@@ -1,4 +1,4 @@
-// $Id: DNS.pmod,v 1.72 2004/09/15 19:59:05 grubba Exp $
+// $Id: DNS.pmod,v 1.73 2005/01/03 11:07:46 grubba Exp $
 // Not yet finished -- Fredrik Hubinette
 
 //! Domain Name System
@@ -360,6 +360,9 @@ class protocol
 	m->retry=decode_int(s,next);
 	m->expire=decode_int(s,next);
 	m->minimum=decode_int(s,next);
+	break;
+      case T_TXT:
+	m->txt = decode_string(s, next);
 	break;
     }
     
