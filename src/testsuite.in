@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.243 1999/12/02 19:18:30 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.244 1999/12/05 17:17:15 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -79,6 +79,18 @@ test_any([[function(:string)|function(mixed, mixed...:int) f;
 test_any([[function(:string)|function(mixed, mixed ...:int) f;
 	  return typeof(f(1)); ]],
 	 "int")
+
+test_any([[mapping(object:string)|mapping(string:int) f;
+	  return typeof(f[class{}()]); ]],
+	 "string")
+
+test_any([[mapping(object:string)|mapping(string:int) f;
+	  return typeof(f[""]); ]],
+	 "int")
+
+test_any([[mapping(object:string)|mapping(string:int) f;
+	  return sort((typeof(f[0]) - " ")/"|")*"|"; ]],
+	 "int|string")
 
 test_compile_any([[
   constant FOO = 0;
