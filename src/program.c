@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.444 2002/09/21 18:22:14 mast Exp $");
+RCSID("$Id: program.c,v 1.445 2002/09/30 12:43:59 marcus Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -5372,10 +5372,8 @@ static void run_exit(struct compilation *c)
 #endif /* PIKE_DEBUG */
   compilation_depth=c->save_depth;
 
-#ifdef PIKE_DEBUG
   if (resolve_cache)
     free_mapping(resolve_cache);
-#endif
   resolve_cache = c->resolve_cache_save;
 
   if (error_handler) free_object(error_handler);
