@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: cpp.c,v 1.121 2003/09/19 23:54:47 nilsson Exp $
+|| $Id: cpp.c,v 1.122 2003/09/30 15:25:16 grubba Exp $
 */
 
 #include "global.h"
@@ -471,7 +471,12 @@ static void simple_add_define(struct cpp *this,
       this->current_line++;						\
       break;								\
     case '"': break;							\
-    case '\\': if(data[++pos]=='\n') this->current_line++;		\
+    case '\\':								\
+      if(data[++pos]=='\n') this->current_line++;			\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
+	this->current_line++;						\
+	pos++;								\
+      }									\
     default: continue;							\
     }									\
    break;								\
@@ -491,7 +496,12 @@ static void simple_add_define(struct cpp *this,
       this->current_line++;						\
       continue;								\
     case '"': break;							\
-    case '\\': if(data[++pos]=='\n') this->current_line++;		\
+    case '\\':								\
+      if(data[++pos]=='\n') this->current_line++;			\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {		\
+	this->current_line++;						\
+	pos++;								\
+      }									\
     default: continue;							\
     }									\
    break;								\
@@ -520,7 +530,12 @@ static void simple_add_define(struct cpp *this,
       this->current_line++;					\
       break;							\
     case '\'': break;						\
-    case '\\': if(data[++pos]=='\n') this->current_line++;	\
+    case '\\':							\
+      if(data[++pos]=='\n') this->current_line++;		\
+      else if ((data[pos] == '\r') && (data[pos+1] == '\n')) {	\
+	this->current_line++;					\
+	pos++;							\
+      }								\
     default: continue;						\
     }								\
     break;							\
@@ -539,11 +554,19 @@ static void simple_add_define(struct cpp *this,
 
 #define SKIPWHITE() do {					\
     if(!WC_ISSPACE(data[pos])) {				\
-      if (data[pos] == '\\' && data[pos+1] == '\n') {		\
-	pos += 2;						\
-	PUTNL();						\
-	this->current_line++;					\
-	continue;						\
+      if (data[pos] == '\\') {					\
+	if (data[pos+1] == '\n') {				\
+	  pos += 2;						\
+	  PUTNL();						\
+	  this->current_line++;					\
+	  continue;						\
+	} else if ((data[pos+1] == '\r') &&			\
+		   (data[pos+2] == '\n')) {			\
+	  pos += 3;						\
+	  PUTNL();						\
+	  this->current_line++;					\
+	  continue;						\
+	}							\
       }								\
       break;							\
     }								\
@@ -556,10 +579,18 @@ static void simple_add_define(struct cpp *this,
     while (WC_ISSPACE(data[pos]) && data[pos]!='\n') {		\
       pos++;							\
     }								\
-    if (data[pos] != '\\' || data[pos+1] != '\n') {		\
+    if (data[pos] == '\\') {					\
+      if (data[pos+1] == '\n') {				\
+	pos+=2;							\
+      } else if ((data[pos+1] == '\r') &&			\
+		 (data[pos+2] == '\n')) {			\
+	pos+=3;							\
+      } else {							\
+	break;							\
+      }								\
+    } else {							\
       break;							\
     }								\
-    pos+=2;							\
     PUTNL();							\
     this->current_line++;					\
   } while (1)
