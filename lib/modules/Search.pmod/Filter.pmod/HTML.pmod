@@ -24,56 +24,66 @@ Output filter(Standards.URI uri, string|Stdio.File data,
 
   if(objectp(data))
     data=data->read();
+  /* http://lib.roxen.com/jargon-4.2.3/jargon.html
+
+      with old <a> callback: 				     64.9
+      with new <a> callback:                                  2.1
+      with C <a> callback:                                    1.9
+      with empty <a> callback:                                1.9
+      without <a> callback:  				      1.7
+  */
+  void parse_meta(Parser.HTML p, mapping m )
+  {
+    string n = m["http-equiv"]||m->name;
+    switch(lower_case(n))
+    {
+      case "description": 
+	res->fields->description=fix_entities(m->contents||"");
+	break;
+      case "keywords":
+	res->fields->keywords=fix_entities(m->contents||"");
+	break;
+    }
+  };
+
+  _WhiteFish.LinkFarm lf = _WhiteFish.LinkFarm();
+  function ladd = lf->add;
+  void parse_title(Parser.HTML p, mapping m, string c) {
+    res->fields->title=fix_entities(c);
+  };
+  void parse_a(Parser.HTML p, mapping m, string c)  {
+    ladd( m->href );
+  };
 
   String.Buffer databuf=String.Buffer();
   Parser.HTML parser = Parser.HTML();
 
   parser->case_insensitive_tag(1);
+  parser->add_tag("meta",parse_meta );
 
-  parser->add_container("title",
-			lambda(string t, mapping m, string c)
-			{
-			  res->fields->title=fix_entities(c);
-			});
+  parser->add_container("title",parse_title);
+  parser->add_container("a",parse_a);
 
-  parser->add_tag("meta",
-		  lambda(string t, mapping m)
-		  {
-		    switch(m->name)
-		    {
-		    case "description": 
-		      res->fields->description=fix_entities(m->contents||"");
-		      break;
-		    case "keywords":
-		      res->fields->keywords=fix_entities(m->contents||"");
-		      break;
-		    }
-		  });
+  constant ignore_tags=({"noindex","script","style","no-index",});
+  parser->add_containers(mkmapping(ignore_tags,({""})*sizeof(ignore_tags)));
 
-  parser->add_container("A",
-			lambda(string t, mapping m, string c)
-			{
-			  if( m->href )
-			    res->links+=({fix_entities(m->href)});
-			});
-  
-  parser->_set_data_callback(lambda(object p, string data)
-			     {
-			       databuf->add(data);
+  function dadd = databuf->add;
+  parser->_set_data_callback(lambda(object p, string data) {
+			       dadd(data);
 			     });
 
-   array(string) ignore_tags=({"noindex","script","style","no-index",});
-
-    foreach(ignore_tags, string ignore_tag)
-      parser->add_container(ignore_tag, "");
-    
   res->fields->title="";
   res->fields->description="";
   res->fields->keywords="";
 
+  int h = gethrtime();
   parser->feed(data);
   parser->finish();
-
+  werror("\n%.1f\n", (gethrtime()-h)/1000000.0 );
+  array links = lf->read();
+  werror("%O\n", links );
+  res->links = map( links, fix_entities );
+  
   res->fields->body=fix_entities(databuf->get());
   res->fix_relative_links(uri);
 
