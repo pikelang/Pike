@@ -1,5 +1,5 @@
 /*
- * $Id: parser.pike,v 1.18 1998/11/18 22:08:53 grubba Exp $
+ * $Id: parser.pike,v 1.19 1998/11/22 00:13:59 grubba Exp $
  *
  * A BNF-grammar in Pike.
  * Compiles to a LALR(1) state-machine.
@@ -9,7 +9,7 @@
 
 //.
 //. File:	parser.pike
-//. RCSID:	$Id: parser.pike,v 1.18 1998/11/18 22:08:53 grubba Exp $
+//. RCSID:	$Id: parser.pike,v 1.19 1998/11/22 00:13:59 grubba Exp $
 //. Author:	Henrik Grubbström (grubba@infovav.se)
 //.
 //. Synopsis:	LALR(1) parser and compiler.
@@ -1126,22 +1126,25 @@ int compile()
 
   /* First make LR(0) states */
 
+#ifdef LR_PROFILE
   werror(sprintf("LR0: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  while (state = s_q->next()) {
+    while (state = s_q->next()) {
 
-    if (verbose) {
-      werror(sprintf("Compiling state %d:\n%s", state_no++,
-		     state_to_string(state) + "\n"));
+      if (verbose) {
+	werror(sprintf("Compiling state %d:\n%s", state_no++,
+		       state_to_string(state) + "\n"));
+      }
+
+      /* Probably better implemented as a stack */
+      foreach (indices(state->goto_set()), int|string symbol) {
+	state->do_goto(symbol);
+      }
     }
-
-    /* Probably better implemented as a stack */
-    foreach (indices(state->goto_set()), int|string symbol) {
-      state->do_goto(symbol);
-    }
-  }
-
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
   /* Compute nullables */
   /* Done during add_rule */
@@ -1150,244 +1153,282 @@ int compile()
 		   map(indices(nullable), symbol_to_string) * ", "));
   }
 
+#ifdef LR_PROFILE
   werror(sprintf("Master items: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Mark Transition and Reduction master items */
-  for (int index = 0; index < s_q->tail; index++) {
-    mapping(int|string : object(item)) master_item =([]);
+    /* Mark Transition and Reduction master items */
+    for (int index = 0; index < s_q->tail; index++) {
+      mapping(int|string : object(item)) master_item =([]);
     
-    foreach (s_q->arr[index]->items, object(item) i) {
-      if (i->offset < sizeof(i->r->symbols)) {
-	/* This is not a reduction item, which represent themselves */
-	int|string symbol = i->r->symbols[i->offset];
-
-	if (!(i->master_item = master_item[symbol])) {
-	  master_item[symbol] = i;
+      foreach (s_q->arr[index]->items, object(item) i) {
+	if (i->offset < sizeof(i->r->symbols)) {
+	  /* This is not a reduction item, which represent themselves */
+	  int|string symbol = i->r->symbols[i->offset];
+	  
+	  if (!(i->master_item = master_item[symbol])) {
+	    master_item[symbol] = i;
+	  }
 	}
       }
     }
-  }
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
   /* Probably OK so far */
 
+#ifdef LR_PROFILE
   werror(sprintf("LA sets: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Calculate look-ahead sets (DR and relation) */
-  for (int index = 0; index < s_q->tail; index++) {
-    foreach (s_q->arr[index]->items, object(item) i) {
-      if ((!i->master_item) && (i->offset != sizeof(i->r->symbols)) &&
-	  (intp(i->r->symbols[i->offset]))) {
-	/* This is a non-terminal master item */
-	foreach (i->next_state->items, object(item) i2) {
-	  int|string symbol;
+    /* Calculate look-ahead sets (DR and relation) */
+    for (int index = 0; index < s_q->tail; index++) {
+      foreach (s_q->arr[index]->items, object(item) i) {
+	if ((!i->master_item) && (i->offset != sizeof(i->r->symbols)) &&
+	    (intp(i->r->symbols[i->offset]))) {
+	  /* This is a non-terminal master item */
+	  foreach (i->next_state->items, object(item) i2) {
+	    int|string symbol;
 
-	  if (!i2->master_item) {
-	    /* Master item */
-	    if (i2->offset != sizeof(i2->r->symbols)) {
-	      if (intp(symbol = i2->r->symbols[i2->offset])) {
-		if (nullable[symbol]) {
-		  /* Add the item to the look-ahead relation set */
-		  i->relation[i2] = 1;
+	    if (!i2->master_item) {
+	      /* Master item */
+	      if (i2->offset != sizeof(i2->r->symbols)) {
+		if (intp(symbol = i2->r->symbols[i2->offset])) {
+		  if (nullable[symbol]) {
+		    /* Add the item to the look-ahead relation set */
+		    i->relation[i2] = 1;
+		  }
+		} else {
+		  /* Add the string to the direct look-ahead set (DR) */
+		  i->direct_lookahead[symbol] = 1;
 		}
-	      } else {
-		/* Add the string to the direct look-ahead set (DR) */
-		i->direct_lookahead[symbol] = 1;
 	      }
 	    }
 	  }
 	}
       }
     }
-  }
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
+#ifdef LR_PROFILE
   werror(sprintf("Handle shift: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Handle SHIFT-conflicts */
-  handle_shift_conflicts();
+    /* Handle SHIFT-conflicts */
+    handle_shift_conflicts();
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
+#ifdef LR_PROFILE
   werror(sprintf("Check shift: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Check the shift sets */
-  /* (Is this needed?)
-   * Yes - initializes error_lookahead
-   */
-  for (int index = 0; index < s_q->tail; index++) {
-    foreach (s_q->arr[index]->items, object(item) i) {
-      if ((!i->master_item) &&
-	  (i->offset != sizeof(i->r->symbols)) &&
-	  (intp(i->r->symbols[i->offset]))) {
-	i->error_lookahead = copy_value(i->direct_lookahead);
+    /* Check the shift sets */
+    /* (Is this needed?)
+     * Yes - initializes error_lookahead
+     */
+    for (int index = 0; index < s_q->tail; index++) {
+      foreach (s_q->arr[index]->items, object(item) i) {
+	if ((!i->master_item) &&
+	    (i->offset != sizeof(i->r->symbols)) &&
+	    (intp(i->r->symbols[i->offset]))) {
+	  i->error_lookahead = copy_value(i->direct_lookahead);
+	}
       }
     }
-  }
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
+#ifdef LR_PROFILE
   werror(sprintf("Lookback sets: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Compute lookback-sets */
-  for (int index = 0; index < s_q->tail; index++) {
-    array(object(item)) items =  s_q->arr[index]->items;
-    // Set up a lookup table to speedup lookups later.
-    mapping(int:array(object(item))) lookup = ([]);
-    foreach (items, object(item) i) {
-      if (!i->offset) {
-	if (!lookup[i->r->nonterminal]) {
-	  lookup[i->r->nonterminal] = ({ i });
-	} else {
-	  lookup[i->r->nonterminal] += ({ i });
+    /* Compute lookback-sets */
+    for (int index = 0; index < s_q->tail; index++) {
+      array(object(item)) items =  s_q->arr[index]->items;
+      // Set up a lookup table to speedup lookups later.
+      mapping(int:array(object(item))) lookup = ([]);
+      foreach (items, object(item) i) {
+	if (!i->offset) {
+	  if (!lookup[i->r->nonterminal]) {
+	    lookup[i->r->nonterminal] = ({ i });
+	  } else {
+	    lookup[i->r->nonterminal] += ({ i });
+	  }
 	}
       }
-    }
-    foreach (items, object(item) transition) {
-      int|string symbol;
+      foreach (items, object(item) transition) {
+	int|string symbol;
 
-      if ((!transition->master_item) &&
-	  (transition->offset != sizeof(transition->r->symbols)) &&
-	  (intp(symbol = transition->r->symbols[transition->offset]))) {
-	/* Master item and
-	 * Not a reduction item and
-	 * next symbol is a NonTerminal
-	 */
-	if (!lookup[symbol]) {
-	  // Foo? Shouldn't these always exist since we've made
-	  // a closure earlier?
-	  werror(sprintf("WARNING: No item for symbol <%s>\n"
-			 "in state:\n"
-			 "%s\n",
-			 symbol_to_string(symbol),
-			 state_to_string(s_q->arr[index])));
-	  continue;
-	}
+	if ((!transition->master_item) &&
+	    (transition->offset != sizeof(transition->r->symbols)) &&
+	    (intp(symbol = transition->r->symbols[transition->offset]))) {
+	  /* Master item and
+	   * Not a reduction item and
+	   * next symbol is a NonTerminal
+	   */
+	  if (!lookup[symbol]) {
+	    // Foo? Shouldn't these always exist since we've made
+	    // a closure earlier?
+	    werror(sprintf("WARNING: No item for symbol <%s>\n"
+			   "in state:\n"
+			   "%s\n",
+			   symbol_to_string(symbol),
+			   state_to_string(s_q->arr[index])));
+	    continue;
+	  }
 
-	/* Find items which can reduce to the nonterminal from above */
-	foreach (lookup[symbol], object(item) i) {
-	  if (sizeof(i->r->symbols)) {
-	    if (go_through(i->next_state, i->item_id + 1, transition)) {
-	      /* Nullable */
-	      object(item) master = i;
-	      if (i->master_item) {
-		master = i->master_item;
-	      }
-	      /* Is this a nonterminal transition? */
-	      if ((master->offset != sizeof(master->r->symbols)) &&
-		  (intp(master->r->symbols[master->offset]))) {
-		/* Don't include ourselves */
-		if (master != transition) {
-		  master->relation[transition] = 1;
+	  /* Find items which can reduce to the nonterminal from above */
+	  foreach (lookup[symbol], object(item) i) {
+	    if (sizeof(i->r->symbols)) {
+	      if (go_through(i->next_state, i->item_id + 1, transition)) {
+		/* Nullable */
+		object(item) master = i;
+		if (i->master_item) {
+		  master = i->master_item;
+		}
+		/* Is this a nonterminal transition? */
+		if ((master->offset != sizeof(master->r->symbols)) &&
+		    (intp(master->r->symbols[master->offset]))) {
+		  /* Don't include ourselves */
+		  if (master != transition) {
+		    master->relation[transition] = 1;
+		  }
 		}
 	      }
+	    } else {
+	      i->relation[transition] = 1;
 	    }
-	  } else {
-	    i->relation[transition] = 1;
 	  }
 	}
       }
     }
-  }
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
+#ifdef LR_PROFILE
   werror(sprintf("Handle follow: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Handle follow-conflicts */
-  handle_follow_conflicts();
+    /* Handle follow-conflicts */
+    handle_follow_conflicts();
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
+#ifdef LR_PROFILE
   werror(sprintf("Compute LA: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Compute the lookahead (LA) */
-  for (int index = 0; index < s_q->tail; index++) {
-    foreach (s_q->arr[index]->items, object(item) i) {
-      if (i->offset == sizeof(i->r->symbols)) {
-	/* Reduction item (always a master item) */
-
-	/* Calculate Look-ahead for all items in look-back set */
+    /* Compute the lookahead (LA) */
+    for (int index = 0; index < s_q->tail; index++) {
+      foreach (s_q->arr[index]->items, object(item) i) {
+	if (i->offset == sizeof(i->r->symbols)) {
+	  /* Reduction item (always a master item) */
+	  
+	  /* Calculate Look-ahead for all items in look-back set */
 	
-	i->direct_lookahead=`|(i->direct_lookahead,
-			       @indices(i->relation)->direct_lookahead);
+	  i->direct_lookahead=`|(i->direct_lookahead,
+				 @indices(i->relation)->direct_lookahead);
+	}
       }
     }
-  }
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
   /* Probably OK from this point onward */
 
+#ifdef LR_PROFILE
   werror(sprintf("Check conflicts: %d\n", gauge {
+#endif /* LR_PROFILE */
 
-  /* Check for conflicts */
-  for (int index = 0; index < s_q->tail; index++) {
-    object(kernel) state = s_q->arr[index];
+    /* Check for conflicts */
+    for (int index = 0; index < s_q->tail; index++) {
+      object(kernel) state = s_q->arr[index];
+    
+      conflicts = (<>);
+      symbols = (<>);
 
-    conflicts = (<>);
-    symbols = (<>);
+      foreach (state->items, object(item) i) {
+	if (i->offset == sizeof(i->r->symbols)) {
+	  /* Reduction */
+	  conflicts |= i->direct_lookahead & symbols;
+	  symbols |= i->direct_lookahead;
+	} else if (!i->master_item) {
+	  string|int symbol;
 
-    foreach (state->items, object(item) i) {
-      if (i->offset == sizeof(i->r->symbols)) {
-	/* Reduction */
-	conflicts |= i->direct_lookahead & symbols;
-	symbols |= i->direct_lookahead;
-      } else if (!i->master_item) {
-	string|int symbol;
+	  /* Only master items, since we get Shift-Shift conflicts otherwise */
 
-	/* Only master items, since we get Shift-Shift conflicts otherwise */
+	  if (!intp(symbol = i->r->symbols[i->offset])) {
+	    /* Shift on terminal */
+	    if (symbols[symbol]) {
+	      conflicts[symbol] = 1;
+	    } else {
+	      symbols[symbol] = 1;
+	    }
+	  }
+	}
+      }
+      if (sizeof(conflicts)) {
+	/* Repair conflicts */
+	// int ov = verbose;
+	// verbose = 1;
+	error = repair(state, conflicts);
+	// verbose = ov;
+      } else if (verbose) {
+	werror(sprintf("No conflicts in state:\n%s\n",
+		       state_to_string(s_q->arr[index])));
+      }
+    }
 
-	if (!intp(symbol = i->r->symbols[i->offset])) {
-	  /* Shift on terminal */
-	  if (symbols[symbol]) {
-	    conflicts[symbol] = 1;
-	  } else {
-	    symbols[symbol] = 1;
+#ifdef LR_PROFILE
+  }));
+#endif /* LR_PROFILE */
+
+#ifdef LR_PROFILE
+  werror(sprintf("Compile actions: %d\n", gauge {
+#endif /* LR_PROFILE */
+
+    /* Compile action tables */
+    for (int index = 0; index < s_q->tail; index++) {
+      object(kernel) state = s_q->arr[index];
+
+      state->action = ([]);
+
+      foreach (state->items, object(item) i) {
+	if (i->next_state) {
+	  /* SHIFT */
+	  state->action[i->r->symbols[i->offset]] = i->next_state;
+	} else {
+	  foreach (indices(i->direct_lookahead), int|string symbol) {
+	    state->action[symbol] = i->r;
 	  }
 	}
       }
     }
-    if (sizeof(conflicts)) {
-      /* Repair conflicts */
-      // int ov = verbose;
-      // verbose = 1;
-      error = repair(state, conflicts);
-      // verbose = ov;
-    } else if (verbose) {
-      werror(sprintf("No conflicts in state:\n%s\n",
-		     state_to_string(s_q->arr[index])));
-    }
-  }
+    start_state = s_q->arr[0];
 
+#ifdef LR_PROFILE
   }));
+#endif /* LR_PROFILE */
 
-  werror(sprintf("Compile actions: %d\n", gauge {
-
-  /* Compile action tables */
-  for (int index = 0; index < s_q->tail; index++) {
-    object(kernel) state = s_q->arr[index];
-
-    state->action = ([]);
-
-    foreach (state->items, object(item) i) {
-      if (i->next_state) {
-	/* SHIFT */
-	state->action[i->r->symbols[i->offset]] = i->next_state;
-      } else {
-	foreach (indices(i->direct_lookahead), int|string symbol) {
-	  state->action[symbol] = i->r;
-	}
-      }
-    }
-  }
-  start_state = s_q->arr[0];
-
-  }));
-
+#ifdef LR_PROFILE
   werror("DONE\n");
+#endif /* LR_PROFILE */
 
   return (error);
 }
