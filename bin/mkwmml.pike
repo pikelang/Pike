@@ -1,4 +1,4 @@
-/* $Id: mkwmml.pike,v 1.14 1999/04/17 15:34:16 grubba Exp $ */
+/* $Id: mkwmml.pike,v 1.15 1999/05/11 18:28:28 mirar Exp $ */
 
 import Stdio;
 import Array;
@@ -247,7 +247,7 @@ string fixdesc(string s,string prefix,string where)
    {
       s+=replace(t,"\n\n","\n\n<p>");
 
-      s+="<illustration __from__='"+where+"' src=lena.gif"+q+">\n"
+      s+="<illustration __from__='"+where+"' src=image_ill.pnm"+q+">\n"
 	 +replace(u,"lena()","src")+"</illustration>";
 
       t=v;
