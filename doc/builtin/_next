@@ -1,0 +1,14 @@
+NAME
+	_next - find the next object/array/whatever
+
+SYNTAX
+	mixed _next(mixed p);
+
+DESCRIPTION
+	This function returns the 'next' object/array/mapping/string/etc
+	in the linked list. It is mainly meant for debugging Pike but
+	can also be used to control memory usage.
+
+SEE ALSO
+	next_object, _prev
+	

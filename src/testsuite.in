@@ -1,4 +1,10 @@
-test_true([["$Id: testsuite.in,v 1.11 1996/12/02 07:02:57 hubbe Exp $"]])
+test_true(mappingp(_memory_usage()))
+test_true(objectp( _next(this_object()) || _prev(this_object())))
+test_true(arrayp( _next(({})) || _prev(({}))))
+test_any(object o=this_object(); while(o=_next(o)));
+test_any(object o=this_object(); while(o=_prev(o)));
+
+test_true([["$Id: testsuite.in,v 1.12 1996/12/05 04:49:38 hubbe Exp $"]])
 test_any([[object(File) o=File(); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return objectp(o);]],1)
 test_any([[object o=Regexp("foo"); return object_program(o);]],Regexp)

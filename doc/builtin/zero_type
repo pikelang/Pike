@@ -11,7 +11,9 @@ DESCRIPTION
 	The only way to separate these two kinds of zeros is zero_type.
 	When doing a find_call_out or mapping lookup, zero_type on this value
 	will return 1 if there was no such thing present in the mappping, or
-	no such call_out could be found. Otherwize zero_type will return zero.
+	no such call_out could be found. If the argument to zero type is a
+	destructed object or a function in a destructed object, 2 will be
+	returned. Otherwize zero_type will return zero.
 
 	If the argument is not an int, zero will be returned.
 

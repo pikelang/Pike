@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.17 1996/12/05 02:32:35 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.18 1996/12/05 04:49:38 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "macros.h"
@@ -515,7 +515,14 @@ void f_zero_type(INT32 args)
   {
     pop_n_elems(args);
     push_int(0);
-  }else{
+  }
+  else if((sp[-args].type==T_OBJECT || sp[-args].type==T_FUNCTION)
+	   && !sp[-args].u.object->prog)
+  {
+    pop_n_elems(args);
+    push_int(NUMBER_DESTRUCTED);
+  }
+  {
     pop_n_elems(args-1);
     sp[-1].u.integer=sp[-1].subtype;
     sp[-1].subtype=NUMBER_NUMBER;
@@ -1509,6 +1516,61 @@ void f__memory_usage(INT32 args)
   f_aggregate_mapping(sp-ss);
 }
 
+void f__next(INT32 args)
+{
+  struct svalue tmp;
+  if(!args)
+    error("Too few arguments to _next()\n");
+  
+  pop_n_elems(args-1);
+  tmp=sp[-1];
+  switch(tmp.type)
+  {
+  case T_OBJECT:  tmp.u.object=tmp.u.object->next; break;
+  case T_ARRAY:   tmp.u.array=tmp.u.array->next; break;
+  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->next; break;
+  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->next; break;
+  case T_PROGRAM: tmp.u.program=tmp.u.program->next; break;
+  case T_STRING:  tmp.u.string=tmp.u.string->next; break;
+  default:
+    error("Bad argument 1 to _next()\n");
+  }
+  if(tmp.u.refs)
+  {
+    assign_svalue(sp-1,&tmp);
+  }else{
+    pop_stack();
+    push_int(0);
+  }
+}
+
+void f__prev(INT32 args)
+{
+  struct svalue tmp;
+  if(!args)
+    error("Too few arguments to _next()\n");
+  
+  pop_n_elems(args-1);
+  tmp=sp[-1];
+  switch(tmp.type)
+  {
+  case T_OBJECT:  tmp.u.object=tmp.u.object->prev; break;
+  case T_ARRAY:   tmp.u.array=tmp.u.array->prev; break;
+  case T_MAPPING: tmp.u.mapping=tmp.u.mapping->prev; break;
+  case T_MULTISET:tmp.u.multiset=tmp.u.multiset->prev; break;
+  case T_PROGRAM: tmp.u.program=tmp.u.program->prev; break;
+  default:
+    error("Bad argument 1 to _prev()\n");
+  }
+  if(tmp.u.refs)
+  {
+    assign_svalue(sp-1,&tmp);
+  }else{
+    pop_stack();
+    push_int(0);
+  }
+}
+
 void init_builtin_efuns()
 {
   init_operators();
@@ -1547,6 +1609,8 @@ void init_builtin_efuns()
   add_efun("mappingp",f_mappingp,"function(mixed:int)",OPT_TRY_OPTIMIZE);
   add_efun("mkmapping",f_mkmapping,"function(mixed *,mixed *:mapping)",OPT_TRY_OPTIMIZE);
   add_efun("next_object",f_next_object,"function(void|object:object)",OPT_EXTERNAL_DEPEND);
+  add_efun("_next",f__next,"function(string:string)|function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
+  add_efun("_prev",f__prev,"function(object:object)|function(mapping:mapping)|function(multiset:multiset)|function(program:program)|function(array:array)",OPT_EXTERNAL_DEPEND);
   add_efun("object_program",f_object_program,"function(mixed:program)",0);
   add_efun("objectp", f_objectp, "function(mixed:int)",0);
   add_efun("programp",f_programp,"function(mixed:int)",0);
