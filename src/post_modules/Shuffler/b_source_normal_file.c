@@ -13,7 +13,7 @@
 
 #define CHUNK 8192
 
-/* $Id: b_source_normal_file.c,v 1.2 2002/05/29 09:33:13 per Exp $ */
+/* $Id: b_source_normal_file.c,v 1.3 2002/05/30 13:30:39 grubba Exp $ */
 
 
 /* Source: Normal file
@@ -21,7 +21,7 @@
  */
 
 
-static struct program *Fd_ref_program;
+static struct program *Fd_ref_program = NULL;
 
 struct fd_source
 {
@@ -33,7 +33,7 @@ struct fd_source
   size_t len;
 };
 
-static struct data get_data( struct source *_s, int len )
+static struct data get_data( struct source *_s, ptrdiff_t len )
 {
   struct fd_source *s = (struct fd_source *)_s;
   struct data res;
@@ -45,9 +45,9 @@ static struct data get_data( struct source *_s, int len )
   res.off = 0;
   res.data = s->buffer;
   
-  if( len > s->len )
+  if( len > (ptrdiff_t)s->len )
   {
-    len = s->len;
+    len = (ptrdiff_t)s->len;
     s->s.eof = 1;
   }
 
@@ -69,8 +69,23 @@ struct source *source_normal_file_make( struct svalue *s,
 {
   struct fd_source *res;
   struct stat st;
-  if( (s->type != PIKE_T_OBJECT) ||
-      !get_storage( s->u.object, Fd_ref_program ) )
+  if(s->type != PIKE_T_OBJECT)
+    return 0;
+
+  if (!Fd_ref_program)
+  {
+    push_text("files.Fd_ref"); push_int(0);
+    SAFE_APPLY_MASTER("resolv",2);
+    Fd_ref_program = program_from_svalue(Pike_sp-1);
+    if (!Fd_ref_program) {
+      pop_stack();
+      return 0;
+    }
+    add_ref(Fd_ref_program);
+    pop_stack( );
+  }
+
+  if (!get_storage( s->u.object, Fd_ref_program ) )
     return 0;
 
   res = malloc( sizeof( struct fd_source ) );
@@ -113,14 +128,11 @@ fail:
 
 void source_normal_file_exit( )
 {
-  free_program( Fd_ref_program );
+  if (Fd_ref_program) {
+    free_program( Fd_ref_program );
+  }
 }
 
 void source_normal_file_init( )
 {
-  push_text("files.Fd_ref"); push_int(0);
-  SAFE_APPLY_MASTER("resolv",2);
-  Fd_ref_program = program_from_svalue(Pike_sp-1);
-  Fd_ref_program->refs++;
-  pop_stack( );
 }

@@ -5,6 +5,7 @@
 
 #include "fdlib.h"
 #include "fd_control.h"
+#include "backend.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -12,7 +13,7 @@
 #include "shuffler.h"
 
 #define CHUNK 8192
-/* $Id: c_source_stream.c,v 1.3 2002/05/30 03:55:24 per Exp $ */
+/* $Id: c_source_stream.c,v 1.4 2002/05/30 13:30:39 grubba Exp $ */
 
 
 /* Source: Stream
@@ -21,7 +22,7 @@
  */
 
 
-static struct program *Fd_ref_program;
+static struct program *Fd_ref_program = NULL;
 
 struct fd_source
 {
@@ -107,7 +108,7 @@ static void read_callback( int fd, struct fd_source *s )
   }
   else if( s->skip )
   {
-    if( s->skip >= l )
+    if( ((ptrdiff_t)s->skip) >= l )
     {
       s->skip -= l;
       return;
@@ -118,7 +119,7 @@ static void read_callback( int fd, struct fd_source *s )
   }
   if( s->len > 0 )
   {
-    if( s->len < l )
+    if( ((ptrdiff_t)s->len) < l )
       l = s->len;
     s->len -= l;
     if( !s->len )
@@ -140,8 +141,22 @@ struct source *source_stream_make( struct svalue *s,
 				   INT64 start, INT64 len )
 {
   struct fd_source *res;
-  if( (s->type != PIKE_T_OBJECT) ||
-      !get_storage( s->u.object, Fd_ref_program ) )
+  if(s->type != PIKE_T_OBJECT)
+    return 0;
+
+  if (!Fd_ref_program) {
+    push_text("files.Fd_ref"); push_int(0);
+    SAFE_APPLY_MASTER("resolv",2);
+    Fd_ref_program = program_from_svalue(Pike_sp-1);
+    if (!Fd_ref_program) {
+      pop_stack();
+      return 0;
+    }
+    add_ref(Fd_ref_program);
+    pop_stack( );
+  }
+
+  if (!get_storage( s->u.object, Fd_ref_program ) )
     return 0;
 
   res = malloc( sizeof( struct fd_source ) );
@@ -166,14 +181,11 @@ struct source *source_stream_make( struct svalue *s,
 
 void source_stream_exit( )
 {
-  free_program( Fd_ref_program );
+  if (Fd_ref_program) {
+    free_program( Fd_ref_program );
+  }
 }
 
 void source_stream_init( )
 {
-  push_text("files.Fd_ref"); push_int(0);
-  SAFE_APPLY_MASTER("resolv",2);
-  Fd_ref_program = program_from_svalue(Pike_sp-1);
-  Fd_ref_program->refs++;
-  pop_stack( );
 }

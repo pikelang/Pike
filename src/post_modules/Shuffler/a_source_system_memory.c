@@ -5,12 +5,12 @@
 
 #include <shuffler.h>
 
-/* $Id: a_source_system_memory.c,v 1.4 2002/05/29 09:33:13 per Exp $ */
+/* $Id: a_source_system_memory.c,v 1.5 2002/05/30 13:30:39 grubba Exp $ */
 
 /* Source: System.Memory
  * Argument: An initialized instance of the System.Memory class
  */
-static struct program *shm_program;
+static struct program *shm_program = NULL;
 
 struct sm_source
 {
@@ -61,7 +61,19 @@ struct source *source_system_memory_make( struct svalue *s,
   if( s->type != PIKE_T_OBJECT )
     return 0;
 
-  
+  if (!shm_program) {
+    push_text("System.Memory");
+    push_int(0);
+    SAFE_APPLY_MASTER("resolv", 2);
+    shm_program = program_from_svalue(Pike_sp - 1);
+    if (!shm_program) {
+      pop_stack();
+      return 0;
+    }
+    add_ref(shm_program);
+    pop_stack();
+  }
+
   res = malloc( sizeof( struct sm_source ) );
   MEMSET( res, 0, sizeof( struct sm_source ) );
 
@@ -106,14 +118,11 @@ struct source *source_system_memory_make( struct svalue *s,
 
 void source_system_memory_exit( )
 {
-  free_program( shm_program );
+  if (shm_program) {
+    free_program( shm_program );
+  }
 }
 
 void source_system_memory_init( )
 {
-  push_text("System.Memory"); push_int(0);
-  SAFE_APPLY_MASTER("resolv",2);
-  shm_program = program_from_svalue(Pike_sp-1);
-  shm_program->refs++;
-  pop_stack( );
 }
