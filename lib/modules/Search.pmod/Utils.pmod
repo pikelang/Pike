@@ -1,7 +1,7 @@
 // This file is part of Roxen Search
 // Copyright © 2001 Roxen IS. All rights reserved.
 //
-// $Id: Utils.pmod,v 1.36 2003/01/27 15:10:09 mattias Exp $
+// $Id: Utils.pmod,v 1.37 2003/01/31 11:55:05 mattias Exp $
 
 #if !constant(report_error)
 #define report_error werror
@@ -470,16 +470,6 @@ class Scheduler {
       return;
     next_run = would_be_indexed;
     reschedule();
-  }
-
-  private void reschedule() {
-    remove_call_out(do_scheduled_stuff);
-    WERR("Scheduler runs next event in "+(next_run-time())+" seconds.");
-    call_out(do_scheduled_stuff, next_run-time());
-  }
-
-  void unschedule() {
-    remove_call_out(do_scheduled_stuff);
   }
 
   void schedule() {
