@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.115 2002/03/25 15:32:49 mast Exp $
+// $Id: module.pmod,v 1.116 2003/02/17 10:32:04 wellhard Exp $
 #pike __REAL_VERSION__
 
 
@@ -668,6 +668,9 @@ class File
 ** 
 */
 
+    if (!(::mode() & 0x400))
+      throw( ({"Read callback called on blocking socket!\n",backtrace()}) );
+    
 #if !defined(__NT__)
     if (peek_file_before_read_callback)
        if (!::peek()) 
