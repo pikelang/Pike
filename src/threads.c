@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.174 2004/03/08 15:02:43 grubba Exp $");
+RCSID("$Id: threads.c,v 1.175 2004/03/08 16:49:58 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -33,7 +33,8 @@ PMOD_EXPORT COND_T live_threads_change;
 PMOD_EXPORT COND_T threads_disabled_change;
 PMOD_EXPORT size_t thread_stack_size=1024 * 1204;
  
-PMOD_EXPORT void thread_low_error (int errcode)
+PMOD_EXPORT void thread_low_error (int errcode, const char *cmd,
+                                   const char *fname, int lineno)
 {
   fatal ("%s:%d: %s\n"
 	 "Unexpected error from thread function: %d\n",
