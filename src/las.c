@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.330 2003/03/14 15:50:44 grubba Exp $
+|| $Id: las.c,v 1.331 2003/03/20 21:26:31 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.330 2003/03/14 15:50:44 grubba Exp $");
+RCSID("$Id: las.c,v 1.331 2003/03/20 21:26:31 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -3071,6 +3071,8 @@ static void find_written_vars(node *n,
     if(n->tree_info & OPT_SIDE_EFFECT) {
       p->ext_flags = VAR_USED;
     }
+    find_written_vars(CAR(n), p, 0);
+    find_written_vars(CDR(n), p, 0);
     break;
 
   case F_AUTO_MAP_MARKER:
@@ -3191,6 +3193,31 @@ static int depend_p2(node *a, node *b)
 
   find_used_variables(a, &aa, 0, 0);
   find_written_vars(b, &bb, 0);
+
+#ifdef PIKE_DEBUG
+  if (l_flag > 2) {
+    struct scope_info *aaa = aa.locals;
+    while (aaa) {
+      fprintf(stderr, "Used locals:\n");
+      for (e = 0; e < MAX_VAR; e++) {
+	if (aaa->vars[e] == VAR_USED) {
+	  fprintf(stderr, "\t%d:%d\n", aaa->scope_id, e);
+	}
+      }
+      aaa = aaa->next;
+    }
+    aaa = bb.locals;
+    while (aaa) {
+      fprintf(stderr, "Written locals:\n");
+      for (e = 0; e < MAX_VAR; e++) {
+	if (aaa->vars[e] != VAR_UNUSED) {
+	  fprintf(stderr, "\t%d:%d\n", aaa->scope_id, e);
+	}
+      }
+      aaa = aaa->next;
+    }
+  }
+#endif /* PIKE_DEBUG */
 
   UNSET_ONERROR(free_bb);
   UNSET_ONERROR(free_aa);
