@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: run_autoconfig,v 1.41 2004/04/04 13:33:22 mast Exp $
+# $Id: run_autoconfig,v 1.42 2004/05/01 13:22:01 mast Exp $
 #
 # Bootstrap script
 
@@ -37,8 +37,30 @@ else
   fi
 fi
 
-autoconf=autoconf
-autoheader=autoheader
+findprog() {
+  (
+    IFS=:
+    for path in $PATH; do
+      if [ -x "$path/$1" ]; then
+	return 0
+      fi
+    done
+    return 1
+  )
+}
+
+# There are script wrappers for autoconf (e.g. in Debian) that tries
+# to autodetect which autoconf version configure.in etc is written
+# for. There are also configure.in scripts (e.g. in Pike) that tries
+# to detect which autoconf they're running in. These tend to fool each
+# other, so try to avoid the script wrappers.
+if findprog autoconf2.50 && findprog autoheader2.50; then
+  autoconf=autoconf2.50
+  autoheader=autoheader2.50
+else
+  autoconf=autoconf
+  autoheader=autoheader
+fi
 
 ac_args="--localdir=$localdir"
 ah_args=""
