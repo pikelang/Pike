@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.198 2001/05/14 06:31:12 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.199 2001/05/14 17:51:20 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -859,8 +859,11 @@ static void do_trace_call(INT32 args)
   X->refs=1;					\
   X->flags=0; 					\
   X->scope=0;					\
-  DO_IF_SECURITY( if(CURRENT_CREDS)		\
-    add_ref(X->current_creds=CURRENT_CREDS); )	\
+  DO_IF_SECURITY( if(CURRENT_CREDS) {		\
+    add_ref(X->current_creds=CURRENT_CREDS);	\
+  } else {					\
+    X->current_creds = 0;			\
+  })						\
 }while(0)
 
 #undef EXIT_BLOCK
@@ -869,7 +872,9 @@ static void do_trace_call(INT32 args)
   if(X->context.prog) free_program(X->context.prog);	\
   if(X->context.parent) free_object(X->context.parent);	\
   if(X->scope) free_pike_frame(X->scope);		\
-  DO_IF_SECURITY( if(X->current_creds) free_object(X->current_creds); )	\
+  DO_IF_SECURITY( if(X->current_creds) {		\
+    free_object(X->current_creds);			\
+  })							\
   if(X->flags & PIKE_FRAME_MALLOCED_LOCALS)		\
   {							\
     free_svalues(X->locals,X->num_locals,BIT_MIXED);	\
@@ -884,6 +889,7 @@ static void do_trace_call(INT32 args)
     X->flags=0;						\
     X->expendible=0;					\
     X->locals=0;					\
+    DO_IF_SECURITY( X->current_creds=0; )		\
  )							\
 }while(0)
 
