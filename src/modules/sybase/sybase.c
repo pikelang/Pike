@@ -24,7 +24,7 @@
 #include "sybase_config.h"
 #include "global.h"
 
-RCSID("$Id: sybase.c,v 1.2 2000/05/03 20:22:44 neotron Exp $");
+RCSID("$Id: sybase.c,v 1.3 2000/05/09 23:13:13 neotron Exp $");
 
 #ifdef HAVE_SYBASE
 
@@ -1174,12 +1174,15 @@ static void f_fetch_fields(INT32 args) {
 /********/
 /* Glue */
 /********/
+
+static struct program* sybase_program;
+
 void pike_module_exit (void) {
   SYB_MT_EXIT(mainlock);
+  if(sybase_program) free_program(sybase_program);
 }
 
 void pike_module_init (void) {
-  struct program* sybase_program;
 
   sybdebug((stderr,"sybase driver release " SYBASE_DRIVER_VERSION "\n"));
 
