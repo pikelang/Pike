@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: svalue.c,v 1.193 2004/04/17 23:22:50 mast Exp $
+|| $Id: svalue.c,v 1.194 2004/09/25 19:21:57 grubba Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: svalue.c,v 1.193 2004/04/17 23:22:50 mast Exp $");
+RCSID("$Id: svalue.c,v 1.194 2004/09/25 19:21:57 grubba Exp $");
 
 struct svalue dest_ob_zero = {
   T_INT, 0,
@@ -728,6 +728,7 @@ PMOD_EXPORT int is_eq(const struct svalue *a, const struct svalue *b)
   switch(a->type)
   {
   case T_OBJECT:
+    if (a->u.object == b->u.object) return 1;
     if(FIND_LFUN(a->u.object->prog,LFUN_EQ) != -1)
       goto a_is_obj;
 
