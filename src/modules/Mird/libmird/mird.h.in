@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mird.h.in,v 1.4 2002/11/25 01:04:29 nilsson Exp $
+|| $Id: mird.h.in,v 1.5 2003/01/03 15:10:20 grubba Exp $
 */
 
 /*
@@ -202,7 +202,7 @@ struct mird_transaction
    struct mird *db;
    struct mird_transaction *next; /* next transaction in our list */
    struct transaction_id no;
-   @OFF_T@ offset,cont_offset;
+   @MIRD_OFF_T@ offset,cont_offset;
    mird_key_t tables;
 
    mird_key_t flags;

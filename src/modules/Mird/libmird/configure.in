@@ -7,7 +7,7 @@
 # configure.in for Pike environment
 #
 
-# $Id: configure.in,v 1.9 2001/12/18 19:14:02 mast Exp $
+# $Id: configure.in,v 1.10 2003/01/03 15:10:12 grubba Exp $
 AC_INIT(internal.h)
 AC_CONFIG_HEADER(config.h)
 
@@ -678,7 +678,7 @@ AC_SUBST(INT64)
 AC_SUBST(UINT32)
 AC_SUBST(UINT64)
 AC_SUBST(CCFILTER)
-AC_SUBST(OFF_T)
+AC_SUBST(MIRD_OFF_T)
 AC_SUBST(ac_configure_args)
 
 AC_OUTPUT([mird.h Makefile])
