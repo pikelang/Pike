@@ -3,7 +3,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: charsetmod.c,v 1.10 1999/02/23 15:01:58 marcus Exp $");
+RCSID("$Id: charsetmod.c,v 1.11 1999/03/07 01:12:31 grubba Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -381,7 +381,7 @@ static void f_rfc1345(INT32 args)
 
   while(lo<=hi) {
     int c, mid = (lo+hi)>>1;
-    if((c = strcmp(STR0(str), charset_map[mid].name))==0) {
+    if((c = strcmp((char *)STR0(str), charset_map[mid].name))==0) {
       struct program *p;
 
       if(args>1 && sp[1-args].type == T_INT && sp[1-args].u.integer != 0) {
