@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.209 1998/07/01 20:21:07 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.210 1998/07/03 11:27:29 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -825,6 +825,10 @@ int main(int argc, char **argv)
 	  AC_MSG_RESULT(yes)
           LIBS="${OLDLIBS} -pthread"
 	fi
+      ;;
+
+      xAIX*)
+        LIBS="${OLDLIBS} -lpthreads"
       ;;
 
       *)
