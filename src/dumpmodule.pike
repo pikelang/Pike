@@ -36,6 +36,18 @@ static string fixup_path(string x)
   return x;
 }
 
+/* FIXME: this is a bit ad-hoc */
+string mkmodulename(string dirname, mixed x)
+{
+  if(!sscanf(dirname,"%*slib/modules/%s",dirname))
+    return 0;
+  dirname-=".pmod";
+  dirname=replace(dirname,"/",".");
+  if(master()->resolv(dirname) == x)
+    return dirname;
+  return 0;
+}
+
 class __Codec
 {
   string last_id;
@@ -64,7 +76,14 @@ class __Codec
 	if(p!=x)
 	{
 	  if(tmp = search(master()->programs,x))
+	  {
+	    if(reverse(tmp)[..4]=="ekip.")
+	    {
+	      if(string mod=mkmodulename(x, tmp))
+		return mod;
+	    }
 	    return fixup_path(tmp);
+	  }
 #if 0
 	  if(tmp = search(values(_static_modules), x)!=-1)
 	  {
@@ -79,6 +98,11 @@ class __Codec
 	{
 	  if(tmp = search(master()->programs,p))
 	  {
+	    if(reverse(tmp)[..4]=="domp.")
+	    {
+	      if(string mod=mkmodulename(x, tmp))
+		return mod;
+	    }
 	    return fixup_path(tmp);
 	  }else{
 #if 0
@@ -89,13 +113,8 @@ class __Codec
 	}
 	if(object_program(x) == master()->dirnode)
 	{
-	  /* FIXME: this is a bit ad-hoc */
-	  string dirname=x->dirname;
-	  dirname-=".pmod";
-	  sscanf(dirname,"%*slib/modules/%s",dirname);
-	  dirname=replace(dirname,"/",".");
-	  if(master()->resolv(dirname) == x)
-	    return "resolv:"+dirname;
+	  if(string mod=mkmodulename(x, x->dirname))
+	    return mod;
 	}
 #if 0
 	if (tmp = mkmapping(values(__builtin), indices(__builtin))[x]) {
