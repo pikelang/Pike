@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: blob.c,v 1.5 2001/05/23 11:48:40 per Exp $");
+RCSID("$Id: blob.c,v 1.6 2001/05/24 14:16:34 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -200,14 +200,15 @@ static struct hash *find_hash( struct blob_data *d, int doc_id )
 {
   int r = doc_id % HSIZE;
   struct hash *h = d->hash[r];
+  
   while( h )
   {
     if( h->doc_id == doc_id )
       return h;
     h = h->next;
   }
-  h = new_hash( doc_id );
   d->size++;
+  h = new_hash( doc_id );
   insert_hash( d, h );
   return h;
 }
@@ -226,13 +227,14 @@ static void free_hash( struct hash *h )
 static void _append_hit( struct blob_data *d, int doc_id, int hit )
 {
   struct hash *h = find_hash( d, doc_id );
+
   int nhits = ((unsigned char *)h->data->data)[4];
 
   /* Max 255 hits */
   if( nhits < 255 )
   {
     wf_buffer_wshort( h->data, hit );
-    ((unsigned char *)h->data)[4] = nhits+1;
+    ((unsigned char *)h->data->data)[4] = nhits+1;
   }
 }
 
@@ -266,30 +268,46 @@ static void f_blob_add( INT32 args )
 {
   int docid = sp[-2].u.integer;
   int hit = sp[-1].u.integer;
+
   _append_hit( THIS, docid, hit );
+
   pop_n_elems( args );
   push_int( 0 );
 }
 
 int cmp_zipp( void *a, void *b )
 {
+  /* a and b in HBO, and aligned */
   int ai = *(int *)((int *)a);
   int bi = *(int *)((int *)b);
   return ai < bi ? -1 : ai == bi ? 0 : 1 ;
 }
 
-struct zipp {
-  int id;
-  struct buffer *b;
-};
+int cmp_hit( char *a, char *b )
+{
+  /* a and b in NBO, and not aligned */
+  unsigned short ai = a[0]<<8 | a[1],
+                 bi = b[0]<<8 | b[1];
+  return ai < bi ? -1 : ai == bi ? 0 : 1 ;
+}
+
+#define CMP(X,Y) cmp_hit( X, Y )
+#define STEP(X,Y)  X+(Y*sizeof(short))
+#define SWAP(X,Y)  do {\
+  /* swap 2 bytes */\
+  tmp = (X)[0];  (X)[0] = (Y)[0];  (Y)[0] = tmp;\
+  tmp = (X)[1];  (X)[1] = (Y)[1];  (Y)[1] = tmp;\
+} while(0)
 
 static void f_blob__cast( INT32 args )
 {
-  struct zipp *zipp;
+  struct zipp {
+    int id;
+    struct buffer *b;
+  } *zipp;
   int i, zp=0;
   struct hash *h;
   struct buffer *res;
-  pop_n_elems( args );
 
   zipp = malloc( THIS->size * sizeof( zipp[0] ) );
 
@@ -304,15 +322,51 @@ static void f_blob__cast( INT32 args )
       h = h->next;
     }
   }
-  fsort( zipp, THIS->size, sizeof( zipp[0] ), (void *)cmp_zipp );
+
+  /* 1: Sort the blobs */
+  if( zp > 1 )
+    fsort( zipp, zp, sizeof( zipp[0] ), (void *)cmp_zipp );
+
+  /* 2: Sort in the blobs */
+  for( i = 0; i<zp; i++ )
+  {
+    int nh;
+#ifdef PIKE_DEBUG
+    if( zipp[i].b->size < 7 )
+      fatal( "Expected at least 7 bytes! (1 hit)\n");
+    else
+#endif
+    if((nh = zipp[i].b->data[4]) > 1 )
+    {
+      short *data = (short *)malloc( nh * 2 );
+      MEMCPY( data,  zipp[i].b->data+5, nh * 2 );
+      fsort( data, nh, 2, (void *)cmp_hit );
+      MEMCPY( zipp[i].b->data+5, data, nh * 2 );
+      free( data );
+    }
+  }
   res = wf_buffer_new();
 
   wf_buffer_set_empty( res );
 
-  for( i = 0; i<THIS->size; i++ )
+  for( i = 0; i<zp; i++ )
+  {
+    int j;
     wf_buffer_append( res, zipp[i].b->data, zipp[i].b->size );
+/*     for( j = 0; j<4; j++ ) */
+/*       printf( "%02x", ((unsigned char *)zipp[i].b->data)[j] ); */
+/*     printf( " %02x ", ((unsigned char *)zipp[i].b->data)[4] ); */
+/*     for( j = 5; j<zipp[i].b->size; j+=2 ) */
+/*       printf( " %02x%02x", ((unsigned char*)zipp[i].b->data)[j], */
+/* 	      ((unsigned char *)zipp[i].b->data)[j+1] ); */
+/*     printf("\n"); */
+  }
   free( zipp );
-  exit_blob_struct();
+
+  /*exit_blob_struct();*/
+
+
+  pop_n_elems( args );
   push_string( make_shared_binary_string( res->data, res->size ) );
   wf_buffer_free( res );
 }
@@ -336,8 +390,10 @@ void init_blob_program()
   start_new_program();
   ADD_STORAGE( struct blob_data );
   add_function( "create", f_blob_create, "function(string|void:void)", 0 );
-  add_function( "`+", f_blob_add, "function(int,int:void)",0 );
-  add_function( "_cast", f_blob__cast, "function(string:string)", 0 );
+  add_function( "add", f_blob_add, "function(int,int:void)",0 );
+  add_function( "cast", f_blob__cast, "function(string:string)", 0 );
+  set_init_callback( init_blob_struct );
+  set_exit_callback( exit_blob_struct );
   blob_program = end_program( );
   add_program_constant( "Blob", blob_program, 0 );
 }

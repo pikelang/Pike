@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: resultset.c,v 1.11 2001/05/22 14:39:28 per Exp $");
+RCSID("$Id: resultset.c,v 1.12 2001/05/24 14:16:34 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -38,10 +38,10 @@ struct program *resultset_program;
 
 #define RETURN_THIS() pop_n_elems(args); ref_push_object(Pike_fp->current_object)
 
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
 struct object *wf_not_resultset( struct object *o )
 {
-  Pike_fatal("%p is not a resultset!\n", o );
+  fatal("%p is not a resultset!\n", o );
   return 0; /* not reached */
 }
 #endif
@@ -72,9 +72,9 @@ void wf_resultset_avg_ranking( struct object *o, int ind, int weight )
 {
   if( ind < 0 )
     ind = T(o)->d->num_docs-1;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if( ind < 0 || ind > T(o)->d->num_docs-1)
-    Pike_fatal( "Indexing resultset with -1\n");
+    fatal( "Indexing resultset with -1\n");
 #endif
   T(o)->d->hits[ind].ranking=(T(o)->d->hits[ind].ranking>>1)+(weight>>1);
 }
@@ -83,9 +83,9 @@ void wf_resultset_add_ranking( struct object *o, int ind, int weight )
 {
   if( ind < 0 )
     ind = T(o)->d->num_docs-1;
-#ifdef DEBUG
+#ifdef PIKE_DEBUG
   if( ind < 0 || ind > T(o)->d->num_docs-1)
-    Pike_fatal( "Indexing resultset with -1\n");
+    fatal( "Indexing resultset with -1\n");
 #endif
   T(o)->d->hits[ind].ranking=(T(o)->d->hits[ind].ranking)+(weight);
 }
@@ -223,7 +223,7 @@ static int cmp_hits( void *a, void *b )
 {
   int ai = *(int *)((int *)a+1);
   int bi = *(int *)((int *)b+1);
-  return ai < bi ? -1 : ai == bi ? 0 : 1 ;
+  return ai > bi ? -1 : ai == bi ? 0 : 1 ;
 }
 
 static int cmp_docid( void *a, void *b )

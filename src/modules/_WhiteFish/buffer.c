@@ -1,7 +1,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: buffer.c,v 1.1 2001/05/23 10:58:00 per Exp $");
+RCSID("$Id: buffer.c,v 1.2 2001/05/24 14:16:34 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -31,8 +31,9 @@ RCSID("$Id: buffer.c,v 1.1 2001/05/23 10:58:00 per Exp $");
 
 void wf_buffer_make_space( struct buffer *b, int n )
 {
-  if( b->read_only )  fatal("Oops\n");
-  while( b->allocated_size-n >= b->size )
+  if( b->read_only )
+    fatal("Oops\n");
+  while( b->allocated_size-n < b->size )
   {
     b->allocated_size++;
     b->allocated_size *= 2;
@@ -50,10 +51,8 @@ void wf_buffer_wbyte( struct buffer *b,
 void wf_buffer_wshort( struct buffer *b,
 		       unsigned short s )
 {
-  s = htons(s);
-  wf_buffer_make_space( b, 2 );
-  MEMCPY( b->data+b->size, &s, 2 );
-  b->size += 2;
+  wf_buffer_wbyte( b, (s>>8)&255 );
+  wf_buffer_wbyte( b, (s)&255 );
 }
 
 void wf_buffer_wint( struct buffer *b,
@@ -152,7 +151,7 @@ void wf_buffer_set_pike_string( struct buffer *b,
 struct buffer *wf_buffer_new( )
 {
   struct buffer *b = malloc( sizeof( struct buffer ) );
-  MEMSET(b, 0, sizeof(struct buffer));
+  MEMSET( b, 0, sizeof(struct buffer) );
   return b;
 }
 
@@ -162,5 +161,5 @@ void wf_buffer_append( struct buffer *b,
 {
   wf_buffer_make_space( b, size );
   MEMCPY( b->data+b->size, data, size );
-  b->data+=size;
+  b->size+=size;
 }

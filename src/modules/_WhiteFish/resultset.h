@@ -7,10 +7,10 @@ typedef struct result_set
   } hits[1];
 } ResultSet;
 struct result_set_p {  int allocated_size; ResultSet *d; };
-#ifdef DEBUG
-extern struct program resultset_program;
+#ifdef PIKE_DEBUG
+extern struct program *resultset_program;
 struct object *wf_not_resultset( struct object *o );
-# define WF_RESULTSET(X) ((X&&find_storage(X,resultset_program))?X:wf_not_resultset(X))
+# define WF_RESULTSET(X) ((X&&get_storage(X,resultset_program))?X:wf_not_resultset(X))
 #else
 # define WF_RESULTSET(X) X
 #endif
