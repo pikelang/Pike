@@ -323,18 +323,18 @@
 #test colortable - standard
    object img=Image.image(200,200)->test();
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-   object c=Image.colortable(img,256);
+   object c=Image.colortable(img,1000)->cubicles(16,16,16,4);
    if (sizeof(c)<200) fail("too few colors");
    object img1=(c*img);
-   if (!(img-img1<100)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
+   if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
 
 #test colortable - floyd-steinberg
    object img=Image.image(200,200)->test();
    img->tuned_box(50,50,150,150,({({0,0,0}),({255,0,0}),({0,255,0}),({0,0,255})}));
-   object c=Image.colortable(img,256)->floyd_steinberg();
+   object c=Image.colortable(32,32,32)->floyd_steinberg();
    object img1=(c*img);
-   if (!(img-img1<100)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
+   if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
    
 #test colortable - ordered
@@ -357,13 +357,24 @@
 
 #test Image.GIF.encode/decode
    object img=Image.image(100,100)->test();
+   object c=Image.colortable(img,250)->cubicles(10,10,10,1)->floyd_steinberg();
+   img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img));
-   if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
+   if (img!=img1) fail("differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
+   ok();
+
+#test Image.GIF.encode/decode colortable 
+   object img=Image.image(100,100)->test();
+   object c=Image.colortable(img,256)->cubicles(16,16,16,1);
+   img=c*img;
+   object img1=Image.GIF.decode(Image.GIF.encode(img,c));
+   if (img!=img1) fail("differ ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
 
 #test Image.GIF.encode/decode colortable w/ floyd-steinberg
    object img=Image.image(100,100)->test();
-   object c=Image.colortable(img,256)->floyd_steinberg();
+   object c=Image.colortable(img,256)->floyd_steinberg()->cubicles(16,16,16);
+   img=c*img;
    object img1=Image.GIF.decode(Image.GIF.encode(img,c));
    if (!(img-img1<50)) fail("differ too much ("+(img-img1)->max()[0]+","+(img-img1)->max()[1]+","+(img-img1)->max()[2]+","+")");
    ok();
