@@ -11,11 +11,17 @@ int main(int argc, string *argv)
   write("threads ");
 #endif
 
-  catch { if(master()->resolv("Gdbm")->gdbm)   write("Gdbm "); };
-  catch { if(master()->resolv("Gmp")->mpz)     write("Gmp ");  };
-  catch { if(master()->resolv("Gz")->deflate)  write("Gz ");   };
-  catch { if(master()->resolv("Odbc")->odbc)   write("Odbc ");   };
-  catch { if(master()->resolv("Mysql")->mysql) write("Mysql ");   };
+  // Special case
+  catch { if(sizeof(indices(master()->resolv("_Crypto"))))
+    write("Crypto ");
+  };
+
+  foreach(({ "Gdbm", "Gmp", "Gz", "Msql", "Mysql", "Odbc", "Oracle",
+	       "Postgres", "Ssleay", "X", "Yp" }), string modname) {
+    catch { if (sizeof(indices(master()->resolv(modname))))
+      write(modname+" ");
+    };
+  }
 
   write("\n");
 }
