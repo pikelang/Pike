@@ -1,5 +1,5 @@
 /*
- * $Id: passwords.c,v 1.34 2002/03/02 13:35:33 nilsson Exp $
+ * $Id: passwords.c,v 1.35 2002/03/04 16:32:16 grubba Exp $
  *
  * Password handling for Pike.
  *
@@ -22,7 +22,7 @@
 #include "system_machine.h"
 #include "system.h"
 
-RCSID("$Id: passwords.c,v 1.34 2002/03/02 13:35:33 nilsson Exp $");
+RCSID("$Id: passwords.c,v 1.35 2002/03/04 16:32:16 grubba Exp $");
 
 #include "module_support.h"
 #include "interpret.h"
@@ -123,7 +123,7 @@ void push_pwent(struct passwd *ent)
   SAFE_PUSH_TEXT(ent->pw_name);
 
 #if defined(HAVE_GETSPNAM) || defined(HAVE_GETSPNAM_R)
-  if(!strcmp(ent->pw_passwd, "x"))
+  if(!strcmp(ent->pw_passwd, "x") || !strcmp(ent->pw_passwd, "*NP*"))
   {
     /* 64-bit Solaris 7 SIGSEGV's with an access to address 0xffffffff
      * if the user is not root:
