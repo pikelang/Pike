@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.39 1998/07/15 23:27:25 hubbe Exp $
+ * $Id: dumudp.c,v 1.40 1998/08/06 23:51:38 grubba Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.39 1998/07/15 23:27:25 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.40 1998/08/06 23:51:38 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -401,8 +401,8 @@ static void udp_query_address(INT32 args)
 {
   struct sockaddr_in addr;
   int i;
-  size_t len;
   char buffer[496],*q;
+  ACCEPT_SIZE_T len;
 
   if(THIS->fd <0)
     error("socket->query_address(): Port not bound yet.\n");
