@@ -5,12 +5,13 @@
 \*/
 
 /*
- * $Id: mapping.h,v 1.18 2000/01/31 21:27:00 hubbe Exp $
+ * $Id: mapping.h,v 1.19 2000/02/01 06:25:07 hubbe Exp $
  */
 #ifndef MAPPING_H
 #define MAPPING_H
 
 #include "las.h"
+#include "block_alloc_h.h"
 
 #define MAPPING_FLAG_WEAK 1
 
@@ -64,10 +65,17 @@ extern struct mapping *first_mapping;
 #define free_mapping_data(M) do{ struct mapping_data *md_=(M); debug_malloc_touch(md_); if(!--md_->refs) really_free_mapping_data(md_); }while(0)
 
 /* Prototypes begin here */
+BLOCK_ALLOC(mapping, 511)
+
+static void check_mapping_type_fields(struct mapping *m);
 struct mapping *debug_allocate_mapping(int size);
-void really_free_mapping(struct mapping *m);
 void really_free_mapping_data(struct mapping_data *md);
+struct mapping_data *copy_mapping_data(struct mapping_data *md);
 void mapping_fix_type_field(struct mapping *m);
+void low_mapping_insert(struct mapping *m,
+			struct svalue *key,
+			struct svalue *val,
+			int overwrite);
 void mapping_insert(struct mapping *m,
 		    struct svalue *key,
 		    struct svalue *val);
@@ -107,11 +115,16 @@ struct array *mapping_to_array(struct mapping *m);
 void mapping_replace(struct mapping *m,struct svalue *from, struct svalue *to);
 struct mapping *mkmapping(struct array *ind, struct array *val);
 struct mapping *copy_mapping(struct mapping *m);
+struct mapping *copy_mapping(struct mapping *m);
 struct mapping *merge_mappings(struct mapping *a, struct mapping *b, INT32 op);
+struct mapping *merge_mapping_array_ordered(struct mapping *a, 
+					    struct array *b, INT32 op);
+struct mapping *merge_mapping_array_unordered(struct mapping *a, 
+					      struct array *b, INT32 op);
 struct mapping *add_mappings(struct svalue *argp, INT32 args);
 int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p);
 void describe_mapping(struct mapping *m,struct processing *p,int indent);
-node * make_node_from_mapping(struct mapping *m);
+node *make_node_from_mapping(struct mapping *m);
 void f_m_delete(INT32 args);
 void f_aggregate_mapping(INT32 args);
 struct mapping *copy_mapping_recursively(struct mapping *m,
@@ -119,7 +132,7 @@ struct mapping *copy_mapping_recursively(struct mapping *m,
 void mapping_search_no_free(struct svalue *to,
 			    struct mapping *m,
 			    struct svalue *look_for,
-			    struct svalue *start);
+			    struct svalue *key );
 void check_mapping(struct mapping *m);
 void check_all_mappings(void);
 void gc_mark_mapping_as_referenced(struct mapping *m);
@@ -129,8 +142,6 @@ void gc_free_all_unreferenced_mappings(void);
 void simple_describe_mapping(struct mapping *m);
 void debug_dump_mapping(struct mapping *m);
 void zap_all_mappings(void);
-void count_memory_in_mappings(INT32 *num_, INT32 *size_);
-struct mapping_data *copy_mapping_data(struct mapping_data *md);
 /* Prototypes end here */
 #endif
 

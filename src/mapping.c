@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.55 2000/01/31 21:26:59 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.56 2000/02/01 06:25:06 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -204,23 +204,21 @@ void really_free_mapping_data(struct mapping_data *md)
  * inefficient just after being rehashed.
  * (wonder if this can't be done faster somehow?)
  */
-static void mapping_rehash_backwards(struct mapping_data *md, struct keypair *p)
+static void mapping_rehash_backwards(struct mapping *m,
+				     struct keypair *p)
 {
   unsigned INT32 h;
   struct keypair *tmp;
 
   if(!p) return;
-  mapping_rehash_backwards(md,p->next);
-  h=hash_svalue(& p->ind) % md->hashsize;
-  tmp=md->free_list;
-  md->free_list=tmp->next;
-  tmp->next=md->hash[h];
-  md->hash[h]=tmp;
-  tmp->ind=p->ind;
-  tmp->val=p->val;
-  md->size++;
-  md->ind_types |= 1 << p->ind.type;
-  md->val_types |= 1 << p->val.type;
+  mapping_rehash_backwards(m,p->next);
+
+  /* We insert without overwriting
+   * however, this could still cause
+   * problems. (for instance if someone does an
+   * m_delete on an element that is not there yet..
+   */
+  low_mapping_insert(m, &p->ind, &p->val,0);
 }
 
 /* This function re-allocates a mapping. It adjusts the max no. of
@@ -235,43 +233,33 @@ static struct mapping *rehash(struct mapping *m, int new_size)
 #endif
   INT32 e;
 
+  md=m->data;
 #ifdef PIKE_DEBUG
-  if(m->data->refs <=0)
+  if(md->refs <=0)
     fatal("Zero refs in mapping->data\n");
 
-  if(d_flag>1)  check_mapping(m);
-#endif
-
-  /* This can be optimized to do rehash and copy
-   * in one operation.. -Hubbe
-   */
-  md=m->data;
-  if(md->refs>1)
-  {
-    debug_malloc_touch(md);
-    md=m->data=copy_mapping_data(m->data);
-    debug_malloc_touch(md);
-  }
-
-#ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif
 
   init_mapping(m, new_size);
   debug_malloc_touch(m);
 
+  /* No need to do add_ref(md) because the ref
+   * from 'm' is not freed yet
+   */
+  md->valrefs++;
+
   for(e=0;e<md->hashsize;e++)
-    mapping_rehash_backwards(m->data, md->hash[e]);
-  m->data->size = md->size;
+    mapping_rehash_backwards(m, md->hash[e]);
+
+  md->valrefs--;
 
 #ifdef PIKE_DEBUG
   if(m->data->size != tmp)
     fatal("Rehash failed, size not same any more.\n");
-  if(md->refs>1)
-    fatal("MD has extra refs in rehash!\n");
 #endif
     
-  free((char *)md);
+  free_mapping_data(md);
 
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
@@ -479,9 +467,10 @@ void mapping_fix_type_field(struct mapping *m)
 /* This function inserts key:val into the mapping m.
  * Same as doing m[key]=val; in pike.
  */
-void mapping_insert(struct mapping *m,
-		    struct svalue *key,
-		    struct svalue *val)
+void low_mapping_insert(struct mapping *m,
+			struct svalue *key,
+			struct svalue *val,
+			int overwrite)
 {
   unsigned INT32 h,h2;
   struct keypair *k, **prev;
@@ -527,6 +516,7 @@ void mapping_insert(struct mapping *m,
   if(d_flag>1)  check_mapping(m);
 #endif
   free_mapping_data(md);
+  if(!overwrite) return;
   PREPARE_FOR_DATA_CHANGE2();
   PROPAGATE(); /* propagate after preparing */
   md->val_types |= 1 << val->type;
@@ -546,6 +536,7 @@ void mapping_insert(struct mapping *m,
   /* We do a re-hash here instead of copying the mapping. */
   if((!(k=md->free_list)) || md->refs>1)
   {
+    debug_malloc_touch(m);
     rehash(m, md->size * 2 + 2);
     md=m->data;
     k=md->free_list;
@@ -567,6 +558,13 @@ void mapping_insert(struct mapping *m,
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
 #endif
+}
+
+void mapping_insert(struct mapping *m,
+		    struct svalue *key,
+		    struct svalue *val)
+{
+  low_mapping_insert(m,key,val,1);
 }
 
 union anything *mapping_get_item_ptr(struct mapping *m,
@@ -645,6 +643,7 @@ union anything *mapping_get_item_ptr(struct mapping *m,
   /* no need to call PREPARE_* because we re-hash instead */
   if(!(k=md->free_list) || md->refs>1)
   {
+    debug_malloc_touch(m);
     rehash(m, md->size * 2 + 2);
     md=m->data;
     k=md->free_list;
@@ -681,6 +680,7 @@ void map_delete_no_free(struct mapping *m,
   if(m->data->refs <=0)
     fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
+  debug_malloc_touch(m);
 #endif
 
   h2=hash_svalue(key);
@@ -697,6 +697,7 @@ void map_delete_no_free(struct mapping *m,
 	   goto md_do_nothing);
 
  md_do_nothing:
+  debug_malloc_touch(m);
   free_mapping_data(md);
   if(to)
   {
@@ -713,6 +714,7 @@ void map_delete_no_free(struct mapping *m,
   if(m->data != md)
     fatal("Wrong dataset in mapping_delete!\n");
   if(d_flag>1)  check_mapping(m);
+  debug_malloc_touch(m);
 #endif
   free_mapping_data(md);
   PREPARE_FOR_INDEX_CHANGE2();
@@ -732,7 +734,10 @@ void map_delete_no_free(struct mapping *m,
   md->size--;
   
   if(md->size < (md->hashsize + 1) * MIN_LINK_LENGTH)
+  {
+    debug_malloc_touch(m);
     rehash(m, MAP_SLOTS(m->data->size));
+  }
   
 #ifdef PIKE_DEBUG
   if(d_flag>1)  check_mapping(m);
@@ -751,6 +756,7 @@ void check_mapping_for_destruct(struct mapping *m)
   if(m->data->refs <=0)
     fatal("Zero refs in mapping->data\n");
   if(d_flag>1)  check_mapping(m);
+  debug_malloc_touch(m);
 #endif
 
   /* no is_eq -> no locking */
@@ -785,7 +791,10 @@ void check_mapping_for_destruct(struct mapping *m)
       }
     }
     if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
+    {
+      debug_malloc_touch(m);
       rehash(m, MAP_SLOTS(md->size));
+    }
 
     md->val_types = val_types;
     md->ind_types = ind_types;
@@ -1104,6 +1113,7 @@ struct mapping *copy_mapping(struct mapping *m)
 #endif
 
   n=allocate_mapping(0);
+  if(!m_sizeof(m)) return n; /* done */
   debug_malloc_touch(n->data);
   free_mapping_data(n->data);
   n->data=m->data;
@@ -1835,7 +1845,10 @@ void gc_free_all_unreferenced_mappings(void)
 	}
       }
       if(MAP_SLOTS(md->size) < md->hashsize * MIN_LINK_LENGTH)
+      {
+	debug_malloc_touch(m);
 	rehash(m, MAP_SLOTS(md->size));
+      }
       next=m->next;
       free_mapping(m);
     }
