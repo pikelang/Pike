@@ -11,6 +11,8 @@ if test "x$with_freetype" = "xyes" ; then
   if test "$FT_CONFIG" = "no" ; then
      :
   else
+    OLDCFLAGS="$CFLAGS"
+    OLDLIBS="$LIBS"
     CFLAGS="$CFLAGS `$FT_CONFIG --cflags`"
     LIBS="$LIBS `$FT_CONFIG --libs`"
     AC_MSG_CHECKING(If freetype actually works)
@@ -28,6 +30,8 @@ if test "x$with_freetype" = "xyes" ; then
       AC_DEFINE(HAVE_LIBFT2)
     else
       AC_MSG_RESULT(no)
+      CFLAGS="$OLDCFLAGS"
+      LIBS="$OLDLIBS"
     fi
   fi
 fi
