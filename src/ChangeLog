@@ -1,3 +1,29 @@
+Fri Jun 21 20:32:00 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* simulate.lpc optimized
+	* reorganize optimized (used by lists and sort and other stuff)
+	* type checks now optimize int|int to just int
+	* #include now honours "" and <>
+	* stack size increased
+	* callback.c is actually useful now..
+	* sleep now handles floats for delays smaller than seconds.
+	* backend now handles delays shorter than seconds.
+	* backend has callbacks to allow call_out for module(s)
+	* explode and string replace optimized (memory searcher)
+	* better stack checks added
+	* `<< method added to /precompiled/file
+	* call_out moved to a module, call_out now handles floating point
+	  delays.
+	* Makefile and configure script added to the module directory.
+	* 'private inherit' now works as you might expect
+
+Wed Jun 19 01:22:53 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
+
+	* Operator overloading added.
+	* new simulated function: putenv
+	* gmp module added, implements LARGE numbers. (/precompiled/mpz)
+	* C++ style output is now possible with <<
+
 Sun Jun  9 16:33:16 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* second argument to file->read() added
