@@ -30,14 +30,17 @@ to the following table.
 </p>
 
 <matrix>
-<r><c>%b</c><c>Reads a binary integer.</c></r>
-<r><c>%d</c><c>Reads a decimal integer.</c></r>
-<r><c>%o</c><c>Reads an octal integer.</c></r>
-<r><c>%x</c><c>Reads a hexadecimal integer.</c></r>
-<r><c>%D</c><c>Reads an integer that is either octal (leading zero), hexadecimal (leading 0x) or decimal.</c></r>
-<r><c>%f</c><c>Reads a float-</c></r>
-<r><c>%c</c><c>Matches one char and returns it as an integer.</c></r>
-<r><c>%2c</c><c>Matches two chars and returns them as an integer (short).</c></r>
+<r><c>%b</c><c>Reads a binary integer ("0101" makes 5).</c></r>
+<r><c>%d</c><c>Reads a decimal integer ("0101" makes 101).</c></r>
+<r><c>%o</c><c>Reads an octal integer ("0101" makes 65).</c></r>
+<r><c>%x</c><c>Reads a hexadecimal integer ("0101" makes 257).</c></r>
+<r><c>%D</c><c>Reads an integer that is either octal (leading zero),
+hexadecimal (leading 0x) or decimal. ("0101" makes 65).</c></r>
+<r><c>%f</c><c>Reads a float ("0101" makes 101.0).</c></r>
+<r><c>%c</c><c>Matches one char and returns it as an integer
+("0101" makes 48, or '0', leaving "101").</c></r>
+<r><c>%2c</c><c>Matches two chars and returns them as an integer
+(short; "0101" makes 12337, leaving "01").</c></r>
 <r><c>%4F</c><c>Matches four chars and returns them as a float (IEEE single precision).</c></r>
 <r><c>%8F</c><c>Matches eigth chars and returns them as a float (IEEE double precision).</c></r>
 <r><c>%s</c><c>Reads a string. If followed by %d, %s will
