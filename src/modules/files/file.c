@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: file.c,v 1.166 2000/03/13 16:46:50 grubba Exp $");
+RCSID("$Id: file.c,v 1.167 2000/03/27 12:38:09 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2752,7 +2752,22 @@ void pike_module_init(void)
 /* Used from backend */
 int pike_make_pipe(int *fds)
 {
-  return socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+  int res = socketpair(AF_UNIX, SOCK_STREAM, 0, fds);
+  if (res < 0) return res;
+  if ((fds[0] > MAX_OPEN_FILEDESCRIPTORS) ||
+      (fds[1] > MAX_OPEN_FILEDESCRIPTORS)) {
+    close(fds[0]);
+    close(fds[1]);
+#ifdef EMFILE
+    errno = EMFILE;
+#else /* !EMFILE */
+#ifdef EBADF
+    errno = EBADF;
+#endif /* EBADF */
+#endif /* EMFILE */
+    return -1;
+  }
+  return res;
 }
 
 int fd_from_object(struct object *o)
