@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.59 1997/11/10 14:19:54 mirar Exp $ */
+/* $Id: image.c,v 1.60 1997/11/11 04:03:09 grubba Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.59 1997/11/10 14:19:54 mirar Exp $
+**!	$Id: image.c,v 1.60 1997/11/11 04:03:09 grubba Exp $
 **! class image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -82,7 +82,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.59 1997/11/10 14:19:54 mirar Exp $");
+RCSID("$Id: image.c,v 1.60 1997/11/11 04:03:09 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2453,7 +2453,7 @@ void _image_map_compat(INT32 args,int fs) /* compat function */
   nct=(struct neo_colortable*)get_storage(co,image_colortable_program);
 
   if (fs) image_colortable_internal_floyd_steinberg(
-		     get_storage(co,image_colortable_program));
+	   (struct neo_colortable *)get_storage(co,image_colortable_program));
 
   push_int(this->xsize);
   push_int(this->ysize);
