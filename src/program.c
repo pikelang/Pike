@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: program.c,v 1.457 2002/11/17 15:31:20 grubba Exp $
+|| $Id: program.c,v 1.458 2002/11/19 12:31:49 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: program.c,v 1.457 2002/11/17 15:31:20 grubba Exp $");
+RCSID("$Id: program.c,v 1.458 2002/11/19 12:31:49 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -806,7 +806,7 @@ void PIKE_CONCAT(low_add_to_,NAME) (struct program_state *state,	\
 		  sizeof(TYPE) *					\
 		  state->malloc_size_program->				\
                   PIKE_CONCAT(num_,NAME));				\
-    if(!tmp) Pike_fatal("Out of memory.\n");					\
+    if(!tmp) Pike_fatal("Out of memory.\n");				\
     PIKE_CONCAT(RELOCATE_,NAME)(state->new_program, tmp);		\
     state->new_program->NAME=tmp;					\
   }									\
@@ -821,6 +821,11 @@ void PIKE_CONCAT(add_to_,NAME) (TYPE ARG) {				\
 
 #include "program_areas.h"
 
+
+#define add_to_program(ARG)	do {				\
+    debug_malloc_touch(Pike_compiler->new_program->program);	\
+    add_to_program(ARG);					\
+  } while(0)
 
 void ins_int(INT32 i, void (*func)(char tmp))
 {
@@ -7002,5 +7007,9 @@ void make_program_executable(struct program *p)
   FLUSH_INSTRUCTION_CACHE(p->program,
 			  p->num_program*sizeof(p->program[0]));
 #endif /* FLUSH_INSTRUCTION_CACHE */
+#ifdef VALGRIND_DISCARD_TRANSLATIONS
+  VALGRIND_DISCARD_TRANSLATIONS(p->program,
+				p->num_program*sizeof(p->program[0]));
+#endif /* VALGRIND_DISCARD_TRANSLATIONS */
 }
 #endif
