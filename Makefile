@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.143 2004/05/01 14:47:46 mast Exp $
+# $Id: Makefile,v 1.144 2004/05/17 21:38:45 mast Exp $
 #
 # Meta Makefile
 #
@@ -50,7 +50,11 @@ force_autoconfig:
 	cd src && ./run_autoconfig . 2>&1 | grep -v warning
 
 force_configure:
-	-rm -f "$(BUILDDIR)/Makefile"
+	-builddir="$(BUILDDIR)"; rm -f "$$builddir/Makefile"
+	@$(DO_MAKE) configure
+
+reconfigure:
+	-builddir="$(BUILDDIR)"; rm -f "$$builddir/Makefile" "$$builddir/config.cache"
 	@$(DO_MAKE) configure
 
 configure_help: src/configure
