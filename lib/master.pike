@@ -1,4 +1,4 @@
-/* $Id: master.pike,v 1.56 1997/11/11 22:20:59 hubbe Exp $
+/* $Id: master.pike,v 1.57 1998/01/10 00:12:16 grubba Exp $
  *
  * Master-file for Pike.
  */
@@ -441,7 +441,7 @@ void _main(string *argv, string *env)
 
   _master_file_name=backtrace()[-1][0];
   q=_master_file_name/"/";
-  pike_library_path = q[0..sizeof(q)-2] * "/";
+  pike_library_path = combine_path(getcwd(), q[0..sizeof(q)-2] * "/");
 
   add_include_path(pike_library_path+"/include");
   add_module_path(pike_library_path+"/modules");
