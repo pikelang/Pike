@@ -1,6 +1,6 @@
 /* -*- Pike -*-
  *	
- * $Id: master.pike.in,v 1.99 2000/02/10 17:57:37 hubbe Exp $
+ * $Id: master.pike.in,v 1.100 2000/02/13 16:24:13 grubba Exp $
  * 
  * Master-file for Pike.
  *
@@ -262,7 +262,13 @@ static program low_findprog(string pname, string ext, object|void handler)
   string fname=pname+ext;
 
 #ifdef THREADED
-  object key=compilation_mutex->lock(2);
+  object key;
+  // FIXME: The catch is needed, since we might be called in
+  // a context when threads are disabled.
+  // (compile() disables threads).
+  catch {
+    key=compilation_mutex->lock(2);
+  };
 #endif
 
 #ifdef PIKE_AUTORELOAD
