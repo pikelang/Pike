@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: pike_error.h,v 1.35 2004/10/28 22:08:18 mast Exp $
+|| $Id: pike_error.h,v 1.36 2004/11/14 17:44:05 mast Exp $
 */
 
 #ifndef PIKE_ERROR_H
@@ -65,7 +65,7 @@ PMOD_EXPORT extern const char msg_fatal_error[];
 #define fatal Pike_fatal
 #endif
 
-PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
 
 
 #include "svalue.h"
@@ -245,8 +245,8 @@ PMOD_EXPORT DECLSPEC(noreturn) void new_error(const char *name, const char *text
 	       INT32 args, const char *file, int line) ATTRIBUTE((noreturn));
 PMOD_EXPORT void exit_on_error(const void *msg);
 PMOD_EXPORT void fatal_on_error(const void *msg);
-PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
-PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)));
+PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn));
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn));
 void DECLSPEC(noreturn) generic_error_va(struct object *o,
 		      const char *func,
 		      struct svalue *base_sp,  int args,
@@ -257,40 +257,40 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func,
   struct svalue *base_sp,  int args,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)));
+  const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) generic_error(
   const char *func,
   struct svalue *base_sp,  int args,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)));
+  const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   const char *func,
   struct svalue *base_sp,  int args,
   struct svalue *val,
   struct svalue *ind,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
+  const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   const char *func,
   struct svalue *base_sp,  int args,
   int which_arg,
   const char *expected_type,
   struct svalue *got,
-  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)));
+  const char *desc, ...)  ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) math_error(
   const char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)));
+  const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) resource_error(
   const char *func,
   struct svalue *base_sp,  int args,
   const char *resource_type,
   size_t howmuch,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)));
+  const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void DECLSPEC(noreturn) permission_error(
   const char *func,
   struct svalue *base_sp, int args,
   const char *permission_type,
-  const char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)));
+  const char *desc, ...) ATTRIBUTE((noreturn));
 PMOD_EXPORT void wrong_number_of_args_error(const char *name, int args, int expected)
   ATTRIBUTE((noreturn));
 void init_error(void);

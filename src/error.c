@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: error.c,v 1.140 2004/11/11 16:10:44 grubba Exp $
+|| $Id: error.c,v 1.141 2004/11/14 17:44:05 mast Exp $
 */
 
 #define NO_PIKE_SHORTHAND
@@ -494,7 +494,7 @@ PMOD_EXPORT void fatal_on_error(const void *msg)
   do_abort();
 }
 
-PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((noreturn))
 {
   va_list args;
   va_start(args,fmt);
@@ -502,7 +502,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void Pike_error(const char *fmt,...) ATTRIBUTE((n
   va_end(args);
 }
 
-PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn,format (printf, 1, 2)))
+PMOD_EXPORT DECLSPEC(noreturn) void debug_fatal(const char *fmt, ...) ATTRIBUTE((noreturn))
 {
   va_list args;
   static int in_fatal = 0;
@@ -879,7 +879,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
   struct object *o,
   const char *func,
   struct svalue *base_sp,  int args,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)))
+  const char *desc, ...) ATTRIBUTE((noreturn))
 {
   va_list foo;
   va_start(foo,desc);
@@ -891,7 +891,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void throw_error_object(
 PMOD_EXPORT DECLSPEC(noreturn) void generic_error(
   const char *func,
   struct svalue *base_sp,  int args,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 4, 5)))
+  const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INIT_ERROR(generic);
   ERROR_DONE(generic);
@@ -902,7 +902,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void index_error(
   struct svalue *base_sp,  int args,
   struct svalue *value,
   struct svalue *index,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
+  const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INIT_ERROR(index);
   ERROR_COPY_SVALUE(index, value);
@@ -916,7 +916,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void bad_arg_error(
   int which_argument,
   const char *expected_type,
   struct svalue *got_value,
-  const char *desc, ...)  ATTRIBUTE((noreturn,format (printf, 7, 8)))
+  const char *desc, ...)  ATTRIBUTE((noreturn))
 {
   INIT_ERROR(bad_argument);
   ERROR_COPY(bad_argument, which_argument);
@@ -934,7 +934,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void math_error(
   const char *func,
   struct svalue *base_sp,  int args,
   struct svalue *number,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 5, 6)))
+  const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INIT_ERROR(math);
   if(number)
@@ -953,7 +953,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void resource_error(
   struct svalue *base_sp,  int args,
   const char *resource_type,
   size_t howmuch_,
-  const char *desc, ...) ATTRIBUTE((noreturn,format (printf, 6, 7)))
+  const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INT_TYPE howmuch = DO_NOT_WARN((INT_TYPE)howmuch_);
   INIT_ERROR(resource);
@@ -966,7 +966,7 @@ PMOD_EXPORT DECLSPEC(noreturn) void permission_error(
   const char *func,
   struct svalue *base_sp, int args,
   const char *permission_type,
-  const char *desc, ...) ATTRIBUTE((noreturn, format(printf, 5, 6)))
+  const char *desc, ...) ATTRIBUTE((noreturn))
 {
   INIT_ERROR(permission);
   ERROR_STRUCT(permission,o)->permission_type=
