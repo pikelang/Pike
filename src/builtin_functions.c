@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.135 1998/10/23 02:14:04 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.136 1998/10/31 20:51:54 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -778,17 +778,17 @@ void f_string_to_utf8(INT32 args)
 	  len++;
 	  if (c & ~0x1fffff) {
 	    /* 22bit or more. */
-	    if (!extended) {
-	      error("string_to_utf8(): "
-		    "Value 0x%08x (index %d) is larger than 21 bits.\n",
-		    c, i);
-	    }
 	    len++;
 	    if (c & ~0x3ffffff) {
 	      /* 27bit or more. */
 	      len++;
 	      if (c & ~0x7fffffff) {
 		/* 32bit or more. */
+		if (!extended) {
+		  error("string_to_utf8(): "
+			"Value 0x%08x (index %d) is larger than 31 bits.\n",
+			c, i);
+		}
 		len++;
 		/* FIXME: Needs fixing when we get 64bit chars... */
 	      }
@@ -1090,7 +1090,7 @@ void f__exit(INT32 args)
   if(sp[-args].type != T_INT)
     PIKE_ERROR("_exit", "Bad argument 1.\n", sp, args);
 
-  exit(sp[-1].u.integer);
+  exit(sp[-args].u.integer);
 }
 
 void f_time(INT32 args)
