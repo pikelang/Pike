@@ -1,5 +1,5 @@
 /*
- * $Id: mysql.c,v 1.32 1999/12/30 16:33:01 grubba Exp $
+ * $Id: mysql.c,v 1.33 2000/01/03 19:02:00 grubba Exp $
  *
  * SQL database functionality for Pike
  *
@@ -42,6 +42,15 @@
 #endif
 #endif
 
+#ifdef HAVE_ERRMSG_H
+#include <errmsg.h>
+#else /* !HAVE_ERRMSG_H */
+#ifdef HAVE_MYSQL_ERRMSG_H
+#include <mysql/errmsg.h>
+#endif /* HAVE_MYSQL_ERRMSG_H */
+#endif /* HAVE_ERRMGS_H */
+
+
 /* dynamic_buffer.h contains a conflicting typedef for string
  * we don't use any dynamic buffers, so we have this work-around
  */
@@ -80,7 +89,7 @@ typedef struct dynamic_buffer_s dynamic_buffer;
  * Globals
  */
 
-RCSID("$Id: mysql.c,v 1.32 1999/12/30 16:33:01 grubba Exp $");
+RCSID("$Id: mysql.c,v 1.33 2000/01/03 19:02:00 grubba Exp $");
 
 /*
 **! module Mysql
@@ -92,7 +101,7 @@ RCSID("$Id: mysql.c,v 1.32 1999/12/30 16:33:01 grubba Exp $");
 **! see also: Mysql.mysql, Mysql.result, Sql.sql
 **!
 **! note
-**!	$Id: mysql.c,v 1.32 1999/12/30 16:33:01 grubba Exp $
+**!	$Id: mysql.c,v 1.33 2000/01/03 19:02:00 grubba Exp $
 **!
 **! class mysql
 **!
@@ -583,15 +592,15 @@ static void f_big_query(INT32 args)
   }
   if (socket && (tmp < 0)) {
     /* Check if we need to reconnect. */
-#if defined(CR_SERVER_GONE) && defined(CR_UNKNOWN_ERROR)
-    tmp = mysql_errno(socket);
-    if ((tmp == CR_SERVER_GONE) ||
-	(tmp == CR_UNKNOWN_ERROR)) {
+#if defined(CR_SERVER_GONE_ERROR) && defined(CR_UNKNOWN_ERROR)
+    int eno = mysql_errno(socket);
+    if ((eno == CR_SERVER_GONE_ERROR) ||
+	(eno == CR_UNKNOWN_ERROR)) {
       socket = NULL;
     }
-#else /* !CR_SERVER_GONE || !CR_UNKNOWN_ERROR */
+#else /* !CR_SERVER_GONE_ERROR || !CR_UNKNOWN_ERROR */
     socket = NULL;
-#endif /* CR_SERVER_GONE && CR_UNKNOWN_ERROR */
+#endif /* CR_SERVER_GONE_ERROR && CR_UNKNOWN_ERROR */
   }
   if (!socket) {
     /* The connection might have been closed. */
