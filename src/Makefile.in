@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.321 2002/09/09 13:45:44 marcus Exp $
+# $Id: Makefile.in,v 1.322 2002/09/09 19:30:20 mast Exp $
 #
 
 # This line is needed on some machines.
@@ -318,6 +318,7 @@ rsif: $(TMP_BINDIR)/rsif Makefile
 	  >./rsif && chmod 755 ./rsif) || exit 1 ;
 
 dump_modules: pike master-stamp $(SRCDIR)/dumpmodule.pike
+	-rm dumpmodule.log
 	args="$(DUMPARGS)"; \
 	args=$${args:-"--log-file --update-only=dumpversion --report-failed"}; \
 	$(RUNPIKE) $(SRCDIR)/dumpmodule.pike $$args \
