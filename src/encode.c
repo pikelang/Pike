@@ -24,7 +24,7 @@
 #include "stuff.h"
 #include "version.h"
 
-RCSID("$Id: encode.c,v 1.34 1999/09/16 20:30:33 hubbe Exp $");
+RCSID("$Id: encode.c,v 1.35 1999/09/17 23:36:57 hubbe Exp $");
 
 #ifdef _AIX
 #include <net/nh.h>
@@ -76,9 +76,23 @@ static void encode_value2(struct svalue *val, struct encode_data *data);
 
 #define addstr(s, l) low_my_binary_strcat((s), (l), &(data->buf))
 #define addchar(t)   low_my_putchar((t),&(data->buf))
+
+/* Code a pike string */
+/* FIXME: Wide strings! */
 #define adddata(S) do { \
   code_entry(T_STRING, (S)->len, data); \
   addstr((char *)((S)->str),(S)->len); \
+}while(0)
+
+/* Like adddata, but allows null pointers */
+
+#define adddata3(S) do {			\
+  if(S) {					\
+    code_entry(T_STRING, (S)->len, data);	\
+    addstr((char *)((S)->str),(S)->len);	\
+  } else {					\
+    code_entry(T_INT, 0, data);			\
+  }						\
 }while(0)
 
 #define adddata2(s,l) addstr((char *)(s),(l) * sizeof(s[0]));
@@ -468,7 +482,7 @@ static void encode_value2(struct svalue *val, struct encode_data *data)
 	  encode_value2(sp-1,data);
 	  pop_stack();
 
-	  adddata(p->inherits[d].name);
+          adddata3(p->inherits[d].name);
 	}
 
 	for(d=0;d<p->num_identifiers;d++)
@@ -589,6 +603,29 @@ static int my_extract_char(struct decode_data *data)
       X=make_shared_binary_string((char *)(data->data + data->ptr), length); \
       data->ptr+=length;						     \
   }while(0)
+
+#define getdata3(X) do {						     \
+  long length;								     \
+  int what, e, num;							     \
+  DECODE();								     \
+  length=num;                                                                \
+  switch(what & T_MASK)							     \
+  {									     \
+    case T_INT:								     \
+      X=0;								     \
+      break;								     \
+									     \
+    case T_STRING:							     \
+      if(data->ptr + length > data->len || length <0)			     \
+        error("Failed to decode string. (string range error)\n");	     \
+      X=make_shared_binary_string((char *)(data->data + data->ptr), length); \
+      data->ptr+=length;						     \
+      break;								     \
+									     \
+    default:								     \
+      error("Failed to decode string, type is wrong: %d\n",what & T_MASK);   \
+    }									     \
+}while(0)
 
 #define decode_number(X,data) do {	\
    int what, e, num;				\
@@ -1061,7 +1098,7 @@ static void decode_value2(struct decode_data *data)
 		error("Failed to decode inheritance.\n");
 	    }
 	    
-	    getdata(p->inherits[d].name);
+	    getdata3(p->inherits[d].name);
 	  }
 	  
 	  debug_malloc_touch(dat);
