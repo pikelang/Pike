@@ -73,7 +73,7 @@ int parse_type(array x, int pos)
     while(x[pos]=="!") pos++;
     pos++;
     if(arrayp(x[pos])) pos++;
-    switch(x[pos])
+    switch((string)x[pos])
     {
       default:
 	return pos;
