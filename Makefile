@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.130 2004/03/07 14:20:07 grubba Exp $
+# $Id: Makefile,v 1.131 2004/03/09 02:28:31 nilsson Exp $
 #
 # Meta Makefile
 #
@@ -172,8 +172,14 @@ pike: bin/pike
 install: bin/pike
 	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install"
 
+install_nodoc: bin/pike
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install_nodoc"
+
 install_interactive: bin/pike
 	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive"
+
+install_interactive_nodoc: bin/pike
+	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=install_interactive_nodoc"
 
 tinstall: bin/pike
 	@$(DO_MAKE) $(MAKE_FLAGS) "METATARGET=tinstall"
