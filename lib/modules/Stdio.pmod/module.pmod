@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.163 2003/01/20 17:44:01 nilsson Exp $
+// $Id: module.pmod,v 1.164 2003/02/17 11:27:09 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -672,6 +672,9 @@ class File
 ** FIXME for NT or internally? /Mirar
 ** 
 */
+
+    if (!(::mode() & 0x400))
+      error ("Read callback called on blocking socket!\n");
 
 #if !defined(__NT__)
     if (peek_file_before_read_callback)
