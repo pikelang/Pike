@@ -1096,89 +1096,90 @@ BREAK;
       CASE(F_ADD_INT); push_int(GET_ARG()); f_add(2); break;
       CASE(F_ADD_NEG_INT); push_int(-GET_ARG()); f_add(2); break;
 
-      CASE(F_PUSH_ARRAY);
-      switch(Pike_sp[-1].type)
-      {
-	default:
-	  PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
+OPCODE0(F_PUSH_ARRAY, "@")
+  switch(Pike_sp[-1].type)
+  {
+  default:
+    PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
+    
+  case PIKE_T_OBJECT:
+    if(!Pike_sp[-1].u.object->prog ||
+       FIND_LFUN(Pike_sp[-1].u.object->prog,LFUN__VALUES) == -1)
+      PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
 
-	case PIKE_T_OBJECT:
-	  if(!Pike_sp[-1].u.object->prog || FIND_LFUN(Pike_sp[-1].u.object->prog,LFUN__VALUES) == -1)
-	    PIKE_ERROR("@", "Bad argument.\n", Pike_sp, 1);
+    apply_lfun(Pike_sp[-1].u.object, LFUN__VALUES, 0);
+    if(Pike_sp[-1].type != PIKE_T_ARRAY)
+      error("Bad return type from o->_values() in @\n");
+    free_svalue(Pike_sp-2);
+    Pike_sp[-2]=Pike_sp[-1];
+    Pike_sp--;
+    break;
 
-	  apply_lfun(Pike_sp[-1].u.object, LFUN__VALUES, 0);
-	  if(Pike_sp[-1].type != PIKE_T_ARRAY)
-	    error("Bad return type from o->_values() in @\n");
-	  free_svalue(Pike_sp-2);
-	  Pike_sp[-2]=Pike_sp[-1];
-	  Pike_sp--;
-	  break;
+  case PIKE_T_ARRAY: break;
+  }
+  Pike_sp--;
+  push_array_items(Pike_sp->u.array);
+BREAK;
 
-	case PIKE_T_ARRAY: break;
-      }
-      Pike_sp--;
-      push_array_items(Pike_sp->u.array);
-      break;
+OPCODE2(F_LOCAL_LOCAL_INDEX, "local local index")
+{
+  struct svalue *s=Pike_fp->locals+arg1;
+  if(s->type == PIKE_T_STRING) s->subtype=0;
+  Pike_sp++->type=PIKE_T_INT;
+  index_no_free(Pike_sp-1,Pike_fp->locals+arg2,s);
+}
+BREAK;
 
-      CASE(F_LOCAL_LOCAL_INDEX);
-      {
-	struct svalue *s=Pike_fp->locals+GET_ARG();
-	if(s->type == PIKE_T_STRING) s->subtype=0;
-	Pike_sp++->type=PIKE_T_INT;
-	index_no_free(Pike_sp-1,Pike_fp->locals+GET_ARG2(),s);
-	break;
-      }
+OPCODE1(F_LOCAL_INDEX, "local index")
+{
+  struct svalue tmp,*s=Pike_fp->locals+arg1();
+  if(s->type == PIKE_T_STRING) s->subtype=0;
+  index_no_free(&tmp,Pike_sp-1,s);
+  free_svalue(Pike_sp-1);
+  Pike_sp[-1]=tmp;
+}
+BREAK;
 
-      CASE(F_LOCAL_INDEX);
-      {
-	struct svalue tmp,*s=Pike_fp->locals+GET_ARG();
-	if(s->type == PIKE_T_STRING) s->subtype=0;
-	index_no_free(&tmp,Pike_sp-1,s);
-	free_svalue(Pike_sp-1);
-	Pike_sp[-1]=tmp;
-	break;
-      }
+OPCODE2(F_GLOBAL_LOCAL_INDEX, "global[local]")
+{
+  struct svalue tmp,*s;
+  low_object_index_no_free(Pike_sp,
+			   Pike_fp->current_object,
+			   arg1 + Pike_fp->context.identifier_level);
+  Pike_sp++;
+  s=Pike_fp->locals+arg2;
+  if(s->type == PIKE_T_STRING) s->subtype=0;
+  index_no_free(&tmp,Pike_sp-1,s);
+  free_svalue(Pike_sp-1);
+  Pike_sp[-1]=tmp;
+}
+BREAK;
 
-      CASE(F_GLOBAL_LOCAL_INDEX);
-      {
-	struct svalue tmp,*s;
-	low_object_index_no_free(Pike_sp,
-				 Pike_fp->current_object,
-				 GET_ARG() + Pike_fp->context.identifier_level);
-	Pike_sp++;
-	s=Pike_fp->locals+GET_ARG2();
-	if(s->type == PIKE_T_STRING) s->subtype=0;
-	index_no_free(&tmp,Pike_sp-1,s);
-	free_svalue(Pike_sp-1);
-	Pike_sp[-1]=tmp;
-	break;
-      }
+OPCODE2(F_LOCAL_ARROW, "local->x")
+{
+  struct svalue tmp;
+  tmp.type=PIKE_T_STRING;
+  tmp.u.string=Pike_fp->context.prog->strings[arg1];
+  tmp.subtype=1;
+  Pike_sp->type=PIKE_T_INT;	
+  Pike_sp++;
+  index_no_free(Pike_sp-1,Pike_fp->locals+arg2, &tmp);
+  print_return_value();
+}
+BREAK;
 
-      CASE(F_LOCAL_ARROW);
-      {
-	struct svalue tmp;
-	tmp.type=PIKE_T_STRING;
-	tmp.u.string=Pike_fp->context.prog->strings[GET_ARG()];
-	tmp.subtype=1;
-	Pike_sp->type=PIKE_T_INT;	
-	Pike_sp++;
-	index_no_free(Pike_sp-1,Pike_fp->locals+GET_ARG2() , &tmp);
-	print_return_value();
-	break;
-      }
-
-      CASE(F_ARROW);
-      {
-	struct svalue tmp,tmp2;
-	tmp.type=PIKE_T_STRING;
-	tmp.u.string=Pike_fp->context.prog->strings[GET_ARG()];
-	tmp.subtype=1;
-	index_no_free(&tmp2, Pike_sp-1, &tmp);
-	free_svalue(Pike_sp-1);
-	Pike_sp[-1]=tmp2;
-	print_return_value();
-	break;
-      }
+OPCODE1(F_ARROW, "->x")
+{
+  struct svalue tmp,tmp2;
+  tmp.type=PIKE_T_STRING;
+  tmp.u.string=Pike_fp->context.prog->strings[arg1];
+  tmp.subtype=1;
+  index_no_free(&tmp2, Pike_sp-1, &tmp);
+  free_svalue(Pike_sp-1);
+  Pike_sp[-1]=tmp2;
+  print_return_value();
+}
+BREAK;
 
 OPCODE1(F_STRING_INDEX, "string index")
 {
