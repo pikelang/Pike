@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.451 2001/09/11 05:59:46 hubbe Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.452 2001/09/23 10:19:33 mirar Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -430,6 +430,49 @@ test_any([[
   }
   return 1;
 ]], 1);
+
+test_any( [[
+// bug [1996] ------------------------------------------------------------
+// http://community/crunch/show_bug.cgi?id=1996
+class Implementation
+{
+   int foo() { return 1; }
+};
+class Prototype
+{
+   int foo();
+   int bar() { return foo(); }
+};
+class Test
+{
+   inherit Implementation;
+   inherit Prototype;
+   int test() { return bar(); }
+};
+return Test()->test(); 
+]], 1 );
+
+test_any( [[
+// bug [721] -------------------------------------------------------------
+// http://community/crunch/show_bug.cgi?id=721
+int res=0;
+program p;
+catch
+{
+add_constant("test_a",compile_string("int foo();","test_a"));
+add_constant("test_b",compile_string("int foo();","test_b"));
+add_constant("test_c",compile_string(
+ "inherit test_a;\n"
+ "inherit test_b;\n"
+ "final int foo() { return 1; }\n","test_c"));
+ res=compile_string("inherit test_c;\n","test_d")()->foo();
+};
+return res;
+	]],1);
+
+// -----------------------------------------------------------------------
+
+
 
 // This test checks for excessive recursion in
 // destruct_objects_to_destruct, and also that it keeps the destruct
@@ -1893,7 +1936,6 @@ class Test
 ]],1);
 
 
-
 test_any([[mixed s="foo"; return s++;]],"foo")
 test_any([[mixed s="foo"; s++; return s;]],"foo1")
 test_any([[mixed s="foo"; return ++s;]],"foo1")
@@ -2062,6 +2104,7 @@ test_any_equal([[
   o2->a += ({2});
   return o->a;
 ]], ({1,2}))
+
 
 dnl // Undefined behaviour, don't do this - Hubbe
 dnl test_any_equal([[
