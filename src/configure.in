@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.67 1997/04/07 03:31:44 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.68 1997/04/10 20:37:40 kg Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1316,7 +1316,7 @@ then
 	SunOS*) LDSHARED="ld";;
 	Solaris) LDSHARED="ld -G";;
 	hp*|HP*) LDSHARED="ld -b";;
-	OSF*) LDSHARED="ld -shared -expect_unresolved \"*\"";;
+	OSF*) LDSHARED="ld -shared -expect_unresolved '*'";;
 	DYNIX/ptx*) LDSHARED="ld -G";;
 	next) LDSHARED='$(CC) $(CFLAGS) -nostdlib -r';;
 	Linux*) LDSHARED="gcc -shared";;
