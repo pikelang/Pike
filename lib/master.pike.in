@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.251 2003/12/03 17:03:44 grubba Exp $
+// $Id: master.pike.in,v 1.252 2003/12/18 18:48:24 mast Exp $
 
 #pike __REAL_VERSION__
 
@@ -2521,6 +2521,7 @@ string describe_module(object|program mod, array(object)|void ret_obj)
 string describe_object(object|program o)
 {
   string s;
+  if(zero_type (o)) return 0;	// Destructed.
 
   function parent_fun = object_program(o);
   if(!parent_fun) return 0;
