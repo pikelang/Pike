@@ -3,7 +3,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: dumpmodule.pike,v 1.39 2003/05/03 15:10:09 grubba Exp $
+|| $Id: dumpmodule.pike,v 1.40 2003/05/07 10:52:29 grubba Exp $
 */
 
 int quiet = 1, report_failed = 0, recursive = 0, update = 0;
@@ -87,6 +87,9 @@ class Codec
       case "program":
 	if(p!=x)
 	{
+	  if (tmp = static_lookup[x]) {
+	    return "resolv:_static_modules."+tmp;
+	  }
 	  if(tmp = search(master()->programs,x))
 	  {
 	    if(has_suffix(tmp, ".pike"))
@@ -100,6 +103,9 @@ class Codec
 	break;
 
       case "object":
+	if (tmp = static_lookup[x]) {
+	  return "resolv:_static_modules."+tmp;
+	}
 	if(program p=search(master()->objects,x))
 	{
 	  if(tmp = search(master()->programs,p))
