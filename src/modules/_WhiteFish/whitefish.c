@@ -3,7 +3,7 @@
 #include "global.h"
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: whitefish.c,v 1.24 2001/05/29 23:59:52 per Exp $");
+RCSID("$Id: whitefish.c,v 1.25 2001/05/30 00:33:39 per Exp $");
 #include "pike_macros.h"
 #include "interpret.h"
 #include "program.h"
@@ -237,22 +237,6 @@ static void handle_phrase_hit( Blob **blobs,
 	  break;
 	}
       }
-
-/*     if( hit > 2 ) */
-/*     { */
-/*       int h = wf_blob_hit_raw( blobs[0], i ); */
-/*       printf("%d/%d\n", hit, nblobs ); */
-/*       for( j = 1; j<nblobs; j++ ) */
-/*       { */
-/* 	for( k = 0; k<nhits[j]; k++ ) */
-/* 	{ */
-/* 	  int h2 = wf_blob_hit_raw( blobs[j], k ); */
-/* 	  printf( "[%d %x] ", ((int)h2-(int)h),h2 ); */
-/* 	} */
-/* 	printf("\n"); */
-/*       } */
-/*       printf("\n"); */
-/*     } */
 
     if( hit == nblobs )
       accum += add/mc;
