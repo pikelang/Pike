@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.113 2001/04/27 13:40:32 grubba Exp $
+// $Id: module.pmod,v 1.114 2001/05/01 12:25:50 grubba Exp $
 #pike __REAL_VERSION__
 
 
@@ -1637,7 +1637,11 @@ int mkdirhier (string pathname, void|int mode)
   else path = "";
   foreach (pathname / "/", string name) {
     path += name;
-    mkdir(path, mode);
+    if (!file_stat(path)) {
+      if (!mkdir(path, mode)) {
+	return 0;
+      }
+    }
     path += "/";
   }
   return is_dir (path);
