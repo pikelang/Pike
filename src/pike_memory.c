@@ -34,7 +34,7 @@ void swap(char *a, char *b, INT32 size)
   {
     tmp=MINIMUM((long)sizeof(tmpbuf), size);
     MEMCPY(tmpbuf,a,tmp);
-    MEMCPY(b,a,tmp);
+    MEMCPY(a,b,tmp);
     MEMCPY(b,tmpbuf,tmp);
     size-=tmp;
     a+=tmp;
