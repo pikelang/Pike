@@ -90,8 +90,7 @@ static unsigned int TOKENIZE(struct array **res, CHAR *data, unsigned int len)
 	  if(data[pos+1]==']') pos++;
 	  break;
 	case '/': case '%': case '*': case '&': case '|':
-	case '^':
-        case '+': case '!':
+	case '^': case '+': case '!': case '=': case '~':
 	  pos++;
 	  break;
 	}
