@@ -19,9 +19,9 @@ SGML split_tag(TAG t, TAG t2)
 		     sprintf("%s %s",
 			     t2->params->number,
 			     (string) t2->params->title),
-		       })),
-	    })
-		 });
+		       }) ),
+	    }) )
+	  });
   }
   return ::split_tag(t,t2);
 }
