@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.126 2004/04/06 08:49:26 grubba Exp $
+|| $Id: backend.cmod,v 1.127 2004/04/06 09:05:38 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.126 2004/04/06 08:49:26 grubba Exp $");
+RCSID("$Id: backend.cmod,v 1.127 2004/04/06 09:05:38 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -58,7 +58,7 @@ RCSID("$Id: backend.cmod,v 1.126 2004/04/06 08:49:26 grubba Exp $");
 #endif
 #include <sys/stat.h>
 
-#define POLL_DEBUG
+/* #define POLL_DEBUG */
 
 #ifdef POLL_DEBUG
 #define IF_PD(x)	x
