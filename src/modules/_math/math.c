@@ -29,7 +29,7 @@
 #include <floatingpoint.h>
 #endif
 
-RCSID("$Id: math.c,v 1.39 2001/09/30 05:10:30 hubbe Exp $");
+RCSID("$Id: math.c,v 1.40 2001/09/30 10:40:08 hubbe Exp $");
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795080
@@ -319,9 +319,6 @@ void f_pow(INT32 args)
       get_all_args("pow",args,"%F%F",&x,&y);
       pop_n_elems(args);
       push_float(pow((double)x, (double)y));
-      Pike_sp-=2;
-      push_float(DO_NOT_WARN((FLOAT_TYPE)pow((double)Pike_sp->u.float_number,
-					     (double)Pike_sp[1].u.integer)));
       return;
     }
   }
