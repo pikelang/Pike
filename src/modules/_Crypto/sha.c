@@ -3,6 +3,7 @@
  * Written by Niels Möller
  */
 
+
 #include "global.h"
 #include "svalue.h"
 #include "string.h"
@@ -23,7 +24,16 @@
 
 static struct program *shamod_program;
 
-static void shamod_create(INT32 args)
+/* string name(void) */
+static void f_name(INT32 args)
+{
+  if (args) 
+    error("Too many arguments to sha->name()\n");
+  
+  push_string(make_shared_string("SHA"));
+}
+
+static void f_create(INT32 args)
 {
   if (args)
     {
@@ -37,13 +47,13 @@ static void shamod_create(INT32 args)
   pop_n_elems(args);
 }
 	  
-static void shamod_update(INT32 args)
+static void f_update(INT32 args)
 {
   sha_update(THIS, (unsigned INT8 *) (sp-args)->u.string->str, (sp-args)->u.string->len);
   pop_n_elems(args);
 }
 
-static void shamod_digest(INT32 args)
+static void f_digest(INT32 args)
 {
   struct pike_string *s;
   
@@ -65,8 +75,9 @@ void MOD_INIT(sha)(void)
 {
   start_new_program();
   add_storage(sizeof(struct sha_ctx));
-  add_function("create", shamod_create, "function(void|object:void)", 0);
-  add_function("update", shamod_update, "function(string:void)", 0);
-  add_function("digest", shamod_digest, "function(void:string)", 0);
+  add_function("name", f_name, "function(void:string)", OPT_TRY_OPTIMIZE);
+  add_function("create", f_create, "function(void|object:void)", 0);
+  add_function("update", f_update, "function(string:void)", 0);
+  add_function("digest", f_digest, "function(void:string)", 0);
   end_class(MODULE_PREFIX "sha", 0);
 }
