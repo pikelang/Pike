@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.150 1999/02/11 02:27:04 hubbe Exp $");
+RCSID("$Id: builtin_functions.c,v 1.151 1999/02/20 17:47:01 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -15,7 +15,6 @@ RCSID("$Id: builtin_functions.c,v 1.150 1999/02/11 02:27:04 hubbe Exp $");
 #include "constants.h"
 #include "mapping.h"
 #include "stralloc.h"
-#include "lex.h"
 #include "multiset.h"
 #include "pike_types.h"
 #include "rusage.h"
@@ -1693,9 +1692,10 @@ void f_compile(INT32 args)
   if(sp[-args].type != T_STRING)
     PIKE_ERROR("compile", "Bad argument 1.\n", sp, args);
 
+#if 0
   if(sp[-args].u.string->size_shift)
     PIKE_ERROR("compile", "Wide strings not supported yet.\n", sp, args);
-
+#endif /* 0 */
 
   p=compile(sp[-args].u.string);
   pop_n_elems(args);

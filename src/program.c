@@ -3,8 +3,9 @@
 ||| Pike is distributed as GPL (General Public License)
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
+/**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.111 1999/02/15 01:56:35 hubbe Exp $");
+RCSID("$Id: program.c,v 1.112 1999/02/20 17:47:05 grubba Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -2292,7 +2293,7 @@ struct program *compile(struct pike_string *prog)
   int saved_threads_disabled = threads_disabled;
   dynamic_buffer used_modules_save = used_modules;
   INT32 num_used_modules_save = num_used_modules;
-  void yyparse(void);
+  extern void yyparse(void);
 
 #ifdef PIKE_DEBUG
   if(SETJMP(tmp))
@@ -2313,7 +2314,23 @@ struct program *compile(struct pike_string *prog)
 
   save_lex=lex;
 
-  lex.end=prog->str+prog->len;
+  lex.end = prog->str + (prog->len << prog->size_shift);
+
+  switch(prog->size_shift) {
+  case 0:
+    lex.current_lexer = yylex0;
+    break;
+  case 1:
+    lex.current_lexer = yylex1;
+    break;
+  case 2:
+    lex.current_lexer = yylex2;
+    break;
+  default:
+    fatal("Program has bad shift %d!\n", prog->size_shift);
+    break;
+  }
+
   lex.current_line=1;
   lex.current_file=make_shared_string("-");
   lex.pragmas=0;

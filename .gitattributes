@@ -133,6 +133,7 @@ testfont binary
 /src/las.h foreign_ident
 /src/lex.c foreign_ident
 /src/lex.h foreign_ident
+/src/lexer.h foreign_ident
 /src/main.c foreign_ident
 /src/main.h foreign_ident
 /src/mapping.c foreign_ident
