@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.114 2001/01/18 02:18:57 hubbe Exp $");
+RCSID("$Id: mapping.c,v 1.115 2001/01/25 08:37:59 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -105,12 +105,15 @@ static void check_mapping_type_fields(struct mapping *m)
 #endif
 
 static struct mapping_data empty_data = { 1, 1, 0,0,0,0,0,0 };
+static struct mapping_data weak_empty_data = { 1, 1, 0,0,0,0,0,0,1 };
 
 /* This function allocates the hash table and svalue space for a mapping
  * struct. The size is the max number of indices that can fit in the
  * allocated space.
  */
-static void init_mapping(struct mapping *m, INT32 size)
+static void init_mapping(struct mapping *m,
+			 INT32 size,
+			 INT16 flags)
 {
   struct mapping_data *md;
   char *tmp;
@@ -149,14 +152,19 @@ static void init_mapping(struct mapping *m, INT32 size)
     md->free_list[e-1].val.type=T_INT;
     md->ind_types = 0;
     md->val_types = 0;
-    md->flags = 0;
+    md->flags = flags;
     md->size = 0;
     md->refs=0;
     md->valrefs=0;
     md->hardlinks=0;
     md->num_keypairs=size;
   }else{
-    md=&empty_data;
+    if(flags & MAPPING_FLAG_WEAK)
+    {
+      md=&weak_empty_data;
+    }else{
+      md=&empty_data;
+    }
   }
   add_ref(md);
   m->data=md;
@@ -176,7 +184,7 @@ PMOD_EXPORT struct mapping *debug_allocate_mapping(int size)
   GC_ALLOC(m);
 
   INITIALIZE_PROT(m);
-  init_mapping(m,size);
+  init_mapping(m,size,0);
 
   m->refs = 1;
 
@@ -306,10 +314,9 @@ static struct mapping *rehash(struct mapping *m, int new_size)
   if(d_flag>1)  check_mapping(m);
 #endif
 
-  init_mapping(m, new_size);
+  init_mapping(m, new_size, md->flags);
   debug_malloc_touch(m);
   new_md=m->data;
-  new_md->flags = md->flags;
 
   /* This operation is now 100% atomic - no locking required */
   if(md->refs>1)
@@ -556,6 +563,18 @@ PMOD_EXPORT void mapping_set_flags(struct mapping *m, int flags)
     struct keypair *k = NULL, *prev = NULL;
     COPYMAP2();
   }
+#ifdef PIKE_DEBUG
+  if(flags & MAPPING_FLAG_WEAK)
+  {
+    debug_malloc_touch(m);
+    debug_malloc_touch(md);
+  }
+  else
+  {
+    debug_malloc_touch(m);
+    debug_malloc_touch(md);
+  }
+#endif
   md->flags = flags;
 }
 
