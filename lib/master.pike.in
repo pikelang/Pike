@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.254 2003/02/25 14:10:06 grubba Exp $
+// $Id: master.pike.in,v 1.255 2003/02/26 16:04:57 nilsson Exp $
 
 #pike __REAL_VERSION__
 
@@ -1892,10 +1892,6 @@ void _main(array(string) orig_argv, array(string) env)
     argv = tmp->get_args(argv,1);
   }
 
-#ifdef __AUTO_BIGNUM__
-  main_resolv( "Gmp", "bignum" );
-#endif /* __AUTO_BIGNUM__ */
-
   switch (postparseaction)
   {
      case "features":
@@ -1914,6 +1910,10 @@ void _main(array(string) orig_argv, array(string) env)
 	     "\n");
 	exit(0);
   }
+
+#ifdef __AUTO_BIGNUM__
+  main_resolv( "Gmp", "bignum" );
+#endif /* __AUTO_BIGNUM__ */
 
   random_seed(time() ^ (getpid()<<8));
 
