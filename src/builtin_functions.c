@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.200 1999/11/04 15:42:51 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.201 1999/11/04 17:21:42 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1889,7 +1889,7 @@ void f_compile(INT32 args)
   if ((args > 1) && (sp[1-args].type == T_OBJECT)) {
     p = compile(sp[-args].u.string, sp[1-args].u.object);
   } else {
-    p = compile(sp[-args].u.string, master_object);
+    p = compile(sp[-args].u.string, NULL);
   }
   pop_n_elems(args);
   push_program(p);
