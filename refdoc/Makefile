@@ -1,7 +1,7 @@
 #
 # Main Makefile for extracting AutoDoc mk II to XML
 #
-# $Id: Makefile,v 1.52 2003/03/26 00:29:29 nilsson Exp $
+# $Id: Makefile,v 1.53 2003/03/26 02:24:50 nilsson Exp $
 #
 # Henrik Grubbström 2001-02-02
 #
@@ -17,7 +17,7 @@ pike.ida.liu.se: modref pelix_modref traditional
 
 modref: $(BUILDDIR)/modref.xml structure/modref.css structure/modref.html \
 	  presentation/make_html.pike presentation/tree-split-autodoc.pike
-	@$(MAKE) PIKE="$(PIKE)" low_modref
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_modref
 
 low_modref:
 	rm -rf modref || /bin/true
@@ -33,7 +33,7 @@ low_modref:
 
 pelix_modref: $(BUILDDIR)/modref.xml structure/pelix_modref.html \
 	        presentation/make_html.pike presentation/tree-split-autodoc.pike
-	@$(MAKE) PIKE="$(PIKE)" low_pelix_modref
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_pelix_modref
 
 low_pelix_modref:
 	rm -rf pelix_modref || /bin/true
@@ -44,14 +44,14 @@ low_pelix_modref:
 	cp $(BUILDDIR)/doc_build/images/* pelix_modref/images
 
 one_page: onepage $(BUILDDIR)/onepage.xml presentation/make_html.pike
-	@$(MAKE) PIKE="$(PIKE)" low_one_page
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_one_page
 
 low_one_page:
 	cp $(BUILDDIR)/doc_build/images/* onepage/
 	@$(PIKE) presentation/make_html.pike --img= $(BUILDDIR)/onepage.xml
 
 traditional: traditional_manual $(BUILDDIR)/traditional.xml presentation/make_html.pike
-	@$(MAKE) PIKE="$(PIKE)" low_traditional
+	@$(MAKE) PIKE="$(PIKE)" BUILDDIR="$(BUILDDIR)" low_traditional
 
 low_traditional:
 	cp $(BUILDDIR)/doc_build/images/* traditional_manual/images/
