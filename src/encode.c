@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: encode.c,v 1.165 2003/02/20 14:55:12 grubba Exp $
+|| $Id: encode.c,v 1.166 2003/02/24 18:56:08 mast Exp $
 */
 
 #include "global.h"
@@ -27,7 +27,7 @@
 #include "bignum.h"
 #include "pikecode.h"
 
-RCSID("$Id: encode.c,v 1.165 2003/02/20 14:55:12 grubba Exp $");
+RCSID("$Id: encode.c,v 1.166 2003/02/24 18:56:08 mast Exp $");
 
 /* #define ENCODE_DEBUG */
 
@@ -2005,6 +2005,12 @@ static int init_placeholder(struct object *placeholder);
   (X)=pop_unfinished_type();			\
 } while(0)
 
+static void cleanup_new_program_decode (int *orig_compilation_depth)
+{
+  end_first_pass(0);
+  compilation_depth = *orig_compilation_depth;
+}
+
 static void decode_value2(struct decode_data *data)
 
 #ifdef PIKE_DEBUG
@@ -3006,6 +3012,7 @@ static void decode_value2(struct decode_data *data)
 	{
 	  struct program *p;
 	  ONERROR err;
+	  int orig_compilation_depth;
 	  int byteorder;
 	  int bytecode_method;
 	  int entry_type;
@@ -3046,6 +3053,8 @@ static void decode_value2(struct decode_data *data)
 	  p_flags |= PROGRAM_AVOID_CHECK;
 
 	  /* Start the new program. */
+	  orig_compilation_depth = compilation_depth;
+	  compilation_depth = -1;
 	  low_start_new_program(NULL, NULL, 0, NULL);
 	  p = Pike_compiler->new_program;
 
@@ -3054,7 +3063,7 @@ static void decode_value2(struct decode_data *data)
 	  /* Kludge to get end_first_pass() to free the program. */
 	  Pike_compiler->num_parse_error++;
 
-	  SET_ONERROR(err, end_first_pass, 0);
+	  SET_ONERROR(err, cleanup_new_program_decode, &orig_compilation_depth);
 
 	  debug_malloc_touch(p);
 
@@ -3502,6 +3511,7 @@ static void decode_value2(struct decode_data *data)
 	  if (!(p = end_first_pass(2))) {
 	    Pike_error("Failed to decode program.\n");
 	  }
+	  compilation_depth = orig_compilation_depth;
 	  push_program(p);
 
 	  /* Verify... */
