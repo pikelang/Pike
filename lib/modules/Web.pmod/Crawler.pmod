@@ -16,7 +16,7 @@
 
 // Author:  Johan Schön.
 // Copyright (c) Roxen Internet Software 2001
-// $Id: Crawler.pmod,v 1.4 2001/07/06 03:13:49 js Exp $
+// $Id: Crawler.pmod,v 1.5 2001/07/11 21:13:56 js Exp $
 
 #define CRAWLER_DEBUG
 #ifdef CRAWLER_DEBUG
@@ -643,21 +643,21 @@ class Crawler
   class HTTPFetcher
   {
     inherit Protocols.HTTP.Query;
-    Standards.URI uri;
+    Standards.URI uri, real_uri;
     
     void got_data()
     {
       int called;
-      queue->stats->close_callback(uri);
+      queue->stats->close_callback(real_uri);
       if(status==200)
       {
-	add_links(page_cb(uri, data(), headers, @args));
+	add_links(page_cb(real_uri, data(), headers, @args));
 	called=1;
       }
       if(headers->location)
 	add_links(({ Standards.URI(headers->location) }));
 
-      queue->done(uri,called);
+      queue->done(real_uri,called);
     }
     
     void request_ok(object httpquery)
@@ -667,33 +667,31 @@ class Crawler
     
     void request_fail(object httpquery)
     {
-      queue->stats->close_callback(uri);
+      queue->stats->close_callback(real_uri);
       queue->done(uri);
     }
     
-    void create(Standards.URI _uri)
+    void create(Standards.URI _uri, void|Standards.URI _real_uri, mapping extra_headers)
     {
       string pq;
       mapping headers;
-      string get_path_query(  Standards.URI u )
-      {
-	return u->path + (u->query?"?"+u->query:"");
-      };
       uri=_uri;
+      real_uri=_real_uri;
+      if(!real_uri)
+	real_uri=uri;
 
       headers = ([
 	"host": uri->host+":"+uri->port,
 	"user-agent": "Mozilla 4.0 (PikeCrawler)",
       ]);
-      pq = get_path_query( uri );
+      if(extra_headers)
+	headers |= extra_headers;
+      
       hostname_cache=_hostname_cache;
       set_callbacks(request_ok, request_fail);
 
-      if( prepare_cb )
-	[pq, headers] = prepare_cb( uri, pq, headers );
-
       async_request(uri->host, uri->port,
-		    sprintf("GET %s HTTP/1.0", pq),
+		    sprintf("GET %s HTTP/1.0", uri->get_path_query()),
 		    headers );
     }
   }
@@ -720,7 +718,13 @@ class Crawler
     }
 
     queue->stats->start_fetch(uri->host);
-    
+
+    mapping headers;
+    Standards.URI real_uri = uri;
+    if( prepare_cb )
+      [uri, headers] = prepare_cb( uri );
+
+    werror("After prepare_cb: %O\n", uri);
     
     if(objectp(uri))
     {
@@ -728,7 +732,7 @@ class Crawler
       {
         case "http":
         case "https":
-	  HTTPFetcher(uri);
+	  HTTPFetcher(uri, real_uri, headers);
       }
     }
   
