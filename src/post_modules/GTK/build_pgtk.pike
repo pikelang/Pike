@@ -1392,7 +1392,7 @@ void do_default_sprintf( int args, int offset, int len )
 	      post += ("  if (_arg"+na+"->size != "+
 		       (t=replace(t,({"{","}"}),({"(",")"})))+
 		       ") \n"
-		       "    error(\"argument "+na+" (array(string)) has wrong size (columns=%d, elements=%d)\n\","+t+",_arg"+na+"->size);"
+		       "    error(\"argument "+na+" (array(string)) has wrong size (columns=%d, elements=%d)\\n\","+t+",_arg"+na+"->size);"
 		       "  arg"+na+"=alloca(sizeof(char *)* (_arg"+na+"->size));\n"
 		       "  for(_i=0; _i<_arg"+na+"->size; _i++)\n"
 		       "  {\n"
