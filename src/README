@@ -52,10 +52,6 @@ This is what you need to do to install Pike:
 
 5) If you want to install Pike, write 'make install'
 
-6) Optionally do 'make html_docs' to create a directory called docs which
-   will contain the Pike documentation in html. This directory can then
-   be copied to anywhere you want.
-
 IF IT DOESN'T WORK:
 
  o Try again.
