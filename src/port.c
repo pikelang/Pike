@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: port.c,v 1.60 2003/02/22 10:21:35 grubba Exp $
+|| $Id: port.c,v 1.61 2003/02/24 13:36:45 grubba Exp $
 */
 
 /*
@@ -26,7 +26,7 @@
 #include <float.h>
 #include <string.h>
 
-RCSID("$Id: port.c,v 1.60 2003/02/22 10:21:35 grubba Exp $");
+RCSID("$Id: port.c,v 1.61 2003/02/24 13:36:45 grubba Exp $");
 
 #ifdef sun
 time_t time PROT((time_t *));
@@ -123,6 +123,18 @@ PMOD_EXPORT unsigned long my_rand(void)
 {
   if( ++rnd_index == RNDBUF) rnd_index=0;
   return rndbuf[rnd_index] += rndbuf[rnd_index+RNDJUMP-(rnd_index<RNDBUF-RNDJUMP?0:RNDBUF)];
+}
+
+PMOD_EXPORT void *pike_realloc(void *ptr, size_t sz)
+{
+  if (!ptr) return malloc(sz);
+#ifndef HAVE_WORKING_REALLOC_NULL
+#undef realloc
+#endif	/* !HAVE_WORKING_REALLOC_NULL */
+  return realloc(ptr, sz);
+#ifndef HAVE_WORKING_REALLOC_NULL
+#define realloc(PTR, SZ)	pike_realloc((PTR),(SZ))
+#endif	/* !HAVE_WORKING_REALLOC_NULL */
 }
 
 #define DIGIT(x)	(isdigit(x) ? (x) - '0' : \

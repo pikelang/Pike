@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: acconfig.h,v 1.117 2003/02/14 19:53:25 mast Exp $
+|| $Id: acconfig.h,v 1.118 2003/02/24 13:36:45 grubba Exp $
 */
 
 #ifndef MACHINE_H
@@ -247,6 +247,9 @@
 
 /* Define if gettimeofday takes to arguments */
 #undef GETTIMEOFDAY_TAKES_TWO_ARGS
+
+/* Define if realloc(NULL, SZ) works. */
+#undef HAVE_WORKING_REALLOC_NULL
 
 /* Define if gethrvtime works (i.e. even without ptime). */
 #undef HAVE_WORKING_GETHRVTIME
@@ -591,6 +594,10 @@
 #define __func__	"unknown"
 #endif /* HAVE_WORKING___FUNCTION__ */
 #endif /* !HAVE_WORKING___FUNC__ */
+
+#ifndef HAVE_WORKING_REALLOC_NULL
+#define realloc(PTR, SZ)	pike_realloc((PTR),(SZ))
+#endif
 
 /* NOTE:
  *    PIKE_CONCAT doesn't get defined if there isn't any way to

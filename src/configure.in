@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.699 2003/02/22 14:56:44 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.700 2003/02/24 13:36:44 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3167,6 +3167,29 @@ AC_CHECK_FUNCS( \
  nanosleep \
  thr_yield \
 )
+
+# SunOS 4 realloc() returns NULL when reallocing NULL.
+AC_MSG_CHECKING([if realloc(NULL, SZ) works])
+AC_CACHE_VAL(pike_cv_realloc_null_works, [
+  AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+int main(int argc, char **argv)
+{
+  void *foo = realloc(NULL, 16);
+
+  return !foo;
+}
+  ], [ pike_cv_realloc_null_works=yes
+  ], [ pike_cv_realloc_null_works=no
+  ], [ pike_cv_realloc_null_works=no
+])
+if test "x$pike_cv_realloc_null_works" = "xyes"; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(HAVE_WORKING_REALLOC_NULL)
+else
+  AC_MSG_RESULT(no)
+fi
 
 AC_MSG_CHECKING(for the type of the last argument to accept)
 AC_CACHE_VAL(pike_cv_accept_size_t, [
