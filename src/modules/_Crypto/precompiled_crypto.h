@@ -68,6 +68,12 @@ struct pike_cbc {
   INT32 mode;
 };
 
+struct pike_pipe {
+  struct object **objects;
+  INT32 num_objs;
+  INT32 block_size;
+};
+
 /*
  * Defines
  */
@@ -81,6 +87,7 @@ struct pike_cbc {
 #define PIKE_DES	((struct pike_des *)(fp->current_storage))
 
 #define PIKE_CBC	((struct pike_cbc *)(fp->current_storage))
+#define PIKE_PIPE	((struct pike_pipe *)(fp->current_storage))
 
 /*
  * Globals
@@ -125,5 +132,10 @@ void exit_invert(void);
 void init_cbc_efuns(void);
 void init_cbc_programs(void);
 void exit_cbc(void);
+
+/* /precompiled/crypto/pipe */
+void init_pipe_efuns(void);
+void init_pipe_programs(void);
+void exit_pipe(void);
 
 #endif /* PRECOMPILED_X_H */
