@@ -1,23 +1,10 @@
 /*
- * $Id: extract_autodoc.pike,v 1.25 2002/12/10 13:45:36 grubba Exp $
+ * $Id: extract_autodoc.pike,v 1.26 2002/12/12 18:26:48 grubba Exp $
  *
  * AutoDoc mk II extraction script.
  *
  * Henrik Grubbström 2001-01-08
  */
-
-array(string) find_root(string path) {
-  if(file_stat(path+"/.autodoc")) {
-    // Note .autodoc files are space-separated to allow for modulenames like
-    //      "7.0".
-    return (Stdio.read_file(path+"/.autodoc")/"\n")[0]/" " - ({""});
-  }
-  if (!sizeof(path)) return ({});
-  array(string) parts = path/"/";
-  string name = parts[-1];
-  sscanf(name, "%s.pmod", name);
-  return find_root(parts[..sizeof(parts)-2]*"/") + ({ name });
-}
 
 string imgsrc;
 string imgdir;
@@ -36,11 +23,25 @@ int main(int n, array(string) args) {
   if(srcdir[-1]!='/') srcdir += "/";
   if(builddir[-1]!='/') builddir += "/";
   if(imgdir[-1]!='/') imgdir += "/";
-  recurse(srcdir, builddir);
+  recurse(srcdir, builddir, 0, ({"predef::"}));
 }
 
-void recurse(string srcdir, string builddir) {
+void recurse(string srcdir, string builddir, int root_ts, array(string) root)
+{
   werror("Extracting from %s\n", srcdir);
+
+  Stdio.Stat st;
+  if(st = file_stat(srcdir+"/.autodoc")) {
+    // Note .autodoc files are space-separated to allow for namespaces like
+    //      "7.0::".
+    root = (Stdio.read_file(srcdir+"/.autodoc")/"\n")[0]/" " - ({""});
+    if (!sizeof(root) || !has_suffix(root[0], "::")) {
+      // The default namespace is predef::
+      root = ({ "predef::" }) + root;
+    }
+    root_ts = st->mtime;
+  }
+
   foreach(get_dir(srcdir), string fn) {
     if(fn=="CVS") continue;
     if(fn[0]=='.') continue;
@@ -51,7 +52,9 @@ void recurse(string srcdir, string builddir) {
 
     if(stat->isdir) {
       if(!file_stat(builddir+fn)) mkdir(builddir+fn);
-      recurse(srcdir+fn+"/", builddir+fn+"/");
+      string mod_name = fn;
+      sscanf(mod_name, "%s.pmod", mod_name);
+      recurse(srcdir+fn+"/", builddir+fn+"/", root_ts, root + ({mod_name}));
       continue;
     }
 
@@ -63,15 +66,18 @@ void recurse(string srcdir, string builddir) {
 
     Stdio.Stat dstat = file_stat(builddir+fn+".xml");
 
-    if(!dstat || dstat->mtime < stat->mtime) {
-      string res = extract( srcdir+fn, imgdir, 0, builddir);
+    // Build the xml file if it doesn't exist, if it is older than the
+    // source file, or if the root has changed since the previous build.
+    if(!dstat || dstat->mtime < stat->mtime || dstat->mtime < root_ts) {
+      string res = extract(srcdir+fn, imgdir, 0, builddir, root);
       if(!res) exit(1);
       Stdio.write_file(builddir+fn+".xml", res);
     }
   }
 }
 
-string extract(string filename, string imgdest, int(0..1) rootless, string builddir) {
+string extract(string filename, string imgdest, int(0..1) rootless,
+	       string builddir, array(string) root) {
 
   werror("Extracting file %O...\n", filename);
   string file = Stdio.read_file(filename);
@@ -92,7 +98,7 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
     foreach(file/"\n", string line) {
       mirar_parser->process_line(line, filename, lineno++);
     }
-    return mirar_parser->make_doc_files( builddir, imgdest );
+    return mirar_parser->make_doc_files(builddir, imgdest, root[0]);
   }
 
   string name_sans_suffix, suffix;
@@ -106,31 +112,32 @@ string extract(string filename, string imgdest, int(0..1) rootless, string build
   suffix = ((name_sans_suffix/"/")[-1]/".")[-1];
   if( !(< "c", "pike", "pmod", >)[suffix] )
     error("Unknown filetype %O.\n", suffix);
-  name_sans_suffix = name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
+  name_sans_suffix =
+    name_sans_suffix[..sizeof(name_sans_suffix)-(sizeof(suffix)+2)];
 
   string result;
   mixed err = catch {
     if( suffix == "c" )
       result = Tools.AutoDoc.ProcessXML.extractXML(filename);
     else {
-      array(string) parents = rootless?({}):find_root(dirname(filename));
       string type = ([ "pike":"class", "pmod":"module", ])[suffix];
       string name = (name_sans_suffix/"/")[-1];
 #if 0
-      werror("parents: %{%O, %}\n"
+      werror("root: %{%O, %}\n"
 	     "type: %O\n"
-	     "name: %O\n", parents, type, name);
+	     "name: %O\n", root, type, name);
 #endif /* 0 */
       if(name == "master.pike")
 	name = "/master";
-      if(name == "module" && (filename/"/")[-1] != "module.pike" && !rootless) {
-	if(!sizeof(parents))
+      if(name == "module" && (filename/"/")[-1] != "module.pike") {
+	if(sizeof(root)<2)
 	  error("Unknown module parent name.\n");
-	name = parents[-1];
-	parents = parents[..sizeof(parents)-2];
+	name = root[-1];
+	root = root[..sizeof(root)-2];
       }
 
-      result = Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, parents);
+      result =
+	Tools.AutoDoc.ProcessXML.extractXML(filename, 1, type, name, root);
     }
   };
 
