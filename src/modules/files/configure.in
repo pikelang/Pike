@@ -242,9 +242,42 @@ int main()
   fd_set tmp;
   struct timeval foo;
   int fds[2];
+  char x;
 
   if(socketpair(AF_UNIX, SOCK_STREAM, 0, fds)<0)
     exit(1);
+
+  foo.tv_sec=1;
+  foo.tv_usec=0;
+  FD_ZERO(&tmp);
+  FD_SET(fds[1], &tmp);
+
+  if(select(fds[1]+1,&tmp, 0,0,&foo)>0)
+  {
+    fprintf(stderr,"select() always falls through\n");
+    exit(4);
+  }
+
+  write(fds[0],"x",1);
+  
+  foo.tv_sec=1;
+  foo.tv_usec=0;
+  FD_ZERO(&tmp);
+  FD_SET(fds[1], &tmp);
+
+  if(select(fds[1]+1,&tmp, 0,0,&foo)<=0)
+  {
+    fprintf(stderr,"select() never falls through\n");
+    exit(5);
+  }
+ 
+  if(!FD_ISSET(fds[1], &tmp))
+  {
+    fprintf(stderr,"select() does not modify read set properly\n");
+    exit(6);
+  }
+
+  read(fds[1], &x, 1);
 
   shutdown(fds[1],1);
   shutdown(fds[0],1);
@@ -256,10 +289,16 @@ int main()
   FD_ZERO(&tmp);
   FD_SET(fds[1], &tmp);
   if(select(fds[1]+1,&tmp, 0,0,&foo)<=0)
+  {
+    fprintf(stderr,"select() does report closed sockets properly\n");
     exit(2);
+  }
 
   if(!FD_ISSET(fds[1], &tmp))
+  {
+    fprintf(stderr,"FD_ISSET does not report closed sockets properly\n");
     exit(3);
+  }
 
   exit(0);
 }
