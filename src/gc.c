@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: gc.c,v 1.201 2003/02/09 13:35:29 mast Exp $
+|| $Id: gc.c,v 1.202 2003/02/09 15:30:57 mast Exp $
 */
 
 #include "global.h"
@@ -33,7 +33,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.201 2003/02/09 13:35:29 mast Exp $");
+RCSID("$Id: gc.c,v 1.202 2003/02/09 15:30:57 mast Exp $");
 
 int gc_enabled = 1;
 
@@ -2851,14 +2851,14 @@ size_t do_gc(void *ignored, int explicit_call)
       non_gc_time = non_gc_time * multiplier +
 	last_non_gc_time * (1.0 - multiplier);
     }
-    else last_non_gc_time = 0;
+    else last_non_gc_time = (cpu_time_t) -1;
     last_gc_end_time = get_cpu_time();
     if (last_gc_end_time > gc_start_time) {
       last_gc_time = last_gc_end_time - gc_start_time;
       gc_time = gc_time * multiplier +
 	last_gc_time * (1.0 - multiplier);
     }
-    else last_gc_time = 0;
+    else last_gc_time = (cpu_time_t) -1;
 
     /* At this point, unreferenced contains the number of things that
      * were without external references during the check and mark
@@ -2874,7 +2874,8 @@ size_t do_gc(void *ignored, int explicit_call)
     objects_freed = objects_freed * multiplier +
       unreferenced * (1.0 - multiplier);
 
-    if (!last_non_gc_time || gc_time / non_gc_time <= gc_time_ratio) {
+    if (last_non_gc_time == (cpu_time_t) -1 ||
+	gc_time / non_gc_time <= gc_time_ratio) {
       /* Calculate the new threshold by adjusting the average
        * threshold (objects_alloced) with the ratio between the wanted
        * garbage at the next gc (gc_garbage_ratio_low *
@@ -2908,7 +2909,7 @@ size_t do_gc(void *ignored, int explicit_call)
 
     alloc_threshold = (ptrdiff_t)new_threshold;
 
-    if (!explicit_call) {
+    if (!explicit_call && last_gc_time != (cpu_time_t) -1) {
 #if CPU_TIME_IS_THREAD_LOCAL == YES
       OBJ2THREAD(Pike_interpreter.thread_id)->auto_gc_time += last_gc_time;
 #elif CPU_TIME_IS_THREAD_LOCAL == NO
@@ -2918,7 +2919,7 @@ size_t do_gc(void *ignored, int explicit_call)
 
     if(GC_VERBOSE_DO(1 ||) gc_trace)
     {
-      if (last_gc_time)
+      if (last_gc_time != (cpu_time_t) -1)
 	fprintf(stderr, "done (%"PRINTSIZET"d of %"PRINTSIZET"d "
 		"was unreferenced), %ld ms.\n",
 		unreferenced, start_num_objs,

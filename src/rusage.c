@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: rusage.c,v 1.31 2003/02/09 13:36:46 mast Exp $
+|| $Id: rusage.c,v 1.32 2003/02/09 15:30:57 mast Exp $
 */
 
 #include "global.h"
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include "pike_rusage.h"
 
-RCSID("$Id: rusage.c,v 1.31 2003/02/09 13:36:46 mast Exp $");
+RCSID("$Id: rusage.c,v 1.32 2003/02/09 15:30:57 mast Exp $");
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -291,7 +291,7 @@ cpu_time_t get_cpu_time (void)
 		     &userTime.ft_struct))
     return (userTime.ft_scalar + kernelTime.ft_scalar) * 100;
   else
-    return 0;
+    return (cpu_time_t) -1;
 }
 
 #elif defined (HAVE_GETHRVTIME)
@@ -307,13 +307,13 @@ cpu_time_t get_cpu_time (void)
 {
   prstatus_t  prs;
 
-  if (proc_fd < 0 && !open_proc_fd()) return 0;
+  if (proc_fd < 0 && !open_proc_fd()) return (cpu_time_t) -1;
   while(ioctl(proc_fd, PIOCSTATUS, &prs) < 0)
   {
     if(errno == EINTR)
       continue;
 
-    return 0;
+    return (cpu_time_t) -1;
   }
 
   return
@@ -335,7 +335,7 @@ cpu_time_t get_cpu_time (void)
   struct tms tms;
   clock_t ticks;
   if (times (&tms) == (clock_t) -1)
-    return 0;
+    return (cpu_time_t) -1;
   ticks = CLK_TCK;
   return CONVERT_TIME (tms.tms_utime + tms.tms_stime, ticks, CPU_TIME_TICKS);
 }
@@ -346,7 +346,7 @@ cpu_time_t get_cpu_time (void)
 {
   clock_t t = clock();
   if (t == (clock_t) -1)
-    return 0;
+    return (cpu_time_t) -1;
   else
     return CONVERT_TIME (t, CLOCKS_PER_SEC, CPU_TIME_TICKS);
 }
@@ -356,7 +356,7 @@ cpu_time_t get_cpu_time (void)
 cpu_time_t get_cpu_time (void)
 {
   struct rusage rus;
-  if (getrusage(RUSAGE_SELF, &rus) < 0) return 0;
+  if (getrusage(RUSAGE_SELF, &rus) < 0) return (cpu_time_t) -1;
   return
     rus.ru_utime.tv_sec * CPU_TIME_TICKS +
     rus.ru_utime.tv_usec * (CPU_TIME_TICKS / 1000) +
@@ -368,7 +368,7 @@ cpu_time_t get_cpu_time (void)
 
 cpu_time_t get_cpu_time (void)
 {
-  return 0;
+  return (cpu_time_t) -1;
 }
 
 #endif
@@ -384,7 +384,8 @@ long *low_rusage(void)
 
 INT32 internal_rusage(void)
 {
-  return get_cpu_time() / (CPU_TIME_TICKS / 1000);
+  cpu_time_t t = get_cpu_time();
+  return t != (cpu_time_t) -1 ? t / (CPU_TIME_TICKS / 1000) : 0;
 }
 
 #if defined(PIKE_DEBUG) || defined(INTERNAL_PROFILING)

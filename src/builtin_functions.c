@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.471 2003/02/08 18:37:54 grubba Exp $
+|| $Id: builtin_functions.c,v 1.472 2003/02/09 15:30:57 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.471 2003/02/08 18:37:54 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.472 2003/02/09 15:30:57 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -5954,7 +5954,7 @@ PMOD_EXPORT void f_master(INT32 args)
 /*! @decl int gethrvtime (void|int nsec)
  *!
  *! Return the CPU time that has been consumed by this process or
- *! thread. Zero is returned if the system couldn't determine it. The
+ *! thread. -1 is returned if the system couldn't determine it. The
  *! time is normally returned in microseconds, but if the optional
  *! argument @[nsec] is nonzero it's returned in nanoseconds.
  *!
@@ -5986,6 +5986,12 @@ PMOD_EXPORT void f_gethrvtime(INT32 args)
 {
   int nsec = 0;
   cpu_time_t time = get_cpu_time();
+
+  if (time == (cpu_time_t) -1) {
+    pop_n_elems (args);
+    push_int (-1);
+    return;
+  }
 
   /* Don't subtract the gc time at all if we don't know whether it's
    * thread local or not, since if we do it wrong we might end up
