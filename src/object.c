@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.70 1999/04/12 02:24:16 hubbe Exp $");
+RCSID("$Id: object.c,v 1.71 1999/05/31 17:08:53 grubba Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -260,7 +260,6 @@ struct object *get_master(void)
 
   if(!master_program)
   {
-    extern struct timeval TM;
     struct pike_string *s,*s2;
     char *tmp=xalloc(strlen(master_file)+3);
     struct stat stat_buf;
