@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.8 2002/12/03 09:41:27 hop Exp $
+// $Id: protocol.pike,v 1.9 2002/12/03 09:48:05 hop Exp $
 
 
 #include "snmp_globals.h"
@@ -169,11 +169,11 @@ inherit Stdio.UDP : snmp;
 //:
 //:  private variables
 //:
-int remote_port; // = SNMP_DEFAULT_PORT;
-string local_host = SNMP_DEFAULT_HOST;
-string remote_host;
-int request_id = 1;
-int next_id = 1;
+private int remote_port; // = SNMP_DEFAULT_PORT;
+private string local_host = SNMP_DEFAULT_HOST;
+private string remote_host;
+private int request_id = 1;
+private int next_id = 1;
 
 //! SNMP version
 //! 
@@ -194,13 +194,13 @@ int ok;
 //: 
 //: msg pool
 //:
-mapping msgpool = ([]);
+private mapping msgpool = ([]);
 
 //:
 //: callback support
 //:
-function con_ok, con_fail;
-array extra_args;
+private function con_ok, con_fail;
+private array extra_args;
 
 //! create a new SNMP protocol object
 //!
@@ -287,7 +287,7 @@ mapping|int from_pool(string msgid) {
 
 
 //! read decoded message from pool
-mapping readmsg_from_pool(int msgid) {
+private mapping readmsg_from_pool(int msgid) {
   //: read SNMP response PDU from PDU pool
 
   mapping rv = from_pool((string)msgid);
@@ -305,7 +305,7 @@ mapping readmsg_from_pool(int msgid) {
 
 
 
-int writemsg(string rem_addr, int rem_port, object pdu) {
+private int writemsg(string rem_addr, int rem_port, object pdu) {
   //: send SNMP encoded message and return status
   //: OK, in most cases :)
 
@@ -327,7 +327,7 @@ int writemsg(string rem_addr, int rem_port, object pdu) {
 }
 
 
-int get_req_id() {
+private int get_req_id() {
   //: returns unicate id
 
   //LOCK
