@@ -15,7 +15,7 @@
 
 #include <ctype.h>
 
-RCSID("$Id: stralloc.c,v 1.30 1998/03/28 15:11:13 grubba Exp $");
+RCSID("$Id: stralloc.c,v 1.31 1998/04/17 05:13:32 hubbe Exp $");
 
 #define BEGIN_HASH_SIZE 997
 #define MAX_AVG_LINK_LENGTH 3
@@ -372,7 +372,7 @@ void check_string(struct pike_string *s)
 
 void verify_shared_strings_tables(void)
 {
-  unsigned INT32 e, h;
+  unsigned INT32 e, h, num=0;
   struct pike_string *s;
 
   for(e=0;e<htable_size;e++)
@@ -380,6 +380,7 @@ void verify_shared_strings_tables(void)
     h=0;
     for(s=base_table[e];s;s=s->next)
     {
+      num++;
       h++;
       if(s->len < 0)
 	fatal("Shared string shorter than zero bytes.\n");
@@ -415,6 +416,8 @@ void verify_shared_strings_tables(void)
       }
     }
   }
+  if(num != num_strings)
+    fatal("Num strings is wrong %d!=%d\n",num,num_strings);
 }
 
 int safe_debug_findstring(struct pike_string *foo)
@@ -835,7 +838,7 @@ void count_memory_in_strings(INT32 *num, INT32 *size)
   }
 #ifdef DEBUG
   if(num_strings != num_)
-    fatal("Num strings is wrong!.\n");
+    fatal("Num strings is wrong! %d!=%d.\n",num_strings, num_);
 #endif
   num[0]=num_;
   size[0]=size_;
