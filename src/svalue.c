@@ -23,7 +23,7 @@
 #include "queue.h"
 #include "bignum.h"
 
-RCSID("$Id: svalue.c,v 1.58 1999/12/14 18:46:19 grubba Exp $");
+RCSID("$Id: svalue.c,v 1.59 1999/12/15 00:47:06 grubba Exp $");
 
 struct svalue dest_ob_zero = { T_INT, 0 };
 
@@ -115,6 +115,7 @@ void really_free_svalue(struct svalue *s)
 #endif
     break;
     
+  case T_TYPE:
   case T_STRING:
     really_free_string(s->u.string);
 #ifdef PIKE_DEBUG
@@ -710,6 +711,56 @@ int is_lt(struct svalue *a,struct svalue *b)
   safe_check_destructed(a);
   safe_check_destructed(b);
 
+  if (((a->type == T_TYPE) ||
+       (a->type == T_FUNCTION) || (a->type == T_PROGRAM)) &&
+      ((b->type == T_FUNCTION) ||
+       (b->type == T_PROGRAM) || (b->type == T_TYPE))) {
+    if (a->type != T_TYPE) {
+      /* Try converting a to a program, and then to a type. */
+      struct svalue aa;
+      int res;
+      aa.u.program = program_from_svalue(a);
+      if (!aa.u.program) {
+	error("Bad argument to comparison.");
+      }
+      type_stack_mark();
+      push_type_int(aa.u.program->id);
+      push_type(0);
+      push_type(T_OBJECT);
+      aa.u.string = pop_unfinished_type();
+      aa.type = T_TYPE;
+      res = is_lt(&aa, b);
+      free_string(aa.u.string);
+      return res;
+    }
+    if (b->type != T_TYPE) {
+      /* Try converting b to a program, and then to a type. */
+      struct svalue bb;
+      int res;
+      bb.u.program = program_from_svalue(b);
+      if (!bb.u.program) {
+	error("Bad argument to comparison.");
+      }
+      type_stack_mark();
+      push_type_int(bb.u.program->id);
+      push_type(0);
+      push_type(T_OBJECT);
+      bb.u.string = pop_unfinished_type();
+      bb.type = T_TYPE;
+      res = is_lt(a, &bb);
+      free_string(bb.u.string);
+      return res;
+    }
+
+    /* At this point both a and b have type T_TYPE */
+#ifdef PIKE_DEBUG
+    if ((a->type != T_TYPE) || (b->type != T_TYPE)) {
+      fatal("Unexpected types in comparison.\n");
+    }
+#endif /* PIKE_DEBUG */
+    return !pike_types_le(b->u.string, a->u.string);
+  }
+
   if (a->type != b->type)
   {
     if(a->type == T_FLOAT && b->type==T_INT)
@@ -773,9 +824,6 @@ int is_lt(struct svalue *a,struct svalue *b)
   case T_STRING:
     return my_strcmp(a->u.string, b->u.string) < 0;
 
-  case T_TYPE:
-    return !pike_types_le(b->u.string, a->u.string);
-
   case T_FLOAT:
     return a->u.float_number < b->u.float_number;
 
@@ -802,11 +850,7 @@ void describe_svalue(struct svalue *s,int indent,struct processing *p)
       break;
 
     case T_TYPE:
-      {
-	struct pike_string *t = describe_type(s->u.string);
-	my_strcat(t->str);
-	free_string(t);
-      }
+      low_describe_type(s->u.string->str);
       break;
 
     case T_STRING:
