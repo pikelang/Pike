@@ -1,5 +1,5 @@
 // Table.pmod by Fredrik Noring, 1998
-// $Id: Table.pmod,v 1.16 2001/01/05 19:42:20 grubba Exp $
+// $Id: Table.pmod,v 1.17 2001/01/05 21:10:06 grubba Exp $
 
 #pike __REAL_VERSION__
 #define TABLE_ERR(msg) throw(({ "(Table) "+msg+"\n", backtrace() }))
@@ -95,7 +95,7 @@ class table {
   //! This method returns the contents of a given column as an array.
   array col(int|string column)
   {
-    return copy_value(local::column(table, remap(column)));
+    return copy_value(predef::column(table, remap(column)));
   }
 
   //! This method returns the contents of a given row as an array.
