@@ -5117,109 +5117,85 @@ as appending 's' to an empty string 'num' times.
 </section>
 
 <section title="Array">
+<module name="Array" title="supplemental Array handling functions">
 As with <tt>String</tt> these functions are Pike functions written to
 supplement those written in C.
 
 <hr noshade size=1>
-<anchor name=Array.map>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Array.map</tt> - map an array or mapping over a function
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array map(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+
+<function name=Array.map title="map an array or mapping over a function">
+<man_syntax>
+array map(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
 array map(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
 array map(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>arg</I>);<br>
-</tt>
-<p>
-
-
-<dt><encaps>DESCRIPTION</encaps><dd>
-First syntax:
+</man_syntax>
+<man_description>
+First syntax:<br>
 Map array returns an array holding the items of arr mapped through
 the function fun. ie. arr[x]=fun(arr[x], @args) for all x.
-<p>Second syntax:
+<p>Second syntax:<br>
 Map array calls function fun in all objects in the array arr.
 ie. arr[x]=arr[x]-&gt;fun(@ args);
-<p>Third syntax:
+<p>Third syntax:<br>
 Map array calls the functions in the array arr:
 arr[x]=arr[x]-&gt;fun(@ args);
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.filter>Array.filter</link>
-<p>
-</dl>
+</man_description>
+<man_see>
+Array.sum_arrays, Array.filter
+</man_see>
+</function>
 
-</anchor>
 <hr noshade size=1>
-<anchor name=Array.filter>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Array.filter</tt> - filter an array or mapping through a function
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array filter(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-array filter(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
-or<br>
-array filter(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
-</tt>
-<p>
 
-<dt><encaps>DESCRIPTION</encaps><dd>
-First syntax:
+<function name=Array.filter title="filter an array or mapping through a function">
+<man_syntax>
+array filter(array <I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
+array filter(array(object) <I>arr</I>,string <I>fun</I>,mixed ... <I>args</I>);<br>
+array filter(array(function) <I>arr</I>,-<I>1</I>,mixed ... <I>args</I>);<br>
+</man_syntax>
+<man_description>
+First syntax:<br>
 Filter array returns an array holding the items of arr for which
 fun returns true.
-<p>Second syntax:
+<p>Second syntax:<br>
 Filter array calls fun in all the objects in the array arr, and
 return all objects that returned true.
-<p>Third syntax:
+<p>Third syntax:<br>
 Filter array calls all function pointers in the array arr, and
 return all that returned true.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.map>Array.map</link>
-</dl>
-</anchor>
-
+</man_description>
+<man_see>
+Array.sum_arrays, Array.map
+</man_see>
+</function>
 
 <hr noshade size=1>
-<anchor name=Array.search_array>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Array.search_array</tt> - search for something in an array
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>int search_array(mixed *<I>arr</I>,function <I>fun</I>,mixed <I>arg</I>, ...);<br>
-or<br>
+
+<function name=Array.search_array title="search for something in an array">
+<man_syntax>
+int search_array(mixed *<I>arr</I>,function <I>fun</I>,mixed <I>arg</I>, ...);<br>
 int search_array(object *<I>arr</I>,string <I>fun</I>,mixed <I>arg</I>, ...);<br>
-or<br>
-int search_array(function *<I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+int search_array(function *<I>arr</I>,-<I>1</I>,mixed <I>arg</I>, ...);
+</man_syntax>
+<man_description>
 search_array works like map_array, only it returns the index of the
 first call that returned true instead or returning an array of the
 returned values. If no call returns true, -1 is returned.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.sum_arrays>Array.sum_arrays</link> and <link to=Array.filter>Array.filter</link>
-<p>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+Array.sum_arrays, Array.filter
+</man_see>
+</function>
 
 <hr noshade size=1>
-<anchor name=Array.sum_arrays>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Array.sum_arrays</tt> - map any number of arrays over a function.
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *sum_arrays(function <I>fun</I>,mixed *<I>arr1</I>,...);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Array.sum_arrays title="map any number of arrays over a function">
+<man_syntax>
+mixed *sum_arrays(function <I>fun</I>,mixed *<I>arr1</I>,...);
+</man_syntax>
+<man_description>
 Works like this:
-<p>mixed *sum_arrays(function fun,mixed *arr1,...)<br>
+<p><tt>mixed *sum_arrays(function fun,mixed *arr1,...)<br>
 {<br>
 <dl><dt><dd>int e;<br>
 mixed *res=allocate(sizeof(arr1));<br>
@@ -5229,54 +5205,47 @@ for(e=0;e&lt;sizeof(arr1);e++)<br>
 </dl>}<br>
 return res;<br>
 </dl>}<br>
-
+</tt>
 <p>Simple ehh?
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.map>Array.map</link>, <link to=Array.filter>Array.filter</link> and <link to=Array.search_array>Array.search_array</link>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+Array.map, Array.filter, Array.search_array
+</man_see>
+</function>
 
 <hr noshade size=1>
-<anchor name=Array.sort_array>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Array.sort_array</tt> - sort an array
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>mixed *sort_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Array.sort_array title="sort an array">
+<man_syntax>
+mixed *sort_array(mixed *<I>arr</I>,function <I>fun</I>,mixed ... <I>args</I>);
+</man_syntax>
+<man_description>
 This function sorts an array after a compare-function <i>fun</i>
 which takes two arguments and should return 1 if the first argument
 is larger then the second. The rest of the arguments <i>args</i> will be
 sent as 3rd, 4th etc. argument to <i>fun</i>. If <i>fun</i> is omitted, `&lt; is used
 instead.
-<p>
-<dt><encaps>SEE ALSO</encaps><dd>
-<link to=Array.map>Array.map</link> and <link to=sort>sort</link>
-</dl>
-</anchor>
+</man_description>
+<man_see>
+Array.map, sort
+</man_see>
+</function>
 
 <hr noshade size=1>
-<anchor name=Array.uniq>
-<dl>
-<dt><encaps>NAME</encaps><dd>
-<tt>Array.uniq</tt> - return one of each element
-<p>
-<dt><encaps>SYNTAX</encaps><dd>
-<tt>array uniq(array <I>a</I>);<br>
-</tt>
-<p>
-<dt><encaps>DESCRIPTION</encaps><dd>
+
+<function name=Array.uniq title="remove elements that are duplicates">
+<man_syntax>
+array uniq(array <I>a</I>);
+</man_syntax>
+<man_description>
 This function returns an copy of the array <i>a</i> with all duplicate
 values removed. The order of the values in the result is undefined.
-<p>
-</dl>
-</anchor>
+</man_description>
+</function>
 
 <hr noshade size=1>
+
+</module>
 </section>
 </chapter>
 
