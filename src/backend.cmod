@@ -5,7 +5,7 @@
 */
 
 /*
- * $Id: backend.cmod,v 1.158 2005/01/19 18:38:10 grubba Exp $
+ * $Id: backend.cmod,v 1.159 2005/01/19 18:43:37 grubba Exp $
  *
  * Backend object.
  */
@@ -2707,8 +2707,6 @@ PIKECLASS Backend
 
 	  check_box (box, fd);
 
-	  if (!(box->events & box->revents)) continue;
-
 	  /* Make sure we don't lose the box during some callback. */
 	  if (box->ref_obj) add_ref(box->ref_obj);
 
@@ -2767,6 +2765,11 @@ PIKECLASS Backend
 	    /* Don't call any other callbacks for this fd.
 	     */
 
+	    if (box->ref_obj) free_object(box->ref_obj);
+	    continue;
+	  }
+
+	  if (!(box->events & box->revents)) {
 	    if (box->ref_obj) free_object(box->ref_obj);
 	    continue;
 	  }
