@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.c,v 1.153 2003/09/11 12:21:59 jhs Exp $
+|| $Id: opcodes.c,v 1.154 2003/09/12 12:36:19 jhs Exp $
 */
 
 #include "global.h"
@@ -30,7 +30,7 @@
 
 #define sp Pike_sp
 
-RCSID("$Id: opcodes.c,v 1.153 2003/09/11 12:21:59 jhs Exp $");
+RCSID("$Id: opcodes.c,v 1.154 2003/09/12 12:36:19 jhs Exp $");
 
 void index_no_free(struct svalue *to,struct svalue *what,struct svalue *ind)
 {
@@ -2290,7 +2290,7 @@ static INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!   @value "*"
  *!     The operator will only match its argument, without assigning any
  *!     variable.
- *!   @value "number"
+ *!   @value number
  *!     You may define a field width by supplying a numeric modifier. This
  *!     means that the format should match that number of characters in the
  *!     input data; be it a @i{number@} characters long string, integer or
@@ -2302,7 +2302,7 @@ static INT32 low_sscanf(struct pike_string *data, struct pike_string *format)
  *!     (big-endian) byte order.
  *!   @value "+"
  *!     Interpret the data as a signed entity. In other words, "%+1c" will
- *!     read "\0xFF" as -1 instead of 255, as "%1c" would have.
+ *!     read "\xFF" as -1 instead of 255, as "%1c" would have.
  *! @endstring
  *!
  *! @note
