@@ -305,8 +305,7 @@ static void file_write_callback(int fd, void *data)
 
 static void file_write(INT32 args)
 {
-  INT32 written;
-  char *out;
+  INT32 written,i;
 
   if(args<1 || sp[-args].type != T_STRING)
     error("Bad argument 1 to file->write().\n");
@@ -317,7 +316,7 @@ static void file_write(INT32 args)
   written=0;
   while(written < sp[-args].u.string->len)
   {
-    i=write(FD, sp[-args].u.string->str, sp[-args].u.string->len);
+    i=write(FD, sp[-args].u.string->str + written, sp[-args].u.string->len - written);
 
     if(i<0)
     {
@@ -345,7 +344,7 @@ static void file_write(INT32 args)
   THIS->errno=0;
 
   pop_n_elems(args);
-  push_int(i);
+  push_int(written);
 }
 
 static void do_close(int fd, int flags)
