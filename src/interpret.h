@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: interpret.h,v 1.110 2002/08/15 14:49:21 marcus Exp $
+ * $Id: interpret.h,v 1.111 2002/09/14 02:46:27 mast Exp $
  */
 #ifndef INTERPRET_H
 #define INTERPRET_H
@@ -329,7 +329,12 @@ do{ \
   } while(0)
 
 
+#ifdef INTERNAL_PROFILING
+PMOD_EXPORT extern unsigned long evaluator_callback_calls;
+#endif
+
 #define check_threads_etc() do { \
+  DO_IF_INTERNAL_PROFILING (evaluator_callback_calls++); \
   call_callback(& evaluator_callbacks, (void *)0); \
 }while(0) 
 

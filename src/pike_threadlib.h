@@ -1,5 +1,5 @@
 /*
- * $Id: pike_threadlib.h,v 1.18 2002/09/14 00:57:27 mast Exp $
+ * $Id: pike_threadlib.h,v 1.19 2002/09/14 02:46:27 mast Exp $
  */
 #ifndef PIKE_THREADLIB_H
 #define PIKE_THREADLIB_H
@@ -134,7 +134,7 @@ void th_atfork_child(void);
  */
 #define th_setconcurrency(X) 
 #ifdef HAVE_PTHREAD_YIELD
-#define th_yield()	pthread_yield()
+#define low_th_yield()	pthread_yield()
 #endif /* HAVE_PTHREAD_YIELD */
 extern pthread_attr_t pattr;
 extern pthread_attr_t small_pattr;
@@ -202,7 +202,7 @@ extern pthread_attr_t small_pattr;
 #define th_exit(foo) thr_exit(foo)
 #define th_self() thr_self()
 #define th_kill(ID,sig) thr_kill((ID),(sig))
-#define th_yield() thr_yield()
+#define low_th_yield() thr_yield()
 #define th_join(ID,res) thr_join((ID), NULL, (res))
 
 #define COND_T cond_t
@@ -235,7 +235,7 @@ extern pthread_attr_t small_pattr;
 #define th_create_small(ID, fun, arg)	(((*(ID)) = sproc(fun, PIKE_SPROC_FLAGS, arg)) == -1)
 #define th_exit(X)	exit(X)
 #define th_self()	getpid()
-#define th_yield()	sginap(0)
+#define low_th_yield()	sginap(0)
 #define th_join(ID,res)	/*********/
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) ((unsigned INT32)(X))
@@ -261,7 +261,7 @@ extern pthread_attr_t small_pattr;
 #define th_join(ID,res)	/******************* FIXME! ****************/
 #define th_self() GetCurrentThreadId()
 #define th_destroy(X)
-#define th_yield() Sleep(0)
+#define low_th_yield() Sleep(0)
 #define th_equal(X,Y) ((X)==(Y))
 #define th_hash(X) (X)
 
@@ -435,11 +435,11 @@ static inline int threads_disabled_wait(void)
 #define th_destroy(X)
 #endif
 
-#ifndef th_yield
+#ifndef low_th_yield
 #ifdef HAVE_THR_YIELD
-#define th_yield() thr_yield()
+#define low_th_yield() thr_yield()
 #else
-#define th_yield()
+#define low_th_yield() 0
 #define HAVE_NO_YIELD
 #endif
 #endif
@@ -450,6 +450,13 @@ static inline int threads_disabled_wait(void)
 
 #ifndef th_hash
 #define th_hash(X) hashmem((unsigned char *)&(X),sizeof(THREAD_T), 16)
+#endif
+
+#ifdef INTERNAL_PROFILING
+PMOD_EXPORT extern unsigned long thread_yields;
+#define th_yield() (thread_yields++, low_th_yield())
+#else
+#define th_yield() low_th_yield()
 #endif
 
 #ifdef PIKE_DEBUG

@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: main.c,v 1.151 2002/09/07 21:14:37 grubba Exp $");
+RCSID("$Id: main.c,v 1.152 2002/09/14 02:46:27 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include "module.h"
@@ -34,6 +34,7 @@ RCSID("$Id: main.c,v 1.151 2002/09/07 21:14:37 grubba Exp $");
 #include "constants.h"
 #include "version.h"
 #include "program.h"
+#include "rusage.h"
 
 #ifdef AUTO_BIGNUM
 #include "bignum.h"
@@ -759,6 +760,15 @@ DECLSPEC(noreturn) void pike_do_exit(int num) ATTRIBUTE((noreturn))
 #ifdef PIKE_DEBUG
   /* For profiling */
   exit_lex();
+#endif
+
+#ifdef INTERNAL_PROFILING
+  fprintf (stderr, "Evaluator callback calls: %lu\n", evaluator_callback_calls);
+#ifdef PIKE_THREADS
+  fprintf (stderr, "Thread yields: %lu\n", thread_yields);
+#endif
+  fprintf (stderr, "Main thread summary:\n");
+  debug_print_rusage (stderr);
 #endif
 
   exit(num);

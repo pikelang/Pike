@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.264 2002/09/11 17:13:58 mast Exp $");
+RCSID("$Id: interpret.c,v 1.265 2002/09/14 02:46:26 mast Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -87,6 +87,10 @@ PMOD_EXPORT const char msg_pop_neg[] =
 
 #ifdef PIKE_DEBUG
 static char trace_buffer[2000];
+#endif
+
+#ifdef INTERNAL_PROFILING
+PMOD_EXPORT unsigned long evaluator_callback_calls = 0;
 #endif
 
 
