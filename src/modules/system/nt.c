@@ -1,5 +1,5 @@
 /*
- * $Id: nt.c,v 1.6 1998/10/22 00:33:55 hubbe Exp $
+ * $Id: nt.c,v 1.7 1999/04/06 20:48:53 js Exp $
  *
  * NT system calls for Pike
  *
@@ -308,6 +308,45 @@ static void encode_user_info(BYTE *u, int level)
   }
 }
 
+
+static void encode_group_info(BYTE *u)
+{
+  GROUP_INFO_2 *tmp;
+  if(!u)
+  {
+    push_int(0);
+    return;
+  }
+
+  tmp=(GROUP_INFO_2 *)u;
+
+  push_constant_text("name");
+  SAFE_PUSH_WSTR(tmp->grpi2_name);
+  push_constant_text("comment");
+  SAFE_PUSH_WSTR(tmp->grpi2_comment);
+  push_constant_text("group_id");
+  push_int(tmp->grpi2_group_id);
+  push_constant_text("attributes");
+  push_int(tmp->grpi2_attributes);
+  f_aggregate_mapping(8);
+}
+
+
+static void encode_group_name(BYTE *u)
+{
+  GROUP_USERS_INFO_0 *tmp;
+  if(!u)
+  {
+    push_int(0);
+    return;
+  }
+
+  tmp=(GROUP_USERS_INFO_0 *)u;
+
+  SAFE_PUSH_WSTR(tmp->grui0_name);
+
+}
+  
 static int sizeof_user_info(int level)
 {
   switch(level)
@@ -325,10 +364,14 @@ static int sizeof_user_info(int level)
 
 typedef NET_API_STATUS WINAPI (*netusergetinfotype)(LPWSTR,LPWSTR,DWORD,LPBYTE *);
 typedef NET_API_STATUS WINAPI (*netuserenumtype)(LPWSTR,DWORD,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS WINAPI (*netusergetgroupstype)(LPWSTR,LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD);
+typedef NET_API_STATUS WINAPI (*netgroupenumtype)(LPWSTR,DWORD,LPBYTE*,DWORD,LPDWORD,LPDWORD,LPDWORD);
 typedef NET_API_STATUS WINAPI (*netapibufferfreetype)(LPVOID);
 
 static netusergetinfotype netusergetinfo;
 static netuserenumtype netuserenum;
+static netusergetgroupstype netusergetgroups;
+static netgroupenumtype netgroupenum;
 static netapibufferfreetype netapibufferfree;
 HINSTANCE netapilib;
 
@@ -446,8 +489,6 @@ void f_NetUserEnum(INT32 args)
     NET_API_STATUS ret;
     LPBYTE buf=0,ptr;
 
-    fprintf(stderr,"Result: filter=%d level=%d\n",filter,level);
-
     THREADS_ALLOW();
     ret=netuserenum(server,
 		    filter,
@@ -460,9 +501,6 @@ void f_NetUserEnum(INT32 args)
     THREADS_DISALLOW();
     if(!a)
       push_array(a=allocate_array(total));
-
-    fprintf(stderr,"Result: %d (%d) %d %d %p\n",ret,ret==NERR_Success,total,read,buf);
-
     switch(ret)
     {
       case ERROR_ACCESS_DENIED:
@@ -480,11 +518,9 @@ void f_NetUserEnum(INT32 args)
 	ptr=buf;
 	for(e=0;e<read;e++)
 	{
-	  fprintf(stderr,"before: sp=%p\n",sp);
 	  encode_user_info(ptr,level);
 	  a->item[pos]=sp[-1];
 	  sp--;
-	  fprintf(stderr,"after: sp=%p\n",sp);
 	  pos++;
 	  if(pos>=a->size) break;
 	  ptr+=sizeof_user_info(level);
@@ -496,6 +532,137 @@ void f_NetUserEnum(INT32 args)
   }
   if(to_free1) free(to_free1);
 }
+
+
+void f_NetGroupEnum(INT32 args)
+{
+  char *to_free1, *tmp_server=NULL;
+  DWORD level=2;
+  LPWSTR server=NULL;
+  INT32 pos=0,e;
+  struct array *a=0;
+
+  if(args && sp[-args].type==T_STRING)
+    server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+
+  pop_n_elems(args);
+
+  while(1)
+  {
+    DWORD read=0, total=0, resume=0;
+    NET_API_STATUS ret;
+    LPBYTE buf=0,ptr;
+
+    THREADS_ALLOW();
+    ret=netgroupenum(server,
+		    level,
+		    &buf,
+		    0x10000,
+		    &read,
+		    &total,
+		    &resume);
+    THREADS_DISALLOW();
+    if(!a)
+      push_array(a=allocate_array(total));
+
+    switch(ret)
+    {
+      case ERROR_ACCESS_DENIED:
+	if(to_free1) free(to_free1);
+	error("NetGroupEnum: Access denied.\n");
+	break;
+	
+      case NERR_InvalidComputer:
+	if(to_free1) free(to_free1);
+	error("NetGroupEnum: Invalid computer.\n");
+	break;
+
+      case NERR_Success:
+      case ERROR_MORE_DATA:
+	ptr=buf;
+	for(e=0;e<read;e++)
+	{
+	  encode_group_info(ptr);
+	  a->item[pos]=sp[-1];
+	  sp--;
+	  pos++;
+	  if(pos>=a->size) break;
+	  ptr+=sizeof(GROUP_INFO_2);
+	}
+	netapibufferfree(buf);
+	if(ret==ERROR_MORE_DATA) continue;
+    }
+    break;
+  }
+  if(to_free1) free(to_free1);
+}
+
+
+void f_NetUserGetGroups(INT32 args)
+{
+  char *to_free1, *to_free2, *tmp_server=NULL, *tmp_user;
+  DWORD level=0;
+  LPWSTR server=NULL;
+  LPWSTR user=NULL;
+  INT32 pos=0,e;
+  struct array *a=0;
+  DWORD read=0, total=0;
+  NET_API_STATUS ret;
+  LPBYTE buf=0,ptr;
+
+  if(args && sp[-args].type==T_STRING)
+    server=(LPWSTR)require_wstring1(sp[-args].u.string,&to_free1);
+
+  if(args && sp[-args+1].type==T_STRING)
+    user=(LPWSTR)require_wstring1(sp[-args+1].u.string,&to_free2);
+
+  pop_n_elems(args);
+
+  
+  THREADS_ALLOW();
+  ret=netusergetgroups(server,
+			user,
+			level,
+			&buf,
+			0x10000,
+			&read,
+			&total);
+  THREADS_DISALLOW();
+  if(!a)
+    push_array(a=allocate_array(total));
+  
+  switch(ret)
+  {
+  case ERROR_ACCESS_DENIED:
+    if(to_free1) free(to_free1);
+    if(to_free2) free(to_free2);
+    error("NetUserGetGroups: Access denied.\n");
+    break;
+    
+  case NERR_InvalidComputer:
+    if(to_free1) free(to_free1);
+    if(to_free2) free(to_free2);
+    error("NetUserGetGroups: Invalid computer.\n");
+    break;
+    
+  case NERR_Success:
+    ptr=buf;
+    for(e=0;e<read;e++)
+    {
+      encode_group_name(ptr);
+      a->item[pos]=sp[-1];
+      sp--;
+      pos++;
+      if(pos>=a->size) break;
+      ptr+=sizeof(GROUP_USERS_INFO_0);
+    }
+    netapibufferfree(buf);
+  }
+  if(to_free1) free(to_free1);
+  if(to_free2) free(to_free2);
+}
+
+
 
 void init_nt_system_calls(void)
 {
@@ -587,6 +754,20 @@ void init_nt_system_calls(void)
 	SIMPCONST(FILTER_INTERDOMAIN_TRUST_ACCOUNT);
 	SIMPCONST(FILTER_WORKSTATION_TRUST_ACCOUNT);
 	SIMPCONST(FILTER_SERVER_TRUST_ACCOUNT);
+      }
+
+      if(proc=GetProcAddress(netapilib, "NetGroupEnum"))
+      {
+	netgroupenum=(netgroupenumtype)proc;
+	
+  	add_function("NetGroupEnum",f_NetGroupEnum,"function(string|int|void:array(mapping(string:string|int)))",0); 
+      }
+
+      if(proc=GetProcAddress(netapilib, "NetUserGetGroups"))
+      {
+	netusergetgroups=(netusergetgroupstype)proc;
+	
+ 	add_function("NetUserGetGroups",f_NetUserGetGroups,"function(string|int,string:array(string))",0); 
       }
     }
   }
