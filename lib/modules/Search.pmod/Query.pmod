@@ -15,11 +15,14 @@ Search.ResultSet do_query_or(Search.Database.Base db,
 			     Search.RankingProfile ranking)
 {
   array(int) word_ids=map(Array.uniq(words), db->hash_word);
-  return _WhiteFish.do_query_or(word_ids,
-				ranking->field_ranking,
-                                ranking->proximity_ranking,
-				ranking->cutoff,
-				blobfeeder(db, word_ids));
+  Search.ResultSet result =
+    _WhiteFish.do_query_or(word_ids,
+                           ranking->field_ranking,
+                           ranking->proximity_ranking,
+                           ranking->cutoff,
+                           blobfeeder(db, word_ids));
+  werror("do_query_or(%{ %O %})     => %d hits\n", words, result->size());
+  return result;
 }
 
 Search.ResultSet do_query_and(Search.Database.Base db,
@@ -27,11 +30,14 @@ Search.ResultSet do_query_and(Search.Database.Base db,
 			      Search.RankingProfile ranking)
 {
   array(int) word_ids=map(Array.uniq(words), db->hash_word);
-  return _WhiteFish.do_query_and(word_ids,
-                                 ranking->field_ranking,
-                                 ranking->proximity_ranking,
-                                 ranking->cutoff,
-                                 blobfeeder(db, word_ids));
+  Search.ResultSet result =
+    _WhiteFish.do_query_and(word_ids,
+                            ranking->field_ranking,
+                            ranking->proximity_ranking,
+                            ranking->cutoff,
+                            blobfeeder(db, word_ids));
+  werror("do_query_and(%{ %O %})    => %d hits\n", words, result->size());
+  return result;
 }
 
 Search.ResultSet do_query_phrase(Search.Database.Base db,
@@ -39,10 +45,13 @@ Search.ResultSet do_query_phrase(Search.Database.Base db,
 				 Search.RankingProfile ranking)
 {
   array(int) word_ids=map(words, db->hash_word);
-  return _WhiteFish.do_query_phrase(word_ids,
-				    ranking->field_ranking,
-				    //    ranking->cutoff,
-				    blobfeeder(db, word_ids));
+  Search.ResultSet result =
+    _WhiteFish.do_query_phrase(word_ids,
+                               ranking->field_ranking,
+                               //    ranking->cutoff,
+                               blobfeeder(db, word_ids));
+  werror("do_query_phrase(%{ %O %}) => %d hits\n", words, result->size());
+  return result;
 }
 
 //! @param query
@@ -62,6 +71,8 @@ Search.ResultSet execute(Search.Database.Base db,
   string error = Search.Grammar.validate(q);
   if (error)
     throw (error);
+
+  werror("Search.Query.execute:\n%s\n", q->print());
 
   return class {
     static Search.RankingProfile defaultRanking;
@@ -179,7 +190,7 @@ Search.ResultSet execute(Search.Database.Base db,
           if (hasOrdinary) {
             int first = 1;
             if (sizeof(q->words)) {
-              push(do_query_and(db, q->words, ranking));
+              push(do_query_or(db, q->words, ranking));
               first = 0;
             }
             foreach (q->phrases, array(string) ph) {
