@@ -82,8 +82,8 @@ b) Pike files
 
 Doc comments look like:
 
-  //. yadda yadda yadda
-  //. yadda yadda
+  //! yadda yadda yadda
+  //! yadda yadda
 
 To be considered one doc block, the comments must be separated only by
 whitespace and _one_ "\n", that is they have to be on adjacent lines
@@ -93,7 +93,7 @@ block is documenting. The target of a doc comment is the coherent
 block of declarations adjacent to (immediately before or after) it in
 the code, without intervening blank lines. Examples:
 
-  //. Doc for alpha
+  //! Doc for alpha
   int alpha()
   {
     return 4711;
@@ -101,24 +101,25 @@ the code, without intervening blank lines. Examples:
 
   static int undocumented;
 
-  //. Error! This doc block has no destination!
+  //! Error! This doc block has no destination!
 
   int beta;
-  //. Doc for beta
+  //! Doc for beta
 
-  //. Doc for gamma, delta, and epsilon
+  //! Doc for gamma, delta, and epsilon
   int gamma, delta;
   float epsilon;
 
-  //. Error here!
+  //! Error here!
   int zeta;
-  //. ambiguous which doc to associate with zeta.
+  //! ambiguous which doc to associate with zeta.
 
   int eta;
-  //. Error here too! ambiguous which variable is documented.
+  //! Error here too! ambiguous which variable is documented.
   int theta;
 
-  //. Doc for two methods. This is so UGLY!
+  //! Doc for two methods. This is so UGLY! We strongly recommend
+  //! using the decl keywords instead to accomplish this effect.
   int methodOne()
   {
     ...
@@ -128,7 +129,7 @@ the code, without intervening blank lines. Examples:
     ...
   }
 
-  //. However, it can be useful sometimes, for short methods:
+  //! However, it can be useful sometimes, for really short methods:
   int very_short() { return 4711; }
   int even_shorter() { return 0; }
 
@@ -136,13 +137,13 @@ the code, without intervening blank lines. Examples:
 In Pike files, you can not use @class or @module to tell which module
 or class you are in. To document a class, you simply write:
 
-//. Doc for the class
+//! Doc for the class
 class CheeseMaker
 {
-  //. You can even document inherits!
+  //! You can even document inherits!
   inherit Earth : earth;
 
-  //. Doc for CheeseMaker->a()
+  //! Doc for CheeseMaker->a()
   int a()
   {
     ...
@@ -159,8 +160,8 @@ documentation comments but is itself undocumented:
 
 class a()
 {
-  //. @decl foo
-  //.    ... doc for foo ...
+  //! @decl foo
+  //!    ... doc for foo ...
 }
 
 If a doc block is the first in a file, and it has no target, then it
@@ -171,13 +172,13 @@ keyword. If a doc comment begins with some @decl keywords, these
 @decl's act just like real declarations standing next to the doc.
 Thus:
 
-  //.@decl int a(int x)
-  //.@decl int b(int x)
-  //.  Here is some doc for these functions....
+  //! @decl int a(int x)
+  //! @decl int b(int x)
+  //! 	Here is some doc for these functions....
 
 is autodocwise equivalent to:
 
-  //.  Here is some doc for these functions....
+  //! Here is some doc for these functions....
   int a(int x)
   {
      .....
@@ -193,11 +194,11 @@ the @decl keyword at the block beginning. That is when you document
 and all @decl's must be methods that have the same name as the real
 method:
 
-  //.@decl float cube(float x)
-  //.@decl int cube(int x)
-  //.  Gives x**3.
-  //.@param x
-  //.  The number to cube.
+  //! @decl float cube(float x)
+  //! @decl int cube(int x)
+  //! 	Gives x**3.
+  //! @param x
+  //! 	The number to cube.
   int|float cube(int|float x)
   {
      ....

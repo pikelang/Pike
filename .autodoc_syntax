@@ -11,12 +11,12 @@ long, it can be broken into several lines. A trailing @ on the line
 indicates that it continues on the next line. The @ and the newline
 character will be discarded, and the lines merged. Thus:
 
-  //. @variable thisVariableNameIsSoLong@
-  //.YouJustCantBelieveIt
+  //! @variable thisVariableNameIsSoLong@
+  //!YouJustCantBelieveIt
 
 will appear to the parser as:
 
-  //. @variable thisVariableNameIsSoLongYouJustCantBelieveIt
+  //! @variable thisVariableNameIsSoLongYouJustCantBelieveIt
 
 This is sometimes necessary because keywords that take parameters
 expect all the parameters to appear on the same line and treat the end
@@ -29,10 +29,10 @@ In text (see the nonterminal 'text' in the grammar at the end of this
 file), a blank line with surrounding non-blank lines will give a
 paragraph break. Thus:
 
-  //. - I love you, said Danny.
-  //.
-  //. - You have no right to come here after what you did to
-  //. my little dog, screamed Penny in despair.
+  //! - I love you, said Danny.
+  //!
+  //! - You have no right to come here after what you did to
+  //! my little dog, screamed Penny in despair.
 
 will generate the following XML:
 
@@ -87,7 +87,7 @@ alone (with their parameters, if any) on one line.
  @ must still be quoted with @@. < and > must also be quoted unless
  the intention really is to write XML. For example:
 
-   //. He is so @xml{<i>italic</i> and @b{bold@}!@}!!
+   //! He is so @xml{<i>italic</i> and @b{bold@}!@}!!
 
  will generate the following XML:
 
@@ -103,20 +103,20 @@ grouped together in the interest of not writing the same docstring for
 multiple parameters etc. Delimiters are grouped if they appear on
 consecutive lines. For example, when documenting a method:
 
-  //. @decl int dist(int x, int y)
-  //.   Calculates the distance.
-  //. @param x
-  //. @param y
-  //.   The coordinates of the vector.
+  //! @decl int dist(int x, int y)
+  //!   Calculates the distance.
+  //! @param x
+  //! @param y
+  //!   The coordinates of the vector.
 
 Above, the two @param's x and y are grouped together and share the
 same docstring: "The coordinates of the vector.". It is an error to
 try to group together different keywords:
 
-  //.   Error, can't group @note and @param:
-  //. @param x
-  //. @note
-  //.   Don't use this function. At all. Ever.
+  //!   Error, can't group @note and @param:
+  //! @param x
+  //! @note
+  //!   Don't use this function. At all. Ever.
 
 
 ======================================================================
@@ -142,28 +142,28 @@ keyword:
  quoting character itself is in the string, a duplication is used to
  quote it:
 
-   //. @question "He is a ""swapper""?!"
+   //! @question "He is a ""swapper""?!"
 
  However, if your parameter contains only one of ' and ", then it is
  smarter to choose the other one as the quouting character:
 
-   //. @question 'He is a "swapper"?!'
+   //! @question 'He is a "swapper"?!'
 
  It is an error not to end a quote before the end of the line:
 
-   //. @wrong "Aww, come on now, this worked fine in C64 basic!
+   //! @wrong "Aww, come on now, this worked fine in C64 basic!
 
  If a quoted parameter is too long to fit in one line, use the @ at
  the end of the line to merge it with the following:
 
-   //. @right "Oh, joy! Now I can make my parameters just as@
-   //. long as I want them!"
+   //! @right "Oh, joy! Now I can make my parameters just as@
+   //! long as I want them!"
 
  The parameters are not parsed so you can not have markup inside
  them. Pike style quoting is not used either, which means that if
  you write:
 
-   //. @look "\n"
+   //! @look "\n"
 
  The parameter will be a string with two characters, a backslash
  followed by the letter n.
