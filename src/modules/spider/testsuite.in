@@ -1,62 +1,9 @@
 test_true(objectp(spider))
-dnl fcgi_create_listen_socket
-dnl _lock
-dnl _unlock
-dnl _free_lock
-dnl _new_lock
 
-dnl encode_value
-test_true(stringp(encode_value(1)))
-test_true(stringp(encode_value(1.0)))
-test_true(stringp(encode_value(({}))))
-test_true(stringp(encode_value(([]))))
-test_true(stringp(encode_value("")))
-test_true(stringp(encode_value((<>))))
-dnl decode_value
-test_equal(decode_value(encode_value(1)),1)
-test_equal(decode_value(encode_value(1.0)),1.0)
-test_equal(decode_value(encode_value(({}))),({}))
-test_equal(decode_value(encode_value(([]))),([]))
-test_equal(decode_value(encode_value("")),"")
-test_equal(decode_value(encode_value((<>))),(<>))
-dnl http_decode_string
-dnl getpwnam
-dnl getpwuid
-dnl getpwent
-dnl setpwent
-dnl endpwent
 dnl set_start_quote
 dnl set_end_quote
-dnl gethostbyname
-dnl gethostbyaddr
-dnl gethostname
-dnl uname
-dnl send_fd
-dnl getuid
-cond([[all_constants()->getuid]],[[test_true(intp(getuid()))]])
-dnl getgid
-cond([[all_constants()->getid]],[[test_true(intp(getid()))]])
-dnl geteuid
-cond([[all_constants()->geteugid]],[[test_true(intp(geteugid()))]])
-dnl getegid
-cond([[all_constants()->getegid]],[[test_true(intp(getegid()))]])
-dnl getpid
-cond([[all_constants()->getpid]],[[test_true(intp(getpid()))]])
-dnl getppid
-cond([[all_constants()->getppid]],[[test_true(intp(getppid()))]])
-dnl getpgrp
-dnl chroot
+
 dnl parse_accessed_database
-dnl _string_debug
-dnl _dump_string_table
-dnl _num_dest_objects
-cond([[all_constants()->_num_dest_objects]],[[test_true(intp(_num_dest_objects()))]])
-dnl _num_arrays
-cond([[all_constants()->_num_arrays]],[[test_true(intp(_num_arrays()))]])
-dnl _num_objects
-cond([[all_constants()->_num_objects]],[[test_true(intp(_num_objects()))]])
-dnl _num_mappings
-cond([[all_constants()->_num_mappings]],[[test_true(intp(_num_mappings()))]])
 dnl _dump_obj_table
 dnl parse_html
 
@@ -83,24 +30,10 @@ test_spider([[parse_html("f<\nbar\rt\"a b\"=\no>g<\n/bar\r>o", ([]), ([ "bar":la
 test_spider([[parse_html("f<bar><foo>o</foo>o", (["bar":lambda(string s, mapping(string:string) attr) { return ""; }]), ([]))]], "f<foo>o</foo>o")
 test_spider([[parse_html("f<!--#bar gazonk=\"o\"-->o", (["!--#bar":lambda(string s, mapping(string:string) attr) { return attr->gazonk; }]),([]))]], "foo")
 
-dnl real_perror
-dnl openlog
-dnl syslog
-dnl closelog
 dnl discdate
 dnl stardate
-dnl parse_tree
-dnl initgroups
-dnl setuid
-dnl setgid
-dnl seteuid
-dnl setegid
-dnl timezone
-cond([[all_constants()->timezone]],[[test_true(intp(timezone()))]])
 dnl get_all_active_fd
 dnl fd_info
-dnl mark_fd
-dnl /precompiled/streamed_parser
 
 dnl XML
 test_do([[Parser.XML.Simple()->parse("<!DOCTYPE root [\n<!NOTATION JPGformat>\n]>\n", lambda(mixed ...args){} )]])
