@@ -201,7 +201,11 @@ static private Ruleset.Timezone _magic_timezone(string tz)
    if (!runtime_timezone_compiler)
       runtime_timezone_compiler=Runtime_timezone_compiler();
 
+   int t=time(1);
+   float t1=time(t);
    object p=runtime_timezone_compiler->find_zone(tz);
+   float t2=time(t);
+   werror("%O\n",t2-t1);
    if (p) return p;
 
    if (sscanf(tz,"%s+%f",z,d)==2)
@@ -457,6 +461,10 @@ class Runtime_timezone_compiler
 	 string t;
 	 array z=(array)ys;
 	 int l=is_leap_year(z[0]);
+
+	 if (dayrule=="0" && time==0 && offset==0 && s=="")
+	    return sprintf("%-40s,  // %s", "  ZEROSHIFT",comment);
+
 	 foreach (z[1..],int y) if (is_leap_year(y)!=l) { l=2; break; }
 	 switch (timetype)
 	 {
@@ -543,11 +551,13 @@ class Runtime_timezone_compiler
 	 for (;y<=INF_YEAR; y++)
 	    [r2[y],last]=mkperiods(rules[y],last,first);
 
+	 werror("%O\n",last);
+
 	 res+=
 	    TZrules_init+
 	    "import __Calendar_mkzone;\n"
 	    "   inherit TZRules;\n"
-	    "   static array(array(string|int)) jd_year_periods(int jd)\n"
+	    "   array(array(string|int)) jd_year_periods(int jd)\n"
 	    "   {\n"
 	    "      [int y,int yjd,int leap]=gregorian_yjd(jd);\n"
 	    "      switch (y)\n"
@@ -618,6 +628,18 @@ class Runtime_timezone_compiler
 	 res+=(s+
 	       "      }\n"
 	       "   }\n");
+
+	 res+=("\n"
+	       "array(string) rule_s=\n");
+
+	 multiset tzname=(<>);
+	 foreach (values(rules),array(Shift)|object(Shift) s)
+	    if (arrayp(s)) foreach (s,Shift s) tzname[s->s]=1;
+	    else  tzname[s->s]=1;
+
+	 res+=("({"+map((array)tzname,
+			lambda(string s) { return sprintf("%O",s); })*","
+	       +"});\n");
 
 	 return res;
       }
@@ -814,13 +836,11 @@ class Runtime_timezone_compiler
 	 }
 
 	 array last=rules[-1];
-	 int n=sizeof(rules);
 	 foreach (reverse(rules)[1..],array a)
 	 {
 	    res+=sprintf("   if (ux>=%s) // %s %s\n"
 			 "      return %s || (%s=%s);\n",
 			 a[5],a[3],last[7],last[6],last[6],last[4]);
-	    n--;
 	    last=a;
 	 }
 	 if (last[7]!="")
@@ -829,7 +849,30 @@ class Runtime_timezone_compiler
 		      last[6],last[6],last[4]);
 
 	 res+=("}\n");
+
+	 multiset tzname=(<>);
+	 foreach (rules,array a)
+	    if (search(a[2],"%s")==-1)
+	       tzname[a[2]]=1;
+	    else
+	    {
+	       program r=find_rule(a[1]);
+	       foreach (r(0,a[2])->rule_s,string s)
+		  tzname[sprintf(a[2],s)]=1;
+	    }
+
+	 res+=("array(string) zone_s=({"+map((array)tzname,
+			lambda(string s) { return sprintf("%O",s); })*","
+	       +"});\n");
       
+	 res+="array(int) shifts=({";
+	 foreach (rules[..sizeof(rules)-2],array a)
+	 {
+	    res+=a[5]+",";
+	 }
+	 res+="});\n";
+	 
+
 	 return res;
       }
    }
@@ -855,7 +898,7 @@ class Runtime_timezone_compiler
 
    string get_all_rules()
    {
-      return 
+      return
 	 map(files,
 	     lambda(string fn)
 	     {
@@ -875,7 +918,10 @@ class Runtime_timezone_compiler
    (["TZrules":Dummymodule(find_rule),
      "TZRules":TZRules,
      "TZHistory":TZHistory,
-     "Ruleset":Ruleset]);
+     "Ruleset":Ruleset,
+     "ZEROSHIFT":({0,0,0,""})]);
+
+#define RTTZC_DEBUG
 
    object find_zone(string s)
    {
@@ -885,6 +931,11 @@ class Runtime_timezone_compiler
       if (zone_cache[s]) return zone_cache[s];
 
       if (!all_rules) all_rules=get_all_rules();
+
+#ifdef RTTZC_DEBUG
+      int t=time(1);
+      float t1=time(t);
+#endif
 
       Zone z=Zone(s);   
       int n=0;
@@ -899,7 +950,7 @@ class Runtime_timezone_compiler
 	 int i=max(n-100,0)-1,j;
 	 do i=search(all_rules,"\nZone",(j=i)+1); while (i<n && i!=-1);
 
-	 if (j<n && i!=-1 &&
+	 if (j<n &&
 	     sscanf(all_rules[j..j+8000],"\nZone%*[ \t]%[^ \t]%*[ \t]%s\n%s", 
 		    string a,string b,string q)==5 && 
 	     a==s)
@@ -914,7 +965,7 @@ class Runtime_timezone_compiler
 	 }
 	 i=max(n-100,0)-1;
 	 do i=search(all_rules,"\nLink",(j=i)+1); while (i<n && i!=-1);
-	 if (j<n && i!=-1 &&
+	 if (j<n &&
 	     sscanf(all_rules[j..j+100],"\nLink%*[ \t]%[^ \t]%*[ \t]%[^ \t\n]", 
 		    string a,string b)==4 &&
 	     b==s)
@@ -922,6 +973,11 @@ class Runtime_timezone_compiler
 	 n++;
       }
       string c=z->dump();
+
+#ifdef RTTZC_DEBUG
+      float t2=time(t);
+      werror("find %O: %O\n",s,t2-t1);
+#endif
 
 #ifdef RTTZC_DEBUG
       werror("%s\n",c);
@@ -932,6 +988,11 @@ class Runtime_timezone_compiler
       program p=compile_string(c);
       object zo=p();
       if (zo->thezone) zo=zo->thezone;
+
+#ifdef RTTZC_DEBUG
+      float t3=time(t);
+      werror("compile %O: %O\n",s,t3-t2);
+#endif
 
       return zone_cache[s]=zo;
    }
@@ -946,6 +1007,11 @@ class Runtime_timezone_compiler
 
       if (!all_rules) all_rules=get_all_rules();
 
+#ifdef RTTZC_DEBUG
+      int t=time(1);
+      float t1=time(t);
+#endif
+
       Rule r=Rule(s);   
       int n=0;
       for (;;)
@@ -956,18 +1022,29 @@ class Runtime_timezone_compiler
 #endif
 	 if (n==-1) 
 	    return ([])[0];
-	 string t=all_rules[n-20..n+8000]; // dummy limit to speed up
 
-	 if (sscanf(t,"%*s\nRule%*[ \t]%[^ \t]%*[ \t]%s\n%s",
-		    string a,string b,t)==6 && a==s)
+	 int i=max(n-100,0)-1,j;
+	 do i=search(all_rules,"\nRule",(j=i)+1); while (i<n && i!=-1);
+
+	 if (j<n && 
+	     sscanf(all_rules[j..j+8000],"\nRule%*[ \t]%[^ \t]%*[ \t]%s\n%s",
+		    string a,string b,string q)==5 && a==s)
 	 {
 	    r->add(b);
-	    foreach (t/"\n",string line)
+#ifdef RTTZC_DEBUG
+	    float tf=time(t);
+	    werror("find %O at: %O\n",s,tf-t1);
+#endif
+	    foreach (q/"\n",string line)
 	       if (sscanf(line,"Rule%*[ \t]%[^ \t]%*[ \t]%s",a,b)==4 &&
 		   a==s)
 		  r->add(b);
 	       else 
 		  break; // end of zone
+#ifdef RTTZC_DEBUG
+	    float tf=time(t);
+	    werror("done %O at: %O\n",s,tf-t1);
+#endif
 	    break;
 	 }
 	 n++;
@@ -977,10 +1054,20 @@ class Runtime_timezone_compiler
 #ifdef RTTZC_DEBUG
       werror("%s\n",c);
 #endif
+#ifdef RTTZC_DEBUG
+      float t2=time(t);
+      werror("find %O: %O\n",s,t2-t1);
+#endif
       
       add_constant("__Calendar_mkzone",mkzonemod);
 
       program p=compile_string(c);
+
+#ifdef RTTZC_DEBUG
+      float t3=time(t);
+      werror("compile %O: %O\n",s,t3-t2);
+#endif
+
       return rule_cache[s]=p;
    }
 

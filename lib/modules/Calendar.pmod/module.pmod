@@ -1,4 +1,5 @@
 static private int stage=0;
+static private int booted=0;
 static private object defcal;
 static private object iso_utc;
 static private object default_rules;
@@ -21,22 +22,34 @@ static private multiset magic= // magic + indices(Calendar.ISO) without YMD
 mixed `[](string what)
 {
 //     werror("%O\n",what);
+   if (!booted)
+   {
+      booted++;
+      stage++;
+// bootstrap in the right order
+      master()->resolv("Calendar")["Ruleset"];
+      master()->resolv("Calendar")["Timezone"];
+      master()->resolv("Calendar")["Language"];
+      master()->resolv("Calendar")["TimeRanges"];
+      master()->resolv("Calendar")["Calendar"];
+      master()->resolv("Calendar")["Time"];
+      master()->resolv("Calendar")["YMD"];
+      master()->resolv("Calendar")["Gregorian"];
+
+// load ISO
+      iso_utc=master()->resolv("Calendar")["ISO"]->set_timezone("UTC");
+      stage--;
+      object tz=
+	 master()->resolv("Calendar")["Timezone"][default_timezone];
+      if (!tz) 
+	 error("Failed to make default timezone %O\n",default_timezone);
+      else
+	 default_rules->timezone=tz; // destructive!
+   }
    if ( !magic[what] || (stage && what!="default_rules")) return ([])[0];
    switch (what)
    {
       case "ISO_UTC":
-	 if (!iso_utc)
-	 {
-	    stage++;
-	    iso_utc=master()->resolv("Calendar")["ISO"]->set_timezone("UTC");
-	    stage--;
-	    object tz=
-	       master()->resolv("Calendar")["Timezone"][default_timezone];
-	    if (!tz) 
-	       error("Failed to make default timezone %O\n",default_timezone);
-	    else
-	       default_rules->timezone=tz; // destructive!
-	 }
 	 return iso_utc;
       case "II":
 	 return 1;
