@@ -122,7 +122,7 @@ void f_sum(INT32 args)
 	break;
 
       case T_INT:
-	sprintf(buf,"%ld",sp[e].u.integer);
+	sprintf(buf,"%ld",(long)sp[e].u.integer);
 	buf+=strlen(buf);
 	break;
 
