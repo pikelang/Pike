@@ -6,7 +6,7 @@
 /**/
 #define NO_PIKE_SHORTHAND
 #include "global.h"
-RCSID("$Id: file.c,v 1.193 2000/08/27 00:03:31 grubba Exp $");
+RCSID("$Id: file.c,v 1.194 2000/08/27 01:04:36 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -2565,8 +2565,8 @@ static void exit_file_lock_key(struct object *o)
 #endif
     THIS_KEY->f->key = 0;
     THIS_KEY->f = 0;
-    free_object(THIS->file);
-    THIS->file = NULL;
+    free_object(THIS_KEY->file);
+    THIS_KEY->file = NULL;
   }
 }
 
