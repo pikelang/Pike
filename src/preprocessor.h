@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: preprocessor.h,v 1.54 2002/11/04 15:30:09 grubba Exp $
+|| $Id: preprocessor.h,v 1.55 2002/11/04 17:14:42 grubba Exp $
 */
 
 /*
@@ -1083,9 +1083,53 @@ static ptrdiff_t lower_cpp(struct cpp *this,
 	      
 	      if(d->parts[e].argument & DEF_ARG_STRINGIFY)
 	      {
-		while(l && WC_ISSPACE(a[l-1]))
-		  l--;
-		PUSH_STRING(a,l,&tmp);
+		/* NOTE: At entry a[0] is non white-space. */
+		int e = 0;
+		string_builder_putchar(&tmp, '"');
+		for(e=0; e<l;) {
+		  if (WC_ISSPACE(a[e]) || a[e]=='"' || a[e]=='\\') {
+		    if (e) {
+		      string_builder_append(&tmp, MKPCHARP(a, SHIFT), e);
+		    }
+		    if (a[e] == '"' || a[e]=='\\') {
+		      /* String or quote. */
+		      string_builder_putchar(&tmp, '\\');
+		      string_builder_putchar(&tmp, a[e]);
+		      if (a[e] == '"') {
+			for (e++; (e < l) && (a[e] != '"'); e++) {
+			  string_builder_putchar(&tmp, a[e]);
+			  if (a[e] == '\\') {
+			    string_builder_putchar(&tmp, '\\');
+			    string_builder_putchar(&tmp, a[++e]);
+			    if (a[e] == '\\') {
+			      string_builder_putchar(&tmp, '\\');
+			    }
+			  }
+			}
+			string_builder_putchar(&tmp, '\\');
+			string_builder_putchar(&tmp, '"');
+			e++;
+		      }
+		    } else {
+		      /* White space. */
+		      while ((e < l) && WC_ISSPACE(a[e])) {
+			e++;
+		      }
+		      if (e != l) {
+			string_builder_putchar(&tmp, ' ');
+		      }
+		    }
+		    a += e;
+		    l -= e;
+		    e = 0;
+		  } else {
+		    e++;
+		  }
+		}
+		if (l) {
+		  string_builder_append(&tmp, MKPCHARP(a, SHIFT), l);
+		}
+		string_builder_putchar(&tmp, '"');
 	      }else{
 		if(DEF_ARG_NOPRESPACE)
 		  while(l && WC_ISSPACE(*a))
