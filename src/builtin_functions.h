@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.28 2003/11/14 03:50:55 mast Exp $
+|| $Id: builtin_functions.h,v 1.29 2003/11/14 11:00:44 mast Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -35,10 +35,13 @@ PMOD_EXPORT void f_random_string (INT32 args);
 PMOD_EXPORT void f_random_seed(INT32 args);
 PMOD_EXPORT void f_query_num_arg(INT32 args);
 PMOD_EXPORT void f_search(INT32 args);
+PMOD_EXPORT void f_has_prefix(INT32 args);
+PMOD_EXPORT void f_has_suffix(INT32 args);
 PMOD_EXPORT void f_has_index(INT32 args);
 PMOD_EXPORT void f_has_value(INT32 args);
 PMOD_EXPORT void f_add_constant(INT32 args);
-PMOD_EXPORT void f_combine_path(INT32 args);
+PMOD_EXPORT void f_combine_path_nt(INT32 args);
+PMOD_EXPORT void f_combine_path_unix(INT32 args);
 PMOD_EXPORT void f_zero_type(INT32 args);
 PMOD_EXPORT void f_string_to_unicode(INT32 args);
 PMOD_EXPORT void f_unicode_to_string(INT32 args);
@@ -46,11 +49,10 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args);
 PMOD_EXPORT void f_utf8_to_string(INT32 args);
 PMOD_EXPORT void f_all_constants(INT32 args);
 PMOD_EXPORT void f_allocate(INT32 args);
-PMOD_EXPORT void f_rusage(INT32 args);
-PMOD_EXPORT void f_this_object(INT32 args);
+void f_this_object(INT32 args);
 PMOD_EXPORT void f_throw(INT32 args);
 PMOD_EXPORT void f_exit(INT32 args);
-PMOD_EXPORT void f__exit(INT32 args);
+void f__exit(INT32 args);
 PMOD_EXPORT void f_time(INT32 args);
 PMOD_EXPORT void f_crypt(INT32 args);
 PMOD_EXPORT void f_destruct(INT32 args);
@@ -64,8 +66,10 @@ PMOD_EXPORT void f_replace(INT32 args);
 PMOD_EXPORT void f_compile(INT32 args);
 PMOD_EXPORT void f_objectp(INT32 args);
 PMOD_EXPORT void f_functionp(INT32 args);
+PMOD_EXPORT void f_callablep(INT32 args);
 PMOD_EXPORT void f_sleep(INT32 args);
-PMOD_EXPORT void f_gc(INT32 args);
+PMOD_EXPORT void f_delay(INT32 args);
+void f_gc(INT32 args);
 PMOD_EXPORT void f_programp(INT32 args);
 TYPEP(f_intp, "intpp", PIKE_T_INT)
 TYPEP(f_mappingp, "mappingp", PIKE_T_MAPPING)
@@ -77,9 +81,12 @@ PMOD_EXPORT void f_sort(INT32 args);
 PMOD_EXPORT void f_rows(INT32 args);
 PMOD_EXPORT void f__verify_internals(INT32 args);
 PMOD_EXPORT void f__debug(INT32 args);
+PMOD_EXPORT void f__optimizer_debug(INT32 args);
+PMOD_EXPORT void f__assembler_debug(INT32 args);
 PMOD_EXPORT void f__compiler_trace(INT32 args);
 PMOD_EXPORT void f_gmtime(INT32 args);
 PMOD_EXPORT void f_localtime(INT32 args);
+PMOD_EXPORT void f_mktime (INT32 args);
 PMOD_EXPORT void f_glob(INT32 args);
 PMOD_EXPORT void f_permute(INT32 args);
 struct diff_magic_link;
@@ -96,17 +103,29 @@ PMOD_EXPORT void f__memory_usage(INT32 args);
 PMOD_EXPORT void f__next(INT32 args);
 PMOD_EXPORT void f__prev(INT32 args);
 PMOD_EXPORT void f__refs(INT32 args);
+PMOD_EXPORT void f__leak(INT32 args);
+PMOD_EXPORT void f__typeof(INT32 args);
 PMOD_EXPORT void f_replace_master(INT32 args);
 PMOD_EXPORT void f_master(INT32 args);
 PMOD_EXPORT void f_gethrvtime(INT32 args);
 PMOD_EXPORT void f_gethrtime(INT32 args);
 PMOD_EXPORT void f_object_variablep(INT32 args);
+PMOD_EXPORT void f_uniq_array(INT32 args);
 PMOD_EXPORT void f_splice(INT32 args);
 PMOD_EXPORT void f_everynth(INT32 args);
 PMOD_EXPORT void f_transpose(INT32 args);
 PMOD_EXPORT void f__reset_dmalloc(INT32 args);
+PMOD_EXPORT void f__dmalloc_set_name(INT32 args);
+PMOD_EXPORT void f__list_open_fds(INT32 args);
 PMOD_EXPORT void f__locate_references(INT32 args);
+PMOD_EXPORT void f__describe(INT32 args);
+PMOD_EXPORT void f__gc_set_watch(INT32 args);
+PMOD_EXPORT void f__dump_backlog(INT32 args);
 PMOD_EXPORT void f_map_array(INT32 args);
+PMOD_EXPORT void f_map(INT32 args);
+PMOD_EXPORT void f_filter(INT32 args);
+PMOD_EXPORT void f_inherit_list(INT32 args);
+PMOD_EXPORT void f_function_defined(INT32 args);
 void init_builtin_efuns(void);
 
 /* From iterators.cmod. */
@@ -114,31 +133,31 @@ PMOD_EXPORT void f_get_iterator(INT32 args);
 int foreach_iterate(struct object *o, int do_step);
 
 /* From builtin.cmod. */
-PMOD_EXPORT void f_cq__describe_program(INT32 args);
-PMOD_EXPORT void f_basetype(INT32 args);
-PMOD_EXPORT void f_int2char(INT32 args);
-PMOD_EXPORT void f_int2hex(INT32 args);
-PMOD_EXPORT void f_string2hex(INT32 args);
-PMOD_EXPORT void f_hex2string(INT32 args);
-PMOD_EXPORT void f_column(INT32 args);
-PMOD_EXPORT void f_mkmultiset(INT32 args);
-PMOD_EXPORT void f_trace(INT32 args);
-PMOD_EXPORT void f_gc_parameters(INT32 args);
-PMOD_EXPORT void f_ctime(INT32 args);
-PMOD_EXPORT void f_mkmapping(INT32 args);
-PMOD_EXPORT void f_string_count(INT32 args);
-PMOD_EXPORT void f_string_trim_whites(INT32 args);
-PMOD_EXPORT void f_string_trim_all_whites(INT32 args);
-PMOD_EXPORT void f_program_implements(INT32 args);
-PMOD_EXPORT void f_program_inherits(INT32 args);
-PMOD_EXPORT void f_program_defined(INT32 args);
-PMOD_EXPORT void f_string_width(INT32 args);
-PMOD_EXPORT void f_m_delete(INT32 args);
-PMOD_EXPORT void f_get_weak_flag(INT32 args);
-PMOD_EXPORT void f_function_name(INT32 args);
-PMOD_EXPORT void f_function_object(INT32 args);
-PMOD_EXPORT void f_function_program(INT32 args);
-PMOD_EXPORT void f_random(INT32 args);
+void f_cq__describe_program(INT32 args);
+void f_basetype(INT32 args);
+void f_int2char(INT32 args);
+void f_int2hex(INT32 args);
+void f_string2hex(INT32 args);
+void f_hex2string(INT32 args);
+void f_column(INT32 args);
+void f_mkmultiset(INT32 args);
+void f_trace(INT32 args);
+void f_gc_parameters(INT32 args);
+void f_ctime(INT32 args);
+void f_mkmapping(INT32 args);
+void f_string_count(INT32 args);
+void f_string_trim_whites(INT32 args);
+void f_string_trim_all_whites(INT32 args);
+void f_program_implements(INT32 args);
+void f_program_inherits(INT32 args);
+void f_program_defined(INT32 args);
+void f_string_width(INT32 args);
+void f_m_delete(INT32 args);
+void f_get_weak_flag(INT32 args);
+void f_function_name(INT32 args);
+void f_function_object(INT32 args);
+void f_function_program(INT32 args);
+void f_random(INT32 args);
 PMOD_EXPORT void f_backtrace(INT32 args);
 void init_builtin(void);
 void exit_builtin(void);

@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.519 2003/11/14 10:13:39 mast Exp $
+|| $Id: builtin_functions.c,v 1.520 2003/11/14 11:00:44 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.519 2003/11/14 10:13:39 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.520 2003/11/14 11:00:44 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1644,7 +1644,7 @@ PMOD_EXPORT void f_unicode_to_string(INT32 args)
  *!   @[Locale.Charset.encoder()], @[string_to_unicode()],
  *!   @[unicode_to_string()], @[utf8_to_string()]
  */
-void f_string_to_utf8(INT32 args)
+PMOD_EXPORT void f_string_to_utf8(INT32 args)
 {
   ptrdiff_t len;
   struct pike_string *in;
@@ -5848,7 +5848,7 @@ PMOD_EXPORT void f_diff(INT32 args)
  *! @seealso
  *!   @[diff()], @[diff_longest_sequence()], @[String.fuzzymatch()]
  */
-void f_diff_compare_table(INT32 args)
+PMOD_EXPORT void f_diff_compare_table(INT32 args)
 {
   struct array *a;
   struct array *b;
@@ -5870,7 +5870,7 @@ void f_diff_compare_table(INT32 args)
  *! @seealso
  *!   @[diff()], @[diff_compare_table()], @[String.fuzzymatch()]
  */
-void f_diff_longest_sequence(INT32 args)
+PMOD_EXPORT void f_diff_longest_sequence(INT32 args)
 {
   struct array *a;
   struct array *b;
@@ -5902,7 +5902,7 @@ void f_diff_longest_sequence(INT32 args)
  *!   @[diff_longest_sequence()], @[diff()], @[diff_compare_table()],
  *!   @[String.fuzzymatch()]
  */
-void f_diff_dyn_longest_sequence(INT32 args)
+PMOD_EXPORT void f_diff_dyn_longest_sequence(INT32 args)
 {
   struct array *a;
   struct array *b;
@@ -6171,7 +6171,7 @@ PMOD_EXPORT void f__refs(INT32 args)
   push_int(i);
 }
 
-
+#ifdef PIKE_DEBUG
 /* This function is for debugging *ONLY*
  * do not document please. /Hubbe
  */
@@ -6192,6 +6192,7 @@ PMOD_EXPORT void f__leak(INT32 args)
   pop_n_elems(args);
   push_int(i);
 }
+#endif
 
 /*! @decl type _typeof(mixed x)
  *!
@@ -6587,7 +6588,7 @@ PMOD_EXPORT void f_splice(INT32 args)
  *! @seealso
  *!   @[splice()], @[`/()]
  */
-void f_everynth(INT32 args)
+PMOD_EXPORT void f_everynth(INT32 args)
 {
   INT32 k,n=2;
   INT32 start=0;
@@ -7890,7 +7891,9 @@ void init_builtin_efuns(void)
 #endif /* PROFILING */
 
   ADD_EFUN("_refs",f__refs,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
+#ifdef PIKE_DEBUG
   ADD_EFUN("_leak",f__leak,tFunc(tRef,tInt),OPT_EXTERNAL_DEPEND);
+#endif
   ADD_EFUN("_typeof", f__typeof, tFunc(tSetvar(0, tMix), tType(tVar(0))), 0);
 
   /* class __master
