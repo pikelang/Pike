@@ -1,7 +1,7 @@
 /* hash.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: hash.cmod,v 1.1 2003/03/13 14:55:22 nisse Exp $");
+RCSID("$Id: hash.cmod,v 1.2 2003/03/18 13:35:31 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
 
@@ -37,54 +37,80 @@ werror(const char *format, ...)
 #define werror(x)
 #endif
 
-PIKECLASS nettle_hash
+/*! @class HashInfo
+ *!
+ *! Represents information about a hash algorithm, such as
+ *! name, digest size, and internal block size.
+ */
+PIKECLASS HashInfo
 {
   CVAR const struct nettle_hash *meta;
 
+  /*! @decl string name(void)
+   *!
+   *! Returns a human readable name for the algorithm.
+   */
   PIKEFUN string name()
     {
       if (!THIS->meta)
-	Pike_error("nettle_hash not properly initialized.");
+	Pike_error("HashInfo not properly initialized.");
 
       push_string(make_shared_string(THIS->meta->name));
     }
 
+  /*! @decl string digest_size(void)
+   *!
+   *! Returns the size of a hash digests.
+   */
   PIKEFUN int digest_size()
     {
       if (!THIS->meta)
-	Pike_error("nettle_hash not properly initialized.");
+	Pike_error("HashInfo not properly initialized.");
 
       push_int(THIS->meta->digest_size);
     }
 
+  /*! @decl string block_size(void)
+   *!
+   *! REturns the internal block size of the hash algorithm.
+   */
   PIKEFUN int block_size()
     {
       if (!THIS->meta)
-	Pike_error("nettle_hash not properly initialized.");
+	Pike_error("HashInfo not properly initialized.");
 
       push_int(THIS->meta->block_size);
     }
   INIT
     {
-      werror("nettle_hash->INIT\n");
+      werror("HashInfo->INIT\n");
       THIS->meta = NULL;
     }
 }
 
 #define GET_META(o) \
-( ((struct nettle_hash_struct *) get_storage((o), nettle_hash_program)) \
+( ((struct HashInfo_struct *) get_storage((o), HashInfo_program)) \
   ->meta)
 
 /* The algorithm objects have to be implemented in pike. */
 
-PIKECLASS hash_instance
+/*! @class HashState
+ *!
+ *! Base class for hashing contexts.
+ */
+PIKECLASS HashState
 {
-  INHERIT nettle_hash;
+  INHERIT HashInfo;
   CVAR void *ctx;
 
   /* FIXME: Create should copy state from the other object, if
    * provided. */
 
+  /*! @decl object update(string data)
+   *!
+   *! Hashes more data.
+   *! @returns this_object().
+   */
   PIKEFUN object update(string data)
     {
       const struct nettle_hash *meta = GET_META(this_object());
@@ -98,6 +124,16 @@ PIKECLASS hash_instance
       push_object(this_object());
     }
 
+  /*! @decl string digest(int|void length)
+   *!
+   *! Generates a digests, and resets the hashing contents.
+   *!
+   *! @param length
+   *!   If the length argument is provided, the digest is truncated
+   *!   to the given length.
+   *!
+   *! @returns the digest.
+   */
   PIKEFUN string digest(int|void arg)
     {
       const struct nettle_hash *meta;
@@ -131,12 +167,12 @@ PIKECLASS hash_instance
   
   INIT
     {
-      werror("hash_instance->INIT\n");
+      werror("HashState->INIT\n");
       THIS->ctx = NULL;
     }
   EXIT
     {
-      werror("hash_instance->EXIT\n");
+      werror("HashState->EXIT\n");
       if (THIS->ctx)
       {
 	const struct nettle_hash *meta = GET_META(this_object());
@@ -146,41 +182,46 @@ PIKECLASS hash_instance
     }
 }
 
-/*! @class nettle_md5
+/*! @class MD5_Info
+ *!
  *! Internal mixin class, intended to be multiply inherited
- *! together with nettle_hash. */
+ *! together with HashInfo. */
 
-PIKECLASS nettle_md5
+PIKECLASS MD5_Info
 {
   INIT
     {
-      struct nettle_hash_struct *nettle_hash
-	= (struct nettle_hash_struct *) get_storage(this_object(),
-						    nettle_hash_program);
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(this_object(),
+						    HashInfo_program);
 
-      werror("nettle_md5->INIT\n");
+      werror("MD5_Info->INIT\n");
       
-      if (nettle_hash || !nettle_hash->meta)
-	nettle_hash->meta = &nettle_md5;
+      if (HashInfo || !HashInfo->meta)
+	HashInfo->meta = &nettle_md5;
       else
 	/* Can't call Pike_error here. 
 	 * Pike_error("Can't initialize this object.\n"); */
-	werror("nettle_md5->INIT failed\n");
+	werror("MD5_Info->INIT failed\n");
     }
 }
 
-PIKECLASS md5_state
+/*! @class MD5_State
+ *!
+ *! State for MD5 hashing.
+ */
+PIKECLASS MD5_State
 {
-  INHERIT nettle_md5;
-  INHERIT hash_instance;
+  INHERIT MD5_Info;
+  INHERIT HashState;
   CVAR struct md5_ctx md5;
 
   INIT
     {
-      struct hash_instance_struct *instance
-	= (struct hash_instance_struct *) get_storage(this_object(),
-						      hash_instance_program);
-      werror("md5_state->INIT\n");
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(this_object(),
+						      HashState_program);
+      werror("MD5_State->INIT\n");
 
       assert(instance);
 
@@ -189,41 +230,47 @@ PIKECLASS md5_state
     }
 }
 
-/*! @class nettle_sha1
+/*! @class SHA1_Info
+ *!
  *! Internal mixin class, intended to be multiply inherited
- *! together with nettle_hash. */
+ *! together with HashInfo. */
 
-PIKECLASS nettle_sha1
+PIKECLASS SHA1_Info
 {
   INIT
     {
-      struct nettle_hash_struct *nettle_hash
-	= (struct nettle_hash_struct *) get_storage(this_object(),
-						    nettle_hash_program);
+      struct HashInfo_struct *HashInfo
+	= (struct HashInfo_struct *) get_storage(this_object(),
+						    HashInfo_program);
 
-      werror("nettle_sha1->INIT\n");
+      werror("SHA1_Info->INIT\n");
       
-      if (nettle_hash || !nettle_hash->meta)
-	nettle_hash->meta = &nettle_sha1;
+      if (HashInfo || !HashInfo->meta)
+	HashInfo->meta = &nettle_sha1;
       else
 	/* Can't call Pike_error here. 
 	 * Pike_error("Can't initialize this object.\n"); */
-	werror("nettle_sha1->INIT failed\n");
+	werror("SHA1_Info->INIT failed\n");
     }
 }
 
-PIKECLASS sha1_state
+/*! @class SHA1_State
+ *!
+ *! State for SHA1 hashing.
+ */
+
+PIKECLASS SHA1_State
 {
-  INHERIT nettle_sha1;
-  INHERIT hash_instance;
+  INHERIT SHA1_Info;
+  INHERIT HashState;
   CVAR struct sha1_ctx sha1;
 
   INIT
     {
-      struct hash_instance_struct *instance
-	= (struct hash_instance_struct *) get_storage(this_object(),
-						      hash_instance_program);
-      werror("sha1_state->INIT\n");
+      struct HashState_struct *instance
+	= (struct HashState_struct *) get_storage(this_object(),
+						      HashState_program);
+      werror("SHA1_State->INIT\n");
 
       assert(instance);
 

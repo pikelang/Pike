@@ -2,32 +2,32 @@
 test_true([[objectp(Nettle)]])
 
 // MD5
-cond([[ Nettle->md5_state ]], [[
+cond([[ Nettle->MD5_State ]], [[
 
-  test_true([[objectp(Nettle.md5_state())]])
-  test_eq([[Nettle.md5_state()->update("")->digest()]],
+  test_true([[objectp(Nettle.MD5_State())]])
+  test_eq([[Nettle.MD5_State()->update("")->digest()]],
   	  [[String.hex2string("d41d8cd98f00b204e9800998ecf8427e")]])
-  test_eq([[Nettle.md5_state()->update("a")->digest()]],
+  test_eq([[Nettle.MD5_State()->update("a")->digest()]],
   	  [[String.hex2string("0cc175b9c0f1b6a831c399e269772661")]])
-  test_eq([[Nettle.md5_state()->update("abc")->digest()]],
+  test_eq([[Nettle.MD5_State()->update("abc")->digest()]],
   	  [[String.hex2string("900150983cd24fb0d6963f7d28e17f72")]])
-  test_eq([[Nettle.md5_state()->update("message digest")->digest()]],
+  test_eq([[Nettle.MD5_State()->update("message digest")->digest()]],
   	  [[String.hex2string("f96b697d7cb7938d525a2f31aaf161d0")]])
-  test_eq([[Nettle.md5_state()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
+  test_eq([[Nettle.MD5_State()->update("abcdefghijklmnopqrstuvwxyz")->digest()]],
   	  [[String.hex2string("c3fcd3d76192e4007dfb496cca67e13b")]])
-  test_eq([[Nettle.md5_state()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  test_eq([[Nettle.MD5_State()->update("ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   		"abcdefghijklmnopqrstuvwxyz0123456789")->digest()]],
 	[[String.hex2string("d174ab98d277d9f5a5611c2c9f419d9f")]])
-  test_eq([[Nettle.md5_state()->update("1234567890123456789012345678901234567890"
+  test_eq([[Nettle.MD5_State()->update("1234567890123456789012345678901234567890"
 		"1234567890123456789012345678901234567890")->digest()]],
 	  [[String.hex2string("57edf4a22be3c955ac49da2e2107b67a")]])
 ]])
 
 // SHA1
-cond([[ Nettle->sha1_state ]], [[
+cond([[ Nettle->SHA1_State ]], [[
 
-  test_true([[objectp(Nettle.sha1_state())]])
-  test_eq([[Nettle.sha1_state()->update("abc")->digest()]],
+  test_true([[objectp(Nettle.SHA1_State())]])
+  test_eq([[Nettle.SHA1_State()->update("abc")->digest()]],
    	[[String.hex2string("a9993e364706816aba3e25717850c26c9cd0d89d")]])
 ]])
 
