@@ -1,22 +1,20 @@
 /* nettle.cmod -*- c -*- */
 
 #include "global.h"
-RCSID("$Id: nettle.cmod,v 1.2 2003/03/12 20:33:33 grubba Exp $");
+RCSID("$Id: nettle.cmod,v 1.3 2003/03/13 14:59:07 nisse Exp $");
 #include "interpret.h"
 #include "svalue.h"
-
 /* For this_object() */
 #include "object.h"
-
 #include "module_support.h"
+
+#include "nettle_config.h"
 
 #ifdef HAVE_LIBNETTLE
 
 #include "nettle.h"
 
-#include <nettle/md5.h>
 #include <nettle/aes.h>
-#include <nettle/sha.h>
 #include <nettle/nettle-meta.h>
 
 #include <assert.h>
@@ -27,222 +25,9 @@ RCSID("$Id: nettle.cmod,v 1.2 2003/03/12 20:33:33 grubba Exp $");
 
 DECLARATIONS
 
-#if 1
-void
-werror(const char *format, ...)
-{
-  va_list args;
-
-  va_start(args, format);
-  vfprintf(stderr, format, args);
-  va_end(args);
-}
-#endif
-
 /*! @module Nettle
  */
 
-PIKECLASS nettle_hash
-{
-  CVAR const struct nettle_hash *meta;
-
-  PIKEFUN string name()
-    {
-      if (!THIS->meta)
-	Pike_error("nettle_hash not properly initialized.");
-
-      push_string(make_shared_string(THIS->meta->name));
-    }
-
-  PIKEFUN int digest_size()
-    {
-      if (!THIS->meta)
-	Pike_error("nettle_hash not properly initialized.");
-
-      push_int(THIS->meta->digest_size);
-    }
-
-  PIKEFUN int block_size()
-    {
-      if (!THIS->meta)
-	Pike_error("nettle_hash not properly initialized.");
-
-      push_int(THIS->meta->block_size);
-    }
-  INIT
-    {
-      /* werror("nettle_hash->INIT\n"); */
-      THIS->meta = NULL;
-    }
-}
-
-#define GET_META(o) \
-( ((struct nettle_hash_struct *) get_storage((o), nettle_hash_program)) \
-  ->meta)
-
-
-PIKECLASS hash_state
-{
-  INHERIT nettle_hash;
-  
-  /* FIXME: The ctx pointer isn't strictly needed, as the ctx is in
-   * the storage area just after the pointer. But this seems like the
-   * simplest and most portable way to get to it. */
-  CVAR void *ctx;
-  
-  PIKEFUN object update(string data)
-    {
-      const struct nettle_hash *meta;
-
-      if (! THIS->ctx)
-	Pike_error("hash_state not properly initialized.");
-
-      meta = GET_META(this_object());
-      
-      NO_WIDE_STRING(data);
-      meta->update(THIS->ctx, data->len, data->str);
-
-      push_object(this_object());
-    }
-  
-  PIKEFUN string digest(int|void arg)
-    {
-      const struct nettle_hash *meta;
-      struct pike_string *digest;
-      INT32 length;
-
-      if (! THIS->ctx)
-	Pike_error("hash_state not properly initialized.");
-
-      meta = GET_META(this_object());
-      
-      if (!arg)
-	length = meta->digest_size;
-      else
-	{
-	  if (arg->type != PIKE_T_INT)
-	    Pike_error("Bad argument type");
-	  length = arg->u.integer;
-	  if (length <= 0 || length > meta->digest_size)
-	    Pike_error("Unsupported digest length");
-	}
-      
-      digest = begin_shared_string(length);
-      meta->digest(THIS->ctx, length, digest->str);
-      push_string(end_shared_string(digest));
-    }
-  INIT
-    {
-      /* werror("hash_state->INIT\n"); */
-      THIS->ctx = NULL;
-    }
-}
-
-PIKECLASS sha1_state
-{
-  INHERIT hash_state;
-  CVAR struct sha1_ctx ctx;
-
-  /* FIXME: Move this to the generic hash_state class. */
-  PIKEFUN void create(void|object arg)
-    {
-      struct sha1_state_struct *other;
-      
-      if (!arg)
-	return;
-
-      if ( (arg->type == PIKE_T_OBJECT)
-	   && ((other = (struct sha1_state_struct *)
-		get_storage(arg->u.object, sha1_state_program))) )
-      {
-	memcpy(&THIS->ctx, &other->ctx, sizeof(THIS->ctx));
-	return;
-      }
-      else
-	Pike_error("Can't copy an incompatible hash state.");
-    }
-  
-  INIT
-    {
-      struct hash_state_struct *hash_state;
-      struct nettle_hash_struct *nettle_hash;
-
-      /* werror("sha1_state->INIT\n"); */
-
-      hash_state = (struct hash_state_struct *)
-	get_storage(this_object(), hash_state_program);
-      nettle_hash = (struct nettle_hash_struct *)
-	get_storage(this_object(), nettle_hash_program);
-
-      assert(hash_state);
-      assert(nettle_hash);
-      
-      nettle_hash->meta = &nettle_sha1;
-      hash_state->ctx = &THIS->ctx;
-
-      sha1_init(&THIS->ctx);
-    }
-}
-
-PIKECLASS md5
-{
-  CVAR struct md5_ctx ctx;
-
-  PIKEFUN string name()
-    {
-      push_string(make_shared_string("md5"));
-    }
-
-  PIKEFUN int digest_size()
-    {
-      push_int(MD5_DIGEST_SIZE);
-    }
-
-  PIKEFUN int block_size()
-    {
-      push_int(MD5_DATA_SIZE);
-    }
-  
-  PIKEFUN object update(string data)
-    {
-      /* FIXME: What about multibyte strings? */
-      md5_update(&THIS->ctx, data->len, data->str);
-
-      push_object(this_object());
-    }
-  
-  PIKEFUN string digest(int|void arg)
-    {
-      struct pike_string *digest;
-      INT32 length;
-
-      if (!arg)
-	length = MD5_DIGEST_SIZE;
-      else
-	{
-	  if (arg->type != PIKE_T_INT)
-	    Pike_error("Bad argument type");
-	  length = arg->u.integer;
-	  if (length <= 0 || length > MD5_DIGEST_SIZE)
-	    Pike_error("Unsupported digest length");
-	}
-      
-      digest = begin_shared_string(length);
-      md5_digest(&THIS->ctx, length, digest->str);
-      push_string(end_shared_string(digest));
-    }
-
-  INIT
-    {
-      /* werror("md5->INIT\n"); */
-      md5_init(&THIS->ctx);
-    }
-
-  EXIT
-    {
-      memset(&THIS->ctx, 0, sizeof(THIS->ctx));
-    }
-}
 
 PIKECLASS aes
 {
@@ -359,6 +144,18 @@ PIKECLASS aes
       /* werror("aes->EXIT\n"); */
       memset(&THIS->ctx, 0, sizeof(THIS->ctx));
     }
+}
+
+PIKE_MODULE_INIT
+{
+  INIT;
+  hash_init();
+}
+
+PIKE_MODULE_EXIT
+{
+  hash_exit();
+  EXIT;
 }
 
 #endif /* HAVE_LIBNETTLE */
