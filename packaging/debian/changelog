@@ -1,6 +1,9 @@
 pike7.4 (7.4.113-1) unstable; urgency=low
 
   * The latest cvs snapshot
+  * Build-depends on librsvg2-dev >= 2.7 so that it doesn't depend
+    on libcroco2 which is no longer in the archive
+    (closes: Bug#258102)
 
  -- Marek Habersack <grendel@debian.org>  Tue, 6 Jul 2004 19:58:41 +0200
 
