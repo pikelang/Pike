@@ -4,7 +4,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: tim.c,v 1.9 2000/08/15 12:54:05 grubba Exp $");
+RCSID("$Id: tim.c,v 1.10 2000/09/17 12:51:45 grubba Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -119,14 +119,14 @@ static void tim_decode_rect(INT32 attr, unsigned char *src, rgb_group *dst,
   }
 }
 
-#define ALPHA(a) if(!a)               /* Transparent */            \
+#define ALPHA(a) if(!a)               /* Transparent */           \
 	           dst->b = dst->g = dst->r = 0;                  \
                  else if(!(a&0x80))  /* Not transparent */        \
-	           dst->b = dst->g = dst->r = ~0;                 \
+	           dst->b = dst->g = dst->r = 0xff;               \
                  else if(!(a&0x7f))  /* Non-transparent black */  \
-	           dst->b = dst->g = dst->r = ~0;                 \
+	           dst->b = dst->g = dst->r = 0xff;               \
                  else                /* Semi transparent */       \
-	           dst->b = dst->g = dst->r = 127
+	           dst->b = dst->g = dst->r = 0x7f
 
 
 static void tim_decode_alpha_rect(INT32 attr, unsigned char *src,
