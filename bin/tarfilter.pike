@@ -52,7 +52,8 @@ void doit(Stdio.File in, Stdio.File out)
     a[6] = "        ";
     s = sprintf("%100s%8s%8s%8s%12s%12s%8s%c%100s%8s%32s%32s%8s%8s", @a)+
       s[345..];
-    out->write(s[..147]+sprintf("%07o\0", `+(@values(s[..511])))+s[156..]);
+    written +=
+      out->write(s[..147]+sprintf("%07o\0", `+(@values(s[..511])))+s[156..]);
     size = (size + 511) & -511;
     copydata(in, out, size);
     written += size;
