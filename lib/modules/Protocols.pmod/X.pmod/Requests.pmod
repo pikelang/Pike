@@ -271,3 +271,83 @@ class PolyFillRectangle
 				 rectangles->to_string()));
   }
 }
+
+class PutImage
+{
+  inherit request;
+  constant type = 72;
+  int drawable;
+  int gc;
+
+  int depth;
+  int width;
+  int height;
+  int dst_x;
+  int dst_y;
+  int left_pad = 0;
+  int format = 2; // Bitmap XYPixmap ZPixmap
+  
+  string data;
+
+  string to_string()
+  {
+  string pad="";
+    while(((strlen(data)+strlen(pad))%4)) pad += "\0";
+    pad =  build_request(sprintf("%4c" "%4c"
+				 "%2c" "%2c"
+				 "%2c" "%2c"
+				 "%c" "%c" "\0\0"
+				 "%s%s",
+				 drawable, gc,
+				 width, height,
+				 dst_x, dst_y, left_pad, depth,
+				 data,pad), format);
+    data=0;
+    return pad;
+  }
+  
+}
+
+class CreateColormap
+{
+  inherit request;
+  constant type = 78;
+
+  int cid;
+  int alloc;
+  
+  int window;
+  int visual;
+
+  string to_string()
+  {
+    return build_request(sprintf("%4c%4c%4c", cid, window, visual), alloc);
+  }
+}
+
+class AllocColor
+{
+  inherit request;
+  constant type = 84;
+  
+  int red, green, blue;
+  int colormap;
+  
+  string to_string()
+  {
+    return build_request(sprintf("%4c%2c%2c%2c\0\0", 
+				 colormap, red, green, blue ));
+  }
+
+  mixed handle_reply(mapping reply)
+  {
+    int pixel, r, g, b;
+    sscanf(reply->rest, "%2c%2c%2c%*2c%4c", r, g, b, pixel);
+    return ([ "pixel":pixel, "red":r, "green":g, "blue":b ]);
+  }
+
+  mixed handle_error(string reply)
+  {
+    return 0;
+  }
+}

@@ -104,6 +104,35 @@ class Point
   }
 }
 
+class Colormap
+{
+  inherit XResource;
+  object visual;
+  mapping alloced = ([]);
+
+  int AllocColor(int r, int g, int b)
+  {
+    if(alloced[sprintf("%2c%2c%2c", r, g, b)])
+      return alloced[sprintf("%2c%2c%2c", r, g, b)];
+    object req = Requests.AllocColor();
+    req->colormap = id;
+    req->red = r;
+    req->green = g;
+    req->blue = b;
+    return (alloced[sprintf("%2c%2c%2c", r, g, b)]=
+	    display->blocking_request( req ));
+  }
+
+
+  void create(object disp, int i, object vis)
+  {
+    display = disp;
+    id = i;
+    visual = vis;
+  }
+}
+
+
 class Drawable
 {
   inherit XResource;
@@ -174,12 +203,27 @@ class Drawable
   {
     display->send_request(DrawLine_req(gc->id, coordMode, points));
   }
+
+  void PutImage(object gc, int depth,
+		int tx, int ty, int width, int height, string data)
+  {
+    object r = Requests.PutImage();
+    r->drawable = id;
+    r->gc = gc->id;
+    r->depth = depth;
+    r->dst_x = tx;
+    r->dst_y = ty;
+    r->width = width;
+    r->height = height;
+    r->data = data;
+    display->send_request(r);
+  }
 }
-  
+
 class Window
 {
   inherit Drawable;
-  object visual;
+  object visual, colortable, parent;
   int currentInputMask;
 
   mapping(string:function) event_callbacks = ([ ]);
@@ -259,12 +303,11 @@ class Window
 	 thai .. korean .. hangul .. */
     }
   } 
-
-  // FIXME! Should use some sort of (global..) db.
-  mapping compose_patterns = decode_value(Stdio.read_bytes("db/compose.db"));
+  mapping compose_patterns;
   string compose_state = "";
   string LookupKeysym( int keysym )
   {
+    if(!compose_patterns) compose_patterns =  display->compose_patterns;
     switch(keysym)
     {
      case XK_A..XK_Z: 
@@ -334,10 +377,10 @@ class Window
   }
   
   object CreateWindow_req(int x, int y, int width, int height,
-			  int border_width)
+			  int border_width, int depth, object visual)
   {
     object req = Requests.CreateWindow();
-    req->depth = 0;  /* CopyFromParent */
+    req->depth = depth;  /* CopyFromParent */
     req->wid = display->alloc_id();
     req->parent = id;
     req->x = x;
@@ -346,7 +389,7 @@ class Window
     req->height = height;
     req->borderWidth = border_width;
     req->c_class = 0 ;  /* CopyFromParent */
-    req->visual = 0;    /* CopyFromParent */
+    req->visual = visual && visual->id;
     return req;
   }
 
@@ -355,20 +398,33 @@ class Window
     return object_program(this_object())(@args);
   }
 
-  /* FIXME: Supports only visual CopyFromParent */
+  object CreateColormap(object visual, int|void alloc)
+  {
+    object req = Requests.CreateColormap();
+    req->cid = display->alloc_id();
+    req->alloc = alloc;
+    req->visual = visual->id;
+    req->window = id;
+    display->send_request(req);
+    return Colormap(display, req->cid, visual);
+  }
+
   object CreateWindow(int x, int y, int width, int height,
-		      int border_width, mapping attributes)
+		      int border_width, mapping attributes,
+		      object|void visual, int|void depth,
+		      int|void c_class)
   {
     object req = CreateWindow_req(x, y, width, height,
-				  border_width);
+				  border_width,depth,visual);
+
     if (attributes)
       req->attributes = attributes;
-    display->send_request(req);
-    
+
+
     // object w = Window(display, req->wid);
-    object w = new(display, req->wid);
-    
-    w->visual = visual;
+    display->send_request(req);
+    object w = new(display, req->wid, visual, this_object());
+    w->colortable = req->attributes->Colormap;
     w->currentInputMask = req->attributes->EventMask;
     return w;
   }
@@ -378,14 +434,14 @@ class Window
 			    int border, int background)
   {
     object req = CreateWindow_req(x, y, width, height,
-				  border_width);
+				  border_width,0,0);
     req->attributes->BackPixel = background;
     req->attributes->BorderPixel = border;
 
     display->send_request(req);
     
     // object w = Window(display, req->wid);
-    object w = new(display, req->wid);
+    object w = new(display, req->wid, 0, this_object());
     
     w->visual = visual;
     w->currentInputMask = 0;
@@ -481,14 +537,11 @@ class Window
   void create(mixed ... args)
   {
     ::create( @args );
+    if(sizeof(args)>2 && objectp(args[2]))  visual = args[2];
+    if(sizeof(args)>3 && objectp(args[3]))  parent = args[3];
     set_event_callback("_KeyPress", handle_keys);
     set_event_callback("_KeyRelease", handle_keys);
   }
-}
-
-class Colormap
-{
-  inherit XResource;
 }
 
 class RootWindow

@@ -55,7 +55,7 @@ class async_request
     callback = f;
   }
 
-  void handle_reply(int success, string reply)
+  void handle_reply( int success, string reply)
   {
     callback(success, (success ? req->handle_reply : req->handle_error)(reply));
   }
@@ -106,6 +106,9 @@ class Display
   
   inherit Stdio.File;
   inherit id_manager;
+
+  // FIXME! Should use some sort of (global) db.
+  mapping compose_patterns = decode_value(Stdio.read_bytes("db/compose.db"));
   
   program Struct = my_struct.struct;
   
@@ -161,29 +164,33 @@ class Display
   {
     int written = write(buffer);
     if (written <= 0)
-      {
-	if (io_error_handler)
-	  io_error_handler(this_object());
-	close();
-      }
+    {
+      if (io_error_handler)
+	io_error_handler(this_object());
+      close();
+    }
     else
-      {
-	buffer = buffer[written..];
-	if (!strlen(buffer))
-	  set_write_callback(0);
-      }
+    {
+      buffer = buffer[written..];
+      if (!strlen(buffer))
+	set_write_callback(0);
+    }
   }
 
   void send(string data)
   {
-//     werror(sprintf("Xlib.Display->send: '%s'\n", data));
+    int ob = strlen(buffer);
     buffer += data;
-    if (strlen(buffer))
+    if (!ob && strlen(buffer))
+    {
       set_write_callback(write_callback);
+      write_callback( );
+    }
   }
 
   int flush()
   { /* FIXME: Not thread-safe */
+//     trace(5);
     set_blocking();
     int result = 0;
     mixed e = catch {
@@ -193,7 +200,7 @@ class Display
 	  break;
 	buffer = buffer[written..];
       
-	if (strlen(buffer)) 
+	if (strlen(buffer))
 	  break;
 	set_write_callback(0);
 	result = 1;
@@ -203,6 +210,7 @@ class Display
     if (e)
       throw(e);
     // werror(sprintf("flush: result = %d\n", result));
+//     trace(0);
     return result;
   }
   
@@ -310,7 +318,7 @@ class Display
 		int wid = struct->get_uint(4);
 		object r = Types.RootWindow(this_object(), wid);
 		int cm = struct->get_uint(4);
-		r->defaultColorMap = Types.Colormap(this_object(), cm);
+		r->defaultColorMap = Types.Colormap(this_object(), cm, 0);
 		r->whitePixel = struct->get_uint(4);
 		r->blackPixel = struct->get_uint(4);
 		r->currentInputMask = struct->get_uint(4);
@@ -551,7 +559,7 @@ class Display
 	  if (handler)
 	    {
 	      m_delete(pending_requests, a[1]->sequenceNumber);
-	      handler->handle_reply(1, a[1]);
+	      handler->handle_reply(1, a[1] );
 	    }
 	  else if(reply_handler)
 	    reply_handler(this_object(), a[1]);
@@ -619,8 +627,20 @@ class Display
 
     string host = strlen(fields[0]) ? fields[0] : "localhost";
 
-    if (!connect(host, XPORT + (int)fields[1]))
-      return 0;
+    if(!strlen(fields[0]))
+    {
+      if(File::open("/tmp/.X11-pipe/X"+((int)fields[1]), "rw"))
+      {
+	werror("Using local transport\n");
+	host=0;
+      } else
+	werror("Failed to use local transport.\n");
+    }
+    if(host)
+      if (!connect(host, XPORT + (int)fields[1]))
+	return 0;
+
+    set_buffer( 65536 );
 
     /* Asynchronous connection */
     if (async)
@@ -681,9 +701,8 @@ class Display
     int done = 0;
 
     int n = send_request(req);
-    flush();
-    set_blocking();
-
+     flush();
+     set_blocking();
     mixed e = catch {
       while(!done)
 	{
@@ -697,14 +716,14 @@ class Display
 	      if ((a[0] == ACTION_REPLY)
 		  && (a[1]->sequenceNumber == n))
 		{
-		  result = req->handle_reply(1,a[1]);
+		  result = req->handle_reply(a[1]);
 		  done = 1;
 		  break;
 		}
 	      else if ((a[0] == ACTION_ERROR)
 		       && (a[1]->sequenceNumber == n))
 		{
-		  result = req->handle_error(1,a[1]);
+		  result = req->handle_error(a[1]);
 		  done = 1;
 		  break;
 		}
@@ -716,11 +735,12 @@ class Display
     set_nonblocking();
     if (e)
       throw(e);
-    if (pending_actions->size())
-      {
-	set_read_callback(0);
-	call_out(process_pending_actions, 0);
-      }
+    if (!pending_actions->is_empty())
+    {
+      set_read_callback(0);
+      call_out(process_pending_actions, 0);
+    } else
+      set_read_callback( read_callback );
     return result;
   }
   
