@@ -1,6 +1,6 @@
 // LDAP client protocol implementation for Pike.
 //
-// $Id: client.pike,v 1.4 1999/08/27 21:55:03 grubba Exp $
+// $Id: client.pike,v 1.13 2000/02/12 10:57:02 hop Exp $
 //
 // Honza Petrous, hop@unibase.cz
 //
@@ -44,6 +44,7 @@
 //
 //	v1.11 1999-04-10 - search filter now processed multiple wild '*' chars
 //			   [ Escaping untested, yet ]
+//	v1.13 2000-02-12 - fixed search NOT op bug (end revision normalized)
 //
 // Specifications:
 //
@@ -660,7 +661,7 @@
 	      return(ASN1_CONTEXT_SET(op, oarr));
       case '!':		// not
 	      if (objectp(ohlp = make_filter(filter_get_sub1expr(filter[1..])[0])))
-	        return(ASN1_CONTEXT_SEQUENCE(2, ohlp));
+	        return(ASN1_CONTEXT_SEQUENCE(2, ({ ohlp}) ));
 	      else
 		return(0); // error: Filter parameter error!
 	      break;
