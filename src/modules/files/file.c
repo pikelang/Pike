@@ -5,7 +5,7 @@
 \*/
 
 #include "global.h"
-RCSID("$Id: file.c,v 1.101 1998/05/22 11:44:47 grubba Exp $");
+RCSID("$Id: file.c,v 1.102 1998/05/22 11:49:29 grubba Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -77,6 +77,9 @@ RCSID("$Id: file.c,v 1.101 1998/05/22 11:44:47 grubba Exp $");
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
+#ifdef HAVE_NET_NETDB_H
+#include <net/netdb.h>
+#endif /* HAVE_NET_NETDB_H */
 
 #include "dmalloc.h"
 
