@@ -1,0 +1,123 @@
+#pike __REAL_VERSION__
+
+inherit @module@;
+
+class Angle {
+
+  //! The actual keeper of the angle value.
+  int|float angle;
+
+  void create(void|int|float degree) {
+    angle = degree % 360;
+  }
+
+  //! Returns the number of degrees.
+  int degrees() {
+    return (int)angle;
+  }
+
+  //! Returns the number of minute.
+  int minutes() {
+    if(intp(angle)) return 0;
+    return (int)floor(60.0*(angle-floor(angle)));
+  }
+
+  //! Returns the number of seconds.
+  float seconds() {
+    if(intp(angle)) return 0;
+    return 3600.0*(angle-floor(60.0*angle)/60.0);
+  }
+
+  //! @decl Angle set_dms(int degrees)
+  //! @decl Angle set_dms(int degrees, int minutes)
+  //! @decl Angle set_dms(int degrees, inte minutes, float seconds)
+  //! Set degrees, minues and seconds. Returns the current angle object.
+  Angle set_dms(int degrees, void|int minutes, void|float seconds) {
+    create( degrees + minutes/60.0 + seconds/3600.0 );
+    return this_object();
+  }
+
+  //! Returns degrees, minutes and seconds as a string, e.g.
+  //! 47°6'36.00".
+  string format_dms() {
+    return sprintf("%d°%d'%.2f\"", degrees(), minutes(), seconds());
+  }
+
+  //! Returns the number of gons.
+  float gon() {
+    return angle * 400.0/360.0;
+  }
+
+  //! Set the angle with gons. Returns the current angle object.
+  Angle set_gon(int|float gon) {
+    create( gon * 360.0/400.0 );
+    return this_object();
+  }
+
+  //! Returns the number of radians.
+  float rad() {
+    return angle * (2*pi)/360.0;
+  }
+
+  //! Set the angle with radians. Returns the current angle object.
+  Angle set_rad(int|float rad) {
+    create( rad * 360.0/(2*pi) );
+    return this_object();
+  }
+
+  float|int|string cast(string to) {
+    switch(to) {
+    case "float": return (float)angle;
+    case "int": return (int)angle;
+    case "string": return (string)angle;
+    }
+    throw("Can not cas to %O.\n");
+  }
+
+  float|int|object `+ (float|int|object _angle) {
+    if(objectp(_angle)) return Angle( angle + _angle->angle );
+    return angle + _angle;
+  }
+
+  float|int|object `- (float|int|object _angle) {
+    if(objectp(_angle)) return Angle( angle - _angle->angle );
+    return angle - _angle;
+  }
+
+  float|int|object `* (float|int|object _angle) {
+    if(objectp(_angle)) return Angle( angle * _angle->angle );
+    return angle * _angle;
+  }
+
+  float|int|object `/ (float|int|object _angle) {
+    if(objectp(_angle)) return Angle( angle / _angle->angle );
+    return angle / _angle;
+  }
+
+  float|int|object `% (float|int|object _angle) {
+    if(objectp(_angle)) return Angle( angle % _angle->angle );
+    return angle % _angle;
+  }
+
+  int __hash() {
+    return (int)angle*1000000;
+  }
+
+  int `== (object _angle) {
+    return _angle->angle == angle;
+  }
+
+  int `< (object _angle) {
+    return angle < _angle->angle;
+  }
+
+  int `> (object _angle) {
+    return angle > _angle->angle;
+  }
+
+  string _sprintf(int t) {
+    if(t=='O')
+      return "Angle(" + angle + "°)";
+    return 0;
+  }
+}
