@@ -1,10 +1,15 @@
-dnl $Id: aclocal.m4,v 1.84 2003/12/03 09:27:03 nilsson Exp $
+dnl $Id: aclocal.m4,v 1.85 2003/12/07 15:56:21 marcus Exp $
 
 dnl Some compatibility with Autoconf 2.50+. Not complete.
 dnl newer Autoconf calls substr m4_substr
 ifdef([substr], ,[m4_copy([m4_substr],[substr])])
 dnl Autoconf 2.53+ hides their version numbers in m4_PACKAGE_VERSION.
 ifdef([AC_ACVERSION], ,[m4_copy([m4_PACKAGE_VERSION],[AC_ACVERSION])])
+
+dnl Not really a prerequisite, but suggest the use of Autoconf 2.50 to
+dnl autoconf-wrapper if it is used.  dnl can't be used since the wrapper
+dnl checks for it, so just store it in a dummy define.
+define([require_autoconf_2.50],[AC_PREREQ(2.50)])
 
 define([if_autoconf],
 [ifelse(ifelse(index(AC_ACVERSION,.),-1,0,[m4_eval(
@@ -351,11 +356,11 @@ define(PIKE_FEATURE_OK,[
 
 define([AC_LOW_MODULE_INIT],
 [
-  # $Id: aclocal.m4,v 1.84 2003/12/03 09:27:03 nilsson Exp $
+  # $Id: aclocal.m4,v 1.85 2003/12/07 15:56:21 marcus Exp $
 
   MY_AC_PROG_CC
 
-  AC_DEFINE(POSIX_SOURCE)
+  AC_DEFINE([POSIX_SOURCE], [], [This should always be defined.])
 
   AC_SUBST(CONFIG_HEADERS)
 
