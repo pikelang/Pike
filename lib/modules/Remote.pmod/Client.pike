@@ -10,7 +10,7 @@ function close_callback = 0;
 object get(string name)
 {
   if(!connected)
-    error("Not connected");
+    error("Not connected\n");
   return con->get_named_object(name);
 }
 
@@ -26,7 +26,7 @@ void create(string host, int port, void|int nice,
 {
   con = Connection(nice, max_call_threads);
   if(!con->connect(host, port, timeout))
-    error("Could not connect to server");
+    error("Could not connect to server.\n");
   connected = 1;
   con->closed = 0;
   con->add_close_callback (client_close_callback);
