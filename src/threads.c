@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.153 2001/02/06 17:14:08 per Exp $");
+RCSID("$Id: threads.c,v 1.154 2001/02/06 17:57:53 grubba Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1333,6 +1333,7 @@ static void thread_was_checked(struct object *o)
  *!   so it's always available.
  */
 
+/* FIXME: Why not use an init callback()? */
 void f_thread_local_create( INT32 args )
 {
   static INT32 thread_local_id = 0;
@@ -1656,15 +1657,16 @@ void th_init(void)
   ADD_STORAGE(struct thread_local);
   ADD_FUNCTION("get",f_thread_local_get,tFunc(tNone,tMix),0);
   ADD_FUNCTION("set",f_thread_local_set,tFunc(tSetvar(1,tMix),tVar(1)),0);
-  ADD_FUNCTION("create",f_thread_local_create,tFunc(tVoid,tVoid),0);
+  ADD_FUNCTION("create", f_thread_local_create,
+	       tFunc(tVoid,tVoid), ID_STATIC);
   thread_local_prog=Pike_compiler->new_program;
   add_ref(thread_local_prog);
   end_class("thread_local", 0);
   if(!thread_local_prog)
     fatal("Failed to initialize thread_local program!\n");
-  ADD_EFUN("thread_local",f_thread_local,
+  ADD_EFUN("thread_local", f_thread_local,
 	   tFunc(tNone,tObjIs_THREAD_LOCAL),
-	   OPT_SIDE_EFFECT);
+	   OPT_EXTERNAL_DEPEND);
 
   START_NEW_PROGRAM_ID(THREAD_ID);
   thread_storage_offset=ADD_STORAGE(struct thread_state);
