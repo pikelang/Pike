@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.30 1999/08/06 23:03:35 hubbe Exp $");
+RCSID("$Id: fdlib.c,v 1.31 2000/06/17 00:25:20 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -90,11 +90,46 @@ void fd_exit()
   mt_destroy(&fd_mutex);
 }
 
+int debug_fd_stat(char *file, struct stat *buf)
+{
+  int l=strlen(file);
+  char fname[MAX_PATH];
+  if(file[l-1]=='/' || file[l-1]=='\\')
+  {
+    while(l && ( file[l]=='/' || file[l]=='\\' )) l--;
+    if(l+1 > sizeof(fname))
+    {
+      errno=EINVAL;
+      return -1;
+    }
+    MEMCPY(fname, file, l);
+    fname[l]=0;
+    file=fname;
+  }
+  return stat(file, buf);
+}
+
 FD debug_fd_open(char *file, int open_mode, int create_mode)
 {
   HANDLE x;
   FD fd;
   DWORD omode,cmode,amode;
+
+  int l=strlen(file);
+  char fname[MAX_PATH];
+  if(file[l-1]=='/' || file[l-1]=='\\')
+  {
+    while(l && ( file[l]=='/' || file[l]=='\\' )) l--;
+    if(l+1 > sizeof(fname))
+    {
+      errno=EINVAL;
+      return -1;
+    }
+    MEMCPY(fname, file, l);
+    fname[l]=0;
+    file=fname;
+  }
+
   omode=0;
   FDDEBUG(fprintf(stderr,"fd_open(%s,0x%x,%o)\n",file,open_mode,create_mode));
   if(first_free_handle == FD_NO_MORE_FREE)

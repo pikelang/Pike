@@ -44,7 +44,7 @@ struct file_ret *aap_find_file( char *s, int len,
   MEMCPY( fname+fs->base.len+hlen, "/", 1 );
   MEMCPY( fname+fs->base.len+hlen+1, s, len );
 
-  res = stat( fname, &s );
+  res = fd_stat( fname, &s );
     
   if(!res) /* ok. The file exists. */
   {
