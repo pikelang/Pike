@@ -198,7 +198,7 @@
  *!                           fun with penguins
  *! Result: 71
  *! > write(sprintf("%-=*O\n",screen_width,({ "fish", 9, "gumbies", 2 })));
- *! ({ /* 4 elements *@xml{/@}
+ *! ({ @xml{/@}* 4 elements *@xml{/@}
  *!     "fish",
  *!     9,
  *!     "gumbies",
@@ -256,7 +256,7 @@
  *! this option      be forced        ls output.
  *! Result: 312
  *! > sample = ([ "align":"left", "valign":"middle" ]);
- *! Result: ([ /* 2 elements *@xml{/@}
+ *! Result: ([ @xml{/@}* 2 elements *@xml{/@}
  *!          "align":"left",
  *!          "valign":"middle"
  *!        ])
@@ -281,7 +281,7 @@
  *!   @[lfun::_sprintf()]
  */
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.84 2001/11/18 00:30:57 nilsson Exp $");
+RCSID("$Id: sprintf.c,v 1.85 2001/12/14 09:59:37 grubba Exp $");
 #include "pike_error.h"
 #include "array.h"
 #include "svalue.h"
@@ -1366,7 +1366,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	  else
 	  {
 	    *p++ = '-';
-	    val = -val;
+	    val = (-val) & 0xffffffff;	/* Workaround for bug in gcc/ia64 */
 	    do {
 	      if((*p++ = '0'|(val&((1<<base)-1)))>'9')
 		p[-1] += (mode=='X'? 'A'-'9'-1 : 'a'-'9'-1);
