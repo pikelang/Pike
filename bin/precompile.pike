@@ -1800,7 +1800,7 @@ class ParseBlock
 
 	string funcname=mkname("f",base,name);
 	string define=make_unique_name("f",base,name,"defined");
-	string func_num=mkname(base,name,"fun_num");
+	string func_num=mkname("f", base,name,"fun_num");
 
 //    werror("FIX RETURN: %O\n",body);
     
@@ -2142,7 +2142,7 @@ class ParseBlock
 	    name=common_name;
 	    funcname=mkname("f",base,common_name);
 	    define=make_unique_name("f",base,common_name,"defined");
-	    func_num=mkname("f",base,funcname,"fun_num");
+	    func_num=mkname(base,funcname,"fun_num");
 	    array(string) defines=({});
 	  
 	    type=PikeType(PC.Token("|"), tmp->type);
