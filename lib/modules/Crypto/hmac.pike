@@ -21,7 +21,12 @@ string raw_hash(string s)
 {
   return H()->update(s)->digest();
 }
-  
+
+string pkcs_digest(string s)
+{
+  return Crypto.Signature.build_digestinfo(s, H());
+}
+
 class `()
 {
   string ikey; /* ipad XOR:ed with the key */
@@ -39,6 +44,11 @@ class `()
   string `()(string text)
     {
       return raw_hash(okey + raw_hash(ikey + text));
+    }
+
+  string digest_info(string text)
+    {
+      return pkcs_digest(okey + raw_hash(ikey + text));
     }
 }
 

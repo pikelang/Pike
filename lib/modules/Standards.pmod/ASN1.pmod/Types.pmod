@@ -386,6 +386,13 @@ class asn1_identifier
     {
       return "IDENTIFIER " + (array(string)) id * ".";
     }
+
+  string `==(object other)
+    {
+      return (object_program(this_object())
+	      == object_program(other)
+	      && equal(id, other->id));
+    }
 }
 
 class asn1_sequence
@@ -492,7 +499,7 @@ class meta_explicit
 	  return build_der(contents->get_der());
 	}
 
-      string decode_constructed_element(int i, object e)
+      object decode_constructed_element(int i, object e)
 	{
 	  if (i)
 	    error("decode_constructed_element: Unexpected index!\n");
@@ -500,7 +507,7 @@ class meta_explicit
 	  return this_object();
 	}
 
-      string end_decode_constructed(int length);
+      object end_decode_constructed(int length)
       {
 	if (length != 1)
 	  error("end_decode_constructed: length != 1!\n");
