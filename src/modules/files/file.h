@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: file.h,v 1.36 2004/04/05 21:51:02 mast Exp $
+|| $Id: file.h,v 1.37 2004/11/09 17:07:34 nilsson Exp $
 */
 
 #ifndef FILE_H
@@ -129,6 +129,11 @@ int fd_from_object(struct object *o);
 void f_strerror(INT32 args);
 void push_stat(PIKE_STAT_T *s);
 /* Prototypes end here */
+
+/* Defined by winnt.h */
+#ifdef FILE_CREATE
+#undef FILE_CREATE
+#endif
 
 /* open_mode
  *
