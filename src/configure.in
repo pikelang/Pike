@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.363 2000/03/31 22:31:15 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.364 2000/04/10 12:02:19 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -1341,7 +1341,7 @@ else
 
     xUnixWare*)
       if test "$GCC" = yes ; then
-        CFLAGS="${LIBS} -pthread"
+        CFLAGS="${CFLAGS} -pthread"
       else
         CFLAGS="${CFLAGS} -Kthread"
       fi
@@ -1643,7 +1643,7 @@ int main()
     case "x$pike_cv_sys_os" in
       xUnixWare*)
   	if test "$GCC" = yes ; then
-  	  CFLAGS="${LIBS} -pthread"
+  	  CFLAGS="${CFLAGS} -pthread"
   	else
   	  CFLAGS="${CFLAGS} -Kthread"
   	fi
