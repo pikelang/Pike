@@ -1,4 +1,4 @@
-// $Id: assemble_autodoc.pike,v 1.30 2004/07/08 15:12:17 grubba Exp $
+// $Id: assemble_autodoc.pike,v 1.31 2004/07/08 17:48:48 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -322,7 +322,7 @@ void ref_expansion(Node n, string dir, void|string file) {
 	error("chapter-ref element outside file element\n");
       if(!c->get_attributes()->file)
 	error("No file attribute on chapter-ref element.\n");
-      n->replace_child(c, parse_file(c->get_attributes()->file)->
+      n->replace_child(c, c = parse_file(c->get_attributes()->file)->
 		       get_first_element("chapter") );
       // fallthrough
     case "chapter":
@@ -338,6 +338,12 @@ void ref_expansion(Node n, string dir, void|string file) {
       n->remove_child(c);
       void_node->add_child(c);
       chapter_ref_expansion(c, dir);
+      break;
+
+    default:
+      werror("Warning unhandled tag %O in ref_expansion\n",
+	     c->get_tag_name());
+      break;
     }
   }
 }
@@ -453,7 +459,7 @@ int(0..1) main(int num, array(string) args) {
 
   int T = time();
   if(has_value(args, "--version"))
-     werror("$Id: assemble_autodoc.pike,v 1.30 2004/07/08 15:12:17 grubba Exp $\n");
+     werror("$Id: assemble_autodoc.pike,v 1.31 2004/07/08 17:48:48 grubba Exp $\n");
   if(num<3)
     error("To few arguments\n");
 
