@@ -6,7 +6,7 @@
 // Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 // for more information.
 //
-// $Id: master.pike.in,v 1.226 2002/11/23 18:40:05 marcus Exp $
+// $Id: master.pike.in,v 1.227 2002/11/24 16:46:33 grubba Exp $
 
 #pike __REAL_VERSION__
 
@@ -2197,48 +2197,42 @@ class Describer
     else if (intp (ident[m]) && ident[m] > 1)
       ident[m] = "@" + identcount++;
 
-    string res, typ;
-    catch {
-      if (catch (typ=sprintf("%t",m)))
-	typ = "object";		// Object with a broken _sprintf(), probably.
-      switch(typ)
-      {
-      case "int":
-      case "float":
-	return (string)m;
-      case "string":
-	return describe_string (m, maxlen);
-      case "array":
-	res = describe_array (m, maxlen);
-	break;
-      case "mapping":
-	res = describe_mapping (m, maxlen);
-	break;
-      case "multiset":
-	res = describe_multiset (m, maxlen);
-	break;
-      case "function":
-	if (string tmp=describe_function(m)) res = tmp;
-	else res = typ;
-	break;
-      case "program":
-	if(string tmp=describe_program(m)) res = tmp;
-	else res = typ;
-	break;
-      default:
-	if (objectp(m))
-	  if(string tmp=sprintf("%O", m)) {
-	    res = tmp;
-	    break;
-	  }
-	res = typ;
+    string res;
+    if (catch (res=sprintf("%t",m)))
+      res = "object";		// Object with a broken _sprintf(), probably.
+    switch(res)
+    {
+    case "int":
+    case "float":
+      return (string)m;
+    case "string":
+      return describe_string (m, maxlen);
+    case "array":
+      res = describe_array (m, maxlen);
+      break;
+    case "mapping":
+      res = describe_mapping (m, maxlen);
+      break;
+    case "multiset":
+      res = describe_multiset (m, maxlen);
+      break;
+    case "function":
+      if (string tmp=describe_function(m)) res = tmp;
+      break;
+    case "program":
+      if(string tmp=describe_program(m)) res = tmp;
+      break;
+    default:
+      /* object or type. */
+      if (catch {
+	if(string tmp=sprintf("%O", m)) res = tmp;
+      }) {
+	// Extra paranoia case.
+	res = sprintf("Instance of %O", _typeof(m));
       }
-    };
-    if (!res) {
-      // Extra paranoia case.
-      res = sprintf("Instance of %O", _typeof(m));
+      break;
     }
-    if (stringp (ident[m]))
+    if (stringp(ident[m]))
       return ident[m] + "=" + res;
     return res;
   }
