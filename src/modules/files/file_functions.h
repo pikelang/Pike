@@ -1,12 +1,12 @@
   FILE_FUNC("open",file_open,"function(string,string,void|int:int)")
   FILE_FUNC("close",file_close,"function(string|void:int)")
-  FILE_FUNC("read",file_read,"function(int|void,int|void:int|string)")
+  FILE_FUNC("read",file_read,"function(int|void,int|void:string)")
 #ifndef __NT__
   FILE_FUNC("peek",file_peek,"function(void:int)")
 #endif
   FILE_FUNC("write",file_write,"function(string|array(string),void|mixed...:int)")
 #ifdef WITH_OOB
-  FILE_FUNC("read_oob",file_read_oob,"function(int|void,int|void:int|string)")
+  FILE_FUNC("read_oob",file_read_oob,"function(int|void,int|void:string)")
   FILE_FUNC("write_oob",file_write_oob,"function(string,void|mixed...:int)")
 #endif /* WITH_OOB */
 
