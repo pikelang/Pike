@@ -30,7 +30,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.175 2001/09/10 20:47:34 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.176 2001/09/11 05:42:59 hubbe Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -509,8 +509,16 @@ void describe_location(void *real_memblock,
     {
       struct array *a=(struct array *)descblock;
       struct svalue *s=(struct svalue *)location;
-      fprintf(stderr,"%*s  **In index number %"PRINTPTRDIFFT"d\n",indent,"",
-	      s-ITEM(a));
+
+      if(location == (void *)&a->next)
+	fprintf(stderr,"%*s  **In a->next\n",indent,"");
+
+      if(location == (void *)&a->prev)
+	fprintf(stderr,"%*s  **In a->prev\n",indent,"");
+
+      if( s-ITEM(a) > 0)
+	fprintf(stderr,"%*s  **In index number %"PRINTPTRDIFFT"d\n",indent,"",
+		s-ITEM(a));
       break;
     }
 
