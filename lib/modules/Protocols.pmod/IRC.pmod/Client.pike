@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+#if constant(Crypto.Random.random_string)
+
 import ".";
 
 Raw raw;
@@ -534,3 +536,5 @@ void forget_person(object p)
 {
    m_delete(nick2person,p->nick);
 }
+
+#endif // constant(Crypto.Random.random_string)
