@@ -1,6 +1,6 @@
 
 // Test suite for Hilfe.
-// $Id: testhilfe.pike,v 1.9 2002/05/27 00:46:59 nilsson Exp $
+// $Id: testhilfe.pike,v 1.10 2002/06/07 17:44:53 nilsson Exp $
 
 class TestHilfe {
   inherit Tools.Hilfe.Evaluator;
@@ -98,10 +98,12 @@ int main(int num, array(string) args) {
   //  test("foo() { write(\"-\"); }", "a-b");
 
   // Test variable delarations.
-  test("int|string a=2;", "");
+  test("int|float a=2;", "");
   test("a=2.0;", "2.000000");
   test("int b=2;", "");
-  test("b=2.0;", "2.000000"); // We should get an error here.
+  test("b=2.0;", "Compiler Error: 1:Bad type in assignment.\n"
+       "Compiler Error: 1:Expected: int\n"
+       "Compiler Error: 1:Got     : float\n");
   test("Image.Image i=Image.Image();", "");
   test("i;", "Image.Image( 0 x 0 /""* 0.0Kb *""/)");
   test("constant z=`+(1,2),y=2;", "");
