@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: backend.c,v 1.29 1998/04/29 19:51:34 grubba Exp $");
+RCSID("$Id: backend.c,v 1.30 1998/05/01 15:42:44 grubba Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -120,7 +120,7 @@ void POLL_FD_CLR(int fd, short sub)
   return;
 }
 
-void switch_poll_set()
+void switch_poll_set(void)
 {
   struct pollfd *tmp = active_poll_fds;
   int sz = active_poll_fd_size;

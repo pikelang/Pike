@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: las.c,v 1.60 1998/04/20 02:36:13 hubbe Exp $");
+RCSID("$Id: las.c,v 1.61 1998/05/01 15:48:12 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -200,7 +200,7 @@ struct node_chunk
 static struct node_chunk *node_chunks=0;
 static node *free_nodes=0;
 
-void free_all_nodes()
+void free_all_nodes(void)
 {
   if(!compiler_frame)
   {

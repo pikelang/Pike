@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: las.h,v 1.13 1998/03/28 15:15:53 grubba Exp $
+ * $Id: las.h,v 1.14 1998/05/01 15:47:48 grubba Exp $
  */
 #ifndef LAS_H
 #define LAS_H
@@ -68,7 +68,7 @@ void check_tree(node *n, int depth);
 INT32 count_args(node *n);
 struct pike_string *find_return_type(node *n);
 struct node_chunk;
-void free_all_nodes();
+void free_all_nodes(void);
 void free_node(node *n);
 node *mknode(short token,node *a,node *b);
 node *mkstrnode(struct pike_string *str);
