@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.687 2003/02/11 20:03:41 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.688 2003/02/11 23:57:02 mast Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3509,7 +3509,7 @@ int main()
     next_vt = gethrvtime();
     if (next_vt < vt) return 2; /* Shouldn't go backward. */
     vt = next_vt;
-  } while (now != (time_t) -1 && now < start + 1);
+  } while (now != (time_t) -1 && now <= start + 1);
   if (now == (time_t) -1) return 3; /* Normal time doesn't work. */
   if (vt <= 0) return 4; /* Should have accounted for some cpu time. */
   return 0;
@@ -5791,7 +5791,7 @@ TH_RETURN_TYPE work_thread (void *dummy)
       break;
     }
     work_time = t - start;
-  } while (work_time < (CPU_TIME_TICKS / 10) && rt < rt_start + 1);
+  } while (work_time < (CPU_TIME_TICKS / 10) && rt <= rt_start + 1);
   co_signal (&c);
   mt_unlock (&m);
 }
