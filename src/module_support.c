@@ -6,7 +6,7 @@
 #include "pike_types.h"
 #include "error.h"
 
-RCSID("$Id: module_support.c,v 1.15 1998/10/10 00:33:38 grubba Exp $");
+RCSID("$Id: module_support.c,v 1.16 1998/10/10 00:34:01 grubba Exp $");
 
 /* Checks that args_to_check arguments are OK.
  * Returns 1 if everything worked ok, zero otherwise.
@@ -234,7 +234,7 @@ void get_all_args(char *fname, INT32 args, char *format,  ... )
     switch(format[ret*2+1]) {
     case 'd': case 'i': expected_type = "int"; break;
     case 's': case 'S': expected_type = "string (8bit)"; break;
-    case "W": expected_type = "string"; break;
+    case 'W': expected_type = "string"; break;
     case 'a': expected_type = "array"; break;
     case 'f': expected_type = "float"; break;
     case 'm': expected_type = "mapping"; break;
