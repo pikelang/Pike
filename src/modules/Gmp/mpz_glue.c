@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.132 2003/03/28 22:27:30 mast Exp $
+|| $Id: mpz_glue.c,v 1.133 2003/03/29 02:00:59 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.132 2003/03/28 22:27:30 mast Exp $");
+RCSID("$Id: mpz_glue.c,v 1.133 2003/03/29 02:00:59 mast Exp $");
 #include "gmp_machine.h"
 #include "module.h"
 
@@ -610,8 +610,23 @@ static void mpzmod__sprintf(INT32 args)
       else
 	push_constant_text("object");
       return;
-#endif      
+#endif
+
   case 'O':
+#ifdef AUTO_BIGNUM
+    if (THIS_PROGRAM == mpzmod_program) {
+#endif
+      push_constant_text ("Gmp.mpz(");
+      push_string (low_get_mpz_digits (THIS, 10));
+      push_constant_text (")");
+      f_add (3);
+      s = (--sp)->u.string;
+      break;
+#ifdef AUTO_BIGNUM
+    }
+#endif
+    /* Fall through */
+
   case 'u': /* Note: 'u' is not really supported. */
   case 'd':
     s = low_get_mpz_digits(THIS, 10);
