@@ -856,7 +856,7 @@ int pre_install(array(string) argv)
                          "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
                          "ProgramFilesDir");
 #else
-    prefix = vars->prefix || "/usr/local";
+    prefix = "/usr/local";
 #endif
   }
 
