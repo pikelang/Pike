@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.45 2001/07/16 14:41:11 grubba Exp $
+# $Id: Makefile,v 1.46 2001/12/02 17:44:42 mast Exp $
 #
 # Meta Makefile
 #
@@ -88,6 +88,7 @@ compile: configure
 	  metatarget="$(METATARGET)"; \
 	  if test "x$(LIMITED_TARGETS)" = "x"; then \
 	    if test -f master.pike -a -x pike; then :; \
+	    elif test "x$$metatarget" = xpike; then :; \
 	    else metatarget="all $$metatarget"; fi; \
 	    if test "x$$metatarget" = x; then metatarget=all; else :; fi; \
 	  else :; fi; \
