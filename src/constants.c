@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: constants.c,v 1.54 2004/09/18 20:50:48 nilsson Exp $
+|| $Id: constants.c,v 1.55 2004/12/30 12:57:24 grubba Exp $
 */
 
 #include "global.h"
@@ -51,6 +51,15 @@ void low_add_constant(const char *name, struct svalue *fun)
   p=make_shared_string(name);
   low_add_efun(p, fun);
   free_string(p);
+}
+
+void add_pike_string_constant(const char *name, const char *str, int len)
+{
+  struct pike_string *key = make_shared_string(name);
+  struct pike_string *val = make_shared_binary_string(str, len);
+  mapping_string_insert_string(builtin_constants, key, val);
+  free_string(val);
+  free_string(key);
 }
 
 PMOD_EXPORT void add_global_program(const char *name, struct program *p)
