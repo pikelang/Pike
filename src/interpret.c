@@ -38,8 +38,6 @@
 #ifdef MMAP_NORESERV
 #define USE_MMAP_FOR_STACK
 
-/* Fixme: just multiplying by 32 is not what we want /Hubbe */
-#define EVALUATOR_STACK_SIZE EVALUATOR_STACK_SIZE*32
 #endif
 #endif
 
@@ -51,6 +49,7 @@
  */
 struct svalue *sp;     /* Current position */
 struct svalue *evaluator_stack; /* Start of stack */
+int stack_size = EVALUATOR_STACK_SIZE;
 
 /* mark stack, used to store markers into the normal stack */
 struct svalue **mark_sp; /* Current position */
@@ -81,15 +80,15 @@ void init_interpreter()
 
 #define MMALLOC(X,Y) (Y *)mmap(0,X*sizeof(Y),PROT_READ|PROT_WRITE, MAP_NORESERV | MAP_PRIVATE | MAP_ANONYMOUS, fd, 0)
 
-  evaluator_stack=MMALLOC(EVALUATOR_STACK_SIZE,struct svalue);
-  mark_stack=MMALLOC(EVALUATOR_STACK_SIZE, struct svalue *);
+  evaluator_stack=MMALLOC(stack_size,struct svalue);
+  mark_stack=MMALLOC(stack_size, struct svalue *);
 
   if(fd != -1) close(fd);
 
   if(!evaluator_stack || !mark_sp) fatal("Failed to mmap() stack space.\n");
 #else
-  evaluator_stack=(struct svalue *)malloc(EVALUATOR_STACK_SIZE*sizeof(struct svalue));
-  mark_stack=(struct svalue **)malloc(EVALUATOR_STACK_SIZE*sizeof(struct svalue *));
+  evaluator_stack=(struct svalue *)malloc(stack_size*sizeof(struct svalue));
+  mark_stack=(struct svalue **)malloc(stack_size*sizeof(struct svalue *));
 #endif
   sp=evaluator_stack;
   mark_sp=mark_stack;
@@ -101,13 +100,13 @@ void exit_interpreter()
 
 void check_stack(INT32 size)
 {
-  if(sp - evaluator_stack + size >= EVALUATOR_STACK_SIZE)
+  if(sp - evaluator_stack + size >= stack_size)
     error("Stack overflow.\n");
 }
 
 void check_mark_stack(INT32 size)
 {
-  if(mark_sp - mark_stack + size >= EVALUATOR_STACK_SIZE)
+  if(mark_sp - mark_stack + size >= stack_size)
     error("Stack overflow.\n");
 }
 
@@ -423,7 +422,7 @@ static void eval_instruction(unsigned char *pc)
     if(sp<evaluator_stack || mark_sp < mark_stack || fp->locals>sp)
       fatal("Stack error (generic).\n");
 
-    if(sp > evaluator_stack+EVALUATOR_STACK_SIZE)
+    if(sp > evaluator_stack+stack_size)
       fatal("Stack error (overflow).\n");
 
     if(fp->fun>=0 && fp->current_object->prog &&
@@ -455,7 +454,7 @@ static void eval_instruction(unsigned char *pc)
 	set_nonblocking(2,0);
 
       file=get_line(pc-1,fp->context.prog,&linep);
-      while((f=strchr(file,'/'))) file=f+1;
+      while((f=STRCHR(file,'/'))) file=f+1;
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
 	      file,(long)linep,
 	      (long)(pc-fp->context.prog->program-1),
@@ -1131,7 +1130,7 @@ void apply_low(struct object *o, int fun, int args)
     if(fp && fp->pc)
     {
       file=get_line(fp->pc,fp->context.prog,&linep);
-      while((f=strchr(file,'/'))) file=f+1;
+      while((f=STRCHR(file,'/'))) file=f+1;
     }else{
       linep=0;
       file="-";
@@ -1171,11 +1170,10 @@ void apply_low(struct object *o, int fun, int args)
 
   if(function->flags & IDENTIFIER_C_FUNCTION)
   {
-#if 0
-    function->func.c_fun(args);
-#else
-    (*function->func.c_fun)(args);
+#ifdef DEBUG
+    if(d_flag) check_signals();
 #endif
+    (*function->func.c_fun)(args);
   }else{
     int num_args;
     int num_locals;
@@ -1352,7 +1350,7 @@ void strict_apply_svalue(struct svalue *s, INT32 args)
     if(fp && fp->pc)
     {
       file=get_line(fp->pc,fp->context.prog,&linep);
-      while((f=strchr(file,'/'))) file=f+1;
+      while((f=STRCHR(file,'/'))) file=f+1;
     }else{
       linep=0;
       file="-";
@@ -1463,10 +1461,10 @@ void slow_check_stack()
 
   debug_check_stack();
 
-  if(sp > &(evaluator_stack[EVALUATOR_STACK_SIZE]))
+  if(sp > &(evaluator_stack[stack_size]))
     fatal("Stack overflow\n");
 
-  if(mark_sp > &(mark_stack[EVALUATOR_STACK_SIZE]))
+  if(mark_sp > &(mark_stack[stack_size]))
     fatal("Mark stack overflow.\n");
 
   if(mark_sp < mark_stack)
@@ -1483,17 +1481,20 @@ void slow_check_stack()
     s=*m;
   }
 
-  if(s > &(evaluator_stack[EVALUATOR_STACK_SIZE]))
+  if(s > &(evaluator_stack[stack_size]))
     fatal("Mark stack exceeds svalue stack\n");
 
   for(f=fp;f;f=f->parent_frame)
   {
-    if(f->locals < evaluator_stack ||
-       f->locals > &(evaluator_stack[EVALUATOR_STACK_SIZE]))
+    if(f->locals)
+    {
+      if(f->locals < evaluator_stack ||
+	f->locals > &(evaluator_stack[stack_size]))
       fatal("Local variable pointer points to Finspång.\n");
 
-    if(f->args < 0 || f->args > EVALUATOR_STACK_SIZE)
-      fatal("FEL FEL FEL! HELP!! (corrupted frame)\n");
+      if(f->args < 0 || f->args > stack_size)
+	fatal("FEL FEL FEL! HELP!! (corrupted frame)\n");
+    }
   }
 }
 #endif
@@ -1525,8 +1526,8 @@ void cleanup_interpret()
   reset_evaluator();
 
 #ifdef USE_MMAP_FOR_STACK
-  munmap((char *)evaluator_stack, EVALUATOR_STACK_SIZE*sizeof(struct svalue));
-  munmap((char *)mark_stack, EVALUATOR_STACK_SIZE*sizeof(struct svalue *));
+  munmap((char *)evaluator_stack, stack_size*sizeof(struct svalue));
+  munmap((char *)mark_stack, stack_size*sizeof(struct svalue *));
 #else
   free((char *)evaluator_stack);
   free((char *)mark_stack);
