@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.30 1997/02/27 13:56:09 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.31 1997/02/27 14:25:07 hubbe Exp $"]])
 teste_eval_error(mixed foo=({}); sort(@foo); )
 test_compile_error([[int foo() { return 1} ; constant foo=(["foo":foo]); return foo->foo();]])
 test_eval_error(mixed *foo=({}); return mkmapping(foo,({1})); )
@@ -133,7 +133,7 @@ cond([[all_constants()->thread_create]],
   test_do(add_constant("_tmp_mutex_lock"))
   test_true(_tmp_mutex->trylock())
   test_do(add_constant("_tmp_mutex"))
-  test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) { data[3]=data[1]->lock(); sleep(5); data[0]=1; destruct(data[3]);  },data); data[3]=data[2]->lock(); return data[0]; ]],1)
+  test_any([[ mixed *data=({0,Thread.Mutex(),Thread.Mutex(),0}); data[3]=data[2]->lock(); thread_create(lambda(mixed *data) {object o=data[1]->lock(); destruct(data[3]); sleep(5); data[0]=1; destruct(o);  },data); object l=data[2]->lock(); object ll=data[1]->lock(); return data[0]; ]],1)
   test_any([[mixed *data=({1, Thread.Mutex()}); for(int e=0;e<3;e++) thread_create(lambda(mixed *data) { for(int e=0;e<1000;e++) { object o=data[1]->lock(); data[0]*=2; for(int d=0;d<5;d++) { data[0]--; data[0]*=2; } data[0]--; destruct(o); }}, data); return data[0];]],1)
 
 // /precompiled/condition
@@ -144,8 +144,8 @@ cond([[all_constants()->thread_create]],
   test_true(objectp(clone(Thread.Fifo)))
   test_true(objectp(clone(Thread.Queue)))
 
-  test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
   test_any([[object o=Thread.Queue(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
+  test_any([[object o=Thread.Fifo(); thread_create(lambda(object f) { for(int e=0;e<10000;e++) f->write(random(4711)); f->write(-1); },o); int tmp=0; while(o->read() != -1) tmp++; return tmp;]],10000)
 ]])
 
 
