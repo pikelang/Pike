@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: lexer.h,v 1.47 2004/03/24 20:25:09 grubba Exp $
+|| $Id: lexer.h,v 1.48 2004/03/24 20:29:25 grubba Exp $
 */
 
 /*
@@ -256,7 +256,7 @@ static struct pike_string *readstring(void)
 #if (SHIFT == 0)
       string_builder_binary_strcat(&tmp, buf, len);
 #else /* SHIFT != 0 */
-      bufptr.ptr = buf;
+      bufptr.ptr = (p_wchar0 *)buf;
       string_builder_append(&tmp, bufptr, len);
 #endif /* SHIFT == 0 */
     }
