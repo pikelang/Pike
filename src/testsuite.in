@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.585 2003/01/15 14:49:52 nilsson Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.586 2003/01/15 19:07:15 mast Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -2695,6 +2695,42 @@ test_true([[lambda(int x) { return lambda() { return x; };}]])
 test_eq([[lambda(int x) { return lambda() { return x; };}(4)()]],4)
 test_eq([[lambda(int x) { return lambda() { return x; };}(17)()]],17)
 test_eq([[lambda(int x) { return lambda() { return lambda() { return x; };};}(17)()()]],17)
+
+// trampoline tests
+test_do([[{
+    function trampoline =
+      lambda() {
+	int i = 17;
+	return lambda () {
+		 error ("Trampoline called.\n");
+		 return i;
+	       };
+      }();
+
+    // Now find the trampoline object. Pike tries very hard to hide
+    // it, so we have to do it the difficult way..
+    object obj;
+  find_trampoline_object: {
+      object start = this;
+      for (obj = start;
+	   objectp (obj) ||	// It's a normal object.
+	     (intp (obj) && obj) || // It's a bignum object.
+	     zero_type (obj);	// It's a destructed object.
+	   obj = _prev (obj))
+	if (obj->`() == trampoline) break find_trampoline_object;
+      for (obj = _next (start);
+	   objectp (obj) || (intp (obj) && obj) || zero_type (obj);
+	   obj = _next (obj))
+	if (obj->`() == trampoline) break find_trampoline_object;
+      error ("Trampoline object not found.\n");
+    }
+
+    if (!obj) error ("Trampoline object false.\n");
+    if (!stringp (sprintf ("%O", obj)))
+      // The important part is to try to call the _sprintf lfun in the
+      // trampoline object, not to check what sprintf() returns.
+      error ("Failed to describe trampoline object.\n");
+  }]])
 
 // local function tests
 test_eq(120,
