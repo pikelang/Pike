@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.100 2000/12/28 16:24:32 grubba Exp $
+// $Id: module.pmod,v 1.101 2001/01/05 07:39:31 mirar Exp $
 #pike __REAL_VERSION__
 
 
@@ -560,10 +560,23 @@ class File
   // FIXME: No way to specify the maximum to read.
   static void __stdio_read_callback()
   {
-#if defined(__STDIO_DEBUG) && !defined(__NT__)
-    if(!::peek())
-      throw( ({"Read callback with no data to read!\n",backtrace()}) );
+
+/*
+
+nothing to read happens if you do, in backend:
+ o (open a socket)
+ o set_read_callback
+ o make sure something is to read on the socket
+ o read it
+ o finish backend (ie, callback)
+
+FIXME for NT or internally? /Mirar
+
+*/
+#if !defined(__NT__)
+    if (!::peek()) return; // nothing to read
 #endif
+
     string s=::read(8192,1);
     if(s)
     {
