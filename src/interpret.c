@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.47 1997/09/17 10:33:12 hubbe Exp $");
+RCSID("$Id: interpret.c,v 1.48 1997/10/10 20:22:01 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -376,48 +376,38 @@ static char trace_buffer[100];
 CASE(ID); \
 instr=EXPR; \
 pop_n_elems(2); \
-sp->type=T_INT; \
-sp->u.integer=instr; \
-sp++; \
-break;
+push_int(instr); \
+break
 
-#define INC_OR_DEC(ID,EXPR) \
-CASE(ID) \
-{ \
-  union anything *u=get_pointer_if_this_type(sp-2, T_INT); \
-  if(!u) error("++ or -- on non-integer.\n"); \
-  instr=EXPR; \
-  pop_n_elems(2); \
-  sp->type=T_INT; \
-  sp->u.integer=instr; \
-  sp++; \
-  break; \
-}
-
-#define INC_OR_DEC_AND_POP(ID,EXPR) \
-CASE(ID) \
-{ \
-  union anything *u=get_pointer_if_this_type(sp-2, T_INT); \
-  if(!u) error("++ or -- on non-integer.\n"); \
-  EXPR; \
-  pop_n_elems(2); \
-  break; \
-}
-
-#define LOOP(ID, OP1, OP2) \
-CASE(ID) \
-{ \
-  union anything *i=get_pointer_if_this_type(sp-2, T_INT); \
-  if(!i) error("Lvalue not usable in loop.\n"); \
-  OP1 ( i->integer ); \
-  if( i->integer OP2 sp[-3].u.integer) \
-  { \
-    pc+=EXTRACT_INT(pc); \
-    fast_check_threads_etc(8); \
-  }else{ \
-    pc+=sizeof(INT32); \
-  } \
-  break; \
+#define LOOP(ID, OP1, OP2, OP3, OP4)				\
+CASE(ID)							\
+{								\
+  union anything *i=get_pointer_if_this_type(sp-2, T_INT);	\
+  if(i)								\
+  {								\
+    OP1 ( i->integer );						\
+    if(i->integer OP2 sp[-3].u.integer)				\
+    {								\
+      pc+=EXTRACT_INT(pc);					\
+      fast_check_threads_etc(8);				\
+    }else{							\
+      pc+=sizeof(INT32);					\
+    }								\
+  }else{							\
+    lvalue_to_svalue_no_free(sp-2,sp); sp++;			\
+    push_int(1);						\
+    OP3;							\
+    assign_lvalue(sp-3,sp-1);					\
+    if(OP4 ( sp-1, sp-4 ))					\
+    {								\
+      pc+=EXTRACT_INT(pc);					\
+      fast_check_threads_etc(8);				\
+    }else{							\
+      pc+=sizeof(INT32);					\
+    }								\
+    pop_stack();						\
+  }								\
+  break;							\
 }
 
 #define CJUMP(X,Y) \
@@ -666,42 +656,72 @@ static void eval_instruction(unsigned char *pc)
 
       CASE(F_INC_LOCAL);
       instr=GET_ARG();
-      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
-      fp->locals[instr].u.integer++;
-      assign_svalue_no_free(sp++,fp->locals+instr);
+      if(fp->locals[instr].type == T_INT)
+      {
+        fp->locals[instr].u.integer++;
+	assign_svalue_no_free(sp++,fp->locals+instr);
+      }else{
+	assign_svalue_no_free(sp++,fp->locals+instr);
+	push_int(1);
+	f_add(2);
+	assign_svalue(fp->locals+instr,sp-1);
+      }
       break;
 
       CASE(F_POST_INC_LOCAL);
       instr=GET_ARG();
-      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
       assign_svalue_no_free(sp++,fp->locals+instr);
-      fp->locals[instr].u.integer++;
-      break;
+      goto inc_local_and_pop;
 
       CASE(F_INC_LOCAL_AND_POP);
       instr=GET_ARG();
-      if(fp->locals[instr].type != T_INT) error("Bad argument to ++\n");
-      fp->locals[instr].u.integer++;
+    inc_local_and_pop:
+      if(fp->locals[instr].type == T_INT)
+      {
+	fp->locals[instr].u.integer++;
+      }else{
+	assign_svalue_no_free(sp++,fp->locals+instr);
+	push_int(1);
+	f_add(2);
+	assign_svalue(fp->locals+instr,sp-1);
+	pop_stack();
+      }
       break;
 
       CASE(F_DEC_LOCAL);
       instr=GET_ARG();
-      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
-      fp->locals[instr].u.integer--;
-      assign_svalue_no_free(sp++,fp->locals+instr);
+      if(fp->locals[instr].type == T_INT)
+      {
+	fp->locals[instr].u.integer--;
+	assign_svalue_no_free(sp++,fp->locals+instr);
+      }else{
+	assign_svalue_no_free(sp++,fp->locals+instr);
+	push_int(1);
+	o_subtract();
+	assign_svalue(fp->locals+instr,sp-1);
+      }
       break;
 
       CASE(F_POST_DEC_LOCAL);
       instr=GET_ARG();
-      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
       assign_svalue_no_free(sp++,fp->locals+instr);
+      goto dec_local_and_pop;
       fp->locals[instr].u.integer--;
       break;
 
       CASE(F_DEC_LOCAL_AND_POP);
       instr=GET_ARG();
-      if(fp->locals[instr].type != T_INT) error("Bad argument to --\n");
-      fp->locals[instr].u.integer--;
+    dec_local_and_pop:
+      if(fp->locals[instr].type == T_INT)
+      {
+	fp->locals[instr].u.integer--;
+      }else{
+	assign_svalue_no_free(sp++,fp->locals+instr);
+	push_int(1);
+	o_subtract();
+	assign_svalue(fp->locals+instr,sp-1);
+	pop_stack();
+      }
       break;
 
       CASE(F_LTOSVAL);
@@ -757,12 +777,117 @@ static void eval_instruction(unsigned char *pc)
 	break;
       }
       
-      INC_OR_DEC(F_INC,++u->integer);
-      INC_OR_DEC(F_POST_INC,u->integer++);
-      INC_OR_DEC(F_DEC,--u->integer);
-      INC_OR_DEC(F_POST_DEC,u->integer--);
-      INC_OR_DEC_AND_POP(F_INC_AND_POP,++u->integer);
-      INC_OR_DEC_AND_POP(F_DEC_AND_POP,--u->integer);
+      CASE(F_INC);
+      {
+	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	if(u)
+	{
+	  instr=++ u->integer;
+	  pop_n_elems(2);
+	  push_int(u->integer);
+	}else{
+	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	  push_int(1);
+	  f_add(2);
+	  assign_lvalue(sp-3, sp-1);
+	  assign_svalue(sp-3, sp-1);
+	  pop_n_elems(2);
+	}
+	break;
+      }
+
+      CASE(F_DEC);
+      {
+	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	if(u)
+	{
+	  instr=-- u->integer;
+	  pop_n_elems(2);
+	  push_int(u->integer);
+	}else{
+	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	  push_int(1);
+	  o_subtract();
+	  assign_lvalue(sp-3, sp-1);
+	  assign_svalue(sp-3, sp-1);
+	  pop_n_elems(2);
+	}
+	break;
+      }
+
+      CASE(F_DEC_AND_POP);
+      {
+	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	if(u)
+	{
+	  instr=-- u->integer;
+	  pop_n_elems(2);
+	}else{
+	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	  push_int(1);
+	  o_subtract();
+	  assign_lvalue(sp-3, sp-1);
+	  pop_n_elems(3);
+	}
+	break;
+      }
+
+      CASE(F_INC_AND_POP);
+      {
+	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	if(u)
+	{
+	  instr=++ u->integer;
+	  pop_n_elems(2);
+	}else{
+	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	  push_int(1);
+	  f_add(2);
+	  assign_lvalue(sp-3, sp-1);
+	  pop_n_elems(3);
+	}
+	break;
+      }
+
+      CASE(F_POST_INC);
+      {
+	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	if(u)
+	{
+	  instr=u->integer ++;
+	  pop_n_elems(2);
+	  push_int(instr);
+	}else{
+	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	  assign_svalue(sp,sp-1); sp++;
+	  push_int(1);
+	  f_add(2);
+	  assign_lvalue(sp-4, sp-1);
+	  assign_svalue(sp-4, sp-2);
+	  pop_n_elems(3);
+	}
+	break;
+      }
+
+      CASE(F_POST_DEC);
+      {
+	union anything *u=get_pointer_if_this_type(sp-2, T_INT);
+	if(u)
+	{
+	  instr=u->integer --;
+	  pop_n_elems(2);
+	  push_int(instr);
+	}else{
+	  lvalue_to_svalue_no_free(sp, sp-2); sp++;
+	  assign_svalue(sp,sp-1); sp++;
+	  push_int(1);
+	  o_subtract();
+	  assign_lvalue(sp-4, sp-1);
+	  assign_svalue(sp-4, sp-2);
+	  pop_n_elems(3);
+	}
+	break;
+      }
 
       CASE(F_ASSIGN);
       assign_lvalue(sp-3,sp-1);
@@ -946,10 +1071,10 @@ static void eval_instruction(unsigned char *pc)
 	break;
       }
       
-      LOOP(F_INC_LOOP, ++, <);
-      LOOP(F_DEC_LOOP, --, >);
-      LOOP(F_INC_NEQ_LOOP, ++, !=);
-      LOOP(F_DEC_NEQ_LOOP, --, !=);
+      LOOP(F_INC_LOOP, ++, <, f_add(2), is_lt);
+      LOOP(F_DEC_LOOP, --, >, o_subtract(), is_gt);
+      LOOP(F_INC_NEQ_LOOP, ++, !=, f_add(2), !is_eq);
+      LOOP(F_DEC_NEQ_LOOP, --, !=, o_subtract(), !is_eq);
 
       CASE(F_FOREACH) /* array, lvalue , i */
       {

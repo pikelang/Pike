@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.58 1997/10/07 11:45:44 hubbe Exp $"]])
+test_true([["$Id: testsuite.in,v 1.59 1997/10/10 20:22:02 hubbe Exp $"]])
 test_eq(1e1,10.0)
 test_eq(1E1,10.0)
 test_eq(1e+1,10.0)
@@ -64,13 +64,19 @@ test_any([[mixed a=({0}); a[0]=a; return equal(a, decode_value(encode_value(a)))
 test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(e))!=e) return e; return -1;]], -1)
 test_any([[ int e; for(e=0;e<100000;e+=1+(e>>4)) if(decode_value(encode_value(-e))!=-e) return e; return -1;]], -1)
 
-
+test_any([[mixed s="foo"; return s++;]],"foo")
+test_any([[mixed s="foo"; s++; return s;]],"foo1")
+test_any([[mixed s="foo"; return ++s;]],"foo1")
+test_any([[float p=2.0; return p--;]],2.0);
+test_any([[float p=2.0; p--; return p;]],1.0);
+test_any([[float p=2.0; return --p;]],1.0);
 
 test_compile_error(int foo() { LJjjjjJJJ ; })
 test_true(clone(class { constant i=1; })->i)
 test_true(clone(class { constant i=0; mixed `->(string s) { if(s=="i") return 1; }})->i)
 test_true(clone(class { constant i=1; mixed `->(string s) { return 0; }})["i"])
 test_true(clone(class { constant i=0; mixed `[](string s) { if(s=="i") return 1; }})["i"])
+test_eq([[class{mixed `[](int a,int b) { return a+b; }}()[1..4]]],5)
 test_true(clone(class { mixed `[]=(mixed a, mixed b) { if(a!=b) throw(1); }})[1]=1)
 test_true(clone(class { mixed `->=(mixed a, mixed b) { if(a!=b) throw(1); }})->i="i")
 
