@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: constants.h,v 1.23 2002/09/12 13:15:49 marcus Exp $
+ * $Id: constants.h,v 1.24 2002/09/30 11:41:58 grubba Exp $
  */
 #ifndef ADD_EFUN_H
 #define ADD_EFUN_H
@@ -76,11 +76,11 @@ void cleanup_added_efuns(void);
 
 #include "pike_macros.h"
 
-#define ADD_EFUN(NAME,FUN,TYPE,FLAGS) \
-    quick_add_efun(NAME,CONSTANT_STRLEN(NAME),FUN,TYPE,CONSTANT_STRLEN(TYPE),FLAGS,0,0)
-
 #define ADD_EFUN2(NAME,FUN,TYPE,FLAGS,OPTIMIZE,DOCODE) \
-    quick_add_efun(NAME,CONSTANT_STRLEN(NAME),FUN,TYPE,CONSTANT_STRLEN(TYPE),FLAGS,OPTIMIZE,DOCODE)
+    quick_add_efun(NAME,CONSTANT_STRLEN(NAME),FUN, \
+                   TYPE,CONSTANT_STRLEN(TYPE),FLAGS,OPTIMIZE,DOCODE)
+
+#define ADD_EFUN(NAME,FUN,TYPE,FLAGS) ADD_EFUN2(NAME,FUN,TYPE,FLAGS,0,0)
 
 #define ADD_EFUN_DTYPE(NAME,FUN,DTYPE,FLAGS) do {				\
   DTYPE_START;									\
