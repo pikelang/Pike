@@ -25,7 +25,7 @@ mapping _continents=
       "KG","KH","KP","KR","KW","KZ","LA","LB","LK",
       "MM","MN","MO","MV","MY","NP","OM","PH","PK","RE",
       "QA","SA","SG","SY","TH","TJ","TR","TW","UZ",
-      "VN","YE",}),
+      "VN","YE","RU"}),
 
    "North America":
    ({ "AG","AW","BB","BM","BS","BZ","CA","CR",
@@ -239,7 +239,9 @@ array(Country) countries=
    Country("RE","Reunion"),
    Country("RO","Romania"),
    Country("RU","Russian Federation",
-	   (["aka":({"Russia"})])),
+	   (["aka":({"Russia"}),
+	     "_continent":"Europe"
+	   ])),
    Country("RW","Rwanda"),
    Country("SA","Saudi Arabia"),
    Country("SB","Solomon Islands"),
@@ -331,6 +333,11 @@ class Country
 
 //! method string continent()
 //!	Returns the continent for the country.
+//! note:
+//!	Some countries are geographically in more then
+//!	one continent; any of the continents might be
+//!	returned then, but probably the continent in which
+//!	the capital is resident - Europe for Russia, for instance.
 
    string _continent=0;
    string continent()
