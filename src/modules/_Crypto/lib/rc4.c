@@ -2,7 +2,7 @@
  *
  */
 
-#include "types.h"
+#include "crypto_types.h"
 #include <rc4.h>
 
 #define SWAP(a,b) (a ^= b, b ^= a, a ^= b)

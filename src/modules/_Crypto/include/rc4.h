@@ -3,6 +3,8 @@
 #ifndef RC4_H_INCLUDED
 #define RC4_H_INCLUDED
 
+#include "crypto_types.h"
+
 struct rc4_ctx {
   unsigned INT8 S[256];
   unsigned INT8 i, j;

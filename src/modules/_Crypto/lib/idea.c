@@ -24,7 +24,7 @@
  *
  */
 
-#include "types.h"
+#include "crypto_types.h"
 #include <idea.h>
 
 #include <string.h>

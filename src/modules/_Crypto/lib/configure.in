@@ -1,0 +1,7 @@
+AC_INIT(desCode.h)
+
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_RANLIB
+
+AC_OUTPUT(Makefile)

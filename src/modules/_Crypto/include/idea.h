@@ -9,6 +9,8 @@
 #define IDEA_ROUNDS 8
 #define IDEA_KEYLEN (6*IDEA_ROUNDS+4)
 
+#include "crypto_types.h"
+
 void idea_expand(unsigned INT16 *ctx,
 		 const unsigned INT8 *key);
 

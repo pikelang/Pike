@@ -2,6 +2,8 @@
  *
  */
 
+#include "crypto_types.h"
+
 /* The SHA block size and message digest sizes, in bytes */
 
 #define SHA_DATASIZE    64
