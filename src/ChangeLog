@@ -1,3 +1,7 @@
+Sun Jan 12 02:08:01 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
+
+	* configure.in: Enabled the setting of LDFLAGS and CPPFLAGS.
+
 Sat Jan 11 23:37:22 1997  Henrik Grubbström  <grubba@skuld.infovav.se>
 
 	* configure.in: Now checks if ld supports -R.
