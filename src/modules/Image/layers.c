@@ -1,14 +1,14 @@
 /*
 **! module Image
 **! note
-**!	$Id: layers.c,v 1.1 1999/04/17 19:41:58 mirar Exp $
+**!	$Id: layers.c,v 1.2 1999/04/18 22:04:20 mirar Exp $
 **! class Layer
 */
 
 #include "global.h"
 #include <config.h>
 
-RCSID("$Id: layers.c,v 1.1 1999/04/17 19:41:58 mirar Exp $");
+RCSID("$Id: layers.c,v 1.2 1999/04/18 22:04:20 mirar Exp $");
 
 #include "config.h"
 
@@ -52,6 +52,8 @@ typedef void lm_row_func(rgb_group *s,
 			 float alpha);
                     
 
+#define SNUMPIXS 64 /* pixels in short-stroke buffer */
+
 struct layer
 {
    int xsize;            /* underlaying image size */
@@ -70,9 +72,13 @@ struct layer
    rgb_group fill;       /* fill color ("outside" the layer) */
    rgb_group fill_alpha; /* fill alpha */ 
 
+   rgb_group sfill[SNUMPIXS];       /* pre-calculated rows */
+   rgb_group sfill_alpha[SNUMPIXS]; 
+
    int tiled;            /* true if tiled */
 
    lm_row_func *row_func;/* layer mode */
+   int optimize_alpha;
 };
 
 #define THIS ((struct layer *)(fp->current_storage))
@@ -137,30 +143,39 @@ struct layer_mode_desc
 {
    char *name;
    lm_row_func *func;
+   int optimize_alpha; /* alpha 0 -> skip layer */
    struct pike_string *ps;
 } layer_mode[]=
 {
-   {"normal",        lm_normal,        NULL            },
-/*    {"dissolve",      lm_dissolve,      NULL            }, */
-/*    {"behind",        lm_behind,        NULL            }, */
-/*    {"multiply",      lm_multiply,      NULL            }, */
-/*    {"screen",        lm_screen,        NULL            }, */
-/*    {"overlay",       lm_overlay,       NULL            }, */
-/*    {"difference",    lm_difference,    NULL            }, */
-/*    {"addition",      lm_addition,      NULL            }, */
-/*    {"subtract",      lm_subtract,      NULL            }, */
-/*    {"darken",        lm_darken,        NULL            }, */
-/*    {"lighten",       lm_lighten,       NULL            }, */
-/*    {"hue",           lm_hue,           NULL            }, */
-/*    {"saturation",    lm_saturation,    NULL            }, */
-/*    {"color",         lm_color,         NULL            }, */
-/*    {"value",         lm_value,         NULL            }, */
-/*    {"divide",        lm_divide,        NULL            },  */
-/*    {"erase",         lm_erase,         NULL            }, */
-/*    {"replace",       lm_replace,       NULL            }, */
+   {"normal",        lm_normal,        1, NULL            },
+/*    {"dissolve",      lm_dissolve,      1,  NULL            }, */
+/*    {"behind",        lm_behind,        1,  NULL            }, */
+/*    {"multiply",      lm_multiply,      1,  NULL            }, */
+/*    {"screen",        lm_screen,        1,  NULL            }, */
+/*    {"overlay",       lm_overlay,       1,  NULL            }, */
+/*    {"difference",    lm_difference,    1,  NULL            }, */
+/*    {"addition",      lm_addition,      1,  NULL            }, */
+/*    {"subtract",      lm_subtract,      1,  NULL            }, */
+/*    {"darken",        lm_darken,        1,  NULL            }, */
+/*    {"lighten",       lm_lighten,       1,  NULL            }, */
+/*    {"hue",           lm_hue,           1,  NULL            }, */
+/*    {"saturation",    lm_saturation,    1,  NULL            }, */
+/*    {"color",         lm_color,         1,  NULL            }, */
+/*    {"value",         lm_value,         1,  NULL            }, */
+/*    {"divide",        lm_divide,        1,  NULL            },  */
+/*    {"erase",         lm_erase,         1,  NULL            }, */
+/*    {"replace",       lm_replace,       1,  NULL            }, */
 } ;
 
 #define LAYER_MODES ((int)NELEM(layer_mode))
+
+/*** layer helpers ****************************************/
+
+static INLINE void smear_color(rgb_group *d,rgb_group s,int len)
+{
+   while (len--)
+      *(d++)=s;
+}
 
 /*** layer object : init and exit *************************/
 
@@ -179,6 +194,10 @@ static void init_layer(struct object *dummy)
    THIS->tiled=0;
    THIS->alpha_value=1.0;
    THIS->row_func=lm_normal;
+   THIS->optimize_alpha=1;
+
+   smear_color(THIS->sfill,THIS->fill,SNUMPIXS);
+   smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
 }
 
 static void free_layer(struct layer *l)
@@ -229,7 +248,7 @@ static void image_layer_set_image(INT32 args)
 	 if (sp[-args].type!=T_INT || 
 	     sp[-args].u.integer!=0)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
-				 "object(image)|int(0)");
+				 "object(Image)|int(0)");
       }
       else if ((img=(struct image*)
 		get_storage(sp[-args].u.object,image_program)))
@@ -242,7 +261,7 @@ static void image_layer_set_image(INT32 args)
       }
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",1,
-			      "object(image)|int(0)");
+			      "object(Image)|int(0)");
 
    if (args>=2)
       if ( sp[1-args].type!=T_OBJECT )
@@ -250,7 +269,7 @@ static void image_layer_set_image(INT32 args)
 	 if (sp[1-args].type!=T_INT || 
 	     sp[1-args].u.integer!=0)
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-				 "object(image)|int(0)");
+				 "object(Image)|int(0)");
       }
       else if ((img=(struct image*)
 		get_storage(sp[1-args].u.object,image_program)))
@@ -271,7 +290,7 @@ static void image_layer_set_image(INT32 args)
       }
       else
 	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_image",2,
-			      "object(image)|int(0)");
+			      "object(Image)|int(0)");
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -466,12 +485,13 @@ static void image_layer_set_mode(INT32 args)
       if (sp[-args].u.string==layer_mode[i].ps)
       {
 	 THIS->row_func=layer_mode[i].func;
+	 THIS->optimize_alpha=layer_mode[i].optimize_alpha;
 	 pop_n_elems(args);
 	 ref_push_object(THISOBJ);
 	 return;
       }
 
-   SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"string");
+   SIMPLE_BAD_ARG_ERROR("Image.Layer->set_mode",1,"existing mode");
 }
 
 static void image_layer_mode(INT32 args)
@@ -509,15 +529,32 @@ static void image_layer_set_fill(INT32 args)
    else
       if (!image_color_arg(-args,&(THIS->fill)))
 	 SIMPLE_BAD_ARG_ERROR("Image.Layer->set_fill",1,"color");
-      
+
+   smear_color(THIS->sfill,THIS->fill,SNUMPIXS);
+
+   THIS->fill_alpha=white;
    if (args>1)
       if (sp[1-args].type==T_INT && !sp[1-args].u.integer)
-	 THIS->fill_alpha=white;
+	 ; /* white is good */
       else
 	 if (!image_color_arg(1-args,&(THIS->fill_alpha)))
+	 {
+	    smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
 	    SIMPLE_BAD_ARG_ERROR("Image.Layer->set_fill",2,"color");
-   else
-      THIS->fill_alpha=white;
+	 }
+   smear_color(THIS->sfill_alpha,THIS->fill_alpha,SNUMPIXS);
+
+#if 0
+   {
+      int i;
+      for (i=0; i<SNUMPIXS; i++)
+	 fprintf(stderr,"#%02x%02x%02x ",THIS->sfill_alpha[i].r,THIS->sfill_alpha[i].g,THIS->sfill_alpha[i].b);
+      fprintf(stderr,"\n");
+      for (i=0; i<SNUMPIXS; i++)
+	 fprintf("stderr,#%02x%02x%02x ",THIS->sfill[i].r,THIS->sfill[i].g,THIS->sfill[i].b);
+      fprintf(stderr,"\n");
+   }
+#endif
 
    pop_n_elems(args);
    ref_push_object(THISOBJ);
@@ -727,6 +764,7 @@ static void image_layer_create(INT32 args)
       if (args>2)
       {
 	 image_layer_set_mode(args-2);
+	 pop_stack();
 	 args=2;
       }
       image_layer_set_image(args);
@@ -772,12 +810,6 @@ static void image_layer_cast(INT32 args)
 }
 
 /*** layer helpers ************************************/
-
-static INLINE void smear_color(rgb_group *d,rgb_group s,int len)
-{
-   while (len--)
-      *(d++)=s;
-}
 
 #define ALPHA_METHOD_INT
 
@@ -842,7 +874,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
    {
       if (!la)  /* no layer alpha => full opaque */
       {
-	 MEMCPY(s,d,sizeof(rgb_group)*len);
+	 MEMCPY(d,l,sizeof(rgb_group)*len);
 	 smear_color(da,white,len);
       }
       else
@@ -938,7 +970,7 @@ static void lm_normal(rgb_group *s,rgb_group *l,rgb_group *d,
 
 static void INLINE img_lay_first_line(struct layer *l,
 				      int xoffs,int xsize,
-				      int y,
+				      int y, /* in _this_ layer */
 				      rgb_group *d,rgb_group *da)
 {
    if (!l->tiled)
@@ -946,8 +978,8 @@ static void INLINE img_lay_first_line(struct layer *l,
       rgb_group *s,*sa;
       int len;
 
-      if (y<l->yoffs ||
-	  y>=l->yoffs+l->ysize ||
+      if (y<0 ||
+	  y>=l->ysize ||
 	  l->xoffs+l->xsize<xoffs ||
 	  l->xoffs>xoffs+xsize) /* outside */
       {
@@ -999,7 +1031,6 @@ static void INLINE img_lay_first_line(struct layer *l,
    {
       rgb_group *s,*sa;
 
-      y-=l->yoffs;
       y%=l->ysize;
       if (y<0) y+=l->ysize;
 
@@ -1016,7 +1047,6 @@ static void INLINE img_lay_first_line(struct layer *l,
       {
 	 int len=l->xsize-xoffs;
 	 if (len>l->xsize) len=l->xsize;
-	 fprintf(stderr,"len=%d xoffs=%d\n",len,xoffs);
 	 if (s) MEMCPY(d,s+xoffs,len*sizeof(rgb_group));
 	 if (sa) MEMCPY(da,sa+xoffs,len*sizeof(rgb_group));
 	 da+=len;
@@ -1025,7 +1055,6 @@ static void INLINE img_lay_first_line(struct layer *l,
       }
       while (xsize>l->xsize)
       {
-	 fprintf(stderr,"s=%p xsize=%d d=%p\n",s,xsize,d);
 	 if (s) MEMCPY(d,s,l->xsize*sizeof(rgb_group));
 	 if (sa) MEMCPY(d,sa,l->xsize*sizeof(rgb_group));
 	 da+=l->xsize;
@@ -1037,12 +1066,7 @@ static void INLINE img_lay_first_line(struct layer *l,
    }
 }
 
-#define SNUMPIXS 64 /* pixels in short-stroke buffer */
-
 static INLINE void img_lay_stroke(struct layer *ly,
-				  rgb_group *stmp,
-				  rgb_group *satmp,
-				  int *sinited,
 				  rgb_group *l,
 				  rgb_group *la,
 				  rgb_group *s,
@@ -1051,65 +1075,77 @@ static INLINE void img_lay_stroke(struct layer *ly,
 				  rgb_group *da,
 				  int len)
 {
-   if ((l && la) ||
-       (l && 
-	ly->fill_alpha.r==0 && ly->fill_alpha.g==0 && ly->fill_alpha.b==0))
+   if (l) 
    {
       (ly->row_func)(s,l,d,sa,la,da,len,ly->alpha_value);
       return;
    }
-   if (!*sinited)
+
+   if (!la &&
+       ly->fill_alpha.r==0 && 
+       ly->fill_alpha.g==0 && 
+       ly->fill_alpha.b==0 && 
+       ly->optimize_alpha)
    {
-      smear_color(stmp,ly->fill,SNUMPIXS);
-      smear_color(satmp,ly->fill_alpha,SNUMPIXS);
-      sinited[0]=1;
+      MEMCPY(d,s,len*sizeof(rgb_group));
+      MEMCPY(da,sa,len*sizeof(rgb_group));
+      return;
    }
 
    if (!la && 
-       ly->fill_alpha.r==0 && ly->fill_alpha.g==0 && ly->fill_alpha.b==0)
+       ly->fill_alpha.r==COLORMAX && 
+       ly->fill_alpha.g==COLORMAX && 
+       ly->fill_alpha.b==COLORMAX)
    {
       while (len>SNUMPIXS)
       {
-	 (ly->row_func)(s,l?l:stmp,d,sa,NULL,da,SNUMPIXS,ly->alpha_value);
-	 s+=SNUMPIXS; l+=SNUMPIXS; d+=SNUMPIXS;
-	 sa+=SNUMPIXS; la+=SNUMPIXS; da+=SNUMPIXS;
+	 (ly->row_func)(s,l?l:ly->sfill,d,sa,NULL,da,
+			SNUMPIXS,ly->alpha_value);
+	 s+=SNUMPIXS; d+=SNUMPIXS;
+	 sa+=SNUMPIXS;da+=SNUMPIXS;
+	 if (l) l+=SNUMPIXS; 
+	 len-=SNUMPIXS;
       }
-      (ly->row_func)(s,l?l:stmp,d,sa,NULL,da,len,ly->alpha_value);
+      if (len)
+	 (ly->row_func)(s,l?l:ly->sfill,d,sa,NULL,da,len,ly->alpha_value);
    }
    else
    {
+      int i;
+
       while (len>SNUMPIXS)
       {
-	 (ly->row_func)(s,l?l:stmp,d,sa,la?la:satmp,da,
+	 (ly->row_func)(s,l?l:ly->sfill,d,sa,la?la:ly->sfill_alpha,da,
 			SNUMPIXS,ly->alpha_value);
-	 s+=SNUMPIXS; l+=SNUMPIXS; d+=SNUMPIXS;
-	 sa+=SNUMPIXS; la+=SNUMPIXS; da+=SNUMPIXS;
+	 s+=SNUMPIXS; d+=SNUMPIXS;
+	 sa+=SNUMPIXS; da+=SNUMPIXS;
+	 if (l) l+=SNUMPIXS; 
+	 if (la) la+=SNUMPIXS; 
+	 len-=SNUMPIXS;
       }
-      (ly->row_func)(s,l?l:stmp,d,sa,la?la:satmp,da,len,ly->alpha_value);
+      if (len)
+	 (ly->row_func)(s,l?l:ly->sfill,d,sa,la?la:ly->sfill_alpha,
+			da,len,ly->alpha_value);
    }
 }
 
 static INLINE void img_lay_line(struct layer *ly,
 				rgb_group *s,rgb_group *sa,
 				int xoffs,int xsize,
-				int y,
+				int y, /* y in ly layer */
 				rgb_group *d,rgb_group *da)
 {
-   rgb_group stmp[SNUMPIXS];
-   rgb_group satmp[SNUMPIXS];
-   int sinited=0;
-
    if (!ly->tiled)
    {
       int len;
       rgb_group *l,*la;
 
-      if (y<ly->yoffs ||
-	  y>=ly->yoffs+ly->ysize ||
+      if (y<0 ||
+	  y>=ly->ysize ||
 	  ly->xoffs+ly->xsize<xoffs ||
 	  ly->xoffs>xoffs+xsize) /* outside */
       {
-	 img_lay_stroke(ly,stmp,satmp,&sinited,NULL,NULL,s,sa,d,da,xsize);
+	 img_lay_stroke(ly,NULL,NULL,s,sa,d,da,xsize);
 	 return;
       }
 
@@ -1120,8 +1156,7 @@ static INLINE void img_lay_line(struct layer *ly,
       if (ly->xoffs>xoffs) 
       {
 	 /* fill to the left */
-	 img_lay_stroke(ly,stmp,satmp,&sinited,NULL,NULL,
-			s,sa,d,da,ly->xoffs-xoffs);
+	 img_lay_stroke(ly,NULL,NULL,s,sa,d,da,ly->xoffs-xoffs);
 
 	 xsize-=ly->xoffs-xoffs;
 	 d+=ly->xoffs-xoffs;
@@ -1137,16 +1172,13 @@ static INLINE void img_lay_line(struct layer *ly,
       }
       if (len<xsize) /* copy stroke, fill right */
       {
-	 img_lay_stroke(ly,stmp,satmp,&sinited,l,la,
-			s,sa,d,da,ly->xoffs-xoffs);
+	 img_lay_stroke(ly,l,la,s,sa,d,da,len);
 
-	 img_lay_stroke(ly,stmp,satmp,&sinited,NULL,NULL,
-			s+len,sa+len,d+len,da+len,xsize-len);
+	 img_lay_stroke(ly,NULL,NULL,s+len,sa+len,d+len,da+len,xsize-len);
       }
       else /* copy rest */
       {
-	 img_lay_stroke(ly,stmp,satmp,&sinited,l,la,
-			s,sa,d,da,xsize);
+	 img_lay_stroke(ly,l,la,s,sa,d,da,xsize);
       }
       return;
    }
@@ -1154,18 +1186,20 @@ static INLINE void img_lay_line(struct layer *ly,
    {
       rgb_group *l,*la;
 
-      if (ly->img) l=ly->img->img+y*ly->xsize; else l=NULL;
-      if (ly->alp) la=ly->alp->img+y*ly->xsize; else la=NULL;
-
-      y-=ly->yoffs;
       y%=ly->ysize;
       if (y<0) y+=ly->ysize;
 
+      if (ly->img) l=ly->img->img+y*ly->xsize; else l=NULL;
+      if (ly->alp) la=ly->alp->img+y*ly->xsize; else la=NULL;
+
       xoffs-=ly->xoffs; /* position in source */
-      if (xoffs%ly->xsize)
+      if ((xoffs=xoffs%ly->xsize))
       {
-	 int len=ly->xsize-(xoffs%ly->xsize);
-	 img_lay_stroke(ly,stmp,satmp,&sinited,l?l+(xoffs%ly->xsize):NULL,
+	 int len;
+	 if (xoffs<0) xoffs+=ly->xsize;
+	 len=ly->xsize-xoffs;
+
+	 img_lay_stroke(ly,l?l+xoffs:NULL,
 			la?la+(xoffs%ly->xsize):NULL,
 			s,sa,d,da,len);
 	 da+=len;
@@ -1176,8 +1210,7 @@ static INLINE void img_lay_line(struct layer *ly,
       }
       while (xsize>ly->xsize)
       {
-	 img_lay_stroke(ly,stmp,satmp,&sinited,l,la,
-			s,sa,d,da,ly->xsize);
+	 img_lay_stroke(ly,l,la,s,sa,d,da,ly->xsize);
 	 da+=ly->xsize;
 	 d+=ly->xsize;
 	 sa+=ly->xsize;
@@ -1185,8 +1218,7 @@ static INLINE void img_lay_line(struct layer *ly,
 	 xsize-=ly->xsize;
       }
       if (xsize)
-	 img_lay_stroke(ly,stmp,satmp,&sinited,l,la,
-			s,sa,d,da,xsize);
+	 img_lay_stroke(ly,l,la,s,sa,d,da,xsize);
    }
 }
 
@@ -1225,8 +1257,12 @@ void img_lay(struct layer **layer,
       {
 	 /* add the bottom layer first */
 	 if (layer[0]->row_func==lm_normal) /* cheat */
-	    img_lay_first_line(layer[0],xoffs,xsize,y+dest->yoffs,
+	 {
+	    img_lay_first_line(layer[0],xoffs,xsize,
+			       y+dest->yoffs-layer[0]->yoffs,
 			       line1,aline1),z=1;
+	    z=1;
+	 }
 	 else
 	 {
 	    smear_color(line1,black,xsize);
@@ -1235,10 +1271,10 @@ void img_lay(struct layer **layer,
 	 }
 
 	 /* loop over the rest of the layers, except the last */
-	 for (; z<layers-2; z++)
+	 for (; z<layers-1; z++)
 	 {
 	    img_lay_line(layer[z],line1,aline1,
-			 xoffs,xsize,y,line2,aline2);
+			 xoffs,xsize,y-layer[z]->yoffs,line2,aline2);
 	    /* swap buffers */
 	    tmp=line1; line1=line2; line2=tmp;
 	    tmp=aline1; aline1=aline2; aline2=tmp;
@@ -1246,12 +1282,13 @@ void img_lay(struct layer **layer,
 
 	 /* make the last layer on the destionation */
 	 img_lay_line(layer[layers-1],line1,aline1,
-		      xoffs,xsize,y+dest->yoffs,d,da);
+		      xoffs,xsize,y+dest->yoffs-layer[layers-1]->yoffs,d,da);
       }
       else 
       {
 	 /* make the layer to destination*/
-	 img_lay_first_line(layer[0],xoffs,xsize,y+dest->yoffs,d,da);
+	 img_lay_first_line(layer[0],xoffs,xsize,
+			    y+dest->yoffs-layer[0]->yoffs,d,da);
       }
       d+=dest->xsize;
       da+=dest->xsize;
@@ -1346,13 +1383,11 @@ void image_lay(INT32 args)
 	 if (l[i]->yoffs<yoffset) 
 	    t=yoffset-l[i]->yoffs,yoffset-=t,ysize+=t;
 	 if (l[i]->xsize+l[i]->xoffs-xoffset>xsize)
-	    xsize=l[i]->xsize+l[i]->xoffs-xoffset>xsize;
+	    xsize=l[i]->xsize+l[i]->xoffs-xoffset;
 	 if (l[i]->ysize+l[i]->yoffs-yoffset>ysize)
-	    ysize=l[i]->ysize+l[i]->yoffs-yoffset>ysize;
+	    ysize=l[i]->ysize+l[i]->yoffs-yoffset;
       }
    }
-
-   fprintf(stderr,"%d,%d @ %d,%d\n",xsize,ysize,xoffset,yoffset);
 
    /* get destination layer */
    push_int(xsize);
@@ -1399,6 +1434,17 @@ void init_image_layers(void)
 
    ADD_FUNCTION("cast",image_layer_cast,
 		tFunc(tString,tMapping),0);
+
+   /* set */
+
+   ADD_FUNCTION("set_offset",image_layer_set_offset,tFunc(tInt tInt,tObj),0);
+   ADD_FUNCTION("set_image",image_layer_set_image,
+		tFunc(tOr(tObj,tVoid) tOr(tObj,tVoid),tObj),0);
+   ADD_FUNCTION("set_fill",image_layer_set_fill,
+		tFunc(tOr(tObj,tVoid) tOr(tObj,tVoid),tObj),0);
+   ADD_FUNCTION("set_mode",image_layer_set_mode,tFunc(tStr,tObj),0);
+   ADD_FUNCTION("set_alpha_value",image_layer_set_mode,tFunc(tFloat,tObj),0);
+   ADD_FUNCTION("set_tiled",image_layer_set_tiled,tFunc(tInt,tObj),0);
 
    /* query */
 
