@@ -91,6 +91,8 @@ mapping(string : array(string)) attributenames =
   "string" : ({ "name" }),
   "mixed" : ({ "name" }),
   "constant" : ({ "name" }),
+  "typedef" : ({ "name" }),
+  "enum" : ({ "name" }),
 ]);
 
 static constant standard = (<
@@ -106,6 +108,7 @@ mapping(string : multiset(string)) allowedChildren =
   "_module" : standard,
   "_constant" : standard,
   "_enum" : (< "constant" >) + standard,
+  "_typedef" : standard,
   "mapping" : (< "member" >),
   "multiset": (< "index" >),
   "array"   : (< "elem" >),
