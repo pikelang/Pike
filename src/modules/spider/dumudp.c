@@ -1,12 +1,12 @@
 /*
- * $Id: dumudp.c,v 1.44 1999/06/19 20:26:40 hubbe Exp $
+ * $Id: dumudp.c,v 1.45 1999/07/16 11:10:45 mirar Exp $
  */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: dumudp.c,v 1.44 1999/06/19 20:26:40 hubbe Exp $");
+RCSID("$Id: dumudp.c,v 1.45 1999/07/16 11:10:45 mirar Exp $");
 #include "fdlib.h"
 #include "interpret.h"
 #include "svalue.h"
@@ -434,7 +434,7 @@ static void udp_query_address(INT32 args)
 }
 
 
-void init_udp(void)
+void init_dumudp(void)
 {
   start_new_program();
 
