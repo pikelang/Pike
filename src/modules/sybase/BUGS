@@ -1,0 +1,27 @@
+# BUGS file for the sybase driver
+# By Francesco Chemolli, (C) Roxen IS
+# $Id: BUGS,v 1.1 2000/03/26 20:43:08 kinkie Exp $
+
+While this could not be traced to a fault in the driver, we were reported
+memory leaks when running multi-threaded under Linux with 
+Sybase ASE 11.9.2.
+
+The possible explanation is that while the linux libraries are thread-safe,
+they're not thread-hot (this is sybase's saying, not ours). Until better
+checks are implemented (see the TODO file), refrain from using this driver
+in a multi-threaded fashion unless the reentrant libraries can be found on
+your system (i.e. /opt/sybase/lib/libtcl_r.so).
+
+Due to the design of the sybase interface, some SQL-interface methods are
+not implemented, you'll get exceptions when trying to use those. This
+driver however behaves mostly nicely when used with the Sql.sql interface.
+
+Also, due to the uniqueness of the sybase interface design, it is NOT
+possible to have multiple pending results for the same connection. Kludging
+around this would be very dangerous in terms of memory consumption (it
+would require fetching the whole results-set before issuing the new query)
+that it won't be done.
+
+Another current limitation of the current implementation is that it lacks a
+cancel method. This means, if you wish to issue a query, you must have
+fetched all the rows for the previous one.

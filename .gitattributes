@@ -456,6 +456,11 @@ testfont binary
 /src/modules/sprintf/configure.in foreign_ident
 /src/modules/sprintf/sprintf.c foreign_ident
 /src/modules/static_module_makefile.in foreign_ident
+/src/modules/sybase/BUGS foreign_ident
+/src/modules/sybase/Makefile.in foreign_ident
+/src/modules/sybase/TODO foreign_ident
+/src/modules/sybase/acconfig.h foreign_ident
+/src/modules/sybase/sybase.c foreign_ident
 /src/modules/system/Makefile.in foreign_ident
 /src/modules/system/acconfig.h foreign_ident
 /src/modules/system/configure.in foreign_ident

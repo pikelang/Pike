@@ -1,0 +1,13 @@
+# TODO file for the sybase pike driver
+# by Francesco Chemolli, (C) Roxen IS
+# $Id: TODO,v 1.1 2000/03/26 20:43:08 kinkie Exp $
+
+Improve the checks for the sybase-libraries, and use a lock to serialize
+all accesses unless the reentrant (thread-hot) libraries are found. This
+could solve the memory leaks experienced when running multi-threaded on
+Linux.
+
+Re-implement the whole show, with better wrappers. Remove most logic from
+the C module in favor of the pike module, and move towards a more standard
+big_query approach (with a separate pike module for the
+result-object). This will allow for better emulation of the other drivers.

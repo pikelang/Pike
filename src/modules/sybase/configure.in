@@ -1,0 +1,153 @@
+dnl This file is part of the Sybase driver for the Pike programming language
+dnl by Francesco Chemolli <kinkie@roxen.com> 10/12/1999
+dnl (C) Roxen IS
+
+
+AC_INIT(sybase.c)
+AC_CONFIG_HEADER(sybase_config.h)
+
+echo "Configureing for sybase support"
+OLD_CPPFLAGS="$CPPFLAGS"
+OLD_CFLAGS="$CFLAGS"
+OLD_LIBS="$LIBS"
+OLD_LDFLAGS="$LDFLAGS"
+
+AC_ARG_WITH(sybase,
+    [  --with(out)-sybase               Include the Sybase database driver],
+    [with_sybase=no],[with_sybase=yes])
+AC_ARG_WITH(sybase-include-dir,
+    [  --with-sybase-include-dir        Sybase headers directory location],
+    [pike_sybase_include_dir=$withval])
+AC_ARG_WITH(sybase-lib-dir,
+    [  --with-sybase-lib-dir            Sybase libraries directory location],
+    [pike_sybase_lib_dir=$withval])
+
+
+dnl "reasonable" search paths we'll look in $root/$prefix/$path
+pike_sybase_reasonable_roots="$SYBASE / /usr/local /usr /opt /usr $HOME"
+pike_sybase_reasonable_prefixes="sybase include lib /"
+pike_sybase_reasonable_paths="sybase include lib /"
+pike_sybase_reasonable_extra_paths="$pike_sybase_include_dir $pike_sybase_lib_dir"
+pike_sybase_reasonable_libs_tosearch="libtcl.a libsybtcl.a libtcl64.a libtcl_r.a libtcl_dce.a libtcl_dce64.a libtcl.so libsybtcl.so libtcl64.so libtcl_r.so libtcl_dce.so libtcl_dce64.so"
+
+AC_MSG_CHECKING(for include files location)
+if test x$pike_sybase_include_dir != x; then
+    AC_MSG_RESULT(user-provided: $pike_sybase_include_dir)
+    pike_cv_sybase_include_dir=$pike_sybase_include_dir
+else
+    AC_MSG_RESULT(going hunting...)
+fi
+
+AC_CACHE_VAL(pike_cv_sybase_include_dir,
+    [
+    for sybroot in $pike_sybase_reasonable_roots
+    do
+        for sybprefix in $pike_sybase_reasonable_prefixes
+        do
+            for sybpath in $pike_sybase_reasonable_paths
+            do
+                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
+                if test -f $sybroot/$sybprefix/$sybpath/ctpublic.h; then
+                    pike_cv_sybase_include_dir="$sybroot/$sybprefix/$sybpath"
+                    AC_MSG_RESULT("Found")
+                    break 3;
+                else
+                    AC_MSG_RESULT("Not Found")
+                fi
+            done
+        done
+    done
+    ])
+
+if test x$pike_cv_sybase_include_dir != x; then
+    AC_MSG_RESULT(Found: $pike_cv_sybase_include_dir)
+else
+    AC_MSG_RESULT(Not found.)
+fi
+
+AC_MSG_CHECKING(for library files location)
+if test x$pike_sybase_lib_dir != x; then
+    AC_MSG_RESULT(user-provided: $pike_sybase_lib_dir)
+    pike_cv_sybase_lib_dir=$pike_sybase_lib_dir
+else
+    AC_MSG_RESULT(going hunting...)
+fi
+
+AC_CACHE_VAL(pike_cv_sybase_lib_dir,
+    [
+    for sybroot in $pike_sybase_reasonable_roots
+    do
+        for sybprefix in $pike_sybase_reasonable_prefixes
+        do
+            for sybpath in $pike_sybase_reasonable_paths
+            do
+                AC_MSG_CHECKING(in $sybroot/$sybprefix/$sybpath)
+                for syblib in $pike_sybase_reasonable_libs_tosearch
+                do
+                    if test -f $sybroot/$sybprefix/$sybpath/$syblib; then
+                        pike_cv_sybase_lib_dir="$sybroot/$sybprefix/$sybpath"
+                        AC_MSG_RESULT("Found")
+                        break 4;
+                    fi
+                done
+            AC_MSG_RESULT("Not Found")
+            done
+        done
+    done
+    ])
+
+if test x$pike_cv_sybase_lib_dir != x; then
+    AC_MSG_RESULT(Found: $pike_cv_sybase_lib_dir)
+else
+    AC_MSG_RESULT(Not found.)
+fi
+
+
+if test x$pike_cv_sybase_include_dir != x; then
+    CPPFLAGS="-I$pike_cv_sybase_include_dir $CPPFLAGS"
+fi
+if test x$pike_cv_sybase_lib_dir != x; then
+    LDFLAGS="-L$pike_cv_sybase_lib_dir $LDFLAGS"
+fi
+
+AC_MODULE_INIT()
+
+if test x$with_sybase != xno; then
+    AC_CHECK_LIB(m,floor)
+    AC_CHECK_LIB(dl,dlopen)
+    AC_CHECK_LIB(nsl,gethostbyname)
+    AC_CHECK_LIB(intl_r64,intl_datetime)
+    AC_CHECK_LIB(intl_r,intl_datetime)
+    AC_CHECK_LIB(intl64,intl_datetime)
+    AC_CHECK_LIB(intl,intl_datetime)
+    AC_CHECK_LIB(comn_dce64,comn_free)
+    AC_CHECK_LIB(comn_dce,comn_free)
+    AC_CHECK_LIB(comn_r,comn_free)
+    AC_CHECK_LIB(comn64,comn_free)
+    AC_CHECK_LIB(comn,comn_free)
+    AC_CHECK_LIB(tcl_dce64,syb_net_connect)
+    AC_CHECK_LIB(tcl_dce,syb_net_connect)
+    AC_CHECK_LIB(tcl_r,syb_net_connect)
+    AC_CHECK_LIB(tcl64,syb_net_connect)
+    AC_CHECK_LIB(sybtcl,syb_net_connect)
+    AC_CHECK_LIB(tcl,syb_net_connect)
+    AC_CHECK_LIB(cs64,cs_ctx_alloc)
+    AC_CHECK_LIB(cs_r64,cs_ctx_alloc)
+    AC_CHECK_LIB(cs_r,cs_ctx_alloc)
+    AC_CHECK_LIB(cs,cs_ctx_alloc)
+    AC_CHECK_LIB(ct64,ct_callback)
+    AC_CHECK_LIB(ct_r64,ct_callback)
+    AC_CHECK_LIB(ct_r,ct_callback)
+    AC_CHECK_LIB(ct,ct_callback)
+
+    AC_CHECK_HEADERS(ctpublic.h)
+
+fi
+
+dnl this is to allow compilation with both pike/0.6 and pike/0.7
+make_variables="/dev/null"
+AC_SUBST_FILE(make_variables)
+
+
+AC_OUTPUT(Makefile,echo FOO >stamp-h)
+
