@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.485 2001/09/01 21:25:11 marcus Exp $")
+AC_REVISION("$Id: configure.in,v 1.486 2001/09/17 15:35:14 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5042,7 +5042,7 @@ CFLAGS="$NEW_CFLAGS"
 ##########################################################################
 
 case "x$pike_cv_sys_os" in
-  xSolaris | xAIX)
+  xSolaris | xAIX | xDarwin)
    if grep _REENTRANT confdefs.h >/dev/null 2>&1; then
      AC_DEFINE(USE_WAIT_THREAD)
    else
