@@ -1,4 +1,4 @@
-//  $Id: Session.pike,v 1.8 1999/10/05 15:34:23 js Exp $
+//  $Id: Session.pike,v 1.9 1999/10/10 01:29:06 js Exp $
 //! module Protocols
 //! submodule LysKOM
 //! class Session
@@ -385,6 +385,17 @@ class Text
       _misc=m;
    }
 
+  void mark_as_read()
+  {
+    foreach( ({ @_misc->recpt,
+		@_misc->ccrecpt,
+		@_misc->bccrecpt }),
+	     object rcpt)
+      catch(con->mark_as_read(rcpt->conf->no, ({ rcpt->local_no })));
+    /* FIXME: Can't set read text in conferences the user isn't a member of ->
+       error */
+  }
+
    mixed `[](string what)
    {
       switch (what)
@@ -403,7 +414,6 @@ class Text
 	    return err;
 
 	 case "text": 
-	   werror("need_text(%d",no);
 	    need_text();
 	    return _text[1];
 
@@ -427,6 +437,9 @@ class Text
 	 case "characters":
 	    need_text();
 	    return strlen(_text[1]);
+
+         case "mark_as_read":
+            return mark_as_read;
       }
    }
 
@@ -494,8 +507,9 @@ class Membership
     mapping(int:int) local_to_global = ([]);
 
     werror("i: %d  last_text_read: %d\n",i,last_text_read);
-//     if(i > conf->no_of_texts)
-//       return (_unread_texts = ({ }) );
+    werror("conf: %d  conf->no_of_texts: %d\n",conf->no, conf->no_of_texts);
+    if(i > con->get_uconf_stat(conf->no)->highest_local_no)
+      return /*_unread_texts =*/ ({ }) ;
 
     /* Get all the global numbers after last-text-read */
     while(1)
@@ -525,7 +539,7 @@ class Membership
       local_to_global -
       mkmapping(read_texts,allocate(sizeof(read_texts)));
 
-    return /*_unread_texts =*/ map( sort(values(local_to_global)), text );
+    return /*_unread_texts =*/ map( sort(values(unread_numbers)), text );
   }
 
   

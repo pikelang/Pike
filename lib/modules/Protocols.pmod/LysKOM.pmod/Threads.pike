@@ -4,36 +4,30 @@ class Thread
 {
   object root;
   multiset unread_numbers=(<>);
-  mapping(int:object) textno_to_node=([]);
+  mapping(int:object) textno_to_node;
   mapping(int:object) unread_texts;
   int max_follow;  
 
   class Node
   {
     Session.Text text;
-    Session.Conference conf;
+    int conf_no;
     Node parent;
     int unread;
   
     array(Node) children = ({ });
 
-    string print(int depth)
+    array(mapping) flatten(int depth)
     {
-      int step = 18, i = 0, indent = 1;
-      while(i++ < depth)
-	indent += max(1, step--);
-      return sprintf("<nobr><a target=display onClick=mark_as_being_read(%d) href=\"%s\">"
-		     "<img width=%d height=14 border=0 src=/internal-roxen-unit alt=\"\">"
-		     "<img width=14 height=14 border=0 src=/internal-roxen-err_%d alt=\"\" name=m%d>"
-		     " : %d</a> %s (%s)</nobr><br>\n",
-		     text->no, "/text.html?id=" + text->no,
-		     indent,
-		     1, text->no, // 1 == unread,
-		                  // 2 == being read,
-		                  // 3 == read -- the images should of course be replaced
-		     text->no, text->subject, text->author->name) +
-	children->print(depth+1) * "";
+      return ({ ([ "no":         (string)text->no,
+		   "author_no":  (string)text->author->name,
+		   "author_name":text->author->name,
+		   "subject":    text->subject,
+		   "unread":     (unread?"un":""),
+		   "depth":      (string)depth ]),
+		children->flatten(depth+1) });
     }
+    
 
     Node possible_parent(int follow)
     {
@@ -49,11 +43,12 @@ class Thread
 		    @_parent->misc->ccrecpt->conf,
 		    @_parent->misc->bccrecpt->conf }),
 		 Session.Conference rcpt_conf)
-	  if(rcpt_conf->no == conf->no)
+	  if(rcpt_conf->no == conf_no)
 	    if(textno_to_node[_parent->no])
 	      return textno_to_node[_parent->no];
 	    else if(follow || unread_numbers[_parent->no])
-	      return Node(_parent, conf, follow);
+	      return Node(_parent, conf_no, follow);
+	return 0;
       }
     }
     
@@ -71,19 +66,19 @@ class Thread
 		    @child->misc->ccrecpt->conf,
 		    @child->misc->bccrecpt->conf }),
 		 Session.Conference rcpt_conf)
-	  if(rcpt_conf->no == conf->no)
+	  if(rcpt_conf->no == conf_no)
 	    if(textno_to_node[child->no])
 	      children += ({ textno_to_node[child->no] });
 	    else if(follow || unread_numbers[child->no])
-	      children += ({ Node(child, conf, follow) });
+	      children += ({ Node(child, conf_no, follow) });
       }
       return children;
     }
     
-    void create(Session.Text _text, Session.Conference _conf, int follow)
+    void create(Session.Text _text, int _conf_no, int follow)
     {
       text=_text;
-      conf=_conf;
+      conf_no=_conf_no;
       
       textno_to_node[text->no]=this_object();
 
@@ -101,14 +96,16 @@ class Thread
     }
   }
 
-  void create(mapping(int:Session.Text) _unread_texts, Session.Conference conf,
-	      Session.Text start_from, int _max_follow)
+  void create(mapping(int:Session.Text) _unread_texts,
+	      int conf_no, Session.Text start_from,
+	      int _max_follow, mapping _textno_to_node)
   {
     unread_texts=_unread_texts;
+    textno_to_node=_textno_to_node;
     unread_numbers=(< @indices(unread_texts) >);
     max_follow=_max_follow;
     
-    Node start_node=Node(start_from, conf, max_follow);
+    Node start_node=Node(start_from, conf_no, max_follow);
     Node temp;
 
     temp=start_node;
@@ -116,28 +113,39 @@ class Thread
     {
       root=temp;
     } while(temp=temp->parent);
-    unread_numbers=textno_to_node=0;
+    unread_numbers=0;
   }
 }
 
+array(Thread) children;
 
-array(Thread) get_unread_threads(array(Session.Text) unread_texts,
-			       Session.Conference conf, int max_follow)
+object parent=0;
+
+void create(array(Session.Text) unread_texts,
+	    int conf_no, int max_follow,
+	    mapping(int:object) textno_to_node)
 {
-  array threads=({ });
-  mapping m_unread_texts=mkmapping(unread_texts->no, unread_texts);
+  children=({ });
+  mapping m_unread_texts=mkmapping(unread_texts->no,
+				   unread_texts);
   m_delete(m_unread_texts,0);
+  
   foreach(unread_texts->no-({0}), int no)
   {
     if(!(m_unread_texts[no]->misc))
       m_delete(m_unread_texts,no);
   }
+  
   foreach(unread_texts->no, array(int) unread_texts_no)
   {
     if(!m_unread_texts[unread_texts_no])
       continue;
-    threads += ({ Thread(m_unread_texts, conf,
-			 m_unread_texts[unread_texts_no], max_follow) });
+    object t=Thread(m_unread_texts, conf_no,
+		    m_unread_texts[unread_texts_no],
+		    max_follow,
+		    textno_to_node);
+    children += ({ t->root });
   }
-  return threads;
+  foreach(children, object thread)
+    thread->parent=this_object();
 }
