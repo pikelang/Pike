@@ -126,6 +126,8 @@ struct subparse_save
   ptrdiff_t c;
   struct location pos;
   struct out_piece *cond_out, *cond_out_end;
+  int out_max_shift;
+  ptrdiff_t out_length;
   enum contexts out_ctx;
 };
 
@@ -140,9 +142,6 @@ struct subparse_save
 
 /* flag: match '<' and '>' for in-tag-tags (<foo <bar>>) */
 #define FLAG_MATCH_TAG			0x00000008
-
-/* flag: handle mixed data from callbacks */
-#define FLAG_MIXED_MODE			0x00000010
 
 /* flag: treat unknown tags and entities as text */
 #define FLAG_IGNORE_UNKNOWN		0x00000020
@@ -176,6 +175,14 @@ struct parser_html_storage
 
    /* resulting data */
    struct out_piece *out,*out_end;
+
+   /* Upper bound for the string shift in the output queue. -1 when in
+    * mixed mode. */
+   int out_max_shift;
+
+   /* Total length of all string in the output queue, or the number of
+    * values in it when in mixed mode. */
+   ptrdiff_t out_length;
 
    /* Data that have been fed out but may be drawn back again. If
     * activated, this contains a placeholder struct first. */
@@ -362,6 +369,8 @@ void reset_feed(struct parser_html_storage *this)
       free_svalue(&f->v);
       free(f);
    }
+   if (this->out_max_shift > 0) this->out_max_shift = 0;
+   this->out_length = 0;
    this->out_ctx = CTX_DATA;
 
    /* kill conditional out-feed */
@@ -527,6 +536,7 @@ static void init_html_struct(struct object *o)
    /* initialize feed */
    THIS->feed=NULL;
    THIS->out=NULL;
+   THIS->out_max_shift = THIS->out_length = 0;
    THIS->cond_out=NULL;
    THIS->stack=NULL;
    reset_feed(THIS);
@@ -587,6 +597,8 @@ static void save_subparse_state (struct parser_html_storage *this,
   save->cond_out = this->cond_out;
   save->cond_out_end = this->cond_out_end;
   save->out_ctx = this->out_ctx;
+  save->out_max_shift = this->out_max_shift;
+  save->out_length = this->out_length;
   if (!this->cond_out) {
     struct out_piece *ph = malloc (sizeof (struct out_piece));
     if (!ph) Pike_error ("Parser.HTML: Out of memory.\n");
@@ -625,6 +637,8 @@ static void finalize_subparse_state (struct subparse_save *save)
     free (this->cond_out);	/* Remove the placeholder. */
     this->cond_out = NULL;
   }
+  this->out_max_shift = MAXIMUM (this->out_max_shift, save->out_max_shift);
+  this->out_length += save->out_length;
 
   free_object (save->thisobj);
 
@@ -674,6 +688,8 @@ static void unwind_subparse_state (struct subparse_save *save)
     this->cond_out_end = save->cond_out_end;
 
     this->out_ctx = save->out_ctx;
+    this->out_max_shift = save->out_max_shift;
+    this->out_length = save->out_length;
   }
 
   else {			/* Object destructed. */
@@ -1251,6 +1267,11 @@ static void put_out_feed(struct parser_html_storage *this,
 {
    struct out_piece *f;
 
+#ifdef PIKE_DEBUG
+   if (v->type != T_STRING && this->out_max_shift >= 0)
+     fatal ("Putting a non-string into output queue in non-mixed mode.\n");
+#endif
+
    f=malloc(sizeof(struct out_piece));
    if (!f)
       Pike_error("Parser.HTML(): out of memory\n");
@@ -1271,6 +1292,13 @@ static void put_out_feed(struct parser_html_storage *this,
        this->out_end=f;
      }
    }
+
+   if (this->out_max_shift >= 0) {
+     this->out_max_shift = MAXIMUM (this->out_max_shift, v->u.string->size_shift);
+     this->out_length += v->u.string->len;
+   }
+   else
+     this->out_length++;
 }
 
 /* ---------------------------- */
@@ -2325,7 +2353,7 @@ static newstate handle_result(struct parser_html_storage *this,
 	 /* output element(s) */
 	 for (i=0; i<sp[-1].u.array->size; i++)
 	 {
-	    if (!(THIS->flags & FLAG_MIXED_MODE) &&
+	    if (THIS->out_max_shift >= 0 &&
 		sp[-1].u.array->item[i].type!=T_STRING)
 	       Pike_error("Parser.HTML: illegal result from callback: "
 			  "element in array not string\n");
@@ -3866,82 +3894,92 @@ static void html_finish(INT32 args)
 
 static void html_read(INT32 args)
 {
-   int n = 0x7fffffff;	/* a lot */
-   int m=0; /* items on stack */
+   ptrdiff_t n = THIS->out_length;
 
    if (args) {
-      if (sp[-args].type==T_INT)
-         n=sp[-args].u.integer;
+      if (sp[-args].type==T_INT && sp[-args].u.integer >= 0)
+	n = MINIMUM (sp[-args].u.integer, n);
       else
-         Pike_error("read: illegal argument\n");
+	SIMPLE_BAD_ARG_ERROR ("read", 1, "nonnegative integer");
    }
 
    pop_n_elems(args);
 
-   if (THIS->flags & FLAG_MIXED_MODE)
+   if (THIS->out_max_shift < 0)
    {
-      int got_arr = 0;
       /* collect up to n items */
-      while (THIS->out && n)
+      struct array *res;
+      ptrdiff_t i;
+      int type_field = 0;
+      res = allocate_array (n);
+      for (i = 0; i < n; i++)
       {
 	 struct out_piece *z = THIS->out;
-	 push_svalue(&z->v);
-	 n--;
-	 if (++m == 32)
-	 {
-	    f_aggregate(32);
-	    m = 0;
-	    if (got_arr) f_add(2), got_arr = 1;
-	 }
+	 type_field |= 1 << z->v.type;
+	 ITEM(res)[i] = z->v;
+#ifdef PIKE_DEBUG
+	 z->v.type = T_INT;
+#endif
 	 THIS->out = THIS->out->next;
-	 free_svalue(&z->v);
 	 free(z);
       }
-      if (m)
-      {
-	 f_aggregate(m);
-	 if (got_arr) f_add(2);
-      }
+      res->type_field = type_field;
+      push_array (res);
    }
    else
    {
-      /* collect up to n characters */
-      while (THIS->out && n)
-      {
+     /* collect up to n characters */
+     if (!THIS->out || THIS->out->v.u.string->len < n) {
+       struct string_builder buf;
+       ptrdiff_t l = 0;
+       init_string_builder_alloc (&buf, n, THIS->out_max_shift);
+       while (l < n) {
 	 struct out_piece *z;
-
+#ifdef PIKE_DEBUG
 	 if (THIS->out->v.type != T_STRING)
-	    Pike_error("Parser.HTML: Got nonstring in parsed data\n");
-
+	    fatal ("Got nonstring in parsed data\n");
+#endif
 	 if (THIS->out->v.u.string->len>n)
 	 {
 	    struct pike_string *ps;
-	    ref_push_string(string_slice(THIS->out->v.u.string,0,n));
-	    m++;
+	    string_builder_append (&buf, MKPCHARP_STR (THIS->out->v.u.string), n);
 	    ps=string_slice(THIS->out->v.u.string,n,THIS->out->v.u.string->len-n);
 	    free_string(THIS->out->v.u.string);
 	    THIS->out->v.u.string=ps;
 	    break;
 	 }
-	 n-=THIS->out->v.u.string->len;
-	 push_svalue(&THIS->out->v);
-	 free_svalue(&THIS->out->v);
-	 m++;
-	 if (m==32)
-	 {
-	    f_add(32);
-	    m=1;
-	 }
+	 l+=THIS->out->v.u.string->len;
+	 string_builder_shared_strcat (&buf, THIS->out->v.u.string);
 	 z=THIS->out;
-	 THIS->out=THIS->out->next;
+	 free_string(z->v.u.string);
+	 THIS->out=z->next;
 	 free(z);
-      }
-
-      if (!m)
-	 ref_push_string(empty_string);
-      else
-	 f_add(m);
+       }
+       push_string (finish_string_builder (&buf));
+     }
+     else
+       /* Optimize the cases when there are no output pieces to concatenate. */
+       if (THIS->out->v.u.string->len == n) {
+	 struct out_piece *z = THIS->out;
+	 push_string (z->v.u.string);
+	 THIS->out = z->next;
+	 free (z);
+       }
+       else {			/* THIS->out->v.u.string->len > n */
+	 struct pike_string *ps;
+	 push_string(string_slice(THIS->out->v.u.string,0,n));
+	 ps=string_slice(THIS->out->v.u.string,n,THIS->out->v.u.string->len-n);
+	 free_string(THIS->out->v.u.string);
+	 THIS->out->v.u.string=ps;
+       }
+     if (n == THIS->out_length) THIS->out_max_shift = 0;
    }
+
+   THIS->out_length -= n;
+#ifdef PIKE_DEBUG
+   if (!THIS->out_length != !THIS->out)
+     fatal ("Inconsistency in output queue length.\n");
+#endif
 }
 
 /*
@@ -3959,7 +3997,7 @@ void html_write_out(INT32 args)
    int i;
    for (i = args; i; i--)
    {
-      if (!(THIS->flags & FLAG_MIXED_MODE) && sp[-i].type!=T_STRING)
+      if (THIS->out_max_shift >= 0 && sp[-i].type!=T_STRING)
 	 Pike_error("write_out: not a string argument\n");
       put_out_feed(THIS,sp-i,1);
    }
@@ -4977,11 +5015,28 @@ static void html_match_tag(INT32 args)
 
 static void html_mixed_mode(INT32 args)
 {
-   int o=!!(THIS->flags & FLAG_MIXED_MODE);
+   int o=THIS->out_max_shift < 0;
    check_all_args("mixed_mode",args,BIT_VOID|BIT_INT,0);
    if (args) {
-     if (sp[-args].u.integer) THIS->flags |= FLAG_MIXED_MODE;
-     else THIS->flags &= ~FLAG_MIXED_MODE;
+     if (sp[-args].u.integer) {
+       if (!o) {
+	 struct out_piece *f;
+	 size_t c;
+	 THIS->out_max_shift = -1;
+	 /* Got to count the entries in the output queue. */
+	 for (f = THIS->out, c = 0; f; f = f->next) c++;
+	 THIS->out_length = c;
+       }
+     }
+     else
+       if (o) {
+	 struct out_piece *f;
+	 for (f = THIS->out; f; f = f->next)
+	   if (f->v.type != T_STRING)
+	     Pike_error ("Cannot switch from mixed mode "
+			 "with nonstrings in the output queue.\n");
+	 THIS->out_max_shift = 0;
+       }
    }
    pop_n_elems(args);
    push_int(o);
