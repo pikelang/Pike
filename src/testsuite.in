@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.470 2001/11/10 19:25:56 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.471 2001/11/10 19:33:15 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -1099,7 +1099,7 @@ test_do([[
 	");
 
  compile_string("import \".\"; "
-		"int foo() { testsuite_test_dir.a(); }",
+		"int foo() { testsuite_test_dir.A(); }",
 		"test");
 
  Stdio.recursive_rm("testsuite_test_dir.pmod");
