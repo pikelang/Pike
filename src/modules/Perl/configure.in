@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.6 1999/08/12 17:12:44 mast Exp $
+# $Id: configure.in,v 1.7 2000/02/09 01:16:07 leif Exp $
 AC_INIT(perlmod.c)
 AC_CONFIG_HEADER(perl_machine.h)
 
@@ -47,6 +47,7 @@ int main(int argc, char **argv, char **env)
   perl_run(my_perl);
   perl_destruct(my_perl);
   perl_free(my_perl);
+  return 0;
 }
 ],pike_cv_perlmod_have_perl=yes)
 
