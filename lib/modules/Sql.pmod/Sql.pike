@@ -1,5 +1,5 @@
 /*
- * $Id: Sql.pike,v 1.56 2002/03/18 15:54:48 tomas Exp $
+ * $Id: Sql.pike,v 1.57 2002/04/11 10:03:04 jhs Exp $
  *
  * Implements the generic parts of the SQL-interface
  *
@@ -100,7 +100,7 @@ function(string:int) decode_datetime;
 //!       Use the dbtype protocol to connect to the database server
 //!       on the specified host.
 //!       If the hostname is @tt{""@}, access through a UNIX-domain
-//!	  socket or similar.
+//!	  socket or similar, e g @tt{"mysql://root@:/tmp/mysql.sock/"@}
 //!     @type int(0..0)
 //!       Access through a UNIX-domain socket or similar.
 //!   @endmixed
@@ -243,6 +243,18 @@ void create(void|string|object host, void|string|mapping(string:int|string) db,
   decode_date = master_sql->decode_date || .sql_util.fallback;
   encode_datetime = master_sql->encode_datetime || .sql_util.fallback;
   decode_datetime = master_sql->decode_datetime || .sql_util.fallback;
+}
+
+string _sprintf(int type, mapping|void flags)
+{
+  switch(type)
+  {
+    case 't': return "Sql";
+    case 'O':
+      if(master_sql->_sprintf)
+	return sprintf("Sql(%O)", master_sql);
+      return "Sql()";
+  }
 }
 
 static private array(mapping(string:mixed)) res_obj_to_array(object res_obj)
