@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.c,v 1.55 2002/11/19 13:57:50 mast Exp $
+|| $Id: multiset.c,v 1.56 2002/11/23 18:57:02 mast Exp $
 */
 
 #include "global.h"
@@ -14,7 +14,7 @@
  * Created by Martin Stjernholm 2001-05-07
  */
 
-RCSID("$Id: multiset.c,v 1.55 2002/11/19 13:57:50 mast Exp $");
+RCSID("$Id: multiset.c,v 1.56 2002/11/23 18:57:02 mast Exp $");
 
 #include "builtin_functions.h"
 #include "gc.h"
@@ -644,7 +644,7 @@ static int prepare_for_change (struct multiset *l, int verbatim)
 
   if (!verbatim && DO_SHRINK (msd, 0)) {
 #ifdef PIKE_DEBUG
-    if (d_flag > 1) check_multiset (l);
+    if (d_flag > 1) check_multiset (l, 1);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
     msd_changed = 1;
@@ -682,7 +682,7 @@ static int prepare_for_add (struct multiset *l, int verbatim)
 
   if (!verbatim && DO_SHRINK (msd, 1)) {
 #ifdef PIKE_DEBUG
-    if (d_flag > 1) check_multiset (l);
+    if (d_flag > 1) check_multiset (l, 1);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size + 1), 0);
     return 1;
@@ -711,7 +711,7 @@ static int prepare_for_value_change (struct multiset *l, int verbatim)
 
   if (!verbatim && DO_SHRINK (msd, 0)) {
 #ifdef PIKE_DEBUG
-    if (d_flag > 1) check_multiset (l);
+    if (d_flag > 1) check_multiset (l, 1);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
     msd_changed = 1;
@@ -800,7 +800,7 @@ static void unlink_msnode (struct multiset *l, struct rbstack_ptr *track,
     msd->size--;
     if (!keep_rbstack && DO_SHRINK (msd, 0)) {
 #ifdef PIKE_DEBUG
-      if (d_flag > 1) check_multiset (l);
+      if (d_flag > 1) check_multiset (l, 1);
 #endif
       l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
     }
@@ -820,7 +820,7 @@ PMOD_EXPORT void multiset_clear_node_refs (struct multiset *l)
   CLEAR_DELETED_ON_FREE_LIST (msd);
   if (DO_SHRINK (msd, 0)) {
 #ifdef PIKE_DEBUG
-    if (d_flag > 1) check_multiset (l);
+    if (d_flag > 1) check_multiset (l, 1);
 #endif
     l->msd = resize_multiset_data (msd, ALLOC_SIZE (msd->size), 0);
   }
@@ -2026,7 +2026,7 @@ PMOD_EXPORT ptrdiff_t multiset_insert_2 (struct multiset *l,
        * insert. Otherwise we either have to redo the search or don't
        * use a rebalancing resize. */
 #ifdef PIKE_DEBUG
-      if (d_flag > 1) check_multiset (l);
+      if (d_flag > 1) check_multiset (l, 1);
 #endif
       l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), 0);
       msd = l->msd;
@@ -2142,7 +2142,7 @@ PMOD_EXPORT ptrdiff_t multiset_add (struct multiset *l,
 	MOVE_MSD_REF (l, msd);
       }
 #ifdef PIKE_DEBUG
-      if (d_flag > 1) check_multiset (l);
+      if (d_flag > 1) check_multiset (l, 1);
 #endif
       l->msd = resize_multiset_data (msd, ENLARGE_SIZE (msd->allocsize), 0);
       msd = l->msd;
@@ -3291,7 +3291,7 @@ PMOD_EXPORT struct multiset *merge_multisets (struct multiset *a,
   if (m.rd.a_msd && !sub_ref (m.rd.a_msd)) free_multiset_data (m.rd.a_msd);
   if (!sub_ref (m.rd.b_msd)) free_multiset_data (m.rd.b_msd);
 #ifdef PIKE_DEBUG
-  if (d_flag > 1) check_multiset (m.res);
+  if (d_flag > 1) check_multiset (m.res, 1);
 #endif
   sub_msnode_ref (m.res);	/* Tries to shrink m.res->msd. */
   return m.res;
@@ -3740,7 +3740,7 @@ void gc_check_all_multisets (void)
     }
 #endif
 #ifdef PIKE_DEBUG
-    if (d_flag > 1) check_multiset (l);
+    if (d_flag > 1) check_multiset (l, 1);
 #endif
 
     debug_gc_check2 (msd, T_MULTISET, l, " as multiset data block of a multiset");
@@ -4239,10 +4239,17 @@ static void check_low_msnode (struct multiset_data *msd,
   }
 }
 
-void check_multiset (struct multiset *l)
+static int inside_check_multiset = 0;
+
+/* The safe flag can be used to avoid the checks that might call pike
+ * code or alter memory structures. */
+void check_multiset (struct multiset *l, int safe)
 {
   struct multiset_data *msd = l->msd;
   int alloc = 0, indval = msd->flags & MULTISET_INDVAL;
+
+  if (inside_check_multiset) return;
+  inside_check_multiset = 1;
 
   /* Check refs and multiset link list. */
 
@@ -4374,7 +4381,7 @@ void check_multiset (struct multiset *l)
 
   /* Check the order. This can call pike code, so we need to be extra careful. */
 
-  if (msd->root && !Pike_in_gc) {
+  if (!safe && msd->root) {
     JMP_BUF recovery;
     add_msnode_ref (l);
     if (SETJMP (recovery))
@@ -4460,13 +4467,15 @@ void check_multiset (struct multiset *l)
     UNSETJMP (recovery);
     sub_msnode_ref (l);
   }
+
+  inside_check_multiset = 0;
 }
 
-void check_all_multisets (void)
+void check_all_multisets (int safe)
 {
   struct multiset *l;
   for (l = first_multiset; l; l = l->next)
-    check_multiset (l);
+    check_multiset (l, safe);
 }
 
 static void debug_dump_ind_data (struct msnode_ind *node,
@@ -4677,7 +4686,7 @@ void test_multiset (void)
 
       for (j = 0; j < 12; j++) {
 	multiset_insert_2 (l, &arr->item[j], NULL, 1);
-	check_multiset (l);
+	check_multiset (l, 0);
       }
       if (multiset_sizeof (l) != 9)
 	multiset_fatal (l, "Size is wrong: %d (%d)\n", multiset_sizeof (l), i);
@@ -4733,14 +4742,14 @@ void test_multiset (void)
       l2 = l;
 #if 0
       l2 = copy_multiset (l);
-      check_multiset (l2);
+      check_multiset (l2, 0);
 #endif
       for (j = 0, v = 0; j < 12; j++) {
 	v += !!multiset_delete_2 (l2, &arr->item[j], NULL);
 	if (multiset_find_eq (l2, &arr->item[j]) >= 0)
 	  multiset_fatal (l2, "Entry %d not deleted (%d).\n",
 			  arr->item[j].u.integer, i);
-	check_multiset (l2);
+	check_multiset (l2, 0);
       }
       if (v != 9 || l2->msd->root)
 	multiset_fatal (l2, "Wrong number of entries deleted: %d (%d)\n", v, i);
@@ -4798,14 +4807,14 @@ void test_multiset (void)
 			      get_multiset_value (l, node)->u.integer);
 	  }
 	  add_msnode_ref (l);
-	  check_multiset (l);
+	  check_multiset (l, 0);
 	}
 	if (j != 8) multiset_fatal (l, "Size is wrong: %d (%d)\n", j, i);
 
 	add_msnode_ref (l);
 	for (j = 0; j < 8; j++) {
 	  multiset_delete_node (l, nodes[j]);
-	  check_multiset (l);
+	  check_multiset (l, 0);
 	}
 	sub_msnode_ref (l);
 	if (multiset_sizeof (l))
@@ -4819,7 +4828,7 @@ void test_multiset (void)
       for (j = 0; j < 8; j++) {
 	push_int (arr->item[j].u.integer * 8 + j);
 	multiset_add (l, &arr->item[j], sp - 1);
-	check_multiset (l);
+	check_multiset (l, 0);
 	pop_stack();
       }
 
@@ -4899,7 +4908,7 @@ void test_multiset (void)
       pop_stack();
 
       l2 = copy_multiset (l);
-      check_multiset (l2);
+      check_multiset (l2, 0);
       if (!naive_test_equal (l, l2))
 	multiset_fatal (l2, "Copy not equal to original (%d).\n", i);
 
@@ -4931,7 +4940,7 @@ void test_multiset (void)
       for (v = 0; multiset_sizeof (l2); v++) {
 	add_msnode_ref (l2);
 	multiset_delete_node (l2, MSNODE2OFF (l2->msd, l2->msd->root));
-	check_multiset (l2);
+	check_multiset (l2, 0);
       }
       if (v != 8)
 	multiset_fatal (l2, "Wrong number of entries deleted: %d (%d)\n", v, i);
@@ -4948,7 +4957,7 @@ void test_multiset (void)
 	  sub_msnode_ref (l);
 	}
 	free_svalue (&tmp);
-	check_multiset (l);
+	check_multiset (l, 0);
       }
 
       free_multiset (l);
@@ -4978,7 +4987,7 @@ void test_multiset (void)
 #ifdef RB_STATS
     fputc ('\n', stderr), print_rb_stats (1);
 #endif
-    check_multiset (l);
+    check_multiset (l, 0);
     srand (0);
     for (i = max; i > 0; i--) {
       if (!(i % 10000)) fprintf (stderr, "shrink %s %d                   \r",
@@ -5006,13 +5015,13 @@ void test_multiset (void)
 			      max * 10 - arr->size);
 
       l = mkmultiset_2 (arr, i & 2 ? arr : NULL, i & 1 ? less_efun : NULL);
-      check_multiset (l);
+      check_multiset (l, 0);
       multiset_set_cmp_less (l, i & 4 ? less_efun : NULL);
-      check_multiset (l);
+      check_multiset (l, 0);
       multiset_set_flags (l, i & 8 ? MULTISET_INDVAL : 0);
-      check_multiset (l);
+      check_multiset (l, 0);
       multiset_set_cmp_less (l, greater_efun);
-      check_multiset (l);
+      check_multiset (l, 0);
 
       if ((node = multiset_first (l)) >= 0) {
 	int pos = 0, try_get = rand() % arr->size;
@@ -5205,7 +5214,7 @@ void test_multiset (void)
 	debug_merge_fatal (a, b, xor, l, "Invalid destructive 'xor' merge (%d).\n", i);
       free_multiset (l);
 
-      check_multiset (a);
+      check_multiset (a, 0);
     }
 
     free_multiset (a);
@@ -5243,7 +5252,7 @@ void test_multiset (void)
 #include "gc.h"
 #include "security.h"
 
-RCSID("$Id: multiset.c,v 1.55 2002/11/19 13:57:50 mast Exp $");
+RCSID("$Id: multiset.c,v 1.56 2002/11/23 18:57:02 mast Exp $");
 
 struct multiset *first_multiset;
 

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: multiset.h,v 1.27 2002/10/11 01:39:34 nilsson Exp $
+|| $Id: multiset.h,v 1.28 2002/11/23 18:57:02 mast Exp $
 */
 
 #ifndef MULTISET_H
@@ -81,7 +81,7 @@ struct multiset
  *    Deleted nodes are always before free nodes on the free list.
  *    multiset_data.size counts both the allocated and the deleted
  *    nodes. Note that deleted nodes might still be on the free list
- *    even when there are no node references.
+ *    even when there are no node references (see below).
  *
  * o  multiset_data.cmp_less.type is T_INT when the internal set order
  *    is used.
@@ -118,9 +118,9 @@ struct multiset
  * o  multiset.node_refs counts the number of references to nodes in
  *    the multiset. The references are array offsets in
  *    multiset.msd->nodes, so the data block may be reallocated but no
- *    nodes may be moved relatively within the block. Values but not
- *    indices may be changed, nodes may be added and removed, and the
- *    order may be changed.
+ *    nodes may be moved relatively within it. Values but not indices
+ *    may be changed when there are node references, nodes may be
+ *    added and removed, and the order may be changed.
  *
  *    Nodes that are deleted during nonzero node_refs are linked in
  *    first on the free list as usual, but ind.type is set to
@@ -175,7 +175,7 @@ union msnode *low_multiset_find_eq (struct multiset *l, struct svalue *key);
     *_ms_index_to_ = msnode_check (NODE)->i.ind;			\
     DO_IF_DEBUG (							\
       if (!(_ms_index_to_->type & MULTISET_FLAG_MARKER))		\
-	Pike_fatal (msg_no_multiset_flag_marker);				\
+	Pike_fatal (msg_no_multiset_flag_marker);			\
     );									\
     _ms_index_to_->type &= ~MULTISET_FLAG_MASK;				\
     add_ref_svalue (_ms_index_to_);					\
@@ -260,8 +260,8 @@ BLOCK_ALLOC(multiset, 511)
  * backwards until one is found which is equal to the key according to
  * `==.
  *
- * It's possible to keep references to individual nodes. They consist
- * of the node offset within the multiset data block, which together
+ * It's possible to keep references to individual nodes. The node
+ * offset within the multiset data block is used then, which together
  * with the multiset struct can access the node. Use add_msnode_ref
  * when you store a node reference and sub_msnode_ref when you throw
  * it away. The multiset_find_*, multiset_first, multiset_last and
@@ -311,7 +311,7 @@ PMOD_EXPORT extern const char msg_multiset_no_node_refs[];
 #define sub_msnode_ref(L) do {						\
     struct multiset *_ms_ = (L);					\
     DO_IF_DEBUG (							\
-      if (!_ms_->node_refs) Pike_fatal (msg_multiset_no_node_refs);		\
+      if (!_ms_->node_refs) Pike_fatal (msg_multiset_no_node_refs);	\
     );									\
     if (!--_ms_->node_refs && _ms_->msd->refs == 1)			\
       multiset_clear_node_refs (_ms_);					\
@@ -425,8 +425,8 @@ void gc_free_all_unreferenced_multisets (void);
   gc_cycle_enqueue ((gc_cycle_check_cb *) real_gc_cycle_check_multiset, (X), (WEAK))
 
 #ifdef PIKE_DEBUG
-void check_multiset (struct multiset *l);
-void check_all_multisets (void);
+void check_multiset (struct multiset *l, int safe);
+void check_all_multisets (int safe);
 void debug_dump_multiset (struct multiset *l);
 #endif
 
