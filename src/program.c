@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.418 2002/04/28 02:48:12 mast Exp $");
+RCSID("$Id: program.c,v 1.419 2002/05/01 01:08:32 mast Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -3188,17 +3188,26 @@ PMOD_EXPORT int quick_map_variable(char *name,
   struct pike_string *n;
   struct pike_type *t;
 
-#ifdef PROGRAM_BUILD_DEBUG
-  fprintf (stderr, "%.*sdefining variable (pass=%d): %s %s\n",
-	   compilation_depth, "                ", Pike_compiler->compiler_pass, type, name);
-#endif
-
   n = make_shared_binary_string(name, name_length);
 #ifdef USE_PIKE_TYPE
   t = make_pike_type(type);
 #else /* !USE_PIKE_TYPE */
   t = make_shared_binary_string(type, type_length);
 #endif /* USE_PIKE_TYPE */
+
+#ifdef PROGRAM_BUILD_DEBUG
+  {
+    fprintf (stderr, "%.*sdefining variable (pass=%d): ",
+	     compilation_depth, "                ", Pike_compiler->compiler_pass);
+    push_string (describe_type (t));
+    print_svalue (stderr, Pike_sp - 1);
+    pop_stack();
+    push_string (n);
+    print_svalue (stderr, --Pike_sp);
+    putc ('\n', stderr);
+  }
+#endif
+
   ret=low_define_variable(n,t,flags,offset,run_time_type);
   free_string(n);
   free_type(t);
@@ -3219,10 +3228,11 @@ int define_variable(struct pike_string *name,
 
 #ifdef PROGRAM_BUILD_DEBUG
   {
-    struct pike_string *d = describe_type (type);
-    fprintf (stderr, "%.*sdefining variable (pass=%d): %s ",
-	     compilation_depth, "                ", Pike_compiler->compiler_pass, d->str);
-    free_string (d);
+    fprintf (stderr, "%.*sdefining variable (pass=%d): ",
+	     compilation_depth, "                ", Pike_compiler->compiler_pass);
+    push_string (describe_type (type));
+    print_svalue (stderr, Pike_sp - 1);
+    pop_stack();
     push_string (name);
     print_svalue (stderr, --Pike_sp);
     putc ('\n', stderr);
@@ -3875,6 +3885,13 @@ INT32 define_function(struct pike_string *name,
 #endif
 
 	Pike_compiler->new_program->identifier_references[z]=ref;
+
+	/* Return the last of the overloaded references. This since
+	 * isidentifier searches backward now and will find the last
+	 * of the references we overload here, and thus would cause
+	 * this function to return another reference when it's called
+	 * a second time. /mast */
+	i = z;
       }
 
 #ifdef PIKE_DEBUG
@@ -4372,8 +4389,9 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
     char *cnt=Pike_compiler->new_program->linenumbers;
 
     if (a_flag > 50) {
-      fprintf(stderr, "store_linenumber(%d, \"%s\")\n",
-	      current_line, current_file->str);
+      fprintf(stderr, "store_linenumber(%d, \"%s\") at pc %d\n",
+	      current_line, current_file->str,
+	      (INT32) PIKE_PC);
       fprintf(stderr, "  last_line:%d last_file:\"%s\"\n",
 	      Pike_compiler->last_line,
 	      Pike_compiler->last_file?Pike_compiler->last_file->str:"");
