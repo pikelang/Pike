@@ -1,6 +1,8 @@
 //
 // snmp_globals.h
 //
+// $Id: snmp_globals.h,v 1.2 2001/05/09 13:52:03 hop Exp $
+//
 
 #define SNMP_DEFAULT_PORT       161
 #define SNMP_DEFAULT_TRAPPORT   162
