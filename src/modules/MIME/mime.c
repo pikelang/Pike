@@ -1,5 +1,5 @@
 /*
- * $Id: mime.c,v 1.22 2000/07/28 07:13:26 hubbe Exp $
+ * $Id: mime.c,v 1.23 2000/08/04 11:24:48 grubba Exp $
  *
  * RFC1521 functionality for Pike
  *
@@ -10,7 +10,7 @@
 
 #include "config.h"
 
-RCSID("$Id: mime.c,v 1.22 2000/07/28 07:13:26 hubbe Exp $");
+RCSID("$Id: mime.c,v 1.23 2000/08/04 11:24:48 grubba Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -157,7 +157,8 @@ static void f_decode_base64( INT32 args )
 
     struct string_builder buf;
     SIGNED char *src;
-    INT32 cnt, d = 1;
+    ptrdiff_t cnt;
+    INT32 d = 1;
     int pads = 0;
 
     init_string_builder( &buf, 0 );
@@ -244,8 +245,8 @@ static void f_encode_base64( INT32 args )
        the number of 24 bit groups in the input, and the number of
        bytes actually present in the last group. */
 
-    INT32 groups = (sp[-args].u.string->len+2)/3;
-    int last = (sp[-args].u.string->len-1)%3+1;
+    ptrdiff_t groups = (sp[-args].u.string->len+2)/3;
+    ptrdiff_t last = (sp[-args].u.string->len-1)%3+1;
 
     int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
 			sp[-1].u.integer != 0);
@@ -306,7 +307,7 @@ static void f_decode_qp( INT32 args )
 
     struct string_builder buf;
     SIGNED char *src;
-    INT32 cnt;
+    ptrdiff_t cnt;
 
     init_string_builder(&buf, 0);
 
@@ -359,7 +360,7 @@ static void f_encode_qp( INT32 args )
 
     struct string_builder buf;
     unsigned char *src = (unsigned char *)sp[-args].u.string->str;
-    INT32 cnt;
+    ptrdiff_t cnt;
     int col = 0;
     int insert_crlf = !(args == 2 && sp[-1].type == T_INT &&
 			sp[-1].u.integer != 0);
@@ -410,7 +411,7 @@ static void f_decode_uue( INT32 args )
 
     struct string_builder buf;
     char *src;
-    INT32 cnt;
+    ptrdiff_t cnt;
 
     init_string_builder( &buf, 0 );
 
@@ -551,8 +552,8 @@ static void f_encode_uue( INT32 args )
     struct pike_string *str;
     unsigned char *src = (unsigned char *) sp[-args].u.string->str;
     /* Calculate number of 24 bit groups, and actual # of bytes in last grp */
-    INT32 groups = (sp[-args].u.string->len + 2)/3;
-    int last= (sp[-args].u.string->len - 1)%3 + 1;
+    ptrdiff_t groups = (sp[-args].u.string->len + 2)/3;
+    ptrdiff_t last= (sp[-args].u.string->len - 1)%3 + 1;
 
     /* Get the filename if provided */
     if (args == 2 && sp[-1].type == T_STRING)
@@ -627,7 +628,8 @@ static void low_tokenize( INT32 args, int mode )
   unsigned char *src = (unsigned char *)sp[-args].u.string->str;
   struct array *arr;
   struct pike_string *str;
-  INT32 cnt = sp[-args].u.string->len, n = 0, l, e, d;
+  ptrdiff_t cnt = sp[-args].u.string->len;
+  INT32 n = 0, l, e, d;
   char *p;
 
   while (cnt>0)
@@ -852,7 +854,7 @@ static void f_tokenize_labled( INT32 args )
 /*  Convenience function for quote() which determines if a sequence of
  *  characters can be stored as an atom.
  */
-static int check_atom_chars( unsigned char *str, INT32 len )
+static int check_atom_chars( unsigned char *str, ptrdiff_t len )
 {
   /* Atoms must contain at least 1 character... */
   if (len < 1)
@@ -871,7 +873,7 @@ static int check_atom_chars( unsigned char *str, INT32 len )
 
 /*  This one check is a sequence of charactes is actually an encoded word.
  */
-static int check_encword( unsigned char *str, INT32 len )
+static int check_encword( unsigned char *str, ptrdiff_t len )
 {
   int q = 0;
 
@@ -1044,7 +1046,7 @@ static void f_quote_labled( INT32 args )
       } else {
 
 	/* Have to use quoted-string */
-	INT32 len = str->len;
+	ptrdiff_t len = str->len;
 	char *src = str->str;
 	string_builder_putchar( &buf, '"' );
 	while(len--) {
@@ -1075,7 +1077,7 @@ static void f_quote_labled( INT32 args )
       struct pike_string *str = item->u.array->item[1].u.string;
 
       /* Encode comment */
-      INT32 len = str->len;
+      ptrdiff_t len = str->len;
       char *src = str->str;
       string_builder_putchar( &buf, '(' );
       while(len--) {
@@ -1094,7 +1096,7 @@ static void f_quote_labled( INT32 args )
       struct pike_string *str = item->u.array->item[1].u.string;
 
       /* Encode domain-literal */
-      INT32 len = str->len;
+      ptrdiff_t len = str->len;
       char *src = str->str;
 
       if (len<2 || src[0] != '[' || src[len-1] != ']') {
