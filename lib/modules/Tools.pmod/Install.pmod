@@ -189,6 +189,11 @@ class Readline
     }
   }
 
+  string absolute_path(string path)
+  {
+    return make_absolute_path(path, cwd && combine_path(getcwd(), cwd));
+  }
+  
   void set_cwd(string _cwd)
   {
     cwd = _cwd;
