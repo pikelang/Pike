@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: test_pike.pike,v 1.102 2004/07/15 09:35:08 grubba Exp $ */
+/* $Id: test_pike.pike,v 1.103 2004/08/31 13:45:48 grubba Exp $ */
 
 #if !constant(_verify_internals)
 #define _verify_internals()
@@ -312,7 +312,7 @@ int main(int argc, array(string) argv)
 	  break;
 
 	case "help":
-	  write(doc);
+	  stdout->write(doc);
 	  return 0;
 
 	case "verbose": verbose+=foo(opt[1]); break;
@@ -394,9 +394,16 @@ int main(int argc, array(string) argv)
     //werror("forked:%O\n", forked);
   }
 
+  // Move stdout to a higher fd, so that close on exec works.
+  // This makes sure the original stdout gets closed even if
+  // some subprocess hangs.
+  Stdio.File stdout = Stdio.stdout->dup();
+  Stdio.stderr->dup2(Stdio.stdout);
+  stdout->set_close_on_exec(1);
+
   add_constant("_verbose", verbose);
   if(verbose)
-    write("Begin tests at "+ctime(time()));
+    stdout->write("Begin tests at "+ctime(time()));
 
 #ifdef WATCHDOG
   int watchdog_time=time();
@@ -1009,12 +1016,13 @@ int main(int argc, array(string) argv)
   }
   if(errors || verbose>1)
   {
-    write("Failed tests: "+errors+".\n");
+    stdout->write("Failed tests: "+errors+".\n");
   }
 
-  write("Total tests: %d  (%d tests skipped)\n",successes+errors,skipped);
+  stdout->write(sprintf("Total tests: %d  (%d tests skipped)\n",
+			successes+errors, skipped));
   if(verbose)
-    write("Finished tests at "+ctime(time()));
+    stdout->write("Finished tests at "+ctime(time()));
 
 #if 1
   if(verbose && sizeof(all_constants())!=sizeof(const_names)) {
