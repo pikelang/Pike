@@ -25,7 +25,7 @@ struct callback *gc_evaluator_callback=0;
 #include "main.h"
 #include <math.h>
 
-RCSID("$Id: gc.c,v 1.31 1998/04/06 04:25:26 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.32 1998/04/08 00:58:46 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -290,8 +290,12 @@ void describe_something(void *a, int t, int dm)
 {
   struct program *p=(struct program *)a;
   if(!a) return;
+
+#ifdef DEBUG_MALLOC
   if(dm)
     debug_malloc_dump_references(a);
+#endif
+
   if(t==-1)
   {
     fprintf(stderr,"**Location description: %s\n",(char *)a);
