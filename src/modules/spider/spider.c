@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.116 2002/09/11 22:42:13 neotron Exp $");
+RCSID("$Id: spider.c,v 1.117 2002/09/12 17:58:50 neotron Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -790,6 +790,7 @@ void do_html_parse(struct pike_string *ss,
   pop_stack();					\
 } while(0)
 
+static struct svalue empty_string_svalue;
 void do_html_parse_lines(struct pike_string *ss,
 			 struct mapping *cont,struct mapping *single,
 			 int *strings,int recurse_left,
@@ -909,7 +910,7 @@ void do_html_parse_lines(struct pike_string *ss,
 
       mapping_index_no_free(&sval1,cont,&sval2);
       if(sval1.type == T_INT)
-	mapping_index_no_free(&sval1,cont,&empty_pike_string);
+	mapping_index_no_free(&sval1,cont,&empty_string_svalue);
       if (sval1.type==T_STRING)
       {
 	if (last < i-1)
@@ -1091,6 +1092,8 @@ void f__dump_obj_table(INT32 args)
 
 void pike_module_init(void)
 {
+  ref_push_string(make_shared_string(""));
+  empty_string_svalue = sp[-1];
   pop_stack();
 
   ADD_EFUN("_low_program_name", f__low_program_name,tFunc(tPrg(tObj),tStr),0);
@@ -1169,6 +1172,7 @@ void pike_module_init(void)
 
 void pike_module_exit(void)
 {
+  free_string(empty_string_svalue.u.string);
   {
     extern void exit_xml(void);
     exit_xml();
