@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: las.c,v 1.317 2002/12/10 16:53:28 mast Exp $
+|| $Id: las.c,v 1.318 2002/12/20 15:13:20 grubba Exp $
 */
 
 #include "global.h"
-RCSID("$Id: las.c,v 1.317 2002/12/10 16:53:28 mast Exp $");
+RCSID("$Id: las.c,v 1.318 2002/12/20 15:13:20 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -2949,6 +2949,13 @@ static int find_used_variables(node *n,
     }
     break;
 
+  case F_ARROW:
+  case F_INDEX:
+    p->ext_flags |= VAR_USED;
+    if(car_is_node(n)) find_used_variables(CAR(n),p,noblock,0);
+    if(cdr_is_node(n)) find_used_variables(CDR(n),p,noblock,0);
+    break;
+
   case F_ASSIGN:
     find_used_variables(CAR(n),p,noblock,0);
     find_used_variables(CDR(n),p,noblock,1);
@@ -3064,7 +3071,9 @@ static void find_written_vars(node *n,
 
   case F_INDEX:
   case F_ARROW:
-    find_written_vars(CAR(n), p, lvalue);
+    if (lvalue)
+      p->ext_flags = VAR_USED;
+    find_written_vars(CAR(n), p, 0);
     find_written_vars(CDR(n), p, 0);
     break;
 
@@ -3158,6 +3167,8 @@ static int depend_p2(node *a, node *b)
   SET_ONERROR(free_aa, free_vars, &aa);
   SET_ONERROR(free_bb, free_vars, &bb);
 
+  /* A depends on B if A uses stuff that is written to by B. */
+
   find_used_variables(a, &aa, 0, 0);
   find_written_vars(b, &bb, 0);
 
@@ -3170,6 +3181,12 @@ static int depend_p2(node *a, node *b)
     return 1;
   }
 
+  /* If A has external dependencies due to indexing, we won't
+   * investigate further.
+   */
+  if (aa.ext_flags == VAR_USED) return 1;
+
+  /* Check for overlap in locals. */
   {
     struct scope_info *aaa = aa.locals;
     struct scope_info *bbb = bb.locals;
@@ -3194,6 +3211,11 @@ static int depend_p2(node *a, node *b)
   }
 
   if (bb.ext_flags == VAR_USED) {
+    /* B has side effects.
+     *
+     * A is dependant if A uses any externals at all.
+     */
+
     /* No need to look closer at b */
     struct scope_info *aaa = aa.externals;
 
@@ -3210,6 +3232,7 @@ static int depend_p2(node *a, node *b)
       aaa = aaa->next;
     }    
   } else {
+    /* Otherwise check for overlaps. */
     struct scope_info *aaa = aa.externals;
     struct scope_info *bbb = bb.externals;
 
