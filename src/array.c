@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.35 1998/04/27 22:33:17 hubbe Exp $");
+RCSID("$Id: array.c,v 1.36 1998/04/28 23:54:21 grubba Exp $");
 
 struct array empty_array=
 {
@@ -161,7 +161,13 @@ void simple_array_index_no_free(struct svalue *s,
     case T_INT:
       i=ind->u.integer;
       if(i<0) i+=a->size;
-      if(i<0 || i>=a->size) error("Index out of range.\n");
+      if(i<0 || i>=a->size) {
+	if (a->size) {
+	  error("Index %d is out of range 0 - %d.\n", i, a->size-1);
+	} else {
+	  error("Attempt to index the empty array with %d.\n", i);
+	}
+      }
       array_index_no_free(s,a,i);
       break;
 
@@ -218,7 +224,13 @@ void simple_set_index(struct array *a,struct svalue *ind,struct svalue *s)
     error("Index is not an integer.\n");
   i=ind->u.integer;
   if(i<0) i+=a->size;
-  if(i<0 || i>=a->size) error("Index out of range.\n");
+  if(i<0 || i>=a->size) {
+    if (a->size) {
+      error("Index %d is out of range 0 - %d.\n", i, a->size-1);
+    } else {
+      error("Attempt to index the empty array with %d.\n", i);
+    }
+  }
   array_set_index(a,i,s);
 }
 
@@ -887,7 +899,13 @@ union anything *array_get_item_ptr(struct array *a,
     error("Index is not an integer.\n");
   i=ind->u.integer;
   if(i<0) i+=a->size;
-  if(i<0 || i>=a->size) error("Index out of range.\n");
+  if(i<0 || i>=a->size) {
+    if (a->size) {
+      error("Index %d is out of range 0 - %d.\n", i, a->size-1);
+    } else {
+      error("Attempt to index the empty array with %d.\n", i);
+    }
+  }
   return low_array_get_item_ptr(a,i,t);
 }
 
