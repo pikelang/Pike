@@ -2,12 +2,12 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: threads.c,v 1.234 2004/04/26 15:45:43 mast Exp $
+|| $Id: threads.c,v 1.235 2004/04/26 16:21:19 mast Exp $
 */
 
 #ifndef CONFIGURE_TEST
 #include "global.h"
-RCSID("$Id: threads.c,v 1.234 2004/04/26 15:45:43 mast Exp $");
+RCSID("$Id: threads.c,v 1.235 2004/04/26 16:21:19 mast Exp $");
 
 PMOD_EXPORT int num_threads = 1;
 PMOD_EXPORT int threads_disabled = 0;
@@ -1106,8 +1106,7 @@ struct key_storage
  *! locked by a different thread the current thread will sleep until the
  *! mutex is unlocked. The value returned is the 'key' to the lock. When
  *! the key is destructed or has no more references the mutex will
- *! automatically be unlocked. The key will also be destructed if the mutex
- *! is destructed.
+ *! automatically be unlocked.
  *!
  *! The @[type] argument specifies what @[lock()] should do if the
  *! mutex is already locked by this thread:
@@ -1124,10 +1123,11 @@ struct key_storage
  *! @endint
  *!
  *! @note
- *! If the mutex is destructed while threads are waiting on it, it
- *! will continue to exist internally until the last thread has
- *! stopped waiting. The returned @[MutexKey] objects will behave as
- *! usual, but refer to the internal "zombie" mutex.
+ *! If the mutex is destructed while it's locked or while threads are
+ *! waiting on it, it will continue to exist internally until the last
+ *! thread has stopped waiting and the last @[MutexKey] has
+ *! disappeared, but further calls to the functions in this class will
+ *! fail as is usual for destructed objects.
  *!
  *! @seealso
  *!   @[trylock()]
@@ -1340,26 +1340,35 @@ void exit_mutex_obj(struct object *o)
 
   THREADS_FPRINTF(1, (stderr, "DESTROYING MUTEX m:%p\n", THIS_MUTEX));
 
+#ifndef PICKY_MUTEX
+  if (key) {
+    /* The last key will destroy m->condition in its exit hook. */
+    THREADS_FPRINTF(1, (stderr, "Destructed mutex is in use - delaying cleanup\n"));
+  }
+  else {
+#ifdef PIKE_DEBUG
+    if (m->num_waiting)
+      Pike_error ("key/num_waiting confusion.\n");
+#endif
+    co_destroy(& m->condition);
+  }
+#else
   if(key) {
     m->key=0;
-    destruct(key);
+    destruct(key); /* Will destroy m->condition if m->num_waiting is zero. */
     if(m->num_waiting)
     {
-      THREADS_FPRINTF(1, (stderr, "DESTRUCTED MUTEX IS BEING WAITED ON\n"));
-#ifdef PICKY_MUTEX
+      THREADS_FPRINTF(1, (stderr, "Destructed mutex is being waited on.\n"));
       /* exit_mutex_key_obj has already signalled, but since the
        * waiting threads will throw an error instead of making a new
        * lock we need to double it to a broadcast. The last thread
        * that stops waiting will destroy m->condition. */
       co_broadcast (&m->condition);
-#else
-      /* The last thread that stops waiting will destroy
-       * m->condition. */
-#endif
-      return;
     }
   }
-  co_destroy(& m->condition);
+  else
+    co_destroy(& m->condition);
+#endif
 }
 
 /*! @endclass
@@ -1423,10 +1432,8 @@ void exit_mutex_key_obj(struct object *o)
     THIS_KEY->mutex_obj = NULL;
     if (mut->num_waiting)
       co_signal(&mut->condition);
-#ifndef PICKY_MUTEX
     else if (!mutex_obj->prog)
       co_destroy (&mut->condition);
-#endif
     free_object(mutex_obj);
   }
 }
