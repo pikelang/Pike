@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.5 2003/03/24 17:41:19 marcus Exp $
+# $Id: configure.in,v 1.6 2003/03/24 22:32:49 peter Exp $
 AC_INIT(SDL.cmod)
 
 AC_MODULE_INIT()
@@ -17,10 +17,6 @@ AC_ARG_WITH(sdl-exec-prefix,[  --with-sdl-exec-prefix=PFX Exec prefix where SDL 
             sdl_exec_prefix="$withval", sdl_exec_prefix="")
 AC_ARG_ENABLE(sdltest, [  --disable-sdltest       Do not try to compile and run a test SDL program],
 		    , enable_sdltest=yes)
-
-  if test x"$pike_cv_sys_os" = xWindows_NT ; then
-      enable_sdltest=no
-  fi
 
   if test x$sdl_exec_prefix != x ; then
      sdl_args="$sdl_args --exec-prefix=$sdl_exec_prefix"
