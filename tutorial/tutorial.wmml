@@ -98,7 +98,7 @@ get a more commercially viable name.
      the other hand, has a lot more libraries available.
 
 <dt> C++
-<dd> Pike's syntax is almost the same as for C++. A huge differance is that
+<dd> Pike's syntax is almost the same as for C++. A huge difference is that
      Pike is interpreted. This makes the code slower, but reduces compile times
      to almost nothing. For those few applications which require the speed of
      C or C++, it is often easier to write a Pike extention than to write the
@@ -585,7 +585,7 @@ Note the <tt>+=</tt> operator. It is the same as saying
 	{
 	  string record_name=readline("Record name: ");
 	  records[record_name]=({});
-	  write("Input song names, one per line. End with	'.' on it's own line.\n");
+	  write("Input song names, one per line. End with	'.' on its own line.\n");
 	  while(1)
 	  {
 	    string song;
@@ -936,7 +936,7 @@ following block. If one is found to be equal to the value returned by
 the expression, Pike will continue executing the code directly following
 that <tt>case</tt> statement. When a <tt>break</tt> is encountered Pike
 will skip the rest of the code in the switch block and continue executing
-after the block. Note that it is not strictly nessesary to have a break
+after the block. Note that it is not strictly necessary to have a break
 before the next case statement. If there is no break before the next case
 statement Pike will simply continue executing and execute the code after
 that case statement as well.
@@ -964,7 +964,7 @@ just like an <tt>if</tt> statement without the else part:
 	while ( <i>expression</i> )
 	  <i>statement</i> ;
 </pre>
-The differance in how it works isn't that big either, the statement is
+The difference in how it works isn't that big either, the statement is
 executed if the expression is true. Then the expression is evaluated
 again, and if it is true the statement is executed again. Then it
 evaluates the expression again and so forth... Here is an example of
@@ -986,13 +986,13 @@ This would call show_record with the values 1, 2, 3 and 4.
 even shorter and more compact way of writing loops. The syntax looks
 like this:
 <pre>
-	for ( <i>initalizer statement</i> ; <i>expression</i> ; <i>incrementor expression</i> )
+	for ( <i>initializer statement</i> ; <i>expression</i> ; <i>incrementor expression</i> )
 	  <i>statement</i> ;
 </pre>
 For does the following steps:
 <ol>
-<li> Executes the the <i>initalizer statement</i>. The initializer statement
-     is executed only once and is most commonly used to initalize the loop
+<li> Executes the the <i>initializer statement</i>. The initializer statement
+     is executed only once and is most commonly used to initialize the loop
       variable.
 <li> Evaluates <i>expression</i>
 <li> If the result was false it exits the loop and continues with the
@@ -1056,7 +1056,7 @@ function in chapter 2. What foreach does is:
      the <i>variable</i>, otherwise exit the loop.
 <li> Go to point 3.
 </ol>
-<tt>Foreach</tt> is not really nessesary, but it is faster and clearer than
+<tt>Foreach</tt> is not really necessary, but it is faster and clearer than
 doing the same thing with a <tt>for</tt> loop, as shown here:
 <pre>
 	array tmp1= <i>array expression</i> ;
@@ -1166,7 +1166,7 @@ in Pike in detail. We have seen examples of many of these, but we haven't
 really gone into how they work. In this chapter we will also see which
 operators and functions work with the different types.
 There are two categories of data types in Pike: <b>atomic types</b>, and
-<b>pointer types</b>. The differance is that atomic types are copied when
+<b>pointer types</b>. The difference is that atomic types are copied when
 assigned to variable. With pointer types, merely the pointer is copied,
 that way you get two variables pointing to the same thing.
 <p>
@@ -1218,7 +1218,7 @@ Also note these functions:
 
 <section title="float">
 Although most programs only use integers, they are unpractical when doing
-trigonometric caluculations, transformations or anything else where you
+trigonometric calculations, transformations or anything else where you
 need decimals. For this purpose you use <tt>float</tt>. Floats are normally
 32 bit floating point numbers, which means that they can represent very large
 and very small numbers, but only with 9 accurate digits. To write a floating
@@ -1273,7 +1273,7 @@ Usually a string contains text such as a word, a sentence, a page or
 even a whole book. But it can also contain parts of a binary file,
 compressed data or other binary data. Strings in Pike are <b>shared</b>,
 which means that identical strings share the same memory space. This
-reduces memory usage very much for most applicatoins and also speeds
+reduces memory usage very much for most applications and also speeds
 up string comparisons. We have already seen how to write a constant
 string:
 <pre>
@@ -1543,7 +1543,7 @@ Writing a constant mapping is easy:
 	([ 1:({2.0}), "":([]), ]) // Mapping with lots of different types
 </pre>
 <p>
-As with arrays, mappings can contain any type. The main differance is that
+As with arrays, mappings can contain any type. The main difference is that
 the index can be any type too. Also note that the index-value pairs in a
 mapping are not stored in a specific order. You can not refer to the
 fourteenth key-index pair, since there is no way of telling which one is
@@ -1556,7 +1556,7 @@ The following operators and functions are important to use mappings:
 <dd> As discussed above, indexing is used to retreive, store and add values
      to the mapping.
 <dt> addition, subtraction, union, intersection and xor
-<dd> All these operators works exactly as on arrays, with the differance that
+<dd> All these operators works exactly as on arrays, with the difference that
      they operate on the indexes. In those cases when the value can come from
      either mapping, it will be taken from the right side of the operator.
      This is to make it easier to add new values to a mapping with <tt>+=</tt>.
@@ -1574,7 +1574,7 @@ The following operators and functions are important to use mappings:
 <dd> Returns 0 if <i>a</i> is <b>the same</b> mapping as <i>b</i>, 1 otherwise.
 
 <dt><tt>array indices(mapping <i>m</i>)</tt>
-<dd><tt>Indices</tt> returns an array containing all the indexes in the mappin <i>m</i>.
+<dd><tt>Indices</tt> returns an array containing all the indexes in the mapping <i>m</i>.
 
 <dt><tt>void m_delete(mapping <i>m</i>, mixed <i>ind</i>)</tt>
 <dd>This function removes the index-value pair with the index <i>ind</i> from the mapping <i>m</i>.
@@ -1598,10 +1598,10 @@ The following operators and functions are important to use mappings:
 <dd><tt>Sizeof</tt> returns how many index-value pairs there is in the mapping.
 
 <dt><tt>array values(mapping <i>m</i>)</tt>
-<dd>This function does the same as <tt>indices</tt>, but returns an array with all the values instead. If <tt>indices</tt> and <tt>values</tt> are called on the same mapping after eachother, without any other mapping operations in between, the returned arrays will be in the same order. They can in turn be used as arguments to <tt>mkmapping</tt> to rebuild the mapping <i>m</i> again.
+<dd>This function does the same as <tt>indices</tt>, but returns an array with all the values instead. If <tt>indices</tt> and <tt>values</tt> are called on the same mapping after each other, without any other mapping operations in between, the returned arrays will be in the same order. They can in turn be used as arguments to <tt>mkmapping</tt> to rebuild the mapping <i>m</i> again.
 
 <dt><tt>int zero_type(mixed t)</tt>
-<dd>When indexing a mapping and the index is not found, zero is returned. However, problems can arise if you have also stored zeroes in the mapping. This function allows you to see the differance between the two cases. If <tt>zero_type(<i>m</i> [ <i>ind</i> ])</tt> returns 1, it means that the value was not present
+<dd>When indexing a mapping and the index is not found, zero is returned. However, problems can arise if you have also stored zeroes in the mapping. This function allows you to see the difference between the two cases. If <tt>zero_type(<i>m</i> [ <i>ind</i> ])</tt> returns 1, it means that the value was not present
 in the mapping. If the value was present in the mapping, <tt>zero_type</tt> will return something else than 1.
 </ul>
 </section>
@@ -1609,7 +1609,7 @@ in the mapping. If the value was present in the mapping, <tt>zero_type</tt> will
 
 <section title="multiset">
 
-A multiset is almost the same thing as a mapping. The differance is that there
+A multiset is almost the same thing as a mapping. The difference is that there
 are no values:
 <p>
 <center>
@@ -1627,7 +1627,7 @@ Writing a constant multiset is similar to writing an array:
 <pre>
 	(< >)      // Empty multiset
 	(< 17 >)  // Multiset with one index: 17
-	(< "", 1, 3.0, 1 >) // Multiset with 3 index
+	(< "", 1, 3.0, 1 >) // Multiset with 3 indexes
 </pre>
 Note that you can actually have two of the same index in a multiset. This is
 normally not used, but can be practical at times.
@@ -1662,7 +1662,7 @@ You can also use the <b>cast</b> operator like this:
 <pre>
 	program p = (program) "hello_world";
 </pre>
-This will also load the program <tt>hello_world.pike</tt>, the only differance
+This will also load the program <tt>hello_world.pike</tt>, the only difference
 is that it will cache the result so that next time you do <tt>(program)"hello_world"</tt> you will receive the _same_ program. If you call
 <tt>compile_file("hello_world.pike")</tt> repeatedly you will get a new program
 for each time.
@@ -1677,11 +1677,11 @@ There is also a way to write programs inside programs with the help of the
 The <tt>class</tt> keyword can be written as a separate entity
 outside of all functions, but it is also an expression which returns the
 <tt>program</tt> written between the brackets. The <i>class_name</i> is
-optinal. If used you can later refer to that <tt>program</tt> by the name
+optional. If used you can later refer to that <tt>program</tt> by the name
 <i>class_name</i>.
 This is very similar to how classes are written in C++ and can be used
-in much the same way. It can also be used to create <b>structs</b>.
-(or records if you program Pascal) 
+in much the same way. It can also be used to create <b>structs</b>
+(or records if you program Pascal).
  Let's look at an example:
 <pre>
 	class record {
@@ -1722,7 +1722,7 @@ section again.
 
 <dl>
 <dt> cloning
-<dd> To create a data area for a <tt>program</tt> you need to instanciate or
+<dd> To create a data area for a <tt>program</tt> you need to instantiate or
      <b>clone</b> the program. This is accomplished by using a pointer
      to the <tt>program</tt> as if it was a function and call it. That
      creates a new object and calls the function <tt>create</tt> in the
@@ -1759,7 +1759,7 @@ section again.
 
 
 <section title="object">
-Although programs are absolutely nessesary for any application you might
+Although programs are absolutely necessary for any application you might
 want to write, they are not enough. A <tt>program</tt> doesn't have anywhere
 to store data, it just merely outlines how to store data. To actually store
 the data you need an <tt>object</tt>. Objects are basically a chunk of memory
@@ -1807,7 +1807,7 @@ contents of the variables in that object. In essence, instead of accessing
 the data in the object with the <tt>-&gt;</tt> operator, we call a function
 in the object and have it write the information itself. This type of
 programming is very flexible, since we can later change how <tt>record</tt>
-stores it's data, but we do not have to change anything outside of
+stores its data, but we do not have to change anything outside of
 the <tt>record</tt> program.
 <p>
 Functions and operators relevant to objects:
@@ -1833,7 +1833,7 @@ Functions and operators relevant to objects:
 <dd> This function invalidates all references to the object <i>o</i> and
      frees all variables in that object. This function is also called when
      <i>o</i> runs out of references. If there is a function named
-     <tt>destroy</tt> in the object, it will be called before the actually
+     <tt>destroy</tt> in the object, it will be called before the actual
      destruction of the object.
 <dt> <tt>array(string) indices(object <i>o</i>)</tt>
 <dd> This function returns a list of all identifiers in the object <i>o</i>.
@@ -1847,7 +1847,7 @@ Functions and operators relevant to objects:
      executing.
 <dt> <tt>array values(object <i>o</i>)</tt>
 <dd> This function returns the same as <tt>rows(o,indices(o))</tt>.
-     That means it returns the all the values of the identifiers in the
+     That means it returns all the values of the identifiers in the
      object <i>o</i>.
 <dt> comparing
 <dd> As with all data types <tt>==</tt> and <tt>!=</tt> can be used to
@@ -1876,7 +1876,7 @@ can be passed around just like any other data type:
 	void teleledningsanka() { return bar()(); }
 </pre>
 In this example, the function bar returns a pointer to the function
-<tt>foo</tt>. No indexing is nessesary since the function <tt>foo</tt> is
+<tt>foo</tt>. No indexing is necessary since the function <tt>foo</tt> is
 located in the same object. The function <tt>gazonk</tt> simply calls
 <tt>foo</tt>. However, note that the word <tt>foo</tt> in that function
 is an expression returning a function pointer that is then called. To
@@ -2255,7 +2255,7 @@ They can also manipulate arrays, multisets and mappings as sets.
 <tr><td>Inverse (not)</td>	<td>~ a</td>		<td>`~</td>		<td>Returns -1-a.</td></tr>
 <tr><td>Intersection (and)</td>	<td>a &amp; b</td>	<td>`&amp;</td>		<td>All elements present in both a and b.</td></tr>
 <tr><td>Union (or)</td>		<td>a | b</td>		<td>`|</td>		<td>All elements present in a or b.</td></tr>
-<tr><td>Symmetric differance (xor)</td><td>a ^ b</td>	<td>`^</td>		<td>All elements present in a or b, but not present in both.</td></tr>
+<tr><td>Symmetric difference (xor)</td><td>a ^ b</td>	<td>`^</td>		<td>All elements present in a or b, but not present in both.</td></tr>
 </table>
 <p>
 </center>
@@ -2263,13 +2263,13 @@ They can also manipulate arrays, multisets and mappings as sets.
 The first three operators can only be used with integers and should be
 pretty obvious.
 
-The other three, intersection, union and symmetric differance, can be used with
+The other three, intersection, union and symmetric difference, can be used with
 integers, arrays, multisets and mappings. When used with integers, these
 operators considers each bit in the integer a separate element. If you do
 not know about how bits in integers I suggest you go look it up in some other
 programming book or just don't use these operators on integers.
 <p>
-When intersection, union or symmetric differance is used on an array each element
+When intersection, union or symmetric difference is used on an array each element
 in the array is considered by itself. So intersecting two arrays will result
 in an array with all elements that are present in both arrays. Example:
 <tt>({7,6,4,3,2,1}) &amp; ({1, 23, 5, 4, 7})</tt> will return
@@ -2501,7 +2501,7 @@ possible. Here is a list of all casts that actually _do_ anything:
 <tr><td>string</td><td>int</td><td>Convert decimal, octal or hexadecimal number to an int.</td></tr>
 <tr><td>string</td><td>float</td><td>Convert ASCII number to a float.</td></tr>
 <tr><td>string</td><td>program</td><td>String is a filename, compile the file and return the program. Results are cached.</td></tr>
-<tr><td>string</td><td>object</td><td>This first casts the strning to a program, (See above) and then clones the result. Results are cached.</td></tr>
+<tr><td>string</td><td>object</td><td>This first casts the string to a program, (see above) and then clones the result. Results are cached.</td></tr>
 </table>
 </center>
 <p>
@@ -2592,13 +2592,13 @@ it is identical to C++ in any way. Pike uses a less strict approach to
 object orientation which creates a more relaxed programming style. For you
 who have never come in contact with object oriented programming before, be
 warned that the ideas expressed in Pike and in this chapter are my own and
-do not nessecarily reflect what other people think about object
+do not necessarily reflect what other people think about object
 orientated programming.
 
 <section title="The approach">
 Think of the data type program as an executable file. Then we clone this
 program and create an object. The object is then a running program. The
-object has it's own data and it's own functions, however, it can work
+object has its own data and its own functions, however, it can work
 together with other programs by calling functions in those objects.
 The functions can be thought of as message carriers, tcp sockets or
 just a way for programs to communicate. Now we have a running system with
@@ -2676,7 +2676,7 @@ leave out the <i>class_name</i> and leave the class unnamed. The
 <i>class definition</i> is simply the functions and programs you want to add
 to the class. It is important to know that although the class is defined in
 the same file as other classes and functions it can not immediately access
-data in it's surroundings. Only constants defined before the class in the
+data in its surroundings. Only constants defined before the class in the
 same file can be used. Example:
 <pre>
 	constant x = 17;
@@ -2684,7 +2684,7 @@ same file can be used. Example:
 	   int test() { return x; }
 	};
 </pre>
-This works because <tt>x</tt> is a <b>constant</b> if x had been a variable
+This works because <tt>x</tt> is a <b>constant</b>. If x had been a variable
 or function it would not have worked. In future versions of Pike it may be
 possible to do this with variables as well. To make it easier to progam,
 defining a class is also to define a
@@ -2815,8 +2815,8 @@ that both files are usable from my program.
 <section title="Pike Inherit compared to other languages">
 Many other languages assign special meaning to inherit. Most common is the
 notion that if you inherit a class, it means that your class should obey
-the same rules as the inherited class. In Pike, this is not nessesarily so.
-You may wish you use inherit in Pike like this, but you can just as well
+the same rules as the inherited class. In Pike, this is not necessarily so.
+You may wish to use inherit in Pike like this, but you can just as well
 choose not to. This may confuse some programmers with previous experience
 in object oriented programming.
 </section>
@@ -2835,7 +2835,7 @@ These modifiers are available:
     function pointer to it is returned from inside this program.
 <dt><tt>nomask</tt>
 <dd>This prevents other objects from re-defining this identifier in
-    program that inherit this program.
+    programs that inherit this program.
 <dt><tt>private</tt>
 <dd>This prevents inheriting programs from accessing this identifier.
     Note that inheriting program can still re-define the identifer.
@@ -2847,7 +2847,7 @@ These modifiers are available:
 <dt><tt>protected</tt>
 <dd>Reserved for future use.
 </dl>
-When modifiers are used in conjunction with inherit, all the variablers,
+When modifiers are used in conjunction with inherit, all the variabels,
 functions and classes copied from the inherited class will be modified
 with the keywords used. For instance, <tt>private inherit</tt> means that
 the identifers from this inherit will not be available to program inheriting
@@ -3005,11 +3005,11 @@ to the following table:
  characters not present in the set. If followed by normal text, %s will match
  all characters up to but not including the first occurance of that text. </td></tr>
 <tr valign=top><td> %5s </td><td> gives a string of 5 characters (5 can be any number) </td></tr>
-<tr valign=top><td> %[set] </td><td> matches a string containing a given set of characters. (thos given inside the brackets) %[^set] means any character ecept those inside brackets. %[0-9H] means any number or 'H'. </td></tr>
+<tr valign=top><td> %[set] </td><td> matches a string containing a given set of characters (those given inside the brackets). %[^set] means any character except those inside brackets. Example: %[0-9H] means any number or 'H'. </td></tr>
 </table>
 
 <p>If a * is put between the percent and the operator, the operator
-will not only match it's argument, not assign any variables.
+will only match its argument, not assign any variables.
 <p>
 Sscanf does not use backtracking. Sscanf simply looks at the format string
 up to the next % and tries to match that with the string. It then proceeds
@@ -3022,7 +3022,7 @@ Let's look at a couple of examples:
 	// a will be assigned "oo" and 1 will be returned
 	sscanf("foo","f%s",a);
 
-	// a will be 4711 amd b will be "bar", 2 will be returned
+	// a will be 4711 and b will be "bar", 2 will be returned
 	sscanf("4711bar","%d%s",a,b);
 
 	// a will become "test"
@@ -3045,16 +3045,16 @@ It works by making a block of code into an expression, like this:
 <pre>
 	catch { <i>statements</i> }
 </pre>
-If an error occurse, catch will return a description of the error.
+If an error occurs, catch will return a description of the error.
 The description of the error has the following format:
 <pre>
 	({
-	   "<i>error description</i>"
+	   "<i>error description</i>",
 	   backtrace()
 	})
 </pre>
 If no error occurs, catch will return zero. You may emulate your own errors
-using the function, throw is described in <link to=functions>.
+using the function throw, described in <link to=functions>.
 <p>
 Example:
 <pre>
@@ -3082,11 +3082,11 @@ two seconds to execute but only uses 50% cpu, this function will return 1000.
 <a name=typeof>
 <section title="typeof">
 This function retuns the type of an expression as a string. It does not
-evaluate the expression at all, which might be someone confusing. Example:
+evaluate the expression at all, which might be somewhat confusing. Example:
 <pre>
 	typeof( exit(1) )
 </pre>
-This will return the string <tt>"void"</tt> since exit is function that
+This will return the string <tt>"void"</tt> since exit is a function that
 returns void.
 It will not execute the function <tt>exit</tt> and exit the process as you
 might expect.
@@ -3234,7 +3234,7 @@ or like this:
 <tr><td>
 <ul>
 <li> Save the hello_world.pike program as hello_world.pike.pmod, then make
-     a program that loads this module and calls it's main().
+     a program that loads this module and calls its main().
 <li> Make a directory called <tt>Programs.pmod</tt> and put all the examples you
      have written so far in it. Make a program that runs one of those
      programs. Make sure the program can be modified to run another of
@@ -3260,7 +3260,7 @@ and classes are collected in the module <tt>Stdio</tt>.
 
 <a name=Stdio.File>
 <section title="Stdio.File">
-This is the basic I/O object, it provides socket communicatoin as well
+This is the basic I/O object, it provides socket communication as well
 as file access. It does not buffer reads and writes or provide line-by-line
 reading, that is done in the FILE object. <tt>Stdio.File</tt> is completely
 written in C. What follows is a description of all the functions in
@@ -3373,7 +3373,7 @@ string read();<br>
 Read tries to read nbytes bytes from the file, and return it as a
 string. If something goes wrong, zero is returned.
 <p>If a one is given as second argument to read(), read will not try
-it's best to read as many bytes as you asked it to read, it will
+its best to read as many bytes as you asked it to read, it will
 merely try to read as many bytes as the system read function will
 return. This mainly useful with stream devices which can return
 exactly one row or packet at a time.
@@ -3500,8 +3500,8 @@ void set_buffer(int <I>bufsize</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function sets the internal buffer size of a socket or stream,
-the second argument allows you to set the read or write buffer by
+This function sets the internal buffer size of a socket or stream.
+The second argument allows you to set the read or write buffer by
 specifying "r" or "w". It is not guaranteed that this function
 actually does anything, but it certainly helps to increase data
 transfer speed when it does.
@@ -3904,7 +3904,7 @@ was open to begin with, it is closed before the pipe is created.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function determines weather this file will be closed when
+This function determines whether this file will be closed when
 calling exece. Default is that the file WILL be closed on exec
 except for stdin, stdout and stderr.
 <p>
@@ -3923,7 +3923,7 @@ Here is an example of how to use the TCP functions in Stdio.File in blocking
 mode. This short program takes an URL as first argument, connects to the
 WWW server, sends a HEAD request and writes the reply to stdout. For clarity,
 all calls to Stdio.File use <tt>File::</tt> even if that is not strictly
-nessesary.
+necessary.
 
 <pre>
 	import Stdio;
@@ -4503,11 +4503,11 @@ they are then named 'socket' and 'file'.
 <pre>
 	  int offset=0;
 </pre>
-Then there is a global variable called offset which is initalized to zero.
-(each instance of this class will have it's own instance of this variable,
+Then there is a global variable called offset which is initialized to zero.
+(each instance of this class will have its own instance of this variable,
  so it is not truly global, but..) 
-Note that the initalization is done when the class is cloned. (or
-instanciated if you prefer C++ terminology)
+Note that the initialization is done when the class is cloned (or
+instantiated if you prefer C++ terminology).
 <p>
 Next we define the function write_callback(). Later the program will go
 into a 'waiting' state, until something is received to process, or until
@@ -4601,7 +4601,7 @@ a complete line yet. If so we parse this and start ouputting the file.
 </pre>
 This sscanf is pretty complicated, but in essense it means: put the
 first word in 'input' in 'cmd' and the second in 'input' and return 2
-if successfull, 0 otherwise.
+if successful, 0 otherwise.
 <p>
 <pre>
 	      if(cmd!="GET")
@@ -4680,7 +4680,7 @@ from the socket.
 	  void selfdestruct() { destruct(this_object()); }
 
 </pre>
-This function is called when the program is instanciated. It is used
+This function is called when the program is instantiated. It is used
 to set up data the way we want it. Extra arguments to clone() will be
 sent to this function. In this case it is the object representing the
 new connection.
@@ -4739,10 +4739,10 @@ If it failed we just return.
 	  output_class(tmp_output);
 </pre>
 Otherwise we clone an instanec of 'output_class' and let it take care of the
-connection. Each clone of output_class will have it's own set of global
+connection. Each clone of output_class will have its own set of global
 variables, which will enable many connections to be active at the same
 time without data being mixed up. Note that the programs will not actually
-run simulataneously though.
+run simultaneously though.
 <p>
 <pre>
 	  destruct(tmp_output);
@@ -4779,7 +4779,7 @@ indicate failiure.
 	  return - 17; /* Keep going */
 </pre>
 If everything went ok, we return -17, any negative value returned by main()
-means that the program WONT exit, it will hang around waiting for events
+means that the program WON'T exit, it will hang around waiting for events
 instead. (like someone connecting)
 <pre>
 	}
@@ -4799,7 +4799,7 @@ Threads are used to run several Pike functions at the same time without having t
 several Pike processes. Using threads often simplifies coding and because the
 threads are within the same process, data can be shared or sent to other threads
 very fast. Threads are not supported on all systems, you may test if you have
-thread support with the preprocessor constructoin <tt>#if constant(thread_create)</tt>.
+thread support with the preprocessor construction <tt>#if constant(thread_create)</tt>.
 Pike needs POSIX or UNIX thread support when compiled to support threads.
 <p>
 
@@ -4965,7 +4965,7 @@ This function returns the object that identifies this thread.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Thread.Mutex is a precompiled Pike program that implements
-mutal exclusion locks. Mutex locks are used to prevent multiple
+mutual exclusion locks. Mutex locks are used to prevent multiple
 threads from simultaneously execute sections of code which accesses
 or changes shared data. The basic operations for a mutex is locking
 and unlocking, if a thread attempts to lock an already locked mutex
@@ -5272,7 +5272,7 @@ This function returns how many values are currently in the fifo.
 <tt>Thread.Queue</tt> - a queue of values
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Thread.Queue implements a queue, or a pipeline. The main differance
+Thread.Queue implements a queue, or a pipeline. The main difference
 between Thread.Queue and Thread.Fifo is that queues
 will never block in write(), only allocate more memory.
 <p>
@@ -5292,7 +5292,7 @@ Queues are only available on systems with POSIX or UNIX threads support.
 <tt>Thread.Queue-&gtwrite</tt> - queue a value
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
-<tt>>void write(mixed <I>value</I>);<br>
+<tt>void write(mixed <I>value</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
@@ -5448,7 +5448,7 @@ not have threads.
 
 There are a few modules that provide extra functions that operate specifically
 on one data type. These modules have the same name as the data type, but are
-capitalized so you can tell the differance. At the time of writing, the only
+capitalized so you can tell the difference. At the time of writing, the only
 such modules are <tt>String</tt> and <tt>Array</tt>, but more are expected to
 show up in the future.
 
@@ -5594,7 +5594,7 @@ fun returns true.
 Filter array calls fun in all the objects in the array arr, and
 return all objects that returned true.
 <p>Third syntax:
-Filter array calls all functionpointers in the array arr, and
+Filter array calls all function pointers in the array arr, and
 return all that returned true.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
@@ -5829,7 +5829,7 @@ Usersecurity
 <a name=gethostbyaddr>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>gethostbyaddr</tt> - gets information about a host given it's address
+<tt>gethostbyaddr</tt> - gets information about a host given its address
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>array gethostbyaddr(string <I>addr</I>);<br>
@@ -5854,7 +5854,7 @@ or similar system call.
 <a name=gethostbyname>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>gethostbyname</tt> - gets information about a host given it's name
+<tt>gethostbyname</tt> - gets information about a host given its name
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>array gethostbyname(string <I>hostname</I>);<br>
@@ -6561,7 +6561,7 @@ object Mpz(string <I>digits</I>, int <I>base</I>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-When cloning an mpz it is by default initalized to zero. However,
+When cloning an mpz it is by default initialized to zero. However,
 you can give a second argument to clone to initialize the new
 object to that value. The argument can be an int, float another
 mpz object, or a string containing an ascii number. You can also
@@ -6653,7 +6653,7 @@ or<br>
 <p><br>
 DESCRIPTION<br>
 This function converts an mpz to a string, int or float. This is<br>
-nessesary when you want to view, store or use the result of an mpz<br>
+necessary when you want to view, store or use the result of an mpz<br>
 calculation.<br>
 </tt>
 <p>
@@ -6723,7 +6723,7 @@ have to be strings. All keys are always unique, just as with a mapping.
 <!-- FIXME, implement `[], `[]=, _sizeof, _indices and _values -->
 
 This is the an interface to the gdbm library. This module might or
-might not be available in your Pike depending on weather the gdbm library
+might not be available in your Pike depending on whether the gdbm library
 was available on your system when Pike was compiled.
 
 </a>
@@ -8058,14 +8058,14 @@ Neither can it be used to produce comments.
 <a name=MIME.reconstruct_partial>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>MIME.reconstruct_partial</tt> - Join a fragmented message to it's original form
+<tt>MIME.reconstruct_partial</tt> - Join a fragmented message to its original form
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int|object reconstruct_partial(array(object) <i>collection</i>);<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This function will attempt to reassemble a fragmented message from it's
+This function will attempt to reassemble a fragmented message from its
 parts.  The array <i>collection</i> should contain <tt>MIME.Message</tt>
 objects forming a complete set of parts for a single fragmented message.
 The order of the messages in this array is not important, but every part
@@ -8075,7 +8075,7 @@ Should the function succeed in reconstructing the original message, a
 new <tt>MIME.Message</tt> object is returned.  Note that this message may
 in turn be a part of another, larger, fragmented message.
 If the function fails to reconstruct an original message, it returns an
-integer indicating the reason for it's failure:
+integer indicating the reason for its failure:
 <ul>
 <li>If an empty <i>collection</i> is passed in, or one that contains messages
 which are not of type <tt>message/partial</tt>, or parts of different
@@ -8780,14 +8780,14 @@ if any.
 <a name=Simulate.this_function>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>Simulate.this_function</tt> - return a functionpointer to the current function
+<tt>Simulate.this_function</tt> - return a function pointer to the current function
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>function this_function();<br>
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-Returns a functionpointer to the current function, useful for
+Returns a function pointer to the current function, useful for
 making recursive lambda-functions.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
@@ -8847,7 +8847,7 @@ Return those strings in arr that matches the regexp in reg.
 </tt>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
-This is not a function, it is a constant roughly equal to the mathimatical
+This is not a function, it is a constant roughly equal to the mathematical
 constant Pi.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
@@ -9081,7 +9081,7 @@ list sum(multiset ... <I>l</I>);<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function does exactly the same thing as adding all the arguments
-together with +. It's just here so you can get a function-pointer to
+together with +. It's just here so you can get a function pointer to
 the summation operator.
 <p>
 </dl>
@@ -11731,7 +11731,7 @@ This is for instance used by the #include directive to tell the
 compiler that we are compiling another file. The directive takes
 the line number first, and optionally, the file afterwards.
 <p>This can also be used when generating pike from something else, to
-tell teh compiler where the code originally originated from.
+tell the compiler where the code originally originated from.
 <p>
 <dt><encaps>EXAMPLES</encaps><dd>
 <tt>#line 4 "foo.cf" /* The next line was generated from 4 in foo.cf */<br>
@@ -11846,7 +11846,7 @@ does not work on strings.
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function checks how many references the value <i>o</i> has.
 Note that the number of references will always be at least one since
-it the value is located on the stack when this function is executed.
+the value is located on the stack when this function is executed.
 _refs() is mainly meant for debugging Pike but
 can also be used to control memory usage.
 <p>
@@ -11913,7 +11913,7 @@ void add_constant(string <I>name</I>);<br>
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 This function adds a new constant to Pike, it is often used to
-add builin functions. All programs compiled after add_constant
+add builtin functions. All programs compiled after add_constant
 function is called can access 'value' by the name given by 'name'.
 If there is a constant called 'name' already, it will be replaced by
 by the new definition. This will not affect already compiled programs.
@@ -12250,7 +12250,7 @@ in the stack. Each entry has this format:
 <dl><dt><dd><table border=0 cellpadding=0 cellspacing=0>
 <tr valign=top><td> file, </td><td> /* a string with the filename if known, else zero */ </td></tr>
 <tr valign=top><td> line, </td><td> /* an integer containing the line if known, else zero */ </td></tr>
-<tr valign=top><td> function, </td><td> /* The function-pointer to the called function */ </td></tr>
+<tr valign=top><td> function, </td><td> /* The function pointer to the called function */ </td></tr>
 <tr valign=top><td> mixed|void ..., </td><td> /* The arguments the function was called with */ </td></tr>
 </table>
 </dl>})<br>
@@ -12456,7 +12456,7 @@ or<br>
 <dt><encaps>DESCRIPTION</encaps><dd>
 new() or clone() creates an object from the program p. Or in C++ terms:
 It creates an instance of the class p. This clone will first have
-all global variables initalized, and then create() will be called
+all global variables initialized, and then create() will be called
 with args as arguments.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
@@ -13355,7 +13355,7 @@ Kill sends a signal to another process. If something goes wrong
 </table>
 
 <p>Note that you have to use signame to translate the name of a signal
-to it's number.
+to its number.
 <p>
 <dt><encaps>SEE ALSO</encaps><dd>
 <a href=#signal>signal</a>, <a href=#signum>signum</a>, <a href=#signame>signame</a> and <a href=#fork>fork</a>
@@ -13417,7 +13417,7 @@ components:
 <tr valign=top><td> wday     </td><td> day of week (0=sunday)  </td><td> 0 - 6 </td></tr>
 <tr valign=top><td> yday     </td><td> day of year             </td><td> 0 - 365 </td></tr>
 <tr valign=top><td> isdst    </td><td> is daylight saving time </td><td> 0/1 </td></tr>
-<tr valign=top><td> timezone </td><td> differance between </td></tr>
+<tr valign=top><td> timezone </td><td> difference between </td></tr>
 <tr valign=top><td>  </td><td>  </td><td> local time and UTC </td></tr>
 </table>
 
@@ -13693,7 +13693,7 @@ Returns 1 if arg is a multiset, zero otherwise.
 <p>
 <dt><encaps>DESCRIPTION</encaps><dd>
 Rename or move a file between directories. If the destination
-file already exists, it will be overwritten. Returns 1 on sucess,
+file already exists, it will be overwritten. Returns 1 on success,
 0 otherwise.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
@@ -14329,7 +14329,7 @@ Result: SIGKILL<br>
 <a name=signum>
 <dl>
 <dt><encaps>NAME</encaps><dd>
-<tt>signum</tt> - get a signal number given a desctiptive string
+<tt>signum</tt> - get a signal number given a descriptive string
 <p>
 <dt><encaps>SYNTAX</encaps><dd>
 <tt>int signum(string <I>sig</I>);<br>
@@ -14432,7 +14432,7 @@ same size. Each of these arrays will be modified in the same way as
 will be moved to position 0 in all the other arrays as well.
 <p>Sort can sort strings, integers and floats in ascending order.
 Arrays will be sorted first on the first element of each array.
-<p>Sort returns it's first argument.
+<p>Sort returns its first argument.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
 <a href=types_array>array</a>
@@ -15003,10 +15003,10 @@ One is returned by normal functions, and one returned by mapping
 lookups and find_call_out() when what you looked for wasn't there.
 The only way to separate these two kinds of zeros is zero_type.
 When doing a find_call_out or mapping lookup, zero_type on this value
-will return 1 if there was no such thing present in the mappping, or
-no such call_out could be found. If the argument to zero type is a
+will return 1 if there was no such thing present in the mapping, or
+no such call_out could be found. If the argument to zero_type is a
 destructed object or a function in a destructed object, 2 will be
-returned. Otherwize zero_type will return zero.
+returned. Otherwise zero_type will return zero.
 <p>If the argument is not an int, zero will be returned.
 <p>
 <dt><encaps>KEYWORDS</encaps><dd>
@@ -15041,7 +15041,7 @@ returned. Otherwize zero_type will return zero.
   <li>hilfe
   <li>socket->query_address()
   <li> scope for class {}
-  <li>optimzation
+  <li>optimization
 </ul>
 <HR NEWPAGE>
 <HR NEWPAGE>
@@ -15085,7 +15085,7 @@ in the <b>master object</b>:
      the value should be, and the value in question otherwise.
 <dt> <tt>void _main(string *<i>argv</i>, string *<i>env</i>)</tt>
 <dd> This function is supposed to start a Pike script. It receives all
-     the command line arguments in the first array. And all environment
+     the command line arguments in the first array and all environment
      variables on the form <tt>"<i>var</i>=<i>value</i>"</tt>.
      _main is called as soon as all modules and setup is done.
 <dt> <tt>void compile_error(string <i>file</i>, int <i>line</i>, string <i>err</i>)</tt>
@@ -15099,7 +15099,7 @@ in the <b>master object</b>:
 </dl>
 <p>
 Aside from the above functions, which are expected from the Pike binary,
-the master object is also exepected to provide functions used by Pike
+the master object is also expected to provide functions used by Pike
 scripts. The current master add the following global functions:
 <dl><dd>
 	add_include_path,
@@ -15210,7 +15210,7 @@ instead of writing them to stderr.
   <dt> TCP <dd> Transmission Control Protocol, the internet standard for computer communication
   <dt> ASCII <dd> American Standard Code for Information Interchange.  Standard set by the American Standards Authority for encoding English letters, numbers , some symbols and control characters in 7 bits. There are also some "semi-standard" systems which add other characters by using 8 bits, which are also loosly called ASCII.
   <dt> UNIX <dd> A group of operating systems. Some noteworthy unixes are: Solaris, Linux, HP-UX, Digital Unix, SunOs, BSD and Unixware.
-  <dt> clone <dd> To create an object from a program. Or to use C++ jargon: to instanciate a class.
+  <dt> clone <dd> To create an object from a program. Or to use C++ jargon: to instantiate a class.
   <dt> command line <dd> The line you write to execute a program
   <dt> command line option <dd> The words after the program name on the <i>command line</i>.
   <dt> constant <dd> 1) A value written directly in the code, such as <tt>1</tt> or <tt>"foo"</tt>. 2) A value defined with add_constant.
@@ -15278,7 +15278,7 @@ void add_record()
 {
   string record_name=readline("Record name: ");
   records[record_name]=({});
-  write("Input song names, one per line. End with '.' on it's own line.\n");
+  write("Input song names, one per line. End with '.' on its own line.\n");
   while(1)
   {
     string song;
@@ -15425,7 +15425,7 @@ int main(int argc, string * argv)
 </pre>
 </appendix>
 
-<appendix title="Reserverd words">
+<appendix title="Reserved words">
 
 These are words that have special meaning in Pike and can not be used
 as variable or function names.
