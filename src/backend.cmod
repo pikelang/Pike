@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: backend.cmod,v 1.64 2003/10/28 20:41:10 mast Exp $
+|| $Id: backend.cmod,v 1.65 2003/10/28 20:49:16 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: backend.cmod,v 1.64 2003/10/28 20:41:10 mast Exp $");
+RCSID("$Id: backend.cmod,v 1.65 2003/10/28 20:49:16 mast Exp $");
 #include "fdlib.h"
 #include "backend.h"
 #include <errno.h>
@@ -1108,6 +1108,8 @@ PIKECLASS Backend
 	debug_malloc_touch(me->fds);
 	for(i=0; i <= me->active_set.max_fd; i++)
 	{
+	  /* FIXME: Error handling equivalent to POLLHUP/POLLERR? */
+
 	  if(fd_FD_ISSET(i, &me->active_set.eset) &&
 	     me->fds[i].read_oob.callback)
 	    if ((*(me->fds[i].read_oob.callback))(i, me->fds[i].read_oob.data) == -1)
@@ -1162,6 +1164,7 @@ PIKECLASS Backend
 	    IF_PD(fprintf(stderr, "BACKEND[%d]: POLLRDBAND on %d\n", me->id, fd));
 	    if (me->fds[fd].read_oob.callback)
 	    {
+	      errno = 0;
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_oob_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].read_oob.data));
 	      if ((*(me->fds[fd].read_oob.callback))(fd, me->fds[fd].read_oob.data) == -1)
@@ -1176,6 +1179,7 @@ PIKECLASS Backend
 	     (me->active_set.poll_fds[i].revents & POLLERR))
 	  {
 	    /* Closed or error */
+	    errno = 0;
 	    if (me->active_set.poll_fds[i].revents & POLLERR) {
 	      int err;
 	      ACCEPT_SIZE_T len = sizeof (err);
@@ -1217,6 +1221,7 @@ PIKECLASS Backend
 	    if (me->fds[fd].read.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: read_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].read.data));
+	      errno = 0;
 	      if ((*(me->fds[fd].read.callback))(fd,me->fds[fd].read.data) == -1)
 		goto callbacks_done;
 	    } else {
@@ -1232,6 +1237,7 @@ PIKECLASS Backend
 	    if (me->fds[fd].write_oob.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_oob_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].write_oob.data));
+	      errno = 0;
 	      if ((*(me->fds[fd].write_oob.callback))(fd, me->fds[fd].write_oob.data) == -1)
 		goto callbacks_done;
 	    }
@@ -1245,6 +1251,7 @@ PIKECLASS Backend
 	    if (me->fds[fd].write.callback) {
 	      IF_PD(fprintf(stderr, "BACKEND[%d]: write_callback(%d, %p)\n",
 			    me->id, fd, me->fds[fd].write.data));
+	      errno = 0;
 	      if ((*(me->fds[fd].write.callback))(fd, me->fds[fd].write.data) == -1)
 		goto callbacks_done;
 	    } else {
