@@ -326,16 +326,31 @@ class _Class_or_Module {
   string print() {
     string s = ::print() + " " + name + " {\n";
     foreach(docGroups, DocGroup dg) {
-      s += sprintf("doc [%d..%d]:\n",
-                   dg->documentation->position->firstline,
-                   dg->documentation->position->lastline);
+      if (dg->documentation->position) {
+	s += sprintf("doc [%d..%d]:\n",
+		     dg->documentation->position->firstline,
+		     dg->documentation->position->lastline);
+      } else {
+	s += "doc [..]:\n";
+      }
       s += dg->documentation->text + "\n";
-      foreach(dg->objects, PikeObject p)
-        s += sprintf("%s   [%d..%d]\n", p->print(),
-                     p->position->firstline,
-                     p->position->lastline);
+      foreach(dg->objects, PikeObject p) {
+	if (p->position) {
+	  s += sprintf("%s   [%d..%d]\n", p->print(),
+		       p->position->firstline,
+		       p->position->lastline);
+	} else {
+	  s += sprintf("%s   [..]\n", p->print());
+	}
+      }
     }
     return s + "\n}";
+  }
+
+  static string _sprintf(int c)
+  {
+    if (c == 's') return xml();
+    return print();
   }
 }
 
