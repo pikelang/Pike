@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.651 2002/12/05 20:09:46 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.652 2002/12/07 16:26:02 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -47,6 +47,18 @@ If this fails, please set CONFIG_SHELL to /bin/sh before starting configure.
     exit 17
   fi
 else :; fi
+
+AC_ARG_ENABLE(make_conf, MY_DESCR([--disable-make.conf],
+   [do not use settings from /etc/make.conf]),
+             [], [enable_make_conf=yes])
+
+if test "x$enable_make_conf" == x"yes" -a -e /etc/make.conf; then
+  set >conftest.tmp
+  echo Using settings from /etc/make.conf...
+  source /etc/make.conf
+  set | diff -u conftest.tmp -  | grep '^+C'
+fi
+
 
 if test "x${CFLAGS-}" = x ; then
   cflags_is_set=no
@@ -6149,6 +6161,7 @@ install......... $INSTALL
 shared object... .$SO
 libs............ $LIBS
 optimize........ $OPTIMIZE
+CFLAGS.......... $CFLAGS
 cross-compiled.. $cross_compiling
 
 features:
