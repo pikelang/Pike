@@ -114,7 +114,7 @@ void make_page(string base, TAG tag, string ind, string fbase)
    werror("creating "+outfiles[0]+"...\n"); 
    object f=Stdio.File(outfiles[0],"wtc");
    string t=ctime(time());
-   f->write("'\\\" t\n"
+   f->write(".\\\" t\n"
 	    ".\\\" automatic generated from wmml\n"
 	    ".TH "+names*","+" "+obase+" \""+
 	    t[8..9]+t[4..7]+t[20..23]+"\"\n"
