@@ -5,7 +5,7 @@
 \*/
 
 /*
- * $Id: error.h,v 1.36 1999/05/02 08:11:40 hubbe Exp $
+ * $Id: error.h,v 1.37 1999/08/06 14:31:16 grubba Exp $
  */
 #ifndef ERROR_H
 #define ERROR_H
@@ -131,11 +131,6 @@ extern int throw_severity;
     recoveries->onerror=(X).previous; \
   } while(0)
 
-#define CALL_AND_UNSET_ONERROR(X) do {		\
-     X.func(X.arg);				\
-     UNSET_ONERROR(X);				\
-  }while(0)
-
 #define ASSERT_ONERROR(X) \
   do{ \
     if (!recoveries) break; \
@@ -158,6 +153,11 @@ extern int throw_severity;
 
 #define ASSERT_ONERROR(X)
 #endif /* PIKE_DEBUG */
+
+#define CALL_AND_UNSET_ONERROR(X) do {		\
+     X.func(X.arg);				\
+     UNSET_ONERROR(X);				\
+  }while(0)
 
 #if defined(PIKE_DEBUG) && 0
 /* Works, but probably not interresting for most people
