@@ -19,7 +19,7 @@
 #include "gc.h"
 #include "main.h"
 
-RCSID("$Id: array.c,v 1.38 1998/05/13 07:38:29 hubbe Exp $");
+RCSID("$Id: array.c,v 1.39 1998/05/24 02:28:20 hubbe Exp $");
 
 struct array empty_array=
 {
@@ -1531,7 +1531,7 @@ void check_array(struct array *a)
 
   for(e=0;e<a->size;e++)
   {
-    if(! ( (1 << ITEM(a)[e].type) & (a->type_field) ))
+    if(! ( (1 << ITEM(a)[e].type) & (a->type_field) ) && ITEM(a)[e].type<16)
       fatal("Type field lies.\n");
     
     check_svalue(ITEM(a)+e);
