@@ -534,8 +534,8 @@ int dwim_sort_func(string a0,string b0)
 int lyskom_sort_func(string a,string b)
 {
    string a0=a,b0=b;
-   a=replace(lower_case(a),"][\\}{|"/1,"ִֵײוהצ"/1);
-   b=replace(lower_case(b),"][\\}{|"/1,"ִֵײוהצ"/1);
+   a=replace(lower_case(a),"][\\}{|"/1,"והצוהצ"/1);
+   b=replace(lower_case(b),"][\\}{|"/1,"והצוהצ"/1);
    
    while (sscanf(a0=a,"%*[ \t](%*[^)])%*[ \t]%s",a)==4 && a0!=a);
    while (sscanf(b0=b,"%*[ \t](%*[^)])%*[ \t]%s",b)==4 && b0!=b);
