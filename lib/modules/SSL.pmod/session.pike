@@ -1,5 +1,5 @@
 //
-// $Id: session.pike,v 1.33 2004/02/04 23:28:17 nilsson Exp $
+// $Id: session.pike,v 1.34 2004/02/29 02:56:04 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -14,6 +14,8 @@
 //!
 //! It is also possible to change to a new session in the middle of a
 //! connection.
+
+#if constant(SSL.Cipher.CipherSpec)
 
 import .Constants;
 static constant Struct = ADT.struct;
@@ -323,3 +325,5 @@ array(.state) new_client_states(string client_random, string server_random,
   }
   return ({ read_state, write_state });
 }
+
+#endif // constant(SSL.Cipher.CipherSpec)

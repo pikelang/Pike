@@ -1,5 +1,7 @@
 #pike __REAL_VERSION__
 
+#if constant(SSL.Cipher.CipherAlgorithm)
+
 import ".";
 
 MySSLPort port;
@@ -158,3 +160,5 @@ void set_certificate(string|array certificate)
   }
 
 }
+
+#endif

@@ -1,5 +1,5 @@
 //
-// $Id: context.pike,v 1.30 2004/02/07 15:54:13 nilsson Exp $
+// $Id: context.pike,v 1.31 2004/02/29 02:56:04 nilsson Exp $
 
 #pike __REAL_VERSION__
 #pragma strict_types
@@ -8,6 +8,8 @@
 //! one server (or one port). It includes policy configuration, a server
 //! certificate, the server's private key(s), etc. It also includes the
 //! session cache.
+
+#if constant(Gmp.mpz) && constant(Crypto.Hash)
 
 import .Constants;
 
@@ -271,3 +273,5 @@ private void update_trusted_issuers()
     trusted_issuers_cache += ({ chain });
   }
 }
+
+#endif // constant(Gmp.mpz) && constant(Crypto.Hash)

@@ -1,7 +1,9 @@
 //
-//  $Id: Cipher.pmod,v 1.12 2004/02/05 19:22:01 nilsson Exp $
+//  $Id: Cipher.pmod,v 1.13 2004/02/29 02:56:04 nilsson Exp $
 
 #pike __REAL_VERSION__
+
+#if constant(Crypto.Hash)
 
 //! Encryption and MAC algorithms used in SSL.
 
@@ -472,3 +474,5 @@ array lookup(int suite,int version)
 
   return ({ ke_method, res });
 }
+
+#endif // constant(Crypto.Hash)

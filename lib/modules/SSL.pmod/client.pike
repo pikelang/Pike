@@ -3,6 +3,8 @@
 
 // SSL Client example
 
+#if constant(SSL.Cipher.CipherAlgorithm)
+
 import SSL.Constants;
 
 SSL.sslfile sslfile;
@@ -44,3 +46,5 @@ int main(int argc, array(string) argv)
 
   return -17;
 }
+
+#endif

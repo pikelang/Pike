@@ -1,12 +1,14 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.23 2004/02/04 21:46:15 nilsson Exp $
+// $Id: state.pike,v 1.24 2004/02/29 02:56:04 nilsson Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
 //! stream of packets, and operates in either decryption or encryption
 //! mode.
+
+#if constant(SSL.Cipher.MACAlgorithm)
 
 import .Constants;
 
@@ -168,4 +170,4 @@ Alert|.packet encrypt_packet(.packet packet, int version)
   return [object(Alert)]packet->check_size(version, 2048) || packet;
 }
 
-
+#endif // constant(SSL.Cipher.MACAlgorithm)

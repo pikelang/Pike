@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
-/* $Id: handshake.pike,v 1.46 2004/02/03 13:52:27 nilsson Exp $
+/* $Id: handshake.pike,v 1.47 2004/02/29 02:56:04 nilsson Exp $
  *
  */
 
@@ -16,6 +16,8 @@
 //! handshake is finished.
 
 //#define SSL3_PROFILING
+
+#if constant(SSL.Cipher.DHKeyExchange)
 
 import .Constants;
 
@@ -1217,3 +1219,5 @@ void create(int is_server, void|SSL.context ctx)
     send_packet(client_hello());
   }
 }
+
+#endif // constant(SSL.Cipher.DHKeyExchange)

@@ -1,5 +1,5 @@
 //
-// $Id: connection.pike,v 1.33 2004/02/03 13:51:59 nilsson Exp $
+// $Id: connection.pike,v 1.34 2004/02/29 02:56:04 nilsson Exp $
 
 #pike __REAL_VERSION__
 //#pragma strict_types
@@ -10,6 +10,8 @@
 //! states, packet queues. This object is responsible for receiving and
 //! sending packets, processing handshake packets, and providing a clear
 //! text packages for some application.
+
+#if constant(SSL.Cipher.CipherAlgorithm)
 
 .state current_read_state;
 .state current_write_state;
@@ -392,3 +394,4 @@ string|int got_data(string|int s)
   return closing ? 1 : res;
 }
 
+#endif

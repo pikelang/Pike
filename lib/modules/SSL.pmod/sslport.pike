@@ -4,6 +4,8 @@
  *
  */
 
+#if constant(SSL.Cipher.CipherAlgorithm)
+
 //! Interface similar to Stdio.Port.
 
 inherit Stdio.Port : socket;
@@ -75,3 +77,5 @@ void create()
   accept_queue::create();
   set_id(this);
 }
+
+#endif

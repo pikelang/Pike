@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: https.pike,v 1.16 2004/02/06 19:02:29 grubba Exp $
+/* $Id: https.pike,v 1.17 2004/02/29 02:56:04 nilsson Exp $
  *
  * dummy https server
  */
@@ -8,6 +8,8 @@
 //! Dummy HTTPS server
 
 #define PORT 25678
+
+#if constant(SSL.Cipher.CipherAlgorithm)
 
 import Stdio;
 
@@ -160,3 +162,4 @@ void create()
   sslport::create();
 }
 
+#endif

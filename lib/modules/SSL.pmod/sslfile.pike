@@ -1,7 +1,9 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.68 2004/01/30 01:01:15 bill Exp $
+/* $Id: sslfile.pike,v 1.69 2004/02/29 02:56:04 nilsson Exp $
  */
+
+#if constant(SSL.Cipher.CipherAlgorithm)
 
 //! Interface similar to @[Stdio.File].
 //!
@@ -1404,3 +1406,5 @@ static int ssl_close_callback (int called_from_real_backend)
   // isn't clobbered by later I/O.
   return -1;
 }
+
+#endif
