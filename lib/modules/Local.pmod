@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.2 2002/02/23 01:29:23 mikael%unix.pp.se Exp $
+// $Id: Local.pmod,v 1.3 2002/02/25 13:13:27 nilsson Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -11,7 +11,7 @@
 //! determined by examining the environment variable HOME, and
 //! if that fails the environment variable USERPROFILE.
 //! @seealso
-//!   @[Local.add_local_path()], @[Local.remove_local_path()]
+//!   @[Local.add_path()], @[Local.remove_path()]
 //!
 
 static array(string) local_path;
