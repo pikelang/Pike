@@ -17,7 +17,7 @@
 //!      2570   : v3 description
 //!
 
-// $Id: protocol.pike,v 1.9 2002/12/03 09:48:05 hop Exp $
+// $Id: protocol.pike,v 1.10 2002/12/04 19:14:00 bill Exp $
 
 
 #include "snmp_globals.h"
@@ -427,6 +427,7 @@ object mk_asn1_val(string type, int|string val) {
 	break;
 
     default:		// bad type!
+        error("Unknown SNMP data type " + type + ".");
 	return 0;
   }
 
@@ -575,7 +576,7 @@ int get_nextrequest(array(string) varlist, string|void rem_addr,
 //!   // set the value of 1.3.6.1.4.1.1882.2.1 to "blah".
 //!   object s=Protocols.SNMP.protocol();
 //!   s->snmp_community="mysetcommunity";
-//!   mapping req=(["1.3.6.1.4.1.1882.2.1": ({"string", "blah"})]);
+//!   mapping req=(["1.3.6.1.4.1.1882.2.1": ({"str", "blah"})]);
 //!   int id=s->set_request(req, "172.21.124.32");
 //!   
 int set_request(mapping varlist, string|void rem_addr,
