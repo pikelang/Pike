@@ -2361,6 +2361,9 @@ static TimeRange dwim_tod(TimeRange origin,string whut,int h,int m,int s)
    TimeRange tr=origin[whut](h,m,s);
    if (tr->hour_no()!=h || tr->minute_no()!=m)
    {
+//        werror("%O %O %O -> %O %O %O (%O)\n",
+//  	     tr->hour_no(),tr->minute_no(),tr->second_no(),
+//  	     h,m,s,tr);
       if (tr->hour_no()!=h)
 	 tr=tr->add(h-tr->hour_no(),Hour);
       if (tr->minute_no()!=m)

@@ -1,6 +1,6 @@
 ### Calendar module
 ### Event definition file
-### $Id: regional,v 1.7 2000/09/30 09:49:53 mirar Exp $
+### $Id: regional,v 1.8 2000/10/26 15:23:14 mirar Exp $
 
 ### =====================================================================
 ###
@@ -108,7 +108,11 @@
 # politic events
 
   Event "africa"                  - "Africa Day"              Fixed May 25
+
+# anzac day is australia-new zealand memorial day,
+# "Australian and New Zealand Army corpse", of those who died in WWII (?)
   Event "anzac"                   - "ANZAC Day"               Fixed Apr 25
+
   Event "arab league"             - "Arab League Day"         Fixed Mar 22
   Event "armistice"               - "Armistice Day"           Fixed Nov 11
   Event "columbus"                - "Columbus Day"            Fixed Oct 12
