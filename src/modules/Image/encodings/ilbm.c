@@ -1,9 +1,9 @@
-/* $Id: ilbm.c,v 1.9 1999/04/13 12:32:43 mirar Exp $ */
+/* $Id: ilbm.c,v 1.10 1999/04/19 21:10:35 marcus Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: ilbm.c,v 1.9 1999/04/13 12:32:43 mirar Exp $
+**!	$Id: ilbm.c,v 1.10 1999/04/19 21:10:35 marcus Exp $
 **! submodule ILBM
 **!
 **!	This submodule keep the ILBM encode/decode capabilities
@@ -14,7 +14,7 @@
 #include "global.h"
 
 #include "stralloc.h"
-RCSID("$Id: ilbm.c,v 1.9 1999/04/13 12:32:43 mirar Exp $");
+RCSID("$Id: ilbm.c,v 1.10 1999/04/19 21:10:35 marcus Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -252,6 +252,7 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
   INT32 *cptr, *cline = alloca((rbyt<<3)*sizeof(INT32));
   INT32 suse;
   rgb_group *dest = img->img;
+  rgb_group *adest = (alpha==NULL? NULL : alpha->img);
 
   if(ctable != NULL && ctable->type != NCT_FLAT)
     ctable = NULL;
@@ -264,6 +265,17 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
     break;
   default:
     error("Unsupported ILBM compression %d\n", bmhd->compression);
+  }
+
+  switch(bmhd->masking) {
+  case mskNone:
+  case mskHasMask:
+  case mskHasTransparentColor:
+    break;
+  case mskLasso:
+    error("Lasso masking not supported\n");
+  default:
+    error("Unsupported ILBM masking %d\n", bmhd->masking);
   }
 
   THREADS_ALLOW();
@@ -282,6 +294,40 @@ static void parse_body(struct BMHD *bmhd, unsigned char *body, INT32 blen,
     if((blen -= suse)<0)
       break;
     planar2chunky(line, rbyt, bmhd->nPlanes, bmhd->w, cptr=cline);
+    if(alpha != NULL)
+      switch(bmhd->masking) {
+      case mskNone:
+	memset((char *)adest, ~0, bmhd->w*sizeof(*adest));
+	adest += bmhd->w;
+	break;
+      case mskHasMask:
+	{
+	  int p, bit=0x80;
+	  unsigned char *src = line+bmhd->nPlanes*rbyt;
+	  unsigned char ss = *src++;
+	  for(x=0; x<bmhd->w; x++) {
+	    if(ss&bit) {
+	      adest->r = adest->g = adest->b = ~0;
+	    } else {
+	      adest->r = adest->g = adest->b = 0;
+	    }
+	    if(!(bit>>=1)) {
+	      bit = 0x80;
+	      ss = *src++;
+	    }
+	  }
+	}
+	break;
+      case mskHasTransparentColor:
+	for(x=0; x<bmhd->w; x++) {
+	  if(cline[x] == bmhd->transparentColor)
+	    adest->r = adest->g = adest->b = 0;
+	  else
+	    adest->r = adest->g = adest->b = ~0;
+	  adest++;
+	}
+	break;
+      }
     if(ctable != NULL)
       if(ham)
 	if(bmhd->nPlanes>6) {
@@ -382,7 +428,7 @@ static void image_ilbm__decode(INT32 args)
 {
   struct array *arr;
   struct object *o;
-  struct image *img;
+  struct image *img, *alpha = NULL;
   struct BMHD bmhd;
   struct neo_colortable *ctable = NULL;
   int n = 0;
@@ -412,6 +458,16 @@ static void image_ilbm__decode(INT32 args)
   img=(struct image*)get_storage(o,image_program);
   push_object(o);
   n++;
+
+  if(bmhd.masking != mskNone) {
+    push_text("alpha");
+    push_int(bmhd.w);
+    push_int(bmhd.h);
+    o=clone_object(image_program,2);
+    alpha=(struct image*)get_storage(o,image_program);
+    push_object(o);
+    n++;
+  }
 
   if(ITEM(arr)[4].type == T_STRING && ITEM(arr)[4].u.string->size_shift == 0 &&
      ITEM(arr)[4].u.string->len>=4) {
@@ -464,7 +520,7 @@ static void image_ilbm__decode(INT32 args)
   }
 
   parse_body(&bmhd, STR0(ITEM(arr)[5].u.string), ITEM(arr)[5].u.string->len,
-	     img, NULL, ctable, !!(camg & CAMG_HAM));
+	     img, alpha, ctable, !!(camg & CAMG_HAM));
 
   f_aggregate_mapping(2*n);
   stack_swap();
