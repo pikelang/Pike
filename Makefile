@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.58 2002/03/10 03:31:33 mast Exp $
+# $Id: Makefile,v 1.59 2002/03/11 17:55:25 mast Exp $
 #
 # Meta Makefile
 #
@@ -245,6 +245,9 @@ clean:
 	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" clean; \
 	  else exit $$res; fi; \
 	} || exit $$?
+	if test -f "refdoc/Makefile"; then \
+	  cd refdoc; $(MAKE) "MAKE=$(MAKE)" clean; \
+	else :; fi
 
 spotless:
 	-cd "$(BUILDDIR)" && test -f Makefile && $(MAKE) "MAKE=$(MAKE)" spotless || { \
@@ -252,6 +255,9 @@ spotless:
 	  if test -f remake; then $(MAKE) "MAKE=$(MAKE)" spotless; \
 	  else exit $$res; fi; \
 	} || exit $$?
+	if test -f "refdoc/Makefile"; then \
+	  cd refdoc; $(MAKE) "MAKE=$(MAKE)" spotless; \
+	else :; fi
 
 delete_builddir:
 	-rm -rf "$(BUILDDIR)"
