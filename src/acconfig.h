@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.49 1999/10/08 16:35:16 noring Exp $
+ * $Id: acconfig.h,v 1.50 1999/11/13 00:34:50 grubba Exp $
  */
 #ifndef MACHINE_H
 #define MACHINE_H
@@ -26,6 +26,9 @@
 
 /* Define this to enable the internal bignum conversion */
 #undef AUTO_BIGNUM
+
+/* Define this if you want to enable the shared nodes mode of the optimizer. */
+#undef SHARED_NODES
 
 /* The following four are used by smartlink */
 /* Define this if your ld sets the run path with -rpath */
