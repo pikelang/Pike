@@ -1,10 +1,25 @@
 #! /usr/bin/env pike
 
+// Pike installer and exporter.
+//
+// $Id: install.pike,v 1.114 2004/11/09 13:24:24 grubba Exp $
+
 #define USE_GTK
 
 #if !constant(GTK.parse_rc)
 #undef USE_GTK
 #endif
+
+constant pike_upgrade_guid = "fcbb6b90-1608-4a7c-926c-69bbab366326";
+
+constant line_feed = Standards.XML.Wix.line_feed;
+
+string version_str = sprintf("%d.%d.%d",
+			     __REAL_MAJOR__,
+			     __REAL_MINOR__,
+			     __REAL_BUILD__);
+string version_guid = Standards.UUID.make_version3(pike_upgrade_guid,
+						   version_str)->str();
 
 int last_len;
 int redump_all;
@@ -13,9 +28,14 @@ array(string) files_to_delete=({});
 array(string) files_to_not_delete=({});
 array(string) to_dump=({});
 array(string) to_export=({});
+Directory root = Directory("SourceDir",
+			   Standards.UUID.UUID(version_guid)->encode(),
+			   "PIKE_TARGETDIR");
+
 
 int export;
 int no_gui;
+int no_autodoc = 1;
 
 Tools.Install.ProgressBar progress_bar;
 
@@ -26,7 +46,6 @@ int installed_files;
 // the nt scripts depends on this value
 // (incidentally defined elsewhere in the C code too)
 #define MASTER_COOKIE "(#*&)@(*&$Master Cookie:"
-
 
 int istty_cache;
 int istty()
@@ -136,13 +155,13 @@ void status(string doing, void|string file, string|void msg)
   }
 
   file=replace(file,"\n","\\n");
-  if(strlen(file)>45)
-    file=".."+file[strlen(file)-44..];
+  if(sizeof(file)>45)
+    file=".."+file[sizeof(file)-44..];
 
   if(msg) file+=" "+msg;
   if(doing) file=doing+": "+file;
   string s="\r   "+file;
-  int t=strlen(s);
+  int t=sizeof(s);
   if(t<last_len) s+=" "*(last_len-t);
   last_len=t;
   write(s);
@@ -156,6 +175,8 @@ void status_clear(void|int all)
     status(0,"");
 }
 
+constant WixNode = Standards.XML.Wix.WixNode;
+constant Directory = Standards.XML.Wix.Directory;
 
 mapping already_created=([]);
 int mkdirhier(string orig_dir)
@@ -165,7 +186,7 @@ int mkdirhier(string orig_dir)
   string dir=orig_dir;
   if(already_created[orig_dir]) return 1;
 
-  if(dir=="" || (strlen(dir)==2 && dir[-1]==':')) return 1;
+  if(dir=="" || (sizeof(dir)==2 && dir[-1]==':')) return 1;
   dir=fakeroot(dir);
 
   status("Creating",dir+"/");
@@ -219,14 +240,49 @@ int compare_to_file(string data,string a)
   return 0;
 }
 
+int low_install_regkey(string path, string root, string key,
+		       string name, string value, string id)
+{
+  if (export != 2) {
+    error("Only supported in wix mode.\n");
+  }
+  global::root->install_regkey(path, root, key, name, value, id);
+}
+
+void recurse_uninstall_file(Directory d, string pattern)
+{
+  if (export != 2) {
+    error("Only supported in wix mode.\n");
+  }
+  d->recurse_uninstall_file(pattern);
+}
+		       
+int low_uninstall_file(string path)
+{
+  if (export != 2) {
+    error("Only supported in wix mode.\n");
+  }
+  root->uninstall_file(path);
+}
+
 int low_install_file(string from,
 		     string to,
-		     void|int mode)
+		     void|int mode,
+		     void|string id)
 {
   installed_files++;
   if(export)
   {
-    to_export+=({ from });
+    if (export == 2) {
+      mapping translator = ([
+	"":"",
+	prefix:"",
+	getcwd():"",
+      ]);
+      root->install_file(translate(to, translator), from, id);
+    } else {
+      to_export+=({ from });
+    }
     return 1;
   }
 
@@ -261,6 +317,7 @@ int low_install_file(string from,
   }
   if(!mv(tmpfile,to))
     fail("mv(%s,%s)",tmpfile,to);
+  rm(to+".old"); // Ignore errors
 
   return 1;
 }
@@ -303,9 +360,20 @@ int install_file(string from,
   return ret;
 }
 
+void create_file(string dest, string content)
+{
+  status("Creating", dest);
+  if (compare_to_file(content, dest)) {
+    status("Creating", dest, "Already created");
+    return;
+  }
+  Stdio.write_file(dest, content);
+  status("Creating", dest, "done");
+}
+
 string stripslash(string s)
 {
-  while(strlen(s)>1 && s[-1]=='/') s=s[..strlen(s)-2];
+  while(sizeof(s)>1 && s[-1]=='/') s=s[..sizeof(s)-2];
   return s;
 }
 
@@ -362,7 +430,7 @@ object reg;
 
 string regquote(string s)
 {
-  while(s[-1] == '/' || s[-1]=='\\') s=s[..strlen(s)-2];
+  while(s[-1] == '/' || s[-1]=='\\') s=s[..sizeof(s)-2];
   return
     replace(s,
 	    ({".","[","]","*","\\","(",")","|","+"}),
@@ -371,7 +439,7 @@ string regquote(string s)
 
 string globify(string s)
 {
-  if(s[-1]=='/') s=s[..strlen(s)-2];
+  if(s[-1]=='/') s=s[..sizeof(s)-2];
   return s+"*";
 }
 
@@ -389,6 +457,7 @@ string fakeroot(string s)
 				   vars->TMP_BINDIR,
 				   vars->BASEDIR,
 				   vars->MANDIR_SRC,
+				   vars->DOCDIR_SRC,
 				   vars->TMP_LIBDIR,
 				   vars->fakeroot,
 				 }),regquote)));
@@ -439,15 +508,79 @@ void tarfilter(string filename)
 
 #ifdef __NT__
 constant tmpdir="~piketmp";
-#endif
+#endif /* __NT__ */
 
 void do_export()
 {
+  if (export == 2) {
+    status("Creating", "Pike_module.wxs");
+
+    // Minimize the number of src directives.
+    root->set_sources();
+
+    // Clean up dumped files and modules on uninstall.
+    recurse_uninstall_file(root->sub_dirs["lib"], "*.o");
+
+    // Make sure the kludge directory exists (forward compat).
+    root->extra_ids["KLUDGE_PIKE_TARGETDIR"] = 1;
+
+    // Generate the XML directory tree.
+    WixNode xml_root =
+      Standards.XML.Wix.get_module_xml(root, "Pike", version_str,
+				       "IDA", "Pike dist", version_guid,
+				       "Merge with this");
+
+    WixNode module_node = xml_root->
+      get_first_element("Wix")->
+      get_first_element("Module");
+
+    module_node->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"FinalizePike",
+			  // Note: Need to use the kludge directory here
+			  //       rather than the root directory due to
+			  //       bugs in light.
+			  //	/grubba 2004-11-08
+			  "Directory":"KLUDGE_PIKE_TARGETDIR",
+			  "Execute":"commit",
+			  "ExeCommand":"cmd /d /c bin\\pike "
+			  "-mlib\\master.pike bin\\install.pike "
+			  "--finalize BASEDIR=. TMP_BUILDDIR=bin",
+			])))->
+      add_child(Standards.XML.Wix.line_feed)->
+      add_child(WixNode("CustomAction", ([
+			  "Id":"InstallMaster",
+			  // Note: Need to use the kludge directory here
+			  //       rather than the root directory due to
+			  //       bugs in light.
+			  //	/grubba 2004-11-08
+			  "Directory":"KLUDGE_PIKE_TARGETDIR",
+			  "Execute":"commit",
+			  "ExeCommand":"cmd /d /c bin\\pike "
+			  "-mlib\\master.pike bin\\install.pike "
+			  "--install-master BASEDIR=.",
+			])))->
+      add_child(Standards.XML.Wix.line_feed)->
+      add_child(WixNode("InstallExecuteSequence", ([]), "\n")->
+		add_child(WixNode("Custom", ([
+				    "Action":"FinalizePike",
+				    "After":"InstallFiles",
+				  ]), "REMOVE=\"\""))->
+		add_child(Standards.XML.Wix.line_feed)->
+		add_child(WixNode("Custom", ([
+				    "Action":"InstallMaster",
+				    "After":"FinalizePike",
+				  ]), "REMOVE=\"\""))->
+		add_child(Standards.XML.Wix.line_feed))->
+      add_child(Standards.XML.Wix.line_feed);
+
+    create_file("Pike_module.wxs", xml_root->render_xml());
+  } else {
 #ifdef __NT__
   status("Creating",export_base_name+".burk");
   Stdio.File p=Stdio.File(export_base_name+".burk","wc");
   string msg="   Loading installation script, please wait...";
-  p->write("w%4c%s",strlen(msg),msg);
+  p->write("w%4c%s",sizeof(msg),msg);
 
 #define TRANSLATE(X,Y) combine_path(".",X) : Y
   mapping translator = ([
@@ -456,6 +589,7 @@ void do_export()
     TRANSLATE(vars->SRCDIR,tmpdir+"/src"),
     TRANSLATE(vars->TMP_BINDIR,tmpdir+"/bin"),
     TRANSLATE(vars->MANDIR_SRC,tmpdir+"/man"),
+    TRANSLATE(vars->DOCDIR_SRC,tmpdir+"/refdoc"),
     TRANSLATE(vars->TMP_LIBDIR,tmpdir+"/build/lib"),
     "unpack_master.pike" : tmpdir+"/build/master.pike",
     "":tmpdir+"/build",
@@ -473,13 +607,13 @@ void do_export()
   dirs-=({""});
   sort(dirs);
 
-  foreach(dirs, string dir) p->write("d%4c%s",strlen(dir),dir);
+  foreach(dirs, string dir) p->write("d%4c%s",sizeof(dir),dir);
   foreach(Array.transpose(  ({ to_export, translated_names }) ),
 	  [ string file, string file_name ])
     {
       status("Adding",file);
       if (string f=Stdio.read_file(file)) {
-	p->write("f%4c%s%4c",strlen(file_name),file_name,strlen(f));
+	p->write("f%4c%s%4c",sizeof(file_name),file_name,sizeof(f));
 	p->write(f);
       } else {
 	//  Huh? File could not be found.
@@ -500,7 +634,7 @@ void do_export()
   });
 
   foreach(env, string e)
-    p->write("e%4c%s",strlen(e),e);
+    p->write("e%4c%s",sizeof(e),e);
 
 #define RELAY(X) " " #X "=" + TRVAR(X)+
 
@@ -514,13 +648,14 @@ void do_export()
     RELAY(SRCDIR)
     RELAY(TMP_BINDIR)
     RELAY(MANDIR_SRC)
+    RELAY(DOCDIR_SRC)
     RELAY(BASEDIR)
     " TMP_BUILDDIR="+translate("", translator)+
     (((vars->PIKE_MODULE_RELOC||"") != "")? " PIKE_MODULE_RELOC=1":"")+
     " $" // $ = @argv
     ;
 
-  p->write("s%4c%s",strlen(cmd),cmd);
+  p->write("s%4c%s",sizeof(cmd),cmd);
 
   array(string) to_delete=translated_names + ({translate("pike.tmp",translator)});
   to_delete=Array.uniq(to_delete);
@@ -528,7 +663,7 @@ void do_export()
 
   // Generate cleanup
   foreach(to_delete, string del)
-    p->write("D%4c%s",strlen(del),del);
+    p->write("D%4c%s",sizeof(del),del);
 
   p->write("q\0\0\0\0");
   p->close("rw");
@@ -560,7 +695,7 @@ do
     case \"$1\" in
               -v|\\
        --version) echo \""+version()+
-#" Copyright (C) 1994-2003 IDA, Linköping University
+#" Copyright (C) 1994-2004 IDA, Linköping University
 Pike comes with ABSOLUTELY NO WARRANTY; This is free software and you
 are welcome to redistribute it under certain conditions; Read the
 files COPYING and COPYRIGHT in the Pike distribution for more details.
@@ -575,6 +710,11 @@ files COPYING and COPYRIGHT in the Pike distribution for more details.
 
       --features) echo \"" + Tools.Install.features()*"\n" + #"\"
 		  rm -f "+tmpname+#".x
+                  exit 0 ;;
+
+    --list-files) tar xf \"$TARFILE\" "+tmpname+#".tar.gz
+                  tar tfz "+tmpname+#".tar.gz
+                  rm -f "+tmpname+".x "+tmpname+#".tar.gz
                   exit 0 ;;
 
               -s|\\
@@ -599,6 +739,7 @@ done
 		   "  TMP_BINDIR=\\\"bin\\\"\\\n"
 		   "  TMP_BUILDDIR=\\\"build\\\"\\\n"
 		   "  MANDIR_SRC=\\\"man\\\"\\\n"
+		   "  DOCDIR_SRC=\\\"refdoc\\\"\\\n"
 		   "  PIKE_MODULE_RELOC=\\\"" + vars->PIKE_MODULE_RELOC +
 		                       "\\\"\\\n"
 		   "  $ARGS\"\n"
@@ -609,7 +750,7 @@ done
   string script=sprintf("#!/bin/sh\n"
 			"tar xf \"$0\" %s.x\n"
 			"exec ./%s.x \"$0\" \"$@\"\n", tmpname, tmpname, tmpname);
-  if(strlen(script) >= 100)
+  if(sizeof(script) >= 100)
   {
     werror("Script too long!!\n");
     exit(1);
@@ -666,6 +807,7 @@ done
   }) ) ->wait();
 
 #endif
+  }
   status1("Export done");
 
   exit(0);
@@ -839,6 +981,7 @@ string prefix;
 string exec_prefix;
 string lib_prefix;
 string include_prefix;
+string doc_prefix;
 string man_prefix;
 string lnk;
 string old_exec_prefix;
@@ -853,8 +996,8 @@ int pre_install(array(string) argv)
   else {
 #ifdef __NT__
     prefix = RegGetValue(HKEY_LOCAL_MACHINE,
-                         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
-                         "ProgramFilesDir");
+			 "SOFTWARE\\Microsoft\\Windows\\CurrentVersion",
+			 "ProgramFilesDir");
 #else
     prefix = "/usr/local";
 #endif
@@ -874,6 +1017,7 @@ int pre_install(array(string) argv)
       exec_prefix=vars->exec_prefix||(prefix+"/bin/");
       lib_prefix=vars->lib_prefix||(prefix+"/lib/pike/");
       include_prefix=combine_path(prefix,"include","pike");
+      doc_prefix=combine_path(prefix, "doc", "pike");
       man_prefix=vars->man_prefix||(prefix+"/man/");
       break;
 
@@ -928,11 +1072,11 @@ int pre_install(array(string) argv)
 				 combine_path(prefix, "bin"),
 				 "pike"), "Pike binary name: ");
 #else
-          bin_path=combine_path(
+	  bin_path=combine_path(
 #ifdef __NT__
-                                "\\",
+				"\\",
 #else
-                                "/",
+				"/",
 #endif
 				getcwd(),prefix,"pike",
 				replace(version()-"Pike v"," release ","."),
@@ -963,7 +1107,10 @@ int pre_install(array(string) argv)
       install_type="--new-style";
       continue;
 
+    case "--wix-module":
+      export = 2;
     case "--export":
+      export = export || 1;
       string ver = replace( version(), ([ " ":"-", " release ":"." ]) );
 #if constant(uname)
       mapping(string:string) u = uname();
@@ -990,32 +1137,35 @@ int pre_install(array(string) argv)
       status1("Building export %s\n", export_base_name);
 
 #ifndef __NT__
-      mkdirhier(export_base_name+".dir");
+      if (export == 1) {
+	if (!mkdir(export_base_name+".dir")) {
+	  error("Failed to create directory %O: %s\n",
+		export_base_name+".dir", strerror(errno()));
+	}
 
-      mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
-      mklink(vars->SRCDIR,export_base_name+".dir/src");
-      mklink(getcwd(),export_base_name+".dir/build");
-      mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
-      mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
+	mklink(vars->LIBDIR_SRC,export_base_name+".dir/lib");
+	mklink(vars->SRCDIR,export_base_name+".dir/src");
+	mklink(getcwd(),export_base_name+".dir/build");
+	mklink(vars->TMP_BINDIR,export_base_name+".dir/bin");
+	mklink(vars->MANDIR_SRC,export_base_name+".dir/man");
+	mklink(vars->DOCDIR_SRC,export_base_name+".dir/refdoc");
 
-      cd(export_base_name+".dir");
+	cd(export_base_name+".dir");
 
-      vars->TMP_LIBDIR="build/lib";
-      vars->LIBDIR_SRC="lib";
-      vars->SRCDIR="src";
-      vars->TMP_BINDIR="bin";
-      vars->MANDIR_SRC="man";
-      vars->TMP_BUILDDIR="build";
-
+	vars->TMP_LIBDIR="build/lib";
+	vars->LIBDIR_SRC="lib";
+	vars->SRCDIR="src";
+	vars->TMP_BINDIR="bin";
+	vars->MANDIR_SRC="man";
+	vars->DOCDIR_SRC="refdoc";
+	vars->TMP_BUILDDIR="build";
+      }
 #endif
-
-      export=1;
-      to_export+=({ combine_path(vars->TMP_BINDIR,"install.pike") });
 
     case "":
     default:
     case "--new-style":
-      if(!(lnk=vars->pike_name) || !strlen(lnk)) {
+      if(!(lnk=vars->pike_name) || !sizeof(lnk)) {
 	lnk = combine_path(vars->exec_prefix || combine_path(vars->prefix, "bin"),
 			   "pike");
 	old_exec_prefix=vars->exec_prefix; // to make the directory for pike link
@@ -1024,9 +1174,35 @@ int pre_install(array(string) argv)
 			    replace(version()-"Pike v"," release ","."));
       exec_prefix=combine_path(prefix,"bin");
       lib_prefix=combine_path(prefix,"lib");
+      doc_prefix=combine_path(prefix,"doc");
       include_prefix=combine_path(prefix,"include","pike");
       man_prefix=combine_path(prefix,"man");
+      if (export) {
+	low_install_file(combine_path(vars->TMP_BINDIR,"install.pike"),
+			 combine_path(prefix, "bin/install.pike"));
+      }
       break;
+  case "--finalize":
+    prefix = getcwd();
+    exec_prefix = combine_path(prefix, "bin");
+    lib_prefix = combine_path(prefix, "lib");
+    if (!vars->TMP_BUILDDIR) vars->TMP_BUILDDIR="bin";
+    finalize_pike();
+    status1("Finalizing done.");
+    return 0;
+  case "--install-master":
+    prefix = getcwd();
+    exec_prefix = combine_path(prefix, "bin");
+    lib_prefix = combine_path(prefix, "lib");
+    include_prefix = combine_path(prefix,"include","pike");
+    make_master("lib/master.pike", "lib/master.pike.in",
+		lib_prefix, include_prefix);
+    status1("Installing master done.");
+    return 0;
+  case "--wix":
+    make_wix();
+    status1("Creating wix done.");
+    return 0;
   }
   break;
   }
@@ -1035,16 +1211,113 @@ int pre_install(array(string) argv)
   return 0;
 }
 
+// Create a versioned root wix file that installs Pike_module.msm.
+void make_wix()
+{
+  status("Creating", "Pike.wxs");
+
+  Directory root = Directory("SourceDir",
+			     Standards.UUID.UUID(version_guid)->encode(),
+			     "TARGETDIR");
+  root->merge_module(".", "Pike_module.msm", "Pike", "PIKE_TARGETDIR");
+
+  string title = 
+#if 1
+    "Pike"
+#else /* !1 */
+    sprintf("Pike v%d.%d release %d",
+	    __REAL_MAJOR__, __REAL_MINOR__, __REAL_BUILD__)
+#endif /* 1 */
+    ;
+
+  WixNode feature_node =
+    WixNode("Feature", ([
+	      "ConfigurableDirectory":"TARGETDIR",
+	      "Title":title,
+	      "Level":"1",
+	      "Id":"F_Pike",
+	    ]))->
+    add_child(line_feed)->
+    add_child(WixNode("MergeRef", ([ "Id":"Pike" ])))->
+    add_child(line_feed);
+
+  // Generate the XML.
+  Parser.XML.Tree.SimpleRootNode root_node =
+    Parser.XML.Tree.SimpleRootNode()->
+    add_child(Parser.XML.Tree.SimpleHeaderNode((["version": "1.0",
+						 "encoding": "utf-8"])))->
+    add_child(WixNode("Wix", (["xmlns":Standards.XML.Wix.wix_ns]))->
+	      add_child(line_feed)->
+	      add_child(WixNode("Product", ([
+				  "Manufacturer":"IDA",
+				  "Name":title,
+				  "Language":"1033",
+				  "UpgradeCode":pike_upgrade_guid,
+				  "Id":version_guid,
+				  "Version":version_str,
+				]))->
+			add_child(line_feed)->
+			add_child(WixNode("Package", ([
+					    "Manufacturer":"IDA",
+					    "Languages":"1033",
+					    "Compressed":"yes",
+					    "InstallerVersion":"200",
+					    "Platforms":"Intel",
+					    "SummaryCodepage":"1252",
+					    "Id":version_guid,
+					  ])))->
+			add_child(line_feed)->
+			add_child(WixNode("Media", ([
+					    "Cabinet":"Pike.cab",
+					    "EmbedCab":"yes",
+					    "Id":"1",
+					  ])))->
+			add_child(line_feed)->
+			add_child(root->gen_xml())->
+			add_child(line_feed)->
+			add_child(feature_node)->
+			add_child(line_feed)->
+			add_child(WixNode("AdminExecuteSequence", ([]), "\n")->
+				  add_child(WixNode("Custom", ([
+						      "Before":"CostInitialize",
+						      "Action":"DIRCA_TARGETDIR",
+						    ]), "TARGETDIR=\"\""))->
+				  add_child(line_feed))->
+			add_child(line_feed)->
+			add_child(WixNode("InstallExecuteSequence", ([
+					  ]), "\n")->
+				  add_child(WixNode("Custom", ([
+						      "Before":"ValidateProductID",
+						      "Action":"DIRCA_TARGETDIR",
+						    ]), "TARGETDIR=\"\""))->
+				  add_child(line_feed)->
+				  add_child(WixNode("RemoveExistingProducts", ([
+						      "After":"InstallInitialize",
+						    ])))->
+				  add_child(line_feed))->
+			add_child(line_feed)->
+			add_child(WixNode("FragmentRef", ([
+					    "Id":"PikeUI",
+					  ])))->
+			add_child(line_feed)))->
+    add_child(line_feed);
+
+  create_file("Pike.wxs", root_node->render_xml());
+}
+
 // Create a master.pike with the correct lib_prefix
 void make_master(string dest, string master, string lib_prefix,
 		 string include_prefix, string|void share_prefix)
 {
   status("Finalizing",master);
   string master_data=Stdio.read_file(master);
+  if (!master_data) {
+    error("Failed to read master template file %O\n", master);
+  }
   master_data=replace(master_data,
 		      ({"¤lib_prefix¤","¤include_prefix¤","¤share_prefix¤"}),
-		      ({replace(lib_prefix, "\\", "\\\\"),
-			replace(include_prefix, "\\", "\\\\"),
+		      ({replace(lib_prefix,"\\","\\\\"),
+			replace(include_prefix,"\\","\\\\"),
 			replace(share_prefix||"¤share_prefix¤", "\\", "\\\\"),
 		      }));
   if((vars->PIKE_MODULE_RELOC||"") != "")
@@ -1082,8 +1355,8 @@ void fix_smartlink(string src, string dest, string include_prefix)
 void dump_modules()
 {
   string master=combine_path(lib_prefix,"master.pike");
-  mixed s1=file_stat(master);
-  mixed s2=file_stat(master+".o");
+  Stdio.Stat s1=file_stat(master);
+  Stdio.Stat s2=file_stat(master+".o");
   mapping(string:mapping(string:string)) options = ([
     "env":getenv()-([
       "PIKE_PROGRAM_PATH":"",
@@ -1093,154 +1366,190 @@ void dump_modules()
       ]) ]);
 
 
-  if(!s1 || !s2 || s1[3]>=s2[3] || redump_all)
+  if(!s2 || s1->mtime>=s2->mtime || redump_all)
   {
-     object p=
-	Process.create_process( ({fakeroot(pike),"-m",
-				  combine_path(vars->SRCDIR,"dumpmaster.pike"),
-				  @(vars->fakeroot?({"--fakeroot="+
-                                                     vars->fakeroot}):({})),
-				  master}), options);
-     int retcode=p->wait();
-     if (retcode)
-       werror("Dumping of master.pike failed (not fatal) (0x%08x)\n",
-	      retcode);
+    int retcode;
+    mixed error = catch {
+      if(file_stat(fakeroot(pike))) {
+	object p=
+	  Process.create_process( ({fakeroot(pike),"-m",
+	    combine_path(vars->SRCDIR,"dumpmaster.pike"),
+	    @(vars->fakeroot?({"--fakeroot="+vars->fakeroot}):({})),
+	    master}), options);
+	retcode=p->wait();
+      }
+      else
+	werror("Pike binary %O could not be found.\n"
+	       "Dumping of master.pike failed (not fatal).\n",
+	       fakeroot(pike));
+    };
+    if(error)
+      werror("Dumping of master.pike failed (not fatal)\n%s\n",
+	     describe_backtrace(error));
+    if(retcode)
+      werror("Dumping of master.pike failed (not fatal) (0x%08x)\n",
+	     retcode);
   }
 
-  if(sizeof(to_dump))
-  {
-    rm("dumpmodule.log");
+  if(!sizeof(to_dump)) return;
 
-    foreach(to_dump, string mod)
+  rm("dumpmodule.log");
+
+  foreach(to_dump, string mod)
+    if (file_stat(mod+".o"))
       rm(mod+".o");
 
-    // Dump 25 modules at a time
+  array cmd=({ fakeroot(pike) });
 
-    array cmd=({fakeroot(pike) });
+  if(vars->fakeroot)
+    cmd+=({
+      sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
+      sprintf("-DPIKE_FAKEROOT_OMIT=%O",
+	      map( ({
+		getcwd(),
+		vars->LIBDIR_SRC,
+		vars->SRCDIR,
+		vars->TMP_BINDIR,
+		vars->MANDIR_SRC,
+		vars->DOCDIR_SRC,
+		vars->TMP_LIBDIR,
+		vars->BASEDIR,
+		vars->fakeroot,
+	      }), globify)*":"),
+      "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
+    });
 
-    if(vars->fakeroot)
-      cmd+=({
-	sprintf("-DPIKE_FAKEROOT=%O",vars->fakeroot),
-	  sprintf("-DPIKE_FAKEROOT_OMIT=%O",
-		  Array.map( ({
-		    getcwd(),
-		    vars->LIBDIR_SRC,
-		    vars->SRCDIR,
-		    vars->TMP_BINDIR,
-		    vars->MANDIR_SRC,
-		    vars->TMP_LIBDIR,
-		    vars->BASEDIR,
-		    vars->fakeroot,
-		  }), globify)*":"),
-	  "-m",combine_path(vars->TMP_LIBDIR,"master.pike")
-	  });
-
-    cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
-	    "--log-file",	// --distquiet below might override this.
+  cmd+=({ combine_path(vars->SRCDIR,"dumpmodule.pike"),
+	  "--log-file",	// --distquiet below might override this.
 #ifdef USE_GTK
-	      label1?"--distquiet":
+	  label1?"--distquiet":
 #endif
-      "--quiet"});
+	  "--quiet"});
 
-    int offset = 1;
-    foreach(to_dump/25.0, array delta_dump)
-    {
-      mixed err = catch {
-	object p=
-	  Process.create_process(cmd +
-				 ( istty() ?
-				   ({
-				     sprintf("--progress-bar=%d,%d",
-					     offset, sizeof(to_dump))
-				   }) : ({}) ) +
-				 delta_dump, options);
-	int retcode=p->wait();
-	if (retcode)
-	{
-	  werror("Dumping of some modules failed (not fatal) (0x%08x)\n",
-		 retcode);
-	}
-      };
-      if (err) {
-	werror("Failed to spawn module dumper (not fatal):\n"
+  // Dump 25 modules at a time as to not confuse systems with
+  // very short memory for application arguments.
+
+  int offset = 1;
+  foreach(to_dump/25.0, array delta_dump)
+  {
+    mixed err = catch {
+      object p=
+	Process.create_process(cmd +
+			       ( istty() ?
+				 ({
+				   sprintf("--progress-bar=%d,%d",
+					   offset, sizeof(to_dump))
+				 }) : ({}) ) +
+			       delta_dump, options);
+      int retcode=p->wait();
+      if (retcode)
+	werror("Dumping of some modules failed (not fatal) (0x%08x)\n",
+	       retcode);
+    };
+    if (err) {
+      werror("Failed to spawn module dumper (not fatal):\n"
 	       "%s\n", describe_backtrace(err));
-      }
-
-      offset += sizeof(delta_dump);
     }
 
-    if(progress_bar)
-      // The last files copied does not really count (should
-      // really be a third phase)...
-      progress_bar->set_phase(1.0, 0.0);
+    offset += sizeof(delta_dump);
+  }
 
-    status_clear(1);
+  if(progress_bar)
+    // The last files copied does not really count (should
+    // really be a third phase)...
+    progress_bar->set_phase(1.0, 0.0);
+
+  status_clear(1);
+}
+
+void finalize_pike()
+{
+  pike=combine_path(exec_prefix,"pike");
+
+  // Ugly way to detect NT installation
+  string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
+  string suffix = "";
+  if(file_stat(pike_bin_file+".exe"))
+  {
+    pike_bin_file+=".exe";
+    pike+=".exe";
+    suffix = ".exe";
+  }
+
+  if(export) {
+    low_install_file(pike_bin_file, pike, 0, "BIN_PIKE");
+    if (export == 2) {
+      low_install_regkey("bin", "HKLM",
+			 "SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\StandardProfile\\AuthorizedApplications\\List",
+			 "[#BIN_PIKE]",
+			 "[#BIN_PIKE]:*:Enabled:Pike",
+			 "RE__BIN_PIKE");
+      low_uninstall_file("bin/*.old");
+    }
+  } else {
+    status("Finalizing",pike_bin_file);
+    string pike_bin=Stdio.read_file(pike_bin_file);
+
+    if (!pike_bin) {
+      // Failed to read bin file, most likely Cygwin.
+
+      status("Finalizing",pike_bin_file,"FAILED");
+      if (!istty()) {
+	werror("Finalizing of %O failed!\n", pike_bin_file);
+	werror("Not found in %s.\n"
+	       "%O\n", getcwd(), get_dir("."));
+	werror("BUILDDIR: %O\n"
+	       "exe-stat: %O\n",
+	       vars->TMP_BUILDDIR, file_stat(pike_bin_file+".exe"));
+      }
+      exit(1);
+    }
+
+    int pos=search(pike_bin, MASTER_COOKIE);
+
+    if(pos>=0)
+    {
+      status("Finalizing",pike_bin_file,"...");
+      pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
+      Stdio.write_file(pike_bin_file, pike_bin);
+      Stdio.File f=Stdio.File(pike_bin_file,"rw");
+      f->seek(pos+sizeof(MASTER_COOKIE));
+      f->write(combine_path(lib_prefix,"master.pike"));
+      f->close();
+      status("Finalizing",pike_bin_file,"done");
+      if(install_file(pike_bin_file,pike)) {
+	redump_all=1;
+      }
+      rm(pike_bin_file);
+    }
+    else {
+      werror("Warning! Failed to finalize master location!\n");
+      if(install_file(pike_bin_file,pike)) {
+	redump_all=1;
+      }
+    }
   }
 }
 
 void do_install()
 {
-  pike=combine_path(exec_prefix,"pike");
   if(!export)
   {
     status1("Installing Pike in %s, please wait...\n", fakeroot(prefix));
-  }
-  catch {
-    files_to_install = (int)Stdio.read_file(combine_path(vars->TMP_BUILDDIR,
-							 "num_files_to_install"));
+    catch {
+      files_to_install = (int)Stdio.read_file
+	(combine_path(vars->TMP_BUILDDIR, "num_files_to_install"));
 
-    if(!export && files_to_install)
-      progress_bar =
-	Tools.Install.ProgressBar("Installing", 0, files_to_install, 0.0, 0.2);
-  };
+      if(files_to_install)
+	progress_bar =
+	  Tools.Install.ProgressBar("Installing", 0,
+				    files_to_install, 0.0, 0.2);
+    };
+  }
 
   mixed err = catch {
 
-    // Ugly way to detect NT installation
-    string pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike");
-    if(file_stat(pike_bin_file+".exe"))
-    {
-      pike_bin_file+=".exe";
-      pike+=".exe";
-    }
-
-    if(export)
-      to_export += ({ pike_bin_file });
-    else {
-      status("Finalizing",pike_bin_file);
-      string pike_bin=Stdio.read_file(pike_bin_file);
-
-      if (!pike_bin) {
-	// Failed to read bin file, most likely Cygwin.
-
-	status("Finalizing",pike_bin_file,"FAILED");
-	if (!istty()) {
-	  werror("Finalizing of %O failed!\n", pike_bin_file);
-	  werror("Not found in %s.\n%O\n", getcwd(), get_dir("."));
-	  werror("BUILDDIR: %O\nexe-stat: %O\n",
-		 vars->TMP_BUILDDIR, file_stat(pike_bin_file+".exe"));
-	}
-	exit(1);
-      }
-
-      int pos=search(pike_bin, MASTER_COOKIE);
-
-      if(pos>=0)
-      {
-	status("Finalizing",pike_bin_file,"...");
-	pike_bin_file=combine_path(vars->TMP_BUILDDIR,"pike.tmp");
-	Stdio.write_file(pike_bin_file, pike_bin);
-	Stdio.File f=Stdio.File(pike_bin_file,"rw");
-	f->seek(pos+strlen(MASTER_COOKIE));
-	f->write(combine_path(lib_prefix,"master.pike"));
-	f->close();
-	status("Finalizing",pike_bin_file,"done");
-      }
-      else
-	werror("Warning! Failed to finalize master location!\n");
-
-      if(install_file(pike_bin_file,pike)) redump_all=1;
-    }
+      finalize_pike();
 
 #ifdef __NT__
     // Copy needed DLL files (like libmySQL.dll if available).
@@ -1267,30 +1576,43 @@ void do_install()
     if(export)
     {
       string unpack_master = "master.pike";
+      if (export == 1) {
 #ifdef __NT__
-      // We don't want to overwrite the main master...
-      // This is undone by the translator.
-      unpack_master = "unpack_master.pike";
-      make_master(unpack_master, master_src,
-		  tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib");
+	// We don't want to overwrite the main master...
+	// This is undone by the translator.
+	unpack_master = "unpack_master.pike";
+	make_master(unpack_master, master_src,
+		    tmpdir+"/build/lib", tmpdir+"/build", tmpdir+"/lib");
 #else
-      make_master(unpack_master, master_src, "build/lib", "build", "lib");
+	make_master(unpack_master, master_src, "build/lib", "build", "lib");
 #endif
-      to_export+=({
-	unpack_master, master_src,
-	combine_path(vars->TMP_BUILDDIR,"specs"),
-	combine_path(vars->TMP_BUILDDIR,
-		     "modules/dynamic_module_makefile"),
-	combine_path(vars->SRCDIR,"install-welcome"),
-	combine_path(vars->SRCDIR,"dumpmaster.pike"),
-	combine_path(vars->SRCDIR,"dumpmodule.pike"),
-      });
+	low_install_file(unpack_master,
+			 combine_path(prefix, "build/master.pike"));
+      } else {
+	unpack_master = "unpack_master.pike";
+	make_master(unpack_master, master_src, "lib", "include/pike");
+	low_install_file(unpack_master,
+			 combine_path(prefix, "lib/master.pike"));
+      }
+
+      low_install_file(combine_path(vars->TMP_BUILDDIR,"specs"),
+		       combine_path(include_prefix, "specs"));
+      low_install_file(combine_path(vars->TMP_BUILDDIR,
+				    "modules/dynamic_module_makefile"),
+		       combine_path(include_prefix,
+				    "dynamic_module_makefile"));
+      low_install_file(combine_path(vars->SRCDIR,"install-welcome"),
+		       combine_path(prefix, "build/install-welcome"));
+      low_install_file(combine_path(vars->SRCDIR,"dumpmaster.pike"),
+		       combine_path(prefix, "build/dumpmaster.pike"));
+      low_install_file(combine_path(vars->SRCDIR,"dumpmodule.pike"),
+		       combine_path(prefix, "build/dumpmodule.pike"));
 
       void basefile(string x) {
 	string from = combine_path(vars->BASEDIR,x);
 	if(!Stdio.cp(from, x))
 	  werror("Could not copy %s to %s.\n", from ,x);
-	to_export += ({ x });
+	low_install_file(x, combine_path(prefix, x));
       };
 
       basefile("ANNOUNCE");
@@ -1313,8 +1635,38 @@ void do_install()
 		 combine_path(include_prefix,"make_variables.in"));
     install_file(combine_path(vars->SRCDIR,"aclocal.m4"),
 		 combine_path(include_prefix,"aclocal.m4"));
+    install_file(combine_path(vars->SRCDIR,"run_autoconfig"),
+		 combine_path(include_prefix,"run_autoconfig"));
     install_file(combine_path(vars->SRCDIR,"precompile2.sh"),
 		 combine_path(include_prefix,"precompile.sh"));
+
+    if (!no_autodoc) {
+      // install the core extracted autodocs
+      install_file(combine_path(vars->TMP_BUILDDIR, "autodoc.xml"),
+		   combine_path(doc_prefix, "src", "core_autodoc.xml"));
+
+      // create a directory for extracted module documentation
+      if(!export)
+	mkdirhier(combine_path(doc_prefix, "src", "extracted"));
+
+      install_dir(combine_path(vars->TMP_BUILDDIR, "doc_build", "images"),
+		  combine_path(doc_prefix, "src", "images"), 0);
+      install_dir(combine_path(vars->DOCDIR_SRC, "presentation"),
+		  combine_path(doc_prefix, "src", "presentation"), 0);
+      install_dir(combine_path(vars->DOCDIR_SRC, "src_images"),
+		  combine_path(doc_prefix, "src", "src_images"), 0);
+      install_dir(combine_path(vars->DOCDIR_SRC, "structure"),
+		  combine_path(doc_prefix, "src", "structure"), 0);
+      install_file(combine_path(vars->DOCDIR_SRC,"Makefile"),
+		   combine_path(doc_prefix, "src", "Makefile"));
+    }
+    else if(!export) {
+      mkdirhier(combine_path(doc_prefix, "src", "extracted"));
+      mkdirhier(combine_path(doc_prefix, "src", "images"));
+      mkdirhier(combine_path(doc_prefix, "src", "presentation"));
+      mkdirhier(combine_path(doc_prefix, "src", "src_images"));
+      mkdirhier(combine_path(doc_prefix, "src", "structure"));
+    }
 
     foreach(({"install_module", "precompile.pike", "smartlink",
 	      "fixdepends.sh", "mktestsuite", "test_pike.pike"}), string f)
@@ -1344,7 +1696,10 @@ void do_install()
   catch {
     Stdio.write_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
 		     sprintf("%d\n",installed_files));
-    to_export+=({ combine_path(vars->TMP_BUILDDIR,"num_files_to_install") });
+    if (export) {
+      low_install_file(combine_path(vars->TMP_BUILDDIR,"num_files_to_install"),
+		       combine_path(prefix, "build/num_files_to_install"));
+    }
   };
 
   files_to_install=0;
@@ -1353,10 +1708,7 @@ void do_install()
   {
     do_export();
   }else{
-    if ((vars->PIKE_MODULE_RELOC||"") == "") {
-      // Support for PIKE_MODULE_RELOC is currently broken.
-      dump_modules();
-    }
+    dump_modules();
 
     // Delete any .pmod files that would shadow the .so
     // files that we just installed. For a new installation
@@ -1401,13 +1753,22 @@ int main(int argc, array(string) argv)
     ({"notty",Getopt.NO_ARG,({"-t","--notty"})}),
     ({"--interactive",Getopt.NO_ARG,({"-i","--interactive"})}),
     ({"--new-style",Getopt.NO_ARG,({"--new-style"})}),
+    ({"--finalize",Getopt.NO_ARG,({"--finalize"})}),
+    ({"--install-master",Getopt.NO_ARG,({"--install-master"})}),
+    ({"no-autodoc",Getopt.NO_ARG,({"--no-autodoc","--no-refdoc"})}),
     ({"no-gui",Getopt.NO_ARG,({"--no-gui","--no-x"})}),
     ({"--export",Getopt.NO_ARG,({"--export"})}),
+    ({"--wix", Getopt.NO_ARG, ({ "--wix" })}),
+    ({"--wix-module", Getopt.NO_ARG, ({ "--wix-module" })}),
     ({"--traditional",Getopt.NO_ARG,({"--traditional"})}),
     }) ),array opt)
     {
       switch(opt[0])
       {
+        case "no-autodoc":
+	  no_autodoc = 1;
+	  break;
+
 	case "no-gui":
 	  no_gui=1;
 	  break;
@@ -1435,6 +1796,7 @@ int main(int argc, array(string) argv)
     if(vars->BASEDIR[-1]!='/') vars->BASEDIR += "/";
     if(!vars->LIBDIR_SRC) vars->LIBDIR_SRC=vars->BASEDIR+"lib";
     if(!vars->MANDIR_SRC) vars->MANDIR_SRC=vars->BASEDIR+"man";
+    if(!vars->DOCDIR_SRC) vars->DOCDIR_SRC=vars->BASEDIR+"refdoc";
     if(!vars->SRCDIR) vars->SRCDIR=vars->BASEDIR+"src";
   }
   else if(vars->SRCDIR) {
