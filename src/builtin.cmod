@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin.cmod,v 1.100 2002/11/28 23:45:38 marcus Exp $
+|| $Id: builtin.cmod,v 1.101 2002/12/01 18:58:20 mast Exp $
 */
 
 #include "global.h"
@@ -533,13 +533,12 @@ PIKEFUN string program_defined(program p)
   errname Program.defined;
   optflags OPT_TRY_OPTIMIZE;
 {
-  if(p && p->num_linenumbers)
-  {
-    INT32 line;
-    struct pike_string *tmp = get_program_line(p, &line);
+  INT32 line;
+  struct pike_string *tmp = low_get_program_line(p, &line);
 
-    pop_n_elems(args);
+  pop_n_elems(args);
 
+  if (tmp) {
     push_string(tmp);
     if(line >= 1)
     {
@@ -547,11 +546,9 @@ PIKEFUN string program_defined(program p)
       push_int(line);
       f_add(3);
     }
-    return;
   }
-
-  pop_n_elems(args);
-  push_int(0);
+  else
+    push_int(0);
 }
 
 /*! @decl int(8..8)|int(16..16)|int(32..32) width(string s)
@@ -655,11 +652,19 @@ PIKEFUN int get_weak_flag(multiset m)
 #endif
 }
 
-PIKEFUN program __empty_program()
+PIKEFUN program __empty_program(int|void line, string|void file)
   efun;
   optflags OPT_EXTERNAL_DEPEND;
 {
-  RETURN low_allocate_program();
+  if (line && line->type != T_INT)
+    SIMPLE_BAD_ARG_ERROR("__empty_program", 1, "int|void");
+  else if (file && file->type != T_STRING)
+    SIMPLE_BAD_ARG_ERROR("__empty_program", 2, "string|void");
+  else {
+    struct program *prog = low_allocate_program();
+    if (file) ext_store_program_line (prog, line->u.integer, file->u.string);
+    RETURN prog;
+  }
 }
 
 /*! @decl string function_name(function f)
