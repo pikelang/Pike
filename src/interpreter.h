@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpreter.h,v 1.78 2002/10/11 01:39:32 nilsson Exp $
+|| $Id: interpreter.h,v 1.79 2002/11/02 15:34:35 grubba Exp $
 */
 
 #undef LOW_GET_ARG
@@ -315,6 +315,13 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #define OPCODE1_TAILJUMP(OP, DESC, FLAGS, CODE) CASE(OP); CODE
 #define OPCODE2_TAILJUMP(OP, DESC, FLAGS, CODE) CASE(OP); CODE
 
+#define OPCODE0_BRANCH		OPCODE0_JUMP
+#define OPCODE1_BRANCH		OPCODE1_JUMP
+#define OPCODE2_BRANCH		OPCODE2_JUMP
+#define OPCODE0_TAILBRANCH	OPCODE0_TAILJUMP
+#define OPCODE1_TAILBRANCH	OPCODE1_TAILJUMP
+#define OPCODE2_TAILBRANCH	OPCODE2_TAILJUMP
+
 #include "interpret_functions.h"
 
 #ifndef HAVE_COMPUTED_GOTO      
@@ -340,6 +347,18 @@ static int eval_instruction(PIKE_OPCODE_T *pc)
 #undef OPCODE0_TAILJUMP
 #undef OPCODE1_TAILJUMP
 #undef OPCODE2_TAILJUMP
+#undef OPCODE0_RETURN
+#undef OPCODE1_RETURN
+#undef OPCODE2_RETURN
+#undef OPCODE0_TAILRETURN
+#undef OPCODE1_TAILRETURN
+#undef OPCODE2_TAILRETURN
+#undef OPCODE0_BRANCH
+#undef OPCODE1_BRANCH
+#undef OPCODE2_BRANCH
+#undef OPCODE0_TAILBRANCH
+#undef OPCODE1_TAILBRANCH
+#undef OPCODE2_TAILBRANCH
 #undef LABEL
 #define LABEL(OP)			&&PIKE_CONCAT(LABEL_,OP)
 #define NULL_LABEL(OP)			NULL

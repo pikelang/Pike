@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: opcodes.h,v 1.30 2002/10/11 01:39:34 nilsson Exp $
+|| $Id: opcodes.h,v 1.31 2002/11/02 15:29:34 grubba Exp $
 */
 
 #ifndef OPCODES_H
@@ -10,10 +10,6 @@
 
 /* Opcodes */
 
-/*
- * These values are used by the stack machine, and can not be directly
- * called from Pike.
- */
 #define OPCODE0(X,Y,F) X,
 #define OPCODE1(X,Y,F) X,
 #define OPCODE2(X,Y,F) X,
@@ -32,9 +28,19 @@
 #define OPCODE0_TAILRETURN(X,Y,F) X,
 #define OPCODE1_TAILRETURN(X,Y,F) X,
 #define OPCODE2_TAILRETURN(X,Y,F) X,
+#define OPCODE0_BRANCH(X,Y,F) X,
+#define OPCODE1_BRANCH(X,Y,F) X,
+#define OPCODE2_BRANCH(X,Y,F) X,
+#define OPCODE0_TAILBRANCH(X,Y,F) X,
+#define OPCODE1_TAILBRANCH(X,Y,F) X,
+#define OPCODE2_TAILBRANCH(X,Y,F) X,
 
 enum Pike_opcodes
 {
+  /*
+   * These values are used by the stack machine, and can not be directly
+   * called from Pike.
+   */
   F_OFFSET = 257,
   F_PREFIX_256,
   F_PREFIX_512,
@@ -51,19 +57,19 @@ enum Pike_opcodes
   F_PREFIX2_WORDX256,
   F_PREFIX2_24BITX256,
 
-/*
- * These are the predefined functions that can be accessed from Pike.
- */
+  /*
+   * These are the predefined functions that can be accessed from Pike.
+   */
 
 #include "interpret_protos.h"
 
   /* Used to mark an entry point from eval_instruction(). */
   F_ENTRY,
 
-/*
- * These are token values that needn't have an associated code for the
- * compiled file
- */
+  /*
+   * These are token values that needn't have an associated code for the
+   * compiled file
+   */
   F_MAX_OPCODE,
 
   F_ADD_EQ,
@@ -127,6 +133,12 @@ enum Pike_opcodes
 #undef OPCODE0_TAILRETURN
 #undef OPCODE1_TAILRETURN
 #undef OPCODE2_TAILRETURN
+#undef OPCODE0_BRANCH
+#undef OPCODE1_BRANCH
+#undef OPCODE2_BRANCH
+#undef OPCODE0_TAILBRANCH
+#undef OPCODE1_TAILBRANCH
+#undef OPCODE2_TAILBRANCH
 
 
 /* Prototypes begin here */

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: interpret_functions.h,v 1.111 2002/10/28 13:01:31 nilsson Exp $
+|| $Id: interpret_functions.h,v 1.112 2002/11/02 15:43:45 grubba Exp $
 */
 
 /*
@@ -52,6 +52,12 @@
 #define OPCODE0_TAILRETURN(A, B, F, C)	OPCODE0_TAILRETURN(A, B, F) --- C
 #define OPCODE1_TAILRETURN(A, B, F, C)	OPCODE1_TAILRETURN(A, B, F) --- C
 #define OPCODE2_TAILRETURN(A, B, F, C)	OPCODE2_TAILRETURN(A, B, F) --- C
+#define OPCODE0_BRANCH(A, B, F, C)	OPCODE0_BRANCH(A, B, F) --- C
+#define OPCODE1_BRANCH(A, B, F, C)	OPCODE1_BRANCH(A, B, F) --- C
+#define OPCODE2_BRANCH(A, B, F, C)	OPCODE2_BRANCH(A, B, F) --- C
+#define OPCODE0_TAILBRANCH(A, B, F, C)	OPCODE0_TAILBRANCH(A, B, F) --- C
+#define OPCODE1_TAILBRANCH(A, B, F, C)	OPCODE1_TAILBRANCH(A, B, F) --- C
+#define OPCODE2_TAILBRANCH(A, B, F, C)	OPCODE2_TAILBRANCH(A, B, F) --- C
 #endif /* GEN_PROTOS */
 
 
@@ -67,6 +73,16 @@
 
 #ifndef INTER_RETURN
 #define INTER_RETURN return -1
+#endif
+
+/* BRANCH opcodes use these two to indicate whether the
+ * branch should be taken or not.
+ */
+#ifndef DO_BRANCH
+#define DO_BRANCH	DOJUMP
+#endif
+#ifndef DONT_BRANCH
+#define DONT_BRANCH	SKIPJUMP
 #endif
 
 #ifndef OVERRIDE_JUMPS
@@ -1159,10 +1175,11 @@ OPCODE0_JUMP(F_CATCH, "catch", 0, {
     /* There was a return inside the evaluated code */
     DO_DUMB_RETURN;
   case 2:
+    /* Escape catch, continue after the escape instruction. */
     DO_JUMP_TO(Pike_fp->pc);
     break;
   default:
-    DO_JUMP_TO(PROG_COUNTER + GET_JUMP());
+    DOJUMP();
   }
   /* NOT_REACHED */
 });
