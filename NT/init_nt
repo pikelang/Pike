@@ -3,6 +3,7 @@
 # Support local settings.
 INIT_NTRC=${INIT_NTRC-"$HOME/.init_ntrc"}
 if [ -f "$INIT_NTRC" ]; then
+  echo Using rc-file $INIT_NTRC
   . "$INIT_NTRC"
 fi
 
@@ -47,14 +48,19 @@ IA64SDK=${IA64SDK-'C:\ia64sdk17'}
 
 case "/$CC" in
   */rntcl)
-    MSVC='j:\winshare\vc98'
-    local='j:\winshare\local'
-    REMOTE_VARIABLES="
+    if [ "x$NOPATHS" = "yes" ]; then
+      echo "I am Hubbe"
+      MSVC='j:\winshare\vc98'
+      local='j:\winshare\local'
+      REMOTE_VARIABLES="
 path=$MSVC\\bin;
 include=$MSVC\\Include;$local\\include
 lib=$MSVC\\Lib;$local\\lib
 "
-    export REMOTE_VARIABLES
+      export REMOTE_VARIABLES
+    else
+      echo "We are not Hubbe."
+    fi
   ;;
 
   */rntcl64)
