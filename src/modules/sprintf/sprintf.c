@@ -103,7 +103,7 @@
 */
 
 #include "global.h"
-RCSID("$Id: sprintf.c,v 1.69 2000/08/09 12:30:03 grubba Exp $");
+RCSID("$Id: sprintf.c,v 1.70 2000/08/10 08:29:40 grubba Exp $");
 #include "error.h"
 #include "array.h"
 #include "svalue.h"
@@ -373,7 +373,7 @@ INLINE static void fix_field(struct string_builder *r,
 			     ptrdiff_t pad_length,
 			     char pos_pad)
 {
-  int e,d;
+  ptrdiff_t e,d;
   if(!width || width==SPRINTF_UNDECIDED)
   {
     if(pos_pad && EXTRACT_PCHARP(b)!='-') string_builder_putchar(r,pos_pad);
@@ -588,7 +588,8 @@ INLINE static int do_one(struct format_stack *fs,
   }
   else if(f->flags & COLUMN_MODE)
   {
-    int mod,col;
+    int mod;
+    ptrdiff_t col;
     PCHARP end;
 
     if(f->width==SPRINTF_UNDECIDED)
@@ -744,7 +745,7 @@ INLINE static int do_one(struct format_stack *fs,
 	  PEEK_SVALUE(sv);						      \
 	  if(sv->type == T_OBJECT && sv->u.object->prog)		      \
 	  {                                                                   \
-            int fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	      \
+            ptrdiff_t fun=FIND_LFUN(sv->u.object->prog, LFUN__SPRINTF);	      \
 	    if (fun != -1)                                                    \
             {                                                                 \
               int n=0;							      \
@@ -810,7 +811,7 @@ static void low_pike_sprintf(struct format_stack *fs,
   int tmp,setwhat,pos,d,e;
   char buffer[140];
   struct format_info *f,*start;
-  float tf;
+  double tf;
   struct svalue *arg=0;	/* pushback argument */
   struct svalue *lastarg=0;
 
@@ -1066,7 +1067,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 
       case 'c':
       {
-        INT32 l,tmp,n;
+        INT32 tmp;
+	ptrdiff_t l,n;
 	char *x;
         DO_OP();
 	CHECK_OBJECT_SPRINTF()
@@ -1207,7 +1209,7 @@ static void low_pike_sprintf(struct format_stack *fs,
 	x=(char *)xalloc(100+MAXIMUM(fs->fsp->precision,3));
 	fs->fsp->b=MKPCHARP(x,0);
 	sprintf(buffer,"%%*.*%c",EXTRACT_PCHARP(a));
-	GET_FLOAT(DO_NOT_WARN(tf));
+	GET_FLOAT(tf);
 
 	if(fs->fsp->precision<0) {
 	  double m=pow(10.0, (double)fs->fsp->precision);
@@ -1242,11 +1244,8 @@ static void low_pike_sprintf(struct format_stack *fs,
 
       case 'F':
       {
-        INT32 l;
+        ptrdiff_t l;
 	char *x;
-#if defined(DOUBLE_IS_IEEE_LITTLE) || defined(DOUBLE_IS_IEEE_BIG)
-	double td;
-#endif
         DO_OP();
         l=4;
         if(fs->fsp->width > 0) l=fs->fsp->width;
@@ -1255,40 +1254,41 @@ static void low_pike_sprintf(struct format_stack *fs,
 	x=(char *)alloca(l);
 	fs->fsp->b=MKPCHARP(x,0);
 	fs->fsp->len=l;
-	GET_FLOAT(DO_NOT_WARN(tf));
+	GET_FLOAT(tf);
 	switch(l) {
 	case 4:
+	  {
 #ifdef FLOAT_IS_IEEE_BIG
-	  MEMCPY(x, &tf, 4);
+	    float f = DO_NOT_WARN((float)tf);
+	    MEMCPY(x, &f, 4);
 #else
 #ifdef FLOAT_IS_IEEE_LITTLE
-	  x[0] = ((char *)&tf)[3];
-	  x[1] = ((char *)&tf)[2];
-	  x[2] = ((char *)&tf)[1];
-	  x[3] = ((char *)&tf)[0];
+	    float f = DO_NOT_WARN((float)tf);
+	    x[0] = ((char *)&f)[3];
+	    x[1] = ((char *)&f)[2];
+	    x[2] = ((char *)&f)[1];
+	    x[3] = ((char *)&f)[0];
 #else
-	  low_write_IEEE_float(x, (double)tf, 4);
+	    low_write_IEEE_float(x, tf, 4);
 #endif
 #endif
+	  }
 	  break;
 	case 8:
 #ifdef DOUBLE_IS_IEEE_BIG
-	  td = (double)tf;
-	  MEMCPY(x, &td, 8);
+	  MEMCPY(x, &tf, 8);
 #else
 #ifdef DOUBLE_IS_IEEE_LITTLE
-	  td = (double)tf;
-
-	  x[0] = ((char *)&td)[7];
-	  x[1] = ((char *)&td)[6];
-	  x[2] = ((char *)&td)[5];
-	  x[3] = ((char *)&td)[4];
-	  x[4] = ((char *)&td)[3];
-	  x[5] = ((char *)&td)[2];
-	  x[6] = ((char *)&td)[1];
-	  x[7] = ((char *)&td)[0];
+	  x[0] = ((char *)&tf)[7];
+	  x[1] = ((char *)&tf)[6];
+	  x[2] = ((char *)&tf)[5];
+	  x[3] = ((char *)&tf)[4];
+	  x[4] = ((char *)&tf)[3];
+	  x[5] = ((char *)&tf)[2];
+	  x[6] = ((char *)&tf)[1];
+	  x[7] = ((char *)&tf)[0];
 #else
-	  low_write_IEEE_float(x, (double)tf, 8);
+	  low_write_IEEE_float(x, tf, 8);
 #endif
 #endif
 	}
@@ -1337,7 +1337,8 @@ static void low_pike_sprintf(struct format_stack *fs,
     if(((f->flags & INVERSE_COLUMN_MODE) && !f->column_width) ||
        (f->flags & COLUMN_MODE))
     {
-      int max_len,nr,columns;
+      int max_len,nr;
+      ptrdiff_t columns;
       tmp=1;
       for(max_len=nr=e=0;e<f->len;e++)
       {

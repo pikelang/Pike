@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.160 2000/08/08 19:40:41 grubba Exp $");
+RCSID("$Id: interpret.c,v 1.161 2000/08/10 08:35:24 grubba Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -545,7 +545,8 @@ void dump_backlog(void)
       {
 	fprintf(stderr,"(%ld)", (long)backlog[e].arg);
       }
-      fprintf(stderr," %d, %d\n", backlog[e].stack, backlog[e].mark_stack);
+      fprintf(stderr," %ld, %ld\n",
+	      (long)backlog[e].stack, (long)backlog[e].mark_stack);
     }
   }while(e!=backlogp);
 }

@@ -122,10 +122,10 @@ static int eval_instruction(unsigned char *pc)
       while((f=STRCHR(file,'/'))) file=f+1;
       fprintf(stderr,"- %s:%4ld:(%lx): %-25s %4ld %4ld\n",
 	      file,(long)linep,
-	      (long)(pc-Pike_fp->context.prog->program-1),
+	      DO_NOT_WARN((long)(pc-Pike_fp->context.prog->program-1)),
 	      get_f_name(instr + F_OFFSET),
-	      (long)(Pike_sp-Pike_interpreter.evaluator_stack),
-	      (long)(Pike_mark_sp-Pike_interpreter.mark_stack));
+	      DO_NOT_WARN((long)(Pike_sp-Pike_interpreter.evaluator_stack)),
+	      DO_NOT_WARN((long)(Pike_mark_sp-Pike_interpreter.mark_stack)));
     }
 
     if(instr + F_OFFSET < F_MAX_OPCODE) 

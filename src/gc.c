@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.111 2000/08/03 18:37:57 grubba Exp $");
+RCSID("$Id: gc.c,v 1.112 2000/08/10 08:33:00 grubba Exp $");
 
 /* Run garbage collect approximately every time
  * 20 percent of all arrays, objects and programs is
@@ -524,7 +524,7 @@ static void gdb_gc_stop_here(void *a, int weak)
   fprintf(stderr,"----------end------------\n");
 }
 
-void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere)
+void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere)
 {
   found_in=(void *)fromwhere;
   found_in_type=-1;
@@ -533,7 +533,7 @@ void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere)
   found_in=0;
 }
 
-void debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data)
+void debug_gc_check_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data)
 {
   found_in=data;
   found_in_type=t;
@@ -542,7 +542,7 @@ void debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data)
   found_in=0;
 }
 
-void debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data)
+void debug_gc_check_weak_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data)
 {
   found_in=data;
   found_in_type=t;

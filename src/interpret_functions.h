@@ -1,5 +1,5 @@
 /*
- * $Id: interpret_functions.h,v 1.29 2000/08/08 19:37:13 grubba Exp $
+ * $Id: interpret_functions.h,v 1.30 2000/08/10 08:36:45 grubba Exp $
  *
  * Opcode definitions for the interpreter.
  */
@@ -1500,7 +1500,9 @@ BREAK;
       break;
 
     CASE(F_CALL_FUNCTION);
-      mega_apply(APPLY_STACK,Pike_sp - *--Pike_mark_sp,0,0);
+      mega_apply(APPLY_STACK,
+		 DO_NOT_WARN(Pike_sp - *--Pike_mark_sp),
+		 0,0);
       break;
 
     CASE(F_CALL_FUNCTION_AND_RETURN);

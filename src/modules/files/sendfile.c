@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.40 2000/08/07 10:04:56 grubba Exp $
+ * $Id: sendfile.c,v 1.41 2000/08/10 08:19:38 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -246,12 +246,12 @@ static void call_callback_and_free(struct callback *cb, void *this_, void *arg)
  */
 
 /* writev() without the IOV_MAX limit. */
-static int send_iov(int fd, struct iovec *iov, int iovcnt)
+static ptrdiff_t send_iov(int fd, struct iovec *iov, int iovcnt)
 {
-  int sent = 0;
+  ptrdiff_t sent = 0;
 
   while (iovcnt) {
-    int bytes;
+    ptrdiff_t bytes;
     int cnt = iovcnt;
 
 #ifdef IOV_MAX

@@ -1,5 +1,5 @@
 /*
- * $Id: gc.h,v 1.59 2000/08/09 12:49:27 grubba Exp $
+ * $Id: gc.h,v 1.60 2000/08/10 08:33:45 grubba Exp $
  */
 #ifndef GC_H
 #define GC_H
@@ -115,9 +115,9 @@ void describe_location(void *real_memblock,
 		       int depth,
 		       int flags);
 void debug_gc_fatal(void *a, int flags, const char *fmt, ...);
-void debug_gc_xmark_svalues(struct svalue *s, int num, char *fromwhere);
-void debug_gc_check_svalues(struct svalue *s, int num, TYPE_T t, void *data);
-void debug_gc_check_weak_svalues(struct svalue *s, int num, TYPE_T t, void *data);
+void debug_gc_xmark_svalues(struct svalue *s, ptrdiff_t num, char *fromwhere);
+void debug_gc_check_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data);
+void debug_gc_check_weak_svalues(struct svalue *s, ptrdiff_t num, TYPE_T t, void *data);
 void debug_gc_check_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 void debug_gc_check_weak_short_svalue(union anything *u, TYPE_T type, TYPE_T t, void *data);
 int debug_gc_check(void *x, TYPE_T t, void *data);
