@@ -330,7 +330,7 @@ object(_encoder) encoder(string name, string|void replacement,
     "utf16": UTF16enc,
     "utf16be": UTF16enc,
     "utf16le": UTF16LEenc,
-    "utf7.5": UTF7_5enc,
+    "utf75": UTF7_5enc,
     "utf7½": UTF7_5enc,
     "shiftjis": ShiftJisEnc,
   ])[name];
