@@ -1,4 +1,4 @@
-// $Id: Binary.pike,v 1.1 2002/04/05 17:28:36 leif Exp $
+// $Id: Binary.pike,v 1.2 2002/06/14 14:46:56 nilsson Exp $
 // An abstract data type for binary relations.
 
 private mapping val   = ([]);
@@ -193,4 +193,67 @@ void create(void|mixed _id, void|mapping|object _initial)
       add(key, _initial[key]);
   else if (_initial)
     error("Bad initializer for ADT.Relation.Binary.\n");
+}
+
+//! An iterator which makes all the left/right entities in the relation
+//! available as index/value pairs.
+class Iterator {
+
+  static int(0..) ipos;
+  static int(0..) vpos;
+  static int(0..1) finished = 1;
+
+  static array lefts;
+  static array rights;
+
+  void create() {
+    first();
+  }
+
+  mixed index() {
+    return lefts[ipos];
+  }
+
+  mixed value() {
+    return rights[vpos];
+  }
+
+  int(0..1) `!() {
+    return finished;
+  }
+
+  int(0..1) next() {
+
+    if(finished || (ipos==sizeof(lefts)-1 &&
+		    vpos==sizeof(rights)-1)) {
+      finished = 1;
+      return 0;
+    }
+
+    vpos++;
+    if(vpos>sizeof(rights)-1 && !finished) {
+      ipos++;
+      rights = indices(val[lefts[ipos]]);
+      vpos = 0;
+    }
+
+    return 1;
+  }
+
+  this_program `+=(int steps) {
+    while(steps--)
+      next();
+    return this_object();
+  }
+
+  int(0..1) first() {
+    lefts = indices(val);
+    if(sizeof(lefts)) {
+      rights = indices(val[lefts[0]]);
+      finished = 0;
+    }
+    else
+      finished = 1;
+    return !finished;
+  }
 }
