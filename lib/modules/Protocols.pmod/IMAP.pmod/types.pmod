@@ -33,6 +33,19 @@ string imap_format_array(array a)
 #endif /* 0 */
 }
 
+array imap_check_array(array a)
+{
+  return(Array.filter(a, lambda(mixed item) {
+			   if (!item || stringp(item) || objectp(item)) {
+			     return 1;
+			   }
+			   werror(describe_backtrace(
+					   sprintf("Bad array element %O\n",
+						   item), backtrace()));
+			   return 0;
+			 }));
+}
+
 /* Output types */
 class imap_atom
 {
@@ -83,7 +96,7 @@ class imap_list
 {
   array data;
 
-  void create(array a) { data = a; }
+  void create(array a) { data = imap_check_array(a); }
 
   string format() { return "(" + imap_format_array(data) + ")"; }
 }
@@ -92,7 +105,7 @@ class imap_prefix
 {
   array data;
 
-  void create(array a) { data = a; }
+  void create(array a) { data = imap_check_array(a); }
 
   string format() { return "[" + imap_format_array(data) + "]"; }
 }
