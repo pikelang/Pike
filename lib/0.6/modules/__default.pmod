@@ -19,7 +19,7 @@ array(mixed) aggregate(mixed ... args)
 }
 
 class Regexp06 {
-  inherit Regexp;
+  inherit Regexp.SimpleRegexp;
 
   // Hide replace().
   private string replace(string in, string|function(string:string) transform)
