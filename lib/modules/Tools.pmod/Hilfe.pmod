@@ -4,7 +4,7 @@
 // Incremental Pike Evaluator
 //
 
-constant cvs_version = ("$Id: Hilfe.pmod,v 1.93 2002/11/29 02:03:45 nilsson Exp $");
+constant cvs_version = ("$Id: Hilfe.pmod,v 1.94 2003/01/05 03:46:39 nilsson Exp $");
 constant hilfe_todo = #"List of known Hilfe bugs/room for improvements:
 
 - Hilfe can not handle sscanf statements like
@@ -397,9 +397,8 @@ class CommandDump {
 
   private string print_mapping(array(string) ind, array val) {
     int m = max( @filter(map(ind, sizeof), `<, 20), 8 );
-    int i;
-    foreach(ind, string name)
-      write("%-*s : %s\n", m, name, replace(sprintf("%O", val[i++]), "\n", "\n"+(" "*m)+"   "));
+    foreach(ind; int i; string name)
+      write("%-*s : %s\n", m, name, replace(sprintf("%O", val[i]), "\n", "\n"+(" "*m)+"   "));
   }
 
   private void dump(Evaluator e) {
@@ -449,6 +448,9 @@ class CommandDump {
       return;
     case "history":
       write(e->history->status());
+      return;
+    case "memory":
+      write(master()->resolv("Debug.pp_memory_usage")());
       return;
     case "":
       dump(e);
@@ -570,11 +572,12 @@ private class SubSysBackend {
 
   private void backend_loop(function(string:int) write_err, int(0..1) once){
     is_running=1;
+    object backend = master()->resolv("Pike.DefaultBackend");
     mixed err;
     do {
       err = catch {
 	while(1)
-	  Pike.DefaultBackend(3600.0);
+	  backend(3600.0);
       };
       if(err)
 	write_err(describe_backtrace(err));
@@ -1005,7 +1008,7 @@ private class ParserState {
     array err;
     if(sizeof(line) && line[0]=='#') {
       string tmp = line-" ";
-      if( has_prefix(tmp, "#define") ) {
+      if( has_prefix(tmp, "#define") || has_prefix(tmp, "#undef") ) {
 	caught_error = "Preprocessor defines not possible inside Hilfe.\n";
 	return 0;
       }
@@ -1025,7 +1028,8 @@ private class ParserState {
       }
       if( has_prefix(tmp, "#if") || has_prefix(tmp, "#elif") ||
 	  has_prefix(tmp, "#else") || has_prefix(tmp, "#endif") ) {
-	caught_error = "Preprocess instructions if, elif, else and endif not possible in Hilfe.\n";
+	caught_error = "Preprocess instructions if, elif, ifdef, ifndef "
+	  "else and endif not possible in Hilfe.\n";
 	return 0;
       }
     }
@@ -1482,8 +1486,8 @@ class Evaluator {
 			 multiset(string) next_symbols, int p, void|string safe_word,
 			 void|int(0..1) top) {
     int op = p;
-    //    werror("%O %O\n", (symbols?indices(symbols||(<>))*", ":0),
-    //	   (next_symbols?indices(next_symbols||(<>))*", ":0) );
+    //    werror("%O %O %d\n", (symbols?indices(symbols||(<>))*", ":0),
+    //    	   (next_symbols?indices(next_symbols||(<>))*", ":0), top );
     p = _relocate(expr, symbols, next_symbols, p, safe_word, top);
     werror(" relocate %O %O\n", op, expr[op..p]);
     return p;
@@ -2253,6 +2257,9 @@ constant documentation_dump =
 
 dump history
       Shows all items in the history queue.
+
+dump memory
+      Shows the current memory usage.
 
 dump state
       Shows the current parser state. Only useful for debugging
