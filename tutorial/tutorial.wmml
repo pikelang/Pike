@@ -2023,7 +2023,7 @@ than that, let's look at a few examples:
 	mixed x; // x can be any type
 	string *x; // x is an array of strings
 
-	 // x is a mapping mapping from int to string
+	 // x is a mapping from int to string
 	mapping(string:int) x;
 
 	// x is a clone of Stdio.File
@@ -2044,7 +2044,7 @@ As you can see there are some interesting ways to specify types.
 Here is a list of what is possible:
 <dl>
 <dt> <tt>mixed</tt>
-<dt> This means that the variable can contain any type, or the
+<dd> This means that the variable can contain any type, or the
 	function return any value
 <dt> <tt>array( <i>type</i> )</tt>
 <dd> This means an array of <i>type</i>.
