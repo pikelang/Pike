@@ -1,4 +1,4 @@
-# $Id: export_list,v 1.6 2004/02/11 14:02:04 grubba Exp $
+# $Id: export_list,v 1.7 2004/02/27 19:47:04 nilsson Exp $
 # This file lists the files and directories that should be
 # added to source dists. Used by bin/export.pike.
 
@@ -13,6 +13,7 @@
 /src
 /lib
 /bin
+/bundles
 /man
 /packaging
 /refdoc/chapters
