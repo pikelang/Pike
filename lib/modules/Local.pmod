@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-// $Id: Local.pmod,v 1.4 2002/08/28 09:36:58 mikael Exp $
+// $Id: Local.pmod,v 1.5 2002/08/28 09:45:13 mikael Exp $
 
 //! @[Local] gives a local module namespace used for locally
 //! installed pike modules. Modules are searched for in
@@ -74,7 +74,7 @@ static void create() {
   }
 
   if(tmp = getenv("PIKE_LOCAL_PATH") ) {
-    array to_add=tmp/":";
+    array to_add=reverse(tmp/":"); // preserve order
     add_path( to_add[*] ); 
   }
 }
