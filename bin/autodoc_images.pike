@@ -5,9 +5,6 @@ void parse_file(string file) {
 
   string dir = getcwd()+"/"+dirname(file)+"/";
 
-  if(has_suffix(file,"sub_manual.xml"))
-      return;
-
   string x,y;
   y = Stdio.read_file(file);
 #ifdef DEBUG
@@ -40,7 +37,10 @@ int main(int num, array(string) args) {
 
   if(num<3) throw( "Not enough arguments to autodoc_images.pike\n" );
   copy_to = args[1];
-  foreach(args[2..], string file)
+  foreach(args[2..], string file) {
+    if(has_suffix(file,"sub_manual.xml")) continue;
+    Stdio.Stat st = file_stat(file);
+    if(st->size == 0 || st->size == 37) continue;
     parse_file( file );
-
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * $Id: join-autodoc.pike,v 1.7 2001/07/26 17:43:32 nilsson Exp $
+ * $Id: join-autodoc.pike,v 1.8 2001/08/11 22:09:27 nilsson Exp $
  *
  * AutoDoc mk II join script.
  *
@@ -12,17 +12,34 @@ int main(int argc, array(string) argv)
 {
   int post_process = has_value(argv, "--post-process");
   argv -= ({ "--post-process" });
-  int files = sizeof( argv )-2;
+
   string save_to = argv[1];
-  werror("Joining %d file%s...\n", files, (files==1?"":"s"));
+  array(string) files = argv[2..];
+
+  files = filter(files, lambda(string fn) {
+			  Stdio.Stat st = file_stat(fn);
+			  return st->size != 0 && st->size != 37;
+			});
+
+  if(!sizeof(files)) {
+    werror("No content to merge.\n");
+    return 0;
+  }
+
+  if(sizeof(files)==1) {
+    werror("Only one content file present. Copy instead of merge.\n");
+    return(!Stdio.cp(files[0], save_to));
+  }
+
+  werror("Joining %d file%s...\n", sizeof(files),
+	 (sizeof(files)==1?"":"s"));
 
   werror("Reading %s...\n", argv[2]);
-  //trace(5);
-  object dest = Parser.XML.Tree.parse_file(argv[2])[0];
+  object dest = Parser.XML.Tree.parse_file(files[0])[0];
 
   int fail;
 
-  foreach(argv[3..], string filename)
+  foreach(files[1..], string filename)
   {    
     object src;
     if (mixed err = catch {
