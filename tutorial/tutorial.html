@@ -5469,12 +5469,541 @@ the exec fails for some reason.
 </a>
 <hr noshade size=1>
 
-<h2>regexp</h2>
-<h2>Mpz</h2>
+<a name=Regexp>
+Regexp is short for <b>Regular Expression</b>. A regular expression is
+a standardized way to make pattern that match certain strings. In Pike
+you can often use the sscanf, range and index operators to match strings,
+but sometimes a regexp is both faster and easier.
+<p>
+A regular expression is actually a string, then compiled into an object.
+The string contains characters that make up a pattern for other strings
+to match. Normal characters, such as A through Z only match themselves,
+but some characters have special meaning. 
+
+<table>
+<tr><th> pattern </th><th>Matches</th></tr>
+<tr><td> . </td><td> any one character </td></tr>
+<tr><td> [abc] </td><td> a, b or c </td></tr>
+<tr><td> [a-z] </td><td> any character a to z inclusive </td></tr>
+<tr><td> [^ac] </td><td> any character except a and c </td></tr>
+<tr><td> (x) </td><td> x (x might be any regexp) If used with split, this also puts the string matching x into the result array. </td></tr>
+<tr><td> x* </td><td> zero or more occurances of 'x' (x may be any regexp) </td></tr>
+<tr><td> x+ </td><td> one or more occurances of 'x' (x may be any regexp) </td></tr>
+<tr><td> x|y </td><td> x or y. (x or y may be any regexp) </td></tr>
+<tr><td> xy </td><td> xy (x and y may be any regexp) </td></tr>
+<tr><td> ^ </td><td> beginning of string (but no characters) </td></tr>
+<tr><td> $ </td><td> end of string (but no characters) </td></tr>
+<tr><td> \&lt; </td><td> the beginning of a word (but no characters) </td></tr>
+<tr valign=top><td> \&gt; </td><td> the end of a word (but no characters) </td></tr>
+</table>
+Let's look at a few examples:
+<table>
+<tr><th>Regexp</th><th>Matches</th></tr>
+<tr><td>[0-9]+</td><td>one or more digits</td></tr>
+<tr><td>[^ \t\n]</td><td>exactly one non-whitespace character</td></tr>
+<tr><td>(foo)|(bar)</td><td>either 'foo' or 'bar'</td></tr>
+<tr><td>\.html$</td><td>any string ending in '.html'</td></tr>
+<tr><td>^\.</td><td>any string starting with a period</td></tr>
+</table>
+<p>Note that \ can be used to quote these characters in which case
+they match themselves, nothing else. Also note that when quoting
+these something in Pike you need two \ because Pike also uses
+this character for quoting.
+<p>
+<p>
+To make make regexps fast, they are compiled in a similar way that Pike is,
+they can then be used over and over again without needing to be recompiled.
+To give the user full control over the compilations and use of regexp an
+object oriented interface is provided.
+<p>
+You might wonder what you use regexp for, hopefully it should be more clear
+when you read about the following functions:
+
+</a>
+<hr noshade size=1>
+<a name=Regexp.create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Regexp.create</tt> - compile regexp
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void create();<br>
+or<br>
+void create(string <i>regexp</i>);<br>
+or<br>
+object(Regexp) Regexp();<br>
+or<br>
+object(Regexp) Regexp(string <I>regexp</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+When create is called, the current regexp bound to this object is
+cleared. If a string is sent to create(), this string will be compiled
+to an internal representation of the regexp and bound to this object
+for laters calls to match or split. Calling create() without an
+argument can be used to free up a little memory after the regexp has
+been used.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#clone>clone</a> and <a href=#Yp.regexp.match>Yp.regexp-&gt;match</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Regexp.match>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Regexp.match</tt> - match a regexp
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int match(string s)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Return 1 if s matches the regexp bound to the object regexp,
+zero otherwise.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Regexp.create>Regexp-&gt;create</a> and <a href=#Yp.regexp.split>regexp-&gt;split</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=split>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Regexp.split</tt> - split a string according to a pattern
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string *split(string s)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Works as regexp-&gt;match, but returns an array of the strings that
+matched the subregexps. Subregexps are those contained in ( ) in
+the regexp. Subregexps that were not matched will contain zero.
+If the total regexp didn't match, zero is returned.
+<p>
+<dt><b> <font size=+1>B</font><font size=-1>UGS</font></b><dd>
+You can only have 40 subregexps.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Regexp.create>Regexp-&gt;create</a> and <a href=#Regexp.match>Regexp-&gt;match</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+
+<!-- FIXME: write and document Regexp-&gt;explode -->
+
+<a name=Gmp>
+<h2>Gmp</h2>
+Gmp is short for GNU MultiPrecision library. It is a set of routines that
+can manipulate very large numbers. Although much slower than regular integers
+they are very useful when you need to handle extremly large numbers.
+Billions and billions as Mr Attenburrow would have said..
+<p>
+The Gmp library can handle large integers, floats and rational numbers, but
+currently Pike only has support for large integers. The others will be added
+later or when demand arises. Large integers are implemented as objects cloned
+from Gmp.Mpz. 
+
+<a name=Gmp.mpz>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz</tt> - bignum program
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Gmp.mpz is a builtin program written in C. It implements
+large, very large integers. In fact, the only limitation on these
+integers is the available memory.
+<p>The mpz object implements all the normal integer operations.
+(except xor) There are also some extra operators:
+<p>
+<dt><b> <font size=+1>N</font><font size=-1>OTA</font> <font size=+1>B</font><font size=-1>ENE</font></b><dd>
+This module is only available if libgmp.a was available and
+found when Pike was compiled.
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.create</tt> - initialize a bignum
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object Mpz();<br>
+or<br>
+object Mpz(int|object|float <I>i</I>);<br>
+or<br>
+object Mpz(string <I>digits</I>, int <I>base</I>);<br>
+<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+When cloning an mpz it is by default initalized to zero. However,
+you can give a second argument to clone to initialize the new
+object to that value. The argument can be an int, float another
+mpz object, or a string containing an ascii number. You can also
+give the number in the string in another base by specifying the
+base as a second argument. Valid bases are 2-36 and 256.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#clone>clone</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.powm>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.powm</tt> - raise and modulo
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object powm(int|string|float|object <I>a</I>,int|string|float|object <I>b</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns ( mpz ** a ) % b
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.sqrt>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.sqrt</tt> - square root
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object sqrt();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function return the the truncated integer part of the square
+root of the value of mpz. 
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.probably_prime_p>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.probably_prime_p</tt> - is this number a prime?
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int probably_prime_p();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns 1 if mpz is a prime, and 0 most of the time
+if it is not.
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.gcd>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.gcd</tt> - greatest common divisor
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object gcd(object|int|float|string arg)<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns the greatest common divisor for arg and mpz.
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.cast>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.cast</tt> - cast to other type
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>object cast( "string" | "int" | "float" );<br>
+or<br>
+(string) mpz<br>
+or<br>
+(int) mpz<br>
+or<br>
+(float) mpz<br>
+<p><br>
+DESCRIPTION<br>
+This function converts an mpz to a string, int or float. This is<br>
+nessesary when you want to view, store or use the result of an mpz<br>
+calculation.<br>
+</tt>
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#cast>cast</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.digits>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.digits</tt> - convert mpz to a string
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string digits();<br>
+or<br>
+string digits(int|void <I>base</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function converts an mpz to a string. If a base is given the
+number will be represented in that base. Valid bases are 2-36 and
+256. The default base is 10.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Gmp.mpz.cast>Gmp.mpz-&gt;cast</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gmp.mpz.size>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gmp.mpz.size</tt> - how long is a number
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string size();<br>
+or<br>
+string size(int|void <I>base</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This function returns how long the mpz would be represented in the
+specified base. The default base is 2.
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>EE</font> <font size=+1>A</font><font size=-1>LSO</font></b><dd>
+<a href=#Gmp.mpz.digits>Gmp.mpz-&gt;digits</a>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+
+<a name=Gdbm>
 <h2>Gdbm</h2>
+Gdbm is short for GNU Data Base Manager. It provides a simple data base
+similar to a file system. The functionality is similar to a mapping,
+but the data is located on disk, not in memory. Each gdbm database
+is one file which contains a key-pair values, both keys and values
+have to be strings. All keys are always unique, just as with a mapping.
+<p>
+<!-- FIXME, implement `[], `[]=, _sizeof, _indices and _values -->
+
+This is the an interface to the gdbm library. This module might or
+might not be available in your Pike depending on weather the gdbm library
+was available on your system when Pike was compiled.
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.create>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gdbm.create</tt> - open database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int create();<br>
+or<br>
+int create(string <I>file</I>);<br>
+or<br>
+int create(string <I>file</I>, string <I>mode</I>);<br>
+or<br>
+object(Gdbm) Gdbm();
+or<br>
+object(Gdbm) Gdbm(string <i>file</i>);
+or<br>
+object(Gdbm) Gdbm(string <i>file</i>, string <i>mode</i>);
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Without arguments, this function does nothing. With one argument it
+opens the given file as a gdbm database, if this fails for some
+reason, an error will be generated. If a second argument is present,
+it specifies how to open the database using one or more of the follow
+flags in a string:
+<p><table border=0 cellpadding=0 cellspacing=0>
+<tr valign=top><td> r </td><td> open database for reading </td></tr>
+<tr valign=top><td> w </td><td> open database for writing </td></tr>
+<tr valign=top><td> c </td><td> create database if it does not exist </td></tr>
+<tr valign=top><td> t </td><td> overwrite existing database </td></tr>
+<tr valign=top><td> f </td><td> fast mode </td></tr>
+</table>
+
+<p>The fast mode prevents the database from syncronizing each change
+in the database immediately. This is dangerous because the database
+can be left in an unusable state if Pike is terminated abnormally.
+<p>The default mode is "rwc".
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.close>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gdbm.close</tt> - close database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void close();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This closes the database.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.store>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gdbm.store</tt> - store a value in the database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int Gdbm.store(string <I>key</I>, string <I>data</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Associate the contents of 'data' with the key 'key'. If the key 'key'
+already exists in the database the data for that key will be replaced.
+If it does not exist it will be added. An error will be generated if
+the database was not open for writing.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.fetch>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gdbm.fetch</tt> - fetch a value from the databse
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string fetch(string <I>key</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Return the data associated with the key 'key' in the database.
+If there was no such key in the database, zero is returned.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.delete>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gdbm.delete</tt> - delete a value from the database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int delete(string <I>key</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Remove a key from the database. Note that no error will be generated
+if the key does not exist.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.firstkey>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gdbm.firstkey</tt> - get first key in database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string firstkey();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Return the first key in the database, this can be any key in the
+database.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.nextkey>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>nextkey</tt> - get next key in database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>string nextkey(string <I>key</I>);<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+This returns the key in database that follows the key 'key' key.
+This is of course used to iterate over all keys in the database.
+<p>
+<dt><b> <font size=+1>E</font><font size=-1>XAMPLE</font></b><dd>
+<tt>/* Write the contents of the database */<br>
+for(key=gdbm-&gt;firstkey(); k; k=gdbm-&gt;nextkey(k))<br>
+<dl><dt><dd>write(k+":"+gdbm-&gt;fetch(k)+"\n");<br>
+</dl>
+</tt>
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.reorganize>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>Gdbm.reorganize</tt> - reorganize database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>int reorganize();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+Deletions and insertions into the database can cause fragmentation
+which will make the database bigger. This routine reorganizes the
+contents to get rid of fragmentation. Note however that this function
+can take a LOT of time to run.
+<p>
+</dl>
+
+</a>
+<hr noshade size=1>
+<a name=Gdbm.sync>
+<dl>
+<dt><b> <font size=+1>N</font><font size=-1>AME</font></b><dd>
+<tt>sync</tt> - synchronize database
+<p>
+<dt><b> <font size=+1>S</font><font size=-1>YNTAX</font></b><dd>
+<tt>void sync();<br>
+</tt>
+<p>
+<dt><b> <font size=+1>D</font><font size=-1>ESCRIPTION</font></b><dd>
+When opening the database with the 'f' flag writings to the database
+can be cached in memory for a long time. Calling sync will write
+all such caches to disk and not return until everything is stored
+on the disk.
+<p>
+</dl>
+</a>
+<hr noshade size=1>
+
+<h2>Getopt</h2>
+
 <h2>Structs</h2>
 <!-- FIXME priority_queue and heap should be placed here -->
-<h2>Getopt</h2>
 <h2>Simulate</h2>
 
 <h1>The Image module</h2>
