@@ -108,14 +108,24 @@ test_false([[-Math.nan>0.0]])
 test_false([[-Math.nan<0.0]])
 test_false([[-Math.nan==0.0]])
 
-test_eq(Math.convert_angle(Math.convert_angle(90, "deg", "rad"), "rad", "deg"), 90.0)
-test_eq(Math.convert_angle(Math.convert_angle(90, "rad", "gon"), "gon", "rad"), 90.0)
-test_eq(Math.convert_angle(Math.convert_angle(90, "gon", "str"), "str", "gon"), 90.0)
-test_eq(Math.convert_angle(Math.convert_angle(90, "str", "deg"), "deg", "str"), 90.0)
+dnl Floating point comparison.
+define([[test_approx]], [[
+  test_eq(`<=(-0.0000001, ($1) - ($2), 0.0000001), 1)
+]])
 
-test_eq(Math.Angle(45, "deg")->degree(), 45)
-test_eq(Math.Angle(45, "deg")->rad(), 0.25*Math.pi)
-test_eq(Math.Angle(45, "deg")->gon(), 50.0)
-test_eq(Math.Angle(45, "deg")->streck(), 787.5)
-test_eq(Math.Angle(361, "deg")->degree(), 1)
-test_eq(Math.Angle(45, "deg")->clone_me()->gon(), 50.0)
+test_approx(Math.Angle(45, "deg")->degree(), 45)
+test_approx(Math.Angle(45, "deg")->rad(), 0.25*Math.pi)
+test_approx(Math.Angle(45, "deg")->gon(), 50.0)
+test_approx(Math.Angle(45, "deg")->streck(), 787.5)
+test_approx(Math.Angle(361, "deg")->degree(), 1)
+test_approx(Math.Angle(45, "deg")->clone_me()->gon(), 50.0)
+
+dnl convert_angle 1-1 test
+define([[test_convert]], [[
+  test_approx(Math.convert_angle(Math.convert_angle($1, $2, $3), $3, $2), $1)
+]])
+
+test_convert(90, "deg", "rad")
+test_convert(90, "rad", "gon")
+test_convert(90, "gon", "str")
+test_convert(90, "str", "deg")
