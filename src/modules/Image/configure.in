@@ -1,4 +1,4 @@
-# $Id: configure.in,v 1.9 1998/09/20 08:31:15 hubbe Exp $
+# $Id: configure.in,v 1.10 1998/11/06 18:40:30 grubba Exp $
 AC_INIT(image.c)
 AC_CONFIG_HEADER(config.h)
 
@@ -9,6 +9,9 @@ AC_MODULE_INIT()
 AC_FUNC_MMAP
 
 AC_CHECK_HEADERS(sys/fcntl.h fcntl.h stdlib.h netinet/in.h winsock.h)
+
+AC_CHECK_LIB(m, abs, [], [])
+AC_CHECK_LIB(m, fabs, [], [])
 
 AC_SUBST(RANLIB)
 
