@@ -2,14 +2,14 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: auto.c.in,v 1.42 2003/07/08 06:58:50 per Exp $
+|| $Id: auto.c.in,v 1.43 2003/07/08 22:31:12 agehall Exp $
 */
 
 #include "global.h"
 
 #include "config.h"
 
-RCSID("$Id: auto.c.in,v 1.42 2003/07/08 06:58:50 per Exp $");
+RCSID("$Id: auto.c.in,v 1.43 2003/07/08 22:31:12 agehall Exp $");
 #include "stralloc.h"
 #include "pike_macros.h"
 #include "object.h"
@@ -38,6 +38,12 @@ RCSID("$Id: auto.c.in,v 1.42 2003/07/08 06:58:50 per Exp $");
 #define ZT_FLOAT  2
 #define ZT_DOUBLE 4
 #define ZT_ARRAY  8
+
+union zvalue {
+  GLint i;
+  GLfloat f;
+  GLdouble d;
+};
 
 struct zvalue4 {
   union {
@@ -413,6 +419,77 @@ static int check_1n_args(char *func, INT32 args, int ty, int rty,
 
   return tt|(arr?ZT_ARRAY:0);
 }
+
+/*
+ * This function copies an array from pike into a zvalue array. It
+ * allocates all the memory needed to do the transfer and copies the
+ * data.
+ *
+ */
+static int check_1unlimited_args(char *func, INT32 args, int ty, int rty,
+			 union zvalue **ret)
+{
+  int i, tt, tr=0, arr=0;
+  struct svalue *s;
+
+  if(args!=1)
+    Pike_error("%s: too %s arguments.\n", func, (args<1? "few":"many"));
+  
+  /* Make sure we were sent an array */
+  if(sp[-1].type==T_ARRAY) {
+    struct array *a = sp[-1].u.array;
+    args = a->size;
+    arr++;
+    s = ITEM(a);
+  } else
+    Pike_error("%s: expected array.\n", func);
+
+  /* Check what types of arguments that are in the array */
+  for(i=0; i<args; i++)
+    if(!((tt=1<<s[i].type)&ty)) {
+      char buf[32];
+      int n=0;
+      buf[0]='\0';
+      for(tt=0; ty; tt++)
+	if(ty&(1<<tt)) {
+	  ty&=~(1<<tt);
+	  if(n++)
+	    strcat(buf, " or ");
+	  strcat(buf, get_name_of_type(tt));
+	}
+      Pike_error("%s: got %s, expected %s.\n", func,
+	    get_name_of_type(s[i].type), buf);
+    } else
+      tr|=tt;
+  if(tr==(BIT_INT|BIT_FLOAT))
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+  else if(tr==BIT_FLOAT)
+    tt=((rty&ZT_FLOAT)? ZT_FLOAT:ZT_DOUBLE);
+  else if(tr!=BIT_INT)
+    Pike_error("Internal error in check_1unlimited_args for %s!\n", func);
+  else if(rty&ZT_INT)
+    tt=ZT_INT;
+  else 
+    tt=((rty&ZT_DOUBLE)? ZT_DOUBLE:ZT_FLOAT);
+
+  ret[0] = (void *)xalloc(args * sizeof(union zvalue));
+  for(i=0; i<args; i++)
+    switch(tt)
+    {
+    case ZT_INT:
+      ((GLint *)ret[0])[i]=s[i].u.integer;
+      break;
+    case ZT_FLOAT:
+      ((GLfloat *)ret[0])[i]=(s[i].type==T_INT?(float)s[i].u.integer:s[i].u.float_number);
+      break;      
+    case ZT_DOUBLE:
+      ((GLdouble *)ret[0])[i]=(s[i].type==T_INT?(double)s[i].u.integer:s[i].u.float_number);
+      break;      
+    }  
+
+  return tt|(arr?ZT_ARRAY:0);
+}
+
 
 #define glClearColor3v(f) glClearColor((f)[0], (f)[1], (f)[2], 0.0)
 #define glClearColor4v(f) glClearColor((f)[0], (f)[1], (f)[2], (f)[3])

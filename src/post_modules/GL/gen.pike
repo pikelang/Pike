@@ -18,7 +18,8 @@
    =XXXX = 4/array(4)
    =XXX  = 3/array(3)
    @X    = 1/array(n)
-   [nnX  = array(nn)
+   ]X    = array() (No size limit)
+   [nnX  = array() (Limited to nn elements)
 
    #     = like =, but add count
    !     = like =, but no vector version available
@@ -44,6 +45,40 @@ void error(string msg, mixed ... args)
   exit(1);
 }
 
+/*
+ *! Generate an array with information about how the function may
+ *! be called. This function is used to generate prototype information
+ *! for functions which may accept 1/2/3/4/array() parameters.
+ *!
+ *! @arg mi
+ *! Minimum number of arguments which should be accepted. Only the mi first
+ *! arguments will be required, the rest may be void.
+ *!
+ *! @arg mx
+ *! Maximum number of arguments which should be accepted.
+ *!
+ *! @arg a
+ *! If 0, output allows for non-arrays.
+ *! If 1, output only allows for arrays.
+ *!
+ *! @arg ty
+ *! Argument type, one of E, B, I, O, D, F, R, Z, Q.
+ *!
+ *! @returns
+ *! array(array(string), string, string, string) where
+ *! the first element is an array containing the prototype for
+ *! each paramter for this function.
+ *!
+ *! The second element is some strange thing.
+ *!
+ *! The third element is the types of values that may be passed
+ *! as parameters to the function. This is used to check input to
+ *! the function.
+ *!
+ *! The fourth element describes, as a string, what types of input the
+ *! function accepts. This value is used to choose which lowlevel GL function
+ *! to call.
+ */
 array(string|array(string)) special_234(int mi, int mx, string ty, int|void a)
 {
   string tm="BIT_FLOAT|BIT_INT", baset="float|int", rt="if";
@@ -89,8 +124,9 @@ array(string|array(string)) special_234(int mi, int mx, string ty, int|void a)
       t+="|void";
     typ+=({t});
   }
-  return ({typ,tm,rows((['i':"ZT_INT",'f':"ZT_FLOAT",'d':"ZT_DOUBLE"]),
+  array ret = ({typ,tm,rows((['i':"ZT_INT",'f':"ZT_FLOAT",'d':"ZT_DOUBLE"]),
 		       values(rt))*"|",rt});
+  return ret;
 }
 
 array(string) gen_func(string name, string ty)
@@ -219,11 +255,20 @@ array(string) gen_func(string name, string ty)
       res += "  union zvalue16 zv16;\n  int r1n;\n";
       argt += arrfix[0];
       got += "  if(Pike_sp["+(a-1)+"-args].u.array->size != "+nn+")\n"
-	"    Pike_error(\""+name+": Array length is wrong (is %d, should be "+nn+
-	")\\n\", Pike_sp["+(a-1)+"-args].u.array->size);\n\n";
+	     "    Pike_error(\""+name+": Array length is wrong (is %d, should be "+nn+")\\n\", Pike_sp["+(a-1)+"-args].u.array->size);\n\n";
       got += "  r1n=check_1n_args(\""+name+"\", args-"+(a-1)+", "+
 	arrfix[1]+", "+arrfix[2]+", &zv16);\n";
       r234=-1;
+      rtypes=arrfix[3];
+      i=sizeof(ty);
+      break;
+    case ']':
+      arrfix = special_234(0, 0, ty[i+1..], 1);
+      res += "  union zvalue *zv;\n  int r1n;\n";
+      argt += arrfix[0];
+      got += "  r1n=check_1unlimited_args(\""+name+"\", args-"+(a-1)+", "+
+	arrfix[1]+", "+arrfix[2]+", &zv);\n";
+      r234=-2;
       rtypes=arrfix[3];
       i=sizeof(ty);
       break;
@@ -392,6 +437,20 @@ array(string) gen_func(string name, string ty)
 		    ((args+({"zv16."+r[i..i]}))*",")+"); break;";
 		}, rtypes, fu, vret, args, novec)*"\n"+
       "\n  }\n";
+    break;
+
+  case -2:
+    res += "  switch(r1n) {\n"+
+      Array.map(indices(rtypes),
+		lambda(int i, string r, string fu, string vret,
+		       array(string) args, array(int) novec) {
+		  return "    case ZT_ARRAY|ZT_"+
+		  (['i':"INT",'f':"FLOAT",'d':"DOUBLE"])[r[i]]+": "+
+		    (vret?"res=":"")+fu+r[i..i]+"("+
+		    ((args+({ "(void *)zv" }))*",")+"); break;";
+		}, rtypes, fu, vret, args, novec)*"\n"+
+      "\n  }\n";
+    res += "  if (zv != NULL)\n    free(zv);\n";
     break;
   }
 
