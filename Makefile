@@ -1,5 +1,5 @@
 #
-# $Id: Makefile,v 1.8 1999/05/10 13:53:05 mast Exp $
+# $Id: Makefile,v 1.9 1999/05/10 18:58:27 mast Exp $
 #
 # Meta Makefile
 #
@@ -57,7 +57,7 @@ configure: src/configure builddir
 	    echo Running "$$srcdir"/configure $$configureargs in "$$builddir"; \
 	    CONFIG_SITE=x "$$srcdir"/configure $$configureargs && ( \
 	      echo "$$configureargs" > .configureargs; \
-	      $(MAKE) clean > /dev/null; \
+	      $(MAKE) "MAKE=$(MAKE)" clean > /dev/null; \
 	      : \
 	    ) \
 	  fi \
@@ -70,7 +70,9 @@ compile: configure
 	cd "$$builddir" && ( \
 	  echo Making in "$$builddir"; \
 	  rm -f remake; \
-	  $(MAKE) all $$metatarget || ( test -f remake && $(MAKE) all $$metatarget ) \
+	  $(MAKE) "MAKE=$(MAKE)" all $$metatarget || ( \
+	    test -f remake && $(MAKE) "MAKE=$(MAKE)" all $$metatarget \
+	  ) \
 	)
 
 bin/pike: force
@@ -105,10 +107,10 @@ feature_list:
 	@$(MAKE) "MAKE=$(MAKE)" "prefix=$(prefix)" "BUILDDIR=$(BUILDDIR)" "METATARGET=feature_list"
 
 clean:
-	-cd "$(BUILDDIR)" && $(MAKE) clean
+	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" clean
 
 spotless:
-	-cd "$(BUILDDIR)" && $(MAKE) spotless
+	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" spotless
 
 distclean:
 	-rm -rf build bin/pike
@@ -117,4 +119,4 @@ cvsclean: distclean
 	for d in `find src -type d -print`; do if test -f "$$d/.cvsignore"; then (cd "$$d" && rm -f `cat ".cvsignore"`); else :; fi; done
 
 depend:
-	-cd "$(BUILDDIR)" && $(MAKE) depend
+	-cd "$(BUILDDIR)" && $(MAKE) "MAKE=$(MAKE)" depend
