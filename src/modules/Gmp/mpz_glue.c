@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: mpz_glue.c,v 1.111 2002/10/11 01:39:40 nilsson Exp $
+|| $Id: mpz_glue.c,v 1.112 2002/10/15 10:35:39 marcus Exp $
 */
 
 #include "global.h"
-RCSID("$Id: mpz_glue.c,v 1.111 2002/10/11 01:39:40 nilsson Exp $");
+RCSID("$Id: mpz_glue.c,v 1.112 2002/10/15 10:35:39 marcus Exp $");
 #include "gmp_machine.h"
 
 #if defined(HAVE_GMP2_GMP_H) && defined(HAVE_LIBGMP2)
@@ -1465,20 +1465,6 @@ static void mpzmod_popcount(INT32 args)
 #endif
 }
 
-static void gmp_pow(INT32 args)
-{
-  struct object *res = NULL;
-  if (args != 2)
-    Pike_error("Gmp.pow: Wrong number of arguments");
-  if ( (sp[-2].type != T_INT) || (sp[-2].u.integer < 0)
-       || (sp[-1].type != T_INT) || (sp[-1].u.integer < 0))
-    Pike_error("Gmp.pow: Negative arguments");
-  res = fast_clone_object(mpzmod_program, 0);
-  mpz_ui_pow_ui(OBTOMPZ(res), sp[-2].u.integer, sp[-1].u.integer);
-  pop_n_elems(args);
-  PUSH_REDUCED(res);
-}
-
 static void gmp_fac(INT32 args)
 {
   struct object *res = NULL;
@@ -1665,8 +1651,6 @@ void pike_module_init(void)
   mpzmod_program->id = PROG_GMP_MPZ_ID;
   add_program_constant("mpz", mpzmod_program, 0);
 
-  /* function(int, int:object) */
-  ADD_FUNCTION("pow", gmp_pow,tFunc(tInt tInt,tObj), 0);
   /* function(int:object) */
   ADD_FUNCTION("fac", gmp_fac,tFunc(tInt,tObj), 0);
 
