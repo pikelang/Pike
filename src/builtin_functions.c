@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.545 2004/10/11 17:08:43 mast Exp $
+|| $Id: builtin_functions.c,v 1.546 2004/12/13 19:12:34 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.545 2004/10/11 17:08:43 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.546 2004/12/13 19:12:34 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4480,7 +4480,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
   /* date.tm_zone = NULL; */
 
 #ifdef HAVE_GMTIME
-  if(args > 7)
+  if ((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
     /* UTC-relative time. Use my_timegm(). */
     retval = my_timegm(&date);
@@ -4521,7 +4521,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
       PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
 
 #if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
-    if(args > 7)
+    if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
     {
       /* Post-adjust for the timezone.
        *
