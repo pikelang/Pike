@@ -172,7 +172,7 @@ void f_get_dir(INT32 args)
 
   get_all_args("get_dir",args,"%s",&path);
 
-#if defined(_REENTRANT) && defined(HAVE_READDIR_R)
+#if defined(_REENTRANT) && ( defined(HAVE_SOLARIS_READDIR_R) || defined(HAVE_HPUX_READDIR_R) || defined(HAVE_POSIX_READDIR_R))
   THREADS_ALLOW();
   dir=opendir(path);
   THREADS_DISALLOW();
