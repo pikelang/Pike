@@ -1,4 +1,4 @@
-// $Id: Certificate.pmod,v 1.16 2004/01/26 23:12:08 nilsson Exp $
+// $Id: Certificate.pmod,v 1.17 2004/01/30 01:02:14 bill Exp $
 
 //! Handle PKCS-6 and PKCS-10 certificates and certificate requests.
 
@@ -166,6 +166,11 @@ Sequence build_distinguished_name(mapping(string:object) ... args)
 			    } ));
 }
 
+Sequence decode_pem_certificate(string cert)
+{
+
+}
+
 //! Return the certificate issuer RDN from a certificate string.
 //!
 //! @param cert
@@ -203,7 +208,7 @@ string get_dn_string(Sequence dnsequence)
   string dn="";
   array rdns=({});
 
-  foreach(dnsequence->elements, Set att)
+  foreach(reverse(dnsequence->elements), Set att)
   {
     foreach(att->elements, Sequence val)
     {

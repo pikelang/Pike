@@ -1,5 +1,5 @@
 //
-// $Id: Identifiers.pmod,v 1.13 2004/01/26 21:50:06 bill Exp $
+// $Id: Identifiers.pmod,v 1.14 2004/01/30 01:02:14 bill Exp $
 // Object identifiers
 
 #pike __REAL_VERSION__
@@ -116,7 +116,8 @@ mapping(Identifier:string) short_name_ids =
   at_id->append(7) : "L",      /* printable string */
   at_id->append(8) : "ST", /* printable string */
   at_id->append(10) : "O", /* printable string */
-  at_id->append(11) : "OU"  /* printable string */
+  at_id->append(11) : "OU",  /* printable string */
+  Identifier(1, 2, 840, 113549, 1, 9, 1) : "E" /* printable string */
 ]);
 
 mapping(string:Identifier) name_ids =
