@@ -1,9 +1,9 @@
-/* $Id: image_gif.c,v 1.5 2001/07/17 03:27:58 nilsson Exp $ */
+/* $Id: image_gif.c,v 1.6 2001/07/18 18:50:15 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image_gif.c,v 1.5 2001/07/17 03:27:58 nilsson Exp $
+**!	$Id: image_gif.c,v 1.6 2001/07/18 18:50:15 nilsson Exp $
 **! submodule GIF
 **!
 **!	This submodule keep the GIF encode/decode capabilities
@@ -35,7 +35,7 @@
 #include <ctype.h>
 
 #include "stralloc.h"
-RCSID("$Id: image_gif.c,v 1.5 2001/07/17 03:27:58 nilsson Exp $");
+RCSID("$Id: image_gif.c,v 1.6 2001/07/18 18:50:15 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -609,8 +609,8 @@ CHRONO("gif _render_block end");
 **!	</pre>
 **!
 **!	<illustration type=image/gif>
-**!	object nct=colortable(lena(),32,({({0,0,0})}));
-**!	string s=GIF.header_block(lena()->xsize(),lena()->ysize(),nct);
+**!	object nct=Image.colortable(lena(),32,({({0,0,0})}));
+**!	string s=Image.GIF.header_block(lena()->xsize(),lena()->ysize(),nct);
 **!	foreach ( ({lena()->xsize(),
 **!		    (int)(lena()->xsize()*0.75),
 **!		    (int)(lena()->xsize()*0.5),
@@ -623,14 +623,14 @@ CHRONO("gif _render_block end");
 **!	   object o=lena()->scale(xsize,lena()->ysize());
 **!	   object p=lena()->clear(0,0,0);
 **!	   p->paste(o,(lena()->xsize()-o->xsize())/2,0);
-**!	   s+=GIF.render_block(p,nct,0,0,0,25);
+**!	   s+=Image.GIF.render_block(p,nct,0,0,0,25);
 **!	}
-**!	s+=GIF.netscape_loop_block(200);
-**!	s+=GIF.end_block();
+**!	s+=Image.GIF.netscape_loop_block(200);
+**!	s+=Image.GIF.end_block();
 **!	return s;
 **!	</illustration>The above animation is thus created:
 **!	<pre>
-**!	object nct=colortable(lena,32,({({0,0,0})}));
+**!	object nct=Image.colortable(lena,32,({({0,0,0})}));
 **!	string s=GIF.header_block(lena->xsize(),lena->ysize(),nct);
 **!	foreach ( ({lena->xsize(),
 **!		    (int)(lena->xsize()*0.75),
@@ -644,10 +644,10 @@ CHRONO("gif _render_block end");
 **!	   object o=lena->scale(xsize,lena->ysize());
 **!	   object p=lena->clear(0,0,0);
 **!	   p->paste(o,(lena->xsize()-o->xsize())/2,0);
-**!	   s+=GIF.render_block(p,nct,0,0,0,25);
+**!	   s+=Image.GIF.render_block(p,nct,0,0,0,25);
 **!	}
-**!	s+=GIF.netscape_loop_block(200);
-**!	s+=GIF.end_block();
+**!	s+=Image.GIF.netscape_loop_block(200);
+**!	s+=Image.GIF.end_block();
 **!	write(s);
 **!	</pre>
 **!

@@ -1,9 +1,9 @@
-/* $Id: image.c,v 1.189 2001/06/13 13:41:13 grubba Exp $ */
+/* $Id: image.c,v 1.190 2001/07/18 18:49:58 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: image.c,v 1.189 2001/06/13 13:41:13 grubba Exp $
+**!	$Id: image.c,v 1.190 2001/07/18 18:49:58 nilsson Exp $
 **! class Image
 **!
 **!	The main object of the <ref>Image</ref> module, this object
@@ -98,7 +98,7 @@
 
 #include "stralloc.h"
 #include "global.h"
-RCSID("$Id: image.c,v 1.189 2001/06/13 13:41:13 grubba Exp $");
+RCSID("$Id: image.c,v 1.190 2001/07/18 18:49:58 nilsson Exp $");
 #include "pike_macros.h"
 #include "object.h"
 #include "constants.h"
@@ -2468,18 +2468,18 @@ void image_threshold(INT32 args)
 **!	<td>->rgb_to_hsv();</td>
 **!	</tr><tr valign=center>
 **!	<td><illustration>
-**!     return image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}));
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->hsv_to_rgb();
 **!	</illustration></td>
 **!	<td><illustration>
-**!     return image(67,67)->tuned_box(0,0, 67,67,
+**!     return Image.image(67,67)->tuned_box(0,0, 67,67,
 **!                      ({ ({ 255,255,128 }), ({ 0,255,128 }),
 **!                         ({ 255,255,255 }), ({ 0,255,255 })}))
 **!          ->rgb_to_hsv();

@@ -1,9 +1,9 @@
-/* $Id: pattern.c,v 1.23 2000/12/01 08:10:02 hubbe Exp $ */
+/* $Id: pattern.c,v 1.24 2001/07/18 18:49:59 nilsson Exp $ */
 
 /*
 **! module Image
 **! note
-**!	$Id: pattern.c,v 1.23 2000/12/01 08:10:02 hubbe Exp $
+**!	$Id: pattern.c,v 1.24 2001/07/18 18:49:59 nilsson Exp $
 **! class Image
 */
 
@@ -345,7 +345,7 @@ static void init_colorrange(rgb_group *cr,struct svalue *s,char *where)
 **!
 **!	Example: 
 **!	<tt>->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.2,0.0,0.0,1.0 );</tt>
-**!	<br><illustration>return Image(200,100)->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.2,0.0,0.0,1.0 );</illustration>
+**!	<br><illustration>return Image.Image(200,100)->noise( ({0,({255,0,0}), 0.3,({0,255,0}), 0.6,({0,0,255}), 0.8,({255,255,0})}), 0.2,0.0,0.0,1.0 );</illustration>
 **!
 **! arg array(float|int|array(int)) colorrange
 **! 	colorrange table
@@ -415,8 +415,8 @@ void image_noise(INT32 args)
 **!
 **!	Example: <br>
 **!	<tt>->turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,Color.black}) );</tt>
-**!	<br><illustration>return Image(200,100)->
-**!     turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,Color.black}));</illustration>
+**!	<br><illustration>return Image.Image(200,100)->
+**!     turbulence( ({0,({229,204,204}), 0.9,({229,20,20}), 0.9,Image.Color.black}));</illustration>
 **! arg array(float|int|array(int)) colorrange
 **! 	colorrange table
 **! arg int octaves

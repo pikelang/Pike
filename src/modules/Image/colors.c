@@ -1,7 +1,7 @@
 /*
 **! module Image
 **! note
-**!	$Id: colors.c,v 1.52 2001/07/17 03:44:13 nilsson Exp $
+**!	$Id: colors.c,v 1.53 2001/07/18 18:49:58 nilsson Exp $
 **! submodule Color
 **!
 **!	This module keeps names and easy handling 
@@ -179,7 +179,7 @@
 
 #include "global.h"
 
-RCSID("$Id: colors.c,v 1.52 2001/07/17 03:44:13 nilsson Exp $");
+RCSID("$Id: colors.c,v 1.53 2001/07/18 18:49:58 nilsson Exp $");
 
 #include "image_machine.h"
 
@@ -1010,32 +1010,32 @@ static void image_color___hash(INT32 args)
 **!	<tr><th>method</th><th width=50%>effect</th>
 **!	<th>h</th><th>s</th><th>v</th><th>as</th></tr>
 **!	<tr><td>light </td><td>raise light level</td><td>±0</td><td> ±0</td><td>+50</td>
-**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->light())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->light()->light())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->light()->light()->light())</illustration></td></tr>
+**!	<td><illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"])</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->light())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->light()->light())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->light()->light()->light())</illustration></td></tr>
 **!
 **!	<tr><td>dark  </td><td>lower light level</td><td>±0</td><td> ±0</td><td>-50</td>
-**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->dark())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->dark()->dark())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->dark()->dark()->dark())</illustration></td></tr>
+**!	<td><illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"])</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->dark())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->dark()->dark())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->dark()->dark()->dark())</illustration></td></tr>
 **!
 **!	<tr><td>bright</td><td>brighter color   </td><td>±0</td><td>+50</td><td>+50</td>
-**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->bright())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->bright()->bright())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->bright()->bright()->bright())</illustration></td></tr>
+**!	<td><illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"])</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->bright())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->bright()->bright())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->bright()->bright()->bright())</illustration></td></tr>
 **!
 **!	<tr><td>dull  </td><td>greyer color     </td><td>±0</td><td>-50</td><td>-50</td>
-**!	<td><illustration>return Image(20,20,@(array)Color.red)</illustration>
-**!	<illustration>return Image(20,20,@(array)Color.red->dull())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color.red->dull()->dull())</illustration>
-**!	<illustration>return Image(20,20,@(array)Color.red->dull()->dull()->dull())</illustration></td></tr>
+**!	<td><illustration>return Image.Image(20,20,@(array)Image.Color.red)</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color.red->dull())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color.red->dull()->dull())</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color.red->dull()->dull()->dull())</illustration></td></tr>
 **!
 **!	<tr><td>neon  </td><td>set to extreme   </td><td>±0</td><td>max</td><td>max</td>
-**!	<td><illustration>return Image(20,20,@(array)Color["#693e3e"])</illustration>
-**!	<illustration>return Image(20,20,@(array)Color["#693e3e"]->neon())</illustration></td></tr>
+**!	<td><illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"])</illustration>
+**!	<illustration>return Image.Image(20,20,@(array)Image.Color["#693e3e"]->neon())</illustration></td></tr>
 **!
 **!     </table>
 **!
