@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: zlibmod.c,v 1.13 1997/10/21 17:44:21 grubba Exp $");
+RCSID("$Id: zlibmod.c,v 1.14 1997/10/21 17:45:40 grubba Exp $");
 
 #include "zlib_machine.h"
 
@@ -248,6 +248,7 @@ static int do_inflate(dynamic_buffer *buf,
   int fail=0;
   THREADS_ALLOW();
   mt_lock(& this->lock);
+  THREADS_DISALLOW();
   if(!this->gz.state)
   {
     fail=Z_STREAM_ERROR;
@@ -257,9 +258,11 @@ static int do_inflate(dynamic_buffer *buf,
       char *loc;
       int ret;
       loc=low_make_buf_space(BUF,buf);
+      THREADS_ALLOW();
       this->gz.next_out=(Bytef *)loc;
       this->gz.avail_out=BUF;
       ret=inflate(& this->gz, flush);
+      THREADS_DISALLOW();
       low_make_buf_space(-this->gz.avail_out,buf);
       if(ret != Z_OK)
       {
@@ -269,7 +272,6 @@ static int do_inflate(dynamic_buffer *buf,
     } while(!this->gz.avail_out || flush==Z_FINISH || this->gz.avail_in);
   }
   mt_unlock(& this->lock);
-  THREADS_DISALLOW();
   return fail;
 }
 
