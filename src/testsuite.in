@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.417 2001/05/29 16:48:21 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.418 2001/05/30 14:04:38 noring Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -7239,6 +7239,9 @@ test_true(!Graphics.Graph.test()->main(1,({"test"})))
 
 // - Yabu
 test_true(!Yabu.test()->main(1,({"test"})))
+
+// - Protocols.XMLRPC
+test_true(!Protocols.XMLRPC.test()->main(1,({"test"})))
 
 // - Standards.ISO639_2
 test_equal(Standards.ISO639_2.get_language("swe"),"Swedish")
