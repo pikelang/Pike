@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.290 1999/05/27 18:33:12 grubba Exp $")
+AC_REVISION("$Id: configure.in,v 1.291 1999/05/28 19:49:26 grubba Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -107,7 +107,7 @@ AC_SUBST(BUILDDIR)
 
 ## Build smartlink
 
-AC_CHECK_HEADERS(stdlib.h string.h unistd.h sys/stat.h sys/types.h)
+AC_CHECK_HEADERS(stdlib.h string.h unistd.h sys/stat.h sys/types.h sys/errno.h)
 
 if test -x /usr/bin/uname 2>/dev/null; then
   UNAME=`/usr/bin/uname -sr`
