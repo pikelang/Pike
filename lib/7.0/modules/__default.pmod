@@ -51,6 +51,7 @@ mapping(string:mixed) all_constants()
   ret->all_constants=all_constants;
   ret->_typeof=_typeof;
   ret->m_delete=m_delete;
+  ret->hash=hash_7_0;
 
   return ret;
 }
