@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.40 2003/12/11 17:24:34 grubba Exp $
+|| $Id: ia32.c,v 1.41 2004/05/25 07:56:48 grubba Exp $
 */
 
 /*
@@ -826,24 +826,19 @@ void ins_f_byte_with_arg(unsigned int a,unsigned INT32 b)
       /* 
        * This would work nicely for all pike types, but we would
        * have to augment dumping
-       */
-      /* Unfortunately this doesn't work for PIKE_PORTABLE_BYTECODE,
-       * since then the constant table isn't fully initialized when
-       * assemble() is called by decode_value().
        *
-       * Note also that this use of ia32_push_constant() probably bugs
-       * when constants are overloaded.
+       * Note: The constants table may contain UNDEFINED in case of being
+       *       called through decode_value() in PORTABLE_BYTECODE mode.
        *
        * /grubba 2003-12-11
        */
-#ifndef PIKE_PORTABLE_BYTECODE
-      if(Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE)
+      if((Pike_compiler->new_program->constants[b].sval.type > MAX_REF_TYPE) &&
+	 !Pike_compiler->new_program->constants[b].sval.subtype)
       {
 	ins_debug_instr_prologue (a - F_OFFSET, b, 0);
 	ia32_push_constant(& Pike_compiler->new_program->constants[b].sval);
 	return;
       }
-#endif /* !PIKE_PORTABLE_BYTECODE */
       break;
 
       /*
