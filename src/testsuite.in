@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.600 2003/02/13 15:58:26 mirar Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.601 2003/02/13 16:33:25 mirar Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -5417,21 +5417,47 @@ class Bar {
   return Bar()->foo()
 ]], "foobarbaz")
 
-// sscanf %O
-test_equal([[array_sscanf("10","%O")]],[[({10})]])
-test_equal([[array_sscanf("\"gnurk\"","%O")]],[[({"gnurk"})]])
-test_equal([[array_sscanf("\"a\\bc\\123\\d\\x123x\\\\f\"","%O")]],[[({"a\bc\123\d\x123x\\f"})]])
-test_equal([[array_sscanf("'a'","%O")]],[[({'a'})]])
-test_equal([[array_sscanf("'\\a'","%O")]],[[({'\a'})]])
+// sscanf %O -------------------------------------------------------------
 
-test_equal([[array_sscanf("   10abcd","%O%s")]],[[({10,"abcd"})]])
-test_equal([[array_sscanf("   \"gnurk\"abcd","%O%s")]],[[({"gnurk","abcd"})]])
-test_equal([[array_sscanf("   \"a\\bc\\123\\d\\x123x\\\\f\"abcd","%O%s")]],[[({"a\bc\123\d\x123x\\f","abcd"})]])
-test_equal([[array_sscanf("   'a'abcd","%O%s")]],[[({'a',"abcd"})]])
-test_equal([[array_sscanf("   '\\a'abcd","%O%s")]],[[({'\a',"abcd"})]])
+define(test_procent_o_raw, [[
+   test_equal(array_sscanf(]]$3[[,]]$1[[),[[$2]])
+]])
+define(test_procent_o_fmt, [[
+   test_procent_o_raw(]]$1[[,]]$2[[,sprintf(]]$1[[,@]]$2[[))
+]])
+define(test_procent_o_char, [[
+dnl patsubst doesn't exist on all m4's (it's a gnuism?)
+ifdef(patsubst,[[
+  test_procent_o_raw("%O",({']]$1[['}),"']]patsubst($1,\\,\\\\)[['"))
+  test_procent_o_raw("%O%s",({']]$1[[',"abc"}),"']]patsubst($1,\\,\\\\)[['abc"))
+]])]])
+ifdef(patsubst,[[
+define(test_procent_o_string, [[
+  test_procent_o_raw("%O",({"]]$1[["}),"\"]]patsubst($1,\\,\\\\)[[\""))
+  test_procent_o_raw("%O%s",({"]]$1[[","abc"}),"\"]]patsubst($1,\\,\\\\)[[\"abc"))
+]])]])
 
-test_equal([[array_sscanf("10 20 30","%O%O%O")]],[[({10,20,30})]])
-test_equal([[array_sscanf("10 20 30","%O%O%s")]],[[({10,20," 30"})]])
+test_procent_o_fmt("%O",({10}))
+test_procent_o_fmt("%O%s",({10,"abc"}))
+
+test_procent_o_char([[a]])
+test_procent_o_char([[\a]])
+test_procent_o_char([[\123]])
+test_procent_o_char([[\x4711]])
+test_procent_o_char([[\d4711]])
+
+test_procent_o_string([[a]])
+test_procent_o_string([[\a]])
+test_procent_o_string([[\123]])
+test_procent_o_string([[\x4711]])
+test_procent_o_string([[\d4711]])
+
+test_procent_o_fmt("%O %O %O",({10,20,30}))
+test_procent_o_fmt("%O %O %s",({10,20,"30"}))
+
+// -------------------------------------------------------------
+
+
 
 // Basics
 test_true(1)
