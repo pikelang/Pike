@@ -1,6 +1,19 @@
 #pike __REAL_VERSION__
 #pragma strict_types
 
+//! Various cryptographic classes and functions.
+//!
+//! @b{Hash functions@}
+//! These are based on the @[Hash] API; @[MD2], @[MD4], @[MD5],
+//! @[SHA1], @[SHA256].
+//!
+//! @b{Stream cipher functions@}
+//! These are based on the @[Cipher] API; @[AES], @[Arcfour],
+//! @[Blowfish], @[CAST], @[DES], @[DES3], @[IDEA], @[Serpent],
+//! @[Twofish]. The @[Substitution] program is compatible with the
+//! CipherState. Also conforming to the API are the helper programs
+//! @[Buffer], @[CBC] and @[Pipe].
+
 #if constant(Nettle.HashInfo)
 
 class HashState {
@@ -14,7 +27,7 @@ class Hash
 {
   inherit Nettle.HashInfo;
 
-  //! Calling `() will return a @[HashState] object.
+  //! Calling `() will return a @[Nettle.HashState] object.
   HashState `()();
   
   //! @decl string hash(string data)
@@ -67,7 +80,7 @@ class Cipher
 {
   inherit Nettle.CipherInfo;
 
-  //! Calling `() will return a @[CipherState] object.
+  //! Calling `() will return a @[Nettle.CipherState] object.
   CipherState `()();
 
   //! Works as a shortcut for @expr{obj->set_encrypt_key(key)->crypt(data)@}
