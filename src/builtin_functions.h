@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.h,v 1.24 2003/04/18 15:41:12 mast Exp $
+|| $Id: builtin_functions.h,v 1.25 2003/06/12 09:25:07 mast Exp $
 */
 
 #ifndef BUILTIN_EFUNS_H
@@ -27,23 +27,18 @@ PMOD_EXPORT void debug_f_aggregate(INT32 args);
 #endif
 
 PMOD_EXPORT void f_equal(INT32 args);
-PMOD_EXPORT void f_trace(INT32 args);
 PMOD_EXPORT void f_hash(INT32 args);
 PMOD_EXPORT void f_copy_value(INT32 args);
-PMOD_EXPORT void f_ctime(INT32 args);
 PMOD_EXPORT void f_lower_case(INT32 args);
 PMOD_EXPORT void f_upper_case(INT32 args);
-PMOD_EXPORT void f_random(INT32 args);
+PMOD_EXPORT void f_random_string (INT32 args);
 PMOD_EXPORT void f_random_seed(INT32 args);
 PMOD_EXPORT void f_query_num_arg(INT32 args);
 PMOD_EXPORT void f_search(INT32 args);
 PMOD_EXPORT void f_has_index(INT32 args);
 PMOD_EXPORT void f_has_value(INT32 args);
-PMOD_EXPORT void f_backtrace(INT32 args);
 PMOD_EXPORT void f_add_constant(INT32 args);
 PMOD_EXPORT void f_combine_path(INT32 args);
-PMOD_EXPORT void f_function_object(INT32 args);
-PMOD_EXPORT void f_function_name(INT32 args);
 PMOD_EXPORT void f_zero_type(INT32 args);
 PMOD_EXPORT void f_string_to_unicode(INT32 args);
 PMOD_EXPORT void f_unicode_to_string(INT32 args);
@@ -67,7 +62,6 @@ PMOD_EXPORT void f_reverse(INT32 args);
 struct tupel;
 PMOD_EXPORT void f_replace(INT32 args);
 PMOD_EXPORT void f_compile(INT32 args);
-PMOD_EXPORT void f_mkmapping(INT32 args);
 PMOD_EXPORT void f_objectp(INT32 args);
 PMOD_EXPORT void f_functionp(INT32 args);
 PMOD_EXPORT void f_sleep(INT32 args);
@@ -81,7 +75,6 @@ TYPEP(f_stringp, "stringp", PIKE_T_STRING)
 TYPEP(f_floatp, "floatp", PIKE_T_FLOAT)
 PMOD_EXPORT void f_sort(INT32 args);
 PMOD_EXPORT void f_rows(INT32 args);
-PMOD_EXPORT void f_column(INT32 args);
 PMOD_EXPORT void f__verify_internals(INT32 args);
 PMOD_EXPORT void f__debug(INT32 args);
 PMOD_EXPORT void f__compiler_trace(INT32 args);
@@ -116,8 +109,20 @@ PMOD_EXPORT void f__locate_references(INT32 args);
 PMOD_EXPORT void f_map_array(INT32 args);
 PMOD_EXPORT void f_get_iterator(INT32 args);
 void init_builtin_efuns(void);
+
+/* From builtin.cmod. */
+PMOD_EXPORT void f_column(INT32 args);
+PMOD_EXPORT void f_trace(INT32 args);
+PMOD_EXPORT void f_ctime(INT32 args);
+PMOD_EXPORT void f_mkmapping(INT32 args);
+PMOD_EXPORT void f_function_name(INT32 args);
+PMOD_EXPORT void f_function_object(INT32 args);
+PMOD_EXPORT void f_function_program(INT32 args);
+PMOD_EXPORT void f_random(INT32 args);
+PMOD_EXPORT void f_backtrace(INT32 args);
 void init_builtin(void);
 void exit_builtin(void);
+
 /* Prototypes end here */
 
 #endif
