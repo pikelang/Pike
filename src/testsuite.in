@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.560 2002/11/07 17:14:09 marcus Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.561 2002/11/13 13:20:33 grubba Exp $"]]);
 
 // This triggered a bug only if run sufficiently early.
 test_compile_any([[#pike 7.2]])
@@ -65,18 +65,36 @@ test_any([[
 ]],0)
 
 test_any([[
-class X
-{
-  int Ack(int M, int N) {
-    if (M == 0) return( N + 1 );
-    if (N == 0) return( Ack(M - 1, 1) );
-    return( Ack(M - 1, Ack(M, (N - 1))) );
-  }
-};
+  // Test that F_TAIL_RECUR and RECUR work properly.
+  class X
+  {
+    int Ack(int M, int N) {
+      if (M == 0) return( N + 1 );
+      if (N == 0) return( Ack(M - 1, 1) );
+      return( Ack(M - 1, Ack(M, (N - 1))) );
+    }
+  };
 
-class Y { inherit X; };
+  return X()->Ack(3,5);
+]],253)
 
-return Y()->Ack(2,2);
+test_any([[
+  // Test that F_COND_RECUR works properly.
+  // NB: The class Y may in the future need to overload
+  //     the function Ack() to ensure that the RECUR fail
+  //     branch is taken in F_COND_RECUR.
+  class X
+  {
+    int Ack(int M, int N) {
+      if (M == 0) return( N + 1 );
+      if (N == 0) return( Ack(M - 1, 1) );
+      return( Ack(M - 1, Ack(M, (N - 1))) );
+    }
+  };
+
+  class Y { inherit X; };
+
+  return Y()->Ack(2,2);
 ]],7)
 
 test_eval_error([[mixed x; return mkmapping(x,x)]]);
