@@ -44,6 +44,11 @@ mixed peek()
   return (tail < head) && l[tail];
 }
 
+int is_empty()
+{
+  return (tail == head);
+}
+
 void flush()
 {
   create();
