@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.71 2004/08/04 18:36:36 bill Exp $
+/* $Id: sslfile.pike,v 1.72 2004/08/16 20:27:23 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -242,25 +242,23 @@ static THREAD_T op_thread;
 
 // stream is assumed to be operational on entry but might be zero
 // afterwards. cb_errno is assumed to be 0 on entry.
-#define RUN_MAYBE_BLOCKING(COND, NONBLOCKING_MODE, DISABLE_WRITES, ERROR_CODE) do { \
+#define RUN_MAYBE_BLOCKING(COND, NONBLOCKING_MODE, ENABLE_READS, ERROR_CODE) do { \
   run_maybe_blocking:							\
     if (COND) {								\
       if (!local_backend) local_backend = Pike.Backend();		\
       stream->set_backend (local_backend);				\
-									\
       stream->set_id (0);						\
-      stream->set_read_callback (ssl_read_callback);			\
-      stream->set_write_callback (					\
-	!(DISABLE_WRITES) && sizeof (write_buffer) && ssl_write_callback); \
-									\
-      /* If we've received a close message then the other end can	\
-       * legitimately close the stream, so don't install our close	\
-       * callback. (Might still have to write our close message.) */	\
-      stream->set_close_callback (conn->closing < 2 && ssl_close_callback); \
-									\
       SSL3_DEBUG_MSG ("Starting %s local backend\n",			\
 		      NONBLOCKING_MODE ? "nonblocking" : "blocking");	\
       while (1) {							\
+	stream->set_read_callback ((ENABLE_READS) && ssl_read_callback); \
+	stream->set_write_callback (sizeof (write_buffer) && ssl_write_callback); \
+									\
+	/* If we've received a close message then the other end can	\
+	 * legitimately close the stream, so don't install our close	\
+	 * callback. (Might still have to write our close message.) */	\
+	stream->set_close_callback (conn->closing < 2 && ssl_close_callback); \
+									\
 	float|int(0..0) action =					\
 	  local_backend (NONBLOCKING_MODE ? 0.0 : 0);			\
 									\
@@ -550,11 +548,11 @@ string read (void|int length, void|int(0..1) not_all)
 
     if (stream)
       if (not_all)
-	RUN_MAYBE_BLOCKING (!sizeof (read_buffer), 0, 0,
+	RUN_MAYBE_BLOCKING (!sizeof (read_buffer), 0, 1,
 			    RETURN (0));
       else
 	RUN_MAYBE_BLOCKING (sizeof (read_buffer) < length || zero_type (length),
-			    nonblocking_mode, 0,
+			    nonblocking_mode, 1,
 			    RETURN (0));
 
     string res = read_buffer->get();
@@ -744,13 +742,11 @@ void set_nonblocking (void|function(mixed,string:void) read,
     close_callback = close;
 
     if (stream) {
-      update_internal_state();
+      stream->set_nonblocking_keep_callbacks();
       // Has to restore here since a backend waiting in another thread
-      // might be woken immediately after set_nonblocking.
+      // might be woken immediately when callbacks are registered.
       RESTORE;
-      stream->set_nonblocking (stream->query_read_callback(),
-			       stream->query_write_callback(),
-			       stream->query_close_callback());
+      update_internal_state();
       return;
     }
   } LEAVE;
@@ -1119,7 +1115,7 @@ static int direct_write()
     }
 
     RUN_MAYBE_BLOCKING (sizeof (write_buffer) || SSL_INTERNAL_TALK,
-			nonblocking_mode, 0,
+			nonblocking_mode, SSL_INTERNAL_TALK,
 			return 0;);
   }
 
