@@ -267,6 +267,8 @@ void exit_main()
   void cleanup_pike_types();
   void cleanup_program();
 
+  th_cleanup();
+
   cleanup_objects();
   exit_signals();
   exit_lex();

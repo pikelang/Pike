@@ -13,6 +13,8 @@
 #endif
 
 extern int num_threads;
+struct object;
+extern struct object *thread_id;
 
 #define MUTEX_T pthread_mutex_t
 #define mt_init(X) pthread_mutex_init((X),0)
@@ -44,6 +46,7 @@ struct thread_state {
   int evaluator_stack_malloced;
   int mark_stack_malloced;
   JMP_BUF *recoveries;
+  struct object * thread_id;
 };
 
 #define THREADS_ALLOW() \
@@ -60,6 +63,7 @@ struct thread_state {
        _tmp.recoveries=recoveries; \
        _tmp.evaluator_stack_malloced=evaluator_stack_malloced; \
        _tmp.mark_stack_malloced=mark_stack_malloced; \
+       _tmp.thread_id = thread_id; \
        mt_unlock(& interpreter_lock); \
      }
 
@@ -74,13 +78,18 @@ struct thread_state {
        recoveries=_tmp.recoveries; \
        evaluator_stack_malloced=_tmp.evaluator_stack_malloced; \
        mark_stack_malloced=_tmp.mark_stack_malloced; \
+       thread_id = _tmp.thread_id; \
      } \
    } while(0)
 
 /* Prototypes begin here */
+struct thread_starter;
 void *new_thread_func(void * data);
 void f_thread_create(INT32 args);
+void f_this_thread();
 void th_init();
+struct mutex_storage;
+struct key_storage;
 void f_mutex_lock(INT32 args);
 void f_mutex_trylock(INT32 args);
 void init_mutex_obj(struct object *o);
@@ -93,6 +102,7 @@ void f_cond_broadcast(INT32 args);
 void init_cond_obj(struct object *o);
 void exit_cond_obj(struct object *o);
 void th_init_programs();
+void th_cleanup();
 /* Prototypes end here */
 
 #else
@@ -102,6 +112,7 @@ void th_init_programs();
 #define THREADS_ALLOW()
 #define THREADS_DISALLOW()
 #define th_init()
+#define th_cleanup()
 #define th_init_programs()
 #endif
 

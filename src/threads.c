@@ -2,26 +2,36 @@
 #include "threads.h"
 #include "array.h"
 #include "object.h"
+#include "macros.h"
 
 int num_threads = 1;
 int threads_disabled = 0;
+struct object *thread_id;
 
 #ifdef _REENTRANT
 
 MUTEX_T interpreter_lock;
 struct program *mutex_key = 0;
+struct program *thread_id_prog = 0;
 pthread_attr_t pattr;
+
+struct thread_starter
+{
+  struct object *id;
+  struct array *args;
+};
 
 void *new_thread_func(void * data)
 {
+  struct thread_starter arg = *(struct thread_starter *)data;
   JMP_BUF back;
-  struct array *foo;
   INT32 args;
-  foo=(struct array *)data;
-  args=foo->size;
+  free((char *)data);
+  args=arg.args->size;
   mt_lock( & interpreter_lock);
   init_interpreter();
 
+  thread_id=arg.id;
 
   if(SETJMP(back))
   {
@@ -31,38 +41,62 @@ void *new_thread_func(void * data)
     pop_stack();
     automatic_fatal=0;
   } else {
-    push_array_items(foo);
+    push_array_items(arg.args);
+    arg.args=0;
     f_call_function(args);
+
   }
 
   UNSETJMP(back);
 
+  destruct(thread_id);
+  free_object(thread_id);
+  thread_id=0;
+
   cleanup_interpret();
-  mt_unlock(& interpreter_lock);
   num_threads--;
+  mt_unlock(& interpreter_lock);
   th_exit(0);
 }
 
 void f_thread_create(INT32 args)
 {
+  struct thread_starter *arg;
   pthread_t dummy;
   int tmp;
-  struct array *a=aggregate_array(args);
-  num_threads++;
-  tmp=th_create(&dummy,new_thread_func,a);
-  if(tmp) num_threads--;
-  push_int(tmp);
+  arg=ALLOC_STRUCT(thread_starter);
+  arg->args=aggregate_array(args);
+  arg->id=clone(thread_id_prog,0);
+  tmp=th_create(&dummy,new_thread_func,arg);
+  if(!tmp)
+  {
+    num_threads++;
+    push_object(arg->id);
+    arg->id->refs++;
+  } else {
+    free_object(arg->id);
+    free_array(arg->args);
+    free((char *)arg);
+    push_int(0);
+  }
+}
+
+void f_this_thread(INT32 args)
+{
+  pop_n_elems(args);
+  push_object(thread_id);
+  thread_id->refs++;
 }
 
 void th_init()
 {
-  thr_setconcurrency(9);
   mt_lock( & interpreter_lock);
   pthread_attr_init(&pattr);
   pthread_attr_setstacksize(&pattr, 2 * 1024 * 1204);
   pthread_attr_setdetachstate(&pattr, PTHREAD_CREATE_DETACHED);
 
   add_efun("thread_create",f_thread_create,"function(mixed ...:int)",OPT_SIDE_EFFECT);
+  add_efun("this_thread",f_this_thread,"function(:object)",OPT_EXTERNAL_DEPEND);
 }
 
 
@@ -246,6 +280,7 @@ void th_init_programs()
   set_init_callback(init_mutex_key_obj);
   set_exit_callback(exit_mutex_key_obj);
   mutex_key=end_c_program("/precompiled/mutex_key");
+  mutex_key->refs++;
 
   start_new_program();
   add_storage(sizeof(COND_T));
@@ -255,6 +290,34 @@ void th_init_programs()
   set_init_callback(init_cond_obj);
   set_exit_callback(exit_cond_obj);
   end_c_program("/precompiled/condition");
+
+  start_new_program();
+  thread_id_prog=end_c_program("/precompiled/thread");
+  thread_id_prog->refs++;
+
+  thread_id=clone(thread_id_prog,0);
+}
+
+void th_cleanup()
+{
+  if(mutex_key)
+  {
+    free_program(mutex_key);
+    mutex_key=0;
+  }
+
+  if(thread_id_prog)
+  {
+    free_program(thread_id_prog);
+    thread_id_prog=0;
+  }
+
+  if(thread_id)
+  {
+    destruct(thread_id);
+    free_object(thread_id);
+    thread_id=0;
+  }
 }
 
 #endif

@@ -1,0 +1,11 @@
+NAME
+	this_thread - return thread id
+
+SYNTAX
+	object thread_id();
+
+DESCRIPTION
+	This function returns the object that identifies this thread.
+
+SEE ALSO
+	thread_create
