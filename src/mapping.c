@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: mapping.c,v 1.102 2000/09/08 16:38:20 grubba Exp $");
+RCSID("$Id: mapping.c,v 1.103 2000/09/08 17:31:26 hubbe Exp $");
 #include "main.h"
 #include "object.h"
 #include "mapping.h"
@@ -1434,7 +1434,7 @@ PMOD_EXPORT struct mapping *merge_mapping_array_unordered(struct mapping *a,
 PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
 {
   INT32 e,d;
-  struct mapping *ret;
+  struct mapping *ret=0;
   struct keypair *k;
 
   for(e=d=0;d<args;d++)
@@ -1456,32 +1456,40 @@ PMOD_EXPORT struct mapping *add_mappings(struct svalue *argp, INT32 args)
 
     if(md->size == 0) continue;
 
+    if(!(md->flags  && MAPPING_FLAG_WEAK))
+    {
 #if 1 /* major optimization */
-    if(e==md->size && !(md->flags && MAPPING_FLAG_WEAK))
-      return copy_mapping(m);
+      if(e==md->size)
+	return copy_mapping(m);
 #endif
     
-    if(m->refs == 1 && !md->hardlinks)
-    {
-      add_ref( ret=m );
-      d++;
-    }else{
-      ret=allocate_mapping(MAP_SLOTS(e));
+      if(m->refs == 1 && !md->hardlinks)
+      {
+	add_ref( ret=m );
+	d++;
+	break;
+      }
     }
+    ret=allocate_mapping(MAP_SLOTS(e));
+    break;
 
-    for(;d<args;d++)
-    {
-      m=argp[d].u.mapping;
-      md=m->data;
-
-      add_ref(md);
-      NEW_MAPPING_LOOP(md)
-	mapping_insert(ret, &k->ind, &k->val);
-      free_mapping_data(md);
-    }
-    return ret;
   }
-  fatal("add_mappings is confused!\n");
+
+  for(;d<args;d++)
+  {
+    struct mapping *m=argp[d].u.mapping;
+    struct mapping_data *md=m->data;
+    
+    add_ref(md);
+    NEW_MAPPING_LOOP(md)
+      mapping_insert(ret, &k->ind, &k->val);
+    free_mapping_data(md);
+  }
+#ifdef PIKE_DEBUG
+  if(!ret)
+    fatal("add_mappings is confused!\n");
+#endif
+  return ret;
 }
 
 PMOD_EXPORT int mapping_equal_p(struct mapping *a, struct mapping *b, struct processing *p)
