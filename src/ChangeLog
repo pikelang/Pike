@@ -5,6 +5,11 @@ Sat Apr 13 04:00:45 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 	* crypt() should now work with BSD crypt() I hope
 	* lots of files: added a peephole optimizer
 
+Thu Apr 11 23:13:24 1996  Fredrik Hubinette  <hubbe@sparky.signum.se>
+
+	* apply on void functions fixed
+	* case -1 fixed
+
 Tue Apr  2 17:01:10 1996  Fredrik Hubinette  <hubbe@tymin.signum.se>
 
 	* signal.c: alarm() added
