@@ -1,6 +1,6 @@
 #! /usr/bin/env pike
 
-/* $Id: export.pike,v 1.52 2002/04/28 21:47:14 mikael%brandstrom.org Exp $ */
+/* $Id: export.pike,v 1.53 2002/04/28 22:54:00 mikael%brandstrom.org Exp $ */
 
 multiset except_modules = (<>);
 string vpath;
@@ -108,19 +108,27 @@ void bump_version()
 
 array(string) build_file_list(string vpath, string list_file)
 {
-  array(string) ret=({ });
+  array(string) ret=({ }), missing=({ });
   foreach(Stdio.FILE(list_file)->line_iterator(1);; string line)
     {
       if( !sizeof(line) || line[0]=='#' )
 	continue;
-      werror("%O\n",line);
       string name=vpath+line;
       Stdio.Stat fs;
       if((fs = file_stat(name)) && fs->isdir)
 	ret += get_files(name);
       else if(fs && fs->isreg)
 	ret += ({ name });
+      else
+	missing +=({ name });
     }
+
+  if(!ignore_missing && sizeof(missing)){
+    werror("The following files and/or directories were not found:\n\t"
+	   + missing * "\t\n"
+	   + "\n(you might want to add --force)\n");
+    return 0;
+  }
   return ret;
 }  
 
@@ -138,7 +146,7 @@ second:%s
 
 string pike_base_name;
 string srcdir;
-int rebuild;
+int(0..1) rebuild, ignore_missing;
 
 int main(int argc, array(string) argv)
 {
@@ -153,7 +161,8 @@ int main(int argc, array(string) argv)
     ({ "tag",       Getopt.NO_ARG,  "--tag"        }),
     ({ "help",      Getopt.NO_ARG,  "--help"       }),
     ({ "exportlist",Getopt.HAS_ARG, "--exportlist" }),
-    ({ "filename",  Getopt.HAS_ARG, "--name"       })
+    ({ "filename",  Getopt.HAS_ARG, "--name"       }),
+    ({ "force",     Getopt.NO_ARG,  "--force"       })
   }) ),array opt)
     {
       switch(opt[0])
@@ -177,6 +186,10 @@ int main(int argc, array(string) argv)
 
 	case "rebuild":
 	  rebuild=1;
+	  break;
+	  
+        case "force":
+	  ignore_missing=1;
 	  break;
 
         case "tag":
@@ -246,6 +259,9 @@ int main(int argc, array(string) argv)
   symlink(".", vpath);
 
   files = build_file_list(vpath,export_list);
+  if(!files) // Unable to build file list.
+    return 1;
+  
   Stdio.write_file("export.stamp", replace(stamp, symbols));
   files += ({ vpath+"/export.stamp" });
 
@@ -312,5 +328,7 @@ Optional arguments:
 --rebuild    
 	Not implemented.
 --tag	Bump the Pike build version and tag the CVS tree.
+--force
+	Force export, ignore missing files.
 --help  Show this text.
 ";
