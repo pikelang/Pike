@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: program.c,v 1.381 2001/10/05 01:30:14 hubbe Exp $");
+RCSID("$Id: program.c,v 1.382 2001/10/06 12:04:23 hubbe Exp $");
 #include "program.h"
 #include "object.h"
 #include "dynamic_buffer.h"
@@ -4092,7 +4092,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 {
 /*  if(!store_linenumbers)  fatal("Fnord.\n"); */
 #ifdef PIKE_DEBUG
-  if(d_flag)
+  if(a_flag)
   {
     INT32 line=0, off=0;
     size_t len = 0;
@@ -4100,7 +4100,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
     char *file=0;
     char *cnt=Pike_compiler->new_program->linenumbers;
 
-    if (d_flag > 50) {
+    if (a_flag > 50) {
       fprintf(stderr, "store_line_number(%d, \"%s\")\n",
 	      current_line, current_file->str);
       fprintf(stderr, "  last_line:%d last_file:\"%s\"\n",
@@ -4119,7 +4119,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
 	shift = *cnt;
 	file = ++cnt;
 	cnt += len<<shift;
-	if (d_flag > 10) {
+	if (a_flag > 10) {
 	  fprintf(stderr, "Filename entry:\n"
 		  "  len: %d, shift: %d\n",
 		  len, shift);
@@ -4127,7 +4127,7 @@ void store_linenumber(INT32 current_line, struct pike_string *current_file)
       }
       off+=get_small_number(&cnt);
       line+=get_small_number(&cnt);
-      if (d_flag > 100) {
+      if (a_flag > 100) {
 	fprintf(stderr, "  off: %d, line: %d\n"
 		"  raw: ",
 		off, line);
@@ -4725,8 +4725,9 @@ static void run_cleanup(struct compilation *c, int delayed)
        * a previous compile() actually failed, even
        * if we did not know it at the time
        */
-      push_program(c->target);
+      ref_push_program(c->target);
       SAFE_APPLY_MASTER("unregister",1);
+      pop_stack();
     }
   }
   else
@@ -4819,7 +4820,7 @@ struct program *compile(struct pike_string *aprog,
     if(cc->dependants)
       fatal("Que???\n");
 #endif
-
+    if(cc->p) free_program(cc->p); /* later */
     free_compilation(cc);
   }
 
@@ -4831,7 +4832,8 @@ struct program *compile(struct pike_string *aprog,
   if(delay)
   {
     /* finish later */
-    return c->p;
+    add_ref(c->p);
+    return c->p; /* freed later */
   }else{
     /* finish now */
     if(c->p) run_pass2(c);
@@ -4845,6 +4847,7 @@ struct program *compile(struct pike_string *aprog,
     if(!ret)
       throw_error_object(low_clone(compilation_error_program), 0, 0, 0,
 			 "Compilation failed.\n");
+    debug_malloc_touch(ret);
     return ret;
   }
 }
