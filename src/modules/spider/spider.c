@@ -43,7 +43,7 @@
 #include "threads.h"
 #include "operators.h"
 
-RCSID("$Id: spider.c,v 1.64 1998/03/08 13:54:16 per Exp $");
+RCSID("$Id: spider.c,v 1.65 1998/03/18 03:08:29 per Exp $");
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1272,6 +1272,7 @@ struct thread_args *done;
 
 /* WARNING! This function is running _without_ any stack etc. */
 
+#define MY_MIN(a,b) ((a)<(b)?(a):(b))
 void do_shuffle(void *_a)
 {
   struct thread_args *a = (struct thread_args *)_a;
@@ -1284,7 +1285,7 @@ void do_shuffle(void *_a)
   while(a->len)
   {
     int nread, written=0;
-    nread = fd_read(a->from_fd, a->buffer, BUFFER);
+    nread = fd_read(a->from_fd, a->buffer, MY_MIN(BUFFER,a->len));
     if(nread <= 0)
       if(errno == EINTR)
 	continue;
