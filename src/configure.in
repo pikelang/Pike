@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.489 2001/02/18 12:21:34 mirar Exp $")
+AC_REVISION("$Id: configure.in,v 1.490 2001/02/20 07:49:45 mirar Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -5230,7 +5230,7 @@ $PIKE_VERSION_LONG configuration summary
 install information:
 prefix........ $prefix
 pike binary... $prefix/bin/pike
-pike library.. $prefix/lib/${PIKE_VERSION}/
+pike library.. $prefix/pike/${PIKE_VERSION}/lib
 
 system information:
 system.... $UNAME`echo $pike_cv_libgcc_filename | sed -n -e 's+^.*gcc-lib/\([[^/]]*\)/.*$+ (\1)+p'`
