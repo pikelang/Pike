@@ -1,3 +1,9 @@
+Mon Jul  8 23:52:48 1996  Fredrik Hubinette  <hubbe@axel.signum.se>
+
+	* uLPC v1.0E-6 released
+	* bug in true/false values fixed
+	* readline module added
+
 Tue Jul  2 13:44:02 1996  Fredrik Hubinette  <hubbe@freeone.signum.se>
 
 	* uLPC v1.2E-7 released
