@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: object.c,v 1.174 2001/06/30 21:28:36 mast Exp $");
+RCSID("$Id: object.c,v 1.175 2001/07/01 18:29:58 mast Exp $");
 #include "object.h"
 #include "dynamic_buffer.h"
 #include "interpret.h"
@@ -711,25 +711,13 @@ PMOD_EXPORT void schedule_really_free_object(struct object *o)
 #ifdef PIKE_DEBUG
   if (o->refs)
     fatal("Object still got references in schedule_really_free_object().\n");
+  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE && o->next != o)
+    fatal("Freeing objects is not allowed inside the gc.\n");
 #endif
 
   debug_malloc_touch(o);
   debug_malloc_touch(o->storage);
 
-  if (Pike_in_gc > GC_PASS_PREPARE && Pike_in_gc < GC_PASS_FREE &&
-      o->next != o) {
-    /* It's easier for the gc if we just leave the object around for
-     * it to find and handle. */
-#ifdef GC_VERBOSE
-    fprintf(stderr, "|   Leaving %p around without refs.\n", o);
-#endif
-    return;
-  }
-
-  /* GC note: PROGRAM_DESTRUCT_IMMEDIATE isn't obeyed inside the
-   * sensitive gc parts, since we can't risk any changes in references
-   * then. It should happen for objects iff they only have weak
-   * references, which is an awkward situation anyway. */
   if(o->prog && (o->prog->flags & PROGRAM_DESTRUCT_IMMEDIATE))
   {
     add_ref(o);
@@ -1380,7 +1368,7 @@ PMOD_EXPORT void real_gc_cycle_check_object(struct object *o, int weak)
     
       LOW_POP_FRAME();
 
-      /* This must be last. */
+      /* Strong ref follows. It must be last. */
       if(o->prog->flags & PROGRAM_USES_PARENT)
 	if(PARENT_INFO(o)->parent)
 	  gc_cycle_check_object(PARENT_INFO(o)->parent, -1);
