@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.530 2004/02/03 22:00:07 grubba Exp $
+|| $Id: builtin_functions.c,v 1.531 2004/02/29 03:41:37 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.530 2004/02/03 22:00:07 grubba Exp $");
+RCSID("$Id: builtin_functions.c,v 1.531 2004/02/29 03:41:37 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1657,16 +1657,9 @@ PMOD_EXPORT void f_string_to_utf8(INT32 args)
   struct pike_string *in;
   struct pike_string *out;
   ptrdiff_t i,j;
-  int extended = 0;
+  INT_TYPE extended = 0;
 
-  get_all_args("string_to_utf8", args, "%W", &in);
-
-  if (args > 1) {
-    if (Pike_sp[1-args].type != T_INT) {
-      SIMPLE_BAD_ARG_ERROR("string_to_utf8", 2, "int|void");
-    }
-    extended = Pike_sp[1-args].u.integer;
-  }
+  get_all_args("string_to_utf8", args, "%W.%i", &in, &extended);
 
   len = in->len;
 
@@ -1791,16 +1784,9 @@ PMOD_EXPORT void f_utf8_to_string(INT32 args)
   int len = 0;
   int shift = 0;
   int i,j;
-  int extended = 0;
+  INT_TYPE extended = 0;
 
-  get_all_args("utf8_to_string", args, "%S", &in);
-
-  if (args > 1) {
-    if (Pike_sp[1-args].type != T_INT) {
-      SIMPLE_BAD_ARG_ERROR("utf8_to_string()", 2, "int|void");
-    }
-    extended = Pike_sp[1-args].u.integer;
-  }
+  get_all_args("utf8_to_string", args, "%S.%i", &in, &extended);
 
   for(i=0; i < in->len; i++) {
     unsigned int c = ((unsigned char *)in->str)[i];
@@ -4467,6 +4453,7 @@ static time_t my_timegm(struct tm *target_tm)
 PMOD_EXPORT void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year;
+  INT_TYPE isdst = -1, tz;
   struct tm date;
   int retval;
 
@@ -4494,8 +4481,8 @@ PMOD_EXPORT void f_mktime (INT32 args)
     args=8;
   }
 
-  get_all_args("mktime",args, "%i%i%i%i%i%i",
-	       &sec, &min, &hour, &mday, &mon, &year);
+  get_all_args("mktime",args, "%i%i%i%i%i%i.%i%i",
+	       &sec, &min, &hour, &mday, &mon, &year, &isdst, &tz);
 
   MEMSET(&date, 0, sizeof(date));
   date.tm_sec=sec;
@@ -4504,35 +4491,18 @@ PMOD_EXPORT void f_mktime (INT32 args)
   date.tm_mday=mday;
   date.tm_mon=mon;
   date.tm_year=year;
-
-  if (args > 6) {
-    if (Pike_sp[6-args].type != T_INT) {
-      SIMPLE_BAD_ARG_ERROR("mktime", 6, "int");
-    }
-    if (args > 7) {
-      if (Pike_sp[7-args].type != T_INT) {
-	SIMPLE_BAD_ARG_ERROR("mktime", 7, "int");
-      }
-    }
-  }
-
-  if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER))
-  {
-    date.tm_isdst = Pike_sp[6-args].u.integer;
-  } else {
-    date.tm_isdst = -1;
-  }
+  date.tm_isdst=isdst;
 
   /* date.tm_zone = NULL; */
 
 #ifdef HAVE_GMTIME
-  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+  if(args > 7)
   {
     /* UTC-relative time. Use my_timegm(). */
     retval = my_timegm(&date);
     if (retval == -1)
       PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
-    retval += Pike_sp[7-args].u.integer;
+    retval += tz;
   } else {
 #endif /* HAVE_GMTIME */
 
@@ -4544,7 +4514,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
     /* Linux-style */
     date.__tm_gmtoff = 0;
 #else
-    if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+    if(args > 7)
     {
       /* Pre-adjust for the timezone.
        *
@@ -4552,7 +4522,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
        * near Jan 1, 1970, sine AIX mktime(3) doesn't support
        * negative time.
        */
-      date.tm_sec += Pike_sp[7-args].u.integer
+      date.tm_sec += tz
 #ifdef HAVE_EXTERNAL_TIMEZONE
 	- timezone
 #endif /* HAVE_EXTERNAL_TIMEZONE */
@@ -4567,7 +4537,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
       PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
 
 #if defined(STRUCT_TM_HAS_GMTOFF) || defined(STRUCT_TM_HAS___TM_GMTOFF)
-    if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
+    if(args > 7)
     {
       /* Post-adjust for the timezone.
        *
@@ -4577,17 +4547,15 @@ PMOD_EXPORT void f_mktime (INT32 args)
        * field is set by mktime(3).
        */
 #ifdef STRUCT_TM_HAS_GMTOFF
-      retval += Pike_sp[7-args].u.integer + date.tm_gmtoff;
+      retval += tz + date.tm_gmtoff;
 #else
-      retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
+      retval += tz + date.__tm_gmtoff;
 #endif /* STRUCT_TM_HAS_GMTOFF */
     }
 
-    if ((args > 6) && (Pike_sp[6-args].subtype == NUMBER_NUMBER) &&
-	(Pike_sp[6-args].u.integer != -1) &&
-	(Pike_sp[6-args].u.integer != date.tm_isdst)) {
+    if ((isdst != -1) && (isdst != date.tm_isdst)) {
       /* Some stupid libc's (Hi Linux!) don't accept that we've set isdst... */
-      retval += 3600 * (Pike_sp[6-args].u.integer - date.tm_isdst);
+      retval += 3600 * (isdst - date.tm_isdst);
     }
 #endif /* STRUCT_TM_HAS_GMTOFF || STRUCT_TM_HAS___TM_GMTOFF */
 #ifdef HAVE_GMTIME
