@@ -1,4 +1,4 @@
-/* $Id: master.pike.in,v 1.48 1999/06/01 11:35:35 mirar Exp $
+/* $Id: master.pike.in,v 1.49 1999/06/01 12:12:11 mirar Exp $
  * 
  * Master-file for Pike.
  *
@@ -734,18 +734,16 @@ void _main(string *orig_argv, string *env)
   add_module_path("¤lib_prefix¤/modules");
 #endif
 
-  /* maybe test here so noenvironment isn't an argument to the script */
-  if (-1==search(argv,"--noenvironment")) 
-  {
-     q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
-     for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
+#ifndef NOT_INSTALLED
+  q=(getenv("PIKE_INCLUDE_PATH")||"")/":"-({""});
+  for(i=sizeof(q)-1;i>=0;i--) add_include_path(q[i]);
 
-     q=(getenv("PIKE_PROGRAM_PATH")||"")/":"-({""});
-     for(i=sizeof(q)-1;i>=0;i--) add_program_path(q[i]);
+  q=(getenv("PIKE_PROGRAM_PATH")||"")/":"-({""});
+  for(i=sizeof(q)-1;i>=0;i--) add_program_path(q[i]);
 
-     q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
-     for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
-  }
+  q=(getenv("PIKE_MODULE_PATH")||"")/":"-({""});
+  for(i=sizeof(q)-1;i>=0;i--) add_module_path(q[i]);
+#endif
   
   if(sizeof(argv)>1 && sizeof(argv[1]) && argv[1][0]=='-')
   {
@@ -772,7 +770,6 @@ void _main(string *orig_argv, string *env)
       ({"debug",tmp->MAY_HAVE_ARG,"--debug",0,1}),
       ({"trace",tmp->MAY_HAVE_ARG,"--trace",0,1}),
       ({"ignore",tmp->MAY_HAVE_ARG,"-Dqdatpl",0,1}),
-      ({"noenvironment",tmp->MAY_HAVE_ARG,"--noenvironment",0,1}),
       ({"ignore",tmp->HAS_ARG,"-s"}),
     }), 1);
     
@@ -842,7 +839,6 @@ void _main(string *orig_argv, string *env)
 	       " -m <file>            : Use <file> as master object.\n"
 	       " -d -d#               : Increase debug (# is how much)\n"
 	       " -t -t#               : Increase trace level\n"
-	       " --noenvironment      : Ignore environmental variables (PIKE_MODULE_PATH etc)\n"
 	  );
 	exit(0);
 
