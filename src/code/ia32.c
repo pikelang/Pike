@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: ia32.c,v 1.37 2003/11/25 22:13:58 mast Exp $
+|| $Id: ia32.c,v 1.38 2003/12/03 17:50:48 grubba Exp $
 */
 
 /*
@@ -892,6 +892,9 @@ static INT32 do_ins_jump (unsigned int op, int backward_jump)
 
   if(op == F_BRANCH) {
     ins_debug_instr_prologue (op, 0, 0);
+    if (backward_jump) {
+      ia32_call_c_function(branch_check_threads_etc);
+    }
     add_to_program(0xe9);
     ret=DO_NOT_WARN( (INT32) PIKE_PC );
     PUSH_INT(0);
