@@ -1,3 +1,8 @@
+Wed Jan  7 22:13:56 1998  Henrik Grubbström  <grubba@idonex.se>
+
+	* pike_memory.c (hashmem): Fixed ambiguity. Thanks to John W Pierce
+ 	<jwp@r2systems.com> for reporting it.
+
 Mon Dec 22 09:33:59 1997  Fredrik Hubinette  <hubbe@cytocin.hubbe.net>
 
 	* version.c: version now includes release number
