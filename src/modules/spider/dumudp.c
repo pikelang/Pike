@@ -1,7 +1,7 @@
 #include "config.h"
 
 #include "global.h"
-RCSID("$Id: dumudp.c,v 1.28 1997/12/07 21:58:12 grubba Exp $");
+RCSID("$Id: dumudp.c,v 1.29 1997/12/23 06:26:12 hubbe Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "stralloc.h"
@@ -21,11 +21,27 @@ RCSID("$Id: dumudp.c,v 1.28 1997/12/07 21:58:12 grubba Exp $");
 #endif
 
 #include <sys/stat.h>
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
+
+#if ! defined(EWOULDBLOCK) && defined(WSAEWOULDBLOCK)
+#define EWOULDBLOCK WSAEWOULDBLOCK
+#endif
+#if ! defined(EADDRINUSE) && defined(WSAEADDRINUSE)
+#define EADDRINUSE WSAEADDRINUSE
+#endif
+
 
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -65,6 +81,7 @@ struct dumudp {
   struct svalue read_callback;
 };
 
+#undef THIS
 #define THIS ((struct dumudp *)fp->current_storage)
 #define FD (THIS->fd)
 
@@ -179,7 +196,9 @@ void udp_read(INT32 args)
      case EBADF:
       set_read_callback( FD, 0, 0 );
       error("Socket closed\n");
+#ifdef ESTALE
      case ESTALE:
+#endif
      case EIO:
       set_read_callback( FD, 0, 0 );
       error("I/O error\n");
@@ -188,8 +207,10 @@ void udp_read(INT32 args)
      case ENOSR:
 #endif /* ENOSR */
       error("Out of memory\n");
+#ifdef ENOTSOCK
      case ENOTSOCK:
       fatal("reading from non-socket fd!!!\n");
+#endif
      case EWOULDBLOCK:
       push_int( 0 );
       return;
@@ -256,7 +277,9 @@ void udp_sendto(INT32 args)
   {
     switch(errno)
     {
+#ifdef EMSGSIZE
      case EMSGSIZE:
+#endif
       error("Too big message\n");
      case EBADF:
       set_read_callback( FD, 0, 0 );
@@ -267,9 +290,11 @@ void udp_sendto(INT32 args)
 #endif /* ENOSR */
       error("Out of memory\n");
      case EINVAL:
+#ifdef ENOTSOCK
      case ENOTSOCK:
       set_read_callback( FD, 0, 0 );
       error("Not a socket!!!\n");
+#endif
      case EWOULDBLOCK:
       return;
     }

@@ -63,6 +63,7 @@
 #define BASE_OFFSET 48
 #define BUFFLEN 8192
 #define FUZZ 60
+#undef THIS
 #define THIS ((struct file_head *)(fp->current_storage))
 #define N_SIZE(S) (((MAX((S).len,SHORT_FILE_NAME)+sizeof(struct node)-1)/8+1)*8)
 #define HASH(X) MAX(((int)(((X)>>10)^(X))&CACHESIZE)-FUZZ,0)

@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.142 1997/12/22 17:38:25 hubbe Exp $")
+AC_REVISION("$Id: configure.in,v 1.143 1997/12/23 06:26:05 hubbe Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -212,6 +212,8 @@ if test $cflags_is_set = no; then
 
   if test "x$with_cdebug" = "xno" ; then
     AC_SYS_COMPILER_FLAG(-fomit-frame-pointer,fomit_frame_pointer,OPTIMIZE)
+  else
+    CFLAGS=`echo " $CFLAGS " | sed -e 's@ -g @@g'`
   fi  
 
 ### Optimize for different SUN machines. If there is no working 'uname'
@@ -241,7 +243,10 @@ if test $cflags_is_set = no; then
 
   # OSF/1
   AC_SYS_OS_COMPILER_FLAG(OSF1,-fast,fast,OPTIMIZE)
-  AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3,OPTIMIZE)
+
+  if test "x$with_cdebug" = "x" ; then
+    AC_SYS_OS_COMPILER_FLAG(OSF1,-g3,g3,OPTIMIZE)
+  fi
   AC_SYS_OS_COMPILER_FLAG(OSF1,-host,host,OPTIMIZE)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-std1,std1,WARN)
   AC_SYS_OS_COMPILER_FLAG(OSF1,-warnprotos,warnprotos,WARN)
@@ -613,7 +618,8 @@ AC_HEADER_STDC
 AC_CHECK_HEADERS(sys/rusage.h time.h sys/time.h sys/types.h unistd.h stdlib.h \
 memory.h values.h string.h strings.h fcntl.h sys/filio.h sys/sockio.h crypt.h \
 locale.h sys/resource.h sys/select.h sys/mman.h setjmp.h limits.h pthread.h \
-thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h)
+thread.h dlfcn.h dld.h sys/times.h sched.h sys/procfs.h sys/param.h winsock.h \
+sys/ioct.h sys/socket.h)
 
 AC_SIZEOF_TYPE(char *)
 AC_SIZEOF_TYPE(long)
@@ -1637,8 +1643,13 @@ AC_CACHE_VAL(pike_cv_sys_nonblock,
 #define USE_IOCTL_FIONBIO
 #include "$srcdir/fd_control.c"
 ], pike_cv_sys_nonblock=USE_IOCTL_FIONBIO,
+    AC_TRY_RUN([
+#define TESTING
+#define USE_IOCTLSOCKET_FIONBIO
+#include "$srcdir/fd_control.c"
+], pike_cv_sys_nonblock=USE_IOCTLSOCKET_FIONBIO,
 unset pike_cv_sys_nonblock
-    ))))
+    )))))
   fi
 ])
 

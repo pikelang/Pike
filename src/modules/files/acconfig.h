@@ -1,5 +1,5 @@
 /*
- * $Id: acconfig.h,v 1.4 1997/12/02 21:28:30 grubba Exp $
+ * $Id: acconfig.h,v 1.5 1997/12/23 06:26:09 hubbe Exp $
  */
 
 #ifndef FILE_MACHINE_H
@@ -40,6 +40,12 @@
 
 /* Buffer size to use on open sockets */
 #undef SOCKET_BUFFER_MAX 
+
+/* Number of args to mkdir() */
+#define MKDIR_ARGS 2
+
+/* Can we declare 'extern char ** environ;' ? */
+#undef DECLARE_ENVIRON
 
 #endif
 

@@ -21,12 +21,22 @@
 #include <sys/types.h>
 #endif
 
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
 
 #ifdef HAVE_SYS_STREAM_H
 #include <sys/stream.h>
@@ -54,6 +64,7 @@ struct port
   struct svalue id;
 };
 
+#undef THIS
 #define THIS ((struct port *)(fp->current_storage))
 static void port_accept_callback(int fd,void *data);
 

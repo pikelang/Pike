@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: lex.c,v 1.34 1997/12/20 19:36:48 grubba Exp $");
+RCSID("$Id: lex.c,v 1.35 1997/12/23 06:26:07 hubbe Exp $");
 #include "language.h"
 #include "array.h"
 #include "lex.h"
@@ -25,7 +25,9 @@ RCSID("$Id: lex.c,v 1.34 1997/12/20 19:36:48 grubba Exp $");
 #include "mapping.h"
 
 #include "pike_macros.h"
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <ctype.h>
 #include <math.h>
 #include <fcntl.h>

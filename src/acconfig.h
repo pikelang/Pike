@@ -169,6 +169,7 @@
 
 /* How to set a socket non-blocking */
 #undef USE_IOCTL_FIONBIO
+#undef USE_IOCTLSOCKET_FIONBIO
 #undef USE_FCNTL_O_NDELAY
 #undef USE_FCNTL_FNDELAY
 #undef USE_FCNTL_O_NONBLOCK

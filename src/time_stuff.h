@@ -21,6 +21,11 @@
 # endif
 #endif
 
+#ifdef HAVE_WINSOCK_H
+# include <winsock.h>
+# undef HAVE_WINSOCK_H
+#endif
+
 #undef HAVE_SYS_TIME_H
 #undef HAVE_TIME_H
 #undef TIME_WITH_SYS_TIME

@@ -35,16 +35,27 @@
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
 #else
-# define dirent direct
-# define NAMLEN(dirent) (dirent)->d_namlen
 # if HAVE_SYS_NDIR_H
 #  include <sys/ndir.h>
+#   define dirent direct
+#   define NAMLEN(dirent) (dirent)->d_namlen
 # endif
 # if HAVE_SYS_DIR_H
 #  include <sys/dir.h>
+#  define dirent direct
+#  define NAMLEN(dirent) (dirent)->d_namlen
 # endif
 # if HAVE_NDIR_H
 #  include <ndir.h>
+#  define dirent direct
+#  define NAMLEN(dirent) (dirent)->d_namlen
+# endif
+#endif
+
+#ifndef NAMELEN
+# if HAVE_DIRECT_H
+#  include <direct.h>
+#  define NAMLEN(dirent) strlen((dirent)->d_name)
 # endif
 #endif
 
@@ -57,7 +68,9 @@ struct array *encode_stat(struct stat *s)
   {
   case S_IFREG: ITEM(a)[1].u.integer=s->st_size; break;
   case S_IFDIR: ITEM(a)[1].u.integer=-2; break;
+#ifdef S_IFLNK
   case S_IFLNK: ITEM(a)[1].u.integer=-3; break;
+#endif
   default: ITEM(a)[1].u.integer=-4; break;
   }
   ITEM(a)[2].u.integer=s->st_atime;
@@ -336,7 +349,11 @@ void f_mkdir(INT32 args)
   }
   s=sp[-args].u.string->str;
   THREADS_ALLOW();
+#if MKDIR_ARGS == 2
   i=mkdir(s, i) != -1;
+#else
+  i=mkdir(s) != -1;
+#endif
   THREADS_DISALLOW();
   pop_n_elems(args);
   push_int(i);
@@ -568,7 +585,9 @@ void f_exece(INT32 args)
 {
   INT32 e;
   char **argv, **env;
+#ifdef DECLARE_ENVIRON
   extern char **environ;
+#endif
   struct svalue *save_sp;
   struct mapping *en;
 

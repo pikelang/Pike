@@ -13,7 +13,9 @@
 #include "error.h"
 #include "callback.h"
 #include <signal.h>
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -223,7 +225,9 @@ static RETSIGTYPE sig_child(int arg)
 #endif /* HAVE_WAITPID */
 
 #ifdef SIGNAL_ONESHOT
+#ifdef SIGCHLD
   my_signal(SIGCHLD, sig_child);
+#endif
 #endif
 }
 
@@ -236,7 +240,9 @@ static RETSIGTYPE receive_signal(int signum)
   if(tmp != lastsig)
     sigbuf[firstsig=tmp]=signum;
 
+#ifdef SIGCHLD
   if(signum==SIGCHLD) sig_child(signum);
+#endif
 
   wake_up_backend();
 
@@ -345,13 +351,17 @@ static void f_signal(int args)
 
     switch(signum)
     {
+#ifdef SIGCHLD
     case SIGCHLD:
       func=sig_child;
       break;
+#endif
 
+#ifdef SIGPIPE
     case SIGPIPE:
       func=(sigfunctype) SIG_IGN;
       break;
+#endif
 
     default:
       func=(sigfunctype) SIG_DFL;
@@ -461,8 +471,13 @@ void init_signals(void)
 {
   int e;
 
+#ifdef SIGCHLD
   my_signal(SIGCHLD, sig_child);
+#endif
+
+#ifdef SIGPIPE
   my_signal(SIGPIPE, SIG_IGN);
+#endif
 
   for(e=0;e<MAX_SIGNALS;e++)
     signal_callbacks[e].type=T_INT;

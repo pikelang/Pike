@@ -6,7 +6,12 @@
 #ifndef MACROS_H
 #define MACROS_H
 
+#include <global.h>
+
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+
 #include "pike_memory.h"
 
 #define OFFSETOF(str_type, field) ((long)& (((struct str_type *)0)->field))

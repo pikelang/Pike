@@ -1,5 +1,5 @@
 /*
- * $Id: system.c,v 1.31 1997/12/07 22:01:35 grubba Exp $
+ * $Id: system.c,v 1.32 1997/12/23 06:26:14 hubbe Exp $
  *
  * System-call module for Pike
  *
@@ -14,7 +14,7 @@
 #include "system.h"
 
 #include "global.h"
-RCSID("$Id: system.c,v 1.31 1997/12/07 22:01:35 grubba Exp $");
+RCSID("$Id: system.c,v 1.32 1997/12/23 06:26:14 hubbe Exp $");
 #include "module_support.h"
 #include "las.h"
 #include "interpret.h"
@@ -58,6 +58,10 @@ RCSID("$Id: system.c,v 1.31 1997/12/07 22:01:35 grubba Exp $");
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif /* HAVE_SYS_STAT_H */
+
+#ifdef HAVE_WINSOCK_H
+#include <winsock.h>
+#endif
 
 /*
  * Functions
@@ -302,7 +306,8 @@ void f_cleargroups(INT32 args)
 /* int setgroup(array(int) gids) */
 /* NOT Implemented in Pike 0.5 */
 #endif /* HAVE_SETGROUPS */
- 
+
+#ifdef HAVE_SETUID 
 void f_setuid(INT32 args)
 {
   INT32 id;
@@ -320,7 +325,9 @@ void f_setuid(INT32 args)
   setuid(id);
   pop_n_elems(args-1);
 }
+#endif
 
+#ifdef HAVE_SETGID
 void f_setgid(INT32 args)
 {
   int id;
@@ -338,6 +345,7 @@ void f_setgid(INT32 args)
   setgid(id);
   pop_n_elems(args-1);
 }
+#endif
 
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
 /* int seteuid(int euid) */
@@ -425,8 +433,13 @@ void f_getpgrp(INT32 args)
 
 #define f_get(X,Y) void X(INT32 args){ pop_n_elems(args); push_int((INT32)Y()); }
 
+#ifdef HAVE_GETUID
 f_get(f_getuid, getuid)
+#endif
+
+#ifdef HAVE_GETGID
 f_get(f_getgid, getgid)
+#endif
  
 #ifdef HAVE_GETEUID
 f_get(f_geteuid, geteuid)
@@ -798,8 +811,12 @@ void pike_module_init(void)
   /* NOT Implemented in Pike 0.5 */
   /* add_efun("setgroups", f_setgroups, "function(array(int):int)", OPT_SIDE_EFFECT); */
 #endif /* HAVE_SETGROUPS */
+#ifdef HAVE_SETUID
   add_efun("setuid", f_setuid, "function(int:void)", OPT_SIDE_EFFECT);
+#endif
+#ifdef HAVE_SETGID
   add_efun("setgid", f_setgid, "function(int:void)", OPT_SIDE_EFFECT);
+#endif
 #if defined(HAVE_SETEUID) || defined(HAVE_SETRESUID)
   add_efun("seteuid", f_seteuid, "function(int:int)", OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEUID || HAVE_SETRESUID */
@@ -807,8 +824,13 @@ void pike_module_init(void)
   add_efun("setegid", f_setegid, "function(int:int)", OPT_SIDE_EFFECT);
 #endif /* HAVE_SETEGID || HAVE_SETRESGID */
 
+#ifdef HAVE_GETUID
   add_efun("getuid", f_getuid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
+
+#ifdef HAVE_GETGID
   add_efun("getgid", f_getgid, "function(:int)", OPT_EXTERNAL_DEPEND);
+#endif
  
 #ifdef HAVE_GETEUID
   add_efun("geteuid", f_geteuid, "function(:int)", OPT_EXTERNAL_DEPEND);
