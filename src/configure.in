@@ -1,4 +1,4 @@
-AC_REVISION("$Id: configure.in,v 1.578 2002/04/07 21:33:53 mast Exp $")
+AC_REVISION("$Id: configure.in,v 1.579 2002/04/08 03:04:58 marcus Exp $")
 AC_INIT(interpret.c)
 AC_CONFIG_HEADER(machine.h)
 
@@ -3419,7 +3419,7 @@ if test "$with_machine_code" = "no"; then :; else
 #endif
     ], [], [pike_cv_machine_code_arch=sparc], [])
     AC_TRY_COMPILE([
-#if !defined(__ppc__) && !defined(_POWER)
+#if !defined(__ppc__) && !defined(__powerpc__) && !defined(_POWER)
 #error Not ppc32 architecture
 #endif
     ], [], [pike_cv_machine_code_arch=ppc32], [])
@@ -3443,7 +3443,7 @@ AC_CACHE_VAL(pike_cv_cpu_reg_prefix,
     AC_TRY_COMPILE([
 #define REGPREFIX "$pike_cv_cpu_reg_prefix"
 ], [
-#if defined(__ppc__) || defined(_POWER)
+#if defined(__ppc__) || defined(__powerpc__) || defined(_POWER)
 	__asm__ __volatile__(" li "REGPREFIX"11,1");
 #else
 	; /* Don't need to find out */
