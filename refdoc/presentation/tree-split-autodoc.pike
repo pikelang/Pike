@@ -1,5 +1,5 @@
 /*
- * $Id: tree-split-autodoc.pike,v 1.20 2001/11/23 21:52:05 nilsson Exp $
+ * $Id: tree-split-autodoc.pike,v 1.21 2001/12/14 11:31:26 nilsson Exp $
  *
  */
 
@@ -43,7 +43,6 @@ class Node
     parent = _parent;
     PROFILE();
     data = get_parser()->finish( _data )->read();
-    data = make_faked_wrapper(data);
     ENDPROFILE("Parsing");
 
     string path = replace(make_class_path(), "()->", ".");
@@ -56,6 +55,15 @@ class Node
     sort(method_children->name, method_children);
 
     method_children = check_uniq(method_children);
+    foreach(method_children, Node m)
+      if( (<"create","destroy">)[m->name] ) {
+	method_children -= ({ m });
+	string d;
+	sscanf(m->data, "%*s<docgroup%s/docgroup>", d);
+	if(d)
+	  data += "<docgroup" + d + "/docgroup>";
+      }
+    data = make_faked_wrapper(data);
   }
 
   array(Node) check_uniq(array children) {
@@ -158,7 +166,7 @@ class Node
   string make_faked_wrapper(string s)
   {
     if(type=="appendix")
-      return "<appendix name='"+name+"'>"+data+"</appendix>";
+      return "<appendix name='"+name+"'>"+s+"</appendix>";
 
     if(type=="method")
       s = sprintf("<docgroup homogen-type='method' homogen-name='%s'>\n"
@@ -400,7 +408,14 @@ class Node
 
   static string make_content() {
     string contents;
-    Parser.XML.Tree.Node n = Parser.XML.Tree.parse_input(data)[0];
+
+    string err;
+    Parser.XML.Tree.Node n;
+    if(err = catch( n = Parser.XML.Tree.parse_input(data)[0] )) {
+      werror(err + "\n" + data);
+      exit(1);
+    }
+
     resolve_reference = my_resolve_reference;
 
     if(type=="appendix")
