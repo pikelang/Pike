@@ -1,6 +1,6 @@
 #pike __REAL_VERSION__
 
-/* $Id: sslfile.pike,v 1.77 2004/08/18 15:08:03 mast Exp $
+/* $Id: sslfile.pike,v 1.78 2004/08/23 14:55:26 mast Exp $
  */
 
 #if constant(SSL.Cipher.CipherAlgorithm)
@@ -850,7 +850,7 @@ function(object,int|object,string:void) query_alert_callback()
   return conn && conn->alert_callback;
 }
 
-void set_accept_callback (function(object,void|mixed:void) accept)
+void set_accept_callback (function(object,void|mixed:int) accept)
 //! Install a function that will be called when the handshake is
 //! finished and the connection is ready for use.
 //!
@@ -871,13 +871,13 @@ void set_accept_callback (function(object,void|mixed:void) accept)
   } LEAVE;
 }
 
-function(void|mixed:void) query_accept_callback()
+function(object,void|mixed:int) query_accept_callback()
 //!
 {
   return accept_callback;
 }
 
-void set_read_callback (function(mixed,string:void) read)
+void set_read_callback (function(mixed,string:int) read)
 //! Install a function to be called when data is available.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_read_callback (%O)\n", read);
@@ -890,13 +890,13 @@ void set_read_callback (function(mixed,string:void) read)
   } LEAVE;
 }
 
-function(mixed,string:void) query_read_callback()
+function(mixed,string:int) query_read_callback()
 //!
 {
   return read_callback;
 }
 
-void set_write_callback (function(void|mixed:void) write)
+void set_write_callback (function(void|mixed:int) write)
 //! Install a function to be called when data can be written.
 {
   SSL3_DEBUG_MSG ("SSL.sslfile->set_write_callback (%O)\n", write);
@@ -909,13 +909,13 @@ void set_write_callback (function(void|mixed:void) write)
   } LEAVE;
 }
 
-function(void|mixed:void) query_write_callback()
+function(void|mixed:int) query_write_callback()
 //!
 {
   return write_callback;
 }
 
-void set_close_callback (function(void|mixed:void) close)
+void set_close_callback (function(void|mixed:int) close)
 //! Install a function to be called when the connection is closed,
 //! either normally or due to an error (use @[errno] to retrieve it).
 {
@@ -929,7 +929,7 @@ void set_close_callback (function(void|mixed:void) close)
   } LEAVE;
 }
 
-function(void|mixed:void) query_close_callback()
+function(void|mixed:int) query_close_callback()
 //!
 {
   return close_callback;
