@@ -2,10 +2,11 @@
 
 /* test_crypto.pike */
 
-inherit "StdCrypt";
+import Crypto;
 
 #define K(a) hex_to_string(a)
 #define H(a) string_to_hex(a)
+
 
 int test_des()
 {
@@ -41,7 +42,7 @@ int test_des()
     {
       string gibberish;
       write(sprintf("Testing key %d\n", i));
-      c = DES()->set_encrypt_key(keys[i]);
+      c = des()->set_encrypt_key(keys[i]);
       gibberish = c->crypt_block(texts[i]);
       if (gibberish != cipher[i])
 	{
@@ -71,7 +72,7 @@ int test_idea()
   object c;
 
   write("IDEA...\n");
-  c = IDEA()->set_encrypt_key(key);
+  c = idea()->set_encrypt_key(key);
   gibberish = c->crypt_block(msg);
   if (gibberish != cipher)
     {
@@ -196,7 +197,7 @@ int test_cbc()
 
   write("CBC...\n");
   // c = Crypto(CBC(IDEA)->set_encrypt_key(key)->set_iv(iv)); /* correct */
-  c = Crypto(CBC(IDEA)->set_iv(iv)->set_encrypt_key(key)); /* bad */
+  c = crypto(cbc(idea)->set_iv(iv)->set_encrypt_key(key)); /* bad */
   gibberish = c->crypt(msg) + c->pad();
   write("\"" + gibberish[..50] + "\"\n");
   write("\"" + H(gibberish) + "\"\n");
@@ -205,7 +206,7 @@ int test_cbc()
       write("Encryption failed\n");
       err++;
     }
-  c = Crypto(CBC(IDEA)->set_decrypt_key(key)->set_iv(iv));
+  c = crypto(cbc(idea)->set_decrypt_key(key)->set_iv(iv));
   recovered = c->unpad(c->crypt(gibberish));
   write("\"" + recovered[..50] + "...\"\n");
   if (recovered != msg)
