@@ -8,14 +8,8 @@ DescDetail: <<
 It is easy to learn, doesn't need long compilation passes
 and has powerful built-in data types that allow simple and fast
 data manipulation.
-<<
-CustomMirror: <<
-Primary: ftp://pike.ida.liu.se/pub/pike/all/
-Seconday-ftp: ftp://ftp.oav.net/pike/official_releases/
-Seconday-http: http://ftp.oav.net/pike/official_releases/
-Roxen: ftp://ftp.roxen.com/pub/pike/all/
 >>
-Source: mirror:custom:%v/Pike-v%v.tar.gz
+Source: http://ftp.oav.net/pike/official_releases/%v/Pike-v%v.tar.gz
 Source-MD5: c0e8b64cf0dfe1f68390290bcc14decb
 BuildDepends: gmp,fileutils,libjpeg,freetype,freetype2,gdbm,mysql-dev,pdflib,fftw,libpoll,librsvg2
 Depends: gmp-shlibs,libjpeg-shlibs,freetype-shlibs,freetype2-shlibs,gdbm-shlibs,mysql-shlibs,pdflib-shlibs,libtiff-shlibs,ffmpeg,fftw-shlibs,libpoll-shlibs,librsvg2-shlibs
