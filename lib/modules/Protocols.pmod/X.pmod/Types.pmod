@@ -1,6 +1,6 @@
 /* Types.pmod
  *
- * $Id: Types.pmod,v 1.36 2002/01/15 22:32:42 nilsson Exp $
+ * $Id: Types.pmod,v 1.37 2002/01/15 22:47:12 nilsson Exp $
  */
 
 /*
@@ -24,8 +24,6 @@
  */
 
 #pike __REAL_VERSION__
-
-#include "error.h"
 
 class XResource
 {

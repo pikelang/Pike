@@ -1,6 +1,6 @@
 /* Requests.pike
  *
- * $Id: Requests.pmod,v 1.30 2002/01/15 22:32:42 nilsson Exp $
+ * $Id: Requests.pmod,v 1.31 2002/01/15 22:47:11 nilsson Exp $
  */
 
 /*
@@ -24,8 +24,6 @@
  */
 
 #pike __REAL_VERSION__
-
-#include "error.h"
 
 class request
 {

@@ -1,6 +1,6 @@
 /* Xlib.pmod
  *
- * $Id: Xlib.pmod,v 1.43 2002/01/15 22:32:43 nilsson Exp $
+ * $Id: Xlib.pmod,v 1.44 2002/01/15 22:47:12 nilsson Exp $
  */
 
 /*
@@ -24,8 +24,6 @@
  */
 
 #pike __REAL_VERSION__
-
-#include "error.h"
 
 // #define DEBUG
 
