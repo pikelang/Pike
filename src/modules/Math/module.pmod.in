@@ -78,6 +78,20 @@ class Angle {
     throw( ({"Unknown type "+type+".\n", backtrace()}) );
   }
 
+  void normalize() {
+    switch(type) {
+    case "deg":
+      angle %= 360;
+      break;
+    case "rad":
+      angle %= 2.0*pi;
+      break;
+    case "gon":
+      angle %= 400;
+      break;
+    }
+  }
+
   //! Returns the number of degrees, including minutes and
   //! seconds as decimals.
   int|float degree() {
@@ -116,7 +130,8 @@ class Angle {
   //! Sets the angle to the provided degree. Alters the type to degrees.
   //! Returns the current object.
   Angle set_degree(int|float degree) {
-    angle = degree % 360;
+    angle = degree;
+    normalize();
     type = "deg";
     return this_object();
   }
@@ -129,7 +144,8 @@ class Angle {
   //! Set the angle to the provided gons. Alters the type to gons.
   //! Returns the current angle object.
   Angle set_gon(int|float gon) {
-    angle = gon % 400;
+    angle = gon;
+    normalize();
     type = "gon";
     return this_object();
   }
@@ -142,9 +158,27 @@ class Angle {
   //! Set the angle to the provided radians. Alters the type to radians.
   //! Returns the current angle object.
   Angle set_rad(int|float rad) {
-    angle = rad % (2.0*pi);
+    angle = rad;
+    normalize();
     type = "rad";
     return this_object();
+  }
+
+  //! Turns the direction of the angle half a turn. Equal to @code{add(180,"deg")@}.
+  void about_face() {
+    add(180, "deg");
+  }
+
+  //! Turns the direction of the angle a quarter of a turn to the right.
+  //! Equal to @code{subtract(90,"deg")@}.
+  void right_face() {
+    subtract(90, "deg");
+  }
+
+  //! Turns the direction of the angle a quarter of a turn to the left.
+  //! Equal to @code{add(90,"deg")@}.
+  void left_face() {
+    add(90, "deg");
   }
 
   float|int|string cast(string to) {
@@ -156,27 +190,47 @@ class Angle {
     throw( ({"Could not cast to "+to+".\n", backtrace()}) );
   }
 
-  float|int|object `+ (float|int|object _angle) {
+  float|int|Angle `+ (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle + _angle->get(type), type );
     return angle + _angle;
   }
 
-  float|int|object `- (float|int|object _angle) {
+  Angle add(float|int|Angle _angle, void|string _type) {
+    //    if(object(_angle)) return add( _angle->angle, _type||_angle->type);
+    if(!_type)
+      angle += _angle;
+    else
+      angle += convert_angle(_angle, _type, type);
+    normalize();
+    return this_object();
+  }
+
+  float|int|Angle `- (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle - _angle->get(type), type );
     return angle - _angle;
   }
 
-  float|int|object `* (float|int|object _angle) {
+  Angle subtract(float|int|Angle _angle, void|string _type) {
+    //    if(object(_angle)) return subtract( _angle->angle, _type||_angle->type);
+    if(!_type)
+      angle -= _angle;
+    else
+      angle -= convert_angle(_angle, _type, type);
+    normalize();
+    return this_object();
+  }
+
+  float|int|Angle `* (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle * _angle->get(type), type );
     return angle * _angle;
   }
 
-  float|int|object `/ (float|int|object _angle) {
+  float|int|Angle `/ (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle / _angle->get(type), type );
     return angle / _angle;
   }
 
-  float|int|object `% (float|int|object _angle) {
+  float|int|Angle `% (float|int|Angle _angle) {
     if(objectp(_angle)) return Angle( angle % _angle->get(type), type );
     return angle % _angle;
   }
@@ -185,15 +239,15 @@ class Angle {
     return (int)angle*1000000;
   }
 
-  int `== (object _angle) {
+  int `== (Angle _angle) {
     return _angle->rad() == rad();
   }
 
-  int `< (object _angle) {
+  int `< (Angle _angle) {
     return rad() < _angle->rad();
   }
 
-  int `> (object _angle) {
+  int `> (Angle _angle) {
     return rad() > _angle->rad();
   }
 
