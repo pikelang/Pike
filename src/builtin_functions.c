@@ -2,11 +2,11 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: builtin_functions.c,v 1.546 2004/04/30 17:19:42 mast Exp $
+|| $Id: builtin_functions.c,v 1.547 2004/05/01 15:25:29 mast Exp $
 */
 
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.546 2004/04/30 17:19:42 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.547 2004/05/01 15:25:29 mast Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -1248,21 +1248,29 @@ PMOD_EXPORT void f_add_constant(INT32 args)
   pop_n_elems(args);
 }
 
-/*! @decl string combine_path(string absolute, string ... relative)
- *! @decl string combine_path_unix(string absolute, string ... relative)
- *! @decl string combine_path_nt(string absolute, string ... relative)
- *! @decl string combine_path_amigaos(string absolute, string ... relative)
+/*! @decl string combine_path(string path, string ... relative)
+ *! @decl string combine_path_unix(string path, string ... relative)
+ *! @decl string combine_path_nt(string path, string ... relative)
+ *! @decl string combine_path_amigaos(string path, string ... relative)
  *!
- *!   Concatenate a relative path to an absolute path and remove any
- *!   @expr{"//"@}, @expr{"/.."@} or @expr{"/."@} to produce a
- *!   straightforward absolute path as result.
+ *!   Concatenate a number of path components to a straightforward
+ *!   path without any @expr{"//"@}, @expr{"/.."@} or @expr{"/."@}. If
+ *!   @[path] is absolute then the result is absolute, otherwise it
+ *!   might have leading @expr{".."@} components. If the last
+ *!   component ends with @expr{"/"@} then the result ends with it
+ *!   too. If all components in a relative path disappear due to
+ *!   subsequent @expr{".."@} components then the result is
+ *!   @expr{"."@}.
  *!
- *!   @[combine_path_nt()] concatenates according to NT-filesystem conventions,
- *!   while @[combine_path_unix()] concatenates according to UNIX-style.
- *!   @[combine_path_amigaos()] concatenates according to AmigaOS filesystem
- *!   conventions.
+ *!   @[combine_path_unix()] concatenates in UNIX style, which also is
+ *!   appropriate for e.g. URL:s ("/" separates path components and
+ *!   absolute paths start with "/"). @[combine_path_nt()]
+ *!   concatenates according to NT filesystem conventions ("/" and "\"
+ *!   separates path components and there might be a drive letter in
+ *!   front of absolute paths). @[combine_path_amigaos()] concatenates
+ *!   according to AmigaOS filesystem conventions.
  *!
- *!   @[combine_path()] is equvivalent to @[combine_path_unix()] on UNIX-like
+ *!   @[combine_path()] is equivalent to @[combine_path_unix()] on UNIX-like
  *!   operating systems, and equivalent to @[combine_path_nt()] on NT-like
  *!   operating systems, and equivalent to @[combine_path_amigaos()] on
  *!   AmigaOS-like operating systems.
