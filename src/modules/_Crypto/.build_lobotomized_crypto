@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 # .build_lobotomized_crypto
 
@@ -15,7 +15,7 @@ mkdir -p ../_Lobotomized_Crypto/lib
 #
 # This way we avoid re-building things which have not changed.
 #
-function smartcopy() {
+smartcopy() {
   if test -f "$1" -a -f "$2" && cmp "$1" "$2" 1>/dev/null 2>/dev/null; then
     :
   else
