@@ -4,7 +4,7 @@
 ||| See the files COPYING and DISCLAIMER for more information.
 \*/
 #include "global.h"
-RCSID("$Id: interpret.c,v 1.70 1998/03/18 20:22:30 per Exp $");
+RCSID("$Id: interpret.c,v 1.71 1998/03/26 05:37:50 hubbe Exp $");
 #include "interpret.h"
 #include "object.h"
 #include "program.h"
@@ -1471,6 +1471,7 @@ static int eval_instruction(unsigned char *pc)
     default:
       fatal("Strange instruction %ld\n",(long)instr);
     }
+
   }
 }
 

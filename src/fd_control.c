@@ -13,6 +13,7 @@
 #include "fdlib.h"
 #else
 #undef DEBUG
+#define fd_ioctl ioctl
 #endif
 
 #include "fd_control.h"
@@ -50,7 +51,7 @@ int set_nonblocking(int fd,int which)
     fatal("Filedescriptor out of range.\n");
 #endif
 
-#if defined(USE_IOCTL_FIONBIO) || __NT__
+#if defined(USE_IOCTL_FIONBIO) || defined(__NT__)
   return fd_ioctl(fd, FIONBIO, &which);
 #else
 
