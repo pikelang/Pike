@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.423 2002/02/14 01:44:34 nilsson Exp $");
+RCSID("$Id: builtin_functions.c,v 1.424 2002/03/21 13:41:06 grubba Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -4050,7 +4050,8 @@ PMOD_EXPORT void f_localtime(INT32 args)
  *!   	@member int(0..1) "isdst"
  *!   	  Is daylight savings time.
  *!   	@member int(-12..12) "timezone"
- *!   	  The timezone offset from UTC in seconds.
+ *!   	  The timezone offset from UTC in seconds. If left out, the time
+ *!       will be calculated in the local timezone.
  *!   @endmapping
  *!
  *!   Or you can just send them all on one line as the second syntax suggests.
@@ -4062,7 +4063,7 @@ PMOD_EXPORT void f_mktime (INT32 args)
 {
   INT_TYPE sec, min, hour, mday, mon, year;
   struct tm date;
-  int retval;
+  int retval, raw;
 
   if (args<1)
     SIMPLE_TOO_FEW_ARGS_ERROR("mktime", 1);
@@ -4106,29 +4107,36 @@ PMOD_EXPORT void f_mktime (INT32 args)
     date.tm_isdst = -1;
   }
 
-#if STRUCT_TM_HAS_GMTOFF
+#ifdef STRUCT_TM_HAS_GMTOFF
+  /* BSD-style */
+  date.tm_gmtoff = 0;
+#else
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+  /* Linux-style */
+  date.__tm_gmtoff = 0;
+#endif /* STRUCT_TM_HAS___TM_GMTOFF */
+#endif /* STRUCT_TM_HAS_GMTOFF */
+
+  raw = retval = mktime(&date);
+  
   if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
   {
-    date.tm_gmtoff=-Pike_sp[7-args].u.integer;
-  }else{
-    time_t tmp = 0;
-    date.tm_gmtoff=localtime(&tmp)->tm_gmtoff;
-  }
-  retval=mktime(&date);
+    /* Adjust for the timezone. */
+    /* Note that tm_gmtoff has the opposite sign of timezone. */
+#ifdef STRUCT_TM_HAS_GMTOFF
+    retval += Pike_sp[7-args].u.integer + date.tm_gmtoff;
+#else
+#ifdef STRUCT_TM_HAS___TM_GMTOFF
+    retval += Pike_sp[7-args].u.integer + date.__tm_gmtoff;
 #else
 #ifdef HAVE_EXTERNAL_TIMEZONE
-  if((args > 7) && (Pike_sp[7-args].subtype == NUMBER_NUMBER))
-  {
-    retval=mktime(&date) + Pike_sp[7-args].u.integer - timezone;
-  }else{
-    retval=mktime(&date);
+    retval += Pike_sp[7-args].u.integer - timezone;
+#endif /* HAVE_EXTERNAL_TIMEZONE */
+#endif /* STRUCT_TM_HAS___TM_GMTOFF */
+#endif /* STRUCT_TM_HAS_GMTOFF */
   }
-#else
-  retval=mktime(&date);
-#endif
-#endif
 
-  if (retval == -1)
+  if (raw == -1)
     PIKE_ERROR("mktime", "Cannot convert.\n", Pike_sp, args);
   pop_n_elems(args);
   push_int(retval);
