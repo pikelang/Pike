@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: builtin_functions.c,v 1.391 2001/07/05 00:09:41 mast Exp $");
+RCSID("$Id: builtin_functions.c,v 1.392 2001/07/08 18:19:54 lange Exp $");
 #include "interpret.h"
 #include "svalue.h"
 #include "pike_macros.h"
@@ -2190,7 +2190,7 @@ PMOD_EXPORT void f_crypt(INT32 args)
  *!
  *!   Mark an object as destructed.
  *!
- *!   Calls @tt{o->destroy()@}, and then clears all varaibles in the object.
+ *!   Calls @tt{o->destroy()@}, and then clears all variables in the object.
  *!
  *!   All pointers and function pointers to this object will become zero.
  *!   The destructed object will be freed from memory as soon as possible.
