@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: blocks.c,v 1.5 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: blocks.c,v 1.6 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -14,16 +14,16 @@
 
 /* handles blocks, freelist and fragmented blocks */
 
-#include "internal.h"
-
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
 
+#include "internal.h"
+
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: blocks.c,v 1.5 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: blocks.c,v 1.6 2003/01/03 20:52:48 grubba Exp $";
 
 #ifdef SUPERMASSIVE_DEBUG
 #define BLOCK_DEBUG

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: transaction.c,v 1.4 2002/10/11 01:39:47 nilsson Exp $
+|| $Id: transaction.c,v 1.5 2003/01/03 20:52:49 grubba Exp $
 */
 
 /*
@@ -12,12 +12,12 @@
 ** also see http://www.mirar.org/mird/
 */
 
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "internal.h"
 
-#include <stdlib.h>
-
 #include "dmalloc.h"
-#include <unistd.h>
 
 #ifdef HAVE_ERRNO_H
 #include <errno.h>
@@ -33,7 +33,7 @@
 
 
 static const char RCSID[]=
-   "$Id: transaction.c,v 1.4 2002/10/11 01:39:47 nilsson Exp $";
+   "$Id: transaction.c,v 1.5 2003/01/03 20:52:49 grubba Exp $";
 
 /*
  * start a new transaction

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: hashtrie.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: hashtrie.c,v 1.7 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -15,9 +15,10 @@
 /* handles hashtrie nodes
  */
 
-#include "internal.h"
-
 #include <stdlib.h>
+#include <unistd.h>
+
+#include "internal.h"
 
 /* AIX requires this to be the first thing in the file.  */
 #if HAVE_ALLOCA_H
@@ -46,7 +47,7 @@ void *alloca();
 #endif
 
 static const char RCSID[]=
-   "$Id: hashtrie.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: hashtrie.c,v 1.7 2003/01/03 20:52:48 grubba Exp $";
 
 #define TOO_DEEP_RECURSION 31 /* we can only shift down that */
 

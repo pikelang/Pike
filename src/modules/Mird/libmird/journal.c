@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: journal.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: journal.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -14,10 +14,10 @@
 
 /* handles the journal file */
 
-#include "internal.h"
-
 #include <unistd.h>
 #include <stdlib.h>
+
+#include "internal.h"
 
 #include "dmalloc.h"
 #include <stdio.h> 
@@ -47,7 +47,7 @@
 #endif
 
 static const char RCSID[]=
-   "$Id: journal.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: journal.c,v 1.5 2003/01/03 20:52:48 grubba Exp $";
 
 
 /*

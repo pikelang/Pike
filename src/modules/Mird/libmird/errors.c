@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: errors.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: errors.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -12,11 +12,11 @@
 ** also see http://www.mirar.org/mird/
 */
 
-#include "internal.h"
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdio.h>
+
+#include "internal.h"
 
 /* for strerror */
 #ifdef HAVE_STRING_H
@@ -26,7 +26,7 @@
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: errors.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: errors.c,v 1.5 2003/01/03 20:52:48 grubba Exp $";
 
 static struct mird_error failed_to_allocate_error =
 { MIRDE_RESOURCE_ERR,NULL,sizeof(struct mird_error),0,0 };

@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: skeys.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: skeys.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -12,14 +12,15 @@
 ** also see http://www.mirar.org/mird/
 */
 
-#include "internal.h"
-
 #include <stdlib.h>
+#include <unistd.h>
+
+#include "internal.h"
 
 #include "dmalloc.h"
 
 static const char RCSID[]=
-   "$Id: skeys.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: skeys.c,v 1.5 2003/01/03 20:52:48 grubba Exp $";
 
 #define SKEY_OVERHEAD 16
 

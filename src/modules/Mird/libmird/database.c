@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: database.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: database.c,v 1.7 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -12,12 +12,12 @@
 ** also see http://www.mirar.org/mird/
 */
 
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "internal.h"
 
-#include <stdlib.h>
-
 #include "dmalloc.h"
-#include <unistd.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -31,7 +31,7 @@
 #endif
 
 static const char RCSID[]=
-   "$Id: database.c,v 1.6 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: database.c,v 1.7 2003/01/03 20:52:48 grubba Exp $";
 
 /* forward declarations */
 

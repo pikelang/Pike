@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: frags.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: frags.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -16,6 +16,8 @@
  * a frag is a small piece of data, of limited size
  */
 
+#include <unistd.h>
+
 #include "internal.h"
 
 #ifndef NULL
@@ -23,7 +25,7 @@
 #endif
 
 static const char RCSID[]=
-   "$Id: frags.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: frags.c,v 1.5 2003/01/03 20:52:48 grubba Exp $";
 
 #ifdef SUPERMASSIVE_DEBUG
 #define FRAGS_DEBUG

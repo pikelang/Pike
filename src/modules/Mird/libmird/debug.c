@@ -2,7 +2,7 @@
 || This file is part of Pike. For copyright information see COPYRIGHT.
 || Pike is distributed under GPL, LGPL and MPL. See the file COPYING
 || for more information.
-|| $Id: debug.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $
+|| $Id: debug.c,v 1.5 2003/01/03 20:52:48 grubba Exp $
 */
 
 /*
@@ -14,17 +14,17 @@
 
 /* handles debug stuff */
 
-#include "internal.h"
-
 #include <unistd.h>
 #include <errno.h>
 #include <stdlib.h>
+
+#include "internal.h"
 
 #include "dmalloc.h"
 #include <stdio.h>
 
 static const char RCSID[]=
-   "$Id: debug.c,v 1.4 2002/10/11 01:39:46 nilsson Exp $";
+   "$Id: debug.c,v 1.5 2003/01/03 20:52:48 grubba Exp $";
 
 #define PRINT_BLOCK_FRAG(X) \
 	CHUNK_ID_2_BLOCK(db,(X)), \
