@@ -29,9 +29,10 @@
 /* #define DLDEBUG 1 */
 /* #define DL_VERBOSE 1 */
 
+#define REALLY_FLUSH() do{ fflush(stderr); Sleep(500); }while(0)
 
 #ifdef DLDEBUG
-#define FLUSH() do{ fflush(stderr); Sleep(500); }while(0)
+#define FLUSH() REALLY_FLUSH()
 #define DO_IF_DLDEBUG(X) X
 #else
 #define FLUSH()
@@ -75,7 +76,7 @@ size_t STRNLEN(char *s, size_t maxlen)
 
 #else /* PIKE_CONCAT */
 
-RCSID("$Id: dlopen.c,v 1.5 2000/12/27 09:05:05 hubbe Exp $");
+RCSID("$Id: dlopen.c,v 1.6 2000/12/29 00:12:20 hubbe Exp $");
 
 #endif
 
@@ -693,20 +694,43 @@ static int dl_load_coff_files(struct DLHandle *ret,
       ret->memsize&=~align;
       ret->memsize+=data->sections[s].raw_data_size;
     }
-
-    /* Count export symbols */
-    for(s=0;s<data->coff->num_symbols;s++)
-    {
-      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN &&
-	 SYMBOLS(s).secnum > 0)
-	num_exports++;
-    }
-
     if(data->coff->num_symbols)
     {
       /* Assumes 32 bit pointers! */
       ret->memsize+=data->coff->num_symbols * 4 + 3;
       ret->memsize&=~3;
+    }
+
+    /* Count export symbols */
+    for(s=0;s<data->coff->num_symbols;s++)
+    {
+      size_t align;
+      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN)
+	num_exports++;
+
+      /* Count memory in common symbols,
+       * I wonder what the alignment should be?
+       */
+      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN &&
+	 !SYMBOLS(s).secnum &&
+	 SYMBOLS(s).value)
+      {
+	switch(SYMBOLS(s).value)
+	{
+	  case 0:
+	  case 1: align=0; break;
+	  case 2:
+	  case 3: align=1; break;
+	  case 4: 
+	  case 5:
+	  case 6:
+	  case 7: align=3; break;
+	  default: align=7;
+	}
+	ret->memsize+=align;
+	ret->memsize&=~align;
+	ret->memsize+=SYMBOLS(s).value;
+      }
     }
   }
 
@@ -788,6 +812,9 @@ static int dl_load_coff_files(struct DLHandle *ret,
       ptr+=3;
       ptr&=~3;
       data->symbol_addresses=(char **)( ((char *)ret->memory) + ptr);
+      MEMSET(data->symbol_addresses,
+	     0,
+	     data->coff->num_symbols * 4);
 #ifdef DLDEBUG
       fprintf(stderr,"DL: data->symbol_addresses=%p\n",
 	      data->symbol_addresses);
@@ -795,6 +822,39 @@ static int dl_load_coff_files(struct DLHandle *ret,
       ptr+=data->coff->num_symbols * 4;
     }
 
+
+    /* Make addresses for common symbols */
+    for(s=0;s<data->coff->num_symbols;s++)
+    {
+      size_t align;
+      /* 
+       * Setup poiners to common symbols
+       */
+      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN &&
+	 !SYMBOLS(s).secnum &&
+	 SYMBOLS(s).value)
+      {
+	switch(SYMBOLS(s).value)
+	{
+	  case 0:
+	  case 1: align=0; break;
+	  case 2:
+	  case 3: align=1; break;
+	  case 4: 
+	  case 5:
+	  case 6:
+	  case 7: align=3; break;
+	  default: align=7;
+	}
+	ptr+=align;
+	ptr&=~align;
+	data->symbol_addresses[s]=((char *)ret->memory + ptr);
+	memset((char *)ret->memory + ptr,
+	       0,
+	       SYMBOLS(s).value);
+	ptr+=SYMBOLS(s).value;
+      }
+    }
 
 #ifdef DLDEBUG
     fprintf(stderr,"DL: exporting symbols (%d)\n",data->coff->num_symbols);
@@ -809,14 +869,29 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	      SYMBOLS(s).secnum);
 #endif
 	
-      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN &&
-	 SYMBOLS(s).secnum > 0)
+      if(SYMBOLS(s).class == COFF_SYMBOL_EXTERN)
       {
-	char *value=data->section_addresses[SYMBOLS(s).secnum-1]+
-		      SYMBOLS(s).value;
-
+	char *value;
 	char *name;
 	size_t len;
+
+	if(SYMBOLS(s).secnum>0)
+	{
+	  value=data->section_addresses[SYMBOLS(s).secnum-1]+
+	    SYMBOLS(s).value;
+	}
+	else if(!SYMBOLS(s).secnum && SYMBOLS(s).value)
+	{
+	  value=data->symbol_addresses[s];
+	  if(!value)
+	  {
+	    fprintf(stderr,"Something is fishy here!!!\n");
+	    exit(99);
+	  }
+	}
+	else
+	  continue;
+
 
 	if(!SYMBOLS(s).name.ptr[0])
 	{
@@ -880,6 +955,8 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	char *loc=data->section_addresses[s] + RELOCS(r).location;
 	char *ptr;
 	ptrdiff_t sym=RELOCS(r).symbol;
+	char *name;
+	size_t len;
 
 #ifdef DLDEBUG
 	fprintf(stderr,"DL: Reloc[%d] sym=%d loc=%d type=%d\n",
@@ -898,12 +975,33 @@ static int dl_load_coff_files(struct DLHandle *ret,
 	    ptr=data->symbol_addresses[sym]=
 	      data->section_addresses[SYMBOLS(sym).secnum-1]+
 	      SYMBOLS(sym).value;
+#ifdef DLDEBUG
+	    if(!SYMBOLS(sym).name.ptr[0])
+	    {
+	      name=data->stringtable + SYMBOLS(sym).name.ptr[1];
+	      len=strlen(name);
+	    }else{
+	      name=SYMBOLS(sym).name.text;
+	      len=STRNLEN(name,8);
+	    }
+	    if(name[len])
+	    {
+	      fprintf(stderr,"DL: reloc name=%s\n",name);
+	    }else{
+	      fprintf(stderr,"DL: reloc name=%c%c%c%c%c%c%c%c\n",
+		      name[0],
+		      name[1],
+		      name[2],
+		      name[3],
+		      name[4],
+		      name[5],
+		      name[6],
+		      name[7]);
+	    }
+#endif
 	  }
-	  else if(!SYMBOLS(sym).value)
+	  else if(!SYMBOLS(sym).secnum /* && !SYMBOLS(sym).value */)
 	  {
-	    char *name;
-	    size_t len;
-
 	    if(!SYMBOLS(sym).name.ptr[0])
 	    {
 	      name=data->stringtable + SYMBOLS(sym).name.ptr[1];
@@ -925,41 +1023,67 @@ static int dl_load_coff_files(struct DLHandle *ret,
 
 	    if(!(ptr=low_dlsym(ret, name, len)))
 	    {
-	      dlerr="Symbol not found";
+	      char err[256];
+	      MEMCPY(err,"Symbol '",8);
+	      MEMCPY(err+8,name,MINIMUM(len, 128));
+	      MEMCPY(err+8+MINIMUM(len, 128),"' not found.\0",13);
+	      dlerr=err;
 #ifndef DL_VERBOSE
 	      return -1;
 #endif
 	    }
 	  }else{
+	    static char err[200];
 #ifdef DLDEBUG
 	    fprintf(stderr,"Gnapp??\n");
 #endif
+	    sprintf(err,"Unknown symbol[%d] type=%d class=%d section=%d value=%d",
+		    sym,
+		    SYMBOLS(sym).type,
+		    SYMBOLS(sym).class,
+		    SYMBOLS(sym).secnum,
+		    SYMBOLS(sym).value);
+	    dlerr=err;
 	    return -1;
 	  }
 
 	  data->symbol_addresses[sym]=ptr;
 	}
 
+#ifndef DL_VERBOSE
+	if(!ptr || !data->symbol_addresses)
+	{
+	  fprintf(stderr,"How on earth did this happen??\n");
+	  dlerr="Zero symbol?";
+	  return -1;
+	}
+#endif
+
 	switch(RELOCS(r).type)
 	{
 	  default:
-	    dlerr="Unknown relocation type.";
+	  {
+	    static char err[100];
+	    sprintf(err,"Unknown relocation type: %d",RELOCS(r).type);
+	    dlerr=err;
 	    return -1;
+	  }
 
 	    /* We may need to support more types here */
 	  case COFFReloc_type_dir32:
 	    if( (SYMBOLS(sym).type >> 4) == 2 && !SYMBOLS(sym).secnum)
 	    {
 #ifdef DLDEBUG
-	      fprintf(stderr,"DL: Indirect *%p = %d secnum=%d!!!\n", loc, *(INT32 *)loc,SYMBOLS(sym).secnum);
+	      fprintf(stderr,"DL: Indirect *%p = %d secnum=%d value=%d!!!\n", loc, *(INT32 *)loc,SYMBOLS(sym).secnum,SYMBOLS(sym).value);
+	      REALLY_FLUSH();
 #endif
 	      ptr=(char *)(data->symbol_addresses + sym);
 	    }
+
 	    ((INT32 *)loc)[0]+=(INT32)ptr;
 #ifdef DLDEBUG
 	    fprintf(stderr,"DL: reloc absolute: loc %p = %p\n", loc,ptr);
 #endif
-	       
 	    break;
 
           case COFFReloc_type_rel32:
@@ -1300,6 +1424,8 @@ static void init_dlopen(void)
     EXPORT(ungetc);
     EXPORT(printf);
     EXPORT(perror);
+    EXPORT(sscanf);
+    EXPORT(abs);
   }
 
 #ifdef DLDEBUG
