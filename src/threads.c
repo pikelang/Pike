@@ -1,5 +1,5 @@
 #include "global.h"
-RCSID("$Id: threads.c,v 1.31 1997/09/03 08:07:36 mast Exp $");
+RCSID("$Id: threads.c,v 1.32 1997/09/04 21:51:29 per Exp $");
 
 int num_threads = 1;
 int threads_disabled = 0;
@@ -161,6 +161,7 @@ void f_this_thread(INT32 args)
 struct mutex_storage
 {
   COND_T condition;
+  MUTEX_T kludge;
   struct object *key;
 };
 
@@ -186,7 +187,7 @@ void f_mutex_lock(INT32 args)
    * might use threads.
    */
   o=clone_object(mutex_key,0);
-  mt_lock(& mutex_kluge);
+  mt_lock(& m->kludge);
   if(m->key && OB2KEY(m->key)->owner == thread_id)
   {
     THREADS_FPRINTF((stderr, "Recursive LOCK k:%08x, m:%08x(%08x), t:%08x\n",
@@ -194,17 +195,16 @@ void f_mutex_lock(INT32 args)
 		     (unsigned int)m,
 		     (unsigned int)OB2KEY(m->key)->mut,
 		     (unsigned int) thread_id));
-    mt_unlock(&mutex_kluge);
     free_object(o);
     error("Recursive mutex locks!\n");
   }
 
   THREADS_ALLOW();
-  while(m->key) co_wait(& m->condition, & mutex_kluge);
+  while(m->key) co_wait(& m->condition, & m->kludge);
   m->key=o;
   OB2KEY(o)->mut=m;
   
-  mt_unlock(&mutex_kluge);
+  mt_unlock(&m->kludge);
   THREADS_DISALLOW();
   THREADS_FPRINTF((stderr, "LOCK k:%08x, m:%08x(%08x), t:%08x\n",
 		   (unsigned int)OB2KEY(o),
@@ -224,15 +224,15 @@ void f_mutex_trylock(INT32 args)
   o=clone_object(mutex_key,0);
   m=THIS_MUTEX;
 
-  mt_lock(& mutex_kluge);
 
   /* No reason to release the interpreter lock here
    * since we aren't calling any functions that take time.
    */
 
+  mt_lock(& m->kludge);
   if(m->key && OB2KEY(m->key)->owner == thread_id)
   {
-    mt_unlock(&mutex_kluge);
+    mt_unlock(&m->kludge);
     free_object(o);
     error("Recursive mutex locks!\n");
   }
@@ -242,7 +242,7 @@ void f_mutex_trylock(INT32 args)
     m->key=o;
     i=1;
   }
-  mt_unlock(&mutex_kluge);
+  mt_unlock(&m->kludge);
   
   if(i)
   {
@@ -257,13 +257,16 @@ void f_mutex_trylock(INT32 args)
 void init_mutex_obj(struct object *o)
 {
   co_init(& THIS_MUTEX->condition);
+  mt_init(& THIS_MUTEX->kludge);
   THIS_MUTEX->key=0;
 }
 
 void exit_mutex_obj(struct object *o)
 {
   if(THIS_MUTEX->key) destruct(THIS_MUTEX->key);
+  THIS_MUTEX->key=0;
   co_destroy(& THIS_MUTEX->condition);
+  mt_destroy(& THIS_MUTEX->kludge);
 }
 
 #define THIS_KEY ((struct key_storage *)(fp->current_storage))
@@ -284,9 +287,9 @@ void exit_mutex_key_obj(struct object *o)
 		   (unsigned int)THIS_KEY->mut,
 		   (unsigned int)thread_id,
 		   (unsigned int)THIS_KEY->owner));
-  mt_lock(& mutex_kluge);
   if(THIS_KEY->mut)
   {
+    mt_lock(& THIS_KEY->mut->kludge);
 #ifdef DEBUG
     if(THIS_KEY->mut->key != o)
       fatal("Mutex unlock from wrong key %p != %p!\n",THIS_KEY->mut->key,o);
@@ -299,8 +302,8 @@ void exit_mutex_key_obj(struct object *o)
     co_signal(& THIS_KEY->mut->condition);
     THIS_KEY->mut=0;
     THIS_KEY->initialized=0;
+    mt_unlock(& THIS_KEY->mut->kludge);
   }
-  mt_unlock(& mutex_kluge);
 }
 
 #define THIS_COND ((COND_T *)(fp->current_storage))
@@ -325,34 +328,32 @@ void f_cond_wait(INT32 args)
     if(key->prog != mutex_key)
       error("Bad argument 1 to condition->wait()\n");
     
-    mt_lock(&mutex_kluge);
     mut=OB2KEY(key)->mut;
-    if(!mut)
-      error("Bad argument 1 to condition->wait()\n");
+    if(!mut) error("Bad argument 1 to condition->wait()\n");
 
+    mt_lock(&mut->kludge);
     THREADS_ALLOW();
-
     /* Unlock mutex */
     mut->key=0;
     OB2KEY(key)->mut=0;
     co_signal(& mut->condition);
-
+    
     /* Wait and allow mutex operations */
-    co_wait(c,&mutex_kluge);
-
+    co_wait(c,&mut->kludge);
+    
     if(OB2KEY(key)->initialized)
     {
       /* Lock mutex */
-      while(mut->key) co_wait(& mut->condition, & mutex_kluge);
+      while(mut->key) co_wait(& mut->condition, &mut->kludge);
       mut->key=key;
       OB2KEY(key)->mut=mut;
     }
-    mt_unlock(&mutex_kluge);
+    mt_unlock(&mut->kludge);
     THREADS_DISALLOW();
     pop_stack();
   } else {
-    mt_lock(&mutex_kluge);
     THREADS_ALLOW();
+    mt_lock(&mutex_kluge);
     co_wait(c, &mutex_kluge);
     mt_unlock(&mutex_kluge);
     THREADS_DISALLOW();
