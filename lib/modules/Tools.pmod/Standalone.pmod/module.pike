@@ -1,8 +1,8 @@
 // -*- Pike -*-
 
-// $Id: module.pike,v 1.14 2003/04/06 22:53:10 nilsson Exp $
+// $Id: module.pike,v 1.15 2003/05/04 21:28:25 nilsson Exp $
 
-constant version = ("$Revision: 1.14 $"/" ")[1];
+constant version = ("$Revision: 1.15 $"/" ")[1];
 constant description = "Pike module installer.";
 
 // Source directory
@@ -20,9 +20,6 @@ string src_path=include_path;
 string bin_path=include_path;
 #endif
 string run_pike;
-
-int(0..1) verbose;
-#define VERB(X ...) if(verbose) werror(X)
 
 #define NOT 0
 #define AUTO 1
