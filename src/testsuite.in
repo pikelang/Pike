@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.420 2001/06/05 00:03:57 mast Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.421 2001/06/05 10:13:59 hubbe Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -3905,7 +3905,13 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("123456789F01234567890", "%x")[0] ]])
   test_eq("1375488932614371410344080",
+	   [[ (string)array_sscanf("0x123456789F01234567890", "%x")[0] ]])
+  test_eq("1375488932614371410344080",
+	   [[ (string)array_sscanf("0X123456789F01234567890", "%x")[0] ]])
+  test_eq("1375488932614371410344080",
 	   [[ (string)array_sscanf("0x123456789F01234567890", "%i")[0] ]])
+  test_eq("1375488932614371410344080",
+	   [[ (string)array_sscanf("0X123456789F01234567890", "%i")[0] ]])
   test_eq("45954944846776",
 	   [[ (string)array_sscanf("1234567012345670", "%o")[0] ]])
   test_eq("45954944846776",
@@ -3939,9 +3945,12 @@ cond([[ sizeof( cpp("__AUTO_BIGNUM__")/"__AUTO_BIGNUM__" ) == 1 ]],
   test_eq([[ sprintf("%08x", @array_sscanf("\8\7\6\5\1\2\3\4", "%8c")) ]], "3807060501020304")
   test_eq([[ sprintf("%08x", @array_sscanf("\010\7\6\5\1\2\3\4", "%8c")) ]], "807060501020304")
 
-  test_equal([[ ({ 0, 118 }) ]], [[ array_sscanf("0x76", "%xx%x") ]])
-  test_equal([[ ({ 0, 557239244978618154304871 }) ]],
-             [[ array_sscanf("0x76000000000001234567", "%xx%x") ]])
+  test_equal([[ ({ 118 }) ]], [[ array_sscanf("0x76", "%x") ]])
+  test_equal([[ ({42 }) ]], [[ array_sscanf("101010", "%b") ]])
+  test_equal([[ ({42 }) ]], [[ array_sscanf("0b101010", "%b") ]])
+  test_equal([[ ({42 }) ]], [[ array_sscanf("0B101010", "%b") ]])
+  test_equal([[ ({ 557239244978618154304871 }) ]],
+             [[ array_sscanf("0x76000000000001234567", "%x") ]])
 
   test_equal([[array_sscanf("foo \12345 bar <fie>","%[^<]")]],
 	     [[ ({"foo \12345 bar " }) ]])
@@ -4812,6 +4821,8 @@ test_eq([[(int)1.0]],[[1]])
 test_eq([[(int)-1.0]],[[-1]])
 test_eq([[(int)"1"]],[[1]])
 test_eq([[(int)"-1"]],[[-1]])
+test_eq([[(int)"0x1"]],[[0]])
+test_eq([[(int)"010"]],[[10]])
 test_eq([[(float)"1"]],[[1.0]])
 test_eq([[(float)"-1"]],[[-1.0]])
 test_eq([[(float)"1.0"]],[[1.0]])
@@ -6506,6 +6517,24 @@ test_eq(lambda(int ... q) { return query_num_arg(); }(1,1,1,1),4)
 
 // - random
 test_any([[int e,d;for(e=0;e<1000;e++){d=random(10); if(d<0 || d>=10) return 0;} return 1]],1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( ({11,21,31,41}) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ random( (<11,21,31,41>) ) % 10 ]], 1)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eq([[ `-( @random( ([11:21,31:41]) )) ]], -10)
+test_eval_error([[ return random( ({}) ) ]])
+test_eval_error([[ return random( (<>) ) ]])
+test_eval_error([[ return random( ([]) ) ]])
+test_eq([[ random( class() { int _random() { return 17; }}()) ]], 17)
 
 // random_seed
 test_do(int p; foreach(({1,2,3,4,5}),p) random_seed(p))
