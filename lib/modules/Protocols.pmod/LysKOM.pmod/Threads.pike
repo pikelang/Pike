@@ -19,6 +19,7 @@ class Thread
 
     array(mapping) flatten(int depth)
     {
+//       werror("%d, ",text->no);
       return ({ ([ "no":         (string)text->no,
 		   "author_no":  (string)text->author->name,
 		   "author_name":text->author->name,
@@ -33,12 +34,8 @@ class Thread
     {
       foreach(text->misc->comm_to, Session.Text _parent)
       {
-	if(!_parent->misc)
-	{
-	  werror("Parent %d. Error: %O\n",_parent->no,
-		 _parent->error && _parent->error->name);
+	if(catch(_parent->misc))
 	  continue;
-	}
 	foreach( ({ @_parent->misc->recpt->conf,
 		    @_parent->misc->ccrecpt->conf,
 		    @_parent->misc->bccrecpt->conf }),
@@ -56,12 +53,8 @@ class Thread
     {
       foreach(text->misc->comm_in, Session.Text child)
       {
-	if(!child->misc)
-	{
-	  werror("Child %d. Error: %O\n",child->no,
-		 child->error && child->error->name);
+	if(catch(child->misc))
 	  continue;
-	}
 	foreach( ({ @child->misc->recpt->conf,
 		    @child->misc->ccrecpt->conf,
 		    @child->misc->bccrecpt->conf }),
@@ -93,6 +86,8 @@ class Thread
       
       parent=possible_parent(follow);
       children=possible_children(follow);
+      //   werror("Parent to %d: %d\n",_text->no, parent && parent->text->no);
+      //   werror("Children to %d: %s\n",_text->no, ((array(string))(children->text->no))*", ");
     }
   }
 
