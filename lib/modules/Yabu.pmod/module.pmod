@@ -4,9 +4,10 @@
  * associated with a unique key.
  */
 
-constant cvs_id = "$Id: module.pmod,v 1.11 1999/08/05 16:24:47 noring Exp $";
+constant cvs_id = "$Id: module.pmod,v 1.12 1999/08/06 23:08:14 hubbe Exp $";
 
 #define ERR(msg) throw(({ "(Yabu) "+msg+"\n", backtrace() }))
+#define IO_ERR(msg) throw(({ sprintf("(Yabu) %s, %s (%d)\n",msg,strerror(errno()),errno()),backtrace() }))
 #define WARN(msg) werror(msg)
 #define DEB(msg) /* werror(msg) */
 #define CHECKSUM(s) (hash(s) & 0xffffffff)
@@ -454,7 +455,7 @@ class Chunk {
     if(!write)
       ERR("Cannot move in read mode");
     if(!mv(filename, new_filename))
-      ERR("Move failed");
+      IO_ERR("Move failed");
     filename = new_filename;
     UNLOCK();
   }

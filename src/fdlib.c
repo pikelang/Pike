@@ -3,7 +3,7 @@
 #include "error.h"
 #include <math.h>
 
-RCSID("$Id: fdlib.c,v 1.29 1999/08/06 15:28:42 grubba Exp $");
+RCSID("$Id: fdlib.c,v 1.30 1999/08/06 23:03:35 hubbe Exp $");
 
 #ifdef HAVE_WINSOCK_H
 
@@ -17,7 +17,11 @@ long da_handle[MAX_OPEN_FILEDESCRIPTORS];
 int fd_type[MAX_OPEN_FILEDESCRIPTORS];
 int first_free_handle;
 
+#ifdef FD_DEBUG
+#define FDDEBUG(X) X
+#else
 #define FDDEBUG(X)
+#endif
 
 char *debug_fd_info(int fd)
 {
@@ -666,15 +670,64 @@ int debug_fd_fstat(FD fd, struct stat *s)
   return 0;
 }
 
+
+#ifdef FD_DEBUG
+static void dump_FDSET(FD_SET *x, int fds)
+{
+  if(x)
+  {
+    int e, first=1;
+    fprintf(stderr,"[");
+    for(e=0;e<fds;e++)
+    {
+      if(FD_ISSET(da_handle[e],x))
+      {
+	if(!first) fprintf(stderr,",",e);
+	fprintf(stderr,"%d",e);
+	first=0;
+      }
+    }
+    fprintf(stderr,"]");
+  }else{
+    fprintf(stderr,"0");
+  }
+}
+#endif
+
+/* FIXME:
+ * select with no fds should call Sleep()
+ * If the backend works correctly, fds is zero when there are no fds.
+ * /Hubbe
+ */
 int debug_fd_select(int fds, FD_SET *a, FD_SET *b, FD_SET *c, struct timeval *t)
 {
   int ret;
+
+  FDDEBUG(
+    int e;
+    fprintf(stderr,"Select(%d,",fds);
+    dump_FDSET(a,fds);
+    dump_FDSET(b,fds);
+    dump_FDSET(c,fds);
+    fprintf(stderr,",(%ld,%06ld));\n", (long) t->tv_sec,(long) t->tv_usec);
+    )
+
   ret=select(fds,a,b,c,t);
   if(ret==SOCKET_ERROR)
   {
     errno=WSAGetLastError();
+    FDDEBUG(fprintf(stderr,"select->%d, errno=%d\n",ret,errno));
     return -1;
   }
+
+  FDDEBUG(
+    fprintf(stderr,"    ->(%d,",fds);
+    dump_FDSET(a,fds);
+    dump_FDSET(b,fds);
+    dump_FDSET(c,fds);
+    fprintf(stderr,",(%ld,%06ld));\n", (long) t->tv_sec,(long) t->tv_usec);
+    )
+
   return ret;
 }
 
