@@ -1,0 +1,185 @@
+#!/bin/sh
+
+CLEANUP=yes
+DEBUG=no 
+
+if [ $DEBUG = yes ]; then
+  set -x
+fi
+
+set -e
+
+fixpath() {
+  echo "$*" | sed -e 's@/@\\@g'
+}
+
+fixabspath() {
+  echo "$*" | sed -e 's@/@\\@g'
+}
+
+OPTS=""
+CFLAGS=""
+SOURCES=""
+OBJECTS=""
+OUTPUT=
+OPERATION=linking
+INCLUDE_PATH=
+LDOPTS=""
+
+while test "$#" != 0; do
+  case $1 in
+    -E)  OPERATION=preprocessing ;;
+    -c)  OPERATION=compiling  ;;
+    -g*) CFLAGS="$CFLAGS -d2" ;;
+    -O)  CFLAGS="$CFLAGS -ox" ;;
+    -O2) CFLAGS="$CFLAGS -otexan" ;;
+    *.c) SOURCES="$SOURCES $1" ;;
+    *.o) OBJECTS="$OBJECTS $1" ;;
+    *.a) OBJECTS="$OBJECTS `cat $a`" ;;
+     -o) OUTPUT="$2" ; shift ;;
+
+    -I*)
+       if test x$1 = x-I ; then
+         tmp="$2"
+         shift
+       else
+         tmp=`echo $1 | sed -e 's/^-I//g'`
+       fi
+
+       case $tmp in
+         /usr/include/* | /usr/local/include*)
+          ;;
+         *)
+           CFLAGS="$CFLAGS -i`fixpath $tmp`"
+         ;;
+       esac
+     ;;
+
+    -traditional-cpp | -lc | -lm) ;;
+
+    -R | -L) shift ;;
+    -R* | -L* | -Wl*)  ;;
+
+    -D*)
+      CFLAGS="$CFLAGS `echo $1 | sed -e 's/^-I/-d/g'`"
+    ;;
+
+# Options to parse:
+# -l
+
+    *)
+      echo "Unrecognized option $1"
+      exit 1
+    ;;
+  esac
+  shift
+done
+
+rm $OUTPUT 2>/dev/null 1>/dev/null || :
+
+OLDIFS="$IFS"
+IFS=:
+set dummy $INCLUDE_PATH
+shift
+IFS="$OLDIFS"
+
+IPATH=.
+IPATHS=":.:"
+
+for a in $*
+do
+  case $IPATHS in
+    *:$a:*) ;;
+    *)
+     IPATH="$IPATH;`fixpath $a`"
+     IPATHS="$IPATHS:$a:"
+    ;;
+  esac
+done
+
+do_cmd() {
+  echo DOING $*
+  BATFILE=TMP$$.bat
+  PWD=`pwd`
+  RPWD=`fixabspath $PWD`
+  if [ $DEBUG != yes ]; then
+    echo >$BATFILE "@echo off"
+  else
+    echo >$BATFILE 
+  fi
+  echo >>$BATFILE "$NTDRIVE"
+  echo >>$BATFILE "cd $RPWD"
+  echo >>$BATFILE "$*"
+  rsh $NTHOST $NTDRIVE$RPWD\\$BATFILE
+  if [ $CLEANUP = yes ]; then
+    rm $BATFILE || :
+  fi
+}
+
+ERRORFILE=TMP$$.err
+rm $ERRORFILE 2>/dev/null 1>/dev/null || :
+
+CFLAGS="$CFLAGS -zq -i$IPATH -fr$ERRORFILE"
+if [ "x$OUTPUT" != x ]; then
+  CFLAGS="$CFLAGS -fo$OUTPUT"
+fi
+
+case $OPERATION in
+  compiling)
+    do_cmd wcc386 $CFLAGS `fixpath $SOURCES $OBJECTS`
+    TARGET=$OUTPUT
+  ;;
+
+  preprocessing)
+    do_cmd wcc386 -p $CFLAGS `fixpath $SOURCES`
+  ;;
+
+  linking)
+    for a in `fixpath $SOURCES`
+    do
+      BASE=`echo $a | sed -e 's/\.c//'`
+      do_cmd wcc386 -i$IPATH $CFLAGS -fr$ERRORFILE -fo=$BASE.obj $a
+      OBJECTS="$OBJECTS $BASE.obj"
+    done
+
+    LDFILE=TMP$$.lk
+    echo "name $OUTPUT.exe $LDOPTS FIL `fixpath $OBJECTS | sed -e 's/ /,/g'`" >$LDFILE
+    do_cmd wlink @$LDFILE
+    TARGET=$OUTPUT.exe
+    if [ $CLEANUP = yes ]; then
+       if [ "x$LDFILE" != x ]; then
+         rm $LDFILE || :
+       fi
+    fi
+  ;;
+esac
+
+if [ -f $ERRORFILE ]; then
+  cat $ERRORFILE 1>&2
+  if grep -iv 'Warning' <$ERRORFILE >/dev/null 2>/dev/null; then
+    rm $ERRORFILE
+    exit 1
+  fi
+  rm $ERRORFILE
+fi
+
+if [ "x$TARGET" != x ]; then
+  if [ ! -f "$TARGET" ]; then
+    echo "RNTCC: output file not generated"
+    exit 1
+  fi
+fi
+
+if [ $OPERATION = linking ]; then
+  echo  >$OUTPUT "#!/bin/sh"
+  echo >>$OUTPUT "BATFILE=TMP\$\$.bat"
+  echo >>$OUTPUT "echo >\$BATFILE @echo off"
+  echo >>$OUTPUT "echo >>\$BATFILE $NTDRIVE"
+  PWD=`pwd`
+  RPWD=`fixabspath $PWD`
+  echo >>$OUTPUT "echo >>\$BATFILE cd '$RPWD'"
+  echo >>$OUTPUT "echo >>\$BATFILE $TARGET \"\$@\""
+  echo >>$OUTPUT "rsh $NTHOST '$NTDRIVE$RPWD\\'\$BATFILE"
+  echo >>$OUTPUT "rm \$BATFILE"
+  chmod +x $OUTPUT
+fi

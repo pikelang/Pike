@@ -1,0 +1,13 @@
+*.bat
+*.lk
+*.o
+Makefile
+config.cache
+config.log
+config.status
+conftest.c
+lib
+machine.h
+modules
+pike
+stamp-h

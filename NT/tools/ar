@@ -1,0 +1,12 @@
+#!/bin/sh
+
+shift
+OUTPUT=$1
+shift
+
+rm $OUTPUT 2>/dev/null 1>/dev/null || :
+for a in $*
+do
+  echo -n "$NTDRIVE$a " | sed -e 's@/@\\@g' >>$OUTPUT
+done
+
