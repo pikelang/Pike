@@ -5,7 +5,7 @@
 \*/
 /**/
 #include "global.h"
-RCSID("$Id: las.c,v 1.128 1999/11/23 03:07:35 grubba Exp $");
+RCSID("$Id: las.c,v 1.129 1999/11/23 22:04:17 grubba Exp $");
 
 #include "language.h"
 #include "interpret.h"
@@ -46,6 +46,8 @@ extern char *get_type_name(int);
 
 #define MAX_GLOBAL 2048
 
+/* #define yywarning my_yyerror */
+
 int car_is_node(node *n)
 {
   switch(n->token)
@@ -72,6 +74,7 @@ int cdr_is_node(node *n)
   case F_CONSTANT:
   case F_LOCAL:
   case F_CAST:
+  case F_SOFT_CAST:
     return 0;
 
   default:
@@ -141,6 +144,9 @@ INT32 count_args(node *n)
       return 0;
     else
       return count_args(CAR(n));
+
+  case F_SOFT_CAST:
+    return count_args(CAR(n));
 
   case F_CASE:
   case F_FOR:
@@ -478,7 +484,7 @@ node *debug_mknode(short token, node *a, node *b)
 #if defined(PIKE_DEBUG) && !defined(SHARED_NODES)
   if(b && a==b)
     fatal("mknode: a and be are the same!\n");
-  if (token == F_CAST)
+  if ((token == F_CAST) || (token == F_SOFT_CAST))
     fatal("Attempt to create a cast-node with mknode()!\n");
 #endif    
 
@@ -914,10 +920,12 @@ node *debug_mksoftcastnode(struct pike_string *type,node *n)
   }
 #endif /* PIKE_DEBUG */
 
+  if (type == void_type_string) return mknode(F_POP_VALUE, n, 0);
+
   if(type==n->type) return n;
 
   if (n->type) {
-    if (!match_types(type, n->type)) {
+    if (!pike_types_le(type, n->type)) {
       struct pike_string *t1 = describe_type(type);
       struct pike_string *t2 = describe_type(n->type);
       yywarning("Soft cast to %s isn't a restriction of %s.",
@@ -1223,6 +1231,7 @@ int node_is_eq(node *a,node *b)
     return a->u.id.number == b->u.id.number;
 
   case F_CAST:
+  case F_SOFT_CAST:
     return a->type == b->type && node_is_eq(CAR(a), CAR(b));
 
   case F_CONSTANT:
@@ -1351,6 +1360,10 @@ node *copy_node(node *n)
     b=mkcastnode(n->type,copy_node(CAR(n)));
     break;
 
+  case F_SOFT_CAST:
+    b=mksoftcastnode(n->type,copy_node(CAR(n)));
+    break;
+
   case F_CONSTANT:
     b=mksvaluenode(&(n->u.sval));
     break;
@@ -1455,12 +1468,14 @@ node **last_cmd(node **a)
   node **n;
   if(!a || !*a) return (node **)NULL;
   if(((*a)->token == F_CAST) ||
+     ((*a)->token == F_SOFT_CAST) ||
      ((*a)->token == F_POP_VALUE)) return last_cmd(&_CAR(*a));
   if(((*a)->token != F_ARG_LIST) &&
      ((*a)->token != F_COMMA_EXPR)) return a;
   if(CDR(*a))
   {
     if(CDR(*a)->token != F_CAST &&
+       CDR(*a)->token != F_SOFT_CAST &&
        CDR(*a)->token != F_POP_VALUE &&
        CAR(*a)->token != F_ARG_LIST &&	/* FIXME: typo? */
        CAR(*a)->token != F_COMMA_EXPR)	/* FIXME: typo? */
@@ -1471,6 +1486,7 @@ node **last_cmd(node **a)
   if(CAR(*a))
   {
     if(CAR(*a)->token != F_CAST &&
+       CAR(*a)->token != F_SOFT_CAST &&
        CAR(*a)->token != F_POP_VALUE &&
        CAR(*a)->token != F_ARG_LIST &&
        CAR(*a)->token != F_COMMA_EXPR)
@@ -1593,6 +1609,19 @@ static void low_print_tree(node *foo,int needlval)
     low_describe_type(foo->type->str);
     s=simple_free_buf();
     fprintf(stderr, "(%s){",s);
+    free(s);
+    low_print_tree(_CAR(foo),0);
+    fprintf(stderr, "}");
+    break;
+  }
+
+  case F_SOFT_CAST:
+  {
+    char *s;
+    init_buf();
+    low_describe_type(foo->type->str);
+    s=simple_free_buf();
+    fprintf(stderr, "[%s]{",s);
     free(s);
     low_print_tree(_CAR(foo),0);
     fprintf(stderr, "}");
@@ -1962,6 +1991,7 @@ static int cntargs(node *n)
   switch(n->token)
   {
   case F_CAST:
+  case F_SOFT_CAST:
   case F_APPLY:
     return n->type != void_type_string;
 
@@ -2039,7 +2069,7 @@ void fix_type_field(node *n)
   {
   case F_SOFT_CAST:
     if (CAR(n) && CAR(n)->type) {
-      if (!match_types(old_type, CAR(n)->type)) {
+      if (!pike_types_le(old_type, CAR(n)->type)) {
 	struct pike_string *t1 = describe_type(old_type);
 	struct pike_string *t2 = describe_type(CAR(n)->type);
 	yywarning("Soft cast to %s isn't a restriction of %s.",
@@ -2082,12 +2112,25 @@ void fix_type_field(node *n)
       copy_shared_string(n->type, void_type_string);
       break;
     } else if(CAR(n) && CDR(n)) {
+      /* Ensure that the type-fields are up to date. */
       fix_type_field(CAR(n));
       fix_type_field(CDR(n));
-      /* a["b"]=c and a->b=c can be valid when a is an array */
-      if (CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
-	  !match_types(CDR(n)->type,CAR(n)->type)) {
-	my_yyerror("Bad type in assignment.");
+      if (!pike_types_le(CAR(n)->type, CDR(n)->type)) {
+	/* a["b"]=c and a->b=c can be valid when a is an array */
+	if (CDR(n)->token != F_INDEX && CDR(n)->token != F_ARROW &&
+	    !match_types(CDR(n)->type,CAR(n)->type)) {
+	  my_yyerror("Bad type in assignment.");
+	} else if (lex.pragmas & ID_STRICT_TYPES) {
+	  struct pike_string *t1 = describe_type(CAR(n)->type);
+	  struct pike_string *t2 = describe_type(CDR(n)->type);
+	  print_tree(n);
+	  yywarning("An expression type %s cannot be assigned to "
+		    "a variable of type %s.",
+		    t1->str, t2->str);
+	  free_string(t2);
+	  free_string(t1);
+	  yywarning("Incompatible types in assignment.");
+	}
       }
     }
     n->type = and_pike_types(CAR(n)->type, CDR(n)->type);
@@ -2098,7 +2141,7 @@ void fix_type_field(node *n)
     if (!CAR(n) || (CAR(n)->type == void_type_string)) {
       my_yyerror("Indexing a void expression.");
       /* The optimizer converts this to an expression returning 0. */
-      copy_shared_string(n->type, mixed_type_string);
+      copy_shared_string(n->type, zero_type_string);
     } else {
       type_a=CAR(n)->type;
       type_b=CDR(n)->type;
@@ -2257,17 +2300,23 @@ void fix_type_field(node *n)
 #endif /* SHARED_NODES */
 	break;
       }
-    } else if(compiler_frame &&
-	      compiler_frame->current_return_type &&
-	      !match_types(compiler_frame->current_return_type,CAR(n)->type) &&
-	      !(
-		compiler_frame->current_return_type==void_type_string &&
-		CAR(n)->token == F_CONSTANT &&
-		IS_ZERO(& CAR(n)->u.sval)
-		)
+    } else if(compiler_frame && compiler_frame->current_return_type) {
+      if (!pike_types_le(CAR(n)->type, compiler_frame->current_return_type) &&
+	    !(
+	      compiler_frame->current_return_type==void_type_string &&
+	      CAR(n)->token == F_CONSTANT &&
+	      IS_ZERO(& CAR(n)->u.sval)
 	      )
-    {
-      yyerror("Wrong return type.");
+	  ) {
+	if (!match_types(compiler_frame->current_return_type,CAR(n)->type))
+	{
+	  yyerror("Wrong return type.");
+	}
+	else if (lex.pragmas & ID_STRICT_TYPES)
+	{
+	  yywarning("Return type mismatch.");
+	}
+      }
     }
 
     /* Fall through */
@@ -2317,7 +2366,7 @@ void fix_type_field(node *n)
     break;
 
   case F_UNDEFINED:
-    MAKE_CONSTANT_SHARED_STRING(n->type, tInt0);
+    MAKE_CONSTANT_SHARED_STRING(n->type, tZero);
     break;
 
   case F_ARG_LIST:
@@ -2754,6 +2803,10 @@ static node *low_localopt(node *n,
   case F_CAST:
     return mkcastnode(n->type, low_localopt(CAR(n), usage, switch_u, cont_u,
 					    break_u, catch_u));
+
+  case F_SOFT_CAST:
+    return mksoftcastnode(n->type, low_localopt(CAR(n), usage, switch_u,
+						cont_u, break_u, catch_u));
 
   case F_CONTINUE:
     MEMCPY(usage, cont_u, MAX_LOCAL);
@@ -3394,6 +3447,7 @@ static node *eval(node *n)
   extern struct svalue *sp;
   if(!is_const(n) || n->token==':')
     return n;
+  
   args=eval_low(n);
 
   switch(args)
@@ -3414,18 +3468,36 @@ static node *eval(node *n)
       pop_stack();
       return n;
     }
-    free_node(n);
-    n=mksvaluenode(sp-1);
+    if (n->token != F_SOFT_CAST) {
+      free_node(n);
+      n=mksvaluenode(sp-1);
+    } else {
+      node *nn = n;
+      n = mksoftcastnode(n->type, mksvaluenode(sp-1));
+      free_node(nn);
+    }
     pop_stack();
     break;
 
   default:
-    free_node(n);
-    n=NULL;
-    while(args--)
-    {
-      n=mknode(F_ARG_LIST,mksvaluenode(sp-1),n);
-      pop_stack();
+    if (n->token != F_SOFT_CAST) {
+      free_node(n);
+      n=NULL;
+      while(args--)
+      {
+	n=mknode(F_ARG_LIST,mksvaluenode(sp-1),n);
+	pop_stack();
+      }
+    } else {
+      node *nn = n;
+      n = NULL;
+      while(args--)
+      {
+	n=mknode(F_ARG_LIST,mksvaluenode(sp-1),n);
+	pop_stack();
+      }
+      n = mksoftcastnode(nn->type, n);
+      free_node(nn);
     }
   }
   return dmalloc_touch(node *, n);
