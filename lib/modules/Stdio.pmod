@@ -146,14 +146,12 @@ class FILE {
     }
   };
 
-object stdin=FILE("stdin");
-
-private static inherit File;
+object(FILE) stdin=FILE("stdin");
 
 string read_file(string filename,void|int start,void|int len)
 {
-  object buf,f;
-  string ret,tmp;
+  object(FILE) f;
+  string ret, tmp;
   f=FILE();
   if(!f->open(filename,"r")) return 0;
 
@@ -167,7 +165,7 @@ string read_file(string filename,void|int start,void|int len)
     len=0x7fffffff;
   case 3:
     while(start-- && f->gets());
-    buf=String_buffer();
+    object(String_buffer) buf=String_buffer();
     while(len-- && (tmp=f->gets()))
     {
       buf->append(tmp);
@@ -184,7 +182,9 @@ string read_file(string filename,void|int start,void|int len)
 string read_bytes(string filename,void|int start,void|int len)
 {
   string ret;
-  if(!open(filename,"r"))
+  object(File) f = File();
+
+  if(!f->open(filename,"r"))
     return 0;
   
   switch(query_num_arg())
@@ -193,21 +193,23 @@ string read_bytes(string filename,void|int start,void|int len)
   case 2:
     len=0x7fffffff;
   case 3:
-    seek(start);
+    f->seek(start);
   }
-  ret=read(len);
-  close();
+  ret=f->read(len);
+  f->close();
   return ret;
 }
 
 int write_file(string filename,string what)
 {
   int ret;
-  if(!open(filename,"awc"))
+  object(File) f = File();
+
+  if(!f->open(filename,"awc"))
     error("Couldn't open file "+filename+".\n");
   
-  ret=write(what);
-  close();
+  ret=f->write(what);
+  f->close();
   return ret;
 }
 
