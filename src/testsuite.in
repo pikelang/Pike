@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.246 1999/12/05 21:45:27 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.247 1999/12/06 02:08:14 mast Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -55,6 +55,7 @@ test_any([[int|string a;
 	   string s = typeof(aggregate(a));
 	   return (< "array(string | int)", "array(int | string)" >)[s];]], 1);
 test_any([[return typeof(aggregate());]], "array(zero)");
+test_any([[int i; return typeof(max(i,0));]], "int")
 
 test_any([[array(string) a; return typeof(a[0]); ]], "string")
 
