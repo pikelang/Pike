@@ -168,10 +168,10 @@ void set_bitmap_cursor(GDK.Bitmap image, GDK.Bitmap mask,
   get_all_args("set_bitmap_cursor", args, "%o%o%o%o%d%d",
 	       &s,&m,&fg,&bg,&xh,&yh);
   gdk_window_set_cursor(  (GdkWindow *)THIS->obj,
-                          gdk_cursor_new_from_pixmap(get_gdkobject(s, pixmap ),
-                                                     get_gdkobject(m, bitmap ),
+                          gdk_cursor_new_from_pixmap(get_gdkobject(s, bitmap),
+                                                     get_gdkobject(m, bitmap),
                                                      get_gdkobject(fg, color),
-                                                     get_gdkobject(bg, color ),
+                                                     get_gdkobject(bg, color),
                                                       xh,yh ) );
   RETURN_THIS();
 }
