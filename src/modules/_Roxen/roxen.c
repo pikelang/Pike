@@ -54,7 +54,37 @@ struct  buffer_str
 
 #define INITIAL_BUF_LEN 4096
 
+/*! @class Buffer A buffer, used for building strings. It's
+ *!    conceptually similar to a string, but you can only @[add]
+ *!    strings to it, and you can only @[get] the value from it once.
+ *!
+ *!    There is a reason for those seemingly rather odd limitations,
+ *!    it makes it possible to do some optimizations that really speed
+ *!    things up.
+ *!
+ *!    You do not need to use this class unless you add very many
+ *!    strings together, or very large strings.
+ *!
+ *!    For the fastest possible operation, write your code like this:
+ *!
+ *!    @example{
+ *!    String.Buffer b = String.Buffer( );
+ *!
+ *!    function add = b->add;
+ *!
+ *!    .. call add several times in code ...
+ *!
+ *!    string result = b->get(); // also clears the buffer
+ *!    @}
+ */
+
 static void f_buf_create( INT32 args )
+/*! @method void create(int|void initial_size) Initializes a new
+ *!   buffer. If no @[initial_size] is specified, 4096 is used. If you
+ *!   know aproximately how big the buffer will be, you can optimize
+ *!   the operation of add (slightly) by passing the size to this
+ *!   function.
+ */
 {
   struct buffer_str *str = THB;
   if( args && Pike_sp[-1].type == PIKE_T_INT )
@@ -64,10 +94,14 @@ static void f_buf_create( INT32 args )
 }
 
 static void f_buf_add( INT32 args )
+/*! @method void add(string data)
+ *!   Adds @[data] to the buffer
+ */
 {
   struct buffer_str *str = THB;
   struct pike_string *a;
   unsigned int l;
+
   if( args != 1 || Pike_sp[-args].type != PIKE_T_STRING )
     Pike_error("Illegal argument\n");
 
@@ -76,20 +110,26 @@ static void f_buf_add( INT32 args )
   if(!(l = (unsigned)a->len) )
     return;
 
-  if( str->len && str->shift != a->size_shift )
-  {
-    /* do something here.... */
-    str->shift = a->size_shift;
-  }
-
-  l<<=str->shift;
   
   if( !str->size )
   {
-    str->size = str->initial + sizeof( struct pike_string );
-    str->data = xalloc( str->size );
-    str->len  = sizeof( struct pike_string );
+    str->shift = a->size_shift;
+    str->size  = str->initial + sizeof( struct pike_string );
+    str->data  = xalloc( str->size );
+    str->len   = sizeof( struct pike_string );
   }
+  else if( str->shift < a->size_shift )
+  {
+    static void f_buf_get( INT32 args );
+    /* This will not win the "most optimal code of the year"
+       award, but it works. */
+    f_buf_get( 0 );
+    f_add( 2 );
+    f_buf_add( 1 );
+    return;
+  }
+  
+  l<<=str->shift;
 
   while( str->size < ((unsigned)l+str->len) )
   {
@@ -103,8 +143,25 @@ static void f_buf_add( INT32 args )
       Pike_error( "Malloc %d failed!\n", sz );
     }
   }
-  
-  MEMCPY( str->data+str->len, a->str, l );
+#ifdef DEBUG
+  if( str->shift < a->size_shift )
+    fatal("Impossible!\n");
+#endif
+  /* str->shift is always greater than or equal to a->size_shift here. */
+
+  if( a->size_shift == str->shift )
+    MEMCPY( (str->data+str->len), a->str, l );
+  else
+    if( a->size_shift )
+      convert_1_to_2((p_wchar2 *)(str->data+str->len),
+		     (p_wchar1 *)a->str, a->len);
+    else
+      if( str->shift & 1 )
+	convert_0_to_1((p_wchar1 *)(str->data+str->len),
+		       (p_wchar0 *)a->str, a->len);
+      else
+	convert_0_to_2((p_wchar2 *)(str->data+str->len),
+		       (p_wchar0 *)a->str, a->len);
 
   str->len += l;
   pop_stack();
@@ -113,6 +170,10 @@ static void f_buf_add( INT32 args )
 
 
 static void f_buf_get( INT32 args )
+/*! @method string get( )
+ *!   Get the data from the buffer.
+ *!   @note This will clear the data in the buffer
+ */
 {
   struct buffer_str *str = THB;
   int len = str->len-sizeof(struct pike_string);
