@@ -1,7 +1,7 @@
 #pike __REAL_VERSION__
 // #pragma strict_types
 
-// $Id: state.pike,v 1.26 2004/03/04 15:36:51 grubba Exp $
+// $Id: state.pike,v 1.27 2004/03/25 21:29:35 bill Exp $
 
 //! A connection switches from one set of state objects to another, one or
 //! more times during its lifetime. Each state object handles a one-way
@@ -43,7 +43,7 @@ string tls_pad(string data, int blocksize) {
 string tls_unpad(string data) {
   int(0..255) plen=[int(0..255)]data[-1];
 
-#ifdef DEBUG
+#ifdef SSL3_DEBUG
   string padding=reverse(data)[..plen];
 
   /* Checks that the padding is correctly done */
