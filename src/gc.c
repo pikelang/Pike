@@ -29,7 +29,7 @@ struct callback *gc_evaluator_callback=0;
 
 #include "block_alloc.h"
 
-RCSID("$Id: gc.c,v 1.54 2000/04/12 18:40:12 hubbe Exp $");
+RCSID("$Id: gc.c,v 1.55 2000/04/13 00:50:16 hubbe Exp $");
 
 /* Run garbage collect approximate every time we have
  * 20 percent of all arrays, objects and programs is
@@ -541,6 +541,7 @@ INT32 real_gc_check(void *a)
     {
       fprintf(stderr,"Reference to object to free in referenced object!\n");
       describe(a);
+      locate_references(a);
       fatal("Reference to object to free in referenced object!\n");
       return 0;
     }
