@@ -1,7 +1,8 @@
 #pike __REAL_VERSION__
 
-// $Id: LGPL.pmod,v 1.1 2002/05/31 16:20:18 nilsson Exp $
+// $Id: LGPL.pmod,v 1.2 2002/05/31 22:24:42 nilsson Exp $
 
 inherit .GPL;
 
-private constant text = #string "lgpl.txt";
+static constant name = "GNU Lesser General Public License 2.1";
+static constant text = #string "lgpl.txt";
