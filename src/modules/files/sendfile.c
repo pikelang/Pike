@@ -1,5 +1,5 @@
 /*
- * $Id: sendfile.c,v 1.39 2000/07/07 13:58:29 grubba Exp $
+ * $Id: sendfile.c,v 1.40 2000/08/07 10:04:56 grubba Exp $
  *
  * Sends headers + from_fd[off..off+len-1] + trailers to to_fd asyncronously.
  *
@@ -186,7 +186,7 @@ static void exit_pike_sendfile(struct object *o)
 
 #ifndef HAVE_WRITEV
 #define writev my_writev
-static int writev(int fd, struct iovec *iov, int n)
+static size_t writev(int fd, struct iovec *iov, int n)
 {
   if (n) {
     return fd_write(fd, iov->iov_base, iov->iov_len);
@@ -273,7 +273,7 @@ static int send_iov(int fd, struct iovec *iov, int iovcnt)
       sent += bytes;
 
       while (bytes) {
-	if ((unsigned int)bytes >= (unsigned int)iov->iov_len) {
+	if ((size_t)bytes >= (size_t)iov->iov_len) {
 	  bytes -= iov->iov_len;
 	  iov++;
 	  iovcnt--;
