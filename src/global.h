@@ -6,6 +6,11 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+#ifndef _LARGEFILE_SOURCE
+#  define _FILE_OFFSET_BITS 64
+#  define _LARGEFILE_SOURCE
+#endif
+
 /*
  * Some structure forward declarations are needed.
  */
