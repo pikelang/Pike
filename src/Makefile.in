@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.in,v 1.199 2000/08/01 22:37:22 grubba Exp $
+# $Id: Makefile.in,v 1.200 2000/08/06 18:37:35 grubba Exp $
 #
 
 # This line is needed on some machines.
@@ -87,6 +87,8 @@ REALCC=@REALCC@
 CC=@CC@
 CPP=@CPP@
 
+FALLBACK_CC=@FALLBACK_CC@
+
 AR=@AR@
 
 LD=@LD@
@@ -151,7 +153,7 @@ MODULE_REQUIREMENTS= \
   $(SRCDIR)/language.h \
   lib \
   master.pike @EXTRA_MODULE_REQUIREMENTS@
-  
+
 
 DEPEND= \
  $(SRCDIR)/language.c \
@@ -295,11 +297,21 @@ hilfe: $(TMP_BINDIR)/hilfe Makefile
 # FIXME: Make this a configure option
 .c.o:
 	@echo "Compiling $<" ;\
-	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ;\
-	else \
+	if $(CC) $(CFLAGS) -c $< -o $@ ; then : ; else \
 	  echo "WARNING: Compiler failure! Trying without optimization!" >&2;\
 	  echo "echo $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
-	  NO_ULIMIT=yes $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	  NO_ULIMIT=yes; \
+	  export NO_ULIMIT; \
+	  if $(CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ; then : ; else \
+	    err=$$?; \
+	    if test "x$(FALLBACK_CC)" = "x"; then \
+	      exit $err; \
+	    else \
+	      echo "WARNING: Compiler failure! Trying fallback compiler!" >&2;\
+	      echo "echo $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@" >&2 ;\
+	      $(FALLBACK_CC) $(PREFLAGS) $(NOOPTFLAGS) -c $< -o $@ ;\
+	    fi; \
+	  fi; \
 	fi
 
 #
