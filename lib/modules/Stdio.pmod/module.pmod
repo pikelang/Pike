@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.208 2005/01/18 19:45:34 mast Exp $
+// $Id: module.pmod,v 1.209 2005/01/26 15:21:01 mast Exp $
 #pike __REAL_VERSION__
 
 inherit files;
@@ -931,24 +931,56 @@ class File
   //! @item
   //!   When data arrives on the stream, @[read_cb] will be called with
   //!   some or all of that data as the second argument.
+  //!
   //! @item
   //!   When the stream has buffer space over for writing, @[write_cb]
   //!   will be called so that you can write more data to it.
+  //!
+  //!   This callback is also called after the remote end of a socket
+  //!   connection has closed the write direction only. An attempt to
+  //!   write data to it in that case will generate a @[System.EPIPE]
+  //!   errno.
+  //!
   //! @item
   //!   When out-of-band data arrives on the stream, @[read_oob_cb]
   //!   will be called with some or all of that data as the second
   //!   argument.
+  //!
   //! @item
   //!   When the stream allows out-of-band data to be sent,
   //!   @[write_oob_cb] will be called so that you can write more
   //!   out-of-band data to it.
+  //!
+  //!   If the OS doesn't separate the write events for normal and
+  //!   out-of-band data, Pike will try to call @[write_oob_cb] first.
+  //!   If it doesn't write anything, then @[write_cb] will be tried.
+  //!   This also means that @[write_oob_cb] might get called when the
+  //!   remote end of a connection has closed the write direction
+  //!   only.
+  //!
   //! @item
-  //!   When the stream has been shut down, either due to an error or
-  //!   a close from the other end, @[close_cb] will be called.
-  //!   @[errno] will return the error that has occurred or zero in
-  //!   the case of a normal close. Note that @[close_cb] will not be
-  //!   called for a local close, neither by a call to @[close] or by
-  //!   destructing this object.
+  //!   When an error or an end-of-stream in the read direction
+  //!   occurs, @[close_cb] will be called. @[errno] will return the
+  //!   error, or zero in the case of an end-of-stream.
+  //!
+  //!   The name of this callback is rather unfortunate since it
+  //!   really has nothing to do with a close: The stream is still
+  //!   open when @[close_cb] is called (you might not be able to read
+  //!   and/or write to it, but you can still use things like
+  //!   @[query_address], and the underlying file descriptor is still
+  //!   allocated). Also, this callback will not be called for a local
+  //!   close, neither by a call to @[close] or by destructing this
+  //!   object.
+  //!
+  //!   Also, @[close_cb] will not be called if a remote close occurs
+  //!   in the write direction; that is handled by @[write_cb] (or
+  //!   possibly @[write_oob_cb]).
+  //!
+  //!   If an error occurs, all events will be automatically
+  //!   deregistered, so there won't be any more read or write events
+  //!   unless callbacks are reinstalled. This doesn't affect the
+  //!   callback settings - @[query_read_callback] et al will still
+  //!   return the installed callbacks.
   //! @endul
   //!
   //! All callbacks will receive the @tt{id@} set by @[set_id] as
