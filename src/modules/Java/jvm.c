@@ -1,5 +1,5 @@
 /*
- * $Id: jvm.c,v 1.14 2000/04/04 14:11:59 marcus Exp $
+ * $Id: jvm.c,v 1.15 2000/05/17 17:53:39 mast Exp $
  *
  * Pike interface to Java Virtual Machine
  *
@@ -16,7 +16,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "global.h"
-RCSID("$Id: jvm.c,v 1.14 2000/04/04 14:11:59 marcus Exp $");
+RCSID("$Id: jvm.c,v 1.15 2000/05/17 17:53:39 mast Exp $");
 #include "program.h"
 #include "interpret.h"
 #include "stralloc.h"
@@ -48,7 +48,7 @@ RCSID("$Id: jvm.c,v 1.14 2000/04/04 14:11:59 marcus Exp $");
 
 #ifdef __NT__
 #define JNI_CreateJavaVM createjavavm
-typedef jint JNICALL (*createjavavmtype)(JavaVM **, void **, void *);
+typedef jint (JNICALL *createjavavmtype)(JavaVM **, void **, void *);
 static createjavavmtype JNI_CreateJavaVM = NULL;
 static HINSTANCE jvmdll = NULL;
 #endif /* __NT___ */
