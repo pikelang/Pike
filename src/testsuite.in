@@ -1,4 +1,4 @@
-test_true([["$Id: testsuite.in,v 1.398 2001/03/31 15:21:47 grubba Exp $"]]);
+test_true([["$Id: testsuite.in,v 1.399 2001/03/31 21:03:19 grubba Exp $"]]);
 
 cond([[all_constants()->_verify_internals]],
 [[
@@ -6374,7 +6374,7 @@ test_eq(search(({"foo"}),"foo"),0)
 test_eq(search("fo-obar|gazonk"/"|","fo-obar"),0)
 test_eq(search("fo-obar|gazonk"/"|","gazonk"),1)
 test_eq(search(([1:2,3:4,5:6,7:8]),4),3)
-test_true(zero_type(search(([1:2,3:4,5:6,7:8]),3)))
+test_true(zero_type(search(([1:2,3:4,5:6,7:8]),(int)3)))
 test_eq(search(([1:2,3:4,5:6,7:8]),8),7)
 test_any([[
   mapping m=([]);
