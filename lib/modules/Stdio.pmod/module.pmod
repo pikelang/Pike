@@ -1,4 +1,4 @@
-// $Id: module.pmod,v 1.74 2000/01/22 02:33:50 hubbe Exp $
+// $Id: module.pmod,v 1.75 2000/02/17 23:11:54 nilsson Exp $
 
 import String;
 
@@ -719,7 +719,7 @@ int append_file(string filename, string what, int|void access)
 
 int file_size(string s)
 {
-  int *stat;
+  array(int) stat;
   stat=file_stat(s);
   if(!stat) return -1;
   return stat[1]; 

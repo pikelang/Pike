@@ -74,7 +74,7 @@ class client
       cmd("HELO "+gethostname(), "greeting failed.");
   }
   
-  void send_message(string from, string *to, string body)
+  void send_message(string from, array(string) to, string body)
   {
     cmd("MAIL FROM: <" + from + ">");
     foreach(to, string t) {
