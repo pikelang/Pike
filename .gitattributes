@@ -357,10 +357,6 @@ testfont binary
 /src/modules/math/math.c foreign_ident
 /src/modules/module_configure.in foreign_ident
 /src/modules/module_makefile foreign_ident
-/src/modules/readline/Makefile.in foreign_ident
-/src/modules/readline/acconfig.h foreign_ident
-/src/modules/readline/configure.in foreign_ident
-/src/modules/readline/readlinemod.c foreign_ident
 /src/modules/spider/Makefile.in foreign_ident
 /src/modules/spider/accesseddb.c foreign_ident
 /src/modules/spider/accesseddb.h foreign_ident
